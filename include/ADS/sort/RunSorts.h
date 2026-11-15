@@ -63,7 +63,7 @@
 
 #ifndef __ADS_RunSorts
  #define __ADS_RunSorts
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -84,7 +84,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// Powersort; the number of runs found goes to `*runs`, if given
 ///
@@ -130,7 +131,7 @@ namespace ADS {
 /// \post \f$ A \f$ is sorted, with the same items (audit)
 template< class T , class C = std::less<> >
 void powerSort( std::vector< T > & A , C less = C() ,
-                std::size_t * runs = nullptr );
+		std::size_t * runs = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
@@ -144,7 +145,7 @@ void powerSort( std::vector< T > & A , C less = C() ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RunSorts.h included */
+#endif /* RunSorts.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File RunSorts.h ---------------------------*/

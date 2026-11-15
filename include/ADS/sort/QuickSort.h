@@ -56,7 +56,7 @@
 
 #ifndef __ADS_QuickSort
  #define __ADS_QuickSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -78,7 +78,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the pivot \f$ A[ \mathit{start} ] \f$ moved to its place \f$ j \f$, the
 /// smaller items before it, the others after it (the perno() of the book);
@@ -104,7 +105,7 @@ namespace ADS {
 ///       \f$ A[ j ] \le A[ j + 1 .. \mathit{end} ] \f$ (audit)
 template< class T , class C = std::less<> >
 std::size_t partition( std::vector< T > & A , std::size_t start ,
-                       std::size_t end , C less = C() );
+		       std::size_t end , C less = C() );
 
 /// the partition of \f$ A[ \mathit{start} .. \mathit{end} ] \f$ around a value
 /// \f$ x \f$ that need not be in it, in one pass from both ends: the items not
@@ -136,8 +137,7 @@ std::size_t partition( std::vector< T > & A , std::size_t start ,
 ///       (audit)
 template< class T , class C = std::less<> >
 std::size_t partitionByValue( std::vector< T > & A , std::size_t start ,
-                              std::size_t end , const T & x ,
-                              C less = C() );
+			      std::size_t end , const T & x , C less = C() );
 
 /// the sort of \f$ A[ \mathit{start} .. \mathit{end} ] \f$, the QuickSort() of
 /// the book
@@ -158,7 +158,7 @@ std::size_t partitionByValue( std::vector< T > & A , std::size_t start ,
 /// \post \f$ A[ \mathit{start} .. \mathit{end} ] \f$ is sorted
 template< class T , class C = std::less<> >
 void quickSort( std::vector< T > & A , std::size_t start , std::size_t end ,
-                C less = C() );
+		C less = C() );
 
 /// \f$ A \f$ in increasing order by `less`, the Quicksort of the whole vector
 /// \f[
@@ -213,7 +213,7 @@ void quickSort( std::vector< T > & A , C less = C() );
 /// \post \f$ A \f$ is sorted, with the same items (audit)
 template< class T , class C = std::less<> >
 void quickSortTuned( std::vector< T > & A , std::size_t cutoff = 16 ,
-                     C less = C() , std::size_t * depth = nullptr );
+		     C less = C() , std::size_t * depth = nullptr );
 
 /// Quicksort of a list with pointers: the items go to three lists, smaller,
 /// equal and larger than the first one, the first and the last are sorted and
@@ -250,7 +250,7 @@ void quickSort( List< T > & L , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* QuickSort.h included */
+#endif /* QuickSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File QuickSort.h --------------------------*/

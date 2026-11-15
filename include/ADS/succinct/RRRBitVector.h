@@ -68,7 +68,7 @@
 
 #ifndef __ADS_RRRBitVector
  #define __ADS_RRRBitVector
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -87,20 +87,21 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS RRRBitVector ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a static vector of bits compressed to its entropy, with rank and select
-class RRRBitVector {
+class RRRBitVector
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the vector of no bit
- RRRBitVector( void ) : RRRBitVector( BitVector() ) {}
+ RRRBitVector( void ) : RRRBitVector( BitVector() ) { }
 
  /// the bits of \f$ b \f$, compressed
  ///
@@ -210,12 +211,12 @@ class RRRBitVector {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  static constexpr int kB = 63;              ///< the bits of a block
  static constexpr std::size_t kSuper = 32;  ///< the blocks of a superblock
 
  /// the binomials C( p , t ) for p , t <= 63, and the bits of the offsets
- struct Tables {
+ struct Tables
+ {
   /// the binomial coefficients \f$ \binom{p}{t} \f$
   std::array< std::array< std::uint64_t , 64 > , 64 > C{};
   /// the bits of the offset of a block with \f$ t \f$ 1s
@@ -232,7 +233,7 @@ class RRRBitVector {
 
  /// the offset and the class of the block j, and the 1s before it
  [[nodiscard]] std::uint64_t locate( std::size_t j , int & c ,
-                                     std::size_t & ones ) const;
+				     std::size_t & ones ) const;
 
  /// the class of the block j
  [[nodiscard]] int cls( std::size_t j ) const {
@@ -243,11 +244,11 @@ class RRRBitVector {
  [[nodiscard]] std::size_t select( std::size_t k , bool b ) const;
 
  std::size_t f_m = 0 , f_ones = 0;
- BitVector f_cls;                          ///< 6 bits a block
- BitVector f_off;                          ///< the offsets
- BitVector f_rank;                         ///< 1s before each superblock
- BitVector f_ptr;                          ///< its first bit of offset
- int f_wr = 1 , f_wp = 1;                  ///< the widths of the two
+ BitVector f_cls;         ///< 6 bits a block
+ BitVector f_off;         ///< the offsets
+ BitVector f_rank;        ///< 1s before each superblock
+ BitVector f_ptr;         ///< its first bit of offset
+ int f_wr = 1 , f_wp = 1;  ///< the widths of the two
 
  };  // end( class RRRBitVector )
 
@@ -263,7 +264,7 @@ class RRRBitVector {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RRRBitVector.h included */
+#endif /* RRRBitVector.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File RRRBitVector.h -------------------------*/

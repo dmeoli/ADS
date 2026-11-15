@@ -16,15 +16,16 @@
 
 #include <algorithm>
 
-namespace ADS {
+namespace ADS
+{
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 Assignment< W , P >::Assignment( int n , std::vector< W > C )
- : f_n( n ) , f_C( std::move( C ) )
+    : f_n( n ) , f_C( std::move( C ) )
 {
  ADS_PRE( ( n >= 0 ) &&
-          ( f_C.size() == std::size_t( f_n ) * std::size_t( f_n ) ) );
+	  ( f_C.size() == std::size_t( f_n ) * std::size_t( f_n ) ) );
  f_u.assign( f_n , W() );
  f_v.assign( f_n , W() );
  f_col.assign( f_n , -1 );
@@ -37,7 +38,7 @@ Assignment< W , P >::Assignment( int n , std::vector< W > C )
  }
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 W Assignment< W , P >::cost( int i , int j ) const
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) && ( j >= 0 ) && ( j < f_n ) );
@@ -45,7 +46,7 @@ W Assignment< W , P >::cost( int i , int j ) const
  }
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 void Assignment< W , P >::setCost( int i , int j , W c )
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) && ( j >= 0 ) && ( j < f_n ) );
@@ -60,12 +61,11 @@ void Assignment< W , P >::setCost( int i , int j , W c )
  }
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 void Assignment< W , P >::setRow( int i , const std::vector< W > & R )
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) && ( int( R.size() ) == f_n ) );
- std::copy( R.begin() , R.end() ,
-            f_C.begin() + std::ptrdiff_t( i ) * f_n );
+ std::copy( R.begin() , R.end() , f_C.begin() + std::ptrdiff_t( i ) * f_n );
  if( f_ready && ! f_dirtyR[ i ] ) {
   f_dirtyR[ i ] = 1;
   f_DR.push_back( i );
@@ -74,7 +74,7 @@ void Assignment< W , P >::setRow( int i , const std::vector< W > & R )
  }
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 void Assignment< W , P >::setColumn( int j , const std::vector< W > & K )
 {
  ADS_PRE( ( j >= 0 ) && ( j < f_n ) && ( int( K.size() ) == f_n ) );
@@ -88,7 +88,7 @@ void Assignment< W , P >::setColumn( int j , const std::vector< W > & K )
  }
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 void Assignment< W , P >::freeRow( int i )
 {
  if( f_col[ i ] >= 0 ) {
@@ -100,7 +100,7 @@ void Assignment< W , P >::freeRow( int i )
 /*--------------------------------------------------------------------------*/
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 bool Assignment< W , P >::augment( int i0 )
 {
  const W INF = infinity< W >();
@@ -127,13 +127,13 @@ bool Assignment< W , P >::augment( int i0 )
     }
    if( ( f_dist[ j ] < low ) ||
        ( ( f_dist[ j ] == low ) && ( low != INF ) && ( f_row[ j ] < 0 ) &&
-         ( best >= 0 ) && ( f_row[ best ] >= 0 ) ) ) {
+	 ( best >= 0 ) && ( f_row[ best ] >= 0 ) ) ) {
     low = f_dist[ j ];
     best = j;
     }
    }
   if( ( best < 0 ) || ( low == INF ) )
-   return( false );                         // no free column reached
+   return( false );  // no free column reached
   mu = low;
   f_scanned[ best ] = 1;
   f_order.push_back( best );
@@ -162,15 +162,15 @@ bool Assignment< W , P >::augment( int i0 )
  }
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 bool Assignment< W , P >::optimal( void ) const
 {
  for( int i = 0 ; i < f_n ; ++i ) {
   for( int j = 0 ; j < f_n ; ++j )
    if( finite( i , j ) && ( reduced( i , j ) < W() ) ) {
     if constexpr( std::is_floating_point_v< W > ) {
-     const W c = f_C[ std::size_t( i ) * std::size_t( f_n ) +
-                      std::size_t( j ) ];
+     const W c =
+       f_C[ std::size_t( i ) * std::size_t( f_n ) + std::size_t( j ) ];
      const W tol = W( 1e-9 ) * ( W( 1 ) + ( c < 0 ? -c : c ) );
      if( reduced( i , j ) < -tol )
       return( false );
@@ -189,7 +189,7 @@ bool Assignment< W , P >::optimal( void ) const
  }
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 void Assignment< W , P >::solve( void )
 {
  const W INF = infinity< W >();
@@ -282,7 +282,7 @@ void Assignment< W , P >::solve( void )
 /*--------------------------------------------------------------------------*/
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 int Assignment< W , P >::column( int i )
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) );
@@ -291,7 +291,7 @@ int Assignment< W , P >::column( int i )
  }
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 int Assignment< W , P >::row( int j )
 {
  ADS_PRE( ( j >= 0 ) && ( j < f_n ) );
@@ -300,7 +300,7 @@ int Assignment< W , P >::row( int j )
  }
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 bool Assignment< W , P >::perfect( void )
 {
  solve();
@@ -311,7 +311,7 @@ bool Assignment< W , P >::perfect( void )
  }
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 W Assignment< W , P >::total( void )
 {
  solve();
@@ -323,7 +323,7 @@ W Assignment< W , P >::total( void )
  }
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 W Assignment< W , P >::rowPotential( int i )
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) );
@@ -332,7 +332,7 @@ W Assignment< W , P >::rowPotential( int i )
  }
 
 template< class W , ReoptPolicy P >
-requires std::is_arithmetic_v< W >
+ requires std::is_arithmetic_v< W >
 W Assignment< W , P >::columnPotential( int j )
 {
  ADS_PRE( ( j >= 0 ) && ( j < f_n ) );

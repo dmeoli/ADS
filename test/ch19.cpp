@@ -53,15 +53,18 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Longs = std::vector< long >;
 using Matrix = std::vector< Longs >;
 
 /// the distances of figure 19.5, the cities 1 to 5 as 0 to 4
-const Matrix fig195 = { { 0 , 3 , 4 , 2 , 7 } , { 3 , 0 , 4 , 6 , 3 } ,
-                        { 4 , 4 , 0 , 5 , 8 } , { 2 , 6 , 5 , 0 , 6 } ,
-                        { 7 , 3 , 8 , 6 , 0 } };
+const Matrix fig195 = { { 0 , 3 , 4 , 2 , 7 } ,
+			{ 3 , 0 , 4 , 6 , 3 } ,
+			{ 4 , 4 , 0 , 5 , 8 } ,
+			{ 2 , 6 , 5 , 0 , 6 } ,
+			{ 7 , 3 , 8 , 6 , 0 } };
 
 /// the cost of a shortest circuit, by all the permutations from 0
 template< class T >
@@ -90,8 +93,10 @@ Matrix random_distances( int n , long w , bool symmetric , std::mt19937 & g )
  for( int u = 0 ; u < n ; ++u )
   for( int v = 0 ; v < n ; ++v )
    if( u != v ) {
-    if( symmetric && ( v < u ) ) D[ u ][ v ] = D[ v ][ u ];
-    else D[ u ][ v ] = 1 + long( g() % w );
+    if( symmetric && ( v < u ) )
+     D[ u ][ v ] = D[ v ][ u ];
+    else
+     D[ u ][ v ] = 1 + long( g() % w );
     }
  return( D );
  }
@@ -102,7 +107,8 @@ Adjacency random_graph( int n , int p , std::mt19937 & g )
  Adjacency G( n , std::vector< bool >( n , false ) );
  for( int u = 0 ; u < n ; ++u )
   for( int v = u + 1 ; v < n ; ++v )
-   if( int( g() % 100 ) < p ) G[ u ][ v ] = G[ v ][ u ] = true;
+   if( int( g() % 100 ) < p )
+    G[ u ][ v ] = G[ v ][ u ] = true;
  return( G );
  }
 
@@ -110,11 +116,11 @@ Adjacency random_graph( int n , int p , std::mt19937 & g )
 std::vector< std::vector< double > > euclid( const std::vector< Point > & P )
 {
  std::vector< std::vector< double > > D( P.size() ,
-                                        std::vector< double >( P.size() ) );
+					 std::vector< double >( P.size() ) );
  for( std::size_t i = 0 ; i < P.size() ; ++i )
   for( std::size_t j = 0 ; j < P.size() ; ++j )
    D[ i ][ j ] = std::hypot( double( P[ i ].x - P[ j ].x ) ,
-                             double( P[ i ].y - P[ j ].y ) );
+			     double( P[ i ].y - P[ j ].y ) );
  return( D );
  }
 
@@ -124,7 +130,8 @@ int bruteBins( const Longs & A , long k )
  int best = int( A.size() );
  std::vector< long > free;
  auto rec = [ & ]( auto & self , std::size_t i ) -> void {
-  if( int( free.size() ) >= best ) return;
+  if( int( free.size() ) >= best )
+   return;
   if( i == A.size() ) {
    best = int( free.size() );
    return;
@@ -154,7 +161,8 @@ int bfsPuzzle( const Board & B , int n )
  while( ! Q.empty() ) {
   Board X = Q.front();
   Q.pop();
-  if( X == goal ) return( d[ X ] );
+  if( X == goal )
+   return( d[ X ] );
   for( const Board & Y : puzzleMoves( X , n ) )
    if( ! d.count( Y ) ) {
     d[ Y ] = d[ X ] + 1;
@@ -182,30 +190,35 @@ ADS_TEST( "sec19.1.subset-sum" )
  CHECK( *subsetSumSet( { 3 , 3 , 3 } , 9 ) == Nodes( { 0 , 1 , 2 } ) );
  CHECK( ! subsetSumSet( { 3 , 3 , 3 } , 10 ) );
  CHECK( ! subsetSumDP( { 3 , 3 } , 4 ) );
- CHECK( ! subsetSumDP( { 1 } , -1 ) );           // no subset sums below 0
+ CHECK( ! subsetSumDP( { 1 } , -1 ) );  // no subset sums below 0
  CHECK_THROWS( subsetSumDP( { -1 } , 1 ) , contract_violation );
  CHECK_THROWS( subsetSumSet( { -1 } , 1 ) , contract_violation );
  std::vector< std::vector< bool > > rows;
  CHECK( subsetSumDP( { 7 , 11 , 13 } , 24 , &rows ) );
- const std::vector< std::vector< long > > ones = { { 0 } , { 0 , 7 } ,
-  { 0 , 7 , 11 , 18 } , { 0 , 7 , 11 , 13 , 18 , 20 , 24 } };
+ const std::vector< std::vector< long > > ones = {
+  { 0 } , { 0 , 7 } , { 0 , 7 , 11 , 18 } , { 0 , 7 , 11 , 13 , 18 , 20 , 24 }
+  };
  CHECK( rows.size() == 4 );
  for( std::size_t i = 0 ; i < 4 ; ++i ) {
   Longs J;
-  for( long j = 0 ; j <= 24 ; ++j ) if( rows[ i ][ j ] ) J.push_back( j );
+  for( long j = 0 ; j <= 24 ; ++j )
+   if( rows[ i ][ j ] )
+    J.push_back( j );
   CHECK( J == ones[ i ] );
   }
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 200 ; ++t ) {
   Longs A( g() % 9 );
-  for( auto & a : A ) a = long( g() % 21 );
+  for( auto & a : A )
+   a = long( g() % 21 );
   const long k = long( g() % 61 );
   const auto S = subsetSumSet( A , k );
   CHECK( subsetSumDP( A , k ) == subsetSumExists( A , k ).has_value() );
   CHECK( S.has_value() == subsetSumDP( A , k ) );
   if( S ) {
    long s = 0;
-   for( int i : *S ) s += A[ i ];
+   for( int i : *S )
+    s += A[ i ];
    CHECK( s == k );
    }
   }
@@ -221,8 +234,8 @@ ADS_TEST( "sec19.2.bin-packing" )
  CHECK( firstFit( {} , 5 ).empty() && firstFit( {} , 5 , true ).empty() );
  CHECK( firstFit( { 0 , 0 } , 0 ) == Ints( { 0 , 0 } ) );
  CHECK( firstFit( { 5 , 5 , 5 } , 5 , true ) == Ints( { 0 , 1 , 2 } ) );
- CHECK( firstFit( { 2 , 3 , 2 , 3 } , 5 , true ) ==
-        Ints( { 0 , 0 , 1 , 1 } ) );
+ CHECK( firstFit( { 2 , 3 , 2 , 3 } , 5 ,
+		  true ) == Ints( { 0 , 0 , 1 , 1 } ) );
  CHECK( firstFit( { 2 , 3 , 2 , 3 } , 5 ) == Ints( { 0 , 0 , 1 , 1 } ) );
  CHECK_THROWS( firstFit( { 6 } , 5 ) , contract_violation );
  CHECK_THROWS( firstFit( { -1 } , 5 ) , contract_violation );
@@ -230,21 +243,25 @@ ADS_TEST( "sec19.2.bin-packing" )
  for( int t = 0 ; t < 200 ; ++t ) {
   const long k = 5 + long( g() % 20 );
   Longs A( 1 + g() % 9 );
-  for( auto & a : A ) a = long( g() % ( k + 1 ) );
+  for( auto & a : A )
+   a = long( g() % ( k + 1 ) );
   const int opt = bruteBins( A , k );
   for( bool dec : { false , true } ) {
    const auto box = firstFit( A , k , dec );
    const int N = 1 + *std::max_element( box.begin() , box.end() );
    Longs load( N , 0 );
-   for( std::size_t i = 0 ; i < A.size() ; ++i ) load[ box[ i ] ] += A[ i ];
+   for( std::size_t i = 0 ; i < A.size() ; ++i )
+    load[ box[ i ] ] += A[ i ];
    CHECK( *std::max_element( load.begin() , load.end() ) <= k );
-   int half = 0;                         // boxes filled at most half
-   for( long l : load ) half += 2 * l <= k;
+   int half = 0;  // boxes filled at most half
+   for( long l : load )
+    half += 2 * l <= k;
    CHECK( half <= 1 );
    CHECK( N >= opt );
    CHECK( ( N == 1 ) || ( N < 2 * opt ) );
    CHECK( 10 * N < 17 * opt + 20 );
-   if( dec ) CHECK( 9 * N < 11 * opt + 36 );
+   if( dec )
+    CHECK( 9 * N < 11 * opt + 36 );
    }
   }
  }
@@ -269,13 +286,15 @@ ADS_TEST( "sec19.2.delta-tsp" )
  CHECK_THROWS( tourCost( fig195 , { 1 , 1 } ) , contract_violation );
  CHECK_THROWS( tourCost( fig195 , { 5 } ) , contract_violation );
  CHECK_THROWS( deltaTsp( DM( { { 0 , 1 } , { 2 , 0 } } ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( deltaTsp( DM( { { 0 , 1 , 5 } , { 1 , 0 , 1 } ,
-                               { 5 , 1 , 0 } } ) ) , contract_violation );
+			       { 5 , 1 , 0 } } ) ) ,
+	       contract_violation );
  std::mt19937 g( 3 );
  for( int t = 0 ; t < 60 ; ++t ) {
   std::vector< Point > P( 2 + g() % 7 );
-  for( auto & p : P ) p = { long( g() % 50 ) , long( g() % 50 ) };
+  for( auto & p : P )
+   p = { long( g() % 50 ) , long( g() % 50 ) };
   const auto D = euclid( P );
   const Nodes S = deltaTsp( D );
   Nodes s = S;
@@ -283,28 +302,29 @@ ADS_TEST( "sec19.2.delta-tsp" )
   CHECK( s == nodes( int( P.size() ) ) );
   CHECK( tourCost( D , S ) <= 2 * bruteTsp( D ) + 1e-9 );
   }
- for( int n = 4 ; n <= 4 ; ++n ) {          // even n, the zigzag x*
+ for( int n = 4 ; n <= 4 ; ++n ) {  // even n, the zigzag x*
   const double pi = std::numbers::pi , d = 1.0 / ( n * n );
   std::vector< std::pair< double , double > > Q;
   for( int i = 0 ; i < n ; ++i ) {
    Q.emplace_back( std::cos( 2 * pi * i / n ) , std::sin( 2 * pi * i / n ) );
    Q.emplace_back( ( 1 + d ) * std::cos( 2 * pi * i / n ) ,
-                   ( 1 + d ) * std::sin( 2 * pi * i / n ) );
+		   ( 1 + d ) * std::sin( 2 * pi * i / n ) );
    }
   std::vector< std::vector< double > > D( 2 * n ,
-                                         std::vector< double >( 2 * n ) );
+					  std::vector< double >( 2 * n ) );
   for( int i = 0 ; i < 2 * n ; ++i )
    for( int j = 0 ; j < 2 * n ; ++j )
-    D[ i ][ j ] = std::hypot( Q[ i ].first - Q[ j ].first ,
-                              Q[ i ].second - Q[ j ].second );
+    D[ i ][ j ] =
+      std::hypot( Q[ i ].first - Q[ j ].first ,
+		  Q[ i ].second - Q[ j ].second );
   const double L = 2 * std::sin( pi / n ) , L1 = ( 1 + d ) * L;
   CHECK( std::abs( bruteTsp( D ) - ( n * ( L + L1 ) / 2 + n * d ) ) < 1e-9 );
-  CHECK( tourCost( D , deltaTsp( D ) ) <= ( n - 1 ) * ( L + L1 ) + 2 * d +
-                                          1e-9 );
+  CHECK( tourCost( D , deltaTsp( D ) ) <=
+	 ( n - 1 ) * ( L + L1 ) + 2 * d + 1e-9 );
   }
  const double n = 1e6 , pi = std::numbers::pi;
- const double cx = 2 * ( n - 1 ) * ( 2 + 1 / ( n * n ) ) * std::sin( pi / n ) +
-                   2 / ( n * n );
+ const double cx =
+   2 * ( n - 1 ) * ( 2 + 1 / ( n * n ) ) * std::sin( pi / n ) + 2 / ( n * n );
  const double cs = n * ( 2 + 1 / ( n * n ) ) * std::sin( pi / n ) + 1 / n;
  CHECK( std::abs( cx - 4 * pi ) < 1e-4 && std::abs( cs - 2 * pi ) < 1e-4 );
  }
@@ -318,22 +338,24 @@ ADS_TEST( "sec19.2.gap" )
  CHECK( tspGap( {} , 1 ).empty() );
  CHECK( tspGap( { { false } } , 1 ) == Matrix( { { 0 } } ) );
  CHECK( tspGap( { { false , false } , { false , false } } , 3 ) ==
-        Matrix( { { 0 , 6 } , { 6 , 0 } } ) );
+	Matrix( { { 0 , 6 } , { 6 , 0 } } ) );
  const Adjacency K5( 5 , std::vector< bool >( 5 , true ) ) ,
-                 E5( 5 , std::vector< bool >( 5 , false ) );
+   E5( 5 , std::vector< bool >( 5 , false ) );
  CHECK( bruteTsp( tspGap( K5 , 2 ) ) == 5 );
  CHECK( bruteTsp( tspGap( E5 , 2 ) ) == 50 );
  CHECK_THROWS( tspGap( { { false } } , 0 ) , contract_violation );
  CHECK_THROWS( tspGap( { { false , true } , { false , false } } , 1 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 4 );
  for( int t = 0 ; t < 60 ; ++t ) {
   const int n = 3 + int( g() % 5 );
   const long s = 1 + long( g() % 3 );
   const auto G = random_graph( n , 55 , g );
   const long opt = bruteTsp( tspGap( G , s ) );
-  if( hamiltonianCircuit( G ) ) CHECK( opt == n );
-  else CHECK( opt > s * n );
+  if( hamiltonianCircuit( G ) )
+   CHECK( opt == n );
+  else
+   CHECK( opt > s * n );
   }
  }
 
@@ -356,21 +378,25 @@ ADS_TEST( "sec19.2.ap-subset-sum" )
  CHECK_THROWS( apSubsetSum( { -1 } , 1 , 1 ) , contract_violation );
  const auto [ z1 , S1 ] = apSubsetSum( A , 45 , 1 );
  Longs v;
- for( int i : S1 ) v.push_back( A[ i ] );
+ for( int i : S1 )
+  v.push_back( A[ i ] );
  std::sort( v.rbegin() , v.rend() );
  CHECK( z1 == 44 && v == Longs( { 23 , 13 , 8 } ) );
  CHECK( apSubsetSum( A , 45 , 2 ).first == 45 );
  std::mt19937 g( 5 );
  for( int t = 0 ; t < 200 ; ++t ) {
   Longs B( 1 + g() % 9 );
-  for( auto & a : B ) a = 1 + long( g() % 30 );
+  for( auto & a : B )
+   a = 1 + long( g() % 30 );
   const long k = long( g() % 101 );
   const int h = int( g() % 4 );
   long opt = k;
-  while( ! subsetSumDP( B , opt ) ) --opt;
+  while( ! subsetSumDP( B , opt ) )
+   --opt;
   const auto [ z , S ] = apSubsetSum( B , k , h );
   long s = 0;
-  for( int i : S ) s += B[ i ];
+  for( int i : S )
+   s += B[ i ];
   CHECK( s == z && z <= k );
   CHECK( ( opt - z ) * ( h + 1 ) <= opt );
   }
@@ -401,11 +427,11 @@ ADS_TEST( "sec19.3.bb-tsp" )
  CHECK_THROWS( tspLowerBound( fig195 , {} ) , contract_violation );
  CHECK_THROWS( tspLowerBound( fig195 , { 0 , 0 } ) , contract_violation );
  CHECK_THROWS( tspLowerBound( D2 , { 0 } , TspBound::ONE_TREE ) ,
-               contract_violation );
+	       contract_violation );
  CHECK( tspLowerBound( fig195 , { 0 , 2 } ) == 18 );
  long gen = 0;
- const auto [ c , S ] = bbTsp( fig195 , { 0 , 3 , 2 , 1 , 4 } ,
-                               TspBound::BOOK , &gen );
+ const auto [ c , S ] =
+   bbTsp( fig195 , { 0 , 3 , 2 , 1 , 4 } , TspBound::BOOK , &gen );
  CHECK( c == 19 && S == Nodes( { 0 , 2 , 1 , 4 , 3 } ) && gen == 25 );
  CHECK( bbTsp( fig195 , {} , TspBound::ONE_TREE ).first == 19 );
  std::mt19937 g( 6 );
@@ -434,12 +460,14 @@ ADS_TEST( "sec19.4.greedy-tsp" )
  const auto [ Ee , Ce ] = greedyTsp( Eq );
  CHECK( Ee.size() == 6 && tourCost( Eq , Ce ) == 24 );
  CHECK_THROWS( greedyTsp( Matrix( { { 0 , 3 } , { 3 , 0 } } ) ) ,
-               contract_violation );
- CHECK_THROWS( greedyTsp( Matrix( { { 0 , 1 , 1 } , { 2 , 0 , 1 } ,
-                                    { 1 , 1 , 0 } } ) ) , contract_violation );
+	       contract_violation );
+ CHECK_THROWS(
+   greedyTsp( Matrix( { { 0 , 1 , 1 } , { 2 , 0 , 1 } , { 1 , 1 , 0 } } ) ) ,
+   contract_violation );
  const auto [ E , C ] = greedyTsp( fig195 );
- const std::vector< std::pair< int , int > > book = { { 0 , 3 } , { 0 , 1 } ,
-                                         { 1 , 4 } , { 2 , 3 } , { 2 , 4 } };
+ const std::vector< std::pair< int , int > > book = {
+  { 0 , 3 } , { 0 , 1 } , { 1 , 4 } , { 2 , 3 } , { 2 , 4 }
+  };
  CHECK( E == book );
  CHECK( C == Nodes( { 0 , 3 , 2 , 4 , 1 } ) && tourCost( fig195 , C ) == 21 );
  std::mt19937 g( 7 );
@@ -474,7 +502,7 @@ ADS_TEST( "sec19.4.local-search" )
  CHECK_THROWS( twoOptMove( pi , 0 , 5 ) , contract_violation );
  CHECK_THROWS( twoOpt( fig195 , { 0 , 1 , 2 } ) , contract_violation );
  CHECK_THROWS( twoOpt( Matrix( { { 0 , 1 } , { 2 , 0 } } ) , { 0 , 1 } ) ,
-               contract_violation );
+	       contract_violation );
  const Nodes p1 = twoOptMove( pi , 2 , 4 ) , p2 = twoOptMove( p1 , 0 , 2 );
  CHECK( tourCost( fig195 , pi ) == 25 );
  CHECK( p1 == Nodes( { 0 , 1 , 2 , 4 , 3 } ) );
@@ -491,7 +519,7 @@ ADS_TEST( "sec19.4.local-search" )
   const Nodes L = twoOpt( D , s , &trace );
   CHECK( std::is_sorted( trace.rbegin() , trace.rend() ) );
   CHECK( trace.back() == tourCost( D , L ) && trace.back() >= bruteTsp( D ) );
-  for( int i = 0 ; i < n ; ++i )         // no neighbour is better
+  for( int i = 0 ; i < n ; ++i )  // no neighbour is better
    for( int j = i + 2 ; j < n ; ++j )
     if( ( i > 0 ) || ( j < n - 1 ) )
      CHECK( tourCost( D , twoOptMove( L , i , j ) ) >= trace.back() );
@@ -505,7 +533,7 @@ ADS_TEST( "sec19.4.local-search" )
 ADS_TEST( "sec19.4.bisection" )
 {
  const Adjacency K2 = { { false , true } , { true , false } } ,
-                 K6( 6 , std::vector< bool >( 6 , true ) );
+		 K6( 6 , std::vector< bool >( 6 , true ) );
  CHECK( minMaxGreedy( K2 , 1 , 0 ) == std::vector< int >( { 1 , 0 } ) );
  CHECK( cutSize( K6 , minMaxGreedy( K6 , 0 , 1 ) ) == 9 );
  CHECK( bisection( K2 , 1 ) && ! bisection( K2 , 0 ) );
@@ -517,18 +545,20 @@ ADS_TEST( "sec19.4.bisection" )
  CHECK_THROWS( minMaxGreedy( { { false } } , 0 , 0 ) , contract_violation );
  CHECK_THROWS( cutSize( K2 , { 0 } ) , contract_violation );
  CHECK_THROWS( bisection( { { false , true } , { false , false } } , 1 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 9 );
  int hit = 0;
  for( int t = 0 ; t < 60 ; ++t ) {
   const int n = 2 * ( 1 + int( g() % 4 ) );
   const auto G = random_graph( n , 40 , g );
   int opt = 0;
-  while( ! bisection( G , opt ) ) ++opt;
+  while( ! bisection( G , opt ) )
+   ++opt;
   int best = n * n;
   for( int a = 0 ; a < n ; ++a )
    for( int b = 0 ; b < n ; ++b ) {
-    if( a == b ) continue;
+    if( a == b )
+     continue;
     const auto side = minMaxGreedy( G , a , b );
     CHECK( std::count( side.begin() , side.end() , 0 ) == n / 2 );
     CHECK( side[ a ] == 0 && side[ b ] == 1 );
@@ -571,14 +601,14 @@ ADS_TEST( "sec19.5.fifteen" )
  CHECK_THROWS( solvable( { 0 , 1 , 2 } , 2 ) , contract_violation );
  CHECK_THROWS( puzzleMoves( { 0 , 1 , 2 , 3 } , 3 ) , contract_violation );
  CHECK_THROWS( solvePuzzle( { 0 , 1 , 2 , 4 } , 2 ) , contract_violation );
- const Board a = { 2 , 3 , 0 , 4 , 1 , 5 , 7 , 8 , 9 , 6 , 10 , 12 ,
-                   13 , 14 , 11 , 15 };
- const Board b = { 2 , 3 , 7 , 4 , 1 , 5 , 0 , 8 , 9 , 6 , 10 , 12 ,
-                   13 , 14 , 11 , 15 };
- const Board c = { 2 , 3 , 7 , 4 , 1 , 5 , 8 , 0 , 9 , 6 , 10 , 12 ,
-                   13 , 14 , 11 , 15 };
+ const Board a = { 2 , 3 , 0 , 4 , 1 , 5 , 7 , 8 , 9 , 6 , 10 , 12 , 13 , 14 ,
+		   11 , 15 };
+ const Board b = { 2 , 3 , 7 , 4 , 1 , 5 , 0 , 8 , 9 , 6 , 10 , 12 , 13 , 14 ,
+		   11 , 15 };
+ const Board c = { 2 , 3 , 7 , 4 , 1 , 5 , 8 , 0 , 9 , 6 , 10 , 12 , 13 , 14 ,
+		   11 , 15 };
  CHECK( manhattan( a , 4 ) == 8 && manhattan( b , 4 ) == 9 &&
-        manhattan( c , 4 ) == 10 );
+	manhattan( c , 4 ) == 10 );
  const auto M = puzzleMoves( a , 4 );
  CHECK( M.size() == 3 && std::count( M.begin() , M.end() , b ) == 1 );
  const auto Mb = puzzleMoves( b , 4 );
@@ -603,7 +633,7 @@ ADS_TEST( "sec19.5.fifteen" )
   CHECK( T && int( T->size() ) - 1 == bfsPuzzle( B , n ) );
   }
  Board U = puzzleGoal( 3 );
- std::swap( U[ 0 ] , U[ 1 ] );           // an odd permutation
+ std::swap( U[ 0 ] , U[ 1 ] );  // an odd permutation
  CHECK( ! solvable( U , 3 ) && ! solvePuzzle( U , 3 ) );
  }
 
@@ -623,12 +653,14 @@ ADS_TEST( "ex19.1" )
  std::mt19937 g( 11 );
  for( int t = 0 ; t < 200 ; ++t ) {
   Longs A( g() % 10 );
-  for( auto & a : A ) a = long( g() % 16 );
+  for( auto & a : A )
+   a = long( g() % 16 );
   const auto S = partitionDP( A );
   CHECK( S.has_value() == partition( A ).has_value() );
   if( S ) {
    long s = 0;
-   for( int i : *S ) s += A[ i ];
+   for( int i : *S )
+    s += A[ i ];
    CHECK( 2 * s == std::accumulate( A.begin() , A.end() , 0L ) );
    }
   }
@@ -641,26 +673,28 @@ ADS_TEST( "ex19.1" )
 // before the fix); the preconditions
 ADS_TEST( "ex19.2" )
 {
- CHECK( ! schedulingDP( {} , 1 , -1 ) && ! multiprocessorScheduling( {} , 1 ,
-                                                                   -1 ) );
+ CHECK( ! schedulingDP( {} , 1 , -1 ) &&
+	! multiprocessorScheduling( {} , 1 , -1 ) );
  CHECK( schedulingDP( {} , 1 , 0 )->empty() );
  CHECK( ! schedulingDP( { 0 } , 2 , -1 ) );
  CHECK( schedulingDP( { 0 , 0 } , 1 , 0 ) );
- CHECK( schedulingDP( { 4 } , 5 , 4 )->size() == 1 && ! schedulingDP( { 4 } ,
-                                                                    5 , 3 ) );
+ CHECK( schedulingDP( { 4 } , 5 , 4 )->size() == 1 &&
+	! schedulingDP( { 4 } , 5 , 3 ) );
  CHECK_THROWS( schedulingDP( { 1 } , 0 , 1 ) , contract_violation );
  CHECK_THROWS( schedulingDP( { -1 } , 1 , 1 ) , contract_violation );
  std::mt19937 g( 12 );
  for( int t = 0 ; t < 200 ; ++t ) {
   Longs T( g() % 8 );
-  for( auto & x : T ) x = long( g() % 9 );
+  for( auto & x : T )
+   x = long( g() % 9 );
   const int m = 1 + int( g() % 3 );
   const long d = long( g() % 21 ) - 1;
   const auto a = schedulingDP( T , m , d );
   CHECK( a.has_value() == multiprocessorScheduling( T , m , d ).has_value() );
   if( a ) {
    Longs load( m , 0 );
-   for( std::size_t i = 0 ; i < T.size() ; ++i ) load[ ( *a )[ i ] ] += T[ i ];
+   for( std::size_t i = 0 ; i < T.size() ; ++i )
+    load[ ( *a )[ i ] ] += T[ i ];
    CHECK( *std::max_element( load.begin() , load.end() ) <= d );
    }
   }
@@ -686,17 +720,19 @@ ADS_TEST( "ex19.3" )
  const auto [ d4 , P4 ] = mcNaughton( { 1 , 1 } , 2 );
  CHECK( d4 == 1 && P4[ 0 ].size() == 1 && P4[ 1 ].size() == 1 );
  CHECK( mcNaughton( std::vector< double >( 1000 , 0.1 ) , 7 ).second.size() ==
-        7 );
+	7 );
  CHECK_THROWS( mcNaughton( { 1 } , 0 ) , contract_violation );
  CHECK_THROWS( mcNaughton( { -1 } , 1 ) , contract_violation );
  std::mt19937 g( 13 );
  for( int t = 0 ; t < 200 ; ++t ) {
   std::vector< double > T( 1 + g() % 10 );
-  for( auto & x : T ) x = 0.5 + double( g() % 100 ) / 10;
+  for( auto & x : T )
+   x = 0.5 + double( g() % 100 ) / 10;
   const int m = 1 + int( g() % 4 );
   const auto [ d , P ] = mcNaughton( T , m );
   double lb = std::accumulate( T.begin() , T.end() , 0.0 ) / m;
-  for( double x : T ) lb = std::max( lb , x );
+  for( double x : T )
+   lb = std::max( lb , x );
   CHECK( std::abs( d - lb ) < 1e-9 );
   std::vector< std::vector< Piece > > of( T.size() );
   for( const auto & q : P )
@@ -706,11 +742,12 @@ ADS_TEST( "ex19.3" )
     }
   for( std::size_t i = 0 ; i < T.size() ; ++i ) {
    double s = 0;
-   for( const auto & p : of[ i ] ) s += p.end - p.start;
+   for( const auto & p : of[ i ] )
+    s += p.end - p.start;
    CHECK( std::abs( s - T[ i ] ) < 1e-9 && of[ i ].size() <= 2 );
    if( of[ i ].size() == 2 )
     CHECK( std::min( of[ i ][ 0 ].end , of[ i ][ 1 ].end ) <=
-           std::max( of[ i ][ 0 ].start , of[ i ][ 1 ].start ) + 1e-9 );
+	   std::max( of[ i ][ 0 ].start , of[ i ][ 1 ].start ) + 1e-9 );
    }
   }
  }
@@ -759,12 +796,14 @@ ADS_TEST( "ex19.5" )
  std::mt19937 g( 15 );
  for( int t = 0 ; t < 200 ; ++t ) {
   Longs P( g() % 8 );
-  for( auto & p : P ) p = long( g() % 10 );
+  for( auto & p : P )
+   p = long( g() % 10 );
   const long m = std::accumulate( P.begin() , P.end() , 0L );
   bool ref = false;
   if( m % 3 == 0 ) {
    int c = 1;
-   for( std::size_t i = 0 ; i < P.size() ; ++i ) c *= 3;
+   for( std::size_t i = 0 ; i < P.size() ; ++i )
+    c *= 3;
    for( int x = 0 ; x < c && ! ref ; ++x ) {
     long s[ 3 ] = { 0 , 0 , 0 };
     for( int y = x , i = 0 ; i < int( P.size() ) ; ++i , y /= 3 )
@@ -776,7 +815,8 @@ ADS_TEST( "ex19.5" )
   CHECK( a.has_value() == ref );
   if( a ) {
    long s[ 3 ] = { 0 , 0 , 0 };
-   for( std::size_t i = 0 ; i < P.size() ; ++i ) s[ ( *a )[ i ] ] += P[ i ];
+   for( std::size_t i = 0 ; i < P.size() ; ++i )
+    s[ ( *a )[ i ] ] += P[ i ];
    CHECK( s[ 0 ] == m / 3 && s[ 1 ] == m / 3 && s[ 2 ] == m / 3 );
    }
   }
@@ -792,19 +832,21 @@ ADS_TEST( "ex19.6" )
  const Adjacency K5( 5 , std::vector< bool >( 5 , true ) );
  CHECK( vertexCoverApprox( K5 ) == Nodes( { 0 , 1 , 2 , 3 } ) );
  CHECK_THROWS( vertexCoverApprox( { { false , true } , { false , false } } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 16 );
  for( int t = 0 ; t < 200 ; ++t ) {
   const int n = 1 + int( g() % 9 );
   const auto G = random_graph( n , int( g() % 70 ) , g );
   const Nodes S = vertexCoverApprox( G );
   std::vector< bool > in( n , false );
-  for( int u : S ) in[ u ] = true;
+  for( int u : S )
+   in[ u ] = true;
   for( int u = 0 ; u < n ; ++u )
    for( int v = u + 1 ; v < n ; ++v )
     CHECK( ! G[ u ][ v ] || in[ u ] || in[ v ] );
   int opt = 0;
-  while( ! vertexCover( G , opt ) ) ++opt;
+  while( ! vertexCover( G , opt ) )
+   ++opt;
   CHECK( int( S.size() ) <= 2 * opt );
   }
  }
@@ -815,21 +857,25 @@ ADS_TEST( "ex19.7" )
  std::mt19937 g( 17 );
  for( int t = 0 ; t < 60 ; ++t ) {
   std::vector< Point > P( 4 + g() % 4 );
-  for( auto & p : P ) p = { long( g() % 30 ) , long( g() % 30 ) };
+  for( auto & p : P )
+   p = { long( g() % 30 ) , long( g() % 30 ) };
   const auto D = euclid( P );
   Nodes s = nodes( int( P.size() ) ) , best = s;
   while( std::next_permutation( s.begin() + 1 , s.end() ) )
-   if( tourCost( D , s ) < tourCost( D , best ) - 1e-9 ) best = s;
+   if( tourCost( D , s ) < tourCost( D , best ) - 1e-9 )
+    best = s;
   const int n = int( best.size() );
   for( int i = 0 ; i < n ; ++i )
    for( int j = i + 2 ; j < n ; ++j ) {
-    if( ( i == 0 ) && ( j == n - 1 ) ) continue;
+    if( ( i == 0 ) && ( j == n - 1 ) )
+     continue;
     const Point a = P[ best[ i ] ] , b = P[ best[ i + 1 ] ] ,
-                c = P[ best[ j ] ] , d = P[ best[ ( j + 1 ) % n ] ];
+      c = P[ best[ j ] ] ,
+		d = P[ best[ ( j + 1 ) % n ] ];
     const long long c1 = cross( a , b , c ) , c2 = cross( a , b , d ) ,
-                    c3 = cross( c , d , a ) , c4 = cross( c , d , b );
+		    c3 = cross( c , d , a ) , c4 = cross( c , d , b );
     const bool proper = ( ( c1 > 0 ) != ( c2 > 0 ) ) &&
-                        ( ( c3 > 0 ) != ( c4 > 0 ) ) && c1 && c2 && c3 && c4;
+			( ( c3 > 0 ) != ( c4 > 0 ) ) && c1 && c2 && c3 && c4;
     CHECK( ! proper );
     }
   }
@@ -846,12 +892,12 @@ ADS_TEST( "ex19.8" )
  CHECK( knapsackApprox( { 4 , 6 } , { 0 , 0 } , 0 , 0.5 ).first == 10 );
  CHECK( knapsackApprox( { 4 , 6 } , { 9 , 9 } , 8 , 0.5 ).second.empty() );
  CHECK( knapsackApprox( { 0 , 0 } , { 1 , 1 } , 5 , 1.0 ).first == 0 );
- for( auto [ p , v , C , eps ] : { std::tuple( 1L , 1L , -1L , 0.5 ) ,
-                                   std::tuple( 1L , 1L , 1L , 1.5 ) ,
-                                   std::tuple( -1L , 1L , 1L , 0.5 ) ,
-                                   std::tuple( 1L , -1L , 1L , 0.5 ) } )
+ for( auto [ p , v , C , eps ] :
+      { std::tuple( 1L , 1L , -1L , 0.5 ) , std::tuple( 1L , 1L , 1L , 1.5 ) ,
+	std::tuple( -1L , 1L , 1L , 0.5 ) ,
+	std::tuple( 1L , -1L , 1L , 0.5 ) } )
   CHECK_THROWS( knapsackApprox( { p } , { v } , C , eps ) ,
-                contract_violation );
+		contract_violation );
  std::mt19937 g( 18 );
  for( int t = 0 ; t < 200 ; ++t ) {
   const int n = int( g() % 11 );
@@ -882,35 +928,40 @@ ADS_TEST( "ex19.9" )
  const Adjacency K3( 3 , std::vector< bool >( 3 , true ) );
  CHECK( maxWeightClique( {} , {} ) == std::pair( 0L , Nodes() ) );
  CHECK( maxWeightClique( { { true } } , { 5 } ) ==
-        std::pair( 5L , Nodes( { 0 } ) ) );
+	std::pair( 5L , Nodes( { 0 } ) ) );
  CHECK( maxWeightClique( K3 , { 0 , 0 , 0 } ).first == 0 );
  CHECK( maxWeightClique( K3 , { 1 , 2 , 3 } ) ==
-        std::pair( 6L , Nodes( { 0 , 1 , 2 } ) ) );
+	std::pair( 6L , Nodes( { 0 , 1 , 2 } ) ) );
  CHECK_THROWS( maxWeightClique( K3 , { 1 , 2 } ) , contract_violation );
  CHECK_THROWS( maxWeightClique( K3 , { 1 , -2 , 3 } ) , contract_violation );
- CHECK_THROWS( maxWeightClique( { { false , true } , { false , false } } ,
-                                { 1 , 1 } ) , contract_violation );
+ CHECK_THROWS(
+   maxWeightClique( { { false , true } , { false , false } } , { 1 , 1 } ) ,
+   contract_violation );
  std::mt19937 g( 19 );
  for( int t = 0 ; t < 200 ; ++t ) {
   const int n = 1 + int( g() % 9 );
   const auto G = random_graph( n , int( g() % 90 ) , g );
   Longs w( n );
-  for( auto & x : w ) x = long( g() % 10 );
+  for( auto & x : w )
+   x = long( g() % 10 );
   long ref = 0;
   for( unsigned S = 0 ; S < ( 1u << n ) ; ++S ) {
    bool ok = true;
    long s = 0;
    for( int u = 0 ; u < n ; ++u ) {
-    if( !( S >> u & 1 ) ) continue;
+    if( ! ( S >> u & 1 ) )
+     continue;
     s += w[ u ];
     for( int v = u + 1 ; v < n ; ++v )
-     ok = ok && ( !( S >> v & 1 ) || G[ u ][ v ] );
+     ok = ok && ( ! ( S >> v & 1 ) || G[ u ][ v ] );
     }
-   if( ok ) ref = std::max( ref , s );
+   if( ok )
+    ref = std::max( ref , s );
    }
   const auto [ z , S ] = maxWeightClique( G , w );
   long s = 0;
-  for( int u : S ) s += w[ u ];
+  for( int u : S )
+   s += w[ u ];
   CHECK( z == ref && s == z && cliqueCertificate( G , S , int( S.size() ) ) );
   }
  }
@@ -925,18 +976,20 @@ ADS_TEST( "ex19.10" )
  CHECK_THROWS( oneTree( fig195 , 5 ) , contract_violation );
  CHECK_THROWS( oneTree( fig195 , -1 ) , contract_violation );
  CHECK_THROWS( oneTree( Matrix( { { 0 , 1 } , { 2 , 0 } } ) , 0 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK( oneTree( fig195 , 0 ) <= 19 );
  long gen = 0;
  CHECK( bbTsp( fig195 , { 0 , 3 , 2 , 1 , 4 } , TspBound::ONE_TREE ,
-               &gen ).first == 19 );
+	       &gen ).first ==
+	19 );
  CHECK( gen <= 65 );
  std::mt19937 g( 20 );
  for( int t = 0 ; t < 100 ; ++t ) {
   const int n = 3 + int( g() % 5 );
   const auto D = random_distances( n , 30 , true , g );
   const long opt = bruteTsp( D );
-  for( int r = 0 ; r < n ; ++r ) CHECK( oneTree( D , r ) <= opt );
+  for( int r = 0 ; r < n ; ++r )
+   CHECK( oneTree( D , r ) <= opt );
   }
  }
 
@@ -1018,7 +1071,8 @@ ADS_TEST( "ex19.13" )
   std::vector< std::string > P( g() % 7 );
   for( auto & s : P ) {
    s.resize( g() % 7 );
-   for( auto & ch : s ) ch = "ACGT"[ g() % 4 ];
+   for( auto & ch : s )
+    ch = "ACGT"[ g() % 4 ];
    }
   const std::string T = greedySuperstring( P );
   std::size_t total = 0;
@@ -1042,7 +1096,8 @@ ADS_TEST( "ex19.14" )
   std::shuffle( s.begin() + 1 , s.end() , g );
   const Nodes pi = twoOpt( D , s );
   const long opt = bruteTsp( D );
-  if( tourCost( D , pi ) == opt ) continue;
+  if( tourCost( D , pi ) == opt )
+   continue;
   found = true;
   for( int i = 0 ; i < 6 ; ++i )
    for( int j = i + 2 ; j < 6 ; ++j )
@@ -1063,8 +1118,10 @@ ADS_TEST( "ex19.15" )
  CHECK( kOptNeighbours( 3 , 0 ) == 1 && kOptNeighbours( 3 , 3 ) == 0 );
  for( int n : { 3 , 4 , 6 } ) {
   long all = 0 , f = 1;
-  for( int k = 0 ; k <= n ; ++k ) all += kOptNeighbours( n , k );
-  for( int i = 2 ; i < n ; ++i ) f *= i;
+  for( int k = 0 ; k <= n ; ++k )
+   all += kOptNeighbours( n , k );
+  for( int i = 2 ; i < n ; ++i )
+   f *= i;
   CHECK( kOptNeighbours( n , 1 ) == 0 && all == std::max( f / 2 , 1L ) );
   }
  CHECK_THROWS( kOptNeighbours( 2 , 0 ) , contract_violation );
@@ -1074,7 +1131,8 @@ ADS_TEST( "ex19.15" )
   CHECK( kOptNeighbours( int( n ) , 2 ) == n * ( n - 1 ) / 2 - n );
   const long i3 = kOptNeighbours( int( n ) , 3 );
   CHECK( i3 <= n * n * n );
-  if( n >= 6 ) CHECK( i3 > n * ( n - 4 ) * ( n - 5 ) / 6 );
+  if( n >= 6 )
+   CHECK( i3 > n * ( n - 4 ) * ( n - 5 ) / 6 );
   }
  }
 
@@ -1093,20 +1151,24 @@ ADS_TEST( "ex19.16" )
  for( int t = 0 ; t < 200 ; ++t ) {
   const int n = int( g() % 10 );
   Longs A( n );
-  for( auto & a : A ) a = long( g() % 21 );
+  for( auto & a : A )
+   a = long( g() % 21 );
   std::vector< int > side( n );
-  for( auto & s : side ) s = int( g() % 2 );
+  for( auto & s : side )
+   s = int( g() % 2 );
   const auto L = partitionLocalSearch( A , side );
   long diff = 0;
-  for( int i = 0 ; i < n ; ++i ) diff += L[ i ] ? -A[ i ] : A[ i ];
+  for( int i = 0 ; i < n ; ++i )
+   diff += L[ i ] ? -A[ i ] : A[ i ];
   long opt = std::accumulate( A.begin() , A.end() , 0L );
   for( unsigned S = 0 ; S < ( 1u << n ) ; ++S ) {
    long d = 0;
-   for( int i = 0 ; i < n ; ++i ) d += ( S >> i & 1 ) ? -A[ i ] : A[ i ];
+   for( int i = 0 ; i < n ; ++i )
+    d += ( S >> i & 1 ) ? -A[ i ] : A[ i ];
    opt = std::min( opt , std::labs( d ) );
    }
   CHECK( std::labs( diff ) >= opt );
-  for( int i = 0 ; i < n ; ++i ) {       // no move improves
+  for( int i = 0 ; i < n ; ++i ) {  // no move improves
    const long di = L[ i ] ? A[ i ] : -A[ i ];
    CHECK( std::labs( diff + 2 * di ) >= std::labs( diff ) );
    }
@@ -1142,7 +1204,7 @@ ADS_TEST( "ex19.17" )
   const int n = 1 + int( g() % 12 );
   Buckets B( n );
   std::vector< int > h[ 2 ] = { std::vector< int >( n , 0 ) ,
-                                std::vector< int >( n , 0 ) };
+				std::vector< int >( n , 0 ) };
   std::vector< bool > in( n , false );
   for( int op = 0 ; op < 200 ; ++op ) {
    const int u = int( g() % n );
@@ -1171,7 +1233,8 @@ ADS_TEST( "ex19.17" )
     CHECK( B.min( k ) == lo && B.max( k ) == hi );
     if( hi >= 0 ) {
      int dim = 0;
-     for( int v = 0 ; v < n ; ++v ) dim += in[ v ] && h[ k ][ v ] == hi;
+     for( int v = 0 ; v < n ; ++v )
+      dim += in[ v ] && h[ k ][ v ] == hi;
      CHECK( B.dim( k , hi ) == dim );
      }
     }
@@ -1187,31 +1250,35 @@ ADS_TEST( "ex19.18" )
 {
  const auto [ h1 , A1 ] = starAlignment( { "ACG" , "ACG" , "ACG" } );
  CHECK( h1 == 0 && A1.size() == 3 && A1[ 2 ].first == "ACG" &&
-        A1[ 2 ].second == "ACG" );
+	A1[ 2 ].second == "ACG" );
  CHECK_THROWS( starAlignment( {} ) , contract_violation );
  std::mt19937 g( 27 );
  for( int t = 0 ; t < 100 ; ++t ) {
   std::vector< std::string > P( 1 + g() % 5 );
   for( auto & s : P ) {
    s.resize( g() % 8 );
-   for( auto & ch : s ) ch = "ACGT"[ g() % 4 ];
+   for( auto & ch : s )
+    ch = "ACGT"[ g() % 4 ];
    }
   const auto [ h , A ] = starAlignment( P );
   const int k = int( P.size() );
   auto sum = [ & ]( int i ) {
    long s = 0;
    for( int j = 0 ; j < k ; ++j )
-    if( j != i ) s += alignmentScore( P[ i ] , P[ j ] , Alignment::GLOBAL );
+    if( j != i )
+     s += alignmentScore( P[ i ] , P[ j ] , Alignment::GLOBAL );
    return( s );
    };
-  for( int i = 0 ; i < k ; ++i ) CHECK( sum( h ) >= sum( i ) );
+  for( int i = 0 ; i < k ; ++i )
+   CHECK( sum( h ) >= sum( i ) );
   for( int j = 0 ; j < k ; ++j ) {
    auto [ a , b ] = A[ j ];
    CHECK( a.size() == b.size() );
    int score = 0;
    for( std::size_t x = 0 ; x < a.size() ; ++x )
     score += ( a[ x ] == '-' || b[ x ] == '-' ) ? -2
-                                                : a[ x ] == b[ x ] ? 1 : -1;
+	     : a[ x ] == b[ x ]                 ? 1
+						: -1;
    CHECK( score == alignmentScore( P[ h ] , P[ j ] , Alignment::GLOBAL ) );
    std::erase( a , '-' );
    std::erase( b , '-' );
@@ -1236,14 +1303,16 @@ ADS_TEST( "ex19.19" )
  const auto c5 = dsatur( C5 );
  CHECK( *std::max_element( c5.begin() , c5.end() ) == 2 );
  CHECK_THROWS( dsatur( { { false , true } , { false , false } } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 28 );
  for( int t = 0 ; t < 200 ; ++t ) {
   const int n = 1 + int( g() % 8 );
   auto G = random_graph( n , int( g() % 80 ) , g );
-  if( t % 2 ) {                          // bipartite: even and odd
+  if( t % 2 ) {  // bipartite: even and odd
    for( int u = 0 ; u < n ; ++u )
-    for( int v = 0 ; v < n ; ++v ) if( u % 2 == v % 2 ) G[ u ][ v ] = false;
+    for( int v = 0 ; v < n ; ++v )
+     if( u % 2 == v % 2 )
+      G[ u ][ v ] = false;
    }
   const auto col = dsatur( G );
   for( int u = 0 ; u < n ; ++u )
@@ -1251,9 +1320,11 @@ ADS_TEST( "ex19.19" )
     CHECK( ! G[ u ][ v ] || col[ u ] != col[ v ] );
   const int k = 1 + *std::max_element( col.begin() , col.end() );
   int chi = 1;
-  while( ! coloring( G , chi ) ) ++chi;
+  while( ! coloring( G , chi ) )
+   ++chi;
   CHECK( k >= chi );
-  if( t % 2 ) CHECK( k <= 2 );
+  if( t % 2 )
+   CHECK( k <= 2 );
   }
  }
 

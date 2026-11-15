@@ -93,7 +93,7 @@
 
 #ifndef __ADS_BucketQueue
  #define __ADS_BucketQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -114,7 +114,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ THE POLICIES OF THE TIES ------------------------*/
@@ -122,15 +123,17 @@ namespace ADS {
 
 /// the order of `BucketQueue` among the items of one \f$ f \f$: the largest
 /// \f$ g \f$ first (A*, towards the deeper nodes), the default
-struct LargestSecondKey {
- static constexpr bool least = false;   ///< not the least g first
+struct LargestSecondKey
+{
+ static constexpr bool least = false;  ///< not the least g first
  };
 
 /// the order of `BucketQueue` among the items of one \f$ f \f$: the least
 /// \f$ g \f$ first, i.e., the lexicographic order of the pairs
 /// \f$ ( f , g ) \f$ (the keys of LPA*)
-struct LeastSecondKey {
- static constexpr bool least = true;    ///< the least g first
+struct LeastSecondKey
+{
+ static constexpr bool least = true;  ///< the least g first
  };
 
 /// a policy of the ties of `BucketQueue`: whether the least \f$ g \f$ comes
@@ -146,16 +149,15 @@ concept BucketTie = requires {
 
 /// a two-level bucket queue: least \f$ f \f$ first, then largest (or, by
 /// the policy `Tie`, least) \f$ g \f$, then LIFO
-template< class T , std::integral K = int ,
-          BucketTie Tie = LargestSecondKey >
-class BucketQueue {
+template< class T , std::integral K = int , BucketTie Tie = LargestSecondKey >
+class BucketQueue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;     ///< the type of the items
- using Key = K;      ///< the type of the keys
- using Ties = Tie;   ///< the order among the items of one f
+ using Item = T;    ///< the type of the items
+ using Key = K;     ///< the type of the keys
+ using Ties = Tie;  ///< the order among the items of one f
 
  /// pushes \f$ x \f$ with the keys \f$ f \f$ and \f$ g \f$
  ///
@@ -255,10 +257,11 @@ class BucketQueue {
  T pop( void );
 
  /// an item with its keys
- struct Entry {
-  T item;   ///< the item
+ struct Entry
+ {
+  T item;  ///< the item
   K f ,     ///< its first key
-    g;      ///< its second key
+    g;     ///< its second key
   };
 
  /// removes `top()` and returns it with its keys \f$ f \f$ and \f$ g \f$,
@@ -284,33 +287,35 @@ class BucketQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  using Index = std::uint32_t;
- static constexpr Index NIL = ~Index( 0 );   ///< no cell
- static constexpr std::size_t S = 4;          ///< the heads in a layer
+ static constexpr Index NIL = ~Index( 0 );  ///< no cell
+ static constexpr std::size_t S = 4;        ///< the heads in a layer
 
  /// a cell: an item and the next cell of its list
- struct Cell {
+ struct Cell
+ {
   T item;
   Index next;
   };
 
  /// a sparse list: its g and its head
- struct Run {
+ struct Run
+ {
   K g;
   Index head;
   };
 
- using Runs = std::vector< Run >;   ///< the runs of a layer, by g
+ using Runs = std::vector< Run >;  ///< the runs of a layer, by g
 
  /// the items of one f
- struct Layer {
-  Index count = 0;                      ///< the items in the layer
-  Index topG = 0;                       ///< no dense list above (below,
-                                        ///< least g first) has items
-  Index runs = NIL;                     ///< its runs in f_runs, if any
-  Index small[ S ] = { NIL , NIL , NIL , NIL };   ///< the heads, g < S
-  std::vector< Index > big;             ///< the dense heads, g >= S
+ struct Layer
+ {
+  Index count = 0;                            ///< the items in the layer
+  Index topG = 0;                             ///< no dense list above (below,
+					      ///< least g first) has items
+  Index runs = NIL;                           ///< its runs in f_runs, if any
+  Index small[ S ] = { NIL , NIL , NIL , NIL };  ///< the heads, g < S
+  std::vector< Index > big;                   ///< the dense heads, g >= S
 
   Index & head( std::size_t g ) {
    return( g < S ? small[ g ] : big[ g - S ] );
@@ -325,7 +330,6 @@ class BucketQueue {
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the items in the order of the extractions (by f
@@ -335,19 +339,22 @@ class BucketQueue {
  // first, then the runs from the last); it skips the empty lists without
  // touching the lazy bounds that top() moves
 
- class const_iterator {
+ class const_iterator
+ {
   public:
-  using iterator_category = std::forward_iterator_tag;   ///< forward
-  using value_type = T;                ///< the type of the items
-  using difference_type = std::ptrdiff_t;   ///< the distances
-  using reference = const T &;         ///< a constant reference to an item
-  using pointer = const T *;           ///< a constant pointer to an item
+  using iterator_category = std::forward_iterator_tag;  ///< forward
+  using value_type = T;                    ///< the type of the items
+  using difference_type = std::ptrdiff_t;  ///< the distances
+  using reference = const T &;             ///< a constant reference to an item
+  using pointer = const T *;               ///< a constant pointer to an item
 
   /// the singular iterator
   const_iterator( void ) = default;
   /// on the first item of the layers from \f$ f \f$ of the queue `q`
-  const_iterator( const BucketQueue * q , std::size_t f )
-   : f_q( q ) , f_f( f ) { settle(); }
+  const_iterator( const BucketQueue * q , std::size_t f ) : f_q( q ) ,
+    f_f( f ) {
+   settle();
+   }
 
   /// the item
   reference operator*( void ) const { return( f_q->f_cells[ f_c ].item ); }
@@ -364,7 +371,11 @@ class BucketQueue {
    return( *this );
    }
   /// on the next item, returning the iterator before
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// whether on the same item, or both at the end
   bool operator==( const const_iterator & o ) const {
@@ -383,11 +394,12 @@ class BucketQueue {
     if( l.count )
      for( ; f_g < r + l.lists() ; ++f_g ) {
       if constexpr( Tie::least )
-       f_c = f_g < l.lists() ? l.head( f_g ) :
-             f_q->f_runs[ l.runs ][ r + l.lists() - 1 - f_g ].head;
+       f_c = f_g < l.lists()
+	       ? l.head( f_g )
+	       : f_q->f_runs[ l.runs ][ r + l.lists() - 1 - f_g ].head;
       else
-       f_c = f_g < r ? f_q->f_runs[ l.runs ][ r - 1 - f_g ].head :
-             l.head( r + l.lists() - 1 - f_g );
+       f_c = f_g < r ? f_q->f_runs[ l.runs ][ r - 1 - f_g ].head
+		     : l.head( r + l.lists() - 1 - f_g );
       if( f_c != NIL )
        return;
       }
@@ -422,7 +434,6 @@ class BucketQueue {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// the layer of the least f, its topG moved to its largest dense g if
  /// it has no run
  Layer & front( void );
@@ -469,13 +480,13 @@ class BucketQueue {
  /// least g first) and with items, and none if l is dense, \f$ O( R ) \f$
  [[nodiscard]] bool ordered( const Layer & l ) const;
 
- std::vector< Layer > f_layers;   ///< a layer per f
- std::vector< Cell > f_cells;     ///< the cells of the items
- Index f_free = NIL;              ///< the cells freed, the last first
- std::size_t f_minF = 0;          ///< no layer below it has items
- std::size_t f_size = 0;          ///< the number of items
- std::vector< Runs > f_runs;      ///< the runs of the layers that have
- std::vector< Index > f_spare;    ///< the runs of no layer, empty
+ std::vector< Layer > f_layers;  ///< a layer per f
+ std::vector< Cell > f_cells;    ///< the cells of the items
+ Index f_free = NIL;             ///< the cells freed, the last first
+ std::size_t f_minF = 0;         ///< no layer below it has items
+ std::size_t f_size = 0;         ///< the number of items
+ std::vector< Runs > f_runs;     ///< the runs of the layers that have
+ std::vector< Index > f_spare;   ///< the runs of no layer, empty
 
  };  // end( class BucketQueue )
 
@@ -491,7 +502,7 @@ class BucketQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BucketQueue.h included */
+#endif /* BucketQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File BucketQueue.h -------------------------*/

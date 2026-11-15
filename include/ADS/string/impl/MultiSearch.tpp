@@ -29,14 +29,16 @@
 #endif
 #include <utility>
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the occurrences ( start , number ) of the patterns P in T by
 /// naiveMatching(), sorted
-inline std::vector< std::pair< std::size_t , std::size_t > > multiNaive(
- std::string_view T , const std::vector< std::string > & P )
+inline std::vector< std::pair< std::size_t , std::size_t > >
+multiNaive( std::string_view T , const std::vector< std::string > & P )
 {
  std::vector< std::pair< std::size_t , std::size_t > > N;
  for( std::size_t j = 0 ; j < P.size() ; ++j )
@@ -49,12 +51,13 @@ inline std::vector< std::pair< std::size_t , std::size_t > > multiNaive(
 }  // end( namespace detail )
 
 inline MultiSearcher::MultiSearcher( const std::vector< std::string > & P )
- : f_P( P )
+    : f_P( P )
 {
- ADS_PRE( std::none_of( P.begin() , P.end() ,
-                        []( const std::string & p ) { return( p.empty() ); }
-                        ) );
- if( P.empty() ) return;
+ ADS_PRE( std::none_of( P.begin() , P.end() , []( const std::string & p ) {
+  return( p.empty() );
+  } ) );
+ if( P.empty() )
+  return;
  f_least = P[ 0 ].size();
  for( const auto & p : P ) {
   f_least = std::min( f_least , p.size() );
@@ -64,9 +67,9 @@ inline MultiSearcher::MultiSearcher( const std::vector< std::string > & P )
  // the patterns sorted, into 8 buckets of consecutive ones
  std::vector< std::uint32_t > order( P.size() );
  std::iota( order.begin() , order.end() , 0u );
- std::sort( order.begin() , order.end() , [ & ]( std::uint32_t a ,
-                                                  std::uint32_t b ) {
-  return( P[ a ] < P[ b ] ); } );
+ std::sort(
+   order.begin() , order.end() ,
+   [ & ]( std::uint32_t a , std::uint32_t b ) { return( P[ a ] < P[ b ] ); } );
  const std::size_t per = ( P.size() + 7 ) / 8;
  if( P.size() > kFilter ) {
   // the shift-or filter: the byte L - 1 - r of the mask of the super
@@ -75,20 +78,21 @@ inline MultiSearcher::MultiSearcher( const std::vector< std::string > & P )
   // place of a pattern of length L takes any next byte
   f_L = std::min< std::size_t >( f_least , 8 );
   // the bytes past the window block nothing
-  f_sh.assign( 2048 , f_L == 8 ? ~std::uint64_t( 0 ) :
-                      ( std::uint64_t( 1 ) << ( 8 * f_L ) ) - 1 );
+  f_sh.assign( 2048 , f_L == 8 ? ~std::uint64_t( 0 )
+			      : ( std::uint64_t( 1 ) << ( 8 * f_L ) ) - 1 );
   for( std::size_t z = 0 ; z < order.size() ; ++z ) {
    const std::size_t b = z / per;
    const std::string & p = P[ order[ z ] ];
    for( std::size_t r = 0 ; r < f_L ; ++r ) {
     const unsigned c = static_cast< unsigned char >( p[ r ] );
-    const std::uint64_t off = ~( std::uint64_t( 1 ) <<
-                                 ( 8 * ( f_L - 1 - r ) + b ) );
+    const std::uint64_t off =
+      ~( std::uint64_t( 1 ) << ( 8 * ( f_L - 1 - r ) + b ) );
     if( r + 1 < p.size() )
-     f_sh[ c | ( ( static_cast< unsigned char >( p[ r + 1 ] ) & 7u ) << 8 ) ]
-      &= off;
+     f_sh[ c | ( ( static_cast< unsigned char >( p[ r + 1 ] ) & 7u )
+		 << 8 ) ] &= off;
     else
-     for( unsigned x = 0 ; x < 8 ; ++x ) f_sh[ c | ( x << 8 ) ] &= off;
+     for( unsigned x = 0 ; x < 8 ; ++x )
+      f_sh[ c | ( x << 8 ) ] &= off;
     }
    }
   // with patterns of 8 bytes or more, the filter of stride 2: the masks
@@ -97,8 +101,8 @@ inline MultiSearcher::MultiSearcher( const std::vector< std::string > & P )
   // (the bits 0 to 3) and at its odd ones (the bits 4 to 7)
   if( f_least >= 8 ) {
    f_W = std::min< std::size_t >( f_least / 2 , 8 );
-   f_sh2.assign( 2048 , f_W == 8 ? ~std::uint64_t( 0 ) :
-                       ( std::uint64_t( 1 ) << ( 8 * f_W ) ) - 1 );
+   f_sh2.assign( 2048 , f_W == 8 ? ~std::uint64_t( 0 )
+				: ( std::uint64_t( 1 ) << ( 8 * f_W ) ) - 1 );
    const std::size_t per2 = ( P.size() + 3 ) / 4;
    for( std::size_t z = 0 ; z < order.size() ; ++z ) {
     const std::string & p = P[ order[ z ] ];
@@ -106,14 +110,14 @@ inline MultiSearcher::MultiSearcher( const std::vector< std::string > & P )
      for( std::size_t i = 0 ; i < f_W ; ++i ) {
       const std::size_t o = 2 * i + phase;
       const unsigned c = static_cast< unsigned char >( p[ o ] );
-      const std::uint64_t off = ~( std::uint64_t( 1 ) <<
-                                   ( 8 * ( f_W - 1 - i ) + 4 * phase +
-                                     z / per2 ) );
+      const std::uint64_t off = ~(
+	std::uint64_t( 1 ) << ( 8 * ( f_W - 1 - i ) + 4 * phase + z / per2 ) );
       if( o + 1 < p.size() )
        f_sh2[ c | ( ( static_cast< unsigned char >( p[ o + 1 ] ) & 7u )
-                    << 8 ) ] &= off;
+		    << 8 ) ] &= off;
       else
-       for( unsigned x = 0 ; x < 8 ; ++x ) f_sh2[ c | ( x << 8 ) ] &= off;
+       for( unsigned x = 0 ; x < 8 ; ++x )
+	f_sh2[ c | ( x << 8 ) ] &= off;
       }
     }
    }
@@ -128,7 +132,7 @@ inline MultiSearcher::MultiSearcher( const std::vector< std::string > & P )
    for( const auto & p : P )
     for( std::size_t o = 0 ; o + 1 < p.size() ; ++o ) {
      f[ static_cast< unsigned char >( p[ o ] ) |
-        ( ( static_cast< unsigned char >( p[ o + 1 ] ) & 7u ) << 8 ) ] += 1;
+	( ( static_cast< unsigned char >( p[ o + 1 ] ) & 7u ) << 8 ) ] += 1;
      total += 1;
      }
    double pass = 0;
@@ -137,7 +141,8 @@ inline MultiSearcher::MultiSearcher( const std::vector< std::string > & P )
     for( std::size_t t = 0 ; t < f_W ; ++t ) {
      double q = 0;
      for( std::size_t x = 0 ; x < 2048 ; ++x )
-      if( ! ( ( f_sh2[ x ] >> ( 8 * t + bit ) ) & 1 ) ) q += f[ x ] / total;
+      if( ! ( ( f_sh2[ x ] >> ( 8 * t + bit ) ) & 1 ) )
+       q += f[ x ] / total;
      here *= q;
      }
     pass += here;
@@ -156,8 +161,8 @@ inline MultiSearcher::MultiSearcher( const std::vector< std::string > & P )
    std::uint64_t k = 0;
    std::memcpy( &k , P[ j ].data() , f_L );
    f_key[ j ] = k;
-   const std::size_t h = std::size_t( ( k * 0x9E3779B97F4A7C15ull ) >>
-                                      ( 64 - f_bits ) );
+   const std::size_t h =
+     std::size_t( ( k * 0x9E3779B97F4A7C15ull ) >> ( 64 - f_bits ) );
    f_next[ j ] = f_first[ h ];
    f_first[ h ] = std::uint32_t( j );
    }
@@ -211,15 +216,16 @@ inline MultiSearcher::MultiSearcher( const std::vector< std::string > & P )
   std::uint64_t h = 0;
   std::memcpy( &h , P[ j ].data() , l );
   f_head[ j ] = h;
-  f_mask[ j ] = l == 8 ? ~std::uint64_t( 0 ) :
-                         ( std::uint64_t( 1 ) << ( 8 * l ) ) - 1;
+  f_mask[ j ] =
+    l == 8 ? ~std::uint64_t( 0 ) : ( std::uint64_t( 1 ) << ( 8 * l ) ) - 1;
   }
  }
 
 template< class F >
 std::size_t MultiSearcher::check( const unsigned char * T , std::size_t n ,
-                           std::size_t s , std::uint64_t mask ,
-                           const unsigned char * C , F && report ) const
+				  std::size_t s , std::uint64_t mask ,
+				  const unsigned char * C ,
+				  F && report ) const
 {
  std::size_t bytes = 0;
  for( ; mask ; mask &= mask - 1 ) {
@@ -229,20 +235,24 @@ std::size_t MultiSearcher::check( const unsigned char * T , std::size_t n ,
    for( const std::uint32_t j : f_bucket[ std::countr_zero( c ) ] ) {
     const std::string & P = f_P[ j ];
     const std::size_t l = P.size();
-    bytes += 8;                       // a word, or a pattern past the end
-    if( i + l > n ) continue;
-    if( i + 8 <= n ) {                // the first 8 bytes in one word
+    bytes += 8;  // a word, or a pattern past the end
+    if( i + l > n )
+     continue;
+    if( i + 8 <= n ) {  // the first 8 bytes in one word
      std::uint64_t w;
      std::memcpy( &w , T + i , 8 );
-     if( ( ( w ^ f_head[ j ] ) & f_mask[ j ] ) != 0 ) continue;
+     if( ( ( w ^ f_head[ j ] ) & f_mask[ j ] ) != 0 )
+      continue;
      if( l > 8 ) {
       bytes += l - 8;
-      if( std::memcmp( T + i + 8 , P.data() + 8 , l - 8 ) ) continue;
+      if( std::memcmp( T + i + 8 , P.data() + 8 , l - 8 ) )
+       continue;
       }
      }
     else {
      bytes += l;
-     if( std::memcmp( T + i , P.data() , l ) ) continue;
+     if( std::memcmp( T + i , P.data() , l ) )
+      continue;
      }
     report( i , std::size_t( j ) );
     }
@@ -252,29 +262,33 @@ std::size_t MultiSearcher::check( const unsigned char * T , std::size_t n ,
 
 template< class F >
 void MultiSearcher::automaton( std::string_view T , std::size_t from ,
-                               F && report ) const
+			       F && report ) const
 {
- const std::size_t b = std::min( from > f_longest ? from - f_longest : 0 ,
-                                 T.size() );
+ const std::size_t b =
+   std::min( from > f_longest ? from - f_longest : 0 , T.size() );
  f_ac.forEach( T.substr( b ) , [ & ]( std::size_t i , std::size_t j ) {
-  if( i + b >= from ) report( i + b , j ); } );
+  if( i + b >= from )
+   report( i + b , j );
+  } );
  }
 
 template< class F >
 std::size_t MultiSearcher::verify( const unsigned char * T , std::size_t n ,
-                                   std::size_t s , F && report ) const
+				   std::size_t s , F && report ) const
 {
  std::uint64_t k = 0;
  std::memcpy( &k , T + s , f_L );
- const std::size_t h = std::size_t( ( k * 0x9E3779B97F4A7C15ull ) >>
-                                    ( 64 - f_bits ) );
+ const std::size_t h =
+   std::size_t( ( k * 0x9E3779B97F4A7C15ull ) >> ( 64 - f_bits ) );
  std::size_t bytes = 0;
  for( std::uint32_t j = f_first[ h ] ; j != ~std::uint32_t( 0 ) ;
       j = f_next[ j ] ) {
-  bytes += 8;                         // the prefix, one word
-  if( f_key[ j ] != k ) continue;
+  bytes += 8;  // the prefix, one word
+  if( f_key[ j ] != k )
+   continue;
   const std::string & p = f_P[ j ];
-  if( s + p.size() > n ) continue;
+  if( s + p.size() > n )
+   continue;
   bytes += p.size() - f_L;
   if( std::memcmp( T + s + f_L , p.data() + f_L , p.size() - f_L ) == 0 )
    report( s , std::size_t( j ) );
@@ -283,19 +297,19 @@ std::size_t MultiSearcher::verify( const unsigned char * T , std::size_t n ,
  }
 
 template< class F >
-std::size_t MultiSearcher::shiftOr( std::string_view Tv ,
-                                    F && report ) const
+std::size_t MultiSearcher::shiftOr( std::string_view Tv , F && report ) const
 {
  const std::size_t n = Tv.size() , L = f_L;
  const auto * T = reinterpret_cast< const unsigned char * >( Tv.data() );
- if( n < f_least ) return( npos );
+ if( n < f_least )
+  return( npos );
  const std::uint64_t * sh = f_sh.data();
  // the state of the ends j .. j + 7 (byte x: the end j + x, a bit off for
  // a bucket that may end there) and of the next 8; the ends before L - 1
  // are no end
- std::uint64_t cur = L > 1 ? ( std::uint64_t( 1 ) << ( 8 * ( L - 1 ) ) ) - 1
-                           : 0 ,
-               nxt = 0;
+ std::uint64_t cur =
+		 L > 1 ? ( std::uint64_t( 1 ) << ( 8 * ( L - 1 ) ) ) - 1 : 0 ,
+	       nxt = 0;
  std::size_t work = 0 , j = 0;
  unsigned char pad[ 24 ] = {};
  // the ends j + x whose byte of cur has a bit off, checked from their start
@@ -304,7 +318,8 @@ std::size_t MultiSearcher::shiftOr( std::string_view Tv ,
    const unsigned x = unsigned( std::countr_one( z ) ) / 8;
    z |= std::uint64_t( 0xff ) << ( 8 * x );
    const std::size_t e = from + x;
-   if( e < n ) work += verify( T , n , e + 1 - L , report );
+   if( e < n )
+    work += verify( T , n , e + 1 - L , report );
    }
   };
  // the super character of the place j + d is the 11 bits of the text
@@ -316,7 +331,7 @@ std::size_t MultiSearcher::shiftOr( std::string_view Tv ,
    std::memcpy( &w[ 0 ] , T + j , 8 );
    std::memcpy( &w[ 1 ] , T + j + 4 , 8 );
    }
-  else {                              // the last bytes, with 0 after them
+  else {  // the last bytes, with 0 after them
    std::memcpy( pad , T + j , n - j );
    std::memcpy( &w[ 0 ] , pad , 8 );
    std::memcpy( &w[ 1 ] , pad + 4 , 8 );
@@ -330,10 +345,12 @@ std::size_t MultiSearcher::shiftOr( std::string_view Tv ,
   // bytes with no carry to handle
   __m128i acc = _mm_set_epi64x( std::int64_t( nxt ) , std::int64_t( cur ) );
   [ & ]< int... d >( std::integer_sequence< int , d... > ) {
-   ( ( acc = _mm_or_si128( acc , _mm_slli_si128( _mm_loadl_epi64(
-      reinterpret_cast< const __m128i * >( sh + ( ( w[ d / 4 ] >>
-                                       ( 8 * ( d % 4 ) ) ) & 0x7ff ) ) ) ,
-      d ) ) ) , ... );
+   ( ( acc = _mm_or_si128(
+	 acc , _mm_slli_si128(
+		_mm_loadl_epi64( reinterpret_cast< const __m128i * >(
+		  sh + ( ( w[ d / 4 ] >> ( 8 * ( d % 4 ) ) ) & 0x7ff ) ) ) ,
+		d ) ) ) ,
+     ... );
    }( std::make_integer_sequence< int , 8 >() );
   cur = std::uint64_t( _mm_cvtsi128_si64( acc ) );
   nxt = std::uint64_t( _mm_cvtsi128_si64( _mm_unpackhi_epi64( acc , acc ) ) );
@@ -346,7 +363,7 @@ std::size_t MultiSearcher::shiftOr( std::string_view Tv ,
 #endif
   if( cur != ~std::uint64_t( 0 ) ) [[unlikely]] {
    ends( j );
-   if( work > 16 * j + 4096 ) {       // too many bytes: the automaton
+   if( work > 16 * j + 4096 ) {  // too many bytes: the automaton
     return( j + 8 >= L - 1 ? j + 9 - L : 0 );
     }
    }
@@ -357,12 +374,12 @@ std::size_t MultiSearcher::shiftOr( std::string_view Tv ,
  }
 
 template< class F >
-std::size_t MultiSearcher::shiftOr2( std::string_view Tv ,
-                                     F && report ) const
+std::size_t MultiSearcher::shiftOr2( std::string_view Tv , F && report ) const
 {
  const std::size_t n = Tv.size() , W = f_W , back = 2 * ( W - 1 );
  const auto * T = reinterpret_cast< const unsigned char * >( Tv.data() );
- if( n < f_least ) return( npos );
+ if( n < f_least )
+  return( npos );
  const std::uint64_t * sh = f_sh2.data();
  // the state of the even ends j , j + 2 , ... , j + 14 (byte x: the end
  // j + 2 x) and of the next 8; a bit off of the bits 0 to 3 for a pattern
@@ -379,9 +396,11 @@ std::size_t MultiSearcher::shiftOr2( std::string_view Tv ,
    const std::size_t e = from + 2 * x;
    for( unsigned phase = 0 ; phase < 2 ; ++phase )
     if( ( bits >> ( 4 * phase ) ) & 15 ) {
-     if( e < back + phase ) continue;
+     if( e < back + phase )
+      continue;
      const std::size_t s = e - back - phase;
-     if( s + f_least <= n ) work += verify( T , n , s , report );
+     if( s + f_least <= n )
+      work += verify( T , n , s , report );
      }
    }
   };
@@ -391,7 +410,7 @@ std::size_t MultiSearcher::shiftOr2( std::string_view Tv ,
    std::memcpy( &w[ 0 ] , T + j , 8 );
    std::memcpy( &w[ 1 ] , T + j + 8 , 8 );
    }
-  else {                              // the last bytes, with 0 after them
+  else {  // the last bytes, with 0 after them
    std::memcpy( pad , T + j , n - j );
    std::memcpy( &w[ 0 ] , pad , 8 );
    std::memcpy( &w[ 1 ] , pad + 8 , 8 );
@@ -403,10 +422,12 @@ std::size_t MultiSearcher::shiftOr2( std::string_view Tv ,
 #if defined( __SSE2__ )
   __m128i acc = _mm_set_epi64x( std::int64_t( nxt ) , std::int64_t( cur ) );
   [ & ]< int... d >( std::integer_sequence< int , d... > ) {
-   ( ( acc = _mm_or_si128( acc , _mm_slli_si128( _mm_loadl_epi64(
-      reinterpret_cast< const __m128i * >( sh + ( ( w[ d / 4 ] >>
-                                       ( 16 * ( d % 4 ) ) ) & 0x7ff ) ) ) ,
-      d ) ) ) , ... );
+   ( ( acc = _mm_or_si128(
+	 acc , _mm_slli_si128(
+		_mm_loadl_epi64( reinterpret_cast< const __m128i * >(
+		  sh + ( ( w[ d / 4 ] >> ( 16 * ( d % 4 ) ) ) & 0x7ff ) ) ) ,
+		d ) ) ) ,
+     ... );
    }( std::make_integer_sequence< int , 8 >() );
   cur = std::uint64_t( _mm_cvtsi128_si64( acc ) );
   nxt = std::uint64_t( _mm_cvtsi128_si64( _mm_unpackhi_epi64( acc , acc ) ) );
@@ -419,7 +440,7 @@ std::size_t MultiSearcher::shiftOr2( std::string_view Tv ,
 #endif
   if( cur != ~std::uint64_t( 0 ) ) [[unlikely]] {
    ends( j );
-   if( work > 16 * j + 4096 )         // too many bytes: the automaton
+   if( work > 16 * j + 4096 )  // too many bytes: the automaton
     return( j + 15 >= back ? j + 15 - back : 0 );
    }
   cur = nxt;
@@ -433,7 +454,8 @@ std::size_t MultiSearcher::scan( std::string_view Tv , F && report ) const
 {
  const std::size_t n = Tv.size() , q = f_q;
  const auto * T = reinterpret_cast< const unsigned char * >( Tv.data() );
- if( n < f_least ) return( npos );
+ if( n < f_least )
+  return( npos );
  const std::size_t last = n - f_least;  // the places 0 .. last
  std::size_t s = 0 , work = 0;
  alignas( 64 ) unsigned char C[ 64 ];
@@ -450,27 +472,31 @@ std::size_t MultiSearcher::scan( std::string_view Tv , F && report ) const
   __m512i lo[ Q ] , hi[ Q ];
   for( std::size_t r = 0 ; r < Q ; ++r ) {
    lo[ r ] = _mm512_broadcast_i32x4( _mm_loadu_si128(
-              reinterpret_cast< const __m128i * >( f_lo[ r ].data() ) ) );
+     reinterpret_cast< const __m128i * >( f_lo[ r ].data() ) ) );
    hi[ r ] = _mm512_broadcast_i32x4( _mm_loadu_si128(
-              reinterpret_cast< const __m128i * >( f_hi[ r ].data() ) ) );
+     reinterpret_cast< const __m128i * >( f_hi[ r ].data() ) ) );
    }
   const __m512i low = _mm512_set1_epi8( 0x0f );
   auto probe = [ & ]( std::size_t t ) {
    __m512i acc = _mm512_set1_epi8( char( 0xff ) );
    for( std::size_t r = 0 ; r < Q ; ++r ) {
     const __m512i v = _mm512_loadu_si512( T + t + r );
-    acc = _mm512_and_si512( acc , _mm512_and_si512(
-           _mm512_shuffle_epi8( lo[ r ] , _mm512_and_si512( v , low ) ) ,
-           _mm512_shuffle_epi8( hi[ r ] , _mm512_and_si512(
-            _mm512_srli_epi16( v , 4 ) , low ) ) ) );
+    acc = _mm512_and_si512(
+      acc ,
+      _mm512_and_si512(
+	_mm512_shuffle_epi8( lo[ r ] , _mm512_and_si512( v , low ) ) ,
+	_mm512_shuffle_epi8(
+	  hi[ r ] , _mm512_and_si512( _mm512_srli_epi16( v , 4 ) , low ) ) ) );
     }
    return( acc );
    };
   // the candidates of the block at t: false if the automaton must go on
   auto take = [ & ]( std::size_t t , __m512i acc ) {
    std::uint64_t m = _mm512_test_epi8_mask( acc , acc );
-   if( m == 0 ) return( true );
-   if( last - t < 63 ) m &= ( std::uint64_t( 1 ) << ( last - t + 1 ) ) - 1;
+   if( m == 0 )
+    return( true );
+   if( last - t < 63 )
+    m &= ( std::uint64_t( 1 ) << ( last - t + 1 ) ) - 1;
    _mm512_store_si512( C , acc );
    work += check( T , n , t , m , C , report );
    return( work <= 16 * t + 4096 );
@@ -478,28 +504,47 @@ std::size_t MultiSearcher::scan( std::string_view Tv , F && report ) const
   for( ; ( s + 64 <= last ) && ( s + 128 + Q - 1 <= n ) ; s += 128 ) {
    const __m512i a = probe( s ) , b = probe( s + 64 );
    if( _mm512_test_epi8_mask( _mm512_or_si512( a , b ) ,
-                              _mm512_or_si512( a , b ) ) == 0 ) [[likely]]
+			      _mm512_or_si512( a , b ) ) == 0 ) [[likely]]
     continue;
-   if( ! take( s , a ) ) return( s + 64 );
-   if( ! take( s + 64 , b ) ) return( s + 128 );
+   if( ! take( s , a ) )
+    return( s + 64 );
+   if( ! take( s + 64 , b ) )
+    return( s + 128 );
    }
   for( ; ( s <= last ) && ( s + 64 + Q - 1 <= n ) ; s += 64 )
-   if( ! take( s , probe( s ) ) ) return( s + 64 );
+   if( ! take( s , probe( s ) ) )
+    return( s + 64 );
   return( npos );
   };
  {
   std::size_t from = npos;
   switch( q ) {
-   case 1: from = blocks.template operator()< 1 >(); break;
-   case 2: from = blocks.template operator()< 2 >(); break;
-   case 3: from = blocks.template operator()< 3 >(); break;
-   case 4: from = blocks.template operator()< 4 >(); break;
-   case 5: from = blocks.template operator()< 5 >(); break;
-   case 6: from = blocks.template operator()< 6 >(); break;
-   case 7: from = blocks.template operator()< 7 >(); break;
-   default: from = blocks.template operator()< 8 >();
+   case 1:
+    from = blocks.template operator()< 1 >();
+    break;
+   case 2:
+    from = blocks.template operator()< 2 >();
+    break;
+   case 3:
+    from = blocks.template operator()< 3 >();
+    break;
+   case 4:
+    from = blocks.template operator()< 4 >();
+    break;
+   case 5:
+    from = blocks.template operator()< 5 >();
+    break;
+   case 6:
+    from = blocks.template operator()< 6 >();
+    break;
+   case 7:
+    from = blocks.template operator()< 7 >();
+    break;
+   default:
+    from = blocks.template operator()< 8 >();
    }
-  if( from != npos ) return( from );
+  if( from != npos )
+   return( from );
   }
 #endif
 #if defined( __AVX2__ )
@@ -507,26 +552,30 @@ std::size_t MultiSearcher::scan( std::string_view Tv , F && report ) const
  __m256i lo[ 8 ] , hi[ 8 ];
  for( std::size_t r = 0 ; r < q ; ++r ) {
   lo[ r ] = _mm256_broadcastsi128_si256( _mm_loadu_si128(
-             reinterpret_cast< const __m128i * >( f_lo[ r ].data() ) ) );
+    reinterpret_cast< const __m128i * >( f_lo[ r ].data() ) ) );
   hi[ r ] = _mm256_broadcastsi128_si256( _mm_loadu_si128(
-             reinterpret_cast< const __m128i * >( f_hi[ r ].data() ) ) );
+    reinterpret_cast< const __m128i * >( f_hi[ r ].data() ) ) );
   }
  const __m256i low = _mm256_set1_epi8( 0x0f ) , zero = _mm256_setzero_si256();
  for( ; ( s <= last ) && ( s + 32 + q - 1 <= n ) ; s += 32 ) {
   __m256i acc = _mm256_set1_epi8( char( 0xff ) );
   for( std::size_t r = 0 ; r < q ; ++r ) {
-   const __m256i v = _mm256_loadu_si256(
-                      reinterpret_cast< const __m256i * >( T + s + r ) );
-   const __m256i a = _mm256_shuffle_epi8( lo[ r ] ,
-                                           _mm256_and_si256( v , low ) ) ,
-                 b = _mm256_shuffle_epi8( hi[ r ] , _mm256_and_si256(
-                      _mm256_srli_epi16( v , 4 ) , low ) );
+   const __m256i v =
+     _mm256_loadu_si256( reinterpret_cast< const __m256i * >( T + s + r ) );
+   const __m256i a =
+		   _mm256_shuffle_epi8( lo[ r ] ,
+					_mm256_and_si256( v , low ) ) ,
+		 b = _mm256_shuffle_epi8(
+		   hi[ r ] ,
+		   _mm256_and_si256( _mm256_srli_epi16( v , 4 ) , low ) );
    acc = _mm256_and_si256( acc , _mm256_and_si256( a , b ) );
    }
-  std::uint64_t m = ~std::uint32_t( _mm256_movemask_epi8(
-                                     _mm256_cmpeq_epi8( acc , zero ) ) );
-  if( m == 0 ) [[likely]] continue;
-  if( last - s < 31 ) m &= ( std::uint64_t( 1 ) << ( last - s + 1 ) ) - 1;
+  std::uint64_t m =
+    ~std::uint32_t( _mm256_movemask_epi8( _mm256_cmpeq_epi8( acc , zero ) ) );
+  if( m == 0 ) [[likely]]
+   continue;
+  if( last - s < 31 )
+   m &= ( std::uint64_t( 1 ) << ( last - s + 1 ) ) - 1;
   _mm256_store_si256( reinterpret_cast< __m256i * >( C ) , acc );
   work += check( T , n , s , m , C , report );
   if( work > 16 * s + 4096 ) {
@@ -545,7 +594,8 @@ std::size_t MultiSearcher::scan( std::string_view Tv , F && report ) const
     c &= f_lo[ r ][ x & 15 ] & f_hi[ r ][ x >> 4 ];
     }
    C[ p ] = static_cast< unsigned char >( c );
-   if( c ) m |= std::uint64_t( 1 ) << p;
+   if( c )
+    m |= std::uint64_t( 1 ) << p;
    }
   work += check( T , n , s , m , C , report );
   if( ( work > 16 * s + 4096 ) && ( s + 32 <= last ) ) {
@@ -556,18 +606,20 @@ std::size_t MultiSearcher::scan( std::string_view Tv , F && report ) const
  }
 
 inline std::vector< std::pair< std::size_t , std::size_t > >
- MultiSearcher::findAll( std::string_view T ) const
+MultiSearcher::findAll( std::string_view T ) const
 {
  std::vector< std::pair< std::size_t , std::size_t > > R;
- auto push = [ & ]( std::size_t i , std::size_t j ) {
-  R.emplace_back( i , j ); };
- if( f_P.size() == 1 )                // one pattern: the single search
+ auto push = [ & ]( std::size_t i ,
+		    std::size_t j ) { R.emplace_back( i , j ); };
+ if( f_P.size() == 1 )  // one pattern: the single search
   for( const std::size_t i : StringSearcher( f_P[ 0 ] ).findAll( T ) )
    R.emplace_back( i , 0 );
  else if( ! f_P.empty() ) {
-  const std::size_t from = f_q ? scan( T , push ) :
-                           f_W ? shiftOr2( T , push ) : shiftOr( T , push );
-  if( from != npos ) automaton( T , from , push );
+  const std::size_t from = f_q   ? scan( T , push )
+			   : f_W ? shiftOr2( T , push )
+				 : shiftOr( T , push );
+  if( from != npos )
+   automaton( T , from , push );
   }
  // within a place the numbers come by bucket, and the automaton gives
  // them by end
@@ -578,30 +630,37 @@ inline std::vector< std::pair< std::size_t , std::size_t > >
 
 inline std::size_t MultiSearcher::automatonFrom( std::string_view T ) const
 {
- if( f_P.size() < 2 ) return( npos );
- auto none = []( std::size_t , std::size_t ) {};
- return( f_q ? scan( T , none ) :
-         f_W ? shiftOr2( T , none ) : shiftOr( T , none ) );
+ if( f_P.size() < 2 )
+  return( npos );
+ auto none = []( std::size_t , std::size_t ) { };
+ return( f_q   ? scan( T , none )
+	  : f_W ? shiftOr2( T , none )
+		: shiftOr( T , none ) );
  }
 
 inline std::size_t MultiSearcher::count( std::string_view T ) const
 {
- if( f_P.size() == 1 ) return( StringSearcher( f_P[ 0 ] ).count( T ) );
- if( f_P.empty() ) return( 0 );
+ if( f_P.size() == 1 )
+  return( StringSearcher( f_P[ 0 ] ).count( T ) );
+ if( f_P.empty() )
+  return( 0 );
  std::size_t c = 0;
  auto one = [ & ]( std::size_t , std::size_t ) { ++c; };
- const std::size_t from = f_q ? scan( T , one ) :
-                          f_W ? shiftOr2( T , one ) : shiftOr( T , one );
- if( from == npos ) return( c );
+ const std::size_t from = f_q   ? scan( T , one )
+			  : f_W ? shiftOr2( T , one )
+				: shiftOr( T , one );
+ if( from == npos )
+  return( c );
  // the automaton from from on: its count from b = from - longest, less
  // the occurrences that start before from, all within the window
  // [ b , from + longest )
  const std::size_t n = T.size() ,
-                   b = std::min( from > f_longest ? from - f_longest : 0 , n );
+		   b = std::min( from > f_longest ? from - f_longest : 0 , n );
  c += f_ac.count( T.substr( b ) );
- f_ac.forEach( T.substr( b , from - std::min( from , b ) + f_longest ) ,
-               [ & ]( std::size_t i , std::size_t ) {
-                c -= std::size_t( i + b < from ); } );
+ f_ac.forEach(
+   T.substr( b , from - std::min( from , b ) + f_longest ) ,
+   [ & ]( std::size_t i ,
+	  std::size_t ) { c -= std::size_t( i + b < from ); } );
  return( c );
  }
 

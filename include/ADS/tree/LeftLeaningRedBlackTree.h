@@ -79,7 +79,7 @@
 
 #ifndef __ADS_LeftLeaningRedBlackTree
  #define __ADS_LeftLeaningRedBlackTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -100,7 +100,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- CLASS LeftLeaningRedBlackTree ----------------------*/
@@ -109,13 +110,13 @@ namespace ADS {
 /// a DICTIONARY on the left-leaning red-black tree of Morin, a simulated
 /// 2-4 tree
 template< std::totally_ordered K , class V >
-class LeftLeaningRedBlackTree {
+class LeftLeaningRedBlackTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty tree
  LeftLeaningRedBlackTree( void ) = default;
@@ -124,12 +125,12 @@ class LeftLeaningRedBlackTree {
  LeftLeaningRedBlackTree( const LeftLeaningRedBlackTree & ) = delete;
 
  /// no copy, since the nodes are linked by pointers
- LeftLeaningRedBlackTree & operator=( const LeftLeaningRedBlackTree & ) =
-  delete;
+ LeftLeaningRedBlackTree &
+ operator=( const LeftLeaningRedBlackTree & ) = delete;
 
  /// the nodes of `other`, which is left empty
  LeftLeaningRedBlackTree( LeftLeaningRedBlackTree && other ) noexcept
-  : f_root( other.f_root ) , f_n( other.f_n ) {
+     : f_root( other.f_root ) , f_n( other.f_n ) {
   other.f_root = nullptr;
   other.f_n = 0;
   }
@@ -224,8 +225,8 @@ class LeftLeaningRedBlackTree {
 
  /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
  /// (the `find(x)` of an SSet of Morin)
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-  const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
 
  /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
  /// time: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
@@ -264,32 +265,33 @@ class LeftLeaningRedBlackTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static constexpr signed char kRed = 0;     ///< the red colour
- static constexpr signed char kBlack = 1;   ///< the black colour
+ static constexpr signed char kRed = 0;    ///< the red colour
+ static constexpr signed char kBlack = 1;  ///< the black colour
 
  /// the links and the colour of a node: 0 red, 1 black, 2 double black
- struct Link {
-  Link * left = nullptr;       ///< the left child
-  Link * right = nullptr;      ///< the right child
-  Link * parent = nullptr;     ///< the parent
-  signed char colour = kRed;   ///< the colour
+ struct Link
+ {
+  Link * left = nullptr;      ///< the left child
+  Link * right = nullptr;     ///< the right child
+  Link * parent = nullptr;    ///< the parent
+  signed char colour = kRed;  ///< the colour
   };
 
  /// a node, a link with a pair
- struct Node : Link {
-  K key;                       ///< the key
-  V value;                     ///< the value
+ struct Node : Link
+ {
+  K key;    ///< the key
+  V value;  ///< the value
   /// the red node of a pair
-  Node( const K & k , const V & v ) : key( k ) , value( v ) {}
+  Node( const K & k , const V & v ) : key( k ) , value( v ) { }
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the shape of the tree, for `PathIterator`
- struct Shape {
+ struct Shape
+ {
   /// the root of the tree `o`
   static const Node * root( const auto & o ) {
    return( static_cast< const Node * >( o.f_root ) );
@@ -310,13 +312,13 @@ class LeftLeaningRedBlackTree {
 
  /// the pairs of references to a key and its value
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
  /// the constant iterator by increasing key, along the path from the root
  using const_iterator = PathIterator< LeftLeaningRedBlackTree , Shape >;
- using iterator = const_iterator;          ///< the constant iterator
+ using iterator = const_iterator;  ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
@@ -332,7 +334,6 @@ class LeftLeaningRedBlackTree {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  static signed char colour( const Link * u ) {
   return( u ? u->colour : kBlack );
   }
@@ -341,10 +342,10 @@ class LeftLeaningRedBlackTree {
   }
  /// the child pointer of the parent of \f$ u \f$ (or the root) that holds
  /// \f$ u \f$
- Link * & place( Link * u ) {
-  return( ! u->parent ? f_root
-                      : ( u->parent->left == u ? u->parent->left
-                                               : u->parent->right ) );
+ Link *& place( Link * u ) {
+  return( ! u->parent
+	     ? f_root
+	     : ( u->parent->left == u ? u->parent->left : u->parent->right ) );
   }
  void rotateLeft( Link * u );
  void rotateRight( Link * u );
@@ -378,8 +379,8 @@ class LeftLeaningRedBlackTree {
  /// the node of the smallest key not smaller than \f$ k \f$, nil if none
  [[nodiscard]] const Link * lowerBoundNode( const K & k ) const;
 
- Link * f_root = nullptr;     ///< the root
- std::size_t f_n = 0;         ///< the number of keys
+ Link * f_root = nullptr;  ///< the root
+ std::size_t f_n = 0;      ///< the number of keys
 
  };  // end( class LeftLeaningRedBlackTree )
 
@@ -395,7 +396,7 @@ class LeftLeaningRedBlackTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LeftLeaningRedBlackTree.h included */
+#endif /* LeftLeaningRedBlackTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------- End File LeftLeaningRedBlackTree.h -------------------*/

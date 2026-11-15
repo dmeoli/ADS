@@ -44,7 +44,7 @@
 
 #ifndef __ADS_DynamicCsr
  #define __ADS_DynamicCsr
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -66,7 +66,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS DynamicCsr ----------------------------*/
@@ -75,23 +76,21 @@ namespace ADS {
 /// a sparse matrix by rows, with indices of type `I` and values of type
 /// `V`, whose rows are appended and removed
 template< class I = int , class V = double >
-class DynamicCsr {
+class DynamicCsr
+{
 
  static_assert( std::is_integral_v< I > );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Index = I;   ///< the type of the indices
- using Value = V;   ///< the type of the values
+ using Index = I;  ///< the type of the indices
+ using Value = V;  ///< the type of the values
 
  /// the matrix of no rows
- DynamicCsr( void ) : f_beg( 1 , I( 0 ) ) {}
+ DynamicCsr( void ) : f_beg( 1 , I( 0 ) ) { }
 
  /// the number of the rows
- [[nodiscard]] std::size_t rows( void ) const {
-  return( f_beg.size() - 1 );
-  }
+ [[nodiscard]] std::size_t rows( void ) const { return( f_beg.size() - 1 ); }
 
  /// the number of the entries
  [[nodiscard]] std::size_t nonzeros( void ) const { return( f_ind.size() ); }
@@ -144,7 +143,7 @@ class DynamicCsr {
  /// \f]
  /// \pre `beg` is not decreasing
  std::size_t append( std::size_t r , const I * beg , const I * ind ,
-                     const V * val );
+		     const V * val );
 
  /// removes the rows of \f$ E \f$ (a contiguous range of integers, e.g., a
  /// `std::vector`), closing the gaps in one pass
@@ -202,16 +201,15 @@ class DynamicCsr {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- template< class U >                  // not zeroed when they grow
+ template< class U >  // not zeroed when they grow
  using Vector = std::vector< U , detail::DefaultInitAllocator< U > >;
 
  /// the invariant
  [[nodiscard]] bool consistent( void ) const;
 
- Vector< I > f_beg;   ///< the starts of the rows, and the end
- Vector< I > f_ind;   ///< the minor indices
- Vector< V > f_val;   ///< the values
+ Vector< I > f_beg;  ///< the starts of the rows, and the end
+ Vector< I > f_ind;  ///< the minor indices
+ Vector< V > f_val;  ///< the values
 
  };  // end( class DynamicCsr )
 
@@ -231,7 +229,7 @@ using DynamicCsc = DynamicCsr< I , V >;
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* DynamicCsr.h included */
+#endif /* DynamicCsr.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File DynamicCsr.h -------------------------*/

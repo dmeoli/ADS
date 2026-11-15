@@ -52,7 +52,7 @@
 
 #ifndef __ADS_Arena
  #define __ADS_Arena
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -75,7 +75,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS Arena --------------------------------*/
@@ -83,15 +84,15 @@ namespace ADS {
 
 /// an arena of objects of type `T` in blocks of \f$ n \f$
 template< class T , class A = std::allocator< T > >
-class Arena {
+class Arena
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty arena whose blocks hold \f$ n \f$ objects, taken from `alloc`
  /// \pre \f$ n \ge 1 \f$
  explicit Arena( std::size_t n = std::size_t( 1 ) << 12 ,
-                 const A & alloc = A() );
+		 const A & alloc = A() );
 
  /// no copy, since the objects are reached by their addresses
  Arena( const Arena & ) = delete;
@@ -166,8 +167,9 @@ class Arena {
 
  /// the iterator, on constant objects if `Const`
  template< bool Const >
- class Iterator {
-  using Blocks = const std::vector< T * > *;   // the vector of the blocks
+ class Iterator
+ {
+  using Blocks = const std::vector< T * > *;  // the vector of the blocks
 
   public:
   /// random access
@@ -186,12 +188,13 @@ class Arena {
   /// the object \f$ i \f$ of the vector of the blocks \f$ B \f$, of
   /// \f$ n \f$ objects each
   Iterator( Blocks B , std::size_t n , std::size_t i )
-   : f_B( B ) , f_n( n ) , f_i( i ) {}
+      : f_B( B ) , f_n( n ) , f_i( i ) { }
 
   /// the constant iterator of the object of \f$ o \f$
-  template< bool K > requires ( Const && ! K )
+  template< bool K >
+   requires( Const && ! K )
   Iterator( const Iterator< K > & o )
-   : f_B( o.f_B ) , f_n( o.f_n ) , f_i( o.f_i ) {}
+      : f_B( o.f_B ) , f_n( o.f_n ) , f_i( o.f_i ) { }
 
   /// the object
   reference operator*( void ) const { return( ( *this )[ 0 ] ); }
@@ -205,13 +208,27 @@ class Arena {
    }
 
   /// the next object
-  Iterator & operator++( void ) { ++f_i; return( *this ); }
+  Iterator & operator++( void ) {
+   ++f_i;
+   return( *this );
+   }
   /// the previous object
-  Iterator & operator--( void ) { --f_i; return( *this ); }
+  Iterator & operator--( void ) {
+   --f_i;
+   return( *this );
+   }
   /// the next object, the iterator before the step returned
-  Iterator operator++( int ) { auto t = *this; ++f_i; return( t ); }
+  Iterator operator++( int ) {
+   auto t = *this;
+   ++f_i;
+   return( t );
+   }
   /// the previous object, the iterator before the step returned
-  Iterator operator--( int ) { auto t = *this; --f_i; return( t ); }
+  Iterator operator--( int ) {
+   auto t = *this;
+   --f_i;
+   return( t );
+   }
   /// \f$ k \f$ objects ahead
   Iterator & operator+=( difference_type k ) {
    f_i += std::size_t( k );
@@ -247,16 +264,17 @@ class Arena {
   Blocks f_B = nullptr;
   std::size_t f_n = 1 , f_i = 0;
 
-  template< bool > friend class Iterator;
+  template< bool >
+  friend class Iterator;
   };
 
- using value_type = T;                      ///< the objects
- using size_type = std::size_t;             ///< a number of objects
- using difference_type = std::ptrdiff_t;    ///< a distance in objects
- using reference = T &;                     ///< a reference to an object
- using const_reference = const T &;         ///< a constant one
- using iterator = Iterator< false >;        ///< the iterator
- using const_iterator = Iterator< true >;   ///< the constant iterator
+ using value_type = T;                     ///< the objects
+ using size_type = std::size_t;            ///< a number of objects
+ using difference_type = std::ptrdiff_t;   ///< a distance in objects
+ using reference = T &;                    ///< a reference to an object
+ using const_reference = const T &;        ///< a constant one
+ using iterator = Iterator< false >;       ///< the iterator
+ using const_iterator = Iterator< true >;  ///< the constant iterator
 
  /// the first object made
  [[nodiscard]] iterator begin( void ) {
@@ -286,7 +304,6 @@ class Arena {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the block after the one in use, kept from an old epoch or new
  void next( void );
 
@@ -295,13 +312,13 @@ class Arena {
   return( f_blocks.empty() ? 0 : std::size_t( f_place - f_blocks[ f_cur ] ) );
   }
 
- std::size_t f_n;                ///< the objects of a block
- T * f_place = nullptr;          ///< the next place of the block in use
- T * f_end = nullptr;            ///< the end of the block in use
- std::size_t f_cur = 0;          ///< the index of the block in use
- std::size_t f_size = 0;         ///< the objects made in the epoch
- std::vector< T * > f_blocks;    ///< the blocks
- A f_alloc;                      ///< the allocator of the blocks
+ std::size_t f_n;              ///< the objects of a block
+ T * f_place = nullptr;        ///< the next place of the block in use
+ T * f_end = nullptr;          ///< the end of the block in use
+ std::size_t f_cur = 0;        ///< the index of the block in use
+ std::size_t f_size = 0;       ///< the objects made in the epoch
+ std::vector< T * > f_blocks;  ///< the blocks
+ A f_alloc;                    ///< the allocator of the blocks
 
  };  // end( class Arena )
 
@@ -317,7 +334,7 @@ class Arena {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Arena.h included */
+#endif /* Arena.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File Arena.h ----------------------------*/

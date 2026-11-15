@@ -73,7 +73,7 @@
 
 #ifndef __ADS_BPlusTree
  #define __ADS_BPlusTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -96,7 +96,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS BPlusTree -------------------------------*/
@@ -105,13 +106,13 @@ namespace ADS {
 /// a B+-tree of order \f$ m \f$, with the removal of exercise 14.8 of
 /// Morin's book
 template< std::totally_ordered K , class V >
-class BPlusTree {
+class BPlusTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// an empty B+-tree of order \f$ m > 2 \f$, the root a leaf
  /// \pre \f$ m > 2 \f$
@@ -236,8 +237,7 @@ class BPlusTree {
  /// the pairs with keys in \f$ ( x , y ] \f$, the `findRange( x , y )` of
  /// exercise 14.8 of Morin's book: `range()` with the first bound left out
  [[nodiscard]] std::vector< std::pair< K , V > > findRange( const K & x ,
-                                                           const K & y )
-  const;
+							   const K & y ) const;
 
  /// the number \f$ n \f$ of keys
  [[nodiscard]] std::size_t size( void ) const;
@@ -267,13 +267,13 @@ class BPlusTree {
  /// \end{array}}
  /// \f]
  [[nodiscard]] std::vector< std::pair< K , V > > range( const K & A ,
-                                                       const K & B ) const;
+						       const K & B ) const;
 
  /// the keys of the nodes, level by level from the root, each level from
  /// left to right: the shape of the tree, as in figure 6.7, by a visit in
  /// breadth
- [[nodiscard]] std::vector< std::vector< std::vector< K > > > levels( void )
-  const;
+ [[nodiscard]] std::vector< std::vector< std::vector< K > > >
+ levels( void ) const;
 
  /// checks the shape [see `shaped()`] whatever the level of the contracts;
  /// it throws `contract_violation` if it fails
@@ -281,34 +281,34 @@ class BPlusTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node, internal or a leaf
- struct Node {
+ struct Node
+ {
   /// an empty node, a leaf if \f$ l \f$
-  explicit Node( bool l ) : is_leaf( l ) {}
-  bool is_leaf;                      ///< true if a leaf
-  std::vector< K > k;                ///< the keys
-  std::vector< Node * > p;           ///< the children, if internal
-  std::vector< V > v;                ///< the values, if a leaf
-  Node * parent = nullptr;           ///< the parent
-  Node * prev = nullptr;             ///< the previous leaf
-  Node * next = nullptr;             ///< the next leaf
+  explicit Node( bool l ) : is_leaf( l ) { }
+  bool is_leaf;             ///< true if a leaf
+  std::vector< K > k;       ///< the keys
+  std::vector< Node * > p;  ///< the children, if internal
+  std::vector< V > v;       ///< the values, if a leaf
+  Node * parent = nullptr;  ///< the parent
+  Node * prev = nullptr;    ///< the previous leaf
+  Node * next = nullptr;    ///< the next leaf
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ) by increasing key,
  // bidirectional along the chain of the leaves
 
  /// the iterator on the pairs by increasing keys, a leaf and a place in it
- class const_iterator {
+ class const_iterator
+ {
   public:
   /// a pair of constant references, the key and its value
   using reference = std::pair< const K & , const V & >;
-  using value_type = reference;             ///< the pairs
-  using difference_type = std::ptrdiff_t;   ///< the type of the distances
+  using value_type = reference;            ///< the pairs
+  using difference_type = std::ptrdiff_t;  ///< the type of the distances
   /// the category of the iterator for the concepts of C++20, bidirectional
   using iterator_concept = std::bidirectional_iterator_tag;
   /// input for the older algorithms, since `*it` is a value
@@ -320,7 +320,7 @@ class BPlusTree {
   /// on the place \f$ i \f$ of the leaf \f$ f \f$ of the tree \f$ t \f$,
   /// the end if \f$ f \f$ is nil
   const_iterator( const BPlusTree * t , const Node * f , std::size_t i )
-   : f_t( t ) , f_f( f ) , f_i( i ) {}
+      : f_t( t ) , f_f( f ) , f_i( i ) { }
 
   /// the pair of the place
   reference operator*( void ) const {
@@ -329,10 +329,12 @@ class BPlusTree {
 
   /// to the next pair, along the list of the leaves
   const_iterator & operator++( void ) {
-   if( ++f_i < f_f->k.size() ) return( *this );
+   if( ++f_i < f_f->k.size() )
+    return( *this );
    f_f = f_f->next;
    f_i = 0;
-   while( f_f && f_f->k.empty() ) f_f = f_f->next;
+   while( f_f && f_f->k.empty() )
+    f_f = f_f->next;
    return( *this );
    }
 
@@ -342,17 +344,26 @@ class BPlusTree {
     --f_i;
     return( *this );
     }
-   f_f = f_f ? f_f->prev : f_t->lastLeaf();   // from the end, the last
-   while( f_f->k.empty() ) f_f = f_f->prev;
+   f_f = f_f ? f_f->prev : f_t->lastLeaf();  // from the end, the last
+   while( f_f->k.empty() )
+    f_f = f_f->prev;
    f_i = f_f->k.size() - 1;
    return( *this );
    }
 
   /// to the next pair, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// to the previous pair, returning the iterator before the step
-  const_iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+  const_iterator operator--( int ) {
+   auto t = *this;
+   --*this;
+   return( t );
+   }
 
   /// equal on the same place of the same leaf
   bool operator==( const const_iterator & o ) const {
@@ -360,23 +371,24 @@ class BPlusTree {
    }
 
   private:
-  const BPlusTree * f_t = nullptr;          ///< the tree
-  const Node * f_f = nullptr;               ///< the leaf, nil at the end
-  std::size_t f_i = 0;                      ///< the place in the leaf
+  const BPlusTree * f_t = nullptr;  ///< the tree
+  const Node * f_f = nullptr;       ///< the leaf, nil at the end
+  std::size_t f_i = 0;              ///< the place in the leaf
   };
 
  /// the pairs of constant references ( key , value )
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
- using iterator = const_iterator;          ///< the constant iterator
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
+ using iterator = const_iterator;         ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
   const Node * f = firstLeaf();
-  while( f && f->k.empty() ) f = f->next;
+  while( f && f->k.empty() )
+   f = f->next;
   return( const_iterator( this , f , 0 ) );
   }
  /// the iterator past the largest key
@@ -391,17 +403,18 @@ class BPlusTree {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// the leftmost leaf
  [[nodiscard]] const Node * firstLeaf( void ) const {
   const Node * x = f_root;
-  while( x && ! x->is_leaf ) x = x->p.front();
+  while( x && ! x->is_leaf )
+   x = x->p.front();
   return( x );
   }
  /// the rightmost leaf
  [[nodiscard]] const Node * lastLeaf( void ) const {
   const Node * x = f_root;
-  while( x && ! x->is_leaf ) x = x->p.back();
+  while( x && ! x->is_leaf )
+   x = x->p.back();
   return( x );
   }
 
@@ -422,8 +435,8 @@ class BPlusTree {
  /// the shape of the subtree of \f$ u \f$, its keys in
  /// \f$ ( \mathit{lo} , \mathit{hi} ] \f$, at the depth \f$ d \f$
  [[nodiscard]] bool shaped( const Node * u , const K * lo , const K * hi ,
-                            int d , int & depth ,
-                            const Node * & last ) const;
+			    int d ,
+			    int & depth , const Node *& last ) const;
 
  /// frees the nodes of the subtree of \f$ u \f$
  static void destroy( Node * u );
@@ -433,9 +446,9 @@ class BPlusTree {
  /// now, or nil
  Node * fix( Node * u );
 
- int f_m;                     ///< the order
- Node * f_root;               ///< the root
- std::size_t f_size = 0;      ///< the number of keys
+ int f_m;                 ///< the order
+ Node * f_root;           ///< the root
+ std::size_t f_size = 0;  ///< the number of keys
 
  };  // end( class BPlusTree )
 
@@ -451,7 +464,7 @@ class BPlusTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BPlusTree.h included */
+#endif /* BPlusTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File BPlusTree.h --------------------------*/

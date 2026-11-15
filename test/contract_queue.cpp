@@ -48,7 +48,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
@@ -62,7 +63,7 @@ namespace {
 ADS_TEST( "array-queue" )
 {
  ArrayQueue< int > Q( 2 );
- CHECK_THROWS( (void) Q.top() , contract_violation );
+ CHECK_THROWS( ( void )Q.top() , contract_violation );
  CHECK_THROWS( Q.dequeue() , contract_violation );
  Q.enqueue( 1 );
  Q.enqueue( 2 );
@@ -70,7 +71,7 @@ ADS_TEST( "array-queue" )
  CHECK( Q.dequeue() == 1 && Q.top() == 2 && Q.size() == 1 );
  ArrayQueue< int > Z( 0 );
  CHECK_THROWS( Z.enqueue( 0 ) , contract_violation );
- CHECK_THROWS( (void) Z.top() , contract_violation );
+ CHECK_THROWS( ( void )Z.top() , contract_violation );
  CHECK_THROWS( Z.dequeue() , contract_violation );
  // capacity 1: full and empty at once around the circle, many turns
  ArrayQueue< int > O( 1 );
@@ -84,7 +85,7 @@ ADS_TEST( "array-queue" )
  Q.enqueue( 3 );
  CHECK_THROWS( Q.enqueue( 4 ) , contract_violation );
  CHECK( Q.size() == 2 && Q.dequeue() == 2 && Q.dequeue() == 3 );
- ArrayQueue< double > N( 2 );            // a NaN is an item like another
+ ArrayQueue< double > N( 2 );  // a NaN is an item like another
  N.enqueue( std::nan( "" ) );
  CHECK( std::isnan( N.top() ) && std::isnan( N.dequeue() ) );
  std::mt19937 g( 6 );
@@ -109,7 +110,7 @@ ADS_TEST( "array-queue" )
 ADS_TEST( "linked-queue" )
 {
  LinkedQueue< int > Q;
- CHECK_THROWS( (void) Q.top() , contract_violation );
+ CHECK_THROWS( ( void )Q.top() , contract_violation );
  CHECK_THROWS( Q.dequeue() , contract_violation );
  std::mt19937 g( 8 );
  std::deque< int > R;
@@ -124,16 +125,17 @@ ADS_TEST( "linked-queue" )
    }
  CHECK( Q.size() == R.size() );
  LinkedQueue< int > C = Q;
- if( ! C.empty() ) C.dequeue();
+ if( ! C.empty() )
+  C.dequeue();
  C.enqueue( -1 );
- CHECK( Q.size() == R.size() && !( C == Q ) );
+ CHECK( Q.size() == R.size() && ! ( C == Q ) );
  LinkedQueue< int > M( std::move( C ) );
  CHECK( C.empty() && ! M.empty() );
  // emptied again after use: the preconditions hold again
  LinkedQueue< int > E;
  E.enqueue( 1 );
  CHECK( E.dequeue() == 1 && E.empty() );
- CHECK_THROWS( (void) E.top() , contract_violation );
+ CHECK_THROWS( ( void )E.top() , contract_violation );
  CHECK_THROWS( E.dequeue() , contract_violation );
  // a NaN at the back of an empty queue: the postcondition of enqueue()
  // compares it with the front, and must not refuse it (a regression)
@@ -152,16 +154,16 @@ ADS_TEST( "unique-queue" )
 {
  UniqueQueue< int > I;
  UniqueQueue< int , Duplicate::FORGET_OLD > F;
- CHECK_THROWS( (void) I.top() , contract_violation );
+ CHECK_THROWS( ( void )I.top() , contract_violation );
  CHECK_THROWS( I.dequeue() , contract_violation );
- CHECK_THROWS( (void) F.top() , contract_violation );
+ CHECK_THROWS( ( void )F.top() , contract_violation );
  CHECK_THROWS( F.dequeue() , contract_violation );
  I.enqueue( 1 );
  F.enqueue( 1 );
- I.enqueue( 1 );                          // the only item twice
+ I.enqueue( 1 );  // the only item twice
  F.enqueue( 1 );
  CHECK( I.size() == 1 && F.size() == 1 );
- for( int v : { 2 , 3 , 1 , 3 } ) {       // at the front and at the back
+ for( int v : { 2 , 3 , 1 , 3 } ) {  // at the front and at the back
   I.enqueue( v );
   F.enqueue( v );
   }
@@ -169,12 +171,12 @@ ADS_TEST( "unique-queue" )
  CHECK( I.dequeue() == 1 && I.dequeue() == 2 && I.dequeue() == 3 );
  CHECK( F.dequeue() == 2 && F.dequeue() == 1 && F.dequeue() == 3 );
  CHECK_THROWS( I.dequeue() , contract_violation );
- CHECK_THROWS( (void) F.top() , contract_violation );
+ CHECK_THROWS( ( void )F.top() , contract_violation );
  UniqueQueue< double > D;
  CHECK_THROWS( D.enqueue( std::nan( "" ) ) , contract_violation );
- UniqueQueue< double > Z;                 // D is spoilt by the violation
+ UniqueQueue< double > Z;  // D is spoilt by the violation
  Z.enqueue( 0.0 );
- Z.enqueue( -0.0 );                       // equal to 0.0
+ Z.enqueue( -0.0 );  // equal to 0.0
  CHECK( Z.size() == 1 );
  // the item in the queue enqueued again by reference, a string whose
  // memory remove() frees before the copy at the back is made from it
@@ -185,7 +187,7 @@ ADS_TEST( "unique-queue" )
  S.enqueue( S.top() );
  CHECK( S.size() == 2 && S.dequeue() == b && S.dequeue() == a );
  S.enqueue( a );
- S.enqueue( S.top() );                    // the only item
+ S.enqueue( S.top() );  // the only item
  CHECK( S.size() == 1 && S.top() == a );
 
  LinkedQueue< int > q , out;
@@ -194,13 +196,14 @@ ADS_TEST( "unique-queue" )
  extractPositive( q , out );
  copyPositive( q , out );
  CHECK( q.empty() && out.empty() );
- for( int v : { 0 , -1 , std::numeric_limits< int >::min() } ) q.enqueue( v );
+ for( int v : { 0 , -1 , std::numeric_limits< int >::min() } )
+  q.enqueue( v );
  copyPositive( q , out );
  CHECK( q.size() == 3 && out.empty() );
  q.enqueue( std::numeric_limits< int >::max() );
  extractPositive( q , out );
  CHECK( q.empty() && out.size() == 1 &&
-        out.top() == std::numeric_limits< int >::max() );
+	out.top() == std::numeric_limits< int >::max() );
  }
 
 // the axioms of QUEUE [see ADT.h] on ArrayQueue and LinkedQueue, for queues
@@ -217,13 +220,16 @@ void queue_axioms( F create , unsigned seed )
  CHECK( E.empty() );
  E.enqueue( 5 );
  CHECK( E.top() == 5 );
- std::vector< int > ops;                        // -1 is a dequeue()
+ std::vector< int > ops;  // -1 is a dequeue()
  for( int t = 0 ; t < 100 ; ++t ) {
   const int v = int( g() % 1000 );
   auto build = [ & ]( void ) {
    Q q = create();
    for( int o : ops )
-    if( o < 0 ) q.dequeue(); else q.enqueue( o );
+    if( o < 0 )
+     q.dequeue();
+    else
+     q.enqueue( o );
    return( q );
    };
   Q a = build() , b = build();
@@ -239,7 +245,8 @@ void queue_axioms( F create , unsigned seed )
    CHECK( a.empty() && b.empty() );
    }
   int size = 0;
-  for( int o : ops ) size += o < 0 ? -1 : 1;
+  for( int o : ops )
+   size += o < 0 ? -1 : 1;
   ops.push_back( ( size > 0 ) && ( g() % 3 == 0 ) ? -1 : v );
   }
  }
@@ -247,9 +254,9 @@ void queue_axioms( F create , unsigned seed )
 ADS_TEST( "queue-axioms" )
 {
  queue_axioms< ArrayQueue< int > >(
-  [] { return( ArrayQueue< int >( 200 ) ); } , 9 );
+   [] { return( ArrayQueue< int >( 200 ) ); } , 9 );
  queue_axioms< LinkedQueue< int > >( [] { return( LinkedQueue< int >() ); } ,
-                                     10 );
+				     10 );
  }
 
 // DEQUEUE: the four removals and readings on an empty dequeue, one item
@@ -259,14 +266,14 @@ ADS_TEST( "dequeue" )
  Dequeue< int > D;
  CHECK_THROWS( D.removeHead() , contract_violation );
  CHECK_THROWS( D.removeTail() , contract_violation );
- CHECK_THROWS( (void) D.head() , contract_violation );
- CHECK_THROWS( (void) D.tail() , contract_violation );
- D.insertTail( 4 );                       // one item: head and tail
+ CHECK_THROWS( ( void )D.head() , contract_violation );
+ CHECK_THROWS( ( void )D.tail() , contract_violation );
+ D.insertTail( 4 );  // one item: head and tail
  CHECK( D.head() == 4 && D.tail() == 4 && D.removeHead() == 4 );
  CHECK_THROWS( D.removeTail() , contract_violation );
  D.insertHead( 5 );
  CHECK( D.removeTail() == 5 && D.empty() );
- CHECK_THROWS( (void) D.head() , contract_violation );
+ CHECK_THROWS( ( void )D.head() , contract_violation );
  std::mt19937 g( 7 );
  std::deque< int > R;
  for( int op = 0 ; op < 2000 ; ++op ) {

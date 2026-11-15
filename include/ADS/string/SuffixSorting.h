@@ -199,7 +199,7 @@
 
 #ifndef __ADS_SuffixSorting
  #define __ADS_SuffixSorting
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -217,7 +217,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the suffix array of the bytes of \f$ T \f$, by SA-IS on integers `I`
 /// (32 or 64 bits, unsigned)
@@ -259,7 +260,7 @@ namespace ADS {
 /// \post a suffix array of \f$ T \f$ (an audit)
 template< class I = std::uint32_t >
  requires( std::same_as< I , std::uint32_t > ||
-           std::same_as< I , std::uint64_t > )
+	   std::same_as< I , std::uint64_t > )
 [[nodiscard]] std::vector< I > suffixArray( std::string_view T );
 
 /// the suffix array of an integer text, by SA-IS
@@ -280,9 +281,9 @@ template< class I = std::uint32_t >
 /// \post a suffix array of \f$ T \f$ (an audit)
 template< class I >
  requires( std::same_as< I , std::uint32_t > ||
-           std::same_as< I , std::uint64_t > )
+	   std::same_as< I , std::uint64_t > )
 [[nodiscard]] std::vector< I > suffixArray( const std::vector< I > & T ,
-                                            std::size_t K );
+					    std::size_t K );
 
 /// the permuted LCP array: \f$ \mathit{PLCP}[ i ] \f$ is the lcp of the
 /// suffix \f$ i \f$ and the one before it in \f$ \mathit{SA} \f$ (0 for the
@@ -311,7 +312,7 @@ template< class I >
 /// \pre \f$ \mathit{SA} \f$ is a suffix array of \f$ T \f$ (an audit)
 template< class I >
 [[nodiscard]] std::vector< I > plcpArray( std::string_view T ,
-                                          const std::vector< I > & SA );
+					  const std::vector< I > & SA );
 
 /// the LCP array by the permuted LCP array, \f$ n - 1 \f$ entries (none if
 /// \f$ n < 2 \f$)
@@ -334,7 +335,7 @@ template< class I >
 ///       audit)
 template< class I >
 [[nodiscard]] std::vector< I > lcpArrayPhi( std::string_view T ,
-                                            const std::vector< I > & SA );
+					    const std::vector< I > & SA );
 
 /*--------------------------------------------------------------------------*/
 
@@ -348,7 +349,7 @@ template< class I >
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SuffixSorting.h included */
+#endif /* SuffixSorting.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File SuffixSorting.h ------------------------*/

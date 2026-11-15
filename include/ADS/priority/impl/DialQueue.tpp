@@ -16,13 +16,13 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , std::integral K >
 DialQueue< T , K >::DialQueue( std::size_t c )
 {
- const std::size_t w = std::max< std::size_t >( std::bit_ceil( c + 1 ) ,
-                                                64 );
+ const std::size_t w = std::max< std::size_t >( std::bit_ceil( c + 1 ) , 64 );
  f_B.resize( w );
  f_bits.assign( w / 64 , 0 );
  }
@@ -61,8 +61,8 @@ inline std::size_t DialQueue< T , K >::next( void ) const
    const std::size_t b = w * 64 + std::size_t( std::countr_zero( m ) );
    return( ( b - s ) & ( W - 1 ) );
    }
-  if( ++k > nw )                            // around, and back to the
-   return( W );                             // low bits of the first word
+  if( ++k > nw )  // around, and back to the
+   return( W );  // low bits of the first word
   w = w + 1 == nw ? 0 : w + 1;
   m = f_bits[ w ];
   if( k == nw )
@@ -75,19 +75,18 @@ inline void DialQueue< T , K >::pull( void )
 {
  ADS_PRE( f_n > 0 );
  if( ! f_B[ std::size_t( f_cur ) & ( f_B.size() - 1 ) ].empty() )
-  return;                                   // still the least key
+  return;  // still the least key
  std::size_t d = f_in ? next() : f_B.size();
- if( ! f_over.empty() ) {                   // peeked, so that the keys
-  const U o = f_over.peekKey();             // pushed next may be smaller
+ if( ! f_over.empty() ) {        // peeked, so that the keys
+  const U o = f_over.peekKey();  // pushed next may be smaller
   if( ( d == f_B.size() ) || ( o < U( f_cur + U( d ) ) ) ) {
-   f_cur = o;                               // the overflow in the window,
-   const U W = U( f_B.size() );             // a bucket of it at a time
+   f_cur = o;                    // the overflow in the window,
+   const U W = U( f_B.size() );  // a bucket of it at a time
    if( f_cur <= U( std::numeric_limits< U >::max() - W ) )
-    f_over.extractBelow( U( f_cur + W ) , [ this ]( T && x , U u ) {
-     put( x , u ); } );
+    f_over.extractBelow( U( f_cur + W ) ,
+			 [ this ]( T && x , U u ) { put( x , u ); } );
    else
-    while( ! f_over.empty() &&
-           ( U( f_over.peekKey() - f_cur ) < W ) ) {
+    while( ! f_over.empty() && ( U( f_over.peekKey() - f_cur ) < W ) ) {
      const U u = f_over.topKey();
      put( f_over.pop() , u );
      }

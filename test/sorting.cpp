@@ -60,7 +60,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ints = std::vector< int >;
 
@@ -75,7 +76,7 @@ template< class T >
 void stdStable( std::vector< T > & V )
 {
  std::stable_sort( V.begin() , V.end() ,
-                   []( const T & a , const T & b ) { return( a < b ); } );
+		   []( const T & a , const T & b ) { return( a < b ); } );
  }
 
 /// the inputs of the battery: every permutation of up to 7 items (the
@@ -87,24 +88,26 @@ std::vector< Ints > inputs( std::size_t maxN )
  for( int n = 0 ; n <= 7 ; ++n ) {
   Ints p( n );
   std::iota( p.begin() , p.end() , 0 );
-  do I.push_back( p ); while( std::next_permutation( p.begin() , p.end() ) );
+  do
+   I.push_back( p );
+  while( std::next_permutation( p.begin() , p.end() ) );
   }
  std::mt19937 g( 7 );
  for( std::size_t n : { 8u , 31u , 100u , 257u , 1000u , 4096u } ) {
   if( n > maxN )
    break;
   Ints r( n ) , s( n ) , v( n ) , w( n ) , o( n ) , f( n ) , e( n , 5 ) ,
-       x( n );
+    x( n );
   const Ints ext = { std::numeric_limits< int >::min() , -1 , 0 , 1 ,
-                     std::numeric_limits< int >::max() };
+		     std::numeric_limits< int >::max() };
   for( std::size_t i = 0 ; i < n ; ++i ) {
-   r[ i ] = int( g() % ( 2 * n ) );          // random
-   s[ i ] = int( i );                        // sorted
-   v[ i ] = int( n - i );                    // reversed
-   w[ i ] = int( i % 17 );                   // sawtooth
-   o[ i ] = int( std::min( i , n - 1 - i ) );   // organ pipe
-   f[ i ] = int( g() % 4 );                  // few distinct keys
-   x[ i ] = ( i % 2 ) ? ext[ g() % 5 ] : int( g() );   // the extremes
+   r[ i ] = int( g() % ( 2 * n ) );                   // random
+   s[ i ] = int( i );                                 // sorted
+   v[ i ] = int( n - i );                             // reversed
+   w[ i ] = int( i % 17 );                            // sawtooth
+   o[ i ] = int( std::min( i , n - 1 - i ) );          // organ pipe
+   f[ i ] = int( g() % 4 );                           // few distinct keys
+   x[ i ] = ( i % 2 ) ? ext[ g() % 5 ] : int( g() );  // the extremes
    }
   for( auto * y : { &r , &s , &v , &w , &o , &f , &e , &x } )
    I.push_back( *y );
@@ -131,7 +134,8 @@ void battery( S sort , std::size_t maxN , bool stable )
   std::vector< P > R = Q;
   sort( Q , []( const P & a , const P & b ) { return( a.first < b.first ); } );
   std::stable_sort( R.begin() , R.end() , []( const P & a , const P & b ) {
-   return( a.first < b.first ); } );
+   return( a.first < b.first );
+   } );
   CHECK( Q == R );
   }
  }
@@ -146,28 +150,29 @@ void battery( S sort , std::size_t maxN , bool stable )
 ADS_TEST( "exchange-sorts" )
 {
  battery( []( auto & A , auto less ) { bubbleSort( A , less ); } , 1000 ,
-          true );
+	  true );
  battery( []( auto & A , auto less ) { cocktailShakerSort( A , less ); } ,
-          1000 , true );
+	  1000 ,
+	  true );
  battery( []( auto & A , auto less ) { oddEvenSort( A , less ); } , 1000 ,
-          true );
+	  true );
  battery( []( auto & A , auto less ) { combSort( A , less ); } , 4096 ,
-          false );
+	  false );
  battery( []( auto & A , auto less ) { gnomeSort( A , less ); } , 1000 ,
-          true );
+	  true );
  Ints A( 50 );
  std::iota( A.rbegin() , A.rend() , 0 );
  std::size_t r = 0;
  oddEvenSort( A , std::less<>() , &r );
  CHECK( r <= 51 );
- oddEvenSort( A , std::less<>() , &r );          // sorted: one round
+ oddEvenSort( A , std::less<>() , &r );  // sorted: one round
  CHECK( r == 1 );
  Ints E , O = { 4 };
  oddEvenSort( E , std::less<>() , &r );
  CHECK( r == 1 && E.empty() );
  oddEvenSort( O , std::less<>() , &r );
  CHECK( r == 1 && O == Ints( { 4 } ) );
- Ints D = { 1 , 0 };                             // n = 2: one swap
+ Ints D = { 1 , 0 };  // n = 2: one swap
  oddEvenSort( D , std::less<>() , &r );
  CHECK( r == 2 && D == Ints( { 0 , 1 } ) );
  }
@@ -177,15 +182,19 @@ ADS_TEST( "exchange-sorts" )
 // nodes on a reversed input
 ADS_TEST( "tree-sort" )
 {
- battery( []( auto & A , auto ) {
-  if constexpr( std::is_same_v< typename std::decay_t< decltype( A ) >::
-                                value_type , int > )
-   treeSort( A );
-  else
-   std::stable_sort( A.begin() , A.end() , []( const auto & a ,
-                                               const auto & b ) {
-    return( a.first < b.first ); } );
-  } , 4096 , false );
+ battery(
+   []( auto & A , auto ) {
+    if constexpr( std::is_same_v<
+		    typename std::decay_t< decltype( A ) >::value_type ,
+		      int > )
+     treeSort( A );
+    else
+     std::stable_sort( A.begin() , A.end() ,
+		       []( const auto & a , const auto & b ) {
+			return( a.first < b.first );
+		        } );
+    } ,
+   4096 , false );
  Ints U = { 5 , 1 , 5 , 3 , 1 };
  treeSort( U , false );
  CHECK( U == Ints( { 1 , 1 , 3 , 5 , 5 } ) );
@@ -193,8 +202,8 @@ ADS_TEST( "tree-sort" )
  treeSort( E );
  treeSort( Q , false );
  CHECK( E.empty() && Q == Ints( 50 , 2 ) );
- Ints C( 20000 );                                // a chain of 20000 nodes,
- for( int i = 0 ; i < 20000 ; ++i )              // with duplicates
+ Ints C( 20000 );                  // a chain of 20000 nodes,
+ for( int i = 0 ; i < 20000 ; ++i )  // with duplicates
   C[ i ] = i / 2;
  Ints R( C.rbegin() , C.rend() );
  treeSort( R , false );
@@ -208,7 +217,8 @@ ADS_TEST( "strand-sort" )
 {
  for( const auto & x : inputs( 1000 ) ) {
   List< int > L;
-  for( int v : x ) L.insert( L.next( L.tail() ) , v );
+  for( int v : x )
+   L.insert( L.next( L.tail() ) , v );
   strandSort( L );
   Ints a , b = x;
   for( auto p = L.head() ; ! L.finished( p ) ; p = L.next( p ) )
@@ -229,7 +239,7 @@ ADS_TEST( "strand-sort" )
  CHECK( k == 1 && O.read( O.head() ) == 4 );
  strandSort( Q , std::less<>() , &k );
  CHECK( k == 1 );
- using P = std::pair< int , int >;               // stable on equal keys
+ using P = std::pair< int , int >;  // stable on equal keys
  std::mt19937 g( 14 );
  List< P > L;
  std::vector< P > V;
@@ -257,7 +267,8 @@ ADS_TEST( "sorting-networks" )
   const auto N = mergeExchangeNetwork( n );
   for( unsigned m = 0 ; m < ( 1u << n ) ; ++m ) {
    Ints A( n );
-   for( std::size_t i = 0 ; i < n ; ++i ) A[ i ] = ( m >> i ) & 1;
+   for( std::size_t i = 0 ; i < n ; ++i )
+    A[ i ] = ( m >> i ) & 1;
    applyNetwork( A , N );
    CHECK( std::is_sorted( A.begin() , A.end() ) );
    }
@@ -265,16 +276,18 @@ ADS_TEST( "sorting-networks" )
  const auto B = bitonicNetwork( 16 );
  for( unsigned m = 0 ; m < ( 1u << 16 ) ; ++m ) {
   Ints A( 16 );
-  for( std::size_t i = 0 ; i < 16 ; ++i ) A[ i ] = ( m >> i ) & 1;
+  for( std::size_t i = 0 ; i < 16 ; ++i )
+   A[ i ] = ( m >> i ) & 1;
   applyNetwork( A , B );
   CHECK( std::is_sorted( A.begin() , A.end() ) );
   }
- CHECK( B.size() == 80 );           // ( n / 4 ) log n ( log n + 1 )
+ CHECK( B.size() == 80 );  // ( n / 4 ) log n ( log n + 1 )
  CHECK_THROWS( bitonicNetwork( 12 ) , contract_violation );
  std::mt19937 g( 9 );
  for( std::size_t n : { 13u , 100u , 1000u } ) {
   Ints A( n );
-  for( auto & x : A ) x = int( g() % 50 );
+  for( auto & x : A )
+   x = int( g() % 50 );
   Ints C = A;
   applyNetwork( A , mergeExchangeNetwork( n ) );
   std::sort( C.begin() , C.end() );
@@ -282,18 +295,18 @@ ADS_TEST( "sorting-networks" )
   }
  Ints Z = { 1 , 0 };
  CHECK_THROWS( applyNetwork( Z , { Comparator( 0 , 2 ) } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK( mergeExchangeNetwork( 0 ).empty() &&
-        mergeExchangeNetwork( 1 ).empty() );
+	mergeExchangeNetwork( 1 ).empty() );
  CHECK( bitonicNetwork( 0 ).empty() && bitonicNetwork( 1 ).empty() &&
-        bitonicNetwork( 2 ).size() == 1 &&
-        mergeExchangeNetwork( 2 ).size() == 1 );
+	bitonicNetwork( 2 ).size() == 1 &&
+	mergeExchangeNetwork( 2 ).size() == 1 );
  CHECK_THROWS( bitonicNetwork( 3 ) , contract_violation );
  Ints E;
  applyNetwork( E , mergeExchangeNetwork( 0 ) );
  CHECK( E.empty() );
  CHECK_THROWS( applyNetwork( E , { Comparator( 0 , 1 ) } ) ,
-               contract_violation );
+	       contract_violation );
  applyNetwork( Z , mergeExchangeNetwork( 2 ) );
  CHECK( Z == Ints( { 0 , 1 } ) );
  }
@@ -309,16 +322,18 @@ ADS_TEST( "sorting-networks" )
 // the sorted and the reversed vectors near its average
 ADS_TEST( "engineered-quicksorts" )
 {
- battery( []( auto & A , auto less ) { pdqSort( A , less ); } , 4096 ,
-          false );
+ battery( []( auto & A , auto less ) { pdqSort( A , less ); } , 4096 , false );
  battery( []( auto & A , auto less ) { dualPivotQuickSort( A , less ); } ,
-          4096 , false );
+	  4096 ,
+	  false );
  battery( []( auto & A , auto less ) { threeWayQuickSort( A , less ); } ,
-          4096 , false );
+	  4096 ,
+	  false );
  long c = 0;
  auto count = [ & ]( int a , int b ) {
   c += ! checkingContract();
-  return( a < b ); };
+  return( a < b );
+  };
  Ints S( 100000 );
  std::iota( S.begin() , S.end() , 0 );
  pdqSort( S , count );
@@ -328,25 +343,27 @@ ADS_TEST( "engineered-quicksorts" )
  c = 0;
  pdqSort( R , count );
  CHECK( std::is_sorted( R.begin() , R.end() ) && c < 4 * 100000 );
- Ints K( 100000 );                               // few distinct keys
+ Ints K( 100000 );  // few distinct keys
  std::mt19937 g( 11 );
- for( auto & x : K ) x = int( g() % 3 );
+ for( auto & x : K )
+  x = int( g() % 3 );
  for( auto sort : { pdqSort< int , decltype( count ) > ,
-                    dualPivotQuickSort< int , decltype( count ) > ,
-                    threeWayQuickSort< int , decltype( count ) > } ) {
+		    dualPivotQuickSort< int , decltype( count ) > ,
+		    threeWayQuickSort< int , decltype( count ) > } ) {
   Ints A = K;
   c = 0;
   sort( A , count );
   CHECK( std::is_sorted( A.begin() , A.end() ) && c < 40 * 100000 );
   }
- Ints Q( 100000 , 7 );                           // the three-way partition
- c = 0;                                          // of the book: all equal
- threeWayQuickSort( Q , count );                 // in one partition, at
- CHECK( Q == Ints( 100000 , 7 ) && c <= 2 * 100000 );   // most 2 per item
- Ints O( 100000 ) , D( 100000 );                 // organ pipe, sorted and
- for( int i = 0 ; i < 100000 ; ++i ) {           // reversed: the random
-  O[ i ] = std::min( i , 99999 - i );            // pivots keep them near
-  D[ i ] = 99999 - i;                            // 2 n ln n on average
+ Ints Q( 100000 , 7 );            // the three-way partition
+ c = 0;                          // of the book: all equal
+ threeWayQuickSort( Q , count );  // in one partition, at
+ CHECK( Q == Ints( 100000 , 7 ) && c <= 2 * 100000 );  // most 2 per item
+ Ints O( 100000 ) ,
+   D( 100000 );                       // organ pipe, sorted and
+ for( int i = 0 ; i < 100000 ; ++i ) {  // reversed: the random
+  O[ i ] = std::min( i , 99999 - i );  // pivots keep them near
+  D[ i ] = 99999 - i;                 // 2 n ln n on average
   }
  for( const Ints & X : { O , S , D } ) {
   Ints A = X , E = X;
@@ -355,9 +372,9 @@ ADS_TEST( "engineered-quicksorts" )
   std::sort( E.begin() , E.end() );
   CHECK( A == E && c < 4 * 100000 * 17 );
   }
- const int n = 20000;                 // the adversary of McIlroy: the keys
- {                                    // fixed only when compared, so that
-  std::vector< int > val( n , n );    // each pivot is a smallest item
+ const int n = 20000;              // the adversary of McIlroy: the keys
+ {                                 // fixed only when compared, so that
+  std::vector< int > val( n , n );  // each pivot is a smallest item
   int solid = 0 , cand = -1;
   long cmp = 0;
   auto adv = [ & ]( int x , int y ) {
@@ -365,16 +382,20 @@ ADS_TEST( "engineered-quicksorts" )
     ++cmp;
     if( ( val[ x ] == n ) && ( val[ y ] == n ) )
      val[ x == cand ? x : y ] = solid++;
-    if( val[ x ] == n ) cand = x;
-    else if( val[ y ] == n ) cand = y;
+    if( val[ x ] == n )
+     cand = x;
+    else if( val[ y ] == n )
+     cand = y;
     }
-   return( val[ x ] < val[ y ] ); };
+   return( val[ x ] < val[ y ] );
+   };
   Ints A( n );
   std::iota( A.begin() , A.end() , 0 );
   pdqSort( A , adv );
   CHECK( std::is_sorted( A.begin() , A.end() , [ & ]( int x , int y ) {
-          return( val[ x ] < val[ y ] ); } ) );
-  CHECK( cmp < 6L * n * 15 );         // n log n, not n^2 / 4
+   return( val[ x ] < val[ y ] );
+   } ) );
+  CHECK( cmp < 6L * n * 15 );  // n log n, not n^2 / 4
   }
  }
 
@@ -385,17 +406,18 @@ ADS_TEST( "engineered-quicksorts" )
 ADS_TEST( "run-sorts" )
 {
  battery( []( auto & A , auto less ) { powerSort( A , less ); } , 4096 ,
-          true );
+	  true );
  long c = 0;
  auto count = [ & ]( int a , int b ) {
   c += ! checkingContract();
-  return( a < b ); };
+  return( a < b );
+  };
  Ints S( 100000 );
  std::iota( S.begin() , S.end() , 0 );
  std::size_t runs = 0;
  powerSort( S , count , &runs );
  CHECK( runs == 1 && c < 100000 );
- Ints T( 100000 );                               // two runs interleaved
+ Ints T( 100000 );  // two runs interleaved
  for( int i = 0 ; i < 50000 ; ++i ) {
   T[ i ] = 2 * i;
   T[ 50000 + i ] = 2 * i + 1;
@@ -405,23 +427,24 @@ ADS_TEST( "run-sorts" )
   c = 0;
   powerSort( A , count , &runs );
   CHECK( std::is_sorted( A.begin() , A.end() ) && runs == 2 &&
-         c <= 2 * 100000 + 64 );   // n - 1 to find the runs, n - 1 to merge
+	 c <= 2 * 100000 + 64 );  // n - 1 to find the runs, n - 1 to merge
   }
- Ints U( 100000 );                               // two runs, one after
- for( int i = 0 ; i < 100000 ; ++i ) U[ i ] = ( i + 50000 ) % 100000;
+ Ints U( 100000 );  // two runs, one after
+ for( int i = 0 ; i < 100000 ; ++i )
+  U[ i ] = ( i + 50000 ) % 100000;
  c = 0;
  powerSort( U , count );
  CHECK( std::is_sorted( U.begin() , U.end() ) && c < 100000 + 200 );
  Ints E , D( 100000 ) , Q( 100000 , 3 );
- std::iota( D.rbegin() , D.rend() , 0 );        // strictly decreasing
+ std::iota( D.rbegin() , D.rend() , 0 );  // strictly decreasing
  powerSort( E , count , &runs );
  CHECK( runs == 0 && E.empty() );
  Ints A = D , B = Q;
  c = 0;
- powerSort( A , count , &runs );                 // one run, reversed
+ powerSort( A , count , &runs );  // one run, reversed
  CHECK( runs == 1 && std::is_sorted( A.begin() , A.end() ) && c < 100000 );
  c = 0;
- powerSort( B , count , &runs );                 // equals: one run
+ powerSort( B , count , &runs );  // equals: one run
  CHECK( runs == 1 && B == Q && c < 100000 );
  }
 
@@ -437,15 +460,23 @@ void radix_of( unsigned seed )
 {
  std::mt19937_64 g( seed );
  constexpr T lo = std::numeric_limits< T >::min() ,
-             hi = std::numeric_limits< T >::max();
+	     hi = std::numeric_limits< T >::max();
  for( std::size_t n : { 0u , 1u , 2u , 7u , 33u , 100u , 5000u } ) {
   std::vector< T > A( n );
-  for( auto & x : A ) x = T( g() );
-  if( n > 5 ) { A[ 3 ] = lo; A[ 4 ] = hi; A[ 5 ] = T( 0 ); }
-  if( n == 2 ) { A[ 0 ] = hi; A[ 1 ] = lo; }
-  for( const auto & X : { A , std::vector< T >( n , lo ) ,
-                          std::vector< T >( n , hi ) } ) {
-   auto B = X , C = X , D = X;                 // also all equal
+  for( auto & x : A )
+   x = T( g() );
+  if( n > 5 ) {
+   A[ 3 ] = lo;
+   A[ 4 ] = hi;
+   A[ 5 ] = T( 0 );
+   }
+  if( n == 2 ) {
+   A[ 0 ] = hi;
+   A[ 1 ] = lo;
+   }
+  for( const auto & X :
+       { A , std::vector< T >( n , lo ) , std::vector< T >( n , hi ) } ) {
+   auto B = X , C = X , D = X;  // also all equal
    radixSort( B );
    americanFlagSort( C );
    std::sort( D.begin() , D.end() );
@@ -466,8 +497,12 @@ ADS_TEST( "radix-sorts" )
  std::mt19937 g( 12 );
  std::uniform_real_distribution< double > u( -1e6 , 1e6 );
  std::vector< double > D( 5000 );
- for( auto & x : D ) x = u( g );
- D[ 0 ] = -0.0; D[ 1 ] = 0.0; D[ 2 ] = -1e300; D[ 3 ] = 1e-300;
+ for( auto & x : D )
+  x = u( g );
+ D[ 0 ] = -0.0;
+ D[ 1 ] = 0.0;
+ D[ 2 ] = -1e300;
+ D[ 3 ] = 1e-300;
  auto E = D;
  radixSort( D );
  std::sort( E.begin() , E.end() );
@@ -476,28 +511,34 @@ ADS_TEST( "radix-sorts" )
  radixSort( F );
  CHECK( F == std::vector< float >( { -2.0f , -0.5f , 0.0f , 3.5f , 7.0f } ) );
  const double inf = std::numeric_limits< double >::infinity() ,
-              nan = std::numeric_limits< double >::quiet_NaN() ,
-              den = std::numeric_limits< double >::denorm_min();
- const std::vector< double > G = { 1.0 , nan , -0.0 , inf , -inf , 0.0 ,
-                                   -den , den , std::copysign( nan , -1.0 ) ,
-                                   -1.0 };
- const std::vector< double > order = { -inf , -1.0 , -den , -0.0 , 0.0 ,
-                                       den , 1.0 , inf };
+	      nan = std::numeric_limits< double >::quiet_NaN() ,
+	      den = std::numeric_limits< double >::denorm_min();
+ const std::vector< double > G = {
+  1.0 , nan , -0.0 , inf , -inf , 0.0 , -den , den ,
+  std::copysign( nan , -1.0 ) , -1.0
+  };
+ const std::vector< double > order = { -inf , -1.0 , -den , -0.0 ,
+				       0.0 ,  den ,  1.0 ,  inf };
  for( int k = 0 ; k < 2 ; ++k ) {
   auto H = G;
-  if( k == 0 ) radixSort( H ); else americanFlagSort( H );
+  if( k == 0 )
+   radixSort( H );
+  else
+   americanFlagSort( H );
   CHECK( std::isnan( H[ 0 ] ) && std::signbit( H[ 0 ] ) &&
-         std::isnan( H[ 9 ] ) && ! std::signbit( H[ 9 ] ) );
+	 std::isnan( H[ 9 ] ) && ! std::signbit( H[ 9 ] ) );
   CHECK( std::equal( order.begin() , order.end() , H.begin() + 1 ) &&
-         std::signbit( H[ 4 ] ) && ! std::signbit( H[ 5 ] ) );
+	 std::signbit( H[ 4 ] ) && ! std::signbit( H[ 5 ] ) );
   }
  using P = std::pair< unsigned , int >;
  std::vector< P > R;
- for( int i = 0 ; i < 3000 ; ++i ) R.emplace_back( unsigned( g() % 50 ) , i );
+ for( int i = 0 ; i < 3000 ; ++i )
+  R.emplace_back( unsigned( g() % 50 ) , i );
  auto Q = R;
  radixSortBy( R , []( const P & p ) { return( p.first ); } );
  std::stable_sort( Q.begin() , Q.end() , []( const P & a , const P & b ) {
-  return( a.first < b.first ); } );
+  return( a.first < b.first );
+  } );
  CHECK( R == Q );
  std::vector< P > none;
  radixSortBy( none , []( const P & p ) { return( p.first ); } );
@@ -505,12 +546,12 @@ ADS_TEST( "radix-sorts" )
  constexpr auto top = std::numeric_limits< std::uint64_t >::max();
  std::vector< std::uint64_t > K = { top , 0 , top - 1 , 1 , top };
  radixSortBy( K , []( std::uint64_t x ) { return( x ); } );
- CHECK( K == std::vector< std::uint64_t >( { 0 , 1 , top - 1 , top ,
-                                             top } ) );
+ CHECK( K == std::vector< std::uint64_t >( { 0 , 1 , top - 1 , top , top } ) );
  std::vector< std::string > W;
  for( int i = 0 ; i < 3000 ; ++i ) {
   std::string s;
-  for( int k = int( g() % 12 ) ; k > 0 ; --k ) s += char( 'a' + g() % 3 );
+  for( int k = int( g() % 12 ) ; k > 0 ; --k )
+   s += char( 'a' + g() % 3 );
   W.push_back( s );
   }
  W.push_back( "" );
@@ -522,11 +563,11 @@ ADS_TEST( "radix-sorts" )
  CHECK( W == V && M == V );
  std::vector< std::string > X;
  const std::string big( 300 , 'q' );
- for( std::size_t l = 0 ; l <= 300 ; l += 7 )   // the prefixes of a string
+ for( std::size_t l = 0 ; l <= 300 ; l += 7 )  // the prefixes of a string
   X.push_back( big.substr( 0 , l ) );
- for( int i = 0 ; i < 40 ; ++i )                 // equal long strings
+ for( int i = 0 ; i < 40 ; ++i )  // equal long strings
   X.push_back( std::string( 2000 , 'z' ) );
- for( const char * s : { "a\0b" , "a\0\0" , "\0\0" } )   // '\0' inside
+ for( const char * s : { "a\0b" , "a\0\0" , "\0\0" } )  // '\0' inside
   X.push_back( std::string( s , 3 ) );
  X.push_back( std::string( "a\0" , 2 ) );
  X.push_back( std::string( 1 , '\0' ) );
@@ -534,8 +575,7 @@ ADS_TEST( "radix-sorts" )
  X.push_back( "" );
  std::shuffle( X.begin() , X.end() , g );
  for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) , X.size() } ) {
-  std::vector< std::string > Y( X.begin() , X.begin() + n ) , Y2 = Y ,
-                             Y3 = Y;
+  std::vector< std::string > Y( X.begin() , X.begin() + n ) , Y2 = Y , Y3 = Y;
   msdRadixSort( Y );
   multikeyQuickSort( Y2 );
   std::sort( Y3.begin() , Y3.end() );
@@ -560,70 +600,84 @@ void flag_of( unsigned seed )
  std::mt19937_64 g( seed );
  auto bits = []( const std::vector< T > & A ) {
   std::vector< U > K( A.size() );
-  for( std::size_t i = 0 ; i < A.size() ; ++i ) K[ i ] = radixKey( A[ i ] );
-  return( K ); };
+  for( std::size_t i = 0 ; i < A.size() ; ++i )
+   K[ i ] = radixKey( A[ i ] );
+  return( K );
+  };
  auto check = [ & ]( std::vector< T > A ) {
   auto R = bits( A );
   std::sort( R.begin() , R.end() );
   americanFlagSort( A );
   CHECK( bits( A ) == R );
   };
- auto of = [ & ]( U k ) {                   // the number of key k
+ auto of = [ & ]( U k ) {  // the number of key k
   if constexpr( std::is_floating_point_v< T > ) {
    constexpr U sign = U( U( 1 ) << ( 8 * W - 1 ) );
    return( std::bit_cast< T >( U( ( k & sign ) ? ( k ^ sign ) : ~k ) ) );
    }
   else
-   return( T( k ^ ( std::is_signed_v< T > ? U( U( 1 ) << ( 8 * W - 1 ) )
-                                          : U( 0 ) ) ) );
+   return( T(
+     k ^ ( std::is_signed_v< T > ? U( U( 1 ) << ( 8 * W - 1 ) ) : U( 0 ) ) ) );
   };
  const std::size_t f = kFlagSmall;
- for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) , f - 1 , f ,
-                        f + 1 , 3 * f + 5 } ) {
+ for( std::size_t n :
+      { std::size_t( 0 ) , std::size_t( 1 ) , f - 1 , f , f + 1 ,
+	3 * f + 5 } ) {
   std::vector< std::vector< U > > K( 9 , std::vector< U >( n ) );
   for( std::size_t i = 0 ; i < n ; ++i ) {
    const U r = U( g() );
-   K[ 0 ][ i ] = r;                                    // random
-   K[ 1 ][ i ] = U( i );                               // sorted
-   K[ 2 ][ i ] = U( ( n - i ) / 3 );                   // non-increasing
+   K[ 0 ][ i ] = r;                   // random
+   K[ 1 ][ i ] = U( i );              // sorted
+   K[ 2 ][ i ] = U( ( n - i ) / 3 );  // non-increasing
    K[ 3 ][ i ] = W > 2 ? U( ( U( n - i ) << ( 8 * W - 16 ) ) | ( n - i ) )
-                       : U( n - i );           // strictly decreasing
-   K[ 4 ][ i ] = U( U( r & 0xFF ) << ( 8 * ( W - 1 ) ) );   // one byte
-   K[ 5 ][ i ] = U( r & 0x0F );                        // the low byte
-   K[ 6 ][ i ] = W > 1 ? U( ( r & 0x3 ) | ( U( r >> 8 & 0x3 ) <<
-                                            ( 8 * ( W - 1 ) ) ) )
-                       : U( r );                       // bytes far apart
-   K[ 7 ][ i ] = W > 1 ? U( ( U( 0x5A ) << ( 8 * ( W - 1 ) ) ) |
-                            ( r >> 8 ) ) : U( 7 );     // the top shared
-   K[ 8 ][ i ] = U( 42 );                              // all equal
+		       : U( n - i );  // strictly decreasing
+   K[ 4 ][ i ] = U( U( r & 0xFF ) << ( 8 * ( W - 1 ) ) );  // one byte
+   K[ 5 ][ i ] = U( r & 0x0F );                            // the low byte
+   K[ 6 ][ i ] =
+     W > 1 ? U( ( r & 0x3 ) | ( U( r >> 8 & 0x3 ) << ( 8 * ( W - 1 ) ) ) )
+	   : U( r );  // bytes far apart
+   K[ 7 ][ i ] = W > 1 ? U( ( U( 0x5A ) << ( 8 * ( W - 1 ) ) ) | ( r >> 8 ) )
+		       : U( 7 );  // the top shared
+   K[ 8 ][ i ] = U( 42 );         // all equal
    }
-  if( f + 1 == n ) {                         // a bucket of kFlagSmall
+  if( f + 1 == n ) {  // a bucket of kFlagSmall
    for( std::size_t i = 0 ; i < n ; ++i )
     K[ 0 ][ i ] = W > 1 ? U( ( U( i == 0 ) << ( 8 * ( W - 1 ) ) ) |
-                             ( U( g() ) & U( 0xFFFF ) ) ) : U( g() );
+			     ( U( g() ) & U( 0xFFFF ) ) )
+			: U( g() );
    }
   for( const auto & k : K ) {
    std::vector< T > A( n );
-   for( std::size_t i = 0 ; i < n ; ++i ) A[ i ] = of( k[ i ] );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    A[ i ] = of( k[ i ] );
    check( A );
    }
   }
  if constexpr( std::is_floating_point_v< T > ) {
   constexpr T inf = std::numeric_limits< T >::infinity() ,
-              nan = std::numeric_limits< T >::quiet_NaN() ,
-              den = std::numeric_limits< T >::denorm_min();
-  const T odd[] = { -T( 0 ) , T( 0 ) , inf , -inf , den , -den , nan ,
-                    std::copysign( nan , T( -1 ) ) ,
-                    std::numeric_limits< T >::max() ,
-                    std::numeric_limits< T >::lowest() };
+	      nan = std::numeric_limits< T >::quiet_NaN() ,
+	      den = std::numeric_limits< T >::denorm_min();
+  const T odd[] = { -T( 0 ) ,
+		    T( 0 ) ,
+		    inf ,
+		    -inf ,
+		    den ,
+		    -den ,
+		    nan ,
+		    std::copysign( nan , T( -1 ) ) ,
+		    std::numeric_limits< T >::max() ,
+		    std::numeric_limits< T >::lowest() };
   for( std::size_t n : { f / 2 , 3 * f } ) {
    std::vector< T > A( n );
    std::uniform_real_distribution< T > u( -2 , 2 );
-   for( auto & x : A ) x = u( g );
-   for( std::size_t i = 0 ; i < n ; i += 7 ) A[ i ] = odd[ g() % 10 ];
+   for( auto & x : A )
+    x = u( g );
+   for( std::size_t i = 0 ; i < n ; i += 7 )
+    A[ i ] = odd[ g() % 10 ];
    check( A );
-   std::vector< T > B( n );                  // a shared top byte, and
-   for( auto & x : B ) x = odd[ g() % 3 ];   // the zeros and inf alone
+   std::vector< T > B( n );  // a shared top byte, and
+   for( auto & x : B )
+    x = odd[ g() % 3 ];  // the zeros and inf alone
    check( B );
    }
   }
@@ -650,18 +704,20 @@ ADS_TEST( "dispatch" )
 {
  battery( []( auto & A , auto less ) { sort( A , less ); } , 4096 , false );
  battery( []( auto & A , auto less ) { stableSort( A , less ); } , 4096 ,
-          true );
+	  true );
  std::mt19937 g( 13 );
  for( std::size_t n : { 10u , 600u , 20000u } ) {
   Ints A( n );
-  for( auto & x : A ) x = int( g() % 2000001 ) - 1000000;
+  for( auto & x : A )
+   x = int( g() % 2000001 ) - 1000000;
   Ints B = A , C = A;
   sort( A );
   stableSort( C );
   std::sort( B.begin() , B.end() );
   CHECK( A == B && C == B );
   std::vector< std::string > S( n );
-  for( auto & s : S ) s = std::to_string( g() % 1000 );
+  for( auto & s : S )
+   s = std::to_string( g() % 1000 );
   auto T = S , U = S;
   sort( S );
   stableSort( U );
@@ -669,12 +725,13 @@ ADS_TEST( "dispatch" )
   CHECK( S == T && U == T );
   }
  Ints R = { 3 , 1 , 2 };
- sort( R , std::greater<>() );                   // not the natural order
+ sort( R , std::greater<>() );  // not the natural order
  CHECK( R == Ints( { 3 , 2 , 1 } ) );
  for( std::size_t n : { kRadix - 1 , kRadix , kRadix + 1 } ) {
-  using L = long long;                           // around the threshold
+  using L = long long;  // around the threshold
   std::vector< L > A( n );
-  for( auto & x : A ) x = L( g() ) - L( g() );
+  for( auto & x : A )
+   x = L( g() ) - L( g() );
   A[ 0 ] = std::numeric_limits< L >::max();
   A[ 1 ] = std::numeric_limits< L >::min();
   auto B = A , C = A;
@@ -682,11 +739,11 @@ ADS_TEST( "dispatch" )
   stableSort( C );
   std::sort( B.begin() , B.end() );
   CHECK( A == B && C == B );
-  Ints S( n ) , D( n ) , Q( n );                 // the presorted ones
+  Ints S( n ) , D( n ) , Q( n );  // the presorted ones
   for( std::size_t i = 0 ; i < n ; ++i ) {
    S[ i ] = int( i / 3 );
    D[ i ] = int( n - i );
-   Q[ i ] = int( ( n - i ) / 3 );                // decreasing, not strictly
+   Q[ i ] = int( ( n - i ) / 3 );  // decreasing, not strictly
    }
   for( const auto & X : { S , D , Q } ) {
    Ints Y = X , Z = X , W = X;
@@ -698,16 +755,17 @@ ADS_TEST( "dispatch" )
   }
  for( std::size_t n : { kStrings - 1 , kStrings } ) {
   std::vector< std::string > S( n );
-  for( auto & s : S ) s = std::string( g() % 3 , char( 'a' + g() % 2 ) );
+  for( auto & s : S )
+   s = std::string( g() % 3 , char( 'a' + g() % 2 ) );
   auto T = S , U = S;
   sort( S );
   stableSort( U );
   std::sort( T.begin() , T.end() );
   CHECK( S == T && U == T );
   }
- std::vector< double > Z( 1000 );                // -0 and +0 are equal:
- for( std::size_t i = 1 ; i < Z.size() ; ++i )   // stableSort keeps their
-  Z[ i ] = ( i % 3 ) ? 0.0 : -0.0;               // order, also by radix
+ std::vector< double > Z( 1000 );             // -0 and +0 are equal:
+ for( std::size_t i = 1 ; i < Z.size() ; ++i )  // stableSort keeps their
+  Z[ i ] = ( i % 3 ) ? 0.0 : -0.0;            // order, also by radix
  Z[ 0 ] = 1.0;
  auto Zs = Z;
  stableSort( Z );
@@ -728,27 +786,44 @@ ADS_TEST( "dispatch" )
 ADS_TEST( "pdq-edges" )
 {
  using R = std::pair< int , std::size_t >;
- auto byKey = []( const R & a , const R & b ) {
-  return( a.first < b.first ); };
+ auto byKey = []( const R & a , const R & b ) { return( a.first < b.first ); };
  std::mt19937 g( 31 );
- for( std::size_t n : { 0u , 1u , 2u , 23u , 24u , 25u , 127u , 128u ,
-                        129u , 191u , 192u , 193u , 257u } )
+ for( std::size_t n :
+      { 0u , 1u , 2u , 23u , 24u , 25u , 127u , 128u , 129u , 191u , 192u ,
+	193u , 257u } )
   for( int p = 0 ; p < 9 ; ++p ) {
    std::vector< double > D( n );
    for( std::size_t i = 0 ; i < n ; ++i )
     switch( p ) {
-     case( 0 ): D[ i ] = double( std::min( i , n - 1 - i ) ); break;
-     case( 1 ): D[ i ] = double( i % 7 ); break;
-     case( 2 ): D[ i ] = ( g() % 2 ) ? 1e300 : -1e300; break;
-     case( 3 ): D[ i ] = 0.5; break;
-     case( 4 ): D[ i ] = double( n - i ); break;
-     case( 6 ): D[ i ] = double( i ); break;
-     case( 7 ): D[ i ] = i + 1 == n ? 1.0 : 5.0; break;   // one smaller
-     case( 8 ): D[ i ] = i == 0 ? 9.0 : 5.0; break;       // one larger
-     default: D[ i ] = double( g() % 1000 ) - 500;
+     case( 0 ):
+      D[ i ] = double( std::min( i , n - 1 - i ) );
+      break;
+     case( 1 ):
+      D[ i ] = double( i % 7 );
+      break;
+     case( 2 ):
+      D[ i ] = ( g() % 2 ) ? 1e300 : -1e300;
+      break;
+     case( 3 ):
+      D[ i ] = 0.5;
+      break;
+     case( 4 ):
+      D[ i ] = double( n - i );
+      break;
+     case( 6 ):
+      D[ i ] = double( i );
+      break;
+     case( 7 ):
+      D[ i ] = i + 1 == n ? 1.0 : 5.0;
+      break;  // one smaller
+     case( 8 ):
+      D[ i ] = i == 0 ? 9.0 : 5.0;
+      break;  // one larger
+     default:
+      D[ i ] = double( g() % 1000 ) - 500;
      }
    std::vector< R > Q( n );
-   for( std::size_t i = 0 ; i < n ; ++i )        // 1e300 as 1
+   for( std::size_t i = 0 ; i < n ; ++i )  // 1e300 as 1
     Q[ i ] = { int( std::max( -1e3 , std::min( 1e3 , D[ i ] ) ) ) , i };
    auto E = D , F = D;
    auto Q2 = Q;
@@ -759,9 +834,9 @@ ADS_TEST( "pdq-edges" )
    std::stable_sort( Q2.begin() , Q2.end() , byKey );
    CHECK( D == E && F == E );
    CHECK( std::is_sorted( Q.begin() , Q.end() , byKey ) &&
-          detail::samePermutation( Q , Q2 , std::less<>() ) );
+	  detail::samePermutation( Q , Q2 , std::less<>() ) );
    }
- for( int t = 0 ; t < 300 ; ++t ) {              // few distinct keys
+ for( int t = 0 ; t < 300 ; ++t ) {  // few distinct keys
   const std::size_t n = 24 + g() % 3000;
   const unsigned k = std::array< unsigned , 4 >{ 1 , 2 , 3 , 16 }[ t % 4 ];
   std::vector< std::int64_t > I( n );
@@ -783,10 +858,10 @@ ADS_TEST( "pdq-edges" )
   std::stable_sort( Q2.begin() , Q2.end() , byKey );
   CHECK( I == IE && S == SE );
   CHECK( std::is_sorted( Q.begin() , Q.end() , byKey ) &&
-         detail::samePermutation( Q , Q2 , std::less<>() ) );
+	 detail::samePermutation( Q , Q2 , std::less<>() ) );
   }
- for( std::size_t n : { 64u , 1000u , 4096u } ) {   // the median-of-3
-  std::vector< double > K( n );                     // killer
+ for( std::size_t n : { 64u , 1000u , 4096u } ) {  // the median-of-3
+  std::vector< double > K( n );                  // killer
   const std::size_t k = n / 2;
   for( std::size_t i = 0 ; i < k ; ++i ) {
    K[ 2 * i ] = double( i + 1 );
@@ -811,24 +886,28 @@ ADS_TEST( "merge-paths" )
 {
  std::mt19937 g( 21 );
  using D = std::vector< double >;
- auto stableAs = []( const D & A , D B ) {      // the signs too
+ auto stableAs = []( const D & A , D B ) {  // the signs too
   stdStable( B );
   for( std::size_t i = 0 ; i < A.size() ; ++i )
    if( ( A[ i ] != B[ i ] ) ||
        ( std::signbit( A[ i ] ) != std::signbit( B[ i ] ) ) )
     return( false );
-  return( A.size() == B.size() ); };
+  return( A.size() == B.size() );
+  };
  const double v[] = { -1.0 , -0.0 , 0.0 , 1.0 };
- for( std::size_t n : { 0u , 1u , 2u , 23u , 24u , 25u , 48u , 49u ,
-                        511u , 512u , 513u , 20000u } ) {
-  D X( n ) , L;                                  // in disorder, in runs
-  for( auto & x : X ) x = v[ g() % 4 ];
+ for( std::size_t n :
+      { 0u , 1u , 2u , 23u , 24u , 25u , 48u , 49u , 511u , 512u , 513u ,
+	20000u } ) {
+  D X( n ) , L;  // in disorder, in runs
+  for( auto & x : X )
+   x = v[ g() % 4 ];
   for( std::size_t r = 0 ; L.size() < n ; ++r ) {
    D run( std::min< std::size_t >( n - L.size() , 1 + n / 5 ) );
-   for( auto & x : run ) x = v[ g() % 4 ];
+   for( auto & x : run )
+    x = v[ g() % 4 ];
    stdStable( run );
-   if( r % 2 )                                   // strictly decreasing
-    std::reverse( run.begin() , run.end() );     // only if no equals
+   if( r % 2 )                               // strictly decreasing
+    std::reverse( run.begin() , run.end() );  // only if no equals
    L.insert( L.end() , run.begin() , run.end() );
    }
   for( const D & Y : { X , L } ) {
@@ -839,30 +918,42 @@ ADS_TEST( "merge-paths" )
    }
   }
  using R = std::pair< int , std::size_t >;
- auto byKey = []( const R & a , const R & b ) {
-  return( a.first < b.first ); };
- for( std::size_t n : { 0u , 1u , 2u , 23u , 24u , 25u , 100u , 511u ,
-                        512u , 513u , 5000u } )
+ auto byKey = []( const R & a , const R & b ) { return( a.first < b.first ); };
+ for( std::size_t n :
+      { 0u , 1u , 2u , 23u , 24u , 25u , 100u , 511u , 512u , 513u , 5000u } )
   for( int p = 0 ; p < 11 ; ++p ) {
    std::vector< R > Q( n );
    const std::size_t h = n / 2 , L = 6 + std::size_t( p % 3 );
    for( std::size_t i = 0 ; i < n ; ++i ) {
     int k = 0;
     switch( p ) {
-     case( 0 ): k = int( ( n - i ) / 2 ); break;   // descending, equals
-     case( 1 ): k = int( std::min( i , n - 1 - i ) ); break;
-     case( 2 ): k = int( i % 17 ); break;
-     case( 3 ): k = int( i ^ 1 ); break;            // runs of length 2
-     case( 4 ): k = int( g() % 3 ); break;          // runs of 1 and 2
-     case( 5 ): k = 7; break;
-     case( 6 ): k = int( g() % 2 ); break;
-     case( 10 ): {                                  // 64 , then 1
+     case( 0 ):
+      k = int( ( n - i ) / 2 );
+      break;  // descending, equals
+     case( 1 ):
+      k = int( std::min( i , n - 1 - i ) );
+      break;
+     case( 2 ):
+      k = int( i % 17 );
+      break;
+     case( 3 ):
+      k = int( i ^ 1 );
+      break;  // runs of length 2
+     case( 4 ):
+      k = int( g() % 3 );
+      break;  // runs of 1 and 2
+     case( 5 ):
+      k = 7;
+      break;
+     case( 6 ):
+      k = int( g() % 2 );
+      break;
+     case( 10 ): {  // 64 , then 1
       const std::size_t j = i < h ? i : i - h , o = i < h ? 0 : 1;
       k = j < h / 2 ? int( ( j / 64 ) * 128 + 64 * o + j % 64 )
-                    : int( ( 1 << 20 ) + 2 * j + o );
-      }
-      break;
-     default: {                                     // blocks of L
+		    : int( ( 1 << 20 ) + 2 * j + o );
+      } break;
+     default: {  // blocks of L
       const std::size_t j = i < h ? i : i - h;
       k = int( ( j / L ) * 2 * L + ( i < h ? 0 : L ) + j % L );
       }
@@ -875,12 +966,13 @@ ADS_TEST( "merge-paths" )
    std::stable_sort( E.begin() , E.end() , byKey );
    CHECK( B == E && C == E );
    }
- for( int t = 0 ; t < 200 ; ++t ) {             // randomized
+ for( int t = 0 ; t < 200 ; ++t ) {  // randomized
   const std::size_t n = g() % 3000;
   std::vector< R > Q( n );
   const int keys = 1 + int( g() % 50 );
-  for( std::size_t i = 0 ; i < n ; ++i ) Q[ i ] = { int( g() % keys ) , i };
-  if( t % 3 == 1 )                              // partly presorted
+  for( std::size_t i = 0 ; i < n ; ++i )
+   Q[ i ] = { int( g() % keys ) , i };
+  if( t % 3 == 1 )  // partly presorted
    std::sort( Q.begin() , Q.begin() + n / 2 , byKey );
   auto A = Q , E = Q;
   powerSort( A , byKey );
@@ -928,16 +1020,16 @@ ADS_TEST( "dispatch-edges" )
   CHECK( D2 == D && D3 == D && S2 == S && S3 == S );
   }
  for( std::size_t n : { kRadix , std::size_t( 4096 ) } )
-  for( std::size_t r : { std::size_t( 1 ) , kRuns - 1 , kRuns , kRuns + 1 ,
-                         2 * kRuns } ) {
-   Ints A( n );                                  // exactly r runs
+  for( std::size_t r :
+       { std::size_t( 1 ) , kRuns - 1 , kRuns , kRuns + 1 , 2 * kRuns } ) {
+   Ints A( n );  // exactly r runs
    for( std::size_t k = 0 ; k < r ; ++k )
     for( std::size_t i = k * n / r ; i < ( k + 1 ) * n / r ; ++i )
      A[ i ] = int( i - k * n / r );
    std::array< std::size_t , kRuns + 1 > ends;
    const std::size_t found = detail::runs( A , less , kRuns , ends.data() );
    CHECK( found == std::min( r , kRuns + 1 ) );
-   for( std::size_t k = 0 ; k < found ; ++k )   // where they end
+   for( std::size_t k = 0 ; k < found ; ++k )  // where they end
     CHECK( ends[ k ] == ( k + 1 ) * n / r );
    Ints B = A , C = A , E = A;
    sort( B );
@@ -954,13 +1046,13 @@ ADS_TEST( "dispatch-edges" )
    CHECK( S2 == S4 && S3 == S4 );
    }
  for( int trial = 0 ; trial < 300 ; ++trial ) {  // random runs, each
-  const std::size_t n = kRadix + g() % 3000;    // ascending with ties or
-  const std::size_t r = 2 + g() % kRuns;        // strictly descending
-  std::vector< std::size_t > cut;               // 2 .. kRuns + 1 runs
+  const std::size_t n = kRadix + g() % 3000;   // ascending with ties or
+  const std::size_t r = 2 + g() % kRuns;       // strictly descending
+  std::vector< std::size_t > cut;              // 2 .. kRuns + 1 runs
   for( std::size_t k = 1 ; k < r ; ++k )
-   cut.push_back( trial % 3 == 0 ? n - r + k     // runs of 1 at the end
-                  : trial % 3 == 1 ? 2 * k       // runs of 2 at the start
-                  : 1 + g() % ( n - 1 ) );
+   cut.push_back( trial % 3 == 0   ? n - r + k  // runs of 1 at the end
+		  : trial % 3 == 1 ? 2 * k      // runs of 2 at the start
+				   : 1 + g() % ( n - 1 ) );
   cut.push_back( n );
   std::sort( cut.begin() , cut.end() );
   cut.erase( std::unique( cut.begin() , cut.end() ) , cut.end() );
@@ -970,7 +1062,7 @@ ADS_TEST( "dispatch-edges" )
    const bool down = g() % 2;
    for( std::size_t i = lo ; i < c ; ++i )
     V[ i ] = down ? double( c - i ) * 3 : double( ( i - lo ) / 2 ) - 1;
-   if( ! down && ( c - lo > 3 ) )            // a tie of -0 and +0
+   if( ! down && ( c - lo > 3 ) )  // a tie of -0 and +0
     V[ lo + 2 ] = -0.0;
    lo = c;
    }
@@ -983,71 +1075,88 @@ ADS_TEST( "dispatch-edges" )
   auto V2 = V , V3 = V , Vs = V;
   auto A2 = A , A3 = A , As = A;
   auto S2 = S , S3 = S , Ss = S;
-  sort( V2 ); stableSort( V3 ); stdStable( Vs );
-  sort( A2 ); stableSort( A3 ); std::sort( As.begin() , As.end() );
-  sort( S2 ); stableSort( S3 ); std::sort( Ss.begin() , Ss.end() );
+  sort( V2 );
+  stableSort( V3 );
+  stdStable( Vs );
+  sort( A2 );
+  stableSort( A3 );
+  std::sort( As.begin() , As.end() );
+  sort( S2 );
+  stableSort( S3 );
+  std::sort( Ss.begin() , Ss.end() );
   CHECK( V2 == Vs && V3 == Vs && A2 == As && A3 == As && S2 == Ss &&
-         S3 == Ss );
+	 S3 == Ss );
   for( std::size_t i = 0 ; i < n ; ++i )
    CHECK( std::signbit( V3[ i ] ) == std::signbit( Vs[ i ] ) );
   }
- std::vector< double > Z( 1000 );               // strictly decreasing
+ std::vector< double > Z( 1000 );             // strictly decreasing
  for( std::size_t i = 0 ; i < Z.size() ; ++i )  // runs, then -0 and +0
   Z[ i ] = double( 500 - int( i ) );
- for( std::size_t i = 500 ; i < 520 ; ++i ) Z[ i ] = ( i % 2 ) ? -0.0 : 0.0;
+ for( std::size_t i = 500 ; i < 520 ; ++i )
+  Z[ i ] = ( i % 2 ) ? -0.0 : 0.0;
  auto Zs = Z;
  stableSort( Z );
  stdStable( Zs );
  CHECK( Z == Zs );
  for( std::size_t i = 0 ; i < Z.size() ; ++i )
   CHECK( std::signbit( Z[ i ] ) == std::signbit( Zs[ i ] ) );
- for( std::size_t n : { kStrings , kRadix , kRadix + 1 } ) {   // one run,
-  Ints U( n ) , Dn( n );                        // non-decreasing with
-  std::vector< std::string > SU( n ) , SD( n ); // ties, or strictly
-  for( std::size_t i = 0 ; i < n ; ++i ) {      // decreasing: one pass
+ for( std::size_t n : { kStrings , kRadix , kRadix + 1 } ) {  // one run,
+  Ints U( n ) , Dn( n );                         // non-decreasing with
+  std::vector< std::string > SU( n ) , SD( n );  // ties, or strictly
+  for( std::size_t i = 0 ; i < n ; ++i ) {        // decreasing: one pass
    U[ i ] = int( i / 3 );
    Dn[ i ] = int( n - i );
    SU[ i ] = std::to_string( 100000 + i / 3 );
    SD[ i ] = std::to_string( 100000 + n - i );
    }
   std::array< std::size_t , kRuns + 1 > ends;
-  CHECK( detail::runs( U , less , kRuns , ends.data() ) == 1 &&
-         ends[ 0 ] == n &&
-         detail::runs( Dn , less , kRuns , ends.data() ) == 1 &&
-         ends[ 0 ] == n );
+  CHECK( detail::runs( U , less , kRuns ,
+		       ends.data() ) == 1 && ends[ 0 ] == n &&
+	 detail::runs( Dn , less , kRuns ,
+		       ends.data() ) == 1 && ends[ 0 ] == n );
   for( int s = 0 ; s < 2 ; ++s ) {
    Ints U2 = U , D2 = Dn , DE = Dn;
    auto SU2 = SU , SD2 = SD , SDE = SD;
    if( s == 0 ) {
-    sort( U2 ); sort( D2 ); sort( SU2 ); sort( SD2 );
+    sort( U2 );
+    sort( D2 );
+    sort( SU2 );
+    sort( SD2 );
     }
    else {
-    stableSort( U2 ); stableSort( D2 ); stableSort( SU2 ); stableSort( SD2 );
+    stableSort( U2 );
+    stableSort( D2 );
+    stableSort( SU2 );
+    stableSort( SD2 );
     }
    std::sort( DE.begin() , DE.end() );
    std::sort( SDE.begin() , SDE.end() );
    CHECK( U2 == U && D2 == DE && SU2 == SU && SD2 == SDE );
    }
   }
- std::vector< double > Y( kRadix );             // decreasing but for a
+ std::vector< double > Y( kRadix );           // decreasing but for a
  for( std::size_t i = 0 ; i < Y.size() ; ++i )  // tie of -0 and +0: two
-  Y[ i ] = double( 300 - int( i ) );            // runs, not one reversed
+  Y[ i ] = double( 300 - int( i ) );          // runs, not one reversed
  Y[ 300 ] = 0.0;
  Y[ 301 ] = -0.0;
- for( std::size_t i = 302 ; i < Y.size() ; ++i ) Y[ i ] = -double( i );
+ for( std::size_t i = 302 ; i < Y.size() ; ++i )
+  Y[ i ] = -double( i );
  auto Ys = Y;
  stableSort( Y );
  stdStable( Ys );
  CHECK( Y == Ys );
  for( std::size_t i = 0 ; i < Y.size() ; ++i )
   CHECK( std::signbit( Y[ i ] ) == std::signbit( Ys[ i ] ) );
- for( std::size_t k : { 1u , 2u , 16u , 17u , 64u } ) {   // few keys,
+ for( std::size_t k : { 1u , 2u , 16u , 17u , 64u } ) {  // few keys,
   std::vector< double > V( 4096 ) , W( k );
-  for( auto & w : W ) w = ( double( g() ) - 2e9 ) / 7.0;
+  for( auto & w : W )
+   w = ( double( g() ) - 2e9 ) / 7.0;
   W[ 0 ] = -0.0;
-  if( k > 1 ) W[ 1 ] = 0.0;
-  for( auto & x : V ) x = W[ g() % k ];
-  if( k != 17 )                                 // -0 and +0 are wide
+  if( k > 1 )
+   W[ 1 ] = 0.0;
+  for( auto & x : V )
+   x = W[ g() % k ];
+  if( k != 17 )  // -0 and +0 are wide
    CHECK( detail::fewWideKeys( V ) == ( ( k > 1 ) && ( k <= 16 ) ) );
   auto V2 = V , V3 = V;
   sort( V );
@@ -1056,25 +1165,28 @@ ADS_TEST( "dispatch-edges" )
   CHECK( V == V3 && V2 == V3 );
   for( std::size_t i = 0 ; i < V2.size() ; ++i )
    CHECK( std::signbit( V2[ i ] ) == std::signbit( V3[ i ] ) );
-  std::vector< std::uint32_t > U( 4096 );       // narrow: one byte
-  for( auto & x : U ) x = std::uint32_t( g() % k );
+  std::vector< std::uint32_t > U( 4096 );  // narrow: one byte
+  for( auto & x : U )
+   x = std::uint32_t( g() % k );
   CHECK( ! detail::fewWideKeys( U ) );
   }
- std::vector< double > Far( 4096 );             // two values, far apart
- for( auto & x : Far ) x = ( g() % 2 ) ? 1e300 : -1e300;
+ std::vector< double > Far( 4096 );  // two values, far apart
+ for( auto & x : Far )
+  x = ( g() % 2 ) ? 1e300 : -1e300;
  auto Far2 = Far;
  sort( Far );
  std::sort( Far2.begin() , Far2.end() );
  CHECK( Far == Far2 );
- for( int b = 0 ; b < 6 ; ++b )                 // one byte that differs
+ for( int b = 0 ; b < 6 ; ++b )  // one byte that differs
   for( std::size_t n : { 0u , 1u , 2u , 1000u } ) {
    std::vector< std::uint32_t > U( n );
    std::vector< long long > L( n );
    for( std::size_t i = 0 ; i < n ; ++i ) {
     const std::uint32_t x = std::uint32_t( g() % 256 );
     U[ i ] = b < 4 ? ( x << ( 8 * b ) ) : ( b == 4 ? 7u : x % 2 );
-    L[ i ] = b < 4 ? ( ( long long )( x ) << ( 8 * b ) ) :
-             ( b == 4 ? ( x % 2 ? -1 : 0 ) : -( long long )( x % 2 ) - 5 );
+    L[ i ] = b < 4
+	       ? ( ( long long )( x ) << ( 8 * b ) )
+	       : ( b == 4 ? ( x % 2 ? -1 : 0 ) : -( long long )( x % 2 ) - 5 );
     }
    auto U2 = U;
    auto L2 = L;
@@ -1087,14 +1199,14 @@ ADS_TEST( "dispatch-edges" )
  std::vector< std::uint8_t > Small = { 3 , 3 , 3 };
  radixSort( Small );
  CHECK( Small == std::vector< std::uint8_t >( { 3 , 3 , 3 } ) );
- {                                             // the counting sort of
-  std::vector< std::uint8_t > B( 3000 );        // one byte: all 256
-  std::vector< std::int8_t > S( 3000 );         // values, signed, -0
-  std::vector< double > Z( 3000 );              // and +0, and a key that
+ {                                        // the counting sort of
+  std::vector< std::uint8_t > B( 3000 );  // one byte: all 256
+  std::vector< std::int8_t > S( 3000 );   // values, signed, -0
+  std::vector< double > Z( 3000 );        // and +0, and a key that
   std::vector< std::pair< std::uint32_t , std::size_t > > P( 3000 );
-  for( std::size_t i = 0 ; i < B.size() ; ++i ) {   // does not tell the
-   B[ i ] = std::uint8_t( i < 256 ? i : g() );  // item, which stays
-   S[ i ] = std::int8_t( B[ i ] );              // stable
+  for( std::size_t i = 0 ; i < B.size() ; ++i ) {  // does not tell the
+   B[ i ] = std::uint8_t( i < 256 ? i : g() );   // item, which stays
+   S[ i ] = std::int8_t( B[ i ] );               // stable
    Z[ i ] = g() % 2 ? -0.0 : 0.0;
    P[ i ] = { std::uint32_t( g() % 256 ) << 16 , i };
    }
@@ -1105,37 +1217,40 @@ ADS_TEST( "dispatch-edges" )
   radixSort( S );
   radixSort( Z );
   radixSortBy( P , []( const std::pair< std::uint32_t , std::size_t > & x ) {
-   return( x.first ); } );
+   return( x.first );
+   } );
   std::sort( B2.begin() , B2.end() );
   std::sort( S2.begin() , S2.end() );
-  std::stable_sort( P2.begin() , P2.end() , []( const auto & x ,
-                                                const auto & y ) {
-   return( x.first < y.first ); } );
+  std::stable_sort(
+    P2.begin() , P2.end() ,
+    []( const auto & x , const auto & y ) { return( x.first < y.first ); } );
   CHECK( B == B2 && S == S2 && P == P2 );
-  CHECK( std::is_partitioned( Z.begin() , Z.end() , []( double x ) {
-   return( std::signbit( x ) ); } ) && Z.front() == 0.0 );
+  CHECK(
+    std::is_partitioned( Z.begin() , Z.end() ,
+			 []( double x ) { return( std::signbit( x ) ); } ) &&
+    Z.front() == 0.0 );
   }
  const std::string pre( 1000 , 'p' );
- std::string cut = pre;                        // the prefix cut in the
- cut[ 500 ] = 'q';                              // middle, by the last
- for( std::size_t c : { 15u , 16u , 17u , 18u , 40u } ) {   // groups
+ std::string cut = pre;                                // the prefix cut in the
+ cut[ 500 ] = 'q';                                     // middle, by the last
+ for( std::size_t c : { 15u , 16u , 17u , 18u , 40u } ) {  // groups
   std::vector< std::vector< std::string > > T( 10 );
   for( std::size_t i = 0 ; i < c ; ++i ) {
-   T[ 0 ].push_back( "abc" );                   // all equal
-   T[ 1 ].push_back( "abc" );                   // and a longer one
-   T[ 2 ].push_back( "abc" );                   // and a shorter one
-   T[ 3 ].push_back( "" );                      // empty strings
-   T[ 4 ].push_back( pre + char( 'a' + g() % 3 ) );   // shared prefix
+   T[ 0 ].push_back( "abc" );                        // all equal
+   T[ 1 ].push_back( "abc" );                        // and a longer one
+   T[ 2 ].push_back( "abc" );                        // and a shorter one
+   T[ 3 ].push_back( "" );                           // empty strings
+   T[ 4 ].push_back( pre + char( 'a' + g() % 3 ) );  // shared prefix
    T[ 5 ].push_back( std::string( g() % 5 , 'x' ) );  // prefixes
    T[ 6 ].push_back( i % 2 ? "ab" : "abc" );
    T[ 7 ].push_back( pre + "b" );
    T[ 8 ].push_back( pre );
-   T[ 9 ].push_back( std::string( "a\0\xff" , 2 + i % 2 ) );   // bytes 0
-   }                                            // and 255
-  T[ 7 ].push_back( pre + "a" );                // a cut at the last place
+   T[ 9 ].push_back( std::string( "a\0\xff" , 2 + i % 2 ) );  // bytes 0
+   }  // and 255
+  T[ 7 ].push_back( pre + "a" );  // a cut at the last place
   T[ 8 ].push_back( cut );
   T[ 1 ].push_back( "abcd" );
-  T[ 2 ].insert( T[ 2 ].begin() , "ab" );       // the shortest first
+  T[ 2 ].insert( T[ 2 ].begin() , "ab" );  // the shortest first
   T[ 4 ].push_back( pre );
   for( auto & X : T ) {
    auto Y = X , W = X , V = X;
@@ -1180,11 +1295,12 @@ bool totalLess( T a , T b )
 {
  if constexpr( std::is_floating_point_v< T > ) {
   using S = std::conditional_t< sizeof( T ) == 4 , std::int32_t ,
-                                std::int64_t >;
+				std::int64_t >;
   using U = std::make_unsigned_t< S >;
   auto key = []( T x ) {
    const U u = U( bitsOf( x ) );
-   return( S( u ^ ( U( S( u ) >> ( 8 * sizeof( S ) - 1 ) ) >> 1 ) ) ); };
+   return( S( u ^ ( U( S( u ) >> ( 8 * sizeof( S ) - 1 ) ) >> 1 ) ) );
+   };
   return( key( a ) < key( b ) );
   }
  else
@@ -1225,16 +1341,16 @@ void vectorBattery()
  if constexpr( std::is_signed_v< T > )
   ext.push_back( T( -1 ) );
  if constexpr( std::is_floating_point_v< T > )
-  for( T x : { T( -0.0 ) , L::infinity() , -L::infinity() ,
-               L::quiet_NaN() , -L::quiet_NaN() , L::denorm_min() ,
-               -L::denorm_min() } )
+  for( T x : { T( -0.0 ) , L::infinity() , -L::infinity() , L::quiet_NaN() ,
+	       -L::quiet_NaN() , L::denorm_min() , -L::denorm_min() } )
    ext.push_back( x );
  std::vector< std::size_t > sizes;
- for( std::size_t n = 0 ; n <= 600 ; ++n ) sizes.push_back( n );
- for( std::size_t n : { 1023u , 1024u , 1025u , 4095u , 4097u , 20000u ,
-                        100000u } )
+ for( std::size_t n = 0 ; n <= 600 ; ++n )
   sizes.push_back( n );
- std::array< T , 16 > pool;                 // 16 keys of any bits
+ for( std::size_t n : { 1023u , 1024u , 1025u , 4095u , 4097u , 20000u ,
+			100000u } )
+  sizes.push_back( n );
+ std::array< T , 16 > pool;  // 16 keys of any bits
  for( auto & x : pool ) {
   const std::uint64_t r = g();
   std::memcpy( &x , &r , sizeof( T ) );
@@ -1242,30 +1358,50 @@ void vectorBattery()
  for( std::size_t n : sizes )
   for( int p = 0 ; p < 12 ; ++p ) {
    if( ( n <= 600 ) && ( n % 7 != 0 ) && ( p > 1 ) )
-    continue;                               // all sizes on random keys
+    continue;  // all sizes on random keys
    std::vector< T > A( n );
    for( std::size_t i = 0 ; i < n ; ++i ) {
     const std::uint64_t r = g();
     switch( p ) {
-     case( 0 ): std::memcpy( &A[ i ] , &r , sizeof( T ) );   // any bits
-                if constexpr( std::is_floating_point_v< T > )
-                 if( A[ i ] != A[ i ] ) A[ i ] = T( r % 1000 );
-                break;
-     case( 1 ): A[ i ] = T( r % 16 ); break;
-     case( 2 ): A[ i ] = r % 2 ? L::max() : T( 3 ); break;
-     case( 3 ): A[ i ] = L::max(); break;
-     case( 4 ): A[ i ] = T( i ); break;
-     case( 5 ): A[ i ] = T( n - i ); break;
-     case( 6 ): A[ i ] = T( std::min( i , n - 1 - i ) ); break;
-     case( 7 ): A[ i ] = ext[ r % ext.size() ]; break;
-     case( 8 ): A[ i ] = n % 2 ? T( L::max() - T( r % 20 ) ) :   // a few
-                         T( L::lowest() + T( r % 20 ) );   // keys at an end
-                break;
-     case( 11 ): A[ i ] = pool[ r % 16 ]; break;
-     default:   A[ i ] = T( r % 16 );       // a few keys and one apart
+     case( 0 ):
+      std::memcpy( &A[ i ] , &r , sizeof( T ) );  // any bits
+      if constexpr( std::is_floating_point_v< T > )
+       if( A[ i ] != A[ i ] )
+	A[ i ] = T( r % 1000 );
+      break;
+     case( 1 ):
+      A[ i ] = T( r % 16 );
+      break;
+     case( 2 ):
+      A[ i ] = r % 2 ? L::max() : T( 3 );
+      break;
+     case( 3 ):
+      A[ i ] = L::max();
+      break;
+     case( 4 ):
+      A[ i ] = T( i );
+      break;
+     case( 5 ):
+      A[ i ] = T( n - i );
+      break;
+     case( 6 ):
+      A[ i ] = T( std::min( i , n - 1 - i ) );
+      break;
+     case( 7 ):
+      A[ i ] = ext[ r % ext.size() ];
+      break;
+     case( 8 ):
+      A[ i ] = n % 2 ? T( L::max() - T( r % 20 ) ) :  // a few
+		 T( L::lowest() + T( r % 20 ) );      // keys at an end
+      break;
+     case( 11 ):
+      A[ i ] = pool[ r % 16 ];
+      break;
+     default:
+      A[ i ] = T( r % 16 );  // a few keys and one apart
      }
     }
-   if( ( p >= 9 ) && ( p <= 10 ) && ( n > 0 ) )   // inside, or last
+   if( ( p >= 9 ) && ( p <= 10 ) && ( n > 0 ) )  // inside, or last
     A[ p == 9 ? n * 7 / 8 : n - 1 ] = T( 100 );
    CHECK( vectorSortsLike( A ) );
    }
@@ -1281,29 +1417,31 @@ ADS_TEST( "vector-quicksort" )
  vectorBattery< double >();
  vectorBattery< long long >();
  vectorBattery< unsigned long long >();
- std::mt19937_64 g( 92 );                   // the last resort, heapsort,
- for( std::size_t n : { 0u , 1u , 2u , 3u , 100u , 1001u } ) {   // alone
+ std::mt19937_64 g( 92 );  // the last resort, heapsort,
+ for( std::size_t n : { 0u , 1u , 2u , 3u , 100u , 1001u } ) {  // alone
   std::vector< std::int64_t > A( n );
-  for( auto & x : A ) x = std::int64_t( g() );
+  for( auto & x : A )
+   x = std::int64_t( g() );
   auto B = A;
   detail::vqs::heapKeys( A.data() , n );
   std::sort( B.begin() , B.end() );
   CHECK( A == B );
   }
  for( std::size_t n : { 600u , 5000u } ) {  // the recursion with no depth
-  std::vector< std::int32_t > A( n );       // left, at once to heapsort
-  for( auto & x : A ) x = std::int32_t( g() );
+  std::vector< std::int32_t > A( n );      // left, at once to heapsort
+  for( auto & x : A )
+   x = std::int32_t( g() );
   auto B = A;
   std::uint64_t s = 1;
   detail::vqs::quick< detail::vqs::Best< std::int32_t > >( A.data() , n , 0 ,
-                                                          s );
+							   s );
   std::sort( B.begin() , B.end() );
   CHECK( A == B );
   }
  std::vector< double > A = { 2.0 , -0.0 , 0.0 , -0.0 , 1.0 };
- vectorQuickSort( A );                      // -0 before +0
+ vectorQuickSort( A );  // -0 before +0
  CHECK( std::signbit( A[ 0 ] ) && std::signbit( A[ 1 ] ) &&
-        ! std::signbit( A[ 2 ] ) && ( A[ 4 ] == 2.0 ) );
+	! std::signbit( A[ 2 ] ) && ( A[ 4 ] == 2.0 ) );
  }
 
 /// detail::vqs::mergeRuns() of V forward and backward, with the run that
@@ -1316,7 +1454,8 @@ void mergeKeys()
  using K = typename V::K;
  std::mt19937_64 g( 96 );
  std::vector< std::size_t > lens;
- for( std::size_t l = 0 ; l <= 70 ; ++l ) lens.push_back( l );
+ for( std::size_t l = 0 ; l <= 70 ; ++l )
+  lens.push_back( l );
  for( std::size_t l : { 127u , 128u , 129u , 1000u , 4099u } )
   lens.push_back( l );
  for( std::size_t na : lens )
@@ -1325,18 +1464,20 @@ void mergeKeys()
     continue;
    for( int p = 0 ; p < 2 ; ++p ) {
     std::vector< K > A( na ) , B( nb ) , R( na + nb );
-    for( auto & x : A ) x = p ? K( g() % 5 ) : K( g() );
-    for( auto & x : B ) x = p ? K( g() % 5 ) : K( g() );
+    for( auto & x : A )
+     x = p ? K( g() % 5 ) : K( g() );
+    for( auto & x : B )
+     x = p ? K( g() % 5 ) : K( g() );
     std::sort( A.begin() , A.end() );
     std::sort( B.begin() , B.end() );
     std::merge( A.begin() , A.end() , B.begin() , B.end() , R.begin() );
     std::vector< K > F( na + nb ) , D( na + nb );
     std::copy( B.begin() , B.end() , F.begin() + std::ptrdiff_t( na ) );
-    detail::vqs::mergeRuns< V , false >( A.data() , na , F.data() + na ,
-                                         nb , F.data() );
+    detail::vqs::mergeRuns< V , false >( A.data() , na , F.data() + na , nb ,
+					F.data() );
     std::copy( B.begin() , B.end() , D.begin() );
     detail::vqs::mergeRuns< V , true >( A.data() , na , D.data() , nb ,
-                                        D.data() );
+					D.data() );
     CHECK( ( F == R ) && ( D == R ) );
     }
    }
@@ -1347,7 +1488,7 @@ template< class K >
 void mergeBattery()
 {
  using V = detail::vqs::Best< detail::vqs::KeyOf< K > >;
- if constexpr( std::is_same_v< typename V::K , K > )   // its own key
+ if constexpr( std::is_same_v< typename V::K , K > )  // its own key
   mergeKeys< V >();
  }
 
@@ -1357,27 +1498,27 @@ ADS_TEST( "vector-merge" )
  mergeBattery< std::uint32_t >();
  mergeBattery< std::int64_t >();
  mergeBattery< std::uint64_t >();
- std::mt19937_64 g( 97 );                   // sort() on 2 to 17 runs,
- for( std::size_t n : { 600u , 5000u , 70001u } )   // some decreasing
+ std::mt19937_64 g( 97 );                        // sort() on 2 to 17 runs,
+ for( std::size_t n : { 600u , 5000u , 70001u } )  // some decreasing
   for( std::size_t r = 2 ; r <= 17 ; ++r ) {
    std::vector< std::uint32_t > U( n );
    std::vector< std::int64_t > S( n );
    std::size_t at = 0;
    for( std::size_t k = 0 ; k < r ; ++k ) {
-    const std::size_t e = k + 1 == r ? n : at + ( n / r ) +
-                                           ( g() % ( n / r / 2 + 1 ) );
+    const std::size_t e =
+      k + 1 == r ? n : at + ( n / r ) + ( g() % ( n / r / 2 + 1 ) );
     std::vector< std::uint32_t > run;
-    for( ; at < std::min( e , n ) ; ++at ) run.push_back(
-     std::uint32_t( g() % ( k % 3 == 0 ? 7 : 1000000 ) ) );
+    for( ; at < std::min( e , n ) ; ++at )
+     run.push_back( std::uint32_t( g() % ( k % 3 == 0 ? 7 : 1000000 ) ) );
     std::sort( run.begin() , run.end() );
-    if( ( k % 2 == 1 ) && ( std::adjacent_find( run.begin() ,
-                                                run.end() ) == run.end() ) )
-     std::reverse( run.begin() , run.end() );   // strictly decreasing
+    if( ( k % 2 == 1 ) &&
+	( std::adjacent_find( run.begin() , run.end() ) == run.end() ) )
+     std::reverse( run.begin() , run.end() );  // strictly decreasing
     std::copy( run.begin() , run.end() ,
-               U.begin() + std::ptrdiff_t( at - run.size() ) );
+	       U.begin() + std::ptrdiff_t( at - run.size() ) );
     }
    std::vector< double > F( n ) , Z( n );   // negative, and with zeros
-   for( std::size_t i = 0 ; i < n ; ++i ) {   // of either sign
+   for( std::size_t i = 0 ; i < n ; ++i ) {  // of either sign
     S[ i ] = std::int64_t( U[ i ] ) - 500000;
     F[ i ] = double( S[ i ] ) / 7.0;
     Z[ i ] = U[ i ] % 7 == 0 ? ( g() % 2 ? -0.0 : 0.0 ) : F[ i ];
@@ -1407,57 +1548,67 @@ ADS_TEST( "prefix-key-sort" )
   sort( C );
   CHECK( ( A == B ) && ( C == B ) );
   };
- for( std::size_t n : { 0u , 1u , 2u , 3u , 8u , 9u , 100u , 1000u ,
-                        20000u } )
+ for( std::size_t n : { 0u , 1u , 2u , 3u , 8u , 9u , 100u , 1000u , 20000u } )
   for( int p = 0 ; p < 9 ; ++p ) {
    std::vector< std::string > A( n );
    for( std::size_t i = 0 ; i < n ; ++i ) {
     std::string & x = A[ i ];
     const std::size_t len = g() % 24;
     switch( p ) {
-     case( 0 ):                             // random, any length
-      for( std::size_t c = 0 ; c < len ; ++c ) x += char( 'a' + g() % 26 );
+     case( 0 ):  // random, any length
+      for( std::size_t c = 0 ; c < len ; ++c )
+       x += char( 'a' + g() % 26 );
       break;
-     case( 1 ):                             // a long common prefix
+     case( 1 ):  // a long common prefix
       x = std::string( 40 , 'p' );
-      for( std::size_t c = 0 ; c < len ; ++c ) x += char( 'a' + g() % 3 );
+      for( std::size_t c = 0 ; c < len ; ++c )
+       x += char( 'a' + g() % 3 );
       break;
-     case( 2 ): x = "same string"; break;   // all equal
-     case( 3 ):                             // the character 0, any byte
+     case( 2 ):
+      x = "same string";
+      break;     // all equal
+     case( 3 ):  // the character 0, any byte
       for( std::size_t c = 0 ; c < len % 6 ; ++c )
        x += char( g() % 3 == 0 ? 0 : g() % 256 );
       break;
-     case( 4 ): x = std::string( i % 200 , 'a' ) + 'b'; break;   // a ladder
-     case( 5 ): x = std::string( g() % 12 , '\0' ); break;   // zeros alone
-     case( 6 ):                             // few distinct
+     case( 4 ):
+      x = std::string( i % 200 , 'a' ) + 'b';
+      break;  // a ladder
+     case( 5 ):
+      x = std::string( g() % 12 , '\0' );
+      break;     // zeros alone
+     case( 6 ):  // few distinct
       x = "key" + std::to_string( g() % 7 );
       break;
-     case( 7 ):                             // sorted, numbered
+     case( 7 ):  // sorted, numbered
       x = std::to_string( 1000000 + i );
       break;
-     default:                               // empty or one character
-      if( g() % 2 ) x = char( g() % 256 );
+     default:  // empty or one character
+      if( g() % 2 )
+       x = char( g() % 256 );
      }
     }
    check( A );
    }
- std::vector< std::string > L( 3000 );      // long strings that differ
- for( std::size_t i = 0 ; i < L.size() ; ++i )   // only at the end
+ std::vector< std::string > L( 3000 );        // long strings that differ
+ for( std::size_t i = 0 ; i < L.size() ; ++i )  // only at the end
   L[ i ] = std::string( 5000 , 'z' ) + std::to_string( g() % 100000 );
  check( L );
  }
 
 ADS_TEST( "vector-dispatch" )
 {
- for( std::size_t n : { 512u , 513u , 640u , 1000u , 4096u , 4099u ,
-                        16384u , 16385u , 50001u , 140001u } ) {
+ for( std::size_t n : { 512u , 513u , 640u , 1000u , 4096u , 4099u , 16384u ,
+			16385u ,
+			50001u , 140001u } ) {
   const std::size_t q = n / 4;
-  std::vector< std::size_t > at = { 1 , 2 , 31 , 32 , 33 , 34 , 64 , 65 ,
-                                    n - 2 , n - 1 , n - 31 , n - 32 ,
-                                    n - 33 , n - 64 , n - 65 };
-  for( std::size_t d = 0 ; d < 5 ; ++d )   // the middle
+  std::vector< std::size_t > at = { 1 ,      2 ,      31 ,     32 ,     33 ,
+				    34 ,     64 ,     65 ,     n - 2 ,  n - 1 ,
+				    n - 31 , n - 32 , n - 33 , n - 64 ,
+				    n - 65 };
+  for( std::size_t d = 0 ; d < 5 ; ++d )  // the middle
    at.push_back( n / 2 + d - 2 );
-  for( std::size_t s = 1 ; s < 4 ; ++s )   // the borders of the quarters
+  for( std::size_t s = 1 ; s < 4 ; ++s )  // the borders of the quarters
    for( std::size_t d = 0 ; d < 5 ; ++d )
     at.push_back( s * q + d - 2 );
   for( std::size_t j : at ) {
@@ -1466,7 +1617,7 @@ ADS_TEST( "vector-dispatch" )
     U[ i ] = std::int64_t( i );
     D[ i ] = std::int64_t( n - i );
     }
-   std::swap( U[ j ] , U[ j - 1 ] );        // one place out of order
+   std::swap( U[ j ] , U[ j - 1 ] );  // one place out of order
    std::swap( D[ j ] , D[ j - 1 ] );
    for( auto * V : { &U , &D } ) {
     auto W = *V , R = *V;
@@ -1476,24 +1627,26 @@ ADS_TEST( "vector-dispatch" )
     CHECK( ( *V == R ) && ( W == R ) );
     }
    }
-  std::vector< std::int64_t > E( n , 3 );   // all equal: sorted, not
-  sort( E );                                // strictly decreasing
+  std::vector< std::int64_t > E( n , 3 );  // all equal: sorted, not
+  sort( E );                              // strictly decreasing
   CHECK( E == std::vector< std::int64_t >( n , 3 ) );
   }
- std::mt19937_64 g( 94 );                   // -0 and +0 keep their order
- for( std::size_t n : { 10u , 600u , 5000u } )   // in stableSort()
+ std::mt19937_64 g( 94 );                     // -0 and +0 keep their order
+ for( std::size_t n : { 10u , 600u , 5000u } )  // in stableSort()
   for( int p = 0 ; p < 3 ; ++p ) {
    std::vector< double > A( n );
    for( std::size_t i = 0 ; i < n ; ++i )
-    A[ i ] = p == 0 ? ( g() % 2 ? -0.0 : 0.0 ) :
-             p == 1 ? double( std::int64_t( g() % 5 ) - 2 ) * ( g() % 2 ) :
-             double( n - i ) * ( i % 7 == 0 ? 0.0 : 1.0 );
+    A[ i ] = p == 0   ? ( g() % 2 ? -0.0 : 0.0 )
+	     : p == 1 ? double( std::int64_t( g() % 5 ) - 2 ) * ( g() % 2 )
+		      : double( n - i ) * ( i % 7 == 0 ? 0.0 : 1.0 );
    if( p == 1 )
-    for( auto & x : A ) if( x == 0.0 && ( g() % 2 ) ) x = -0.0;
+    for( auto & x : A )
+     if( x == 0.0 && ( g() % 2 ) )
+      x = -0.0;
    auto B = A;
    stableSort( A );
-   std::stable_sort( B.begin() , B.end() , []( double x , double y ) {
-    return( x < y ); } );
+   std::stable_sort( B.begin() , B.end() ,
+		     []( double x , double y ) { return( x < y ); } );
    for( std::size_t i = 0 ; i < n ; ++i )
     CHECK( bitsOf( A[ i ] ) == bitsOf( B[ i ] ) );
    }
@@ -1501,19 +1654,25 @@ ADS_TEST( "vector-dispatch" )
 
 ADS_TEST( "sample-sort" )
 {
- struct Rec { std::uint64_t key; std::uint64_t pad[ 3 ]; };
- auto byKey = []( const Rec & a , const Rec & b ) {
-  return( a.key < b.key ); };
+ struct Rec
+ {
+  std::uint64_t key;
+  std::uint64_t pad[ 3 ];
+  };
+ auto byKey = []( const Rec & a , const Rec & b ) { return( a.key < b.key ); };
  std::mt19937_64 g( 93 );
  for( std::size_t n : { 0u , 1u , 2u , 64u , 65u , 100u , 1000u , 2185u ,
-                        4096u , 4097u , 30000u , 300000u } )
+			4096u , 4097u ,
+			30000u , 300000u } )
   for( int p = 0 ; p < 8 ; ++p ) {
    std::vector< Rec > A( n );
    std::vector< std::uint64_t > U( n );
    std::vector< std::string > S( n );
    for( std::size_t i = 0 ; i < n ; ++i ) {
-    const std::uint64_t k[] = { g() , g() % 16 , g() % 2 , 7 , i , n - i ,
-                                std::min( i , n - 1 - i ) , g() % 1000 };
+    const std::uint64_t k[] = {
+     g() , g() % 16 , g() % 2 , 7 , i , n - i , std::min( i , n - 1 - i ) ,
+     g() % 1000
+     };
     A[ i ] = Rec{ k[ p ] , { i , 0 , 0 } };
     U[ i ] = k[ p ];
     S[ i ] = "k" + std::to_string( k[ p ] % 100003 );
@@ -1525,57 +1684,67 @@ ADS_TEST( "sample-sort" )
    std::stable_sort( B.begin() , B.end() , byKey );
    for( std::size_t i = 0 ; i < n ; ++i )
     CHECK( A[ i ].key == B[ i ].key );
-   sampleSort( U , std::greater<>() );      // another order
+   sampleSort( U , std::greater<>() );  // another order
    std::sort( V.begin() , V.end() , std::greater<>() );
    CHECK( U == V );
-   if( n <= 30000 ) {                       // items that are not bytes
+   if( n <= 30000 ) {  // items that are not bytes
     sampleSort( S );
     std::sort( T.begin() , T.end() );
     CHECK( S == T );
     }
    }
  battery( []( auto & A , auto less ) { sampleSort( A , less ); } , 4096 ,
-          false );
+	  false );
  }
 
 ADS_TEST( "fast-paths" )
 {
  std::mt19937_64 g( 57 );
- struct Rec { std::uint64_t key; std::size_t id; };
- auto byKey = []( const Rec & a , const Rec & b ) {
-  return( a.key < b.key ); };
+ struct Rec
+ {
+  std::uint64_t key;
+  std::size_t id;
+  };
+ auto byKey = []( const Rec & a , const Rec & b ) { return( a.key < b.key ); };
  auto same = []( const std::vector< Rec > & A ,
-                 const std::vector< Rec > & B ) {
+		 const std::vector< Rec > & B ) {
   for( std::size_t i = 0 ; i < A.size() ; ++i )
    if( ( A[ i ].key != B[ i ].key ) || ( A[ i ].id != B[ i ].id ) )
     return( false );
-  return( A.size() == B.size() ); };
- for( std::size_t n : { 0u , 1u , 2u , 3u , 15u , 16u , 17u , 31u , 32u ,
-                        33u , 34u , 63u , 64u , 65u , 1000u , 4097u } )
+  return( A.size() == B.size() );
+  };
+ for( std::size_t n : { 0u , 1u , 2u , 3u , 15u , 16u , 17u , 31u , 32u , 33u ,
+			34u , 63u ,
+			64u , 65u , 1000u , 4097u } )
   for( int p = 0 ; p < 9 ; ++p ) {
    std::vector< Rec > A( n );
    for( std::size_t i = 0 ; i < n ; ++i ) {
-    const std::uint64_t k[] = { g() , g() % 3 , i , n - i , 7 ,
-                                std::min( i , n - 1 - i ) , i % 17 ,
-                                i / 8 * 8 + ( ( i % 8 ) ^ 5 ) ,
-                                ( n - i ) / 8 * 8 + ( ( i % 8 ) ^ 5 ) };
-    A[ i ] = { k[ p ] , i };                     // random, few, sorted,
-    }                                            // reversed, equal, organ,
-   auto B = A;                                   // sawtooth, blocks in
-   stableSort( A , byKey );                      // order and in reverse
+    const std::uint64_t k[] = { g() ,
+				g() % 3 ,
+				i ,
+				n - i ,
+				7 ,
+				std::min( i , n - 1 - i ) ,
+				i % 17 ,
+				i / 8 * 8 + ( ( i % 8 ) ^ 5 ) ,
+				( n - i ) / 8 * 8 + ( ( i % 8 ) ^ 5 ) };
+    A[ i ] = { k[ p ] , i };  // random, few, sorted,
+    }  // reversed, equal, organ,
+   auto B = A;              // sawtooth, blocks in
+   stableSort( A , byKey );  // order and in reverse
    std::stable_sort( B.begin() , B.end() , byKey );
    CHECK( same( A , B ) );
    }
- for( std::size_t n : { 511u , 512u , 513u , 5000u } )   // few keys: 16
-  for( std::uint64_t k : { 1u , 2u , 16u , 17u , 1000u } )   // and 17,
-   for( int rare = 0 ; rare < 3 ; ++rare ) {    // one out of the sample
+ for( std::size_t n : { 511u , 512u , 513u , 5000u } )     // few keys: 16
+  for( std::uint64_t k : { 1u , 2u , 16u , 17u , 1000u } )  // and 17,
+   for( int rare = 0 ; rare < 3 ; ++rare ) {  // one out of the sample
     std::vector< Rec > A( n );
     for( std::size_t i = 0 ; i < n ; ++i )
      A[ i ] = { ( g() % k ) * 1000003 , i };
     if( rare == 1 )
-     A[ n - 1 ].key = 7;                         // at the end
+     A[ n - 1 ].key = 7;  // at the end
     if( rare == 2 )
-     A[ n / 2 ].key = 999999999999;              // the largest
+     A[ n / 2 ].key = 999999999999;  // the largest
     auto B = A , C = A;
     stableSort( A , byKey );
     sort( C , byKey );
@@ -1585,31 +1754,32 @@ ADS_TEST( "fast-paths" )
      CHECK( C[ i ].key == B[ i ].key );
     }
  for( std::size_t n : { 31u , 32u , 33u , 63u , 64u , 65u , 97u , 128u ,
-                        1000u } )
-  for( int t = 0 ; t < 40 ; ++t ) {              // runs of every length
+			1000u } )
+  for( int t = 0 ; t < 40 ; ++t ) {  // runs of every length
    std::vector< double > V( n );
    std::size_t i = 0;
    while( i < n ) {
-    const std::size_t l = std::min< std::size_t >( n - i ,
-                                                  t < 20 ? 30 + g() % 6 :
-                                                  1 + g() % 70 );
+    const std::size_t l =
+      std::min< std::size_t >( n - i , t < 20 ? 30 + g() % 6 : 1 + g() % 70 );
     const bool down = g() % 2;
     for( std::size_t j = 0 ; j < l ; ++j )
      V[ i + j ] = down ? double( l - j ) : double( j / 2 );
     if( ( ! down ) && ( l > 3 ) && ( g() % 2 ) )
-     V[ i + 1 ] = -0.0;                          // a tie of -0 and +0
+     V[ i + 1 ] = -0.0;  // a tie of -0 and +0
     i += l;
     }
    auto less = std::less<>();
    std::array< std::size_t , kRuns + 1 > E , F;
    const std::size_t r = detail::runs( V , less , kRuns , E.data() );
-   std::size_t q = 0;                            // item by item
+   std::size_t q = 0;  // item by item
    for( std::size_t k = 0 ; ( k < n ) && ( q <= kRuns ) ; ++q ) {
     std::size_t j = k + 1;
     if( ( j < n ) && ( V[ j ] < V[ k ] ) )
-     while( ( j < n ) && ( V[ j ] < V[ j - 1 ] ) ) ++j;
+     while( ( j < n ) && ( V[ j ] < V[ j - 1 ] ) )
+      ++j;
     else
-     while( ( j < n ) && ! ( V[ j ] < V[ j - 1 ] ) ) ++j;
+     while( ( j < n ) && ! ( V[ j ] < V[ j - 1 ] ) )
+      ++j;
     F[ q ] = k = j;
     }
    CHECK( r == q && std::equal( E.begin() , E.begin() + r , F.begin() ) );
@@ -1618,11 +1788,11 @@ ADS_TEST( "fast-paths" )
    stdStable( Ws );
    for( std::size_t k = 0 ; k < n ; ++k )
     CHECK( W[ k ] == Ws[ k ] &&
-           std::signbit( W[ k ] ) == std::signbit( Ws[ k ] ) );
+	   std::signbit( W[ k ] ) == std::signbit( Ws[ k ] ) );
    }
- for( int t = 0 ; t < 60 ; ++t ) {               // the shorter run on
-  const std::size_t a = 1 + g() % 3000 , b = 1 + g() % 3000;   // either
-  std::vector< std::pair< int , std::size_t > > P( a + b );    // side
+ for( int t = 0 ; t < 60 ; ++t ) {  // the shorter run on
+  const std::size_t a = 1 + g() % 3000 , b = 1 + g() % 3000;  // either
+  std::vector< std::pair< int , std::size_t > > P( a + b );   // side
   Ints I( a + b );
   for( std::size_t i = 0 ; i < a + b ; ++i ) {
    const int k = int( g() % ( t % 2 ? 7 : 100000 ) );
@@ -1630,7 +1800,8 @@ ADS_TEST( "fast-paths" )
    I[ i ] = k;
    }
   auto first = []( const auto & x , const auto & y ) {
-   return( x.first < y.first ); };
+   return( x.first < y.first );
+   };
   std::stable_sort( P.begin() , P.begin() + a , first );
   std::stable_sort( P.begin() + a , P.end() , first );
   std::sort( I.begin() , I.begin() + a );
@@ -1643,7 +1814,7 @@ ADS_TEST( "fast-paths" )
   std::sort( I.begin() , I.end() );
   CHECK( P2 == P && I2 == I );
   }
- const std::size_t c64 = ( std::size_t( 1 ) << 20 ) / 8;   // the cache
+ const std::size_t c64 = ( std::size_t( 1 ) << 20 ) / 8;  // the cache
  for( std::size_t n : { c64 - 1 , c64 , c64 + 1 , 3 * c64 } )
   for( int p = 0 ; p < 5 ; ++p ) {
    std::vector< long long > L( n );
@@ -1651,15 +1822,16 @@ ADS_TEST( "fast-paths" )
    std::vector< std::uint32_t > U( 2 * n );
    for( std::size_t i = 0 ; i < n ; ++i ) {
     const std::uint64_t x = g();
-    const std::uint64_t k[] = { x , x & 0xFFFFFF ,    // all, 3 bytes,
-                                ( x % 1000 ? 0 : ( x % 7 + 1 ) << 56 ) |
-                                ( x & 0xFFFFFF ) ,    // parts of <= 32,
-                                ( x % 2 ) << 56 | ( x % 2 ) << 49 |
-                                ( x & 0xFFFF00 ) ,    // no split in a
-                                x % 16 };             // part, few
+    const std::uint64_t k[] = { x , x & 0xFFFFFF ,  // all, 3 bytes,
+				( x % 1000 ? 0 : ( x % 7 + 1 ) << 56 ) |
+				  ( x & 0xFFFFFF ) ,  // parts of <= 32,
+				( x % 2 ) << 56 | ( x % 2 ) << 49 |
+				  ( x & 0xFFFF00 ) ,  // no split in a
+				x % 16 };            // part, few
     L[ i ] = ( long long )( k[ p ] );
     Z[ i ] = p == 4 ? double( int( x % 5 ) - 2 ) * ( x % 3 ? 1.0 : 0.0 ) *
-                      ( x % 7 < 3 ? -1.0 : 1.0 ) : double( L[ i ] ) / 1e3;
+			( x % 7 < 3 ? -1.0 : 1.0 )
+		    : double( L[ i ] ) / 1e3;
     U[ 2 * i ] = std::uint32_t( k[ p ] );
     U[ 2 * i + 1 ] = std::uint32_t( k[ p ] >> 8 );
     }
@@ -1676,15 +1848,15 @@ ADS_TEST( "fast-paths" )
    CHECK( L2 == L && L3 == L && U2 == U );
    for( std::size_t i = 0 ; i < n ; ++i )
     CHECK( Z2[ i ] == Z3[ i ] &&
-           std::signbit( Z2[ i ] ) == std::signbit( Z3[ i ] ) );
+	   std::signbit( Z2[ i ] ) == std::signbit( Z3[ i ] ) );
    std::vector< std::pair< std::uint64_t , std::size_t > > P( n );
-   for( std::size_t i = 0 ; i < n ; ++i ) P[ i ] = { L[ ( i * 7919 ) % n ] ,
-                                                    i };
+   for( std::size_t i = 0 ; i < n ; ++i )
+    P[ i ] = { L[ ( i * 7919 ) % n ] , i };
    auto P2 = P;
    radixSortBy( P , []( const auto & x ) { return( x.first ); } );
-   std::stable_sort( P2.begin() , P2.end() , []( const auto & x ,
-                                                 const auto & y ) {
-    return( x.first < y.first ); } );
+   std::stable_sort(
+     P2.begin() , P2.end() ,
+     []( const auto & x , const auto & y ) { return( x.first < y.first ); } );
    CHECK( P == P2 );
    }
  for( std::size_t n : { 15u , 16u , 17u , 18u , 33u , 5000u } )
@@ -1692,11 +1864,13 @@ ADS_TEST( "fast-paths" )
    std::vector< std::string > S( n );
    for( std::size_t i = 0 ; i < n ; ++i ) {
     const std::size_t k = g() % 4;
-    S[ i ] = p == 0 ? "item" + std::string( 12 , char( 'a' + k ) ) :
-             p == 1 ? std::string( "same" ) :
-             p == 2 ? std::string( k , 'z' ) :      // empty, and ended
-                      "ab" + std::string( 1 , char( 'a' + k ) ) +
-                      std::string( g() % 2 , 'q' );
+    S[ i ] =
+      p == 0   ? "item" + std::string( 12 , char( 'a' + k ) )
+      : p == 1 ? std::string( "same" )
+      : p == 2 ? std::string( k , 'z' )
+	       :  // empty, and ended
+	"ab" + std::string( 1 , char( 'a' + k ) ) + std::string( g() % 2 ,
+								 'q' );
     }
    auto S2 = S , S3 = S , S4 = S;
    sort( S2 );
@@ -1711,24 +1885,35 @@ ADS_TEST( "fast-paths" )
 /// random, all equal, few distinct, sorted, reversed, organ pipe, half of
 /// them equal, Zipf, exponential, clustered, the ends of the type
 std::uint64_t learnedKey( int p , std::size_t i , std::size_t n ,
-                          std::mt19937_64 & g )
+			  std::mt19937_64 & g )
 {
  const double u = double( g() >> 11 ) * 0x1p-53;
  switch( p ) {
-  case( 0 ): return( g() );
-  case( 1 ): return( 42 );
-  case( 2 ): return( g() % 16 );
-  case( 3 ): return( i << 20 );
-  case( 4 ): return( ( n - i ) << 20 );
-  case( 5 ): return( std::min( i , n - 1 - i ) << 20 );
-  case( 6 ): return( g() % 2 ? std::uint64_t( 7 ) << 40 : g() >> 1 );
-  case( 7 ): return( std::uint64_t( 1e6 / std::pow( 1 - u , 1 / 1.2 ) ) );
-  case( 8 ): return( std::uint64_t( -std::log( 1 - u ) * 1e12 ) );
-  case( 9 ): return( ( ( g() % 8 ) << 52 ) + g() % 1000 );
+  case( 0 ):
+   return( g() );
+  case( 1 ):
+   return( 42 );
+  case( 2 ):
+   return( g() % 16 );
+  case( 3 ):
+   return( i << 20 );
+  case( 4 ):
+   return( ( n - i ) << 20 );
+  case( 5 ):
+   return( std::min( i , n - 1 - i ) << 20 );
+  case( 6 ):
+   return( g() % 2 ? std::uint64_t( 7 ) << 40 : g() >> 1 );
+  case( 7 ):
+   return( std::uint64_t( 1e6 / std::pow( 1 - u , 1 / 1.2 ) ) );
+  case( 8 ):
+   return( std::uint64_t( -std::log( 1 - u ) * 1e12 ) );
+  case( 9 ):
+   return( ( ( g() % 8 ) << 52 ) + g() % 1000 );
   default: {
    const std::uint64_t r = g() % 4;
-   return( r == 0 ? std::uint64_t( 1 ) << 63 :
-           r == 1 ? ( std::uint64_t( 1 ) << 63 ) - 1 : g() );
+   return( r == 0   ? std::uint64_t( 1 ) << 63
+	    : r == 1 ? ( std::uint64_t( 1 ) << 63 ) - 1
+		     : g() );
    }
   }
  }
@@ -1753,8 +1938,8 @@ void learnedCheck( std::vector< T > A )
 {
  auto R = A , S = A;
  learnedSort( A );
- std::sort( R.begin() , R.end() , []( T x , T y ) {
-  return( radixKey( x ) < radixKey( y ) ); } );
+ std::sort( R.begin() , R.end() ,
+	    []( T x , T y ) { return( radixKey( x ) < radixKey( y ) ); } );
  bool same = A.size() == R.size();
  for( std::size_t i = 0 ; same && ( i < A.size() ) ; ++i )
   same = bitsOf( A[ i ] ) == bitsOf( R[ i ] );
@@ -1775,9 +1960,9 @@ ADS_TEST( "learned-sort" )
  const std::size_t L = 4 * detail::kLearnedBucket;
  std::mt19937_64 g( 95 );
  for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) ,
-                        std::size_t( 2 ) , std::size_t( 100 ) , L - 1 , L ,
-                        L + 1 , std::size_t( 100000 ) ,
-                        std::size_t( 300001 ) } )
+			std::size_t( 2 ) ,
+			std::size_t( 100 ) , L - 1 , L , L + 1 ,
+			std::size_t( 100000 ) , std::size_t( 300001 ) } )
   for( int p = 0 ; p < 11 ; ++p ) {
    std::vector< std::uint64_t > k( n );
    for( std::size_t i = 0 ; i < n ; ++i )
@@ -1800,45 +1985,48 @@ ADS_TEST( "learned-sort" )
    learnedCheck( D );
    learnedCheck( F );
    }
- {                                         // the specials of IEEE 754
+ {  // the specials of IEEE 754
   constexpr double inf = std::numeric_limits< double >::infinity() ,
-                   nan = std::numeric_limits< double >::quiet_NaN() ,
-                   sub = std::numeric_limits< double >::denorm_min();
+		   nan = std::numeric_limits< double >::quiet_NaN() ,
+		   sub = std::numeric_limits< double >::denorm_min();
   for( std::size_t n : { std::size_t( 50 ) , std::size_t( 100000 ) } ) {
    std::vector< double > D( n );
    for( std::size_t i = 0 ; i < n ; ++i ) {
     const std::uint64_t r = g() % 16;
-    D[ i ] = r == 0 ? -0.0 : r == 1 ? 0.0 : r == 2 ? inf : r == 3 ? -inf :
-             r == 4 ? nan : r == 5 ? -nan : r == 6 ? sub * double( g() % 9 ) :
-             double( std::int64_t( g() ) ) / 1e9;
+    D[ i ] = r == 0   ? -0.0
+	     : r == 1 ? 0.0
+	     : r == 2 ? inf
+	     : r == 3 ? -inf
+	     : r == 4 ? nan
+	     : r == 5 ? -nan
+	     : r == 6 ? sub * double( g() % 9 )
+		      : double( std::int64_t( g() ) ) / 1e9;
     }
    learnedCheck( D );
    std::vector< float > F( n );
    for( std::size_t i = 0 ; i < n ; ++i )
     F[ i ] = float( D[ i ] );
    learnedCheck( F );
-   std::vector< double > Z( n );           // -0 and +0 only
+   std::vector< double > Z( n );  // -0 and +0 only
    for( std::size_t i = 0 ; i < n ; ++i )
     Z[ i ] = g() % 2 ? -0.0 : 0.0;
    learnedCheck( Z );
    }
   }
- {                                         // which way the sort went
+ {  // which way the sort went
   std::vector< std::uint64_t > R( 100000 ) , E( 100000 , 5 ) , H( 100000 );
   for( std::size_t i = 0 ; i < R.size() ; ++i ) {
    R[ i ] = g();
    H[ i ] = i % 2 ? 0 : g();
    }
-  CHECK( detail::learnedSortIf( R ) && std::is_sorted( R.begin() ,
-                                                        R.end() ) );
-  CHECK( ! detail::learnedSortIf( E ) );   // few keys: left as they are
+  CHECK( detail::learnedSortIf( R ) && std::is_sorted( R.begin() , R.end() ) );
+  CHECK( ! detail::learnedSortIf( E ) );  // few keys: left as they are
   CHECK( E == std::vector< std::uint64_t >( 100000 , 5 ) );
   auto S = detail::learnedSample( H , 16 * 64 );
   const detail::CdfModel< std::uint64_t > M( S.data() , S.size() , 64 );
   CHECK( M.equality() && M.fits() && M.equal( 1 ) && ! M.equal( 2 ) );
-  CHECK( detail::learnedSortIf( H ) && std::is_sorted( H.begin() ,
-                                                        H.end() ) );
-  std::vector< std::uint64_t > Z( 100000 );   // a heavy tail: no fit
+  CHECK( detail::learnedSortIf( H ) && std::is_sorted( H.begin() , H.end() ) );
+  std::vector< std::uint64_t > Z( 100000 );  // a heavy tail: no fit
   for( auto & x : Z )
    x = ( std::uint64_t( 1 ) << ( g() % 63 ) ) + g() % 1000;
   CHECK( ! detail::learnedSortIf( Z ) );

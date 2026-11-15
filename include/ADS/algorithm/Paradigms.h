@@ -56,7 +56,7 @@
 
 #ifndef __ADS_Paradigms
  #define __ADS_Paradigms
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -72,7 +72,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the enumerative search from the first object \f$ z \f$: the answer
 /// \f$ o( z ) \f$ of the first \f$ z \f$ with \f$ a( z ) \f$, `next( z )`
@@ -90,7 +91,7 @@ namespace ADS {
 /// \f]
 template< class Z , class Next , class Last , class A , class O >
 auto enumerateSearch( Z z , Next && next , Last && last , A && a , O && o )
- -> std::optional< decltype( o( z ) ) >;
+  -> std::optional< decltype( o( z ) ) >;
 
 /// the enumerative optimization: the answer of an admissible object of
 /// \f$ Z \f$ with no admissible one better, i.e., with no \f$ y \f$ such that
@@ -113,10 +114,10 @@ auto enumerateSearch( Z z , Next && next , Last && last , A && a , O && o )
 /// \end{array}}
 /// \f]
 template< class Z , class Next , class Last , class A , class O , class M ,
-          class B >
-auto enumerateOptimize( Z z , Next && next , Last && last , A && a ,
-                        O && o , M && m , B && better )
- -> std::optional< decltype( o( z ) ) >;
+	  class B >
+auto enumerateOptimize( Z z , Next && next , Last && last , A && a , O && o ,
+			M && m , B && better )
+  -> std::optional< decltype( o( z ) ) >;
 
 /// the backtracking from the node \f$ N \f$: `prune( N )` rejects \f$ N \f$
 /// and its subtree, a leaf goes to `visit( N )`, which returns true to stop,
@@ -138,7 +139,7 @@ auto enumerateOptimize( Z z , Next && next , Last && last , A && a ,
 /// \f]
 template< class N , class C , class P , class L , class V >
 bool backtrack( const N & node , C && children , P && prune , L && leaf ,
-                V && visit );
+		V && visit );
 
 /// the greedy scheme: for each of \f$ k \f$ stages, the best of the values
 /// `candidates( i , x )` admissible after the partial solution \f$ x \f$ is
@@ -176,7 +177,7 @@ std::vector< X > greedy( int k , Cand && candidates , Best && best );
 /// \f]
 template< class X , class S , class D , class V , class C >
 auto divideEtImpera( const X & x , S && small , D && direct , V && divide ,
-                     C && combine ) -> decltype( direct( x ) );
+		     C && combine ) -> decltype( direct( x ) );
 
 /// the elements of \f$ X \f$ that are maximal for the partial order
 /// `better( a , b )`, i.e., \f$ a \f$ strictly better than \f$ b \f$
@@ -207,7 +208,7 @@ std::vector< T > maximal( const std::vector< T > & X , B && better );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Paradigms.h included */
+#endif /* Paradigms.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Paradigms.h --------------------------*/

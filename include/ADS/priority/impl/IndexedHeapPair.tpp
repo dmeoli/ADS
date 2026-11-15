@@ -15,11 +15,12 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class K , class Bd , unsigned D >
 inline void IndexedHeapPair< K , Bd , D >::push( int id , const K & k ,
-                                                 const Bd & b )
+					       const Bd & b )
 {
  f_key.push( id , k );
  f_bound.push( id , b );
@@ -28,7 +29,7 @@ inline void IndexedHeapPair< K , Bd , D >::push( int id , const K & k ,
 
 template< class K , class Bd , unsigned D >
 inline void IndexedHeapPair< K , Bd , D >::update( int id , const K & k ,
-                                                   const Bd & b )
+						 const Bd & b )
 {
  ADS_PRE( contains( id ) );
  f_key.update( id , k );

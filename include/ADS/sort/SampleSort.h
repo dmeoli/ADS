@@ -84,7 +84,7 @@
 
 #ifndef __ADS_SampleSort
  #define __ADS_SampleSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -107,7 +107,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the in-place super scalar samplesort of \f$ A \f$ by `less`
 ///
@@ -152,7 +153,7 @@ void sampleSort( std::vector< T > & A , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SampleSort.h included */
+#endif /* SampleSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File SampleSort.h --------------------------*/

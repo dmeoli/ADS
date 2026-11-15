@@ -61,7 +61,7 @@
 
 #ifndef __ADS_Generation
  #define __ADS_Generation
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -80,9 +80,10 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-using Tuple = std::vector< int >;   ///< a tuple, a permutation, a string
+using Tuple = std::vector< int >;  ///< a tuple, a permutation, a string
 
 /// the tuples \f$ ( a_0 , \ldots , a_{n-1} ) \f$ with
 /// \f$ 0 \le a_j < m_j \f$, in lexicographic order, \f$ O( 1 ) \f$
@@ -379,7 +380,7 @@ long nestedParentheses( int n , F && visit );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Generation.h included */
+#endif /* Generation.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File Generation.h --------------------------*/

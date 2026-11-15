@@ -55,7 +55,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
@@ -86,7 +87,7 @@ ADS_TEST( "bucket-queue-cells" )
    R.erase( R.begin() );
    }
  CHECK( Q.size() == R.size() );
- auto it = Q.begin();                       // the order of the extractions
+ auto it = Q.begin();  // the order of the extractions
  for( const auto & e : R ) {
   CHECK( it != Q.end() && *it == std::get< 3 >( e ) );
   ++it;
@@ -96,12 +97,12 @@ ADS_TEST( "bucket-queue-cells" )
   const auto e = Q.popEntry();
   CHECK( e.item == std::get< 3 >( *R.begin() ) );
   CHECK( e.f == std::get< 0 >( *R.begin() ) &&
-         e.g == -std::get< 1 >( *R.begin() ) );
+	 e.g == -std::get< 1 >( *R.begin() ) );
   R.erase( R.begin() );
   }
  CHECK( Q.empty() && Q.begin() == Q.end() );
- Q.push( "a" , 2 , 150 );                   // a layer with a large g,
- CHECK( Q.pop() == "a" );                   // emptied, and filled again
+ Q.push( "a" , 2 , 150 );    // a layer with a large g,
+ CHECK( Q.pop() == "a" );  // emptied, and filled again
  Q.push( "b" , 2 , 0 );
  Q.push( "c" , 2 , 4 );
  CHECK( Q.topG() == 4 && Q.pop() == "c" && Q.topG() == 0 );
@@ -115,14 +116,18 @@ template< class Q >
 void bucketLimits( void )
 {
  const std::int64_t big = std::int64_t( 1 ) << 32;
- {                                             // dense by the 65th run
+ {  // dense by the 65th run
   Q q;
   for( std::int64_t g = 256 ; g < 256 + 63 ; ++g )
    q.push( int( g ) , 0 , g );
-  q.push( -1 , 0 , big );                      // the 64th run
+  q.push( -1 , 0 , big );  // the 64th run
   bool thrown = false;
-  try { q.push( -2 , 0 , 500 ); }
-  catch( const std::length_error & ) { thrown = true; }
+  try {
+   q.push( -2 , 0 , 500 );
+   }
+  catch( const std::length_error & ) {
+   thrown = true;
+   }
   CHECK( thrown && ( q.size() == 64 ) );
   std::size_t n = 0;
   while( ! q.empty() ) {
@@ -132,15 +137,19 @@ void bucketLimits( void )
    }
   CHECK( n == 64 );
   }
- {                                             // into a dense layer
+ {  // into a dense layer
   Q q;
   for( std::int64_t g = 256 ; g < 256 + 65 ; ++g )
    q.push( int( g ) , 0 , g );
   bool thrown = false;
-  try { q.push( -1 , 0 , big ); }
-  catch( const std::length_error & ) { thrown = true; }
+  try {
+   q.push( -1 , 0 , big );
+   }
+  catch( const std::length_error & ) {
+   thrown = true;
+   }
   CHECK( thrown && ( q.size() == 65 ) );
-  q.push( 7 , 0 , 400 );                       // a dense key still taken
+  q.push( 7 , 0 , 400 );  // a dense key still taken
   CHECK( q.size() == 66 );
   std::size_t n = 0;
   while( ! q.empty() ) {
@@ -198,29 +207,29 @@ ADS_TEST( "dial-queue" )
 {
  DialQueue< int > E( 10 );
  CHECK( E.window() == 64 );
- CHECK_THROWS( (void) E.top() , contract_violation );
+ CHECK_THROWS( ( void )E.top() , contract_violation );
  CHECK_THROWS( E.pop() , contract_violation );
- E.push( 0 , 50u );                         // the window from 50
+ E.push( 0 , 50u );  // the window from 50
  CHECK( E.pop() == 0 );
  E.push( 1 , 100u );
  E.push( 2 , 100u );
- E.push( 3 , 113u );                        // the last bucket of the window
- E.push( 4 , 114u );                        // the first beyond it
+ E.push( 3 , 113u );  // the last bucket of the window
+ E.push( 4 , 114u );  // the first beyond it
  CHECK( E.top() == 2 && E.pop() == 2 && E.pop() == 1 );
  CHECK_THROWS( E.push( 5 , 99u ) , contract_violation );
  CHECK( E.topKey() == 113u && E.pop() == 3 && E.pop() == 4 );
  CHECK( E.empty() );
  E.clear();
- E.push( 6 , 7u );                          // any key after clear()
+ E.push( 6 , 7u );  // any key after clear()
  E.push( 7 , 7u + 64u * 5u );
  CHECK( E.pop() == 6 && E.topKey() == 7u + 320u && E.pop() == 7 );
- dial< std::uint32_t >( 1 , 63 , 63 , 5000 );        // in the window
- dial< std::uint32_t >( 2 , 63 , 640 , 5000 );       // overflow
+ dial< std::uint32_t >( 1 , 63 , 63 , 5000 );   // in the window
+ dial< std::uint32_t >( 2 , 63 , 640 , 5000 );  // overflow
  dial< std::uint32_t >( 3 , 1023 , 1000 , 5000 );
  dial< std::uint64_t >( 4 , 1023 , 1000000 , 5000 );
  dial< std::int32_t >( 5 , 100 , 1000 , 5000 );
- dial< std::uint32_t >( 6 , 255 , 255 , 30000 );     // past 1024 items
- dial< std::uint32_t >( 7 , 63 , 0 , 2000 );         // all equal
+ dial< std::uint32_t >( 6 , 255 , 255 , 30000 );  // past 1024 items
+ dial< std::uint32_t >( 7 , 63 , 0 , 2000 );      // all equal
  }
 
 /// the radix heap of digits of B bits against a multiset of ( key , id ),
@@ -284,7 +293,7 @@ ADS_TEST( "radix-heap-floor" )
 ADS_TEST( "radix-heap" )
 {
  RadixHeap< int > E;
- CHECK_THROWS( (void) E.top() , contract_violation );
+ CHECK_THROWS( ( void )E.top() , contract_violation );
  CHECK_THROWS( E.pop() , contract_violation );
  E.push( 1 , 10u );
  E.push( 2 , 10u );
@@ -294,34 +303,34 @@ ADS_TEST( "radix-heap" )
  CHECK_THROWS( E.push( 4 , 9u ) , contract_violation );
  E.push( 4 , 10u );
  CHECK( E.pop() == 4 );
- E.push( 8 , 20u );                         // peekKey() keeps the base,
- CHECK( E.pop() == 1 && E.peekKey() == 20u );   // so 15 may come next
+ E.push( 8 , 20u );                             // peekKey() keeps the base,
+ CHECK( E.pop() == 1 && E.peekKey() == 20u );  // so 15 may come next
  E.push( 9 , 15u );
  CHECK( E.topKey() == 15u && E.pop() == 9 && E.pop() == 8 );
  E.clear();
- E.push( 5 , 0u );                          // any key after clear()
+ E.push( 5 , 0u );  // any key after clear()
  CHECK( E.topKey() == 0u && E.size() == 1 );
 
- RadixHeap< char , std::int64_t , 4 > X;    // the extremes
+ RadixHeap< char , std::int64_t , 4 > X;  // the extremes
  X.push( 'c' , LLONG_MAX );
  X.push( 'a' , LLONG_MIN );
  X.push( 'b' , 0 );
  CHECK( X.pop() == 'a' && X.pop() == 'b' && X.topKey() == LLONG_MAX );
  CHECK( X.pop() == 'c' && X.empty() );
- RadixHeap< int , std::uint8_t , 3 > S;     // a type of 8 bits, rows of
- for( int k = 255 ; k >= 0 ; --k )          // 3 + 3 + 2 bits
+ RadixHeap< int , std::uint8_t , 3 > S;  // a type of 8 bits, rows of
+ for( int k = 255 ; k >= 0 ; --k )       // 3 + 3 + 2 bits
   S.push( k , std::uint8_t( k ) );
  for( int k = 0 ; k < 256 ; ++k )
   CHECK( S.topKey() == k && S.pop() == k );
 
- RadixHeap< std::string , unsigned > N;     // items with a destructor
+ RadixHeap< std::string , unsigned > N;  // items with a destructor
  for( int i = 0 ; i < 100 ; ++i )
   N.push( std::string( 40 , char( 'a' + i % 26 ) ) , unsigned( i % 7 ) );
  CHECK( N.pop().size() == 40 && N.size() == 99 );
 
  for( unsigned limit : { 0u , 1u , 37u , 500u , 4096u , 100000u } ) {
-  RadixHeap< int , unsigned > Q;             // extractBelow() against a
-  std::multiset< unsigned > R;               // multiset, after some pops
+  RadixHeap< int , unsigned > Q;  // extractBelow() against a
+  std::multiset< unsigned > R;   // multiset, after some pops
   std::mt19937 g( limit + 1 );
   for( int i = 0 ; i < 3000 ; ++i ) {
    const unsigned k = unsigned( g() % 5000 );
@@ -334,10 +343,10 @@ ADS_TEST( "radix-heap" )
    R.erase( R.begin() );
    }
   std::multiset< unsigned > out;
-  Q.extractBelow( *R.begin() + limit , [ & ]( int , unsigned k ) {
-   out.insert( k ); } );
+  Q.extractBelow( *R.begin() + limit ,
+		  [ & ]( int , unsigned k ) { out.insert( k ); } );
   std::multiset< unsigned > want( R.begin() ,
-                                  R.lower_bound( *R.begin() + limit ) );
+				  R.lower_bound( *R.begin() + limit ) );
   CHECK( out == want && Q.size() == R.size() - want.size() );
   R.erase( R.begin() , R.lower_bound( *R.begin() + limit ) );
   while( ! R.empty() ) {
@@ -355,7 +364,7 @@ ADS_TEST( "radix-heap" )
  radix< std::uint64_t , 3 >( 6 , std::uint64_t( 1 ) << 40 , 4000 );
  radix< std::int32_t , 4 >( 7 , 1000 , 4000 );
  radix< std::int64_t , 4 >( 8 , std::uint64_t( 1 ) << 40 , 4000 );
- radix< std::uint64_t , 4 >( 9 , 100 , 20000 );   // past 1024 items
+ radix< std::uint64_t , 4 >( 9 , 100 , 20000 );  // past 1024 items
  }
 
 /// the heap H against a map of the priorities by
@@ -365,7 +374,7 @@ template< class H >
 void handled( unsigned seed , int steps , int range )
 {
  H Q;
- std::map< typename H::Handle , int > R;   // handle -> priority
+ std::map< typename H::Handle , int > R;  // handle -> priority
  std::set< std::pair< int , typename H::Handle > > O;
  std::mt19937 g( seed );
  for( int t = 0 ; t < steps ; ++t ) {
@@ -381,9 +390,10 @@ void handled( unsigned seed , int steps , int range )
    std::advance( it , g() % R.size() );
    auto h = it->first;
    const int p = it->second;
-   const int q = ( c == 4 ) ? O.begin()->first - 1 :   // a new minimum
-                 ( c == 5 ) ? p :                      // the same
-                 p - int( g() % unsigned( range ) );
+   const int q = ( c == 4 ) ? O.begin()->first - 1 :  // a new minimum
+		   ( c == 5 ) ? p
+			      :  // the same
+		   p - int( g() % unsigned( range ) );
    O.erase( { p , h } );
    Q.decrease( h , q );
    it->second = q;
@@ -393,7 +403,8 @@ void handled( unsigned seed , int steps , int range )
    CHECK( Q.minPriority() == O.begin()->first );
    const int v = Q.min();
    auto h = std::find_if( R.begin() , R.end() , [ & ]( auto & e ) {
-    return( e.first->value == v && e.second == O.begin()->first ); } );
+    return( e.first->value == v && e.second == O.begin()->first );
+    } );
    CHECK( h != R.end() );
    CHECK( Q.deleteMin() == v );
    O.erase( { h->second , h->first } );
@@ -419,20 +430,20 @@ template< class H , class HS >
 void handled_edges( void )
 {
  H E;
- CHECK_THROWS( (void) E.min() , contract_violation );
+ CHECK_THROWS( ( void )E.min() , contract_violation );
  CHECK_THROWS( E.deleteMin() , contract_violation );
  auto h = E.insert( 7 , 5 );
  CHECK_THROWS( E.decrease( h , 6 ) , contract_violation );
- E.decrease( h , 5 );                       // the root, to the same
+ E.decrease( h , 5 );  // the root, to the same
  E.decrease( h , 1 );
  CHECK( E.min() == 7 && E.minPriority() == 1 && E.size() == 1 );
  CHECK( E.deleteMin() == 7 && E.empty() );
- for( int dir = 0 ; dir < 3 ; ++dir ) {     // sorted, reversed, equal
+ for( int dir = 0 ; dir < 3 ; ++dir ) {  // sorted, reversed, equal
   H Q;
   std::vector< typename H::Handle > hs;
   for( int i = 0 ; i < 300 ; ++i )
    hs.push_back( Q.insert( i , dir == 0 ? i : dir == 1 ? 300 - i : 4 ) );
-  Q.decrease( hs[ 150 ] , -1 );             // a node of the list (Aux)
+  Q.decrease( hs[ 150 ] , -1 );  // a node of the list (Aux)
   CHECK( Q.min() == 150 && Q.deleteMin() == 150 );
   int last = INT_MIN;
   while( ! Q.empty() ) {
@@ -441,8 +452,8 @@ void handled_edges( void )
    Q.deleteMin();
    }
   }
- HS S;                                      // a move, and items with a
- for( int i = 0 ; i < 50 ; ++i )            // destructor left in it
+ HS S;                          // a move, and items with a
+ for( int i = 0 ; i < 50 ; ++i )  // destructor left in it
   S.insert( std::string( 30 , char( 'a' + i % 26 ) ) , i % 9 );
  S.deleteMin();
  HS M( std::move( S ) );
@@ -452,16 +463,16 @@ void handled_edges( void )
 ADS_TEST( "pairing-heap" )
 {
  handled_edges< PairingHeap< int , int > ,
-                PairingHeap< std::string , int > >();
+		PairingHeap< std::string , int > >();
  handled_edges< PairingHeap< int , int , true > ,
-                PairingHeap< std::string , int , true > >();
+		PairingHeap< std::string , int , true > >();
  using P2 = PairingHeap< int , int >;
  using PA = PairingHeap< int , int , true >;
  handled< P2 >( 1 , 3000 , 100 );
  handled< PA >( 2 , 3000 , 100 );
- handled< P2 >( 3 , 3000 , 3 );             // many ties
+ handled< P2 >( 3 , 3000 , 3 );  // many ties
  handled< PA >( 4 , 3000 , 3 );
- handled< P2 >( 5 , 6000 , 1000000 );       // past 1024 nodes
+ handled< P2 >( 5 , 6000 , 1000000 );  // past 1024 nodes
  handled< PA >( 6 , 6000 , 1000000 );
  }
 
@@ -506,14 +517,14 @@ void bulk( unsigned seed , std::size_t n , int k , Make && make )
    H.push( x );
    R.push( x );
    }
-  CHECK( H.pop() == R.top() );               // the scan of the bulk
+  CHECK( H.pop() == R.top() );  // the scan of the bulk
   R.pop();
-  for( int i = 0 ; i < k ; ++i ) {           // still in the bulk
+  for( int i = 0 ; i < k ; ++i ) {  // still in the bulk
    const T x = make( g );
    H.push( x );
    R.push( x );
    }
-  CHECK( H.top() == R.top() );               // the bulk closed
+  CHECK( H.top() == R.top() );  // the bulk closed
   for( std::size_t t = 0 ; t < 2 * n ; ++t )
    if( g() % 2 ) {
     const T x = make( g );
@@ -546,18 +557,18 @@ void bulk( unsigned seed , std::size_t n , int k , Make && make )
 ADS_TEST( "sequence-heap" )
 {
  SequenceHeap< int > E;
- CHECK_THROWS( (void) E.top() , contract_violation );
+ CHECK_THROWS( ( void )E.top() , contract_violation );
  CHECK_THROWS( E.pop() , contract_violation );
  E.push( 3 );
  CHECK( E.top() == 3 && E.pop() == 3 && E.empty() );
  sequence( 1 , 500 , 6 , 1000 );
  sequence( 2 , 3000 , 7 , 1000 );
- sequence( 3 , 3000 , 7 , 2 );               // many equal
- sequence( 4 , 3000 , 7 , 1 );               // all equal
- sequence( 5 , 60000 , 9 , 1000000 );        // past the group 1
- sequence( 6 , 200000 , 6 , 100000 );        // pops all along
+ sequence( 3 , 3000 , 7 , 2 );         // many equal
+ sequence( 4 , 3000 , 7 , 1 );         // all equal
+ sequence( 5 , 60000 , 9 , 1000000 );  // past the group 1
+ sequence( 6 , 200000 , 6 , 100000 );  // pops all along
  const std::size_t big = SequenceHeap< int >::M * SequenceHeap< int >::K * 3;
- for( int dir = 0 ; dir < 2 ; ++dir ) {      // sorted, reversed
+ for( int dir = 0 ; dir < 2 ; ++dir ) {  // sorted, reversed
   SequenceHeap< int > S;
   for( std::size_t i = 0 ; i < big ; ++i )
    S.push( dir ? int( big - i ) : int( i ) );
@@ -565,8 +576,8 @@ ADS_TEST( "sequence-heap" )
    CHECK( S.pop() == ( dir ? int( i + 1 ) : int( i ) ) );
   CHECK( S.empty() );
   }
- SequenceHeap< std::string > T;              // strings, and an item of
- for( int i = 0 ; i < 1000 ; ++i )           // the heap pushed again
+ SequenceHeap< std::string > T;   // strings, and an item of
+ for( int i = 0 ; i < 1000 ; ++i )  // the heap pushed again
   T.push( std::to_string( 100000 + i * 7919 % 1000 ) );
  for( int i = 0 ; i < 600 ; ++i )
   T.push( T.top() );
@@ -576,25 +587,31 @@ ADS_TEST( "sequence-heap" )
   CHECK( last <= x );
   last = x;
   }
- bulk< int >( 7 , 100000 , 10 , []( auto & g ) {   // a bulk of random
-  return( int( g() % 1000000 ) ); } );             // keys, of 3 keys,
- bulk< int >( 8 , 50000 , 0 , []( auto & g ) {     // and of strings
-  return( int( g() % 3 ) ); } );
+ bulk< int >( 7 , 100000 , 10 , []( auto & g ) {  // a bulk of random
+  return( int( g() % 1000000 ) );
+  } );                                        // keys, of 3 keys,
+ bulk< int >( 8 , 50000 , 0 , []( auto & g ) {  // and of strings
+  return( int( g() % 3 ) );
+  } );
  bulk< std::string >( 9 , 20000 , 5 , []( auto & g ) {
-  return( std::to_string( g() % 100000 ) ); } );
- bulk< int >( 10 , 3000 , 3 , []( auto & g ) {     // within one buffer
-  return( int( g() % 100 ) ); } );
- {                                           // the keys of OrderKey.h:
-  SequenceHeap< std::pair< int , short > > A;    // a pair with negative
-  SequenceHeap< double , std::greater<> > B;     // items, doubles largest
-  std::priority_queue< std::pair< int , short > ,   // first
-   std::vector< std::pair< int , short > > , std::greater<> > RA;
+  return( std::to_string( g() % 100000 ) );
+  } );
+ bulk< int >( 10 , 3000 , 3 , []( auto & g ) {  // within one buffer
+  return( int( g() % 100 ) );
+  } );
+ {                                               // the keys of OrderKey.h:
+  SequenceHeap< std::pair< int , short > > A;     // a pair with negative
+  SequenceHeap< double , std::greater<> > B;      // items, doubles largest
+  std::priority_queue< std::pair< int , short > ,  // first
+		       std::vector< std::pair< int , short > > ,
+			 std::greater<> >
+    RA;
   std::priority_queue< double > RB;
   std::mt19937 g( 12 );
   for( int t = 0 ; t < 30000 ; ++t )
    if( RA.empty() || ( g() % 3 ) ) {
     const std::pair< int , short > p( int( g() % 2001 ) - 1000 ,
-                                      short( int( g() % 201 ) - 100 ) );
+				     short( int( g() % 201 ) - 100 ) );
     const double d = double( int( g() % 2001 ) - 1000 ) / 7;
     A.push( p );
     RA.push( p );
@@ -607,8 +624,9 @@ ADS_TEST( "sequence-heap" )
     RB.pop();
     }
   }
- SequenceHeap< int , std::greater<> > X;     // the largest first
- for( int i = 0 ; i < 2000 ; ++i ) X.push( i % 777 );
+ SequenceHeap< int , std::greater<> > X;  // the largest first
+ for( int i = 0 ; i < 2000 ; ++i )
+  X.push( i % 777 );
  CHECK( X.top() == 776 && X.size() == 2000 );
  X.clear();
  CHECK( X.empty() );
@@ -626,16 +644,16 @@ ADS_TEST( "heap-priority-queue-pool" )
  std::vector< HeapPriorityQueue< std::string , int , 4 >::Handle > hs;
  for( int i = 0 ; i < 50 ; ++i )
   hs.push_back( Q.insert( std::string( 30 , char( 'a' + i % 26 ) ) ,
-                          100 - i ) );
+			  100 - i ) );
  const std::string m = Q.min();
  auto * slot = hs[ 49 ];
  CHECK( Q.deleteMin() == m );
- auto h = Q.insert( "new" , 1000 );          // the slot freed last
+ auto h = Q.insert( "new" , 1000 );  // the slot freed last
  CHECK( h == slot && h->value == "new" );
  hs[ 49 ] = h;
  HeapPriorityQueue< std::string , int , 4 > M( std::move( Q ) );
  CHECK( Q.empty() && M.size() == 50 );
- M.decrease( hs[ 0 ] , -5 );                 // a handle of the moved one
+ M.decrease( hs[ 0 ] , -5 );  // a handle of the moved one
  CHECK( M.minPriority() == -5 && M.min() == hs[ 0 ]->value );
  HeapPriorityQueue< std::string , int , 4 > N( 10 );
  N.insert( "x" , 1 );
@@ -672,7 +690,7 @@ void linked( void )
  N.insert( "x" , -1 );
  N = std::move( M );
  CHECK( N.size() == int( R.size() ) && N.minPriority() == *R.begin() );
- Q.insert( "again" , 3 );                   // the one moved from, reused
+ Q.insert( "again" , 3 );  // the one moved from, reused
  CHECK( Q.min() == "again" && Q.deleteMin() == "again" && Q.empty() );
  }
 
@@ -709,7 +727,7 @@ void ends( unsigned seed , int steps , int range )
    }
   CHECK( Q.size() == R.size() );
   }
- while( ! R.empty() ) {                      // from both ends in turn
+ while( ! R.empty() ) {  // from both ends in turn
   if( R.size() % 2 ) {
    CHECK( Q.popMax() == *R.rbegin() );
    R.erase( std::prev( R.end() ) );
@@ -727,34 +745,37 @@ template< template< class , class > class H >
 void ends_edges( void )
 {
  H< int , std::less< int > > E;
- CHECK_THROWS( (void) E.min() , contract_violation );
- CHECK_THROWS( (void) E.max() , contract_violation );
+ CHECK_THROWS( ( void )E.min() , contract_violation );
+ CHECK_THROWS( ( void )E.max() , contract_violation );
  CHECK_THROWS( E.popMin() , contract_violation );
  CHECK_THROWS( E.popMax() , contract_violation );
- E.push( 5 );                                // one item: both ends
+ E.push( 5 );  // one item: both ends
  CHECK( E.min() == 5 && E.max() == 5 && E.popMax() == 5 && E.empty() );
  E.push( 2 );
- E.push( 1 );                                // two, three items
+ E.push( 1 );  // two, three items
  CHECK( E.min() == 1 && E.max() == 2 );
  E.push( 3 );
  CHECK( E.popMin() == 1 && E.popMax() == 3 && E.popMin() == 2 );
- for( int i = 0 ; i < 100 ; ++i ) E.push( 7 );   // all equal
+ for( int i = 0 ; i < 100 ; ++i )
+  E.push( 7 );  // all equal
  for( int i = 0 ; i < 100 ; ++i )
   CHECK( ( i % 2 ? E.popMin() : E.popMax() ) == 7 );
- for( int i = 0 ; i < 500 ; ++i ) E.push( i );   // sorted, reversed
- for( int i = 500 ; i-- > 0 ; ) E.push( i );
+ for( int i = 0 ; i < 500 ; ++i )
+  E.push( i );  // sorted, reversed
+ for( int i = 500 ; i-- > 0 ; )
+  E.push( i );
  CHECK( E.min() == 0 && E.max() == 499 && E.size() == 1000 );
  E.clear();
  CHECK( E.empty() );
- H< std::string , std::greater<> > S;        // strings, reversed order
+ H< std::string , std::greater<> > S;  // strings, reversed order
  for( int i = 0 ; i < 200 ; ++i )
   S.push( std::to_string( i * 7919 % 1000 ) );
  std::string last = S.min();
  S.popMin();
  while( S.size() > 1 ) {
-  CHECK( !( std::greater<>()( S.min() , last ) ) );
+  CHECK( ! ( std::greater<>()( S.min() , last ) ) );
   last = S.popMin();
-  CHECK( !( std::greater<>()( S.max() , S.min() ) ) );
+  CHECK( ! ( std::greater<>()( S.max() , S.min() ) ) );
   S.popMax();
   }
  }
@@ -770,11 +791,11 @@ ADS_TEST( "double-ended-heaps" )
  ends_edges< IntervalHeap >();
  ends< MinMaxHeap< int > >( 1 , 5000 , 1000 );
  ends< IntervalHeap< int > >( 2 , 5000 , 1000 );
- ends< MinMaxHeap< int > >( 3 , 5000 , 3 );        // many equal
+ ends< MinMaxHeap< int > >( 3 , 5000 , 3 );  // many equal
  ends< IntervalHeap< int > >( 4 , 5000 , 3 );
- for( int k = 0 ; k < 2 ; ++k ) {           // a run of removals sorts
-  MinMaxHeap< int > A;                       // the items, a push makes a
-  IntervalHeap< int > B;                     // heap again
+ for( int k = 0 ; k < 2 ; ++k ) {  // a run of removals sorts
+  MinMaxHeap< int > A;           // the items, a push makes a
+  IntervalHeap< int > B;         // heap again
   std::multiset< int > R;
   std::mt19937 g( 30 + k );
   for( int round = 0 ; round < 3 ; ++round ) {
@@ -801,7 +822,7 @@ ADS_TEST( "double-ended-heaps" )
    }
   CHECK( A.empty() && B.empty() );
   }
- ends< MinMaxHeap< int > >( 5 , 20000 , 1000000 ); // past 1024 items
+ ends< MinMaxHeap< int > >( 5 , 20000 , 1000000 );  // past 1024 items
  ends< IntervalHeap< int > >( 6 , 20000 , 1000000 );
  }
 
@@ -844,8 +865,10 @@ ADS_TEST( "dary-heap-bottom-up" )
  CHECK_THROWS( E.pop() , contract_violation );
  E.push( 1 );
  CHECK( E.pop() == 1 && E.empty() );
- for( int i = 0 ; i < 100 ; ++i ) E.push( 5 );
- for( int i = 0 ; i < 100 ; ++i ) CHECK( E.pop() == 5 );
+ for( int i = 0 ; i < 100 ; ++i )
+  E.push( 5 );
+ for( int i = 0 ; i < 100 ; ++i )
+  CHECK( E.pop() == 5 );
  }
 
 // the audits of the order at the level 3 of the contracts, which on more
@@ -859,7 +882,8 @@ ADS_TEST( "large-heap-audits" )
  const int n = 1 << 17;
  std::mt19937 g( 77 );
  std::vector< int > x( n );
- for( auto & v : x ) v = int( g() % 1000000 );
+ for( auto & v : x )
+  v = int( g() % 1000000 );
  DaryHeap< int , std::less< int > , 4 > A;
  IndexedDaryHeap< int , 4 > B( n );
  MinMaxHeap< int > C;

@@ -15,15 +15,15 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline QuicksortAdversary::QuicksortAdversary( std::size_t n )
- : f_val( n , n ) , f_candidate( n )
-{
- }
+    : f_val( n , n ) , f_candidate( n )
+{ }
 
 inline bool QuicksortAdversary::Less::operator()( std::size_t x ,
-                                                   std::size_t y ) const
+						  std::size_t y ) const
 {
  auto & a = *f_a;
  const std::size_t gas = a.f_val.size();

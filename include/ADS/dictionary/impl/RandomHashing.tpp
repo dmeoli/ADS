@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 constexpr std::uint64_t splitmix64( std::uint64_t x )
 {
@@ -31,8 +32,8 @@ constexpr std::uint64_t fibonacciPlace( std::uint64_t h , int b )
  }
 
 inline ZobristTable::ZobristTable( std::size_t n , std::size_t m ,
-                                   std::uint64_t seed )
- : f_n( n ) , f_m( m )
+				   std::uint64_t seed )
+    : f_n( n ) , f_m( m )
 {
  ADS_PRE( ( n >= 1 ) && ( m >= 1 ) );
  SplitMix64 g( seed );
@@ -42,7 +43,7 @@ inline ZobristTable::ZobristTable( std::size_t n , std::size_t m ,
  }
 
 inline std::uint64_t ZobristTable::operator()( std::size_t f ,
-                                               std::size_t v ) const
+					       std::size_t v ) const
 {
  ADS_PRE( ( f < f_n ) && ( v < f_m ) );
  return( f_R[ f * f_m + v ] );
@@ -61,8 +62,8 @@ std::uint64_t ZobristTable::hash( const S & s ) const
  }
 
 inline std::uint64_t ZobristTable::update( std::uint64_t h , std::size_t f ,
-                                           std::size_t a ,
-                                           std::size_t b ) const
+					   std::size_t a ,
+					   std::size_t b ) const
 {
  return( h ^ ( *this )( f , a ) ^ ( *this )( f , b ) );
  }
@@ -84,12 +85,12 @@ inline std::uint64_t TabulationHash::operator()( std::uint64_t x ) const
  }
 
 inline std::size_t TabulationHash::place( std::uint64_t x ,
-                                          std::size_t m ) const
+					  std::size_t m ) const
 {
  ADS_PRE( ( m > 0 ) && ( ( m & ( m - 1 ) ) == 0 ) );
  const int d = std::countr_zero( std::uint64_t( m ) );
- const std::size_t r = d == 0 ? 0 :
-                       std::size_t( ( *this )( x ) >> ( 64 - d ) );
+ const std::size_t r =
+   d == 0 ? 0 : std::size_t( ( *this )( x ) >> ( 64 - d ) );
  ADS_POST( r < m );
  return( r );
  }

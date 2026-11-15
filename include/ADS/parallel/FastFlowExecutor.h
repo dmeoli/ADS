@@ -79,7 +79,7 @@
 
 #ifndef __ADS_FastFlowExecutor
  #define __ADS_FastFlowExecutor
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 #if defined( ADS_WITH_FASTFLOW )
 
@@ -88,13 +88,14 @@
 // and the headers that read NO_DEFAULT_MAPPING include it before; with
 // FF_CONFIG_HPP defined they are read already, and the executor would pin
 // its threads and count the cores by a shell at each ParallelFor
-#if defined( FF_CONFIG_HPP ) && ( ! defined( NUM_CORES ) || \
-    ! defined( NUM_REAL_CORES ) || \
-    ( ! defined( ADS_FASTFLOW_MAPPING ) && ! defined( NO_DEFAULT_MAPPING ) ) )
- #error "ADS/parallel/FastFlowExecutor.h included after a header of \
-FastFlow: include it before any <ff/...> header (or define NUM_CORES, \
-NUM_REAL_CORES and NO_DEFAULT_MAPPING before them), since FastFlow reads \
-these macros when its ff/config.hpp is first included"
+#if defined( FF_CONFIG_HPP ) &&                                               \
+  ( ! defined( NUM_CORES ) || ! defined( NUM_REAL_CORES ) ||                  \
+    ( ! defined( ADS_FASTFLOW_MAPPING ) &&                                    \
+      ! defined( NO_DEFAULT_MAPPING ) ) )
+// a program that includes the executor after a header of FastFlow is
+// stopped: it includes it before any <ff/...> header, or defines NUM_CORES,
+// NUM_REAL_CORES and NO_DEFAULT_MAPPING before them
+ #error "ADS/parallel/FastFlowExecutor.h included after a header of FastFlow"
 #endif
 
 /*--------------------------------------------------------------------------*/
@@ -116,14 +117,15 @@ these macros when its ff/config.hpp is first included"
  #define ADS_FASTFLOW_AFFINITY 1
 #endif
 
-namespace ADS::detail {
+namespace ADS::detail
+{
 
 /// the logical processors of the machine, once, for `ff_numCores()` of
 /// FastFlow, which otherwise runs a shell at each call
 inline long fastFlowCores( void )
 {
- static const long n = long( std::max( std::thread::hardware_concurrency() ,
-                                       1u ) );
+ static const long n =
+   long( std::max( std::thread::hardware_concurrency() , 1u ) );
  return( n );
  }
 
@@ -143,10 +145,10 @@ inline long fastFlowRealCores( void )
    for( int i = 0 ; i < CPU_SETSIZE ; ++i )
     if( CPU_ISSET( i , &s ) ) {
      std::ifstream f( "/sys/devices/system/cpu/cpu" + std::to_string( i ) +
-                      "/topology/thread_siblings_list" );
+		      "/topology/thread_siblings_list" );
      std::string l;
      if( ! ( f >> l ) )
-      l = "#" + std::to_string( i );       // no topology: a core alone
+      l = "#" + std::to_string( i );  // no topology: a core alone
      cores.insert( l );
      }
    c = long( cores.size() );
@@ -185,16 +187,17 @@ inline long fastFlowRealCores( void )
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS FastFlowLock ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the spin lock of FastFlow, `ff::lock_t`, as a mutex of the standard
-class FastFlowLock {
+class FastFlowLock
+{
  public:
-
  /// an unlocked lock
  FastFlowLock( void ) { ff::init_unlocked( f_lock ); }
  /// no copy, as a mutex
@@ -213,8 +216,7 @@ class FastFlowLock {
   }
 
  private:
-
- ff::lock_t f_lock;                        ///< the lock of FastFlow
+ ff::lock_t f_lock;  ///< the lock of FastFlow
  };  // end( class FastFlowLock )
 
 /*--------------------------------------------------------------------------*/
@@ -222,18 +224,19 @@ class FastFlowLock {
 /*--------------------------------------------------------------------------*/
 
 /// the executor on a ParallelFor of FastFlow
-class FastFlowExecutor {
+class FastFlowExecutor
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the executor of \f$ p \f$ workers of FastFlow (the hardware threads if
  /// \f$ p = 0 \f$), which spin between the calls if `spin`
  /// \pre \f$ p \ge 1 \f$ once the hardware threads are counted
  explicit FastFlowExecutor( std::size_t p = 0 , bool spin = true )
-  : f_p( p ? p : std::max< std::size_t >(
-                  std::thread::hardware_concurrency() , 1 ) ) ,
-    f_spin( spin ) {
+     : f_p( p ? p
+	      : std::max< std::size_t >( std::thread::hardware_concurrency() ,
+					 1 ) ) ,
+       f_spin( spin ) {
   ADS_PRE( f_p >= 1 );
   }
 
@@ -269,18 +272,21 @@ class FastFlowExecutor {
   detail::FirstError error;
   // at least one index per worker, those from n doing nothing
   const long m = long( std::max( n , f_p ) );
-  loop().parallel_for( 0 , m , 1 , 1 , [ & ]( const long i ) {
-   if( ( std::size_t( i ) >= n ) || error.failed() )
-    return;
-   tl_inside = true;
-   try {
-    f( std::size_t( i ) );
-    }
-   catch( ... ) {
-    error.keep();
-    }
-   tl_inside = false;
-   } , long( f_p ) );
+  loop().parallel_for(
+    0 , m , 1 , 1 ,
+    [ & ]( const long i ) {
+     if( ( std::size_t( i ) >= n ) || error.failed() )
+      return;
+     tl_inside = true;
+     try {
+      f( std::size_t( i ) );
+      }
+     catch( ... ) {
+      error.keep();
+      }
+     tl_inside = false;
+     } ,
+    long( f_p ) );
   error.rethrow();
   }
 
@@ -316,29 +322,31 @@ class FastFlowExecutor {
    }
   std::lock_guard< std::mutex > g( f_lock );
   detail::FirstError error;
-  workers().parallel_for( 0 , long( p ) , 1 , 1 , [ & ]( const long i ) {
-   tl_inside = true;
-   try {
-    f( std::size_t( i ) );
-    }
-   catch( ... ) {
-    error.keep();
-    }
-   tl_inside = false;
-   } , long( p ) );
+  workers().parallel_for(
+    0 , long( p ) , 1 , 1 ,
+    [ & ]( const long i ) {
+     tl_inside = true;
+     try {
+      f( std::size_t( i ) );
+      }
+     catch( ... ) {
+      error.keep();
+      }
+     tl_inside = false;
+     } ,
+    long( p ) );
   error.rethrow();
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static inline thread_local bool tl_inside = false;   ///< in a call of f
+ static inline thread_local bool tl_inside = false;  ///< in a call of f
 
  /// the loop of `bulk()`, built at its first call, spinning if `f_spin`
  ff::ParallelFor & loop( void ) {
   if( ! f_for ) {
    f_for = std::make_unique< ff::ParallelFor >( long( f_p ) , f_spin ,
-                                                f_spin );
+						f_spin );
    f_for->disableScheduler( true );
    }
   return( *f_for );
@@ -348,8 +356,7 @@ class FastFlowExecutor {
  /// between the calls; the threads of the loop of `bulk()` put to sleep
  ff::ParallelFor & workers( void ) {
   if( ! f_run ) {
-   f_run = std::make_unique< ff::ParallelFor >( long( f_p ) , false ,
-                                                false );
+   f_run = std::make_unique< ff::ParallelFor >( long( f_p ) , false , false );
    f_run->disableScheduler( true );
    }
   if( f_for && f_spin )
@@ -357,22 +364,22 @@ class FastFlowExecutor {
   return( *f_run );
   }
 
- std::size_t f_p;                          ///< the workers
- bool f_spin;                              ///< whether bulk() spins
- std::unique_ptr< ff::ParallelFor > f_for;   ///< the loop of bulk()
- std::unique_ptr< ff::ParallelFor > f_run;   ///< the loop of run()
- std::mutex f_lock;                        ///< one caller at a time
+ std::size_t f_p;                           ///< the workers
+ bool f_spin;                               ///< whether bulk() spins
+ std::unique_ptr< ff::ParallelFor > f_for;  ///< the loop of bulk()
+ std::unique_ptr< ff::ParallelFor > f_run;  ///< the loop of run()
+ std::mutex f_lock;                         ///< one caller at a time
  };  // end( class FastFlowExecutor )
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 
-#endif  /* ADS_WITH_FASTFLOW */
+#endif /* ADS_WITH_FASTFLOW */
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* FastFlowExecutor.h included */
+#endif /* FastFlowExecutor.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File FastFlowExecutor.h -----------------------*/

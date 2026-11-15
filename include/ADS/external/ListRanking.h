@@ -95,7 +95,7 @@
 
 #ifndef __ADS_ListRanking
  #define __ADS_ListRanking
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -117,7 +117,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// whether \f$ \mathit{succ} \f$ is a list: one tail \f$ t \f$ with
 /// \f$ \mathit{succ}[ t ] = t \f$, and every item reached from the only item
@@ -141,8 +142,8 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \pre \f$ \mathit{succ} \f$ is a list (an audit)
-[[nodiscard]] inline std::vector< std::size_t > listRank(
-                                    const std::vector< std::size_t > & succ );
+[[nodiscard]] inline std::vector< std::size_t >
+listRank( const std::vector< std::size_t > & succ );
 
 /// the distances from the tail, by pointer jumping; the rounds go to
 /// `*rounds`, if given
@@ -166,9 +167,9 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \pre \f$ \mathit{succ} \f$ is a list (an audit)
-[[nodiscard]] inline std::vector< std::size_t > listRankPointerJumping(
-                                    const std::vector< std::size_t > & succ ,
-                                    std::size_t * rounds = nullptr );
+[[nodiscard]] inline std::vector< std::size_t >
+listRankPointerJumping( const std::vector< std::size_t > & succ ,
+			std::size_t * rounds = nullptr );
 
 /// the heads whose successor shows tails, a coin per item drawn by `g`
 ///
@@ -186,8 +187,8 @@ namespace ADS {
 /// \pre \f$ \mathit{succ} \f$ is a list (an audit)
 /// \post an independent set, without the tail (an audit)
 template< class R >
-std::vector< bool > randomIndependentSet(
-                          const std::vector< std::size_t > & succ , R & g );
+std::vector< bool >
+randomIndependentSet( const std::vector< std::size_t > & succ , R & g );
 
 /// three colors in \f$ \{ 0 , 1 , 2 \} \f$, by deterministic coin tossing;
 /// the rounds down to six colors go to `*rounds`, if given
@@ -215,9 +216,9 @@ std::vector< bool > randomIndependentSet(
 /// \f]
 /// \pre \f$ \mathit{succ} \f$ is a list (an audit)
 /// \post adjacent items have different colors (an audit)
-[[nodiscard]] inline std::vector< int > deterministicCoinTossing(
-                                    const std::vector< std::size_t > & succ ,
-                                    std::size_t * rounds = nullptr );
+[[nodiscard]] inline std::vector< int >
+deterministicCoinTossing( const std::vector< std::size_t > & succ ,
+			  std::size_t * rounds = nullptr );
 
 /// the items whose color is smaller than those of their neighbours, the
 /// tail excluded and not counted as a neighbour, so that a list of two
@@ -238,9 +239,9 @@ std::vector< bool > randomIndependentSet(
 /// \f]
 /// \pre adjacent items have different colors
 /// \post an independent set (an audit)
-[[nodiscard]] inline std::vector< bool > independentSetOfColors(
-                                    const std::vector< std::size_t > & succ ,
-                                    const std::vector< int > & color );
+[[nodiscard]] inline std::vector< bool >
+independentSetOfColors( const std::vector< std::size_t > & succ ,
+			const std::vector< int > & color );
 
 /// the distances from the tail, by removing independent sets, random ones
 /// drawn by `g` or, if `deterministic`, the local minima of the three
@@ -276,10 +277,10 @@ std::vector< bool > randomIndependentSet(
 /// \pre \f$ \mathit{succ} \f$ is a list (an audit)
 /// \post the ranks of `listRank()` (an audit)
 template< class R >
-std::vector< std::size_t > listRankIndependentSet(
-                                    const std::vector< std::size_t > & succ ,
-                                    R & g , bool deterministic = false ,
-                                    std::size_t * levels = nullptr );
+std::vector< std::size_t >
+listRankIndependentSet( const std::vector< std::size_t > & succ , R & g ,
+			bool deterministic = false ,
+			std::size_t * levels = nullptr );
 
 /// \f$ \mathit{out}[ i ] = \mathrm{op}( A[ i ] , A[ b ] ) \f$ for each pair
 /// \f$ ( i , b ) \f$ of `ops`, \f$ \mathit{out}[ i ] = A[ i ] \f$ for the
@@ -312,10 +313,10 @@ std::vector< std::size_t > listRankIndependentSet(
 ///      below the size of \f$ A \f$, `out` empty, the files on the same
 ///      memory
 template< class T , class Op >
-void parallelStep( const DiskFile< T > & A ,
-                   const DiskFile< std::pair< std::size_t , std::size_t > > &
-                                                                         ops ,
-                   Op op , DiskFile< T > & out );
+void parallelStep(
+  const DiskFile< T > & A ,
+  const DiskFile< std::pair< std::size_t , std::size_t > > & ops , Op op ,
+  DiskFile< T > & out );
 
 /// the ranks of the list `succ` into `rank`, by pointer jumping, each round
 /// a `parallelStep()`; the rounds go to `*rounds`, if given
@@ -344,8 +345,8 @@ void parallelStep( const DiskFile< T > & A ,
 ///      `rank` empty, the files on the same memory
 /// \post the ranks of `listRank()` (an audit)
 inline void externalPointerJumping( const DiskFile< std::size_t > & succ ,
-                                    DiskFile< std::size_t > & rank ,
-                                    std::size_t * rounds = nullptr );
+				    DiskFile< std::size_t > & rank ,
+				    std::size_t * rounds = nullptr );
 
 /// the ranks of the list `succ` into `rank`, by removing random independent
 /// sets drawn by `g`; the levels of the recursion go to `*levels`, if given
@@ -379,8 +380,8 @@ inline void externalPointerJumping( const DiskFile< std::size_t > & succ ,
 /// \post the ranks of `listRank()` (an audit)
 template< class R >
 void externalListRank( const DiskFile< std::size_t > & succ ,
-                       DiskFile< std::size_t > & rank , R & g ,
-                       std::size_t * levels = nullptr );
+		       DiskFile< std::size_t > & rank , R & g ,
+		       std::size_t * levels = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
@@ -394,7 +395,7 @@ void externalListRank( const DiskFile< std::size_t > & succ ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ListRanking.h included */
+#endif /* ListRanking.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File ListRanking.h -------------------------*/

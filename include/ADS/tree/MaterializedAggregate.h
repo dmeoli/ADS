@@ -53,7 +53,7 @@
 
 #ifndef __ADS_MaterializedAggregate
  #define __ADS_MaterializedAggregate
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -74,20 +74,24 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
 /// a function of a key and a value that does nothing
-struct AnyPair {
+struct AnyPair
+{
  template< class A , class B >
- void operator()( const A & , const B & ) const {}
+ void operator()( const A & , const B & ) const { }
  };
 
 /// a structure whose pairs `forEach( f )` gives to \f$ f \f$
 template< class S >
-concept pair_visitable = requires( const S & s ) { s.forEach( AnyPair() ); };
+concept pair_visitable = requires( const S & s )
+{ s.forEach( AnyPair() ); };
 
 }  // end( namespace detail )
 /// \endcond
@@ -101,32 +105,34 @@ concept pair_visitable = requires( const S & s ) { s.forEach( AnyPair() ); };
 /// values, recomputed from the structure bound every `Period` changes
 template< class G , std::size_t Period = 1024 >
  requires CommutativeMonoid< G >
-class MaterializedAggregate {
+class MaterializedAggregate
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Value = typename G::Value;   ///< the type of the aggregate
+ using Value = typename G::Value;  ///< the type of the aggregate
 
  /// how the events update the aggregate
  enum class Kind {
-  Group ,       ///< by the value and its inverse
-  Selective ,   ///< by the multiset of the values
-  Monoid        ///< by a combination, or a recomputation
+  Group ,      ///< by the value and its inverse
+  Selective ,  ///< by the multiset of the values
+  Monoid      ///< by a combination, or a recomputation
   };
 
  /// the kind of `G`
- static constexpr Kind kind = AbelianGroup< G > ? Kind::Group
-                              : ( Selective< G > &&
-                                  std::equality_comparable< Value > )
-                                ? Kind::Selective : Kind::Monoid;
+ static constexpr Kind kind =
+   AbelianGroup< G >                                         ? Kind::Group
+   : ( Selective< G > && std::equality_comparable< Value > ) ? Kind::Selective
+							     : Kind::Monoid;
 
  /// the identity, with no structure bound
  MaterializedAggregate( void ) = default;
 
  /// the aggregate of \f$ s \f$, bound
  template< detail::pair_visitable S >
- explicit MaterializedAggregate( const S & s ) { bind( s ); }
+ explicit MaterializedAggregate( const S & s ) {
+  bind( s );
+  }
 
  /// \f$ s \f$ bound, and the aggregate recomputed from it, in
  /// \f$ O( m ) \f$ (\f$ O( m \log m ) \f$ if selective)
@@ -188,19 +194,20 @@ class MaterializedAggregate {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the order of the values of a selective `G`: \f$ x \f$ before
  /// \f$ y \f$ if \f$ x \ne y \f$ and \f$ x \otimes y = x \f$
- struct Before {
+ struct Before
+ {
   bool operator()( const Value & x , const Value & y ) const {
-   return( !( x == y ) && ( G::combine( x , y ) == x ) );
+   return( ! ( x == y ) && ( G::combine( x , y ) == x ) );
    }
   };
 
  /// the multiset of a selective `G`, nothing otherwise
- struct NoSet {};
+ struct NoSet
+ { };
  using Set = std::conditional_t< kind == Kind::Selective ,
-                                 std::multiset< Value , Before > , NoSet >;
+				 std::multiset< Value , Before > , NoSet >;
 
  /// the value counted for the drift
  void changed( void ) noexcept;
@@ -212,14 +219,14 @@ class MaterializedAggregate {
  template< class S >
  static Value fold( const S & s );
 
- mutable Value f_a = G::identity();     ///< the aggregate
- ADS_NO_UNIQUE_ADDRESS mutable Set f_set;   ///< the values, if selective
- mutable bool f_stale = false;           ///< whether to recompute
- mutable std::size_t f_drift = 0;        ///< the changes since then
- mutable std::size_t f_recomputed = 0;   ///< the recomputations
- const void * f_src = nullptr;           ///< the structure bound
+ mutable Value f_a = G::identity();        ///< the aggregate
+ ADS_NO_UNIQUE_ADDRESS mutable Set f_set;  ///< the values, if selective
+ mutable bool f_stale = false;             ///< whether to recompute
+ mutable std::size_t f_drift = 0;          ///< the changes since then
+ mutable std::size_t f_recomputed = 0;     ///< the recomputations
+ const void * f_src = nullptr;             ///< the structure bound
  /// the recomputation from the structure bound
- void ( * f_redo )( const void * , const MaterializedAggregate & ) = nullptr;
+ void ( *f_redo )( const void * , const MaterializedAggregate & ) = nullptr;
 
  };  // end( class MaterializedAggregate )
 
@@ -235,7 +242,7 @@ class MaterializedAggregate {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MaterializedAggregate.h included */
+#endif /* MaterializedAggregate.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File MaterializedAggregate.h ------------------*/

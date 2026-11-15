@@ -189,7 +189,7 @@ doublings, the shift and add of the arithmetic units
 
 --8<-- "generated/BinaryInteger-ahmes.pseudo.md"
 
-<span id="lem-17-2"></span>**Lemma 17.2.** *`ahmes(a, b)` returns
+<span id="lem-17-2"></span>**Lemma 17.2.** *`ahmes( a , b )` returns
 $a b \bmod 2^{64}$ after $\lfloor \log_2 a \rfloor + 1$ halvings when
 $a > 0$.*
 
@@ -213,11 +213,11 @@ inline Bits carry( const std::vector< long > & c );
 inline Bits binaryAdd( const Bits & X , const Bits & Y );
 inline std::vector< long > widen( const Bits & X );
 inline Bits multiplyBinarySchool( const Bits & X , const Bits & Y ,
-                            long * mults = nullptr );
+                                  long * mults = nullptr );
 inline Bits multiplyBinaryFour( const Bits & X , const Bits & Y ,
-                          long * mults = nullptr );
+                                long * mults = nullptr );
 inline Bits multiplyBinaryKaratsuba( const Bits & X , const Bits & Y ,
-                               long * mults = nullptr );
+                                     long * mults = nullptr );
 inline std::uint64_t ahmes( std::uint64_t a , std::uint64_t b ,
                             long * steps = nullptr );
 
@@ -242,11 +242,11 @@ For instance, with the headers `ADS/numeric/BinaryInteger.h` and
 long k = 0;
 std::vector< long > p = { 1 , 2 , 3 , 4 } , q = { 5 , 6 , 7 , 8 };
 std::vector< long > r = ADS::multiplyKaratsuba( p , q , &k );
-                                           // r is ( 5 , 16 , 34 , 60 , 61 ,
-                                           // 52 , 32 ), k is 9 = 3^2
-ADS::Bits b = ADS::multiplyBinaryKaratsuba( ADS::toBits( 13 ) ,
-                                            ADS::toBits( 11 ) );
-std::uint64_t x = ADS::fromBits( b );      // x is 143
+// r is ( 5 , 16 , 34 , 60 , 61 ,
+// 52 , 32 ), k is 9 = 3^2
+ADS::Bits b =
+  ADS::multiplyBinaryKaratsuba( ADS::toBits( 13 ) , ADS::toBits( 11 ) );
+std::uint64_t x = ADS::fromBits( b );  // x is 143
 ```
 
 ## 17.3 Integers of any length {#sec-17-3}
@@ -464,9 +464,9 @@ by Newton's method; $\ell$ is the number of bits of $a$.
 
 --8<-- "generated/BigInteger-sqrtNewton.pseudo.md"
 
-<span id="lem-17-5"></span>**Lemma 17.5.** *For $a > 0$,
-`sqrtNewton(a)` returns $s = \lfloor \sqrt{a} \rfloor$; its iterates
-decrease strictly until they reach $s$.*
+<span id="lem-17-5"></span>**Lemma 17.5.** *For $a > 0$, `sqrtNewton( a )`
+returns $s = \lfloor \sqrt{a} \rfloor$; its iterates decrease strictly until
+they reach $s$.*
 
 *Proof.* For an integer $x > 0$, $y = \lfloor ( x + \lfloor a / x \rfloor
 ) / 2 \rfloor = \lfloor ( x + a / x ) / 2 \rfloor \ge \lfloor \sqrt{a}
@@ -549,28 +549,29 @@ where it cannot allocate, while the code of ADS throws `std::bad_alloc`.
 [Lemma 17.11](17-numeric.md#lem-17-11) states that the route does not
 change the results.
 
-**Interface.** A `BigInteger` is built from a `long long` (0 by default)
-or from a string in a base from 2 to 36, with an optional sign; `sign()`
-returns $-1$, 0 or 1, `abs()` the absolute value and `limbs()` the number
-of digits. The operators `+`, `-`, `*`, `/` and `%` (the last two those of
-`divMod()`), the unary `-`, the compound `+=`, `-=` and `*=`, the equality
-and the three-way comparison (by the signs, the lengths and the digits
-from the most significant one) complete the arithmetic, and
-`addMul(r, a, b)` makes $r \gets r + a b$. Next to the conversions,
-`toStringSchool()` and `fromStringSchool()` are those of
-[Algorithm 17.6](17-numeric.md#alg-17-6) with no backend, with which the
-audits of `toString()` and of the constructor compare. Finally, the
-product of two words of 64 bits into 128, on which the school, the short
-division and the steps of Lehmer rest, is `wideProduct()` of `Portable.h`
-([§1.6](01-introduction.md#sec-1-6)): the type `unsigned __int128` where
-it exists, the intrinsics of MSVC on x64 otherwise, and four products of
-halves of 32 bits (`wideProductHalves()`) where neither is available, or
-with `ADS_BIGINT_PORTABLE` defined; the macro `ADS_BIGINT_WIDE`, which
-records the choice as 128, 64 or 0, can also be set by hand. The class is
+**Interface.** A `BigInteger` is built from a `long long` (0 by default) or
+from a string in a base from 2 to 36, with an optional sign; `sign()` returns
+$-1$, 0 or 1, `abs()` the absolute value and `limbs()` the number of digits.
+The operators `+`, `-`, `*`, `/` and `%` (the last two those of `divMod()`),
+the unary `-`, the compound `+=`, `-=` and `*=`, the equality and the
+three-way comparison (by the signs, the lengths and the digits from the most
+significant one) complete the arithmetic, and `addMul( r , a , b )` makes
+$r \gets r + a b$. Next to the conversions, `toStringSchool()` and
+`fromStringSchool()` are those of [Algorithm 17.6](17-numeric.md#alg-17-6)
+with no backend, with which the audits of `toString()` and of the constructor
+compare. Finally, the product of two words of 64 bits into 128, on which the
+school, the short division and the steps of Lehmer rest, is `wideProduct()` of
+`Portable.h` ([§1.6](01-introduction.md#sec-1-6)): the type
+`unsigned __int128` where it exists, the intrinsics of MSVC on x64 otherwise,
+and four products of halves of 32 bits (`wideProductHalves()`) where neither
+is available, or with `ADS_BIGINT_PORTABLE` defined; the macro
+`ADS_BIGINT_WIDE`, which records the choice as 128, 64 or 0, can also be set
+by hand. The class is
 
 ```cpp
 // declarations of <ADS/numeric/BigInteger.h>
-class BigInteger {
+class BigInteger
+{
  public:
  using Limb = std::uint64_t;
  static constexpr std::size_t kKaratsuba = 32;
@@ -595,9 +596,9 @@ class BigInteger {
  friend std::strong_ordering operator<=>( const BigInteger & a ,
                                           const BigInteger & b );
  static std::pair< BigInteger , BigInteger > divMod( const BigInteger & a ,
-                                                     const BigInteger & b );
- static std::pair< BigInteger , BigInteger > divModSchool(
-                                const BigInteger & a , const BigInteger & b );
+                                                    const BigInteger & b );
+ static std::pair< BigInteger , BigInteger >
+ divModSchool( const BigInteger & a , const BigInteger & b );
  static BigInteger multiplySchool( const BigInteger & a ,
                                    const BigInteger & b );
  static BigInteger multiplyKaratsuba( const BigInteger & a ,
@@ -621,13 +622,14 @@ with the equality defaulted. For instance, with the header
 ```cpp
 ADS::BigInteger f( 1 );
 for( int k = 2 ; k <= 30 ; ++k )
- f *= k;                                   // 30!
-std::string s = f.toString();              // the 33 figures of 30!,
-                                           // "2652528598...0000000"
+ f *= k;                       // 30!
+std::string s = f.toString();  // the 33 figures of 30!,
+                               // "2652528598...0000000"
 auto [ q , r ] = ADS::BigInteger::divMod( f , ADS::BigInteger( 1000003 ) );
-ADS::BigInteger g = ADS::BigInteger::gcd( f , ADS::BigInteger( "1" +
-                                          std::string( 20 , '0' ) ) );
-                                           // g is 2^20 5^7 = 81920000000
+ADS::BigInteger g =
+  ADS::BigInteger::gcd( f ,
+                        ADS::BigInteger( "1" + std::string( 20 , '0' ) ) );
+// g is 2^20 5^7 = 81920000000
 ```
 
 ## 17.4 Rational numbers {#sec-17-4}
@@ -687,28 +689,28 @@ the method of Henrici: no number larger than the result is reduced.
 | $d_2 = \gcd( 31 , 6 )$ | 1 |
 | result $( 31 / 1 ) / ( ( 12 / 6 ) ( 18 / 1 ) )$ | $31 / 36$ |
 
-Since a `Rational` is a pair of `BigInteger`, a figure of its memory
-would be that of [Figure 17.2](17-numeric.md#fig-17-2) twice, and we
-leave it out. With `ADS_WITH_GMP` (cf. [§17.3](17-numeric.md#sec-17-3)),
-the sum, the difference, the product, the quotient and the comparison of
-two fractions go to `mpq_add()`, `mpq_sub()`, `mpq_mul()`, `mpq_div()` and
-`mpq_cmp()` of GMP. These follow the same method of Henrici at all
-lengths, on the terms read in place, and the terms of the result are
-copied from the fraction of GMP that receives it; the reductions of the
-constructor go to GMP through the gcd and the exact quotient of
-`BigInteger`. With `ADS_RATIONAL_GMP` defined to 0, `Rational` keeps the
-code of [Algorithm 17.9](17-numeric.md#alg-17-9) on the operations of
-`BigInteger`. As for the interface, `Rational(u, u')` requires $u' \ne 0$
-and reduces the fraction by one gcd (the defaults give 0 and, with one
-argument, the integers), `num()` and `den()` return the terms, and
-`toString()` writes `u/u'`, or `u` when $u' = 1$. The operators are `+`,
-`-`, `*` and `/`, the last one being the product by the reciprocal, which
-is in lowest terms already, together with the unary `-`, the equality of
-the terms and the three-way comparison:
+Since a `Rational` is a pair of `BigInteger`, a figure of its memory would be
+that of [Figure 17.2](17-numeric.md#fig-17-2) twice, and we leave it out. With
+`ADS_WITH_GMP` (cf. [§17.3](17-numeric.md#sec-17-3)), the sum, the difference,
+the product, the quotient and the comparison of two fractions go to
+`mpq_add()`, `mpq_sub()`, `mpq_mul()`, `mpq_div()` and `mpq_cmp()` of GMP.
+These follow the same method of Henrici at all lengths, on the terms read in
+place, and the terms of the result are copied from the fraction of GMP that
+receives it; the reductions of the constructor go to GMP through the gcd and
+the exact quotient of `BigInteger`. With `ADS_RATIONAL_GMP` defined to 0,
+`Rational` keeps the code of [Algorithm 17.9](17-numeric.md#alg-17-9) on the
+operations of `BigInteger`. As for the interface, `Rational( u , u' )`
+requires $u' \ne 0$ and reduces the fraction by one gcd (the defaults give 0
+and, with one argument, the integers), `num()` and `den()` return the terms,
+and `toString()` writes `u/u'`, or `u` when $u' = 1$. The operators are `+`,
+`-`, `*` and `/`, the last one being the product by the reciprocal, which is
+in lowest terms already, together with the unary `-`, the equality of the
+terms and the three-way comparison:
 
 ```cpp
 // declarations of <ADS/numeric/Rational.h>
-class Rational {
+class Rational
+{
  public:
  Rational( BigInteger num = 0 , BigInteger den = 1 );
  [[nodiscard]] const BigInteger & num( void ) const;
@@ -730,7 +732,7 @@ For instance, with the header `ADS/numeric/Rational.h`, the sum of [Table
 
 ```cpp
 ADS::Rational x( 7 , 12 ) , y( 5 , 18 );
-std::string s = ( x + y ).toString();      // "31/36"
+std::string s = ( x + y ).toString();     // "31/36"
 bool lt = x * y < ADS::Rational( 1 , 6 );  // 35/216 < 1/6: lt is true
 ```
 
@@ -763,7 +765,7 @@ chapter 13](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/Combinatorics-tartaglia.pseudo.md"
 
-<span id="lem-17-8"></span>**Lemma 17.8.** *`binomial(n, k)` makes
+<span id="lem-17-8"></span>**Lemma 17.8.** *`binomial( n , k )` makes
 $2 \binom{n}{k} - 1$ calls.*
 
 *Proof.* Each leaf of the tree of the calls returns 1, and the value of an
@@ -821,12 +823,12 @@ $$
 which `catalan()` fills in $\Theta( n^2 )$ operations on numbers of
 $\Theta( n )$ bits ([Algorithm 17.12](17-numeric.md#alg-17-12)). Both the
 closed form $C_n = \binom{2n}{n} / ( n + 1 )$ and the recurrence
-$C_{n+1} = 2 ( 2 n + 1 ) C_n / ( n + 2 )$ take only $O( n )$ operations.
-Yet, their intermediate values exceed the result, and in 64 bits they stop
-before the table does, which reaches $C_{36}$ with the default type
-`T = std::uint64_t` of `catalan<T>()`; with `T` a `BigInteger`, the table
-has no limit. Asymptotically, $C_n \sim 4^n / ( n^{3/2}
-\sqrt{\pi} )$ ([Knuth 1997, §2.3.4.4](Z-bibliography.md#ref-knuth1997)).
+$C_{n+1} = 2 ( 2 n + 1 ) C_n / ( n + 2 )$ take only $O( n )$ operations. Yet,
+their intermediate values exceed the result, and in 64 bits they stop before
+the table does, which reaches $C_{36}$ with the default type
+`T = std::uint64_t` of `catalan< T >()`; with `T` a `BigInteger`, the table
+has no limit. Asymptotically, $C_n \sim 4^n / ( n^{3/2} \sqrt{\pi} )$ ([Knuth
+1997, §2.3.4.4](Z-bibliography.md#ref-knuth1997)).
 
 <span id="alg-17-12"></span>**Algorithm 17.12.** Numbers of Catalan by
 the recurrence (17.7) ([Montresor 2025, exercises of chapter
@@ -905,7 +907,8 @@ inline std::uint64_t binomial( int n , int k , long * calls = nullptr );
 inline std::vector< std::vector< std::uint64_t > > tartaglia( int n );
 inline std::uint64_t fibonacciTable( int n );
 inline std::uint64_t fibonacci( int n );
-class FibonacciCache {
+class FibonacciCache
+{
  public:
  [[nodiscard]] std::uint64_t value( int n ) const;
  [[nodiscard]] int size( void ) const;
@@ -919,9 +922,9 @@ T catalan( int n );
 
 inline std::pair< long , std::vector< std::vector< std::size_t > > >
 matrixChain( const std::vector< long > & c );
-inline std::string parenthesization(
-                         const std::vector< std::vector< std::size_t > > & S ,
-                         std::size_t i , std::size_t j );
+inline std::string
+parenthesization( const std::vector< std::vector< std::size_t > > & S ,
+                  std::size_t i , std::size_t j );
 ```
 
 and, e.g., with the header `ADS/numeric/MatrixChain.h`, the example of
@@ -930,7 +933,7 @@ and, e.g., with the header `ADS/numeric/MatrixChain.h`, the example of
 ```cpp
 auto [ cost , S ] = ADS::matrixChain( { 30 , 35 , 15 , 5 , 10 } );
 std::string p = ADS::parenthesization( S , 0 , 3 );  // cost is 9375, and
-                                           // p is "((A0·(A1·A2))·A3)"
+                                                   // p is "((A0·(A1·A2))·A3)"
 ```
 
 ## 17.6 Dense matrices {#sec-17-6}
@@ -1012,31 +1015,29 @@ Matrix< T > strassen( const Matrix< T > & A , const Matrix< T > & B ,
                       std::size_t cutoff = 1 , long * mults = nullptr );
 ```
 
-**Engineered product.** In `DenseMatrix.h`, `gemm()` is the routine
-of the BLAS, $C \gets \alpha A B + \beta C$, on matrices by rows with
-leading dimensions ([Algorithm 17.15](17-numeric.md#alg-17-15)). Its
-macro `ADS_WITH_BLAS` is defined by the option of CMake of the same name
-whenever a CBLAS is found, by the makefile, or by hand (with
-`ADS_BLAS_ACCELERATE` for the framework Accelerate of macOS). With it, the
-products of `double` and of `float` go to `cblas_dgemm()` and
-`cblas_sgemm()` at all the sizes that fit the `int` of the CBLAS, which
-chooses its own kernels, blocks and threads for the processor. Only the
-product with $k = 0$, a mere $C \gets \beta C$, stays on the loops of
-ADS, since a CBLAS may refuse its leading dimension 0. Otherwise, and for
-the other types, `gemm()` is the product of the definition, $2 m n k$
-operations, by the loops in the order $i , p , j$. These are blocked on
-$j$ and on $p$ by $L$ = `kGemmBlock` $= 256$, and a block of $L \times L$
-entries of $B$ thus stays in the cache while the rows of $C$ run over it.
-We choose the route by the macro `ADS_GEMM_BLAS`, which is 1 when
-`ADS_WITH_BLAS` is defined and which, defined to 0, keeps the loops of ADS
-even with a CBLAS. On the class, `DenseMatrix(m, n, v)` fills the
-entries with $v$ (0 by default), `uninitialized(m, n)` leaves them
-unwritten for an output that will be overwritten, and the constructor from
-a `Matrix` and `toMatrix()` convert between the two layouts; `rows()`,
-`cols()`, the entry `A(i, j)`, the pointer `data()` to the first entry
-(the leading dimension being `cols()`) and the equality complete it, and
-`multiply(A, B)` is `gemm()` with $\alpha = 1$ and $\beta = 0$ on a new
-matrix.
+**Engineered product.** In `DenseMatrix.h`, `gemm()` is the routine of the
+BLAS, $C \gets \alpha A B + \beta C$, on matrices by rows with leading
+dimensions ([Algorithm 17.15](17-numeric.md#alg-17-15)). Its macro
+`ADS_WITH_BLAS` is defined by the option of CMake of the same name whenever a
+CBLAS is found, by the makefile, or by hand (with `ADS_BLAS_ACCELERATE` for
+the framework Accelerate of macOS). With it, the products of `double` and of
+`float` go to `cblas_dgemm()` and `cblas_sgemm()` at all the sizes that fit
+the `int` of the CBLAS, which chooses its own kernels, blocks and threads for
+the processor. Only the product with $k = 0$, a mere $C \gets \beta C$, stays
+on the loops of ADS, since a CBLAS may refuse its leading dimension 0.
+Otherwise, and for the other types, `gemm()` is the product of the definition,
+$2 m n k$ operations, by the loops in the order $i , p , j$. These are blocked
+on $j$ and on $p$ by $L$ = `kGemmBlock` $= 256$, and a block of $L \times L$
+entries of $B$ thus stays in the cache while the rows of $C$ run over it. We
+choose the route by the macro `ADS_GEMM_BLAS`, which is 1 when `ADS_WITH_BLAS`
+is defined and which, defined to 0, keeps the loops of ADS even with a CBLAS.
+On the class, `DenseMatrix( m , n , v )` fills the entries with $v$ (0 by
+default), `uninitialized( m , n )` leaves them unwritten for an output that
+will be overwritten, and the constructor from a `Matrix` and `toMatrix()`
+convert between the two layouts; `rows()`, `cols()`, the entry `A( i , j )`,
+the pointer `data()` to the first entry (the leading dimension being `cols()`)
+and the equality complete it, and `multiply( A , B )` is `gemm()` with
+$\alpha = 1$ and $\beta = 0$ on a new matrix.
 
 <span id="alg-17-15"></span>**Algorithm 17.15.** Product of the BLAS
 in `DenseMatrix.h`, by blocks of $L$ columns and rows of $B$.
@@ -1093,7 +1094,8 @@ In all, `DenseMatrix.h` declares
 ```cpp
 // declarations of <ADS/numeric/DenseMatrix.h>
 template< class T >
-class DenseMatrix {
+class DenseMatrix
+{
  public:
  using value_type = T;
  DenseMatrix( void ) = default;
@@ -1112,8 +1114,9 @@ class DenseMatrix {
 inline constexpr std::size_t kGemmBlock = 256;
 template< class T >
 void gemm( std::size_t m , std::size_t n , std::size_t k , T alpha ,
-           const T * A , std::size_t lda , const T * B , std::size_t ldb ,
-           T beta , T * C , std::size_t ldc );
+           const T * A ,
+           std::size_t lda , const T * B , std::size_t ldb , T beta , T * C ,
+           std::size_t ldc );
 template< class T >
 DenseMatrix< T > multiply( const DenseMatrix< T > & A ,
                            const DenseMatrix< T > & B );
@@ -1132,7 +1135,7 @@ of a quadrant into another, through the leading dimension, is
 ADS::DenseMatrix< double > A( 4 , 4 , 1.0 ) , C( 4 , 4 );
 const double * A22 = A.data() + 2 * 4 + 2;  // the view of Figure 17.3
 ADS::gemm( 2 , 2 , 2 , 1.0 , A22 , 4 , A22 , 4 , 0.0 , C.data() , 4 );
-double c = C( 0 , 0 );                     // c is 2.0
+double c = C( 0 , 0 );  // c is 2.0
 ```
 
 Fewer products are paid for by the accuracy in floating point: the bound
@@ -1246,7 +1249,8 @@ ranges `rowEntries()` and `colEntries()`, the class is
 
 ```cpp
 // declarations of <ADS/numeric/SparseMatrix.h>
-class SparseMatrix {
+class SparseMatrix
+{
  public:
  SparseMatrix( std::size_t m , std::size_t n );
  [[nodiscard]] std::size_t rows( void ) const;
@@ -1254,35 +1258,35 @@ class SparseMatrix {
  [[nodiscard]] std::size_t nonzeros( void ) const;
  [[nodiscard]] double get( std::size_t i , std::size_t j ) const;
  void set( std::size_t i , std::size_t j , double v );
- [[nodiscard]] std::vector< std::pair< std::size_t , double > > row(
-                                                       std::size_t i ) const;
- [[nodiscard]] std::vector< std::pair< std::size_t , double > > col(
-                                                       std::size_t j ) const;
+ [[nodiscard]] std::vector< std::pair< std::size_t , double > >
+ row( std::size_t i ) const;
+ [[nodiscard]] std::vector< std::pair< std::size_t , double > >
+ col( std::size_t j ) const;
  void pivot( std::size_t r , std::size_t c , double eps = 0 );
  };
 ```
 
-**Compressed sparse rows.** A `CsrMatrix` keeps the nonzeros of each row,
-by increasing column, in one vector of values $\mathit{val}$ and one of
-columns $\mathit{col}$, the rows one after the other. A vector
-$\mathit{row}$ of $m + 1$ offsets holds the place where each row begins,
-the last one being $\mathit{nnz}$ ([Saad 2003, §3.4](Z-bibliography.md#ref-saad2003);
-[Figure 17.5](17-numeric.md#fig-17-5)). With doubles, columns of 32 bits
-and offsets of 64, the matrix takes $12 \, \mathit{nnz} + 8 ( m + 1 )$
-bytes, read in order by a product with a vector; by contrast, the nodes of
-the orthogonal lists are scattered, and more than three times as large
-(40 bytes each). We build the matrix either from a `SparseMatrix` or from
-triplets $( i , j , v )$ in any order (each a `Triplet`, the tuple of two
-`std::size_t` and a `double`). In the latter case a counting sort
-on the rows, a sort of the columns of each row and the sum of the entries
-in the same place take $O( \mathit{nnz} + m )$ time plus the sorts of the
-rows; the columns of 32 bits require $n \le 2^{32}$. The default
-constructor makes the $m \times n$ zero matrix (0 by 0 by default), and
-`get()` finds an entry by a binary search in its row, in $O( \log ( 1 +
-\text{the length of the row} ) )$ time. The product exists both on vectors
-and on pointers, `multiply(x, y)` writing $y$ in place, and the three
-arrays are read by `rowStart()`, `columns()` and `values()`, as a solver
-takes them; two matrices are equal when their arrays are.
+**Compressed sparse rows.** A `CsrMatrix` keeps the nonzeros of each row, by
+increasing column, in one vector of values $\mathit{val}$ and one of columns
+$\mathit{col}$, the rows one after the other. A vector $\mathit{row}$ of
+$m + 1$ offsets holds the place where each row begins, the last one being
+$\mathit{nnz}$ ([Saad 2003, §3.4](Z-bibliography.md#ref-saad2003); [Figure
+17.5](17-numeric.md#fig-17-5)). With doubles, columns of 32 bits and offsets
+of 64, the matrix takes $12 \, \mathit{nnz} + 8 ( m + 1 )$ bytes, read in
+order by a product with a vector; by contrast, the nodes of the orthogonal
+lists are scattered, and more than three times as large (40 bytes each). We
+build the matrix either from a `SparseMatrix` or from triplets $( i , j , v )$
+in any order (each a `Triplet`, the tuple of two `std::size_t` and a
+`double`). In the latter case a counting sort on the rows, a sort of the
+columns of each row and the sum of the entries in the same place take
+$O( \mathit{nnz} + m )$ time plus the sorts of the rows; the columns of 32
+bits require $n \le 2^{32}$. The default constructor makes the $m \times n$
+zero matrix (0 by 0 by default), and `get()` finds an entry by a binary search
+in its row, in $O( \log ( 1 + \text{the length of the row} ) )$ time. The
+product exists both on vectors and on pointers, `multiply( x , y )` writing
+$y$ in place, and the three arrays are read by `rowStart()`, `columns()` and
+`values()`, as a solver takes them; two matrices are equal when their arrays
+are.
 
 ![Figure 17.5. A $3 \times 4$ matrix in compressed sparse rows, and its transpose (violet), i.e., the same matrix by columns: the row $i$ of the transpose holds the entries of the column $i$, by increasing row.](../figures/numeric-csr.svg){#fig-17-5}
 
@@ -1338,7 +1342,8 @@ result is that of [Lemma 17.12](17-numeric.md#lem-17-12). The class is
 
 ```cpp
 // declarations of <ADS/numeric/CsrMatrix.h>
-class CsrMatrix {
+class CsrMatrix
+{
  public:
  using Triplet = std::tuple< std::size_t , std::size_t , double >;
  CsrMatrix( std::size_t m = 0 , std::size_t n = 0 );
@@ -1348,8 +1353,8 @@ class CsrMatrix {
  [[nodiscard]] std::size_t cols( void ) const;
  [[nodiscard]] std::size_t nonzeros( void ) const;
  [[nodiscard]] double get( std::size_t i , std::size_t j ) const;
- [[nodiscard]] std::vector< double > multiply(
-                                     const std::vector< double > & x ) const;
+ [[nodiscard]] std::vector< double >
+ multiply( const std::vector< double > & x ) const;
  void multiply( const double * x , double * y ) const;
  [[nodiscard]] CsrMatrix transpose( void ) const;
  [[nodiscard]] const std::size_t * rowStart( void ) const;
@@ -1364,12 +1369,16 @@ and, for instance, with the header `ADS/numeric/CsrMatrix.h`, the matrix of
 6$ is
 
 ```cpp
-ADS::CsrMatrix A( 3 , 4 , { { 0 , 0 , 1.0 } , { 0 , 2 , 2.0 } ,
-                            { 1 , 2 , 3.0 } , { 1 , 3 , 4.0 } ,
-                            { 2 , 0 , 5.0 } , { 2 , 1 , 6.0 } } );
+ADS::CsrMatrix A( 3 , 4 ,
+                  { { 0 , 0 , 1.0 } ,
+                    { 0 , 2 , 2.0 } ,
+                    { 1 , 2 , 3.0 } ,
+                    { 1 , 3 , 4.0 } ,
+                    { 2 , 0 , 5.0 } ,
+                    { 2 , 1 , 6.0 } } );
 std::vector< double > y = A.multiply( { 1.0 , 1.0 , 1.0 , 1.0 } );
-                                           // y is ( 3 , 7 , 11 )
-ADS::CsrMatrix B = A.transpose();          // 4 rows, B.get( 3 , 1 ) is 4
+// y is ( 3 , 7 , 11 )
+ADS::CsrMatrix B = A.transpose();  // 4 rows, B.get( 3 , 1 ) is 4
 ```
 
 **SELL-$C$-$\sigma$.** In CSR, the product computes one row at a time,
@@ -1424,7 +1433,8 @@ the default $\sigma$ of the constructor is 256:
 ```cpp
 // declarations of <ADS/numeric/SellMatrix.h>
 template< std::size_t C = 4 >
-class SellMatrix {
+class SellMatrix
+{
  public:
  explicit SellMatrix( const CsrMatrix & A , std::size_t sigma = 256 );
  [[nodiscard]] std::size_t rows( void ) const;
@@ -1436,44 +1446,44 @@ class SellMatrix {
                 std::size_t last ) const;
  [[nodiscard]] std::size_t chunks( void ) const;
  [[nodiscard]] std::size_t chunkStart( std::size_t c ) const;
- [[nodiscard]] std::vector< double > multiply(
-                                     const std::vector< double > & x ) const;
+ [[nodiscard]] std::vector< double >
+ multiply( const std::vector< double > & x ) const;
  };
 ```
 
-**A compressed matrix that grows by rows.** A `DynamicCsr` is a
-compressed sparse matrix that grows and shrinks by whole rows (or by whole
-columns, as `DynamicCsc`, when the major index is a column). We keep it at
-all times in the three arrays $\mathit{beg}$, $\mathit{ind}$ and
-$\mathit{val}$ that the solvers of linear programs take ([Gustavson
-1978](Z-bibliography.md#ref-gustavson1978)), and handing it over thus
-costs nothing. Its typical use is the bundle of the cuts of a
-decomposition, whose rows come in batches and go away in batches. Here
-$\mathit{beg}$ has one entry more than the rows, $\mathit{beg}[ i
-]$ being the first entry of the row $i$ and its last entry the number of
-the entries, and $\mathit{ind}$ and $\mathit{val}$ hold the minor index
-and the value of each entry, the rows one after the other. Its invariant
-is that $\mathit{beg}$ starts at 0, never decreases, and ends at the
-number of the entries. At the end, `append()` adds a row, or a block of
-$r$ rows given in the same form, in time linear in its entries amortized
-over the growth of the vectors. Conversely, `remove()` takes a strictly
-increasing set $E$ of rows and closes the gaps in one pass
-([Algorithm 17.20](17-numeric.md#alg-17-20) and
-[Figure 17.7](17-numeric.md#fig-17-7)), while `remove(first, last)` erases
-a range of consecutive rows at once. Each `append()` returns the index of
-the first row that it adds. The types of the indices and of the values are
-the parameters `I` (`int` by default, the `Index` of the class) and `V`
-(`double`, its `Value`), and the vectors that hold them are not zeroed
-when they grow. The rest of the interface reads and sizes the matrix:
-`rows()`, `nonzeros()` and `empty()`, `reserve(r, z)` for $r$ rows and
-$z$ entries, `clear()`, which keeps the memory, the spans `indices(i)` and
-`values(i)` of a row (the values writable), and the pointers `beg()`,
-`ind()` and `val()` that a solver takes:
+**A compressed matrix that grows by rows.** A `DynamicCsr` is a compressed
+sparse matrix that grows and shrinks by whole rows (or by whole columns, as
+`DynamicCsc`, when the major index is a column). We keep it at all times in
+the three arrays $\mathit{beg}$, $\mathit{ind}$ and $\mathit{val}$ that the
+solvers of linear programs take ([Gustavson
+1978](Z-bibliography.md#ref-gustavson1978)), and handing it over thus costs
+nothing. Its typical use is the bundle of the cuts of a decomposition, whose
+rows come in batches and go away in batches. Here $\mathit{beg}$ has one entry
+more than the rows, $\mathit{beg}[ i ]$ being the first entry of the row $i$
+and its last entry the number of the entries, and $\mathit{ind}$ and
+$\mathit{val}$ hold the minor index and the value of each entry, the rows one
+after the other. Its invariant is that $\mathit{beg}$ starts at 0, never
+decreases, and ends at the number of the entries. At the end, `append()` adds
+a row, or a block of $r$ rows given in the same form, in time linear in its
+entries amortized over the growth of the vectors. Conversely, `remove()` takes
+a strictly increasing set $E$ of rows and closes the gaps in one pass
+([Algorithm 17.20](17-numeric.md#alg-17-20) and [Figure
+17.7](17-numeric.md#fig-17-7)), while `remove( first , last )` erases a range
+of consecutive rows at once. Each `append()` returns the index of the first
+row that it adds. The types of the indices and of the values are the
+parameters `I` (`int` by default, the `Index` of the class) and `V` (`double`,
+its `Value`), and the vectors that hold them are not zeroed when they grow.
+The rest of the interface reads and sizes the matrix: `rows()`, `nonzeros()`
+and `empty()`, `reserve( r , z )` for $r$ rows and $z$ entries, `clear()`,
+which keeps the memory, the spans `indices( i )` and `values( i )` of a row
+(the values writable), and the pointers `beg()`, `ind()` and `val()` that a
+solver takes:
 
 ```cpp
 // declarations of <ADS/numeric/DynamicCsr.h>
 template< class I = int , class V = double >
-class DynamicCsr {
+class DynamicCsr
+{
  public:
  using Index = I;
  using Value = V;
@@ -1505,11 +1515,11 @@ For instance, with the header `ADS/numeric/DynamicCsr.h`, the run of
 
 ```cpp
 ADS::DynamicCsr<> D;
-for( std::vector< int > r : { std::vector< int >{ 0 , 1 } , { 2 } ,
-                              { 3 , 4 , 5 } , { 6 , 7 } } )
+for( std::vector< int > r :
+     { std::vector< int >{ 0 , 1 } , { 2 } , { 3 , 4 , 5 } , { 6 , 7 } } )
  D.append( r , std::vector< double >( r.size() , 1.0 ) );
-D.remove( std::vector< int >{ 1 , 3 } );   // two rows left, ( 0 , 1 ) and
-                                           // ( 3 , 4 , 5 ), 5 entries
+D.remove( std::vector< int >{ 1 , 3 } );  // two rows left, ( 0 , 1 ) and
+                                         // ( 3 , 4 , 5 ), 5 entries
 ```
 
 <span id="alg-17-20"></span>**Algorithm 17.20.** Append of a row and
@@ -1524,11 +1534,10 @@ the removal of a set of rows, of `DynamicCsr`.
 
 ![Figure 17.7. A `DynamicCsr` of four rows, $( a , b )$, $( c )$, $( d , e , f )$ and $( g , h )$, before and after `remove({1,3})`: the entries of the rows removed (faintest tint) are overwritten by those of the rows kept after them, each moved once (violet).](../figures/numeric-dynamiccsr.svg){#fig-17-7}
 
-<span id="lem-17-13"></span>**Lemma 17.13.** *`remove(E)` leaves the
-rows not in $E$ in their order, with their entries, in $O( r + z' )$ time
-and no memory beyond the arrays, where $r$ is the number of the rows from
-the first one of $E$ on and $z'$ the number of the entries after the start
-of that row.*
+<span id="lem-17-13"></span>**Lemma 17.13.** *`remove( E )` leaves the rows
+not in $E$ in their order, with their entries, in $O( r + z' )$ time and no
+memory beyond the arrays, where $r$ is the number of the rows from the first
+one of $E$ on and $z'$ the number of the entries after the start of that row.*
 
 *Proof.* No row before $E[ 0 ]$ moves. From $E[ 0 ]$ on, the loop visits
 the rows in order, and it moves a row kept to the place $o$. This is
@@ -1584,26 +1593,25 @@ by the sort of the library otherwise. Note that $o$ never exceeds the
 place of the next triplet of $i$ to be read, and the compaction thus never
 overwrites a triplet not yet read. $\square$
 
-We thus scatter the entries over memory in one pass only. By contrast, the sort by
-the least significant index first, or the transposition of a matrix built
-by the other index (as `setFromTriplets()` of Eigen does), scatters them
-twice. For rows or columns of bounded length the time is $O( z + m + n
-)$,
-and the workspace holds a cursor per major index, a mark per minor one and
-the pairs of the longest major index past 32 entries. Entries summed to 0
-stay, as the solvers accept them. We remark that the mark of a minor
-index (a place plus 1) never needs to be cleared between the major
-indices, since the comparison with $f$ makes the marks of the earlier ones
-stale by themselves. The workspace is an `AssemblyWorkspace<I, V>`, whose
-vectors grow to the largest assembly seen; a form of `compressTriplets()`
-without it allocates a temporary one. All three functions return the number
-of the entries written, i.e., $\mathit{beg}[ \mathit{nmajor} ]$. We
-declare them as
+We thus scatter the entries over memory in one pass only. By contrast, the
+sort by the least significant index first, or the transposition of a matrix
+built by the other index (as `setFromTriplets()` of Eigen does), scatters them
+twice. For rows or columns of bounded length the time is $O( z + m + n )$, and
+the workspace holds a cursor per major index, a mark per minor one and the
+pairs of the longest major index past 32 entries. Entries summed to 0 stay, as
+the solvers accept them. We remark that the mark of a minor index (a place
+plus 1) never needs to be cleared between the major indices, since the
+comparison with $f$ makes the marks of the earlier ones stale by themselves.
+The workspace is an `AssemblyWorkspace< I , V >`, whose vectors grow to the
+largest assembly seen; a form of `compressTriplets()` without it allocates a
+temporary one. All three functions return the number of the entries written,
+i.e., $\mathit{beg}[ \mathit{nmajor} ]$. We declare them as
 
 ```cpp
 // declarations of <ADS/numeric/SparseAssembly.h>
 template< class I , class V >
-struct AssemblyWorkspace {
+struct AssemblyWorkspace
+{
  template< class U >
  using Vector = std::vector< U , detail::DefaultInitAllocator< U > >;
  Vector< I > cursor;
@@ -1614,8 +1622,8 @@ struct AssemblyWorkspace {
 template< class I , class V , class J >
 std::size_t compressTriplets( std::size_t nmajor , std::size_t nminor ,
                               std::size_t z , const J * major ,
-                              const J * minor , const V * value , I * beg ,
-                              I * ind , V * val ,
+                              const J * minor ,
+                              const V * value , I * beg , I * ind , V * val ,
                               AssemblyWorkspace< I , V > & work );
 template< class I , class V , class J >
 std::size_t assembleCsc( std::size_t m , std::size_t n , std::size_t z ,
@@ -1699,9 +1707,9 @@ counts the trailing zeros of a word.
 
 --8<-- "generated/NumberTheory-binaryGcd.pseudo.md"
 
-<span id="lem-17-16"></span>**Lemma 17.16.** *For $a , b > 0$, `binaryGcd(a, b)` returns
-$\gcd( a , b )$ after at most $\log_2 a + \log_2 b + 2$ iterations of its
-loop.*
+<span id="lem-17-16"></span>**Lemma 17.16.** *For $a , b > 0$,
+`binaryGcd( a , b )` returns $\gcd( a , b )$ after at most
+$\log_2 a + \log_2 b + 2$ iterations of its loop.*
 
 *Proof.* At an iteration, the value of $\gcd$ does not change, by the two
 identities above and since the shifts remove factors 2 from one number
@@ -1909,8 +1917,8 @@ Eratosthenes.
 
 --8<-- "generated/NumberTheory-sieve.pseudo.md"
 
-<span id="lem-17-19"></span>**Lemma 17.19.** *`sieve(n)` returns the
-primes up to $n$ in increasing order, in $O( n \log \log n )$ time.*
+<span id="lem-17-19"></span>**Lemma 17.19.** *`sieve( n )` returns the primes
+up to $n$ in increasing order, in $O( n \log \log n )$ time.*
 
 *Proof.* A number $p$ left in the set when the loop reaches it has no
 prime factor below it, since each prime $p' < p$ removed its multiples
@@ -1965,14 +1973,15 @@ as
 using U64 = std::uint64_t;
 inline U64 gcd( U64 s , U64 m );
 [[nodiscard]] constexpr U64 binaryGcd( U64 a , U64 b );
-inline std::tuple< long long , long long , long long > extendedEuclid(
-                                                   long long s , long long m );
+inline std::tuple< long long , long long , long long >
+extendedEuclid( long long s , long long m );
 inline long long modInverse( long long s , long long m );
 inline constexpr U64 kMersenne61 = ( U64( 1 ) << 61 ) - 1;
 [[nodiscard]] constexpr U64 mulMod61( U64 a , U64 b );
 [[nodiscard]] constexpr U64 mulMod( U64 a , U64 b , U64 m );
 
-class Montgomery64 {
+class Montgomery64
+{
  public:
  explicit constexpr Montgomery64( U64 n );
  [[nodiscard]] constexpr U64 modulus( void ) const;
@@ -1992,9 +2001,9 @@ inline bool isPrime( U64 n );
 inline std::vector< U64 > sieve( U64 n );
 inline std::vector< U64 > factorize( U64 n );
 
-struct RsaKey {
- U64 N ,
-     e;
+struct RsaKey
+{
+ U64 N , e;
  };
 template< class R >
 U64 randomPrime( int bits , R & rng );
@@ -2012,11 +2021,11 @@ with the headers `ADS/numeric/NumberTheory.h`, `ADS/numeric/RSA.h` and
 ```cpp
 bool p = ADS::isPrime( 18446744073709551557ULL );  // true, 2^64 - 59
 std::vector< ADS::U64 > F = ADS::factorize( 600851475143ULL );
-                                           // F is ( 71 , 839 , 1471 , 6857 )
+// F is ( 71 , 839 , 1471 , 6857 )
 ADS::Xoshiro256 g( 42 );
 auto [ pub , priv ] = ADS::rsaKeys( g );
 ADS::U64 c = ADS::rsa( 1234567 , pub );
-ADS::U64 m = ADS::rsa( c , priv );         // m is 1234567
+ADS::U64 m = ADS::rsa( c , priv );  // m is 1234567
 ```
 
 ## 17.9 Random numbers {#sec-17-9}
@@ -2040,30 +2049,27 @@ and $m$ are coprime, (ii) $a - 1$ is a multiple of every prime factor of
 $m$, and (iii) $a - 1$ is a multiple of 4 if $m$ is.*
 
 We refer to [Hull and Dobell 1962](Z-bibliography.md#ref-hull1962) and to
-[Knuth 1998, Theorem 3.2.1.2A](Z-bibliography.md#ref-knuth1998v2) for
-the proof, which counts the period modulo each prime power of $m$. In the
-code, `minstd()` gives the multiplicative generator of [Park and
-Miller 1988](Z-bibliography.md#ref-park1988) ($c = 0$, $m = 2^{31} - 1$,
-$a = 16807$, of period $m - 1$ for $X_0 \ne 0$, since $m$ is prime and
-$16807 = 7^5$ is a primitive root modulo $m$, which [Knuth 1998,
-Theorem 3.2.1.2B](Z-bibliography.md#ref-knuth1998v2) shows to be the
-condition of the largest period when $c = 0$, a case that the theorem
-does not cover), and
-`mmix()` that of Knuth for MMIX, with $m = 2^{64}$. In
-`LinearCongruential` the parameters are values at run time, and so are its `min()` and
-`max()`, which a UniformRandomBitGenerator of the standard library must
-have constant. Hence `LinearCongruentialT` is the same generator with $a$,
-$c$ and $m$ fixed at compile time, which the distributions of `std` take,
-and `MinStd` and `Mmix` are those of Park and Miller and of Knuth. One
-can measure the period of a generator by `period()`, with the cycle
-detection
-of [Brent 1980](Z-bibliography.md#ref-brent1980): a tortoise jumps to the
-hare at each power of 2, and the hare counts its steps from the last
-jump, in $O( \lambda + \mu )$ steps for a period $\lambda$ after $\mu$
-numbers; `period(limit)` returns 0 when the period exceeds the limit. The
-constructor takes $a$, $c$, $m$ (0 standing for $2^{64}$) and the seed
-$X_0$, and `min()` is 1 when $c = 0$, since a multiplicative generator
-never gives 0.
+[Knuth 1998, Theorem 3.2.1.2A](Z-bibliography.md#ref-knuth1998v2) for the
+proof, which counts the period modulo each prime power of $m$. In the code,
+`minstd()` gives the multiplicative generator of [Park and Miller
+1988](Z-bibliography.md#ref-park1988) ($c = 0$, $m = 2^{31} - 1$, $a = 16807$,
+of period $m - 1$ for $X_0 \ne 0$, since $m$ is prime and $16807 = 7^5$ is a
+primitive root modulo $m$, which [Knuth 1998, Theorem
+3.2.1.2B](Z-bibliography.md#ref-knuth1998v2) shows to be the condition of the
+largest period when $c = 0$, a case that the theorem does not cover), and
+`mmix()` that of Knuth for MMIX, with $m = 2^{64}$. In `LinearCongruential`
+the parameters are values at run time, and so are its `min()` and `max()`,
+which a UniformRandomBitGenerator of the standard library must have constant.
+Hence `LinearCongruentialT` is the same generator with $a$, $c$ and $m$ fixed
+at compile time, which the distributions of `std` take, and `MinStd` and
+`Mmix` are those of Park and Miller and of Knuth. One can measure the period
+of a generator by `period()`, with the cycle detection of [Brent
+1980](Z-bibliography.md#ref-brent1980): a tortoise jumps to the hare at each
+power of 2, and the hare counts its steps from the last jump, in
+$O( \lambda + \mu )$ steps for a period $\lambda$ after $\mu$ numbers;
+`period( limit )` returns 0 when the period exceeds the limit. The constructor
+takes $a$, $c$, $m$ (0 standing for $2^{64}$) and the seed $X_0$, and `min()`
+is 1 when $c = 0$, since a multiplicative generator never gives 0.
 
 --8<-- "generated/RandomNumbers-LinearCongruential-period.pseudo.md"
 
@@ -2129,22 +2135,21 @@ generator also compares equal to another in the same state.
   the Weyl sequence $s_{i+1} = s_i + c \bmod 2^{64}$, $c$ odd, of period
   $2^{64}$, hashed by the folding of a product of 128 bits, $h \oplus l$
   for $h 2^{64} + l = s ( s \oplus c' )$.
-- `Philox4x32` and `Philox4x64` are the counter-based generators
-  Philox4xW-10 of [Salmon et al. 2011](Z-bibliography.md#ref-salmon2011):
-  the output for the counter $c$ (4 words of $W$ bits) and the key $k$ (2
-  words) is 10 rounds of the bijection $( c_0 , c_1 , c_2 , c_3 ) \mapsto
-  ( h( M_1 c_2 ) \oplus c_1 \oplus k_0 , l( M_1 c_2 ) , h( M_0 c_0 ) \oplus
-  c_3 \oplus k_1 , l( M_0 c_0 ) )$, $h$ and $l$ the high and the low word
-  of a product of $2 W$ bits, the key bumped by the Weyl constants $w_0$
-  and $w_1$ between the rounds. Since the counter only increases,
-  `discard(z)` costs $O( 1 )$, and any block of the stream is computed on
-  its own, as a parallel computation needs; this sequence is that of
-  `std::philox4x32` and `std::philox4x64` of C++26. Two blocks are
-  computed at once, their rounds interleaved, and the products of one may
-  thus fill the latency of those of the other. The seed $\sigma$ gives the
-  key $( \sigma , 0 )$ and the counter 0 (the default seed is 20111115,
+- `Philox4x32` and `Philox4x64` are the counter-based generators Philox4xW-10
+  of [Salmon et al. 2011](Z-bibliography.md#ref-salmon2011): the output for
+  the counter $c$ (4 words of $W$ bits) and the key $k$ (2 words) is 10 rounds
+  of the bijection
+  $( c_0 , c_1 , c_2 , c_3 ) \mapsto ( h( M_1 c_2 ) \oplus c_1 \oplus k_0 , l( M_1 c_2 ) , h( M_0 c_0 ) \oplus c_3 \oplus k_1 , l( M_0 c_0 ) )$,
+  $h$ and $l$ the high and the low word of a product of $2 W$ bits, the key
+  bumped by the Weyl constants $w_0$ and $w_1$ between the rounds. Since the
+  counter only increases, `discard( z )` costs $O( 1 )$, and any block of the
+  stream is computed on its own, as a parallel computation needs; this
+  sequence is that of `std::philox4x32` and `std::philox4x64` of C++26. Two
+  blocks are computed at once, their rounds interleaved, and the products of
+  one may thus fill the latency of those of the other. The seed $\sigma$ gives
+  the key $( \sigma , 0 )$ and the counter 0 (the default seed is 20111115,
   that of C++26), `setCounter()` moves to the counter of a given `Block`,
-  whose block then gives the next outputs, and the static `block(c, k)`
+  whose block then gives the next outputs, and the static `block( c , k )`
   computes the bijection for a counter and a `Key`.
 
 <span id="alg-17-31"></span>**Algorithm 17.31.** Steps of xoshiro256++,
@@ -2160,23 +2165,24 @@ of the jump, of WyRand and of Philox.
 
 --8<-- "generated/RandomGenerators-PhiloxT-discard.pseudo.md"
 
-**Integers in a range.** Drawing $g() \bmod s$, as usual, is biased (the residues
-below $2^{64} \bmod s$ come once more than the others) and costs a
-division. `uniformBelow(g, s)` is the method of [Lemire
-2019](Z-bibliography.md#ref-lemire2019): for the word $x$, $x s = h 2^{64}
-+ l$, and the result is $h$, once the $l$ below $t = 2^{64} \bmod s$ are
-rejected ([Algorithm 17.32](17-numeric.md#alg-17-32)).
+**Integers in a range.** Drawing $g() \bmod s$, as usual, is biased (the
+residues below $2^{64} \bmod s$ come once more than the others) and costs a
+division. `uniformBelow( g , s )` is the method of [Lemire
+2019](Z-bibliography.md#ref-lemire2019): for the word $x$,
+$x s = h 2^{64} + l$, and the result is $h$, once the $l$ below
+$t = 2^{64} \bmod s$ are rejected ([Algorithm
+17.32](17-numeric.md#alg-17-32)).
 
 <span id="alg-17-32"></span>**Algorithm 17.32.** Integer uniform in
 $[ 0 , s )$ of [Lemire 2019](Z-bibliography.md#ref-lemire2019).
 
 --8<-- "generated/RandomGenerators-uniformBelow.pseudo.md"
 
-<span id="lem-17-20"></span>**Lemma 17.20 (Lemire).** *If $x$ is uniform
-on the words, the result of `uniformBelow(g, s)` is uniform in $[ 0 , s )$;
-a word is rejected with probability $t / 2^{64} < s / 2^{64}$, and the
-division that computes $t$ is made only when $l < s$, i.e., with
-probability $s / 2^{64}$.*
+<span id="lem-17-20"></span>**Lemma 17.20 (Lemire).** *If $x$ is uniform on
+the words, the result of `uniformBelow( g , s )` is uniform in $[ 0 , s )$; a
+word is rejected with probability $t / 2^{64} < s / 2^{64}$, and the division
+that computes $t$ is made only when $l < s$, i.e., with probability
+$s / 2^{64}$.*
 
 *Proof.* For a given $h$, the $x$ with $\lfloor x s / 2^{64} \rfloor = h$
 give $l = x s - h 2^{64}$, which runs through the integers of $[ 0 ,
@@ -2314,17 +2320,18 @@ cell plus the $1 - \mathit{keep}[ s ]$ of each cell whose alias it is,
 i.e., its initial share $p_i = n w_i / \sum_j w_j$. Since each cell has
 probability $1 / n$, the claim follows. $\square$
 
-In floating point the remaining shares are 1 up to the rounding, and we
-set them to 1; the cells and the coins drawn from a word are off the
-exact ones by at most $n / 2^{64}$ each, as for the products of Lemire with
-no rejection. The weights must be finite and nonnegative, with a positive sum,
-and at most $2^{32} - 1$ in number; a draw is `table(g)`, `size()` returns $n$, and
-`probability(i)` gives the probability of $i$ as the table holds it, which
+In floating point the remaining shares are 1 up to the rounding, and we set
+them to 1; the cells and the coins drawn from a word are off the exact ones by
+at most $n / 2^{64}$ each, as for the products of Lemire with no rejection.
+The weights must be finite and nonnegative, with a positive sum, and at most
+$2^{32} - 1$ in number; a draw is `table( g )`, `size()` returns $n$, and
+`probability( i )` gives the probability of $i$ as the table holds it, which
 the tests compare with $w_i / \sum_j w_j$. In `RandomNumbers.h` we declare
 
 ```cpp
 // declarations of <ADS/numeric/RandomNumbers.h>
-class LinearCongruential {
+class LinearCongruential
+{
  public:
  using result_type = std::uint64_t;
  LinearCongruential( std::uint64_t a , std::uint64_t c , std::uint64_t m ,
@@ -2338,7 +2345,8 @@ class LinearCongruential {
  };
 
 template< std::uint64_t a , std::uint64_t c , std::uint64_t m >
-class LinearCongruentialT {
+class LinearCongruentialT
+{
  public:
  using result_type = std::uint64_t;
  explicit constexpr LinearCongruentialT( std::uint64_t seed = 1 );
@@ -2348,13 +2356,13 @@ class LinearCongruentialT {
  bool operator==( const LinearCongruentialT & ) const = default;
  };
 using MinStd = LinearCongruentialT< 16807 , 0 , 2147483647 >;
-using Mmix = LinearCongruentialT< 6364136223846793005ULL ,
-                                  1442695040888963407ULL , 0 >;
+using Mmix =
+  LinearCongruentialT< 6364136223846793005ULL , 1442695040888963407ULL , 0 >;
 
 inline double chiSquare( const std::vector< long > & Y ,
                          const std::vector< double > & p );
-inline std::pair< double , double > kolmogorovSmirnov(
-                                             std::vector< double > U );
+inline std::pair< double , double >
+kolmogorovSmirnov( std::vector< double > U );
 inline double serialTest( const std::vector< double > & U , int d );
 inline double spectralTest2( std::uint64_t a , std::uint64_t m );
 template< class T , class R >
@@ -2364,7 +2372,8 @@ std::vector< std::size_t > selectionSampling( std::size_t n , std::size_t N ,
                                               R & g );
 template< class T , class R >
 std::vector< T > reservoirSampling( const std::vector< T > & S ,
-                                    std::size_t n , R & g );
+                                    std::size_t n ,
+                                    R & g );
 ```
 
 and in `RandomGenerators.h`
@@ -2373,15 +2382,16 @@ and in `RandomGenerators.h`
 // declarations of <ADS/numeric/RandomGenerators.h>
 template< class G >
 concept FullWordGenerator =
- std::uniform_random_bit_generator< std::remove_reference_t< G > > &&
- std::same_as< typename std::remove_reference_t< G >::result_type ,
-               std::uint64_t > &&
- ( std::remove_reference_t< G >::min() == 0 ) &&
- ( std::remove_reference_t< G >::max() ==
-   std::numeric_limits< std::uint64_t >::max() );
+  std::uniform_random_bit_generator< std::remove_reference_t< G > > &&
+  std::same_as< typename std::remove_reference_t< G >::result_type ,
+                std::uint64_t > &&
+  ( std::remove_reference_t< G >::min() == 0 ) &&
+  ( std::remove_reference_t< G >::max() ==
+    std::numeric_limits< std::uint64_t >::max() );
 
 template< bool StarStar >
-class Xoshiro256T {
+class Xoshiro256T
+{
  public:
  using result_type = std::uint64_t;
  explicit constexpr Xoshiro256T( std::uint64_t seed = 1 );
@@ -2395,7 +2405,8 @@ using Xoshiro256 = Xoshiro256T< false >;
 using Xoshiro256StarStar = Xoshiro256T< true >;
 
 template< class W >
-class PhiloxT {
+class PhiloxT
+{
  public:
  using result_type = W;
  using Block = std::array< W , 4 >;
@@ -2413,7 +2424,8 @@ class PhiloxT {
 using Philox4x32 = PhiloxT< std::uint32_t >;
 using Philox4x64 = PhiloxT< std::uint64_t >;
 
-class AliasTable {
+class AliasTable
+{
  public:
  explicit AliasTable( const std::vector< double > & w );
  [[nodiscard]] std::size_t size( void ) const;
@@ -2440,11 +2452,11 @@ instance, with the header `ADS/numeric/RandomGenerators.h`,
 ```cpp
 ADS::Xoshiro256 g( 2026 );
 std::uint64_t d = ADS::uniformBelow( g , 6 ) + 1;  // a fair die
-double z = ADS::normalZiggurat( g );       // a standard normal variate
+double z = ADS::normalZiggurat( g );              // a standard normal variate
 std::normal_distribution< double > N( 0.0 , 1.0 );
-double y = N( g );                         // the distributions of std too
-ADS::AliasTable A( { 1 , 2 , 4 , 1 } );    // Figure 17.8
-std::size_t i = A( g );                    // 2 with probability 1/2
+double y = N( g );                    // the distributions of std too
+ADS::AliasTable A( { 1 , 2 , 4 , 1 } );  // Figure 17.8
+std::size_t i = A( g );               // 2 with probability 1/2
 std::vector< int > v = { 1 , 2 , 3 , 4 , 5 };
 ADS::shuffleFast( v.begin() , v.end() , g );
 ```
@@ -2608,8 +2620,8 @@ template< class R >
 std::vector< std::size_t > sampleBySwaps( std::size_t n , std::size_t N ,
                                           R & g );
 template< class R >
-std::vector< std::size_t > sampleByDictionary( std::size_t n ,
-                                               std::size_t N , R & g );
+std::vector< std::size_t > sampleByDictionary( std::size_t n , std::size_t N ,
+                                               R & g );
 template< class R >
 std::vector< std::size_t > sampleBySorting( std::size_t n , std::size_t N ,
                                             R & g ,
@@ -2633,11 +2645,11 @@ and, for instance, with the headers `ADS/numeric/RandomSampling.h` and
 ```cpp
 ADS::Xoshiro256 g( 7 );
 std::vector< std::size_t > P = ADS::sampleBySkips( 5 , 1000000 , g );
-                                           // 5 sorted positions
+// 5 sorted positions
 std::istringstream in( "a b c d e f g h" );
 std::vector< std::string > R = ADS::reservoirSampleL(
-             std::istream_iterator< std::string >( in ) ,
-             std::istream_iterator< std::string >() , 3 , g );  // 3 words
+  std::istream_iterator< std::string >( in ) ,
+  std::istream_iterator< std::string >() , 3 , g );  // 3 words
 ```
 
 ## 17.11 Discussion and references {#sec-17-11}

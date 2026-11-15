@@ -92,7 +92,7 @@
 
 #ifndef __ADS_ArithmeticCoding
  #define __ADS_ArithmeticCoding
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -116,7 +116,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- THE EXACT ARITHMETIC CODE ------------------------*/
@@ -139,9 +140,9 @@ namespace ADS {
 /// \pre the probabilities are positive with sum 1, and each symbol of
 ///      `text` is in `prob`
 template< class C >
-[[nodiscard]] std::pair< Rational , Rational > arithmeticInterval(
-                                   std::span< const C > text ,
-                                   const std::map< C , Rational > & prob );
+[[nodiscard]] std::pair< Rational , Rational >
+arithmeticInterval( std::span< const C > text ,
+		    const std::map< C , Rational > & prob );
 
 /// the arithmetic code of `text`: the first
 /// \f$ \lceil \log_2( 2 / s ) \rceil \f$ bits of \f$ l + s / 2 \f$, a string
@@ -166,9 +167,9 @@ template< class C >
 /// \pre as `arithmeticInterval()`
 /// \post the code, as a fraction, is in \f$ [ l , l + s ) \f$
 template< class C >
-[[nodiscard]] std::string arithmeticCodeExact(
-                                   std::span< const C > text ,
-                                   const std::map< C , Rational > & prob );
+[[nodiscard]] std::string
+arithmeticCodeExact( std::span< const C > text ,
+		     const std::map< C , Rational > & prob );
 
 /// the text of \f$ n \f$ symbols of the code `bits`
 ///
@@ -188,9 +189,9 @@ template< class C >
 /// \pre the probabilities are positive with sum 1, `bits` is a string of
 ///      `'0'` and `'1'`
 template< class C >
-[[nodiscard]] std::vector< C > arithmeticDecodeExact(
-                                   const std::string & bits , std::size_t n ,
-                                   const std::map< C , Rational > & prob );
+[[nodiscard]] std::vector< C >
+arithmeticDecodeExact( const std::string & bits , std::size_t n ,
+		       const std::map< C , Rational > & prob );
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS RangeEncoder ---------------------------*/
@@ -198,11 +199,11 @@ template< class C >
 
 /// the integer arithmetic encoder of Witten, Neal and Cleary on \f$ w \f$
 /// bits
-class RangeEncoder {
+class RangeEncoder
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the encoder on \f$ w \f$ bits, with the interval \f$ [ 0 , M ) \f$,
  /// \f$ M = 2^w \f$
  /// \pre \f$ 2 \le w \le 32 \f$
@@ -249,15 +250,14 @@ class RangeEncoder {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// emits \f$ b \f$ and the pending bits, the opposite of \f$ b \f$
  void emit( bool b );
 
- std::uint64_t f_M;                ///< \f$ M = 2^w \f$
- std::uint64_t f_low = 0;          ///< \f$ L \f$, the low end of the interval
- std::uint64_t f_high;             ///< its \f$ H \f$
- std::size_t f_pending = 0;        ///< the underflows to emit
- PackedBitWriter f_out;            ///< the bits emitted
+ std::uint64_t f_M;          ///< \f$ M = 2^w \f$
+ std::uint64_t f_low = 0;    ///< \f$ L \f$, the low end of the interval
+ std::uint64_t f_high;       ///< its \f$ H \f$
+ std::size_t f_pending = 0;  ///< the underflows to emit
+ PackedBitWriter f_out;      ///< the bits emitted
 
  };  // end( class RangeEncoder )
 
@@ -266,11 +266,11 @@ class RangeEncoder {
 /*--------------------------------------------------------------------------*/
 
 /// the decoder of a `RangeEncoder` on \f$ w \f$ bits
-class RangeDecoder {
+class RangeDecoder
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the decoder of the code `bytes`, which must outlive it
  /// \pre \f$ 2 \le w \le 32 \f$
  explicit RangeDecoder( std::span< const std::uint8_t > bytes , int w = 32 );
@@ -319,17 +319,15 @@ class RangeDecoder {
  /// \pre \f$ \mathit{low} < \mathit{high} \le \mathit{total} \le \f$
  ///      `maxTotal()`
  /// \invariant \f$ L \le v < H \f$
- void consume( std::uint64_t low , std::uint64_t high ,
-               std::uint64_t total );
+ void consume( std::uint64_t low , std::uint64_t high , std::uint64_t total );
 
 /*--------------------------------------------------------------------------*/
  private:
-
- std::uint64_t f_M;                ///< \f$ M = 2^w \f$
- std::uint64_t f_low = 0;          ///< \f$ L \f$, the low end of the interval
- std::uint64_t f_high;             ///< its \f$ H \f$
- std::uint64_t f_v = 0;            ///< \f$ v \f$, the \f$ w \f$ bits read
- PackedBitReader f_in;             ///< the bits of the code
+ std::uint64_t f_M;        ///< \f$ M = 2^w \f$
+ std::uint64_t f_low = 0;  ///< \f$ L \f$, the low end of the interval
+ std::uint64_t f_high;     ///< its \f$ H \f$
+ std::uint64_t f_v = 0;    ///< \f$ v \f$, the \f$ w \f$ bits read
+ PackedBitReader f_in;     ///< the bits of the code
 
  };  // end( class RangeDecoder )
 
@@ -359,10 +357,9 @@ class RangeDecoder {
 /// \post `arithmeticDecode( result , text.size() , counts , w )` is `text`
 ///       (audit)
 template< class C >
-[[nodiscard]] std::vector< std::uint8_t > arithmeticEncode(
-                         std::span< const C > text ,
-                         const std::map< C , std::uint64_t > & counts ,
-                         int w = 32 );
+[[nodiscard]] std::vector< std::uint8_t >
+arithmeticEncode( std::span< const C > text ,
+		  const std::map< C , std::uint64_t > & counts , int w = 32 );
 
 /// the \f$ n \f$ symbols of the code with the static model of the counts
 ///
@@ -382,10 +379,9 @@ template< class C >
 /// \f]
 /// \pre as `arithmeticEncode()`
 template< class C >
-[[nodiscard]] std::vector< C > arithmeticDecode(
-                         std::span< const std::uint8_t > code , std::size_t n ,
-                         const std::map< C , std::uint64_t > & counts ,
-                         int w = 32 );
+[[nodiscard]] std::vector< C >
+arithmeticDecode( std::span< const std::uint8_t > code , std::size_t n ,
+		  const std::map< C , std::uint64_t > & counts , int w = 32 );
 
 /// the adaptive arithmetic code of the symbols of \f$ x \f$ in
 /// \f$ [ 0 , \sigma ) \f$
@@ -412,8 +408,9 @@ template< class C >
 ///      \f$ \sigma \f$
 /// \post `adaptiveArithmeticDecode( result , x.size() , sigma )` is \f$ x \f$
 ///       (audit)
-[[nodiscard]] inline std::vector< std::uint8_t > adaptiveArithmeticEncode(
-                    std::span< const std::uint32_t > x , std::uint32_t sigma );
+[[nodiscard]] inline std::vector< std::uint8_t >
+adaptiveArithmeticEncode( std::span< const std::uint32_t > x ,
+			  std::uint32_t sigma );
 
 /// the \f$ n \f$ symbols of the adaptive arithmetic code in
 /// \f$ [ 0 , \sigma ) \f$
@@ -437,21 +434,23 @@ template< class C >
 /// \end{array}}
 /// \f]
 /// \pre \f$ 1 \le \sigma \le 2^{20} \f$
-[[nodiscard]] inline std::vector< std::uint32_t > adaptiveArithmeticDecode(
-                    std::span< const std::uint8_t > code , std::size_t n ,
-                    std::uint32_t sigma );
+[[nodiscard]] inline std::vector< std::uint32_t >
+adaptiveArithmeticDecode( std::span< const std::uint8_t > code ,
+			  std::size_t n ,
+			  std::uint32_t sigma );
 
 /// the adaptive arithmetic code of the bytes of \f$ s \f$, those of
 /// `adaptiveArithmeticEncode()` above with \f$ \sigma = 256 \f$
 /// \post `adaptiveArithmeticDecode( result , s.size() )` is \f$ s \f$
 ///       (audit)
-[[nodiscard]] inline std::vector< std::uint8_t > adaptiveArithmeticEncode(
-                                                         std::string_view s );
+[[nodiscard]] inline std::vector< std::uint8_t >
+adaptiveArithmeticEncode( std::string_view s );
 
 /// the \f$ n \f$ bytes of the adaptive arithmetic code, by
 /// `adaptiveArithmeticDecode()` above with \f$ \sigma = 256 \f$
-[[nodiscard]] inline std::string adaptiveArithmeticDecode(
-                    std::span< const std::uint8_t > code , std::size_t n );
+[[nodiscard]] inline std::string
+adaptiveArithmeticDecode( std::span< const std::uint8_t > code ,
+			  std::size_t n );
 
 /*--------------------------------------------------------------------------*/
 
@@ -465,7 +464,7 @@ template< class C >
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ArithmeticCoding.h included */
+#endif /* ArithmeticCoding.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File ArithmeticCoding.h -----------------------*/

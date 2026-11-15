@@ -14,12 +14,14 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline std::uint64_t binomial( int n , int k , long * calls )
 {
  ADS_PRE( ( k >= 0 ) && ( k <= n ) && ( n <= 67 ) );
- if( calls ) ++*calls;
+ if( calls )
+  ++*calls;
  if( ( k == 0 ) || ( k == n ) )
   return( 1 );
  return( binomial( n - 1 , k - 1 , calls ) + binomial( n - 1 , k , calls ) );

@@ -57,7 +57,7 @@
 
 #ifndef __ADS_BinarySearch
  #define __ADS_BinarySearch
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -76,7 +76,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the place of \f$ v \f$ in the sorted \f$ A \f$, or -1; `trace( i , j , m )`
 /// on each call that examines \f$ A[ m ] \f$
@@ -151,13 +152,13 @@ BinaryTree< T > * decisionTree( const std::vector< T > & A );
 ///       \f$ [ \mathit{lo} , \mathit{hi} ] \f$
 template< class T , class C = std::less<> >
 std::size_t lowerBound( const std::vector< T > & A , const T & v ,
-                        std::size_t lo , std::size_t hi , C less = C() );
+			std::size_t lo , std::size_t hi , C less = C() );
 
 /// the place of `lowerBound()` above in the whole of \f$ A \f$, i.e.,
 /// `lowerBound( A , v , 0 , n )`
 template< class T , class C = std::less<> >
 std::size_t lowerBound( const std::vector< T > & A , const T & v ,
-                        C less = C() );
+			C less = C() );
 
 /// the first place of an item larger than \f$ v \f$, \f$ n \f$ if none
 ///
@@ -179,7 +180,7 @@ std::size_t lowerBound( const std::vector< T > & A , const T & v ,
 /// \post \f$ A[ r - 1 ] \le v < A[ r ] \f$
 template< class T , class C = std::less<> >
 std::size_t upperBound( const std::vector< T > & A , const T & v ,
-                        C less = C() );
+			C less = C() );
 
 /// the first place \f$ h \f$ of an item not smaller than \f$ v \f$, found by
 /// looking at the places \f$ 0 , 1 , 3 , 7 , \ldots \f$ and then by a binary
@@ -205,7 +206,7 @@ std::size_t upperBound( const std::vector< T > & A , const T & v ,
 /// \post \f$ A[ r - 1 ] < v \le A[ r ] \f$
 template< class T , class C = std::less<> >
 std::size_t gallopSearch( const std::vector< T > & A , const T & v ,
-                          C less = C() );
+			  C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
@@ -219,7 +220,7 @@ std::size_t gallopSearch( const std::vector< T > & A , const T & v ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BinarySearch.h included */
+#endif /* BinarySearch.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File BinarySearch.h -------------------------*/

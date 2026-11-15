@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< Sequence S >
 SequenceRange< S > range( const S & s )

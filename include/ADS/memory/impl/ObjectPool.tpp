@@ -14,27 +14,25 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , class A >
 ObjectPool< T , A >::ObjectPool( std::size_t n , const A & alloc )
- : f_n( n ) , f_alloc( alloc )
+    : f_n( n ) , f_alloc( alloc )
 {
  ADS_PRE( n >= 1 );
  }
 
 template< class T , class A >
 ObjectPool< T , A >::ObjectPool( ObjectPool && other ) noexcept
- : f_free( std::exchange( other.f_free , nullptr ) ) ,
-   f_next( std::exchange( other.f_next , nullptr ) ) ,
-   f_end( std::exchange( other.f_end , nullptr ) ) ,
-   f_last( std::exchange( other.f_last , nullptr ) ) ,
-   f_reuse( std::exchange( other.f_reuse , nullptr ) ) ,
-   f_n( other.f_n ) ,
-   f_size( std::exchange( other.f_size , 0 ) ) ,
-   f_alloc( other.f_alloc )
-{
- }
+    : f_free( std::exchange( other.f_free , nullptr ) ) ,
+      f_next( std::exchange( other.f_next , nullptr ) ) ,
+      f_end( std::exchange( other.f_end , nullptr ) ) ,
+      f_last( std::exchange( other.f_last , nullptr ) ) ,
+      f_reuse( std::exchange( other.f_reuse , nullptr ) ) , f_n( other.f_n ) ,
+      f_size( std::exchange( other.f_size , 0 ) ) , f_alloc( other.f_alloc )
+{ }
 
 template< class T , class A >
 ObjectPool< T , A > &
@@ -56,9 +54,9 @@ void ObjectPool< T , A >::release( void ) noexcept
 {
  while( Block * b = f_last ) {
   f_last = b->prev;
-  ADS_UNPOISON( b , b->k * sizeof( Slot ) );   // dropped by clear()
-  std::allocator_traits< SlotAlloc >::deallocate( f_alloc ,
-   reinterpret_cast< Slot * >( b ) , b->k );
+  ADS_UNPOISON( b , b->k * sizeof( Slot ) );  // dropped by clear()
+  std::allocator_traits< SlotAlloc >::deallocate(
+    f_alloc , reinterpret_cast< Slot * >( b ) , b->k );
   }
  }
 
@@ -81,26 +79,28 @@ void ObjectPool< T , A >::adopt( ObjectPool & other ) noexcept
  if( ( &other == this ) || ! other.f_last )
   return;
  const std::size_t n = std::max( f_n , other.f_n ) , m = other.f_n;
- if( ! f_last ) {                           // nothing here: all of other
+ if( ! f_last ) {  // nothing here: all of other
   swap( other );
-  other.f_n = m;                            // each keeps its own limit
+  other.f_n = m;  // each keeps its own limit
   }
  else if( f_reuse ) {
   // blocks kept by clear() lie under the one in use: the chain of other
   // goes over the last block, out of their way
-  Block * b = other.f_last;                 // the first block of other
-  while( b->prev ) b = b->prev;
+  Block * b = other.f_last;  // the first block of other
+  while( b->prev )
+   b = b->prev;
   b->prev = f_last;
   f_last = other.f_last;
   f_size += other.f_size;
   }
  else {
-  Block * b = f_last;                       // the first block of this pool
-  while( b->prev ) b = b->prev;
+  Block * b = f_last;  // the first block of this pool
+  while( b->prev )
+   b = b->prev;
   b->prev = other.f_last;
   f_size += other.f_size;
   }
- f_n = n;                                   // the larger limit, in both
+ f_n = n;  // the larger limit, in both
  other.f_free = other.f_next = other.f_end = nullptr;
  other.f_last = other.f_reuse = nullptr;
  other.f_size = 0;
@@ -116,7 +116,7 @@ template< class T , class A >
 inline typename ObjectPool< T , A >::Slot * ObjectPool< T , A >::slot( void )
 {
  Slot * s;
- if( f_free )                               // the last one freed
+ if( f_free )  // the last one freed
   s = std::exchange( f_free , f_free->next );
  else {
   if( f_next == f_end )
@@ -131,16 +131,16 @@ inline typename ObjectPool< T , A >::Slot * ObjectPool< T , A >::slot( void )
 template< class T , class A >
 void ObjectPool< T , A >::refill( void )
 {
- if( f_reuse ) {                            // a block kept by clear()
+ if( f_reuse ) {  // a block kept by clear()
   Block * b = std::exchange( f_reuse , f_reuse->prev );
   f_next = reinterpret_cast< Slot * >( b ) + H;
   f_end = reinterpret_cast< Slot * >( b ) + b->k;
   return;
   }
  // twice the last block, up to n slots
- const std::size_t s = ! f_last ? 1 :
-                       2 * ( f_last->k - H ) <= f_n ?
-                       2 * ( f_last->k - H ) : f_n;
+ const std::size_t s = ! f_last                       ? 1
+		       : 2 * ( f_last->k - H ) <= f_n ? 2 * ( f_last->k - H )
+						      : f_n;
  Slot * b = std::allocator_traits< SlotAlloc >::allocate( f_alloc , s + H );
  f_last = ::new( static_cast< void * >( b ) ) Block{ f_last , s + H };
  f_next = b + H;
@@ -156,13 +156,13 @@ inline T * ObjectPool< T , A >::make( Args &&... args )
  try {
   if constexpr( std::is_constructible_v< T , Args... > )
    x = ::new( static_cast< void * >( s->object ) )
-        T( std::forward< Args >( args )... );
-  else                                      // an aggregate
+     T( std::forward< Args >( args )... );
+  else  // an aggregate
    x = ::new( static_cast< void * >( s->object ) )
-        T{ std::forward< Args >( args )... };
+     T{ std::forward< Args >( args )... };
   }
  catch( ... ) {
-  s->next = f_free;                         // the slot stays free
+  s->next = f_free;  // the slot stays free
   f_free = s;
   --f_size;
   throw;
@@ -200,10 +200,10 @@ void ObjectPool< T , A >::clear( void ) noexcept
  f_size = 0;
  if( ! f_last )
   return;
- if constexpr( ADS_ASAN )                  // the slots of the epochs
+ if constexpr( ADS_ASAN )  // the slots of the epochs
   for( Block * b = f_last ; b ; b = b->prev )
    ADS_POISON( reinterpret_cast< Slot * >( b ) + H ,
-               ( b->k - H ) * sizeof( Slot ) );
+	       ( b->k - H ) * sizeof( Slot ) );
  f_next = reinterpret_cast< Slot * >( f_last ) + H;
  f_end = reinterpret_cast< Slot * >( f_last ) + f_last->k;
  f_reuse = f_last->prev;

@@ -196,15 +196,18 @@ and `tryPop()`, and both of them the batch operations and the wait of
 ```cpp
 // declarations of <ADS/concurrent/SPSCQueue.h>
 template< class T >
-class SPSCQueue {
+class SPSCQueue
+{
  public:
  explicit SPSCQueue( std::size_t capacity );
  bool push( const T & v );
  bool push( T && v );
- template< class ... Args > bool emplace( Args && ... args );
+ template< class... Args >
+ bool emplace( Args &&... args );
  std::optional< T > pop( void );
  bool tryPop( T & x );
- template< class It > std::size_t pushMany( It first , std::size_t n );
+ template< class It >
+ std::size_t pushMany( It first , std::size_t n );
  template< class F >
  std::size_t consume( F && f , std::size_t n = std::size_t( -1 ) );
  void notify( void ) noexcept;
@@ -218,20 +221,21 @@ and two threads use it as follows, the producer with `push()`, which
 answers false on a full queue, and the consumer with `waitPop()`:
 
 ```cpp
-ADS::SPSCQueue< int > Q( 1024 );             // c = 1024
+ADS::SPSCQueue< int > Q( 1024 );  // c = 1024
 std::thread producer( [ & ]() {
  for( int i = 0 ; i < 100 ; ++i ) {
-  while( ! Q.push( i ) ) {}                 // full: try again
+  while( ! Q.push( i ) ) {
+   }  // full: try again
   Q.notify();
   }
  } );
 long sum = 0;
 for( int i = 0 ; i < 100 ; ++i ) {
  int x;
- Q.waitPop( x );                            // the items 0, 1, ..., 99
+ Q.waitPop( x );  // the items 0, 1, ..., 99
  sum += x;
  }
-producer.join();                            // sum is 4950
+producer.join();  // sum is 4950
 ```
 
 <span id="alg-24-1"></span>**Algorithm 24.1.** The push and the pop of
@@ -345,11 +349,14 @@ Its public members are those below; a producer pushes through its handle,
 ```cpp
 // declarations of <ADS/concurrent/MPSCQueue.h>
 template< class T , std::size_t B = 1024 >
-class MPSCQueue {
+class MPSCQueue
+{
  public:
- class Producer {
+ class Producer
+ {
   public:
-  template< class ... Args > void emplace( Args && ... args );
+  template< class... Args >
+  void emplace( Args &&... args );
   void push( const T & v );
   void push( T && v );
   void notify( void );
@@ -370,16 +377,18 @@ ADS::MPSCQueue< int > Q;
 std::vector< std::thread > T;
 for( int k = 0 ; k < 4 ; ++k )
  T.emplace_back( [ & , k ]() {
-  auto P = Q.producer();                    // one lane per handle
-  for( int i = 0 ; i < 1000 ; ++i ) P.push( 1000 * k + i );
+  auto P = Q.producer();  // one lane per handle
+  for( int i = 0 ; i < 1000 ; ++i )
+   P.push( 1000 * k + i );
   P.notify();
   } );
 int x , got = 0;
 while( got < 4000 ) {
- Q.waitPop( x );                            // in order within each lane
+ Q.waitPop( x );  // in order within each lane
  ++got;
  }
-for( auto & t : T ) t.join();
+for( auto & t : T )
+ t.join();
 ```
 
 <span id="alg-24-2"></span>**Algorithm 24.2.** The operations of
@@ -456,7 +465,8 @@ Its public members are
 ```cpp
 // declarations of <ADS/concurrent/MPSCInbox.h>
 template< class T >
-class MPSCInbox {
+class MPSCInbox
+{
  public:
  void push( T v );
  std::vector< T > take( void );
@@ -527,10 +537,12 @@ Its public members are
 ```cpp
 // declarations of <ADS/concurrent/MPMCQueue.h>
 template< class T >
-class MPMCQueue {
+class MPMCQueue
+{
  public:
  explicit MPMCQueue( std::size_t capacity );
- template< class ... Args > bool emplace( Args && ... args );
+ template< class... Args >
+ bool emplace( Args &&... args );
  bool push( const T & v );
  bool push( T && v );
  bool tryPop( T & x );
@@ -612,12 +624,13 @@ Its public members are
 ```cpp
 // declarations of <ADS/concurrent/WorkStealingDeque.h>
 template< class T >
-class WorkStealingDeque {
+class WorkStealingDeque
+{
  public:
  explicit WorkStealingDeque( std::size_t capacity = 1024 );
- void push( T x );                          // the owner
- std::optional< T > take( void );           // the owner
- bool steal( T & x );                       // any thief
+ void push( T x );                 // the owner
+ std::optional< T > take( void );  // the owner
+ bool steal( T & x );              // any thief
  std::size_t size( void ) const;
  bool empty( void ) const;
  std::size_t capacity( void ) const;
@@ -763,7 +776,8 @@ Its public members are
 
 ```cpp
 // declarations of <ADS/concurrent/ConcurrentUnionFind.h>
-class ConcurrentUnionFind {
+class ConcurrentUnionFind
+{
  public:
  explicit ConcurrentUnionFind( std::size_t n );
  std::size_t size( void ) const;
@@ -920,7 +934,8 @@ Its public members are
 // declarations of <ADS/concurrent/ConcurrentCuckooTable.h>
 template< class K , class V , class H = DefaultHash< K > ,
           class Eq = std::equal_to< K > >
-class ConcurrentCuckooTable {
+class ConcurrentCuckooTable
+{
  public:
  explicit ConcurrentCuckooTable( std::size_t n = 0 , H h = H() ,
                                  Eq eq = Eq() );
@@ -928,7 +943,8 @@ class ConcurrentCuckooTable {
  bool contains( const K & k ) const;
  bool insert( const K & k , const V & v );
  bool insertOrAssign( const K & k , const V & v );
- template< class F > bool update( const K & k , F && f );
+ template< class F >
+ bool update( const K & k , F && f );
  bool erase( const K & k );
  std::size_t size( void ) const;
  bool empty( void ) const;
@@ -936,10 +952,10 @@ class ConcurrentCuckooTable {
  std::size_t rehashes( void ) const;
  void reserve( std::size_t n );
  void clear( void );
- template< class F > void forEach( F && f );
+ template< class F >
+ void forEach( F && f );
  bool consistent( void ) const;
- static constexpr bool optimistic = refLockFree< K >() &&
-                                    refLockFree< V >();
+ static constexpr bool optimistic = refLockFree< K >() && refLockFree< V >();
  };
 ```
 
@@ -950,13 +966,16 @@ function to the value under the lock of the region:
 ADS::ConcurrentCuckooTable< std::uint64_t , int > C( 1 << 16 );
 auto count = [ & ]( std::uint64_t w ) {
  if( ! C.update( w , []( int & c ) { ++c; } ) )
-  if( ! C.insert( w , 1 ) )                 // inserted meanwhile
+  if( ! C.insert( w , 1 ) )  // inserted meanwhile
    C.update( w , []( int & c ) { ++c; } );
  };
-auto work = [ & ]() { for( int i = 0 ; i < 1000 ; ++i ) count( i % 7 ); };
+auto work = [ & ]() {
+ for( int i = 0 ; i < 1000 ; ++i )
+  count( i % 7 );
+ };
 std::thread a( work ) , b( work );
 a.join();
-b.join();                                   // C.find( 0 ) holds 286
+b.join();  // C.find( 0 ) holds 286
 ```
 
 <span id="alg-24-7"></span>**Algorithm 24.7.** The lookup and the insertion
@@ -1186,28 +1205,31 @@ second argument), are
 // declarations of <ADS/concurrent/ConcurrentFlatTable.h>
 template< class K , class V , class H = DefaultHash< K > ,
           class Eq = std::equal_to< K > , class C = ZeroingClear >
-class ConcurrentFlatTable {
+class ConcurrentFlatTable
+{
  public:
- static constexpr bool packed = std::is_trivially_copyable_v< K > &&
-                                std::is_trivially_copyable_v< V > &&
-                                plainKey() &&
-                                ( sizeof( K ) + valueBytes() <= 8 );
- static constexpr bool inlined = ( ADS_FLAT_CAS16 != 0 ) && ! packed &&
-                                 std::is_trivially_copyable_v< K > &&
-                                 std::is_trivially_copyable_v< V > &&
-                                 plainKey() && ( sizeof( K ) <= 8 ) &&
-                                 ( sizeof( V ) <= 8 );
- struct Entry { const K key; V value; };
+ static constexpr bool packed =
+   std::is_trivially_copyable_v< K > && std::is_trivially_copyable_v< V > &&
+   plainKey() && ( sizeof( K ) + valueBytes() <= 8 );
+ static constexpr bool inlined =
+   ( ADS_FLAT_CAS16 != 0 ) && ! packed && std::is_trivially_copyable_v< K > &&
+   std::is_trivially_copyable_v< V > && plainKey() && ( sizeof( K ) <= 8 ) &&
+   ( sizeof( V ) <= 8 );
+ struct Entry
+ {
+  const K key;
+  V value;
+  };
  using Ref = std::conditional_t< packed || inlined , V , Entry & >;
- explicit ConcurrentFlatTable( std::size_t n = 0 , H h = H() ,
-                               Eq eq = Eq() );
+ explicit ConcurrentFlatTable( std::size_t n = 0 , H h = H() , Eq eq = Eq() );
  std::uint64_t hash( const K & k ) const;
  std::pair< Ref , bool > findOrInsert( const K & k , const V & v );
  bool insert( const K & k , const V & v );
  std::optional< V > find( const K & k ) const;
  bool contains( const K & k ) const;
  void prefetch( std::uint64_t h ) const;
- template< class F > bool update( const K & k , F && f )
+ template< class F >
+ bool update( const K & k , F && f )
   requires( packed || inlined );
  std::size_t size( void ) const;
  bool empty( void ) const;
@@ -1216,7 +1238,8 @@ class ConcurrentFlatTable {
  void reserve( std::size_t n );
  void clear( void );
  std::uint64_t epoch( void ) const;
- template< class F > void forEach( F && f ) const;
+ template< class F >
+ void forEach( F && f ) const;
  bool consistent( void ) const;
  };
 ```
@@ -1381,18 +1404,18 @@ store of the epoch of a group that another insertion renews. $\square$
 
 `clear()` writes 0 to every place, in time linear in the capacity, which a
 table cleared often and filled little in between (the restarts of an
-incremental search) pays at each clear. With the policy `EpochClear<S>`,
-the fifth template parameter (`ZeroingClear`, the default, leaves the table
-as above; the concept `FlatClear` admits these two policies only), `clear()` takes $O( 1 )$ amortized time instead. Each group of 8
-places has a stamp of the unsigned type $S$ (32 bits by default, i.e., half
-a byte per place), and the group is in use only if its stamp is the epoch
-of the table, which `clear()` raises, so that all the groups fall out of
-use at once. A lookup reads the tags of a group, or a word of a table
-without tags, only if the stamp of its group is the epoch, and a group out
-of use is free, where the lookup stops. An insertion that reaches a group
-out of use renews it first: it takes the group by a compare-and-swap of its
-stamp to a mark, writes 0 to its words and tags, and stores the epoch with
-release:
+incremental search) pays at each clear. With the policy `EpochClear< S >`, the
+fifth template parameter (`ZeroingClear`, the default, leaves the table as
+above; the concept `FlatClear` admits these two policies only), `clear()`
+takes $O( 1 )$ amortized time instead. Each group of 8 places has a stamp of
+the unsigned type $S$ (32 bits by default, i.e., half a byte per place), and
+the group is in use only if its stamp is the epoch of the table, which
+`clear()` raises, so that all the groups fall out of use at once. A lookup
+reads the tags of a group, or a word of a table without tags, only if the
+stamp of its group is the epoch, and a group out of use is free, where the
+lookup stops. An insertion that reaches a group out of use renews it first: it
+takes the group by a compare-and-swap of its stamp to a mark, writes 0 to its
+words and tags, and stores the epoch with release:
 
 --8<-- "generated/ConcurrentFlatTable-renew.pseudo.md"
 
@@ -1464,17 +1487,25 @@ Its public members, and those of the handle of a thread, are
 ```cpp
 // declarations of <ADS/concurrent/MultiQueue.h>
 template< class K , class T , class Less = std::less< K > >
-class MultiQueue {
+class MultiQueue
+{
  public:
- struct Entry { K key; T item; };
- class Handle {
+ struct Entry
+ {
+  K key;
+  T item;
+  };
+ class Handle
+ {
   public:
   void push( K k , T x );
-  template< class It > void pushAll( It first , It last );
+  template< class It >
+  void pushAll( It first , It last );
   std::optional< Entry > tryPop( void );
   };
  explicit MultiQueue( std::size_t n , unsigned s = 16 ,
-                      std::uint64_t seed = 1 , Less less = Less() );
+                      std::uint64_t seed = 1 ,
+                      Less less = Less() );
  Handle handle( void );
  std::size_t queues( void ) const;
  unsigned stickiness( void ) const;
@@ -1490,15 +1521,18 @@ declares, in the vocabulary of [§1.14](01-introduction.md#sec-1-14), that
 a key is lowered lazily, by a new pair. Each thread takes its own handle:
 
 ```cpp
-ADS::MultiQueue< int , int > M( 8 );        // n = 8 queues
+ADS::MultiQueue< int , int > M( 8 );  // n = 8 queues
 std::vector< std::thread > T;
 for( int k = 0 ; k < 4 ; ++k )
  T.emplace_back( [ & , k ]() {
   auto h = M.handle();
-  for( int i = 0 ; i < 100 ; ++i ) h.push( 4 * i + k , i );
-  while( auto e = h.tryPop() ) {}          // small keys first, roughly
+  for( int i = 0 ; i < 100 ; ++i )
+   h.push( 4 * i + k , i );
+  while( auto e = h.tryPop() ) {
+   }  // small keys first, roughly
   } );
-for( auto & t : T ) t.join();
+for( auto & t : T )
+ t.join();
 ```
 
 <span id="alg-24-9"></span>**Algorithm 24.9.** The push and the pop of
@@ -1666,14 +1700,16 @@ Its public members are
 
 ```cpp
 // declarations of <ADS/concurrent/EventCount.h>
-class EventCount {
+class EventCount
+{
  public:
  using Key = std::uint32_t;
  Key prepareWait( void ) noexcept;
  void cancelWait( Key k ) noexcept;
  void commitWait( Key k ) noexcept;
  void notify( void ) noexcept;
- template< class P > void await( P && p , std::int64_t spin = 20000 );
+ template< class P >
+ void await( P && p , std::int64_t spin = 20000 );
  std::uint32_t waiters( void ) const noexcept;
  };
 ```
@@ -1684,10 +1720,10 @@ and a thread waits for a flag that another one raises as follows:
 ADS::EventCount E;
 std::atomic< bool > ready{ false };
 std::thread w( [ & ]() {
- E.await( [ & ]() { return( ready.load() ); } );   // spins, then sleeps
+ E.await( [ & ]() { return( ready.load() ); } );  // spins, then sleeps
  } );
-ready.store( true );                        // the condition first,
-E.notify();                                 // then the notification
+ready.store( true );  // the condition first,
+E.notify();           // then the notification
 w.join();
 ```
 
@@ -1706,15 +1742,15 @@ of the epoch.
 
 --8<-- "generated/EventCount-await.pseudo.md"
 
-We make the fences asymmetric where the system has them, as `membarrier(2)` on
-Linux ([Ladan-Mozes, Lee and Vyukov
+We make the fences asymmetric where the system has them, as `membarrier( 2 )`
+on Linux ([Ladan-Mozes, Lee and Vyukov
 2011](Z-bibliography.md#ref-ladanmozes2011)). A waiter, which is about to
 sleep anyway, runs the heavy fence, a system call that makes each running
 thread of the process run a full barrier; the notifier runs the light one,
-which only stops the compiler. When no thread waits, a notification thus
-costs the read of a line that stays shared. A full fence, instead, would
-wait at each item for the stores of the item to reach the caches of the
-other threads. Elsewhere both fences are full ones.
+which only stops the compiler. When no thread waits, a notification thus costs
+the read of a line that stays shared. A full fence, instead, would wait at
+each item for the stores of the item to reach the caches of the other threads.
+Elsewhere both fences are full ones.
 
 <span id="lem-24-21"></span>**Lemma 24.21.** *Let the read-modify-write of
 the waiter be followed by a full fence, and the write that makes the
@@ -1775,7 +1811,8 @@ Its public members are
 
 ```cpp
 // declarations of <ADS/concurrent/Backoff.h>
-class Backoff {
+class Backoff
+{
  public:
  explicit Backoff( int S = 6 );
  void pause( void ) noexcept;
@@ -1881,24 +1918,27 @@ Its public members are
 
 ```cpp
 // declarations of <ADS/concurrent/StealablePriorityQueue.h>
-template< class K , class T , class Less = std::less< K > ,
-          class Bd = void , class BdLess = std::less<> >
-class StealablePriorityQueue {
+template< class K , class T , class Less = std::less< K > , class Bd = void ,
+          class BdLess = std::less<> >
+class StealablePriorityQueue
+{
  public:
  static constexpr bool bounded = ! std::is_void_v< Bd >;
- using Bound = std::conditional_t< bounded , Bd ,
-                                   detail::SpqNoBound >;
- using Entry = detail::SpqEntry< K , T , Bd >;    // key, (bound,) item
- explicit StealablePriorityQueue( Less less = Less() ,
-                                  BdLess bl = BdLess() );
- void push( K k , T x ) requires( ! bounded );
- void push( K k , Bound b , T x ) requires bounded;
- std::optional< Bound > minBound( void ) const requires bounded;
- std::optional< Entry > pop( void );        // the owner
- const Entry & top( void );                 // the owner
- void serve( void );                        // the owner
- std::size_t steal( StealablePriorityQueue & v );   // a thief, into v
- template< class F > std::size_t drain( F && f );
+ using Bound = std::conditional_t< bounded , Bd , detail::SpqNoBound >;
+ using Entry = detail::SpqEntry< K , T , Bd >;  // key, (bound,) item
+ explicit StealablePriorityQueue( Less less = Less() , BdLess bl = BdLess() );
+ void push( K k , T x )
+  requires( ! bounded );
+ void push( K k , Bound b , T x )
+  requires bounded;
+ std::optional< Bound > minBound( void ) const
+  requires bounded;
+ std::optional< Entry > pop( void );               // the owner
+ const Entry & top( void );                        // the owner
+ void serve( void );                               // the owner
+ std::size_t steal( StealablePriorityQueue & v );  // a thief, into v
+ template< class F >
+ std::size_t drain( F && f );
  std::size_t size( void ) const;
  bool empty( void ) const;
  bool stealable( void ) const;
@@ -1979,9 +2019,10 @@ Its public members are
 
 ```cpp
 // declarations of <ADS/concurrent/StealablePriorityQueue.h>
-template< class K , class T , class Less = std::less< K > ,
-          class Bd = void , class BdLess = std::less<> >
-class StealingFrontier {
+template< class K , class T , class Less = std::less< K > , class Bd = void ,
+          class BdLess = std::less<> >
+class StealingFrontier
+{
  public:
  using Queue = StealablePriorityQueue< K , T , Less , Bd , BdLess >;
  using Entry = typename Queue::Entry;
@@ -1990,20 +2031,24 @@ class StealingFrontier {
                             Less less = Less() , BdLess bl = BdLess() );
  std::size_t workers( void ) const;
  Queue & queue( std::size_t i );
- void push( std::size_t i , K k , T x ) requires( ! Queue::bounded );
+ void push( std::size_t i , K k , T x )
+  requires( ! Queue::bounded );
  void push( std::size_t i , K k , Bound b , T x )
   requires Queue::bounded;
  std::optional< Bound > minBound( std::size_t i ) const
   requires Queue::bounded;
- template< class F > std::size_t drain( std::size_t i , F && f );
+ template< class F >
+ std::size_t drain( std::size_t i , F && f );
  void serve( std::size_t i );
  std::optional< Entry > pop( std::size_t i );
  void stop( void );
  bool stopped( void ) const;
  bool terminated( void ) const;
  std::size_t steals( void ) const;
- template< class E , class F > void run( E & ex , F && f );
- template< class F > std::size_t leftovers( F && f );
+ template< class E , class F >
+ void run( E & ex , F && f );
+ template< class F >
+ std::size_t leftovers( F && f );
  };
 ```
 
@@ -2016,16 +2061,16 @@ stealing, inside `pop( i )`) until the frontier is empty everywhere:
 
 ADS::ThreadPool pool( 4 );
 ADS::StealingFrontier< int , int > F( 4 );
-F.push( 0 , 0 , 1 );                        // the root, key 0, at worker 0
+F.push( 0 , 0 , 1 );  // the root, key 0, at worker 0
 std::atomic< long > nodes{ 0 };
 F.run( pool , [ & ]( std::size_t i ) {
- while( auto e = F.pop( i ) ) {             // nothing once terminated
+ while( auto e = F.pop( i ) ) {  // nothing once terminated
   ++nodes;
-  if( e->item < 1000 )                      // two children
+  if( e->item < 1000 )  // two children
    for( int c : { 2 * e->item , 2 * e->item + 1 } )
     F.push( i , e->key + 1 , c );
   }
- } );                                       // nodes is 1999
+ } );  // nodes is 1999
 ```
 
 <span id="alg-24-12"></span>**Algorithm 24.12.** The pop of a worker of
@@ -2427,16 +2472,23 @@ timing them. The public members of the queue are
 ```cpp
 // declarations of <ADS/concurrent/LockFreePriorityQueue.h>
 template< class K , class T , class Less = std::less< K > >
-class LockFreePriorityQueue {
+class LockFreePriorityQueue
+{
  public:
- struct Entry { K key; T item; };
- struct Counts {
+ struct Entry
+ {
+  K key;
+  T item;
+  };
+ struct Counts
+ {
   std::uint64_t rmw = 0;
   std::uint64_t failed = 0;
   std::uint64_t walked = 0;
   std::uint64_t cuts = 0;
   };
- class Handle {
+ class Handle
+ {
   public:
   void insert( K k , T x );
   std::optional< Entry > tryDeleteMin( void );
@@ -2468,11 +2520,14 @@ std::vector< std::thread > T;
 for( int k = 0 ; k < 4 ; ++k )
  T.emplace_back( [ & , k ]() {
   auto h = Q.handle();
-  for( int i = 0 ; i < 100 ; ++i ) h.insert( 4 * i + k , i );
+  for( int i = 0 ; i < 100 ; ++i )
+   h.insert( 4 * i + k , i );
   } );
-for( auto & t : T ) t.join();
+for( auto & t : T )
+ t.join();
 auto h = Q.handle();
-while( auto e = h.tryDeleteMin() ) {}       // the keys 0, 1, 2, ...
+while( auto e = h.tryDeleteMin() ) {
+ }  // the keys 0, 1, 2, ...
 ```
 
 <span id="alg-24-13"></span>**Algorithm 24.13.** The insertion and the

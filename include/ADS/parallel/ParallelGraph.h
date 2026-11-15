@@ -75,7 +75,7 @@
 
 #ifndef __ADS_ParallelGraph
  #define __ADS_ParallelGraph
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -97,7 +97,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the distances from \f$ s \f$ by a visit in breadth that optimizes its
 /// direction, \f$ -1 \f$ for the nodes not reached; `gt` the transpose of
@@ -142,11 +143,9 @@ namespace ADS {
 /// \f]
 /// \pre \f$ s \f$ is a node of \f$ g \f$, `gt` has as many nodes if given
 template< Executor E , class W >
-[[nodiscard]] std::vector< int > bfsDistances( E & ex ,
-                                               const StaticGraph< W > & g ,
-                                               int s ,
-                                               const StaticGraph< W > * gt =
-                                                nullptr );
+[[nodiscard]] std::vector< int >
+bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
+	      const StaticGraph< W > * gt = nullptr );
 
 /// the least node of the component of each node, an oriented graph taken
 /// as unoriented
@@ -176,8 +175,8 @@ template< Executor E , class W >
 /// \end{array}}
 /// \f]
 template< Executor E , class W >
-[[nodiscard]] std::vector< int > connectedComponents(
-                                 E & ex , const StaticGraph< W > & g );
+[[nodiscard]] std::vector< int >
+connectedComponents( E & ex , const StaticGraph< W > & g );
 
 /*--------------------------------------------------------------------------*/
 
@@ -191,7 +190,7 @@ template< Executor E , class W >
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ParallelGraph.h included */
+#endif /* ParallelGraph.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File ParallelGraph.h ------------------------*/

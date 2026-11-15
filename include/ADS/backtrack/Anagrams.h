@@ -29,7 +29,7 @@
 
 #ifndef __ADS_Anagrams
  #define __ADS_Anagrams
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -47,7 +47,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the anagrams of \f$ s \f$ made of words for which `word( w )` is true,
 /// `prefix( w )` being true if \f$ w \f$ begins some word (a word included);
@@ -82,7 +83,7 @@ namespace ADS {
 /// \post each sentence has the letters of \f$ s \f$ (audit)
 template< class W , class P >
 std::set< std::string > anagrams( const std::string & s , W && word ,
-                                  P && prefix );
+				  P && prefix );
 
 /*--------------------------------------------------------------------------*/
 
@@ -96,7 +97,7 @@ std::set< std::string > anagrams( const std::string & s , W && word ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Anagrams.h included */
+#endif /* Anagrams.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Anagrams.h ---------------------------*/

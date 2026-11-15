@@ -107,7 +107,7 @@
 
 #ifndef __ADS_MultiQueue
  #define __ADS_MultiQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -131,7 +131,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS MultiQueue -----------------------------*/
@@ -140,27 +141,28 @@ namespace ADS {
 /// a relaxed PRIORITY QUEUE shared by threads: \f$ n \f$ queues under locks,
 /// the pop from the better of two
 template< class K , class T , class Less = std::less< K > >
-class MultiQueue {
+class MultiQueue
+{
 
  static_assert( std::numeric_limits< K >::is_specialized ,
-                "the keys are integers or reals" );
+		"the keys are integers or reals" );
  static_assert( std::atomic< K >::is_always_lock_free ,
-                "the keys fit an atomic word without a lock" );
+		"the keys fit an atomic word without a lock" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Item = T;    ///< the type of the items
+ using Key = K;   ///< the type of the keys
+ using Item = T;  ///< the type of the items
 
  /// a relaxed queue with no handles, on which a search lowers a key by a
  /// new insertion [see `decrease_key_of()` of `Capabilities.h`]
  static constexpr decrease_key_kind decrease_key = decrease_key_kind::lazy;
 
  /// a pair of the queue, its key and its item
- struct Entry {
-  K key;    ///< the key, the least popped first
-  T item;   ///< the item
+ struct Entry
+ {
+  K key;   ///< the key, the least popped first
+  T item;  ///< the item
   };
 
  class Handle;
@@ -170,7 +172,8 @@ class MultiQueue {
  /// \f$ n = 2 p \f$ for \f$ p \f$ threads, \f$ n = 1 \f$ an exact queue
  /// \pre \f$ n \ge 1 \f$ and \f$ s \ge 1 \f$
  explicit MultiQueue( std::size_t n , unsigned s = 16 ,
-                      std::uint64_t seed = 1 , Less less = Less() );
+		      std::uint64_t seed = 1 ,
+		      Less less = Less() );
 
  /// no copy, since the threads share it by its address
  MultiQueue( const MultiQueue & ) = delete;
@@ -203,11 +206,11 @@ class MultiQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  static constexpr std::size_t kBuf = 16;  ///< the pairs of a buffer
 
  /// a before b, by the keys
- struct ByKey {
+ struct ByKey
+ {
   Less less;
   bool operator()( const Entry & a , const Entry & b ) const {
    return( less( a.key , b.key ) );
@@ -216,7 +219,8 @@ class MultiQueue {
 
  /// a queue: its lock, its minimum, its two buffers and its
  /// heap, on lines of cache of its own
- struct alignas( 64 ) Queue {
+ struct alignas( 64 ) Queue
+ {
   /// held while true
   std::atomic< bool > lock{ false };
   /// the pairs of D and of I
@@ -232,8 +236,8 @@ class MultiQueue {
   /// the rest of the pairs
   DaryHeap< Entry , ByKey , 8 > heap;
   /// the empty queue, ordered by less
-  explicit Queue( const ByKey & less , K none )
-   : top( none ) , heap( less ) {}
+  explicit Queue( const ByKey & less , K none ) : top( none ) ,
+    heap( less ) { }
   };
 
 
@@ -268,12 +272,12 @@ class MultiQueue {
  /// on, each locked in turn; nothing if all are empty
  std::optional< Entry > scan( std::size_t r );
 
- std::size_t f_n;                         ///< the number of the queues
- unsigned f_s;                            ///< the stickiness
- ByKey f_less;                            ///< the order of the pairs
- K f_none;                                ///< the minimum of an empty queue
- Queue * f_q;                             ///< the queues
- std::atomic< std::uint64_t > f_seed;     ///< the seeds of the handles
+ std::size_t f_n;                      ///< the number of the queues
+ unsigned f_s;                         ///< the stickiness
+ ByKey f_less;                         ///< the order of the pairs
+ K f_none;                             ///< the minimum of an empty queue
+ Queue * f_q;                          ///< the queues
+ std::atomic< std::uint64_t > f_seed;  ///< the seeds of the handles
 
  };  // end( class MultiQueue )
 
@@ -284,11 +288,11 @@ class MultiQueue {
 /// the access of one thread to a `MultiQueue`: its draws and the two
 /// queues it keeps
 template< class K , class T , class Less >
-class MultiQueue< K , T , Less >::Handle {
+class MultiQueue< K , T , Less >::Handle
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// puts the pair \f$ ( k , x ) \f$ into one of the two queues kept, or
  /// into the first free one of other draws; the key by value, as the
  /// item, since a key by reference makes the caller write it on its
@@ -379,12 +383,10 @@ class MultiQueue< K , T , Less >::Handle {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  friend class MultiQueue;
 
  /// the handle of m, its draws from the seed
- Handle( MultiQueue & m , std::uint64_t seed )
-  : f_m( &m ) , f_x( seed ) {}
+ Handle( MultiQueue & m , std::uint64_t seed ) : f_m( &m ) , f_x( seed ) { }
 
  /// a random number of 64 bits (the splitmix64 of Steele et al.)
  std::uint64_t next( void );
@@ -401,12 +403,12 @@ class MultiQueue< K , T , Less >::Handle {
  /// one more use of the queues kept, drawn again after f_s uses
  void use( void );
 
- MultiQueue * f_m;                        ///< the structure
- std::uint64_t f_x;                       ///< the state of the generator
- std::size_t f_k[ 2 ] = { 0 , 0 };        ///< the two queues kept
- unsigned f_used = ~0u;                   ///< their uses so far
- std::uint64_t f_bits = 0;                ///< random bits not yet used
- int f_nbits = 0;                         ///< their number
+ MultiQueue * f_m;                 ///< the structure
+ std::uint64_t f_x;                ///< the state of the generator
+ std::size_t f_k[ 2 ] = { 0 , 0 };  ///< the two queues kept
+ unsigned f_used = ~0u;            ///< their uses so far
+ std::uint64_t f_bits = 0;         ///< random bits not yet used
+ int f_nbits = 0;                  ///< their number
 
  };  // end( class MultiQueue::Handle )
 
@@ -422,7 +424,7 @@ class MultiQueue< K , T , Less >::Handle {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MultiQueue.h included */
+#endif /* MultiQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File MultiQueue.h --------------------------*/

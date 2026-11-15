@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 CursorTree< T >::CursorTree( const T & v )
@@ -136,11 +137,14 @@ template< class T >
 void CursorTree< T >::remove( int n )
 {
  const int p = node( n ).parent;
- if( p == NIL ) f_root = NIL;
- else if( f_N[ p ].child == n ) f_N[ p ].child = f_N[ n ].sibling;
+ if( p == NIL )
+  f_root = NIL;
+ else if( f_N[ p ].child == n )
+  f_N[ p ].child = f_N[ n ].sibling;
  else {
   int u = f_N[ p ].child;
-  while( f_N[ u ].sibling != n ) u = f_N[ u ].sibling;
+  while( f_N[ u ].sibling != n )
+   u = f_N[ u ].sibling;
   f_N[ u ].sibling = f_N[ n ].sibling;
   }
  release_children( n );
@@ -192,7 +196,7 @@ bool CursorTree< T >::linked( void ) const
  // with the parent it must have; more than n nodes met is a cycle
  int count = 0 , met = 0;
  std::vector< std::pair< int , int > > S;
- if( f_root != NIL )                        // the root, not its siblings
+ if( f_root != NIL )  // the root, not its siblings
   S.emplace_back( f_root , NIL );
  while( ! S.empty() ) {
   const auto [ n , p ] = S.back();
@@ -247,7 +251,8 @@ void CursorTree< T >::release_children( int n )
    }
   const int x = S.back().first;
   S.pop_back();
-  if( x != n ) free_node( x );
+  if( x != n )
+   free_node( x );
   }
  }
 
@@ -258,7 +263,10 @@ int CursorTree< T >::copy( const CursorTree & t , int s , int p )
  // a previsit with a stack of its own, as the height may be n: each copy
  // with the next child of its original and its last child copied; places
  // only, as make() may move the nodes, and t may be this tree
- struct Item { int c , u , last; };
+ struct Item
+ {
+  int c , u , last;
+  };
  std::vector< Item > S = { Item{ n , t.f_N[ s ].child , NIL } };
  while( ! S.empty() ) {
   const Item x = S.back();
@@ -268,8 +276,10 @@ int CursorTree< T >::copy( const CursorTree & t , int s , int p )
    }
   S.back().u = t.f_N[ x.u ].sibling;
   const int c = make( t.f_N[ x.u ].value , x.c );
-  if( x.last == NIL ) f_N[ x.c ].child = c;
-  else f_N[ x.last ].sibling = c;
+  if( x.last == NIL )
+   f_N[ x.c ].child = c;
+  else
+   f_N[ x.last ].sibling = c;
   S.back().last = c;
   S.push_back( Item{ c , t.f_N[ x.u ].child , NIL } );
   }
@@ -278,13 +288,18 @@ int CursorTree< T >::copy( const CursorTree & t , int s , int p )
 
 template< class T >
 void CursorTree< T >::visit( int n , int i , std::vector< int > & P ,
-                             int kind ) const
+			     int kind ) const
 {
- if( n == NIL ) return;
+ if( n == NIL )
+  return;
  // with a stack of its own, as the height may be n: each node with its
  // next child and the number k of its children entered
- struct Item { int n , u , k; };
- if( kind == 0 ) P.push_back( n );
+ struct Item
+ {
+  int n , u , k;
+  };
+ if( kind == 0 )
+  P.push_back( n );
  std::vector< Item > S = { Item{ n , f_N[ n ].child , 0 } };
  while( ! S.empty() ) {
   Item & x = S.back();
@@ -294,11 +309,13 @@ void CursorTree< T >::visit( int n , int i , std::vector< int > & P ,
    S.pop_back();
    continue;
    }
-  if( ( kind == 2 ) && ( x.k == i ) ) P.push_back( x.n );
+  if( ( kind == 2 ) && ( x.k == i ) )
+   P.push_back( x.n );
   const int u = x.u;
   x.u = f_N[ u ].sibling;
   ++x.k;
-  if( kind == 0 ) P.push_back( u );
+  if( kind == 0 )
+   P.push_back( u );
   S.push_back( Item{ u , f_N[ u ].child , 0 } );
   }
  }

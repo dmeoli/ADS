@@ -80,7 +80,7 @@
 
 #ifndef __ADS_BucketCuckooTable
  #define __ADS_BucketCuckooTable
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -103,7 +103,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS BucketCuckooTable -------------------------*/
@@ -111,27 +112,27 @@ namespace ADS {
 
 /// a DICTIONARY on the cuckoo hashing with buckets of 4 places
 template< class K , class V , class H = DefaultHash< K > ,
-          class Eq = std::equal_to< K > >
-class BucketCuckooTable {
+	  class Eq = std::equal_to< K > >
+class BucketCuckooTable
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty table, with room for \f$ n \f$ pairs before it grows
  explicit BucketCuckooTable( std::size_t n = 0 , H h = H() , Eq eq = Eq() );
 
  /// the value of the key \f$ k \f$, or nothing, from the 8 places of its two
-/// buckets, compared first by their tags
+ /// buckets, compared first by their tags
  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
 
  /// the value of the key \f$ k \f$, nil if it is not there
  [[nodiscard]] const V * find( const K & k ) const;
 
  /// the value of the key \f$ k \f$, to change in place, nil if it is not
-/// there
+ /// there
  [[nodiscard]] V * find( const K & k );
 
  /// associates the value \f$ v \f$ to the key \f$ k \f$; true if \f$ k \f$
@@ -190,24 +191,24 @@ class BucketCuckooTable {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- struct Slot {
-  K key{};                       ///< the key
-  V value{};                     ///< its value
+ struct Slot
+ {
+  K key{};    ///< the key
+  V value{};  ///< its value
   };
 
- static constexpr int kDepth = 5;          ///< the moves of a path
- static constexpr std::size_t kNodes = 1024;   ///< the buckets searched
+ static constexpr int kDepth = 5;             ///< the moves of a path
+ static constexpr std::size_t kNodes = 1024;  ///< the buckets searched
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ), in the order of the
  // places, bidirectional
 
  /// the places, for `SlotIterator`
- struct Places {
+ struct Places
+ {
   /// the number of places
   static std::size_t size( const auto & o ) { return( o.f_S.size() ); }
   /// whether the place \f$ i \f$ holds a key, i.e., its tag is not 0
@@ -216,8 +217,8 @@ class BucketCuckooTable {
    }
   /// the pair of the place \f$ i \f$
   static auto read( const auto & o , std::size_t i ) {
-   return( std::pair< const K & , const V & >( o.f_S[ i ].key ,
-                                              o.f_S[ i ].value ) );
+   return(
+     std::pair< const K & , const V & >( o.f_S[ i ].key , o.f_S[ i ].value ) );
    }
   };
 
@@ -251,7 +252,6 @@ class BucketCuckooTable {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the hash of \f$ k \f$, mixed unless `H` avalanches
  [[nodiscard]] std::uint64_t hash( const K & k ) const;
 
@@ -262,7 +262,7 @@ class BucketCuckooTable {
  [[nodiscard]] std::size_t first( std::uint64_t h ) const;
 
  /// the other bucket of a key with the tag \f$ t \f$ in the bucket
-/// \f$ b \f$, \f$ b \oplus ( g( t ) \wedge ( B - 1 ) \vee 1 ) \f$
+ /// \f$ b \f$, \f$ b \oplus ( g( t ) \wedge ( B - 1 ) \vee 1 ) \f$
  [[nodiscard]] std::size_t other( std::size_t b , std::uint32_t t ) const;
 
  /// the place of \f$ k \f$ with the hash \f$ h \f$, or `~0`
@@ -272,7 +272,7 @@ class BucketCuckooTable {
  [[nodiscard]] int freePlace( std::size_t b ) const;
 
  /// the pair in the free place \f$ i \f$ of the bucket \f$ b \f$ with the tag
-/// \f$ t \f$
+ /// \f$ t \f$
  template< class KK , class VV >
  void put( std::size_t b , int i , std::uint32_t t , KK && k , VV && v );
 
@@ -291,14 +291,14 @@ class BucketCuckooTable {
  /// 1024 places, every pair so and counted right
  [[nodiscard]] bool placed( const K & k ) const;
 
- std::vector< std::uint32_t > f_T; ///< the 4 tags of each bucket
- std::vector< Slot > f_S;          ///< the places, 4 per bucket
- int f_lg = 1;                     ///< log2 of the buckets
- std::size_t f_n = 0;              ///< the number of keys
- std::size_t f_rehashes = 0;       ///< the doublings
- std::size_t f_moves = 0;          ///< the keys moved
- H f_h;                            ///< the hash of the keys
- Eq f_eq;                          ///< the equality of the keys
+ std::vector< std::uint32_t > f_T;  ///< the 4 tags of each bucket
+ std::vector< Slot > f_S;           ///< the places, 4 per bucket
+ int f_lg = 1;                      ///< log2 of the buckets
+ std::size_t f_n = 0;               ///< the number of keys
+ std::size_t f_rehashes = 0;        ///< the doublings
+ std::size_t f_moves = 0;           ///< the keys moved
+ H f_h;                             ///< the hash of the keys
+ Eq f_eq;                           ///< the equality of the keys
 
  };  // end( class BucketCuckooTable )
 
@@ -314,7 +314,7 @@ class BucketCuckooTable {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BucketCuckooTable.h included */
+#endif /* BucketCuckooTable.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File BucketCuckooTable.h ----------------------*/

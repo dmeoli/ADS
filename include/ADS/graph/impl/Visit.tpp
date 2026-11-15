@@ -14,14 +14,17 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// a frame of the recursion of a visit in depth, kept on an explicit stack
 /// so that a path of 10^5 nodes does not overflow the stack of the calls:
 /// the node, its adjacent nodes and the place of the next one
-struct DfsFrame {
+struct DfsFrame
+{
  int u;
  std::vector< int > A;
  std::size_t i = 0;
@@ -55,7 +58,7 @@ bool topologicalComponents( const G & g , const std::vector< int > & C )
 /// no edge from a reached node goes further than one level
 template< Graph G >
 bool bfsTree( const G & g , int r , const std::vector< int > & d ,
-              const std::vector< int > & p )
+	      const std::vector< int > & p )
 {
  if( ( d[ r ] != 0 ) || ( p[ r ] != NIL ) )
   return( false );
@@ -84,7 +87,7 @@ template< Graph G >
 bool allNodes( const G & g , const std::vector< int > & S )
 {
  return( std::all_of( S.begin() , S.end() ,
-                      [ & ]( int u ) { return( g.hasNode( u ) ); } ) );
+		       [ & ]( int u ) { return( g.hasNode( u ) ); } ) );
  }
 
 /// each edge ( u , v ) of g is ( v , u ) in t
@@ -125,10 +128,13 @@ void bfs( const G & g , int r , FN && node , FE && edge )
  }
 
 template< Graph G , class Q >
-requires requires( Q q , int v ) { q.enqueue( v ); { q.dequeue() } ->
-                                   std::convertible_to< int >; }
-std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
-                                 int r , Q & S , VisitCounts * c )
+ requires requires( Q q , int v )
+{
+  q.enqueue( v );
+  { q.dequeue() } -> std::convertible_to< int >;
+  }
+std::pair< std::vector< int > , std::vector< int > >
+distance( const G & g , int r , Q & S , VisitCounts * c )
 {
  ADS_PRE( g.hasNode( r ) && S.empty() );
  std::vector< int > d( g.bound() , INF ) , p( g.bound() , NIL );
@@ -147,14 +153,15 @@ std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
     }
    } );
   }
- if( c ) *c = k;
+ if( c )
+  *c = k;
  ADS_AUDIT( detail::bfsTree( g , r , d , p ) );
  return( std::pair( std::move( d ) , std::move( p ) ) );
  }
 
 template< Graph G >
 std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
-                                                                int r )
+							      int r )
 {
  ADS_PRE( g.hasNode( r ) );
  ArrayQueue< int > S( std::max( g.n() , 1 ) );
@@ -164,11 +171,11 @@ std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
 inline std::vector< int > path( int r , int s , const std::vector< int > & p )
 {
  ADS_PRE( ( r >= 0 ) && ( r < int( p.size() ) ) && ( s >= 0 ) &&
-          ( s < int( p.size() ) ) );
- std::vector< int > out = { s };                    // from s up to r
+	  ( s < int( p.size() ) ) );
+ std::vector< int > out = { s };  // from s up to r
  for( int x = s ; x != r ; ) {
   x = p[ x ];
-  if( ( x == NIL ) || ( out.size() >= p.size() ) )   // none, or a cycle
+  if( ( x == NIL ) || ( out.size() >= p.size() ) )  // none, or a cycle
    return( std::vector< int >() );
   ADS_PRE( ( x >= 0 ) && ( x < int( p.size() ) ) );
   out.push_back( x );
@@ -184,28 +191,28 @@ inline std::vector< int > path( int r , int s , const std::vector< int > & p )
 
 template< Graph G , class Pre , class Edge , class Post >
 void dfs( const G & g , int u , std::vector< bool > & visited , Pre && pre ,
-          Edge && edge , Post && post )
+	  Edge && edge , Post && post )
 {
  ADS_PRE( g.hasNode( u ) && ( int( visited.size() ) >= g.bound() ) &&
-          ! visited[ u ] );
- std::vector< detail::DfsFrame > S;                  // the recursion
+	  ! visited[ u ] );
+ std::vector< detail::DfsFrame > S;  // the recursion
  auto discover = [ & ]( int v ) {
   visited[ v ] = true;
-  pre( v );                                           // (1)
+  pre( v );  // (1)
   S.push_back( detail::DfsFrame{ v , g.adj( v ) } );
   };
  discover( u );
  while( ! S.empty() ) {
   auto & f = S.back();
-  if( f.i == f.A.size() ) {                           // the return
+  if( f.i == f.A.size() ) {  // the return
    const int x = f.u;
    S.pop_back();
-   post( x );                                         // (2)
+   post( x );  // (2)
    continue;
    }
   const int x = f.u , v = f.A[ f.i++ ];
   edge( x , v );
-  if( ! visited[ v ] )                                // the call
+  if( ! visited[ v ] )  // the call
    discover( v );
   }
  }
@@ -216,7 +223,7 @@ std::vector< int > cc( const G & g , std::vector< int > S )
  ADS_AUDIT( detail::allNodes( g , S ) );
  std::vector< int > id( g.bound() , 0 );
  int count = 0;
- std::vector< int > T;                    // the nodes of the visit to do
+ std::vector< int > T;  // the nodes of the visit to do
  while( ! S.empty() ) {
   const int u = S.back();
   S.pop_back();
@@ -245,7 +252,7 @@ std::vector< int > cc( const G & g )
  std::reverse( S.begin() , S.end() );
  auto id = cc( g , S );
  ADS_AUDIT( std::all_of( S.begin() , S.end() ,
-                         [ & ]( int u ) { return( id[ u ] > 0 ); } ) );
+			 [ & ]( int u ) { return( id[ u ] > 0 ); } ) );
  return( id );
  }
 
@@ -254,15 +261,16 @@ std::vector< int > cc( const G & g )
 /*--------------------------------------------------------------------------*/
 
 template< Graph G >
-DfsSchema< G >::DfsSchema( const G & g ) : f_g( g ) , f_dt( g.bound() , 0 ) ,
-                                           f_ft( g.bound() , 0 ) {}
+DfsSchema< G >::DfsSchema( const G & g )
+    : f_g( g ) , f_dt( g.bound() , 0 ) , f_ft( g.bound() , 0 )
+{ }
 
 template< Graph G >
 template< class Edge >
 void DfsSchema< G >::visit( int u , Edge && edge )
 {
  ADS_PRE( f_g.hasNode( u ) && ( f_dt[ u ] == 0 ) );
- std::vector< detail::DfsFrame > S;                  // the recursion
+ std::vector< detail::DfsFrame > S;  // the recursion
  auto discover = [ & ]( int v ) {
   f_dt[ v ] = ++f_time;
   S.push_back( detail::DfsFrame{ v , f_g.adj( v ) } );
@@ -270,7 +278,7 @@ void DfsSchema< G >::visit( int u , Edge && edge )
  discover( u );
  while( ! S.empty() ) {
   auto & f = S.back();
-  if( f.i == f.A.size() ) {                           // the return
+  if( f.i == f.A.size() ) {  // the return
    f_ft[ f.u ] = ++f_time;
    S.pop_back();
    continue;
@@ -278,7 +286,7 @@ void DfsSchema< G >::visit( int u , Edge && edge )
   const int x = f.u , v = f.A[ f.i++ ];
   if( f_dt[ v ] == 0 ) {
    edge( x , v , EdgeKind::TREE );
-   discover( v );                                     // the call
+   discover( v );  // the call
    }
   else if( ( f_dt[ x ] > f_dt[ v ] ) && ( f_ft[ v ] == 0 ) )
    edge( x , v , EdgeKind::BACK );
@@ -322,7 +330,7 @@ bool hasCycle( const G & g )
 {
  std::vector< int > dt( g.bound() , 0 ) , ft( g.bound() , 0 );
  int time = 0;
- std::vector< detail::DfsFrame > S;                  // the recursion
+ std::vector< detail::DfsFrame > S;  // the recursion
  auto discover = [ & ]( int v ) {
   dt[ v ] = ++time;
   S.push_back( detail::DfsFrame{ v , g.adj( v ) } );
@@ -333,16 +341,16 @@ bool hasCycle( const G & g )
   discover( r );
   while( ! S.empty() ) {
    auto & f = S.back();
-   if( f.i == f.A.size() ) {                          // the return
+   if( f.i == f.A.size() ) {  // the return
     ft[ f.u ] = ++time;
     S.pop_back();
     continue;
     }
    const int u = f.u , v = f.A[ f.i++ ];
    if( dt[ v ] == 0 )
-    discover( v );                                    // the call
+    discover( v );  // the call
    else if( ( dt[ u ] > dt[ v ] ) && ( ft[ v ] == 0 ) )
-    return( true );                                   // a back edge
+    return( true );  // a back edge
    }
   }
  return( false );
@@ -370,14 +378,13 @@ std::vector< int > topsort( const G & g )
 {
  std::vector< bool > visited( g.bound() , false );
  std::vector< int > S;
- auto none = []( auto... ) {};
+ auto none = []( auto... ) { };
  for( int u : g.V() )
   if( ! visited[ u ] )
-   dfs( g , u , visited , none , none ,
-        [ & ]( int v ) { S.push_back( v ); } );
+   dfs( g , u , visited , none , none , [ & ]( int v ) { S.push_back( v ); } );
  std::reverse( S.begin() , S.end() );
  ADS_AUDIT( ( int( S.size() ) == g.n() ) &&
-            ( hasCycle( g ) || isTopologicalOrder( g , S ) ) );
+	    ( hasCycle( g ) || isTopologicalOrder( g , S ) ) );
  return( S );
  }
 
@@ -415,11 +422,11 @@ ListGraph<> transpose( const G & g )
 template< Graph G >
 std::vector< int > scc( const G & g )
 {
- auto S = topsort( g );                           // first visit
- std::reverse( S.begin() , S.end() );             // its top at the back
- auto id = cc( transpose( g ) , S );              // second visit
+ auto S = topsort( g );               // first visit
+ std::reverse( S.begin() , S.end() );  // its top at the back
+ auto id = cc( transpose( g ) , S );   // second visit
  ADS_POST( std::all_of( S.begin() , S.end() ,
-                        [ & ]( int u ) { return( id[ u ] > 0 ); } ) );
+			[ & ]( int u ) { return( id[ u ] > 0 ); } ) );
  ADS_AUDIT( detail::topologicalComponents( g , id ) );
  return( id );
  }
@@ -430,9 +437,9 @@ std::vector< int > sccTarjan( const G & g )
  const int n = g.bound();
  const detail::Rows< G > A( g );
  std::vector< int > dt( n , 0 ) , low( n , 0 ) , id( n , 0 );
- std::vector< int > S;                           // the stack of Tarjan
- std::vector< std::pair< int , std::size_t > > R;   // the recursion: the
- int t = 0 , k = 0;                                 // node, its next arc
+ std::vector< int > S;                            // the stack of Tarjan
+ std::vector< std::pair< int , std::size_t > > R;  // the recursion: the
+ int t = 0 , k = 0;                                // node, its next arc
  auto discover = [ & ]( int v ) {
   dt[ v ] = low[ v ] = ++t;
   S.push_back( v );
@@ -446,14 +453,14 @@ std::vector< int > sccTarjan( const G & g )
    const int u = R.back().first;
    if( R.back().second < A.last( u ) ) {
     const int v = A.head( R.back().second++ );
-    if( dt[ v ] == 0 )                            // the call
+    if( dt[ v ] == 0 )  // the call
      discover( v );
-    else if( id[ v ] == 0 )                       // v is on S
+    else if( id[ v ] == 0 )  // v is on S
      low[ u ] = std::min( low[ u ] , dt[ v ] );
     continue;
     }
-   R.pop_back();                                  // the return
-   if( low[ u ] == dt[ u ] ) {                    // u opened its component
+   R.pop_back();                // the return
+   if( low[ u ] == dt[ u ] ) {  // u opened its component
     ++k;
     int v;
     do {
@@ -466,8 +473,8 @@ std::vector< int > sccTarjan( const G & g )
     low[ R.back().first ] = std::min( low[ R.back().first ] , low[ u ] );
    }
   }
- for( int & c : id )                     // the components close in reverse
-  if( c != 0 )                           // topological order
+ for( int & c : id )  // the components close in reverse
+  if( c != 0 )        // topological order
    c = k + 1 - c;
  ADS_POST( S.empty() );
  ADS_AUDIT( detail::topologicalComponents( g , id ) );
@@ -482,7 +489,7 @@ std::vector< int > sccPearce( const G & g )
  std::vector< int > rindex( n , 0 );
  std::vector< bool > root( n , false );
  std::vector< int > S;
- std::vector< std::pair< int , std::size_t > > R;   // the recursion
+ std::vector< std::pair< int , std::size_t > > R;  // the recursion
  int i = 1 , c = n - 1;
  auto discover = [ & ]( int v ) {
   root[ v ] = true;
@@ -500,7 +507,7 @@ std::vector< int > sccPearce( const G & g )
    const int u = R.back().first;
    if( R.back().second < A.last( u ) ) {
     const int v = A.head( R.back().second++ );
-    if( rindex[ v ] == 0 )                        // the call
+    if( rindex[ v ] == 0 )  // the call
      discover( v );
     else if( rindex[ v ] < rindex[ u ] ) {
      rindex[ u ] = rindex[ v ];
@@ -508,8 +515,8 @@ std::vector< int > sccPearce( const G & g )
      }
     continue;
     }
-   R.pop_back();                                  // the return
-   if( root[ u ] ) {                              // u opened its component
+   R.pop_back();      // the return
+   if( root[ u ] ) {  // u opened its component
     --i;
     while( ! S.empty() && ( rindex[ u ] <= rindex[ S.back() ] ) ) {
      rindex[ S.back() ] = c;
@@ -526,9 +533,9 @@ std::vector< int > sccPearce( const G & g )
     }
    }
   }
- for( int u = 0 ; u < n ; ++u )          // the components close in reverse
-  if( g.hasNode( u ) )                   // topological order, from n - 1
-   rindex[ u ] -= c;                     // down to c + 1
+ for( int u = 0 ; u < n ; ++u )  // the components close in reverse
+  if( g.hasNode( u ) )         // topological order, from n - 1
+   rindex[ u ] -= c;           // down to c + 1
   else
    rindex[ u ] = 0;
  ADS_POST( S.empty() && ( i == 1 ) );
@@ -544,7 +551,7 @@ genericVisit( const G & g , int r , Choice c )
  std::vector< int > R = { r };
  std::vector< std::pair< int , int > > B;
  std::vector< bool > in( g.bound() , false );
- std::vector< std::vector< int > > A( g.bound() );   // the adjacencies
+ std::vector< std::vector< int > > A( g.bound() );  // the adjacencies
  std::vector< std::size_t > at( g.bound() , 0 );     // their cursors
  std::deque< int > Q = { r };
  in[ r ] = true;
@@ -553,7 +560,7 @@ genericVisit( const G & g , int r , Choice c )
   const int j = c == Choice::NEWEST ? Q.back() : Q.front();
   while( ( at[ j ] < A[ j ].size() ) && in[ A[ j ][ at[ j ] ] ] )
    ++at[ j ];
-  if( at[ j ] < A[ j ].size() ) {          // k adjacent to j, not in R
+  if( at[ j ] < A[ j ].size() ) {  // k adjacent to j, not in R
    const int k = A[ j ][ at[ j ]++ ];
    in[ k ] = true;
    A[ k ] = g.adj( k );
@@ -561,7 +568,7 @@ genericVisit( const G & g , int r , Choice c )
    Q.push_back( k );
    B.emplace_back( j , k );
    }
-  else if( c == Choice::NEWEST )           // j leaves Q
+  else if( c == Choice::NEWEST )  // j leaves Q
    Q.pop_back();
   else
    Q.pop_front();
@@ -590,23 +597,25 @@ bool unilaterallyConnected( const G & g )
  int k = 0;
  for( int u : g.V() )
   k = std::max( k , C[ u ] );
- std::vector< std::set< int > > E( k + 1 );    // the graph of components
+ std::vector< std::set< int > > E( k + 1 );  // the graph of components
  std::vector< int > in( k + 1 , 0 );
  for( int u : g.V() )
   g.forEachAdj( u , [ & ]( int v ) {
    if( ( C[ u ] != C[ v ] ) && E[ C[ u ] ].insert( C[ v ] ).second )
     ++in[ C[ v ] ];
    } );
- std::vector< int > S;                         // the sources
+ std::vector< int > S;  // the sources
  for( int c = 1 ; c <= k ; ++c )
-  if( in[ c ] == 0 ) S.push_back( c );
+  if( in[ c ] == 0 )
+   S.push_back( c );
  while( ! S.empty() ) {
-  if( S.size() > 1 )                           // two components with no
-   return( false );                            // path between them
+  if( S.size() > 1 )  // two components with no
+   return( false );  // path between them
   const int c = S.back();
   S.pop_back();
   for( int d : E[ c ] )
-   if( --in[ d ] == 0 ) S.push_back( d );
+   if( --in[ d ] == 0 )
+    S.push_back( d );
   }
  return( true );
  }

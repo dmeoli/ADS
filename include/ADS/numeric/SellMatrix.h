@@ -54,7 +54,7 @@
 
 #ifndef __ADS_SellMatrix
  #define __ADS_SellMatrix
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -73,7 +73,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS SellMatrix ----------------------------*/
@@ -83,11 +84,12 @@ namespace ADS {
 /// \f$ C \f$ rows (4 by default, the fastest on a Xeon Gold 5120 with
 /// AVX-512: the gathers of 8 lanes cost more than they save)
 template< std::size_t C = 4 >
-class SellMatrix {
+class SellMatrix
+{
  static_assert( ( C >= 1 ) && ( ( C & ( C - 1 ) ) == 0 ) ,
-                "the rows of a chunk are a power of 2" );
- public:
+		"the rows of a chunk are a power of 2" );
 
+ public:
  /// the matrix \f$ A \f$, its rows sorted by length within windows of
  /// \f$ \sigma \f$ rows
  ///
@@ -155,7 +157,7 @@ class SellMatrix {
  ///      apart from \f$ x \f$,
  ///      \f$ \mathit{first} \le \mathit{last} \le \mathrm{chunks}() \f$
  void multiply( const double * x , double * y , std::size_t first ,
-                std::size_t last ) const;
+		std::size_t last ) const;
 
  /// the number of chunks
  [[nodiscard]] std::size_t chunks( void ) const {
@@ -169,18 +171,18 @@ class SellMatrix {
 
  /// the product \f$ y = A x \f$, a new vector
  /// \pre \f$ x \f$ has \f$ n \f$ entries
- [[nodiscard]] std::vector< double > multiply(
-                                     const std::vector< double > & x ) const;
+ [[nodiscard]] std::vector< double >
+ multiply( const std::vector< double > & x ) const;
 
  private:
- std::size_t f_m ,                         ///< the rows
-             f_n ,                         ///< the columns
-             f_nnz;                        ///< the nonzeros
+ std::size_t f_m ,  ///< the rows
+   f_n ,            ///< the columns
+   f_nnz;          ///< the nonzeros
  /// the `chunks() + 1` offsets of the chunks in the places
  std::vector< std::size_t > f_start;
- std::vector< std::uint32_t > f_perm;      ///< the row of each slot
- std::vector< std::uint32_t > f_col;       ///< the column of each place
- std::vector< double > f_val;              ///< its value, 0 for padding
+ std::vector< std::uint32_t > f_perm;  ///< the row of each slot
+ std::vector< std::uint32_t > f_col;   ///< the column of each place
+ std::vector< double > f_val;          ///< its value, 0 for padding
  };  // end( class SellMatrix )
 
 /*--------------------------------------------------------------------------*/
@@ -195,7 +197,7 @@ class SellMatrix {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SellMatrix.h included */
+#endif /* SellMatrix.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File SellMatrix.h --------------------------*/

@@ -16,7 +16,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , std::integral K , unsigned B >
 inline void RadixHeap< T , K , B >::push( const T & x , K k )
@@ -33,11 +34,11 @@ inline void RadixHeap< T , K , B >::pull( void )
 {
  ADS_PRE( f_size > 0 );
  if( ! f_B[ f_cur ].empty() && ( f_cur < R ) )
-  return;                                   // still the top
+  return;  // still the top
  unsigned i = first();
- if( i >= R ) {                             // its least key is the new
-  std::vector< Entry > & b = f_B[ i ];      // last, and its items go
-  f_last = f_min[ i ];                      // down to the rows below
+ if( i >= R ) {                         // its least key is the new
+  std::vector< Entry > & b = f_B[ i ];  // last, and its items go
+  f_last = f_min[ i ];                  // down to the rows below
   f_min[ i ] = std::numeric_limits< U >::max();
   f_mask[ i >> 6 ] &= ~( std::uint64_t( 1 ) << ( i & 63 ) );
   for( Entry & e : b )
@@ -45,10 +46,11 @@ inline void RadixHeap< T , K , B >::pull( void )
   b.clear();
   i = bucket( f_last );
   }
- else                                       // the keys of a bucket of the
-  f_last = ( f_last & ~U( R - 1 ) ) | U( i );   // row 0 are equal
+ else                                          // the keys of a bucket of the
+  f_last = ( f_last & ~U( R - 1 ) ) | U( i );  // row 0 are equal
  f_cur = i;
- if( f_last > f_floor ) f_floor = f_last;   // the key read or extracted
+ if( f_last > f_floor )
+  f_floor = f_last;  // the key read or extracted
  }
 
 template< class T , std::integral K , unsigned B >
@@ -97,11 +99,12 @@ void RadixHeap< T , K , B >::extractBelow( K limit , F && f )
  while( f_size > 0 ) {
   const unsigned i = first();
   std::vector< Entry > & b = f_B[ i ];
-  if( f_min[ i ] >= u )                     // nothing below the limit
+  if( f_min[ i ] >= u )  // nothing below the limit
    break;
-  if( ceiling( i ) < u ) {                  // all of them, as they are
+  if( ceiling( i ) < u ) {  // all of them, as they are
    for( Entry & e : b ) {
-    if( e.key > f_floor ) f_floor = e.key;
+    if( e.key > f_floor )
+     f_floor = e.key;
     f( std::move( e.item ) , decode( e.key ) );
     }
    f_size -= b.size();
@@ -110,20 +113,21 @@ void RadixHeap< T , K , B >::extractBelow( K limit , F && f )
    f_mask[ i >> 6 ] &= ~( std::uint64_t( 1 ) << ( i & 63 ) );
    continue;
    }
-  if( i >= R ) {                            // a bucket across the limit,
-   f_last = f_min[ i ];                     // above the row 0: down to the
-   f_min[ i ] = std::numeric_limits< U >::max();   // rows below, for its
-   f_mask[ i >> 6 ] &= ~( std::uint64_t( 1 ) << ( i & 63 ) );   // least
-   for( Entry & e : b )                     // key (removed next)
+  if( i >= R ) {         // a bucket across the limit,
+   f_last = f_min[ i ];  // above the row 0: down to the
+   f_min[ i ] = std::numeric_limits< U >::max();  // rows below, for its
+   f_mask[ i >> 6 ] &= ~( std::uint64_t( 1 ) << ( i & 63 ) );  // least
+   for( Entry & e : b )  // key (removed next)
     place( bucket( e.key ) , std::move( e ) );
    b.clear();
    continue;
    }
-  std::size_t k = 0;                        // those below, and the rest
-  U m = std::numeric_limits< U >::max();    // kept in the bucket
+  std::size_t k = 0;                      // those below, and the rest
+  U m = std::numeric_limits< U >::max();  // kept in the bucket
   for( std::size_t j = 0 ; j < b.size() ; ++j )
    if( b[ j ].key < u ) {
-    if( b[ j ].key > f_floor ) f_floor = b[ j ].key;
+    if( b[ j ].key > f_floor )
+     f_floor = b[ j ].key;
     f( std::move( b[ j ].item ) , decode( b[ j ].key ) );
     }
    else {
@@ -135,8 +139,8 @@ void RadixHeap< T , K , B >::extractBelow( K limit , F && f )
   f_size -= b.size() - k;
   b.erase( b.begin() + std::ptrdiff_t( k ) , b.end() );
   f_min[ i ] = m;
-  if( k == 0 ) {                            // all below after all: on to
-   f_mask[ i >> 6 ] &= ~( std::uint64_t( 1 ) << ( i & 63 ) );   // the next
+  if( k == 0 ) {  // all below after all: on to
+   f_mask[ i >> 6 ] &= ~( std::uint64_t( 1 ) << ( i & 63 ) );  // the next
    continue;
    }
   break;
@@ -171,7 +175,8 @@ bool RadixHeap< T , K , B >::bucketed( void ) const
   for( const Entry & e : f_B[ i ] ) {
    if( ( e.key < f_last ) || ( bucket( e.key ) != i ) )
     return( false );
-   if( e.key < m ) m = e.key;
+   if( e.key < m )
+    m = e.key;
    }
   if( m != f_min[ i ] )
    return( false );

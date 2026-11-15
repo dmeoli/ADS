@@ -56,7 +56,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ints = std::vector< int >;
 using Matrix = std::vector< std::vector< int > >;
@@ -145,7 +146,7 @@ ListGraph<> gridGraph( const Matrix & M , const Moves & moves )
    for( const auto & [ dr , dc ] : moves ) {
     const int a = r + dr , b = c + dc;
     if( ( M[ r ][ c ] == 0 ) && ( 0 <= a ) && ( a < rows ) && ( 0 <= b ) &&
-        ( b < cols ) && ( M[ a ][ b ] == 0 ) )
+	( b < cols ) && ( M[ a ][ b ] == 0 ) )
      G.insertEdge( r * cols + c , a * cols + b );
     }
  return( G );
@@ -153,8 +154,8 @@ ListGraph<> gridGraph( const Matrix & M , const Moves & moves )
 
 /// the most pairs of a b-matching, over all the subsets of the edges
 int bMatchingBrute( const std::vector< std::pair< int , int > > & E , int nl ,
-                    int nr , const std::vector< long long > & cl ,
-                    const std::vector< long long > & cr )
+		    int nr , const std::vector< long long > & cl ,
+		    const std::vector< long long > & cr )
 {
  int best = 0;
  for( unsigned m = 0 ; m < ( 1u << E.size() ) ; ++m ) {
@@ -163,7 +164,7 @@ int bMatchingBrute( const std::vector< std::pair< int , int > > & E , int nl ,
   for( std::size_t i = 0 ; i < E.size() ; ++i )
    if( ( m >> i ) & 1u )
     ok = ok && ( ++dl[ E[ i ].first ] <= cl[ E[ i ].first ] ) &&
-         ( ++dr[ E[ i ].second ] <= cr[ E[ i ].second ] );
+	 ( ++dr[ E[ i ].second ] <= cr[ E[ i ].second ] );
   if( ok )
    best = std::max( best , std::popcount( m ) );
   }
@@ -177,9 +178,8 @@ long value( const std::vector< std::vector< long > > & f , int s )
  }
 
 /// a maximum flow of the capacities c from s to t, as a skew matrix
-std::vector< std::vector< long > > flowMatrix(
-                       const std::vector< std::vector< long > > & c , int s ,
-                       int t )
+std::vector< std::vector< long > >
+flowMatrix( const std::vector< std::vector< long > > & c , int s , int t )
 {
  const int n = int( c.size() );
  FlowNetwork N( n );
@@ -220,7 +220,9 @@ ADS_TEST( "grid-distances" )
    M[ r ][ c ] = 0;
    S.emplace_back( r , c );
    }
-  auto free = [ & ]( GridCell x ) { return( M[ x.first ][ x.second ] == 0 ); };
+  auto free = [ & ]( GridCell x ) {
+   return( M[ x.first ][ x.second ] == 0 );
+   };
   auto check = [ & ]( const auto & moves ) {
    const auto G = gridGraph( M , moves );
    std::vector< Ints > ref( S.size() );
@@ -235,7 +237,7 @@ ADS_TEST( "grid-distances" )
      CHECK( D[ r ][ c ] == e );
      if( ! S.empty() )
       CHECK( gridDistance( rows , cols , S[ 0 ] , GridCell( r , c ) , free ,
-                           moves ) == ref[ 0 ][ r * cols + c ] );
+			   moves ) == ref[ 0 ][ r * cols + c ] );
      }
    };
   check( FOUR_MOVES );
@@ -245,17 +247,19 @@ ADS_TEST( "grid-distances" )
  // a 40 x 40 room, corner to corner: 78 moves of a rook, 39 of a king
  auto all = []( GridCell ) { return( true ); };
  CHECK( gridDistance( 40 , 40 , GridCell( 0 , 0 ) , GridCell( 39 , 39 ) ,
-                      all ) == 78 );
- CHECK( gridDistance( 40 , 40 , GridCell( 0 , 0 ) , GridCell( 39 , 39 ) ,
-                      all , EIGHT_MOVES ) == 39 );
+		      all ) ==
+	78 );
+ CHECK( gridDistance( 40 , 40 , GridCell( 0 , 0 ) , GridCell( 39 , 39 ) , all ,
+		      EIGHT_MOVES ) == 39 );
  CHECK( gridDistances( 0 , 0 , {} , all ).empty() );
  CHECK( gridDistances( 2 , 3 , {} , all ) ==
-        std::vector< Ints >( 2 , Ints( 3 , INF ) ) );
+	std::vector< Ints >( 2 , Ints( 3 , INF ) ) );
  CHECK_THROWS( gridDistances( 2 , 2 , { GridCell( 0 , 0 ) } ,
-                              []( GridCell ) { return( false ); } ) ,
-               contract_violation );
+			      []( GridCell ) { return( false ); } ) ,
+	       contract_violation );
  CHECK_THROWS( gridDistance( 2 , 2 , GridCell( 0 , 0 ) , GridCell( 2 , 0 ) ,
-                             all ) , contract_violation );
+			     all ) ,
+	       contract_violation );
  }
 
 // the fill of random matrices of three colours against a recursive fill
@@ -272,7 +276,7 @@ ADS_TEST( "flood-fill" )
     x = rnd( g , 0 , 2 );
   Matrix B = A;
   const int r = rnd( g , 0 , rows - 1 ) , c = rnd( g , 0 , cols - 1 ) ,
-            color = rnd( g , 0 , 2 ) , old = A[ r ][ c ];
+	    color = rnd( g , 0 , 2 ) , old = A[ r ][ c ];
   const bool eight = t % 2 == 1;
   std::size_t painted = 0;
   auto rec = [ & ]( auto & self , int i , int j ) -> void {
@@ -290,7 +294,7 @@ ADS_TEST( "flood-fill" )
   if( color != old )
    rec( rec , r , c );
   const std::size_t k = eight ? floodFill( A , r , c , color , EIGHT_MOVES )
-                              : floodFill( A , r , c , color );
+			      : floodFill( A , r , c , color );
   CHECK( ( A == B ) && ( k == painted ) );
   }
  Matrix one = { { 3 } };
@@ -319,15 +323,16 @@ ADS_TEST( "knight-distance" )
       for( const auto & [ dr , dc ] : KNIGHT_MOVES ) {
        const int a = u / n + dr , b = u % n + dc;
        if( ( 0 <= a ) && ( a < n ) && ( 0 <= b ) && ( b < n ) &&
-           ( d[ u ] + 1 < d[ a * n + b ] ) ) {
-        d[ a * n + b ] = d[ u ] + 1;
-        more = true;
+	   ( d[ u ] + 1 < d[ a * n + b ] ) ) {
+	d[ a * n + b ] = d[ u ] + 1;
+	more = true;
         }
        }
     }
    for( int e = 0 ; e < n * n ; ++e ) {
-    const int x = knightDistance( n , GridCell( s / n , s % n ) ,
-                                  GridCell( e / n , e % n ) );
+    const int x =
+      knightDistance( n , GridCell( s / n , s % n ) ,
+		      GridCell( e / n , e % n ) );
     CHECK( x == d[ e ] );
     if( n >= 4 )
      CHECK( x != INF );
@@ -336,7 +341,7 @@ ADS_TEST( "knight-distance" )
  CHECK( knightDistance( 8 , GridCell( 0 , 0 ) , GridCell( 7 , 7 ) ) == 6 );
  CHECK( knightDistance( 3 , GridCell( 1 , 1 ) , GridCell( 0 , 0 ) ) == INF );
  CHECK_THROWS( knightDistance( 0 , GridCell( 0 , 0 ) , GridCell( 0 , 0 ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the shortest paths counted against the simple paths as long as the
@@ -365,14 +370,14 @@ ADS_TEST( "count-shortest-paths" )
   h.insertEdge( 3 * i + 2 , 3 * i + 3 );
   }
  CHECK( countShortestPaths( h , 0 )[ 120 ] == ( std::uint64_t( 1 ) << 40 ) );
- const ArrayGraph<> a( 3 , { { 0 , 1 , {} } , { 0 , 1 , {} } , { 1 , 2 , {} } ,
-                             { 0 , 2 , {} } } );
+ const ArrayGraph<> a(
+   3 , { { 0 , 1 , {} } , { 0 , 1 , {} } , { 1 , 2 , {} } , { 0 , 2 , {} } } );
  CHECK( countShortestPaths( a , 0 ) ==
-        std::vector< std::uint64_t >( { 1 , 2 , 1 } ) );
+	std::vector< std::uint64_t >( { 1 , 2 , 1 } ) );
  CHECK( countShortestPaths( ListGraph<>( 1 ) , 0 ) ==
-        std::vector< std::uint64_t >( { 1 } ) );
+	std::vector< std::uint64_t >( { 1 } ) );
  CHECK_THROWS( countShortestPaths( ListGraph<>( 1 ) , 1 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the distance from a set against the least of distance() from each of
@@ -420,7 +425,7 @@ ADS_TEST( "multi-source-distance" )
  CHECK( multiSourceDistance( P , { 500 , 0 } ).first[ 999 ] == 499 );
  CHECK( multiSourceDistance( P , {} ).first == Ints( 1000 , INF ) );
  CHECK_THROWS( setDistance( P , a , std::vector< bool >( 3 ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the layers of random acyclic graphs against the rounds of removal of the
@@ -453,7 +458,7 @@ ADS_TEST( "longest-path-layering" )
   for( int s = 0 ; s < n ; ++s )
    simplePaths( G , s , [ & ]( const Ints & P ) {
     longest[ P.back() ] = std::max( longest[ P.back() ] ,
-                                    int( P.size() ) - 1 );
+				    int( P.size() ) - 1 );
     } );
   const auto L = longestPathLayering( G );
   CHECK( ( L == round ) && ( L == longest ) );
@@ -512,7 +517,8 @@ ADS_TEST( "dag-longest-paths" )
   for( int s = 0 ; s < n ; ++s )
    rec( rec , s , s , 0 );
   CHECK( dagLongestPaths( U , [ & ]( int u , int v ) {
-          return( z[ v ] < z[ u ] ); } ) == down );
+	  return( z[ v ] < z[ u ] );
+	  } ) == down );
   }
  ListGraph< double > p( 3 , true );
  p.insertEdge( 0 , 1 , 0.5 );
@@ -522,7 +528,7 @@ ADS_TEST( "dag-longest-paths" )
  e.insertEdge( 0 , 1 );
  CHECK_THROWS( dagLongestPaths( e ) , contract_violation );
  CHECK( dagLongestPaths( e , []( int u , int v ) { return( u < v ); } ) ==
-        Ints( { 1 , 0 } ) );
+	Ints( { 1 , 0 } ) );
  }
 
 // the cycles through s of random digraphs against the sequences of
@@ -577,7 +583,7 @@ ADS_TEST( "refueling-stops" )
   for( int k = rnd( g , 0 , 12 ) ; k > 0 ; --k )
    D.push_back( rnd( g , 0 , L ) );
   std::sort( D.begin() , D.end() );
-  Ints P = { 0 };                        // the start, the stations, L
+  Ints P = { 0 };  // the start, the stations, L
   P.insert( P.end() , D.begin() , D.end() );
   P.push_back( L );
   Ints best( P.size() , INF );
@@ -597,11 +603,12 @@ ADS_TEST( "refueling-stops" )
  CHECK( refuelingStops( Ints() , 4 , 4 )->empty() );
  CHECK( ! refuelingStops( Ints() , 5 , 4 ) );
  CHECK( *refuelingStops( Ints( { 0 , 5 , 10 } ) , 15 , 5 ) ==
-        std::vector< std::size_t >( { 1 , 2 } ) );
- CHECK( refuelingStops( std::vector< double >( { 0.5 } ) , 1.0 , 0.5 )->size()
-        == 1 );
+	std::vector< std::size_t >( { 1 , 2 } ) );
+ CHECK( refuelingStops( std::vector< double >( { 0.5 } ) , 1.0 ,
+			0.5 )->size() ==
+	1 );
  CHECK_THROWS( refuelingStops( Ints( { 3 , 1 } ) , 5 , 4 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // random forests and graphs against one component of cc() and n - 1
@@ -614,14 +621,15 @@ ADS_TEST( "trees-and-diameters" )
  int trees = 0;
  for( int t = 0 ; t < 1000 ; ++t ) {
   const int n = rnd( g , 1 , 12 );
-  ListGraph<> G = t % 2 ? randomTree( g , n )
-                        : randomGraph( g , n , 2.0 / n , false );
+  ListGraph<> G =
+    t % 2 ? randomTree( g , n ) : randomGraph( g , n , 2.0 / n , false );
   const auto c = cc( G );
   int m = 0;
   for( int u = 0 ; u < n ; ++u )
    m += int( G.adj( u ).size() );
-  const bool e = ( *std::max_element( c.begin() , c.end() ) == 1 ) &&
-                 ( m == 2 * ( n - 1 ) );
+  const bool e =
+    ( *std::max_element( c.begin() ,
+			 c.end() ) == 1 ) && ( m == 2 * ( n - 1 ) );
   CHECK( isTree( G ) == e );
   trees += e ? 1 : 0;
   if( e )
@@ -632,7 +640,7 @@ ADS_TEST( "trees-and-diameters" )
   const int n = rnd( g , 1 , 20 );
   const bool directed = t % 2 == 0;
   ListGraph< int > G( n , directed );
-  for( int v = 1 ; v < n ; ++v ) {           // strongly connected
+  for( int v = 1 ; v < n ; ++v ) {  // strongly connected
    const int u = rnd( g , 0 , v - 1 );
    G.insertEdge( u , v , 1 );
    G.insertEdge( v , u , 1 );
@@ -675,19 +683,19 @@ ADS_TEST( "trees-and-diameters" )
   CHECK( treeDiameter( node[ 0 ] ) == std::pair( h , diameter( G ) ) );
   }
  CHECK( treeDiameter< int >( nullptr ) == std::pair( -1 , 0 ) );
- CHECK( isTree( ListGraph<>( 1 , false ) ) && ! isTree( ListGraph<>( 2 ,
-                                                                   false ) ) );
+ CHECK( isTree( ListGraph<>( 1 , false ) ) &&
+	! isTree( ListGraph<>( 2 , false ) ) );
  CHECK( ( diameter( ListGraph<>( 1 ) ) == 0 ) &&
-        ( treeDiameter( ListGraph<>( 1 , false ) ) == 0 ) );
+	( treeDiameter( ListGraph<>( 1 , false ) ) == 0 ) );
  CHECK_THROWS( isTree( ListGraph<>( 0 , false ) ) , contract_violation );
  CHECK_THROWS( isTree( ListGraph<>( 3 , true ) ) , contract_violation );
  CHECK_THROWS( diameter( ListGraph<>( 2 , false ) ) , contract_violation );
- CHECK_THROWS( treeDiameter( ListGraph<>( 2 , false ) ) ,
-               contract_violation );
+ CHECK_THROWS( treeDiameter( ListGraph<>( 2 , false ) ) , contract_violation );
  // a path of 100000 nodes: the visits are not recursive
  const int n = 100000;
  ListGraph<> path( n , false );
- for( int u = 0 ; u + 1 < n ; ++u ) path.insertEdge( u , u + 1 );
+ for( int u = 0 ; u + 1 < n ; ++u )
+  path.insertEdge( u , u + 1 );
  CHECK( isTree( path ) && treeDiameter( path ) == n - 1 );
  }
 
@@ -726,7 +734,7 @@ ADS_TEST( "tree-vertex-cover" )
  path.insertEdge( 0 , 2000 );
  CHECK_THROWS( treeVertexCover( path ) , contract_violation );
  CHECK_THROWS( treeVertexCover( ListGraph<>( 2 , true ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the triangles of random graphs against all the triples; the complete
@@ -741,15 +749,16 @@ ADS_TEST( "count-triangles" )
   for( int a = 0 ; a < n ; ++a )
    for( int b = a + 1 ; b < n ; ++b )
     for( int c = b + 1 ; c < n ; ++c )
-     e += ( G.hasEdge( a , b ) && G.hasEdge( b , c ) && G.hasEdge( a , c ) )
-          ? 1 : 0;
+     e +=
+       ( G.hasEdge( a , b ) && G.hasEdge( b , c ) && G.hasEdge( a ,
+								c ) ) ? 1 : 0;
   CHECK( countTriangles( G ) == e );
   }
  for( int n = 0 ; n <= 40 ; n += 5 )
   CHECK( countTriangles( randomGraph( g , n , 1.0 , false ) ) ==
-         ( n < 3 ? 0 : std::int64_t( binomial( n , 3 ) ) ) );
+	 ( n < 3 ? 0 : std::int64_t( binomial( n , 3 ) ) ) );
  CHECK_THROWS( countTriangles( ListGraph<>( 2 , true ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the colourings of random graphs against all the 2^n colourings; odd and
@@ -824,7 +833,7 @@ ADS_TEST( "universal-sink" )
  CHECK( universalSink( Matrix( 1 , Ints( 1 , 0 ) ) ) == 0 );
  CHECK( universalSink( Matrix() ) == NIL );
  CHECK_THROWS( universalSink( Matrix( { { 0 , 1 } , { 0 } } ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the order of random graphs against the count of the topological
@@ -835,8 +844,8 @@ ADS_TEST( "unique-topological-order" )
  int unique = 0;
  for( int t = 0 ; t < 400 ; ++t ) {
   const int n = rnd( g , 0 , 6 );
-  const auto G = t % 4 ? randomDag( g , n , 0.7 )
-                       : randomGraph( g , n , 0.3 , true );
+  const auto G =
+    t % 4 ? randomDag( g , n , 0.7 ) : randomGraph( g , n , 0.3 , true );
   Ints pi( n );
   std::iota( pi.begin() , pi.end() , 0 );
   int count = 0;
@@ -864,7 +873,7 @@ ADS_TEST( "unique-topological-order" )
  CHECK( ! uniqueTopologicalOrder( c ) );
  CHECK( ! uniqueTopologicalOrder( ListGraph<>( 2 , true ) ) );
  CHECK_THROWS( uniqueTopologicalOrder( ListGraph<>( 2 , false ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the b-matchings of random bipartite graphs against all the subsets of
@@ -893,12 +902,13 @@ ADS_TEST( "bipartite-b-matching" )
    CHECK( std::find( A[ u ].begin() , A[ u ].end() , v ) != A[ u ].end() );
   }
  CHECK( bipartiteBMatching( {} , 0 , {} , {} ).empty() );
- CHECK( bipartiteBMatching( { { 0 , 1 , 2 } } , 3 , { 3 } , { 1 , 1 , 1 } )
-        .size() == 3 );
+ CHECK( bipartiteBMatching( { { 0 , 1 , 2 } } , 3 , { 3 } ,
+			    { 1 , 1 , 1 } ).size() ==
+	3 );
  CHECK_THROWS( bipartiteBMatching( { { 1 } } , 1 , { 1 } , { 1 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( bipartiteBMatching( { { 0 } } , 1 , { -1 } , { 1 } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the matchings of largest weight of random graphs against the dynamic
@@ -928,8 +938,8 @@ ADS_TEST( "max-weight-matching" )
    F[ S ] = F[ R ];
    for( int v = u + 1 ; v < n ; ++v )
     if( ( R >> v ) & 1u )
-     F[ S ] = std::max( F[ S ] , W[ u ][ v ] +
-                                 F[ R & ~( std::size_t( 1 ) << v ) ] );
+     F[ S ] =
+       std::max( F[ S ] , W[ u ][ v ] + F[ R & ~( std::size_t( 1 ) << v ) ] );
    }
   const auto [ w , M ] = maxWeightMatching( n , E );
   CHECK( w == F.back() );
@@ -939,13 +949,17 @@ ADS_TEST( "max-weight-matching" )
   CHECK( ( sum == w ) && std::is_sorted( M.begin() , M.end() ) );
   }
  using E3 = std::vector< std::tuple< int , int , double > >;
- CHECK( maxWeightMatching( 4 , E3( { { 0 , 1 , 2 } , { 1 , 2 , 3 } ,
-                                     { 2 , 3 , 2 } } ) ).first == 4 );
- CHECK( maxWeightMatching( 3 , E3( { { 0 , 1 , 5 } , { 1 , 2 , 5 } ,
-                                     { 0 , 2 , 5 } } ) ).second.size() == 1 );
+ CHECK( maxWeightMatching( 4 ,
+			   E3( { { 0 , 1 , 2 } , { 1 , 2 , 3 } ,
+				 { 2 , 3 , 2 } } ) )
+	  .first == 4 );
+ CHECK( maxWeightMatching( 3 ,
+			   E3( { { 0 , 1 , 5 } , { 1 , 2 , 5 } ,
+				 { 0 , 2 , 5 } } ) )
+	  .second.size() == 1 );
  CHECK( maxWeightMatching( 0 , E3() ).first == 0 );
  CHECK_THROWS( maxWeightMatching( 2 , E3( { { 0 , 0 , 1 } } ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the edge-disjoint paths of random graphs, oriented or not, against the
@@ -980,16 +994,18 @@ ADS_TEST( "edge-disjoint-paths" )
   CHECK( int( edgeDisjointPaths( G , 0 , n - 1 ).size() ) == cut );
   for( long k = 0 ; k <= 3 ; ++k )
    CHECK( long( edgeDisjointPaths( G , 0 , n - 1 , k ).size() ) ==
-          std::min( k , long( cut ) ) );
+	  std::min( k , long( cut ) ) );
   }
- const ArrayGraph<> a( 3 , { { 0 , 1 , {} } , { 0 , 1 , {} } , { 1 , 2 , {} } ,
-                             { 1 , 2 , {} } , { 1 , 2 , {} } } );
+ const ArrayGraph<> a(
+   3 ,
+   { { 0 , 1 , {} } , { 0 , 1 , {} } , { 1 , 2 , {} } , { 1 , 2 , {} } ,
+     { 1 , 2 , {} } } );
  CHECK( edgeDisjointPaths( a , 0 , 2 ).size() == 2 );
  CHECK( edgeDisjointPaths( ListGraph<>( 2 ) , 0 , 1 ).empty() );
  CHECK_THROWS( edgeDisjointPaths( ListGraph<>( 2 ) , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( edgeDisjointPaths( ListGraph<>( 2 ) , 0 , 1 , -1 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the decrease of a capacity on random networks, with cycles of flow
@@ -1001,18 +1017,18 @@ ADS_TEST( "decrease-capacity" )
  {
   LMatrix c( 5 , std::vector< long >( 5 , 0 ) ) , f = c;
   for( const auto & [ x , y ] : std::vector< std::pair< int , int > >(
-        { { 0 , 1 } , { 1 , 2 } , { 1 , 3 } , { 3 , 4 } , { 4 , 1 } } ) ) {
+	 { { 0 , 1 } , { 1 , 2 } , { 1 , 3 } , { 3 , 4 } , { 4 , 1 } } ) ) {
    c[ x ][ y ] = f[ x ][ y ] = 1;
    f[ y ][ x ] = -1;
    }
-  CHECK( decreaseCapacity( c , f , 0 , 2 , 1 , 3 ) ==
-         CapacityDecrease::CYCLE );
+  CHECK( decreaseCapacity( c , f , 0 , 2 , 1 ,
+			   3 ) == CapacityDecrease::CYCLE );
   CHECK( ( value( f , 0 ) == 1 ) && ( f[ 3 ][ 4 ] == 0 ) );
   CHECK( decreaseCapacity( c , f , 0 , 2 , 1 , 2 ) == CapacityDecrease::PATH );
   CHECK( value( f , 0 ) == 0 );
   CHECK_THROWS( decreaseCapacity( c , f , 0 , 2 , 1 , 2 ) ,
-                contract_violation );
- }
+		contract_violation );
+  }
  std::mt19937 g( 18 );
  int cases[ 3 ] = { 0 , 0 , 0 };
  for( int t = 0 ; t < 1500 ; ++t ) {
@@ -1024,7 +1040,7 @@ ADS_TEST( "decrease-capacity" )
      c[ x ][ y ] = rnd( g , 1 , 3 );
   const int s = rnd( g , 0 , n - 1 ) , p = ( s + rnd( g , 1 , n - 1 ) ) % n;
   LMatrix f = flowMatrix( c , s , p );
-  for( int k = 0 ; k < 10 ; ++k ) {       // cycles along the residuals
+  for( int k = 0 ; k < 10 ; ++k ) {  // cycles along the residuals
    Ints C( n );
    std::iota( C.begin() , C.end() , 0 );
    std::shuffle( C.begin() , C.end() , g );
@@ -1032,7 +1048,8 @@ ADS_TEST( "decrease-capacity" )
    bool ok = true;
    for( std::size_t i = 0 ; i < C.size() ; ++i )
     ok = ok && ( c[ C[ i ] ][ C[ ( i + 1 ) % C.size() ] ] -
-                 f[ C[ i ] ][ C[ ( i + 1 ) % C.size() ] ] > 0 );
+		   f[ C[ i ] ][ C[ ( i + 1 ) % C.size() ] ] >
+		 0 );
    if( ok )
     for( std::size_t i = 0 ; i < C.size() ; ++i ) {
      ++f[ C[ i ] ][ C[ ( i + 1 ) % C.size() ] ];
@@ -1052,7 +1069,7 @@ ADS_TEST( "decrease-capacity" )
   ++cases[ int( r ) ];
   CHECK( value( f , s ) == value( flowMatrix( c , s , p ) , s ) );
   CHECK( r == CapacityDecrease::PATH ? value( f , s ) >= before - 1
-                                     : value( f , s ) == before );
+				     : value( f , s ) == before );
   }
  CHECK( ( cases[ 0 ] > 0 ) && ( cases[ 1 ] > 0 ) && ( cases[ 2 ] > 0 ) );
  }

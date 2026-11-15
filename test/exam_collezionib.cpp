@@ -84,7 +84,8 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ints = std::vector< int >;
 using Arcs3 = std::vector< std::tuple< int , int , long > >;
@@ -109,7 +110,8 @@ int draw( std::mt19937 & g , int lo , int hi )
 Ints drawInts( std::mt19937 & g , int n , int lo , int hi )
 {
  Ints A( n );
- for( int & x : A ) x = draw( g , lo , hi );
+ for( int & x : A )
+  x = draw( g , lo , hi );
  return( A );
  }
 
@@ -168,7 +170,8 @@ std::vector< std::vector< bool > > reach( const G & g )
  std::vector< std::vector< bool > > R( n , std::vector< bool >( n ) );
  for( int u : g.V() ) {
   const auto d = distance( g , u ).first;
-  for( int v : g.V() ) R[ u ][ v ] = ( d[ v ] != ADS::INF );
+  for( int v : g.V() )
+   R[ u ][ v ] = ( d[ v ] != ADS::INF );
   }
  return( R );
  }
@@ -176,39 +179,40 @@ std::vector< std::vector< bool > > reach( const G & g )
 /// the capacity of a minimum cut between the nodes with S[ v ] = 1 and
 /// those with S[ v ] = 2, by trying every side of the other nodes; the
 /// edges are ( u , v , c )
-long minCutBrute( int n , const Arcs3 & E ,
-                  const Ints & S )
+long minCutBrute( int n , const Arcs3 & E , const Ints & S )
 {
  Ints free;
  for( int v = 0 ; v < n ; ++v )
-  if( S[ v ] == 0 ) free.push_back( v );
+  if( S[ v ] == 0 )
+   free.push_back( v );
  long best = LINF;
  for( std::uint64_t mask = 0 ; mask < ( std::uint64_t( 1 ) << free.size() ) ;
       ++mask ) {
-  std::vector< bool > side( n );           // true on the side of s
-  for( int v = 0 ; v < n ; ++v ) side[ v ] = ( S[ v ] == 1 );
+  std::vector< bool > side( n );  // true on the side of s
+  for( int v = 0 ; v < n ; ++v )
+   side[ v ] = ( S[ v ] == 1 );
   for( std::size_t i = 0 ; i < free.size() ; ++i )
    side[ free[ i ] ] = ( mask >> i ) & 1;
   long c = 0;
   for( auto [ u , v , w ] : E )
-   if( side[ u ] && ! side[ v ] ) c += w;
+   if( side[ u ] && ! side[ v ] )
+    c += w;
   best = std::min( best , c );
   }
  return( best );
  }
 
 /// the maximum flow from s to t of the edges ( u , v , c )
-long maxFlowOf( int n , const Arcs3 & E ,
-                int s , int t )
+long maxFlowOf( int n , const Arcs3 & E , int s , int t )
 {
  FlowNetwork F( n );
- for( auto [ u , v , c ] : E ) F.addEdge( u , v , c );
+ for( auto [ u , v , c ] : E )
+  F.addEdge( u , v , c );
  return( F.maxFlow( s , t ) );
  }
 
 /// the minimum cut from s to t of the edges, by brute force
-long minCutBrute( int n , const Arcs3 & E ,
-                  int s , int t )
+long minCutBrute( int n , const Arcs3 & E , int s , int t )
 {
  Ints S( n , 0 );
  S[ s ] = 1;
@@ -218,7 +222,8 @@ long minCutBrute( int n , const Arcs3 & E ,
 
 }  // end( namespace )
 
-namespace collezioni {
+namespace collezioni
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------- COLLECTION 11, SHORTEST PATHS ------------------------*/
@@ -236,7 +241,8 @@ template< Graph G >
 bool negativeCycle( const G & g )
 {
  const int n = g.n();
- if( n == 0 ) return( false );
+ if( n == 0 )
+  return( false );
  std::vector< long > d( g.bound() , 0 );
  for( int k = 1 ; k <= n ; ++k ) {
   bool changed = false;
@@ -247,7 +253,8 @@ bool negativeCycle( const G & g )
      changed = true;
      }
     } );
-  if( ! changed ) return( false );
+  if( ! changed )
+   return( false );
   }
  return( true );
  }
@@ -268,10 +275,12 @@ std::pair< Ints , double > mostReliable( const DGraph & g , int s , int t )
  for( int u : g.V() )
   g.forEachEdge( u , [ & ]( int v , double r ) {
    ADS_PRE( ( r >= 0 ) && ( r <= 1 ) );
-   if( r > 0 ) c.insertEdge( u , v , r == 1 ? 0.0 : -std::log( r ) );
+   if( r > 0 )
+    c.insertEdge( u , v , r == 1 ? 0.0 : -std::log( r ) );
    } );
  const auto R = johnson( c , s );
- if( R.d[ t ] == infinity< double >() ) return( std::pair( Ints() , 0.0 ) );
+ if( R.d[ t ] == infinity< double >() )
+  return( std::pair( Ints() , 0.0 ) );
  return( std::pair( path( s , t , R.T ) , std::exp( -R.d[ t ] ) ) );
  }
 
@@ -298,7 +307,8 @@ std::uint64_t pathCount( const WGraph & g , int s , int t )
    if( ! done[ x ] && ( d[ x ] < LINF ) &&
        ( ( u < 0 ) || ( d[ x ] < d[ u ] ) ) )
     u = x;
-  if( u < 0 ) break;
+  if( u < 0 )
+   break;
   done[ u ] = true;
   g.forEachEdge( u , [ & ]( int v , int w ) {
    ADS_PRE( w > 0 );
@@ -306,7 +316,8 @@ std::uint64_t pathCount( const WGraph & g , int s , int t )
     d[ v ] = d[ u ] + w;
     count[ v ] = count[ u ];
     }
-   else if( d[ u ] + w == d[ v ] ) count[ v ] += count[ u ];
+   else if( d[ u ] + w == d[ v ] )
+    count[ v ] += count[ u ];
    } );
   }
  return( count[ t ] );
@@ -337,11 +348,13 @@ Ints shortestEdgePath( const WGraph & g , int r , int s )
      bw = w;
      }
     } );
- if( bu == NIL ) return( Ints() );
+ if( bu == NIL )
+  return( Ints() );
  Ints P = path( r , bu , pr );
- for( int x = bv ; ; x = ps[ x ] ) {       // the parents lead to s in g
+ for( int x = bv ; ; x = ps[ x ] ) {  // the parents lead to s in g
   P.push_back( x );
-  if( x == s ) break;
+  if( x == s )
+   break;
   }
  return( P );
  }
@@ -359,9 +372,9 @@ ADS_TEST( "collezioni-11-strutture-1-2" )
  CHECK( ! negativeCycle( WGraph( 0 ) ) && ! negativeCycle( WGraph( 1 ) ) );
  WGraph c( 3 );
  c.insertEdge( 0 , 1 , 1 );
- c.insertEdge( 1 , 0 , -1 );               // weight 0: not negative
+ c.insertEdge( 1 , 0 , -1 );  // weight 0: not negative
  CHECK( ! negativeCycle( c ) );
- c.insertEdge( 2 , 1 , -5 );               // 2 reaches no cycle
+ c.insertEdge( 2 , 1 , -5 );  // 2 reaches no cycle
  CHECK( ! negativeCycle( c ) );
  c.insertEdge( 1 , 0 , -2 );
  CHECK( negativeCycle( c ) );
@@ -370,13 +383,14 @@ ADS_TEST( "collezioni-11-strutture-1-2" )
  for( int t = 0 ; t < 400 ; ++t ) {
   const WGraph G = randomGraph( g , draw( g , 1 , 7 ) , 30 , -4 , 9 );
   bool any = false;
-  for( int r : G.V() ) any = any || reachesNegativeCycle( G , r );
+  for( int r : G.V() )
+   any = any || reachesNegativeCycle( G , r );
   const bool nc = negativeCycle( G );
   CHECK( nc == any );
   CHECK( nc == floydWarshall( G ).negativeCycle );
   yes += nc;
   }
- CHECK( ( yes > 20 ) && ( yes < 380 ) );   // both answers were tried
+ CHECK( ( yes > 20 ) && ( yes < 380 ) );  // both answers were tried
  }
 
 // collezione 11-strutture, 1.3: the most reliable path against the
@@ -388,20 +402,20 @@ ADS_TEST( "collezioni-11-strutture-1-3" )
  DGraph e( 3 );
  e.insertEdge( 0 , 1 , 0.5 );
  e.insertEdge( 1 , 2 , 0.5 );
- e.insertEdge( 0 , 2 , 0.2 );              // 0.25 by 1 beats 0.2
+ e.insertEdge( 0 , 2 , 0.2 );  // 0.25 by 1 beats 0.2
  auto [ P , q ] = collezioni::mostReliable( e , 0 , 2 );
  CHECK( ( P == Ints( { 0 , 1 , 2 } ) ) && ( std::abs( q - 0.25 ) < 1e-12 ) );
  CHECK( collezioni::mostReliable( e , 2 , 0 ).first.empty() );
  CHECK( collezioni::mostReliable( e , 1 , 1 ) == std::pair( Ints{ 1 } ,
-                                                             1.0 ) );
+							    1.0 ) );
  // an edge of reliability 0 is no path, one of reliability 1 costs
  // nothing; s, t or a reliability out of [ 0 , 1 ] refused
  DGraph z( 3 );
  z.insertEdge( 0 , 1 , 0.0 );
  z.insertEdge( 1 , 2 , 1.0 );
  CHECK( collezioni::mostReliable( z , 0 , 2 ) == std::pair( Ints() , 0.0 ) );
- CHECK( collezioni::mostReliable( z , 1 , 2 ) == std::pair( Ints{ 1 , 2 } ,
-                                                             1.0 ) );
+ CHECK( collezioni::mostReliable( z , 1 , 2 ) ==
+	std::pair( Ints{ 1 , 2 } , 1.0 ) );
  CHECK_THROWS( collezioni::mostReliable( z , 0 , 3 ) , contract_violation );
  CHECK_THROWS( collezioni::mostReliable( z , -1 , 0 ) , contract_violation );
  DGraph bad( 2 );
@@ -432,7 +446,7 @@ ADS_TEST( "collezioni-11-strutture-1-3" )
    for( std::size_t i = 1 ; i < R.size() ; ++i )
     r *= *G.weight( R[ i - 1 ] , R[ i ] );
    CHECK( ( R.front() == s ) && ( R.back() == d ) &&
-          ( std::abs( r - p ) < 1e-9 ) );
+	  ( std::abs( r - p ) < 1e-9 ) );
    }
   }
  }
@@ -448,8 +462,10 @@ ADS_TEST( "collezioni-11-strutture-1-4" )
  WGraph grid( k * k );
  for( int i = 0 ; i < k ; ++i )
   for( int j = 0 ; j < k ; ++j ) {
-   if( i + 1 < k ) grid.insertEdge( i * k + j , ( i + 1 ) * k + j , 1 );
-   if( j + 1 < k ) grid.insertEdge( i * k + j , i * k + j + 1 , 1 );
+   if( i + 1 < k )
+    grid.insertEdge( i * k + j , ( i + 1 ) * k + j , 1 );
+   if( j + 1 < k )
+    grid.insertEdge( i * k + j , i * k + j + 1 , 1 );
    }
  CHECK( collezioni::pathCount( grid , 0 , k * k - 1 ) == 252 );
  CHECK( collezioni::pathCount( grid , k * k - 1 , 0 ) == 0 );
@@ -462,7 +478,7 @@ ADS_TEST( "collezioni-11-strutture-1-4" )
  tie.insertEdge( 2 , 1 , 1 );
  tie.insertEdge( 1 , 3 , 1 );
  CHECK( collezioni::pathCount( tie , 0 , 3 ) == 2 );
- tie.insertEdge( 0 , 1 , 3 );                  // now only through 2
+ tie.insertEdge( 0 , 1 , 3 );  // now only through 2
  CHECK( collezioni::pathCount( tie , 0 , 3 ) == 1 );
  CHECK_THROWS( collezioni::pathCount( tie , 0 , 4 ) , contract_violation );
  tie.insertEdge( 1 , 3 , 0 );
@@ -475,8 +491,12 @@ ADS_TEST( "collezioni-11-strutture-1-4" )
   std::uint64_t count = 0;
   simplePaths( G , s , d , [ & ]( const Ints & Q ) {
    const long w = pathWeight( G , Q );
-   if( w < best ) { best = w; count = 0; }
-   if( w == best ) ++count;
+   if( w < best ) {
+    best = w;
+    count = 0;
+    }
+   if( w == best )
+    ++count;
    } );
   CHECK( collezioni::pathCount( G , s , d ) == count );
   }
@@ -491,18 +511,18 @@ ADS_TEST( "collezioni-11-strutture-1-5" )
  WGraph e( 4 );
  e.insertEdge( 0 , 1 , 5 );
  e.insertEdge( 1 , 3 , 5 );
- e.insertEdge( 1 , 2 , 1 );                // 2 is a dead end
- e.insertEdge( 3 , 0 , 2 );                // on the way back to 0
+ e.insertEdge( 1 , 2 , 1 );  // 2 is a dead end
+ e.insertEdge( 3 , 0 , 2 );  // on the way back to 0
  CHECK( collezioni::shortestEdgePath( e , 0 , 3 ) ==
-        Ints( { 0 , 1 , 3 , 0 , 1 , 3 } ) );
+	Ints( { 0 , 1 , 3 , 0 , 1 , 3 } ) );
  CHECK( collezioni::shortestEdgePath( e , 2 , 0 ).empty() );
  // r = s on a cycle (the path closes it through the shortest edge), r = s
  // with no edge (empty), nodes out refused
- CHECK( collezioni::shortestEdgePath( e , 0 , 0 ) ==
-        Ints( { 0 , 1 , 3 , 0 } ) );
+ CHECK( collezioni::shortestEdgePath( e , 0 ,
+				      0 ) == Ints( { 0 , 1 , 3 , 0 } ) );
  CHECK( collezioni::shortestEdgePath( WGraph( 2 ) , 1 , 1 ).empty() );
  CHECK_THROWS( collezioni::shortestEdgePath( e , 0 , 4 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 115 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const WGraph G = randomGraph( g , draw( g , 1 , 8 ) , 25 , 1 , 20 );
@@ -511,7 +531,8 @@ ADS_TEST( "collezioni-11-strutture-1-5" )
   int best = ADS::INF;
   for( int u : G.V() )
    G.forEachEdge( u , [ & ]( int v , int w ) {
-    if( R[ r ][ u ] && R[ v ][ s ] ) best = std::min( best , w );
+    if( R[ r ][ u ] && R[ v ][ s ] )
+     best = std::min( best , w );
     } );
   const Ints P = collezioni::shortestEdgePath( G , r , s );
   if( best == ADS::INF ) {
@@ -532,7 +553,8 @@ ADS_TEST( "collezioni-11-strutture-1-5" )
 /*------------------- COLLECTION 12, DIVIDE ET IMPERA ----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace collezioni {
+namespace collezioni
+{
 
 // collezione 12-divide, 1.2: Analisi Quicksort
 
@@ -541,12 +563,14 @@ namespace collezioni {
 /// comparisons made are added to *cmp
 void quickSortCounted( Ints & A , int start , int end , long & cmp )
 {
- if( start >= end ) return;
+ if( start >= end )
+  return;
  const int x = A[ start ];
  int j = start;
  for( int i = start + 1 ; i <= end ; ++i ) {
   ++cmp;
-  if( A[ i ] < x ) std::swap( A[ i ] , A[ ++j ] );
+  if( A[ i ] < x )
+   std::swap( A[ i ] , A[ ++j ] );
   }
  std::swap( A[ start ] , A[ j ] );
  quickSortCounted( A , start , j - 1 , cmp );
@@ -560,7 +584,7 @@ void quickSortCounted( Ints & A , int start , int end , long & cmp )
 /// imaginary one m3 - m1 - m2; 3 products and 5 sums
 template< class T >
 std::pair< T , T > complexProduct( const T & a , const T & b , const T & c ,
-                                   const T & d )
+				  const T & d )
 {
  const T m1 = a * c , m2 = b * d , m3 = ( a + b ) * ( c + d );
  return( std::pair( m1 - m2 , m3 - m1 - m2 ) );
@@ -577,8 +601,10 @@ int missing( const Ints & A )
  int i = 0 , j = int( A.size() );
  while( i < j ) {
   const int m = ( i + j ) / 2;
-  if( A[ m ] == m ) i = m + 1;
-  else j = m;
+  if( A[ m ] == m )
+   i = m + 1;
+  else
+   j = m;
   }
  return( i );
  }
@@ -594,9 +620,12 @@ bool fixedPoint( const Ints & A )
  int i = 0 , j = int( A.size() ) - 1;
  while( i <= j ) {
   const int m = ( i + j ) / 2;
-  if( A[ m ] == m ) return( true );
-  if( A[ m ] < m ) i = m + 1;
-  else j = m - 1;
+  if( A[ m ] == m )
+   return( true );
+  if( A[ m ] < m )
+   i = m + 1;
+  else
+   j = m - 1;
   }
  return( false );
  }
@@ -613,8 +642,10 @@ int unimodalMin( const Ints & A )
  std::size_t start = 0 , end = A.size() - 1;
  while( start < end ) {
   const std::size_t m = ( start + end ) / 2;
-  if( A[ m ] < A[ m + 1 ] ) end = m;
-  else start = m + 1;
+  if( A[ m ] < A[ m + 1 ] )
+   end = m;
+  else
+   start = m + 1;
   }
  return( A[ start ] );
  }
@@ -622,9 +653,10 @@ int unimodalMin( const Ints & A )
 // collezione 12-divide, 1.9: Massima somma di sottovettori
 
 /// a subvector A[ start .. end ] and its sum
-struct Sub {
+struct Sub
+{
  int start , end;
- long long sum;             ///< in 64 bits: a sum of many int
+ long long sum;  ///< in 64 bits: a sum of many int
  };
 
 /// maxSumCubic(): the non-empty subvector of largest sum, by summing each
@@ -637,8 +669,10 @@ Sub maxSumCubic( const Ints & A )
  for( int i = 0 ; i < int( A.size() ) ; ++i )
   for( int j = i ; j < int( A.size() ) ; ++j ) {
    long long s = 0;
-   for( int k = i ; k <= j ; ++k ) s += A[ k ];
-   if( s > best.sum ) best = Sub{ i , j , s };
+   for( int k = i ; k <= j ; ++k )
+    s += A[ k ];
+   if( s > best.sum )
+    best = Sub{ i , j , s };
    }
  return( best );
  }
@@ -654,7 +688,8 @@ Sub maxSumQuadratic( const Ints & A )
   long long s = 0;
   for( int j = i ; j < int( A.size() ) ; ++j ) {
    s += A[ j ];
-   if( s > best.sum ) best = Sub{ i , j , s };
+   if( s > best.sum )
+    best = Sub{ i , j , s };
    }
   }
  return( best );
@@ -665,23 +700,31 @@ Sub maxSumQuadratic( const Ints & A )
 /// left half joined to the best prefix of the right one
 Sub maxSumRec( const Ints & A , int start , int end )
 {
- if( start == end ) return( Sub{ start , start , A[ start ] } );
+ if( start == end )
+  return( Sub{ start , start , A[ start ] } );
  const int mid = ( start + end ) / 2;
- const Sub l = maxSumRec( A , start , mid ) , r = maxSumRec( A , mid + 1 ,
-                                                            end );
+ const Sub l = maxSumRec( A , start , mid ) ,
+   r = maxSumRec( A , mid + 1 , end );
  long long s = 0 , bl = std::numeric_limits< long long >::min() , br = bl;
  int i0 = mid , j0 = mid + 1;
  for( int i = mid ; i >= start ; --i ) {
   s += A[ i ];
-  if( s > bl ) { bl = s; i0 = i; }
+  if( s > bl ) {
+   bl = s;
+   i0 = i;
+   }
   }
  s = 0;
  for( int j = mid + 1 ; j <= end ; ++j ) {
   s += A[ j ];
-  if( s > br ) { br = s; j0 = j; }
+  if( s > br ) {
+   br = s;
+   j0 = j;
+   }
   }
  const Sub c{ i0 , j0 , bl + br };
- if( ( l.sum >= r.sum ) && ( l.sum >= c.sum ) ) return( l );
+ if( ( l.sum >= r.sum ) && ( l.sum >= c.sum ) )
+  return( l );
  return( r.sum >= c.sum ? r : c );
  }
 
@@ -734,8 +777,10 @@ int highest( const std::vector< std::pair< double , double > > & V )
  int i = 0 , j = int( V.size() ) - 1;
  while( i < j ) {
   const int m = ( i + j ) / 2;
-  if( V[ m ].second < V[ m + 1 ].second ) i = m + 1;
-  else j = m;
+  if( V[ m ].second < V[ m + 1 ].second )
+   i = m + 1;
+  else
+   j = m;
   }
  return( i );
  }
@@ -751,8 +796,10 @@ int findIncrease( const Ints & A )
  int start = 0 , end = int( A.size() ) - 1;
  while( start + 1 < end ) {
   const int mid = ( start + end ) / 2;
-  if( A[ start ] < A[ mid ] ) end = mid;
-  else start = mid;
+  if( A[ start ] < A[ mid ] )
+   end = mid;
+  else
+   start = mid;
   }
  return( start );
  }
@@ -761,9 +808,10 @@ int findIncrease( const Ints & A )
 
 /// the minimum, the maximum and the best gain P[ y ] - P[ x ], x < y, of a
 /// part of the prices
-struct Gain {
+struct Gain
+{
  int min , max;
- long long gain;            ///< in 64 bits: a difference of two int
+ long long gain;  ///< in 64 bits: a difference of two int
  };
 
 /// the gain of P[ start .. end ]: that of either half, or the maximum of
@@ -771,14 +819,15 @@ struct Gain {
 Gain bestGainRec( const Ints & P , int start , int end )
 {
  if( start == end )
-  return( Gain{ P[ start ] , P[ start ] ,
-                std::numeric_limits< long long >::min() } );
+  return(
+    Gain{ P[ start ] , P[ start ] ,
+	  std::numeric_limits< long long >::min() } );
  const int mid = ( start + end ) / 2;
  const Gain l = bestGainRec( P , start , mid ) ,
-            r = bestGainRec( P , mid + 1 , end );
- return( Gain{ std::min( l.min , r.min ) , std::max( l.max , r.max ) ,
-               std::max( { l.gain , r.gain ,
-                           (long long)( r.max ) - l.min } ) } );
+	    r = bestGainRec( P , mid + 1 , end );
+ return(
+   Gain{ std::min( l.min , r.min ) , std::max( l.max , r.max ) ,
+	 std::max( { l.gain , r.gain , ( long long )( r.max ) - l.min } ) } );
  }
 
 /// bestGain(): the largest P[ y ] - P[ x ] with x < y, possibly negative,
@@ -796,13 +845,14 @@ long long bestGain( const Ints & P )
 /// or one across the middle, found by two indices on the minima and the
 /// maxima of the suffixes of the left half and of the prefixes of the
 /// right one, kept in mn and mx shared by all the calls
-int thinRec( const Ints & V , long long C , int start , int end ,
-             Ints & mn , Ints & mx )
+int thinRec( const Ints & V , long long C , int start , int end , Ints & mn ,
+	     Ints & mx )
 {
- if( start == end ) return( 1 );
+ if( start == end )
+  return( 1 );
  const int mid = ( start + end ) / 2;
  int best = std::max( thinRec( V , C , start , mid , mn , mx ) ,
-                      thinRec( V , C , mid + 1 , end , mn , mx ) );
+		      thinRec( V , C , mid + 1 , end , mn , mx ) );
  mn[ mid ] = mx[ mid ] = V[ mid ];
  for( int i = mid - 1 ; i >= start ; --i ) {
   mn[ i ] = std::min( mn[ i + 1 ] , V[ i ] );
@@ -813,13 +863,15 @@ int thinRec( const Ints & V , long long C , int start , int end ,
   mn[ j ] = std::min( mn[ j - 1 ] , V[ j ] );
   mx[ j ] = std::max( mx[ j - 1 ] , V[ j ] );
   }
- int right = mid;                          // the last place on the right
+ int right = mid;  // the last place on the right
  for( int left = start ; left <= mid ; ++left ) {
   while( ( right < end ) &&
-         ( (long long)( std::max( mx[ left ] , mx[ right + 1 ] ) ) -
-           std::min( mn[ left ] , mn[ right + 1 ] ) <= C ) )
+	 ( ( long long )( std::max( mx[ left ] , mx[ right + 1 ] ) ) -
+	     std::min( mn[ left ] , mn[ right + 1 ] ) <=
+	   C ) )
    ++right;
-  if( right > mid ) best = std::max( best , right - left + 1 );
+  if( right > mid )
+   best = std::max( best , right - left + 1 );
   }
  return( best );
  }
@@ -837,10 +889,12 @@ int thinSubarray( const Ints & V , long long C )
 
 }  // end( namespace collezioni )
 
-namespace {
+namespace
+{
 
 /// an integer that counts its products
-struct Counted {
+struct Counted
+{
  std::int64_t v;
  static inline long products = 0;
  };
@@ -851,15 +905,22 @@ Counted operator*( Counted a , Counted b )
  return( Counted{ a.v * b.v } );
  }
 
-Counted operator+( Counted a , Counted b ) { return( Counted{ a.v + b.v } ); }
+Counted operator+( Counted a , Counted b )
+{
+ return( Counted{ a.v + b.v } );
+ }
 
-Counted operator-( Counted a , Counted b ) { return( Counted{ a.v - b.v } ); }
+Counted operator-( Counted a , Counted b )
+{
+ return( Counted{ a.v - b.v } );
+ }
 
 /// a vector of n distinct integers in increasing order, from [ lo , hi ]
 Ints drawSortedDistinct( std::mt19937 & g , int n , int lo , int hi )
 {
  std::set< int > S;
- while( int( S.size() ) < n ) S.insert( draw( g , lo , hi ) );
+ while( int( S.size() ) < n )
+  S.insert( draw( g , lo , hi ) );
  return( Ints( S.begin() , S.end() ) );
  }
 
@@ -873,7 +934,8 @@ ADS_TEST( "collezioni-12-divide-1-1" )
 {
  using P = std::pair< int , int >;
  const auto first = []( const P & a , const P & b ) {
-  return( a.first < b.first ); };
+  return( a.first < b.first );
+  };
  std::mt19937 g( 121 );
  for( int t = 0 ; t < 300 ; ++t ) {
   std::vector< P > A( draw( g , 0 , 60 ) );
@@ -914,7 +976,10 @@ ADS_TEST( "collezioni-12-divide-1-2" )
  const auto count = []( int n ) {
   Ints A( n , 7 );
   long c = 0;
-  quickSort( A , [ & ]( int a , int b ) { ++c; return( a < b ); } );
+  quickSort( A , [ & ]( int a , int b ) {
+   ++c;
+   return( a < b );
+   } );
   return( double( c ) );
   };
  const double r = count( 800 ) / count( 400 );
@@ -927,7 +992,8 @@ ADS_TEST( "collezioni-12-divide-1-3" )
 {
  using P = std::pair< int , int >;
  const auto first = []( const P & a , const P & b ) {
-  return( a.first < b.first ); };
+  return( a.first < b.first );
+  };
  std::mt19937 g( 123 );
  for( int n = 0 ; n <= 130 ; ++n )
   for( int t = 0 ; t < 3 ; ++t ) {
@@ -948,14 +1014,13 @@ ADS_TEST( "collezioni-12-divide-1-5" )
  std::mt19937 g( 125 );
  for( int t = 0 ; t < 1000 ; ++t ) {
   const int a = draw( g , -1000 , 1000 ) , b = draw( g , -1000 , 1000 ) ,
-            c = draw( g , -1000 , 1000 ) , d = draw( g , -1000 , 1000 );
+	    c = draw( g , -1000 , 1000 ) , d = draw( g , -1000 , 1000 );
   Counted::products = 0;
   const auto [ re , im ] = collezioni::complexProduct(
-                          Counted{ a } , Counted{ b } , Counted{ c } ,
-                          Counted{ d } );
+    Counted{ a } , Counted{ b } , Counted{ c } , Counted{ d } );
   CHECK( Counted::products == 3 );
-  const std::complex< double > z = std::complex< double >( a , b ) *
-                                   std::complex< double >( c , d );
+  const std::complex< double > z =
+    std::complex< double >( a , b ) * std::complex< double >( c , d );
   CHECK( ( double( re.v ) == z.real() ) && ( double( im.v ) == z.imag() ) );
   }
  const std::int64_t M = std::int64_t( 1 ) << 30;
@@ -972,10 +1037,11 @@ ADS_TEST( "collezioni-12-divide-1-6" )
   for( int k = 0 ; k <= n ; ++k ) {
    Ints A;
    for( int v = 0 ; v <= n ; ++v )
-    if( v != k ) A.push_back( v );
+    if( v != k )
+     A.push_back( v );
    CHECK( collezioni::missing( A ) == k );
-   CHECK( n * ( n + 1 ) / 2 - std::accumulate( A.begin() , A.end() , 0 ) ==
-          k );
+   CHECK( n * ( n + 1 ) / 2 - std::accumulate( A.begin() , A.end() ,
+					       0 ) == k );
    }
  }
 
@@ -993,7 +1059,8 @@ ADS_TEST( "collezioni-12-divide-1-7" )
   const int n = draw( g , 1 , 30 );
   const Ints A = drawSortedDistinct( g , n , -20 , 40 );
   bool any = false;
-  for( int i = 0 ; i < n ; ++i ) any = any || ( A[ i ] == i );
+  for( int i = 0 ; i < n ; ++i )
+   any = any || ( A[ i ] == i );
   CHECK( collezioni::fixedPoint( A ) == any );
   yes += any;
   }
@@ -1028,7 +1095,7 @@ ADS_TEST( "collezioni-12-divide-1-8" )
  // two items both ways, the extremes of int, and the empty vector refused
  const int M = std::numeric_limits< int >::max();
  CHECK( collezioni::unimodalMin( Ints{ 2 , 1 } ) == 1 &&
-        collezioni::unimodalMin( Ints{ 1 , 2 } ) == 1 );
+	collezioni::unimodalMin( Ints{ 1 , 2 } ) == 1 );
  CHECK( collezioni::unimodalMin( Ints{ M , -M - 1 , M - 1 } ) == -M - 1 );
  CHECK_THROWS( collezioni::unimodalMin( Ints() ) , contract_violation );
  }
@@ -1047,14 +1114,14 @@ ADS_TEST( "collezioni-12-divide-1-9" )
  for( int t = 0 ; t < 600 ; ++t ) {
   const Ints A = drawInts( g , draw( g , 1 , 25 ) , -9 , t % 5 ? 9 : -1 );
   const collezioni::Sub a = collezioni::maxSumCubic( A ) ,
-                        b = collezioni::maxSumQuadratic( A ) ,
-                        c = collezioni::maxSum( A );
+			b = collezioni::maxSumQuadratic( A ) ,
+			c = collezioni::maxSum( A );
   CHECK( ( a.sum == b.sum ) && ( b.sum == c.sum ) );
   for( const auto & x : { a , b , c } )
    CHECK( ( 0 <= x.start ) && ( x.start <= x.end ) &&
-          ( x.end < int( A.size() ) ) &&
-          ( std::accumulate( A.begin() + x.start , A.begin() + x.end + 1 ,
-                             0LL ) == x.sum ) );
+	  ( x.end < int( A.size() ) ) &&
+	  ( std::accumulate( A.begin() + x.start , A.begin() + x.end + 1 ,
+			     0LL ) == x.sum ) );
   const int top = *std::max_element( A.begin() , A.end() );
   CHECK( c.sum == ( top < 0 ? top : maxSubarraySum( A ) ) );
   }
@@ -1062,7 +1129,8 @@ ADS_TEST( "collezioni-12-divide-1-9" )
  // whose sums leave int, and an empty vector refused
  const int M = std::numeric_limits< int >::max();
  for( const auto & f : { collezioni::maxSumCubic ,
-                         collezioni::maxSumQuadratic , collezioni::maxSum } ) {
+			 collezioni::maxSumQuadratic ,
+			 collezioni::maxSum } ) {
   CHECK( f( Ints{ -4 } ).sum == -4 );
   const collezioni::Sub n = f( Ints{ -5 , -2 , -9 } );
   CHECK( ( n.start == 1 ) && ( n.end == 1 ) && ( n.sum == -2 ) );
@@ -1078,19 +1146,19 @@ ADS_TEST( "collezioni-12-divide-1-9" )
 ADS_TEST( "collezioni-12-divide-1-10" )
 {
  CHECK( collezioni::majoritySort( Ints{ 4 } ) &&
-        collezioni::majoritySelect( Ints{ 4 } ) );
+	collezioni::majoritySelect( Ints{ 4 } ) );
  CHECK( ! collezioni::majoritySort( Ints{ 1 , 2 } ) &&
-        ! collezioni::majoritySelect( Ints{ 1 , 2 } ) );
+	! collezioni::majoritySelect( Ints{ 1 , 2 } ) );
  CHECK( collezioni::majoritySelect( Ints{ 2 , 1 , 2 } ) );
  // exactly half is no majority, half plus one is; the extremes of int;
  // the empty vector refused
  CHECK( ! collezioni::majoritySort( Ints{ 3 , 3 , 1 , 2 } ) &&
-        ! collezioni::majoritySelect( Ints{ 3 , 3 , 1 , 2 } ) );
+	! collezioni::majoritySelect( Ints{ 3 , 3 , 1 , 2 } ) );
  CHECK( collezioni::majoritySort( Ints{ 3 , 1 , 3 , 3 , 2 } ) &&
-        collezioni::majoritySelect( Ints{ 3 , 1 , 3 , 3 , 2 } ) );
+	collezioni::majoritySelect( Ints{ 3 , 1 , 3 , 3 , 2 } ) );
  const int M = std::numeric_limits< int >::max();
  CHECK( collezioni::majoritySort( Ints{ -M - 1 , M , -M - 1 } ) &&
-        collezioni::majoritySelect( Ints{ M , M , -M - 1 } ) );
+	collezioni::majoritySelect( Ints{ M , M , -M - 1 } ) );
  CHECK_THROWS( collezioni::majoritySort( Ints() ) , contract_violation );
  CHECK_THROWS( collezioni::majoritySelect( Ints() ) , contract_violation );
  std::mt19937 g( 1210 );
@@ -1099,7 +1167,8 @@ ADS_TEST( "collezioni-12-divide-1-10" )
   const Ints A = drawInts( g , draw( g , 1 , 30 ) , 0 , draw( g , 1 , 3 ) );
   std::unordered_map< int , int > f;
   int top = 0;
-  for( int x : A ) top = std::max( top , ++f[ x ] );
+  for( int x : A )
+   top = std::max( top , ++f[ x ] );
   const bool maj = 2 * top > int( A.size() );
   CHECK( collezioni::majoritySort( A ) == maj );
   CHECK( collezioni::majoritySelect( A ) == maj );
@@ -1119,30 +1188,35 @@ ADS_TEST( "collezioni-12-divide-1-11" )
  for( int t = 0 ; t < 1000 ; ++t ) {
   const int n = draw( g , 3 , 40 );
   std::vector< double > a( n );
-  for( double & x : a ) x = U( g );
-  std::sort( a.begin() , a.end() );        // counterclockwise
+  for( double & x : a )
+   x = U( g );
+  std::sort( a.begin() , a.end() );  // counterclockwise
   std::vector< std::pair< double , double > > V;
   for( double x : a )
-   V.emplace_back( 3 * std::cos( x ) , 2 * std::sin( x ) + 0.1 * std::cos(
-                   x ) );
-  const auto low = std::min_element( V.begin() , V.end() , []( auto p ,
-                     auto q ) { return( p.second < q.second ); } );
+   V.emplace_back( 3 * std::cos( x ) ,
+		   2 * std::sin( x ) + 0.1 * std::cos( x ) );
+  const auto low = std::min_element( V.begin() , V.end() ,
+				     []( auto p , auto q ) {
+   return( p.second < q.second );
+   } );
   std::rotate( V.begin() , low , V.end() );
-  const auto high = std::max_element( V.begin() , V.end() , []( auto p ,
-                      auto q ) { return( p.second < q.second ); } );
+  const auto high =
+    std::max_element( V.begin() , V.end() , []( auto p , auto q ) {
+     return( p.second < q.second );
+     } );
   CHECK( collezioni::highest( V ) == int( high - V.begin() ) );
   }
  const std::vector< std::pair< double , double > > T = { { 0 , 0 } ,
-                                                       { 1 , 1 } ,
-                                                       { -1 , 2 } };
+							{ 1 , 1 } ,
+							{ -1 , 2 } };
  CHECK( collezioni::highest( T ) == 2 );
  // the highest second, and fewer than three vertices refused
  const std::vector< std::pair< double , double > > S = { { 0 , 0 } ,
-                                                       { 1 , 3 } ,
-                                                       { -1 , 1 } };
+							{ 1 , 3 } ,
+							{ -1 , 1 } };
  CHECK( collezioni::highest( S ) == 1 );
  CHECK_THROWS( collezioni::highest( { { 0 , 0 } , { 1 , 1 } } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // collezione 12-divide, 1.12: the place found has A[ i ] < A[ i + 1 ], on
@@ -1158,9 +1232,9 @@ ADS_TEST( "collezioni-12-divide-1-12" )
  CHECK( collezioni::findIncrease( Ints{ -M - 1 , M } ) == 0 );
  CHECK_THROWS( collezioni::findIncrease( Ints{ 1 } ) , contract_violation );
  CHECK_THROWS( collezioni::findIncrease( Ints{ 2 , 5 , 2 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( collezioni::findIncrease( Ints{ 3 , 1 } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1212 );
  for( int t = 0 ; t < 2000 ; ++t ) {
   Ints A = drawInts( g , draw( g , 2 , 40 ) , 0 , t % 2 ? 5 : 100 );
@@ -1170,7 +1244,7 @@ ADS_TEST( "collezioni-12-divide-1-12" )
    }
   const int i = collezioni::findIncrease( A );
   CHECK( ( i >= 0 ) && ( i + 1 < int( A.size() ) ) &&
-         ( A[ i ] < A[ i + 1 ] ) );
+	 ( A[ i ] < A[ i + 1 ] ) );
   }
  }
 
@@ -1188,7 +1262,7 @@ ADS_TEST( "collezioni-12-divide-1-13" )
   long long best = std::numeric_limits< long long >::min();
   for( std::size_t x = 0 ; x < P.size() ; ++x )
    for( std::size_t y = x + 1 ; y < P.size() ; ++y )
-    best = std::max( best , (long long)( P[ y ] ) - P[ x ] );
+    best = std::max( best , ( long long )( P[ y ] ) - P[ x ] );
   CHECK( collezioni::bestGain( P ) == best );
   }
  const int M = std::numeric_limits< int >::max();
@@ -1212,12 +1286,12 @@ ADS_TEST( "collezioni-12-divide-1-14" )
  // C covering the whole range of int (the whole vector), one less (the
  // extremes apart), the best run across the middle; C < 0 and the empty
  // vector refused
- CHECK( collezioni::thinSubarray( Ints{ -M - 1 , 0 , M } , 2LL * M + 1 ) ==
-        3 );
+ CHECK( collezioni::thinSubarray( Ints{ -M - 1 , 0 , M } ,
+				  2LL * M + 1 ) == 3 );
  CHECK( collezioni::thinSubarray( Ints{ -M - 1 , 0 , M } , 2LL * M ) == 2 );
  CHECK( collezioni::thinSubarray( Ints{ 9 , 1 , 2 , 1 , 2 , 9 } , 1 ) == 4 );
  CHECK_THROWS( collezioni::thinSubarray( Ints{ 1 } , -1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( collezioni::thinSubarray( Ints() , 0 ) , contract_violation );
  std::mt19937 g( 1214 );
  for( int t = 0 ; t < 1000 ; ++t ) {
@@ -1229,7 +1303,8 @@ ADS_TEST( "collezioni-12-divide-1-14" )
    for( std::size_t j = i ; j < V.size() ; ++j ) {
     lo = std::min( lo , V[ j ] );
     hi = std::max( hi , V[ j ] );
-    if( hi - lo <= C ) best = std::max( best , int( j - i + 1 ) );
+    if( hi - lo <= C )
+     best = std::max( best , int( j - i + 1 ) );
     }
    }
   CHECK( collezioni::thinSubarray( V , C ) == best );
@@ -1240,7 +1315,8 @@ ADS_TEST( "collezioni-12-divide-1-14" )
 /*------------------ COLLECTION 13, DYNAMIC PROGRAMMING --------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace collezioni {
+namespace collezioni
+{
 
 /// no path, the -infinity of the longest paths
 constexpr int NOPATH = std::numeric_limits< int >::min();
@@ -1250,7 +1326,8 @@ constexpr int NOPATH = std::numeric_limits< int >::min();
 /// an operation of an approximate occurrence: 'M' copies the character c
 /// of T, 'S' substitutes the one of T with c of P, 'D' deletes c from T,
 /// 'I' inserts c of P
-struct EditOp {
+struct EditOp
+{
  int kind , c;
  };
 
@@ -1258,16 +1335,17 @@ struct EditOp {
 /// the table came from it, else the deletion of T[ h - 1 ], else the
 /// insertion of P[ i - 1 ]; the operations go to out in order
 void printApproxRec( const std::string & P , const std::string & T ,
-                     const Table & DP , std::size_t i , std::size_t h ,
-                     std::vector< EditOp > & out )
+		     const Table & DP , std::size_t i , std::size_t h ,
+		     std::vector< EditOp > & out )
 {
- if( i == 0 ) return;
+ if( i == 0 )
+  return;
  if( h > 0 ) {
   const int delta = ( P[ i - 1 ] == T[ h - 1 ] ) ? 0 : 1;
   if( DP[ i ][ h ] == DP[ i - 1 ][ h - 1 ] + delta ) {
    printApproxRec( P , T , DP , i - 1 , h - 1 , out );
-   out.push_back( EditOp{ delta == 0 ? 'M' : 'S' ,
-                          delta == 0 ? T[ h - 1 ] : P[ i - 1 ] } );
+   out.push_back(
+     EditOp{ delta == 0 ? 'M' : 'S' , delta == 0 ? T[ h - 1 ] : P[ i - 1 ] } );
    return;
    }
   if( DP[ i ][ h ] == DP[ i ][ h - 1 ] + 1 ) {
@@ -1285,12 +1363,12 @@ void printApproxRec( const std::string & P , const std::string & T ,
 /// matching; O( m + n )
 /// \pre DP is matchingTable( P , T ), j < n
 std::vector< EditOp > printApprox( const std::string & P ,
-                                   const std::string & T , const Table & DP ,
-                                   std::size_t j )
+				   const std::string & T , const Table & DP ,
+				   std::size_t j )
 {
  ADS_PRE( ( j < T.size() ) && ( DP.size() == P.size() + 1 ) );
  std::vector< EditOp > out;
- out.reserve( P.size() + j + 1 );          // at most m + j + 1 operations
+ out.reserve( P.size() + j + 1 );  // at most m + j + 1 operations
  printApproxRec( P , T , DP , P.size() , j + 1 , out );
  return( out );
  }
@@ -1384,7 +1462,8 @@ void insertEdgeAPSP( std::vector< Longs > & D , int u , int v , long w )
  if( ( D[ v ][ u ] < LINF ) && ( D[ v ][ u ] + w < 0 ) )
   throw( std::domain_error( "insertEdgeAPSP: a negative cycle" ) );
  Longs toU( n ) , fromV = D[ v ];
- for( int x = 0 ; x < n ; ++x ) toU[ x ] = D[ x ][ u ];
+ for( int x = 0 ; x < n ; ++x )
+  toU[ x ] = D[ x ][ u ];
  for( int x = 0 ; x < n ; ++x )
   if( toU[ x ] < LINF )
    for( int y = 0 ; y < n ; ++y )
@@ -1409,8 +1488,10 @@ Sub maxSumLinear( const Ints & A )
    here = A[ i ];
    start = i;
    }
-  else here += A[ i ];
-  if( here > best.sum ) best = Sub{ start , i , here };
+  else
+   here += A[ i ];
+  if( here > best.sum )
+   best = Sub{ start , i , here };
   }
  return( best );
  }
@@ -1430,8 +1511,10 @@ long searchPath( const std::vector< Ints > & P )
  for( int r = 1 ; r < n ; ++r ) {
   for( int c = 0 ; c < n ; ++c ) {
    long b = DP[ c ];
-   if( c > 0 ) b = std::max( b , DP[ c - 1 ] );
-   if( c + 1 < n ) b = std::max( b , DP[ c + 1 ] );
+   if( c > 0 )
+    b = std::max( b , DP[ c - 1 ] );
+   if( c + 1 < n )
+    b = std::max( b , DP[ c + 1 ] );
    next[ c ] = P[ r ][ c ] + b;
    }
   std::swap( DP , next );
@@ -1458,7 +1541,8 @@ long minCostStops( const Longs & dist , const Longs & cost , long R )
    continue;
    }
   for( int j = i - 1 ; ( j >= 0 ) && ( dist[ i ] - dist[ j ] <= R ) ; --j )
-   if( DP[ j ] < LINF ) DP[ i ] = std::min( DP[ i ] , DP[ j ] + cost[ i ] );
+   if( DP[ j ] < LINF )
+    DP[ i ] = std::min( DP[ i ] , DP[ j ] + cost[ i ] );
   }
  return( DP[ n ] );
  }
@@ -1472,17 +1556,18 @@ long minCostStops( const Longs & dist , const Longs & cost , long R )
 /// the set walks the table back; Theta( n V )
 /// \pre |score| = |time|, scores and times not negative, V >= 0
 std::pair< Ints , long > lazyStudent( const Ints & score , const Ints & time ,
-                                      int V )
+				     int V )
 {
  ADS_PRE( ( score.size() == time.size() ) && ( V >= 0 ) );
  const int n = int( score.size() );
  std::vector< Longs > DP( n + 1 , Longs( V + 1 , LINF ) );
- for( int i = 0 ; i <= n ; ++i ) DP[ i ][ 0 ] = 0;
+ for( int i = 0 ; i <= n ; ++i )
+  DP[ i ][ 0 ] = 0;
  for( int i = 1 ; i <= n ; ++i )
   for( int v = 1 ; v <= V ; ++v ) {
    const long prev = DP[ i - 1 ][ std::max( 0 , v - score[ i - 1 ] ) ];
-   DP[ i ][ v ] = std::min( DP[ i - 1 ][ v ] ,
-                            prev < LINF ? time[ i - 1 ] + prev : LINF );
+   DP[ i ][ v ] =
+     std::min( DP[ i - 1 ][ v ] , prev < LINF ? time[ i - 1 ] + prev : LINF );
    }
  Ints S;
  if( DP[ n ][ V ] < LINF )
@@ -1506,12 +1591,13 @@ double lazyFractional( const Ints & score , const Ints & time , int V )
  Ints by( score.size() );
  std::iota( by.begin() , by.end() , 0 );
  std::sort( by.begin() , by.end() , [ & ]( int a , int b ) {
-  return( (long long)( time[ a ] ) * score[ b ] <
-          (long long)( time[ b ] ) * score[ a ] );
+  return( ( long long )( time[ a ] ) * score[ b ] <
+	   ( long long )( time[ b ] ) * score[ a ] );
   } );
  double need = V , t = 0;
  for( int i : by ) {
-  if( need <= 0 ) break;
+  if( need <= 0 )
+   break;
   const double f = std::min( 1.0 , need / score[ i ] );
   t += f * time[ i ];
   need -= f * score[ i ];
@@ -1528,8 +1614,7 @@ double lazyFractional( const Ints & score , const Ints & time , int V )
 /// \pre |s| = |f|, f not decreasing
 Ints computePredecessor( const Ints & s , const Ints & f )
 {
- ADS_PRE( ( s.size() == f.size() ) &&
-          std::is_sorted( f.begin() , f.end() ) );
+ ADS_PRE( ( s.size() == f.size() ) && std::is_sorted( f.begin() , f.end() ) );
  const int n = int( s.size() );
  Ints pred( n + 1 , 0 );
  for( int i = 1 ; i <= n ; ++i ) {
@@ -1540,7 +1625,8 @@ Ints computePredecessor( const Ints & s , const Ints & f )
     pred[ i ] = mid + 1;
     left = mid + 1;
     }
-   else right = mid - 1;
+   else
+    right = mid - 1;
    }
   }
  return( pred );
@@ -1553,18 +1639,18 @@ Ints computePredecessor( const Ints & s , const Ints & f )
 /// rating of the first i songs in t minutes; Theta( n N )
 /// \pre |g| = |d|, d >= 0, N >= 0
 std::pair< Ints , double > schedule( const std::vector< double > & g ,
-                                     const Ints & d , int N )
+				    const Ints & d , int N )
 {
  ADS_PRE( ( g.size() == d.size() ) && ( N >= 0 ) );
  const int n = int( g.size() );
  std::vector< std::vector< double > > DP( n + 1 ,
-                                         std::vector< double >( N + 1 , 0 ) );
+					  std::vector< double >( N + 1 , 0 ) );
  for( int i = 1 ; i <= n ; ++i )
   for( int t = 0 ; t <= N ; ++t ) {
    DP[ i ][ t ] = DP[ i - 1 ][ t ];
    if( d[ i - 1 ] <= t )
-    DP[ i ][ t ] = std::max( DP[ i ][ t ] ,
-                             DP[ i - 1 ][ t - d[ i - 1 ] ] + g[ i - 1 ] );
+    DP[ i ][ t ] =
+      std::max( DP[ i ][ t ] , DP[ i - 1 ][ t - d[ i - 1 ] ] + g[ i - 1 ] );
    }
  Ints S;
  for( int i = n , t = N ; i > 0 ; --i )
@@ -1584,9 +1670,9 @@ bool lcsAtLeast( const std::string & X , const std::string & Y , int k )
  Ints prev( Y.size() + 1 , 0 ) , cur( Y.size() + 1 , 0 );
  for( std::size_t i = 1 ; i <= X.size() ; ++i ) {
   for( std::size_t j = 1 ; j <= Y.size() ; ++j )
-   cur[ j ] = ( X[ i - 1 ] == Y[ j - 1 ] ) ? prev[ j - 1 ] + 1
-                                           : std::max( prev[ j ] ,
-                                                       cur[ j - 1 ] );
+   cur[ j ] = ( X[ i - 1 ] == Y[ j - 1 ] )
+		? prev[ j - 1 ] + 1
+		: std::max( prev[ j ] , cur[ j - 1 ] );
   std::swap( prev , cur );
   }
  return( prev[ Y.size() ] >= k );
@@ -1596,14 +1682,15 @@ bool lcsAtLeast( const std::string & X , const std::string & Y , int k )
 
 /// the least insertions that make s[ i .. j ] a palindrome, memoized in DP
 int minpalRec( const std::string & s , int i , int j ,
-               std::vector< Ints > & DP )
+	       std::vector< Ints > & DP )
 {
- if( i >= j ) return( 0 );
+ if( i >= j )
+  return( 0 );
  int & r = DP[ i ][ j ];
  if( r < 0 )
   r = ( s[ i ] == s[ j ] ) ? minpalRec( s , i + 1 , j - 1 , DP )
-                           : 1 + std::min( minpalRec( s , i + 1 , j , DP ) ,
-                                           minpalRec( s , i , j - 1 , DP ) );
+			   : 1 + std::min( minpalRec( s , i + 1 , j , DP ) ,
+					   minpalRec( s , i , j - 1 , DP ) );
  return( r );
  }
 
@@ -1630,11 +1717,12 @@ std::pair< long , Ints > railway( const Ints & d , const Ints & f , long X )
 {
  const int n = int( d.size() );
  ADS_PRE( ( n >= 1 ) && ( f.size() == d.size() ) &&
-          std::is_sorted( d.begin() , d.end() ) );
+	  std::is_sorted( d.begin() , d.end() ) );
  Ints next( n );
  for( int i = 0 , j = 0 ; i < n ; ++i ) {
   j = std::max( j , i + 1 );
-  while( ( j < n ) && ( d[ j ] < d[ i ] + 30 ) ) ++j;
+  while( ( j < n ) && ( d[ j ] < d[ i ] + 30 ) )
+   ++j;
   next[ i ] = j;
   }
  Longs DP( n + 1 , 0 );
@@ -1649,7 +1737,8 @@ std::pair< long , Ints > railway( const Ints & d , const Ints & f , long X )
    buy.push_back( i );
    i = next[ i ];
    }
-  else ++i;
+  else
+   ++i;
  return( std::pair( DP[ 0 ] , buy ) );
  }
 
@@ -1668,7 +1757,7 @@ long datacenter( const Ints & x , const Ints & s )
  for( int i = n - 1 ; i >= 0 ; --i )
   for( int a = 0 ; a <= i ; ++a )
    DP[ i ][ a ] = std::max( DP[ i + 1 ][ 0 ] , std::min( x[ i ] , s[ a ] ) +
-                                              DP[ i + 1 ][ a + 1 ] );
+						DP[ i + 1 ][ a + 1 ] );
  return( DP[ 0 ][ 0 ] );
  }
 
@@ -1680,7 +1769,7 @@ long datacenter( const Ints & x , const Ints & s )
 /// O( n sum |s| ) time, O( n ) space
 /// \pre the strings of S are not empty
 std::uint64_t countWays( const std::string & X ,
-                         const std::vector< std::string > & S )
+			 const std::vector< std::string > & S )
 {
  const std::size_t n = X.size();
  std::vector< std::uint64_t > DP( n + 1 , 0 );
@@ -1706,23 +1795,26 @@ std::uint64_t fullTrees( int n )
  std::vector< std::uint64_t > T( n + 1 , 0 );
  T[ 1 ] = 1;
  for( int k = 3 ; k <= n ; k += 2 )
-  for( int j = 1 ; j <= k - 2 ; j += 2 ) T[ k ] += T[ j ] * T[ k - 1 - j ];
+  for( int j = 1 ; j <= k - 2 ; j += 2 )
+   T[ k ] += T[ j ] * T[ k - 1 - j ];
  return( T[ n ] );
  }
 
 }  // end( namespace collezioni )
 
-namespace {
+namespace
+{
 
 /// a random acyclic graph: the edges ( u , v ) with u < v, each with
 /// probability p percent, of weight in [ lo , hi ]; the names permuted if
 /// shuffle
 WGraph randomDag( std::mt19937 & g , int n , int p , int lo , int hi ,
-                  bool shuffle )
+		  bool shuffle )
 {
  Ints name( n );
  std::iota( name.begin() , name.end() , 0 );
- if( shuffle ) std::shuffle( name.begin() , name.end() , g );
+ if( shuffle )
+  std::shuffle( name.begin() , name.end() , g );
  WGraph G( n );
  for( int u = 0 ; u < n ; ++u )
   for( int v = u + 1 ; v < n ; ++v )
@@ -1737,8 +1829,8 @@ Ints longestBrute( const WGraph & G , int s , bool unit )
  Ints d( G.bound() , collezioni::NOPATH );
  std::function< void( int , int ) > rec = [ & ]( int u , int w ) {
   d[ u ] = std::max( d[ u ] , w );
-  G.forEachEdge( u , [ & ]( int v , int c ) {
-   rec( v , w + ( unit ? 1 : c ) ); } );
+  G.forEachEdge( u ,
+		 [ & ]( int v , int c ) { rec( v , w + ( unit ? 1 : c ) ); } );
   };
  rec( s , 0 );
  return( d );
@@ -1748,7 +1840,8 @@ Ints longestBrute( const WGraph & G , int s , bool unit )
 std::string drawString( std::mt19937 & g , int n , int k )
 {
  std::string s( n , 'a' );
- for( char & c : s ) c = char( 'a' + draw( g , 0 , k - 1 ) );
+ for( char & c : s )
+  c = char( 'a' + draw( g , 0 , k - 1 ) );
  return( s );
  }
 
@@ -1773,37 +1866,41 @@ ADS_TEST( "collezioni-13-pd-1-1" )
 {
  const std::string P = "ab" , T = "xaxb";
  const auto ops = collezioni::printApprox( P , T , matchingTable( P , T ) ,
-                                           3 );
+					   3 );
  CHECK( ( ops.size() == 2 ) && ( ops[ 0 ].kind == 'S' ) &&
-        ( ops[ 0 ].c == 'a' ) && ( ops[ 1 ].kind == 'M' ) );   // in "xb"
+	( ops[ 0 ].c == 'a' ) && ( ops[ 1 ].kind == 'M' ) );  // in "xb"
  // P equal to T (all copies), P longer than the part read (insertions),
  // j out of T and a table of the wrong size refused
  const std::string abc = "abc" , c1 = "c" , a1 = "a";
- const auto same = collezioni::printApprox( abc , abc ,
-                                            matchingTable( abc , abc ) , 2 );
- CHECK( ( same.size() == 3 ) && std::all_of( same.begin() , same.end() ,
-         []( const auto & o ) { return( o.kind == 'M' ); } ) );
- const auto ins = collezioni::printApprox( abc , c1 ,
-                                           matchingTable( abc , c1 ) , 0 );
+ const auto same =
+   collezioni::printApprox( abc , abc , matchingTable( abc , abc ) , 2 );
+ CHECK( ( same.size() == 3 ) &&
+	std::all_of( same.begin() , same.end() ,
+		     []( const auto & o ) { return( o.kind == 'M' ); } ) );
+ const auto ins =
+   collezioni::printApprox( abc , c1 , matchingTable( abc , c1 ) , 0 );
  CHECK( ( ins.size() == 3 ) && ( ins[ 0 ].kind == 'I' ) &&
-        ( ins[ 1 ].kind == 'I' ) && ( ins[ 2 ].kind == 'M' ) );
+	( ins[ 1 ].kind == 'I' ) && ( ins[ 2 ].kind == 'M' ) );
  CHECK_THROWS( collezioni::printApprox( P , T , matchingTable( P , T ) , 4 ) ,
-               contract_violation );
- CHECK_THROWS( collezioni::printApprox( P , T , matchingTable( a1 , T ) ,
-                                        1 ) , contract_violation );
+	       contract_violation );
+ CHECK_THROWS( collezioni::printApprox( P , T , matchingTable( a1 , T ) , 1 ) ,
+	       contract_violation );
  std::mt19937 g( 131 );
  for( int t = 0 ; t < 300 ; ++t ) {
   const std::string P = drawString( g , draw( g , 1 , 6 ) , 3 ) ,
-                    T = drawString( g , draw( g , 1 , 12 ) , 3 );
+		    T = drawString( g , draw( g , 1 , 12 ) , 3 );
   const Table DP = matchingTable( P , T );
   for( std::size_t j = 0 ; j < T.size() ; ++j ) {
    std::string out;
    std::size_t read = 0;
    int errors = 0;
    for( const auto & o : collezioni::printApprox( P , T , DP , j ) ) {
-    if( o.kind != 'I' ) ++read;
-    if( o.kind != 'D' ) out += char( o.c );
-    if( o.kind != 'M' ) ++errors;
+    if( o.kind != 'I' )
+     ++read;
+    if( o.kind != 'D' )
+     out += char( o.c );
+    if( o.kind != 'M' )
+     ++errors;
     }
    CHECK( ( out == P ) && ( read <= j + 1 ) );
    CHECK( errors == DP[ P.size() ][ j + 1 ] );
@@ -1826,14 +1923,16 @@ ADS_TEST( "collezioni-13-pd-1-2" )
  for( int t = 0 ; t < 600 ; ++t ) {
   const WGraph G = randomGraph( g , draw( g , 1 , 8 ) , 35 , -3 , 9 );
   const int r = draw( g , 0 , G.n() - 1 );
-  if( reachesNegativeCycle( G , r ) ) continue;
+  if( reachesNegativeCycle( G , r ) )
+   continue;
   ++tried;
   const auto [ T , d ] = collezioni::shortestPathDP( G , r );
   const auto R = bellmanFordMoore( G , r );
   CHECK( d == widen( R.d ) );
   ShortestPathTree< int > S;
   S.T = T;
-  for( long x : d ) S.d.push_back( x == LINF ? infinity< int >() : int( x ) );
+  for( long x : d )
+   S.d.push_back( x == LINF ? infinity< int >() : int( x ) );
   CHECK( isShortestPathTree( G , r , S ) );
   }
  CHECK( tried > 300 );
@@ -1843,7 +1942,7 @@ ADS_TEST( "collezioni-13-pd-1-2" )
  const auto [ T2 , d2 ] = collezioni::shortestPathDP( WGraph( 2 ) , 1 );
  CHECK( ( d2 == Longs( { LINF , 0 } ) ) && ( T2[ 0 ] == NIL ) );
  CHECK_THROWS( collezioni::shortestPathDP( WGraph( 2 ) , 2 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // collezione 13-pd, 1.3: the numeric order as topological order, against
@@ -1867,7 +1966,7 @@ ADS_TEST( "collezioni-13-pd-1-3" )
  D.insertEdge( 0 , 1 , 4 );
  D.insertEdge( 1 , 2 , -6 );
  CHECK( collezioni::shortestPathDAG( D , 1 ).second ==
-        Longs( { LINF , 0 , -6 } ) );
+	Longs( { LINF , 0 , -6 } ) );
  CHECK_THROWS( collezioni::shortestPathDAG( D , 3 ) , contract_violation );
  D.insertEdge( 2 , 0 , 1 );
  CHECK_THROWS( collezioni::shortestPathDAG( D , 0 ) , contract_violation );
@@ -1886,10 +1985,11 @@ ADS_TEST( "collezioni-13-pd-1-4" )
   CHECK( d == longestBrute( G , s , true ) );
   Adjacency A( n , std::vector< bool >( n ) );
   for( int u = 0 ; u < n ; ++u )
-   for( int v : G.adj( u ) ) A[ u ][ v ] = true;
+   for( int v : G.adj( u ) )
+    A[ u ][ v ] = true;
   for( int v = 0 ; v < n ; ++v )
    CHECK( longestPathDag( A , s , v ) ==
-          ( d[ v ] == collezioni::NOPATH ? -1 : d[ v ] ) );
+	  ( d[ v ] == collezioni::NOPATH ? -1 : d[ v ] ) );
   }
  // one node, a shortcut beside a longer path, s out of the graph refused
  CHECK( collezioni::longestPaths( WGraph( 1 ) , 0 , true ) == Ints( { 0 } ) );
@@ -1899,9 +1999,8 @@ ADS_TEST( "collezioni-13-pd-1-4" )
  S.insertEdge( 1 , 2 , 1 );
  CHECK( collezioni::longestPaths( S , 0 , true ) == Ints( { 0 , 1 , 2 } ) );
  CHECK( collezioni::longestPaths( S , 2 , true ) ==
-        Ints( { collezioni::NOPATH , collezioni::NOPATH , 0 } ) );
- CHECK_THROWS( collezioni::longestPaths( S , 3 , true ) ,
-               contract_violation );
+	Ints( { collezioni::NOPATH , collezioni::NOPATH , 0 } ) );
+ CHECK_THROWS( collezioni::longestPaths( S , 3 , true ) , contract_violation );
  }
 
 // collezione 13-pd, 1.5: the heaviest path, against dagShortestPaths() of
@@ -1921,7 +2020,7 @@ ADS_TEST( "collezioni-13-pd-1-5" )
   const auto R = dagShortestPaths( N , s );
   for( int v = 0 ; v < n ; ++v )
    CHECK( ( d[ v ] == collezioni::NOPATH ) ? ( R.d[ v ] == infinity< int >() )
-                                           : ( R.d[ v ] == -d[ v ] ) );
+					   : ( R.d[ v ] == -d[ v ] ) );
   }
  // the heaviest path with fewer edges, negative weights only (the path of
  // one edge wins)
@@ -1946,7 +2045,8 @@ ADS_TEST( "collezioni-13-pd-1-6" )
  const auto table = []( const WGraph & G ) {
   const auto R = floydWarshall( G );
   std::vector< Longs > D;
-  for( const auto & row : R.d ) D.push_back( widen( row ) );
+  for( const auto & row : R.d )
+   D.push_back( widen( row ) );
   return( D );
   };
  std::mt19937 g( 136 );
@@ -1954,10 +2054,12 @@ ADS_TEST( "collezioni-13-pd-1-6" )
  for( int t = 0 ; t < 600 ; ++t ) {
   WGraph G = randomGraph( g , draw( g , 2 , 7 ) , 30 , -2 , 9 );
   auto R = floydWarshall( G );
-  if( R.negativeCycle ) continue;
+  if( R.negativeCycle )
+   continue;
   std::vector< Longs > D = table( G );
   const int u = draw( g , 0 , G.n() - 1 ) , v = draw( g , 0 , G.n() - 1 );
-  if( ( u == v ) || G.hasEdge( u , v ) ) continue;
+  if( ( u == v ) || G.hasEdge( u , v ) )
+   continue;
   const int w = draw( g , -8 , 8 );
   G.insertEdge( u , v , w );
   try {
@@ -1970,7 +2072,8 @@ ADS_TEST( "collezioni-13-pd-1-6" )
    }
   CHECK( ! floydWarshall( G ).negativeCycle && ( D == table( G ) ) );
   addEdge( R , u , v , w );
-  for( int x = 0 ; x < G.n() ; ++x ) CHECK( widen( R.d[ x ] ) == D[ x ] );
+  for( int x = 0 ; x < G.n() ; ++x )
+   CHECK( widen( R.d[ x ] ) == D[ x ] );
   }
  CHECK( thrown > 10 );
  // an edge that makes a cycle of weight 0 (no throw), u = v and a node
@@ -1979,9 +2082,9 @@ ADS_TEST( "collezioni-13-pd-1-6" )
  collezioni::insertEdgeAPSP( D , 1 , 0 , -3 );
  CHECK( D == std::vector< Longs >( { { 0 , 3 } , { -3 , 0 } } ) );
  CHECK_THROWS( collezioni::insertEdgeAPSP( D , 0 , 0 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( collezioni::insertEdgeAPSP( D , 0 , 2 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // collezione 13-pd, 1.7: lis() of ADS on the example of the text, whose
@@ -2002,16 +2105,18 @@ ADS_TEST( "collezioni-13-pd-1-7" )
   for( int mask = 1 ; mask < ( 1 << n ) ; ++mask ) {
    Ints S;
    for( int i = 0 ; i < n ; ++i )
-    if( mask >> i & 1 ) S.push_back( A[ i ] );
+    if( mask >> i & 1 )
+     S.push_back( A[ i ] );
    if( std::adjacent_find( S.begin() , S.end() , std::greater_equal<>() ) ==
        S.end() )
     best = std::max( best , S.size() );
    }
   const Ints R = lis( A );
   CHECK( R.size() == best );
-  std::size_t k = 0;                       // R is a subsequence of A
+  std::size_t k = 0;  // R is a subsequence of A
   for( int x : A )
-   if( ( k < R.size() ) && ( R[ k ] == x ) ) ++k;
+   if( ( k < R.size() ) && ( R[ k ] == x ) )
+    ++k;
   CHECK( k == R.size() );
   }
  }
@@ -2021,10 +2126,10 @@ ADS_TEST( "collezioni-13-pd-1-7" )
 ADS_TEST( "collezioni-13-pd-1-8" )
 {
  using I = WeightedInterval< long >;
- const auto [ S , w ] = maxinterval( std::vector< I >{ { 0 , 3 , 5 } ,
-                                                      { 3 , 6 , 5 } ,
-                                                      { 1 , 5 , 9 } } );
- CHECK( ( w == 10 ) && ( S.size() == 2 ) );   // half-open: [0,3) , [3,6)
+ const auto [ S , w ] =
+   maxinterval( std::vector< I >{ { 0 , 3 , 5 } , { 3 , 6 , 5 } ,
+				  { 1 , 5 , 9 } } );
+ CHECK( ( w == 10 ) && ( S.size() == 2 ) );  // half-open: [0,3) , [3,6)
  std::mt19937 g( 138 );
  for( int t = 0 ; t < 300 ; ++t ) {
   std::vector< I > R( draw( g , 0 , 11 ) );
@@ -2040,12 +2145,14 @@ ADS_TEST( "collezioni-13-pd-1-8" )
    bool ok = true;
    for( int i = 0 ; i < n ; ++i )
     for( int j = i + 1 ; j < n ; ++j )
-     if( ( mask >> i & 1 ) && ( mask >> j & 1 ) &&
-         ( R[ i ].a < R[ j ].b ) && ( R[ j ].a < R[ i ].b ) )
+     if( ( mask >> i & 1 ) && ( mask >> j & 1 ) && ( R[ i ].a < R[ j ].b ) &&
+	 ( R[ j ].a < R[ i ].b ) )
       ok = false;
    for( int i = 0 ; i < n ; ++i )
-    if( mask >> i & 1 ) s += R[ i ].w;
-   if( ok ) best = std::max( best , s );
+    if( mask >> i & 1 )
+     s += R[ i ].w;
+   if( ok )
+    best = std::max( best , s );
    }
   const auto [ P , v ] = maxinterval( R );
   long s = 0;
@@ -2053,7 +2160,7 @@ ADS_TEST( "collezioni-13-pd-1-8" )
    s += R[ P[ i ] ].w;
    for( std::size_t j = i + 1 ; j < P.size() ; ++j )
     CHECK( ( R[ P[ i ] ].b <= R[ P[ j ] ].a ) ||
-           ( R[ P[ j ] ].b <= R[ P[ i ] ].a ) );
+	   ( R[ P[ j ] ].b <= R[ P[ i ] ].a ) );
    }
   CHECK( ( v == best ) && ( s == best ) );
   }
@@ -2064,8 +2171,8 @@ ADS_TEST( "collezioni-13-pd-1-8" )
 ADS_TEST( "collezioni-13-pd-1-9" )
 {
  CHECK( collezioni::maxSumLinear( Ints{ -3 } ).sum == -3 );
- const collezioni::Sub e = collezioni::maxSumLinear( Ints{ -1 , 3 , -1 ,
-                                                           2 , -9 } );
+ const collezioni::Sub e =
+   collezioni::maxSumLinear( Ints{ -1 , 3 , -1 , 2 , -9 } );
  CHECK( ( e.start == 1 ) && ( e.end == 3 ) && ( e.sum == 4 ) );
  std::mt19937 g( 139 );
  for( int t = 0 ; t < 1000 ; ++t ) {
@@ -2073,8 +2180,8 @@ ADS_TEST( "collezioni-13-pd-1-9" )
   const collezioni::Sub s = collezioni::maxSumLinear( A );
   CHECK( s.sum == collezioni::maxSumQuadratic( A ).sum );
   CHECK( ( s.start <= s.end ) &&
-         ( std::accumulate( A.begin() + s.start , A.begin() + s.end + 1 ,
-                            0LL ) == s.sum ) );
+	 ( std::accumulate( A.begin() + s.start , A.begin() + s.end + 1 ,
+			    0LL ) == s.sum ) );
   }
  }
 
@@ -2083,16 +2190,18 @@ ADS_TEST( "collezioni-13-pd-1-9" )
 // n ( n + 1 ) / 2
 ADS_TEST( "collezioni-13-pd-1-10" )
 {
- const std::set< std::string > it = { "era" , "una" , "notte" , "buia" ,
-                                      "e" , "tempestosa" , "not" , "te" };
+ const std::set< std::string > it = { "era" , "una" ,        "notte" , "buia" ,
+				      "e" ,   "tempestosa" , "not" ,   "te" };
  const auto in = [ & ]( const std::string & w ) {
-  return( it.count( w ) > 0 ); };
+  return( it.count( w ) > 0 );
+  };
  const std::string s = "eraunanottebuiaetempestosa";
  long lookups = 0;
  const auto W = wordBreak( s , in , std::string::npos , &lookups );
- CHECK( W && ( std::accumulate( W->begin() , W->end() , std::string() ) ==
-               s ) );
- for( const auto & w : *W ) CHECK( in( w ) );
+ CHECK( W && ( std::accumulate( W->begin() , W->end() ,
+				std::string() ) == s ) );
+ for( const auto & w : *W )
+  CHECK( in( w ) );
  CHECK( lookups <= long( s.size() * ( s.size() + 1 ) / 2 ) );
  CHECK( ! wordBreak( std::string( "eraunanottx" ) , in ) );
  CHECK( wordBreak( std::string() , in ) );
@@ -2103,14 +2212,15 @@ ADS_TEST( "collezioni-13-pd-1-10" )
    D.insert( drawString( g , draw( g , 1 , 3 ) , 2 ) );
   const std::string x = drawString( g , draw( g , 0 , 12 ) , 2 );
   std::function< bool( std::size_t ) > can = [ & ]( std::size_t i ) {
-   if( i == x.size() ) return( true );
+   if( i == x.size() )
+    return( true );
    for( const auto & w : D )
     if( ( x.compare( i , w.size() , w ) == 0 ) && can( i + w.size() ) )
      return( true );
    return( false );
    };
-  const auto R = wordBreak( x , [ & ]( const std::string & w ) {
-   return( D.count( w ) > 0 ); } );
+  const auto R = wordBreak(
+    x , [ & ]( const std::string & w ) { return( D.count( w ) > 0 ); } );
   CHECK( bool( R ) == can( 0 ) );
   }
  }
@@ -2121,32 +2231,39 @@ ADS_TEST( "collezioni-13-pd-1-10" )
 ADS_TEST( "collezioni-13-pd-1-11" )
 {
  const std::vector< Ints > P = { { 6 , 7 , 4 , 7 , 8 } ,
-                                 { 7 , 6 , 1 , 1 , 4 } ,
-                                 { 3 , 5 , 7 , 8 , 2 } ,
-                                 { 2 , 6 , 7 , 0 , 2 } ,
-                                 { 7 , 3 , 5 , 6 , 1 } };
+				 { 7 , 6 , 1 , 1 , 4 } ,
+				 { 3 , 5 , 7 , 8 , 2 } ,
+				 { 2 , 6 , 7 , 0 , 2 } ,
+				 { 7 , 3 , 5 , 6 , 1 } };
  CHECK( collezioni::searchPath( P ) == 33 );
  CHECK( collezioni::searchPath( { { 4 } } ) == 4 );
  // all negative (the least loss), a column of large profits zigzagged to,
  // and the empty board refused
  CHECK( collezioni::searchPath( { { -1 , -5 } , { -2 , -9 } } ) == -3 );
  CHECK( collezioni::searchPath( { { 0 , 0 , 9 } , { 0 , 9 , 0 } ,
-                                  { 9 , 0 , 0 } } ) == 27 );
+				  { 9 , 0 , 0 } } ) ==
+	27 );
  CHECK_THROWS( collezioni::searchPath( {} ) , contract_violation );
  std::mt19937 g( 1311 );
  for( int t = 0 ; t < 200 ; ++t ) {
   const int n = draw( g , 1 , 6 );
   std::vector< Ints > Q( n );
-  for( Ints & r : Q ) r = drawInts( g , n , -5 , 9 );
+  for( Ints & r : Q )
+   r = drawInts( g , n , -5 , 9 );
   long best = std::numeric_limits< long >::min();
   std::function< void( int , int , long ) > rec = [ & ]( int r , int c ,
-                                                         long s ) {
+							 long s ) {
    s += Q[ r ][ c ];
-   if( r == n - 1 ) { best = std::max( best , s ); return; }
+   if( r == n - 1 ) {
+    best = std::max( best , s );
+    return;
+    }
    for( int dc = -1 ; dc <= 1 ; ++dc )
-    if( ( c + dc >= 0 ) && ( c + dc < n ) ) rec( r + 1 , c + dc , s );
+    if( ( c + dc >= 0 ) && ( c + dc < n ) )
+     rec( r + 1 , c + dc , s );
    };
-  for( int c = 0 ; c < n ; ++c ) rec( 0 , c , 0 );
+  for( int c = 0 ; c < n ; ++c )
+   rec( 0 , c , 0 );
   CHECK( collezioni::searchPath( Q ) == best );
   }
  }
@@ -2163,12 +2280,12 @@ ADS_TEST( "collezioni-13-pd-1-12" )
  // a gap of exactly R, a gap larger than R in the middle, the cheaper of
  // two stations in reach; no station and sizes that differ refused
  CHECK( collezioni::minCostStops( { 5 , 10 } , { 2 , 0 } , 5 ) == 2 );
- CHECK( collezioni::minCostStops( { 2 , 9 , 11 } , { 1 , 1 , 0 } , 5 ) ==
-        LINF );
+ CHECK( collezioni::minCostStops( { 2 , 9 , 11 } , { 1 , 1 , 0 } ,
+				  5 ) == LINF );
  CHECK( collezioni::minCostStops( { 3 , 4 , 8 } , { 1 , 7 , 0 } , 5 ) == 1 );
  CHECK_THROWS( collezioni::minCostStops( {} , {} , 5 ) , contract_violation );
  CHECK_THROWS( collezioni::minCostStops( { 1 , 2 } , { 0 } , 5 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1312 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const int n = draw( g , 0 , 10 );
@@ -2190,7 +2307,8 @@ ADS_TEST( "collezioni-13-pd-1-12" )
      last = dist[ i ];
      c += cost[ i ];
      }
-   if( ok ) best = std::min( best , c );
+   if( ok )
+    best = std::min( best , c );
    }
   CHECK( collezioni::minCostStops( dist , cost , R ) == best );
   }
@@ -2205,46 +2323,54 @@ ADS_TEST( "collezioni-13-pd-1-12" )
 ADS_TEST( "collezioni-13-pd-1-13-2" )
 {
  CHECK( collezioni::lazyStudent( { 5 , 4 , 3 } , { 10 , 3 , 3 } , 6 ) ==
-        std::pair( Ints{ 2 , 1 } , 6L ) );
+	std::pair( Ints{ 2 , 1 } , 6L ) );
  CHECK( collezioni::lazyStudent( { 1 } , { 1 } , 2 ).second == LINF );
  CHECK( collezioni::lazyStudent( {} , {} , 0 ).second == 0 );
  // V = 0 (no problem, no time), a problem of score 0 never needed, a
  // problem of time 0 always worth taking; V < 0 and sizes that differ
  // refused
  CHECK( collezioni::lazyStudent( { 3 } , { 5 } , 0 ) ==
-        std::pair( Ints() , 0L ) );
+	std::pair( Ints() , 0L ) );
  CHECK( collezioni::lazyStudent( { 0 , 4 } , { 1 , 2 } , 4 ) ==
-        std::pair( Ints{ 1 } , 2L ) );
+	std::pair( Ints{ 1 } , 2L ) );
  CHECK( collezioni::lazyStudent( { 5 , 5 } , { 0 , 9 } , 5 ).second == 0 );
  CHECK_THROWS( collezioni::lazyStudent( { 1 } , { 1 } , -1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( collezioni::lazyStudent( { 1 } , {} , 1 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1313 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const int n = draw( g , 0 , 12 );
-  const Ints score = drawInts( g , n , 0 , 8 ) , time = drawInts( g , n , 0 ,
-                                                                    20 );
+  const Ints score = drawInts( g , n , 0 , 8 ) ,
+    time = drawInts( g , n , 0 , 20 );
   const int S = std::accumulate( score.begin() , score.end() , 0 ) ,
-            T = std::accumulate( time.begin() , time.end() , 0 );
+	    T = std::accumulate( time.begin() , time.end() , 0 );
   const int V = draw( g , 0 , S + 3 );
   long best = LINF;
   for( int mask = 0 ; mask < ( 1 << n ) ; ++mask ) {
    long p = 0 , c = 0;
    for( int i = 0 ; i < n ; ++i )
-    if( mask >> i & 1 ) { p += score[ i ]; c += time[ i ]; }
-   if( p >= V ) best = std::min( best , c );
+    if( mask >> i & 1 ) {
+     p += score[ i ];
+     c += time[ i ];
+     }
+   if( p >= V )
+    best = std::min( best , c );
    }
   const auto [ Set , c ] = collezioni::lazyStudent( score , time , V );
   CHECK( c == best );
-  if( best == LINF ) continue;
+  if( best == LINF )
+   continue;
   long p = 0 , q = 0;
-  for( int i : Set ) { p += score[ i ]; q += time[ i ]; }
+  for( int i : Set ) {
+   p += score[ i ];
+   q += time[ i ];
+   }
   CHECK( ( p >= V ) && ( q == c ) );
   if( std::count( score.begin() , score.end() , 0 ) == 0 )
    CHECK( c == T - knapsack( Longs( time.begin() , time.end() ) ,
-                             Longs( score.begin() , score.end() ) ,
-                             S - V ).first );
+			     Longs( score.begin() , score.end() ) , S - V )
+		     .first );
   }
  }
 
@@ -2253,24 +2379,24 @@ ADS_TEST( "collezioni-13-pd-1-13-2" )
 // out, and it is at most the time of the whole problems
 ADS_TEST( "collezioni-13-pd-1-13-4" )
 {
- CHECK( collezioni::lazyFractional( { 10 , 10 } , { 10 , 50 } , 15 ) ==
-        35.0 );
+ CHECK( collezioni::lazyFractional( { 10 , 10 } , { 10 , 50 } , 15 ) == 35.0 );
  CHECK( collezioni::lazyFractional( { 4 } , { 8 } , 0 ) == 0.0 );
  CHECK( std::isinf( collezioni::lazyFractional( { 4 } , { 8 } , 5 ) ) );
  std::mt19937 g( 1314 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const int n = draw( g , 1 , 10 );
-  const Ints score = drawInts( g , n , 1 , 8 ) , time = drawInts( g , n , 0 ,
-                                                                    20 );
+  const Ints score = drawInts( g , n , 1 , 8 ) ,
+    time = drawInts( g , n , 0 , 20 );
   const int S = std::accumulate( score.begin() , score.end() , 0 ) ,
-            T = std::accumulate( time.begin() , time.end() , 0 );
+	    T = std::accumulate( time.begin() , time.end() , 0 );
   const int V = draw( g , 0 , S );
   const double f = collezioni::lazyFractional( score , time , V );
   const std::vector< double > x = fractionalKnapsack(
-         std::vector< double >( time.begin() , time.end() ) ,
-         std::vector< double >( score.begin() , score.end() ) , S - V );
+    std::vector< double >( time.begin() , time.end() ) ,
+    std::vector< double >( score.begin() , score.end() ) , S - V );
   double out = 0;
-  for( int i = 0 ; i < n ; ++i ) out += x[ i ] * time[ i ];
+  for( int i = 0 ; i < n ; ++i )
+   out += x[ i ] * time[ i ];
   CHECK( std::abs( f - ( T - out ) ) < 1e-9 );
   CHECK( f <= collezioni::lazyStudent( score , time , V ).second + 1e-9 );
   }
@@ -2283,17 +2409,17 @@ ADS_TEST( "collezioni-13-pd-1-14" )
 {
  CHECK( collezioni::computePredecessor( {} , {} ) == Ints{ 0 } );
  CHECK( collezioni::computePredecessor( { 0 , 1 , 3 } , { 2 , 3 , 4 } ) ==
-        Ints( { 0 , 0 , 0 , 2 } ) );
+	Ints( { 0 , 0 , 0 , 2 } ) );
  // all the ends equal (the last one before each), touching intervals,
  // sizes that differ and f not sorted refused
  CHECK( collezioni::computePredecessor( { 5 , 5 , 5 } , { 5 , 5 , 5 } ) ==
-        Ints( { 0 , 0 , 1 , 2 } ) );
+	Ints( { 0 , 0 , 1 , 2 } ) );
  CHECK( collezioni::computePredecessor( { 0 , 1 , 2 } , { 1 , 2 , 3 } ) ==
-        Ints( { 0 , 0 , 1 , 2 } ) );
+	Ints( { 0 , 0 , 1 , 2 } ) );
  CHECK_THROWS( collezioni::computePredecessor( { 0 } , {} ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( collezioni::computePredecessor( { 0 , 0 } , { 3 , 1 } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1315 );
  for( int t = 0 ; t < 1000 ; ++t ) {
   const int n = draw( g , 0 , 20 );
@@ -2305,7 +2431,8 @@ ADS_TEST( "collezioni-13-pd-1-14" )
   Ints pred( n + 1 , 0 );
   for( int i = 1 ; i <= n ; ++i )
    for( int j = 1 ; j < i ; ++j )
-    if( f[ j - 1 ] <= s[ i - 1 ] ) pred[ i ] = j;
+    if( f[ j - 1 ] <= s[ i - 1 ] )
+     pred[ i ] = j;
   CHECK( collezioni::computePredecessor( s , f ) == pred );
   }
  }
@@ -2317,41 +2444,50 @@ ADS_TEST( "collezioni-13-pd-1-14" )
 // differ refused
 ADS_TEST( "collezioni-13-pd-1-15" )
 {
- const auto [ S0 , r0 ] = collezioni::schedule( { 0.5 , 0.4 , 0.3 } ,
-                                                { 3 , 2 , 2 } , 4 );
+ const auto [ S0 , r0 ] =
+   collezioni::schedule( { 0.5 , 0.4 , 0.3 } , { 3 , 2 , 2 } , 4 );
  CHECK( ( S0 == Ints( { 2 , 1 } ) ) && ( std::abs( r0 - 0.7 ) < 1e-12 ) );
  CHECK( collezioni::schedule( { 0.9 } , { 5 } , 4 ).second == 0 );
  // N = 0 (only songs of duration 0), a song exactly N long, no song; N < 0
  // and sizes that differ refused
  CHECK( collezioni::schedule( { 0.2 , 0.7 } , { 0 , 1 } , 0 ) ==
-        std::pair( Ints{ 0 } , 0.2 ) );
+	std::pair( Ints{ 0 } , 0.2 ) );
  CHECK( collezioni::schedule( { 0.9 } , { 5 } , 5 ).second == 0.9 );
  CHECK( collezioni::schedule( {} , {} , 9 ) == std::pair( Ints() , 0.0 ) );
  CHECK_THROWS( collezioni::schedule( { 0.1 } , { 1 } , -1 ) ,
-               contract_violation );
- CHECK_THROWS( collezioni::schedule( { 0.1 } , {} , 1 ) ,
-               contract_violation );
+	       contract_violation );
+ CHECK_THROWS( collezioni::schedule( { 0.1 } , {} , 1 ) , contract_violation );
  std::mt19937 g( 1316 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const int n = draw( g , 0 , 12 ) , N = draw( g , 0 , 30 );
   const Ints h = drawInts( g , n , 0 , 100 ) , d = drawInts( g , n , 0 , 9 );
   std::vector< double > r( n );
-  for( int i = 0 ; i < n ; ++i ) r[ i ] = h[ i ] / 100.0;
+  for( int i = 0 ; i < n ; ++i )
+   r[ i ] = h[ i ] / 100.0;
   long best = 0;
   for( int mask = 0 ; mask < ( 1 << n ) ; ++mask ) {
    long p = 0 , v = 0;
    for( int i = 0 ; i < n ; ++i )
-    if( mask >> i & 1 ) { p += h[ i ]; v += d[ i ]; }
-   if( v <= N ) best = std::max( best , p );
+    if( mask >> i & 1 ) {
+     p += h[ i ];
+     v += d[ i ];
+     }
+   if( v <= N )
+    best = std::max( best , p );
    }
   const auto [ S , v ] = collezioni::schedule( r , d , N );
   long p = 0 , w = 0;
-  for( int i : S ) { p += h[ i ]; w += d[ i ]; }
-  CHECK( ( w <= N ) && ( p == best ) && ( std::abs( v - best / 100.0 ) <
-                                          1e-9 ) );
+  for( int i : S ) {
+   p += h[ i ];
+   w += d[ i ];
+   }
+  CHECK( ( w <= N ) && ( p == best ) &&
+	 ( std::abs( v - best / 100.0 ) < 1e-9 ) );
   if( std::count( d.begin() , d.end() , 0 ) == 0 )
-   CHECK( knapsack( Longs( h.begin() , h.end() ) ,
-                    Longs( d.begin() , d.end() ) , N ).first == best );
+   CHECK(
+     knapsack( Longs( h.begin() , h.end() ) , Longs( d.begin() , d.end() ) ,
+	       N )
+       .first == best );
   }
  }
 
@@ -2363,27 +2499,30 @@ ADS_TEST( "collezioni-13-pd-1-17" )
  CHECK( collezioni::lcsAtLeast( "" , "abc" , 0 ) );
  CHECK( ! collezioni::lcsAtLeast( "" , "abc" , 1 ) );
  CHECK( collezioni::lcsAtLeast( "abcbdab" , "bdcaba" , 4 ) &&
-        ! collezioni::lcsAtLeast( "abcbdab" , "bdcaba" , 5 ) );
+	! collezioni::lcsAtLeast( "abcbdab" , "bdcaba" , 5 ) );
  // k <= 0 always holds, equal strings reach their length, no common letter
  CHECK( collezioni::lcsAtLeast( "" , "" , 0 ) &&
-        collezioni::lcsAtLeast( "ab" , "cd" , -3 ) );
+	collezioni::lcsAtLeast( "ab" , "cd" , -3 ) );
  CHECK( collezioni::lcsAtLeast( "abc" , "abc" , 3 ) &&
-        ! collezioni::lcsAtLeast( "abc" , "abc" , 4 ) );
+	! collezioni::lcsAtLeast( "abc" , "abc" , 4 ) );
  CHECK( ! collezioni::lcsAtLeast( "aaa" , "bbb" , 1 ) );
  std::mt19937 g( 1317 );
  for( int t = 0 ; t < 300 ; ++t ) {
   const std::string X = drawString( g , draw( g , 0 , 8 ) , 3 ) ,
-                    Y = drawString( g , draw( g , 0 , 10 ) , 3 );
+		    Y = drawString( g , draw( g , 0 , 10 ) , 3 );
   const int L = lcsTable( X , Y ).back().back();
   int best = 0;
   for( int mask = 0 ; mask < ( 1 << X.size() ) ; ++mask ) {
    std::string sub;
    for( std::size_t i = 0 ; i < X.size() ; ++i )
-    if( mask >> i & 1 ) sub += X[ i ];
+    if( mask >> i & 1 )
+     sub += X[ i ];
    std::size_t k = 0;
    for( char c : Y )
-    if( ( k < sub.size() ) && ( sub[ k ] == c ) ) ++k;
-   if( k == sub.size() ) best = std::max( best , int( sub.size() ) );
+    if( ( k < sub.size() ) && ( sub[ k ] == c ) )
+     ++k;
+   if( k == sub.size() )
+    best = std::max( best , int( sub.size() ) );
    }
   CHECK( L == best );
   for( int k = 0 ; k <= 11 ; ++k )
@@ -2401,8 +2540,8 @@ ADS_TEST( "collezioni-13-pd-1-18" )
  CHECK( collezioni::minpal( "anta" ) == 1 );
  CHECK( collezioni::minpal( "x" ) == 0 && collezioni::minpal( "" ) == 0 );
  CHECK( collezioni::minpal( "abcba" ) == 0 &&
-        collezioni::minpal( "ab" ) == 1 );
- CHECK( collezioni::minpal( "abcdef" ) == 5 );   // all distinct: n - 1
+	collezioni::minpal( "ab" ) == 1 );
+ CHECK( collezioni::minpal( "abcdef" ) == 5 );  // all distinct: n - 1
  CHECK( collezioni::minpal( std::string( 300 , 'z' ) ) == 0 );
  std::mt19937 g( 1318 );
  for( int t = 0 ; t < 300 ; ++t ) {
@@ -2414,7 +2553,8 @@ ADS_TEST( "collezioni-13-pd-1-18" )
   for( int mask = 1 ; mask < ( 1 << n ) ; ++mask ) {
    std::string sub;
    for( int i = 0 ; i < n ; ++i )
-    if( mask >> i & 1 ) sub += s[ i ];
+    if( mask >> i & 1 )
+     sub += s[ i ];
    if( std::equal( sub.begin() , sub.end() , sub.rbegin() ) )
     best = std::max( best , int( sub.size() ) );
    }
@@ -2428,22 +2568,22 @@ ADS_TEST( "collezioni-13-pd-1-18" )
 // sorted refused
 ADS_TEST( "collezioni-13-pd-1-19" )
 {
- const auto [ c0 , b0 ] = collezioni::railway( { 1 , 10 , 29 , 31 } ,
-                                               { 20 , 20 , 20 , 5 } , 50 );
+ const auto [ c0 , b0 ] =
+   collezioni::railway( { 1 , 10 , 29 , 31 } , { 20 , 20 , 20 , 5 } , 50 );
  CHECK( ( c0 == 55 ) && ( b0 == Ints{ 0 } ) );
  CHECK( collezioni::railway( { 3 } , { 7 } , 7 ).first == 7 );
  // a free pass covers all (one pass, bought on the first day), the days 29
  // apart (one pass covers both) and 30 apart (it does not); no trip, f and
  // d of different sizes, d not sorted refused
  CHECK( collezioni::railway( { 0 , 40 , 80 } , { 5 , 5 , 5 } , 0 ) ==
-        std::pair( 0L , Ints( { 0 , 1 , 2 } ) ) );
+	std::pair( 0L , Ints( { 0 , 1 , 2 } ) ) );
  CHECK( collezioni::railway( { 0 , 29 } , { 9 , 9 } , 10 ).first == 10 );
  CHECK( collezioni::railway( { 0 , 30 } , { 9 , 9 } , 10 ).first == 18 );
  CHECK_THROWS( collezioni::railway( {} , {} , 5 ) , contract_violation );
  CHECK_THROWS( collezioni::railway( { 1 } , { 1 , 2 } , 5 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( collezioni::railway( { 5 , 1 } , { 1 , 1 } , 5 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1319 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const int n = draw( g , 1 , 11 );
@@ -2456,7 +2596,8 @@ ADS_TEST( "collezioni-13-pd-1-19" )
     bool covered = false;
     for( int i : buy )
      covered = covered || ( ( d[ i ] <= d[ j ] ) && ( d[ j ] < d[ i ] + 30 ) );
-    if( ! covered ) c += f[ j ];
+    if( ! covered )
+     c += f[ j ];
     }
    return( c );
    };
@@ -2464,7 +2605,8 @@ ADS_TEST( "collezioni-13-pd-1-19" )
   for( int mask = 0 ; mask < ( 1 << n ) ; ++mask ) {
    Ints buy;
    for( int i = 0 ; i < n ; ++i )
-    if( mask >> i & 1 ) buy.push_back( i );
+    if( mask >> i & 1 )
+     buy.push_back( i );
    best = std::min( best , cost( buy ) );
    }
   const auto [ c , buy ] = collezioni::railway( d , f , X );
@@ -2477,8 +2619,8 @@ ADS_TEST( "collezioni-13-pd-1-19" )
 // capacity always enough; sizes that differ refused
 ADS_TEST( "collezioni-13-pd-1-20" )
 {
- CHECK( collezioni::datacenter( { 10 , 1 , 7 , 7 } , { 8 , 4 , 2 , 1 } ) ==
-        19 );
+ CHECK( collezioni::datacenter( { 10 , 1 , 7 , 7 } ,
+				{ 8 , 4 , 2 , 1 } ) == 19 );
  CHECK( collezioni::datacenter( { 5 } , { 3 } ) == 3 );
  CHECK( collezioni::datacenter( {} , {} ) == 0 );
  // no data at all, a capacity above the data every day (no reboot), and
@@ -2491,13 +2633,15 @@ ADS_TEST( "collezioni-13-pd-1-20" )
   const int n = draw( g , 1 , 12 );
   const Ints x = drawInts( g , n , 0 , 20 );
   Ints s = drawSortedDistinct( g , n , 1 , 40 );
-  std::reverse( s.begin() , s.end() );     // strictly decreasing
+  std::reverse( s.begin() , s.end() );  // strictly decreasing
   long best = 0;
   for( int mask = 0 ; mask < ( 1 << n ) ; ++mask ) {
    long done = 0;
    for( int i = 0 , a = 0 ; i < n ; ++i )
-    if( mask >> i & 1 ) a = 0;
-    else done += std::min( x[ i ] , s[ a++ ] );
+    if( mask >> i & 1 )
+     a = 0;
+    else
+     done += std::min( x[ i ] , s[ a++ ] );
    best = std::max( best , done );
    }
   CHECK( collezioni::datacenter( x , s ) == best );
@@ -2514,23 +2658,22 @@ ADS_TEST( "collezioni-13-pd-1-21" )
  CHECK( collezioni::countWays( "0110001" , S ) == 0 );
  CHECK( collezioni::countWays( "" , S ) == 1 );
  CHECK( collezioni::countWays( std::string( 60 , '0' ) , { "0" , "00" } ) ==
-        fibonacci( 60 ) );
+	fibonacci( 60 ) );
  // no string in S, a string equal to X, a string repeated in S (counted
  // twice), an empty string in S refused
  CHECK( collezioni::countWays( "01" , {} ) == 0 &&
-        collezioni::countWays( "" , {} ) == 1 );
+	collezioni::countWays( "" , {} ) == 1 );
  CHECK( collezioni::countWays( "011" , S ) == 1 );
  CHECK( collezioni::countWays( "01" , { "01" , "01" } ) == 2 );
  CHECK_THROWS( collezioni::countWays( "01" , { "0" , "" } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1321 );
  for( int t = 0 ; t < 500 ; ++t ) {
   std::vector< std::string > P;
   for( int k = draw( g , 1 , 4 ) ; k > 0 ; --k )
    P.push_back( drawString( g , draw( g , 1 , 3 ) , 2 ) );
   const std::string x = drawString( g , draw( g , 0 , 12 ) , 2 );
-  std::function< std::uint64_t( std::size_t ) > ways = [ & ](
-                                                      std::size_t i ) {
+  std::function< std::uint64_t( std::size_t ) > ways = [ & ]( std::size_t i ) {
    std::uint64_t w = ( i == x.size() );
    for( const auto & p : P )
     if( x.compare( i , p.size() , p ) == 0 && i + p.size() <= x.size() )
@@ -2556,7 +2699,8 @@ ADS_TEST( "collezioni-13-pd-1-22" )
  const auto C = tartaglia( 60 );
  for( int k = 0 ; k <= 30 ; ++k ) {
   CHECK( collezioni::fullTrees( 2 * k + 1 ) == C[ 2 * k ][ k ] / ( k + 1 ) );
-  if( k > 0 ) CHECK( collezioni::fullTrees( 2 * k ) == 0 );
+  if( k > 0 )
+   CHECK( collezioni::fullTrees( 2 * k ) == 0 );
   }
  for( int n = 1 ; n <= 11 ; ++n ) {
   // ( L ) R is the root with the left subtree L and the right one R
@@ -2566,16 +2710,17 @@ ADS_TEST( "collezioni-13-pd-1-22" )
    std::function< int( void ) > tree = [ & ]( void ) -> int {
     // the children of the root that starts at w[ i ], -1 if not full
     if( ( i == w.size() ) || ( w[ i ] == ')' ) )
-     return( 0 );                          // the empty tree
+     return( 0 );  // the empty tree
     ++i;
     const int l = tree();
-    ++i;                                   // the ')'
+    ++i;  // the ')'
     const int r = tree();
-    if( ( l < 0 ) || ( r < 0 ) || ( ( l == 0 ) != ( r == 0 ) ) ) return( -1 );
+    if( ( l < 0 ) || ( r < 0 ) || ( ( l == 0 ) != ( r == 0 ) ) )
+     return( -1 );
     return( 1 + l + r );
     };
    full += ( tree() > 0 );
-   return( false );                        // go on
+   return( false );  // go on
    } );
   CHECK( full == collezioni::fullTrees( n ) );
   }
@@ -2585,7 +2730,8 @@ ADS_TEST( "collezioni-13-pd-1-22" )
 /*---------------------- COLLECTION 14, GREEDY -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace collezioni {
+namespace collezioni
+{
 
 using Edge = WeightedEdge< long >;
 
@@ -2593,7 +2739,8 @@ using Edge = WeightedEdge< long >;
 long weightOf( const std::vector< Edge > & T )
 {
  long w = 0;
- for( const Edge & e : T ) w += e.w;
+ for( const Edge & e : T )
+  w += e.w;
  return( w );
  }
 
@@ -2604,13 +2751,15 @@ long weightOf( const std::vector< Edge > & T )
 /// the lightest edge across; its weight, or LINF if no edge is across or
 /// a side is not connected, where the scheme gives no spanning tree
 long proposedMST( int n , const std::vector< Edge > & E ,
-                  const std::vector< bool > & side )
+		  const std::vector< bool > & side )
 {
  std::vector< Edge > A , B;
  long across = LINF;
  for( const Edge & e : E )
-  if( side[ e.u ] != side[ e.v ] ) across = std::min( across , e.w );
-  else ( side[ e.u ] ? A : B ).push_back( e );
+  if( side[ e.u ] != side[ e.v ] )
+   across = std::min( across , e.w );
+  else
+   ( side[ e.u ] ? A : B ).push_back( e );
  const auto TA = kruskal( n , A ) , TB = kruskal( n , B );
  if( ( across == LINF ) || ( int( TA.size() + TB.size() ) != n - 2 ) )
   return( LINF );
@@ -2625,11 +2774,13 @@ long proposedMST( int n , const std::vector< Edge > & E ,
 /// O( n + m alpha( n ) )
 /// \pre the ends of the edges in [ 0 , n )
 long minBlack( int n , const std::vector< std::pair< int , int > > & white ,
-               const std::vector< std::pair< int , int > > & black )
+	       const std::vector< std::pair< int , int > > & black )
 {
  std::vector< Edge > E;
- for( auto [ u , v ] : white ) E.push_back( Edge{ u , v , 0 } );
- for( auto [ u , v ] : black ) E.push_back( Edge{ u , v , 1 } );
+ for( auto [ u , v ] : white )
+  E.push_back( Edge{ u , v , 0 } );
+ for( auto [ u , v ] : black )
+  E.push_back( Edge{ u , v , 1 } );
  return( weightOf( kruskal( n , E , 2 ) ) );
  }
 
@@ -2676,8 +2827,8 @@ long skisGreedy( const Ints & H , const Ints & L )
   std::size_t bi = 0 , bj = 0;
   for( std::size_t i = 0 ; i < n ; ++i )
    for( std::size_t j = 0 ; j < n ; ++j )
-    if( ! h[ i ] && ! l[ j ] && ( std::abs( long( H[ i ] ) - L[ j ] ) <
-                                  best ) ) {
+    if( ! h[ i ] && ! l[ j ] &&
+	( std::abs( long( H[ i ] ) - L[ j ] ) < best ) ) {
      best = std::abs( long( H[ i ] ) - L[ j ] );
      bi = i;
      bj = j;
@@ -2690,21 +2841,24 @@ long skisGreedy( const Ints & H , const Ints & L )
 
 }  // end( namespace collezioni )
 
-namespace {
+namespace
+{
 
 /// f( T ) on each spanning tree T of the nodes [ 0 , n ), the places of
 /// its n - 1 edges in E, by trying all the sets of n - 1 edges
 template< class F >
 void spanningTrees( int n , const std::vector< collezioni::Edge > & E ,
-                    F && f )
+		    F && f )
 {
  const int m = int( E.size() );
  for( std::uint64_t mask = 0 ; mask < ( std::uint64_t( 1 ) << m ) ; ++mask ) {
-  if( std::popcount( mask ) != n - 1 ) continue;
+  if( std::popcount( mask ) != n - 1 )
+   continue;
   Ints p( n );
   std::iota( p.begin() , p.end() , 0 );
   std::function< int( int ) > find = [ & ]( int x ) {
-   return( p[ x ] == x ? x : p[ x ] = find( p[ x ] ) ); };
+   return( p[ x ] == x ? x : p[ x ] = find( p[ x ] ) );
+   };
   bool ok = true;
   Ints T;
   for( int i = 0 ; i < m ; ++i )
@@ -2714,22 +2868,24 @@ void spanningTrees( int n , const std::vector< collezioni::Edge > & E ,
     p[ a ] = b;
     T.push_back( i );
     }
-  if( ok ) f( T );
+  if( ok )
+   f( T );
   }
  }
 
 /// a random connected unoriented graph: a random tree of n nodes and m more
 /// edges, the weights in [ lo , hi ]
 std::vector< collezioni::Edge > randomConnected( std::mt19937 & g , int n ,
-                                                 int m , int lo , int hi )
+						 int m , int lo , int hi )
 {
  std::vector< collezioni::Edge > E;
  for( int v = 1 ; v < n ; ++v )
   E.push_back( collezioni::Edge{ draw( g , 0 , v - 1 ) , v ,
-                                 draw( g , lo , hi ) } );
+				 draw( g , lo , hi ) } );
  for( int i = 0 ; ( i < m ) && ( n > 1 ) ; ++i ) {
   const int u = draw( g , 0 , n - 1 ) , v = draw( g , 0 , n - 1 );
-  if( u != v ) E.push_back( collezioni::Edge{ u , v , draw( g , lo , hi ) } );
+  if( u != v )
+   E.push_back( collezioni::Edge{ u , v , draw( g , lo , hi ) } );
   }
  return( E );
  }
@@ -2749,15 +2905,16 @@ ADS_TEST( "collezioni-14-greedy-1-3" )
   const int n = draw( g , 1 , 30 );
   const auto E = randomConnected( g , n , draw( g , 0 , 3 * n ) , 1 , n );
   const auto T = kruskal( n , E , n + 1 );
-  CHECK( ( int( T.size() ) == n - 1 ) &&
-         isMinimumSpanningForest( n , E , T ) );
+  CHECK( ( int( T.size() ) == n - 1 ) && isMinimumSpanningForest( n , E ,
+								  T ) );
   CHECK( collezioni::weightOf( T ) ==
-         collezioni::weightOf( kruskal( n , E ) ) );
+	 collezioni::weightOf( kruskal( n , E ) ) );
   }
  // one node, all the weights equal, a graph not connected (a forest)
  CHECK( kruskal( 1 , std::vector< collezioni::Edge >() , 2 ).empty() );
  const std::vector< collezioni::Edge > K4 = { { 0 , 1 , 1 } , { 0 , 2 , 1 } ,
-  { 0 , 3 , 1 } , { 1 , 2 , 1 } , { 1 , 3 , 1 } , { 2 , 3 , 1 } };
+					      { 0 , 3 , 1 } , { 1 , 2 , 1 } ,
+					      { 1 , 3 , 1 } , { 2 , 3 , 1 } };
  CHECK( collezioni::weightOf( kruskal( 4 , K4 , 2 ) ) == 3 );
  const std::vector< collezioni::Edge > two = { { 0 , 1 , 2 } , { 2 , 3 , 1 } };
  const auto F = kruskal( 4 , two , 3 );
@@ -2769,25 +2926,28 @@ ADS_TEST( "collezioni-14-greedy-1-3" )
 // on one side, a side not connected (no tree)
 ADS_TEST( "collezioni-14-greedy-1-4" )
 {
- const std::vector< collezioni::Edge > C = { { 0 , 1 , 1 } , { 1 , 2 , 10 } ,
-                                             { 2 , 3 , 1 } , { 3 , 0 , 10 } };
+ const std::vector< collezioni::Edge > C = {
+  { 0 , 1 , 1 } , { 1 , 2 , 10 } , { 2 , 3 , 1 } , { 3 , 0 , 10 }
+  };
  const std::vector< bool > AD = { true , false , false , true };
  CHECK( collezioni::proposedMST( 4 , C , AD ) == 21 );
  CHECK( collezioni::weightOf( kruskal( 4 , C ) ) == 12 );
  // all the nodes on one side (no edge across), a side not connected
- CHECK( collezioni::proposedMST( 4 , C , std::vector< bool >( 4 , true ) )
-        == LINF );
- CHECK( collezioni::proposedMST( 4 , C , { true , false , true , false } )
-        == LINF );
+ CHECK( collezioni::proposedMST( 4 , C , std::vector< bool >( 4 , true ) ) ==
+	LINF );
+ CHECK( collezioni::proposedMST( 4 , C , { true , false , true , false } ) ==
+	LINF );
  std::mt19937 g( 144 );
  int worse = 0;
  for( int t = 0 ; t < 300 ; ++t ) {
   const int n = draw( g , 2 , 12 );
   const auto E = randomConnected( g , n , 2 * n , 1 , 20 );
   std::vector< bool > side( n );
-  for( int v = 0 ; v < n ; ++v ) side[ v ] = draw( g , 0 , 1 );
+  for( int v = 0 ; v < n ; ++v )
+   side[ v ] = draw( g , 0 , 1 );
   const long p = collezioni::proposedMST( n , E , side );
-  if( p == LINF ) continue;
+  if( p == LINF )
+   continue;
   const long best = collezioni::weightOf( kruskal( n , E ) );
   CHECK( p >= best );
   worse += ( p > best );
@@ -2800,27 +2960,29 @@ ADS_TEST( "collezioni-14-greedy-1-4" )
 // ones, a black bridge
 ADS_TEST( "collezioni-14-greedy-1-5" )
 {
- CHECK( collezioni::minBlack( 3 , { { 0 , 1 } } , { { 1 , 2 } , { 0 , 2 } } )
-        == 1 );
+ CHECK( collezioni::minBlack( 3 , { { 0 , 1 } } ,
+			      { { 1 , 2 } , { 0 , 2 } } ) == 1 );
  CHECK( collezioni::minBlack( 1 , {} , {} ) == 0 );
  // only black edges (n - 1 of them), only white ones, a black bridge that
  // cannot be avoided beside a white cycle
- CHECK( collezioni::minBlack( 4 , {} , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } ,
-                                         { 3 , 0 } } ) == 3 );
- CHECK( collezioni::minBlack( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } , {} )
-        == 0 );
+ CHECK( collezioni::minBlack(
+	  4 , {} , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } , { 3 , 0 } } ) == 3 );
+ CHECK( collezioni::minBlack( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } ,
+			      {} ) == 0 );
  CHECK( collezioni::minBlack( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } ,
-                              { { 2 , 3 } } ) == 1 );
+			      { { 2 , 3 } } ) == 1 );
  std::mt19937 g( 145 );
  for( int t = 0 ; t < 200 ; ++t ) {
   const int n = draw( g , 1 , 6 );
   const auto E = randomConnected( g , n , draw( g , 0 , 6 ) , 0 , 1 );
   std::vector< std::pair< int , int > > W , B;
-  for( const auto & e : E ) ( e.w ? B : W ).emplace_back( e.u , e.v );
+  for( const auto & e : E )
+   ( e.w ? B : W ).emplace_back( e.u , e.v );
   long best = LINF;
   spanningTrees( n , E , [ & ]( const Ints & T ) {
    long b = 0;
-   for( int i : T ) b += E[ i ].w;
+   for( int i : T )
+    b += E[ i ].w;
    best = std::min( best , b );
    } );
   CHECK( collezioni::minBlack( n , W , B ) == best );
@@ -2832,8 +2994,9 @@ ADS_TEST( "collezioni-14-greedy-1-5" )
 // random graphs with distinct weights the two lightest edges are always in
 ADS_TEST( "collezioni-14-greedy-1-6-3" )
 {
- const std::vector< collezioni::Edge > T = { { 0 , 1 , 1 } , { 0 , 2 , 3 } ,
-                                             { 1 , 2 , 5 } };
+ const std::vector< collezioni::Edge > T = { { 0 , 1 , 1 } ,
+					     { 0 , 2 , 3 } ,
+					     { 1 , 2 , 5 } };
  const auto M = kruskal( 3 , T );
  CHECK( ( M.size() == 2 ) && ( collezioni::weightOf( M ) == 4 ) );
  CHECK( std::find( M.begin() , M.end() , T[ 2 ] ) == M.end() );
@@ -2841,17 +3004,19 @@ ADS_TEST( "collezioni-14-greedy-1-6-3" )
  for( int t = 0 ; t < 300 ; ++t ) {
   const int n = draw( g , 3 , 10 );
   auto E = randomConnected( g , n , 2 * n , 0 , 0 );
-  std::set< std::pair< int , int > > seen;   // no parallel edges
+  std::set< std::pair< int , int > > seen;  // no parallel edges
   std::erase_if( E , [ & ]( const collezioni::Edge & e ) {
-   return( ! seen.insert( std::minmax( e.u , e.v ) ).second ); } );
+   return( ! seen.insert( std::minmax( e.u , e.v ) ).second );
+   } );
   Ints w( E.size() );
   std::iota( w.begin() , w.end() , 1 );
   std::shuffle( w.begin() , w.end() , g );
-  for( std::size_t i = 0 ; i < E.size() ; ++i ) E[ i ].w = w[ i ];
+  for( std::size_t i = 0 ; i < E.size() ; ++i )
+   E[ i ].w = w[ i ];
   const auto K = kruskal( n , E );
   for( long x : { 1L , 2L } ) {
-   const auto e = std::find_if( E.begin() , E.end() , [ & ]( auto & y ) {
-    return( y.w == x ); } );
+   const auto e = std::find_if( E.begin() , E.end() ,
+				[ & ]( auto & y ) { return( y.w == x ); } );
    CHECK( std::find( K.begin() , K.end() , *e ) != K.end() );
    }
   }
@@ -2868,11 +3033,13 @@ ADS_TEST( "collezioni-14-greedy-1-8" )
   std::uint64_t best = std::numeric_limits< std::uint64_t >::max();
   spanningTrees( n , E , [ & ]( const Ints & T ) {
    std::uint64_t p = 1;
-   for( int i : T ) p *= std::uint64_t( E[ i ].w );
+   for( int i : T )
+    p *= std::uint64_t( E[ i ].w );
    best = std::min( best , p );
    } );
   std::uint64_t p = 1;
-  for( const auto & e : kruskal( n , E ) ) p *= std::uint64_t( e.w );
+  for( const auto & e : kruskal( n , E ) )
+   p *= std::uint64_t( e.w );
   CHECK( p == best );
   }
  }
@@ -2885,13 +3052,13 @@ ADS_TEST( "collezioni-14-greedy-1-9" )
 {
  CHECK( collezioni::minStops( {} , 5 , 5 ) == 0 );
  CHECK( collezioni::minStops( { 4 } , 8 , 5 ) == 1 );
- CHECK( collezioni::minStops( { 5 , 10 } , 15 , 5 ) == 2 );   // = deadline
+ CHECK( collezioni::minStops( { 5 , 10 } , 15 , 5 ) == 2 );  // = deadline
  // stations not needed (L within R), a station every kilometre with R = 1,
  // and a gap beyond the range refused
  CHECK( collezioni::minStops( { 1 , 2 , 3 } , 4 , 10 ) == 0 );
  CHECK( collezioni::minStops( { 1 , 2 , 3 } , 4 , 1 ) == 3 );
  CHECK_THROWS( collezioni::minStops( { 2 , 9 } , 10 , 5 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( collezioni::minStops( {} , 6 , 5 ) , contract_violation );
  std::mt19937 g( 149 );
  for( int t = 0 ; t < 1000 ; ++t ) {
@@ -2901,14 +3068,14 @@ ADS_TEST( "collezioni-14-greedy-1-9" )
   for( int k = draw( g , 0 , 15 ) ; k > 0 ; --k )
    D.push_back( x += draw( g , 1 , int( R ) ) );
   const long L = x + draw( g , 1 , int( R ) );
-  Longs P = { 0 };                         // the start, the stations, L
+  Longs P = { 0 };  // the start, the stations, L
   P.insert( P.end() , D.begin() , D.end() );
   P.push_back( L );
   Ints stops( P.size() , ADS::INF );
   stops[ 0 ] = 0;
   for( std::size_t i = 0 ; i < P.size() ; ++i )
    for( std::size_t j = i + 1 ; ( j < P.size() ) && ( P[ j ] - P[ i ] <= R ) ;
-        ++j )
+	++j )
     stops[ j ] = std::min( stops[ j ] , stops[ i ] + ( j + 1 < P.size() ) );
   CHECK( collezioni::minStops( D , L , R ) == stops.back() );
   }
@@ -2930,14 +3097,15 @@ ADS_TEST( "collezioni-14-greedy-1-10" )
  std::mt19937 g( 1410 );
  for( int t = 0 ; t < 300 ; ++t ) {
   const int n = draw( g , 1 , 7 );
-  const Ints H = drawInts( g , n , 100 , 200 ) , L = drawInts( g , n , 100 ,
-                                                                200 );
+  const Ints H = drawInts( g , n , 100 , 200 ) ,
+    L = drawInts( g , n , 100 , 200 );
   Ints p( n );
   std::iota( p.begin() , p.end() , 0 );
   long best = LINF;
   do {
    long c = 0;
-   for( int i = 0 ; i < n ; ++i ) c += std::abs( H[ i ] - L[ p[ i ] ] );
+   for( int i = 0 ; i < n ; ++i )
+    c += std::abs( H[ i ] - L[ p[ i ] ] );
    best = std::min( best , c );
    } while( std::next_permutation( p.begin() , p.end() ) );
   CHECK( collezioni::skis( H , L ) == best );
@@ -2949,7 +3117,8 @@ ADS_TEST( "collezioni-14-greedy-1-10" )
 /*--------------------- COLLECTION 15, NETWORKS OF FLOW --------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace collezioni {
+namespace collezioni
+{
 
 using Arcs = std::vector< std::tuple< int , int , long > >;
 
@@ -2960,14 +3129,18 @@ using Arcs = std::vector< std::tuple< int , int , long > >;
 /// larger than any cut
 /// \pre sources and sinks disjoint and not empty
 long multiFlow( int n , const Arcs & E , const Ints & sources ,
-                const Ints & sinks )
+		const Ints & sinks )
 {
  long big = 1;
- for( auto [ u , v , c ] : E ) big += c;
+ for( auto [ u , v , c ] : E )
+  big += c;
  FlowNetwork F( n + 2 );
- for( auto [ u , v , c ] : E ) F.addEdge( u , v , c );
- for( int s : sources ) F.addEdge( n , s , big );
- for( int t : sinks ) F.addEdge( t , n + 1 , big );
+ for( auto [ u , v , c ] : E )
+  F.addEdge( u , v , c );
+ for( int s : sources )
+  F.addEdge( n , s , big );
+ for( int t : sinks )
+  F.addEdge( t , n + 1 , big );
  return( F.maxFlow( n , n + 1 ) );
  }
 
@@ -2979,13 +3152,14 @@ Arcs splitNodes( int n , const Arcs & E , const Longs & cap , int s , int t )
  for( auto [ u , v , c ] : E )
   S.emplace_back( ( u == s ) || ( u == t ) ? u : n + u , v , c );
  for( int v = 0 ; v < n ; ++v )
-  if( ( v != s ) && ( v != t ) ) S.emplace_back( v , n + v , cap[ v ] );
+  if( ( v != s ) && ( v != t ) )
+   S.emplace_back( v , n + v , cap[ v ] );
  return( S );
  }
 
 /// the maximum flow with capacities on the nodes too, on the split nodes
 long nodeCapacityFlow( int n , const Arcs & E , const Longs & cap , int s ,
-                       int t )
+		       int t )
 {
  return( maxFlowOf( 2 * n , splitNodes( n , E , cap , s , t ) , s , t ) );
  }
@@ -3013,8 +3187,7 @@ long increaseCapacity( FlowNetwork & F , int s , int t , int u , int v )
 {
  F.addEdge( u , v , 1 );
  long long paths = 0;
- const long long d = F.maxFlow( s , t , Augment::FORD_FULKERSON ,
-                              &paths );
+ const long long d = F.maxFlow( s , t , Augment::FORD_FULKERSON , &paths );
  ADS_POST( ( paths <= 1 ) && ( d == paths ) );
  return( d );
  }
@@ -3034,7 +3207,7 @@ long increaseCapacity( FlowNetwork & F , int s , int t , int u , int v )
 /// sink by cap; an assignment exists iff the maximum flow is n, and the
 /// edges i -> j of flow 1 give it; O( n^2 k ) by augmenting paths
 std::optional< Ints > assign( const std::vector< std::vector< bool > > & A ,
-                              int k , long cap )
+			      int k , long cap )
 {
  const int n = int( A.size() ) , s = n + k , t = n + k + 1;
  FlowNetwork F( n + k + 2 );
@@ -3042,23 +3215,26 @@ std::optional< Ints > assign( const std::vector< std::vector< bool > > & A ,
  for( int i = 0 ; i < n ; ++i ) {
   F.addEdge( s , i , 1 );
   for( int j = 0 ; j < k ; ++j )
-   if( A[ i ][ j ] ) id[ i ][ j ] = F.addEdge( i , n + j , 1 );
+   if( A[ i ][ j ] )
+    id[ i ][ j ] = F.addEdge( i , n + j , 1 );
   }
- for( int j = 0 ; j < k ; ++j ) F.addEdge( n + j , t , cap );
- if( F.maxFlow( s , t ) < n ) return( std::nullopt );
+ for( int j = 0 ; j < k ; ++j )
+  F.addEdge( n + j , t , cap );
+ if( F.maxFlow( s , t ) < n )
+  return( std::nullopt );
  Ints to( n , -1 );
  for( int i = 0 ; i < n ; ++i )
   for( int j = 0 ; j < k ; ++j )
-   if( ( id[ i ][ j ] >= 0 ) && ( F.flow( id[ i ][ j ] ) == 1 ) ) to[ i ] = j;
+   if( ( id[ i ][ j ] >= 0 ) && ( F.flow( id[ i ][ j ] ) == 1 ) )
+    to[ i ] = j;
  return( to );
  }
 
 /// hospitals(): the patients assigned to reachable hospitals, at most
 /// ceil( n / k ) each, or nothing
 /// \pre k >= 1
-std::optional< Ints > hospitals(
-                        const std::vector< std::vector< bool > > & reachable ,
-                        int k )
+std::optional< Ints >
+hospitals( const std::vector< std::vector< bool > > & reachable , int k )
 {
  ADS_PRE( k >= 1 );
  const long n = long( reachable.size() );
@@ -3068,15 +3244,15 @@ std::optional< Ints > hospitals(
 /// towers(): the planes assigned to towers within distance d, at most L
 /// each, or nothing; Theta( n m ) to build the network
 std::optional< Ints > towers( const std::vector< std::pair< int , int > > & A ,
-                              const std::vector< std::pair< int , int > > & Q ,
-                              long d , long L )
+			      const std::vector< std::pair< int , int > > & Q ,
+			      long d , long L )
 {
  std::vector< std::vector< bool > > M( A.size() ,
-                                       std::vector< bool >( Q.size() ) );
+				       std::vector< bool >( Q.size() ) );
  for( std::size_t i = 0 ; i < A.size() ; ++i )
   for( std::size_t j = 0 ; j < Q.size() ; ++j ) {
    const long dx = A[ i ].first - Q[ j ].first ,
-              dy = A[ i ].second - Q[ j ].second;
+	      dy = A[ i ].second - Q[ j ].second;
    M[ i ][ j ] = ( dx * dx + dy * dy <= d * d );
    }
  return( assign( M , int( Q.size() ) , L ) );
@@ -3091,13 +3267,11 @@ std::optional< Ints > towers( const std::vector< std::pair< int , int > > & A ,
 /// day ) by 2, that to each shift of the day j is free for by 1, each
 /// shift to the sink by p[ i ]; feasible iff the flow is the sum of p
 /// \pre |p| a multiple of 3, |unavailable[ j ]| = |p|
-std::optional< std::vector< std::vector< bool > > > mcdonalds(
-                    const Ints & p ,
-                    const std::vector< std::vector< bool > > & unavailable ,
-                    long W )
+std::optional< std::vector< std::vector< bool > > >
+mcdonalds( const Ints & p ,
+	   const std::vector< std::vector< bool > > & unavailable , long W )
 {
- const int S = int( p.size() ) , days = S / 3 ,
-           E = int( unavailable.size() );
+ const int S = int( p.size() ) , days = S / 3 , E = int( unavailable.size() );
  ADS_PRE( S % 3 == 0 );
  const int s = E + E * days + S , t = s + 1;
  FlowNetwork F( t + 1 );
@@ -3117,7 +3291,8 @@ std::optional< std::vector< std::vector< bool > > > mcdonalds(
   F.addEdge( E + E * days + i , t , p[ i ] );
   P += p[ i ];
   }
- if( F.maxFlow( s , t ) < P ) return( std::nullopt );
+ if( F.maxFlow( s , t ) < P )
+  return( std::nullopt );
  std::vector< std::vector< bool > > works( E , std::vector< bool >( S ) );
  for( int j = 0 ; j < E ; ++j )
   for( int i = 0 ; i < S ; ++i )
@@ -3134,7 +3309,7 @@ bool films( int n , const Arcs & E , int s , const Ints & C , long b )
 {
  Arcs N = E;
  for( int c : C )
-  N.emplace_back( c , n , b );         // parallel edges add up
+  N.emplace_back( c , n , b );  // parallel edges add up
  return( maxFlowOf( n + 1 , N , s , n ) == long( C.size() ) * b );
  }
 
@@ -3151,12 +3326,13 @@ bool evacuation( const ListGraph<> & G , const std::vector< bool > & village )
  Arcs E;
  long k = 0;
  for( int u : G.V() ) {
-  for( int v : G.adj( u ) ) E.emplace_back( u , v , 1 );
+  for( int v : G.adj( u ) )
+   E.emplace_back( u , v , 1 );
   k += village[ u ];
   }
  for( int u : G.V() )
   E.emplace_back( village[ u ] ? n : u , village[ u ] ? u : n + 1 ,
-                  village[ u ] ? 1 : k );
+		  village[ u ] ? 1 : k );
  return( k == 0 || maxFlowOf( n + 2 , E , n , n + 1 ) == k );
  }
 
@@ -3181,8 +3357,10 @@ std::optional< Matrix > fillMatrix( Longs r , Longs c )
   M[ i ][ j ] = std::min( r[ i ] , c[ j ] );
   r[ i ] -= M[ i ][ j ];
   c[ j ] -= M[ i ][ j ];
-  if( r[ i ] == 0 ) ++i;
-  else ++j;
+  if( r[ i ] == 0 )
+   ++i;
+  else
+   ++j;
   }
  return( M );
  }
@@ -3199,14 +3377,16 @@ std::optional< Matrix > fillMatrixFlow( const Longs & r , const Longs & c )
  for( int i = 0 ; i < n ; ++i ) {
   F.addEdge( s , i , r[ i ] );
   F.addEdge( n + i , t , c[ i ] );
-  for( int j = 0 ; j < n ; ++j ) id[ i ][ j ] = F.addEdge( i , n + j , R );
+  for( int j = 0 ; j < n ; ++j )
+   id[ i ][ j ] = F.addEdge( i , n + j , R );
   }
  if( ( F.maxFlow( s , t ) != R ) ||
      ( std::accumulate( c.begin() , c.end() , 0L ) != R ) )
   return( std::nullopt );
  Matrix M( n , Longs( n ) );
  for( int i = 0 ; i < n ; ++i )
-  for( int j = 0 ; j < n ; ++j ) M[ i ][ j ] = F.flow( id[ i ][ j ] );
+  for( int j = 0 ; j < n ; ++j )
+   M[ i ][ j ] = F.flow( id[ i ][ j ] );
  return( M );
  }
 
@@ -3220,8 +3400,8 @@ std::optional< Matrix > fillMatrixFlow( const Longs & r , const Longs & c )
 /// min( l1 , C_j ) ], the sink to the source in [ max( 0 , W - t2 ) ,
 /// min( t1 , W ) ], R, C and W the sums of M; O( m n ) edges
 /// \pre M rectangular of non-negative integers, the limits >= 0
-std::optional< std::pair< Matrix , Matrix > > splitMatrix(
-               const Matrix & M , long l1 , long l2 , long t1 , long t2 )
+std::optional< std::pair< Matrix , Matrix > >
+splitMatrix( const Matrix & M , long l1 , long l2 , long t1 , long t2 )
 {
  const int m = int( M.size() ) , n = m ? int( M[ 0 ].size() ) : 0;
  const int s = m + n , t = m + n + 1;
@@ -3229,26 +3409,29 @@ std::optional< std::pair< Matrix , Matrix > > splitMatrix(
  long W = 0;
  for( int i = 0 ; i < m ; ++i ) {
   const long R = std::accumulate( M[ i ].begin() , M[ i ].end() , 0L );
-  E.push_back( BoundedEdge{ s , i , std::max( 0L , R - l2 ) ,
-                            std::min( l1 , R ) } );
+  E.push_back(
+    BoundedEdge{ s , i , std::max( 0L , R - l2 ) , std::min( l1 , R ) } );
   W += R;
   }
  for( int j = 0 ; j < n ; ++j ) {
   long C = 0;
-  for( int i = 0 ; i < m ; ++i ) C += M[ i ][ j ];
-  E.push_back( BoundedEdge{ m + j , t , std::max( 0L , C - l2 ) ,
-                            std::min( l1 , C ) } );
+  for( int i = 0 ; i < m ; ++i )
+   C += M[ i ][ j ];
+  E.push_back(
+    BoundedEdge{ m + j , t , std::max( 0L , C - l2 ) , std::min( l1 , C ) } );
   }
  E.push_back( BoundedEdge{ t , s , std::max( 0L , W - t2 ) ,
-                           std::min( t1 , W ) } );
+			   std::min( t1 , W ) } );
  const std::size_t first = E.size();
  for( int i = 0 ; i < m ; ++i )
   for( int j = 0 ; j < n ; ++j )
    E.push_back( BoundedEdge{ i , m + j , 0 , M[ i ][ j ] } );
  for( const auto & e : E )
-  if( e.low > e.high ) return( std::nullopt );
+  if( e.low > e.high )
+   return( std::nullopt );
  std::vector< long long > f;
- if( ! feasibleCirculation( m + n + 2 , E , &f ) ) return( std::nullopt );
+ if( ! feasibleCirculation( m + n + 2 , E , &f ) )
+  return( std::nullopt );
  Matrix A( m , Longs( n ) ) , B = A;
  for( int i = 0 ; i < m ; ++i )
   for( int j = 0 ; j < n ; ++j ) {
@@ -3260,7 +3443,8 @@ std::optional< std::pair< Matrix , Matrix > > splitMatrix(
 
 }  // end( namespace collezioni )
 
-namespace {
+namespace
+{
 
 using collezioni::Arcs;
 using collezioni::Matrix;
@@ -3280,15 +3464,17 @@ Arcs randomArcs( std::mt19937 & g , int n , int p , int hi )
 /// whether the n items can go to the k places, each at most cap items,
 /// by backtrack
 bool assignBrute( const std::vector< std::vector< bool > > & A , int k ,
-                  long cap )
+		  long cap )
 {
  Longs load( k , 0 );
  std::function< bool( std::size_t ) > rec = [ & ]( std::size_t i ) {
-  if( i == A.size() ) return( true );
+  if( i == A.size() )
+   return( true );
   for( int j = 0 ; j < k ; ++j )
    if( A[ i ][ j ] && ( load[ j ] < cap ) ) {
     ++load[ j ];
-    if( rec( i + 1 ) ) return( true );
+    if( rec( i + 1 ) )
+     return( true );
     --load[ j ];
     }
   return( false );
@@ -3298,7 +3484,7 @@ bool assignBrute( const std::vector< std::vector< bool > > & A , int k ,
 
 /// whether to is an assignment of the items, within A and cap
 bool validAssignment( const std::vector< std::vector< bool > > & A , int k ,
-                      long cap , const Ints & to )
+		      long cap , const Ints & to )
 {
  Longs load( k , 0 );
  for( std::size_t i = 0 ; i < A.size() ; ++i )
@@ -3309,7 +3495,8 @@ bool validAssignment( const std::vector< std::vector< bool > > & A , int k ,
 
 /// a random boolean matrix of n x k, each entry true with probability p
 std::vector< std::vector< bool > > randomBools( std::mt19937 & g , int n ,
-                                                int k , int p )
+						int k ,
+						int p )
 {
  std::vector< std::vector< bool > > A( n , std::vector< bool >( k ) );
  for( auto & row : A )
@@ -3334,21 +3521,25 @@ ADS_TEST( "collezioni-15-locale-1-1" )
   const int n = draw( g , 3 , 7 );
   const Arcs E = randomArcs( g , n , 40 , 9 );
   Ints S = drawInts( g , n , 0 , 2 ) , src , snk;
-  S[ 0 ] = 1;                              // a source and a sink at least
+  S[ 0 ] = 1;  // a source and a sink at least
   S[ 1 ] = 2;
   for( int v = 0 ; v < n ; ++v )
-   if( S[ v ] ) ( S[ v ] == 1 ? src : snk ).push_back( v );
-  CHECK( collezioni::multiFlow( n , E , src , snk ) ==
-         minCutBrute( n , E , S ) );
+   if( S[ v ] )
+    ( S[ v ] == 1 ? src : snk ).push_back( v );
+  CHECK( collezioni::multiFlow( n , E , src , snk ) == minCutBrute( n , E ,
+								    S ) );
   Longs cap( n );
-  for( long & c : cap ) c = draw( g , 0 , 9 );
+  for( long & c : cap )
+   c = draw( g , 0 , 9 );
   CHECK( collezioni::nodeCapacityFlow( n , E , cap , 0 , n - 1 ) ==
-         minCutBrute( 2 * n , collezioni::splitNodes( n , E , cap , 0 ,
-                                                      n - 1 ) , 0 , n - 1 ) );
+	 minCutBrute( 2 * n ,
+		      collezioni::splitNodes( n , E , cap , 0 , n - 1 ) , 0 ,
+		      n - 1 ) );
   Arcs D = E;
-  for( auto [ u , v , c ] : E ) D.emplace_back( v , u , c );
+  for( auto [ u , v , c ] : E )
+   D.emplace_back( v , u , c );
   CHECK( collezioni::unorientedFlow( n , E , 0 , n - 1 ) ==
-         minCutBrute( n , D , 0 , n - 1 ) );
+	 minCutBrute( n , D , 0 , n - 1 ) );
   }
  // a node of capacity 1 in the middle of two paths lets one unit through
  const Arcs P = { { 0 , 1 , 5 } , { 1 , 2 , 5 } , { 0 , 2 , 0 } };
@@ -3357,7 +3548,7 @@ ADS_TEST( "collezioni-15-locale-1-1" )
  // from either end
  CHECK( collezioni::multiFlow( 3 , {} , { 0 } , { 1 , 2 } ) == 0 );
  CHECK( collezioni::nodeCapacityFlow( 3 , { { 0 , 1 , 5 } , { 1 , 2 , 5 } } ,
-                                      { 0 , 0 , 0 } , 0 , 2 ) == 0 );
+				      { 0 , 0 , 0 } , 0 , 2 ) == 0 );
  CHECK( collezioni::unorientedFlow( 2 , { { 1 , 0 , 4 } } , 0 , 1 ) == 4 );
  }
 
@@ -3371,9 +3562,11 @@ ADS_TEST( "collezioni-15-locale-1-2" )
  for( int t = 0 ; t < 200 ; ++t ) {
   const int n = draw( g , 2 , 8 );
   Arcs E = randomArcs( g , n , 40 , 5 );
-  if( E.empty() ) continue;
+  if( E.empty() )
+   continue;
   FlowNetwork F( n );
-  for( auto [ u , v , c ] : E ) F.addEdge( u , v , c );
+  for( auto [ u , v , c ] : E )
+   F.addEdge( u , v , c );
   long f = F.maxFlow( 0 , n - 1 );
   for( int k = 0 ; k < 5 ; ++k ) {
    auto & [ u , v , c ] = E[ draw( g , 0 , int( E.size() ) - 1 ) ];
@@ -3403,13 +3596,13 @@ ADS_TEST( "collezioni-15-locale-1-3" )
 {
  enum { s , b , c , d , e , t };
  ListGraph<> G( 6 );
- for( auto [ u , v ] : { std::pair( s , b ) , std::pair( s , c ) ,
-                         std::pair( b , d ) , std::pair( c , e ) ,
-                         std::pair( d , t ) , std::pair( e , t ) ,
-                         std::pair( b , c ) , std::pair( e , d ) } )
+ for( auto [ u , v ] :
+      { std::pair( s , b ) , std::pair( s , c ) , std::pair( b , d ) ,
+	std::pair( c , e ) , std::pair( d , t ) , std::pair( e , t ) ,
+	std::pair( b , c ) , std::pair( e , d ) } )
   G.insertEdge( u , v );
  CHECK( edgeDisjointPaths( G , s , t ).size() == 2 );
- CHECK( edgeDisjointPaths( ListGraph<>( 2 ) , 0 , 1 ).empty() );   // no edge
+ CHECK( edgeDisjointPaths( ListGraph<>( 2 ) , 0 , 1 ).empty() );  // no edge
  std::mt19937 g( 153 );
  for( int k = 0 ; k < 200 ; ++k ) {
   const int n = draw( g , 2 , 8 );
@@ -3420,7 +3613,7 @@ ADS_TEST( "collezioni-15-locale-1-3" )
    E.emplace_back( u , v , w );
    }
   CHECK( long( edgeDisjointPaths( H , 0 , n - 1 ).size() ) ==
-         minCutBrute( n , E , 0 , n - 1 ) );
+	 minCutBrute( n , E , 0 , n - 1 ) );
   }
  }
 
@@ -3432,14 +3625,14 @@ ADS_TEST( "collezioni-15-locale-1-4" )
 {
  CHECK( collezioni::hospitals( {} , 1 ) == Ints() );
  CHECK( collezioni::hospitals( { { true } , { true } } , 1 ) ==
-        Ints( { 0 , 0 } ) );
+	Ints( { 0 , 0 } ) );
  CHECK( ! collezioni::hospitals( { { true , false } , { true , false } } ,
-                                 2 ) );   // ceil( 2 / 2 ) = 1 each
+				 2 ) );  // ceil( 2 / 2 ) = 1 each
  // a patient who reaches no hospital, more hospitals than patients, and
  // k = 0 refused
  CHECK( ! collezioni::hospitals( { { true } , { false } } , 1 ) );
  CHECK( collezioni::hospitals( { { false , false , true } } , 3 ) ==
-        Ints( { 2 } ) );
+	Ints( { 2 } ) );
  CHECK_THROWS( collezioni::hospitals( {} , 0 ) , contract_violation );
  std::mt19937 g( 154 );
  int yes = 0;
@@ -3464,28 +3657,32 @@ ADS_TEST( "collezioni-15-locale-1-4" )
 ADS_TEST( "collezioni-15-locale-1-5" )
 {
  CHECK( collezioni::towers( { { 0 , 0 } , { 3 , 4 } } , { { 0 , 0 } } , 5 ,
-                            2 ) == Ints( { 0 , 0 } ) );   // 5 is within 5
+			    2 ) ==
+	Ints( { 0 , 0 } ) );  // 5 is within 5
  CHECK( ! collezioni::towers( { { 0 , 0 } , { 3 , 4 } } , { { 0 , 0 } } , 5 ,
-                              1 ) );
+			      1 ) );
  // no plane, L = 0, d = 0 (only a tower on the plane itself)
  CHECK( collezioni::towers( {} , { { 1 , 1 } } , 3 , 1 ) == Ints() );
  CHECK( ! collezioni::towers( { { 0 , 0 } } , { { 0 , 0 } } , 5 , 0 ) );
  CHECK( collezioni::towers( { { 2 , 2 } } , { { 0 , 0 } , { 2 , 2 } } , 0 ,
-                            1 ) == Ints( { 1 } ) );
+			    1 ) ==
+	Ints( { 1 } ) );
  std::mt19937 g( 155 );
  int yes = 0;
  for( int t = 0 ; t < 300 ; ++t ) {
   std::vector< std::pair< int , int > > A( draw( g , 1 , 8 ) ) ,
-                                        Q( draw( g , 1 , 4 ) );
-  for( auto & p : A ) p = std::pair( draw( g , 0 , 10 ) , draw( g , 0 , 10 ) );
-  for( auto & p : Q ) p = std::pair( draw( g , 0 , 10 ) , draw( g , 0 , 10 ) );
+    Q( draw( g , 1 , 4 ) );
+  for( auto & p : A )
+   p = std::pair( draw( g , 0 , 10 ) , draw( g , 0 , 10 ) );
+  for( auto & p : Q )
+   p = std::pair( draw( g , 0 , 10 ) , draw( g , 0 , 10 ) );
   const long d = draw( g , 2 , 8 ) , L = draw( g , 1 , 3 );
   std::vector< std::vector< bool > > M( A.size() ,
-                                        std::vector< bool >( Q.size() ) );
+					std::vector< bool >( Q.size() ) );
   for( std::size_t i = 0 ; i < A.size() ; ++i )
    for( std::size_t j = 0 ; j < Q.size() ; ++j )
     M[ i ][ j ] = std::hypot( A[ i ].first - Q[ j ].first ,
-                              A[ i ].second - Q[ j ].second ) <= d + 1e-9;
+			      A[ i ].second - Q[ j ].second ) <= d + 1e-9;
   const auto R = collezioni::towers( A , Q , d , L );
   CHECK( bool( R ) == assignBrute( M , int( Q.size() ) , L ) );
   if( R ) {
@@ -3504,27 +3701,31 @@ ADS_TEST( "collezioni-15-locale-1-5" )
 ADS_TEST( "collezioni-15-locale-1-6" )
 {
  const auto valid = []( const Ints & p ,
-                        const std::vector< std::vector< bool > > & U ,
-                        long W , const std::vector< std::vector< bool > > &
-                        w ) {
+			const std::vector< std::vector< bool > > & U , long W ,
+			const std::vector< std::vector< bool > > & w ) {
   for( std::size_t j = 0 ; j < U.size() ; ++j ) {
    long all = 0;
    for( std::size_t d = 0 ; d < p.size() / 3 ; ++d ) {
     long day = 0;
     for( std::size_t i = 3 * d ; i < 3 * d + 3 ; ++i )
      if( w[ j ][ i ] ) {
-      if( U[ j ][ i ] ) return( false );
+      if( U[ j ][ i ] )
+       return( false );
       ++day;
       }
-    if( day > 2 ) return( false );
+    if( day > 2 )
+     return( false );
     all += day;
     }
-   if( all > W ) return( false );
+   if( all > W )
+    return( false );
    }
   for( std::size_t i = 0 ; i < p.size() ; ++i ) {
    long k = 0;
-   for( std::size_t j = 0 ; j < U.size() ; ++j ) k += w[ j ][ i ];
-   if( k != p[ i ] ) return( false );
+   for( std::size_t j = 0 ; j < U.size() ; ++j )
+    k += w[ j ][ i ];
+   if( k != p[ i ] )
+    return( false );
    }
   return( true );
   };
@@ -3538,9 +3739,11 @@ ADS_TEST( "collezioni-15-locale-1-6" )
   std::vector< std::vector< bool > > w( E , std::vector< bool >( S ) );
   // the shift i needs need more employees, to choose from j on
   std::function< bool( int , int , int ) > rec = [ & ]( int i , int j ,
-                                                        int need ) {
-   if( need == 0 ) return( ( i + 1 == S ) || rec( i + 1 , 0 , p[ i + 1 ] ) );
-   if( j == E ) return( false );
+						      int need ) {
+   if( need == 0 )
+    return( ( i + 1 == S ) || rec( i + 1 , 0 , p[ i + 1 ] ) );
+   if( j == E )
+    return( false );
    long all = 0 , day = 0;
    for( int x = 0 ; x < S ; ++x ) {
     all += w[ j ][ x ];
@@ -3548,7 +3751,8 @@ ADS_TEST( "collezioni-15-locale-1-6" )
     }
    if( ! U[ j ][ i ] && ( all < W ) && ( day < 2 ) ) {
     w[ j ][ i ] = true;
-    if( rec( i , j + 1 , need - 1 ) ) return( true );
+    if( rec( i , j + 1 , need - 1 ) )
+     return( true );
     w[ j ][ i ] = false;
     }
    return( rec( i , j + 1 , need ) );
@@ -3562,23 +3766,23 @@ ADS_TEST( "collezioni-15-locale-1-6" )
    }
   }
  CHECK( ( yes > 20 ) && ( yes < 180 ) );
- const Ints week( 21 , 2 );                // 42 shifts by 9 employees
+ const Ints week( 21 , 2 );  // 42 shifts by 9 employees
  const std::vector< std::vector< bool > > free( 9 ,
-                                                std::vector< bool >( 21 ) );
+						std::vector< bool >( 21 ) );
  const auto R = collezioni::mcdonalds( week , free , 5 );
  CHECK( R && valid( week , free , 5 , *R ) );
- CHECK( ! collezioni::mcdonalds( week , std::vector< std::vector< bool > >(
-                                         8 , std::vector< bool >( 21 ) ) ,
-                                 5 ) );   // 8 x 5 < 42
+ CHECK( ! collezioni::mcdonalds(
+   week , std::vector< std::vector< bool > >( 8 , std::vector< bool >( 21 ) ) ,
+   5 ) );  // 8 x 5 < 42
  // no need (an empty schedule), no employee for a need, shifts not in
  // whole days refused
- const auto Z = collezioni::mcdonalds( Ints( 3 , 0 ) ,
-                                       { std::vector< bool >( 3 ) } , 2 );
+ const auto Z =
+   collezioni::mcdonalds( Ints( 3 , 0 ) , { std::vector< bool >( 3 ) } , 2 );
  CHECK( Z && ( ( *Z )[ 0 ] == std::vector< bool >( 3 , false ) ) );
  CHECK( ! collezioni::mcdonalds( { 1 , 0 , 0 } , {} , 2 ) );
- CHECK_THROWS( collezioni::mcdonalds( { 1 , 0 } ,
-                                      { std::vector< bool >( 2 ) } , 2 ) ,
-               contract_violation );
+ CHECK_THROWS(
+   collezioni::mcdonalds( { 1 , 0 } , { std::vector< bool >( 2 ) } , 2 ) ,
+   contract_violation );
  }
 
 // collezione 15-locale, 1.7: the films fit iff the minimum cut between
@@ -3587,7 +3791,7 @@ ADS_TEST( "collezioni-15-locale-1-6" )
 ADS_TEST( "collezioni-15-locale-1-7" )
 {
  CHECK( collezioni::films( 3 , { { 0 , 1 , 4 } , { 0 , 2 , 4 } } , 0 ,
-                           { 1 , 2 } , 4 ) );
+			   { 1 , 2 } , 4 ) );
  CHECK( ! collezioni::films( 2 , { { 0 , 1 , 7 } } , 0 , { 1 , 1 } , 4 ) );
  // no film (always), a capacity exactly n b, a client not reached
  CHECK( collezioni::films( 2 , {} , 0 , {} , 4 ) );
@@ -3599,10 +3803,12 @@ ADS_TEST( "collezioni-15-locale-1-7" )
   const int n = draw( g , 2 , 7 );
   const Arcs E = randomArcs( g , n , 50 , 9 );
   Ints C( draw( g , 1 , 3 ) );
-  for( int & c : C ) c = draw( g , 1 , n - 1 );
+  for( int & c : C )
+   c = draw( g , 1 , n - 1 );
   const long b = draw( g , 1 , 4 );
   Arcs N = E;
-  for( int c : C ) N.emplace_back( c , n , b );
+  for( int c : C )
+   N.emplace_back( c , n , b );
   const bool f = collezioni::films( n , E , 0 , C , b );
   CHECK( f == ( minCutBrute( n + 1 , N , 0 , n ) == long( C.size() ) * b ) );
   yes += f;
@@ -3625,21 +3831,25 @@ ADS_TEST( "collezioni-15-locale-1-8" )
   std::vector< bool > village( n );
   Ints V;
   for( int v = 0 ; v < n ; ++v )
-   if( ( village[ v ] = draw( g , 0 , 1 ) ) ) V.push_back( v );
+   if( ( village[ v ] = draw( g , 0 , 1 ) ) )
+    V.push_back( v );
   std::set< std::pair< int , int > > used;
   std::function< bool( std::size_t ) > next;
   std::function< bool( std::size_t , int ) > walk = [ & ]( std::size_t i ,
-                                                           int u ) {
-   if( ! village[ u ] && next( i + 1 ) ) return( true );
+							  int u ) {
+   if( ! village[ u ] && next( i + 1 ) )
+    return( true );
    for( int v : G.adj( u ) )
     if( used.insert( std::pair( u , v ) ).second ) {
-     if( walk( i , v ) ) return( true );
+     if( walk( i , v ) )
+      return( true );
      used.erase( std::pair( u , v ) );
      }
    return( false );
    };
   next = [ & ]( std::size_t i ) {
-   return( i == V.size() || walk( i , V[ i ] ) ); };
+   return( i == V.size() || walk( i , V[ i ] ) );
+   };
   const bool e = collezioni::evacuation( G , village );
   CHECK( e == next( 0 ) );
   yes += e;
@@ -3665,44 +3875,50 @@ ADS_TEST( "collezioni-15-locale-1-9" )
   for( std::size_t i = 0 ; i < r.size() ; ++i ) {
    long a = 0 , b = 0;
    for( std::size_t j = 0 ; j < r.size() ; ++j ) {
-    if( M[ i ][ j ] < 0 ) return( false );
+    if( M[ i ][ j ] < 0 )
+     return( false );
     a += M[ i ][ j ];
     b += M[ j ][ i ];
     }
-   if( ( a != r[ i ] ) || ( b != c[ i ] ) ) return( false );
+   if( ( a != r[ i ] ) || ( b != c[ i ] ) )
+    return( false );
    }
   return( true );
   };
  CHECK( collezioni::fillMatrix( { 3 , 1 } , { 2 , 2 } ) ==
-        Matrix( { { 2 , 1 } , { 0 , 1 } } ) );
+	Matrix( { { 2 , 1 } , { 0 , 1 } } ) );
  CHECK( collezioni::fillMatrix( {} , {} ) == Matrix() );
  CHECK( ! collezioni::fillMatrix( { 1 } , { 2 } ) );
  // all sums 0 (the zero matrix), one row taking all, by both ways; sizes
  // that differ refused
  CHECK( collezioni::fillMatrix( { 0 , 0 } , { 0 , 0 } ) ==
-        Matrix( 2 , Longs( 2 , 0 ) ) );
+	Matrix( 2 , Longs( 2 , 0 ) ) );
  CHECK( collezioni::fillMatrixFlow( { 0 , 0 } , { 0 , 0 } ) ==
-        Matrix( 2 , Longs( 2 , 0 ) ) );
+	Matrix( 2 , Longs( 2 , 0 ) ) );
  CHECK( collezioni::fillMatrix( { 0 , 5 } , { 2 , 3 } ) ==
-        Matrix( { { 0 , 0 } , { 2 , 3 } } ) );
+	Matrix( { { 0 , 0 } , { 2 , 3 } } ) );
  CHECK_THROWS( collezioni::fillMatrix( { 1 } , { 1 , 0 } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 159 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const int n = draw( g , 1 , 7 );
   Longs r( n ) , c( n );
-  for( long & x : r ) x = draw( g , 0 , 9 );
-  for( long & x : c ) x = draw( g , 0 , 9 );
-  if( t % 2 ) {                            // equal sums
+  for( long & x : r )
+   x = draw( g , 0 , 9 );
+  for( long & x : c )
+   x = draw( g , 0 , 9 );
+  if( t % 2 ) {  // equal sums
    c.assign( n , 0 );
-   for( long x : r ) c[ draw( g , 0 , n - 1 ) ] += x;
+   for( long x : r )
+    c[ draw( g , 0 , n - 1 ) ] += x;
    }
   const bool eq = std::accumulate( r.begin() , r.end() , 0L ) ==
-                  std::accumulate( c.begin() , c.end() , 0L );
+		  std::accumulate( c.begin() , c.end() , 0L );
   const auto A = collezioni::fillMatrix( r , c ) ,
-             B = collezioni::fillMatrixFlow( r , c );
+	     B = collezioni::fillMatrixFlow( r , c );
   CHECK( ( bool( A ) == eq ) && ( bool( B ) == eq ) );
-  if( eq ) CHECK( ok( *A , r , c ) && ok( *B , r , c ) );
+  if( eq )
+   CHECK( ok( *A , r , c ) && ok( *B , r , c ) );
   }
  }
 
@@ -3716,14 +3932,21 @@ ADS_TEST( "collezioni-15-locale-1-10" )
   long all = 0;
   for( std::size_t i = 0 ; i < A.size() ; ++i ) {
    long r = 0;
-   for( long x : A[ i ] ) { r += x; if( x < 0 ) return( false ); }
-   if( r > l ) return( false );
+   for( long x : A[ i ] ) {
+    r += x;
+    if( x < 0 )
+     return( false );
+    }
+   if( r > l )
+    return( false );
    all += r;
    }
   for( std::size_t j = 0 ; ! A.empty() && ( j < A[ 0 ].size() ) ; ++j ) {
    long c = 0;
-   for( const auto & row : A ) c += row[ j ];
-   if( c > l ) return( false );
+   for( const auto & row : A )
+    c += row[ j ];
+   if( c > l )
+    return( false );
    }
   return( all <= T );
   };
@@ -3742,17 +3965,21 @@ ADS_TEST( "collezioni-15-locale-1-10" )
   const int m = draw( g , 1 , 2 ) , n = draw( g , 1 , 3 );
   Matrix M( m , Longs( n ) );
   for( auto & row : M )
-   for( long & x : row ) x = draw( g , 0 , 2 );
+   for( long & x : row )
+    x = draw( g , 0 , 2 );
   const long l1 = draw( g , 0 , 4 ) , l2 = draw( g , 0 , 4 ) ,
-             t1 = draw( g , 0 , 6 ) , t2 = draw( g , 0 , 6 );
+    t1 = draw( g , 0 , 6 ) ,
+	     t2 = draw( g , 0 , 6 );
   bool brute = false;
   Matrix A( m , Longs( n , 0 ) );
   std::function< void( int ) > rec = [ & ]( int k ) {
-   if( brute ) return;
+   if( brute )
+    return;
    if( k == m * n ) {
     Matrix B = M;
     for( int i = 0 ; i < m ; ++i )
-     for( int j = 0 ; j < n ; ++j ) B[ i ][ j ] -= A[ i ][ j ];
+     for( int j = 0 ; j < n ; ++j )
+      B[ i ][ j ] -= A[ i ][ j ];
     brute = fits( A , l1 , t1 ) && fits( B , l2 , t2 );
     return;
     }
@@ -3779,7 +4006,8 @@ ADS_TEST( "collezioni-15-locale-1-10" )
 /*------------------------ THE VARIOUS COLLECTION --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace collezioni {
+namespace collezioni
+{
 
 // collezione varie, 1.2: Blocchi 0-1
 
@@ -3794,7 +4022,8 @@ int longestBalancedBlock( const Ints & S )
  for( int x : S ) {
   ADS_PRE( ( x == 0 ) || ( x == 1 ) );
   if( x == 0 ) {
-   if( ones > 0 ) zeros = ones = 0;
+   if( ones > 0 )
+    zeros = ones = 0;
    ++zeros;
    }
   else {
@@ -3818,7 +4047,8 @@ Longs preprocess( const Ints & A , int k )
   ADS_PRE( ( 1 <= x ) && ( x <= k ) );
   ++B[ x ];
   }
- for( int j = 1 ; j <= k ; ++j ) B[ j ] += B[ j - 1 ];
+ for( int j = 1 ; j <= k ; ++j )
+  B[ j ] += B[ j - 1 ];
  return( B );
  }
 
@@ -3847,7 +4077,8 @@ Ints middleThird( const Ints & A )
  const int hi = medianOfMedians( B , 2 * m );
  Ints out;
  for( int x : A )
-  if( ( lo <= x ) && ( x <= hi ) ) out.push_back( x );
+  if( ( lo <= x ) && ( x <= hi ) )
+   out.push_back( x );
  return( out );
  }
 
@@ -3888,7 +4119,8 @@ bool searchSum( std::vector< double > A , double x )
 // collezione varie, 1.7: Bounding box
 
 /// a box [ x0 , x1 ] x [ y0 , y1 ]
-struct Box {
+struct Box
+{
  int x0 , x1 , y0 , y1;
  bool operator==( const Box & ) const = default;
  };
@@ -3897,7 +4129,7 @@ struct Box {
 Box join( const Box & a , const Box & b )
 {
  return( Box{ std::min( a.x0 , b.x0 ) , std::max( a.x1 , b.x1 ) ,
-              std::min( a.y0 , b.y0 ) , std::max( a.y1 , b.y1 ) } );
+	       std::min( a.y0 , b.y0 ) , std::max( a.y1 , b.y1 ) } );
  }
 
 /// a set of points with isPresent(), insert(), the bounding box of all
@@ -3908,7 +4140,8 @@ Box join( const Box & a , const Box & b )
 /// O( log n ), the box of all O( 1 ), space O( n ). The tree here is a
 /// treap (balanced in expectation by random priorities), not the
 /// Red-Black tree of the text, since only the augmentation matters
-class BoxSet {
+class BoxSet
+{
  public:
  [[nodiscard]] bool isPresent( int x , int y ) const {
   const Node * u = f_root.get();
@@ -3918,7 +4151,8 @@ class BoxSet {
   }
 
  void insert( int x , int y ) {
-  if( ! isPresent( x , y ) ) insert( f_root , std::pair( x , y ) );
+  if( ! isPresent( x , y ) )
+   insert( f_root , std::pair( x , y ) );
   }
 
  /// the box of all the points, nothing if there is none
@@ -3934,7 +4168,8 @@ class BoxSet {
   }
 
  private:
- struct Node {
+ struct Node
+ {
   std::pair< int , int > p;
   unsigned prio;
   Box box;
@@ -3944,7 +4179,8 @@ class BoxSet {
  static void update( Node * u ) {
   u->box = Box{ u->p.first , u->p.first , u->p.second , u->p.second };
   for( Node * c : { u->l.get() , u->r.get() } )
-   if( c ) u->box = join( u->box , c->box );
+   if( c )
+    u->box = join( u->box , c->box );
   }
 
  static void add( std::optional< Box > & b , const Box & c ) {
@@ -3954,15 +4190,22 @@ class BoxSet {
  /// the points of u with x in [ x0 , x1 ]; lo (hi) if all the subtree is
  /// known to be at least x0 (at most x1), so that its box is taken whole
  static void range( const Node * u , int x0 , int x1 , bool lo , bool hi ,
-                    std::optional< Box > & b ) {
-  if( ! u ) return;
+		    std::optional< Box > & b ) {
+  if( ! u )
+   return;
   if( lo && hi ) {
    add( b , u->box );
    return;
    }
   const int x = u->p.first;
-  if( x < x0 ) { range( u->r.get() , x0 , x1 , lo , hi , b ); return; }
-  if( x > x1 ) { range( u->l.get() , x0 , x1 , lo , hi , b ); return; }
+  if( x < x0 ) {
+   range( u->r.get() , x0 , x1 , lo , hi , b );
+   return;
+   }
+  if( x > x1 ) {
+   range( u->l.get() , x0 , x1 , lo , hi , b );
+   return;
+   }
   add( b , Box{ x , x , u->p.second , u->p.second } );
   range( u->l.get() , x0 , x1 , lo , true , b );
   range( u->r.get() , x0 , x1 , true , hi , b );
@@ -3979,15 +4222,15 @@ class BoxSet {
 
  void insert( std::unique_ptr< Node > & u , std::pair< int , int > p ) {
   if( ! u ) {
-   u.reset( new Node{ p , unsigned( f_rng() ) , Box{} , nullptr ,
-                      nullptr } );
+   u.reset( new Node{ p , unsigned( f_rng() ) , Box{} , nullptr , nullptr } );
    update( u.get() );
    return;
    }
   const bool right = u->p < p;
   insert( right ? u->r : u->l , p );
   update( u.get() );
-  if( ( right ? u->r : u->l )->prio > u->prio ) rotate( u , right );
+  if( ( right ? u->r : u->l )->prio > u->prio )
+   rotate( u , right );
   }
 
  std::unique_ptr< Node > f_root;
@@ -4004,14 +4247,14 @@ ADS_TEST( "collezioni-varie-1-2" )
 {
  CHECK( collezioni::longestBalancedBlock( Ints{ 1 , 1 , 0 } ) == 0 );
  CHECK( collezioni::longestBalancedBlock( Ints{ 0 } ) == 0 );
- CHECK( collezioni::longestBalancedBlock( Ints{ 0 , 0 , 0 , 1 , 1 , 0 , 1 } )
-        == 4 );
+ CHECK( collezioni::longestBalancedBlock( Ints{ 0 , 0 , 0 , 1 , 1 , 0 ,
+						1 } ) == 4 );
  // empty, all ones, a block at the very end, an item not 0 or 1 refused
  CHECK( collezioni::longestBalancedBlock( Ints() ) == 0 );
  CHECK( collezioni::longestBalancedBlock( Ints( 5 , 1 ) ) == 0 );
  CHECK( collezioni::longestBalancedBlock( Ints{ 1 , 0 , 0 , 1 , 1 } ) == 4 );
  CHECK_THROWS( collezioni::longestBalancedBlock( Ints{ 0 , 2 } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 162 );
  for( int t = 0 ; t < 1000 ; ++t ) {
   const Ints S = drawInts( g , draw( g , 1 , 25 ) , 0 , 1 );
@@ -4022,7 +4265,8 @@ ADS_TEST( "collezioni-varie-1-2" )
     bool ok = true;
     for( int h = 0 ; h < k ; ++h )
      ok = ok && ( S[ i + h ] == 0 ) && ( S[ i + k + h ] == 1 );
-    if( ok ) best = std::max( best , 2 * k );
+    if( ok )
+     best = std::max( best , 2 * k );
     }
   CHECK( collezioni::longestBalancedBlock( S ) == best );
   }
@@ -4043,12 +4287,13 @@ ADS_TEST( "collezioni-varie-1-3" )
   countingSort( sorted , std::size_t( k + 1 ) );
   for( int j = 0 ; j <= k ; ++j )
    CHECK( B[ j ] == std::upper_bound( sorted.begin() , sorted.end() , j ) -
-                    sorted.begin() );
+		      sorted.begin() );
   for( int a = 1 ; a <= k ; ++a )
    for( int b = a ; b <= k ; ++b )
     CHECK( collezioni::rangeCount( B , a , b ) ==
-           std::count_if( A.begin() , A.end() , [ & ]( int x ) {
-            return( ( a <= x ) && ( x <= b ) ); } ) );
+	   std::count_if( A.begin() , A.end() , [ & ]( int x ) {
+	    return( ( a <= x ) && ( x <= b ) );
+	    } ) );
   }
  // no item (all counts 0), k = 1, and the contracts: an item out of
  // [ 1 , k ], a > b, b > k, a = 0
@@ -4091,9 +4336,10 @@ ADS_TEST( "collezioni-varie-1-4" )
 // distinct, all equal, a tie, the extremes of int; empty refused
 ADS_TEST( "collezioni-varie-1-5" )
 {
- CHECK( collezioni::mode( { 1 , 2 , 7 , 12 , 3 , 6 , 7 , 18 , 28 , 11 , 28 ,
-                            11 , 12 , 12 , 14 , 3 , 5 , 8 , 9 , 2 , 38 ,
-                            28 } ) == 28 );
+ CHECK( collezioni::mode( { 1 ,  2 ,  7 ,  12 , 3 , 6 , 7 , 18 , 28 , 11 , 28 ,
+			    11 , 12 , 12 , 14 , 3 , 5 , 8 , 9 ,  2 ,  38 ,
+			    28 } ) ==
+	28 );
  CHECK( collezioni::mode( { -4 } ) == -4 );
  CHECK( collezioni::mode( { 2 , 1 , 3 } ) == 3 );
  // all equal, a tie of two runs (the larger value), the extremes of int,
@@ -4107,9 +4353,11 @@ ADS_TEST( "collezioni-varie-1-5" )
  for( int t = 0 ; t < 1000 ; ++t ) {
   const Ints A = drawInts( g , draw( g , 1 , 30 ) , -5 , 5 );
   std::map< int , int > f;
-  for( int x : A ) ++f[ x ];
+  for( int x : A )
+   ++f[ x ];
   std::pair< int , int > best( 0 , 0 );
-  for( auto [ x , c ] : f ) best = std::max( best , std::pair( c , x ) );
+  for( auto [ x , c ] : f )
+   best = std::max( best , std::pair( c , x ) );
   CHECK( collezioni::mode( A ) == best.second );
   }
  }
@@ -4120,13 +4368,13 @@ ADS_TEST( "collezioni-varie-1-5" )
 ADS_TEST( "collezioni-varie-1-6" )
 {
  CHECK( ! collezioni::searchSum( {} , 0 ) );
- CHECK( ! collezioni::searchSum( { 2 } , 4 ) );   // distinct places
+ CHECK( ! collezioni::searchSum( { 2 } , 4 ) );  // distinct places
  CHECK( collezioni::searchSum( { 2 , 2 } , 4 ) );
  // the pair at the two ends, negative and fractional values, infinity
  CHECK( collezioni::searchSum( { 9 , 5 , 6 , 1 } , 10 ) );
  CHECK( collezioni::searchSum( { -2.5 , 0.5 , 7 } , -2 ) );
  CHECK( ! collezioni::searchSum( { 1 , 2 } ,
-                                 std::numeric_limits< double >::infinity() ) );
+				 std::numeric_limits< double >::infinity() ) );
  std::mt19937 g( 166 );
  int yes = 0;
  for( int t = 0 ; t < 1000 ; ++t ) {
@@ -4150,25 +4398,27 @@ ADS_TEST( "collezioni-varie-1-7" )
 {
  collezioni::BoxSet B;
  CHECK( ! B.bbox() && ! B.bbox( -9 , 9 ) && ! B.isPresent( 0 , 0 ) );
- {                                         // one point, inserted twice
+ {  // one point, inserted twice
   collezioni::BoxSet O;
   O.insert( 3 , -4 );
   O.insert( 3 , -4 );
   CHECK( O.bbox() == collezioni::Box( { 3 , 3 , -4 , -4 } ) );
   CHECK( O.bbox( 3 , 3 ) == O.bbox() && ! O.bbox( 4 , 9 ) &&
-         ! O.bbox( 5 , 1 ) );            // an empty range
+	 ! O.bbox( 5 , 1 ) );  // an empty range
   }
  std::mt19937 g( 167 );
  std::vector< std::pair< int , int > > P;
  for( int t = 0 ; t < 3000 ; ++t ) {
   const int x = draw( g , -50 , 50 ) , y = draw( g , -50 , 50 );
-  const bool in = std::find( P.begin() , P.end() , std::pair( x , y ) ) !=
-                  P.end();
+  const bool in =
+    std::find( P.begin() , P.end() , std::pair( x , y ) ) != P.end();
   CHECK( B.isPresent( x , y ) == in );
   B.insert( x , y );
-  if( ! in ) P.emplace_back( x , y );
+  if( ! in )
+   P.emplace_back( x , y );
   int x0 = draw( g , -60 , 60 ) , x1 = draw( g , -60 , 60 );
-  if( x0 > x1 ) std::swap( x0 , x1 );
+  if( x0 > x1 )
+   std::swap( x0 , x1 );
   std::optional< collezioni::Box > all , part;
   for( auto [ a , b ] : P ) {
    const collezioni::Box c{ a , a , b , b };

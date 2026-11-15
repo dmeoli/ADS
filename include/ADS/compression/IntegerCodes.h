@@ -122,7 +122,7 @@
 
 #ifndef __ADS_IntegerCodes
  #define __ADS_IntegerCodes
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -144,7 +144,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*---------------------------- PREPROCESSING -------------------------------*/
 
@@ -165,12 +166,12 @@ namespace ADS {
 /// the d-gaps of a non-decreasing sequence: the first item, then the
 /// differences between consecutive items
 /// \pre \f$ x \f$ is non-decreasing
-[[nodiscard]] inline std::vector< std::uint64_t > dGaps(
-                                     const std::vector< std::uint64_t > & x );
+[[nodiscard]] inline std::vector< std::uint64_t >
+dGaps( const std::vector< std::uint64_t > & x );
 
 /// the sequence of the d-gaps \f$ g \f$, i.e., their prefix sums
-[[nodiscard]] inline std::vector< std::uint64_t > prefixSums(
-                                     const std::vector< std::uint64_t > & g );
+[[nodiscard]] inline std::vector< std::uint64_t >
+prefixSums( const std::vector< std::uint64_t > & g );
 
 /*------------------------------ UNARY, GAMMA, DELTA -----------------------*/
 
@@ -321,20 +322,21 @@ inline void encodeGolomb( BitWriter & w , std::uint64_t x , std::uint64_t b );
 /// \f]
 /// \pre \f$ 1 \le b \le 2^{63} \f$
 [[nodiscard]] inline std::uint64_t decodeGolomb( BitReader & r ,
-                                                 std::uint64_t b );
+						 std::uint64_t b );
 
 /// the bits of Golomb's code of \f$ x \f$ of modulus \f$ b \f$
 [[nodiscard]] constexpr std::uint64_t golombLength( std::uint64_t x ,
-                                                    std::uint64_t b );
+						    std::uint64_t b );
 
 /*-------------------------------- PFORDELTA -------------------------------*/
 
 /// a block of values coded by PForDelta
-struct PForDeltaBlock {
- int b = 1;                   ///< the bits of a slot
- std::uint64_t base = 0;      ///< subtracted from the values in range
- BitVector slots;             ///< the \f$ n \f$ slots of \f$ b \f$ bits
- std::vector< std::uint64_t > exceptions;   ///< the values out of range
+struct PForDeltaBlock
+{
+ int b = 1;               ///< the bits of a slot
+ std::uint64_t base = 0;  ///< subtracted from the values in range
+ BitVector slots;         ///< the \f$ n \f$ slots of \f$ b \f$ bits
+ std::vector< std::uint64_t > exceptions;  ///< the values out of range
 
  /// the number of values
  [[nodiscard]] std::size_t size( void ) const;
@@ -348,9 +350,9 @@ struct PForDeltaBlock {
 /// fraction \f$ f \f$ of the values (all of them if \f$ f = 1 \f$), at most
 /// 63
 /// \pre \f$ 0 < f \le 1 \f$
-[[nodiscard]] inline int pforDeltaWidth(
-                                    const std::vector< std::uint64_t > & x ,
-                                    std::uint64_t base , double f = 0.9 );
+[[nodiscard]] inline int
+pforDeltaWidth( const std::vector< std::uint64_t > & x , std::uint64_t base ,
+		double f = 0.9 );
 
 /// the values \f$ x \f$ in slots of \f$ b \f$ bits after subtracting
 /// `base`
@@ -373,14 +375,14 @@ struct PForDeltaBlock {
 /// \f]
 /// \pre \f$ 1 \le b \le 63 \f$
 /// \post `decodePForDelta()` gives \f$ x \f$ back (audit)
-[[nodiscard]] inline PForDeltaBlock encodePForDelta(
-                                   const std::vector< std::uint64_t > & x ,
-                                   int b , std::uint64_t base = 0 );
+[[nodiscard]] inline PForDeltaBlock
+encodePForDelta( const std::vector< std::uint64_t > & x , int b ,
+		 std::uint64_t base = 0 );
 
 /// the values of the block \f$ p \f$: each slot plus the base, or the next
 /// exception for an escape
-[[nodiscard]] inline std::vector< std::uint64_t > decodePForDelta(
-                                                 const PForDeltaBlock & p );
+[[nodiscard]] inline std::vector< std::uint64_t >
+decodePForDelta( const PForDeltaBlock & p );
 
 /*---------------------- VARIABLE BYTE, (s,c)-DENSE ------------------------*/
 
@@ -403,9 +405,8 @@ inline void encodeVByte( std::vector< std::uint8_t > & out , std::uint64_t x );
 /// the integer coded from \f$ \mathit{in}[ p ] \f$, \f$ p \f$ moved past it:
 /// the groups of 7 bits gathered up to the byte below \f$ 2^7 \f$
 /// \pre a whole codeword from \f$ \mathit{in}[ p ] \f$
-[[nodiscard]] inline std::uint64_t decodeVByte(
-                                      const std::vector< std::uint8_t > & in ,
-                                      std::size_t & p );
+[[nodiscard]] inline std::uint64_t
+decodeVByte( const std::vector< std::uint8_t > & in , std::size_t & p );
 
 /// the bytes of the variable-byte code of \f$ x \f$,
 /// \f$ \lceil | B( x ) | / 7 \rceil \f$, and 1 for \f$ x = 0 \f$
@@ -430,7 +431,7 @@ inline void encodeVByte( std::vector< std::uint8_t > & out , std::uint64_t x );
 /// \pre \f$ s \ge 1 \f$ and \f$ c \ge 1 \f$
 /// \post `denseLength( x , s , c )` words written
 inline void encodeDense( std::vector< std::uint32_t > & out , std::uint64_t x ,
-                         std::uint32_t s , std::uint32_t c );
+			 std::uint32_t s , std::uint32_t c );
 
 /// the integer coded from \f$ \mathit{in}[ p ] \f$, \f$ p \f$ moved past it
 ///
@@ -446,15 +447,14 @@ inline void encodeDense( std::vector< std::uint32_t > & out , std::uint64_t x ,
 /// \end{array}}
 /// \f]
 /// \pre a whole codeword from \f$ \mathit{in}[ p ] \f$
-[[nodiscard]] inline std::uint64_t decodeDense(
-                                     const std::vector< std::uint32_t > & in ,
-                                     std::size_t & p , std::uint32_t s ,
-                                     std::uint32_t c );
+[[nodiscard]] inline std::uint64_t
+decodeDense( const std::vector< std::uint32_t > & in , std::size_t & p ,
+	     std::uint32_t s , std::uint32_t c );
 
 /// the words of the \f$ ( s , c ) \f$-dense code of \f$ x \f$
 /// \pre \f$ s \ge 1 \f$ and \f$ c \ge 1 \f$
 [[nodiscard]] constexpr int denseLength( std::uint64_t x , std::uint32_t s ,
-                                         std::uint32_t c );
+					 std::uint32_t c );
 
 /// the number \f$ s \f$ of stoppers, \f$ c = 2^{\mathit{bits}} - s \f$, that
 /// minimizes the words of the integers \f$ 0 , 1 , \ldots \f$ of
@@ -472,23 +472,22 @@ inline void encodeDense( std::vector< std::uint32_t > & out , std::uint64_t x ,
 /// \end{array}}
 /// \f]
 /// \pre \f$ 1 \le \mathit{bits} \le 16 \f$
-[[nodiscard]] inline std::uint32_t denseOptimalS(
-                       const std::vector< std::uint64_t > & f , int bits = 8 );
+[[nodiscard]] inline std::uint32_t
+denseOptimalS( const std::vector< std::uint64_t > & f , int bits = 8 );
 
 /*------------------------------ INTERPOLATIVE -----------------------------*/
 
 /// \f$ x - a \f$ in \f$ \lceil \log_2( b - a + 1 ) \rceil \f$ bits, the
 /// BinaryCode of chapter 11, Integer Coding, of Ferragina's book
 /// \pre \f$ a \le x \le b \f$
-inline void encodeBounded( BitWriter & w , std::uint64_t x ,
-                             std::uint64_t a , std::uint64_t b );
+inline void encodeBounded( BitWriter & w , std::uint64_t x , std::uint64_t a ,
+			   std::uint64_t b );
 
 /// the integer in \f$ [ a , b ] \f$ coded next in \f$ r \f$ by
 /// `encodeBounded()`
 /// \pre \f$ a \le b \f$
-[[nodiscard]] inline std::uint64_t decodeBounded( BitReader & r ,
-                                                    std::uint64_t a ,
-                                                    std::uint64_t b );
+[[nodiscard]] inline std::uint64_t
+decodeBounded( BitReader & r , std::uint64_t a , std::uint64_t b );
 
 /// the interpolative code of \f$ x \f$, which \f$ \mathit{low} \f$ and
 /// \f$ \mathit{hi} \f$ bound
@@ -513,15 +512,15 @@ inline void encodeBounded( BitWriter & w , std::uint64_t x ,
 /// \pre \f$ x \f$ is strictly increasing in
 ///      \f$ [ \mathit{low} , \mathit{hi} ] \f$
 inline void encodeInterpolative( BitWriter & w ,
-                                 const std::vector< std::uint64_t > & x ,
-                                 std::uint64_t low , std::uint64_t hi );
+				 const std::vector< std::uint64_t > & x ,
+				 std::uint64_t low , std::uint64_t hi );
 
 /// the \f$ n \f$ integers coded in \f$ [ \mathit{low} , \mathit{hi} ] \f$,
 /// by the recursion of `encodeInterpolative()` with `decodeBounded()` in
 /// place of `encodeBounded()`
-[[nodiscard]] inline std::vector< std::uint64_t > decodeInterpolative(
-                                       BitReader & r , std::size_t n ,
-                                       std::uint64_t low , std::uint64_t hi );
+[[nodiscard]] inline std::vector< std::uint64_t >
+decodeInterpolative( BitReader & r , std::size_t n , std::uint64_t low ,
+		     std::uint64_t hi );
 
 /*--------------------------------------------------------------------------*/
 
@@ -535,7 +534,7 @@ inline void encodeInterpolative( BitWriter & w ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* IntegerCodes.h included */
+#endif /* IntegerCodes.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File IntegerCodes.h ------------------------*/

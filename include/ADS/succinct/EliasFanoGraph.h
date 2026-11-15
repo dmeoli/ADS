@@ -53,7 +53,7 @@
 
 #ifndef __ADS_EliasFanoGraph
  #define __ADS_EliasFanoGraph
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -71,18 +71,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS EliasFanoGraph --------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a static directed graph with its adjacency lists in Elias-Fano
-class EliasFanoGraph {
+class EliasFanoGraph
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the graph with no node
  EliasFanoGraph( void ) = default;
 
@@ -107,7 +108,7 @@ class EliasFanoGraph {
  /// \pre each \f$ a[ u ] \f$ is strictly increasing in \f$ [ 0 , n ) \f$,
  ///      \f$ n^2 < 2^{64} \f$
  explicit EliasFanoGraph(
-                       const std::vector< std::vector< std::size_t > > & a );
+   const std::vector< std::vector< std::size_t > > & a );
 
  /// the number of nodes, \f$ n \f$
  [[nodiscard]] std::size_t order( void ) const;
@@ -139,8 +140,7 @@ class EliasFanoGraph {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- std::size_t f_n = 0;        ///< the number of nodes
+ std::size_t f_n = 0;  ///< the number of nodes
  /// \f$ u n + v \f$ for each edge \f$ ( u , v ) \f$
  EliasFano f_edges;
  /// where each list starts, and \f$ m \f$ at the end
@@ -160,7 +160,7 @@ class EliasFanoGraph {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* EliasFanoGraph.h included */
+#endif /* EliasFanoGraph.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File EliasFanoGraph.h -----------------------*/

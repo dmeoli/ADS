@@ -1397,14 +1397,13 @@ headers as it stands, and its assertions hold.
 
 ```cpp
 // declarations of <ADS/complexity/Domino.h>
-struct Tile {
+struct Tile
+{
  int up , right , down , left;
  };
 using Tiling = std::vector< std::vector< int > >;
-bool legalTiling( const std::vector< Tile > & D , int n ,
-    const Tiling & T );
-std::optional< Tiling > squareTiling( const std::vector< Tile > & D ,
-    int n );
+bool legalTiling( const std::vector< Tile > & D , int n , const Tiling & T );
+std::optional< Tiling > squareTiling( const std::vector< Tile > & D , int n );
 bool linearTiling( const std::vector< Tile > & D , long n );
 ```
 
@@ -1415,10 +1414,10 @@ bool linearTiling( const std::vector< Tile > & D , long n );
 int literalNode( int l );
 std::optional< std::vector< bool > > twoSat( const Cnf & F , int n );
 std::optional< std::vector< int > > twoColoring( const Adjacency & G );
-std::vector< std::pair< int , int > > bipartiteMatching( int p , int q ,
-    const std::vector< std::pair< int , int > > & E );
-Adjacency intervalGraph( const std::vector< std::pair< long ,
-    long > > & I );
+std::vector< std::pair< int , int > >
+bipartiteMatching( int p , int q ,
+                   const std::vector< std::pair< int , int > > & E );
+Adjacency intervalGraph( const std::vector< std::pair< long , long > > & I );
 int intervalClique( const std::vector< std::pair< long , long > > & I );
 ```
 
@@ -1426,9 +1425,12 @@ int intervalClique( const std::vector< std::pair< long , long > > & I );
 
 ```cpp
 // declarations of <ADS/complexity/Nondeterminism.h>
-class Chooser { public:
+class Chooser
+{
+ public:
  int choice( int k );
- template< class A > bool run( A && alg , long * runs = nullptr );
+ template< class A >
+ bool run( A && alg , long * runs = nullptr );
  std::vector< int > choices( void ) const;
  };
 ```
@@ -1449,37 +1451,40 @@ std::optional< std::vector< int > > coloring( const Adjacency & G , int k );
 std::optional< Nodes > bisection( const Adjacency & G , int k );
 template< class T >
 bool tspCertificate( const std::vector< std::vector< T > > & D , T k ,
-    const Nodes & P );
+                     const Nodes & P );
 template< class T >
-std::optional< Nodes > tsp( const std::vector< std::vector< T > > & D ,
-    T k );
+std::optional< Nodes > tsp( const std::vector< std::vector< T > > & D , T k );
 std::optional< Nodes > hamiltonianCircuit( const Adjacency & G );
 std::optional< Nodes > hamiltonianCycle( const Adjacency & G );
 std::optional< Nodes > hamiltonianPath( const Adjacency & G , int r = -1 ,
-    int t = -1 );
+                                        int t = -1 );
 std::optional< Nodes > hamiltonianChain( const Adjacency & G );
 std::optional< Nodes > longestPath( const Adjacency & G , int r , int t ,
-    int k );
+                                    int k );
 int longestPathDag( const Adjacency & G , int r , int t );
-std::optional< std::vector< std::pair< int ,
-    int > > > boundedSpanningTree( const Adjacency & G , int k );
+std::optional< std::vector< std::pair< int , int > > >
+boundedSpanningTree( const Adjacency & G , int k );
 bool satCertificate( const Cnf & F , const std::vector< bool > & x );
 std::optional< std::vector< bool > > satisfiable( const Cnf & F , int n );
-std::optional< std::vector< int > > lp01( const std::vector< std::vector<
-    long > > & A , const std::vector< long > & b , int n );
+std::optional< std::vector< int > >
+lp01( const std::vector< std::vector< long > > & A ,
+      const std::vector< long > & b , int n );
 std::optional< Nodes > subsetSumExists( const std::vector< long > & A ,
-    long k );
+                                        long k );
 std::optional< Nodes > partition( const std::vector< long > & A );
 std::optional< Nodes > knapsackDecision( const std::vector< long > & p ,
-    const std::vector< long > & v , long C , long k );
-std::optional< std::vector< int > > multiprocessorScheduling( const
-    std::vector< long > & t , int m , long d );
-std::optional< Nodes > exactCover3( const std::vector< std::array< int ,
-    3 > > & Y , int m );
-std::optional< Nodes > threeDimensionalMatching( const std::vector<
-    std::array< int , 3 > > & M , int q );
+                                         const std::vector< long > & v ,
+                                         long C ,
+                                         long k );
+std::optional< std::vector< int > >
+multiprocessorScheduling( const std::vector< long > & t , int m , long d );
+std::optional< Nodes >
+exactCover3( const std::vector< std::array< int , 3 > > & Y , int m );
+std::optional< Nodes >
+threeDimensionalMatching( const std::vector< std::array< int , 3 > > & M ,
+                          int q );
 std::optional< std::vector< long > > bribes( std::vector< long > M ,
-    const std::vector< bool > & ps );
+                                             const std::vector< bool > & ps );
 ```
 
 `Reductions.h` ([§20.4](20-complexity.md#sec-20-4)).
@@ -1487,12 +1492,11 @@ std::optional< std::vector< long > > bribes( std::vector< long > M ,
 ```cpp
 // declarations of <ADS/complexity/Reductions.h>
 int tileVar( int h , int i , int j , int n );
-std::pair< Adjacency ,
-    int > dominoToClique( const std::vector< Tile > & D , int n );
+std::pair< Adjacency , int > dominoToClique( const std::vector< Tile > & D ,
+                                            int n );
 Cnf dominoToSat( const std::vector< Tile > & D , int n );
-std::pair< std::vector< std::vector< long > > ,
-    std::vector< long > > dominoToLp01( const std::vector< Tile > & D ,
-    int n );
+std::pair< std::vector< std::vector< long > > , std::vector< long > >
+dominoToLp01( const std::vector< Tile > & D , int n );
 Adjacency complement( const Adjacency & G );
 std::vector< std::vector< long > > hamiltonToTsp( const Adjacency & G );
 long halfSum( const std::vector< long > & A );
@@ -1506,16 +1510,18 @@ std::vector< Point > sortToHull( const std::vector< long > & a );
 ```cpp
 // declarations of <ADS/intractable/Approximation.h>
 std::vector< int > firstFit( const std::vector< long > & A , long k ,
-    bool decreasing = false );
+                             bool decreasing = false );
 template< class T >
 T tourCost( const std::vector< std::vector< T > > & D , const Nodes & S );
 template< class T >
 Nodes deltaTsp( const std::vector< std::vector< T > > & D );
 std::vector< std::vector< long > > tspGap( const Adjacency & G , long s );
-std::pair< long , Nodes > apSubsetSum( const std::vector< long > & A ,
-    long k , int h );
+std::pair< long , Nodes > apSubsetSum( const std::vector< long > & A , long k ,
+                                      int h );
 std::pair< long , Nodes > knapsackApprox( const std::vector< long > & p ,
-    const std::vector< long > & v , long C , double eps );
+                                         const std::vector< long > & v ,
+                                         long C ,
+                                         double eps );
 Nodes vertexCoverApprox( const Adjacency & G );
 ```
 
@@ -1526,29 +1532,32 @@ Nodes vertexCoverApprox( const Adjacency & G );
 enum class TspBound { BOOK , ONE_TREE };
 template< class T >
 T spanningTreeWeight( const std::vector< std::vector< T > > & D ,
-    const Nodes & V );
+                      const Nodes & V );
 template< class T >
 T oneTree( const std::vector< std::vector< T > > & D , int r );
 template< class T >
-T tspLowerBound( const std::vector< std::vector< T > > & D ,
-    const Nodes & S , TspBound how = TspBound::BOOK );
+T tspLowerBound( const std::vector< std::vector< T > > & D , const Nodes & S ,
+                 TspBound how = TspBound::BOOK );
 template< class T >
-std::pair< T , Nodes > bbTsp( const std::vector< std::vector< T > > & D ,
-    const Nodes & start = {} , TspBound how = TspBound::BOOK ,
-    long * generated = nullptr );
+std::pair< T , Nodes >
+bbTsp( const std::vector< std::vector< T > > & D , const Nodes & start = {} ,
+       TspBound how = TspBound::BOOK , long * generated = nullptr );
 template< class T >
-std::pair< T ,
-    Nodes > littleTsp( const std::vector< std::vector< T > > & D ,
-    long * generated = nullptr );
+std::pair< T , Nodes > littleTsp( const std::vector< std::vector< T > > & D ,
+                                 long * generated = nullptr );
 std::pair< long , Nodes > maxWeightClique( const Adjacency & G ,
-    const std::vector< long > & w , long * generated = nullptr );
+                                          const std::vector< long > & w ,
+                                          long * generated = nullptr );
 std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
-    const std::vector< long > & v , long C , long * generated = nullptr );
-std::pair< long ,
-    Nodes > knapsackBacktrack( const std::vector< long > & p ,
-    const std::vector< long > & v , long C , long * generated = nullptr );
+                                     const std::vector< long > & v , long C ,
+                                     long * generated = nullptr );
+std::pair< long , Nodes > knapsackBacktrack( const std::vector< long > & p ,
+                                            const std::vector< long > & v ,
+                                            long C ,
+                                            long * generated = nullptr );
 std::pair< long , Nodes > knapsackGreedy( const std::vector< long > & p ,
-    const std::vector< long > & v , long C );
+                                         const std::vector< long > & v ,
+                                         long C );
 ```
 
 `FifteenPuzzle.h` ([§20.10](20-complexity.md#sec-20-10)).
@@ -1561,13 +1570,14 @@ int manhattan( const Board & B , int n );
 std::vector< Board > puzzleMoves( const Board & B , int n );
 Board puzzleSpiralGoal( int n );
 std::optional< std::vector< Board > > puzzleBFS( const Board & B ,
-    const Board & goal , int n , long * visited = nullptr );
-std::optional< std::vector< Board > > puzzleDFS( const Board & B ,
-    const Board & goal , int n , int nmax );
+                                                 const Board & goal , int n ,
+                                                 long * visited = nullptr );
+std::optional< std::vector< Board > >
+puzzleDFS( const Board & B , const Board & goal , int n , int nmax );
 bool solvable( const Board & B , int n );
 template< class Map = std::map< Board , int > >
-std::optional< std::vector< Board > > solvePuzzle( const Board & B ,
-    int n , long * visited = nullptr );
+std::optional< std::vector< Board > > solvePuzzle( const Board & B , int n ,
+                                                   long * visited = nullptr );
 ```
 
 `Heuristics.h` ([§20.9](20-complexity.md#sec-20-9)).
@@ -1575,16 +1585,18 @@ std::optional< std::vector< Board > > solvePuzzle( const Board & B ,
 ```cpp
 // declarations of <ADS/intractable/Heuristics.h>
 template< class T >
-std::pair< std::vector< std::pair< int , int > > ,
-    Nodes > greedyTsp( const std::vector< std::vector< T > > & D );
+std::pair< std::vector< std::pair< int , int > > , Nodes >
+greedyTsp( const std::vector< std::vector< T > > & D );
 Nodes twoOptMove( Nodes pi , int i , int j );
 template< class T >
 Nodes twoOpt( const std::vector< std::vector< T > > & D , Nodes pi ,
-    std::vector< T > * trace = nullptr );
+              std::vector< T > * trace = nullptr );
 long kOptNeighbours( int n , int k );
 std::vector< int > partitionLocalSearch( const std::vector< long > & A ,
-    std::vector< int > side );
-class Buckets { public:
+                                         std::vector< int > side );
+class Buckets
+{
+ public:
  explicit Buckets( int n );
  void insert( int u );
  void remove( int u );
@@ -1601,8 +1613,8 @@ std::vector< int > minMaxGreedy( const Adjacency & G , int a , int b );
 int cutSize( const Adjacency & G , const std::vector< int > & side );
 int overlap( const std::string & a , const std::string & b );
 std::string greedySuperstring( const std::vector< std::string > & P );
-std::pair< int , std::vector< std::pair< std::string ,
-    std::string > > > starAlignment( const std::vector< std::string > & P );
+std::pair< int , std::vector< std::pair< std::string , std::string > > >
+starAlignment( const std::vector< std::string > & P );
 std::vector< int > dsatur( const Adjacency & G );
 ```
 
@@ -1612,24 +1624,22 @@ std::vector< int > dsatur( const Adjacency & G );
 // declarations of <ADS/intractable/Pseudopolynomial.h>
 template< class Bits = std::vector< bool > >
 bool subsetSumDP( const std::vector< long > & A , long k ,
-    std::vector< std::vector< bool > > * rows = nullptr );
-std::optional< Nodes > subsetSumSet( const std::vector< long > & A ,
-    long k );
+                  std::vector< std::vector< bool > > * rows = nullptr );
+std::optional< Nodes > subsetSumSet( const std::vector< long > & A , long k );
 std::optional< Nodes > partitionDP( const std::vector< long > & A );
-std::optional< std::vector< int > > schedulingDP( const std::vector< long >
-    & t , int m , long d );
-struct Piece {
+std::optional< std::vector< int > >
+schedulingDP( const std::vector< long > & t , int m , long d );
+struct Piece
+{
  int program;
  double start , end;
  };
-std::pair< double ,
-    std::vector< std::vector< Piece > > > mcNaughton( const std::vector<
-    double > & t , int m );
-std::optional< std::vector< std::vector< Piece > > > realTimeScheduling(
-    const std::vector< double > & C , const std::vector< double > & T ,
-    int m );
-std::optional< std::vector< int > > bottino( const std::vector< long > & P
-    );
+std::pair< double , std::vector< std::vector< Piece > > >
+mcNaughton( const std::vector< double > & t , int m );
+std::optional< std::vector< std::vector< Piece > > >
+realTimeScheduling( const std::vector< double > & C ,
+                    const std::vector< double > & T , int m );
+std::optional< std::vector< int > > bottino( const std::vector< long > & P );
 ```
 
 
@@ -1642,16 +1652,17 @@ std::optional< std::vector< int > > bottino( const std::vector< long > & P
 int main( void )
 {
  ADS::Adjacency G( 4 , std::vector< bool >( 4 , true ) );
- G[ 0 ][ 3 ] = G[ 3 ][ 0 ] = false;                 // K4 less an edge
+ G[ 0 ][ 3 ] = G[ 3 ][ 0 ] = false;  // K4 less an edge
  assert( ADS::clique( G , 3 ) && ! ADS::clique( G , 4 ) );
- ADS::Chooser ch;                                    // guess a root of 49
+ ADS::Chooser ch;  // guess a root of 49
  const bool yes = ch.run( []( ADS::Chooser & c ) {
   const int x = c.choice( 10 );
-  return( x * x == 49 ); } );
+  return( x * x == 49 );
+  } );
  assert( yes && ( ch.choices() == std::vector< int >{ 7 } ) );
- auto [ profit , S ] = ADS::knapsackApprox( { 60 , 100 , 120 } ,
-                                            { 10 , 20 , 30 } , 50 , 0.1 );
- assert( profit >= 198 );                            // ( 1 - 0.1 ) 220
+ auto [ profit , S ] =
+   ADS::knapsackApprox( { 60 , 100 , 120 } , { 10 , 20 , 30 } , 50 , 0.1 );
+ assert( profit >= 198 );  // ( 1 - 0.1 ) 220
  }
 ```
 

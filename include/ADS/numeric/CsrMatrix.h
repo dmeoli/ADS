@@ -63,7 +63,7 @@
 
 #ifndef __ADS_CsrMatrix
  #define __ADS_CsrMatrix
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -84,14 +84,16 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS CsrMatrix -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a sparse \f$ m \times n \f$ matrix of doubles in compressed sparse rows
-class CsrMatrix {
+class CsrMatrix
+{
  public:
  /// an entry \f$ ( i , j , v ) \f$
  using Triplet = std::tuple< std::size_t , std::size_t , double >;
@@ -139,8 +141,8 @@ class CsrMatrix {
 
  /// the product \f$ y = A x \f$, a new vector
  /// \pre \f$ x \f$ has \f$ n \f$ entries
- [[nodiscard]] std::vector< double > multiply(
-                                     const std::vector< double > & x ) const;
+ [[nodiscard]] std::vector< double >
+ multiply( const std::vector< double > & x ) const;
 
  /// the product \f$ y = A x \f$ into \f$ y \f$, which must have \f$ m \f$
  /// entries
@@ -202,14 +204,14 @@ class CsrMatrix {
  /// the offsets not decreasing, the columns of each row increasing
  [[nodiscard]] bool sorted( void ) const;
 
- template< class U >                  // not zeroed when they grow
+ template< class U >  // not zeroed when they grow
  using Vector = std::vector< U , detail::DefaultInitAllocator< U > >;
 
- std::size_t f_m ,                     ///< the rows
-             f_n;                      ///< the columns
- Vector< std::size_t > f_row;          ///< the \f$ m + 1 \f$ offsets
- Vector< std::uint32_t > f_col;        ///< the column of each nonzero
- Vector< double > f_val;               ///< its value
+ std::size_t f_m ,                ///< the rows
+   f_n;                          ///< the columns
+ Vector< std::size_t > f_row;    ///< the \f$ m + 1 \f$ offsets
+ Vector< std::uint32_t > f_col;  ///< the column of each nonzero
+ Vector< double > f_val;         ///< its value
  };  // end( class CsrMatrix )
 
 /*--------------------------------------------------------------------------*/
@@ -224,7 +226,7 @@ class CsrMatrix {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CsrMatrix.h included */
+#endif /* CsrMatrix.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File CsrMatrix.h --------------------------*/

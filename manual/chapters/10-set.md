@@ -30,31 +30,31 @@ a space that does not depend on the items ([§10.7](10-set.md#sec-10-7) to
 ## 10.1 The interface {#sec-10-1}
 
 The operations of the SET are those of the concept `Set` of `ADS/ADT.h`:
-`contains(x)`, `insert(x)` and `remove(x)`, together with `forEach(f)`,
-which calls `f` on each item, and the four operations of two sets, the
-union $A \cup B$, the intersection $A \cap B$, the difference
-$A \setminus B$ and the symmetric difference $A \triangle B = ( A \setminus
-B ) \cup ( B \setminus A )$. They are called `setUnion()`,
-`setIntersection()`, `setDifference()` and `setSymmetricDifference()`,
-since `union` is a keyword of C++ ([Montresor 2025,
-§8.1](Z-bibliography.md#ref-montresor2025)). Their meaning is fixed by the
-axioms
+`contains( x )`, `insert( x )` and `remove( x )`, together with
+`forEach( f )`, which calls `f` on each item, and the four operations of two
+sets, the union $A \cup B$, the intersection $A \cap B$, the difference
+$A \setminus B$ and the symmetric difference
+$A \triangle B = ( A \setminus B ) \cup ( B \setminus A )$. They are called
+`setUnion()`, `setIntersection()`, `setDifference()` and
+`setSymmetricDifference()`, since `union` is a keyword of C++ ([Montresor
+2025, §8.1](Z-bibliography.md#ref-montresor2025)). Their meaning is fixed by
+the axioms
 
 $$
 \mathrm{contains}( \mathrm{insert}( S , x ) , x ) , \qquad
 \lnot \mathrm{contains}( \mathrm{remove}( S , x ) , x ) , \tag{10.1}
 $$
 
-together with the two axioms that say that `insert(x)` and `remove(x)`
+together with the two axioms that say that `insert( x )` and `remove( x )`
 leave the answers for $y \ne x$ as they were, which the contracts of the
-realizations check as postconditions. A *multiset* may hold an item more
-than once, and the number of its occurrences is its *multiplicity*.
-Throughout the chapter $n$ and $m$ are the sizes of the two sets of an
-operation (with $m \le n$ for the intersections), $N$ the dimension of a
-boolean vector, and, in a hash table, $n_X$ and $m_X$ the items and the
-size of the table of the set $X$. [Table 10.1](10-set.md#tab-10-1)
-summarizes the realizations of the SET; the bounds of the hash tables are
-expected, over the choice of the hash function.
+realizations check as postconditions. A *multiset* may hold an item more than
+once, and the number of its occurrences is its *multiplicity*. Throughout the
+chapter $n$ and $m$ are the sizes of the two sets of an operation (with
+$m \le n$ for the intersections), $N$ the dimension of a boolean vector, and,
+in a hash table, $n_X$ and $m_X$ the items and the size of the table of the
+set $X$. [Table 10.1](10-set.md#tab-10-1) summarizes the realizations of the
+SET; the bounds of the hash tables are expected, over the choice of the hash
+function.
 
 <span id="tab-10-1"></span>**Table 10.1.** The realizations of the SET
 and the cost of their operations; $c$ is the number of the containers of a
@@ -100,7 +100,8 @@ sets of the universe $[ 0 , 100 )$.
 
 ```cpp
 // declarations of <ADS/set/BoolSet.h>
-class BoolSet {
+class BoolSet
+{
  public:
  using Item = long;
  explicit BoolSet( long N );
@@ -112,7 +113,8 @@ class BoolSet {
  void remove( long x );
  std::optional< long > min( void ) const;
  std::optional< long > max( void ) const;
- template< class F > void forEach( F && f ) const;
+ template< class F >
+ void forEach( F && f ) const;
  };
 BoolSet setUnion( const BoolSet & A , const BoolSet & B );
 // and setIntersection(), setDifference(), setSymmetricDifference() alike
@@ -120,10 +122,12 @@ BoolSet setUnion( const BoolSet & A , const BoolSet & B );
 
 ```cpp
 ADS::BoolSet A( 100 ) , B( 100 );
-for( long x : { 3 , 7 , 64 } ) A.insert( x );
-for( long x : { 7 , 64 , 99 } ) B.insert( x );
-const ADS::BoolSet C = setIntersection( A , B );     // { 7 , 64 }
-const auto lo = C.min();                             // 7
+for( long x : { 3 , 7 , 64 } )
+ A.insert( x );
+for( long x : { 7 , 64 , 99 } )
+ B.insert( x );
+const ADS::BoolSet C = setIntersection( A , B );  // { 7 , 64 }
+const auto lo = C.min();                         // 7
 ```
 
 ![Figure 10.1. A `BoolSet` of dimension $N = 16$ holding $\{ 1 , 3 , 4 , 9 , 14 \}$, before and after `insert(6)`, which sets one bit (in colour) and increments the size.](../figures/set-bool.svg){#fig-10-1}
@@ -201,7 +205,8 @@ We declare the class and its operations of two sets as follows.
 ```cpp
 // declarations of <ADS/set/ListSet.h>
 template< std::equality_comparable T >
-class ListSet {
+class ListSet
+{
  public:
  using Item = T;
  ListSet( void ) = default;
@@ -212,13 +217,14 @@ class ListSet {
  void insert( const T & x );
  void insertNew( const T & x );
  void remove( const T & x );
- std::optional< T > min( void ) const requires std::totally_ordered< T >;
- template< class F > void forEach( F && f ) const;
+ std::optional< T > min( void ) const
+  requires std::totally_ordered< T >;
+ template< class F >
+ void forEach( F && f ) const;
  using const_iterator = typename List< T >::const_iterator;
  };
 template< class T >
-ListSet< T > setUnion( const ListSet< T > & A ,
-                       const ListSet< T > & B );
+ListSet< T > setUnion( const ListSet< T > & A , const ListSet< T > & B );
 // and setIntersection(), setDifference(), setSymmetricDifference() alike
 ```
 
@@ -284,7 +290,8 @@ Its declarations are the following.
 ```cpp
 // declarations of <ADS/set/SortedListSet.h>
 template< std::totally_ordered T >
-class SortedListSet {
+class SortedListSet
+{
  public:
  using Item = T;
  SortedListSet( void ) = default;
@@ -297,14 +304,15 @@ class SortedListSet {
  void remove( const T & x );
  std::optional< T > min( void ) const;
  std::optional< T > max( void ) const;
- template< class F > void forEach( F && f ) const;
+ template< class F >
+ void forEach( F && f ) const;
  const List< T > & list( void ) const;
  using const_iterator = typename List< T >::const_iterator;
  };
 template< class T >
 SortedListSet< T > merge( const SortedListSet< T > & A ,
-                          const SortedListSet< T > & B , bool a ,
-                          bool b , bool both );
+                          const SortedListSet< T > & B , bool a , bool b ,
+                          bool both );
 template< class T >
 SortedListSet< T > setUnion( const SortedListSet< T > & A ,
                              const SortedListSet< T > & B );
@@ -327,53 +335,53 @@ table with open addressing, and $O( n )$, in order, on the tree.
 
 In this way, the adaptor makes every dictionary of the library a set of Morin
 ([Morin 2013, §1.2.3 and §1.2.4](Z-bibliography.md#ref-morin-cpp)), whose
-interfaces `USet` and `SSet` are the concepts of `SetInterfaces.h`
-described in [§1.3](01-introduction.md#sec-1-3), with their realizations
-on a vector, `ArrayUSet` and `ArraySSet`, and the multiset `Bag` (with its
-`findAll()`) of [§1.4](01-introduction.md#sec-1-4). Two more concepts of
-the same header state what the adaptor needs of a dictionary `D`. A `KeyedDictionary` has the types `D::Key` and `D::Value`, an
-`insert(k, v)`, a `remove(k)` and a `findKey(k)` that gives the address of
-the key equal to $k$ that it holds (nil if there is none). Its search may
-change the dictionary, but not the set of its keys. An
-`OrderedDictionary` is a `KeyedDictionary` with `lowerBoundKey(k)`, the
-address of the smallest key not smaller than $k$, nil if none. On the
-first `DictionarySet< D >` is a `USet`, whose `find(x)` is `findKey(x)`,
-and on the second also an `SSet`, whose `lowerBound(x)` is
-`lowerBoundKey(x)`, i.e., the successor search; both members are
-constrained by `requires`, and hence a hash table, which has no order,
-gives no `lowerBound()`. Hash tables are of the first kind, and the
-search trees, the skip lists, the B-trees and the sorted array of the
-second, each at the cost of its search. Trees keep their
-`lowerBound()`, which gives the key with its value as a map does (a pair or
-an iterator), and the adaptor reads the address instead, which is the item
-of the interfaces of Morin. The dictionary is a `mutable` member of the
-adaptor; hence a splay tree, whose searches move its nodes, still splays
-in the constant `find()` of a `USet` and keeps the amortized bound of the
-tree.
+interfaces `USet` and `SSet` are the concepts of `SetInterfaces.h` described
+in [§1.3](01-introduction.md#sec-1-3), with their realizations on a vector,
+`ArrayUSet` and `ArraySSet`, and the multiset `Bag` (with its `findAll()`) of
+[§1.4](01-introduction.md#sec-1-4). Two more concepts of the same header state
+what the adaptor needs of a dictionary `D`. A `KeyedDictionary` has the types
+`D::Key` and `D::Value`, an `insert( k , v )`, a `remove( k )` and a
+`findKey( k )` that gives the address of the key equal to $k$ that it holds
+(nil if there is none). Its search may change the dictionary, but not the set
+of its keys. An `OrderedDictionary` is a `KeyedDictionary` with
+`lowerBoundKey( k )`, the address of the smallest key not smaller than $k$,
+nil if none. On the first `DictionarySet< D >` is a `USet`, whose `find( x )`
+is `findKey( x )`, and on the second also an `SSet`, whose `lowerBound( x )`
+is `lowerBoundKey( x )`, i.e., the successor search; both members are
+constrained by `requires`, and hence a hash table, which has no order, gives
+no `lowerBound()`. Hash tables are of the first kind, and the search trees,
+the skip lists, the B-trees and the sorted array of the second, each at the
+cost of its search. Trees keep their `lowerBound()`, which gives the key with
+its value as a map does (a pair or an iterator), and the adaptor reads the
+address instead, which is the item of the interfaces of Morin. The dictionary
+is a `mutable` member of the adaptor; hence a splay tree, whose searches move
+its nodes, still splays in the constant `find()` of a `USet` and keeps the
+amortized bound of the tree.
 
 Both concepts `USet` and `SSet` require `insert()` and `remove()` to say
 whether they changed the set. Hence the adaptor takes the answer of the
-dictionary when its `insert()` and `remove()` return a `bool`, and
-otherwise first checks whether the item is there
-([Algorithm 10.2](10-set.md#alg-10-2)); a new key gets the value `true`
-when the values are `bool`, and the value made by default otherwise.
-Its `contains(x)` is `findKey(x)` on a `KeyedDictionary`, and the `contains()`
-of the dictionary on any other, while `size()` and `empty()` are those of the
-dictionary, which `dictionary()` gives, and `forEach(f)` calls $f$ on the keys in the order of the dictionary (by its
-`forEach()` when it has one, by its iterators otherwise). When the
-dictionary is a range, `begin()` and `end()` make the set a constant range
-of its keys, in the same order.
+dictionary when its `insert()` and `remove()` return a `bool`, and otherwise
+first checks whether the item is there ([Algorithm 10.2](10-set.md#alg-10-2));
+a new key gets the value `true` when the values are `bool`, and the value made
+by default otherwise. Its `contains( x )` is `findKey( x )` on a
+`KeyedDictionary`, and the `contains()` of the dictionary on any other, while
+`size()` and `empty()` are those of the dictionary, which `dictionary()`
+gives, and `forEach( f )` calls $f$ on the keys in the order of the dictionary
+(by its `forEach()` when it has one, by its iterators otherwise). When the
+dictionary is a range, `begin()` and `end()` make the set a constant range of
+its keys, in the same order.
 
 We declare the adaptor and its three aliases as follows, and the example uses the set on the Red-Black tree as an `SSet`.
 
 ```cpp
 // declarations of <ADS/set/DictionarySet.h>
 template< class D >
-class DictionarySet {
+class DictionarySet
+{
  public:
  using Item = typename D::Key;
  template< class... A >
- requires std::constructible_from< D , A... >
+  requires std::constructible_from< D , A... >
  explicit DictionarySet( A &&... a );
  std::size_t size( void ) const;
  bool empty( void ) const;
@@ -384,14 +392,17 @@ class DictionarySet {
   requires KeyedDictionary< D >;
  const Item * lowerBound( const Item & x ) const
   requires OrderedDictionary< D >;
- template< class F > void forEach( F && f ) const;
+ template< class F >
+ void forEach( F && f ) const;
  const D & dictionary( void ) const;
- auto begin( void ) const requires std::ranges::forward_range< const D >;
- auto end( void ) const requires std::ranges::forward_range< const D >;
+ auto begin( void ) const
+  requires std::ranges::forward_range< const D >;
+ auto end( void ) const
+  requires std::ranges::forward_range< const D >;
  };
 template< class T , class H = std::hash< T > >
-using ChainedHashSet = DictionarySet< ChainedHashTable< T , bool ,
-                                                       Chain::FRONT , H > >;
+using ChainedHashSet =
+  DictionarySet< ChainedHashTable< T , bool , Chain::FRONT , H > >;
 template< class T , class H = std::hash< T > >
 using OpenHashSet = DictionarySet< OpenHashTable< T , bool , H > >;
 template< std::totally_ordered T >
@@ -400,9 +411,10 @@ using TreeSet = DictionarySet< RedBlackTree< T , bool > >;
 
 ```cpp
 ADS::TreeSet< int > S;
-for( int x : { 40 , 10 , 30 } ) S.insert( x );
-const int * y = S.lowerBound( 25 );                  // *y == 30
-const bool fresh = S.insert( 10 );                   // false
+for( int x : { 40 , 10 , 30 } )
+ S.insert( x );
+const int * y = S.lowerBound( 25 );  // *y == 30
+const bool fresh = S.insert( 10 );   // false
 ```
 
 <span id="alg-10-2"></span>**Algorithm 10.2.** The insertion and the
@@ -441,9 +453,10 @@ In `SetOperations.h` the concept and the four templates are declared as follows.
 ```cpp
 // declarations of <ADS/set/SetOperations.h>
 template< class S >
-concept IterableSet = Set< S > && std::copy_constructible< S > &&
-                      requires( const S s ) {
-                       s.forEach( []( const typename S::Item & ) {} ); };
+concept IterableSet =
+  Set< S > && std::copy_constructible< S > &&
+  requires( const S s )
+{ s.forEach( []( const typename S::Item & ) { } ); };
 template< IterableSet S >
 S setUnion( const S & A , const S & B );
 template< IterableSet S >
@@ -483,7 +496,8 @@ Its class is declared as follows (its copy assignment is deleted).
 ```cpp
 // declarations of <ADS/set/LinkedHashSet.h>
 template< class T , class H = std::hash< T > >
-class LinkedHashSet {
+class LinkedHashSet
+{
  public:
  using Item = T;
  LinkedHashSet( void );
@@ -493,24 +507,25 @@ class LinkedHashSet {
  bool contains( const T & x ) const;
  void insert( const T & x );
  void remove( const T & x );
- template< class F > void forEach( F && f ) const;
+ template< class F >
+ void forEach( F && f ) const;
  using const_iterator = typename List< T >::const_iterator;
  };
 ```
 
-Its invariant, checked at the contract level 3, is that each item of the
-list is indexed at its position and that the table has no other item.
-Finally, `HashMultiset` realizes a multiset on a hash table with lists of
-overflow that maps each item to its multiplicity (exercise 8.10): the
-insertion of a new item sets its counter to 1 and that of an item already
-there increments it, while a removal decrements the counter and removes the
-item when it reaches 0. Each operation costs $O( 1 )$ expected time, `count(x)` gives the
-multiplicity of $x$, and the invariant is that the size equals the sum of
-the counters, none of which is 0. We remark that `ListSet`,
-`SortedListSet`, `LinkedHashSet`, `HashMultiset` (whose items are the
-pairs of an item and its count), `BoolSet` and `RoaringBitmap` are also
-constant ranges, with `begin()` and `end()` (and `cbegin()` and `cend()`),
-which visit the items in the order of their `forEach()`.
+Its invariant, checked at the contract level 3, is that each item of the list
+is indexed at its position and that the table has no other item. Finally,
+`HashMultiset` realizes a multiset on a hash table with lists of overflow that
+maps each item to its multiplicity (exercise 8.10): the insertion of a new
+item sets its counter to 1 and that of an item already there increments it,
+while a removal decrements the counter and removes the item when it reaches 0.
+Each operation costs $O( 1 )$ expected time, `count( x )` gives the
+multiplicity of $x$, and the invariant is that the size equals the sum of the
+counters, none of which is 0. We remark that `ListSet`, `SortedListSet`,
+`LinkedHashSet`, `HashMultiset` (whose items are the pairs of an item and its
+count), `BoolSet` and `RoaringBitmap` are also constant ranges, with `begin()`
+and `end()` (and `cbegin()` and `cend()`), which visit the items in the order
+of their `forEach()`.
 
 --8<-- "generated/HashMultiset-remove.pseudo.md"
 
@@ -519,7 +534,8 @@ Its declarations follow; `distinct()` gives the number of the distinct items, an
 ```cpp
 // declarations of <ADS/set/HashMultiset.h>
 template< class T , class H = std::hash< T > >
-class HashMultiset {
+class HashMultiset
+{
  public:
  using Item = T;
  HashMultiset( void );
@@ -530,27 +546,28 @@ class HashMultiset {
  std::size_t count( const T & x ) const;
  void insert( const T & x );
  void remove( const T & x );
- template< class F > void forEach( F && f ) const;
+ template< class F >
+ void forEach( F && f ) const;
  };
 ```
 
-Finally, `SpaceEfficientSortedSet` is the space-efficient sorted set of
-[Morin 2013, exercise 4.13](Z-bibliography.md#ref-morin-cpp) (his
-`SESSet`), an `SSet` of ordered items that needs only the space of its $n$
-items and $O( n / b + b )$ more places, $b \ge 3$ a parameter of the
-constructor (32 by default, with the seed of the skip list). The items are
-kept in increasing order in a list of *blocks*, as in the `SEList` of
-[Morin 2013, §3.3](Z-bibliography.md#ref-morin-cpp) (cf.
-[Chapter 2](02-sequence.md#ch-2)). Each block is a circular buffer of
-$b + 1$ places, and each block but the last holds from $b - 1$ to $b + 1$
-items. A `SkipList` ([Chapter 7](07-dictionary.md#ch-7)) indexes the blocks,
-the key of a block being its largest item, read in the block at each comparison. The blocks partition the
-sorted items into intervals; hence their order never changes when items
-move between neighbours, and the skip list sees only the creation and the
-removal of a block (and of a largest item of the last one, which is
-indexed again). Its `lowerBound(x)` finds the first block whose largest item is
-not smaller than $x$ and then $x$ in it by a binary search, and `find(x)`
-and `contains(x)` are a `lowerBound(x)` followed by a test of equality:
+Finally, `SpaceEfficientSortedSet` is the space-efficient sorted set of [Morin
+2013, exercise 4.13](Z-bibliography.md#ref-morin-cpp) (his `SESSet`), an
+`SSet` of ordered items that needs only the space of its $n$ items and
+$O( n / b + b )$ more places, $b \ge 3$ a parameter of the constructor (32 by
+default, with the seed of the skip list). The items are kept in increasing
+order in a list of *blocks*, as in the `SEList` of [Morin 2013,
+§3.3](Z-bibliography.md#ref-morin-cpp) (cf. [Chapter 2](02-sequence.md#ch-2)).
+Each block is a circular buffer of $b + 1$ places, and each block but the last
+holds from $b - 1$ to $b + 1$ items. A `SkipList` ([Chapter
+7](07-dictionary.md#ch-7)) indexes the blocks, the key of a block being its
+largest item, read in the block at each comparison. The blocks partition the
+sorted items into intervals; hence their order never changes when items move
+between neighbours, and the skip list sees only the creation and the removal
+of a block (and of a largest item of the last one, which is indexed again).
+Its `lowerBound( x )` finds the first block whose largest item is not smaller
+than $x$ and then $x$ in it by a binary search, and `find( x )` and
+`contains( x )` are a `lowerBound( x )` followed by a test of equality:
 
 --8<-- "generated/SpaceEfficientSortedSet-lowerBound.pseudo.md"
 
@@ -576,8 +593,9 @@ Its declarations are the following.
 ```cpp
 // declarations of <ADS/set/SpaceEfficientSortedSet.h>
 template< std::totally_ordered T >
-requires std::semiregular< T >
-class SpaceEfficientSortedSet {
+ requires std::semiregular< T >
+class SpaceEfficientSortedSet
+{
  public:
  using Item = T;
  explicit SpaceEfficientSortedSet( std::size_t b = 32 ,
@@ -591,7 +609,8 @@ class SpaceEfficientSortedSet {
  const T * lowerBound( const T & x ) const;
  bool insert( const T & x );
  bool remove( const T & x );
- template< class F > void forEach( F && f ) const;
+ template< class F >
+ void forEach( F && f ) const;
  };
 ```
 
@@ -764,7 +783,8 @@ a bitmap container of 5000 even integers.
 
 ```cpp
 // declarations of <ADS/set/RoaringBitmap.h>
-class RoaringBitmap {
+class RoaringBitmap
+{
  public:
  using Item = std::uint32_t;
  static constexpr std::uint32_t ARRAY = 4096;
@@ -781,24 +801,25 @@ class RoaringBitmap {
  std::size_t containers( void ) const;
  std::size_t bitmaps( void ) const;
  std::size_t bytes( void ) const;
- template< class F > void forEach( F && f ) const;
+ template< class F >
+ void forEach( F && f ) const;
  std::vector< std::uint32_t > items( void ) const;
  std::size_t rank( std::uint32_t x ) const;
  class const_iterator;
  const_iterator lowerBound( std::uint32_t x ) const;
  const_iterator select( std::size_t i ) const;
  };
-RoaringBitmap setUnion( const RoaringBitmap & A ,
-                        const RoaringBitmap & B );
+RoaringBitmap setUnion( const RoaringBitmap & A , const RoaringBitmap & B );
 // and setIntersection(), setDifference(), setSymmetricDifference() alike
 ```
 
 ```cpp
 ADS::RoaringBitmap R;
-for( std::uint32_t x = 0 ; x < 5000 ; ++x ) R.insert( 2 * x );
-const std::size_t r = R.rank( 101 );                 // 51 items below
-const std::uint32_t z = *R.select( 10 );             // 20
-const std::size_t b = R.bitmaps();                   // 1: 5000 > 4096
+for( std::uint32_t x = 0 ; x < 5000 ; ++x )
+ R.insert( 2 * x );
+const std::size_t r = R.rank( 101 );      // 51 items below
+const std::uint32_t z = *R.select( 10 );  // 20
+const std::size_t b = R.bitmaps();        // 1: 5000 > 4096
 ```
 
 It is fair to remark that the library of Roaring has a third form of
@@ -959,28 +980,29 @@ We declare the functions of `SortedIntersection.h` as follows; the constructor o
 
 ```cpp
 // declarations of <ADS/set/SortedIntersection.h>
-class PermutedBuckets {
+class PermutedBuckets
+{
  public:
  PermutedBuckets( const std::vector< std::uint64_t > & A , unsigned w ,
                   std::size_t L , std::uint64_t a , std::uint64_t c );
  std::size_t size( void ) const;
  std::size_t buckets( void ) const;
- std::vector< std::uint64_t > intersect(
-                           const PermutedBuckets & other ,
-                           std::size_t * scanned = nullptr ) const;
+ std::vector< std::uint64_t >
+ intersect( const PermutedBuckets & other ,
+            std::size_t * scanned = nullptr ) const;
  std::vector< std::uint64_t > values( void ) const;
  };
 template< class T , class C = std::less<> >
 std::vector< T > intersectMerge( const std::vector< T > & A ,
-                                 const std::vector< T > & B ,
-                                 C less = C() );
+                                 const std::vector< T > & B , C less = C() );
 template< class T , class C = std::less<> >
 std::vector< T > intersectBinarySearch( const std::vector< T > & A ,
                                         const std::vector< T > & B ,
                                         C less = C() );
 template< class T , class C = std::less<> >
 std::vector< T > intersectMutualPartition( const std::vector< T > & A ,
-    const std::vector< T > & B , C less = C() );
+                                           const std::vector< T > & B ,
+                                           C less = C() );
 template< class T , class C = std::less<> >
 std::vector< T > intersectDoubling( const std::vector< T > & A ,
                                     const std::vector< T > & B ,
@@ -988,7 +1010,8 @@ std::vector< T > intersectDoubling( const std::vector< T > & A ,
 template< class T , class C = std::less<> >
 std::vector< T > intersectTwoLevel( const std::vector< T > & A ,
                                     const std::vector< T > & B ,
-                                    std::size_t L , C less = C() );
+                                    std::size_t L ,
+                                    C less = C() );
 template< class T >
 void twoLevelHeaders( const DiskFile< T > & A , std::size_t L ,
                       DiskFile< T > & H );
@@ -998,10 +1021,9 @@ void intersectMergeExternal( const DiskFile< T > & A ,
                              DiskFile< T > & out , C less = C() );
 template< class T , class C = std::less<> >
 void intersectTwoLevelExternal( const DiskFile< T > & A ,
-                                const DiskFile< T > & H ,
-                                std::size_t L ,
-                                const DiskFile< T > & B ,
-                                DiskFile< T > & out , C less = C() );
+                                const DiskFile< T > & H , std::size_t L ,
+                                const DiskFile< T > & B , DiskFile< T > & out ,
+                                C less = C() );
 ```
 
 These bounds count comparisons. On a modern processor, however,
@@ -1056,7 +1078,8 @@ Both functions write the common items into `out`, returning their number, or ret
 // declarations of <ADS/set/VectorIntersection.h>
 template< class T >
 std::size_t intersect( const T * a , std::size_t n , const T * b ,
-                       std::size_t m , T * out );
+                       std::size_t m ,
+                       T * out );
 template< class T >
 std::vector< T > intersect( const std::vector< T > & A ,
                             const std::vector< T > & B );
@@ -1064,8 +1087,8 @@ std::vector< T > intersect( const std::vector< T > & A ,
 
 ```cpp
 const std::vector< int > A = { 1 , 3 , 5 , 7 , 9 , 11 } , B = { 3 , 9 };
-const auto C = ADS::intersectDoubling( A , B );      // { 3 , 9 }
-const auto D = ADS::intersect( A , B );              // { 3 , 9 }
+const auto C = ADS::intersectDoubling( A , B );  // { 3 , 9 }
+const auto D = ADS::intersect( A , B );          // { 3 , 9 }
 ```
 
 Comparing blocks all against all is the method of [Schlegel et al.
@@ -1191,7 +1214,8 @@ We declare the class as follows; `falsePositiveRate()` gives (10.5) at the curre
 ```cpp
 // declarations of <ADS/set/BloomFilter.h>
 template< class T , class H = std::hash< T > >
-class BloomFilter {
+class BloomFilter
+{
  public:
  BloomFilter( std::size_t m , int k , H h = H() );
  static BloomFilter forItems( std::size_t n , double p );
@@ -1206,10 +1230,10 @@ class BloomFilter {
 ```cpp
 auto F = ADS::BloomFilter< std::string >::forItems( 1000 , 0.01 );
 F.insert( "apple" );
-const bool yes = F.maybe( "apple" );                 // true, always
-const int k = F.hashes();                            // 7
+const bool yes = F.maybe( "apple" );  // true, always
+const int k = F.hashes();             // 7
 ADS::CuckooFilter< std::uint64_t > G( 1000 );
-const bool in = G.insert( 42 ) && G.maybe( 42 );     // true
+const bool in = G.insert( 42 ) && G.maybe( 42 );  // true
 G.remove( 42 );
 ```
 
@@ -1235,9 +1259,9 @@ filter of [Fan et al. 2000](Z-bibliography.md#ref-fan2000)).
 
 <span id="lem-10-14"></span>**Lemma 10.14.** *Let each removal of a
 `SpectralBloomFilter` remove occurrences that were inserted, and let
-$\mathit{top}$ be the largest value of a counter. Then `count(x)` is at
-least $\min( \mathit{top} , \mu( x ) )$, $\mu( x )$ the multiplicity of
-$x$, and in particular the filter has no false negative.*
+$\mathit{top}$ be the largest value of a counter. Then `count( x )` is at
+least $\min( \mathit{top} , \mu( x ) )$, $\mu( x )$ the multiplicity of $x$,
+and in particular the filter has no false negative.*
 
 *Proof.* We show that each counter $C[ j ]$ is $\mathit{top}$ or at least
 the sum $\sigma_j$ of the multiplicities of the keys that have $j$ among
@@ -1278,7 +1302,8 @@ We declare them as follows; `counters()` and `hashes()` give $m$ and $r$, and `o
 ```cpp
 // declarations of <ADS/set/BloomVariants.h>
 template< class T , class C = std::uint32_t , class H = std::hash< T > >
-class SpectralBloomFilter {
+class SpectralBloomFilter
+{
  public:
  SpectralBloomFilter( std::size_t m , int r , H h = H() );
  void insert( const T & x , C f = 1 );
@@ -1290,7 +1315,8 @@ class SpectralBloomFilter {
  int hashes( void ) const;
  };
 template< class T , class H = std::hash< T > >
-class PartitionedBloomFilter {
+class PartitionedBloomFilter
+{
  public:
  PartitionedBloomFilter( std::size_t m , int r , H h = H() );
  void insert( const T & x );
@@ -1361,7 +1387,8 @@ Its constructor takes the number $n$ of the keys and the bits per key (10 by def
 ```cpp
 // declarations of <ADS/set/BlockedBloomFilter.h>
 template< class T , class H = DefaultHash< T > >
-class BlockedBloomFilter {
+class BlockedBloomFilter
+{
  public:
  explicit BlockedBloomFilter( std::size_t n , double bitsPerItem = 10 ,
                               H h = H() );
@@ -1463,7 +1490,8 @@ Its parameter `F` is `std::uint8_t` or `std::uint16_t`, i.e., $f = 8$ or 16.
 ```cpp
 // declarations of <ADS/set/CuckooFilter.h>
 template< class T , class F = std::uint8_t , class H = DefaultHash< T > >
-class CuckooFilter {
+class CuckooFilter
+{
  public:
  explicit CuckooFilter( std::size_t n , H h = H() );
  bool insert( const T & x );
@@ -1591,7 +1619,8 @@ Its declarations are the following.
 ```cpp
 // declarations of <ADS/set/PrefixFilter.h>
 template< class T , class H = DefaultHash< T > >
-class PrefixFilter {
+class PrefixFilter
+{
  public:
  explicit PrefixFilter( std::size_t n , H h = H() );
  bool insert( const T & x );
@@ -1760,8 +1789,9 @@ Both static filters are declared as follows, `F` giving $b$ (or $r$) bits and `r
 ```cpp
 // declarations of <ADS/set/BinaryFuseFilter.h>
 template< class T , class F = std::uint8_t , class H = DefaultHash< T > >
-requires( std::is_unsigned_v< F > && ( sizeof( F ) <= 4 ) )
-class BinaryFuseFilter {
+ requires( std::is_unsigned_v< F > && ( sizeof( F ) <= 4 ) )
+class BinaryFuseFilter
+{
  public:
  explicit BinaryFuseFilter( const std::vector< T > & keys ,
                             std::uint64_t seed = 1 , H h = H() );
@@ -1776,10 +1806,12 @@ class BinaryFuseFilter {
 ```cpp
 // declarations of <ADS/set/RibbonFilter.h>
 template< class T , class F = std::uint8_t , class H = DefaultHash< T > >
-class RibbonFilter {
+class RibbonFilter
+{
  public:
  explicit RibbonFilter( const std::vector< T > & keys ,
-                        std::uint64_t seed = 1 , H h = H() );
+                        std::uint64_t seed = 1 ,
+                        H h = H() );
  bool maybe( const T & x ) const;
  std::size_t size( void ) const;
  bool empty( void ) const;
@@ -1792,10 +1824,10 @@ class RibbonFilter {
 ```cpp
 const std::vector< std::uint64_t > keys = { 2 , 3 , 5 , 7 , 11 , 13 };
 const ADS::BinaryFuseFilter< std::uint64_t > F( keys );
-const bool yes = F.maybe( 7 );                       // true, always
+const bool yes = F.maybe( 7 );  // true, always
 const ADS::GrafiteFilter<> G( keys , 16 );
-const bool empty = ! G.mayContain( 20 , 30 );        // true, but for a
-                                                     // false positive
+const bool empty = ! G.mayContain( 20 , 30 );  // true, but for a
+                                              // false positive
 ```
 
 <span id="tab-10-3"></span>**Table 10.3.** The filters of the library,
@@ -1892,11 +1924,11 @@ need a prime above the $2^{64} / r$ blocks. Keys may be of any type that
 `radixKey()` maps in order onto unsigned words, floating point numbers
 included.
 
-Besides `mayContain(a, b)` and `maybe(x)`, i.e., `mayContain(x, x)`,
-`GrafiteFilter` gives `falsePositiveBound(l)`, the bound (10.12) for a
-range of $\ell$ keys, `reduced()`, i.e., $r$, `codes()`, the distinct
-codes, and `sizeInBits()`, the bits of the codes and of the directory of
-`select()` of Elias-Fano.
+Besides `mayContain( a , b )` and `maybe( x )`, i.e., `mayContain( x , x )`,
+`GrafiteFilter` gives `falsePositiveBound( l )`, the bound (10.12) for a range
+of $\ell$ keys, `reduced()`, i.e., $r$, `codes()`, the distinct codes, and
+`sizeInBits()`, the bits of the codes and of the directory of `select()` of
+Elias-Fano.
 
 `BucketingFilter`, the heuristic of the same paper, cuts the universe into
 buckets of $s = \lceil 2^{64} / ( n \, 2^{B-2} ) \rceil$ keys and keeps by
@@ -1919,7 +1951,8 @@ Both range filters are declared as follows ($B = 16$ bits per key by default).
 ```cpp
 // declarations of <ADS/set/GrafiteFilter.h>
 template< RadixKey T = std::uint64_t >
-class GrafiteFilter {
+class GrafiteFilter
+{
  public:
  explicit GrafiteFilter( const std::vector< T > & keys , int B = 16 ,
                          std::uint64_t seed = 1 );
@@ -1933,7 +1966,8 @@ class GrafiteFilter {
  std::size_t sizeInBits( void ) const;
  };
 template< RadixKey T = std::uint64_t >
-class BucketingFilter {
+class BucketingFilter
+{
  public:
  explicit BucketingFilter( const std::vector< T > & keys , int B = 16 );
  bool mayContain( const T & a , const T & b ) const;

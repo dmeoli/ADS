@@ -15,16 +15,17 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ PROTOTYPE ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 template< Graph G , class S >
-requires PrototypeFrontier< S , typename G::Weight >
-ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
-                                     S & frontier , FrontierCounts * c )
+ requires PrototypeFrontier< S , typename G::Weight >
+ShortestPathTree< typename G::Weight >
+shortestPaths( const G & g , int r , S & frontier , FrontierCounts * c )
 {
  constexpr bool fifo = requires { requires S::fifo; };
  ADS_PRE( g.hasNode( r ) && frontier.empty() );
@@ -41,10 +42,10 @@ ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
 
  R.d[ r ] = D( 0 );
  b[ r ] = true;
- frontier.add( r , D( 0 ) , true );                        // (1)
+ frontier.add( r , D( 0 ) , true );  // (1)
  ++k.adds;
  while( ! frontier.empty() ) {
-  const int u = frontier.extract();                        // (2)
+  const int u = frontier.extract();  // (2)
   ++k.extracts;
   b[ u ] = false;
   R.order.push_back( u );
@@ -53,7 +54,8 @@ ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
     // a node is extracted at most n times by a queue, unless there is a
     // negative cycle; the other frontiers have no such bound
     R.negativeCycle = true;
-    if( c ) *c = k;
+    if( c )
+     *c = k;
     return( R );
     }
   g.forEachEdge( u , [ & ]( int v , const D & w ) {
@@ -64,25 +66,26 @@ ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
     R.d[ v ] = nd;
     R.T[ v ] = u;
     if( ! b[ v ] ) {
-     frontier.add( v , nd , first );                       // (3)
+     frontier.add( v , nd , first );  // (3)
      ++k.adds;
      b[ v ] = true;
      }
     else {
-     frontier.update( v , nd );                            // (4)
+     frontier.update( v , nd );  // (4)
      ++k.decreases;
      }
     }
    } );
   }
- if( c ) *c = k;
+ if( c )
+  *c = k;
  ADS_AUDIT( isShortestPathTree( g , r , R ) );
  return( R );
  }
 
 template< Graph G >
 ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
-                                                      Frontier how )
+						      Frontier how )
 {
  ADS_PRE( g.hasNode( r ) );
  using D = typename G::Weight;
@@ -152,8 +155,7 @@ auto papeDEsopo( const G & g , int r )
  }
 
 template< Graph G >
-ShortestPathTree< typename G::Weight > dagShortestPaths( const G & g ,
-                                                         int r )
+ShortestPathTree< typename G::Weight > dagShortestPaths( const G & g , int r )
 {
  ADS_PRE( g.hasNode( r ) );
  ADS_AUDIT( ! hasCycle( g ) );
@@ -184,12 +186,13 @@ ShortestPathTree< typename G::Weight > dagShortestPaths( const G & g ,
 
 template< Graph G >
 bool isShortestPathTree( const G & g , int r ,
-                         const ShortestPathTree< typename G::Weight > & R )
+			 const ShortestPathTree< typename G::Weight > & R )
 {
  using D = typename G::Weight;
  const D INF = infinity< D >();
- if( ( int( R.d.size() ) != g.bound() ) || ( int( R.T.size() ) != g.bound() )
-     || ( R.d[ r ] != D( 0 ) ) || ( R.T[ r ] != NIL ) )
+ if( ( int( R.d.size() ) != g.bound() ) ||
+     ( int( R.T.size() ) != g.bound() ) || ( R.d[ r ] != D( 0 ) ) ||
+     ( R.T[ r ] != NIL ) )
   return( false );
  bool ok = true;
  for( int v : g.V() ) {
@@ -202,17 +205,17 @@ bool isShortestPathTree( const G & g , int r ,
   const int u = R.T[ v ];
   if( ! g.hasNode( u ) || ( R.d[ u ] == INF ) )
    return( false );
-  bool found = false;                    // d[ v ] = d[ u ] + w( u , v )
+  bool found = false;  // d[ v ] = d[ u ] + w( u , v )
   g.forEachEdge( u , [ & ]( int x , const D & w ) {
    if( ( x == v ) && ( R.d[ u ] + w == R.d[ v ] ) )
     found = true;
    } );
   ok = ok && found;
   }
- for( int u : g.V() )                    // no edge violates the condition
+ for( int u : g.V() )  // no edge violates the condition
   if( R.d[ u ] != INF )
    g.forEachEdge( u , [ & ]( int v , const D & w ) {
-    ok = ok && !( R.d[ u ] + w < R.d[ v ] );
+    ok = ok && ! ( R.d[ u ] + w < R.d[ v ] );
     } );
  return( ok );
  }

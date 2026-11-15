@@ -37,7 +37,7 @@
 
 #ifndef __ADS_Huffman
  #define __ADS_Huffman
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -57,7 +57,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the codes of Huffman of the characters with the given frequencies, at
 /// least one; a single character gets the code `0`
@@ -88,7 +89,7 @@ std::map< C , std::string > huffman( const std::map< C , F > & freq );
 /// \pre each character of `text` has a code
 template< class C >
 std::string encode( const std::basic_string< C > & text ,
-                    const std::map< C , std::string > & code );
+		    const std::map< C , std::string > & code );
 
 /// the bits decoded by the codes, a prefix code
 ///
@@ -109,7 +110,7 @@ std::string encode( const std::basic_string< C > & text ,
 /// \pre `bits` is a concatenation of codes of a prefix-free code
 template< class C >
 std::basic_string< C > decode( const std::string & bits ,
-                               const std::map< C , std::string > & code );
+			       const std::map< C , std::string > & code );
 
 /*--------------------------------------------------------------------------*/
 
@@ -123,7 +124,7 @@ std::basic_string< C > decode( const std::string & bits ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Huffman.h included */
+#endif /* Huffman.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Huffman.h ---------------------------*/

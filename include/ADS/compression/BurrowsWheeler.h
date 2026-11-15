@@ -87,7 +87,7 @@
 
 #ifndef __ADS_BurrowsWheeler
  #define __ADS_BurrowsWheeler
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -114,13 +114,15 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the transform of Burrows and Wheeler: the last column of \f$ M' \f$
 /// without the \f$ \$ \f$, and the row of the \f$ \$ \f$
-struct BWT {
- std::string last;      ///< the last column \f$ L \f$ without the \f$ \$ \f$
- std::size_t primary;   ///< the row \f$ r \f$ of the \f$ \$ \f$ in \f$ L \f$
+struct BWT
+{
+ std::string last;     ///< the last column \f$ L \f$ without the \f$ \$ \f$
+ std::size_t primary;  ///< the row \f$ r \f$ of the \f$ \$ \f$ in \f$ L \f$
  /// whether the two transforms have the same column and row
  friend bool operator==( const BWT & a , const BWT & b ) = default;
  };
@@ -203,8 +205,8 @@ struct BWT {
 /// \f]
 /// \pre `alphabet` has distinct symbols, each symbol of \f$ s \f$ in it
 /// \post `inverseMoveToFront( result , alphabet ) == s` (an audit)
-[[nodiscard]] inline std::vector< std::uint8_t > moveToFront(
-                              std::string_view s , std::string_view alphabet );
+[[nodiscard]] inline std::vector< std::uint8_t >
+moveToFront( std::string_view s , std::string_view alphabet );
 
 /// the move-to-front of `moveToFront()` above, with the 256 bytes in their
 /// order
@@ -216,8 +218,8 @@ struct BWT {
 ///     \ldots , 255 )
 /// \end{array}}
 /// \f]
-[[nodiscard]] inline std::vector< std::uint8_t > moveToFront(
-                                                         std::string_view s );
+[[nodiscard]] inline std::vector< std::uint8_t >
+moveToFront( std::string_view s );
 
 /// the symbols of the places \f$ x \f$ in the list `alphabet`
 ///
@@ -235,9 +237,9 @@ struct BWT {
 /// \end{array}}
 /// \f]
 /// \pre `alphabet` has distinct symbols, each place below its size
-[[nodiscard]] inline std::string inverseMoveToFront(
-                                       const std::vector< std::uint8_t > & x ,
-                                       std::string_view alphabet );
+[[nodiscard]] inline std::string
+inverseMoveToFront( const std::vector< std::uint8_t > & x ,
+		    std::string_view alphabet );
 
 /// the inverse of `inverseMoveToFront()` above, with the 256 bytes in their
 /// order
@@ -249,8 +251,8 @@ struct BWT {
 ///     \text{bytes } 0 , \ldots , 255 )
 /// \end{array}}
 /// \f]
-[[nodiscard]] inline std::string inverseMoveToFront(
-                                      const std::vector< std::uint8_t > & x );
+[[nodiscard]] inline std::string
+inverseMoveToFront( const std::vector< std::uint8_t > & x );
 
 /// the maximal runs of \f$ s \f$ as pairs \f$ ( \ell , c ) \f$ of a length
 /// and a symbol
@@ -270,7 +272,7 @@ struct BWT {
 /// \f]
 /// \post `runLengthDecode( result ) == s` (an audit)
 [[nodiscard]] inline std::vector< std::pair< std::size_t , char > >
-                                        runLengthEncode( std::string_view s );
+runLengthEncode( std::string_view s );
 
 /// the text of the runs \f$ R \f$
 ///
@@ -285,8 +287,8 @@ struct BWT {
 /// \end{array}}
 /// \f]
 /// \pre each length positive
-[[nodiscard]] inline std::string runLengthDecode(
-                   const std::vector< std::pair< std::size_t , char > > & R );
+[[nodiscard]] inline std::string
+runLengthDecode( const std::vector< std::pair< std::size_t , char > > & R );
 
 /// the RLE0 of bzip: the integers of \f$ x \f$ but 0 grown by 1, each run of
 /// \f$ m \f$ zeros in the code of Wheeler, the digits of \f$ m + 1 \f$ after
@@ -312,8 +314,8 @@ struct BWT {
 /// \end{array}}
 /// \f]
 /// \post `zeroRunDecode( result ) == x` (an audit)
-[[nodiscard]] inline std::vector< std::uint32_t > zeroRunEncode(
-                                       const std::vector< std::uint8_t > & x );
+[[nodiscard]] inline std::vector< std::uint32_t >
+zeroRunEncode( const std::vector< std::uint8_t > & x );
 
 /// the integers of an RLE0
 ///
@@ -335,8 +337,8 @@ struct BWT {
 /// \end{array}}
 /// \f]
 /// \pre each integer at most 256
-[[nodiscard]] inline std::vector< std::uint8_t > zeroRunDecode(
-                                      const std::vector< std::uint32_t > & y );
+[[nodiscard]] inline std::vector< std::uint8_t >
+zeroRunDecode( const std::vector< std::uint32_t > & y );
 
 /// the bzip of \f$ s \f$: blocks of at most `block` symbols, each
 /// transformed, moved to front, coded by RLE0 and by its canonical code of
@@ -361,8 +363,8 @@ struct BWT {
 /// \f]
 /// \pre `block > 0`
 /// \post `bzipDecompress( result ) == s` (an audit)
-[[nodiscard]] inline std::vector< std::uint8_t > bzipCompress(
-                            std::string_view s , std::size_t block = 900000 );
+[[nodiscard]] inline std::vector< std::uint8_t >
+bzipCompress( std::string_view s , std::size_t block = 900000 );
 
 /// the text of a bzip
 ///
@@ -383,8 +385,8 @@ struct BWT {
 /// \end{array}}
 /// \f]
 /// \pre `code` is a bzip
-[[nodiscard]] inline std::string bzipDecompress(
-                                     std::span< const std::uint8_t > code );
+[[nodiscard]] inline std::string
+bzipDecompress( std::span< const std::uint8_t > code );
 
 /*--------------------------------------------------------------------------*/
 
@@ -398,7 +400,7 @@ struct BWT {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BurrowsWheeler.h included */
+#endif /* BurrowsWheeler.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File BurrowsWheeler.h ------------------------*/

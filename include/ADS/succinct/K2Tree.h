@@ -57,7 +57,7 @@
 
 #ifndef __ADS_K2Tree
  #define __ADS_K2Tree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -77,18 +77,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ CLASS K2Tree ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the adjacency matrix of a static directed graph as a \f$ k^2 \f$-tree
-class K2Tree {
+class K2Tree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// an edge \f$ ( u , v ) \f$, from \f$ u \f$ to \f$ v \f$
  using Edge = std::pair< std::size_t , std::size_t >;
 
@@ -168,8 +169,8 @@ class K2Tree {
  /// `neighbors()` on the children that cross the column \f$ v \f$, the
  /// place \f$ \mathit{base} + j k + \lfloor r / c \rfloor \f$ in its line 6
  /// \pre \f$ v < \mathrm{order}() \f$
- [[nodiscard]] std::vector< std::size_t > reverseNeighbors(
-                                                       std::size_t v ) const;
+ [[nodiscard]] std::vector< std::size_t >
+ reverseNeighbors( std::size_t v ) const;
 
  /// whether \f$ ( u , v ) \f$ is an edge
  ///
@@ -203,7 +204,6 @@ class K2Tree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the mark at the place \f$ p \f$ of \f$ T \f$ followed by \f$ L \f$
  [[nodiscard]] bool mark( std::size_t p ) const;
 
@@ -214,16 +214,15 @@ class K2Tree {
  /// the cells of the row (or the column, if not `row`) \f$ r \f$ of the
  /// submatrix of side \f$ s \f$ whose children start at `base`, offset by
  /// \f$ o \f$
- void walk( std::size_t s , std::size_t r , std::size_t o ,
-            std::size_t base , bool row ,
-            std::vector< std::size_t > & out ) const;
+ void walk( std::size_t s , std::size_t r , std::size_t o , std::size_t base ,
+	    bool row , std::vector< std::size_t > & out ) const;
 
- std::size_t f_n = 0;         ///< the number of nodes
- std::size_t f_k = 2;         ///< the arity \f$ k \f$
- std::size_t f_side = 1;      ///< \f$ N = k^h \f$, the side of the matrix
- std::size_t f_m = 0;         ///< the number of distinct edges
- RankSelect f_t;              ///< \f$ T \f$
- BitVector f_l;               ///< \f$ L \f$
+ std::size_t f_n = 0;     ///< the number of nodes
+ std::size_t f_k = 2;     ///< the arity \f$ k \f$
+ std::size_t f_side = 1;  ///< \f$ N = k^h \f$, the side of the matrix
+ std::size_t f_m = 0;     ///< the number of distinct edges
+ RankSelect f_t;          ///< \f$ T \f$
+ BitVector f_l;           ///< \f$ L \f$
 
  };  // end( class K2Tree )
 
@@ -239,7 +238,7 @@ class K2Tree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* K2Tree.h included */
+#endif /* K2Tree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File K2Tree.h ---------------------------*/

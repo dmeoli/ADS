@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline BPTree::BPTree( const std::vector< std::vector< std::size_t > > & c )
 {
@@ -22,15 +23,15 @@ inline BPTree::BPTree( const std::vector< std::vector< std::size_t > > & c )
  BitVector B;
  B.reserve( 2 * n );
  std::size_t seen = 0;
- std::vector< bool > in( n , false );       // the nodes reached
- std::vector< std::pair< std::size_t , std::size_t > > S;   // node , child
+ std::vector< bool > in( n , false );                      // the nodes reached
+ std::vector< std::pair< std::size_t , std::size_t > > S;  // node , child
  if( n > 0 ) {
   S.emplace_back( 0 , 0 );
   B.push_back( true );
   seen = 1;
   in[ 0 ] = true;
   }
- while( ! S.empty() ) {                     // the visit in depth
+ while( ! S.empty() ) {  // the visit in depth
   auto & [ u , k ] = S.back();
   if( k < c[ u ].size() ) {
    const std::size_t w = c[ u ][ k++ ];
@@ -45,14 +46,14 @@ inline BPTree::BPTree( const std::vector< std::vector< std::size_t > > & c )
    S.pop_back();
    }
   }
- ADS_PRE( seen == n );                      // each node reached once
+ ADS_PRE( seen == n );  // each node reached once
  f_p = BalancedParentheses( std::move( B ) );
  }
 
 inline BPTree::BPTree( BitVector b ) : f_p( std::move( b ) )
 {
  ADS_PRE( ( f_p.size() == 0 ) ||
-          ( f_p[ 0 ] && ( f_p.findClose( 0 ) == f_p.size() - 1 ) ) );
+	  ( f_p[ 0 ] && ( f_p.findClose( 0 ) == f_p.size() - 1 ) ) );
  }
 
 inline std::size_t BPTree::size( void ) const

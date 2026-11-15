@@ -134,7 +134,7 @@
 
 #ifndef __ADS_StringSearch
  #define __ADS_StringSearch
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -176,18 +176,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS StringSearcher ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a pattern prepared for the search of its occurrences in any text
-class StringSearcher {
+class StringSearcher
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// no place: the result of a search that finds no occurrence
  static constexpr std::size_t npos = std::string_view::npos;
 
@@ -196,7 +197,7 @@ class StringSearcher {
  static constexpr std::size_t kSkip = 64;
 
  /// the empty pattern
- StringSearcher( void ) : StringSearcher( std::string_view() ) {}
+ StringSearcher( void ) : StringSearcher( std::string_view() ) { }
 
  /// the pattern \f$ P \f$ prepared, its probes and the shifts of its
  /// q-grams, in \f$ O( 256 + m ) \f$
@@ -266,7 +267,7 @@ class StringSearcher {
  /// \f]
  /// \post `npos`, or an occurrence at or after `from`
  [[nodiscard]] std::size_t find( std::string_view T ,
-                                 std::size_t from = 0 ) const;
+				 std::size_t from = 0 ) const;
 
  /// all the occurrences of \f$ P \f$ in \f$ T \f$, in increasing order: the
  /// search of `find()`, which goes on after each occurrence
@@ -284,13 +285,14 @@ class StringSearcher {
  template< std::contiguous_iterator I >
   requires( sizeof( std::iter_value_t< I > ) == 1 )
  [[nodiscard]] std::pair< I , I > operator()( I first , I last ) const {
-  const std::string_view T( reinterpret_cast< const char * >(
-                             std::to_address( first ) ) ,
-                            std::size_t( last - first ) );
+  const std::string_view T(
+    reinterpret_cast< const char * >( std::to_address( first ) ) ,
+    std::size_t( last - first ) );
   const std::size_t s = find( T );
-  if( s == npos ) return( std::pair( last , last ) );
+  if( s == npos )
+   return( std::pair( last , last ) );
   return( std::pair( first + std::ptrdiff_t( s ) ,
-                     first + std::ptrdiff_t( s + f_P.size() ) ) );
+		      first + std::ptrdiff_t( s + f_P.size() ) ) );
   }
 
  /// the pattern \f$ P \f$
@@ -298,35 +300,34 @@ class StringSearcher {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the occurrences of P in T from from on, each given to report(), which
  /// returns true to stop; the place where it stopped, or npos
  template< class F >
- std::size_t scan( std::string_view T , std::size_t from ,
-                   F && report ) const;
+ std::size_t scan( std::string_view T , std::size_t from , F && report ) const;
 
  /// scan() by the filter of the probes, k of them, with vectors of W bytes
  template< int k , int W , class F >
  std::size_t filter( const unsigned char * T , std::size_t n ,
-                     std::size_t from , F && report ) const;
+		     std::size_t from ,
+		     F && report ) const;
 
  /// scan() by memchr() on the first probe and the bytes of the others
  template< class F >
  std::size_t filterBytes( const unsigned char * T , std::size_t n ,
-                          std::size_t from , F && report ) const;
+			  std::size_t from , F && report ) const;
 
  /// scan() by the shifts of the q-grams at the end of the window, for the
  /// long patterns
  template< class F >
- std::size_t skip( const unsigned char * T , std::size_t n ,
-                   std::size_t from , F && report ) const;
+ std::size_t skip( const unsigned char * T , std::size_t n , std::size_t from ,
+		   F && report ) const;
 
  /// skip() on four segments of T at once, whose chains of loads overlap,
  /// the occurrences of each segment reported after those of the ones
  /// before it
  template< class F >
  std::size_t skipPair( const unsigned char * T , std::size_t n ,
-                       std::size_t from , F && report ) const;
+		       std::size_t from , F && report ) const;
 
  /// the hash of the q-gram at p, in [ 0 , 4096 )
  [[nodiscard]] std::size_t gram( const unsigned char * p ) const;
@@ -334,17 +335,18 @@ class StringSearcher {
  /// scan() by the Two-Way algorithm, from from on
  template< class F >
  std::size_t twoWay( const unsigned char * T , std::size_t n ,
-                     std::size_t from , F && report ) const;
+		     std::size_t from ,
+		     F && report ) const;
 
  std::string f_P;
- std::size_t f_off[ 4 ] = { 0 , 0 , 0 , 0 };  ///< the offsets of the probes
- unsigned char f_byte[ 4 ] = { 0 , 0 , 0 , 0 };   ///< and their bytes
+ std::size_t f_off[ 4 ] = { 0 , 0 , 0 , 0 };     ///< the offsets of the probes
+ unsigned char f_byte[ 4 ] = { 0 , 0 , 0 , 0 };  ///< and their bytes
  int f_probes = 0;                            ///< 0 , 2 or 4
- std::size_t f_q = 0;      ///< the length of the q-grams, 0 if no skip
- std::uint64_t f_qmask = 0;              ///< the q bytes of a load of 8
- std::array< std::uint8_t , 4096 > f_shift; ///< the shift of each hash
- std::size_t f_shift0 = 1;               ///< after a window that ends in
-                                         ///< the last q-gram of P
+ std::size_t f_q = 0;        ///< the length of the q-grams, 0 if no skip
+ std::uint64_t f_qmask = 0;  ///< the q bytes of a load of 8
+ std::array< std::uint8_t , 4096 > f_shift;  ///< the shift of each hash
+ std::size_t f_shift0 = 1;                  ///< after a window that ends in
+					    ///< the last q-gram of P
 
  };  // end( class StringSearcher )
 
@@ -352,14 +354,13 @@ class StringSearcher {
 
 /// the first occurrence of \f$ P \f$ in \f$ T \f$ at or after `from`,
 /// `npos` if none, by a `StringSearcher` used once
-[[nodiscard]] inline std::size_t findFirst( std::string_view T ,
-                                            std::string_view P ,
-                                            std::size_t from = 0 );
+[[nodiscard]] inline std::size_t
+findFirst( std::string_view T , std::string_view P , std::size_t from = 0 );
 
 /// all the occurrences of \f$ P \f$ in \f$ T \f$, overlapping ones
 /// included, by a `StringSearcher` used once
 [[nodiscard]] inline std::vector< std::size_t > findAll( std::string_view T ,
-                                                    std::string_view P );
+							 std::string_view P );
 
 /*--------------------------------------------------------------------------*/
 
@@ -373,7 +374,7 @@ class StringSearcher {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* StringSearch.h included */
+#endif /* StringSearch.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File StringSearch.h -------------------------*/

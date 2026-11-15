@@ -55,7 +55,8 @@
 /*------------------------------- MAILBOX ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace {
+namespace
+{
 
 /// the median of r runs of work() after one not timed, the time of each
 /// the largest among the processes, in ns per op
@@ -86,14 +87,15 @@ std::uint64_t mixOf( std::uint64_t x )
  }
 
 /// a node of the random tree
-struct Node {
+struct Node
+{
  std::uint64_t key;
  std::uint32_t depth;
  };
 
 /// the cells of the mailbox, printed by the rank 0
 void mailboxCells( const std::vector< std::size_t > & sizes , int r ,
-                   unsigned seed )
+		   unsigned seed )
 {
  int P = 1 , me = 0;
  MPI_Comm_size( MPI_COMM_WORLD , &P );
@@ -115,7 +117,7 @@ void mailboxCells( const std::vector< std::size_t > & sizes , int r ,
       mb.send( 1 - m , x + 1 );
      } );
    while( ! mb.quiescent() )
-    mb.poll( []( const std::uint64_t & ) {} );
+    mb.poll( []( const std::uint64_t & ) { } );
    };
   // the random tree, 2 to 4 children per node above the depth
   std::uint32_t d = 0;
@@ -143,7 +145,7 @@ void mailboxCells( const std::vector< std::size_t > & sizes , int r ,
    std::vector< Node > stack;
    if( ADS::ownerOf( std::uint64_t( seed ) , p ) == m )
     stack.push_back( Node{ seed , 0 } );
-   for( ;; ) {
+   for( ; ; ) {
     mb.poll( [ & ]( const Node & v ) { stack.push_back( v ); } );
     if( ! stack.empty() ) {
      for( int j = 0 ; ( j < 64 ) && ! stack.empty() ; ++j ) {
@@ -152,9 +154,9 @@ void mailboxCells( const std::vector< std::size_t > & sizes , int r ,
       children( v , [ & ]( Node w ) {
        const std::size_t o = ADS::ownerOf( w.key , p );
        if( o == m )
-        stack.push_back( w );
+	stack.push_back( w );
        else
-        mb.send( o , w );
+	mb.send( o , w );
        } );
       }
      continue;
@@ -167,8 +169,8 @@ void mailboxCells( const std::vector< std::size_t > & sizes , int r ,
   // duplicates the communicator)
   std::vector< std::unique_ptr< ADS::MPIMailbox< std::uint64_t > > > boxes;
   for( int i = 0 ; i < 2 * ( r + 1 ) ; ++i )
-   boxes.push_back( std::make_unique< ADS::MPIMailbox< std::uint64_t > >(
-                                                          MPI_COMM_WORLD ) );
+   boxes.push_back(
+     std::make_unique< ADS::MPIMailbox< std::uint64_t > >( MPI_COMM_WORLD ) );
   std::size_t used = 0;
   auto end = [ & ]( void ) {
    auto & mb = *boxes[ used++ ];
@@ -176,14 +178,12 @@ void mailboxCells( const std::vector< std::size_t > & sizes , int r ,
     ;
    };
   const double t1 = cellOf( trips , r , k ) , t2 = cellOf( trips , r , k );
-  const double u1 = cellOf( tree , r , size ) ,
-               u2 = cellOf( tree , r , size );
+  const double u1 = cellOf( tree , r , size ) , u2 = cellOf( tree , r , size );
   const double e1 = cellOf( end , r , 1 ) , e2 = cellOf( end , r , 1 );
   if( me == 0 ) {
    if( p >= 2 ) {
     ADS::bench::print( b.c_str() , "round-trip" , k , "MPIMailbox" , t1 );
-    ADS::bench::print( b.c_str() , "round-trip" , k , "MPIMailbox A/A" ,
-                       t2 );
+    ADS::bench::print( b.c_str() , "round-trip" , k , "MPIMailbox A/A" , t2 );
     }
    ADS::bench::print( b.c_str() , "tree" , n , "MPIMailbox" , u1 );
    ADS::bench::print( b.c_str() , "tree" , n , "MPIMailbox A/A" , u2 );
@@ -216,17 +216,17 @@ int main( int argc , char ** argv )
    mailbox = true;
   else
    rest.push_back( argv[ i ] );
- ADS::bench::Options o( int( rest.size() ) , rest.data() ,
-                        { mailbox ? std::size_t( 1000000 ) :
-                                    std::size_t( 10000000 ) } );
+ ADS::bench::Options o(
+   int( rest.size() ) , rest.data() ,
+   { mailbox ? std::size_t( 1000000 ) : std::size_t( 10000000 ) } );
  if( mailbox ) {
   mailboxCells( o.sizes , o.runs , o.seed );
   MPI_Finalize();
   return( 0 );
   }
  ADS::ThreadPool pool{ std::size_t( threads ) };
- const std::string b = "mpi sort P" + std::to_string( P ) + " t" +
-                       std::to_string( threads );
+ const std::string b =
+   "mpi sort P" + std::to_string( P ) + " t" + std::to_string( threads );
  for( std::size_t n : o.sizes )
   for( int pattern = 0 ; pattern < 2 ; ++pattern ) {
    std::mt19937_64 g( o.seed + 1000003u * unsigned( me ) );
@@ -246,7 +246,7 @@ int main( int argc , char ** argv )
       ADS::distributed::sort( pool , MPI_COMM_WORLD , B );
      double d = MPI_Wtime() - a , m = 0;
      MPI_Reduce( &d , &m , 1 , MPI_DOUBLE , MPI_MAX , 0 , MPI_COMM_WORLD );
-     if( i > 0 )                            // the first one not timed
+     if( i > 0 )  // the first one not timed
       t.push_back( m * 1e9 / double( std::max< std::size_t >( n , 1 ) ) );
      }
     std::nth_element( t.begin() , t.begin() + t.size() / 2 , t.end() );
@@ -256,8 +256,7 @@ int main( int argc , char ** argv )
    const double x = cell() , y = cell();
    if( me == 0 ) {
     ADS::bench::print( b.c_str() , c , n , "ADS::distributed::sort" , x );
-    ADS::bench::print( b.c_str() , c , n , "ADS::distributed::sort A/A" ,
-                       y );
+    ADS::bench::print( b.c_str() , c , n , "ADS::distributed::sort A/A" , y );
     }
    }
  MPI_Finalize();

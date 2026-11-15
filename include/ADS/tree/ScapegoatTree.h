@@ -99,7 +99,7 @@
 
 #ifndef __ADS_ScapegoatTree
  #define __ADS_ScapegoatTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -120,16 +120,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the rebuilds of the trees of partial rebuilding: a subtree of nodes
 /// with the fields `left` and `right` made perfectly balanced, the left
 /// part of each node of \f$ s \f$ nodes holding \f$ \lfloor ( s - 1 ) / 2
 /// \rfloor \f$ of them, and `set( u , s )` called on each node with the
 /// size of its new subtree
-struct Rebuild {
+struct Rebuild
+{
 
  /// the nodes of the subtree of \f$ u \f$ in symmetric order, appended to
  /// \f$ B \f$ by a walk with no stack (the right links threaded as in the
@@ -137,12 +140,23 @@ struct Rebuild {
  template< class N >
  static void flatten( N * u , std::vector< N * > & B ) {
   while( u )
-   if( ! u->left ) { B.push_back( u ); u = u->right; }
+   if( ! u->left ) {
+    B.push_back( u );
+    u = u->right;
+    }
    else {
     N * p = u->left;
-    while( p->right && ( p->right != u ) ) p = p->right;
-    if( ! p->right ) { p->right = u; u = u->left; }
-    else { p->right = nullptr; B.push_back( u ); u = u->right; }
+    while( p->right && ( p->right != u ) )
+     p = p->right;
+    if( ! p->right ) {
+     p->right = u;
+     u = u->left;
+     }
+    else {
+     p->right = nullptr;
+     B.push_back( u );
+     u = u->right;
+     }
     }
   }
 
@@ -163,8 +177,9 @@ struct Rebuild {
  /// \f]
  template< class N , class Set >
  static N * fromArray( N * const * B , std::size_t i , std::size_t j ,
-                       Set & set ) {
-  if( i >= j ) return( nullptr );
+		       Set & set ) {
+  if( i >= j )
+   return( nullptr );
   const std::size_t m = i + ( j - i - 1 ) / 2;
   N * u = B[ m ];
   u->left = fromArray( B , i , m , set );
@@ -199,9 +214,9 @@ struct Rebuild {
  /// \f]
  template< class N >
  static N * toList( N * u , N * r ) {
-  while( u ) {                              // the left spine by a loop,
-   r = toList( u->right , r );              // the right subtrees by
-   u->right = r;                            // recursion
+  while( u ) {                 // the left spine by a loop,
+   r = toList( u->right , r );  // the right subtrees by
+   u->right = r;               // recursion
    r = u;
    N * l = u->left;
    u->left = nullptr;
@@ -213,8 +228,9 @@ struct Rebuild {
  /// the balanced tree of the first \f$ s \f$ nodes of the list \f$ h \f$,
  /// which is advanced past them
  template< class N , class Set >
- static N * fromList( std::size_t s , N * & h , Set & set ) {
-  if( s == 0 ) return( nullptr );
+ static N * fromList( std::size_t s , N *& h , Set & set ) {
+  if( s == 0 )
+   return( nullptr );
   N * l = fromList( ( s - 1 ) / 2 , h , set );
   N * u = h;
   h = h->right;
@@ -230,13 +246,16 @@ struct Rebuild {
  static std::size_t count( N * u , std::vector< N * > & S ) {
   std::size_t c = 0;
   S.clear();
-  if( u ) S.push_back( u );
+  if( u )
+   S.push_back( u );
   while( ! S.empty() ) {
    N * x = S.back();
    S.pop_back();
    ++c;
-   if( x->left ) S.push_back( x->left );
-   if( x->right ) S.push_back( x->right );
+   if( x->left )
+    S.push_back( x->left );
+   if( x->right )
+    S.push_back( x->right );
    }
   return( c );
   }
@@ -251,37 +270,37 @@ struct Rebuild {
 /// a DICTIONARY on a scapegoat tree of height at most \f$ \log_b q \f$,
 /// whose nodes keep the size of their subtree if `StoredSizes`
 template< std::totally_ordered K , class V , bool StoredSizes = false >
-class ScapegoatTree {
+class ScapegoatTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// how the sizes are found when they are not stored
  enum class Sizes {
-  RECOMPUTE ,       ///< each one counted, as Morin does
-  REUSE             ///< the child on the path known (exercise 8.5)
+  RECOMPUTE ,  ///< each one counted, as Morin does
+  REUSE       ///< the child on the path known (exercise 8.5)
   };
 
  /// which ancestor is the scapegoat
  enum class Scapegoats {
-  HEIGHT ,          ///< the first too high for its size (Galperin, Rivest)
-  WEIGHT            ///< the first with a child too large, as Morin does
+  HEIGHT ,  ///< the first too high for its size (Galperin, Rivest)
+  WEIGHT   ///< the first with a child too large, as Morin does
   };
 
  /// how a subtree is rebuilt
  enum class Rebuilds {
-  ARRAY ,           ///< by a buffer of its nodes, as Morin does
-  LIST              ///< by a list of its nodes, no buffer (exercise 8.7)
+  ARRAY ,  ///< by a buffer of its nodes, as Morin does
+  LIST    ///< by a list of its nodes, no buffer (exercise 8.7)
   };
 
  /// the empty tree of height at most \f$ \log_b q \f$
  /// \pre \f$ 1 < b < 2 \f$
  explicit ScapegoatTree( double b = 1.5 , Sizes sizes = Sizes::REUSE ,
-                         Rebuilds rebuilds = Rebuilds::ARRAY ,
-                         Scapegoats scapegoats = Scapegoats::HEIGHT );
+			 Rebuilds rebuilds = Rebuilds::ARRAY ,
+			 Scapegoats scapegoats = Scapegoats::HEIGHT );
 
  /// no copy, since the nodes are linked by pointers
  ScapegoatTree( const ScapegoatTree & ) = delete;
@@ -349,8 +368,8 @@ class ScapegoatTree {
 
  /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
  /// (the `find(x)` of an SSet of Morin)
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-  const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
 
  /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
  /// time: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
@@ -374,29 +393,33 @@ class ScapegoatTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the size of a node, if stored
- struct Size { std::size_t s = 1; };
+ struct Size
+ {
+  std::size_t s = 1;
+  };
 
  /// nothing, if not stored
- struct NoSize {};
+ struct NoSize
+ { };
 
  /// a node: its pair, its children and, if stored, its size
- struct Node : std::conditional_t< StoredSizes , Size , NoSize > {
-  K key;                       ///< the key
-  V value;                     ///< the value
-  Node * left = nullptr;       ///< the left child
-  Node * right = nullptr;      ///< the right child
+ struct Node : std::conditional_t< StoredSizes , Size , NoSize >
+ {
+  K key;                   ///< the key
+  V value;                 ///< the value
+  Node * left = nullptr;   ///< the left child
+  Node * right = nullptr;  ///< the right child
   /// the node of a pair
-  Node( const K & k , const V & v ) : key( k ) , value( v ) {}
+  Node( const K & k , const V & v ) : key( k ) , value( v ) { }
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the shape of the tree, for `PathIterator`
- struct Shape {
+ struct Shape
+ {
   /// the root of the tree `o`
   static auto root( const auto & o ) { return( o.f_root ); }
   /// the left child of the node `n`
@@ -411,13 +434,13 @@ class ScapegoatTree {
 
  /// the pairs of references to a key and its value
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
  /// the constant iterator by increasing key, along the path from the root
  using const_iterator = PathIterator< ScapegoatTree , Shape >;
- using iterator = const_iterator;          ///< the constant iterator
+ using iterator = const_iterator;  ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
@@ -433,7 +456,6 @@ class ScapegoatTree {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// the size of the subtree of \f$ u \f$: read if stored, counted if not
  std::size_t sizeOf( Node * u );
 
@@ -450,18 +472,18 @@ class ScapegoatTree {
  /// the node of the smallest key not smaller than \f$ k \f$, nil if none
  [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
- Node * f_root = nullptr;          ///< the root
- std::size_t f_n = 0;              ///< the number \f$ n \f$ of keys
- std::size_t f_q = 0;              ///< the bound \f$ q \f$
- double f_b;                       ///< the base \f$ b \f$
- Sizes f_sizes;                    ///< how the sizes are found
- Rebuilds f_rebuild;               ///< how a subtree is rebuilt
- Scapegoats f_goat;                ///< which ancestor is the scapegoat
- std::vector< double > f_pow;      ///< \f$ b^d \f$ for each depth \f$ d \f$
- std::vector< Node * > f_path;     ///< the path of the last descent
- std::vector< Node * > f_buf;      ///< the buffer of the rebuilds
- std::size_t f_rebuilds = 0;       ///< the rebuilds
- std::size_t f_work = 0;           ///< the nodes rebuilt
+ Node * f_root = nullptr;       ///< the root
+ std::size_t f_n = 0;           ///< the number \f$ n \f$ of keys
+ std::size_t f_q = 0;           ///< the bound \f$ q \f$
+ double f_b;                    ///< the base \f$ b \f$
+ Sizes f_sizes;                 ///< how the sizes are found
+ Rebuilds f_rebuild;            ///< how a subtree is rebuilt
+ Scapegoats f_goat;             ///< which ancestor is the scapegoat
+ std::vector< double > f_pow;   ///< \f$ b^d \f$ for each depth \f$ d \f$
+ std::vector< Node * > f_path;  ///< the path of the last descent
+ std::vector< Node * > f_buf;   ///< the buffer of the rebuilds
+ std::size_t f_rebuilds = 0;    ///< the rebuilds
+ std::size_t f_work = 0;        ///< the nodes rebuilt
 
  };  // end( class ScapegoatTree )
 
@@ -477,7 +499,7 @@ class ScapegoatTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ScapegoatTree.h included */
+#endif /* ScapegoatTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File ScapegoatTree.h ------------------------*/

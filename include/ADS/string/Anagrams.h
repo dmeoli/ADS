@@ -39,7 +39,7 @@
 
 #ifndef __ADS_Anagrams
  #define __ADS_Anagrams
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -59,7 +59,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the classes of anagrams among the words, in the order of their first
 /// word, each in the order of the words
@@ -81,13 +82,13 @@ namespace ADS {
 /// \f]
 /// \post the groups partition the words, each one of anagrams (audit)
 template< class S , class Hash = std::hash< S > >
-[[nodiscard]] std::vector< std::vector< S > > anagramGroups(
-                                             const std::vector< S > & words );
+[[nodiscard]] std::vector< std::vector< S > >
+anagramGroups( const std::vector< S > & words );
 
 /// the classes of `anagramGroups()` above, on `std::string` (or a list of
 /// literals)
-[[nodiscard]] inline std::vector< std::vector< std::string > > anagramGroups(
-                                   const std::vector< std::string > & words );
+[[nodiscard]] inline std::vector< std::vector< std::string > >
+anagramGroups( const std::vector< std::string > & words );
 
 /*--------------------------------------------------------------------------*/
 
@@ -101,7 +102,7 @@ template< class S , class Hash = std::hash< S > >
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Anagrams.h included */
+#endif /* Anagrams.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Anagrams.h ---------------------------*/

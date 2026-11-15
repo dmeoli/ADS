@@ -49,7 +49,7 @@
 
 #ifndef __ADS_Segmentations
  #define __ADS_Segmentations
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -67,7 +67,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the number of ways of writing \f$ X \f$ as a sequence of the words,
 /// modulo \f$ 2^{64} \f$; a word repeated in the list counts once for each
@@ -86,14 +87,16 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \pre no word is empty
-template< class S > requires std::is_class_v< S >
-[[nodiscard]] std::uint64_t countSegmentations(
-                             const S & X , const std::vector< S > & words );
+template< class S >
+ requires std::is_class_v< S >
+[[nodiscard]] std::uint64_t
+countSegmentations( const S & X , const std::vector< S > & words );
 
 /// the count of `countSegmentations()` above, on `std::string` (or
 /// literals)
-[[nodiscard]] inline std::uint64_t countSegmentations(
-            const std::string & X , const std::vector< std::string > & words );
+[[nodiscard]] inline std::uint64_t
+countSegmentations( const std::string & X ,
+		    const std::vector< std::string > & words );
 
 /// the number of readings of the digits as letters
 /// \f$ A = 1 , \ldots , Z = 26 \f$, modulo \f$ 2^{64} \f$; 1 for no digits
@@ -115,8 +118,8 @@ template< class S > requires std::is_class_v< S >
 /// \end{array}}
 /// \f]
 /// \pre every digit is in \f$ 0 .. 9 \f$
-[[nodiscard]] inline std::uint64_t countDecodings(
-                                           const std::vector< int > & digits );
+[[nodiscard]] inline std::uint64_t
+countDecodings( const std::vector< int > & digits );
 
 /*--------------------------------------------------------------------------*/
 
@@ -130,7 +133,7 @@ template< class S > requires std::is_class_v< S >
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Segmentations.h included */
+#endif /* Segmentations.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File Segmentations.h ------------------------*/

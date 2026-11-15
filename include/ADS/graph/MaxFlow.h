@@ -104,7 +104,7 @@
 
 #ifndef __ADS_MaxFlow
  #define __ADS_MaxFlow
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -121,14 +121,15 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the way of increasing the flow
 enum class Augment {
- FORD_FULKERSON ,   ///< any augmenting path, by a visit in depth
- EDMONDS_KARP ,     ///< a shortest augmenting path, by a visit in breadth
- DINIC ,            ///< a blocking flow on the levels of a visit in breadth
- PUSH_RELABEL       ///< the pushes and the relabelings of a preflow
+ FORD_FULKERSON ,  ///< any augmenting path, by a visit in depth
+ EDMONDS_KARP ,    ///< a shortest augmenting path, by a visit in breadth
+ DINIC ,           ///< a blocking flow on the levels of a visit in breadth
+ PUSH_RELABEL     ///< the pushes and the relabelings of a preflow
  };
 
 /*--------------------------------------------------------------------------*/
@@ -136,11 +137,11 @@ enum class Augment {
 /*--------------------------------------------------------------------------*/
 
 /// a network of flow with integer capacities
-class FlowNetwork {
+class FlowNetwork
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the network of the nodes \f$ 0 , \ldots , n - 1 \f$, with no edge
  /// \pre \f$ n \ge 0 \f$
  explicit FlowNetwork( int n );
@@ -210,7 +211,7 @@ class FlowNetwork {
  /// \pre \f$ s \f$ and \f$ t \f$ are distinct nodes
  /// \post no augmenting path from \f$ s \f$ to \f$ t \f$ (audit)
  long long maxFlow( int s , int t , Augment how = Augment::DINIC ,
-                    long long * paths = nullptr );
+		    long long * paths = nullptr );
 
  /// the side \f$ S \f$ of a minimum cut, the nodes reached from \f$ s \f$ in
  /// the residual network, after `maxFlow()`
@@ -230,8 +231,6 @@ class FlowNetwork {
 
 /*--------------------------------------------------------------------------*/
  private:
-
-
  /// no bound
  static constexpr long long INF = std::numeric_limits< long long >::max();
 
@@ -387,34 +386,36 @@ class FlowNetwork {
 
  /// an edge out of a node: its number and its head, kept together so
  /// that a visit reads the edge only when its head is of use
- struct Incidence {
-  int e;            ///< the number of the edge
-  int to;           ///< its head
+ struct Incidence
+ {
+  int e;   ///< the number of the edge
+  int to;  ///< its head
   };
 
- std::vector< std::vector< Incidence > > f_adj;   ///< the edges out of
-                                                  ///< each node
- std::vector< int > f_to;                   ///< the head of each edge,
-                                            ///< each and its twin
- std::vector< long long > f_cap;            ///< the capacities
- std::vector< long long > f_res;            ///< the residual capacities,
-                                            ///< apart, so that a visit
-                                            ///< reads 8 bytes per edge
- std::vector< int > f_level;                ///< the levels of Dinic
- std::vector< std::size_t > f_next;         ///< the next edge of Dinic
- std::vector< long long > f_imb;            ///< the excesses left by
-                                            ///< `setCapacity()`
- bool f_unbalanced = false;                 ///< whether there are some
- std::vector< int > f_imbNodes;             ///< the nodes that have them
+ std::vector< std::vector< Incidence > > f_adj;  ///< the edges out of
+						 ///< each node
+ std::vector< int > f_to;                        ///< the head of each edge,
+						 ///< each and its twin
+ std::vector< long long > f_cap;                 ///< the capacities
+ std::vector< long long > f_res;                 ///< the residual capacities,
+						 ///< apart, so that a visit
+						 ///< reads 8 bytes per edge
+ std::vector< int > f_level;                     ///< the levels of Dinic
+ std::vector< std::size_t > f_next;              ///< the next edge of Dinic
+ std::vector< long long > f_imb;                 ///< the excesses left by
+						 ///< `setCapacity()`
+ bool f_unbalanced = false;                      ///< whether there are some
+ std::vector< int > f_imbNodes;                  ///< the nodes that have them
 
  };  // end( class FlowNetwork )
 
 /// an edge \f$ ( u , v ) \f$ with lower and upper bounds on its flow
-struct BoundedEdge {
- int u ,           ///< the tail
-     v;            ///< the head
- long long low ,   ///< the least flow on the edge
-           high;   ///< the largest flow on the edge
+struct BoundedEdge
+{
+ int u ,          ///< the tail
+   v;            ///< the head
+ long long low ,  ///< the least flow on the edge
+   high;         ///< the largest flow on the edge
  };
 
 /// whether the edges admit a circulation, a flow conserved at every node with
@@ -449,7 +450,7 @@ struct BoundedEdge {
 /// \pre \f$ n \ge 0 \f$, the ends of the edges in \f$ [ 0 , n ) \f$
 /// \post the flows given are within the bounds and conserved (audit)
 inline bool feasibleCirculation( int n , const std::vector< BoundedEdge > & E ,
-                                 std::vector< long long > * flows = nullptr );
+				 std::vector< long long > * flows = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
@@ -463,7 +464,7 @@ inline bool feasibleCirculation( int n , const std::vector< BoundedEdge > & E ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MaxFlow.h included */
+#endif /* MaxFlow.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File MaxFlow.h ---------------------------*/

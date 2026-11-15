@@ -20,7 +20,8 @@
 #include <unordered_map>
 #include <utility>
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS RollbackUnionFind -------------------------*/
@@ -62,7 +63,7 @@ inline bool RollbackUnionFind::merge( int x , int y )
   return( false );
   }
  if( f_rank[ x ] > f_rank[ y ] )
-  std::swap( x , y );                     // x of lower rank, under y
+  std::swap( x , y );  // x of lower rank, under y
  const bool grew = f_rank[ x ] == f_rank[ y ];
  f_p[ x ] = y;
  f_size[ y ] += f_size[ x ];
@@ -110,7 +111,7 @@ inline bool RollbackUnionFind::forest( void ) const
    r = f_p[ r ];
    }
   if( h > f_rank[ r ] )
-   return( false );                       // the rank bounds the height
+   return( false );  // the rank bounds the height
   ++size[ r ];
   }
  for( int x = 0 ; x < n ; ++x )
@@ -126,8 +127,8 @@ inline bool RollbackUnionFind::forest( void ) const
 /*----------------------- OFFLINE DYNAMIC CONNECTIVITY ---------------------*/
 /*--------------------------------------------------------------------------*/
 
-inline std::vector< int > offlineConnectivity(
-                           int n , const std::vector< ConnectivityOp > & ops )
+inline std::vector< int >
+offlineConnectivity( int n , const std::vector< ConnectivityOp > & ops )
 {
  ADS_PRE( n >= 0 );
  using Op = ConnectivityOp;
@@ -136,25 +137,27 @@ inline std::vector< int > offlineConnectivity(
  std::vector< int > before( k + 1 , 0 );
  for( int t = 0 ; t < k ; ++t )
   before[ t + 1 ] = before[ t ] + ( ( ops[ t ].kind == Op::CONNECTED ) ||
-                                    ( ops[ t ].kind == Op::COMPONENTS ) );
+				    ( ops[ t ].kind == Op::COMPONENTS ) );
  const int q = before[ k ];
  std::vector< int > out( q , 0 );
 
  // the intervals of life of the edges, in the leaves of the questions
- struct Life {
+ struct Life
+ {
   int u , v , s , e;
   };
  std::vector< Life > lives;
  std::unordered_map< std::uint64_t , std::vector< int > > open;
  auto key = []( int u , int v ) {
-  if( v < u ) std::swap( u , v );
+  if( v < u )
+   std::swap( u , v );
   return( ( std::uint64_t( std::uint32_t( u ) ) << 32 ) |
-          std::uint32_t( v ) );
+	   std::uint32_t( v ) );
   };
  for( int t = 0 ; t < k ; ++t ) {
   const Op & o = ops[ t ];
   ADS_PRE( ( o.kind == Op::COMPONENTS ) ||
-           ( ( o.u >= 0 ) && ( o.u < n ) && ( o.v >= 0 ) && ( o.v < n ) ) );
+	   ( ( o.u >= 0 ) && ( o.u < n ) && ( o.v >= 0 ) && ( o.v < n ) ) );
   if( o.kind == Op::INSERT ) {
    open[ key( o.u , o.v ) ].push_back( int( lives.size() ) );
    lives.push_back( { o.u , o.v , before[ t ] , q } );
@@ -173,7 +176,7 @@ inline std::vector< int > offlineConnectivity(
  // the children 2 x and 2 x + 1
  std::vector< std::vector< int > > L( 4 * std::size_t( q ) );
  auto add = [ & ]( auto && self , int x , int a , int b , int s , int e ,
-                   int id ) -> void {
+		   int id ) -> void {
   if( ( e <= a ) || ( b <= s ) )
    return;
   if( ( s <= a ) && ( b <= e ) ) {
@@ -193,7 +196,7 @@ inline std::vector< int > offlineConnectivity(
  ask.reserve( q );
  for( const auto & o : ops )
   if( ( o.kind == Op::CONNECTED ) || ( o.kind == Op::COMPONENTS ) )
-   ask.push_back( & o );
+   ask.push_back( &o );
 
  RollbackUnionFind U( n );
  auto visit = [ & ]( auto && self , int x , int a , int b ) -> void {
@@ -202,8 +205,8 @@ inline std::vector< int > offlineConnectivity(
    U.merge( lives[ id ].u , lives[ id ].v );
   if( b - a == 1 ) {
    const Op & o = *ask[ a ];
-   out[ a ] = o.kind == Op::COMPONENTS ? U.count() :
-                                         int( U.same( o.u , o.v ) );
+   out[ a ] = o.kind == Op::COMPONENTS ? U.count() : int( U.same( o.u ,
+								  o.v ) );
    }
   else {
    const int c = ( a + b ) / 2;

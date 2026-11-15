@@ -50,7 +50,7 @@
 
 #ifndef __ADS_Lyndon
  #define __ADS_Lyndon
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -66,7 +66,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// whether \f$ S \f$ is a Lyndon word, i.e., nonempty and smaller than all
 /// its proper suffixes, in \f$ O( n^2 ) \f$ by the definition
@@ -95,8 +96,8 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \post Lyndon words, non-increasing, that give \f$ S \f$ back (audit)
-[[nodiscard]] inline std::vector< std::size_t > lyndonFactorization(
-                                                        std::string_view S );
+[[nodiscard]] inline std::vector< std::size_t >
+lyndonFactorization( std::string_view S );
 
 /// the start of the least rotation of \f$ S \f$, 0 if \f$ S \f$ is empty
 ///
@@ -130,7 +131,7 @@ namespace ADS {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Lyndon.h included */
+#endif /* Lyndon.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Lyndon.h ----------------------------*/

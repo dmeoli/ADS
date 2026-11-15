@@ -59,21 +59,26 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /// every rank and every select of both bits of R against a scan
 template< class D = RankSelect >
 void checkAll( const std::vector< bool > & R )
 {
  BitVector b;
- for( const bool x : R ) b.push_back( x );
+ for( const bool x : R )
+  b.push_back( x );
  const D S( b );
  std::size_t ones = 0 , zeros = 0;
  for( std::size_t i = 0 ; i <= R.size() ; ++i ) {
   CHECK( S.rank1( i ) == ones && S.rank0( i ) == zeros );
-  if( i == R.size() ) break;
-  if( R[ i ] ) CHECK( S.select1( ++ones ) == i );
-  else CHECK( S.select0( ++zeros ) == i );
+  if( i == R.size() )
+   break;
+  if( R[ i ] )
+   CHECK( S.select1( ++ones ) == i );
+  else
+   CHECK( S.select0( ++zeros ) == i );
   }
  CHECK( S.ones() == ones && S.zeros() == zeros );
  }
@@ -94,14 +99,13 @@ void checkAll( const std::vector< bool > & R )
 ADS_TEST( "binary-packing-scalar" )
 {
  std::mt19937_64 g( 29 );
- for( const std::size_t n : { 0 , 1 , 4 , 127 , 128 , 129 , 2047 , 2048 ,
-                              2049 , 5000 } )
+ for( const std::size_t n :
+      { 0 , 1 , 4 , 127 , 128 , 129 , 2047 , 2048 , 2049 , 5000 } )
   for( int t = 0 ; t < 6 ; ++t ) {
    std::vector< std::uint32_t > x( n );
    for( std::size_t i = 0 ; i < n ; ++i ) {
     const int b = t == 5 ? int( ( i / 128 ) % 33 ) : t * 6 + 2;
-    x[ i ] = b == 0 ? 0
-                    : std::uint32_t( g() ) >> ( 32 - std::min( b , 32 ) );
+    x[ i ] = b == 0 ? 0 : std::uint32_t( g() ) >> ( 32 - std::min( b , 32 ) );
     }
    const auto c = binaryPack( x );
    std::size_t bytes = 16 * ( ( n + 2047 ) / 2048 );
@@ -124,11 +128,10 @@ ADS_TEST( "binary-packing-scalar" )
   out[ i ] = i % 50 == 7 ? std::uint32_t( g() ) : std::uint32_t( g() % 16 );
  const auto pc = patchedPack( out );
  CHECK( patchedUnpack( pc , out.size() ) == out &&
-        pc.size() < binaryPack( out ).size() / 3 );
+	pc.size() < binaryPack( out ).size() / 3 );
  auto pt = pc;
  pt.pop_back();
- CHECK_THROWS( ( void )patchedUnpack( pt , out.size() ) ,
-               contract_violation );
+ CHECK_THROWS( ( void )patchedUnpack( pt , out.size() ) , contract_violation );
  std::vector< std::uint32_t > big( 3000 );
  for( std::size_t i = 0 ; i < big.size() ; ++i )
   big[ i ] = 0xFFFFF000u + std::uint32_t( i );
@@ -149,18 +152,20 @@ ADS_TEST( "rank-select-words-top" )
 {
  std::mt19937_64 g( 13 );
  for( const std::size_t n : { 0 , 1 , 63 , 64 , 65 , 255 , 256 , 257 , 1023 ,
-                              1024 , 1025 , 3000 , 4096 , 8191 , 8192 ,
-                              8193 , 70001 } )
+			      1024 ,
+			      1025 , 3000 , 4096 , 8191 , 8192 , 8193 ,
+			      70001 } )
   for( const double p : { 0.0 , 0.05 , 0.5 , 1.0 } ) {
    std::vector< Word > w( ( n + 63 ) / 64 + 3 );
    std::bernoulli_distribution B( p );
    for( auto & x : w )
-    for( int i = 0 ; i < 64 ; ++i ) x |= Word( B( g ) ) << i;
-   w.back() = ~Word( 0 );                  // past the size
+    for( int i = 0 ; i < 64 ; ++i )
+     x |= Word( B( g ) ) << i;
+   w.back() = ~Word( 0 );  // past the size
    const RankSelect A( std::span< const Word >( w ) , n );
    const RankSelect C( BitVector( std::span< const Word >( w ) , n ) );
-   bool ok = A.size() == n && A.ones() == C.ones() &&
-             A.bits() == C.bits() && A.directoryBits() == C.directoryBits();
+   bool ok = A.size() == n && A.ones() == C.ones() && A.bits() == C.bits() &&
+	     A.directoryBits() == C.directoryBits();
    for( std::size_t i = 0 ; ok && i <= n ; ++i )
     ok = A.rank1( i ) == C.rank1( i );
    for( std::size_t k = 1 ; ok && k <= A.ones() ; ++k )
@@ -171,7 +176,7 @@ ADS_TEST( "rank-select-words-top" )
    const CompactRankSelect X( std::span< const Word >( w ) , n );
    const CompactRankSelect Y( BitVector( std::span< const Word >( w ) , n ) );
    ok = X.size() == n && X.ones() == Y.ones() && X.bits() == Y.bits() &&
-        X.directoryBits() == Y.directoryBits() && X.ones() == A.ones();
+	X.directoryBits() == Y.directoryBits() && X.ones() == A.ones();
    for( std::size_t i = 0 ; ok && i <= n ; ++i )
     ok = X.rank1( i ) == A.rank1( i );
    for( std::size_t k = 1 ; ok && k <= X.ones() ; ++k )
@@ -195,18 +200,21 @@ ADS_TEST( "rank-select-top" )
   for( const double p : { 0.0 , 0.01 , 0.5 , 0.99 , 1.0 } ) {
    std::vector< bool > R( n );
    std::bernoulli_distribution B( p );
-   for( std::size_t i = 0 ; i < n ; ++i ) R[ i ] = B( g );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    R[ i ] = B( g );
    checkAll( R );
    }
- for( const std::size_t n : { 8191 , 8192 , 8193 , 40000 } ) {   // compact
+ for( const std::size_t n : { 8191 , 8192 , 8193 , 40000 } ) {  // compact
   std::vector< bool > R( n );
-  for( std::size_t i = 0 ; i < n ; ++i ) R[ i ] = g() % 3 == 0;
+  for( std::size_t i = 0 ; i < n ; ++i )
+   R[ i ] = g() % 3 == 0;
   checkAll< CompactRankSelect >( R );
   }
  std::vector< bool > C;
  for( int run = 0 ; run < 6 ; ++run ) {
-  for( int i = 0 ; i < 20000 ; ++i ) C.push_back( g() % 2 );
-  C.insert( C.end() , 100000 , run % 2 == 0 );   // no 0s, then no 1s
+  for( int i = 0 ; i < 20000 ; ++i )
+   C.push_back( g() % 2 );
+  C.insert( C.end() , 100000 , run % 2 == 0 );  // no 0s, then no 1s
   }
  checkAll( C );
  std::vector< bool > T( 5000 , true );
@@ -215,7 +223,8 @@ ADS_TEST( "rank-select-top" )
  checkAll( T );
  // a vector from its words, the bits past the size cleared
  std::vector< Word > W( 9 );
- for( auto & w : W ) w = g() | ( Word( g() ) << 32 );
+ for( auto & w : W )
+  w = g() | ( Word( g() ) << 32 );
  for( const std::size_t n : { 0 , 1 , 63 , 64 , 65 , 575 , 576 } ) {
   const BitVector v( W , n );
   BitVector u;
@@ -224,14 +233,14 @@ ADS_TEST( "rank-select-top" )
   CHECK( v == u && v.size() == n );
   }
  CHECK_THROWS( BitVector( std::span< const Word >( W ).first( 1 ) , 65 ) ,
-               contract_violation );
+	       contract_violation );
  // the directories with fewer selects: the same ranks and the selects
  // asked for, in fewer bits, and the others refused
  BitVector b;
- for( int i = 0 ; i < 30000 ; ++i ) b.push_back( g() % 3 == 0 );
+ for( int i = 0 ; i < 30000 ; ++i )
+  b.push_back( g() % 3 == 0 );
  const RankSelect A( b ) , O( b , RankSelect::Selects::ONES ) ,
-                  Z( b , RankSelect::Selects::ZEROS ) ,
-                  N( b , RankSelect::Selects::NONE );
+   Z( b , RankSelect::Selects::ZEROS ) , N( b , RankSelect::Selects::NONE );
  for( std::size_t i = 0 ; i <= b.size() ; i += 7 )
   CHECK( N.rank1( i ) == A.rank1( i ) && O.rank0( i ) == A.rank0( i ) );
  for( std::size_t k = 1 ; k <= A.ones() ; k += 5 )
@@ -239,8 +248,8 @@ ADS_TEST( "rank-select-top" )
  for( std::size_t k = 1 ; k <= A.zeros() ; k += 5 )
   CHECK( Z.select0( k ) == A.select0( k ) );
  CHECK( N.directoryBits() < O.directoryBits() &&
-        O.directoryBits() < A.directoryBits() &&
-        Z.directoryBits() < A.directoryBits() );
+	O.directoryBits() < A.directoryBits() &&
+	Z.directoryBits() < A.directoryBits() );
  CHECK_THROWS( ( void )N.select1( 1 ) , contract_violation );
  CHECK_THROWS( ( void )O.select0( 1 ) , contract_violation );
  CHECK_THROWS( ( void )Z.select1( 1 ) , contract_violation );
@@ -256,20 +265,22 @@ ADS_TEST( "parallel-rank-select-top" )
  std::mt19937_64 g( 41 );
  for( std::size_t t : { 2 , 5 } ) {
   ThreadPool pool( t );
-  for( const std::size_t n : { 0 , 1 , 1023 , 1024 , 1025 , 2049 , 8193 ,
-                               40000 , 300001 , 1100000 } )
+  for( const std::size_t n :
+       { 0 , 1 , 1023 , 1024 , 1025 , 2049 , 8193 , 40000 , 300001 ,
+	 1100000 } )
    for( const double p : { 0.0 , 0.3 , 1.0 } ) {
     std::vector< Word > w( ( n + 63 ) / 64 + 3 );
     std::bernoulli_distribution B( p );
     for( auto & x : w )
-     for( int i = 0 ; i < 64 ; ++i ) x |= Word( B( g ) ) << i;
-    w.back() = ~Word( 0 );                 // past the size
+     for( int i = 0 ; i < 64 ; ++i )
+      x |= Word( B( g ) ) << i;
+    w.back() = ~Word( 0 );  // past the size
     const std::span< const Word > W( w );
     const BitVector b( W , n );
     const RankSelect A( b ) , P( pool , b ) , Q( pool , W , n );
     bool ok = P.bits() == A.bits() && Q.bits() == A.bits() &&
-              P.ones() == A.ones() && Q.ones() == A.ones() &&
-              P.directoryBits() == A.directoryBits();
+	      P.ones() == A.ones() && Q.ones() == A.ones() &&
+	      P.directoryBits() == A.directoryBits();
     for( std::size_t i = 0 ; ok && i <= n ; ++i )
      ok = P.rank1( i ) == A.rank1( i ) && Q.rank1( i ) == A.rank1( i );
     for( std::size_t k = 1 ; ok && k <= A.ones() ; ++k )
@@ -279,8 +290,8 @@ ADS_TEST( "parallel-rank-select-top" )
     CHECK( ok );
     const CompactRankSelect X( b ) , Y( pool , b ) , Z( pool , W , n );
     ok = Y.bits() == X.bits() && Z.bits() == X.bits() &&
-         Y.directoryBits() == X.directoryBits() &&
-         Z.directoryBits() == X.directoryBits();
+	 Y.directoryBits() == X.directoryBits() &&
+	 Z.directoryBits() == X.directoryBits();
     for( std::size_t i = 0 ; ok && i <= n ; ++i )
      ok = Y.rank1( i ) == X.rank1( i ) && Z.rank1( i ) == X.rank1( i );
     for( std::size_t k = 1 ; ok && k <= X.ones() ; ++k )
@@ -298,24 +309,26 @@ ADS_TEST( "succinct-top" )
 {
  std::mt19937_64 g( 5 );
  std::vector< std::uint64_t > x( 5000 );
- for( auto & v : x ) v = g() % 300000;
+ for( auto & v : x )
+  v = g() % 300000;
  std::sort( x.begin() , x.end() );
  const EliasFano E( x , 300000 );
  for( std::size_t i = 0 ; i < x.size() ; ++i )
   CHECK( E.access( i ) == x[ i ] );
  for( int q = 0 ; q < 2000 ; ++q ) {
   const std::uint64_t v = g() % 300001;
-  CHECK( E.nextGEQ( v ) == std::size_t( std::lower_bound( x.begin() ,
-                                                          x.end() , v ) -
-                                        x.begin() ) );
+  CHECK(
+    E.nextGEQ( v ) ==
+    std::size_t( std::lower_bound( x.begin() , x.end() , v ) - x.begin() ) );
   }
- BitVector b;                               // ( ( ) ( ( ) ) ... )
+ BitVector b;  // ( ( ) ( ( ) ) ... )
  std::vector< std::size_t > S , match( 6000 );
  for( std::size_t i = 0 ; i < 6000 ; ++i ) {
-  const bool open = S.empty() ||
-                    ( ( g() % 2 ) && ( S.size() + i + 1 < 6000 ) );
+  const bool open =
+    S.empty() || ( ( g() % 2 ) && ( S.size() + i + 1 < 6000 ) );
   b.push_back( open );
-  if( open ) S.push_back( i );
+  if( open )
+   S.push_back( i );
   else {
    match[ i ] = S.back();
    match[ S.back() ] = i;
@@ -324,8 +337,8 @@ ADS_TEST( "succinct-top" )
   }
  const BalancedParentheses P( b );
  for( std::size_t i = 0 ; i < 6000 ; ++i )
-  CHECK( b[ i ] ? P.findClose( i ) == match[ i ] :
-                  P.findOpen( i ) == match[ i ] );
+  CHECK( b[ i ] ? P.findClose( i ) == match[ i ]
+		: P.findOpen( i ) == match[ i ] );
  }
 
 /*--------------------------------------------------------------------------*/

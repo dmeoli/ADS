@@ -43,7 +43,7 @@
 
 #ifndef __ADS_ObservableArray
  #define __ADS_ObservableArray
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -63,7 +63,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS ObservableArray --------------------------*/
@@ -71,13 +72,13 @@ namespace ADS {
 
 /// an array of values of `T` whose changes are told through `Policy`
 template< class T , class Policy = NoObservers >
-class ObservableArray {
+class ObservableArray
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using value_type = T;                          ///< the values
- using size_type = std::size_t;                 ///< the indices
+ using value_type = T;           ///< the values
+ using size_type = std::size_t;  ///< the indices
  /// the reads, which never change the array
  using const_iterator = typename std::vector< T >::const_iterator;
 
@@ -88,24 +89,23 @@ class ObservableArray {
  /// the last value removed: its index and the value
  using Erase = mod::Erased< std::size_t , std::size_t , T >;
  /// the events
- using modifications = mod::list< Assign , Insert , Erase , mod::Cleared ,
-                                  mod::Rebuilt >;
+ using modifications =
+   mod::list< Assign , Insert , Erase , mod::Cleared , mod::Rebuilt >;
  /// the subject
- using Subject = typename Policy::template bind< modifications ,
-                                                 ObservableArray >;
+ using Subject =
+   typename Policy::template bind< modifications , ObservableArray >;
 
  /// the array of \f$ n \f$ values `v`, the static observers `o...`; no
  /// event
- template< class ... O >
- explicit ObservableArray( std::size_t n = 0 , const T & v = T() ,
-                           O & ... o )
-  : f_a( n , v ) , f_sub( o... ) {}
+ template< class... O >
+ explicit ObservableArray( std::size_t n = 0 , const T & v = T() , O &... o )
+     : f_a( n , v ) , f_sub( o... ) { }
 
  /// the array of the values of `il`, the static observers `o...`; no
  /// event
- template< class ... O >
- ObservableArray( std::initializer_list< T > il , O & ... o )
-  : f_a( il ) , f_sub( o... ) {}
+ template< class... O >
+ ObservableArray( std::initializer_list< T > il , O &... o )
+     : f_a( il ) , f_sub( o... ) { }
 
 /*-------------------------------- THE READS -------------------------------*/
 
@@ -244,23 +244,27 @@ class ObservableArray {
  /// attaches the observer \f$ o \f$ and gives its number
  /// \pre no batch is open
  template< class O >
- int attach( O & o ) requires( Subject::dynamic ) {
+ int attach( O & o )
+  requires( Subject::dynamic )
+ {
   return( f_sub.attach( o ) );
   }
 
  /// detaches the observer number \f$ \mathit{id} \f$
  /// \pre it is attached, no batch is open
- void detach( int id ) requires( Subject::dynamic ) { f_sub.detach( id ); }
+ void detach( int id )
+  requires( Subject::dynamic )
+ {
+  f_sub.detach( id );
+  }
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// set() when someone listens
  void setTold( std::size_t i , const T & v );
  /// set() when someone listens, out of the hot code
- ADS_COLD_PATH void setCold( std::size_t i , const T & v ) {
-  setTold( i , v );
-  }
+ ADS_COLD_PATH void setCold( std::size_t i ,
+			     const T & v ) { setTold( i , v ); }
 
  /// push_back() when someone listens
  void pushTold( const T & v );
@@ -272,8 +276,8 @@ class ObservableArray {
  /// pop_back() when someone listens, out of the hot code
  ADS_COLD_PATH void popCold( void ) { popTold(); }
 
- std::vector< T > f_a;                     ///< the values
- ADS_NO_UNIQUE_ADDRESS Subject f_sub;      ///< the observers
+ std::vector< T > f_a;                 ///< the values
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  };  // end( class ObservableArray )
 
@@ -289,7 +293,7 @@ class ObservableArray {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ObservableArray.h included */
+#endif /* ObservableArray.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File ObservableArray.h -----------------------*/

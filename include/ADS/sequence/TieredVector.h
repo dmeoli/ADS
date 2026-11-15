@@ -69,7 +69,7 @@
 
 #ifndef __ADS_TieredVector
  #define __ADS_TieredVector
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -88,7 +88,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS TieredVector ----------------------------*/
@@ -97,11 +98,11 @@ namespace ADS {
 /// a sequence with access in \f$ O( 1 ) \f$ and insertion and removal
 /// anywhere in \f$ O( \sqrt{n} ) \f$, in circular blocks of \f$ b \f$ items
 template< class T >
-class TieredVector {
+class TieredVector
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the type of the items
  using value_type = T;
  /// the type of the sizes
@@ -242,9 +243,10 @@ class TieredVector {
 
  /// the iterator by index, random access, on items const if `Const`
  template< bool Const >
- class Iterator {
+ class Iterator
+ {
   using Owner = std::conditional_t< Const , const TieredVector ,
-                                    TieredVector >;
+				    TieredVector >;
 
   public:
   /// the category of the iterator, random access
@@ -262,11 +264,12 @@ class TieredVector {
   Iterator( void ) = default;
 
   /// on the item of index \f$ i \f$ of the vector \f$ v \f$
-  Iterator( Owner * v , std::size_t i ) : f_v( v ) , f_i( i ) {}
+  Iterator( Owner * v , std::size_t i ) : f_v( v ) , f_i( i ) { }
 
   /// the const iterator from the other one
-  template< bool K > requires ( Const && ! K )
-  Iterator( const Iterator< K > & o ) : f_v( o.f_v ) , f_i( o.f_i ) {}
+  template< bool K >
+   requires( Const && ! K )
+  Iterator( const Iterator< K > & o ) : f_v( o.f_v ) , f_i( o.f_i ) { }
 
   /// the item
   reference operator*( void ) const { return( ( *f_v )[ f_i ] ); }
@@ -277,13 +280,27 @@ class TieredVector {
    return( ( *f_v )[ std::size_t( difference_type( f_i ) + k ) ] );
    }
   /// to the next item
-  Iterator & operator++( void ) { ++f_i; return( *this ); }
+  Iterator & operator++( void ) {
+   ++f_i;
+   return( *this );
+   }
   /// to the previous item
-  Iterator & operator--( void ) { --f_i; return( *this ); }
+  Iterator & operator--( void ) {
+   --f_i;
+   return( *this );
+   }
   /// to the next item, returning the iterator before the step
-  Iterator operator++( int ) { auto t = *this; ++f_i; return( t ); }
+  Iterator operator++( int ) {
+   auto t = *this;
+   ++f_i;
+   return( t );
+   }
   /// to the previous item, returning the iterator before the step
-  Iterator operator--( int ) { auto t = *this; --f_i; return( t ); }
+  Iterator operator--( int ) {
+   auto t = *this;
+   --f_i;
+   return( t );
+   }
   /// \f$ k \f$ items on
   Iterator & operator+=( difference_type k ) {
    f_i = std::size_t( difference_type( f_i ) + k );
@@ -300,8 +317,7 @@ class TieredVector {
   friend Iterator operator-( Iterator a , difference_type k ) {
    return( a -= k );
    }
-  friend difference_type operator-( const Iterator & a ,
-                                    const Iterator & b ) {
+  friend difference_type operator-( const Iterator & a , const Iterator & b ) {
    return( difference_type( a.f_i ) - difference_type( b.f_i ) );
    }
   /// equal on the same index
@@ -313,7 +329,8 @@ class TieredVector {
   Owner * f_v = nullptr;
   std::size_t f_i = 0;
 
-  template< bool > friend class Iterator;
+  template< bool >
+  friend class Iterator;
   };
 
  /// the iterator on the items
@@ -340,11 +357,11 @@ class TieredVector {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a block: \f$ b \f$ places, the first item at `off`
- struct Block {
-  std::unique_ptr< T[] > a;   ///< the places
-  std::size_t off = 0;        ///< the place of the first item
+ struct Block
+ {
+  std::unique_ptr< T[] > a;  ///< the places
+  std::size_t off = 0;       ///< the place of the first item
   };
 
  /// the blocks for the size \f$ n \f$, \f$ b \f$ the least power of 2 not
@@ -390,11 +407,11 @@ class TieredVector {
  /// and size() items in them
  [[nodiscard]] bool full( void ) const;
 
- std::vector< Block > f_blocks;   ///< the blocks
- std::size_t f_n = 0;             ///< the number of items
- std::size_t f_g = 0;             ///< the places free before the first item
- std::size_t f_b = 64;            ///< the places of a block
- unsigned f_lg = 6;               ///< \f$ \log_2 b \f$
+ std::vector< Block > f_blocks;  ///< the blocks
+ std::size_t f_n = 0;            ///< the number of items
+ std::size_t f_g = 0;            ///< the places free before the first item
+ std::size_t f_b = 64;           ///< the places of a block
+ unsigned f_lg = 6;              ///< \f$ \log_2 b \f$
 
  };  // end( class TieredVector )
 
@@ -410,7 +427,7 @@ class TieredVector {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* TieredVector.h included */
+#endif /* TieredVector.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File TieredVector.h -------------------------*/

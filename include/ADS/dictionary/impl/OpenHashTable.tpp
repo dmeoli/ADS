@@ -15,16 +15,16 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- PROBING ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 inline Probing::Probing( Kind k , long c1 , long c2 )
- : f_kind( k ) , f_c1( c1 ) , f_c2( c2 )
-{
- }
+    : f_kind( k ) , f_c1( c1 ) , f_c2( c2 )
+{ }
 
 inline Probing Probing::linear( long delta )
 {
@@ -66,7 +66,7 @@ inline Probing::Kind Probing::kind( void ) const
  }
 
 inline std::size_t Probing::at( std::size_t h , std::size_t i ,
-                                std::size_t m ) const
+				std::size_t m ) const
 {
  ADS_PRE( m > 0 );
  const std::size_t h0 = h % m;
@@ -109,9 +109,12 @@ inline std::size_t Probing::stride( std::size_t h , std::size_t m ) const
 {
  ADS_PRE( m > 0 );
  switch( f_kind ) {
-  case( Kind::LINEAR ): return( mod( f_c1 , m ) );
-  case( Kind::DOUBLE ): return( step( f_g ? f_g( h ) : h , m ) % m );
-  default: return( 0 );
+  case( Kind::LINEAR ):
+   return( mod( f_c1 , m ) );
+  case( Kind::DOUBLE ):
+   return( step( f_g ? f_g( h ) : h , m ) % m );
+  default:
+   return( 0 );
   }
  }
 
@@ -120,11 +123,16 @@ inline bool Probing::works( std::size_t m ) const
  if( m == 0 )
   return( false );
  switch( f_kind ) {
-  case( Kind::LINEAR ): return( std::gcd( mod( f_c1 , m ) , m ) == 1 );
-  case( Kind::QUADRATIC ): return( is_prime( m ) );
-  case( Kind::TRIANGULAR ): return( is_pow2( m ) );
-  case( Kind::RANDOM ): return( true );
-  default: return( ( m == 1 ) || is_prime( m ) || is_pow2( m ) );
+  case( Kind::LINEAR ):
+   return( std::gcd( mod( f_c1 , m ) , m ) == 1 );
+  case( Kind::QUADRATIC ):
+   return( is_prime( m ) );
+  case( Kind::TRIANGULAR ):
+   return( is_pow2( m ) );
+  case( Kind::RANDOM ):
+   return( true );
+  default:
+   return( ( m == 1 ) || is_prime( m ) || is_pow2( m ) );
   }
  }
 
@@ -136,7 +144,7 @@ inline void Probing::check( std::size_t m ) const
 inline const std::vector< std::size_t > &
 Probing::permutation( std::size_t m ) const
 {
- if( f_m != m ) {                    // Fisher-Yates on 1 , ... , m - 1
+ if( f_m != m ) {  // Fisher-Yates on 1 , ... , m - 1
   f_p.resize( m );
   for( std::size_t i = 0 ; i < m ; ++i )
    f_p[ i ] = i;
@@ -160,9 +168,9 @@ inline std::size_t Probing::mod( long c , std::size_t m )
 
 template< class K , class V , class H >
 OpenHashTable< K , V , H >::OpenHashTable( std::size_t m , Probing probe ,
-                                           bool restructure , H h )
- : f_T( m ) , f_probe( probe ) , f_m0( m ) , f_restructure( restructure ) ,
-   f_h( h )
+					 bool restructure , H h )
+    : f_T( m ) , f_probe( probe ) , f_m0( m ) , f_restructure( restructure ) ,
+      f_h( h )
 {
  ADS_PRE( ( m > 0 ) && f_probe.works( m ) );
  if constexpr( PlaceHash< H , K > )
@@ -196,8 +204,8 @@ void OpenHashTable< K , V , H >::insert( const K & k , const V & v )
  if( f_restructure && ( 2 * ( f_size + f_deleted ) > f_T.size() ) )
   // the deleted places go away; the size doubles unless the keys are at
   // most a quarter of it
-  rebuild( 4 * f_size > f_T.size() ? resized( f_T.size() , true , f_m0 ) :
-                                     f_T.size() );
+  rebuild( 4 * f_size > f_T.size() ? resized( f_T.size() , true , f_m0 )
+				   : f_T.size() );
  ADS_POST( where( k ) < f_T.size() );
  ADS_INVARIANT( consistent( k ) );
  }
@@ -315,15 +323,16 @@ std::size_t OpenHashTable< K , V , H >::scan( const K & k , bool insert ) const
  const std::size_t h = hashOf( k );
  long firstDeleted = -1;
  std::size_t i = 0;
- std::size_t j = h % m;                    // H( k , 0 ) = H0( k )
+ std::size_t j = h % m;  // H( k , 0 ) = H0( k )
  ADS_AUDIT( j == f_probe.at( h , 0 , m ) );
- const std::size_t s = f_probe.kind() == Probing::Kind::LINEAR ? f_linear :
-                       f_probe.stride( h , m );   // 0 if not constant
+ const std::size_t s = f_probe.kind() == Probing::Kind::LINEAR
+			 ? f_linear
+			 : f_probe.stride( h , m );  // 0 if not constant
  while( ! is( j , k ) && ( f_T[ j ].slot != Slot::NIL ) && ( i < m ) ) {
   if( ( f_T[ j ].slot == Slot::DELETED ) && ( firstDeleted == -1 ) )
    firstDeleted = j;
   ++i;
-  if( s ) {                                 // H( k , i - 1 ) + s mod m
+  if( s ) {  // H( k , i - 1 ) + s mod m
    j += s;
    if( j >= m )
     j -= m;
@@ -382,7 +391,7 @@ bool OpenHashTable< K , V , H >::consistent( const K & k ) const
 template< class K , class V , class H >
 void OpenHashTable< K , V , H >::rebuild( std::size_t m )
 {
- while( ! f_probe.works( m ) )    // a linear step that m divides
+ while( ! f_probe.works( m ) )  // a linear step that m divides
   m = next_prime( m + 1 );
  f_probe.check( m );
  if( f_probe.kind() == Probing::Kind::LINEAR )

@@ -14,15 +14,18 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< RadixKey T >
 auto radixKey( T x )
 {
- using U = std::conditional_t< sizeof( T ) == 1 , std::uint8_t ,
-           std::conditional_t< sizeof( T ) == 2 , std::uint16_t ,
-           std::conditional_t< sizeof( T ) <= 4 , std::uint32_t ,
-                                                  std::uint64_t > > >;
+ using U = std::conditional_t<
+   sizeof( T ) == 1 , std::uint8_t ,
+   std::conditional_t<
+     sizeof( T ) == 2 , std::uint16_t ,
+     std::conditional_t< sizeof( T ) <= 4 , std::uint32_t ,
+			 std::uint64_t > > >;
  constexpr U sign = U( U( 1 ) << ( 8 * sizeof( T ) - 1 ) );
  if constexpr( std::is_floating_point_v< T > ) {
   const U u = std::bit_cast< U >( x );
@@ -34,14 +37,15 @@ auto radixKey( T x )
   return( U( x ) );
  }
 
-namespace detail {
+namespace detail
+{
 
 /// the counts of the bytes D[ 0 .. m ) of the unsigned key( x ) of the
 /// items of s[ 0 .. n ) into H, in one sweep; the bytes 0 .. W - 1, all
 /// those of H, by constant shifts
 template< class T , class K , class N , std::size_t W >
 void counts( const T * s , std::size_t n , K & key , const std::size_t * D ,
-             std::size_t m , std::array< std::array< N , 256 > , W > & H )
+	     std::size_t m , std::array< std::array< N , 256 > , W > & H )
 {
  for( std::size_t t = 0 ; ( t < m ) && ( t < W ) ; ++t )
   H[ t ].fill( 0 );
@@ -63,10 +67,10 @@ void counts( const T * s , std::size_t n , K & key , const std::size_t * D ,
 /// the unsigned key( x ) at the shift sh, whose counts are H; the starts
 /// of the buckets go to S, if given
 template< class T , class K , class N >
-void scatter( T * s , T * d , std::size_t n , K & key , int sh ,
-              const N * H , std::size_t * S = nullptr )
+void scatter( T * s , T * d , std::size_t n , K & key , int sh , const N * H ,
+	      std::size_t * S = nullptr )
 {
- std::array< N , 256 > P;                   // the next place in each
+ std::array< N , 256 > P;  // the next place in each
  N sum = 0;
  for( std::size_t c = 0 ; c < 256 ; ++c ) {
   if( S )
@@ -75,7 +79,8 @@ void scatter( T * s , T * d , std::size_t n , K & key , int sh ,
   sum = N( sum + H[ c ] );
   }
  auto byte = [ & ]( const T & x ) {
-  return( std::size_t( ( key( x ) >> sh ) & 0xFF ) ); };
+  return( std::size_t( ( key( x ) >> sh ) & 0xFF ) );
+  };
  for( std::size_t i = 0 ; i < n ; ++i )
   d[ P[ byte( s[ i ] ) ]++ ] = std::move( s[ i ] );
  }
@@ -87,7 +92,8 @@ void scatter( T * s , T * d , std::size_t n , K & key , int sh ,
 /// make no pass, and at most 32 items are sorted by insertion, in s
 template< class N , class T , class K >
 T * lsdPasses( T * s , T * r , std::size_t n , K & key ,
-               const std::size_t * D , std::size_t m )
+	       const std::size_t * D ,
+	       std::size_t m )
 {
  using U = std::decay_t< decltype( key( *s ) ) >;
  if( n <= 32 ) {
@@ -108,7 +114,7 @@ T * lsdPasses( T * s , T * r , std::size_t n , K & key ,
   const int sh = int( 8 * D[ t ] );
   const std::size_t c0 = std::size_t( ( k0 >> sh ) & 0xFF );
   if( H[ t ][ c0 ] == n )
-   continue;                                // all the same byte
+   continue;  // all the same byte
   scatter( s , r , n , key , sh , H[ t ].data() );
   std::swap( s , r );
   }
@@ -122,8 +128,8 @@ T * lsdPasses( T * s , T * r , std::size_t n , K & key ,
 /// parts is sorted in the same way and moved back to s, if it ends in r;
 /// the others go to lsdPasses(), with the narrowest counters that hold n
 template< class T , class K >
-T * lsdSort( T * s , T * r , std::size_t n , K & key ,
-             const std::size_t * D , std::size_t m )
+T * lsdSort( T * s , T * r , std::size_t n , K & key , const std::size_t * D ,
+	     std::size_t m )
 {
  if( ( m < 3 ) || ( n * sizeof( T ) < ( std::size_t( 1 ) << 20 ) ) ) {
   if( n < ( std::size_t( 1 ) << 31 ) )
@@ -134,7 +140,7 @@ T * lsdSort( T * s , T * r , std::size_t n , K & key ,
  counts( s , n , key , D + m - 1 , 1 , H );
  const int sh = int( 8 * D[ m - 1 ] );
  if( H[ 0 ][ std::size_t( ( key( s[ 0 ] ) >> sh ) & 0xFF ) ] == n )
-  return( lsdSort( s , r , n , key , D , m - 1 ) );   // no split there
+  return( lsdSort( s , r , n , key , D , m - 1 ) );  // no split there
  std::array< std::size_t , 257 > S;
  scatter( s , r , n , key , sh , H[ 0 ].data() , S.data() );
  S[ 256 ] = n;
@@ -163,24 +169,24 @@ void lsd( std::vector< T > & A , K & key )
  const std::size_t n = A.size();
  if( n < 2 )
   return;
- U any = 0 , all = U( ~U( 0 ) );            // the bits set in some key
- for( const auto & x : A ) {                // and those set in all
+ U any = 0 , all = U( ~U( 0 ) );  // the bits set in some key
+ for( const auto & x : A ) {     // and those set in all
   const U k = key( x );
   any |= k;
   all &= k;
   }
- std::array< std::size_t , W > D;          // the bytes that differ
+ std::array< std::size_t , W > D;  // the bytes that differ
  std::size_t m = 0;
  for( std::size_t d = 0 ; d < W ; ++d )
   if( ( ( any ^ all ) >> ( 8 * d ) ) & 0xFF )
    D[ m++ ] = d;
  if( m == 0 )
-  return;                                   // all the keys are equal
+  return;  // all the keys are equal
  if constexpr( Exact )
   if( m == 1 ) {
    const int s = int( 8 * D[ 0 ] );
    std::array< std::size_t , 256 > h{};
-   std::array< T , 256 > R{};               // an item of each byte
+   std::array< T , 256 > R{};  // an item of each byte
    for( const auto & x : A ) {
     const std::size_t c = std::size_t( ( key( x ) >> s ) & 0xFF );
     ++h[ c ];
@@ -235,17 +241,19 @@ void flagGroup( std::vector< T > & A , std::size_t lo , std::size_t n )
 /// flagGroup()
 template< RadixKey T >
 void flag( std::vector< T > & A , std::size_t lo , std::size_t n ,
-           const int * D , int m )
+	   const int * D ,
+	   int m )
 {
  T * const a = A.data() + lo;
  for( ; ; ) {
   const int sh = 8 * D[ 0 ];
   auto byte = [ sh ]( T x ) {
-   return( std::size_t( ( radixKey( x ) >> sh ) & 0xFF ) ); };
+   return( std::size_t( ( radixKey( x ) >> sh ) & 0xFF ) );
+   };
   std::array< std::size_t , 256 > count{} , next , end;
   for( std::size_t i = 0 ; i < n ; ++i )
    ++count[ byte( a[ i ] ) ];
-  std::array< unsigned char , 256 > full , todo;   // the non empty ones
+  std::array< unsigned char , 256 > full , todo;  // the non empty ones
   int k = 0;
   std::size_t sum = 0;
   for( std::size_t b = 0 ; b < 256 ; ++b ) {
@@ -255,7 +263,7 @@ void flag( std::vector< T > & A , std::size_t lo , std::size_t n ,
    if( count[ b ] )
     full[ k++ ] = static_cast< unsigned char >( b );
    }
-  if( k == 1 ) {                            // one bucket: the next byte
+  if( k == 1 ) {  // one bucket: the next byte
    if( m == 1 )
     return;
    ++D;
@@ -263,7 +271,7 @@ void flag( std::vector< T > & A , std::size_t lo , std::size_t n ,
    continue;
    }
   std::copy( full.begin() , full.begin() + k , todo.begin() );
-  for( int left = k ; left > 1 ; ) {        // the rounds
+  for( int left = k ; left > 1 ; ) {  // the rounds
    int w = 0;
    for( int t = 0 ; t < left ; ++t ) {
     const std::size_t b = todo[ t ];
@@ -298,14 +306,14 @@ void flagSort( std::vector< T > & A )
  using U = decltype( radixKey( T() ) );
  constexpr int W = int( sizeof( U ) );
  const std::size_t n = A.size();
- U any = 0 , all = U( ~U( 0 ) );            // the bits set in some key and
- for( const T x : A ) {                     // in all
+ U any = 0 , all = U( ~U( 0 ) );  // the bits set in some key and
+ for( const T x : A ) {          // in all
   const U k = radixKey( x );
   any |= k;
   all &= k;
   }
- std::array< int , W > D{};                 // the bytes that differ, the
- int m = 0;                                 // most significant first
+ std::array< int , W > D{};  // the bytes that differ, the
+ int m = 0;                 // most significant first
  for( int d = W - 1 ; d >= 0 ; --d )
   if( ( ( any ^ all ) >> ( 8 * d ) ) & 0xFF )
    D[ m++ ] = d;
@@ -331,8 +339,8 @@ void flagSort( std::vector< T > & A )
 /// the character d of s, 0 at its end, then the characters plus 1
 inline std::uint16_t charAt( const std::string & s , std::size_t d )
 {
- return( std::uint16_t( d < s.size() ? static_cast< unsigned char >( s[ d ] )
-                                       + 1 : 0 ) );
+ return( std::uint16_t(
+   d < s.size() ? static_cast< unsigned char >( s[ d ] ) + 1 : 0 ) );
  }
 
 /// the length of the prefix that the strings of s[ 0 .. n ), n >= 2,
@@ -341,12 +349,12 @@ inline std::uint16_t charAt( const std::string & s , std::size_t d )
 /// one call of memcmp(), and only one that cuts it is compared character
 /// by character; equal tells whether the strings are all equal
 inline std::size_t sharedPrefix( const std::string * s , std::size_t n ,
-                                 std::size_t d , bool & equal )
+				 std::size_t d , bool & equal )
 {
  const char * f = s[ 0 ].data() + d;
  const std::size_t n0 = s[ 0 ].size();
  std::size_t l = n0 - d;
- bool same = true;                          // all as long as s[ 0 ]
+ bool same = true;  // all as long as s[ 0 ]
  std::size_t i = 1;
  for( ; ( i < n ) && ( l > 0 ) ; ++i ) {
   const char * x = s[ i ].data() + d;
@@ -367,13 +375,14 @@ inline std::size_t sharedPrefix( const std::string * s , std::size_t n ,
 /// them share from d is skipped [see sharedPrefix()], so that equal keys
 /// and long shared prefixes make no pass of their own
 inline void msd( std::string * s , std::string * t , std::uint16_t * k ,
-                 std::size_t n , std::size_t d , bool home )
+		 std::size_t n , std::size_t d , bool home )
 {
- if( n <= 16 ) {                            // the rest of the strings
+ if( n <= 16 ) {  // the rest of the strings
   for( std::size_t i = 1 ; i < n ; ++i )
-   for( std::size_t j = i ; ( j > 0 ) &&
-        ( s[ j ].compare( d , std::string::npos , s[ j - 1 ] , d ,
-                          std::string::npos ) < 0 ) ; --j )
+   for( std::size_t j = i ;
+	( j > 0 ) && ( s[ j ].compare( d , std::string::npos , s[ j - 1 ] , d ,
+				       std::string::npos ) < 0 ) ;
+	--j )
     std::swap( s[ j ] , s[ j - 1 ] );
   if( ! home )
    std::move( s , s + n , t );
@@ -387,17 +396,18 @@ inline void msd( std::string * s , std::string * t , std::uint16_t * k ,
    k[ i ] = charAt( s[ i ] , d );
    ++c[ k[ i ] + 1 ];
    }
- if( equal || ( c[ 1 ] == n ) ) {           // all equal
+ if( equal || ( c[ 1 ] == n ) ) {  // all equal
   if( ! home )
    std::move( s , s + n , t );
   return;
   }
- for( std::size_t r = 0 ; r + 1 < c.size() ; ++r ) c[ r + 1 ] += c[ r ];
+ for( std::size_t r = 0 ; r + 1 < c.size() ; ++r )
+  c[ r + 1 ] += c[ r ];
  for( std::size_t i = 0 ; i < n ; ++i )
   t[ c[ k[ i ] ]++ ] = std::move( s[ i ] );
- for( std::size_t r = 0 ; r < 257 ; ++r ) {   // bucket r: [ b , e )
+ for( std::size_t r = 0 ; r < 257 ; ++r ) {  // bucket r: [ b , e )
   const std::size_t b = r == 0 ? 0 : c[ r - 1 ] , e = c[ r ];
-  if( ( r == 0 ) || ( e - b < 2 ) ) {       // sorted: back home
+  if( ( r == 0 ) || ( e - b < 2 ) ) {  // sorted: back home
    if( home )
     std::move( t + b , t + e , s + b );
    }
@@ -411,8 +421,7 @@ inline void msd( std::string * s , std::string * t , std::uint16_t * k ,
 /// buckets in place, following the cycles of the permutation, and a
 /// buffer as large as the largest bucket is made only when a bucket is not
 /// all of equal strings
-inline void msdInPlace( std::string * s , std::uint16_t * k ,
-                        std::size_t n )
+inline void msdInPlace( std::string * s , std::uint16_t * k , std::size_t n )
 {
  if( n <= 16 ) {
   msd( s , nullptr , k , n , 0 , true );
@@ -427,13 +436,14 @@ inline void msdInPlace( std::string * s , std::uint16_t * k ,
   k[ i ] = charAt( s[ i ] , d );
   ++c[ k[ i ] + 1 ];
   }
- for( std::size_t r = 0 ; r + 1 < c.size() ; ++r ) c[ r + 1 ] += c[ r ];
- std::array< std::size_t , 257 > next;      // bucket r: [ c[ r ] ,
- std::copy_n( c.begin() , 257 , next.begin() );   // c[ r + 1 ] )
+ for( std::size_t r = 0 ; r + 1 < c.size() ; ++r )
+  c[ r + 1 ] += c[ r ];
+ std::array< std::size_t , 257 > next;          // bucket r: [ c[ r ] ,
+ std::copy_n( c.begin() , 257 , next.begin() );  // c[ r + 1 ] )
  std::size_t most = 0;
  for( std::size_t r = 0 ; r < 257 ; ++r ) {
   most = std::max( most , c[ r + 1 ] - c[ r ] );
-  while( next[ r ] < c[ r + 1 ] ) {         // the cycles into the buckets
+  while( next[ r ] < c[ r + 1 ] ) {  // the cycles into the buckets
    std::size_t x = k[ next[ r ] ];
    while( x != r ) {
     const std::size_t p = next[ x ]++;
@@ -468,8 +478,9 @@ void radixSort( std::vector< T > & A )
  const auto before = detail::auditCopy( A );
  auto key = []( T x ) { return( radixKey( x ) ); };
  detail::lsd< true >( A , key );
- ADS_AUDIT( detail::sortedPermutation( A , before , []( T a , T b ) {
-  return( radixKey( a ) < radixKey( b ) ); } ) );
+ ADS_AUDIT( detail::sortedPermutation(
+   A , before ,
+   []( T a , T b ) { return( radixKey( a ) < radixKey( b ) ); } ) );
  }
 
 template< class T , class K >
@@ -480,7 +491,8 @@ void radixSortBy( std::vector< T > & A , K key )
  detail::lsd< false >( A , key );
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   for( std::size_t i = 1 ; i < A.size() ; ++i )
-   if( key( A[ i ] ) < key( A[ i - 1 ] ) ) return( false );
+   if( key( A[ i ] ) < key( A[ i - 1 ] ) )
+    return( false );
   return( true );
   } ) );
  }
@@ -490,23 +502,25 @@ void americanFlagSort( std::vector< T > & A )
 {
  const auto before = detail::auditCopy( A );
  const std::size_t n = A.size();
- auto step = [ & ]( auto rel ) {            // whether two keys in a row
-  auto k = radixKey( A[ 0 ] );              // step by rel: a scan that
+ auto step = [ & ]( auto rel ) {          // whether two keys in a row
+  auto k = radixKey( A[ 0 ] );            // step by rel: a scan that
   for( std::size_t i = 1 ; i < n ; ++i ) {  // stops there, at once on keys
-   const auto l = radixKey( A[ i ] );       // in disorder
+   const auto l = radixKey( A[ i ] );     // in disorder
    if( rel( l , k ) )
     return( true );
    k = l;
    }
-  return( false ); };
+  return( false );
+  };
  if( ( n < 2 ) || ! step( std::less<>() ) )
-  ;                                         // sorted already
+  ;  // sorted already
  else if( ! step( std::greater<>() ) )
-  std::reverse( A.begin() , A.end() );      // in reverse order
+  std::reverse( A.begin() , A.end() );  // in reverse order
  else
   detail::flagSort( A );
- ADS_AUDIT( detail::sortedPermutation( A , before , []( T a , T b ) {
-  return( radixKey( a ) < radixKey( b ) ); } ) );
+ ADS_AUDIT( detail::sortedPermutation(
+   A , before ,
+   []( T a , T b ) { return( radixKey( a ) < radixKey( b ) ); } ) );
  }
 
 inline void msdRadixSort( std::vector< std::string > & A )

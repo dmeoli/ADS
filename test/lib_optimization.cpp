@@ -67,7 +67,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using I64 = std::int64_t;
 using U64 = std::uint64_t;
@@ -127,13 +128,13 @@ ADS_TEST( "rod-cutting" )
  CHECK( rodCutting( Longs() , 0 ).first == 0 );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 400 ; ++t ) {
-  const Longs price = rndVector( g , std::size_t( rnd( g , 1 , 8 ) ) ,
-                                 -3 , 20 );
+  const Longs price = rndVector( g , std::size_t( rnd( g , 1 , 8 ) ) , -3 ,
+				 20 );
   const auto L = std::size_t( rnd( g , 0 , 12 ) );
   const auto [ gain , pieces ] = rodCutting( price , L );
   CHECK( gain == rodBrute( price , L ) );
-  CHECK( std::accumulate( pieces.begin() , pieces.end() ,
-                          std::size_t( 0 ) ) == L );
+  CHECK( std::accumulate( pieces.begin() , pieces.end() , std::size_t( 0 ) ) ==
+	 L );
   }
  CHECK( rodCutting( Longs( 1 , 3 ) , 1000 ).first == 3000 );
  CHECK_THROWS( rodCutting( Longs() , 1 ) , contract_violation );
@@ -176,7 +177,7 @@ ADS_TEST( "unbounded-knapsack" )
   CHECK( best == unboundedBrute( p , v , C ) );
   CHECK( copies.size() == n );
   const Longs w = rndVector( g , n , 1 , 6 ) ,
-              val = rndVector( g , n , 0 , 9 );
+    val = rndVector( g , n , 0 , 9 );
   CHECK( minValueExactWeight( w , val , C ) == exactBrute( w , val , C ) );
   const std::vector< long > coins( w.begin() , w.end() );
   const auto one = minValueExactWeight( w , Longs( n , 1 ) , C );
@@ -186,17 +187,18 @@ ADS_TEST( "unbounded-knapsack" )
    CHECK( *one == *opt );
   }
  CHECK( minValueExactWeight( Longs( { 50 , 10 } ) , Longs( { 200 , 50 } ) ,
-                             I64( 50 ) ) == 200 );
+			     I64( 50 ) ) == 200 );
  CHECK( ! minValueExactWeight( Longs( { 3 } ) , Longs( { 7 } ) , I64( 5 ) ) );
  CHECK( minValueExactWeight( Longs() , Longs() , I64( 0 ) ) == 0 );
  CHECK( unboundedKnapsack( Longs( { 10 , 40 , 50 , 70 } ) ,
-                           Longs( { 1 , 3 , 4 , 5 } ) , I64( 8 ) ).first
-        == 110 );
+			   Longs( { 1 , 3 , 4 , 5 } ) , I64( 8 ) )
+	  .first == 110 );
  CHECK_THROWS( unboundedKnapsack( Longs( { 1 } ) , Longs( { 0 } ) ,
-                                  I64( 3 ) ) ,
-               contract_violation );
- CHECK_THROWS( minValueExactWeight( Longs( { 1 } ) , Longs( { 1 } ) ,
-                                    I64( -1 ) ) , contract_violation );
+				  I64( 3 ) ) ,
+	       contract_violation );
+ CHECK_THROWS(
+   minValueExactWeight( Longs( { 1 } ) , Longs( { 1 } ) , I64( -1 ) ) ,
+   contract_violation );
  }
 
 /// the multisets of coins[ i .. ] of sum t
@@ -242,9 +244,9 @@ ADS_TEST( "coin-change-ways" )
  CHECK( subsetSumCount( Longs( { 0 , 0 } ) , I64( 0 ) ) == 4 );
  CHECK( subsetSumCount( Longs() , I64( 3 ) ) == 0 );
  CHECK_THROWS( coinChangeWays( Longs( { 0 } ) , I64( 1 ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( subsetSumCount( Longs( { -1 } ) , I64( 1 ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the fewest squares against the dynamic programming up to 3000, 18 = 9 +
@@ -317,11 +319,11 @@ ADS_TEST( "linear-partition" )
   const auto [ cost , starts ] = linearPartition( A , k );
   CHECK( cost == partitionBrute( A , k ) );
   CHECK( ( starts.size() == k - 1 ) &&
-         ( partitionCost( A , starts ) == cost ) );
+	 ( partitionCost( A , starts ) == cost ) );
   const Longs B = rndVector( g , std::size_t( rnd( g , 1 , 11 ) ) , 0 , 20 );
   const auto h = std::size_t( rnd( g , 1 , 14 ) );
   CHECK( painterPartition( B , h ) ==
-         linearPartition( B , std::min( h , B.size() ) ).first );
+	 linearPartition( B , std::min( h , B.size() ) ).first );
   }
  CHECK( painterPartition( Longs() , 3 ) == 0 );
  CHECK( painterPartition( Longs( 6 , 4 ) , 10 ) == 4 );
@@ -376,11 +378,11 @@ ADS_TEST( "stock-trading" )
  CHECK( maxProfit( Longs() , 3 ) == 0 );
  // k = 0, one day, all prices equal, k far above the days
  CHECK( maxProfit( Longs( { 1 , 9 } ) , 0 ) == 0 &&
-        maxProfitExactly( Longs( { 1 , 9 } ) , 0 ) == 0 );
+	maxProfitExactly( Longs( { 1 , 9 } ) , 0 ) == 0 );
  CHECK( maxProfit( Longs( { 4 } ) , 1 ) == 0 &&
-        ! maxProfitExactly( Longs( { 4 } ) , 1 ) );
+	! maxProfitExactly( Longs( { 4 } ) , 1 ) );
  CHECK( maxProfit( Longs( 6 , 3 ) , 2 ) == 0 &&
-        maxProfitExactly( Longs( 6 , 3 ) , 3 ) == 0 );
+	maxProfitExactly( Longs( 6 , 3 ) , 3 ) == 0 );
  CHECK( maxProfit( Longs( { 1 , 5 , 2 , 8 } ) , 100 ) == 10 );
  }
 
@@ -391,7 +393,7 @@ ADS_TEST( "house-problems" )
 {
  CHECK( maxNonAdjacentSum( Longs( { 5 , 1 , 1 , 5 } ) ) == 10 );
  CHECK( nonAdjacentSelection( Longs( { 5 , 1 , 1 , 5 } ) ).second ==
-        std::vector< std::size_t >( { 0 , 3 } ) );
+	std::vector< std::size_t >( { 0 , 3 } ) );
  CHECK( maxNonAdjacentSum( Longs() ) == 0 );
  CHECK( maxNonAdjacentSum( Longs( { -3 , -1 } ) ) == 0 );
  std::mt19937 g( 6 );
@@ -415,7 +417,7 @@ ADS_TEST( "house-problems" )
    }
   CHECK( ( s == best ) && ( sp == best ) );
   const auto n = std::size_t( rnd( g , 0 , 6 ) ) ,
-             k = std::size_t( rnd( g , 2 , 4 ) );
+	     k = std::size_t( rnd( g , 2 , 4 ) );
   std::vector< Longs > cost( n );
   for( auto & r : cost )
    r = rndVector( g , k , 0 , 20 );
@@ -439,12 +441,12 @@ ADS_TEST( "house-problems" )
   CHECK( ( c == cheapest ) && ( colors.size() == n ) );
   }
  CHECK( paintHouses( std::vector< Longs >( { { 4 } } ) ).first == 4 );
- CHECK( paintHouses( std::vector< Longs >( 3 , Longs( { 1 , 9 } ) ) ).first
-        == 11 );
+ CHECK( paintHouses( std::vector< Longs >( 3 , Longs( { 1 , 9 } ) ) ).first ==
+	11 );
  CHECK_THROWS( paintHouses( std::vector< Longs >( 2 , Longs( { 1 } ) ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( paintHouses( std::vector< Longs >( { { 1 , 2 } , { 1 } } ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /// the least weighted path length of the keys i .. j - 1 at depth d
@@ -454,9 +456,9 @@ I64 bstBrute( const Longs & p , const Longs & q , int i , int j , I64 d )
   return( q[ i ] * d );
  I64 best = std::numeric_limits< I64 >::max();
  for( int r = i ; r < j ; ++r )
-  best = std::min( best , p[ r ] * ( d + 1 ) +
-                          bstBrute( p , q , i , r , d + 1 ) +
-                          bstBrute( p , q , r + 1 , j , d + 1 ) );
+  best = std::min( best ,
+		   p[ r ] * ( d + 1 ) + bstBrute( p , q , i , r , d + 1 ) +
+			   bstBrute( p , q , r + 1 , j , d + 1 ) );
  return( best );
  }
 
@@ -469,24 +471,25 @@ ADS_TEST( "optimal-search-tree" )
  const auto E = optimalSearchTree( Longs() );
  CHECK( ( E.cost == 0 ) && ( E.root == -1 ) );
  const auto C = optimalSearchTree( Longs( { 15 , 10 , 5 , 10 , 20 } ) ,
-                                   Longs( { 5 , 10 , 5 , 5 , 5 , 10 } ) );
- CHECK( ( C.cost == 235 ) && ( C.root == 3 ) );     // 1 and 3 tie
+				   Longs( { 5 , 10 , 5 , 5 , 5 , 10 } ) );
+ CHECK( ( C.cost == 235 ) && ( C.root == 3 ) );  // 1 and 3 tie
  CHECK( optimalSearchTree( Longs( { 1 , 1 , 1 } ) ).cost == 5 );
  std::mt19937 g( 7 );
  for( int t = 0 ; t < 300 ; ++t ) {
   const auto n = std::size_t( rnd( g , 0 , 8 ) );
   const Longs p = rndVector( g , n , 0 , 6 ) ,
-              q = rndVector( g , n + 1 , 0 , 4 );
+    q = rndVector( g , n + 1 , 0 , 4 );
   CHECK( optimalSearchTree( p , q ).cost == bstBrute( p , q , 0 , int( n ) ,
-                                                      0 ) );
+						      0 ) );
   CHECK( optimalSearchTree( p ).cost ==
-         bstBrute( p , Longs( n + 1 , 0 ) , 0 , int( n ) , 0 ) );
+	 bstBrute( p , Longs( n + 1 , 0 ) , 0 , int( n ) , 0 ) );
   }
- CHECK( optimalSearchTree( std::vector< double >( { 0.6 , 0.2 , 0.2 } ) )
-        .root == 0 );
+ CHECK( optimalSearchTree( std::vector< double >( { 0.6 , 0.2 ,
+						    0.2 } ) ).root ==
+	0 );
  CHECK_THROWS( optimalSearchTree( Longs( { -1 } ) ) , contract_violation );
  CHECK_THROWS( optimalSearchTree( Longs( { 1 } ) , Longs( { 1 } ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /// the most the player to move gets from V[ i .. j - 1 ]
@@ -494,10 +497,10 @@ I64 coinsBrute( const Longs & V , std::size_t i , std::size_t j )
 {
  if( i >= j )
   return( 0 );
- const I64 sum = std::accumulate( V.begin() + I64( i ) , V.begin() + I64( j ) ,
-                                  I64( 0 ) );
+ const I64 sum =
+   std::accumulate( V.begin() + I64( i ) , V.begin() + I64( j ) , I64( 0 ) );
  return( std::max( sum - coinsBrute( V , i + 1 , j ) ,
-                   sum - coinsBrute( V , i , j - 1 ) ) );
+		    sum - coinsBrute( V , i , j - 1 ) ) );
  }
 
 // the game of the coins against the minimax on all the plays, odd and
@@ -520,29 +523,29 @@ ADS_TEST( "coins-in-a-line" )
 ADS_TEST( "grid-paths" )
 {
  const Grid A = { { 1 , 0 , 1 , 0 , 1 , 0 , 0 } ,
-                  { 1 , 0 , 1 , 1 , 1 , 1 , 0 } ,
-                  { 0 , 1 , 1 , 1 , 1 , 1 , 0 } ,
-                  { 0 , 0 , 1 , 1 , 1 , 1 , 0 } ,
-                  { 1 , 1 , 1 , 1 , 1 , 1 , 0 } ,
-                  { 1 , 1 , 1 , 1 , 1 , 1 , 0 } ,
-                  { 1 , 0 , 1 , 0 , 1 , 0 , 1 } };
+		  { 1 , 0 , 1 , 1 , 1 , 1 , 0 } ,
+		  { 0 , 1 , 1 , 1 , 1 , 1 , 0 } ,
+		  { 0 , 0 , 1 , 1 , 1 , 1 , 0 } ,
+		  { 1 , 1 , 1 , 1 , 1 , 1 , 0 } ,
+		  { 1 , 1 , 1 , 1 , 1 , 1 , 0 } ,
+		  { 1 , 0 , 1 , 0 , 1 , 0 , 1 } };
  const auto S = largestSquare( A );
  CHECK( ( S.side == 4 ) && ( S.row == 1 ) && ( S.col == 2 ) );
  CHECK( largestSquare( Grid() ).side == 0 );
- CHECK( largestSquare( Grid( 30 , std::vector< int >( 40 , 1 ) ) ).side
-        == 30 );
+ CHECK( largestSquare( Grid( 30 ,
+			     std::vector< int >( 40 , 1 ) ) ).side == 30 );
  std::mt19937 g( 9 );
  std::function< U64( const Grid & , std::size_t , std::size_t ) > paths =
-  [ & ]( const Grid & B , std::size_t i , std::size_t j ) -> U64 {
-   if( ( i >= B.size() ) || ( j >= B[ 0 ].size() ) || ( B[ i ][ j ] == 0 ) )
-    return( 0 );
-   if( ( i + 1 == B.size() ) && ( j + 1 == B[ 0 ].size() ) )
-    return( 1 );
-   return( paths( B , i + 1 , j ) + paths( B , i , j + 1 ) );
-   };
+   [ & ]( const Grid & B , std::size_t i , std::size_t j ) -> U64 {
+  if( ( i >= B.size() ) || ( j >= B[ 0 ].size() ) || ( B[ i ][ j ] == 0 ) )
+   return( 0 );
+  if( ( i + 1 == B.size() ) && ( j + 1 == B[ 0 ].size() ) )
+   return( 1 );
+  return( paths( B , i + 1 , j ) + paths( B , i , j + 1 ) );
+  };
  for( int t = 0 ; t < 400 ; ++t ) {
   const auto r = std::size_t( rnd( g , 1 , 7 ) ) ,
-             c = std::size_t( rnd( g , 1 , 7 ) );
+	     c = std::size_t( rnd( g , 1 , 7 ) );
   const Grid B = rndGrid( g , r , c , int( rnd( g , 5 , 10 ) ) );
   std::size_t side = 0;
   for( std::size_t i = 0 ; i < r ; ++i )
@@ -560,23 +563,24 @@ ADS_TEST( "grid-paths" )
   }
  const auto T = tartaglia( 60 );
  CHECK( countLatticePaths( Grid( 31 , std::vector< int >( 31 , 1 ) ) ) ==
-        T[ 60 ][ 30 ] );
+	T[ 60 ][ 30 ] );
  CHECK( countLatticePaths( Grid( { { 0 } } ) ) == 0 );
  CHECK( countLatticePaths( Grid() ) == 0 );
  CHECK_THROWS( largestSquare( Grid( { { 1 , 1 } , { 1 } } ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( countLatticePaths( Grid( { { 1 } , { 1 , 1 } } ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the water against the quadratic formula of the maxima on either side,
 // the classical example (6), fewer than three columns, all equal
 ADS_TEST( "trapping-rain-water" )
 {
- CHECK( trappingRainWater( Longs( { 0 , 1 , 0 , 2 , 1 , 0 , 1 , 3 , 2 , 1 ,
-                                    2 , 1 } ) ) == 6 );
+ CHECK( trappingRainWater( Longs( { 0 , 1 , 0 , 2 , 1 , 0 , 1 , 3 , 2 , 1 , 2 ,
+				    1 } ) ) ==
+	6 );
  CHECK( trappingRainWater( Longs() ) == 0 &&
-        trappingRainWater( Longs( { 3 , 0 } ) ) == 0 );
+	trappingRainWater( Longs( { 3 , 0 } ) ) == 0 );
  CHECK( trappingRainWater( Longs( 50 , 7 ) ) == 0 );
  std::mt19937 g( 10 );
  for( int t = 0 ; t < 400 ; ++t ) {
@@ -584,7 +588,7 @@ ADS_TEST( "trapping-rain-water" )
   I64 w = 0;
   for( std::size_t i = 0 ; i < h.size() ; ++i ) {
    const I64 l = *std::max_element( h.begin() , h.begin() + I64( i ) + 1 ) ,
-             r = *std::max_element( h.begin() + I64( i ) , h.end() );
+	     r = *std::max_element( h.begin() + I64( i ) , h.end() );
    w += std::min( l , r ) - h[ i ];
    }
   CHECK( trappingRainWater( h ) == w );
@@ -596,13 +600,16 @@ ADS_TEST( "trapping-rain-water" )
 // every segment
 ADS_TEST( "sequence-problems" )
 {
- CHECK( largestDivisibleSubset( std::vector< int >( { 1 , 2 , 3 , 4 , 6 } ) )
-        .size() == 3 );
+ CHECK(
+   largestDivisibleSubset( std::vector< int >( { 1 , 2 , 3 , 4 ,
+						 6 } ) ).size() ==
+   3 );
  CHECK( largestDivisibleSubset( std::vector< int >() ).empty() );
  CHECK( maxSumIncreasingSubsequence( Longs( { 1 , 101 , 2 , 3 , 100 , 4 ,
-                                              5 } ) ) == 106 );
- CHECK( longestDistinctSegment( Longs( { 1 , 2 , 3 , 1 , 2 , 3 , 2 , 2 } ) )
-        == std::pair( std::size_t( 0 ) , std::size_t( 3 ) ) );
+					      5 } ) ) ==
+	106 );
+ CHECK( longestDistinctSegment( Longs( { 1 , 2 , 3 , 1 , 2 , 3 , 2 , 2 } ) ) ==
+	std::pair( std::size_t( 0 ) , std::size_t( 3 ) ) );
  std::mt19937 g( 11 );
  for( int t = 0 ; t < 300 ; ++t ) {
   std::set< int > pool;
@@ -616,7 +623,7 @@ ADS_TEST( "sequence-problems" )
    for( std::size_t i = 0 ; i < n ; ++i )
     for( std::size_t j = 0 ; j < n ; ++j )
      if( ( ( m >> i ) & ( m >> j ) & 1 ) && ( A[ j ] % A[ i ] ) &&
-         ( A[ i ] % A[ j ] ) )
+	 ( A[ i ] % A[ j ] ) )
       ok = false;
    if( ok )
     best = std::max( best , std::size_t( std::popcount( m ) ) );
@@ -640,10 +647,11 @@ ADS_TEST( "sequence-problems" )
   std::vector< std::array< int , 3 > > B( std::size_t( rnd( g , 0 , 11 ) ) );
   for( auto & b : B )
    b = { int( rnd( g , 1 , 6 ) ) , int( rnd( g , 1 , 6 ) ) ,
-         int( rnd( g , 1 , 6 ) ) };
+	 int( rnd( g , 1 , 6 ) ) };
   auto fits = []( const std::array< int , 3 > & a ,
-                  const std::array< int , 3 > & b ) {
-   return( ( a[ 0 ] < b[ 0 ] ) && ( a[ 1 ] < b[ 1 ] ) && ( a[ 2 ] < b[ 2 ] ) );
+		  const std::array< int , 3 > & b ) {
+   return( ( a[ 0 ] < b[ 0 ] ) && ( a[ 1 ] < b[ 1 ] ) &&
+	    ( a[ 2 ] < b[ 2 ] ) );
    };
   std::size_t longest = 0;
   for( unsigned m = 0 ; m < ( 1u << B.size() ) ; ++m ) {
@@ -663,7 +671,7 @@ ADS_TEST( "sequence-problems" )
   for( std::size_t i = 0 ; i < D.size() ; ++i )
    for( std::size_t j = i ; j < D.size() ; ++j )
     if( std::set< I64 >( D.begin() + I64( i ) , D.begin() + I64( j ) + 1 )
-        .size() == j - i + 1 )
+	  .size() == j - i + 1 )
      widest = std::max( widest , j - i + 1 );
   CHECK( longestDistinctSegment( D ).second == widest );
   }
@@ -673,12 +681,12 @@ ADS_TEST( "sequence-problems" )
  CHECK( largestDivisibleSubset( P2 ) == P2 );
  CHECK( longestDistinctSegment( Longs() ).second == 0 );
  CHECK( longestChainSubsequence( Longs( { 3 , 1 , 2 , 5 , 4 } ) ,
-                                 std::less<>() ) ==
-        std::vector< std::size_t >( { 1 , 2 , 3 } ) );
+				 std::less<>() ) ==
+	std::vector< std::size_t >( { 1 , 2 , 3 } ) );
  CHECK_THROWS( largestDivisibleSubset( std::vector< int >( { 2 , 2 } ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( largestDivisibleSubset( std::vector< int >( { 0 } ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the cover by the fewest intervals against all the subsets of at most 11
@@ -686,12 +694,16 @@ ADS_TEST( "sequence-problems" )
 ADS_TEST( "interval-cover" )
 {
  using Is = std::vector< std::pair< I64 , I64 > >;
- CHECK( minimumIntervalCover( Is( { { 0 , 10 } , { 20 , 30 } } ) , I64( 0 ) ,
-                              I64( 10 ) )->size() == 1 );
+ CHECK(
+   minimumIntervalCover( Is( { { 0 , 10 } , { 20 , 30 } } ) , I64( 0 ) ,
+			 I64( 10 ) )
+     ->size() == 1 );
  CHECK( ! minimumIntervalCover( Is() , I64( 0 ) , I64( 5 ) ) );
  CHECK( ! minimumIntervalCover( Is( { { 1 , 7 } } ) , I64( 0 ) , I64( 5 ) ) );
- CHECK( minimumIntervalCover( Is( { { 0 , 2 } , { 2 , 4 } } ) , I64( 0 ) ,
-                              I64( 4 ) )->size() == 2 );
+ CHECK(
+   minimumIntervalCover( Is( { { 0 , 2 } , { 2 , 4 } } ) , I64( 0 ) ,
+			 I64( 4 ) )
+     ->size() == 2 );
  std::mt19937 g( 12 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const auto n = std::size_t( rnd( g , 0 , 11 ) );
@@ -723,9 +735,10 @@ ADS_TEST( "interval-cover" )
    CHECK( got->size() == *best );
   }
  CHECK_THROWS( minimumIntervalCover( Is() , I64( 3 ) , I64( 3 ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( minimumIntervalCover( Is( { { 2 , 1 } } ) , I64( 0 ) ,
-                                     I64( 3 ) ) , contract_violation );
+				     I64( 3 ) ) ,
+	       contract_violation );
  }
 
 // Smith's rule against all the orders, weights 0 and times 0 included;
@@ -734,8 +747,8 @@ ADS_TEST( "smith-rule" )
 {
  const std::vector< double > l = { 1 , 2 } , f = { 0.3 , 0.7 };
  CHECK( smithOrder( l , f ) == std::vector< std::size_t >( { 1 , 0 } ) );
- CHECK( smithOrder( std::vector< double >() , std::vector< double >() )
-        .empty() );
+ CHECK(
+   smithOrder( std::vector< double >() , std::vector< double >() ).empty() );
  std::mt19937 g( 13 );
  for( int t = 0 ; t < 300 ; ++t ) {
   const auto n = std::size_t( rnd( g , 0 , 6 ) );
@@ -746,17 +759,19 @@ ADS_TEST( "smith-rule" )
   std::vector< std::size_t > order( n );
   std::iota( order.begin() , order.end() , std::size_t( 0 ) );
   I64 best = std::numeric_limits< I64 >::max();
-  do best = std::min( best , I64( weightedCompletion( T , W , order ) ) );
+  do
+   best = std::min( best , I64( weightedCompletion( T , W , order ) ) );
   while( std::next_permutation( order.begin() , order.end() ) );
   CHECK( weightedCompletion( T , W , smithOrder( T , W ) ) == best );
-  CHECK( weightedCompletion( T , Longs( n , 1 ) , smithOrder( T ,
-                                                    Longs( n , 1 ) ) ) ==
-         totalCompletion( T , shortestJobFirst( T ) ) );
+  CHECK(
+    weightedCompletion( T , Longs( n , 1 ) ,
+			smithOrder( T , Longs( n , 1 ) ) ) ==
+    totalCompletion( T , shortestJobFirst( T ) ) );
   }
  CHECK_THROWS( smithOrder( Longs( { 0 } ) , Longs( { 0 } ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( smithOrder( Longs( { 1 } ) , Longs( { -1 } ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the exponent against the root of the equation and against the master
@@ -768,23 +783,23 @@ ADS_TEST( "akra-bazzi" )
  const double p = akraBazziExponent( { { 1 , 0.2 } , { 1 , 0.7 } } );
  CHECK( near( std::pow( 0.2 , p ) + std::pow( 0.7 , p ) , 1 ) && ( p < 1 ) );
  CHECK( akraBazzi( { { 1 , 0.2 } , { 1 , 0.7 } } , 1 ) ==
-        ( Growth{ 1 , 1 , 0 , 0 } ) );
- CHECK( std::abs( akraBazziExponent( { { 2 , 1.0 / 3 } , { 1 , 2.0 / 3 } } )
-                  - 1.394954 ) < 1e-6 );
+	( Growth{ 1 , 1 , 0 , 0 } ) );
+ CHECK( std::abs( akraBazziExponent( { { 2 , 1.0 / 3 } , { 1 , 2.0 / 3 } } ) -
+		  1.394954 ) < 1e-6 );
  CHECK( near( akraBazziExponent( { { 0.25 , 0.5 } } ) , -2 ) );
  CHECK( near( akraBazziExponent( { { 1 , 0.5 } , { 1 , 0.5 } } ) , 1 ) );
  for( double a : { 1.0 , 2.0 , 3.0 , 4.0 , 7.0 , 8.0 } )
   for( double b : { 2.0 , 3.0 , 4.0 } )
    for( double beta : { 0.0 , 0.5 , 1.0 , 2.0 , 3.0 } ) {
     const Growth x = akraBazzi( { { a , 1 / b } } , beta , 0 ) ,
-                 y = master( a , b , beta , 0 );
+		 y = master( a , b , beta , 0 );
     CHECK( ( std::abs( x.p - y.p ) < 1e-6 ) && ( x.q == y.q ) &&
-           ( x.r == y.r ) );
+	   ( x.r == y.r ) );
     }
  CHECK( akraBazzi( { { 1 , 0.5 } , { 1 , 0.5 } } , 1 , -1 ) ==
-        ( Growth{ 1 , 1 , 0 , 1 } ) );
+	( Growth{ 1 , 1 , 0 , 1 } ) );
  CHECK( akraBazzi( { { 1 , 0.5 } , { 1 , 0.5 } } , 1 , -2 ) ==
-        ( Growth{ 1 , 1 , 0 , 0 } ) );
+	( Growth{ 1 , 1 , 0 , 0 } ) );
  CHECK( akraBazzi( { { 1 , 0.5 } } , 2 , 1 ) == ( Growth{ 1 , 2 , 1 , 0 } ) );
  CHECK_THROWS( akraBazziExponent( {} ) , contract_violation );
  CHECK_THROWS( akraBazziExponent( { { 1 , 1 } } ) , contract_violation );
@@ -800,7 +815,7 @@ ADS_TEST( "catalan" )
   CHECK( catalan( n ) == T[ 2 * n ][ n ] / U64( n + 1 ) );
  CHECK( catalan( 3 ) == 5 && catalan( 0 ) == 1 && catalan( 1 ) == 1 );
  CHECK( catalan( 36 ) == 11959798385860453492ull );
- BigInteger c( 1 );                             // C_{n+1} from C_n
+ BigInteger c( 1 );  // C_{n+1} from C_n
  for( long long n = 0 ; n < 200 ; ++n )
   c = c * BigInteger( 2 * ( 2 * n + 1 ) ) / BigInteger( n + 2 );
  CHECK( catalan< BigInteger >( 200 ) == c );

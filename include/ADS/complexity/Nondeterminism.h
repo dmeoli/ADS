@@ -33,7 +33,7 @@
 
 #ifndef __ADS_Nondeterminism
  #define __ADS_Nondeterminism
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -48,14 +48,15 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the simulation of `choice()`, success and failure
-class Chooser {
+class Chooser
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the choice among \f$ \{ 0 , \ldots , k - 1 \} \f$ that the current
  /// sequence makes at this depth, 0 the first time the depth is reached
  ///
@@ -103,9 +104,8 @@ class Chooser {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- std::vector< std::pair< int , int > > f_path;   ///< ( choice , of how many )
- std::size_t f_depth = 0;                        ///< the choices made so far
+ std::vector< std::pair< int , int > > f_path;  ///< ( choice , of how many )
+ std::size_t f_depth = 0;                      ///< the choices made so far
 
  };  // end( class Chooser )
 
@@ -121,7 +121,7 @@ class Chooser {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Nondeterminism.h included */
+#endif /* Nondeterminism.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File Nondeterminism.h ------------------------*/

@@ -53,10 +53,12 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /// an item that counts the live ones, to find leaks and double frees
-struct Counted {
+struct Counted
+{
  static inline std::atomic< long > alive{ 0 };
  std::string s;
  explicit Counted( std::string v = "" ) : s( std::move( v ) ) { ++alive; }
@@ -69,17 +71,19 @@ struct Counted {
  };
 
 /// a message of a few words, as a change of a model
-struct Message {
+struct Message
+{
  std::uint64_t id;
  std::uint64_t check;
  double data[ 4 ];
- explicit Message( std::uint64_t i ) : id( i ) , check( ~i ) ,
-                                       data{ 1 , 2 , 3 , 4 } {}
+ explicit Message( std::uint64_t i )
+     : id( i ) , check( ~i ) , data{ 1 , 2 , 3 , 4 } { }
  [[nodiscard]] bool intact( void ) const { return( check == ~id ); }
  };
 
 /// an object aligned more than a class
-struct alignas( 64 ) Wide {
+struct alignas( 64 ) Wide
+{
  std::uint64_t x[ 8 ];
  };
 
@@ -105,9 +109,10 @@ void requests( R & r , std::size_t b , std::size_t a )
    }
   for( int i = 0 ; i < 300 ; ++i )
    CHECK( std::all_of( P[ i ] , P[ i ] + b , [ i ]( unsigned char c ) {
-           return( c == static_cast< unsigned char >( i ) ); } ) );
+    return( c == static_cast< unsigned char >( i ) );
+    } ) );
   CHECK( std::set< unsigned char * >( P.begin() , P.end() ).size() ==
-         P.size() );
+	 P.size() );
   std::shuffle( P.begin() , P.end() , g );
   for( auto * p : P )
    r.deallocate( p , b , a );
@@ -128,31 +133,33 @@ ADS_TEST( "pool-resource" )
 {
  PoolResource<> r;
  CHECK( r.size() == 0 && r.bytes() == 0 );
- CHECK( PoolResource<>::pooled( 1 , 1 ) && PoolResource<>::pooled( 256 , 16 )
-        && ! PoolResource<>::pooled( 257 , 8 ) &&
-        ! PoolResource<>::pooled( 16 , 32 ) &&
-        ! PoolResource<>::pooled( 0 , 8 ) );
- for( std::size_t b : { 1 , 2 , 15 , 16 , 17 , 31 , 32 , 33 , 100 , 255 ,
-                        256 , 257 , 1000 , 5000 } )
+ CHECK( PoolResource<>::pooled( 1 , 1 ) && PoolResource<>::pooled( 256 ,
+								   16 ) &&
+	! PoolResource<>::pooled( 257 , 8 ) &&
+	! PoolResource<>::pooled( 16 , 32 ) &&
+	! PoolResource<>::pooled( 0 , 8 ) );
+ for( std::size_t b :
+      { 1 , 2 , 15 , 16 , 17 , 31 , 32 , 33 , 100 , 255 , 256 , 257 , 1000 ,
+	5000 } )
   for( std::size_t a : { 1 , 8 , 16 , 32 , 64 } )
    requests( r , b , a );
  CHECK( r.size() == 0 );
  const std::size_t kept = r.bytes();
  CHECK( kept > 0 );
- void * p = r.allocate< 24 , 16 >();       // aligned to 16, as max_align_t
- r.deallocate< 24 , 16 >( p );              // is not everywhere
- void * q = r.allocate< 32 , 16 >();        // the same class, the same slot
+ void * p = r.allocate< 24 , 16 >();  // aligned to 16, as max_align_t
+ r.deallocate< 24 , 16 >( p );        // is not everywhere
+ void * q = r.allocate< 32 , 16 >();  // the same class, the same slot
  CHECK( q == p && r.size() == 1 );
  r.deallocate< 32 , 16 >( q );
- void * big = r.allocate< 4096 >();         // operator new
+ void * big = r.allocate< 4096 >();  // operator new
  CHECK( r.size() == 0 && r.bytes() == kept );
  r.deallocate< 4096 >( big );
  void * w = r.allocate< 64 , 64 >();
  CHECK( aligned( w , 64 ) );
  r.deallocate< 64 , 64 >( w );
- void * z = r.allocate( 0 );                // no class: operator new
+ void * z = r.allocate( 0 );  // no class: operator new
  r.deallocate( z , 0 );
- CHECK( r.bytes() == kept );                // nothing given back
+ CHECK( r.bytes() == kept );  // nothing given back
  CHECK_THROWS( r.deallocate( nullptr , 8 ) , contract_violation );
  }
 
@@ -164,28 +171,28 @@ ADS_TEST( "pool-allocator-containers" )
  using A = PoolAllocator< int >;
  using T = std::allocator_traits< A >;
  static_assert( T::propagate_on_container_copy_assignment::value &&
-                T::propagate_on_container_move_assignment::value &&
-                T::propagate_on_container_swap::value &&
-                ! T::is_always_equal::value );
- static_assert( std::is_same_v< T::rebind_alloc< double > ,
-                                PoolAllocator< double > > );
+		T::propagate_on_container_move_assignment::value &&
+		T::propagate_on_container_swap::value &&
+		! T::is_always_equal::value );
+ static_assert(
+   std::is_same_v< T::rebind_alloc< double > , PoolAllocator< double > > );
  static_assert( ! std::is_default_constructible_v< A > );
  PoolResource<> r , s;
  CHECK( A( r ) == PoolAllocator< double >( r ) && A( r ) != A( s ) );
  CHECK( PoolAllocator< char >( A( r ) ).resource() == &r );
  {
   std::mt19937_64 g( 7 );
-  std::list< Counted , PoolAllocator< Counted > > L{ PoolAllocator<
-                                                     Counted >( r ) };
+  std::list< Counted , PoolAllocator< Counted > > L{ PoolAllocator< Counted >(
+    r ) };
   std::list< Counted > M;
   std::map< int , Counted , std::less< int > ,
-            PoolAllocator< std::pair< const int , Counted > > >
-   P{ PoolAllocator< std::pair< const int , Counted > >( r ) };
+	    PoolAllocator< std::pair< const int , Counted > > >
+    P{ PoolAllocator< std::pair< const int , Counted > >( r ) };
   std::map< int , Counted > Q;
   std::unordered_map< int , int , std::hash< int > , std::equal_to< int > ,
-                      PoolAllocator< std::pair< const int , int > > >
-   U( 0 , std::hash< int >() , std::equal_to< int >() ,
-      PoolAllocator< std::pair< const int , int > >( r ) );
+		      PoolAllocator< std::pair< const int , int > > >
+    U( 0 , std::hash< int >() , std::equal_to< int >() ,
+       PoolAllocator< std::pair< const int , int > >( r ) );
   std::unordered_map< int , int > V;
   std::vector< int , PoolAllocator< int > > X{ PoolAllocator< int >( r ) };
   std::vector< int > Y;
@@ -193,14 +200,34 @@ ADS_TEST( "pool-allocator-containers" )
    const int k = int( g() % 2000 );
    const std::string v = std::to_string( g() % 100 );
    switch( g() % 6 ) {
-    case 0: L.emplace_back( v ); M.emplace_back( v ); break;
-    case 1: if( ! M.empty() ) { L.pop_front(); M.pop_front(); } break;
-    case 2: P.insert_or_assign( k , Counted( v ) );
-            Q.insert_or_assign( k , Counted( v ) ); break;
-    case 3: P.erase( k ); Q.erase( k ); break;
-    case 4: U[ k ] = int( t ); V[ k ] = int( t ); break;
-    default: U.erase( k ); V.erase( k );
-             X.push_back( k ); Y.push_back( k ); break;
+    case 0:
+     L.emplace_back( v );
+     M.emplace_back( v );
+     break;
+    case 1:
+     if( ! M.empty() ) {
+      L.pop_front();
+      M.pop_front();
+      }
+     break;
+    case 2:
+     P.insert_or_assign( k , Counted( v ) );
+     Q.insert_or_assign( k , Counted( v ) );
+     break;
+    case 3:
+     P.erase( k );
+     Q.erase( k );
+     break;
+    case 4:
+     U[ k ] = int( t );
+     V[ k ] = int( t );
+     break;
+    default:
+     U.erase( k );
+     V.erase( k );
+     X.push_back( k );
+     Y.push_back( k );
+     break;
     }
    }
   CHECK( std::ranges::equal( L , M ) );
@@ -220,8 +247,8 @@ ADS_TEST( "pool-allocator-propagation" )
 {
  PoolResource<> r , s;
  using A = PoolAllocator< Counted >;
- std::size_t h = 0;                         // the slots of an empty list,
- {                                          // its sentinel on MSVC
+ std::size_t h = 0;  // the slots of an empty list,
+ {                   // its sentinel on MSVC
   const std::list< Counted , A > E{ A( r ) };
   h = r.size();
   }
@@ -232,21 +259,21 @@ ADS_TEST( "pool-allocator-propagation" )
    M.emplace_back( std::to_string( -i ) );
    }
   CHECK( r.size() == 100 + h && s.size() == 100 + h );
-  M = L;                                    // the copy takes r
+  M = L;  // the copy takes r
   CHECK( M.get_allocator().resource() == &r && s.size() == 0 &&
-         r.size() == 200 + 2 * h && std::ranges::equal( L , M ) );
+	 r.size() == 200 + 2 * h && std::ranges::equal( L , M ) );
   std::list< Counted , A > N{ A( s ) };
   N.emplace_back( "x" );
-  N = std::move( L );                       // the move takes r
+  N = std::move( L );  // the move takes r
   CHECK( N.get_allocator().resource() == &r && s.size() == 0 &&
-         r.size() == 200 + 3 * h && N.size() == 100 );
+	 r.size() == 200 + 3 * h && N.size() == 100 );
   std::list< Counted , A > O{ A( s ) };
   O.emplace_back( "y" );
-  O.swap( N );                              // the swap swaps them
+  O.swap( N );  // the swap swaps them
   CHECK( O.get_allocator().resource() == &r &&
-         N.get_allocator().resource() == &s && N.size() == 1 &&
-         s.size() == 1 + h );
-  std::list< Counted , A > C( O );          // the copy keeps r
+	 N.get_allocator().resource() == &s && N.size() == 1 &&
+	 s.size() == 1 + h );
+  std::list< Counted , A > C( O );  // the copy keeps r
   CHECK( C.get_allocator().resource() == &r && r.size() == 300 + 4 * h );
   }
  CHECK( r.size() == 0 && s.size() == 0 && Counted::alive == 0 );
@@ -262,21 +289,21 @@ ADS_TEST( "pool-allocate-shared" )
  {
   std::vector< std::shared_ptr< Message > > S;
   for( std::uint64_t i = 0 ; i < 10000 ; ++i )
-   S.push_back( std::allocate_shared< Message >(
-                 PoolAllocator< Message >( r ) , i ) );
-  CHECK( r.size() == 10000 );                // one slot each
+   S.push_back(
+     std::allocate_shared< Message >( PoolAllocator< Message >( r ) , i ) );
+  CHECK( r.size() == 10000 );  // one slot each
   std::weak_ptr< Message > w = S[ 5 ];
   std::mt19937_64 g( 3 );
   std::shuffle( S.begin() , S.end() , g );
   S.resize( 5000 );
-  CHECK( std::all_of( S.begin() , S.end() , []( const auto & p ) {
-          return( p->intact() ); } ) );
+  CHECK( std::all_of( S.begin() , S.end() ,
+		      []( const auto & p ) { return( p->intact() ); } ) );
   S.clear();
-  CHECK( w.expired() && r.size() == 1 );    // the block of w
+  CHECK( w.expired() && r.size() == 1 );  // the block of w
   auto x = std::allocate_shared< Wide >( PoolAllocator< Wide >( r ) );
   CHECK( aligned( x.get() , 64 ) );
-  auto c = std::allocate_shared< Counted >( PoolAllocator< Counted >( r ) ,
-                                            "c" );
+  auto c =
+    std::allocate_shared< Counted >( PoolAllocator< Counted >( r ) , "c" );
   CHECK( c->s == "c" && Counted::alive == 1 );
   }
  CHECK( r.size() == 0 && Counted::alive == 0 );
@@ -293,9 +320,9 @@ ADS_TEST( "concurrent-pool" )
   for( std::size_t a : { 1 , 16 , 64 } )
    requests( r , b , a );
  CHECK( r.heaps() == 1 && r.bytes() == ConcurrentPoolResource<>::SEGMENT &&
-        s.heaps() == 0 );
- void * p = r.allocate< 40 , 16 >();       // aligned to 16, as max_align_t
- r.deallocate< 40 , 16 >( p );              // is not everywhere
+	s.heaps() == 0 );
+ void * p = r.allocate< 40 , 16 >();  // aligned to 16, as max_align_t
+ r.deallocate< 40 , 16 >( p );        // is not everywhere
  CHECK( ( r.allocate< 48 , 16 >() == p ) );
  r.deallocate< 48 , 16 >( p );
  r.collect();
@@ -329,11 +356,10 @@ ADS_TEST( "concurrent-pool-threads" )
  std::atomic< long > bad{ 0 } , freed{ 0 };
  std::size_t after_first = 0;
  for( int round = 0 ; round < ROUNDS ; ++round ) {
-  std::vector< std::unique_ptr< SPSCQueue< std::shared_ptr< Message > > > >
-   Q;
+  std::vector< std::unique_ptr< SPSCQueue< std::shared_ptr< Message > > > > Q;
   for( int k = 0 ; k < PAIRS ; ++k )
-   Q.push_back( std::make_unique< SPSCQueue< std::shared_ptr< Message > > >(
-                 1024 ) );
+   Q.push_back(
+     std::make_unique< SPSCQueue< std::shared_ptr< Message > > >( 1024 ) );
   std::vector< std::thread > T;
   for( int k = 0 ; k < PAIRS ; ++k ) {
    T.emplace_back( [ & , k ]() {
@@ -342,7 +368,7 @@ ADS_TEST( "concurrent-pool-threads" )
      while( ! Q[ k ]->push( m ) )
       std::this_thread::yield();
      }
-    while( ! Q[ k ]->push( nullptr ) )      // the end
+    while( ! Q[ k ]->push( nullptr ) )  // the end
      std::this_thread::yield();
     } );
    T.emplace_back( [ & , k ]() {
@@ -356,7 +382,7 @@ ADS_TEST( "concurrent-pool-threads" )
       break;
      if( ! m->intact() || ( m->id != i++ ) )
       ++bad;
-     m.reset();                             // the free of another thread
+     m.reset();  // the free of another thread
      ++freed;
      }
     } );
@@ -368,14 +394,15 @@ ADS_TEST( "concurrent-pool-threads" )
   }
  CHECK( bad == 0 && freed == long( PAIRS ) * N * ROUNDS );
  // the memory of the later rounds: at most a segment more per heap
- CHECK( r.bytes() <= after_first +
-        r.heaps() * ConcurrentPoolResource<>::SEGMENT );
+ CHECK( r.bytes() <=
+	after_first + r.heaps() * ConcurrentPoolResource<>::SEGMENT );
  // the objects of a thread that ended, freed here
  std::vector< void * > P;
  std::thread( [ & ]() {
   for( int i = 0 ; i < 1000 ; ++i )
    P.push_back( r.allocate< 64 >() );
-  } ).join();
+  } )
+   .join();
  for( void * p : P )
   r.deallocate< 64 >( p );
  // a shared pointer whose last copy dies in another thread, by the
@@ -401,7 +428,7 @@ ADS_TEST( "concurrent-pool-threads" )
 ADS_TEST( "arena-epochs" )
 {
  Arena< long > E( 4 );
- E.clear();                                 // no block: nothing to do
+ E.clear();  // no block: nothing to do
  CHECK( E.size() == 0 && E.bytes() == 0 );
  std::vector< long * > P;
  for( long i = 0 ; i < 10 ; ++i )
@@ -430,7 +457,7 @@ ADS_TEST( "arena-epochs" )
    s += x;
   CHECK( s == 1000 * e + 45 );
   }
- for( long i = 0 ; i < 3 ; ++i )            // past the blocks kept
+ for( long i = 0 ; i < 3 ; ++i )  // past the blocks kept
   E.make( i );
  CHECK( E.bytes() == b + 4 * sizeof( long ) && E.size() == 13 );
  CHECK( ! E.fresh( nullptr ) );
@@ -448,11 +475,12 @@ ADS_TEST( "arena-epochs" )
   }
  CHECK( Counted::alive == 0 );
  // a constructor that throws in a block kept: the arena as before it
- struct Thrower {
+ struct Thrower
+ {
   long x;
   explicit Thrower( long v ) : x( v ) {
    if( v < 0 )
-    throw std::runtime_error( "no" );
+    throw( std::runtime_error( "no" ) );
    }
   };
  Arena< Thrower > T( 2 );
@@ -481,7 +509,7 @@ ADS_TEST( "object-pool-epochs" )
  Q.clear();
  CHECK( Q.size() == 0 && Q.bytes() == 0 );
  std::vector< long * > P;
- for( long i = 0 ; i < 23 ; ++i )          // blocks of 1, 2, 4, 8 and 8
+ for( long i = 0 ; i < 23 ; ++i )  // blocks of 1, 2, 4, 8 and 8
   P.push_back( Q.make( i ) );
  const std::size_t b = Q.bytes();
  for( int i = 0 ; i < 23 ; i += 2 )
@@ -514,7 +542,7 @@ ADS_TEST( "object-pool-epochs" )
    Q.make( 0L );
   CHECK( Q.bytes() == b );
   }
- Q.make( 1L );                              // a new block, past the kept
+ Q.make( 1L );  // a new block, past the kept
  CHECK( Q.bytes() > b && Q.size() == 24 );
  // adopt() while blocks kept wait: the objects of the other pool alive
  // and never overwritten by the slots given again
@@ -522,7 +550,7 @@ ADS_TEST( "object-pool-epochs" )
  for( long i = 0 ; i < 15 ; ++i )
   A.make( i );
  A.clear();
- A.make( -1L );                             // blocks kept still waiting
+ A.make( -1L );  // blocks kept still waiting
  std::vector< long * > Bp;
  for( long i = 0 ; i < 9 ; ++i )
   Bp.push_back( B.make( 1000 + i ) );
@@ -536,8 +564,8 @@ ADS_TEST( "object-pool-epochs" )
   A.free( p );
  A.clear();
  const std::size_t a = A.bytes();
- for( long i = 0 ; i < 42 ; ++i )           // all the slots, the adopted
-  A.make( i );                              // ones too: 15 + 11 + 16
+ for( long i = 0 ; i < 42 ; ++i )  // all the slots, the adopted
+  A.make( i );                   // ones too: 15 + 11 + 16
  CHECK( A.bytes() == a );
  A.make( 0L );
  CHECK( A.bytes() > a );
@@ -570,7 +598,8 @@ ADS_TEST( "object-pool-epochs" )
 // first one, and no race (the test runs under the sanitizer of threads)
 ADS_TEST( "pool-epochs-threads" )
 {
- struct Node {
+ struct Node
+ {
   int owner , epoch;
   long value;
   const Node * parent;
@@ -579,7 +608,7 @@ ADS_TEST( "pool-epochs-threads" )
  std::vector< std::vector< Node * > > pub( P ) , pooled( P );
  // ret[ o ][ w ]: the nodes of the owner o that the worker w gives back
  std::vector< std::vector< std::vector< Node * > > > ret(
-  P , std::vector< std::vector< Node * > >( P ) );
+   P , std::vector< std::vector< Node * > >( P ) );
  std::vector< std::size_t > bytes( P , 0 );
  std::atomic< long > bad{ 0 };
  std::barrier sync( P );
@@ -591,7 +620,7 @@ ADS_TEST( "pool-epochs-threads" )
    pub[ w ].clear();
    for( int i = 0 ; i < M ; ++i )
     pub[ w ].push_back( ar.make( Node{ w , e , long( w ) * M + i ,
-                                       nullptr } ) );
+				       nullptr } ) );
    sync.arrive_and_wait();
    // phase 2: the nodes of the others read, and pooled nodes whose
    // parents are theirs; a third of the pooled nodes freed by the owner,
@@ -601,7 +630,7 @@ ADS_TEST( "pool-epochs-threads" )
     for( int i = w ; i < M ; i += 7 ) {
      const Node * x = pub[ o ][ i ];
      if( ( x->owner != o ) || ( x->epoch != e ) ||
-         ( x->value != long( o ) * M + i ) || x->parent )
+	 ( x->value != long( o ) * M + i ) || x->parent )
       ++bad;
      Node * y = pool.make( Node{ w , e , x->value , x } );
      if( i % 3 == 0 )
@@ -613,10 +642,10 @@ ADS_TEST( "pool-epochs-threads" )
    for( int o = 0 ; o < P ; ++o )
     if( o != w ) {
      for( std::size_t i = std::size_t( w ) ; i < pooled[ o ].size() ;
-          i += 2 * P ) {
+	  i += 2 * P ) {
       const Node * y = pooled[ o ][ i ];
       if( ( y->owner != o ) || ( y->epoch != e ) ||
-          ( y->parent->value != y->value ) )
+	  ( y->parent->value != y->value ) )
        ++bad;
       ret[ o ][ w ].push_back( pooled[ o ][ i ] );
       }

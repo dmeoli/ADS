@@ -14,10 +14,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline FMIndex::FMIndex( std::string_view s , std::size_t b , std::size_t mu )
- : f_n( s.size() ) , f_b( b ) , f_mu( mu ) , f_dollar( 0 )
+    : f_n( s.size() ) , f_b( b ) , f_mu( mu ) , f_dollar( 0 )
 {
  ADS_PRE( ( b > 0 ) && ( mu > 0 ) );
  ADS_PRE( std::uint64_t( s.size() ) < ( std::uint64_t( 1 ) << 32 ) );
@@ -25,25 +26,28 @@ inline FMIndex::FMIndex( std::string_view s , std::size_t b , std::size_t mu )
  const std::size_t rows = f_n + 1;
  f_L.assign( rows , '\0' );
  for( std::size_t i = 0 ; i < rows ; ++i )
-  if( sa[ i ] == 0 ) f_dollar = i;
-  else f_L[ i ] = s[ sa[ i ] - 1 ];
+  if( sa[ i ] == 0 )
+   f_dollar = i;
+  else
+   f_L[ i ] = s[ sa[ i ] - 1 ];
  std::array< std::size_t , 256 > cnt{};
- for( char c : s ) ++cnt[ static_cast< unsigned char >( c ) ];
- f_C[ 0 ] = 1;                             // the $ comes first
+ for( char c : s )
+  ++cnt[ static_cast< unsigned char >( c ) ];
+ f_C[ 0 ] = 1;  // the $ comes first
  for( std::size_t c = 0 ; c < 256 ; ++c ) {
   f_C[ c + 1 ] = f_C[ c ] + cnt[ c ];
   f_id[ c ] = cnt[ c ] > 0 ? int( f_sigma++ ) : -1;
   }
- f_occ.assign( ( rows / f_b + 1 ) * f_sigma , 0 );   // the counts
+ f_occ.assign( ( rows / f_b + 1 ) * f_sigma , 0 );  // the counts
  std::vector< std::uint32_t > run( f_sigma , 0 );
  for( std::size_t i = 0 ; i <= rows ; ++i ) {
   if( i % f_b == 0 )
    std::copy( run.begin() , run.end() ,
-              f_occ.begin() + std::ptrdiff_t( i / f_b * f_sigma ) );
+	      f_occ.begin() + std::ptrdiff_t( i / f_b * f_sigma ) );
   if( ( i < rows ) && ( i != f_dollar ) )
    ++run[ std::size_t( f_id[ static_cast< unsigned char >( f_L[ i ] ) ] ) ];
   }
- BitVector mark( rows );                   // the samples
+ BitVector mark( rows );  // the samples
  f_row.assign( f_n / f_mu + 1 , 0 );
  for( std::size_t i = 0 ; i < rows ; ++i )
   if( sa[ i ] % f_mu == 0 ) {
@@ -65,7 +69,8 @@ inline std::size_t FMIndex::rank( char c , std::size_t k ) const
 {
  ADS_PRE( k <= f_n + 1 );
  const int id = f_id[ static_cast< unsigned char >( c ) ];
- if( id < 0 ) return( 0 );
+ if( id < 0 )
+  return( 0 );
  const std::size_t blk = k / f_b;
  std::size_t r = f_occ[ blk * f_sigma + std::size_t( id ) ];
  // the scan of the block up to k, 8 symbols at a time: the bytes equal to
@@ -73,8 +78,8 @@ inline std::size_t FMIndex::rank( char c , std::size_t k ) const
  // high bit; the $ is stored as a 0, which a symbol 0 does not count
  const std::size_t a = blk * f_b;
  const auto * L = reinterpret_cast< const unsigned char * >( f_L.data() );
- const std::uint64_t cc = 0x0101010101010101ULL *
-                          static_cast< unsigned char >( c );
+ const std::uint64_t cc =
+   0x0101010101010101ULL * static_cast< unsigned char >( c );
  constexpr std::uint64_t lo7 = 0x7F7F7F7F7F7F7F7FULL;
  std::size_t i = a;
  for( ; i + 8 <= k ; i += 8 ) {
@@ -83,8 +88,10 @@ inline std::size_t FMIndex::rank( char c , std::size_t k ) const
   x ^= cc;
   r += std::size_t( std::popcount( ~( ( ( x & lo7 ) + lo7 ) | x | lo7 ) ) );
   }
- for( ; i < k ; ++i ) r += ( L[ i ] == static_cast< unsigned char >( c ) );
- if( ( c == '\0' ) && ( f_dollar >= a ) && ( f_dollar < k ) ) --r;
+ for( ; i < k ; ++i )
+  r += ( L[ i ] == static_cast< unsigned char >( c ) );
+ if( ( c == '\0' ) && ( f_dollar >= a ) && ( f_dollar < k ) )
+  --r;
  return( r );
  }
 
@@ -95,8 +102,8 @@ inline std::size_t FMIndex::lf( std::size_t r ) const
  return( f_C[ static_cast< unsigned char >( c ) ] + rank( c , r ) );
  }
 
-inline std::pair< std::size_t , std::size_t > FMIndex::range(
-                                                   std::string_view P ) const
+inline std::pair< std::size_t , std::size_t >
+FMIndex::range( std::string_view P ) const
 {
  ADS_PRE( ! P.empty() );
  std::size_t first = 0 , last = f_n + 1;
@@ -105,7 +112,8 @@ inline std::pair< std::size_t , std::size_t > FMIndex::range(
   first = f_C[ c ] + rank( P[ i ] , first );
   last = f_C[ c ] + rank( P[ i ] , last );
   }
- if( first > last ) last = first;
+ if( first > last )
+  last = first;
  return( std::pair( first , last ) );
  }
 
@@ -118,7 +126,8 @@ inline std::size_t FMIndex::count( std::string_view P ) const
 inline std::size_t FMIndex::place( std::size_t r ) const
 {
  std::size_t t = 0;
- for( ; ! marked( r ) ; ++t ) r = lf( r );  // at most mu - 1 steps
+ for( ; ! marked( r ) ; ++t )
+  r = lf( r );  // at most mu - 1 steps
  return( f_place[ f_mark.rank1( r ) ] + t );
  }
 
@@ -127,11 +136,12 @@ inline std::vector< std::size_t > FMIndex::locate( std::string_view P ) const
  const auto [ first , last ] = range( P );
  std::vector< std::size_t > R;
  R.reserve( last - first );
- for( std::size_t r = first ; r < last ; ++r ) R.push_back( place( r ) );
+ for( std::size_t r = first ; r < last ; ++r )
+  R.push_back( place( r ) );
  std::sort( R.begin() , R.end() );
  ADS_AUDIT( std::all_of( R.begin() , R.end() , [ & ]( std::size_t p ) {
-  return( ( p + P.size() <= f_n ) &&
-          ( extract( p , p + P.size() ) == P ) ); } ) );
+  return( ( p + P.size() <= f_n ) && ( extract( p , p + P.size() ) == P ) );
+  } ) );
  return( R );
  }
 
@@ -139,15 +149,18 @@ inline std::string FMIndex::extract( std::size_t i , std::size_t j ) const
 {
  ADS_PRE( ( i <= j ) && ( j <= f_n ) );
  std::string out( j - i , '\0' );
- if( i == j ) return( out );
+ if( i == j )
+  return( out );
  std::size_t p = ( j + f_mu - 1 ) / f_mu * f_mu , r;
- if( p >= f_n ) {                          // the suffix $, row 0
+ if( p >= f_n ) {  // the suffix $, row 0
   p = f_n;
   r = 0;
   }
- else r = f_row[ p / f_mu ];
+ else
+  r = f_row[ p / f_mu ];
  for( std::size_t t = p ; t > i ; --t ) {  // r is the row of suffix t
-  if( t - 1 < j ) out[ t - 1 - i ] = f_L[ r ];
+  if( t - 1 < j )
+   out[ t - 1 - i ] = f_L[ r ];
   r = lf( r );
   }
  return( out );
@@ -156,9 +169,9 @@ inline std::string FMIndex::extract( std::size_t i , std::size_t j ) const
 inline std::size_t FMIndex::sizeInBits( void ) const
 {
  return( 8 * f_L.size() + 32 * f_occ.size() + f_mark.size() +
-         f_mark.directoryBits() +
-         64 * ( f_place.size() + f_row.size() + f_C.size() ) +
-         32 * f_id.size() );
+	  f_mark.directoryBits() +
+	  64 * ( f_place.size() + f_row.size() + f_C.size() ) +
+	  32 * f_id.size() );
  }
 
 /*--------------------------------------------------------------------------*/

@@ -34,7 +34,7 @@
 
 #ifndef __ADS_ArrayStack
  #define __ADS_ArrayStack
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -50,7 +50,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS ArrayStack ----------------------------*/
@@ -58,12 +59,12 @@ namespace ADS {
 
 /// a STACK realized with a vector of a given capacity
 template< class T >
-class ArrayStack {
+class ArrayStack
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty stack of at most \f$ \mathit{dim} \f$ items
  explicit ArrayStack( std::size_t dim );
@@ -128,13 +129,13 @@ class ArrayStack {
  // a constant view of the items, from the bottom to the top, contiguous;
  // the operations of the stack stay the only way to change it
 
- using value_type = T;                     ///< the type of the items
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = const T &;              ///< a constant reference
- using const_reference = const T &;        ///< a constant reference
- using iterator = const T *;               ///< a constant iterator
- using const_iterator = const T *;         ///< a constant iterator
+ using value_type = T;                    ///< the type of the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = const T &;             ///< a constant reference
+ using const_reference = const T &;       ///< a constant reference
+ using iterator = const T *;              ///< a constant iterator
+ using const_iterator = const T *;        ///< a constant iterator
 
  /// the iterator on the item at the bottom
  [[nodiscard]] const_iterator begin( void ) const { return( f_A.get() ); }
@@ -152,10 +153,9 @@ class ArrayStack {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- std::unique_ptr< T[] > f_A;   ///< the items, the top in `f_A[ f_size - 1 ]`
- std::size_t f_size;           ///< the number of items
- std::size_t f_capacity;       ///< the maximum number of items
+ std::unique_ptr< T[] > f_A;  ///< the items, the top in `f_A[ f_size - 1 ]`
+ std::size_t f_size;          ///< the number of items
+ std::size_t f_capacity;      ///< the maximum number of items
 
  };  // end( class ArrayStack )
 
@@ -171,7 +171,7 @@ class ArrayStack {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ArrayStack.h included */
+#endif /* ArrayStack.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File ArrayStack.h --------------------------*/

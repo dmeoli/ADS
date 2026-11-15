@@ -52,7 +52,7 @@
 
 #ifndef __ADS_PositionIndex
  #define __ADS_PositionIndex
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -79,7 +79,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS PositionIndex ---------------------------*/
@@ -87,19 +88,19 @@ namespace ADS {
 
 /// the positions of objects of type `T`, by their addresses
 template< class T , class H = FastHash< const T * > >
-class PositionIndex {
+class PositionIndex
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Position = std::uint32_t;     ///< the type of the positions
+ using Position = std::uint32_t;  ///< the type of the positions
 
  /// the position of a key absent
  static constexpr Position NONE = std::numeric_limits< Position >::max();
 
  /// an empty index with room for \f$ n \f$ keys
  explicit PositionIndex( std::size_t n = 0 , H h = H() )
-  : f_table( n , std::move( h ) ) {}
+     : f_table( n , std::move( h ) ) { }
 
 /*--------------------------------------------------------------------------*/
 
@@ -157,7 +158,7 @@ class PositionIndex {
  [[nodiscard]] std::size_t size( void ) const { return( f_table.size() ); }
 
  /// true if there are no keys
-[[nodiscard]] bool empty( void ) const { return( f_table.empty() ); }
+ [[nodiscard]] bool empty( void ) const { return( f_table.empty() ); }
 
  /// the number of places of the table
  [[nodiscard]] std::size_t capacity( void ) const {
@@ -173,10 +174,12 @@ class PositionIndex {
  /// `f( p , i )` for each key \f$ p \f$ at the position \f$ i \f$, in the
  /// order of the places
  template< class F >
- void forEach( F && f ) const { f_table.forEach( f ); }
+ void forEach( F && f ) const {
+  f_table.forEach( f );
+  }
 
  /// exchanges the contents with `o` in \f$ O( 1 ) \f$
-void swap( PositionIndex & o ) noexcept {
+ void swap( PositionIndex & o ) noexcept {
   f_table.swap( o.f_table );
   f_words.swap( o.f_words );
   f_drop.swap( o.f_drop );
@@ -184,15 +187,15 @@ void swap( PositionIndex & o ) noexcept {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a word of the positions erased and the count of those before it
- struct Word {
-  std::uint64_t bits;             ///< the positions erased in the word
-  Position rank;                  ///< the positions erased before it
+ struct Word
+ {
+  std::uint64_t bits;  ///< the positions erased in the word
+  Position rank;       ///< the positions erased before it
   };
 
- FlatHashTable< const T * , Position , H > f_table;   ///< the positions
- std::vector< Word > f_words;      ///< the positions erased
+ FlatHashTable< const T * , Position , H > f_table;  ///< the positions
+ std::vector< Word > f_words;                      ///< the positions erased
  std::vector< const T * > f_drop;  ///< the keys of the positions erased
 
  };  // end( class PositionIndex )
@@ -209,7 +212,7 @@ void swap( PositionIndex & o ) noexcept {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PositionIndex.h included */
+#endif /* PositionIndex.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File PositionIndex.h ------------------------*/

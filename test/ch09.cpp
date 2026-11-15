@@ -48,7 +48,8 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ints = std::vector< int >;
 using Edges = std::vector< std::pair< int , int > >;
@@ -75,15 +76,16 @@ G make( int n , const Edges & E , bool directed )
 /// Figure 9.9: the edges in increasing order, so that the lists of
 /// adjacency are sorted
 const Edges fig99 = { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } , { 0 , 5 } ,
-                      { 0 , 7 } , { 1 , 3 } , { 1 , 4 } , { 1 , 6 } ,
-                      { 1 , 8 } , { 2 , 5 } , { 3 , 4 } , { 6 , 7 } ,
-                      { 6 , 8 } };
+		      { 0 , 7 } ,
+		      { 1 , 3 } , { 1 , 4 } , { 1 , 6 } , { 1 , 8 } ,
+		      { 2 , 5 } ,
+		      { 3 , 4 } , { 6 , 7 } , { 6 , 8 } };
 
 /// Figure 9.1, oriented, and figure 9.2, unoriented
-const Edges fig91 = { { 0 , 1 } , { 0 , 2 } , { 1 , 3 } , { 2 , 1 } ,
-                      { 3 , 1 } , { 3 , 2 } };
+const Edges fig91 = { { 0 , 1 } , { 0 , 2 } , { 1 , 3 } ,
+		      { 2 , 1 } , { 3 , 1 } , { 3 , 2 } };
 const Edges fig92 = { { 0 , 1 } , { 0 , 2 } , { 1 , 3 } , { 2 , 1 } ,
-                      { 3 , 2 } };
+		      { 3 , 2 } };
 
 /// the transitive closure: R[ u ][ v ] if there is a path of at least one
 /// edge from u to v
@@ -180,7 +182,8 @@ std::vector< std::vector< int > > all_distances( const G & g )
 /// the trace of a visit: a node as "u", an edge as "(u,v)"
 using Trace = std::vector< std::string >;
 
-std::string E( int u , int v ) {
+std::string E( int u , int v )
+{
  return( "(" + std::to_string( u ) + "," + std::to_string( v ) + ")" );
  }
 
@@ -201,14 +204,14 @@ Trace trace( const char * s )
  }
 
 const Trace bfs99 = trace(
- "0 (0,1) (0,2) (0,3) (0,5) (0,7) 1 (1,0) (1,3) (1,4) (1,6) (1,8) 2 (2,0) "
- "(2,5) 3 (3,0) (3,1) (3,4) 5 (5,0) (5,2) 7 (7,0) (7,6) 4 (4,1) (4,3) 6 "
- "(6,1) (6,7) (6,8) 8 (8,1) (8,6)" );
+  "0 (0,1) (0,2) (0,3) (0,5) (0,7) 1 (1,0) (1,3) (1,4) (1,6) (1,8) 2 (2,0) "
+  "(2,5) 3 (3,0) (3,1) (3,4) 5 (5,0) (5,2) 7 (7,0) (7,6) 4 (4,1) (4,3) 6 "
+  "(6,1) (6,7) (6,8) 8 (8,1) (8,6)" );
 
 const Trace dfs99 = trace(
- "0 (0,1) 1 (1,0) (1,3) 3 (3,0) (3,1) (3,4) 4 (4,1) (4,3) (1,4) (1,6) 6 "
- "(6,1) (6,7) 7 (7,0) (7,6) (6,8) 8 (8,1) (8,6) (1,8) (0,2) 2 (2,0) (2,5) "
- "5 (5,0) (5,2) (0,3) (0,5) (0,7)" );
+  "0 (0,1) 1 (1,0) (1,3) 3 (3,0) (3,1) (3,4) 4 (4,1) (4,3) (1,4) (1,6) 6 "
+  "(6,1) (6,7) 7 (7,0) (7,6) (6,8) 8 (8,1) (8,6) (1,8) (0,2) 2 (2,0) (2,5) "
+  "5 (5,0) (5,2) (0,3) (0,5) (0,7)" );
 
 /// the trace of the recursive dfs from r
 template< Graph G >
@@ -216,9 +219,9 @@ Trace dfs_trace( const G & g , int r )
 {
  Trace t;
  std::vector< bool > visited( g.bound() , false );
- dfs( g , r , visited ,
-      [ & ]( int u ) { t.push_back( std::to_string( u ) ); } ,
-      [ & ]( int u , int v ) { t.push_back( E( u , v ) ); } , []( int ) {} );
+ dfs(
+   g , r , visited , [ & ]( int u ) { t.push_back( std::to_string( u ) ); } ,
+   [ & ]( int u , int v ) { t.push_back( E( u , v ) ); } , []( int ) { } );
  return( t );
  }
 
@@ -241,7 +244,7 @@ void spec( bool directed , unsigned seed )
  std::map< std::pair< int , int > , double > edges;
  auto key = [ & ]( int u , int v ) {
   return( directed ? std::pair( u , v )
-                   : std::pair( std::min( u , v ) , std::max( u , v ) ) );
+		    : std::pair( std::min( u , v ) , std::max( u , v ) ) );
   };
  for( int o = 0 ; o < 3000 ; ++o ) {
   const Ints V( nodes.begin() , nodes.end() );
@@ -251,7 +254,8 @@ void spec( bool directed , unsigned seed )
    g.deleteNode( u );
    nodes.erase( u );
    std::erase_if( edges , [ & ]( const auto & e ) {
-    return( ( e.first.first == u ) || ( e.first.second == u ) ); } );
+    return( ( e.first.first == u ) || ( e.first.second == u ) );
+    } );
    }
   else if( what == 1 ) {
    const int w = g.insertNode( "n" + std::to_string( o ) );
@@ -274,8 +278,10 @@ void spec( bool directed , unsigned seed )
  for( int u : nodes ) {
   std::set< int > adj;
   for( const auto & [ e , w ] : edges ) {
-   if( e.first == u ) adj.insert( e.second );
-   if( ! directed && ( e.second == u ) ) adj.insert( e.first );
+   if( e.first == u )
+    adj.insert( e.second );
+   if( ! directed && ( e.second == u ) )
+    adj.insert( e.first );
    }
   auto a = g.adj( u );
   std::sort( a.begin() , a.end() );
@@ -293,7 +299,7 @@ void spec( bool directed , unsigned seed )
   std::sort( y.begin() , y.end() );
   CHECK( x == y );
   }
- CHECK_THROWS( (void) g.adj( g.bound() ) , contract_violation );
+ CHECK_THROWS( ( void )g.adj( g.bound() ) , contract_violation );
 
  // the degenerate cases: no node, an edge inserted twice (its weight
  // replaced, counted once), an absent one deleted (nothing), the queries
@@ -317,12 +323,12 @@ void spec( bool directed , unsigned seed )
  const ArrayGraph< double > h( e );
  CHECK( h.n() == 3 && h.m() == 0 && h.adj( 0 ).empty() );
  CHECK_THROWS( e.deleteNode( 0 ) , contract_violation );
- CHECK_THROWS( (void) e.label( 0 ) , contract_violation );
+ CHECK_THROWS( ( void )e.label( 0 ) , contract_violation );
  CHECK_THROWS( e.setLabel( 0 , "x" ) , contract_violation );
  CHECK_THROWS( e.insertEdge( 0 , 1 ) , contract_violation );
  CHECK_THROWS( e.insertEdge( 1 , 7 ) , contract_violation );
  CHECK_THROWS( e.deleteEdge( 1 , 1 ) , contract_violation );
- CHECK_THROWS( (void) e.adj( 0 ) , contract_violation );
+ CHECK_THROWS( ( void )e.adj( 0 ) , contract_violation );
  CHECK_THROWS( G( -1 , directed ) , contract_violation );
  }
 
@@ -354,15 +360,15 @@ ADS_TEST( "sec9.1.definitions" )
  CHECK( is_path( { 0 , 1 , 3 , 2 , 1 } ) && is_path( { 1 , 3 , 2 , 1 } ) );
  CHECK( ! is_path( { 3 , 0 } ) );
  const auto R = closure( G );
- CHECK( R[ 0 ][ 3 ] && ! R[ 3 ][ 0 ] );             // not strongly connected
+ CHECK( R[ 0 ][ 3 ] && ! R[ 3 ][ 0 ] );  // not strongly connected
  const auto id = scc( G );
  CHECK( id[ 1 ] == id[ 2 ] && id[ 2 ] == id[ 3 ] && id[ 0 ] != id[ 1 ] );
 
  const auto U = make( 4 , fig92 , false );
  CHECK( U.n() == 4 && U.m() == 5 );
  CHECK( U.hasEdge( 0 , 2 ) && U.hasEdge( 2 , 0 ) && ! U.hasEdge( 0 , 3 ) );
- CHECK( cc( U ) == Ints( { 1 , 1 , 1 , 1 } ) );       // connected
- CHECK( U.m() > U.n() - 1 );                          // not a free tree
+ CHECK( cc( U ) == Ints( { 1 , 1 , 1 , 1 } ) );  // connected
+ CHECK( U.m() > U.n() - 1 );                  // not a free tree
  }
 
 // the case of the duke McPollock: an interval graph is chordal (each
@@ -375,7 +381,7 @@ bool chordal( const MatrixGraph<> & g )
 {
  const Ints V = g.V();
  std::vector< int > weight( g.bound() , 0 ) , place( g.bound() , -1 );
- Ints order;                                       // reversed elimination
+ Ints order;  // reversed elimination
  for( std::size_t i = 0 ; i < V.size() ; ++i ) {
   int best = -1;
   for( int u : V )
@@ -399,8 +405,10 @@ bool chordal( const MatrixGraph<> & g )
    } );
   if( before.empty() )
    continue;
-  const int w = *std::max_element( before.begin() , before.end() ,
-   [ & ]( int a , int b ) { return( place[ a ] < place[ b ] ); } );
+  const int w =
+    *std::max_element( before.begin() , before.end() , [ & ]( int a , int b ) {
+     return( place[ a ] < place[ b ] );
+     } );
   for( int v : before )
    if( ( v != w ) && ! g.hasEdge( v , w ) )
     return( false );
@@ -414,7 +422,8 @@ ADS_TEST( "sec9.1.mcpollock" )
  auto I = [ & ]( char c ) { return( int( who.find( c ) ) ); };
  MatrixGraph<> g( 7 , false );
  for( const char * e : { "AB" , "AC" , "AF" , "AG" , "BC" , "BE" , "BF" ,
-                         "BH" , "CE" , "EF" , "FH" , "GH" } )
+			 "BH" , "CE" ,
+			 "EF" , "FH" , "GH" } )
   g.insertEdge( I( e[ 0 ] ) , I( e[ 1 ] ) );
  // the testimonies are symmetric: Betty met Ann, Charlotte, Edith, ...
  CHECK( g.adj( I( 'B' ) ) == Ints( { 0 , 2 , 3 , 4 , 6 } ) );
@@ -428,8 +437,10 @@ ADS_TEST( "sec9.1.mcpollock" )
  // are chordal, a circuit of 4 is not until a chord is added
  CHECK( chordal( MatrixGraph<>( 0 , false ) ) );
  CHECK( chordal( MatrixGraph<>( 1 , false ) ) );
- auto k = make< MatrixGraph<> >( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } ,
-                                       { 3 , 0 } } , false );
+ auto k = make< MatrixGraph<> >( 4 ,
+				 { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } ,
+				   { 3 , 0 } } ,
+				 false );
  CHECK( ! chordal( k ) );
  k.insertEdge( 0 , 2 );
  CHECK( chordal( k ) );
@@ -444,8 +455,9 @@ ADS_TEST( "sec9.1.mcpollock" )
 ADS_TEST( "sec9.3.matrices" )
 {
  const auto U = make< MatrixGraph<> >( 4 , fig92 , false );
- const std::vector< Ints > M = { { 0 , 1 , 1 , 0 } , { 1 , 0 , 1 , 1 } ,
-                                 { 1 , 1 , 0 , 1 } , { 0 , 1 , 1 , 0 } };
+ const std::vector< Ints > M = {
+  { 0 , 1 , 1 , 0 } , { 1 , 0 , 1 , 1 } , { 1 , 1 , 0 , 1 } , { 0 , 1 , 1 , 0 }
+  };
  for( int u = 0 ; u < 4 ; ++u )
   for( int v = 0 ; v < 4 ; ++v )
    CHECK( U.hasEdge( u , v ) == bool( M[ u ][ v ] ) );
@@ -483,8 +495,8 @@ ADS_TEST( "sec9.3.matrices" )
    std::sort( b.begin() , b.end() );
    CHECK( a == b );
    }
-  CHECK_THROWS( (void) adjFromIncidence( B , 4 , d ) , contract_violation );
-  CHECK_THROWS( (void) adjFromIncidence( B , -1 , d ) , contract_violation );
+  CHECK_THROWS( ( void )adjFromIncidence( B , 4 , d ) , contract_violation );
+  CHECK_THROWS( ( void )adjFromIncidence( B , -1 , d ) , contract_violation );
   const auto Z = incidence( ListGraph<>( 3 , d ) );
   CHECK( Z.size() == 3 && Z[ 0 ].empty() );
   CHECK( adjFromIncidence( Z , 2 , d ).empty() );
@@ -492,7 +504,7 @@ ADS_TEST( "sec9.3.matrices" )
   }
  const ArrayGraph<> N( 0 , {} );
  CHECK( N.n() == 0 && N.m() == 0 && N.V().empty() );
- CHECK_THROWS( (void) N.adj( 0 ) , contract_violation );
+ CHECK_THROWS( ( void )N.adj( 0 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -504,17 +516,18 @@ ADS_TEST( "sec9.5.1.bfs" )
 {
  auto g = make( 9 , fig99 , false );
  Trace t;
- bfs( g , 0 , [ & ]( int u ) { t.push_back( std::to_string( u ) ); } ,
-      [ & ]( int u , int v ) { t.push_back( E( u , v ) ); } );
+ bfs(
+   g , 0 , [ & ]( int u ) { t.push_back( std::to_string( u ) ); } ,
+   [ & ]( int u , int v ) { t.push_back( E( u , v ) ); } );
  CHECK( t == bfs99 );
 
- g.insertNode();                                    // an author alone
+ g.insertNode();  // an author alone
  const auto [ d , p ] = distance( g , 0 );
  CHECK( d == Ints( { 0 , 1 , 1 , 1 , 2 , 1 , 2 , 1 , 2 , INF } ) );
  CHECK( path( 0 , 8 , p ) == Ints( { 0 , 1 , 8 } ) );
  CHECK( path( 0 , 0 , p ) == Ints( { 0 } ) );
  CHECK( path( 0 , 9 , p ).empty() );
- for( unsigned s = 0 ; s < 20 ; ++s ) {             // against Floyd-Warshall
+ for( unsigned s = 0 ; s < 20 ; ++s ) {  // against Floyd-Warshall
   const auto h = random_graph( 25 , 0.08 , s % 2 , s );
   const auto D = all_distances( h );
   for( int r = 0 ; r < 25 ; r += 6 ) {
@@ -532,8 +545,9 @@ ADS_TEST( "sec9.5.1.bfs" )
  // cycle give none instead of looping; a path of 10^5 nodes (the
  // recursive path() overflowed the stack); the contracts
  Trace one;
- bfs( g , 9 , [ & ]( int u ) { one.push_back( std::to_string( u ) ); } ,
-      [ & ]( int u , int v ) { one.push_back( E( u , v ) ); } );
+ bfs(
+   g , 9 , [ & ]( int u ) { one.push_back( std::to_string( u ) ); } ,
+   [ & ]( int u , int v ) { one.push_back( E( u , v ) ); } );
  CHECK( one == Trace( { "9" } ) );
  const auto [ d9 , p9 ] = distance( g , 9 );
  CHECK( d9[ 9 ] == 0 && d9[ 0 ] == INF && p9 == Ints( 10 , NIL ) );
@@ -543,18 +557,18 @@ ADS_TEST( "sec9.5.1.bfs" )
  const auto c = chain( n , true );
  const auto [ dc , pc ] = distance( c , 0 );
  CHECK( dc[ n - 1 ] == n - 1 &&
-        path( 0 , n - 1 , pc ).size() == std::size_t( n ) );
+	path( 0 , n - 1 , pc ).size() == std::size_t( n ) );
  CHECK( path( 1 , 0 , pc ).empty() );
  CHECK( distance( c , n - 1 ).first[ 0 ] == INF );
  g.deleteNode( 4 );
- auto none = []( auto... ) {};
+ auto none = []( auto... ) { };
  CHECK_THROWS( bfs( g , 4 , none , none ) , contract_violation );
  CHECK_THROWS( bfs( g , 10 , none , none ) , contract_violation );
- CHECK_THROWS( (void) distance( g , -1 ) , contract_violation );
- CHECK_THROWS( (void) path( 0 , 10 , p ) , contract_violation );
- CHECK_THROWS( (void) path( -1 , 0 , p ) , contract_violation );
- CHECK_THROWS( (void) path( 0 , 1 , Ints( { NIL , 7 } ) ) ,
-               contract_violation );
+ CHECK_THROWS( ( void )distance( g , -1 ) , contract_violation );
+ CHECK_THROWS( ( void )path( 0 , 10 , p ) , contract_violation );
+ CHECK_THROWS( ( void )path( -1 , 0 , p ) , contract_violation );
+ CHECK_THROWS( ( void )path( 0 , 1 , Ints( { NIL , 7 } ) ) ,
+	       contract_violation );
  }
 
 // the order of the example dfs; a single node, the previsits and the
@@ -571,9 +585,10 @@ ADS_TEST( "sec9.5.4.dfs" )
   std::vector< bool > visited( n , false );
   Ints pre , post;
   long edges = 0;
-  dfs( c , 0 , visited , [ & ]( int u ) { pre.push_back( u ); } ,
-       [ & ]( int , int ) { ++edges; } ,
-       [ & ]( int u ) { post.push_back( u ); } );
+  dfs(
+    c , 0 , visited , [ & ]( int u ) { pre.push_back( u ); } ,
+    [ & ]( int , int ) { ++edges; } ,
+    [ & ]( int u ) { post.push_back( u ); } );
   CHECK( int( pre.size() ) == n && int( post.size() ) == n );
   CHECK( pre.front() == 0 && pre.back() == n - 1 );
   CHECK( post.front() == n - 1 && post.back() == 0 );
@@ -582,16 +597,16 @@ ADS_TEST( "sec9.5.4.dfs" )
   }
  const auto g = make( 3 , { { 0 , 1 } } , true );
  std::vector< bool > visited( 3 , false );
- auto none = []( auto... ) {};
+ auto none = []( auto... ) { };
  dfs( g , 0 , visited , none , none , none );
  CHECK( visited == std::vector< bool >( { true , true , false } ) );
  CHECK_THROWS( dfs( g , 1 , visited , none , none , none ) ,
-               contract_violation );
+	       contract_violation );
  std::vector< bool > shorter( 2 , false );
  CHECK_THROWS( dfs( g , 2 , shorter , none , none , none ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( dfs( g , 3 , visited , none , none , none ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the components of a graph like the one of figure 9.3 (its edges are not
@@ -601,14 +616,17 @@ ADS_TEST( "sec9.5.4.dfs" )
 // with repetitions, a path of 10^5 nodes
 ADS_TEST( "sec9.5.5.cc" )
 {
- const auto g = make( 8 , { { 0 , 1 } , { 1 , 4 } , { 1 , 5 } , { 4 , 5 } ,
-                            { 2 , 6 } , { 6 , 7 } } , false );
+ const auto g = make(
+   8 ,
+   { { 0 , 1 } , { 1 , 4 } , { 1 , 5 } , { 4 , 5 } , { 2 , 6 } , { 6 , 7 } } ,
+   false );
  Ints order;
  std::vector< bool > visited( 8 , false );
  for( int u = 0 ; u < 8 ; ++u )
   if( ! visited[ u ] )
-   dfs( g , u , visited , [ & ]( int v ) { order.push_back( v ); } ,
-        []( int , int ) {} , []( int ) {} );
+   dfs(
+     g , u , visited , [ & ]( int v ) { order.push_back( v ); } ,
+     []( int , int ) { } , []( int ) { } );
  CHECK( order == Ints( { 0 , 1 , 4 , 5 , 2 , 6 , 7 , 3 } ) );
  CHECK( cc( g ) == Ints( { 1 , 1 , 2 , 3 , 1 , 1 , 2 , 2 } ) );
 
@@ -616,7 +634,7 @@ ADS_TEST( "sec9.5.5.cc" )
  CHECK( cc( G , { 3 , 2 , 0 , 1 } ) == Ints( { 2 , 1 , 1 , 1 } ) );
  CHECK( cc( G , { 3 , 2 , 1 , 0 } ) == Ints( { 1 , 1 , 1 , 1 } ) );
 
- for( unsigned s = 0 ; s < 20 ; ++s ) {             // against the closure
+ for( unsigned s = 0 ; s < 20 ; ++s ) {  // against the closure
   const auto h = random_graph( 30 , 0.05 , false , s );
   const auto R = closure( h );
   const auto id = cc( h );
@@ -635,12 +653,13 @@ ADS_TEST( "sec9.5.5.cc" )
  h.deleteNode( 1 );
  CHECK( cc( h ) == Ints( { 1 , 0 , 2 , 3 , 4 , 4 , 2 , 2 } ) );
  CHECK( cc( g , {} ) == Ints( 8 , 0 ) );
- CHECK( cc( g , { 3 , 2 , 3 , 0 , 0 } ) ==
-        Ints( { 1 , 1 , 3 , 2 , 1 , 1 , 3 , 3 } ) );
+ CHECK( cc( g ,
+	    { 3 , 2 , 3 , 0 ,
+	      0 } ) == Ints( { 1 , 1 , 3 , 2 , 1 , 1 , 3 , 3 } ) );
  const int n = 100000;
  const auto c = cc( chain( n , false ) );
- CHECK( std::all_of( c.begin() , c.end() ,
-                     []( int x ) { return( x == 1 ); } ) );
+ CHECK(
+   std::all_of( c.begin() , c.end() , []( int x ) { return( x == 1 ); } ) );
  }
 
 // the kinds of the edges of figure 9.10; in an unoriented graph the first
@@ -649,8 +668,11 @@ ADS_TEST( "sec9.5.5.cc" )
 // the contracts
 ADS_TEST( "sec9.5.6.schema" )
 {
- const auto G = make( 4 , { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } , { 1 , 2 } ,
-                            { 2 , 0 } , { 3 , 1 } , { 3 , 2 } } , true );
+ const auto G = make(
+   4 ,
+   { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } , { 1 , 2 } , { 2 , 0 } , { 3 , 1 } ,
+     { 3 , 2 } } ,
+   true );
  DfsSchema S( G );
  std::map< std::pair< int , int > , EdgeKind > kind;
  Trace t;
@@ -678,7 +700,7 @@ ADS_TEST( "sec9.5.6.schema" )
    for( int v = 0 ; v < 30 ; ++v ) {
     const bool disjoint = T.ft( u ) < T.dt( v ) || T.ft( v ) < T.dt( u );
     const bool nested = ( T.dt( u ) <= T.dt( v ) && T.ft( v ) <= T.ft( u ) ) ||
-                        ( T.dt( v ) <= T.dt( u ) && T.ft( u ) <= T.ft( v ) );
+			( T.dt( v ) <= T.dt( u ) && T.ft( u ) <= T.ft( v ) );
     CHECK( disjoint || nested );
     }
   }
@@ -689,19 +711,19 @@ ADS_TEST( "sec9.5.6.schema" )
  // contracts
  const ListGraph<> o( 1 );
  DfsSchema O( o );
- O.visitAll( []( int , int , EdgeKind ) {} );
+ O.visitAll( []( int , int , EdgeKind ) { } );
  CHECK( O.dt( 0 ) == 1 && O.ft( 0 ) == 2 );
  for( bool d : { true , false } ) {
   const auto c2 = d ? make( 2 , { { 0 , 1 } , { 1 , 0 } } , true )
-                    : make( 2 , { { 0 , 1 } } , false );
+		    : make( 2 , { { 0 , 1 } } , false );
   DfsSchema C( c2 );
   std::vector< EdgeKind > k;
   C.visit( 0 , [ & ]( int , int , EdgeKind e ) { k.push_back( e ); } );
   CHECK( k == std::vector< EdgeKind >( { TREE , BACK } ) );
-  CHECK_THROWS( C.visit( 1 , []( int , int , EdgeKind ) {} ) ,
-                contract_violation );
-  CHECK_THROWS( (void) C.dt( 2 ) , contract_violation );
-  CHECK_THROWS( (void) C.ft( -1 ) , contract_violation );
+  CHECK_THROWS( C.visit( 1 , []( int , int , EdgeKind ) { } ) ,
+		contract_violation );
+  CHECK_THROWS( ( void )C.dt( 2 ) , contract_violation );
+  CHECK_THROWS( ( void )C.ft( -1 ) , contract_violation );
   }
  const int n = 100000;
  const auto c = chain( n , true );
@@ -720,15 +742,16 @@ ADS_TEST( "sec9.5.7.cycle" )
 {
  CHECK( hasCycle( make( 4 , fig91 , true ) ) );
  CHECK( ! hasCycle( make( 3 , { { 0 , 1 } , { 1 , 2 } , { 0 , 2 } } ,
-                          true ) ) );
+			  true ) ) );
  CHECK( ! hasCycle( ListGraph<>( 5 ) ) && ! hasCycle( ListGraph<>( 0 ) ) );
  CHECK( hasCycle( make( 2 , { { 0 , 1 } , { 1 , 0 } } , true ) ) );
- CHECK( hasCycle( make( 2 , { { 0 , 1 } } , false ) ) );    // documented
+ CHECK( hasCycle( make( 2 , { { 0 , 1 } } , false ) ) );  // documented
  CHECK( ! hasCycle( ListGraph<>( 3 , false ) ) );
  // the cycle in the last component, and a path of 10^5 nodes without and
  // with the edge that closes it (the recursive visit overflowed)
- CHECK( hasCycle( make( 5 , { { 0 , 1 } , { 2 , 3 } , { 3 , 4 } ,
-                              { 4 , 2 } } , true ) ) );
+ CHECK(
+   hasCycle( make( 5 , { { 0 , 1 } , { 2 , 3 } , { 3 , 4 } , { 4 , 2 } } ,
+		   true ) ) );
  auto c = chain( 100000 , true );
  CHECK( ! hasCycle( c ) );
  c.insertEdge( 99999 , 0 );
@@ -753,9 +776,15 @@ ADS_TEST( "sec9.5.8.topsort" )
  ListGraph<> g( 12 , true );
  for( int u : { 0 , 1 , 4 , 6 } )
   g.deleteNode( u );
- for( auto [ u , v ] : Edges( { { 3 , 8 } , { 3 , 10 } , { 5 , 11 } ,
-                                { 7 , 8 } , { 7 , 11 } , { 8 , 9 } ,
-                                { 11 , 2 } , { 11 , 9 } , { 11 , 10 } } ) )
+ for( auto [ u , v ] : Edges( { { 3 , 8 } ,
+			       { 3 , 10 } ,
+			       { 5 , 11 } ,
+			       { 7 , 8 } ,
+			       { 7 , 11 } ,
+			       { 8 , 9 } ,
+			       { 11 , 2 } ,
+			       { 11 , 9 } ,
+			       { 11 , 10 } } ) )
   g.insertEdge( u , v );
  CHECK( topological( g , { 3 , 5 , 7 , 11 , 8 , 10 , 2 , 9 } ) );
  CHECK( topological( g , topsort( g ) ) );
@@ -829,8 +858,9 @@ ADS_TEST( "sec9.5.9.scc" )
  CHECK( along );
  c.insertEdge( n - 1 , 0 );
  const auto one = scc( c );
- CHECK( std::all_of( one.begin() , one.end() ,
-                     []( int x ) { return( x == 1 ); } ) );
+ CHECK(
+   std::all_of( one.begin() , one.end() ,
+		[]( int x ) { return( x == 1 ); } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -864,7 +894,7 @@ Trace dfs_iterative( const G & g , int r )
 {
  Trace t;
  std::vector< bool > visited( g.bound() , false );
- std::vector< std::pair< int , std::size_t > > S;   // node, next place
+ std::vector< std::pair< int , std::size_t > > S;  // node, next place
  std::vector< Ints > adj( g.bound() );
  auto discover = [ & ]( int u ) {
   visited[ u ] = true;
@@ -970,14 +1000,15 @@ ADS_TEST( "ex9.3" )
 
 ADS_TEST( "ex9.4" )
 {
- CHECK( bipartite( make( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } ,
-                               { 3 , 0 } } , false ) ) );
+ CHECK(
+   bipartite( make( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } , { 3 , 0 } } ,
+		    false ) ) );
  CHECK( ! bipartite( make( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } ,
-                           false ) ) );
+			   false ) ) );
  // the odd circuit in the second component: a bfs from 0 alone misses it
- CHECK( ! bipartite( make( 5 , { { 0 , 1 } , { 2 , 3 } , { 3 , 4 } ,
-                                 { 4 , 2 } } , false ) ) );
- CHECK( bipartite( make( 9 , fig99 , false ) ) == false );   // 0-1-3
+ CHECK( ! bipartite(
+   make( 5 , { { 0 , 1 } , { 2 , 3 } , { 3 , 4 } , { 4 , 2 } } , false ) ) );
+ CHECK( bipartite( make( 9 , fig99 , false ) ) == false );  // 0-1-3
  CHECK( bipartite( ListGraph<>( 3 , false ) ) );
  // no node, one edge, a deleted node breaking the odd circuit, circuits of
  // 1000 and 1001 nodes
@@ -1010,9 +1041,17 @@ ADS_TEST( "ex9.5" )
   return( w );
   };
  // a root, 3 children, 5 grandchildren, 1 great-grandchild
- const auto t = make( 10 , { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } , { 1 , 4 } ,
-                             { 1 , 5 } , { 2 , 6 } , { 3 , 7 } , { 3 , 8 } ,
-                             { 8 , 9 } } , true );
+ const auto t = make( 10 ,
+		      { { 0 , 1 } ,
+			{ 0 , 2 } ,
+			{ 0 , 3 } ,
+			{ 1 , 4 } ,
+			{ 1 , 5 } ,
+			{ 2 , 6 } ,
+			{ 3 , 7 } ,
+			{ 3 , 8 } ,
+			{ 8 , 9 } } ,
+		      true );
  CHECK( width( t , 0 ) == 5 );
  CHECK( width( ListGraph<>( 1 ) , 0 ) == 1 );
  const auto chain = make( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } } , true );
@@ -1041,11 +1080,12 @@ bool free_tree( const G & g )
 
 ADS_TEST( "ex9.6" )
 {
- CHECK( free_tree( make( 5 , { { 0 , 1 } , { 1 , 2 } , { 1 , 3 } ,
-                               { 3 , 4 } } , false ) ) );
- CHECK( ! free_tree( make( 4 , fig92 , false ) ) );              // a circuit
+ CHECK(
+   free_tree( make( 5 , { { 0 , 1 } , { 1 , 2 } , { 1 , 3 } , { 3 , 4 } } ,
+		    false ) ) );
+ CHECK( ! free_tree( make( 4 , fig92 , false ) ) );  // a circuit
  CHECK( ! free_tree( make( 5 , { { 0 , 1 } , { 1 , 2 } , { 3 , 4 } } ,
-                           false ) ) );                          // a forest
+			   false ) ) );  // a forest
  CHECK( free_tree( ListGraph<>( 1 , false ) ) );
  // no node (not a tree), two nodes with and without their edge, a path
  // of 10^5 nodes, a tree with a deleted leaf
@@ -1061,8 +1101,8 @@ ADS_TEST( "ex9.6" )
  for( unsigned s = 0 ; s < 100 ; ++s ) {
   const auto g = random_graph( 9 , 0.25 , false , s );
   const auto id = cc( g );
-  bool connected = std::all_of( id.begin() , id.end() ,
-                                []( int x ) { return( x == 1 ); } );
+  bool connected =
+    std::all_of( id.begin() , id.end() , []( int x ) { return( x == 1 ); } );
   CHECK( free_tree( g ) == ( connected && g.m() == 8 ) );
   }
  }
@@ -1086,11 +1126,12 @@ Ints scheduling( const G & g , const Ints & length )
 ADS_TEST( "ex9.7" )
 {
  // 0 and 1 first, 2 after both, 3 after 1, 4 after 2 and 3
- const auto g = make( 5 , { { 0 , 2 } , { 1 , 2 } , { 1 , 3 } , { 2 , 4 } ,
-                            { 3 , 4 } } , true );
+ const auto g =
+   make( 5 , { { 0 , 2 } , { 1 , 2 } , { 1 , 3 } , { 2 , 4 } , { 3 , 4 } } ,
+	 true );
  const Ints t = { 3 , 5 , 2 , 9 , 1 };
  CHECK( scheduling( g , t ) == Ints( { 0 , 0 , 5 , 5 , 14 } ) );
- for( unsigned s = 0 ; s < 20 ; ++s ) {      // against n rounds of relaxing
+ for( unsigned s = 0 ; s < 20 ; ++s ) {  // against n rounds of relaxing
   const auto h = random_dag( 25 , 0.15 , s );
   std::mt19937 r( s );
   Ints len( 25 );
@@ -1110,8 +1151,9 @@ ADS_TEST( "ex9.7" )
  CHECK( scheduling( ListGraph<>( 1 ) , { 7 } ) == Ints( { 0 } ) );
  CHECK( scheduling( g , Ints( 5 , 0 ) ) == Ints( 5 , 0 ) );
  const auto c = chain( 5 , true );
- CHECK( scheduling( c , { 1 , 2 , 3 , 4 , 5 } ) ==
-        Ints( { 0 , 1 , 3 , 6 , 10 } ) );
+ CHECK( scheduling( c ,
+		    { 1 , 2 , 3 , 4 ,
+		      5 } ) == Ints( { 0 , 1 , 3 , 6 , 10 } ) );
  }
 
 // the largest set of intervals that meet, by sorting the 2 n ends: + 1 at
@@ -1119,15 +1161,15 @@ ADS_TEST( "ex9.7" )
 // each point; with closed intervals a left end goes before a right one
 // equal to it, so that touching intervals meet; no interval, a point,
 // equal, touching, disjoint ones, negative ends
-std::pair< int , Ints > overlap(
-                           const std::vector< std::pair< int , int > > & I )
+std::pair< int , Ints >
+overlap( const std::vector< std::pair< int , int > > & I )
 {
- std::vector< std::pair< int , int > > S;           // ( point , -1 or +1 )
+ std::vector< std::pair< int , int > > S;  // ( point , -1 or +1 )
  for( auto [ a , b ] : I ) {
   S.emplace_back( a , -1 );
   S.emplace_back( b , +1 );
   }
- std::sort( S.begin() , S.end() );                  // left ends first
+ std::sort( S.begin() , S.end() );  // left ends first
  int c = 0 , best = 0 , x = 0;
  for( auto [ p , e ] : S ) {
   c -= e;
@@ -1145,10 +1187,11 @@ std::pair< int , Ints > overlap(
 
 ADS_TEST( "ex9.8" )
 {
- const auto [ c , s ] = overlap( { { 1 , 4 } , { 2 , 6 } , { 5 , 8 } ,
-                                   { 3 , 5 } , { 7 , 9 } } );
- CHECK( c == 3 && s == Ints( { 0 , 1 , 3 } ) );     // over the point 3
- for( unsigned t = 0 ; t < 100 ; ++t ) {     // against every end as a point
+ const auto [ c , s ] =
+   overlap( { { 1 , 4 } , { 2 , 6 } , { 5 , 8 } , { 3 , 5 } , { 7 , 9 } } );
+ CHECK( c == 3 && s == Ints( { 0 , 1 , 3 } ) );  // over the point 3
+ for( unsigned t = 0 ; t < 100 ;
+      ++t ) {         // against every end as a point
   std::mt19937 r( t );
   std::vector< std::pair< int , int > > I( 1 + r() % 15 );
   for( auto & [ a , b ] : I ) {
@@ -1172,11 +1215,11 @@ ADS_TEST( "ex9.8" )
  CHECK( overlap( { { 2 , 5 } } ) == std::pair( 1 , Ints( { 0 } ) ) );
  CHECK( overlap( { { 4 , 4 } } ) == std::pair( 1 , Ints( { 0 } ) ) );
  CHECK( overlap( { { 1 , 3 } , { 1 , 3 } , { 1 , 3 } } ) ==
-        std::pair( 3 , Ints( { 0 , 1 , 2 } ) ) );
+	std::pair( 3 , Ints( { 0 , 1 , 2 } ) ) );
  CHECK( overlap( { { 1 , 2 } , { 2 , 3 } } ).first == 2 );
  CHECK( overlap( { { 1 , 2 } , { 3 , 4 } } ).first == 1 );
  CHECK( overlap( { { -5 , -1 } , { -3 , 0 } } ) ==
-        std::pair( 2 , Ints( { 0 , 1 } ) ) );
+	std::pair( 2 , Ints( { 0 , 1 } ) ) );
  }
 
 // the number of nodes at the largest distance from r; in the solution of
@@ -1201,9 +1244,9 @@ int farthest( const G & g , int r )
 
 ADS_TEST( "ex9.9" )
 {
- CHECK( farthest( make( 9 , fig99 , false ) , 0 ) == 3 );     // 4, 6, 8
- CHECK( farthest( make( 4 , fig91 , true ) , 0 ) == 1 );      // 3
- CHECK( farthest( make( 4 , fig91 , true ) , 3 ) == 2 );      // 1 and 2
+ CHECK( farthest( make( 9 , fig99 , false ) , 0 ) == 3 );  // 4, 6, 8
+ CHECK( farthest( make( 4 , fig91 , true ) , 0 ) == 1 );   // 3
+ CHECK( farthest( make( 4 , fig91 , true ) , 3 ) == 2 );   // 1 and 2
  CHECK( farthest( ListGraph<>( 3 ) , 0 ) == 0 );
  // a single node, the end of a chain (nothing reached), its start (one
  // node, at distance n - 1, also for 10^5 nodes), a star
@@ -1244,8 +1287,8 @@ ADS_TEST( "ex9.10" )
   for( int w : s.adj( u ) )
    e.emplace_back( u , w );
  CHECK( e == Edges( { { 0 , 1 } , { 0 , 3 } , { 1 , 2 } , { 2 , 3 } ,
-                      { 3 , 1 } } ) );
- for( unsigned t = 0 ; t < 10 ; ++t ) {             // against the lists
+		      { 3 , 1 } } ) );
+ for( unsigned t = 0 ; t < 10 ; ++t ) {  // against the lists
   const auto h = random_graph( 15 , 0.15 , true , t );
   MatrixGraph<> m( 15 , true );
   for( int u = 0 ; u < 15 ; ++u )
@@ -1254,7 +1297,10 @@ ADS_TEST( "ex9.10" )
   for( int u = 0 ; u < 15 ; ++u ) {
    std::set< int > two;
    h.forEachAdj( u , [ & ]( int v ) {
-    h.forEachAdj( v , [ & ]( int w ) { if( w != u ) two.insert( w ); } );
+    h.forEachAdj( v , [ & ]( int w ) {
+     if( w != u )
+      two.insert( w );
+     } );
     } );
    CHECK( q.adj( u ) == Ints( two.begin() , two.end() ) );
    }
@@ -1264,10 +1310,12 @@ ADS_TEST( "ex9.10" )
  CHECK( square( MatrixGraph<>( 0 , true ) ).n() == 0 );
  CHECK( square( MatrixGraph<>( 3 , true ) ).m() == 0 );
  CHECK( square( make< MatrixGraph<> >( 2 , { { 0 , 1 } } , true ) ).m() == 0 );
- CHECK( square( make< MatrixGraph<> >( 2 , { { 0 , 1 } , { 1 , 0 } } ,
-                                       true ) ).m() == 0 );
- const auto p = square( make< MatrixGraph<> >( 3 , { { 0 , 1 } , { 1 , 2 } } ,
-                                               true ) );
+ CHECK(
+   square( make< MatrixGraph<> >( 2 , { { 0 , 1 } , { 1 , 0 } } ,
+				  true ) ).m() ==
+   0 );
+ const auto p =
+   square( make< MatrixGraph<> >( 3 , { { 0 , 1 } , { 1 , 2 } } , true ) );
  CHECK( p.m() == 1 && p.hasEdge( 0 , 2 ) );
  }
 
@@ -1291,8 +1339,8 @@ std::optional< int > diameter( const G & g )
 
 ADS_TEST( "ex9.11" )
 {
- CHECK( diameter( make( 9 , fig99 , false ) ) == 3 );   // 4, 8 via 1, ...
- CHECK( ! diameter( make( 4 , fig91 , true ) ) );       // 0 not reached
+ CHECK( diameter( make( 9 , fig99 , false ) ) == 3 );  // 4, 8 via 1, ...
+ CHECK( ! diameter( make( 4 , fig91 , true ) ) );      // 0 not reached
  CHECK( diameter( make( 4 , fig92 , false ) ) == 2 );
  for( unsigned s = 0 ; s < 20 ; ++s ) {
   const auto h = random_graph( 20 , 0.2 , s % 2 , s );
@@ -1301,7 +1349,10 @@ ADS_TEST( "ex9.11" )
   bool inf = false;
   for( const auto & r : D )
    for( int x : r )
-    if( x == INF ) inf = true; else ref = std::max( ref , x );
+    if( x == INF )
+     inf = true;
+    else
+     ref = std::max( ref , x );
   CHECK( diameter( h ) == ( inf ? std::nullopt : std::optional( ref ) ) );
   }
  // no node and one node (0), one edge (1 unoriented, nothing oriented),

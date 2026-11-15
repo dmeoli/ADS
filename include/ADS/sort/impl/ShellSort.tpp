@@ -14,9 +14,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// h is not empty, positive and increasing, and h[ 0 ] = 1 if one
 inline bool validGaps( const std::vector< std::size_t > & h , bool one )
@@ -96,7 +98,8 @@ inline std::vector< std::size_t > ciuraGaps( std::size_t n )
 
 template< class T , class C >
 void shellSort( std::vector< T > & A ,
-                const std::vector< std::size_t > & gaps , C less )
+		const std::vector< std::size_t > & gaps ,
+		C less )
 {
  ADS_PRE( detail::validGaps( gaps , false ) );
  const auto before = detail::auditCopy( A );
@@ -113,9 +116,9 @@ void shellSort( std::vector< T > & A ,
    A[ j ] = std::move( temp );
    }
   }
- ADS_AUDIT( ( gaps[ 0 ] == 1 )
-            ? detail::sortedPermutation( A , before , less )
-            : detail::samePermutation( A , before , less ) );
+ ADS_AUDIT( ( gaps[ 0 ] == 1 ) ? detail::sortedPermutation( A , before , less )
+			       : detail::samePermutation( A , before ,
+							  less ) );
  }
 
 template< class T , class C >

@@ -35,7 +35,7 @@
 
 #ifndef __ADS_Bag
  #define __ADS_Bag
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -53,7 +53,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- CLASS Bag --------------------------------*/
@@ -62,16 +63,16 @@ namespace ADS {
 /// a USet that keeps the items equal to one another, on a hash table of
 /// groups
 template< class T , class H = DefaultHash< T > ,
-          class Eq = std::equal_to< T > >
-class Bag {
+	  class Eq = std::equal_to< T > >
+class Bag
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty bag
- explicit Bag( H h = H() , Eq eq = Eq() ) : f_T( 0 , h , eq ) {}
+ explicit Bag( H h = H() , Eq eq = Eq() ) : f_T( 0 , h , eq ) { }
 
  /// the number \f$ n \f$ of items, the equal ones counted each
  [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
@@ -129,12 +130,11 @@ class Bag {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// no group is empty and the groups count \f$ n \f$ items
  [[nodiscard]] bool counted( void ) const;
 
- FlatHashTable< T , std::vector< T > , H , Eq > f_T;   ///< the groups
- std::size_t f_n = 0;                                ///< the items
+ FlatHashTable< T , std::vector< T > , H , Eq > f_T;  ///< the groups
+ std::size_t f_n = 0;                              ///< the items
 
  };  // end( class Bag )
 
@@ -150,7 +150,7 @@ class Bag {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Bag.h included */
+#endif /* Bag.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- End File Bag.h -----------------------------*/

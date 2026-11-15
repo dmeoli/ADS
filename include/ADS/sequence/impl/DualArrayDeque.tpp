@@ -15,12 +15,14 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , class S >
 DualArrayDeque< T , S >::DualArrayDeque( std::initializer_list< T > l )
 {
- for( const T & x : l ) f_B.push_back( x );
+ for( const T & x : l )
+  f_B.push_back( x );
  balance();
  }
 
@@ -67,10 +69,12 @@ void DualArrayDeque< T , S >::insert( std::size_t i , const T & x )
 {
  ADS_PRE( i <= size() );
  [[maybe_unused]] const std::size_t n = size();
- T y = x;                                   // x may be an item
+ T y = x;  // x may be an item
  const std::size_t f = f_F.size();
- if( i < f ) put( f_F , f - i , std::move( y ) );
- else put( f_B , i - f , std::move( y ) );
+ if( i < f )
+  put( f_F , f - i , std::move( y ) );
+ else
+  put( f_B , i - f , std::move( y ) );
  balance();
  ADS_POST( size() == n + 1 );
  ADS_INVARIANT( balanced() );
@@ -82,8 +86,10 @@ void DualArrayDeque< T , S >::erase( std::size_t i )
  ADS_PRE( i < size() );
  [[maybe_unused]] const std::size_t n = size();
  const std::size_t f = f_F.size();
- if( i < f ) take( f_F , f - 1 - i );
- else take( f_B , i - f );
+ if( i < f )
+  take( f_F , f - 1 - i );
+ else
+  take( f_B , i - f );
  balance();
  ADS_POST( size() == n - 1 );
  ADS_INVARIANT( balanced() );
@@ -150,8 +156,10 @@ void DualArrayDeque< T , S >::balance( void )
  if( balanced() )
   return;
  const std::size_t m = size() / 2 , f = f_F.size();
- if( f > m ) deal( f_F , f_B , f - m );     // the bottom of F to B
- else deal( f_B , f_F , m - f );            // the bottom of B to F
+ if( f > m )
+  deal( f_F , f_B , f - m );  // the bottom of F to B
+ else
+  deal( f_B , f_F , m - f );  // the bottom of B to F
  }
 
 template< class T , class S >
@@ -160,7 +168,7 @@ bool DualArrayDeque< T , S >::operator==( const DualArrayDeque & o ) const
  if( size() != o.size() )
   return( false );
  for( std::size_t i = 0 ; i < size() ; ++i )
-  if( !( ( *this )[ i ] == o[ i ] ) )
+  if( ! ( ( *this )[ i ] == o[ i ] ) )
    return( false );
  return( true );
  }

@@ -40,7 +40,7 @@
 
 #ifndef __ADS_BloomFilter
  #define __ADS_BloomFilter
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -59,7 +59,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS BloomFilter ----------------------------*/
@@ -67,11 +68,11 @@ namespace ADS {
 
 /// a filter of Bloom of \f$ m \f$ bits and \f$ k \f$ hashes
 template< class T , class H = std::hash< T > >
-class BloomFilter {
+class BloomFilter
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty filter of \f$ m \f$ bits and \f$ k \f$ hashes
  /// \pre \f$ m \ge 1 \f$ and \f$ k \ge 1 \f$
  BloomFilter( std::size_t m , int k , H h = H() );
@@ -128,12 +129,11 @@ class BloomFilter {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- std::vector< std::uint64_t > f_B;   ///< the bits
- std::size_t f_m;                    ///< the bits
- int f_k;                            ///< the hashes
- std::size_t f_n = 0;                ///< the insertions
- H f_h;                              ///< the hash of the items
+ std::vector< std::uint64_t > f_B;  ///< the bits
+ std::size_t f_m;                   ///< the bits
+ int f_k;                           ///< the hashes
+ std::size_t f_n = 0;               ///< the insertions
+ H f_h;                             ///< the hash of the items
 
  };  // end( class BloomFilter )
 
@@ -149,7 +149,7 @@ class BloomFilter {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BloomFilter.h included */
+#endif /* BloomFilter.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File BloomFilter.h -------------------------*/

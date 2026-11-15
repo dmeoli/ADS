@@ -73,7 +73,7 @@
 
 #ifndef __ADS_SuccinctPatriciaTrie
  #define __ADS_SuccinctPatriciaTrie
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -95,7 +95,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- CLASS SuccinctPatriciaTrie ------------------------*/
@@ -103,11 +104,11 @@ namespace ADS {
 
 /// the compacted trie of a sorted dictionary of strings in DFUDS, the
 /// strings numbered by their lexicographic rank
-class SuccinctPatriciaTrie {
+class SuccinctPatriciaTrie
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty dictionary
  SuccinctPatriciaTrie( void );
 
@@ -221,8 +222,8 @@ class SuccinctPatriciaTrie {
  ///     T , \mathrm{rank}_0( \mathit{BP} , e ) ) )
  /// \end{array}}
  /// \f]
- [[nodiscard]] std::pair< std::size_t , std::size_t > prefixRange(
-                                                   std::string_view P ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ prefixRange( std::string_view P ) const;
 
  /// the bytes of the structure: the parentheses with their directory and
  /// tree, the first characters, the marks and the rests of the labels
@@ -230,7 +231,6 @@ class SuccinctPatriciaTrie {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the rank of the node beginning at the place \f$ p \f$
  [[nodiscard]] std::size_t node( std::size_t p ) const;
 
@@ -259,16 +259,16 @@ class SuccinctPatriciaTrie {
  [[nodiscard]] std::size_t subtreeEnd( std::size_t p ) const;
 
  /// the walk of \f$ P \f$ down the trie: the range of `prefixRange()`
- [[nodiscard]] std::pair< std::size_t , std::size_t > walk(
-                                                   std::string_view P ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ walk( std::string_view P ) const;
 
- std::size_t f_n = 0;            ///< the strings
- BalancedParentheses f_bp;       ///< the degrees in depth, DFUDS
- std::string f_first;            ///< the first characters of the children
- CompactRankSelect f_end;        ///< the nodes where a string ends
- CompactRankSelect f_hasRest;    ///< the nodes with a rest of their label
- std::string f_rest;             ///< the rests with their lengths, in order
- EliasFano f_restAt;             ///< where each rest begins
+ std::size_t f_n = 0;          ///< the strings
+ BalancedParentheses f_bp;     ///< the degrees in depth, DFUDS
+ std::string f_first;          ///< the first characters of the children
+ CompactRankSelect f_end;      ///< the nodes where a string ends
+ CompactRankSelect f_hasRest;  ///< the nodes with a rest of their label
+ std::string f_rest;           ///< the rests with their lengths, in order
+ EliasFano f_restAt;           ///< where each rest begins
 
  };  // end( class SuccinctPatriciaTrie )
 
@@ -284,7 +284,7 @@ class SuccinctPatriciaTrie {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SuccinctPatriciaTrie.h included */
+#endif /* SuccinctPatriciaTrie.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File SuccinctPatriciaTrie.h --------------------*/

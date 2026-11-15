@@ -164,7 +164,7 @@
 
 #ifndef __ADS_JoinAlgorithms
  #define __ADS_JoinAlgorithms
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -188,7 +188,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CONCEPT JoinAdaptor --------------------------*/
@@ -212,25 +213,26 @@ inline constexpr std::size_t kJoinGrain = 2048;
 /// \f$ O( 1 ) \f$; `join( l , rl , m , r , rr )`, the join of the balancing
 /// scheme, which returns the root and its rank
 template< class A >
-concept JoinAdaptor = requires( typename A::Node * t ,
-                                typename A::Node * & l ,
-                                const typename A::Key & k ,
-                                typename A::Rank r ) {
- { A::nil() } -> std::same_as< typename A::Node * >;
- { A::left( t ) } -> std::same_as< typename A::Node * >;
- { A::right( t ) } -> std::same_as< typename A::Node * >;
- { A::key( t ) } -> std::same_as< const typename A::Key & >;
- { A::value( t ) } -> std::same_as< typename A::Value & >;
- { A::size( t ) } -> std::convertible_to< std::size_t >;
- A::expose( t , l , l );
- { A::connect( t , t , t ) } -> std::same_as< typename A::Node * >;
- A::dispose( t );
- { A::rank( t ) } -> std::same_as< typename A::Rank >;
- { A::childRank( t , r , t ) } -> std::same_as< typename A::Rank >;
- { A::join( t , r , t , t , r ) }
-  -> std::same_as< std::pair< typename A::Node * , typename A::Rank > >;
- { k < k } -> std::convertible_to< bool >;
- };
+concept JoinAdaptor =
+  requires( typename A::Node * t , typename A::Node *& l ,
+	    const typename A::Key & k , typename A::Rank r )
+{
+   { A::nil() } -> std::same_as< typename A::Node * >;
+   { A::left( t ) } -> std::same_as< typename A::Node * >;
+   { A::right( t ) } -> std::same_as< typename A::Node * >;
+   { A::key( t ) } -> std::same_as< const typename A::Key & >;
+   { A::value( t ) } -> std::same_as< typename A::Value & >;
+   { A::size( t ) } -> std::convertible_to< std::size_t >;
+   A::expose( t , l , l );
+   { A::connect( t , t , t ) } -> std::same_as< typename A::Node * >;
+   A::dispose( t );
+   { A::rank( t ) } -> std::same_as< typename A::Rank >;
+   { A::childRank( t , r , t ) } -> std::same_as< typename A::Rank >;
+   {
+    A::join( t , r , t , t , r )
+    } -> std::same_as< std::pair< typename A::Node * , typename A::Rank > >;
+   { k < k } -> std::convertible_to< bool >;
+   };
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- THE JOINS OF THE SCHEMES -------------------------*/
@@ -239,8 +241,9 @@ concept JoinAdaptor = requires( typename A::Node * t ,
 /// the join of the AVL trees; `A` gives also `height( t )`, -1 for nil,
 /// which `connect()` keeps
 template< class A >
-struct AVLJoin {
- using Node = typename A::Node;   ///< the type of the nodes
+struct AVLJoin
+{
+ using Node = typename A::Node;  ///< the type of the nodes
 
  /// the join of the AVL trees \f$ l \f$ and \f$ r \f$ with \f$ m \f$ between
  /// them, in \f$ O( | h( l ) - h( r ) | + 1 ) \f$ time
@@ -284,8 +287,9 @@ struct AVLJoin {
 /// the join of the Red-Black trees, whose ranks are the black heights; `A`
 /// gives also `red( t )`, false for nil, and `paint( t , red )`
 template< class A >
-struct RedBlackJoin {
- using Node = typename A::Node;   ///< the type of the nodes
+struct RedBlackJoin
+{
+ using Node = typename A::Node;  ///< the type of the nodes
 
  /// the join of the Red-Black trees \f$ l \f$ and \f$ r \f$, of black heights
  /// \f$ b_l \f$ and \f$ b_r \f$, with \f$ m \f$ between them: the root and its
@@ -325,12 +329,12 @@ struct RedBlackJoin {
  /// \end{array}}
  /// \f]
  static std::pair< Node * , int > join( Node * l , int bl , Node * m ,
-                                        Node * r , int br );
+					Node * r ,
+				       int br );
 
  /// the join when the black height \f$ b_l \f$ of \f$ l \f$ is larger than
  /// \f$ b_r \f$, by the right spine of \f$ l \f$
- static Node * joinRight( Node * l , int bl , Node * m , Node * r ,
-                          int br );
+ static Node * joinRight( Node * l , int bl , Node * m , Node * r , int br );
 
  /// the join when the black height \f$ b_r \f$ of \f$ r \f$ is larger than
  /// \f$ b_l \f$, the mirror of `joinRight()`
@@ -339,11 +343,12 @@ struct RedBlackJoin {
 
 /// the join of the trees balanced by weight, with \f$ \alpha = 0.29 \f$
 template< class A >
-struct WeightBalancedJoin {
- using Node = typename A::Node;   ///< the type of the nodes
+struct WeightBalancedJoin
+{
+ using Node = typename A::Node;  ///< the type of the nodes
 
- static constexpr std::size_t kAlphaNum = 29;    ///< \f$ \alpha \f$, up
- static constexpr std::size_t kAlphaDen = 100;   ///< and down
+ static constexpr std::size_t kAlphaNum = 29;   ///< \f$ \alpha \f$, up
+ static constexpr std::size_t kAlphaDen = 100;  ///< and down
 
  /// the join of the trees \f$ l \f$ and \f$ r \f$ balanced by weight with
  /// \f$ m \f$ between them, in \f$ O( | \log w( l ) - \log w( r ) | + 1 ) \f$
@@ -401,8 +406,9 @@ struct WeightBalancedJoin {
 
 /// the join of the treaps; `A` gives also `priority( t )`, of a node
 template< class A >
-struct TreapJoin {
- using Node = typename A::Node;   ///< the type of the nodes
+struct TreapJoin
+{
+ using Node = typename A::Node;  ///< the type of the nodes
 
  /// the join of the treaps \f$ l \f$ and \f$ r \f$ with \f$ m \f$ between
  /// them, in \f$ O( \log n ) \f$ expected time
@@ -435,7 +441,8 @@ struct TreapJoin {
 /// each of them consumes the trees it is given and returns the trees it
 /// makes
 template< JoinAdaptor A >
-struct JoinAlgorithms {
+struct JoinAlgorithms
+{
 
  using Node = typename A::Node;    ///< the type of the nodes
  using Key = typename A::Key;      ///< the type of the keys
@@ -443,16 +450,18 @@ struct JoinAlgorithms {
  using Rank = typename A::Rank;    ///< the type of the ranks
 
  /// a tree: its root and its rank
- struct Tree {
-  Node * t = nullptr;   ///< the root, nil if empty
-  Rank r{};             ///< the rank
+ struct Tree
+ {
+  Node * t = nullptr;  ///< the root, nil if empty
+  Rank r{};            ///< the rank
   };
 
  /// a tree taken apart at its root
- struct Exposed {
-  Tree l;               ///< the left subtree
-  Node * m = nullptr;   ///< the root, alone
-  Tree r;               ///< the right subtree
+ struct Exposed
+ {
+  Tree l;              ///< the left subtree
+  Node * m = nullptr;  ///< the root, alone
+  Tree r;              ///< the right subtree
   };
 
  /// the empty tree
@@ -612,8 +621,7 @@ struct JoinAlgorithms {
  /// \end{array}}
  /// \f]
  template< Executor E , class F >
- [[nodiscard]] static Tree intersect( E & ex , Tree a , Tree b ,
-                                      const F & f );
+ [[nodiscard]] static Tree intersect( E & ex , Tree a , Tree b , const F & f );
 
  /// the keys of \f$ a \f$ not in \f$ b \f$, with the work and the span of
  /// `unite()`; the nodes of \f$ b \f$ and those of \f$ a \f$ that leave are
@@ -662,8 +670,7 @@ struct JoinAlgorithms {
  /// \end{array}}
  /// \f]
  template< Executor E >
- [[nodiscard]] static Tree build( E & ex , Node * const * N ,
-                                  std::size_t n );
+ [[nodiscard]] static Tree build( E & ex , Node * const * N , std::size_t n );
 
  /// the \f$ n \f$ nodes alone of \f$ N \f$, whose keys increase, inserted in
  /// \f$ x \f$; on a key already there the value
@@ -695,7 +702,7 @@ struct JoinAlgorithms {
  /// \f]
  template< Executor E , class F >
  [[nodiscard]] static Tree multiInsert( E & ex , Tree x , Node * const * N ,
-                                        std::size_t n , const F & f );
+					std::size_t n , const F & f );
 
  /// the \f$ n \f$ keys of \f$ K \f$, increasing, taken out of \f$ x \f$ and
  /// freed, `gone` how many were there: the difference of \f$ x \f$ and
@@ -725,7 +732,7 @@ struct JoinAlgorithms {
  /// \f]
  template< Executor E >
  [[nodiscard]] static Tree multiRemove( E & ex , Tree x , const Key * K ,
-                                        std::size_t n , std::size_t & gone );
+					std::size_t n , std::size_t & gone );
 
  /// the nodes of \f$ x \f$ with \f$ p( k , v ) \f$ kept, the others freed:
  /// \f$ O( n ) \f$ work and \f$ O( \log^2 n ) \f$ span
@@ -767,7 +774,7 @@ struct JoinAlgorithms {
  /// \f]
  template< Executor E , class M , class R , class U >
  [[nodiscard]] static U mapReduce( E & ex , Node * t , const M & map ,
-                                   const R & reduce , const U & id );
+				   const R & reduce , const U & id );
 
  /// the keys of \f$ x \f$ in \f$ [ \mathit{lo} , \mathit{hi} ] \f$ taken out
  /// into the tree returned, by two splits, two joins and a `join2`, in
@@ -788,7 +795,7 @@ struct JoinAlgorithms {
  /// \end{array}}
  /// \f]
  [[nodiscard]] static Tree extract( Tree & x , const Key & lo ,
-                                    const Key & hi );
+				    const Key & hi );
 
  /// the smallest key of \f$ t \f$
  /// \pre \f$ t \f$ is not nil
@@ -799,7 +806,6 @@ struct JoinAlgorithms {
  [[nodiscard]] static const Key & lastKey( Node * t );
 
  private:
-
  /// `g()` and `h()`, in parallel on `ex`
  template< Executor E , class G , class H >
  static void fork( E & ex , G && g , H && h );
@@ -819,17 +825,23 @@ struct JoinAlgorithms {
 /*--------------------------------------------------------------------------*/
 
 /// the value of the second tree, or of the batch, on a key in both
-struct TakeSecond {
+struct TakeSecond
+{
  /// \f$ b \f$
  template< class V >
- V operator()( const V & , const V & b ) const { return( b ); }
+ V operator()( const V & , const V & b ) const {
+  return( b );
+  }
  };
 
 /// the value of the first tree on a key in both
-struct TakeFirst {
+struct TakeFirst
+{
  /// \f$ a \f$
  template< class V >
- V operator()( const V & a , const V & ) const { return( a ); }
+ V operator()( const V & a , const V & ) const {
+  return( a );
+  }
  };
 
 /// the operations based on join of the tree `T` of keys `Key` and values
@@ -844,11 +856,11 @@ struct TakeFirst {
 /// pair \f$ ( k , v ) \f$, the \f$ i \f$-th of a batch of salt \f$ s \f$,
 /// which may be called in parallel
 template< class T , class A , class Key , class Value >
-class Joinable {
+class Joinable
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
 /*--------------------------------------------------------------------------*/
 /*------------------------- SPLITTING AND JOINING --------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -856,8 +868,8 @@ class Joinable {
  /// the keys before \f$ k \f$, the value of \f$ k \f$ (if there), the keys
  /// after \f$ k \f$, by `JoinAlgorithms::split()`; the tree is consumed, in
  /// \f$ O( \log n ) \f$ time
- [[nodiscard]] std::tuple< T , std::optional< Value > , T > split(
-                                                        const Key & k ) &&;
+ [[nodiscard]] std::tuple< T , std::optional< Value > , T >
+ split( const Key & k ) &&;
 
  /// the tree of the keys of \f$ l \f$, the pair \f$ ( k , v ) \f$ and the
  /// keys of \f$ r \f$, by the join of the scheme; \f$ l \f$ and \f$ r \f$ are
@@ -865,7 +877,7 @@ class Joinable {
  /// \pre the keys of \f$ l \f$ are smaller than \f$ k \f$, those of \f$ r \f$
  ///      larger
  [[nodiscard]] static T join( T && l , const Key & k , const Value & v ,
-                              T && r );
+			      T && r );
 
  /// the tree of the keys of \f$ l \f$ and of \f$ r \f$, which are consumed,
  /// by `JoinAlgorithms::join2()`, in \f$ O( \log n ) \f$ time
@@ -926,7 +938,7 @@ class Joinable {
  /// \pre the keys of \f$ B \f$ increasing (an audit)
  template< class F = TakeSecond >
  void multiInsert( std::span< const std::pair< Key , Value > > B ,
-                   F f = F() ) {
+		   F f = F() ) {
   Sequential seq;
   multiInsert( seq , B , f );
   }
@@ -934,7 +946,7 @@ class Joinable {
  /// `multiInsert( B , f )` on the threads of `ex`
  template< Executor E , class F = TakeSecond >
  void multiInsert( E & ex , std::span< const std::pair< Key , Value > > B ,
-                   F f = F() );
+		   F f = F() );
 
  /// the keys of \f$ B \f$ removed, by `JoinAlgorithms::multiRemove()`,
  /// \f$ O( m \log( n / m + 1 ) ) \f$ work
@@ -988,7 +1000,7 @@ class Joinable {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* JoinAlgorithms.h included */
+#endif /* JoinAlgorithms.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File JoinAlgorithms.h ------------------------*/

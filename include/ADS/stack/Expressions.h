@@ -54,7 +54,7 @@
 
 #ifndef __ADS_Expressions
  #define __ADS_Expressions
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -73,7 +73,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the value of the postfix expression \f$ e \f$
 ///
@@ -169,7 +170,7 @@ std::string toPostfix( std::string_view e );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Expressions.h included */
+#endif /* Expressions.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File Expressions.h -------------------------*/

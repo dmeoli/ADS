@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- THE OPERATIONS ------------------------------*/
@@ -22,7 +23,7 @@ namespace ADS {
 
 template< class W , class T >
 ListGraph< W , T >::ListGraph( int n , bool directed )
- : B( n , directed ) , f_adj( n )
+    : B( n , directed ) , f_adj( n )
 {
  ADS_INVARIANT( consistent() );
  }
@@ -110,7 +111,7 @@ std::vector< int > ListGraph< W , T >::adj( int u ) const
 template< class W , class T >
 std::vector< int > ListGraph< W , T >::inAdj( int u ) const
 {
- ( void ) B::check( u );
+ ( void )B::check( u );
  std::vector< int > in;
  if( ! B::directed() ) {
   in = adj( u );
@@ -188,7 +189,8 @@ bool ListGraph< W , T >::consistent( void ) const
  for( int u = 0 ; u < B::bound() ; ++u ) {
   const auto & L = f_adj[ u ];
   if( ! B::f_alive[ u ] ) {
-   if( ! L.empty() ) return( false );
+   if( ! L.empty() )
+    return( false );
    continue;
    }
   for( auto p = L.head() ; ! L.finished( p ) ; p = L.next( p ) ) {
@@ -198,9 +200,11 @@ bool ListGraph< W , T >::consistent( void ) const
    seen[ v ] = u;
    if( ! B::f_directed ) {
     const auto w = weight( v , u );
-    if( ! w ) return( false );
+    if( ! w )
+     return( false );
     if constexpr( std::equality_comparable< W > )
-     if( !( *w == L.read( p ).second ) ) return( false );
+     if( ! ( *w == L.read( p ).second ) )
+      return( false );
     }
    ++count;
    }
@@ -227,7 +231,7 @@ bool ListGraph< W , T >::consistentAt( int u , int v ) const
  if( a.has_value() != b.has_value() )
   return( false );
  if constexpr( std::equality_comparable< W > )
-  if( a && !( *a == *b ) )
+  if( a && ! ( *a == *b ) )
    return( false );
  return( true );
  }

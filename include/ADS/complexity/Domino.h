@@ -44,7 +44,7 @@
 
 #ifndef __ADS_Domino
  #define __ADS_Domino
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -61,17 +61,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a tile: the colors of its four sides
-struct Tile {
- int up ,      ///< the color of the upper side
-     right ,   ///< the color of the right side
-     down ,    ///< the color of the lower side
-     left;     ///< the color of the left side
+struct Tile
+{
+ int up ,   ///< the color of the upper side
+   right ,  ///< the color of the right side
+   down ,   ///< the color of the lower side
+   left;   ///< the color of the left side
  };
 
-using Tiling = std::vector< std::vector< int > >;   ///< the tile of ( i , j )
+using Tiling = std::vector< std::vector< int > >;  ///< the tile of ( i , j )
 
 /// whether \f$ T \f$ is a legal covering of the \f$ n \times n \f$ square by
 /// \f$ D \f$, with \f$ d = D[ 0 ] \f$ in \f$ ( 0 , 0 ) \f$; false if
@@ -95,7 +97,7 @@ using Tiling = std::vector< std::vector< int > >;   ///< the tile of ( i , j )
 /// \end{array}}
 /// \f]
 inline bool legalTiling( const std::vector< Tile > & D , int n ,
-                         const Tiling & T );
+			 const Tiling & T );
 
 /// a legal covering of the \f$ n \times n \f$ square, by backtrack, or
 /// nothing (also if \f$ n < 1 \f$ or \f$ D \f$ is empty)
@@ -123,7 +125,7 @@ inline bool legalTiling( const std::vector< Tile > & D , int n ,
 /// \f]
 /// \post a covering returned passes `legalTiling()`
 inline std::optional< Tiling > squareTiling( const std::vector< Tile > & D ,
-                                             int n );
+					     int n );
 
 /// whether a strip of \f$ n \f$ tiles from \f$ d = D[ 0 ] \f$ exists,
 /// \f$ O( m^2 ) \f$; false if \f$ n < 1 \f$ or \f$ D \f$ is empty, true for
@@ -166,7 +168,7 @@ inline bool linearTiling( const std::vector< Tile > & D , long n );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Domino.h included */
+#endif /* Domino.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Domino.h ----------------------------*/

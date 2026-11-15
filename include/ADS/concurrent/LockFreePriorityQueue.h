@@ -142,7 +142,7 @@
 
 #ifndef __ADS_LockFreePriorityQueue
  #define __ADS_LockFreePriorityQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -163,7 +163,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- CLASS LockFreePriorityQueue -----------------------*/
@@ -172,18 +173,18 @@ namespace ADS {
 /// an exact PRIORITY QUEUE shared by threads, linearizable and lock-free:
 /// the skiplist of Lindén and Jonsson, its deleted prefix cut in batches
 template< class K , class T , class Less = std::less< K > >
-class LockFreePriorityQueue {
+class LockFreePriorityQueue
+{
 
  static_assert( std::is_nothrow_copy_constructible_v< K > ,
-                "the keys are copied without exceptions" );
+		"the keys are copied without exceptions" );
  static_assert( std::is_nothrow_move_constructible_v< T > ,
-                "the items are moved without exceptions" );
+		"the items are moved without exceptions" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Item = T;    ///< the type of the items
+ using Key = K;   ///< the type of the keys
+ using Item = T;  ///< the type of the items
 
  /// a queue with no handles on the pairs, on which a search lowers a key
  /// by a new insertion [see `decrease_key_of()` of `Capabilities.h`]
@@ -193,15 +194,17 @@ class LockFreePriorityQueue {
  static constexpr int kLevels = 32;
 
  /// a pair of the queue, its key and its item
- struct Entry {
-  K key;    ///< the key, the least deleted first
-  T item;   ///< the item
+ struct Entry
+ {
+  K key;   ///< the key, the least deleted first
+  T item;  ///< the item
   };
 
  /// what a handle counted of its operations, for comparisons that do not
  /// time: the read-modify-writes, those that failed, the nodes walked by
  /// the DeleteMin, and the cuts of the prefix
- struct Counts {
+ struct Counts
+ {
   std::uint64_t rmw = 0;     ///< compare-and-swaps and fetch-and-ors
   std::uint64_t failed = 0;  ///< those that changed nothing
   std::uint64_t walked = 0;  ///< the nodes walked by the DeleteMin
@@ -215,14 +218,13 @@ class LockFreePriorityQueue {
  /// `seed`
  /// \pre \f$ b \ge 1 \f$
  explicit LockFreePriorityQueue( unsigned offset = 32 ,
-                                 std::uint64_t seed = 1 ,
-                                 Less less = Less() );
+				 std::uint64_t seed = 1 ,
+				 Less less = Less() );
 
  /// no copy, since the threads share it by its address
  LockFreePriorityQueue( const LockFreePriorityQueue & ) = delete;
  /// no copy, since the threads share it by its address
- LockFreePriorityQueue & operator=( const LockFreePriorityQueue & ) =
-  delete;
+ LockFreePriorityQueue & operator=( const LockFreePriorityQueue & ) = delete;
 
  /// the frees of the nodes, of those waiting for their epoch and of the
  /// records
@@ -254,32 +256,34 @@ class LockFreePriorityQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
+ using Word = std::uintptr_t;  ///< a pointer with its two bits
 
- using Word = std::uintptr_t;    ///< a pointer with its two bits
-
- static constexpr Word kMark = 1;   ///< the delete flag of the successor
- static constexpr Word kCut = 2;    ///< a cut in progress, on the head
+ static constexpr Word kMark = 1;  ///< the delete flag of the successor
+ static constexpr Word kCut = 2;   ///< a cut in progress, on the head
 
  /// the links of a node, or of the head and of the tail: its height, its
  /// flag of an insertion in progress, and its \f$ h \f$ pointers
- struct Link {
-  std::atomic< Word > * next;          ///< the pointers, after the node
-  Link * later;                        ///< the next node of its limbo
-  int height;                          ///< the levels of the node
-  std::atomic< bool > inserting;       ///< true until the insertion ends
+ struct Link
+ {
+  std::atomic< Word > * next;     ///< the pointers, after the node
+  Link * later;                   ///< the next node of its limbo
+  int height;                     ///< the levels of the node
+  std::atomic< bool > inserting;  ///< true until the insertion ends
   };
 
  /// a node of a pair: its key, its stamp and its item, after its links
- struct Node : Link {
-  K key;                 ///< the key
-  std::uint64_t stamp;   ///< the stamp that tells equal keys apart
-  T item;                ///< the item, moved out by its DeleteMin
+ struct Node : Link
+ {
+  K key;                ///< the key
+  std::uint64_t stamp;  ///< the stamp that tells equal keys apart
+  T item;               ///< the item, moved out by its DeleteMin
   };
 
  /// the record of a handle for the epochs: the epoch it announces, the
  /// nodes it cut off by the epoch of their cut, and whether a handle holds
  /// it; the records are never freed but by the destructor
- struct alignas( 64 ) Record {
+ struct alignas( 64 ) Record
+ {
   /// \f$ 2 e + 1 \f$ inside an operation of the epoch \f$ e \f$, 0 out
   std::atomic< std::uint64_t > local{ 0 };
   /// held by a handle
@@ -314,8 +318,7 @@ class LockFreePriorityQueue {
 
  /// the memory of a link of n bytes and of its h pointers, the pointers
  /// constructed and null, their address in next
- static void * allocate( std::size_t n , int h , std::atomic< Word > * &
-                         next );
+ static void * allocate( std::size_t n , int h , std::atomic< Word > *& next );
 
  /// the head or the tail, of height h
  static Link * makeLink( int h );
@@ -334,12 +337,12 @@ class LockFreePriorityQueue {
 
  /// whether the node p is before the key ( k , s )
  [[nodiscard]] bool before( const Link * p , const K & k ,
-                            std::uint64_t s ) const;
+			    std::uint64_t s ) const;
 
  /// the predecessors and the successors of the key ( k , s ) at each
  /// level
  void locate( const K & k , std::uint64_t s , Link ** preds ,
-              Link ** succs ) const;
+	      Link ** succs ) const;
 
  /// whether the node c, found as the successor at an upper level of the
  /// node n linked at level 0, may be before n in the list of level 0: true
@@ -353,16 +356,16 @@ class LockFreePriorityQueue {
  /// the nodes of the records freed, and the records
  void release( void );
 
- unsigned f_b;                                  ///< the length of a cut
- Less f_less;                                   ///< the order of the keys
- Link * f_head;                                 ///< the head
- Link * f_tail;                                 ///< the tail
+ unsigned f_b;   ///< the length of a cut
+ Less f_less;    ///< the order of the keys
+ Link * f_head;  ///< the head
+ Link * f_tail;  ///< the tail
  alignas( 64 ) std::atomic< std::uint64_t > f_epoch{ 2 };
-                                                ///< the epoch, from 2
+ ///< the epoch, from 2
  alignas( 64 ) std::atomic< Record * > f_records{ nullptr };
-                                                ///< the records
- std::atomic< std::uint64_t > f_ids{ 0 };       ///< the numbers given
- std::atomic< std::uint64_t > f_seed;           ///< the seeds of the handles
+ ///< the records
+ std::atomic< std::uint64_t > f_ids{ 0 };  ///< the numbers given
+ std::atomic< std::uint64_t > f_seed;      ///< the seeds of the handles
 
  };  // end( class LockFreePriorityQueue )
 
@@ -373,11 +376,11 @@ class LockFreePriorityQueue {
 /// the access of one thread to a `LockFreePriorityQueue`: its record of the
 /// epochs, the generator of its heights and the counter of its stamps
 template< class K , class T , class Less >
-class LockFreePriorityQueue< K , T , Less >::Handle {
+class LockFreePriorityQueue< K , T , Less >::Handle
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the record moved, the other handle left without one
  Handle( Handle && o ) noexcept;
 
@@ -504,12 +507,11 @@ class LockFreePriorityQueue< K , T , Less >::Handle {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  friend class LockFreePriorityQueue;
 
  /// the handle of q on the record r, its heights drawn from the seed
  Handle( LockFreePriorityQueue & q , Record * r , std::uint64_t seed )
-  : f_q( &q ) , f_r( r ) , f_x( seed ) {}
+     : f_q( &q ) , f_r( r ) , f_x( seed ) { }
 
  /// a random number of 64 bits (the splitmix64 of Steele et al.)
  std::uint64_t next( void );
@@ -531,10 +533,10 @@ class LockFreePriorityQueue< K , T , Less >::Handle {
  /// the epoch raised if every record inside an operation announces it
  void advance( void );
 
- LockFreePriorityQueue * f_q;             ///< the queue
- Record * f_r;                            ///< the record, nil once moved
- std::uint64_t f_x;                       ///< the state of the generator
- Counts f_c;                              ///< the counts
+ LockFreePriorityQueue * f_q;  ///< the queue
+ Record * f_r;                 ///< the record, nil once moved
+ std::uint64_t f_x;            ///< the state of the generator
+ Counts f_c;                   ///< the counts
 
  };  // end( class LockFreePriorityQueue::Handle )
 
@@ -550,7 +552,7 @@ class LockFreePriorityQueue< K , T , Less >::Handle {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LockFreePriorityQueue.h included */
+#endif /* LockFreePriorityQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- End File LockFreePriorityQueue.h --------------------*/

@@ -53,7 +53,7 @@
 
 #ifndef __ADS_LinkedHeapPriorityQueue
  #define __ADS_LinkedHeapPriorityQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -73,7 +73,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- CLASS LinkedHeapPriorityQueue ----------------------*/
@@ -82,13 +83,13 @@ namespace ADS {
 /// a priority queue on a heap with pointers, which keeps a pointer to the
 /// last leaf if `L`
 template< class T , std::totally_ordered P = int , bool L = false >
-class LinkedHeapPriorityQueue {
+class LinkedHeapPriorityQueue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;            ///< the type of the items
- using Priority = P;        ///< the type of the priorities
+ using Item = T;      ///< the type of the items
+ using Priority = P;  ///< the type of the priorities
 
  /// the empty queue
  LinkedHeapPriorityQueue( void ) = default;
@@ -97,15 +98,15 @@ class LinkedHeapPriorityQueue {
  LinkedHeapPriorityQueue( const LinkedHeapPriorityQueue & ) = delete;
 
  /// no copy: the nodes belong to the queue
- LinkedHeapPriorityQueue & operator=( const LinkedHeapPriorityQueue & ) =
-  delete;
+ LinkedHeapPriorityQueue &
+ operator=( const LinkedHeapPriorityQueue & ) = delete;
 
  /// the items of `other`, which is left empty
  LinkedHeapPriorityQueue( LinkedHeapPriorityQueue && other ) noexcept;
 
  /// the items of `other`, which is left empty, in place of these
- LinkedHeapPriorityQueue & operator=( LinkedHeapPriorityQueue && other )
-  noexcept;
+ LinkedHeapPriorityQueue &
+ operator=( LinkedHeapPriorityQueue && other ) noexcept;
 
  /// the queue and its nodes destroyed
  ~LinkedHeapPriorityQueue();
@@ -203,29 +204,29 @@ class LinkedHeapPriorityQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node of the heap
- struct Node {
-  P priority;                ///< the priority
-  T value;                   ///< the item
-  Node * parent;             ///< the parent, `nullptr` for the root
-  Node * left = nullptr ,    ///< the left child
-       * right = nullptr;    ///< the right child
+ struct Node
+ {
+  P priority;            ///< the priority
+  T value;               ///< the item
+  Node * parent;         ///< the parent, `nullptr` for the root
+  Node *left = nullptr ,  ///< the left child
+    *right = nullptr;    ///< the right child
   /// the node of the priority \f$ p \f$ and of the item \f$ v \f$, a child
   /// of \f$ u \f$
   Node( const P & p , const T & v , Node * u )
-   : priority( p ) , value( v ) , parent( u ) {}
+      : priority( p ) , value( v ) , parent( u ) { }
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( priority , item ), in the symmetric
  // order of the tree (no useful order), bidirectional
 
  /// the shape of the tree, for `PathIterator`
- struct Shape {
+ struct Shape
+ {
   /// the root of the queue \f$ o \f$
   static auto root( const auto & o ) {
    return( static_cast< const Node * >( o.f_root ) );
@@ -273,7 +274,6 @@ class LinkedHeapPriorityQueue {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// the node k >= 1 of the levels, by the bits of k
  Node * at( int k ) const;
 
@@ -299,9 +299,9 @@ class LinkedHeapPriorityQueue {
  void release( Node * u );
 
  Node * f_root = nullptr;
- Node * f_last = nullptr;   ///< the last leaf, the node f_n
+ Node * f_last = nullptr;  ///< the last leaf, the node f_n
  int f_n = 0;
- ObjectPool< Node > f_pool; ///< the nodes
+ ObjectPool< Node > f_pool;  ///< the nodes
 
  };  // end( class LinkedHeapPriorityQueue )
 
@@ -317,7 +317,7 @@ class LinkedHeapPriorityQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LinkedHeapPriorityQueue.h included */
+#endif /* LinkedHeapPriorityQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------- End File LinkedHeapPriorityQueue.h -------------------*/

@@ -148,7 +148,7 @@
 
 #ifndef __ADS_ParallelSort
  #define __ADS_ParallelSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -174,7 +174,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the items from which the parallel sorts use more than one thread,
 /// \f$ 2^{15} \f$
@@ -317,7 +318,7 @@ void learnedStableSort( E & ex , std::vector< T > & A );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ParallelSort.h included */
+#endif /* ParallelSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File ParallelSort.h -------------------------*/

@@ -60,7 +60,7 @@
 
 #ifndef __ADS_RingDeque
  #define __ADS_RingDeque
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -86,9 +86,9 @@
 
 #if defined( __GNUC__ ) || defined( __clang__ )
  /// the operations at the ends, inlined even where the compiler would not
- #define ADS_RING_INLINE inline __attribute__(( always_inline ))
+ #define ADS_RING_INLINE inline __attribute__( ( always_inline ) )
  /// the growth, never inlined
- #define ADS_RING_NOINLINE __attribute__(( noinline ))
+ #define ADS_RING_NOINLINE __attribute__( ( noinline ) )
 #elif defined( _MSC_VER )
  /// the operations at the ends, inlined even where the compiler would not
  #define ADS_RING_INLINE __forceinline
@@ -101,14 +101,17 @@
  #define ADS_RING_NOINLINE
 #endif
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the random-access iterator of a circular vector of \f$ 2^k \f$ places,
 /// the place of the rank \f$ i \f$ being `( head + i ) & mask`
 template< class T , bool Const >
-class MaskIterator {
+class MaskIterator
+{
  using Item = std::conditional_t< Const , const T , T >;
 
  public:
@@ -125,14 +128,15 @@ class MaskIterator {
 
  /// an iterator on nothing
  MaskIterator( void ) = default;
- MaskIterator( Item * A , std::size_t head , std::size_t mask ,
-               std::size_t i )
-  : f_A( A ) , f_head( head ) , f_mask( mask ) , f_i( i ) {}
+ MaskIterator( Item * A , std::size_t head , std::size_t mask , std::size_t i )
+     : f_A( A ) , f_head( head ) , f_mask( mask ) , f_i( i ) { }
 
  /// the constant iterator from the mutable one
- template< bool K > requires ( Const && ! K )
+ template< bool K >
+  requires( Const && ! K )
  MaskIterator( const MaskIterator< T , K > & o )
-  : f_A( o.f_A ) , f_head( o.f_head ) , f_mask( o.f_mask ) , f_i( o.f_i ) {}
+     : f_A( o.f_A ) , f_head( o.f_head ) , f_mask( o.f_mask ) ,
+       f_i( o.f_i ) { }
 
  /// the item
  reference operator*( void ) const {
@@ -146,13 +150,27 @@ class MaskIterator {
   }
 
  /// to the next item
- MaskIterator & operator++( void ) { ++f_i; return( *this ); }
+ MaskIterator & operator++( void ) {
+  ++f_i;
+  return( *this );
+  }
  /// to the previous item
- MaskIterator & operator--( void ) { --f_i; return( *this ); }
+ MaskIterator & operator--( void ) {
+  --f_i;
+  return( *this );
+  }
  /// to the next item, returning the iterator before the step
- MaskIterator operator++( int ) { auto t = *this; ++f_i; return( t ); }
+ MaskIterator operator++( int ) {
+  auto t = *this;
+  ++f_i;
+  return( t );
+  }
  /// to the previous item, returning the iterator before the step
- MaskIterator operator--( int ) { auto t = *this; --f_i; return( t ); }
+ MaskIterator operator--( int ) {
+  auto t = *this;
+  --f_i;
+  return( t );
+  }
  /// \f$ k \f$ items on
  MaskIterator & operator+=( difference_type k ) {
   f_i += std::size_t( k );
@@ -173,7 +191,7 @@ class MaskIterator {
   return( a -= k );
   }
  friend difference_type operator-( const MaskIterator & a ,
-                                   const MaskIterator & b ) {
+				   const MaskIterator & b ) {
   return( difference_type( a.f_i - b.f_i ) );
   }
  bool operator==( const MaskIterator & o ) const { return( f_i == o.f_i ); }
@@ -182,11 +200,12 @@ class MaskIterator {
   }
 
  private:
- template< class , bool > friend class MaskIterator;
+ template< class , bool >
+ friend class MaskIterator;
 
  Item * f_A = nullptr;
  std::size_t f_head = 0 , f_mask = 0;
- std::size_t f_i = 0;          ///< the rank from the head
+ std::size_t f_i = 0;  ///< the rank from the head
  };  // end( class MaskIterator )
 
 }  // end( namespace detail )
@@ -198,7 +217,8 @@ class MaskIterator {
 /// a double ended queue on a circular vector of \f$ 2^k \f$ places that
 /// doubles
 template< class T >
-class RingDeque {
+class RingDeque
+{
 /*--------------------------------------------------------------------------*/
  public:
  /// the type of the items
@@ -288,9 +308,7 @@ class RingDeque {
  ADS_RING_INLINE void push_front( const T & v ) { emplace_front( v ); }
 
  /// \f$ v \f$ at the front, moved
- ADS_RING_INLINE void push_front( T && v ) {
-  emplace_front( std::move( v ) );
-  }
+ ADS_RING_INLINE void push_front( T && v ) { emplace_front( std::move( v ) ); }
 
  /// the item built from `args` at the back, \f$ O( 1 ) \f$ amortized
  ///
@@ -313,8 +331,8 @@ class RingDeque {
  /// \end{array}}
  /// \f]
  /// \post one item more, the new one at the back
- template< class ... Args >
- T & emplace_back( Args && ... args );
+ template< class... Args >
+ T & emplace_back( Args &&... args );
 
  /// the item built from `args` at the front, \f$ O( 1 ) \f$ amortized
  ///
@@ -330,8 +348,8 @@ class RingDeque {
  /// \end{array}}
  /// \f]
  /// \post one item more, the new one at the front
- template< class ... Args >
- T & emplace_front( Args && ... args );
+ template< class... Args >
+ T & emplace_front( Args &&... args );
 
  /// removes the item at the front, advancing \f$ h \f$
  /// \pre the deque is not empty
@@ -467,8 +485,8 @@ class RingDeque {
  /// place \f$ h \f$ moved to its front, \f$ A \f$ freed; out of
  /// line and with no access to the deque, which the loops of operations
  /// can then keep in registers, its address never given away
- ADS_RING_NOINLINE static T * relocate( T * A , std::size_t m ,
-                                        std::size_t h , std::size_t n );
+ ADS_RING_NOINLINE static T * relocate( T * A , std::size_t m , std::size_t h ,
+					std::size_t n );
 
  /// the vector of twice the places, the items moved to its front in order
  void grow( void );
@@ -513,10 +531,10 @@ class RingDeque {
  // change one each, two chains that do not wait for each other
  using Count = std::size_t;
 
- T * f_A = nullptr;            ///< the places, raw memory
- Count f_mask = Count( -1 );   ///< places - 1; -1 with none
- Count f_head = 0;             ///< the front, at the place head & mask
- Count f_tail = 0;             ///< the back + 1
+ T * f_A = nullptr;           ///< the places, raw memory
+ Count f_mask = Count( -1 );  ///< places - 1; -1 with none
+ Count f_head = 0;            ///< the front, at the place head & mask
+ Count f_tail = 0;            ///< the back + 1
  };  // end( class RingDeque )
 
 /*--------------------------------------------------------------------------*/
@@ -531,7 +549,7 @@ class RingDeque {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RingDeque.h included */
+#endif /* RingDeque.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File RingDeque.h --------------------------*/

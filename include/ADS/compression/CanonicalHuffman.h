@@ -89,7 +89,7 @@
 
 #ifndef __ADS_CanonicalHuffman
  #define __ADS_CanonicalHuffman
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -112,7 +112,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the lengths of the codes of Huffman [see `Huffman.h`] of the symbols with
 /// the frequencies `freq`
@@ -128,8 +129,8 @@ namespace ADS {
 /// \f]
 /// \pre `freq` is not empty, no frequency is negative
 template< class C , class F >
-[[nodiscard]] std::map< C , int > huffmanLengths(
-                                            const std::map< C , F > & freq );
+[[nodiscard]] std::map< C , int >
+huffmanLengths( const std::map< C , F > & freq );
 
 /// the lengths of a code of Huffman of no length above \f$ L \f$, by halving
 /// the frequencies (rounding up) until the code of Huffman of the halved
@@ -154,8 +155,9 @@ template< class C , class F >
 ///      symbols
 /// \post no length is above \f$ L \f$
 template< class C , class F >
-[[nodiscard]] std::map< C , int > limitedLengths(
-                                     const std::map< C , F > & freq , int L );
+[[nodiscard]] std::map< C ,
+			int > limitedLengths( const std::map< C , F > & freq ,
+						 int L );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS CanonicalHuffman -------------------------*/
@@ -163,12 +165,12 @@ template< class C , class F >
 
 /// the canonical prefix code of the given lengths of the symbols of type `C`
 template< class C >
-class CanonicalHuffman {
+class CanonicalHuffman
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using symbol_type = C;   ///< the type of the symbols
+ using symbol_type = C;  ///< the type of the symbols
 
  /// the canonical code of the lengths
  ///
@@ -197,8 +199,8 @@ class CanonicalHuffman {
  /// the canonical code of the code of Huffman of the frequencies
  /// \pre as `huffmanLengths()`
  template< class F >
- [[nodiscard]] static CanonicalHuffman fromFrequencies(
-                                            const std::map< C , F > & freq );
+ [[nodiscard]] static CanonicalHuffman
+ fromFrequencies( const std::map< C , F > & freq );
 
  /// the lengths of the codes
  [[nodiscard]] const std::map< C , int > & lengths( void ) const {
@@ -235,8 +237,8 @@ class CanonicalHuffman {
  /// \f]
  /// \pre each symbol of `text` has a code
  /// \post `decode( result , text.size() )` is `text` (audit)
- [[nodiscard]] std::vector< std::uint8_t > encode(
-                                         std::span< const C > text ) const;
+ [[nodiscard]] std::vector< std::uint8_t >
+ encode( std::span< const C > text ) const;
 
  /// the symbol whose code is next in \f$ r \f$
  ///
@@ -257,17 +259,16 @@ class CanonicalHuffman {
 
  /// the first \f$ n \f$ symbols encoded in `bits`, each by `decode()` above
  /// \pre `bits` begins with \f$ n \f$ codes
- [[nodiscard]] std::vector< C > decode(
-         const std::vector< std::uint8_t > & bits , std::size_t n ) const;
+ [[nodiscard]] std::vector< C >
+ decode( const std::vector< std::uint8_t > & bits , std::size_t n ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
-
  std::map< C , int > f_len;                ///< the lengths
  std::map< C , std::uint64_t > f_code;     ///< the values of the codes
- std::vector< std::uint64_t > f_fc;   ///< \f$ \mathit{fc}[ 1 .. \max ] \f$
- std::vector< std::vector< C > > f_symb;   ///< the symbols by length
- int f_max = 0;                            ///< the longest length
+ std::vector< std::uint64_t > f_fc;       ///< \f$ \mathit{fc}[ 1 .. \max ] \f$
+ std::vector< std::vector< C > > f_symb;  ///< the symbols by length
+ int f_max = 0;                           ///< the longest length
 
  };  // end( class CanonicalHuffman )
 
@@ -283,7 +284,7 @@ class CanonicalHuffman {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CanonicalHuffman.h included */
+#endif /* CanonicalHuffman.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File CanonicalHuffman.h -----------------------*/

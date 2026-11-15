@@ -17,15 +17,17 @@
 
 #include <thread>
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the first exception thrown by the calls of a pattern, and the flag that
 /// stops the claim of new blocks
-class FirstError {
+class FirstError
+{
  public:
-
  /// true once a call has thrown
  [[nodiscard]] bool failed( void ) const noexcept {
   return( f_failed.load( std::memory_order_relaxed ) );
@@ -46,7 +48,6 @@ class FirstError {
   }
 
  private:
-
  std::atomic< bool > f_failed{ false };
  std::mutex f_lock;
  std::exception_ptr f_error;
@@ -69,7 +70,8 @@ inline void spinPause( unsigned & k ) noexcept
 /// the state of a tile of the scan, on a line of its own: 0 nothing, 1 its
 /// aggregate, 2 its inclusive prefix
 template< class T >
-struct alignas( 64 ) ScanTile {
+struct alignas( 64 ) ScanTile
+{
  std::atomic< std::uint8_t > flag{ 0 };
  std::optional< T > aggregate , prefix;
  };
@@ -81,12 +83,12 @@ T lookBackScan( E & ex , I in , std::size_t n , O out , T init , Op & op )
 {
  const std::size_t p = ex.concurrency();
  // tiles of about 64 KB, at least 256 items
- const std::size_t tile = std::max< std::size_t >( 256 ,
-                                         ( std::size_t( 1 ) << 16 ) /
-                                         std::max< std::size_t >(
-                                          sizeof( T ) , 1 ) );
+ const std::size_t tile =
+   std::max< std::size_t >( 256 , ( std::size_t( 1 ) << 16 ) /
+				   std::max< std::size_t >( sizeof( T ) ,
+							    1 ) );
  const std::size_t tiles = ( n + tile - 1 ) / tile;
- if( ( p == 1 ) || ( tiles <= 1 ) ) {      // one pass on one thread
+ if( ( p == 1 ) || ( tiles <= 1 ) ) {  // one pass on one thread
   T acc = init;
   for( std::size_t i = 0 ; i < n ; ++i ) {
    T x = in[ i ];
@@ -112,7 +114,7 @@ T lookBackScan( E & ex , I in , std::size_t n , O out , T init , Op & op )
    const std::size_t lo = c * tile , hi = std::min( n , lo + tile );
    try {
     if( error.failed() )
-     throw( 0 );                            // only to publish the tile
+     throw( 0 );  // only to publish the tile
     // the aggregate of the tile, published at once
     T a = in[ lo ];
     for( std::size_t i = lo + 1 ; i < hi ; ++i )
@@ -128,7 +130,7 @@ T lookBackScan( E & ex , I in , std::size_t n , O out , T init , Op & op )
       std::uint8_t f;
       while( ( f = S[ j ].flag.load( std::memory_order_acquire ) ) == 0 )
        spinPause( k );
-      if( f == 3 )                          // a tile that failed
+      if( f == 3 )  // a tile that failed
        throw( 0 );
       const T & v = ( f == 2 ) ? *S[ j ].prefix : *S[ j ].aggregate;
       acc = acc ? op( v , *acc ) : v;
@@ -179,7 +181,10 @@ void parallelInvoke( E & ex , F && f , G && g )
   detail::FirstError error;
   ex.bulk( 2 , [ & ]( std::size_t i ) {
    try {
-    if( i == 0 ) f(); else g();
+    if( i == 0 )
+     f();
+    else
+     g();
     }
    catch( ... ) {
     error.keep();
@@ -191,24 +196,24 @@ void parallelInvoke( E & ex , F && f , G && g )
 
 /*--------------------------------------------------------------------------*/
 
-inline std::pair< std::size_t , std::size_t > blocksOf( std::size_t first ,
-                                                        std::size_t last ,
-                                                        std::size_t grain )
+inline std::pair< std::size_t , std::size_t >
+blocksOf( std::size_t first , std::size_t last , std::size_t grain )
 {
  const std::size_t n = last > first ? last - first : 0;
  if( n == 0 )
   return( std::pair< std::size_t , std::size_t >( 0 , 0 ) );
  grain = std::max< std::size_t >( grain , 1 );
  std::size_t size = std::max( grain , ( n + kBlocks - 1 ) / kBlocks );
- return( std::pair< std::size_t , std::size_t >( ( n + size - 1 ) / size ,
-                                                 size ) );
+ return(
+   std::pair< std::size_t , std::size_t >( ( n + size - 1 ) / size , size ) );
  }
 
 /*--------------------------------------------------------------------------*/
 
 template< Executor E , class F >
 void parallelForBlocks( E & ex , std::size_t first , std::size_t last ,
-                        F && f , std::size_t grain )
+			F && f ,
+			std::size_t grain )
 {
  const auto cut = blocksOf( first , last , grain );
  const std::size_t b = cut.first , size = cut.second;
@@ -237,31 +242,37 @@ void parallelForBlocks( E & ex , std::size_t first , std::size_t last ,
 
 template< Executor E , class F >
 void parallelFor( E & ex , std::size_t first , std::size_t last , F && f ,
-                  std::size_t grain )
+		  std::size_t grain )
 {
- parallelForBlocks( ex , first , last ,
-                    [ & ]( std::size_t lo , std::size_t hi ) {
-                     for( std::size_t i = lo ; i < hi ; ++i )
-                      f( i );
-                     } , grain );
+ parallelForBlocks(
+   ex , first , last ,
+   [ & ]( std::size_t lo , std::size_t hi ) {
+    for( std::size_t i = lo ; i < hi ; ++i )
+     f( i );
+    } ,
+   grain );
  }
 
 /*--------------------------------------------------------------------------*/
 
 template< Executor E , class T , class F , class Op >
 T parallelReduce( E & ex , std::size_t first , std::size_t last , T id ,
-                  F && f , Op op , std::size_t grain )
+		  F && f ,
+		  Op op , std::size_t grain )
 {
  const auto cut = blocksOf( first , last , grain );
  const std::size_t b = cut.first , size = cut.second;
  if( b == 0 )
   return( id );
  std::vector< std::optional< T > > part( b );
- parallelForBlocks( ex , 0 , b , [ & ]( std::size_t lo , std::size_t hi ) {
-  for( std::size_t i = lo ; i < hi ; ++i )
-   part[ i ].emplace( f( first + i * size ,
-                         std::min( last , first + ( i + 1 ) * size ) ) );
-  } , 1 );
+ parallelForBlocks(
+   ex , 0 , b ,
+   [ & ]( std::size_t lo , std::size_t hi ) {
+    for( std::size_t i = lo ; i < hi ; ++i )
+     part[ i ].emplace(
+       f( first + i * size , std::min( last , first + ( i + 1 ) * size ) ) );
+    } ,
+   1 );
  T r = std::move( id );
  for( auto & x : part )
   r = op( std::move( r ) , std::move( *x ) );
@@ -271,21 +282,23 @@ T parallelReduce( E & ex , std::size_t first , std::size_t last , T id ,
 /*--------------------------------------------------------------------------*/
 
 template< Executor E , std::random_access_iterator I ,
-          std::random_access_iterator O , class T , class Op >
+	  std::random_access_iterator O , class T , class Op >
 T parallelInclusiveScan( E & ex , I in , std::size_t n , O out , T init ,
-                         Op op )
+			 Op op )
 {
- return( detail::lookBackScan< true >( ex , in , n , out , std::move( init ) ,
-                                       op ) );
+ return(
+   detail::lookBackScan< true >( ex , in , n , out , std::move( init ) ,
+				 op ) );
  }
 
 template< Executor E , std::random_access_iterator I ,
-          std::random_access_iterator O , class T , class Op >
+	  std::random_access_iterator O , class T , class Op >
 T parallelExclusiveScan( E & ex , I in , std::size_t n , O out , T init ,
-                         Op op )
+			 Op op )
 {
- return( detail::lookBackScan< false >( ex , in , n , out ,
-                                        std::move( init ) , op ) );
+ return(
+   detail::lookBackScan< false >( ex , in , n , out , std::move( init ) ,
+				  op ) );
  }
 
 /*--------------------------------------------------------------------------*/

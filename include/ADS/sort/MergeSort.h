@@ -50,7 +50,7 @@
 
 #ifndef __ADS_MergeSort
  #define __ADS_MergeSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -71,7 +71,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// \f$ A[ \mathit{start} .. \mathit{mid} ] \f$ and
 /// \f$ A[ \mathit{mid} + 1 .. \mathit{end} ] \f$, sorted, merged through
@@ -105,8 +106,9 @@ namespace ADS {
 /// \post \f$ A[ \mathit{start} .. \mathit{end} ] \f$ sorted (audit)
 template< class T , class C = std::less<> >
 void mergeParts( std::vector< T > & A , std::vector< T > & B ,
-                 std::size_t start , std::size_t mid , std::size_t end ,
-                 C less = C() , long long * inv = nullptr );
+		 std::size_t start ,
+		 std::size_t mid , std::size_t end , C less = C() ,
+		 long long * inv = nullptr );
 
 /// the sort of \f$ A[ \mathit{start} .. \mathit{end} ] \f$ (the MergeSort() of
 /// the book), `insertionSort()` on at most \f$ \mathit{cutoff} \f$ items; with
@@ -139,8 +141,8 @@ void mergeParts( std::vector< T > & A , std::vector< T > & B ,
 ///      \f$ \mathit{cutoff} \ge 1 \f$
 template< class T , class C = std::less<> >
 void mergeSortRec( std::vector< T > & A , std::vector< T > & B ,
-                   std::size_t start , std::size_t end , std::size_t cutoff ,
-                   C less = C() , long long * inv = nullptr );
+		   std::size_t start , std::size_t end , std::size_t cutoff ,
+		   C less = C() , long long * inv = nullptr );
 
 /// \f$ A \f$ in increasing order, stable; the parts of at most
 /// \f$ \mathit{cutoff} \f$ items by `insertionSort()` (1 is the book)
@@ -153,8 +155,7 @@ void mergeSortRec( std::vector< T > & A , std::vector< T > & B ,
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
 template< class T , class C = std::less<> >
-void mergeSort( std::vector< T > & A , std::size_t cutoff = 1 ,
-                C less = C() );
+void mergeSort( std::vector< T > & A , std::size_t cutoff = 1 , C less = C() );
 
 /// the iterative Merge Sort: the runs of length \f$ w \f$ are merged in pairs,
 /// for \f$ w = 1 , 2 , 4 , \ldots \f$
@@ -233,7 +234,7 @@ void mergeSort( List< T > & L , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MergeSort.h included */
+#endif /* MergeSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File MergeSort.h --------------------------*/

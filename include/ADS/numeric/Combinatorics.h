@@ -45,7 +45,7 @@
 
 #ifndef __ADS_Combinatorics
  #define __ADS_Combinatorics
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -61,7 +61,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the binomial coefficient \f$ \binom{n}{k} \f$ by the recursion; the calls
 /// added to `*calls`, if given
@@ -131,7 +132,8 @@ inline std::uint64_t fibonacciTable( int n );
 inline std::uint64_t fibonacci( int n );
 
 /// the numbers of Fibonacci, those computed kept between the calls
-class FibonacciCache {
+class FibonacciCache
+{
  public:
  /// the number \f$ F_n \f$, the ones not kept yet computed from the last
  /// two kept
@@ -153,7 +155,7 @@ class FibonacciCache {
  [[nodiscard]] int size( void ) const;
 
  private:
- mutable std::vector< std::uint64_t > f_F = { 1 , 1 };   ///< the numbers kept
+ mutable std::vector< std::uint64_t > f_F = { 1 , 1 };  ///< the numbers kept
  };
 
 /// the factorial \f$ n! \f$ by a loop
@@ -211,7 +213,7 @@ inline std::uint64_t binomialByFactorials( int n , int k );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Combinatorics.h included */
+#endif /* Combinatorics.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File Combinatorics.h ------------------------*/

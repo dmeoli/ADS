@@ -59,7 +59,7 @@
 
 #ifndef __ADS_RandomizedSearchTree
  #define __ADS_RandomizedSearchTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -82,7 +82,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- CLASS RandomizedSearchTree -----------------------*/
@@ -90,16 +91,16 @@ namespace ADS {
 
 /// a DICTIONARY on a randomized binary search tree of Martínez and Roura
 template< std::totally_ordered K , class V >
-class RandomizedSearchTree {
+class RandomizedSearchTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty tree, its random choices drawn from the seed
- explicit RandomizedSearchTree( std::uint64_t seed = 1 ) : f_g( seed ) {}
+ explicit RandomizedSearchTree( std::uint64_t seed = 1 ) : f_g( seed ) { }
 
  /// the value of \f$ k \f$, or nothing, in \f$ O( \log n ) \f$ expected time
  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
@@ -164,8 +165,8 @@ class RandomizedSearchTree {
 
  /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
  /// (the `find(x)` of an SSet of Morin)
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-  const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
 
  /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
  /// expected time: the `find( x )` of a USet of Morin [see `DictionarySet`];
@@ -190,22 +191,22 @@ class RandomizedSearchTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node, with the size of its subtree
- struct Node {
-  K key;                           ///< the key
-  V value;                         ///< the value
-  std::size_t s = 1;               ///< the nodes of the subtree
-  std::unique_ptr< Node > left ,   ///< the left child
-                          right;   ///< the right child
+ struct Node
+ {
+  K key;                         ///< the key
+  V value;                       ///< the value
+  std::size_t s = 1;             ///< the nodes of the subtree
+  std::unique_ptr< Node > left ,  ///< the left child
+    right;                       ///< the right child
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the shape of the tree, for `PathIterator`
- struct Shape {
+ struct Shape
+ {
   /// the root of the tree `o`
   static auto root( const auto & o ) { return( o.f_root.get() ); }
   /// the left child of the node `n`
@@ -220,13 +221,13 @@ class RandomizedSearchTree {
 
  /// the pairs of references to a key and its value
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
  /// the constant iterator by increasing key, along the path from the root
  using const_iterator = PathIterator< RandomizedSearchTree , Shape >;
- using iterator = const_iterator;          ///< the constant iterator
+ using iterator = const_iterator;  ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
@@ -257,8 +258,8 @@ class RandomizedSearchTree {
  /// the node of the smallest key not smaller than \f$ k \f$, nil if none
  [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
- Ptr f_root;                  ///< the root
- SplitMix64 f_g;              ///< the generator of the random choices
+ Ptr f_root;      ///< the root
+ SplitMix64 f_g;  ///< the generator of the random choices
 
  };  // end( class RandomizedSearchTree )
 
@@ -274,7 +275,7 @@ class RandomizedSearchTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RandomizedSearchTree.h included */
+#endif /* RandomizedSearchTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File RandomizedSearchTree.h --------------------*/

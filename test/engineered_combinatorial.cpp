@@ -64,7 +64,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
@@ -79,8 +80,10 @@ ADS_TEST( "fast-bitwise" )
 {
  std::mt19937_64 g( 7 );
  std::vector< Word > A( 700 ) , B( 700 );
- for( auto & w : A ) w = g();
- for( auto & w : B ) w = g();
+ for( auto & w : A )
+  w = g();
+ for( auto & w : B )
+  w = g();
  for( std::size_t off = 0 ; off < 3 ; ++off )
   for( std::size_t n = 0 ; n + off <= A.size() ; n += ( n < 300 ? 1 : 37 ) ) {
    std::uint64_t p = 0 , q = 0;
@@ -100,18 +103,21 @@ ADS_TEST( "fast-bitwise" )
  auto slowDep = []( Word x , Word m ) {
   Word r = 0;
   for( int i = 0 , k = 0 ; i < 64 ; ++i )
-   if( ( m >> i ) & 1 ) r |= ( ( x >> k++ ) & 1 ) << i;
+   if( ( m >> i ) & 1 )
+    r |= ( ( x >> k++ ) & 1 ) << i;
   return( r );
   };
  auto slowExt = []( Word x , Word m ) {
   Word r = 0;
   for( int i = 0 , k = 0 ; i < 64 ; ++i )
-   if( ( m >> i ) & 1 ) r |= ( ( x >> i ) & 1 ) << k++;
+   if( ( m >> i ) & 1 )
+    r |= ( ( x >> i ) & 1 ) << k++;
   return( r );
   };
  std::vector< Word > W = { 0 , 1 , ~Word( 0 ) , Word( 1 ) << 63 ,
-                           0x8000000000000001ULL };
- for( int i = 0 ; i < 2000 ; ++i ) W.push_back( g() & g() );
+			   0x8000000000000001ULL };
+ for( int i = 0 ; i < 2000 ; ++i )
+  W.push_back( g() & g() );
  for( Word x : W )
   for( Word m : { W[ 2 ] , W[ 3 ] , g() , g() & g() , Word( 0 ) } ) {
    CHECK( pdep( x , m ) == slowDep( x , m ) );
@@ -119,11 +125,12 @@ ADS_TEST( "fast-bitwise" )
    }
  for( Word x : W )
   for( int r = 0 , p = 0 ; r < std::popcount( x ) ; ++r , ++p ) {
-   while( ! ( ( x >> p ) & 1 ) ) ++p;
+   while( ! ( ( x >> p ) & 1 ) )
+    ++p;
    CHECK( select( x , r ) == p );
    }
- CHECK_THROWS( (void) select( 0 , 0 ) , contract_violation );
- CHECK_THROWS( (void) select( 6 , 2 ) , contract_violation );
+ CHECK_THROWS( ( void )select( 0 , 0 ) , contract_violation );
+ CHECK_THROWS( ( void )select( 6 , 2 ) , contract_violation );
  for( int i = 0 ; i < 1000 ; ++i ) {
   const auto x = std::uint32_t( g() ) , y = std::uint32_t( g() );
   CHECK( mortonEncode( x , y ) == interleave( x , y ) );
@@ -141,75 +148,89 @@ ADS_TEST( "fast-generation" )
  long f = 1;
  for( int n = 0 ; n <= 8 ; f *= ++n ) {
   std::vector< int > a( n );
-  for( int i = 0 ; i < n ; ++i ) a[ i ] = i;
+  for( int i = 0 ; i < n ; ++i )
+   a[ i ] = i;
   std::set< std::vector< int > > seen;
   CHECK( forEachPermutation( a , [ & ]( const std::vector< int > & p ) {
-   seen.insert( p ); } ) == f );
+	  seen.insert( p );
+	  } ) == f );
   CHECK( long( seen.size() ) == f );
   for( long s = 1 ; s <= std::min( f , 30L ) ; ++s ) {
    long k = 0;
    CHECK( forEachPermutation( a , [ & ]( const std::vector< int > & ) {
-    return( ++k == s ); } ) == s );
+	   return( ++k == s );
+	   } ) == s );
    }
   }
  std::vector< char > dup = { 'a' , 'a' , 'b' , 'b' };
- CHECK( forEachPermutation( dup , []( const std::vector< char > & ) {} )
-        == 24 );
+ CHECK( forEachPermutation( dup , []( const std::vector< char > & ) { } ) ==
+	24 );
 
  std::mt19937 g( 3 );
  for( int trial = 0 ; trial < 300 ; ++trial ) {
   const int n = int( g() % 9 );
   std::vector< int > a( n );
-  for( auto & x : a ) x = int( g() % ( 1 + g() % 5 ) );
+  for( auto & x : a )
+   x = int( g() % ( 1 + g() % 5 ) );
   std::vector< std::vector< int > > want , got;
   auto b = a;
   std::sort( b.begin() , b.end() );
-  do want.push_back( b );
+  do
+   want.push_back( b );
   while( std::next_permutation( b.begin() , b.end() ) );
   CHECK( forEachPermutationLex( a , [ & ]( const std::vector< int > & p ) {
-   got.push_back( p ); } ) == long( want.size() ) );
+	  got.push_back( p );
+	  } ) == long( want.size() ) );
   CHECK( got == want );
   CHECK( std::is_sorted( a.begin() , a.end() ) );
   const long s = 1 + long( g() % want.size() );
   long k = 0;
   CHECK( forEachPermutationLex( a , [ & ]( const std::vector< int > & ) {
-   return( ++k == s ); } ) == s );
+	  return( ++k == s );
+	  } ) == s );
   }
 
  for( int n = 0 ; n <= 12 ; ++n )
   for( int t = 0 ; t <= n ; ++t ) {
    std::vector< std::vector< int > > want , got;
    combinationsLex( n , t , [ & ]( const Tuple & c ) {
-    want.push_back( c ); return( false ); } );
+    want.push_back( c );
+    return( false );
+    } );
    CHECK( forEachCombination( n , t , [ & ]( const std::vector< int > & c ) {
-    got.push_back( c ); } ) == long( want.size() ) );
+	   got.push_back( c );
+	   } ) == long( want.size() ) );
    CHECK( got == want );
    std::vector< Word > m;
    CHECK( forEachCombinationMask( n , t , [ & ]( Word x ) {
-    m.push_back( x ); } ) == long( want.size() ) );
+	   m.push_back( x );
+	   } ) == long( want.size() ) );
    std::vector< Word > w;
    for( const auto & c : want ) {
     Word x = 0;
-    for( int v : c ) x |= Word( 1 ) << v;
+    for( int v : c )
+     x |= Word( 1 ) << v;
     w.push_back( x );
     }
-   std::sort( w.begin() , w.end() );        // the words: increasing order
+   std::sort( w.begin() , w.end() );  // the words: increasing order
    CHECK( m == w );
    long k = 0;
    const long s = 1 + long( want.size() ) / 2;
    CHECK( forEachCombination( n , t , [ & ]( const std::vector< int > & ) {
-    return( ++k == s ); } ) == s );
+	   return( ++k == s );
+	   } ) == s );
    }
- CHECK( forEachCombinationMask( 64 , 64 , []( Word x ) {
-  return( x != ~Word( 0 ) ); } ) == 1 );
- CHECK( forEachCombinationMask( 64 , 1 , []( Word ) {} ) == 64 );
- CHECK( forEachCombinationMask( 64 , 63 , []( Word ) {} ) == 64 );
+ CHECK( forEachCombinationMask(
+	  64 , 64 , []( Word x ) { return( x != ~Word( 0 ) ); } ) == 1 );
+ CHECK( forEachCombinationMask( 64 , 1 , []( Word ) { } ) == 64 );
+ CHECK( forEachCombinationMask( 64 , 63 , []( Word ) { } ) == 64 );
  CHECK( nextCombination( 0b10110 ) == 0b11001 );
  for( Word x = 1 ; x < 5000 ; ++x )
   CHECK( nextCombination( x ) == nextSameWeight( x ) );
- CHECK_THROWS( (void) nextCombination( ~Word( 0 ) ) , contract_violation );
- CHECK_THROWS( forEachCombination( 3 , 4 , []( const std::vector< int > & )
-               {} ) , contract_violation );
+ CHECK_THROWS( ( void )nextCombination( ~Word( 0 ) ) , contract_violation );
+ CHECK_THROWS(
+   forEachCombination( 3 , 4 , []( const std::vector< int > & ) { } ) ,
+   contract_violation );
  }
 
 
@@ -222,16 +243,17 @@ ADS_TEST( "fast-exact-cover" )
 {
  std::mt19937 g( 11 );
  for( int trial = 0 ; trial < 300 ; ++trial ) {
-  const int p = 1 + int( g() % 8 ) , s = int( g() % 4 ) ,
-            m = int( g() % 25 );
+  const int p = 1 + int( g() % 8 ) , s = int( g() % 4 ) , m = int( g() % 25 );
   ExactCover A( p , s );
   FastExactCover B( p , s );
   for( int o = 0 ; o < m ; ++o ) {
    std::vector< int > it;
    for( int i = 0 ; i < p + s ; ++i )
-    if( g() % 3 == 0 ) it.push_back( i );
-   if( std::none_of( it.begin() , it.end() , [ & ]( int i ) {
-    return( i < p ); } ) ) it.push_back( int( g() % p ) );
+    if( g() % 3 == 0 )
+     it.push_back( i );
+   if( std::none_of( it.begin() , it.end() ,
+		     [ & ]( int i ) { return( i < p ); } ) )
+    it.push_back( int( g() % p ) );
    std::shuffle( it.begin() , it.end() , g );
    A.addOption( it );
    B.addOption( it );
@@ -239,13 +261,16 @@ ADS_TEST( "fast-exact-cover" )
   std::vector< std::vector< int > > a , b , c;
   auto sorted = []( std::vector< int > S ) {
    std::sort( S.begin() , S.end() );
-   return( S ); };
+   return( S );
+   };
   A.solve( [ & ]( const std::vector< int > & S ) {
-   a.push_back( sorted( S ) ); return( false ); } );
-  B.solve( [ & ]( const std::vector< int > & S ) {
-   b.push_back( sorted( S ) ); } );
-  B.solve( [ & ]( const std::vector< int > & S ) {
-   c.push_back( sorted( S ) ); } );
+   a.push_back( sorted( S ) );
+   return( false );
+   } );
+  B.solve(
+    [ & ]( const std::vector< int > & S ) { b.push_back( sorted( S ) ); } );
+  B.solve(
+    [ & ]( const std::vector< int > & S ) { c.push_back( sorted( S ) ); } );
   std::sort( a.begin() , a.end() );
   CHECK( b.size() == a.size() );
   CHECK( b == c );
@@ -254,30 +279,32 @@ ADS_TEST( "fast-exact-cover" )
   if( ! b.empty() ) {
    long k = 0;
    CHECK( B.solve( [ & ]( const std::vector< int > & ) {
-    return( ++k == 1 ); } ) == 1 );
+    return( ++k == 1 );
+    } ) == 1 );
    std::vector< std::vector< int > > d;
-   B.solve( [ & ]( const std::vector< int > & S ) {
-    d.push_back( sorted( S ) ); } );
+   B.solve(
+     [ & ]( const std::vector< int > & S ) { d.push_back( sorted( S ) ); } );
    std::sort( d.begin() , d.end() );
    CHECK( d == b );
    }
   }
- for( int n = 1 ; n <= 8 ; ++n ) {          // rows, columns; diagonals
+ for( int n = 1 ; n <= 8 ; ++n ) {  // rows, columns; diagonals
   FastExactCover Q( 2 * n , 4 * n - 2 );
   for( int r = 0 ; r < n ; ++r )
    for( int c = 0 ; c < n ; ++c )
     Q.addOption( { r , n + c , 2 * n + r + c , 5 * n - 1 + r - c - 1 } );
-  CHECK( Q.solve( []( const std::vector< int > & ) {} ) ==
-         nQueens( n , []( const std::vector< int > & ) {
-          return( false ); } ) );
+  CHECK(
+    Q.solve( []( const std::vector< int > & ) { } ) ==
+    nQueens( n , []( const std::vector< int > & ) { return( false ); } ) );
   }
  FastExactCover E( 0 , 2 );
  CHECK( E.solve( []( const std::vector< int > & S ) {
-  return( ! S.empty() ); } ) == 1 );
+  return( ! S.empty() );
+  } ) == 1 );
 
  for( int trial = 0 ; trial < 300 ; ++trial ) {
   const int p = 1 + int( g() % 4 ) , s = 1 + int( g() % 3 ) ,
-            m = int( g() % 12 );
+	    m = int( g() % 12 );
   FastExactCover X( p , s );
   std::vector< std::vector< std::pair< int , int > > > opt;
   for( int o = 0 ; o < m ; ++o ) {
@@ -287,8 +314,8 @@ ADS_TEST( "fast-exact-cover" )
      it.push_back( i );
      co.push_back( i >= p ? int( g() % 3 ) : 0 );
      }
-   if( std::none_of( it.begin() , it.end() , [ & ]( int i ) {
-    return( i < p ); } ) ) {
+   if( std::none_of( it.begin() , it.end() ,
+		     [ & ]( int i ) { return( i < p ); } ) ) {
     it.push_back( 0 );
     co.push_back( 0 );
     }
@@ -297,7 +324,7 @@ ADS_TEST( "fast-exact-cover" )
    for( std::size_t k = 0 ; k < it.size() ; ++k )
     opt.back().emplace_back( it[ k ] , co[ k ] );
    }
-  long brute = 0;                           // every set of options
+  long brute = 0;  // every set of options
   for( long S = 0 ; S < ( 1L << m ) ; ++S ) {
    std::vector< int > cnt( p + s , 0 ) , col( p + s , -1 );
    bool ok = true;
@@ -313,10 +340,11 @@ ADS_TEST( "fast-exact-cover" )
        col[ i ] = c;
        }
       }
-   for( int i = 0 ; i < p ; ++i ) ok = ok && ( cnt[ i ] == 1 );
+   for( int i = 0 ; i < p ; ++i )
+    ok = ok && ( cnt[ i ] == 1 );
    brute += ok;
    }
-  CHECK( X.solve( []( const std::vector< int > & ) {} ) == brute );
+  CHECK( X.solve( []( const std::vector< int > & ) { } ) == brute );
   }
  CHECK_THROWS( E.addOption( { 0 } ) , contract_violation );
  FastExactCover P( 2 , 1 );
@@ -325,7 +353,8 @@ ADS_TEST( "fast-exact-cover" )
  CHECK_THROWS( P.addOption( { 2 } ) , contract_violation );
  }
 /// the hash of a configuration, its bytes
-struct BoardHash {
+struct BoardHash
+{
  using is_avalanching = void;
  std::size_t operator()( const Board & b ) const {
   return( std::size_t( hashBytes( b.data() , b.size() * sizeof( int ) ) ) );
@@ -355,16 +384,17 @@ ADS_TEST( "book-structures" )
   const auto a = A.solve();
   CHECK( int( B.solve() ) == int( a ) );
   CHECK( ( A.decisions() == B.decisions() ) &&
-         ( A.conflicts() == B.conflicts() ) );
-  if( a == Cdcl::Result::SAT ) CHECK( A.model() == B.model() );
+	 ( A.conflicts() == B.conflicts() ) );
+  if( a == Cdcl::Result::SAT )
+   CHECK( A.model() == B.model() );
 #ifdef ADS_TEST_BOOST
-  BasicCdcl< boost::heap::d_ary_heap< Pair , boost::heap::arity< 4 > > > C(
-                                                                     F , n );
+  BasicCdcl< boost::heap::d_ary_heap< Pair , boost::heap::arity< 4 > > > C( F ,
+									   n );
   BasicCdcl< boost::heap::pairing_heap< Pair > > D( F , n );
   CHECK( int( C.solve() ) == int( a ) );
   CHECK( int( D.solve() ) == int( a ) );
   CHECK( ( C.decisions() == A.decisions() ) &&
-         ( D.conflicts() == A.conflicts() ) );
+	 ( D.conflicts() == A.conflicts() ) );
 #endif
   }
  const Board goal = puzzleGoal( 3 );
@@ -376,23 +406,26 @@ ADS_TEST( "book-structures" )
    }
   long v1 = 0 , v2 = 0 , v3 = 0;
   const auto s1 = solvePuzzle( B , 3 , &v1 );
-  const auto s2 = solvePuzzle< std::unordered_map< Board , int , BoardHash > >(
-                   B , 3 , &v2 );
-  const auto s3 = solvePuzzle< FlatHashTable< Board , int , BoardHash > >(
-                   B , 3 , &v3 );
+  const auto s2 =
+    solvePuzzle< std::unordered_map< Board , int , BoardHash > >( B , 3 ,
+								  &v2 );
+  const auto s3 =
+    solvePuzzle< FlatHashTable< Board , int , BoardHash > >( B , 3 , &v3 );
   CHECK( s1 && ( s1 == s2 ) && ( s1 == s3 ) && ( v1 == v2 ) && ( v1 == v3 ) );
 #ifdef ADS_TEST_BOOST
   long v4 = 0;
-  const auto s4 = solvePuzzle< boost::unordered_flat_map< Board , int ,
-                                                           BoardHash > >(
-                   B , 3 , &v4 );
+  const auto s4 =
+    solvePuzzle< boost::unordered_flat_map< Board , int , BoardHash > >( B ,
+									 3 ,
+								       &v4 );
   CHECK( ( s4 == s1 ) && ( v4 == v1 ) );
 #endif
   }
  for( int trial = 0 ; trial < 100 ; ++trial ) {
   const int n = int( g() % 20 );
   std::vector< long > A( n );
-  for( auto & a : A ) a = long( g() % 200 );
+  for( auto & a : A )
+   a = long( g() % 200 );
   const long k = long( g() % 1500 );
   const bool want = subsetSumDP( A , k );
   CHECK( subsetSumDP< BitVector >( A , k ) == want );

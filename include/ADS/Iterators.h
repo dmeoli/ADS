@@ -78,7 +78,7 @@
 
 #ifndef __ADS_Iterators
  #define __ADS_Iterators
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -95,7 +95,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS LinkedIterator ---------------------------*/
@@ -104,12 +105,13 @@ namespace ADS {
 /// a forward iterator along the cells `C` linked by the member `Next`, on
 /// the items `V` in the member `Value`; nil is the end
 template< class C , class V , C * C::* Next , V C::* Value ,
-          bool Const = true >
-class LinkedIterator {
+	  bool Const = true >
+class LinkedIterator
+{
  using Cell = std::conditional_t< Const , const C , C >;
 
  public:
- using iterator_category = std::forward_iterator_tag;   ///< forward
+ using iterator_category = std::forward_iterator_tag;  ///< forward
  using value_type = V;                                 ///< the items
  using difference_type = std::ptrdiff_t;               ///< the distances
  /// a reference to an item, constant if `Const`
@@ -121,12 +123,13 @@ class LinkedIterator {
  LinkedIterator( void ) = default;
 
  /// on the item of the cell \f$ c \f$, the end if \f$ c \f$ is nil
- explicit LinkedIterator( Cell * c ) : f_c( c ) {}
+ explicit LinkedIterator( Cell * c ) : f_c( c ) { }
 
  /// the constant iterator from the mutable one
- template< bool K > requires ( Const && ! K )
+ template< bool K >
+  requires( Const && ! K )
  LinkedIterator( const LinkedIterator< C , V , Next , Value , K > & o )
-  : f_c( o.cell() ) {}
+     : f_c( o.cell() ) { }
 
  /// the item
  reference operator*( void ) const { return( f_c->*Value ); }
@@ -165,13 +168,14 @@ class LinkedIterator {
 /// a forward iterator along the cells `C` of a vector linked by the index in
 /// the member `Next`, on the items `V` in the member `Value`; -1 is the end
 template< class C , class V , int C::* Next , V C::* Value ,
-          bool Const = true >
-class IndexIterator {
- using Cells = std::conditional_t< Const , const std::vector< C > ,
-                                   std::vector< C > >;
+	  bool Const = true >
+class IndexIterator
+{
+ using Cells =
+   std::conditional_t< Const , const std::vector< C > , std::vector< C > >;
 
  public:
- using iterator_category = std::forward_iterator_tag;   ///< forward
+ using iterator_category = std::forward_iterator_tag;  ///< forward
  using value_type = V;                                 ///< the items
  using difference_type = std::ptrdiff_t;               ///< the distances
  /// a reference to an item, constant if `Const`
@@ -183,12 +187,13 @@ class IndexIterator {
  IndexIterator( void ) = default;
 
  /// on the item of the cell \f$ A[ c ] \f$, the end if \f$ c = -1 \f$
- IndexIterator( Cells * A , int c ) : f_A( A ) , f_c( c ) {}
+ IndexIterator( Cells * A , int c ) : f_A( A ) , f_c( c ) { }
 
  /// the constant iterator from the mutable one
- template< bool K > requires ( Const && ! K )
+ template< bool K >
+  requires( Const && ! K )
  IndexIterator( const IndexIterator< C , V , Next , Value , K > & o )
-  : f_A( o.cells() ) , f_c( o.index() ) {}
+     : f_A( o.cells() ) , f_c( o.index() ) { }
 
  /// the item
  reference operator*( void ) const { return( ( *f_A )[ f_c ].*Value ); }
@@ -234,30 +239,32 @@ class IndexIterator {
 /// capacity \f$ c \f$ whose first item is at the place \f$ \mathit{head} \f$,
 /// the item \f$ i \f$ at the place \f$ ( \mathit{head} + i ) \bmod c \f$
 template< class T , bool Const = true >
-class CircularIterator {
+class CircularIterator
+{
  using Item = std::conditional_t< Const , const T , T >;
 
  public:
  /// random access
  using iterator_category = std::random_access_iterator_tag;
- using value_type = T;                     ///< the items
- using difference_type = std::ptrdiff_t;   ///< the distances
- using reference = Item &;                 ///< a reference to an item
- using pointer = Item *;                   ///< a pointer to an item
+ using value_type = T;                    ///< the items
+ using difference_type = std::ptrdiff_t;  ///< the distances
+ using reference = Item &;                ///< a reference to an item
+ using pointer = Item *;                  ///< a pointer to an item
 
  /// an iterator on no vector
  CircularIterator( void ) = default;
 
  /// on the item \f$ i \f$ from the head of the vector \f$ A \f$
  CircularIterator( Item * A , std::size_t head , std::size_t capacity ,
-                   difference_type i )
-  : f_A( A ) , f_head( head ) , f_cap( capacity ) , f_i( i ) {}
+		   difference_type i )
+     : f_A( A ) , f_head( head ) , f_cap( capacity ) , f_i( i ) { }
 
  /// the constant iterator from the mutable one
- template< bool K > requires ( Const && ! K )
+ template< bool K >
+  requires( Const && ! K )
  CircularIterator( const CircularIterator< T , K > & o )
-  : f_A( o.base() ) , f_head( o.head() ) , f_cap( o.capacity() ) ,
-    f_i( o.index() ) {}
+     : f_A( o.base() ) , f_head( o.head() ) , f_cap( o.capacity() ) ,
+       f_i( o.index() ) { }
 
  /// the item
  reference operator*( void ) const { return( ( *this )[ 0 ] ); }
@@ -272,16 +279,30 @@ class CircularIterator {
   }
 
  /// to the next item
- CircularIterator & operator++( void ) { ++f_i; return( *this ); }
+ CircularIterator & operator++( void ) {
+  ++f_i;
+  return( *this );
+  }
 
  /// to the previous item
- CircularIterator & operator--( void ) { --f_i; return( *this ); }
+ CircularIterator & operator--( void ) {
+  --f_i;
+  return( *this );
+  }
 
  /// to the next item, returning the iterator before the step
- CircularIterator operator++( int ) { auto t = *this; ++f_i; return( t ); }
+ CircularIterator operator++( int ) {
+  auto t = *this;
+  ++f_i;
+  return( t );
+  }
 
  /// to the previous item, returning the iterator before the step
- CircularIterator operator--( int ) { auto t = *this; --f_i; return( t ); }
+ CircularIterator operator--( int ) {
+  auto t = *this;
+  --f_i;
+  return( t );
+  }
 
  /// \f$ k \f$ items on
  CircularIterator & operator+=( difference_type k ) {
@@ -305,7 +326,7 @@ class CircularIterator {
   return( a -= k );
   }
  friend difference_type operator-( const CircularIterator & a ,
-                                   const CircularIterator & b ) {
+				   const CircularIterator & b ) {
   return( a.f_i - b.f_i );
   }
 
@@ -334,7 +355,7 @@ class CircularIterator {
  private:
  Item * f_A = nullptr;
  std::size_t f_head = 0 , f_cap = 1;
- difference_type f_i = 0;     ///< the item from the head
+ difference_type f_i = 0;  ///< the item from the head
 
  };  // end( class CircularIterator )
 
@@ -345,28 +366,30 @@ class CircularIterator {
 /// the random-access iterator on the items of a container `C` read by rank,
 /// `c[ i ]` the item \f$ i \f$, of the type `T`
 template< class C , class T , bool Const = true >
-class RankIterator {
+class RankIterator
+{
  using Owner = std::conditional_t< Const , const C , C >;
  using Item = std::conditional_t< Const , const T , T >;
 
  public:
  /// random access
  using iterator_category = std::random_access_iterator_tag;
- using value_type = T;                     ///< the items
- using difference_type = std::ptrdiff_t;   ///< the distances
- using reference = Item &;                 ///< a reference to an item
- using pointer = Item *;                   ///< a pointer to an item
+ using value_type = T;                    ///< the items
+ using difference_type = std::ptrdiff_t;  ///< the distances
+ using reference = Item &;                ///< a reference to an item
+ using pointer = Item *;                  ///< a pointer to an item
 
  /// an iterator on no container
  RankIterator( void ) = default;
 
  /// on the item of rank \f$ i \f$ of `c`
- RankIterator( Owner * c , std::size_t i ) : f_c( c ) , f_i( i ) {}
+ RankIterator( Owner * c , std::size_t i ) : f_c( c ) , f_i( i ) { }
 
  /// the constant iterator from the mutable one
- template< bool K > requires ( Const && ! K )
+ template< bool K >
+  requires( Const && ! K )
  RankIterator( const RankIterator< C , T , K > & o )
-  : f_c( o.owner() ) , f_i( o.rank() ) {}
+     : f_c( o.owner() ) , f_i( o.rank() ) { }
 
  /// the item
  reference operator*( void ) const { return( ( *f_c )[ f_i ] ); }
@@ -380,16 +403,30 @@ class RankIterator {
   }
 
  /// to the next item
- RankIterator & operator++( void ) { ++f_i; return( *this ); }
+ RankIterator & operator++( void ) {
+  ++f_i;
+  return( *this );
+  }
 
  /// to the previous item
- RankIterator & operator--( void ) { --f_i; return( *this ); }
+ RankIterator & operator--( void ) {
+  --f_i;
+  return( *this );
+  }
 
  /// to the next item, returning the iterator before the step
- RankIterator operator++( int ) { auto t = *this; ++f_i; return( t ); }
+ RankIterator operator++( int ) {
+  auto t = *this;
+  ++f_i;
+  return( t );
+  }
 
  /// to the previous item, returning the iterator before the step
- RankIterator operator--( int ) { auto t = *this; --f_i; return( t ); }
+ RankIterator operator--( int ) {
+  auto t = *this;
+  --f_i;
+  return( t );
+  }
 
  /// \f$ k \f$ items on
  RankIterator & operator+=( difference_type k ) {
@@ -413,7 +450,7 @@ class RankIterator {
   return( a -= k );
   }
  friend difference_type operator-( const RankIterator & a ,
-                                   const RankIterator & b ) {
+				   const RankIterator & b ) {
   return( difference_type( a.f_i - b.f_i ) );
   }
 
@@ -433,7 +470,7 @@ class RankIterator {
 
  private:
  Owner * f_c = nullptr;
- std::size_t f_i = 0;         ///< the rank of the item
+ std::size_t f_i = 0;  ///< the rank of the item
 
  };  // end( class RankIterator )
 
@@ -444,7 +481,8 @@ class RankIterator {
 /// the random-access iterator `I` on pointers read through them, `*it`
 /// being `**base`; the items are constant
 template< std::random_access_iterator I >
-class IndirectIterator {
+class IndirectIterator
+{
  public:
  /// random access
  using iterator_category = std::random_access_iterator_tag;
@@ -452,14 +490,14 @@ class IndirectIterator {
  using value_type = std::remove_cvref_t< decltype( **std::declval< I >() ) >;
  /// the distances, those of `I`
  using difference_type = std::iter_difference_t< I >;
- using reference = const value_type &;   ///< a constant reference to an item
- using pointer = const value_type *;     ///< a constant pointer to an item
+ using reference = const value_type &;  ///< a constant reference to an item
+ using pointer = const value_type *;    ///< a constant pointer to an item
 
  /// an iterator on nothing
  IndirectIterator( void ) = default;
 
  /// on the item pointed to by `*i`
- explicit IndirectIterator( I i ) : f_i( i ) {}
+ explicit IndirectIterator( I i ) : f_i( i ) { }
 
  /// the item pointed to
  reference operator*( void ) const { return( **f_i ); }
@@ -471,16 +509,30 @@ class IndirectIterator {
  reference operator[]( difference_type k ) const { return( *f_i[ k ] ); }
 
  /// to the next pointer
- IndirectIterator & operator++( void ) { ++f_i; return( *this ); }
+ IndirectIterator & operator++( void ) {
+  ++f_i;
+  return( *this );
+  }
 
  /// to the previous pointer
- IndirectIterator & operator--( void ) { --f_i; return( *this ); }
+ IndirectIterator & operator--( void ) {
+  --f_i;
+  return( *this );
+  }
 
  /// to the next pointer, returning the iterator before the step
- IndirectIterator operator++( int ) { auto t = *this; ++f_i; return( t ); }
+ IndirectIterator operator++( int ) {
+  auto t = *this;
+  ++f_i;
+  return( t );
+  }
 
  /// to the previous pointer, returning the iterator before the step
- IndirectIterator operator--( int ) { auto t = *this; --f_i; return( t ); }
+ IndirectIterator operator--( int ) {
+  auto t = *this;
+  --f_i;
+  return( t );
+  }
 
  /// \f$ k \f$ pointers on
  IndirectIterator & operator+=( difference_type k ) {
@@ -504,7 +556,7 @@ class IndirectIterator {
   return( a -= k );
   }
  friend difference_type operator-( const IndirectIterator & a ,
-                                   const IndirectIterator & b ) {
+				   const IndirectIterator & b ) {
   return( a.f_i - b.f_i );
   }
 
@@ -530,27 +582,28 @@ class IndirectIterator {
 /// policy `P` with the static functions `size( o )`, `occupied( o , i )` and
 /// `read( o , i )`; the items are constant
 template< class O , class P >
-class SlotIterator {
+class SlotIterator
+{
  public:
  /// what `P::read()` gives
  using reference = decltype( P::read( std::declval< const O & >() , 0 ) );
- using value_type = std::remove_cvref_t< reference >;   ///< the items
- using difference_type = std::ptrdiff_t;                ///< the distances
+ using value_type = std::remove_cvref_t< reference >;  ///< the items
+ using difference_type = std::ptrdiff_t;               ///< the distances
  /// bidirectional for the concepts of C++20
  using iterator_concept = std::bidirectional_iterator_tag;
  /// bidirectional for the older algorithms if `P::read()` gives a
  /// reference, input otherwise
- using iterator_category = std::conditional_t<
-  std::is_reference_v< reference > , std::bidirectional_iterator_tag ,
-  std::input_iterator_tag >;
+ using iterator_category =
+   std::conditional_t< std::is_reference_v< reference > ,
+		       std::bidirectional_iterator_tag ,
+		       std::input_iterator_tag >;
 
  /// an iterator on no table
  SlotIterator( void ) = default;
 
  /// on the first occupied place from \f$ i \f$, or at the end
- SlotIterator( const O * o , std::size_t i ) : f_o( o ) , f_i( i ) {
-  forward();
-  }
+ SlotIterator( const O * o , std::size_t i ) : f_o( o ) ,
+   f_i( i ) { forward(); }
 
  /// the item of the place, read by `P::read()`
  reference operator*( void ) const { return( P::read( *f_o , f_i ) ); }
@@ -585,15 +638,25 @@ class SlotIterator {
  /// \f]
  /// \pre an occupied place precedes the current one
  SlotIterator & operator--( void ) {
-  do --f_i; while( ! P::occupied( *f_o , f_i ) );
+  do
+   --f_i;
+  while( ! P::occupied( *f_o , f_i ) );
   return( *this );
   }
 
  /// to the next occupied place, returning the iterator before the step
- SlotIterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+ SlotIterator operator++( int ) {
+  auto t = *this;
+  ++*this;
+  return( t );
+  }
 
  /// to the previous occupied place, returning the iterator before the step
- SlotIterator operator--( int ) { auto t = *this; --*this; return( t ); }
+ SlotIterator operator--( int ) {
+  auto t = *this;
+  --*this;
+  return( t );
+  }
 
  /// equal on the same place
  bool operator==( const SlotIterator & o ) const { return( f_i == o.f_i ); }
@@ -604,7 +667,8 @@ class SlotIterator {
  private:
  void forward( void ) {
   const std::size_t m = P::size( *f_o );
-  while( ( f_i < m ) && ! P::occupied( *f_o , f_i ) ) ++f_i;
+  while( ( f_i < m ) && ! P::occupied( *f_o , f_i ) )
+   ++f_i;
   }
 
  const O * f_o = nullptr;
@@ -619,25 +683,26 @@ class SlotIterator {
 /// the member `first` of what the iterator `I` reads, with the category of
 /// `I` up to bidirectional
 template< std::forward_iterator I >
-class KeyIterator {
+class KeyIterator
+{
  public:
  /// a constant reference to a key
- using reference = const std::remove_cvref_t<
-  decltype( ( *std::declval< I >() ).first ) > &;
- using value_type = std::remove_cvref_t< reference >;   ///< the keys
+ using reference =
+   const std::remove_cvref_t< decltype( ( *std::declval< I >() ).first ) > &;
+ using value_type = std::remove_cvref_t< reference >;  ///< the keys
  /// the distances, those of `I`
  using difference_type = std::iter_difference_t< I >;
  /// bidirectional if `I` is, forward otherwise
- using iterator_concept = std::conditional_t<
-  std::bidirectional_iterator< I > , std::bidirectional_iterator_tag ,
-  std::forward_iterator_tag >;
- using iterator_category = iterator_concept;   ///< as `iterator_concept`
+ using iterator_concept = std::conditional_t< std::bidirectional_iterator< I > ,
+					      std::bidirectional_iterator_tag ,
+					      std::forward_iterator_tag >;
+ using iterator_category = iterator_concept;  ///< as `iterator_concept`
 
  /// an iterator on nothing
  KeyIterator( void ) = default;
 
  /// on the key of what `i` reads
- explicit KeyIterator( I i ) : f_i( i ) {}
+ explicit KeyIterator( I i ) : f_i( i ) { }
 
  /// the key
  reference operator*( void ) const { return( ( *f_i ).first ); }
@@ -646,19 +711,30 @@ class KeyIterator {
  const value_type * operator->( void ) const { return( &**this ); }
 
  /// to the next key
- KeyIterator & operator++( void ) { ++f_i; return( *this ); }
+ KeyIterator & operator++( void ) {
+  ++f_i;
+  return( *this );
+  }
 
  /// to the next key, returning the iterator before the step
- KeyIterator operator++( int ) { auto t = *this; ++f_i; return( t ); }
+ KeyIterator operator++( int ) {
+  auto t = *this;
+  ++f_i;
+  return( t );
+  }
 
  /// to the previous key
- KeyIterator & operator--( void ) requires std::bidirectional_iterator< I > {
+ KeyIterator & operator--( void )
+  requires std::bidirectional_iterator< I >
+ {
   --f_i;
   return( *this );
   }
 
  /// to the previous key, returning the iterator before the step
- KeyIterator operator--( int ) requires std::bidirectional_iterator< I > {
+ KeyIterator operator--( int )
+  requires std::bidirectional_iterator< I >
+ {
   auto t = *this;
   --f_i;
   return( t );
@@ -681,29 +757,32 @@ class KeyIterator {
 /// `root( o )`, `left( n )`, `right( n )` (nil for no child) and
 /// `read( n )`; the items are constant, and the end is the empty path
 template< class O , class P >
-class PathIterator {
- using N = std::remove_pointer_t<
-  decltype( P::root( std::declval< const O & >() ) ) >;
+class PathIterator
+{
+ using N =
+   std::remove_pointer_t< decltype( P::root( std::declval< const O & >() ) ) >;
 
  public:
  /// what `P::read()` gives
  using reference = decltype( P::read( std::declval< N * >() ) );
- using value_type = std::remove_cvref_t< reference >;   ///< the items
- using difference_type = std::ptrdiff_t;                ///< the distances
+ using value_type = std::remove_cvref_t< reference >;  ///< the items
+ using difference_type = std::ptrdiff_t;               ///< the distances
  /// bidirectional for the concepts of C++20
  using iterator_concept = std::bidirectional_iterator_tag;
  /// bidirectional for the older algorithms if `P::read()` gives a
  /// reference, input otherwise
- using iterator_category = std::conditional_t<
-  std::is_reference_v< reference > , std::bidirectional_iterator_tag ,
-  std::input_iterator_tag >;
+ using iterator_category =
+   std::conditional_t< std::is_reference_v< reference > ,
+		       std::bidirectional_iterator_tag ,
+		       std::input_iterator_tag >;
 
  /// the end of no tree
  PathIterator( void ) = default;
 
  /// on the first node of the tree of `o` if `first`, at the end otherwise
  PathIterator( const O * o , bool first ) : f_o( o ) {
-  if( first ) descend( P::root( *f_o ) , true );
+  if( first )
+   descend( P::root( *f_o ) , true );
   }
 
  /// the item of the current node, read by `P::read()`
@@ -754,22 +833,32 @@ class PathIterator {
  /// \f]
  /// \pre not on the first node
  PathIterator & operator--( void ) {
-  if( f_path.empty() ) descend( P::root( *f_o ) , false );
-  else step( false );
+  if( f_path.empty() )
+   descend( P::root( *f_o ) , false );
+  else
+   step( false );
   return( *this );
   }
 
  /// to the next node, returning the iterator before the step
- PathIterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+ PathIterator operator++( int ) {
+  auto t = *this;
+  ++*this;
+  return( t );
+  }
 
  /// to the previous node, returning the iterator before the step
- PathIterator operator--( int ) { auto t = *this; --*this; return( t ); }
+ PathIterator operator--( int ) {
+  auto t = *this;
+  --*this;
+  return( t );
+  }
 
  /// equal on the same node, or both at the end
  bool operator==( const PathIterator & o ) const {
   return( f_path.empty() ? o.f_path.empty()
-                         : ( ! o.f_path.empty() &&
-                             ( f_path.back() == o.f_path.back() ) ) );
+			  : ( ! o.f_path.empty() &&
+			      ( f_path.back() == o.f_path.back() ) ) );
   }
 
  private:
@@ -779,7 +868,8 @@ class PathIterator {
 
  /// from `n` down to its first node (or last, if not `first`)
  void descend( N * n , bool first ) {
-  for( ; n ; n = child( n , ! first ) ) f_path.push_back( n );
+  for( ; n ; n = child( n , ! first ) )
+   f_path.push_back( n );
   }
 
  /// to the next node (or the previous one, if not `forward`)
@@ -788,15 +878,15 @@ class PathIterator {
    descend( c , forward );
    return;
    }
-  N * from;                                 // up while coming from the
-  do {                                      // side we move toward
+  N * from;  // up while coming from the
+  do {       // side we move toward
    from = f_path.back();
    f_path.pop_back();
    } while( ! f_path.empty() && ( child( f_path.back() , forward ) == from ) );
   }
 
  const O * f_o = nullptr;
- std::vector< N * > f_path;   ///< from the root to the current node
+ std::vector< N * > f_path;  ///< from the root to the current node
 
  };  // end( class PathIterator )
 
@@ -809,11 +899,12 @@ class PathIterator {
 /// the constant `none`, the end, `o` being a pointer to the owner; `*it` is
 /// the node
 template< class O , class H , class P >
-class WalkIterator {
+class WalkIterator
+{
  public:
- using value_type = H;                              ///< the nodes
- using reference = H;                               ///< a node, by value
- using difference_type = std::ptrdiff_t;            ///< the distances
+ using value_type = H;                    ///< the nodes
+ using reference = H;                     ///< a node, by value
+ using difference_type = std::ptrdiff_t;  ///< the distances
  /// forward for the concepts of C++20
  using iterator_concept = std::forward_iterator_tag;
  /// input for the older algorithms, since `*it` is a value
@@ -824,7 +915,7 @@ class WalkIterator {
 
  /// on the node `n` of the walk below `root` of the owner `o`
  WalkIterator( const O * o , H n , H root )
-  : f_o( o ) , f_n( n ) , f_root( root ) {}
+     : f_o( o ) , f_n( n ) , f_root( root ) { }
 
  /// the node
  reference operator*( void ) const { return( f_n ); }
@@ -836,7 +927,11 @@ class WalkIterator {
   }
 
  /// to the next node, returning the iterator before the step
- WalkIterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+ WalkIterator operator++( int ) {
+  auto t = *this;
+  ++*this;
+  return( t );
+  }
 
  /// equal on the same node
  bool operator==( const WalkIterator & o ) const { return( f_n == o.f_n ); }
@@ -854,7 +949,7 @@ class WalkIterator {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Iterators.h included */
+#endif /* Iterators.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Iterators.h --------------------------*/

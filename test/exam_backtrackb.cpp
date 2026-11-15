@@ -69,13 +69,15 @@ using namespace ADS;
 /*----------------------------- ALGORITHMS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace backtrack {
+namespace backtrack
+{
 
 using Grid = std::vector< std::vector< int > >;     ///< a matrix of cells
 using Weights = std::vector< std::vector< int > >;  ///< 0 for no arc
-using Cell = std::pair< int , int >;                ///< ( row , column )
+using Cell = std::pair< int , int >;                 ///< ( row , column )
 
-namespace detail {
+namespace detail
+{
 
 /// the items of A are distinct
 inline bool distinct( std::vector< int > A )
@@ -89,7 +91,8 @@ template< class M >
 bool square( const M & G )
 {
  for( const auto & row : G )
-  if( row.size() != G.size() ) return( false );
+  if( row.size() != G.size() )
+   return( false );
  return( true );
  }
 
@@ -97,23 +100,26 @@ bool square( const M & G )
 template< class M >
 bool symmetric( const M & G )
 {
- if( ! square( G ) ) return( false );
+ if( ! square( G ) )
+  return( false );
  for( std::size_t u = 0 ; u < G.size() ; ++u )
   for( std::size_t v = 0 ; v < G.size() ; ++v )
-   if( G[ u ][ v ] != G[ v ][ u ] ) return( false );
+   if( G[ u ][ v ] != G[ v ][ u ] )
+    return( false );
  return( true );
  }
 
 /// the primes <= n, increasing, by the sieve of Eratosthenes
 inline std::vector< int > sieve( int n )
 {
- std::vector< bool > composite( std::size_t( std::max( n + 1 , 2 ) ) ,
-                                false );
+ std::vector< bool > composite( std::size_t( std::max( n + 1 , 2 ) ) , false );
  std::vector< int > P;
  for( int i = 2 ; i <= n ; ++i ) {
-  if( composite[ i ] ) continue;
+  if( composite[ i ] )
+   continue;
   P.push_back( i );
-  for( long j = long( i ) * i ; j <= n ; j += i ) composite[ j ] = true;
+  for( long j = long( i ) * i ; j <= n ; j += i )
+   composite[ j ] = true;
   }
  return( P );
  }
@@ -121,11 +127,12 @@ inline std::vector< int > sieve( int n )
 }  // end( namespace detail )
 
 /// a binary tree in arrays, the children -1 when nil
-struct Tree {
- std::vector< int > value;   ///< the value of each node
- std::vector< int > left;    ///< the left child of each node
- std::vector< int > right;   ///< the right child of each node
- int root = -1;              ///< the root, -1 if empty
+struct Tree
+{
+ std::vector< int > value;  ///< the value of each node
+ std::vector< int > left;   ///< the left child of each node
+ std::vector< int > right;  ///< the right child of each node
+ int root = -1;             ///< the root, -1 if empty
 
  /// a new node of value v with children l and r, its index
  int add( int v , int l = -1 , int r = -1 ) {
@@ -267,21 +274,21 @@ void printMixing( const std::string & S1 , const std::string & S2 , F && f )
 /// of a success, so the nodes of a failed branch stay on it.
 /// \pre W is symmetric with weights >= 0 (0 for no edge), src and dest are
 ///      nodes, target >= 0
-inline std::optional< std::vector< int > > searchPath( const Weights & W ,
-                                                       int src , int dest ,
-                                                       int target )
+inline std::optional< std::vector< int > >
+searchPath( const Weights & W , int src , int dest , int target )
 {
  const int n = int( W.size() );
  ADS_PRE( detail::symmetric( W ) && ( target >= 0 ) );
  ADS_PRE( ( src >= 0 ) && ( src < n ) && ( dest >= 0 ) && ( dest < n ) );
  std::vector< int > stack = { src };
  auto rec = [ & ]( auto & self , int curr , int prev ,
-                   int remaining ) -> bool {
-  if( ( curr == dest ) && ( remaining == 0 ) ) return( true );
+		   int remaining ) -> bool {
+  if( ( curr == dest ) && ( remaining == 0 ) )
+   return( true );
   if( remaining > 0 )
    for( int next = 0 ; next < n ; ++next )
     if( ( W[ curr ][ next ] > 0 ) && ( next != prev ) &&
-        ( W[ curr ][ next ] <= remaining ) ) {
+	( W[ curr ][ next ] <= remaining ) ) {
      stack.push_back( next );
      if( self( self , next , curr , remaining - W[ curr ][ next ] ) )
       return( true );
@@ -289,7 +296,8 @@ inline std::optional< std::vector< int > > searchPath( const Weights & W ,
      }
   return( false );
   };
- if( ! rec( rec , src , -1 , target ) ) return( std::nullopt );
+ if( ! rec( rec , src , -1 , target ) )
+  return( std::nullopt );
  return( stack );
  }
 
@@ -308,11 +316,14 @@ void subPalindrome( const std::string & S , F && f )
  std::string sub;
  auto palindrome = [ & ]( void ) {
   for( int i = 0 , j = int( sub.size() ) - 1 ; i < j ; ++i , --j )
-   if( sub[ i ] != sub[ j ] ) return( false );
-  return( true ); };
+   if( sub[ i ] != sub[ j ] )
+    return( false );
+  return( true );
+  };
  auto rec = [ & ]( auto & self , int i ) -> void {
   if( i == n ) {
-   if( palindrome() ) f( sub );
+   if( palindrome() )
+    f( sub );
    return;
    }
   self( self , i + 1 );
@@ -384,19 +395,21 @@ inline bool isMagic( const Grid & A )
 {
  ADS_PRE( detail::square( A ) );
  const int n = int( A.size() );
- long long d1 = 0 , d2 = 0;                    // 64 bits: sums of int
+ long long d1 = 0 , d2 = 0;  // 64 bits: sums of int
  for( int i = 0 ; i < n ; ++i ) {
   d1 += A[ i ][ i ];
   d2 += A[ i ][ n - 1 - i ];
   }
- if( d1 != d2 ) return( false );
+ if( d1 != d2 )
+  return( false );
  for( int i = 0 ; i < n ; ++i ) {
   long long r = 0 , c = 0;
   for( int j = 0 ; j < n ; ++j ) {
    r += A[ i ][ j ];
    c += A[ j ][ i ];
    }
-  if( ( r != d1 ) || ( c != d1 ) ) return( false );
+  if( ( r != d1 ) || ( c != d1 ) )
+   return( false );
   }
  return( true );
  }
@@ -420,7 +433,8 @@ void printMagic( int n , F && f )
    j = 0;
    ++i;
    if( i == n ) {
-    if( isMagic( A ) ) f( A );
+    if( isMagic( A ) )
+     f( A );
     return;
     }
    }
@@ -456,7 +470,7 @@ void printZigZag( const std::vector< int > & A , F && f )
    return;
    }
   self( self , iA + 1 , dir );
-  if( S.empty() || ( ( (long long)( A[ iA ] ) - S.back() ) * dir < 0 ) ) {
+  if( S.empty() || ( ( ( long long )( A[ iA ] ) - S.back() ) * dir < 0 ) ) {
    S.push_back( A[ iA ] );
    self( self , iA + 1 , -dir );
    S.pop_back();
@@ -477,9 +491,11 @@ void allPaths( const Tree & T , F && f )
 {
  std::vector< int > path;
  auto rec = [ & ]( auto & self , int t ) -> void {
-  if( t < 0 ) return;
+  if( t < 0 )
+   return;
   path.push_back( T.value[ t ] );
-  if( T.leaf( t ) ) f( path );
+  if( T.leaf( t ) )
+   f( path );
   self( self , T.left[ t ] );
   self( self , T.right[ t ] );
   path.pop_back();
@@ -502,7 +518,8 @@ void printNumbers( int n , F && f )
  ADS_PRE( n >= 0 );
  f( std::int64_t( 0 ) );
  const int limit = std::min( n , 10 );
- if( limit == 0 ) return;
+ if( limit == 0 )
+  return;
  std::vector< bool > available( 10 , true );
  auto rec = [ & ]( auto & self , int i , std::int64_t x ) -> void {
   f( x );
@@ -537,16 +554,19 @@ void printTuples( const std::vector< int > & A , int k , F && f )
  std::vector< int > S;
  auto run = [ & ]( auto less ) {
   auto rec = [ & ]( auto & self , int j ) -> void {
-   if( ( int( S.size() ) >= k ) || ( j >= n ) ) return;
+   if( ( int( S.size() ) >= k ) || ( j >= n ) )
+    return;
    self( self , j + 1 );
    if( S.empty() || less( S.back() , A[ j ] ) ) {
     S.push_back( A[ j ] );
-    if( S.size() > 1 ) f( S );
+    if( S.size() > 1 )
+     f( S );
     self( self , j + 1 );
     S.pop_back();
     }
    };
-  rec( rec , 0 ); };
+  rec( rec , 0 );
+  };
  run( []( int a , int b ) { return( a < b ); } );
  run( []( int a , int b ) { return( a > b ); } );
  }
@@ -569,13 +589,15 @@ void printAllPaths( Grid A , F && f )
  for( int r = 0 ; r < n ; ++r )
   for( int c = 0 ; c < n ; ++c ) {
    ADS_PRE( ( A[ r ][ c ] >= -1 ) && ( A[ r ][ c ] <= 2 ) );
-   if( ( A[ r ][ c ] == 0 ) || ( A[ r ][ c ] == 1 ) ) ++remaining;
+   if( ( A[ r ][ c ] == 0 ) || ( A[ r ][ c ] == 1 ) )
+    ++remaining;
    if( A[ r ][ c ] == 1 ) {
     sr = r;
     sc = c;
     ++ones;
     }
-   if( A[ r ][ c ] == 2 ) ++twos;
+   if( A[ r ][ c ] == 2 )
+    ++twos;
    }
  ADS_PRE( ( ones == 1 ) && ( twos == 1 ) );
  std::vector< Cell > stack;
@@ -627,7 +649,7 @@ void printDistantSets( std::vector< int > A , int k , F && f )
    return;
    }
   self( self , i + 1 );
-  if( S.empty() || ( (long long)( A[ i ] ) - S.back() > k ) ) {
+  if( S.empty() || ( ( long long )( A[ i ] ) - S.back() > k ) ) {
    S.push_back( A[ i ] );
    self( self , i + 1 );
    S.pop_back();
@@ -685,23 +707,23 @@ void printPaths( const Weights & W , int s , int k , int tol , F && f )
  visited[ s ] = true;
  auto rec = [ & ]( auto & self , int u , long missing ) -> void {
   for( int v = 0 ; v < n ; ++v ) {
-   if( W[ u ][ v ] <= 0 ) continue;
+   if( W[ u ][ v ] <= 0 )
+    continue;
    if( v == s ) {
     if( ( path.size() > 1 ) && ( -tol <= missing - W[ u ][ s ] ) &&
-        ( missing - W[ u ][ s ] <= tol ) ) {
+	( missing - W[ u ][ s ] <= tol ) ) {
      path.push_back( s );
      f( path );
      path.pop_back();
      }
     }
-   else
-    if( ! visited[ v ] && ( missing - W[ u ][ v ] >= -tol ) ) {
-     visited[ v ] = true;
-     path.push_back( v );
-     self( self , v , missing - W[ u ][ v ] );
-     path.pop_back();
-     visited[ v ] = false;
-     }
+   else if( ! visited[ v ] && ( missing - W[ u ][ v ] >= -tol ) ) {
+    visited[ v ] = true;
+    path.push_back( v );
+    self( self , v , missing - W[ u ][ v ] );
+    path.pop_back();
+    visited[ v ] = false;
+    }
    }
   };
  rec( rec , s , k );
@@ -730,7 +752,8 @@ void setlists( const std::string & type , int m , F && f )
    return;
    }
   for( int song = 0 ; song < n ; ++song ) {
-   if( used[ song ] ) continue;
+   if( used[ song ] )
+    continue;
    if( ( i >= 2 ) && ( type[ song ] == type[ S[ i - 1 ] ] ) &&
        ( type[ song ] == type[ S[ i - 2 ] ] ) )
     continue;
@@ -758,12 +781,14 @@ void noPalindrome( const std::string & alphabet , int n , F && f )
 {
  ADS_PRE( n >= 0 );
  ADS_PRE( std::set< char >( alphabet.begin() , alphabet.end() ).size() ==
-          alphabet.size() );
+	  alphabet.size() );
  std::string S( std::size_t( n ) , ' ' );
  auto palindrome = [ & ]( int i , int j ) {
   for( ; i < j ; ++i , --j )
-   if( S[ i ] != S[ j ] ) return( false );
-  return( true ); };
+   if( S[ i ] != S[ j ] )
+    return( false );
+  return( true );
+  };
  auto rec = [ & ]( auto & self , int curr ) -> void {
   if( curr == n ) {
    f( S );
@@ -773,8 +798,10 @@ void noPalindrome( const std::string & alphabet , int n , F && f )
    S[ curr ] = c;
    bool palindromeFree = true;
    for( int start = 0 ; palindromeFree && ( start < curr ) ; ++start )
-    if( palindrome( start , curr ) ) palindromeFree = false;
-   if( palindromeFree ) self( self , curr + 1 );
+    if( palindrome( start , curr ) )
+     palindromeFree = false;
+   if( palindromeFree )
+    self( self , curr + 1 );
    }
   };
  rec( rec , 0 );
@@ -789,7 +816,7 @@ void noPalindromeFast( const std::string & alphabet , int n , F && f )
 {
  ADS_PRE( n >= 0 );
  ADS_PRE( std::set< char >( alphabet.begin() , alphabet.end() ).size() ==
-          alphabet.size() );
+	  alphabet.size() );
  std::string S( std::size_t( n ) , ' ' );
  auto rec = [ & ]( auto & self , int curr ) -> void {
   if( curr == n ) {
@@ -810,7 +837,8 @@ void noPalindromeFast( const std::string & alphabet , int n , F && f )
 
 }  // end( namespace backtrack )
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- ORACLES ----------------------------------*/
@@ -831,23 +859,25 @@ std::vector< std::string > words( const std::string & s )
 {
  std::istringstream in( s );
  std::vector< std::string > w;
- for( std::string x ; in >> x ; ) w.push_back( x );
+ for( std::string x ; in >> x ; )
+  w.push_back( x );
  return( w );
  }
 
 /// a random graph of n nodes, each arc with probability p, symmetric unless
 /// directed, no loops
 Adjacency randomGraph( int n , double p , std::mt19937 & g ,
-                       bool directed = false )
+		       bool directed = false )
 {
  std::bernoulli_distribution coin( p );
- Adjacency G( std::size_t( n ) , std::vector< bool >( std::size_t( n ) ,
-                                                     false ) );
+ Adjacency G( std::size_t( n ) ,
+	      std::vector< bool >( std::size_t( n ) , false ) );
  for( int u = 0 ; u < n ; ++u )
   for( int v = directed ? 0 : u + 1 ; v < n ; ++v )
    if( ( u != v ) && coin( g ) ) {
     G[ u ][ v ] = true;
-    if( ! directed ) G[ v ][ u ] = true;
+    if( ! directed )
+     G[ v ][ u ] = true;
     }
  return( G );
  }
@@ -855,18 +885,20 @@ Adjacency randomGraph( int n , double p , std::mt19937 & g ,
 /// the complete graph of n nodes, no loops
 Adjacency complete( int n )
 {
- Adjacency G( std::size_t( n ) , std::vector< bool >( std::size_t( n ) ,
-                                                     true ) );
- for( int u = 0 ; u < n ; ++u ) G[ u ][ u ] = false;
+ Adjacency G( std::size_t( n ) ,
+	      std::vector< bool >( std::size_t( n ) , true ) );
+ for( int u = 0 ; u < n ; ++u )
+  G[ u ][ u ] = false;
  return( G );
  }
 
 /// the unoriented graph of n nodes with the given edges
 Adjacency edges( int n , const std::vector< std::pair< int , int > > & E )
 {
- Adjacency G( std::size_t( n ) , std::vector< bool >( std::size_t( n ) ,
-                                                     false ) );
- for( auto [ u , v ] : E ) G[ u ][ v ] = G[ v ][ u ] = true;
+ Adjacency G( std::size_t( n ) ,
+	      std::vector< bool >( std::size_t( n ) , false ) );
+ for( auto [ u , v ] : E )
+  G[ u ][ v ] = G[ v ][ u ] = true;
  return( G );
  }
 
@@ -874,7 +906,8 @@ Adjacency edges( int n , const std::vector< std::pair< int , int > > & E )
 Adjacency cycle( int n )
 {
  std::vector< std::pair< int , int > > E;
- for( int i = 0 ; i < n ; ++i ) E.emplace_back( i , ( i + 1 ) % n );
+ for( int i = 0 ; i < n ; ++i )
+  E.emplace_back( i , ( i + 1 ) % n );
  return( edges( n , E ) );
  }
 
@@ -883,7 +916,8 @@ std::vector< int > randomInts( int n , int lo , int hi , std::mt19937 & g )
 {
  std::uniform_int_distribution< int > d( lo , hi );
  std::vector< int > v( std::size_t( n ) , 0 );
- for( auto & x : v ) x = d( g );
+ for( auto & x : v )
+  x = d( g );
  return( v );
  }
 
@@ -892,7 +926,8 @@ std::vector< int > pick( const std::vector< int > & A , unsigned mask )
 {
  std::vector< int > S;
  for( std::size_t i = 0 ; i < A.size() ; ++i )
-  if( ( mask >> i ) & 1u ) S.push_back( A[ i ] );
+  if( ( mask >> i ) & 1u )
+   S.push_back( A[ i ] );
  return( S );
  }
 
@@ -901,23 +936,26 @@ std::string bitString( unsigned x , int n )
 {
  std::string s( std::size_t( n ) , '0' );
  for( int i = 0 ; i < n ; ++i )
-  if( ( x >> ( n - 1 - i ) ) & 1u ) s[ i ] = '1';
+  if( ( x >> ( n - 1 - i ) ) & 1u )
+   s[ i ] = '1';
  return( s );
  }
 
 /// the sequences of distinct nodes from s (s first, all lengths), by an
 /// enumeration of the tuples over [ 0 , n ) filtered by distinctness
 std::vector< std::vector< int > > distinctSequences( int n , int s ,
-                                                     int maxLength )
+						     int maxLength )
 {
  std::vector< std::vector< int > > out;
  for( int len = 1 ; len <= maxLength ; ++len ) {
   long total = 1;
-  for( int i = 1 ; i < len ; ++i ) total *= n;
+  for( int i = 1 ; i < len ; ++i )
+   total *= n;
   for( long code = 0 ; code < total ; ++code ) {
    std::vector< int > t = { s };
    long c = code;
-   for( int i = 1 ; i < len ; ++i , c /= n ) t.push_back( int( c % n ) );
+   for( int i = 1 ; i < len ; ++i , c /= n )
+    t.push_back( int( c % n ) );
    if( std::set< int >( t.begin() , t.end() ).size() == t.size() )
     out.push_back( t );
    }
@@ -936,7 +974,7 @@ Tree randomTree( int n , int lo , int hi , std::mt19937 & g )
    T.root = t;
    continue;
    }
-  for( int p = T.root ; ; ) {                   // a random free child
+  for( int p = T.root ; ; ) {  // a random free child
    int & child = ( g() % 2 ) ? T.left[ p ] : T.right[ p ];
    if( child < 0 ) {
     child = t;
@@ -952,7 +990,8 @@ Tree randomTree( int n , int lo , int hi , std::mt19937 & g )
 std::vector< std::vector< int > > rootLeafPaths( const Tree & T )
 {
  std::vector< std::vector< int > > out;
- if( T.root < 0 ) return( out );
+ if( T.root < 0 )
+  return( out );
  std::vector< int > parent( T.value.size() , -1 ) , todo = { T.root };
  while( ! todo.empty() ) {
   const int t = todo.back();
@@ -964,7 +1003,8 @@ std::vector< std::vector< int > > rootLeafPaths( const Tree & T )
     }
   if( T.leaf( t ) ) {
    std::vector< int > p;
-   for( int x = t ; x >= 0 ; x = parent[ x ] ) p.push_back( T.value[ x ] );
+   for( int x = t ; x >= 0 ; x = parent[ x ] )
+    p.push_back( T.value[ x ] );
    std::reverse( p.begin() , p.end() );
    out.push_back( p );
    }
@@ -989,14 +1029,19 @@ ADS_TEST( "backtrack-28" )
  auto run = []( int n , bool fast ) {
   std::vector< std::vector< int > > out;
   auto f = [ & ]( const std::vector< int > & S ) { out.push_back( S ); };
-  if( fast ) backtrack::printElegantFast( n , f );
-  else backtrack::printElegant( n , f );
-  return( out ); };
+  if( fast )
+   backtrack::printElegantFast( n , f );
+  else
+   backtrack::printElegant( n , f );
+  return( out );
+  };
  const std::vector< std::vector< int > > five = {
   { 1 , 2 , 3 , 4 , 5 } , { 1 , 4 , 3 , 2 , 5 } , { 2 , 1 , 3 , 4 , 5 } ,
-  { 2 , 4 , 3 , 1 , 5 } , { 3 , 2 , 1 , 4 , 5 } , { 3 , 4 , 1 , 2 , 5 } ,
-  { 4 , 1 , 3 , 2 , 5 } , { 4 , 2 , 3 , 1 , 5 } , { 5 , 2 , 3 , 4 , 1 } ,
-  { 5 , 4 , 3 , 2 , 1 } };
+  { 2 , 4 , 3 , 1 , 5 } ,
+  { 3 , 2 , 1 , 4 , 5 } , { 3 , 4 , 1 , 2 , 5 } , { 4 , 1 , 3 , 2 , 5 } ,
+  { 4 , 2 , 3 , 1 , 5 } ,
+  { 5 , 2 , 3 , 4 , 1 } , { 5 , 4 , 3 , 2 , 1 }
+  };
  CHECK( run( 5 , false ) == five );
  CHECK( sorted( run( 5 , true ) ) == five );
  const long count[] = { 1 , 2 , 3 , 8 , 10 , 36 , 41 , 132 };
@@ -1008,9 +1053,9 @@ ADS_TEST( "backtrack-28" )
    bool ok = true;
    for( int i = 1 ; i <= n && ok ; ++i )
     ok = ( P[ i - 1 ] % i == 0 ) || ( i % P[ i - 1 ] == 0 );
-   if( ok ) want.push_back( P );
-   }
-  while( std::next_permutation( P.begin() , P.end() ) );
+   if( ok )
+    want.push_back( P );
+   } while( std::next_permutation( P.begin() , P.end() ) );
   CHECK( run( n , false ) == want );
   CHECK( sorted( run( n , true ) ) == want );
   CHECK( long( want.size() ) == count[ n - 1 ] );
@@ -1033,19 +1078,26 @@ ADS_TEST( "backtrack-29" )
 {
  auto run = []( int n ) {
   std::vector< std::vector< int > > out;
-  backtrack::minCardinality( n , [ & ]( const std::vector< int > & S ) {
-   out.push_back( S ); } );
-  return( out ); };
- CHECK( run( 6 ) == std::vector< std::vector< int > >( {
-         { 1 } , { 2 , 3 } , { 2 , 4 } , { 2 , 5 } , { 2 , 6 } ,
-         { 3 , 4 , 5 } , { 3 , 4 , 6 } , { 3 , 5 , 6 } } ) );
+  backtrack::minCardinality(
+    n , [ & ]( const std::vector< int > & S ) { out.push_back( S ); } );
+  return( out );
+  };
+ CHECK( run( 6 ) == std::vector< std::vector< int > >( { { 1 } ,
+							 { 2 , 3 } ,
+							 { 2 , 4 } ,
+							 { 2 , 5 } ,
+							 { 2 , 6 } ,
+							 { 3 , 4 , 5 } ,
+							 { 3 , 4 , 6 } ,
+							 { 3 , 5 , 6 } } ) );
  for( int n = 1 ; n <= 18 ; ++n ) {
   std::vector< int > all( std::size_t( n ) , 0 );
   std::iota( all.begin() , all.end() , 1 );
   std::vector< std::vector< int > > want;
   for( unsigned m = 1 ; m < ( 1u << n ) ; ++m ) {
    const auto S = pick( all , m );
-   if( S[ 0 ] == int( S.size() ) ) want.push_back( S );
+   if( S[ 0 ] == int( S.size() ) )
+    want.push_back( S );
    }
   const auto got = run( n );
   CHECK( sorted( got ) == sorted( want ) );
@@ -1055,7 +1107,7 @@ ADS_TEST( "backtrack-29" )
  CHECK( run( 1 ) == std::vector< std::vector< int > >( 1 , { 1 } ) );
  CHECK( run( 2 ) == std::vector< std::vector< int > >( 1 , { 1 } ) );
  CHECK( run( 3 ) == std::vector< std::vector< int > >( { { 1 } ,
-                                                         { 2 , 3 } } ) );
+							 { 2 , 3 } } ) );
  CHECK_THROWS( run( -1 ) , contract_violation );
  }
 
@@ -1072,23 +1124,25 @@ ADS_TEST( "backtrack-30" )
 {
  auto run = []( const std::string & S1 , const std::string & S2 ) {
   std::vector< std::string > out;
-  backtrack::printMixing( S1 , S2 , [ & ]( const std::string & T ) {
-   out.push_back( T ); } );
-  return( out ); };
+  backtrack::printMixing(
+    S1 , S2 , [ & ]( const std::string & T ) { out.push_back( T ); } );
+  return( out );
+  };
  auto interleaving = []( const std::string & a , const std::string & b ,
-                         const std::string & t ) {
+			 const std::string & t ) {
   const std::size_t n = a.size() , m = b.size();
-  if( t.size() != n + m ) return( false );
-  std::vector< std::vector< bool > > D( n + 1 , std::vector< bool >( m + 1 ,
-                                                                    false ) );
+  if( t.size() != n + m )
+   return( false );
+  std::vector< std::vector< bool > > D( n + 1 ,
+					std::vector< bool >( m + 1 , false ) );
   for( std::size_t i = 0 ; i <= n ; ++i )
    for( std::size_t j = 0 ; j <= m ; ++j )
-    D[ i ][ j ] = ( ( i == 0 ) && ( j == 0 ) ) ||
-                  ( ( i > 0 ) && D[ i - 1 ][ j ] &&
-                    ( a[ i - 1 ] == t[ i + j - 1 ] ) ) ||
-                  ( ( j > 0 ) && D[ i ][ j - 1 ] &&
-                    ( b[ j - 1 ] == t[ i + j - 1 ] ) );
-  return( bool( D[ n ][ m ] ) ); };
+    D[ i ][ j ] =
+      ( ( i == 0 ) && ( j == 0 ) ) ||
+      ( ( i > 0 ) && D[ i - 1 ][ j ] && ( a[ i - 1 ] == t[ i + j - 1 ] ) ) ||
+      ( ( j > 0 ) && D[ i ][ j - 1 ] && ( b[ j - 1 ] == t[ i + j - 1 ] ) );
+  return( bool( D[ n ][ m ] ) );
+  };
  const auto abc = run( "ABC" , "DEF" );
  CHECK( std::find( abc.begin() , abc.end() , "ADBCEF" ) != abc.end() );
  const auto twice = run( "ABC" , "ABC" );
@@ -1098,11 +1152,14 @@ ADS_TEST( "backtrack-30" )
  for( int trial = 0 ; trial < 400 ; ++trial ) {
   const int n1 = int( g() % 6 ) , n2 = int( g() % 6 );
   std::string a , b;
-  for( int i = 0 ; i < n1 ; ++i ) a += char( 'a' + g() % 3 );
-  for( int i = 0 ; i < n2 ; ++i ) b += char( 'a' + g() % 3 );
+  for( int i = 0 ; i < n1 ; ++i )
+   a += char( 'a' + g() % 3 );
+  for( int i = 0 ; i < n2 ; ++i )
+   b += char( 'a' + g() % 3 );
   std::vector< std::string > want;
   for( unsigned x = 0 ; x < ( 1u << ( n1 + n2 ) ) ; ++x ) {
-   if( std::popcount( x ) != n1 ) continue;
+   if( std::popcount( x ) != n1 )
+    continue;
    std::string t;
    for( int p = 0 , i = 0 , j = 0 ; p < n1 + n2 ; ++p )
     t += ( ( x >> p ) & 1u ) ? a[ i++ ] : b[ j++ ];
@@ -1111,7 +1168,8 @@ ADS_TEST( "backtrack-30" )
   const auto got = run( a , b );
   CHECK( sorted( got ) == sorted( want ) );
   CHECK( got.size() == binomial( n1 + n2 , n1 ) );
-  for( const auto & t : got ) CHECK( interleaving( a , b , t ) );
+  for( const auto & t : got )
+   CHECK( interleaving( a , b , t ) );
   }
  CHECK( run( "" , "" ) == std::vector< std::string >( 1 , "" ) );
  CHECK( run( "xy" , "" ) == std::vector< std::string >( 1 , "xy" ) );
@@ -1120,7 +1178,7 @@ ADS_TEST( "backtrack-30" )
  // coincide
  CHECK( run( "a" , "a" ) == std::vector< std::string >( 2 , "aa" ) );
  CHECK( run( "ab" , "c" ) ==
-        std::vector< std::string >( { "abc" , "acb" , "cab" } ) );
+	std::vector< std::string >( { "abc" , "acb" , "cab" } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1136,32 +1194,37 @@ ADS_TEST( "backtrack-30" )
 ADS_TEST( "backtrack-31" )
 {
  auto check = []( const backtrack::Weights & W , int src , int dest ,
-                  int target , const std::vector< int > & P ) {
+		  int target ,
+		  const std::vector< int > & P ) {
   if( P.empty() || ( P.front() != src ) || ( P.back() != dest ) )
    return( false );
   int sum = 0;
   for( std::size_t i = 1 ; i < P.size() ; ++i ) {
-   if( W[ P[ i - 1 ] ][ P[ i ] ] <= 0 ) return( false );
-   if( ( i >= 2 ) && ( P[ i ] == P[ i - 2 ] ) ) return( false );
+   if( W[ P[ i - 1 ] ][ P[ i ] ] <= 0 )
+    return( false );
+   if( ( i >= 2 ) && ( P[ i ] == P[ i - 2 ] ) )
+    return( false );
    sum += W[ P[ i - 1 ] ][ P[ i ] ];
    }
-  return( sum == target ); };
+  return( sum == target );
+  };
  std::mt19937 g( 31 );
  for( int trial = 0 ; trial < 500 ; ++trial ) {
   const int n = 1 + int( g() % 6 ) , target = int( g() % 13 );
   const int src = int( g() % unsigned( n ) ) ,
-            dest = int( g() % unsigned( n ) );
-  backtrack::Weights W( std::size_t( n ) , std::vector< int >(
-                                                     std::size_t( n ) , 0 ) );
+	    dest = int( g() % unsigned( n ) );
+  backtrack::Weights W( std::size_t( n ) ,
+			std::vector< int >( std::size_t( n ) , 0 ) );
   for( int u = 0 ; u < n ; ++u )
    for( int v = u + 1 ; v < n ; ++v )
-    if( g() % 2 ) W[ u ][ v ] = W[ v ][ u ] = 1 + int( g() % 4 );
+    if( g() % 2 )
+     W[ u ][ v ] = W[ v ][ u ] = 1 + int( g() % 4 );
   // R[ s ][ u ][ p ]: ( u , p ) reachable with s steps used, p = n for nil
   using Layer = std::vector< std::vector< bool > >;
-  std::vector< Layer > R( std::size_t( target ) + 1 ,
-                          Layer( std::size_t( n ) ,
-                                 std::vector< bool >( std::size_t( n ) + 1 ,
-                                                      false ) ) );
+  std::vector< Layer > R(
+    std::size_t( target ) + 1 ,
+    Layer( std::size_t( n ) ,
+	   std::vector< bool >( std::size_t( n ) + 1 , false ) ) );
   R[ 0 ][ src ][ n ] = true;
   for( int s = 0 ; s < target ; ++s )
    for( int u = 0 ; u < n ; ++u )
@@ -1173,15 +1236,17 @@ ADS_TEST( "backtrack-31" )
        R[ s + W[ u ][ v ] ][ v ][ u ] = true;
      }
   bool exists = false;
-  for( int p = 0 ; p <= n ; ++p ) exists = exists || R[ target ][ dest ][ p ];
+  for( int p = 0 ; p <= n ; ++p )
+   exists = exists || R[ target ][ dest ][ p ];
   const auto P = backtrack::searchPath( W , src , dest , target );
   CHECK( P.has_value() == exists );
-  if( P ) CHECK( check( W , src , dest , target , *P ) );
+  if( P )
+   CHECK( check( W , src , dest , target , *P ) );
   }
  const backtrack::Weights E = { { 0 , 2 } , { 2 , 0 } };
  CHECK( backtrack::searchPath( E , 0 , 0 , 0 ) == std::vector< int >( 1 ) );
  CHECK( backtrack::searchPath( E , 0 , 1 , 2 ) ==
-        std::vector< int >( { 0 , 1 } ) );
+	std::vector< int >( { 0 , 1 } ) );
  CHECK( ! backtrack::searchPath( E , 0 , 0 , 4 ) );
  // target 0 away from dest, no edge, a triangle walked around (a cycle
  // is a walk without reversal), a weight above the target
@@ -1189,19 +1254,16 @@ ADS_TEST( "backtrack-31" )
  const backtrack::Weights none( 2 , std::vector< int >( 2 , 0 ) );
  CHECK( ! backtrack::searchPath( none , 0 , 1 , 3 ) );
  const backtrack::Weights T3 = { { 0 , 1 , 1 } , { 1 , 0 , 1 } ,
-                                 { 1 , 1 , 0 } };
+				 { 1 , 1 , 0 } };
  CHECK( backtrack::searchPath( T3 , 0 , 0 , 3 ) );
  CHECK( backtrack::searchPath( T3 , 0 , 0 , 6 ) );
  CHECK( ! backtrack::searchPath( T3 , 0 , 0 , 2 ) );
  CHECK( ! backtrack::searchPath( E , 0 , 1 , 1 ) );
  CHECK_THROWS( backtrack::searchPath( E , 0 , 2 , 1 ) , contract_violation );
- CHECK_THROWS( backtrack::searchPath( E , -1 , 0 , 1 ) ,
-               contract_violation );
- CHECK_THROWS( backtrack::searchPath( E , 0 , 1 , -1 ) ,
-               contract_violation );
+ CHECK_THROWS( backtrack::searchPath( E , -1 , 0 , 1 ) , contract_violation );
+ CHECK_THROWS( backtrack::searchPath( E , 0 , 1 , -1 ) , contract_violation );
  const backtrack::Weights arc = { { 0 , 2 } , { 0 , 0 } };
- CHECK_THROWS( backtrack::searchPath( arc , 0 , 1 , 2 ) ,
-               contract_violation );
+ CHECK_THROWS( backtrack::searchPath( arc , 0 , 1 , 2 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1216,33 +1278,39 @@ ADS_TEST( "backtrack-32" )
 {
  auto run = []( const std::string & S ) {
   std::vector< std::string > out;
-  backtrack::subPalindrome( S , [ & ]( const std::string & T ) {
-   out.push_back( T ); } );
-  return( out ); };
- CHECK( sorted( run( "casca" ) ) == sorted( std::vector< std::string >( {
-         "" , "c" , "a" , "s" , "c" , "a" , "cc" , "aa" , "cac" , "csc" ,
-         "asa" , "aca" } ) ) );
+  backtrack::subPalindrome(
+    S , [ & ]( const std::string & T ) { out.push_back( T ); } );
+  return( out );
+  };
+ CHECK( sorted( run( "casca" ) ) ==
+	sorted( std::vector< std::string >( { "" , "c" , "a" , "s" , "c" ,
+					      "a" ,
+					      "cc" , "aa" , "cac" , "csc" ,
+					      "asa" ,
+					      "aca" } ) ) );
  std::mt19937 g( 32 );
  for( int trial = 0 ; trial < 400 ; ++trial ) {
   const int n = int( g() % 13 );
   std::string S;
-  for( int i = 0 ; i < n ; ++i ) S += char( 'a' + g() % 3 );
+  for( int i = 0 ; i < n ; ++i )
+   S += char( 'a' + g() % 3 );
   std::vector< std::string > want;
   for( unsigned m = 0 ; m < ( 1u << n ) ; ++m ) {
    std::string t;
    for( int i = 0 ; i < n ; ++i )
-    if( ( m >> i ) & 1u ) t += S[ i ];
-   if( std::equal( t.begin() , t.end() , t.rbegin() ) ) want.push_back( t );
+    if( ( m >> i ) & 1u )
+     t += S[ i ];
+   if( std::equal( t.begin() , t.end() , t.rbegin() ) )
+    want.push_back( t );
    }
-  std::vector< std::vector< long > > P( std::size_t( n ) + 1 ,
-                               std::vector< long >( std::size_t( n ) + 1 ,
-                                                    0 ) );
+  std::vector< std::vector< long > > P(
+    std::size_t( n ) + 1 , std::vector< long >( std::size_t( n ) + 1 , 0 ) );
   auto at = [ & ]( int i , int j ) { return( i > j ? 0L : P[ i ][ j ] ); };
   for( int len = 1 ; len <= n ; ++len )
    for( int i = 0 ; i + len - 1 < n ; ++i ) {
     const int j = i + len - 1;
-    P[ i ][ j ] = len == 1 ? 1 : at( i + 1 , j ) + at( i , j - 1 ) -
-                                 at( i + 1 , j - 1 );
+    P[ i ][ j ] =
+      len == 1 ? 1 : at( i + 1 , j ) + at( i , j - 1 ) - at( i + 1 , j - 1 );
     if( ( len > 1 ) && ( S[ i ] == S[ j ] ) )
      P[ i ][ j ] += at( i + 1 , j - 1 ) + 1;
     }
@@ -1254,7 +1322,7 @@ ADS_TEST( "backtrack-32" )
  // one character, all equal (every one of the 2^n subsequences), all
  // distinct (only the empty one and the single characters)
  CHECK( sorted( run( "z" ) ) ==
-        sorted( std::vector< std::string >( { "" , "z" } ) ) );
+	sorted( std::vector< std::string >( { "" , "z" } ) ) );
  CHECK( run( "aaaa" ).size() == 16 );
  CHECK( run( "abcdef" ).size() == 1 + 6 );
  }
@@ -1272,20 +1340,22 @@ ADS_TEST( "backtrack-33" )
 {
  auto run = []( const Adjacency & G , int s ) {
   std::vector< std::vector< int > > out;
-  backtrack::printCycles( G , s , [ & ]( const std::vector< int > & C ) {
-   out.push_back( C ); } );
-  return( out ); };
+  backtrack::printCycles(
+    G , s , [ & ]( const std::vector< int > & C ) { out.push_back( C ); } );
+  return( out );
+  };
  CHECK( sorted( run( complete( 3 ) , 0 ) ) ==
-        sorted( std::vector< std::vector< int > >( {
-         { 0 , 1 , 0 } , { 0 , 2 , 0 } , { 0 , 1 , 2 , 0 } ,
-         { 0 , 2 , 1 , 0 } } ) ) );
+	sorted( std::vector< std::vector< int > >(
+	  { { 0 , 1 , 0 } , { 0 , 2 , 0 } , { 0 , 1 , 2 , 0 } ,
+	    { 0 , 2 , 1 , 0 } } ) ) );
  std::mt19937 g( 33 );
  for( int trial = 0 ; trial < 300 ; ++trial ) {
   const int n = 1 + int( g() % 6 ) , s = int( g() % unsigned( n ) );
   const Adjacency G = randomGraph( n , 0.45 , g , true );
   std::vector< std::vector< int > > want;
   for( auto P : distinctSequences( n , s , n ) ) {
-   if( P.size() < 2 ) continue;
+   if( P.size() < 2 )
+    continue;
    bool ok = G[ P.back() ][ s ];
    for( std::size_t i = 1 ; i < P.size() && ok ; ++i )
     ok = G[ P[ i - 1 ] ][ P[ i ] ];
@@ -1307,14 +1377,14 @@ ADS_TEST( "backtrack-33" )
  const Adjacency loop( 1 , std::vector< bool >( 1 , true ) );
  CHECK( run( loop , 0 ).empty() );
  CHECK( run( complete( 2 ) , 1 ) ==
-        std::vector< std::vector< int > >( 1 , { 1 , 0 , 1 } ) );
+	std::vector< std::vector< int > >( 1 , { 1 , 0 , 1 } ) );
  Adjacency away = edges( 3 , { { 1 , 2 } } );
  away[ 0 ][ 1 ] = true;
  CHECK( run( away , 0 ).empty() && ( run( away , 1 ).size() == 1 ) );
  CHECK_THROWS( run( complete( 2 ) , 2 ) , contract_violation );
  CHECK_THROWS( run( complete( 2 ) , -1 ) , contract_violation );
  CHECK_THROWS( run( Adjacency( 2 , std::vector< bool >( 1 , true ) ) , 0 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1328,15 +1398,19 @@ ADS_TEST( "backtrack-34" )
 {
  auto run = []( int n ) {
   std::vector< std::vector< int > > out;
-  backtrack::lessThanHalf( n , [ & ]( const std::vector< int > & S ) {
-   out.push_back( S ); } );
-  return( out ); };
- CHECK( run( 7 ) == std::vector< std::vector< int > >( {
-         { 7 } , { 7 , 1 } , { 7 , 2 } , { 7 , 2 , 1 } , { 7 , 3 } ,
-         { 7 , 3 , 1 } } ) );
+  backtrack::lessThanHalf(
+    n , [ & ]( const std::vector< int > & S ) { out.push_back( S ); } );
+  return( out );
+  };
+ CHECK(
+   run( 7 ) ==
+   std::vector< std::vector< int > >(
+     { { 7 } , { 7 , 1 } , { 7 , 2 } , { 7 , 2 , 1 } , { 7 , 3 } ,
+       { 7 , 3 , 1 } } ) );
  std::vector< long > T( 151 , 1 );
  for( int n = 2 ; n <= 150 ; ++n )
-  for( int i = 1 ; i <= n / 2 ; ++i ) T[ n ] += T[ i ];
+  for( int i = 1 ; i <= n / 2 ; ++i )
+   T[ n ] += T[ i ];
  for( int n = 1 ; n <= 150 ; ++n ) {
   auto got = run( n );
   CHECK( long( got.size() ) == T[ n ] );
@@ -1350,9 +1424,9 @@ ADS_TEST( "backtrack-34" )
   }
  CHECK( run( 1 ) == std::vector< std::vector< int > >( 1 , { 1 } ) );
  CHECK( run( 2 ) == std::vector< std::vector< int > >( { { 2 } ,
-                                                         { 2 , 1 } } ) );
+							 { 2 , 1 } } ) );
  CHECK( run( 3 ) == std::vector< std::vector< int > >( { { 3 } ,
-                                                         { 3 , 1 } } ) );
+							 { 3 , 1 } } ) );
  CHECK_THROWS( run( 0 ) , contract_violation );
  CHECK_THROWS( run( -4 ) , contract_violation );
  }
@@ -1372,16 +1446,19 @@ ADS_TEST( "backtrack-35" )
  using backtrack::Grid;
  auto run = []( int n ) {
   std::vector< Grid > out;
-  backtrack::printMagic( n , [ & ]( const Grid & A ) {
-   out.push_back( A ); } );
-  return( out ); };
- auto magic = []( const std::vector< int > & a ) {      // 3 x 3, row major
-  const int L[ 8 ][ 3 ] = { { 0 , 1 , 2 } , { 3 , 4 , 5 } , { 6 , 7 , 8 } ,
-                            { 0 , 3 , 6 } , { 1 , 4 , 7 } , { 2 , 5 , 8 } ,
-                            { 0 , 4 , 8 } , { 2 , 4 , 6 } };
-  for( const auto & l : L )
-   if( a[ l[ 0 ] ] + a[ l[ 1 ] ] + a[ l[ 2 ] ] != 15 ) return( false );
-  return( true ); };
+  backtrack::printMagic( n , [ & ]( const Grid & A ) { out.push_back( A ); } );
+  return( out );
+  };
+ auto magic =
+   []( const std::vector< int > & a ) {  // 3 x 3, row major
+    const int L[ 8 ][ 3 ] = { { 0 , 1 , 2 } , { 3 , 4 , 5 } , { 6 , 7 , 8 } ,
+			      { 0 , 3 , 6 } , { 1 , 4 , 7 } , { 2 , 5 , 8 } ,
+			      { 0 , 4 , 8 } , { 2 , 4 , 6 } };
+    for( const auto & l : L )
+     if( a[ l[ 0 ] ] + a[ l[ 1 ] ] + a[ l[ 2 ] ] != 15 )
+      return( false );
+    return( true );
+    };
  CHECK( run( 1 ) == std::vector< Grid >( 1 , Grid( 1 , { 1 } ) ) );
  CHECK( run( 2 ).empty() );
  std::vector< Grid > want;
@@ -1390,8 +1467,8 @@ ADS_TEST( "backtrack-35" )
  do
   if( magic( a ) )
    want.push_back( { { a[ 0 ] , a[ 1 ] , a[ 2 ] } ,
-                     { a[ 3 ] , a[ 4 ] , a[ 5 ] } ,
-                     { a[ 6 ] , a[ 7 ] , a[ 8 ] } } );
+		     { a[ 3 ] , a[ 4 ] , a[ 5 ] } ,
+		     { a[ 6 ] , a[ 7 ] , a[ 8 ] } } );
  while( std::next_permutation( a.begin() , a.end() ) );
  std::set< Grid > symmetries;
  Grid S = { { 2 , 7 , 6 } , { 9 , 5 , 1 } , { 4 , 3 , 8 } };
@@ -1411,21 +1488,22 @@ ADS_TEST( "backtrack-35" )
  CHECK( sorted( got ) == want );
  CHECK( std::set< Grid >( got.begin() , got.end() ) == symmetries );
  CHECK( backtrack::isMagic( { { 2 , 7 , 6 } , { 9 , 5 , 1 } ,
-                             { 4 , 3 , 8 } } ) );
+			      { 4 , 3 , 8 } } ) );
  CHECK( ! backtrack::isMagic( { { 1 , 2 } , { 3 , 4 } } ) );
  // isMagic() only compares the sums: the empty square and one cell are
  // magic, so is a square of equal or negative values; the rows and the
  // columns equal but a diagonal not, the diagonals equal but a row not
  CHECK( backtrack::isMagic( {} ) && backtrack::isMagic( { { -7 } } ) );
  CHECK( backtrack::isMagic( Grid( 4 , std::vector< int >( 4 , -3 ) ) ) );
- CHECK( ! backtrack::isMagic( { { 1 , 2 , 3 } , { 2 , 3 , 1 } ,
-                                { 3 , 1 , 2 } } ) );   // diagonal 1 + 3 + 2
+ CHECK( ! backtrack::isMagic(
+   { { 1 , 2 , 3 } , { 2 , 3 , 1 } ,
+     { 3 , 1 , 2 } } ) );  // diagonal 1 + 3 + 2
  CHECK( ! backtrack::isMagic( { { 1 , 0 } , { 1 , 0 } } ) );
  CHECK( ! backtrack::isMagic( { { 2 , 0 } , { 0 , 2 } } ) );
- const int big = std::numeric_limits< int >::max();   // sums beyond int
+ const int big = std::numeric_limits< int >::max();  // sums beyond int
  CHECK( backtrack::isMagic( Grid( 3 , std::vector< int >( 3 , big ) ) ) );
  CHECK_THROWS( backtrack::isMagic( { { 1 , 2 } , { 3 } } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( run( 0 ) , contract_violation );
  }
 
@@ -1441,11 +1519,19 @@ ADS_TEST( "backtrack-35" )
 // node; an oriented graph refused
 ADS_TEST( "backtrack-36" )
 {
- const Adjacency K23 = edges( 5 , { { 0 , 2 } , { 0 , 3 } , { 0 , 4 } ,
-                                    { 1 , 2 } , { 1 , 3 } , { 1 , 4 } } );
- const Adjacency K33 = edges( 6 , { { 0 , 3 } , { 0 , 4 } , { 0 , 5 } ,
-                                    { 1 , 3 } , { 1 , 4 } , { 1 , 5 } ,
-                                    { 2 , 3 } , { 2 , 4 } , { 2 , 5 } } );
+ const Adjacency K23 =
+   edges( 5 ,
+	  { { 0 , 2 } , { 0 , 3 } , { 0 , 4 } , { 1 , 2 } , { 1 , 3 } ,
+	    { 1 , 4 } } );
+ const Adjacency K33 = edges( 6 , { { 0 , 3 } ,
+				   { 0 , 4 } ,
+				   { 0 , 5 } ,
+				   { 1 , 3 } ,
+				   { 1 , 4 } ,
+				   { 1 , 5 } ,
+				   { 2 , 3 } ,
+				   { 2 , 4 } ,
+				   { 2 , 5 } } );
  CHECK( ! hamiltonianCircuit( K23 ) && hamiltonianCircuit( K33 ) );
  std::mt19937 g( 36 );
  for( int trial = 0 ; trial < 400 ; ++trial ) {
@@ -1456,31 +1542,34 @@ ADS_TEST( "backtrack-36" )
   bool exists = false;
   do {
    bool ok = G[ P[ n - 1 ] ][ 0 ];
-   for( int i = 1 ; i < n && ok ; ++i ) ok = G[ P[ i - 1 ] ][ P[ i ] ];
+   for( int i = 1 ; i < n && ok ; ++i )
+    ok = G[ P[ i - 1 ] ][ P[ i ] ];
    exists = exists || ok;
-   }
-  while( std::next_permutation( P.begin() + 1 , P.end() ) );
+   } while( std::next_permutation( P.begin() + 1 , P.end() ) );
   CHECK( hamiltonianCircuit( G ).has_value() == exists );
   }
  for( int n = 3 ; n <= 8 ; ++n )
   CHECK( hamiltonianCircuit( complete( n ) ) &&
-         hamiltonianCircuit( cycle( n ) ) );
- CHECK( ! hamiltonianCircuit( edges( 4 , { { 0 , 1 } , { 1 , 2 } ,
-                                            { 1 , 3 } } ) ) );
- CHECK( ! hamiltonianCircuit( edges( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } ,
-                                            { 2 , 3 } } ) ) );
+	 hamiltonianCircuit( cycle( n ) ) );
+ CHECK( ! hamiltonianCircuit( edges( 4 ,
+				     { { 0 , 1 } , { 1 , 2 } ,
+				       { 1 , 3 } } ) ) );
+ CHECK( ! hamiltonianCircuit(
+   edges( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } , { 2 , 3 } } ) ) );
  CHECK( ! hamiltonianCircuit( complete( 1 ) ) &&
-        ! hamiltonianCircuit( complete( 2 ) ) );
+	! hamiltonianCircuit( complete( 2 ) ) );
  // no node, the path of 3, two triangles apart, two triangles sharing a
  // node (a cut node), an oriented graph refused
  CHECK( ! hamiltonianCircuit( edges( 0 , {} ) ) );
  CHECK( ! hamiltonianCircuit( edges( 3 , { { 0 , 1 } , { 1 , 2 } } ) ) );
- CHECK( ! hamiltonianCircuit( edges( 6 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } ,
-                                            { 3 , 4 } , { 4 , 5 } ,
-                                            { 5 , 3 } } ) ) );
- CHECK( ! hamiltonianCircuit( edges( 5 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } ,
-                                            { 2 , 3 } , { 3 , 4 } ,
-                                            { 4 , 2 } } ) ) );
+ CHECK( ! hamiltonianCircuit( edges(
+   6 ,
+   { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } , { 3 , 4 } , { 4 , 5 } ,
+     { 5 , 3 } } ) ) );
+ CHECK( ! hamiltonianCircuit( edges(
+   5 ,
+   { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } , { 2 , 3 } , { 3 , 4 } ,
+     { 4 , 2 } } ) ) );
  Adjacency arc = complete( 3 );
  arc[ 0 ][ 1 ] = false;
  CHECK_THROWS( hamiltonianCircuit( arc ) , contract_violation );
@@ -1497,20 +1586,26 @@ ADS_TEST( "backtrack-37" )
 {
  auto run = []( const std::vector< int > & A ) {
   std::vector< std::vector< int > > out;
-  backtrack::printZigZag( A , [ & ]( const std::vector< int > & S ) {
-   out.push_back( S ); } );
-  return( out ); };
+  backtrack::printZigZag(
+    A , [ & ]( const std::vector< int > & S ) { out.push_back( S ); } );
+  return( out );
+  };
  auto zigzag = []( const std::vector< int > & x ) {
   for( std::size_t i = 0 ; i + 1 < x.size() ; ++i )
    if( ( i % 2 == 0 ) ? ! ( x[ i ] < x[ i + 1 ] ) : ! ( x[ i ] > x[ i + 1 ] ) )
     return( false );
-  return( true ); };
+  return( true );
+  };
  const auto ex = run( { 1 , 3 , 6 , 4 , 5 } );
  const std::vector< std::vector< int > > listed = {
-  {} , { 5 } , { 4 } , { 4 , 5 } , { 6 } , { 3 } , { 3 , 5 } , { 3 , 4 } ,
-  { 3 , 6 } , { 3 , 6 , 5 } , { 3 , 6 , 4 } , { 3 , 6 , 4 , 5 } , { 1 } ,
-  { 1 , 5 } , { 1 , 4 } , { 1 , 6 } , { 1 , 6 , 5 } , { 1 , 6 , 4 } ,
-  { 1 , 6 , 4 , 5 } , { 1 , 3 } };
+  {} ,          { 5 } ,          { 4 } ,       { 4 , 5 } ,       { 6 } ,
+  { 3 } ,       { 3 , 5 } ,       { 3 , 4 } ,    { 3 , 6 } ,
+  { 3 , 6 , 5 } ,
+  { 3 , 6 , 4 } , { 3 , 6 , 4 , 5 } , { 1 } ,       { 1 , 5 } ,
+  { 1 , 4 } ,
+  { 1 , 6 } ,    { 1 , 6 , 5 } ,    { 1 , 6 , 4 } , { 1 , 6 , 4 , 5 } ,
+  { 1 , 3 }
+  };
  CHECK( sorted( ex ) == sorted( listed ) );
  std::mt19937 g( 37 );
  for( int trial = 0 ; trial < 500 ; ++trial ) {
@@ -1519,7 +1614,8 @@ ADS_TEST( "backtrack-37" )
   std::vector< std::vector< int > > want;
   for( unsigned m = 0 ; m < ( 1u << n ) ; ++m ) {
    const auto S = pick( A , m );
-   if( zigzag( S ) ) want.push_back( S );
+   if( zigzag( S ) )
+    want.push_back( S );
    }
   CHECK( sorted( run( A ) ) == sorted( want ) );
   }
@@ -1528,18 +1624,18 @@ ADS_TEST( "backtrack-37" )
  // one item, a fall first (not a zigzag of two), the extremes of int whose
  // difference overflows an int, a rise and a fall at the extremes
  CHECK( sorted( run( { 7 } ) ) ==
-        sorted( std::vector< std::vector< int > >( { {} , { 7 } } ) ) );
+	sorted( std::vector< std::vector< int > >( { {} , { 7 } } ) ) );
  CHECK( run( { 5 , 1 } ).size() == 3 );
  const int lo = std::numeric_limits< int >::min() ,
-           hi = std::numeric_limits< int >::max();
+	   hi = std::numeric_limits< int >::max();
  CHECK( sorted( run( { lo , hi } ) ) ==
-        sorted( std::vector< std::vector< int > >( { {} , { lo } , { hi } ,
-                                                      { lo , hi } } ) ) );
+	sorted( std::vector< std::vector< int > >(
+	  { {} , { lo } , { hi } , { lo , hi } } ) ) );
  CHECK( run( { hi , lo } ).size() == 3 );
  const auto ext = run( { lo , hi , lo } );
  CHECK( std::find( ext.begin() , ext.end() ,
-                   std::vector< int >( { lo , hi , lo } ) ) != ext.end() );
- CHECK( ext.size() == 1 + 3 + 1 + 1 );          // {}, 3 singles, lo hi
+		   std::vector< int >( { lo , hi , lo } ) ) != ext.end() );
+ CHECK( ext.size() == 1 + 3 + 1 + 1 );  // {}, 3 singles, lo hi
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1554,15 +1650,18 @@ ADS_TEST( "backtrack-38" )
 {
  auto run = []( const Tree & T ) {
   std::vector< std::vector< int > > out;
-  backtrack::allPaths( T , [ & ]( const std::vector< int > & p ) {
-   out.push_back( p ); } );
-  return( out ); };
+  backtrack::allPaths(
+    T , [ & ]( const std::vector< int > & p ) { out.push_back( p ); } );
+  return( out );
+  };
  Tree T;
  const int b = T.add( 'B' , T.add( 'D' ) , T.add( 'E' ) ) ,
-           c = T.add( 'C' , -1 , T.add( 'F' ) );
+	   c = T.add( 'C' , -1 , T.add( 'F' ) );
  T.root = T.add( 'A' , b , c );
- CHECK( run( T ) == std::vector< std::vector< int > >( {
-         { 'A' , 'B' , 'D' } , { 'A' , 'B' , 'E' } , { 'A' , 'C' , 'F' } } ) );
+ CHECK( run( T ) ==
+	std::vector< std::vector< int > >(
+	  { { 'A' , 'B' , 'D' } , { 'A' , 'B' , 'E' } ,
+	    { 'A' , 'C' , 'F' } } ) );
  std::mt19937 g( 38 );
  for( int trial = 0 ; trial < 500 ; ++trial ) {
   const Tree R = randomTree( 1 + int( g() % 20 ) , 0 , 99 , g );
@@ -1576,7 +1675,7 @@ ADS_TEST( "backtrack-38" )
  Tree chain;
  chain.root = chain.add( 1 , chain.add( 2 , -1 , chain.add( 3 ) ) );
  CHECK( run( chain ) == std::vector< std::vector< int > >( 1 ,
-                                                          { 1 , 2 , 3 } ) );
+							   { 1 , 2 , 3 } ) );
  CHECK( run( Tree() ).empty() );
  // one node, a chain of 2000 nodes on the right, a full tree of depth 3
  Tree one;
@@ -1587,18 +1686,19 @@ ADS_TEST( "backtrack-38" )
   deep.root = deep.add( 2000 - i , -1 , deep.root );
  const auto d = run( deep );
  CHECK( ( d.size() == 1 ) && ( d[ 0 ].size() == 2000 ) &&
-        ( d[ 0 ][ 1999 ] == 2000 ) );
+	( d[ 0 ][ 1999 ] == 2000 ) );
  Tree full;
  auto build = [ & ]( auto & self , int h , int v ) -> int {
-  return( h == 0 ? full.add( v ) : full.add( v , self( self , h - 1 , 2 * v ) ,
-                                             self( self , h - 1 ,
-                                                   2 * v + 1 ) ) ); };
+  return( h == 0 ? full.add( v )
+		  : full.add( v , self( self , h - 1 , 2 * v ) ,
+			      self( self , h - 1 , 2 * v + 1 ) ) );
+  };
  full.root = build( build , 3 , 1 );
  const auto fp = run( full );
  CHECK( fp.size() == 8 );
  for( int i = 0 ; i < 8 ; ++i )
   CHECK( fp[ i ] == std::vector< int >( { 1 , 2 + i / 4 , 4 + i / 2 ,
-                                          8 + i } ) );
+					  8 + i } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1612,12 +1712,14 @@ ADS_TEST( "backtrack-39" )
 {
  auto run = []( int n ) {
   std::vector< std::int64_t > out;
-  backtrack::printNumbers( n , [ & ]( std::int64_t x ) {
-   out.push_back( x ); } );
-  return( out ); };
+  backtrack::printNumbers( n ,
+			   [ & ]( std::int64_t x ) { out.push_back( x ); } );
+  return( out );
+  };
  std::vector< std::int64_t > two;
  for( int x = 0 ; x < 100 ; ++x )
-  if( ( x < 10 ) || ( x % 11 != 0 ) ) two.push_back( x );
+  if( ( x < 10 ) || ( x % 11 != 0 ) )
+   two.push_back( x );
  CHECK( sorted( run( 2 ) ) == two );
  std::int64_t limit = 1;
  for( int n = 0 ; n <= 6 ; ++n , limit *= 10 ) {
@@ -1631,14 +1733,14 @@ ADS_TEST( "backtrack-39" )
     ok = ok && ! ( seen & d );
     seen |= d;
     y /= 10;
-    }
-   while( y > 0 );
-   if( ok ) want.push_back( x );
+    } while( y > 0 );
+   if( ok )
+    want.push_back( x );
    }
   CHECK( sorted( run( n ) ) == want );
   }
- const long count[] = { 10 , 91 , 739 , 5275 , 32491 , 168571 , 712891 ,
-                        2345851 , 5611771 , 8877691 };
+ const long count[] = { 10 ,     91 ,     739 ,     5275 ,    32491 ,
+			168571 , 712891 , 2345851 , 5611771 , 8877691 };
  for( int n = 1 ; n <= 11 ; ++n ) {
   long c = 0;
   backtrack::printNumbers( n , [ & ]( std::int64_t ) { ++c; } );
@@ -1660,14 +1762,24 @@ ADS_TEST( "backtrack-40" )
 {
  auto run = []( const std::vector< int > & A , int k ) {
   std::vector< std::vector< int > > out;
-  backtrack::printTuples( A , k , [ & ]( const std::vector< int > & S ) {
-   out.push_back( S ); } );
-  return( out ); };
+  backtrack::printTuples(
+    A , k , [ & ]( const std::vector< int > & S ) { out.push_back( S ); } );
+  return( out );
+  };
  CHECK( sorted( run( { 2 , 5 , 3 , 4 , 1 } , 3 ) ) ==
-        sorted( std::vector< std::vector< int > >( {
-         { 3 , 4 } , { 2 , 4 } , { 2 , 3 } , { 2 , 3 , 4 } , { 2 , 5 } ,
-         { 4 , 1 } , { 3 , 1 } , { 5 , 1 } , { 5 , 4 } , { 5 , 4 , 1 } ,
-         { 5 , 3 } , { 5 , 3 , 1 } , { 2 , 1 } } ) ) );
+	sorted( std::vector< std::vector< int > >( { { 3 , 4 } ,
+						     { 2 , 4 } ,
+						     { 2 , 3 } ,
+						     { 2 , 3 , 4 } ,
+						     { 2 , 5 } ,
+						     { 4 , 1 } ,
+						     { 3 , 1 } ,
+						     { 5 , 1 } ,
+						     { 5 , 4 } ,
+						     { 5 , 4 , 1 } ,
+						     { 5 , 3 } ,
+						     { 5 , 3 , 1 } ,
+						     { 2 , 1 } } ) ) );
  std::mt19937 g( 40 );
  for( int trial = 0 ; trial < 500 ; ++trial ) {
   const int n = 1 + int( g() % 11 ) , k = 1 + int( g() % unsigned( n ) );
@@ -1675,11 +1787,13 @@ ADS_TEST( "backtrack-40" )
   std::vector< std::vector< int > > want;
   for( unsigned m = 0 ; m < ( 1u << n ) ; ++m ) {
    const auto S = pick( A , m );
-   if( ( S.size() < 2 ) || ( int( S.size() ) > k ) ) continue;
+   if( ( S.size() < 2 ) || ( int( S.size() ) > k ) )
+    continue;
    if( ( std::adjacent_find( S.begin() , S.end() ,
-                             std::greater_equal< int >() ) == S.end() ) ||
+			     std::greater_equal< int >() ) == S.end() ) ||
        ( std::adjacent_find( S.begin() , S.end() ,
-                             std::less_equal< int >() ) == S.end() ) )
+			     std::less_equal< int >() ) ==
+	 S.end() ) )
     want.push_back( S );
    }
   CHECK( sorted( run( A , k ) ) == sorted( want ) );
@@ -1689,18 +1803,18 @@ ADS_TEST( "backtrack-40" )
  CHECK( run( { 8 } , 1 ).empty() );
  // two items rising and falling, k = n on a decreasing vector (all its
  // subsets of 2 items or more), a tie between two others, the extremes
- CHECK( run( { 1 , 2 } , 2 ) == std::vector< std::vector< int > >( 1 ,
-                                                            { 1 , 2 } ) );
- CHECK( run( { 2 , 1 } , 2 ) == std::vector< std::vector< int > >( 1 ,
-                                                            { 2 , 1 } ) );
+ CHECK( run( { 1 , 2 } , 2 ) ==
+	std::vector< std::vector< int > >( 1 , { 1 , 2 } ) );
+ CHECK( run( { 2 , 1 } , 2 ) ==
+	std::vector< std::vector< int > >( 1 , { 2 , 1 } ) );
  CHECK( run( { 4 , 3 , 2 , 1 } , 4 ).size() == 16 - 1 - 4 );
- CHECK( sorted( run( { 1 , 5 , 5 } , 3 ) ) ==
-        sorted( std::vector< std::vector< int > >( { { 1 , 5 } ,
-                                                      { 1 , 5 } } ) ) );
+ CHECK(
+   sorted( run( { 1 , 5 , 5 } , 3 ) ) ==
+   sorted( std::vector< std::vector< int > >( { { 1 , 5 } , { 1 , 5 } } ) ) );
  const int lo = std::numeric_limits< int >::min() ,
-           hi = std::numeric_limits< int >::max();
- CHECK( run( { lo , hi } , 2 ) == std::vector< std::vector< int > >( 1 ,
-                                                            { lo , hi } ) );
+	   hi = std::numeric_limits< int >::max();
+ CHECK( run( { lo , hi } , 2 ) ==
+	std::vector< std::vector< int > >( 1 , { lo , hi } ) );
  CHECK_THROWS( run( { 1 , 2 } , 3 ) , contract_violation );
  CHECK_THROWS( run( { 1 , 2 } , 0 ) , contract_violation );
  CHECK_THROWS( run( {} , 1 ) , contract_violation );
@@ -1722,23 +1836,32 @@ ADS_TEST( "backtrack-41" )
  using backtrack::Grid;
  auto run = []( const Grid & A ) {
   std::vector< std::vector< Cell > > out;
-  backtrack::printAllPaths( A , [ & ]( const std::vector< Cell > & P ) {
-   out.push_back( P ); } );
-  return( out ); };
- const Grid E = { { 1 , 0 , 0 , 0 } , { 0 , 0 , 0 , 0 } , { 0 , 0 , 0 , 0 } ,
-                  { 0 , 0 , -1 , 2 } };
+  backtrack::printAllPaths(
+    A , [ & ]( const std::vector< Cell > & P ) { out.push_back( P ); } );
+  return( out );
+  };
+ const Grid E = {
+  { 1 , 0 , 0 , 0 } , { 0 , 0 , 0 , 0 } , { 0 , 0 , 0 , 0 } ,
+  { 0 , 0 , -1 , 2 }
+  };
  const std::vector< Cell > path = { { 0 , 0 } , { 1 , 0 } , { 2 , 0 } ,
-  { 3 , 0 } , { 3 , 1 } , { 2 , 1 } , { 1 , 1 } , { 0 , 1 } , { 0 , 2 } ,
-  { 0 , 3 } , { 1 , 3 } , { 1 , 2 } , { 2 , 2 } , { 2 , 3 } , { 3 , 3 } };
+				    { 3 , 0 } ,
+				    { 3 , 1 } , { 2 , 1 } , { 1 , 1 } ,
+				    { 0 , 1 } ,
+				    { 0 , 2 } , { 0 , 3 } , { 1 , 3 } ,
+				    { 1 , 2 } ,
+				    { 2 , 2 } , { 2 , 3 } , { 3 , 3 } };
  const auto ex = run( E );
  CHECK( std::find( ex.begin() , ex.end() , path ) != ex.end() );
  std::mt19937 g( 41 );
  for( int trial = 0 ; trial < 300 ; ++trial ) {
   const int n = 1 + int( g() % 4 );
-  if( n * n < 2 ) continue;
+  if( n * n < 2 )
+   continue;
   Grid A( std::size_t( n ) , std::vector< int >( std::size_t( n ) , 0 ) );
   for( auto & row : A )
-   for( auto & x : row ) x = ( g() % 5 ) ? 0 : -1;
+   for( auto & x : row )
+    x = ( g() % 5 ) ? 0 : -1;
   std::vector< int > cells( std::size_t( n ) * n );
   std::iota( cells.begin() , cells.end() , 0 );
   std::shuffle( cells.begin() , cells.end() , g );
@@ -1755,17 +1878,19 @@ ADS_TEST( "backtrack-41" )
   const int F = int( where.size() );
   std::vector< long > Dp( ( std::size_t( 1 ) << F ) * F , 0 );
   auto D = [ & ]( unsigned m , int v ) -> long & {
-   return( Dp[ m * unsigned( F ) + unsigned( v ) ] ); };
+   return( Dp[ m * unsigned( F ) + unsigned( v ) ] );
+   };
   D( 1u << id[ s ] , id[ s ] ) = 1;
   for( unsigned m = 1 ; m < ( 1u << F ) ; ++m )
    for( int v = 0 ; v < F ; ++v ) {
-    if( ! D( m , v ) || ( where[ v ] == t ) ) continue;
+    if( ! D( m , v ) || ( where[ v ] == t ) )
+     continue;
     const int r = where[ v ] / n , c = where[ v ] % n;
     const int dr[] = { 1 , -1 , 0 , 0 } , dc[] = { 0 , 0 , 1 , -1 };
     for( int d = 0 ; d < 4 ; ++d ) {
      const int a = r + dr[ d ] , b = c + dc[ d ];
      if( ( a < 0 ) || ( a >= n ) || ( b < 0 ) || ( b >= n ) ||
-         ( id[ a * n + b ] < 0 ) || ( ( m >> id[ a * n + b ] ) & 1u ) )
+	 ( id[ a * n + b ] < 0 ) || ( ( m >> id[ a * n + b ] ) & 1u ) )
       continue;
      D( m | ( 1u << id[ a * n + b ] ) , id[ a * n + b ] ) += D( m , v );
      }
@@ -1773,12 +1898,12 @@ ADS_TEST( "backtrack-41" )
   const auto got = run( A );
   CHECK( long( got.size() ) == D( ( 1u << F ) - 1 , id[ t ] ) );
   for( const auto & P : got ) {
-   CHECK( ( int( P.size() ) == F ) &&
-          ( P.front() == Cell( s / n , s % n ) ) &&
-          ( P.back() == Cell( t / n , t % n ) ) );
+   CHECK( ( int( P.size() ) == F ) && ( P.front() == Cell( s / n , s % n ) ) &&
+	  ( P.back() == Cell( t / n , t % n ) ) );
    for( std::size_t i = 1 ; i < P.size() ; ++i )
     CHECK( std::abs( P[ i ].first - P[ i - 1 ].first ) +
-           std::abs( P[ i ].second - P[ i - 1 ].second ) == 1 );
+	     std::abs( P[ i ].second - P[ i - 1 ].second ) ==
+	   1 );
    CHECK( std::set< Cell >( P.begin() , P.end() ).size() == P.size() );
    }
   }
@@ -1787,10 +1912,10 @@ ADS_TEST( "backtrack-41" )
  CHECK( run( { { 1 , 0 } , { 0 , 2 } } ).empty() );
  // a corridor (one path), a free cell cut off (no path), two starts, two
  // ends, a value out of -1 .. 2, a matrix not square
- CHECK( run( { { 1 , 0 , 0 } , { -1 , -1 , 0 } , { 2 , 0 , 0 } } ).size() ==
-        1 );
- CHECK( run( { { 1 , 2 , -1 } , { -1 , -1 , -1 } , { -1 , -1 , 0 } } )
-        .empty() );
+ CHECK( run( { { 1 , 0 , 0 } , { -1 , -1 , 0 } ,
+	       { 2 , 0 , 0 } } ).size() == 1 );
+ CHECK( run( { { 1 , 2 , -1 } , { -1 , -1 , -1 } ,
+	       { -1 , -1 , 0 } } ).empty() );
  CHECK_THROWS( run( { { 1 , 1 } , { 0 , 2 } } ) , contract_violation );
  CHECK_THROWS( run( { { 1 , 2 } , { 0 , 2 } } ) , contract_violation );
  CHECK_THROWS( run( { { 1 , 3 } , { 0 , 2 } } ) , contract_violation );
@@ -1811,13 +1936,21 @@ ADS_TEST( "backtrack-42" )
 {
  auto run = []( const std::vector< int > & A , int k ) {
   std::vector< std::vector< int > > out;
-  backtrack::printDistantSets( A , k , [ & ]( const std::vector< int > & S ) {
-   out.push_back( S ); } );
-  return( out ); };
+  backtrack::printDistantSets(
+    A , k , [ & ]( const std::vector< int > & S ) { out.push_back( S ); } );
+  return( out );
+  };
  CHECK( sorted( run( { 2 , 4 , -2 , 5 , 2 } , 2 ) ) ==
-        sorted( std::vector< std::vector< int > >( {
-         {} , { 2 } , { 4 } , { -2 } , { 5 } , { -2 , 2 } , { -2 , 4 } ,
-         { -2 , 5 } , { 2 , 5 } , { -2 , 2 , 5 } } ) ) );
+	sorted( std::vector< std::vector< int > >( { {} ,
+						     { 2 } ,
+						     { 4 } ,
+						     { -2 } ,
+						     { 5 } ,
+						     { -2 , 2 } ,
+						     { -2 , 4 } ,
+						     { -2 , 5 } ,
+						     { 2 , 5 } ,
+						     { -2 , 2 , 5 } } ) ) );
  std::mt19937 g( 42 );
  for( int trial = 0 ; trial < 500 ; ++trial ) {
   const int n = int( g() % 14 ) , k = 1 + int( g() % 3 );
@@ -1832,12 +1965,14 @@ ADS_TEST( "backtrack-42" )
    for( std::size_t i = 0 ; i < S.size() ; ++i )
     for( std::size_t j = i + 1 ; j < S.size() ; ++j )
      ok = ok && ( std::abs( S[ i ] - S[ j ] ) > k );
-   if( ok ) want.push_back( S );
+   if( ok )
+    want.push_back( S );
    }
   std::vector< long > f( std::size_t( m ) + 1 , 1 );  // f[ i ]: v[ 0 .. i )
   for( int i = 1 ; i <= m ; ++i ) {
-   int j = i - 1;                            // the values below v - k
-   while( ( j > 0 ) && ( v[ j - 1 ] >= v[ i - 1 ] - k ) ) --j;
+   int j = i - 1;  // the values below v - k
+   while( ( j > 0 ) && ( v[ j - 1 ] >= v[ i - 1 ] - k ) )
+    --j;
    f[ i ] = f[ i - 1 ] + f[ j ];
    }
   const auto got = run( A , k );
@@ -1846,18 +1981,17 @@ ADS_TEST( "backtrack-42" )
   }
  CHECK( run( {} , 1 ) == std::vector< std::vector< int > >( 1 ) );
  CHECK( sorted( run( { 3 , 3 , 3 } , 1 ) ) ==
-        std::vector< std::vector< int > >( { {} , { 3 } } ) );
+	std::vector< std::vector< int > >( { {} , { 3 } } ) );
  // two values exactly k apart (not more), k + 1 apart, a k above every
  // gap (only the single values), the extremes of int (a gap beyond int)
  CHECK( run( { 0 , 2 } , 2 ).size() == 3 && run( { 0 , 3 } , 2 ).size() == 4 );
  CHECK( run( { 5 , 1 , 9 , -3 } , 1000 ).size() == 1 + 4 );
  const int lo = std::numeric_limits< int >::min() ,
-           hi = std::numeric_limits< int >::max();
+	   hi = std::numeric_limits< int >::max();
  CHECK( run( { hi , lo } , hi ).size() == 4 );
  CHECK( sorted( run( { hi , lo , 0 } , hi ) ) ==
-        sorted( std::vector< std::vector< int > >( { {} , { lo } , { 0 } ,
-                                                      { hi } , { lo , 0 } ,
-                                                      { lo , hi } } ) ) );
+	sorted( std::vector< std::vector< int > >(
+	  { {} , { lo } , { 0 } , { hi } , { lo , 0 } , { lo , hi } } ) ) );
  CHECK_THROWS( run( { 1 } , 0 ) , contract_violation );
  CHECK_THROWS( run( { 1 } , -2 ) , contract_violation );
  }
@@ -1874,21 +2008,25 @@ ADS_TEST( "backtrack-43" )
 {
  auto run = []( int n ) {
   std::vector< std::string > out;
-  backtrack::printZerable( n , [ & ]( const std::string & S ) {
-   out.push_back( S ); } );
-  return( out ); };
+  backtrack::printZerable(
+    n , [ & ]( const std::string & S ) { out.push_back( S ); } );
+  return( out );
+  };
  CHECK( sorted( run( 4 ) ) == words( "0000 0001 0010 0100 1000" ) );
  const long count[] = { 1 , 1 , 4 , 5 , 16 , 22 , 64 , 93 , 256 , 386 };
  for( int n = 1 ; n <= 20 ; ++n ) {
   const auto got = run( n );
   std::uint64_t want = 0;
-  for( int k = 0 ; 2 * k < n ; ++k ) want += binomial( n , k );
+  for( int k = 0 ; 2 * k < n ; ++k )
+   want += binomial( n , k );
   CHECK( got.size() == want );
-  if( n <= 10 ) CHECK( long( got.size() ) == count[ n - 1 ] );
+  if( n <= 10 )
+   CHECK( long( got.size() ) == count[ n - 1 ] );
   if( n <= 14 ) {
    std::vector< std::string > all;
    for( unsigned x = 0 ; x < ( 1u << n ) ; ++x )
-    if( 2 * std::popcount( x ) < n ) all.push_back( bitString( x , n ) );
+    if( 2 * std::popcount( x ) < n )
+     all.push_back( bitString( x , n ) );
    CHECK( sorted( got ) == sorted( all ) );
    }
   }
@@ -1915,32 +2053,42 @@ ADS_TEST( "backtrack-44" )
  auto run = []( const backtrack::Weights & W , int s , int k , int tol ) {
   std::vector< std::vector< int > > out;
   backtrack::printPaths( W , s , k , tol ,
-                         [ & ]( const std::vector< int > & P ) {
-   out.push_back( P ); } );
-  return( out ); };
- enum { S , B , C , D , E , F };            // the arcs read off the figure
+			 [ & ]( const std::vector< int > & P ) {
+   out.push_back( P );
+   } );
+  return( out );
+  };
+ enum { S , B , C , D , E , F };  // the arcs read off the figure
  backtrack::Weights W( 6 , std::vector< int >( 6 , 0 ) );
- W[ S ][ B ] = 4000;  W[ S ][ C ] = 3500;  W[ B ][ D ] = 3000;
- W[ C ][ D ] = 3800;  W[ D ][ E ] = 3000;  W[ D ][ F ] = 3000;
- W[ E ][ S ] = 4500;  W[ F ][ S ] = 4900;  W[ B ][ E ] = 7200;
+ W[ S ][ B ] = 4000;
+ W[ S ][ C ] = 3500;
+ W[ B ][ D ] = 3000;
+ W[ C ][ D ] = 3800;
+ W[ D ][ E ] = 3000;
+ W[ D ][ F ] = 3000;
+ W[ E ][ S ] = 4500;
+ W[ F ][ S ] = 4900;
+ W[ B ][ E ] = 7200;
  W[ C ][ F ] = 3200;
  const auto ex = run( W , S , 15000 , 500 );
- for( const std::vector< int > & p : std::vector< std::vector< int > >( {
-       { S , B , D , F , S } , { S , B , D , E , S } ,
-       { S , C , D , F , S } } ) )
+ for( const std::vector< int > & p : std::vector< std::vector< int > >(
+	{ { S , B , D , F , S } , { S , B , D , E , S } ,
+	  { S , C , D , F , S } } ) )
   CHECK( std::find( ex.begin() , ex.end() , p ) != ex.end() );
  std::mt19937 g( 44 );
  for( int trial = 0 ; trial < 300 ; ++trial ) {
   const int n = 1 + int( g() % 6 ) , s = int( g() % unsigned( n ) );
-  backtrack::Weights R( std::size_t( n ) , std::vector< int >(
-                                                     std::size_t( n ) , 0 ) );
+  backtrack::Weights R( std::size_t( n ) ,
+			std::vector< int >( std::size_t( n ) , 0 ) );
   for( int u = 0 ; u < n ; ++u )
    for( int v = 0 ; v < n ; ++v )
-    if( ( u != v ) && ( g() % 2 ) ) R[ u ][ v ] = 1 + int( g() % 9 );
+    if( ( u != v ) && ( g() % 2 ) )
+     R[ u ][ v ] = 1 + int( g() % 9 );
   const int k = int( g() % 30 ) , tol = int( g() % 4 );
   std::vector< std::vector< int > > want;
   for( auto P : distinctSequences( n , s , n ) ) {
-   if( P.size() < 2 ) continue;
+   if( P.size() < 2 )
+    continue;
    P.push_back( s );
    long len = 0;
    bool ok = true;
@@ -1948,30 +2096,31 @@ ADS_TEST( "backtrack-44" )
     ok = R[ P[ i - 1 ] ][ P[ i ] ] > 0;
     len += R[ P[ i - 1 ] ][ P[ i ] ];
     }
-   if( ok && ( std::abs( len - k ) <= tol ) ) want.push_back( P );
+   if( ok && ( std::abs( len - k ) <= tol ) )
+    want.push_back( P );
    }
   CHECK( sorted( run( R , s , k , tol ) ) == sorted( want ) );
   }
  const backtrack::Weights two = { { 0 , 3 } , { 4 , 0 } };
- CHECK( run( two , 0 , 7 , 0 ) == std::vector< std::vector< int > >( 1 ,
-                                                            { 0 , 1 , 0 } ) );
+ CHECK( run( two , 0 , 7 , 0 ) ==
+	std::vector< std::vector< int > >( 1 , { 0 , 1 , 0 } ) );
  CHECK( run( two , 0 , 9 , 1 ).empty() );
  CHECK( run( backtrack::Weights( 1 , { 0 } ) , 0 , 0 , 5 ).empty() );
  // the bounds k - tol and k + tol included, one beyond excluded; a loop
  // on s is not a closed path (s would repeat at once); k = 0 with a
  // tolerance
- CHECK( run( two , 0 , 5 , 2 ).size() == 1 && run( two , 0 , 9 , 2 ).size()
-        == 1 );
+ CHECK( run( two , 0 , 5 , 2 ).size() == 1 && run( two , 0 , 9 ,
+						   2 ).size() == 1 );
  CHECK( run( two , 0 , 4 , 2 ).empty() && run( two , 0 , 10 , 2 ).empty() );
  CHECK( run( backtrack::Weights( 1 , { 6 } ) , 0 , 6 , 0 ).empty() );
  CHECK( run( two , 0 , 0 , 7 ).size() == 1 );
- CHECK( run( two , 1 , 7 , 0 ) == std::vector< std::vector< int > >( 1 ,
-                                                            { 1 , 0 , 1 } ) );
+ CHECK( run( two , 1 , 7 , 0 ) ==
+	std::vector< std::vector< int > >( 1 , { 1 , 0 , 1 } ) );
  CHECK_THROWS( run( two , 2 , 7 , 0 ) , contract_violation );
  CHECK_THROWS( run( two , -1 , 7 , 0 ) , contract_violation );
  CHECK_THROWS( run( two , 0 , 7 , -1 ) , contract_violation );
  CHECK_THROWS( run( backtrack::Weights( 2 , { 0 } ) , 0 , 7 , 0 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1986,33 +2135,40 @@ ADS_TEST( "backtrack-45" )
 {
  auto run = []( const std::string & type , int m ) {
   std::vector< std::vector< int > > out;
-  backtrack::setlists( type , m , [ & ]( const std::vector< int > & S ) {
-   out.push_back( S ); } );
-  return( out ); };
+  backtrack::setlists(
+    type , m , [ & ]( const std::vector< int > & S ) { out.push_back( S ); } );
+  return( out );
+  };
  std::mt19937 g( 45 );
  for( int trial = 0 ; trial < 300 ; ++trial ) {
   const int n = 1 + int( g() % 6 ) , m = int( g() % unsigned( n + 1 ) );
   std::string type;
-  for( int i = 0 ; i < n ; ++i ) type += "BDLR"[ g() % 4 ];
+  for( int i = 0 ; i < n ; ++i )
+   type += "BDLR"[ g() % 4 ];
   std::vector< std::vector< int > > want;
   long total = 1;
-  for( int i = 0 ; i < m ; ++i ) total *= n;
+  for( int i = 0 ; i < m ; ++i )
+   total *= n;
   for( long code = 0 ; code < total ; ++code ) {
    std::vector< int > S( std::size_t( m ) , 0 );
    long x = code;
-   for( int i = m - 1 ; i >= 0 ; --i , x /= n ) S[ i ] = int( x % n );
-   if( std::set< int >( S.begin() , S.end() ).size() != S.size() ) continue;
+   for( int i = m - 1 ; i >= 0 ; --i , x /= n )
+    S[ i ] = int( x % n );
+   if( std::set< int >( S.begin() , S.end() ).size() != S.size() )
+    continue;
    bool ok = true;
    for( int i = 2 ; i < m ; ++i )
     ok = ok && ! ( ( type[ S[ i ] ] == type[ S[ i - 1 ] ] ) &&
-                   ( type[ S[ i ] ] == type[ S[ i - 2 ] ] ) );
-   if( ok ) want.push_back( S );
+		   ( type[ S[ i ] ] == type[ S[ i - 2 ] ] ) );
+   if( ok )
+    want.push_back( S );
    }
-  CHECK( run( type , m ) == want );           // both lexicographic
+  CHECK( run( type , m ) == want );  // both lexicographic
   }
  for( int m = 0 ; m <= 4 ; ++m ) {
   long want = 1;
-  for( int i = 0 ; i < m ; ++i ) want *= 4 - i;
+  for( int i = 0 ; i < m ; ++i )
+   want *= 4 - i;
   CHECK( long( run( "BDLR" , m ).size() ) == want );
   }
  CHECK( run( "BBB" , 0 ) == std::vector< std::vector< int > >( 1 ) );
@@ -2021,7 +2177,7 @@ ADS_TEST( "backtrack-45" )
  // five songs (the three never consecutive)
  CHECK( run( "" , 0 ) == std::vector< std::vector< int > >( 1 ) );
  CHECK( run( "BBD" , 3 ).size() == 6 );
- CHECK( run( "BBBDD" , 5 ).size() == ( 10 - 3 ) * 6 * 2 );   // no BBB
+ CHECK( run( "BBBDD" , 5 ).size() == ( 10 - 3 ) * 6 * 2 );  // no BBB
  CHECK_THROWS( run( "BD" , 3 ) , contract_violation );
  CHECK_THROWS( run( "BD" , -1 ) , contract_violation );
  }
@@ -2040,37 +2196,44 @@ ADS_TEST( "backtrack-46" )
  auto run = []( const std::string & alphabet , int n , bool fast ) {
   std::vector< std::string > out;
   auto f = [ & ]( const std::string & S ) { out.push_back( S ); };
-  if( fast ) backtrack::noPalindromeFast( alphabet , n , f );
-  else backtrack::noPalindrome( alphabet , n , f );
-  return( out ); };
+  if( fast )
+   backtrack::noPalindromeFast( alphabet , n , f );
+  else
+   backtrack::noPalindrome( alphabet , n , f );
+  return( out );
+  };
  auto palFree = []( const std::string & s ) {
   for( std::size_t i = 0 ; i < s.size() ; ++i )
    for( std::size_t len = 2 ; i + len <= s.size() ; ++len )
     if( std::equal( s.begin() + i , s.begin() + i + len ,
-                    s.rbegin() + ( s.size() - i - len ) ) )
+		    s.rbegin() + ( s.size() - i - len ) ) )
      return( false );
-  return( true ); };
+  return( true );
+  };
  const auto five = words( "abcab acbac bacba bcabc cabca cbacb" );
  CHECK( run( "abc" , 5 , false ) == five && run( "abc" , 5 , true ) == five );
- CHECK( ! palFree( "abbab" ) && ! palFree( "acbc" ) &&
-        palFree( "abcab" ) );
+ CHECK( ! palFree( "abbab" ) && ! palFree( "acbc" ) && palFree( "abcab" ) );
  for( int k = 1 ; k <= 4 ; ++k )
   for( int n = 0 ; n <= 7 ; ++n ) {
-   const std::string alphabet = std::string( "abcd" ).substr( 0 ,
-                                                     std::size_t( k ) );
+   const std::string alphabet =
+     std::string( "abcd" ).substr( 0 , std::size_t( k ) );
    std::vector< std::string > want;
    long total = 1;
-   for( int i = 0 ; i < n ; ++i ) total *= k;
+   for( int i = 0 ; i < n ; ++i )
+    total *= k;
    for( long code = 0 ; code < total ; ++code ) {
     std::string s( std::size_t( n ) , ' ' );
     long x = code;
-    for( int i = n - 1 ; i >= 0 ; --i , x /= k ) s[ i ] = alphabet[ x % k ];
-    if( palFree( s ) ) want.push_back( s );
+    for( int i = n - 1 ; i >= 0 ; --i , x /= k )
+     s[ i ] = alphabet[ x % k ];
+    if( palFree( s ) )
+     want.push_back( s );
     }
    CHECK( run( alphabet , n , false ) == want );
    CHECK( run( alphabet , n , true ) == want );
    long count = n == 0 ? 1 : n == 1 ? k : long( k ) * ( k - 1 );
-   for( int i = 2 ; i < n ; ++i ) count *= k - 2;
+   for( int i = 2 ; i < n ; ++i )
+    count *= k - 2;
    CHECK( long( want.size() ) == count );
    }
  CHECK( run( "abc" , 0 , true ) == std::vector< std::string >( 1 , "" ) );
@@ -2102,24 +2265,28 @@ ADS_TEST( "backtrack-47" )
   std::vector< std::vector< int > > out;
   derangements( A , [ & ]( const std::vector< int > & P ) {
    out.push_back( P );
-   return( false ); } );
-  return( out ); };
- CHECK( run( 3 ) == std::vector< std::vector< int > >( {
-         { 1 , 2 , 0 } , { 2 , 0 , 1 } } ) );
+   return( false );
+   } );
+  return( out );
+  };
+ CHECK( run( 3 ) ==
+	std::vector< std::vector< int > >( { { 1 , 2 , 0 } ,
+					     { 2 , 0 , 1 } } ) );
  const auto three = run( 3 );
  CHECK( std::find( three.begin() , three.end() ,
-                   std::vector< int >( { 0 , 2 , 1 } ) ) == three.end() );
- long d2 = 1 , d1 = 0;                           // D_0 , D_1
+		   std::vector< int >( { 0 , 2 , 1 } ) ) == three.end() );
+ long d2 = 1 , d1 = 0;  // D_0 , D_1
  for( int n = 0 ; n <= 8 ; ++n ) {
   std::vector< int > P( std::size_t( n ) , 0 );
   std::iota( P.begin() , P.end() , 0 );
   std::vector< std::vector< int > > want;
   do {
    bool ok = true;
-   for( int i = 0 ; i < n && ok ; ++i ) ok = P[ i ] != i;
-   if( ok ) want.push_back( P );
-   }
-  while( std::next_permutation( P.begin() , P.end() ) );
+   for( int i = 0 ; i < n && ok ; ++i )
+    ok = P[ i ] != i;
+   if( ok )
+    want.push_back( P );
+   } while( std::next_permutation( P.begin() , P.end() ) );
   const auto got = run( n );
   CHECK( got == want );
   const long D = n == 0 ? 1 : n == 1 ? 0 : ( n - 1 ) * ( d1 + d2 );
@@ -2138,13 +2305,15 @@ ADS_TEST( "backtrack-47" )
   std::vector< std::vector< int > > out;
   const long c = derangements( A , [ & ]( const std::vector< int > & P ) {
    out.push_back( P );
-   return( first ); } );
-  return( std::pair( c , out ) ); };
+   return( first );
+   } );
+  return( std::pair( c , out ) );
+  };
  CHECK( places( { 7 , 7 } , false ).second ==
-        std::vector< std::vector< int > >( 1 , { 7 , 7 } ) );
+	std::vector< std::vector< int > >( 1 , { 7 , 7 } ) );
  CHECK( sorted( places( { 5 , 9 , 2 } , false ).second ) ==
-        sorted( std::vector< std::vector< int > >( { { 9 , 2 , 5 } ,
-                                                      { 2 , 5 , 9 } } ) ) );
+	sorted( std::vector< std::vector< int > >(
+	  { { 9 , 2 , 5 } , { 2 , 5 , 9 } } ) ) );
  CHECK( places( { 0 , 1 , 2 , 3 } , true ).second.size() == 1 );
  }
 

@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- CONSTRUCTION AND DESTRUCTION ----------------------*/
@@ -23,7 +24,7 @@ namespace ADS {
 
 template< class K , class V , class H , class Eq >
 DenseHashMap< K , V , H , Eq >::DenseHashMap( std::size_t n , H h , Eq eq )
- : f_h( std::move( h ) ) , f_eq( std::move( eq ) )
+    : f_h( std::move( h ) ) , f_eq( std::move( eq ) )
 {
  if( n > 0 )
   reserve( n );
@@ -31,16 +32,15 @@ DenseHashMap< K , V , H , Eq >::DenseHashMap( std::size_t n , H h , Eq eq )
 
 template< class K , class V , class H , class Eq >
 DenseHashMap< K , V , H , Eq >::DenseHashMap( const DenseHashMap & o )
- : f_kv( o.f_kv ) , f_h( o.f_h ) , f_eq( o.f_eq )
+    : f_kv( o.f_kv ) , f_h( o.f_h ) , f_eq( o.f_eq )
 {
  if( o.f_cap == 0 )
   return;
  const std::size_t G = o.f_mask + 1;
- f_g.reset( static_cast< Group * >(
-  ::operator new( G * sizeof( Group ) ,
-                  std::align_val_t( alignof( Group ) ) ) ) );
+ f_g.reset( static_cast< Group * >( ::operator new(
+   G * sizeof( Group ) , std::align_val_t( alignof( Group ) ) ) ) );
  std::memcpy( static_cast< void * >( f_g.get() ) , o.f_ctrl ,
-              G * sizeof( Group ) );
+	      G * sizeof( Group ) );
  f_ctrl = f_g.get();
  f_mask = o.f_mask;
  f_cap = o.f_cap;
@@ -51,10 +51,10 @@ DenseHashMap< K , V , H , Eq >::DenseHashMap( const DenseHashMap & o )
 
 template< class K , class V , class H , class Eq >
 DenseHashMap< K , V , H , Eq >::DenseHashMap( DenseHashMap && o ) noexcept
- : f_kv( std::move( o.f_kv ) ) , f_g( std::move( o.f_g ) ) ,
-   f_ctrl( o.f_ctrl ) , f_mask( o.f_mask ) , f_cap( o.f_cap ) ,
-   f_shift( o.f_shift ) , f_max( o.f_max ) , f_deleted( o.f_deleted ) ,
-   f_h( std::move( o.f_h ) ) , f_eq( std::move( o.f_eq ) )
+    : f_kv( std::move( o.f_kv ) ) , f_g( std::move( o.f_g ) ) ,
+      f_ctrl( o.f_ctrl ) , f_mask( o.f_mask ) , f_cap( o.f_cap ) ,
+      f_shift( o.f_shift ) , f_max( o.f_max ) , f_deleted( o.f_deleted ) ,
+      f_h( std::move( o.f_h ) ) , f_eq( std::move( o.f_eq ) )
 {
  o.f_kv.clear();
  o.f_ctrl = s_none;
@@ -87,11 +87,11 @@ void DenseHashMap< K , V , H , Eq >::swap( DenseHashMap & o ) noexcept
  }
 
 template< class K , class V , class H , class Eq >
-void DenseHashMap< K , V , H , Eq >::Free::operator()( Group * g ) const
- noexcept
+void DenseHashMap< K , V , H , Eq >::Free::operator()(
+  Group * g ) const noexcept
 {
  ::operator delete( static_cast< void * >( g ) ,
-                    std::align_val_t( alignof( Group ) ) );
+		    std::align_val_t( alignof( Group ) ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -105,8 +105,7 @@ DenseHashMap< K , V , H , Eq >::mix( const K & k ) const
  if constexpr( AVALANCHING )
   return( std::uint64_t( f_h( k ) ) );
  else
-  return( detail::mulx( std::uint64_t( f_h( k ) ) ,
-                        0x9e3779b97f4a7c15ULL ) );
+  return( detail::mulx( std::uint64_t( f_h( k ) ) , 0x9e3779b97f4a7c15ULL ) );
  }
 
 template< class K , class V , class H , class Eq >
@@ -129,18 +128,20 @@ DenseHashMap< K , V , H , Eq >::match( const Group & c , std::uint32_t t )
 {
 #if ADS_FLAT_SIMD == 1
  const __m128i w =
-  _mm_load_si128( reinterpret_cast< const __m128i * >( c.c ) );
+   _mm_load_si128( reinterpret_cast< const __m128i * >( c.c ) );
  return( Mask( _mm_movemask_epi8(
-          _mm_cmpeq_epi8( w , _mm_set1_epi32( int( t ) ) ) ) ) & PLACES );
+	    _mm_cmpeq_epi8( w , _mm_set1_epi32( int( t ) ) ) ) ) &
+	  PLACES );
 #elif ADS_FLAT_SIMD == 2
- static constexpr std::uint8_t b[ 16 ] = { 1 , 2 , 4 , 8 , 16 , 32 , 64 ,
-                                           128 , 1 , 2 , 4 , 8 , 16 , 32 ,
-                                           64 , 128 };
- const uint8x16_t e = vandq_u8( vceqq_u8( vld1q_u8( c.c ) ,
-                                vdupq_n_u8( std::uint8_t( t ) ) ) ,
-                                vld1q_u8( b ) );
+ static constexpr std::uint8_t b[ 16 ] = { 1 , 2 , 4 , 8 , 16 , 32 , 64 , 128 ,
+					   1 , 2 , 4 , 8 , 16 , 32 , 64 ,
+					   128 };
+ const uint8x16_t e =
+   vandq_u8( vceqq_u8( vld1q_u8( c.c ) , vdupq_n_u8( std::uint8_t( t ) ) ) ,
+	     vld1q_u8( b ) );
  return( ( Mask( vaddv_u8( vget_low_u8( e ) ) ) |
-           ( Mask( vaddv_u8( vget_high_u8( e ) ) ) << 8 ) ) & PLACES );
+	    ( Mask( vaddv_u8( vget_high_u8( e ) ) ) << 8 ) ) &
+	  PLACES );
 #else
  // the bytes 0 to 7 and 8 to 15 as two words, the byte j in the bits 8 j
  // to 8 j + 7; a byte equal to t is 0 in w ^ b, whose low 7 bits plus
@@ -169,21 +170,24 @@ DenseHashMap< K , V , H , Eq >::empties( const Group & c )
 
 template< class K , class V , class H , class Eq >
 ADS_FLAT_INLINE void DenseHashMap< K , V , H , Eq >::vacate( Group & c ,
-                                                             std::size_t j )
+							  std::size_t j )
 {
 #if ADS_FLAT_SIMD == 1
  const __m128i w = _mm_load_si128( reinterpret_cast< __m128i * >( c.c ) ) ,
-               at = _mm_cmpeq_epi8( _mm_setr_epi8( 0 , 1 , 2 , 3 , 4 , 5 ,
-                                     6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 ,
-                                     15 ) , _mm_set1_epi8( char( j ) ) );
+	       at = _mm_cmpeq_epi8( _mm_setr_epi8( 0 , 1 , 2 , 3 , 4 , 5 , 6 ,
+						   7 , 8 ,
+						   9 , 10 , 11 , 12 , 13 , 14 ,
+						   15 ) ,
+				    _mm_set1_epi8( char( j ) ) );
  _mm_store_si128( reinterpret_cast< __m128i * >( c.c ) ,
-                  _mm_andnot_si128( at , w ) );
+		  _mm_andnot_si128( at , w ) );
 #elif ADS_FLAT_SIMD == 2
- static constexpr std::uint8_t iota[ 16 ] = { 0 , 1 , 2 , 3 , 4 , 5 , 6 ,
-                                              7 , 8 , 9 , 10 , 11 , 12 , 13 ,
-                                              14 , 15 };
- const uint8x16_t at = vceqq_u8( vld1q_u8( iota ) ,
-                                 vdupq_n_u8( std::uint8_t( j ) ) );
+ static constexpr std::uint8_t iota[ 16 ] = { 0 , 1 , 2 ,  3 ,  4 ,  5 ,  6 ,
+					      7 ,
+					      8 , 9 , 10 , 11 , 12 , 13 , 14 ,
+					      15 };
+ const uint8x16_t at =
+   vceqq_u8( vld1q_u8( iota ) , vdupq_n_u8( std::uint8_t( j ) ) );
  vst1q_u8( c.c , vbicq_u8( vld1q_u8( c.c ) , at ) );
 #else
  c.c[ j ] = EMPTY;
@@ -206,7 +210,7 @@ DenseHashMap< K , V , H , Eq >::locate( std::uint64_t x , const K & k ) const
    return( p );
   }
  if( ! ( c.c[ OVER ] & bit( x ) ) ) [[likely]]
-  return( ~std::size_t( 0 ) );              // no key of x went past g
+  return( ~std::size_t( 0 ) );  // no key of x went past g
  const auto [ h , j ] = further( x , g , k );
  return( h == ~std::size_t( 0 ) ? h : f_ctrl[ h ].at[ j ] );
  }
@@ -214,7 +218,7 @@ DenseHashMap< K , V , H , Eq >::locate( std::uint64_t x , const K & k ) const
 template< class K , class V , class H , class Eq >
 std::pair< std::size_t , std::size_t >
 DenseHashMap< K , V , H , Eq >::further( std::uint64_t x , std::size_t g ,
-                                         KeyArg k ) const
+				      KeyArg k ) const
 {
  const std::uint32_t t = detail::flatTags[ x & 0xFF ];
  for( std::size_t i = 1 ; i <= f_mask ; ++i ) {
@@ -228,8 +232,7 @@ DenseHashMap< K , V , H , Eq >::further( std::uint64_t x , std::size_t g ,
   if( ! ( c.c[ OVER ] & bit( x ) ) )
    break;
   }
- return( std::pair< std::size_t , std::size_t >( ~std::size_t( 0 ) ,
-                                                 0 ) );
+ return( std::pair< std::size_t , std::size_t >( ~std::size_t( 0 ) , 0 ) );
  }
 
 template< class K , class V , class H , class Eq >
@@ -239,14 +242,14 @@ std::size_t DenseHashMap< K , V , H , Eq >::claim( std::uint64_t x )
  for( std::size_t i = 1 ; ; ++i ) {
   if( const Mask m = empties( f_ctrl[ g ] ) )
    return( g * 16 + std::size_t( std::countr_zero( m ) ) );
-  f_ctrl[ g ].c[ OVER ] |= bit( x );        // x goes past g
+  f_ctrl[ g ].c[ OVER ] |= bit( x );  // x goes past g
   g = ( g + i ) & f_mask;
   }
  }
 
 template< class K , class V , class H , class Eq >
 std::uint32_t & DenseHashMap< K , V , H , Eq >::holder( std::uint64_t x ,
-                                                         std::size_t p )
+						     std::size_t p )
 {
  // the place whose position is p, by the inspection of x: no key compared
  const std::uint32_t t = detail::flatTags[ x & 0xFF ];
@@ -295,52 +298,50 @@ DenseHashMap< K , V , H , Eq >::contains( const K & k ) const
  }
 
 template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE bool
-DenseHashMap< K , V , H , Eq >::insert( const K & k , const V & v )
+ADS_FLAT_INLINE bool DenseHashMap< K , V , H , Eq >::insert( const K & k ,
+							  const V & v )
 {
  return( put( k , v ) );
  }
 
 template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE bool
-DenseHashMap< K , V , H , Eq >::insert( K && k , V && v )
+ADS_FLAT_INLINE bool DenseHashMap< K , V , H , Eq >::insert( K && k , V && v )
 {
  return( put( std::move( k ) , std::move( v ) ) );
  }
 
 template< class K , class V , class H , class Eq >
 template< class KK , class VV >
-ADS_FLAT_INLINE bool
-DenseHashMap< K , V , H , Eq >::put( KK && k , VV && v )
+ADS_FLAT_INLINE bool DenseHashMap< K , V , H , Eq >::put( KK && k , VV && v )
 {
- return( place< true >( std::forward< KK >( k ) ,
-                        std::forward< VV >( v ) ).second );
+ return(
+   place< true >( std::forward< KK >( k ) , std::forward< VV >( v ) ).second );
  }
 
 template< class K , class V , class H , class Eq >
-template< class ... A >
+template< class... A >
 ADS_FLAT_INLINE std::pair< V * , bool >
-DenseHashMap< K , V , H , Eq >::try_emplace( const K & k , A && ... a )
+DenseHashMap< K , V , H , Eq >::try_emplace( const K & k , A &&... a )
 {
  return( place< false >( k , std::forward< A >( a )... ) );
  }
 
 template< class K , class V , class H , class Eq >
-template< class ... A >
+template< class... A >
 ADS_FLAT_INLINE std::pair< V * , bool >
-DenseHashMap< K , V , H , Eq >::try_emplace( K && k , A && ... a )
+DenseHashMap< K , V , H , Eq >::try_emplace( K && k , A &&... a )
 {
  return( place< false >( std::move( k ) , std::forward< A >( a )... ) );
  }
 
 template< class K , class V , class H , class Eq >
-template< bool Assign , class KK , class ... A >
+template< bool Assign , class KK , class... A >
 ADS_FLAT_INLINE std::pair< V * , bool >
-DenseHashMap< K , V , H , Eq >::place( KK && k , A && ... a )
+DenseHashMap< K , V , H , Eq >::place( KK && k , A &&... a )
 {
  const std::uint64_t x = mix( k );
- if( const std::size_t p = locate( x , k ) ; p != ~std::size_t( 0 ) ) {
-  if constexpr( Assign )                     // replaced in place
+ if( const std::size_t p = locate( x , k ); p != ~std::size_t( 0 ) ) {
+  if constexpr( Assign )  // replaced in place
    ( ( f_kv[ p ].second = std::forward< A >( a ) ) , ... );
   ADS_INVARIANT( consistent( x ) );
   return( std::pair< V * , bool >( &f_kv[ p ].second , false ) );
@@ -350,12 +351,12 @@ DenseHashMap< K , V , H , Eq >::place( KK && k , A && ... a )
   grow();
  // the pair first, so that an exception leaves the index as it was
  f_kv.emplace_back( std::piecewise_construct ,
-                    std::forward_as_tuple( std::forward< KK >( k ) ) ,
-                    std::forward_as_tuple( std::forward< A >( a )... ) );
+		    std::forward_as_tuple( std::forward< KK >( k ) ) ,
+		    std::forward_as_tuple( std::forward< A >( a )... ) );
  const std::size_t g = home( x );
  const Mask e = empties( f_ctrl[ g ] );
- const std::size_t i = e ? g * 16 + std::size_t( std::countr_zero( e ) )
-                         : claim( x );
+ const std::size_t i =
+   e ? g * 16 + std::size_t( std::countr_zero( e ) ) : claim( x );
  Group & c = f_ctrl[ i / 16 ];
  // a place counted, by no branch past the test of the bound, 0 with no
  // removals [see FlatHashTable.tpp]
@@ -378,8 +379,7 @@ bool DenseHashMap< K , V , H , Eq >::remove( const K & k )
  Group & c = f_ctrl[ g ];
  const std::uint8_t over = c.c[ OVER ];
  for( Mask m = match( c , detail::flatTags[ x & 0xFF ] ) ; m ; m &= m - 1 ) {
-  const std::size_t j = std::size_t( std::countr_zero( m ) ) ,
-                    p = c.at[ j ];
+  const std::size_t j = std::size_t( std::countr_zero( m ) ) , p = c.at[ j ];
   if( f_eq( f_kv[ p ].first , k ) ) [[likely]] {
    unlink( c , j , p );
    ADS_POST( locate( x , k ) == ~std::size_t( 0 ) );
@@ -400,12 +400,12 @@ bool DenseHashMap< K , V , H , Eq >::remove( const K & k )
 
 template< class K , class V , class H , class Eq >
 void DenseHashMap< K , V , H , Eq >::unlink( Group & c , std::size_t j ,
-                                             std::size_t p )
+					  std::size_t p )
 {
  vacate( c , j );
- ++f_deleted;                               // a bound, see recount()
+ ++f_deleted;  // a bound, see recount()
  const std::size_t last = f_kv.size() - 1;
- if( p != last ) {                          // the last pair into p
+ if( p != last ) {  // the last pair into p
   holder( mix( f_kv[ last ].first ) , last ) = std::uint32_t( p );
   f_kv[ p ] = std::move( f_kv[ last ] );
   }
@@ -439,7 +439,7 @@ double DenseHashMap< K , V , H , Eq >::load( void ) const
 template< class K , class V , class H , class Eq >
 std::size_t DenseHashMap< K , V , H , Eq >::deleted( void ) const
 {
- std::size_t d = 0;                         // the empty places counted
+ std::size_t d = 0;  // the empty places counted
  for( std::size_t g = 0 ; f_cap && ( g <= f_mask ) ; ++g )
   if( f_ctrl[ g ].c[ OVER ] )
    d += std::size_t( std::popcount( empties( f_ctrl[ g ] ) ) );
@@ -468,7 +468,7 @@ void DenseHashMap< K , V , H , Eq >::clear( void )
  f_kv.clear();
  if( f_cap )
   std::memset( static_cast< void * >( f_ctrl ) , 0 ,
-               ( f_mask + 1 ) * sizeof( Group ) );
+	       ( f_mask + 1 ) * sizeof( Group ) );
  f_deleted = 0;
  }
 
@@ -481,8 +481,7 @@ void DenseHashMap< K , V , H , Eq >::forEach( F && f ) const
  }
 
 template< class K , class V , class H , class Eq >
-const std::pair< K , V > * DenseHashMap< K , V , H , Eq >::data( void )
- const
+const std::pair< K , V > * DenseHashMap< K , V , H , Eq >::data( void ) const
 {
  return( f_kv.data() );
  }
@@ -501,9 +500,8 @@ void DenseHashMap< K , V , H , Eq >::grow( void )
 template< class K , class V , class H , class Eq >
 void DenseHashMap< K , V , H , Eq >::rebuild( std::size_t G )
 {
- std::unique_ptr< Group[] , Free > g( static_cast< Group * >(
-  ::operator new( G * sizeof( Group ) ,
-                  std::align_val_t( alignof( Group ) ) ) ) );
+ std::unique_ptr< Group[] , Free > g( static_cast< Group * >( ::operator new(
+   G * sizeof( Group ) , std::align_val_t( alignof( Group ) ) ) ) );
  Group * const c = g.get();
  std::memset( static_cast< void * >( c ) , 0 , G * sizeof( Group ) );
  const int shift = 64 - std::countr_zero( G );
@@ -514,7 +512,7 @@ void DenseHashMap< K , V , H , Eq >::rebuild( std::size_t G )
   const std::uint64_t x = mix( f_kv[ p ].first );
   std::size_t h = std::size_t( x >> shift );
   for( std::size_t r = 1 ; n[ h ] == SLOTS ; ++r ) {
-   c[ h ].c[ OVER ] |= bit( x );            // x goes past h
+   c[ h ].c[ OVER ] |= bit( x );  // x goes past h
    h = ( h + r ) & ( G - 1 );
    }
   c[ h ].c[ n[ h ] ] = std::uint8_t( detail::flatTags[ x & 0xFF ] );
@@ -587,7 +585,7 @@ bool DenseHashMap< K , V , H , Eq >::consistent( std::uint64_t x ) const
    }
   return( true );
   }
- std::vector< char > held( n , 0 );         // each position exactly once
+ std::vector< char > held( n , 0 );  // each position exactly once
  std::size_t full = 0;
  for( std::size_t g = 0 ; g <= f_mask ; ++g )
   for( Mask m = fulls( g ) ; m ; m &= m - 1 ) {

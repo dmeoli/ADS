@@ -75,10 +75,12 @@
 using namespace ADS;
 using ADS::bench::Options;
 
-namespace {
+namespace
+{
 
 /// a network: its nodes, the source, the sink and the arcs ( u , v , c )
-struct Net {
+struct Net
+{
  int n = 0 , s = 0 , t = 0;
  std::vector< std::tuple< int , int , long long > > A;
  };
@@ -93,7 +95,7 @@ Net randomNet( int n , unsigned seed )
  N.t = n - 1;
  while( int( N.A.size() ) < 4 * n ) {
   const int u = int( g() % std::uint64_t( n ) ) ,
-            v = int( g() % std::uint64_t( n ) );
+	    v = int( g() % std::uint64_t( n ) );
   if( u != v )
    N.A.emplace_back( u , v , 1 + static_cast< long long >( g() % 1000 ) );
   }
@@ -110,7 +112,8 @@ Net gridNet( int n , unsigned seed )
  N.s = k * k;
  N.t = k * k + 1;
  auto cap = [ & ]( long long hi ) {
-  return( static_cast< long long >( g() % std::uint64_t( hi ) ) ); };
+  return( static_cast< long long >( g() % std::uint64_t( hi ) ) );
+  };
  for( int i = 0 ; i < k ; ++i )
   for( int j = 0 ; j < k ; ++j ) {
    const int p = i * k + j;
@@ -139,7 +142,8 @@ std::pair< FlowNetwork , std::vector< int > > adsNet( const Net & N )
 
 #ifdef ADS_LEMON_FLOW
 /// the network of LEMON
-struct LemonNet {
+struct LemonNet
+{
  lemon::SmartDigraph g;
  lemon::SmartDigraph::ArcMap< long long > cap{ g };
  std::vector< lemon::SmartDigraph::Arc > arc;
@@ -159,8 +163,8 @@ struct LemonNet {
 
  long long run( void ) {
   lemon::Preflow< lemon::SmartDigraph ,
-                  lemon::SmartDigraph::ArcMap< long long > > p( g , cap , s ,
-                                                                 t );
+		  lemon::SmartDigraph::ArcMap< long long > >
+    p( g , cap , s , t );
   p.run();
   return( p.flowValue() );
   }
@@ -169,15 +173,19 @@ struct LemonNet {
 
 #ifdef ADS_BOOST_FLOW
 /// the network of Boost, each arc with its reverse of capacity 0
-struct BoostNet {
- using Traits = boost::adjacency_list_traits< boost::vecS , boost::vecS ,
-                                              boost::directedS >;
- using G = boost::adjacency_list< boost::vecS , boost::vecS ,
-           boost::directedS , boost::no_property ,
-           boost::property< boost::edge_capacity_t , long long ,
-           boost::property< boost::edge_residual_capacity_t , long long ,
-           boost::property< boost::edge_reverse_t ,
-                            Traits::edge_descriptor > > > >;
+struct BoostNet
+{
+ using Traits =
+   boost::adjacency_list_traits< boost::vecS , boost::vecS ,
+				 boost::directedS >;
+ using G = boost::adjacency_list<
+   boost::vecS , boost::vecS , boost::directedS , boost::no_property ,
+   boost::property<
+     boost::edge_capacity_t , long long ,
+     boost::property<
+       boost::edge_residual_capacity_t , long long ,
+       boost::property< boost::edge_reverse_t ,
+			Traits::edge_descriptor > > > >;
  G g;
  std::vector< Traits::edge_descriptor > arc;
  int s , t;
@@ -196,9 +204,7 @@ struct BoostNet {
    }
   }
 
- long long run( void ) {
-  return( boost::push_relabel_max_flow( g , s , t ) );
-  }
+ long long run( void ) { return( boost::push_relabel_max_flow( g , s , t ) ); }
 
  void setCapacity( int i , long long c ) {
   boost::get( boost::edge_capacity , g )[ arc[ i ] ] = c;
@@ -209,15 +215,15 @@ struct BoostNet {
 /// a cell of one structure: its preparation and its work, ops of them
 template< class P , class W >
 void cell( const char * bench , const char * c , int n ,
-           const std::string & who , int r , std::size_t ops , P && prepare ,
-           W && work )
+	   const std::string & who ,
+	   int r , std::size_t ops , P && prepare , W && work )
 {
  for( int twice = 0 ; twice < 2 ; ++twice ) {
   const std::string w = who + ( twice ? " A/A" : "" );
   if( ADS::bench::skip( w ) )
    continue;
   ADS::bench::print( bench , c , std::size_t( n ) , w ,
-                     ADS::bench::median( prepare , work , r , ops ) );
+		     ADS::bench::median( prepare , work , r , ops ) );
   }
  }
 
@@ -226,30 +232,39 @@ void flows( const char * c , const Net & N , int n , int r , unsigned seed )
 {
  const std::size_t m = N.A.size();
  // from scratch
- cell( "flow" , c , n , "ADS push-relabel" , r , m ,
-       [ & ]( void ) { return( adsNet( N ) ); } ,
-       [ & ]( auto & F ) {
-        ADS::bench::sink = std::uint64_t( F.first.maxFlow( N.s , N.t ,
-                                          Augment::PUSH_RELABEL ) ); } );
+ cell(
+   "flow" , c , n , "ADS push-relabel" , r , m ,
+   [ & ]( void ) { return( adsNet( N ) ); } ,
+   [ & ]( auto & F ) {
+    ADS::bench::sink =
+      std::uint64_t( F.first.maxFlow( N.s , N.t , Augment::PUSH_RELABEL ) );
+    } );
  if( ! ADS::bench::skip( "ADS Dinic" ) )
-  ADS::bench::print( "flow" , c , std::size_t( n ) , "ADS Dinic" ,
-   ADS::bench::median( [ & ]( void ) { return( adsNet( N ) ); } ,
-                       [ & ]( auto & F ) {
-    ADS::bench::sink = std::uint64_t( F.first.maxFlow( N.s , N.t ,
-                                      Augment::DINIC ) ); } , r , m ) );
+  ADS::bench::print(
+    "flow" , c , std::size_t( n ) , "ADS Dinic" ,
+    ADS::bench::median( [ & ]( void ) { return( adsNet( N ) ); } ,
+			[ & ]( auto & F ) {
+			 ADS::bench::sink = std::uint64_t(
+			   F.first.maxFlow( N.s , N.t , Augment::DINIC ) );
+			 } ,
+			r , m ) );
 #ifdef ADS_LEMON_FLOW
  if( ! ADS::bench::skip( "LEMON Preflow" ) )
-  ADS::bench::print( "flow" , c , std::size_t( n ) , "LEMON Preflow" ,
-   ADS::bench::median( [ & ]( void ) {
-    return( std::make_unique< LemonNet >( N ) ); } , [ & ]( auto & L ) {
-    ADS::bench::sink = std::uint64_t( L->run() ); } , r , m ) );
+  ADS::bench::print(
+    "flow" , c , std::size_t( n ) , "LEMON Preflow" ,
+    ADS::bench::median(
+      [ & ]( void ) { return( std::make_unique< LemonNet >( N ) ); } ,
+      [ & ]( auto & L ) { ADS::bench::sink = std::uint64_t( L->run() ); } , r ,
+      m ) );
 #endif
 #ifdef ADS_BOOST_FLOW
  if( ! ADS::bench::skip( "Boost push-relabel" ) )
-  ADS::bench::print( "flow" , c , std::size_t( n ) , "Boost push-relabel" ,
-   ADS::bench::median( [ & ]( void ) {
-    return( std::make_unique< BoostNet >( N ) ); } , [ & ]( auto & B ) {
-    ADS::bench::sink = std::uint64_t( B->run() ); } , r , m ) );
+  ADS::bench::print(
+    "flow" , c , std::size_t( n ) , "Boost push-relabel" ,
+    ADS::bench::median(
+      [ & ]( void ) { return( std::make_unique< BoostNet >( N ) ); } ,
+      [ & ]( auto & B ) { ADS::bench::sink = std::uint64_t( B->run() ); } , r ,
+      m ) );
 #endif
 
  // from the flow there is, after each change
@@ -259,54 +274,64 @@ void flows( const char * c , const Net & N , int n , int r , unsigned seed )
  for( auto & x : C ) {
   x.first = int( g() % m );
   x.second = static_cast< long long >(
-             g() % std::uint64_t( std::get< 2 >( N.A[ x.first ] ) + 50 ) );
+    g() % std::uint64_t( std::get< 2 >( N.A[ x.first ] ) + 50 ) );
   }
  const std::vector< std::pair< int , long long > > C16( C.begin() ,
-                                                        C.begin() + 16 );
- ( void ) C16;
+						       C.begin() + 16 );
+ ( void )C16;
  for( Augment how : { Augment::PUSH_RELABEL , Augment::DINIC } ) {
-  const std::string who = how == Augment::PUSH_RELABEL ?
-                          "ADS warm push-relabel" : "ADS warm Dinic";
+  const std::string who =
+    how == Augment::PUSH_RELABEL ? "ADS warm push-relabel" : "ADS warm Dinic";
   auto work = [ & ]( auto & F ) {
    std::uint64_t h = 0;
    for( const auto & [ i , cap ] : C ) {
     F.first.setCapacity( F.second[ i ] , cap );
     h += std::uint64_t( F.first.maxFlow( N.s , N.t , how ) );
     }
-   ADS::bench::sink = h; };
+   ADS::bench::sink = h;
+   };
   auto prepare = [ & ]( void ) {
    auto F = adsNet( N );
    F.first.maxFlow( N.s , N.t , how );
-   return( F ); };
+   return( F );
+   };
   if( how == Augment::PUSH_RELABEL )
    cell( "warm" , c , n , who , r , k , prepare , work );
   else if( ! ADS::bench::skip( who ) )
    ADS::bench::print( "warm" , c , std::size_t( n ) , who ,
-                      ADS::bench::median( prepare , work , r , k ) );
+		      ADS::bench::median( prepare , work , r , k ) );
   }
 #ifdef ADS_LEMON_FLOW
  if( ! ADS::bench::skip( "LEMON Preflow" ) )
-  ADS::bench::print( "warm" , c , std::size_t( n ) , "LEMON Preflow" ,
-   ADS::bench::median( [ & ]( void ) {
-    return( std::make_unique< LemonNet >( N ) ); } , [ & ]( auto & L ) {
-    std::uint64_t h = 0;
-    for( const auto & [ i , cap ] : C16 ) {
-     L->cap[ L->arc[ i ] ] = cap;
-     h += std::uint64_t( L->run() );
-     }
-    ADS::bench::sink = h; } , r , C16.size() ) );
+  ADS::bench::print(
+    "warm" , c , std::size_t( n ) , "LEMON Preflow" ,
+    ADS::bench::median(
+      [ & ]( void ) { return( std::make_unique< LemonNet >( N ) ); } ,
+      [ & ]( auto & L ) {
+       std::uint64_t h = 0;
+       for( const auto & [ i , cap ] : C16 ) {
+	L->cap[ L->arc[ i ] ] = cap;
+	h += std::uint64_t( L->run() );
+        }
+       ADS::bench::sink = h;
+       } ,
+      r , C16.size() ) );
 #endif
 #ifdef ADS_BOOST_FLOW
  if( ! ADS::bench::skip( "Boost push-relabel" ) )
-  ADS::bench::print( "warm" , c , std::size_t( n ) , "Boost push-relabel" ,
-   ADS::bench::median( [ & ]( void ) {
-    return( std::make_unique< BoostNet >( N ) ); } , [ & ]( auto & B ) {
-    std::uint64_t h = 0;
-    for( const auto & [ i , cap ] : C16 ) {
-     B->setCapacity( i , cap );
-     h += std::uint64_t( B->run() );
-     }
-    ADS::bench::sink = h; } , r , C16.size() ) );
+  ADS::bench::print(
+    "warm" , c , std::size_t( n ) , "Boost push-relabel" ,
+    ADS::bench::median(
+      [ & ]( void ) { return( std::make_unique< BoostNet >( N ) ); } ,
+      [ & ]( auto & B ) {
+       std::uint64_t h = 0;
+       for( const auto & [ i , cap ] : C16 ) {
+	B->setCapacity( i , cap );
+	h += std::uint64_t( B->run() );
+        }
+       ADS::bench::sink = h;
+       } ,
+      r , C16.size() ) );
 #endif
  }
 

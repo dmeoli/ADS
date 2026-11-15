@@ -41,7 +41,7 @@
 
 #ifndef __ADS_GraphBuilder
  #define __ADS_GraphBuilder
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -60,7 +60,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS GraphBuilder ---------------------------*/
@@ -69,12 +70,12 @@ namespace ADS {
 /// the nodes and the edges of a graph collected one at a time, then frozen
 /// into a `StaticGraph` or an `ArrayGraph`
 template< class W = std::monostate >
-class GraphBuilder {
+class GraphBuilder
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Weight = W;   ///< the type of the weights
+ using Weight = W;  ///< the type of the weights
 
  /// an edge \f$ ( u , v ) \f$ of weight \f$ w \f$
  using Edge = std::tuple< int , int , W >;
@@ -136,10 +137,9 @@ class GraphBuilder {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- bool f_directed;             ///< oriented or not
- int f_n;                     ///< the number of nodes
- std::vector< Edge > f_E;     ///< the edges, in the order of insertion
+ bool f_directed;          ///< oriented or not
+ int f_n;                  ///< the number of nodes
+ std::vector< Edge > f_E;  ///< the edges, in the order of insertion
 
  };  // end( class GraphBuilder )
 
@@ -155,7 +155,7 @@ class GraphBuilder {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* GraphBuilder.h included */
+#endif /* GraphBuilder.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File GraphBuilder.h -------------------------*/

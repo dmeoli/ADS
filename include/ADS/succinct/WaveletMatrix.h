@@ -78,7 +78,7 @@
 
 #ifndef __ADS_WaveletMatrix
  #define __ADS_WaveletMatrix
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -103,7 +103,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS WaveletMatrix --------------------------*/
@@ -111,11 +112,11 @@ namespace ADS {
 
 /// a static sequence of integers of \f$ w \f$ bits with access, rank, select
 /// and the range quantiles in \f$ O( w ) \f$ time
-class WaveletMatrix {
+class WaveletMatrix
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty sequence
  WaveletMatrix( void ) = default;
 
@@ -194,17 +195,17 @@ class WaveletMatrix {
  /// the sequence \f$ x \f$ of items of 8, 16 or 32 bits, which the
  /// construction reads as they are, as `WaveletMatrix( x , w )` above
  template< class U >
- requires( std::is_same_v< U , std::uint8_t > ||
-           std::is_same_v< U , std::uint16_t > ||
-           std::is_same_v< U , std::uint32_t > )
+  requires( std::is_same_v< U , std::uint8_t > ||
+	    std::is_same_v< U , std::uint16_t > ||
+	    std::is_same_v< U , std::uint32_t > )
  explicit WaveletMatrix( std::span< const U > x , int w = 0 );
 
  /// the sequence \f$ x \f$ of items of 8, 16 or 32 bits on the threads of
  /// `ex`, as `WaveletMatrix( ex , x , w )` above
  template< Executor E , class U >
- requires( std::is_same_v< U , std::uint8_t > ||
-           std::is_same_v< U , std::uint16_t > ||
-           std::is_same_v< U , std::uint32_t > )
+  requires( std::is_same_v< U , std::uint8_t > ||
+	    std::is_same_v< U , std::uint16_t > ||
+	    std::is_same_v< U , std::uint32_t > )
  WaveletMatrix( E & ex , std::span< const U > x , int w = 0 );
 
  /// the number of items
@@ -304,7 +305,7 @@ class WaveletMatrix {
  /// \f]
  /// \pre \f$ i \le j \le \mathrm{size}() \f$ and \f$ k < j - i \f$
  [[nodiscard]] std::uint64_t quantile( std::size_t i , std::size_t j ,
-                                       std::size_t k ) const;
+				       std::size_t k ) const;
 
  /// the number of the items below \f$ c \f$ in the places \f$ [ i , j ) \f$
  ///
@@ -327,21 +328,21 @@ class WaveletMatrix {
  /// \f]
  /// \pre \f$ i \le j \le \mathrm{size}() \f$
  [[nodiscard]] std::size_t countLess( std::size_t i , std::size_t j ,
-                                      std::uint64_t c ) const;
+				      std::uint64_t c ) const;
 
  /// the bits of the levels and of their directories
  [[nodiscard]] std::size_t sizeInBits( void ) const;
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
- using value_type = std::uint64_t;            ///< the type of an item
- using size_type = std::size_t;               ///< the type of a size
- using difference_type = std::ptrdiff_t;      ///< the type of a distance
- using reference = std::uint64_t;             ///< an item, by value
- using const_reference = std::uint64_t;       ///< an item, by value
+ using value_type = std::uint64_t;        ///< the type of an item
+ using size_type = std::size_t;           ///< the type of a size
+ using difference_type = std::ptrdiff_t;  ///< the type of a distance
+ using reference = std::uint64_t;         ///< an item, by value
+ using const_reference = std::uint64_t;   ///< an item, by value
  /// an iterator on the items, by `access()`
  using const_iterator = SubscriptIterator< WaveletMatrix , std::uint64_t >;
- using iterator = const_iterator;             ///< the items are read only
+ using iterator = const_iterator;  ///< the items are read only
 
  /// the first item
  [[nodiscard]] const_iterator begin( void ) const {
@@ -358,7 +359,6 @@ class WaveletMatrix {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the bit of \f$ c \f$ at the level \f$ l \f$
  [[nodiscard]] bool bit( std::uint64_t c , std::size_t l ) const {
   return( ( c >> ( f_lev.size() - 1 - l ) ) & 1 );
@@ -371,14 +371,14 @@ class WaveletMatrix {
 #ifndef ADS_WAVELET_SLICE
  static constexpr std::size_t kSlice = std::size_t( 1 ) << 16;
 #else
- static constexpr std::size_t kSlice = ADS_WAVELET_SLICE;   // a test
+ static constexpr std::size_t kSlice = ADS_WAVELET_SLICE;  // a test
 #endif
 
  /// the most items of a slice, whose 8 levels take 256 KB
 #ifndef ADS_WAVELET_SLICE_MAX
  static constexpr std::size_t kSliceMax = std::size_t( 1 ) << 18;
 #else
- static constexpr std::size_t kSliceMax = ADS_WAVELET_SLICE_MAX;   // a test
+ static constexpr std::size_t kSliceMax = ADS_WAVELET_SLICE_MAX;  // a test
 #endif
 
  /// the width w (0: the bits of the largest item) and the levels of the
@@ -391,9 +391,9 @@ class WaveletMatrix {
  template< class T , class U , Executor E >
  void build( E & ex , std::span< const U > x , int w );
 
- std::size_t f_n = 0;                    ///< the number of items
- std::vector< RankSelect > f_lev;        ///< the levels, the top first
- std::vector< std::size_t > f_zeros;     ///< the 0s of each level
+ std::size_t f_n = 0;                 ///< the number of items
+ std::vector< RankSelect > f_lev;     ///< the levels, the top first
+ std::vector< std::size_t > f_zeros;  ///< the 0s of each level
 
  };  // end( class WaveletMatrix )
 
@@ -409,7 +409,7 @@ class WaveletMatrix {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* WaveletMatrix.h included */
+#endif /* WaveletMatrix.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File WaveletMatrix.h ------------------------*/

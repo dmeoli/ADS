@@ -16,7 +16,8 @@
 
 #include <numeric>
 
-namespace ADS {
+namespace ADS
+{
 
 inline RemUnionFind::RemUnionFind( std::size_t n ) : f_p( n ) , f_count( n )
 {
@@ -44,7 +45,7 @@ inline std::uint32_t RemUnionFind::find( std::uint32_t x )
 {
  ADS_PRE( x < f_p.size() );
  std::uint32_t * p = f_p.data();
- while( p[ x ] != x ) {                     // the halving of the path
+ while( p[ x ] != x ) {  // the halving of the path
   const std::uint32_t g = p[ p[ x ] ];
   p[ x ] = g;
   x = g;
@@ -60,14 +61,14 @@ inline bool RemUnionFind::merge( std::uint32_t x , std::uint32_t y )
  std::uint32_t a = x , b = y;
  bool joined = false;
  while( p[ a ] != p[ b ] ) {
-  if( p[ a ] > p[ b ] )                     // a has the smaller parent
+  if( p[ a ] > p[ b ] )  // a has the smaller parent
    std::swap( a , b );
-  if( a == p[ a ] ) {                       // a root: under the other one
+  if( a == p[ a ] ) {  // a root: under the other one
    p[ a ] = p[ b ];
    joined = true;
    break;
    }
-  const std::uint32_t z = p[ a ];           // the splicing
+  const std::uint32_t z = p[ a ];  // the splicing
   p[ a ] = p[ b ];
   a = z;
   }

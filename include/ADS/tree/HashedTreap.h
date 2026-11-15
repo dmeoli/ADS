@@ -61,7 +61,7 @@
 
 #ifndef __ADS_HashedTreap
  #define __ADS_HashedTreap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -83,7 +83,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS HashedTreap ----------------------------*/
@@ -92,16 +93,16 @@ namespace ADS {
 /// a DICTIONARY on a treap whose priorities are the hashes of the addresses
 /// of the nodes
 template< std::totally_ordered K , class V >
-class HashedTreap {
+class HashedTreap
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty treap, the tables of its hash drawn from the seed
- explicit HashedTreap( std::uint64_t seed = 1 ) : f_h( seed ) {}
+ explicit HashedTreap( std::uint64_t seed = 1 ) : f_h( seed ) { }
 
  /// the value of \f$ k \f$, or nothing, in \f$ O( \log n ) \f$ expected time
  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
@@ -129,8 +130,8 @@ class HashedTreap {
 
  /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
  /// (the `find(x)` of an SSet of Morin)
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-  const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
 
  /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
  /// expected time: the `find( x )` of a USet of Morin [see `DictionarySet`];
@@ -148,21 +149,21 @@ class HashedTreap {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node: its pair and its children, no priority
- struct Node {
-  K key;                           ///< the key
-  V value;                         ///< the value
-  std::unique_ptr< Node > left ,   ///< the left child
-                          right;   ///< the right child
+ struct Node
+ {
+  K key;                         ///< the key
+  V value;                       ///< the value
+  std::unique_ptr< Node > left ,  ///< the left child
+    right;                       ///< the right child
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the shape of the tree, for `PathIterator`
- struct Shape {
+ struct Shape
+ {
   /// the root of the tree `o`
   static auto root( const auto & o ) { return( o.f_root.get() ); }
   /// the left child of the node `n`
@@ -177,13 +178,13 @@ class HashedTreap {
 
  /// the pairs of references to a key and its value
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
  /// the constant iterator by increasing key, along the path from the root
  using const_iterator = PathIterator< HashedTreap , Shape >;
- using iterator = const_iterator;          ///< the constant iterator
+ using iterator = const_iterator;  ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
@@ -215,9 +216,9 @@ class HashedTreap {
  /// the node of the smallest key not smaller than \f$ k \f$, nil if none
  [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
- Ptr f_root;                  ///< the root
- std::size_t f_size = 0;      ///< the number of keys
- TabulationHash f_h;          ///< the hash of the addresses
+ Ptr f_root;              ///< the root
+ std::size_t f_size = 0;  ///< the number of keys
+ TabulationHash f_h;      ///< the hash of the addresses
 
  };  // end( class HashedTreap )
 
@@ -233,7 +234,7 @@ class HashedTreap {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* HashedTreap.h included */
+#endif /* HashedTreap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File HashedTreap.h -------------------------*/

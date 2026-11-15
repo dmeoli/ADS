@@ -72,7 +72,7 @@
 
 #ifndef __ADS_CompressedPGMIndex
  #define __ADS_CompressedPGMIndex
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -93,7 +93,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- CLASS CompressedPGMIndex -------------------------*/
@@ -103,14 +104,14 @@ namespace ADS {
 /// the error \f$ \epsilon = E \f$
 template< class K , std::size_t E = 64 >
  requires std::is_arithmetic_v< K >
-class CompressedPGMIndex {
+class CompressedPGMIndex
+{
 
  static_assert( E >= 1 , "the error is at least 1" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = K;   ///< the type of the items
+ using Item = K;  ///< the type of the items
 
  /// an empty index
  CompressedPGMIndex( void ) = default;
@@ -200,17 +201,15 @@ class CompressedPGMIndex {
 
 /*--------------------------------------------------------------------------*/
  private:
-
-
- std::vector< K , HugePageAllocator< K > > f_A;   ///< the items
- std::size_t f_m = 0;              ///< the segments
- PGMIndex< std::uint64_t , 4 , 4 > f_key;   ///< the first keys, by pgmOrd()
- EliasFano f_start;                         ///< the first places, and n
- std::vector< float > f_slope;     ///< the table of the slopes
- BitVector f_code;                 ///< the slope and the intercept of each
- int f_ws = 0;                     ///< the bits of the index of a slope
- int f_wd = 0;                     ///< the bits of an intercept
- std::int64_t f_dmin = 0;          ///< the least intercept less its place
+ std::vector< K , HugePageAllocator< K > > f_A;  ///< the items
+ std::size_t f_m = 0;                           ///< the segments
+ PGMIndex< std::uint64_t , 4 , 4 > f_key;  ///< the first keys, by pgmOrd()
+ EliasFano f_start;                      ///< the first places, and n
+ std::vector< float > f_slope;           ///< the table of the slopes
+ BitVector f_code;         ///< the slope and the intercept of each
+ int f_ws = 0;             ///< the bits of the index of a slope
+ int f_wd = 0;             ///< the bits of an intercept
+ std::int64_t f_dmin = 0;  ///< the least intercept less its place
 
  };  // end( class CompressedPGMIndex )
 
@@ -226,7 +225,7 @@ class CompressedPGMIndex {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CompressedPGMIndex.h included */
+#endif /* CompressedPGMIndex.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File CompressedPGMIndex.h ---------------------*/

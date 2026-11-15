@@ -36,7 +36,7 @@
 
 #ifndef __ADS_MinQueue
  #define __ADS_MinQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -54,7 +54,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS MinQueue -----------------------------*/
@@ -62,16 +63,16 @@ namespace ADS {
 
 /// a QUEUE with its least item in \f$ O( 1 ) \f$ amortized time
 template< class T , class C = std::less<> >
-class MinQueue {
+class MinQueue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty queue, ordered by `less`
  explicit MinQueue( C less = C() )
-  : f_I( less ) , f_O( less ) , f_less( less ) {}
+     : f_I( less ) , f_O( less ) , f_less( less ) { }
 
  /// true if there is no item
  [[nodiscard]] bool empty( void ) const {
@@ -114,17 +115,19 @@ class MinQueue {
  [[nodiscard]] const T & min( void ) const;
 
  /// removes all the items
- void clear( void ) { f_I.clear(); f_O.clear(); }
+ void clear( void ) {
+  f_I.clear();
+  f_O.clear();
+  }
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the items of \f$ I \f$ moved to \f$ O \f$, the front on top
  void transfer( void );
 
- MinStack< T , C > f_I;   ///< the back, the last item on top
- MinStack< T , C > f_O;   ///< the front, the first item on top
- ADS_NO_UNIQUE_ADDRESS C f_less;   ///< the order
+ MinStack< T , C > f_I;            ///< the back, the last item on top
+ MinStack< T , C > f_O;            ///< the front, the first item on top
+ ADS_NO_UNIQUE_ADDRESS C f_less;  ///< the order
 
  };  // end( class MinQueue )
 
@@ -140,7 +143,7 @@ class MinQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MinQueue.h included */
+#endif /* MinQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File MinQueue.h ---------------------------*/

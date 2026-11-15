@@ -51,7 +51,7 @@
 
 #ifndef __ADS_EasyCases
  #define __ADS_EasyCases
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -75,7 +75,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the node of the literal \f$ \pm( v + 1 ) \f$ in the graph of the
 /// implications, \f$ 2 v \f$ for \f$ v \f$ and \f$ 2 v + 1 \f$ for its
@@ -161,9 +162,9 @@ inline std::optional< std::vector< int > > twoColoring( const Adjacency & G );
 /// \pre \f$ p , q \ge 0 \f$ and the edges join \f$ [ 0 , p ) \f$ to
 ///      \f$ [ 0 , q ) \f$
 /// \post no two pairs returned share an end
-inline std::vector< std::pair< int , int > > bipartiteMatching(
-                        int p , int q ,
-                        const std::vector< std::pair< int , int > > & E );
+inline std::vector< std::pair< int , int > >
+bipartiteMatching( int p , int q ,
+		   const std::vector< std::pair< int , int > > & E );
 
 /// the graph of the intervals \f$ [ a , b ) \f$, an edge if two share a
 /// point: an empty interval \f$ [ a , a ) \f$ meets none, as in
@@ -181,8 +182,8 @@ inline std::vector< std::pair< int , int > > bipartiteMatching(
 /// \f]
 /// \pre each interval \f$ [ a , b ) \f$ has \f$ a \le b \f$
 /// \post an unoriented graph, one node per interval
-inline Adjacency intervalGraph(
-                        const std::vector< std::pair< long , long > > & I );
+inline Adjacency
+intervalGraph( const std::vector< std::pair< long , long > > & I );
 
 /// the largest clique of the graph of the intervals \f$ [ a , b ) \f$: the
 /// most intervals through one point, the right ends before the left ones
@@ -218,7 +219,7 @@ inline int intervalClique( const std::vector< std::pair< long , long > > & I );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* EasyCases.h included */
+#endif /* EasyCases.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File EasyCases.h --------------------------*/

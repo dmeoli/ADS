@@ -14,21 +14,22 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-inline double akraBazziExponent(
-                       const std::vector< std::pair< double , double > > & ab )
+inline double
+akraBazziExponent( const std::vector< std::pair< double , double > > & ab )
 {
  ADS_PRE( ! ab.empty() );
  for( const auto & [ a , b ] : ab )
   ADS_PRE( ( a > 0 ) && ( 0 < b ) && ( b < 1 ) );
- auto f = [ & ]( double p ) {                   // strictly decreasing
+ auto f = [ & ]( double p ) {  // strictly decreasing
   double v = 0;
   for( const auto & [ a , b ] : ab )
    v += a * std::pow( b , p );
   return( v );
   };
- double lo = -1 , hi = 1;                       // f( lo ) >= 1 >= f( hi )
+ double lo = -1 , hi = 1;  // f( lo ) >= 1 >= f( hi )
  while( f( lo ) < 1 )
   lo *= 2;
  while( f( hi ) > 1 )
@@ -41,9 +42,9 @@ inline double akraBazziExponent(
  return( lo );
  }
 
-inline Growth akraBazzi(
-                  const std::vector< std::pair< double , double > > & ab ,
-                  double beta , double k )
+inline Growth akraBazzi( const std::vector< std::pair< double ,
+						       double > > & ab ,
+			 double beta , double k )
 {
  const double p = akraBazziExponent( ab );
  const double eps = 1e-9;

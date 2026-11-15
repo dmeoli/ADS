@@ -29,7 +29,7 @@
 
 #ifndef __ADS_UniqueQueue
  #define __ADS_UniqueQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -45,7 +45,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS UniqueQueue -----------------------------*/
@@ -53,20 +54,20 @@ namespace ADS {
 
 /// what `enqueue()` does with an item already in the queue
 enum class Duplicate {
- IGNORE_NEW ,   ///< the queue is left as it is
- FORGET_OLD     ///< the old copy is removed, the item goes to the back
+ IGNORE_NEW ,  ///< the queue is left as it is
+ FORGET_OLD   ///< the old copy is removed, the item goes to the back
  };
 
 /// a QUEUE with no duplicates; the equality of `T` must be an equivalence,
 /// so an item unequal to itself (e.g., a NaN) cannot be enqueued: the
 /// postcondition of `enqueue()` refuses it
 template< std::equality_comparable T , Duplicate D = Duplicate::IGNORE_NEW >
-class UniqueQueue {
+class UniqueQueue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// true if there is no item
  [[nodiscard]] bool empty( void ) const;
@@ -108,11 +109,11 @@ class UniqueQueue {
  // a constant view of the items from the front to the back, bidirectional;
  // a change through it could break the uniqueness
 
- using value_type = T;                     ///< the type of the items
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = const T &;              ///< a constant reference
- using const_reference = const T &;        ///< a constant reference
+ using value_type = T;                    ///< the type of the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = const T &;             ///< a constant reference
+ using const_reference = const T &;       ///< a constant reference
  /// a constant iterator of the list
  using iterator = typename List< T >::const_iterator;
  /// a constant iterator of the list
@@ -132,7 +133,6 @@ class UniqueQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// no item occurs twice, \f$ O( n^2 ) \f$
  [[nodiscard]] bool unique( void ) const;
 
@@ -156,7 +156,7 @@ class UniqueQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* UniqueQueue.h included */
+#endif /* UniqueQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File UniqueQueue.h -------------------------*/

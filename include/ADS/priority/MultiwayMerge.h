@@ -89,7 +89,7 @@
 
 #ifndef __ADS_MultiwayMerge
  #define __ADS_MultiwayMerge
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -113,17 +113,20 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the natural order of an arithmetic type: std::less or std::greater
 template< class T , class C >
 inline constexpr bool kNaturalOrder =
- std::is_arithmetic_v< T > &&
- ( std::is_same_v< C , std::less<> > || std::is_same_v< C , std::less< T > >
-   || std::is_same_v< C , std::greater<> > ||
-   std::is_same_v< C , std::greater< T > > );
+  std::is_arithmetic_v< T > &&
+  ( std::is_same_v< C , std::less<> > || std::is_same_v< C ,
+							 std::less< T > > ||
+    std::is_same_v< C , std::greater<> > ||
+    std::is_same_v< C , std::greater< T > > );
 
 }  // end( namespace detail )
 
@@ -134,11 +137,11 @@ inline constexpr bool kNaturalOrder =
 /// the tree of losers of \f$ k \f$ sources with the keys in its nodes, the
 /// winner the smallest key by `less`, the lower source on equal keys
 template< class T , class C = std::less<> >
-class FlatLoserTree {
+class FlatLoserTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the tree of \f$ k \f$ sources, all exhausted
  /// \pre \f$ 1 \le k < 2^{31} \f$
  explicit FlatLoserTree( std::size_t k , C less = C() );
@@ -218,24 +221,23 @@ class FlatLoserTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the arithmetic types in their natural order
  static constexpr bool kNatural = detail::kNaturalOrder< T , C >;
 
  /// the integers of at most 64 bits in their natural order, compared with
  /// their sources as one integer of 128 bits where the compiler has it
  static constexpr bool kInteger = kNatural && std::is_integral_v< T > &&
-                                  ! std::is_same_v< T , bool > &&
-                                  ( sizeof( T ) <= 8 );
+				  ! std::is_same_v< T , bool > &&
+				  ( sizeof( T ) <= 8 );
 
  /// the natural order is std::less
- static constexpr bool kUp = std::is_same_v< C , std::less<> > ||
-                             std::is_same_v< C , std::less< T > >;
+ static constexpr bool kUp =
+   std::is_same_v< C , std::less<> > || std::is_same_v< C , std::less< T > >;
 
  /// a key by value if small and copied as bytes, else by address
  static constexpr bool kByValue = std::is_trivially_copyable_v< T > &&
-                                  ( sizeof( T ) <= 16 ) &&
-                                  std::is_default_constructible_v< T >;
+				  ( sizeof( T ) <= 16 ) &&
+				  std::is_default_constructible_v< T >;
 
  using Key = std::conditional_t< kByValue , T , const T * >;
 
@@ -243,9 +245,10 @@ class FlatLoserTree {
  static constexpr std::uint32_t kSup = std::uint32_t( 1 ) << 31;
 
  /// a node: the key and the source of the loser there
- struct Node {
-  Key key;             ///< the key, or its address
-  std::uint32_t src;   ///< the source, its highest bit set if exhausted
+ struct Node
+ {
+  Key key;            ///< the key, or its address
+  std::uint32_t src;  ///< the source, its highest bit set if exhausted
   };
 
  /// the key of a node
@@ -263,10 +266,10 @@ class FlatLoserTree {
  /// the winner is not beaten by any source, \f$ O( K ) \f$
  [[nodiscard]] bool winnerIsBest( void ) const;
 
- std::size_t f_k;                           ///< the sources
- std::size_t f_K;                           ///< the leaves, a power of two
- std::vector< Node > f_node;                ///< 0 the winner, the losers
- std::vector< Node > f_leaf;                ///< the keys of build()
+ std::size_t f_k;             ///< the sources
+ std::size_t f_K;             ///< the leaves, a power of two
+ std::vector< Node > f_node;  ///< 0 the winner, the losers
+ std::vector< Node > f_leaf;  ///< the keys of build()
  C f_less;
 
  };  // end( class FlatLoserTree )
@@ -318,7 +321,7 @@ class FlatLoserTree {
 /// \post the output sorted, with the items of the ranges (an audit)
 template< class I , class O , class C = std::less<> >
 O multiwayMerge( const std::vector< std::pair< I , I > > & R , O out ,
-                 C less = C() );
+		 C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
@@ -332,7 +335,7 @@ O multiwayMerge( const std::vector< std::pair< I , I > > & R , O out ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MultiwayMerge.h included */
+#endif /* MultiwayMerge.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File MultiwayMerge.h ------------------------*/

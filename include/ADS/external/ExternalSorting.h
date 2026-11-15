@@ -116,7 +116,7 @@
 
 #ifndef __ADS_ExternalSorting
  #define __ADS_ExternalSorting
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -146,17 +146,16 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the I/Os of a mergesort of fan-in at most \f$ k \f$,
 /// \f$ 2 \lceil n / B \rceil ( 1 + \lceil \log_k \lceil n / R \rceil \rceil )
 /// \f$ with \f$ R = \lfloor M / B \rfloor B \f$: a pass that forms the runs
 /// and one per level of the merges, each reading and writing every block
 /// \pre \f$ B \ge 1 \f$, \f$ M \ge B \f$ and \f$ k \ge 2 \f$
-[[nodiscard]] inline std::uint64_t mergeSortIOs( std::size_t n ,
-                                                 std::size_t M ,
-                                                 std::size_t B ,
-                                                 std::size_t k );
+[[nodiscard]] inline std::uint64_t
+mergeSortIOs( std::size_t n , std::size_t M , std::size_t B , std::size_t k );
 
 /// the least I/Os of a sort of \f$ n \f$ items by comparisons,
 /// \f$ \lceil n / B \rceil \f$ writes plus the reads that the tree of the
@@ -167,18 +166,16 @@ namespace ADS {
 /// \log_2 B! \f$, the logarithms of the factorials computed by the
 /// function \f$ \Gamma \f$.
 /// \pre \f$ B \ge 1 \f$ and \f$ M \ge 2 B \f$
-[[nodiscard]] inline std::uint64_t sortingLowerBound( std::size_t n ,
-                                                      std::size_t M ,
-                                                      std::size_t B );
+[[nodiscard]] inline std::uint64_t
+sortingLowerBound( std::size_t n , std::size_t M , std::size_t B );
 
 /// the least I/Os of a permutation of \f$ n \f$ items, the larger of
 /// \f$ 2 \lceil n / B \rceil \f$ and the smallest \f$ t \f$ with
 /// \f$ t ( \log_2 ( n + 1 ) + \log_2 \binom{M}{B} ) \ge \log_2 n! -
 /// \lceil n / B \rceil \log_2 B! \f$
 /// \pre \f$ B \ge 1 \f$ and \f$ M \ge 2 B \f$
-[[nodiscard]] inline std::uint64_t permutingLowerBound( std::size_t n ,
-                                                        std::size_t M ,
-                                                        std::size_t B );
+[[nodiscard]] inline std::uint64_t
+permutingLowerBound( std::size_t n , std::size_t M , std::size_t B );
 
 /// the items of `in`, sorted, into `out`, by the binary mergesort
 ///
@@ -204,7 +201,7 @@ namespace ADS {
 /// \post `out` sorted, with the items of `in` (an audit)
 template< class T , class C = std::less<> >
 void binaryMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
-                      C less = C() );
+		      C less = C() );
 
 /// the items of `in`, sorted, into `out`, by the mergesort of fan-in
 /// \f$ M / B - 1 \f$; the runs by replacement selection if `snowPlow`; the
@@ -241,7 +238,7 @@ void binaryMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
 /// \post `out` sorted, with the items of `in` (an audit)
 template< class T , class C = std::less<> , class Sel = LoserTree< T , C > >
 void multiwayMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
-                        C less = C() , bool snowPlow = false );
+			C less = C() , bool snowPlow = false );
 
 /// the items of `in`, sorted, into `out`, by the distribution with pivots
 /// from a random sample drawn by `g`
@@ -274,8 +271,8 @@ void multiwayMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
 /// \pre \f$ M \ge 5 B + 2 \f$, `out` empty, the two files on the same memory
 /// \post `out` sorted, with the items of `in` (an audit)
 template< class T , class R , class C = std::less<> >
-void distributionSort( const DiskFile< T > & in , DiskFile< T > & out ,
-                       R & g , C less = C() );
+void distributionSort( const DiskFile< T > & in , DiskFile< T > & out , R & g ,
+		       C less = C() );
 
 /// \f$ \mathit{out}[ i ] = \mathit{in}[ \pi[ i ] ] \f$, by two sorts and
 /// three scans
@@ -301,8 +298,8 @@ void distributionSort( const DiskFile< T > & in , DiskFile< T > & out ,
 ///      \f$ M \ge 3 B \f$, `out` empty, the three files on the same memory
 template< class T >
 void permuteBySorting( const DiskFile< T > & in ,
-                       const DiskFile< std::size_t > & pi ,
-                       DiskFile< T > & out );
+		       const DiskFile< std::size_t > & pi ,
+		       DiskFile< T > & out );
 
 /// \f$ \mathit{out}[ i ] = \mathit{in}[ \pi[ i ] ] \f$, one read per item at
 /// most
@@ -323,8 +320,7 @@ void permuteBySorting( const DiskFile< T > & in ,
 ///      `out` empty, the three files on the same memory
 template< class T >
 void permuteDirect( const DiskFile< T > & in ,
-                    const DiskFile< std::size_t > & pi ,
-                    DiskFile< T > & out );
+		    const DiskFile< std::size_t > & pi , DiskFile< T > & out );
 
 /*--------------------------------------------------------------------------*/
 
@@ -338,7 +334,7 @@ void permuteDirect( const DiskFile< T > & in ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ExternalSorting.h included */
+#endif /* ExternalSorting.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File ExternalSorting.h -----------------------*/

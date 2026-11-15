@@ -23,7 +23,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*------------------------------- THE QUEUES -------------------------------*/
 
@@ -38,13 +39,14 @@ K MultiQueue< K , T , Less >::none( const Less & less )
 
 template< class K , class T , class Less >
 MultiQueue< K , T , Less >::MultiQueue( std::size_t n , unsigned s ,
-                                        std::uint64_t seed , Less less )
- : f_n( n ) , f_s( s ) , f_less{ less } , f_none( none( less ) ) ,
-   f_q( nullptr ) , f_seed( seed )
+				      std::uint64_t seed , Less less )
+    : f_n( n ) , f_s( s ) , f_less
+{ less } , f_none( none( less ) ) ,
+      f_q( nullptr ) , f_seed( seed )
 {
  ADS_PRE( ( n >= 1 ) && ( s >= 1 ) );
- f_q = static_cast< Queue * >( ::operator new( n * sizeof( Queue ) ,
-                               std::align_val_t( alignof( Queue ) ) ) );
+ f_q = static_cast< Queue * >( ::operator new(
+   n * sizeof( Queue ) , std::align_val_t( alignof( Queue ) ) ) );
  std::size_t i = 0;
  try {
   for( ; i < n ; ++i )
@@ -73,8 +75,8 @@ auto MultiQueue< K , T , Less >::handle( void ) -> Handle
  // random of its sequence: seeds apart by its increment would give one
  // sequence shifted by a draw, and the handles taken one after the other
  // would choose the same queues one operation apart
- std::uint64_t z = f_seed.fetch_add( 0x9E3779B97F4A7C15ULL ,
-                                     std::memory_order_relaxed );
+ std::uint64_t z =
+   f_seed.fetch_add( 0x9E3779B97F4A7C15ULL , std::memory_order_relaxed );
  z = ( z ^ ( z >> 30 ) ) * 0xBF58476D1CE4E5B9ULL;
  z = ( z ^ ( z >> 27 ) ) * 0x94D049BB133111EBULL;
  return( Handle( *this , z ^ ( z >> 31 ) ) );
@@ -85,7 +87,7 @@ bool MultiQueue< K , T , Less >::tryLock( Queue & q )
 {
  // a plain read first, so that a held lock costs no write to its line
  return( ! q.lock.load( std::memory_order_relaxed ) &&
-         ! q.lock.exchange( true , std::memory_order_acquire ) );
+	  ! q.lock.exchange( true , std::memory_order_acquire ) );
  }
 
 template< class K , class T , class Less >
@@ -108,7 +110,7 @@ template< class K , class T , class Less >
 void MultiQueue< K , T , Less >::publish( Queue & q ) const
 {
  q.top.store( q.nd ? q.D[ q.nd - 1 ].key : f_none ,
-              std::memory_order_relaxed );
+	      std::memory_order_relaxed );
  }
 
 template< class K , class T , class Less >
@@ -125,7 +127,7 @@ void MultiQueue< K , T , Less >::put( Queue & q , Entry && e ) const
  // the least last; a pair not greater than the greatest of D goes into D,
  // found from the least end, and a full D gives its greatest to I
  if( q.nd && ! f_less( q.D[ 0 ] , e ) ) {
-  std::size_t j = q.nd - 1;               // the last place not less than e
+  std::size_t j = q.nd - 1;  // the last place not less than e
   while( f_less( q.D[ j ] , e ) )
    --j;
   if( q.nd == kBuf ) {
@@ -164,7 +166,7 @@ template< class K , class T , class Less >
 auto MultiQueue< K , T , Less >::take( Queue & q ) const -> Entry
 {
  Entry e = std::move( q.D[ --q.nd ] );
- if( q.nd == 0 ) {                        // D again with the least pairs
+ if( q.nd == 0 ) {  // D again with the least pairs
   flush( q );
   std::size_t m = std::min( kBuf , q.heap.size() );
   q.nd = std::uint8_t( m );
@@ -194,7 +196,7 @@ bool MultiQueue< K , T , Less >::ordered( const Queue & q ) const
 
 template< class K , class T , class Less >
 auto MultiQueue< K , T , Less >::scan( std::size_t r )
- -> std::optional< Entry >
+  -> std::optional< Entry >
 {
  // each queue locked in turn, also those whose minimum reads empty: when
  // no push runs, an empty answer means that all of them were empty
@@ -232,9 +234,8 @@ bool MultiQueue< K , T , Less >::consistent( void ) const
  for( std::size_t i = 0 ; i < f_n ; ++i ) {
   Queue & q = f_q[ i ];
   lock( q );
-  const bool ok = ordered( q ) &&
-   ( q.top.load( std::memory_order_relaxed ) ==
-     ( q.nd ? q.D[ q.nd - 1 ].key : f_none ) );
+  const bool ok = ordered( q ) && ( q.top.load( std::memory_order_relaxed ) ==
+				    ( q.nd ? q.D[ q.nd - 1 ].key : f_none ) );
   unlock( q );
   if( ! ok )
    return( false );
@@ -271,8 +272,8 @@ std::size_t MultiQueue< K , T , Less >::Handle::any( void )
 {
  // the top 32 bits times n, the multiply-shift of Lemire, which needs no
  // division
- return( std::size_t( ( ( next() >> 32 ) * std::uint64_t( f_m->f_n ) )
-                      >> 32 ) );
+ return(
+   std::size_t( ( ( next() >> 32 ) * std::uint64_t( f_m->f_n ) ) >> 32 ) );
  }
 
 template< class K , class T , class Less >
@@ -340,7 +341,7 @@ void MultiQueue< K , T , Less >::Handle::pushAll( It first , It last )
 
 template< class K , class T , class Less >
 auto MultiQueue< K , T , Less >::Handle::tryPop( void )
- -> std::optional< Entry >
+  -> std::optional< Entry >
 {
  MultiQueue & m = *f_m;
  for( ; ; ) {
@@ -349,14 +350,14 @@ auto MultiQueue< K , T , Less >::Handle::tryPop( void )
   // anyway, and the lock decides
   // the better of the two selected by an index, not by a branch, whose
   // outcome is that of two keys at random
-  const K kk[ 2 ] = {
-   m.f_q[ f_k[ 0 ] ].top.load( std::memory_order_relaxed ) ,
-   m.f_q[ f_k[ 1 ] ].top.load( std::memory_order_relaxed ) };
+  const K kk[ 2 ] = { m.f_q[ f_k[ 0 ] ].top.load( std::memory_order_relaxed ) ,
+		      m.f_q[ f_k[ 1 ] ].top.load(
+			std::memory_order_relaxed ) };
   const std::size_t w = m.f_less.less( kk[ 1 ] , kk[ 0 ] );
   Queue & q = m.f_q[ f_k[ w ] ];
   const K kq = kk[ w ];
   if( ! m.f_less.less( kq , m.f_none ) )
-   return( m.scan( any() ) );             // both read empty
+   return( m.scan( any() ) );  // both read empty
   if( tryLock( q ) ) {
    if( q.nd == 0 ) {
     unlock( q );

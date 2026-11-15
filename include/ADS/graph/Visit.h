@@ -97,7 +97,7 @@
 
 #ifndef __ADS_Visit
  #define __ADS_Visit
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -121,15 +121,16 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the infinite distance
 inline constexpr int INF = std::numeric_limits< int >::max();
 
 /// the node of \f$ Q \f$ that `genericVisit()` chooses
 enum class Choice {
- NEWEST ,   ///< the last one added: the visit in depth
- OLDEST     ///< the first one added: the visit in breadth
+ NEWEST ,  ///< the last one added: the visit in depth
+ OLDEST   ///< the first one added: the visit in breadth
  };
 
 /// no node
@@ -216,11 +217,12 @@ void bfs( const G & g , int r , FN && node , FE && edge );
 ///       \f$ d[ v ] = d[ p[ v ] ] + 1 \f$ (audit)
 template< Graph G >
 std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
-                                                                int r );
+							      int r );
 
 /// what a visit did: the nodes taken out of its structure and the edges
 /// examined
-struct VisitCounts {
+struct VisitCounts
+{
  long long nodes = 0 , edges = 0;
  };
 
@@ -230,10 +232,13 @@ struct VisitCounts {
 /// \pre \f$ r \f$ is a node, \f$ S \f$ is empty
 /// \post as `distance()`
 template< Graph G , class Q >
-requires requires( Q q , int v ) { q.enqueue( v ); { q.dequeue() } ->
-                                   std::convertible_to< int >; }
-std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
-                                 int r , Q & S , VisitCounts * c = nullptr );
+ requires requires( Q q , int v )
+{
+  q.enqueue( v );
+  { q.dequeue() } -> std::convertible_to< int >;
+  }
+std::pair< std::vector< int > , std::vector< int > >
+distance( const G & g , int r , Q & S , VisitCounts * c = nullptr );
 
 /// the path from \f$ r \f$ to \f$ s \f$ in the tree of the parents \f$ p \f$,
 /// empty if there is none (the procedure printPath of the book)
@@ -299,7 +304,7 @@ inline std::vector< int > path( int r , int s , const std::vector< int > & p );
 /// \pre \f$ u \f$ is a node not visited, and `visited` has a place per name
 template< Graph G , class Pre , class Edge , class Post >
 void dfs( const G & g , int u , std::vector< bool > & visited , Pre && pre ,
-          Edge && edge , Post && post );
+	  Edge && edge , Post && post );
 
 /// the component of each node, numbered from 1, the visits starting
 /// from the nodes as they leave the stack \f$ S \f$ (its last item first)
@@ -351,20 +356,20 @@ std::vector< int > cc( const G & g );
 
 /// the kind of an edge with respect to a depth-first visit
 enum class EdgeKind {
- TREE ,      ///< an edge of the tree of the visit, to a node not discovered
- BACK ,      ///< an edge to an ancestor, not finished yet
- FORWARD ,   ///< an edge to a descendant, already finished
- CROSS       ///< any other edge, between two subtrees or two trees
+ TREE ,     ///< an edge of the tree of the visit, to a node not discovered
+ BACK ,     ///< an edge to an ancestor, not finished yet
+ FORWARD ,  ///< an edge to a descendant, already finished
+ CROSS     ///< any other edge, between two subtrees or two trees
  };
 
 /// the discovery and finish times and the kind of each edge, the
 /// procedure dfs-schema of the book
 template< Graph G >
-class DfsSchema {
+class DfsSchema
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  explicit DfsSchema( const G & g );
 
  /// the visit from \f$ u \f$; `edge( u , v , k )` on each edge examined, of
@@ -407,11 +412,10 @@ class DfsSchema {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  const G & f_g;
- std::vector< int > f_dt;   ///< the discovery times, 0 if not yet
- std::vector< int > f_ft;   ///< the finish times, 0 if not yet
- int f_time = 0;            ///< the clock
+ std::vector< int > f_dt;  ///< the discovery times, 0 if not yet
+ std::vector< int > f_ft;  ///< the finish times, 0 if not yet
+ int f_time = 0;           ///< the clock
 
  };  // end( class DfsSchema )
 
@@ -669,7 +673,7 @@ bool unilaterallyConnected( const G & g );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Visit.h included */
+#endif /* Visit.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File Visit.h ----------------------------*/

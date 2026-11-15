@@ -292,20 +292,19 @@ the API reference shows next to the headers.
 The tests are programs of `test/`, grouped by their source: `ch01.cpp` to
 `ch19.cpp` for the chapters of Montresor's book, `ods_ints.cpp`,
 `ods_lists.cpp` and `ods_trees.cpp` for Morin's, `taocp.cpp` for Knuth's,
-`pearls_*.cpp` for Ferragina's and `exam_*.cpp` for the exams of the
-course (and `conclusion.cpp` for the conclusion of Montresor's book).
-Furthermore, `beyond.cpp` tests what no book covers, `lib_*.cpp` the
-problems that the library adds in an area (e.g., `lib_graphs.cpp`),
-`contract_<area>.cpp` the contracts and the axioms of an area,
-`interop.cpp` the standard interface of the containers, and
-`engineered*.cpp` (with a few programs by family, e.g., `heaps.cpp`,
-`hashing.cpp`, `join_trees.cpp`, `ordered.cpp` and `sorting.cpp`) the
-engineered structures. A test is a function registered
-with a name by the macro `ADS_TEST` of `test/ADSTest.h`. This header also
-gives `CHECK( c )`, whose failure names its file and line, `CHECK_THROWS(
-e , E )`, which checks that a precondition throws, and `scaled( n , small
-)`, the size of a case that is there for its scale only (the build of the
-coverage makes it small through `ADS_TEST_SMALL`).
+`pearls_*.cpp` for Ferragina's and `exam_*.cpp` for the exams of the course
+(and `conclusion.cpp` for the conclusion of Montresor's book). Furthermore,
+`beyond.cpp` tests what no book covers, `lib_*.cpp` the problems that the
+library adds in an area (e.g., `lib_graphs.cpp`), `contract_<area>.cpp` the
+contracts and the axioms of an area, `interop.cpp` the standard interface of
+the containers, and `engineered*.cpp` (with a few programs by family, e.g.,
+`heaps.cpp`, `hashing.cpp`, `join_trees.cpp`, `ordered.cpp` and `sorting.cpp`)
+the engineered structures. A test is a function registered with a name by the
+macro `ADS_TEST` of `test/ADSTest.h`. This header also gives `CHECK( c )`,
+whose failure names its file and line, `CHECK_THROWS( e , E )`, which checks
+that a precondition throws, and `scaled( n , small )`, the size of a case that
+is there for its scale only (the build of the coverage makes it small through
+`ADS_TEST_SMALL`).
 
 A test is named after its source, and that of `MinStack` is
 `ods-ex3.14.min-stack`, in `test/ods_lists.cpp`. It runs 4000 random

@@ -34,7 +34,7 @@
 
 #ifndef __ADS_SetOperations
  #define __ADS_SetOperations
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -56,7 +56,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- GENERIC OPERATIONS ---------------------------*/
@@ -64,10 +65,10 @@ namespace ADS {
 
 /// a SET that can be copied and has the foreach
 template< class S >
-concept IterableSet = Set< S > && std::copy_constructible< S > &&
- requires( const S s ) {
-  s.forEach( []( const typename S::Item & ) {} );
-  };
+concept IterableSet =
+  Set< S > && std::copy_constructible< S > &&
+  requires( const S s )
+{ s.forEach( []( const typename S::Item & ) { } ); };
 
 /// the union: a copy of \f$ A \f$, plus the items of \f$ B \f$
 ///
@@ -133,7 +134,8 @@ S setDifference( const S & A , const S & B );
 template< IterableSet S >
 S setSymmetricDifference( const S & A , const S & B );
 
-namespace detail {
+namespace detail
+{
 
 /// whether \f$ C \f$ is \f$ A \f$ `op` \f$ B \f$, `op` one of the
 /// characters `|`, `&`, `-` and `^`: each item of \f$ C \f$ is in
@@ -156,7 +158,7 @@ bool isSetOperation( const C & c , const A & a , const B & b , char op );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SetOperations.h included */
+#endif /* SetOperations.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File SetOperations.h ------------------------*/

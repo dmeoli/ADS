@@ -55,7 +55,7 @@
 
 #ifndef __ADS_JacobsonTree
  #define __ADS_JacobsonTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -73,19 +73,20 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS JacobsonTree ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a binary tree in \f$ 2 n + 1 \f$ bits, its nodes by levels
-class JacobsonTree {
+class JacobsonTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- static constexpr std::size_t nil = std::size_t( -1 );   ///< no node
+ static constexpr std::size_t nil = std::size_t( -1 );  ///< no node
 
  /// the empty tree
  JacobsonTree( void );
@@ -111,8 +112,8 @@ class JacobsonTree {
  /// \end{array}}
  /// \f]
  /// \pre \f$ c \f$ describes a binary tree rooted at 0
- explicit JacobsonTree( const std::vector< std::pair< std::size_t ,
-                                                      std::size_t > > & c );
+ explicit JacobsonTree(
+   const std::vector< std::pair< std::size_t , std::size_t > > & c );
 
  /// the tree whose code by levels is \f$ b \f$
  /// \pre \f$ b \f$ is the code of a binary tree (an audit)
@@ -169,7 +170,6 @@ class JacobsonTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the node at the place \f$ q \f$ of \f$ B \f$, `nil` if a leaf added
  [[nodiscard]] std::size_t nodeAt( std::size_t q ) const;
 
@@ -177,7 +177,7 @@ class JacobsonTree {
  /// its children
  [[nodiscard]] bool valid( void ) const;
 
- RankSelect f_b;   ///< the code by levels, with its rank and select
+ RankSelect f_b;  ///< the code by levels, with its rank and select
 
  };  // end( class JacobsonTree )
 
@@ -193,7 +193,7 @@ class JacobsonTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* JacobsonTree.h included */
+#endif /* JacobsonTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File JacobsonTree.h ------------------------*/

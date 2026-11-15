@@ -1958,6 +1958,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The code follows the style of code-style, as that of SMS++: its
+  .clang-format, copied at the root, with what format.py adds (return( x ),
+  throw( e ), a space before each comma, the braces of namespaces, classes
+  and structs on a line of their own), the blocks \code of the comments,
+  the theory pages and the C++ of the manual included, with no change to
+  the compiled code; the continuous integration checks every file on each
+  push
+
 - The web site of the manual, the Doxygen site and the Sphinx site look
   as the PDF of the manual: the Latin Modern fonts of TeX for the text and
   the code (in manual/build/fonts, under the GUST Font License), the size

@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class F >
 long subsets( int n , int k , F && f )
@@ -24,13 +25,14 @@ long subsets( int n , int k , F && f )
  long count = 0;
  bool stop = false;
  auto rec = [ & ]( auto & self , int i , int c ) -> void {
-  if( stop ) return;
-  if( c == k ) {                                // a feasible solution
+  if( stop )
+   return;
+  if( c == k ) {  // a feasible solution
    ++count;
    stop = f( S );
    return;
    }
-  if( ( i == n ) || ( c + ( n - i ) < k ) )     // pruned
+  if( ( i == n ) || ( c + ( n - i ) < k ) )  // pruned
    return;
   S[ i ] = true;
   self( self , i + 1 , c + 1 );
@@ -41,7 +43,8 @@ long subsets( int n , int k , F && f )
  return( count );
  }
 
-namespace detail {
+namespace detail
+{
 
 template< class T , class F >
 long permute( const std::vector< T > & A , bool derange , F && f )
@@ -52,7 +55,8 @@ long permute( const std::vector< T > & A , bool derange , F && f )
  long count = 0;
  bool stop = false;
  auto rec = [ & ]( auto & self ) -> void {
-  if( stop ) return;
+  if( stop )
+   return;
   if( S.size() == n ) {
    ++count;
    stop = f( S );
@@ -60,11 +64,11 @@ long permute( const std::vector< T > & A , bool derange , F && f )
    }
   for( std::size_t c = 0 ; c < n && ! stop ; ++c )
    if( ! used[ c ] && ! ( derange && ( c == S.size() ) ) ) {
-    used[ c ] = true;                         // A.remove( c )
+    used[ c ] = true;  // A.remove( c )
     S.push_back( A[ c ] );
     self( self );
     S.pop_back();
-    used[ c ] = false;                        // A.insert( c )
+    used[ c ] = false;  // A.insert( c )
     }
   };
  rec( rec );
@@ -89,19 +93,20 @@ template< class T , class F >
 long subsetSum( const std::vector< T > & A , T k , F && f )
 {
  ADS_PRE( std::all_of( A.begin() , A.end() ,
-                       []( const T & x ) { return( T( 0 ) < x ); } ) );
+		       []( const T & x ) { return( T( 0 ) < x ); } ) );
  std::vector< std::size_t > S;
  long count = 0;
  bool stop = false;
  auto rec = [ & ]( auto & self , std::size_t i , T sum ) -> void {
-  if( stop ) return;
+  if( stop )
+   return;
   if( sum == k ) {
    ++count;
    stop = f( S );
    return;
    }
   for( std::size_t j = i ; j < A.size() && ! stop ; ++j )
-   if( sum + A[ j ] <= k ) {                 // pruned when it exceeds k
+   if( sum + A[ j ] <= k ) {  // pruned when it exceeds k
     S.push_back( j );
     self( self , j + 1 , sum + A[ j ] );
     S.pop_back();

@@ -14,15 +14,19 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< std::totally_ordered K , class V >
 std::optional< V > AVLTree< K , V >::lookup( const K & k ) const
 {
  for( const Node * t = f_root.get() ; t ; )
-  if( k < t->key ) t = t->left.get();
-  else if( t->key < k ) t = t->right.get();
-  else return( t->value );
+  if( k < t->key )
+   t = t->left.get();
+  else if( t->key < k )
+   t = t->right.get();
+  else
+   return( t->value );
  return( std::nullopt );
  }
 
@@ -113,14 +117,14 @@ void AVLTree< K , V >::balance( Ptr & t )
   ++f_rebalances;
   ++f_rotations;
   }
- if( b > 1 ) {                              // too high on the left
+ if( b > 1 ) {  // too high on the left
   if( h( t->left->left ) < h( t->left->right ) ) {
-   rotateLeft( t->left );                   // double rotation
+   rotateLeft( t->left );  // double rotation
    ++f_rotations;
    }
   rotateRight( t );
   }
- else if( b < -1 ) {                        // too high on the right
+ else if( b < -1 ) {  // too high on the right
   if( h( t->right->right ) < h( t->right->left ) ) {
    rotateRight( t->right );
    ++f_rotations;
@@ -137,9 +141,12 @@ bool AVLTree< K , V >::insert( Ptr & t , const K & k , const V & v )
   return( true );
   }
  bool fresh = false;
- if( k < t->key ) fresh = insert( t->left , k , v );
- else if( t->key < k ) fresh = insert( t->right , k , v );
- else t->value = v;                         // the new value replaces it
+ if( k < t->key )
+  fresh = insert( t->left , k , v );
+ else if( t->key < k )
+  fresh = insert( t->right , k , v );
+ else
+  t->value = v;  // the new value replaces it
  balance( t );
  return( fresh );
  }
@@ -150,8 +157,10 @@ bool AVLTree< K , V >::remove( Ptr & t , const K & k )
  if( ! t )
   return( false );
  bool gone = true;
- if( k < t->key ) gone = remove( t->left , k );
- else if( t->key < k ) gone = remove( t->right , k );
+ if( k < t->key )
+  gone = remove( t->left , k );
+ else if( t->key < k )
+  gone = remove( t->right , k );
  else if( ! t->left ) {
   t = std::move( t->right );
   return( true );
@@ -160,9 +169,10 @@ bool AVLTree< K , V >::remove( Ptr & t , const K & k )
   t = std::move( t->left );
   return( true );
   }
- else {                                     // the successor takes its place
+ else {  // the successor takes its place
   Node * s = t->right.get();
-  while( s->left ) s = s->left.get();
+  while( s->left )
+   s = s->left.get();
   t->key = s->key;
   t->value = s->value;
   remove( t->right , s->key );
@@ -175,7 +185,8 @@ template< std::totally_ordered K , class V >
 template< class F >
 void AVLTree< K , V >::visit( const Ptr & t , F & f )
 {
- if( ! t ) return;
+ if( ! t )
+  return;
  visit( t->left , f );
  f( t->key , t->value );
  visit( t->right , f );
@@ -186,14 +197,14 @@ bool AVLTree< K , V >::valid( const Ptr & t , const K * lo , const K * hi )
 {
  if( ! t )
   return( true );
- if( ( lo && !( *lo < t->key ) ) || ( hi && !( t->key < *hi ) ) )
+ if( ( lo && ! ( *lo < t->key ) ) || ( hi && ! ( t->key < *hi ) ) )
   return( false );
  if( ( t->h != 1 + std::max( h( t->left ) , h( t->right ) ) ) ||
      ( t->s != 1 + sz( t->left ) + sz( t->right ) ) )
   return( false );
  const int b = h( t->left ) - h( t->right );
  return( ( b >= -1 ) && ( b <= 1 ) && valid( t->left , lo , &t->key ) &&
-         valid( t->right , &t->key , hi ) );
+	  valid( t->right , &t->key , hi ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -201,7 +212,8 @@ bool AVLTree< K , V >::valid( const Ptr & t , const K * lo , const K * hi )
 /*--------------------------------------------------------------------------*/
 
 template< std::totally_ordered K , class V >
-struct AVLTreeNodes {
+struct AVLTreeNodes
+{
  using T = AVLTree< K , V >;
  using Node = typename T::Node;
  using Key = K;
@@ -215,7 +227,7 @@ struct AVLTreeNodes {
  static V & value( Node * t ) { return( t->value ); }
  static std::size_t size( const Node * t ) { return( t ? t->s : 0 ); }
  static int height( const Node * t ) { return( t ? t->h : -1 ); }
- static void expose( Node * t , Node * & l , Node * & r ) {
+ static void expose( Node * t , Node *& l , Node *& r ) {
   l = t->left.release();
   r = t->right.release();
   }
@@ -232,7 +244,8 @@ struct AVLTreeNodes {
   return( height( c ) );
   }
  static std::pair< Node * , Rank > join( Node * l , Rank , Node * m ,
-                                         Node * r , Rank ) {
+					 Node * r ,
+					Rank ) {
   Node * t = AVLJoin< AVLTreeNodes >::join( l , m , r );
   return( std::pair< Node * , Rank >( t , t->h ) );
   }
@@ -249,25 +262,26 @@ struct AVLTreeNodes {
  static T fresh( T & ) { return( T() ); }
  static bool valid( const T & t ) {
   return( t.valid( t.f_root , nullptr , nullptr ) &&
-          ( t.f_size == size( t.f_root.get() ) ) );
+	   ( t.f_size == size( t.f_root.get() ) ) );
   }
  static std::uint64_t salt( T & ) { return( 0 ); }
  static Node * make( const K & k , const V & v , std::uint64_t ,
-                     std::size_t ) {
+		     std::size_t ) {
   return( new Node{ k , v , 0 , 1 , nullptr , nullptr } );
   }
  };
 
 template< std::totally_ordered K , class V >
-auto AVLTree< K , V >::lowerBoundNode( const K & k ) const
- -> const Node *
+auto AVLTree< K , V >::lowerBoundNode( const K & k ) const -> const Node *
 {
  const Node * best = nullptr;
  for( const Node * t = f_root.get() ; t ; )
-  if( t->key < k ) t = t->right.get();
+  if( t->key < k )
+   t = t->right.get();
   else {
    best = t;
-   if( !( k < t->key ) ) break;
+   if( ! ( k < t->key ) )
+    break;
    t = t->left.get();
    }
  return( best );
@@ -275,19 +289,19 @@ auto AVLTree< K , V >::lowerBoundNode( const K & k ) const
 
 template< std::totally_ordered K , class V >
 auto AVLTree< K , V >::lowerBound( const K & k ) const
- -> std::optional< std::pair< K , V > >
+  -> std::optional< std::pair< K , V > >
 {
  const Node * b = lowerBoundNode( k );
  return( b ? std::optional< std::pair< K , V > >(
-              std::pair< K , V >( b->key , b->value ) )
-           : std::nullopt );
+		std::pair< K , V >( b->key , b->value ) )
+	    : std::nullopt );
  }
 
 template< std::totally_ordered K , class V >
 const K * AVLTree< K , V >::findKey( const K & k ) const
 {
  const Node * b = lowerBoundNode( k );
- return( ( b && !( k < b->key ) ) ? &b->key : nullptr );
+ return( ( b && ! ( k < b->key ) ) ? &b->key : nullptr );
  }
 
 template< std::totally_ordered K , class V >

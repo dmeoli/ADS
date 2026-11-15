@@ -61,7 +61,7 @@
 
 #ifndef __ADS_ParallelMerge
  #define __ADS_ParallelMerge
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -82,7 +82,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the split of the sorted ranges \f$ R_1 , \ldots , R_k \f$ at the rank
 /// \f$ r \f$ of the stable merge, i.e., the number of items that each range
@@ -120,9 +121,10 @@ namespace ADS {
 /// \f]
 /// \pre each range sorted by `less`, \f$ r \le \sum_i |R_i| \f$
 template< std::random_access_iterator I , class C = std::less<> >
-[[nodiscard]] std::vector< std::size_t > multisequenceSplit(
-                         const std::vector< std::pair< I , I > > & R ,
-                         std::size_t r , C less = C() );
+[[nodiscard]] std::vector< std::size_t >
+multisequenceSplit( const std::vector< std::pair< I , I > > & R ,
+		    std::size_t r ,
+		    C less = C() );
 
 /// the items of the sorted ranges \f$ R_1 , \ldots , R_k \f$ merged into
 /// `out` on the threads of `ex`, the range of lower index first on equal
@@ -154,9 +156,9 @@ template< std::random_access_iterator I , class C = std::less<> >
 /// \pre each range sorted by `less` (an audit), `out` not overlapping them
 /// \post the output sorted, with the items of the ranges (an audit)
 template< Executor E , std::random_access_iterator I ,
-          std::random_access_iterator O , class C = std::less<> >
-O multiwayMerge( E & ex , const std::vector< std::pair< I , I > > & R ,
-                 O out , C less = C() );
+	  std::random_access_iterator O , class C = std::less<> >
+O multiwayMerge( E & ex , const std::vector< std::pair< I , I > > & R , O out ,
+		 C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
@@ -170,7 +172,7 @@ O multiwayMerge( E & ex , const std::vector< std::pair< I , I > > & R ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ParallelMerge.h included */
+#endif /* ParallelMerge.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File ParallelMerge.h ------------------------*/

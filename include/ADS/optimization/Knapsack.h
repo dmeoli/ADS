@@ -40,7 +40,7 @@
 
 #ifndef __ADS_Knapsack
  #define __ADS_Knapsack
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -60,7 +60,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the best profit and a set of objects, by places, of the 0-1 knapsack
 ///
@@ -85,10 +86,9 @@ namespace ADS {
 /// \pre \f$ |p| = |v| \f$, \f$ p_i , v_i \ge 0 \f$, \f$ C \ge 0 \f$, the
 ///      \f$ C + 1 \f$ capacities within the largest vector
 /// \post the objects fit and give the profit
-inline std::pair< long , std::vector< std::size_t > > knapsack(
-                                            const std::vector< long > & p ,
-                                            const std::vector< long > & v ,
-                                            long C );
+inline std::pair< long , std::vector< std::size_t > >
+knapsack( const std::vector< long > & p , const std::vector< long > & v ,
+	  long C );
 
 /// the best profit by memoization in a hash table (the `zaino()` of the book);
 /// the number of subproblems solved goes to `*solved`, if given
@@ -109,8 +109,8 @@ inline std::pair< long , std::vector< std::size_t > > knapsack(
 /// called as \f$ \mathrm{zaino}( n , C ) \f$.
 /// \pre \f$ |p| = |v| \f$, \f$ p_i , v_i \ge 0 \f$, \f$ C \ge 0 \f$
 inline long zaino( const std::vector< long > & p ,
-                   const std::vector< long > & v , long C ,
-                   long * solved = nullptr );
+		   const std::vector< long > & v , long C ,
+		   long * solved = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
@@ -124,7 +124,7 @@ inline long zaino( const std::vector< long > & p ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Knapsack.h included */
+#endif /* Knapsack.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Knapsack.h ---------------------------*/

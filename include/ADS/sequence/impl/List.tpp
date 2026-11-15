@@ -14,15 +14,16 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CONSTRUCTING AND DESTRUCTING -------------------*/
 /*--------------------------------------------------------------------------*/
 
 template< class T , bool Pooled >
-List< T , Pooled >::List( void ) : f_sentinel{ nullptr , nullptr , T() }
-{
+List< T , Pooled >::List( void ) : f_sentinel
+{ nullptr , nullptr , T() } {
  f_sentinel.pred = &f_sentinel;
  f_sentinel.succ = &f_sentinel;
  }
@@ -66,7 +67,7 @@ List< T , Pooled > & List< T , Pooled >::operator=( List other ) noexcept
 template< class T , bool Pooled >
 List< T , Pooled >::~List()
 {
- if constexpr( ! ( Pooled && std::is_trivially_destructible_v< T > ) )
+ if constexpr( ! ( Pooled && std::is_trivially_destructible_v< T > ))
   while( ! empty() )
    remove( head() );
  }
@@ -144,8 +145,8 @@ typename List< T , Pooled >::Pos List< T , Pooled >::prev( Pos p ) const
  }
 
 template< class T , bool Pooled >
-typename List< T , Pooled >::Pos
-List< T , Pooled >::insert( Pos p , const T & v )
+typename List< T , Pooled >::Pos List< T , Pooled >::insert( Pos p ,
+							   const T & v )
 {
  ADS_PRE( p != nullptr );
  ADS_AUDIT( owns( p ) );
@@ -154,7 +155,7 @@ List< T , Pooled >::insert( Pos p , const T & v )
  p->pred = t;
  ++f_size;
  ADS_POST( ! empty() && ( t->succ == p ) && ( p->pred == t ) &&
-           detail::equal( t->value , v ) );
+	   detail::equal( t->value , v ) );
  ADS_INVARIANT( linked() );
  return( t );
  }
@@ -217,10 +218,12 @@ List< T , Pooled >::position( std::size_t i ) const
 {
  ADS_PRE( i <= f_size );
  Pos p;
- if( i < f_size / 2 )                       // from the front
-  for( p = f_sentinel.succ ; i > 0 ; --i ) p = p->succ;
- else                                       // from the back
-  for( p = sentinel() , i = f_size - i ; i > 0 ; --i ) p = p->pred;
+ if( i < f_size / 2 )  // from the front
+  for( p = f_sentinel.succ ; i > 0 ; --i )
+   p = p->succ;
+ else  // from the back
+  for( p = sentinel() , i = f_size - i ; i > 0 ; --i )
+   p = p->pred;
  return( p );
  }
 
@@ -266,8 +269,8 @@ void List< T , Pooled >::checkSize( void ) const
   ++c;
  if( c != f_size )
   throw( std::logic_error( "List::checkSize: " + std::to_string( c ) +
-                           " cells, " + std::to_string( f_size ) +
-                           " counted" ) );
+			   " cells, " + std::to_string( f_size ) +
+			   " counted" ) );
  }
 
 template< class T , bool Pooled >
@@ -275,7 +278,7 @@ bool List< T , Pooled >::isPalindrome( void ) const
 {
  Pos p = f_sentinel.succ , q = f_sentinel.pred;
  for( std::size_t k = f_size / 2 ; k > 0 ; --k , p = p->succ , q = q->pred )
-  if( !( p->value == q->value ) )
+  if( ! ( p->value == q->value ) )
    return( false );
  return( true );
  }
@@ -283,9 +286,9 @@ bool List< T , Pooled >::isPalindrome( void ) const
 template< class T , bool Pooled >
 void List< T , Pooled >::relink( Cell * c , Cell * p ) noexcept
 {
- c->pred->succ = c->succ;                   // out of its place
+ c->pred->succ = c->succ;  // out of its place
  c->succ->pred = c->pred;
- c->pred = p->pred;                         // and before p
+ c->pred = p->pred;  // and before p
  c->succ = p;
  p->pred->succ = c;
  p->pred = c;
@@ -299,7 +302,7 @@ void List< T , Pooled >::rotate( std::size_t r )
  r %= f_size;
  if( r == 0 )
   return;
- relink( sentinel() , position( f_size - r ) );   // the sentinel moves
+ relink( sentinel() , position( f_size - r ) );  // the sentinel moves
  ADS_INVARIANT( linked() );
  }
 
@@ -311,16 +314,16 @@ List< T , Pooled > List< T , Pooled >::truncate( std::size_t i )
  if( i == f_size )
   return( L );
  Pos u = position( i );
- if constexpr( Pooled )                     // a cell keeps its pool
+ if constexpr( Pooled )  // a cell keeps its pool
   while( u != sentinel() ) {
    L.push_back( std::move( u->value ) );
    u = remove( u );
    }
  else {
   Pos last = f_sentinel.pred;
-  u->pred->succ = sentinel();               // this list ends before u
+  u->pred->succ = sentinel();  // this list ends before u
   f_sentinel.pred = u->pred;
-  L.f_sentinel.succ = u;                    // and L is u .. last
+  L.f_sentinel.succ = u;  // and L is u .. last
   u->pred = L.sentinel();
   L.f_sentinel.pred = last;
   last->succ = L.sentinel();
@@ -339,7 +342,7 @@ void List< T , Pooled >::absorb( List & l2 )
  if( l2.empty() )
   return;
  if constexpr( Pooled )
-  f_pool.adopt( l2.f_pool );                // the cells change pool
+  f_pool.adopt( l2.f_pool );  // the cells change pool
  Pos a = l2.f_sentinel.succ , b = l2.f_sentinel.pred;
  a->pred = f_sentinel.pred;
  f_sentinel.pred->succ = a;
@@ -357,7 +360,7 @@ List< T , Pooled > List< T , Pooled >::deal( void )
  List L;
  for( Pos p = f_sentinel.succ ;
       ( p != sentinel() ) && ( p->succ != sentinel() ) ; p = p->succ ) {
-  Pos q = p->succ;                          // of odd rank
+  Pos q = p->succ;  // of odd rank
   if constexpr( Pooled ) {
    L.push_back( std::move( q->value ) );
    remove( q );
@@ -378,15 +381,17 @@ void List< T , Pooled >::reverse( void )
 {
  const auto old = detail::snapshot( *this );
  Pos p = sentinel();
- do {                                       // the two links of each cell
-  std::swap( p->pred , p->succ );           // exchanged, the sentinel's too
-  p = p->pred;                              // the old successor
+ do {                             // the two links of each cell
+  std::swap( p->pred , p->succ );  // exchanged, the sentinel's too
+  p = p->pred;                    // the old successor
   } while( p != sentinel() );
  ADS_AUDIT( ( [ & ] {
   Pos a = f_sentinel.succ , b = old->f_sentinel.pred;
   for( ; a != sentinel() ; a = a->succ , b = b->pred )
-   if( ! detail::equal( a->value , b->value ) ) return( false );
-  return( true ); }() ) );
+   if( ! detail::equal( a->value , b->value ) )
+    return( false );
+  return( true );
+  }() ) );
  ADS_INVARIANT( linked() );
  }
 
@@ -407,15 +412,14 @@ void List< T , Pooled >::takeFirst( List & l2 )
 
 template< class T , bool Pooled >
 template< class C >
-List< T , Pooled > List< T , Pooled >::merge( List & l1 , List & l2 ,
-                                              C less )
+List< T , Pooled > List< T , Pooled >::merge( List & l1 , List & l2 , C less )
 {
  ADS_PRE( &l1 != &l2 );
  List L;
- if constexpr( Pooled ) {                   // the cells of both, relinked
+ if constexpr( Pooled ) {  // the cells of both, relinked
   L.absorb( l1 );
   L.f_pool.adopt( l2.f_pool );
-  Pos a = L.f_sentinel.succ , b = l2.f_sentinel.succ;   // b into L
+  Pos a = L.f_sentinel.succ , b = l2.f_sentinel.succ;  // b into L
   while( b != l2.sentinel() ) {
    while( ( a != L.sentinel() ) && ! less( b->value , a->value ) )
     a = a->succ;
@@ -436,10 +440,12 @@ List< T , Pooled > List< T , Pooled >::merge( List & l1 , List & l2 ,
   L.absorb( l2 );
   }
  ADS_AUDIT( ( [ & ] {
-  for( Pos p = L.f_sentinel.succ ; ( p != L.sentinel() ) &&
-                                   ( p->succ != L.sentinel() ) ; p = p->succ )
-   if( less( p->succ->value , p->value ) ) return( false );
-  return( true ); }() ) );
+  for( Pos p = L.f_sentinel.succ ;
+       ( p != L.sentinel() ) && ( p->succ != L.sentinel() ) ; p = p->succ )
+   if( less( p->succ->value , p->value ) )
+    return( false );
+  return( true );
+  }() ) );
  ADS_INVARIANT( L.linked() );
  return( L );
  }
@@ -450,18 +456,28 @@ typename List< T , Pooled >::Cell *
 List< T , Pooled >::sortChain( Cell * a , std::size_t k , C & less )
 {
  if( k <= 1 ) {
-  if( a ) a->succ = nullptr;
+  if( a )
+   a->succ = nullptr;
   return( a );
   }
- Cell * b = a;                              // the second half, by a walk
- for( std::size_t j = k / 2 ; j > 0 ; --j ) b = b->succ;
- b = sortChain( b , k - k / 2 , less );     // b first: a still reaches it
+ Cell * b = a;  // the second half, by a walk
+ for( std::size_t j = k / 2 ; j > 0 ; --j )
+  b = b->succ;
+ b = sortChain( b , k - k / 2 , less );  // b first: a still reaches it
  a = sortChain( a , k / 2 , less );
- Cell head{ nullptr , nullptr , T() };      // the merge, stable
+ Cell head{ nullptr , nullptr , T() };  // the merge, stable
  Cell * t = &head;
  while( a && b )
-  if( less( b->value , a->value ) ) { t->succ = b; t = b; b = b->succ; }
-  else { t->succ = a; t = a; a = a->succ; }
+  if( less( b->value , a->value ) ) {
+   t->succ = b;
+   t = b;
+   b = b->succ;
+   }
+  else {
+   t->succ = a;
+   t = a;
+   a = a->succ;
+   }
  t->succ = a ? a : b;
  return( head.succ );
  }
@@ -474,7 +490,7 @@ void List< T , Pooled >::mergeSort( C less )
  if( f_size <= 1 )
   return;
  Cell * a = sortChain( f_sentinel.succ , f_size , less );
- Cell * p = sentinel();                     // the predecessors again
+ Cell * p = sentinel();  // the predecessors again
  for( ; a ; p = a , a = a->succ ) {
   p->succ = a;
   a->pred = p;
@@ -488,7 +504,8 @@ void List< T , Pooled >::mergeSort( C less )
    if( ( q->succ != sentinel() ) && less( q->succ->value , q->value ) )
     return( false );
    }
-  return( c == n ); }() ) );
+  return( c == n );
+  }() ) );
  ADS_INVARIANT( linked() );
  }
 
@@ -497,7 +514,7 @@ bool List< T , Pooled >::operator==( const List & o ) const
 {
  Pos p = head() , q = o.head();
  for( ; ! finished( p ) && ! o.finished( q ) ; p = p->succ , q = q->succ )
-  if( !( p->value == q->value ) )
+  if( ! ( p->value == q->value ) )
    return( false );
  return( finished( p ) && o.finished( q ) );
  }

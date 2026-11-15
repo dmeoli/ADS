@@ -63,7 +63,7 @@
 
 #ifndef __ADS_MoveRIndex
  #define __ADS_MoveRIndex
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -91,7 +91,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS MoveRIndex ----------------------------*/
@@ -99,13 +100,13 @@ namespace ADS {
 
 /// the r-index of a text on move structures: count and locate with each
 /// step in \f$ O( 1 ) \f$ time
-class MoveRIndex {
+class MoveRIndex
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the index of the empty text
- MoveRIndex( void ) : MoveRIndex( std::string_view() ) {}
+ MoveRIndex( void ) : MoveRIndex( std::string_view() ) { }
 
  /// the index of \f$ s \f$
  ///
@@ -212,26 +213,25 @@ class MoveRIndex {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the backward search of \f$ P \f$: the rows \f$ [ s , e ] \f$ with their
  /// intervals, and the place of the suffix of \f$ e \f$ with its interval
  /// of \f$ \phi \f$ if `Toehold`; false if \f$ P \f$ does not occur
  template< bool Toehold >
  [[nodiscard]] bool search( std::string_view P , std::uint64_t & s ,
-                            std::size_t & is , std::uint64_t & e ,
-                            std::size_t & ie , std::uint64_t & v ,
-                            std::size_t & iv ) const;
+			    std::size_t & is , std::uint64_t & e ,
+			    std::size_t & ie , std::uint64_t & v ,
+			    std::size_t & iv ) const;
 
  std::size_t f_n = 0;
- int f_w = 1 , f_wi = 1;                 ///< the widths of the samples
- MoveStructure f_lf;                     ///< LF on the runs
- HuffmanWaveletTree< RankSelect > f_tag;   ///< their tags, ranked
- std::array< std::size_t , 257 > f_cnt{};   ///< the intervals of each tag
- MoveStructure f_phi;                    ///< \f$ \phi \f$ on the places
- BitVector f_end;                        ///< the samples at the interval ends
- BitVector f_endPhi;                     ///< the interval of each sample - 1
+ int f_w = 1 , f_wi = 1;                   ///< the widths of the samples
+ MoveStructure f_lf;                      ///< LF on the runs
+ HuffmanWaveletTree< RankSelect > f_tag;  ///< their tags, ranked
+ std::array< std::size_t , 257 > f_cnt{};  ///< the intervals of each tag
+ MoveStructure f_phi;                     ///< \f$ \phi \f$ on the places
+ BitVector f_end;                         ///< the samples at the interval ends
+ BitVector f_endPhi;                      ///< the interval of each sample - 1
 #if ADS_CONTRACTS >= 3
- std::string f_text;                     ///< the text, for the audits
+ std::string f_text;  ///< the text, for the audits
 #endif
 
  };  // end( class MoveRIndex )
@@ -248,7 +248,7 @@ class MoveRIndex {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MoveRIndex.h included */
+#endif /* MoveRIndex.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File MoveRIndex.h -------------------------*/

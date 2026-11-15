@@ -71,7 +71,7 @@
 
 #ifndef __ADS_SubsequenceProblems
  #define __ADS_SubsequenceProblems
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -91,7 +91,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// whether \f$ Z \f$ interleaves \f$ X \f$ and \f$ Y \f$ keeping the order
 /// of the items of each
@@ -114,13 +115,14 @@ namespace ADS {
 /// 8 & \quad \textbf{return}\ D[ m ]
 /// \end{array}}
 /// \f]
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] bool isInterleaving( const S & X , const S & Y , const S & Z );
 
 /// `isInterleaving()` above on `std::string` (or literals)
 [[nodiscard]] inline bool isInterleaving( const std::string & X ,
-                                          const std::string & Y ,
-                                          const std::string & Z );
+					  const std::string & Y ,
+					  const std::string & Z );
 
 /// the length of a shortest common supersequence of \f$ X \f$ and \f$ Y \f$
 ///
@@ -141,12 +143,13 @@ template< class S > requires std::is_class_v< S >
 /// \end{array}}
 /// \f]
 /// \post \f$ n + m - | \mathrm{lcs}( X , Y ) | \f$ (an audit)
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] std::size_t scsLength( const S & X , const S & Y );
 
 /// `scsLength()` above on `std::string` (or literals)
 [[nodiscard]] inline std::size_t scsLength( const std::string & X ,
-                                            const std::string & Y );
+					    const std::string & Y );
 
 /// a shortest common supersequence of \f$ X \f$ and \f$ Y \f$
 ///
@@ -171,12 +174,13 @@ template< class S > requires std::is_class_v< S >
 /// \f]
 /// \post \f$ X \f$ and \f$ Y \f$ subsequences of it (an audit), of length
 ///       `scsLength()`
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] S shortestCommonSupersequence( const S & X , const S & Y );
 
 /// `shortestCommonSupersequence()` above on `std::string` (or literals)
-[[nodiscard]] inline std::string shortestCommonSupersequence(
-                               const std::string & X , const std::string & Y );
+[[nodiscard]] inline std::string
+shortestCommonSupersequence( const std::string & X , const std::string & Y );
 
 /// the number of occurrences of \f$ P \f$ as a subsequence of \f$ T \f$,
 /// modulo \f$ 2^{64} \f$: 1 for the empty \f$ P \f$, 0 if \f$ P \f$ is
@@ -197,13 +201,14 @@ template< class S > requires std::is_class_v< S >
 /// 6 & \quad \textbf{return}\ C[ m ]
 /// \end{array}}
 /// \f]
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] std::uint64_t subsequenceOccurrences( const S & P ,
-                                                    const S & T );
+						    const S & T );
 
 /// `subsequenceOccurrences()` above on `std::string` (or literals)
-[[nodiscard]] inline std::uint64_t subsequenceOccurrences(
-                               const std::string & P , const std::string & T );
+[[nodiscard]] inline std::uint64_t
+subsequenceOccurrences( const std::string & P , const std::string & T );
 
 /// a longest common subsequence of \f$ X \f$, \f$ Y \f$ and \f$ Z \f$
 ///
@@ -224,13 +229,13 @@ template< class S > requires std::is_class_v< S >
 /// \end{array}}
 /// \f]
 /// \post a subsequence of the three (an audit)
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] S lcs3( const S & X , const S & Y , const S & Z );
 
 /// `lcs3()` above on `std::string` (or literals)
-[[nodiscard]] inline std::string lcs3( const std::string & X ,
-                                       const std::string & Y ,
-                                       const std::string & Z );
+[[nodiscard]] inline std::string
+lcs3( const std::string & X , const std::string & Y , const std::string & Z );
 
 /*--------------------------------------------------------------------------*/
 
@@ -244,7 +249,7 @@ template< class S > requires std::is_class_v< S >
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SubsequenceProblems.h included */
+#endif /* SubsequenceProblems.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File SubsequenceProblems.h ---------------------*/

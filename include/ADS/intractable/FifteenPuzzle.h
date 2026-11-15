@@ -53,7 +53,7 @@
 
 #ifndef __ADS_FifteenPuzzle
  #define __ADS_FifteenPuzzle
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -74,7 +74,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a configuration: the tile of each square by rows, 0 the hole
 using Board = std::vector< int >;
@@ -128,9 +129,9 @@ inline Board puzzleSpiralGoal( int n );
 ///      squares
 /// \post a solution returned goes from \f$ B \f$ to `goal` one move at a
 ///       time
-inline std::optional< std::vector< Board > > puzzleBFS(
-                        const Board & B , const Board & goal , int n ,
-                        long * visited = nullptr );
+inline std::optional< std::vector< Board > >
+puzzleBFS( const Board & B , const Board & goal , int n ,
+	   long * visited = nullptr );
 
 /// the configurations from \f$ B \f$ to `goal` of a solution of at most
 /// \f$ \mathit{nmax} \f$ moves by the backtracking in depth, or nothing if
@@ -157,9 +158,8 @@ inline std::optional< std::vector< Board > > puzzleBFS(
 ///      squares, \f$ \mathit{nmax} \ge 0 \f$
 /// \post a solution returned goes from \f$ B \f$ to `goal` one move at a
 ///       time
-inline std::optional< std::vector< Board > > puzzleDFS(
-                        const Board & B , const Board & goal , int n ,
-                        int nmax );
+inline std::optional< std::vector< Board > >
+puzzleDFS( const Board & B , const Board & goal , int n , int nmax );
 
 /// whether the goal can be reached from \f$ B \f$
 ///
@@ -216,7 +216,7 @@ inline bool solvable( const Board & B , int n );
 ///       time
 template< class Map = std::map< Board , int > >
 std::optional< std::vector< Board > > solvePuzzle( const Board & B , int n ,
-                                                   long * visited = nullptr );
+						   long * visited = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
@@ -230,7 +230,7 @@ std::optional< std::vector< Board > > solvePuzzle( const Board & B , int n ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* FifteenPuzzle.h included */
+#endif /* FifteenPuzzle.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File FifteenPuzzle.h ------------------------*/

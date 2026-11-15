@@ -81,7 +81,7 @@
 
 #ifndef __ADS_List
  #define __ADS_List
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -104,7 +104,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS List ----------------------------------*/
@@ -113,21 +114,22 @@ namespace ADS {
 /// a SEQUENCE realized as a bidirectional circular list with a sentinel,
 /// its cells from a pool if `Pooled`
 template< class T , bool Pooled = true >
-class List {
+class List
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// a cell of the list: the sentinel is a `Cell` with no meaningful value
- struct Cell {
-  Cell * pred;     ///< the predecessor
-  Cell * succ;     ///< the successor
-  T value;         ///< the item
+ struct Cell
+ {
+  Cell * pred;  ///< the predecessor
+  Cell * succ;  ///< the successor
+  T value;      ///< the item
   };
 
- using Pos = Cell *;   ///< a position is the address of a cell
+ using Pos = Cell *;  ///< a position is the address of a cell
 
 /*--------------------------------------------------------------------------*/
 
@@ -244,12 +246,13 @@ class List {
 
  /// the iterator, on items const if `Const`
  template< bool Const >
- class Iterator {
+ class Iterator
+ {
   public:
   /// the category of the iterator, bidirectional
   using iterator_category = std::bidirectional_iterator_tag;
-  using value_type = T;                     ///< the type of the items
-  using difference_type = std::ptrdiff_t;   ///< the type of the distances
+  using value_type = T;                    ///< the type of the items
+  using difference_type = std::ptrdiff_t;  ///< the type of the distances
   /// a reference to an item, constant if `Const`
   using reference = std::conditional_t< Const , const T & , T & >;
   /// a pointer to an item, constant if `Const`
@@ -260,24 +263,39 @@ class List {
 
   /// on the item of the cell \f$ c \f$, the end if \f$ c \f$ is the
   /// sentinel
-  explicit Iterator( Cell * c ) : f_c( c ) {}
+  explicit Iterator( Cell * c ) : f_c( c ) { }
 
   /// the const iterator from the other one
-  template< bool C > requires ( Const && ! C )
-  Iterator( const Iterator< C > & o ) : f_c( o.cell() ) {}
+  template< bool C >
+   requires( Const && ! C )
+  Iterator( const Iterator< C > & o ) : f_c( o.cell() ) { }
 
   /// the item
   reference operator*( void ) const { return( f_c->value ); }
   /// the address of the item
   pointer operator->( void ) const { return( &f_c->value ); }
   /// to the next cell
-  Iterator & operator++( void ) { f_c = f_c->succ; return( *this ); }
+  Iterator & operator++( void ) {
+   f_c = f_c->succ;
+   return( *this );
+   }
   /// to the next cell, returning the iterator before the step
-  Iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  Iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
   /// to the previous cell
-  Iterator & operator--( void ) { f_c = f_c->pred; return( *this ); }
+  Iterator & operator--( void ) {
+   f_c = f_c->pred;
+   return( *this );
+   }
   /// to the previous cell, returning the iterator before the step
-  Iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+  Iterator operator--( int ) {
+   auto t = *this;
+   --*this;
+   return( t );
+   }
   /// equal on the same cell
   bool operator==( const Iterator & o ) const = default;
 
@@ -536,7 +554,6 @@ class List {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// each cell is the predecessor of its successor, \f$ O( n ) \f$
  [[nodiscard]] bool linked( void ) const;
 
@@ -553,7 +570,8 @@ class List {
 
  /// the cells one by one from `new` and `delete`, as a pool would give
  /// them
- struct Plain {
+ struct Plain
+ {
   /// a new cell made from the arguments
   template< class... Args >
   Cell * make( Args &&... args ) {
@@ -562,7 +580,7 @@ class List {
   /// deletes the cell \f$ c \f$
   void free( Cell * c ) noexcept { delete c; }
   /// nothing to exchange
-  void swap( Plain & ) noexcept {}
+  void swap( Plain & ) noexcept { }
   };
 
  /// the cell \f$ c \f$ unlinked from its list and linked before \f$ p \f$
@@ -573,8 +591,8 @@ class List {
  template< class C >
  static Cell * sortChain( Cell * a , std::size_t k , C & less );
 
- mutable Cell f_sentinel;   ///< the sentinel, i.e., the list
- std::size_t f_size = 0;    ///< the number of items
+ mutable Cell f_sentinel;  ///< the sentinel, i.e., the list
+ std::size_t f_size = 0;   ///< the number of items
  /// the cells
  ADS_NO_UNIQUE_ADDRESS
  std::conditional_t< Pooled , ObjectPool< Cell > , Plain > f_pool;
@@ -593,7 +611,7 @@ class List {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* List.h included */
+#endif /* List.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File List.h -----------------------------*/

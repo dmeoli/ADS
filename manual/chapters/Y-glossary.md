@@ -674,8 +674,8 @@ integers compress well ([§21.7](21-compression.md#sec-21-7)).
 indexed by the key within a band of values above the last minimum extracted
 ([§9.9](09-priority.md#sec-9-9)).
 
-**Dictionary.** A univocal relation from keys to values, with `lookup(k)`,
-`insert(k, v)` and `remove(k)` ([§7.1](07-dictionary.md#sec-7-1)).
+**Dictionary.** A univocal relation from keys to values, with `lookup( k )`,
+`insert( k , v )` and `remove( k )` ([§7.1](07-dictionary.md#sec-7-1)).
 
 **Dictionary of strings.** A sorted array of strings searched by prefix, as
 in the autocompletion of a query ([§15.6](15-string.md#sec-15-6)).

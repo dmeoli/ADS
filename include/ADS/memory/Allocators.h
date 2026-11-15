@@ -50,7 +50,7 @@
 
 #ifndef __ADS_Allocators
  #define __ADS_Allocators
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -68,23 +68,24 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS BoundaryTagAllocator ----------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the dynamic storage allocation with boundary tags
-class BoundaryTagAllocator {
+class BoundaryTagAllocator
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the block chosen for a request
  enum class Fit {
-  FIRST ,   ///< the first one large enough on the list (Algorithm 2.5A)
-  BEST ,    ///< the smallest one large enough
-  NEXT      ///< the first one large enough after the last one given
+  FIRST ,  ///< the first one large enough on the list (Algorithm 2.5A)
+  BEST ,   ///< the smallest one large enough
+  NEXT    ///< the first one large enough after the last one given
   };
 
  /// the memory of \f$ N \f$ words, one free block, with the choice `fit`
@@ -149,7 +150,6 @@ class BoundaryTagAllocator {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  // a block of s words at p: M[ p ] = M[ p + s - 1 ] = +s if free, -s if in
  // use; a free block has also M[ p + 1 ] = next, M[ p + 2 ] = prev on the
  // list of the free blocks, whose head is the place N (two extra words)
@@ -160,11 +160,11 @@ class BoundaryTagAllocator {
  /// the free blocks tile the free memory, none adjacent, \f$ O( N ) \f$
  [[nodiscard]] bool tiled( void ) const;
 
- std::vector< long > M;   ///< the memory and the head of the list
+ std::vector< long > M;  ///< the memory and the head of the list
  long N;
  Fit f_fit;
- long f_rover;            ///< where next fit starts
- std::set< long > f_used; ///< the blocks in use, for the contracts
+ long f_rover;             ///< where next fit starts
+ std::set< long > f_used;  ///< the blocks in use, for the contracts
 
  };  // end( class BoundaryTagAllocator )
 
@@ -173,11 +173,11 @@ class BoundaryTagAllocator {
 /*--------------------------------------------------------------------------*/
 
 /// the buddy system on \f$ 2^m \f$ words
-class BuddyAllocator {
+class BuddyAllocator
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the memory of \f$ 2^m \f$ words, one free block
  /// \pre \f$ 0 \le m \le 40 \f$, and \f$ 2^m \f$ fits in a `long`
  ///      (\f$ m \le 30 \f$ where `long` has 32 bits)
@@ -232,12 +232,11 @@ class BuddyAllocator {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// no two free buddies, and the free blocks disjoint, \f$ O( N \log N ) \f$
  [[nodiscard]] bool merged( void ) const;
 
  int f_m;
- std::vector< std::set< long > > f_free;   ///< the free blocks of 2^k
+ std::vector< std::set< long > > f_free;  ///< the free blocks of 2^k
  std::map< long , int > f_used;            ///< the blocks in use, by k
 
  };  // end( class BuddyAllocator )
@@ -254,7 +253,7 @@ class BuddyAllocator {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Allocators.h included */
+#endif /* Allocators.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File Allocators.h --------------------------*/

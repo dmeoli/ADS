@@ -60,7 +60,7 @@
 
 #ifndef __ADS_FingerTreap
  #define __ADS_FingerTreap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -82,7 +82,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS FingerTreap ----------------------------*/
@@ -91,30 +92,32 @@ namespace ADS {
 /// a DICTIONARY on a treap with the parents, the sizes and the extremes of
 /// the subtrees, searched from a finger
 template< std::totally_ordered K , class V >
-class FingerTreap {
+class FingerTreap
+{
 
  struct Node;
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// a node of the treap, from which a search may start; valid until the
  /// node is removed
- class Finger {
+ class Finger
+ {
   public:
   /// no node: a search from it starts at the root
   Finger( void ) = default;
+
   private:
   friend class FingerTreap;
-  explicit Finger( Node * u ) : f_u( u ) {}
+  explicit Finger( Node * u ) : f_u( u ) { }
   Node * f_u = nullptr;
   };
 
  /// the empty treap, its priorities drawn from the seed
- explicit FingerTreap( std::uint64_t seed = 1 ) : f_g( seed ) {}
+ explicit FingerTreap( std::uint64_t seed = 1 ) : f_g( seed ) { }
 
  /// no copy, since the nodes are linked by pointers
  FingerTreap( const FingerTreap & ) = delete;
@@ -124,7 +127,7 @@ class FingerTreap {
 
  /// the nodes of `other`, which is left empty
  FingerTreap( FingerTreap && other ) noexcept
-  : f_root( other.f_root ) , f_size( other.f_size ) , f_g( other.f_g ) {
+     : f_root( other.f_root ) , f_size( other.f_size ) , f_g( other.f_g ) {
   other.f_root = other.f_finger = nullptr;
   other.f_size = 0;
   }
@@ -162,8 +165,7 @@ class FingerTreap {
  /// \end{array}}
  /// \f]
  /// \pre \f$ f \f$ is a node of this treap, or empty
- [[nodiscard]] std::optional< V > lookupFrom( const K & k ,
-                                              Finger f ) const;
+ [[nodiscard]] std::optional< V > lookupFrom( const K & k , Finger f ) const;
 
  /// the node of \f$ k \f$, or the last node of its search from the root,
  /// as a finger
@@ -193,8 +195,8 @@ class FingerTreap {
 
  /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
  /// (the `find(x)` of an SSet of Morin)
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-  const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
 
  /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
  /// expected time: the `find( x )` of a USet of Morin [see `DictionarySet`];
@@ -219,27 +221,27 @@ class FingerTreap {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node, with its parent, its priority, the size of its subtree and its
  /// extremes
- struct Node {
-  K key;                       ///< the key
-  V value;                     ///< the value
-  std::uint64_t priority;      ///< the random priority
-  Node * left = nullptr;       ///< the left child
-  Node * right = nullptr;      ///< the right child
-  Node * parent = nullptr;     ///< the parent
-  Node * lo = nullptr;         ///< the smallest node of the subtree
-  Node * hi = nullptr;         ///< the largest node of the subtree
-  std::size_t size = 1;        ///< the nodes of the subtree
+ struct Node
+ {
+  K key;                    ///< the key
+  V value;                  ///< the value
+  std::uint64_t priority;   ///< the random priority
+  Node * left = nullptr;    ///< the left child
+  Node * right = nullptr;   ///< the right child
+  Node * parent = nullptr;  ///< the parent
+  Node * lo = nullptr;      ///< the smallest node of the subtree
+  Node * hi = nullptr;      ///< the largest node of the subtree
+  std::size_t size = 1;     ///< the nodes of the subtree
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the shape of the tree, for `PathIterator`
- struct Shape {
+ struct Shape
+ {
   /// the root of the tree `o`
   static auto root( const auto & o ) { return( o.f_root ); }
   /// the left child of the node `n`
@@ -254,13 +256,13 @@ class FingerTreap {
 
  /// the pairs of references to a key and its value
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
  /// the constant iterator by increasing key, along the path from the root
  using const_iterator = PathIterator< FingerTreap , Shape >;
- using iterator = const_iterator;          ///< the constant iterator
+ using iterator = const_iterator;  ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
@@ -276,14 +278,13 @@ class FingerTreap {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// the node of \f$ k \f$ or the last of its search from \f$ u \f$
  Node * search( const K & k , Node * u ) const;
 
  /// the size and the extremes of \f$ u \f$ from its children
  static void update( Node * u ) {
-  u->size = 1 + ( u->left ? u->left->size : 0 ) +
-            ( u->right ? u->right->size : 0 );
+  u->size =
+    1 + ( u->left ? u->left->size : 0 ) + ( u->right ? u->right->size : 0 );
   u->lo = u->left ? u->left->lo : u;
   u->hi = u->right ? u->right->hi : u;
   }
@@ -300,10 +301,10 @@ class FingerTreap {
  /// the node of the smallest key not smaller than \f$ k \f$, nil if none
  [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
- Node * f_root = nullptr;     ///< the root
- Node * f_finger = nullptr;   ///< the node of the last finger search
- std::size_t f_size = 0;      ///< the number of keys
- SplitMix64 f_g;              ///< the generator of the priorities
+ Node * f_root = nullptr;    ///< the root
+ Node * f_finger = nullptr;  ///< the node of the last finger search
+ std::size_t f_size = 0;     ///< the number of keys
+ SplitMix64 f_g;             ///< the generator of the priorities
 
  };  // end( class FingerTreap )
 
@@ -319,7 +320,7 @@ class FingerTreap {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* FingerTreap.h included */
+#endif /* FingerTreap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File FingerTreap.h -------------------------*/

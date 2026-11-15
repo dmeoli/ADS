@@ -57,7 +57,7 @@
 
 #ifndef __ADS_IndexedHeapPair
  #define __ADS_IndexedHeapPair
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -72,7 +72,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS IndexedHeapPair --------------------------*/
@@ -81,17 +82,17 @@ namespace ADS {
 /// the ids \f$ [ 0 , n ) \f$ by a key, the least on top, with the least of
 /// their bounds
 template< class K , class Bd = K , unsigned D = 4 >
-class IndexedHeapPair {
+class IndexedHeapPair
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  using Key = K;     ///< the type of the keys of selection
  using Bound = Bd;  ///< the type of the bounds
 
  /// the empty queue of the ids \f$ [ 0 , n ) \f$
  /// \pre \f$ n \ge 0 \f$
- explicit IndexedHeapPair( int n = 0 ) : f_key( n ) , f_bound( n ) {}
+ explicit IndexedHeapPair( int n = 0 ) : f_key( n ) , f_bound( n ) { }
 
  /// the empty queue of the ids \f$ [ 0 , n ) \f$, the room kept
  /// \pre \f$ n \ge 0 \f$
@@ -223,7 +224,6 @@ class IndexedHeapPair {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  IndexedDaryHeap< K , D > f_key;     ///< the heap by the keys
  IndexedDaryHeap< Bd , D > f_bound;  ///< the heap by the bounds
 
@@ -241,7 +241,7 @@ class IndexedHeapPair {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* IndexedHeapPair.h included */
+#endif /* IndexedHeapPair.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File IndexedHeapPair.h -----------------------*/

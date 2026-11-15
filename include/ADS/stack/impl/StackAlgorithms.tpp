@@ -14,9 +14,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the items of s from the top, read by popping them and pushing them
 /// back, so that s is left as it was
@@ -24,8 +26,10 @@ template< Stack S >
 std::vector< typename S::Item > stackItems( S & s )
 {
  std::vector< typename S::Item > v;
- while( ! s.empty() ) v.push_back( s.pop() );
- for( auto it = v.rbegin() ; it != v.rend() ; ++it ) s.push( *it );
+ while( ! s.empty() )
+  v.push_back( s.pop() );
+ for( auto it = v.rbegin() ; it != v.rend() ; ++it )
+  s.push( *it );
  return( v );
  }
 
@@ -33,7 +37,8 @@ std::vector< typename S::Item > stackItems( S & s )
 template< Stack S >
 long stackSize( S & s )
 {
- if( s.empty() ) return( 0 );
+ if( s.empty() )
+  return( 0 );
  auto x = s.pop();
  const long n = 1 + stackSize( s );
  s.push( x );
@@ -45,7 +50,8 @@ long stackSize( S & s )
 template< Stack S >
 void sinkPass( S & s )
 {
- if( s.empty() ) return;
+ if( s.empty() )
+  return;
  auto a = s.pop();
  if( s.empty() ) {
   s.push( a );
@@ -62,7 +68,8 @@ template< class T >
 bool risingFromTop( const std::vector< T > & v )
 {
  for( std::size_t i = 1 ; i < v.size() ; ++i )
-  if( v[ i ] < v[ i - 1 ] ) return( false );
+  if( v[ i ] < v[ i - 1 ] )
+   return( false );
  return( true );
  }
 
@@ -71,20 +78,25 @@ bool risingFromTop( const std::vector< T > & v )
 inline bool isPalindrome( const std::string & s )
 {
  SequenceStack< List< char > > S;
- for( char c : s ) S.push( c );
  for( char c : s )
-  if( S.pop() != c ) return( false );
+  S.push( c );
+ for( char c : s )
+  if( S.pop() != c )
+   return( false );
  return( true );
  }
 
 inline bool isDyckWord( std::span< const int > w )
 {
- std::size_t h = 0;                         // the size of the stack
+ std::size_t h = 0;  // the size of the stack
  for( int c : w ) {
   ADS_PRE( ( c == 1 ) || ( c == -1 ) );
-  if( c == 1 ) ++h;
-  else if( h == 0 ) return( false );        // a pop of the empty stack
-  else --h;
+  if( c == 1 )
+   ++h;
+  else if( h == 0 )
+   return( false );  // a pop of the empty stack
+  else
+   --h;
   }
  return( true );
  }
@@ -94,11 +106,25 @@ inline bool isMatched( std::string_view s )
  ArrayStack< char > S( s.size() );
  for( char c : s )
   switch( c ) {
-   case '(': case '[': case '{': S.push( c ); break;
-   case ')': if( S.empty() || ( S.pop() != '(' ) ) return( false ); break;
-   case ']': if( S.empty() || ( S.pop() != '[' ) ) return( false ); break;
-   case '}': if( S.empty() || ( S.pop() != '{' ) ) return( false ); break;
-   default: ADS_PRE( false );
+   case '(':
+   case '[':
+   case '{':
+    S.push( c );
+    break;
+   case ')':
+    if( S.empty() || ( S.pop() != '(' ) )
+     return( false );
+    break;
+   case ']':
+    if( S.empty() || ( S.pop() != '[' ) )
+     return( false );
+    break;
+   case '}':
+    if( S.empty() || ( S.pop() != '{' ) )
+     return( false );
+    break;
+   default:
+    ADS_PRE( false );
    }
  return( S.empty() );
  }
@@ -107,25 +133,30 @@ template< Stack S , Queue Q >
 void reverseWithQueue( S & s )
 {
  const auto old = [ & ] {
-  if constexpr( ADS_CONTRACTS >= 3 ) return( detail::stackItems( s ) );
-  else return( std::vector< typename S::Item >() );
+  if constexpr( ADS_CONTRACTS >= 3 )
+   return( detail::stackItems( s ) );
+  else
+   return( std::vector< typename S::Item >() );
   }();
  Q q;
- while( ! s.empty() ) q.enqueue( s.pop() );
- while( ! q.empty() ) s.push( q.dequeue() );
+ while( ! s.empty() )
+  q.enqueue( s.pop() );
+ while( ! q.empty() )
+  s.push( q.dequeue() );
  ADS_AUDIT( ( [ & ] {
   auto now = detail::stackItems( s );
-  return( std::equal( now.begin() , now.end() , old.rbegin() ,
-                      old.rend() ) ); }() ) );
+  return( std::equal( now.begin() , now.end() , old.rbegin() , old.rend() ) );
+  }() ) );
  }
 
 template< Stack S >
 void sortStack( S & s )
 {
  const long n = detail::stackSize( s );
- for( long k = n ; k > 1 ; --k ) detail::sinkPass( s );   // n - 1 passes
+ for( long k = n ; k > 1 ; --k )
+  detail::sinkPass( s );  // n - 1 passes
  ADS_AUDIT( detail::risingFromTop( detail::stackItems( s ) ) &&
-            ( detail::stackSize( s ) == n ) );
+	    ( detail::stackSize( s ) == n ) );
  }
 
 template< Stack S >
@@ -134,16 +165,21 @@ void removeGreater( S & s , const typename S::Item & k )
  SequenceStack< List< typename S::Item > > aux;
  while( ! s.empty() ) {
   auto x = s.pop();
-  if( !( k < x ) ) aux.push( x );
+  if( ! ( k < x ) )
+   aux.push( x );
   }
- while( ! aux.empty() ) s.push( aux.pop() );
+ while( ! aux.empty() )
+  s.push( aux.pop() );
  ADS_AUDIT( ( [ & ] {
   for( const auto & x : detail::stackItems( s ) )
-   if( k < x ) return( false );
-  return( true ); }() ) );
+   if( k < x )
+    return( false );
+  return( true );
+  }() ) );
  }
 
-namespace detail {
+namespace detail
+{
 
 template< Stack S , class F >
 void bottomUp( S & s , F & f )

@@ -90,7 +90,7 @@
 
 #ifndef __ADS_BalancedParentheses
  #define __ADS_BalancedParentheses
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -110,19 +110,20 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- CLASS BalancedParentheses ------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a static sequence of balanced parentheses with a range min-max tree
-class BalancedParentheses {
+class BalancedParentheses
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- static constexpr std::size_t nil = std::size_t( -1 );   ///< no place
+ static constexpr std::size_t nil = std::size_t( -1 );  ///< no place
 
  /// the empty sequence
  BalancedParentheses( void );
@@ -230,7 +231,7 @@ class BalancedParentheses {
  /// \f]
  /// \pre \f$ i < \mathrm{size}() \f$ and \f$ d < 0 \f$
  [[nodiscard]] std::size_t forwardSearch( std::size_t i ,
-                                          std::int64_t d ) const;
+					  std::int64_t d ) const;
 
  /// the open parenthesis of the closed one at \f$ j \f$
  ///
@@ -275,28 +276,27 @@ class BalancedParentheses {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static constexpr std::size_t kLeaf = 512;    ///< bits in a leaf
- static constexpr std::size_t kGroup = 16;    ///< leaves in a group
+ static constexpr std::size_t kLeaf = 512;  ///< bits in a leaf
+ static constexpr std::size_t kGroup = 16;  ///< leaves in a group
 
  /// from \f$ e = E( a - 1 ) - r \f$, the first \f$ j \in [ a , b ) \f$ with
  /// \f$ E( j ) - r \le d \f$, `nil` if none; \f$ e \f$ becomes
  /// \f$ E( b - 1 ) - r \f$
  [[nodiscard]] std::size_t scanForward( std::size_t a , std::size_t b ,
-                                        std::int64_t & e ,
-                                        std::int64_t d ) const;
+					std::int64_t & e ,
+					std::int64_t d ) const;
 
  /// from \f$ e = E( b ) - r \f$, the last \f$ k \in [ a - 1 , b ) \f$ with
  /// \f$ E( k ) - r \le d \f$, plus 1, `nil` if none; \f$ e \f$ becomes
  /// \f$ E( a - 1 ) - r \f$
  [[nodiscard]] std::size_t scanBackward( std::size_t a , std::size_t b ,
-                                         std::int64_t & e ,
-                                         std::int64_t d ) const;
+					 std::int64_t & e ,
+					 std::int64_t d ) const;
 
  /// the last \f$ k < i \f$ with \f$ E( k ) - E( i ) = d \le 0 \f$, plus 1,
  /// counting \f$ E( -1 ) = 0 \f$; `nil` if none
  [[nodiscard]] std::size_t backwardSearch( std::size_t i ,
-                                           std::int64_t d ) const;
+					   std::int64_t d ) const;
 
  /// the end of the leaf \f$ l \f$, one past its last bit
  [[nodiscard]] std::size_t leafEnd( std::size_t l ) const {
@@ -306,9 +306,9 @@ class BalancedParentheses {
  /// whether the excess is never negative and 0 at the end
  [[nodiscard]] bool balanced( void ) const;
 
- CompactRankSelect f_b;                  ///< the parentheses
- std::size_t f_nleaf = 0;                ///< the leaves
- std::size_t f_groups = 1;               ///< leaves of the tree, a power of 2
+ CompactRankSelect f_b;     ///< the parentheses
+ std::size_t f_nleaf = 0;   ///< the leaves
+ std::size_t f_groups = 1;  ///< leaves of the tree, a power of 2
  /// the excess of a leaf and the least excess of its places and of the
  /// place before it, relative to that place
  std::vector< std::int16_t > f_lexc , f_lmin;
@@ -329,7 +329,7 @@ class BalancedParentheses {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BalancedParentheses.h included */
+#endif /* BalancedParentheses.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File BalancedParentheses.h ---------------------*/

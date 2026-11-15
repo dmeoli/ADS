@@ -61,7 +61,7 @@
 
 #ifndef __ADS_Reductions
  #define __ADS_Reductions
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -84,7 +84,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the place \f$ ( h n + i ) n + j \f$ of the variable or node of the tile
 /// \f$ h \f$ in the square \f$ ( i , j ) \f$
@@ -114,8 +115,8 @@ inline int tileVar( int h , int i , int j , int n );
 /// \f]
 /// \pre \f$ n \ge 1 \f$ and \f$ D \f$ is not empty
 /// \post an unoriented graph of \f$ m n^2 \f$ nodes, and \f$ k = n^2 \f$
-inline std::pair< Adjacency , int > dominoToClique(
-                                   const std::vector< Tile > & D , int n );
+inline std::pair< Adjacency , int >
+dominoToClique( const std::vector< Tile > & D , int n );
 
 /// BOUNDED TILING to SATISFIABILITY, on the \f$ m n^2 \f$ variables of
 /// `tileVar()`
@@ -297,7 +298,7 @@ inline std::vector< Point > sortToHull( const std::vector< long > & a );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Reductions.h included */
+#endif /* Reductions.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File Reductions.h --------------------------*/

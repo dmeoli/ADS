@@ -40,7 +40,7 @@
 
 #ifndef __ADS_OpenMPExecutor
  #define __ADS_OpenMPExecutor
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 #if defined( _OPENMP )
 
@@ -61,16 +61,17 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS OpenMPLock ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the lock of OpenMP, `omp_lock_t`, as a mutex of the standard
-class OpenMPLock {
+class OpenMPLock
+{
  public:
-
  /// an unlocked lock; on the runtime of LLVM a test-and-set one, since its
  /// default lock queues the threads and hands over in their order, so that
  /// with more threads than cores the next one is often descheduled and the
@@ -97,8 +98,7 @@ class OpenMPLock {
  bool try_lock( void ) { return( omp_test_lock( &f_lock ) != 0 ); }
 
  private:
-
- omp_lock_t f_lock;                        ///< the lock of OpenMP
+ omp_lock_t f_lock;  ///< the lock of OpenMP
  };  // end( class OpenMPLock )
 
 /*--------------------------------------------------------------------------*/
@@ -106,16 +106,16 @@ class OpenMPLock {
 /*--------------------------------------------------------------------------*/
 
 /// the executor on the threads of OpenMP
-class OpenMPExecutor {
+class OpenMPExecutor
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the executor of \f$ p \f$ threads of OpenMP (`omp_get_max_threads()`
  /// if \f$ p = 0 \f$)
  /// \pre \f$ p \ge 1 \f$
  explicit OpenMPExecutor( std::size_t p = 0 )
-  : f_p( p ? p : std::size_t( omp_get_max_threads() ) ) {
+     : f_p( p ? p : std::size_t( omp_get_max_threads() ) ) {
   ADS_PRE( f_p >= 1 );
   }
 
@@ -144,8 +144,8 @@ class OpenMPExecutor {
    }
   detail::FirstError error;
   const long m = long( n );
-  #pragma omp parallel for schedule( dynamic , 1 ) \
-                           num_threads( int( std::min( f_p , n ) ) )
+  #pragma omp parallel for schedule( dynamic, 1 )                             \
+    num_threads( int( std::min( f_p, n ) ) )
   for( long i = 0 ; i < m ; ++i ) {
    if( error.failed() )
     continue;
@@ -162,7 +162,12 @@ class OpenMPExecutor {
  /// the calls `f()` and `g()` in parallel, by `bulk()` on 2 indices
  template< class F , class G >
  void invoke( F && f , G && g ) {
-  bulk( 2 , [ & ]( std::size_t i ) { if( i == 0 ) f(); else g(); } );
+  bulk( 2 , [ & ]( std::size_t i ) {
+   if( i == 0 )
+    f();
+   else
+    g();
+   } );
   }
 
  /// the lock of the data shared by the workers of `run()`
@@ -210,28 +215,27 @@ class OpenMPExecutor {
     catch( ... ) {
      error.keep();
      }
-  }
+   }
   if( smaller )
    throw( std::runtime_error( "OpenMPExecutor::run: a team smaller than "
-                              "the workers" ) );
+			      "the workers" ) );
   error.rethrow();
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
- std::size_t f_p;                          ///< the threads
+ std::size_t f_p;  ///< the threads
  };  // end( class OpenMPExecutor )
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 
-#endif  /* _OPENMP */
+#endif /* _OPENMP */
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* OpenMPExecutor.h included */
+#endif /* OpenMPExecutor.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File OpenMPExecutor.h ------------------------*/

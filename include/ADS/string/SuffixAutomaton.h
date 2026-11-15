@@ -64,7 +64,7 @@
 
 #ifndef __ADS_SuffixAutomaton
  #define __ADS_SuffixAutomaton
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -82,18 +82,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS SuffixAutomaton ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the suffix automaton of a string, built a byte at a time
-class SuffixAutomaton {
+class SuffixAutomaton
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the automaton of the empty string, the start state alone
  SuffixAutomaton( void );
 
@@ -188,7 +189,7 @@ class SuffixAutomaton {
  /// \end{array}}
  /// \f]
  [[nodiscard]] std::pair< std::size_t , std::size_t >
-  longestCommonSubstring( std::string_view T ) const;
+ longestCommonSubstring( std::string_view T ) const;
 
  /// the number of states
  [[nodiscard]] std::size_t states( void ) const { return( f_len.size() ); }
@@ -198,7 +199,6 @@ class SuffixAutomaton {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the state reached from \f$ v \f$ by \f$ c \f$, `none` if there is no
  /// transition
  [[nodiscard]] std::uint32_t next( std::uint32_t v , unsigned char c ) const;
@@ -208,14 +208,14 @@ class SuffixAutomaton {
 
  static constexpr std::uint32_t none = ~std::uint32_t( 0 );
 
- std::vector< std::size_t > f_len;                 ///< the longest member
- std::vector< std::uint32_t > f_link;              ///< the suffix links
+ std::vector< std::size_t > f_len;     ///< the longest member
+ std::vector< std::uint32_t > f_link;  ///< the suffix links
  std::vector< std::vector< std::pair< unsigned char , std::uint32_t > > >
-  f_next;                                          ///< the transitions
- std::vector< std::uint8_t > f_prefix;             ///< ends a prefix of S
- std::uint32_t f_last = 0;                         ///< the state of S
- std::size_t f_n = 0;                              ///< the length of S
- mutable std::vector< std::size_t > f_count;       ///< |endpos|, or empty
+   f_next;                                    ///< the transitions
+ std::vector< std::uint8_t > f_prefix;        ///< ends a prefix of S
+ std::uint32_t f_last = 0;                    ///< the state of S
+ std::size_t f_n = 0;                         ///< the length of S
+ mutable std::vector< std::size_t > f_count;  ///< |endpos|, or empty
 
  };  // end( class SuffixAutomaton )
 
@@ -231,7 +231,7 @@ class SuffixAutomaton {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SuffixAutomaton.h included */
+#endif /* SuffixAutomaton.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File SuffixAutomaton.h -----------------------*/

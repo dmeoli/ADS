@@ -64,9 +64,9 @@ int main( int argc , char ** argv )
     };
    auto same = [ & ]( const auto & A , const char * who ) {
     if( ! std::equal( A.begin() , A.end() , ref.begin() , ref.end() ,
-                      []( auto a , auto b ) {
-                       return( std::uint64_t( a ) == std::uint64_t( b ) );
-                       } ) ) {
+		      []( auto a , auto b ) {
+		       return( std::uint64_t( a ) == std::uint64_t( b ) );
+		       } ) ) {
      std::fprintf( stderr , "%s: a different suffix array\n" , who );
      std::exit( 1 );
      }
@@ -75,37 +75,49 @@ int main( int argc , char ** argv )
    // the suffix arrays
    for( const char * who : { "ADS::suffixArray" , "ADS::suffixArray A/A" } )
     if( ! skip( who ) )
-     out( "suffix array" , who , median( [](){ return( 0 ); } ,
-           [ & ]( int ) {
-            const auto A = ADS::suffixArray( T );
-            sink = sink + A[ n / 2 ]; } , r , n ) );
+     out( "suffix array" , who ,
+	  median( []() { return( 0 ); } ,
+		  [ & ]( int ) {
+		   const auto A = ADS::suffixArray( T );
+		   sink = sink + A[ n / 2 ];
+		   } ,
+		  r , n ) );
    if( ( n <= 1000000 ) && ! skip( "ADS::suffixArraySais" ) ) {
     std::vector< std::size_t > A;
-    out( "suffix array" , "ADS::suffixArraySais" , median(
-          [](){ return( 0 ); } , [ & ]( int ) {
-           A = ADS::suffixArraySais( T );
-           sink = sink + A[ n / 2 ]; } , r , n ) );
+    out( "suffix array" , "ADS::suffixArraySais" ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  A = ADS::suffixArraySais( T );
+		  sink = sink + A[ n / 2 ];
+		  } ,
+		 r , n ) );
     same( A , "ADS::suffixArraySais" );
     }
 #ifdef ADS_HAS_LIBSAIS
    if( ! skip( "libsais" ) ) {
     std::vector< std::int32_t > A;
-    out( "suffix array" , "libsais" , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           A = std::vector< std::int32_t >( n );
-           libsais( t , A.data() , std::int32_t( n ) , 0 , nullptr );
-           sink = sink + std::uint64_t( A[ n / 2 ] ); } , r , n ) );
+    out( "suffix array" , "libsais" ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  A = std::vector< std::int32_t >( n );
+		  libsais( t , A.data() , std::int32_t( n ) , 0 , nullptr );
+		  sink = sink + std::uint64_t( A[ n / 2 ] );
+		  } ,
+		 r , n ) );
     same( A , "libsais" );
     }
 #endif
 #ifdef ADS_HAS_DIVSUFSORT
    if( ! skip( "divsufsort" ) ) {
     std::vector< saidx_t > A;
-    out( "suffix array" , "divsufsort" , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           A = std::vector< saidx_t >( n );
-           divsufsort( t , A.data() , saidx_t( n ) );
-           sink = sink + std::uint64_t( A[ n / 2 ] ); } , r , n ) );
+    out( "suffix array" , "divsufsort" ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  A = std::vector< saidx_t >( n );
+		  divsufsort( t , A.data() , saidx_t( n ) );
+		  sink = sink + std::uint64_t( A[ n / 2 ] );
+		  } ,
+		 r , n ) );
     same( A , "divsufsort" );
     }
 #endif
@@ -114,16 +126,23 @@ int main( int argc , char ** argv )
    const auto L = ADS::lcpArrayPhi( T , ref );
    for( const char * who : { "ADS::lcpArrayPhi" , "ADS::lcpArrayPhi A/A" } )
     if( ! skip( who ) )
-     out( "lcp" , who , median( [](){ return( 0 ); } , [ & ]( int ) {
-           const auto P = ADS::lcpArrayPhi( T , ref );
-           sink = sink + P[ n / 2 ]; } , r , n ) );
+     out( "lcp" , who ,
+	  median( []() { return( 0 ); } ,
+		  [ & ]( int ) {
+		   const auto P = ADS::lcpArrayPhi( T , ref );
+		   sink = sink + P[ n / 2 ];
+		   } ,
+		  r , n ) );
    if( ( n <= 1000000 ) && ! skip( "ADS::lcpArray (Kasai)" ) ) {
     const std::vector< std::size_t > S( ref.begin() , ref.end() );
     std::vector< std::size_t > K;
-    out( "lcp" , "ADS::lcpArray (Kasai)" , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           K = ADS::lcpArray( T , S );
-           sink = sink + K[ n / 2 ]; } , r , n ) );
+    out( "lcp" , "ADS::lcpArray (Kasai)" ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  K = ADS::lcpArray( T , S );
+		  sink = sink + K[ n / 2 ];
+		  } ,
+		 r , n ) );
     if( ! std::equal( K.begin() , K.end() , L.begin() , L.end() ) )
      return( 1 );
     }
@@ -131,13 +150,17 @@ int main( int argc , char ** argv )
    if( ! skip( "libsais plcp+lcp" ) ) {
     const std::vector< std::int32_t > S( ref.begin() , ref.end() );
     std::vector< std::int32_t > Q;
-    out( "lcp" , "libsais plcp+lcp" , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           std::vector< std::int32_t > P( n );
-           Q = std::vector< std::int32_t >( n );
-           libsais_plcp( t , S.data() , P.data() , std::int32_t( n ) );
-           libsais_lcp( P.data() , S.data() , Q.data() , std::int32_t( n ) );
-           sink = sink + std::uint64_t( Q[ n / 2 ] ); } , r , n ) );
+    out( "lcp" , "libsais plcp+lcp" ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  std::vector< std::int32_t > P( n );
+		  Q = std::vector< std::int32_t >( n );
+		  libsais_plcp( t , S.data() , P.data() , std::int32_t( n ) );
+		  libsais_lcp( P.data() , S.data() , Q.data() ,
+			       std::int32_t( n ) );
+		  sink = sink + std::uint64_t( Q[ n / 2 ] );
+		  } ,
+		 r , n ) );
     for( std::size_t i = 0 ; i + 1 < n ; ++i )
      if( std::uint32_t( Q[ i + 1 ] ) != L[ i ] ) {
       std::fprintf( stderr , "libsais: a different LCP array\n" );

@@ -27,7 +27,7 @@
 
 #ifndef __ADS_LinkedHashSet
  #define __ADS_LinkedHashSet
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -51,7 +51,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS LinkedHashSet ---------------------------*/
@@ -62,12 +63,12 @@ namespace ADS {
 /// position, so `insert()`, `remove()` and `contains()` take \f$ O( 1 ) \f$
 /// expected time and `forEach()` \f$ O( n ) \f$ (exercise 8.9)
 template< class T , class H = std::hash< T > >
-class LinkedHashSet {
+class LinkedHashSet
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty set
  LinkedHashSet( void );
@@ -135,7 +136,7 @@ class LinkedHashSet {
  using const_reference = const T &;       ///< a constant reference
  /// the iterator of the list of the order, constant
  using const_iterator = typename List< T >::const_iterator;
- using iterator = const_iterator;         ///< the same, constant
+ using iterator = const_iterator;  ///< the same, constant
 
  /// the iterator on the first item inserted
  [[nodiscard]] const_iterator begin( void ) const {
@@ -150,15 +151,14 @@ class LinkedHashSet {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  using Pos = typename List< T >::Pos;
 
  /// each item of the order is indexed at its own position, and the table
  /// has no other item, \f$ O( n ) \f$
  [[nodiscard]] bool indexed( void ) const;
 
- List< T > f_order;                                        ///< the order
- ChainedHashTable< T , Pos , Chain::FRONT , H > f_index;   ///< the places
+ List< T > f_order;                                    ///< the order
+ ChainedHashTable< T , Pos , Chain::FRONT , H > f_index;  ///< the places
 
  };  // end( class LinkedHashSet )
 
@@ -172,7 +172,7 @@ class LinkedHashSet {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LinkedHashSet.h included */
+#endif /* LinkedHashSet.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File LinkedHashSet.h ------------------------*/

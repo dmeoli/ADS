@@ -29,7 +29,7 @@
 
 #ifndef __ADS_StrandSort
  #define __ADS_StrandSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -49,7 +49,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the strand sort of a list; the number of strands goes to `*strands`, if
 /// given
@@ -73,7 +74,7 @@ namespace ADS {
 /// \post \f$ L \f$ is sorted (audit)
 template< class T , class C = std::less<> >
 void strandSort( List< T > & L , C less = C() ,
-                 std::size_t * strands = nullptr );
+		 std::size_t * strands = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
@@ -87,7 +88,7 @@ void strandSort( List< T > & L , C less = C() ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* StrandSort.h included */
+#endif /* StrandSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File StrandSort.h --------------------------*/

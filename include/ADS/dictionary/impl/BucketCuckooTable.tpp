@@ -15,9 +15,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the mask of the bytes equal to 0 in the word w, their bits 7 set,
 /// exactly (no false byte after a borrow)
@@ -32,11 +34,11 @@ namespace detail {
 
 template< class K , class V , class H , class Eq >
 BucketCuckooTable< K , V , H , Eq >::BucketCuckooTable( std::size_t n , H h ,
-                                                        Eq eq )
- : f_h( h ) , f_eq( eq )
+						     Eq eq )
+    : f_h( h ) , f_eq( eq )
 {
- const std::size_t b = std::bit_ceil( std::max< std::size_t >(
-                        2 , ( n * 10 + 35 ) / 36 ) );   // at load 0.9
+ const std::size_t b = std::bit_ceil(
+   std::max< std::size_t >( 2 , ( n * 10 + 35 ) / 36 ) );  // at load 0.9
  f_lg = std::countr_zero( b );
  f_T.assign( b , 0 );
  f_S.resize( 4 * b );
@@ -59,28 +61,25 @@ std::uint32_t BucketCuckooTable< K , V , H , Eq >::tag( std::uint64_t h )
  }
 
 template< class K , class V , class H , class Eq >
-std::size_t BucketCuckooTable< K , V , H , Eq >::first( std::uint64_t h )
- const
+std::size_t BucketCuckooTable< K , V , H , Eq >::first( std::uint64_t h ) const
 {
  return( std::size_t( h >> ( 64 - f_lg ) ) );
  }
 
 template< class K , class V , class H , class Eq >
 std::size_t BucketCuckooTable< K , V , H , Eq >::other( std::size_t b ,
-                                                        std::uint32_t t )
- const
+						     std::uint32_t t ) const
 {
  // an odd offset below the buckets, so that the two differ, by the top
  // bits of the product of the tag by the golden ratio
- const auto d = std::size_t( ( std::uint64_t( t ) * 0x9E3779B97F4A7C15ULL )
-                             >> ( 64 - f_lg ) );
+ const auto d = std::size_t( ( std::uint64_t( t ) * 0x9E3779B97F4A7C15ULL ) >>
+			     ( 64 - f_lg ) );
  return( b ^ ( d | 1 ) );
  }
 
 template< class K , class V , class H , class Eq >
 std::size_t BucketCuckooTable< K , V , H , Eq >::locate( const K & k ,
-                                                         std::uint64_t h )
- const
+						      std::uint64_t h ) const
 {
  const std::uint32_t t = tag( h );
  std::size_t b = first( h );
@@ -105,8 +104,8 @@ int BucketCuckooTable< K , V , H , Eq >::freePlace( std::size_t b ) const
 template< class K , class V , class H , class Eq >
 template< class KK , class VV >
 void BucketCuckooTable< K , V , H , Eq >::put( std::size_t b , int i ,
-                                               std::uint32_t t , KK && k ,
-                                               VV && v )
+					    std::uint32_t t , KK && k ,
+					    VV && v )
 {
  Slot & s = f_S[ 4 * b + std::size_t( i ) ];
  s.key = std::forward< KK >( k );
@@ -121,7 +120,8 @@ std::size_t BucketCuckooTable< K , V , H , Eq >::makeRoom( std::uint64_t h )
 {
  // the nodes of the search: a bucket, the node it comes from and the place
  // of that bucket whose key moves into it
- struct Node {
+ struct Node
+ {
   std::size_t b;
   int parent , from , depth;
   };
@@ -134,14 +134,15 @@ std::size_t BucketCuckooTable< K , V , H , Eq >::makeRoom( std::uint64_t h )
   for( ; x >= 0 ; x = N[ x ].parent )
    if( N[ x ].b == b )
     return( true );
-  return( false ); };
+  return( false );
+  };
  for( int q = 0 ; q < nn ; ++q ) {
   const std::size_t b = N[ q ].b;
   for( int i = 0 ; i < 4 ; ++i ) {
    const std::uint32_t t = ( f_T[ b ] >> ( 8 * i ) ) & 0xFF;
    const std::size_t a = other( b , t );
    const int j = freePlace( a );
-   if( j < 4 ) {                          // the moves, from the end
+   if( j < 4 ) {  // the moves, from the end
     Slot & s = f_S[ 4 * b + std::size_t( i ) ];
     put( a , j , t , std::move( s.key ) , std::move( s.value ) );
     f_T[ b ] &= ~( 0xFFU << ( 8 * i ) );
@@ -170,7 +171,7 @@ std::size_t BucketCuckooTable< K , V , H , Eq >::makeRoom( std::uint64_t h )
 template< class K , class V , class H , class Eq >
 template< class KK , class VV >
 bool BucketCuckooTable< K , V , H , Eq >::place( std::uint64_t h , KK && k ,
-                                                 VV && v )
+					      VV && v )
 {
  const std::uint32_t t = tag( h );
  const std::size_t b1 = first( h ) , b2 = other( b1 , t );
@@ -183,7 +184,7 @@ bool BucketCuckooTable< K , V , H , Eq >::place( std::uint64_t h , KK && k ,
   put( b2 , i , t , std::forward< KK >( k ) , std::forward< VV >( v ) );
   return( true );
   }
- if( 50 * ( f_n + 1 ) > 49 * f_S.size() ) // past the load 0.98
+ if( 50 * ( f_n + 1 ) > 49 * f_S.size() )  // past the load 0.98
   return( false );
  const std::size_t r = makeRoom( h );
  if( r == ~std::size_t( 0 ) )
@@ -216,7 +217,8 @@ void BucketCuckooTable< K , V , H , Eq >::grow( void )
  // the key AHEAD places later prefetched
  constexpr std::size_t AHEAD = 8;
  auto full = [ & ]( std::size_t j ) {
-  return( ( ( T[ j >> 2 ] >> ( 8 * ( j & 3 ) ) ) & 0xFF ) != 0 ); };
+  return( ( ( T[ j >> 2 ] >> ( 8 * ( j & 3 ) ) ) & 0xFF ) != 0 );
+  };
  std::vector< std::uint64_t > X( S.size() );
  for( std::size_t j = 0 ; j < S.size() ; ++j ) {
   if( j + AHEAD < S.size() )
@@ -233,13 +235,13 @@ void BucketCuckooTable< K , V , H , Eq >::grow( void )
    __builtin_prefetch( &f_S[ 4 * b ] , 1 );
    }
 #endif
-  if( full( i ) && ! place( X[ i ] , std::move( S[ i ].key ) ,
-                            std::move( S[ i ].value ) ) )
+  if( full( i ) &&
+      ! place( X[ i ] , std::move( S[ i ].key ) , std::move( S[ i ].value ) ) )
    break;
   }
  if( i == S.size() )
   return;
- std::vector< Slot > P;                   // the rare case
+ std::vector< Slot > P;  // the rare case
  P.reserve( f_n );
  auto gather = [ & ]( void ) {
   for( std::size_t j = 0 ; j < f_S.size() ; ++j )
@@ -255,22 +257,22 @@ void BucketCuckooTable< K , V , H , Eq >::grow( void )
   std::size_t j = 0;
   for( ; j < P.size() ; ++j )
    if( ! place( hash( P[ j ].key ) , std::move( P[ j ].key ) ,
-                std::move( P[ j ].value ) ) )
+		std::move( P[ j ].value ) ) )
     break;
   if( j == P.size() )
    return;
   std::vector< Slot > R( std::make_move_iterator( P.begin() + long( j ) ) ,
-                         std::make_move_iterator( P.end() ) );
-  P.swap( R );                            // the ones not placed,
-  gather();                               // and the ones placed
+			 std::make_move_iterator( P.end() ) );
+  P.swap( R );  // the ones not placed,
+  gather();     // and the ones placed
   }
  }
 
 /*--------------------------------------------------------------------------*/
 
 template< class K , class V , class H , class Eq >
-std::optional< V > BucketCuckooTable< K , V , H , Eq >::lookup( const K & k )
- const
+std::optional< V >
+BucketCuckooTable< K , V , H , Eq >::lookup( const K & k ) const
 {
  const V * v = find( k );
  return( v ? std::optional< V >( *v ) : std::nullopt );
@@ -315,7 +317,7 @@ bool BucketCuckooTable< K , V , H , Eq >::remove( const K & k )
  if( i == ~std::size_t( 0 ) )
   return( false );
  f_T[ i >> 2 ] &= ~( 0xFFU << ( 8 * ( i & 3 ) ) );
- f_S[ i ] = Slot{};                       // what the pair holds goes now
+ f_S[ i ] = Slot{};  // what the pair holds goes now
  --f_n;
  ADS_POST( ! contains( k ) );
  ADS_INVARIANT( placed( k ) );
@@ -367,7 +369,7 @@ std::size_t BucketCuckooTable< K , V , H , Eq >::moves( void ) const
 template< class K , class V , class H , class Eq >
 bool BucketCuckooTable< K , V , H , Eq >::placed( const K & k ) const
 {
- auto ok = [ & ]( const K & x ) {             // in one bucket, once
+ auto ok = [ & ]( const K & x ) {  // in one bucket, once
   const std::uint64_t h = hash( x );
   const std::uint32_t t = tag( h );
   const std::size_t b1 = first( h ) , b2 = other( b1 , t );
@@ -375,12 +377,13 @@ bool BucketCuckooTable< K , V , H , Eq >::placed( const K & k ) const
   for( std::size_t b : { b1 , b2 } ) {
    for( int i = 0 ; i < 4 ; ++i )
     if( ( ( f_T[ b ] >> ( 8 * i ) ) & 0xFF ) == t &&
-        f_eq( f_S[ 4 * b + std::size_t( i ) ].key , x ) )
+	f_eq( f_S[ 4 * b + std::size_t( i ) ].key , x ) )
      ++c;
    if( b2 == b1 )
     break;
    }
-  return( c ); };
+  return( c );
+  };
  if( ok( k ) > 1 )
   return( false );
  if( f_S.size() > 1024 )

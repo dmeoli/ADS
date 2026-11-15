@@ -82,7 +82,7 @@
 
 #ifndef __ADS_PartialRebuildingTree
  #define __ADS_PartialRebuildingTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -107,13 +107,14 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the rules that select the subtree to rebuild
 enum class RebuildPolicy {
- WEIGHT ,           ///< \f$ s( u ) \le \frac23 s( u.\mathit{parent} ) \f$
- COUNTDOWN ,        ///< a timer set to \f$ s( u ) / 3 \f$ that runs out
- DYNAMITE           ///< an explosion with probability \f$ 1 / s( u ) \f$
+ WEIGHT ,     ///< \f$ s( u ) \le \frac23 s( u.\mathit{parent} ) \f$
+ COUNTDOWN ,  ///< a timer set to \f$ s( u ) / 3 \f$ that runs out
+ DYNAMITE    ///< an explosion with probability \f$ 1 / s( u ) \f$
  };
 
 /*--------------------------------------------------------------------------*/
@@ -123,23 +124,22 @@ enum class RebuildPolicy {
 /// a DICTIONARY on a binary search tree balanced by partial rebuilding by
 /// the rule `P`
 template< std::totally_ordered K , class V , RebuildPolicy P >
-class PartialRebuildingTree {
+class PartialRebuildingTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty tree, its random choices (if any) drawn from the seed
- explicit PartialRebuildingTree( std::uint64_t seed = 1 ) : f_g( seed ) {}
+ explicit PartialRebuildingTree( std::uint64_t seed = 1 ) : f_g( seed ) { }
 
  /// no copy, since the nodes are linked by pointers
  PartialRebuildingTree( const PartialRebuildingTree & ) = delete;
 
  /// no copy, since the nodes are linked by pointers
- PartialRebuildingTree & operator=( const PartialRebuildingTree & ) =
-  delete;
+ PartialRebuildingTree & operator=( const PartialRebuildingTree & ) = delete;
 
  /// the nodes of `other`, which is left empty
  PartialRebuildingTree( PartialRebuildingTree && other ) noexcept;
@@ -195,8 +195,8 @@ class PartialRebuildingTree {
 
  /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
  /// (the `find(x)` of an SSet of Morin)
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-  const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
 
  /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
  /// time: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
@@ -220,32 +220,36 @@ class PartialRebuildingTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the timer of a node of `CountdownTree`
- struct Timer { long t = 0; };
+ struct Timer
+ {
+  long t = 0;
+  };
 
  /// no timer
- struct NoTimer {};
+ struct NoTimer
+ { };
 
  /// a node: its pair, its children, its size and, for `CountdownTree`, its
  /// timer
  struct Node
-  : std::conditional_t< P == RebuildPolicy::COUNTDOWN , Timer , NoTimer > {
-  K key;                       ///< the key
-  V value;                     ///< the value
-  Node * left = nullptr;       ///< the left child
-  Node * right = nullptr;      ///< the right child
-  std::size_t s = 1;           ///< the nodes of the subtree
+     : std::conditional_t< P == RebuildPolicy::COUNTDOWN , Timer , NoTimer >
+ {
+  K key;                   ///< the key
+  V value;                 ///< the value
+  Node * left = nullptr;   ///< the left child
+  Node * right = nullptr;  ///< the right child
+  std::size_t s = 1;       ///< the nodes of the subtree
   /// the node of a pair
-  Node( const K & k , const V & v ) : key( k ) , value( v ) {}
+  Node( const K & k , const V & v ) : key( k ) , value( v ) { }
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the shape of the tree, for `PathIterator`
- struct Shape {
+ struct Shape
+ {
   /// the root of the tree `o`
   static auto root( const auto & o ) { return( o.f_root ); }
   /// the left child of the node `n`
@@ -260,13 +264,13 @@ class PartialRebuildingTree {
 
  /// the pairs of references to a key and its value
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
  /// the constant iterator by increasing key, along the path from the root
  using const_iterator = PathIterator< PartialRebuildingTree , Shape >;
- using iterator = const_iterator;          ///< the constant iterator
+ using iterator = const_iterator;  ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
@@ -282,7 +286,6 @@ class PartialRebuildingTree {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  static std::size_t sz( const Node * u ) { return( u ? u->s : 0 ); }
 
  /// the rule on the path, top down, and the rebuild of the first node it
@@ -298,29 +301,28 @@ class PartialRebuildingTree {
  /// the node of the smallest key not smaller than \f$ k \f$, nil if none
  [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
- Node * f_root = nullptr;          ///< the root
- std::vector< Node * > f_path;     ///< the path of the last operation
- std::vector< Node * > f_buf;      ///< the buffer of the rebuilds
- SplitMix64 f_g;                   ///< the random choices of `DYNAMITE`
- std::size_t f_rebuilds = 0;       ///< the rebuilds
- std::size_t f_work = 0;           ///< the nodes rebuilt
+ Node * f_root = nullptr;       ///< the root
+ std::vector< Node * > f_path;  ///< the path of the last operation
+ std::vector< Node * > f_buf;   ///< the buffer of the rebuilds
+ SplitMix64 f_g;                ///< the random choices of `DYNAMITE`
+ std::size_t f_rebuilds = 0;    ///< the rebuilds
+ std::size_t f_work = 0;        ///< the nodes rebuilt
 
  };  // end( class PartialRebuildingTree )
 
 /// the tree of exercise 8.8 of Morin, balanced by weight by rebuilds
 template< std::totally_ordered K , class V >
 using WeightRebuildTree = PartialRebuildingTree< K , V ,
-                                                 RebuildPolicy::WEIGHT >;
+						 RebuildPolicy::WEIGHT >;
 
 /// the `CountdownTree` of exercise 8.9 of Morin
 template< std::totally_ordered K , class V >
 using CountdownTree = PartialRebuildingTree< K , V ,
-                                             RebuildPolicy::COUNTDOWN >;
+					     RebuildPolicy::COUNTDOWN >;
 
 /// the `DynamiteTree` of exercise 8.10 of Morin
 template< std::totally_ordered K , class V >
-using DynamiteTree = PartialRebuildingTree< K , V ,
-                                            RebuildPolicy::DYNAMITE >;
+using DynamiteTree = PartialRebuildingTree< K , V , RebuildPolicy::DYNAMITE >;
 
 /*--------------------------------------------------------------------------*/
 
@@ -334,7 +336,7 @@ using DynamiteTree = PartialRebuildingTree< K , V ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PartialRebuildingTree.h included */
+#endif /* PartialRebuildingTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- End File PartialRebuildingTree.h --------------------*/

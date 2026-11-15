@@ -15,26 +15,25 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , class Less , class A >
 MeldableHeap< T , Less , A >::MeldableHeap( Less less , std::uint64_t seed ,
-                                            const A & alloc )
- : f_less( std::move( less ) ) , f_g( seed ) , f_alloc( alloc )
-{
- }
+					  const A & alloc )
+    : f_less( std::move( less ) ) , f_g( seed ) , f_alloc( alloc )
+{ }
 
 template< class T , class Less , class A >
 MeldableHeap< T , Less , A >::MeldableHeap( MeldableHeap && o ) noexcept
- : f_root( std::exchange( o.f_root , nullptr ) ) ,
-   f_n( std::exchange( o.f_n , 0 ) ) , f_less( o.f_less ) , f_g( o.f_g ) ,
-   f_bits( o.f_bits ) , f_left( o.f_left ) , f_alloc( o.f_alloc )
-{
- }
+    : f_root( std::exchange( o.f_root , nullptr ) ) ,
+      f_n( std::exchange( o.f_n , 0 ) ) , f_less( o.f_less ) , f_g( o.f_g ) ,
+      f_bits( o.f_bits ) , f_left( o.f_left ) , f_alloc( o.f_alloc )
+{ }
 
 template< class T , class Less , class A >
-MeldableHeap< T , Less , A > & MeldableHeap< T , Less , A >::operator=(
-                                                  MeldableHeap && o ) noexcept
+MeldableHeap< T , Less , A > &
+MeldableHeap< T , Less , A >::operator=( MeldableHeap && o ) noexcept
 {
  std::swap( f_root , o.f_root );
  std::swap( f_n , o.f_n );
@@ -55,7 +54,7 @@ MeldableHeap< T , Less , A >::~MeldableHeap()
 template< class T , class Less , class A >
 void MeldableHeap< T , Less , A >::clear( void )
 {
- std::vector< Node * > S;   // a stack: the tree may be deep
+ std::vector< Node * > S;  // a stack: the tree may be deep
  if( f_root )
   S.push_back( f_root );
  while( ! S.empty() ) {
@@ -115,15 +114,15 @@ auto MeldableHeap< T , Less , A >::merge( Node * a , Node * b ) -> Node *
  if( f_less( b->x , a->x ) )
   std::swap( a , b );
  Node * r = a;
- for( ; ; ) {   // b goes below a, whose item is not larger than b's
-  Node * & c = coin() ? a->left : a->right;
+ for( ; ; ) {  // b goes below a, whose item is not larger than b's
+  Node *& c = coin() ? a->left : a->right;
   if( ! c ) {
    c = b;
    b->parent = a;
    return( r );
    }
-  if( f_less( b->x , c->x ) ) {   // b takes the place of c, which goes
-   Node * d = c;                  // below b
+  if( f_less( b->x , c->x ) ) {  // b takes the place of c, which goes
+   Node * d = c;                // below b
    c = b;
    b->parent = a;
    a = b;
@@ -223,10 +222,10 @@ std::vector< T > MeldableHeap< T , Less , A >::smallest( std::size_t k ) const
  const auto better = [ this ]( const Node * a , const Node * b ) {
   return( f_less( a->x , b->x ) );
   };
- std::vector< const Node * > Q{ f_root };   // a binary heap of nodes
+ std::vector< const Node * > Q{ f_root };  // a binary heap of nodes
  while( ( S.size() < k ) && ! Q.empty() ) {
   std::pop_heap( Q.begin() , Q.end() ,
-                 [ & ]( auto a , auto b ) { return( better( b , a ) ); } );
+		 [ & ]( auto a , auto b ) { return( better( b , a ) ); } );
   const Node * u = Q.back();
   Q.pop_back();
   S.push_back( u->x );
@@ -234,7 +233,7 @@ std::vector< T > MeldableHeap< T , Less , A >::smallest( std::size_t k ) const
    if( c ) {
     Q.push_back( c );
     std::push_heap( Q.begin() , Q.end() ,
-                    [ & ]( auto a , auto b ) { return( better( b , a ) ); } );
+		    [ & ]( auto a , auto b ) { return( better( b , a ) ); } );
     }
   }
  return( S );
@@ -242,7 +241,7 @@ std::vector< T > MeldableHeap< T , Less , A >::smallest( std::size_t k ) const
 
 template< class T , class Less , class A >
 bool MeldableHeap< T , Less , A >::subtree( const Node * u ,
-                                            std::size_t & n ) const
+					  std::size_t & n ) const
 {
  std::vector< const Node * > S{ u };
  while( ! S.empty() ) {

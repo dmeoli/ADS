@@ -49,7 +49,7 @@
 
 #ifndef __ADS_StringBreaking
  #define __ADS_StringBreaking
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -70,7 +70,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the least total cost of the cuts of a string of the given length at
 /// the places `cuts`
@@ -98,12 +99,13 @@ namespace ADS {
 ///      \f$ ( 0 , \mathit{length} ) \f$
 template< class I >
 [[nodiscard]] I stringBreakingCost( const std::vector< I > & cuts ,
-                                    std::type_identity_t< I > length );
+				    std::type_identity_t< I > length );
 
 /// the cost of `stringBreakingCost()` above, on `std::int64_t` (or a
 /// braced list)
-[[nodiscard]] inline std::int64_t stringBreakingCost(
-              const std::vector< std::int64_t > & cuts , std::int64_t length );
+[[nodiscard]] inline std::int64_t
+stringBreakingCost( const std::vector< std::int64_t > & cuts ,
+		    std::int64_t length );
 
 /// the places `cuts` in an order of least total cost
 ///
@@ -129,13 +131,15 @@ template< class I >
 /// \post a permutation of `cuts` of the cost of `stringBreakingCost()`
 ///       (audit)
 template< class I >
-[[nodiscard]] std::vector< I > stringBreakingOrder(
-           const std::vector< I > & cuts , std::type_identity_t< I > length );
+[[nodiscard]] std::vector< I >
+stringBreakingOrder( const std::vector< I > & cuts ,
+		     std::type_identity_t< I > length );
 
 /// the order of `stringBreakingOrder()` above, on `std::int64_t` (or a
 /// braced list)
-[[nodiscard]] inline std::vector< std::int64_t > stringBreakingOrder(
-              const std::vector< std::int64_t > & cuts , std::int64_t length );
+[[nodiscard]] inline std::vector< std::int64_t >
+stringBreakingOrder( const std::vector< std::int64_t > & cuts ,
+		     std::int64_t length );
 
 /*--------------------------------------------------------------------------*/
 
@@ -149,7 +153,7 @@ template< class I >
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* StringBreaking.h included */
+#endif /* StringBreaking.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File StringBreaking.h ------------------------*/

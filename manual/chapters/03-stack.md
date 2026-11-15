@@ -24,10 +24,10 @@ summarizes the costs.
 
 ## 3.1 The interface {#sec-3-1}
 
-The STACK of [Montresor 2025, §4.3.1](Z-bibliography.md#ref-montresor2025)
-has four operations: `push(v)` adds the item $v$ on top, `pop()` removes
-the item on top and returns it, `top()` reads it, and `empty()` is true
-when there is no item. Their meaning is fixed by the two axioms
+The STACK of [Montresor 2025, §4.3.1](Z-bibliography.md#ref-montresor2025) has
+four operations: `push( v )` adds the item $v$ on top, `pop()` removes the
+item on top and returns it, `top()` reads it, and `empty()` is true when there
+is no item. Their meaning is fixed by the two axioms
 
 $$
 \mathrm{top}( \mathrm{push}( S , v ) ) = v , \qquad
@@ -61,17 +61,17 @@ shrink).
 ## 3.2 A stack on a vector {#sec-3-2}
 
 `ArrayStack` keeps the $n$ items in the places $0 , \ldots , n - 1$ of a
-vector $A$ of $c$ places, with the item at the bottom in $A[ 0 ]$ and the
-top in $A[ n - 1 ]$. Hence `push(v)` writes the place $n$ and increments
-$n$, while `pop()` decrements $n$ and returns the item of the place $n$
-([Algorithm 3.1](03-stack.md#alg-3-1)), each in constant time. Its vector
-is allocated once, when the stack is built (its $c$ places are then
-default-constructed, which costs $O( c )$ time and requires items
-with a default constructor), and the only precondition besides those of
-(3.1) is that `push()` finds the stack not full, i.e., $n < c$.
-[Figure 3.1](03-stack.md#fig-3-1) shows the vector before and after the two
-operations. We remark that `pop()` does not clear the place it frees: the
-item is moved out of it, and the place is simply no longer counted.
+vector $A$ of $c$ places, with the item at the bottom in $A[ 0 ]$ and the top
+in $A[ n - 1 ]$. Hence `push( v )` writes the place $n$ and increments $n$,
+while `pop()` decrements $n$ and returns the item of the place $n$ ([Algorithm
+3.1](03-stack.md#alg-3-1)), each in constant time. Its vector is allocated
+once, when the stack is built (its $c$ places are then default-constructed,
+which costs $O( c )$ time and requires items with a default constructor), and
+the only precondition besides those of (3.1) is that `push()` finds the stack
+not full, i.e., $n < c$. [Figure 3.1](03-stack.md#fig-3-1) shows the vector
+before and after the two operations. We remark that `pop()` does not clear the
+place it frees: the item is moved out of it, and the place is simply no longer
+counted.
 
 ![Figure 3.1. An `ArrayStack` of capacity $c = 8$ with the items `a`, `b`, `c`, `d`, after `push(e)` and after `pop()`; the place that `push(e)` fills is in orange, the one that `pop()` reads in violet, and the free places in the faintest tint.](../figures/stack-array.svg){#fig-3-1}
 
@@ -91,26 +91,25 @@ with $0 \le n \le c$, and its operations satisfy the axioms (3.1); each of
 construction takes $O( c )$ time and $\Theta( c )$ space.*
 
 *Proof.* By induction on the operations, the new stack having $n = 0$. A
-`push(v)` with $n < c$ writes $v$ in $A[ n ]$ and increments $n$, which
+`push( v )` with $n < c$ writes $v$ in $A[ n ]$ and increments $n$, which
 stays at most $c$, so that $v$ is the new top and the places below it are
-untouched; hence `top()`, which reads $A[ n - 1 ]$, gives $v$ right after
-it. A `pop()` with $n > 0$ decrements $n$ and returns $A[ n ]$, the old
-top, and leaves $A[ 0 .. n - 1 ]$, which right after a `push()` is the
-stack before it, i.e., $\mathrm{pop}( \mathrm{push}( S , v ) ) = S$. Each
-operation makes a constant number of steps, and the constructor allocates
-and default-constructs the $c$ places ([§1.6](01-introduction.md#sec-1-6)).
-$\square$
+untouched; hence `top()`, which reads $A[ n - 1 ]$, gives $v$ right after it.
+A `pop()` with $n > 0$ decrements $n$ and returns $A[ n ]$, the old top, and
+leaves $A[ 0 .. n - 1 ]$, which right after a `push()` is the stack before it,
+i.e., $\mathrm{pop}( \mathrm{push}( S , v ) ) = S$. Each operation makes a
+constant number of steps, and the constructor allocates and default-constructs
+the $c$ places ([§1.6](01-introduction.md#sec-1-6)). $\square$
 
 The code follows the pseudocode line by line; its contracts check the
-preconditions above, the number of items after each operation, and, after
-a `push(v)`, that $n \le c$ and that $v$ is on top. For instance, with the
+preconditions above, the number of items after each operation, and, after a
+`push( v )`, that $n \le c$ and that $v$ is on top. For instance, with the
 header `ADS/stack/ArrayStack.h`,
 
 ```cpp
-ADS::ArrayStack< std::string > S( 8 );     // c = 8, n = 0
+ADS::ArrayStack< std::string > S( 8 );  // c = 8, n = 0
 S.push( "a" );
 S.push( "b" );
-std::string t = S.pop();                   // t is "b", and n = 1
+std::string t = S.pop();  // t is "b", and n = 1
 ```
 
 where `pop()` moves the item out of the place $n$ (line 3 of `pop()`)
@@ -149,18 +148,19 @@ calls are
 ```cpp
 // declarations of <ADS/stack/ArrayStack.h>
 template< class T >
-class ArrayStack {
+class ArrayStack
+{
  public:
-  using Item = T;
-  explicit ArrayStack( std::size_t dim );
-  bool empty( void ) const;
-  const T & top( void ) const;
-  T pop( void );
-  void push( const T & v );
-  std::size_t size( void ) const;
-  std::size_t capacity( void ) const;
-  bool operator==( const ArrayStack & o ) const;
-  };
+ using Item = T;
+ explicit ArrayStack( std::size_t dim );
+ bool empty( void ) const;
+ const T & top( void ) const;
+ T pop( void );
+ void push( const T & v );
+ std::size_t size( void ) const;
+ std::size_t capacity( void ) const;
+ bool operator==( const ArrayStack & o ) const;
+ };
 ```
 
 ## 3.3 A stack on a sequence {#sec-3-3}
@@ -192,20 +192,18 @@ cost, on the two lists `head()`, `read()`, `insert()` and `remove()` at a
 position take $O( 1 )$ time ([Table 2.1](02-sequence.md#tab-2-1)), and
 each operation of (3.2) calls a constant number of them. $\square$
 
-The price of the list is one node (an item and at least one pointer) per
-item. On a vector, however, an insertion at the head moves
-all the items; there the top had better be the last item, as in
-`ArrayStack`. Since the class is parametrized on the sequence, the same code
-gives a stack on `List`, on `SinglyList` and on any other model of
-the concept `Sequence` of `ADS/ADT.h` (cf.
-[§1.3.2](01-introduction.md#sec-1-3-2)). Its `pop()` reads the head and
+The price of the list is one node (an item and at least one pointer) per item.
+On a vector, however, an insertion at the head moves all the items; there the
+top had better be the last item, as in `ArrayStack`. Since the class is
+parametrized on the sequence, the same code gives a stack on `List`, on
+`SinglyList` and on any other model of the concept `Sequence` of `ADS/ADT.h`
+(cf. [§1.3.2](01-introduction.md#sec-1-3-2)). Its `pop()` reads the head and
 then removes it, and thus copies the item instead of moving it, since a
-SEQUENCE has no operation that hands out the item it removes. Two stacks
-are equal when their sequences are, and the contracts check that `top()`
-and `pop()` find the stack not empty and that `push(v)` leaves $v$ on
-top. When the sequence is a range of the
-standard library, `begin()` and `end()` give its constant iterators, i.e.,
-a view of the items from the top to the bottom.
+SEQUENCE has no operation that hands out the item it removes. Two stacks are
+equal when their sequences are, and the contracts check that `top()` and
+`pop()` find the stack not empty and that `push( v )` leaves $v$ on top. When
+the sequence is a range of the standard library, `begin()` and `end()` give
+its constant iterators, i.e., a view of the items from the top to the bottom.
 
 In `ADS/stack/SequenceStack.h`, the declarations of `SequenceStack` that a
 user calls are
@@ -213,34 +211,34 @@ user calls are
 ```cpp
 // declarations of <ADS/stack/SequenceStack.h>
 template< Sequence S >
-class SequenceStack {
+class SequenceStack
+{
  public:
-  using Item = typename S::Item;
-  bool empty( void ) const;
-  const Item & top( void ) const;
-  Item pop( void );
-  void push( const Item & v );
-  bool operator==( const SequenceStack & o ) const;
-  };
+ using Item = typename S::Item;
+ bool empty( void ) const;
+ const Item & top( void ) const;
+ Item pop( void );
+ void push( const Item & v );
+ bool operator==( const SequenceStack & o ) const;
+ };
 ```
 
 ## 3.4 Several stacks in one vector {#sec-3-4}
 
 Two stacks can share one vector of $c$ places by growing from its two ends
 toward each other ([Knuth 1997, §2.2.2](Z-bibliography.md#ref-knuth1997)).
-Neither of them is full while the vector has a free place, whereas two
-vectors of $c / 2$ places each would refuse a `push()` as soon as one of
-the two stacks reached $c / 2$ items. `MultiStack` extends the idea to $k$
-stacks, numbered from 0, without fixing a capacity in advance. Each item is
-a cell of a single vector $C$, which holds the item and the index of the
-cell below it in its stack; $\mathit{top}[ i ]$ is the index of the top of
-the stack $i$ (or $-1$ when the stack is empty), and the free cells form
-one more list, whose head is $\mathit{free}$ ([Figure
-3.2](03-stack.md#fig-3-2)). A `push(i,v)` takes the first free cell, or a
-new cell at the end of $C$ when there is none, and links it on top of the
-stack $i$; a `pop(i)` unlinks the top of the stack $i$ and puts its cell
-back at the head of the free list ([Algorithm 3.2](03-stack.md#alg-3-2)).
-Both cost $O( 1 )$, except when $C$ has to grow.
+Neither of them is full while the vector has a free place, whereas two vectors
+of $c / 2$ places each would refuse a `push()` as soon as one of the two
+stacks reached $c / 2$ items. `MultiStack` extends the idea to $k$ stacks,
+numbered from 0, without fixing a capacity in advance. Each item is a cell of
+a single vector $C$, which holds the item and the index of the cell below it
+in its stack; $\mathit{top}[ i ]$ is the index of the top of the stack $i$ (or
+$-1$ when the stack is empty), and the free cells form one more list, whose
+head is $\mathit{free}$ ([Figure 3.2](03-stack.md#fig-3-2)). A `push( i , v )`
+takes the first free cell, or a new cell at the end of $C$ when there is none,
+and links it on top of the stack $i$; a `pop( i )` unlinks the top of the
+stack $i$ and puts its cell back at the head of the free list ([Algorithm
+3.2](03-stack.md#alg-3-2)). Both cost $O( 1 )$, except when $C$ has to grow.
 
 ![Figure 3.2. A `MultiStack` with two stacks, `x1 x2 x3` (the top `x3`, in the cell 6) and `y1 y2` (the top `y2`, in the cell 4), and the free list 2, 5, 7 (in the faintest tint), the top of the stack 0 in violet; the lower row of a cell in use is the index of the cell below it in its stack, that of a free cell the index of the next free one, and $-1$ ends a list.](../figures/stack-multi.svg){#fig-3-2}
 
@@ -278,44 +276,42 @@ of items held at once by all the stacks, and if an enlargement multiplies
 the capacity of $C$ by at most $\gamma'$, then that capacity is less than
 $\gamma' N$; the space is thus $\Theta( N + k )$ words.*
 
-*Proof.* The first claim holds for the empty `MultiStack`, whose lists
-are all empty. A `push(i,v)` takes the cell $c$ at the head of the free
-list (line 3), which it removes from that list, or a new cell (line 2), which is in no list. Then line 4 makes $c$ the head of the list of the
-stack $i$, with the old top below it; the list then holds $v$ and then
-the old items from the top down. A `pop(i)` removes the head $c$ of the
-list of the stack $i$, whose item is the top, and makes it the head of the
-free list (line 3); no other cell changes list in either operation. As for
-the cost, an enlargement happens only when all the cells of $C$ are in use,
-and it moves them all. Only a `push()` adds a cell to $C$, and therefore
-the last enlargement of the sequence moves $s \le m$ cells. The sizes at
-which $C$ is enlarged grow at least by the factor $\gamma$ from one
-enlargement to the next, and hence the cells moved in all are at most
-$s ( 1 + \gamma^{-1} + \gamma^{-2} + \cdots ) < \gamma s / ( \gamma - 1 )
-\le \gamma m / ( \gamma - 1 )$. As for the space, a `push()` appends a
-cell to $C$ only when the free list is empty, i.e., when all the cells of
-$C$ hold items, and the number of cells thus grows by one exactly when the
-number of items exceeds its largest value so far; hence $C$ has $N$ cells.
-The last enlargement found $s \le N - 1$ cells in use, all of them, and
-made the capacity at most $\gamma' s < \gamma' N$ (or 1, for the first
-cell). Besides $C$, the stacks take the $k$ tops and the $k$ counters.
-$\square$
+*Proof.* The first claim holds for the empty `MultiStack`, whose lists are all
+empty. A `push( i , v )` takes the cell $c$ at the head of the free list (line
+3), which it removes from that list, or a new cell (line 2), which is in no
+list. Then line 4 makes $c$ the head of the list of the stack $i$, with the
+old top below it; the list then holds $v$ and then the old items from the top
+down. A `pop( i )` removes the head $c$ of the list of the stack $i$, whose
+item is the top, and makes it the head of the free list (line 3); no other
+cell changes list in either operation. As for the cost, an enlargement happens
+only when all the cells of $C$ are in use, and it moves them all. Only a
+`push()` adds a cell to $C$, and therefore the last enlargement of the
+sequence moves $s \le m$ cells. The sizes at which $C$ is enlarged grow at
+least by the factor $\gamma$ from one enlargement to the next, and hence the
+cells moved in all are at most
+$s ( 1 + \gamma^{-1} + \gamma^{-2} + \cdots ) < \gamma s / ( \gamma - 1 ) \le \gamma m / ( \gamma - 1 )$.
+As for the space, a `push()` appends a cell to $C$ only when the free list is
+empty, i.e., when all the cells of $C$ hold items, and the number of cells
+thus grows by one exactly when the number of items exceeds its largest value
+so far; hence $C$ has $N$ cells. The last enlargement found $s \le N - 1$
+cells in use, all of them, and made the capacity at most
+$\gamma' s < \gamma' N$ (or 1, for the first cell). Besides $C$, the stacks
+take the $k$ tops and the $k$ counters. $\square$
 
-Since $C$ may move during a `push()`, an item of the stacks passed to it
-by reference (e.g., in `push( i , top( j ) )`) would be read, after the
-move, from a place that is no longer valid; the code therefore builds the
-new cell, copying $v$, before $C$ grows. Also, `stacks()` gives $k$,
-`size(i)` the number of items of the stack $i$ (kept in a counter per
-stack, and hence in $O( 1 )$ time), and `stack(i)` a view of the stack $i$
-from the top to the bottom, whose forward iterator `const_iterator` (an
-`IndexIterator`,
-cf. [§1.8](01-introduction.md#sec-1-8)) follows the links. Its contracts
-check that $k > 0$, that the index of a stack is in $[ 0 , k )$ and that
-`top()` and `pop()` find the stack not empty. The invariant is that each
-cell is in one stack or in the free list, and that the counters are the
-lengths of the stacks. It is checked after each `push()` and `pop()`, at
-the corresponding level of the contracts, in $O( | C | + k )$ time, where
-$| C |$ is the largest number of items reached so far (since $C$ grows
-only when no cell is free).
+Since $C$ may move during a `push()`, an item of the stacks passed to it by
+reference (e.g., in `push( i , top( j ) )`) would be read, after the move,
+from a place that is no longer valid; the code therefore builds the new cell,
+copying $v$, before $C$ grows. Also, `stacks()` gives $k$, `size( i )` the
+number of items of the stack $i$ (kept in a counter per stack, and hence in
+$O( 1 )$ time), and `stack( i )` a view of the stack $i$ from the top to the
+bottom, whose forward iterator `const_iterator` (an `IndexIterator`,
+cf. [§1.8](01-introduction.md#sec-1-8)) follows the links. Its contracts check
+that $k > 0$, that the index of a stack is in $[ 0 , k )$ and that `top()` and
+`pop()` find the stack not empty. The invariant is that each cell is in one
+stack or in the free list, and that the counters are the lengths of the
+stacks. It is checked after each `push()` and `pop()`, at the corresponding
+level of the contracts, in $O( | C | + k )$ time, where $| C |$ is the largest
+number of items reached so far (since $C$ grows only when no cell is free).
 
 In the libraries of GCC, LLVM and Microsoft one has $\gamma' = 2$ in
 [Lemma 3.3](03-stack.md#lem-3-3) (the last one enlarges a vector of $s$
@@ -334,18 +330,19 @@ calls are
 ```cpp
 // declarations of <ADS/stack/MultiStack.h>
 template< class T >
-class MultiStack {
+class MultiStack
+{
  public:
-  using Item = T;
-  explicit MultiStack( int k );
-  int stacks( void ) const;
-  bool empty( int i ) const;
-  int size( int i ) const;
-  const T & top( int i ) const;
-  void push( int i , const T & v );
-  T pop( int i );
-  std::ranges::subrange< const_iterator > stack( int i ) const;
-  };
+ using Item = T;
+ explicit MultiStack( int k );
+ int stacks( void ) const;
+ bool empty( int i ) const;
+ int size( int i ) const;
+ const T & top( int i ) const;
+ void push( int i , const T & v );
+ T pop( int i );
+ std::ranges::subrange< const_iterator > stack( int i ) const;
+ };
 ```
 
 ## 3.5 A stack with the minimum {#sec-3-5}
@@ -386,30 +383,29 @@ harmonic number $H_n = \sum_{i = 1}^{n} 1 / i \le 1 + \ln n$ (with no
 `pop()`). Each operation takes $O( 1 )$ amortized time, and the space is
 $\Theta( N )$, with $N$ the largest number of items held at once.*
 
-*Proof.* By induction on the operations, the empty stack being trivial.
-Note that the record lows of $A$ do not increase from the bottom up, by
-their definition. Also, the highest of them is a least item of $A$, since
-the highest least item is a record low, and the highest record low (that
-item or one above it) is not larger than it. A `push(x)`
-makes $x$ a record low if and only if $x$ is not larger than any item of
-$A$, i.e., if $A$ is empty or $x \le \min A = \mathrm{top}( M )$, and it
-does not change the status of the items below $x$; this is the test of
-line 3 of `push()`. A `pop()` removes the top $x$ of $A$, which is the top
-of $M$ if $x$ is a record low, and then $x \le \mathrm{top}( M )$;
-otherwise some item below $x$ is smaller than $x$, so that
-$\mathrm{top}( M ) < x$. This is the test of line 3 of `pop()`, and the
-items below $x$ keep their status. As for the expectation, the $i$-th item
-pushed is a record low with probability $1 / i$ (i.e., when it is the least
-of the first $i$ items, whose order is uniformly random). The sum over $i$
-gives $H_n$, and $H_n \le 1 + \ln n$ follows by comparing the sum with
-$\int_1^n d x / x$ ([Lemma 1.7](01-introduction.md#lem-1-7), where the
-same count is that of the changes of a running minimum). Finally, each
-operation makes at most one comparison and one `push_back` or `pop_back`
-on each of $A$ and $M$. Neither vector shrinks, and only a `push()` makes them grow. Hence the argument of the second part of
-[Lemma 3.3](03-stack.md#lem-3-3) bounds the items moved by their
-enlargements in $m'$ operations by $2 \gamma m' / ( \gamma - 1 )$; their
-capacities are less than $\gamma' N$, since $M$ never holds more items
-than $A$. $\square$
+*Proof.* By induction on the operations, the empty stack being trivial. Note
+that the record lows of $A$ do not increase from the bottom up, by their
+definition. Also, the highest of them is a least item of $A$, since the
+highest least item is a record low, and the highest record low (that item or
+one above it) is not larger than it. A `push( x )` makes $x$ a record low if
+and only if $x$ is not larger than any item of $A$, i.e., if $A$ is empty or
+$x \le \min A = \mathrm{top}( M )$, and it does not change the status of the
+items below $x$; this is the test of line 3 of `push()`. A `pop()` removes the
+top $x$ of $A$, which is the top of $M$ if $x$ is a record low, and then
+$x \le \mathrm{top}( M )$; otherwise some item below $x$ is smaller than $x$,
+so that $\mathrm{top}( M ) < x$. This is the test of line 3 of `pop()`, and
+the items below $x$ keep their status. As for the expectation, the $i$-th item
+pushed is a record low with probability $1 / i$ (i.e., when it is the least of
+the first $i$ items, whose order is uniformly random). The sum over $i$ gives
+$H_n$, and $H_n \le 1 + \ln n$ follows by comparing the sum with
+$\int_1^n d x / x$ ([Lemma 1.7](01-introduction.md#lem-1-7), where the same
+count is that of the changes of a running minimum). Finally, each operation
+makes at most one comparison and one `push_back` or `pop_back` on each of $A$
+and $M$. Neither vector shrinks, and only a `push()` makes them grow. Hence
+the argument of the second part of [Lemma 3.3](03-stack.md#lem-3-3) bounds the
+items moved by their enlargements in $m'$ operations by
+$2 \gamma m' / ( \gamma - 1 )$; their capacities are less than $\gamma' N$,
+since $M$ never holds more items than $A$. $\square$
 
 An item equal to the least goes to $M$ too, for the reason given by the
 proof: removing it then leaves on top of $M$ the copy pushed by the equal
@@ -424,12 +420,13 @@ are equal when neither is less than the other. With the header
 `ADS/stack/MinStack.h`,
 
 ```cpp
-ADS::MinStack< int > S;                    // the order std::less<>
-for( int x : { 5 , 3 , 7 , 3 } ) S.push( x );
-S.push( 9 );                               // M stays 5 3 3
-S.push( 2 );                               // M becomes 5 3 3 2
-S.pop();                                   // removes 2 from A and M
-int m = S.min();                           // m is 3
+ADS::MinStack< int > S;  // the order std::less<>
+for( int x : { 5 , 3 , 7 , 3 } )
+ S.push( x );
+S.push( 9 );      // M stays 5 3 3
+S.push( 2 );      // M becomes 5 3 3 2
+S.pop();          // removes 2 from A and M
+int m = S.min();  // m is 3
 ```
 
 is the run of [Figure 3.3](03-stack.md#fig-3-3). Besides these, the class has `size()`,
@@ -449,20 +446,21 @@ are
 ```cpp
 // declarations of <ADS/stack/MinStack.h>
 template< class T , class C = std::less<> >
-class MinStack {
+class MinStack
+{
  public:
-  using Item = T;
-  explicit MinStack( C less = C() );
-  bool empty( void ) const;
-  std::size_t size( void ) const;
-  const T & top( void ) const;
-  const T & min( void ) const;
-  void push( const T & x );
-  T pop( void );
-  void clear( void );
-  const std::vector< T > & items( void ) const;
-  std::size_t minima( void ) const;
-  };
+ using Item = T;
+ explicit MinStack( C less = C() );
+ bool empty( void ) const;
+ std::size_t size( void ) const;
+ const T & top( void ) const;
+ const T & min( void ) const;
+ void push( const T & x );
+ T pop( void );
+ void clear( void );
+ const std::vector< T > & items( void ) const;
+ std::size_t minima( void ) const;
+ };
 ```
 
 ## 3.6 Arithmetic expressions {#sec-3-6}
@@ -793,10 +791,12 @@ In `ADS/stack/StackAlgorithms.h`, the functions are declared as
 ```cpp
 // declarations of <ADS/stack/StackAlgorithms.h>
 bool isPalindrome( const std::string & s );
-template< Stack S > void sortStack( S & s );
+template< Stack S >
+void sortStack( S & s );
 template< Stack S >
 void removeGreater( S & s , const typename S::Item & k );
-template< Stack S , class F > void forEachBottomUp( S & s , F && f );
+template< Stack S , class F >
+void forEachBottomUp( S & s , F && f );
 bool isDyckWord( std::span< const int > w );
 bool isMatched( std::string_view s );
 template< Stack S , Queue Q = LinkedQueue< typename S::Item > >

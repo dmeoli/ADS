@@ -57,14 +57,17 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /// a random string of n bytes over the first sigma bytes from base
 std::string randomString( std::mt19937_64 & g , std::size_t n ,
-                          unsigned sigma , unsigned base = 'a' )
+			  unsigned sigma ,
+			  unsigned base = 'a' )
 {
  std::string s( n , ' ' );
- for( auto & c : s ) c = char( base + g() % sigma );
+ for( auto & c : s )
+  c = char( base + g() % sigma );
  return( s );
  }
 
@@ -83,15 +86,22 @@ std::string fibonacciWord( std::size_t n )
 
 /// b from a by e random edits (substitutions, insertions, deletions)
 std::string mutate( std::mt19937_64 & g , std::string a , std::size_t e ,
-                    unsigned sigma )
+		    unsigned sigma )
 {
  for( std::size_t k = 0 ; k < e ; ++k ) {
   const std::size_t i = a.empty() ? 0 : g() % ( a.size() + 1 );
   const char c = char( 'a' + g() % sigma );
   switch( a.empty() ? 1 : g() % 3 ) {
-   case( 0 ): if( i < a.size() ) a[ i ] = c; break;
-   case( 1 ): a.insert( a.begin() + std::ptrdiff_t( i ) , c ); break;
-   default: if( i < a.size() ) a.erase( a.begin() + std::ptrdiff_t( i ) );
+   case( 0 ):
+    if( i < a.size() )
+     a[ i ] = c;
+    break;
+   case( 1 ):
+    a.insert( a.begin() + std::ptrdiff_t( i ) , c );
+    break;
+   default:
+    if( i < a.size() )
+     a.erase( a.begin() + std::ptrdiff_t( i ) );
    }
   }
  return( a );
@@ -102,11 +112,11 @@ void checkSearch( std::string_view T , std::string_view P )
 {
  const auto N = naiveMatching( T , P );
  const StringSearcher S( P );
- CHECK( S.findAll( T ) == N );            // an audit too
+ CHECK( S.findAll( T ) == N );  // an audit too
  CHECK( S.count( T ) == N.size() );
  CHECK( S.find( T ) == ( N.empty() ? StringSearcher::npos : N[ 0 ] ) );
  CHECK( findAll( T , P ) == N );
- if( N.size() > 1 ) {                    // from the place after the first
+ if( N.size() > 1 ) {  // from the place after the first
   CHECK( S.find( T , N[ 0 ] + 1 ) == N[ 1 ] );
   CHECK( findFirst( T , P , N[ 0 ] + 1 ) == N[ 1 ] );
   }
@@ -150,51 +160,52 @@ ADS_TEST( "string-search" )
   for( int r = 0 ; r < 300 ; ++r ) {
    const std::size_t n = g() % 600 , m = 1 + g() % 40;
    const std::string T = randomString( g , n , sigma ,
-                                       sigma == 256 ? 0 : 'a' );
+				       sigma == 256 ? 0 : 'a' );
    std::string P = randomString( g , m , sigma , sigma == 256 ? 0 : 'a' );
    if( ( n >= m ) && ( g() % 2 ) )
     P = T.substr( g() % ( n - m + 1 ) , m );
    checkSearch( T , P );
-   checkSearch( T , T.substr( n / 2 ) );    // a suffix
-   checkSearch( T , T.substr( 0 , n / 3 ) ); // a prefix
+   checkSearch( T , T.substr( n / 2 ) );     // a suffix
+   checkSearch( T , T.substr( 0 , n / 3 ) );  // a prefix
    }
- for( unsigned sigma : { 2u , 4u , 26u , 256u } )   // the q-gram shifts
+ for( unsigned sigma : { 2u , 4u , 26u , 256u } )  // the q-gram shifts
   for( int r = 0 ; r < 60 ; ++r ) {
    const std::size_t n = 64 + g() % 4000 , m = 64 + g() % 300;
    const std::string T = randomString( g , n , sigma ,
-                                       sigma == 256 ? 0 : 'a' );
-   if( m > n ) continue;
+				       sigma == 256 ? 0 : 'a' );
+   if( m > n )
+    continue;
    const std::string P = T.substr( g() % ( n - m + 1 ) , m );
    checkSearch( T , P );
    checkSearch( T + P + T , P );
    std::string Q = P;
-   Q[ g() % m ] ^= 1;                    // one byte off
+   Q[ g() % m ] ^= 1;  // one byte off
    checkSearch( T + P + T , Q );
    }
- {                                 // the four segments at once
+ {  // the four segments at once
   const std::string T = randomString( g , 100000 , 256 , 0 );
-  for( std::size_t at : { std::size_t( 0 ) , std::size_t( 1000 ) ,
-                          std::size_t( 24850 ) , std::size_t( 24925 ) ,
-                          std::size_t( 49800 ) , std::size_t( 50000 ) ,
-                          std::size_t( 74800 ) , std::size_t( 99700 ) } ) {
+  for( std::size_t at :
+       { std::size_t( 0 ) , std::size_t( 1000 ) , std::size_t( 24850 ) ,
+	 std::size_t( 24925 ) , std::size_t( 49800 ) , std::size_t( 50000 ) ,
+	 std::size_t( 74800 ) , std::size_t( 99700 ) } ) {
    const std::string P = T.substr( at , 300 );
    checkSearch( T , P );
    checkSearch( T + T , P );
    }
-  std::string W = T;                   // the same pattern in both halves
+  std::string W = T;  // the same pattern in both halves
   const std::string P = T.substr( 7000 , 200 );
   W.replace( 60000 , 200 , P );
   W.replace( 30000 , 200 , P );
   checkSearch( W , P );
   for( std::size_t at : { 24900 , 49900 , 74900 , 90000 } )
-   W.replace( at , 200 , P );          // in all, and across the borders
+   W.replace( at , 200 , P );  // in all, and across the borders
   checkSearch( W , P );
   checkSearch( W.substr( 0 , 70000 ) , P );
   }
  const std::string F = fibonacciWord( 3000 );
  for( std::size_t m : { 2 , 5 , 13 , 34 , 100 , 377 } )
   checkSearch( F , F.substr( 500 , m ) );
- for( std::size_t m : { 2 , 20 , 100 , 300 } )    // an occurrence at every
+ for( std::size_t m : { 2 , 20 , 100 , 300 } )  // an occurrence at every
   checkSearch( std::string( 20000 , 'a' ) , std::string( m , 'a' ) );
  for( std::size_t m : { 2 , 3 , 9 , 64 , 65 , 200 } ) {
   const std::string A( 5000 , 'a' );
@@ -202,11 +213,13 @@ ADS_TEST( "string-search" )
   checkSearch( A , "b" + std::string( m - 1 , 'a' ) );
   checkSearch( A + "b" , std::string( m - 1 , 'a' ) + "b" );
   }
- std::string ab;                          // (ab)^n
- for( int i = 0 ; i < 20000 ; ++i ) ab += "ab";
+ std::string ab;  // (ab)^n
+ for( int i = 0 ; i < 20000 ; ++i )
+  ab += "ab";
  for( std::size_t k : { 4 , 30 , 200 } ) {
   std::string half;
-  for( std::size_t i = 0 ; i < k ; ++i ) half += "ab";
+  for( std::size_t i = 0 ; i < k ; ++i )
+   half += "ab";
   checkSearch( ab , half + "ba" + half );
   checkSearch( ab , half + "a" + half );
   checkSearch( ab + "a" + half , half + "a" + half );
@@ -250,7 +263,8 @@ ADS_TEST( "suffix-sorting" )
   const auto Q = plcpArray( T , A );
   for( std::size_t r = 1 ; r < A.size() ; ++r )
    CHECK( Q[ A[ r ] ] == L[ r - 1 ] );
-  if( ! A.empty() ) CHECK( Q[ A[ 0 ] ] == 0 );
+  if( ! A.empty() )
+   CHECK( Q[ A[ 0 ] ] == 0 );
   };
  check( "" );
  check( "a" );
@@ -260,16 +274,16 @@ ADS_TEST( "suffix-sorting" )
  check( "banana" );
  check( "mississippi" );
  check( std::string( 1000 , 'x' ) );
- check( "zyyxxxw" );                      // never rises: all of type L
- check( "abbcd" );                        // never falls: no LMS place
- check( "aabbzzyx" );                     // rises, then falls
+ check( "zyyxxxw" );   // never rises: all of type L
+ check( "abbcd" );     // never falls: no LMS place
+ check( "aabbzzyx" );  // rises, then falls
  check( std::string( "\0\xff\0\xff\xff\0" , 6 ) );
  std::mt19937_64 g( 11 );
  for( unsigned sigma : { 1u , 2u , 4u , 26u , 256u } )
   for( int r = 0 ; r < 100 ; ++r )
    check( randomString( g , g() % 2000 , sigma , sigma == 256 ? 0 : 'a' ) );
  check( fibonacciWord( 10000 ) );
- for( unsigned sigma : { 64u , 128u , 256u } )   // few names repeat: the
+ for( unsigned sigma : { 64u , 128u , 256u } )    // few names repeat: the
   check( randomString( g , 60000 , sigma , 0 ) );  // doubling of the groups
  // equal LMS-substrings sorted by the text after them: in small groups
  // and in groups large enough for the radix sort, and with long repeats,
@@ -277,12 +291,15 @@ ADS_TEST( "suffix-sorting" )
  check( randomString( g , 300000 , 26 , 'a' ) );
  {
   std::string W , R = randomString( g , 20000 , 26 , 'a' );
-  for( int i = 0 ; W.size() < 120000 ; ++i ) W += i % 2 ? "the " : "then ";
-  for( int i = 0 ; i < 5 ; ++i ) W += R;
+  for( int i = 0 ; W.size() < 120000 ; ++i )
+   W += i % 2 ? "the " : "then ";
+  for( int i = 0 ; i < 5 ; ++i )
+   W += R;
   check( W );
-  std::string E;                          // words: ends inside the keys
+  std::string E;  // words: ends inside the keys
   const char * word[] = { "a " , "an " , "and " , "ant " , "antenna " };
-  while( E.size() < 100000 ) E += word[ g() % 5 ];
+  while( E.size() < 100000 )
+   E += word[ g() % 5 ];
   check( E );
   }
  // the LMS-suffixes sorted directly by the windows of the packed text:
@@ -306,7 +323,8 @@ ADS_TEST( "suffix-sorting" )
   std::copy( T.begin() + 1000 , T.begin() + 21000 , T.begin() + 60000 );
   check( T );
   std::string U = randomString( g , 70000 , 4 , 0 );
-  for( auto & c : U ) c = "\x01\x40\x7f\xfe"[ unsigned( c ) ];
+  for( auto & c : U )
+   c = "\x01\x40\x7f\xfe"[ unsigned( c ) ];
   check( U );
   }
  // the LCP array of a large text read from the bytes of the permuted LCP:
@@ -314,19 +332,22 @@ ADS_TEST( "suffix-sorting" )
  // that the integers are read instead
  {
   std::string T = randomString( g , 300000 , 4 , 'a' );
-  for( int r = 0 ; r < 5 ; ++r )       // about 1% of the values
+  for( int r = 0 ; r < 5 ; ++r )  // about 1% of the values
    std::copy( T.begin() + 1000 * r , T.begin() + 1000 * r + 600 ,
-              T.begin() + 100000 + 5000 * r );
+	      T.begin() + 100000 + 5000 * r );
   check( T );
   std::string B = randomString( g , 3000 , 26 , 'a' ) , U;
-  while( U.size() < 300000 ) U += B;
+  while( U.size() < 300000 )
+   U += B;
   check( U );
   }
  std::string P;
- for( int i = 0 ; i < 3000 ; ++i ) P += "abaabab";
+ for( int i = 0 ; i < 3000 ; ++i )
+  P += "abaabab";
  check( P );
- std::string D;                           // every LMS-substring distinct
- for( int i = 0 ; i < 200 ; ++i ) D += char( 'a' + i % 26 );
+ std::string D;  // every LMS-substring distinct
+ for( int i = 0 ; i < 200 ; ++i )
+  D += char( 'a' + i % 26 );
  check( D );
  for( std::size_t K : { 1 , 3 , 1000 , 100000 } )
   for( int r = 0 ; r < 20 ; ++r ) {
@@ -342,8 +363,9 @@ ADS_TEST( "suffix-sorting" )
    const auto B = suffixArray( W , K );
    CHECK( std::equal( R.begin() , R.end() , B.begin() , B.end() ) );
    }
- CHECK_THROWS( (void) suffixArray( std::vector< std::uint32_t >{ 0 , 5 } ,
-                                   5 ) , contract_violation );
+ CHECK_THROWS( ( void )suffixArray( std::vector< std::uint32_t >{ 0 , 5 } ,
+				    5 ) ,
+	       contract_violation );
  }
 
 // the bit-parallel edit distance against editDistance() of the textbook
@@ -380,12 +402,12 @@ ADS_TEST( "edit-distance" )
   check( std::string( m , 'x' ) + a , std::string( m , 'x' ) + "y" + a );
   check( a + std::string( 70 , 'z' ) , "q" + a + std::string( 70 , 'z' ) );
   }
- {                                       // a slow start, then close
+ {  // a slow start, then close
   const std::string a = randomString( g , 5000 , 4 );
   check( a , randomString( g , 40 , 4 ) + mutate( g , a , 3 , 4 ) );
-  check( a , mutate( g , a , 30 , 4 ) );           // the diagonals
+  check( a , mutate( g , a , 30 , 4 ) );  // the diagonals
   }
- for( std::size_t e : { 150 , 400 , 900 } ) {     // the band doubled
+ for( std::size_t e : { 150 , 400 , 900 } ) {  // the band doubled
   const std::string a = randomString( g , 3000 , 4 );
   check( a , mutate( g , a , e , 4 ) );
   check( a , mutate( g , a , e , 4 ) + randomString( g , e , 4 ) );
@@ -403,11 +425,11 @@ ADS_TEST( "edit-distance" )
    std::string P = randomString( g , g() % 200 , sigma );
    if( ( T.size() > 50 ) && ( g() % 2 ) )
     P = mutate( g , T.substr( g() % ( T.size() - 50 ) , 50 ) , 4 , sigma );
-   for( std::size_t k : { std::size_t( 0 ) , std::size_t( 1 ) ,
-                          P.size() / 4 , P.size() / 2 , P.size() ,
-                          P.size() + 3 } ) {
-    const auto R = approximateMatches( T , P , k );   // an audit
-    for( const auto & [ j , d ] : R ) CHECK( ( j >= 1 ) && ( d <= k ) );
+   for( std::size_t k : { std::size_t( 0 ) , std::size_t( 1 ) , P.size() / 4 ,
+			  P.size() / 2 , P.size() , P.size() + 3 } ) {
+    const auto R = approximateMatches( T , P , k );  // an audit
+    for( const auto & [ j , d ] : R )
+     CHECK( ( j >= 1 ) && ( d <= k ) );
     }
    }
  const auto E = approximateMatches( "abc" , "" , 0 );
@@ -428,7 +450,8 @@ ADS_TEST( "classic-matching" )
   long c = 0;
   CHECK( boyerMoore( T , P , &c ) == N );
   CHECK( horspool( T , P , &c ) == N );
-  if( P.size() <= 64 ) CHECK( shiftOr( T , P ) == N );
+  if( P.size() <= 64 )
+   CHECK( shiftOr( T , P ) == N );
   CHECK( zMatching( T , P ) == N );
   CHECK( twoWay( T , P ) == N );
   };
@@ -452,13 +475,14 @@ ADS_TEST( "classic-matching" )
    const auto Z = zFunction( T );
    for( std::size_t i = 0 ; i < T.size() ; ++i ) {
     std::size_t k = 0;
-    while( ( i + k < T.size() ) && ( T[ k ] == T[ i + k ] ) ) ++k;
+    while( ( i + k < T.size() ) && ( T[ k ] == T[ i + k ] ) )
+     ++k;
     CHECK( Z[ i ] == k );
     }
    }
  CHECK( zFunction( "" ).empty() );
- CHECK_THROWS( (void) shiftOr( "abc" , std::string( 65 , 'a' ) ) ,
-               contract_violation );
+ CHECK_THROWS( ( void )shiftOr( "abc" , std::string( 65 , 'a' ) ) ,
+	       contract_violation );
  }
 
 // the automaton of Aho and Corasick against naiveMatching() on each pattern
@@ -474,7 +498,8 @@ ADS_TEST( "aho-corasick" )
  AhoCorasick A( { "he" , "she" , "his" , "hers" , "he" } );
  const auto R = A.findAll( "ushers" );
  const std::vector< std::pair< std::size_t , std::size_t > > X = {
-  { 1 , 1 } , { 2 , 0 } , { 2 , 4 } , { 2 , 3 } };
+  { 1 , 1 } , { 2 , 0 } , { 2 , 4 } , { 2 , 3 }
+  };
  CHECK( R == X && A.count( "ushers" ) == 4 );
  CHECK( A.add( "us" ) == 5 );
  A.build();
@@ -486,19 +511,20 @@ ADS_TEST( "aho-corasick" )
    std::vector< std::string > P;
    const std::string T = randomString( g , g() % 800 , sigma );
    for( std::size_t k = 1 + g() % 12 ; k-- > 0 ; )
-    P.push_back( ( T.size() > 30 ) && ( g() % 2 ) ?
-                 T.substr( g() % ( T.size() - 30 ) , 1 + g() % 30 ) :
-                 randomString( g , 1 + g() % 8 , sigma ) );
+    P.push_back( ( T.size() > 30 ) && ( g() % 2 )
+		   ? T.substr( g() % ( T.size() - 30 ) , 1 + g() % 30 )
+		   : randomString( g , 1 + g() % 8 , sigma ) );
    const AhoCorasick B( P );
-   const auto S = B.findAll( T );                     // an audit
+   const auto S = B.findAll( T );  // an audit
    std::size_t total = 0;
-   for( const auto & p : P ) total += naiveMatching( T , p ).size();
+   for( const auto & p : P )
+    total += naiveMatching( T , p ).size();
    CHECK( S.size() == total && B.count( T ) == total );
    for( std::size_t k = 1 ; k < S.size() ; ++k ) {
     const std::size_t e0 = S[ k - 1 ].first + P[ S[ k - 1 ].second ].size() ,
-                      e1 = S[ k ].first + P[ S[ k ].second ].size();
-    CHECK( ( e0 < e1 ) || ( ( e0 == e1 ) && ( S[ k - 1 ].first <=
-                                                S[ k ].first ) ) );
+		      e1 = S[ k ].first + P[ S[ k ].second ].size();
+    CHECK( ( e0 < e1 ) ||
+	   ( ( e0 == e1 ) && ( S[ k - 1 ].first <= S[ k ].first ) ) );
     }
    }
  }
@@ -513,16 +539,16 @@ ADS_TEST( "lyndon" )
  CHECK( lyndonFactorization( "" ).empty() && leastRotation( "" ) == 0 );
  CHECK( lyndonFactorization( "a" ) == std::vector< std::size_t >{ 0 } );
  CHECK( lyndonFactorization( "aaa" ) ==
-        ( std::vector< std::size_t >{ 0 , 1 , 2 } ) );
+	( std::vector< std::size_t >{ 0 , 1 , 2 } ) );
  CHECK( lyndonFactorization( "aab" ) == std::vector< std::size_t >{ 0 } );
  CHECK( lyndonFactorization( "cba" ) ==
-        ( std::vector< std::size_t >{ 0 , 1 , 2 } ) );
+	( std::vector< std::size_t >{ 0 , 1 , 2 } ) );
  CHECK( isLyndon( "aabab" ) && ! isLyndon( "abab" ) && ! isLyndon( "" ) );
  std::mt19937_64 g( 19 );
  for( unsigned sigma : { 1u , 2u , 3u } )
   for( int r = 0 ; r < 300 ; ++r ) {
    const std::string S = randomString( g , g() % 60 , sigma );
-   std::vector< std::size_t > F;      // the longest Lyndon prefix first
+   std::vector< std::size_t > F;  // the longest Lyndon prefix first
    for( std::size_t i = 0 ; i < S.size() ; ) {
     F.push_back( i );
     std::size_t l = 1;
@@ -534,11 +560,11 @@ ADS_TEST( "lyndon" )
     i += l;
     }
    CHECK( lyndonFactorization( S ) == F );
-   const std::size_t q = leastRotation( S );         // an audit
+   const std::size_t q = leastRotation( S );  // an audit
    CHECK( q < std::max< std::size_t >( S.size() , 1 ) );
-   for( std::size_t i = 0 ; i < q ; ++i )            // the first least
+   for( std::size_t i = 0 ; i < q ; ++i )  // the first least
     CHECK( S.substr( i ) + S.substr( 0 , i ) >
-           S.substr( q ) + S.substr( 0 , q ) );
+	   S.substr( q ) + S.substr( 0 , q ) );
    }
  }
 
@@ -551,7 +577,7 @@ ADS_TEST( "lyndon" )
 ADS_TEST( "lyndon-bytes" )
 {
  using F = std::vector< std::size_t >;
- auto brute = []( std::string_view S ) {   // the longest Lyndon prefix
+ auto brute = []( std::string_view S ) {  // the longest Lyndon prefix
   F f;
   for( std::size_t i = 0 ; i < S.size() ; ) {
    f.push_back( i );
@@ -565,31 +591,36 @@ ADS_TEST( "lyndon-bytes" )
    }
   return( f );
   };
- auto least = []( const std::string & S ) {     // the first least one
+ auto least = []( const std::string & S ) {  // the first least one
   std::size_t q = 0;
   for( std::size_t i = 1 ; i < S.size() ; ++i )
    if( S.substr( i ) + S.substr( 0 , i ) < S.substr( q ) + S.substr( 0 , q ) )
     q = i;
   return( q );
   };
- CHECK( lyndonFactorization( "\x80" "a" ) == ( F{ 0 , 1 } ) &&
-        lyndonFactorization( "a\x80" ) == F{ 0 } &&
-        lyndonFactorization( "\xFF\x80\x7F" ) == ( F{ 0 , 1 , 2 } ) &&
-        lyndonFactorization( "\x7F\x80\xFF" ) == F{ 0 } );
- CHECK( leastRotation( "\xFF" "a" ) == 1 && leastRotation( "a\xFF" ) == 0 &&
-        leastRotation( "\x80\x7F\x80" ) == 1 );
- CHECK( isLyndon( "a\x80" ) && ! isLyndon( "\x80" "a" ) );
+ CHECK( lyndonFactorization( "\x80"
+			     "a" ) == ( F{ 0 , 1 } ) &&
+	lyndonFactorization( "a\x80" ) == F{ 0 } &&
+	lyndonFactorization( "\xFF\x80\x7F" ) == ( F{ 0 , 1 , 2 } ) &&
+	lyndonFactorization( "\x7F\x80\xFF" ) == F{ 0 } );
+ CHECK( leastRotation( "\xFF"
+		       "a" ) == 1 &&
+	leastRotation( "a\xFF" ) == 0 &&
+	leastRotation( "\x80\x7F\x80" ) == 1 );
+ CHECK( isLyndon( "a\x80" ) && ! isLyndon( "\x80"
+					   "a" ) );
  for( const char c : { '\x00' , '\x7F' , '\x80' , '\xFF' } )
   for( std::size_t n : { 1u , 2u , 7u } ) {
    const std::string S( n , c );
    F f( n );
-   for( std::size_t i = 0 ; i < n ; ++i ) f[ i ] = i;
+   for( std::size_t i = 0 ; i < n ; ++i )
+    f[ i ] = i;
    CHECK( lyndonFactorization( S ) == f && leastRotation( S ) == 0 );
    }
  std::mt19937_64 g( 29 );
- for( const auto & [ sigma , base ] : { std::pair( 4u , 0x7Eu ) ,
-                                        std::pair( 3u , 0xFDu ) ,
-                                        std::pair( 256u , 0u ) } )
+ for( const auto & [ sigma , base ] :
+      { std::pair( 4u , 0x7Eu ) , std::pair( 3u , 0xFDu ) ,
+	std::pair( 256u , 0u ) } )
   for( int r = 0 ; r < 300 ; ++r ) {
    const std::string S = randomString( g , g() % 60 , sigma , base );
    CHECK( lyndonFactorization( S ) == brute( S ) );
@@ -606,18 +637,18 @@ ADS_TEST( "lyndon-bytes" )
 ADS_TEST( "suffix-automaton" )
 {
  const SuffixAutomaton E;
- CHECK( E.states() == 1 && E.distinctSubstrings() == 0 &&
-        E.contains( "" ) && ! E.contains( "a" ) &&
-        E.occurrences( "" ) == 1 );
+ CHECK( E.states() == 1 && E.distinctSubstrings() == 0 && E.contains( "" ) &&
+	! E.contains( "a" ) && E.occurrences( "" ) == 1 );
  const SuffixAutomaton A( std::string( 50 , 'a' ) );
  CHECK( A.states() == 51 && A.distinctSubstrings() == 50 &&
-        A.occurrences( "aaa" ) == 48 );
+	A.occurrences( "aaa" ) == 48 );
  std::mt19937_64 g( 23 );
  for( unsigned sigma : { 1u , 2u , 4u , 26u } )
   for( int r = 0 ; r < 40 ; ++r ) {
    const std::string S = randomString( g , g() % 120 , sigma );
    SuffixAutomaton B;
-   for( char c : S ) B.extend( static_cast< unsigned char >( c ) );
+   for( char c : S )
+    B.extend( static_cast< unsigned char >( c ) );
    const SuffixAutomaton M( S );
    CHECK( M.states() == B.states() && M.size() == S.size() );
    CHECK( M.states() <= ( S.size() < 2 ? S.size() + 1 : 2 * S.size() - 1 ) );
@@ -627,8 +658,8 @@ ADS_TEST( "suffix-automaton" )
      sub.insert( S.substr( i , l ) );
    CHECK( M.distinctSubstrings() == sub.size() );
    for( const auto & u : sub )
-    CHECK( M.contains( u ) && M.occurrences( u ) ==
-           naiveMatching( S , u ).size() );
+    CHECK( M.contains( u ) &&
+	   M.occurrences( u ) == naiveMatching( S , u ).size() );
    for( int k = 0 ; k < 20 ; ++k ) {
     const std::string u = randomString( g , 1 + g() % 6 , sigma + 1 );
     CHECK( M.contains( u ) == sub.count( u ) );
@@ -638,10 +669,12 @@ ADS_TEST( "suffix-automaton" )
    std::size_t best = 0;
    for( std::size_t j = 0 ; j < T.size() ; ++j )
     for( std::size_t l = 1 ; j + l <= T.size() ; ++l )
-     if( sub.count( T.substr( j , l ) ) ) best = std::max( best , l );
+     if( sub.count( T.substr( j , l ) ) )
+      best = std::max( best , l );
    const auto [ len , end ] = M.longestCommonSubstring( T );
    CHECK( len == best );
-   if( len > 0 ) CHECK( sub.count( T.substr( end - len , len ) ) );
+   if( len > 0 )
+    CHECK( sub.count( T.substr( end - len , len ) ) );
    }
  }
 
@@ -656,8 +689,7 @@ ADS_TEST( "suffix-automaton" )
 // texts with bytes 0 (which the padding of the text must not extend)
 ADS_TEST( "lce" )
 {
- auto check = []( const std::string & T , std::mt19937_64 & g ,
-                  int queries ) {
+ auto check = []( const std::string & T , std::mt19937_64 & g , int queries ) {
   const LceIndex<> X( T );
   const LceIndex< std::uint64_t > Y( T );
   const std::size_t n = T.size();
@@ -687,27 +719,28 @@ ADS_TEST( "lce" )
   for( std::size_t n : { 10 , 100 , 1000 , 20000 } )
    check( randomString( g , n , sigma , sigma == 256 ? 0 : 'a' ) , g , 500 );
  std::string R = randomString( g , 3000 , 4 , 'a' );
- check( R + R + R , g , 2000 );          // long extensions, many blocks
+ check( R + R + R , g , 2000 );  // long extensions, many blocks
  // suffixes near in SA, up to 5000 ranks apart: every shape of the range
  // minimum (one block, two, within a group of blocks, across groups),
  // against the minimum of LCP by a scan
- for( const std::string & T : { fibonacciWord( 100000 ) ,
-                                randomString( g , 100000 , 2 , 'a' ) } ) {
+ for( const std::string & T :
+      { fibonacciWord( 100000 ) , randomString( g , 100000 , 2 , 'a' ) } ) {
   const auto SA = suffixArray( T );
   const auto LCP = lcpArrayPhi( T , SA );
   std::vector< std::size_t > rank( T.size() );
-  for( std::size_t r = 0 ; r < T.size() ; ++r ) rank[ SA[ r ] ] = r;
+  for( std::size_t r = 0 ; r < T.size() ; ++r )
+   rank[ SA[ r ] ] = r;
   const LceIndex<> X( T );
   for( int q = 0 ; q < 3000 ; ++q ) {
-   const std::size_t r = g() % T.size() ,
-                     d = 1 + g() % ( q % 2 ? 40 : 5000 ) ,
-                     i = SA[ r ] , j = SA[ std::min( r + d , T.size() - 1 ) ];
-   if( i == j ) continue;
+   const std::size_t r = g() % T.size() , d = 1 + g() % ( q % 2 ? 40 : 5000 ) ,
+		     i = SA[ r ] , j = SA[ std::min( r + d , T.size() - 1 ) ];
+   if( i == j )
+    continue;
    const std::size_t a = std::min( rank[ i ] , rank[ j ] ) ,
-                     b = std::max( rank[ i ] , rank[ j ] );
+		     b = std::max( rank[ i ] , rank[ j ] );
    CHECK( X.lce( i , j ) ==
-          *std::min_element( LCP.begin() + std::ptrdiff_t( a ) ,
-                             LCP.begin() + std::ptrdiff_t( b ) ) );
+	  *std::min_element( LCP.begin() + std::ptrdiff_t( a ) ,
+			     LCP.begin() + std::ptrdiff_t( b ) ) );
    }
   }
  }
@@ -726,23 +759,23 @@ ADS_TEST( "multi-search" )
    for( const std::size_t i : naiveMatching( T , P[ j ] ) )
     N.emplace_back( i , j );
   std::sort( N.begin() , N.end() );
-  CHECK( S.findAll( T ) == N );           // an audit too
+  CHECK( S.findAll( T ) == N );  // an audit too
   CHECK( S.count( T ) == N.size() );
-  CHECK( S.filtered() == ( ! P.empty() &&
-                           ( P.size() <= MultiSearcher::kFilter ) ) );
+  CHECK( S.filtered() ==
+	 ( ! P.empty() && ( P.size() <= MultiSearcher::kFilter ) ) );
   };
  check( "abc" , {} );
  check( "" , { "a" } );
  check( "aaaa" , { "a" , "aa" , "aa" , "aaa" } );
  check( "abcabcab" , { "ab" , "abc" , "bca" , "cab" , "b" } );
  check( std::string( "\xff\x80\x7f\xff\x80" , 5 ) ,
-        { std::string( "\xff\x80" , 2 ) , std::string( "\x80\x7f" , 2 ) } );
+	{ std::string( "\xff\x80" , 2 ) , std::string( "\x80\x7f" , 2 ) } );
  std::mt19937_64 g( 37 );
  for( unsigned sigma : { 2u , 4u , 26u , 256u } )
   for( std::size_t k : { 1 , 2 , 7 , 8 , 9 , 30 , 64 , 65 , 200 } )
    for( int r = 0 ; r < 3 ; ++r ) {
-    const std::string T = randomString( g , g() % 3000 , sigma ,
-                                        sigma == 256 ? 0 : 'a' );
+    const std::string T =
+      randomString( g , g() % 3000 , sigma , sigma == 256 ? 0 : 'a' );
     std::vector< std::string > P;
     for( std::size_t z = 0 ; z < k ; ++z ) {
      const std::size_t m = 1 + g() % 12;
@@ -761,8 +794,8 @@ ADS_TEST( "multi-search" )
   for( int k : { 16 , 100 } ) {
    const std::string T = randomString( g , 50000 , sigma , 'a' );
    std::vector< std::string > P;
-   for( int z = 0 ; z < k ; ++z ) P.push_back( T.substr( g() % 40000 ,
-                                                          4 + g() % 5 ) );
+   for( int z = 0 ; z < k ; ++z )
+    P.push_back( T.substr( g() % 40000 , 4 + g() % 5 ) );
    check( T , P );
    }
  // the shift-or filter on many patterns, of 1 to 20 bytes, and with
@@ -773,7 +806,7 @@ ADS_TEST( "multi-search" )
   for( int z = 0 ; z < 300 ; ++z ) {
    const std::size_t m = least + g() % 12;
    P.push_back( z % 3 ? T.substr( g() % ( T.size() - m ) , m )
-                      : randomString( g , m , 26 , 'a' ) );
+		      : randomString( g , m , 26 , 'a' ) );
    }
   P.push_back( P[ 0 ] + "xyz" );
   check( T , P );
@@ -794,23 +827,24 @@ ADS_TEST( "multi-search-worst" )
  const MultiSearcher S( { std::string( 999 , 'a' ) + "b" , "zzzzzzzz" } );
  CHECK( S.filtered() && S.automatonFrom( T ) <= 256 );
  CHECK( S.findAll( T ).empty() && S.count( T ) == 0 );
- for( std::size_t least : { 4 , 8 } ) {      // stride 1 and stride 2
+ for( std::size_t least : { 4 , 8 } ) {  // stride 1 and stride 2
   std::vector< std::string > P{ std::string( 999 , 'a' ) + "b" };
   for( int z = 0 ; z < 99 ; ++z )
    P.push_back( std::string( least , char( 'b' + z % 20 ) ) +
-                std::to_string( z ) );
+		std::to_string( z ) );
   const MultiSearcher M( P );
   CHECK( ! M.filtered() && M.automatonFrom( T ) <= 256 );
   CHECK( M.findAll( T ).empty() && M.count( T ) == 0 );
   const std::string U = T + P[ 0 ] + P[ 7 ];
-  CHECK( M.findAll( U ) == ( std::vector< std::pair< std::size_t ,
-                                                      std::size_t > >{
-          { T.size() , 0 } , { T.size() + 1000 , 7 } } ) );
+  CHECK( M.findAll( U ) ==
+	 ( std::vector< std::pair< std::size_t , std::size_t > >{
+	   { T.size() , 0 } , { T.size() + 1000 , 7 } } ) );
   }
  std::mt19937_64 g( 41 );
  const std::string R = randomString( g , 100000 , 26 , 'a' );
  std::vector< std::string > Q;
- for( int z = 0 ; z < 20 ; ++z ) Q.push_back( R.substr( g() % 99000 , 12 ) );
+ for( int z = 0 ; z < 20 ; ++z )
+  Q.push_back( R.substr( g() % 99000 , 12 ) );
  const MultiSearcher F( Q );
  CHECK( F.automatonFrom( R ) == std::string_view::npos );
  }
@@ -829,13 +863,14 @@ ADS_TEST( "eertree" )
  for( unsigned sigma : { 1u , 2u , 3u , 26u } )
   for( int r = 0 ; r < 150 ; ++r ) {
    const std::string S = randomString( g , g() % 200 , sigma );
-   const auto P = palindromicFactorization( S );     // an audit
+   const auto P = palindromicFactorization( S );  // an audit
    CHECK( P.size() == palindromicPartition( S ).size() );
    std::set< std::string > pal;
    for( std::size_t i = 0 ; i < S.size() ; ++i )
     for( std::size_t l = 1 ; i + l <= S.size() ; ++l ) {
      const std::string u = S.substr( i , l );
-     if( std::equal( u.begin() , u.end() , u.rbegin() ) ) pal.insert( u );
+     if( std::equal( u.begin() , u.end() , u.rbegin() ) )
+      pal.insert( u );
      }
    CHECK( Eertree( S ).distinct() == pal.size() );
    }
@@ -856,7 +891,7 @@ ADS_TEST( "eertree" )
 // characters break the contracts
 template< class T >
 static void stringDictionaryCheck( const std::vector< std::string > & D ,
-                                   const T & d , std::mt19937_64 & g )
+				   const T & d , std::mt19937_64 & g )
 {
  CHECK( d.size() == D.size() );
  for( std::size_t i = 0 ; i < D.size() ; ++i ) {
@@ -864,14 +899,15 @@ static void stringDictionaryCheck( const std::vector< std::string > & D ,
   CHECK( d.lookup( D[ i ] ) == i );
   }
  std::vector< std::string > Q = { "" , std::string( 100 , 'z' ) ,
-                                  std::string( 1 , char( 0 ) ) ,
-                                  std::string( 1 , char( 0xFF ) ) };
+				  std::string( 1 , char( 0 ) ) ,
+				  std::string( 1 , char( 0xFF ) ) };
  for( int q = 0 ; q < 400 ; ++q ) {
   std::string s;
   if( ! D.empty() && ( q % 2 ) ) {
    s = D[ g() % D.size() ];
    s.resize( g() % ( s.size() + 2 ) , char( 'a' + g() % 3 ) );
-   if( ( q % 4 == 1 ) && ! s.empty() ) s.back() = char( g() );
+   if( ( q % 4 == 1 ) && ! s.empty() )
+    s.back() = char( g() );
    }
   else
    for( int i = int( g() % 5 ) ; i > 0 ; --i )
@@ -879,8 +915,8 @@ static void stringDictionaryCheck( const std::vector< std::string > & D ,
   Q.push_back( s );
   }
  for( const std::string & P : Q ) {
-  const std::size_t l = std::size_t( std::lower_bound( D.begin() , D.end() ,
-                                                       P ) - D.begin() );
+  const std::size_t l =
+    std::size_t( std::lower_bound( D.begin() , D.end() , P ) - D.begin() );
   std::size_t r = l;
   while( ( r < D.size() ) && ( D[ r ].compare( 0 , P.size() , P ) == 0 ) )
    ++r;
@@ -895,20 +931,24 @@ ADS_TEST( "string-dictionaries" )
 {
  std::mt19937_64 g( 71 );
  std::vector< std::vector< std::string > > cases = {
-  {} , { "" } , { "a" } , { "" , "a" , "ab" , "abc" , "b" } ,
-  { "abc" , "abd" , "abdz" , "b" , "bcdefghij" , "bcdefghik" } };
+  {} ,
+  { "" } ,
+  { "a" } ,
+  { "" , "a" , "ab" , "abc" , "b" } ,
+  { "abc" , "abd" , "abdz" , "b" , "bcdefghij" , "bcdefghik" }
+  };
  for( const int sigma : { 2 , 4 , 256 } ) {
   std::set< std::string > S;
   while( S.size() < 2000 ) {
    std::string s;
    for( int i = int( g() % 14 ) ; i > 0 ; --i )
     s.push_back( char( sigma == 256 ? g() % 256 : 'a' + g() % sigma ) );
-   if( g() % 9 == 0 )                       // a long run, then the rest
+   if( g() % 9 == 0 )  // a long run, then the rest
     s = std::string( g() % 60 , 'x' ) + s;
    S.insert( s );
    }
   cases.emplace_back( S.begin() , S.end() );
-  std::vector< std::string > P;             // all behind a common prefix
+  std::vector< std::string > P;  // all behind a common prefix
   for( const std::string & s : S )
    P.push_back( "https://www." + s );
   cases.push_back( P );
@@ -934,11 +974,11 @@ ADS_TEST( "string-dictionaries" )
   }
  const auto R = rearCode( { "abcd" , "abx" , "b" , "bcd" } );
  CHECK( ( R[ 0 ] == RearPair( 0 , "abcd" ) ) &&
-        ( R[ 1 ] == RearPair( 2 , "x" ) ) &&
-        ( R[ 2 ] == RearPair( 3 , "b" ) ) &&
-        ( R[ 3 ] == RearPair( 0 , "cd" ) ) );
+	( R[ 1 ] == RearPair( 2 , "x" ) ) && ( R[ 2 ] == RearPair( 3 ,
+								   "b" ) ) &&
+	( R[ 3 ] == RearPair( 0 , "cd" ) ) );
  const SuccinctPatriciaTrie T( cases[ 4 ] );
- CHECK( T.nodes() == 9 );                   // the root, ab, b and 6 more
+ CHECK( T.nodes() == 9 );  // the root, ab, b and 6 more
  CHECK_THROWS( SuccinctPatriciaTrie( { "b" , "a" } ) , contract_violation );
  CHECK_THROWS( SuccinctPatriciaTrie( { "a" , "a" } ) , contract_violation );
  CHECK_THROWS( RearCodedDictionary( { "b" , "a" } ) , contract_violation );

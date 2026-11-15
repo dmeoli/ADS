@@ -50,59 +50,69 @@
 
 using namespace ADS::bench;
 
-namespace {
+namespace
+{
 
 /// an object of a model
-struct Row {
+struct Row
+{
  std::uint64_t w[ 4 ];
  };
 
 using Pos = std::uint32_t;
 
-std::vector< Row > rows;                ///< the objects
-std::vector< const Row * > v;           ///< their vector
-std::vector< std::uint32_t > probe;     ///< the positions looked up
-std::vector< Pos > erased , one;        ///< the positions erased
+std::vector< Row > rows;             ///< the objects
+std::vector< const Row * > v;        ///< their vector
+std::vector< std::uint32_t > probe;  ///< the positions looked up
+std::vector< Pos > erased , one;      ///< the positions erased
 
 /// the cases of a map of the standard interface, made by make()
 template< class M , class Make >
-void standard( const std::string & who , std::size_t n , int r ,
-               Make && make )
+void standard( const std::string & who , std::size_t n , int r , Make && make )
 {
  if( skip( who ) )
   return;
- print( "positions" , "build" , n , who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) {
-          M m = make();
-          for( std::size_t i = 0 ; i < n ; ++i )
-           m.emplace( v[ i ] , Pos( i ) );
-          sink = sink + m.size(); } , r , n ) );
+ print( "positions" , "build" , n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 M m = make();
+		 for( std::size_t i = 0 ; i < n ; ++i )
+		  m.emplace( v[ i ] , Pos( i ) );
+		 sink = sink + m.size();
+		 } ,
+		r , n ) );
  M full = make();
  for( std::size_t i = 0 ; i < n ; ++i )
   full.emplace( v[ i ] , Pos( i ) );
- print( "positions" , "lookup" , n , who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) {
-          std::uint64_t t = 0;
-          for( const std::uint32_t i : probe )
-           t += full.find( v[ i ] )->second;
-          sink = sink + t; } , r , n ) );
+ print( "positions" , "lookup" , n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 std::uint64_t t = 0;
+		 for( const std::uint32_t i : probe )
+		  t += full.find( v[ i ] )->second;
+		 sink = sink + t;
+		 } ,
+		r , n ) );
  for( const auto * E : { &erased , &one } )
   print( "positions" , E == &erased ? "renumber" : "renumber-one" , n , who ,
-         median( [ & ](){ return( full ); } , [ & ]( M & m ) {
-          std::vector< Pos > to( n );       // the old positions to the new
-          std::size_t k = 0 , d = 0;
-          for( std::size_t i = 0 ; i < n ; ++i )
-           if( ( k < E->size() ) && ( ( *E )[ k ] == i ) ) {
-            to[ i ] = Pos( -1 );
-            ++k;
-            }
-           else
-            to[ i ] = Pos( d++ );
-          for( const Pos e : *E )
-           m.erase( v[ e ] );
-          for( auto & [ p , i ] : m )
-           i = to[ i ];
-          sink = sink + m.size(); } , r , n ) );
+	 median( [ & ]() { return( full ); } ,
+		 [ & ]( M & m ) {
+		  std::vector< Pos > to( n );  // the old positions to the new
+		  std::size_t k = 0 , d = 0;
+		  for( std::size_t i = 0 ; i < n ; ++i )
+		   if( ( k < E->size() ) && ( ( *E )[ k ] == i ) ) {
+		    to[ i ] = Pos( -1 );
+		    ++k;
+		    }
+		   else
+		    to[ i ] = Pos( d++ );
+		  for( const Pos e : *E )
+		   m.erase( v[ e ] );
+		  for( auto & [ p , i ] : m )
+		   i = to[ i ];
+		  sink = sink + m.size();
+		  } ,
+		 r , n ) );
  }
 
 }  // end( namespace )
@@ -127,59 +137,73 @@ int main( int argc , char ** argv )
   one = { Pos( n / 2 ) };
 
   using U = std::unordered_map< const Row * , Pos >;
-  for( const char * who : { "std::unordered_map" ,
-                            "std::unordered_map A/A" } )
-   standard< U >( who , n , r , [](){ return( U() ); } );
+  for( const char * who : { "std::unordered_map" , "std::unordered_map A/A" } )
+   standard< U >( who , n , r , []() { return( U() ); } );
 #ifdef ADS_HAS_BOOST
   using B = boost::unordered_flat_map< const Row * , Pos >;
   standard< B >( "boost::unordered_flat_map" , n , r ,
-                 [](){ return( B() ); } );
+		 []() { return( B() ); } );
 #endif
 
   // FlatHashTable: build and lookup, no update of the values in a pass
   using F = ADS::FlatHashTable< const Row * , Pos >;
   if( ! skip( "ADS::FlatHashTable" ) ) {
    print( "positions" , "build" , n , "ADS::FlatHashTable" ,
-          median( [](){ return( 0 ); } , [ & ]( int ) {
-           F m;
-           for( std::size_t i = 0 ; i < n ; ++i )
-            m.insert( v[ i ] , Pos( i ) );
-           sink = sink + m.size(); } , r , n ) );
+	  median( []() { return( 0 ); } ,
+		  [ & ]( int ) {
+		   F m;
+		   for( std::size_t i = 0 ; i < n ; ++i )
+		    m.insert( v[ i ] , Pos( i ) );
+		   sink = sink + m.size();
+		   } ,
+		  r , n ) );
    {
     F m;
     for( std::size_t i = 0 ; i < n ; ++i )
      m.insert( v[ i ] , Pos( i ) );
     print( "positions" , "lookup" , n , "ADS::FlatHashTable" ,
-           median( [](){ return( 0 ); } , [ & ]( int ) {
-            std::uint64_t t = 0;
-            for( const std::uint32_t i : probe )
-             t += *m.find( v[ i ] );
-            sink = sink + t; } , r , n ) );
+	   median( []() { return( 0 ); } ,
+		   [ & ]( int ) {
+		    std::uint64_t t = 0;
+		    for( const std::uint32_t i : probe )
+		     t += *m.find( v[ i ] );
+		    sink = sink + t;
+		    } ,
+		   r , n ) );
     }
    }
 
   using P = ADS::PositionIndex< Row >;
   if( ! skip( "ADS::PositionIndex" ) ) {
    print( "positions" , "build" , n , "ADS::PositionIndex" ,
-          median( [](){ return( 0 ); } , [ & ]( int ) {
-           P m;
-           for( std::size_t i = 0 ; i < n ; ++i )
-            m.insert( v[ i ] , Pos( i ) );
-           sink = sink + m.size(); } , r , n ) );
+	  median( []() { return( 0 ); } ,
+		  [ & ]( int ) {
+		   P m;
+		   for( std::size_t i = 0 ; i < n ; ++i )
+		    m.insert( v[ i ] , Pos( i ) );
+		   sink = sink + m.size();
+		   } ,
+		  r , n ) );
    P full;
    full.assign( v );
    print( "positions" , "lookup" , n , "ADS::PositionIndex" ,
-          median( [](){ return( 0 ); } , [ & ]( int ) {
-           std::uint64_t t = 0;
-           for( const std::uint32_t i : probe )
-            t += full.find( v[ i ] );
-           sink = sink + t; } , r , n ) );
+	  median( []() { return( 0 ); } ,
+		  [ & ]( int ) {
+		   std::uint64_t t = 0;
+		   for( const std::uint32_t i : probe )
+		    t += full.find( v[ i ] );
+		   sink = sink + t;
+		   } ,
+		  r , n ) );
    for( const auto * E : { &erased , &one } )
     print( "positions" , E == &erased ? "renumber" : "renumber-one" , n ,
-           "ADS::PositionIndex" , median( [ & ](){ return( full ); } ,
-            [ & ]( P & m ) {
-             m.renumber( *E );
-             sink = sink + m.size(); } , r , n ) );
+	   "ADS::PositionIndex" ,
+	   median( [ & ]() { return( full ); } ,
+		   [ & ]( P & m ) {
+		    m.renumber( *E );
+		    sink = sink + m.size();
+		    } ,
+		   r , n ) );
    }
   }
  return( 0 );

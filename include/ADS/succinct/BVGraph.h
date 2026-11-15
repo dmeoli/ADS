@@ -71,7 +71,7 @@
 
 #ifndef __ADS_BVGraph
  #define __ADS_BVGraph
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -94,7 +94,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS BVGraph ------------------------------*/
@@ -102,11 +103,11 @@ namespace ADS {
 
 /// a static directed graph with the lists compressed by reference, copy
 /// blocks, intervals and gaps
-class BVGraph {
+class BVGraph
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// an adjacency list, strictly increasing
  using List = std::vector< std::size_t >;
 
@@ -158,7 +159,7 @@ class BVGraph {
  /// \pre each \f$ a[ u ] \f$ strictly increasing in \f$ [ 0 , n ) \f$,
  ///      \f$ w , r \ge 1 \f$ and \f$ \mathit{lmin} \ge 2 \f$
  explicit BVGraph( const std::vector< List > & a , std::size_t w = 7 ,
-                   std::size_t r = 3 , std::size_t lmin = 4 );
+		   std::size_t r = 3 , std::size_t lmin = 4 );
 
  /// the number of nodes, \f$ n \f$
  [[nodiscard]] std::size_t order( void ) const;
@@ -259,21 +260,20 @@ class BVGraph {
  /// the residuals `res` of \f$ x \f$ as written: the first as
  /// `signedToNatural()` of its difference from \f$ x \f$, the others as the
  /// gaps less 1, \f$ \mathit{res}[ i ] - \mathit{res}[ i - 1 ] - 1 \f$
- [[nodiscard]] static std::vector< std::uint64_t > residualGaps(
-                                         const List & res , std::size_t x );
+ [[nodiscard]] static std::vector< std::uint64_t >
+ residualGaps( const List & res , std::size_t x );
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the list of \f$ x \f$, decoded from the stream after that of its
  /// reference
  [[nodiscard]] List decode( std::size_t x ) const;
 
- std::size_t f_n = 0;        ///< the number of nodes
- std::size_t f_m = 0;        ///< the number of edges
- std::size_t f_lmin = 4;     ///< the least length of an interval
- BitVector f_bits;           ///< the lists, one after the other
- EliasFano f_start;          ///< the place of each list, and the end
+ std::size_t f_n = 0;     ///< the number of nodes
+ std::size_t f_m = 0;     ///< the number of edges
+ std::size_t f_lmin = 4;  ///< the least length of an interval
+ BitVector f_bits;        ///< the lists, one after the other
+ EliasFano f_start;       ///< the place of each list, and the end
 
  };  // end( class BVGraph )
 
@@ -289,7 +289,7 @@ class BVGraph {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BVGraph.h included */
+#endif /* BVGraph.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File BVGraph.h --------------------------*/

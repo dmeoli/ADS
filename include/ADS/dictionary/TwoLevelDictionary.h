@@ -55,7 +55,7 @@
 
 #ifndef __ADS_TwoLevelDictionary
  #define __ADS_TwoLevelDictionary
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -75,58 +75,59 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- CLASS TwoLevelDictionary -------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a Patricia trie on the anchors of a front-coded dictionary
-class TwoLevelDictionary {
+class TwoLevelDictionary
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the trie on the anchors of the coding \f$ F \f$
  explicit TwoLevelDictionary( FrontCodedDictionary F );
 
  /// the number of strings smaller than \f$ Q \f$
-///
-/// In pseudocode (chapter 9 of Ferragina), the trie in memory
-/// and the buckets of the coding on disk:
-/// \f[
-/// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{lexicographicPosition}( Q ) \cr
-/// 2 & \quad j \gets T.\mathrm{lexicographicPosition}( Q )\quad
-///     \triangleright\ \text{the blind search among the anchors} \cr
-/// 3 & \quad \textbf{return}\ \text{the rank of } Q \text{ in the bucket }
-///     \text{of the anchor } j \text{, decoded on the fly}
-/// \end{array}}
-/// \f]
-/// \post the strings before the result are smaller than \f$ Q \f$, the
-///       others are not
+ ///
+ /// In pseudocode (chapter 9 of Ferragina), the trie in memory
+ /// and the buckets of the coding on disk:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{lexicographicPosition}( Q ) \cr
+ /// 2 & \quad j \gets T.\mathrm{lexicographicPosition}( Q )\quad
+ ///     \triangleright\ \text{the blind search among the anchors} \cr
+ /// 3 & \quad \textbf{return}\ \text{the rank of } Q \text{ in the bucket }
+ ///     \text{of the anchor } j \text{, decoded on the fly}
+ /// \end{array}}
+ /// \f]
+ /// \post the strings before the result are smaller than \f$ Q \f$, the
+ ///       others are not
  [[nodiscard]] std::size_t lexicographicPosition( std::string_view Q ) const;
 
  /// the number of strings smaller than \f$ P\# \f$, \f$ \# \f$ larger than
-/// every character, i.e., of the strings smaller than \f$ P \f$ or prefixed
-/// by it; as `lexicographicPosition()`, with \f$ P\# \f$ in the place of
-/// \f$ Q \f$
-/// \post the strings before the result precede \f$ P\# \f$, the others do
-///       not
+ /// every character, i.e., of the strings smaller than \f$ P \f$ or prefixed
+ /// by it; as `lexicographicPosition()`, with \f$ P\# \f$ in the place of
+ /// \f$ Q \f$
+ /// \post the strings before the result precede \f$ P\# \f$, the others do
+ ///       not
  [[nodiscard]] std::size_t prefixEnd( std::string_view P ) const;
 
  /// the range \f$ [ l , r ) \f$ of the strings prefixed by \f$ P \f$
-///
-/// In pseudocode (chapter 9 of Ferragina):
-/// \f[
-/// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{prefixRange}( P ) \cr
-/// 2 & \quad \textbf{return}\ ( \mathrm{lexicographicPosition}( P ) ,
-///     \mathrm{prefixEnd}( P ) )
-/// \end{array}}
-/// \f]
- [[nodiscard]] std::pair< std::size_t , std::size_t > prefixRange(
-                                                   std::string_view P ) const;
+ ///
+ /// In pseudocode (chapter 9 of Ferragina):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{prefixRange}( P ) \cr
+ /// 2 & \quad \textbf{return}\ ( \mathrm{lexicographicPosition}( P ) ,
+ ///     \mathrm{prefixEnd}( P ) )
+ /// \end{array}}
+ /// \f]
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ prefixRange( std::string_view P ) const;
 
  /// the string \f$ i \f$, decoded from its bucket
  /// \pre \f$ i \f$ is less than `size()`
@@ -171,13 +172,12 @@ class TwoLevelDictionary {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the anchors of \f$ F \f$, whole
- [[nodiscard]] static std::vector< std::string > anchorsOf(
-                                              const FrontCodedDictionary & F );
+ [[nodiscard]] static std::vector< std::string >
+ anchorsOf( const FrontCodedDictionary & F );
 
- FrontCodedDictionary f_F;         ///< the lower level
- PatriciaTrie f_T;                 ///< the upper level, on the anchors
+ FrontCodedDictionary f_F;  ///< the lower level
+ PatriciaTrie f_T;          ///< the upper level, on the anchors
 
  };  // end( class TwoLevelDictionary )
 
@@ -193,7 +193,7 @@ class TwoLevelDictionary {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* TwoLevelDictionary.h included */
+#endif /* TwoLevelDictionary.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File TwoLevelDictionary.h ----------------------*/

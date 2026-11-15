@@ -59,7 +59,7 @@
 
 #ifndef __ADS_PageHeap
  #define __ADS_PageHeap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -77,7 +77,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS::detail {
+namespace ADS::detail
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS PageHeap ------------------------------*/
@@ -85,36 +86,38 @@ namespace ADS::detail {
 
 /// pages of \f$ C \f$ size classes of 8 bytes, a free list per page
 template< std::size_t C >
-class alignas( 64 ) PageHeap {
+class alignas( 64 ) PageHeap
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- static constexpr std::size_t GRAIN = 8;           ///< the step of a class
+ static constexpr std::size_t GRAIN = 8;  ///< the step of a class
  /// the bytes of a page
  static constexpr std::size_t PAGE = std::size_t( 1 ) << 16;
  /// the bytes of a segment
  static constexpr std::size_t SEGMENT = std::size_t( 1 ) << 21;
- static constexpr std::size_t HEADER = 64;         ///< the header of a page
+ static constexpr std::size_t HEADER = 64;  ///< the header of a page
 
  static_assert( C * GRAIN <= ( PAGE - HEADER ) / 8 ,
-                "a page holds at least 8 slots of the largest class" );
+		"a page holds at least 8 slots of the largest class" );
 
  /// a free slot
- struct Free {
+ struct Free
+ {
   /// the next free slot of the page
   Free * next;
   };
 
  /// the header of a page
- struct Page {
-  Free * free;           ///< the free slots
-  char * next;           ///< the first slot never given
-  char * end;            ///< the end of the slots
-  Page * link;           ///< the next page with free slots
-  void * owner;          ///< the owner of the heap
-  std::uint32_t c;       ///< the class
-  bool listed;           ///< current, or on the list of its class
+ struct Page
+ {
+  Free * free;      ///< the free slots
+  char * next;      ///< the first slot never given
+  char * end;       ///< the end of the slots
+  Page * link;      ///< the next page with free slots
+  void * owner;     ///< the owner of the heap
+  std::uint32_t c;  ///< the class
+  bool listed;      ///< current, or on the list of its class
   };
 
  static_assert( sizeof( Page ) <= HEADER );
@@ -132,8 +135,8 @@ class alignas( 64 ) PageHeap {
 
  /// the page of the slot \f$ p \f$, \f$ p \wedge \neg ( 2^{16} - 1 ) \f$
  [[nodiscard]] static Page * pageOf( void * p ) {
-  return( reinterpret_cast< Page * >( reinterpret_cast< std::uintptr_t >(
-           p ) & ~std::uintptr_t( PAGE - 1 ) ) );
+  return( reinterpret_cast< Page * >(
+    reinterpret_cast< std::uintptr_t >( p ) & ~std::uintptr_t( PAGE - 1 ) ) );
   }
 
  /// a slot of the class \f$ c \f$ from its current page, the free list or
@@ -160,7 +163,7 @@ class alignas( 64 ) PageHeap {
    ++f_live;
    return( f );
    }
-  if( p->next != p->end ) {                 // a slot never given
+  if( p->next != p->end ) {  // a slot never given
    void * const s = p->next;
    p->next += ( c + 1 ) * GRAIN;
    ++f_live;
@@ -206,7 +209,7 @@ class alignas( 64 ) PageHeap {
   f->next = g->free;
   g->free = f;
   --f_live;
-  if( ! g->listed ) [[unlikely]] {          // back among the pages to use
+  if( ! g->listed ) [[unlikely]] {  // back among the pages to use
    g->listed = true;
    g->link = f_class[ g->c ].avail;
    f_class[ g->c ].avail = g;
@@ -223,26 +226,26 @@ class alignas( 64 ) PageHeap {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a class: its current page and the other pages with free slots
- struct Class {
+ struct Class
+ {
   Page * current;
   Page * avail = nullptr;
   };
 
  /// the page of no slot, current of every class at the start
  inline static Page s_none{ nullptr , nullptr , nullptr , nullptr ,
-                            nullptr , 0 , true };
+			    nullptr , 0 ,       true };
 
  /// a new page of the class c
  Page * fresh( std::size_t c );
 
- Class f_class[ C ];                  ///< the classes
- char * f_page = nullptr;             ///< the next page of the segment
- char * f_last = nullptr;             ///< the end of the segment
- std::size_t f_live = 0;              ///< the slots given
- void * f_owner;                      ///< the owner of the heap
- std::vector< char * > f_segments;    ///< all the segments
+ Class f_class[ C ];                ///< the classes
+ char * f_page = nullptr;           ///< the next page of the segment
+ char * f_last = nullptr;           ///< the end of the segment
+ std::size_t f_live = 0;            ///< the slots given
+ void * f_owner;                    ///< the owner of the heap
+ std::vector< char * > f_segments;  ///< all the segments
 
  };  // end( class PageHeap )
 
@@ -267,7 +270,7 @@ PageHeap< C >::~PageHeap()
 template< std::size_t C >
 typename PageHeap< C >::Page * PageHeap< C >::fresh( std::size_t c )
 {
- if( f_page == f_last ) {                   // a new segment
+ if( f_page == f_last ) {                            // a new segment
   if( f_segments.size() == f_segments.capacity() )   // its place first,
    f_segments.reserve( 2 * f_segments.size() + 1 );  // doubling the room
   char * s = HugePageAllocator< char >().allocate( SEGMENT );
@@ -278,9 +281,10 @@ typename PageHeap< C >::Page * PageHeap< C >::fresh( std::size_t c )
  char * const p = f_page;
  f_page += PAGE;
  const std::size_t b = ( c + 1 ) * GRAIN;
- return( ::new( static_cast< void * >( p ) ) Page{ nullptr , p + HEADER ,
-          p + HEADER + ( ( PAGE - HEADER ) / b ) * b , nullptr , f_owner ,
-          std::uint32_t( c ) , true } );
+ return( ::new( static_cast< void * >( p ) ) Page{
+   nullptr , p + HEADER , p + HEADER + ( ( PAGE - HEADER ) / b ) * b ,
+   nullptr ,
+   f_owner , std::uint32_t( c ) , true } );
  }
 
 template< std::size_t C >
@@ -294,13 +298,13 @@ void * PageHeap< C >::more( std::size_t c )
    ++f_live;
    return( f );
    }
-  if( p->next != p->end ) {                 // a slot never given
+  if( p->next != p->end ) {  // a slot never given
    void * s = p->next;
    p->next += ( c + 1 ) * GRAIN;
    ++f_live;
    return( s );
    }
-  if( p != &s_none )                        // exhausted: off the list
+  if( p != &s_none )  // exhausted: off the list
    p->listed = false;
   if( Page * q = k.avail ) {
    k.avail = q->link;
@@ -317,7 +321,7 @@ void * PageHeap< C >::more( std::size_t c )
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PageHeap.h included */
+#endif /* PageHeap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File PageHeap.h -------------------------*/

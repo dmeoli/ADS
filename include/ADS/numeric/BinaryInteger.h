@@ -44,7 +44,7 @@
 
 #ifndef __ADS_BinaryInteger
  #define __ADS_BinaryInteger
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -62,9 +62,10 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-using Bits = std::vector< int >;   ///< the bits, the least significant first
+using Bits = std::vector< int >;  ///< the bits, the least significant first
 
 /// the bits of \f$ x \f$, at least \f$ n \f$ of them
 ///
@@ -154,7 +155,7 @@ inline std::vector< long > widen( const Bits & X );
 /// \f]
 /// \pre the items of \f$ X \f$ and \f$ Y \f$ are bits (audit)
 inline Bits multiplyBinarySchool( const Bits & X , const Bits & Y ,
-                            long * mults = nullptr );
+				  long * mults = nullptr );
 
 /// the product \f$ X Y \f$ by four products of half size,
 /// \f$ \Theta( n^2 ) \f$; the products of two bits added to `*mults`, if
@@ -170,7 +171,7 @@ inline Bits multiplyBinarySchool( const Bits & X , const Bits & Y ,
 /// \f]
 /// \pre the items of \f$ X \f$ and \f$ Y \f$ are bits (audit)
 inline Bits multiplyBinaryFour( const Bits & X , const Bits & Y ,
-                          long * mults = nullptr );
+				long * mults = nullptr );
 
 /// the product \f$ X Y \f$ by the three products of Karatsuba,
 /// \f$ O( n^{1.59} ) \f$; the products of two bits added to `*mults`, if
@@ -186,7 +187,7 @@ inline Bits multiplyBinaryFour( const Bits & X , const Bits & Y ,
 /// \f]
 /// \pre the items of \f$ X \f$ and \f$ Y \f$ are bits (audit)
 inline Bits multiplyBinaryKaratsuba( const Bits & X , const Bits & Y ,
-                               long * mults = nullptr );
+				     long * mults = nullptr );
 
 /// the product \f$ a b \f$ by the multiplication of Ahmes; the halvings
 /// added to `*steps`, if given
@@ -204,7 +205,7 @@ inline Bits multiplyBinaryKaratsuba( const Bits & X , const Bits & Y ,
 /// \f]
 /// \post the result is \f$ a b \bmod 2^{64} \f$
 inline std::uint64_t ahmes( std::uint64_t a , std::uint64_t b ,
-                            long * steps = nullptr );
+			    long * steps = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
@@ -218,7 +219,7 @@ inline std::uint64_t ahmes( std::uint64_t a , std::uint64_t b ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BinaryInteger.h included */
+#endif /* BinaryInteger.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File BinaryInteger.h ------------------------*/

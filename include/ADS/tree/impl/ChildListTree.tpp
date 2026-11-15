@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 ChildListTree< T >::ChildListTree( const T & v )
@@ -25,10 +26,10 @@ ChildListTree< T >::ChildListTree( const T & v )
 
 template< class T >
 ChildListTree< T >::ChildListTree( const ChildListTree & o )
- : f_N( o.f_N ) , f_root( o.f_root ) , f_free( o.f_free ) ,
-   f_size( o.f_size )
+    : f_N( o.f_N ) , f_root( o.f_root ) , f_free( o.f_free ) ,
+      f_size( o.f_size )
 {
- for( Node & u : f_N )                      // the cells of the new lists
+ for( Node & u : f_N )  // the cells of the new lists
   for( auto q = u.children.head() ; ! u.children.finished( q ) ;
        q = u.children.next( q ) )
    f_N[ u.children.read( q ) ].where = q;
@@ -117,8 +118,8 @@ int ChildListTree< T >::size( void ) const
 template< class T >
 int ChildListTree< T >::insertChild( int n , const T & v )
 {
- (void) node( n );                           // n is a node
- const int c = make( v , n );                // may move the nodes
+ ( void )node( n );           // n is a node
+ const int c = make( v , n );  // may move the nodes
  auto & C = f_N[ n ].children;
  f_N[ c ].where = C.insert( C.head() , c );
  ADS_POST( ( leftmostChild( n ) == c ) && ( parent( c ) == n ) );
@@ -130,7 +131,7 @@ template< class T >
 int ChildListTree< T >::insertSibling( int n , const T & v )
 {
  const int p = node( n ).parent;
- ADS_PRE( p != NIL );                        // n is not the root
+ ADS_PRE( p != NIL );  // n is not the root
  const int c = make( v , p );
  auto & C = f_N[ p ].children;
  f_N[ c ].where = C.insert( C.next( f_N[ n ].where ) , c );
@@ -141,10 +142,10 @@ int ChildListTree< T >::insertSibling( int n , const T & v )
 
 template< class T >
 int ChildListTree< T >::insertChildTree( int n , const ChildListTree & t ,
-                                         int s )
+					 int s )
 {
- (void) node( n );                           // n is a node
- const int c = copy( t , s , n );            // may move the nodes
+ ( void )node( n );              // n is a node
+ const int c = copy( t , s , n );  // may move the nodes
  auto & C = f_N[ n ].children;
  f_N[ c ].where = C.insert( C.head() , c );
  ADS_POST( ( leftmostChild( n ) == c ) && ( parent( c ) == n ) );
@@ -154,10 +155,10 @@ int ChildListTree< T >::insertChildTree( int n , const ChildListTree & t ,
 
 template< class T >
 int ChildListTree< T >::insertSiblingTree( int n , const ChildListTree & t ,
-                                           int s )
+					   int s )
 {
  const int p = node( n ).parent;
- ADS_PRE( p != NIL );                        // n is not the root
+ ADS_PRE( p != NIL );  // n is not the root
  const int c = copy( t , s , p );
  auto & C = f_N[ p ].children;
  f_N[ c ].where = C.insert( C.next( f_N[ n ].where ) , c );
@@ -182,7 +183,8 @@ template< class T >
 std::vector< int > ChildListTree< T >::previsit( void ) const
 {
  std::vector< int > P;
- if( f_root != NIL ) visit( f_root , 0 , P , 0 );
+ if( f_root != NIL )
+  visit( f_root , 0 , P , 0 );
  return( P );
  }
 
@@ -190,7 +192,8 @@ template< class T >
 std::vector< int > ChildListTree< T >::postvisit( void ) const
 {
  std::vector< int > P;
- if( f_root != NIL ) visit( f_root , 0 , P , 1 );
+ if( f_root != NIL )
+  visit( f_root , 0 , P , 1 );
  return( P );
  }
 
@@ -198,7 +201,8 @@ template< class T >
 std::vector< int > ChildListTree< T >::invisit( int i ) const
 {
  std::vector< int > P;
- if( f_root != NIL ) visit( f_root , i , P , 2 );
+ if( f_root != NIL )
+  visit( f_root , i , P , 2 );
  return( P );
  }
 
@@ -247,8 +251,8 @@ int ChildListTree< T >::copy( const ChildListTree & t , int s , int p )
  while( ! S.empty() ) {
   const auto [ u , c ] = S.back();
   S.pop_back();
-  X.clear();                                // the children of u, read
-  const auto & U = t.f_N[ u ].children;     // before make() moves them
+  X.clear();                             // the children of u, read
+  const auto & U = t.f_N[ u ].children;  // before make() moves them
   for( auto q = U.head() ; ! U.finished( q ) ; q = U.next( q ) )
    X.push_back( U.read( q ) );
   for( int x : X ) {
@@ -287,12 +291,18 @@ void ChildListTree< T >::release( int n )
 
 template< class T >
 void ChildListTree< T >::visit( int n , int i , std::vector< int > & P ,
-                                int kind ) const
+				int kind ) const
 {
  // with a stack of its own, as the height may be n: each node with the
  // cell of its next child and the number k of its children entered
- struct Item { int n; typename List< int >::Pos q; int k; };
- if( kind == 0 ) P.push_back( n );
+ struct Item
+ {
+  int n;
+  typename List< int >::Pos q;
+  int k;
+  };
+ if( kind == 0 )
+  P.push_back( n );
  std::vector< Item > S = { Item{ n , f_N[ n ].children.head() , 0 } };
  while( ! S.empty() ) {
   Item & x = S.back();
@@ -303,11 +313,13 @@ void ChildListTree< T >::visit( int n , int i , std::vector< int > & P ,
    S.pop_back();
    continue;
    }
-  if( ( kind == 2 ) && ( x.k == i ) ) P.push_back( x.n );
+  if( ( kind == 2 ) && ( x.k == i ) )
+   P.push_back( x.n );
   const int u = C.read( x.q );
   x.q = C.next( x.q );
   ++x.k;
-  if( kind == 0 ) P.push_back( u );
+  if( kind == 0 )
+   P.push_back( u );
   S.push_back( Item{ u , f_N[ u ].children.head() , 0 } );
   }
  }
@@ -328,8 +340,8 @@ bool ChildListTree< T >::linked( void ) const
   const auto & C = f_N[ n ].children;
   for( auto q = C.head() ; ! C.finished( q ) ; q = C.next( q ) ) {
    const int c = C.read( q );
-   if( ( c < 0 ) || ( c >= int( f_N.size() ) ) ||
-       ( f_N[ c ].parent != n ) || ( f_N[ c ].where != q ) )
+   if( ( c < 0 ) || ( c >= int( f_N.size() ) ) || ( f_N[ c ].parent != n ) ||
+       ( f_N[ c ].where != q ) )
     return( false );
    S.push_back( c );
    }

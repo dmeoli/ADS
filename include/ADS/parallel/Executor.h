@@ -114,7 +114,7 @@
 
 #ifndef __ADS_Executor
  #define __ADS_Executor
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -140,7 +140,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the largest number of blocks into which the loops and the reductions cut
 /// their indices
@@ -154,11 +155,12 @@ inline constexpr std::size_t kGrain = 1024;
 /// they have returned, and whose `concurrency()` is the number of their
 /// threads
 template< class E >
-concept Executor = requires( E & e , std::size_t n ,
-                             void ( & f )( std::size_t ) ) {
- { e.concurrency() } -> std::convertible_to< std::size_t >;
- e.bulk( n , f );
- };
+concept Executor =
+  requires( E & e , std::size_t n , void ( &f )( std::size_t ) )
+{
+   { e.concurrency() } -> std::convertible_to< std::size_t >;
+   e.bulk( n , f );
+   };
 
 /// the executors that also run long-lived workers: `run( p , f )` runs
 /// \f$ f( 0 ) , \ldots , f( p - 1 ) \f$ at the same time on \f$ p \f$
@@ -167,22 +169,26 @@ concept Executor = requires( E & e , std::size_t n ,
 /// Lockable of the standard (`lock()`, `unlock()`, and `try_lock()`, which
 /// takes the lock only if it is free and never waits)
 template< class E >
-concept WorkerExecutor = Executor< E > &&
- requires( E & e , std::size_t p , void ( & f )( std::size_t ) ,
-           typename E::lock_type & l ) {
-  e.run( p , f );
-  l.lock();
-  l.unlock();
-  { l.try_lock() } -> std::convertible_to< bool >;
-  };
+concept WorkerExecutor =
+  Executor< E > && requires( E & e , std::size_t p ,
+			     void ( &f )( std::size_t ) ,
+			     typename E::lock_type & l )
+{
+   e.run( p , f );
+   l.lock();
+   l.unlock();
+   { l.try_lock() } -> std::convertible_to< bool >;
+   };
 
-namespace detail {
+namespace detail
+{
 
 /// whether the running thread is the caller of a run that has not returned
 inline thread_local bool tl_runCaller = false;
 
 /// marks the running thread as the caller of a run for its scope
-class RunCaller {
+class RunCaller
+{
  public:
  /// the mark set, the previous one kept
  RunCaller( void ) : f_old( tl_runCaller ) { tl_runCaller = true; }
@@ -192,8 +198,9 @@ class RunCaller {
  RunCaller & operator=( const RunCaller & ) = delete;
  /// the previous mark back
  ~RunCaller() { tl_runCaller = f_old; }
+
  private:
- bool f_old;                               ///< the mark before
+ bool f_old;  ///< the mark before
  };
 
 }  // end( namespace detail )
@@ -217,9 +224,9 @@ class RunCaller {
 
 /// the executor of the calling thread alone, which makes the calls in their
 /// order
-class Sequential {
+class Sequential
+{
  public:
-
  /// the number of threads, 1
  [[nodiscard]] static constexpr std::size_t concurrency( void ) {
   return( 1 );
@@ -292,9 +299,8 @@ void parallelInvoke( E & ex , F && f , G && g );
 /// 5 & \quad \textbf{return}\ ( \lceil n / s \rceil , s )
 /// \end{array}}
 /// \f]
-[[nodiscard]] inline std::pair< std::size_t , std::size_t > blocksOf(
-                                std::size_t first , std::size_t last ,
-                                std::size_t grain = kGrain );
+[[nodiscard]] inline std::pair< std::size_t , std::size_t >
+blocksOf( std::size_t first , std::size_t last , std::size_t grain = kGrain );
 
 /// the calls `f( lo , hi )` on the blocks \f$ [ \mathit{lo} , \mathit{hi} )
 /// \f$ of \f$ [ \mathit{first} , \mathit{last} ) \f$, in parallel
@@ -320,7 +326,8 @@ void parallelInvoke( E & ex , F && f , G && g );
 /// \f]
 template< Executor E , class F >
 void parallelForBlocks( E & ex , std::size_t first , std::size_t last ,
-                        F && f , std::size_t grain = kGrain );
+			F && f ,
+			std::size_t grain = kGrain );
 
 /// the calls `f( i )` for each \f$ i \in [ \mathit{first} , \mathit{last} )
 /// \f$, in parallel
@@ -339,7 +346,7 @@ void parallelForBlocks( E & ex , std::size_t first , std::size_t last ,
 /// \f]
 template< Executor E , class F >
 void parallelFor( E & ex , std::size_t first , std::size_t last , F && f ,
-                  std::size_t grain = kGrain );
+		  std::size_t grain = kGrain );
 
 /// the reduction of \f$ [ \mathit{first} , \mathit{last} ) \f$: the
 /// results of `f( lo , hi )` on the blocks, combined by \f$ \oplus \f$
@@ -362,9 +369,9 @@ void parallelFor( E & ex , std::size_t first , std::size_t last , F && f ,
 /// \f]
 /// \pre \f$ \oplus \f$ is associative
 template< Executor E , class T , class F , class Op >
-[[nodiscard]] T parallelReduce( E & ex , std::size_t first ,
-                                std::size_t last , T id , F && f , Op op ,
-                                std::size_t grain = kGrain );
+[[nodiscard]] T parallelReduce( E & ex , std::size_t first , std::size_t last ,
+				T id , F && f , Op op ,
+				std::size_t grain = kGrain );
 
 /// the inclusive prefixes
 /// \f$ y[ i ] = \mathit{init} \oplus x[ 0 ] \oplus \cdots \oplus x[ i ] \f$
@@ -412,10 +419,9 @@ template< Executor E , class T , class F , class Op >
 /// \f]
 /// \pre \f$ \oplus \f$ is associative
 template< Executor E , std::random_access_iterator I ,
-          std::random_access_iterator O , class T ,
-          class Op = std::plus<> >
+	  std::random_access_iterator O , class T , class Op = std::plus<> >
 T parallelInclusiveScan( E & ex , I in , std::size_t n , O out , T init ,
-                         Op op = Op() );
+			 Op op = Op() );
 
 /// the exclusive prefixes
 /// \f$ y[ i ] = \mathit{init} \oplus x[ 0 ] \oplus \cdots \oplus x[ i - 1 ]
@@ -433,10 +439,9 @@ T parallelInclusiveScan( E & ex , I in , std::size_t n , O out , T init ,
 /// \f]
 /// \pre \f$ \oplus \f$ is associative
 template< Executor E , std::random_access_iterator I ,
-          std::random_access_iterator O , class T ,
-          class Op = std::plus<> >
+	  std::random_access_iterator O , class T , class Op = std::plus<> >
 T parallelExclusiveScan( E & ex , I in , std::size_t n , O out , T init ,
-                         Op op = Op() );
+			 Op op = Op() );
 
 /*--------------------------------------------------------------------------*/
 
@@ -450,7 +455,7 @@ T parallelExclusiveScan( E & ex , I in , std::size_t n , O out , T init ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Executor.h included */
+#endif /* Executor.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File Executor.h ----------------------------*/

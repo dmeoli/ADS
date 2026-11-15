@@ -14,9 +14,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// f( v , l ) on each edge ( u , v ) of length l
 template< Graph G , class F >
@@ -24,7 +26,7 @@ void forEachLength( const G & g , int u , F && f )
 {
  using D = PathLength< G >;
  if constexpr( requires { typename G::Weight; } &&
-               ( ! std::is_same_v< typename G::Weight , std::monostate > ) )
+	       ( ! std::is_same_v< typename G::Weight , std::monostate > ))
   g.forEachEdge( u , [ & ]( int v , const auto & w ) { f( v , D( w ) ); } );
  else
   g.forEachAdj( u , [ & ]( int v ) { f( v , D( 1 ) ); } );
@@ -54,7 +56,7 @@ bool pathCounts( const G & g , int s , const std::vector< std::uint64_t > & c )
 /// rooted at the nodes of S
 template< Graph G >
 bool bfsForest( const G & g , const std::vector< int > & S ,
-                const std::vector< int > & d , const std::vector< int > & p )
+		const std::vector< int > & d , const std::vector< int > & p )
 {
  std::vector< bool > in( g.bound() , false );
  for( int s : S )
@@ -69,7 +71,7 @@ bool bfsForest( const G & g , const std::vector< int > & S ,
     return( false );
    }
   else if( ! g.hasNode( p[ v ] ) || ( d[ p[ v ] ] == INF ) ||
-           ( d[ v ] != d[ p[ v ] ] + 1 ) )
+	   ( d[ v ] != d[ p[ v ] ] + 1 ) )
    return( false );
   }
  bool ok = true;
@@ -86,7 +88,7 @@ bool bfsForest( const G & g , const std::vector< int > & S ,
 /// or equal to w + L[ v ] on some kept edge
 template< Graph G , class Keep >
 bool longestFrom( const G & g , Keep & keep ,
-                  const std::vector< PathLength< G > > & L )
+		  const std::vector< PathLength< G > > & L )
 {
  using D = PathLength< G >;
  for( int u : g.V() ) {
@@ -105,8 +107,9 @@ bool longestFrom( const G & g , Keep & keep ,
 
 /// Johnson's state for the cycles through s: the stack, the blocked
 /// nodes and the lists B of the nodes waiting on each blocked one
-struct CycleSearch {
- std::vector< std::vector< int > > A;   ///< the adjacent nodes
+struct CycleSearch
+{
+ std::vector< std::vector< int > > A;  ///< the adjacent nodes
  std::vector< int > stack;
  std::vector< bool > blocked;
  std::vector< std::set< int > > B;
@@ -142,7 +145,7 @@ struct CycleSearch {
    unblock( v );
   else
    for( int w : A[ v ] )
-    B[ w ].insert( v );      // v waits until w is unblocked
+    B[ w ].insert( v );  // v waits until w is unblocked
   stack.pop_back();
   return( found );
   }
@@ -205,10 +208,10 @@ multiSourceDistance( const G & g , const std::vector< int > & S )
 
 template< Graph G >
 int setDistance( const G & g , const std::vector< bool > & A ,
-                 const std::vector< bool > & B )
+		 const std::vector< bool > & B )
 {
  ADS_PRE( ( int( A.size() ) == g.bound() ) &&
-          ( int( B.size() ) == g.bound() ) );
+	  ( int( B.size() ) == g.bound() ) );
  std::vector< int > d( g.bound() , INF ) , Q;
  for( int u : g.V() )
   if( A[ u ] ) {
@@ -228,7 +231,7 @@ int setDistance( const G & g , const std::vector< bool > & A ,
     Q.push_back( v );
     }
    } );
-  if( found != INF )                    // the first node of B discovered
+  if( found != INF )  // the first node of B discovered
    return( found );
   }
  return( INF );
@@ -255,7 +258,7 @@ std::vector< int > longestPathLayering( const G & g )
     Q.push_back( v );
    } );
   }
- ADS_PRE( int( Q.size() ) == g.n() );            // else a cycle
+ ADS_PRE( int( Q.size() ) == g.n() );  // else a cycle
  ADS_AUDIT( [ & ]( void ) {
   std::vector< bool > below( g.bound() , false );
   for( int u : g.V() ) {
@@ -281,14 +284,14 @@ std::vector< PathLength< G > > dagLongestPaths( const G & g , Keep && keep )
 {
  using D = PathLength< G >;
  std::vector< D > L( g.bound() , D( 0 ) );
- std::vector< char > state( g.bound() , 0 );    // 0 new, 1 open, 2 done
+ std::vector< char > state( g.bound() , 0 );  // 0 new, 1 open, 2 done
  std::vector< std::vector< std::pair< int , D > > > out( g.bound() );
  for( int u : g.V() )
   detail::forEachLength( g , u , [ & ]( int v , D w ) {
    if( keep( u , v ) )
     out[ u ].emplace_back( v , w );
    } );
- std::vector< std::pair< int , std::size_t > > S;   // node and next edge
+ std::vector< std::pair< int , std::size_t > > S;  // node and next edge
  for( int r : g.V() ) {
   if( state[ r ] != 0 )
    continue;
@@ -298,7 +301,7 @@ std::vector< PathLength< G > > dagLongestPaths( const G & g , Keep && keep )
    auto & [ u , i ] = S.back();
    if( i < out[ u ].size() ) {
     const int v = out[ u ][ i++ ].first;
-    ADS_PRE( state[ v ] != 1 );                 // else a cycle
+    ADS_PRE( state[ v ] != 1 );  // else a cycle
     if( state[ v ] == 0 ) {
      state[ v ] = 1;
      S.emplace_back( v , 0 );
@@ -345,23 +348,23 @@ void simpleCycles( const G & g , int s , F && f )
 /*--------------------------------------------------------------------------*/
 
 template< class T >
-std::optional< std::vector< std::size_t > > refuelingStops(
-                                       const std::vector< T > & D , T L , T R )
+std::optional< std::vector< std::size_t > >
+refuelingStops( const std::vector< T > & D , T L , T R )
 {
  ADS_PRE( ( L >= T( 0 ) ) && ( R >= T( 0 ) ) &&
-          std::is_sorted( D.begin() , D.end() ) &&
-          ( D.empty() || ( ( D.front() >= T( 0 ) ) && ( D.back() <= L ) ) ) );
+	  std::is_sorted( D.begin() , D.end() ) &&
+	  ( D.empty() || ( ( D.front() >= T( 0 ) ) && ( D.back() <= L ) ) ) );
  std::vector< std::size_t > S;
- T reach = R;                                   // the farthest point
+ T reach = R;  // the farthest point
  std::size_t i = 0;
  while( reach < L ) {
   std::size_t best = D.size();
   for( ; ( i < D.size() ) && ( D[ i ] <= reach ) ; ++i )
-   best = i;                                    // the last one in reach
+   best = i;  // the last one in reach
   if( best == D.size() )
    return( std::nullopt );
   S.push_back( best );
-  reach = D[ best ] > L - R ? L : D[ best ] + R;      // no overflow, R < L
+  reach = D[ best ] > L - R ? L : D[ best ] + R;  // no overflow, R < L
   }
  ADS_AUDIT( [ & ]( void ) {
   T at = T( 0 );

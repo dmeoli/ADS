@@ -14,15 +14,16 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 void countingSort( std::vector< T > & A , std::size_t k )
 {
  const auto before = detail::auditCopy( A );
- std::vector< std::size_t > B( k , 0 );          // the occurrences
+ std::vector< std::size_t > B( k , 0 );  // the occurrences
  for( const T & a : A ) {
-  ADS_PRE( !( a < 0 ) && ( std::size_t( a ) < k ) );
+  ADS_PRE( ! ( a < 0 ) && ( std::size_t( a ) < k ) );
   ++B[ a ];
   }
  std::size_t j = 0;

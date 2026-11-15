@@ -40,7 +40,7 @@
 
 #ifndef __ADS_Parentheses
  #define __ADS_Parentheses
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -57,7 +57,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the length of a longest subsequence of \f$ s \f$ that is a balanced
 /// string of the parentheses `open` and `close`
@@ -79,8 +80,9 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \pre `open` differs from `close`
-[[nodiscard]] inline std::size_t longestBalancedSubsequence(
-                     std::string_view s , char open = '(' , char close = ')' );
+[[nodiscard]] inline std::size_t
+longestBalancedSubsequence( std::string_view s , char open = '(' ,
+			    char close = ')' );
 
 /// where the leftmost of the longest balanced substrings of \f$ s \f$
 /// starts and its length, \f$ ( 0 , 0 ) \f$ if there is none
@@ -112,7 +114,7 @@ namespace ADS {
 ///       is balanced
 [[nodiscard]] inline std::pair< std::size_t , std::size_t >
 longestBalancedSubstring( std::string_view s , char open = '(' ,
-                          char close = ')' );
+			  char close = ')' );
 
 /*--------------------------------------------------------------------------*/
 
@@ -126,7 +128,7 @@ longestBalancedSubstring( std::string_view s , char open = '(' ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Parentheses.h included */
+#endif /* Parentheses.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File Parentheses.h -------------------------*/

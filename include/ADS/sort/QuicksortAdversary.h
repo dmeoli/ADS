@@ -49,7 +49,7 @@
 
 #ifndef __ADS_QuicksortAdversary
  #define __ADS_QuicksortAdversary
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -64,7 +64,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- CLASS QuicksortAdversary -------------------------*/
@@ -72,20 +73,21 @@ namespace ADS {
 
 /// the adversary of McIlroy: a comparator of \f$ n \f$ items that gives
 /// them their values while a quicksort runs
-class QuicksortAdversary {
+class QuicksortAdversary
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the adversary of the items \f$ 0 , \ldots , n - 1 \f$, all gas
  explicit QuicksortAdversary( std::size_t n );
 
  /// the comparator to pass to a sort, by value: a pointer to the adversary,
  /// which must outlive it
- class Less {
+ class Less
+ {
   public:
   /// the comparator of the adversary \f$ a \f$
-  explicit Less( QuicksortAdversary & a ) : f_a( &a ) {}
+  explicit Less( QuicksortAdversary & a ) : f_a( &a ) { }
 
   /// true if the value of \f$ x \f$ is smaller than that of \f$ y \f$,
   /// after freezing one of them if both are gas
@@ -128,11 +130,10 @@ class QuicksortAdversary {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- std::vector< std::size_t > f_val;   ///< the values, \f$ n \f$ for the gas
- std::size_t f_solid = 0;            ///< the values given
- std::size_t f_candidate;            ///< the candidate for the pivot
- std::size_t f_count = 0;            ///< the comparisons
+ std::vector< std::size_t > f_val;  ///< the values, \f$ n \f$ for the gas
+ std::size_t f_solid = 0;           ///< the values given
+ std::size_t f_candidate;           ///< the candidate for the pivot
+ std::size_t f_count = 0;           ///< the comparisons
 
  };  // end( class QuicksortAdversary )
 
@@ -148,7 +149,7 @@ class QuicksortAdversary {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* QuicksortAdversary.h included */
+#endif /* QuicksortAdversary.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File QuicksortAdversary.h ----------------------*/

@@ -29,7 +29,7 @@
 
 #ifndef __ADS_WordBreak
  #define __ADS_WordBreak
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -47,7 +47,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the words of \f$ s \f$, if it is a sequence of words, by the
 /// `lookup( word )` of a dictionary; the lookups made go to `*lookups`, if
@@ -74,10 +75,10 @@ namespace ADS {
 /// \f]
 /// \post the words joined give \f$ s \f$
 template< class F >
-std::optional< std::vector< std::string > > wordBreak(
-                         const std::string & s , F && lookup ,
-                         std::size_t longest = std::string::npos ,
-                         long * lookups = nullptr );
+std::optional< std::vector< std::string > >
+wordBreak( const std::string & s , F && lookup ,
+	   std::size_t longest = std::string::npos ,
+	   long * lookups = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
@@ -91,7 +92,7 @@ std::optional< std::vector< std::string > > wordBreak(
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* WordBreak.h included */
+#endif /* WordBreak.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File WordBreak.h --------------------------*/

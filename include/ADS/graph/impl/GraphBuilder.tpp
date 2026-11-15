@@ -17,7 +17,8 @@
 
 #include <climits>
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- THE OPERATIONS -----------------------------*/
@@ -25,7 +26,7 @@ namespace ADS {
 
 template< class W >
 GraphBuilder< W >::GraphBuilder( int n , bool directed )
- : f_directed( directed ) , f_n( n )
+    : f_directed( directed ) , f_n( n )
 {
  ADS_PRE( n >= 0 );
  }
@@ -34,7 +35,7 @@ template< class W >
 void GraphBuilder< W >::addEdge( int u , int v , const W & w )
 {
  ADS_PRE( ( u >= 0 ) && ( u < f_n ) && ( v >= 0 ) && ( v < f_n ) &&
-          ( u != v ) );
+	  ( u != v ) );
  ADS_PRE( f_E.size() < std::size_t( INT_MAX ) );
  f_E.emplace_back( u , v , w );
  }

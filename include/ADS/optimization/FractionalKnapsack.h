@@ -33,7 +33,7 @@
 
 #ifndef __ADS_FractionalKnapsack
  #define __ADS_FractionalKnapsack
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -50,7 +50,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the fractions \f$ x \f$ of the objects, by decreasing \f$ p_i / v_i \f$
 /// (the `zaino()` of the book)
@@ -70,10 +71,9 @@ namespace ADS {
 /// \f]
 /// \pre \f$ |p| = |v| \f$, \f$ v_i > 0 \f$, \f$ p_i \ge 0 \f$, \f$ C \ge 0 \f$
 /// \post fractions in \f$ [ 0 , 1 ] \f$ of volume at most \f$ C \f$
-inline std::vector< double > fractionalKnapsack(
-                                            const std::vector< double > & p ,
-                                            const std::vector< double > & v ,
-                                            double C );
+inline std::vector< double >
+fractionalKnapsack( const std::vector< double > & p ,
+		    const std::vector< double > & v , double C );
 
 /*--------------------------------------------------------------------------*/
 
@@ -87,7 +87,7 @@ inline std::vector< double > fractionalKnapsack(
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* FractionalKnapsack.h included */
+#endif /* FractionalKnapsack.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File FractionalKnapsack.h ----------------------*/

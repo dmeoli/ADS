@@ -14,16 +14,18 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- THE OPERATIONS ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 template< class W >
-ArrayGraph< W >::ArrayGraph( int n ,
-                 const std::vector< std::tuple< int , int , W > > & E ,
-                 bool directed ) : f_directed( directed )
+ArrayGraph< W >::ArrayGraph(
+  int n , const std::vector< std::tuple< int , int , W > > & E ,
+  bool directed )
+    : f_directed( directed )
 {
  ADS_PRE( n >= 0 );
  f_off.assign( n + 1 , 0 );
@@ -53,7 +55,8 @@ ArrayGraph< W >::ArrayGraph( int n ,
 template< class W >
 template< Graph G >
 ArrayGraph< W >::ArrayGraph( const G & g )
- : ArrayGraph( g.bound() , edges( g ) , g.directed() ) {}
+    : ArrayGraph( g.bound() , edges( g ) , g.directed() )
+{ }
 
 template< class W >
 bool ArrayGraph< W >::hasNode( int u ) const
@@ -75,7 +78,7 @@ std::vector< int > ArrayGraph< W >::adj( int u ) const
 {
  ADS_PRE( hasNode( u ) );
  return( std::vector< int >( f_to.begin() + f_off[ u ] ,
-                             f_to.begin() + f_off[ u + 1 ] ) );
+			      f_to.begin() + f_off[ u + 1 ] ) );
  }
 
 template< class W >

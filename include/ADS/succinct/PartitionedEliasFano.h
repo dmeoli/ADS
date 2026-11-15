@@ -77,7 +77,7 @@
 
 #ifndef __ADS_PartitionedEliasFano
  #define __ADS_PartitionedEliasFano
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -98,7 +98,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- CLASS PartitionedEliasFano -----------------------*/
@@ -107,11 +108,11 @@ namespace ADS {
 /// a static strictly increasing sequence of integers in blocks, each coded
 /// as full, as a vector of bits or by Elias-Fano, with `access()` and
 /// `nextGEQ()`
-class PartitionedEliasFano {
+class PartitionedEliasFano
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty sequence
  PartitionedEliasFano( void ) = default;
 
@@ -239,8 +240,8 @@ class PartitionedEliasFano {
  /// an item, returned by value
  using const_reference = std::uint64_t;
  /// the constant iterator, random access
- using const_iterator = SubscriptIterator< PartitionedEliasFano ,
-                                           std::uint64_t >;
+ using const_iterator =
+   SubscriptIterator< PartitionedEliasFano , std::uint64_t >;
  /// the same as `const_iterator`
  using iterator = const_iterator;
 
@@ -259,23 +260,23 @@ class PartitionedEliasFano {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static constexpr std::size_t kB = 128;     ///< the items of a block
- static constexpr std::size_t kApart = 8;   ///< blocks between records apart
+ static constexpr std::size_t kB = 128;    ///< the items of a block
+ static constexpr std::size_t kApart = 8;  ///< blocks between records apart
 
  /// the encoding of a block
  enum Kind {
-  FULL = 0 ,     ///< all the values of the range, no bits
-  VECTOR = 1 ,   ///< a vector of bits over the range
-  ELIAS = 2      ///< the code of Elias and Fano
+  FULL = 0 ,    ///< all the values of the range, no bits
+  VECTOR = 1 ,  ///< a vector of bits over the range
+  ELIAS = 2    ///< the code of Elias and Fano
   };
 
  /// the code of a block of m values in [ 0 , u ): its kind, its bits and
  /// the low bits of Elias-Fano
- struct Code {
-  Kind kind;            ///< the encoding chosen
-  std::uint64_t bits;   ///< the bits of the code
-  int ell;              ///< \f$ \ell \f$, the low bits of Elias-Fano
+ struct Code
+ {
+  Kind kind;           ///< the encoding chosen
+  std::uint64_t bits;  ///< the bits of the code
+  int ell;             ///< \f$ \ell \f$, the low bits of Elias-Fano
   };
  [[nodiscard]] static Code code( std::uint64_t m , std::uint64_t u );
 
@@ -285,12 +286,12 @@ class PartitionedEliasFano {
   return( f_rec.get( j * std::size_t( f_wr ) , f_wl ) );
   }
  [[nodiscard]] std::size_t where( std::size_t j ) const {
-  return( std::size_t( f_rec.get( j * std::size_t( f_wr ) +
-                                  std::size_t( f_wl ) , f_wo ) ) );
+  return( std::size_t(
+    f_rec.get( j * std::size_t( f_wr ) + std::size_t( f_wl ) , f_wo ) ) );
   }
  [[nodiscard]] unsigned form( std::size_t j ) const {
-  return( unsigned( f_rec.get( j * std::size_t( f_wr ) +
-                               std::size_t( f_wl + f_wo ) , 8 ) ) );
+  return( unsigned(
+    f_rec.get( j * std::size_t( f_wr ) + std::size_t( f_wl + f_wo ) , 8 ) ) );
   }
 
  /// the place of the k-th 1 (from 0) in the bits [ p , p + len ) of the
@@ -305,7 +306,7 @@ class PartitionedEliasFano {
  std::uint64_t f_u = 0;
  BitVector f_codes;                     ///< the codes of the blocks
  BitVector f_rec;                       ///< the records of the blocks
- int f_wl = 1 , f_wo = 1 , f_wr = 10;   ///< a last, a place, a record
+ int f_wl = 1 , f_wo = 1 , f_wr = 10;     ///< a last, a place, a record
  std::vector< std::uint64_t > f_apart;  ///< the last of every 8-th block
  std::vector< std::uint64_t > f_eyt;    ///< them by Eytzinger, from 1
  std::vector< std::uint32_t > f_rank;   ///< the rank of each one there
@@ -324,7 +325,7 @@ class PartitionedEliasFano {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PartitionedEliasFano.h included */
+#endif /* PartitionedEliasFano.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File PartitionedEliasFano.h --------------------*/

@@ -63,7 +63,7 @@
 
 #ifndef __ADS_RangeTree
  #define __ADS_RangeTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -84,7 +84,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS RangeTree ------------------------------*/
@@ -94,15 +95,16 @@ namespace ADS {
 /// of a rectangle
 template< std::totally_ordered T >
  requires std::numeric_limits< T >::is_specialized
-class RangeTree {
+class RangeTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Point = std::pair< T , T >;   ///< \f$ ( x , y ) \f$
+ using Point = std::pair< T , T >;  ///< \f$ ( x , y ) \f$
 
  /// the augmentation: the sorted ordinates, with their copies
- struct Ordinates {
+ struct Ordinates
+ {
   /// the ordinates of a subtree, sorted
   using Value = std::vector< T >;
   /// the empty sequence, the identity of the merge
@@ -198,17 +200,16 @@ class RangeTree {
  /// \f]
  /// where the pieces, \f$ O( \log n ) \f$ subtrees and single points, are
  /// those of `JoinTree::augVisit()`.
- [[nodiscard]] std::size_t count( const T & x1 , const T & x2 ,
-                                  const T & y1 , const T & y2 ) const;
+ [[nodiscard]] std::size_t count( const T & x1 , const T & x2 , const T & y1 ,
+				  const T & y2 ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
-
  using Map = JoinTree< Point , std::size_t , WeightBalance , Ordinates >;
 
  /// the sorted points with their multiplicities
- static std::vector< std::pair< Point , std::size_t > > counted(
-                                                std::vector< Point > & P );
+ static std::vector< std::pair< Point , std::size_t > >
+ counted( std::vector< Point > & P );
 
  Map f_map;            ///< \f$ ( x , y ) \mapsto \f$ its copies
  std::size_t f_n = 0;  ///< the points, with their copies
@@ -227,7 +228,7 @@ class RangeTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RangeTree.h included */
+#endif /* RangeTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File RangeTree.h --------------------------*/

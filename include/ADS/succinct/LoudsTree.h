@@ -62,7 +62,7 @@
 
 #ifndef __ADS_LoudsTree
  #define __ADS_LoudsTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -79,19 +79,20 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS LoudsTree -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// an ordered tree in \f$ 2 n + 1 \f$ bits by LOUDS, its nodes by levels
-class LoudsTree {
+class LoudsTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- static constexpr std::size_t nil = std::size_t( -1 );   ///< no node
+ static constexpr std::size_t nil = std::size_t( -1 );  ///< no node
 
  /// the empty tree
  LoudsTree( void );
@@ -166,12 +167,11 @@ class LoudsTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// whether there are \f$ n \f$ 0s and \f$ n + 1 \f$ 1s, ending in 1, the
  /// \f$ k \f$-th 0 after the \f$ k \f$-th 1
  [[nodiscard]] bool valid( void ) const;
 
- RankSelect f_b;   ///< the code, with its rank and select
+ RankSelect f_b;  ///< the code, with its rank and select
 
  };  // end( class LoudsTree )
 
@@ -187,7 +187,7 @@ class LoudsTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LoudsTree.h included */
+#endif /* LoudsTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File LoudsTree.h --------------------------*/

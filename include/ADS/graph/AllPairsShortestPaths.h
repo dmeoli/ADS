@@ -53,7 +53,7 @@
 
 #ifndef __ADS_AllPairsShortestPaths
  #define __ADS_AllPairsShortestPaths
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -69,14 +69,16 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the distances, the predecessors and whether there is a negative cycle
 template< class D >
-struct AllPairs {
- std::vector< std::vector< D > > d;   ///< the distance of each pair
- std::vector< std::vector< int > > p;   ///< the predecessor of each pair
- bool negativeCycle = false;            ///< whether a negative cycle exists
+struct AllPairs
+{
+ std::vector< std::vector< D > > d;    ///< the distance of each pair
+ std::vector< std::vector< int > > p;  ///< the predecessor of each pair
+ bool negativeCycle = false;           ///< whether a negative cycle exists
  };
 
 /// the shortest paths between all the pairs of nodes
@@ -141,7 +143,7 @@ void addEdge( AllPairs< D > & R , int a , int b , const D & w );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* AllPairsShortestPaths.h included */
+#endif /* AllPairsShortestPaths.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- End File AllPairsShortestPaths.h --------------------*/

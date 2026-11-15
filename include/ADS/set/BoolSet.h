@@ -43,7 +43,7 @@
 
 #ifndef __ADS_BoolSet
  #define __ADS_BoolSet
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -74,21 +74,28 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// an allocator whose construction with no value leaves the item as it is
 /// (a default-initialization), so that a vector grows with no fill
 template< class T >
-struct UninitAllocator : std::allocator< T > {
- template< class U > struct rebind { using other = UninitAllocator< U >; };
+struct UninitAllocator : std::allocator< T >
+{
+ template< class U >
+ struct rebind
+ {
+  using other = UninitAllocator< U >;
+  };
  UninitAllocator( void ) = default;
  template< class U >
- UninitAllocator( const UninitAllocator< U > & ) noexcept {}
+ UninitAllocator( const UninitAllocator< U > & ) noexcept { }
  template< class U >
- void construct( U * p ) noexcept( std::is_nothrow_default_constructible_v<
-                                    U > ) {
+ void construct( U * p ) noexcept(
+   std::is_nothrow_default_constructible_v< U > ) {
   ::new( static_cast< void * >( p ) ) U;
   }
  template< class U , class... Args >
@@ -104,12 +111,12 @@ struct UninitAllocator : std::allocator< T > {
 /*--------------------------------------------------------------------------*/
 
 /// a set of integers in \f$ [ 0 , N ) \f$ as a boolean vector
-class BoolSet {
+class BoolSet
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = long;   ///< the type of the items
+ using Item = long;  ///< the type of the items
 
  /// the empty set of the integers in \f$ [ 0 , N ) \f$, the `Set( N )` of
  /// the book
@@ -193,7 +200,8 @@ class BoolSet {
  // item is computed from its bit
 
  /// the places of the table, for `SlotIterator`
- struct Places {
+ struct Places
+ {
   /// the places, \f$ N \f$
   static std::size_t size( const auto & o ) { return( o.f_N ); }
   /// whether the bit \f$ i \f$ is set
@@ -201,9 +209,7 @@ class BoolSet {
    return( ( o.f_W[ i / 64 ] >> ( i % 64 ) ) & 1 );
    }
   /// the item of the place \f$ i \f$, \f$ i \f$ itself
-  static auto read( const auto & , std::size_t i ) {
-   return( long( i ) );
-   }
+  static auto read( const auto & , std::size_t i ) { return( long( i ) ); }
   };
 
  using value_type = long;                 ///< the items
@@ -213,7 +219,7 @@ class BoolSet {
  using const_reference = long;            ///< an item, by value
  /// the iterator, on the bits set in increasing order
  using const_iterator = SlotIterator< BoolSet , Places >;
- using iterator = const_iterator;         ///< the same, constant
+ using iterator = const_iterator;  ///< the same, constant
 
  /// the iterator on the smallest item
  [[nodiscard]] const_iterator begin( void ) const {
@@ -230,7 +236,6 @@ class BoolSet {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the size is the number of bits set, \f$ O( N ) \f$
  [[nodiscard]] bool counted( void ) const;
 
@@ -239,22 +244,23 @@ class BoolSet {
  /// counted
  template< class Op >
  static void combine( BoolSet & C , const BoolSet & A , const BoolSet & B ,
-                      Op op );
+		      Op op );
 
  friend BoolSet setUnion( const BoolSet & A , const BoolSet & B );
  friend BoolSet setIntersection( const BoolSet & A , const BoolSet & B );
  friend BoolSet setDifference( const BoolSet & A , const BoolSet & B );
  friend BoolSet setSymmetricDifference( const BoolSet & A ,
-                                        const BoolSet & B );
+					const BoolSet & B );
 
  /// a set of dimension \f$ N \f$ whose words are not filled
- struct Raw {};
+ struct Raw
+ { };
  BoolSet( long N , Raw );
 
  /// the bits, 64 per word
  std::vector< std::uint64_t , detail::UninitAllocator< std::uint64_t > > f_W;
- std::size_t f_N = 0;                ///< the dimension
- std::size_t f_size = 0;             ///< the number of items
+ std::size_t f_N = 0;     ///< the dimension
+ std::size_t f_size = 0;  ///< the number of items
 
  };  // end( class BoolSet )
 
@@ -323,8 +329,7 @@ inline BoolSet setDifference( const BoolSet & A , const BoolSet & B );
 /// 4 & \quad \textbf{return}\ C
 /// \end{array}}
 /// \f]
-inline BoolSet setSymmetricDifference( const BoolSet & A ,
-                                       const BoolSet & B );
+inline BoolSet setSymmetricDifference( const BoolSet & A , const BoolSet & B );
 
 }  // end( namespace ADS )
 
@@ -336,7 +341,7 @@ inline BoolSet setSymmetricDifference( const BoolSet & A ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BoolSet.h included */
+#endif /* BoolSet.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File BoolSet.h ---------------------------*/

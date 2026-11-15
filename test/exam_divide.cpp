@@ -68,7 +68,8 @@ using namespace ADS;
 /*------------------------------- SOLUTIONS --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace divide {
+namespace divide
+{
 
 using Ints = std::vector< int >;
 using std::int64_t;
@@ -111,8 +112,8 @@ size_t doublegap( const Ints & V )
 /// \post r >= 1
 double maxprod( const std::vector< double > & X )
 {
- ADS_PRE( std::all_of( X.begin() , X.end() ,
-                       []( double x ) { return( x >= 0 ); } ) );
+ ADS_PRE(
+   std::all_of( X.begin() , X.end() , []( double x ) { return( x >= 0 ); } ) );
  double best = 1 , here = 1;
  for( double x : X ) {
   here = ( x == 0 ) ? 1.0 : std::max( here * x , 1.0 );
@@ -178,15 +179,15 @@ size_t thicknessQuadratic( const Ints & V , int C )
 /// and last on a failure, which misses runs (asPrinted keeps that order):
 /// here a success moves last, a failure start.
 size_t thicknessRec( const Ints & V , size_t i , size_t j , int C ,
-                     Ints & mins , Ints & maxs , bool asPrinted )
+		     Ints & mins ,
+		     Ints & maxs , bool asPrinted )
 {
  if( i == j )
   return( 1 );
  const size_t m = ( i + j ) / 2;
- size_t maxlen = std::max( thicknessRec( V , i , m , C , mins , maxs ,
-                                         asPrinted ) ,
-                           thicknessRec( V , m + 1 , j , C , mins , maxs ,
-                                         asPrinted ) );
+ size_t maxlen =
+   std::max( thicknessRec( V , i , m , C , mins , maxs , asPrinted ) ,
+	     thicknessRec( V , m + 1 , j , C , mins , maxs , asPrinted ) );
  mins[ m ] = maxs[ m ] = V[ m ];
  for( size_t k = m ; k-- > i ; ) {
   mins[ k ] = std::min( mins[ k + 1 ] , V[ k ] );
@@ -200,7 +201,8 @@ size_t thicknessRec( const Ints & V , size_t i , size_t j , int C ,
  size_t start = i , last = m + 1;
  while( ( start <= m ) && ( last <= j ) ) {
   const bool ok = int64_t( std::max( maxs[ start ] , maxs[ last ] ) ) -
-                  std::min( mins[ start ] , mins[ last ] ) <= C;
+		    std::min( mins[ start ] , mins[ last ] ) <=
+		  C;
   if( ok )
    maxlen = std::max( maxlen , last - start + 1 );
   if( ok == asPrinted )
@@ -220,8 +222,7 @@ size_t thickness( const Ints & V , int C , bool asPrinted = false )
  if( V.empty() )
   return( 0 );
  Ints mins( V.size() ) , maxs( V.size() );
- return( thicknessRec( V , 0 , V.size() - 1 , C , mins , maxs ,
-                       asPrinted ) );
+ return( thicknessRec( V , 0 , V.size() - 1 , C , mins , maxs , asPrinted ) );
  }
 
 /*------------------------- 2015-09-01, Find peak --------------------------*/
@@ -238,7 +239,7 @@ size_t findPeak( const Ints & A )
  ADS_AUDIT( std::set< int >( A.begin() , A.end() ).size() == n );
  const size_t r = ADS::findPeak( A );
  ADS_POST( ( ( r == 0 ) || ( A[ r - 1 ] < A[ r ] ) ) &&
-           ( ( r == n - 1 ) || ( A[ r ] > A[ r + 1 ] ) ) );
+	   ( ( r == n - 1 ) || ( A[ r ] > A[ r + 1 ] ) ) );
  return( r );
  }
 
@@ -263,8 +264,9 @@ size_t countA( const Ints & A )
  const size_t n = A.size();
  ADS_PRE( ( n >= 2 ) && ( A[ 0 ] < A[ n - 1 ] ) );
  ADS_AUDIT( std::is_sorted( A.begin() , A.end() ) &&
-            std::all_of( A.begin() , A.end() , [ & ]( int x ) {
-             return( ( x == A[ 0 ] ) || ( x == A[ n - 1 ] ) ); } ) );
+	    std::all_of( A.begin() , A.end() , [ & ]( int x ) {
+	     return( ( x == A[ 0 ] ) || ( x == A[ n - 1 ] ) );
+	     } ) );
  return( binarySearchAB( A , 0 , n - 1 ) + 1 );
  }
 
@@ -312,7 +314,8 @@ size_t zero( const Ints & V )
   for( size_t i = 1 ; i < n ; ++i )
    if( std::abs( int64_t( V[ i - 1 ] ) - V[ i ] ) > 1 )
     return( false );
-  return( true ); }() );
+  return( true );
+  }() );
  const size_t r = zeroRec( V , 0 , n - 1 );
  ADS_POST( V[ r ] == 0 );
  return( r );
@@ -418,10 +421,10 @@ int intruder( const Ints & A , const Ints & B )
 
 /// a sorted sequence with no size: a read past its end gives BOTTOM, here
 /// std::nullopt; it counts its reads
-class MisteryArray {
+class MisteryArray
+{
  public:
-
- explicit MisteryArray( const Ints & v ) : f_v( v ) {}
+ explicit MisteryArray( const Ints & v ) : f_v( v ) { }
 
  std::optional< int > operator[]( size_t i ) const {
   ++f_reads;
@@ -433,9 +436,8 @@ class MisteryArray {
  [[nodiscard]] long reads( void ) const { return( f_reads ); }
 
  private:
-
- const Ints & f_v;              ///< the items
- mutable long f_reads = 0;      ///< the reads so far
+ const Ints & f_v;          ///< the items
+ mutable long f_reads = 0;  ///< the reads so far
 
  };  // end( class MisteryArray )
 
@@ -448,7 +450,7 @@ size_t countNegatives( const MisteryArray & A )
 {
  ADS_PRE( A[ 0 ].has_value() );
  return( unboundedSearch( [ & ]( size_t i ) { return( A[ i ] ); } ,
-                          []( int a ) { return( a >= 0 ); } ) );
+			   []( int a ) { return( a >= 0 ); } ) );
  }
 
 /*------------------------ 2020-07-03, Maggioranza -------------------------*/
@@ -556,7 +558,7 @@ int64_t fastSum( const Ints & A )
  const size_t n = A.size();
  ADS_PRE( ( n >= 3 ) && ( A.front() == 1 ) && ( A.back() == 3 ) );
  ADS_AUDIT( std::is_sorted( A.begin() , A.end() ) &&
-            std::count( A.begin() , A.end() , 2 ) > 0 );
+	    std::count( A.begin() , A.end() , 2 ) > 0 );
  const size_t pos1 = lastPos( A , 0 , n - 1 , 1 ) + 1;
  const size_t pos2 = lastPos( A , 0 , n - 1 , 2 ) + 1;
  return( 3 * int64_t( n ) - int64_t( pos1 ) - int64_t( pos2 ) );
@@ -667,7 +669,7 @@ size_t findLocalMinimum( const Ints & A )
  ADS_AUDIT( std::set< int >( A.begin() , A.end() ).size() == n );
  const size_t r = localMinimum( A );
  ADS_POST( ( 0 < r ) && ( r < n - 1 ) && ( A[ r - 1 ] > A[ r ] ) &&
-           ( A[ r ] < A[ r + 1 ] ) );
+	   ( A[ r ] < A[ r + 1 ] ) );
  return( r );
  }
 
@@ -677,7 +679,8 @@ size_t findLocalMinimum( const Ints & A )
 /// times in it: a character of S[ start .. end ] with fewer occurrences is
 /// in no such run, which splits there; T( n ) = T( n - 1 ) + n = O( n^2 )
 size_t krRec( const std::string & S , std::ptrdiff_t start ,
-              std::ptrdiff_t end , int k )
+	      std::ptrdiff_t end ,
+	      int k )
 {
  if( end < start )
   return( 0 );
@@ -686,8 +689,9 @@ size_t krRec( const std::string & S , std::ptrdiff_t start ,
   ++freq[ S[ i ] ];
  for( std::ptrdiff_t i = start ; i <= end ; ++i )
   if( freq[ S[ i ] ] < k )
-   return( std::max( krRec( S , start , i - 1 , k ) ,
-                     krRec( S , i + 1 , end , k ) ) );
+   return(
+     std::max( krRec( S , start , i - 1 , k ) ,
+	       krRec( S , i + 1 , end , k ) ) );
  return( size_t( end - start + 1 ) );
  }
 
@@ -749,7 +753,7 @@ int64_t findNegative( const std::function< int64_t( int64_t ) > & f )
 {
  ADS_PRE( f( 1 ) > 0 );
  return( exponentialSearch( [ & ]( int64_t k ) { return( f( k ) < 0 ); } ,
-                            int64_t( 1 ) ) );
+			     int64_t( 1 ) ) );
  }
 
 /*------------------------ 2025-01-14, AlternaSort -------------------------*/
@@ -758,7 +762,7 @@ int64_t findNegative( const std::function< int64_t( int64_t ) > & f )
 bool alternating( const Ints & A )
 {
  for( size_t i = 0 ; i + 1 < A.size() ; ++i )
-  if( ( i % 2 == 0 ) ? !( A[ i ] < A[ i + 1 ] ) : !( A[ i ] > A[ i + 1 ] ) )
+  if( ( i % 2 == 0 ) ? ! ( A[ i ] < A[ i + 1 ] ) : ! ( A[ i ] > A[ i + 1 ] ) )
    return( false );
  return( true );
  }
@@ -828,7 +832,7 @@ char swapcase( char c )
 bool isPaired( const std::string & S , size_t start , size_t end )
 {
  const std::set< char > letters( S.begin() + std::ptrdiff_t( start ) ,
-                                 S.begin() + std::ptrdiff_t( end ) + 1 );
+				 S.begin() + std::ptrdiff_t( end ) + 1 );
  for( char c : letters )
   if( ! letters.count( swapcase( c ) ) )
    return( false );
@@ -856,7 +860,8 @@ size_t largestPaired( const std::string & S )
 {
  ADS_PRE( std::all_of( S.begin() , S.end() , []( char c ) {
   return( ( ( c >= 'a' ) && ( c <= 'z' ) ) ||
-          ( ( c >= 'A' ) && ( c <= 'Z' ) ) ); } ) );
+	   ( ( c >= 'A' ) && ( c <= 'Z' ) ) );
+  } ) );
  return( lpRec( S , 0 , std::ptrdiff_t( S.size() ) - 1 ) );
  }
 
@@ -865,7 +870,7 @@ size_t largestPaired( const std::string & S )
 /// the run from first leftwards with the characters chars, of size 1 or 2,
 /// the first new character joining a set of size 1; its first place
 std::ptrdiff_t goingLeft( const std::string & S , std::ptrdiff_t start ,
-                          std::ptrdiff_t first , std::set< char > & chars )
+			  std::ptrdiff_t first , std::set< char > & chars )
 {
  std::ptrdiff_t i = first;
  while( ( i >= start ) && ( ( chars.size() == 1 ) || chars.count( S[ i ] ) ) )
@@ -875,7 +880,7 @@ std::ptrdiff_t goingLeft( const std::string & S , std::ptrdiff_t start ,
 
 /// the same rightwards; its last place
 std::ptrdiff_t goingRight( const std::string & S , std::ptrdiff_t first ,
-                           std::ptrdiff_t end , std::set< char > & chars )
+			   std::ptrdiff_t end , std::set< char > & chars )
 {
  std::ptrdiff_t j = first;
  while( ( j <= end ) && ( ( chars.size() == 1 ) || chars.count( S[ j ] ) ) )
@@ -888,7 +893,7 @@ std::ptrdiff_t goingRight( const std::string & S , std::ptrdiff_t first ,
 /// leftwards and then rightwards, and the other way round;
 /// T( n ) = 2 T( n / 2 ) + O( n ) = O( n log n )
 size_t maxTwoRec( const std::string & S , std::ptrdiff_t start ,
-                  std::ptrdiff_t end )
+		  std::ptrdiff_t end )
 {
  if( end - start + 1 <= 2 )
   return( size_t( end - start + 1 ) );
@@ -903,8 +908,9 @@ size_t maxTwoRec( const std::string & S , std::ptrdiff_t start ,
  j = goingRight( S , mid + 2 , end , chars );
  i = goingLeft( S , start , mid - 1 , chars );
  const size_t maxGoingRightFirst = size_t( j - i + 1 );
- return( std::max( { maxLeft , maxRight , maxGoingLeftFirst ,
-                     maxGoingRightFirst } ) );
+ return(
+   std::max( { maxLeft , maxRight , maxGoingLeftFirst ,
+	       maxGoingRightFirst } ) );
  }
 
 size_t maxTwoDivide( const std::string & S )
@@ -942,7 +948,8 @@ size_t maxTwoWrong( const std::string & S )
 
 }  // end( namespace divide )
 
-namespace {
+namespace
+{
 
 using namespace divide;
 
@@ -979,8 +986,7 @@ Ints distinctInts( size_t n , int lo , int span , std::mt19937 & g )
  }
 
 /// a random string of n characters of the alphabet a
-std::string randomString( size_t n , const std::string & a ,
-                          std::mt19937 & g )
+std::string randomString( size_t n , const std::string & a , std::mt19937 & g )
 {
  std::string s;
  for( size_t i = 0 ; i < n ; ++i )
@@ -1085,7 +1091,7 @@ ADS_TEST( "divide-2" )
    }
   CHECK( near( maxprod( X ) , best ) );
   if( std::all_of( X.begin() , X.end() ,
-                   []( double x ) { return( x > 0 ); } ) ) {
+		   []( double x ) { return( x > 0 ); } ) ) {
    std::vector< double > L;
    for( double x : X )
     L.push_back( std::log( x ) );
@@ -1123,7 +1129,7 @@ ADS_TEST( "divide-3" )
    for( size_t j = i + 1 ; j < A.size() ; ++j )
     for( size_t k = 0 ; k < A.size() ; ++k )
      if( ( k != i ) && ( k != j ) &&
-         ( A[ i ] * A[ i ] + A[ j ] * A[ j ] == A[ k ] * A[ k ] ) )
+	 ( A[ i ] * A[ i ] + A[ j ] * A[ j ] == A[ k ] * A[ k ] ) )
       found = true;
   CHECK( pythagorean( A ) == found );
   }
@@ -1158,17 +1164,17 @@ ADS_TEST( "divide-4" )
    std::shuffle( H.begin() , H.end() , g );
   else if( ! H.empty() && ( g() % 2 ) )
    H[ g() % H.size() ] = 100;
-  BinaryTree< int > * a = bst( K ) , * b = bst( H );
+  BinaryTree< int > *a = bst( K ) , *b = bst( H );
   CHECK( equalTrees( a , b ) == ( to_list( a ) == to_list( b ) ) );
   CHECK( equalTrees( a , a ) && equalTrees( b , b ) );
   delete a;
   delete b;
   }
- BinaryTree< int > * a = bst( { 2 , 1 , 3 } ) , * b = bst( { 2 , 3 , 1 } );
- BinaryTree< int > * c = bst( { 1 , 2 , 3 } ) , * d = bst( { 2 , 1 , 4 } );
- BinaryTree< int > * e = bst( { 2 } ) , * const nil = nullptr;
- CHECK( equalTrees( a , b ) && ! equalTrees( a , c ) &&
-        ! equalTrees( a , d ) );
+ BinaryTree< int > *a = bst( { 2 , 1 , 3 } ) , *b = bst( { 2 , 3 , 1 } );
+ BinaryTree< int > *c = bst( { 1 , 2 , 3 } ) , *d = bst( { 2 , 1 , 4 } );
+ BinaryTree< int > *e = bst( { 2 } ) , *const nil = nullptr;
+ CHECK( equalTrees( a , b ) && ! equalTrees( a , c ) && ! equalTrees( a ,
+								      d ) );
  CHECK( ! equalTrees( a , e ) && ! equalTrees( e , a ) );
  CHECK( equalTrees( nil , nil ) );
  CHECK( ! equalTrees( e , nil ) && ! equalTrees( nil , e ) );
@@ -1193,8 +1199,8 @@ ADS_TEST( "divide-5" )
   size_t best = 0;
   for( size_t i = 0 ; i < V.size() ; ++i )
    for( size_t j = i ; j < V.size() ; ++j ) {
-    const auto [ lo , hi ] = std::minmax_element( V.begin() + long( i ) ,
-                                                  V.begin() + long( j ) + 1 );
+    const auto [ lo , hi ] =
+      std::minmax_element( V.begin() + long( i ) , V.begin() + long( j ) + 1 );
     if( *hi - *lo <= C )
      best = std::max( best , j - i + 1 );
     }
@@ -1224,7 +1230,7 @@ ADS_TEST( "divide-6-b" )
  std::mt19937 g( 1 );
  auto peak = [ & ]( const Ints & A , size_t r ) {
   return( ( r < A.size() ) && ( ( r == 0 ) || ( A[ r - 1 ] < A[ r ] ) ) &&
-          ( ( r + 1 == A.size() ) || ( A[ r ] > A[ r + 1 ] ) ) );
+	   ( ( r + 1 == A.size() ) || ( A[ r ] > A[ r + 1 ] ) ) );
   };
  const size_t r = findPeak( { 5 , 7 , 9 , 6 , 12 , 8 , 10 } );
  CHECK( ( r == 2 ) || ( r == 4 ) || ( r == 6 ) );
@@ -1270,8 +1276,8 @@ ADS_TEST( "divide-7" )
   CHECK( countA( A ) == na );
   CHECK( countA( A ) == upperBound( A , a ) );
   CHECK( mostFrequent( A ) == std::max( na , n - na ) );
-  CHECK( computeSum( A ) == std::accumulate( A.begin() , A.end() ,
-                                             int64_t( 0 ) ) );
+  CHECK( computeSum( A ) ==
+	 std::accumulate( A.begin() , A.end() , int64_t( 0 ) ) );
   }
  CHECK( mostFrequent( { 0 , 1 } ) == 1 );
  CHECK( computeSum( { INT_MIN , INT_MAX } ) == -1 );
@@ -1329,8 +1335,8 @@ ADS_TEST( "divide-9" )
   const int w = 1 + int( g() % 12 );
   size_t best = 0;
   for( auto it = A.begin() ; it != A.end() ; ++it )
-   best = std::max( best , size_t( std::upper_bound( it , A.end() ,
-                                                    *it + w - 1 ) - it ) );
+   best = std::max(
+     best , size_t( std::upper_bound( it , A.end() , *it + w - 1 ) - it ) );
   CHECK( maxCrime( A , w ) == best );
   }
  CHECK( maxCrime( {} , 5 ) == 0 );
@@ -1401,12 +1407,11 @@ ADS_TEST( "divide-10" )
   CHECK( single( A ) == x && findSingle( A ) == x && oneSingle( A ) == x );
   CHECK( xorAll( A ) == x && xorAll( B ) == x && xorAll( C ) == 99 );
   CHECK( single( B ) == x && findSingle( B ) == x && oneSingle( B ) == x );
-  CHECK( single( C ) == 99 && findSingle( C ) == 99 &&
-         oneSingle( C ) == 99 );
+  CHECK( single( C ) == 99 && findSingle( C ) == 99 && oneSingle( C ) == 99 );
   }
  for( int x : { 0 , INT_MIN , INT_MAX } ) {
   CHECK( single( { x } ) == x && findSingle( { x } ) == x &&
-         oneSingle( { x } ) == x );
+	 oneSingle( { x } ) == x );
   const Ints E{ INT_MIN , INT_MIN , x , INT_MAX , INT_MAX };
   if( ( x != INT_MIN ) && ( x != INT_MAX ) )
    CHECK( single( E ) == x && findSingle( E ) == x && oneSingle( E ) == x );
@@ -1432,8 +1437,8 @@ ADS_TEST( "divide-11" )
    Ints R( A );
    std::rotate( R.begin() , R.end() - long( k ) , R.end() );
    CHECK( shift( R ) == k );
-   CHECK( shift( R ) == size_t( std::min_element( R.begin() , R.end() ) -
-                                R.begin() ) );
+   CHECK( shift( R ) ==
+	  size_t( std::min_element( R.begin() , R.end() ) - R.begin() ) );
    }
   }
  CHECK( shift( { 5 } ) == 0 );
@@ -1477,7 +1482,7 @@ ADS_TEST( "divide-13" )
 {
  std::mt19937 g( 1 );
  CHECK( intruder( { 2 , 4 , 6 , 8 , 10 , 12 } ,
-                  { 2 , 4 , 6 , 8 , 9 , 10 , 12 } ) == 9 );
+		  { 2 , 4 , 6 , 8 , 9 , 10 , 12 } ) == 9 );
  for( int t = 0 ; t < 300 ; ++t ) {
   Ints B = distinctInts( 1 + g() % 40 , -50 , 120 , g );
   std::sort( B.begin() , B.end() );
@@ -1486,8 +1491,8 @@ ADS_TEST( "divide-13" )
    A.erase( A.begin() + long( k ) );
    CHECK( intruder( A , B ) == B[ k ] );
    CHECK( intruder( A , B ) ==
-          std::accumulate( B.begin() , B.end() , int64_t( 0 ) ) -
-          std::accumulate( A.begin() , A.end() , int64_t( 0 ) ) );
+	  std::accumulate( B.begin() , B.end() , int64_t( 0 ) ) -
+	    std::accumulate( A.begin() , A.end() , int64_t( 0 ) ) );
    }
   }
  CHECK( intruder( {} , { 7 } ) == 7 );
@@ -1511,12 +1516,12 @@ ADS_TEST( "divide-14" )
   const size_t n = 1 + g() % ( t < 2000 ? 40 : 5000 );
   const Ints A = sortedInts( n , -1000 , 1000 , g );
   const MisteryArray X( A );
-  CHECK( countNegatives( X ) == size_t( std::lower_bound( A.begin() ,
-                                        A.end() , 0 ) - A.begin() ) );
+  CHECK( countNegatives( X ) ==
+	 size_t( std::lower_bound( A.begin() , A.end() , 0 ) - A.begin() ) );
   CHECK( X.reads() <= 2 * long( std::bit_width( n ) ) + 4 );
   }
  for( size_t n : { size_t( 1 ) , size_t( 2 ) , size_t( 3 ) , size_t( 64 ) ,
-                   size_t( 65 ) , size_t( 100000 ) } ) {
+		   size_t( 65 ) , size_t( 100000 ) } ) {
   const Ints N( n , INT_MIN ) , P( n , 0 ) , Q( n , INT_MAX );
   CHECK( countNegatives( MisteryArray( N ) ) == n );
   CHECK( countNegatives( MisteryArray( P ) ) == 0 );
@@ -1603,7 +1608,7 @@ ADS_TEST( "divide-18" )
   A.resize( A.size() + 1 + g() % 30 , 2 );
   A.resize( A.size() + 1 + g() % ( t < 2900 ? 30 : 100000 ) , 3 );
   CHECK( fastSum( A ) == std::accumulate( A.begin() , A.end() ,
-                                          int64_t( 0 ) ) );
+					  int64_t( 0 ) ) );
   }
  CHECK( fastSum( { 1 , 2 , 3 } ) == 6 );
  CHECK_THROWS( fastSum( { 1 , 3 } ) , contract_violation );
@@ -1622,8 +1627,9 @@ ADS_TEST( "divide-19" )
 {
  std::mt19937 g( 1 );
  for( const auto & [ A , z ] : std::vector< std::pair< Ints , bool > >{
-       { { -5 , -4 , -1 , 2 , 3 , 4 , 7 } , true } ,
-       { { -2 , 0 , 1 } , true } , { { -6 , -3 , 2 , 3 , 7 } , false } } ) {
+	{ { -5 , -4 , -1 , 2 , 3 , 4 , 7 } , true } ,
+	{ { -2 , 0 , 1 } , true } ,
+	{ { -6 , -3 , 2 , 3 , 7 } , false } } ) {
   CHECK( containsZero( A ) == z );
   CHECK( containsZeroSort( A ) == z );
   }
@@ -1695,9 +1701,9 @@ ADS_TEST( "divide-21" )
      A.push_back( x + int( i ) * d );
    const int64_t m = x + int64_t( k ) * d;
    CHECK( missing( A ) == m );
-   CHECK( missing( A ) == int64_t( n + 1 ) * ( A.front() + A.back() ) / 2 -
-                          std::accumulate( A.begin() , A.end() ,
-                                           int64_t( 0 ) ) );
+   CHECK( missing( A ) ==
+	  int64_t( n + 1 ) * ( A.front() + A.back() ) / 2 -
+	    std::accumulate( A.begin() , A.end() , int64_t( 0 ) ) );
    }
   }
  for( size_t n = 2 ; n < 40 ; ++n )
@@ -1713,7 +1719,7 @@ ADS_TEST( "divide-21" )
  CHECK( missing( { INT_MIN + 1 , INT_MAX } ) == 0 );
  const int d = INT_MAX / 2;
  CHECK( missing( { INT_MIN , INT_MIN + d , INT_MIN + d + d + d } ) ==
-        int64_t( INT_MIN ) + 2 * d );
+	int64_t( INT_MIN ) + 2 * d );
  CHECK_THROWS( missing( { 1 } ) , contract_violation );
  }
 
@@ -1732,7 +1738,8 @@ ADS_TEST( "divide-22" )
   size_t h = 0;
   for( size_t c = 0 ; c <= A.size() ; ++c )
    if( size_t( std::count_if( A.begin() , A.end() , [ & ]( int a ) {
-        return( size_t( a ) >= c ); } ) ) >= c )
+	return( size_t( a ) >= c );
+        } ) ) >= c )
     h = c;
   CHECK( hIndex( A ) == h );
   }
@@ -1797,8 +1804,8 @@ ADS_TEST( "divide-24" )
    std::map< char , int > f;
    for( size_t j = i ; j < S.size() ; ++j ) {
     ++f[ S[ j ] ];
-    if( std::all_of( f.begin() , f.end() , [ & ]( const auto & p ) {
-         return( p.second >= k ); } ) )
+    if( std::all_of( f.begin() , f.end() ,
+		     [ & ]( const auto & p ) { return( p.second >= k ); } ) )
      best = std::max( best , j - i + 1 );
     }
    }
@@ -1825,7 +1832,7 @@ ADS_TEST( "divide-26" )
 {
  std::mt19937 g( 1 );
  CHECK( smallerCount( { 1 , 7 , 2 , 3 , -1 } ) ==
-        ( std::vector< size_t >{ 1 , 3 , 1 , 1 , 0 } ) );
+	( std::vector< size_t >{ 1 , 3 , 1 , 1 , 0 } ) );
  for( int t = 0 ; t < 3000 ; ++t ) {
   const Ints A = distinctInts( g() % 40 , -50 , 120 , g );
   std::vector< size_t > c( A.size() , 0 );
@@ -1836,7 +1843,7 @@ ADS_TEST( "divide-26" )
   CHECK( r == c );
   Ints B( A );
   CHECK( long( std::accumulate( r.begin() , r.end() , size_t( 0 ) ) ) ==
-         countInversions( B ) );
+	 countInversions( B ) );
   }
  CHECK( smallerCount( {} ).empty() );
  CHECK( smallerCount( { 5 } ) == std::vector< size_t >( 1 , 0 ) );
@@ -1848,7 +1855,7 @@ ADS_TEST( "divide-26" )
  for( size_t i = 0 ; i < S.size() ; ++i )
   CHECK( R[ i ] == S.size() - 1 - i );
  CHECK( smallerCount( { INT_MAX , 0 , INT_MIN } ) ==
-        ( std::vector< size_t >{ 2 , 1 , 0 } ) );
+	( std::vector< size_t >{ 2 , 1 , 0 } ) );
  CHECK_THROWS( smallerCount( { 1 , 1 } ) , contract_violation );
  }
 
@@ -1861,7 +1868,10 @@ ADS_TEST( "divide-27" )
  for( int64_t c = 2 ; c < 3000 ; ++c )
   for( int64_t s = 1 ; s <= 3 ; ++s ) {
    long calls = 0;
-   auto f = [ & ]( int64_t k ) { ++calls; return( c - k / s ); };
+   auto f = [ & ]( int64_t k ) {
+    ++calls;
+    return( c - k / s );
+    };
    int64_t n = 1;
    while( c - n / s >= 0 )
     ++n;
@@ -1870,14 +1880,15 @@ ADS_TEST( "divide-27" )
    CHECK( calls <= 2 * long( std::bit_width( std::uint64_t( n ) ) ) + 3 );
    }
  const int64_t big = int64_t( 1 ) << 40;
- CHECK( findNegative( [ & ]( int64_t k ) { return( big - k ); } ) == big + 1 );
+ CHECK( findNegative( [ & ]( int64_t k ) { return( big - k ); } ) ==
+	big + 1 );
  CHECK( findNegative( []( int64_t k ) { return( 3 - 2 * k ); } ) == 2 );
  CHECK( findNegative( []( int64_t k ) { return( 4 - 2 * k ); } ) == 3 );
  CHECK( findNegative( []( int64_t k ) { return( k == 1 ? 1 : -1 ); } ) == 2 );
  CHECK_THROWS( findNegative( []( int64_t k ) { return( -k ); } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( findNegative( []( int64_t k ) { return( 1 - k ); } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*------------------------ 2025-01-14, AlternaSort -------------------------*/
@@ -1958,9 +1969,9 @@ ADS_TEST( "divide-29" )
 ADS_TEST( "divide-30" )
 {
  std::mt19937 g( 1 );
- for( const auto & [ S , r ] : std::vector< std::pair< std::string ,
-                                                      size_t > >{
-       { "abacccbb" , 5 } , { "abccc" , 4 } } ) {
+ for( const auto & [ S ,
+		     r ] : std::vector< std::pair< std::string , size_t > >{
+	{ "abacccbb" , 5 } , { "abccc" , 4 } } ) {
   CHECK( maxTwo( S ) == r );
   CHECK( maxTwoDivide( S ) == r );
   }
@@ -1980,9 +1991,9 @@ ADS_TEST( "divide-30" )
   CHECK( maxTwo( S ) == best );
   CHECK( maxTwoDivide( S ) == best );
   }
- for( const std::string & S : { std::string() , std::string( "q" ) ,
-                                std::string( 1000 , 'q' ) ,
-                                std::string( "ababababab" ) } ) {
+ for( const std::string & S :
+      { std::string() , std::string( "q" ) , std::string( 1000 , 'q' ) ,
+	std::string( "ababababab" ) } ) {
   CHECK( maxTwo( S ) == S.size() );
   CHECK( maxTwoDivide( S ) == S.size() );
   }

@@ -60,8 +60,8 @@
 
 #include "ADS/priority/IndexedDaryHeap.h"
 
-#if defined( ZC_POLICIES ) && ! defined( ZC_BEFORE ) && \
-    __has_include( "ADS/sequence/ObservableArray.h" )
+#if defined( ZC_POLICIES ) && ! defined( ZC_BEFORE ) &&                       \
+  __has_include( "ADS/sequence/ObservableArray.h" )
  #include "ADS/sequence/ObservableArray.h"
  #define ZC_EMITTERS 1
 #endif
@@ -72,7 +72,8 @@
 #include <utility>
 #include <vector>
 
-namespace zc {
+namespace zc
+{
 
 /// the heap of the check: with `NoObservers`, or the heap of the tree before
 using Heap = ADS::IndexedDaryHeap< int >;
@@ -83,7 +84,7 @@ using Ev = ADS::GraphEvent< long long >;
 
 /// the tree of the workloads of JoinTree, of the default policy
 using JT = ADS::JoinTree< int , long long , ADS::AVLBalance ,
-                          ADS::SumAugmentation< long long > >;
+			  ADS::SumAugmentation< long long > >;
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- THE OBSERVERS OF Observable.h ----------------------*/
@@ -91,13 +92,14 @@ using JT = ADS::JoinTree< int , long long , ADS::AVLBalance ,
 
 /// an observer of the insertions of nodes only, the kind that no change of
 /// the check makes
-struct LegacyExcluding {
+struct LegacyExcluding
+{
  long long n = 0;
  [[nodiscard]] unsigned mask( void ) const {
   return( ADS::GraphEvents::NODE_INSERT );
   }
  void notify( const Ev & ) { ++n; }
- void notify( std::span< const Ev > s ) { n += (long long)( s.size() ); }
+ void notify( std::span< const Ev > s ) { n += ( long long )( s.size() ); }
  };
 
 #ifdef ZC_POLICIES
@@ -107,13 +109,15 @@ struct LegacyExcluding {
 /*--------------------------------------------------------------------------*/
 
 /// an observer of the insertions of nodes only
-struct Excluding {
+struct Excluding
+{
  long long n = 0;
  void on( const ADS::NodeInserted & ) { ++n; }
  };
 
 /// an observer that counts the weights that decrease
-struct CountDecreases {
+struct CountDecreases
+{
  long long n = 0;
  void on( const ADS::WeightChanged< long long > & e ) {
   n += ( e.to < e.from ) ? 1 : 0;
@@ -124,13 +128,15 @@ struct CountDecreases {
 using KeySet = ADS::mod::KeyChanged< std::size_t , int >;
 
 /// an observer of the array that wants no change of key
-struct KeyExcluding {
+struct KeyExcluding
+{
  long long n = 0;
  void on( const ADS::mod::Cleared & ) noexcept { ++n; }
  };
 
 /// an observer of the array that counts the keys that decrease
-struct KeyCountDecreases {
+struct KeyCountDecreases
+{
  long long n = 0;
  void on( const KeySet & e ) { n += ( e.to < e.from ) ? 1 : 0; }
  };
@@ -142,14 +148,14 @@ struct KeyCountDecreases {
 /// an array of keys that tells its changes through the subject policy
 /// `Policy`, written as a structure of the library writes its mutators
 template< class Policy >
-class KeyArray {
+class KeyArray
+{
  public:
-
  using modifications = ADS::mod::list< KeySet , ADS::mod::Cleared >;
  using Subject = typename Policy::template bind< modifications >;
 
- template< class ... O >
- explicit KeyArray( std::size_t n , O & ... o ) : f_k( n ) , f_sub( o... ) {}
+ template< class... O >
+ explicit KeyArray( std::size_t n , O &... o ) : f_k( n ) , f_sub( o... ) { }
 
  /// the key of h set to k
  void set( std::size_t h , int k ) {
@@ -172,7 +178,6 @@ class KeyArray {
  Subject & subject( void ) { return( f_sub ); }
 
  private:
-
  void setEmit( std::size_t h , int k ) {
   const int old = f_k[ h ];
   f_k[ h ] = k;
@@ -186,7 +191,7 @@ class KeyArray {
  };
 
 static_assert( sizeof( KeyArray< ADS::NoObservers > ) ==
-               sizeof( std::vector< int > ) );
+	       sizeof( std::vector< int > ) );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- THE GRID ---------------------------------*/
@@ -200,7 +205,8 @@ template< class Policy >
 using Grid = ADS::GridGraph< int , int , Policy >;
 
 /// an observer of the grid that counts the costs that decrease
-struct GridCountDecreases {
+struct GridCountDecreases
+{
  long long n = 0;
  void on( const CellSet & e ) { n += ( e.to < e.from ) ? 1 : 0; }
  };
@@ -214,13 +220,15 @@ struct GridCountDecreases {
 /*--------------------------------------------------------------------------*/
 
 /// an observer of the heap that wants only its clearing
-struct HeapExcluding {
+struct HeapExcluding
+{
  long long n = 0;
  void on( const ADS::mod::Cleared & ) noexcept { ++n; }
  };
 
 /// an observer of the heap that counts the keys that decrease
-struct HeapCountDecreases {
+struct HeapCountDecreases
+{
  long long n = 0;
  void on( const ADS::mod::KeyChanged< int , int > & e ) {
   n += ( e.to < e.from ) ? 1 : 0;
@@ -232,13 +240,15 @@ template< class Policy >
 using OArray = ADS::ObservableArray< int , Policy >;
 
 /// an observer of the array that wants only its clearing
-struct ArrayExcluding {
+struct ArrayExcluding
+{
  long long n = 0;
  void on( const ADS::mod::Cleared & ) noexcept { ++n; }
  };
 
 /// an observer of the array that counts the values that decrease
-struct ArrayCountDecreases {
+struct ArrayCountDecreases
+{
  long long n = 0;
  void on( const ADS::mod::Assigned< std::size_t , int > & e ) {
   n += ( e.to < e.from ) ? 1 : 0;
@@ -246,7 +256,7 @@ struct ArrayCountDecreases {
  };
 
 static_assert( sizeof( OArray< ADS::NoObservers > ) ==
-               sizeof( std::vector< int > ) );
+	       sizeof( std::vector< int > ) );
 static_assert( sizeof( Heap ) == 2 * sizeof( std::vector< int > ) );
 
 #ifndef ZC_BEFORE
@@ -256,13 +266,15 @@ static_assert( sizeof( Heap ) == 2 * sizeof( std::vector< int > ) );
 /*--------------------------------------------------------------------------*/
 
 /// an observer of the tree that wants none of the events of the workloads
-struct TreeExcluding {
+struct TreeExcluding
+{
  long long n = 0;
  void on( const ADS::mod::Cleared & ) noexcept { ++n; }
  };
 
 /// an observer of the tree that counts the values that decrease
-struct TreeCountDecreases {
+struct TreeCountDecreases
+{
  long long n = 0;
  void on( const JT::Assigned & e ) { n += ( e.to < e.from ) ? 1 : 0; }
  };
@@ -270,7 +282,7 @@ struct TreeCountDecreases {
 /// the tree of the policy P
 template< class P >
 using JTP = ADS::JoinTree< int , long long , ADS::AVLBalance ,
-                           ADS::SumAugmentation< long long > , P >;
+			   ADS::SumAugmentation< long long > , P >;
 
 /// with no observer, the root and the generator of the priorities alone
 static_assert( sizeof( JT ) == sizeof( void * ) + sizeof( std::uint64_t ) );
@@ -281,7 +293,7 @@ static_assert( sizeof( JT ) == sizeof( void * ) + sizeof( std::uint64_t ) );
 
 }  // end( namespace zc )
 
-#endif  /* zerocost.h included */
+#endif /* zerocost.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File zerocost.h --------------------------*/

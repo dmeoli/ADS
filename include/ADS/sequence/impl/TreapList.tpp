@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 void TreapList< T >::rotateRight( Ptr & t )
@@ -43,7 +44,8 @@ auto TreapList< T >::nodeAt( std::size_t i ) const -> Node *
 {
  Node * t = f_root.get();
  for( std::size_t l ; i != ( l = sz( t->left ) ) ; )
-  if( i < l ) t = t->left.get();
+  if( i < l )
+   t = t->left.get();
   else {
    i -= l + 1;
    t = t->right.get();
@@ -75,12 +77,14 @@ void TreapList< T >::add( Ptr & t , std::size_t i , const T & v )
  if( i <= sz( t->left ) ) {
   add( t->left , i , v );
   update( t );
-  if( t->left->priority > t->priority ) rotateRight( t );
+  if( t->left->priority > t->priority )
+   rotateRight( t );
   }
  else {
   add( t->right , i - sz( t->left ) - 1 , v );
   update( t );
-  if( t->right->priority > t->priority ) rotateLeft( t );
+  if( t->right->priority > t->priority )
+   rotateLeft( t );
   }
  }
 
@@ -96,13 +100,13 @@ template< class T >
 T TreapList< T >::remove( Ptr & t , std::size_t i )
 {
  const std::size_t l = sz( t->left );
- if( ( i == l ) && ( ! t->left || ! t->right ) ) {   // one child at most
+ if( ( i == l ) && ( ! t->left || ! t->right ) ) {  // one child at most
   T v = std::move( t->item );
   t = std::move( t->left ? t->left : t->right );
   return( v );
   }
- if( i == l ) {                             // down, the child of larger
-  if( t->left->priority > t->right->priority ) {   // priority up
+ if( i == l ) {                                   // down, the child of larger
+  if( t->left->priority > t->right->priority ) {  // priority up
    rotateRight( t );
    T v = remove( t->right , sz( t->right->left ) );
    update( t );
@@ -147,8 +151,10 @@ auto TreapList< T >::split( Ptr t , std::size_t i ) -> std::pair< Ptr , Ptr >
 template< class T >
 auto TreapList< T >::join( Ptr a , Ptr b ) -> Ptr
 {
- if( ! a ) return( b );
- if( ! b ) return( a );
+ if( ! a )
+  return( b );
+ if( ! b )
+  return( a );
  if( a->priority > b->priority ) {
   a->right = join( std::move( a->right ) , std::move( b ) );
   update( a );

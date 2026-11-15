@@ -86,7 +86,7 @@
 
 #ifndef __ADS_RadixSort
  #define __ADS_RadixSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -115,12 +115,14 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// an integer or a floating point number of at most 8 bytes
 template< class T >
-concept RadixKey = ( std::is_integral_v< T > ||
-                     std::is_floating_point_v< T > ) && ( sizeof( T ) <= 8 );
+concept RadixKey =
+  ( std::is_integral_v< T > || std::is_floating_point_v< T > ) &&
+  ( sizeof( T ) <= 8 );
 
 /// the unsigned key of \f$ x \f$, whose order is the order of the numbers: the
 /// bits of \f$ x \f$ with the sign bit flipped for a signed integer, and for a
@@ -266,7 +268,7 @@ inline void msdRadixSort( std::vector< std::string > & A );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RadixSort.h included */
+#endif /* RadixSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File RadixSort.h --------------------------*/

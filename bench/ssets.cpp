@@ -74,11 +74,13 @@
 using namespace ADS::bench;
 using Key = int;
 
-namespace {
+namespace
+{
 
 /// the keys of a run: K in the order of insertion, H the same in another
 /// order, Q absent ones, S sorted, D sorted down
-struct Data {
+struct Data
+{
  std::vector< Key > K , H , Q , S , D;
  };
 
@@ -87,7 +89,8 @@ struct Data {
 /// or 0) and del( d , k )
 template< class M , class I , class F , class L , class E >
 void run( const std::string & who , const Data & X , int r , M && make ,
-          I && ins , F && find , L && low , E && del )
+	  I && ins ,
+	  F && find , L && low , E && del )
 {
  if( skip( who ) )
   return;
@@ -95,32 +98,71 @@ void run( const std::string & who , const Data & X , int r , M && make ,
  const char * b = "ssets";
  auto built = [ & ]( void ) {
   auto d = make();
-  for( Key k : X.K ) ins( d , k );
+  for( Key k : X.K )
+   ins( d , k );
   return( d );
   };
- print( b , "insert random" , n , who , median( make , [ & ]( auto & e ) {
-         for( Key k : X.K ) ins( e , k ); } , r , n ) );
- print( b , "insert sorted" , n , who , median( make , [ & ]( auto & e ) {
-         for( Key k : X.S ) ins( e , k ); } , r , n ) );
+ print( b , "insert random" , n , who ,
+	median(
+	  make ,
+	  [ & ]( auto & e ) {
+	   for( Key k : X.K )
+	    ins( e , k );
+	   } ,
+	  r , n ) );
+ print( b , "insert sorted" , n , who ,
+	median(
+	  make ,
+	  [ & ]( auto & e ) {
+	   for( Key k : X.S )
+	    ins( e , k );
+	   } ,
+	  r , n ) );
  {
   auto d = built();
-  print( b , "find hit" , n , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           std::uint64_t s = 0;
-           for( Key k : X.H ) s += find( d , k );
-           sink = sink + s; } , r , n ) );
-  print( b , "find(x) miss" , n , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           std::uint64_t s = 0;
-           for( Key k : X.Q ) s += std::uint64_t( low( d , k ) );
-           sink = sink + s; } , r , n ) );
+  print( b , "find hit" , n , who ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  std::uint64_t s = 0;
+		  for( Key k : X.H )
+		   s += find( d , k );
+		  sink = sink + s;
+		  } ,
+		 r , n ) );
+  print( b , "find(x) miss" , n , who ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  std::uint64_t s = 0;
+		  for( Key k : X.Q )
+		   s += std::uint64_t( low( d , k ) );
+		  sink = sink + s;
+		  } ,
+		 r , n ) );
   }
- print( b , "remove random" , n , who , median( built , [ & ]( auto & e ) {
-         for( Key k : X.H ) del( e , k ); } , r , n ) );
- print( b , "remove sorted" , n , who , median( built , [ & ]( auto & e ) {
-         for( Key k : X.S ) del( e , k ); } , r , n ) );
- print( b , "remove sorted down" , n , who , median( built ,
-         [ & ]( auto & e ) { for( Key k : X.D ) del( e , k ); } , r , n ) );
+ print( b , "remove random" , n , who ,
+	median(
+	  built ,
+	  [ & ]( auto & e ) {
+	   for( Key k : X.H )
+	    del( e , k );
+	   } ,
+	  r , n ) );
+ print( b , "remove sorted" , n , who ,
+	median(
+	  built ,
+	  [ & ]( auto & e ) {
+	   for( Key k : X.S )
+	    del( e , k );
+	   } ,
+	  r , n ) );
+ print( b , "remove sorted down" , n , who ,
+	median(
+	  built ,
+	  [ & ]( auto & e ) {
+	   for( Key k : X.D )
+	    del( e , k );
+	   } ,
+	  r , n ) );
  }
 
 }  // end( namespace )
@@ -132,15 +174,17 @@ int main( int argc , char ** argv )
   std::mt19937 g( o.seed );
   std::vector< Key > all;
   {
-   const auto w = keys( 2 * n , o.seed );   // 31 bits, distinct
+   const auto w = keys( 2 * n , o.seed );  // 31 bits, distinct
    std::set< Key > seen;
    for( std::uint64_t x : w ) {
     const Key k = Key( x & 0x7FFFFFFF );
-    if( ( k > 0 ) && seen.insert( k ).second ) all.push_back( k );
+    if( ( k > 0 ) && seen.insert( k ).second )
+     all.push_back( k );
     }
    while( all.size() < 2 * n ) {
     const Key k = Key( g() & 0x7FFFFFFF );
-    if( ( k > 0 ) && seen.insert( k ).second ) all.push_back( k );
+    if( ( k > 0 ) && seen.insert( k ).second )
+     all.push_back( k );
     }
    }
   Data X;
@@ -155,83 +199,111 @@ int main( int argc , char ** argv )
 
   auto adsIns = []( auto & d , Key k ) { d.insert( k , k ); };
   auto adsFind = []( const auto & d , Key k ) {
-   return( std::uint64_t( d.contains( k ) ) ); };
+   return( std::uint64_t( d.contains( k ) ) );
+   };
   auto adsLow = []( const auto & d , Key k ) {
    const auto v = d.lowerBound( k );
-   return( v ? v->first : Key( 0 ) ); };
+   return( v ? v->first : Key( 0 ) );
+   };
   auto adsDel = []( auto & d , Key k ) { d.remove( k ); };
 
-  run( "std::set" , X , r , [](){ return( std::set< Key >() ); } ,
-       []( auto & d , Key k ) { d.insert( k ); } ,
-       []( const auto & d , Key k ) {
-        return( std::uint64_t( d.count( k ) ) ); } ,
-       []( const auto & d , Key k ) {
-        const auto it = d.lower_bound( k );
-        return( it == d.end() ? Key( 0 ) : *it ); } ,
-       []( auto & d , Key k ) { d.erase( k ); } );
-  run( "ADS::SkipList" , X , r ,
-       [](){ return( ADS::SkipList< Key , Key >() ); } , adsIns , adsFind ,
-       []( const auto & d , Key k ) {
-        const auto it = d.lowerBound( k );
-        return( it == d.end() ? Key( 0 ) : ( *it ).first ); } , adsDel );
-  run( "ADS::ScapegoatTree" , X , r ,
-       [](){ return( ADS::ScapegoatTree< Key , Key >() ); } , adsIns ,
-       adsFind , adsLow , adsDel );
-  run( "ADS::ScapegoatTree sizes" , X , r ,
-       [](){ return( ADS::ScapegoatTree< Key , Key , true >() ); } , adsIns ,
-       adsFind , adsLow , adsDel );
-  run( "ADS::ScapegoatTree recompute" , X , r , [](){
-        using S = ADS::ScapegoatTree< Key , Key >;
-        return( S( 1.5 , S::Sizes::RECOMPUTE ) ); } , adsIns , adsFind ,
-       adsLow , adsDel );
-  run( "ADS::Treap" , X , r , [](){ return( ADS::Treap< Key , Key >() ); } ,
-       adsIns , adsFind , adsLow , adsDel );
-  run( "ADS::HashedTreap" , X , r ,
-       [](){ return( ADS::HashedTreap< Key , Key >() ); } , adsIns ,
-       adsFind , adsLow , adsDel );
-  run( "ADS::FingerTreap" , X , r ,
-       [](){ return( ADS::FingerTreap< Key , Key >() ); } , adsIns ,
-       adsFind , adsLow , adsDel );
-  run( "ADS::RandomizedSearchTree" , X , r ,
-       [](){ return( ADS::RandomizedSearchTree< Key , Key >() ); } , adsIns ,
-       adsFind , adsLow , adsDel );
-  run( "ADS::LeftLeaningRedBlackTree" , X , r ,
-       [](){ return( ADS::LeftLeaningRedBlackTree< Key , Key >() ); } ,
-       adsIns , adsFind , adsLow , adsDel );
-  run( "ADS::WeightRebuildTree" , X , r ,
-       [](){ return( ADS::WeightRebuildTree< Key , Key >() ); } , adsIns ,
-       adsFind , adsLow , adsDel );
-  run( "ADS::CountdownTree" , X , r ,
-       [](){ return( ADS::CountdownTree< Key , Key >() ); } , adsIns ,
-       adsFind , adsLow , adsDel );
-  run( "ADS::DynamiteTree" , X , r ,
-       [](){ return( ADS::DynamiteTree< Key , Key >() ); } , adsIns ,
-       adsFind , adsLow , adsDel );
-  run( "ADS::RedBlackTree" , X , r ,
-       [](){ return( ADS::RedBlackTree< Key , Key >() ); } , adsIns ,
-       adsFind , []( const auto & , Key ) { return( Key( 0 ) ); } , adsDel );
-  run( "ADS::AVLTree" , X , r ,
-       [](){ return( ADS::AVLTree< Key , Key >() ); } , adsIns , adsFind ,
-       []( const auto & , Key ) { return( Key( 0 ) ); } ,
-       adsDel );
+  run(
+    "std::set" , X , r , []() { return( std::set< Key >() ); } ,
+    []( auto & d , Key k ) { d.insert( k ); } ,
+    []( const auto & d , Key k ) { return( std::uint64_t( d.count( k ) ) ); } ,
+    []( const auto & d , Key k ) {
+     const auto it = d.lower_bound( k );
+     return( it == d.end() ? Key( 0 ) : *it );
+     } ,
+    []( auto & d , Key k ) { d.erase( k ); } );
+  run(
+    "ADS::SkipList" , X , r ,
+    []() { return( ADS::SkipList< Key , Key >() ); } ,
+    adsIns , adsFind ,
+    []( const auto & d , Key k ) {
+     const auto it = d.lowerBound( k );
+     return( it == d.end() ? Key( 0 ) : ( *it ).first );
+     } ,
+    adsDel );
+  run(
+    "ADS::ScapegoatTree" , X , r ,
+    []() { return( ADS::ScapegoatTree< Key , Key >() ); } , adsIns , adsFind ,
+    adsLow , adsDel );
+  run(
+    "ADS::ScapegoatTree sizes" , X , r ,
+    []() { return( ADS::ScapegoatTree< Key , Key , true >() ); } , adsIns ,
+    adsFind , adsLow , adsDel );
+  run(
+    "ADS::ScapegoatTree recompute" , X , r ,
+    []() {
+     using S = ADS::ScapegoatTree< Key , Key >;
+     return( S( 1.5 , S::Sizes::RECOMPUTE ) );
+     } ,
+    adsIns , adsFind , adsLow , adsDel );
+  run(
+    "ADS::Treap" , X , r , []() { return( ADS::Treap< Key , Key >() ); } ,
+    adsIns ,
+    adsFind , adsLow , adsDel );
+  run(
+    "ADS::HashedTreap" , X , r ,
+    []() { return( ADS::HashedTreap< Key , Key >() ); } , adsIns , adsFind ,
+    adsLow , adsDel );
+  run(
+    "ADS::FingerTreap" , X , r ,
+    []() { return( ADS::FingerTreap< Key , Key >() ); } , adsIns , adsFind ,
+    adsLow , adsDel );
+  run(
+    "ADS::RandomizedSearchTree" , X , r ,
+    []() { return( ADS::RandomizedSearchTree< Key , Key >() ); } , adsIns ,
+    adsFind , adsLow , adsDel );
+  run(
+    "ADS::LeftLeaningRedBlackTree" , X , r ,
+    []() { return( ADS::LeftLeaningRedBlackTree< Key , Key >() ); } , adsIns ,
+    adsFind , adsLow , adsDel );
+  run(
+    "ADS::WeightRebuildTree" , X , r ,
+    []() { return( ADS::WeightRebuildTree< Key , Key >() ); } , adsIns ,
+    adsFind ,
+    adsLow , adsDel );
+  run(
+    "ADS::CountdownTree" , X , r ,
+    []() { return( ADS::CountdownTree< Key , Key >() ); } , adsIns , adsFind ,
+    adsLow , adsDel );
+  run(
+    "ADS::DynamiteTree" , X , r ,
+    []() { return( ADS::DynamiteTree< Key , Key >() ); } , adsIns , adsFind ,
+    adsLow , adsDel );
+  run(
+    "ADS::RedBlackTree" , X , r ,
+    []() { return( ADS::RedBlackTree< Key , Key >() ); } , adsIns , adsFind ,
+    []( const auto & , Key ) { return( Key( 0 ) ); } , adsDel );
+  run(
+    "ADS::AVLTree" , X , r , []() { return( ADS::AVLTree< Key , Key >() ); } ,
+    adsIns , adsFind , []( const auto & , Key ) { return( Key( 0 ) ); } ,
+    adsDel );
 #if defined( ADS_HAS_ODS )
   auto odsIns = []( auto & d , Key k ) { d->add( k ); };
   auto odsFind = []( const auto & d , Key k ) {
-   return( std::uint64_t( d->find( k ) == k ) ); };
+   return( std::uint64_t( d->find( k ) == k ) );
+   };
   auto odsLow = []( const auto & d , Key k ) { return( d->find( k ) ); };
   auto odsDel = []( auto & d , Key k ) { d->remove( k ); };
-  run( "ods::SkiplistSSet" , X , r , [](){
-        return( std::make_unique< ods::SkiplistSSet< Key > >() ); } ,
-       odsIns , odsFind , odsLow , odsDel );
-  run( "ods::ScapegoatTree1" , X , r , [](){
-        return( std::make_unique< ods::ScapegoatTree1< Key > >() ); } ,
-       odsIns , odsFind , odsLow , odsDel );
-  run( "ods::Treap1" , X , r , [](){
-        return( std::make_unique< ods::Treap1< Key > >() ); } , odsIns ,
-       odsFind , odsLow , odsDel );
-  run( "ods::RedBlackTree1" , X , r , [](){
-        return( std::make_unique< ods::RedBlackTree1< Key > >() ); } ,
-       odsIns , odsFind , odsLow , odsDel );
+  run(
+    "ods::SkiplistSSet" , X , r ,
+    []() { return( std::make_unique< ods::SkiplistSSet< Key > >() ); } ,
+    odsIns , odsFind , odsLow , odsDel );
+  run(
+    "ods::ScapegoatTree1" , X , r ,
+    []() { return( std::make_unique< ods::ScapegoatTree1< Key > >() ); } ,
+    odsIns , odsFind , odsLow , odsDel );
+  run(
+    "ods::Treap1" , X , r ,
+    []() { return( std::make_unique< ods::Treap1< Key > >() ); } , odsIns ,
+    odsFind , odsLow , odsDel );
+  run(
+    "ods::RedBlackTree1" , X , r ,
+    []() { return( std::make_unique< ods::RedBlackTree1< Key > >() ); } ,
+    odsIns , odsFind , odsLow , odsDel );
 #endif
   }
  return( 0 );

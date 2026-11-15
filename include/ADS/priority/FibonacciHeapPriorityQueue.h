@@ -58,7 +58,7 @@
 
 #ifndef __ADS_FibonacciHeapPriorityQueue
  #define __ADS_FibonacciHeapPriorityQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -81,7 +81,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------- CLASS FibonacciHeapPriorityQueue ---------------------*/
@@ -90,26 +91,27 @@ namespace ADS {
 /// a priority queue on a Fibonacci heap, a collection of trees heap ordered
 /// whose roots are in a circular list
 template< class T , std::totally_ordered P = int >
-class FibonacciHeapPriorityQueue {
+class FibonacciHeapPriorityQueue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// a node of the heap
- struct Node {
-  P priority;                ///< the priority
-  T value;                   ///< the item
-  Node * parent = nullptr;   ///< the parent, `nullptr` for a root
-  Node * child = nullptr;    ///< a child, the entry of their circular list
-  Node * left = this;        ///< the previous node of its circular list
-  Node * right = this;       ///< the next node of its circular list
-  int degree = 0;            ///< the number of children
-  bool mark = false;         ///< whether it lost a child since it became one
+ struct Node
+ {
+  P priority;               ///< the priority
+  T value;                  ///< the item
+  Node * parent = nullptr;  ///< the parent, `nullptr` for a root
+  Node * child = nullptr;   ///< a child, the entry of their circular list
+  Node * left = this;       ///< the previous node of its circular list
+  Node * right = this;      ///< the next node of its circular list
+  int degree = 0;           ///< the number of children
+  bool mark = false;        ///< whether it lost a child since it became one
   };
 
- using Item = T;            ///< the type of the items
- using Priority = P;        ///< the type of the priorities
- using Handle = Node *;     ///< what `insert()` gives
+ using Item = T;         ///< the type of the items
+ using Priority = P;     ///< the type of the priorities
+ using Handle = Node *;  ///< what `insert()` gives
 
  /// the empty heap
  FibonacciHeapPriorityQueue( void ) = default;
@@ -118,8 +120,8 @@ class FibonacciHeapPriorityQueue {
  FibonacciHeapPriorityQueue( const FibonacciHeapPriorityQueue & ) = delete;
 
  /// no copy: the handles point into the heap
- FibonacciHeapPriorityQueue & operator=(
-                              const FibonacciHeapPriorityQueue & ) = delete;
+ FibonacciHeapPriorityQueue &
+ operator=( const FibonacciHeapPriorityQueue & ) = delete;
 
  /// the items of `other`, which is left empty; its handles stay valid here
  FibonacciHeapPriorityQueue( FibonacciHeapPriorityQueue && other ) noexcept;
@@ -246,7 +248,8 @@ class FibonacciHeapPriorityQueue {
  // child of the parent (or the minimum, for the roots)
 
  /// the iterator of the view, constant, forward
- class const_iterator {
+ class const_iterator
+ {
   public:
   /// the pair of the priority and of the item of a node
   /// the type of a reference to an item of the view
@@ -265,7 +268,7 @@ class FibonacciHeapPriorityQueue {
   const_iterator( void ) = default;
 
   /// the first node of the view, the root \f$ \mathit{min} \f$
-  explicit const_iterator( const Node * min ) : f_x( min ) , f_min( min ) {}
+  explicit const_iterator( const Node * min ) : f_x( min ) , f_min( min ) { }
 
   /// the priority and the item of the node
   reference operator*( void ) const {
@@ -284,13 +287,17 @@ class FibonacciHeapPriorityQueue {
      f_x = f_x->right;
      return( *this );
      }
-    f_x = f_x->parent;                      // the list is done
+    f_x = f_x->parent;  // the list is done
     }
    return( *this );
    }
 
   /// the next node in preorder, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// whether the two iterators are on the same node
   bool operator==( const const_iterator & o ) const {
@@ -320,7 +327,9 @@ class FibonacciHeapPriorityQueue {
   return( const_iterator( f_min ) );
   }
  /// the end of the view
- [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator() );
+  }
  /// the same as `begin()`
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
  /// the same as `end()`
@@ -328,7 +337,6 @@ class FibonacciHeapPriorityQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// x leaves its circular list
  static void unlink( Node * x );
 
@@ -336,7 +344,7 @@ class FibonacciHeapPriorityQueue {
  static void splice( Node * x , Node * y );
 
  /// x leaves the list whose entry is head, which follows it if needed
- static void remove( Node * x , Node * & head );
+ static void remove( Node * x , Node *& head );
 
  void add_root( Node * z );
 
@@ -354,15 +362,15 @@ class FibonacciHeapPriorityQueue {
  /// not smaller than parent, and the trees below them as well; their
  /// nodes counted in n
  [[nodiscard]] bool tree( const Node * x , const Node * parent ,
-                          int & n ) const;
+			  int & n ) const;
 
  /// the invariant of the heap, \f$ O( n ) \f$; on more than 1024 nodes, the
  /// list of the roots and the minimum among them only
  [[nodiscard]] bool isHeap( void ) const;
 
- Node * f_min = nullptr;      ///< the root of least priority
- int f_n = 0;                 ///< the number of items
- ObjectPool< Node > f_pool;   ///< the nodes
+ Node * f_min = nullptr;     ///< the root of least priority
+ int f_n = 0;                ///< the number of items
+ ObjectPool< Node > f_pool;  ///< the nodes
 
  };  // end( class FibonacciHeapPriorityQueue )
 
@@ -370,7 +378,7 @@ class FibonacciHeapPriorityQueue {
 /// point to [see `Capabilities.h`]
 template< class T , std::totally_ordered P >
 inline constexpr bool
- enable_stable_references< FibonacciHeapPriorityQueue< T , P > > = true;
+  enable_stable_references< FibonacciHeapPriorityQueue< T , P > > = true;
 
 /*--------------------------------------------------------------------------*/
 
@@ -384,7 +392,7 @@ inline constexpr bool
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* FibonacciHeapPriorityQueue.h included */
+#endif /* FibonacciHeapPriorityQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------- End File FibonacciHeapPriorityQueue.h ------------------*/

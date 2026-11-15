@@ -63,7 +63,7 @@
  #include <cblas.h>
 #endif
 
-#ifdef ADS_BENCH_OWN                        // the code of ADS alone
+#ifdef ADS_BENCH_OWN  // the code of ADS alone
  #undef ADS_HAS_EIGEN
  #undef ADS_HAS_OPENBLAS
  #define ADS_WHO " own"
@@ -95,27 +95,38 @@ int main( int argc , char ** argv )
   std::mt19937_64 g( o.seed );
   std::uniform_real_distribution< double > U( -1 , 1 );
   ADS::Matrix< double > A( n , std::vector< double >( n ) ) , B = A;
-  for( auto & row : A ) for( auto & x : row ) x = U( g );
-  for( auto & row : B ) for( auto & x : row ) x = U( g );
+  for( auto & row : A )
+   for( auto & x : row )
+    x = U( g );
+  for( auto & row : B )
+   for( auto & x : row )
+    x = U( g );
   const double flops = 2.0 * double( n ) * double( n ) * double( n );
-  const std::size_t ops = std::size_t( flops / 1000 );   // kiloflops
-  auto none = [](){ return( 0 ); };
+  const std::size_t ops = std::size_t( flops / 1000 );  // kiloflops
+  auto none = []() { return( 0 ); };
   // a product before each run, not timed, so that the run finds the clock
   // that its own vectors set (after those of 512 bits of a library the
   // processor keeps a lower clock for some milliseconds) and its data in
   // the cache, as in a loop of products; up to n = 512
   auto warm = [ & ]( auto && f ) {
-   return( [ & , f ](){ if( n <= 512 ) f( 0 ); return( 0 ); } ); };
+   return( [ & , f ]() {
+    if( n <= 512 )
+     f( 0 );
+    return( 0 );
+    } );
+   };
   // 20 ms of scalar work before each cell of the product, so that each
   // one begins at the same clock, whatever the vectors of the one before
-  auto settle = [](){
-   const auto end = std::chrono::steady_clock::now() +
-                    std::chrono::milliseconds( 20 );
-   while( std::chrono::steady_clock::now() < end ) {}
+  auto settle = []() {
+   const auto end =
+     std::chrono::steady_clock::now() + std::chrono::milliseconds( 20 );
+   while( std::chrono::steady_clock::now() < end ) {
+    }
    };
 #ifdef ADS_HAS_EIGEN
-  using EM = Eigen::Matrix< double , Eigen::Dynamic , Eigen::Dynamic ,
-                            Eigen::RowMajor >;
+  using EM =
+    Eigen::Matrix< double , Eigen::Dynamic , Eigen::Dynamic ,
+		   Eigen::RowMajor >;
   EM EA , EB , EC;
   if( wanted( { "Eigen" , "Eigen A/A" } ) ) {
    EA.resize( n , n );
@@ -131,16 +142,20 @@ int main( int argc , char ** argv )
    if( skip( who ) )
     continue;
    settle();
-   print( "gemm" , "double" , n , who , median( warm( [ & ]( int ) {
-           EC.noalias() = EA * EB; } ) , [ & ]( int ) {
-           EC.noalias() = EA * EB;
-           sink = sink + ( EC( 0 , 0 ) > 0 ); } , r , ops ) );
+   print( "gemm" , "double" , n , who ,
+	  median(
+	    warm( [ & ]( int ) { EC.noalias() = EA * EB; } ) ,
+	    [ & ]( int ) {
+	     EC.noalias() = EA * EB;
+	     sink = sink + ( EC( 0 , 0 ) > 0 );
+	     } ,
+	    r , ops ) );
    }
 #endif
 #ifndef ADS_BENCH_OLD
   ADS::DenseMatrix< double > DA , DB , DC;
   if( wanted( { "ADS::gemm" ADS_WHO , "ADS::multiplyStrassen" ADS_WHO ,
-                "ADS::transpose" } ) ) {
+		"ADS::transpose" } ) ) {
    DA = ADS::DenseMatrix< double >( A );
    DB = ADS::DenseMatrix< double >( B );
    DC = ADS::DenseMatrix< double >( n , n );
@@ -157,32 +172,45 @@ int main( int argc , char ** argv )
    const int N = int( n );
    auto blas = [ & ]( int ) {
     cblas_dgemm( CblasRowMajor , CblasNoTrans , CblasNoTrans , N , N , N ,
-                 1.0 , a.data() , N , b.data() , N , 0.0 , c.data() , N ); };
+		 1.0 ,
+		 a.data() , N , b.data() , N , 0.0 , c.data() , N );
+    };
    settle();
-   print( "gemm" , "double" , n , "OpenBLAS" , median( warm( blas ) ,
-           [ & ]( int ) {
-            blas( 0 );
-            sink = sink + ( c[ 0 ] > 0 ); } , r , ops ) );
+   print( "gemm" , "double" , n , "OpenBLAS" ,
+	  median(
+	    warm( blas ) ,
+	    [ & ]( int ) {
+	     blas( 0 );
+	     sink = sink + ( c[ 0 ] > 0 );
+	     } ,
+	    r , ops ) );
    }
 #endif
 #ifndef ADS_BENCH_OLD
   auto ads = [ & ]( int ) {
    ADS::gemm( n , n , n , 1.0 , DA.data() , n , DB.data() , n , 0.0 ,
-              DC.data() , n ); };
+	      DC.data() , n );
+   };
   if( ! skip( "ADS::gemm" ADS_WHO ) ) {
    settle();
-   print( "gemm" , "double" , n , "ADS::gemm" ADS_WHO , median( warm( ads ) ,
-           [ & ]( int ) {
-            ads( 0 );
-            sink = sink + ( DC( 0 , 0 ) > 0 ); } , r , ops ) );
+   print( "gemm" , "double" , n , "ADS::gemm" ADS_WHO ,
+	  median(
+	    warm( ads ) ,
+	    [ & ]( int ) {
+	     ads( 0 );
+	     sink = sink + ( DC( 0 , 0 ) > 0 );
+	     } ,
+	    r , ops ) );
    }
   if( ( n >= 4096 ) && ! skip( "ADS::multiplyStrassen" ADS_WHO ) ) {
    settle();
    print( "gemm" , "double" , n , "ADS::multiplyStrassen" ADS_WHO ,
-          median( none ,
-           [ & ]( int ) {
-            sink = sink + ( ADS::multiplyStrassen( DA , DB )( 0 , 0 ) > 0 );
-            } , r , ops ) );
+	  median(
+	    none ,
+	    [ & ]( int ) {
+	     sink = sink + ( ADS::multiplyStrassen( DA , DB )( 0 , 0 ) > 0 );
+	     } ,
+	    r , ops ) );
    }
 #endif
 #ifdef ADS_BENCH_OWN
@@ -190,17 +218,24 @@ int main( int argc , char ** argv )
  return( 0 );
  }
 #else
-  if( n <= 512 ) {
+  if( n <= 512 )
+{
    if( ! skip( "ADS::multiplyNaive" ) )
-    print( "gemm" , "double" , n , "ADS::multiplyNaive" , median( none ,
-            [ & ]( int ) {
-             sink = sink + ( ADS::multiplyNaive( A , B )[ 0 ][ 0 ] > 0 ); } ,
-            r , ops ) );
+    print( "gemm" , "double" , n , "ADS::multiplyNaive" ,
+	   median(
+	     none ,
+	     [ & ]( int ) {
+	      sink = sink + ( ADS::multiplyNaive( A , B )[ 0 ][ 0 ] > 0 );
+	      } ,
+	     r , ops ) );
    if( ! skip( "ADS::strassen" ) )
-    print( "gemm" , "double" , n , "ADS::strassen" , median( none ,
-            [ & ]( int ) {
-             sink = sink + ( ADS::strassen( A , B , 64 )[ 0 ][ 0 ] > 0 ); } ,
-            r , ops ) );
+    print( "gemm" , "double" , n , "ADS::strassen" ,
+	   median(
+	     none ,
+	     [ & ]( int ) {
+	      sink = sink + ( ADS::strassen( A , B , 64 )[ 0 ][ 0 ] > 0 );
+	      } ,
+	     r , ops ) );
    }
 
   // ----- transpose
@@ -208,22 +243,34 @@ int main( int argc , char ** argv )
 #ifdef ADS_HAS_EIGEN
   for( const char * who : { "Eigen" , "Eigen A/A" } )
    if( ! skip( who ) )
-    print( "transpose" , "double" , n , who , median( none , [ & ]( int ) {
-            const EM T = EA.transpose();
-            sink = sink + ( T( 0 , 0 ) > 0 ); } , r , entries ) );
+    print( "transpose" , "double" , n , who ,
+	   median(
+	     none ,
+	     [ & ]( int )
+{
+	      const EM T = EA.transpose();
+	      sink = sink + ( T( 0 , 0 ) > 0 );
+	      } ,
+	     r , entries ) );
 #endif
 #ifndef ADS_BENCH_OLD
   if( ! skip( "ADS::transpose" ) )
-   print( "transpose" , "double" , n , "ADS::transpose" , median( none ,
-           [ & ]( int ) {
-            sink = sink + ( ADS::transpose( DA )( 0 , 0 ) > 0 ); } , r ,
-           entries ) );
+   print(
+     "transpose" , "double" , n , "ADS::transpose" ,
+     median(
+       none ,
+       [ & ]( int )
+{ sink = sink + ( ADS::transpose( DA )( 0 , 0 ) > 0 ); } , r ,
+       entries ) );
 #endif
   if( ! skip( "ADS::transpose (book)" ) )
-   print( "transpose" , "double" , n , "ADS::transpose (book)" ,
-           median( none , [ & ]( int ) {
-            sink = sink + ( ADS::transpose( A )[ 0 ][ 0 ] > 0 ); } , r ,
-           entries ) );
+   print(
+     "transpose" , "double" , n , "ADS::transpose (book)" ,
+     median(
+       none ,
+       [ & ]( int )
+{ sink = sink + ( ADS::transpose( A )[ 0 ][ 0 ] > 0 ); } ,
+       r , entries ) );
   }
  return( 0 );
  }

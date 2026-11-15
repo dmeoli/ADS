@@ -29,7 +29,7 @@
 
 #ifndef __ADS_InsertionSort
  #define __ADS_InsertionSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -48,7 +48,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the insertion sort of \f$ A[ \mathit{lo} .. \mathit{hi} - 1 ] \f$
 ///
@@ -72,7 +73,7 @@ namespace ADS {
 ///       items (audit)
 template< class T , class C = std::less<> >
 void insertionSort( std::vector< T > & A , std::size_t lo , std::size_t hi ,
-                    C less = C() );
+		    C less = C() );
 
 /// the insertion sort with a sentinel: the minimum first goes to
 /// \f$ A[ 0 ] \f$, with \f$ n - 1 \f$ comparisons and one swap, so that the
@@ -119,7 +120,7 @@ void insertionSort( std::vector< T > & A , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* InsertionSort.h included */
+#endif /* InsertionSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File InsertionSort.h ------------------------*/

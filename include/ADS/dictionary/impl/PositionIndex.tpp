@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , class H >
 inline typename PositionIndex< T , H >::Position
@@ -62,7 +63,7 @@ template< class T , class H >
 void PositionIndex< T , H >::renumber( std::span< const Position > E )
 {
  ADS_PRE( std::is_sorted( E.begin() , E.end() ) &&
-          ( std::adjacent_find( E.begin() , E.end() ) == E.end() ) );
+	  ( std::adjacent_find( E.begin() , E.end() ) == E.end() ) );
  if( E.empty() || f_table.empty() )
   return;
 

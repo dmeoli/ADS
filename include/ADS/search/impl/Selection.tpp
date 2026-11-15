@@ -15,9 +15,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// fewer than k items of A are smaller than x, and at least k are not
 /// larger
@@ -27,7 +29,7 @@ bool hasRank( const std::vector< T > & A , const T & x , std::size_t k )
  std::size_t less = 0 , notLarger = 0;
  for( const T & a : A ) {
   less += a < x;
-  notLarger += !( x < a );
+  notLarger += ! ( x < a );
   }
  return( ( less < k ) && ( notLarger >= k ) );
  }
@@ -40,9 +42,10 @@ T selection( std::vector< T > & A , std::size_t k , R * rng )
  ADS_PRE( ( k >= 1 ) && ( k <= A.size() ) );
  const std::size_t rank = k;
  auto ranked = [ & ]( const T & x ) {
-  return( detail::hasRank( A , x , rank ) ); };
+  return( detail::hasRank( A , x , rank ) );
+  };
  std::size_t start = 0 , end = A.size() - 1;
- for( ; ; ) {                                   // the tail recursion
+ for( ; ; ) {  // the tail recursion
   if( start == end ) {
    ADS_AUDIT( ranked( A[ start ] ) );
    return( A[ start ] );
@@ -71,7 +74,7 @@ T medianOfMedians( std::vector< T > & A , std::size_t k )
 {
  ADS_PRE( ( k >= 1 ) && ( k <= A.size() ) );
  auto rec = [ & ]( auto & self , std::size_t lo , std::size_t hi ,
-                   std::size_t r ) -> T {     // rank r in A[ lo .. hi ]
+		   std::size_t r ) -> T {  // rank r in A[ lo .. hi ]
   for( ; ; ) {
    const std::size_t n = hi - lo + 1;
    if( n <= 10 ) {
@@ -88,9 +91,12 @@ T medianOfMedians( std::vector< T > & A , std::size_t k )
    // three ways: smaller, equal, larger
    std::size_t lt = lo , i = lo , gt = hi;
    while( i <= gt )
-    if( A[ i ] < pivot ) std::swap( A[ lt++ ] , A[ i++ ] );
-    else if( pivot < A[ i ] ) std::swap( A[ i ] , A[ gt-- ] );
-    else ++i;
+    if( A[ i ] < pivot )
+     std::swap( A[ lt++ ] , A[ i++ ] );
+    else if( pivot < A[ i ] )
+     std::swap( A[ i ] , A[ gt-- ] );
+    else
+     ++i;
    if( r <= lt - lo )
     hi = lt - 1;
    else if( r <= i - lo )

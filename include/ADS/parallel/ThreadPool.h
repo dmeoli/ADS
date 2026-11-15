@@ -101,7 +101,7 @@
 
 #ifndef __ADS_ThreadPool
  #define __ADS_ThreadPool
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -125,18 +125,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS ThreadPool ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a pool of threads with work stealing, an executor
-class ThreadPool {
+class ThreadPool
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// a pool of \f$ p \f$ threads, the caller included (the number of the
  /// hardware threads if \f$ p = 0 \f$), whose idle workers look for tasks
  /// for `spin` ns before they sleep
@@ -252,30 +253,34 @@ class ThreadPool {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a task: the function that runs it
- struct Task {
-  void ( * run )( Task * ) noexcept;   ///< runs the task given
+ struct Task
+ {
+  void ( *run )( Task * ) noexcept;  ///< runs the task given
   };
 
  /// the deque of a thread, on lines of its own
- struct alignas( 128 ) Slot {
-  WorkStealingDeque< Task * > deque{ 256 };   ///< the tasks of the thread
-  std::uint64_t seed = 0;   ///< the state of its choice of the victims
+ struct alignas( 128 ) Slot
+ {
+  WorkStealingDeque< Task * > deque{ 256 };  ///< the tasks of the thread
+  std::uint64_t seed = 0;  ///< the state of its choice of the victims
   };
 
  /// the pool and the slot of the running thread
- struct Self {
-  ThreadPool * pool;   ///< the pool, `nullptr` outside any
-  std::size_t slot;    ///< the slot in the pool
+ struct Self
+ {
+  ThreadPool * pool;  ///< the pool, `nullptr` outside any
+  std::size_t slot;   ///< the slot in the pool
   };
 
  /// the place of the calling thread in the pool for the time of a call:
  /// its own if it is a worker, the p-th otherwise
  class Enter;
 
- template< class F > struct BulkJob;
- template< class G > struct InvokeTask;
+ template< class F >
+ struct BulkJob;
+ template< class G >
+ struct InvokeTask;
 
  /// the loop of the worker s
  void loop( std::size_t s );
@@ -292,20 +297,20 @@ class ThreadPool {
  /// the pool and the slot of the running thread
  static inline thread_local Self tl_self{ nullptr , 0 };
 
- std::vector< std::unique_ptr< Slot > > f_slot;   ///< one per thread
- std::vector< std::thread > f_thread;   ///< the workers
- EventCount f_event;                       ///< where the idle ones sleep
- std::atomic< bool > f_stop{ false };      ///< set by the destructor
- std::mutex f_master;                      ///< the slot of the caller
- std::int64_t f_spin;                      ///< ns of looking before sleep
- std::mutex f_runOne;                      ///< one run at a time
- std::mutex f_runLock;                     ///< the claims of the calls
- std::atomic< bool > f_runOpen{ false };   ///< calls left to claim
- std::size_t f_runNext = 0;                ///< the next call to claim
- std::size_t f_runN = 0;                   ///< the calls of the run
- void ( * f_runCall )( void * , std::size_t ) = nullptr;   ///< makes one
- void * f_runCtx = nullptr;                ///< its function
- std::atomic< std::size_t > f_runDone{ 0 };   ///< the calls returned
+ std::vector< std::unique_ptr< Slot > > f_slot;  ///< one per thread
+ std::vector< std::thread > f_thread;            ///< the workers
+ EventCount f_event;                             ///< where the idle ones sleep
+ std::atomic< bool > f_stop{ false };            ///< set by the destructor
+ std::mutex f_master;                            ///< the slot of the caller
+ std::int64_t f_spin;                     ///< ns of looking before sleep
+ std::mutex f_runOne;                     ///< one run at a time
+ std::mutex f_runLock;                    ///< the claims of the calls
+ std::atomic< bool > f_runOpen{ false };  ///< calls left to claim
+ std::size_t f_runNext = 0;               ///< the next call to claim
+ std::size_t f_runN = 0;                  ///< the calls of the run
+ void ( *f_runCall )( void * , std::size_t ) = nullptr;  ///< makes one
+ void * f_runCtx = nullptr;                             ///< its function
+ std::atomic< std::size_t > f_runDone{ 0 };             ///< the calls returned
  };  // end( class ThreadPool )
 
 /*--------------------------------------------------------------------------*/
@@ -320,7 +325,7 @@ class ThreadPool {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ThreadPool.h included */
+#endif /* ThreadPool.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File ThreadPool.h ---------------------------*/

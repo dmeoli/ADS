@@ -14,11 +14,12 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class V >
-std::vector< std::pair< int , V > > pigeonholeSort(
-                    const std::vector< std::pair< int , V > > & A , int k )
+std::vector< std::pair< int , V > >
+pigeonholeSort( const std::vector< std::pair< int , V > > & A , int k )
 {
  ADS_PRE( k >= 0 );
  std::vector< List< V > > B( k );
@@ -32,9 +33,9 @@ std::vector< std::pair< int , V > > pigeonholeSort(
   for( auto p = B[ i ].head() ; ! B[ i ].finished( p ) ; p = B[ i ].next( p ) )
    out.emplace_back( i , B[ i ].read( p ) );
  ADS_POST( out.size() == A.size() );
- ADS_AUDIT( std::is_sorted( out.begin() , out.end() ,
-                            []( const auto & x , const auto & y ) {
-                             return( x.first < y.first ); } ) );
+ ADS_AUDIT( std::is_sorted(
+   out.begin() , out.end() ,
+   []( const auto & x , const auto & y ) { return( x.first < y.first ); } ) );
  return( out );
  }
 

@@ -51,7 +51,7 @@
 
 #ifndef __ADS_HeapPriorityQueue
  #define __ADS_HeapPriorityQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -72,7 +72,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS HeapPriorityQueue -------------------------*/
@@ -82,21 +83,22 @@ namespace ADS {
 /// \f$ d \f$ the parameter `D`
 template< class T , std::totally_ordered P = int , int D = 2 >
  requires( D >= 2 )
-class HeapPriorityQueue {
+class HeapPriorityQueue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the PRIORITYITEM of the book: priority, item, place in the vector
- struct PriorityItem {
-  P priority;   ///< the priority
-  T value;      ///< the item
-  int pos;      ///< the place in the vector of the heap
+ struct PriorityItem
+ {
+  P priority;  ///< the priority
+  T value;     ///< the item
+  int pos;     ///< the place in the vector of the heap
   };
 
- using Item = T;                  ///< the type of the items
- using Priority = P;              ///< the type of the priorities
- using Handle = PriorityItem *;   ///< what `insert()` gives
+ using Item = T;                 ///< the type of the items
+ using Priority = P;             ///< the type of the priorities
+ using Handle = PriorityItem *;  ///< what `insert()` gives
 
  /// the empty queue of capacity \f$ n \f$ (the `PriorityQueue( n )` of the
  /// book)
@@ -235,8 +237,8 @@ class HeapPriorityQueue {
  /// the type of a constant reference to an item
  using const_reference = const PriorityItem &;
  /// the iterator of the view, constant
- using const_iterator = IndirectIterator<
-  typename std::vector< PriorityItem * >::const_iterator >;
+ using const_iterator =
+   IndirectIterator< typename std::vector< PriorityItem * >::const_iterator >;
  /// the same as `const_iterator`
  using iterator = const_iterator;
 
@@ -255,7 +257,6 @@ class HeapPriorityQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// swaps the places i and j, keeping the positions of the items
  void swap( int i , int j );
 
@@ -272,9 +273,9 @@ class HeapPriorityQueue {
  /// \f$ O( n ) \f$; on more than 1024 items, the root and the last item only
  [[nodiscard]] bool isHeap( void ) const;
 
- int f_capacity;                       ///< the capacity
- std::vector< PriorityItem * > f_H;    ///< the heap
- ObjectPool< PriorityItem > f_pool;    ///< the items
+ int f_capacity;                     ///< the capacity
+ std::vector< PriorityItem * > f_H;  ///< the heap
+ ObjectPool< PriorityItem > f_pool;  ///< the items
 
  };  // end( class HeapPriorityQueue )
 
@@ -290,7 +291,7 @@ class HeapPriorityQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* HeapPriorityQueue.h included */
+#endif /* HeapPriorityQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File HeapPriorityQueue.h ----------------------*/

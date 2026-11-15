@@ -14,14 +14,15 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 Matrix< T > multiplyNaive( const Matrix< T > & A , const Matrix< T > & B ,
-                           long * mults )
+			   long * mults )
 {
  ADS_PRE( detail::hasShape( A , A.size() , A.size() ) &&
-          detail::hasShape( B , A.size() , A.size() ) );
+	  detail::hasShape( B , A.size() , A.size() ) );
  const std::size_t n = A.size();
  Matrix< T > C( n , std::vector< T >( n , T( 0 ) ) );
  for( std::size_t i = 0 ; i < n ; ++i )
@@ -37,9 +38,9 @@ template< class T >
 Matrix< T > multiply( const Matrix< T > & A , const Matrix< T > & B )
 {
  ADS_PRE( detail::hasShape( A , A.size() , B.size() ) &&
-          detail::hasShape( B , B.size() , B.empty() ? 0 : B[ 0 ].size() ) );
+	  detail::hasShape( B , B.size() , B.empty() ? 0 : B[ 0 ].size() ) );
  const std::size_t p = A.size() , q = B.size() ,
-                   r = B.empty() ? 0 : B[ 0 ].size();
+		   r = B.empty() ? 0 : B[ 0 ].size();
  Matrix< T > C( p , std::vector< T >( r , T( 0 ) ) );
  for( std::size_t i = 0 ; i < p ; ++i )
   for( std::size_t k = 0 ; k < q ; ++k )
@@ -55,7 +56,8 @@ Matrix< T > transpose( const Matrix< T > & A )
  const std::size_t p = A.size() , q = A.empty() ? 0 : A[ 0 ].size();
  Matrix< T > B( q , std::vector< T >( p ) );
  for( std::size_t i = 0 ; i < p ; ++i )
-  for( std::size_t j = 0 ; j < q ; ++j ) B[ j ][ i ] = A[ i ][ j ];
+  for( std::size_t j = 0 ; j < q ; ++j )
+   B[ j ][ i ] = A[ i ][ j ];
  return( B );
  }
 
@@ -63,11 +65,13 @@ template< class T >
 Matrix< T > scale( Matrix< T > A , const T & s )
 {
  for( auto & row : A )
-  for( auto & x : row ) x *= s;
+  for( auto & x : row )
+   x *= s;
  return( A );
  }
 
-namespace detail {
+namespace detail
+{
 
 template< class T >
 bool hasShape( const Matrix< T > & A , std::size_t r , std::size_t c )
@@ -82,7 +86,7 @@ bool hasShape( const Matrix< T > & A , std::size_t r , std::size_t c )
 
 template< class T >
 Matrix< T > block( const Matrix< T > & A , std::size_t r , std::size_t c ,
-                   std::size_t h )
+		   std::size_t h )
 {
  Matrix< T > X( h , std::vector< T >( h ) );
  for( std::size_t i = 0 ; i < h ; ++i )
@@ -103,19 +107,20 @@ Matrix< T > plus( const Matrix< T > & A , const Matrix< T > & B , T s )
 
 template< class T >
 Matrix< T > strassenRec( const Matrix< T > & A , const Matrix< T > & B ,
-                         std::size_t cutoff , long * mults )
+			 std::size_t cutoff , long * mults )
 {
  const std::size_t n = A.size();
  if( n <= cutoff )
   return( multiplyNaive( A , B , mults ) );
  const std::size_t h = n / 2;
  const auto A11 = block( A , 0 , 0 , h ) , A12 = block( A , 0 , h , h ) ,
-            A21 = block( A , h , 0 , h ) , A22 = block( A , h , h , h ) ,
-            B11 = block( B , 0 , 0 , h ) , B12 = block( B , 0 , h , h ) ,
-            B21 = block( B , h , 0 , h ) , B22 = block( B , h , h , h );
+	    A21 = block( A , h , 0 , h ) , A22 = block( A , h , h , h ) ,
+	    B11 = block( B , 0 , 0 , h ) , B12 = block( B , 0 , h , h ) ,
+	    B21 = block( B , h , 0 , h ) , B22 = block( B , h , h , h );
  const T m = T( -1 );
  auto S = [ & ]( const Matrix< T > & X , const Matrix< T > & Y ) {
-  return( strassenRec( X , Y , cutoff , mults ) ); };
+  return( strassenRec( X , Y , cutoff , mults ) );
+  };
  const auto X1 = S( plus( A11 , A22 ) , plus( B11 , B22 ) );
  const auto X2 = S( plus( A21 , A22 ) , B11 );
  const auto X3 = S( A11 , plus( B12 , B22 , m ) );
@@ -142,7 +147,7 @@ Matrix< T > strassenRec( const Matrix< T > & A , const Matrix< T > & B ,
 
 template< class T >
 Matrix< T > strassen( const Matrix< T > & A , const Matrix< T > & B ,
-                      std::size_t cutoff , long * mults )
+		      std::size_t cutoff , long * mults )
 {
  const std::size_t n = A.size();
  ADS_PRE( detail::hasShape( A , n , n ) && detail::hasShape( B , n , n ) );

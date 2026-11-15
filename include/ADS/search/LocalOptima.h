@@ -58,7 +58,7 @@
 
 #ifndef __ADS_LocalOptima
  #define __ADS_LocalOptima
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -77,7 +77,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the place \f$ r \f$ of an item of \f$ A \f$ not smaller than its
 /// neighbours, by a binary search; \f$ \lceil \log_2 n \rceil \f$
@@ -160,7 +161,7 @@ BinaryTree< T > * localMinimum( BinaryTree< T > * t , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LocalOptima.h included */
+#endif /* LocalOptima.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File LocalOptima.h -------------------------*/

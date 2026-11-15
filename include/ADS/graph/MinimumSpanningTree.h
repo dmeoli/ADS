@@ -58,7 +58,7 @@
 
 #ifndef __ADS_MinimumSpanningTree
  #define __ADS_MinimumSpanningTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -85,14 +85,16 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// an edge \f$ [ u , v ] \f$ of weight \f$ w \f$
 template< class W >
-struct WeightedEdge {
- int u ,   ///< one end
-     v;    ///< the other end
- W w;      ///< the weight
+struct WeightedEdge
+{
+ int u ,  ///< one end
+   v;    ///< the other end
+ W w;    ///< the weight
  /// whether the two edges have the same ends, in order, and weight
  bool operator==( const WeightedEdge & ) const = default;
  };
@@ -141,22 +143,23 @@ std::vector< WeightedEdge< typename G::Weight > > edges( const G & g );
 ///      weights in \f$ [ 0 , k ) \f$ if \f$ k > 0 \f$
 /// \post a minimum spanning forest (audit)
 template< class W >
-std::vector< WeightedEdge< W > > kruskal( int n ,
-                                          std::vector< WeightedEdge< W > > A ,
-                                          long k = 0 );
+std::vector< WeightedEdge< W > >
+kruskal( int n , std::vector< WeightedEdge< W > > A , long k = 0 );
 
 /// a union of disjoint sets as `kruskal()` needs it: merge( u , v ) joins
 /// the components of u and v and tells whether they were apart
 template< class M >
-concept Mergeable = requires( M m , int u , int v ) {
+concept Mergeable = requires( M m , int u , int v )
+{
  { m.merge( u , v ) } -> std::convertible_to< bool >;
  };
 
 /// what a run of `kruskal()` did: the merges tried and those that joined
 /// two components
-struct MergeCounts {
- long long merges = 0 ,   ///< the merges tried
-           unions = 0;   ///< the merges that joined two components
+struct MergeCounts
+{
+ long long merges = 0 ,  ///< the merges tried
+   unions = 0;          ///< the merges that joined two components
  };
 
 /// the minimum spanning forest of `kruskal()` above, with the MFSET `sets`
@@ -176,10 +179,9 @@ struct MergeCounts {
 ///      \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$
 /// \post a minimum spanning forest (audit)
 template< class W , Mergeable M >
-std::vector< WeightedEdge< W > > kruskal( int n ,
-                                          std::vector< WeightedEdge< W > > A ,
-                                          M & sets , long k = 0 ,
-                                          MergeCounts * c = nullptr );
+std::vector< WeightedEdge< W > >
+kruskal( int n , std::vector< WeightedEdge< W > > A , M & sets , long k = 0 ,
+	 MergeCounts * c = nullptr );
 
 /// the minimum spanning forest of `kruskal()` above, on the edges of an
 /// unoriented graph
@@ -250,9 +252,10 @@ std::vector< int > prim( const G & g , int r , Frontier how = Frontier::HEAP );
 /// \post a minimum spanning tree of the component of \f$ r \f$ (audit)
 template< Graph G , PriorityQueue Q >
  requires( ( decrease_key_of< Q >() != decrease_key_kind::none ) &&
-           requires { typename Q::Priority; } )
+	   requires
+{ typename Q::Priority; } )
 std::vector< int > prim( const G & g , int r , Q & q ,
-                         FrontierCounts * c = nullptr );
+			 FrontierCounts * c = nullptr );
 
 /// whether \f$ T \f$ is a minimum spanning forest of the edges \f$ A \f$ on
 /// the nodes \f$ [ 0 , n ) \f$: its edges are in A, it has no cycle, as many
@@ -276,8 +279,8 @@ std::vector< int > prim( const G & g , int r , Q & q ,
 /// \f]
 template< class W >
 bool isMinimumSpanningForest( int n ,
-                              const std::vector< WeightedEdge< W > > & A ,
-                              const std::vector< WeightedEdge< W > > & T );
+			      const std::vector< WeightedEdge< W > > & A ,
+			      const std::vector< WeightedEdge< W > > & T );
 
 /*--------------------------------------------------------------------------*/
 
@@ -291,7 +294,7 @@ bool isMinimumSpanningForest( int n ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MinimumSpanningTree.h included */
+#endif /* MinimumSpanningTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File MinimumSpanningTree.h ---------------------*/

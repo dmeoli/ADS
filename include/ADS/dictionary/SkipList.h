@@ -67,7 +67,7 @@
 
 #ifndef __ADS_SkipList
  #define __ADS_SkipList
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -91,7 +91,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS SkipList ------------------------------*/
@@ -99,13 +100,13 @@ namespace ADS {
 
 /// a DICTIONARY on a skip list, an SSet of Morin by `lowerBound()`
 template< std::totally_ordered K , class V >
-class SkipList {
+class SkipList
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty list, its levels drawn by a generator from the seed
  explicit SkipList( std::uint64_t seed = 1 );
@@ -214,37 +215,37 @@ class SkipList {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static constexpr int kMax = 32;   ///< the largest number of levels
+ static constexpr int kMax = 32;  ///< the largest number of levels
 
  /// a node, followed in its block by the tower of its \f$ \ell \f$
  /// successors [see `tower()`]
- struct Node {
-  K key;                           ///< the key
-  V value;                         ///< its value
-  int height;                      ///< the number \f$ \ell \f$ of levels
+ struct Node
+ {
+  K key;       ///< the key
+  V value;     ///< its value
+  int height;  ///< the number \f$ \ell \f$ of levels
   };
 
  /// the offset of the tower from the start of a node
  static constexpr std::size_t kTower =
-  ( sizeof( Node ) + alignof( Node * ) - 1 ) / alignof( Node * ) *
-  alignof( Node * );
+   ( sizeof( Node ) + alignof( Node * ) - 1 ) / alignof( Node * ) *
+   alignof( Node * );
 
  /// the tower of the successors of \f$ x \f$
  static Node ** tower( Node * x ) {
   return( std::launder( reinterpret_cast< Node ** >(
-           reinterpret_cast< std::byte * >( x ) + kTower ) ) );
+    reinterpret_cast< std::byte * >( x ) + kTower ) ) );
   }
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ) by increasing key, along
  // the bottom level, forward
 
  /// the iterator on the pairs, along the bottom level
- class const_iterator {
+ class const_iterator
+ {
   public:
   /// a reference to an item
   using reference = std::pair< const K & , const V & >;
@@ -261,7 +262,7 @@ class SkipList {
   const_iterator( void ) = default;
 
   /// on the pair of the node \f$ x \f$
-  explicit const_iterator( Node * x ) : f_x( x ) {}
+  explicit const_iterator( Node * x ) : f_x( x ) { }
 
   /// the pair of the node
   reference operator*( void ) const {
@@ -273,7 +274,11 @@ class SkipList {
    return( *this );
    }
   /// to the next node, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// equal on the same node
   bool operator==( const const_iterator & o ) const = default;
@@ -300,7 +305,9 @@ class SkipList {
   return( const_iterator( f_head[ 0 ] ) );
   }
  /// the iterator past the last item
- [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator() );
+  }
  /// the constant iterator on the first item
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
  /// the constant iterator past the last item
@@ -355,7 +362,6 @@ class SkipList {
  [[nodiscard]] std::optional< V > fingerLookup( const K & k );
 
  private:
-
  /// the node of \f$ k \f$ or nil, the last node before \f$ k \f$ on each
  /// level in `update` (nil for the head), by `before()` above
  Node * before( const K & k , Node * update[ kMax ] ) const;
@@ -374,11 +380,11 @@ class SkipList {
  /// each level sorted and a sublist of the one below, \f$ O( n \log n ) \f$
  [[nodiscard]] bool sorted( void ) const;
 
- Node * f_head[ kMax ] = {};       ///< the first node on each level
- Node * f_finger[ kMax ] = {};     ///< the finger, nil for the head
- int f_levels = 0;                 ///< the levels in use
- std::size_t f_size = 0;           ///< the number of keys
- SplitMix64 f_g;                   ///< the generator of the levels
+ Node * f_head[ kMax ] = {};    ///< the first node on each level
+ Node * f_finger[ kMax ] = {};  ///< the finger, nil for the head
+ int f_levels = 0;              ///< the levels in use
+ std::size_t f_size = 0;        ///< the number of keys
+ SplitMix64 f_g;                ///< the generator of the levels
 
  };  // end( class SkipList )
 
@@ -394,7 +400,7 @@ class SkipList {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SkipList.h included */
+#endif /* SkipList.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File SkipList.h ---------------------------*/

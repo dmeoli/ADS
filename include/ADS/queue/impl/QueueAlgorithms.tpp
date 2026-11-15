@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< Queue Q >
 void extractPositive( Q & q , Q & out )
@@ -33,7 +34,7 @@ void copyPositive( Q & q , Q & out )
 {
  ADS_PRE( &q != &out );
  LinkedQueue< typename Q::Item > aux;
- std::vector< typename Q::Item > before;    // for the audit
+ std::vector< typename Q::Item > before;  // for the audit
  while( ! q.empty() ) {
   auto x = q.dequeue();
   if constexpr( ADS_CONTRACTS >= 3 )
@@ -44,11 +45,11 @@ void copyPositive( Q & q , Q & out )
   }
  while( ! aux.empty() )
   q.enqueue( aux.dequeue() );
- ADS_AUDIT( [ & ]( void ) {                  // q holds before, in order
+ ADS_AUDIT( [ & ]( void ) {  // q holds before, in order
   for( const auto & x : before ) {
    auto y = q.dequeue();
    q.enqueue( y );
-   if( !( x == y ) )
+   if( ! ( x == y ) )
     return( false );
    }
   return( true );

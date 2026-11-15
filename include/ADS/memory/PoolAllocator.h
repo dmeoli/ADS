@@ -69,7 +69,7 @@
 
 #ifndef __ADS_PoolAllocator
  #define __ADS_PoolAllocator
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -89,9 +89,11 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// \f$ b \f$ bytes of `operator new`, aligned to \f$ a \f$, for the
 /// requests that no class takes
@@ -110,23 +112,22 @@ void poolDelete( void * p , std::size_t b , std::size_t a ) noexcept;
 /// pools of the size classes of 8 bytes up to \f$ M \f$, for one thread at a
 /// time
 template< std::size_t M = 256 >
-class PoolResource {
+class PoolResource
+{
 
  static_assert( ( M >= 16 ) && ( M % 16 == 0 ) && ( M <= 4096 ) ,
-                "the largest class is a multiple of 16 bytes, up to 4096" );
+		"the largest class is a multiple of 16 bytes, up to 4096" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- static constexpr std::size_t GRAIN = 8;           ///< the step of a class
- static constexpr std::size_t ALIGN = 16;          ///< the largest alignment
- static constexpr std::size_t MAX = M;             ///< the largest class
- static constexpr std::size_t CLASSES = M / GRAIN; ///< the classes
+ static constexpr std::size_t GRAIN = 8;            ///< the step of a class
+ static constexpr std::size_t ALIGN = 16;           ///< the largest alignment
+ static constexpr std::size_t MAX = M;              ///< the largest class
+ static constexpr std::size_t CLASSES = M / GRAIN;  ///< the classes
 
  /// true if a request of \f$ b \f$ bytes aligned to \f$ a \f$ takes a class,
  /// i.e., if \f$ 1 \le b \le M \f$ and \f$ a \le 16 \f$
- [[nodiscard]] static constexpr bool pooled( std::size_t b ,
-                                             std::size_t a ) {
+ [[nodiscard]] static constexpr bool pooled( std::size_t b , std::size_t a ) {
   return( ( b >= 1 ) && ( b <= M ) && ( a <= ALIGN ) );
   }
 
@@ -169,14 +170,13 @@ class PoolResource {
 
  /// \f$ b \f$ bytes aligned to \f$ a \f$, as `allocate< b , a >()` above
  [[nodiscard]] void * allocate( std::size_t b ,
-                                std::size_t a = alignof( std::max_align_t )
-                                );
+				std::size_t a = alignof( std::max_align_t ) );
 
  /// the memory \f$ p \f$ of `allocate( b , a )` given back, to the free
  /// list of its page
  /// \pre \f$ p \f$ was given by `allocate( b , a )`
  void deallocate( void * p , std::size_t b ,
-                  std::size_t a = alignof( std::max_align_t ) );
+		  std::size_t a = alignof( std::max_align_t ) );
 
  /// the number of objects alive in the classes
  [[nodiscard]] std::size_t size( void ) const;
@@ -186,11 +186,10 @@ class PoolResource {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the class of b bytes aligned to a: b rounded up to a multiple of 8,
  /// or of 16 if a > 8, so that the slots of the class are aligned to a
  [[nodiscard]] static constexpr std::size_t classOf( std::size_t b ,
-                                                     std::size_t a ) {
+						     std::size_t a ) {
   return( ( a > GRAIN ? ( b + 15 ) / 16 * 2 : ( b + 7 ) / 8 ) - 1 );
   }
 
@@ -215,11 +214,11 @@ class PoolResource {
 
 /// the standard allocator of objects of type `T` over the resource `R`
 template< class T , class R = PoolResource<> >
-class PoolAllocator {
+class PoolAllocator
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the objects
  using value_type = T;
  /// a number of objects
@@ -237,21 +236,23 @@ class PoolAllocator {
 
  /// the allocator of the objects of type `U` over the same resource
  template< class U >
- struct rebind {
-  using other = PoolAllocator< U , R >;   ///< the allocator of `U`
+ struct rebind
+ {
+  using other = PoolAllocator< U , R >;  ///< the allocator of `U`
   };
 
  /// the allocator of the resource r
- PoolAllocator( R & r ) noexcept : f_r( &r ) {}
+ PoolAllocator( R & r ) noexcept : f_r( &r ) { }
 
  /// the allocator of the default resource of R, if it has one
- PoolAllocator( void ) noexcept requires requires { R::global(); }
-  : f_r( &R::global() ) {}
+ PoolAllocator( void ) noexcept
+  requires requires { R::global(); }
+     : f_r( &R::global() ) { }
 
  /// the allocator of the resource of \f$ o \f$, for objects of type `T`
  template< class U >
  PoolAllocator( const PoolAllocator< U , R > & o ) noexcept
-  : f_r( o.resource() ) {}
+     : f_r( o.resource() ) { }
 
  /// room for \f$ n \f$ objects, the class found at compile time when
  /// \f$ n = 1 \f$
@@ -273,8 +274,7 @@ class PoolAllocator {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- R * f_r;   ///< the resource, never nil
+ R * f_r;  ///< the resource, never nil
 
  };  // end( class PoolAllocator )
 
@@ -290,7 +290,7 @@ class PoolAllocator {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PoolAllocator.h included */
+#endif /* PoolAllocator.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File PoolAllocator.h ------------------------*/

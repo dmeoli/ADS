@@ -45,7 +45,7 @@
 
 #ifndef __ADS_GridPaths
  #define __ADS_GridPaths
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -62,13 +62,15 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a square of a matrix: its side and its upper left cell
-struct GridSquare {
- std::size_t side = 0;         ///< the side, 0 for none
- std::size_t row = 0;          ///< the row of the upper left cell
- std::size_t col = 0;          ///< the column of the upper left cell
+struct GridSquare
+{
+ std::size_t side = 0;  ///< the side, 0 for none
+ std::size_t row = 0;   ///< the row of the upper left cell
+ std::size_t col = 0;   ///< the column of the upper left cell
  };
 
 /// the largest square of nonzero cells of \f$ A \f$, the first in the order
@@ -135,7 +137,7 @@ C countLatticePaths( const std::vector< std::vector< T > > & B );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* GridPaths.h included */
+#endif /* GridPaths.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File GridPaths.h --------------------------*/

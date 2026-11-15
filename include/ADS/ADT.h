@@ -78,7 +78,7 @@
 
 #ifndef __ADS_ADT
  #define __ADS_ADT
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -92,7 +92,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- CONCEPTS ---------------------------------*/
@@ -107,21 +108,22 @@ namespace ADS {
 /// \f$ \mathrm{read}( \mathrm{write}( p , v ) ) = v \f$ with the other
 /// items unchanged
 template< class S >
-concept Sequence = requires( S s , const S cs , typename S::Pos p ,
-                             const typename S::Item & v ) {
- typename S::Item;
- typename S::Pos;
- { cs.empty() } -> std::same_as< bool >;
- { cs.finished( p ) } -> std::same_as< bool >;
- { cs.head() } -> std::same_as< typename S::Pos >;
- { cs.tail() } -> std::same_as< typename S::Pos >;
- { cs.next( p ) } -> std::same_as< typename S::Pos >;
- { cs.prev( p ) } -> std::same_as< typename S::Pos >;
- { s.insert( p , v ) } -> std::same_as< typename S::Pos >;
- { s.remove( p ) } -> std::same_as< typename S::Pos >;
- { cs.read( p ) } -> std::convertible_to< typename S::Item >;
- s.write( p , v );
- };
+concept Sequence =
+  requires( S s , const S cs , typename S::Pos p , const typename S::Item & v )
+{
+   typename S::Item;
+   typename S::Pos;
+   { cs.empty() } -> std::same_as< bool >;
+   { cs.finished( p ) } -> std::same_as< bool >;
+   { cs.head() } -> std::same_as< typename S::Pos >;
+   { cs.tail() } -> std::same_as< typename S::Pos >;
+   { cs.next( p ) } -> std::same_as< typename S::Pos >;
+   { cs.prev( p ) } -> std::same_as< typename S::Pos >;
+   { s.insert( p , v ) } -> std::same_as< typename S::Pos >;
+   { s.remove( p ) } -> std::same_as< typename S::Pos >;
+   { cs.read( p ) } -> std::convertible_to< typename S::Item >;
+   s.write( p , v );
+   };
 
 /// SET (section 3.2.2): a finite collection of distinct items; `union()`,
 /// `intersection()` and `difference()` are functions of two sets. As
@@ -135,7 +137,8 @@ concept Sequence = requires( S s , const S cs , typename S::Pos p ,
 /// preconditions \f$ x \notin A \f$ and \f$ x \in A \f$ that some
 /// specifications state)
 template< class S >
-concept Set = requires( S s , const S cs , const typename S::Item & x ) {
+concept Set = requires( S s , const S cs , const typename S::Item & x )
+{
  typename S::Item;
  { cs.size() } -> std::convertible_to< std::size_t >;
  { cs.contains( x ) } -> std::same_as< bool >;
@@ -156,7 +159,8 @@ concept Set = requires( S s , const S cs , const typename S::Item & x ) {
 /// are total, i.e., they do not need the key to be there
 template< class D >
 concept Dictionary = requires( D d , const D cd , const typename D::Key & k ,
-                               const typename D::Value & v ) {
+			       const typename D::Value & v )
+{
  typename D::Key;
  typename D::Value;
  { cd.lookup( k ) } -> std::same_as< std::optional< typename D::Value > >;
@@ -177,7 +181,8 @@ concept Dictionary = requires( D d , const D cd , const typename D::Key & k ,
 /// the stack it leaves
 //! [Stack]
 template< class S >
-concept Stack = requires( S s , const S cs , const typename S::Item & v ) {
+concept Stack = requires( S s , const S cs , const typename S::Item & v )
+{
  typename S::Item;
  { cs.empty() } -> std::same_as< bool >;
  s.push( v );
@@ -198,7 +203,8 @@ concept Stack = requires( S s , const S cs , const typename S::Item & v ) {
 /// \mathrm{enqueue}( \mathrm{dequeue}( Q ) , v ) \f$, while `top()` and
 /// `dequeue()` of the empty queue are undefined
 template< class Q >
-concept Queue = requires( Q q , const Q cq , const typename Q::Item & v ) {
+concept Queue = requires( Q q , const Q cq , const typename Q::Item & v )
+{
  typename Q::Item;
  { cq.empty() } -> std::same_as< bool >;
  q.enqueue( v );
@@ -212,7 +218,7 @@ concept Queue = requires( Q q , const Q cq , const typename Q::Item & v ) {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ADT.h included */
+#endif /* ADT.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File ADT.h ------------------------------*/

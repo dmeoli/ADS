@@ -57,7 +57,7 @@
 
 #ifndef __ADS_BlockedBloomFilter
  #define __ADS_BlockedBloomFilter
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -80,7 +80,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS BlockedBloomFilter ------------------------*/
@@ -88,17 +89,17 @@ namespace ADS {
 
 /// a filter of Bloom in blocks of 256 bits, 8 bits per item
 template< class T , class H = DefaultHash< T > >
-class BlockedBloomFilter {
+class BlockedBloomFilter
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty filter of about `bitsPerItem` bits for each of \f$ n \f$
  /// items, in at least one block, \f$ \lceil n \cdot
  /// \mathit{bitsPerItem} / 256 \rceil \f$ blocks
  /// \pre \f$ \mathit{bitsPerItem} > 0 \f$
  explicit BlockedBloomFilter( std::size_t n , double bitsPerItem = 10 ,
-                              H h = H() );
+			      H h = H() );
 
  /// \f$ x \f$ into the filter, by `insertHash()` of its hash
  /// \post `maybe( x )`
@@ -185,10 +186,10 @@ class BlockedBloomFilter {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a block of 8 words, aligned to its 32 bytes
- struct alignas( 32 ) Block {
-  std::uint32_t w[ 8 ];   ///< the words, 32 bits each
+ struct alignas( 32 ) Block
+ {
+  std::uint32_t w[ 8 ];  ///< the words, 32 bits each
   };
 
  /// the hash of \f$ x \f$, mixed unless `H` avalanches
@@ -197,9 +198,9 @@ class BlockedBloomFilter {
  /// the block of the hash \f$ h \f$
  [[nodiscard]] std::size_t block( std::uint64_t h ) const;
 
- std::vector< Block > f_B;            ///< the blocks
- std::size_t f_n = 0;                 ///< the insertions
- H f_h;                               ///< the hash of the items
+ std::vector< Block > f_B;  ///< the blocks
+ std::size_t f_n = 0;       ///< the insertions
+ H f_h;                     ///< the hash of the items
 
  };  // end( class BlockedBloomFilter )
 
@@ -215,7 +216,7 @@ class BlockedBloomFilter {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BlockedBloomFilter.h included */
+#endif /* BlockedBloomFilter.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File BlockedBloomFilter.h ---------------------*/

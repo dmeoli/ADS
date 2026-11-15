@@ -45,14 +45,13 @@ each workload with no observer and the code of every function, e.g., of
 Two auxiliary headers serve the programs. One is `bench/Bench.h`, with the
 timing, the options and the output that all of them share
 ([§B.2](B-benchmarks.md#sec-B-2)), the selection of the structures of
-[§B.4](B-benchmarks.md#sec-B-4), and `keys(n, seed)`, which gives $n$
-distinct random keys of 63 bits (from `std::mt19937_64`, so that they fit
-a signed key too); while `bench/Texts.h` holds the
-texts of the benchmarks on strings, each of $n$ bytes from a seed: random
-bytes over alphabets of 4, 26 and 256 symbols, words of a Zipf vocabulary
-with the frequencies of the English letters, the Fibonacci word, a highly
-repetitive text, and the repeated byte on which the naive search takes
-its worst case.
+[§B.4](B-benchmarks.md#sec-B-4), and `keys( n , seed )`, which gives $n$
+distinct random keys of 63 bits (from `std::mt19937_64`, so that they fit a
+signed key too); while `bench/Texts.h` holds the texts of the benchmarks on
+strings, each of $n$ bytes from a seed: random bytes over alphabets of 4, 26
+and 256 symbols, words of a Zipf vocabulary with the frequencies of the
+English letters, the Fibonacci word, a highly repetitive text, and the
+repeated byte on which the naive search takes its worst case.
 
 <span id="tab-B-1"></span>**Table B.1.** The programs of `bench/`: what each
 one measures, the structures of other libraries it is compared with (those of
@@ -120,30 +119,30 @@ with `mpicxx` (the variable `MPICXX`) by `make build-make/bench-mpi` and
 runs it by `mpirun` on $P$ processes, and with `-m` it measures the
 mailbox in place of the sort.
 
-Besides the options of `bench/Bench.h` ([§B.2](B-benchmarks.md#sec-B-2)),
-some programs take options of their own, all of which default to running
+Besides the options of `bench/Bench.h` ([§B.2](B-benchmarks.md#sec-B-2)), some
+programs take options of their own, all of which default to running
 everything. The programs of several threads take `-t`, the number of the
 threads (1 by default in `parallel`, `joins`, `greedy` and `mpi`, 4 in
-`runtime`); `parallel` also takes `-b`, one of its parts (`sort`,
-`patterns`, `merge`, `spmv`, `gemm`, `graphs`, `sssp`, `succinct`, `lcp`,
-`hash`, `closed`, `pq`, `rank` and `bnb`), and `-w`, one family of
-executors (`pool`, `fastflow`, `ff`, `openmp`, `tbb`, `parlay`, `ips` or
-`seq`). Variables of the environment select the rest: `ONLY=a|b|...` the
-structures whose label contains one of the words (in `arrays`, `ordered`,
-`sets` and `tries`); `PART` one part of `arrays` (`array search`, `select`
-or `rmq`) or of `sets` (`intersection`, `mfset`, `boolset` or `bitmap`);
-`PARTS` the parts of `hashing` named by their first words (e.g.,
-`PARTS=filters,perfect`), and `THREADS` the threads of its concurrent maps
-(`1,2` by default); `ADS_GRAPHS` the benchmarks of `graphs`, separated by
-commas; `ADS_BESTFIRST_CASE` one family of `bestfirst` (`closed`,
-`frontier`, `ordered` or `packed`). In `parallel`, `ADS_SSSP_DELTA` and
-`ADS_SSSP_RHO` set the parameters of the shortest paths (32 and $2^{20}$
-by default, 256 and $2^{12}$ on the grid), `ADS_SSSP_CASE` keeps one graph
-(e.g., `kronecker20`), and `ADS_SSSP_DUMP` and `ADS_WAVELET_DUMP` name
-folders where the graphs and the sequences are written for the programs
-of GBBS and of pwm. Finally, `joins` sets `PARLAY_NUM_THREADS` to the
-number of its threads unless it is given, and `numeric` built with the
-macro `ADS_BENCH_OLD` leaves out what the previous release lacks.
+`runtime`); `parallel` also takes `-b`, one of its parts (`sort`, `patterns`,
+`merge`, `spmv`, `gemm`, `graphs`, `sssp`, `succinct`, `lcp`, `hash`,
+`closed`, `pq`, `rank` and `bnb`), and `-w`, one family of executors (`pool`,
+`fastflow`, `ff`, `openmp`, `tbb`, `parlay`, `ips` or `seq`). Variables of the
+environment select the rest: `ONLY=a|b|...` the structures whose label
+contains one of the words (in `arrays`, `ordered`, `sets` and `tries`); `PART`
+one part of `arrays` (`array search`, `select` or `rmq`) or of `sets`
+(`intersection`, `mfset`, `boolset` or `bitmap`); `PARTS` the parts of
+`hashing` named by their first words (e.g., `PARTS=filters , perfect`), and
+`THREADS` the threads of its concurrent maps (`1 , 2` by default);
+`ADS_GRAPHS` the benchmarks of `graphs`, separated by commas;
+`ADS_BESTFIRST_CASE` one family of `bestfirst` (`closed`, `frontier`,
+`ordered` or `packed`). In `parallel`, `ADS_SSSP_DELTA` and `ADS_SSSP_RHO` set
+the parameters of the shortest paths (32 and $2^{20}$ by default, 256 and
+$2^{12}$ on the grid), `ADS_SSSP_CASE` keeps one graph (e.g., `kronecker20`),
+and `ADS_SSSP_DUMP` and `ADS_WAVELET_DUMP` name folders where the graphs and
+the sequences are written for the programs of GBBS and of pwm. Finally,
+`joins` sets `PARLAY_NUM_THREADS` to the number of its threads unless it is
+given, and `numeric` built with the macro `ADS_BENCH_OLD` leaves out what the
+previous release lacks.
 
 ## B.2 The measure of a cell {#sec-B-2}
 

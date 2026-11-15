@@ -14,9 +14,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 inline bool & checking( void )
 {
@@ -31,7 +33,8 @@ inline bool checkingContract( void )
  return( detail::checking() );
  }
 
-namespace detail {
+namespace detail
+{
 
 template< class F >
 bool contract( F && f )
@@ -45,7 +48,7 @@ bool contract( F && f )
 
 template< class T >
 std::vector< T > auditCopy( const std::vector< T > & A , std::size_t lo ,
-                            std::size_t hi )
+			    std::size_t hi )
 {
  if constexpr( ADS_CONTRACTS >= 3 ) {
   hi = std::min( hi , A.size() );
@@ -56,9 +59,8 @@ std::vector< T > auditCopy( const std::vector< T > & A , std::size_t lo ,
  }
 
 template< class T , class C >
-bool samePermutation( const std::vector< T > & A ,
-                      std::vector< T > before , C less ,
-                      std::size_t lo , std::size_t hi )
+bool samePermutation( const std::vector< T > & A , std::vector< T > before ,
+		      C less , std::size_t lo , std::size_t hi )
 {
  return( contract( [ & ]( void ) {
   hi = std::min( hi , A.size() );
@@ -75,18 +77,19 @@ bool samePermutation( const std::vector< T > & A ,
   for( std::size_t i = 0 ; i < after.size() ; ++i )
    if( less( before[ i ] , after[ i ] ) || less( after[ i ] , before[ i ] ) )
     return( false );
-  return( true ); } ) );
+  return( true );
+  } ) );
  }
 
 template< class T , class C >
-bool sortedPermutation( const std::vector< T > & A ,
-                        std::vector< T > before , C less ,
-                        std::size_t lo , std::size_t hi )
+bool sortedPermutation( const std::vector< T > & A , std::vector< T > before ,
+			C less , std::size_t lo , std::size_t hi )
 {
  hi = std::min( hi , A.size() );
  return( contract( [ & ]( void ) {
-  return( std::is_sorted( A.begin() + lo , A.begin() + hi , less ) ); } ) &&
-         samePermutation( A , std::move( before ) , less , lo , hi ) );
+	   return( std::is_sorted( A.begin() + lo , A.begin() + hi , less ) );
+	   } ) &&
+	  samePermutation( A , std::move( before ) , less , lo , hi ) );
  }
 
 template< class S , class C >
@@ -99,7 +102,8 @@ bool sequenceSorted( const S & L , C less )
        p = q , q = L.next( q ) )
    if( less( L.read( q ) , L.read( p ) ) )
     return( false );
-  return( true ); } ) );
+  return( true );
+  } ) );
  }
 
 }  // end( namespace detail )

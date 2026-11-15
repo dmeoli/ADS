@@ -476,7 +476,8 @@ and those of `StringSearch.h` are
 
 ```cpp
 // declarations of <ADS/string/StringSearch.h>
-class StringSearcher {
+class StringSearcher
+{
  public:
  static constexpr std::size_t npos = std::string_view::npos;
  static constexpr std::size_t kSkip = 64;
@@ -491,23 +492,23 @@ class StringSearcher {
  [[nodiscard]] std::string_view pattern( void ) const;
  };
 
-[[nodiscard]] inline std::size_t findFirst( std::string_view T ,
-                                            std::string_view P ,
-                                            std::size_t from = 0 );
+[[nodiscard]] inline std::size_t
+findFirst( std::string_view T , std::string_view P , std::size_t from = 0 );
 [[nodiscard]] inline std::vector< std::size_t > findAll( std::string_view T ,
-                                                    std::string_view P );
+                                                         std::string_view P );
 ```
 
 For instance, with the headers `ADS/string/StringMatching.h` and
 `ADS/string/StringSearch.h`,
 
 ```cpp
-std::vector< std::size_t > O = ADS::kmp( "abababa" , "aba" );  // ( 0 , 2 , 4 )
+std::vector< std::size_t > O = ADS::kmp( "abababa" ,
+                                         "aba" );  // ( 0 , 2 , 4 )
 ADS::StringSearcher S( "needle" );
 std::string_view T = "a needle in a haystack, a needle";
-std::size_t f = S.find( T );               // f is 2
-std::size_t c = S.count( T );              // c is 2
-f = S.find( T , f + 1 );                   // f is 26
+std::size_t f = S.find( T );   // f is 2
+std::size_t c = S.count( T );  // c is 2
+f = S.find( T , f + 1 );        // f is 26
 ```
 
 ## 15.3 The search of many patterns {#sec-15-3}
@@ -611,14 +612,15 @@ next call of `build()`; `size()` gives the number of patterns and
 
 ```cpp
 // declarations of <ADS/string/AhoCorasick.h>
-class AhoCorasick {
+class AhoCorasick
+{
  public:
  AhoCorasick( void );
  explicit AhoCorasick( const std::vector< std::string > & P );
  std::size_t add( std::string_view P );
  void build( void );
  [[nodiscard]] std::vector< std::pair< std::size_t , std::size_t > >
-  findAll( std::string_view T ) const;
+ findAll( std::string_view T ) const;
  [[nodiscard]] std::size_t count( std::string_view T ) const;
  template< class F >
  void forEach( std::string_view T , F && report ) const;
@@ -632,9 +634,9 @@ automaton of [Figure 15.2](15-string.md#fig-15-2) gives
 
 ```cpp
 ADS::AhoCorasick A( { "he" , "she" , "his" , "hers" } );
-auto O = A.findAll( "ushers" );            // ( 1 , 1 ) for she, ( 2 , 0 )
-                                           // for he, ( 2 , 3 ) for hers
-std::size_t c = A.count( "ushers" );       // c is 3
+auto O = A.findAll( "ushers" );       // ( 1 , 1 ) for she, ( 2 , 0 )
+                                      // for he, ( 2 , 3 ) for hers
+std::size_t c = A.count( "ushers" );  // c is 3
 ```
 
 ### 15.3.2 The engineered search of many patterns {#sec-15-3-2}
@@ -798,27 +800,25 @@ prefixes holds each pattern under its prefix. $\square$
 
 --8<-- "generated/MultiSearch-MultiSearcher-findAll.pseudo.md"
 
-**The switch to the automaton.** Both filters may let through a candidate
-at nearly every place, on patterns that occur everywhere or on a text
-whose bytes the filter cannot tell apart (a small alphabet, against
-patterns that use all of it), or on long patterns whose first bytes occur
-everywhere. Each search therefore counts the *bytes* that it compares with
-the patterns, as `StringSearcher` does
-([§15.2.2](15-string.md#sec-15-2-2)): a word of 8 bytes for each pattern
-compared at a candidate (in the filter of shuffles) or for each entry of
-the chains visited (in the filters of shift-or), and the bytes past the
-word that `memcmp()` compares when the word agrees. When they exceed
-$16 s + 4096$ after the block that starts at $s$ (except on the last block
-of the filter of shuffles without vector instructions), the search stops
-and returns the first place that it has not tested, which
-`automatonFrom(T)` also gives (`std::string_view::npos` if the filter
-searches all of $T$). This
-is the end of the block of shuffles ($s + 32$ or $s + 64$), or the first
-start whose end lies in the next block of shift-or, $j + 9 - L$ for the
-stride 1 and $j + 15 - 2 ( W - 1 )$ for the stride 2. We then let the automaton
-go on from that place $f$: it scans $T$ from $\max( f - \ell_{\max} ,
-0 )$ and reports only the occurrences that start at $f$ or later, the
-earlier ones being the filter's.
+**The switch to the automaton.** Both filters may let through a candidate at
+nearly every place, on patterns that occur everywhere or on a text whose bytes
+the filter cannot tell apart (a small alphabet, against patterns that use all
+of it), or on long patterns whose first bytes occur everywhere. Each search
+therefore counts the *bytes* that it compares with the patterns, as
+`StringSearcher` does ([§15.2.2](15-string.md#sec-15-2-2)): a word of 8 bytes
+for each pattern compared at a candidate (in the filter of shuffles) or for
+each entry of the chains visited (in the filters of shift-or), and the bytes
+past the word that `memcmp()` compares when the word agrees. When they exceed
+$16 s + 4096$ after the block that starts at $s$ (except on the last block of
+the filter of shuffles without vector instructions), the search stops and
+returns the first place that it has not tested, which `automatonFrom( T )`
+also gives (`std::string_view::npos` if the filter searches all of $T$). This
+is the end of the block of shuffles ($s + 32$ or $s + 64$), or the first start
+whose end lies in the next block of shift-or, $j + 9 - L$ for the stride 1 and
+$j + 15 - 2 ( W - 1 )$ for the stride 2. We then let the automaton go on from
+that place $f$: it scans $T$ from $\max( f - \ell_{\max} , 0 )$ and reports
+only the occurrences that start at $f$ or later, the earlier ones being the
+filter's.
 
 <span id="lem-15-11"></span>**Lemma 15.11.** *`MultiSearcher::findAll()`
 gives $\mathrm{Occ}( P_j , T )$ for each $j$. Before the switch the
@@ -863,11 +863,12 @@ its occurrences. The class is
 
 ```cpp
 // declarations of <ADS/string/MultiSearch.h>
-class MultiSearcher {
+class MultiSearcher
+{
  public:
  explicit MultiSearcher( const std::vector< std::string > & P );
  [[nodiscard]] std::vector< std::pair< std::size_t , std::size_t > >
-  findAll( std::string_view T ) const;
+ findAll( std::string_view T ) const;
  [[nodiscard]] std::size_t count( std::string_view T ) const;
  [[nodiscard]] std::size_t automatonFrom( std::string_view T ) const;
  [[nodiscard]] std::size_t size( void ) const;
@@ -999,8 +1000,8 @@ std::string P = "aba" , T = "bacbab";
 auto [ e , k ] = ADS::stringMatching( P , T );  // e is 1, k is 1
 ADS::Table DP = ADS::matchingTable( P , T );
 std::size_t s = ADS::occurrence( DP , P , T , std::size_t( e + 1 ) );
-                                           // s is 0: the occurrence "ba"
-int d = ADS::editDistance( P , T );        // d is 3
+// s is 0: the occurrence "ba"
+int d = ADS::editDistance( P , T );  // d is 3
 ```
 
 ### 15.4.2 The longest common subsequence {#sec-15-4-2}
@@ -1068,8 +1069,8 @@ int lcsMemo( const S & P , const S & T , long * solved = nullptr );
 template< class S >
 S lcs( const S & P , const S & T );
 template< class S >
-std::vector< std::pair< char , typename S::value_type > > diff(
-                                                 const S & P , const S & T );
+std::vector< std::pair< char , typename S::value_type > > diff( const S & P ,
+                                                               const S & T );
 template< class S >
 std::tuple< std::size_t , std::size_t , std::size_t >
 longestCommonSubstring( const S & P , const S & T );
@@ -1107,16 +1108,12 @@ The declarations are
 
 ```cpp
 // declarations of <ADS/string/Alignment.h>
-enum class Alignment {
- GLOBAL ,
- SEMIGLOBAL ,
- LOCAL
- };
+enum class Alignment { GLOBAL , SEMIGLOBAL , LOCAL };
 template< class S >
 int alignmentScore( const S & P , const S & T , Alignment kind );
 template< class S >
 std::pair< S , S > globalAlignment( const S & P , const S & T ,
-                                    typename S::value_type gap = ' ' );
+                                   typename S::value_type gap = ' ' );
 ```
 
 ### 15.4.4 Problems related to the subsequences {#sec-15-4-4}
@@ -1191,16 +1188,21 @@ Each function has a template on the sequences, with
 
 ```cpp
 // declarations of <ADS/string/SubsequenceProblems.h>
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] bool isInterleaving( const S & X , const S & Y , const S & Z );
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] std::size_t scsLength( const S & X , const S & Y );
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] S shortestCommonSupersequence( const S & X , const S & Y );
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] std::uint64_t subsequenceOccurrences( const S & P ,
                                                     const S & T );
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] S lcs3( const S & X , const S & Y , const S & Z );
 ```
 
@@ -1337,22 +1339,22 @@ end, and a cell of a block at least the bottom of the block minus its
 distance from it; the first and the last block go when the least
 of these bounds exceeds $t$.
 
-**Strategy of `levenshtein()`.** This function strips the common prefix
-and suffix, puts the shorter string, of $m$ bytes, in the column, and
-chooses by size ([Algorithm 15.7](15-string.md#alg-15-7)). One word
-suffices when $m \le 64$, i.e., $O( n )$ time. For $m > 128$ the diagonal
-transitions run first, up to $d \le n / 48 + 128$ (where they cost about as
-much as the blocks), and give up once the rows reached by
-$h = 32 , 64 , 128 , \ldots$ edits suggest a distance more than twice as
-large. Then the band, from the guess of the diagonals and a quarter more,
-doubles until the distance is at most its width; once the bands have
-computed a quarter of the $n \lceil m / 64 \rceil$ blocks of the table, or
-span half of the column, all the blocks are computed instead, four columns
-at a time; indeed, the block $b$ of the column $j + q$ needs only the
-block $b - 1$ of the same column and the block $b$ of the column before,
-so that the blocks $i - q$ of the columns $j + q$, $q < 4$, are
-independent (the four lanes of an AVX2 vector). `levenshtein(a,b,k)` does
-the same with $k$ fixed, and gives $k + 1$ for any larger distance.
+**Strategy of `levenshtein()`.** This function strips the common prefix and
+suffix, puts the shorter string, of $m$ bytes, in the column, and chooses by
+size ([Algorithm 15.7](15-string.md#alg-15-7)). One word suffices when
+$m \le 64$, i.e., $O( n )$ time. For $m > 128$ the diagonal transitions run
+first, up to $d \le n / 48 + 128$ (where they cost about as much as the
+blocks), and give up once the rows reached by $h = 32 , 64 , 128 , \ldots$
+edits suggest a distance more than twice as large. Then the band, from the
+guess of the diagonals and a quarter more, doubles until the distance is at
+most its width; once the bands have computed a quarter of the
+$n \lceil m / 64 \rceil$ blocks of the table, or span half of the column, all
+the blocks are computed instead, four columns at a time; indeed, the block $b$
+of the column $j + q$ needs only the block $b - 1$ of the same column and the
+block $b$ of the column before, so that the blocks $i - q$ of the columns
+$j + q$, $q < 4$, are independent (the four lanes of an AVX2 vector).
+`levenshtein( a , b , k )` does the same with $k$ fixed, and gives $k + 1$ for
+any larger distance.
 
 <span id="alg-15-7"></span>**Algorithm 15.7.** The engineered edit
 distance, without and with a bound $k$.
@@ -1361,16 +1363,16 @@ distance, without and with a bound $k$.
 
 --8<-- "generated/EditDistance-levenshtein-2.pseudo.md"
 
-**Approximate search.** `approximateMatches(T,P,k)` gives the ends
-$j$ of the substrings of $T$ at edit distance at most $k$ from $P$, with
-their distances, by the search of [Myers 1999](Z-bibliography.md#ref-myers1999)
-on the table with the first row 0. By the second part of (15.12), a cell of
-value at most $k$ has a cell of value at most $k$ on its diagonal in the
-column before. Hence the last row of value at most $k$ goes down by at
-most one row per column, and only the blocks down to the last one with a
-cell at most $k + 1$ at its bottom are computed (the cut-off of [Ukkonen
-1985b](Z-bibliography.md#ref-ukkonen1985b)), $O( n k / 64 )$ expected time
-on random texts.
+**Approximate search.** `approximateMatches( T , P , k )` gives the ends $j$
+of the substrings of $T$ at edit distance at most $k$ from $P$, with their
+distances, by the search of [Myers 1999](Z-bibliography.md#ref-myers1999) on
+the table with the first row 0. By the second part of (15.12), a cell of value
+at most $k$ has a cell of value at most $k$ on its diagonal in the column
+before. Hence the last row of value at most $k$ goes down by at most one row
+per column, and only the blocks down to the last one with a cell at most
+$k + 1$ at its bottom are computed (the cut-off of [Ukkonen
+1985b](Z-bibliography.md#ref-ukkonen1985b)), $O( n k / 64 )$ expected time on
+random texts.
 
 --8<-- "generated/EditDistance-approximateMatches.pseudo.md"
 
@@ -1392,26 +1394,24 @@ of the section in [Table 15.4](15-string.md#tab-15-4), and declare them as
 // declarations of <ADS/string/EditDistance.h>
 [[nodiscard]] inline std::size_t levenshtein( std::string_view a ,
                                               std::string_view b );
-[[nodiscard]] inline std::size_t levenshtein( std::string_view a ,
-                                              std::string_view b ,
-                                              std::size_t k );
+[[nodiscard]] inline std::size_t
+levenshtein( std::string_view a , std::string_view b , std::size_t k );
 [[nodiscard]] inline std::size_t lcsLength( std::string_view a ,
                                             std::string_view b );
 [[nodiscard]] inline std::vector< std::pair< std::size_t , std::size_t > >
- approximateMatches( std::string_view T , std::string_view P ,
-                     std::size_t k );
+approximateMatches( std::string_view T , std::string_view P , std::size_t k );
 ```
 
 For instance, with the header `ADS/string/EditDistance.h`,
 
 ```cpp
-std::size_t d = ADS::levenshtein( "kitten" , "sitting" );  // d is 3
+std::size_t d = ADS::levenshtein( "kitten" , "sitting" );     // d is 3
 std::size_t e = ADS::levenshtein( "kitten" , "sitting" , 2 );  // e is 3,
-                                           // the bound 2 exceeded
+// the bound 2 exceeded
 std::size_t l = ADS::lcsLength( "kitten" , "sitting" );  // l is 4
 auto A = ADS::approximateMatches( "the cat sat" , "cot" , 1 );
-                                           // A is ( ( 7 , 1 ) ): "cat",
-                                           // which ends before the place 7
+// A is ( ( 7 , 1 ) ): "cat",
+// which ends before the place 7
 ```
 
 --8<-- "generated/EditDistance-lcsLength.pseudo.md"
@@ -1688,32 +1688,33 @@ header, for the scan); we list those on the bytes and the class:
 // declarations of <ADS/string/SuffixArray.h>
 using Symbols = std::vector< std::size_t >;
 [[nodiscard]] inline Symbols toSymbols( std::string_view T );
-[[nodiscard]] inline std::vector< std::size_t > suffixArraySorting(
-                                                        std::string_view T );
-[[nodiscard]] inline std::vector< std::size_t > suffixArrayDoubling(
-                                                        std::string_view T );
-[[nodiscard]] inline std::vector< std::size_t > suffixArrayLarssonSadakane(
-                                                        std::string_view T );
-[[nodiscard]] inline std::vector< std::size_t > suffixArraySkew(
-                                                        std::string_view T );
-[[nodiscard]] inline std::vector< std::size_t > suffixArraySais(
-                                                        std::string_view T );
-[[nodiscard]] inline std::vector< std::size_t > suffixArrayScan(
-                                       std::string_view T , std::size_t m );
-[[nodiscard]] inline std::vector< std::size_t > inversePermutation(
-                                       const std::vector< std::size_t > & SA );
-[[nodiscard]] inline std::vector< std::size_t > lcpArray(
-                  std::string_view T , const std::vector< std::size_t > & SA );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArraySorting( std::string_view T );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArrayDoubling( std::string_view T );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArrayLarssonSadakane( std::string_view T );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArraySkew( std::string_view T );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArraySais( std::string_view T );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArrayScan( std::string_view T , std::size_t m );
+[[nodiscard]] inline std::vector< std::size_t >
+inversePermutation( const std::vector< std::size_t > & SA );
+[[nodiscard]] inline std::vector< std::size_t >
+lcpArray( std::string_view T , const std::vector< std::size_t > & SA );
 
-class SuffixArray {
+class SuffixArray
+{
  public:
  SuffixArray( void ) = default;
  explicit SuffixArray( std::string_view T );
  SuffixArray( Symbols T , std::size_t K );
- [[nodiscard]] std::pair< std::size_t , std::size_t > range(
-             std::string_view P , long * comparisons = nullptr ) const;
- [[nodiscard]] std::pair< std::size_t , std::size_t > rangeLcp(
-             std::string_view P , long * comparisons = nullptr ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ range( std::string_view P , long * comparisons = nullptr ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ rangeLcp( std::string_view P , long * comparisons = nullptr ) const;
  [[nodiscard]] std::size_t count( std::string_view P ) const;
  [[nodiscard]] std::vector< std::size_t > locate( std::string_view P ) const;
  [[nodiscard]] std::size_t lce( std::size_t i , std::size_t j ) const;
@@ -1730,11 +1731,11 @@ $[ \mathit{lo} , \mathit{hi} )$ of the ranks. For instance, with the header
 `ADS/string/SuffixArray.h`, [Figure 15.3](15-string.md#fig-15-3) is
 
 ```cpp
-ADS::SuffixArray S( "banana" );            // SA is ( 5 , 3 , 1 , 0 , 4 , 2 )
-auto [ lo , hi ] = S.rangeLcp( "an" );     // the ranks 1 and 2: lo is 1,
-                                           // hi is 3
+ADS::SuffixArray S( "banana" );        // SA is ( 5 , 3 , 1 , 0 , 4 , 2 )
+auto [ lo , hi ] = S.rangeLcp( "an" );  // the ranks 1 and 2: lo is 1,
+                                       // hi is 3
 std::vector< std::size_t > L = S.locate( "an" );  // L is ( 3 , 1 )
-std::size_t e = S.lce( 1 , 3 );            // e is 3, "ana"
+std::size_t e = S.lce( 1 , 3 );                    // e is 3, "ana"
 ```
 
 ### 15.5.2 The engineered suffix sorting {#sec-15-5-2}
@@ -2164,15 +2165,13 @@ In all, the class is
 
 ```cpp
 // declarations of <ADS/string/SuffixTree.h>
-class SuffixTree {
+class SuffixTree
+{
  public:
  static constexpr std::size_t npos = std::numeric_limits< std::size_t >::max();
- enum class Build {
-  naive ,
-  mcCreight ,
-  suffixArray
-  };
- struct Node {
+ enum class Build { naive , mcCreight , suffixArray };
+ struct Node
+ {
   std::size_t pos = 0;
   std::size_t depth = 0;
   std::size_t parent = npos;
@@ -2182,8 +2181,7 @@ class SuffixTree {
   };
  SuffixTree( void ) = default;
  explicit SuffixTree( std::string_view T , Build b = Build::mcCreight );
- SuffixTree( const Symbols & T , std::size_t K ,
-             Build b = Build::mcCreight );
+ SuffixTree( const Symbols & T , std::size_t K , Build b = Build::mcCreight );
  [[nodiscard]] std::size_t textSize( void ) const;
  [[nodiscard]] std::size_t root( void ) const;
  [[nodiscard]] const Node & node( std::size_t u ) const;
@@ -2195,8 +2193,8 @@ class SuffixTree {
  [[nodiscard]] std::size_t lca( std::size_t u , std::size_t v ) const;
  [[nodiscard]] std::size_t lce( std::size_t i , std::size_t j ) const;
  [[nodiscard]] std::pair< std::vector< std::size_t > ,
-                          std::vector< std::size_t > > toSuffixArray( void )
-                                                                       const;
+                          std::vector< std::size_t > >
+ toSuffixArray( void ) const;
  [[nodiscard]] std::vector< std::size_t > preorder( void ) const;
  [[nodiscard]] std::size_t size( void ) const;
  };
@@ -2208,10 +2206,10 @@ random-access range of the nodes. For instance, with the header
 gives
 
 ```cpp
-ADS::SuffixTree S( "banana" );             // built by McCreight
-std::size_t c = S.count( "ana" );          // c is 2
+ADS::SuffixTree S( "banana" );     // built by McCreight
+std::size_t c = S.count( "ana" );  // c is 2
 std::size_t u = S.lca( S.leaf( 1 ) , S.leaf( 3 ) );
-std::size_t d = S.node( u ).depth;         // d is 3, the node of "ana"
+std::size_t d = S.node( u ).depth;  // d is 3, the node of "ana"
 ```
 
 ### 15.5.4 The suffix automaton {#sec-15-5-4}
@@ -2286,7 +2284,8 @@ The class is
 
 ```cpp
 // declarations of <ADS/string/SuffixAutomaton.h>
-class SuffixAutomaton {
+class SuffixAutomaton
+{
  public:
  SuffixAutomaton( void );
  explicit SuffixAutomaton( std::string_view S );
@@ -2295,7 +2294,7 @@ class SuffixAutomaton {
  [[nodiscard]] std::size_t occurrences( std::string_view P ) const;
  [[nodiscard]] std::size_t distinctSubstrings( void ) const;
  [[nodiscard]] std::pair< std::size_t , std::size_t >
-  longestCommonSubstring( std::string_view T ) const;
+ longestCommonSubstring( std::string_view T ) const;
  [[nodiscard]] std::size_t states( void ) const;
  [[nodiscard]] std::size_t size( void ) const;
  };
@@ -2305,10 +2304,10 @@ and, e.g., with the header `ADS/string/SuffixAutomaton.h`,
 
 ```cpp
 ADS::SuffixAutomaton A( "abcb" );
-A.extend( 'c' );                           // the step of Figure 15.5
-std::size_t s = A.states();                // s is 8, the start included
-std::size_t k = A.occurrences( "bc" );     // k is 2
-std::size_t t = A.distinctSubstrings();    // t is 12
+A.extend( 'c' );                         // the step of Figure 15.5
+std::size_t s = A.states();              // s is 8, the start included
+std::size_t k = A.occurrences( "bc" );   // k is 2
+std::size_t t = A.distinctSubstrings();  // t is 12
 ```
 
 ### 15.5.5 Applications of the suffix arrays and trees {#sec-15-5-5}
@@ -2408,7 +2407,8 @@ The declarations of `SuffixApplications.h` are
 
 ```cpp
 // declarations of <ADS/string/SuffixApplications.h>
-struct CopyPhrase {
+struct CopyPhrase
+{
  std::size_t distance = 0;
  std::size_t length = 0;
  std::optional< char > next;
@@ -2416,25 +2416,24 @@ struct CopyPhrase {
  };
 
 [[nodiscard]] inline std::pair< std::size_t , std::size_t >
-                         longestRepeatedSubstring( const SuffixArray & SA );
-[[nodiscard]] inline std::optional< std::size_t > repeatedSubstring(
-                  const SuffixArray & SA , std::size_t L , std::size_t C );
-[[nodiscard]] inline std::uint64_t distinctSubstrings(
-                                                   const SuffixArray & SA );
-[[nodiscard]] inline std::string longestCommonSubstring(
-                       const std::vector< std::string > & S , std::size_t k );
+longestRepeatedSubstring( const SuffixArray & SA );
+[[nodiscard]] inline std::optional< std::size_t >
+repeatedSubstring( const SuffixArray & SA , std::size_t L , std::size_t C );
+[[nodiscard]] inline std::uint64_t
+distinctSubstrings( const SuffixArray & SA );
+[[nodiscard]] inline std::string
+longestCommonSubstring( const std::vector< std::string > & S , std::size_t k );
 [[nodiscard]] inline std::vector< std::pair< std::size_t , std::size_t > >
-                                      maximalRepeats( const SuffixTree & ST );
+maximalRepeats( const SuffixTree & ST );
 [[nodiscard]] inline bool proximity( const SuffixArray & SA ,
                                      std::string_view P , std::string_view Q ,
                                      std::size_t k );
-[[nodiscard]] inline std::vector< std::size_t > kMismatches(
-                                        std::string_view T ,
-                                        std::string_view P , std::size_t k );
-[[nodiscard]] inline std::vector< CopyPhrase > lz77ByTree(
-                                                        std::string_view T );
-[[nodiscard]] inline std::string decodeCopyPhrases(
-                                     const std::vector< CopyPhrase > & Z );
+[[nodiscard]] inline std::vector< std::size_t >
+kMismatches( std::string_view T , std::string_view P , std::size_t k );
+[[nodiscard]] inline std::vector< CopyPhrase >
+lz77ByTree( std::string_view T );
+[[nodiscard]] inline std::string
+decodeCopyPhrases( const std::vector< CopyPhrase > & Z );
 ```
 
 where `longestRepeatedSubstring()` gives the place and the length of the
@@ -2445,9 +2444,9 @@ substring, `distinctSubstrings()` the count (15.20), and
 ```cpp
 ADS::SuffixArray S( "banana" );
 auto [ p , l ] = ADS::longestRepeatedSubstring( S );  // "ana": l is 3
-std::uint64_t d = ADS::distinctSubstrings( S );       // d is 15
+std::uint64_t d = ADS::distinctSubstrings( S );      // d is 15
 std::string c = ADS::longestCommonSubstring( { "xabcy" , "zabcw" , "abq" } ,
-                                             3 );     // c is "ab"
+                                             3 );  // c is "ab"
 ```
 
 ### 15.5.6 The engineered longest common extension {#sec-15-5-6}
@@ -2518,7 +2517,8 @@ The class is
 template< class I = std::uint32_t >
  requires( std::same_as< I , std::uint32_t > ||
            std::same_as< I , std::uint64_t > )
-class LceIndex {
+class LceIndex
+{
  public:
  explicit LceIndex( std::string_view T );
  [[nodiscard]] std::size_t lce( std::size_t i , std::size_t j ) const;
@@ -2776,65 +2776,65 @@ headers of the section as
 ```cpp
 // declarations of <ADS/string/PrefixSearch.h> <ADS/string/FrontCoding.h>
 //                  <ADS/string/RearCoding.h>
-[[nodiscard]] inline std::size_t lexicographicPosition(
-                                       const std::vector< std::string > & A ,
-                                       std::string_view Q );
-[[nodiscard]] inline std::size_t prefixEnd(
-                                       const std::vector< std::string > & A ,
-                                       std::string_view P );
-[[nodiscard]] inline std::pair< std::size_t , std::size_t > prefixRange(
-                                       const std::vector< std::string > & A ,
-                                       std::string_view P );
+[[nodiscard]] inline std::size_t
+lexicographicPosition( const std::vector< std::string > & A ,
+                       std::string_view Q );
+[[nodiscard]] inline std::size_t
+prefixEnd( const std::vector< std::string > & A , std::string_view P );
+[[nodiscard]] inline std::pair< std::size_t , std::size_t >
+prefixRange( const std::vector< std::string > & A , std::string_view P );
 [[nodiscard]] inline std::size_t commonPrefixLength( std::string_view a ,
                                                      std::string_view b );
 
-class BinnedSearch {
+class BinnedSearch
+{
  public:
  explicit BinnedSearch( std::vector< std::uint64_t > X );
  [[nodiscard]] std::size_t position( std::uint64_t y ) const;
  [[nodiscard]] bool contains( std::uint64_t y ) const;
  [[nodiscard]] std::size_t bins( void ) const;
  [[nodiscard]] std::uint64_t width( void ) const;
- [[nodiscard]] std::pair< std::size_t , std::size_t > bin(
-                                                      std::size_t j ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ bin( std::size_t j ) const;
  [[nodiscard]] std::optional< std::size_t > binOf( std::uint64_t y ) const;
  [[nodiscard]] std::size_t largestBin( void ) const;
  [[nodiscard]] std::size_t size( void ) const;
  [[nodiscard]] const std::vector< std::uint64_t > & items( void ) const;
  };
 
-class BinnedStringSearch {
+class BinnedStringSearch
+{
  public:
  explicit BinnedStringSearch( std::vector< std::string > A );
  [[nodiscard]] std::size_t lexicographicPosition( std::string_view Q ) const;
  [[nodiscard]] std::size_t prefixEnd( std::string_view P ) const;
- [[nodiscard]] std::pair< std::size_t , std::size_t > prefixRange(
-                                                   std::string_view P ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ prefixRange( std::string_view P ) const;
  [[nodiscard]] const BinnedSearch & keys( void ) const;
  };
 
 using FrontPair = std::pair< std::size_t , std::string >;
-[[nodiscard]] inline std::vector< FrontPair > frontCode(
-                                       const std::vector< std::string > & D );
-[[nodiscard]] inline std::vector< std::string > frontDecode(
-                                       const std::vector< FrontPair > & F );
+[[nodiscard]] inline std::vector< FrontPair >
+frontCode( const std::vector< std::string > & D );
+[[nodiscard]] inline std::vector< std::string >
+frontDecode( const std::vector< FrontPair > & F );
 inline void encodeLength( std::uint32_t l , std::string & out );
 [[nodiscard]] inline std::uint32_t decodeLength( std::string_view in ,
                                                  std::size_t & pos );
 
-class FrontCodedDictionary {
+class FrontCodedDictionary
+{
  public:
- [[nodiscard]] static FrontCodedDictionary bucketed(
-                           const std::vector< std::string > & D ,
-                           std::size_t b );
- [[nodiscard]] static FrontCodedDictionary localityPreserving(
-                           const std::vector< std::string > & D , double c );
+ [[nodiscard]] static FrontCodedDictionary
+ bucketed( const std::vector< std::string > & D , std::size_t b );
+ [[nodiscard]] static FrontCodedDictionary
+ localityPreserving( const std::vector< std::string > & D , double c );
  [[nodiscard]] std::string access( std::size_t i ) const;
  [[nodiscard]] std::size_t decodeCost( std::size_t i ) const;
  [[nodiscard]] std::size_t lexicographicPosition( std::string_view Q ) const;
  [[nodiscard]] std::size_t prefixEnd( std::string_view P ) const;
- [[nodiscard]] std::pair< std::size_t , std::size_t > prefixRange(
-                                                   std::string_view P ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ prefixRange( std::string_view P ) const;
  [[nodiscard]] std::size_t rankInBucket( std::size_t k , std::string_view P ,
                                          bool upper ) const;
  [[nodiscard]] std::size_t size( void ) const;
@@ -2846,12 +2846,13 @@ class FrontCodedDictionary {
  };
 
 using RearPair = std::pair< std::size_t , std::string >;
-[[nodiscard]] inline std::vector< RearPair > rearCode(
-                                       const std::vector< std::string > & D );
-[[nodiscard]] inline std::vector< std::string > rearDecode(
-                                       const std::vector< RearPair > & R );
+[[nodiscard]] inline std::vector< RearPair >
+rearCode( const std::vector< std::string > & D );
+[[nodiscard]] inline std::vector< std::string >
+rearDecode( const std::vector< RearPair > & R );
 
-class RearCodedDictionary {
+class RearCodedDictionary
+{
  public:
  RearCodedDictionary( void ) = default;
  explicit RearCodedDictionary( const std::vector< std::string > & D ,
@@ -2863,27 +2864,28 @@ class RearCodedDictionary {
  [[nodiscard]] std::size_t lookup( std::string_view Q ) const;
  [[nodiscard]] std::size_t lexicographicPosition( std::string_view Q ) const;
  [[nodiscard]] std::size_t prefixEnd( std::string_view P ) const;
- [[nodiscard]] std::pair< std::size_t , std::size_t > prefixRange(
-                                                   std::string_view P ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ prefixRange( std::string_view P ) const;
  [[nodiscard]] std::size_t codeBytes( void ) const;
  [[nodiscard]] std::size_t bytes( void ) const;
  };
 ```
 
-where `rankInBucket(k, P, upper)` places $P$ (or $P \#$, if `upper`) in
-the bucket $k$, and `FrontCodedDictionary` has the forward iterators
-`begin()` and `end()`. For instance, with the headers
-`ADS/string/FrontCoding.h` and `ADS/string/RearCoding.h`, the dictionary
-of [Figure 15.6](15-string.md#fig-15-6) gives
+where `rankInBucket( k , P , upper )` places $P$ (or $P \#$, if `upper`) in
+the bucket $k$, and `FrontCodedDictionary` has the forward iterators `begin()`
+and `end()`. For instance, with the headers `ADS/string/FrontCoding.h` and
+`ADS/string/RearCoding.h`, the dictionary of [Figure
+15.6](15-string.md#fig-15-6) gives
 
 ```cpp
-std::vector< std::string > D = { "algebra" , "algo" , "algorithm" ,
-  "algorithms" , "align" , "alpha" , "alphabet" , "beta" };
+std::vector< std::string > D = { "algebra" ,    "algo" ,  "algorithm" ,
+                                 "algorithms" , "align" , "alpha" ,
+                                 "alphabet" ,   "beta" };
 auto F = ADS::FrontCodedDictionary::bucketed( D , 4 );  // anchors 0 and 4
-auto [ lo , hi ] = F.prefixRange( "algo" );  // lo is 1, hi is 4
-std::string s = F.access( 3 );             // s is "algorithms"
+auto [ lo , hi ] = F.prefixRange( "algo" );             // lo is 1, hi is 4
+std::string s = F.access( 3 );                         // s is "algorithms"
 ADS::RearCodedDictionary R( D );
-std::size_t k = R.lookup( "alpha" );       // k is 5
+std::size_t k = R.lookup( "alpha" );  // k is 5
 ```
 
 <span id="alg-15-12"></span>**Algorithm 15.12.** The lexicographic
@@ -2994,17 +2996,22 @@ overload on `std::string` for each but the first, as
 
 ```cpp
 // declarations of <ADS/string/Palindromes.h>
-template< class S > requires std::is_class_v< S >
-[[nodiscard]] std::pair< std::size_t , std::size_t > longestPalindrome(
-                                                              const S & s );
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
+[[nodiscard]] std::pair< std::size_t , std::size_t >
+longestPalindrome( const S & s );
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] S longestPalindromicSubstring( const S & s );
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] S longestPalindromicSubsequence( const S & s );
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] std::vector< S > palindromicPartition( const S & s );
 
-class Eertree {
+class Eertree
+{
  public:
  Eertree( void );
  explicit Eertree( std::string_view s );
@@ -3014,8 +3021,8 @@ class Eertree {
  [[nodiscard]] std::size_t size( void ) const;
  };
 
-[[nodiscard]] inline std::vector< std::string > palindromicFactorization(
-                                                        std::string_view s );
+[[nodiscard]] inline std::vector< std::string >
+palindromicFactorization( std::string_view s );
 ```
 
 where `longestPalindrome()` gives the start and the length. For instance,
@@ -3023,10 +3030,10 @@ with the header `ADS/string/Palindromes.h`,
 
 ```cpp
 std::string p = ADS::longestPalindromicSubstring( std::string( "abacabad" ) );
-                                           // p is "abacaba"
+// p is "abacaba"
 ADS::Eertree E( "abacabad" );
-std::size_t k = E.distinct();              // k is 8: a, b, c, d, aba, aca,
-                                           // bacab, abacaba
+std::size_t k = E.distinct();  // k is 8: a, b, c, d, aba, aca,
+                               // bacab, abacaba
 ```
 
 ### 15.7.2 Lyndon words {#sec-15-7-2}
@@ -3124,8 +3131,8 @@ suffixes in $O( n^2 )$ time; the contracts check by it the factors of
 ```cpp
 // declarations of <ADS/string/Lyndon.h>
 [[nodiscard]] inline bool isLyndon( std::string_view S );
-[[nodiscard]] inline std::vector< std::size_t > lyndonFactorization(
-                                                        std::string_view S );
+[[nodiscard]] inline std::vector< std::size_t >
+lyndonFactorization( std::string_view S );
 [[nodiscard]] inline std::size_t leastRotation( std::string_view S );
 ```
 
@@ -3171,8 +3178,9 @@ We declare the two functions as
 
 ```cpp
 // declarations of <ADS/string/Parentheses.h>
-[[nodiscard]] inline std::size_t longestBalancedSubsequence(
-                     std::string_view s , char open = '(' , char close = ')' );
+[[nodiscard]] inline std::size_t
+longestBalancedSubsequence( std::string_view s , char open = '(' ,
+                            char close = ')' );
 [[nodiscard]] inline std::pair< std::size_t , std::size_t >
 longestBalancedSubstring( std::string_view s , char open = '(' ,
                           char close = ')' );
@@ -3198,8 +3206,8 @@ The function has an overload on the strings:
 ```cpp
 // declarations of <ADS/string/Anagrams.h>
 template< class S , class Hash = std::hash< S > >
-[[nodiscard]] std::vector< std::vector< S > > anagramGroups(
-                                             const std::vector< S > & words );
+[[nodiscard]] std::vector< std::vector< S > >
+anagramGroups( const std::vector< S > & words );
 ```
 
 ## 15.8 Segmentations, cuts and the code of Huffman {#sec-15-8}
@@ -3221,10 +3229,10 @@ The dictionary is a predicate, and the words are returned in order:
 ```cpp
 // declarations of <ADS/string/WordBreak.h>
 template< class F >
-std::optional< std::vector< std::string > > wordBreak(
-                         const std::string & s , F && lookup ,
-                         std::size_t longest = std::string::npos ,
-                         long * lookups = nullptr );
+std::optional< std::vector< std::string > >
+wordBreak( const std::string & s , F && lookup ,
+           std::size_t longest = std::string::npos ,
+           long * lookups = nullptr );
 ```
 
 We count the segmentations (`countSegmentations()` of
@@ -3250,11 +3258,12 @@ We declare them as
 
 ```cpp
 // declarations of <ADS/string/Segmentations.h>
-template< class S > requires std::is_class_v< S >
-[[nodiscard]] std::uint64_t countSegmentations(
-                             const S & X , const std::vector< S > & words );
-[[nodiscard]] inline std::uint64_t countDecodings(
-                                           const std::vector< int > & digits );
+template< class S >
+ requires std::is_class_v< S >
+[[nodiscard]] std::uint64_t
+countSegmentations( const S & X , const std::vector< S > & words );
+[[nodiscard]] inline std::uint64_t
+countDecodings( const std::vector< int > & digits );
 ```
 
 with an overload of the first on `std::string`; e.g.,
@@ -3311,8 +3320,9 @@ template< class I >
 [[nodiscard]] I stringBreakingCost( const std::vector< I > & cuts ,
                                     std::type_identity_t< I > length );
 template< class I >
-[[nodiscard]] std::vector< I > stringBreakingOrder(
-           const std::vector< I > & cuts , std::type_identity_t< I > length );
+[[nodiscard]] std::vector< I >
+stringBreakingOrder( const std::vector< I > & cuts ,
+                     std::type_identity_t< I > length );
 ```
 
 and, e.g., the cuts at 2, 8 and 10 of a string of 20 cost
@@ -3374,11 +3384,11 @@ and the code of [Figure 15.7](15-string.md#fig-15-7) comes from, with the
 header `ADS/string/Huffman.h`,
 
 ```cpp
-std::map< char , int > f = { { 'a' , 5 } , { 'b' , 9 } , { 'c' , 12 } ,
-                             { 'd' , 13 } , { 'e' , 16 } , { 'f' , 45 } };
+std::map< char , int > f = { { 'a' , 5 } ,  { 'b' , 9 } ,  { 'c' , 12 } ,
+                            { 'd' , 13 } , { 'e' , 16 } , { 'f' , 45 } };
 std::map< char , std::string > C = ADS::huffman( f );  // C[ 'a' ] is 1100
 std::string b = ADS::encode( std::string( "face" ) , C );
-std::string t = ADS::decode( b , C );      // t is "face"
+std::string t = ADS::decode( b , C );  // t is "face"
 ```
 
 ## 15.9 Discussion and references {#sec-15-9}

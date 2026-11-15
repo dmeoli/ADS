@@ -14,11 +14,12 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline EliasFanoGraph::EliasFanoGraph(
-                       const std::vector< std::vector< std::size_t > > & a )
- : f_n( a.size() )
+  const std::vector< std::vector< std::size_t > > & a )
+    : f_n( a.size() )
 {
  const std::uint64_t n = f_n;
  ADS_PRE( ( n < ( std::uint64_t( 1 ) << 32 ) ) );
@@ -26,9 +27,9 @@ inline EliasFanoGraph::EliasFanoGraph(
  S.reserve( f_n + 1 );
  for( std::uint64_t u = 0 ; u < n ; ++u ) {
   S.push_back( E.size() );
-  ADS_AUDIT( std::is_sorted( a[ u ].begin() , a[ u ].end() ) &&
-             ( std::adjacent_find( a[ u ].begin() , a[ u ].end() ) ==
-               a[ u ].end() ) );
+  ADS_AUDIT(
+    std::is_sorted( a[ u ].begin() , a[ u ].end() ) &&
+    ( std::adjacent_find( a[ u ].begin() , a[ u ].end() ) == a[ u ].end() ) );
   for( const std::size_t v : a[ u ] ) {
    ADS_PRE( v < n );
    E.push_back( u * n + v );
@@ -56,18 +57,19 @@ inline std::size_t EliasFanoGraph::outdegree( std::size_t u ) const
  }
 
 inline std::size_t EliasFanoGraph::successor( std::size_t u ,
-                                              std::size_t i ) const
+					      std::size_t i ) const
 {
  ADS_PRE( i < outdegree( u ) );
  return( std::size_t( f_edges[ std::size_t( f_start[ u ] ) + i ] -
-                      std::uint64_t( u ) * f_n ) );
+		       std::uint64_t( u ) * f_n ) );
  }
 
-inline std::vector< std::size_t > EliasFanoGraph::successors(
-                                                       std::size_t u ) const
+inline std::vector< std::size_t >
+EliasFanoGraph::successors( std::size_t u ) const
 {
  std::vector< std::size_t > s( outdegree( u ) );
- for( std::size_t i = 0 ; i < s.size() ; ++i ) s[ i ] = successor( u , i );
+ for( std::size_t i = 0 ; i < s.size() ; ++i )
+  s[ i ] = successor( u , i );
  return( s );
  }
 

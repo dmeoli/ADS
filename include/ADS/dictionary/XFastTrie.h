@@ -83,7 +83,7 @@
 
 #ifndef __ADS_XFastTrie
  #define __ADS_XFastTrie
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -107,7 +107,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS XFastTrie ------------------------------*/
@@ -116,15 +117,15 @@ namespace ADS {
 /// the x-fast trie: a binary trie with a hash table of the prefixes per
 /// depth
 template< std::unsigned_integral U , class V = std::monostate ,
-          int W = std::numeric_limits< U >::digits >
+	  int W = std::numeric_limits< U >::digits >
  requires TrieWidth< U , W >
-class XFastTrie : public detail::JumpTrie< U , V , W , true > {
+class XFastTrie : public detail::JumpTrie< U , V , W , true >
+{
 
  using Base = detail::JumpTrie< U , V , W , true >;
 
 /*--------------------------------------------------------------------------*/
  public:
-
  using Base::Base;
 
  /// the smallest key \f$ \ge x \f$, nil if none, in
@@ -162,16 +163,16 @@ class XFastTrie : public detail::JumpTrie< U , V , W , true > {
 /// the x-fast trie of a doubly linked list and \f$ w + 1 \f$ hash tables
 /// (exercise 13.2 of Morin's book)
 template< std::unsigned_integral U , class V = std::monostate ,
-          int W = std::numeric_limits< U >::digits >
+	  int W = std::numeric_limits< U >::digits >
  requires TrieWidth< U , W >
-class ListXFastTrie {
+class ListXFastTrie
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = U;     ///< the type of the keys
- using Item = U;    ///< the items of the SSet, the keys
- using Value = V;   ///< the type of the values
+ using Key = U;    ///< the type of the keys
+ using Item = U;   ///< the items of the SSet, the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty trie
  ListXFastTrie( void );
@@ -296,30 +297,31 @@ class ListXFastTrie {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a key in the list
- struct Leaf {
-  Leaf * prev = nullptr;   ///< the previous key, or the dummy
-  Leaf * next = nullptr;   ///< the next key, or the dummy
-  U key = 0;               ///< the key
-  V value{};               ///< the value
+ struct Leaf
+ {
+  Leaf * prev = nullptr;  ///< the previous key, or the dummy
+  Leaf * next = nullptr;  ///< the next key, or the dummy
+  U key = 0;              ///< the key
+  V value{};              ///< the value
   };
 
  /// the smallest and the largest key of a prefix
- struct Entry {
-  Leaf * min;   ///< the smallest key with the prefix
-  Leaf * max;   ///< the largest key with the prefix
+ struct Entry
+ {
+  Leaf * min;  ///< the smallest key with the prefix
+  Leaf * max;  ///< the largest key with the prefix
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ) by increasing key, along
  // the list
 
  /// the bidirectional iterator along the list
- class const_iterator {
+ class const_iterator
+ {
   public:
   /// the category of the iterator
   using iterator_category = std::bidirectional_iterator_tag;
@@ -336,7 +338,7 @@ class ListXFastTrie {
   const_iterator( void ) = default;
 
   /// on the key \f$ l \f$
-  explicit const_iterator( const Leaf * l ) : f_l( l ) {}
+  explicit const_iterator( const Leaf * l ) : f_l( l ) { }
 
   /// the pair of the key
   reference operator*( void ) const {
@@ -344,16 +346,30 @@ class ListXFastTrie {
    }
 
   /// to the next key
-  const_iterator & operator++( void ) { f_l = f_l->next; return( *this ); }
+  const_iterator & operator++( void ) {
+   f_l = f_l->next;
+   return( *this );
+   }
 
   /// to the next key, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// to the previous key
-  const_iterator & operator--( void ) { f_l = f_l->prev; return( *this ); }
+  const_iterator & operator--( void ) {
+   f_l = f_l->prev;
+   return( *this );
+   }
 
   /// to the previous key, returning the iterator before the step
-  const_iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+  const_iterator operator--( int ) {
+   auto t = *this;
+   --*this;
+   return( t );
+   }
 
   /// equal on the same key
   bool operator==( const const_iterator & o ) const = default;
@@ -394,7 +410,6 @@ class ListXFastTrie {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the entry of the prefix \f$ p \f$ of depth \f$ i \f$ in `e`; false if
  /// there is none
  [[nodiscard]] bool entry( U p , int i , Entry & e ) const;
@@ -414,11 +429,11 @@ class ListXFastTrie {
  /// \f$ n \le 256 \f$, around \f$ x \f$ beyond
  [[nodiscard]] bool consistent( U x ) const;
 
- ObjectPool< Leaf > f_pool{ 1 << 16 };   ///< the keys
- Leaf * f_dummy = nullptr;                ///< the head of the list
- std::size_t f_n = 0;                     ///< the number of keys
+ ObjectPool< Leaf > f_pool{ 1 << 16 };                ///< the keys
+ Leaf * f_dummy = nullptr;                            ///< the head of the list
+ std::size_t f_n = 0;                                 ///< the number of keys
  std::array< FlatHashTable< U , Entry > , W + 1 > f_t;  ///< \f$ t[ 0 ] \f$
-                                                        ///< unused
+						      ///< unused
 
  };  // end( class ListXFastTrie )
 
@@ -434,7 +449,7 @@ class ListXFastTrie {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* XFastTrie.h included */
+#endif /* XFastTrie.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File XFastTrie.h ---------------------------*/

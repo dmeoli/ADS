@@ -50,7 +50,8 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ints = std::vector< int >;
 
@@ -61,11 +62,11 @@ static_assert( PriorityQueue< ListPriorityQueue< int , int , false > > );
 static_assert( PriorityQueue< TreePriorityQueue< int > > );
 static_assert( AddressablePriorityQueue< HeapPriorityQueue< int > > );
 static_assert(
- AddressablePriorityQueue< HeapPriorityQueue< int , double , 4 > > );
+  AddressablePriorityQueue< HeapPriorityQueue< int , double , 4 > > );
 static_assert(
- AddressablePriorityQueue< ListPriorityQueue< int , int , true > > );
+  AddressablePriorityQueue< ListPriorityQueue< int , int , true > > );
 static_assert(
- AddressablePriorityQueue< ListPriorityQueue< int , int , false > > );
+  AddressablePriorityQueue< ListPriorityQueue< int , int , false > > );
 static_assert( AddressablePriorityQueue< TreePriorityQueue< int > > );
 
 /*--------------------------------------------------------------------------*/
@@ -80,7 +81,7 @@ void against_ref( M make , unsigned seed )
 {
  std::mt19937 g( seed );
  Q q = make();
- std::map< int , std::pair< typename Q::Handle , int > > in;   // item ->
+ std::map< int , std::pair< typename Q::Handle , int > > in;  // item ->
  int next = 0;
  for( int o = 0 ; o < 20000 ; ++o ) {
   const int what = g() % 10;
@@ -126,7 +127,7 @@ void degenerate( M make )
 {
  Q q = make();
  CHECK( q.empty() && q.size() == 0 );
- CHECK_THROWS( (void) q.min() , contract_violation );
+ CHECK_THROWS( ( void )q.min() , contract_violation );
  CHECK_THROWS( q.deleteMin() , contract_violation );
  auto h = q.insert( 1 , 5 );
  CHECK( q.size() == 1 && q.min() == 1 );
@@ -159,10 +160,11 @@ void degenerate( M make )
  }
 
 /// a comparison that counts
-struct Counting {
+struct Counting
+{
  long * c;
  bool operator()( const auto & a , const auto & b ) const {
-  *c += ! checkingContract();               // not those of the contracts
+  *c += ! checkingContract();  // not those of the contracts
   return( a < b );
   }
  };
@@ -171,8 +173,10 @@ struct Counting {
 void restore_rec( Ints & A , std::size_t i , std::size_t dim )
 {
  std::size_t max = i;
- if( 2 * i + 1 < dim && A[ 2 * i + 1 ] > A[ max ] ) max = 2 * i + 1;
- if( 2 * i + 2 < dim && A[ 2 * i + 2 ] > A[ max ] ) max = 2 * i + 2;
+ if( 2 * i + 1 < dim && A[ 2 * i + 1 ] > A[ max ] )
+  max = 2 * i + 1;
+ if( 2 * i + 2 < dim && A[ 2 * i + 2 ] > A[ max ] )
+  max = 2 * i + 2;
  if( i != max ) {
   std::swap( A[ i ] , A[ max ] );
   restore_rec( A , max , dim );
@@ -202,9 +206,9 @@ int height( const MFSet & M , int r )
 ADS_TEST( "spec.HeapPriorityQueue" )
 {
  against_ref< HeapPriorityQueue< int > >(
-  [] { return( HeapPriorityQueue< int >( 1000 ) ); } , 1 );
+   [] { return( HeapPriorityQueue< int >( 1000 ) ); } , 1 );
  HeapPriorityQueue< int > q( 2 );
- CHECK_THROWS( (void) q.min() , std::logic_error );
+ CHECK_THROWS( ( void )q.min() , std::logic_error );
  CHECK_THROWS( q.deleteMin() , std::logic_error );
  auto h = q.insert( 7 , 5 );
  q.insert( 8 , 6 );
@@ -216,7 +220,7 @@ ADS_TEST( "spec.HeapPriorityQueue" )
  // filled again, a null handle and one of another queue, a negative
  // capacity
  degenerate< HeapPriorityQueue< int > >(
-  [] { return( HeapPriorityQueue< int >( 100 ) ); } );
+   [] { return( HeapPriorityQueue< int >( 100 ) ); } );
  HeapPriorityQueue< int > z( 0 );
  CHECK( z.empty() && z.capacity() == 0 );
  CHECK_THROWS( z.insert( 1 , 1 ) , contract_violation );
@@ -236,18 +240,18 @@ ADS_TEST( "spec.HeapPriorityQueue" )
 ADS_TEST( "spec.ListPriorityQueue" )
 {
  against_ref< ListPriorityQueue< int , int , true > >(
-  [] { return( ListPriorityQueue< int , int , true >() ); } , 2 );
+   [] { return( ListPriorityQueue< int , int , true >() ); } , 2 );
  against_ref< ListPriorityQueue< int , int , false > >(
-  [] { return( ListPriorityQueue< int , int , false >() ); } , 3 );
+   [] { return( ListPriorityQueue< int , int , false >() ); } , 3 );
  ListPriorityQueue< int > q;
- CHECK_THROWS( (void) q.min() , std::logic_error );
+ CHECK_THROWS( ( void )q.min() , std::logic_error );
 
  // the degenerate cases, sorted and unsorted; the handle of an item
  // removed is no longer one of the queue (checked with the audits)
  degenerate< ListPriorityQueue< int , int , true > >(
-  [] { return( ListPriorityQueue< int , int , true >() ); } );
+   [] { return( ListPriorityQueue< int , int , true >() ); } );
  degenerate< ListPriorityQueue< int , int , false > >(
-  [] { return( ListPriorityQueue< int , int , false >() ); } );
+   [] { return( ListPriorityQueue< int , int , false >() ); } );
  auto h = q.insert( 1 , 1 );
  auto k = q.insert( 2 , 2 );
  CHECK( q.deleteMin() == 1 );
@@ -259,12 +263,12 @@ ADS_TEST( "spec.ListPriorityQueue" )
 ADS_TEST( "spec.TreePriorityQueue" )
 {
  against_ref< TreePriorityQueue< int > >(
-  [] { return( TreePriorityQueue< int >() ); } , 4 );
+   [] { return( TreePriorityQueue< int >() ); } , 4 );
 
  // the degenerate cases; the handle of an item removed, a negative one
  // and one never given
  degenerate< TreePriorityQueue< int > >(
-  [] { return( TreePriorityQueue< int >() ); } );
+   [] { return( TreePriorityQueue< int >() ); } );
  TreePriorityQueue< int > q;
  auto h = q.insert( 1 , 1 );
  q.insert( 2 , 2 );
@@ -299,19 +303,20 @@ ADS_TEST( "sec10.1.3.heap" )
  CHECK( q.priorities() == Ints( { 5 , 6 , 9 , 10 , 8 , 13 , 12 , 11 , 18 } ) );
  auto r = build();
  r.insert( 4 , 4 );
- CHECK( r.priorities() ==
-        Ints( { 3 , 4 , 9 , 6 , 5 , 13 , 12 , 11 , 18 , 10 , 8 } ) );
+ CHECK( r.priorities() == Ints( { 3 , 4 , 9 , 6 , 5 , 13 , 12 , 11 , 18 , 10 ,
+				  8 } ) );
  // decrease() moves an item up, its handle follows it
  HeapPriorityQueue< int >::Handle h = nullptr;
  HeapPriorityQueue< int > t( 20 );
  for( int x : fig ) {
   auto y = t.insert( x , x );
-  if( x == 18 ) h = y;
+  if( x == 18 )
+   h = y;
   }
  t.decrease( h , 1 );
  CHECK( h->pos == 0 && t.min() == 18 && t.minPriority() == 1 );
- CHECK( t.priorities() ==
-        Ints( { 1 , 3 , 9 , 5 , 8 , 13 , 12 , 11 , 6 , 10 } ) );
+ CHECK( t.priorities() == Ints( { 1 , 3 , 9 , 5 , 8 , 13 , 12 , 11 , 6 ,
+				  10 } ) );
  // the root decreased stays where it is; a leaf decreased to its own
  // priority does not move; the heap emptied gives its items in order
  t.decrease( h , 0 );
@@ -356,8 +361,8 @@ ADS_TEST( "sec10.1.4.heapsort" )
  const int lo = std::numeric_limits< int >::min();
  const int hi = std::numeric_limits< int >::max();
  for( const Ints & A : { Ints( 50 , 4 ) , Ints( { 1 , 2 , 3 , 4 , 5 , 6 } ) ,
-                         Ints( { 6 , 5 , 4 , 3 , 2 , 1 } ) ,
-                         Ints( { hi , lo , 0 , hi , lo , -1 , 1 } ) } ) {
+			 Ints( { 6 , 5 , 4 , 3 , 2 , 1 } ) ,
+			 Ints( { hi , lo , 0 , hi , lo , -1 , 1 } ) } ) {
   Ints C = A , D = A , E = A;
   heapsort( C );
   std::sort( D.begin() , D.end() );
@@ -369,17 +374,17 @@ ADS_TEST( "sec10.1.4.heapsort" )
   }
  Ints Z , O = { 3 };
  CHECK( isMaxHeap( Z , 0 ) && isMaxHeap( O , 1 ) );
- CHECK( isMaxHeap( Ints( { 1 , 2 } ) , 1 ) && ! isMaxHeap( Ints( { 1 , 2 } ) ,
-                                                           2 ) );
+ CHECK( isMaxHeap( Ints( { 1 , 2 } ) , 1 ) &&
+	! isMaxHeap( Ints( { 1 , 2 } ) , 2 ) );
  Ints L = { 1 , 5 , 7 };
  maxHeapRestore( L , 2 , 3 );
  CHECK( L == Ints( { 1 , 5 , 7 } ) );
- maxHeapRestore( L , 0 , 2 );                      // only the prefix
+ maxHeapRestore( L , 0 , 2 );  // only the prefix
  CHECK( L == Ints( { 5 , 1 , 7 } ) );
  CHECK_THROWS( maxHeapRestore( L , 3 , 3 ) , contract_violation );
  CHECK_THROWS( maxHeapRestore( L , 0 , 4 ) , contract_violation );
  CHECK_THROWS( maxHeapRestore( Z , 0 , 0 ) , contract_violation );
- CHECK_THROWS( (void) isMaxHeap( L , 4 ) , contract_violation );
+ CHECK_THROWS( ( void )isMaxHeap( L , 4 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -399,8 +404,8 @@ ADS_TEST( "sec10.2.2.forest" )
 
  MFSet F( 7 , MFSet::Union::NONE , false );
  for( auto [ x , y ] : std::vector< std::pair< int , int > >(
-       { { 0 , 1 } , { 0 , 2 } , { 4 , 5 } , { 5 , 2 } , { 3 , 6 } ,
-         { 2 , 6 } } ) )
+	{ { 0 , 1 } , { 0 , 2 } , { 4 , 5 } , { 5 , 2 } , { 3 , 6 } ,
+	  { 2 , 6 } } ) )
   F.merge( x , y );
  Ints p( 7 );
  for( int x = 0 ; x < 7 ; ++x )
@@ -412,8 +417,8 @@ ADS_TEST( "sec10.2.2.forest" )
  // or twice with the same one (false, nothing changes), the tie of the
  // union by size (the root of y under that of x), the contracts of each
  // operation, for each union
- for( auto u : { MFSet::Union::NONE , MFSet::Union::RANK ,
-                 MFSet::Union::SIZE } ) {
+ for( auto u :
+      { MFSet::Union::NONE , MFSet::Union::RANK , MFSet::Union::SIZE } ) {
   MFSet E( 0 , u );
   CHECK( E.n() == 0 && E.count() == 0 );
   CHECK_THROWS( E.find( 0 ) , contract_violation );
@@ -429,10 +434,10 @@ ADS_TEST( "sec10.2.2.forest" )
    CHECK_THROWS( M.find( x ) , contract_violation );
    CHECK_THROWS( M.merge( 0 , x ) , contract_violation );
    CHECK_THROWS( M.merge( x , 0 ) , contract_violation );
-   CHECK_THROWS( (void) M.same( x , 0 ) , contract_violation );
-   CHECK_THROWS( (void) M.parent( x ) , contract_violation );
-   CHECK_THROWS( (void) M.rank( x ) , contract_violation );
-   CHECK_THROWS( (void) M.size( x ) , contract_violation );
+   CHECK_THROWS( ( void )M.same( x , 0 ) , contract_violation );
+   CHECK_THROWS( ( void )M.parent( x ) , contract_violation );
+   CHECK_THROWS( ( void )M.rank( x ) , contract_violation );
+   CHECK_THROWS( ( void )M.size( x ) , contract_violation );
    }
   CHECK_THROWS( MFSet( -1 , u ) , contract_violation );
   }
@@ -487,9 +492,13 @@ ADS_TEST( "sec10.2.3.rank" )
 ADS_TEST( "sec10.2.4.compression" )
 {
  MFSet M( 8 , MFSet::Union::NONE , true );
- for( auto [ x , y ] : std::vector< std::pair< int , int > >(
-       { { 4 , 7 } , { 3 , 4 } , { 3 , 6 } , { 2 , 5 } , { 0 , 1 } ,
-         { 0 , 2 } , { 0 , 3 } } ) )
+ for( auto [ x , y ] : std::vector< std::pair< int , int > >( { { 4 , 7 } ,
+							      { 3 , 4 } ,
+							      { 3 , 6 } ,
+							      { 2 , 5 } ,
+							      { 0 , 1 } ,
+							      { 0 , 2 } ,
+							      { 0 , 3 } } ) )
   M.merge( x , y );
  Ints p( 8 );
  for( int x = 0 ; x < 8 ; ++x )
@@ -512,7 +521,7 @@ ADS_TEST( "sec10.2.4.compression" )
   for( int k = 0 ; k < n ; ++k )
    C.find( n - 1 );
   CHECK( C.steps() - before ==
-         ( compress ? 2L * ( n - 1 ) : long( n ) * ( n - 1 ) ) );
+	 ( compress ? 2L * ( n - 1 ) : long( n ) * ( n - 1 ) ) );
   }
  }
 
@@ -581,14 +590,14 @@ ADS_TEST( "sec10.2.1.lists" )
  CHECK( int( W.members( 7 ).size() ) == n && W.find( 0 ) == W.find( n - 1 ) );
  ListMFSet E( 0 );
  CHECK( E.n() == 0 );
- CHECK_THROWS( (void) E.find( 0 ) , contract_violation );
+ CHECK_THROWS( ( void )E.find( 0 ) , contract_violation );
  ListMFSet O( 1 );
  CHECK( ! O.merge( 0 , 0 ) && O.relabels() == 0 );
  CHECK( O.members( 0 ) == Ints( { 0 } ) );
  for( int x : { -1 , n } ) {
-  CHECK_THROWS( (void) L.find( x ) , contract_violation );
+  CHECK_THROWS( ( void )L.find( x ) , contract_violation );
   CHECK_THROWS( L.merge( 0 , x ) , contract_violation );
-  CHECK_THROWS( (void) L.members( x ) , contract_violation );
+  CHECK_THROWS( ( void )L.members( x ) , contract_violation );
   }
  CHECK_THROWS( ListMFSet( -1 ) , contract_violation );
  }
@@ -607,7 +616,8 @@ ADS_TEST( "ex10.1" )
  const Ints H = { 3 , 5 , 9 , 6 , 8 , 13 , 12 , 11 , 18 , 10 };
  Ints in;
  auto rec = [ & ]( auto & self , std::size_t i ) -> void {
-  if( i >= H.size() ) return;
+  if( i >= H.size() )
+   return;
   self( self , 2 * i + 1 );
   in.push_back( H[ i ] );
   self( self , 2 * i + 2 );
@@ -626,8 +636,8 @@ ADS_TEST( "ex10.1" )
   }
  // the smallest: 0 comparisons on 1 item, 1 on 2, 3 on 3 (heapBuild 2,
  // then 1), at least ceil( log2 n! ) = 0 , 1 , 3
- for( const Ints & B : { Ints( { 0 } ) , Ints( { 1 , 0 } ) ,
-                         Ints( { 2 , 0 , 1 } ) } ) {
+ for( const Ints & B :
+      { Ints( { 0 } ) , Ints( { 1 , 0 } ) , Ints( { 2 , 0 , 1 } ) } ) {
   Ints A = B;
   long c = 0;
   heapsort( A , Counting{ &c } );
@@ -687,13 +697,13 @@ ADS_TEST( "ex10.3" )
  for( int i = 1 ; i < k ; ++i ) {
   Ints D( C.size() + m );
   std::merge( C.begin() , C.end() , V[ i ].begin() , V[ i ].end() ,
-              D.begin() );
+	      D.begin() );
   moves += long( D.size() );
   C = std::move( D );
   }
  CHECK( C == all && moves == long( m ) * ( k * ( k + 1 ) / 2 - 1 ) );
 
- HeapPriorityQueue< std::pair< int , int > > Q( k );   // ( vector , place )
+ HeapPriorityQueue< std::pair< int , int > > Q( k );  // ( vector , place )
  for( int i = 0 ; i < k ; ++i )
   Q.insert( { i , 0 } , V[ i ][ 0 ] );
  Ints out;
@@ -709,8 +719,8 @@ ADS_TEST( "ex10.3" )
  // vectors among the others, lengths that differ, equal items across the
  // vectors, the extremes of int
  auto kmerge = []( const std::vector< Ints > & W ) {
-  HeapPriorityQueue< std::pair< int , int > > H( std::max( int( W.size() ) ,
-                                                           1 ) );
+  HeapPriorityQueue< std::pair< int , int > > H(
+    std::max( int( W.size() ) , 1 ) );
   for( int i = 0 ; i < int( W.size() ) ; ++i )
    if( ! W[ i ].empty() )
     H.insert( { i , 0 } , W[ i ][ 0 ] );
@@ -729,8 +739,8 @@ ADS_TEST( "ex10.3" )
  CHECK( kmerge( { Ints() } ).empty() );
  CHECK( kmerge( { Ints( { 1 , 2 , 3 } ) } ) == Ints( { 1 , 2 , 3 } ) );
  CHECK( kmerge( { Ints() , Ints( { 2 , 2 } ) , Ints() , Ints( { 1 , 2 , 9 } ) ,
-                  Ints( { lo , hi } ) } ) ==
-        Ints( { lo , 1 , 2 , 2 , 2 , 9 , hi } ) );
+		  Ints( { lo , hi } ) } ) ==
+	Ints( { lo , 1 , 2 , 2 , 2 , 9 , hi } ) );
  }
 
 // maxHeapRestore() iterative, O( 1 ) extra space, as the recursive one,
@@ -787,14 +797,14 @@ ADS_TEST( "ex10.5" )
 ADS_TEST( "ex10.6" )
 {
  against_ref< HeapPriorityQueue< int , int , 3 > >(
-  [] { return( HeapPriorityQueue< int , int , 3 >( 1000 ) ); } , 6 );
+   [] { return( HeapPriorityQueue< int , int , 3 >( 1000 ) ); } , 6 );
  against_ref< HeapPriorityQueue< int , int , 5 > >(
-  [] { return( HeapPriorityQueue< int , int , 5 >( 1000 ) ); } , 7 );
+   [] { return( HeapPriorityQueue< int , int , 5 >( 1000 ) ); } , 7 );
  using Q = HeapPriorityQueue< int , int , 4 >;
  for( int i = 0 ; i < 100 ; ++i )
   for( int j = 0 ; j < 4 ; ++j )
    CHECK( Q::child( i , j ) == 4 * i + j + 1 &&
-          Q::parent( Q::child( i , j ) ) == i );
+	  Q::parent( Q::child( i , j ) ) == i );
  // a 4-ary heap of 1365 = 1 + 4 + 16 + 64 + 256 + 1024 items has height 5
  Q q( 1365 );
  for( int x = 0 ; x < 1365 ; ++x )
@@ -806,7 +816,7 @@ ADS_TEST( "ex10.6" )
  // the degenerate cases for d = 3 and d = 4, a full queue whose last level
  // is complete, all the children of the root (places 1 to d) under it
  degenerate< HeapPriorityQueue< int , int , 3 > >(
-  [] { return( HeapPriorityQueue< int , int , 3 >( 100 ) ); } );
+   [] { return( HeapPriorityQueue< int , int , 3 >( 100 ) ); } );
  degenerate< Q >( [] { return( Q( 100 ) ); } );
  CHECK_THROWS( q.insert( 0 , 0 ) , contract_violation );
  for( int x = 0 ; x < 1365 ; ++x )
@@ -884,9 +894,14 @@ ADS_TEST( "ex10.8" )
   M.merge( x , y );
   const int rx = find( find , x ) , ry = find( find , y );
   if( rx != ry ) {
-   if( rank[ rx ] > rank[ ry ] ) p[ ry ] = rx;
-   else if( rank[ ry ] > rank[ rx ] ) p[ rx ] = ry;
-   else { p[ rx ] = ry; ++rank[ ry ]; }
+   if( rank[ rx ] > rank[ ry ] )
+    p[ ry ] = rx;
+   else if( rank[ ry ] > rank[ rx ] )
+    p[ rx ] = ry;
+   else {
+    p[ rx ] = ry;
+    ++rank[ ry ];
+    }
    }
   }
  for( int x = 0 ; x < n ; ++x )
@@ -930,7 +945,7 @@ ADS_TEST( "ex10.9" )
  MFSet M( n );
  for( const auto & [ w , u , v ] : E )
   M.merge( u , v );
- std::map< int , std::tuple< int , int , int > > least;   // root -> edge
+ std::map< int , std::tuple< int , int , int > > least;  // root -> edge
  for( const auto & e : E ) {
   const int r = M.find( std::get< 1 >( e ) );
   if( ! least.count( r ) || e < least[ r ] )
@@ -955,10 +970,11 @@ ADS_TEST( "ex10.9" )
  // weight: the least is the one of smaller ends, in the order of the
  // triples; one component holding all the nodes
  MFSet Z( 4 );
- CHECK( Z.count() == 4 && components( ListGraph< int >( 4 , false ) ).count()
-                          == 4 );
- const std::vector< std::tuple< int , int , int > > T = {
-  { 5 , 2 , 3 } , { 5 , 0 , 3 } , { 5 , 1 , 2 } };
+ CHECK( Z.count() == 4 &&
+	components( ListGraph< int >( 4 , false ) ).count() == 4 );
+ const std::vector< std::tuple< int , int , int > > T = { { 5 , 2 , 3 } ,
+							{ 5 , 0 , 3 } ,
+							{ 5 , 1 , 2 } };
  MFSet A( 4 );
  std::optional< std::tuple< int , int , int > > lt;
  for( const auto & e : T ) {

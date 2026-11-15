@@ -14,18 +14,21 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , class C >
 void maxHeapRestore( std::vector< T > & A , std::size_t i , std::size_t dim ,
-                     C less )
+		     C less )
 {
  ADS_PRE( ( i < dim ) && ( dim <= A.size() ) );
  for( ; ; ) {
   std::size_t max = i;
   const std::size_t l = 2 * i + 1 , r = 2 * i + 2;
-  if( ( l < dim ) && less( A[ max ] , A[ l ] ) ) max = l;
-  if( ( r < dim ) && less( A[ max ] , A[ r ] ) ) max = r;
+  if( ( l < dim ) && less( A[ max ] , A[ l ] ) )
+   max = l;
+  if( ( r < dim ) && less( A[ max ] , A[ r ] ) )
+   max = r;
   if( max == i )
    return;
   std::swap( A[ i ] , A[ max ] );
@@ -38,8 +41,8 @@ void heapBuild( std::vector< T > & A , C less )
 {
  for( std::size_t i = A.size() / 2 ; i-- > 0 ; )
   maxHeapRestore( A , i , A.size() , less );
- ADS_AUDIT( detail::contract( [ & ]( void ) {
-  return( isMaxHeap( A , A.size() , less ) ); } ) );
+ ADS_AUDIT( detail::contract(
+   [ & ]( void ) { return( isMaxHeap( A , A.size() , less ) ); } ) );
  }
 
 template< class T , class C >

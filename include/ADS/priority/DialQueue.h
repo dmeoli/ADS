@@ -57,7 +57,7 @@
 
 #ifndef __ADS_DialQueue
  #define __ADS_DialQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -79,7 +79,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS DialQueue ------------------------------*/
@@ -88,13 +89,13 @@ namespace ADS {
 /// a monotone queue of items with integer keys of the type `K` on a
 /// circular window of buckets, the keys beyond it in a radix heap
 template< class T , std::integral K = std::uint32_t >
-class DialQueue {
+class DialQueue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
- using Key = K;    ///< the type of the keys
+ using Item = T;  ///< the type of the items
+ using Key = K;   ///< the type of the keys
 
  /// an empty queue whose window has room for the keys up to \f$ c \f$
  /// above the last one extracted: \f$ W \f$ buckets, the least power of 2
@@ -175,7 +176,6 @@ class DialQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  using U = std::make_unsigned_t< K >;
  static U encode( K k ) {
   if constexpr( std::is_signed_v< K > )
@@ -205,11 +205,11 @@ class DialQueue {
  /// count size() items
  [[nodiscard]] bool counted( void ) const;
 
- std::vector< std::vector< T > > f_B;   ///< the buckets, LIFO
- std::vector< std::uint64_t > f_bits;   ///< the buckets in use
- U f_cur = 0;                           ///< the last key extracted
- std::size_t f_in = 0;                  ///< the items in the buckets
- std::size_t f_n = 0;                   ///< the number of items
+ std::vector< std::vector< T > > f_B;  ///< the buckets, LIFO
+ std::vector< std::uint64_t > f_bits;  ///< the buckets in use
+ U f_cur = 0;                          ///< the last key extracted
+ std::size_t f_in = 0;                 ///< the items in the buckets
+ std::size_t f_n = 0;                  ///< the number of items
  RadixHeap< T , U > f_over;             ///< the keys beyond the window
 
  };  // end( class DialQueue )
@@ -226,7 +226,7 @@ class DialQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* DialQueue.h included */
+#endif /* DialQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File DialQueue.h --------------------------*/

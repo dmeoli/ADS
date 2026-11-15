@@ -15,9 +15,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// A is a rotation of a strictly increasing vector: at most one place of
 /// the circle where an item is not smaller than the next one, and there
@@ -30,10 +32,10 @@ bool isRotatedIncreasing( const std::vector< T > & A , C & less )
   return( true );
  std::size_t down = 0;
  for( std::size_t i = 0 ; i < n ; ++i ) {
-  const T & a = A[ i ] , & b = A[ ( i + 1 ) % n ];
+  const T &a = A[ i ] , &b = A[ ( i + 1 ) % n ];
   if( ! less( a , b ) ) {
    if( ! less( b , a ) )
-    return( false );                        // equal items
+    return( false );  // equal items
    ++down;
    }
   }
@@ -65,19 +67,21 @@ template< class T , class C >
 std::size_t rotatedMinimum( const std::vector< T > & A , C less )
 {
  ADS_PRE( ! A.empty() );
- ADS_AUDIT( detail::contract( [ & ]( void ) {
-  return( detail::isRotatedIncreasing( A , less ) ); } ) );
- std::size_t lo = 0 , hi = A.size() - 1;    // the minimum in A[ lo .. hi ]
+ ADS_AUDIT( detail::contract(
+   [ & ]( void ) { return( detail::isRotatedIncreasing( A , less ) ); } ) );
+ std::size_t lo = 0 , hi = A.size() - 1;  // the minimum in A[ lo .. hi ]
  while( lo < hi ) {
   const std::size_t m = lo + ( hi - lo ) / 2;
   if( less( A[ hi ] , A[ m ] ) )
-   lo = m + 1;                              // the rotation point after m
+   lo = m + 1;  // the rotation point after m
   else
    hi = m;
   }
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   return( std::none_of( A.begin() , A.end() , [ & ]( const T & a ) {
-   return( less( a , A[ lo ] ) ); } ) ); } ) );
+   return( less( a , A[ lo ] ) );
+   } ) );
+  } ) );
  return( lo );
  }
 
@@ -88,11 +92,11 @@ std::size_t closestValue( const std::vector< T > & A , const T & x )
  ADS_PRE( ! A.empty() );
  ADS_AUDIT( std::is_sorted( A.begin() , A.end() ) );
  const std::size_t n = A.size() , r = lowerBound( A , x );
- std::size_t p = r;                         // A[ r ] the first not < x
+ std::size_t p = r;  // A[ r ] the first not < x
  if( r == n )
   p = lowerBound( A , A[ n - 1 ] );
  else if( ( r > 0 ) && ( detail::closestSpan( A[ r - 1 ] , x ) <=
-                         detail::closestSpan( x , A[ r ] ) ) )
+			 detail::closestSpan( x , A[ r ] ) ) )
   p = lowerBound( A , A[ r - 1 ] );
  ADS_AUDIT( [ & ]( void ) {
   const auto d = detail::closestDistance( A[ p ] , x );
@@ -113,49 +117,54 @@ pairWithSum( const std::vector< T > & A , const S & x )
  if( A.size() < 2 )
   return( std::nullopt );
  std::size_t i = 0 , j = A.size() - 1;
- while( i < j ) {                           // no pair out of A[ i .. j ]
+ while( i < j ) {  // no pair out of A[ i .. j ]
   const S s = S( A[ i ] ) + S( A[ j ] );
   if( s == x ) {
    ADS_POST( ( i < j ) && ( S( A[ i ] ) + S( A[ j ] ) == x ) );
    return( std::pair( i , j ) );
    }
   if( s < x )
-   ++i;                                     // A[ i ] too small for all
+   ++i;  // A[ i ] too small for all
   else
-   --j;                                     // A[ j ] too large for all
+   --j;  // A[ j ] too large for all
   }
  return( std::nullopt );
  }
 
 template< class T , class C >
 T kthOfTwoSorted( const std::vector< T > & X , const std::vector< T > & Y ,
-                  std::size_t k , C less )
+		  std::size_t k , C less )
 {
  ADS_PRE( k < X.size() + Y.size() );
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   return( std::is_sorted( X.begin() , X.end() , less ) &&
-          std::is_sorted( Y.begin() , Y.end() , less ) ); } ) );
+	   std::is_sorted( Y.begin() , Y.end() , less ) );
+  } ) );
  const bool swap = X.size() > Y.size();
- const std::vector< T > & S = swap ? Y : X , & L = swap ? X : Y;
+ const std::vector< T > &S = swap ? Y : X , &L = swap ? X : Y;
  const std::size_t m = S.size() , n = L.size();
  std::size_t lo = ( k + 1 > n ) ? k + 1 - n : 0 , hi = std::min( k + 1 , m );
- while( lo < hi ) {                         // i items of S, j of L
+ while( lo < hi ) {  // i items of S, j of L
   const std::size_t i = lo + ( hi - lo ) / 2 , j = k + 1 - i;
   if( less( S[ i ] , L[ j - 1 ] ) )
-   lo = i + 1;                              // more items of S
+   lo = i + 1;  // more items of S
   else
    hi = i;
   }
  const std::size_t i = lo , j = k + 1 - i;
- const T & r = ( i == 0 ) ? L[ j - 1 ] :
-               ( j == 0 ) ? S[ i - 1 ] :
-               ( less( S[ i - 1 ] , L[ j - 1 ] ) ? L[ j - 1 ] : S[ i - 1 ] );
+ const T & r =
+   ( i == 0 )   ? L[ j - 1 ]
+   : ( j == 0 ) ? S[ i - 1 ]
+		: ( less( S[ i - 1 ] ,
+			  L[ j - 1 ] ) ? L[ j - 1 ] : S[ i - 1 ] );
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   std::vector< T > M;
   M.reserve( m + n );
   std::merge( X.begin() , X.end() , Y.begin() , Y.end() ,
-              std::back_inserter( M ) , less );
-  return( ! less( r , M[ k ] ) && ! less( M[ k ] , r ) ); } ) );
+	      std::back_inserter( M ) ,
+	      less );
+  return( ! less( r , M[ k ] ) && ! less( M[ k ] , r ) );
+  } ) );
  return( r );
  }
 

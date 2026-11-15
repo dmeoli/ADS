@@ -37,7 +37,7 @@
 
 #ifndef __ADS_Treque
  #define __ADS_Treque
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -56,7 +56,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ CLASS Treque ------------------------------*/
@@ -65,16 +66,16 @@ namespace ADS {
 /// a LIST by rank fast at both ends and in the middle, on two circular
 /// deques
 template< class T >
-class Treque {
+class Treque
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using value_type = T;                     ///< the type of the items
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = T &;                    ///< a reference to an item
- using const_reference = const T &;        ///< a constant reference
+ using value_type = T;                    ///< the type of the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = T &;                   ///< a reference to an item
+ using const_reference = const T &;       ///< a constant reference
  /// the iterator on the items
  using iterator = RankIterator< Treque , T , false >;
  /// the iterator on the constant items
@@ -166,7 +167,10 @@ class Treque {
  void pop_back( void ) { erase( size() - 1 ); }
 
  /// removes all the items
- void clear( void ) { f_L.clear(); f_R.clear(); }
+ void clear( void ) {
+  f_L.clear();
+  f_R.clear();
+  }
 
  /// the same items in the same order
  [[nodiscard]] bool operator==( const Treque & o ) const;
@@ -186,7 +190,6 @@ class Treque {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// one item from the longer deque to the shorter one, if they differ by
  /// more than one item
  ///
@@ -205,8 +208,8 @@ class Treque {
  /// the two deques differ by one item at most
  [[nodiscard]] bool balanced( void ) const;
 
- RingDeque< T > f_L;   ///< the ranks \f$ 0 , \ldots , |L| - 1 \f$
- RingDeque< T > f_R;   ///< the ranks \f$ |L| , \ldots , n - 1 \f$
+ RingDeque< T > f_L;  ///< the ranks \f$ 0 , \ldots , |L| - 1 \f$
+ RingDeque< T > f_R;  ///< the ranks \f$ |L| , \ldots , n - 1 \f$
 
  };  // end( class Treque )
 
@@ -222,7 +225,7 @@ class Treque {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Treque.h included */
+#endif /* Treque.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Treque.h ----------------------------*/

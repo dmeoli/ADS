@@ -987,11 +987,14 @@ against 1.3 to 1.5 s with the headers; the peak memory grows instead, from
 
 The code follows the style of the repository
 [code-style](https://github.com/dmeoli/code-style), i.e., its `.clang-format`
-with what its `format.py` adds to it (e.g., `return( x );` and a space before
-each comma), which clang-format has no option for. On a pull request, the
-continuous integration checks the lines that the request changes, and posts
-the changes that put them in the style as suggestions on them; with that
-repository cloned in `~/code-style`,
+(of which the one at the root of ADS is a copy, so that clang-format and the
+IDEs find it) with what its `format.py` adds to it (e.g., `return( x );` and
+a space before each comma), which clang-format has no option for, the C++ of
+the blocks `\code` of the comments and of the theory pages included. On a
+pull request, the continuous integration checks the lines that the request
+changes, and posts the changes that put them in the style as suggestions on
+them; on every push, it checks all the files whole. With that repository
+cloned in `~/code-style`,
 
 ```sh
 ~/code-style/code-format --since origin/main FILE...

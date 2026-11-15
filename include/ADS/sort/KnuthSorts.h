@@ -64,7 +64,7 @@
 
 #ifndef __ADS_KnuthSorts
  #define __ADS_KnuthSorts
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -87,7 +87,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the binary insertion sort
 ///
@@ -131,7 +132,7 @@ void binaryInsertionSort( std::vector< T > & A , C less = C() );
 /// \post \f$ A \f$ is sorted, with the same items (audit)
 template< class T , class C = std::less<> >
 void listInsertionSort( std::vector< T > & A , C less = C() ,
-                        std::size_t * moves = nullptr );
+			std::size_t * moves = nullptr );
 
 /// the address calculation sort of numbers into \f$ M \f$ lists,
 /// \f$ M = \lfloor n / 4 \rfloor + 1 \f$ if \f$ M \f$ is 0; with an infinite
@@ -258,7 +259,7 @@ inline long fordJohnsonBound( std::size_t n );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* KnuthSorts.h included */
+#endif /* KnuthSorts.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File KnuthSorts.h --------------------------*/

@@ -71,7 +71,7 @@
 
 #ifndef __ADS_PatriciaTrie
  #define __ADS_PatriciaTrie
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -92,18 +92,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS PatriciaTrie ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a sorted dictionary of strings on a Patricia trie, with the blind search
-class PatriciaTrie {
+class PatriciaTrie
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the trie of \f$ D \f$, built in \f$ O( N ) \f$ time
  ///
  /// In pseudocode (chapter 9 of Ferragina), the nodes of the
@@ -166,9 +167,9 @@ class PatriciaTrie {
  [[nodiscard]] std::size_t prefixEnd( std::string_view P ) const;
 
  /// the range \f$ [ l , r ) \f$ of the strings prefixed by \f$ P \f$, i.e.,
-/// `lexicographicPosition( P )` and `prefixEnd( P )`
- [[nodiscard]] std::pair< std::size_t , std::size_t > prefixRange(
-                                                   std::string_view P ) const;
+ /// `lexicographicPosition( P )` and `prefixEnd( P )`
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ prefixRange( std::string_view P ) const;
 
  /// the leaf \f$ l \f$ of the first stage of the blind search of \f$ P \f$,
  /// the only string that the search reads
@@ -190,8 +191,8 @@ class PatriciaTrie {
 
  /// the length of the prefix of each node and its branching character, in
  /// preorder (-1 for the end of a string, and for the root)
- [[nodiscard]] std::vector< std::pair< std::size_t , int > > shape( void )
-  const;
+ [[nodiscard]] std::vector< std::pair< std::size_t , int > >
+ shape( void ) const;
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
@@ -223,12 +224,12 @@ class PatriciaTrie {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- struct Node {
-  std::size_t depth;               ///< the length of its prefix
-  std::size_t lo ,                 ///< the first of its strings
-              hi;                 ///< past the last of its strings
-  bool leaf;                       ///< the string lo, if a leaf
+ struct Node
+ {
+  std::size_t depth;  ///< the length of its prefix
+  std::size_t lo ,     ///< the first of its strings
+    hi;               ///< past the last of its strings
+  bool leaf;          ///< the string lo, if a leaf
   std::vector< std::pair< int , std::size_t > > child;  ///< by character
   };
 
@@ -241,12 +242,12 @@ class PatriciaTrie {
  /// the first stage of the blind search of \f$ P \f$ followed by the
  /// character `term`: the path down by the branching characters
  void descend( std::string_view P , int term ,
-               std::vector< std::size_t > & path ) const;
+	       std::vector< std::size_t > & path ) const;
 
  /// the blind search of \f$ P \f$ followed by the character `term` (-1 for
  /// \f$ P \f$, 256 for \f$ P\# \f$); the path of the first stage in `path`
  [[nodiscard]] std::size_t blind( std::string_view P , int term ,
-                                  std::vector< std::size_t > & path ) const;
+				  std::vector< std::size_t > & path ) const;
 
  /// the first leaf below each node, its strings and their depths,
  /// \f$ O( N ) \f$
@@ -255,7 +256,7 @@ class PatriciaTrie {
  static constexpr std::size_t kNone = ~std::size_t( 0 );
 
  std::vector< std::string > f_D;
- std::vector< Node > f_N;          ///< the root at 0
+ std::vector< Node > f_N;  ///< the root at 0
 
  };  // end( class PatriciaTrie )
 
@@ -271,7 +272,7 @@ class PatriciaTrie {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PatriciaTrie.h included */
+#endif /* PatriciaTrie.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File PatriciaTrie.h -------------------------*/

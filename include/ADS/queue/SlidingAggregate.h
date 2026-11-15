@@ -58,7 +58,7 @@
 
 #ifndef __ADS_SlidingAggregate
  #define __ADS_SlidingAggregate
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -81,7 +81,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ THE POLICIES ------------------------------*/
@@ -89,18 +90,25 @@ namespace ADS {
 
 /// the policy of a sliding window whose operations cost \f$ O( 1 ) \f$
 /// amortized time, by the algorithm that suits the algebra
-struct Amortized {};
+struct Amortized
+{ };
 
 /// the policy of a sliding window whose operations cost \f$ O( 1 ) \f$
 /// time in the worst case
-struct WorstCase {};
+struct WorstCase
+{ };
 
 /// the algorithm of a sliding window [see `SlidingAggregate`]
-enum class window_kind { subtract_on_evict , monotone_deque , two_stacks ,
-                         real_time };
+enum class window_kind {
+ subtract_on_evict ,
+ monotone_deque ,
+ two_stacks ,
+ real_time
+ };
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
 /// the algorithm for the monoid G and the policy P
 template< class G , class P >
@@ -111,7 +119,7 @@ constexpr window_kind windowKindOf( void )
  else if constexpr( Group< G > )
   return( window_kind::subtract_on_evict );
  else if constexpr( Selective< G > &&
-                    std::equality_comparable< typename G::Value > )
+		    std::equality_comparable< typename G::Value > )
   return( window_kind::monotone_deque );
  else
   return( window_kind::two_stacks );
@@ -119,7 +127,8 @@ constexpr window_kind windowKindOf( void )
 
 /// the window by subtract-on-evict: the items and their aggregate
 template< class G >
-class SubtractWindow {
+class SubtractWindow
+{
  public:
  using Value = typename G::Value;
  [[nodiscard]] std::size_t size( void ) const { return( f_q.size() ); }
@@ -133,18 +142,22 @@ class SubtractWindow {
   f_since = 0;
   }
  template< class F >
- void forEach( F && f ) const { for( const auto & x : f_q ) f( x ); }
- std::size_t f_period = 4096;   ///< the removals between rebuildings
+ void forEach( F && f ) const {
+  for( const auto & x : f_q )
+   f( x );
+  }
+ std::size_t f_period = 4096;  ///< the removals between rebuildings
  private:
- std::deque< Value > f_q;           ///< the items
- Value f_s = G::identity();         ///< their aggregate
- std::size_t f_since = 0;           ///< the removals since the rebuilding
+ std::deque< Value > f_q;    ///< the items
+ Value f_s = G::identity();  ///< their aggregate
+ std::size_t f_since = 0;    ///< the removals since the rebuilding
  };
 
 /// the window by the monotone deque of the candidates of a selective
 /// monoid
 template< class G >
-class DequeWindow {
+class DequeWindow
+{
  public:
  using Value = typename G::Value;
  [[nodiscard]] std::size_t size( void ) const { return( f_q.size() ); }
@@ -159,18 +172,23 @@ class DequeWindow {
   f_c.clear();
   }
  template< class F >
- void forEach( F && f ) const { for( const auto & x : f_q ) f( x ); }
+ void forEach( F && f ) const {
+  for( const auto & x : f_q )
+   f( x );
+  }
+
  private:
- std::deque< Value > f_q;           ///< the items
+ std::deque< Value > f_q;  ///< the items
  /// the candidates, by their number in the order of arrival
  std::deque< std::pair< std::uint64_t , Value > > f_c;
- std::uint64_t f_head = 0;          ///< the number of the front item
+ std::uint64_t f_head = 0;  ///< the number of the front item
  };
 
 /// the window of Two-Stacks Lite: the items, the aggregates of the
 /// suffixes of the first part, the aggregate of the rest
 template< class G >
-class StacksWindow {
+class StacksWindow
+{
  public:
  using Value = typename G::Value;
  [[nodiscard]] std::size_t size( void ) const { return( f_q.size() ); }
@@ -189,12 +207,16 @@ class StacksWindow {
   f_b = G::identity();
   }
  template< class F >
- void forEach( F && f ) const { for( const auto & x : f_q ) f( x ); }
+ void forEach( F && f ) const {
+  for( const auto & x : f_q )
+   f( x );
+  }
+
  private:
- std::deque< Value > f_q;     ///< the items
+ std::deque< Value > f_q;  ///< the items
  /// the aggregates of the suffixes of the first part, the whole on top
  std::vector< Value > f_f;
- Value f_b = G::identity();   ///< the aggregate of the rest
+ Value f_b = G::identity();  ///< the aggregate of the rest
  };
 
 /// an array of fixed capacity whose live cells are \f$ [ lo , hi ) \f$,
@@ -202,13 +224,14 @@ class StacksWindow {
 /// window: the cell first when `Front` (a front, the first item on top),
 /// last otherwise (a back, the last item on top)
 template< class G , bool Front >
-class AggArray {
+class AggArray
+{
  public:
  using Value = typename G::Value;
  AggArray( void ) = default;
  explicit AggArray( std::size_t c )
-  : f_a( c ? std::allocator< Cell >().allocate( c ) : nullptr ) ,
-    f_cap( c ) {}
+     : f_a( c ? std::allocator< Cell >().allocate( c ) : nullptr ) ,
+       f_cap( c ) { }
  AggArray( AggArray && o ) noexcept { swap( o ); }
  AggArray & operator=( AggArray && o ) noexcept {
   swap( o );
@@ -217,7 +240,8 @@ class AggArray {
  ~AggArray() {
   for( std::size_t i = f_lo ; i < f_hi ; ++i )
    std::destroy_at( f_a + i );
-  if( f_a ) std::allocator< Cell >().deallocate( f_a , f_cap );
+  if( f_a )
+   std::allocator< Cell >().deallocate( f_a , f_cap );
   }
  void swap( AggArray & o ) noexcept {
   std::swap( f_a , o.f_a );
@@ -257,10 +281,12 @@ class AggArray {
   ADS_PRE( f_hi > f_lo );
   std::destroy_at( f_a + f_lo++ );
   }
+
  private:
- struct Cell {
-  Value item;   ///< the item
-  Value agg;    ///< the aggregate of the cells from 0 to here
+ struct Cell
+ {
+  Value item;  ///< the item
+  Value agg;   ///< the aggregate of the cells from 0 to here
   };
  Cell * f_a = nullptr;
  std::size_t f_cap = 0;
@@ -271,10 +297,11 @@ class AggArray {
 /// the window of the real-time queue of Hood and Melville on stacks with
 /// the aggregates [see `RealTimeMinQueue`]
 template< class G >
-class RealTimeWindow {
+class RealTimeWindow
+{
  public:
  using Value = typename G::Value;
- RealTimeWindow( void ) : f_R( 1 ) {}
+ RealTimeWindow( void ) : f_R( 1 ) { }
  RealTimeWindow( const RealTimeWindow & o ) : f_R( 1 ) {
   o.forEach( [ & ]( const Value & x ) { push( x ); } );
   }
@@ -302,39 +329,44 @@ class RealTimeWindow {
   }
  template< class F >
  void forEach( F && f ) const;
+
  private:
- using Fr = AggArray< G , true >;    ///< a front
- using Bk = AggArray< G , false >;   ///< a back
+ using Fr = AggArray< G , true >;   ///< a front
+ using Bk = AggArray< G , false >;  ///< a back
  void startIfDue( void );
  void steps( int k );
- Fr f_F;                     ///< the front, the first item on top
- Bk f_R;                     ///< the back, the last item on top
- Bk f_Rf;                    ///< the frozen back of a rotation
- Fr f_N;                     ///< the new front of a rotation
- std::size_t f_r0 = 0;       ///< the items of the frozen back
- std::size_t f_i = 0;        ///< the places of the front moved
- std::size_t f_n = 0;        ///< the items
- bool f_rot = false;         ///< a rotation is going on
+ Fr f_F;                ///< the front, the first item on top
+ Bk f_R;                ///< the back, the last item on top
+ Bk f_Rf;               ///< the frozen back of a rotation
+ Fr f_N;                ///< the new front of a rotation
+ std::size_t f_r0 = 0;  ///< the items of the frozen back
+ std::size_t f_i = 0;   ///< the places of the front moved
+ std::size_t f_n = 0;   ///< the items
+ bool f_rot = false;    ///< a rotation is going on
  };
 
 /// the window of the kind K
 template< class G , window_kind K >
-struct window_of {
+struct window_of
+{
  using type = RealTimeWindow< G >;
  };
 
 template< class G >
-struct window_of< G , window_kind::subtract_on_evict > {
+struct window_of< G , window_kind::subtract_on_evict >
+{
  using type = SubtractWindow< G >;
  };
 
 template< class G >
-struct window_of< G , window_kind::monotone_deque > {
+struct window_of< G , window_kind::monotone_deque >
+{
  using type = DequeWindow< G >;
  };
 
 template< class G >
-struct window_of< G , window_kind::two_stacks > {
+struct window_of< G , window_kind::two_stacks >
+{
  using type = StacksWindow< G >;
  };
 
@@ -349,18 +381,18 @@ struct window_of< G , window_kind::two_stacks > {
 /// each operation in \f$ O( 1 ) \f$ time, amortized or in the worst case by
 /// `Policy`
 template< Monoid G , class Policy = Amortized >
-class SlidingAggregate {
+class SlidingAggregate
+{
 
  static_assert( std::is_same_v< Policy , Amortized > ||
-                std::is_same_v< Policy , WorstCase > ,
-                "ADS: the policy of a window is Amortized or WorstCase" );
+		  std::is_same_v< Policy , WorstCase > ,
+		"ADS: the policy of a window is Amortized or WorstCase" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Value = typename G::Value;   ///< the values
- using Item = Value;                ///< the items of the QUEUE
- using Algebra = G;                 ///< their algebra
+ using Value = typename G::Value;  ///< the values
+ using Item = Value;               ///< the items of the QUEUE
+ using Algebra = G;                ///< their algebra
 
  /// the algorithm chosen by the algebra and the policy
  static constexpr window_kind kind = detail::windowKindOf< G , Policy >();
@@ -434,7 +466,9 @@ class SlidingAggregate {
 
  /// `f( x )` on the items from the front to the back, \f$ O( n ) \f$
  template< class F >
- void forEach( F && f ) const { f_w.forEach( std::forward< F >( f ) ); }
+ void forEach( F && f ) const {
+  f_w.forEach( std::forward< F >( f ) );
+  }
 
  /// removes all the items
  void clear( void ) { f_w.clear(); }
@@ -442,22 +476,23 @@ class SlidingAggregate {
  /// the removals after which a group of floating point values is rebuilt
  /// from its items (subtract-on-evict only)
  [[nodiscard]] std::size_t period( void ) const
-  requires( kind == window_kind::subtract_on_evict ) {
+  requires( kind == window_kind::subtract_on_evict )
+ {
   return( f_w.f_period );
   }
 
  /// sets the period of the rebuilding to \f$ p \f$
  /// \pre \f$ p \ge 1 \f$
  void period( std::size_t p )
-  requires( kind == window_kind::subtract_on_evict ) {
+  requires( kind == window_kind::subtract_on_evict )
+ {
   ADS_PRE( p >= 1 );
   f_w.f_period = p;
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
- typename detail::window_of< G , kind >::type f_w;   ///< the window
+ typename detail::window_of< G , kind >::type f_w;  ///< the window
 
  };  // end( class SlidingAggregate )
 
@@ -473,7 +508,7 @@ class SlidingAggregate {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SlidingAggregate.h included */
+#endif /* SlidingAggregate.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File SlidingAggregate.h -----------------------*/

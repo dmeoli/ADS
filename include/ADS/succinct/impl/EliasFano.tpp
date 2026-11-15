@@ -14,23 +14,23 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
-
-template< bool Lazy >
-inline BasicEliasFano< Lazy >::BasicEliasFano(
-                                       const std::vector< std::uint64_t > & x )
- : BasicEliasFano( x , x.empty() ? 0 : x.back() + 1 )
+namespace ADS
 {
- }
 
 template< bool Lazy >
 inline BasicEliasFano< Lazy >::BasicEliasFano(
-                     const std::vector< std::uint64_t > & x , std::uint64_t u )
- : f_n( x.size() ) , f_u( u )
+  const std::vector< std::uint64_t > & x )
+    : BasicEliasFano( x , x.empty() ? 0 : x.back() + 1 )
+{ }
+
+template< bool Lazy >
+inline BasicEliasFano< Lazy >::BasicEliasFano(
+  const std::vector< std::uint64_t > & x , std::uint64_t u )
+    : f_n( x.size() ) , f_u( u )
 {
  ADS_AUDIT( std::is_sorted( x.begin() , x.end() ) );
  ADS_PRE( x.empty() || ( x.back() < u ) );
- if( f_n > 0 ) {                            // ell = ceil( log2( u / n ) )
+ if( f_n > 0 ) {  // ell = ceil( log2( u / n ) )
   const std::uint64_t c = u / f_n + ( u % f_n ? 1 : 0 );
   f_l = c <= 1 ? 0 : lambda( c - 1 ) + 1;
   }
@@ -83,7 +83,8 @@ inline std::uint64_t BasicEliasFano< Lazy >::access( std::size_t i ) const
  }
 
 template< bool Lazy >
-inline std::uint64_t BasicEliasFano< Lazy >::operator[]( std::size_t i ) const
+inline std::uint64_t
+BasicEliasFano< Lazy >::operator[]( std::size_t i ) const
 {
  return( access( i ) );
  }
@@ -101,19 +102,23 @@ inline std::size_t BasicEliasFano< Lazy >::nextGEQ( std::uint64_t x ) const
   // decide, and the first item of a later bucket is above x
   const std::uint64_t xl = x & detail::lowMask( f_l );
   auto low = [ & ]( std::size_t i ) {
-   return( f_low.get( i * std::size_t( f_l ) , f_l ) ); };
-  int t = 0;                                // a few items one by one
+   return( f_low.get( i * std::size_t( f_l ) , f_l ) );
+   };
+  int t = 0;  // a few items one by one
   for( ; ( t < 8 ) && ( pos < f_high.size() ) && f_high[ pos ] ;
        ++t , ++pos , ++p )
-   if( low( p ) >= xl ) break;
+   if( low( p ) >= xl )
+    break;
   if( ( t == 8 ) && ( pos < f_high.size() ) && f_high[ pos ] ) {
    // a long bucket: its end by the 0 that closes it, then a binary search
    // on the low bits, sorted within the bucket
    std::size_t q = f_high.select0( std::size_t( h ) + 1 ) - std::size_t( h );
    while( p < q ) {
     const std::size_t mid = p + ( q - p ) / 2;
-    if( low( mid ) < xl ) p = mid + 1;
-    else q = mid;
+    if( low( mid ) < xl )
+     p = mid + 1;
+    else
+     q = mid;
     }
    }
   }
@@ -142,8 +147,8 @@ inline const BitVector & BasicEliasFano< Lazy >::low( void ) const
  }
 
 template< bool Lazy >
-inline const BasicRankSelect< Lazy > & BasicEliasFano< Lazy >::high( void )
- const
+inline const BasicRankSelect< Lazy > &
+BasicEliasFano< Lazy >::high( void ) const
 {
  return( f_high );
  }
@@ -161,19 +166,20 @@ inline std::size_t BasicEliasFano< Lazy >::sizeInBits( void ) const
  }
 
 template< bool Lazy >
-inline std::vector< std::uint64_t > BasicEliasFano< Lazy >::decode( void )
- const
+inline std::vector< std::uint64_t >
+BasicEliasFano< Lazy >::decode( void ) const
 {
  std::vector< std::uint64_t > x;
  x.reserve( f_n );
- std::uint64_t h = 0;                       // a scan of H, bucket by bucket
+ std::uint64_t h = 0;  // a scan of H, bucket by bucket
  for( std::size_t pos = 0 ; x.size() < f_n ; ++pos )
   if( f_high[ pos ] ) {
    const std::size_t i = x.size();
    const std::uint64_t l = f_low.get( i * std::size_t( f_l ) , f_l );
    x.push_back( f_l >= 64 ? l : ( h << f_l ) | l );
    }
-  else ++h;
+  else
+   ++h;
  return( x );
  }
 

@@ -67,7 +67,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ints = std::vector< int >;
 
@@ -75,7 +76,8 @@ using Ints = std::vector< int >;
 Ints random_ints( std::size_t n , int k , std::mt19937 & g )
 {
  Ints A( n );
- for( auto & a : A ) a = int( g() % k );
+ for( auto & a : A )
+  a = int( g() % k );
  return( A );
  }
 
@@ -101,9 +103,9 @@ ADS_TEST( "sorts" )
  for( int t = 0 ; t < 100 ; ++t ) {
   const Ints A = random_ints( g() % 120 , 1 + int( g() % 40 ) , g );
   for( bool up : { true , false } ) {
-   const std::function< bool( int , int ) > less = up ?
-    std::function< bool( int , int ) >( std::less<>() ) :
-    std::function< bool( int , int ) >( std::greater<>() );
+   const std::function< bool( int , int ) > less =
+     up ? std::function< bool( int , int ) >( std::less<>() )
+	: std::function< bool( int , int ) >( std::greater<>() );
    Ints S = A;
    std::sort( S.begin() , S.end() , less );
    auto check = [ & ]( auto && sort ) {
@@ -120,10 +122,10 @@ ADS_TEST( "sorts" )
    check( [ & ]( Ints & B ) { quickSort( B , less ); } );
    check( [ & ]( Ints & B ) { quickSortTuned( B , 16 , less ); } );
    check( [ & ]( Ints & B ) { shellSort( B , less ); } );
-   check( [ & ]( Ints & B ) {
-    shellSort( B , ciuraGaps( B.size() ) , less ); } );
-   check( [ & ]( Ints & B ) {
-    shellSort( B , prattGaps( B.size() ) , less ); } );
+   check( [ & ]( Ints & B ) { shellSort( B , ciuraGaps( B.size() ) ,
+					 less ); } );
+   check( [ & ]( Ints & B ) { shellSort( B , prattGaps( B.size() ) ,
+					 less ); } );
    long inv = 0;
    for( std::size_t i = 0 ; i < A.size() ; ++i )
     for( std::size_t j = i + 1 ; j < A.size() ; ++j )
@@ -132,8 +134,12 @@ ADS_TEST( "sorts" )
    CHECK( countInversions( B , less ) == inv && B == S );
    for( bool merge : { true , false } ) {
     List< int > L;
-    for( int a : A ) L.insert( L.next( L.tail() ) , a );
-    if( merge ) mergeSort( L , less ); else quickSort( L , less );
+    for( int a : A )
+     L.insert( L.next( L.tail() ) , a );
+    if( merge )
+     mergeSort( L , less );
+    else
+     quickSort( L , less );
     CHECK( items( L ) == S );
     }
    }
@@ -149,20 +155,20 @@ ADS_TEST( "ranges" )
  Ints B( 4 );
  CHECK_THROWS( insertionSort( A , 3 , 2 ) , contract_violation );
  CHECK_THROWS( insertionSort( A , 0 , 5 ) , contract_violation );
- CHECK_THROWS( (void) partition( A , 2 , 1 ) , contract_violation );
- CHECK_THROWS( (void) partition( A , 0 , 4 ) , contract_violation );
+ CHECK_THROWS( ( void )partition( A , 2 , 1 ) , contract_violation );
+ CHECK_THROWS( ( void )partition( A , 0 , 4 ) , contract_violation );
  CHECK_THROWS( quickSort( A , 0 , 4 ) , contract_violation );
- quickSort( A , 2 , 1 );                      // an empty range
+ quickSort( A , 2 , 1 );  // an empty range
  CHECK_THROWS( maxHeapRestore( A , 2 , 2 ) , contract_violation );
  CHECK_THROWS( maxHeapRestore( A , 0 , 5 ) , contract_violation );
- CHECK_THROWS( (void) isMaxHeap( A , 5 ) , contract_violation );
+ CHECK_THROWS( ( void )isMaxHeap( A , 5 ) , contract_violation );
  CHECK_THROWS( mergeParts( A , B , 0 , 3 , 3 ) , contract_violation );
  CHECK_THROWS( mergeParts( A , B , 0 , 1 , 3 ) , contract_violation );
  Ints small( 2 );
  CHECK_THROWS( mergeParts( A , small , 0 , 1 , 3 ) , contract_violation );
  CHECK_THROWS( mergeSortRec( A , B , 0 , 3 , 0 ) , contract_violation );
  CHECK_THROWS( mergeSortRec( A , B , 0 , 4 , 1 ) , contract_violation );
- Ints H = { 1 , 3 , 2 , 4 };                  // sorted halves
+ Ints H = { 1 , 3 , 2 , 4 };  // sorted halves
  mergeParts( H , B , 0 , 1 , 3 );
  CHECK( H == Ints( { 1 , 2 , 3 , 4 } ) );
  Ints P = { 9 , 4 , 7 , 1 , 8 };
@@ -186,19 +192,21 @@ ADS_TEST( "counting-pigeonhole" )
    P.emplace_back( int( g() % k ) , i );
   auto Q = P;
   std::stable_sort( Q.begin() , Q.end() ,
-                    []( const auto & a , const auto & b ) {
-                     return( a.first < b.first ); } );
+		    []( const auto & a , const auto & b ) {
+   return( a.first < b.first );
+   } );
   CHECK( pigeonholeSort( P , k ) == Q );
   }
  Ints C = { 3 , 7 } , N = { 1 , -1 };
  CHECK_THROWS( countingSort( C , 5 ) , contract_violation );
  CHECK_THROWS( countingSort( N , 5 ) , contract_violation );
  const std::vector< std::pair< int , char > > R = { { 0 , 'a' } ,
-                                                    { 4 , 'b' } };
- CHECK_THROWS( (void) pigeonholeSort( R , 4 ) , contract_violation );
- CHECK_THROWS( (void) pigeonholeSort(
-  std::vector< std::pair< int , char > >( { { -1 , 'a' } } ) , 4 ) ,
-               contract_violation );
+						    { 4 , 'b' } };
+ CHECK_THROWS( ( void )pigeonholeSort( R , 4 ) , contract_violation );
+ CHECK_THROWS( ( void )pigeonholeSort(
+		 std::vector< std::pair< int , char > >( { { -1 , 'a' } } ) ,
+		 4 ) ,
+	       contract_violation );
  }
 
 // the four sequences of gaps start from 1 and increase for every n; the
@@ -207,11 +215,12 @@ ADS_TEST( "counting-pigeonhole" )
 ADS_TEST( "shell-gaps" )
 {
  for( std::size_t n = 0 ; n < 3000 ; n += 1 + n / 7 ) {
-  for( const auto & h : { knuthGaps( n ) , shellGaps( n ) , prattGaps( n ) ,
-                          ciuraGaps( n ) } ) {
+  for( const auto & h :
+       { knuthGaps( n ) , shellGaps( n ) , prattGaps( n ) ,
+	 ciuraGaps( n ) } ) {
    CHECK( ! h.empty() && h[ 0 ] == 1 );
-   CHECK( std::adjacent_find( h.begin() , h.end() ,
-                              std::greater_equal<>() ) == h.end() );
+   CHECK( std::adjacent_find( h.begin() , h.end() , std::greater_equal<>() ) ==
+	  h.end() );
    }
   }
  Ints A = { 5 , 4 , 3 , 2 , 1 };
@@ -220,7 +229,7 @@ ADS_TEST( "shell-gaps" )
  CHECK_THROWS( shellSort( A , Gaps( { 0 , 1 } ) ) , contract_violation );
  CHECK_THROWS( shellSort( A , Gaps( { 1 , 4 , 2 } ) ) , contract_violation );
  Ints B = { 4 , 3 , 2 , 1 };
- shellSort( B , Gaps( { 2 } ) );                 // 2-sorted only
+ shellSort( B , Gaps( { 2 } ) );  // 2-sorted only
  CHECK( B == Ints( { 2 , 1 , 4 , 3 } ) );
  shellSort( B , Gaps( { 1 , 2 } ) );
  CHECK( B == Ints( { 1 , 2 , 3 , 4 } ) );
@@ -238,11 +247,14 @@ ADS_TEST( "shell-gaps" )
 ADS_TEST( "other-sorts" )
 {
  const int lo = std::numeric_limits< int >::min() ,
-           hi = std::numeric_limits< int >::max();
- std::vector< Ints > cases = { {} , { 7 } , { 2 , 1 } , Ints( 9 , 4 ) ,
-                               { 1 , 2 , 3 , 4 , 5 , 6 } ,
-                               { 6 , 5 , 4 , 3 , 2 , 1 } ,
-                               { hi , lo , 0 , -1 , hi , lo , 1 } };
+	   hi = std::numeric_limits< int >::max();
+ std::vector< Ints > cases = { {} ,
+			       { 7 } ,
+			       { 2 , 1 } ,
+			       Ints( 9 , 4 ) ,
+			       { 1 , 2 , 3 , 4 , 5 , 6 } ,
+			       { 6 , 5 , 4 , 3 , 2 , 1 } ,
+			       { hi , lo , 0 , -1 , hi , lo , 1 } };
  std::mt19937 g( 7 );
  for( int t = 0 ; t < 20 ; ++t )
   cases.push_back( random_ints( g() % 70 , 1 + int( g() % 30 ) , g ) );
@@ -276,42 +288,47 @@ ADS_TEST( "other-sorts" )
   check( []( Ints & B ) { treeSort( B , false ); } );
   check( []( Ints & B ) { heapsort( B ); } );
   check( []( Ints & B ) { quickSortTuned( B , 1 ); } );
-  check( [ & ]( Ints & B ) {
-   B = externalSort( B , 1 , 3 ); } );
-  check( [ & ]( Ints & B ) {
-   B = externalSort( B , 4 , 5 ); } );
+  check( [ & ]( Ints & B ) { B = externalSort( B , 1 , 3 ); } );
+  check( [ & ]( Ints & B ) { B = externalSort( B , 4 , 5 ); } );
   check( []( Ints & B ) {
    std::size_t n = 1;
-   while( n < B.size() ) n *= 2;
+   while( n < B.size() )
+    n *= 2;
    std::vector< int > P = B;
    P.resize( n , std::numeric_limits< int >::max() );
    applyNetwork( P , bitonicNetwork( n ) );
    P.resize( B.size() );
-   B = P; } );
-  check( []( Ints & B ) { applyNetwork( B , mergeExchangeNetwork( B.size() ) );
+   B = P;
    } );
+  check(
+    []( Ints & B ) { applyNetwork( B , mergeExchangeNetwork( B.size() ) ); } );
   List< int > L;
-  for( int a : A ) L.insert( L.next( L.tail() ) , a );
+  for( int a : A )
+   L.insert( L.next( L.tail() ) , a );
   strandSort( L );
   CHECK( items( L ) == S );
   }
  // floating point keys: -0.0, the infinities, the extremes of double
  const double inf = std::numeric_limits< double >::infinity() ,
-              big = std::numeric_limits< double >::max();
- const std::vector< double > F = { 1.5 , -inf , big , -0.0 , -big , inf ,
-                                   0.0 , -2.5 , std::nextafter( 0.0 , 1.0 ) };
+	      big = std::numeric_limits< double >::max();
+ const std::vector< double > F = { 1.5 ,  -inf , big ,
+				   -0.0 , -big , inf ,
+				   0.0 ,  -2.5 , std::nextafter( 0.0 , 1.0 ) };
  auto FS = F;
  std::sort( FS.begin() , FS.end() );
  for( int s = 0 ; s < 3 ; ++s ) {
   auto B = F;
-  if( s == 0 ) radixSort( B );
-  else if( s == 1 ) americanFlagSort( B );
-  else addressCalculationSort( B );
+  if( s == 0 )
+   radixSort( B );
+  else if( s == 1 )
+   americanFlagSort( B );
+  else
+   addressCalculationSort( B );
   CHECK( std::is_sorted( B.begin() , B.end() ) );
   CHECK( std::is_permutation( B.begin() , B.end() , FS.begin() ) );
   }
- std::vector< std::string > W = { "b" , "" , "ab" , "a" , "" , "abc" ,
-                                  "b" } , WS = W;
+ std::vector< std::string > W = { "b" , "" , "ab" , "a" , "" , "abc" , "b" } ,
+   WS = W;
  std::sort( WS.begin() , WS.end() );
  auto W1 = W , W2 = W;
  multikeyQuickSort( W1 );
@@ -326,29 +343,31 @@ ADS_TEST( "other-sorts" )
  const Ints In = { 5 , 1 , 4 , 2 , 3 };
  CHECK( replacementSelection( In , 1 ).size() == 3 );
  CHECK( replacementSelection( Ints() , 1 ).empty() );
- CHECK_THROWS( (void) replacementSelection( In , 0 ) , contract_violation );
- CHECK_THROWS( (void) externalSort( In , 0 , 3 ) , contract_violation );
- CHECK_THROWS( (void) externalSort( In , 2 , 2 ) , contract_violation );
+ CHECK_THROWS( ( void )replacementSelection( In , 0 ) , contract_violation );
+ CHECK_THROWS( ( void )externalSort( In , 0 , 3 ) , contract_violation );
+ CHECK_THROWS( ( void )externalSort( In , 2 , 2 ) , contract_violation );
  const std::vector< Ints > runs = { { 1 , 5 } , { 2 } , { 0 , 3 , 9 } };
  CHECK( polyphaseMerge( runs , 3 ) == Ints( { 0 , 1 , 2 , 3 , 5 , 9 } ) );
  CHECK( polyphaseMerge( std::vector< Ints >() , 3 ).empty() );
  CHECK( polyphaseMerge( std::vector< Ints >{ {} , { 4 } } , 3 ) ==
-        Ints( { 4 } ) );
- CHECK_THROWS( (void) polyphaseMerge( runs , 2 ) , contract_violation );
- CHECK_THROWS( (void) polyphaseMerge( std::vector< Ints >{ { 2 , 1 } } , 3 ) ,
-               contract_violation );
+	Ints( { 4 } ) );
+ CHECK_THROWS( ( void )polyphaseMerge( runs , 2 ) , contract_violation );
+ CHECK_THROWS( ( void )polyphaseMerge( std::vector< Ints >{ { 2 , 1 } } , 3 ) ,
+	       contract_violation );
  Ints V = { 4 , 1 , 3 };
  CHECK( partitionByValue( V , 1 , 1 , 2 ) == 1 &&
-        partitionByValue( V , 2 , 2 , 5 ) == 1 );
+	partitionByValue( V , 2 , 2 , 5 ) == 1 );
  CHECK( partitionByValue( V , 0 , 2 , 3 ) == 2 && V[ 2 ] == 4 );
- CHECK_THROWS( (void) partitionByValue( V , 2 , 1 , 3 ) , contract_violation );
- CHECK_THROWS( (void) partitionByValue( V , 0 , 3 , 3 ) , contract_violation );
+ CHECK_THROWS( ( void )partitionByValue( V , 2 , 1 , 3 ) ,
+	       contract_violation );
+ CHECK_THROWS( ( void )partitionByValue( V , 0 , 3 , 3 ) ,
+	       contract_violation );
  CHECK( bitonicNetwork( 0 ).empty() && bitonicNetwork( 1 ).empty() &&
-        bitonicNetwork( 2 ).size() == 1 );
- CHECK_THROWS( (void) bitonicNetwork( 3 ) , contract_violation );
- CHECK_THROWS( (void) bitonicNetwork( 6 ) , contract_violation );
+	bitonicNetwork( 2 ).size() == 1 );
+ CHECK_THROWS( ( void )bitonicNetwork( 3 ) , contract_violation );
+ CHECK_THROWS( ( void )bitonicNetwork( 6 ) , contract_violation );
  CHECK( mergeExchangeNetwork( 0 ).empty() &&
-        mergeExchangeNetwork( 1 ).empty() );
+	mergeExchangeNetwork( 1 ).empty() );
  Ints N3 = { 3 , 2 , 1 };
  applyNetwork( N3 , { { 0 , 2 } } );
  CHECK( N3 == Ints( { 1 , 2 , 3 } ) );
@@ -358,18 +377,21 @@ ADS_TEST( "other-sorts" )
  applyNetwork( E0 , {} );
  CHECK_THROWS( applyNetwork( E0 , { { 0 , 0 } } ) , contract_violation );
  Ints K = { 4 , 0 , 4 };
- countingSort( K , 5 );                       // the key k - 1 just inside
+ countingSort( K , 5 );  // the key k - 1 just inside
  CHECK( K == Ints( { 0 , 4 , 4 } ) );
  Ints K0;
- countingSort( K0 , 0 );                      // k = 0 and no key
+ countingSort( K0 , 0 );  // k = 0 and no key
  Ints K1 = { 0 };
  CHECK_THROWS( countingSort( K1 , 0 ) , contract_violation );
- CHECK( pigeonholeSort( std::vector< std::pair< int , char > >() , 0 )
-        .empty() );
- CHECK_THROWS( (void) pigeonholeSort(
-  std::vector< std::pair< int , char > >() , -1 ) , contract_violation );
- CHECK( pigeonholeSort( std::vector< std::pair< int , char > >(
-                         { { 3 , 'a' } } ) , 4 ).size() == 1 );
+ CHECK( pigeonholeSort( std::vector< std::pair< int , char > >() ,
+			0 ).empty() );
+ CHECK_THROWS(
+   ( void )pigeonholeSort( std::vector< std::pair< int , char > >() , -1 ) ,
+   contract_violation );
+ CHECK(
+   pigeonholeSort( std::vector< std::pair< int , char > >( { { 3 , 'a' } } ) ,
+		   4 )
+     .size() == 1 );
  }
 
 // a comparator that counts its calls skips those of the contracts, which
@@ -379,12 +401,14 @@ ADS_TEST( "checking-contract" )
  CHECK( ! checkingContract() );
  for( std::size_t n : { 0u , 1u , 5u , 40u } ) {
   Ints A( n );
-  for( std::size_t i = 0 ; i < n ; ++i ) A[ i ] = int( n - i );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   A[ i ] = int( n - i );
   long c = 0 , all = 0;
   selectionSort( A , [ & ]( int a , int b ) {
    ++all;
    c += ! checkingContract();
-   return( a < b ); } );
+   return( a < b );
+   } );
   CHECK( c == long( n * ( n ? n - 1 : 0 ) / 2 ) );
   CHECK( all >= c && ( n < 2 || all > c ) );
   }

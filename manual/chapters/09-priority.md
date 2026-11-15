@@ -43,13 +43,13 @@ decrease-key follow [Montresor 2025, §10.1 and
 The PRIORITYQUEUE of [Montresor 2025,
 §10.1](Z-bibliography.md#ref-montresor2025) holds a multiset of $n$ items,
 each item $x$ with a priority $p( x )$, and has five operations:
-`insert(x,p)` adds the item $x$ with the priority $p$ and returns a
+`insert( x , p )` adds the item $x$ with the priority $p$ and returns a
 *handle* $y$ of it (a cell, a node, an index: what the realization needs to
-find the item again), `min()` reads an item of least priority,
-`deleteMin()` removes it and returns it, `empty()` is true when there is no
-item, and `decrease(y,p)` lowers to $p$ the priority of the item of the
-handle $y$. Writing $Q$ for the multiset of the pairs $( x , p( x ) )$,
-their meaning is fixed by
+find the item again), `min()` reads an item of least priority, `deleteMin()`
+removes it and returns it, `empty()` is true when there is no item, and
+`decrease( y , p )` lowers to $p$ the priority of the item of the handle $y$.
+Writing $Q$ for the multiset of the pairs $( x , p( x ) )$, their meaning is
+fixed by
 
 $$
 p( \mathrm{min}( Q ) ) = \min_{( x , q ) \in Q} q , \qquad
@@ -57,40 +57,41 @@ p( \mathrm{min}( Q ) ) = \min_{( x , q ) \in Q} q , \qquad
 \mathrm{min}( Q ) ) ) \} , \tag{9.1}
 $$
 
-together with $\mathrm{insert}( Q , x , p ) = Q \cup \{ ( x , p ) \}$ and
-with $\mathrm{decrease}( y , p )$ replacing the pair of the item of $y$ by
-$( x , p )$ under the precondition $p \le p( x )$; `min()` and
-`deleteMin()` are undefined on the empty queue. Items of equal priority
-leave in no given order unless a realization fixes one (only the
-merges of [§9.11](09-priority.md#sec-9-11) and the bucket queue of
+together with $\mathrm{insert}( Q , x , p ) = Q \cup \{ ( x , p ) \}$ and with
+$\mathrm{decrease}( y , p )$ replacing the pair of the item of $y$ by
+$( x , p )$ under the precondition $p \le p( x )$; `min()` and `deleteMin()`
+are undefined on the empty queue. Items of equal priority leave in no given
+order unless a realization fixes one (only the merges of
+[§9.11](09-priority.md#sec-9-11) and the bucket queue of
 [§9.9](09-priority.md#sec-9-9) fix one). In `ADS/priority/PriorityQueue.h`,
-the concept `AddressablePriorityQueue` requires these operations and the
-three types `Item`, `Priority` and `Handle`, and its models are
-`ListPriorityQueue`, `TreePriorityQueue`, `HeapPriorityQueue`,
-`IndexedDaryHeap`, `FibonacciHeapPriorityQueue` and `PairingHeap`. The
-concept `PriorityQueue` drops the handles and `decrease()`, and reads the
-queue through the customization points `queue_insert()`, `queue_min()` and
-`queue_deleteMin()`, which call the members of the book when the queue has
-them and otherwise the free functions of the same names found by the
-lookup of the arguments, and which also take the spelling of the standard
-library ([§1.14](01-introduction.md#sec-1-14)), with `queue_item_t<Q>` the
-type of its items; hence
-`LinkedHeapPriorityQueue`, `DaryHeap`, `BucketQueue`, `DialQueue`,
-`RadixHeap` and `std::priority_queue` model it as well. The algorithms that
-take a priority queue (the shortest paths and the minimum spanning trees of
-[chapter 14](14-graph.md#ch-14)) are written once for both kinds, a
-decrease being a new insertion on a queue without handles. The *priority `Queue`* of [Morin 2013,
-§10](Z-bibliography.md#ref-morin-cpp) is the same type without handles and
-without `decrease()`: `add(x)` and `remove()`, which the heaps of plain
-items in this chapter call `push(x)` and `pop()`, with `top()` for the
-least item. Thus the realizations with handles share the interface of the
-book, e.g., for `HeapPriorityQueue<T,P>` of capacity $c$ (`capacity()`),
+the concept `AddressablePriorityQueue` requires these operations and the three
+types `Item`, `Priority` and `Handle`, and its models are `ListPriorityQueue`,
+`TreePriorityQueue`, `HeapPriorityQueue`, `IndexedDaryHeap`,
+`FibonacciHeapPriorityQueue` and `PairingHeap`. The concept `PriorityQueue`
+drops the handles and `decrease()`, and reads the queue through the
+customization points `queue_insert()`, `queue_min()` and `queue_deleteMin()`,
+which call the members of the book when the queue has them and otherwise the
+free functions of the same names found by the lookup of the arguments, and
+which also take the spelling of the standard library
+([§1.14](01-introduction.md#sec-1-14)), with `queue_item_t< Q >` the type of
+its items; hence `LinkedHeapPriorityQueue`, `DaryHeap`, `BucketQueue`,
+`DialQueue`, `RadixHeap` and `std::priority_queue` model it as well. The
+algorithms that take a priority queue (the shortest paths and the minimum
+spanning trees of [chapter 14](14-graph.md#ch-14)) are written once for both
+kinds, a decrease being a new insertion on a queue without handles. The
+*priority `Queue`* of [Morin 2013, §10](Z-bibliography.md#ref-morin-cpp) is
+the same type without handles and without `decrease()`: `add( x )` and
+`remove()`, which the heaps of plain items in this chapter call `push( x )`
+and `pop()`, with `top()` for the least item. Thus the realizations with
+handles share the interface of the book, e.g., for
+`HeapPriorityQueue< T , P >` of capacity $c$ (`capacity()`),
 
 ```cpp
 // declarations of <ADS/priority/HeapPriorityQueue.h>
 template< class T , std::totally_ordered P = int , int D = 2 >
  requires( D >= 2 )
-class HeapPriorityQueue {
+class HeapPriorityQueue
+{
  public:
  using Handle = PriorityItem *;
  explicit HeapPriorityQueue( int n );
@@ -108,14 +109,16 @@ class HeapPriorityQueue {
  };
 ```
 
-while the heaps of plain items, e.g., `DaryHeap<T,Better,D>`, take the
+while the heaps of plain items, e.g., `DaryHeap< T , Better , D >`, take the
 names of [Morin 2013](Z-bibliography.md#ref-morin-cpp) and of the standard
 library:
 
 ```cpp
 // declarations of <ADS/priority/DaryHeap.h>
 template< class T , class Better = std::less< T > , unsigned D = 4 ,
-          bool BottomUp = false > class DaryHeap {
+          bool BottomUp = false >
+class DaryHeap
+{
  public:
  explicit DaryHeap( Better better = Better() );
  void push( const T & x );
@@ -143,7 +146,7 @@ triple on top) reads
 ADS::DaryHeap< std::tuple< long , long , int > > open;  // least f first
 open.push( { 9 , 2 , 1 } );
 open.push( { 7 , 0 , 0 } );
-auto [ f , g , v ] = open.pop();                    // f == 7 , v == 0
+auto [ f , g , v ] = open.pop();  // f == 7 , v == 0
 ```
 
 The pairing heap and the Fibonacci heap also declare
@@ -153,20 +156,20 @@ nodes, which the handles point to.
 
 A queue without handles (`DaryHeap`, `MeldableHeap` without its handles,
 `MinMaxHeap`, `SequenceHeap` and the queues of integer keys) has no
-`decrease()`, and an item whose priority improves is then pushed again,
-while its stale copy is skipped when it comes out. This *lazy deletion*
-keeps up to $m$ items in the queue for $m$ decreases instead of $n$, but
-it makes the items plain values, which can be compared without following a
-pointer and moved without updating a handle, and it is what a search on a
-large graph typically does. Several of these queues are ordered by a
-predicate `better(a,b)`, true if $a$ must come out before $b$, with
-`std::less` giving the least item first and `std::greater` the greatest. A
-queue is *monotone* if no priority pushed is smaller than the last one
-extracted, $\ell$: Dijkstra's algorithm with nonnegative costs is
-monotone, since the distance of a node extracted is not smaller than that
-of the node extracted before it, and so is the simulation of discrete
-events, whose events never schedule others in the past. In [§9.9](09-priority.md#sec-9-9), the monotone queues use this property to find the minimum
-without comparisons.
+`decrease()`, and an item whose priority improves is then pushed again, while
+its stale copy is skipped when it comes out. This *lazy deletion* keeps up to
+$m$ items in the queue for $m$ decreases instead of $n$, but it makes the
+items plain values, which can be compared without following a pointer and
+moved without updating a handle, and it is what a search on a large graph
+typically does. Several of these queues are ordered by a predicate
+`better( a , b )`, true if $a$ must come out before $b$, with `std::less`
+giving the least item first and `std::greater` the greatest. A queue is
+*monotone* if no priority pushed is smaller than the last one extracted,
+$\ell$: Dijkstra's algorithm with nonnegative costs is monotone, since the
+distance of a node extracted is not smaller than that of the node extracted
+before it, and so is the simulation of discrete events, whose events never
+schedule others in the past. In [§9.9](09-priority.md#sec-9-9), the monotone
+queues use this property to find the minimum without comparisons.
 
 Throughout the chapter, $n$ is the number of items, $d$ (or $D$, as a
 parameter of a template) the number of children of a node of a heap, $h$
@@ -252,8 +255,9 @@ The public members of `ListPriorityQueue` are the following:
 
 ```cpp
 // declarations of <ADS/priority/ListPriorityQueue.h>
-template< class T , std::totally_ordered P = int ,
-          bool Sorted = true > class ListPriorityQueue {
+template< class T , std::totally_ordered P = int , bool Sorted = true >
+class ListPriorityQueue
+{
  public:
  using Handle = typename List< Pair >::Pos;
  bool empty( void ) const;
@@ -294,8 +298,9 @@ The public members of `TreePriorityQueue` are the following:
 
 ```cpp
 // declarations of <ADS/priority/TreePriorityQueue.h>
-template< class T ,
-          std::totally_ordered P = int > class TreePriorityQueue {
+template< class T , std::totally_ordered P = int >
+class TreePriorityQueue
+{
  public:
  using Handle = long;
  bool empty( void ) const;
@@ -500,20 +505,19 @@ illustrate a binary heap. We solve them in
 
 ## 9.4 Heaps with d children and plain items {#sec-9-4}
 
-`DaryHeap<T,Better,D,BottomUp>` is the heap of [§9.3](09-priority.md#sec-9-3)
-with $D$ children per node, $D = 4$ by default, whose items are plain
-values ordered by `better()`, with no handle and no `decrease()`. Its
-items are meant to be "small" and to carry their keys (e.g., the two
-costs of a node of a search and a pointer to it), and a comparison then
-never follows a pointer. Also, the vector of a large heap is on huge pages
-(cf. [chapter 5](05-memory.md#ch-5)), and a walk from the root to a leaf
-does not miss the translation buffer at each level. With
-$D = 2$ it is the `BinaryHeap` of [Morin 2013,
-§10.1](Z-bibliography.md#ref-morin-cpp), with any $D$ it is the `DaryHeap`
-of [Morin 2013, exercise 10.5](Z-bibliography.md#ref-morin-cpp), and its
-static functions `parent(i)` and `child(i,j)` are the formulae of
-[Lemma 9.1](09-priority.md#lem-9-1), which solve [Morin 2013, exercise
-10.4](Z-bibliography.md#ref-morin-cpp).
+`DaryHeap< T , Better , D , BottomUp >` is the heap of
+[§9.3](09-priority.md#sec-9-3) with $D$ children per node, $D = 4$ by default,
+whose items are plain values ordered by `better()`, with no handle and no
+`decrease()`. Its items are meant to be "small" and to carry their keys (e.g.,
+the two costs of a node of a search and a pointer to it), and a comparison
+then never follows a pointer. Also, the vector of a large heap is on huge
+pages (cf. [chapter 5](05-memory.md#ch-5)), and a walk from the root to a leaf
+does not miss the translation buffer at each level. With $D = 2$ it is the
+`BinaryHeap` of [Morin 2013, §10.1](Z-bibliography.md#ref-morin-cpp), with any
+$D$ it is the `DaryHeap` of [Morin 2013, exercise
+10.5](Z-bibliography.md#ref-morin-cpp), and its static functions `parent( i )`
+and `child( i , j )` are the formulae of [Lemma 9.1](09-priority.md#lem-9-1),
+which solve [Morin 2013, exercise 10.4](Z-bibliography.md#ref-morin-cpp).
 
 --8<-- "generated/DaryHeap-push.pseudo.md"
 
@@ -597,16 +601,16 @@ followed by a push of a similar key. Both walks are checked by the test
 `std::priority_queue`.
 
 Beyond the book, `DaryHeap` solves three exercises of [Morin 2013,
-§10.3](Z-bibliography.md#ref-morin-cpp), which we take in his order. We begin with the removal of the
-item in a given place, `erase(i)` (exercise 10.3).
+§10.3](Z-bibliography.md#ref-morin-cpp), which we take in his order. We begin
+with the removal of the item in a given place, `erase( i )` (exercise 10.3).
 
 --8<-- "generated/DaryHeap-erase.pseudo.md"
 
-<span id="lem-9-7"></span>**Lemma 9.7.** *Let the item at the place $i$ of
-a heap be removed and the last item $x$ be put in its place. If $x$ is
-smaller than the parent of $i$, the walk up from $i$ restores the heap,
-and otherwise the walk down does; only one walk is needed, and `erase(i)`
-costs $O( D \log_D n )$ time.*
+<span id="lem-9-7"></span>**Lemma 9.7.** *Let the item at the place $i$ of a
+heap be removed and the last item $x$ be put in its place. If $x$ is smaller
+than the parent of $i$, the walk up from $i$ restores the heap, and otherwise
+the walk down does; only one walk is needed, and `erase( i )` costs
+$O( D \log_D n )$ time.*
 
 *Proof.* The items below $i$ are not smaller than the item removed, which
 is not smaller than the parent of $i$. If $x$ is smaller than that parent,
@@ -616,31 +620,30 @@ $x$ is not smaller than its parent, and (9.2) fails only between $x$ and
 its children: $x$ may come from another subtree, where it was larger than
 the items below $i$, and the walk down mends it as in `pop()`. $\square$
 
-[Figure 9.7](09-priority.md#fig-9-7) shows a heap with $D = 3$ and the
-case of the walk down. As for why `erase(i)` is of little use, the places
-of the items change at each operation and the heap gives no handle to
-follow them. A caller must thus first search for the place of an item, in
-$O( n )$ time, more than any operation of the heap costs. In
-`IndexedDaryHeap` ([§9.5](09-priority.md#sec-9-5)) the items know their
-places, and the same removal costs $O( D \log_D n )$ in all.
+[Figure 9.7](09-priority.md#fig-9-7) shows a heap with $D = 3$ and the case of
+the walk down. As for why `erase( i )` is of little use, the places of the
+items change at each operation and the heap gives no handle to follow them. A
+caller must thus first search for the place of an item, in $O( n )$ time, more
+than any operation of the heap costs. In `IndexedDaryHeap`
+([§9.5](09-priority.md#sec-9-5)) the items know their places, and the same
+removal costs $O( D \log_D n )$ in all.
 
 ![Figure 9.7. A heap with $D = 3$: the children of the place $i = 1$ are the places $3 i + 1 , 3 i + 2 , 3 i + 3 = 4 , 5 , 6$ (orange). `erase(1)` removes 5 and puts the last item 9 in its place; since 9 is not smaller than the parent 1, it moves down by the best child, 6.](../figures/prio-dary.svg){#fig-9-7}
 
-Exercise 10.9 is about the second least item, which `secondTop()`
-gives as the best of the children of the root in $O( D )$ time (a null
-pointer if the heap has fewer than two items): any other
-item has one of the children of the root as an ancestor, and is not smaller
-than it. Exercise 10.10 is about the $k$ least items in order, which
-`smallest(k)` gives without changing the heap, by a second heap $Q$ of
-places that starts with the root and receives the children of each place
-it gives.
+Exercise 10.9 is about the second least item, which `secondTop()` gives as the
+best of the children of the root in $O( D )$ time (a null pointer if the heap
+has fewer than two items): any other item has one of the children of the root
+as an ancestor, and is not smaller than it. Exercise 10.10 is about the $k$
+least items in order, which `smallest( k )` gives without changing the heap,
+by a second heap $Q$ of places that starts with the root and receives the
+children of each place it gives.
 
 --8<-- "generated/DaryHeap-smallest.pseudo.md"
 
-<span id="lem-9-8"></span>**Lemma 9.8.** *`smallest(k)` gives the $k$
-least items of a $D$-ary heap in order, in $O( k D \log ( k D ) )$ time,
-i.e., $O( k \log k )$ for a constant $D$; its heap $Q$ never holds more
-than $k ( D - 1 ) + 1$ places.*
+<span id="lem-9-8"></span>**Lemma 9.8.** *`smallest( k )` gives the $k$ least
+items of a $D$-ary heap in order, in $O( k D \log ( k D ) )$ time, i.e.,
+$O( k \log k )$ for a constant $D$; its heap $Q$ never holds more than
+$k ( D - 1 ) + 1$ places.*
 
 *Proof.* By induction on the items given: $Q$ always holds the places
 whose parent has been given but which have not been given themselves (the
@@ -651,55 +654,60 @@ $D$; hence $|Q| \le 1 + k ( D - 1 )$, and an operation of $Q$ costs
 $O( \log ( k D ) )$. $\square$
 
 [Figure 9.8](09-priority.md#fig-9-8) shows the answer for $k = 4$ on the
-binary heap of [Figure 9.3](09-priority.md#fig-9-3), and the five places
-left in $Q$, which are exactly $k ( D - 1 ) + 1$. Of course, the $k$-th least item of
-the exercise is the last item that `smallest(k)` gives.
+binary heap of [Figure 9.3](09-priority.md#fig-9-3), and the five places left
+in $Q$, which are exactly $k ( D - 1 ) + 1$. Of course, the $k$-th least item
+of the exercise is the last item that `smallest( k )` gives.
 
 ![Figure 9.8. The 4 least items of the binary heap of [Figure 9.3](09-priority.md#fig-9-3), 4, 6, 8 and 9, in violet, and the places left in the heap $Q$ of `smallest(4)`, in orange: each of them is a child of an item given, and the least of them, 16, would be the fifth item.](../figures/prio-smallest.svg){#fig-9-8}
 
 The merge of $k$ sorted lists of [Morin 2013, exercise
-10.11](Z-bibliography.md#ref-morin-cpp) is another use of the heap of
-plain items. A heap of the pairs (first item, list) gives the next item of
-the merge at each `pop()`, which is followed by a `push()` of the next item
-of the same list. Since the heap holds at most $k$ pairs, the merge of $n$
-items costs $O( n \log k )$. In the test `ods_ints.ods.ex10.11.k-way-merge`
-we make it with a `DaryHeap` and compare the result with that of
-`multiwayMerge()`, which does it with fewer comparisons per item
-([§9.11](09-priority.md#sec-9-11)). Finally, `assign(first,last)` replaces
-the items of the heap by those of a range, arranged by the construction of
-Floyd ([Lemma 9.4](09-priority.md#lem-9-4)), and leaves the heap unchanged
-if a copy throws. `reserve(n)` and `clear()` are those of the vector, and
-the view gives the items in the order of the vector, the root first.
+10.11](Z-bibliography.md#ref-morin-cpp) is another use of the heap of plain
+items. A heap of the pairs (first item, list) gives the next item of the merge
+at each `pop()`, which is followed by a `push()` of the next item of the same
+list. Since the heap holds at most $k$ pairs, the merge of $n$ items costs
+$O( n \log k )$. In the test `ods_ints.ods.ex10.11.k-way-merge` we make it
+with a `DaryHeap` and compare the result with that of `multiwayMerge()`, which
+does it with fewer comparisons per item ([§9.11](09-priority.md#sec-9-11)).
+Finally, `assign( first , last )` replaces the items of the heap by those of a
+range, arranged by the construction of Floyd ([Lemma
+9.4](09-priority.md#lem-9-4)), and leaves the heap unchanged if a copy throws.
+`reserve( n )` and `clear()` are those of the vector, and the view gives the
+items in the order of the vector, the root first.
 
 ## 9.5 Heaps of indices and heaps with pointers {#sec-9-5}
 
 The algorithms on graphs know their items by number: the nodes
-$0 , \ldots , n - 1$. `IndexedDaryHeap<K,D>` is a $D$-ary heap of such
-ids, $D = 4$ by default, whose items are the pairs `Entry` of a key and an
-id. With the key inline, a comparison never leaves the vector of the
-heap. A second vector $\mathit{pos}$ holds the places of the ids ($-1$ for
-an id that is not in the heap), and takes the place of the handles of
-`HeapPriorityQueue`: each move of an item updates the place of its id, and
-the operations on an id start from its place, read in $O( 1 )$. With $s$
-items in the heap, `push(id,k)` and `decrease(id,k)` move the item up in
+$0 , \ldots , n - 1$. `IndexedDaryHeap< K , D >` is a $D$-ary heap of such
+ids, $D = 4$ by default, whose items are the pairs `Entry` of a key and an id.
+With the key inline, a comparison never leaves the vector of the heap. A
+second vector $\mathit{pos}$ holds the places of the ids ($-1$ for an id that
+is not in the heap), and takes the place of the handles of
+`HeapPriorityQueue`: each move of an item updates the place of its id, and the
+operations on an id start from its place, read in $O( 1 )$. With $s$ items in
+the heap, `push( id , k )` and `decrease( id , k )` move the item up in
 $O( \log_D s )$ time, while `pop()` and `top()` work as in `DaryHeap`.
-`increase(id,k)` moves the item down as `pop()` moves the last item, in
-$O( D \log_D s )$, and `update(id,k)` takes either way as the new key
-requires. Finally, `erase(id)` puts the last item in the place of the id and
-moves it up or down by [Lemma 9.7](09-priority.md#lem-9-7)
-([Figure 9.9](09-priority.md#fig-9-9)).
+`increase( id , k )` moves the item down as `pop()` moves the last item, in
+$O( D \log_D s )$, and `update( id , k )` takes either way as the new key
+requires. Finally, `erase( id )` puts the last item in the place of the id and
+moves it up or down by [Lemma 9.7](09-priority.md#lem-9-7) ([Figure
+9.9](09-priority.md#fig-9-9)).
 
 The public members of `IndexedDaryHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/IndexedDaryHeap.h>
 template< class K , unsigned D = 4 , class Policy = NoObservers >
-class IndexedDaryHeap {
+class IndexedDaryHeap
+{
  public:
- struct Entry { K key; int id; };
+ struct Entry
+ {
+  K key;
+  int id;
+  };
  using Handle = int;
- template< class ... O >
- explicit IndexedDaryHeap( int n = 0 , O & ... o );
+ template< class... O >
+ explicit IndexedDaryHeap( int n = 0 , O &... o );
  void reset( int n );
  void grow( int n );
  int ids( void ) const;
@@ -721,8 +729,10 @@ class IndexedDaryHeap {
  int deleteMin( void );
  Subject & subject( void );
  template< class O >
- int attach( O & o ) requires( Subject::dynamic );
- void detach( int id ) requires( Subject::dynamic );
+ int attach( O & o )
+  requires( Subject::dynamic );
+ void detach( int id )
+  requires( Subject::dynamic );
  };
 ```
 
@@ -738,57 +748,56 @@ class IndexedDaryHeap {
 
 ![Figure 9.9. An `IndexedDaryHeap` drawn with $D = 2$ for brevity: the vector $A$ of the pairs key:id and the vector $\mathit{pos}$ of the places of the ids 0 to 7, $-1$ for the ids not in the heap; `decrease(2,1)` reads the place 5 of the id 2 and moves it up past 3:7 and 2:5 (violet), updating the places of the three ids it moves (orange the new place of the id 2).](../figures/prio-indexed.svg){#fig-9-9}
 
-Its space is that of the $s$ entries and of the $n$ places, i.e.,
-$e s + 4 n$ bytes for entries of $e$ bytes and ids of 4 bytes: $e = 8$
-for keys of 4 bytes and $e = 16$ for keys of 8, the entry being padded to
-the alignment of its key. With
-32-bit keys and $D = 4$, the four children of a node take half a line of
-the cache. `pushOrDecrease(id,k)` pushes an id that is not in the heap and
-lowers the key of one that is (the relaxation of an edge in the algorithm
-of Dijkstra), and returns whether the key changed. `contains()`, `key()`,
-`ids()`, `reset(n)` (the heap of $n$ ids emptied, its memory kept),
-`grow(n)` and `clear()` complete the interface. `grow(n)` raises the range
+Its space is that of the $s$ entries and of the $n$ places, i.e., $e s + 4 n$
+bytes for entries of $e$ bytes and ids of 4 bytes: $e = 8$ for keys of 4 bytes
+and $e = 16$ for keys of 8, the entry being padded to the alignment of its
+key. With 32-bit keys and $D = 4$, the four children of a node take half a
+line of the cache. `pushOrDecrease( id , k )` pushes an id that is not in the
+heap and lowers the key of one that is (the relaxation of an edge in the
+algorithm of Dijkstra), and returns whether the key changed. `contains()`,
+`key()`, `ids()`, `reset( n )` (the heap of $n$ ids emptied, its memory kept),
+`grow( n )` and `clear()` complete the interface. `grow( n )` raises the range
 of the ids to $[ 0 , n )$ keeping the items, the new ids absent; the vector
-$\mathit{pos}$ at least doubles when it is full, so that a search that
-numbers its nodes as it generates them grows the heap with them in
-$O( 1 )$ amortized time per node (test
-`engineered_search.indexed-heap-grow`). Also, the heap models the concept
-`PriorityQueue`, the ids being their own handles: `insert()` is `push()`,
-`min()` the id of `top()` and `deleteMin()` that of `pop()`. Hence the
-algorithms of [chapter 14](14-graph.md#ch-14) run on it unchanged (test
-`engineered_graph.indexed-dary-heap`). A search may also need to take a
-node out of its frontier, or to make it worse when a bound prunes it,
-which `erase()` and `increase()` do (test
-`engineered_search.indexed-heap-erase`). The last parameter, `Policy`, is
-the subject policy of [§1.13](01-introduction.md#sec-1-13), by which the
-heap tells its insertions, erasures and changes of key, and on demand the
-moves of its items ([§1.15.1](01-introduction.md#sec-1-15-1)); with
-`NoObservers`, the default, its code is that of the plain heap.
+$\mathit{pos}$ at least doubles when it is full, so that a search that numbers
+its nodes as it generates them grows the heap with them in $O( 1 )$ amortized
+time per node (test `engineered_search.indexed-heap-grow`). Also, the heap
+models the concept `PriorityQueue`, the ids being their own handles:
+`insert()` is `push()`, `min()` the id of `top()` and `deleteMin()` that of
+`pop()`. Hence the algorithms of [chapter 14](14-graph.md#ch-14) run on it
+unchanged (test `engineered_graph.indexed-dary-heap`). A search may also need
+to take a node out of its frontier, or to make it worse when a bound prunes
+it, which `erase()` and `increase()` do (test
+`engineered_search.indexed-heap-erase`). The last parameter, `Policy`, is the
+subject policy of [§1.13](01-introduction.md#sec-1-13), by which the heap
+tells its insertions, erasures and changes of key, and on demand the moves of
+its items ([§1.15.1](01-introduction.md#sec-1-15-1)); with `NoObservers`, the
+default, its code is that of the plain heap.
 
-Some searches choose a node by one key and must know at each moment the
-least of a second key over the whole frontier. A bounded suboptimal search
-expands by an inflated cost or by the estimated distance to the goal, and
-needs the least lower bound $f_{\min}$ of the open nodes to stop or to
-certify its factor of suboptimality ([Pearl and Kim
+Some searches choose a node by one key and must know at each moment the least
+of a second key over the whole frontier. A bounded suboptimal search expands
+by an inflated cost or by the estimated distance to the goal, and needs the
+least lower bound $f_{\min}$ of the open nodes to stop or to certify its
+factor of suboptimality ([Pearl and Kim
 1982](Z-bibliography.md#ref-pearl1982); [Thayer and Ruml
 2011](Z-bibliography.md#ref-thayer2011)). Similarly, a branch and bound by
 best estimate selects by an estimate and prunes by the least bound.
-`IndexedHeapPair<K,Bd,D>` keeps the same ids in two `IndexedDaryHeap`,
+`IndexedHeapPair< K , Bd , D >` keeps the same ids in two `IndexedDaryHeap`,
 $H_K$ by the keys and $H_B$ by the bounds. `top()` and `topKey()` read the
 root of $H_K$, `minBound()` and `minBoundId()` that of $H_B$, and `bound()`
-the bound of an id. Also, `push(id,k,b)` pushes into both heaps,
-`update(id,k,b)` and `erase(id)` change both, and `pop()` (resp.
-`popMinBound()`) pops from one heap and erases the same id from the other
-by [Lemma 9.7](09-priority.md#lem-9-7). The other members, `contains()`,
-`key()`, `size()`, `ids()`, `reset(n)` and `clear()`, are those of
-`IndexedDaryHeap`, read or applied to both heaps.
+the bound of an id. Also, `push( id , k , b )` pushes into both heaps,
+`update( id , k , b )` and `erase( id )` change both, and `pop()` (resp.
+`popMinBound()`) pops from one heap and erases the same id from the other by
+[Lemma 9.7](09-priority.md#lem-9-7). The other members, `contains()`, `key()`,
+`size()`, `ids()`, `reset( n )` and `clear()`, are those of `IndexedDaryHeap`,
+read or applied to both heaps.
 
 The public members of `IndexedHeapPair` are the following:
 
 ```cpp
 // declarations of <ADS/priority/IndexedHeapPair.h>
-template< class K , class Bd = K ,
-          unsigned D = 4 > class IndexedHeapPair {
+template< class K , class Bd = K , unsigned D = 4 >
+class IndexedHeapPair
+{
  public:
  explicit IndexedHeapPair( int n = 0 );
  void reset( int n );
@@ -828,18 +837,17 @@ ordered dictionary with iterators, such as the B-tree of
 [chapter 8](08-tree.md#ch-8). A frontier that is only popped is better
 kept in a heap, whose items need no order beyond the least one.
 
-`LinkedHeapPriorityQueue<T,P,L>` keeps the shape of the binary heap on nodes
-linked to their parent and to their two children, instead of on a vector.
-In the numbering by levels from 1 (that of Eytzinger shifted by one), the
-node $k$ has the children $2 k$ and $2 k + 1$. Hence the path from the
-root to the node $k$ is spelled by the bits of $k$ after the leading one,
-0 for the left child and 1 for the right one
-([Figure 9.10](09-priority.md#fig-9-10)). In $O( \log n )$ steps,
-`insert()` finds the parent of the new leaf $n + 1$ and `deleteMin()` the
-last leaf $n$. Items move up and down by swapping the contents of the
-nodes, as in the vector, and each operation takes $O( \log n )$ time;
-there is no `decrease()`, which would need a handle that follows the
-contents.
+`LinkedHeapPriorityQueue< T , P , L >` keeps the shape of the binary heap on
+nodes linked to their parent and to their two children, instead of on a
+vector. In the numbering by levels from 1 (that of Eytzinger shifted by one),
+the node $k$ has the children $2 k$ and $2 k + 1$. Hence the path from the
+root to the node $k$ is spelled by the bits of $k$ after the leading one, 0
+for the left child and 1 for the right one ([Figure
+9.10](09-priority.md#fig-9-10)). In $O( \log n )$ steps, `insert()` finds the
+parent of the new leaf $n + 1$ and `deleteMin()` the last leaf $n$. Items move
+up and down by swapping the contents of the nodes, as in the vector, and each
+operation takes $O( \log n )$ time; there is no `decrease()`, which would need
+a handle that follows the contents.
 
 ![Figure 9.10. A linked heap of 12 nodes numbered by levels from 1, and the new leaf of an `insert()`, the node $13 = 1101_2$, reached from the root by the bits after the leading 1, i.e., right, left, right (violet the path, orange the new node).](../figures/prio-linked.svg){#fig-9-10}
 
@@ -847,8 +855,9 @@ The public members of `LinkedHeapPriorityQueue` are the following:
 
 ```cpp
 // declarations of <ADS/priority/LinkedHeapPriorityQueue.h>
-template< class T , std::totally_ordered P = int ,
-          bool L = false > class LinkedHeapPriorityQueue {
+template< class T , std::totally_ordered P = int , bool L = false >
+class LinkedHeapPriorityQueue
+{
  public:
  LinkedHeapPriorityQueue( void );
  bool empty( void ) const;
@@ -880,29 +889,30 @@ the items.
 
 ## 9.6 The randomized meldable heap {#sec-9-6}
 
-A heap in a vector cannot merge with another heap faster than by
-rebuilding it, in linear time, and one may well need such merges (e.g., in
-the algorithms that join the queues of two components). `MeldableHeap<T,Less,A>` is the randomized
-meldable heap of [Gambin and Malinowski
+A heap in a vector cannot merge with another heap faster than by rebuilding
+it, in linear time, and one may well need such merges (e.g., in the algorithms
+that join the queues of two components). `MeldableHeap< T , Less , A >` is the
+randomized meldable heap of [Gambin and Malinowski
 1998](Z-bibliography.md#ref-gambin1998), as [Morin 2013,
 §10.2](Z-bibliography.md#ref-morin-cpp) presents it: a heap-ordered binary
-tree of nodes with pointers, of any shape, whose only structural operation
-is the merge of two such trees. Given the roots $h_1$ and $h_2$, the merge
-keeps the smaller root on top (say $h_1$, after exchanging the two if
-needed) and merges $h_2$, recursively, with one of the two subtrees of
-$h_1$, chosen by a fair coin ([Figure 9.11](09-priority.md#fig-9-11)). Then
-`push(x)` merges the heap with a tree of one node, `pop()` merges the two
-subtrees of the root, `meld(o)` merges a whole heap `o` into this one,
-leaving `o` empty. Finally, `erase(h)` removes the node of the handle $h$
-that `push()` returned. Each of these operations makes a constant number
-of merges.
+tree of nodes with pointers, of any shape, whose only structural operation is
+the merge of two such trees. Given the roots $h_1$ and $h_2$, the merge keeps
+the smaller root on top (say $h_1$, after exchanging the two if needed) and
+merges $h_2$, recursively, with one of the two subtrees of $h_1$, chosen by a
+fair coin ([Figure 9.11](09-priority.md#fig-9-11)). Then `push( x )` merges
+the heap with a tree of one node, `pop()` merges the two subtrees of the root,
+`meld( o )` merges a whole heap `o` into this one, leaving `o` empty. Finally,
+`erase( h )` removes the node of the handle $h$ that `push()` returned. Each
+of these operations makes a constant number of merges.
 
 The public members of `MeldableHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/MeldableHeap.h>
 template< class T , class Less = std::less< T > ,
-          class A = std::allocator< T > > class MeldableHeap {
+          class A = std::allocator< T > >
+class MeldableHeap
+{
  public:
  using Handle = Node *;
  explicit MeldableHeap( Less less = Less() , std::uint64_t seed = 1 ,
@@ -988,14 +998,13 @@ of $u$, with fewer than $n$ nodes.
 --8<-- "generated/MeldableHeap-erase.pseudo.md"
 
 The second least item ([Morin 2013, exercise
-10.9](Z-bibliography.md#ref-morin-cpp)) is the smaller of the two children
-of the root, which `secondTop()` gives in $O( 1 )$. The $k$ least items in
-order ([Morin 2013, exercise 10.10](Z-bibliography.md#ref-morin-cpp))
-come from `smallest(k)`, the algorithm of
-[Lemma 9.8](09-priority.md#lem-9-8) on the nodes instead of the places.
-Its heap of nodes holds at most $k + 1$ of them, since each step takes one
-and puts two, and it costs $O( k \log k )$ time without changing the heap.
-`get(h)` reads the item of a handle.
+10.9](Z-bibliography.md#ref-morin-cpp)) is the smaller of the two children of
+the root, which `secondTop()` gives in $O( 1 )$. The $k$ least items in order
+([Morin 2013, exercise 10.10](Z-bibliography.md#ref-morin-cpp)) come from
+`smallest( k )`, the algorithm of [Lemma 9.8](09-priority.md#lem-9-8) on the
+nodes instead of the places. Its heap of nodes holds at most $k + 1$ of them,
+since each step takes one and puts two, and it costs $O( k \log k )$ time
+without changing the heap. `get( h )` reads the item of a handle.
 
 --8<-- "generated/MeldableHeap-smallest.pseudo.md"
 
@@ -1026,18 +1035,19 @@ item, which do not depend on them.
 
 ## 9.7 Fibonacci heaps {#sec-9-7}
 
-On a graph of $n$ nodes and $m$ edges, the algorithms of Dijkstra and Prim make up to $m$ decreases and $n$
-extractions, and on a dense graph the decreases dominate. The Fibonacci heap of [Fredman and Tarjan
+On a graph of $n$ nodes and $m$ edges, the algorithms of Dijkstra and Prim
+make up to $m$ decreases and $n$ extractions, and on a dense graph the
+decreases dominate. The Fibonacci heap of [Fredman and Tarjan
 1987](Z-bibliography.md#ref-fredman1987), which [Montresor 2025,
 §11.5](Z-bibliography.md#ref-montresor2025) names for the shortest paths
-without describing it, lowers the cost of `decrease()` to $O( 1 )$
-amortized by doing almost nothing at each operation and tidying the heap
-only in `deleteMin()`. `FibonacciHeapPriorityQueue<T,P>` is a collection
-of heap-ordered trees whose roots lie in a circular doubly linked list,
-with a pointer $\mathit{min}$ to the least root; the children of each node
-lie in a circular list as well, and each node records its parent, its
-degree (the number of its children) and a *mark*, set when the node, not
-a root, loses a child.
+without describing it, lowers the cost of `decrease()` to $O( 1 )$ amortized
+by doing almost nothing at each operation and tidying the heap only in
+`deleteMin()`. `FibonacciHeapPriorityQueue< T , P >` is a collection of
+heap-ordered trees whose roots lie in a circular doubly linked list, with a
+pointer $\mathit{min}$ to the least root; the children of each node lie in a
+circular list as well, and each node records its parent, its degree (the
+number of its children) and a *mark*, set when the node, not a root, loses a
+child.
 
 `insert()` adds a tree of one node to the list of the roots. `decrease()`
 lowers the priority of a node and, if the node became smaller than its
@@ -1053,8 +1063,9 @@ The public members of `FibonacciHeapPriorityQueue` are the following:
 
 ```cpp
 // declarations of <ADS/priority/FibonacciHeapPriorityQueue.h>
-template< class T ,
-          std::totally_ordered P = int > class FibonacciHeapPriorityQueue {
+template< class T , std::totally_ordered P = int >
+class FibonacciHeapPriorityQueue
+{
  public:
  using Handle = Node *;
  FibonacciHeapPriorityQueue( void );
@@ -1145,16 +1156,16 @@ and, for the algorithm of Prim, `ch14.ex14.4`).
 ## 9.8 Pairing heaps {#sec-9-8}
 
 The pairing heap of [Fredman, Sedgewick, Sleator and Tarjan
-1986](Z-bibliography.md#ref-fredman1986) is the simplest of the heaps with
-an efficient `decrease()`, and in the experiments of [Stasko and Vitter
+1986](Z-bibliography.md#ref-fredman1986) is the simplest of the heaps with an
+efficient `decrease()`, and in the experiments of [Stasko and Vitter
 1987](Z-bibliography.md#ref-stasko1987) and of [Larkin, Sen and Tarjan
 2014](Z-bibliography.md#ref-larkin2014) the fastest one with pointers in
-practice. `PairingHeap<T,P,Aux>` is one heap-ordered tree in the form
+practice. `PairingHeap< T , P , Aux >` is one heap-ordered tree in the form
 child-sibling. Each node points to its leftmost child and to its right
-sibling, and back to its left sibling (or to its parent, if it is the
-leftmost child); a node is thus cut from its tree in $O( 1 )$. Two trees
-are *linked* by making the root of larger priority the leftmost child of
-the other one, with one comparison and $O( 1 )$ updates of the links.
+sibling, and back to its left sibling (or to its parent, if it is the leftmost
+child); a node is thus cut from its tree in $O( 1 )$. Two trees are *linked*
+by making the root of larger priority the leftmost child of the other one,
+with one comparison and $O( 1 )$ updates of the links.
 
 `insert()` links a tree of one node with the root, and `decrease()` cuts
 the node with its subtree (unless it is the leftmost child and still not
@@ -1168,8 +1179,9 @@ The public members of `PairingHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/PairingHeap.h>
-template< class T , std::totally_ordered P = int ,
-          bool Aux = false > class PairingHeap {
+template< class T , std::totally_ordered P = int , bool Aux = false >
+class PairingHeap
+{
  public:
  using Handle = Node *;
  PairingHeap( void );
@@ -1247,10 +1259,10 @@ the last one extracted, $\ell$, which is the precondition that their
 contracts check.
 
 The radix heap of [Ahuja, Mehlhorn, Orlin and Tarjan
-1990](Z-bibliography.md#ref-ahuja1990), `RadixHeap<T,K,B>`, splits a key
+1990](Z-bibliography.md#ref-ahuja1990), `RadixHeap< T , K , B >`, splits a key
 $x$ of $W$ bits into $\lceil W / B \rceil$ digits of $B$ bits, $B = 4$ by
-default (a signed key has its sign bit flipped, which keeps the order).
-It puts the item in the bucket
+default (a signed key has its sign bit flipped, which keeps the order). It
+puts the item in the bucket
 
 $$
 ( r , x_r ) , \text{ of index } 2^B r + x_r , \qquad r \text{ the digit of
@@ -1287,8 +1299,9 @@ The public members of `RadixHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/RadixHeap.h>
-template< class T , std::integral K = std::uint32_t ,
-          unsigned B = 4 > class RadixHeap {
+template< class T , std::integral K = std::uint32_t , unsigned B = 4 >
+class RadixHeap
+{
  public:
  void push( const T & x , K k );
  const T & top( void );
@@ -1352,21 +1365,23 @@ the row 0, and therefore raise $\ell$. Its
 digits of $B$ bits are the two-level heap of the paper, which trades fewer
 moves for more buckets; with $B = 1$ it is the radix heap of the paper.
 
-`DialQueue<T,K>` is the queue of [Dial 1969](Z-bibliography.md#ref-dial1969)
-on a circular window of $N$ buckets (the $W$ of the header, renamed here
-since $W$ is the width of a key). $N$ is the least power of two above the
-argument $c$ of the constructor, 1023 by default, and 64 at least. A key $k$ with $k - \ell < N$ goes to the bucket
-$k \bmod N$, a vector used as a stack, and a key beyond the window goes to
-an overflow, which is a `RadixHeap` ([Figure 9.16](09-priority.md#fig-9-16)).
-A bit per bucket records whether it is in use, so that the next key in use is
-found by a scan of $N / 64$ words at most, from the bucket of $\ell$
-around the circle.
+`DialQueue< T , K >` is the queue of [Dial
+1969](Z-bibliography.md#ref-dial1969) on a circular window of $N$ buckets (the
+$W$ of the header, renamed here since $W$ is the width of a key). $N$ is the
+least power of two above the argument $c$ of the constructor, 1023 by default,
+and 64 at least. A key $k$ with $k - \ell < N$ goes to the bucket $k \bmod N$,
+a vector used as a stack, and a key beyond the window goes to an overflow,
+which is a `RadixHeap` ([Figure 9.16](09-priority.md#fig-9-16)). A bit per
+bucket records whether it is in use, so that the next key in use is found by a
+scan of $N / 64$ words at most, from the bucket of $\ell$ around the circle.
 
 The public members of `DialQueue` are the following:
 
 ```cpp
 // declarations of <ADS/priority/DialQueue.h>
-template< class T , std::integral K = std::uint32_t > class DialQueue {
+template< class T , std::integral K = std::uint32_t >
+class DialQueue
+{
  public:
  explicit DialQueue( std::size_t c = 1023 );
  void push( const T & x , K k );
@@ -1409,52 +1424,54 @@ compare these queues for the shortest paths).
 
 --8<-- "generated/RadixHeap-extractBelow.pseudo.md"
 
-`BucketQueue<T,K>` applies the scan of Dial to two keys: the first, $f$,
+`BucketQueue< T , K >` applies the scan of Dial to two keys: the first, $f$,
 orders the items, and the second, $g$, breaks the ties towards the largest,
-the last item pushed first among equal pairs, which is the order of the
-search A* (least $f$, ties towards the deeper nodes). It is the two-level
-queue of the search code of [Burns, Hatem, Leighton and Ruml
+the last item pushed first among equal pairs, which is the order of the search
+A* (least $f$, ties towards the deeper nodes). It is the two-level queue of
+the search code of [Burns, Hatem, Leighton and Ruml
 2012](Z-bibliography.md#ref-burns2012), with no monotonicity required. Its
 outer level is a vector of *layers* indexed by $f$, scanned forward from a
-lazy least $f$ that only moves forward between two pushes of a smaller
-$f$. A layer, i.e., the items of one $f$, keeps a LIFO list per $g$ in one
-of two ways ([Figure 9.17](09-priority.md#fig-9-17)). The lists of $g < D$
-($D = 256$) are *dense*: an array of heads indexed by $g$, the first
-$S = 4$ in the layer itself and the others in a vector, scanned backward
-from a bound that only moves down between two pushes of a larger $g$. The
-lists of $g \ge D$ are *runs* while they are at most $R = 64$: a vector of
-pairs $( g , h )$, $h$ the head of the list of $g$, sorted by increasing
-$g$, whose last pair is the top of the layer. A push of any $g \ge D$
-(new or not) into a layer of $R$ runs turns the layer dense on all its
-$g$, by moving
-the heads of the runs (not the items) into an array as long as the
-largest $g$. The layer stays dense until it empties; it then frees the
-array and is sparse again.
+lazy least $f$ that only moves forward between two pushes of a smaller $f$. A
+layer, i.e., the items of one $f$, keeps a LIFO list per $g$ in one of two
+ways ([Figure 9.17](09-priority.md#fig-9-17)). The lists of $g < D$
+($D = 256$) are *dense*: an array of heads indexed by $g$, the first $S = 4$
+in the layer itself and the others in a vector, scanned backward from a bound
+that only moves down between two pushes of a larger $g$. The lists of
+$g \ge D$ are *runs* while they are at most $R = 64$: a vector of pairs
+$( g , h )$, $h$ the head of the list of $g$, sorted by increasing $g$, whose
+last pair is the top of the layer. A push of any $g \ge D$ (new or not) into a
+layer of $R$ runs turns the layer dense on all its $g$, by moving the heads of
+the runs (not the items) into an array as long as the largest $g$. The layer
+stays dense until it empties; it then frees the array and is sparse again.
 
 The order among the items of one $f$ is a policy, the third parameter of
-`BucketQueue<T,K,Tie>` (`Ties` in the class). `LargestSecondKey`, the default, is the order
-above, while `LeastSecondKey` takes the least $g$ first, and among equal
-pairs the last item pushed, i.e., the lexicographic order of the pairs
-$( f , g )$, which is that of the keys $( k_1 , k_2 )$ of LPA* ([Koenig,
-Likhachev and Furcy 2004](Z-bibliography.md#ref-koenig2004)), $k_1$ the
-estimate of the cost through a node and $k_2$ its cost from the start. The
+`BucketQueue< T , K , Tie >` (`Ties` in the class). `LargestSecondKey`, the
+default, is the order above, while `LeastSecondKey` takes the least $g$ first,
+and among equal pairs the last item pushed, i.e., the lexicographic order of
+the pairs $( f , g )$, which is that of the keys $( k_1 , k_2 )$ of LPA*
+([Koenig, Likhachev and Furcy 2004](Z-bibliography.md#ref-koenig2004)), $k_1$
+the estimate of the cost through a node and $k_2$ its cost from the start. The
 two policies are mirror images: with the least $g$ first, the bound of the
 dense lists is scanned forward and moves only up between two pushes of a
 smaller $g$, the runs are kept by decreasing $g$, so that their last one is
-still the top, and a layer gives its dense lists, all of $g < D$ while it
-has runs, before its runs. The costs of [Lemma 9.15](09-priority.md#lem-9-15)
-hold for both, and
-the default compiles to the same code as before the policy existed (test
-`engineered.bucket-queue-lexicographic`).
+still the top, and a layer gives its dense lists, all of $g < D$ while it has
+runs, before its runs. The costs of [Lemma 9.15](09-priority.md#lem-9-15) hold
+for both, and the default compiles to the same code as before the policy
+existed (test `engineered.bucket-queue-lexicographic`).
 
 The public members of `BucketQueue` are the following:
 
 ```cpp
 // declarations of <ADS/priority/BucketQueue.h>
-template< class T , std::integral K = int ,
-          BucketTie Tie = LargestSecondKey > class BucketQueue {
+template< class T , std::integral K = int , BucketTie Tie = LargestSecondKey >
+class BucketQueue
+{
  public:
- struct Entry { T item; K f , g; };
+ struct Entry
+ {
+  T item;
+  K f , g;
+  };
  void push( const T & x , K f , K g );
  const T & top( void );
  K topF( void );
@@ -1563,30 +1580,30 @@ amortized per operation when the operations are $\Omega( F )$.
 ## 9.10 Double-ended queues {#sec-9-10}
 
 A double-ended priority queue has both the best and the worst item at hand,
-and removes either in logarithmic time, which a heap cannot do since its
-worst item may be any of its leaves. `MinMaxHeap.h` has two realizations of
-plain items ordered by `better()`, with `push()`, `min()`, `max()`,
-`popMin()` and `popMax()`, besides `empty()`, `size()`, `reserve(n)` and
-`clear()`.
+and removes either in logarithmic time, which a heap cannot do since its worst
+item may be any of its leaves. `MinMaxHeap.h` has two realizations of plain
+items ordered by `better()`, with `push()`, `min()`, `max()`, `popMin()` and
+`popMax()`, besides `empty()`, `size()`, `reserve( n )` and `clear()`.
 
-`MinMaxHeap<T,Better>` is the min-max heap of [Atkinson, Sack, Santoro and
+`MinMaxHeap< T , Better >` is the min-max heap of [Atkinson, Sack, Santoro and
 Strothotte 1986](Z-bibliography.md#ref-atkinson1986): a binary heap in a
-vector whose levels alternate, a node of an even level (the root's) being
-not worse than any item of its subtree and a node of an odd level not
-better ([Figure 9.18](09-priority.md#fig-9-18)). Hence the best item is the
-root, and the worst is the worse of its children, or the root if it is
-alone. An item pushed is swapped at most once with its parent, to reach a
-level of the right kind, and then moved up by its grandparents. An item
-moved down from the root (or from the child that held the worst) is
-compared with its up to 2 children and 4 grandchildren. When it lands on a
-grandchild, it is swapped with its parent there if this parent, of the
-other kind, is now out of order.
+vector whose levels alternate, a node of an even level (the root's) being not
+worse than any item of its subtree and a node of an odd level not better
+([Figure 9.18](09-priority.md#fig-9-18)). Hence the best item is the root, and
+the worst is the worse of its children, or the root if it is alone. An item
+pushed is swapped at most once with its parent, to reach a level of the right
+kind, and then moved up by its grandparents. An item moved down from the root
+(or from the child that held the worst) is compared with its up to 2 children
+and 4 grandchildren. When it lands on a grandchild, it is swapped with its
+parent there if this parent, of the other kind, is now out of order.
 
 The public members of `MinMaxHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/MinMaxHeap.h>
-template< class T , class Better = std::less< T > > class MinMaxHeap {
+template< class T , class Better = std::less< T > >
+class MinMaxHeap
+{
  public:
  explicit MinMaxHeap( Better better = Better() );
  void push( const T & x );
@@ -1607,9 +1624,9 @@ template< class T , class Better = std::less< T > > class MinMaxHeap {
 
 --8<-- "generated/MinMaxHeap-popMax.pseudo.md"
 
-`IntervalHeap<T,Better>` is the interval heap of [van Leeuwen and Wood
-1993](Z-bibliography.md#ref-vanleeuwen1993): the items two by two in the
-nodes of a complete binary tree, each node an interval
+`IntervalHeap< T , Better >` is the interval heap of [van Leeuwen and Wood
+1993](Z-bibliography.md#ref-vanleeuwen1993): the items two by two in the nodes
+of a complete binary tree, each node an interval
 $[ \mathit{lo} , \mathit{hi} ]$ with
 
 $$
@@ -1627,7 +1644,9 @@ The public members of `IntervalHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/MinMaxHeap.h>
-template< class T , class Better = std::less< T > > class IntervalHeap {
+template< class T , class Better = std::less< T > >
+class IntervalHeap
+{
  public:
  explicit IntervalHeap( Better better = Better() );
  void push( const T & x );
@@ -1685,51 +1704,51 @@ The tests `heaps.double-ended-heaps` and `heaps.large-heap-audits` check
 both heaps against a multiset, through runs of removals on sorted items and
 the pushes that make them heaps again.
 
-These heaps (and the sequence heap of [§9.12](09-priority.md#sec-9-12))
-take the keys of the numbers from `OrderKey.h`, whose functions and
-constants lie in the namespace `ADS::detail`, since they serve the
-realizations and are not meant for the user. There `orderKey(x)` maps a
-number of at most 8 bytes, or a pair of numbers of at most 8 bytes in all
-(`IsNumberPair`, the concept `OrderKeyed`), to an unsigned word whose order
-is that of the items. For a number, it is the key of the radix sort: the
-sign bit flipped for a signed integer, all the bits flipped for a negative
-floating point number and the sign bit otherwise. For a pair, it is the
-key of its first item followed by that of the second, and
-`orderKeyBy<C>(x)` complements it for `std::greater` (the constants
-`kAscending`, `kDescending` and `kKeyed` of the header tell, at compile
-time, whether an order is one of the two and has keys). A comparison of two
-keys is then a comparison of two words, which the compiler makes with no
-jump (a comparison of two pairs takes two), and the keys give the radix
-sort its digits. Two items equal in the order have the same key, but for
-the floating point zeros, $-0$ coming before $+0$, which only breaks a tie;
-a NaN, which has no place in the order, has one among the keys.
+These heaps (and the sequence heap of [§9.12](09-priority.md#sec-9-12)) take
+the keys of the numbers from `OrderKey.h`, whose functions and constants lie
+in the namespace `ADS::detail`, since they serve the realizations and are not
+meant for the user. There `orderKey( x )` maps a number of at most 8 bytes, or
+a pair of numbers of at most 8 bytes in all (`IsNumberPair`, the concept
+`OrderKeyed`), to an unsigned word whose order is that of the items. For a
+number, it is the key of the radix sort: the sign bit flipped for a signed
+integer, all the bits flipped for a negative floating point number and the
+sign bit otherwise. For a pair, it is the key of its first item followed by
+that of the second, and `orderKeyBy< C >( x )` complements it for
+`std::greater` (the constants `kAscending`, `kDescending` and `kKeyed` of the
+header tell, at compile time, whether an order is one of the two and has
+keys). A comparison of two keys is then a comparison of two words, which the
+compiler makes with no jump (a comparison of two pairs takes two), and the
+keys give the radix sort its digits. Two items equal in the order have the
+same key, but for the floating point zeros, $-0$ coming before $+0$, which
+only breaks a tie; a NaN, which has no place in the order, has one among the
+keys.
 
 ## 9.11 Merging sorted sequences {#sec-9-11}
 
-The merge of $k$ sorted sequences extracts at each step the least of
-their first items. A heap of the $k$ first items does it with a `pop()` and
-a `push()`, up to $3 \lfloor \log_2 k \rfloor$ comparisons, or with a
-replacement of its top in one walk down, up to
-$2 \lfloor \log_2 k \rfloor$, as in [Morin 2013, exercise
-10.11](Z-bibliography.md#ref-morin-cpp) ([§9.4](09-priority.md#sec-9-4)).
-The *tree of losers* of a tournament ([Knuth 1998,
-§5.4.1](Z-bibliography.md#ref-knuth1998v3)) does it with half as many.
-`LoserTree<T,C>` has the $k$ players (the sequences) as the leaves of a
+The merge of $k$ sorted sequences extracts at each step the least of their
+first items. A heap of the $k$ first items does it with a `pop()` and a
+`push()`, up to $3 \lfloor \log_2 k \rfloor$ comparisons, or with a
+replacement of its top in one walk down, up to $2 \lfloor \log_2 k \rfloor$,
+as in [Morin 2013, exercise 10.11](Z-bibliography.md#ref-morin-cpp)
+([§9.4](09-priority.md#sec-9-4)). The *tree of losers* of a tournament ([Knuth
+1998, §5.4.1](Z-bibliography.md#ref-knuth1998v3)) does it with half as many.
+`LoserTree< T , C >` has the $k$ players (the sequences) as the leaves of a
 complete binary tree laid out as a heap: the leaf of the player $i$ is the
-node $k + i$, and the parent of the node $v$ is $\lfloor v / 2 \rfloor$.
-Each internal node keeps the *loser* of the match played there, and the
-node 0 the overall winner, i.e., the player of least key and, among equal
-keys, of least index. A merge through the tree is thus stable; a player
-that ran out loses all its matches ([Figure 9.19](09-priority.md#fig-9-19)).
+node $k + i$, and the parent of the node $v$ is $\lfloor v / 2 \rfloor$. Each
+internal node keeps the *loser* of the match played there, and the node 0 the
+overall winner, i.e., the player of least key and, among equal keys, of least
+index. A merge through the tree is thus stable; a player that ran out loses
+all its matches ([Figure 9.19](09-priority.md#fig-9-19)).
 
 The public members of `LoserTree` are the following:
 
 ```cpp
 // declarations of <ADS/priority/LoserTree.h>
-template< class T , class C = std::less<> > class LoserTree {
+template< class T , class C = std::less<> >
+class LoserTree
+{
  public:
- explicit LoserTree( std::vector< std::optional< T > > keys ,
-                     C less = C() );
+ explicit LoserTree( std::vector< std::optional< T > > keys , C less = C() );
  std::size_t players( void ) const;
  bool empty( void ) const;
  std::size_t winner( void ) const;
@@ -1780,28 +1799,31 @@ the step of the multiway mergesort (cf.
 notes of [Ferragina 2023, chapter 5](Z-bibliography.md#ref-ferragina2023),
 which use a heap of $k$ pairs for the same purpose.
 
-`MultiwayMerge.h` engineers the merge in two ways. `FlatLoserTree<T,C>` keeps
-in each of its $K - 1$ internal nodes ($K$ the power of two not below $k$)
-the key of the loser together with its source, instead of the index of the
-player. A replay thus reads only the array of the tree, and never the
+`MultiwayMerge.h` engineers the merge in two ways. `FlatLoserTree< T , C >`
+keeps in each of its $K - 1$ internal nodes ($K$ the power of two not below
+$k$) the key of the loser together with its source, instead of the index of
+the player. A replay thus reads only the array of the tree, and never the
 sequence of a loser. A key of at most 16 bytes copied as bytes is kept by
-value, a larger one by its address. On integers in their natural order (the constant `kNaturalOrder`) a
-match compares the pairs (key, source) as one integer of 128 bits, an
-exhausted source having the largest key and its index with the highest bit
-set. Its matches are then made of flags, and the swaps of the winner with
-the loser of a node of masks, with no jump. This matters since the matches
-of a merge of random keys are won by either side with probability $1 / 2$,
-which a branch predicts wrongly half of the time. The sources are given by `start(s,x)`
-before `build()`, and `replaceTop(x)` and `exhaustTop()` replay the path
-of the winner, $\log_2 K = \lceil \log_2 k \rceil$ matches; `sources()`,
-`empty()`, `winner()` and `top()` read the tree. As in `LoserTree`, equal
-keys are won by the lower source, and a merge through the tree is stable.
+value, a larger one by its address. On integers in their natural order (the
+constant `kNaturalOrder`) a match compares the pairs (key, source) as one
+integer of 128 bits, an exhausted source having the largest key and its index
+with the highest bit set. Its matches are then made of flags, and the swaps of
+the winner with the loser of a node of masks, with no jump. This matters since
+the matches of a merge of random keys are won by either side with probability
+$1 / 2$, which a branch predicts wrongly half of the time. The sources are
+given by `start( s , x )` before `build()`, and `replaceTop( x )` and
+`exhaustTop()` replay the path of the winner,
+$\log_2 K = \lceil \log_2 k \rceil$ matches; `sources()`, `empty()`,
+`winner()` and `top()` read the tree. As in `LoserTree`, equal keys are won by
+the lower source, and a merge through the tree is stable.
 
 The public members of `FlatLoserTree` are the following:
 
 ```cpp
 // declarations of <ADS/priority/MultiwayMerge.h>
-template< class T , class C = std::less<> > class FlatLoserTree {
+template< class T , class C = std::less<> >
+class FlatLoserTree
+{
  public:
  explicit FlatLoserTree( std::size_t k , C less = C() );
  std::size_t sources( void ) const;
@@ -1819,20 +1841,20 @@ template< class T , class C = std::less<> > class FlatLoserTree {
 
 --8<-- "generated/MultiwayMerge-FlatLoserTree-replaceTop.pseudo.md"
 
-`multiwayMerge(R,out,less)` merges $k$ sorted ranges into an output
+`multiwayMerge( R , out , less )` merges $k$ sorted ranges into an output
 iterator. On contiguous ranges of items copied as bytes it builds a tree of
-binary mergers (the halves of the sources below each node), with a buffer
-of 4 KiB at each internal node, filled lazily. A node merges its two
-children into its buffer when the buffer runs out, a child being refilled
-when it runs out in turn. This is the $k$-merger of the cache-oblivious funnelsort
-of [Frigo, Leiserson, Prokop and Ramachandran
-2012](Z-bibliography.md#ref-frigo2012), made of binary mergers as [Brodal,
-Fagerberg and Vinther 2008](Z-bibliography.md#ref-brodal2008) engineered
-it. A merge of two goes by stretches as long as the least of the room left
-in its two inputs and in its output, $\min\{ | X | , | Y | , | O | \}$.
-Since each step takes one item from one input, the steps of a stretch
-check no end. Each step is a comparison, a store of the item picked by a
-mask and the advance of an input by the flag, with no jump.
+binary mergers (the halves of the sources below each node), with a buffer of 4
+KiB at each internal node, filled lazily. A node merges its two children into
+its buffer when the buffer runs out, a child being refilled when it runs out
+in turn. This is the $k$-merger of the cache-oblivious funnelsort of [Frigo,
+Leiserson, Prokop and Ramachandran 2012](Z-bibliography.md#ref-frigo2012),
+made of binary mergers as [Brodal, Fagerberg and Vinther
+2008](Z-bibliography.md#ref-brodal2008) engineered it. A merge of two goes by
+stretches as long as the least of the room left in its two inputs and in its
+output, $\min\{ | X | , | Y | , | O | \}$. Since each step takes one item from
+one input, the steps of a stretch check no end. Each step is a comparison, a
+store of the item picked by a mask and the advance of an input by the flag,
+with no jump.
 
 --8<-- "generated/MultiwayMerge-multiwayMerge.pseudo.md"
 
@@ -1855,29 +1877,31 @@ on the matches (tests `engineered_pearls.flat-loser-tree`,
 
 ## 9.12 A priority queue for the caches {#sec-9-12}
 
-In the model of the cache, with $M$ items in the cache and $B$ in a block
-(a line or a page), a heap of $n \gg M$ items misses the cache at almost
-each level of a walk below the levels that fit, i.e.,
-$\Theta( \log( n / M ) )$ times per operation, and the misses (not the
-comparisons) then typically dominate its cost. The sequence heap of
-[Sanders 2000](Z-bibliography.md#ref-sanders2000), `SequenceHeap<T,Better>`,
-keeps instead its items in sorted sequences, merged in large batches, so
-that its memory is read and written in order
-([Figure 9.20](09-priority.md#fig-9-20)). New items go to an insertion
-heap $I$ of at most $m$ items, small enough to stay in the first level of
-the cache, and the best items wait, sorted, in a deletion buffer $D$. When
-$I$ is full, its items are sorted into a sequence that joins the group 1.
-In general, the group $i$ holds up to $k$ sorted sequences of at most $m k^{i - 1}$
-items each, and a buffer of its best items, refilled by merging its
-sequences; when a group is full, its sequences and the buffer of the group
-$i + 1$ are merged into one sequence that joins the group $i + 1$. Finally, the deletion buffer is refilled by merging the
-buffers of the groups.
+In the model of the cache, with $M$ items in the cache and $B$ in a block (a
+line or a page), a heap of $n \gg M$ items misses the cache at almost each
+level of a walk below the levels that fit, i.e., $\Theta( \log( n / M ) )$
+times per operation, and the misses (not the comparisons) then typically
+dominate its cost. The sequence heap of [Sanders
+2000](Z-bibliography.md#ref-sanders2000), `SequenceHeap< T , Better >`, keeps
+instead its items in sorted sequences, merged in large batches, so that its
+memory is read and written in order ([Figure 9.20](09-priority.md#fig-9-20)).
+New items go to an insertion heap $I$ of at most $m$ items, small enough to
+stay in the first level of the cache, and the best items wait, sorted, in a
+deletion buffer $D$. When $I$ is full, its items are sorted into a sequence
+that joins the group 1. In general, the group $i$ holds up to $k$ sorted
+sequences of at most $m k^{i - 1}$ items each, and a buffer of its best items,
+refilled by merging its sequences; when a group is full, its sequences and the
+buffer of the group $i + 1$ are merged into one sequence that joins the group
+$i + 1$. Finally, the deletion buffer is refilled by merging the buffers of
+the groups.
 
 The public members of `SequenceHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/SequenceHeap.h>
-template< class T , class Better = std::less< T > > class SequenceHeap {
+template< class T , class Better = std::less< T > >
+class SequenceHeap
+{
  public:
  explicit SequenceHeap( Better better = Better() );
  void push( const T & x );

@@ -55,7 +55,7 @@
 
 #ifndef __ADS_ParallelText
  #define __ADS_ParallelText
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -79,7 +79,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the LCP array of \f$ T \f$ and of its suffix array \f$ \mathit{SA} \f$
 /// on the threads of `ex`, \f$ n - 1 \f$ entries (none if \f$ n < 2 \f$)
@@ -118,8 +119,8 @@ namespace ADS {
 /// \f]
 /// \pre \f$ \mathit{SA} \f$ is a suffix array of \f$ T \f$ (an audit)
 template< Executor E , class S >
-[[nodiscard]] std::vector< std::size_t > lcpArray( E & ex , const S & T ,
-                                       const std::vector< std::size_t > & SA );
+[[nodiscard]] std::vector< std::size_t >
+lcpArray( E & ex , const S & T , const std::vector< std::size_t > & SA );
 
 /// the LCP array of the text \f$ T \f$ of bytes and of its suffix array
 /// \f$ \mathit{SA} \f$ of indices of the type `I`, on the threads of `ex`,
@@ -151,13 +152,13 @@ template< Executor E , class S >
 /// \pre \f$ \mathit{SA} \f$ is a suffix array of \f$ T \f$
 template< Executor E , class I >
 [[nodiscard]] std::vector< I > lcpArrayPhi( E & ex , std::string_view T ,
-                                            const std::vector< I > & SA );
+					    const std::vector< I > & SA );
 
 /*--------------------------------------------------------------------------*/
 
 template< Executor E , class S >
 std::vector< std::size_t > lcpArray( E & ex , const S & T ,
-                                     const std::vector< std::size_t > & SA )
+				     const std::vector< std::size_t > & SA )
 {
  const std::size_t n = SA.size();
  ADS_PRE( std::size_t( std::size( T ) ) == n );
@@ -165,28 +166,35 @@ std::vector< std::size_t > lcpArray( E & ex , const S & T ,
   return( lcpArray( T , SA ) );
  // Phi, then PLCP in its place
  std::vector< std::size_t > P( n );
- parallelFor( ex , 0 , n , [ & ]( std::size_t r ) {
-  P[ SA[ r ] ] = r == 0 ? n : SA[ r - 1 ]; } , 4096 );
+ parallelFor(
+   ex , 0 , n ,
+   [ & ]( std::size_t r ) { P[ SA[ r ] ] = r == 0 ? n : SA[ r - 1 ]; } ,
+   4096 );
  const std::size_t B = std::min( n , 4 * ex.concurrency() );
- parallelFor( ex , 0 , B , [ & ]( std::size_t b ) {
-  const std::size_t i0 = n * b / B , i1 = n * ( b + 1 ) / B;
-  std::size_t h = 0;
-  for( std::size_t i = i0 ; i < i1 ; ++i ) {
-   const std::size_t j = P[ i ];
-   if( j == n ) {                           // the least suffix
-    h = 0;
-    P[ i ] = 0;
-    continue;
-    }
-   while( ( i + h < n ) && ( j + h < n ) && ( T[ i + h ] == T[ j + h ] ) )
-    ++h;
-   P[ i ] = h;
-   if( h > 0 ) --h;
-   }
-  } , 1 );
+ parallelFor(
+   ex , 0 , B ,
+   [ & ]( std::size_t b ) {
+    const std::size_t i0 = n * b / B , i1 = n * ( b + 1 ) / B;
+    std::size_t h = 0;
+    for( std::size_t i = i0 ; i < i1 ; ++i ) {
+     const std::size_t j = P[ i ];
+     if( j == n ) {  // the least suffix
+      h = 0;
+      P[ i ] = 0;
+      continue;
+      }
+     while( ( i + h < n ) && ( j + h < n ) && ( T[ i + h ] == T[ j + h ] ) )
+      ++h;
+     P[ i ] = h;
+     if( h > 0 )
+      --h;
+     }
+    } ,
+   1 );
  std::vector< std::size_t > LCP( n - 1 );
- parallelFor( ex , 0 , n - 1 , [ & ]( std::size_t r ) {
-  LCP[ r ] = P[ SA[ r + 1 ] ]; } , 4096 );
+ parallelFor(
+   ex , 0 , n - 1 , [ & ]( std::size_t r ) { LCP[ r ] = P[ SA[ r + 1 ] ]; } ,
+   4096 );
  return( LCP );
  }
 
@@ -194,7 +202,7 @@ std::vector< std::size_t > lcpArray( E & ex , const S & T ,
 
 template< Executor E , class I >
 std::vector< I > lcpArrayPhi( E & ex , std::string_view T ,
-                              const std::vector< I > & SA )
+			      const std::vector< I > & SA )
 {
  const std::size_t n = SA.size();
  ADS_PRE( T.size() == n );
@@ -202,18 +210,22 @@ std::vector< I > lcpArrayPhi( E & ex , std::string_view T ,
   return( lcpArrayPhi( T , SA ) );
  const auto * t = reinterpret_cast< const unsigned char * >( T.data() );
  const auto P = std::make_unique_for_overwrite< I[] >( n );
- parallelFor( ex , 0 , n , [ & ]( std::size_t r ) {
-  P[ SA[ r ] ] = r == 0 ? I( n ) : SA[ r - 1 ]; } , 4096 );
+ parallelFor(
+   ex , 0 , n ,
+   [ & ]( std::size_t r ) { P[ SA[ r ] ] = r == 0 ? I( n ) : SA[ r - 1 ]; } ,
+   4096 );
  // the lcp of the suffixes i and Phi[ i ] from h on: 8 symbols at a time
  // after the first 4, which are compared one by one (most lcp are short)
  auto lcp = [ & ]( std::size_t i , std::size_t j , std::size_t h ) {
   const std::size_t far = n - std::max( i , j ) ,
-                    near = std::min( far , h + 4 );
-  while( ( h < near ) && ( t[ i + h ] == t[ j + h ] ) ) ++h;
+  near = std::min( far , h + 4 );
+  while( ( h < near ) && ( t[ i + h ] == t[ j + h ] ) )
+   ++h;
   if( h == near )
    for( ; ; ) {
     if( h + 8 > far ) {
-     while( ( h < far ) && ( t[ i + h ] == t[ j + h ] ) ) ++h;
+     while( ( h < far ) && ( t[ i + h ] == t[ j + h ] ) )
+      ++h;
      break;
      }
     std::uint64_t a , b;
@@ -231,25 +243,29 @@ std::vector< I > lcpArrayPhi( E & ex , std::string_view T ,
   return( h );
   };
  const std::size_t B = std::min( n , 4 * ex.concurrency() );
- parallelFor( ex , 0 , B , [ & ]( std::size_t b ) {
-  const std::size_t i0 = n * b / B , i1 = n * ( b + 1 ) / B;
-  constexpr std::size_t D = 16;            // the text at Phi, ahead
-  std::size_t h = 0;
-  for( std::size_t i = i0 ; i < i1 ; ++i ) {
+ parallelFor(
+   ex , 0 , B ,
+   [ & ]( std::size_t b ) {
+    const std::size_t i0 = n * b / B , i1 = n * ( b + 1 ) / B;
+    constexpr std::size_t D = 16;  // the text at Phi, ahead
+    std::size_t h = 0;
+    for( std::size_t i = i0 ; i < i1 ; ++i ) {
 #if defined( __GNUC__ )
-   if( i + D < i1 )
-    __builtin_prefetch( t + std::min< std::size_t >( std::size_t(
-                                             P[ i + D ] ) + h , n - 1 ) );
+     if( i + D < i1 )
+      __builtin_prefetch(
+	t + std::min< std::size_t >( std::size_t( P[ i + D ] ) + h , n - 1 ) );
 #endif
-   const std::size_t j = std::size_t( P[ i ] );
-   h = j == n ? 0 : lcp( i , j , h );
-   P[ i ] = I( h );
-   h -= ( h != 0 );
-   }
-  } , 1 );
+     const std::size_t j = std::size_t( P[ i ] );
+     h = j == n ? 0 : lcp( i , j , h );
+     P[ i ] = I( h );
+     h -= ( h != 0 );
+     }
+    } ,
+   1 );
  std::vector< I > LCP( n - 1 );
- parallelFor( ex , 0 , n - 1 , [ & ]( std::size_t r ) {
-  LCP[ r ] = P[ SA[ r + 1 ] ]; } , 4096 );
+ parallelFor(
+   ex , 0 , n - 1 , [ & ]( std::size_t r ) { LCP[ r ] = P[ SA[ r + 1 ] ]; } ,
+   4096 );
  return( LCP );
  }
 
@@ -259,7 +275,7 @@ std::vector< I > lcpArrayPhi( E & ex , std::string_view T ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ParallelText.h included */
+#endif /* ParallelText.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File ParallelText.h ------------------------*/

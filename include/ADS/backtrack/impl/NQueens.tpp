@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class F >
 long nQueens( int n , F && f )
@@ -25,8 +26,10 @@ long nQueens( int n , F && f )
  bool stop = false;
  const std::uint64_t all = ( std::uint64_t( 1 ) << n ) - 1;
  auto rec = [ & ]( auto & self , int r , std::uint64_t cols ,
-                   std::uint64_t d1 , std::uint64_t d2 ) -> void {
-  if( stop ) return;
+		   std::uint64_t d1 ,
+		   std::uint64_t d2 ) -> void {
+  if( stop )
+   return;
   if( r == n ) {
    ++count;
    ADS_AUDIT( admissible( Q ) );
@@ -38,7 +41,7 @@ long nQueens( int n , F && f )
    const std::uint64_t bit = free & ( ~free + 1 );
    Q[ r ] = std::countr_zero( bit );
    self( self , r + 1 , cols | bit , ( ( d1 | bit ) << 1 ) & all ,
-         ( d2 | bit ) >> 1 );
+	 ( d2 | bit ) >> 1 );
    }
   };
  rec( rec , 0 , 0 , 0 , 0 );
@@ -58,7 +61,8 @@ inline bool admissible( const std::vector< int > & Q )
 inline std::string board( const std::vector< int > & Q )
 {
  ADS_PRE( std::all_of( Q.begin() , Q.end() , [ & ]( int c ) {
-  return( ( c >= 0 ) && ( c < int( Q.size() ) ) ); } ) );
+  return( ( c >= 0 ) && ( c < int( Q.size() ) ) );
+  } ) );
  std::string s;
  for( int c : Q ) {
   for( std::size_t j = 0 ; j < Q.size() ; ++j )
@@ -73,7 +77,7 @@ long nQueensIterative( int n , F && f )
 {
  ADS_PRE( n >= 1 );
  std::vector< int > V( n , -1 );
- auto free = [ & ]( int k ) {               // V[ k ] not attacked above
+ auto free = [ & ]( int k ) {  // V[ k ] not attacked above
   for( int h = 0 ; h < k ; ++h )
    if( ( V[ h ] == V[ k ] ) || ( std::abs( V[ h ] - V[ k ] ) == k - h ) )
     return( false );
@@ -84,11 +88,11 @@ long nQueensIterative( int n , F && f )
   do
    ++V[ k ];
   while( ( V[ k ] < n ) && ! free( k ) );
-  if( V[ k ] == n ) {                       // row k is over: back
+  if( V[ k ] == n ) {  // row k is over: back
    V[ k ] = -1;
    --k;
    }
-  else if( k == n - 1 ) {                   // a solution
+  else if( k == n - 1 ) {  // a solution
    ADS_POST( admissible( V ) );
    ++count;
    if( f( V ) )

@@ -35,7 +35,7 @@
 
 #ifndef __ADS_OrderKey
  #define __ADS_OrderKey
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -52,15 +52,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS::detail {
+namespace ADS::detail
+{
 
 /// a pair of two numbers
 template< class T >
-struct IsNumberPair : std::false_type {};
+struct IsNumberPair : std::false_type
+{ };
 
 template< class A , class B >
-struct IsNumberPair< std::pair< A , B > > : std::bool_constant<
- RadixKey< A > && RadixKey< B > && ( sizeof( A ) + sizeof( B ) <= 8 ) > {};
+struct IsNumberPair< std::pair< A , B > >
+    : std::bool_constant< RadixKey< A > && RadixKey< B > &&
+			  ( sizeof( A ) + sizeof( B ) <= 8 ) >
+{ };
 
 /// the items with an order key: numbers and pairs of numbers
 template< class T >
@@ -68,17 +72,17 @@ concept OrderKeyed = RadixKey< T > || IsNumberPair< T >::value;
 
 /// the orders of the keys: std::less and std::greater
 template< class T , class C >
-inline constexpr bool kAscending = std::is_same_v< C , std::less<> > ||
-                                   std::is_same_v< C , std::less< T > >;
+inline constexpr bool kAscending =
+  std::is_same_v< C , std::less<> > || std::is_same_v< C , std::less< T > >;
 
 template< class T , class C >
 inline constexpr bool kDescending = std::is_same_v< C , std::greater<> > ||
-                                    std::is_same_v< C , std::greater< T > >;
+				    std::is_same_v< C , std::greater< T > >;
 
 /// the items T ordered by C have keys
 template< class T , class C >
-inline constexpr bool kKeyed = OrderKeyed< T > &&
-                               ( kAscending< T , C > || kDescending< T , C > );
+inline constexpr bool kKeyed =
+  OrderKeyed< T > && ( kAscending< T , C > || kDescending< T , C > );
 
 /// the key of x, ascending
 template< OrderKeyed T >
@@ -90,9 +94,10 @@ template< OrderKeyed T >
   using A = typename T::first_type;
   using B = typename T::second_type;
   using U = std::conditional_t< sizeof( A ) + sizeof( B ) <= 4 ,
-                                std::uint32_t , std::uint64_t >;
+				std::uint32_t ,
+				std::uint64_t >;
   return( U( ( U( radixKey( x.first ) ) << ( 8 * sizeof( B ) ) ) |
-             U( radixKey( x.second ) ) ) );
+	      U( radixKey( x.second ) ) ) );
   }
  }
 
@@ -112,7 +117,7 @@ template< class C , class T >
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* OrderKey.h included */
+#endif /* OrderKey.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File OrderKey.h ---------------------------*/

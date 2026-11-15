@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- THE OPERATIONS ------------------------------*/
@@ -32,18 +33,17 @@ HeapPriorityQueue< T , P , D >::HeapPriorityQueue( int n ) : f_capacity( n )
 template< class T , std::totally_ordered P , int D >
  requires( D >= 2 )
 HeapPriorityQueue< T , P , D >::HeapPriorityQueue(
-                                       HeapPriorityQueue && other ) noexcept
- : f_capacity( std::exchange( other.f_capacity , 0 ) ) ,
-   f_H( std::exchange( other.f_H , {} ) ) ,
-   f_pool( std::move( other.f_pool ) )
-{
- }
+  HeapPriorityQueue && other ) noexcept
+    : f_capacity( std::exchange( other.f_capacity , 0 ) ) ,
+      f_H( std::exchange( other.f_H ,
+{} ) ) ,
+      f_pool( std::move( other.f_pool ) )
+{ }
 
 template< class T , std::totally_ordered P , int D >
  requires( D >= 2 )
-HeapPriorityQueue< T , P , D > &
-HeapPriorityQueue< T , P , D >::operator=( HeapPriorityQueue && other )
- noexcept
+HeapPriorityQueue< T , P , D > & HeapPriorityQueue< T , P , D >::operator=(
+  HeapPriorityQueue && other ) noexcept
 {
  if( this != &other ) {
   for( PriorityItem * h : f_H )
@@ -113,7 +113,7 @@ T HeapPriorityQueue< T , P , D >::deleteMin( void )
  T v = std::move( f_H.back()->value );
  f_pool.free( f_H.back() );
  f_H.pop_back();
- ADS_POST( ( size() == dim ) && ( empty() || !( minPriority() < p ) ) );
+ ADS_POST( ( size() == dim ) && ( empty() || ! ( minPriority() < p ) ) );
  ADS_INVARIANT( isHeap() );
  return( v );
  }
@@ -125,7 +125,7 @@ HeapPriorityQueue< T , P , D >::insert( const T & x , const P & p )
 {
  ADS_PRE( size() < capacity() );
  const int i = size();
- Handle h = f_pool.make( p , x , i );       // the vector has room for it
+ Handle h = f_pool.make( p , x , i );  // the vector has room for it
  f_H.push_back( h );
  up( i );
  ADS_POST( ( size() == i + 1 ) && owns( h ) );
@@ -137,7 +137,7 @@ template< class T , std::totally_ordered P , int D >
  requires( D >= 2 )
 void HeapPriorityQueue< T , P , D >::decrease( Handle y , const P & p )
 {
- ADS_PRE( owns( y ) && !( y->priority < p ) );
+ ADS_PRE( owns( y ) && ! ( y->priority < p ) );
  y->priority = p;
  up( y->pos );
  ADS_POST( owns( y ) && ( y->priority == p ) );
@@ -200,14 +200,14 @@ template< class T , std::totally_ordered P , int D >
 bool HeapPriorityQueue< T , P , D >::owns( Handle y ) const
 {
  return( ( y != nullptr ) && ( y->pos >= 0 ) && ( y->pos < size() ) &&
-         ( f_H[ y->pos ] == y ) );
+	  ( f_H[ y->pos ] == y ) );
  }
 
 template< class T , std::totally_ordered P , int D >
  requires( D >= 2 )
 bool HeapPriorityQueue< T , P , D >::isHeap( void ) const
 {
- if( size() > 1024 ) {                      // the root and the last item
+ if( size() > 1024 ) {  // the root and the last item
   const int l = size() - 1;
   for( int i : { 0 , l } )
    if( f_H[ i ]->pos != i )
@@ -215,7 +215,7 @@ bool HeapPriorityQueue< T , P , D >::isHeap( void ) const
   for( int j = 0 ; ( j < D ) && ( child( 0 , j ) < size() ) ; ++j )
    if( f_H[ child( 0 , j ) ]->priority < f_H[ 0 ]->priority )
     return( false );
-  return( !( f_H[ l ]->priority < f_H[ parent( l ) ]->priority ) );
+  return( ! ( f_H[ l ]->priority < f_H[ parent( l ) ]->priority ) );
   }
  for( int i = 0 ; i < size() ; ++i ) {
   if( f_H[ i ]->pos != i )

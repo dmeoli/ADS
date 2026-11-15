@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 LinkedQueue< T >::LinkedQueue( const LinkedQueue & other )
@@ -25,12 +26,11 @@ LinkedQueue< T >::LinkedQueue( const LinkedQueue & other )
 
 template< class T >
 LinkedQueue< T >::LinkedQueue( LinkedQueue && other ) noexcept
- : f_front( std::exchange( other.f_front , nullptr ) ) ,
-   f_back( std::exchange( other.f_back , nullptr ) ) ,
-   f_size( std::exchange( other.f_size , 0 ) ) ,
-   f_pool( std::move( other.f_pool ) )
-{
- }
+    : f_front( std::exchange( other.f_front , nullptr ) ) ,
+      f_back( std::exchange( other.f_back , nullptr ) ) ,
+      f_size( std::exchange( other.f_size , 0 ) ) ,
+      f_pool( std::move( other.f_pool ) )
+{ }
 
 template< class T >
 LinkedQueue< T > & LinkedQueue< T >::operator=( LinkedQueue other ) noexcept
@@ -102,9 +102,9 @@ std::size_t LinkedQueue< T >::size( void ) const
 template< class T >
 bool LinkedQueue< T >::operator==( const LinkedQueue & o ) const
 {
- const Cell * a = f_front , * b = o.f_front;
+ const Cell *a = f_front , *b = o.f_front;
  for( ; a && b ; a = a->next , b = b->next )
-  if( !( a->value == b->value ) )
+  if( ! ( a->value == b->value ) )
    return( false );
  return( ! a && ! b );
  }

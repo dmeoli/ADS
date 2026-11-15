@@ -15,15 +15,19 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< std::totally_ordered K , class V >
 auto RandomizedSearchTree< K , V >::find( const K & k ) const -> Node *
 {
  for( Node * t = f_root.get() ; t ; )
-  if( k < t->key ) t = t->left.get();
-  else if( t->key < k ) t = t->right.get();
-  else return( t );
+  if( k < t->key )
+   t = t->left.get();
+  else if( t->key < k )
+   t = t->right.get();
+  else
+   return( t );
  return( nullptr );
  }
 
@@ -42,7 +46,7 @@ bool RandomizedSearchTree< K , V >::contains( const K & k ) const
 
 template< std::totally_ordered K , class V >
 auto RandomizedSearchTree< K , V >::split( Ptr t , const K & k )
- -> std::pair< Ptr , Ptr >
+  -> std::pair< Ptr , Ptr >
 {
  if( ! t )
   return( std::pair< Ptr , Ptr >( nullptr , nullptr ) );
@@ -61,7 +65,7 @@ auto RandomizedSearchTree< K , V >::split( Ptr t , const K & k )
 template< std::totally_ordered K , class V >
 void RandomizedSearchTree< K , V >::insert( Ptr & t , Ptr & u )
 {
- if( uniformBelow( f_g , sz( t ) + 1 ) == 0 ) {   // u the root of t
+ if( uniformBelow( f_g , sz( t ) + 1 ) == 0 ) {  // u the root of t
   auto [ a , b ] = split( std::move( t ) , u->key );
   u->left = std::move( a );
   u->right = std::move( b );
@@ -89,8 +93,10 @@ void RandomizedSearchTree< K , V >::insert( const K & k , const V & v )
 template< std::totally_ordered K , class V >
 auto RandomizedSearchTree< K , V >::join( Ptr a , Ptr b ) -> Ptr
 {
- if( ! a ) return( b );
- if( ! b ) return( a );
+ if( ! a )
+  return( b );
+ if( ! b )
+  return( a );
  if( uniformBelow( f_g , a->s + b->s ) < a->s ) {
   a->right = join( std::move( a->right ) , std::move( b ) );
   update( a );
@@ -107,13 +113,16 @@ bool RandomizedSearchTree< K , V >::remove( Ptr & t , const K & k )
  if( ! t )
   return( false );
  bool gone;
- if( k < t->key ) gone = remove( t->left , k );
- else if( t->key < k ) gone = remove( t->right , k );
+ if( k < t->key )
+  gone = remove( t->left , k );
+ else if( t->key < k )
+  gone = remove( t->right , k );
  else {
   t = join( std::move( t->left ) , std::move( t->right ) );
   return( true );
   }
- if( gone ) --t->s;
+ if( gone )
+  --t->s;
  return( gone );
  }
 
@@ -127,14 +136,16 @@ void RandomizedSearchTree< K , V >::remove( const K & k )
 
 template< std::totally_ordered K , class V >
 auto RandomizedSearchTree< K , V >::lowerBoundNode( const K & k ) const
- -> const Node *
+  -> const Node *
 {
  const Node * best = nullptr;
  for( const Node * t = f_root.get() ; t ; )
-  if( t->key < k ) t = t->right.get();
+  if( t->key < k )
+   t = t->right.get();
   else {
    best = t;
-   if( !( k < t->key ) ) break;
+   if( ! ( k < t->key ) )
+    break;
    t = t->left.get();
    }
  return( best );
@@ -142,19 +153,19 @@ auto RandomizedSearchTree< K , V >::lowerBoundNode( const K & k ) const
 
 template< std::totally_ordered K , class V >
 auto RandomizedSearchTree< K , V >::lowerBound( const K & k ) const
- -> std::optional< std::pair< K , V > >
+  -> std::optional< std::pair< K , V > >
 {
  const Node * b = lowerBoundNode( k );
  return( b ? std::optional< std::pair< K , V > >(
-              std::pair< K , V >( b->key , b->value ) )
-           : std::nullopt );
+		std::pair< K , V >( b->key , b->value ) )
+	    : std::nullopt );
  }
 
 template< std::totally_ordered K , class V >
 const K * RandomizedSearchTree< K , V >::findKey( const K & k ) const
 {
  const Node * b = lowerBoundNode( k );
- return( ( b && !( k < b->key ) ) ? &b->key : nullptr );
+ return( ( b && ! ( k < b->key ) ) ? &b->key : nullptr );
  }
 
 template< std::totally_ordered K , class V >
@@ -170,7 +181,8 @@ std::pair< K , V > RandomizedSearchTree< K , V >::select( std::size_t i ) const
  ADS_PRE( i < size() );
  const Node * t = f_root.get();
  for( std::size_t l ; i != ( l = sz( t->left ) ) ; )
-  if( i < l ) t = t->left.get();
+  if( i < l )
+   t = t->left.get();
   else {
    i -= l + 1;
    t = t->right.get();
@@ -208,16 +220,17 @@ template< std::totally_ordered K , class V >
 template< class F >
 void RandomizedSearchTree< K , V >::forEach( F && f ) const
 {
- for( const auto & [ k , v ] : *this ) f( k , v );
+ for( const auto & [ k , v ] : *this )
+  f( k , v );
  }
 
 template< std::totally_ordered K , class V >
 bool RandomizedSearchTree< K , V >::valid( const Ptr & t , const K * lo ,
-                                         const K * hi )
+					  const K * hi )
 {
  if( ! t )
   return( true );
- if( ( lo && !( *lo < t->key ) ) || ( hi && !( t->key < *hi ) ) ||
+ if( ( lo && ! ( *lo < t->key ) ) || ( hi && ! ( t->key < *hi ) ) ||
      ( t->s != 1 + sz( t->left ) + sz( t->right ) ) )
   return( false );
  return( valid( t->left , lo , &t->key ) && valid( t->right , &t->key , hi ) );

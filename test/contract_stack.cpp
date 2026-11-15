@@ -49,7 +49,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
@@ -80,7 +81,7 @@ void stack_against_vector( S & P , std::size_t cap , unsigned seed )
 ADS_TEST( "array-stack" )
 {
  ArrayStack< int > P( 2 );
- CHECK_THROWS( (void) P.top() , contract_violation );
+ CHECK_THROWS( ( void )P.top() , contract_violation );
  CHECK_THROWS( P.pop() , contract_violation );
  P.push( 1 );
  P.push( 2 );
@@ -89,9 +90,9 @@ ADS_TEST( "array-stack" )
  CHECK( P.pop() == 2 && P.pop() == 1 && P.empty() );
  ArrayStack< int > Z( 0 );
  CHECK_THROWS( Z.push( 0 ) , contract_violation );
- CHECK_THROWS( (void) Z.top() , contract_violation );
+ CHECK_THROWS( ( void )Z.top() , contract_violation );
  CHECK_THROWS( Z.pop() , contract_violation );
- ArrayStack< int > O( 1 );                     // full and empty in turn
+ ArrayStack< int > O( 1 );  // full and empty in turn
  for( int i = 0 ; i < 3 ; ++i ) {
   O.push( i );
   CHECK_THROWS( O.push( i ) , contract_violation );
@@ -111,20 +112,20 @@ ADS_TEST( "array-stack" )
 ADS_TEST( "sequence-stack" )
 {
  SequenceStack< List< int > > P;
- CHECK_THROWS( (void) P.top() , contract_violation );
+ CHECK_THROWS( ( void )P.top() , contract_violation );
  CHECK_THROWS( P.pop() , contract_violation );
  P.push( 1 );
  CHECK( P.top() == 1 && ! P.empty() );
- CHECK( P.pop() == 1 && P.empty() );            // emptied again
+ CHECK( P.pop() == 1 && P.empty() );  // emptied again
  CHECK_THROWS( P.pop() , contract_violation );
- SequenceStack< List< double > > N;            // a NaN (a regression)
+ SequenceStack< List< double > > N;  // a NaN (a regression)
  N.push( std::nan( "" ) );
  CHECK( std::isnan( N.top() ) && std::isnan( N.pop() ) );
  SequenceStack< ArraySequence< double > > NA;
  NA.push( std::nan( "" ) );
  CHECK( std::isnan( NA.pop() ) );
  SequenceStack< ArraySequence< int > > A;
- CHECK_THROWS( (void) A.top() , contract_violation );
+ CHECK_THROWS( ( void )A.top() , contract_violation );
  CHECK_THROWS( A.pop() , contract_violation );
  stack_against_vector( A , 1000000 , 2 );
  stack_against_vector( P , 1000000 , 3 );
@@ -140,16 +141,16 @@ void stack_axioms( S create , unsigned seed )
 {
  std::mt19937 g( seed );
  CHECK( create.empty() );
- CHECK_THROWS( (void) create.top() , contract_violation );
+ CHECK_THROWS( ( void )create.top() , contract_violation );
  CHECK_THROWS( create.pop() , contract_violation );
  S P = create;
  for( int t = 0 ; t < 200 ; ++t ) {
   const int v = int( g() % 1000 );
-  S Q = P;                                      // copies are independent
+  S Q = P;  // copies are independent
   Q.push( v );
   CHECK( ! Q.empty() && Q.top() == v );
   CHECK( Q.pop() == v && Q == P );
-  S M( std::move( Q ) );                        // moving leaves Q usable
+  S M( std::move( Q ) );  // moving leaves Q usable
   CHECK( M == P && Q.empty() );
   if( P.empty() || g() % 3 )
    P.push( v );
@@ -158,7 +159,7 @@ void stack_axioms( S create , unsigned seed )
   }
  S R = P;
  const S & r = R;
- R = r;                                         // self-assignment
+ R = r;  // self-assignment
  CHECK( R == P );
  }
 
@@ -170,7 +171,7 @@ ADS_TEST( "stack-axioms" )
  ArrayStack< int > A( 4 ) , B( 9 );
  A.push( 1 );
  B.push( 1 );
- CHECK( A == B );                               // whatever the capacities
+ CHECK( A == B );  // whatever the capacities
  }
 
 // k stacks in one vector: k > 0, the stack i in [ 0 , k ), top() and pop()
@@ -181,29 +182,29 @@ ADS_TEST( "multistack" )
 {
  CHECK_THROWS( MultiStack< int >( 0 ) , contract_violation );
  MultiStack< int > M( 3 );
- CHECK_THROWS( (void) M.empty( 3 ) , contract_violation );
- CHECK_THROWS( (void) M.size( -1 ) , contract_violation );
+ CHECK_THROWS( ( void )M.empty( 3 ) , contract_violation );
+ CHECK_THROWS( ( void )M.size( -1 ) , contract_violation );
  CHECK_THROWS( M.push( 3 , 0 ) , contract_violation );
- CHECK_THROWS( (void) M.top( 0 ) , contract_violation );
+ CHECK_THROWS( ( void )M.top( 0 ) , contract_violation );
  CHECK_THROWS( M.pop( 1 ) , contract_violation );
  CHECK_THROWS( MultiStack< int >( -1 ) , contract_violation );
- CHECK( MultiStack< int >( 1 ).stacks() == 1 );   // k = 1 just inside
+ CHECK( MultiStack< int >( 1 ).stacks() == 1 );  // k = 1 just inside
  // each i just inside ( 0 , k - 1 ) and just outside ( -1 , k )
- CHECK( M.empty( 0 ) && M.empty( 2 ) && M.size( 0 ) == 0 &&
-        M.size( 2 ) == 0 && M.stack( 0 ).empty() && M.stack( 2 ).empty() );
- CHECK_THROWS( (void) M.empty( -1 ) , contract_violation );
- CHECK_THROWS( (void) M.size( 3 ) , contract_violation );
+ CHECK( M.empty( 0 ) && M.empty( 2 ) && M.size( 0 ) == 0 && M.size( 2 ) == 0 &&
+	M.stack( 0 ).empty() && M.stack( 2 ).empty() );
+ CHECK_THROWS( ( void )M.empty( -1 ) , contract_violation );
+ CHECK_THROWS( ( void )M.size( 3 ) , contract_violation );
  CHECK_THROWS( M.push( -1 , 0 ) , contract_violation );
- CHECK_THROWS( (void) M.top( -1 ) , contract_violation );
- CHECK_THROWS( (void) M.top( 3 ) , contract_violation );
+ CHECK_THROWS( ( void )M.top( -1 ) , contract_violation );
+ CHECK_THROWS( ( void )M.top( 3 ) , contract_violation );
  CHECK_THROWS( M.pop( -1 ) , contract_violation );
  CHECK_THROWS( M.pop( 3 ) , contract_violation );
- CHECK_THROWS( (void) M.stack( -1 ) , contract_violation );
- CHECK_THROWS( (void) M.stack( 3 ) , contract_violation );
- M.push( 2 , 7 );                               // the last stack
+ CHECK_THROWS( ( void )M.stack( -1 ) , contract_violation );
+ CHECK_THROWS( ( void )M.stack( 3 ) , contract_violation );
+ M.push( 2 , 7 );  // the last stack
  CHECK( M.top( 2 ) == 7 && M.pop( 2 ) == 7 && M.empty( 2 ) );
- CHECK_THROWS( M.pop( 2 ) , contract_violation );   // emptied again
- M.push( 0 , 1 );                               // a freed cell reused
+ CHECK_THROWS( M.pop( 2 ) , contract_violation );  // emptied again
+ M.push( 0 , 1 );                                  // a freed cell reused
  CHECK( M.top( 0 ) == 1 && M.pop( 0 ) == 1 );
  std::mt19937 g( 4 );
  std::vector< std::vector< int > > R( 3 );
@@ -244,13 +245,14 @@ ADS_TEST( "stack-algorithms" )
    CHECK( x >= prev );
    prev = x;
    }
-  while( ! B.empty() ) CHECK( B.pop() <= 4 );
+  while( ! B.empty() )
+   CHECK( B.pop() <= 4 );
   }
  CHECK( isPalindrome( "abba" ) && ! isPalindrome( "ab" ) );
  // empty and one-character strings, odd length; empty stacks, one item,
  // all items equal, already sorted and reversed, k below and above all
  CHECK( isPalindrome( "" ) && isPalindrome( "x" ) && isPalindrome( "aba" ) &&
-        ! isPalindrome( "abca" ) );
+	! isPalindrome( "abca" ) );
  ArrayStack< int > E( 4 );
  SequenceStack< List< int > > F;
  sortStack( E );
@@ -260,10 +262,10 @@ ADS_TEST( "stack-algorithms" )
  CHECK( E.empty() && F.empty() && visits == 0 );
  for( const std::vector< int > & items :
       { std::vector< int >{ 5 } , std::vector< int >( 6 , 3 ) ,
-        std::vector< int >{ 1 , 2 , 3 , 4 } ,
-        std::vector< int >{ 4 , 3 , 2 , 1 } ,
-        std::vector< int >{ std::numeric_limits< int >::max() ,
-                            std::numeric_limits< int >::min() } } ) {
+	std::vector< int >{ 1 , 2 , 3 , 4 } ,
+	std::vector< int >{ 4 , 3 , 2 , 1 } ,
+	std::vector< int >{ std::numeric_limits< int >::max() ,
+			    std::numeric_limits< int >::min() } } ) {
   const int lo = std::numeric_limits< int >::min();
   ArrayStack< int > S( 10 );
   SequenceStack< List< int > > T , U;
@@ -275,14 +277,17 @@ ADS_TEST( "stack-algorithms" )
   sortStack( S );
   std::vector< int > sorted = items , seen;
   std::sort( sorted.begin() , sorted.end() );
-  for( int x : sorted ) CHECK( S.pop() == x );
-  removeGreater( T , std::numeric_limits< int >::max() );   // none
-  removeGreater( U , lo );                       // all but the minima
+  for( int x : sorted )
+   CHECK( S.pop() == x );
+  removeGreater( T , std::numeric_limits< int >::max() );  // none
+  removeGreater( U ,
+		 lo );  // all but the minima
   forEachBottomUp( T , [ & ]( int x ) { seen.push_back( x ); } );
-  CHECK( seen == items );                        // bottom up, unchanged
+  CHECK( seen == items );  // bottom up, unchanged
   for( std::size_t i = items.size() ; i-- > 0 ; )
    CHECK( T.pop() == items[ i ] );
-  while( ! U.empty() ) CHECK( U.pop() == lo );
+  while( ! U.empty() )
+   CHECK( U.pop() == lo );
   }
  }
 
@@ -319,33 +324,32 @@ ADS_TEST( "expressions" )
  CHECK_THROWS( toPostfixParenthesized( ")" ) , contract_violation );
  CHECK( toPostfix( "" ) == "" && toPostfixParenthesized( "" ) == "" );
  CHECK( toPostfix( "()" ) == "" && toPostfix( "((7))" ) == "7" );
- CHECK( toPostfix( "8 - 3 - 2" ) == "8 3 - 2 -" );       // to the left
+ CHECK( toPostfix( "8 - 3 - 2" ) == "8 3 - 2 -" );  // to the left
  CHECK( evalPostfix( "8 3 - 2 -" ) == 3 && evalPostfix( "7 2 /" ) == 3 &&
-        evalPostfix( "0 7 2 - /" ) == 0 && evalPostfix( "0 7 - 2 /" ) == -3 );
+	evalPostfix( "0 7 2 - /" ) == 0 && evalPostfix( "0 7 - 2 /" ) == -3 );
  // the operations at the bounds of long, just inside and just outside
  const std::string M = std::to_string( std::numeric_limits< long >::max() );
  CHECK( evalPostfix( M ) == std::numeric_limits< long >::max() );
  CHECK( evalPostfix( M + " 1 - 1 +" ) == std::numeric_limits< long >::max() );
  CHECK_THROWS( evalPostfix( M + " 1 +" ) , contract_violation );
  CHECK( evalPostfix( "0 " + M + " - 1 -" ) ==
-        std::numeric_limits< long >::min() );
+	std::numeric_limits< long >::min() );
  CHECK_THROWS( evalPostfix( "0 " + M + " - 2 -" ) , contract_violation );
  CHECK_THROWS( evalPostfix( "0 " + M + " - 1 - 1 -" ) , contract_violation );
  CHECK_THROWS( evalPostfix( M + " 2 *" ) , contract_violation );
  CHECK_THROWS( evalPostfix( "0 " + M + " - 2 *" ) , contract_violation );
- CHECK_THROWS( evalPostfix( "0 " + M + " - 0 2 - *" ) ,
-               contract_violation );
+ CHECK_THROWS( evalPostfix( "0 " + M + " - 0 2 - *" ) , contract_violation );
  CHECK( evalPostfix( "0 " + M + " - 0 1 - *" ) ==
-        std::numeric_limits< long >::max() );
+	std::numeric_limits< long >::max() );
  CHECK( evalPostfix( "0 " + M + " - 1 - 0 *" ) == 0 );
  CHECK( evalPostfix( "0 " + M + " - 1 - 0 1 - 0 1 - * *" ) ==
-        std::numeric_limits< long >::min() );
+	std::numeric_limits< long >::min() );
  CHECK_THROWS( evalPostfix( "0 " + M + " - 1 - 0 1 - /" ) ,
-               contract_violation );                    // min / -1
+	       contract_violation );  // min / -1
  CHECK_THROWS( evalPostfix( "0 " + M + " - 1 - 0 1 - *" ) ,
-               contract_violation );                    // min * -1
+	       contract_violation );  // min * -1
  CHECK( evalPostfix( "0 " + M + " - 1 - 1 /" ) ==
-        std::numeric_limits< long >::min() );
+	std::numeric_limits< long >::min() );
  CHECK_THROWS( evalPostfix( M + "0" ) , std::out_of_range );
  }
 

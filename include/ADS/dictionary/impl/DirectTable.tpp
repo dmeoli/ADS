@@ -14,13 +14,14 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class V >
 DirectTable< V >::DirectTable( long a , long b ) : f_a( a )
 {
  ADS_PRE( ( a <= b ) && ( std::size_t( b ) - std::size_t( a ) <
-                          std::numeric_limits< std::size_t >::max() ) );
+			  std::numeric_limits< std::size_t >::max() ) );
  f_A.resize( std::size_t( b ) - std::size_t( a ) + 1 );
  }
 
@@ -68,7 +69,7 @@ template< class V >
 bool DirectTable< V >::inRange( long k ) const
 {
  return( ( k >= f_a ) &&
-         ( std::size_t( k ) - std::size_t( f_a ) < f_A.size() ) );
+	  ( std::size_t( k ) - std::size_t( f_a ) < f_A.size() ) );
  }
 
 template< class V >

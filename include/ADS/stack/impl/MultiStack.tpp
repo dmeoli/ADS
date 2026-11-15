@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 MultiStack< T >::MultiStack( int k )
@@ -56,7 +57,7 @@ void MultiStack< T >::push( int i , const T & v )
 {
  ADS_PRE( ( i >= 0 ) && ( i < stacks() ) );
  int c = f_free;
- if( c < 0 ) {                          // v copied before f_C moves, as
+ if( c < 0 ) {                         // v copied before f_C moves, as
   f_C.push_back( { v , f_top[ i ] } );  // it may be one of its items
   c = int( f_C.size() ) - 1;
   }
@@ -92,7 +93,8 @@ bool MultiStack< T >::partitioned( void ) const
  std::vector< bool > seen( f_C.size() , false );
  auto walk = [ & ]( int c , int count ) {
   for( ; c >= 0 ; c = f_C[ c ].below , --count ) {
-   if( ( c >= int( f_C.size() ) ) || seen[ c ] ) return( false );
+   if( ( c >= int( f_C.size() ) ) || seen[ c ] )
+    return( false );
    seen[ c ] = true;
    }
   return( count <= 0 );
@@ -100,11 +102,16 @@ bool MultiStack< T >::partitioned( void ) const
  for( int i = 0 ; i < stacks() ; ++i ) {
   int n = 0;
   for( int c = f_top[ i ] ; ( c >= 0 ) && ( n <= int( f_C.size() ) ) ;
-       c = f_C[ c ].below ) ++n;
-  if( ( n != f_size[ i ] ) || ! walk( f_top[ i ] , n ) ) return( false );
+       c = f_C[ c ].below )
+   ++n;
+  if( ( n != f_size[ i ] ) || ! walk( f_top[ i ] , n ) )
+   return( false );
   }
- if( ! walk( f_free , 0 ) ) return( false );
- for( bool s : seen ) if( ! s ) return( false );
+ if( ! walk( f_free , 0 ) )
+  return( false );
+ for( bool s : seen )
+  if( ! s )
+   return( false );
  return( true );
  }
 

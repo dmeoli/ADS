@@ -65,7 +65,7 @@
 
 #ifndef __ADS_DirectAccessCodes
  #define __ADS_DirectAccessCodes
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -87,18 +87,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS DirectAccessCodes ------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a static sequence of integers of variable length with direct access
-class DirectAccessCodes {
+class DirectAccessCodes
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty sequence
  DirectAccessCodes( void ) = default;
 
@@ -183,9 +184,8 @@ class DirectAccessCodes {
  using reference = std::uint64_t;         ///< an item, by value
  using const_reference = std::uint64_t;   ///< an item, by value
  /// the iterator, by `access()`
- using const_iterator = SubscriptIterator< DirectAccessCodes ,
-                                           std::uint64_t >;
- using iterator = const_iterator;         ///< the same as `const_iterator`
+ using const_iterator = SubscriptIterator< DirectAccessCodes , std::uint64_t >;
+ using iterator = const_iterator;  ///< the same as `const_iterator`
 
  /// the iterator at the first item
  [[nodiscard]] const_iterator begin( void ) const {
@@ -205,20 +205,20 @@ class DirectAccessCodes {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a level: its width, its chunks and the bits of the integers that
  /// continue past it, with rank (none on the last level)
- struct Level {
-  int width = 0 ,   ///< the bits of a chunk of the level
-      shift = 0;    ///< the bits of the integers on the levels before it
-  BitVector chunks;   ///< the chunks, one per integer that reaches the level
+ struct Level
+ {
+  int width = 0 ,     ///< the bits of a chunk of the level
+    shift = 0;       ///< the bits of the integers on the levels before it
+  BitVector chunks;  ///< the chunks, one per integer that reaches the level
   /// a 1 for each integer that continues past the level, with rank
   RankSelect more;
   };
 
  /// the levels of the cuts at the places cut[ s ] from s = 0 to w
  void build( std::span< const std::uint64_t > x ,
-             const std::array< int , 65 > & cut , int w );
+	     const std::array< int , 65 > & cut , int w );
 
  std::size_t f_n = 0;
  std::vector< Level > f_lev;
@@ -237,7 +237,7 @@ class DirectAccessCodes {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* DirectAccessCodes.h included */
+#endif /* DirectAccessCodes.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File DirectAccessCodes.h ----------------------*/

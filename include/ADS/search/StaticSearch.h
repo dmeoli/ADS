@@ -102,7 +102,7 @@
 
 #ifndef __ADS_StaticSearch
  #define __ADS_StaticSearch
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -127,7 +127,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the first place of an item not smaller than \f$ v \f$ in the sorted
 /// \f$ A \f$, \f$ n \f$ if none, by the binary search with no branch
@@ -152,7 +153,7 @@ namespace ADS {
 /// \post \f$ A[ r - 1 ] < v \le A[ r ] \f$
 template< class T , class C = std::less<> >
 std::size_t branchlessLowerBound( const std::vector< T > & A , const T & v ,
-                                  C less = C() );
+				  C less = C() );
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS SPlusTree ------------------------------*/
@@ -161,16 +162,17 @@ std::size_t branchlessLowerBound( const std::vector< T > & A , const T & v ,
 /// the static B+-tree of Slotin on a sorted array, by the order `less()`
 template< class T , class Less = std::less< T > , std::size_t Bytes = 64 >
  requires std::is_trivially_copyable_v< T >
-class SPlusTree {
+class SPlusTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the items of a node, a line of cache
- static constexpr std::size_t B = sizeof( T ) <= Bytes ?
-  std::max< std::size_t >( Bytes / sizeof( T ) , 2 ) : 2;
+ static constexpr std::size_t B =
+   sizeof( T ) <= Bytes ? std::max< std::size_t >( Bytes / sizeof( T ) , 2 )
+			: 2;
 
  /// an empty tree
  SPlusTree( void ) = default;
@@ -250,10 +252,9 @@ class SPlusTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static constexpr bool FAST = std::is_arithmetic_v< T > &&
-  ( std::is_same_v< Less , std::less< T > > ||
-    std::is_same_v< Less , std::less<> > );
+ static constexpr bool FAST =
+   std::is_arithmetic_v< T > && ( std::is_same_v< Less , std::less< T > > ||
+				  std::is_same_v< Less , std::less<> > );
 
  [[nodiscard]] static constexpr T pad( void ) {
   if constexpr( std::numeric_limits< T >::has_infinity )
@@ -266,8 +267,9 @@ class SPlusTree {
  /// least one [see `HugePageAllocator.h`]
  [[nodiscard]] static T * allocate( std::size_t n );
 
- struct Free {
-  std::size_t n = 0;                    ///< the items
+ struct Free
+ {
+  std::size_t n = 0;  ///< the items
   void operator()( T * p ) const noexcept {
    if( n * sizeof( T ) >= HUGE_BYTES )
     HugePageAllocator< T >().deallocate( p , n );
@@ -282,20 +284,20 @@ class SPlusTree {
  /// if `Up`
  template< bool Up >
  [[nodiscard]] std::size_t count( const T * a , const T & v ,
-                                  std::size_t m ) const;
+				  std::size_t m ) const;
 
  template< bool Up >
  [[nodiscard]] std::size_t search( const T & v ) const;
 
  void layout( const std::vector< T > & A );
 
- std::vector< std::size_t > f_size;     ///< the nodes of each level
+ std::vector< std::size_t > f_size;  ///< the nodes of each level
 
- std::unique_ptr< T[] , Free > f_a;     ///< the levels, the leaves last
- std::vector< std::size_t > f_off;      ///< the first item of each level
- std::size_t f_items = 0;               ///< the items of the levels
- std::size_t f_n = 0;                   ///< the items
- ADS_NO_UNIQUE_ADDRESS Less f_less;     ///< the order of the items
+ std::unique_ptr< T[] , Free > f_a;   ///< the levels, the leaves last
+ std::vector< std::size_t > f_off;   ///< the first item of each level
+ std::size_t f_items = 0;            ///< the items of the levels
+ std::size_t f_n = 0;                ///< the items
+ ADS_NO_UNIQUE_ADDRESS Less f_less;  ///< the order of the items
 
  };  // end( class SPlusTree )
 
@@ -311,7 +313,7 @@ class SPlusTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* StaticSearch.h included */
+#endif /* StaticSearch.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File StaticSearch.h -------------------------*/

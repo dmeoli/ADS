@@ -81,23 +81,24 @@
 using namespace ADS;
 using ADS::bench::Options;
 
-namespace {
+namespace
+{
 
 using LG = ListGraph< long long >;
 
 /// the edges ( u , v , w ) of G( n , 4 n ), no loop, no repetition
-std::vector< std::tuple< int , int , long long > > gnm( int n ,
-                                                        unsigned seed )
+std::vector< std::tuple< int , int , long long > > gnm( int n , unsigned seed )
 {
  std::mt19937_64 g( seed );
  std::unordered_set< std::uint64_t > seen;
  std::vector< std::tuple< int , int , long long > > E;
  while( int( E.size() ) < 4 * n ) {
   const int u = int( g() % std::uint64_t( n ) ) ,
-            v = int( g() % std::uint64_t( n ) );
-  if( ( u == v ) ||
-      ! seen.insert( std::uint64_t( std::min( u , v ) ) << 32 |
-                     std::uint64_t( std::max( u , v ) ) ).second )
+	    v = int( g() % std::uint64_t( n ) );
+  if( ( u == v ) || ! seen
+			.insert( std::uint64_t( std::min( u , v ) ) << 32 |
+				 std::uint64_t( std::max( u , v ) ) )
+			.second )
    continue;
   E.emplace_back( u , v , 1 + static_cast< long long >( g() % 1000 ) );
   }
@@ -105,9 +106,8 @@ std::vector< std::tuple< int , int , long long > > gnm( int n ,
  }
 
 /// the changes: the place of an edge and its new weight
-std::vector< std::pair< int , long long > > changes( std::size_t k ,
-                                                     std::size_t m ,
-                                                     unsigned seed )
+std::vector< std::pair< int , long long > >
+changes( std::size_t k , std::size_t m , unsigned seed )
 {
  std::mt19937_64 g( seed );
  std::vector< std::pair< int , long long > > C( k );
@@ -118,7 +118,8 @@ std::vector< std::pair< int , long long > > changes( std::size_t k ,
 
 /// a graph, its wrapper and an observer, built and solved
 template< class O >
-struct State {
+struct State
+{
  LG g;
  std::unique_ptr< O > o;
  std::unique_ptr< Observable< LG > > og;
@@ -128,15 +129,16 @@ struct State {
 /// fresh( g ) the answer from scratch
 template< class Make , class Query , class Fresh >
 void reopt( const char * bench , int n , bool directed , int r ,
-            unsigned seed , Make && make , Query && query , Fresh && fresh )
+	    unsigned seed ,
+	    Make && make , Query && query , Fresh && fresh )
 {
  const auto E = gnm( n , seed );
  const std::size_t m = E.size();
  for( const char * c : { "single" , "batch" } ) {
-  const std::size_t batch = std::string( c ) == "single" ? 1 :
-                            std::max< std::size_t >( m / 100 , 1 );
+  const std::size_t batch =
+    std::string( c ) == "single" ? 1 : std::max< std::size_t >( m / 100 , 1 );
   auto build = [ & ]( void ) {
-   using O = std::decay_t< decltype( * make( std::declval< LG & >() ) ) >;
+   using O = std::decay_t< decltype( *make( std::declval< LG & >() ) ) >;
    auto s = std::make_unique< State< O > >();
    s->g = LG( n , directed );
    for( const auto & [ u , v , w ] : E )
@@ -150,26 +152,29 @@ void reopt( const char * bench , int n , bool directed , int r ,
    };
   const auto C1 = changes( 1024 * batch , m , seed + 1 );
   const auto C0 = changes( 64 * batch , m , seed + 2 );
-  for( const std::string who : { "observer" , "observer A/A" ,
-                                 "scratch" } ) {
+  for( const std::string who : { "observer" , "observer A/A" , "scratch" } ) {
    if( ADS::bench::skip( who ) )
     continue;
    const bool obs = who != "scratch";
    const auto & C = obs ? C1 : C0;
-   const double ns = ADS::bench::median( build , [ & ]( auto & s ) {
-    std::uint64_t h = 0;
-    for( std::size_t i = 0 ; i < C.size() ; i += batch ) {
-     {
-      auto b = s->og->batch();
-      for( std::size_t j = i ; j < std::min( C.size() , i + batch ) ; ++j ) {
-       const auto & [ u , v , w0 ] = E[ C[ j ].first ];
-       s->og->setWeight( u , v , C[ j ].second );
-       ( void ) w0;
+   const double ns = ADS::bench::median(
+     build ,
+     [ & ]( auto & s ) {
+      std::uint64_t h = 0;
+      for( std::size_t i = 0 ; i < C.size() ; i += batch ) {
+       {
+	auto b = s->og->batch();
+	for( std::size_t j = i ; j < std::min( C.size() , i + batch ) ; ++j ) {
+	 const auto & [ u , v , w0 ] = E[ C[ j ].first ];
+	 s->og->setWeight( u , v , C[ j ].second );
+	 ( void )w0;
+	 }
+        }
+       h += std::uint64_t( obs ? query( *s->o ) : fresh( s->g ) );
        }
-      }
-     h += std::uint64_t( obs ? query( *s->o ) : fresh( s->g ) );
-     }
-    ADS::bench::sink = h; } , r , C.size() );
+      ADS::bench::sink = h;
+      } ,
+     r , C.size() );
    ADS::bench::print( bench , c , std::size_t( n ) , who , ns );
    }
   }
@@ -187,75 +192,87 @@ void linkCut( int n , int r , unsigned seed )
  std::vector< long long > val( n );
  for( auto & x : val )
   x = static_cast< long long >( g() % 1000000 );
- struct Max {
+ struct Max
+ {
   long long operator()( long long a , long long b ) const {
    return( a < b ? b : a );
    }
   };
- for( const std::string who : { "LinkCutTree" , "LinkCutTree A/A" ,
-                                "parents" } ) {
+ for( const std::string who :
+      { "LinkCutTree" , "LinkCutTree A/A" , "parents" } ) {
   if( ADS::bench::skip( who ) )
    continue;
   double ns;
   if( who != "parents" )
-   ns = ADS::bench::median( [ & ]( void ) {
-    LinkCutTree< long long , Max > T( n , -1 );
-    for( int v = 0 ; v < n ; ++v )
-     T.setValue( v , val[ v ] );
-    return( T ); } , [ & ]( auto & T ) {
-    std::uint64_t h = 0;
-    for( std::size_t i = 0 ; i < Q.size() ; ++i ) {
-     const auto [ u , v ] = Q[ i ];
-     if( u == v )
-      continue;
-     if( T.connected( u , v ) ) {
-      if( i % 2 )
-       h += std::uint64_t( T.aggregate( u , v ) );
-      else
-       T.cutParent( u );
-      }
-     else
-      T.link( u , v );
-     }
-    ADS::bench::sink = h; } , r , Q.size() );
-  else
-   ns = ADS::bench::median( [ & ]( void ) {
-    return( std::vector< int >( n , -1 ) ); } , [ & ]( auto & par ) {
-    // the same operations: the root of u found by its parents, an evert
-    // by the reversal of the path to the root
-    auto root = [ & ]( int x ) {
-     while( par[ x ] >= 0 ) x = par[ x ];
-     return( x ); };
-    auto evert = [ & ]( int x ) {
-     int prev = -1;
-     while( x >= 0 ) {
-      const int up = par[ x ];
-      par[ x ] = prev;
-      prev = x;
-      x = up;
-      } };
-    std::uint64_t h = 0;
-    for( std::size_t i = 0 ; i < Q.size() ; ++i ) {
-     const auto [ u , v ] = Q[ i ];
-     if( u == v )
-      continue;
-     if( root( u ) == root( v ) ) {
-      if( i % 2 ) {
-       long long m = -1;
-       evert( u );
-       for( int x = v ; x >= 0 ; x = par[ x ] )
-        m = std::max( m , val[ x ] );
-       h += std::uint64_t( m );
+   ns = ADS::bench::median(
+     [ & ]( void ) {
+      LinkCutTree< long long , Max > T( n , -1 );
+      for( int v = 0 ; v < n ; ++v )
+       T.setValue( v , val[ v ] );
+      return( T );
+      } ,
+     [ & ]( auto & T ) {
+      std::uint64_t h = 0;
+      for( std::size_t i = 0 ; i < Q.size() ; ++i ) {
+       const auto [ u , v ] = Q[ i ];
+       if( u == v )
+	continue;
+       if( T.connected( u , v ) ) {
+	if( i % 2 )
+	 h += std::uint64_t( T.aggregate( u , v ) );
+	else
+	 T.cutParent( u );
+        }
+       else
+	T.link( u , v );
        }
-      else
-       par[ u ] = -1;
-      }
-     else {
-      evert( u );
-      par[ u ] = v;
-      }
-     }
-    ADS::bench::sink = h; } , r , Q.size() );
+      ADS::bench::sink = h;
+      } ,
+     r , Q.size() );
+  else
+   ns = ADS::bench::median(
+     [ & ]( void ) { return( std::vector< int >( n , -1 ) ); } ,
+     [ & ]( auto & par ) {
+      // the same operations: the root of u found by its parents, an evert
+      // by the reversal of the path to the root
+      auto root = [ & ]( int x ) {
+       while( par[ x ] >= 0 )
+	x = par[ x ];
+       return( x );
+       };
+      auto evert = [ & ]( int x ) {
+       int prev = -1;
+       while( x >= 0 ) {
+	const int up = par[ x ];
+	par[ x ] = prev;
+	prev = x;
+	x = up;
+        }
+       };
+      std::uint64_t h = 0;
+      for( std::size_t i = 0 ; i < Q.size() ; ++i ) {
+       const auto [ u , v ] = Q[ i ];
+       if( u == v )
+	continue;
+       if( root( u ) == root( v ) ) {
+	if( i % 2 ) {
+	 long long m = -1;
+	 evert( u );
+	 for( int x = v ; x >= 0 ; x = par[ x ] )
+	  m = std::max( m , val[ x ] );
+	 h += std::uint64_t( m );
+	 }
+	else
+	 par[ u ] = -1;
+        }
+       else {
+	evert( u );
+	par[ u ] = v;
+        }
+       }
+      ADS::bench::sink = h;
+      } ,
+     r , Q.size() );
   ADS::bench::print( "link-cut" , "random" , std::size_t( n ) , who , ns );
   }
  }
@@ -267,29 +284,34 @@ void rollback( int n , int r , unsigned seed )
  std::vector< std::pair< int , int > > P( n );
  for( auto & p : P )
   p = { int( g() % unsigned( n ) ) , int( g() % unsigned( n ) ) };
- for( const std::string who : { "RollbackUnionFind" ,
-                                "RollbackUnionFind A/A" , "UnionFind" } ) {
+ for( const std::string who :
+      { "RollbackUnionFind" , "RollbackUnionFind A/A" , "UnionFind" } ) {
   if( ADS::bench::skip( who ) )
    continue;
   double ns;
   if( who != "UnionFind" )
-   ns = ADS::bench::median( [ & ]( void ) {
-    return( RollbackUnionFind( n ) ); } , [ & ]( auto & U ) {
-    // merges in groups of 64, each group rolled back half of the times
-    for( std::size_t i = 0 ; i < P.size() ; i += 64 ) {
-     const int t = U.checkpoint();
-     for( std::size_t j = i ; j < std::min( P.size() , i + 64 ) ; ++j )
-      U.merge( P[ j ].first , P[ j ].second );
-     if( ( i / 64 ) % 2 )
-      U.rollback( t );
-     }
-    ADS::bench::sink = std::uint64_t( U.count() ); } , r , P.size() );
+   ns = ADS::bench::median(
+     [ & ]( void ) { return( RollbackUnionFind( n ) ); } ,
+     [ & ]( auto & U ) {
+      // merges in groups of 64, each group rolled back half of the times
+      for( std::size_t i = 0 ; i < P.size() ; i += 64 ) {
+       const int t = U.checkpoint();
+       for( std::size_t j = i ; j < std::min( P.size() , i + 64 ) ; ++j )
+	U.merge( P[ j ].first , P[ j ].second );
+       if( ( i / 64 ) % 2 )
+	U.rollback( t );
+       }
+      ADS::bench::sink = std::uint64_t( U.count() );
+      } ,
+     r , P.size() );
   else
    ns = ADS::bench::median( [ & ]( void ) { return( UnionFind( n ) ); } ,
-                            [ & ]( auto & U ) {
-    for( const auto & [ x , y ] : P )
-     U.merge( x , y );
-    ADS::bench::sink = std::uint64_t( U.count() ); } , r , P.size() );
+			    [ & ]( auto & U ) {
+			     for( const auto & [ x , y ] : P )
+			      U.merge( x , y );
+			     ADS::bench::sink = std::uint64_t( U.count() );
+			     } ,
+			    r , P.size() );
   ADS::bench::print( "rollback" , "random" , std::size_t( n ) , who , ns );
   }
  }
@@ -316,38 +338,45 @@ void offline( int n , int r , unsigned seed )
    }
   else
    ops.push_back( { Op::CONNECTED , int( g() % unsigned( n ) ) ,
-                    int( g() % unsigned( n ) ) } );
+		    int( g() % unsigned( n ) ) } );
   }
- for( const std::string who : { "offlineConnectivity" ,
-                                "offlineConnectivity A/A" , "rebuild" } ) {
+ for( const std::string who :
+      { "offlineConnectivity" , "offlineConnectivity A/A" , "rebuild" } ) {
   if( ADS::bench::skip( who ) || ( ( who == "rebuild" ) && ( n > 10000 ) ) )
    continue;
   double ns;
   if( who != "rebuild" )
-   ns = ADS::bench::median( [ & ]( void ) { return( 0 ); } , [ & ]( int ) {
-    ADS::bench::sink = std::uint64_t( offlineConnectivity( n , ops ).size() );
-    } , r , ops.size() );
+   ns = ADS::bench::median( [ & ]( void ) { return( 0 ); } ,
+			    [ & ]( int ) {
+			     ADS::bench::sink = std::uint64_t(
+			       offlineConnectivity( n , ops ).size() );
+			     } ,
+			    r , ops.size() );
   else
-   ns = ADS::bench::median( [ & ]( void ) { return( 0 ); } , [ & ]( int ) {
-    std::vector< std::pair< int , int > > live;
-    std::uint64_t h = 0;
-    for( const auto & o : ops )
-     if( o.kind == Op::INSERT )
-      live.emplace_back( o.u , o.v );
-     else if( o.kind == Op::DELETE ) {
-      for( std::size_t j = live.size() ; j-- > 0 ; )
-       if( live[ j ] == std::pair< int , int >( o.u , o.v ) ) {
-        live.erase( live.begin() + std::ptrdiff_t( j ) );
-        break;
+   ns = ADS::bench::median(
+     [ & ]( void ) { return( 0 ); } ,
+     [ & ]( int ) {
+      std::vector< std::pair< int , int > > live;
+      std::uint64_t h = 0;
+      for( const auto & o : ops )
+       if( o.kind == Op::INSERT )
+	live.emplace_back( o.u , o.v );
+       else if( o.kind == Op::DELETE ) {
+	for( std::size_t j = live.size() ; j-- > 0 ; )
+	 if( live[ j ] == std::pair< int , int >( o.u , o.v ) ) {
+	  live.erase( live.begin() + std::ptrdiff_t( j ) );
+	  break;
+	  }
         }
-      }
-     else {
-      UnionFind U( n );
-      for( const auto & [ u , v ] : live )
-       U.merge( u , v );
-      h += U.same( o.u , o.v );
-      }
-    ADS::bench::sink = h; } , r , ops.size() );
+       else {
+	UnionFind U( n );
+	for( const auto & [ u , v ] : live )
+	 U.merge( u , v );
+	h += U.same( o.u , o.v );
+        }
+      ADS::bench::sink = h;
+      } ,
+     r , ops.size() );
   ADS::bench::print( "offline" , "random" , std::size_t( n ) , who , ns );
   }
  }
@@ -361,35 +390,41 @@ int main( int argc , char ** argv )
  const Options o( argc , argv , { 10000 , 100000 } );
  for( std::size_t n0 : o.sizes ) {
   const int n = int( n0 );
-  reopt( "reopt sssp" , n , true , o.runs , o.seed ,
-         []( LG & g ) {
-          return( std::make_unique< ShortestPathsObserver< LG > >( g , 0 ) );
-          } ,
-         []( auto & x ) { return( x.distance( 0 ) + x.tree().d.back() ); } ,
-         []( const LG & g ) {
-          return( shortestPaths( g , 0 , Frontier::HEAP ).d.back() ); } );
-  reopt( "reopt mst" , n , false , o.runs , o.seed ,
-         []( LG & g ) {
-          return( std::make_unique< SpanningForestObserver< LG > >( g ) );
-          } ,
-         []( auto & x ) { return( x.weight() ); } ,
-         []( const LG & g ) {
-          long long s = 0;
-          for( const auto & e : kruskal( g ) )
-           s += e.w;
-          return( s ); } );
-  reopt( "reopt flow" , n , true , o.runs , o.seed ,
-         [ n ]( LG & g ) {
-          return( std::make_unique< MaxFlowObserver< LG > >( g , 0 ,
-                                                             n - 1 ) );
-          } ,
-         []( auto & x ) { return( x.value() ); } ,
-         [ n ]( const LG & g ) {
-          FlowNetwork N( g.bound() );
-          for( int u : g.V() )
-           g.forEachEdge( u , [ & ]( int v , long long w ) {
-            N.addEdge( u , v , w ); } );
-          return( N.maxFlow( 0 , n - 1 ) ); } );
+  reopt(
+    "reopt sssp" , n , true , o.runs , o.seed ,
+    []( LG & g ) {
+     return( std::make_unique< ShortestPathsObserver< LG > >( g , 0 ) );
+     } ,
+    []( auto & x ) { return( x.distance( 0 ) + x.tree().d.back() ); } ,
+    []( const LG & g ) {
+     return( shortestPaths( g , 0 , Frontier::HEAP ).d.back() );
+     } );
+  reopt(
+    "reopt mst" , n , false , o.runs , o.seed ,
+    []( LG & g ) {
+     return( std::make_unique< SpanningForestObserver< LG > >( g ) );
+     } ,
+    []( auto & x ) { return( x.weight() ); } ,
+    []( const LG & g ) {
+     long long s = 0;
+     for( const auto & e : kruskal( g ) )
+      s += e.w;
+     return( s );
+     } );
+  reopt(
+    "reopt flow" , n , true , o.runs , o.seed ,
+    [ n ]( LG & g ) {
+     return( std::make_unique< MaxFlowObserver< LG > >( g , 0 , n - 1 ) );
+     } ,
+    []( auto & x ) { return( x.value() ); } ,
+    [ n ]( const LG & g ) {
+     FlowNetwork N( g.bound() );
+     for( int u : g.V() )
+      g.forEachEdge( u ,
+		     [ & ]( int v ,
+			    long long w ) { N.addEdge( u , v , w ); } );
+     return( N.maxFlow( 0 , n - 1 ) );
+     } );
   linkCut( n , o.runs , o.seed );
   rollback( n , o.runs , o.seed );
   offline( n , o.runs , o.seed );

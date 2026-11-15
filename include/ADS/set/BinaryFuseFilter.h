@@ -71,7 +71,7 @@
 
 #ifndef __ADS_BinaryFuseFilter
  #define __ADS_BinaryFuseFilter
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -94,7 +94,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS BinaryFuseFilter -------------------------*/
@@ -104,11 +105,11 @@ namespace ADS {
 /// 3 places per key in 3 consecutive segments
 template< class T , class F = std::uint8_t , class H = DefaultHash< T > >
  requires( std::is_unsigned_v< F > && ( sizeof( F ) <= 4 ) )
-class BinaryFuseFilter {
+class BinaryFuseFilter
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the filter of the keys, which may repeat
  ///
  /// In pseudocode (Graf and Lemire), \f$ c[ p ] \f$ the keys of the place
@@ -145,7 +146,7 @@ class BinaryFuseFilter {
  /// \pre fewer than \f$ 2^{31} \f$ keys
  /// \post every key is maybe there (an audit)
  explicit BinaryFuseFilter( const std::vector< T > & keys ,
-                            std::uint64_t seed = 1 , H h = H() );
+			    std::uint64_t seed = 1 , H h = H() );
 
  /// whether \f$ x \f$ may be in the set: true for every key of the set,
  /// and for any other with probability about \f$ 2^{-b} \f$, \f$ b \f$
@@ -176,8 +177,7 @@ class BinaryFuseFilter {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static constexpr std::size_t kMaxTrials = 1000;   ///< seeds at most
+ static constexpr std::size_t kMaxTrials = 1000;  ///< seeds at most
 
  /// the hash of \f$ x \f$ before the seed, mixed unless `H` avalanches
  [[nodiscard]] std::uint64_t base( const T & x ) const;
@@ -198,13 +198,13 @@ class BinaryFuseFilter {
  /// fails
  bool build( const std::vector< std::uint64_t > & B );
 
- std::vector< F > f_F;             ///< the fingerprints
- std::uint64_t f_seed;             ///< the seed of the last trial
- std::uint32_t f_L = 0;            ///< the places of a segment
- std::uint32_t f_CL = 0;           ///< the places of h_0, C L
- std::size_t f_n = 0;              ///< the keys, the repeated ones once
- std::size_t f_trials = 0;         ///< the seeds drawn
- H f_h;                            ///< the hash of the keys
+ std::vector< F > f_F;      ///< the fingerprints
+ std::uint64_t f_seed;      ///< the seed of the last trial
+ std::uint32_t f_L = 0;     ///< the places of a segment
+ std::uint32_t f_CL = 0;    ///< the places of h_0, C L
+ std::size_t f_n = 0;       ///< the keys, the repeated ones once
+ std::size_t f_trials = 0;  ///< the seeds drawn
+ H f_h;                     ///< the hash of the keys
 
  };  // end( class BinaryFuseFilter )
 
@@ -220,7 +220,7 @@ class BinaryFuseFilter {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BinaryFuseFilter.h included */
+#endif /* BinaryFuseFilter.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File BinaryFuseFilter.h ----------------------*/

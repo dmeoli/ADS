@@ -65,7 +65,7 @@
 
 #ifndef __ADS_SequenceProblems
  #define __ADS_SequenceProblems
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -85,7 +85,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the water held by the columns of heights \f$ h \f$, no walls outside
 ///
@@ -182,8 +183,8 @@ T maxSumIncreasingSubsequence( const std::vector< T > & A );
 /// \f]
 /// \post increasing places, `less` on each two consecutive items (audit)
 template< class T , class Less >
-std::vector< std::size_t > longestChainSubsequence(
-                                    const std::vector< T > & S , Less less );
+std::vector< std::size_t > longestChainSubsequence( const std::vector< T > & S ,
+						    Less less );
 
 /// the start and the length of the first longest segment of \f$ A \f$ with no
 /// value repeated
@@ -209,8 +210,8 @@ std::vector< std::size_t > longestChainSubsequence(
 /// \f]
 /// \post the values of the segment distinct (audit)
 template< class T , class Hash = std::hash< T > >
-std::pair< std::size_t , std::size_t > longestDistinctSegment(
-                                                  const std::vector< T > & A );
+std::pair< std::size_t , std::size_t >
+longestDistinctSegment( const std::vector< T > & A );
 
 /*--------------------------------------------------------------------------*/
 
@@ -224,7 +225,7 @@ std::pair< std::size_t , std::size_t > longestDistinctSegment(
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SequenceProblems.h included */
+#endif /* SequenceProblems.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File SequenceProblems.h -----------------------*/

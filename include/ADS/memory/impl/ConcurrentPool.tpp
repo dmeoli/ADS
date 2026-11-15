@@ -15,13 +15,13 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< std::size_t M >
 ConcurrentPoolResource< M >::ConcurrentPoolResource( void )
- : f_id( s_ids.fetch_add( 1 , std::memory_order_relaxed ) + 1 )
-{
- }
+    : f_id( s_ids.fetch_add( 1 , std::memory_order_relaxed ) + 1 )
+{ }
 
 template< std::size_t M >
 ConcurrentPoolResource< M >::~ConcurrentPoolResource()
@@ -59,13 +59,13 @@ ConcurrentPoolResource< M >::find( void )
  Heap * h = top;
  while( h && ( h->id != me ) )
   h = h->link;
- if( ! h ) {                              // a new heap, pushed on the list
+ if( ! h ) {  // a new heap, pushed on the list
   h = new Heap;
   h->id = me;
   h->link = top;
-  while( ! f_heaps.compare_exchange_weak( h->link , h ,
-                                          std::memory_order_release ,
-                                          std::memory_order_acquire ) ) {}
+  while( ! f_heaps.compare_exchange_weak(
+    h->link , h , std::memory_order_release , std::memory_order_acquire ) ) {
+   }
   }
  s_cache.id = f_id;
  s_cache.heap = h;
@@ -84,9 +84,9 @@ inline void * ConcurrentPoolResource< M >::take( std::size_t c )
 template< std::size_t M >
 void * ConcurrentPoolResource< M >::refill( Heap & h , std::size_t c )
 {
- send( h.out[ c ] , c );                   // its own frees for others
+ send( h.out[ c ] , c );  // its own frees for others
  std::atomic< Free * > & r = h.returns[ c ].top;
- if( r.load( std::memory_order_relaxed ) ) { // the returns, all at once
+ if( r.load( std::memory_order_relaxed ) ) {  // the returns, all at once
   Free * f = r.exchange( nullptr , std::memory_order_acquire );
   while( f ) {
    Free * const n = f->next;
@@ -106,7 +106,7 @@ inline void ConcurrentPoolResource< M >::give( void * p , std::size_t c )
  Page * const g = Pages::pageOf( p );
  ADS_PRE( g->c == c );
  Heap * const o = static_cast< Heap * >( g->owner );
- if( o == mine() ) [[likely]] {             // a slot of the own heap
+ if( o == mine() ) [[likely]] {  // a slot of the own heap
   o->pages.give( g , p );
   return;
   }
@@ -134,7 +134,7 @@ void ConcurrentPoolResource< M >::send( Batch & b , std::size_t c )
  do
   b.tail->next = t;
  while( ! r.compare_exchange_weak( t , b.head , std::memory_order_release ,
-                                   std::memory_order_relaxed ) );
+				   std::memory_order_relaxed ) );
  b.head = b.tail = nullptr;
  b.n = 0;
  }
@@ -169,7 +169,7 @@ void * ConcurrentPoolResource< M >::allocate( std::size_t b , std::size_t a )
 
 template< std::size_t M >
 void ConcurrentPoolResource< M >::deallocate( void * p , std::size_t b ,
-                                              std::size_t a )
+					      std::size_t a )
 {
  if( pooled( b , a ) )
   give( p , classOf( b , a ) );
@@ -184,7 +184,7 @@ void ConcurrentPoolResource< M >::collect( void )
  for( std::size_t c = 0 ; c < CLASSES ; ++c ) {
   send( h.out[ c ] , c );
   Free * f = h.returns[ c ].top.exchange( nullptr ,
-                                          std::memory_order_acquire );
+					  std::memory_order_acquire );
   while( f ) {
    Free * const n = f->next;
    h.pages.give( Pages::pageOf( f ) , f );

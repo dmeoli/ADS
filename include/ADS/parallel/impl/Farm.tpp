@@ -16,9 +16,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the work of the task t by the worker i, as work( t , i ) or as work( t )
 template< class W , class T >
@@ -27,7 +29,7 @@ decltype( auto ) farmWork( W & work , T && t , std::size_t i )
  if constexpr( std::is_invocable_v< W & , T && , std::size_t > )
   return( work( std::forward< T >( t ) , i ) );
  else {
-  (void) i;
+  ( void )i;
   return( work( std::forward< T >( t ) ) );
   }
  }
@@ -40,7 +42,7 @@ void farmStart( S & start , M & emit , std::size_t m )
  if constexpr( std::is_invocable_v< S & , M & , std::size_t > )
   start( emit , m );
  else {
-  (void) m;
+  ( void )m;
   start( emit );
   }
  }
@@ -66,10 +68,9 @@ void farmAlone( S & start , O & onResult , W & work )
 
 /*--------------------------------------------------------------------------*/
 
-template< class T , class R , WorkerExecutor E , class S , class O ,
-          class W >
+template< class T , class R , WorkerExecutor E , class S , class O , class W >
 void feedbackFarm( E & ex , std::size_t w , S && start , O && onResult ,
-                   W && work )
+		   W && work )
 {
  ADS_PRE( ( w == 0 ) || ( w + 1 <= ex.concurrency() ) );
  if( w == 0 ) {
@@ -82,16 +83,16 @@ void feedbackFarm( E & ex , std::size_t w , S && start , O && onResult ,
   c *= 2;
  MPMCQueue< std::optional< T > > tasks( c );
  MPSCQueue< std::optional< R > , 64 > results;
- std::vector< typename MPSCQueue< std::optional< R > , 64 >::Producer >
-  lane( w );
+ std::vector< typename MPSCQueue< std::optional< R > , 64 >::Producer > lane(
+   w );
  for( auto & l : lane )
   l = results.producer();
  std::atomic< bool > end{ false };
  detail::FirstError error;
 
  auto master = [ & ]( void ) {
-  std::deque< T > ready;                   // emitted, not yet queued
-  std::size_t m = 0;                       // emitted, not yet back
+  std::deque< T > ready;  // emitted, not yet queued
+  std::size_t m = 0;      // emitted, not yet back
   auto emit = [ & ]( T t ) {
    ready.push_back( std::move( t ) );
    ++m;
@@ -105,7 +106,7 @@ void feedbackFarm( E & ex , std::size_t w , S && start , O && onResult ,
     while( ! ready.empty() ) {
      std::optional< T > t( std::move( ready.front() ) );
      if( ! tasks.push( std::move( t ) ) ) {
-      ready.front() = std::move( *t );     // full: kept for later
+      ready.front() = std::move( *t );  // full: kept for later
       break;
       }
      ready.pop_front();
@@ -167,14 +168,16 @@ void feedbackFarm( E & ex , std::size_t w , S && start , O && onResult ,
 
 #if defined( ADS_WITH_FASTFLOW )
 
-namespace detail {
+namespace detail
+{
 
 /// the emitter of the farm of FastFlow: the master, of index w
 template< class T , class R , class S , class O >
-struct FarmEmitter : ff::ff_node_t< std::optional< R > , T > {
+struct FarmEmitter : ff::ff_node_t< std::optional< R > , T >
+{
  FarmEmitter( S & s , O & o , std::atomic< bool > & stop , FirstError & e ,
-              std::size_t w )
-  : start( s ) , onResult( o ) , stop( stop ) , error( e ) , index( w ) {}
+	      std::size_t w )
+     : start( s ) , onResult( o ) , stop( stop ) , error( e ) , index( w ) { }
 
  T * svc( std::optional< R > * r ) override {
   auto emit = [ this ]( T t ) {
@@ -188,7 +191,7 @@ struct FarmEmitter : ff::ff_node_t< std::optional< R > , T > {
     std::unique_ptr< std::optional< R > > own( r );
     --m;
     if( ( ! stopped ) && own->has_value() &&
-        ! onResult( std::move( **own ) , emit ) )
+	! onResult( std::move( **own ) , emit ) )
      stopped = true;
     }
    }
@@ -202,21 +205,22 @@ struct FarmEmitter : ff::ff_node_t< std::optional< R > , T > {
   return( m == 0 ? this->EOS : this->GO_ON );
   }
 
- S & start;                                ///< the first tasks
- O & onResult;                             ///< the master
- std::atomic< bool > & stop;               ///< told to the workers
- FirstError & error;                       ///< the first exception
- std::size_t index;                        ///< the index of the master
- std::size_t m = 0;                        ///< the tasks not yet back
- bool stopped = false;                     ///< the master has stopped
+ S & start;                   ///< the first tasks
+ O & onResult;                ///< the master
+ std::atomic< bool > & stop;  ///< told to the workers
+ FirstError & error;          ///< the first exception
+ std::size_t index;           ///< the index of the master
+ std::size_t m = 0;           ///< the tasks not yet back
+ bool stopped = false;        ///< the master has stopped
  };
 
 /// the worker i of the farm of FastFlow, a node with a thread of its own
 template< class T , class R , class W >
-struct FarmWorker : ff::ff_node_t< T , std::optional< R > > {
+struct FarmWorker : ff::ff_node_t< T , std::optional< R > >
+{
  FarmWorker( W & w , std::atomic< bool > & stop , FirstError & e ,
-             std::size_t i )
-  : work( w ) , stop( stop ) , error( e ) , index( i ) {}
+	     std::size_t i )
+     : work( w ) , stop( stop ) , error( e ) , index( i ) { }
 
  std::optional< R > * svc( T * t ) override {
   std::unique_ptr< T > own( t );
@@ -231,17 +235,17 @@ struct FarmWorker : ff::ff_node_t< T , std::optional< R > > {
   return( r );
   }
 
- W & work;                                 ///< the work of a task
- std::atomic< bool > & stop;               ///< set by the master
- FirstError & error;                       ///< the first exception
- std::size_t index;                        ///< the index of the worker
+ W & work;                    ///< the work of a task
+ std::atomic< bool > & stop;  ///< set by the master
+ FirstError & error;          ///< the first exception
+ std::size_t index;           ///< the index of the worker
  };
 
 }  // end( namespace detail )
 
 template< class T , class R , class S , class O , class W >
 void feedbackFarm( FastFlowExecutor & ex , std::size_t w , S && start ,
-                   O && onResult , W && work )
+		   O && onResult , W && work )
 {
  ADS_PRE( w <= ex.concurrency() );
  if( w == 0 ) {
@@ -251,13 +255,12 @@ void feedbackFarm( FastFlowExecutor & ex , std::size_t w , S && start ,
  std::atomic< bool > stop{ false };
  detail::FirstError error;
  using Emitter = detail::FarmEmitter< T , R , std::remove_reference_t< S > ,
-                                      std::remove_reference_t< O > >;
+				      std::remove_reference_t< O > >;
  using Worker = detail::FarmWorker< T , R , std::remove_reference_t< W > >;
  Emitter emitter( start , onResult , stop , error , w );
  std::vector< std::unique_ptr< ff::ff_node > > workers;
  for( std::size_t i = 0 ; i < w ; ++i )
-  workers.push_back( std::make_unique< Worker >( work , stop , error ,
-                                                  i ) );
+  workers.push_back( std::make_unique< Worker >( work , stop , error , i ) );
  ff::ff_Farm<> farm( std::move( workers ) , emitter );
  farm.remove_collector();
  farm.set_scheduling_ondemand();
@@ -267,7 +270,7 @@ void feedbackFarm( FastFlowExecutor & ex , std::size_t w , S && start ,
  error.rethrow();
  }
 
-#endif  /* ADS_WITH_FASTFLOW */
+#endif /* ADS_WITH_FASTFLOW */
 
 /*--------------------------------------------------------------------------*/
 

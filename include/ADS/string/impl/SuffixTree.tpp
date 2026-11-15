@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline SuffixTree::SuffixTree( std::string_view T , Build b )
 {
@@ -28,24 +29,31 @@ inline SuffixTree::SuffixTree( const Symbols & T , std::size_t K , Build b )
  }
 
 inline void SuffixTree::construct( const Symbols & T , std::size_t K ,
-                                   Build b )
+				   Build b )
 {
  f_T.resize( T.size() + 1 );
- for( std::size_t i = 0 ; i < T.size() ; ++i ) f_T[ i ] = T[ i ] + 1;
+ for( std::size_t i = 0 ; i < T.size() ; ++i )
+  f_T[ i ] = T[ i ] + 1;
  f_T.back() = 0;
  f_N.reserve( 2 * f_T.size() );
  newNode( 0 , 0 , npos );
  switch( b ) {
-  case Build::naive: buildNaive(); break;
-  case Build::mcCreight: buildMcCreight(); break;
-  case Build::suffixArray: buildFromSuffixArray( T , K ); break;
+  case Build::naive:
+   buildNaive();
+   break;
+  case Build::mcCreight:
+   buildMcCreight();
+   break;
+  case Build::suffixArray:
+   buildFromSuffixArray( T , K );
+   break;
   }
  finish();
  ADS_INVARIANT( valid() );
  }
 
 inline std::size_t SuffixTree::newNode( std::size_t pos , std::size_t depth ,
-                                        std::size_t parent )
+					std::size_t parent )
 {
  Node x;
  x.pos = pos;
@@ -64,7 +72,7 @@ inline std::size_t SuffixTree::attachLeaf( std::size_t u , std::size_t i )
  }
 
 inline std::size_t SuffixTree::split( std::size_t u , std::size_t c ,
-                                      std::size_t d )
+				      std::size_t d )
 {
  const std::size_t p = f_N[ c ].pos;
  const std::size_t w = newNode( p , d , u );
@@ -81,11 +89,12 @@ inline void SuffixTree::buildNaive( void )
   std::size_t u = 0;
   for( ; ; ) {
    const auto it = f_N[ u ].child.find( f_T[ i + f_N[ u ].depth ] );
-   if( it == f_N[ u ].child.end() ) break;
+   if( it == f_N[ u ].child.end() )
+    break;
    const std::size_t c = it->second;
    std::size_t k = f_N[ u ].depth + 1;
    while( ( k < f_N[ c ].depth ) &&
-          ( f_T[ f_N[ c ].pos + k ] == f_T[ i + k ] ) )
+	  ( f_T[ f_N[ c ].pos + k ] == f_T[ i + k ] ) )
     ++k;
    if( k < f_N[ c ].depth ) {
     u = split( u , c , k );
@@ -100,16 +109,17 @@ inline void SuffixTree::buildNaive( void )
 inline void SuffixTree::buildMcCreight( void )
 {
  const std::size_t N = f_T.size();
- std::vector< std::size_t > link( 1 , 0 );      // the suffix links
+ std::vector< std::size_t > link( 1 , 0 );  // the suffix links
  auto setLink = [ & ]( std::size_t u , std::size_t v ) {
-  if( link.size() <= u ) link.resize( f_N.size() , npos );
+  if( link.size() <= u )
+   link.resize( f_N.size() , npos );
   link[ u ] = v;
   };
  auto getLink = [ & ]( std::size_t u ) {
   return( u < link.size() ? link[ u ] : npos );
   };
  attachLeaf( 0 , 0 );
- std::size_t h = 0;                  // the locus of head_{i-1}
+ std::size_t h = 0;  // the locus of head_{i-1}
  for( std::size_t i = 1 ; i < N ; ++i ) {
   std::size_t w = getLink( h );
   if( w == npos ) {
@@ -119,7 +129,8 @@ inline void SuffixTree::buildMcCreight( void )
    std::size_t u = f == 0 ? 0 : getLink( f );
    while( f_N[ u ].depth < D ) {
     const std::size_t c = f_N[ u ].child.at( f_T[ i + f_N[ u ].depth ] );
-    if( f_N[ c ].depth <= D ) u = c;
+    if( f_N[ c ].depth <= D )
+     u = c;
     else {
      u = split( u , c , D );
      break;
@@ -132,11 +143,12 @@ inline void SuffixTree::buildMcCreight( void )
   std::size_t u = w;
   for( ; ; ) {
    const auto it = f_N[ u ].child.find( f_T[ i + f_N[ u ].depth ] );
-   if( it == f_N[ u ].child.end() ) break;
+   if( it == f_N[ u ].child.end() )
+    break;
    const std::size_t c = it->second;
    std::size_t k = f_N[ u ].depth + 1;
    while( ( k < f_N[ c ].depth ) &&
-          ( f_T[ f_N[ c ].pos + k ] == f_T[ i + k ] ) )
+	  ( f_T[ f_N[ c ].pos + k ] == f_T[ i + k ] ) )
     ++k;
    if( k < f_N[ c ].depth ) {
     u = split( u , c , k );
@@ -150,16 +162,17 @@ inline void SuffixTree::buildMcCreight( void )
  }
 
 inline void SuffixTree::buildFromSuffixArray( const Symbols & T ,
-                                              std::size_t K )
+					      std::size_t K )
 {
  const std::size_t n = T.size();
  const std::vector< std::size_t > SA = suffixArraySais( T , K ) ,
-                                  LCP = lcpArray( T , SA );
- std::size_t last = attachLeaf( 0 , n );         // the terminator first
+				  LCP = lcpArray( T , SA );
+ std::size_t last = attachLeaf( 0 , n );  // the terminator first
  for( std::size_t r = 0 ; r < n ; ++r ) {
   const std::size_t l = r == 0 ? 0 : LCP[ r - 1 ];
   std::size_t x = last;
-  while( f_N[ f_N[ x ].parent ].depth > l ) x = f_N[ x ].parent;
+  while( f_N[ f_N[ x ].parent ].depth > l )
+   x = f_N[ x ].parent;
   const std::size_t p = f_N[ x ].parent;
   const std::size_t u = f_N[ p ].depth == l ? p : split( p , x , l );
   last = attachLeaf( u , SA[ r ] );
@@ -174,8 +187,7 @@ inline std::vector< std::size_t > SuffixTree::preorder( void ) const
   const std::size_t u = S.back();
   S.pop_back();
   out.push_back( u );
-  for( auto it = f_N[ u ].child.rbegin() ; it != f_N[ u ].child.rend() ;
-       ++it )
+  for( auto it = f_N[ u ].child.rbegin() ; it != f_N[ u ].child.rend() ; ++it )
    S.push_back( it->second );
   }
  return( out );
@@ -186,7 +198,7 @@ inline void SuffixTree::finish( void )
  const std::size_t N = f_T.size() , m = f_N.size();
  f_leaf.assign( N , npos );
  const std::vector< std::size_t > pre = preorder();
- for( std::size_t k = m ; k-- > 0 ; ) {        // children before parents
+ for( std::size_t k = m ; k-- > 0 ; ) {  // children before parents
   Node & x = f_N[ pre[ k ] ];
   if( x.suffix != npos ) {
    x.leaves = 1;
@@ -194,7 +206,8 @@ inline void SuffixTree::finish( void )
    }
   else {
    x.leaves = 0;
-   for( const auto & e : x.child ) x.leaves += f_N[ e.second ].leaves;
+   for( const auto & e : x.child )
+    x.leaves += f_N[ e.second ].leaves;
    }
   }
 
@@ -240,7 +253,8 @@ inline bool SuffixTree::valid( void ) const
        ( x.pos != x.suffix ) )
     return( false );
    }
-  else if( ( u != 0 ) && ( x.child.size() < 2 ) ) return( false );
+  else if( ( u != 0 ) && ( x.child.size() < 2 ) )
+   return( false );
   for( const auto & [ key , c ] : x.child ) {
    const Node & y = f_N[ c ];
    if( ( y.parent != u ) || ( y.depth <= x.depth ) ||
@@ -280,10 +294,12 @@ inline std::size_t SuffixTree::locus( const Symbols & P ) const
  std::size_t u = 0 , k = 0;
  while( k < p ) {
   const auto it = f_N[ u ].child.find( P[ k ] + 1 );
-  if( it == f_N[ u ].child.end() ) return( npos );
+  if( it == f_N[ u ].child.end() )
+   return( npos );
   const std::size_t c = it->second;
   for( ++k ; ( k < p ) && ( k < f_N[ c ].depth ) ; ++k )
-   if( f_T[ f_N[ c ].pos + k ] != P[ k ] + 1 ) return( npos );
+   if( f_T[ f_N[ c ].pos + k ] != P[ k ] + 1 )
+    return( npos );
   u = c;
   }
  return( u );
@@ -297,26 +313,28 @@ inline std::size_t SuffixTree::locus( std::string_view P ) const
 inline std::size_t SuffixTree::count( std::string_view P ) const
 {
  const std::size_t u = locus( P );
- if( u == npos ) return( 0 );
- return( f_N[ u ].leaves - ( u == 0 ? 1 : 0 ) );    // not the terminator
+ if( u == npos )
+  return( 0 );
+ return( f_N[ u ].leaves - ( u == 0 ? 1 : 0 ) );  // not the terminator
  }
 
-inline std::vector< std::size_t > SuffixTree::locate(
-                                                std::string_view P ) const
+inline std::vector< std::size_t >
+SuffixTree::locate( std::string_view P ) const
 {
  std::vector< std::size_t > out;
  const std::size_t u = locus( P );
- if( u == npos ) return( out );
+ if( u == npos )
+  return( out );
  std::vector< std::size_t > S( 1 , u );
  while( ! S.empty() ) {
   const std::size_t v = S.back();
   S.pop_back();
   if( f_N[ v ].suffix != npos ) {
-   if( f_N[ v ].suffix < textSize() ) out.push_back( f_N[ v ].suffix );
+   if( f_N[ v ].suffix < textSize() )
+    out.push_back( f_N[ v ].suffix );
    continue;
    }
-  for( auto it = f_N[ v ].child.rbegin() ; it != f_N[ v ].child.rend() ;
-       ++it )
+  for( auto it = f_N[ v ].child.rbegin() ; it != f_N[ v ].child.rend() ; ++it )
    S.push_back( it->second );
   }
  return( out );
@@ -326,7 +344,8 @@ inline std::size_t SuffixTree::lca( std::size_t u , std::size_t v ) const
 {
  ADS_PRE( ( u < f_N.size() ) && ( v < f_N.size() ) );
  std::size_t a = f_first[ u ] , b = f_first[ v ];
- if( a > b ) std::swap( a , b );
+ if( a > b )
+  std::swap( a , b );
  return( f_E[ f_tour.query( a , b ) ] );
  }
 
@@ -334,13 +353,15 @@ inline std::size_t SuffixTree::lce( std::size_t i , std::size_t j ) const
 {
  const std::size_t n = textSize();
  ADS_PRE( ( i <= n ) && ( j <= n ) );
- if( ( i == n ) || ( j == n ) ) return( 0 );
- if( i == j ) return( n - i );
+ if( ( i == n ) || ( j == n ) )
+  return( 0 );
+ if( i == j )
+  return( n - i );
  return( f_N[ lca( f_leaf[ i ] , f_leaf[ j ] ) ].depth );
  }
 
 inline std::pair< std::vector< std::size_t > , std::vector< std::size_t > >
-                                      SuffixTree::toSuffixArray( void ) const
+SuffixTree::toSuffixArray( void ) const
 {
  std::vector< std::size_t > SA , LCP;
  using It = std::map< std::size_t , std::size_t >::const_iterator;
@@ -352,15 +373,18 @@ inline std::pair< std::vector< std::size_t > , std::vector< std::size_t > >
    S.pop_back();
    continue;
    }
-  if( it != f_N[ u ].child.begin() ) LCP.push_back( f_N[ u ].depth );
+  if( it != f_N[ u ].child.begin() )
+   LCP.push_back( f_N[ u ].depth );
   const std::size_t c = ( it++ )->second;
-  if( f_N[ c ].suffix != npos ) SA.push_back( f_N[ c ].suffix );
+  if( f_N[ c ].suffix != npos )
+   SA.push_back( f_N[ c ].suffix );
   else
    S.emplace_back( c , f_N[ c ].child.begin() );
   }
  // the terminator is the first leaf, and its lcp with the next is 0
  SA.erase( SA.begin() );
- if( ! LCP.empty() ) LCP.erase( LCP.begin() );
+ if( ! LCP.empty() )
+  LCP.erase( LCP.begin() );
  return( std::pair( std::move( SA ) , std::move( LCP ) ) );
  }
 

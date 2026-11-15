@@ -45,7 +45,7 @@
 
 #ifndef __ADS_ShortestJobFirst
  #define __ADS_ShortestJobFirst
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -62,7 +62,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the order of the programs, by increasing duration
 ///
@@ -84,7 +85,7 @@ std::vector< std::size_t > shortestJobFirst( const std::vector< T > & t );
 /// \pre the places of \f$ A \f$ are places of \f$ t \f$
 template< class T >
 T totalCompletion( const std::vector< T > & t ,
-                   const std::vector< std::size_t > & A );
+		   const std::vector< std::size_t > & A );
 
 /// the order of the programs of times \f$ t \f$ and weights \f$ w \f$ of least
 /// weighted sum of the times of completion, by increasing \f$ t / w \f$
@@ -103,15 +104,15 @@ T totalCompletion( const std::vector< T > & t ,
 /// \post the places by increasing \f$ t / w \f$
 template< class T , class W >
 std::vector< std::size_t > smithOrder( const std::vector< T > & t ,
-                                       const std::vector< W > & w );
+				       const std::vector< W > & w );
 
 /// the sum of \f$ w_i C_i \f$ in the order \f$ A \f$, \f$ C_i \f$ the time of
 /// completion of \f$ i \f$
 /// \pre \f$ |t| = |w| \f$ and the places of \f$ A \f$ are places of \f$ t \f$
 template< class T , class W >
 auto weightedCompletion( const std::vector< T > & t ,
-                         const std::vector< W > & w ,
-                         const std::vector< std::size_t > & A );
+			 const std::vector< W > & w ,
+			 const std::vector< std::size_t > & A );
 
 /*--------------------------------------------------------------------------*/
 
@@ -125,7 +126,7 @@ auto weightedCompletion( const std::vector< T > & t ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ShortestJobFirst.h included */
+#endif /* ShortestJobFirst.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File ShortestJobFirst.h -----------------------*/

@@ -45,7 +45,7 @@
 
 #ifndef __ADS_DictionarySet
  #define __ADS_DictionarySet
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -73,7 +73,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS DictionarySet ---------------------------*/
@@ -82,12 +83,12 @@ namespace ADS {
 /// a set on a DICTIONARY `D`, an item being a key: a `USet` of Morin if
 /// `D` is a `KeyedDictionary`, an `SSet` if it is an `OrderedDictionary`
 template< class D >
-class DictionarySet {
+class DictionarySet
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = typename D::Key;   ///< the type of the items
+ using Item = typename D::Key;  ///< the type of the items
 
  /// the empty set on the dictionary `D( a... )`
  template< class... A >
@@ -164,30 +165,31 @@ class DictionarySet {
 
  /// the iterator on the first key of the dictionary
  [[nodiscard]] auto begin( void ) const
-  requires std::ranges::forward_range< const D > {
+  requires std::ranges::forward_range< const D >
+ {
   return( KeyIterator( std::ranges::begin( std::as_const( f_d ) ) ) );
   }
 
  /// the iterator past the last key of the dictionary
  [[nodiscard]] auto end( void ) const
-  requires std::ranges::forward_range< const D > {
+  requires std::ranges::forward_range< const D >
+ {
   return( KeyIterator( std::ranges::end( std::as_const( f_d ) ) ) );
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the value of a new key: true, or made by default
  [[nodiscard]] static typename D::Value mark( void );
 
- mutable D f_d;   ///< the dictionary of the items, which a search may move
+ mutable D f_d;  ///< the dictionary of the items, which a search may move
 
  };  // end( class DictionarySet )
 
 /// the set on a hash table with lists of overflow
 template< class T , class H = std::hash< T > >
-using ChainedHashSet = DictionarySet< ChainedHashTable< T , bool ,
-                                                        Chain::FRONT , H > >;
+using ChainedHashSet =
+  DictionarySet< ChainedHashTable< T , bool , Chain::FRONT , H > >;
 
 /// the set on a hash table with open addressing
 template< class T , class H = std::hash< T > >
@@ -207,7 +209,7 @@ using TreeSet = DictionarySet< RedBlackTree< T , bool > >;
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* DictionarySet.h included */
+#endif /* DictionarySet.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File DictionarySet.h ------------------------*/

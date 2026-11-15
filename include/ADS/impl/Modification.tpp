@@ -18,10 +18,12 @@
 #include <optional>
 #include <unordered_map>
 
-namespace ADS::mod {
+namespace ADS::mod
+{
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- THE KINDS --------------------------------*/
@@ -30,7 +32,7 @@ namespace detail {
 template< class L , class F >
 void visitKind( std::size_t k , F && f )
 {
- [ & ]< class ... E >( list< E... > * ) {
+ [ & ]< class... E >( list< E... > * ) {
   std::size_t i = 0;
   ( ( ( i++ == k ) ? ( f.template operator()< E >() , void() ) : void() ) ,
     ... );
@@ -68,30 +70,35 @@ int Slots< L , Obs >::attach( D & o )
 {
  check< A , D , L >();
  Slot s;
- s.o = & o;
+ s.o = &o;
  s.mask = kinds_of< A , D , L >::value;
  if constexpr( calls_mask< A , D > )
   s.mask &= A::mask( o );
- [ & ]< std::size_t ... I >( std::index_sequence< I... > ) {
-  ( fill< A , D , I >( s ) , ... ); }( std::make_index_sequence< K >() );
+ [ & ]< std::size_t... I >( std::index_sequence< I... > ) {
+  ( fill< A , D , I >( s ) , ... );
+  }( std::make_index_sequence< K >() );
  if constexpr( calls_span< A , D , Var > )
   s.all = []( void * p , std::span< const Var > C ) {
-   A::many( *static_cast< D * >( p ) , C ); };
+   A::many( *static_cast< D * >( p ) , C );
+   };
  if constexpr( calls_group< A , D > ) {
   s.begin = []( void * p , const Group & g ) {
-   A::begin( *static_cast< D * >( p ) , g ); };
+   A::begin( *static_cast< D * >( p ) , g );
+   };
   s.end = []( void * p ) { A::end( *static_cast< D * >( p ) ); };
   }
  if constexpr( calls_policy< A , D > ) {
   s.early = []( void * p , std::size_t k ) -> bool {
-   return( A::early( *static_cast< D * >( p ) , k ) ); };
+   return( A::early( *static_cast< D * >( p ) , k ) );
+   };
   s.rebuilt = []( void * p ) { A::rebuilt( *static_cast< D * >( p ) ); };
   }
  if constexpr( ! std::is_void_v< Obs > ) {
   if constexpr( calls_audit< A , D , Obs > )
    s.audit = []( const void * p , const void * x ) -> bool {
     return( A::audit( *static_cast< const D * >( p ) ,
-                      *static_cast< const Obs * >( x ) ) ); };
+		       *static_cast< const Obs * >( x ) ) );
+    };
   }
  f_s.push_back( s );
  f_mask |= s.mask;
@@ -112,14 +119,17 @@ void Slots< L , Obs >::fill( Slot & s )
    else {
     A::one( d , x );
     return( Keep::Yes );
-    } };
+    }
+   };
   s.run[ I ] = []( void * p , std::span< const Var > R ) -> bool {
-   return( giveRun< A , D , E >( *static_cast< D * >( p ) , R ) ); };
+   return( giveRun< A , D , E >( *static_cast< D * >( p ) , R ) );
+   };
   }
  if constexpr( calls_prepare< A , D , E > )
   s.prep[ I ] = []( const void * p , const void * e ) -> bool {
    return( A::prepare( *static_cast< const D * >( p ) ,
-                       *static_cast< const E * >( e ) ) ); };
+			*static_cast< const E * >( e ) ) );
+   };
  }
 
 template< class L , class Obs >
@@ -155,7 +165,7 @@ void Slots< L , Obs >::deliver( const E & e , Trail & t )
    }
   if constexpr( T )
    t.dy = i;
-  if( s.one[ k ]( s.o , & e ) == Keep::Detach ) {
+  if( s.one[ k ]( s.o , &e ) == Keep::Detach ) {
    s.o = nullptr;
    gone = true;
    }
@@ -180,12 +190,13 @@ void Slots< L , Obs >::undo( const Inv & inv , const Trail & t ) noexcept
        ( s.one[ j ] == nullptr ) )
     continue;
    try {
-    if( s.one[ j ]( s.o , & inv ) == Keep::Detach ) {
-     s.o = nullptr;                     // honoured after the rollback
+    if( s.one[ j ]( s.o , &inv ) == Keep::Detach ) {
+     s.o = nullptr;  // honoured after the rollback
      gone = true;
      }
     }
-   catch( ... ) {}                      // the first exception wins
+   catch( ... ) {
+    }  // the first exception wins
    }
   if( gone )
    remask();
@@ -199,7 +210,7 @@ bool Slots< L , Obs >::prepare( const E & e ) const
  constexpr std::size_t k = index_v< E , L >;
  for( const auto & s : f_s )
   if( s.o && ( ( s.mask >> k ) & 1u ) && s.prep[ k ] &&
-      ! s.prep[ k ]( s.o , & e ) )
+      ! s.prep[ k ]( s.o , &e ) )
    return( false );
  return( true );
  }
@@ -210,7 +221,7 @@ bool Slots< L , Obs >::audit( [[maybe_unused]] const S & x ) const
 {
  if constexpr( std::is_same_v< S , Obs > ) {
   for( const auto & s : f_s )
-   if( s.o && s.audit && ! s.audit( s.o , & x ) )
+   if( s.o && s.audit && ! s.audit( s.o , &x ) )
     return( false );
   }
  return( true );
@@ -218,8 +229,8 @@ bool Slots< L , Obs >::audit( [[maybe_unused]] const S & x ) const
 
 template< class L , class Obs >
 void Slots< L , Obs >::deliverGroup( std::span< const Var > C ,
-                                     std::uint64_t kinds , const Group & g ,
-                                     std::vector< Var > & tmp )
+				    std::uint64_t kinds , const Group & g ,
+				    std::vector< Var > & tmp )
 {
  bool gone = false;
  for( std::size_t i = 0 ; i < f_s.size() ; ++i ) {
@@ -231,7 +242,7 @@ void Slots< L , Obs >::deliverGroup( std::span< const Var > C ,
    ++s.counts.groups;
   if( s.early && s.early( s.o , eventsFor( C , m , ( kinds & ~m ) == 0 ) ) ) {
    if constexpr( ADS_CONTRACTS >= 3 )
-    ++s.counts.rebuilds;                // Rebuilt instead of the events
+    ++s.counts.rebuilds;  // Rebuilt instead of the events
    if( s.begin )
     s.begin( s.o , g );
    s.rebuilt( s.o );
@@ -285,10 +296,10 @@ template< class E , class U >
 void Subject< L , Obs , St , Dy >::emit( const E & e , U && undo )
 {
  static_assert( contains_v< E , L > ,
-                "ADS: an event that the structure does not declare" );
+		"ADS: an event that the structure does not declare" );
  ++f_built;
  if( ( f_depth | f_quiet ) != 0 ) {
-  defer( e );                           // nobody is told before the close
+  defer( e );  // nobody is told before the close
   return;
   }
  if( ! live< E >() )
@@ -299,7 +310,8 @@ void Subject< L , Obs , St , Dy >::emit( const E & e , U && undo )
   f_st.template deliver< E , true >( e , t );
   if constexpr( dynamic ) {
    f_dy.f_busy = true;
-   struct Done {
+   struct Done
+   {
     bool & b;
     ~Done() { b = false; }
     } done{ f_dy.f_busy };
@@ -328,17 +340,17 @@ void Subject< L , Obs , St , Dy >::defer( const E & e )
  if( f_quiet > 0 )
   return;
  if constexpr( ( role_of< E > == Role::BulkInsert ) ||
-               ( role_of< E > == Role::BulkErase ) ) {
+	       ( role_of< E > == Role::BulkErase ) ) {
   using H = typename decltype( e.hs )::value_type;
-  auto c = std::make_shared< const std::vector< H > >( e.hs.begin() ,
-                                                      e.hs.end() );
+  auto c =
+    std::make_shared< const std::vector< H > >( e.hs.begin() , e.hs.end() );
   f_buf.emplace_back( E{ std::span< const H >( *c ) } );
   f_keep.push_back( std::move( c ) );
   }
  else if constexpr( role_of< E > == Role::Permute ) {
   using H = typename decltype( e.old_of_new )::value_type;
-  auto c = std::make_shared< const std::vector< H > >(
-                                e.old_of_new.begin() , e.old_of_new.end() );
+  auto c = std::make_shared< const std::vector< H > >( e.old_of_new.begin() ,
+						       e.old_of_new.end() );
   f_buf.emplace_back( E{ std::span< const H >( *c ) } );
   f_keep.push_back( std::move( c ) );
   }
@@ -372,14 +384,15 @@ void Subject< L , Obs , St , Dy >::discard( std::size_t m )
 template< class L , class Obs , class St , class Dy >
 void Subject< L , Obs , St , Dy >::flush( void )
 {
- struct Hold {
+ struct Hold
+ {
   std::vector< std::shared_ptr< const void > > & k;
   ~Hold() { k.clear(); }
   } hold{ f_keep };
  if( f_buf.empty() )
   return;
- const std::vector< Event > C = coalesce_traits< L >::coalesce(
-                                std::span< const Event >( f_buf ) );
+ const std::vector< Event > C =
+   coalesce_traits< L >::coalesce( std::span< const Event >( f_buf ) );
  f_buf.clear();
  if( C.empty() )
   return;
@@ -403,7 +416,8 @@ void Subject< L , Obs , St , Dy >::flush( void )
  f_st.deliverGroup( std::span< const Event >( C ) , kinds , g , tmp );
  if constexpr( dynamic ) {
   f_dy.f_busy = true;
-  struct Done {
+  struct Done
+  {
    bool & b;
    ~Done() { b = false; }
    } done{ f_dy.f_busy };
@@ -423,7 +437,8 @@ void Subject< L , Obs , St , Dy >::rebuilt( void )
   f_st.template deliver< Rebuilt , false >( e , t );
   if constexpr( dynamic ) {
    f_dy.f_busy = true;
-   struct Done {
+   struct Done
+   {
     bool & b;
     ~Done() { b = false; }
     } done{ f_dy.f_busy };
@@ -451,7 +466,7 @@ void Subject< L , Obs , St , Dy >::unmute( const S & s )
   return;
  const bool rebuild = std::exchange( f_rebuild , false );
  if( f_depth > 0 )
-  return;                               // the batch has its Rebuilt
+  return;  // the batch has its Rebuilt
  if( rebuild )
   rebuilt();
  audit( s );
@@ -462,38 +477,48 @@ void Subject< L , Obs , St , Dy >::unmute( const S & s )
 /*--------------------------------------------------------------------------*/
 
 template< class E >
-struct isInserted : std::false_type {};
+struct isInserted : std::false_type
+{ };
 template< class H , class K , class V >
-struct isInserted< Inserted< H , K , V > > : std::true_type {};
+struct isInserted< Inserted< H , K , V > > : std::true_type
+{ };
 
 template< class E >
-struct isErased : std::false_type {};
+struct isErased : std::false_type
+{ };
 template< class H , class K , class V >
-struct isErased< Erased< H , K , V > > : std::true_type {};
+struct isErased< Erased< H , K , V > > : std::true_type
+{ };
 
 template< class E >
-struct isChanged : std::false_type {};
+struct isChanged : std::false_type
+{ };
 template< class A , class H , class V >
-struct isChanged< Changed< A , H , V > > : std::true_type {};
+struct isChanged< Changed< A , H , V > > : std::true_type
+{ };
 
 template< class E >
-struct isShifted : std::false_type {};
+struct isShifted : std::false_type
+{ };
 template< class A , class D >
-struct isShifted< Shifted< A , D > > : std::true_type {};
+struct isShifted< Shifted< A , D > > : std::true_type
+{ };
 
 /// whether E is an event of one item, coalesced per handle
 template< class E >
-inline constexpr bool element = isInserted< E >::value ||
-                                isErased< E >::value || isChanged< E >::value;
+inline constexpr bool element =
+  isInserted< E >::value || isErased< E >::value || isChanged< E >::value;
 
 /// whether the handles of E can be hashed and compared
 template< class E >
 inline constexpr bool hashed = [] {
  if constexpr( element< E > )
   return( std::equality_comparable< typename E::handle_type > &&
-          requires( const typename E::handle_type & h ) {
-           { std::hash< typename E::handle_type >{}( h ) }
-            -> std::convertible_to< std::size_t >; } );
+	   requires( const typename E::handle_type & h ) {
+	    {
+	     std::hash< typename E::handle_type >{}( h )
+	     } -> std::convertible_to< std::size_t >;
+	    } );
  else
   return( false );
  }();
@@ -542,35 +567,38 @@ void pushNet( std::vector< variant_t< L > > & N , E e )
  if constexpr( isChanged< E >::value ) {
   using A = typename E::attribute;
   if( same( e.from , e.to ) )
-   return;                              // a touch
+   return;  // a touch
   for( std::size_t k = N.size() ; k-- > 0 ; ) {
    // 1 composed, 2 composed into no change, 0 commuted, 3 stopped
-   const int r = std::visit( [ & ]( auto & y ) -> int {
-    using Y = std::decay_t< decltype( y ) >;
-    if constexpr( std::is_same_v< Y , E > ) {
-     reduceTo< typename reduction_of< A >::type >( y.to , e );
-     return( same( y.from , y.to ) ? 2 : 1 );
-     }
-    else if constexpr( isChanged< Y >::value )
-     return( 0 );                       // another attribute: they commute
-    else if constexpr( isInserted< Y >::value ) {
-     if constexpr( std::is_same_v< A , Key > &&
-                   std::is_same_v< typename Y::key_type ,
-                                   typename E::value_type > ) {
-      y.key = e.to;
-      return( 1 );
-      }
-     else if constexpr( std::is_same_v< A , Value > &&
-                        std::is_same_v< typename Y::value_type ,
-                                        typename E::value_type > ) {
-      y.value = e.to;
-      return( 1 );
-      }
-     else
-      return( 3 );
-     }
-    else
-     return( 3 ); } , N[ k ] );
+   const int r = std::visit(
+     [ & ]( auto & y ) -> int {
+      using Y = std::decay_t< decltype( y ) >;
+      if constexpr( std::is_same_v< Y , E > ) {
+       reduceTo< typename reduction_of< A >::type >( y.to , e );
+       return( same( y.from , y.to ) ? 2 : 1 );
+       }
+      else if constexpr( isChanged< Y >::value )
+       return( 0 );  // another attribute: they commute
+      else if constexpr( isInserted< Y >::value ) {
+       if constexpr( std::is_same_v< A , Key > &&
+		     std::is_same_v< typename Y::key_type ,
+				     typename E::value_type > ) {
+	y.key = e.to;
+	return( 1 );
+        }
+       else if constexpr( std::is_same_v< A , Value > &&
+			  std::is_same_v< typename Y::value_type ,
+					  typename E::value_type > ) {
+	y.value = e.to;
+	return( 1 );
+        }
+       else
+	return( 3 );
+       }
+      else
+       return( 3 );
+      } ,
+     N[ k ] );
    if( r == 1 )
     return;
    if( r == 2 ) {
@@ -588,20 +616,23 @@ void pushNet( std::vector< variant_t< L > > & N , E e )
   using V = typename E::value_type;
   // the changes before it vanish, their first values restored in it
   while( ! N.empty() ) {
-   const bool change = std::visit( [ & ]( const auto & y ) -> bool {
-    using Y = std::decay_t< decltype( y ) >;
-    if constexpr( isChanged< Y >::value ) {
-     using A = typename Y::attribute;
-     if constexpr( std::is_same_v< A , Key > &&
-                   std::is_same_v< typename Y::value_type , K > )
-      e.key = y.from;
-     else if constexpr( std::is_same_v< A , Value > &&
-                        std::is_same_v< typename Y::value_type , V > )
-      restoreValue( e , y.from );
-     return( true );
-     }
-    else
-     return( false ); } , N.back() );
+   const bool change = std::visit(
+     [ & ]( const auto & y ) -> bool {
+      using Y = std::decay_t< decltype( y ) >;
+      if constexpr( isChanged< Y >::value ) {
+       using A = typename Y::attribute;
+       if constexpr( std::is_same_v< A , Key > &&
+		     std::is_same_v< typename Y::value_type , K > )
+	e.key = y.from;
+       else if constexpr( std::is_same_v< A , Value > &&
+			  std::is_same_v< typename Y::value_type , V > )
+	restoreValue( e , y.from );
+       return( true );
+       }
+      else
+       return( false );
+      } ,
+     N.back() );
    if( ! change )
     break;
    N.pop_back();
@@ -643,7 +674,7 @@ void pushNet( std::vector< variant_t< L > > & N , E e )
      if constexpr( ! std::is_void_v< V > ) {
       if constexpr( contains_v< Assigned< H , V > , L > )
        if( ! sv )
-        N.emplace_back( Assigned< H , V >{ e.h , y.value , e.value } );
+	N.emplace_back( Assigned< H , V >{ e.h , y.value , e.value } );
       }
      return;
      }
@@ -660,26 +691,32 @@ void pushNet( std::vector< variant_t< L > > & N , E e )
 /// one attribute are one
 template< class L >
 void pushGlobal( std::vector< variant_t< L > > & C ,
-                 const variant_t< L > & x )
+		 const variant_t< L > & x )
 {
  if( ! C.empty() && ( C.back().index() == x.index() ) ) {
-  const bool merged = std::visit( [ & ]( auto & y ) -> bool {
-   using Y = std::decay_t< decltype( y ) >;
-   if constexpr( isShifted< Y >::value ) {
-    y.delta = y.delta + std::get< Y >( x ).delta;
-    return( true );
-    }
-   else if constexpr( role_of< Y > == Role::Replace )
-    return( true );
-   else
-    return( false ); } , C.back() );
+  const bool merged = std::visit(
+    [ & ]( auto & y ) -> bool {
+     using Y = std::decay_t< decltype( y ) >;
+     if constexpr( isShifted< Y >::value ) {
+      y.delta = y.delta + std::get< Y >( x ).delta;
+      return( true );
+      }
+     else if constexpr( role_of< Y > == Role::Replace )
+      return( true );
+     else
+      return( false );
+     } ,
+    C.back() );
   if( merged ) {
-   const bool null = std::visit( []( const auto & y ) -> bool {
-    using Y = std::decay_t< decltype( y ) >;
-    if constexpr( isShifted< Y >::value )
-     return( same( y.delta , decltype( y.delta )() ) );
-    else
-     return( false ); } , C.back() );
+   const bool null = std::visit(
+     []( const auto & y ) -> bool {
+      using Y = std::decay_t< decltype( y ) >;
+      if constexpr( isShifted< Y >::value )
+       return( same( y.delta , decltype( y.delta )() ) );
+      else
+       return( false );
+      } ,
+     C.back() );
    if( null )
     C.pop_back();
    return;
@@ -692,41 +729,46 @@ void pushGlobal( std::vector< variant_t< L > > & C ,
 /// list of net events per handle, in the order of their first event
 template< class L >
 void coalesceRun( std::span< const variant_t< L > > R ,
-                  std::vector< variant_t< L > > & C )
+		  std::vector< variant_t< L > > & C )
 {
  using Var = variant_t< L >;
- struct Chain {
-  Var first;                     ///< the first event of the handle
-  std::vector< Var > net;        ///< its net events
+ struct Chain
+ {
+  Var first;               ///< the first event of the handle
+  std::vector< Var > net;  ///< its net events
   };
  std::vector< Chain > chains;
  std::unordered_multimap< std::size_t , std::size_t > at;
  at.reserve( R.size() );
  for( const auto & x : R ) {
   const std::optional< std::size_t > key = std::visit(
-   []( const auto & e ) -> std::optional< std::size_t > {
-    using E = std::decay_t< decltype( e ) >;
-    if constexpr( hashed< E > )
-     return( std::hash< typename E::handle_type >{}( e.h ) );
-    else
-     return( std::nullopt ); } , x );
+    []( const auto & e ) -> std::optional< std::size_t > {
+     using E = std::decay_t< decltype( e ) >;
+     if constexpr( hashed< E > )
+      return( std::hash< typename E::handle_type >{}( e.h ) );
+     else
+      return( std::nullopt );
+     } ,
+    x );
   std::size_t c = chains.size();
   if( key ) {
    auto [ b , end ] = at.equal_range( *key );
    for( ; b != end ; ++b ) {
     const bool sameHandle = std::visit(
-     [ & ]( const auto & p , const auto & q ) -> bool {
-      using P = std::decay_t< decltype( p ) >;
-      using Q = std::decay_t< decltype( q ) >;
-      if constexpr( hashed< P > && hashed< Q > ) {
-       if constexpr( std::is_same_v< typename P::handle_type ,
-                                     typename Q::handle_type > )
-        return( p.h == q.h );
+      [ & ]( const auto & p , const auto & q ) -> bool {
+       using P = std::decay_t< decltype( p ) >;
+       using Q = std::decay_t< decltype( q ) >;
+       if constexpr( hashed< P > && hashed< Q > ) {
+	if constexpr( std::is_same_v< typename P::handle_type ,
+				      typename Q::handle_type > )
+	 return( p.h == q.h );
+	else
+	 return( false );
+        }
        else
-        return( false );
-       }
-      else
-       return( false ); } , chains[ b->second ].first , x );
+	return( false );
+       } ,
+      chains[ b->second ].first , x );
     if( sameHandle ) {
      c = b->second;
      break;
@@ -738,8 +780,9 @@ void coalesceRun( std::span< const variant_t< L > > R ,
    if( key )
     at.emplace( *key , c );
    }
-  std::visit( [ & ]( const auto & e ) {
-   pushNet< L >( chains[ c ].net , e ); } , x );
+  std::visit( [ & ]( const auto & e ) { pushNet< L >( chains[ c ].net ,
+						      e ); } ,
+	      x );
   }
  for( auto & ch : chains )
   for( auto & y : ch.net )
@@ -750,17 +793,23 @@ void coalesceRun( std::span< const variant_t< L > > R ,
 /// \endcond
 
 template< class L >
-std::vector< variant_t< L > > coalesce_traits< L >::coalesce(
-                                       std::span< const variant_t< L > > B )
+std::vector< variant_t< L > >
+coalesce_traits< L >::coalesce( std::span< const variant_t< L > > B )
 {
  using Var = variant_t< L >;
  auto roleAt = []( const Var & x ) {
-  return( std::visit( []( const auto & e ) {
-   return( role_of< std::decay_t< decltype( e ) > > ); } , x ) );
+  return( std::visit(
+    []( const auto & e ) {
+     return( role_of< std::decay_t< decltype( e ) > > );
+     } ,
+    x ) );
   };
  auto itemAt = []( const Var & x ) {
-  return( std::visit( []( const auto & e ) {
-   return( detail::element< std::decay_t< decltype( e ) > > ); } , x ) );
+  return( std::visit(
+    []( const auto & e ) {
+     return( detail::element< std::decay_t< decltype( e ) > > );
+     } ,
+    x ) );
   };
  // everything before the last Cleared or Rebuilt is dropped
  std::size_t i = 0;
@@ -794,7 +843,8 @@ std::vector< variant_t< L > > coalesce_traits< L >::coalesce(
 
 }  // end( namespace ADS::mod )
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ CLASS UndoLog -----------------------------*/
@@ -806,7 +856,8 @@ void UndoLog< L >::rollback( S & s , std::size_t t )
 {
  ADS_PRE( ( t >= f_floor ) && ( t <= checkpoint() ) );
  f_replay = true;
- struct Done {
+ struct Done
+ {
   bool & b;
   ~Done() { b = false; }
   } done{ f_replay };
@@ -814,9 +865,12 @@ void UndoLog< L >::rollback( S & s , std::size_t t )
  while( checkpoint() > t ) {
   const Event e = std::move( f_log.back() );
   f_log.pop_back();
-  std::visit( [ & ]( const auto & x ) {
-   if constexpr( mod::invertible< std::decay_t< decltype( x ) > > )
-    s.apply( inverse( x ) ); } , e );
+  std::visit(
+    [ & ]( const auto & x ) {
+     if constexpr( mod::invertible< std::decay_t< decltype( x ) > > )
+      s.apply( inverse( x ) );
+     } ,
+    e );
   }
  b.close();
  }

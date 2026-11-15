@@ -86,7 +86,7 @@
 
 #ifndef __ADS_FingerprintPerfectHash
  #define __ADS_FingerprintPerfectHash
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -109,7 +109,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- CLASS FingerprintPerfectHash ----------------------*/
@@ -118,12 +119,12 @@ namespace ADS {
 /// a minimal perfect hash function of a static set of keys by levels of
 /// fingerprints
 template< class T , class H = DefaultHash< T > >
-class FingerprintPerfectHash {
+class FingerprintPerfectHash
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = T;   ///< the type of the keys
+ using Key = T;  ///< the type of the keys
 
  /// the function of the distinct keys, with \f$ \gamma \f$ bits per key in
  /// each level
@@ -152,8 +153,8 @@ class FingerprintPerfectHash {
  /// \post the keys are mapped onto \f$ \{ 0 , \ldots , n - 1 \} \f$ (an
  ///       audit)
  explicit FingerprintPerfectHash( const std::vector< T > & keys ,
-                                  double gamma = 2 , std::uint64_t seed = 1 ,
-                                  H h = H() );
+				  double gamma = 2 , std::uint64_t seed = 1 ,
+				  H h = H() );
 
  /// the value of \f$ k \f$, in \f$ [ 0 , n ) \f$; some value in it for a key
  /// out of \f$ S \f$
@@ -190,26 +191,25 @@ class FingerprintPerfectHash {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  static constexpr std::size_t kMaxLevels = 64;
- static constexpr std::size_t kBlock = 512;      ///< the bits of a block
+ static constexpr std::size_t kBlock = 512;  ///< the bits of a block
 
  /// the hash of \f$ k \f$ under the seed, mixed unless `H` avalanches
  [[nodiscard]] std::uint64_t base( const T & k ) const;
 
  /// the place of the word \f$ x \f$ in the level \f$ i \f$ of \f$ m \f$ bits
  [[nodiscard]] static std::size_t place( std::uint64_t x , std::size_t i ,
-                                         std::size_t m );
+					 std::size_t m );
 
  /// the number of 1s before the bit \f$ g \f$ of the levels
  [[nodiscard]] std::size_t rank( std::size_t g ) const;
 
  std::uint64_t f_seed;
  std::size_t f_n = 0;
- std::vector< std::uint64_t > f_bits;   ///< the levels, one after another
- std::vector< std::uint32_t > f_rank;   ///< the 1s before each block
- std::vector< std::size_t > f_at;       ///< the first bit of each level
- std::vector< std::size_t > f_m;        ///< the bits of each level
+ std::vector< std::uint64_t > f_bits;  ///< the levels, one after another
+ std::vector< std::uint32_t > f_rank;  ///< the 1s before each block
+ std::vector< std::size_t > f_at;      ///< the first bit of each level
+ std::vector< std::size_t > f_m;       ///< the bits of each level
  H f_h;
 
  };  // end( class FingerprintPerfectHash )
@@ -226,7 +226,7 @@ class FingerprintPerfectHash {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* FingerprintPerfectHash.h included */
+#endif /* FingerprintPerfectHash.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File FingerprintPerfectHash.h ------------------*/

@@ -87,7 +87,7 @@
 
 #ifndef __ADS_IndexedDaryHeap
  #define __ADS_IndexedDaryHeap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -105,7 +105,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS IndexedDaryHeap --------------------------*/
@@ -114,40 +115,40 @@ namespace ADS {
 /// a \f$ D \f$-ary heap of the ids \f$ [ 0 , n ) \f$ by their keys, the
 /// least on top, with decrease-key, its changes told through `Policy`
 template< class K , unsigned D = 4 , class Policy = NoObservers >
-class IndexedDaryHeap {
+class IndexedDaryHeap
+{
 
  static_assert( D >= 2 , "a heap needs at least two children per node" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;        ///< the type of the keys
- using Item = int;     ///< the items of PRIORITYQUEUE: the ids
- using Priority = K;   ///< and their priorities, the keys
- using Handle = int;   ///< what `insert()` gives: the id itself
+ using Key = K;       ///< the type of the keys
+ using Item = int;    ///< the items of PRIORITYQUEUE: the ids
+ using Priority = K;  ///< and their priorities, the keys
+ using Handle = int;  ///< what `insert()` gives: the id itself
 
  /// an item: an id with its key
- struct Entry {
-  K key;    ///< the key
-  int id;   ///< the id
+ struct Entry
+ {
+  K key;   ///< the key
+  int id;  ///< the id
   };
 
  /// the events: an id inserted or erased with its key, its key changed,
  /// an item moved from a place to another, the heap emptied or rebuilt
- using modifications = mod::list< mod::Inserted< int , K > ,
-                                  mod::Erased< int , K > ,
-                                  mod::KeyChanged< int , K > ,
-                                  mod::Relocated< std::size_t > ,
-                                  mod::Cleared , mod::Rebuilt >;
+ using modifications =
+   mod::list< mod::Inserted< int , K > , mod::Erased< int , K > ,
+	      mod::KeyChanged< int , K > , mod::Relocated< std::size_t > ,
+	      mod::Cleared , mod::Rebuilt >;
  /// the subject
- using Subject = typename Policy::template bind< modifications ,
-                                                 IndexedDaryHeap >;
+ using Subject =
+   typename Policy::template bind< modifications , IndexedDaryHeap >;
 
  /// the empty heap of the ids \f$ [ 0 , n ) \f$, the static observers
  /// `o...`
  /// \pre \f$ n \ge 0 \f$
- template< class ... O >
- explicit IndexedDaryHeap( int n = 0 , O & ... o );
+ template< class... O >
+ explicit IndexedDaryHeap( int n = 0 , O &... o );
 
  /// the empty heap of the ids \f$ [ 0 , n ) \f$, the room kept
  /// \pre \f$ n \ge 0 \f$
@@ -318,28 +319,33 @@ class IndexedDaryHeap {
  /// attaches the observer \f$ o \f$ and gives its number
  /// \pre no batch is open
  template< class O >
- int attach( O & o ) requires( Subject::dynamic ) {
+ int attach( O & o )
+  requires( Subject::dynamic )
+ {
   return( f_sub.attach( o ) );
   }
 
  /// detaches the observer number \f$ \mathit{id} \f$
  /// \pre it is attached, no batch is open
- void detach( int id ) requires( Subject::dynamic ) { f_sub.detach( id ); }
+ void detach( int id )
+  requires( Subject::dynamic )
+ {
+  f_sub.detach( id );
+  }
 
 /*--------------------------------------------------------------------------*/
  private:
-
- using Ins = mod::Inserted< int , K >;            ///< an insertion
- using Era = mod::Erased< int , K >;              ///< an erasure
- using Chg = mod::KeyChanged< int , K >;          ///< a change of key
- using Rel = mod::Relocated< std::size_t >;       ///< a move of an item
+ using Ins = mod::Inserted< int , K >;        ///< an insertion
+ using Era = mod::Erased< int , K >;          ///< an erasure
+ using Chg = mod::KeyChanged< int , K >;      ///< a change of key
+ using Rel = mod::Relocated< std::size_t >;  ///< a move of an item
 
  /// whether someone may want one of the events `E...`, at compile time
- template< class ... E >
+ template< class... E >
  static constexpr bool heard = ( Subject::template listened< E > || ... );
 
  /// whether someone wants one of the events `E...` now
- template< class ... E >
+ template< class... E >
  [[nodiscard]] bool alive( void ) const {
   return( ( f_sub.template live< E >() || ... ) );
   }
@@ -356,10 +362,10 @@ class IndexedDaryHeap {
 
  /// the change of an operation when someone listens
  void pushTold( int id , const K & k );
- void decreaseTold( int id , const K & k );   ///< as pushTold()
- void increaseTold( int id , const K & k );   ///< as pushTold()
- void eraseTold( int id );                    ///< as pushTold()
- Entry popTold( void );                       ///< as pushTold()
+ void decreaseTold( int id , const K & k );  ///< as pushTold()
+ void increaseTold( int id , const K & k );  ///< as pushTold()
+ void eraseTold( int id );                  ///< as pushTold()
+ Entry popTold( void );                     ///< as pushTold()
 
  /// the changes when someone listens, out of the hot code
  ADS_COLD_PATH void pushCold( int id , const K & k ) { pushTold( id , k ); }
@@ -379,9 +385,9 @@ class IndexedDaryHeap {
  /// on more than 1024 items, those of the root and of the last item only
  [[nodiscard]] bool ordered( void ) const;
 
- std::vector< Entry > f_A;   ///< the heap, the root in f_A[ 0 ]
- std::vector< int > f_pos;   ///< the place of each id, -1 if absent
- ADS_NO_UNIQUE_ADDRESS Subject f_sub;   ///< the observers
+ std::vector< Entry > f_A;             ///< the heap, the root in f_A[ 0 ]
+ std::vector< int > f_pos;             ///< the place of each id, -1 if absent
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  };  // end( class IndexedDaryHeap )
 
@@ -397,7 +403,7 @@ class IndexedDaryHeap {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* IndexedDaryHeap.h included */
+#endif /* IndexedDaryHeap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File IndexedDaryHeap.h -----------------------*/

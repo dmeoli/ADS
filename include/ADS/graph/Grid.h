@@ -87,7 +87,7 @@
 
 #ifndef __ADS_Grid
  #define __ADS_Grid
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -106,7 +106,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a cell \f$ ( r , c ) \f$ of a grid, or a move as the difference of two
 /// cells
@@ -115,19 +116,24 @@ using GridCell = std::pair< int , int >;
 /// the moves to the four sides of a cell: up, left, down, right
 inline constexpr std::array< GridCell , 4 > FOUR_MOVES = {
  GridCell( -1 , 0 ) , GridCell( 0 , -1 ) , GridCell( 1 , 0 ) ,
- GridCell( 0 , 1 ) };
+ GridCell( 0 , 1 )
+ };
 
 /// the moves to the sides and to the corners of a cell, those of the king
 inline constexpr std::array< GridCell , 8 > EIGHT_MOVES = {
  GridCell( -1 , -1 ) , GridCell( -1 , 0 ) , GridCell( -1 , 1 ) ,
- GridCell( 0 , -1 ) , GridCell( 0 , 1 ) , GridCell( 1 , -1 ) ,
- GridCell( 1 , 0 ) , GridCell( 1 , 1 ) };
+ GridCell( 0 , -1 ) ,
+ GridCell( 0 , 1 ) ,   GridCell( 1 , -1 ) , GridCell( 1 , 0 ) ,
+ GridCell( 1 , 1 )
+ };
 
 /// the moves of the knight
 inline constexpr std::array< GridCell , 8 > KNIGHT_MOVES = {
  GridCell( -2 , -1 ) , GridCell( -2 , 1 ) , GridCell( -1 , -2 ) ,
- GridCell( -1 , 2 ) , GridCell( 1 , -2 ) , GridCell( 1 , 2 ) ,
- GridCell( 2 , -1 ) , GridCell( 2 , 1 ) };
+ GridCell( -1 , 2 ) ,
+ GridCell( 1 , -2 ) ,  GridCell( 1 , 2 ) ,  GridCell( 2 , -1 ) ,
+ GridCell( 2 , 1 )
+ };
 
 /// the type of FOUR_MOVES, the default range of moves
 using FourMoves = std::remove_cv_t< decltype( FOUR_MOVES ) >;
@@ -172,10 +178,9 @@ inline bool insideGrid( int rows , int cols , GridCell x );
 /// \post 0 on the sources, and each other reached cell one move farther
 ///       than a neighbour from which it can be reached (audit)
 template< class Free , class Moves = FourMoves >
-std::vector< std::vector< int > > gridDistances( int rows , int cols ,
-                                    const std::vector< GridCell > & sources ,
-                                    Free && free ,
-                                    const Moves & moves = FOUR_MOVES );
+std::vector< std::vector< int > >
+gridDistances( int rows , int cols , const std::vector< GridCell > & sources ,
+	       Free && free , const Moves & moves = FOUR_MOVES );
 
 /// the distance in moves from the cell \f$ s \f$ to the cell
 /// \f$ t \f$ of the \f$ \mathit{rows} \times \mathit{cols} \f$ grid through
@@ -206,7 +211,8 @@ std::vector< std::vector< int > > gridDistances( int rows , int cols ,
 ///      are cells of the grid, \f$ s \f$ is free
 template< class Free , class Moves = FourMoves >
 int gridDistance( int rows , int cols , GridCell s , GridCell t ,
-                  Free && free , const Moves & moves = FOUR_MOVES );
+		  Free && free ,
+		  const Moves & moves = FOUR_MOVES );
 
 /// the cell \f$ ( r , c ) \f$ of \f$ M \f$ and all the cells
 /// joined to it by moves through cells of its colour get the colour
@@ -235,8 +241,8 @@ int gridDistance( int rows , int cols , GridCell s , GridCell t ,
 /// \post \f$ M[ r ][ c ] = \mathit{color} \f$
 template< class T , class Moves = FourMoves >
 std::size_t floodFill( std::vector< std::vector< T > > & M , int r , int c ,
-                       const std::type_identity_t< T > & color ,
-                       const Moves & moves = FOUR_MOVES );
+		       const std::type_identity_t< T > & color ,
+		       const Moves & moves = FOUR_MOVES );
 
 /// the fewest moves of a knight from \f$ s \f$ to
 /// \f$ t \f$ on an \f$ n \times n \f$ board, `INF` if it cannot get there
@@ -264,7 +270,7 @@ inline int knightDistance( int n , GridCell s , GridCell t );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Grid.h included */
+#endif /* Grid.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File Grid.h -----------------------------*/

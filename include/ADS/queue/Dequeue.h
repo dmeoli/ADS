@@ -31,7 +31,7 @@
 
 #ifndef __ADS_Dequeue
  #define __ADS_Dequeue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -46,7 +46,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS Dequeue ------------------------------*/
@@ -54,12 +55,12 @@ namespace ADS {
 
 /// a DEQUEUE on a bidirectional list with pointers
 template< class T >
-class Dequeue {
+class Dequeue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// true if there is no item
  [[nodiscard]] bool empty( void ) const;
@@ -178,8 +179,7 @@ class Dequeue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- List< T > f_L;   ///< the items, from the head
+ List< T > f_L;  ///< the items, from the head
 
  };  // end( class Dequeue )
 
@@ -195,7 +195,7 @@ class Dequeue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Dequeue.h included */
+#endif /* Dequeue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Dequeue.h ---------------------------*/

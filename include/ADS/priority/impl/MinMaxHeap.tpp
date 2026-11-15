@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ MinMaxHeap --------------------------------*/
@@ -24,12 +25,11 @@ namespace ADS {
 template< class T , class Better >
 void MinMaxHeap< T , Better >::run( void )
 {
- if( f_sorted ||
-     ( ++f_run < std::max< std::size_t >( 64 , f_A.size() / 8 ) ) )
+ if( f_sorted || ( ++f_run < std::max< std::size_t >( 64 , f_A.size() / 8 ) ) )
   return;
  if constexpr( detail::kKeyed< T , Better > )
-  radixSortBy( f_A , []( const T & x ) {
-   return( detail::orderKeyBy< Better >( x ) ); } );
+  radixSortBy(
+    f_A , []( const T & x ) { return( detail::orderKeyBy< Better >( x ) ); } );
  else
   ADS::sort( f_A , f_better );
  f_sorted = true;
@@ -44,7 +44,7 @@ void MinMaxHeap< T , Better >::unsort( void )
  f_A.erase( f_A.begin() , f_A.begin() + std::ptrdiff_t( f_lo ) );
  f_sorted = false;
  f_run = 0;
- for( std::size_t i = f_A.size() / 2 + 1 ; i-- > 0 ; )   // bottom up
+ for( std::size_t i = f_A.size() / 2 + 1 ; i-- > 0 ; )  // bottom up
   if( minLevel( i ) )
    down< true >( i );
   else
@@ -75,15 +75,15 @@ inline void MinMaxHeap< T , Better >::push( const T & x )
  if( i > 0 ) {
   const std::size_t p = ( i - 1 ) / 2;
   if( minLevel( i ) ) {
-   if( f_better( f_A[ p ] , f_A[ i ] ) ) {   // worse than its parent of a
-    std::swap( f_A[ i ] , f_A[ p ] );        // level for the worst
+   if( f_better( f_A[ p ] , f_A[ i ] ) ) {  // worse than its parent of a
+    std::swap( f_A[ i ] , f_A[ p ] );       // level for the worst
     up< false >( p );
     }
    else
     up< true >( i );
    }
-  else if( f_better( f_A[ i ] , f_A[ p ] ) ) {   // better than its parent
-   std::swap( f_A[ i ] , f_A[ p ] );             // of a level for the best
+  else if( f_better( f_A[ i ] , f_A[ p ] ) ) {  // better than its parent
+   std::swap( f_A[ i ] , f_A[ p ] );            // of a level for the best
    up< true >( p );
    }
   else
@@ -128,9 +128,9 @@ inline void MinMaxHeap< T , Better >::down( std::size_t i )
   const std::size_t c = 2 * i + 1;
   if( c >= n )
    break;
-  std::size_t m = c;                        // the first of the children
+  std::size_t m = c;  // the first of the children
   if( ( c + 1 < n ) && first< Min >( f_A[ c + 1 ] , f_A[ m ] ) )
-   m = c + 1;                               // and the grandchildren
+   m = c + 1;  // and the grandchildren
   const std::size_t g = 4 * i + 3 , ge = g + 4 < n ? g + 4 : n;
   for( std::size_t k = g ; k < ge ; ++k )
    if( first< Min >( f_A[ k ] , f_A[ m ] ) )
@@ -138,10 +138,10 @@ inline void MinMaxHeap< T , Better >::down( std::size_t i )
   if( ! first< Min >( f_A[ m ] , f_A[ i ] ) )
    break;
   std::swap( f_A[ m ] , f_A[ i ] );
-  if( m < g )                               // a child: done
+  if( m < g )  // a child: done
    break;
   const std::size_t p = ( m - 1 ) / 2;      // a grandchild, against its
-  if( first< Min >( f_A[ p ] , f_A[ m ] ) ) // parent of the other kind
+  if( first< Min >( f_A[ p ] , f_A[ m ] ) )  // parent of the other kind
    std::swap( f_A[ p ] , f_A[ m ] );
   i = m;
   }
@@ -152,7 +152,7 @@ T MinMaxHeap< T , Better >::popMin( void )
 {
  ADS_PRE( ! empty() );
  run();
- if( f_sorted ) {                           // an end of the sorted items
+ if( f_sorted ) {  // an end of the sorted items
   T x = std::move( f_A[ f_lo++ ] );
   if( f_lo == f_hi )
    clear();
@@ -175,7 +175,7 @@ T MinMaxHeap< T , Better >::popMax( void )
 {
  ADS_PRE( ! empty() );
  run();
- if( f_sorted ) {                           // an end of the sorted items
+ if( f_sorted ) {  // an end of the sorted items
   T x = std::move( f_A[ --f_hi ] );
   if( f_lo == f_hi )
    clear();
@@ -197,12 +197,12 @@ T MinMaxHeap< T , Better >::popMax( void )
 template< class T , class Better >
 bool MinMaxHeap< T , Better >::ordered( void ) const
 {
- if( f_sorted && ( f_hi - f_lo > 1024 ) )   // the two ends only
+ if( f_sorted && ( f_hi - f_lo > 1024 ) )  // the two ends only
   return( ! f_better( f_A[ f_lo + 1 ] , f_A[ f_lo ] ) &&
-          ! f_better( f_A[ f_hi - 1 ] , f_A[ f_hi - 2 ] ) );
+	   ! f_better( f_A[ f_hi - 1 ] , f_A[ f_hi - 2 ] ) );
  if( f_sorted )
   return( std::is_sorted( f_A.begin() + std::ptrdiff_t( f_lo ) ,
-                          f_A.begin() + std::ptrdiff_t( f_hi ) , f_better ) );
+			   f_A.begin() + std::ptrdiff_t( f_hi ) , f_better ) );
  if( f_A.size() > 1024 )
   return( true );
  for( std::size_t i = 1 ; i < f_A.size() ; ++i ) {
@@ -212,8 +212,7 @@ bool MinMaxHeap< T , Better >::ordered( void ) const
    return( false );
   if( i >= 3 ) {
    const std::size_t g = ( p - 1 ) / 2;
-   if( m ? f_better( f_A[ i ] , f_A[ g ] )
-         : f_better( f_A[ g ] , f_A[ i ] ) )
+   if( m ? f_better( f_A[ i ] , f_A[ g ] ) : f_better( f_A[ g ] , f_A[ i ] ) )
     return( false );
    }
   }
@@ -227,12 +226,11 @@ bool MinMaxHeap< T , Better >::ordered( void ) const
 template< class T , class Better >
 void IntervalHeap< T , Better >::run( void )
 {
- if( f_sorted ||
-     ( ++f_run < std::max< std::size_t >( 64 , f_A.size() / 8 ) ) )
+ if( f_sorted || ( ++f_run < std::max< std::size_t >( 64 , f_A.size() / 8 ) ) )
   return;
  if constexpr( detail::kKeyed< T , Better > )
-  radixSortBy( f_A , []( const T & x ) {
-   return( detail::orderKeyBy< Better >( x ) ); } );
+  radixSortBy(
+    f_A , []( const T & x ) { return( detail::orderKeyBy< Better >( x ) ); } );
  else
   ADS::sort( f_A , f_better );
  f_sorted = true;
@@ -244,8 +242,8 @@ template< class T , class Better >
 void IntervalHeap< T , Better >::unsort( void )
 {
  const std::size_t n = f_hi - f_lo;
- std::vector< T > B;                        // the node j: the j-th best
- B.reserve( n );                            // and the j-th worst
+ std::vector< T > B;  // the node j: the j-th best
+ B.reserve( n );      // and the j-th worst
  for( std::size_t j = 0 ; j < n / 2 ; ++j ) {
   B.push_back( std::move( f_A[ f_lo + j ] ) );
   B.push_back( std::move( f_A[ f_hi - 1 - j ] ) );
@@ -265,13 +263,13 @@ inline void IntervalHeap< T , Better >::push( const T & x )
  f_run = 0;
  f_A.push_back( x );
  const std::size_t i = f_A.size() - 1 , j = i / 2;
- bool low;                                  // x is the lo of its node
- if( i % 2 == 1 ) {                         // the second item of the node
+ bool low;           // x is the lo of its node
+ if( i % 2 == 1 ) {  // the second item of the node
   low = f_better( f_A[ i ] , f_A[ i - 1 ] );
   if( low )
    std::swap( f_A[ i ] , f_A[ i - 1 ] );
   }
- else {                                     // alone in its node
+ else {  // alone in its node
   if( j == 0 ) {
    ADS_INVARIANT( ordered() );
    return;
@@ -286,7 +284,7 @@ inline void IntervalHeap< T , Better >::push( const T & x )
    return;
    }
   }
- if( low )                                  // up by the lo of the nodes
+ if( low )  // up by the lo of the nodes
   for( std::size_t k = j ; k > 0 ; ) {
    const std::size_t q = ( k - 1 ) / 2;
    if( ! f_better( f_A[ 2 * k ] , f_A[ 2 * q ] ) )
@@ -294,7 +292,7 @@ inline void IntervalHeap< T , Better >::push( const T & x )
    std::swap( f_A[ 2 * k ] , f_A[ 2 * q ] );
    k = q;
    }
- else                                       // up by the hi of the nodes
+ else  // up by the hi of the nodes
   for( std::size_t k = j , pos = i ; k > 0 ; ) {
    const std::size_t q = ( k - 1 ) / 2;
    if( ! f_better( f_A[ 2 * q + 1 ] , f_A[ pos ] ) )
@@ -329,7 +327,7 @@ T IntervalHeap< T , Better >::popMin( void )
 {
  ADS_PRE( ! empty() );
  run();
- if( f_sorted ) {                           // an end of the sorted items
+ if( f_sorted ) {  // an end of the sorted items
   T x = std::move( f_A[ f_lo++ ] );
   if( f_lo == f_hi )
    clear();
@@ -344,23 +342,22 @@ T IntervalHeap< T , Better >::popMin( void )
   ADS_INVARIANT( ordered() );
   return( x );
   }
- T y = std::move( f_A.back() );             // the last item into the hole
- f_A.pop_back();                            // of the lo of the root, down
- const std::size_t n = f_A.size();          // by the better lo of the
- std::size_t j = 0;                         // children
+ T y = std::move( f_A.back() );     // the last item into the hole
+ f_A.pop_back();                    // of the lo of the root, down
+ const std::size_t n = f_A.size();  // by the better lo of the
+ std::size_t j = 0;                 // children
  for( ; ; ) {
   const std::size_t c1 = 2 * j + 1 , c2 = c1 + 1;
   if( 2 * c1 >= n )
    break;
-  const std::size_t c = ( ( 2 * c2 < n ) &&
-                          f_better( f_A[ 2 * c2 ] , f_A[ 2 * c1 ] ) ) ? c2
-                                                                     : c1;
+  const std::size_t c =
+    ( ( 2 * c2 < n ) && f_better( f_A[ 2 * c2 ] , f_A[ 2 * c1 ] ) ) ? c2 : c1;
   if( ! f_better( f_A[ 2 * c ] , y ) )
    break;
   f_A[ 2 * j ] = std::move( f_A[ 2 * c ] );
   j = c;
   if( ( 2 * j + 1 < n ) && f_better( f_A[ 2 * j + 1 ] , y ) )
-   std::swap( y , f_A[ 2 * j + 1 ] );       // y beyond the hi: swapped
+   std::swap( y , f_A[ 2 * j + 1 ] );  // y beyond the hi: swapped
   }
  f_A[ 2 * j ] = std::move( y );
  ADS_INVARIANT( ordered() );
@@ -372,7 +369,7 @@ T IntervalHeap< T , Better >::popMax( void )
 {
  ADS_PRE( ! empty() );
  run();
- if( f_sorted ) {                           // an end of the sorted items
+ if( f_sorted ) {  // an end of the sorted items
   T x = std::move( f_A[ --f_hi ] );
   if( f_lo == f_hi )
    clear();
@@ -386,10 +383,10 @@ T IntervalHeap< T , Better >::popMax( void )
   return( x );
   }
  T x = std::move( f_A[ 1 ] );
- T y = std::move( f_A.back() );             // the last item into the hole
- f_A.pop_back();                            // of the hi of the root, down
- const std::size_t n = f_A.size();          // by the worse hi of the
- std::size_t j = 0 , hole = 1;              // children
+ T y = std::move( f_A.back() );     // the last item into the hole
+ f_A.pop_back();                    // of the hi of the root, down
+ const std::size_t n = f_A.size();  // by the worse hi of the
+ std::size_t j = 0 , hole = 1;       // children
  for( ; ; ) {
   const std::size_t c1 = 2 * j + 1 , c2 = c1 + 1;
   if( 2 * c1 >= n )
@@ -405,7 +402,7 @@ T IntervalHeap< T , Better >::popMax( void )
   hole = h;
   j = c;
   if( ( h == 2 * j + 1 ) && f_better( y , f_A[ 2 * j ] ) )
-   std::swap( y , f_A[ 2 * j ] );           // y below the lo: swapped
+   std::swap( y , f_A[ 2 * j ] );  // y below the lo: swapped
   }
  f_A[ hole ] = std::move( y );
  ADS_INVARIANT( ordered() );
@@ -415,12 +412,12 @@ T IntervalHeap< T , Better >::popMax( void )
 template< class T , class Better >
 bool IntervalHeap< T , Better >::ordered( void ) const
 {
- if( f_sorted && ( f_hi - f_lo > 1024 ) )   // the two ends only
+ if( f_sorted && ( f_hi - f_lo > 1024 ) )  // the two ends only
   return( ! f_better( f_A[ f_lo + 1 ] , f_A[ f_lo ] ) &&
-          ! f_better( f_A[ f_hi - 1 ] , f_A[ f_hi - 2 ] ) );
+	   ! f_better( f_A[ f_hi - 1 ] , f_A[ f_hi - 2 ] ) );
  if( f_sorted )
   return( std::is_sorted( f_A.begin() + std::ptrdiff_t( f_lo ) ,
-                          f_A.begin() + std::ptrdiff_t( f_hi ) , f_better ) );
+			   f_A.begin() + std::ptrdiff_t( f_hi ) , f_better ) );
  const std::size_t n = f_A.size();
  if( n > 1024 )
   return( true );

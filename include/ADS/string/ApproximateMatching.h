@@ -55,7 +55,7 @@
 
 #ifndef __ADS_ApproximateMatching
  #define __ADS_ApproximateMatching
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -73,7 +73,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the table \f$ \mathit{DP}[ i ][ j ] \f$ of the costs
 using Table = std::vector< std::vector< int > >;
@@ -151,7 +152,7 @@ std::pair< long , int > stringMatching( const S & P , const S & T );
 ///      \f$ j \le |T| \f$
 template< class S >
 std::size_t occurrence( const Table & DP , const S & P , const S & T ,
-                        std::size_t j );
+			std::size_t j );
 
 /// the least number of errors of an occurrence of \f$ P \f$ in \f$ T \f$,
 /// with two rows of the table only
@@ -210,7 +211,7 @@ int editDistance( const S & P , const S & T );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ApproximateMatching.h included */
+#endif /* ApproximateMatching.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File ApproximateMatching.h ---------------------*/

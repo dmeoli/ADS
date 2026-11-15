@@ -14,14 +14,15 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-inline std::optional< std::vector< long > > greedyChange(
-                                       std::vector< long > coins , long c )
+inline std::optional< std::vector< long > >
+greedyChange( std::vector< long > coins , long c )
 {
  ADS_PRE( c >= 0 );
  ADS_PRE( std::all_of( coins.begin() , coins.end() ,
-                       []( long d ) { return( d > 0 ); } ) );
+		       []( long d ) { return( d > 0 ); } ) );
  const long c0 = c;
  std::sort( coins.rbegin() , coins.rend() );
  std::vector< long > out;
@@ -35,11 +36,11 @@ inline std::optional< std::vector< long > > greedyChange(
  }
 
 inline std::optional< long > optimalChange( const std::vector< long > & coins ,
-                                            long c )
+					    long c )
 {
  ADS_PRE( c >= 0 );
  ADS_PRE( std::all_of( coins.begin() , coins.end() ,
-                       []( long d ) { return( d > 0 ); } ) );
+		       []( long d ) { return( d > 0 ); } ) );
  ADS_PRE( std::size_t( c ) < std::vector< long >().max_size() );
  const long INF = std::numeric_limits< long >::max();
  std::vector< long > N( std::size_t( c ) + 1 , INF );

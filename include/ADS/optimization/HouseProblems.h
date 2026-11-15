@@ -51,7 +51,7 @@
 
 #ifndef __ADS_HouseProblems
  #define __ADS_HouseProblems
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -68,7 +68,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the largest sum of items of \f$ A \f$ no two of them adjacent, 0 for none
 ///
@@ -111,8 +112,8 @@ T maxNonAdjacentSum( const std::vector< T > & A );
 /// \f]
 /// \post no two places adjacent, the items of the sum found
 template< class T >
-std::pair< T , std::vector< std::size_t > > nonAdjacentSelection(
-                                                  const std::vector< T > & A );
+std::pair< T , std::vector< std::size_t > >
+nonAdjacentSelection( const std::vector< T > & A );
 
 /// the least cost of a painting of the houses, adjacent houses of different
 /// colors, \f$ \mathit{cost}[ h ][ c ] \f$ for the house \f$ h \f$ of the
@@ -143,8 +144,8 @@ std::pair< T , std::vector< std::size_t > > nonAdjacentSelection(
 ///      rows or more, \f$ k \ge 1 \f$ if one
 /// \post adjacent colors differ and give the cost found
 template< class T >
-std::pair< T , std::vector< std::size_t > > paintHouses(
-                                const std::vector< std::vector< T > > & cost );
+std::pair< T , std::vector< std::size_t > >
+paintHouses( const std::vector< std::vector< T > > & cost );
 
 /*--------------------------------------------------------------------------*/
 
@@ -158,7 +159,7 @@ std::pair< T , std::vector< std::size_t > > paintHouses(
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* HouseProblems.h included */
+#endif /* HouseProblems.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File HouseProblems.h ------------------------*/

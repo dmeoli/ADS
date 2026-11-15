@@ -88,7 +88,7 @@
 
 #ifndef __ADS_PairingHeap
  #define __ADS_PairingHeap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -109,7 +109,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS PairingHeap -----------------------------*/
@@ -118,23 +119,24 @@ namespace ADS {
 /// a priority queue on a pairing heap, two-pass, or auxiliary two-pass if
 /// `Aux`
 template< class T , std::totally_ordered P = int , bool Aux = false >
-class PairingHeap {
+class PairingHeap
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// a node of the heap
- struct Node {
-  P priority;               ///< the priority
-  T value;                  ///< the item
-  Node * child = nullptr;   ///< the leftmost child
-  Node * next = nullptr;    ///< the right sibling
-  Node * prev = nullptr;    ///< the left sibling, or the parent
+ struct Node
+ {
+  P priority;              ///< the priority
+  T value;                 ///< the item
+  Node * child = nullptr;  ///< the leftmost child
+  Node * next = nullptr;   ///< the right sibling
+  Node * prev = nullptr;   ///< the left sibling, or the parent
   };
 
- using Item = T;            ///< the type of the items
- using Priority = P;        ///< the type of the priorities
- using Handle = Node *;     ///< what `insert()` gives
+ using Item = T;         ///< the type of the items
+ using Priority = P;     ///< the type of the priorities
+ using Handle = Node *;  ///< what `insert()` gives
 
  /// the empty heap
  PairingHeap( void ) = default;
@@ -326,7 +328,6 @@ class PairingHeap {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the root of the two trees a and b, the other its leftmost child
  static Node * link( Node * a , Node * b );
 
@@ -356,10 +357,10 @@ class PairingHeap {
  /// the invariant, on heaps of at most 1024 nodes
  [[nodiscard]] bool isHeap( void ) const;
 
- Node * f_root = nullptr;     ///< the root, and the list after it if Aux
- Node * f_min = nullptr;      ///< the least among the root and the list
- int f_n = 0;                 ///< the number of items
- ObjectPool< Node > f_pool;   ///< the nodes
+ Node * f_root = nullptr;    ///< the root, and the list after it if Aux
+ Node * f_min = nullptr;     ///< the least among the root and the list
+ int f_n = 0;                ///< the number of items
+ ObjectPool< Node > f_pool;  ///< the nodes
 
  };  // end( class PairingHeap )
 
@@ -367,7 +368,7 @@ class PairingHeap {
 /// to [see `Capabilities.h`]
 template< class T , std::totally_ordered P , bool Aux >
 inline constexpr bool enable_stable_references< PairingHeap< T , P , Aux > > =
- true;
+  true;
 
 /*--------------------------------------------------------------------------*/
 
@@ -381,7 +382,7 @@ inline constexpr bool enable_stable_references< PairingHeap< T , P , Aux > > =
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PairingHeap.h included */
+#endif /* PairingHeap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File PairingHeap.h -------------------------*/

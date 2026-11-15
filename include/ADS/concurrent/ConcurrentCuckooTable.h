@@ -158,7 +158,7 @@
 
 #ifndef __ADS_ConcurrentCuckooTable
  #define __ADS_ConcurrentCuckooTable
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -183,7 +183,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- CLASS ConcurrentCuckooTable -----------------------*/
@@ -191,25 +192,24 @@ namespace ADS {
 
 /// a DICTIONARY shared by threads, by cuckoo hashing with a lock per region
 template< class K , class V , class H = DefaultHash< K > ,
-          class Eq = std::equal_to< K > >
-class ConcurrentCuckooTable {
+	  class Eq = std::equal_to< K > >
+class ConcurrentCuckooTable
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty table, with room for \f$ n \f$ pairs before it grows, the
  /// hash `h` and the equality `eq`
  explicit ConcurrentCuckooTable( std::size_t n = 0 , H h = H() ,
-                                 Eq eq = Eq() );
+				 Eq eq = Eq() );
 
  /// no copy, since the threads share it by its address
  ConcurrentCuckooTable( const ConcurrentCuckooTable & ) = delete;
  /// no copy, since the threads share it by its address
- ConcurrentCuckooTable & operator=( const ConcurrentCuckooTable & ) =
-  delete;
+ ConcurrentCuckooTable & operator=( const ConcurrentCuckooTable & ) = delete;
 
  /// a copy of the value of the key \f$ k \f$, or nothing
  ///
@@ -385,7 +385,6 @@ class ConcurrentCuckooTable {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the alignment of an object of type T read by std::atomic_ref
  template< class T >
  static constexpr std::size_t refAlign( void ) {
@@ -405,42 +404,43 @@ class ConcurrentCuckooTable {
   }
 
  public:
-
  /// true if the lookups read without locks, under the versions of the
  /// stripes: the keys and the values trivially copyable, and read and
  /// written atomically without locks
- static constexpr bool optimistic = refLockFree< K >() &&
-                                    refLockFree< V >();
+ static constexpr bool optimistic = refLockFree< K >() && refLockFree< V >();
 
 /*--------------------------------------------------------------------------*/
  private:
-
- struct Slot {
+ struct Slot
+ {
   /// the key
   alignas( refAlign< K >() ) K key{};
   /// the value
   alignas( refAlign< V >() ) V value{};
   };
 
- static constexpr std::size_t line = 64;          ///< a line of cache
+ static constexpr std::size_t line = 64;  ///< a line of cache
 
  /// the 4 places of a bucket, on one line of cache when they fit in one
  /// and their size is a power of 2
  struct alignas( ( 4 * sizeof( Slot ) <= line ) &&
-                 std::has_single_bit( 4 * sizeof( Slot ) ) ?
-                 4 * sizeof( Slot ) : alignof( Slot ) ) Bucket {
+		     std::has_single_bit( 4 * sizeof( Slot ) )
+		   ? 4 * sizeof( Slot )
+		   : alignof( Slot ) ) Bucket
+ {
   /// the places
   Slot s[ 4 ];
   };
- static constexpr std::size_t kStripes = 2048;    ///< the locks, at most
- static constexpr int kLgStripes = 11;            ///< log2 of kStripes
- static constexpr int kLgRegion = 8;              ///< log2 of the least
-                                                  ///< buckets of a region
- static constexpr int kDepth = 5;                 ///< the moves of a path
- static constexpr int kNodes = 1024;              ///< the buckets searched
+ static constexpr std::size_t kStripes = 2048;  ///< the locks, at most
+ static constexpr int kLgStripes = 11;          ///< log2 of kStripes
+ static constexpr int kLgRegion = 8;            ///< log2 of the least
+						///< buckets of a region
+ static constexpr int kDepth = 5;               ///< the moves of a path
+ static constexpr int kNodes = 1024;            ///< the buckets searched
 
  /// a lock with its version, odd while held, and the pairs of its region
- struct alignas( line ) Stripe {
+ struct alignas( line ) Stripe
+ {
   /// the version, odd while the lock is held
   std::atomic< std::uint64_t > version{ 0 };
   /// the pairs of the region
@@ -448,7 +448,8 @@ class ConcurrentCuckooTable {
   };
 
  /// the buckets: 2^lg of them in regions of 2^rg, the tags and the places
- struct Table {
+ struct Table
+ {
   /// log2 of the buckets and of the buckets of a region
   int lg , rg;
   /// the tags, 4 per bucket
@@ -474,23 +475,26 @@ class ConcurrentCuckooTable {
   };
 
  /// the lock of a stripe, released at the end of the scope
- class Hold {
+ class Hold
+ {
   public:
   /// the lock of \f$ s \f$, already taken
-  explicit Hold( Stripe & s ) : f_s( s ) {}
+  explicit Hold( Stripe & s ) : f_s( s ) { }
   /// no copy, since it releases its lock once
   Hold( const Hold & ) = delete;
   /// no copy, since it releases its lock once
   Hold & operator=( const Hold & ) = delete;
   /// releases the lock
   ~Hold() { unlock( f_s ); }
+
   private:
   Stripe & f_s;
   };
 
  /// all the locks in use, those of the regions, released at the end of
  /// the scope
- class HoldAll {
+ class HoldAll
+ {
   public:
   /// all the locks in use of \f$ t \f$, taken from the stripe 0 up
   explicit HoldAll( const ConcurrentCuckooTable & t );
@@ -504,6 +508,7 @@ class ConcurrentCuckooTable {
   void extend( int lg );
   /// the locks held
   [[nodiscard]] std::size_t held( void ) const { return( f_n ); }
+
   private:
   Stripe * f_L;
   std::size_t f_n = 0;
@@ -511,7 +516,8 @@ class ConcurrentCuckooTable {
 
  /// a bucket of the search in breadth: the node it comes from, the place
  /// of that bucket whose key moves into it and the tag of that key
- struct Node {
+ struct Node
+ {
   /// the bucket
   std::size_t b;
   /// the node it comes from, the place of that bucket, the moves from the
@@ -539,7 +545,7 @@ class ConcurrentCuckooTable {
  /// the other bucket of a key with the tag t in the bucket b, in the same
  /// region of 2^rg buckets
  [[nodiscard]] static std::size_t other( std::size_t b , std::uint32_t t ,
-                                         int rg );
+					 int rg );
 
  /// the tags of the bucket b of the table T
  [[nodiscard]] static std::uint32_t tags( const Table & T , std::size_t b );
@@ -552,8 +558,8 @@ class ConcurrentCuckooTable {
 
  /// the place of k with the tag t in the buckets b1 and b2 of T, or ~0
  [[nodiscard]] std::size_t locate( const Table & T , const K & k ,
-                                   std::uint32_t t , std::size_t b1 ,
-                                   std::size_t b2 ) const;
+				   std::uint32_t t , std::size_t b1 ,
+				   std::size_t b2 ) const;
 
  /// the lines of the buckets b1 and b2 of T fetched ahead
  static void fetch( const Table & T , std::size_t b1 , std::size_t b2 );
@@ -569,7 +575,8 @@ class ConcurrentCuckooTable {
  /// the pair in the free place i of the bucket b of T with the tag t
  template< class KK , class VV >
  static void put( Table & T , std::size_t b , int i , std::uint32_t t ,
-                  KK && k , VV && v );
+		  KK && k ,
+		  VV && v );
 
  /// the value of the place i of T set to v
  static void assign( Table & T , std::size_t i , const V & v );
@@ -579,14 +586,13 @@ class ConcurrentCuckooTable {
 
  /// the key of the place i of the bucket a of T moved to the free place j
  /// of the bucket d
- static void move( Table & T , std::size_t a , int i , std::size_t d ,
-                   int j );
+ static void move( Table & T , std::size_t a , int i , std::size_t d , int j );
 
  /// the search in breadth in T from the buckets of the hash h: the node
  /// whose bucket has a free place, -1 if none within kDepth moves and
  /// kNodes buckets
  [[nodiscard]] int search( const Table & T , std::uint64_t h ,
-                           Node * N ) const;
+			   Node * N ) const;
 
  /// a free place for the hash h in T, made by moving keys along a path
  /// within its region, or ~0
@@ -616,12 +622,12 @@ class ConcurrentCuckooTable {
  /// the keys of the bucket b of T in it with their tags
  [[nodiscard]] bool inBucket( const Table & T , std::size_t b ) const;
 
- std::unique_ptr< Stripe[] > f_L;          ///< the locks
- std::atomic< int > f_lg{ 1 };             ///< log2 of the buckets
- std::atomic< Table * > f_table{ nullptr };   ///< the table in use
+ std::unique_ptr< Stripe[] > f_L;                ///< the locks
+ std::atomic< int > f_lg{ 1 };                   ///< log2 of the buckets
+ std::atomic< Table * > f_table{ nullptr };      ///< the table in use
  std::vector< std::unique_ptr< Table > > f_old;  ///< the tables replaced,
-                                                 ///< if optimistic
- std::unique_ptr< Table > f_cur;           ///< the table in use, owned
+						 ///< if optimistic
+ std::unique_ptr< Table > f_cur;                 ///< the table in use, owned
  std::atomic< std::size_t > f_rehashes{ 0 };
  H f_h;
  Eq f_eq;
@@ -640,7 +646,7 @@ class ConcurrentCuckooTable {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ConcurrentCuckooTable.h included */
+#endif /* ConcurrentCuckooTable.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- End File ConcurrentCuckooTable.h --------------------*/

@@ -20,7 +20,8 @@
 #include <numbers>
 #include <string>
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ CONSTRUCTION ------------------------------*/
@@ -28,39 +29,42 @@ namespace ADS {
 
 template< class W , class C , class P >
 GridGraph< W , C , P >::GridGraph( int rows , int cols , GridMoves moves ,
-                               Corners corners , W straight ,
-                               std::optional< W > diagonal ,
-                               MoveCost model )
- : f_rows( rows ) , f_cols( cols ) , f_moves( moves ) ,
-   f_corners( corners ) , f_model( model ) , f_straight( straight ) ,
-   f_diagonal( straight )
+				 Corners corners , W straight ,
+				 std::optional< W > diagonal , MoveCost model )
+    : f_rows( rows ) , f_cols( cols ) , f_moves( moves ) ,
+      f_corners( corners ) ,
+      f_model( model ) , f_straight( straight ) , f_diagonal( straight )
 {
  init( diagonal );
  }
 
 template< class W , class C , class P >
 GridGraph< W , C , P >::GridGraph( int rows , int cols ,
-                                   std::vector< C > cost ,
-                                   GridMoves moves , Corners corners ,
-                                   W straight , std::optional< W > diagonal ,
-                                   MoveCost model )
- : f_rows( rows ) , f_cols( cols ) , f_moves( moves ) ,
-   f_corners( corners ) , f_model( model ) , f_straight( straight ) ,
-   f_diagonal( straight ) , f_cost( std::move( cost ) )
+				   std::vector< C > cost ,
+				 GridMoves moves , Corners corners ,
+				 W straight ,
+				 std::optional< W > diagonal , MoveCost model )
+    : f_rows( rows ) , f_cols( cols ) , f_moves( moves ) ,
+      f_corners( corners ) ,
+      f_model( model ) , f_straight( straight ) , f_diagonal( straight ) ,
+      f_cost( std::move( cost ) )
 {
  init( diagonal );
  }
 
 template< class W , class C , class P >
-template< class ... O > requires( sizeof...( O ) > 0 )
+template< class... O >
+ requires( sizeof...( O ) > 0 )
 GridGraph< W , C , P >::GridGraph( int rows , int cols ,
-                                   std::vector< C > cost , GridMoves moves ,
-                                   Corners corners , W straight ,
-                                   std::optional< W > diagonal ,
-                                   MoveCost model , O & ... o )
- : f_rows( rows ) , f_cols( cols ) , f_moves( moves ) ,
-   f_corners( corners ) , f_model( model ) , f_straight( straight ) ,
-   f_diagonal( straight ) , f_cost( std::move( cost ) ) , f_sub( o... )
+				   std::vector< C > cost ,
+				 GridMoves moves , Corners corners ,
+				 W straight ,
+				 std::optional< W > diagonal , MoveCost model ,
+				 O &... o )
+    : f_rows( rows ) , f_cols( cols ) , f_moves( moves ) ,
+      f_corners( corners ) ,
+      f_model( model ) , f_straight( straight ) , f_diagonal( straight ) ,
+      f_cost( std::move( cost ) ) , f_sub( o... )
 {
  init( diagonal );
  }
@@ -136,7 +140,7 @@ template< class W , class C , class P >
 void GridGraph< W , C , P >::setCost( int u , const C & c )
 {
  ADS_PRE( ( u >= 0 ) && ( u < bound() ) );
- if( f_cost.empty() ) {                     // all free, of cost 1
+ if( f_cost.empty() ) {  // all free, of cost 1
   if( c == C( 1 ) )
    return;
   f_cost.assign( std::size_t( bound() ) , C( 1 ) );
@@ -162,7 +166,7 @@ void GridGraph< W , C , P >::setCost( int u , const C & c )
   f_min = C( 1 );
   f_atmin = 0;
   }
- else if( f_atmin == 0 )                    // the least cost left
+ else if( f_atmin == 0 )  // the least cost left
   recount();
  f_directed = ( f_n > 0 ) && ( f_atmin != f_n );
  ADS_INVARIANT( counted() );
@@ -180,13 +184,13 @@ void GridGraph< W , C , P >::setCost( int u , const C & c )
 template< class W , class C , class P >
 template< class F >
 void GridGraph< W , C , P >::forEachAffected( int u , const C & from ,
-                                              const C & to , F && f ) const
+					    const C & to , F && f ) const
 {
  ADS_PRE( ( u >= 0 ) && ( u < bound() ) );
  const bool a = from > C( 0 ) , b = to > C( 0 );
- if( ! a && ! b )                           // blocked before and after
+ if( ! a && ! b )  // blocked before and after
   return;
- if( a && b ) {                             // free before and after
+ if( a && b ) {  // free before and after
   if( f_model == MoveCost::ENTERED )
    f( u );
   else
@@ -252,22 +256,30 @@ void GridGraph< W , C , P >::scan( int u , G && g ) const
  const bool n = up && open( u - k ) , s = down && open( u + k );
  const bool w = left && open( u - 1 ) , e = right && open( u + 1 );
  if( f_moves == GridMoves::FOUR ) {
-  if( n ) g( u - k , false );
-  if( w ) g( u - 1 , false );
-  if( e ) g( u + 1 , false );
-  if( s ) g( u + k , false );
+  if( n )
+   g( u - k , false );
+  if( w )
+   g( u - 1 , false );
+  if( e )
+   g( u + 1 , false );
+  if( s )
+   g( u + k , false );
   return;
   }
  if( up && left && corner( n , w ) && open( u - k - 1 ) )
   g( u - k - 1 , true );
- if( n ) g( u - k , false );
+ if( n )
+  g( u - k , false );
  if( up && right && corner( n , e ) && open( u - k + 1 ) )
   g( u - k + 1 , true );
- if( w ) g( u - 1 , false );
- if( e ) g( u + 1 , false );
+ if( w )
+  g( u - 1 , false );
+ if( e )
+  g( u + 1 , false );
  if( down && left && corner( s , w ) && open( u + k - 1 ) )
   g( u + k - 1 , true );
- if( s ) g( u + k , false );
+ if( s )
+  g( u + k , false );
  if( down && right && corner( s , e ) && open( u + k + 1 ) )
   g( u + k + 1 , true );
  }
@@ -288,14 +300,16 @@ void GridGraph< W , C , P >::forEachEdge( int u , F && f ) const
  if( f_cost.empty() || ! f_directed || ( f_model == MoveCost::LEFT ) ) {
   // one cost for all the moves out of u (one for all the free cells, or
   // that of u itself when the cell left pays): two weights only
-  const W k = f_cost.empty() ? W( 1 ) :
-              W( f_model == MoveCost::LEFT ? f_cost[ u ] : f_min );
+  const W k = f_cost.empty()
+		? W( 1 )
+		: W( f_model == MoveCost::LEFT ? f_cost[ u ] : f_min );
   const W ws = k * f_straight , wd = k * f_diagonal;
   scan( u , [ & ]( int v , bool d ) { f( v , d ? wd : ws ); } );
   }
  else
   scan( u , [ & ]( int v , bool d ) {
-   f( v , W( f_cost[ v ] ) * ( d ? f_diagonal : f_straight ) ); } );
+   f( v , W( f_cost[ v ] ) * ( d ? f_diagonal : f_straight ) );
+   } );
  }
 
 template< class W , class C , class P >
@@ -312,14 +326,15 @@ bool GridGraph< W , C , P >::counted( void ) const
     return( false );
    }
  return( ( k == f_n ) && ( m == f_atmin ) && ( ( k > 0 ) == ( m > 0 ) ) &&
-         ( f_directed == ( m != k ) ) );
+	  ( f_directed == ( m != k ) ) );
  }
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- FUNCTIONS --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace detail {
+namespace detail
+{
 
 /// D holds the distances of a breadth first visit of g from S: 0 on the
 /// sources, INF on the blocked cells, each other cell at INF or one move
@@ -327,13 +342,13 @@ namespace detail {
 /// more than one move farther
 template< class W , class C , class P >
 bool gridGraphBfs( const GridGraph< W , C , P > & g ,
-                   const std::vector< int > & S ,
-                   const std::vector< int > & D )
+		   const std::vector< int > & S ,
+		   const std::vector< int > & D )
 {
  for( int s : S )
   if( D[ s ] != 0 )
    return( false );
- std::vector< int > best( D.size() , INF );   // the least D of a neighbour
+ std::vector< int > best( D.size() , INF );  // the least D of a neighbour
  for( int u = 0 ; u < g.bound() ; ++u ) {
   if( ! g.hasNode( u ) ) {
    if( D[ u ] != INF )
@@ -366,10 +381,10 @@ inline long long gap( int x , int y )
 
 template< class W , class C , class P >
 std::vector< int > gridDistances( const GridGraph< W , C , P > & g ,
-                                  const std::vector< int > & S )
+				  const std::vector< int > & S )
 {
  std::vector< int > D( std::size_t( g.bound() ) , INF );
- std::vector< int > Q;                          // the queue, read from h
+ std::vector< int > Q;  // the queue, read from h
  Q.reserve( std::size_t( g.n() ) );
  for( int s : S ) {
   ADS_PRE( g.hasNode( s ) );
@@ -396,14 +411,14 @@ W manhattan( GridCell a , GridCell b , W straight )
 {
  ADS_PRE( straight >= W( 0 ) );
  return( straight * W( detail::gap( a.first , b.first ) +
-                       detail::gap( a.second , b.second ) ) );
+			detail::gap( a.second , b.second ) ) );
  }
 
 template< class W >
 W octile( GridCell a , GridCell b , W straight , W diagonal )
 {
  ADS_PRE( ( W( 0 ) <= straight ) && ( straight <= diagonal ) &&
-          ( diagonal <= straight + straight ) );
+	  ( diagonal <= straight + straight ) );
  const long long x = detail::gap( a.first , b.first );
  const long long y = detail::gap( a.second , b.second );
  const long long M = std::max( x , y ) , m = std::min( x , y );
@@ -415,7 +430,7 @@ W chebyshev( GridCell a , GridCell b , W straight )
 {
  ADS_PRE( straight >= W( 0 ) );
  return( straight * W( std::max( detail::gap( a.first , b.first ) ,
-                                 detail::gap( a.second , b.second ) ) ) );
+				  detail::gap( a.second , b.second ) ) ) );
  }
 
 template< class W , class C , class P >
@@ -426,14 +441,14 @@ W gridHeuristic( const GridGraph< W , C , P > & g , int u , int t )
  if( g.moves() == GridMoves::FOUR )
   return( k * manhattan( a , b , g.straight() ) );
  ADS_PRE( g.diagonal() >= g.straight() );
- return( k * octile( a , b , g.straight() ,
-                     std::min( g.diagonal() , g.straight() + g.straight() ) )
-         );
+ return( k *
+	  octile( a , b , g.straight() ,
+		  std::min( g.diagonal() , g.straight() + g.straight() ) ) );
  }
 
 template< class W , class C >
 GridGraph< W , C > readGridMap( std::istream & in , GridMoves moves ,
-                                Corners corners )
+			       Corners corners )
 {
  std::string key , type;
  int h = -1 , w = -1;
@@ -448,7 +463,7 @@ GridGraph< W , C > readGridMap( std::istream & in , GridMoves moves ,
   }
  in >> key;
  ADS_PRE( in && ( key == "map" ) && ( h >= 0 ) && ( w >= 0 ) &&
-          ( 1LL * h * w <= INT_MAX ) );
+	  ( 1LL * h * w <= INT_MAX ) );
  std::vector< C > cost( std::size_t( h ) * std::size_t( w ) );
  std::string line;
  for( int r = 0 ; r < h ; ++r ) {
@@ -457,7 +472,7 @@ GridGraph< W , C > readGridMap( std::istream & in , GridMoves moves ,
   for( int c = 0 ; c < w ; ++c ) {
    const char x = line[ c ];
    cost[ std::size_t( r ) * w + c ] =
-    C( ( x == '.' ) || ( x == 'G' ) || ( x == 'S' ) ? 1 : 0 );
+     C( ( x == '.' ) || ( x == 'G' ) || ( x == 'S' ) ? 1 : 0 );
    }
   }
  return( GridGraph< W , C >( h , w , std::move( cost ) , moves , corners ) );

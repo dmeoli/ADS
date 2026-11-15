@@ -31,7 +31,7 @@
 
 #ifndef __ADS_SortedArrayDictionary
  #define __ADS_SortedArrayDictionary
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -49,7 +49,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- CLASS SortedArrayDictionary -----------------------*/
@@ -57,34 +58,34 @@ namespace ADS {
 
 /// a DICTIONARY realized with a vector sorted by key
 template< std::totally_ordered K , class V >
-class SortedArrayDictionary {
+class SortedArrayDictionary
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the value of the key \f$ k \f$, or nothing, \f$ O( \log n ) \f$
-///
-/// In pseudocode (the binary search of section 1.2), \f$ A[ 0 .. n - 1 ] \f$
-/// the pairs by increasing key, \f$ \mathit{lo} \f$ the first place whose
-/// key is not smaller than \f$ k \f$:
-/// \f[
-/// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{lookup}( k ) \cr
-/// 2 & \quad \mathit{lo} \gets 0;\ \mathit{hi} \gets n \cr
-/// 3 & \quad \textbf{while}\ \mathit{lo} < \mathit{hi}\ \textbf{do} \cr
-/// 4 & \qquad m \gets \lfloor ( \mathit{lo} + \mathit{hi} ) / 2 \rfloor
-///     \cr
-/// 5 & \qquad \textbf{if}\ A[ m ].\mathit{key} < k\ \textbf{then}
-///     \ \mathit{lo} \gets m + 1\ \textbf{else}\ \mathit{hi} \gets m \cr
-/// 6 & \quad \textbf{if}\ \mathit{lo} < n\ \textbf{and}\ A[ \mathit{lo}
-///     ].\mathit{key} = k\ \textbf{then return}\ A[ \mathit{lo}
-///     ].\mathit{value} \cr
-/// 7 & \quad \textbf{return nil}
-/// \end{array}}
-/// \f]
+ ///
+ /// In pseudocode (the binary search of section 1.2), \f$ A[ 0 .. n - 1 ] \f$
+ /// the pairs by increasing key, \f$ \mathit{lo} \f$ the first place whose
+ /// key is not smaller than \f$ k \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{lookup}( k ) \cr
+ /// 2 & \quad \mathit{lo} \gets 0;\ \mathit{hi} \gets n \cr
+ /// 3 & \quad \textbf{while}\ \mathit{lo} < \mathit{hi}\ \textbf{do} \cr
+ /// 4 & \qquad m \gets \lfloor ( \mathit{lo} + \mathit{hi} ) / 2 \rfloor
+ ///     \cr
+ /// 5 & \qquad \textbf{if}\ A[ m ].\mathit{key} < k\ \textbf{then}
+ ///     \ \mathit{lo} \gets m + 1\ \textbf{else}\ \mathit{hi} \gets m \cr
+ /// 6 & \quad \textbf{if}\ \mathit{lo} < n\ \textbf{and}\ A[ \mathit{lo}
+ ///     ].\mathit{key} = k\ \textbf{then return}\ A[ \mathit{lo}
+ ///     ].\mathit{value} \cr
+ /// 7 & \quad \textbf{return nil}
+ /// \end{array}}
+ /// \f]
  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
 
  /// associates the value \f$ v \f$ to the key \f$ k \f$, \f$ O( n ) \f$
@@ -116,8 +117,8 @@ class SortedArrayDictionary {
 
  /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
  /// (the `find( x )` of an SSet of Morin), in \f$ O( \log n ) \f$ time
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-  const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
 
  /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
  /// time: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
@@ -170,14 +171,13 @@ class SortedArrayDictionary {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the place of the first key not smaller than \f$ k \f$, by binary search
  [[nodiscard]] std::size_t place( const K & k ) const;
 
  /// the keys are strictly increasing, \f$ O( n ) \f$
  [[nodiscard]] bool sorted( void ) const;
 
- std::vector< std::pair< K , V > > f_A;   ///< the pairs, sorted by key
+ std::vector< std::pair< K , V > > f_A;  ///< the pairs, sorted by key
 
  };  // end( class SortedArrayDictionary )
 
@@ -193,7 +193,7 @@ class SortedArrayDictionary {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SortedArrayDictionary.h included */
+#endif /* SortedArrayDictionary.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- End File SortedArrayDictionary.h --------------------*/

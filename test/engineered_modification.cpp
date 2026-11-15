@@ -49,7 +49,8 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ins = mod::Inserted< int , int , int >;
 using Era = mod::Erased< int , int , int >;
@@ -57,8 +58,8 @@ using KC = mod::KeyChanged< int , int >;
 using As = mod::Assigned< int , int >;
 using CC = mod::Changed< mod::Cost , int , int >;
 using Sh = mod::Shifted< mod::Key , int >;
-using Events = mod::list< Ins , Era , KC , As , CC , Sh , mod::Cleared ,
-                          mod::Rebuilt >;
+using Events =
+  mod::list< Ins , Era , KC , As , CC , Sh , mod::Cleared , mod::Rebuilt >;
 using Ev = mod::variant_t< Events >;
 
 /*--------------------------------------------------------------------------*/
@@ -69,27 +70,28 @@ using Ev = mod::variant_t< Events >;
 /// handle, its changes told through the subject policy `Policy`; with
 /// `Undo`, checkpoints of its whole state
 template< class Policy , bool Undo = false >
-class Keyed {
+class Keyed
+{
  public:
-
  using modifications = Events;
  using Subject = typename Policy::template bind< modifications , Keyed >;
 
  /// an item
- struct Item {
+ struct Item
+ {
   bool live = false;
   int key = 0 , value = 0 , cost = 0;
   /// the same item, or both places empty
   bool operator==( const Item & y ) const {
    return( ( live == y.live ) &&
-           ( ! live || ( ( key == y.key ) && ( value == y.value ) &&
-                         ( cost == y.cost ) ) ) );
+	    ( ! live || ( ( key == y.key ) && ( value == y.value ) &&
+			  ( cost == y.cost ) ) ) );
    }
   };
 
- template< class ... O >
- explicit Keyed( int n , O & ... o )
-  : f_i( std::size_t( n ) ) , f_sub( o... ) {}
+ template< class... O >
+ explicit Keyed( int n , O &... o ) : f_i( std::size_t( n ) ) ,
+   f_sub( o... ) { }
 
  void insert( int h , int k , int v ) {
   ADS_PRE( ! at( h ).live );
@@ -102,7 +104,7 @@ class Keyed {
 
  void erase( int h ) {
   ADS_PRE( at( h ).live );
-  f_sub.emit( Era{ h , at( h ).key , at( h ).value } );   // before
+  f_sub.emit( Era{ h , at( h ).key , at( h ).value } );  // before
   at( h ).live = false;
   f_sub.audit( *this );
   }
@@ -154,13 +156,17 @@ class Keyed {
  void apply( const Sh & e ) { shift( e.delta ); }
 
  /// a checkpoint of the whole state
- std::size_t checkpoint( void ) requires Undo {
+ std::size_t checkpoint( void )
+  requires Undo
+ {
   f_snap.push_back( f_i );
   return( f_snap.size() - 1 );
   }
 
  /// the state of the checkpoint t
- void rollback( std::size_t t ) requires Undo {
+ void rollback( std::size_t t )
+  requires Undo
+ {
   f_i = f_snap[ t ];
   f_snap.resize( t );
   }
@@ -175,7 +181,6 @@ class Keyed {
  Subject & subject( void ) { return( f_sub ); }
 
  private:
-
  Item & at( int h ) { return( f_i[ std::size_t( h ) ] ); }
 
  std::vector< Item > f_i;
@@ -188,20 +193,26 @@ class Keyed {
 /*--------------------------------------------------------------------------*/
 
 /// records every event, one by one
-struct Rec {
+struct Rec
+{
  std::vector< Ev > one;
  template< class E >
   requires mod::contains_v< E , Events >
- void on( const E & e ) noexcept { one.push_back( Ev( e ) ); }
+ void on( const E & e ) noexcept {
+  one.push_back( Ev( e ) );
+  }
  };
 
 /// records the events one by one and the batches as spans of the variant
-struct SpanRec {
+struct SpanRec
+{
  std::vector< Ev > one;
  std::vector< std::vector< Ev > > batches;
  template< class E >
   requires mod::contains_v< E , Events >
- void on( const E & e ) noexcept { one.push_back( Ev( e ) ); }
+ void on( const E & e ) noexcept {
+  one.push_back( Ev( e ) );
+  }
  void on( std::span< const Ev > s ) {
   batches.emplace_back( s.begin() , s.end() );
   }
@@ -209,7 +220,8 @@ struct SpanRec {
 
 /// wants the insertions only, as spans of their kind, and the erasures
 /// one by one
-struct KindSpan {
+struct KindSpan
+{
  std::vector< std::vector< Ins > > runs;
  std::vector< Era > erased;
  void on( const Ins & e ) { runs.push_back( { e } ); }
@@ -220,24 +232,30 @@ struct KindSpan {
  };
 
 /// counts the groups, with the versions
-struct Grouped {
+struct Grouped
+{
  int begins = 0 , ends = 0 , events = 0;
  mod::Group last;
  void on( const KC & ) { ++events; }
- void group_begin( const mod::Group & g ) { ++begins; last = g; }
+ void group_begin( const mod::Group & g ) {
+  ++begins;
+  last = g;
+  }
  void group_end( void ) { ++ends; }
  };
 
 /// counts the groups, without the versions
-struct PlainGrouped {
+struct PlainGrouped
+{
  int begins = 0 , ends = 0;
- void on( const As & ) {}
+ void on( const As & ) { }
  void group_begin( void ) { ++begins; }
  void group_end( void ) { ++ends; }
  };
 
 /// refuses the key 13
-struct Refuser {
+struct Refuser
+{
  int told = 0;
  bool prepare( const KC & e ) const { return( e.to != 13 ); }
  bool prepare( const Ins & e ) const { return( e.key != 13 ); }
@@ -246,7 +264,8 @@ struct Refuser {
  };
 
 /// throws at the insertions and at the changes of key when armed
-struct Thrower {
+struct Thrower
+{
  bool armed = false;
  int told = 0;
  void on( const Ins & ) {
@@ -262,13 +281,18 @@ struct Thrower {
  };
 
 /// leaves at its first event
-struct Leaver {
+struct Leaver
+{
  int told = 0;
- Keep on( const As & ) { ++told; return( Keep::Detach ); }
+ Keep on( const As & ) {
+  ++told;
+  return( Keep::Detach );
+  }
  };
 
 /// a filter of the kinds at run time
-struct Masked {
+struct Masked
+{
  std::uint64_t m = 0;
  int told = 0;
  [[nodiscard]] std::uint64_t mask( void ) const { return( m ); }
@@ -277,10 +301,11 @@ struct Masked {
  };
 
 /// audits itself by a flag
-struct Auditor {
+struct Auditor
+{
  bool ok = true;
  mutable int audits = 0;
- void on( const As & ) {}
+ void on( const As & ) { }
  template< class S >
  bool audit( const S & ) const {
   ++audits;
@@ -289,7 +314,8 @@ struct Auditor {
  };
 
 /// the sum of the values of the live items, kept by the events
-struct SumIncremental {
+struct SumIncremental
+{
  long long sum = 0;
  void on( const Ins & e ) { sum += e.value; }
  void on( const Era & e ) noexcept { sum -= e.value; }
@@ -298,15 +324,14 @@ struct SumIncremental {
  };
 
 /// the sum of the values of the live items, from the last values seen
-struct SumScratch {
+struct SumScratch
+{
  std::vector< std::optional< int > > v =
-  std::vector< std::optional< int > >( 8 );
+   std::vector< std::optional< int > >( 8 );
  bool broken = false;
  void on( const Ins & e ) { v[ std::size_t( e.h ) ] = e.value; }
  void on( const Era & e ) noexcept { v[ std::size_t( e.h ) ].reset(); }
- void on( const As & e ) {
-  v[ std::size_t( e.h ) ] = broken ? e.from : e.to;
-  }
+ void on( const As & e ) { v[ std::size_t( e.h ) ] = broken ? e.from : e.to; }
  void on( const mod::Cleared & ) noexcept {
   for( auto & x : v )
    x.reset();
@@ -317,19 +342,21 @@ struct SumScratch {
    s += x.value_or( 0 );
   return( s );
   }
- void flush( void ) {}
+ void flush( void ) { }
  };
 
 /// an observer of the insertions that its successor depends on
-struct First {
- void on( const Ins & ) {}
+struct First
+{
+ void on( const Ins & ) { }
  };
 
 /// depends on First
-struct Second {
+struct Second
+{
  using depends_on = mod::list< First >;
  using requires_modifications = mod::list< Ins >;
- void on( const Ins & ) {}
+ void on( const Ins & ) { }
  };
 
 using KN = Keyed< NoObservers >;
@@ -351,7 +378,7 @@ ADS_TEST( "mod-events" )
  static_assert( mod::role_of< Ins > == mod::Role::Insert );
  static_assert( mod::role_of< int > == mod::Role::Other );
  static_assert( mod::must_not_throw< Era > &&
-                mod::must_not_throw< mod::Rebuilt > );
+		mod::must_not_throw< mod::Rebuilt > );
  static_assert( mod::must_not_throw< mod::Replaced< mod::Cost > > );
  static_assert( mod::must_not_throw< mod::BulkErased< int > > );
  static_assert( ! mod::must_not_throw< Ins > && ! mod::must_not_throw< KC > );
@@ -359,20 +386,24 @@ ADS_TEST( "mod-events" )
  static_assert( mod::index_v< KC , Events > == 2 );
  static_assert( mod::index_v< double , Events > == Events::size );
  static_assert( mod::contains_v< Sh , Events > &&
-                ! mod::contains_v< int , Events > );
+		! mod::contains_v< int , Events > );
  static_assert( std::is_same_v< mod::variant_t< mod::list< int , char > > ,
-                                std::variant< int , char > > );
+				std::variant< int , char > > );
  static_assert( mod::invertible< Ins > && mod::invertible< Sh > );
  static_assert( ! mod::invertible< mod::Cleared > );
- static_assert( std::is_same_v< mod::reduction_of< mod::Key >::type ,
-                                mod::reduce::last > );
+ static_assert(
+   std::is_same_v< mod::reduction_of< mod::Key >::type , mod::reduce::last > );
  // the directions
  CHECK( ( KC{ 0 , 5 , 3 } ).direction() == mod::effect::down );
  CHECK( ( KC{ 0 , 3 , 5 } ).direction() == mod::effect::up );
  CHECK( ( KC{ 0 , 3 , 3 } ).direction() == 0 );
- struct NoOrder { int x; bool operator==( const NoOrder & ) const = default; };
+ struct NoOrder
+ {
+  int x;
+  bool operator==( const NoOrder & ) const = default;
+  };
  CHECK( ( mod::Assigned< int , NoOrder >{ 0 , { 1 } , { 2 } } ).direction() ==
-        ( mod::effect::up | mod::effect::down ) );
+	( mod::effect::up | mod::effect::down ) );
  CHECK( ( Sh{ -2 } ).direction() == mod::effect::down );
  CHECK( ( Sh{ 2 } ).direction() == mod::effect::up );
  CHECK( ( Sh{ 0 } ).direction() == 0 );
@@ -380,12 +411,12 @@ ADS_TEST( "mod-events" )
  CHECK( mod::inverse( Ins{ 1 , 2 , 3 } ) == ( Era{ 1 , 2 , 3 } ) );
  CHECK( mod::inverse( Era{ 1 , 2 , 3 } ) == ( Ins{ 1 , 2 , 3 } ) );
  CHECK( mod::inverse( mod::Inserted< int , int >{ 1 , 2 } ) ==
-        ( mod::Erased< int , int >{ 1 , 2 } ) );
+	( mod::Erased< int , int >{ 1 , 2 } ) );
  CHECK( mod::inverse( mod::Erased< int , int >{ 4 , 2 } ) ==
-        ( mod::Inserted< int , int >{ 4 , 2 } ) );
+	( mod::Inserted< int , int >{ 4 , 2 } ) );
  CHECK( mod::inverse( KC{ 1 , 2 , 3 } ) == ( KC{ 1 , 3 , 2 } ) );
  CHECK( mod::inverse( mod::Relocated< int >{ 1 , 2 } ) ==
-        ( mod::Relocated< int >{ 2 , 1 } ) );
+	( mod::Relocated< int >{ 2 , 1 } ) );
  CHECK( mod::inverse( Sh{ 5 } ) == ( Sh{ -5 } ) );
  }
 
@@ -397,19 +428,19 @@ ADS_TEST( "mod-observer-parts" )
 {
  // found at compile time
  static_assert( mod::observes< KindSpan , Ins > &&
-                ! mod::observes< KindSpan , KC > );
+		! mod::observes< KindSpan , KC > );
  static_assert( mod::observes_span< KindSpan , Ins > &&
-                ! mod::observes_span< KindSpan , Era > );
+		! mod::observes_span< KindSpan , Era > );
  static_assert( mod::observes_span< SpanRec , Ev > );
  static_assert( mod::groups< Grouped > && mod::groups< PlainGrouped > &&
-                ! mod::groups< Rec > );
+		! mod::groups< Rec > );
  static_assert( mod::refuses< Refuser , KC > && ! mod::refuses< Rec , KC > );
- static_assert( mod::auditable< Auditor , KN > &&
-                ! mod::auditable< Rec , KN > );
+ static_assert( mod::auditable< Auditor , KN > && ! mod::auditable< Rec ,
+								    KN > );
  static_assert( mod::masked< Masked > && ! mod::masked< Rec > );
  static_assert( mod::lazy< SumScratch > && ! mod::lazy< Rec > );
  static_assert( mod::observer_of< Rec , Events > &&
-                ! mod::observer_of< Rec , mod::list< int > > );
+		! mod::observer_of< Rec , mod::list< int > > );
  static_assert( mod::counted< Shadow< SumIncremental , SumScratch > > );
 
  // a static set of every form, then the same attached dynamically
@@ -426,7 +457,7 @@ ADS_TEST( "mod-observer-parts" )
    s.insert( 0 , 10 , 100 );
    s.insert( 1 , 11 , 101 );
    s.setKey( 0 , 12 );
-   s.assign( 0 , 7 );                    // Leaver leaves here
+   s.assign( 0 , 7 );  // Leaver leaves here
    s.assign( 0 , 8 );
    {
     auto b = ADS::batch( s );
@@ -446,17 +477,19 @@ ADS_TEST( "mod-observer-parts" )
    CHECK( gr.last.size == 5 && gr.last.to > gr.last.from );
    CHECK( pg.begins == 1 && pg.ends == 1 );
    CHECK( lv.told == 1 );
-   CHECK( mk.told == 2 );                 // the changes of key only
+   CHECK( mk.told == 2 );  // the changes of key only
    };
   if( dyn == 0 ) {
-   Keyed< Static< Rec , SpanRec , KindSpan , Grouped , PlainGrouped ,
-                  Leaver , Masked > > s( 8 , r , sr , ks , gr , pg , lv , mk );
+   Keyed<
+     Static< Rec , SpanRec , KindSpan , Grouped , PlainGrouped , Leaver ,
+	     Masked > >
+     s( 8 , r , sr , ks , gr , pg , lv , mk );
    run( s );
    CHECK( s.subject().mask() != 0 );
    }
   else {
    KD s( 8 );
-   for( auto * o : { & r } )
+   for( auto * o : { &r } )
     s.subject().attach( *o );
    s.subject().attach( sr );
    s.subject().attach( ks );
@@ -465,7 +498,7 @@ ADS_TEST( "mod-observer-parts" )
    const int l = s.subject().attach( lv );
    s.subject().attach( mk );
    run( s );
-   CHECK( ! s.subject().attached( l ) );     // it left
+   CHECK( ! s.subject().attached( l ) );  // it left
    }
   }
 
@@ -475,8 +508,13 @@ ADS_TEST( "mod-observer-parts" )
  Keyed< Static< First , Second > > s( 2 , f , g );
  s.insert( 0 , 1 , 1 );
  // a static observer through an adapter
- struct Counter { int n = 0; void bump( void ) { ++n; } };
- struct Bump {
+ struct Counter
+ {
+  int n = 0;
+  void bump( void ) { ++n; }
+  };
+ struct Bump
+ {
   static void one( Counter & c , const Ins & ) { c.bump(); }
   };
  Counter c;
@@ -513,7 +551,7 @@ ADS_TEST( "mod-policies" )
  // dynamic: attach, the mask, detach, the contracts
  KD d( 4 );
  CHECK( ! d.subject().live< Ins >() && d.subject().mask() == 0 );
- d.insert( 0 , 1 , 1 );                   // nobody: nothing built
+ d.insert( 0 , 1 , 1 );  // nobody: nothing built
  CHECK( d.subject().version() == 0 );
  KindSpan ks;
  Rec r;
@@ -533,29 +571,35 @@ ADS_TEST( "mod-policies" )
   CHECK_THROWS( d.subject().detach( a ) , contract_violation );
   }
  // an observer that attaches from within on(): refused
- struct Attacher {
+ struct Attacher
+ {
   KD * s = nullptr;
   Rec other;
   bool refused = false;
   void on( const As & ) {
-   try { s->subject().attach( other ); }
-   catch( const contract_violation & ) { refused = true; }
+   try {
+    s->subject().attach( other );
+    }
+   catch( const contract_violation & ) {
+    refused = true;
+    }
    }
   };
  Attacher at;
- at.s = & d;
+ at.s = &d;
  d.subject().attach( at );
  d.assign( 0 , 5 );
  CHECK( at.refused );
 
  // both: the static ones first, then the dynamic ones
  std::vector< int > order;
- struct Tag {
+ struct Tag
+ {
   std::vector< int > * o;
   int id;
   void on( const Ins & ) { o->push_back( id ); }
   };
- Tag t1{ & order , 1 } , t2{ & order , 2 } , t3{ & order , 3 };
+ Tag t1{ &order , 1 } , t2{ &order , 2 } , t3{ &order , 3 };
  Keyed< Both< Static< Tag , Tag > > > bo( 4 , t1 , t2 );
  bo.subject().attach( t3 );
  bo.insert( 0 , 0 , 0 );
@@ -580,7 +624,7 @@ ADS_TEST( "mod-batch" )
   auto b = ADS::batch( s );
   s.setKey( 0 , 5 );
   {
-   auto inner = ADS::batch( s );         // nested: the outer one sends
+   auto inner = ADS::batch( s );  // nested: the outer one sends
    CHECK( s.subject().depth() == 2 );
    s.setKey( 0 , 6 );
    s.insert( 2 , 3 , 3 );
@@ -588,7 +632,7 @@ ADS_TEST( "mod-batch" )
   CHECK( sr.batches.empty() && sr.one.empty() );
   s.erase( 1 );
   b.close();
-  b.close();                              // idempotent
+  b.close();  // idempotent
   CHECK( s.subject().depth() == 0 );
   }
  CHECK( sr.batches.size() == 1 );
@@ -603,13 +647,15 @@ ADS_TEST( "mod-batch" )
   s.setKey( 0 , 9 );
   s.setKey( 0 , 6 );
   }
- { auto b = ADS::batch( s ); }
+ {
+  auto b = ADS::batch( s );
+  }
  CHECK( sr.batches.size() == 1 );
  // a batch moved keeps its channel
  {
   auto b = ADS::batch( s );
   auto c = std::move( b );
-  b.close();                              // moved from: nothing
+  b.close();  // moved from: nothing
   CHECK( s.subject().depth() == 1 );
   s.assign( 0 , 4 );
   }
@@ -618,7 +664,8 @@ ADS_TEST( "mod-batch" )
  using BI = mod::BulkInserted< int >;
  using PE = mod::Permuted< int >;
  using BL = mod::list< BI , PE >;
- struct BulkRec {
+ struct BulkRec
+ {
   std::vector< std::vector< int > > seen;
   void on( const BI & e ) { seen.emplace_back( e.hs.begin() , e.hs.end() ); }
   void on( const PE & e ) {
@@ -633,7 +680,7 @@ ADS_TEST( "mod-batch" )
   sub.emit( BI{ std::span< const int >( hs ) } );
   std::vector< int > p = { 2 , 0 , 1 };
   sub.emit( PE{ std::span< const int >( p ) } );
-  hs.assign( 3 , -1 );                    // the caller changes them
+  hs.assign( 3 , -1 );  // the caller changes them
   p.assign( 3 , -1 );
   }
  sub.close( 0 );
@@ -647,25 +694,29 @@ ADS_TEST( "mod-batch" )
 /*----------------------------- THE COALESCING -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace {
+namespace
+{
 
 /// the net effect of B by the default rule of Events
 std::vector< Ev > net( const std::vector< Ev > & B )
 {
- return( mod::coalesce_traits< Events >::coalesce(
-                                          std::span< const Ev >( B ) ) );
+ return(
+   mod::coalesce_traits< Events >::coalesce( std::span< const Ev >( B ) ) );
  }
 
 /// an attribute that keeps the least value of a batch
-struct Low {
+struct Low
+{
  using reduction = mod::reduce::min;
  };
 /// an attribute that keeps the largest
-struct High {
+struct High
+{
  using reduction = mod::reduce::max;
  };
 /// an attribute whose differences add up
-struct Total {
+struct Total
+{
  using reduction = mod::reduce::sum;
  };
 
@@ -675,20 +726,23 @@ ADS_TEST( "mod-coalesce" )
 {
  // an insertion and an erasure cancel, with the changes between them
  CHECK( net( { Ins{ 0 , 1 , 1 } , KC{ 0 , 1 , 2 } , CC{ 0 , 0 , 5 } ,
-               As{ 0 , 1 , 3 } , Era{ 0 , 2 , 3 } } ).empty() );
+	       As{ 0 , 1 , 3 } ,
+	       Era{ 0 , 2 , 3 } } )
+	  .empty() );
  // the changes of key and value fold into the insertion; the cost stays
- CHECK( ( net( { Ins{ 0 , 1 , 1 } , KC{ 0 , 1 , 2 } , CC{ 0 , 0 , 5 } ,
-                 As{ 0 , 1 , 3 } } ) ==
-          std::vector< Ev >{ Ins{ 0 , 2 , 3 } , CC{ 0 , 0 , 5 } } ) );
+ CHECK(
+   ( net( { Ins{ 0 , 1 , 1 } , KC{ 0 , 1 , 2 } , CC{ 0 , 0 , 5 } ,
+	    As{ 0 , 1 , 3 } } ) ==
+     std::vector< Ev >{ Ins{ 0 , 2 , 3 } , CC{ 0 , 0 , 5 } } ) );
  // changes then an erasure: the erasure of what there was before
  CHECK( ( net( { KC{ 0 , 1 , 2 } , As{ 0 , 5 , 6 } , KC{ 0 , 2 , 3 } ,
-                 Era{ 0 , 3 , 6 } } ) ==
-          std::vector< Ev >{ Era{ 0 , 1 , 5 } } ) );
+		 Era{ 0 , 3 ,
+		      6 } } ) == std::vector< Ev >{ Era{ 0 , 1 , 5 } } ) );
  // an erasure and an insertion: the changes, or nothing if equal
  CHECK( ( net( { Era{ 0 , 1 , 5 } , Ins{ 0 , 2 , 6 } } ) ==
-          std::vector< Ev >{ KC{ 0 , 1 , 2 } , As{ 0 , 5 , 6 } } ) );
+	  std::vector< Ev >{ KC{ 0 , 1 , 2 } , As{ 0 , 5 , 6 } } ) );
  CHECK( ( net( { Era{ 0 , 1 , 5 } , Ins{ 0 , 1 , 7 } } ) ==
-          std::vector< Ev >{ As{ 0 , 5 , 7 } } ) );
+	  std::vector< Ev >{ As{ 0 , 5 , 7 } } ) );
  CHECK( net( { Era{ 0 , 1 , 5 } , Ins{ 0 , 1 , 5 } } ).empty() );
  // ... kept as they are when the structure has no change of that kind
  {
@@ -697,66 +751,71 @@ ADS_TEST( "mod-coalesce" )
   using L2 = mod::list< I2 , E2 >;
   using V2 = mod::variant_t< L2 >;
   const std::vector< V2 > B = { E2{ 0 , 1 } , I2{ 0 , 2 } , E2{ 1 , 4 } ,
-                                I2{ 1 , 4 } };
-  const auto C = mod::coalesce_traits< L2 >::coalesce(
-                                             std::span< const V2 >( B ) );
+				I2{ 1 , 4 } };
+  const auto C =
+    mod::coalesce_traits< L2 >::coalesce( std::span< const V2 >( B ) );
   CHECK( ( C == std::vector< V2 >{ E2{ 0 , 1 } , I2{ 0 , 2 } } ) );
   }
  // consecutive changes compose; a touch vanishes; other attributes commute
  CHECK( ( net( { KC{ 0 , 1 , 2 } , CC{ 0 , 0 , 4 } , KC{ 0 , 2 , 3 } } ) ==
-          std::vector< Ev >{ KC{ 0 , 1 , 3 } , CC{ 0 , 0 , 4 } } ) );
+	  std::vector< Ev >{ KC{ 0 , 1 , 3 } , CC{ 0 , 0 , 4 } } ) );
  CHECK( net( { KC{ 0 , 1 , 2 } , KC{ 0 , 2 , 1 } } ).empty() );
  CHECK( net( { As{ 3 , 4 , 4 } } ).empty() );
  // handles apart, in the order of their first event
  CHECK( ( net( { KC{ 1 , 1 , 2 } , KC{ 0 , 5 , 6 } , KC{ 1 , 2 , 4 } } ) ==
-          std::vector< Ev >{ KC{ 1 , 1 , 4 } , KC{ 0 , 5 , 6 } } ) );
+	  std::vector< Ev >{ KC{ 1 , 1 , 4 } , KC{ 0 , 5 , 6 } } ) );
  // the reductions of the attributes
  {
-  using L3 = mod::list< mod::Changed< Low , int , int > ,
-                        mod::Changed< High , int , int > ,
-                        mod::Changed< Total , int , int > ,
-                        mod::Changed< mod::Value , int , int > >;
+  using L3 =
+    mod::list< mod::Changed< Low , int , int > ,
+	       mod::Changed< High , int , int > ,
+	       mod::Changed< Total , int , int > ,
+	       mod::Changed< mod::Value , int , int > >;
   using V3 = mod::variant_t< L3 >;
   using CL = mod::Changed< Low , int , int >;
   using CH = mod::Changed< High , int , int >;
   using CT = mod::Changed< Total , int , int >;
   using CV = mod::Changed< mod::Value , int , int >;
   const std::vector< V3 > B = { CL{ 0 , 9 , 5 } , CL{ 0 , 9 , 7 } ,
-                                CH{ 1 , 0 , 5 } , CH{ 1 , 0 , 3 } ,
-                                CT{ 2 , 0 , 5 } , CT{ 2 , 0 , 3 } ,
-                                CV{ 3 , 0 , 5 } , CV{ 3 , 0 , 3 } };
-  const auto C = mod::coalesce_traits< L3 >::coalesce(
-                                             std::span< const V3 >( B ) );
+				CH{ 1 , 0 , 5 } ,
+				CH{ 1 , 0 , 3 } , CT{ 2 , 0 , 5 } ,
+				CT{ 2 , 0 , 3 } ,
+				CV{ 3 , 0 , 5 } , CV{ 3 , 0 , 3 } };
+  const auto C =
+    mod::coalesce_traits< L3 >::coalesce( std::span< const V3 >( B ) );
   CHECK( ( C == std::vector< V3 >{ CL{ 0 , 9 , 5 } , CH{ 1 , 0 , 5 } ,
-                                   CT{ 2 , 0 , 8 } , CV{ 3 , 0 , 3 } } ) );
+				   CT{ 2 , 0 , 8 } ,
+				   CV{ 3 , 0 , 3 } } ) );
   }
  // everything before the last Cleared or Rebuilt is dropped
  CHECK( ( net( { Ins{ 0 , 1 , 1 } , mod::Cleared{} , Ins{ 1 , 2 , 2 } ,
-                 mod::Rebuilt{} , KC{ 1 , 2 , 3 } } ) ==
-          std::vector< Ev >{ mod::Rebuilt{} , KC{ 1 , 2 , 3 } } ) );
+		 mod::Rebuilt{} , KC{ 1 , 2 , 3 } } ) ==
+	  std::vector< Ev >{ mod::Rebuilt{} , KC{ 1 , 2 , 3 } } ) );
  CHECK( ( net( { mod::Rebuilt{} , mod::Cleared{} } ) ==
-          std::vector< Ev >{ mod::Cleared{} } ) );
+	  std::vector< Ev >{ mod::Cleared{} } ) );
  // the shifts add up, to nothing if they cancel; they bound the runs
  CHECK( ( net( { KC{ 0 , 1 , 2 } , Sh{ 2 } , Sh{ 3 } , KC{ 0 , 7 , 8 } } ) ==
-          std::vector< Ev >{ KC{ 0 , 1 , 2 } , Sh{ 5 } , KC{ 0 , 7 , 8 } } ) );
+	  std::vector< Ev >{ KC{ 0 , 1 , 2 } , Sh{ 5 } , KC{ 0 , 7 , 8 } } ) );
  CHECK( ( net( { Sh{ 2 } , Sh{ -2 } , KC{ 0 , 1 , 2 } } ) ==
-          std::vector< Ev >{ KC{ 0 , 1 , 2 } } ) );
+	  std::vector< Ev >{ KC{ 0 , 1 , 2 } } ) );
  // replacements of one attribute are one; relocations bound the runs
  {
   using R = mod::Replaced< mod::Cost >;
   using RL = mod::Relocated< int >;
   using L4 = mod::list< KC , R , RL >;
   using V4 = mod::variant_t< L4 >;
-  const std::vector< V4 > B = { KC{ 0 , 1 , 2 } , R{} , R{} , RL{ 0 , 5 } ,
-                                KC{ 0 , 2 , 3 } , KC{ 0 , 3 , 4 } };
-  const auto C = mod::coalesce_traits< L4 >::coalesce(
-                                             std::span< const V4 >( B ) );
+  const std::vector< V4 > B = { KC{ 0 , 1 , 2 } , R{} ,           R{} ,
+				RL{ 0 , 5 } ,    KC{ 0 , 2 , 3 } ,
+				KC{ 0 , 3 , 4 } };
+  const auto C =
+    mod::coalesce_traits< L4 >::coalesce( std::span< const V4 >( B ) );
   CHECK( ( C == std::vector< V4 >{ KC{ 0 , 1 , 2 } , R{} , RL{ 0 , 5 } ,
-                                   KC{ 0 , 2 , 4 } } ) );
+				   KC{ 0 , 2 , 4 } } ) );
   }
  // handles with no hash are not coalesced
  {
-  struct NH {
+  struct NH
+  {
    int x;
    bool operator==( const NH & ) const = default;
    };
@@ -764,19 +823,22 @@ ADS_TEST( "mod-coalesce" )
   using L5 = mod::list< KN2 >;
   using V5 = mod::variant_t< L5 >;
   const std::vector< V5 > B = { KN2{ { 0 } , 1 , 2 } , KN2{ { 0 } , 2 , 3 } };
-  CHECK( mod::coalesce_traits< L5 >::coalesce(
-                                std::span< const V5 >( B ) ).size() == 2 );
+  CHECK( mod::coalesce_traits< L5 >::coalesce( std::span< const V5 >( B ) )
+	   .size() == 2 );
   }
  // values with no == never vanish
  {
-  struct NoEq { int x; };
+  struct NoEq
+  {
+   int x;
+   };
   using AN = mod::Assigned< int , NoEq >;
   using L6 = mod::list< AN >;
   using V6 = mod::variant_t< L6 >;
   const std::vector< V6 > B = { AN{ 0 , { 1 } , { 2 } } ,
-                                AN{ 0 , { 2 } , { 1 } } };
-  CHECK( mod::coalesce_traits< L6 >::coalesce(
-                                std::span< const V6 >( B ) ).size() == 1 );
+				AN{ 0 , { 2 } , { 1 } } };
+  CHECK( mod::coalesce_traits< L6 >::coalesce( std::span< const V6 >( B ) )
+	   .size() == 1 );
   }
  CHECK( net( {} ).empty() );
  // a long random sequence: replaying the net effect gives the same state
@@ -815,31 +877,34 @@ ADS_TEST( "mod-coalesce" )
   CHECK( C.size() <= B.size() );
   s2 = s0;
   for( const auto & e : C )
-   std::visit( [ & ]( const auto & y ) {
-    using Y = std::decay_t< decltype( y ) >;
-    if constexpr( ! mod::detail::element< Y > )
-     CHECK( false );
-    else {
-    auto & it = s2[ std::size_t( y.h ) ];
-    if constexpr( std::is_same_v< Y , Ins > ) {
-     CHECK( ! it );
-     it = std::pair< int , int >( y.key , y.value );
-     }
-    else if constexpr( std::is_same_v< Y , Era > ) {
-     CHECK( it && ( it->first == y.key ) && ( it->second == y.value ) );
-     it.reset();
-     }
-    else if constexpr( std::is_same_v< Y , KC > ) {
-     CHECK( it && ( it->first == y.from ) );
-     it->first = y.to;
-     }
-    else if constexpr( std::is_same_v< Y , As > ) {
-     CHECK( it && ( it->second == y.from ) );
-     it->second = y.to;
-     }
-    else
-     CHECK( false );
-    } } , e );
+   std::visit(
+     [ & ]( const auto & y ) {
+      using Y = std::decay_t< decltype( y ) >;
+      if constexpr( ! mod::detail::element< Y > )
+       CHECK( false );
+      else {
+       auto & it = s2[ std::size_t( y.h ) ];
+       if constexpr( std::is_same_v< Y , Ins > ) {
+	CHECK( ! it );
+	it = std::pair< int , int >( y.key , y.value );
+        }
+       else if constexpr( std::is_same_v< Y , Era > ) {
+	CHECK( it && ( it->first == y.key ) && ( it->second == y.value ) );
+	it.reset();
+        }
+       else if constexpr( std::is_same_v< Y , KC > ) {
+	CHECK( it && ( it->first == y.from ) );
+	it->first = y.to;
+        }
+       else if constexpr( std::is_same_v< Y , As > ) {
+	CHECK( it && ( it->second == y.from ) );
+	it->second = y.to;
+        }
+       else
+	CHECK( false );
+       }
+      } ,
+     e );
   CHECK( s2 == s1 );
   s0 = s1;
   }
@@ -861,7 +926,7 @@ ADS_TEST( "mod-rollback" )
  th.armed = true;
  CHECK_THROWS( s.insert( 1 , 2 , 2 ) , std::runtime_error );
  CHECK( ! s.item( 1 ).live );
- CHECK( r1.one.size() == 3 && r3.one.size() == 1 );   // r3 never told
+ CHECK( r1.one.size() == 3 && r3.one.size() == 1 );  // r3 never told
  CHECK( r1.one[ 1 ] == Ev( Ins{ 1 , 2 , 2 } ) );
  CHECK( r1.one[ 2 ] == Ev( Era{ 1 , 2 , 2 } ) );
  CHECK_THROWS( s.setKey( 0 , 5 ) , std::runtime_error );
@@ -881,12 +946,14 @@ ADS_TEST( "mod-rollback" )
   }
  // a Keep::Detach returned by the inverse is honoured after the rollback
  {
-  struct LeaveOnUndo {
+  struct LeaveOnUndo
+  {
    int told = 0;
    void on( const KC & ) { ++told; }
    Keep on( const As & ) { return( Keep::Detach ); }
    };
-  struct ThrowAs {
+  struct ThrowAs
+  {
    void on( const As & ) { throw( std::runtime_error( "as" ) ); }
    };
   LeaveOnUndo lu;
@@ -925,7 +992,8 @@ ADS_TEST( "mod-rollback" )
    u.insert( 1 , 2 , 2 );
    throw( std::runtime_error( "abort" ) );
    }
-  catch( const std::runtime_error & ) {}
+  catch( const std::runtime_error & ) {
+   }
   CHECK( u.items() == before && sr.batches.empty() );
   CHECK( u.subject().depth() == 0 );
   // Batch::rollback(), also nested: the outer batch keeps its events
@@ -951,10 +1019,11 @@ ADS_TEST( "mod-rollback" )
    u.insert( 0 , 1 , 1 );
    throw( std::runtime_error( "abort" ) );
    }
-  catch( const std::runtime_error & ) {}
+  catch( const std::runtime_error & ) {
+   }
   CHECK( u.item( 0 ).live && u.subject().depth() == 0 );
   CHECK( sr.batches.size() == 1 &&
-         ( sr.batches[ 0 ] == std::vector< Ev >{ mod::Rebuilt{} } ) );
+	 ( sr.batches[ 0 ] == std::vector< Ev >{ mod::Rebuilt{} } ) );
   }
  // UndoLog: any structure with apply() becomes undoable
  {
@@ -976,12 +1045,12 @@ ADS_TEST( "mod-rollback" )
   CHECK( log.checkpoint() == t && log.size() == 1 );
   // the other observer gets the net effect of the undo, in one batch
   CHECK( other.one.empty() && other.batches.size() == 1 );
-  CHECK( log.size() == 1 );               // the undo is not recorded
+  CHECK( log.size() == 1 );  // the undo is not recorded
   CHECK_THROWS( log.rollback( u , t + 5 ) , contract_violation );
-  u.clear();                              // no rollback before a Cleared
+  u.clear();  // no rollback before a Cleared
   CHECK( log.size() == 0 && log.checkpoint() == t );
   CHECK_THROWS( log.rollback( u , t - 1 ) , contract_violation );
-  log.rollback( u , t );                  // nothing to undo
+  log.rollback( u , t );  // nothing to undo
   }
  }
 
@@ -1009,7 +1078,7 @@ ADS_TEST( "mod-quiet" )
   auto q = ADS::quiet( s , no_rebuild );
   s.setKey( 0 , 3 );
   q.end();
-  q.end();                                // idempotent
+  q.end();  // idempotent
   }
  CHECK( sr.one.size() == 1 && au.audits == audits + 1 );
  // nested mutes: one Rebuilt at the outermost end, if any asked for it
@@ -1030,11 +1099,12 @@ ADS_TEST( "mod-quiet" )
    auto q = ADS::quiet( s );
    s.setKey( 0 , 6 );
    }
-  s.setKey( 0 , 7 );                      // after the mute: kept
+  s.setKey( 0 , 7 );  // after the mute: kept
   }
- CHECK( sr.batches.size() == 1 &&
-        ( sr.batches[ 0 ] == std::vector< Ev >{ mod::Rebuilt{} ,
-                                                KC{ 0 , 6 , 7 } } ) );
+ CHECK(
+   sr.batches.size() == 1 &&
+   ( sr.batches[ 0 ] == std::vector< Ev >{ mod::Rebuilt{} ,
+					   KC{ 0 , 6 , 7 } } ) );
  // a mute with no_rebuild in a batch keeps what came before it
  {
   auto b = ADS::batch( s );
@@ -1045,7 +1115,7 @@ ADS_TEST( "mod-quiet" )
    }
   }
  CHECK( sr.batches.size() == 2 &&
-        ( sr.batches[ 1 ] == std::vector< Ev >{ KC{ 0 , 7 , 8 } } ) );
+	( sr.batches[ 1 ] == std::vector< Ev >{ KC{ 0 , 7 , 8 } } ) );
  // the built events count the muted ones too
  CHECK( s.subject().built() == 9 );
  }
@@ -1062,7 +1132,7 @@ ADS_TEST( "mod-revisions" )
  CHECK( s.subject().version() == 0 );
  s.insert( 0 , 1 , 1 );
  s.insert( 1 , 2 , 2 );
- s.assign( 0 , 5 );                       // nobody wants it: no revision
+ s.assign( 0 , 5 );  // nobody wants it: no revision
  CHECK( s.subject().revision< Ins >() == 2 );
  CHECK( s.subject().revision< As >() == 0 );
  CHECK( s.subject().version() == 2 );
@@ -1101,14 +1171,14 @@ ADS_TEST( "mod-audit" )
  Auditor ad;
  const int id = s.subject().attach( ad );
  s.insert( 0 , 1 , 1 );
- CHECK( au.audits == 1 && ad.audits == 1 );   // after each event
+ CHECK( au.audits == 1 && ad.audits == 1 );  // after each event
  {
   auto b = ADS::batch( s );
   s.assign( 0 , 2 );
   s.assign( 0 , 3 );
-  CHECK( au.audits == 1 );                // not inside a batch
+  CHECK( au.audits == 1 );  // not inside a batch
   }
- CHECK( au.audits == 2 );                 // after the batch
+ CHECK( au.audits == 2 );  // after the batch
  au.ok = false;
  CHECK_THROWS( s.assign( 0 , 4 ) , contract_violation );
  au.ok = true;
@@ -1147,13 +1217,13 @@ ADS_TEST( "mod-shadow" )
  auto incSum = []( SumIncremental & x ) { return( x.sum ); };
  auto both = [ & ]( auto & o ) {
   if constexpr( std::is_same_v< std::decay_t< decltype( o ) > ,
-                                SumIncremental > )
+				SumIncremental > )
    return( o.sum );
   else
    return( o.sum() );
   };
  CHECK( sd.query( both ) == 22 && sd.agree( both ) );
- (void)( incSum );
+ ( void )( incSum );
  sd.flush();
  CHECK( sd.counts().events == 5 && sd.counts().queries == 2 );
  // a broken observer from scratch: the mismatch is found
@@ -1164,7 +1234,7 @@ ADS_TEST( "mod-shadow" )
  CHECK( sd.counts().mismatches == 2 );
  CHECK( sd.audit( s ) );
  s.clear();
- CHECK( & sd.incremental() == & inc && & sd.scratch() == & scr );
+ CHECK( &sd.incremental() == &inc && &sd.scratch() == &scr );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1175,11 +1245,13 @@ ADS_TEST( "mod-observed-graph" )
 {
  using LG = ListGraph< long long >;
  using W = WeightChanged< long long >;
- struct Lower {
+ struct Lower
+ {
   int n = 0;
   void on( const W & e ) { n += ( e.to < e.from ) ? 1 : 0; }
   };
- struct Nodes {
+ struct Nodes
+ {
   int n = 0;
   void on( const NodeInserted & ) { ++n; }
   };
@@ -1188,7 +1260,7 @@ ADS_TEST( "mod-observed-graph" )
  Lower lo;
  ObservedGraph< LG , Static< Lower > > og( g , lo );
  og.insertEdge( 0 , 1 , 5 );
- og.insertEdge( 0 , 1 , 3 );              // a lower weight
+ og.insertEdge( 0 , 1 , 3 );  // a lower weight
  og.setWeight( 0 , 1 , 4 );
  og.insertNode();
  CHECK( lo.n == 1 && og.built() == 2 );
@@ -1203,7 +1275,8 @@ ADS_TEST( "mod-observed-graph" )
  CHECK( none.built() == 0 && none.mask() == 0 && ! none.listening() );
  CHECK( g.weight( 0 , 1 ) == 1 );
  // dynamic, both forms attached
- struct Old {
+ struct Old
+ {
   int n = 0;
   [[nodiscard]] unsigned mask( void ) const { return( GraphEvents::ALL ); }
   void notify( const GraphEvent< long long > & ) { ++n; }

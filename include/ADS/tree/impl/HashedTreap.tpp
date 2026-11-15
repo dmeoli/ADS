@@ -14,15 +14,19 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< std::totally_ordered K , class V >
 std::optional< V > HashedTreap< K , V >::lookup( const K & k ) const
 {
  for( const Node * t = f_root.get() ; t ; )
-  if( k < t->key ) t = t->left.get();
-  else if( t->key < k ) t = t->right.get();
-  else return( t->value );
+  if( k < t->key )
+   t = t->left.get();
+  else if( t->key < k )
+   t = t->right.get();
+  else
+   return( t->value );
  return( std::nullopt );
  }
 
@@ -33,15 +37,16 @@ bool HashedTreap< K , V >::contains( const K & k ) const
  }
 
 template< std::totally_ordered K , class V >
-auto HashedTreap< K , V >::lowerBoundNode( const K & k ) const
- -> const Node *
+auto HashedTreap< K , V >::lowerBoundNode( const K & k ) const -> const Node *
 {
  const Node * best = nullptr;
  for( const Node * t = f_root.get() ; t ; )
-  if( t->key < k ) t = t->right.get();
+  if( t->key < k )
+   t = t->right.get();
   else {
    best = t;
-   if( !( k < t->key ) ) break;
+   if( ! ( k < t->key ) )
+    break;
    t = t->left.get();
    }
  return( best );
@@ -49,19 +54,19 @@ auto HashedTreap< K , V >::lowerBoundNode( const K & k ) const
 
 template< std::totally_ordered K , class V >
 auto HashedTreap< K , V >::lowerBound( const K & k ) const
- -> std::optional< std::pair< K , V > >
+  -> std::optional< std::pair< K , V > >
 {
  const Node * b = lowerBoundNode( k );
  return( b ? std::optional< std::pair< K , V > >(
-              std::pair< K , V >( b->key , b->value ) )
-           : std::nullopt );
+		std::pair< K , V >( b->key , b->value ) )
+	    : std::nullopt );
  }
 
 template< std::totally_ordered K , class V >
 const K * HashedTreap< K , V >::findKey( const K & k ) const
 {
  const Node * b = lowerBoundNode( k );
- return( ( b && !( k < b->key ) ) ? &b->key : nullptr );
+ return( ( b && ! ( k < b->key ) ) ? &b->key : nullptr );
  }
 
 template< std::totally_ordered K , class V >
@@ -97,7 +102,7 @@ int HashedTreap< K , V >::insert( Ptr & t , const K & k , const V & v )
   t = std::make_unique< Node >( Node{ k , v , nullptr , nullptr } );
   return( 1 );
   }
- if( !( k < t->key ) && !( t->key < k ) ) {
+ if( ! ( k < t->key ) && ! ( t->key < k ) ) {
   t->value = v;
   return( 0 );
   }
@@ -106,17 +111,19 @@ int HashedTreap< K , V >::insert( Ptr & t , const K & k , const V & v )
  const int r = insert( c , k , v );
  if( r != 1 )
   return( r );
- if( !( priority( c.get() ) > priority( t.get() ) ) )   // the heap holds:
-  return( 2 );                                    // no hash above
- if( left ) rotateRight( t );
- else rotateLeft( t );
+ if( ! ( priority( c.get() ) > priority( t.get() ) ) )  // the heap holds:
+  return( 2 );                                         // no hash above
+ if( left )
+  rotateRight( t );
+ else
+  rotateLeft( t );
  return( 1 );
  }
 
 template< std::totally_ordered K , class V >
 void HashedTreap< K , V >::insert( const K & k , const V & v )
 {
- if( insert( f_root , k , v ) )               // 1 or 2: a new key
+ if( insert( f_root , k , v ) )  // 1 or 2: a new key
   ++f_size;
  ADS_POST( contains( k ) );
  ADS_INVARIANT( valid( f_root , nullptr , nullptr ) );
@@ -127,8 +134,10 @@ bool HashedTreap< K , V >::remove( Ptr & t , const K & k )
 {
  if( ! t )
   return( false );
- if( k < t->key ) return( remove( t->left , k ) );
- if( t->key < k ) return( remove( t->right , k ) );
+ if( k < t->key )
+  return( remove( t->left , k ) );
+ if( t->key < k )
+  return( remove( t->right , k ) );
  if( ! t->left ) {
   t = std::move( t->right );
   return( true );
@@ -170,16 +179,17 @@ template< std::totally_ordered K , class V >
 template< class F >
 void HashedTreap< K , V >::forEach( F && f ) const
 {
- for( const auto & [ k , v ] : *this ) f( k , v );
+ for( const auto & [ k , v ] : *this )
+  f( k , v );
  }
 
 template< std::totally_ordered K , class V >
 bool HashedTreap< K , V >::valid( const Ptr & t , const K * lo ,
-                                const K * hi ) const
+				 const K * hi ) const
 {
  if( ! t )
   return( true );
- if( ( lo && !( *lo < t->key ) ) || ( hi && !( t->key < *hi ) ) )
+ if( ( lo && ! ( *lo < t->key ) ) || ( hi && ! ( t->key < *hi ) ) )
   return( false );
  if( ( t->left && ( priority( t->left.get() ) > priority( t.get() ) ) ) ||
      ( t->right && ( priority( t->right.get() ) > priority( t.get() ) ) ) )

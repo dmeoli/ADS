@@ -97,7 +97,7 @@
 
 #ifndef __ADS_LongestCommonExtension
  #define __ADS_LongestCommonExtension
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -117,7 +117,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- LceIndex ------------------------------------*/
@@ -127,15 +128,15 @@ namespace ADS {
 /// each, on unsigned integers `I` of 32 or 64 bits
 template< class I = std::uint32_t >
  requires( std::same_as< I , std::uint32_t > ||
-           std::same_as< I , std::uint64_t > )
-class LceIndex {
+	   std::same_as< I , std::uint64_t > )
+class LceIndex
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- PUBLIC PART OF THE CLASS -------------------------*/
 /*--------------------------------------------------------------------------*/
 
  public:
-
  /// the index of \f$ T \f$ (a copy of it), in \f$ O( n ) \f$ time but for
  /// the sparse table of the groups
  ///
@@ -204,27 +205,26 @@ class LceIndex {
 /*--------------------------------------------------------------------------*/
 
  private:
-
  /// lce( i , j ) past the first chunk of symbols, which match
 #if defined( __GNUC__ ) || defined( __clang__ )
  [[gnu::noinline]]
 #endif
  [[nodiscard]] std::size_t longer( std::size_t i , std::size_t j ,
-                                   std::size_t far ) const;
+				   std::size_t far ) const;
 
  /// the minimum of LCP[ a .. c ], a <= c
  [[nodiscard]] I minimum( std::size_t a , std::size_t c ) const;
 
- std::string f_T;                    ///< the text, 8 bytes of 0 after it
- std::size_t f_n = 0;                ///< its length
- std::vector< I > f_rank;            ///< the inverse of SA
- std::vector< I > f_line;            ///< LCP, with room to align it
- std::size_t f_shift = 0;            ///< where it starts at 64 bytes
+ std::string f_T;                      ///< the text, 8 bytes of 0 after it
+ std::size_t f_n = 0;                  ///< its length
+ std::vector< I > f_rank;              ///< the inverse of SA
+ std::vector< I > f_line;              ///< LCP, with room to align it
+ std::size_t f_shift = 0;              ///< where it starts at 64 bytes
  std::vector< std::uint16_t > f_word;  ///< the stack of each entry
- std::vector< I > f_inner;           ///< the table of each group
- std::vector< I > f_top;             ///< the table of the groups
- std::size_t f_blocks = 0;           ///< the number of the blocks
- std::size_t f_groups = 0;           ///< and of the groups
+ std::vector< I > f_inner;             ///< the table of each group
+ std::vector< I > f_top;               ///< the table of the groups
+ std::size_t f_blocks = 0;             ///< the number of the blocks
+ std::size_t f_groups = 0;             ///< and of the groups
 
  };  // end( class LceIndex )
 
@@ -240,7 +240,7 @@ class LceIndex {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LongestCommonExtension.h included */
+#endif /* LongestCommonExtension.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- End File LongestCommonExtension.h -------------------*/

@@ -64,7 +64,7 @@
 
 #ifndef __ADS_Approximation
  #define __ADS_Approximation
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -85,7 +85,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- BIN PACKING ---------------------------------*/
@@ -112,7 +113,7 @@ namespace ADS {
 /// \pre each volume is in \f$ [ 0 , k ] \f$
 /// \post no box is filled beyond \f$ k \f$
 inline std::vector< int > firstFit( const std::vector< long > & A , long k ,
-                                    bool decreasing = false );
+				    bool decreasing = false );
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- DELTA TSP ----------------------------------*/
@@ -166,7 +167,7 @@ Nodes deltaTsp( const std::vector< std::vector< T > > & D );
 ///      \f$ s \ge 1 \f$
 /// \post a symmetric matrix of the size of \f$ G \f$
 inline std::vector< std::vector< long > > tspGap( const Adjacency & G ,
-                                                  long s );
+						  long s );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ SUBSET SUM AND KNAPSACK -------------------------*/
@@ -199,7 +200,7 @@ inline std::vector< std::vector< long > > tspGap( const Adjacency & G ,
 /// \pre \f$ k , h \ge 0 \f$ and \f$ A \f$ is not negative
 /// \post a set of sum at most \f$ k \f$, the sum returned
 inline std::pair< long , Nodes > apSubsetSum( const std::vector< long > & A ,
-                                              long k , int h );
+					     long k , int h );
 
 /// the best profit and the objects of an \f$ \epsilon \f$-approximation of
 /// KNAPSACK, profits \f$ p \f$ and volumes \f$ v \f$ within \f$ C \f$, by
@@ -231,10 +232,10 @@ inline std::pair< long , Nodes > apSubsetSum( const std::vector< long > & A ,
 /// \pre \f$ p \f$ and \f$ v \f$ of the same size and not negative,
 ///      \f$ 0 < \epsilon \le 1 \f$, \f$ C \ge 0 \f$
 /// \post objects within \f$ C \f$, their profit returned
-inline std::pair< long , Nodes > knapsackApprox(
-                                            const std::vector< long > & p ,
-                                            const std::vector< long > & v ,
-                                            long C , double eps );
+inline std::pair< long ,
+		  Nodes > knapsackApprox( const std::vector< long > & p ,
+						const std::vector< long > & v ,
+						long C , double eps );
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- VERTEX COVER --------------------------------*/
@@ -273,7 +274,7 @@ inline Nodes vertexCoverApprox( const Adjacency & G );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Approximation.h included */
+#endif /* Approximation.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File Approximation.h ------------------------*/

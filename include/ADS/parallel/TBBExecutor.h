@@ -45,7 +45,7 @@
 
 #ifndef __ADS_TBBExecutor
  #define __ADS_TBBExecutor
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 #if defined( ADS_WITH_TBB )
 
@@ -71,25 +71,27 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS TBBExecutor ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the executor on an arena of oneTBB
-class TBBExecutor {
+class TBBExecutor
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the executor of an arena of \f$ p \f$ threads (the hardware threads if
  /// \f$ p = 0 \f$)
  /// \pre \f$ p \ge 1 \f$ once the hardware threads are counted
  explicit TBBExecutor( std::size_t p = 0 )
-  : f_p( p ? p : std::max< std::size_t >(
-                  std::thread::hardware_concurrency() , 1 ) ) ,
-    f_arena( int( f_p ) ) {
+     : f_p( p ? p
+	      : std::max< std::size_t >( std::thread::hardware_concurrency() ,
+					 1 ) ) ,
+       f_arena( int( f_p ) ) {
   ADS_PRE( f_p >= 1 );
   }
 
@@ -117,11 +119,13 @@ class TBBExecutor {
    return;
    }
   f_arena.execute( [ & ] {
-   tbb::parallel_for( tbb::blocked_range< std::size_t >( 0 , n , 1 ) ,
-                      [ & ]( const tbb::blocked_range< std::size_t > & r ) {
-                       for( std::size_t i = r.begin() ; i < r.end() ; ++i )
-                        f( i );
-                       } , tbb::simple_partitioner() );
+   tbb::parallel_for(
+     tbb::blocked_range< std::size_t >( 0 , n , 1 ) ,
+     [ & ]( const tbb::blocked_range< std::size_t > & r ) {
+      for( std::size_t i = r.begin() ; i < r.end() ; ++i )
+       f( i );
+      } ,
+     tbb::simple_partitioner() );
    } );
   }
 
@@ -169,38 +173,39 @@ class TBBExecutor {
    }
   detail::FirstError error;
   f_arena.execute( [ & ] {
-   tbb::parallel_for( tbb::blocked_range< std::size_t >( 0 , p , 1 ) ,
-                      [ & ]( const tbb::blocked_range< std::size_t > & r ) {
-                       for( std::size_t i = r.begin() ; i < r.end() ; ++i )
-                        tbb::this_task_arena::isolate( [ & ] {
-                         try {
-                          f( i );
-                          }
-                         catch( ... ) {
-                          error.keep();
-                          }
-                         } );
-                       } , tbb::simple_partitioner() );
+   tbb::parallel_for(
+     tbb::blocked_range< std::size_t >( 0 , p , 1 ) ,
+     [ & ]( const tbb::blocked_range< std::size_t > & r ) {
+      for( std::size_t i = r.begin() ; i < r.end() ; ++i )
+       tbb::this_task_arena::isolate( [ & ] {
+	try {
+	 f( i );
+	 }
+	catch( ... ) {
+	 error.keep();
+	 }
+        } );
+      } ,
+     tbb::simple_partitioner() );
    } );
   error.rethrow();
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
- std::size_t f_p;                          ///< the threads
- tbb::task_arena f_arena;                  ///< where they run
+ std::size_t f_p;          ///< the threads
+ tbb::task_arena f_arena;  ///< where they run
  };  // end( class TBBExecutor )
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 
-#endif  /* ADS_WITH_TBB */
+#endif /* ADS_WITH_TBB */
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* TBBExecutor.h included */
+#endif /* TBBExecutor.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File TBBExecutor.h -------------------------*/

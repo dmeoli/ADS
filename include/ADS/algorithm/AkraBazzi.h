@@ -54,7 +54,7 @@
 
 #ifndef __ADS_AkraBazzi
  #define __ADS_AkraBazzi
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -71,7 +71,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the exponent \f$ p \f$ of Akra and Bazzi of
 /// \f$ T( n ) = \sum_i a_i T( b_i n ) + g( n ) \f$, the root of
@@ -96,8 +97,8 @@ namespace ADS {
 /// \f]
 /// \pre at least one term, \f$ a_i > 0 \f$ and \f$ 0 < b_i < 1 \f$
 /// \post \f$ | \sum_i a_i b_i^p - 1 | < 10^{-9} \f$
-inline double akraBazziExponent(
-                      const std::vector< std::pair< double , double > > & ab );
+inline double
+akraBazziExponent( const std::vector< std::pair< double , double > > & ab );
 
 /// the order of \f$ T( n ) = \sum_i a_i T( b_i n ) + g( n ) \f$ with
 /// \f$ g( n ) = \Theta( n^\beta \log^k n ) \f$
@@ -120,9 +121,9 @@ inline double akraBazziExponent(
 /// \end{array}}
 /// \f]
 /// \pre at least one term, \f$ a_i > 0 \f$ and \f$ 0 < b_i < 1 \f$
-inline Growth akraBazzi(
-                  const std::vector< std::pair< double , double > > & ab ,
-                  double beta , double k = 0 );
+inline Growth akraBazzi( const std::vector< std::pair< double ,
+						       double > > & ab ,
+			 double beta , double k = 0 );
 
 /*--------------------------------------------------------------------------*/
 
@@ -136,7 +137,7 @@ inline Growth akraBazzi(
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* AkraBazzi.h included */
+#endif /* AkraBazzi.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File AkraBazzi.h --------------------------*/

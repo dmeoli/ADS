@@ -54,7 +54,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ints = std::vector< int >;
 using BT = BinaryTree< int >;
@@ -111,11 +112,11 @@ ADS_TEST( "local-optima" )
 {
  auto isPeak = []( const Ints & A , std::size_t r ) {
   return( ( r < A.size() ) && ( ( r == 0 ) || ( A[ r - 1 ] <= A[ r ] ) ) &&
-          ( ( r + 1 == A.size() ) || ( A[ r + 1 ] <= A[ r ] ) ) );
+	   ( ( r + 1 == A.size() ) || ( A[ r + 1 ] <= A[ r ] ) ) );
   };
  auto isMin = []( const Ints & A , std::size_t r ) {
   return( ( r < A.size() ) && ( ( r == 0 ) || ( A[ r - 1 ] >= A[ r ] ) ) &&
-          ( ( r + 1 == A.size() ) || ( A[ r + 1 ] >= A[ r ] ) ) );
+	   ( ( r + 1 == A.size() ) || ( A[ r + 1 ] >= A[ r ] ) ) );
   };
  for( std::size_t n = 1 ; n <= 7 ; ++n ) {
   Ints A( n );
@@ -124,7 +125,8 @@ ADS_TEST( "local-optima" )
    long cmp = 0;
    const auto count = [ & ]( int a , int b ) {
     cmp += ! checkingContract();
-    return( a < b ); };
+    return( a < b );
+    };
    const std::size_t r = findPeak( A , count );
    CHECK( isPeak( A , r ) && ( ( r == 0 ) || ( A[ r - 1 ] < A[ r ] ) ) );
    CHECK( cmp <= long( std::bit_width( n - 1 ) ) );
@@ -133,8 +135,8 @@ ADS_TEST( "local-optima" )
   }
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 3000 ; ++t ) {
-  const Ints A = rndInts( g , std::size_t( rnd( g , 1 , 60 ) ) , 0 ,
-                          rnd( g , 0 , 5 ) );
+  const Ints A =
+    rndInts( g , std::size_t( rnd( g , 1 , 60 ) ) , 0 , rnd( g , 0 , 5 ) );
   CHECK( isPeak( A , findPeak( A ) ) && isMin( A , localMinimum( A ) ) );
   }
  Ints B( 1000 );
@@ -148,9 +150,9 @@ ADS_TEST( "local-optima" )
   std::unique_ptr< BT > T( rndTree( g , rnd( g , 1 , 40 ) , 20 ) );
   BT * u = localMinimum( T.get() );
   CHECK( ( ! u->left() || ( u->left()->read() >= u->read() ) ) &&
-         ( ! u->right() || ( u->right()->read() >= u->read() ) ) &&
-         ( ( u == T.get() ) || ( u->parent()->read() > u->read() ) ) );
-  BT * v = T.get();                         // the first smaller child
+	 ( ! u->right() || ( u->right()->read() >= u->read() ) ) &&
+	 ( ( u == T.get() ) || ( u->parent()->read() > u->read() ) ) );
+  BT * v = T.get();  // the first smaller child
   for( ; ; ) {
    if( v->left() && ( v->left()->read() < v->read() ) )
     v = v->left();
@@ -169,7 +171,7 @@ ADS_TEST( "local-optima" )
  CHECK( localMinimum( S.get() )->read() == 4 );
  CHECK( localMinimum( S.get() , std::greater<>() )->read() == 5 );
  CHECK_THROWS( localMinimum( static_cast< BT * >( nullptr ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // exponentialSearch() against the threshold of random predicates on int,
@@ -182,11 +184,12 @@ ADS_TEST( "exponential-search" )
  std::mt19937 g( 2 );
  for( int t = 0 ; t < 5000 ; ++t ) {
   const std::int64_t lo = rnd( g , -1000 , 1000 ) ,
-                     h = lo + rnd( g , 0 , t < 4000 ? 100 : 1000000 );
+		     h = lo + rnd( g , 0 , t < 4000 ? 100 : 1000000 );
   long calls = 0;
   const auto p = [ & ]( std::int64_t i ) {
    calls += ! checkingContract();
-   return( i >= h ); };
+   return( i >= h );
+   };
   CHECK( exponentialSearch( p , lo ) == h );
   const double d = double( h - lo + 1 );
   CHECK( calls <= 2 * long( std::ceil( std::log2( d ) ) ) + 1 );
@@ -194,31 +197,34 @@ ADS_TEST( "exponential-search" )
  constexpr std::int64_t M = std::numeric_limits< std::int64_t >::max();
  for( std::int64_t h : { M , M - 1 , M / 2 , M / 2 + 1 , std::int64_t( 0 ) } )
   for( std::int64_t lo : { std::numeric_limits< std::int64_t >::min() ,
-                           std::int64_t( -5 ) , std::int64_t( 0 ) } )
+			   std::int64_t( -5 ) , std::int64_t( 0 ) } )
    CHECK( exponentialSearch( [ & ]( std::int64_t i ) { return( i >= h ); } ,
-                             lo ) == h );
+			     lo ) == h );
  for( int h = -128 ; h <= 127 ; ++h )
   for( int lo = -128 ; lo <= h ; lo += 7 )
    CHECK( exponentialSearch( [ & ]( std::int8_t i ) { return( i >= h ); } ,
-                             std::int8_t( lo ) ) == h );
+			     std::int8_t( lo ) ) == h );
  CHECK( exponentialSearch< int >( []( int i ) { return( i >= 0 ); } ) == 0 );
- CHECK( exponentialSearch( []( unsigned i ) { return( i > 40 ); } , 3u )
-        == 41u );
+ CHECK( exponentialSearch( []( unsigned i ) { return( i > 40 ); } , 3u ) ==
+	41u );
  CHECK_THROWS( exponentialSearch( []( std::int8_t ) { return( false ); } ,
-                                  std::int8_t( 0 ) ) , contract_violation );
+				  std::int8_t( 0 ) ) ,
+	       contract_violation );
  for( int t = 0 ; t < 3000 ; ++t ) {
-  Ints A = rndInts( g , std::size_t( rnd( g , 0 , t < 2000 ? 40 : 5000 ) ) ,
-                    -100 , 100 );
+  Ints A =
+    rndInts( g , std::size_t( rnd( g , 0 , t < 2000 ? 40 : 5000 ) ) , -100 ,
+	     100 );
   std::sort( A.begin() , A.end() );
   const int v = rnd( g , -110 , 110 );
   long reads = 0;
   const auto get = [ & ]( std::size_t i ) {
    reads += ! checkingContract();
-   return( i < A.size() ? std::optional< int >( A[ i ] ) : std::nullopt ); };
-  const std::size_t r = unboundedSearch( get , [ & ]( int x ) {
-   return( x >= v ); } );
+   return( i < A.size() ? std::optional< int >( A[ i ] ) : std::nullopt );
+   };
+  const std::size_t r =
+    unboundedSearch( get , [ & ]( int x ) { return( x >= v ); } );
   CHECK( r == std::size_t( std::lower_bound( A.begin() , A.end() , v ) -
-                           A.begin() ) );
+			   A.begin() ) );
   CHECK( reads <= 2 * long( std::bit_width( A.size() ) ) + 1 );
   }
  }
@@ -246,16 +252,16 @@ ADS_TEST( "integer-sqrt" )
    }
   }
  CHECK( integerSqrt( std::numeric_limits< std::uint64_t >::max() ) ==
-        0xFFFFFFFFull );
+	0xFFFFFFFFull );
  CHECK( integerSqrt( std::numeric_limits< std::uint32_t >::max() ) ==
-        0xFFFFu );
+	0xFFFFu );
  CHECK( integerSqrt( std::uint16_t( 65535 ) ) == 255 );
  CHECK( integerSqrt( std::uint8_t( 255 ) ) == 15 );
  for( unsigned n = 0 ; n < 256 ; ++n )
   CHECK( integerSqrt( std::uint8_t( n ) ) ==
-         unsigned( std::sqrt( double( n ) ) ) );
+	 unsigned( std::sqrt( double( n ) ) ) );
  CHECK( isPerfectSquare( 0u ) && isPerfectSquare( 1u ) &&
-        ! isPerfectSquare( 2u ) );
+	! isPerfectSquare( 2u ) );
  CHECK( ! isPerfectSquare( std::numeric_limits< std::uint64_t >::max() ) );
  CHECK( isPerfectSquare( 0xFFFFFFFE00000001ull ) );
  }
@@ -289,7 +295,8 @@ ADS_TEST( "sorted-searches" )
    long cmp = 0;
    const auto count = [ & ]( int a , int b ) {
     cmp += ! checkingContract();
-    return( a < b ); };
+    return( a < b );
+    };
    CHECK( rotatedMinimum( R , count ) == k );
    CHECK( cmp <= long( std::bit_width( n - 1 ) ) );
    }
@@ -321,7 +328,7 @@ ADS_TEST( "sorted-searches" )
  CHECK( closestValue( Ints{ INT_MIN , 0 , INT_MAX } , 1 ) == 1 );
  CHECK( closestValue( std::vector< double >{ 0.5 , 1.25 , 2.0 } , 1.7 ) == 2 );
  CHECK( closestValue( std::vector< unsigned >{ 0u , 4000000000u } ,
-                      2000000001u ) == 1 );
+		      2000000001u ) == 1 );
  CHECK_THROWS( closestValue( Ints() , 0 ) , contract_violation );
  CHECK_THROWS( closestValue( Ints{ 2 , 1 } , 0 ) , contract_violation );
  for( int t = 0 ; t < 3000 ; ++t ) {
@@ -335,20 +342,21 @@ ADS_TEST( "sorted-searches" )
   const auto r = pairWithSum( A , x );
   CHECK( r.has_value() == brute );
   CHECK( ! r || ( ( r->first < r->second ) &&
-                  ( A[ r->first ] + A[ r->second ] == x ) ) );
+		  ( A[ r->first ] + A[ r->second ] == x ) ) );
   }
  CHECK( ! pairWithSum( Ints() , 0 ) && ! pairWithSum( Ints{ 4 } , 8 ) );
  CHECK( pairWithSum( Ints{ 4 , 4 } , 8 ) ==
-        std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
+	std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
  CHECK( pairWithSum( Ints{ INT_MAX , INT_MAX } ,
-                     2 * std::int64_t( INT_MAX ) ) );
+		     2 * std::int64_t( INT_MAX ) ) );
  CHECK( pairWithSum( std::vector< double >{ 0.25 , 0.5 , 4.0 } , 4.5 ) );
  CHECK_THROWS( pairWithSum( Ints{ 2 , 1 } , 3 ) , contract_violation );
  for( int t = 0 ; t < 3000 ; ++t ) {
   Ints X = rndInts( g , std::size_t( rnd( g , 0 , 20 ) ) , 0 ,
-                    rnd( g , 1 , 50 ) );
-  Ints Y = rndInts( g , std::size_t( rnd( g , X.empty() , 20 ) ) , 0 ,
-                    rnd( g , 1 , 50 ) );
+		    rnd( g , 1 , 50 ) );
+  Ints Y =
+    rndInts( g , std::size_t( rnd( g , X.empty() , 20 ) ) , 0 ,
+	     rnd( g , 1 , 50 ) );
   std::sort( X.begin() , X.end() );
   std::sort( Y.begin() , Y.end() );
   Ints Z( X.size() + Y.size() );
@@ -359,8 +367,8 @@ ADS_TEST( "sorted-searches" )
  const Ints X{ 1 , 3 , 5 } , Y{ 2 , 4 , 6 };
  CHECK( kthOfTwoSorted( X , Y , 2 ) == 3 && kthOfTwoSorted( X , Y , 3 ) == 4 );
  CHECK( kthOfTwoSorted( Ints{ 7 } , Ints() , 0 ) == 7 );
- CHECK( kthOfTwoSorted( Ints{ 5 , 3 } , Ints{ 4 } , 0 , std::greater<>() ) ==
-        5 );
+ CHECK( kthOfTwoSorted( Ints{ 5 , 3 } , Ints{ 4 } , 0 ,
+			std::greater<>() ) == 5 );
  CHECK_THROWS( kthOfTwoSorted( X , Y , 6 ) , contract_violation );
  CHECK_THROWS( kthOfTwoSorted( Ints{ 2 , 1 } , Y , 0 ) , contract_violation );
  }
@@ -396,7 +404,7 @@ std::pair< std::size_t , std::int64_t > swapSortBrute( const Ints & A )
      }
     }
   }
- while( ! B.empty() ) {                     // the swaps by a visit
+ while( ! B.empty() ) {  // the swaps by a visit
   const Ints u = B.front();
   B.pop();
   for( std::size_t i = 0 ; i < u.size() ; ++i )
@@ -424,8 +432,8 @@ ADS_TEST( "rearrangements" )
   Ints A = rndInts( g , std::size_t( rnd( g , 0 , 30 ) ) , 0 , 2 );
   const Ints C( A );
   std::size_t swaps = 0;
-  const auto [ i , j ] = dutchNationalFlag( A , []( int x ) {
-   return( x ); } , & swaps );
+  const auto [ i , j ] =
+    dutchNationalFlag( A , []( int x ) { return( x ); } , &swaps );
   Ints S( C );
   std::sort( S.begin() , S.end() );
   CHECK( ( A == S ) && ( swaps <= A.size() ) );
@@ -434,43 +442,42 @@ ADS_TEST( "rearrangements" )
   }
  std::vector< std::string > W{ "red" , "white" , "green" , "red" , "green" };
  const auto colour = []( const std::string & s ) {
-  return( s == "green" ? 0 : ( s == "white" ? 1 : 2 ) ); };
+  return( s == "green" ? 0 : ( s == "white" ? 1 : 2 ) );
+  };
  CHECK( dutchNationalFlag( W , colour ) ==
-        std::pair( std::size_t( 2 ) , std::size_t( 3 ) ) );
+	std::pair( std::size_t( 2 ) , std::size_t( 3 ) ) );
  CHECK( W[ 0 ] == "green" && W[ 2 ] == "white" && W[ 4 ] == "red" );
  Ints E;
  CHECK( dutchNationalFlag( E , []( int ) { return( 1 ); } ) ==
-        std::pair( std::size_t( 0 ) , std::size_t( 0 ) ) );
+	std::pair( std::size_t( 0 ) , std::size_t( 0 ) ) );
  Ints F{ 0 , 3 };
  CHECK_THROWS( dutchNationalFlag( F , []( int x ) { return( x ); } ) ,
-               contract_violation );
+	       contract_violation );
  for( int t = 0 ; t < 3000 ; ++t ) {
   Ints A = rndInts( g , std::size_t( rnd( g , 0 , 40 ) ) , 0 ,
-                    rnd( g , 0 , 100 ) );
+		    rnd( g , 0 , 100 ) );
   Ints B( A );
   wiggleSort( B );
   CHECK( std::is_permutation( A.begin() , A.end() , B.begin() , B.end() ) );
-  const bool distinct = std::set< int >( A.begin() , A.end() ).size() ==
-                        A.size();
+  const bool distinct =
+    std::set< int >( A.begin() , A.end() ).size() == A.size();
   for( std::size_t i = 0 ; i + 1 < B.size() ; ++i )
-   CHECK( ( i % 2 == 0 ) ? ( distinct ? B[ i ] < B[ i + 1 ]
-                                      : B[ i ] <= B[ i + 1 ] )
-                         : ( distinct ? B[ i ] > B[ i + 1 ]
-                                      : B[ i ] >= B[ i + 1 ] ) );
+   CHECK( ( i % 2 == 0 )
+	    ? ( distinct ? B[ i ] < B[ i + 1 ] : B[ i ] <= B[ i + 1 ] )
+	    : ( distinct ? B[ i ] > B[ i + 1 ] : B[ i ] >= B[ i + 1 ] ) );
   }
  Ints H{ 1 , 3 , 4 , 6 , 8 , 7 };
  wiggleSort( H , std::greater<>() );
  CHECK( H == Ints( { 3 , 1 , 6 , 4 , 8 , 7 } ) );
  for( int t = 0 ; t < 3000 ; ++t ) {
   const std::size_t n = std::size_t( rnd( g , 0 , 60 ) ) ,
-                    k = std::size_t( rnd( g , 0 , 8 ) );
+		    k = std::size_t( rnd( g , 0 , 8 ) );
   Ints A = rndInts( g , n , -50 , 50 );
   std::sort( A.begin() , A.end() );
   Ints S( A );
-  for( std::size_t b = 0 ; b < n ; b += k + 1 )   // blocks of k + 1
+  for( std::size_t b = 0 ; b < n ; b += k + 1 )  // blocks of k + 1
    std::shuffle( A.begin() + std::ptrdiff_t( b ) ,
-                 A.begin() + std::ptrdiff_t( std::min( n , b + k + 1 ) ) ,
-                 g );
+		 A.begin() + std::ptrdiff_t( std::min( n , b + k + 1 ) ) , g );
   sortKSorted( A , k );
   CHECK( A == S );
   }
@@ -489,15 +496,16 @@ ADS_TEST( "rearrangements" )
    V.insert( rnd( g , 1 , 30 ) );
   Ints A( V.begin() , V.end() );
   std::shuffle( A.begin() , A.end() , g );
-  CHECK( ( minimumSwapSort< int , std::int64_t >( A ) ) ==
-         swapSortBrute( A ) );
+  CHECK( ( minimumSwapSort< int ,
+			    std::int64_t >( A ) ) == swapSortBrute( A ) );
   }
- CHECK( ( minimumSwapSort< int , std::int64_t >( { 8 , 4 , 5 , 3 , 2 , 7 } ) )
-        == std::pair( std::size_t( 4 ) , std::int64_t( 34 ) ) );
+ CHECK( ( minimumSwapSort< int ,
+			   std::int64_t >( { 8 , 4 , 5 , 3 , 2 , 7 } ) ) ==
+	std::pair( std::size_t( 4 ) , std::int64_t( 34 ) ) );
  CHECK( ( minimumSwapSort< double , double >( { 2.5 , 1.5 } ) ) ==
-        std::pair( std::size_t( 1 ) , 4.0 ) );
+	std::pair( std::size_t( 1 ) , 4.0 ) );
  CHECK_THROWS( ( minimumSwapSort< int , int >( { 1 , 1 } ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // smallerToTheRight() against the double loop with repeated items;
@@ -508,8 +516,9 @@ ADS_TEST( "sequence-queries" )
 {
  std::mt19937 g( 6 );
  for( int t = 0 ; t < 3000 ; ++t ) {
-  const Ints A = rndInts( g , std::size_t( rnd( g , 0 , 40 ) ) , -20 ,
-                          rnd( g , -20 , 60 ) );
+  const Ints A =
+    rndInts( g , std::size_t( rnd( g , 0 , 40 ) ) , -20 ,
+	     rnd( g , -20 , 60 ) );
   std::vector< std::size_t > c( A.size() , 0 );
   for( std::size_t i = 0 ; i < A.size() ; ++i )
    for( std::size_t j = i + 1 ; j < A.size() ; ++j )
@@ -517,9 +526,9 @@ ADS_TEST( "sequence-queries" )
   CHECK( smallerToTheRight( A ) == c );
   }
  CHECK( smallerToTheRight( Ints{ 1 , 7 , 2 , 3 , -1 } ) ==
-        ( std::vector< std::size_t >{ 1 , 3 , 1 , 1 , 0 } ) );
+	( std::vector< std::size_t >{ 1 , 3 , 1 , 1 , 0 } ) );
  CHECK( smallerToTheRight( Ints{ 1 , 2 , 3 } , std::greater<>() ) ==
-        ( std::vector< std::size_t >{ 2 , 1 , 0 } ) );
+	( std::vector< std::size_t >{ 2 , 1 , 0 } ) );
  CHECK( smallerToTheRight( Ints() ).empty() );
  Ints R( 3000 );
  std::iota( R.rbegin() , R.rend() , 0 );
@@ -547,9 +556,9 @@ ADS_TEST( "sequence-queries" )
   CHECK( longestKDistinctRun( S , k ) == std::pair( start , best ) );
   }
  CHECK( longestKDistinctRun( std::string( "abacccbb" ) , 2 ) ==
-        std::pair( std::size_t( 3 ) , std::size_t( 5 ) ) );
+	std::pair( std::size_t( 3 ) , std::size_t( 5 ) ) );
  CHECK( longestKDistinctRun( Ints{ 1 , 2 , 1 , 3 } , 2 ) ==
-        std::pair( std::size_t( 0 ) , std::size_t( 3 ) ) );
+	std::pair( std::size_t( 0 ) , std::size_t( 3 ) ) );
  CHECK( longestKDistinctRun( std::string() , 2 ).second == 0 );
  CHECK( longestKDistinctRun( std::string( 1000 , 'q' ) , 1 ).second == 1000 );
  using I = std::vector< std::pair< int , int > >;
@@ -563,23 +572,27 @@ ADS_TEST( "sequence-queries" )
   for( const auto & e : V )
    for( const auto & s : V )
     if( ( e.second < s.first ) &&
-        std::none_of( V.begin() , V.end() , [ & ]( const auto & p ) {
-         return( ( p.second > e.second ) && ( p.first < s.first ) ); } ) &&
-        ( ! best || ( s.first - e.second > best->second - best->first ) ||
-          ( ( s.first - e.second == best->second - best->first ) &&
-            ( e.second < best->first ) ) ) )
+	std::none_of( V.begin() , V.end() ,
+		      [ & ]( const auto & p ) {
+		       return( ( p.second > e.second ) &&
+				( p.first < s.first ) );
+		       } ) &&
+	( ! best || ( s.first - e.second > best->second - best->first ) ||
+	  ( ( s.first - e.second == best->second - best->first ) &&
+	    ( e.second < best->first ) ) ) )
      best = std::pair( e.second , s.first );
   CHECK( largestGap( V ) == best );
   }
  CHECK( largestGap( I( { { 1 , 3 } , { 7 , 9 } , { 4 , 5 } } ) ) ==
-        std::pair( 5 , 7 ) );
+	std::pair( 5 , 7 ) );
  CHECK( ! largestGap( I( { { 1 , 5 } , { 5 , 9 } } ) ) );
  CHECK( ! largestGap( I() ) );
- CHECK( largestGap( I( { { INT_MIN , INT_MIN } , { INT_MAX , INT_MAX } ,
-                         { 0 , 1 } } ) ) == std::pair( INT_MIN , 0 ) );
+ CHECK( largestGap(
+	  I( { { INT_MIN , INT_MIN } , { INT_MAX , INT_MAX } ,
+	       { 0 , 1 } } ) ) ==
+	std::pair( INT_MIN , 0 ) );
  CHECK( largestGap( std::vector< std::pair< double , double > >(
-                     { { 0.0 , 1.0 } , { 1.5 , 2.0 } } ) ) ==
-        std::pair( 1.0 , 1.5 ) );
+	  { { 0.0 , 1.0 } , { 1.5 , 2.0 } } ) ) == std::pair( 1.0 , 1.5 ) );
  CHECK_THROWS( largestGap( I( { { 2 , 1 } } ) ) , contract_violation );
  for( int t = 0 ; t < 400 ; ++t ) {
   const std::size_t n = std::size_t( rnd( g , 0 , 7 ) );
@@ -596,10 +609,11 @@ ADS_TEST( "sequence-queries" )
   CHECK( ( lineAssignment< int , long >( H , L ) ) == best );
   }
  CHECK( ( lineAssignment< int , long >( { 5 , 10 } , { 9 , 14 } ) ) == 8 );
- CHECK( ( lineAssignment< int , std::int64_t >( { INT_MIN } , { INT_MAX } ) )
-        == std::int64_t( UINT_MAX ) );
+ CHECK( ( lineAssignment< int , std::int64_t >( { INT_MIN } ,
+						{ INT_MAX } ) ) ==
+	std::int64_t( UINT_MAX ) );
  CHECK_THROWS( ( lineAssignment< int , long >( { 1 } , {} ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // closestPair() against closestPairBrute() and the double loop on random
@@ -611,7 +625,7 @@ ADS_TEST( "closest-pair" )
  std::mt19937 g( 7 );
  for( int t = 0 ; t < 1500 ; ++t ) {
   const int n = rnd( g , 2 , 150 ) ,
-            M = t % 3 == 0 ? 10 : ( t % 3 == 1 ? 1000000000 : 1000 );
+	    M = t % 3 == 0 ? 10 : ( t % 3 == 1 ? 1000000000 : 1000 );
   std::vector< Point > P( static_cast< std::size_t >( n ) );
   for( auto & p : P )
    p = Point{ rnd( g , -M , M ) , t % 7 ? rnd( g , -M , M ) : 0 };
@@ -619,7 +633,7 @@ ADS_TEST( "closest-pair" )
   for( std::size_t i = 0 ; i < P.size() ; ++i )
    for( std::size_t j = i + 1 ; j < P.size() ; ++j ) {
     const std::int64_t dx = std::int64_t( P[ i ].x ) - P[ j ].x ,
-                       dy = std::int64_t( P[ i ].y ) - P[ j ].y;
+		       dy = std::int64_t( P[ i ].y ) - P[ j ].y;
     best = std::min( best , dx * dx + dy * dy );
     }
   const auto [ ij , d ] = closestPair( P );
@@ -629,19 +643,19 @@ ADS_TEST( "closest-pair" )
   }
  CHECK( closestPair( { Point{ 0 , 0 } , Point{ 3 , 4 } } ).second == 25 );
  CHECK( closestPair( { Point{ -1000000000 , -1000000000 } ,
-                       Point{ 1000000000 , 1000000000 } } ).second ==
-        std::int64_t( 8000000000000000000LL ) );
- CHECK( closestPair( { Point{ 1 , 1 } , Point{ 9 , 9 } , Point{ 1 , 1 } } )
-        == std::pair( std::pair( std::size_t( 0 ) , std::size_t( 2 ) ) ,
-                      std::int64_t( 0 ) ) );
+		       Point{ 1000000000 , 1000000000 } } )
+	  .second == std::int64_t( 8000000000000000000LL ) );
+ CHECK( closestPair( { Point{ 1 , 1 } , Point{ 9 , 9 } , Point{ 1 , 1 } } ) ==
+	std::pair( std::pair( std::size_t( 0 ) , std::size_t( 2 ) ) ,
+		   std::int64_t( 0 ) ) );
  CHECK_THROWS( closestPair( { Point{ 0 , 0 } } ) , contract_violation );
  CHECK_THROWS( closestPair( {} ) , contract_violation );
  CHECK_THROWS( closestPair( { Point{ 0 , 0 } , Point{ 1000000001 , 0 } } ) ,
-               contract_violation );
- const std::vector< Point > same( 200 , Point{ -7 , 7 } );   // all equal
+	       contract_violation );
+ const std::vector< Point > same( 200 , Point{ -7 , 7 } );  // all equal
  CHECK( closestPair( same ).second == 0 &&
-        closestPairBrute( same ).first ==
-        std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
+	closestPairBrute( same ).first ==
+	  std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
  }
 
 }  // end( namespace )

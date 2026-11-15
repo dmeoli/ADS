@@ -14,11 +14,12 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 SPSCQueue< T >::SPSCQueue( std::size_t capacity )
- : f_A( nullptr ) , f_mask( capacity - 1 )
+    : f_A( nullptr ) , f_mask( capacity - 1 )
 {
  ADS_PRE( ( capacity >= 2 ) && std::has_single_bit( capacity ) );
  f_A = std::allocator< T >().allocate( capacity + 2 * pad );
@@ -33,17 +34,17 @@ SPSCQueue< T >::~SPSCQueue()
  }
 
 template< class T >
-template< class ... Args >
-bool SPSCQueue< T >::emplace( Args && ... args )
+template< class... Args >
+bool SPSCQueue< T >::emplace( Args &&... args )
 {
  const std::size_t t = f_tail.load( std::memory_order_relaxed );
- if( t - f_headSeen == capacity() ) {      // full, as far as we know
+ if( t - f_headSeen == capacity() ) {  // full, as far as we know
   f_headSeen = f_head.load( std::memory_order_acquire );
   if( t - f_headSeen == capacity() )
    return( false );
   }
  ::new( static_cast< void * >( at( t ) ) )
-  T( std::forward< Args >( args )... );
+   T( std::forward< Args >( args )... );
  f_tail.store( t + 1 , std::memory_order_release );
  return( true );
  }
@@ -65,7 +66,7 @@ void SPSCQueue< T >::refresh( std::size_t h )
 {
  std::size_t t = f_tail.load( std::memory_order_acquire );
  if( f_streaming && ( t != h ) && ( t - h < batch() ) ) {
-  relax();                                  // a moment for a batch
+  relax();  // a moment for a batch
   t = f_tail.load( std::memory_order_acquire );
   }
  f_tailSeen = t;
@@ -75,9 +76,9 @@ template< class T >
 bool SPSCQueue< T >::tryPop( T & x )
 {
  const std::size_t h = f_head.load( std::memory_order_relaxed );
- if( h == f_tailSeen ) {                    // empty, as far as we know:
-  prefetch( at( h ) );                      // the place on its way with
-  refresh( h );                             // the tail
+ if( h == f_tailSeen ) {  // empty, as far as we know:
+  prefetch( at( h ) );    // the place on its way with
+  refresh( h );           // the tail
   if( h == f_tailSeen )
    return( f_streaming = false );
   }
@@ -92,9 +93,9 @@ template< class T >
 std::optional< T > SPSCQueue< T >::pop( void )
 {
  const std::size_t h = f_head.load( std::memory_order_relaxed );
- if( h == f_tailSeen ) {                    // empty, as far as we know:
-  prefetch( at( h ) );                      // the place on its way with
-  refresh( h );                             // the tail
+ if( h == f_tailSeen ) {  // empty, as far as we know:
+  prefetch( at( h ) );    // the place on its way with
+  refresh( h );           // the tail
   if( h == f_tailSeen ) {
    f_streaming = false;
    return( std::nullopt );
@@ -114,7 +115,7 @@ std::size_t SPSCQueue< T >::pushMany( It first , std::size_t n )
 {
  const std::size_t t = f_tail.load( std::memory_order_relaxed );
  if( capacity() - ( t - f_headSeen ) < n )  // too little room, as far as
-  f_headSeen = f_head.load( std::memory_order_acquire );   // we know
+  f_headSeen = f_head.load( std::memory_order_acquire );  // we know
  const std::size_t k = std::min( n , capacity() - ( t - f_headSeen ) );
  for( std::size_t j = 0 ; j < k ; ++j , ++first )
   ::new( static_cast< void * >( at( t + j ) ) ) T( *first );
@@ -134,7 +135,8 @@ std::size_t SPSCQueue< T >::consume( F && f , std::size_t n )
  f_streaming = false;
  // the items called are dequeued also when a call throws
  std::size_t j = 0;
- struct Done {
+ struct Done
+ {
   SPSCQueue & q;
   std::size_t h;
   std::size_t & j;
@@ -146,7 +148,8 @@ std::size_t SPSCQueue< T >::consume( F && f , std::size_t n )
  while( j < k ) {
   T * p = at( h + j );
   ++j;
-  struct Kill {
+  struct Kill
+  {
    T * p;
    ~Kill() { p->~T(); }
    } kill{ p };
@@ -159,7 +162,7 @@ template< class T >
 std::size_t SPSCQueue< T >::size( void ) const
 {
  return( f_tail.load( std::memory_order_acquire ) -
-         f_head.load( std::memory_order_acquire ) );
+	  f_head.load( std::memory_order_acquire ) );
  }
 
 

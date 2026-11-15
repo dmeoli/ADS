@@ -72,7 +72,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- HELPERS ----------------------------------*/
@@ -94,10 +95,10 @@ bool same( L & l , const R & r )
   return( false );
  std::size_t k = 0;
  for( const auto & x : l )
-  if( !( x == r[ k++ ] ) )
+  if( ! ( x == r[ k++ ] ) )
    return( false );
  for( std::size_t i = 0 ; i < r.size() ; i += 1 + r.size() / 17 )
-  if( !( l[ i ] == r[ i ] ) )
+  if( ! ( l[ i ] == r[ i ] ) )
    return( false );
  return( true );
  }
@@ -107,23 +108,25 @@ bool same( L & l , const R & r )
 /// anywhere, insertions with probability \f$ p / 10 \f$
 template< class L >
 void listRandom( L & l , std::size_t m , int p , std::uint64_t seed ,
-                 bool front = true )
+		 bool front = true )
 {
  std::mt19937_64 g( seed );
- std::deque< std::string > r( l.begin() , l.end() );   // what l holds
+ std::deque< std::string > r( l.begin() , l.end() );  // what l holds
  for( std::size_t t = 0 ; t < m ; ++t ) {
   const std::size_t n = r.size();
   const int w = int( g() % 4 );
   if( ( n == 0 ) || ( int( g() % 10 ) < p ) ) {
    std::size_t i = w == 0 ? 0 : w == 1 ? n : w == 2 ? n / 2 : g() % ( n + 1 );
-   if( ! front && ( w == 0 ) ) i = n;
+   if( ! front && ( w == 0 ) )
+    i = n;
    const std::string x = item( g() % 100000 );
    l.insert( i , x );
    r.insert( r.begin() + std::ptrdiff_t( i ) , x );
    }
   else {
    std::size_t i = w == 0 ? 0 : w == 1 ? n - 1 : w == 2 ? n / 2 : g() % n;
-   if( ! front && ( w == 0 ) ) i = n - 1;
+   if( ! front && ( w == 0 ) )
+    i = n - 1;
    l.erase( i );
    r.erase( r.begin() + std::ptrdiff_t( i ) );
    }
@@ -143,11 +146,23 @@ void dequeRandom( D & d , std::size_t m , int p , std::uint64_t seed )
   const bool atFront = g() % 2;
   if( r.empty() || ( int( g() % 10 ) < p ) ) {
    const std::string x = item( g() % 100000 );
-   if( atFront ) { d.push_front( x ); r.push_front( x ); }
-   else { d.push_back( x ); r.push_back( x ); }
+   if( atFront ) {
+    d.push_front( x );
+    r.push_front( x );
+    }
+   else {
+    d.push_back( x );
+    r.push_back( x );
+    }
    }
-  else if( atFront ) { d.pop_front(); r.pop_front(); }
-  else { d.pop_back(); r.pop_back(); }
+  else if( atFront ) {
+   d.pop_front();
+   r.pop_front();
+   }
+  else {
+   d.pop_back();
+   r.pop_back();
+   }
   CHECK( d.size() == r.size() );
   if( ! r.empty() )
    CHECK( ( d.front() == r.front() ) && ( d.back() == r.back() ) );
@@ -156,14 +171,16 @@ void dequeRandom( D & d , std::size_t m , int p , std::uint64_t seed )
  }
 
 /// a record equal to another by its key alone, for the bag
-struct Record {
- int key;          ///< the key, which the equality reads
- int payload;      ///< the rest, which it ignores
+struct Record
+{
+ int key;      ///< the key, which the equality reads
+ int payload;  ///< the rest, which it ignores
  bool operator==( const Record & o ) const { return( key == o.key ); }
  };
 
 /// the hash of a record, its key
-struct RecordHash {
+struct RecordHash
+{
  std::uint64_t operator()( const Record & r ) const {
   return( std::uint64_t( r.key ) * 0x9E3779B97F4A7C15ULL );
   }
@@ -177,7 +194,7 @@ struct RecordHash {
 static_assert( IndexedList< RingDeque< int > > );
 static_assert( IndexedList< DualArrayDeque< int > > );
 static_assert(
- IndexedList< DualArrayDeque< int , RootishArrayStack< int > > > );
+  IndexedList< DualArrayDeque< int , RootishArrayStack< int > > > );
 static_assert( IndexedList< Treque< int > > );
 static_assert( IndexedList< ContiguousDeque< int > > );
 static_assert( IndexedList< RootishArrayStack< int > > );
@@ -202,10 +219,13 @@ ADS_TEST( "ods-1.2.interfaces" )
 {
  // the same LIST through the concept, on every realization
  auto run = []< IndexedList L >( L l ) {
-  for( int i = 0 ; i < 50 ; ++i ) l.insert( l.size() / 2 , i );
+  for( int i = 0 ; i < 50 ; ++i )
+   l.insert( l.size() / 2 , i );
   std::vector< int > r;
-  for( int i = 0 ; i < 50 ; ++i ) r.insert( r.begin() + r.size() / 2 , i );
-  for( std::size_t i = 0 ; i < r.size() ; ++i ) CHECK( l[ i ] == r[ i ] );
+  for( int i = 0 ; i < 50 ; ++i )
+   r.insert( r.begin() + r.size() / 2 , i );
+  for( std::size_t i = 0 ; i < r.size() ; ++i )
+   CHECK( l[ i ] == r[ i ] );
   };
  run( RingDeque< int >() );
  run( DualArrayDeque< int >() );
@@ -228,7 +248,8 @@ ADS_TEST( "ods-ex1.1.lines" )
  // 1. the lines in the reverse order: a stack
  {
   SinglyList< std::string > s;
-  for( const auto & x : in ) s.push_front( x );
+  for( const auto & x : in )
+   s.push_front( x );
   CHECK( std::equal( s.begin() , s.end() , in.rbegin() , in.rend() ) );
   }
  // 2. blocks of 50 reversed, no more than 50 lines kept: a stack of 50
@@ -237,9 +258,12 @@ ADS_TEST( "ods-ex1.1.lines" )
   ArrayStack< std::string > s( 50 );
   for( const auto & x : in ) {
    s.push( x );
-   if( s.size() == 50 ) while( ! s.empty() ) out.push_back( s.pop() );
+   if( s.size() == 50 )
+    while( ! s.empty() )
+     out.push_back( s.pop() );
    }
-  while( ! s.empty() ) out.push_back( s.pop() );
+  while( ! s.empty() )
+   out.push_back( s.pop() );
   for( std::size_t b = 0 ; b < in.size() ; b += 50 )
    for( std::size_t k = std::min( in.size() , b + 50 ) ; k > b ; --k )
     ref.push_back( in[ k - 1 ] );
@@ -251,11 +275,14 @@ ADS_TEST( "ods-ex1.1.lines" )
   RingDeque< std::string > q;
   for( const auto & x : in ) {
    q.push_back( x );
-   if( q.size() > 43 ) q.pop_front();
-   if( x.empty() && ( q.size() == 43 ) ) out.push_back( q.front() );
+   if( q.size() > 43 )
+    q.pop_front();
+   if( x.empty() && ( q.size() == 43 ) )
+    out.push_back( q.front() );
    }
   for( std::size_t k = 42 ; k < in.size() ; ++k )
-   if( in[ k ].empty() ) ref.push_back( in[ k - 42 ] );
+   if( in[ k ].empty() )
+    ref.push_back( in[ k - 42 ] );
   CHECK( out == ref && q.capacity() <= 64 );
   }
  // 4. and 5. the first and the later occurrences: a USet, a bag
@@ -279,10 +306,14 @@ ADS_TEST( "ods-ex1.1.lines" )
    };
   ArraySSet< std::string , decltype( shorter ) > s( shorter );
   Bag< std::string > b;
-  for( const auto & x : in ) { s.insert( x ); b.insert( x ); }
+  for( const auto & x : in ) {
+   s.insert( x );
+   b.insert( x );
+   }
   std::vector< std::string > once( s.items() ) , all , ref( in );
   for( const auto & x : s.items() )
-   for( std::size_t k = b.count( x ) ; k > 0 ; --k ) all.push_back( x );
+   for( std::size_t k = b.count( x ) ; k > 0 ; --k )
+    all.push_back( x );
   std::sort( ref.begin() , ref.end() , shorter );
   CHECK( all == ref );
   ref.erase( std::unique( ref.begin() , ref.end() ) , ref.end() );
@@ -295,18 +326,23 @@ ADS_TEST( "ods-ex1.1.lines" )
    ( k % 2 ? odd : even ).push_back( in[ k ] );
   std::vector< std::string > out( even.begin() , even.end() ) , ref;
   out.insert( out.end() , odd.begin() , odd.end() );
-  for( std::size_t k = 0 ; k < in.size() ; k += 2 ) ref.push_back( in[ k ] );
-  for( std::size_t k = 1 ; k < in.size() ; k += 2 ) ref.push_back( in[ k ] );
+  for( std::size_t k = 0 ; k < in.size() ; k += 2 )
+   ref.push_back( in[ k ] );
+  for( std::size_t k = 1 ; k < in.size() ; k += 2 )
+   ref.push_back( in[ k ] );
   CHECK( out == ref );
   }
  // 9. a random permutation: a random queue
  {
   RandomQueue< std::string > q( 5 );
-  for( const auto & x : in ) q.push( x );
+  for( const auto & x : in )
+   q.push( x );
   std::vector< std::string > out;
-  while( ! q.empty() ) out.push_back( q.pop() );
-  CHECK( out != in && std::is_permutation( out.begin() , out.end() ,
-                                           in.begin() , in.end() ) );
+  while( ! q.empty() )
+   out.push_back( q.pop() );
+  CHECK( out != in &&
+	 std::is_permutation( out.begin() , out.end() , in.begin() ,
+			      in.end() ) );
   }
  }
 
@@ -315,15 +351,22 @@ ADS_TEST( "ods-ex1.2.dyck" )
  std::mt19937_64 g( 2 );
  for( int t = 0 ; t < 2000 ; ++t ) {
   std::vector< int > w( g() % 20 );
-  for( int & c : w ) c = g() % 5 < 3 ? 1 : -1;
+  for( int & c : w )
+   c = g() % 5 < 3 ? 1 : -1;
   long s = 0;
   bool prefix = true , stack = true;
-  for( int c : w ) prefix = prefix && ( ( s += c ) >= 0 );
-  ArrayStack< int > S( w.size() + 1 );           // the stack itself
   for( int c : w )
-   if( c == 1 ) S.push( 0 );
-   else if( S.empty() ) { stack = false; break; }
-   else ( void )S.pop();
+   prefix = prefix && ( ( s += c ) >= 0 );
+  ArrayStack< int > S( w.size() + 1 );  // the stack itself
+  for( int c : w )
+   if( c == 1 )
+    S.push( 0 );
+   else if( S.empty() ) {
+    stack = false;
+    break;
+    }
+   else
+    ( void )S.pop();
   CHECK( isDyckWord( w ) == prefix && prefix == stack );
   }
  const std::vector< int > yes{ 1 , -1 , 1 , -1 } , no{ 1 , -1 , -1 , 1 };
@@ -339,7 +382,8 @@ ADS_TEST( "ods-ex1.3.matched" )
  const std::string B = "()[]{}";
  for( int t = 0 ; t < 3000 ; ++t ) {
   std::string s;
-  for( std::size_t k = g() % 12 ; k > 0 ; --k ) s += B[ g() % 6 ];
+  for( std::size_t k = g() % 12 ; k > 0 ; --k )
+   s += B[ g() % 6 ];
   std::string r = s;
   for( bool changed = true ; changed ; ) {
    changed = false;
@@ -356,13 +400,17 @@ ADS_TEST( "ods-ex1.3.matched" )
 ADS_TEST( "ods-ex1.4.reverse-stack" )
 {
  ArrayStack< int > s( 100 );
- for( int i = 0 ; i < 100 ; ++i ) s.push( i );
+ for( int i = 0 ; i < 100 ; ++i )
+  s.push( i );
  reverseWithQueue( s );
- for( int i = 0 ; i < 100 ; ++i ) CHECK( s.pop() == i );
+ for( int i = 0 ; i < 100 ; ++i )
+  CHECK( s.pop() == i );
  SequenceStack< List< std::string > > t;
- for( int i = 0 ; i < 30 ; ++i ) t.push( item( i ) );
+ for( int i = 0 ; i < 30 ; ++i )
+  t.push( item( i ) );
  reverseWithQueue( t );
- for( int i = 0 ; i < 30 ; ++i ) CHECK( t.pop() == item( i ) );
+ for( int i = 0 ; i < 30 ; ++i )
+  CHECK( t.pop() == item( i ) );
  }
 
 ADS_TEST( "ods-ex1.5.bag" )
@@ -380,17 +428,20 @@ ADS_TEST( "ods-ex1.5.bag" )
    const auto range = r.equal_range( x.key );
    const bool there = range.first != range.second;
    CHECK( b.remove( x ) == there );
-   if( there ) r.erase( std::prev( range.second ) );   // the last added
+   if( there )
+    r.erase( std::prev( range.second ) );  // the last added
    }
   const auto range = r.equal_range( x.key );
   const std::vector< Record > all = b.findAll( x );
-  CHECK( all.size() == std::size_t( std::distance( range.first ,
-                                                   range.second ) ) );
+  CHECK( all.size() ==
+	 std::size_t( std::distance( range.first , range.second ) ) );
   auto it = range.first;
-  for( const Record & y : all ) CHECK( y.payload == ( it++ )->second );
+  for( const Record & y : all )
+   CHECK( y.payload == ( it++ )->second );
   const Record * f = b.find( x );
   CHECK( ( f == nullptr ) == all.empty() );
-  if( f ) CHECK( f->payload == range.first->second );
+  if( f )
+   CHECK( f->payload == range.first->second );
   }
  CHECK( b.size() == r.size() );
  }
@@ -415,13 +466,14 @@ ADS_TEST( "ods-ex1.6.reference-sets" )
   const auto lb = r.lower_bound( y );
   const int * p = s.lowerBound( y );
   CHECK( ( p == nullptr ) == ( lb == r.end() ) );
-  if( p ) CHECK( *p == *lb );
+  if( p )
+   CHECK( *p == *lb );
   CHECK( ( u.find( y ) != nullptr ) == r.contains( y ) );
   CHECK( ( s.find( y ) != nullptr ) == r.contains( y ) );
   }
  CHECK( u.size() == r.size() && s.size() == r.size() );
  CHECK( std::equal( s.items().begin() , s.items().end() , r.begin() ,
-                    r.end() ) );
+		    r.end() ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -446,9 +498,9 @@ ADS_TEST( "ods-2.1.array-stack" )
    a.remove( long( i ) );
    r.erase( r.begin() + std::ptrdiff_t( i ) );
    }
-  CHECK( a.size() == long( r.size() ) &&
-         ( a.capacity() == 0 || 4 * a.size() > a.capacity() ||
-           a.size() == 0 ) );
+  CHECK(
+    a.size() == long( r.size() ) &&
+    ( a.capacity() == 0 || 4 * a.size() > a.capacity() || a.size() == 0 ) );
   }
  CHECK( std::equal( a.begin() , a.end() , r.begin() , r.end() ) );
  }
@@ -465,7 +517,7 @@ ADS_TEST( "ods-ex2.1.add-all" )
  a.insert( 3 , a.begin() , a.end() );
  own.insert( own.begin() + 3 , own.begin() , own.end() );
  CHECK( std::equal( a.begin() , a.end() , own.begin() , own.end() ) );
- a.insert( a.size() , c.begin() , c.begin() );     // nothing
+ a.insert( a.size() , c.begin() , c.begin() );  // nothing
  CHECK( a.size() == long( own.size() ) );
  }
 
@@ -500,24 +552,33 @@ ADS_TEST( "ods-2.4.array-deque" )
  for( std::size_t h = 0 ; h < 16 ; ++h ) {
   RingDeque< int > e;
   std::deque< int > r;
-  for( int k = 0 ; k < 16 ; ++k ) { e.push_back( k ); r.push_back( k ); }
-  for( std::size_t k = 0 ; k < h ; ++k ) {       // the head moved by h
-   e.push_back( e.front() ); e.pop_front();
-   r.push_back( r.front() ); r.pop_front();
+  for( int k = 0 ; k < 16 ; ++k ) {
+   e.push_back( k );
+   r.push_back( k );
    }
-  e.pop_back(); r.pop_back();
+  for( std::size_t k = 0 ; k < h ; ++k ) {  // the head moved by h
+   e.push_back( e.front() );
+   e.pop_front();
+   r.push_back( r.front() );
+   r.pop_front();
+   }
+  e.pop_back();
+  r.pop_back();
   for( std::size_t i = 0 ; i <= r.size() ; ++i ) {
    RingDeque< int > f = e;
    std::deque< int > s = r;
-   f.insert( i , 99 ); s.insert( s.begin() + std::ptrdiff_t( i ) , 99 );
+   f.insert( i , 99 );
+   s.insert( s.begin() + std::ptrdiff_t( i ) , 99 );
    CHECK( std::equal( f.begin() , f.end() , s.begin() , s.end() ) );
    f.erase( ( i * 7 ) % f.size() );
    s.erase( s.begin() + std::ptrdiff_t( ( i * 7 ) % s.size() ) );
    CHECK( std::equal( f.begin() , f.end() , s.begin() , s.end() ) );
    }
   }
- for( int k = 0 ; k < 3000 ; ++k ) d.push_back( item( k ) );
- while( d.size() > 100 ) d.pop_back();
+ for( int k = 0 ; k < 3000 ; ++k )
+  d.push_back( item( k ) );
+ while( d.size() > 100 )
+  d.pop_back();
  d.shrink_to_fit();
  CHECK( d.size() == 100 && d.capacity() == 128 );
  }
@@ -536,9 +597,10 @@ ADS_TEST( "ods-2.5.dual-array-deque" )
  DualArrayDeque< std::string > d;
  listRandom( d , 20000 , 6 , 25 );
  listRandom( d , 20000 , 4 , 26 );
- for( int k = 0 ; k < 3000 ; ++k ) d.push_back( item( k ) );
+ for( int k = 0 ; k < 3000 ; ++k )
+  d.push_back( item( k ) );
  const std::size_t n = d.size() , f = d.frontSize();
- CHECK( 3 * f >= n - f && 3 * ( n - f ) >= f );    // the balance
+ CHECK( 3 * f >= n - f && 3 * ( n - f ) >= f );  // the balance
  dequeRandom( d , 20000 , 5 , 27 );
  }
 
@@ -550,7 +612,7 @@ ADS_TEST( "ods-2.6.rootish-array-stack" )
   CHECK( b * ( b + 1 ) / 2 <= i && i < ( b + 1 ) * ( b + 2 ) / 2 );
   }
  for( std::size_t b : { std::size_t( 1 ) << 20 , std::size_t( 3000000 ) ,
-                        std::size_t( 1 ) << 26 } ) {
+			std::size_t( 1 ) << 26 } ) {
   const std::size_t s = b * ( b + 1 ) / 2;
   CHECK( RootishArrayStack< int >::block( s ) == b );
   CHECK( RootishArrayStack< int >::block( s - 1 ) == b - 1 );
@@ -580,23 +642,32 @@ ADS_TEST( "ods-ex2.2.random-queue" )
  int c[ 8 ] = {};
  RandomQueue< int > q( 9 );
  for( int t = 0 ; t < 80000 ; ++t ) {
-  for( int k = 0 ; k < 8 ; ++k ) q.push( k );
+  for( int k = 0 ; k < 8 ; ++k )
+   q.push( k );
   ++c[ q.pop() ];
   q.clear();
   }
- for( int k = 0 ; k < 8 ; ++k ) CHECK( std::abs( c[ k ] - 10000 ) < 470 );
+ for( int k = 0 ; k < 8 ; ++k )
+  CHECK( std::abs( c[ k ] - 10000 ) < 470 );
  // the draw of a place, uniform also for a range not a power of 2
  RandomQueue< int > u( 3 );
  std::vector< int > h( 3 );
- for( int t = 0 ; t < 30000 ; ++t ) ++h[ u.uniform( 3 ) ];
- for( int k : h ) CHECK( std::abs( k - 10000 ) < 500 );
+ for( int t = 0 ; t < 30000 ; ++t )
+  ++h[ u.uniform( 3 ) ];
+ for( int k : h )
+  CHECK( std::abs( k - 10000 ) < 500 );
  // the same items out as in
  std::multiset< int > in , out;
  for( int t = 0 ; t < 5000 ; ++t ) {
-  if( q.empty() || ( t % 3 ) ) { q.push( t % 97 ); in.insert( t % 97 ); }
-  else out.insert( q.pop() );
+  if( q.empty() || ( t % 3 ) ) {
+   q.push( t % 97 );
+   in.insert( t % 97 );
+   }
+  else
+   out.insert( q.pop() );
   }
- while( ! q.empty() ) out.insert( q.pop() );
+ while( ! q.empty() )
+  out.insert( q.pop() );
  CHECK( in == out );
  }
 
@@ -613,11 +684,13 @@ ADS_TEST( "ods-ex2.4.rotate-array" )
  for( std::size_t n = 0 ; n < 40 ; ++n )
   for( std::size_t r = 0 ; r < 2 * n + 2 ; ++r ) {
    std::vector< std::string > a , b;
-   for( std::size_t k = 0 ; k < n ; ++k ) a.push_back( item( k ) );
+   for( std::size_t k = 0 ; k < n ; ++k )
+    a.push_back( item( k ) );
    b = a;
    rotateArray( std::span< std::string >( a ) , r );
-   if( n ) std::rotate( b.rbegin() , b.rbegin() + std::ptrdiff_t( r % n ) ,
-                        b.rend() );
+   if( n )
+    std::rotate( b.rbegin() , b.rbegin() + std::ptrdiff_t( r % n ) ,
+		 b.rend() );
    CHECK( a == b );
    }
  }
@@ -631,12 +704,14 @@ ADS_TEST( "ods-ex2.5.rotate-list" )
    l.insert( l.size() , int( k ) );
    r.push_back( int( k ) );
    }
-  for( std::size_t s : { std::size_t( 0 ) , std::size_t( 1 ) , n / 3 ,
-                         n / 2 , n - 1 , n , 3 * n + 2 } ) {
+  for( std::size_t s : { std::size_t( 0 ) , std::size_t( 1 ) , n / 3 , n / 2 ,
+			 n - 1 , n , 3 * n + 2 } ) {
    rotate( l , s );
-   if( n ) std::rotate( r.rbegin() , r.rbegin() + std::ptrdiff_t( s % n ) ,
-                        r.rend() );
-   for( std::size_t k = 0 ; k < n ; ++k ) CHECK( l[ k ] == r[ k ] );
+   if( n )
+    std::rotate( r.rbegin() , r.rbegin() + std::ptrdiff_t( s % n ) ,
+		 r.rend() );
+   for( std::size_t k = 0 ; k < n ; ++k )
+    CHECK( l[ k ] == r[ k ] );
    }
   };
  for( std::size_t n : { 1 , 2 , 8 , 9 , 100 , 257 } ) {
@@ -647,8 +722,9 @@ ADS_TEST( "ods-ex2.5.rotate-list" )
   run( RootishArrayStack< int >() , n );
   run( SEList< int >( 4 ) , n );
   }
- RingDeque< int > full;                          // the head alone moves
- for( int k = 0 ; k < 8 ; ++k ) full.push_back( k );
+ RingDeque< int > full;  // the head alone moves
+ for( int k = 0 ; k < 8 ; ++k )
+  full.push_back( k );
  CHECK( full.capacity() == 8 );
  full.rotate( 3 );
  CHECK( full[ 0 ] == 5 && full[ 3 ] == 0 && full[ 7 ] == 4 );
@@ -665,16 +741,18 @@ ADS_TEST( "ods-ex2.8.contiguous-deque" )
  ContiguousDeque< int > q;
  for( int k = 0 ; k < 200000 ; ++k ) {
   q.push_back( k );
-  if( k % 2 ) q.pop_front();
+  if( k % 2 )
+   q.pop_front();
   CHECK( q.capacity() <= 9 * q.size() + 24 );
   }
- for( std::size_t i = 0 ; i < q.size() ; ++i )   // consecutive integers
+ for( std::size_t i = 0 ; i < q.size() ; ++i )  // consecutive integers
   CHECK( q[ i ] == q.front() + int( i ) );
  }
 
 /// an item that counts the items alive, moved-from ones included, and
 /// their peak
-struct Live {
+struct Live
+{
  int v = 0;
  static inline long alive = 0 , peak = 0;
  static void born( void ) { peak = std::max( peak , ++alive ); }
@@ -704,7 +782,7 @@ ADS_TEST( "ods-ex2.9.rootish-deque" )
   }
  for( int i = 0 ; i < 30000 ; ++i ) {
   Live::peak = Live::alive;
-  e.pop_back();                             // the other side, the same
+  e.pop_back();  // the other side, the same
   CHECK( 2 * Live::peak <= 3 * long( e.size() + 1 ) + 8 );
   }
  CHECK( e.empty() && ( Live::alive == 0 ) );
@@ -716,7 +794,7 @@ ADS_TEST( "ods-ex2.10.tiered-deque" )
  // exercise 2.10; the places wasted below 2 b plus the gap
  TieredVector< std::string > v;
  listRandom( v , test::scaled< std::size_t >( 60000 , 6000 ) , 7 , 37 ,
-             false );
+	     false );
  CHECK( v.capacity() - v.size() < 2 * v.block() );
  }
 
@@ -730,12 +808,14 @@ ADS_TEST( "ods-ex2.11.tiered-deque" )
  CHECK( v.capacity() - v.size() < 2 * v.block() );
  dequeRandom( v , 20000 , 5 , 40 );
  TieredVector< int > w;
- for( int k = 0 ; k < 20000 ; ++k ) w.push_front( k );
- for( int k = 0 ; k < 20000 ; ++k ) CHECK( w[ std::size_t( k ) ] ==
-                                          19999 - k );
+ for( int k = 0 ; k < 20000 ; ++k )
+  w.push_front( k );
+ for( int k = 0 ; k < 20000 ; ++k )
+  CHECK( w[ std::size_t( k ) ] == 19999 - k );
  CHECK( w.block() * w.block() >= w.size() &&
-        w.capacity() - w.size() < 2 * w.block() );
- while( ! w.empty() ) w.pop_front();
+	w.capacity() - w.size() < 2 * w.block() );
+ while( ! w.empty() )
+  w.pop_front();
  CHECK( w.capacity() == 0 );
  }
 
@@ -751,17 +831,19 @@ ADS_TEST( "ods-ex2.12.cubish" )
   if( k % 4096 == 0 ) {
    const double n = double( w.size() );
    CHECK( double( w.capacity() - w.size() ) <=
-          2.0 * double( w.block() ) * ( n / double( w.block() *
-                                                    w.block() ) + 1 ) +
-          4.0 * double( w.block() ) );
+	  2.0 * double( w.block() ) *
+	      ( n / double( w.block() * w.block() ) + 1 ) +
+	    4.0 * double( w.block() ) );
    CHECK( double( w.block() ) <= 2.0 * std::cbrt( n ) + 16 );
    }
   }
  std::vector< int > r;
  for( int k = 0 ; k < test::scaled( 300000 , 40000 ) ; ++k )
   r.insert( r.begin() + k / 2 , k );
- for( std::size_t i = 0 ; i < r.size() ; i += 101 ) CHECK( w[ i ] == r[ i ] );
- while( w.size() > 10 ) w.erase( w.size() / 3 );
+ for( std::size_t i = 0 ; i < r.size() ; i += 101 )
+  CHECK( w[ i ] == r[ i ] );
+ while( w.size() > 10 )
+  w.erase( w.size() / 3 );
  CHECK( w.block() == 16 );
  }
 
@@ -778,15 +860,22 @@ ADS_TEST( "ods-3.1.sllist" )
   const int w = int( g() % 3 );
   if( r.empty() || ( g() % 10 < 6 ) ) {
    const std::string x = item( t );
-   if( w ) { s.push_front( x ); r.push_front( x ); }  // push(x)
-   else { s.push_back( x ); r.push_back( x ); }       // add(x)
+   if( w ) {
+    s.push_front( x );
+    r.push_front( x );
+    }  // push(x)
+   else {
+    s.push_back( x );
+    r.push_back( x );
+    }  // add(x)
    }
   else {
-   CHECK( s.pop_front() == r.front() );               // pop(), remove()
+   CHECK( s.pop_front() == r.front() );  // pop(), remove()
    r.pop_front();
    }
   CHECK( s.size() == r.size() );
-  if( ! r.empty() ) CHECK( s.front() == r.front() && s.back() == r.back() );
+  if( ! r.empty() )
+   CHECK( s.front() == r.front() && s.back() == r.back() );
   }
  CHECK( std::equal( s.begin() , s.end() , r.begin() , r.end() ) );
  }
@@ -799,7 +888,7 @@ ADS_TEST( "ods-ex3.2-3.5.sllist" )
  for( int t = 0 ; t < 3000 ; ++t ) {
   if( r.empty() || ( g() % 10 < 6 ) ) {
    const std::size_t i = g() % ( r.size() + 1 );
-   s.add( i , t );                                    // exercise 3.3
+   s.add( i , t );  // exercise 3.3
    r.insert( r.begin() + std::ptrdiff_t( i ) , t );
    }
   else if( g() % 2 ) {
@@ -812,12 +901,13 @@ ADS_TEST( "ods-ex3.2-3.5.sllist" )
    CHECK( s.set( i , -t ) == r[ i ] );
    r[ i ] = -t;
    }
-  if( r.size() >= 2 ) CHECK( s.secondLast() == r[ r.size() - 2 ] );   // 3.2
-  if( ! r.empty() ) CHECK( s.get( r.size() / 2 ) == r[ r.size() / 2 ] &&
-                           s.back() == r.back() );
+  if( r.size() >= 2 )
+   CHECK( s.secondLast() == r[ r.size() - 2 ] );  // 3.2
+  if( ! r.empty() )
+   CHECK( s.get( r.size() / 2 ) == r[ r.size() / 2 ] && s.back() == r.back() );
   }
- s.checkSize();                                       // exercise 3.5
- s.reverse();                                         // exercise 3.4
+ s.checkSize();  // exercise 3.5
+ s.reverse();    // exercise 3.4
  CHECK( std::equal( s.begin() , s.end() , r.rbegin() , r.rend() ) );
  s.push_back( 1 );
  CHECK( s.back() == 1 );
@@ -867,11 +957,12 @@ void dllistExercises( void )
  CHECK( a.get( 0 ) == 1 && a.get( 1 ) == 2 && a.get( 2 ) == 3 );
  // 3.7
  CHECK( ( L{ 1 , 2 , 1 } ).isPalindrome() && ( L{} ).isPalindrome() &&
-        ( L{ 4 , 4 } ).isPalindrome() && ! ( L{ 1 , 2 } ).isPalindrome() );
+	( L{ 4 , 4 } ).isPalindrome() && ! ( L{ 1 , 2 } ).isPalindrome() );
  // 3.8
  for( std::size_t n : { 1 , 2 , 7 , 50 } )
-  for( std::size_t r : { std::size_t( 0 ) , std::size_t( 1 ) , n / 2 ,
-                         n - 1 , n , 2 * n + 1 } ) {
+  for( std::size_t r :
+       { std::size_t( 0 ) , std::size_t( 1 ) , n / 2 , n - 1 , n ,
+	 2 * n + 1 } ) {
    L l;
    std::vector< int > v;
    for( std::size_t k = 0 ; k < n ; ++k ) {
@@ -879,8 +970,7 @@ void dllistExercises( void )
     v.push_back( int( k ) );
     }
    l.rotate( r );
-   std::rotate( v.rbegin() , v.rbegin() + std::ptrdiff_t( r % n ) ,
-                v.rend() );
+   std::rotate( v.rbegin() , v.rbegin() + std::ptrdiff_t( r % n ) , v.rend() );
    CHECK( std::equal( l.begin() , l.end() , v.begin() , v.end() ) );
    l.checkSize();
    }
@@ -888,30 +978,34 @@ void dllistExercises( void )
  for( std::size_t n : { 0 , 1 , 2 , 9 , 40 } )
   for( std::size_t i = 0 ; i <= n ; ++i ) {
    L l;
-   for( std::size_t k = 0 ; k < n ; ++k ) l.push_back( int( k ) );
+   for( std::size_t k = 0 ; k < n ; ++k )
+    l.push_back( int( k ) );
    L t = l.truncate( i );
    CHECK( l.size() == i && t.size() == n - i );
-   for( std::size_t k = 0 ; k < i ; ++k ) CHECK( l.get( k ) == int( k ) );
-   for( std::size_t k = i ; k < n ; ++k ) CHECK( t.get( k - i ) ==
-                                                int( k ) );
+   for( std::size_t k = 0 ; k < i ; ++k )
+    CHECK( l.get( k ) == int( k ) );
+   for( std::size_t k = i ; k < n ; ++k )
+    CHECK( t.get( k - i ) == int( k ) );
    l.absorb( t );
    CHECK( t.empty() && t.size() == 0 && l.size() == n );
-   for( std::size_t k = 0 ; k < n ; ++k ) CHECK( l.get( k ) == int( k ) );
+   for( std::size_t k = 0 ; k < n ; ++k )
+    CHECK( l.get( k ) == int( k ) );
    l.checkSize();
    t.checkSize();
-   t.push_back( 5 );                              // the emptied list works
+   t.push_back( 5 );  // the emptied list works
    CHECK( t.size() == 1 && t.get( 0 ) == 5 );
    }
  // 3.11
  for( std::size_t n : { 0 , 1 , 2 , 5 , 6 } ) {
   L l;
-  for( std::size_t k = 0 ; k < n ; ++k ) l.push_back( int( k ) );
+  for( std::size_t k = 0 ; k < n ; ++k )
+   l.push_back( int( k ) );
   L o = l.deal();
   CHECK( l.size() == ( n + 1 ) / 2 && o.size() == n / 2 );
-  for( std::size_t k = 0 ; k < l.size() ; ++k ) CHECK( l.get( k ) ==
-                                                      int( 2 * k ) );
-  for( std::size_t k = 0 ; k < o.size() ; ++k ) CHECK( o.get( k ) ==
-                                                      int( 2 * k + 1 ) );
+  for( std::size_t k = 0 ; k < l.size() ; ++k )
+   CHECK( l.get( k ) == int( 2 * k ) );
+  for( std::size_t k = 0 ; k < o.size() ; ++k )
+   CHECK( o.get( k ) == int( 2 * k + 1 ) );
   }
  // 3.12
  L l{ 1 , 2 , 3 , 4 };
@@ -919,7 +1013,7 @@ void dllistExercises( void )
  CHECK( l == ( L{ 4 , 3 , 2 , 1 } ) && l.get( 0 ) == 4 );
  l.push_back( 0 );
  CHECK( l.get( 4 ) == 0 && l.size() == 5 );
- l.checkSize();                                  // 3.5
+ l.checkSize();  // 3.5
  }
 
 ADS_TEST( "ods-ex3.5-3.12.dllist" )
@@ -954,14 +1048,14 @@ void dllistSort( void )
   a.push_back( { 2 * k , 0 } );
   b.push_back( { 3 * k , 1 } );
   }
- c.takeFirst( a );                                 // no cell made if not P
+ c.takeFirst( a );  // no cell made if not P
  CHECK( c.size() == 1 && a.size() == 49 && c.get( 0 ).first == 0 );
- a.absorb( c );                                    // back at the end
+ a.absorb( c );  // back at the end
  a.mergeSort( byKey );
  List< I , P > m = List< I , P >::merge( a , b , byKey );
  CHECK( a.empty() && b.empty() && m.size() == 100 );
  for( std::size_t k = 1 ; k < m.size() ; ++k ) {
-  const I & x = m.get( k - 1 ) , & y = m.get( k );
+  const I &x = m.get( k - 1 ) , &y = m.get( k );
   CHECK( x.first < y.first || ( x.first == y.first && x.second <= y.second ) );
   }
  m.checkSize();
@@ -989,12 +1083,13 @@ ADS_TEST( "ods-ex3.14.min-stack" )
    r.pop_back();
    }
   CHECK( s.size() == r.size() );
-  if( ! r.empty() ) CHECK( s.min() == *std::min_element( r.begin() ,
-                                                         r.end() ) &&
-                           s.top() == r.back() );
+  if( ! r.empty() )
+   CHECK( s.min() == *std::min_element( r.begin() , r.end() ) &&
+	  s.top() == r.back() );
   }
- MinStack< int > inc;                              // few minima kept
- for( int k = 0 ; k < 100 ; ++k ) inc.push( k );
+ MinStack< int > inc;  // few minima kept
+ for( int k = 0 ; k < 100 ; ++k )
+  inc.push( k );
  CHECK( inc.minima() == 1 && inc.min() == 0 );
  }
 
@@ -1015,20 +1110,25 @@ ADS_TEST( "ods-ex3.15.min-queue" )
    r.pop_front();
    }
   CHECK( q.size() == r.size() );
-  if( ! r.empty() ) CHECK( q.min() == *std::min_element( r.begin() ,
-                                                         r.end() ) );
+  if( ! r.empty() )
+   CHECK( q.min() == *std::min_element( r.begin() , r.end() ) );
   }
  }
 
 /// an item that counts its copies and its moves, to bound the work of an
 /// operation
-struct Counted {
+struct Counted
+{
  int v;
  static inline long made = 0;
- Counted( int x ) : v( x ) {}
+ Counted( int x ) : v( x ) { }
  Counted( const Counted & o ) : v( o.v ) { ++made; }
  Counted( Counted && o ) noexcept : v( o.v ) { ++made; }
- Counted & operator=( const Counted & o ) { v = o.v; ++made; return( *this ); }
+ Counted & operator=( const Counted & o ) {
+  v = o.v;
+  ++made;
+  return( *this );
+  }
  Counted & operator=( Counted && o ) noexcept {
   v = o.v;
   ++made;
@@ -1050,9 +1150,9 @@ ADS_TEST( "ods-ex3.15.real-time-min-queue" )
  std::mt19937_64 g( 59 );
  long most = 0;
  for( int t = 0 ; t < 60000 ; ++t ) {
-  const int phase = ( t / 5000 ) % 3;      // enqueues, mixed, dequeues
-  const bool in = r.empty() || ( phase == 0 ) ||
-                  ( ( phase == 1 ) && ( g() % 10 < 6 ) );
+  const int phase = ( t / 5000 ) % 3;  // enqueues, mixed, dequeues
+  const bool in =
+    r.empty() || ( phase == 0 ) || ( ( phase == 1 ) && ( g() % 10 < 6 ) );
   const long before = Counted::made;
   if( in ) {
    const int x = int( g() % 1000 );
@@ -1066,15 +1166,15 @@ ADS_TEST( "ods-ex3.15.real-time-min-queue" )
    }
   most = std::max( most , Counted::made - before );
   CHECK( q.size() == r.size() );
-  if( ! r.empty() ) CHECK( q.min().v == *std::min_element( r.begin() ,
-                                                           r.end() ) );
+  if( ! r.empty() )
+   CHECK( q.min().v == *std::min_element( r.begin() , r.end() ) );
   if( t % 4999 == 0 ) {
    std::vector< int > all;
    q.forEach( [ & ]( const Counted & x ) { all.push_back( x.v ); } );
    CHECK( std::equal( all.begin() , all.end() , r.begin() , r.end() ) );
    RealTimeMinQueue< Counted > c( q );
    CHECK( ( c.size() == q.size() ) &&
-          ( r.empty() || ( c.min().v == q.min().v ) ) );
+	  ( r.empty() || ( c.min().v == q.min().v ) ) );
    }
   }
  CHECK( most <= 8 );
@@ -1094,16 +1194,23 @@ ADS_TEST( "ods-ex3.16.real-time-min-deque" )
  long most = 0;
  for( int t = 0 ; t < 80000 ; ++t ) {
   const int phase = ( t / 4000 ) % 4;
-  const bool atFront = ( phase == 0 ) ? true : ( phase == 1 ) ? false
-                                                             : g() % 2;
-  const bool in = r.empty() || ( phase < 2 ? ( g() % 10 < 7 )
-                                           : ( phase == 2 ) ? g() % 2
-                                                            : g() % 10 < 3 );
+  const bool atFront = ( phase == 0 )   ? true
+		       : ( phase == 1 ) ? false
+					: g() % 2;
+  const bool in = r.empty() || ( phase < 2        ? ( g() % 10 < 7 )
+				 : ( phase == 2 ) ? g() % 2
+						  : g() % 10 < 3 );
   const long before = Counted::made;
   if( in ) {
    const int x = int( g() % 1000 );
-   if( atFront ) { d.push_front( Counted( x ) ); r.push_front( x ); }
-   else { d.push_back( Counted( x ) ); r.push_back( x ); }
+   if( atFront ) {
+    d.push_front( Counted( x ) );
+    r.push_front( x );
+    }
+   else {
+    d.push_back( Counted( x ) );
+    r.push_back( x );
+    }
    }
   else if( atFront ) {
    CHECK( d.pop_front().v == r.front() );
@@ -1117,7 +1224,7 @@ ADS_TEST( "ods-ex3.16.real-time-min-deque" )
   CHECK( d.size() == r.size() );
   if( ! r.empty() )
    CHECK( ( d.min().v == *std::min_element( r.begin() , r.end() ) ) &&
-          ( d.front().v == r.front() ) && ( d.back().v == r.back() ) );
+	  ( d.front().v == r.front() ) && ( d.back().v == r.back() ) );
   if( t % 3999 == 0 ) {
    std::vector< int > all;
    d.forEach( [ & ]( const Counted & x ) { all.push_back( x.v ); } );
@@ -1141,15 +1248,27 @@ ADS_TEST( "ods-ex3.16.min-deque" )
   const bool atFront = g() % 2;
   if( r.empty() || ( g() % 10 < 5 ) ) {
    const int x = int( g() % 1000 );
-   if( atFront ) { d.push_front( x ); r.push_front( x ); }
-   else { d.push_back( x ); r.push_back( x ); }
+   if( atFront ) {
+    d.push_front( x );
+    r.push_front( x );
+    }
+   else {
+    d.push_back( x );
+    r.push_back( x );
+    }
    }
-  else if( atFront ) { CHECK( d.pop_front() == r.front() ); r.pop_front(); }
-  else { CHECK( d.pop_back() == r.back() ); r.pop_back(); }
+  else if( atFront ) {
+   CHECK( d.pop_front() == r.front() );
+   r.pop_front();
+   }
+  else {
+   CHECK( d.pop_back() == r.back() );
+   r.pop_back();
+   }
   CHECK( d.size() == r.size() );
   if( ! r.empty() )
    CHECK( d.min() == *std::min_element( r.begin() , r.end() ) &&
-          d.front() == r.front() && d.back() == r.back() );
+	  d.front() == r.front() && d.back() == r.back() );
   }
  }
 
@@ -1165,7 +1284,10 @@ ADS_TEST( "ods-3.3.selist-space" )
   for( int i = 0 ; i < 20000 ; ++i ) {
    const std::size_t n = s.size();
    if( ( n == 0 ) || ( g() % 3 ) ) {
-    if( g() % 2 ) s.push_back( i ); else s.insert( g() % ( n + 1 ) , i );
+    if( g() % 2 )
+     s.push_back( i );
+    else
+     s.insert( g() % ( n + 1 ) , i );
     }
    else
     s.erase( g() % n );
@@ -1185,7 +1307,8 @@ ADS_TEST( "ods-3.3.selist" )
   CHECK( s.blocks() <= s.size() / ( b - 1 ) + 2 );
   }
  SEList< int > c( 4 ) , d = c;
- for( int k = 0 ; k < 1000 ; ++k ) c.insert( c.size() / 2 , k );
+ for( int k = 0 ; k < 1000 ; ++k )
+  c.insert( c.size() / 2 , k );
  d = c;
  CHECK( d == c && d.size() == 1000 );
  SEList< int > e( std::move( d ) );
@@ -1201,9 +1324,11 @@ ADS_TEST( "ods-ex3.17-3.18.selist-ends" )
   dequeRandom( s , 30000 , 6 , 61 + b );
   dequeRandom( s , 30000 , 4 , 62 + b );
   SEList< int > t( b );
-  for( int k = 0 ; k < 10000 ; ++k ) t.push_back( k );
+  for( int k = 0 ; k < 10000 ; ++k )
+   t.push_back( k );
   CHECK( t.blocks() == ( 10000 + b ) / ( b + 1 ) );
-  for( int k = 0 ; k < 9990 ; ++k ) t.pop_back();
+  for( int k = 0 ; k < 9990 ; ++k )
+   t.pop_back();
   CHECK( t.size() == 10 && t.blocks() <= 10 / ( b + 1 ) + 1 );
   }
  }
@@ -1216,12 +1341,13 @@ ADS_TEST( "ods-3.4.xor-list" )
  x.reverse();
  CHECK( std::equal( x.begin() , x.end() , r.rbegin() , r.rend() ) );
  std::vector< std::string > back;
- for( auto it = x.end() ; it != x.begin() ; ) back.push_back( *--it );
+ for( auto it = x.end() ; it != x.begin() ; )
+  back.push_back( *--it );
  CHECK( back == r );
  XorList< std::string > y = x;
  CHECK( y == x );
  y.push_back( "z" );
- CHECK( !( y == x ) && y.back() == "z" );
+ CHECK( ! ( y == x ) && y.back() == "z" );
  }
 
 ADS_TEST( "ods-ex3.19.xor-swap" )

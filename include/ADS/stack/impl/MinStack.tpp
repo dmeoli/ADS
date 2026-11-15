@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , class C >
 void MinStack< T , C >::push( const T & x )
@@ -37,7 +38,7 @@ T MinStack< T , C >::pop( void )
  //! [pop]
  T x = std::move( f_A.back() );
  f_A.pop_back();
- if( ! f_less( f_M.back() , x ) )          // x is the least: it leaves
+ if( ! f_less( f_M.back() , x ) )  // x is the least: it leaves
   f_M.pop_back();
  //! [pop]
  ADS_POST( f_A.size() == n - 1 );

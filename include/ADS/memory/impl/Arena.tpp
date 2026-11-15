@@ -14,11 +14,12 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , class A >
 Arena< T , A >::Arena( std::size_t n , const A & alloc )
- : f_n( n ) , f_alloc( alloc )
+    : f_n( n ) , f_alloc( alloc )
 {
  ADS_PRE( n >= 1 );
  }
@@ -40,14 +41,14 @@ Arena< T , A >::~Arena()
 template< class T , class A >
 void Arena< T , A >::next( void )
 {
- if( f_cur + 1 < f_blocks.size() )         // a block kept by clear()
+ if( f_cur + 1 < f_blocks.size() )  // a block kept by clear()
   ++f_cur;
  else {
   T * const b = std::allocator_traits< A >::allocate( f_alloc , f_n );
   try {
    f_blocks.push_back( b );
    }
-  catch( ... ) {                            // the block not kept, freed
+  catch( ... ) {  // the block not kept, freed
    std::allocator_traits< A >::deallocate( f_alloc , b , f_n );
    throw;
    }
@@ -65,7 +66,7 @@ T * Arena< T , A >::make( Args &&... args )
   next();
  ADS_UNPOISON( f_place , sizeof( T ) );
  T * p = ::new( static_cast< void * >( f_place ) )
-          T( std::forward< Args >( args )... );
+   T( std::forward< Args >( args )... );
  ++f_place;
  ++f_size;
  ADS_INVARIANT( f_size == f_cur * f_n + used() );
@@ -82,7 +83,7 @@ void Arena< T , A >::clear( void ) noexcept
   for( std::size_t b = 0 ; b <= f_cur ; ++b )
    std::destroy_n( f_blocks[ b ] , b < f_cur ? f_n : u );
   }
- if constexpr( ADS_ASAN )                  // the places of the epoch
+ if constexpr( ADS_ASAN )  // the places of the epoch
   for( std::size_t b = 0 ; b <= f_cur ; ++b )
    ADS_POISON( f_blocks[ b ] , f_n * sizeof( T ) );
  f_cur = 0;

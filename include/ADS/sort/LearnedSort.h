@@ -103,7 +103,7 @@
 
 #ifndef __ADS_LearnedSort
  #define __ADS_LearnedSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -129,7 +129,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the learned sort of \f$ A \f$ in the natural order (the total order of
 /// IEEE 754 for the floating point numbers): the buckets of a model of the
@@ -183,7 +184,8 @@ namespace ADS {
 template< VectorKey T >
 void learnedSort( std::vector< T > & A );
 
-namespace detail {
+namespace detail
+{
 
 /// `learnedSort()` of \f$ A \f$ if the sample shows a distribution that the
 /// model fits, and then true; false, with \f$ A \f$ unchanged, otherwise
@@ -204,7 +206,7 @@ bool learnedSortIf( std::vector< T > & A );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LearnedSort.h included */
+#endif /* LearnedSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File LearnedSort.h -------------------------*/

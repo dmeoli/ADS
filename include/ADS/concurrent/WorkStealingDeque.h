@@ -52,7 +52,7 @@
 
 #ifndef __ADS_WorkStealingDeque
  #define __ADS_WorkStealingDeque
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -73,7 +73,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS WorkStealingDeque -------------------------*/
@@ -81,23 +82,25 @@ namespace ADS {
 
 /// the deque of an owner that pushes and takes, and of thieves that steal
 template< class T >
-class WorkStealingDeque {
+class WorkStealingDeque
+{
  static_assert( std::is_trivially_copyable_v< T > ,
-                "the items are copied through atomics" );
+		"the items are copied through atomics" );
 
  /// a circular vector of 2^k places
- struct Ring {
+ struct Ring
+ {
   /// the places less 1
   std::int64_t mask;
   /// the places
   std::unique_ptr< std::atomic< T >[] > place;
   /// the vector of \f$ c \f$ places
   explicit Ring( std::int64_t c )
-   : mask( c - 1 ) , place( new std::atomic< T >[ std::size_t( c ) ] ) {}
+      : mask( c - 1 ) , place( new std::atomic< T >[ std::size_t( c ) ] ) { }
   /// the item of the index \f$ i \f$
   [[nodiscard]] T get( std::int64_t i ) const {
-   return( place[ std::size_t( i & mask ) ].load(
-                                            std::memory_order_relaxed ) );
+   return(
+     place[ std::size_t( i & mask ) ].load( std::memory_order_relaxed ) );
    }
   /// the item of the index \f$ i \f$ set to \f$ x \f$
   void put( std::int64_t i , T x ) {
@@ -107,8 +110,7 @@ class WorkStealingDeque {
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty deque on a vector of capacity \f$ c \f$
  /// \pre \f$ c \ge 2 \f$ is a power of 2
@@ -197,19 +199,17 @@ class WorkStealingDeque {
 
  /// the places of the current vector; only the owner calls it
  [[nodiscard]] std::size_t capacity( void ) const {
-  return( std::size_t( f_ring.load( std::memory_order_relaxed )->mask +
-                       1 ) );
+  return( std::size_t( f_ring.load( std::memory_order_relaxed )->mask + 1 ) );
   }
 
 /*--------------------------------------------------------------------------*/
  private:
+ static constexpr std::size_t line = 64;  ///< a line of cache
 
- static constexpr std::size_t line = 64;   ///< a line of cache
-
- alignas( 2 * line ) std::atomic< std::int64_t > f_top{ 0 };   ///< thieves
- alignas( 2 * line ) std::atomic< std::int64_t > f_bottom{ 0 };   ///< owner
- std::atomic< Ring * > f_ring;             ///< the current vector
- std::vector< std::unique_ptr< Ring > > f_rings;   ///< all, for the owner
+ alignas( 2 * line ) std::atomic< std::int64_t > f_top{ 0 };     ///< thieves
+ alignas( 2 * line ) std::atomic< std::int64_t > f_bottom{ 0 };  ///< owner
+ std::atomic< Ring * > f_ring;                    ///< the current vector
+ std::vector< std::unique_ptr< Ring > > f_rings;  ///< all, for the owner
  };  // end( class WorkStealingDeque )
 
 /*--------------------------------------------------------------------------*/
@@ -224,7 +224,7 @@ class WorkStealingDeque {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* WorkStealingDeque.h included */
+#endif /* WorkStealingDeque.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File WorkStealingDeque.h ----------------------*/

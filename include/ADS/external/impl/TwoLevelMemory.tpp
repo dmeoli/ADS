@@ -15,14 +15,15 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS TwoLevelMemory ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
 inline TwoLevelMemory::TwoLevelMemory( std::size_t B , std::size_t M )
- : f_B( B ) , f_M( M )
+    : f_B( B ) , f_M( M )
 {
  ADS_PRE( ( B >= 1 ) && ( M >= 2 * B ) );
  }
@@ -101,7 +102,7 @@ inline void TwoLevelMemory::countWrite( void )
 /*--------------------------------------------------------------------------*/
 
 inline MemoryLease::MemoryLease( TwoLevelMemory & mem , std::size_t k )
- : f_mem( &mem ) , f_k( k )
+    : f_mem( &mem ) , f_k( k )
 {
  mem.allocate( k );
  }
@@ -122,14 +123,12 @@ inline std::size_t MemoryLease::size( void ) const
 
 template< class T >
 DiskFile< T >::DiskFile( TwoLevelMemory & mem ) : f_mem( &mem )
-{
- }
+{ }
 
 template< class T >
 DiskFile< T >::DiskFile( TwoLevelMemory & mem , std::vector< T > items )
- : f_mem( &mem ) , f_items( std::move( items ) )
-{
- }
+    : f_mem( &mem ) , f_items( std::move( items ) )
+{ }
 
 template< class T >
 DiskFile< T > & DiskFile< T >::operator=( DiskFile && other )
@@ -169,9 +168,9 @@ std::size_t DiskFile< T >::readBlock( std::size_t b , T * dest ) const
 {
  ADS_PRE( b < blocks() );
  const std::size_t B = f_mem->blockSize() , lo = b * B ,
-                   hi = std::min( lo + B , f_items.size() );
+		   hi = std::min( lo + B , f_items.size() );
  std::copy( f_items.begin() + std::ptrdiff_t( lo ) ,
-            f_items.begin() + std::ptrdiff_t( hi ) , dest );
+	    f_items.begin() + std::ptrdiff_t( hi ) , dest );
  f_mem->countRead();
  return( hi - lo );
  }
@@ -203,10 +202,9 @@ const std::vector< T > & DiskFile< T >::contents( void ) const
 
 template< class T >
 DiskReader< T >::DiskReader( const DiskFile< T > & f )
- : f_file( &f ) , f_lease( f.memory() , f.memory().blockSize() ) ,
-   f_buf( f.memory().blockSize() ) , f_block( std::size_t( -1 ) )
-{
- }
+    : f_file( &f ) , f_lease( f.memory() , f.memory().blockSize() ) ,
+      f_buf( f.memory().blockSize() ) , f_block( std::size_t( -1 ) )
+{ }
 
 template< class T >
 void DiskReader< T >::load( std::size_t b )
@@ -262,7 +260,7 @@ const T & DiskReader< T >::at( std::size_t i )
 
 template< class T >
 DiskWriter< T >::DiskWriter( DiskFile< T > & f )
- : f_file( &f ) , f_lease( f.memory() , f.memory().blockSize() )
+    : f_file( &f ) , f_lease( f.memory() , f.memory().blockSize() )
 {
  ADS_PRE( f.size() % f.memory().blockSize() == 0 );
  f_buf.reserve( f.memory().blockSize() );

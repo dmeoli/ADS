@@ -15,15 +15,17 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 bool isInterleaving( const S & X , const S & Y , const S & Z )
 {
  const std::size_t n = X.size() , m = Y.size();
  if( Z.size() != n + m )
   return( false );
- std::vector< char > D( m + 1 , 0 );           // the row i of the table
+ std::vector< char > D( m + 1 , 0 );  // the row i of the table
  D[ 0 ] = 1;
  for( std::size_t j = 1 ; j <= m ; ++j )
   D[ j ] = D[ j - 1 ] && ( Y[ j - 1 ] == Z[ j - 1 ] );
@@ -31,7 +33,7 @@ bool isInterleaving( const S & X , const S & Y , const S & Z )
   D[ 0 ] = D[ 0 ] && ( X[ i - 1 ] == Z[ i - 1 ] );
   for( std::size_t j = 1 ; j <= m ; ++j )
    D[ j ] = ( D[ j ] && ( X[ i - 1 ] == Z[ i + j - 1 ] ) ) ||
-            ( D[ j - 1 ] && ( Y[ j - 1 ] == Z[ i + j - 1 ] ) );
+	    ( D[ j - 1 ] && ( Y[ j - 1 ] == Z[ i + j - 1 ] ) );
   }
  return( D[ m ] != 0 );
  }
@@ -39,24 +41,25 @@ bool isInterleaving( const S & X , const S & Y , const S & Z )
 /*--------------------------------------------------------------------------*/
 
 inline bool isInterleaving( const std::string & X , const std::string & Y ,
-                            const std::string & Z )
+			    const std::string & Z )
 {
  return( isInterleaving< std::string >( X , Y , Z ) );
  }
 
 /*--------------------------------------------------------------------------*/
 
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 std::size_t scsLength( const S & X , const S & Y )
 {
  const std::size_t n = X.size() , m = Y.size();
- std::vector< std::size_t > L( m + 1 , 0 );    // the row i of the LCS
+ std::vector< std::size_t > L( m + 1 , 0 );  // the row i of the LCS
  for( std::size_t i = 1 ; i <= n ; ++i ) {
-  std::size_t diagonal = 0;                     // L[ i - 1 ][ j - 1 ]
+  std::size_t diagonal = 0;  // L[ i - 1 ][ j - 1 ]
   for( std::size_t j = 1 ; j <= m ; ++j ) {
    const std::size_t up = L[ j ];
-   L[ j ] = X[ i - 1 ] == Y[ j - 1 ] ? diagonal + 1
-                                     : std::max( up , L[ j - 1 ] );
+   L[ j ] =
+     X[ i - 1 ] == Y[ j - 1 ] ? diagonal + 1 : std::max( up , L[ j - 1 ] );
    diagonal = up;
    }
   }
@@ -74,7 +77,8 @@ inline std::size_t scsLength( const std::string & X , const std::string & Y )
 
 /*--------------------------------------------------------------------------*/
 
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 S shortestCommonSupersequence( const S & X , const S & Y )
 {
  const auto L = lcsTable( X , Y );
@@ -95,24 +99,25 @@ S shortestCommonSupersequence( const S & X , const S & Y )
  while( j > 0 )
   out.push_back( Y[ --j ] );
  std::reverse( out.begin() , out.end() );
- ADS_POST( out.size() == X.size() + Y.size() -
-                         std::size_t( L[ X.size() ][ Y.size() ] ) );
+ ADS_POST( out.size() ==
+	   X.size() + Y.size() - std::size_t( L[ X.size() ][ Y.size() ] ) );
  ADS_AUDIT( detail::isSubsequence( X , out ) &&
-            detail::isSubsequence( Y , out ) );
+	    detail::isSubsequence( Y , out ) );
  return( out );
  }
 
 /*--------------------------------------------------------------------------*/
 
 inline std::string shortestCommonSupersequence( const std::string & X ,
-                                                const std::string & Y )
+						const std::string & Y )
 {
  return( shortestCommonSupersequence< std::string >( X , Y ) );
  }
 
 /*--------------------------------------------------------------------------*/
 
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 std::uint64_t subsequenceOccurrences( const S & P , const S & T )
 {
  const std::size_t m = P.size();
@@ -128,34 +133,35 @@ std::uint64_t subsequenceOccurrences( const S & P , const S & T )
 /*--------------------------------------------------------------------------*/
 
 inline std::uint64_t subsequenceOccurrences( const std::string & P ,
-                                             const std::string & T )
+					     const std::string & T )
 {
  return( subsequenceOccurrences< std::string >( P , T ) );
  }
 
 /*--------------------------------------------------------------------------*/
 
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 S lcs3( const S & X , const S & Y , const S & Z )
 {
  const std::size_t a = X.size() , b = Y.size() , c = Z.size();
  std::vector< std::size_t > D( ( a + 1 ) * ( b + 1 ) * ( c + 1 ) , 0 );
- auto at = [ & ]( std::size_t i , std::size_t j , std::size_t k )
-                                                       -> std::size_t & {
+ auto at = [ & ]( std::size_t i , std::size_t j ,
+		  std::size_t k ) -> std::size_t & {
   return( D[ ( i * ( b + 1 ) + j ) * ( c + 1 ) + k ] );
   };
  for( std::size_t i = 1 ; i <= a ; ++i )
   for( std::size_t j = 1 ; j <= b ; ++j )
    for( std::size_t k = 1 ; k <= c ; ++k )
-    at( i , j , k ) = ( X[ i - 1 ] == Y[ j - 1 ] ) &&
-                      ( Y[ j - 1 ] == Z[ k - 1 ] )
-                      ? at( i - 1 , j - 1 , k - 1 ) + 1
-                      : std::max( { at( i - 1 , j , k ) ,
-                                    at( i , j - 1 , k ) ,
-                                    at( i , j , k - 1 ) } );
+    at( i , j , k ) =
+      ( X[ i - 1 ] == Y[ j - 1 ] ) && ( Y[ j - 1 ] == Z[ k - 1 ] )
+	? at( i - 1 , j - 1 , k - 1 ) + 1
+	: std::max(
+	    { at( i - 1 , j , k ) , at( i , j - 1 , k ) ,
+	      at( i , j , k - 1 ) } );
  S out;
- for( std::size_t i = a , j = b , k = c ; ( i > 0 ) && ( j > 0 ) &&
-                                          ( k > 0 ) ; )
+ for( std::size_t i = a , j = b , k = c ; ( i > 0 ) && ( j > 0 ) && ( k > 0 ) ;
+      )
   if( ( X[ i - 1 ] == Y[ j - 1 ] ) && ( Y[ j - 1 ] == Z[ k - 1 ] ) ) {
    out.push_back( X[ i - 1 ] );
    --i;
@@ -171,15 +177,15 @@ S lcs3( const S & X , const S & Y , const S & Z )
  std::reverse( out.begin() , out.end() );
  ADS_POST( out.size() == at( a , b , c ) );
  ADS_AUDIT( detail::isSubsequence( out , X ) &&
-            detail::isSubsequence( out , Y ) &&
-            detail::isSubsequence( out , Z ) );
+	    detail::isSubsequence( out , Y ) &&
+	    detail::isSubsequence( out , Z ) );
  return( out );
  }
 
 /*--------------------------------------------------------------------------*/
 
 inline std::string lcs3( const std::string & X , const std::string & Y ,
-                         const std::string & Z )
+			 const std::string & Z )
 {
  return( lcs3< std::string >( X , Y , Z ) );
  }

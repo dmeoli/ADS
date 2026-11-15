@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< std::unsigned_integral U , class V , int W >
  requires TrieWidth< U , W >
@@ -32,8 +33,8 @@ YFastTrie< U , V , W >::YFastTrie( YFastTrie && o ) : YFastTrie( 1 )
 
 template< std::unsigned_integral U , class V , int W >
  requires TrieWidth< U , W >
-YFastTrie< U , V , W > & YFastTrie< U , V , W >::operator=( YFastTrie && o )
- noexcept
+YFastTrie< U , V , W > &
+YFastTrie< U , V , W >::operator=( YFastTrie && o ) noexcept
 {
  std::swap( f_x , o.f_x );
  std::swap( f_g , o.f_g );
@@ -112,8 +113,8 @@ bool YFastTrie< U , V , W >::insert( U x , const V & v )
   if( ( x != r ) && ( f_g() % std::uint64_t( W ) == 0 ) ) {
    // x becomes the representative of the keys of T up to it
    auto [ L , y , R ] = std::move( *T ).split( x );
-   Group * G = new Group( Group::join( std::move( L ) , x , *y ,
-                                       Group( f_g() ) ) );
+   Group * G =
+     new Group( Group::join( std::move( L ) , x , *y , Group( f_g() ) ) );
    *T = std::move( R );
    f_x.insert( x , G );
    }
@@ -134,7 +135,7 @@ bool YFastTrie< U , V , W >::remove( U x )
   return( false );
  T->remove( x );
  --f_n;
- if( ( x == r ) && ( x != TOP ) ) {   // the group joins the next one
+ if( ( x == r ) && ( x != TOP ) ) {  // the group joins the next one
   Group * N = ( *std::next( it ) ).second;
   *N = Group::join2( std::move( *T ) , std::move( *N ) );
   delete T;
@@ -161,10 +162,10 @@ bool YFastTrie< U , V , W >::consistent( void ) const
  if( f_n > 256 )
   return( true );
  std::size_t n = 0;
- std::optional< U > prev;   // the previous representative
+ std::optional< U > prev;  // the previous representative
  for( const auto & e : f_x ) {
-  const U & r = e.first;   // a lambda may not capture a structured binding
-  const auto & T = e.second;   // under OpenMP in clang
+  const U & r = e.first;      // a lambda may not capture a structured binding
+  const auto & T = e.second;  // under OpenMP in clang
   bool ok = true;
   T->forEach( [ & ]( const U & k , const V & ) {
    ok = ok && ( k <= r ) && ( ! prev || ( k > *prev ) );

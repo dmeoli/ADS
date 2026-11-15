@@ -46,7 +46,7 @@
 
 #ifndef __ADS_LongestCommonSubsequence
  #define __ADS_LongestCommonSubsequence
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -65,7 +65,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the table of the lengths of the LCS of the prefixes of \f$ P \f$ and
 /// \f$ T \f$
@@ -159,8 +160,8 @@ S lcs( const S & P , const S & T );
 /// \end{array}}
 /// \f]
 template< class S >
-std::vector< std::pair< char , typename S::value_type > > diff(
-                                                 const S & P , const S & T );
+std::vector< std::pair< char , typename S::value_type > > diff( const S & P ,
+							       const S & T );
 
 /// the longest common substring: its length and where it ends in
 /// \f$ P \f$ and \f$ T \f$, the first one found by rows of \f$ P \f$;
@@ -199,7 +200,7 @@ longestCommonSubstring( const S & P , const S & T );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LongestCommonSubsequence.h included */
+#endif /* LongestCommonSubsequence.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------ End File LongestCommonSubsequence.h -------------------*/

@@ -217,10 +217,10 @@ follows, `Growth` being the structure of (13.1):
 // declarations of <ADS/algorithm/MasterTheorem.h> <ADS/algorithm/AkraBazzi.h>
 Growth master( double a , double b , double beta , double k = 0 );
 Growth linear( double a , double beta );
-double akraBazziExponent( const std::vector< std::pair< double ,
-                          double > > & ab );
-Growth akraBazzi( const std::vector< std::pair< double ,
-                  double > > & ab , double beta , double k = 0 );
+double
+akraBazziExponent( const std::vector< std::pair< double , double > > & ab );
+Growth akraBazzi( const std::vector< std::pair< double , double > > & ab ,
+                  double beta , double k = 0 );
 ```
 
 ## 13.2 Amortized analysis {#sec-13-2}
@@ -368,11 +368,9 @@ the three pegs and the function that receives each move:
 ```cpp
 // declarations of <ADS/algorithm/Hanoi.h>
 template< class F >
-void hanoi_recursive( int n , int source , int dest , int middle ,
-                      F && f );
+void hanoi_recursive( int n , int source , int dest , int middle , F && f );
 template< class F >
-void hanoi_iterative( int n , int source , int dest , int middle ,
-                      F && f );
+void hanoi_iterative( int n , int source , int dest , int middle , F && f );
 template< class F >
 void hanoi_iterative_labels( int n , int source , int dest , int middle ,
                              F && f );
@@ -475,12 +473,12 @@ are declared as follows:
 // declarations of <ADS/algorithm/Paradigms.h>
 template< class Z , class Next , class Last , class A , class O >
 auto enumerateSearch( Z z , Next && next , Last && last , A && a , O && o )
- -> std::optional< decltype( o( z ) ) >;
-template< class Z , class Next , class Last , class A , class O ,
-          class M , class B >
-auto enumerateOptimize( Z z , Next && next , Last && last , A && a ,
-                        O && o , M && m , B && better )
- -> std::optional< decltype( o( z ) ) >;
+  -> std::optional< decltype( o( z ) ) >;
+template< class Z , class Next , class Last , class A , class O , class M ,
+          class B >
+auto enumerateOptimize( Z z , Next && next , Last && last , A && a , O && o ,
+                        M && m , B && better )
+  -> std::optional< decltype( o( z ) ) >;
 template< class N , class C , class P , class L , class V >
 bool backtrack( const N & node , C && children , P && prune , L && leaf ,
                 V && visit );
@@ -739,16 +737,15 @@ Segment< T > maxSumSegment( const std::vector< T > & D );
 template< class T >
 Segment< T > maxSumSegmentPrefix( const std::vector< T > & D );
 template< class T >
-Segment< T > maxSumSegmentLength( const std::vector< T > & D ,
-                                  std::size_t L , std::size_t U );
+Segment< T > maxSumSegmentLength( const std::vector< T > & D , std::size_t L ,
+                                  std::size_t U );
 template< class T >
 Segment< T > longestSegmentAtLeast( const std::vector< T > & D , T t );
 template< class T >
-Segment< T >
-longestSegmentAverageAtLeast( const std::vector< T > & D , T p , T q );
+Segment< T > longestSegmentAverageAtLeast( const std::vector< T > & D , T p ,
+                                           T q );
 template< class T >
-Segment< T > maxDensitySegment( const std::vector< T > & D ,
-                                std::size_t L );
+Segment< T > maxDensitySegment( const std::vector< T > & D , std::size_t L );
 std::vector< int > gcIndicator( const std::string & dna );
 template< class T >
 T maxSubarraySum( const std::vector< T > & A );
@@ -925,13 +922,13 @@ is returned as the pair of its first place and of its length:
 // declarations of <ADS/algorithm/SequenceQueries.h>
 //                  <ADS/optimization/SequenceProblems.h>
 template< class T , class C = std::less<> >
-std::vector< std::size_t >
-smallerToTheRight( const std::vector< T > & A , C less = C() );
+std::vector< std::size_t > smallerToTheRight( const std::vector< T > & A ,
+                                              C less = C() );
 template< std::ranges::random_access_range R >
+std::pair< std::size_t , std::size_t > longestKDistinctRun( const R & S ,
+                                                           std::size_t k );
+template< class T , class Hash = std::hash< T > >
 std::pair< std::size_t , std::size_t >
-longestKDistinctRun( const R & S , std::size_t k );
-template< class T , class Hash = std::hash< T >
-> std::pair< std::size_t , std::size_t >
 longestDistinctSegment( const std::vector< T > & A );
 template< class T >
  requires( std::is_arithmetic_v< T > && ! std::is_same_v< T , bool > )
@@ -1068,9 +1065,8 @@ taken:
 std::pair< long , std::vector< std::size_t > >
 knapsack( const std::vector< long > & p , const std::vector< long > & v ,
           long C );
-long zaino( const std::vector< long > & p ,
-            const std::vector< long > & v , long C ,
-            long *solved = nullptr );
+long zaino( const std::vector< long > & p , const std::vector< long > & v ,
+            long C , long * solved = nullptr );
 ```
 
 ## 13.8 Dynamic programming on a capacity {#sec-13-8}
@@ -1225,15 +1221,14 @@ being of the type `C`:
 //                  <ADS/optimization/CoinChange.h>
 template< class T , class V >
 std::pair< T , std::vector< std::size_t > >
-unboundedKnapsack( const std::vector< T > & p ,
-                   const std::vector< V > & v , V C );
+unboundedKnapsack( const std::vector< T > & p , const std::vector< V > & v ,
+                   V C );
 template< class T >
 std::pair< T , std::vector< std::size_t > >
 rodCutting( const std::vector< T > & price , std::size_t L );
 template< class T , class V >
-std::optional< T >
-minValueExactWeight( const std::vector< V > & w ,
-                     const std::vector< T > & v , V W );
+std::optional< T > minValueExactWeight( const std::vector< V > & w ,
+                                        const std::vector< T > & v , V W );
 std::optional< long > optimalChange( const std::vector< long > & coins ,
                                      long c );
 template< class C = std::uint64_t , class V >
@@ -1522,8 +1517,8 @@ std::vector< T > lis( const std::vector< T > & A );
 template< class T >
 std::size_t lisLength( const std::vector< T > & A );
 template< class T , class Less >
-std::vector< std::size_t >
-longestChainSubsequence( const std::vector< T > & S , Less less );
+std::vector< std::size_t > longestChainSubsequence( const std::vector< T > & S ,
+                                                    Less less );
 template< std::integral T >
 std::vector< T > largestDivisibleSubset( std::vector< T > A );
 template< class T >
@@ -1771,18 +1766,19 @@ of the two children of each key ($-1$ for none):
 //                  <ADS/optimization/CoinGame.h>
 //                  <ADS/optimization/LinearPartition.h>
 //                  <ADS/optimization/GridPaths.h>
-template< class T > struct OptimalSearchTree {
- T cost;                       // the weighted path length
- int root;                     // the key at the root
+template< class T >
+struct OptimalSearchTree
+{
+ T cost;    // the weighted path length
+ int root;  // the key at the root
  std::vector< int > left;
  std::vector< int > right;
  };
 template< class T >
 T coinsInALine( const std::vector< T > & V );
 template< class T >
-OptimalSearchTree< T >
-optimalSearchTree( const std::vector< T > & p ,
-                   const std::vector< T > & q );
+OptimalSearchTree< T > optimalSearchTree( const std::vector< T > & p ,
+                                          const std::vector< T > & q );
 template< class T >
 OptimalSearchTree< T > optimalSearchTree( const std::vector< T > & p );
 template< class T >
@@ -2085,23 +2081,23 @@ The greedy algorithms of the section are declared as follows:
 //                  <ADS/optimization/ShortestJobFirst.h>
 //                  <ADS/optimization/CoinChange.h>
 //                  <ADS/algorithm/SequenceQueries.h>
-std::vector< double >
-fractionalKnapsack( const std::vector< double > & p ,
-                    const std::vector< double > & v , double C );
+std::vector< double > fractionalKnapsack( const std::vector< double > & p ,
+                                          const std::vector< double > & v ,
+                                          double C );
 std::vector< std::size_t >
 independentSet( const std::vector< std::pair< long , long > > & I );
-std::vector< int > intervalColoring( const std::vector< std::pair< long ,
-                                     long > > & I );
+std::vector< int >
+intervalColoring( const std::vector< std::pair< long , long > > & I );
 std::vector< double > towers( std::vector< double > k , double d );
 template< class T >
 std::optional< std::vector< std::size_t > >
-minimumIntervalCover( const std::vector< std::pair< T , T > > & I ,
-                      T lo , T hi );
+minimumIntervalCover( const std::vector< std::pair< T , T > > & I , T lo ,
+                      T hi );
 template< class T >
 std::vector< std::size_t > shortestJobFirst( const std::vector< T > & t );
 template< class T , class W >
-std::vector< std::size_t >
-smithOrder( const std::vector< T > & t , const std::vector< W > & w );
+std::vector< std::size_t > smithOrder( const std::vector< T > & t ,
+                                       const std::vector< W > & w );
 template< class T >
 T totalCompletion( const std::vector< T > & t ,
                    const std::vector< std::size_t > & A );
@@ -2112,8 +2108,8 @@ auto weightedCompletion( const std::vector< T > & t ,
 template< class T , class W = T >
  requires std::is_arithmetic_v< T >
 W lineAssignment( std::vector< T > H , std::vector< T > L );
-std::optional< std::vector< long > >
-greedyChange( std::vector< long > coins , long c );
+std::optional< std::vector< long > > greedyChange( std::vector< long > coins ,
+                                                   long c );
 ```
 
 ## 13.12 Monte Carlo algorithms {#sec-13-12}
@@ -2207,8 +2203,7 @@ bool zeroPolynomial( F && p , std::size_t n , long d , int K , R & rng );
 template< class T , class R >
 bool freivalds( const std::vector< std::vector< T > > & A ,
                 const std::vector< std::vector< T > > & B ,
-                const std::vector< std::vector< T > > & C , int K ,
-                R & rng );
+                const std::vector< std::vector< T > > & C , int K , R & rng );
 template< class F , class R >
 bool halfSatisfiable( F && f , std::size_t n , int K , R & rng );
 ```

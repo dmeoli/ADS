@@ -134,7 +134,8 @@
 
 using namespace ADS::bench;
 
-namespace {
+namespace
+{
 
 constexpr std::size_t kQueries = 1000000;
 
@@ -142,10 +143,14 @@ constexpr std::size_t kQueries = 1000000;
 template< class F >
 double queries( const std::vector< std::uint64_t > & X , int r , F && f )
 {
- return( median( [](){ return( 0 ); } , [ & ]( int ) {
-          std::uint64_t s = 0;
-          for( const auto x : X ) s += std::uint64_t( f( x ) );
-          sink = sink + s; } , r , X.size() ) );
+ return( median( []() { return( 0 ); } ,
+		  [ & ]( int ) {
+		   std::uint64_t s = 0;
+		   for( const auto x : X )
+		    s += std::uint64_t( f( x ) );
+		   sink = sink + s;
+		   } ,
+		  r , X.size() ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -154,10 +159,11 @@ double queries( const std::vector< std::uint64_t > & X , int r , F && f )
 
 /// the input of a cell of the bit vectors: the words, the bits as bools
 /// and the queries
-struct Bits {
+struct Bits
+{
  std::size_t n = 0 , ones = 0;
  std::vector< std::uint64_t > words;
- std::vector< std::uint64_t > R , S1 , S0;   ///< rank places, select ks
+ std::vector< std::uint64_t > R , S1 , S0;  ///< rank places, select ks
  };
 
 Bits makeBits( std::size_t n , double d , unsigned seed )
@@ -190,38 +196,55 @@ using None = std::nullptr_t;
 /// queries are lambdas, inlined into the loop of the queries
 template< class B , class R , class S1 , class S0 , class Z >
 void bitvector( const std::string & dname , const Bits & b ,
-                const std::string & who , B build , R rank , S1 sel1 ,
-                S0 sel0 , Z bits , int r )
+		const std::string & who , B build , R rank , S1 sel1 ,
+		S0 sel0 ,
+		Z bits , int r )
 {
  if( skip( who ) )
   return;
- struct { const std::string & who; B & build; R & rank; S1 & sel1; S0 & sel0;
-          Z & bits; } c{ who , build , rank , sel1 , sel0 , bits };
- print( "bitvector" , "build " + dname , b.n , c.who , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          auto s = c.build( b );
-          sink = sink + std::uint64_t( s != nullptr ); } , r , b.n / 64 ) );
+ struct
+ {
+  const std::string & who;
+  B & build;
+  R & rank;
+  S1 & sel1;
+  S0 & sel0;
+  Z & bits;
+  } c{ who , build , rank , sel1 , sel0 , bits };
+ print( "bitvector" , "build " + dname , b.n , c.who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 auto s = c.build( b );
+		 sink = sink + std::uint64_t( s != nullptr );
+		 } ,
+		r , b.n / 64 ) );
  // the building with the first select of each value, which builds the
  // inventories of a directory that defers them
- print( "bitvector" , "build+select " + dname , b.n , c.who , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          auto s = c.build( b );
-          std::uint64_t x = 0;
-          if constexpr( ! std::is_same_v< S1 , None > )
-           x += std::uint64_t( c.sel1( *s , 1 ) );
-          if constexpr( ! std::is_same_v< S0 , None > )
-           x += std::uint64_t( c.sel0( *s , 1 ) );
-          sink = sink + x; } , r , b.n / 64 ) );
+ print( "bitvector" , "build+select " + dname , b.n , c.who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 auto s = c.build( b );
+		 std::uint64_t x = 0;
+		 if constexpr( ! std::is_same_v< S1 , None > )
+		  x += std::uint64_t( c.sel1( *s , 1 ) );
+		 if constexpr( ! std::is_same_v< S0 , None > )
+		  x += std::uint64_t( c.sel0( *s , 1 ) );
+		 sink = sink + x;
+		 } ,
+		r , b.n / 64 ) );
  const auto s = c.build( b );
  if constexpr( ! std::is_same_v< R , None > )
-  print( "bitvector" , "rank1 " + dname , b.n , c.who , queries( b.R , r ,
-          [ & ]( std::uint64_t x ) { return( c.rank( *s , x ) ); } ) );
+  print( "bitvector" , "rank1 " + dname , b.n , c.who ,
+	 queries( b.R , r ,
+		  [ & ]( std::uint64_t x ) { return( c.rank( *s , x ) ); } ) );
  if constexpr( ! std::is_same_v< S1 , None > )
-  print( "bitvector" , "select1 " + dname , b.n , c.who , queries( b.S1 ,
-          r , [ & ]( std::uint64_t x ) { return( c.sel1( *s , x ) ); } ) );
+  print( "bitvector" , "select1 " + dname , b.n , c.who ,
+	 queries( b.S1 , r ,
+		  [ & ]( std::uint64_t x ) { return( c.sel1( *s , x ) ); } ) );
  if constexpr( ! std::is_same_v< S0 , None > )
-  print( "bitvector" , "select0 " + dname , b.n , c.who , queries( b.S0 ,
-          r , [ & ]( std::uint64_t x ) { return( c.sel0( *s , x ) ); } ) );
+  print( "bitvector" , "select0 " + dname , b.n , c.who ,
+	 queries( b.S0 , r ,
+		  [ & ]( std::uint64_t x ) { return( c.sel0( *s , x ) ); } ) );
  print( "space" , "bitvector " + dname , b.n , c.who , c.bits( *s ) );
  }
 
@@ -229,22 +252,30 @@ void bitvector( const std::string & dname , const Bits & b ,
 /// benchmark rrr
 template< class B , class R , class S1 , class S0 , class Z >
 void compressed( const std::string & dname , const Bits & b ,
-                 const std::string & who , B build , R rank , S1 sel1 ,
-                 S0 sel0 , Z bits , int r )
+		 const std::string & who , B build , R rank , S1 sel1 ,
+		 S0 sel0 ,
+		 Z bits , int r )
 {
  if( skip( who ) )
   return;
- print( "rrr" , "build " + dname , b.n , who , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          auto s = build( b );
-          sink = sink + std::uint64_t( s != nullptr ); } , r , b.n / 64 ) );
+ print( "rrr" , "build " + dname , b.n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 auto s = build( b );
+		 sink = sink + std::uint64_t( s != nullptr );
+		 } ,
+		r , b.n / 64 ) );
  const auto s = build( b );
- print( "rrr" , "rank1 " + dname , b.n , who , queries( b.R , r ,
-         [ & ]( std::uint64_t i ) { return( rank( *s , i ) ); } ) );
- print( "rrr" , "select1 " + dname , b.n , who , queries( b.S1 , r ,
-         [ & ]( std::uint64_t x ) { return( sel1( *s , x ) ); } ) );
- print( "rrr" , "select0 " + dname , b.n , who , queries( b.S0 , r ,
-         [ & ]( std::uint64_t x ) { return( sel0( *s , x ) ); } ) );
+ print(
+   "rrr" , "rank1 " + dname , b.n , who ,
+   queries( b.R , r ,
+	    [ & ]( std::uint64_t i ) { return( rank( *s , i ) ); } ) );
+ print( "rrr" , "select1 " + dname , b.n , who ,
+	queries( b.S1 , r ,
+		 [ & ]( std::uint64_t x ) { return( sel1( *s , x ) ); } ) );
+ print( "rrr" , "select0 " + dname , b.n , who ,
+	queries( b.S0 , r ,
+		 [ & ]( std::uint64_t x ) { return( sel0( *s , x ) ); } ) );
  print( "space" , "rrr " + dname , b.n , who , bits( *s ) );
  }
 
@@ -260,8 +291,8 @@ BV adsBits( const Bits & b )
   BV v;
   v.reserve( b.n );
   for( std::size_t w = 0 ; w < b.words.size() ; ++w )
-   v.append( b.words[ w ] , int( std::min< std::size_t >( 64 ,
-                                                        b.n - 64 * w ) ) );
+   v.append( b.words[ w ] ,
+	     int( std::min< std::size_t >( 64 , b.n - 64 * w ) ) );
   return( v );
   }
  }
@@ -269,103 +300,142 @@ BV adsBits( const Bits & b )
 void bitvectors( std::size_t n , int r , unsigned seed )
 {
  const std::pair< double , const char * > D[] = { { 0.5 , "50%" } ,
-                                                  { 0.1 , "10%" } ,
-                                                  { 0.01 , "1%" } };
+						 { 0.1 , "10%" } ,
+						 { 0.01 , "1%" } };
  for( const auto & [ d , dname ] : D ) {
   const Bits b = makeBits( n , d , seed );
   const double nb = double( b.n );
   for( const char * who : { "ADS::RankSelect" , "ADS::RankSelect A/A" } )
-   bitvector( dname , b ,
-    who , []< class RS = ADS::RankSelect >( const Bits & b ) {
-     using Span = std::span< const std::uint64_t >;
-     if constexpr( std::is_constructible_v< RS , Span , std::size_t > )
-      return( std::make_unique< RS >( Span( b.words ) , b.n ) );
-     else return( std::make_unique< RS >( adsBits( b ) ) ); } ,
-    []( const ADS::RankSelect & s , std::uint64_t i ) {
-     return( s.rank1( i ) ); } ,
-    []( const ADS::RankSelect & s , std::uint64_t k ) {
-     return( s.select1( k ) ); } ,
-    []( const ADS::RankSelect & s , std::uint64_t k ) {
-     return( s.select0( k ) ); } ,
-    [ nb ]( const ADS::RankSelect & s ) {
-     return( double( s.size() + s.directoryBits() ) / nb ); } , r );
+   bitvector(
+     dname , b , who ,
+     []< class RS = ADS::RankSelect >( const Bits & b ) {
+      using Span = std::span< const std::uint64_t >;
+      if constexpr( std::is_constructible_v< RS , Span , std::size_t > )
+       return( std::make_unique< RS >( Span( b.words ) , b.n ) );
+      else
+       return( std::make_unique< RS >( adsBits( b ) ) );
+      } ,
+     []( const ADS::RankSelect & s , std::uint64_t i ) {
+      return( s.rank1( i ) );
+      } ,
+     []( const ADS::RankSelect & s , std::uint64_t k ) {
+      return( s.select1( k ) );
+      } ,
+     []( const ADS::RankSelect & s , std::uint64_t k ) {
+      return( s.select0( k ) );
+      } ,
+     [ nb ]( const ADS::RankSelect & s ) {
+      return( double( s.size() + s.directoryBits() ) / nb );
+      } ,
+     r );
   // the inventories of select built at the first select of each value
   using LRS = ADS::LazyRankSelect;
-  bitvector( dname , b ,
-   "ADS::RankSelect lazy" , []( const Bits & b ) {
-    return( std::make_unique< LRS >( std::span< const std::uint64_t >(
-                                      b.words ) , b.n ) ); } ,
-   []( const LRS & s , std::uint64_t i ) { return( s.rank1( i ) ); } ,
-   []( const LRS & s , std::uint64_t k ) { return( s.select1( k ) ); } ,
-   []( const LRS & s , std::uint64_t k ) { return( s.select0( k ) ); } ,
-   [ nb ]( const LRS & s ) {
-    return( double( s.size() + s.directoryBits() ) / nb ); } , r );
+  bitvector(
+    dname , b , "ADS::RankSelect lazy" ,
+    []( const Bits & b ) {
+     return( std::make_unique< LRS >(
+       std::span< const std::uint64_t >( b.words ) , b.n ) );
+     } ,
+    []( const LRS & s , std::uint64_t i ) { return( s.rank1( i ) ); } ,
+    []( const LRS & s , std::uint64_t k ) { return( s.select1( k ) ); } ,
+    []( const LRS & s , std::uint64_t k ) { return( s.select0( k ) ); } ,
+    [ nb ]( const LRS & s ) {
+     return( double( s.size() + s.directoryBits() ) / nb );
+     } ,
+    r );
 #ifdef ADS_HAS_RRR
   if( b.n <= 10000000 ) {
-   compressed( dname , b , "ADS::RRRBitVector" , []( const Bits & b ) {
-     return( std::make_unique< ADS::RRRBitVector >( adsBits( b ) ) ); } ,
-    []( const ADS::RRRBitVector & s , std::uint64_t i ) {
-     return( s.rank1( i ) ); } ,
-    []( const ADS::RRRBitVector & s , std::uint64_t k ) {
-     return( s.select1( k ) ); } ,
-    []( const ADS::RRRBitVector & s , std::uint64_t k ) {
-     return( s.select0( k ) ); } ,
-    [ nb ]( const ADS::RRRBitVector & s ) {
-     return( double( s.sizeInBits() ) / nb ); } , r );
+   compressed(
+     dname , b , "ADS::RRRBitVector" ,
+     []( const Bits & b ) {
+      return( std::make_unique< ADS::RRRBitVector >( adsBits( b ) ) );
+      } ,
+     []( const ADS::RRRBitVector & s , std::uint64_t i ) {
+      return( s.rank1( i ) );
+      } ,
+     []( const ADS::RRRBitVector & s , std::uint64_t k ) {
+      return( s.select1( k ) );
+      } ,
+     []( const ADS::RRRBitVector & s , std::uint64_t k ) {
+      return( s.select0( k ) );
+      } ,
+     [ nb ]( const ADS::RRRBitVector & s ) {
+      return( double( s.sizeInBits() ) / nb );
+      } ,
+     r );
 #ifdef ADS_HAS_SDSL
-   struct SR {
+   struct SR
+   {
     sdsl::rrr_vector< 63 > v;
     sdsl::rrr_vector< 63 >::rank_1_type rk;
     sdsl::rrr_vector< 63 >::select_1_type s1;
     sdsl::rrr_vector< 63 >::select_0_type s0;
     };
-   compressed( dname , b , "sdsl::rrr_vector<63>" , []( const Bits & b ) {
-     auto s = std::make_unique< SR >();
-     sdsl::bit_vector v( b.n , 0 );
-     std::copy( b.words.begin() , b.words.end() , v.data() );
-     s->v = sdsl::rrr_vector< 63 >( v );
-     s->rk = sdsl::rrr_vector< 63 >::rank_1_type( &s->v );
-     s->s1 = sdsl::rrr_vector< 63 >::select_1_type( &s->v );
-     s->s0 = sdsl::rrr_vector< 63 >::select_0_type( &s->v );
-     return( s ); } ,
-    []( const SR & s , std::uint64_t i ) { return( s.rk.rank( i ) ); } ,
-    []( const SR & s , std::uint64_t k ) { return( s.s1.select( k ) ); } ,
-    []( const SR & s , std::uint64_t k ) { return( s.s0.select( k ) ); } ,
-    [ nb ]( const SR & s ) {
-     return( 8 * double( sdsl::size_in_bytes( s.v ) ) / nb ); } , r );
+   compressed(
+     dname , b , "sdsl::rrr_vector<63>" ,
+     []( const Bits & b ) {
+      auto s = std::make_unique< SR >();
+      sdsl::bit_vector v( b.n , 0 );
+      std::copy( b.words.begin() , b.words.end() , v.data() );
+      s->v = sdsl::rrr_vector< 63 >( v );
+      s->rk = sdsl::rrr_vector< 63 >::rank_1_type( &s->v );
+      s->s1 = sdsl::rrr_vector< 63 >::select_1_type( &s->v );
+      s->s0 = sdsl::rrr_vector< 63 >::select_0_type( &s->v );
+      return( s );
+      } ,
+     []( const SR & s , std::uint64_t i ) { return( s.rk.rank( i ) ); } ,
+     []( const SR & s , std::uint64_t k ) { return( s.s1.select( k ) ); } ,
+     []( const SR & s , std::uint64_t k ) { return( s.s0.select( k ) ); } ,
+     [ nb ]( const SR & s ) {
+      return( 8 * double( sdsl::size_in_bytes( s.v ) ) / nb );
+      } ,
+     r );
 #endif
    }
 #endif
 #ifdef ADS_HAS_COMPACT
-  bitvector( dname , b , "ADS::CompactRankSelect" ,
-   []< class RS = ADS::CompactRankSelect >( const Bits & b ) {
-    using Span = std::span< const std::uint64_t >;
-    if constexpr( std::is_constructible_v< RS , Span , std::size_t > )
-     return( std::make_unique< RS >( Span( b.words ) , b.n ) );
-    else return( std::make_unique< RS >( adsBits( b ) ) ); } ,
-   []( const ADS::CompactRankSelect & s , std::uint64_t i ) {
-    return( s.rank1( i ) ); } ,
-   []( const ADS::CompactRankSelect & s , std::uint64_t k ) {
-    return( s.select1( k ) ); } ,
-   []( const ADS::CompactRankSelect & s , std::uint64_t k ) {
-    return( s.select0( k ) ); } ,
-   [ nb ]( const ADS::CompactRankSelect & s ) {
-    return( double( s.size() + s.directoryBits() ) / nb ); } , r );
+  bitvector(
+    dname , b , "ADS::CompactRankSelect" ,
+    []< class RS = ADS::CompactRankSelect >( const Bits & b ) {
+     using Span = std::span< const std::uint64_t >;
+     if constexpr( std::is_constructible_v< RS , Span , std::size_t > )
+      return( std::make_unique< RS >( Span( b.words ) , b.n ) );
+     else
+      return( std::make_unique< RS >( adsBits( b ) ) );
+     } ,
+    []( const ADS::CompactRankSelect & s , std::uint64_t i ) {
+     return( s.rank1( i ) );
+     } ,
+    []( const ADS::CompactRankSelect & s , std::uint64_t k ) {
+     return( s.select1( k ) );
+     } ,
+    []( const ADS::CompactRankSelect & s , std::uint64_t k ) {
+     return( s.select0( k ) );
+     } ,
+    [ nb ]( const ADS::CompactRankSelect & s ) {
+     return( double( s.size() + s.directoryBits() ) / nb );
+     } ,
+    r );
 #endif
 #ifdef ADS_HAS_IRS
   using IRS = ADS::InterleavedRankSelect;
-  bitvector( dname , b , "ADS::InterleavedRankSelect" ,
-   []( const Bits & b ) {
-    return( std::make_unique< IRS >( std::span< const std::uint64_t >(
-                                      b.words ) , b.n ) ); } ,
-   []( const IRS & s , std::uint64_t i ) { return( s.rank1( i ) ); } ,
-   []( const IRS & s , std::uint64_t k ) { return( s.select1( k ) ); } ,
-   []( const IRS & s , std::uint64_t k ) { return( s.select0( k ) ); } ,
-   [ nb ]( const IRS & s ) {
-    return( double( s.size() + s.directoryBits() ) / nb ); } , r );
+  bitvector(
+    dname , b , "ADS::InterleavedRankSelect" ,
+    []( const Bits & b ) {
+     return( std::make_unique< IRS >(
+       std::span< const std::uint64_t >( b.words ) , b.n ) );
+     } ,
+    []( const IRS & s , std::uint64_t i ) { return( s.rank1( i ) ); } ,
+    []( const IRS & s , std::uint64_t k ) { return( s.select1( k ) ); } ,
+    []( const IRS & s , std::uint64_t k ) { return( s.select0( k ) ); } ,
+    [ nb ]( const IRS & s ) {
+     return( double( s.size() + s.directoryBits() ) / nb );
+     } ,
+    r );
 #endif
 #ifdef ADS_HAS_SDSL
-  struct SdslV {
+  struct SdslV
+  {
    sdsl::bit_vector v;
    sdsl::rank_support_v< 1 > rk;
    sdsl::select_support_mcl< 1 > s1;
@@ -376,130 +446,172 @@ void bitvectors( std::size_t n , int r , unsigned seed )
    std::copy( b.words.begin() , b.words.end() , v.data() );
    return( v );
    };
-  bitvector( dname , b ,
-   "sdsl::rank_support_v+mcl" , [ & ]( const Bits & b ) {
-    auto s = std::make_unique< SdslV >();
-    s->v = sdslBits( b );
-    s->rk = sdsl::rank_support_v< 1 >( &s->v );
-    s->s1 = sdsl::select_support_mcl< 1 >( &s->v );
-    s->s0 = sdsl::select_support_mcl< 0 >( &s->v );
-    return( s ); } ,
-   []( const SdslV & s , std::uint64_t i ) { return( s.rk.rank( i ) ); } ,
-   []( const SdslV & s , std::uint64_t k ) { return( s.s1.select( k ) ); } ,
-   []( const SdslV & s , std::uint64_t k ) { return( s.s0.select( k ) ); } ,
-   [ nb ]( const SdslV & s ) {
-    return( 8 * double( sdsl::size_in_bytes( s.v ) +
-                        sdsl::size_in_bytes( s.rk ) +
-                        sdsl::size_in_bytes( s.s1 ) +
-                        sdsl::size_in_bytes( s.s0 ) ) / nb ); } , r );
-  struct SdslV5 {
+  bitvector(
+    dname , b , "sdsl::rank_support_v+mcl" ,
+    [ & ]( const Bits & b ) {
+     auto s = std::make_unique< SdslV >();
+     s->v = sdslBits( b );
+     s->rk = sdsl::rank_support_v< 1 >( &s->v );
+     s->s1 = sdsl::select_support_mcl< 1 >( &s->v );
+     s->s0 = sdsl::select_support_mcl< 0 >( &s->v );
+     return( s );
+     } ,
+    []( const SdslV & s , std::uint64_t i ) { return( s.rk.rank( i ) ); } ,
+    []( const SdslV & s , std::uint64_t k ) { return( s.s1.select( k ) ); } ,
+    []( const SdslV & s , std::uint64_t k ) { return( s.s0.select( k ) ); } ,
+    [ nb ]( const SdslV & s ) {
+     return(
+       8 *
+       double( sdsl::size_in_bytes( s.v ) + sdsl::size_in_bytes( s.rk ) +
+	       sdsl::size_in_bytes( s.s1 ) + sdsl::size_in_bytes( s.s0 ) ) /
+       nb );
+     } ,
+    r );
+  struct SdslV5
+  {
    sdsl::bit_vector v;
    sdsl::rank_support_v5< 1 > rk;
    };
-  bitvector( dname , b ,
-   "sdsl::rank_support_v5" , [ & ]( const Bits & b ) {
-    auto s = std::make_unique< SdslV5 >();
-    s->v = sdslBits( b );
-    s->rk = sdsl::rank_support_v5< 1 >( &s->v );
-    return( s ); } ,
-   []( const SdslV5 & s , std::uint64_t i ) { return( s.rk.rank( i ) ); } ,
-   None() , None() , [ nb ]( const SdslV5 & s ) {
-    return( 8 * double( sdsl::size_in_bytes( s.v ) +
-                        sdsl::size_in_bytes( s.rk ) ) / nb ); } , r );
+  bitvector(
+    dname , b , "sdsl::rank_support_v5" ,
+    [ & ]( const Bits & b ) {
+     auto s = std::make_unique< SdslV5 >();
+     s->v = sdslBits( b );
+     s->rk = sdsl::rank_support_v5< 1 >( &s->v );
+     return( s );
+     } ,
+    []( const SdslV5 & s , std::uint64_t i ) { return( s.rk.rank( i ) ); } ,
+    None() , None() ,
+    [ nb ]( const SdslV5 & s ) {
+     return(
+       8 * double( sdsl::size_in_bytes( s.v ) + sdsl::size_in_bytes( s.rk ) ) /
+       nb );
+     } ,
+    r );
 #endif
 #ifdef ADS_HAS_SUX
-  struct Sux {
+  struct Sux
+  {
    std::vector< std::uint64_t > v;
    std::unique_ptr< sux::bits::Rank9Sel<> > rs;
    std::unique_ptr< sux::bits::SimpleSelect<> > s1;
    std::unique_ptr< sux::bits::SimpleSelectZero<> > s0;
    };
-  bitvector( dname , b ,
-   "sux::Rank9Sel+SimpleSelect" , []( const Bits & b ) {
-    auto s = std::make_unique< Sux >();
-    s->v = b.words;
-    s->rs = std::make_unique< sux::bits::Rank9Sel<> >( s->v.data() , b.n );
-    s->s1 = std::make_unique< sux::bits::SimpleSelect<> >( s->v.data() ,
-                                                           b.n , 3 );
-    s->s0 = std::make_unique< sux::bits::SimpleSelectZero<> >( s->v.data() ,
-                                                               b.n , 3 );
-    return( s ); } ,
-   []( const Sux & s , std::uint64_t i ) { return( s.rs->rank( i ) ); } ,
-   []( const Sux & s , std::uint64_t k ) {
-    return( s.s1->select( k - 1 ) ); } ,
-   []( const Sux & s , std::uint64_t k ) {
-    return( s.s0->selectZero( k - 1 ) ); } ,
-   [ nb ]( const Sux & s ) {
-    return( ( nb + double( s.rs->bitCount() + s.s1->bitCount() +
-                           s.s0->bitCount() ) ) / nb ); } , r );
-  struct SuxR9 {
+  bitvector(
+    dname , b , "sux::Rank9Sel+SimpleSelect" ,
+    []( const Bits & b ) {
+     auto s = std::make_unique< Sux >();
+     s->v = b.words;
+     s->rs = std::make_unique< sux::bits::Rank9Sel<> >( s->v.data() , b.n );
+     s->s1 =
+       std::make_unique< sux::bits::SimpleSelect<> >( s->v.data() , b.n , 3 );
+     s->s0 = std::make_unique< sux::bits::SimpleSelectZero<> >( s->v.data() ,
+								b.n , 3 );
+     return( s );
+     } ,
+    []( const Sux & s , std::uint64_t i ) { return( s.rs->rank( i ) ); } ,
+    []( const Sux & s ,
+	std::uint64_t k ) { return( s.s1->select( k - 1 ) ); } ,
+    []( const Sux & s , std::uint64_t k ) {
+     return( s.s0->selectZero( k - 1 ) );
+     } ,
+    [ nb ]( const Sux & s ) {
+     return( ( nb + double( s.rs->bitCount() + s.s1->bitCount() +
+			     s.s0->bitCount() ) ) /
+	      nb );
+     } ,
+    r );
+  struct SuxR9
+  {
    std::vector< std::uint64_t > v;
    std::unique_ptr< sux::bits::Rank9Sel<> > rs;
    };
-  bitvector( dname , b ,
-   "sux::Rank9Sel" , []( const Bits & b ) {
-    auto s = std::make_unique< SuxR9 >();
-    s->v = b.words;
-    s->rs = std::make_unique< sux::bits::Rank9Sel<> >( s->v.data() , b.n );
-    return( s ); } ,
-   []( const SuxR9 & s , std::uint64_t i ) { return( s.rs->rank( i ) ); } ,
-   []( const SuxR9 & s , std::uint64_t k ) {
-    return( s.rs->select( k - 1 ) ); } , None() ,
-   [ nb ]( const SuxR9 & s ) {
-    return( ( nb + double( s.rs->bitCount() ) ) / nb ); } , r );
+  bitvector(
+    dname , b , "sux::Rank9Sel" ,
+    []( const Bits & b ) {
+     auto s = std::make_unique< SuxR9 >();
+     s->v = b.words;
+     s->rs = std::make_unique< sux::bits::Rank9Sel<> >( s->v.data() , b.n );
+     return( s );
+     } ,
+    []( const SuxR9 & s , std::uint64_t i ) { return( s.rs->rank( i ) ); } ,
+    []( const SuxR9 & s , std::uint64_t k ) {
+     return( s.rs->select( k - 1 ) );
+     } ,
+    None() ,
+    [ nb ]( const SuxR9 & s ) {
+     return( ( nb + double( s.rs->bitCount() ) ) / nb );
+     } ,
+    r );
 #endif
 #ifdef ADS_HAS_PASTA
   // the bits of a directory of pasta: those of its rank (the base class,
   // which the select of the derived class leaves out) and of its select
-  using FlatBase = pasta::FlatRank< pasta::OptimizedFor::DONT_CARE ,
-                                    pasta::BitVector >;
+  using FlatBase =
+    pasta::FlatRank< pasta::OptimizedFor::DONT_CARE , pasta::BitVector >;
   using WideBase = pasta::WideRank< pasta::OptimizedFor::DONT_CARE >;
   auto pasta = [ & ]< class RS , class Base >( const char * who , RS * ,
-                                               Base * ) {
-   struct P {
+					      Base * ) {
+   struct P
+   {
     pasta::BitVector v;
     std::unique_ptr< RS > rs;
     };
-   bitvector( dname , b , who , []( const Bits & b ) {
-     auto s = std::make_unique< P >();
-     s->v = pasta::BitVector( b.n , false );
-     std::copy( b.words.begin() , b.words.end() , s->v.data().begin() );
-     s->rs = std::make_unique< RS >( s->v );
-     return( s ); } ,
-    []( const P & s , std::uint64_t i ) { return( s.rs->rank1( i ) ); } ,
-    []( const P & s , std::uint64_t k ) { return( s.rs->select1( k ) ); } ,
-    []( const P & s , std::uint64_t k ) { return( s.rs->select0( k ) ); } ,
-    [ nb ]( const P & s ) {
-     return( 8 * double( s.v.space_usage() + s.rs->space_usage() +
-                         s.rs->Base::space_usage() ) / nb ); } , r );
+   bitvector(
+     dname , b , who ,
+     []( const Bits & b ) {
+      auto s = std::make_unique< P >();
+      s->v = pasta::BitVector( b.n , false );
+      std::copy( b.words.begin() , b.words.end() , s->v.data().begin() );
+      s->rs = std::make_unique< RS >( s->v );
+      return( s );
+      } ,
+     []( const P & s , std::uint64_t i ) { return( s.rs->rank1( i ) ); } ,
+     []( const P & s , std::uint64_t k ) { return( s.rs->select1( k ) ); } ,
+     []( const P & s , std::uint64_t k ) { return( s.rs->select0( k ) ); } ,
+     [ nb ]( const P & s ) {
+      return( 8 *
+	       double( s.v.space_usage() + s.rs->space_usage() +
+		       s.rs->Base::space_usage() ) /
+	       nb );
+      } ,
+     r );
    };
   pasta( "pasta::FlatRankSelect" , ( pasta::FlatRankSelect<> * )nullptr ,
-         ( FlatBase * )nullptr );
-  pasta( "pasta::FlatRankSelect intrinsics" ,
-         ( pasta::FlatRankSelect< pasta::OptimizedFor::DONT_CARE ,
-                                  pasta::FindL2FlatWith::INTRINSICS > * )
-          nullptr , ( FlatBase * )nullptr );
+	 ( FlatBase * )nullptr );
+  pasta(
+    "pasta::FlatRankSelect intrinsics" ,
+    ( pasta::FlatRankSelect< pasta::OptimizedFor::DONT_CARE ,
+			     pasta::FindL2FlatWith::INTRINSICS > * )nullptr ,
+    ( FlatBase * )nullptr );
   pasta( "pasta::WideRankSelect" , ( pasta::WideRankSelect<> * )nullptr ,
-         ( WideBase * )nullptr );
+	 ( WideBase * )nullptr );
 #endif
 #ifdef ADS_HAS_SUCCINCT
-  bitvector( dname , b ,
-   "succinct::rs_bit_vector" , []( const Bits & b ) {
-    succinct::bit_vector_builder bb( b.n );
-    for( std::size_t w = 0 ; w < b.words.size() ; ++w )
-     bb.set_bits( 64 * w , b.words[ w ] ,
-                  std::min< std::size_t >( 64 , b.n - 64 * w ) );
-    return( std::make_unique< succinct::rs_bit_vector >( &bb , true ,
-                                                         true ) ); } ,
-   []( const succinct::rs_bit_vector & s , std::uint64_t i ) {
-    return( s.rank( i ) ); } ,
-   []( const succinct::rs_bit_vector & s , std::uint64_t k ) {
-    return( s.select( k - 1 ) ); } ,
-   []( const succinct::rs_bit_vector & s , std::uint64_t k ) {
-    return( s.select0( k - 1 ) ); } ,
-   [ nb ]( const succinct::rs_bit_vector & s ) {
-    auto & t = const_cast< succinct::rs_bit_vector & >( s );
-    return( 8 * double( succinct::mapper::size_of( t ) ) / nb ); } , r );
+  bitvector(
+    dname , b , "succinct::rs_bit_vector" ,
+    []( const Bits & b ) {
+     succinct::bit_vector_builder bb( b.n );
+     for( std::size_t w = 0 ; w < b.words.size() ; ++w )
+      bb.set_bits( 64 * w , b.words[ w ] ,
+		   std::min< std::size_t >( 64 , b.n - 64 * w ) );
+     return( std::make_unique< succinct::rs_bit_vector >( &bb , true ,
+							  true ) );
+     } ,
+    []( const succinct::rs_bit_vector & s , std::uint64_t i ) {
+     return( s.rank( i ) );
+     } ,
+    []( const succinct::rs_bit_vector & s , std::uint64_t k ) {
+     return( s.select( k - 1 ) );
+     } ,
+    []( const succinct::rs_bit_vector & s , std::uint64_t k ) {
+     return( s.select0( k - 1 ) );
+     } ,
+    [ nb ]( const succinct::rs_bit_vector & s ) {
+     auto & t = const_cast< succinct::rs_bit_vector & >( s );
+     return( 8 * double( succinct::mapper::size_of( t ) ) / nb );
+     } ,
+    r );
 #endif
   }
  }
@@ -512,26 +624,39 @@ void bitvectors( std::size_t n , int r , unsigned seed )
 /// 0, and nextGEQ( x ), the number of the items below x
 template< class B , class A , class G , class Z >
 void eliasFano( const std::string & tag ,
-                const std::vector< std::uint64_t > & X , std::uint64_t u ,
-                const std::vector< std::uint64_t > & I ,
-                const std::vector< std::uint64_t > & Q ,
-                const std::string & who , B build , A access , G geq ,
-                Z bits , int r )
+		const std::vector< std::uint64_t > & X , std::uint64_t u ,
+		const std::vector< std::uint64_t > & I ,
+		const std::vector< std::uint64_t > & Q ,
+		const std::string & who , B build , A access , G geq , Z bits ,
+		int r )
 {
  if( skip( who ) )
   return;
- struct { const std::string & who; B & build; A & access; G & geq;
-          Z & bits; } c{ who , build , access , geq , bits };
+ struct
+ {
+  const std::string & who;
+  B & build;
+  A & access;
+  G & geq;
+  Z & bits;
+  } c{ who , build , access , geq , bits };
  const std::size_t n = X.size();
- print( "eliasfano" , "build" + tag , n , c.who , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          auto s = c.build( X , u );
-          sink = sink + std::uint64_t( s != nullptr ); } , r , n ) );
+ print( "eliasfano" , "build" + tag , n , c.who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 auto s = c.build( X , u );
+		 sink = sink + std::uint64_t( s != nullptr );
+		 } ,
+		r , n ) );
  auto s = c.build( X , u );
- print( "eliasfano" , "access" + tag , n , c.who , queries( I , r ,
-         [ & ]( std::uint64_t i ) { return( c.access( *s , i ) ); } ) );
- print( "eliasfano" , "nextGEQ" + tag , n , c.who , queries( Q , r ,
-         [ & ]( std::uint64_t x ) { return( c.geq( *s , x ) ); } ) );
+ print( "eliasfano" , "access" + tag , n , c.who ,
+	queries(
+	  I , r ,
+	  [ & ]( std::uint64_t i ) { return( c.access( *s , i ) ); } ) );
+ print(
+   "eliasfano" , "nextGEQ" + tag , n , c.who ,
+   queries( Q , r ,
+	    [ & ]( std::uint64_t x ) { return( c.geq( *s , x ) ); } ) );
  print( "space" , "eliasfano" + tag , n , c.who , c.bits( *s ) );
  }
 
@@ -545,7 +670,7 @@ void eliasFanos( std::size_t n , int r , unsigned seed )
   if( ! clustered ) {
    std::unordered_set< std::uint64_t > seen;
    while( X.size() < n )
-    if( const std::uint64_t x = g() % u ; seen.insert( x ).second )
+    if( const std::uint64_t x = g() % u; seen.insert( x ).second )
      X.push_back( x );
    std::sort( X.begin() , X.end() );
    }
@@ -567,82 +692,98 @@ void eliasFanos( std::size_t n , int r , unsigned seed )
   const double nn = double( n );
   using EF = ADS::EliasFano;
   for( const char * who : { "ADS::EliasFano" , "ADS::EliasFano A/A" } )
-   eliasFano( tag , X , u , I , Q ,
-    who , []( const std::vector< std::uint64_t > & X , std::uint64_t u ) {
-     return( std::make_unique< EF >( X , u ) ); } ,
-    []( const EF & s , std::uint64_t i ) { return( s.access( i ) ); } ,
-    []( const EF & s , std::uint64_t x ) { return( s.nextGEQ( x ) ); } ,
-    [ nn ]( const EF & s ) { return( double( s.sizeInBits() ) / nn ); } ,
-    r );
+   eliasFano(
+     tag , X , u , I , Q , who ,
+     []( const std::vector< std::uint64_t > & X , std::uint64_t u ) {
+      return( std::make_unique< EF >( X , u ) );
+      } ,
+     []( const EF & s , std::uint64_t i ) { return( s.access( i ) ); } ,
+     []( const EF & s , std::uint64_t x ) { return( s.nextGEQ( x ) ); } ,
+     [ nn ]( const EF & s ) { return( double( s.sizeInBits() ) / nn ); } , r );
   using LEF = ADS::LazyEliasFano;
-  eliasFano( tag , X , u , I , Q ,
-   "ADS::EliasFano lazy" , []( const std::vector< std::uint64_t > & X ,
-                               std::uint64_t u ) {
-    return( std::make_unique< LEF >( X , u ) ); } ,
-   []( const LEF & s , std::uint64_t i ) { return( s.access( i ) ); } ,
-   []( const LEF & s , std::uint64_t x ) { return( s.nextGEQ( x ) ); } ,
-   [ nn ]( const LEF & s ) { return( double( s.sizeInBits() ) / nn ); } ,
-   r );
+  eliasFano(
+    tag , X , u , I , Q , "ADS::EliasFano lazy" ,
+    []( const std::vector< std::uint64_t > & X , std::uint64_t u ) {
+     return( std::make_unique< LEF >( X , u ) );
+     } ,
+    []( const LEF & s , std::uint64_t i ) { return( s.access( i ) ); } ,
+    []( const LEF & s , std::uint64_t x ) { return( s.nextGEQ( x ) ); } ,
+    [ nn ]( const LEF & s ) { return( double( s.sizeInBits() ) / nn ); } , r );
 #ifdef ADS_HAS_SDSL
-  struct SD {
+  struct SD
+  {
    sdsl::sd_vector<> v;
    sdsl::sd_vector<>::rank_1_type rk;
    sdsl::sd_vector<>::select_1_type sl;
    };
-  eliasFano( tag , X , u , I , Q ,
-   "sdsl::sd_vector" , []( const std::vector< std::uint64_t > & X ,
-                           std::uint64_t u ) {
-    auto s = std::make_unique< SD >();
-    sdsl::sd_vector_builder b( u , X.size() );
-    for( const auto x : X ) b.set( x );
-    s->v = sdsl::sd_vector<>( b );
-    s->rk = sdsl::sd_vector<>::rank_1_type( &s->v );
-    s->sl = sdsl::sd_vector<>::select_1_type( &s->v );
-    return( s ); } ,
-   []( const SD & s , std::uint64_t i ) { return( s.sl.select( i + 1 ) ); } ,
-   []( const SD & s , std::uint64_t x ) { return( s.rk.rank( x ) ); } ,
-   [ nn ]( const SD & s ) {
-    return( 8 * double( sdsl::size_in_bytes( s.v ) ) / nn ); } , r );
+  eliasFano(
+    tag , X , u , I , Q , "sdsl::sd_vector" ,
+    []( const std::vector< std::uint64_t > & X , std::uint64_t u ) {
+     auto s = std::make_unique< SD >();
+     sdsl::sd_vector_builder b( u , X.size() );
+     for( const auto x : X )
+      b.set( x );
+     s->v = sdsl::sd_vector<>( b );
+     s->rk = sdsl::sd_vector<>::rank_1_type( &s->v );
+     s->sl = sdsl::sd_vector<>::select_1_type( &s->v );
+     return( s );
+     } ,
+    []( const SD & s , std::uint64_t i ) { return( s.sl.select( i + 1 ) ); } ,
+    []( const SD & s , std::uint64_t x ) { return( s.rk.rank( x ) ); } ,
+    [ nn ]( const SD & s ) {
+     return( 8 * double( sdsl::size_in_bytes( s.v ) ) / nn );
+     } ,
+    r );
 #endif
 #ifdef ADS_HAS_SUX
   using SE = sux::bits::EliasFano<>;
-  eliasFano( tag , X , u , I , Q ,
-   "sux::EliasFano" , []( const std::vector< std::uint64_t > & X ,
-                          std::uint64_t u ) {
-    return( std::make_unique< SE >( X , u ) ); } ,
-   []( const SE & s , std::uint64_t i ) {
-    return( const_cast< SE & >( s ).select( i ) ); } ,
-   []( const SE & s , std::uint64_t x ) {
-    return( const_cast< SE & >( s ).rank( x ) ); } ,
-   [ nn ]( const SE & s ) {
-    return( double( const_cast< SE & >( s ).bitCount() ) / nn ); } , r );
+  eliasFano(
+    tag , X , u , I , Q , "sux::EliasFano" ,
+    []( const std::vector< std::uint64_t > & X , std::uint64_t u ) {
+     return( std::make_unique< SE >( X , u ) );
+     } ,
+    []( const SE & s , std::uint64_t i ) {
+     return( const_cast< SE & >( s ).select( i ) );
+     } ,
+    []( const SE & s , std::uint64_t x ) {
+     return( const_cast< SE & >( s ).rank( x ) );
+     } ,
+    [ nn ]( const SE & s ) {
+     return( double( const_cast< SE & >( s ).bitCount() ) / nn );
+     } ,
+    r );
 #endif
 #ifdef ADS_HAS_SUCCINCT
   using SC = succinct::elias_fano;
-  eliasFano( tag , X , u , I , Q ,
-   "succinct::elias_fano" , []( const std::vector< std::uint64_t > & X ,
-                                std::uint64_t u ) {
-    succinct::elias_fano::elias_fano_builder b( u , X.size() );
-    for( const auto x : X ) b.push_back( x );
-    return( std::make_unique< SC >( &b , true ) ); } ,
-   []( const SC & s , std::uint64_t i ) { return( s.select( i ) ); } ,
-   []( const SC & s , std::uint64_t x ) { return( s.rank( x ) ); } ,
-   [ nn ]( const SC & s ) {
-    return( 8 * double( succinct::mapper::size_of(
-                         const_cast< SC & >( s ) ) ) / nn ); } , r );
+  eliasFano(
+    tag , X , u , I , Q , "succinct::elias_fano" ,
+    []( const std::vector< std::uint64_t > & X , std::uint64_t u ) {
+     succinct::elias_fano::elias_fano_builder b( u , X.size() );
+     for( const auto x : X )
+      b.push_back( x );
+     return( std::make_unique< SC >( &b , true ) );
+     } ,
+    []( const SC & s , std::uint64_t i ) { return( s.select( i ) ); } ,
+    []( const SC & s , std::uint64_t x ) { return( s.rank( x ) ); } ,
+    [ nn ]( const SC & s ) {
+     return( 8 *
+	      double( succinct::mapper::size_of( const_cast< SC & >( s ) ) ) /
+	      nn );
+     } ,
+    r );
 #endif
 #ifdef ADS_HAS_PEF
   using PEF = ADS::PartitionedEliasFano;
-  eliasFano( tag , X , u , I , Q ,
-   "ADS::PartitionedEliasFano" , []( const std::vector< std::uint64_t > & X ,
-                                     std::uint64_t u ) {
-    return( std::make_unique< PEF >( X , u ) ); } ,
-   []( const PEF & s , std::uint64_t i ) { return( s.access( i ) ); } ,
-   []( const PEF & s , std::uint64_t x ) { return( s.nextGEQ( x ) ); } ,
-   [ nn ]( const PEF & s ) { return( double( s.sizeInBits() ) / nn ); } ,
-   r );
+  eliasFano(
+    tag , X , u , I , Q , "ADS::PartitionedEliasFano" ,
+    []( const std::vector< std::uint64_t > & X , std::uint64_t u ) {
+     return( std::make_unique< PEF >( X , u ) );
+     } ,
+    []( const PEF & s , std::uint64_t i ) { return( s.access( i ) ); } ,
+    []( const PEF & s , std::uint64_t x ) { return( s.nextGEQ( x ) ); } ,
+    [ nn ]( const PEF & s ) { return( double( s.sizeInBits() ) / nn ); } , r );
 #endif
- }
+  }
  }
 
 /*--------------------------------------------------------------------------*/
@@ -663,10 +804,13 @@ Bits makeTree( std::size_t n , unsigned seed )
  std::size_t at = 0;
  for( std::size_t i = 0 ; i < s.size() ; ++i ) {
   e += s[ i ] ? 1 : -1;
-  if( e < mn ) { mn = e; at = i + 1; }
+  if( e < mn ) {
+   mn = e;
+   at = i + 1;
+   }
   }
  std::rotate( s.begin() , s.begin() + std::ptrdiff_t( at % s.size() ) ,
-              s.end() );
+	      s.end() );
  Bits b;
  b.n = 2 * n;
  b.words.assign( ( b.n + 63 ) / 64 , 0 );
@@ -676,7 +820,8 @@ Bits makeTree( std::size_t n , unsigned seed )
    b.words[ i / 64 ] |= std::uint64_t( 1 ) << ( i % 64 );
    opens.push_back( i );
    }
-  else closes.push_back( i );
+  else
+   closes.push_back( i );
  b.ones = n;
  for( std::size_t q = 0 ; q < kQueries ; ++q ) {
   b.S1.push_back( opens[ g() % n ] );
@@ -689,28 +834,43 @@ Bits makeTree( std::size_t n , unsigned seed )
 /// findOpen and enclose, any of them None if missing
 template< class B , class C , class O , class E , class Z >
 void parentheses( const Bits & b , const std::string & who , B build ,
-                  C close , O open , E enclose , Z bits , int r )
+		  C close ,
+		  O open , E enclose , Z bits , int r )
 {
  if( skip( who ) )
   return;
- struct { const std::string & who; B & build; C & close; O & open;
-          E & enclose; Z & bits; } c{ who , build , close , open , enclose ,
-                                      bits };
+ struct
+ {
+  const std::string & who;
+  B & build;
+  C & close;
+  O & open;
+  E & enclose;
+  Z & bits;
+  } c{ who , build , close , open , enclose , bits };
  const std::size_t n = b.ones;
- print( "parentheses" , "build" , n , c.who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) {
-          auto s = c.build( b );
-          sink = sink + std::uint64_t( s != nullptr ); } , r , n ) );
+ print( "parentheses" , "build" , n , c.who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 auto s = c.build( b );
+		 sink = sink + std::uint64_t( s != nullptr );
+		 } ,
+		r , n ) );
  auto s = c.build( b );
  if constexpr( ! std::is_same_v< C , None > )
-  print( "parentheses" , "findClose" , n , c.who , queries( b.S1 , r ,
-          [ & ]( std::uint64_t i ) { return( c.close( *s , i ) ); } ) );
+  print( "parentheses" , "findClose" , n , c.who ,
+	 queries( b.S1 , r , [ & ]( std::uint64_t i ) {
+	  return( c.close( *s , i ) );
+	  } ) );
  if constexpr( ! std::is_same_v< O , None > )
-  print( "parentheses" , "findOpen" , n , c.who , queries( b.S0 , r ,
-          [ & ]( std::uint64_t i ) { return( c.open( *s , i ) ); } ) );
+  print( "parentheses" , "findOpen" , n , c.who ,
+	 queries( b.S0 , r ,
+		  [ & ]( std::uint64_t i ) { return( c.open( *s , i ) ); } ) );
  if constexpr( ! std::is_same_v< E , None > )
-  print( "parentheses" , "enclose" , n , c.who , queries( b.S1 , r ,
-          [ & ]( std::uint64_t i ) { return( c.enclose( *s , i ) ); } ) );
+  print( "parentheses" , "enclose" , n , c.who ,
+	 queries( b.S1 , r , [ & ]( std::uint64_t i ) {
+	  return( c.enclose( *s , i ) );
+	  } ) );
  print( "space" , "parentheses" , n , c.who , c.bits( *s ) );
  }
 
@@ -719,51 +879,66 @@ void parenthesess( std::size_t n , int r , unsigned seed )
  const Bits b = makeTree( n , seed );
  const double nb = double( b.n );
  using BP = ADS::BalancedParentheses;
- for( const char * who : { "ADS::BalancedParentheses" ,
-                           "ADS::BalancedParentheses A/A" } )
-  parentheses( b ,
-   who , []( const Bits & b ) {
-    return( std::make_unique< BP >( adsBits( b ) ) ); } ,
-   []( const BP & s , std::uint64_t i ) { return( s.findClose( i ) ); } ,
-   []( const BP & s , std::uint64_t i ) { return( s.findOpen( i ) ); } ,
-   []( const BP & s , std::uint64_t i ) { return( s.enclose( i ) ); } ,
-   [ nb ]( const BP & s ) {
-    return( double( s.size() + s.bits().directoryBits() + s.treeBits() ) /
-            nb ); } , r );
+ for( const char * who :
+      { "ADS::BalancedParentheses" , "ADS::BalancedParentheses A/A" } )
+  parentheses(
+    b , who ,
+    []( const Bits & b ) {
+     return( std::make_unique< BP >( adsBits( b ) ) );
+     } ,
+    []( const BP & s , std::uint64_t i ) { return( s.findClose( i ) ); } ,
+    []( const BP & s , std::uint64_t i ) { return( s.findOpen( i ) ); } ,
+    []( const BP & s , std::uint64_t i ) { return( s.enclose( i ) ); } ,
+    [ nb ]( const BP & s ) {
+     return( double( s.size() + s.bits().directoryBits() + s.treeBits() ) /
+	      nb );
+     } ,
+    r );
 #ifdef ADS_HAS_SDSL
- struct Sada {
+ struct Sada
+ {
   sdsl::bit_vector v;
   sdsl::bp_support_sada<> bp;
   };
- parentheses( b ,
-  "sdsl::bp_support_sada" , []( const Bits & b ) {
-   auto s = std::make_unique< Sada >();
-   s->v = sdsl::bit_vector( b.n , 0 );
-   std::copy( b.words.begin() , b.words.end() , s->v.data() );
-   s->bp = sdsl::bp_support_sada<>( &s->v );
-   return( s ); } ,
-  []( const Sada & s , std::uint64_t i ) { return( s.bp.find_close( i ) ); } ,
-  []( const Sada & s , std::uint64_t i ) { return( s.bp.find_open( i ) ); } ,
-  []( const Sada & s , std::uint64_t i ) { return( s.bp.enclose( i ) ); } ,
-  [ nb ]( const Sada & s ) {
-   return( 8 * double( sdsl::size_in_bytes( s.v ) +
-                       sdsl::size_in_bytes( s.bp ) ) / nb ); } , r );
+ parentheses(
+   b , "sdsl::bp_support_sada" ,
+   []( const Bits & b ) {
+    auto s = std::make_unique< Sada >();
+    s->v = sdsl::bit_vector( b.n , 0 );
+    std::copy( b.words.begin() , b.words.end() , s->v.data() );
+    s->bp = sdsl::bp_support_sada<>( &s->v );
+    return( s );
+    } ,
+   []( const Sada & s , std::uint64_t i ) { return( s.bp.find_close( i ) ); } ,
+   []( const Sada & s , std::uint64_t i ) { return( s.bp.find_open( i ) ); } ,
+   []( const Sada & s , std::uint64_t i ) { return( s.bp.enclose( i ) ); } ,
+   [ nb ]( const Sada & s ) {
+    return(
+      8 * double( sdsl::size_in_bytes( s.v ) + sdsl::size_in_bytes( s.bp ) ) /
+      nb );
+    } ,
+   r );
 #endif
 #ifdef ADS_HAS_SUCCINCT
  using SB = succinct::bp_vector;
- parentheses( b ,
-  "succinct::bp_vector" , []( const Bits & b ) {
-   succinct::bit_vector_builder bb( b.n );
-   for( std::size_t w = 0 ; w < b.words.size() ; ++w )
-    bb.set_bits( 64 * w , b.words[ w ] ,
-                 std::min< std::size_t >( 64 , b.n - 64 * w ) );
-   return( std::make_unique< SB >( &bb , false , false ) ); } ,
-  []( const SB & s , std::uint64_t i ) { return( s.find_close( i ) ); } ,
-  []( const SB & s , std::uint64_t i ) { return( s.find_open( i ) ); } ,
-  None() ,                                 // no enclose() but find_open()
-  [ nb ]( const SB & s ) {
-   return( 8 * double( succinct::mapper::size_of(
-                        const_cast< SB & >( s ) ) ) / nb ); } , r );
+ parentheses(
+   b , "succinct::bp_vector" ,
+   []( const Bits & b ) {
+    succinct::bit_vector_builder bb( b.n );
+    for( std::size_t w = 0 ; w < b.words.size() ; ++w )
+     bb.set_bits( 64 * w , b.words[ w ] ,
+		  std::min< std::size_t >( 64 , b.n - 64 * w ) );
+    return( std::make_unique< SB >( &bb , false , false ) );
+    } ,
+   []( const SB & s , std::uint64_t i ) { return( s.find_close( i ) ); } ,
+   []( const SB & s , std::uint64_t i ) { return( s.find_open( i ) ); } ,
+   None() ,  // no enclose() but find_open()
+   [ nb ]( const SB & s ) {
+    return( 8 *
+	     double( succinct::mapper::size_of( const_cast< SB & >( s ) ) ) /
+	     nb );
+    } ,
+   r );
 #endif
  }
 
@@ -775,30 +950,45 @@ void parenthesess( std::size_t n , int r , unsigned seed )
 /// select( c , k ), a query of rank or select coded as c 2^40 + i (or k)
 template< class B , class A , class K , class S , class Z >
 void wavelet( const std::string & what ,
-              const std::vector< std::uint64_t > & X , int w ,
-              const std::vector< std::uint64_t > & I ,
-              const std::vector< std::uint64_t > & R ,
-              const std::vector< std::uint64_t > & L ,
-              const std::string & who , B build , A access , K rank ,
-              S select , Z bits , int r )
+	      const std::vector< std::uint64_t > & X ,
+	      int w , const std::vector< std::uint64_t > & I ,
+	      const std::vector< std::uint64_t > & R ,
+	      const std::vector< std::uint64_t > & L ,
+	      const std::string & who ,
+	      B build , A access , K rank , S select , Z bits , int r )
 {
  if( skip( who ) )
   return;
- struct { const std::string & who; B & build; A & access; K & rank;
-          S & select; Z & bits; } c{ who , build , access , rank , select ,
-                                     bits };
+ struct
+ {
+  const std::string & who;
+  B & build;
+  A & access;
+  K & rank;
+  S & select;
+  Z & bits;
+  } c{ who , build , access , rank , select , bits };
  const std::size_t n = X.size();
- print( "wavelet" , "build " + what , n , c.who , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          auto s = c.build( X , w );
-          sink = sink + std::uint64_t( s != nullptr ); } , r , n ) );
+ print( "wavelet" , "build " + what , n , c.who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 auto s = c.build( X , w );
+		 sink = sink + std::uint64_t( s != nullptr );
+		 } ,
+		r , n ) );
  auto s = c.build( X , w );
- print( "wavelet" , "access " + what , n , c.who , queries( I , r ,
-         [ & ]( std::uint64_t i ) { return( c.access( *s , i ) ); } ) );
- print( "wavelet" , "rank " + what , n , c.who , queries( R , r ,
-         [ & ]( std::uint64_t q ) { return( c.rank( *s , q ) ); } ) );
- print( "wavelet" , "select " + what , n , c.who , queries( L , r ,
-         [ & ]( std::uint64_t q ) { return( c.select( *s , q ) ); } ) );
+ print( "wavelet" , "access " + what , n , c.who ,
+	queries(
+	  I , r ,
+	  [ & ]( std::uint64_t i ) { return( c.access( *s , i ) ); } ) );
+ print(
+   "wavelet" , "rank " + what , n , c.who ,
+   queries( R , r ,
+	    [ & ]( std::uint64_t q ) { return( c.rank( *s , q ) ); } ) );
+ print( "wavelet" , "select " + what , n , c.who ,
+	queries(
+	  L , r ,
+	  [ & ]( std::uint64_t q ) { return( c.select( *s , q ) ); } ) );
  print( "space" , "wavelet " + what , n , c.who , c.bits( *s ) );
  }
 
@@ -806,19 +996,20 @@ void wavelets( std::size_t n , int r , unsigned seed )
 {
  constexpr std::uint64_t M = ( std::uint64_t( 1 ) << 40 ) - 1;
  for( const auto [ w , skew ] : { std::pair( 8 , false ) ,
-                                  std::pair( 16 , false ) ,
-                                  std::pair( 8 , true ) } ) {
-  const std::string what = std::to_string( w ) + " bits" +
-                           ( skew ? " skewed" : "" );
+				  std::pair( 16 , false ) ,
+				 std::pair( 8 , true ) } ) {
+  const std::string what =
+    std::to_string( w ) + " bits" + ( skew ? " skewed" : "" );
   std::mt19937_64 g( seed );
   std::vector< std::uint64_t > X( n ) , I , R , L;
   std::geometric_distribution< std::uint64_t > G( 0.2 );
   for( auto & x : X )
    x = skew ? std::min< std::uint64_t >( G( g ) , 255 )
-            : g() % ( std::uint64_t( 1 ) << w );
+	    : g() % ( std::uint64_t( 1 ) << w );
   // the occurrence of each item among those equal to it, for select
   std::vector< std::uint64_t > seen( std::size_t( 1 ) << w , 0 ) , occ( n );
-  for( std::size_t i = 0 ; i < n ; ++i ) occ[ i ] = ++seen[ X[ i ] ];
+  for( std::size_t i = 0 ; i < n ; ++i )
+   occ[ i ] = ++seen[ X[ i ] ];
   for( std::size_t q = 0 ; q < kQueries / 10 ; ++q ) {
    I.push_back( g() % n );
    const std::size_t p = g() % n;
@@ -828,63 +1019,75 @@ void wavelets( std::size_t n , int r , unsigned seed )
   const double nn = double( n );
 #ifdef ADS_HAS_WM
   using WM = ADS::WaveletMatrix;
-  for( const char * who : { "ADS::WaveletMatrix" ,
-                            "ADS::WaveletMatrix A/A" } )
-   wavelet( what , X , w , I , R , L ,
-    who , []( const std::vector< std::uint64_t > & X , int w ) {
-     return( std::make_unique< WM >( X , w ) ); } ,
-    []( const WM & s , std::uint64_t i ) { return( s.access( i ) ); } ,
-    []( const WM & s , std::uint64_t q ) {
-     return( s.rank( q >> 40 , q & M ) ); } ,
-    []( const WM & s , std::uint64_t q ) {
-     return( s.select( q >> 40 , q & M ) ); } ,
-    [ nn ]( const WM & s ) { return( double( s.sizeInBits() ) / nn ); } ,
-    r );
+  for( const char * who : { "ADS::WaveletMatrix" , "ADS::WaveletMatrix A/A" } )
+   wavelet(
+     what , X , w , I , R , L , who ,
+     []( const std::vector< std::uint64_t > & X , int w ) {
+      return( std::make_unique< WM >( X , w ) );
+      } ,
+     []( const WM & s , std::uint64_t i ) { return( s.access( i ) ); } ,
+     []( const WM & s , std::uint64_t q ) {
+      return( s.rank( q >> 40 , q & M ) );
+      } ,
+     []( const WM & s , std::uint64_t q ) {
+      return( s.select( q >> 40 , q & M ) );
+      } ,
+     [ nn ]( const WM & s ) { return( double( s.sizeInBits() ) / nn ); } , r );
 #endif
 #ifdef ADS_HAS_HWT
   auto huffman = [ & ]< class RS >( const char * who , RS * ) {
    using T = ADS::HuffmanWaveletTree< RS >;
-   wavelet( what , X , w , I , R , L ,
-    who , []( const std::vector< std::uint64_t > & X , int ) {
-     std::vector< std::uint32_t > Y( X.begin() , X.end() );
-     return( std::make_unique< T >( Y ) ); } ,
-    []( const T & s , std::uint64_t i ) { return( s.access( i ) ); } ,
-    []( const T & s , std::uint64_t q ) {
-     return( s.rank( std::uint32_t( q >> 40 ) , q & M ) ); } ,
-    []( const T & s , std::uint64_t q ) {
-     return( s.select( std::uint32_t( q >> 40 ) , q & M ) ); } ,
-    [ nn ]( const T & s ) { return( double( s.sizeInBits() ) / nn ); } ,
-    r );
+   wavelet(
+     what , X , w , I , R , L , who ,
+     []( const std::vector< std::uint64_t > & X , int ) {
+      std::vector< std::uint32_t > Y( X.begin() , X.end() );
+      return( std::make_unique< T >( Y ) );
+      } ,
+     []( const T & s , std::uint64_t i ) { return( s.access( i ) ); } ,
+     []( const T & s , std::uint64_t q ) {
+      return( s.rank( std::uint32_t( q >> 40 ) , q & M ) );
+      } ,
+     []( const T & s , std::uint64_t q ) {
+      return( s.select( std::uint32_t( q >> 40 ) , q & M ) );
+      } ,
+     [ nn ]( const T & s ) { return( double( s.sizeInBits() ) / nn ); } , r );
    };
   huffman( "ADS::HuffmanWaveletTree" , ( ADS::RankSelect * )nullptr );
   huffman( "ADS::HuffmanWaveletTree compact" ,
-           ( ADS::CompactRankSelect * )nullptr );
+	   ( ADS::CompactRankSelect * )nullptr );
 #endif
 #ifdef ADS_HAS_SDSL
   auto sdslInts = []( const std::vector< std::uint64_t > & X , int w ) {
    sdsl::int_vector<> v( X.size() , 0 , std::uint8_t( w ) );
-   for( std::size_t i = 0 ; i < X.size() ; ++i ) v[ i ] = X[ i ];
+   for( std::size_t i = 0 ; i < X.size() ; ++i )
+    v[ i ] = X[ i ];
    return( v );
    };
   using SWM = sdsl::wm_int< sdsl::bit_vector , sdsl::rank_support_v< 1 > ,
-                            sdsl::select_support_mcl< 1 > ,
-                            sdsl::select_support_mcl< 0 > >;
+			    sdsl::select_support_mcl< 1 > ,
+			    sdsl::select_support_mcl< 0 > >;
   using SWT = sdsl::wt_int< sdsl::bit_vector , sdsl::rank_support_v< 1 > ,
-                            sdsl::select_support_mcl< 1 > ,
-                            sdsl::select_support_mcl< 0 > >;
+			    sdsl::select_support_mcl< 1 > ,
+			    sdsl::select_support_mcl< 0 > >;
   auto sdslCand = [ & ]< class T >( const char * who , T * ) {
-   wavelet( what , X , w , I , R , L ,
-    who , [ & ]( const std::vector< std::uint64_t > & X , int w ) {
-     auto s = std::make_unique< T >();
-     sdsl::construct_im( *s , sdslInts( X , w ) );
-     return( s ); } ,
-    []( const T & s , std::uint64_t i ) { return( s[ i ] ); } ,
-    []( const T & s , std::uint64_t q ) {
-     return( s.rank( q & M , q >> 40 ) ); } ,
-    []( const T & s , std::uint64_t q ) {
-     return( s.select( q & M , q >> 40 ) ); } ,
-    [ nn ]( const T & s ) {
-     return( 8 * double( sdsl::size_in_bytes( s ) ) / nn ); } , r );
+   wavelet(
+     what , X , w , I , R , L , who ,
+     [ & ]( const std::vector< std::uint64_t > & X , int w ) {
+      auto s = std::make_unique< T >();
+      sdsl::construct_im( *s , sdslInts( X , w ) );
+      return( s );
+      } ,
+     []( const T & s , std::uint64_t i ) { return( s[ i ] ); } ,
+     []( const T & s , std::uint64_t q ) {
+      return( s.rank( q & M , q >> 40 ) );
+      } ,
+     []( const T & s , std::uint64_t q ) {
+      return( s.select( q & M , q >> 40 ) );
+      } ,
+     [ nn ]( const T & s ) {
+      return( 8 * double( sdsl::size_in_bytes( s ) ) / nn );
+      } ,
+     r );
    };
   sdslCand( "sdsl::wm_int" , ( SWM * )nullptr );
   sdslCand( "sdsl::wt_int" , ( SWT * )nullptr );
@@ -901,19 +1104,23 @@ void wavelets( std::size_t n , int r , unsigned seed )
 /// the building and the bits per item
 template< class B , class A , class Z >
 void dac( const std::vector< std::uint64_t > & X ,
-          const std::vector< std::uint64_t > & I , const std::string & who ,
-          B build , A access , Z bits , int r )
+	  const std::vector< std::uint64_t > & I , const std::string & who ,
+	  B build , A access , Z bits , int r )
 {
  if( skip( who ) )
   return;
  const std::size_t n = X.size();
- print( "dac" , "build" , n , who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) {
-          sink = sink + std::uint64_t( build( X ) != nullptr ); } ,
-         r , n ) );
+ print( "dac" , "build" , n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 sink = sink + std::uint64_t( build( X ) != nullptr );
+		 } ,
+		r , n ) );
  const auto s = build( X );
- print( "dac" , "access" , n , who , queries( I , r ,
-         [ & ]( std::uint64_t i ) { return( access( *s , i ) ); } ) );
+ print( "dac" , "access" , n , who ,
+	queries( I , r , [ & ]( std::uint64_t i ) {
+	 return( access( *s , i ) );
+	 } ) );
  print( "space" , "dac" , n , who , bits( *s ) );
  }
 
@@ -923,32 +1130,42 @@ void dacs( std::size_t n , int r , unsigned seed )
  std::mt19937_64 g( seed );
  std::geometric_distribution< std::uint64_t > G( 0.01 );
  std::vector< std::uint64_t > X( n ) , I;
- for( auto & x : X ) x = G( g ) * ( g() % 64 == 0 ? 1000 : 1 );
- for( std::size_t q = 0 ; q < kQueries ; ++q ) I.push_back( g() % n );
+ for( auto & x : X )
+  x = G( g ) * ( g() % 64 == 0 ? 1000 : 1 );
+ for( std::size_t q = 0 ; q < kQueries ; ++q )
+  I.push_back( g() % n );
  const double nn = double( n );
 #ifdef ADS_HAS_DAC
  using D = ADS::DirectAccessCodes;
- for( const char * who : { "ADS::DirectAccessCodes" ,
-                           "ADS::DirectAccessCodes A/A" } )
-  dac( X , I , who , []( const std::vector< std::uint64_t > & X ) {
-        return( std::make_unique< D >( X ) ); } ,
-       []( const D & s , std::uint64_t i ) { return( s.access( i ) ); } ,
-       [ nn ]( const D & s ) { return( double( s.sizeInBits() ) / nn ); } ,
-       r );
- dac( X , I , "ADS::DirectAccessCodes b=8" ,
-      []( const std::vector< std::uint64_t > & X ) {
-       return( std::make_unique< D >( X , 8 ) ); } ,
-      []( const D & s , std::uint64_t i ) { return( s.access( i ) ); } ,
-      [ nn ]( const D & s ) { return( double( s.sizeInBits() ) / nn ); } ,
-      r );
+ for( const char * who :
+      { "ADS::DirectAccessCodes" , "ADS::DirectAccessCodes A/A" } )
+  dac(
+    X , I , who ,
+    []( const std::vector< std::uint64_t > & X ) {
+     return( std::make_unique< D >( X ) );
+     } ,
+    []( const D & s , std::uint64_t i ) { return( s.access( i ) ); } ,
+    [ nn ]( const D & s ) { return( double( s.sizeInBits() ) / nn ); } , r );
+ dac(
+   X , I , "ADS::DirectAccessCodes b=8" ,
+   []( const std::vector< std::uint64_t > & X ) {
+    return( std::make_unique< D >( X , 8 ) );
+    } ,
+   []( const D & s , std::uint64_t i ) { return( s.access( i ) ); } ,
+   [ nn ]( const D & s ) { return( double( s.sizeInBits() ) / nn ); } , r );
 #endif
 #ifdef ADS_HAS_SDSL
  auto sdslDac = [ & ]< class T >( const char * who , T * ) {
-  dac( X , I , who , []( const std::vector< std::uint64_t > & X ) {
-        return( std::make_unique< T >( X ) ); } ,
-       []( const T & s , std::uint64_t i ) { return( s[ i ] ); } ,
-       [ nn ]( const T & s ) {
-        return( 8 * double( sdsl::size_in_bytes( s ) ) / nn ); } , r );
+  dac(
+    X , I , who ,
+    []( const std::vector< std::uint64_t > & X ) {
+     return( std::make_unique< T >( X ) );
+     } ,
+    []( const T & s , std::uint64_t i ) { return( s[ i ] ); } ,
+    [ nn ]( const T & s ) {
+     return( 8 * double( sdsl::size_in_bytes( s ) ) / nn );
+     } ,
+    r );
   };
  sdslDac( "sdsl::dac_vector<4>" , ( sdsl::dac_vector< 4 > * )nullptr );
  sdslDac( "sdsl::dac_vector<8>" , ( sdsl::dac_vector< 8 > * )nullptr );
@@ -961,14 +1178,19 @@ int main( int argc , char ** argv )
 {
  const Options o( argc , argv , { 100000 , 1000000 , 10000000 , 100000000 } );
  for( std::size_t n : o.sizes )
-  if( n <= 10000000 ) eliasFanos( n , o.runs , o.seed );
+  if( n <= 10000000 )
+   eliasFanos( n , o.runs , o.seed );
  for( std::size_t n : o.sizes )
-  if( n <= 10000000 ) parenthesess( n , o.runs , o.seed );
+  if( n <= 10000000 )
+   parenthesess( n , o.runs , o.seed );
  for( std::size_t n : o.sizes )
-  if( n <= 10000000 ) wavelets( n , o.runs , o.seed );
+  if( n <= 10000000 )
+   wavelets( n , o.runs , o.seed );
  for( std::size_t n : o.sizes )
-  if( n <= 10000000 ) dacs( n , o.runs , o.seed );
- for( std::size_t n : o.sizes ) bitvectors( n , o.runs , o.seed );
+  if( n <= 10000000 )
+   dacs( n , o.runs , o.seed );
+ for( std::size_t n : o.sizes )
+  bitvectors( n , o.runs , o.seed );
  return( 0 );
  }
 

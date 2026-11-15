@@ -86,7 +86,7 @@
 
 #ifndef __ADS_BloomVariants
  #define __ADS_BloomVariants
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -110,14 +110,14 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the probability \f$ ( 1 - ( 1 - 1 / m )^{r n} )^r \f$ of a false
 /// positive of a filter of \f$ m \f$ bits and \f$ r \f$ hashes after
 /// \f$ n \f$ insertions, 0 for \f$ n = 0 \f$
 /// \pre \f$ m \ge 1 \f$, \f$ n \ge 0 \f$ and \f$ r \ge 1 \f$
-[[nodiscard]] inline double bloomFalsePositive( double m , double n ,
-                                                int r );
+[[nodiscard]] inline double bloomFalsePositive( double m , double n , int r );
 
 /// the number of hashes, the floor or the ceiling of
 /// \f$ ( m / n ) \ln 2 \f$, of the least false positives; past the
@@ -166,8 +166,8 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \pre \f$ \mathit{bitsPerKey} > 0 \f$ and \f$ r \ge 1 \f$
-[[nodiscard]] inline std::pair< double , double > compressedBloom(
-                                                   double bitsPerKey , int r );
+[[nodiscard]] inline std::pair< double , double >
+compressedBloom( double bitsPerKey , int r );
 
 /// the intersection of \f$ A \f$ and \f$ B \f$ by a filter of \f$ A \f$
 /// of \f$ m_A \f$ bits: the keys \f$ Q \f$ of \f$ B \f$ that the filter
@@ -193,8 +193,8 @@ namespace ADS {
 /// \post the second is the exact intersection, within the first
 template< class T , class H = std::hash< T > >
 [[nodiscard]] std::pair< std::vector< T > , std::vector< T > >
- bloomIntersection( const std::vector< T > & A , const std::vector< T > & B ,
-                    std::size_t mA );
+bloomIntersection( const std::vector< T > & A , const std::vector< T > & B ,
+		   std::size_t mA );
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- CLASS SpectralBloomFilter ------------------------*/
@@ -203,11 +203,11 @@ template< class T , class H = std::hash< T > >
 /// a filter of Bloom of \f$ m \f$ counters of the type `C` and \f$ r \f$
 /// hashes, for multisets
 template< class T , class C = std::uint32_t , class H = std::hash< T > >
-class SpectralBloomFilter {
+class SpectralBloomFilter
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty filter of \f$ m \f$ counters and \f$ r \f$ hashes
  /// \pre \f$ m \ge 1 \f$ and \f$ r \ge 1 \f$
  SpectralBloomFilter( std::size_t m , int r , H h = H() );
@@ -271,13 +271,12 @@ class SpectralBloomFilter {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the places of the \f$ r \f$ counters of \f$ x \f$
  [[nodiscard]] std::vector< std::size_t > places( const T & x ) const;
 
- std::vector< C > f_C;   ///< the counters
- int f_r;                ///< the hashes
- H f_h;                  ///< the hash of the items
+ std::vector< C > f_C;  ///< the counters
+ int f_r;               ///< the hashes
+ H f_h;                 ///< the hash of the items
 
  };  // end( class SpectralBloomFilter )
 
@@ -288,11 +287,11 @@ class SpectralBloomFilter {
 /// a filter of Bloom of \f$ r \f$ parts of \f$ m / r \f$ bits, a hash
 /// for each part
 template< class T , class H = std::hash< T > >
-class PartitionedBloomFilter {
+class PartitionedBloomFilter
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty filter of about \f$ m \f$ bits in \f$ r \f$ parts
  /// \pre \f$ r \ge 1 \f$ and \f$ m \ge r \f$
  PartitionedBloomFilter( std::size_t m , int r , H h = H() );
@@ -323,15 +322,14 @@ class PartitionedBloomFilter {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the places of \f$ x \f$ in the parts, \f$ h_1 + i h_2 \f$ modulo the
  /// bits of a part
  [[nodiscard]] detail::BloomProbe probe( const T & x ) const;
 
- std::vector< bool > f_B;          ///< the bits
- std::size_t f_w;                  ///< the bits of a part
- int f_r;                          ///< the parts, i.e., the hashes
- H f_h;                            ///< the hash of the items
+ std::vector< bool > f_B;  ///< the bits
+ std::size_t f_w;          ///< the bits of a part
+ int f_r;                  ///< the parts, i.e., the hashes
+ H f_h;                    ///< the hash of the items
 
  };  // end( class PartitionedBloomFilter )
 
@@ -347,7 +345,7 @@ class PartitionedBloomFilter {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BloomVariants.h included */
+#endif /* BloomVariants.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File BloomVariants.h ------------------------*/

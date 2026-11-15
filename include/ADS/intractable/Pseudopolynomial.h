@@ -46,7 +46,7 @@
 
 #ifndef __ADS_Pseudopolynomial
  #define __ADS_Pseudopolynomial
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -66,7 +66,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- SUBSET SUM ----------------------------------*/
@@ -98,7 +99,7 @@ namespace ADS {
 /// \post `*rows`, if given, has \f$ n + 1 \f$ rows (none if \f$ k < 0 \f$)
 template< class Bits = std::vector< bool > >
 bool subsetSumDP( const std::vector< long > & A , long k ,
-                  std::vector< std::vector< bool > > * rows = nullptr );
+		  std::vector< std::vector< bool > > * rows = nullptr );
 
 /// the places of a subset of \f$ A \f$ of sum \f$ k \f$, by the table of all
 /// the rows, \f$ O( n k ) \f$ time and space, or nothing
@@ -126,7 +127,7 @@ bool subsetSumDP( const std::vector< long > & A , long k ,
 /// \pre \f$ A \f$ is not negative
 /// \post the places returned are distinct, of sum \f$ k \f$
 inline std::optional< Nodes > subsetSumSet( const std::vector< long > & A ,
-                                            long k );
+					    long k );
 
 /// PARTITION by dynamic programming: the places of a half of \f$ A \f$ of
 /// half the sum, or nothing (exercise 19.1)
@@ -172,15 +173,16 @@ inline std::optional< Nodes > partitionDP( const std::vector< long > & A );
 /// \f]
 /// \pre \f$ m \ge 1 \f$ and \f$ t \f$ is not negative
 /// \post each processor returned is loaded at most \f$ d \f$
-inline std::optional< std::vector< int > > schedulingDP(
-                        const std::vector< long > & t , int m , long d );
+inline std::optional< std::vector< int > >
+schedulingDP( const std::vector< long > & t , int m , long d );
 
 /// an interval \f$ [ \mathit{start} , \mathit{end} ) \f$ of the program on a
 /// processor
-struct Piece {
- int program;    ///< the program
+struct Piece
+{
+ int program;   ///< the program
  double start ,  ///< the time at which the piece starts
-        end;     ///< the time at which the piece ends
+   end;         ///< the time at which the piece ends
  };
 
 /// the rule of McNaughton: the length \f$ d \f$ of the schedule and the
@@ -212,8 +214,8 @@ struct Piece {
 /// \pre \f$ m \ge 1 \f$ and \f$ t \f$ is not negative
 /// \post each program runs for its time within \f$ [ 0 , d ] \f$, never on
 ///       two processors at once
-inline std::pair< double , std::vector< std::vector< Piece > > > mcNaughton(
-                        const std::vector< double > & t , int m );
+inline std::pair< double , std::vector< std::vector< Piece > > >
+mcNaughton( const std::vector< double > & t , int m );
 
 /// REAL-TIME SCHEDULING without priority rule: the tasks of time
 /// \f$ C[ i ] \f$ every \f$ T[ i ] \f$ run on \f$ m \f$ processors if and
@@ -234,9 +236,9 @@ inline std::pair< double , std::vector< std::vector< Piece > > > mcNaughton(
 /// \pre \f$ m \ge 1 \f$, \f$ C \f$ and \f$ T \f$ of the same size,
 ///      \f$ C \ge 0 \f$, \f$ T > 0 \f$
 /// \post a schedule returned has \f$ m \f$ processors
-inline std::optional< std::vector< std::vector< Piece > > > realTimeScheduling(
-                        const std::vector< double > & C ,
-                        const std::vector< double > & T , int m );
+inline std::optional< std::vector< std::vector< Piece > > >
+realTimeScheduling( const std::vector< double > & C ,
+		    const std::vector< double > & T , int m );
 
 /// the thief of each jewel of price \f$ P[ i ] \f$, so that the three
 /// thieves take \f$ m / 3 \f$ each, or nothing; \f$ S[ i ][ j ][ h ] \f$
@@ -265,8 +267,8 @@ inline std::optional< std::vector< std::vector< Piece > > > realTimeScheduling(
 /// \f]
 /// \pre the prices are not negative
 /// \post an assignment returned gives a third of the value to each thief
-inline std::optional< std::vector< int > > bottino(
-                        const std::vector< long > & P );
+inline std::optional< std::vector< int > >
+bottino( const std::vector< long > & P );
 
 /*--------------------------------------------------------------------------*/
 
@@ -280,7 +282,7 @@ inline std::optional< std::vector< int > > bottino(
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Pseudopolynomial.h included */
+#endif /* Pseudopolynomial.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File Pseudopolynomial.h -----------------------*/

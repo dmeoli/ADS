@@ -14,9 +14,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail::ss {
+namespace detail::ss
+{
 
 /// the largest number of buckets, as its logarithm
 inline constexpr int kLogBuckets = 8;
@@ -30,8 +32,8 @@ inline constexpr std::size_t kLeaf = 16;
 
 /// the items of a block, about 2 KiB of them
 template< class T >
-inline constexpr std::size_t kBlock = sizeof( T ) >= 2048 ? 1 :
-                                      2048 / sizeof( T );
+inline constexpr std::size_t kBlock =
+  sizeof( T ) >= 2048 ? 1 : 2048 / sizeof( T );
 
 /// the items that go down the tree together
 inline constexpr std::size_t kUnroll = 4;
@@ -50,61 +52,63 @@ void insertion( T * a , std::size_t n , C & less )
    }
   else {
    std::size_t j = i;
-   for( ; less( x , a[ j - 1 ] ) ; --j ) a[ j ] = std::move( a[ j - 1 ] );
+   for( ; less( x , a[ j - 1 ] ) ; --j )
+    a[ j ] = std::move( a[ j - 1 ] );
    a[ j ] = std::move( x );
    }
   }
  }
 
 template< class T , class C >
-class Sorter {
+class Sorter
+{
  public:
-  Sorter( std::vector< T > & A , C & less ) : A( A ) , less( less ) {}
+ Sorter( std::vector< T > & A , C & less ) : A( A ) , less( less ) { }
 
-  /// A[ lo .. hi ) sorted
-  void sort( std::size_t lo , std::size_t hi );
+ /// A[ lo .. hi ) sorted
+ void sort( std::size_t lo , std::size_t hi );
 
  private:
-  static constexpr std::size_t B = kBlock< T >;
+ static constexpr std::size_t B = kBlock< T >;
 
-  std::vector< T > & A;
-  C & less;
-  std::unique_ptr< T[] > buf;               // the buffers of the buckets,
-  std::size_t bufSize = 0;                  // not initialized for bytes,
-  std::unique_ptr< T[] > room;              // two blocks and the overflow
-  T tree[ 1 << kLogBuckets ];               // t[ 1 .. k ) of the splitters
-  T low[ 1 << kLogBuckets ];                // s_i of the bucket i > 0
-  std::uint64_t seed = 0x9E3779B97F4A7C15ull;
-  int logk = 0;
-  bool equal = false;
+ std::vector< T > & A;
+ C & less;
+ std::unique_ptr< T[] > buf;   // the buffers of the buckets,
+ std::size_t bufSize = 0;      // not initialized for bytes,
+ std::unique_ptr< T[] > room;  // two blocks and the overflow
+ T tree[ 1 << kLogBuckets ];   // t[ 1 .. k ) of the splitters
+ T low[ 1 << kLogBuckets ];    // s_i of the bucket i > 0
+ std::uint64_t seed = 0x9E3779B97F4A7C15ull;
+ int logk = 0;
+ bool equal = false;
 
-  std::uint64_t random() {
-   seed ^= seed << 13;
-   seed ^= seed >> 7;
-   seed ^= seed << 17;
-   return( seed );
-   }
+ std::uint64_t random() {
+  seed ^= seed << 13;
+  seed ^= seed >> 7;
+  seed ^= seed << 17;
+  return( seed );
+  }
 
-  /// the bucket of x
-  std::size_t bucket( const T & x ) const {
-   std::size_t j = 1;
-   for( int l = 0 ; l < logk ; ++l )
-    j = 2 * j + ! less( x , tree[ j ] );
-   const std::size_t i = j - ( std::size_t( 1 ) << logk );
-   return( equal ? 2 * i + ! ( ( i != 0 ) & ! less( low[ i ] , x ) ) : i );
-   }
+ /// the bucket of x
+ std::size_t bucket( const T & x ) const {
+  std::size_t j = 1;
+  for( int l = 0 ; l < logk ; ++l )
+   j = 2 * j + ! less( x , tree[ j ] );
+  const std::size_t i = j - ( std::size_t( 1 ) << logk );
+  return( equal ? 2 * i + ! ( ( i != 0 ) & ! less( low[ i ] , x ) ) : i );
+  }
 
-  /// the splitters from a sample of A[ lo .. hi ): false if the sample
-  /// holds one key alone
-  bool splitters( std::size_t lo , std::size_t hi );
+ /// the splitters from a sample of A[ lo .. hi ): false if the sample
+ /// holds one key alone
+ bool splitters( std::size_t lo , std::size_t hi );
 
-  /// t[ j ] and below from the sorted s[ a .. b )
-  void build( const T * s , std::size_t j , std::size_t a , std::size_t b );
+ /// t[ j ] and below from the sorted s[ a .. b )
+ void build( const T * s , std::size_t j , std::size_t a , std::size_t b );
  };
 
 template< class T , class C >
 void Sorter< T , C >::build( const T * s , std::size_t j , std::size_t a ,
-                             std::size_t b )
+			    std::size_t b )
 {
  const std::size_t m = a + ( b - a ) / 2;
  tree[ j ] = s[ m ];
@@ -119,26 +123,27 @@ bool Sorter< T , C >::splitters( std::size_t lo , std::size_t hi )
 {
  const std::size_t n = hi - lo;
  const int levels = int( std::bit_width( n / kLeaf ) ) - 1;  // log2
- logk = levels <= kLogBuckets ? std::max( 1 , levels ) :
-        levels <= 2 * kLogBuckets ? ( levels + 1 ) / 2 : kLogBuckets;
+ logk = levels <= kLogBuckets       ? std::max( 1 , levels )
+	: levels <= 2 * kLogBuckets ? ( levels + 1 ) / 2
+				    : kLogBuckets;
  std::size_t k = std::size_t( 1 ) << logk;
- const std::size_t alpha = std::max( std::size_t( 1 ) ,
-                                     std::size_t( std::bit_width( n ) / 5 ) );
+ const std::size_t alpha =
+   std::max( std::size_t( 1 ) , std::size_t( std::bit_width( n ) / 5 ) );
  const std::size_t s = alpha * k - 1;
  T * const a = A.data() + lo;
  for( std::size_t i = 0 ; i < s ; ++i )     // the sample at the front,
-  std::swap( a[ i ] , a[ i + std::size_t(   // a place drawn by a product
-   ( ( random() >> 32 ) * ( n - i ) ) >> 32 ) ] );
+  std::swap( a[ i ] , a[ i + std::size_t(  // a place drawn by a product
+			      ( ( random() >> 32 ) * ( n - i ) ) >> 32 ) ] );
  pdq( A , lo , lo + s , int( std::bit_width( s ) ) , true , less );
- std::size_t m = 0;                         // the splitters, once each,
- for( std::size_t i = alpha - 1 ; i < s ; i += alpha )   // to low[ 1 .. ]
+ std::size_t m = 0;  // the splitters, once each,
+ for( std::size_t i = alpha - 1 ; i < s ; i += alpha )  // to low[ 1 .. ]
   if( ( m == 0 ) || less( low[ m ] , a[ i ] ) )
    low[ ++m ] = a[ i ];
  equal = m < k - 1;
  if( equal ) {
-  if( ! less( a[ 0 ] , a[ s - 1 ] ) )       // the sample all equal
+  if( ! less( a[ 0 ] , a[ s - 1 ] ) )  // the sample all equal
    return( false );
-  logk = int( std::bit_width( m ) );         // k > m
+  logk = int( std::bit_width( m ) );  // k > m
   k = std::size_t( 1 ) << logk;
   }
  for( ; m < k - 1 ; ++m )
@@ -157,7 +162,7 @@ void Sorter< T , C >::sort( std::size_t lo , std::size_t hi )
    insertion( A.data() + lo , n , less );
   return;
   }
- if( ! splitters( lo , hi ) ) {             // a sample of one key
+ if( ! splitters( lo , hi ) ) {  // a sample of one key
   pdq( A , lo , hi , int( std::bit_width( n ) ) , true , less );
   return;
   }
@@ -168,7 +173,7 @@ void Sorter< T , C >::sort( std::size_t lo , std::size_t hi )
   if( ! room )
    room = std::make_unique_for_overwrite< T[] >( 3 * B );
   }
- T * const a = A.data() + lo , * const bf = buf.get();
+ T *const a = A.data() + lo , *const bf = buf.get();
 
  // the classification: full buffers back to a[ 0 .. w ) as blocks
  std::size_t cnt[ 2 << kLogBuckets ] , full[ 2 << kLogBuckets ];
@@ -187,7 +192,8 @@ void Sorter< T , C >::sort( std::size_t lo , std::size_t hi )
  std::size_t i = 0;
  for( ; i + kUnroll <= n ; i += kUnroll ) {
   std::size_t j[ kUnroll ];
-  for( std::size_t u = 0 ; u < kUnroll ; ++u ) j[ u ] = 1;
+  for( std::size_t u = 0 ; u < kUnroll ; ++u )
+   j[ u ] = 1;
   for( int l = 0 ; l < logk ; ++l )
    for( std::size_t u = 0 ; u < kUnroll ; ++u )
     j[ u ] = 2 * j[ u ] + ! less( a[ i + u ] , tree[ j[ u ] ] );
@@ -197,10 +203,13 @@ void Sorter< T , C >::sort( std::size_t lo , std::size_t hi )
     j[ u ] = 2 * h + ! ( ( h != 0 ) & ! less( low[ h ] , a[ i + u ] ) );
     }
   else
-   for( std::size_t u = 0 ; u < kUnroll ; ++u ) j[ u ] -= k;
-  for( std::size_t u = 0 ; u < kUnroll ; ++u ) put( j[ u ] , a[ i + u ] );
+   for( std::size_t u = 0 ; u < kUnroll ; ++u )
+    j[ u ] -= k;
+  for( std::size_t u = 0 ; u < kUnroll ; ++u )
+   put( j[ u ] , a[ i + u ] );
   }
- for( ; i < n ; ++i ) put( bucket( a[ i ] ) , a[ i ] );
+ for( ; i < n ; ++i )
+  put( bucket( a[ i ] ) , a[ i ] );
 
  // the starts of the buckets, and the areas of their blocks
  std::size_t st[ ( 2 << kLogBuckets ) + 1 ];
@@ -208,7 +217,7 @@ void Sorter< T , C >::sort( std::size_t lo , std::size_t hi )
  st[ 0 ] = 0;
  for( std::size_t b = 0 ; b < nb ; ++b )
   st[ b + 1 ] = st[ b ] + full[ b ] * B + cnt[ b ];
- const std::size_t W = w / B;               // the blocks written
+ const std::size_t W = w / B;  // the blocks written
  for( std::size_t b = 0 ; b < nb ; ++b ) {
   wp[ b ] = ( st[ b ] + B - 1 ) / B;
   rp[ b ] = std::max( wp[ b ] , std::min( ( st[ b + 1 ] + B - 1 ) / B , W ) );
@@ -216,7 +225,7 @@ void Sorter< T , C >::sort( std::size_t lo , std::size_t hi )
 
  // the permutation of the blocks, through two blocks of room; a block
  // whose place goes past n goes to the overflow
- T * cur = room.get() , * oth = room.get() + B;
+ T *cur = room.get() , *oth = room.get() + B;
  T * const over = room.get() + 2 * B;
  std::size_t overSlot = std::size_t( -1 );
  for( std::size_t b = 0 ; b < nb ; ++b )
@@ -226,7 +235,7 @@ void Sorter< T , C >::sort( std::size_t lo , std::size_t hi )
    for( ; ; ) {
     const std::size_t t = bucket( cur[ 0 ] );
     const std::size_t d = wp[ t ]++;
-    if( d < rp[ t ] ) {                     // a block not yet placed
+    if( d < rp[ t ] ) {  // a block not yet placed
      std::move( a + d * B , a + ( d + 1 ) * B , oth );
      std::move( cur , cur + B , a + d * B );
      std::swap( cur , oth );
@@ -242,7 +251,7 @@ void Sorter< T , C >::sort( std::size_t lo , std::size_t hi )
      }
     }
    }
- if( overSlot != std::size_t( -1 ) )        // the part within the vector
+ if( overSlot != std::size_t( -1 ) )  // the part within the vector
   std::move( over , over + ( n - overSlot * B ) , a + overSlot * B );
 
  // the cleanup: the buffer and the items past its end of each bucket into
@@ -250,15 +259,17 @@ void Sorter< T , C >::sort( std::size_t lo , std::size_t hi )
  for( std::size_t b = 0 ; b < nb ; ++b ) {
   const std::size_t s = st[ b ] , e = st[ b + 1 ];
   const std::size_t bb = ( s + B - 1 ) / B * B;
-  const std::size_t be = full[ b ] ? bb + full[ b ] * B : e;   // the blocks
-  std::size_t f = s;                        // the next free place
+  const std::size_t be = full[ b ] ? bb + full[ b ] * B : e;  // the blocks
+  std::size_t f = s;  // the next free place
   const std::size_t f1 = std::min( bb , e );
   const std::size_t f2 = full[ b ] ? be : f1;
   auto place = [ & ]( T & x ) {
-   if( f == f1 ) f = f2;
+   if( f == f1 )
+    f = f2;
    a[ f++ ] = std::move( x );
    };
-  for( std::size_t h = 0 ; h < cnt[ b ] ; ++h ) place( bf[ b * B + h ] );
+  for( std::size_t h = 0 ; h < cnt[ b ] ; ++h )
+   place( bf[ b * B + h ] );
   for( std::size_t p = e ; p < be ; ++p )
    place( p < n ? a[ p ] : over[ p - overSlot * B ] );
   if( ( e - s > 1 ) && ( e - s <= kBase ) &&  // a small bucket at once,
@@ -272,9 +283,10 @@ void Sorter< T , C >::sort( std::size_t lo , std::size_t hi )
   const std::size_t m = st[ b + 1 ] - st[ b ];
   if( ( m <= kBase ) || ( eq && ! ( b & 1 ) ) )
    continue;
-  if( m > n / 2 )                           // an unlucky sample
+  if( m > n / 2 )  // an unlucky sample
    pdq( A , lo + st[ b ] , lo + st[ b + 1 ] , int( std::bit_width( m ) ) ,
-        true , less );
+	true ,
+	less );
   else
    sort( lo + st[ b ] , lo + st[ b + 1 ] );
   }

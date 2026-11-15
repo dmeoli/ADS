@@ -33,7 +33,7 @@
 
 #ifndef __ADS_TreePriorityQueue
  #define __ADS_TreePriorityQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -53,7 +53,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS TreePriorityQueue -------------------------*/
@@ -62,16 +63,16 @@ namespace ADS {
 /// a priority queue on a Red-Black tree of the pairs of a priority and of a
 /// number of insertion
 template< class T , std::totally_ordered P = int >
-class TreePriorityQueue {
+class TreePriorityQueue
+{
 
- using Key = std::pair< P , long >;   ///< priority, number of insertion
+ using Key = std::pair< P , long >;  ///< priority, number of insertion
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;        ///< the type of the items
- using Priority = P;    ///< the type of the priorities
- using Handle = long;   ///< the number of insertion of an item
+ using Item = T;       ///< the type of the items
+ using Priority = P;   ///< the type of the priorities
+ using Handle = long;  ///< the number of insertion of an item
 
  /// whether the queue has no item
  [[nodiscard]] bool empty( void ) const;
@@ -158,12 +159,11 @@ class TreePriorityQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// each item of the tree with the priority of its handle, \f$ O( n ) \f$
  [[nodiscard]] bool consistent( void ) const;
 
- RedBlackTree< Key , T > f_t;   ///< the items by priority
- std::vector< P > f_p;          ///< the priority of each insertion
+ RedBlackTree< Key , T > f_t;  ///< the items by priority
+ std::vector< P > f_p;        ///< the priority of each insertion
 
  };  // end( class TreePriorityQueue )
 
@@ -179,7 +179,7 @@ class TreePriorityQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* TreePriorityQueue.h included */
+#endif /* TreePriorityQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File TreePriorityQueue.h ----------------------*/

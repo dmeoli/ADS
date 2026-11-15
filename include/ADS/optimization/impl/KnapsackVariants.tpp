@@ -15,15 +15,17 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// whether the integer \f$ n \ge 0 \f$ is a square, without overflow
 inline bool isPerfectSquare( std::int64_t n )
 {
  std::int64_t r = 0 , step = std::int64_t( 1 ) << 31;
- for( ; step > 0 ; step >>= 1 )                 // the largest r, r^2 <= n
+ for( ; step > 0 ; step >>= 1 )  // the largest r, r^2 <= n
   if( ( r + step ) <= n / ( r + step ) )
    r += step;
  return( r * r == n );
@@ -34,8 +36,8 @@ inline bool isPerfectSquare( std::int64_t n )
 /*--------------------------------------------------------------------------*/
 
 template< class T >
-std::pair< T , std::vector< std::size_t > > rodCutting(
-                               const std::vector< T > & price , std::size_t L )
+std::pair< T , std::vector< std::size_t > >
+rodCutting( const std::vector< T > & price , std::size_t L )
 {
  ADS_PRE( ( L == 0 ) || ( ! price.empty() ) );
  const std::size_t m = price.size();
@@ -54,30 +56,31 @@ std::pair< T , std::vector< std::size_t > > rodCutting(
  for( std::size_t l = L ; l > 0 ; l -= cut[ l ] )
   pieces.push_back( cut[ l ] );
  ADS_POST( [ & ] {
-            std::size_t s = 0;
-            T g = T( 0 );
-            for( std::size_t t : pieces ) {
-             s += t;
-             g += price[ t - 1 ];
-             }
-            return( ( s == L ) && ( g == R[ L ] ) );
-            }() );
+  std::size_t s = 0;
+  T g = T( 0 );
+  for( std::size_t t : pieces ) {
+   s += t;
+   g += price[ t - 1 ];
+   }
+  return( ( s == L ) && ( g == R[ L ] ) );
+  }() );
  return( std::pair( R[ L ] , pieces ) );
  }
 
 /*--------------------------------------------------------------------------*/
 
 template< class T , class V >
-std::pair< T , std::vector< std::size_t > > unboundedKnapsack(
-                const std::vector< T > & p , const std::vector< V > & v , V C )
+std::pair< T , std::vector< std::size_t > >
+unboundedKnapsack( const std::vector< T > & p , const std::vector< V > & v ,
+		   V C )
 {
  ADS_PRE( ( p.size() == v.size() ) && ( C >= V( 0 ) ) );
  ADS_PRE( std::all_of( v.begin() , v.end() ,
-                       []( const V & x ) { return( x > V( 0 ) ); } ) );
+		       []( const V & x ) { return( x > V( 0 ) ); } ) );
  const auto cap = static_cast< std::size_t >( C );
  const std::size_t n = p.size();
  std::vector< T > P( cap + 1 , T( 0 ) );
- std::vector< std::size_t > last( cap + 1 , n );   // n: one unit left empty
+ std::vector< std::size_t > last( cap + 1 , n );  // n: one unit left empty
  for( std::size_t c = 1 ; c <= cap ; ++c ) {
   P[ c ] = P[ c - 1 ];
   for( std::size_t i = 0 ; i < n ; ++i ) {
@@ -97,14 +100,14 @@ std::pair< T , std::vector< std::size_t > > unboundedKnapsack(
    c -= static_cast< std::size_t >( v[ last[ c ] ] );
    }
  ADS_POST( [ & ] {
-            V vol = V( 0 );
-            T gain = T( 0 );
-            for( std::size_t i = 0 ; i < n ; ++i ) {
-             vol += V( copies[ i ] ) * v[ i ];
-             gain += T( copies[ i ] ) * p[ i ];
-             }
-            return( ( vol <= C ) && ( gain == P[ cap ] ) );
-            }() );
+  V vol = V( 0 );
+  T gain = T( 0 );
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   vol += V( copies[ i ] ) * v[ i ];
+   gain += T( copies[ i ] ) * p[ i ];
+   }
+  return( ( vol <= C ) && ( gain == P[ cap ] ) );
+  }() );
  return( std::pair( P[ cap ] , copies ) );
  }
 
@@ -112,11 +115,11 @@ std::pair< T , std::vector< std::size_t > > unboundedKnapsack(
 
 template< class T , class V >
 std::optional< T > minValueExactWeight( const std::vector< V > & w ,
-                                        const std::vector< T > & v , V W )
+					const std::vector< T > & v , V W )
 {
  ADS_PRE( ( w.size() == v.size() ) && ( W >= V( 0 ) ) );
  ADS_PRE( std::all_of( w.begin() , w.end() ,
-                       []( const V & x ) { return( x > V( 0 ) ); } ) );
+		       []( const V & x ) { return( x > V( 0 ) ); } ) );
  const auto cap = static_cast< std::size_t >( W );
  std::vector< std::optional< T > > D( cap + 1 );
  D[ 0 ] = T( 0 );
@@ -137,7 +140,7 @@ C coinChangeWays( const std::vector< V > & coins , V T )
 {
  ADS_PRE( T >= V( 0 ) );
  ADS_PRE( std::all_of( coins.begin() , coins.end() ,
-                       []( const V & d ) { return( d > V( 0 ) ); } ) );
+		       []( const V & d ) { return( d > V( 0 ) ); } ) );
  const auto t = static_cast< std::size_t >( T );
  std::vector< C > N( t + 1 , C( 0 ) );
  N[ 0 ] = C( 1 );
@@ -156,7 +159,7 @@ C subsetSumCount( const std::vector< V > & A , V k )
 {
  ADS_PRE( k >= V( 0 ) );
  ADS_PRE( std::all_of( A.begin() , A.end() ,
-                       []( const V & a ) { return( a >= V( 0 ) ); } ) );
+		       []( const V & a ) { return( a >= V( 0 ) ); } ) );
  const auto K = static_cast< std::size_t >( k );
  std::vector< C > N( K + 1 , C( 0 ) );
  N[ 0 ] = C( 1 );

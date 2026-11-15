@@ -54,7 +54,7 @@
 
 #ifndef __ADS_MonteCarlo
  #define __ADS_MonteCarlo
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -72,7 +72,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// whether \f$ p \f$, of \f$ n \f$ variables and total degree \f$ d \f$, is
 /// identically 0, by \f$ K \f$ random points
@@ -111,8 +112,8 @@ bool zeroPolynomial( F && p , std::size_t n , long d , int K , R & rng );
 ///      \f$ K \ge 0 \f$
 template< class T , class R >
 bool freivalds( const std::vector< std::vector< T > > & A ,
-                const std::vector< std::vector< T > > & B ,
-                const std::vector< std::vector< T > > & C , int K , R & rng );
+		const std::vector< std::vector< T > > & B ,
+		const std::vector< std::vector< T > > & C , int K , R & rng );
 
 /// whether the formula \f$ f \f$ of \f$ n \f$ variables is true on more than
 /// half of the assignments, from \f$ K \f$ random ones
@@ -144,7 +145,7 @@ bool halfSatisfiable( F && f , std::size_t n , int K , R & rng );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MonteCarlo.h included */
+#endif /* MonteCarlo.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File MonteCarlo.h --------------------------*/

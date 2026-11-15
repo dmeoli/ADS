@@ -62,39 +62,45 @@ int main()
  D.insert( "one" , 1 );
  D.insert( "two" , 2 );
  D.remove( "one" );
- check( ! D.lookup( "one" ) && D.lookup( "two" ) == 2 ,
-        "ChainedHashTable" );
+ check( ! D.lookup( "one" ) && D.lookup( "two" ) == 2 , "ChainedHashTable" );
 
  // graph: the shortest paths of the example of the book
  ListGraph< int > g( 7 , true );
- const struct { char u , v; int w; } E[] = { { 'A' , 'B' , 2 } ,
-  { 'A' , 'D' , 1 } , { 'B' , 'C' , 3 } , { 'B' , 'D' , 3 } ,
-  { 'D' , 'F' , 1 } , { 'F' , 'C' , 2 } , { 'C' , 'G' , 2 } ,
-  { 'F' , 'G' , 5 } };
+ const struct
+ {
+  char u , v;
+  int w;
+  } E[] = {
+  { 'A' , 'B' , 2 } , { 'A' , 'D' , 1 } , { 'B' , 'C' , 3 } ,
+  { 'B' , 'D' , 3 } ,
+  { 'D' , 'F' , 1 } , { 'F' , 'C' , 2 } , { 'C' , 'G' , 2 } , { 'F' , 'G' , 5 }
+  };
  for( const auto & e : E )
   g.insertEdge( e.u - 'A' , e.v - 'A' , e.w );
  const auto R = dijkstra( g , 0 );
- check( R.d == std::vector< int >( { 0 , 2 , 4 , 1 , infinity< int >() ,
-                                     2 , 6 } ) , "dijkstra" );
+ check( R.d == std::vector< int >( { 0 , 2 , 4 , 1 , infinity< int >() , 2 ,
+				     6 } ) ,
+	"dijkstra" );
 
  // string: the occurrences of a pattern
- check( kmp( "abracadabra" , "abra" ) ==
-        std::vector< std::size_t >( { 0 , 7 } ) , "kmp" );
+ check( kmp( "abracadabra" ,
+	     "abra" ) == std::vector< std::size_t >( { 0 , 7 } ) ,
+	"kmp" );
 
  // numeric: ( 1 + 2 x ) ( 3 + x ) = 3 + 7 x + 2 x^2 by Karatsuba
  const auto c = multiplyKaratsuba( std::vector< long >( { 1 , 2 } ) ,
-                                   std::vector< long >( { 3 , 1 } ) );
+				   std::vector< long >( { 3 , 1 } ) );
  check( c == std::vector< long >( { 3 , 7 , 2 } ) , "multiplyKaratsuba" );
 
  // numeric: a product of BigInteger beyond 64 bits
  const BigInteger a( "123456789012345678901234567890" );
  check( ( a * a ).toString() ==
-        "15241578753238836750495351562536198787501905199875019052100" ,
-        "BigInteger" );
+	  "15241578753238836750495351562536198787501905199875019052100" ,
+	"BigInteger" );
 
  std::cout << ( failed ? "FAILED" : "PASSED" ) << " module\n";
  return( failed ? 1 : 0 );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File module.cpp ---------------------------*/

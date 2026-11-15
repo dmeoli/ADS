@@ -78,18 +78,20 @@
 /*------------------------------- HELPERS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace {
+namespace
+{
 
 using namespace ADS;
 using namespace ADS::bench;
 
-int threads = 4;                            ///< -t
-std::string bname;                          ///< "runtime t<t>"
+int threads = 4;    ///< -t
+std::string bname;  ///< "runtime t<t>"
 
 #if defined( ADS_WITH_FASTFLOW )
 /// the mesh of FastFlow: a SWSR_Ptr_Buffer per pair, a pointer per
 /// message (the message plus 1, never null)
-class FFMesh {
+class FFMesh
+{
  public:
  using Message = std::uint64_t;
  static constexpr bool bounded = true;
@@ -101,11 +103,11 @@ class FFMesh {
   }
  [[nodiscard]] std::size_t size( void ) const { return( f_p ); }
  std::size_t tryPush( std::size_t from , std::size_t to ,
-                      std::span< const std::uint64_t > m ) {
+		      std::span< const std::uint64_t > m ) {
   auto & q = *f_q[ to * f_p + from ];
   std::size_t k = 0;
   while( ( k < m.size() ) &&
-         q.push( reinterpret_cast< void * >( m[ k ] + 1 ) ) )
+	 q.push( reinterpret_cast< void * >( m[ k ] + 1 ) ) )
    ++k;
   return( k );
   }
@@ -122,6 +124,7 @@ class FFMesh {
    }
   return( n );
   }
+
  private:
  std::size_t f_p;
  std::vector< std::unique_ptr< ff::SWSR_Ptr_Buffer > > f_q;
@@ -132,7 +135,8 @@ class FFMesh {
 /// channels C, on the workers of ex
 template< class C , class E >
 void allToAll( E & ex , const std::string & who , std::size_t n ,
-               std::size_t b , int r )
+	       std::size_t b ,
+	       int r )
 {
  if( skip( who ) )
   return;
@@ -149,7 +153,10 @@ void allToAll( E & ex , const std::string & who , std::size_t n ,
   ex.run( p , [ & ]( std::size_t me ) {
    std::vector< std::uint64_t > batch( b );
    std::uint64_t got = 0 , sum = 0;
-   auto take = [ & ]( std::uint64_t && x ) { ++got; sum += x; };
+   auto take = [ & ]( std::uint64_t && x ) {
+    ++got;
+    sum += x;
+    };
    for( std::size_t k = 0 , j = 0 ; k < n ; k += b , ++j ) {
     const std::size_t to = dest( me , j );
     const std::size_t m = std::min( b , n - k );
@@ -157,8 +164,9 @@ void allToAll( E & ex , const std::string & who , std::size_t n ,
      batch[ j ] = k + j;
     std::size_t sent = 0;
     while( sent < m ) {
-     sent += c.tryPush( me , to , std::span< const std::uint64_t >(
-                                   batch.data() + sent , m - sent ) );
+     sent += c.tryPush(
+       me , to ,
+       std::span< const std::uint64_t >( batch.data() + sent , m - sent ) );
      c.drain( me , take );
      }
     }
@@ -168,8 +176,8 @@ void allToAll( E & ex , const std::string & who , std::size_t n ,
    } );
   };
  print( bname.c_str() , "all-to-all b" + std::to_string( b ) , n , who ,
-        median( [ & ] { return( std::make_unique< C >( p ) ); } ,
-                [ & ]( auto & c ) { run( *c ); } , r , n * p ) );
+	median( [ & ] { return( std::make_unique< C >( p ) ); } ,
+		[ & ]( auto & c ) { run( *c ); } , r , n * p ) );
  }
 
 /// n round trips of a message between two workers of ex, through a
@@ -179,24 +187,26 @@ void roundTrip( E & ex , const std::string & who , std::size_t n , int r )
 {
  if( skip( who ) || ( threads < 2 ) )
   return;
- print( bname.c_str() , "round-trip" , n , who , median(
-  [ & ] { return( std::make_unique< Mailbox< std::uint64_t , C > >( 2 ,
-                                                                      1 ) );
-          } ,
-  [ & ]( auto & mb ) {
-   ex.run( 2 , [ & ]( std::size_t me ) {
-    std::uint64_t seen = 0;
-    if( me == 0 )
-     mb->send( 0 , 1 , 0 );
-    while( seen < n ) {
-     mb->poll( me , [ & ]( std::uint64_t && x ) {
-      ++seen;
-      if( x + 1 < 2 * n )
-       mb->send( me , 1 - me , x + 1 );
-      } );
-     }
-    } );
-   } , r , n ) );
+ print( bname.c_str() , "round-trip" , n , who ,
+	median(
+	  [ & ] {
+	   return( std::make_unique< Mailbox< std::uint64_t , C > >( 2 , 1 ) );
+	   } ,
+	  [ & ]( auto & mb ) {
+	   ex.run( 2 , [ & ]( std::size_t me ) {
+	    std::uint64_t seen = 0;
+	    if( me == 0 )
+	     mb->send( 0 , 1 , 0 );
+	    while( seen < n ) {
+	     mb->poll( me , [ & ]( std::uint64_t && x ) {
+	      ++seen;
+	      if( x + 1 < 2 * n )
+	       mb->send( me , 1 - me , x + 1 );
+	      } );
+	     }
+	    } );
+	   } ,
+	  r , n ) );
  }
 
 /// the mixing of 64 bits of SplitMix64
@@ -218,7 +228,8 @@ std::uint32_t depthOf( std::size_t n )
  }
 
 /// a node of the random tree: its key and its depth
-struct Node {
+struct Node
+{
  std::uint64_t key;
  std::uint32_t depth;
  };
@@ -228,7 +239,7 @@ struct Node {
 /// above the depth, so about 3^depth nodes
 template< class C , class E >
 void tree( E & ex , const std::string & who , std::size_t n , int r ,
-           unsigned seed )
+	   unsigned seed )
 {
  if( skip( who ) )
   return;
@@ -254,34 +265,37 @@ void tree( E & ex , const std::string & who , std::size_t n , int r ,
    children( v , [ & ]( Node w ) { stack.push_back( w ); } );
    }
   }
- print( bname.c_str() , "tree" , n , who , median(
-  [ & ] { return( std::make_unique< Mailbox< Node , C > >( p , 64 ) ); } ,
-  [ & ]( auto & mb ) {
-   ex.run( p , [ & ]( std::size_t me ) {
-    std::vector< Node > stack;
-    if( ownerOf( std::uint64_t( seed ) , p ) == me )
-     stack.push_back( Node{ seed , 0 } );
-    for( ;; ) {
-     mb->poll( me , [ & ]( Node && v ) { stack.push_back( v ); } );
-     if( ! stack.empty() ) {
-      for( int j = 0 ; ( j < 64 ) && ! stack.empty() ; ++j ) {
-       const Node v = stack.back();
-       stack.pop_back();
-       children( v , [ & ]( Node w ) {
-        const std::size_t o = ownerOf( w.key , p );
-        if( o == me )
-         stack.push_back( w );
-        else
-         mb->send( me , o , w );
-        } );
-       }
-      continue;
-      }
-     if( mb->quiescent( me ) )
-      break;
-     }
-    } );
-   } , r , std::size_t( size ) ) );
+ print(
+   bname.c_str() , "tree" , n , who ,
+   median(
+     [ & ] { return( std::make_unique< Mailbox< Node , C > >( p , 64 ) ); } ,
+     [ & ]( auto & mb ) {
+      ex.run( p , [ & ]( std::size_t me ) {
+       std::vector< Node > stack;
+       if( ownerOf( std::uint64_t( seed ) , p ) == me )
+	stack.push_back( Node{ seed , 0 } );
+       for( ; ; ) {
+	mb->poll( me , [ & ]( Node && v ) { stack.push_back( v ); } );
+	if( ! stack.empty() ) {
+	 for( int j = 0 ; ( j < 64 ) && ! stack.empty() ; ++j ) {
+	  const Node v = stack.back();
+	  stack.pop_back();
+	  children( v , [ & ]( Node w ) {
+	   const std::size_t o = ownerOf( w.key , p );
+	   if( o == me )
+	    stack.push_back( w );
+	   else
+	    mb->send( me , o , w );
+	   } );
+	  }
+	 continue;
+	 }
+	if( mb->quiescent( me ) )
+	 break;
+        }
+       } );
+      } ,
+     r , std::size_t( size ) ) );
  }
 
 /// the latency of the detection: the time from the start of the workers,
@@ -293,18 +307,22 @@ void endLatency( E & ex , const std::string & who , int r )
  if( skip( who ) )
   return;
  const std::size_t p = std::size_t( threads );
- print( bname.c_str() , "run" , p , who , median(
-  [ & ] { return( 0 ); } ,
-  [ & ]( int ) { ex.run( p , []( std::size_t ) {} ); } , r , 1 ) );
- print( bname.c_str() , "end" , p , who , median(
-  [ & ] { return( std::make_unique< Mailbox< std::uint64_t , C > >( p ) );
-          } ,
-  [ & ]( auto & mb ) {
-   ex.run( p , [ & ]( std::size_t me ) {
-    while( ! mb->quiescent( me ) )
-     ;
-    } );
-   } , r , 1 ) );
+ print( bname.c_str() , "run" , p , who ,
+	median( [ & ] { return( 0 ); } ,
+		[ & ]( int ) { ex.run( p , []( std::size_t ) { } ); } , r ,
+		1 ) );
+ print( bname.c_str() , "end" , p , who ,
+	median(
+	  [ & ] {
+	   return( std::make_unique< Mailbox< std::uint64_t , C > >( p ) );
+	   } ,
+	  [ & ]( auto & mb ) {
+	   ex.run( p , [ & ]( std::size_t me ) {
+	    while( ! mb->quiescent( me ) )
+	     ;
+	    } );
+	   } ,
+	  r , 1 ) );
  }
 
 /// the all-to-all of n messages per worker through a mailbox of batches of
@@ -312,33 +330,37 @@ void endLatency( E & ex , const std::string & who , int r )
 /// (k mod (p - 1))-th of the others; the workers poll every 64 sends but
 /// the worker 0, which polls every 4096, so that the queues to it fill and
 /// the sends to it are refused and retried; per message
-template< class C , class E , class ... A >
+template< class C , class E , class... A >
 void mailboxFull( E & ex , const std::string & who , std::size_t n , int r ,
-                  A ... args )
+		  A... args )
 {
  if( skip( who ) )
   return;
  const std::size_t p = std::size_t( threads );
- print( bname.c_str() , "full" , n , who , median(
-  [ & ] { return( std::make_unique< Mailbox< std::uint64_t , C > >( p , 64 ,
-                                                                 args... ) );
-          } ,
-  [ & ]( auto & mb ) {
-   ex.run( p , [ & ]( std::size_t me ) {
-    std::uint64_t sum = 0;
-    auto take = [ & ]( std::uint64_t && x ) { sum += x; };
-    const std::size_t every = ( me == 0 ) ? 4096 : 64;
-    for( std::size_t k = 0 ; k < n ; ++k ) {
-     const std::size_t to = ( p == 1 ) ? me : ( me + 1 + k % ( p - 1 ) ) % p;
-     mb->send( me , to , k );
-     if( k % every == every - 1 )
-      mb->poll( me , take );
-     }
-    while( ! mb->quiescent( me ) )
-     mb->poll( me , take );
-    sink = sink + sum;
-    } );
-   } , r , n * p ) );
+ print( bname.c_str() , "full" , n , who ,
+	median(
+	  [ & ] {
+	   return( std::make_unique< Mailbox< std::uint64_t , C > >(
+	     p , 64 , args... ) );
+	   } ,
+	  [ & ]( auto & mb ) {
+	   ex.run( p , [ & ]( std::size_t me ) {
+	    std::uint64_t sum = 0;
+	    auto take = [ & ]( std::uint64_t && x ) { sum += x; };
+	    const std::size_t every = ( me == 0 ) ? 4096 : 64;
+	    for( std::size_t k = 0 ; k < n ; ++k ) {
+	     const std::size_t to =
+	       ( p == 1 ) ? me : ( me + 1 + k % ( p - 1 ) ) % p;
+	     mb->send( me , to , k );
+	     if( k % every == every - 1 )
+	      mb->poll( me , take );
+	     }
+	    while( ! mb->quiescent( me ) )
+	     mb->poll( me , take );
+	    sink = sink + sum;
+	    } );
+	   } ,
+	  r , n * p ) );
  }
 
 /// the latency of a stop: the random tree of about n nodes explored by the
@@ -348,7 +370,7 @@ void mailboxFull( E & ex , const std::string & who , std::size_t n , int r ,
 /// at most)
 template< class C , class E >
 void stopLatency( E & ex , const std::string & who , std::size_t n , int r ,
-                  unsigned seed )
+		  unsigned seed )
 {
  if( skip( who ) )
   return;
@@ -384,9 +406,9 @@ void stopLatency( E & ex , const std::string & who , std::size_t n , int r ,
       children( v , [ & ]( Node w ) {
        const std::size_t o = ownerOf( w.key , p );
        if( o == me )
-        stack.push_back( w );
+	stack.push_back( w );
        else
-        mb.send( me , o , w );
+	mb.send( me , o , w );
        } );
       }
      continue;
@@ -397,8 +419,8 @@ void stopLatency( E & ex , const std::string & who , std::size_t n , int r ,
    } );
   const auto end = std::chrono::steady_clock::now();
   if( mb.stopped() )
-   t.push_back( std::chrono::duration< double , std::nano >( end - at )
-                .count() );
+   t.push_back(
+     std::chrono::duration< double , std::nano >( end - at ).count() );
   std::uint64_t left = 0;
   mb.leftovers( [ & ]( Node && ) { ++left; } );
   sink = sink + left;
@@ -411,23 +433,31 @@ void stopLatency( E & ex , const std::string & who , std::size_t n , int r ,
 
 /// the families of channels, for any type of messages
 template< class L >
-struct LockedOf {
- template< class M > using type = LockedChannels< M , L >;
+struct LockedOf
+{
+ template< class M >
+ using type = LockedChannels< M , L >;
  };
-struct InboxOf {
- template< class M > using type = InboxChannels< M >;
+struct InboxOf
+{
+ template< class M >
+ using type = InboxChannels< M >;
  };
-struct LanesOf {
- template< class M > using type = LaneChannels< M >;
+struct LanesOf
+{
+ template< class M >
+ using type = LaneChannels< M >;
  };
-struct MeshOf {
- template< class M > using type = MeshChannels< M >;
+struct MeshOf
+{
+ template< class M >
+ using type = MeshChannels< M >;
  };
 
 /// all the cases of the family F on the executor ex, as who
 template< class F , class E >
 void cases( E & ex , const std::string & who , std::size_t n , int r ,
-            unsigned seed )
+	    unsigned seed )
 {
  using C = typename F::template type< std::uint64_t >;
  for( std::size_t b : { 1 , 64 } )
@@ -436,15 +466,14 @@ void cases( E & ex , const std::string & who , std::size_t n , int r ,
  tree< typename F::template type< Node > >( ex , who , n , r , seed );
  endLatency< C >( ex , who , r );
  mailboxFull< C >( ex , who , n , r );
- stopLatency< typename F::template type< Node > >( ex , who , n , r ,
-                                                   seed );
+ stopLatency< typename F::template type< Node > >( ex , who , n , r , seed );
  }
 
 /// the families on the executor ex, the first one again as "A/A" when
 /// first is true
 template< class E >
 void families( E & ex , const std::string & name , std::size_t n , int r ,
-               unsigned seed , bool first )
+	       unsigned seed , bool first )
 {
  using L = typename E::lock_type;
  cases< LockedOf< L > >( ex , name + " locked" , n , r , seed );
@@ -455,7 +484,8 @@ void families( E & ex , const std::string & name , std::size_t n , int r ,
  cases< LanesOf >( ex , name + " lanes" , n , r , seed );
  cases< MeshOf >( ex , name + " mesh" , n , r , seed );
  mailboxFull< MeshChannels< std::uint64_t > >( ex , name + " mesh-c64" , n ,
-                                               r , std::size_t( 64 ) );
+					       r ,
+					       std::size_t( 64 ) );
 #if defined( ADS_WITH_FASTFLOW )
  for( std::size_t b : { 1 , 64 } )
   allToAll< FFMesh >( ex , name + " ff-mesh" , n , b , r );

@@ -14,10 +14,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline MFSet::MFSet( int n , Union u , bool compress )
- : f_union( u ) , f_compress( compress ) , f_count( n )
+    : f_union( u ) , f_compress( compress ) , f_count( n )
 {
  ADS_PRE( n >= 0 );
  f_p.resize( n );
@@ -123,16 +124,17 @@ inline bool MFSet::forest( void ) const
 {
  const int N = n();
  int roots = 0;
- std::vector< char > state( N , 0 );     // 0 new, 1 on the path, 2 done
+ std::vector< char > state( N , 0 );  // 0 new, 1 on the path, 2 done
  for( int x = 0 ; x < N ; ++x ) {
   if( ( f_p[ x ] < 0 ) || ( f_p[ x ] >= N ) )
    return( false );
-  if( f_p[ x ] == x ) ++roots;
+  if( f_p[ x ] == x )
+   ++roots;
   else if( ( f_union == Union::RANK ) &&
-           !( f_rank[ x ] < f_rank[ f_p[ x ] ] ) )
-   return( false );                      // the rank grows upwards
+	   ! ( f_rank[ x ] < f_rank[ f_p[ x ] ] ) )
+   return( false );  // the rank grows upwards
   }
- for( int x = 0 ; x < N ; ++x ) {        // no cycle but the roots
+ for( int x = 0 ; x < N ; ++x ) {  // no cycle but the roots
   int u = x;
   while( ( state[ u ] == 0 ) && ( f_p[ u ] != u ) ) {
    state[ u ] = 1;
@@ -144,7 +146,7 @@ inline bool MFSet::forest( void ) const
    state[ u ] = 2;
   state[ u ] = 2;
   }
- if( f_union == Union::SIZE ) {          // the sizes count the nodes
+ if( f_union == Union::SIZE ) {  // the sizes count the nodes
   std::vector< int > count( N , 0 );
   for( int x = 0 ; x < N ; ++x )
    ++count[ root( x ) ];

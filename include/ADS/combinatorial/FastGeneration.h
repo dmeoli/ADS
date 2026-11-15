@@ -72,7 +72,7 @@
 
 #ifndef __ADS_FastGeneration
  #define __ADS_FastGeneration
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -93,7 +93,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the \f$ n! \f$ arrangements of \f$ a \f$ by Heap's method, `visit( a )` on
 /// each
@@ -234,7 +235,7 @@ long forEachCombinationMask( int n , int t , F && visit );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* FastGeneration.h included */
+#endif /* FastGeneration.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File FastGeneration.h ------------------------*/

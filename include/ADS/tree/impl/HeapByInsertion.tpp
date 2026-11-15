@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , class C >
 void maxHeapSiftUp( std::vector< T > & A , std::size_t i , C less )
@@ -23,8 +24,9 @@ void maxHeapSiftUp( std::vector< T > & A , std::size_t i , C less )
  ADS_AUDIT( isMaxHeap( A , i , less ) );
  const std::size_t dim = i + 1;
  while( i > 0 ) {
-  const std::size_t p = ( i - 1 ) / 2;       // the parent
-  if( ! less( A[ p ] , A[ i ] ) ) break;
+  const std::size_t p = ( i - 1 ) / 2;  // the parent
+  if( ! less( A[ p ] , A[ i ] ) )
+   break;
   std::swap( A[ p ] , A[ i ] );
   i = p;
   }

@@ -66,7 +66,7 @@
 
 #ifndef __ADS_SinglyList
  #define __ADS_SinglyList
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -87,7 +87,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS SinglyList ------------------------------*/
@@ -95,19 +96,20 @@ namespace ADS {
 
 /// a SEQUENCE realized as a singly linked list with no sentinel
 template< class T >
-class SinglyList {
+class SinglyList
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// a cell of the list
- struct Cell {
+ struct Cell
+ {
   T value;      ///< the item
   Cell * next;  ///< the next cell, nil after the last one
   };
 
- using Item = T;       ///< the type of the items
- using Pos = Cell *;   ///< the cell before the item, nil for the first one
+ using Item = T;      ///< the type of the items
+ using Pos = Cell *;  ///< the cell before the item, nil for the first one
 
  /// the empty list
  SinglyList( void ) = default;
@@ -245,12 +247,13 @@ class SinglyList {
 
  /// the iterator, on items const if `Const`
  template< bool Const >
- class Iterator {
+ class Iterator
+ {
   public:
   /// the category of the iterator, forward
   using iterator_category = std::forward_iterator_tag;
-  using value_type = T;                     ///< the type of the items
-  using difference_type = std::ptrdiff_t;   ///< the type of the distances
+  using value_type = T;                    ///< the type of the items
+  using difference_type = std::ptrdiff_t;  ///< the type of the distances
   /// a reference to an item, constant if `Const`
   using reference = std::conditional_t< Const , const T & , T & >;
   /// a pointer to an item, constant if `Const`
@@ -260,27 +263,36 @@ class SinglyList {
   Iterator( void ) = default;
 
   /// on the item of the cell \f$ c \f$, the end if \f$ c \f$ is nil
-  explicit Iterator( Cell * c ) : f_c( c ) {}
+  explicit Iterator( Cell * c ) : f_c( c ) { }
 
   /// the const iterator from the other one
-  template< bool C > requires ( Const && ! C )
-  Iterator( const Iterator< C > & o ) : f_c( o.f_c ) {}
+  template< bool C >
+   requires( Const && ! C )
+  Iterator( const Iterator< C > & o ) : f_c( o.f_c ) { }
 
   /// the item
   reference operator*( void ) const { return( f_c->value ); }
   /// the address of the item
   pointer operator->( void ) const { return( &**this ); }
   /// to the next cell
-  Iterator & operator++( void ) { f_c = f_c->next; return( *this ); }
+  Iterator & operator++( void ) {
+   f_c = f_c->next;
+   return( *this );
+   }
   /// to the next cell, returning the iterator before the step
-  Iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  Iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
   /// equal on the same cell
   bool operator==( const Iterator & o ) const = default;
 
   private:
-  Cell * f_c = nullptr;   ///< the cell of the item, nil at the end
+  Cell * f_c = nullptr;  ///< the cell of the item, nil at the end
 
-  template< bool > friend class Iterator;
+  template< bool >
+  friend class Iterator;
   };
 
  /// the type of the items
@@ -307,7 +319,9 @@ class SinglyList {
   return( const_iterator( f_first ) );
   }
  /// the constant iterator past the last item
- [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator() );
+  }
  /// the constant iterator on the first item
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
  /// the constant iterator past the last item
@@ -420,17 +434,16 @@ class SinglyList {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the cell of the item in the position \f$ p \f$
  [[nodiscard]] Cell * cell( Pos p ) const;
 
  /// the cell of rank \f$ i \f$, by a walk
  [[nodiscard]] Cell * walk( std::size_t i ) const;
 
- Cell * f_first = nullptr;               ///< the first cell
- Cell * f_last = nullptr;                ///< the last cell
- std::size_t f_size = 0;                 ///< the number of items
- ObjectPool< Cell > f_pool;              ///< the cells
+ Cell * f_first = nullptr;   ///< the first cell
+ Cell * f_last = nullptr;    ///< the last cell
+ std::size_t f_size = 0;     ///< the number of items
+ ObjectPool< Cell > f_pool;  ///< the cells
  /// its address is \f$ \mathit{pos}_{-1} \f$
  mutable Cell f_before{ T() , nullptr };
 
@@ -448,7 +461,7 @@ class SinglyList {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SinglyList.h included */
+#endif /* SinglyList.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File SinglyList.h --------------------------*/

@@ -58,7 +58,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using I64 = std::int64_t;
 using Ints = std::vector< int >;
@@ -83,7 +84,8 @@ int randInt( std::mt19937 & g , int lo , int hi )
 Ints randInts( std::mt19937 & g , int n , int lo , int hi )
 {
  Ints A( n );
- for( auto & a : A ) a = randInt( g , lo , hi );
+ for( auto & a : A )
+  a = randInt( g , lo , hi );
  return( A );
  }
 
@@ -91,7 +93,8 @@ Ints randInts( std::mt19937 & g , int n , int lo , int hi )
 Ints randDistinct( std::mt19937 & g , int n , int lo , int hi )
 {
  Ints R;
- for( int v = lo ; v <= hi ; ++v ) R.push_back( v );
+ for( int v = lo ; v <= hi ; ++v )
+  R.push_back( v );
  std::shuffle( R.begin() , R.end() , g );
  R.resize( n );
  return( R );
@@ -101,7 +104,8 @@ Ints randDistinct( std::mt19937 & g , int n , int lo , int hi )
 Grid randGrid( std::mt19937 & g , int n , int m , int lo , int hi )
 {
  Grid A( n );
- for( auto & r : A ) r = randInts( g , m , lo , hi );
+ for( auto & r : A )
+  r = randInts( g , m , lo , hi );
  return( A );
  }
 
@@ -109,7 +113,8 @@ Grid randGrid( std::mt19937 & g , int n , int m , int lo , int hi )
 std::string randString( std::mt19937 & g , int n , int s )
 {
  std::string w( std::size_t( n ) , 'A' );
- for( auto & c : w ) c = char( 'A' + randInt( g , 0 , s - 1 ) );
+ for( auto & c : w )
+  c = char( 'A' + randInt( g , 0 , s - 1 ) );
  return( w );
  }
 
@@ -118,7 +123,8 @@ Ints bitsOf( unsigned s )
 {
  Ints P;
  for( int i = 0 ; s ; ++i , s >>= 1 )
-  if( s & 1u ) P.push_back( i );
+  if( s & 1u )
+   P.push_back( i );
  return( P );
  }
 
@@ -159,13 +165,13 @@ Kids parseShape( const std::string & w )
    ++p;
    return( -1 );
    }
-  ++p;                                                  // '('
+  ++p;  // '('
   const int v = int( K.size() );
   K.push_back( { -1 , -1 } );
   const int l = rec();
   const int r = rec();
   K[ v ] = { l , r };
-  ++p;                                                  // ')'
+  ++p;  // ')'
   return( v );
   };
  rec();
@@ -175,8 +181,9 @@ Kids parseShape( const std::string & w )
 /// the size of the subtree of v in K
 int subSize( const Kids & K , int v )
 {
- return( v < 0 ? 0 :
-         1 + subSize( K , K[ v ][ 0 ] ) + subSize( K , K[ v ][ 1 ] ) );
+ return( v < 0 ? 0
+		: 1 + subSize( K , K[ v ][ 0 ] ) + subSize( K ,
+							    K[ v ][ 1 ] ) );
  }
 
 /// the binomial coefficients up to 62 by Pascal's triangle
@@ -206,7 +213,8 @@ bool isSubsequence( const S & s , const S & t )
 {
  std::size_t i = 0;
  for( std::size_t j = 0 ; ( i < s.size() ) && ( j < t.size() ) ; ++j )
-  if( s[ i ] == t[ j ] ) ++i;
+  if( s[ i ] == t[ j ] )
+   ++i;
  return( i == s.size() );
  }
 
@@ -216,7 +224,8 @@ bool isSubsequence( const S & s , const S & t )
 /*------------------- dp-73, 2021-01-18, Stiamo compatti -------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Stiamo compatti: the fewest items of A, distinct, to remove so that the
 /// rest spans at most k. On A sorted, the interval DP of the text,
@@ -235,8 +244,9 @@ int minRemoveDP( std::vector< int > A , int k )
  for( int h = 1 ; h < n ; ++h )
   for( int i = 0 ; i + h < n ; ++i ) {
    const int j = i + h;
-   DP[ i ][ j ] = I64( A[ j ] ) - A[ i ] <= k ? 0 :
-                  1 + std::min( DP[ i + 1 ][ j ] , DP[ i ][ j - 1 ] );
+   DP[ i ][ j ] = I64( A[ j ] ) - A[ i ] <= k
+		    ? 0
+		    : 1 + std::min( DP[ i + 1 ][ j ] , DP[ i ][ j - 1 ] );
    }
  return( DP[ 0 ][ n - 1 ] );
  }
@@ -264,7 +274,8 @@ int minRemove( std::vector< int > A , int k )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 int minRemoveBrute( const Ints & A , int k )
 {
@@ -272,13 +283,15 @@ int minRemoveBrute( const Ints & A , int k )
  int best = 0;
  for( unsigned s = 0 ; s < ( 1u << n ) ; ++s ) {
   const Ints P = bitsOf( s );
-  if( P.empty() ) continue;
+  if( P.empty() )
+   continue;
   I64 lo = A[ P[ 0 ] ] , hi = lo;
   for( int p : P ) {
    lo = std::min< I64 >( lo , A[ p ] );
    hi = std::max< I64 >( hi , A[ p ] );
    }
-  if( hi - lo <= k ) best = std::max( best , int( P.size() ) );
+  if( hi - lo <= k )
+   best = std::max( best , int( P.size() ) );
   }
  return( n - best );
  }
@@ -292,8 +305,7 @@ ADS_TEST( "dp-73" )
  CHECK( dp::minRemove( { -3 , 3 , 4 , 7 , 9 , 12 , 15 } , 6 ) == 3 );
  CHECK( dp::minRemoveDP( { -3 , 3 , 4 , 7 , 9 , 12 , 15 } , 6 ) == 3 );
  CHECK( dp::minRemove( { -30 , 4 , 1 , -40 , 3 , 2 , -2 , -20 } , 4 ) == 4 );
- CHECK( dp::minRemoveDP( { -30 , 4 , 1 , -40 , 3 , 2 , -2 , -20 } , 4 ) ==
-        4 );
+ CHECK( dp::minRemoveDP( { -30 , 4 , 1 , -40 , 3 , 2 , -2 , -20 } , 4 ) == 4 );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const Ints A = randDistinct( g , randInt( g , 0 , 12 ) , -30 , 30 );
@@ -308,13 +320,13 @@ ADS_TEST( "dp-73" )
  CHECK( dp::minRemove( { INT_MIN , -1 , INT_MAX } , INT_MAX ) == 1 );
  CHECK( dp::minRemove( { 0 , INT_MAX } , INT_MAX ) == 0 );
  CHECK( dp::minRemove( { 0 , 5 } , 5 ) == 0 &&
-        dp::minRemoveDP( { 0 , 5 } , 5 ) == 0 );
+	dp::minRemoveDP( { 0 , 5 } , 5 ) == 0 );
  CHECK( dp::minRemove( { 0 , 5 } , 4 ) == 1 &&
-        dp::minRemoveDP( { 0 , 5 } , 4 ) == 1 );
+	dp::minRemoveDP( { 0 , 5 } , 4 ) == 1 );
  CHECK( dp::minRemove( { 30 , 1 , 20 , 10 } , 5 ) == 3 &&
-        dp::minRemoveDP( { 30 , 1 , 20 , 10 } , 5 ) == 3 );
+	dp::minRemoveDP( { 30 , 1 , 20 , 10 } , 5 ) == 3 );
  CHECK( dp::minRemove( { 1 , 2 , 3 , 4 , 10 } , 3 ) == 1 &&
-        dp::minRemoveDP( { 10 , 4 , 3 , 2 , 1 } , 3 ) == 1 );
+	dp::minRemoveDP( { 10 , 4 , 3 , 2 , 1 } , 3 ) == 1 );
  CHECK_THROWS( dp::minRemove( { 1 , 1 } , 1 ) , contract_violation );
  CHECK_THROWS( dp::minRemove( { 1 } , 0 ) , contract_violation );
  CHECK_THROWS( dp::minRemoveDP( { 3 , 1 , 3 } , 1 ) , contract_violation );
@@ -327,7 +339,8 @@ ADS_TEST( "dp-73" )
 /*-------------------- dp-74, 2021-02-08, Zaino leggero --------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// the memoized recursion of smallSum(): DP[ i ][ c ] < 0 marks the
 /// subproblems not solved yet
@@ -354,8 +367,8 @@ int ssRec( const Ints & W , int i , int c , Grid & DP )
 int smallSum( const Ints & W , int C )
 {
  ADS_PRE( C >= 0 );
- ADS_PRE( std::all_of( W.begin() , W.end() , []( int w ) { return( w > 0 ); }
-                     ) );
+ ADS_PRE(
+   std::all_of( W.begin() , W.end() , []( int w ) { return( w > 0 ); } ) );
  const int n = int( W.size() );
  Grid DP( n + 1 , Ints( std::size_t( C ) + 1 , -1 ) );
  return( ssRec( W , n , C , DP ) );
@@ -363,15 +376,18 @@ int smallSum( const Ints & W , int C )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 int smallSumBrute( const Ints & W , int C )
 {
  int best = INF;
  for( unsigned s = 0 ; s < ( 1u << W.size() ) ; ++s ) {
   I64 sum = 0;
-  for( int p : bitsOf( s ) ) sum += W[ p ];
-  if( sum == C ) best = std::min( best , std::popcount( s ) );
+  for( int p : bitsOf( s ) )
+   sum += W[ p ];
+  if( sum == C )
+   best = std::min( best , std::popcount( s ) );
   }
  return( best );
  }
@@ -389,7 +405,7 @@ ADS_TEST( "dp-74" )
   const int r = dp::smallSum( W , C );
   CHECK( r == smallSumBrute( W , C ) );
   CHECK( ( r < INF ) ==
-         subsetSumDP( std::vector< long >( W.begin() , W.end() ) , C ) );
+	 subsetSumDP( std::vector< long >( W.begin() , W.end() ) , C ) );
   }
  CHECK( dp::smallSum( {} , 0 ) == 0 && dp::smallSum( {} , 3 ) == INF );
  CHECK( dp::smallSum( { 4 } , 4 ) == 1 && dp::smallSum( { 4 } , 3 ) == INF );
@@ -411,7 +427,8 @@ ADS_TEST( "dp-74" )
 /*---------------------- dp-76, 2021-06-16, Rimozioni ----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Rimozioni: the most items of A, distinct and positive, that can be
 /// removed so that the rest sums to exactly C, NEGI if none. DP[ i ][ c ]
@@ -421,8 +438,8 @@ namespace dp {
 int removeSum( const Ints & A , int C )
 {
  ADS_PRE( C > 0 );
- ADS_PRE( std::all_of( A.begin() , A.end() , []( int a ) { return( a > 0 ); }
-                     ) );
+ ADS_PRE(
+   std::all_of( A.begin() , A.end() , []( int a ) { return( a > 0 ); } ) );
  ADS_PRE( std::set< int >( A.begin() , A.end() ).size() == A.size() );
  const int n = int( A.size() );
  Grid DP( n + 1 , Ints( std::size_t( C ) + 1 , NEGI ) );
@@ -439,7 +456,8 @@ int removeSum( const Ints & A , int C )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 // the example, the duality with smallSum() and the subsets on random
 // distinct items, the single item, all the items kept, C above the total,
@@ -452,13 +470,12 @@ ADS_TEST( "dp-76" )
   const Ints A = randDistinct( g , randInt( g , 0 , 12 ) , 1 , 25 );
   const int C = randInt( g , 1 , 70 );
   const int s = smallSumBrute( A , C );
-  CHECK( dp::removeSum( A , C ) ==
-         ( s == INF ? NEGI : int( A.size() ) - s ) );
+  CHECK( dp::removeSum( A , C ) == ( s == INF ? NEGI : int( A.size() ) - s ) );
   CHECK( dp::smallSum( A , C ) == s );
   }
  CHECK( dp::removeSum( {} , 1 ) == NEGI );
- CHECK( dp::removeSum( { 7 } , 7 ) == 0 &&
-        dp::removeSum( { 7 } , 6 ) == NEGI );
+ CHECK( dp::removeSum( { 7 } , 7 ) == 0 && dp::removeSum( { 7 } ,
+							  6 ) == NEGI );
  CHECK( dp::removeSum( { 1 , 2 , 3 , 4 } , 10 ) == 0 );
  CHECK( dp::removeSum( { 1 , 2 , 3 , 4 } , 4 ) == 3 );
  CHECK( dp::removeSum( { 1 , 2 , 3 , 4 } , 11 ) == NEGI );
@@ -475,21 +492,23 @@ ADS_TEST( "dp-76" )
 /*-------------- dp-77, 2021-07-26, Sottosequenze k-contigue ---------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// the memoized recursion of maxSumK(): the value of DP[ i ][ j ] is
 /// meaningful once solved[ i ][ j ] is set
 I64 maxSumKRec( const Ints & V , int k , int i , int j ,
-                std::vector< Longs > & DP ,
-                std::vector< std::vector< char > > & solved )
+		std::vector< Longs > & DP ,
+		std::vector< std::vector< char > > & solved )
 {
  if( i <= 0 )
   return( 0 );
  if( ! solved[ i ][ j ] ) {
   const I64 take = maxSumKRec( V , k , i - 1 , k , DP , solved ) + V[ i - 1 ];
-  DP[ i ][ j ] = j == 0 ? take :
-                 std::max( maxSumKRec( V , k , i - 1 , j - 1 , DP , solved ) ,
-                           take );
+  DP[ i ][ j ] =
+    j == 0 ? take
+	   : std::max( maxSumKRec( V , k , i - 1 , j - 1 , DP , solved ) ,
+		       take );
   solved[ i ][ j ] = 1;
   }
  return( DP[ i ][ j ] );
@@ -510,7 +529,7 @@ I64 maxSumK( const Ints & V , int k )
  const int n = int( V.size() );
  std::vector< Longs > DP( n + 1 , Longs( k + 1 , 0 ) );
  std::vector< std::vector< char > > solved( n + 1 ,
-                                            std::vector< char >( k + 1 , 0 ) );
+					    std::vector< char >( k + 1 , 0 ) );
  return( maxSumKRec( V , k , n , k , DP , solved ) );
  }
 
@@ -535,7 +554,8 @@ I64 maxSumKLinear( const Ints & V , int k )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 I64 maxSumKBrute( const Ints & V , int k )
 {
@@ -551,7 +571,8 @@ I64 maxSumKBrute( const Ints & V , int k )
     }
    else
     worst = std::max( worst , ++run );
-  if( worst <= k ) best = std::max( best , sum );
+  if( worst <= k )
+   best = std::max( best , sum );
   }
  return( best );
  }
@@ -563,8 +584,8 @@ I64 maxSumKBrute( const Ints & V , int k )
 ADS_TEST( "dp-77" )
 {
  const Ints V = { 1 , 2 , 3 , 4 , 5 , 6 };
- auto maxGap = [ & ]( const Ints & S ) {      // S, an increasing subsequence
-  int prev = 0 , gap = 0;                     // of V, by its values
+ auto maxGap = [ & ]( const Ints & S ) {  // S, an increasing subsequence
+  int prev = 0 , gap = 0;                  // of V, by its values
   for( int x : S ) {
    gap = std::max( gap , x - prev - 1 );
    prev = x;
@@ -572,7 +593,7 @@ ADS_TEST( "dp-77" )
   return( std::max( gap , int( V.size() ) - prev ) );
   };
  CHECK( maxGap( { 1 , 3 , 5 } ) == 1 && maxGap( { 1 , 4 , 6 } ) == 2 &&
-        maxGap( { 1 , 5 } ) == 3 );
+	maxGap( { 1 , 5 } ) == 3 );
  CHECK( dp::maxSumK( V , 0 ) == 21 && dp::maxSumKLinear( V , 0 ) == 21 );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 600 ; ++t ) {
@@ -581,7 +602,7 @@ ADS_TEST( "dp-77" )
   const I64 r = maxSumKBrute( A , k );
   CHECK( dp::maxSumK( A , k ) == r && dp::maxSumKLinear( A , k ) == r );
   }
- auto textLinear = []( const Ints & A , int k ) {   // j from max( 0 , i - k )
+ auto textLinear = []( const Ints & A , int k ) {  // j from max( 0 , i - k )
   const int n = int( A.size() );
   Longs DP( n + 1 , 0 );
   for( int i = 1 ; i <= n ; ++i ) {
@@ -589,8 +610,7 @@ ADS_TEST( "dp-77" )
    for( int j = std::max( 0 , i - k ) ; j < i ; ++j )
     DP[ i ] = std::max( DP[ i ] , DP[ j ] + A[ i - 1 ] );
    }
-  return( *std::max_element( DP.begin() + std::max( 0 , n - k ) ,
-                             DP.end() ) );
+  return( *std::max_element( DP.begin() + std::max( 0 , n - k ) , DP.end() ) );
   };
  CHECK( dp::maxSumK( { 5 , -1 , 5 } , 1 ) == 10 );
  CHECK( textLinear( { 5 , -1 , 5 } , 1 ) == 9 );
@@ -602,14 +622,14 @@ ADS_TEST( "dp-77" )
  CHECK( dp::maxSumK( Ints( 1000 , INT_MAX ) , 2 ) == I64( 1000 ) * INT_MAX );
  CHECK( dp::maxSumK( { 5 } , 0 ) == 5 && dp::maxSumKLinear( { 5 } , 0 ) == 5 );
  CHECK( dp::maxSumK( { -5 } , 0 ) == -5 &&
-        dp::maxSumKLinear( { -5 } , 0 ) == -5 );
- CHECK( dp::maxSumK( { -5 } , 1 ) == 0 &&
-        dp::maxSumKLinear( { -5 } , 1 ) == 0 );
+	dp::maxSumKLinear( { -5 } , 0 ) == -5 );
+ CHECK( dp::maxSumK( { -5 } , 1 ) == 0 && dp::maxSumKLinear( { -5 } ,
+							     1 ) == 0 );
  CHECK( dp::maxSumK( { 3 , -9 , 4 } , 10 ) == 7 &&
-        dp::maxSumKLinear( { 3 , -9 , 4 } , 10 ) == 7 );
+	dp::maxSumKLinear( { 3 , -9 , 4 } , 10 ) == 7 );
  CHECK( dp::maxSumK( Ints( 1000 , INT_MIN ) , 0 ) == I64( 1000 ) * INT_MIN );
  CHECK( dp::maxSumKLinear( Ints( 1000 , INT_MIN ) , 1 ) ==
-        I64( 500 ) * INT_MIN );
+	I64( 500 ) * INT_MIN );
  CHECK_THROWS( dp::maxSumK( V , -1 ) , contract_violation );
  CHECK_THROWS( dp::maxSumKLinear( V , -1 ) , contract_violation );
  }
@@ -620,7 +640,8 @@ ADS_TEST( "dp-77" )
 /*------------------ dp-78, 2021-08-31, Somma Palindroma -------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Somma Palindroma: the number of palindromic sequences of even length of
 /// positive integers summing to n. DP[ 0 ] = 1, DP[ i ] = sum of DP[ i - 2 j
@@ -647,7 +668,8 @@ I64 countSumEvenFast( int n )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 // the compositions of n, by their cut points, that are even palindromes
 I64 countSumEvenBrute( int n )
@@ -687,7 +709,7 @@ ADS_TEST( "dp-78" )
  CHECK_THROWS( dp::countSumEven( -2 ) , contract_violation );
  CHECK_THROWS( dp::countSumEven( 128 ) , contract_violation );
  CHECK( dp::countSumEvenFast( 2 ) == 1 &&
-        dp::countSumEvenFast( 126 ) == ( I64( 1 ) << 62 ) );
+	dp::countSumEvenFast( 126 ) == ( I64( 1 ) << 62 ) );
  CHECK_THROWS( dp::countSumEvenFast( 3 ) , contract_violation );
  CHECK_THROWS( dp::countSumEvenFast( 0 ) , contract_violation );
  CHECK_THROWS( dp::countSumEvenFast( 128 ) , contract_violation );
@@ -699,7 +721,8 @@ ADS_TEST( "dp-78" )
 /*------------------- dp-79, 2022-01-17, Ben bilanciato --------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// the memoized recursion of countWellBalanced()
 I64 wbRec( int i , Longs & DP )
@@ -707,8 +730,8 @@ I64 wbRec( int i , Longs & DP )
  if( i <= 1 )
   return( 1 );
  if( DP[ i ] < 0 )
-  DP[ i ] = i % 2 ? wbRec( ( i - 1 ) / 2 , DP ) * wbRec( ( i - 1 ) / 2 , DP ) :
-                    2 * wbRec( ( i - 1 ) / 2 , DP ) * wbRec( i / 2 , DP );
+  DP[ i ] = i % 2 ? wbRec( ( i - 1 ) / 2 , DP ) * wbRec( ( i - 1 ) / 2 , DP )
+		  : 2 * wbRec( ( i - 1 ) / 2 , DP ) * wbRec( i / 2 , DP );
  return( DP[ i ] );
  }
 
@@ -726,14 +749,16 @@ I64 countWellBalanced( int n )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 bool wellBalanced( const Kids & K , int v )
 {
- if( v < 0 ) return( true );
- return( std::abs( subSize( K , K[ v ][ 0 ] ) - subSize( K , K[ v ][ 1 ] ) )
-         <= 1 && wellBalanced( K , K[ v ][ 0 ] ) &&
-         wellBalanced( K , K[ v ][ 1 ] ) );
+ if( v < 0 )
+  return( true );
+ return( std::abs( subSize( K , K[ v ][ 0 ] ) - subSize( K , K[ v ][ 1 ] ) ) <=
+	    1 &&
+	  wellBalanced( K , K[ v ][ 0 ] ) && wellBalanced( K , K[ v ][ 1 ] ) );
  }
 
 // the sequence of the text, all the tree shapes up to 11 nodes, the full
@@ -746,7 +771,8 @@ ADS_TEST( "dp-79" )
  for( int n = 0 ; n <= 11 ; ++n ) {
   I64 c = 0;
   for( const auto & w : shapes( n ) )
-   if( wellBalanced( parseShape( w ) , n ? 0 : -1 ) ) ++c;
+   if( wellBalanced( parseShape( w ) , n ? 0 : -1 ) )
+    ++c;
   CHECK( dp::countWellBalanced( n ) == c );
   }
  for( int h = 1 ; h <= 7 ; ++h )
@@ -762,7 +788,8 @@ ADS_TEST( "dp-79" )
 /*------------- dp-80, 2022-01-17, Longest repeating sequence --------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Longest repeating sequence: the longest subsequence occurring twice in T
 /// with its i-th items never at the same place. The LCS of T with itself
@@ -775,15 +802,16 @@ int lrs( const std::string & T )
  Grid DP( n + 1 , Ints( n + 1 , 0 ) );
  for( std::size_t i = 1 ; i <= n ; ++i )
   for( std::size_t j = 1 ; j <= n ; ++j )
-   DP[ i ][ j ] = ( T[ i - 1 ] == T[ j - 1 ] ) && ( i != j ) ?
-                  DP[ i - 1 ][ j - 1 ] + 1 :
-                  std::max( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] );
+   DP[ i ][ j ] = ( T[ i - 1 ] == T[ j - 1 ] ) && ( i != j )
+		    ? DP[ i - 1 ][ j - 1 ] + 1
+		    : std::max( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] );
  return( DP[ n ][ n ] );
  }
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 int lrsBrute( const std::string & T )
 {
@@ -791,13 +819,14 @@ int lrsBrute( const std::string & T )
  int best = 0;
  for( unsigned a = 0 ; a < ( 1u << n ) ; ++a )
   for( unsigned b = 0 ; b < ( 1u << n ) ; ++b ) {
-   if( std::popcount( a ) != std::popcount( b ) ||
-       std::popcount( a ) <= best ) continue;
+   if( std::popcount( a ) != std::popcount( b ) || std::popcount( a ) <= best )
+    continue;
    const Ints I = bitsOf( a ) , J = bitsOf( b );
    bool ok = true;
    for( std::size_t t = 0 ; ok && ( t < I.size() ) ; ++t )
     ok = ( I[ t ] != J[ t ] ) && ( T[ I[ t ] ] == T[ J[ t ] ] );
-   if( ok ) best = int( I.size() );
+   if( ok )
+    best = int( I.size() );
    }
  return( best );
  }
@@ -812,8 +841,8 @@ ADS_TEST( "dp-80" )
  CHECK( dp::lrs( "ABCCBA" ) == 1 );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 200 ; ++t ) {
-  const std::string T = randString( g , randInt( g , 0 , 8 ) ,
-                                    randInt( g , 1 , 3 ) );
+  const std::string T =
+    randString( g , randInt( g , 0 , 8 ) , randInt( g , 1 , 3 ) );
   CHECK( dp::lrs( T ) == lrsBrute( T ) );
   }
  CHECK( dp::lrs( "" ) == 0 && dp::lrs( "A" ) == 0 );
@@ -821,7 +850,8 @@ ADS_TEST( "dp-80" )
  CHECK( dp::lrs( "ABCDEFGH" ) == 0 );
  CHECK( dp::lrs( "AA" ) == 1 && dp::lrs( "AB" ) == 0 );
  std::string w;
- for( char c = 'A' ; c <= 'Z' ; ++c ) w += c;
+ for( char c = 'A' ; c <= 'Z' ; ++c )
+  w += c;
  CHECK( dp::lrs( w ) == 0 && dp::lrs( w + w ) == 26 );
  }
 
@@ -831,7 +861,8 @@ ADS_TEST( "dp-80" )
 /*-------------------- dp-81, 2022-02-07, Discordville ---------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Discordville: the largest total donation D of the houses that take part,
 /// house i refusing if any of the N[ i ] houses before it takes part.
@@ -852,7 +883,8 @@ I64 discordville( const Ints & D , const Ints & N )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 I64 discordvilleBrute( const Ints & D , const Ints & N )
 {
@@ -864,9 +896,11 @@ I64 discordvilleBrute( const Ints & D , const Ints & N )
   for( int i : bitsOf( s ) ) {
    sum += D[ i ];
    for( int j = i - N[ i ] ; j < i ; ++j )
-    if( ( s >> j ) & 1u ) ok = false;
+    if( ( s >> j ) & 1u )
+     ok = false;
    }
-  if( ok ) best = std::max( best , sum );
+  if( ok )
+   best = std::max( best , sum );
   }
  return( best );
  }
@@ -876,29 +910,30 @@ I64 discordvilleBrute( const Ints & D , const Ints & N )
 // preconditions (no house, sizes differing, D or N negative, N[ i ] > i)
 ADS_TEST( "dp-81" )
 {
- CHECK( dp::discordville( { 3 , 4 , 5 , 7 , 1 } , { 0 , 1 , 1 , 3 , 1 } ) ==
-        9 );
+ CHECK( dp::discordville( { 3 , 4 , 5 , 7 , 1 } ,
+			  { 0 , 1 , 1 , 3 , 1 } ) == 9 );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const int n = randInt( g , 1 , 12 );
   const Ints D = randInts( g , n , 0 , 20 );
   Ints N( n );
-  for( int i = 0 ; i < n ; ++i ) N[ i ] = randInt( g , 0 , i );
+  for( int i = 0 ; i < n ; ++i )
+   N[ i ] = randInt( g , 0 , i );
   CHECK( dp::discordville( D , N ) == discordvilleBrute( D , N ) );
   }
  CHECK( dp::discordville( { 6 } , { 0 } ) == 6 );
  CHECK( dp::discordville( { 1 , 2 , 3 } , { 0 , 0 , 0 } ) == 6 );
  CHECK( dp::discordville( { 1 , 5 , 3 } , { 0 , 1 , 2 } ) == 5 );
  CHECK( dp::discordville( Ints( 1000 , INT_MAX ) , Ints( 1000 , 0 ) ) ==
-        I64( 1000 ) * INT_MAX );
+	I64( 1000 ) * INT_MAX );
  CHECK( dp::discordville( { 0 , 0 , 0 } , { 0 , 1 , 2 } ) == 0 );
  CHECK_THROWS( dp::discordville( { 1 , 1 } , { 1 , 0 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( dp::discordville( {} , {} ) , contract_violation );
  CHECK_THROWS( dp::discordville( { 1 , 2 } , { 0 } ) , contract_violation );
  CHECK_THROWS( dp::discordville( { -1 } , { 0 } ) , contract_violation );
  CHECK_THROWS( dp::discordville( { 1 , 2 } , { 0 , -1 } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 }  // end( namespace )
@@ -907,7 +942,8 @@ ADS_TEST( "dp-81" )
 /*---------------------- dp-82, 2022-02-07, Math ways ----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Math ways: the sequences of the operations +1, *2 and squaring leading
 /// from k to n. DP[ n ] = 1, DP[ i ] = DP[ i + 1 ] + DP[ 2 i ] + DP[ i^2 ],
@@ -921,22 +957,27 @@ I64 mathWays( int n , int k )
  DP[ n ] = 1;
  for( int i = n - 1 ; i >= k ; --i ) {
   DP[ i ] = DP[ i + 1 ];
-  if( 2 * I64( i ) <= n ) DP[ i ] += DP[ 2 * i ];
-  if( I64( i ) * i <= n ) DP[ i ] += DP[ i * i ];
+  if( 2 * I64( i ) <= n )
+   DP[ i ] += DP[ 2 * i ];
+  if( I64( i ) * i <= n )
+   DP[ i ] += DP[ i * i ];
   }
  return( DP[ k ] );
  }
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 I64 mathWaysBrute( I64 i , I64 n )
 {
- if( i == n ) return( 1 );
- if( i > n ) return( 0 );
+ if( i == n )
+  return( 1 );
+ if( i > n )
+  return( 0 );
  return( mathWaysBrute( i + 1 , n ) + mathWaysBrute( 2 * i , n ) +
-         mathWaysBrute( i * i , n ) );
+	  mathWaysBrute( i * i , n ) );
  }
 
 // the example, the plain recursion for every n <= 50 and every k, k = n
@@ -950,7 +991,7 @@ ADS_TEST( "dp-82" )
  CHECK( dp::mathWays( 3 , 3 ) == 1 && dp::mathWays( 1000 , 999 ) == 1 );
  CHECK( dp::mathWays( 10000 , 3 ) == 81838953590412168 );
  CHECK( dp::mathWays( 10000 , 10000 ) == 1 &&
-        dp::mathWays( 10000 , 9999 ) == 1 );
+	dp::mathWays( 10000 , 9999 ) == 1 );
  CHECK_THROWS( dp::mathWays( 10001 , 3 ) , contract_violation );
  CHECK_THROWS( dp::mathWays( 10 , 2 ) , contract_violation );
  CHECK_THROWS( dp::mathWays( 5 , 6 ) , contract_violation );
@@ -962,7 +1003,8 @@ ADS_TEST( "dp-82" )
 /*------------------- dp-83, 2022-06-21, Double sequence -------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// the memoized recursion of countSequences()
 I64 csRec( int i , int j , std::vector< Longs > & DP )
@@ -995,23 +1037,27 @@ I64 countSequencesEnding( int n , int m )
 {
  ADS_PRE( ( n > 0 ) && ( m > 0 ) );
  std::vector< Longs > E( n + 1 , Longs( std::size_t( m ) + 1 , 0 ) );
- for( int j = 1 ; j <= m ; ++j ) E[ 1 ][ j ] = 1;
+ for( int j = 1 ; j <= m ; ++j )
+  E[ 1 ][ j ] = 1;
  for( int i = 2 ; i <= n ; ++i )
   for( int j = 1 ; j <= m ; ++j )
    for( int t = 1 ; t <= j / 2 ; ++t )
     E[ i ][ j ] += E[ i - 1 ][ t ];
  I64 c = 0;
- for( int j = 1 ; j <= m ; ++j ) c += E[ n ][ j ];
+ for( int j = 1 ; j <= m ; ++j )
+  c += E[ n ][ j ];
  return( c );
  }
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 I64 countSequencesBrute( int left , I64 low , int m )
 {
- if( left == 0 ) return( 1 );
+ if( left == 0 )
+  return( 1 );
  I64 c = 0;
  for( I64 v = std::max< I64 >( low , 1 ) ; v <= m ; ++v )
   c += countSequencesBrute( left - 1 , 2 * v , m );
@@ -1028,11 +1074,11 @@ ADS_TEST( "dp-83" )
   for( int m = 1 ; m <= 40 ; ++m ) {
    const I64 r = countSequencesBrute( n , 1 , m );
    CHECK( dp::countSequences( n , m ) == r &&
-          dp::countSequencesEnding( n , m ) == r );
+	  dp::countSequencesEnding( n , m ) == r );
    }
  CHECK( dp::countSequences( 1 , 77 ) == 77 );
- CHECK( dp::countSequences( 5 , 15 ) == 0 &&
-        dp::countSequences( 5 , 16 ) == 1 );
+ CHECK( dp::countSequences( 5 , 15 ) == 0 && dp::countSequences( 5 ,
+								 16 ) == 1 );
  CHECK( dp::countSequences( 10 , 512 ) == 1 );
  CHECK( dp::countSequences( 3 , 300 ) == dp::countSequencesEnding( 3 , 300 ) );
  CHECK( dp::countSequences( 1 , 1 ) == 1 && dp::countSequences( 2 , 1 ) == 0 );
@@ -1049,7 +1095,8 @@ ADS_TEST( "dp-83" )
 /*----------------- dp-84, 2022-07-13, Sequenze crescenti ------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Sequenze crescenti: the strictly increasing subsequences of length k of
 /// A. DP[ i ][ j ] counts those of length j ending in A[ i ]: 1 if j = 1,
@@ -1068,7 +1115,8 @@ I64 countIncreasing( const Ints & A , int k )
   DP[ i ][ 1 ] = 1;
   for( int j = 2 ; j <= k ; ++j )
    for( int m = 0 ; m < i ; ++m )
-    if( A[ m ] < A[ i ] ) DP[ i ][ j ] += DP[ m ][ j - 1 ];
+    if( A[ m ] < A[ i ] )
+     DP[ i ][ j ] += DP[ m ][ j - 1 ];
   c += DP[ i ][ k ];
   }
  return( c );
@@ -1076,18 +1124,22 @@ I64 countIncreasing( const Ints & A , int k )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 I64 countIncreasingBrute( const Ints & A , int k )
 {
  I64 c = 0;
  for( unsigned s = 0 ; s < ( 1u << A.size() ) ; ++s ) {
-  if( std::popcount( s ) != k ) continue;
+  if( std::popcount( s ) != k )
+   continue;
   const Ints P = bitsOf( s );
   bool ok = true;
   for( std::size_t t = 1 ; t < P.size() ; ++t )
-   if( A[ P[ t - 1 ] ] >= A[ P[ t ] ] ) ok = false;
-  if( ok ) ++c;
+   if( A[ P[ t - 1 ] ] >= A[ P[ t ] ] )
+    ok = false;
+  if( ok )
+   ++c;
   }
  return( c );
  }
@@ -1108,12 +1160,13 @@ ADS_TEST( "dp-84" )
  CHECK( dp::countIncreasing( { 3 , 1 , 2 } , 1 ) == 3 );
  CHECK( dp::countIncreasing( { 3 , 1 , 2 } , 4 ) == 0 );
  Ints S( 60 );
- for( int i = 0 ; i < 60 ; ++i ) S[ i ] = i;
+ for( int i = 0 ; i < 60 ; ++i )
+  S[ i ] = i;
  CHECK( dp::countIncreasing( S , 30 ) == binom( 60 , 30 ) );
  CHECK( dp::countIncreasing( S , 60 ) == 1 );
  CHECK( dp::countIncreasing( Ints( S.rbegin() , S.rend() ) , 2 ) == 0 );
  CHECK( dp::countIncreasing( Ints( 7 , 4 ) , 1 ) == 7 &&
-        dp::countIncreasing( Ints( 7 , 4 ) , 2 ) == 0 );
+	dp::countIncreasing( Ints( 7 , 4 ) , 2 ) == 0 );
  for( int t = 0 ; t < 200 ; ++t ) {
   const Ints A = randInts( g , randInt( g , 0 , 11 ) , 1 , 3 );
   const int k = randInt( g , 1 , 4 );
@@ -1135,10 +1188,13 @@ int maxConnectionsBrute( const Ints & X , const Ints & Y )
 {
  int best = 0;
  for( unsigned s = 0 ; s < ( 1u << X.size() ) ; ++s ) {
-  if( std::popcount( s ) <= best ) continue;
+  if( std::popcount( s ) <= best )
+   continue;
   Ints S;
-  for( int p : bitsOf( s ) ) S.push_back( X[ p ] );
-  if( isSubsequence( S , Y ) ) best = int( S.size() );
+  for( int p : bitsOf( s ) )
+   S.push_back( X[ p ] );
+  if( isSubsequence( S , Y ) )
+   best = int( S.size() );
   }
  return( best );
  }
@@ -1172,7 +1228,8 @@ ADS_TEST( "dp-85" )
 /*--------------------- dp-86, 2023-02-09, k-prodotto ----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// the memoized recursion of productK()
 I64 pkRec( const Ints & A , std::vector< Longs > & DP , int i , int k )
@@ -1180,9 +1237,9 @@ I64 pkRec( const Ints & A , std::vector< Longs > & DP , int i , int k )
  if( i == 0 )
   return( 1 );
  if( DP[ i ][ k ] < 0 )
-  DP[ i ][ k ] = A[ i - 1 ] > k ? pkRec( A , DP , i - 1 , k ) :
-                 pkRec( A , DP , i - 1 , k ) +
-                 pkRec( A , DP , i - 1 , k / A[ i - 1 ] );
+  DP[ i ][ k ] = A[ i - 1 ] > k ? pkRec( A , DP , i - 1 , k )
+				: pkRec( A , DP , i - 1 , k ) +
+				    pkRec( A , DP , i - 1 , k / A[ i - 1 ] );
  return( DP[ i ][ k ] );
  }
 
@@ -1194,8 +1251,8 @@ I64 pkRec( const Ints & A , std::vector< Longs > & DP , int i , int k )
 I64 productK( const Ints & A , int m )
 {
  ADS_PRE( m > 0 );
- ADS_PRE( std::all_of( A.begin() , A.end() , []( int a ) { return( a > 0 ); }
-                     ) );
+ ADS_PRE(
+   std::all_of( A.begin() , A.end() , []( int a ) { return( a > 0 ); } ) );
  const int n = int( A.size() );
  std::vector< Longs > DP( n + 1 , Longs( std::size_t( m ) + 1 , -1 ) );
  return( pkRec( A , DP , n , m ) );
@@ -1203,7 +1260,8 @@ I64 productK( const Ints & A , int m )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 I64 productKBrute( const Ints & A , int m )
 {
@@ -1211,8 +1269,10 @@ I64 productKBrute( const Ints & A , int m )
  for( unsigned s = 0 ; s < ( 1u << A.size() ) ; ++s ) {
   I64 p = 1;
   for( int i : bitsOf( s ) )
-   if( ( p *= A[ i ] ) > m ) break;
-  if( p <= m ) ++c;
+   if( ( p *= A[ i ] ) > m )
+    break;
+  if( p <= m )
+   ++c;
   }
  return( c );
  }
@@ -1235,7 +1295,7 @@ ADS_TEST( "dp-86" )
  CHECK( dp::productK( { 1000000 , 1000000 } , 1000000 ) == 3 );
  CHECK( dp::productK( { 2 , 3 , 5 } , 1 ) == 1 );
  CHECK( dp::productK( { 2 , 2 , 2 } , 8 ) == 8 &&
-        dp::productK( { 2 , 2 , 2 } , 7 ) == 7 );
+	dp::productK( { 2 , 2 , 2 } , 7 ) == 7 );
  CHECK( dp::productK( { INT_MAX } , 1 ) == 1 );
  CHECK_THROWS( dp::productK( { 0 } , 5 ) , contract_violation );
  CHECK_THROWS( dp::productK( { 2 , -3 } , 5 ) , contract_violation );
@@ -1248,7 +1308,8 @@ ADS_TEST( "dp-86" )
 /*---------------- dp-87, 2023-02-09, Sottosequenza massima ----------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Sottosequenza massima: the largest sum of a common subsequence of T and
 /// U (0 for the empty one). DP[ i ][ j ] = DP[ i - 1 ][ j - 1 ] + T[ i ] if
@@ -1260,15 +1321,16 @@ I64 mcs( const Ints & T , const Ints & U )
  std::vector< Longs > DP( n + 1 , Longs( m + 1 , 0 ) );
  for( std::size_t i = 1 ; i <= n ; ++i )
   for( std::size_t j = 1 ; j <= m ; ++j )
-   DP[ i ][ j ] = ( T[ i - 1 ] == U[ j - 1 ] ) && ( T[ i - 1 ] > 0 ) ?
-                  DP[ i - 1 ][ j - 1 ] + T[ i - 1 ] :
-                  std::max( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] );
+   DP[ i ][ j ] = ( T[ i - 1 ] == U[ j - 1 ] ) && ( T[ i - 1 ] > 0 )
+		    ? DP[ i - 1 ][ j - 1 ] + T[ i - 1 ]
+		    : std::max( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] );
  return( DP[ n ][ m ] );
  }
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 I64 mcsBrute( const Ints & T , const Ints & U )
 {
@@ -1280,7 +1342,8 @@ I64 mcsBrute( const Ints & T , const Ints & U )
    S.push_back( T[ p ] );
    sum += T[ p ];
    }
-  if( isSubsequence( S , U ) ) best = std::max( best , sum );
+  if( isSubsequence( S , U ) )
+   best = std::max( best , sum );
   }
  return( best );
  }
@@ -1303,7 +1366,7 @@ ADS_TEST( "dp-87" )
  CHECK( dp::mcs( { 3 , -1 , 3 } , { 3 , -1 , 3 } ) == 6 );
  CHECK( dp::mcs( { 1 , 2 , 3 } , { 3 , 2 , 1 } ) == 3 );
  CHECK( dp::mcs( Ints( 100 , INT_MAX ) , Ints( 100 , INT_MAX ) ) ==
-        I64( 100 ) * INT_MAX );
+	I64( 100 ) * INT_MAX );
  }
 
 }  // end( namespace )
@@ -1320,18 +1383,21 @@ ADS_TEST( "dp-87" )
 // SubsequenceProblems.h]. The text points to the exam of January 2016 for
 // this recurrence
 
-namespace {
+namespace
+{
 
 bool isMixingBrute( const std::string & S1 , const std::string & S2 ,
-                    const std::string & T , std::size_t i = 0 ,
-                    std::size_t j = 0 )
+		    const std::string & T , std::size_t i = 0 ,
+		    std::size_t j = 0 )
 {
- if( S1.size() + S2.size() != T.size() ) return( false );
- if( i + j == T.size() ) return( true );
+ if( S1.size() + S2.size() != T.size() )
+  return( false );
+ if( i + j == T.size() )
+  return( true );
  return( ( ( i < S1.size() ) && ( S1[ i ] == T[ i + j ] ) &&
-           isMixingBrute( S1 , S2 , T , i + 1 , j ) ) ||
-         ( ( j < S2.size() ) && ( S2[ j ] == T[ i + j ] ) &&
-           isMixingBrute( S1 , S2 , T , i , j + 1 ) ) );
+	    isMixingBrute( S1 , S2 , T , i + 1 , j ) ) ||
+	  ( ( j < S2.size() ) && ( S2[ j ] == T[ i + j ] ) &&
+	    isMixingBrute( S1 , S2 , T , i , j + 1 ) ) );
  }
 
 // the two counterexamples of the text, which defeat the test on the LCS
@@ -1341,24 +1407,28 @@ bool isMixingBrute( const std::string & S1 , const std::string & S2 ,
 ADS_TEST( "dp-88" )
 {
  auto lcsTest = []( const std::string & A , const std::string & B ,
-                    const std::string & T ) {
-  return( lcsTable( A , T ).back().back() + lcsTable( B , T ).back().back()
-          == int( T.size() ) );
+		    const std::string & T ) {
+  return( lcsTable( A , T ).back().back() + lcsTable( B , T ).back().back() ==
+	   int( T.size() ) );
   };
  auto greedy = []( const std::string & A , const std::string & B ,
-                   const std::string & T ) {
-  if( A.size() + B.size() != T.size() ) return( false );
+		   const std::string & T ) {
+  if( A.size() + B.size() != T.size() )
+   return( false );
   std::size_t i = 0 , j = 0;
   for( char c : T )
-   if( ( i < A.size() ) && ( A[ i ] == c ) ) ++i;
-   else if( ( j < B.size() ) && ( B[ j ] == c ) ) ++j;
-   else return( false );
+   if( ( i < A.size() ) && ( A[ i ] == c ) )
+    ++i;
+   else if( ( j < B.size() ) && ( B[ j ] == c ) )
+    ++j;
+   else
+    return( false );
   return( true );
   };
  CHECK( ! isInterleaving( "ABC" , "ABC" , "ABCDEF" ) &&
-        lcsTest( "ABC" , "ABC" , "ABCDEF" ) );
+	lcsTest( "ABC" , "ABC" , "ABCDEF" ) );
  CHECK( isInterleaving( "AC" , "AB" , "ABAC" ) &&
-        ! greedy( "AC" , "AB" , "ABAC" ) );
+	! greedy( "AC" , "AB" , "ABAC" ) );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 600 ; ++t ) {
   const std::string A = randString( g , randInt( g , 0 , 6 ) , 2 );
@@ -1377,16 +1447,16 @@ ADS_TEST( "dp-88" )
   }
  CHECK( isInterleaving( "" , "" , "" ) && ! isInterleaving( "" , "" , "A" ) );
  CHECK( isInterleaving( "AB" , "" , "AB" ) &&
-        ! isInterleaving( "AB" , "" , "BA" ) );
+	! isInterleaving( "AB" , "" , "BA" ) );
  CHECK( isInterleaving( "" , "AB" , "AB" ) );
- CHECK( isInterleaving( "A" , "B" , "BA" ) &&
-        isInterleaving( "A" , "B" , "AB" ) &&
-        ! isInterleaving( "A" , "B" , "AA" ) );
+ CHECK( isInterleaving( "A" , "B" , "BA" ) && isInterleaving( "A" , "B" ,
+							      "AB" ) &&
+	! isInterleaving( "A" , "B" , "AA" ) );
  CHECK( ! isInterleaving( "AB" , "C" , "ABCD" ) &&
-        ! isInterleaving( "AB" , "C" , "AB" ) &&
-        ! isInterleaving( "ABC" , "" , "" ) );
+	! isInterleaving( "AB" , "C" , "AB" ) &&
+	! isInterleaving( "ABC" , "" , "" ) );
  CHECK( isInterleaving( std::string( 400 , 'A' ) , std::string( 400 , 'A' ) ,
-                        std::string( 800 , 'A' ) ) );
+			std::string( 800 , 'A' ) ) );
  }
 
 }  // end( namespace )
@@ -1395,7 +1465,8 @@ ADS_TEST( "dp-88" )
 /*----------------------- dp-89, 2023-07-11, Made-up -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Made-up: the binary trees of n nodes whose nodes at odd levels have one
 /// child and the ones at even levels zero or two, the root at level 0. P[
@@ -1418,15 +1489,17 @@ I64 countMadeup( int n )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 bool madeUp( const Kids & K , int v , int level )
 {
  const int l = K[ v ][ 0 ] , r = K[ v ][ 1 ];
  const int kids = ( l >= 0 ) + ( r >= 0 );
- if( level % 2 ? kids != 1 : kids == 1 ) return( false );
+ if( level % 2 ? kids != 1 : kids == 1 )
+  return( false );
  return( ( l < 0 || madeUp( K , l , level + 1 ) ) &&
-         ( r < 0 || madeUp( K , r , level + 1 ) ) );
+	  ( r < 0 || madeUp( K , r , level + 1 ) ) );
  }
 
 // the values of the text, the closed form 4^k Catalan( k ) for n = 4 k + 1
@@ -1435,19 +1508,22 @@ ADS_TEST( "dp-89" )
 {
  CHECK( dp::countMadeup( 1 ) == 1 && dp::countMadeup( 5 ) == 4 );
  CHECK( dp::countMadeup( 2 ) == 0 && dp::countMadeup( 3 ) == 0 &&
-        dp::countMadeup( 4 ) == 0 );
- const Longs seq = { 1 , 4 , 32 , 320 , 3584 , 43008 , 540672 , 7028736 ,
-                     93716480 , 1274544128 , 17611882496 };
+	dp::countMadeup( 4 ) == 0 );
+ const Longs seq = { 1 ,      4 ,       32 ,       320 ,        3584 ,
+		     43008 ,
+		     540672 , 7028736 , 93716480 , 1274544128 , 17611882496 };
  for( int k = 0 ; k <= 10 ; ++k ) {
   CHECK( dp::countMadeup( 4 * k + 1 ) == seq[ k ] );
   CHECK( seq[ k ] == ( I64( 1 ) << ( 2 * k ) ) * catalan( k ) );
   }
  for( int n = 1 ; n <= 41 ; ++n )
-  if( n % 4 != 1 ) CHECK( dp::countMadeup( n ) == 0 );
+  if( n % 4 != 1 )
+   CHECK( dp::countMadeup( n ) == 0 );
  for( int n = 1 ; n <= 11 ; ++n ) {
   I64 c = 0;
   for( const auto & w : shapes( n ) )
-   if( madeUp( parseShape( w ) , 0 , 0 ) ) ++c;
+   if( madeUp( parseShape( w ) , 0 , 0 ) )
+    ++c;
   CHECK( dp::countMadeup( n ) == c );
   }
  CHECK( dp::countMadeup( 41 ) == seq[ 10 ] );
@@ -1462,7 +1538,8 @@ ADS_TEST( "dp-89" )
 /*------------------ dp-90, 2023-08-23, Stringhe eleganti ------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Stringhe eleganti: the fewest bit flips making the binary string S of
 /// the form 0*1*. DP[ i ][ b ] makes the first i bits elegant ending with
@@ -1483,7 +1560,8 @@ int minInversions( const std::string & S )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 int minInversionsSplit( const std::string & S )
 {
@@ -1491,7 +1569,8 @@ int minInversionsSplit( const std::string & S )
  int best = INF;
  for( int s = 0 ; s <= n ; ++s ) {
   int c = 0;
-  for( int i = 0 ; i < n ; ++i ) c += ( S[ i ] == '1' ) == ( i < s );
+  for( int i = 0 ; i < n ; ++i )
+   c += ( S[ i ] == '1' ) == ( i < s );
   best = std::min( best , c );
   }
  return( best );
@@ -1503,7 +1582,8 @@ int minInversionsBrute( const std::string & S )
  int best = INF;
  for( unsigned f = 0 ; f < ( 1u << n ) ; ++f ) {
   std::string T = S;
-  for( int i : bitsOf( f ) ) T[ i ] = T[ i ] == '0' ? '1' : '0';
+  for( int i : bitsOf( f ) )
+   T[ i ] = T[ i ] == '0' ? '1' : '0';
   if( std::is_sorted( T.begin() , T.end() ) )
    best = std::min( best , std::popcount( f ) );
   }
@@ -1523,14 +1603,16 @@ ADS_TEST( "dp-90" )
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 500 ; ++t ) {
   std::string S( std::size_t( randInt( g , 0 , 12 ) ) , '0' );
-  for( auto & c : S ) c = char( '0' + g() % 2 );
+  for( auto & c : S )
+   c = char( '0' + g() % 2 );
   const int r = minInversionsBrute( S );
   CHECK( dp::minInversions( S ) == r && minInversionsSplit( S ) == r );
   }
  CHECK( dp::minInversions( "" ) == 0 );
  CHECK( dp::minInversions( std::string( 1000 , '0' ) ) == 0 );
  std::string alt;
- for( int i = 0 ; i < 1000 ; ++i ) alt += i % 2 ? '0' : '1';
+ for( int i = 0 ; i < 1000 ; ++i )
+  alt += i % 2 ? '0' : '1';
  CHECK( dp::minInversions( alt ) == minInversionsSplit( alt ) );
  CHECK( dp::minInversions( alt ) == 500 );
  CHECK( dp::minInversions( "0" ) == 0 && dp::minInversions( "1" ) == 0 );
@@ -1538,7 +1620,7 @@ ADS_TEST( "dp-90" )
  CHECK( dp::minInversions( std::string( 1000 , '1' ) ) == 0 );
  CHECK( dp::minInversions( "1" + std::string( 999 , '0' ) ) == 1 );
  CHECK( dp::minInversions( std::string( 500 , '1' ) +
-                           std::string( 500 , '0' ) ) == 500 );
+			   std::string( 500 , '0' ) ) == 500 );
  CHECK_THROWS( dp::minInversions( "012" ) , contract_violation );
  CHECK_THROWS( dp::minInversions( "0 1" ) , contract_violation );
  }
@@ -1549,7 +1631,8 @@ ADS_TEST( "dp-90" )
 /*------------------ dp-91, 2024-01-09, Quanti quadrati! -------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Quanti quadrati!: the square submatrices of only 1 of the 0/1 matrix A.
 /// DP[ i ][ j ], the side of the largest such square with bottom right
@@ -1564,7 +1647,8 @@ I64 countSquares( const Grid & A )
  ADS_PRE( n > 0 );
  for( const auto & r : A ) {
   ADS_PRE( int( r.size() ) == n );
-  for( int a : r ) ADS_PRE( ( a == 0 ) || ( a == 1 ) );
+  for( int a : r )
+   ADS_PRE( ( a == 0 ) || ( a == 1 ) );
   }
  Grid DP( n , Ints( n , 0 ) );
  I64 c = 0;
@@ -1576,7 +1660,7 @@ I64 countSquares( const Grid & A )
     DP[ i ][ j ] = 1;
    else
     DP[ i ][ j ] = 1 + std::min( { DP[ i - 1 ][ j ] , DP[ i - 1 ][ j - 1 ] ,
-                                   DP[ i ][ j - 1 ] } );
+				   DP[ i ][ j - 1 ] } );
    c += DP[ i ][ j ];
    }
  return( c );
@@ -1584,7 +1668,8 @@ I64 countSquares( const Grid & A )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 I64 countSquaresBrute( const Grid & A )
 {
@@ -1607,32 +1692,38 @@ I64 countSquaresBrute( const Grid & A )
 // square, ragged, not 0/1)
 ADS_TEST( "dp-91" )
 {
- CHECK( dp::countSquares( { { 0 , 1 , 1 , 1 } , { 1 , 1 , 1 , 1 } ,
-                            { 0 , 1 , 1 , 1 } , { 0 , 0 , 0 , 0 } } ) == 15 );
+ CHECK(
+   dp::countSquares(
+     { { 0 , 1 , 1 , 1 } , { 1 , 1 , 1 , 1 } , { 0 , 1 , 1 , 1 } ,
+       { 0 , 0 , 0 , 0 } } ) ==
+   15 );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const int n = randInt( g , 1 , 8 );
   Grid A = randGrid( g , n , n , 0 , 4 );
   for( auto & r : A )
-   for( auto & a : r ) a = a > 0;
+   for( auto & a : r )
+    a = a > 0;
   CHECK( dp::countSquares( A ) == countSquaresBrute( A ) );
   }
  CHECK( dp::countSquares( { { 0 } } ) == 0 &&
-        dp::countSquares( { { 1 } } ) == 1 );
+	dp::countSquares( { { 1 } } ) == 1 );
  CHECK( dp::countSquares( Grid( 50 , Ints( 50 , 0 ) ) ) == 0 );
- I64 all = 0;                                 // sum of s^2 for s <= 300
- for( I64 s = 1 ; s <= 300 ; ++s ) all += s * s;
+ I64 all = 0;  // sum of s^2 for s <= 300
+ for( I64 s = 1 ; s <= 300 ; ++s )
+  all += s * s;
  CHECK( dp::countSquares( Grid( 300 , Ints( 300 , 1 ) ) ) == all );
  Grid C( 9 , Ints( 9 , 0 ) );
  for( int i = 0 ; i < 9 ; ++i )
-  for( int j = 0 ; j < 9 ; ++j ) C[ i ][ j ] = ( i + j ) % 2;
+  for( int j = 0 ; j < 9 ; ++j )
+   C[ i ][ j ] = ( i + j ) % 2;
  CHECK( dp::countSquares( C ) == 40 );
  CHECK_THROWS( dp::countSquares( { { 2 } } ) , contract_violation );
  CHECK_THROWS( dp::countSquares( { { -1 } } ) , contract_violation );
  CHECK_THROWS( dp::countSquares( Grid() ) , contract_violation );
  CHECK_THROWS( dp::countSquares( { { 1 , 1 } } ) , contract_violation );
  CHECK_THROWS( dp::countSquares( { { 1 , 1 } , { 1 } } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 }  // end( namespace )
@@ -1641,7 +1732,8 @@ ADS_TEST( "dp-91" )
 /*--------------------- dp-92, 2024-02-01, Alberibelli ---------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Alberibelli: the full binary trees of n nodes, every node with zero or
 /// two children. DP[ 1 ] = 1, DP[ n ] = sum of DP[ j ] DP[ n - 1 - j ],
@@ -1663,12 +1755,14 @@ I64 countAB( int n )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 bool full( const Kids & K )
 {
  for( const auto & k : K )
-  if( ( k[ 0 ] < 0 ) != ( k[ 1 ] < 0 ) ) return( false );
+  if( ( k[ 0 ] < 0 ) != ( k[ 1 ] < 0 ) )
+   return( false );
  return( true );
  }
 
@@ -1682,12 +1776,13 @@ ADS_TEST( "dp-92" )
   CHECK( dp::countAB( n ) == ( n % 2 ? catalan( ( n - 1 ) / 2 ) : 0 ) );
  for( int n = 1 ; n <= 11 ; ++n ) {
   I64 c = 0;
-  for( const auto & w : shapes( n ) ) c += full( parseShape( w ) );
+  for( const auto & w : shapes( n ) )
+   c += full( parseShape( w ) );
   CHECK( dp::countAB( n ) == c );
   }
- CHECK( dp::countAB( 71 ) == 3116285494907301262 );       // Catalan( 35 )
+ CHECK( dp::countAB( 71 ) == 3116285494907301262 );  // Catalan( 35 )
  CHECK( dp::countAB( 0 ) == 0 && dp::countAB( 1 ) == 1 &&
-        dp::countAB( 70 ) == 0 );
+	dp::countAB( 70 ) == 0 );
  CHECK_THROWS( dp::countAB( 72 ) , contract_violation );
  CHECK_THROWS( dp::countAB( -1 ) , contract_violation );
  }
@@ -1698,7 +1793,8 @@ ADS_TEST( "dp-92" )
 /*------------------------ dp-93, 2024-02-01, LCNCS ------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// LCNCS: the longest string that is a subsequence of T and of U using no
 /// two adjacent places of either. DP[ i ][ j ] = DP[ i - 2 ][ j - 2 ] + 1
@@ -1720,13 +1816,16 @@ int lcncs( const std::string & T , const std::string & U )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 // whether s[ p .. ] embeds in U after the place last + 1, never adjacent
 bool embedsApart( const std::string & s , const std::string & U ,
-                  std::size_t p , int last )
+		  std::size_t p ,
+		  int last )
 {
- if( p == s.size() ) return( true );
+ if( p == s.size() )
+  return( true );
  for( int j = last + 2 ; j < int( U.size() ) ; ++j )
   if( ( U[ j ] == s[ p ] ) && embedsApart( s , U , p + 1 , j ) )
    return( true );
@@ -1737,10 +1836,13 @@ int lcncsBrute( const std::string & T , const std::string & U )
 {
  int best = 0;
  for( unsigned s = 0 ; s < ( 1u << T.size() ) ; ++s ) {
-  if( ( s & ( s >> 1 ) ) || ( std::popcount( s ) <= best ) ) continue;
+  if( ( s & ( s >> 1 ) ) || ( std::popcount( s ) <= best ) )
+   continue;
   std::string w;
-  for( int p : bitsOf( s ) ) w += T[ p ];
-  if( embedsApart( w , U , 0 , -2 ) ) best = int( w.size() );
+  for( int p : bitsOf( s ) )
+   w += T[ p ];
+  if( embedsApart( w , U , 0 , -2 ) )
+   best = int( w.size() );
   }
  return( best );
  }
@@ -1752,7 +1854,7 @@ ADS_TEST( "dp-93" )
 {
  CHECK( dp::lcncs( "ABCD" , "BCDC" ) == 2 );
  CHECK( dp::lcncs( "ABC" , "AXC" ) == 2 && dp::lcncs( "ABC" , "AB" ) == 1 &&
-        dp::lcncs( "ABC" , "ABC" ) == 2 );
+	dp::lcncs( "ABC" , "ABC" ) == 2 );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const int s = randInt( g , 1 , 3 );
@@ -1764,8 +1866,8 @@ ADS_TEST( "dp-93" )
  CHECK( dp::lcncs( "" , "" ) == 0 && dp::lcncs( "A" , "" ) == 0 );
  CHECK( dp::lcncs( "ABC" , "DEF" ) == 0 && dp::lcncs( "AB" , "BA" ) == 1 );
  CHECK( dp::lcncs( "ABAB" , "ABAB" ) == 2 );
- CHECK( dp::lcncs( std::string( 999 , 'A' ) , std::string( 999 , 'A' ) ) ==
-        500 );
+ CHECK( dp::lcncs( std::string( 999 , 'A' ) ,
+		   std::string( 999 , 'A' ) ) == 500 );
  }
 
 }  // end( namespace )
@@ -1774,7 +1876,8 @@ ADS_TEST( "dp-93" )
 /*---------------------- dp-95, 2024-07-02, Norma L1 -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Norma L1: the largest L1 distance between two subsequences of the same
 /// length of V1 and V2. DP[ i ][ j ] = max( DP[ i - 1 ][ j ] , DP[ i ][ j -
@@ -1786,22 +1889,24 @@ I64 maxL1( const Ints & V1 , const Ints & V2 )
  std::vector< Longs > DP( n1 + 1 , Longs( n2 + 1 , 0 ) );
  for( std::size_t i = 1 ; i <= n1 ; ++i )
   for( std::size_t j = 1 ; j <= n2 ; ++j )
-   DP[ i ][ j ] = std::max( { DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] ,
-                              DP[ i - 1 ][ j - 1 ] +
-                              std::abs( I64( V1[ i - 1 ] ) - V2[ j - 1 ] ) } );
+   DP[ i ][ j ] = std::max(
+     { DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] ,
+       DP[ i - 1 ][ j - 1 ] + std::abs( I64( V1[ i - 1 ] ) - V2[ j - 1 ] ) } );
  return( DP[ n1 ][ n2 ] );
  }
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 I64 maxL1Brute( const Ints & V1 , const Ints & V2 )
 {
  I64 best = 0;
  for( unsigned a = 0 ; a < ( 1u << V1.size() ) ; ++a )
   for( unsigned b = 0 ; b < ( 1u << V2.size() ) ; ++b ) {
-   if( std::popcount( a ) != std::popcount( b ) ) continue;
+   if( std::popcount( a ) != std::popcount( b ) )
+    continue;
    const Ints I = bitsOf( a ) , J = bitsOf( b );
    I64 d = 0;
    for( std::size_t t = 0 ; t < I.size() ; ++t )
@@ -1829,7 +1934,7 @@ ADS_TEST( "dp-95" )
  CHECK( dp::maxL1( { 4 } , { 4 } ) == 0 );
  CHECK( dp::maxL1( { 4 , 4 } , { 4 , 4 } ) == 0 );
  CHECK( dp::maxL1( Ints( 3 , INT_MIN ) , Ints( 3 , INT_MAX ) ) ==
-        3 * ( I64( INT_MAX ) - INT_MIN ) );
+	3 * ( I64( INT_MAX ) - INT_MIN ) );
  }
 
 }  // end( namespace )
@@ -1838,7 +1943,8 @@ ADS_TEST( "dp-95" )
 /*---------------------- dp-96, 2024-08-26, Connect-x ----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Connect-x: the longest run of true cells along a row or a column of the
 /// square matrix A, 0 if none. A scan of each row and each column keeps
@@ -1848,7 +1954,8 @@ namespace dp {
 int longestLine( const std::vector< std::vector< bool > > & A )
 {
  const int n = int( A.size() );
- for( const auto & r : A ) ADS_PRE( int( r.size() ) == n );
+ for( const auto & r : A )
+  ADS_PRE( int( r.size() ) == n );
  int best = 0;
  for( int i = 0 ; i < n ; ++i ) {
   int row = 0 , col = 0;
@@ -1863,7 +1970,8 @@ int longestLine( const std::vector< std::vector< bool > > & A )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 int longestLineBrute( const std::vector< std::vector< bool > > & A )
 {
@@ -1872,8 +1980,10 @@ int longestLineBrute( const std::vector< std::vector< bool > > & A )
  for( int i = 0 ; i < n ; ++i )
   for( int j = 0 ; j < n ; ++j ) {
    int r = 0 , d = 0;
-   while( ( j + r < n ) && A[ i ][ j + r ] ) ++r;
-   while( ( i + d < n ) && A[ i + d ][ j ] ) ++d;
+   while( ( j + r < n ) && A[ i ][ j + r ] )
+    ++r;
+   while( ( i + d < n ) && A[ i + d ][ j ] )
+    ++d;
    best = std::max( { best , r , d } );
    }
  return( best );
@@ -1884,12 +1994,13 @@ int longestLineBrute( const std::vector< std::vector< bool > > & A )
 ADS_TEST( "dp-96" )
 {
  const std::vector< std::string > rows = { "TTFTTTT" , "TTFTTTT" , "FFTFFFF" ,
-                                           "TTTTFTF" , "TFTFFFF" , "FFTFTTT" ,
-                                           "FTTTFFF" };
+					   "TTTTFTF" , "TFTFFFF" , "FFTFTTT" ,
+					   "FTTTFFF" };
  std::vector< std::vector< bool > > E;
  for( const auto & r : rows ) {
   E.emplace_back();
-  for( char c : r ) E.back().push_back( c == 'T' );
+  for( char c : r )
+   E.back().push_back( c == 'T' );
   }
  CHECK( dp::longestLine( E ) == 5 );
  std::mt19937 g( 1 );
@@ -1897,21 +2008,23 @@ ADS_TEST( "dp-96" )
   const int n = randInt( g , 0 , 9 );
   std::vector< std::vector< bool > > A( n , std::vector< bool >( n ) );
   for( auto & r : A )
-   for( std::size_t j = 0 ; j < r.size() ; ++j ) r[ j ] = g() % 3 != 0;
+   for( std::size_t j = 0 ; j < r.size() ; ++j )
+    r[ j ] = g() % 3 != 0;
   CHECK( dp::longestLine( A ) == longestLineBrute( A ) );
   }
  CHECK( dp::longestLine( {} ) == 0 );
  using B = std::vector< std::vector< bool > >;
  CHECK( dp::longestLine( B( 40 , std::vector< bool >( 40 , false ) ) ) == 0 );
- CHECK( dp::longestLine( B( 400 , std::vector< bool >( 400 , true ) ) ) ==
-        400 );
+ CHECK( dp::longestLine( B( 400 ,
+			    std::vector< bool >( 400 , true ) ) ) == 400 );
  CHECK( dp::longestLine( B( 1 , std::vector< bool >( 1 , true ) ) ) == 1 &&
-        dp::longestLine( B( 1 , std::vector< bool >( 1 , false ) ) ) == 0 );
+	dp::longestLine( B( 1 , std::vector< bool >( 1 , false ) ) ) == 0 );
  B col( 6 , std::vector< bool >( 6 , false ) );
- for( auto & r : col ) r[ 5 ] = true;
+ for( auto & r : col )
+  r[ 5 ] = true;
  CHECK( dp::longestLine( col ) == 6 );
  CHECK_THROWS( dp::longestLine( B( 2 , std::vector< bool >( 3 , true ) ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 }  // end( namespace )
@@ -1920,13 +2033,14 @@ ADS_TEST( "dp-96" )
 /*----------------- dp-97, 2024-08-26, Formazione stringhe -----------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// whether the first i characters of S are a string repeated twice
 bool check( const std::string & S , int i )
 {
  return( S.compare( 0 , std::size_t( i / 2 ) , S , std::size_t( i / 2 ) ,
-                    std::size_t( i / 2 ) ) == 0 );
+		     std::size_t( i / 2 ) ) == 0 );
  }
 
 /// Formazione stringhe: the fewest moves building S from the empty string,
@@ -1957,7 +2071,8 @@ int minMovesGreedy( const std::string & S )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 int minMovesBfs( const std::string & S )
 {
@@ -1986,11 +2101,12 @@ ADS_TEST( "dp-97" )
 {
  CHECK( dp::minMoves( "tatami" ) == 5 && dp::minMoves( "babababa" ) == 4 );
  CHECK( dp::minMoves( "aaaaaa" ) == 4 && dp::minMovesGreedy( "aaaaaa" ) == 4 );
- auto forward = []( const std::string & S ) {    // doubling when possible
+ auto forward = []( const std::string & S ) {  // doubling when possible
   int moves = 0;
   for( std::size_t L = 0 ; L < S.size() ; ++moves )
-   L = ( 2 * L <= S.size() ) && ( L > 0 ) &&
-       dp::check( S , int( 2 * L ) ) ? 2 * L : L + 1;
+   L = ( 2 * L <= S.size() ) && ( L > 0 ) && dp::check( S , int( 2 * L ) )
+	 ? 2 * L
+	 : L + 1;
   return( moves );
   };
  CHECK( forward( "aaaaaa" ) == 5 );
@@ -2001,8 +2117,7 @@ ADS_TEST( "dp-97" )
    S = randString( g , randInt( g , 0 , 20 ) , randInt( g , 1 , 2 ) );
   else
    while( S.size() < std::size_t( randInt( g , 0 , 30 ) ) )
-    S = ( g() % 3 == 0 ) && ! S.empty() ? S + S :
-        S + char( 'a' + g() % 2 );
+    S = ( g() % 3 == 0 ) && ! S.empty() ? S + S : S + char( 'a' + g() % 2 );
   const int r = minMovesBfs( S );
   CHECK( dp::minMoves( S ) == r && dp::minMovesGreedy( S ) == r );
   }
@@ -2012,9 +2127,9 @@ ADS_TEST( "dp-97" )
  CHECK( dp::minMoves( "aa" ) == 2 && dp::minMoves( "ab" ) == 2 );
  CHECK( dp::minMoves( "abab" ) == 3 && dp::minMovesGreedy( "abab" ) == 3 );
  CHECK( dp::minMoves( "abcdefgh" ) == 8 &&
-        dp::minMovesGreedy( "abcdefgh" ) == 8 );
+	dp::minMovesGreedy( "abcdefgh" ) == 8 );
  CHECK( dp::minMovesGreedy( std::string( 1023 , 'a' ) ) ==
-        minMovesBfs( std::string( 1023 , 'a' ) ) );
+	minMovesBfs( std::string( 1023 , 'a' ) ) );
  }
 
 }  // end( namespace )
@@ -2023,7 +2138,8 @@ ADS_TEST( "dp-97" )
 /*------------------ dp-98, 2025-01-14, Quante parentesi -------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Quante parentesi: the balanced strings of n pairs of parentheses, the
 /// Catalan numbers: DP[ 0 ] = 1, DP[ k ] = sum of DP[ i ] DP[ k - 1 - i ]
@@ -2042,7 +2158,8 @@ I64 countPars( int n )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 // the examples, the count of nestedParentheses() of the library up to 12,
 // the closed formula up to 30, the largest n, the bounds of n
@@ -2050,18 +2167,20 @@ ADS_TEST( "dp-98" )
 {
  std::set< std::string > W;
  nestedParentheses( 3 , [ & ]( const std::string & w ) {
-  W.insert( w ); return( false ); } );
+  W.insert( w );
+  return( false );
+  } );
  CHECK( dp::countPars( 3 ) == 5 &&
-        W == std::set< std::string >( { "()()()" , "(()())" , "(())()" ,
-                                        "()(())" , "((()))" } ) );
+	W == std::set< std::string >(
+	       { "()()()" , "(()())" , "(())()" , "()(())" , "((()))" } ) );
  const Longs seq = { 1 , 1 , 2 , 5 , 14 , 42 , 132 , 429 , 1430 , 4862 ,
-                     16796 };
+		     16796 };
  for( int n = 0 ; n <= 10 ; ++n )
   CHECK( dp::countPars( n ) == seq[ n ] );
  for( int n = 0 ; n <= 12 ; ++n )
-  CHECK( dp::countPars( n ) == nestedParentheses( n ,
-                               []( const std::string & ) { return( false ); }
-                               ) );
+  CHECK(
+    dp::countPars( n ) ==
+    nestedParentheses( n , []( const std::string & ) { return( false ); } ) );
  for( int n = 0 ; n <= 30 ; ++n )
   CHECK( dp::countPars( n ) == catalan( n ) );
  CHECK( dp::countPars( 35 ) == 3116285494907301262 );
@@ -2075,7 +2194,8 @@ ADS_TEST( "dp-98" )
 /*------------------ dp-99, 2025-02-03, Mosse matriciali -------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// the memoized recursion of minSteps(): DP[ r ][ c ] < 0 marks the cells
 /// not solved yet
@@ -2106,7 +2226,8 @@ int minSteps( const Grid & A )
  ADS_PRE( n > 0 );
  for( const auto & r : A ) {
   ADS_PRE( int( r.size() ) == n );
-  for( int a : r ) ADS_PRE( ( a >= 1 ) && ( a <= n ) );
+  for( int a : r )
+   ADS_PRE( ( a >= 1 ) && ( a <= n ) );
   }
  Grid DP( n , Ints( n , -1 ) );
  return( msRec( A , n , DP , 0 , 0 ) );
@@ -2114,7 +2235,8 @@ int minSteps( const Grid & A )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 int minStepsBfs( const Grid & A )
 {
@@ -2139,8 +2261,11 @@ int minStepsBfs( const Grid & A )
 // preconditions (empty, not square, entries out of 1 .. n)
 ADS_TEST( "dp-99" )
 {
- CHECK( dp::minSteps( { { 3 , 1 , 3 , 1 } , { 1 , 1 , 1 , 1 } ,
-                        { 1 , 2 , 2 , 2 } , { 1 , 1 , 3 , 1 } } ) == 3 );
+ CHECK(
+   dp::minSteps(
+     { { 3 , 1 , 3 , 1 } , { 1 , 1 , 1 , 1 } , { 1 , 2 , 2 , 2 } ,
+       { 1 , 1 , 3 , 1 } } ) ==
+   3 );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const int n = randInt( g , 1 , 9 );
@@ -2152,7 +2277,7 @@ ADS_TEST( "dp-99" )
  CHECK( dp::minSteps( Grid( 60 , Ints( 60 , 60 ) ) ) == 2 );
  CHECK( dp::minSteps( { { 2 , 1 } , { 1 , 1 } } ) == 2 );
  CHECK_THROWS( dp::minSteps( { { 1 , 3 } , { 1 , 1 } } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( dp::minSteps( { { 0 } } ) , contract_violation );
  CHECK_THROWS( dp::minSteps( Grid() ) , contract_violation );
  CHECK_THROWS( dp::minSteps( { { 1 , 1 } } ) , contract_violation );
@@ -2164,7 +2289,8 @@ ADS_TEST( "dp-99" )
 /*-------------------- dp-100, 2025-06-13, Dollar word ---------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Dollar word: the strings of letters a .. z, worth 1 .. 26, of total
 /// value T, i.e., the compositions of T with parts at most 26: DP[ 0 ] =
@@ -2184,11 +2310,13 @@ I64 countWords( int T )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 I64 countWordsBrute( int T )
 {
- if( T == 0 ) return( 1 );
+ if( T == 0 )
+  return( 1 );
  I64 c = 0;
  for( int i = 1 ; i <= std::min( 26 , T ) ; ++i )
   c += countWordsBrute( T - i );
@@ -2201,7 +2329,7 @@ I64 countWordsBrute( int T )
 ADS_TEST( "dp-100" )
 {
  CHECK( dp::countWords( 1 ) == 1 && dp::countWords( 2 ) == 2 &&
-        dp::countWords( 3 ) == 4 && dp::countWords( 4 ) == 8 );
+	dp::countWords( 3 ) == 4 && dp::countWords( 4 ) == 8 );
  CHECK( dp::countWords( 27 ) == 67108863 );
  CHECK( dp::countWords( 0 ) == 1 );
  for( int T = 0 ; T <= 22 ; ++T )
@@ -2210,7 +2338,7 @@ ADS_TEST( "dp-100" )
   CHECK( dp::countWords( T ) == ( I64( 1 ) << ( T - 1 ) ) );
  for( int T = 28 ; T <= 62 ; ++T )
   CHECK( dp::countWords( T ) ==
-         2 * dp::countWords( T - 1 ) - dp::countWords( T - 27 ) );
+	 2 * dp::countWords( T - 1 ) - dp::countWords( T - 27 ) );
  CHECK_THROWS( dp::countWords( 63 ) , contract_violation );
  CHECK_THROWS( dp::countWords( -1 ) , contract_violation );
  }
@@ -2221,7 +2349,8 @@ ADS_TEST( "dp-100" )
 /*--------------- dp-101, 2025-07-14, Massima espressività -----------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Massima espressività: the largest value of V[ 0 ] op[ 0 ] V[ 1 ] ...
 /// V[ n - 1 ] over all the parenthesizations, op of '+' and '*', V
@@ -2234,8 +2363,10 @@ I64 maxResults( const Ints & V , const std::string & op )
 {
  const int n = int( V.size() );
  ADS_PRE( ( n > 0 ) && ( int( op.size() ) == n - 1 ) );
- for( int v : V ) ADS_PRE( v > 0 );
- for( char o : op ) ADS_PRE( ( o == '+' ) || ( o == '*' ) );
+ for( int v : V )
+  ADS_PRE( v > 0 );
+ for( char o : op )
+  ADS_PRE( ( o == '+' ) || ( o == '*' ) );
  std::vector< Longs > DP( n , Longs( n , 0 ) );
  for( int i = 0 ; i < n ; ++i )
   DP[ i ][ i ] = V[ i ];
@@ -2243,21 +2374,23 @@ I64 maxResults( const Ints & V , const std::string & op )
   for( int i = 0 ; i + h < n ; ++i ) {
    const int j = i + h;
    for( int k = i ; k < j ; ++k )
-    DP[ i ][ j ] = std::max( DP[ i ][ j ] , op[ k ] == '+' ?
-                             DP[ i ][ k ] + DP[ k + 1 ][ j ] :
-                             DP[ i ][ k ] * DP[ k + 1 ][ j ] );
+    DP[ i ][ j ] = std::max(
+      DP[ i ][ j ] , op[ k ] == '+' ? DP[ i ][ k ] + DP[ k + 1 ][ j ]
+				   : DP[ i ][ k ] * DP[ k + 1 ][ j ] );
    }
  return( DP[ 0 ][ n - 1 ] );
  }
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 // all the values of V[ i .. j ] over its parenthesizations
 Longs allValues( const Ints & V , const std::string & op , int i , int j )
 {
- if( i == j ) return( Longs( 1 , V[ i ] ) );
+ if( i == j )
+  return( Longs( 1 , V[ i ] ) );
  Longs R;
  for( int k = i ; k < j ; ++k )
   for( I64 a : allValues( V , op , i , k ) )
@@ -2277,17 +2410,18 @@ ADS_TEST( "dp-101" )
   const int n = randInt( g , 1 , 8 );
   const Ints V = randInts( g , n , 1 , 9 );
   std::string op;
-  for( int i = 1 ; i < n ; ++i ) op += g() % 2 ? '+' : '*';
+  for( int i = 1 ; i < n ; ++i )
+   op += g() % 2 ? '+' : '*';
   const Longs R = allValues( V , op , 0 , n - 1 );
   CHECK( dp::maxResults( V , op ) == *std::max_element( R.begin() ,
-                                                        R.end() ) );
+							R.end() ) );
   }
  CHECK( dp::maxResults( { 7 } , "" ) == 7 );
  CHECK( dp::maxResults( { 1 , 2 , 3 , 4 } , "+++" ) == 10 );
  CHECK( dp::maxResults( { 1 , 2 , 3 , 4 } , "***" ) == 24 );
  CHECK( dp::maxResults( { 1 , 1 , 1 , 1 } , "+*+" ) == 4 );
  CHECK( dp::maxResults( { INT_MAX , INT_MAX } , "*" ) ==
-        I64( INT_MAX ) * INT_MAX );
+	I64( INT_MAX ) * INT_MAX );
  CHECK_THROWS( dp::maxResults( { 1 , 2 } , "-" ) , contract_violation );
  CHECK_THROWS( dp::maxResults( {} , "" ) , contract_violation );
  CHECK_THROWS( dp::maxResults( { 1 , 2 } , "" ) , contract_violation );
@@ -2301,7 +2435,8 @@ ADS_TEST( "dp-101" )
 /*------------------- dp-102, 2025-07-14, Livelli bonus --------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Livelli bonus: the most points from level 0 to level n - 1, a step going
 /// from a level to the next or to the one after. DP[ 0 ] = P[ 0 ], DP[ 1 ]
@@ -2312,7 +2447,7 @@ I64 maxPoints( const Ints & P )
 {
  const int n = int( P.size() );
  ADS_PRE( n > 0 );
- I64 before = 0 , last = P[ 0 ];          // DP[ i - 2 ] and DP[ i - 1 ]
+ I64 before = 0 , last = P[ 0 ];  // DP[ i - 2 ] and DP[ i - 1 ]
  for( int i = 1 ; i < n ; ++i ) {
   const I64 cur = P[ i ] + ( i == 1 ? last : std::max( last , before ) );
   before = last;
@@ -2323,7 +2458,8 @@ I64 maxPoints( const Ints & P )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 I64 maxPointsBrute( const Ints & P )
 {
@@ -2331,10 +2467,12 @@ I64 maxPointsBrute( const Ints & P )
  I64 best = NEG;
  for( unsigned s = 0 ; s < ( 1u << n ) ; ++s ) {
   const unsigned skip = ~s & ( ( 1u << n ) - 1 );
-  if( !( s & 1u ) || !( ( s >> ( n - 1 ) ) & 1u ) ||
-      ( skip & ( skip >> 1 ) ) ) continue;        // two levels skipped
+  if( ! ( s & 1u ) || ! ( ( s >> ( n - 1 ) ) & 1u ) ||
+      ( skip & ( skip >> 1 ) ) )
+   continue;  // two levels skipped
   I64 sum = 0;
-  for( int i : bitsOf( s ) ) sum += P[ i ];
+  for( int i : bitsOf( s ) )
+   sum += P[ i ];
   best = std::max( best , sum );
   }
  return( best );
@@ -2365,7 +2503,8 @@ ADS_TEST( "dp-102" )
 /*------------------- dp-103, 2025-08-25, Going nowhere --------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// the memoized recursion of countWays(): the ways back to 0 from the
 /// position pos in exactly steps moves; DP is shifted by n / 2
@@ -2375,7 +2514,7 @@ I64 cwRec( std::vector< Longs > & DP , int steps , int pos , int half )
   return( 0 );
  if( steps == 0 )
   return( 1 );
- if( std::abs( pos ) > half )                  // too far to come back
+ if( std::abs( pos ) > half )  // too far to come back
   return( 0 );
  I64 & d = DP[ steps ][ pos + half ];
  if( d < 0 )
@@ -2400,15 +2539,18 @@ I64 countWays( int n )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 I64 countWaysBrute( int n )
 {
  I64 c = 0 , total = 1;
- for( int i = 0 ; i < n ; ++i ) total *= 3;
+ for( int i = 0 ; i < n ; ++i )
+  total *= 3;
  for( I64 s = 0 ; s < total ; ++s ) {
   int pos = 0;
-  for( I64 x = s , i = 0 ; i < n ; ++i , x /= 3 ) pos += int( x % 3 ) - 1;
+  for( I64 x = s , i = 0 ; i < n ; ++i , x /= 3 )
+   pos += int( x % 3 ) - 1;
   c += pos == 0;
   }
  return( c );
@@ -2440,7 +2582,8 @@ ADS_TEST( "dp-103" )
 /*----------------------- dp-104, 2026-01-12, Borsa ------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Borsa: the largest gain of exactly k buy and sell operations, b1 < s1 <
 /// b2 < ... < sk, NEG if n < 2 k. DP[ i ][ l ], the best of the first i
@@ -2452,23 +2595,27 @@ namespace dp {
 I64 maxGain( const Ints & prices , int k )
 {
  ADS_PRE( k >= 0 );
- const auto r = maxProfitExactly( Longs( prices.begin() , prices.end() ) ,
-                                  std::size_t( k ) );
+ const auto r =
+   maxProfitExactly( Longs( prices.begin() , prices.end() ) ,
+		     std::size_t( k ) );
  return( r ? *r : NEG );
  }
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 I64 maxGainBrute( const Ints & P , int k )
 {
  I64 best = NEG;
  for( unsigned s = 0 ; s < ( 1u << P.size() ) ; ++s ) {
-  if( std::popcount( s ) != 2 * k ) continue;
+  if( std::popcount( s ) != 2 * k )
+   continue;
   const Ints I = bitsOf( s );
   I64 g = 0;
-  for( int t = 0 ; t < k ; ++t ) g += P[ I[ 2 * t + 1 ] ] - P[ I[ 2 * t ] ];
+  for( int t = 0 ; t < k ; ++t )
+   g += P[ I[ 2 * t + 1 ] ] - P[ I[ 2 * t ] ];
   best = std::max( best , g );
   }
  return( best );
@@ -2492,8 +2639,8 @@ ADS_TEST( "dp-104" )
  CHECK( dp::maxGain( { 4 , 9 , 2 } , 0 ) == 0 );
  CHECK( dp::maxGain( { 3 , 1 } , 1 ) == -2 && dp::maxGain( {} , 1 ) == NEG );
  CHECK( dp::maxGain( { 5 , 5 , 5 , 5 } , 2 ) == 0 );
- CHECK( dp::maxGain( { 0 , INT_MAX , 0 , INT_MAX } , 2 ) ==
-        2 * I64( INT_MAX ) );
+ CHECK( dp::maxGain( { 0 , INT_MAX , 0 , INT_MAX } ,
+		     2 ) == 2 * I64( INT_MAX ) );
  CHECK_THROWS( dp::maxGain( { 1 } , -1 ) , contract_violation );
  }
 
@@ -2503,7 +2650,8 @@ ADS_TEST( "dp-104" )
 /*------------------- dp-105, 2026-02-02, Hateville PNRR -------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Hateville PNRR: the cheapest painting of n houses in a row with k
 /// colors, cost[ h ][ c ] for house h and color c, adjacent houses of
@@ -2514,7 +2662,8 @@ namespace dp {
 I64 hateville( const Grid & cost , int k )
 {
  ADS_PRE( k >= 2 );
- for( const auto & r : cost ) ADS_PRE( int( r.size() ) == k );
+ for( const auto & r : cost )
+  ADS_PRE( int( r.size() ) == k );
  std::vector< Longs > C;
  for( const auto & r : cost )
   C.emplace_back( r.begin() , r.end() );
@@ -2532,7 +2681,8 @@ I64 hatevilleFast( const Grid & cost , int k )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 I64 hatevilleBrute( const Grid & cost , int k )
 {
@@ -2573,7 +2723,7 @@ ADS_TEST( "dp-105" )
  CHECK( dp::hatevilleFast( { { 1 , 9 } , { 1 , 9 } , { 1 , 9 } } , 2 ) == 11 );
  const Grid E( 500 , Ints( 3 , INT_MAX ) );
  CHECK( dp::hateville( E , 3 ) == 500 * I64( INT_MAX ) &&
-        dp::hatevilleFast( E , 3 ) == 500 * I64( INT_MAX ) );
+	dp::hatevilleFast( E , 3 ) == 500 * I64( INT_MAX ) );
  for( int t = 0 ; t < 200 ; ++t ) {
   const int n = randInt( g , 1 , 6 ) , k = randInt( g , 2 , 3 );
   const Grid C = randGrid( g , n , k , -20 , 20 );
@@ -2583,9 +2733,9 @@ ADS_TEST( "dp-105" )
  CHECK_THROWS( dp::hateville( { { 1 } } , 1 ) , contract_violation );
  CHECK_THROWS( dp::hateville( {} , 0 ) , contract_violation );
  CHECK_THROWS( dp::hateville( { { 1 , 2 } , { 1 } } , 2 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( dp::hatevilleFast( { { 1 , 2 , 3 } } , 2 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 }  // end( namespace )
@@ -2594,7 +2744,8 @@ ADS_TEST( "dp-105" )
 /*--------------------- dp-106, 2026-07-20, Acqua alta ---------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Acqua alta: the units of rain water trapped by the columns of heights h,
 /// no walls outside. DPleft[ i ] and DPright[ i ] are the highest column up
@@ -2604,7 +2755,8 @@ namespace dp {
 /// \pre the heights are not negative
 I64 howMuchWater( const Ints & h )
 {
- for( int x : h ) ADS_PRE( x >= 0 );
+ for( int x : h )
+  ADS_PRE( x >= 0 );
  return( trappingRainWater( Longs( h.begin() , h.end() ) ) );
  }
 
@@ -2614,7 +2766,8 @@ I64 howMuchWater( const Ints & h )
 I64 howMuchWaterColumns( const Ints & h )
 {
  const int n = int( h.size() );
- for( int x : h ) ADS_PRE( x >= 0 );
+ for( int x : h )
+  ADS_PRE( x >= 0 );
  I64 w = 0;
  for( int i = 1 ; i < n - 1 ; ++i ) {
   const int l = *std::max_element( h.begin() , h.begin() + i );
@@ -2630,21 +2783,26 @@ I64 howMuchWaterColumns( const Ints & h )
 I64 howMuchWaterLevels( const Ints & h )
 {
  const int n = int( h.size() );
- for( int x : h ) ADS_PRE( x >= 0 );
+ for( int x : h )
+  ADS_PRE( x >= 0 );
  const int top = n ? *std::max_element( h.begin() , h.end() ) : 0;
  I64 w = 0;
  for( int l = 1 ; l <= top ; ++l ) {
   int first = 0 , last = n - 1;
-  while( h[ first ] < l ) ++first;
-  while( h[ last ] < l ) --last;
-  for( int i = first ; i <= last ; ++i ) w += h[ i ] < l;
+  while( h[ first ] < l )
+   ++first;
+  while( h[ last ] < l )
+   --last;
+  for( int i = first ; i <= last ; ++i )
+   w += h[ i ] < l;
   }
  return( w );
  }
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 // the example, the three scans on random columns, fewer than three
 // columns, all equal, the highest columns, monotone heights, a single
@@ -2653,7 +2811,7 @@ ADS_TEST( "dp-106" )
 {
  const Ints E = { 0 , 1 , 0 , 2 , 4 , 0 , 1 , 2 , 1 , 3 };
  CHECK( dp::howMuchWater( E ) == 9 && dp::howMuchWaterColumns( E ) == 9 &&
-        dp::howMuchWaterLevels( E ) == 9 );
+	dp::howMuchWaterLevels( E ) == 9 );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const Ints h = randInts( g , randInt( g , 0 , 20 ) , 0 , 8 );
@@ -2662,26 +2820,25 @@ ADS_TEST( "dp-106" )
   }
  CHECK( dp::howMuchWater( {} ) == 0 && dp::howMuchWater( { 3 , 0 } ) == 0 );
  CHECK( dp::howMuchWater( Ints( 50 , 7 ) ) == 0 );
- CHECK( dp::howMuchWater( { INT_MAX , 0 , 0 , INT_MAX } ) ==
-        2 * I64( INT_MAX ) );
+ CHECK( dp::howMuchWater( { INT_MAX , 0 , 0 ,
+			    INT_MAX } ) == 2 * I64( INT_MAX ) );
  CHECK( dp::howMuchWaterColumns( { INT_MAX , 0 , 0 , INT_MAX } ) ==
-        2 * I64( INT_MAX ) );
+	2 * I64( INT_MAX ) );
  CHECK( dp::howMuchWater( { 5 } ) == 0 &&
-        dp::howMuchWaterColumns( { 5 } ) == 0 &&
-        dp::howMuchWaterLevels( { 5 } ) == 0 );
+	dp::howMuchWaterColumns( { 5 } ) == 0 &&
+	dp::howMuchWaterLevels( { 5 } ) == 0 );
  CHECK( dp::howMuchWaterColumns( {} ) == 0 &&
-        dp::howMuchWaterLevels( {} ) == 0 );
+	dp::howMuchWaterLevels( {} ) == 0 );
  CHECK( dp::howMuchWater( { 1 , 2 , 3 , 4 , 5 } ) == 0 &&
-        dp::howMuchWater( { 5 , 4 , 3 , 2 , 1 } ) == 0 );
+	dp::howMuchWater( { 5 , 4 , 3 , 2 , 1 } ) == 0 );
  CHECK( dp::howMuchWater( { 5 , 4 , 3 , 4 , 6 } ) == 4 &&
-        dp::howMuchWaterLevels( { 5 , 4 , 3 , 4 , 6 } ) == 4 );
+	dp::howMuchWaterLevels( { 5 , 4 , 3 , 4 , 6 } ) == 4 );
  CHECK( dp::howMuchWater( Ints( 50 , 0 ) ) == 0 &&
-        dp::howMuchWaterLevels( Ints( 50 , 0 ) ) == 0 );
+	dp::howMuchWaterLevels( Ints( 50 , 0 ) ) == 0 );
  CHECK_THROWS( dp::howMuchWater( { -1 } ) , contract_violation );
  CHECK_THROWS( dp::howMuchWaterColumns( { 1 , -1 , 1 } ) ,
-               contract_violation );
- CHECK_THROWS( dp::howMuchWaterLevels( { 1 , -1 , 1 } ) ,
-               contract_violation );
+	       contract_violation );
+ CHECK_THROWS( dp::howMuchWaterLevels( { 1 , -1 , 1 } ) , contract_violation );
  }
 
 }  // end( namespace )
@@ -2690,7 +2847,8 @@ ADS_TEST( "dp-106" )
 /*-------------- dp-107, 2026-08-28, Sottoinsieme divisibile ---------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Sottoinsieme divisibile: the largest subset of nums, distinct and
 /// positive, whose every pair has one item dividing the other. On nums
@@ -2706,7 +2864,8 @@ int largestDivisibleSubsetSize( std::vector< int > nums )
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 int divisibleBrute( const Ints & A )
 {
@@ -2716,8 +2875,10 @@ int divisibleBrute( const Ints & A )
   bool ok = true;
   for( int a : P )
    for( int b : P )
-    if( ( A[ a ] % A[ b ] ) && ( A[ b ] % A[ a ] ) ) ok = false;
-  if( ok ) best = std::max( best , int( P.size() ) );
+    if( ( A[ a ] % A[ b ] ) && ( A[ b ] % A[ a ] ) )
+     ok = false;
+  if( ok )
+   best = std::max( best , int( P.size() ) );
   }
  return( best );
  }
@@ -2736,17 +2897,18 @@ ADS_TEST( "dp-107" )
  CHECK( dp::largestDivisibleSubsetSize( {} ) == 0 );
  CHECK( dp::largestDivisibleSubsetSize( { 9 } ) == 1 );
  Ints P2;
- for( int i = 0 ; i < 31 ; ++i ) P2.push_back( 1 << i );
+ for( int i = 0 ; i < 31 ; ++i )
+  P2.push_back( 1 << i );
  CHECK( dp::largestDivisibleSubsetSize( P2 ) == 31 );
  CHECK( dp::largestDivisibleSubsetSize( { 2 , 3 , 5 , 7 , 11 , 13 } ) == 1 );
  CHECK( dp::largestDivisibleSubsetSize( { 7 , 1 , 5 } ) == 2 );
  CHECK( dp::largestDivisibleSubsetSize( { INT_MAX , 1 } ) == 2 );
  CHECK_THROWS( dp::largestDivisibleSubsetSize( { 2 , 2 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( dp::largestDivisibleSubsetSize( { 0 , 1 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( dp::largestDivisibleSubsetSize( { -2 , 4 } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 }  // end( namespace )
@@ -2755,7 +2917,8 @@ ADS_TEST( "dp-107" )
 /*------------------ dp-108, 2026-08-28, Pari-bilanciato -------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 /// Pari-bilanciato: the longest subarray of A with as many even items as
 /// odd ones, 0 if none. With +1 for an even item and -1 for an odd one, A[
@@ -2770,7 +2933,8 @@ int maxBalanced( const Ints & A )
  for( int i = 0 ; i < int( A.size() ) ; ++i ) {
   balance += A[ i ] % 2 == 0 ? 1 : -1;
   const auto [ it , fresh ] = first.emplace( balance , i + 1 );
-  if( ! fresh ) best = std::max( best , i + 1 - it->second );
+  if( ! fresh )
+   best = std::max( best , i + 1 - it->second );
   }
  return( best );
  }
@@ -2785,13 +2949,15 @@ int maxBalancedQuadratic( const Ints & A )
  int best = 0;
  for( int i = 0 ; i <= n ; ++i )
   for( int j = i + 1 ; j <= n ; ++j )
-   if( prefix[ i ] == prefix[ j ] ) best = std::max( best , j - i );
+   if( prefix[ i ] == prefix[ j ] )
+    best = std::max( best , j - i );
  return( best );
  }
 
 }  // end( namespace dp )
 
-namespace {
+namespace
+{
 
 int maxBalancedCubic( const Ints & A )
 {
@@ -2800,8 +2966,10 @@ int maxBalancedCubic( const Ints & A )
  for( int i = 0 ; i < n ; ++i )
   for( int j = i + 1 ; j <= n ; ++j ) {
    int even = 0;
-   for( int t = i ; t < j ; ++t ) even += A[ t ] % 2 == 0;
-   if( 2 * even == j - i ) best = std::max( best , j - i );
+   for( int t = i ; t < j ; ++t )
+    even += A[ t ] % 2 == 0;
+   if( 2 * even == j - i )
+    best = std::max( best , j - i );
    }
  return( best );
  }
@@ -2821,12 +2989,13 @@ ADS_TEST( "dp-108" )
  CHECK( dp::maxBalanced( {} ) == 0 && dp::maxBalanced( { 3 } ) == 0 );
  CHECK( dp::maxBalanced( Ints( 100 , 4 ) ) == 0 );
  CHECK( dp::maxBalanced( Ints( 100 , -3 ) ) == 0 &&
-        dp::maxBalancedQuadratic( Ints( 100 , -3 ) ) == 0 );
+	dp::maxBalancedQuadratic( Ints( 100 , -3 ) ) == 0 );
  CHECK( dp::maxBalanced( { -3 , -2 } ) == 2 &&
-        dp::maxBalancedQuadratic( { -3 , -2 } ) == 2 );
+	dp::maxBalancedQuadratic( { -3 , -2 } ) == 2 );
  CHECK( dp::maxBalancedQuadratic( {} ) == 0 );
  Ints alt( 100000 );
- for( int i = 0 ; i < 100000 ; ++i ) alt[ i ] = i;
+ for( int i = 0 ; i < 100000 ; ++i )
+  alt[ i ] = i;
  CHECK( dp::maxBalanced( alt ) == 100000 );
  CHECK( dp::maxBalanced( { INT_MAX , INT_MIN } ) == 2 );
  }

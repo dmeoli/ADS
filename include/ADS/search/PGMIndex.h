@@ -84,7 +84,7 @@
 
 #ifndef __ADS_PGMIndex
  #define __ADS_PGMIndex
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -104,7 +104,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS PGMIndex ------------------------------*/
@@ -115,14 +116,14 @@ namespace ADS {
 /// others
 template< class K , std::size_t E = 64 , std::size_t R = 4 >
  requires std::is_arithmetic_v< K >
-class PGMIndex {
+class PGMIndex
+{
 
  static_assert( ( E >= 1 ) && ( R >= 1 ) , "the errors are at least 1" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = K;   ///< the type of the items
+ using Item = K;  ///< the type of the items
 
  /// an empty index
  PGMIndex( void ) = default;
@@ -221,21 +222,22 @@ class PGMIndex {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the line of a segment: the predicted place of its first key and the
  /// slope
- struct Line {
-  double icpt;    ///< the predicted place of the first key
-  double slope;   ///< the slope
+ struct Line
+ {
+  double icpt;   ///< the predicted place of the first key
+  double slope;  ///< the slope
   };
 
  /// a level: the first keys of its segments, their lines, and the first
  /// place of each segment at the level below (and their number, at the
  /// end)
- struct Level {
-  std::vector< std::uint64_t > key;      ///< the first keys
-  std::vector< Line > line;              ///< the lines
-  std::vector< std::uint32_t > start;    ///< the first places below
+ struct Level
+ {
+  std::vector< std::uint64_t > key;    ///< the first keys
+  std::vector< Line > line;            ///< the lines
+  std::vector< std::uint32_t > start;  ///< the first places below
   };
 
  /// the key in an order of integers of 64 bits
@@ -244,16 +246,16 @@ class PGMIndex {
  /// the segments of the points \f$ ( x[ i ] , y[ i ] ) \f$ with error
  /// \f$ e \f$
  static Level approximate( const std::vector< std::uint64_t > & x ,
-                           const std::vector< std::uint32_t > & y ,
-                           std::int64_t e , std::size_t total );
+			   const std::vector< std::uint32_t > & y ,
+			   std::int64_t e , std::size_t total );
 
  /// the place predicted by the segment \f$ s \f$ of \f$ l \f$ for \f$ x \f$,
  /// within its range
  [[nodiscard]] static std::size_t predict( const Level & l , std::size_t s ,
-                                           std::uint64_t x );
+					   std::uint64_t x );
 
- std::vector< K , HugePageAllocator< K > > f_A;   ///< the items
- std::vector< Level > f_L;              ///< the levels, the last first
+ std::vector< K , HugePageAllocator< K > > f_A;  ///< the items
+ std::vector< Level > f_L;                      ///< the levels, the last first
 
  };  // end( class PGMIndex )
 
@@ -269,7 +271,7 @@ class PGMIndex {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PGMIndex.h included */
+#endif /* PGMIndex.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File PGMIndex.h ---------------------------*/

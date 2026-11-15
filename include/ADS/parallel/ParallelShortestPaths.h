@@ -99,7 +99,7 @@
 
 #ifndef __ADS_ParallelShortestPaths
  #define __ADS_ParallelShortestPaths
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -121,7 +121,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the distances from \f$ s \f$ by the \f$ \Delta \f$-stepping of Meyer and
 /// Sanders, `infinity()` for the nodes not reached
@@ -190,9 +191,8 @@ namespace ADS {
 /// \f]
 /// \pre \f$ s \f$ is a node, the costs are not negative, \f$ \Delta > 0 \f$
 template< Executor E , Graph G >
-[[nodiscard]] std::vector< typename G::Weight > deltaStepping(
-                              E & ex , const G & g , int s ,
-                              typename G::Weight delta );
+[[nodiscard]] std::vector< typename G::Weight >
+deltaStepping( E & ex , const G & g , int s , typename G::Weight delta );
 
 /// the distances from \f$ s \f$ by the \f$ \rho \f$-stepping of Dong, Gu,
 /// Sun and Zhang, `infinity()` for the nodes not reached
@@ -223,9 +223,9 @@ template< Executor E , Graph G >
 /// \f]
 /// \pre \f$ s \f$ is a node, the costs are not negative, \f$ \rho \ge 1 \f$
 template< Executor E , Graph G >
-[[nodiscard]] std::vector< typename G::Weight > rhoStepping(
-                              E & ex , const G & g , int s ,
-                              std::size_t rho = std::size_t( 1 ) << 20 );
+[[nodiscard]] std::vector< typename G::Weight >
+rhoStepping( E & ex , const G & g , int s ,
+	     std::size_t rho = std::size_t( 1 ) << 20 );
 
 /*--------------------------------------------------------------------------*/
 
@@ -239,7 +239,7 @@ template< Executor E , Graph G >
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ParallelShortestPaths.h included */
+#endif /* ParallelShortestPaths.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- End File ParallelShortestPaths.h --------------------*/

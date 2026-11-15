@@ -15,9 +15,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the edges of a graph for the walks of Hierholzer: the incidences of each
 /// node u in inc[ off[ u ] .. off[ u + 1 ] ), each an edge and its other
@@ -25,12 +27,13 @@ namespace detail {
 /// edge from both ends, the two arcs of the adjacency paired in order; the
 /// excess of each node, the edges leaving minus those entering (the degree,
 /// if unoriented), and the number m of the edges
-struct EulerEdges {
+struct EulerEdges
+{
  std::vector< std::size_t > off;
- std::vector< std::pair< int , int > > inc;   ///< ( edge , other end )
+ std::vector< std::pair< int , int > > inc;  ///< ( edge , other end )
  std::vector< int > excess;
  std::size_t m = 0;
- int last = -1;                               ///< the last node with an edge
+ int last = -1;  ///< the last node with an edge
 
  template< Graph G >
  explicit EulerEdges( const G & g ) {
@@ -75,7 +78,7 @@ struct EulerEdges {
    inc[ at[ E[ e ].first ]++ ] = { int( e ) , E[ e ].second };
    inc[ at[ E[ e ].second ]++ ] = { int( e ) , E[ e ].first };
    }
-  ADS_PRE( inc.size() == 2 * m );     // each arc has its twin
+  ADS_PRE( inc.size() == 2 * m );  // each arc has its twin
   }
 
  /// the walk of Hierholzer from s: the trail, backwards
@@ -88,7 +91,7 @@ struct EulerEdges {
    const int u = S.back();
    std::size_t & i = next[ u ];
    while( ( i < off[ u + 1 ] ) && used[ inc[ i ].first ] )
-    ++i;                                 // the twin of a used edge
+    ++i;  // the twin of a used edge
    if( i < off[ u + 1 ] ) {
     used[ inc[ i ].first ] = true;
     S.push_back( inc[ i++ ].second );
@@ -105,7 +108,7 @@ struct EulerEdges {
  /// the trail from s, or nothing if it misses an edge
  std::optional< std::vector< int > > trail( int s ) const {
   auto C = walk( s );
-  if( C.size() != m + 1 )               // the edges are not connected
+  if( C.size() != m + 1 )  // the edges are not connected
    return( std::nullopt );
   return( C );
   }
@@ -170,7 +173,7 @@ std::optional< std::vector< int > > eulerianTrail( const G & g , int s )
  const detail::EulerEdges E( g );
  if( E.m == 0 )
   return( std::vector< int >() );
- if( E.off[ s ] == E.off[ s + 1 ] )     // s has no edge to start with
+ if( E.off[ s ] == E.off[ s + 1 ] )  // s has no edge to start with
   return( std::nullopt );
  int unbalanced = 0;
  for( int u = 0 ; u < g.bound() ; ++u ) {
@@ -186,7 +189,7 @@ std::optional< std::vector< int > > eulerianTrail( const G & g , int s )
    }
   }
  if( ( unbalanced > 0 ) && ( E.excess[ s ] % 2 == 0 ) )
-  return( std::nullopt );               // s is not an end of the trail
+  return( std::nullopt );  // s is not an end of the trail
  auto C = E.trail( s );
  ADS_AUDIT( ! C || ( isEulerianTrail( g , *C ) && ( C->front() == s ) ) );
  return( C );
@@ -205,8 +208,8 @@ bool isEulerianTrail( const G & g , const std::vector< int > & c )
 {
  const bool d = g.directed();
  auto arc = [ d ]( int u , int v ) {
-  return( d ? std::pair( u , v ) : std::pair( std::min( u , v ) ,
-                                              std::max( u , v ) ) );
+  return( d ? std::pair( u , v )
+	     : std::pair( std::min( u , v ) , std::max( u , v ) ) );
   };
  std::vector< std::pair< int , int > > E , C;
  for( int u : g.V() )

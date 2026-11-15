@@ -122,22 +122,22 @@ exercise 5.11 of [Montresor 2025](Z-bibliography.md#ref-montresor2025).
 
 The abstract data type TREE of [Montresor 2025,
 §5.1](Z-bibliography.md#ref-montresor2025) has the node and its subtree as the
-same object. Its operation `Tree(v)` makes a tree of one node of value $v$,
-`read()` and `write(v)` access the value of a node, and `parent()`,
-`leftmostChild()` and `rightSibling()` move along the tree, returning nil where
-there is no such node. Then `insertChild(t)` and `insertSibling(t)` hang a tree
-$t$, which must be a root, as the first child or as the next sibling of a node,
-and `deleteChild()` and `deleteSibling()` destroy the subtree of the first
-child or of the next sibling. Its binary version has `left()` and `right()` in
-place of the first child and of the next sibling, and `insertLeft(t)`,
-`insertRight(t)`, `deleteLeft()` and `deleteRight()` in place of the insertions
-and of the deletions, a child being inserted only where none is. Unlike the
-SEQUENCE, the SET and the DICTIONARY, the two data types have no concept in
-`ADS/ADT.h`. Instead, the realizations of the next two sections share the names
-of the operations (with a node passed explicitly, as an index, when the nodes
-live in a vector), and the algorithms of [§8.4](08-tree.md#sec-8-4) are written
-once for any node that has the links to its children, by three concepts defined
-there.
+same object. Its operation `Tree( v )` makes a tree of one node of value $v$,
+`read()` and `write( v )` access the value of a node, and `parent()`,
+`leftmostChild()` and `rightSibling()` move along the tree, returning nil
+where there is no such node. Then `insertChild( t )` and `insertSibling( t )`
+hang a tree $t$, which must be a root, as the first child or as the next
+sibling of a node, and `deleteChild()` and `deleteSibling()` destroy the
+subtree of the first child or of the next sibling. Its binary version has
+`left()` and `right()` in place of the first child and of the next sibling,
+and `insertLeft( t )`, `insertRight( t )`, `deleteLeft()` and `deleteRight()`
+in place of the insertions and of the deletions, a child being inserted only
+where none is. Unlike the SEQUENCE, the SET and the DICTIONARY, the two data
+types have no concept in `ADS/ADT.h`. Instead, the realizations of the next
+two sections share the names of the operations (with a node passed explicitly,
+as an index, when the nodes live in a vector), and the algorithms of
+[§8.4](08-tree.md#sec-8-4) are written once for any node that has the links to
+its children, by three concepts defined there.
 
 A *visit* examines each node of a tree once. The *previsit* examines a node
 before the subtrees of its children, the *postvisit* after them, the *invisit*
@@ -254,18 +254,17 @@ if and only if $j$ was below $i$ (and never for $j = -1$). $\square$
 `Tree` (in `ADS/tree/Tree.h`) is the TREE of [Montresor 2025,
 §5.2](Z-bibliography.md#ref-montresor2025): each node holds its value and
 three pointers, to its parent, to its first child and to its next sibling,
-whatever the number of its children. A node owns the subtrees of its
-children, so that deleting the root of a tree destroys all of it. The
-destructor, `deleteChild()` and `deleteSibling()` take time linear in the
-size of the subtree they destroy, by an explicit stack
-([Algorithm 8.1](08-tree.md#alg-8-1)), and the copy of a tree is
-deep and explicit (`copy()`), the copy constructor being deleted. Its
-insertions are a few assignments of pointers
-([Figure 8.2](08-tree.md#fig-8-2)): `insertChild(t)` makes $t$ the
-first child, whose next sibling is the first child before the call, and
-`insertSibling(t)` puts $t$ between a node and its next sibling, both in
-$O( 1 )$. Also, `isLeaf()` and `isLastSibling()` test the two pointers to the
-children and to the next sibling.
+whatever the number of its children. A node owns the subtrees of its children,
+so that deleting the root of a tree destroys all of it. The destructor,
+`deleteChild()` and `deleteSibling()` take time linear in the size of the
+subtree they destroy, by an explicit stack ([Algorithm
+8.1](08-tree.md#alg-8-1)), and the copy of a tree is deep and explicit
+(`copy()`), the copy constructor being deleted. Its insertions are a few
+assignments of pointers ([Figure 8.2](08-tree.md#fig-8-2)): `insertChild( t )`
+makes $t$ the first child, whose next sibling is the first child before the
+call, and `insertSibling( t )` puts $t$ between a node and its next sibling,
+both in $O( 1 )$. Also, `isLeaf()` and `isLastSibling()` test the two pointers
+to the children and to the next sibling.
 
 ![Figure 8.2. The tree `( a ( b ( e ) ( f ) ) ( c ( g ) ) )` as a `Tree`, the pointers to the first child going down and those to the next sibling going right (the pointers to the parents are not drawn), before and after `a.insertChild(d)`, which sets the two pointers in orange.](../figures/tree-pointers.svg){#fig-8-2}
 
@@ -287,16 +286,16 @@ refused stays the caller's. At the contract level 3 each update also checks
 that the children of the node it changes have that node as their parent
 (only the links that the update writes, not the whole subtree).
 
-As for the visits, they are free functions on a node: `dfs(t, pre, post)` calls
-`pre(u)` on each node before the subtrees of its children and `post(u)` after
-them, and `pre_visit()` and `post_visit()` are `dfs()` with one of the two
-only. In the same way, `in_visit(t, i, f)` calls `f(u)` after the first $i$
-subtrees of $u$ (or after all of them, if $u$ has fewer than $i$ children), and
-`bfs(t, f)` visits by levels with a queue ([Algorithm
-8.2](08-tree.md#alg-8-2)). Each of them costs what [Lemma
-8.2](08-tree.md#lem-8-2) states, the stack holding each node of
-the current path with the child it is visiting, which is the state that the
-recursion of the pseudocode keeps in its calls.
+As for the visits, they are free functions on a node: `dfs( t , pre , post )`
+calls `pre( u )` on each node before the subtrees of its children and
+`post( u )` after them, and `pre_visit()` and `post_visit()` are `dfs()` with
+one of the two only. In the same way, `in_visit( t , i , f )` calls `f( u )`
+after the first $i$ subtrees of $u$ (or after all of them, if $u$ has fewer
+than $i$ children), and `bfs( t , f )` visits by levels with a queue
+([Algorithm 8.2](08-tree.md#alg-8-2)). Each of them costs what [Lemma
+8.2](08-tree.md#lem-8-2) states, the stack holding each node of the current
+path with the child it is visiting, which is the state that the recursion of
+the pseudocode keeps in its calls.
 
 <span id="alg-8-2"></span>**Algorithm 8.2.** The visits
 of an ordered tree ([Montresor 2025,
@@ -308,19 +307,19 @@ of an ordered tree ([Montresor 2025,
 
 --8<-- "generated/Tree-bfs.pseudo.md"
 
-Several functions are built on the visits. Thus `copy(t)` is a previsit that
-makes a copy of each node and hangs the copies of its subtrees in order
-(the siblings of $t$ are not copied, and the copy is a root that the caller
-owns). Next, `maxWeightLevel(t)` returns the first level of largest weight, the
+Several functions are built on the visits. Thus `copy( t )` is a previsit that
+makes a copy of each node and hangs the copies of its subtrees in order (the
+siblings of $t$ are not copied, and the copy is a root that the caller owns).
+Next, `maxWeightLevel( t )` returns the first level of largest weight, the
 weight of a level being the sum of the values of its nodes, by a visit by
-levels that keeps one level at a time. Finally, `to_list(t)` writes the tree as
-a parenthesized list, $( r \, T_1 \cdots T_k )$ for the root $r$ with the
-subtrees $T_1 , \ldots , T_k$ (e.g., `( a ( b ( e ) ( f ) ) ( c ( g ) ) )`
-for the tree of [Figure 8.2](08-tree.md#fig-8-2)). The list is
-read back by `tree_from_list(s)`, a descent on the grammar
-$T \to ( \, v \, T^* \, )$, the values being written with `<<` and read
-with `>>` ([Algorithm 8.3](08-tree.md#alg-8-3)); [Lemma
-8.4](08-tree.md#lem-8-4) below gives the cost of all four.
+levels that keeps one level at a time. Finally, `to_list( t )` writes the tree
+as a parenthesized list, $( r \, T_1 \cdots T_k )$ for the root $r$ with the
+subtrees $T_1 , \ldots , T_k$ (e.g., `( a ( b ( e ) ( f ) ) ( c ( g ) ) )` for
+the tree of [Figure 8.2](08-tree.md#fig-8-2)). The list is read back by
+`tree_from_list( s )`, a descent on the grammar $T \to ( \, v \, T^* \, )$,
+the values being written with `<<` and read with `>>` ([Algorithm
+8.3](08-tree.md#alg-8-3)); [Lemma 8.4](08-tree.md#lem-8-4) below gives the
+cost of all four.
 
 <span id="alg-8-3"></span>**Algorithm 8.3.** The copy, the
 heaviest level and the parenthesized lists of a `Tree`.
@@ -333,31 +332,30 @@ heaviest level and the parenthesized lists of a `Tree`.
 
 --8<-- "generated/Tree-readTree.pseudo.md"
 
-Finally, the two ranges of the standard interface (cf.
-[§1.8](01-introduction.md#sec-1-8)) walk a tree with no stack. The first,
-`children(t)`, gives the children of $t$ from the leftmost, by the links to the
-next siblings. The second, `preorder(t)`, gives the nodes of the subtree of $t$
-in previsit, by the step of [Algorithm
-8.4](08-tree.md#alg-8-4), which goes down to the first
-child if there is one and otherwise climbs until it finds a next sibling,
-never above $t$. A single step may climb $h$ levels; yet, the steps of a
-complete visit are few in all, as the following lemma shows.
+Finally, the two ranges of the standard interface
+(cf. [§1.8](01-introduction.md#sec-1-8)) walk a tree with no stack. The first,
+`children( t )`, gives the children of $t$ from the leftmost, by the links to
+the next siblings. The second, `preorder( t )`, gives the nodes of the subtree
+of $t$ in previsit, by the step of [Algorithm 8.4](08-tree.md#alg-8-4), which
+goes down to the first child if there is one and otherwise climbs until it
+finds a next sibling, never above $t$. A single step may climb $h$ levels;
+yet, the steps of a complete visit are few in all, as the following lemma
+shows.
 
 <span id="alg-8-4"></span>**Algorithm 8.4.** The next
 node of the previsit of an ordered tree, by the links to the parents.
 
 --8<-- "generated/Tree-next.pseudo.md"
 
-<span id="lem-8-4"></span>**Lemma 8.4.** *On the subtree of a node $t$
-with $n_t$ nodes and height $h_t$, `copy(t)` and `to_list(t)` cost
-$O( n_t )$ time and $O( h_t )$ space besides their result, and
-`maxWeightLevel(t)` costs $O( n_t )$ time and space proportional to the two
-largest consecutive levels, all with the contracts of level 1 and 2 and
-with the values copied, added, written and read in constant time;
-`tree_from_list(s)` costs time linear in the length of $s$. The range
-`children(t)` costs $O( 1 )$ per child, and the range `preorder(t)` gives
-the nodes of the subtree of $t$ in previsit in $O( n_t )$ time and
-$O( 1 )$ space in all.*
+<span id="lem-8-4"></span>**Lemma 8.4.** *On the subtree of a node $t$ with
+$n_t$ nodes and height $h_t$, `copy( t )` and `to_list( t )` cost $O( n_t )$
+time and $O( h_t )$ space besides their result, and `maxWeightLevel( t )`
+costs $O( n_t )$ time and space proportional to the two largest consecutive
+levels, all with the contracts of level 1 and 2 and with the values copied,
+added, written and read in constant time; `tree_from_list( s )` costs time
+linear in the length of $s$. The range `children( t )` costs $O( 1 )$ per
+child, and the range `preorder( t )` gives the nodes of the subtree of $t$ in
+previsit in $O( n_t )$ time and $O( 1 )$ space in all.*
 
 *Proof.* `copy()` and `to_list()` keep on their stack the nodes of the path
 from $t$ to the current node, each with its next child. Each node is
@@ -383,10 +381,10 @@ parenthesized list and reads it back:
 ```cpp
 #include "ADS/tree/Tree.h"
 
-ADS::Tree< char > a( 'a' );                    // a root that owns its subtree
+ADS::Tree< char > a( 'a' );  // a root that owns its subtree
 a.insertChild( new ADS::Tree< char >( 'c' ) );
-a.insertChild( new ADS::Tree< char >( 'b' ) );    // b first, c its sibling
-const std::string s = ADS::to_list( &a );      // "( a ( b ) ( c ) )"
+a.insertChild( new ADS::Tree< char >( 'b' ) );  // b first, c its sibling
+const std::string s = ADS::to_list( &a );       // "( a ( b ) ( c ) )"
 // the caller owns the tree read back
 ADS::Tree< char > * t = ADS::tree_from_list< char >( s );
 ```
@@ -397,18 +395,18 @@ ADS::Tree< char > * t = ADS::tree_from_list< char >( s );
 of nodes instead of pointers, `NIL` ($-1$) standing for nil. Each place freed
 by a removal is linked in a free list through its field of the next sibling,
 and the next insertions take the places from its head before the vector grows
-([Figure 8.3](08-tree.md#fig-8-3)). A tree with cursors can thus be
-copied, saved and moved in one piece, the indices staying valid when the vector
-grows, and its nodes are close in memory, which usually makes the visits faster
-than on nodes scattered in the heap. Of course, the price is that an insertion
-costs $O( 1 )$ amortized time rather than in the worst case, by the argument of
-[Lemma 3.3](03-stack.md#lem-3-3) on the growth of the vector. All the
-operations take a node as an index. Here `insertChild(n, v)` and
-`insertSibling(n, v)` hang a new node of value $v$ and return its place.
-Similarly, `insertChildTree(n, t, s)` and `insertSiblingTree(n, t, s)` hang a
-copy of the subtree of the node $s$ of the tree $t$ (which may be the tree
-itself, copied as it was before the call), and `remove(n)` removes the subtree
-of $n$ ([Algorithm 8.5](08-tree.md#alg-8-5)). Note that the removal
+([Figure 8.3](08-tree.md#fig-8-3)). A tree with cursors can thus be copied,
+saved and moved in one piece, the indices staying valid when the vector grows,
+and its nodes are close in memory, which usually makes the visits faster than
+on nodes scattered in the heap. Of course, the price is that an insertion
+costs $O( 1 )$ amortized time rather than in the worst case, by the argument
+of [Lemma 3.3](03-stack.md#lem-3-3) on the growth of the vector. All the
+operations take a node as an index. Here `insertChild( n , v )` and
+`insertSibling( n , v )` hang a new node of value $v$ and return its place.
+Similarly, `insertChildTree( n , t , s )` and `insertSiblingTree( n , t , s )`
+hang a copy of the subtree of the node $s$ of the tree $t$ (which may be the
+tree itself, copied as it was before the call), and `remove( n )` removes the
+subtree of $n$ ([Algorithm 8.5](08-tree.md#alg-8-5)). Note that the removal
 has to unlink $n$ from the list of the children of its parent, which a singly
 linked list of siblings allows only by a scan from the first child. Hence it
 costs $O( c + n_n )$ time, $c$ the number of the siblings before $n$ and $n_n$
@@ -430,17 +428,17 @@ nodes.
 --8<-- "generated/CursorTree-invisit.pseudo.md"
 
 All the classes of the trees in a vector (`CursorTree`, `ChildListTree`,
-`PreorderArrayTree`, `CursorBinaryTree` and `ArrayBinaryTree`) all define
-the type `Item` of the values, as `Tree` and `BinaryTree` do, the constant
-`NIL`, and `empty()` and `root()`, the root being `NIL` in an empty tree;
-all but `ArrayBinaryTree` also give `size()`, the number of nodes. The
-visits `previsit()`, `postvisit()` and `invisit(i)` return the places
-in the order of the visit, as vectors, and `nodes()` is a range over the
-places in use (a `SlotIterator` of [§1.8](01-introduction.md#sec-1-8),
-which skips the free ones), and `children(n)` a range over the children of
-$n$. Its contracts require that a node be a place in use and that a sibling
-not be inserted next to the root; the invariant is that the nodes reached
-from the root link back to their parent and are all the nodes in use.
+`PreorderArrayTree`, `CursorBinaryTree` and `ArrayBinaryTree`) all define the
+type `Item` of the values, as `Tree` and `BinaryTree` do, the constant `NIL`,
+and `empty()` and `root()`, the root being `NIL` in an empty tree; all but
+`ArrayBinaryTree` also give `size()`, the number of nodes. The visits
+`previsit()`, `postvisit()` and `invisit( i )` return the places in the order
+of the visit, as vectors, and `nodes()` is a range over the places in use (a
+`SlotIterator` of [§1.8](01-introduction.md#sec-1-8), which skips the free
+ones), and `children( n )` a range over the children of $n$. Its contracts
+require that a node be a place in use and that a sibling not be inserted next
+to the root; the invariant is that the nodes reached from the root link back
+to their parent and are all the nodes in use.
 
 ### 8.2.3 Lists of children {#sec-8-2-3}
 
@@ -453,23 +451,23 @@ list and `rightSibling()` costs $O( 1 )$ time: it returns the place held by
 the cell after `where` in the list of the parent, or `NIL` when that cell is
 the last one or the node is the root.
 
-In this way the list of the children of a node is returned by `children(n)`,
+In this way the list of the children of a node is returned by `children( n )`,
 and it is scanned in $O( 1 )$ time per child, which is what the representation
-is for. Furthermore, `insertChild(n, v)` puts the new node at the head of the list
-of $n$ and records its cell ([Figure 8.4](08-tree.md#fig-8-4)),
-`insertSibling(n, v)` after the cell of $n$. A removal `remove(n)` unlinks the
-cell of $n$ in $O( 1 )$ by its position, with no scan of the siblings as in
-`CursorTree`, and costs $O( n_n )$ for the subtree ([Lemma
-8.3](08-tree.md#lem-8-3)). As for the other
-operations, the visits and the copies of subtrees (`insertChildTree(n, t, s)`
-and `insertSiblingTree(n, t, s)`) are those of `CursorTree` ([Algorithm
-8.6](08-tree.md#alg-8-6)). A copy of the whole tree, by the copy
-constructor or by the assignment, gives each node the position of its cell in
-the lists of the copy, since a position of the lists of the source would be
-wrong there. In terms of space, we pay for $n$ nodes, each with the header of
-its list, and for $n - 1$ cells of the lists (one per node but the root), each
-cell with its links. This is somewhat more than the three indices per node of
-`CursorTree`, the price of the constant time of every step.
+is for. Furthermore, `insertChild( n , v )` puts the new node at the head of
+the list of $n$ and records its cell ([Figure 8.4](08-tree.md#fig-8-4)),
+`insertSibling( n , v )` after the cell of $n$. A removal `remove( n )`
+unlinks the cell of $n$ in $O( 1 )$ by its position, with no scan of the
+siblings as in `CursorTree`, and costs $O( n_n )$ for the subtree ([Lemma
+8.3](08-tree.md#lem-8-3)). As for the other operations, the visits and the
+copies of subtrees (`insertChildTree( n , t , s )` and
+`insertSiblingTree( n , t , s )`) are those of `CursorTree` ([Algorithm
+8.6](08-tree.md#alg-8-6)). A copy of the whole tree, by the copy constructor
+or by the assignment, gives each node the position of its cell in the lists of
+the copy, since a position of the lists of the source would be wrong there. In
+terms of space, we pay for $n$ nodes, each with the header of its list, and
+for $n - 1$ cells of the lists (one per node but the root), each cell with its
+links. This is somewhat more than the three indices per node of `CursorTree`,
+the price of the constant time of every step.
 
 ![Figure 8.4. The tree of [Figure 8.2](08-tree.md#fig-8-2) as a `ChildListTree` after `insertChild(0,d)`: the nodes with their parents, and the lists $C_0$, $C_1$, $C_2$ of the children of `a`, `b` and `c`; the new node and its cell, at the head of $C_0$, in orange, and the field `where` of `b`, which points to its cell in $C_0$, in violet.](../figures/tree-childlist.svg){#fig-8-4}
 
@@ -487,24 +485,23 @@ position, and are all the nodes in use.
 ### 8.2.4 A vector of parents {#sec-8-2-4}
 
 `ParentTree` is the representation of [Montresor 2025,
-§5.4](Z-bibliography.md#ref-montresor2025): the nodes are $0 , \ldots , n - 1$,
-and $p[ i ]$ is the parent of $i$, or $-1$ when $i$ is a root. It answers
-`parent(i)` alone, in $O( 1 )$ time and with one integer per node. This is
-often all that is needed when a tree is built and then walked toward the root,
-e.g., the trees of the visits of a graph ([§14.5](14-graph.md#sec-14-5)), the
-paths of the shortest paths, and the forests of the MFSET
-([§11.3](11-mfset.md#sec-11-3)). We lose the order among the siblings (unless
-it is that of their numbers), and also the access to the children, which needs
-a scan of the vector. Since `setParent(i, j)` may hang any node under any
-other, the structure is a forest of $n$ isolated nodes at the start, and it
-stays a forest of rooted trees after each call whose $j$ is not a descendant
-of $i$ ([Lemma 8.3](08-tree.md#lem-8-3) and [Figure
-8.5](08-tree.md#fig-8-5)); `size()` is $n$. Its contracts check that
-the nodes are in $[ 0 , n )$, $j$ possibly $-1$, and that a node is not its
-own parent; at the contract level 3 they also check, by a walk from $j$ to
-its root, that $j$ is not a descendant of $i$. Thus `setParent()` costs
-$O( 1 )$ time in the code compiled for production and $O( d( j ) )$ with the
-audits.
+§5.4](Z-bibliography.md#ref-montresor2025): the nodes are
+$0 , \ldots , n - 1$, and $p[ i ]$ is the parent of $i$, or $-1$ when $i$ is a
+root. It answers `parent( i )` alone, in $O( 1 )$ time and with one integer
+per node. This is often all that is needed when a tree is built and then
+walked toward the root, e.g., the trees of the visits of a graph
+([§14.5](14-graph.md#sec-14-5)), the paths of the shortest paths, and the
+forests of the MFSET ([§11.3](11-mfset.md#sec-11-3)). We lose the order among
+the siblings (unless it is that of their numbers), and also the access to the
+children, which needs a scan of the vector. Since `setParent( i , j )` may
+hang any node under any other, the structure is a forest of $n$ isolated nodes
+at the start, and it stays a forest of rooted trees after each call whose $j$
+is not a descendant of $i$ ([Lemma 8.3](08-tree.md#lem-8-3) and [Figure
+8.5](08-tree.md#fig-8-5)); `size()` is $n$. Its contracts check that the nodes
+are in $[ 0 , n )$, $j$ possibly $-1$, and that a node is not its own parent;
+at the contract level 3 they also check, by a walk from $j$ to its root, that
+$j$ is not a descendant of $i$. Thus `setParent()` costs $O( 1 )$ time in the
+code compiled for production and $O( d( j ) )$ with the audits.
 
 ![Figure 8.5. A `ParentTree` of 7 nodes, a tree rooted at 0 and the node 6 alone, before and after `setParent(6,2)`, which writes the place 6 (in orange).](../figures/tree-parent.svg){#fig-8-5}
 
@@ -533,16 +530,16 @@ after $i$ is its first child, and the first node after the subtree is the next
 sibling of $i$ when $i$ has one. $\square$
 
 Reading and writing a value, and the parent, take $O( 1 )$ time;
-`leftmostChild(i)` takes $O( 1 )$ and `rightSibling(i)` the time of
-`subtreeEnd(i)`, i.e., the size of the subtree of $i$, and `isLeaf(i)` is $O( 1
-)$. Inserting a tree $t$ of $k$ nodes as the first child (`insertChild(i, t)`)
-or as the next sibling (`insertSibling(i, t)`) of $i$, and removing a subtree
-(`remove(i)`), shift the places after it and renumber the parents that point
-beyond it, in $O( n + k )$ time ([Algorithm
+`leftmostChild( i )` takes $O( 1 )$ and `rightSibling( i )` the time of
+`subtreeEnd( i )`, i.e., the size of the subtree of $i$, and `isLeaf( i )` is
+$O( 1 )$. Inserting a tree $t$ of $k$ nodes as the first child
+(`insertChild( i , t )`) or as the next sibling (`insertSibling( i , t )`) of
+$i$, and removing a subtree (`remove( i )`), shift the places after it and
+renumber the parents that point beyond it, in $O( n + k )$ time ([Algorithm
 8.7](08-tree.md#alg-8-7), [Figure 8.6](08-tree.md#fig-8-6) and [Lemma
-8.6](08-tree.md#lem-8-6) below). We expect the vector to suit (typically)
-the trees that are read much more often than they change, e.g., the trees
-written once and then visited, since the previsit is the order of the vector
+8.6](08-tree.md#lem-8-6) below). We expect the vector to suit (typically) the
+trees that are read much more often than they change, e.g., the trees written
+once and then visited, since the previsit is the order of the vector
 (`values()` gives the values in that order, as a view) and it is scanned in
 contiguous memory.
 
@@ -599,34 +596,35 @@ condition, by part (ii), but the invariant does not test it.
 ### 8.3.1 Pointers to the children {#sec-8-3-1}
 
 `BinaryTree` (in `ADS/tree/BinaryTree.h`) is the binary TREE of [Montresor
-2025, §5.5](Z-bibliography.md#ref-montresor2025) and the `BinaryTree` of [Morin
-2013, §6.1](Z-bibliography.md#ref-morin-cpp): each node holds its value and
-three pointers, to its parent and to its left and right children, nil where
-there is none. As in `Tree`, a node and its subtree are the same object and a
-node owns its subtrees; `parent()`, `left()`, `right()`, `read()`, `write(v)`,
-`insertLeft(t)` and `insertRight(t)` take $O( 1 )$ time, while `deleteLeft()`
-and `deleteRight()` destroy a subtree in time linear in its size. Beside the
-operations of the book, `detachLeft()` and `detachRight()` cut a subtree off
-its parent without destroying it, in $O( 1 )$: the subtree becomes a root owned
-by the caller, ready to be inserted elsewhere, which moves subtrees (a mirror,
-a rotation) with no copy ([Figure 8.7](08-tree.md#fig-8-7)). Its
-contracts require that the tree inserted be a root other than the node itself
-and than the root of its tree, and that it go where no child is; at the level
-3 each update also checks that the two children of the node it changes have
-that node as their parent.
+2025, §5.5](Z-bibliography.md#ref-montresor2025) and the `BinaryTree` of
+[Morin 2013, §6.1](Z-bibliography.md#ref-morin-cpp): each node holds its value
+and three pointers, to its parent and to its left and right children, nil
+where there is none. As in `Tree`, a node and its subtree are the same object
+and a node owns its subtrees; `parent()`, `left()`, `right()`, `read()`,
+`write( v )`, `insertLeft( t )` and `insertRight( t )` take $O( 1 )$ time,
+while `deleteLeft()` and `deleteRight()` destroy a subtree in time linear in
+its size. Beside the operations of the book, `detachLeft()` and
+`detachRight()` cut a subtree off its parent without destroying it, in
+$O( 1 )$: the subtree becomes a root owned by the caller, ready to be inserted
+elsewhere, which moves subtrees (a mirror, a rotation) with no copy ([Figure
+8.7](08-tree.md#fig-8-7)). Its contracts require that the tree inserted be a
+root other than the node itself and than the root of its tree, and that it go
+where no child is; at the level 3 each update also checks that the two
+children of the node it changes have that node as their parent.
 
 ![Figure 8.7. A `BinaryTree` before and after `c.insertLeft(a.detachLeft())`: the subtree of `b` (in violet) is cut off `a` and hung under `c` with no copy, the edge added in orange.](../figures/tree-binarytree.svg){#fig-8-7}
 
-Here the visit `dfs(t, pre, in, post)` examines a node before its subtrees
-(`pre`), between them (`in`) and after them (`post`), and `pre_visit()`,
-`in_visit()` and `post_visit()` are `dfs()` with one of the three. Also,
-`copy(t)` makes a deep copy of a subtree, and `join(v, l, r)` a new root of
-value $v$ with the copies of $l$ and $r$ as its subtrees. A parenthesized list of a binary tree has `()` for the
-empty tree and $( v \, L \, R )$ for the root $v$ with the subtrees $L$ and $R$
-(e.g., `( 8 () ( 5 ( 27 () () ) ( 16 () () ) ) )`). We write it by `to_list(t)`
-and read it back by `from_list(s)` ([Algorithm
-8.8](08-tree.md#alg-8-8)). None of these functions recurses in the
-code, which keeps an explicit stack for the reason given after [Lemma
+Here the visit `dfs( t , pre , in , post )` examines a node before its
+subtrees (`pre`), between them (`in`) and after them (`post`), and
+`pre_visit()`, `in_visit()` and `post_visit()` are `dfs()` with one of the
+three. Also, `copy( t )` makes a deep copy of a subtree, and
+`join( v , l , r )` a new root of value $v$ with the copies of $l$ and $r$ as
+its subtrees. A parenthesized list of a binary tree has `()` for the empty
+tree and $( v \, L \, R )$ for the root $v$ with the subtrees $L$ and $R$
+(e.g., `( 8 () ( 5 ( 27 () () ) ( 16 () () ) ) )`). We write it by
+`to_list( t )` and read it back by `from_list( s )` ([Algorithm
+8.8](08-tree.md#alg-8-8)). None of these functions recurses in the code, which
+keeps an explicit stack for the reason given after [Lemma
 8.2](08-tree.md#lem-8-2), and their costs are those of [Lemma
 8.7](08-tree.md#lem-8-7).
 
@@ -639,11 +637,11 @@ the join and the reading of a parenthesized list of a `BinaryTree`.
 
 --8<-- "generated/BinaryTree-readTree.pseudo.md"
 
-<span id="lem-8-7"></span>**Lemma 8.7.** *Let the values be copied,
-written and read in constant time. Then `dfs()`, `copy(t)` and `to_list(t)`
-cost $O( n_t )$ time and $O( h_t )$ space besides their result on the
-subtree of $t$, of $n_t$ nodes and height $h_t$, and `join(v, l, r)` costs
-$O( n_l + n_r )$; `from_list(s)` costs time linear in the length of $s$.*
+<span id="lem-8-7"></span>**Lemma 8.7.** *Let the values be copied, written
+and read in constant time. Then `dfs()`, `copy( t )` and `to_list( t )` cost
+$O( n_t )$ time and $O( h_t )$ space besides their result on the subtree of
+$t$, of $n_t$ nodes and height $h_t$, and `join( v , l , r )` costs
+$O( n_l + n_r )$; `from_list( s )` costs time linear in the length of $s$.*
 
 *Proof.* Both the visit and the copy keep on their stack the nodes of the path
 from $t$ to the current node, each with the number of its subtrees done;
@@ -654,16 +652,16 @@ their parent is examined). `join()` makes one node and two copies. Finally, the
 reading consumes each token of $s$ once, as in [Lemma
 8.4](08-tree.md#lem-8-4). $\square$
 
-Three ranges, `preorder(t)`, `inorder(t)` and `postorder(t)`, walk the nodes of
-the subtree of $t$ by the links to the parents, with no stack and no recursion,
-by the three steps of [Algorithm 8.9](08-tree.md#alg-8-9). The
+Three ranges, `preorder( t )`, `inorder( t )` and `postorder( t )`, walk the
+nodes of the subtree of $t$ by the links to the parents, with no stack and no
+recursion, by the three steps of [Algorithm 8.9](08-tree.md#alg-8-9). The
 previsit goes down to the left child, or else to the right one, and otherwise
 climbs until it leaves a left child whose parent has a right child. Instead,
 the invisit goes to the leftmost node of the right subtree, or else climbs
-until it leaves a left child. Finally, the postvisit, which starts at the first
-leaf reached by going left when possible and right otherwise, goes from a left
-child to the first leaf of the right subtree of its parent, and otherwise to
-the parent itself. [Lemma 8.14](08-tree.md#lem-8-14) of
+until it leaves a left child. Finally, the postvisit, which starts at the
+first leaf reached by going left when possible and right otherwise, goes from
+a left child to the first leaf of the right subtree of its parent, and
+otherwise to the parent itself. [Lemma 8.14](08-tree.md#lem-8-14) of
 [§8.4](08-tree.md#sec-8-4) shows that a complete walk costs $O( n )$ time and
 $O( 1 )$ space, although a single step may cost $\Theta( h )$.
 
@@ -677,13 +675,13 @@ $t$, by the links to the parents.
 
 --8<-- "generated/BinaryTree-next-3.pseudo.md"
 
-An ordered tree $T$ is represented by a binary tree $B$ whose left child of
-a node is its first child in $T$ and whose right child is its next sibling
-in $T$ ([Knuth 1997, §2.3.2](Z-bibliography.md#ref-knuth1997); [Montresor
-2025, §5.5](Z-bibliography.md#ref-montresor2025)). This is `to_binary(t)`
-([Algorithm 8.10](08-tree.md#alg-8-10) and
-[Figure 8.8](08-tree.md#fig-8-8)), and it is the reason why the
-links of `Tree` are three per node whatever the degrees.
+An ordered tree $T$ is represented by a binary tree $B$ whose left child of a
+node is its first child in $T$ and whose right child is its next sibling in
+$T$ ([Knuth 1997, §2.3.2](Z-bibliography.md#ref-knuth1997); [Montresor 2025,
+§5.5](Z-bibliography.md#ref-montresor2025)). This is `to_binary( t )`
+([Algorithm 8.10](08-tree.md#alg-8-10) and [Figure 8.8](08-tree.md#fig-8-8)),
+and it is the reason why the links of `Tree` are three per node whatever the
+degrees.
 
 ![Figure 8.8. An ordered tree $T$ and the binary tree $B$ of its first children (the grey edges, to the left) and of its next siblings (the violet edges, to the right).](../figures/tree-binrep.svg){#fig-8-8}
 
@@ -692,12 +690,12 @@ of the first children and of the next siblings.
 
 --8<-- "generated/BinaryTree-to_binary.pseudo.md"
 
-<span id="lem-8-8"></span>**Lemma 8.8.** *The map from the
-ordered forests of $n$ nodes to the binary trees of $n$ nodes that makes the
-first child the left child and the next sibling the right child is one to
-one and onto. The previsit of a forest $F$ is the previsit of its binary
-tree $B$, and the postvisit of $F$ is the invisit of $B$; `to_binary(t)`
-builds $B$ in $O( n )$ time.*
+<span id="lem-8-8"></span>**Lemma 8.8.** *The map from the ordered forests of
+$n$ nodes to the binary trees of $n$ nodes that makes the first child the left
+child and the next sibling the right child is one to one and onto. The
+previsit of a forest $F$ is the previsit of its binary tree $B$, and the
+postvisit of $F$ is the invisit of $B$; `to_binary( t )` builds $B$ in
+$O( n )$ time.*
 
 *Proof.* Let $F = ( T_1 , \ldots , T_k )$, $r$ the root of $T_1$, $F_1$ the
 forest of the subtrees of the children of $r$ and $F' = ( T_2 , \ldots ,
@@ -724,11 +722,11 @@ d i + 1 , \ldots , d i + d , \qquad
 \tag{8.1}
 $$
 
-which `dary_child(i, d, j)` (the child $1 \le j \le d$) and
-`dary_parent(i, d)` compute, the contracts requiring $d \ge 1$, $j$ in
+which `dary_child( i , d , j )` (the child $1 \le j \le d$) and
+`dary_parent( i , d )` compute, the contracts requiring $d \ge 1$, $j$ in
 $1 , \ldots , d$ and $i > 0$ for the parent. This is how the heaps of
-[§9.3](09-priority.md#sec-9-3) and [§9.4](09-priority.md#sec-9-4) are
-stored, and the following lemma justifies the numbering.
+[§9.3](09-priority.md#sec-9-3) and [§9.4](09-priority.md#sec-9-4) are stored,
+and the following lemma justifies the numbering.
 
 <span id="lem-8-9"></span>**Lemma 8.9.** *Number the places of an
 infinite $d$-ary tree, $d \ge 1$, by levels from 0, from left to right
@@ -755,19 +753,19 @@ nodes, `NIL` where a node is missing, with a free list of the places removed,
 linked by their field of the left child; the next insertions reuse them before
 the vector grows. As for `CursorTree`, the tree can be copied, saved or moved
 in one piece, and the insertions cost $O( 1 )$ amortized time ([Lemma
-8.3](08-tree.md#lem-8-3)). Here
-`setRoot(v)` makes the root of an empty tree, and `insertLeft(n, v)` and
-`insertRight(n, v)` a new child of value $v$ where none is. Similarly,
-`insertLeft(n, t, s)` and `insertRight(n, t, s)` make a copy of the subtree of
-the node $s$ of the tree $t$ (possibly the tree itself). A removal `remove(n)`
-returns the places of the subtree of $n$ to the free list in postvisit, in time
-linear in its size ([Figure 8.9](08-tree.md#fig-8-9)). Finally,
-`preorder()` returns the places in previsit and `nodes()` is a range over the
-places in use. Its contracts require that a node be a place in use, that
-`setRoot()` find the tree empty, that a child be inserted where none is and
-that the subtree copied be a node of the other tree. As in `CursorTree`, the
-invariant is that the nodes reached from the root link back to their parent and
-are all the nodes in use.
+8.3](08-tree.md#lem-8-3)). Here `setRoot( v )` makes the root of an empty
+tree, and `insertLeft( n , v )` and `insertRight( n , v )` a new child of
+value $v$ where none is. Similarly, `insertLeft( n , t , s )` and
+`insertRight( n , t , s )` make a copy of the subtree of the node $s$ of the
+tree $t$ (possibly the tree itself). A removal `remove( n )` returns the
+places of the subtree of $n$ to the free list in postvisit, in time linear in
+its size ([Figure 8.9](08-tree.md#fig-8-9)). Finally, `preorder()` returns the
+places in previsit and `nodes()` is a range over the places in use. Its
+contracts require that a node be a place in use, that `setRoot()` find the
+tree empty, that a child be inserted where none is and that the subtree copied
+be a node of the other tree. As in `CursorTree`, the invariant is that the
+nodes reached from the root link back to their parent and are all the nodes in
+use.
 
 ![Figure 8.9. The tree `( a ( b ( d () () ) () ) ( c () () ) )` as a `CursorBinaryTree`, before and after `remove(1)`: the left child of `a` becomes `NIL` (in violet), and the places of `d` and of `b` go to the free list 1, 3, linked by their field `left`.](../figures/tree-cursorbinary.svg){#fig-8-9}
 
@@ -780,23 +778,23 @@ a left child and the copy of a subtree in `CursorBinaryTree`.
 
 ### 8.3.3 A positional vector {#sec-8-3-3}
 
-`ArrayBinaryTree` stores a binary tree in a vector by positions, as (8.1)
-with $d = 2$. The root is in the place 0, the children of the place $i$ in $2 i
-+ 1$ and $2 i + 2$, its parent in $\lfloor ( i - 1 ) / 2 \rfloor$, and an empty
-place where no node is. Moving along the tree, reading and writing take $O( 1
-)$ time, with no link at all. Since the vector grows to the deepest place used,
-a tree of height $h$ takes $O( 2^h )$ space: $2^{h+1} - 1$ places in the worst
-case, which a path of $n = h + 1$ nodes going to the right needs, its last
-node being in the place $2^{h+1} - 2$ ([Lemma 8.9](08-tree.md#lem-8-9)),
-against the $n$ of a complete tree. We remark that the representation thus suits the trees
-that are complete or nearly so, which is usually the case of the heaps. As in
-`CursorBinaryTree`, `setRoot(v)` makes the root of an empty tree, and the
-constructor with $( v , l , r )$ joins two trees under a new root. Then
-`insertLeft(i, t)` and `insertRight(i, t)` copy a tree $t$ under the node $i$,
-where no child is, in time linear in the places of $t$ ([Algorithm
-8.12](08-tree.md#alg-8-12) and [Figure
-8.10](08-tree.md#fig-8-10)), since each node of $t$ moves to the place
-that its position below $i$ gives it. Conversely, `remove(i)` empties the
+`ArrayBinaryTree` stores a binary tree in a vector by positions, as (8.1) with
+$d = 2$. The root is in the place 0, the children of the place $i$ in
+$2 i + 1$ and $2 i + 2$, its parent in $\lfloor ( i - 1 ) / 2 \rfloor$, and an
+empty place where no node is. Moving along the tree, reading and writing take
+$O( 1 )$ time, with no link at all. Since the vector grows to the deepest
+place used, a tree of height $h$ takes $O( 2^h )$ space: $2^{h+1} - 1$ places
+in the worst case, which a path of $n = h + 1$ nodes going to the right needs,
+its last node being in the place $2^{h+1} - 2$ ([Lemma
+8.9](08-tree.md#lem-8-9)), against the $n$ of a complete tree. We remark that
+the representation thus suits the trees that are complete or nearly so, which
+is usually the case of the heaps. As in `CursorBinaryTree`, `setRoot( v )`
+makes the root of an empty tree, and the constructor with $( v , l , r )$
+joins two trees under a new root. Then `insertLeft( i , t )` and
+`insertRight( i , t )` copy a tree $t$ under the node $i$, where no child is,
+in time linear in the places of $t$ ([Algorithm 8.12](08-tree.md#alg-8-12) and
+[Figure 8.10](08-tree.md#fig-8-10)), since each node of $t$ moves to the place
+that its position below $i$ gives it. Conversely, `remove( i )` empties the
 places of the subtree of $i$, and `preorder()` returns the places in previsit
 and `nodes()` is a range over the places in use. Its invariant is that each
 node but the root has its parent.
@@ -812,25 +810,25 @@ and `insertRight()` call with $k$ the place of the new child.
 ### 8.3.4 Threaded trees {#sec-8-3-4}
 
 A binary tree of $n$ nodes leaves $n + 1$ links nil ([Lemma
-8.1](08-tree.md#lem-8-1)), which the *threads* of [Perlis and
-Thornton 1960](Z-bibliography.md#ref-perlis1960) put to use. A missing left
-child is replaced by a link to the predecessor in the symmetric order, and a
-missing right child by a link to the successor, a bit of each node telling a
-child from a thread. The successor of a node is then its right thread, or else
-the leftmost node of its right subtree (Algorithm S of [Knuth 1997,
+8.1](08-tree.md#lem-8-1)), which the *threads* of [Perlis and Thornton
+1960](Z-bibliography.md#ref-perlis1960) put to use. A missing left child is
+replaced by a link to the predecessor in the symmetric order, and a missing
+right child by a link to the successor, a bit of each node telling a child
+from a thread. The successor of a node is then its right thread, or else the
+leftmost node of its right subtree (Algorithm S of [Knuth 1997,
 §2.3.1](Z-bibliography.md#ref-knuth1997)), and the symmetric visit needs
 neither a stack, nor the recursion, nor the links to the parents.
 `ThreadedTree` is a binary search tree with threads (search trees are the
 subject of [§8.5](08-tree.md#sec-8-5)). As in the representation of Knuth, a
 head node, whose left child is the root and which is the predecessor of the
 first node and the successor of the last one, closes the threads, so that no
-thread is nil ([Figure 8.11](08-tree.md#fig-8-11)). An insertion
-`insert(k)` goes down the search path and replaces a thread with a new leaf,
-which inherits the thread on its side and takes a thread to its parent on the
-other side ([Lemma 8.10](08-tree.md#lem-8-10)). Then `contains(k)` is the search, `size()` the
-number of keys, and `forEach(f)` visits the keys in increasing order by the
-threads, while `reversed()` returns them in decreasing order by the
-predecessors. This class also gives bidirectional iterators (`begin()` and
+thread is nil ([Figure 8.11](08-tree.md#fig-8-11)). An insertion `insert( k )`
+goes down the search path and replaces a thread with a new leaf, which
+inherits the thread on its side and takes a thread to its parent on the other
+side ([Lemma 8.10](08-tree.md#lem-8-10)). Then `contains( k )` is the search,
+`size()` the number of keys, and `forEach( f )` visits the keys in increasing
+order by the threads, while `reversed()` returns them in decreasing order by
+the predecessors. This class also gives bidirectional iterators (`begin()` and
 `end()`), whose steps are `successor()` and `predecessor()`.
 
 ![Figure 8.11. A `ThreadedTree` after the insertions of 4, 2, 6, 1, 3, with the threads dashed, and after `insert(5)`: the left thread of 6 becomes the new leaf 5, whose two threads, to its predecessor 4 and to its successor 6, are in orange.](../figures/tree-threaded.svg){#fig-8-11}
@@ -843,9 +841,9 @@ a threaded search tree and the successor
 
 --8<-- "generated/ThreadedTree-successor.pseudo.md"
 
-<span id="lem-8-10"></span>**Lemma 8.10.** *`insert(k)` keeps the threads
-of a threaded tree of height $h$, in $O( h )$ time. A visit of the $n$ keys
-by $n$ calls of `successor()` from the head costs $O( n )$ time and $O( 1 )$
+<span id="lem-8-10"></span>**Lemma 8.10.** *`insert( k )` keeps the threads of
+a threaded tree of height $h$, in $O( h )$ time. A visit of the $n$ keys by
+$n$ calls of `successor()` from the head costs $O( n )$ time and $O( 1 )$
 space, i.e., $O( 1 )$ amortized time per step, although one step may cost
 $\Theta( h )$.*
 
@@ -875,23 +873,22 @@ keys inserted in decreasing order is thus freed and walked safely.
 
 The tree of an arithmetic expression (its *parse tree*) is a binary tree whose
 leaves are the operands, numbers or names of variables, and whose internal
-nodes are the binary operators `+`, `-`, `*`, `/` and `^` (the power), the left
-subtree being the left operand ([Montresor 2025, §5.5 and
+nodes are the binary operators `+`, `-`, `*`, `/` and `^` (the power), the
+left subtree being the left operand ([Montresor 2025, §5.5 and
 §5.6](Z-bibliography.md#ref-montresor2025)). In `ExpressionTree.h`,
-`expressionTree(e)` builds it as a `BinaryTree< std::string >` from the postfix
-form of the expression (cf. [§3.6](03-stack.md#sec-3-6)), with a stack of
-trees. An operand is pushed as a leaf, and an operator pops its right and then
-its left subtree and pushes the tree they make under it ([Algorithm
-8.14](08-tree.md#alg-8-14) and [Figure
-8.12](08-tree.md#fig-8-12)). Then `evaluate(t, env)` computes
-the value by a postvisit, the values of the variables being given by the
-dictionary `env`. We write the expression in prefix form by `prefixForm(t)`,
-each subtree in parentheses (e.g.,
-`(*(/(3)(+(*(^(x)(2))(y))(*(3)(x))))(-(z)(1)))` for $( 3 / ( x^2 y + 3 x ) ) (
-z - 1 )$), and in infix form, fully parenthesized, by `infixForm(t)`, an
-invisit. Its contracts require a well formed postfix expression (each operator
-finds two subtrees, and one tree is left), a value for each variable, and no
-division by 0.
+`expressionTree( e )` builds it as a `BinaryTree< std::string >` from the
+postfix form of the expression (cf. [§3.6](03-stack.md#sec-3-6)), with a stack
+of trees. An operand is pushed as a leaf, and an operator pops its right and
+then its left subtree and pushes the tree they make under it ([Algorithm
+8.14](08-tree.md#alg-8-14) and [Figure 8.12](08-tree.md#fig-8-12)). Then
+`evaluate( t , env )` computes the value by a postvisit, the values of the
+variables being given by the dictionary `env`. We write the expression in
+prefix form by `prefixForm( t )`, each subtree in parentheses (e.g.,
+`(*(/(3)(+(*(^(x)(2))(y))(*(3)(x))))(-(z)(1)))` for
+$( 3 / ( x^2 y + 3 x ) ) ( z - 1 )$), and in infix form, fully parenthesized,
+by `infixForm( t )`, an invisit. Its contracts require a well formed postfix
+expression (each operator finds two subtrees, and one tree is left), a value
+for each variable, and no division by 0.
 
 ![Figure 8.12. A run of `expressionTree()` on `5 9 8 + 4 6 * * 7 + *`: the stack of trees (its top on the right) after `5 9 8 + 4 6 *`, the two trees that the next `*` pops in violet, and after it, the tree it pushes in orange.](../figures/tree-expression.svg){#fig-8-12}
 
@@ -905,12 +902,12 @@ of a postfix expression, its value and its infix form.
 --8<-- "generated/ExpressionTree-infixForm.pseudo.md"
 
 <span id="lem-8-11"></span>**Lemma 8.11.** *On a well formed postfix
-expression $e$ of $n$ tokens, `expressionTree(e)` returns the binary tree
-whose postvisit is $e$, in time linear in the length of $e$. On a tree of
-$n$ nodes, `evaluate()` makes one arithmetic operation per operator and one
-lookup in `env` per variable, and `prefixForm()` and `infixForm()` cost time
-linear in the length of their result; all of them keep $O( h )$ nodes on
-their stack, $h$ the height of the tree.*
+expression $e$ of $n$ tokens, `expressionTree( e )` returns the binary tree
+whose postvisit is $e$, in time linear in the length of $e$. On a tree of $n$
+nodes, `evaluate()` makes one arithmetic operation per operator and one lookup
+in `env` per variable, and `prefixForm()` and `infixForm()` cost time linear
+in the length of their result; all of them keep $O( h )$ nodes on their stack,
+$h$ the height of the tree.*
 
 *Proof.* We follow the scan of [Lemma 3.5](03-stack.md#lem-3-5) with each value
 replaced by a tree. By induction on the structure of an expression $E$ read
@@ -926,16 +923,16 @@ the two values of its subtrees. $\square$
 
 ### 8.3.6 Building a heap by insertions {#sec-8-3-6}
 
-A max-heap is a complete binary tree stored as (8.1) with $d = 2$ in
-which each item is not smaller than its children (cf.
-[§9.3](09-priority.md#sec-9-3)). `HeapByInsertion.h` builds it by
+A max-heap is a complete binary tree stored as (8.1) with $d = 2$ in which
+each item is not smaller than its children
+(cf. [§9.3](09-priority.md#sec-9-3)). `HeapByInsertion.h` builds it by
 inserting the items one at a time, the construction of [Williams
-1964](Z-bibliography.md#ref-williams1964): `maxHeapSiftUp(A, i)` moves the
+1964](Z-bibliography.md#ref-williams1964): `maxHeapSiftUp( A , i )` moves the
 item of $A[ i ]$ up, swapping it with its parent while it is larger, when
-$A[ 0 .. i - 1 ]$ is a max-heap, and `heapBuildByInsertion(A)` calls it on
-the places 1 to $n - 1$ ([Algorithm 8.15](08-tree.md#alg-8-15)
-and [Figure 8.13](08-tree.md#fig-8-13)). A comparison other than
-`std::less` changes the order, `std::greater` giving a min-heap.
+$A[ 0 .. i - 1 ]$ is a max-heap, and `heapBuildByInsertion( A )` calls it on
+the places 1 to $n - 1$ ([Algorithm 8.15](08-tree.md#alg-8-15) and [Figure
+8.13](08-tree.md#fig-8-13)). A comparison other than `std::less` changes the
+order, `std::greater` giving a min-heap.
 
 ![Figure 8.13. The step `maxHeapSiftUp(A,3)` on $A = [ 9 , 4 , 7 , 10 ]$, whose first three places are a max-heap: the item 10 (in orange) climbs the violet path to the root, which gives the heap $[ 10 , 9 , 7 , 4 ]$ that the insertions build from $[ 4 , 7 , 9 , 10 ]$.](../figures/tree-heapins.svg){#fig-8-13}
 
@@ -947,12 +944,11 @@ of a max-heap by insertions ([Montresor 2025,
 
 --8<-- "generated/HeapByInsertion-heapBuildByInsertion.pseudo.md"
 
-<span id="lem-8-12"></span>**Lemma 8.12.** *If
-$A[ 0 .. i - 1 ]$ is a max-heap, `maxHeapSiftUp(A, i)` makes
-$A[ 0 .. i ]$ a max-heap with at most $\lfloor \log_2( i + 1 ) \rfloor$
-swaps. Hence `heapBuildByInsertion()` makes a max-heap of $n$ items in
-$O( n \log n )$ time, and in $\Theta( n \log n )$ time on an increasing
-vector.*
+<span id="lem-8-12"></span>**Lemma 8.12.** *If $A[ 0 .. i - 1 ]$ is a
+max-heap, `maxHeapSiftUp( A , i )` makes $A[ 0 .. i ]$ a max-heap with at most
+$\lfloor \log_2( i + 1 ) \rfloor$ swaps. Hence `heapBuildByInsertion()` makes
+a max-heap of $n$ items in $O( n \log n )$ time, and in $\Theta( n \log n )$
+time on an increasing vector.*
 
 *Proof.* Let $x$ be the climbing item and $j$ its place. Before each swap,
 $A[ 0 .. i ]$ is a max-heap but possibly for the pair of $j$ and its parent
@@ -988,13 +984,13 @@ a postcondition.
 The functions of `ADS/tree/BinaryTreeAlgorithms.h` are written once for any
 representation of the nodes. A node is reached by a pointer, nil being
 `nullptr`, and its links and its key are read either by the member functions
-`left()`, `right()`, `parent()` and `read()` of `BinaryTree`, or by the
-fields `left`, `right`, `parent` and `key` of a plain struct, as in the
-pseudocode of the books. Three concepts state what each function needs:
-`BinaryNode` (the two children), `ParentBinaryNode` (also the parent) and
-`KeyedBinaryNode` (also a key). Those that build a tree return a
-`BinaryTree`, or take a callable `make(v, l, r)` that makes a node of value
-$v$ over the subtrees $l$ and $r$, for any other representation.
+`left()`, `right()`, `parent()` and `read()` of `BinaryTree`, or by the fields
+`left`, `right`, `parent` and `key` of a plain struct, as in the pseudocode of
+the books. Three concepts state what each function needs: `BinaryNode` (the
+two children), `ParentBinaryNode` (also the parent) and `KeyedBinaryNode`
+(also a key). Those that build a tree return a `BinaryTree`, or take a
+callable `make( v , l , r )` that makes a node of value $v$ over the subtrees
+$l$ and $r$, for any other representation.
 
 ### 8.4.1 Recursion and the walk with no stack {#sec-8-4-1}
 
@@ -1005,15 +1001,15 @@ as deep as the tree is high ([Morin 2013,
 §6.1.1](Z-bibliography.md#ref-morin-cpp)). With the links to the parents, the
 recursion is not needed: a walk can decide where to go from the node it comes
 from ([Morin 2013, §6.1.2](Z-bibliography.md#ref-morin-cpp) and [Figure
-8.14](08-tree.md#fig-8-14)). If it arrives at $u$ from its parent, it
-goes on to the left child of $u$, and if it arrives from the left child, it
-goes on to the right child. If it arrives from the right child, the subtree of
-$u$ is over and it goes back to the parent, a missing child being skipped as if
-the walk had come back from it. In this way `subtreeSize(u)` (the `size2(u)` of
-exercise 6.4 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)) counts the nodes
-entered from their parent, and `subtreeHeight(u)` (the `height2(u)` of his
-exercise 6.5) keeps the depth below $u$ and its maximum; both stop when the
-walk climbs above $u$, so that they never leave the subtree ([Algorithm
+8.14](08-tree.md#fig-8-14)). If it arrives at $u$ from its parent, it goes on
+to the left child of $u$, and if it arrives from the left child, it goes on to
+the right child. If it arrives from the right child, the subtree of $u$ is
+over and it goes back to the parent, a missing child being skipped as if the
+walk had come back from it. In this way `subtreeSize( u )` (the `size2( u )`
+of exercise 6.4 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)) counts the
+nodes entered from their parent, and `subtreeHeight( u )` (the `height2( u )`
+of his exercise 6.5) keeps the depth below $u$ and its maximum; both stop when
+the walk climbs above $u$, so that they never leave the subtree ([Algorithm
 8.16](08-tree.md#alg-8-16)).
 
 ![Figure 8.14. The three cases of the walk with no stack at the node $u$ ([Morin 2013, Figure 6.3](Z-bibliography.md#ref-morin-cpp)): the step that arrives at $u$ in violet and the next one in orange.](../figures/tree-traverse.svg){#fig-8-14}
@@ -1053,15 +1049,15 @@ level, from left to right within a level ([Figure
 
 ### 8.4.2 The next node of a visit {#sec-8-4-2}
 
-The functions `nextPreorder(u)`, `nextInorder(u)` and `nextPostorder(u)` return
-the node after $u$ in the previsit, in the invisit and in the postvisit of its
-tree, nil after the last one, by the links to the parents (exercise 6.8 of
-[Morin 2013](Z-bibliography.md#ref-morin-cpp)). They are the steps of the
+The functions `nextPreorder( u )`, `nextInorder( u )` and `nextPostorder( u )`
+return the node after $u$ in the previsit, in the invisit and in the postvisit
+of its tree, nil after the last one, by the links to the parents (exercise 6.8
+of [Morin 2013](Z-bibliography.md#ref-morin-cpp)). They are the steps of the
 ranges of [§8.3.1](08-tree.md#sec-8-3-1) without the bound $t$, which here is
-the root of the tree ([Algorithm 8.17](08-tree.md#alg-8-17)). The
-previsit starts at the root, the invisit at the leftmost node,
-`firstInorder(u)`, and the postvisit at the first leaf reached by going left
-when possible and right otherwise, `firstPostorder(u)`.
+the root of the tree ([Algorithm 8.17](08-tree.md#alg-8-17)). The previsit
+starts at the root, the invisit at the leftmost node, `firstInorder( u )`, and
+the postvisit at the first leaf reached by going left when possible and right
+otherwise, `firstPostorder( u )`.
 
 <span id="alg-8-17"></span>**Algorithm 8.17.** The next node in
 the three visits of a binary tree, by the links to the parents ([Morin
@@ -1095,13 +1091,13 @@ call costs $O( 1 )$ besides its steps. $\square$
 
 ### 8.4.3 The numbers of the three visits {#sec-8-4-3}
 
-Each of the previsit, the invisit and the postvisit numbers the nodes of a tree
-with $0 , \ldots , n - 1$ in the order in which it examines them ([Figure
-8.16](08-tree.md#fig-8-16)). Our `orderNumbers(t, f)` calls `f(u, pre,
-in, post)` on each node with its three numbers, computed in one visit by three
-counters ([Algorithm 8.18](08-tree.md#alg-8-18); exercise 6.7 of [Morin
-2013](Z-bibliography.md#ref-morin-cpp)). Once they are known, some questions on
-the tree are answered in constant time ([Lemma
+Each of the previsit, the invisit and the postvisit numbers the nodes of a
+tree with $0 , \ldots , n - 1$ in the order in which it examines them ([Figure
+8.16](08-tree.md#fig-8-16)). Our `orderNumbers( t , f )` calls
+`f( u , pre , in , post )` on each node with its three numbers, computed in
+one visit by three counters ([Algorithm 8.18](08-tree.md#alg-8-18); exercise
+6.7 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)). Once they are known,
+some questions on the tree are answered in constant time ([Lemma
 8.15](08-tree.md#lem-8-15), his exercise 6.9).
 
 ![Figure 8.16. The numbers of the previsit, of the postvisit and of the invisit of the binary tree of twelve nodes of [Morin 2013, Figure 6.10](Z-bibliography.md#ref-morin-cpp).](../figures/tree-numbering.svg){#fig-8-16}
@@ -1112,11 +1108,11 @@ of each node in one visit, $a$, $b$ and $c$ being three counters from 0
 
 --8<-- "generated/BinaryTreeAlgorithms-number.pseudo.md"
 
-<span id="lem-8-15"></span>**Lemma 8.15.** *`orderNumbers(t, f)` gives
-each node its three numbers in $O( n )$ time and $O( h )$ space. Let
-$\mathrm{pre}( u )$ and $\mathrm{post}( u )$ be the numbers of the node $u$
-in the previsit and in the postvisit. Then $u$ is an ancestor of $w$ if and
-only if $\mathrm{pre}( u ) \le \mathrm{pre}( w )$ and
+<span id="lem-8-15"></span>**Lemma 8.15.** *`orderNumbers( t , f )` gives each
+node its three numbers in $O( n )$ time and $O( h )$ space. Let
+$\mathrm{pre}( u )$ and $\mathrm{post}( u )$ be the numbers of the node $u$ in
+the previsit and in the postvisit. Then $u$ is an ancestor of $w$ if and only
+if $\mathrm{pre}( u ) \le \mathrm{pre}( w )$ and
 $\mathrm{post}( w ) \le \mathrm{post}( u )$, and*
 
 $$
@@ -1156,14 +1152,14 @@ root, which gives the depth by (8.2).
 
 ### 8.4.4 Balanced sizes {#sec-8-4-4}
 
-A binary tree is *size-balanced* if the two subtrees of each node differ by one
-node at most. We test it by `isSizeBalanced(t)`, a postvisit that returns the
-size of each subtree, or a mark $\bot$ at the first node that is not balanced,
-which stops the visit ([Algorithm
-8.19](08-tree.md#alg-8-19)), with an explicit stack, as the height may be $n -
-1$ (exercise 6.6 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)). One can
-write instead the obvious test, which calls a function of the size at each
-node; the following lemma compares the two.
+A binary tree is *size-balanced* if the two subtrees of each node differ by
+one node at most. We test it by `isSizeBalanced( t )`, a postvisit that
+returns the size of each subtree, or a mark $\bot$ at the first node that is
+not balanced, which stops the visit ([Algorithm 8.19](08-tree.md#alg-8-19)),
+with an explicit stack, as the height may be $n - 1$ (exercise 6.6 of [Morin
+2013](Z-bibliography.md#ref-morin-cpp)). One can write instead the obvious
+test, which calls a function of the size at each node; the following lemma
+compares the two.
 
 <span id="alg-8-19"></span>**Algorithm 8.19.** The test of
 the balance of the sizes ([Morin 2013, exercise
@@ -1171,11 +1167,11 @@ the balance of the sizes ([Morin 2013, exercise
 
 --8<-- "generated/BinaryTreeAlgorithms-sizeIfBalanced.pseudo.md"
 
-<span id="lem-8-16"></span>**Lemma 8.16.** *`isSizeBalanced(t)` decides
-whether a tree of $n$ nodes and height $h$ is size-balanced in $O( n )$
-time and $O( h )$ space. On the other hand, the test that computes the size of the subtree of
-each node apart costs $\sum_u n_u = \sum_u ( d( u ) + 1 )$, which is
-$\Theta( n \log n )$ on a size-balanced tree and $n ( n + 1 ) / 2$ on a
+<span id="lem-8-16"></span>**Lemma 8.16.** *`isSizeBalanced( t )` decides
+whether a tree of $n$ nodes and height $h$ is size-balanced in $O( n )$ time
+and $O( h )$ space. On the other hand, the test that computes the size of the
+subtree of each node apart costs $\sum_u n_u = \sum_u ( d( u ) + 1 )$, which
+is $\Theta( n \log n )$ on a size-balanced tree and $n ( n + 1 ) / 2$ on a
 path.*
 
 *Proof.* By induction on the postvisit, the value returned for a node is the
@@ -1200,12 +1196,12 @@ Indeed, the first value of the previsit is the root, which splits the invisit
 into the values of the left subtree and those of the right one, and the next
 values of the previsit are those of the two subtrees, the left one first
 (exercise 5.4 of [Montresor 2025](Z-bibliography.md#ref-montresor2025) and
-exercise 6.10 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)). A recursion on
-this argument would look each root up in the invisit, which costs
+exercise 6.10 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)). A recursion
+on this argument would look each root up in the invisit, which costs
 $\Theta( n^2 )$ time on a path of left children unless the places of the
 values are kept in a table (the root of the subtree of $m$ nodes is then the
 last of its $m$ values in the invisit). Instead,
-`fromPreorderInorder(pre, in)` keeps a stack $S$ of the nodes whose right
+`fromPreorderInorder( pre , in )` keeps a stack $S$ of the nodes whose right
 subtree is still open, and needs only the equality of the values ([Algorithm
 8.20](08-tree.md#alg-8-20)).
 
@@ -1268,15 +1264,15 @@ right).
 | `e` | | `c.left` | `c e` |
 | `f` | `e c` | `c.right` | `f` |
 
-We show now that the shape of a binary tree of $n \ge 1$ nodes fits in $2 ( n -
-1 )$ bits (exercise 6.11 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)). Our
-`shapeCode(t)` writes, for each node in the previsit, whether it has a left
-child and whether it has a right child, and drops the two bits of the last
-node, which is a leaf ([Figure 8.17](08-tree.md#fig-8-17)).
-Conversely, `fromShapeCode(c, n)` reads them back, with a stack of the nodes
-whose right child is still due ([Algorithm
-8.21](08-tree.md#alg-8-21)), and gives each node the number of
-its place in the previsit as its value.
+We show now that the shape of a binary tree of $n \ge 1$ nodes fits in
+$2 ( n - 1 )$ bits (exercise 6.11 of [Morin
+2013](Z-bibliography.md#ref-morin-cpp)). Our `shapeCode( t )` writes, for each
+node in the previsit, whether it has a left child and whether it has a right
+child, and drops the two bits of the last node, which is a leaf ([Figure
+8.17](08-tree.md#fig-8-17)). Conversely, `fromShapeCode( c , n )` reads them
+back, with a stack of the nodes whose right child is still due ([Algorithm
+8.21](08-tree.md#alg-8-21)), and gives each node the number of its place in
+the previsit as its value.
 
 ![Figure 8.17. The code `shapeCode()` of a tree of 5 nodes, numbered in the previsit: the two bits of each node (a left child, a right child), none for the last node, give the code of $2 ( 5 - 1 ) = 8$ bits.](../figures/tree-shape.svg){#fig-8-17}
 
@@ -1303,15 +1299,15 @@ code of all of them. $\square$
 
 ### 8.4.6 Ancestors, comparisons and checks {#sec-8-4-6}
 
-By the links to the parents, `lowestCommonAncestor(u, v)` returns the deepest
-node that is an ancestor of both $u$ and $v$. The deeper node climbs to the
-depth of the other, and then the two climb together until they meet ([Algorithm
-8.22](08-tree.md#alg-8-22)), the depths being counted by two climbs to the
-root. A usual alternative pushes the
-two paths on two stacks and pops them while their tops agree, in $O( h )$
-space. With many queries on a fixed tree, the reduction of [Bender and
-Farach-Colton 2000](Z-bibliography.md#ref-bender2000) to the range minimum on
-the Euler tour answers each in $O( 1 )$ after $O( n )$ preprocessing
+By the links to the parents, `lowestCommonAncestor( u , v )` returns the
+deepest node that is an ancestor of both $u$ and $v$. The deeper node climbs
+to the depth of the other, and then the two climb together until they meet
+([Algorithm 8.22](08-tree.md#alg-8-22)), the depths being counted by two
+climbs to the root. A usual alternative pushes the two paths on two stacks and
+pops them while their tops agree, in $O( h )$ space. With many queries on a
+fixed tree, the reduction of [Bender and Farach-Colton
+2000](Z-bibliography.md#ref-bender2000) to the range minimum on the Euler tour
+answers each in $O( 1 )$ after $O( n )$ preprocessing
 ([§6.9](06-search.md#sec-6-9)), as the structure of [Harel and Tarjan
 1984](Z-bibliography.md#ref-harel1984) did first. Its contracts require two
 nodes of the same tree and check that the node returned is a common ancestor
@@ -1329,33 +1325,33 @@ order of a search tree and the coloring of a Red-Black tree.
 
 --8<-- "generated/BinaryTreeAlgorithms-bh.pseudo.md"
 
-Two trees are compared by `equalTrees(t, s, eq)`, which returns whether they have
-the same shape and keys equal by `eq` in the same places. It is a simultaneous
-previsit; the two trees may have different
-representations, and with a comparison always true it compares the shapes
-alone. Similarly, `isSearchTree(t, less)` checks the order of a binary search
-tree ([§8.5](08-tree.md#sec-8-5)). Each key must lie in the open interval $( a
-, b )$ that its ancestors leave to it, with $a = -\infty$ and $b = +\infty$ at
-the root, and the function checks it by a visit that carries the two ends
-down. Comparing each node with its children only is not
-enough: the root 5 with the left child 3 and the grandchild 7, the right child
-of 3, passes that test, and yet 7 is in the left subtree of 5. Finally,
-`isRedBlackTree(t, red)`, where `red(u)` returns whether the node $u$ is red,
-checks the constraints of a Red-Black coloring ([§8.5](08-tree.md#sec-8-5)).
-These are the root black, no red node with a red child and the same number of
-black nodes on every path from the root down to a leaf nil. Its check is a
-postvisit that returns the black height of each subtree, the leaf nil counted,
-or $-1$ at the first violation.
+Two trees are compared by `equalTrees( t , s , eq )`, which returns whether
+they have the same shape and keys equal by `eq` in the same places. It is a
+simultaneous previsit; the two trees may have different representations, and
+with a comparison always true it compares the shapes alone. Similarly,
+`isSearchTree( t , less )` checks the order of a binary search tree
+([§8.5](08-tree.md#sec-8-5)). Each key must lie in the open interval
+$( a , b )$ that its ancestors leave to it, with $a = -\infty$ and
+$b = +\infty$ at the root, and the function checks it by a visit that carries
+the two ends down. Comparing each node with its children only is not enough:
+the root 5 with the left child 3 and the grandchild 7, the right child of 3,
+passes that test, and yet 7 is in the left subtree of 5. Finally,
+`isRedBlackTree( t , red )`, where `red( u )` returns whether the node $u$ is
+red, checks the constraints of a Red-Black coloring
+([§8.5](08-tree.md#sec-8-5)). These are the root black, no red node with a red
+child and the same number of black nodes on every path from the root down to a
+leaf nil. Its check is a postvisit that returns the black height of each
+subtree, the leaf nil counted, or $-1$ at the first violation.
 
-<span id="lem-8-19"></span>**Lemma 8.19.** *On trees of at most $n$ nodes
-and height at most $h$: (i) `lowestCommonAncestor(u, v)` returns the deepest
+<span id="lem-8-19"></span>**Lemma 8.19.** *On trees of at most $n$ nodes and
+height at most $h$: (i) `lowestCommonAncestor( u , v )` returns the deepest
 common ancestor of $u$ and $v$ in $O( h )$ time and $O( 1 )$ space; (ii)
-`equalTrees(t, s, eq)` decides whether the two trees have the same shape
-and keys equal by `eq` in the same places; (iii) `isSearchTree(t, less)`
-decides whether each key lies in the open interval that its ancestors leave
-to it, which holds if and only if the tree is a binary search tree, and if
-and only if its invisit is strictly increasing; (iv) `isRedBlackTree(t,
-red)` decides whether the coloring satisfies (V1), (V3) and (V4) of
+`equalTrees( t , s , eq )` decides whether the two trees have the same shape
+and keys equal by `eq` in the same places; (iii) `isSearchTree( t , less )`
+decides whether each key lies in the open interval that its ancestors leave to
+it, which holds if and only if the tree is a binary search tree, and if and
+only if its invisit is strictly increasing; (iv) `isRedBlackTree( t , red )`
+decides whether the coloring satisfies (V1), (V3) and (V4) of
 [§8.5.5](08-tree.md#sec-8-5-5), the leaves nil being black. Each of (ii) to
 (iv) costs $O( n )$ time and $O( h )$ space.*
 
@@ -1383,12 +1379,12 @@ child. $\square$
 
 ### 8.4.7 Searches and builders on search trees {#sec-8-4-7}
 
-On a binary search tree, `searchTreeRange(t, lo, hi, f)` calls `f(u)` on the
-nodes whose keys are in $[ \mathit{lo} , \mathit{hi} ]$, in increasing order.
-The function is an invisit pruned where the keys leave the range ([Algorithm
-8.23](08-tree.md#alg-8-23) and [Figure
-8.18](08-tree.md#fig-8-18)), and it returns the number of the nodes
-it examines; the contracts require $\mathit{lo} \le \mathit{hi}$.
+On a binary search tree, `searchTreeRange( t , lo , hi , f )` calls `f( u )`
+on the nodes whose keys are in $[ \mathit{lo} , \mathit{hi} ]$, in increasing
+order. The function is an invisit pruned where the keys leave the range
+([Algorithm 8.23](08-tree.md#alg-8-23) and [Figure
+8.18](08-tree.md#fig-8-18)), and it returns the number of the nodes it
+examines; the contracts require $\mathit{lo} \le \mathit{hi}$.
 
 ![Figure 8.18. The query `searchTreeRange(t,4,10)` on a binary search tree of 13 keys: the six keys reported in violet, and the edges that the visit follows in violet; the nodes 3, 12 and 11 are examined and not reported, the visit going on from each only on the side of the range (the left subtree of 11 being empty).](../figures/tree-range.svg){#fig-8-18}
 
@@ -1428,14 +1424,15 @@ examined lie on the path. $\square$
 
 Indeed, the test of the function checks the bound on the count returned, on
 trees built by insertions and on plain nodes. The second function is the
-`getLE(x)` of exercise 6.14 of [Morin 2013](Z-bibliography.md#ref-morin-cpp),
-and it returns the number $n'$ of the keys reported. `MeasuredSearchTree::getLE()` of
-[§8.5](08-tree.md#sec-8-5) is this function on its nodes.
+`getLE( x )` of exercise 6.14 of [Morin
+2013](Z-bibliography.md#ref-morin-cpp), and it returns the number $n'$ of the
+keys reported. `MeasuredSearchTree::getLE()` of [§8.5](08-tree.md#sec-8-5) is
+this function on its nodes.
 
-Conversely, `minimumHeightSearchTree(A, make)` builds the binary search tree of
-the strictly increasing keys of $A$ of the least height, by putting the lower
-middle key at the root and the two halves below, recursively ([Algorithm
-8.24](08-tree.md#alg-8-24)), with the nodes made by the callable
+Conversely, `minimumHeightSearchTree( A , make )` builds the binary search
+tree of the strictly increasing keys of $A$ of the least height, by putting
+the lower middle key at the root and the two halves below, recursively
+([Algorithm 8.24](08-tree.md#alg-8-24)), with the nodes made by the callable
 `make`; the overload without it returns a `BinaryTree`.
 
 <span id="alg-8-24"></span>**Algorithm 8.24.** The search tree of
@@ -1470,22 +1467,22 @@ path of right children and then compresses it by left rotations; the
 rebuilds of the scapegoat trees ([§8.9.1](08-tree.md#sec-8-9-1)) reach a
 tree of least height in other ways.
 
-Last, `cartesianBinaryTree(A, less)` is the Cartesian tree of [Vuillemin
-1980](Z-bibliography.md#ref-vuillemin1980) as a `BinaryTree`. Its root is
-the leftmost minimum of $A$ and its subtrees are the Cartesian trees of the
-parts before and after it; with `std::greater` it is the maximal
-tree, with the maximum at the root. Its parents come from `cartesianTree()`
-of `RangeMinimum.h`, which builds them with a stack of the right spine
-([Algorithm 6.18](06-search.md#alg-6-18), with the figure of an example
-in [§6.9](06-search.md#sec-6-9)), and the invisit of the tree built is
-checked to be $A$ as an audit.
+Last, `cartesianBinaryTree( A , less )` is the Cartesian tree of [Vuillemin
+1980](Z-bibliography.md#ref-vuillemin1980) as a `BinaryTree`. Its root is the
+leftmost minimum of $A$ and its subtrees are the Cartesian trees of the parts
+before and after it; with `std::greater` it is the maximal tree, with the
+maximum at the root. Its parents come from `cartesianTree()` of
+`RangeMinimum.h`, which builds them with a stack of the right spine
+([Algorithm 6.18](06-search.md#alg-6-18), with the figure of an example in
+[§6.9](06-search.md#sec-6-9)), and the invisit of the tree built is checked to
+be $A$ as an audit.
 
-<span id="lem-8-22"></span>**Lemma 8.22.** *`cartesianBinaryTree(A, less)`
-builds in $O( n )$ time the binary tree whose invisit is $A$ and whose
-every node holds the leftmost minimum of the items of its subtree; in it,
-the lowest common ancestor of the places $i \le j$ is the leftmost minimum
-of $A[ i .. j ]$. By contrast, the recursion of the definition, which scans each part for
-its minimum, costs $\Theta( n^2 )$ time on an increasing $A$.*
+<span id="lem-8-22"></span>**Lemma 8.22.** *`cartesianBinaryTree( A , less )`
+builds in $O( n )$ time the binary tree whose invisit is $A$ and whose every
+node holds the leftmost minimum of the items of its subtree; in it, the lowest
+common ancestor of the places $i \le j$ is the leftmost minimum of
+$A[ i .. j ]$. By contrast, the recursion of the definition, which scans each
+part for its minimum, costs $\Theta( n^2 )$ time on an increasing $A$.*
 
 *Proof.* `cartesianTree()` pushes and pops each place once on its stack
 ([§6.9](06-search.md#sec-6-9)), and the tree is then linked in one pass over
@@ -1824,8 +1821,8 @@ for a Red-Black tree:
 ADS::RedBlackTree< int , std::string > t;
 t.insert( 3 , "three" );
 t.insert( 7 , "seven" );
-const auto v = t.lookup( 3 );                  // the value "three"
-const int * k = t.lowerBoundKey( 4 );          // the smallest key >= 4, 7
+const auto v = t.lookup( 3 );          // the value "three"
+const int * k = t.lowerBoundKey( 4 );  // the smallest key >= 4, 7
 t.remove( 3 );
 ```
 
@@ -2649,9 +2646,9 @@ set when the nodes are popped, by the loop or at the end. Hence the ownership of
 
 ![Figure 8.38. `fromSorted()` on the keys of [Figure 8.32](08-tree.md#fig-8-32): (a) the treap of 0, 1 and 2 and the stack $S$ of its right spine (in violet); (b) after the key 3, of the largest priority, which pops the whole spine and takes it as its left subtree.](../figures/tree-treap-fromsorted.svg){#fig-8-38}
 
-<span id="lem-8-38"></span>**Lemma 8.38.** *`fromSorted( A ,
-seed )` builds in $O( n )$ time the treap that the insertions of the pairs of
-$A$, in their order, into `Treap( seed )` build.*
+<span id="lem-8-38"></span>**Lemma 8.38.** *`fromSorted( A , seed )` builds in
+$O( n )$ time the treap that the insertions of the pairs of $A$, in their
+order, into `Treap( seed )` build.*
 
 *Proof.* After each pair, the nodes popped from $S$ and the subtrees hanging
 from them form a treap of the keys read so far whose right spine is $S$,
@@ -2668,38 +2665,43 @@ The test of the exercise compares the two trees node by node, keys and
 sizes, on 5000 keys, and checks that a vector whose keys do not increase
 strictly violates the precondition of `fromSorted()`.
 
-Each node keeping its size, the treap also has the operations written on
-join ([Morin 2013, exercises 7.12 and 7.13](Z-bibliography.md#ref-morin-cpp);
-[Blelloch and Reid-Miller 1998](Z-bibliography.md#ref-blelloch1998)), which
-it inherits from `Joinable` of `ADS/tree/JoinAlgorithms.h` and which [§8.12](08-tree.md#sec-8-12) presents for all the balanced trees
-together. `split( k )` cuts the treap into the keys smaller than $k$, the pair of $k$
-if there, and the larger keys, i.e., the `split(x)` of Morin, and `join2( L , R )` glues two treaps whose
-keys are separated, the `absorb(t)` of Morin, both in $O( \log n )$ expected
-time ([Lemma 8.83](08-tree.md#lem-8-83)). There are also `join()`,
-`extractRange()`, the union, the intersection and the difference of two
-treaps, the batches of insertions and of removals, `filter()` and
-`mapReduce()`. Joining two treaps merges their two facing spines by the
-priorities, which is the removal of an imaginary root between them
-([§8.12.2](08-tree.md#sec-8-12-2)). These operations reach the nodes through the adaptor `TreapNodes`. It
-exposes a node into its two subtrees, connects a node over two subtrees
-updating its size. It also makes the nodes of a batch
-with the priorities $\mathrm{splitmix64}( s + i \gamma )$, from a salt $s$
-drawn from the generator, the place $i$ in the batch and the odd constant
-$\gamma = 9\mathrm{e}3779\mathrm{b}97\mathrm{f}4\mathrm{a}7\mathrm{c}15_{16}$ of SplitMix64. Thus a batch built in parallel draws the same priorities in any order. Finally, the list of [Morin 2013, exercise 7.11](Z-bibliography.md#ref-morin-cpp), a treap whose order is
-that of the positions instead of the keys, with `get(i)`, `set(i,x)`,
-`add(i,x)` and `remove(i)` in $O( \log n )$ expected time by the sizes,
-is `TreapList` of `ADS/sequence` ([Chapter 2](02-sequence.md#ch-2)).
+Each node keeping its size, the treap also has the operations written on join
+([Morin 2013, exercises 7.12 and 7.13](Z-bibliography.md#ref-morin-cpp);
+[Blelloch and Reid-Miller 1998](Z-bibliography.md#ref-blelloch1998)), which it
+inherits from `Joinable` of `ADS/tree/JoinAlgorithms.h` and which
+[§8.12](08-tree.md#sec-8-12) presents for all the balanced trees together.
+`split( k )` cuts the treap into the keys smaller than $k$, the pair of $k$ if
+there, and the larger keys, i.e., the `split( x )` of Morin, and
+`join2( L , R )` glues two treaps whose keys are separated, the `absorb( t )`
+of Morin, both in $O( \log n )$ expected time ([Lemma
+8.83](08-tree.md#lem-8-83)). There are also `join()`, `extractRange()`, the
+union, the intersection and the difference of two treaps, the batches of
+insertions and of removals, `filter()` and `mapReduce()`. Joining two treaps
+merges their two facing spines by the priorities, which is the removal of an
+imaginary root between them ([§8.12.2](08-tree.md#sec-8-12-2)). These
+operations reach the nodes through the adaptor `TreapNodes`. It exposes a node
+into its two subtrees, connects a node over two subtrees updating its size. It
+also makes the nodes of a batch with the priorities
+$\mathrm{splitmix64}( s + i \gamma )$, from a salt $s$ drawn from the
+generator, the place $i$ in the batch and the odd constant
+$\gamma = 9\mathrm{e}3779\mathrm{b}97\mathrm{f}4\mathrm{a}7\mathrm{c}15_{16}$
+of SplitMix64. Thus a batch built in parallel draws the same priorities in any
+order. Finally, the list of [Morin 2013, exercise
+7.11](Z-bibliography.md#ref-morin-cpp), a treap whose order is that of the
+positions instead of the keys, with `get( i )`, `set(i,x)`, `add( i , x )` and
+`remove( i )` in $O( \log n )$ expected time by the sizes, is `TreapList` of
+`ADS/sequence` ([Chapter 2](02-sequence.md#ch-2)).
 
 For instance, the ranks of a treap are read as follows:
 
 ```cpp
 #include "ADS/tree/Treap.h"
 
-ADS::Treap< int , int > t( 42 );               // the seed of the priorities
+ADS::Treap< int , int > t( 42 );  // the seed of the priorities
 for( int k = 0 ; k < 10 ; ++k )
  t.insert( k , k * k );
-const auto [ k , v ] = t.select( 4 );          // the pair of rank 4, (4, 16)
-const std::size_t r = t.rank( 7 );             // the keys smaller than 7
+const auto [ k , v ] = t.select( 4 );  // the pair of rank 4, (4, 16)
+const std::size_t r = t.rank( 7 );    // the keys smaller than 7
 ```
 
 ### 8.6.4 Treaps that store no priority {#sec-8-6-4}
@@ -4393,18 +4395,17 @@ path to the leftmost nil, and `twoFourDegrees()` counts the nodes of degree
 children), in $O( n )$.
 
 Four operations of constant time change the colours of a node and of its
-children ([Figure 8.51](08-tree.md#fig-8-51)). `pushBlack( u )` takes a
-black node with two red children and makes it red and them black, and
+children ([Figure 8.51](08-tree.md#fig-8-51)). `pushBlack( u )` takes a black
+node with two red children and makes it red and them black, and
 `pullBlack( u )` does the converse. `flipLeft( u )` exchanges the colours of
-$u$ and of its right child and rotates $u$ to the left, and `flipRight( u
-)` is its mirror image. In terms of the 2-4 tree, `pushBlack()` splits a
-node and sends its middle key up, and `pullBlack()` merges two nodes with
-the key between them. Instead, the flips change only the representation of
-a node, or move a key between two nodes when they follow a `pullBlack()`
-([Morin 2013, exercise 9.5](Z-bibliography.md#ref-morin-cpp)). In the
-proofs we write $c( x )$ for the colour of a node as a number, 0 for red
-and 1 for black (2 for the double black of the removal), a nil counting as
-1.
+$u$ and of its right child and rotates $u$ to the left, and `flipRight( u )`
+is its mirror image. In terms of the 2-4 tree, `pushBlack()` splits a node and
+sends its middle key up, and `pullBlack()` merges two nodes with the key
+between them. Instead, the flips change only the representation of a node, or
+move a key between two nodes when they follow a `pullBlack()` ([Morin 2013,
+exercise 9.5](Z-bibliography.md#ref-morin-cpp)). In the proofs we write
+$c( x )$ for the colour of a node as a number, 0 for red and 1 for black (2
+for the double black of the removal), a nil counting as 1.
 
 <span id="lem-8-66"></span>**Lemma 8.66.** *A `pushBlack()`, a
 `pullBlack()`, a flip whose child rotated up is red, and a rotation of two
@@ -4415,44 +4416,43 @@ no-red-edge property, leaves $r$ in the place of $u$ with the colour of $u$
 and the red left child $u$, whose two children are black; no other node
 changes its children or its colour.*
 
-*Proof.* A path through a node $u$ of `pushBlack( u )` or of `pullBlack( u
-)` goes through exactly one of its children, both of which exist, and the
-operation adds $-1$ and $+1$, or $+1$ and $-1$, to the colours of the two.
-In `flipLeft( u )`, let $x = c( u )$ and $c( r ) = 0$, and let $A$ be the
-left subtree of $u$ and $B$ and $C$ those of $r$. Before it, the paths into
-$A$ cross $u$ only, and those into $B$ and $C$ cross $u$ and $r$; both add
-$x$ to the sum. After it, $r$ of colour $x$ is above $u$ of colour 0, the
-paths into $A$ and $B$ cross both and those into $C$ cross $r$ only, which
-again adds $x$. The flip on the right is its mirror image, and a rotation of
-two red nodes adds 0 on each path. For the second claim, $u$ was black by
-the no-red-edge property, $r$ takes its colour and $u$ takes the red of $r$.
-The children of $u$ are now its old left child and the old left child
-of $r$, both black. $\square$
+*Proof.* A path through a node $u$ of `pushBlack( u )` or of `pullBlack( u )`
+goes through exactly one of its children, both of which exist, and the
+operation adds $-1$ and $+1$, or $+1$ and $-1$, to the colours of the two. In
+`flipLeft( u )`, let $x = c( u )$ and $c( r ) = 0$, and let $A$ be the left
+subtree of $u$ and $B$ and $C$ those of $r$. Before it, the paths into $A$
+cross $u$ only, and those into $B$ and $C$ cross $u$ and $r$; both add $x$ to
+the sum. After it, $r$ of colour $x$ is above $u$ of colour 0, the paths into
+$A$ and $B$ cross both and those into $C$ cross $r$ only, which again adds
+$x$. The flip on the right is its mirror image, and a rotation of two red
+nodes adds 0 on each path. For the second claim, $u$ was black by the
+no-red-edge property, $r$ takes its colour and $u$ takes the red of $r$. The
+children of $u$ are now its old left child and the old left child of $r$, both
+black. $\square$
 
 ![Figure 8.51. The operations of `LeftLeaningRedBlackTree` on the colours, the red nodes in orange and the subtrees as squares: `pushBlack(u)` and its inverse `pullBlack(u)`, which split a 2-4 node and merge two of them, and `flipLeft(u)` and its inverse `flipRight(w)`, a rotation with the exchange of the colours of the two nodes.](../figures/tree-llrb-ops.svg){#fig-8-51}
 
 ### 8.10.3 Insertion {#sec-8-10-3}
 
-An insertion adds a leaf $u$ of the new key as a binary search tree does,
-red, and no black height changes. This leaf may then break the left-leaning
-property, if $u$ is a right child, and the no-red-edge property, if the
-parent of $u$ is red, and `addFixup( u )` restores them going up
-([Algorithm 8.46](08-tree.md#alg-8-46),
-[Figure 8.52](08-tree.md#fig-8-52)). At each round $u$ is
-red. If it is the root, it becomes black and the round ends. Otherwise, if
-the parent $w$ of $u$ has a black left child (i.e., $u$ is its right child
-and breaks the left-leaning property at $w$), `flipLeft( w )` makes $u$
-the parent of $w$, and we then exchange the names, so that $u$ is again the red
-left child of its parent $w$. If $w$ is black, the no-red-edge property
-holds and the insertion ends. Otherwise $w$ is red, and its parent $g$ is
-black, by the no-red-edge property that held before the insertion. If the
-right child of $g$ is black, `flipRight( g )` makes $w$ a black node with
-the two red children $u$ and $g$, and the insertion ends. If it is red,
-$g$ has two red children (by the left-leaning property), and `pushBlack(
-g )` makes $g$ red and its children black. A red $g$ may break the
-properties at its own parent, and the round starts again with
-$u = g$. In terms of the 2-4 tree, the last case is the split of a node of
-five children, while the others end the insertion.
+An insertion adds a leaf $u$ of the new key as a binary search tree does, red,
+and no black height changes. This leaf may then break the left-leaning
+property, if $u$ is a right child, and the no-red-edge property, if the parent
+of $u$ is red, and `addFixup( u )` restores them going up ([Algorithm
+8.46](08-tree.md#alg-8-46), [Figure 8.52](08-tree.md#fig-8-52)). At each round
+$u$ is red. If it is the root, it becomes black and the round ends. Otherwise,
+if the parent $w$ of $u$ has a black left child (i.e., $u$ is its right child
+and breaks the left-leaning property at $w$), `flipLeft( w )` makes $u$ the
+parent of $w$, and we then exchange the names, so that $u$ is again the red
+left child of its parent $w$. If $w$ is black, the no-red-edge property holds
+and the insertion ends. Otherwise $w$ is red, and its parent $g$ is black, by
+the no-red-edge property that held before the insertion. If the right child of
+$g$ is black, `flipRight( g )` makes $w$ a black node with the two red
+children $u$ and $g$, and the insertion ends. If it is red, $g$ has two red
+children (by the left-leaning property), and `pushBlack( g )` makes $g$ red
+and its children black. A red $g$ may break the properties at its own parent,
+and the round starts again with $u = g$. In terms of the 2-4 tree, the last
+case is the split of a node of five children, while the others end the
+insertion.
 
 <span id="alg-8-46"></span>**Algorithm 8.46.** The repair of
 the insertion of `LeftLeaningRedBlackTree` ([Morin 2013,
@@ -4664,33 +4664,33 @@ time in all the calls of `addFixup()` and `removeFixup()`.*
 *Proof.* We follow the 2-4 tree that the red-black tree simulates
 ([§8.10.2](08-tree.md#sec-8-10-2)): a black node with its red children is a
 2-4 node. A round of `addFixup()` either ends, after `flipLeft()`,
-`flipRight()` or the colouring of the root, or goes on after `pushBlack( g
-)`. It does so only when $u$ is red, its parent $w$ red and $g$ black with
-two red children, i.e., when the 2-4 node of $g$, of three keys, has
-received the key of $u$, and `pushBlack()` splits it into two nodes, the
-key of $g$ going up, red, into the node above. An insertion thus runs one
-round per split of the 2-4 tree, plus one. A round of `removeFixup()` runs
-one of four cases on the double black $u$, the root, case 1 (a red left
-sibling, which `flipRight()` turns into case 3 at the next round, so that
-case 1 never runs twice in a row), and the cases 2 and 3. These begin by
-`pullBlack( w )`, the merge of the 2-4 node of $u$, which has lost a key,
-with the key of $w$ and the node of the sibling $v$. Case 2 returns the red
-$q$ (and ends) when $v$ had a red left child, i.e., when the merged node
-had too many keys and is split back, a borrowing; otherwise it returns $v$,
-which after `flipLeft( w )` has the colour of $w$ plus one, and the loop
-goes on exactly when $w$ was black. Case 3 likewise ends when $q$ or the
-left child of $v$ is red (a borrowing) and returns $w$, with the colour of
-$w$ plus one, otherwise. In a case 2 or 3 that goes on, $w$ is black with
-a black left child and hence, by the left-leaning property, a black right
-child, and the sibling has no red child: both 2-4 nodes had one key, and
-the round is the merge of the bottom-up rule that leaves the node above
-with one child too few. A removal thus runs at most $2 ( M_o + 1 ) + 1$
-rounds, $M_o$ its merges, plus the final `flipLeft()`, and every other
-round makes $O( 1 )$ rotations and changes of colour. The 2-4 tree follows
-the bottom-up rules of [§8.10.1](08-tree.md#sec-8-10-1), and by
-[Theorem 8.9](08-tree.md#thm-8-9) its splits and merges are at most $3 m /
-2$ in all. Hence the rounds are at most $( S + m ) + ( 2 M + 3 m ) \le 2 ( S
-+ M ) + 3 m \le 6 m$, $S$ and $M$ the splits and the merges. $\square$
+`flipRight()` or the colouring of the root, or goes on after `pushBlack( g )`.
+It does so only when $u$ is red, its parent $w$ red and $g$ black with two red
+children, i.e., when the 2-4 node of $g$, of three keys, has received the key
+of $u$, and `pushBlack()` splits it into two nodes, the key of $g$ going up,
+red, into the node above. An insertion thus runs one round per split of the
+2-4 tree, plus one. A round of `removeFixup()` runs one of four cases on the
+double black $u$, the root, case 1 (a red left sibling, which `flipRight()`
+turns into case 3 at the next round, so that case 1 never runs twice in a
+row), and the cases 2 and 3. These begin by `pullBlack( w )`, the merge of the
+2-4 node of $u$, which has lost a key, with the key of $w$ and the node of the
+sibling $v$. Case 2 returns the red $q$ (and ends) when $v$ had a red left
+child, i.e., when the merged node had too many keys and is split back, a
+borrowing; otherwise it returns $v$, which after `flipLeft( w )` has the
+colour of $w$ plus one, and the loop goes on exactly when $w$ was black. Case
+3 likewise ends when $q$ or the left child of $v$ is red (a borrowing) and
+returns $w$, with the colour of $w$ plus one, otherwise. In a case 2 or 3 that
+goes on, $w$ is black with a black left child and hence, by the left-leaning
+property, a black right child, and the sibling has no red child: both 2-4
+nodes had one key, and the round is the merge of the bottom-up rule that
+leaves the node above with one child too few. A removal thus runs at most
+$2 ( M_o + 1 ) + 1$ rounds, $M_o$ its merges, plus the final `flipLeft()`, and
+every other round makes $O( 1 )$ rotations and changes of colour. The 2-4 tree
+follows the bottom-up rules of [§8.10.1](08-tree.md#sec-8-10-1), and by
+[Theorem 8.9](08-tree.md#thm-8-9) its splits and merges are at most $3 m / 2$
+in all. Hence the rounds are at most
+$( S + m ) + ( 2 M + 3 m ) \le 2 ( S + M ) + 3 m \le 6 m$, $S$ and $M$ the
+splits and the merges. $\square$
 
 As in [Morin 2013, §9.3](Z-bibliography.md#ref-morin-cpp), the constant
 is that of the rounds, not of the rotations, which are at most four per
@@ -5035,25 +5035,25 @@ $t$ keys up in its place, which keeps the order of the keys. The split, which is
 insertion, is the procedure $\mathrm{split}$ of the lines 14 to 17 of
 [Algorithm 8.50](08-tree.md#alg-8-50).
 
-`insert( k , v )` goes down from the root and splits each full node it is about
-to enter ([Algorithm 8.50](08-tree.md#alg-8-50)), so that the
-parent of a node being split always has room for the median. Then the key goes
-into the leaf reached, which is not full, and a key already there gets the new
-value. A full root is split under a new root, which is the only way the height
-grows; since it grows at the top, the leaves stay at one depth. [Figure
+`insert( k , v )` goes down from the root and splits each full node it is
+about to enter ([Algorithm 8.50](08-tree.md#alg-8-50)), so that the parent of
+a node being split always has room for the median. Then the key goes into the
+leaf reached, which is not full, and a key already there gets the new value. A
+full root is split under a new root, which is the only way the height grows;
+since it grows at the top, the leaves stay at one depth. [Figure
 8.56](08-tree.md#fig-8-56) solves [Morin 2013, exercise
-14.1](Z-bibliography.md#ref-morin-cpp) by `BTree` of degree $t = 2$ on the tree
-of his figure 14.2 (the same exercise is solved in
+14.1](Z-bibliography.md#ref-morin-cpp) by `BTree` of degree $t = 2$ on the
+tree of his figure 14.2 (the same exercise is solved in
 [§23.3.2](23-external.md#sec-23-3-2) by the bottom-up insertion of the block
-B-tree, with a different result). Here `insert(1.5)` splits the full leaf
-$\{ 0 , 1 , 2 \}$, whose median 1 goes up, and `insert(7.5)` splits first the
-full node $\{ 1 , 3 , 6 \}$, whose median 3 goes up into the root, and then the
-full leaf $\{ 7 , 8 , 9 \}$. We remark that the one-pass rule splits a full
-node on the path even when the leaf reached has room: `insert(4.5)` on the tree
-left by `insert(1.5)` splits $\{ 1 , 3 , 6 \}$ although the leaf $\{ 4 , 5 \}$
-could take the key, which a bottom-up insertion would not do. This is the price
-of a single pass with no parent pointers and no stack of the path, and it is
-paid at most once per node of the path.
+B-tree, with a different result). Here `insert( 1.5 )` splits the full leaf
+$\{ 0 , 1 , 2 \}$, whose median 1 goes up, and `insert( 7.5 )` splits first
+the full node $\{ 1 , 3 , 6 \}$, whose median 3 goes up into the root, and
+then the full leaf $\{ 7 , 8 , 9 \}$. We remark that the one-pass rule splits
+a full node on the path even when the leaf reached has room: `insert( 4.5 )`
+on the tree left by `insert( 1.5 )` splits $\{ 1 , 3 , 6 \}$ although the leaf
+$\{ 4 , 5 \}$ could take the key, which a bottom-up insertion would not do.
+This is the price of a single pass with no parent pointers and no stack of the
+path, and it is paid at most once per node of the path.
 
 ![Figure 8.56. Exercise 14.1 of [Morin 2013](Z-bibliography.md#ref-morin-cpp) by `BTree` of degree $t = 2$ on the tree of his figure 14.2: the tree before, after `insert(1.5)` and after `insert(7.5)`; the nodes that an insertion writes are in orange, those it only reads in violet, and the edges it follows thick.](../figures/tree-btree-insert.svg){#fig-8-56}
 
@@ -5188,21 +5188,21 @@ spends part of the page on the values, and the tree is lower; the list of the
 leaves gives the pairs of an interval with no climb.
 
 A search goes down to the first child whose separator is not smaller than the
-key, which `leaf( x )` follows to the leaf where $x$ is or would be ([Algorithm
-8.53](08-tree.md#alg-8-53)). An insertion puts the pair in that
+key, which `leaf( x )` follows to the leaf where $x$ is or would be
+([Algorithm 8.53](08-tree.md#alg-8-53)). An insertion puts the pair in that
 leaf. A leaf that gets $m + 1$ pairs splits them between a new leaf on its
-left, with the first $\lceil ( m + 1 ) / 2 \rceil$, and itself, and the largest
-key of the new leaf goes into the parent next to it. A parent that gets $m + 1$
-children splits in the same way, the key between the two groups going one level
-up, and so on up to the root, which may split under a new root with two
-children. `range( A , B )` reaches the leaf of $A$ and walks along the list
-until a key larger than $B$, at the cost of [Lemma 8.78](08-tree.md#lem-8-78)
-below. [Figure 8.59](08-tree.md#fig-8-59) draws
-the last insertion of figure 6.7 of the book, which the test
-`ch06.sec6.3.bplus-figure` replays step by step: `insert(6)` fills the leaf
-$\{ 8 , 9 , 10 \}$, which splits into $\{ 6 , 8 \}$ and $\{ 9 , 10 \}$, and the
-separator 8 makes the root of three keys overflow, and the root splits in turn
-under a new root.
+left, with the first $\lceil ( m + 1 ) / 2 \rceil$, and itself, and the
+largest key of the new leaf goes into the parent next to it. A parent that
+gets $m + 1$ children splits in the same way, the key between the two groups
+going one level up, and so on up to the root, which may split under a new root
+with two children. `range( A , B )` reaches the leaf of $A$ and walks along
+the list until a key larger than $B$, at the cost of [Lemma
+8.78](08-tree.md#lem-8-78) below. [Figure 8.59](08-tree.md#fig-8-59) draws the
+last insertion of figure 6.7 of the book, which the test
+`ch06.sec6.3.bplus-figure` replays step by step: `insert( 6 )` fills the leaf
+$\{ 8 , 9 , 10 \}$, which splits into $\{ 6 , 8 \}$ and $\{ 9 , 10 \}$, and
+the separator 8 makes the root of three keys overflow, and the root splits in
+turn under a new root.
 
 ![Figure 8.59. Figure 6.7 of [Montresor 2025](Z-bibliography.md#ref-montresor2025) by `BPlusTree` of order $m = 3$: the tree after the insertions of 10, 12, 13, 15, 8, 11 and 9, and after `insert(6)`, which splits a leaf and then the root; the nodes written are in orange, and the arrows are the list of the leaves.](../figures/tree-bplus-insert.svg){#fig-8-59}
 
@@ -5234,13 +5234,13 @@ changes no separator but those of its borrowings and merges. The fix of one
 node, which is the core, is a round of the loop of the lines 4 to 7 of
 [Algorithm 8.54](08-tree.md#alg-8-54).
 
-[Figure 8.60](08-tree.md#fig-8-60) removes two keys from the tree
-of [Figure 8.59](08-tree.md#fig-8-59): `remove(9)` leaves the leaf
-$\{ 10 \}$ short, whose sibling $\{ 6 , 8 \}$ has no pair to lend, and the two
-merge. Their parent, left with one child, merges with its sibling around the
-separator 10 of the root, and the root, left with one child, gives way. Then
-`remove(11)` leaves $\{ 12 \}$ short, and its left sibling $\{ 6 , 8 , 10 \}$
-lends it 10, the separator becoming 8.
+[Figure 8.60](08-tree.md#fig-8-60) removes two keys from the tree of [Figure
+8.59](08-tree.md#fig-8-59): `remove( 9 )` leaves the leaf $\{ 10 \}$ short,
+whose sibling $\{ 6 , 8 \}$ has no pair to lend, and the two merge. Their
+parent, left with one child, merges with its sibling around the separator 10
+of the root, and the root, left with one child, gives way. Then `remove( 11 )`
+leaves $\{ 12 \}$ short, and its left sibling $\{ 6 , 8 , 10 \}$ lends it 10,
+the separator becoming 8.
 
 ![Figure 8.60. Exercise 14.8 of [Morin 2013](Z-bibliography.md#ref-morin-cpp) by `BPlusTree` of order $m = 3$ on the second tree of [Figure 8.59](08-tree.md#fig-8-59): `remove(9)` merges two leaves and then two internal nodes, and the height falls; `remove(11)` borrows a pair from the left sibling; the nodes written are in orange.](../figures/tree-bplus-remove.svg){#fig-8-60}
 
@@ -5580,7 +5580,7 @@ ADS::BTreeMap< int , double > m;
 for( int k = 0 ; k < 1000 ; ++k )
  m.insert( k , 0.5 * k );
 double s = 0;
-m.forRange( 10 , 20 ,                          // the keys in [10, 20)
+m.forRange( 10 , 20 ,  // the keys in [10, 20)
             [ & ]( int , double v ) { s += v; } );
 ```
 
@@ -5676,22 +5676,21 @@ Each requires a little more of `A`: `height()` for AVL, `red()` and
 
 On the join of `A`, `JoinAlgorithms< A >` writes the algorithms of
 [§8.12.3](08-tree.md#sec-8-12-3) and [§8.12.4](08-tree.md#sec-8-12-4). It
-works on trees paired with their ranks, its nested `Tree`, made by
-`empty()` or by `whole( t )`, which computes the rank of a root. Its
-`expose()` returns an `Exposed`, i.e., the root and the two subtrees with
-their ranks, and `firstKey()` and `lastKey()` give the extreme keys of a
-subtree. As a base of the class `T` of a tree, `Joinable< T , A , Key ,
-Value >` gives to it the algorithms as methods, by the curiously recurring
-template pattern. For it `A` gives also the side of the tree: `take()` and
-`put()`, which take the root out of the tree and put it back, `peek()`,
-`fresh()` (an empty tree like the given one) and `valid()` (the
-invariant). Finally, `salt()` and `make()` build the node of a pair; for a
-treap, its priority is drawn from the salt of a batch and the place of the
-pair in it ([§8.12.5](08-tree.md#sec-8-12-5)). Four classes derive from
-`Joinable`: `AVLTree`, `Treap`, `RedBlackTree` and `JoinTree`. Since the
-height of `BinarySearchTree` may be $n - 1$, and so would be the depth of
-the recursion of the algorithms, it derives instead from the empty struct
-`NotJoinable`.
+works on trees paired with their ranks, its nested `Tree`, made by `empty()`
+or by `whole( t )`, which computes the rank of a root. Its `expose()` returns
+an `Exposed`, i.e., the root and the two subtrees with their ranks, and
+`firstKey()` and `lastKey()` give the extreme keys of a subtree. As a base of
+the class `T` of a tree, `Joinable< T , A , Key , Value >` gives to it the
+algorithms as methods, by the curiously recurring template pattern. For it `A`
+gives also the side of the tree: `take()` and `put()`, which take the root out
+of the tree and put it back, `peek()`, `fresh()` (an empty tree like the given
+one) and `valid()` (the invariant). Finally, `salt()` and `make()` build the
+node of a pair; for a treap, its priority is drawn from the salt of a batch
+and the place of the pair in it ([§8.12.5](08-tree.md#sec-8-12-5)). Four
+classes derive from `Joinable`: `AVLTree`, `Treap`, `RedBlackTree` and
+`JoinTree`. Since the height of `BinarySearchTree` may be $n - 1$, and so
+would be the depth of the recursion of the algorithms, it derives instead from
+the empty struct `NotJoinable`.
 
 Each operation is destructive: it consumes the trees it is given and
 reuses their nodes. Thus no node is copied and no tree is shared between
@@ -5875,21 +5874,20 @@ thus costs $O( 1 )$, but for the `join2()` of `remove()`, which costs
 $O( \log n )$. Last, `extract()` is two splits, two joins and a
 `join2()`. $\square$
 
-As methods of a tree, `Joinable` gives these operations as follows.
-Called on an rvalue, e.g., `std::move( t ).split( k )`, `split( k )`
-consumes the tree. It returns the tree of the keys before $k$, the value of
-$k$ if it was there (a `std::optional`) and the tree of the keys after
-$k$. Both the static `join( l , k , v , r )` and `join2( l , r )` consume
-their two trees, and they check by `firstKey()` and `lastKey()` the
-precondition that the keys are in order. Similarly, `extractRange( lo , hi
-)` returns the tree of the pairs taken out. In [§8.6](08-tree.md#sec-8-6)
-and in [§8.10](08-tree.md#sec-8-10) we meet other forms of these
-operations, on the nodes of those trees. For instance, the `split(x)` and
-the `absorb(t)` of the treaps of [Morin 2013, exercises 7.12 and
-7.13](Z-bibliography.md#ref-morin-cpp) are the `split()` and the `join2()`
-of `Treap`, i.e., those above on `TreapJoin`. Instead, the `absorb()` of
-`LeftLeaningRedBlackTree` joins two red-black trees of separated keys
-(exercises 9.10 and 9.11) keeping the left-leaning property, which
+As methods of a tree, `Joinable` gives these operations as follows. Called on
+an rvalue, e.g., `std::move( t ).split( k )`, `split( k )` consumes the tree.
+It returns the tree of the keys before $k$, the value of $k$ if it was there
+(a `std::optional`) and the tree of the keys after $k$. Both the static
+`join( l , k , v , r )` and `join2( l , r )` consume their two trees, and they
+check by `firstKey()` and `lastKey()` the precondition that the keys are in
+order. Similarly, `extractRange( lo , hi )` returns the tree of the pairs
+taken out. In [§8.6](08-tree.md#sec-8-6) and in [§8.10](08-tree.md#sec-8-10)
+we meet other forms of these operations, on the nodes of those trees. For
+instance, the `split( x )` and the `absorb( t )` of the treaps of [Morin 2013,
+exercises 7.12 and 7.13](Z-bibliography.md#ref-morin-cpp) are the `split()`
+and the `join2()` of `Treap`, i.e., those above on `TreapJoin`. Instead, the
+`absorb()` of `LeftLeaningRedBlackTree` joins two red-black trees of separated
+keys (exercises 9.10 and 9.11) keeping the left-leaning property, which
 `RedBlackJoin` does not keep.
 
 ### 8.12.4 The set operations and the batches {#sec-8-12-4}
@@ -6355,18 +6353,18 @@ With `SumAugmentation< V >` the value is the sum of the values, of identity
 `V()`. With `MaxAugmentation< V >` it is the largest value, of identity
 $-\infty$ when the type has it and its least value otherwise.
 
-At the root, `augValue()` reads the value of the whole map in $O( 1 )$, as
-an `AugValue`, the type `G::Value`. For a range of keys, `augVisit( lo , hi
-, f )` calls `f` on the values of $O( \log n )$ pieces, by increasing keys,
-whose union is the set of the keys in $[ \mathit{lo} , \mathit{hi} ]$.
-These pieces hang from the node $t$ where the paths to $\mathit{lo}$ and to
-$\mathit{hi}$ part. On the path to $\mathit{lo}$, they are the pairs not
-smaller than $\mathit{lo}$ and the right subtrees that these pairs leave
-behind. Then comes the pair of $t$, and on the path to $\mathit{hi}$ the
-pairs not larger than $\mathit{hi}$ and their left subtrees. By combining
-those pieces we get `augRange( lo , hi )`; `augPrefix( k )` combines the
-pieces of the keys not larger than $k$, along the path to $k$ ([Algorithm
-8.66](08-tree.md#alg-8-66), [Figure
+At the root, `augValue()` reads the value of the whole map in $O( 1 )$, as an
+`AugValue`, the type `G::Value`. For a range of keys,
+`augVisit( lo , hi , f )` calls `f` on the values of $O( \log n )$ pieces, by
+increasing keys, whose union is the set of the keys in
+$[ \mathit{lo} , \mathit{hi} ]$. These pieces hang from the node $t$ where the
+paths to $\mathit{lo}$ and to $\mathit{hi}$ part. On the path to
+$\mathit{lo}$, they are the pairs not smaller than $\mathit{lo}$ and the right
+subtrees that these pairs leave behind. Then comes the pair of $t$, and on the
+path to $\mathit{hi}$ the pairs not larger than $\mathit{hi}$ and their left
+subtrees. By combining those pieces we get `augRange( lo , hi )`;
+`augPrefix( k )` combines the pieces of the keys not larger than $k$, along
+the path to $k$ ([Algorithm 8.66](08-tree.md#alg-8-66), [Figure
 8.64](08-tree.md#fig-8-64)).
 
 <span id="alg-8-66"></span>**Algorithm 8.66.** The pieces
@@ -6421,8 +6419,8 @@ the intervals of keys:
 ADS::AugmentedMap< int , int , ADS::SumAugmentation< int > > m;
 for( int k = 1 ; k <= 100 ; ++k )
  m.insert( k , k );
-const int all = m.augValue();                  // 5050
-const int part = m.augRange( 10 , 20 );        // 10 + ... + 20 = 165
+const int all = m.augValue();           // 5050
+const int part = m.augRange( 10 , 20 );  // 10 + ... + 20 = 165
 ```
 
 ### 8.12.7 Observers, assignments and selections on the aggregates {#sec-8-12-7}
@@ -6583,11 +6581,11 @@ $\square$
 
 <span id="lem-8-92"></span>**Lemma 8.92.** *Let $q$ be false on the identity
 and distributive. Then $q( \mathit{aug}( u ) )$ holds if and only if a pair
-$( x , v )$ of $T_u$ has $q( \mathrm{from}( x , v ) )$, and `augFilter( q ,
-f )` gives exactly those pairs of the tree, by increasing keys. If it gives
-$m$ pairs on a tree of height $h$, it enters at most $m ( h + 1 )$ nodes
-and calls $q$ at most $3 m ( h + 1 ) + 1$ times, i.e., it takes
-$O( 1 + m \log n )$ on the four schemes.*
+$( x , v )$ of $T_u$ has $q( \mathrm{from}( x , v ) )$, and
+`augFilter( q , f )` gives exactly those pairs of the tree, by increasing
+keys. If it gives $m$ pairs on a tree of height $h$, it enters at most
+$m ( h + 1 )$ nodes and calls $q$ at most $3 m ( h + 1 ) + 1$ times, i.e., it
+takes $O( 1 + m \log n )$ on the four schemes.*
 
 *Proof.* The first claim is by induction on (8.12): a nil subtree has the
 identity, on which $q$ is false, and $q( \mathit{aug}( u ) ) = q(
@@ -6678,8 +6676,8 @@ selects by its prefixes:
 ```cpp
 #include "ADS/tree/MaterializedAggregate.h"
 
-using Tree = ADS::JoinAVLTree< int , int , ADS::NoAugmentation ,
-                               ADS::Dynamic<> >;
+using Tree =
+  ADS::JoinAVLTree< int , int , ADS::NoAugmentation , ADS::Dynamic<> >;
 Tree t;
 ADS::MaterializedAggregate< ADS::SumAugmentation< int > > sum( t );
 t.subject().attach( sum );
@@ -6687,12 +6685,12 @@ for( int k = 1 ; k <= 10 ; ++k )
  t.insert( k , k );
 t.assign( 3 , 30 );
 t.remove( 10 );
-const int s = sum.value();                     // 1 + ... + 9 + 27 = 72
+const int s = sum.value();  // 1 + ... + 9 + 27 = 72
 ADS::AugmentedMap< int , int , ADS::SumAugmentation< int > > m;
 for( int k = 1 ; k <= 10 ; ++k )
  m.insert( k , k );
 const auto first = m.augSelect( []( int a ) { return( a >= 20 ); } );
-                                               // ( 6 , 6 ), 21 >= 20
+// ( 6 , 6 ), 21 >= 20
 ```
 
 ## 8.13 Dynamic trees {#sec-8-13}
@@ -6897,14 +6895,14 @@ default monoid):
 ```cpp
 #include "ADS/tree/LinkCutTree.h"
 
-ADS::LinkCutTree<> f( 4 );                     // 4 isolated nodes, sums
+ADS::LinkCutTree<> f( 4 );  // 4 isolated nodes, sums
 for( int v = 0 ; v < 4 ; ++v )
  f.setValue( v , 10 * v );
-f.link( 1 , 0 );                               // 1 becomes a child of 0
+f.link( 1 , 0 );  // 1 becomes a child of 0
 f.link( 2 , 1 );
 f.link( 3 , 1 );
-const int c = f.lca( 2 , 3 );                  // 1, below the root 0
-const long long a = f.aggregate( 2 , 3 );      // 20 + 10 + 30, everts 2
+const int c = f.lca( 2 , 3 );              // 1, below the root 0
+const long long a = f.aggregate( 2 , 3 );  // 20 + 10 + 30, everts 2
 f.cut( 1 , 0 );
 ```
 
@@ -7360,241 +7358,280 @@ compiled with all its members.
 
 ```cpp
 // declarations of <ADS/tree/Tree.h>
-template< class T > class Tree {
+template< class T >
+class Tree
+{
  public:
-  using Item = T;
-  explicit Tree( const T & v );
-  [[nodiscard]] const T & read( void ) const;
-  void write( const T & v );
-  [[nodiscard]] Tree * parent( void ) const;
-  [[nodiscard]] Tree * leftmostChild( void ) const;
-  [[nodiscard]] Tree * rightSibling( void ) const;
-  void insertChild( Tree * t );
-  void insertSibling( Tree * t );
-  [[nodiscard]] bool isLeaf( void ) const;
-  [[nodiscard]] bool isLastSibling( void ) const;
-  void deleteChild( void );
-  void deleteSibling( void );
+ using Item = T;
+ explicit Tree( const T & v );
+ [[nodiscard]] const T & read( void ) const;
+ void write( const T & v );
+ [[nodiscard]] Tree * parent( void ) const;
+ [[nodiscard]] Tree * leftmostChild( void ) const;
+ [[nodiscard]] Tree * rightSibling( void ) const;
+ void insertChild( Tree * t );
+ void insertSibling( Tree * t );
+ [[nodiscard]] bool isLeaf( void ) const;
+ [[nodiscard]] bool isLastSibling( void ) const;
+ void deleteChild( void );
+ void deleteSibling( void );
  };
-template< class T , class Pre , class Post > void dfs( Tree< T > * t ,
-    Pre && pre , Post && post );
-template< class T , class F > void pre_visit( Tree< T > * t , F && f );
-template< class T , class F > void post_visit( Tree< T > * t , F && f );
-template< class T , class F > void in_visit( Tree< T > * t , int i , F && f );
-template< class T > Tree< T > * copy( const Tree< T > * t );
-template< class T , class F > void bfs( Tree< T > * t , F && f );
-template< class T > int maxWeightLevel( Tree< T > * t );
-template< class T > std::string to_list( const Tree< T > * t );
-template< class T > Tree< T > * tree_from_list( std::string_view s );
-template< class T > auto children( Tree< T > * t );
-template< class T > auto preorder( Tree< T > * t );
+template< class T , class Pre , class Post >
+void dfs( Tree< T > * t , Pre && pre , Post && post );
+template< class T , class F >
+void pre_visit( Tree< T > * t , F && f );
+template< class T , class F >
+void post_visit( Tree< T > * t , F && f );
+template< class T , class F >
+void in_visit( Tree< T > * t , int i , F && f );
+template< class T >
+Tree< T > * copy( const Tree< T > * t );
+template< class T , class F >
+void bfs( Tree< T > * t , F && f );
+template< class T >
+int maxWeightLevel( Tree< T > * t );
+template< class T >
+std::string to_list( const Tree< T > * t );
+template< class T >
+Tree< T > * tree_from_list( std::string_view s );
+template< class T >
+auto children( Tree< T > * t );
+template< class T >
+auto preorder( Tree< T > * t );
 ```
 
 ```cpp
 // declarations of <ADS/tree/CursorTree.h>
-template< class T > class CursorTree {
+template< class T >
+class CursorTree
+{
  public:
-  using Item = T;
-  static constexpr int NIL = -1;
-  CursorTree( void ) = default;
-  explicit CursorTree( const T & v );
-  [[nodiscard]] bool empty( void ) const;
-  [[nodiscard]] int root( void ) const;
-  [[nodiscard]] int parent( int n ) const;
-  [[nodiscard]] int leftmostChild( int n ) const;
-  [[nodiscard]] int rightSibling( int n ) const;
-  [[nodiscard]] bool isLeaf( int n ) const;
-  [[nodiscard]] bool isLastSibling( int n ) const;
-  [[nodiscard]] const T & read( int n ) const;
-  void write( int n , const T & v );
-  [[nodiscard]] int size( void ) const;
-  int insertChild( int n , const T & v );
-  int insertSibling( int n , const T & v );
-  int insertChildTree( int n , const CursorTree & t , int s );
-  int insertSiblingTree( int n , const CursorTree & t , int s );
-  void remove( int n );
-  [[nodiscard]] std::vector< int > previsit( void ) const;
-  [[nodiscard]] std::vector< int > postvisit( void ) const;
-  [[nodiscard]] std::vector< int > invisit( int i ) const;
-  [[nodiscard]] auto nodes( void ) const;
-  [[nodiscard]] auto children( int n ) const;
+ using Item = T;
+ static constexpr int NIL = -1;
+ CursorTree( void ) = default;
+ explicit CursorTree( const T & v );
+ [[nodiscard]] bool empty( void ) const;
+ [[nodiscard]] int root( void ) const;
+ [[nodiscard]] int parent( int n ) const;
+ [[nodiscard]] int leftmostChild( int n ) const;
+ [[nodiscard]] int rightSibling( int n ) const;
+ [[nodiscard]] bool isLeaf( int n ) const;
+ [[nodiscard]] bool isLastSibling( int n ) const;
+ [[nodiscard]] const T & read( int n ) const;
+ void write( int n , const T & v );
+ [[nodiscard]] int size( void ) const;
+ int insertChild( int n , const T & v );
+ int insertSibling( int n , const T & v );
+ int insertChildTree( int n , const CursorTree & t , int s );
+ int insertSiblingTree( int n , const CursorTree & t , int s );
+ void remove( int n );
+ [[nodiscard]] std::vector< int > previsit( void ) const;
+ [[nodiscard]] std::vector< int > postvisit( void ) const;
+ [[nodiscard]] std::vector< int > invisit( int i ) const;
+ [[nodiscard]] auto nodes( void ) const;
+ [[nodiscard]] auto children( int n ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/ChildListTree.h>
-template< class T > class ChildListTree {
+template< class T >
+class ChildListTree
+{
  public:
-  using Item = T;
-  static constexpr int NIL = -1;
-  ChildListTree( void ) = default;
-  explicit ChildListTree( const T & v );
-  ChildListTree( const ChildListTree & o );
-  ChildListTree( ChildListTree && o ) noexcept = default;
-  ChildListTree & operator=( const ChildListTree & o );
-  ChildListTree & operator=( ChildListTree && o ) noexcept = default;
-  [[nodiscard]] bool empty( void ) const;
-  [[nodiscard]] int root( void ) const;
-  [[nodiscard]] int parent( int n ) const;
-  [[nodiscard]] int leftmostChild( int n ) const;
-  [[nodiscard]] int rightSibling( int n ) const;
-  [[nodiscard]] bool isLeaf( int n ) const;
-  [[nodiscard]] bool isLastSibling( int n ) const;
-  [[nodiscard]] const List< int > & children( int n ) const;
-  [[nodiscard]] const T & read( int n ) const;
-  void write( int n , const T & v );
-  [[nodiscard]] int size( void ) const;
-  int insertChild( int n , const T & v );
-  int insertSibling( int n , const T & v );
-  int insertChildTree( int n , const ChildListTree & t , int s );
-  int insertSiblingTree( int n , const ChildListTree & t , int s );
-  void remove( int n );
-  [[nodiscard]] std::vector< int > previsit( void ) const;
-  [[nodiscard]] std::vector< int > postvisit( void ) const;
-  [[nodiscard]] std::vector< int > invisit( int i ) const;
+ using Item = T;
+ static constexpr int NIL = -1;
+ ChildListTree( void ) = default;
+ explicit ChildListTree( const T & v );
+ ChildListTree( const ChildListTree & o );
+ ChildListTree( ChildListTree && o ) noexcept = default;
+ ChildListTree & operator=( const ChildListTree & o );
+ ChildListTree & operator=( ChildListTree && o ) noexcept = default;
+ [[nodiscard]] bool empty( void ) const;
+ [[nodiscard]] int root( void ) const;
+ [[nodiscard]] int parent( int n ) const;
+ [[nodiscard]] int leftmostChild( int n ) const;
+ [[nodiscard]] int rightSibling( int n ) const;
+ [[nodiscard]] bool isLeaf( int n ) const;
+ [[nodiscard]] bool isLastSibling( int n ) const;
+ [[nodiscard]] const List< int > & children( int n ) const;
+ [[nodiscard]] const T & read( int n ) const;
+ void write( int n , const T & v );
+ [[nodiscard]] int size( void ) const;
+ int insertChild( int n , const T & v );
+ int insertSibling( int n , const T & v );
+ int insertChildTree( int n , const ChildListTree & t , int s );
+ int insertSiblingTree( int n , const ChildListTree & t , int s );
+ void remove( int n );
+ [[nodiscard]] std::vector< int > previsit( void ) const;
+ [[nodiscard]] std::vector< int > postvisit( void ) const;
+ [[nodiscard]] std::vector< int > invisit( int i ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/ParentTree.h>
-class ParentTree {
+class ParentTree
+{
  public:
-  explicit ParentTree( int n );
-  [[nodiscard]] int parent( int i ) const;
-  void setParent( int i , int j );
-  [[nodiscard]] int size( void ) const;
+ explicit ParentTree( int n );
+ [[nodiscard]] int parent( int i ) const;
+ void setParent( int i , int j );
+ [[nodiscard]] int size( void ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/PreorderArrayTree.h>
-template< class T > class PreorderArrayTree {
+template< class T >
+class PreorderArrayTree
+{
  public:
-  using Item = T;
-  static constexpr int NIL = -1;
-  PreorderArrayTree( void ) = default;
-  explicit PreorderArrayTree( const T & v );
-  [[nodiscard]] bool empty( void ) const;
-  [[nodiscard]] int size( void ) const;
-  [[nodiscard]] int root( void ) const;
-  [[nodiscard]] int parent( int i ) const;
-  [[nodiscard]] const T & read( int i ) const;
-  void write( int i , const T & v );
-  [[nodiscard]] int leftmostChild( int i ) const;
-  [[nodiscard]] int rightSibling( int i ) const;
-  [[nodiscard]] bool isLeaf( int i ) const;
-  [[nodiscard]] int subtreeEnd( int i ) const;
-  void insertChild( int i , const PreorderArrayTree & t );
-  void insertSibling( int i , const PreorderArrayTree & t );
-  void remove( int i );
-  [[nodiscard]] auto values( void ) const;
+ using Item = T;
+ static constexpr int NIL = -1;
+ PreorderArrayTree( void ) = default;
+ explicit PreorderArrayTree( const T & v );
+ [[nodiscard]] bool empty( void ) const;
+ [[nodiscard]] int size( void ) const;
+ [[nodiscard]] int root( void ) const;
+ [[nodiscard]] int parent( int i ) const;
+ [[nodiscard]] const T & read( int i ) const;
+ void write( int i , const T & v );
+ [[nodiscard]] int leftmostChild( int i ) const;
+ [[nodiscard]] int rightSibling( int i ) const;
+ [[nodiscard]] bool isLeaf( int i ) const;
+ [[nodiscard]] int subtreeEnd( int i ) const;
+ void insertChild( int i , const PreorderArrayTree & t );
+ void insertSibling( int i , const PreorderArrayTree & t );
+ void remove( int i );
+ [[nodiscard]] auto values( void ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/BinaryTree.h>
-template< class T > class BinaryTree {
+template< class T >
+class BinaryTree
+{
  public:
-  using Item = T;
-  explicit BinaryTree( const T & v );
-  [[nodiscard]] const T & read( void ) const;
-  void write( const T & v );
-  [[nodiscard]] BinaryTree * parent( void ) const;
-  [[nodiscard]] BinaryTree * left( void ) const;
-  [[nodiscard]] BinaryTree * right( void ) const;
-  void insertLeft( BinaryTree * t );
-  void insertRight( BinaryTree * t );
-  void deleteLeft( void );
-  void deleteRight( void );
-  [[nodiscard]] BinaryTree * detachLeft( void );
-  [[nodiscard]] BinaryTree * detachRight( void );
+ using Item = T;
+ explicit BinaryTree( const T & v );
+ [[nodiscard]] const T & read( void ) const;
+ void write( const T & v );
+ [[nodiscard]] BinaryTree * parent( void ) const;
+ [[nodiscard]] BinaryTree * left( void ) const;
+ [[nodiscard]] BinaryTree * right( void ) const;
+ void insertLeft( BinaryTree * t );
+ void insertRight( BinaryTree * t );
+ void deleteLeft( void );
+ void deleteRight( void );
+ [[nodiscard]] BinaryTree * detachLeft( void );
+ [[nodiscard]] BinaryTree * detachRight( void );
  };
-template< class T , class Pre , class In , class Post > void dfs(
-    BinaryTree< T > * t , Pre && pre , In && in , Post && post );
-template< class T , class F > void pre_visit( BinaryTree< T > * t , F && f );
-template< class T , class F > void in_visit( BinaryTree< T > * t , F && f );
-template< class T , class F > void post_visit( BinaryTree< T > * t , F && f );
-template< class T > BinaryTree< T > * copy( const BinaryTree< T > * t );
-template< class T > BinaryTree< T > * join( const T & v ,
-    const BinaryTree< T > * l , const BinaryTree< T > * r );
-template< class T > std::string to_list( const BinaryTree< T > * t );
-template< class T > BinaryTree< T > * from_list( std::string_view s );
-template< class T > BinaryTree< T > * to_binary( const Tree< T > * t );
+template< class T , class Pre , class In , class Post >
+void dfs( BinaryTree< T > * t , Pre && pre , In && in , Post && post );
+template< class T , class F >
+void pre_visit( BinaryTree< T > * t , F && f );
+template< class T , class F >
+void in_visit( BinaryTree< T > * t , F && f );
+template< class T , class F >
+void post_visit( BinaryTree< T > * t , F && f );
+template< class T >
+BinaryTree< T > * copy( const BinaryTree< T > * t );
+template< class T >
+BinaryTree< T > * join( const T & v , const BinaryTree< T > * l ,
+                        const BinaryTree< T > * r );
+template< class T >
+std::string to_list( const BinaryTree< T > * t );
+template< class T >
+BinaryTree< T > * from_list( std::string_view s );
+template< class T >
+BinaryTree< T > * to_binary( const Tree< T > * t );
 inline long dary_child( long i , long d , long j );
 inline long dary_parent( long i , long d );
-template< class T > auto preorder( BinaryTree< T > * t );
-template< class T > auto inorder( BinaryTree< T > * t );
-template< class T > auto postorder( BinaryTree< T > * t );
+template< class T >
+auto preorder( BinaryTree< T > * t );
+template< class T >
+auto inorder( BinaryTree< T > * t );
+template< class T >
+auto postorder( BinaryTree< T > * t );
 ```
 
 ```cpp
 // declarations of <ADS/tree/CursorBinaryTree.h>
-template< class T > class CursorBinaryTree {
+template< class T >
+class CursorBinaryTree
+{
  public:
-  using Item = T;
-  static constexpr int NIL = -1;
-  CursorBinaryTree( void ) = default;
-  explicit CursorBinaryTree( const T & v );
-  [[nodiscard]] bool empty( void ) const;
-  [[nodiscard]] int root( void ) const;
-  [[nodiscard]] int parent( int n ) const;
-  [[nodiscard]] int left( int n ) const;
-  [[nodiscard]] int right( int n ) const;
-  [[nodiscard]] bool isLeaf( int n ) const;
-  [[nodiscard]] const T & read( int n ) const;
-  void write( int n , const T & v );
-  [[nodiscard]] int size( void ) const;
-  int setRoot( const T & v );
-  int insertLeft( int n , const T & v );
-  int insertRight( int n , const T & v );
-  int insertLeft( int n , const CursorBinaryTree & t , int s );
-  int insertRight( int n , const CursorBinaryTree & t , int s );
-  void remove( int n );
-  [[nodiscard]] std::vector< int > preorder( void ) const;
-  [[nodiscard]] auto nodes( void ) const;
+ using Item = T;
+ static constexpr int NIL = -1;
+ CursorBinaryTree( void ) = default;
+ explicit CursorBinaryTree( const T & v );
+ [[nodiscard]] bool empty( void ) const;
+ [[nodiscard]] int root( void ) const;
+ [[nodiscard]] int parent( int n ) const;
+ [[nodiscard]] int left( int n ) const;
+ [[nodiscard]] int right( int n ) const;
+ [[nodiscard]] bool isLeaf( int n ) const;
+ [[nodiscard]] const T & read( int n ) const;
+ void write( int n , const T & v );
+ [[nodiscard]] int size( void ) const;
+ int setRoot( const T & v );
+ int insertLeft( int n , const T & v );
+ int insertRight( int n , const T & v );
+ int insertLeft( int n , const CursorBinaryTree & t , int s );
+ int insertRight( int n , const CursorBinaryTree & t , int s );
+ void remove( int n );
+ [[nodiscard]] std::vector< int > preorder( void ) const;
+ [[nodiscard]] auto nodes( void ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/ArrayBinaryTree.h>
-template< class T > class ArrayBinaryTree {
+template< class T >
+class ArrayBinaryTree
+{
  public:
-  using Item = T;
-  static constexpr long NIL = -1;
-  ArrayBinaryTree( void ) = default;
-  explicit ArrayBinaryTree( const T & v );
-  ArrayBinaryTree( const T & v , const ArrayBinaryTree & l ,
-      const ArrayBinaryTree & r );
-  [[nodiscard]] bool empty( void ) const;
-  [[nodiscard]] long root( void ) const;
-  [[nodiscard]] long parent( long i ) const;
-  [[nodiscard]] long left( long i ) const;
-  [[nodiscard]] long right( long i ) const;
-  [[nodiscard]] bool isLeaf( long i ) const;
-  [[nodiscard]] const T & read( long i ) const;
-  void write( long i , const T & v );
-  void setRoot( const T & v );
-  void insertLeft( long i , const ArrayBinaryTree & t );
-  void insertRight( long i , const ArrayBinaryTree & t );
-  void remove( long i );
-  [[nodiscard]] std::vector< long > preorder( void ) const;
-  [[nodiscard]] auto nodes( void ) const;
+ using Item = T;
+ static constexpr long NIL = -1;
+ ArrayBinaryTree( void ) = default;
+ explicit ArrayBinaryTree( const T & v );
+ ArrayBinaryTree( const T & v , const ArrayBinaryTree & l ,
+                  const ArrayBinaryTree & r );
+ [[nodiscard]] bool empty( void ) const;
+ [[nodiscard]] long root( void ) const;
+ [[nodiscard]] long parent( long i ) const;
+ [[nodiscard]] long left( long i ) const;
+ [[nodiscard]] long right( long i ) const;
+ [[nodiscard]] bool isLeaf( long i ) const;
+ [[nodiscard]] const T & read( long i ) const;
+ void write( long i , const T & v );
+ void setRoot( const T & v );
+ void insertLeft( long i , const ArrayBinaryTree & t );
+ void insertRight( long i , const ArrayBinaryTree & t );
+ void remove( long i );
+ [[nodiscard]] std::vector< long > preorder( void ) const;
+ [[nodiscard]] auto nodes( void ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/ThreadedTree.h>
-template< std::totally_ordered K > class ThreadedTree {
+template< std::totally_ordered K >
+class ThreadedTree
+{
  public:
-  ThreadedTree( void );
-  void insert( const K & k );
-  [[nodiscard]] bool contains( const K & k ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  template< class F > void forEach( F && f ) const;
-  [[nodiscard]] std::vector< K > reversed( void ) const;
-  using value_type = K;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ ThreadedTree( void );
+ void insert( const K & k );
+ [[nodiscard]] bool contains( const K & k ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ [[nodiscard]] std::vector< K > reversed( void ) const;
+ using value_type = K;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 ```
 
@@ -7602,344 +7639,387 @@ template< std::totally_ordered K > class ThreadedTree {
 // declarations of <ADS/tree/ExpressionTree.h>
 BinaryTree< std::string > * expressionTree( std::string_view e );
 double evaluate( const BinaryTree< std::string > * t ,
-    const std::map< std::string , double > & env = {} );
+                 const std::map< std::string , double > & env = {} );
 std::string prefixForm( const BinaryTree< std::string > * t );
 std::string infixForm( const BinaryTree< std::string > * t );
 ```
 
 ```cpp
 // declarations of <ADS/tree/HeapByInsertion.h>
-template< class T , class C = std::less<> > void maxHeapSiftUp(
-    std::vector< T > & A , std::size_t i , C less = C() );
-template< class T , class C = std::less<> > void heapBuildByInsertion(
-    std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void maxHeapSiftUp( std::vector< T > & A , std::size_t i , C less = C() );
+template< class T , class C = std::less<> >
+void heapBuildByInsertion( std::vector< T > & A , C less = C() );
 ```
 
 ```cpp
 // declarations of <ADS/tree/BinaryTreeAlgorithms.h>
-template< class N > concept BinaryNode = std::is_pointer_v< N > && requires(
-    N n ) { ... };
-template< class N > concept ParentBinaryNode = BinaryNode< N > && requires(
-    N n ) { ... };
-template< class N > concept KeyedBinaryNode = BinaryNode< N > && requires(
-    N n ) { ... };
-template< ParentBinaryNode N > N lowestCommonAncestor( N u , N v );
+template< class N >
+concept BinaryNode = std::is_pointer_v< N > && requires( N n )
+{ ... };
+template< class N >
+concept ParentBinaryNode = BinaryNode< N > && requires( N n )
+{ ... };
+template< class N >
+concept KeyedBinaryNode = BinaryNode< N > && requires( N n )
+{ ... };
+template< ParentBinaryNode N >
+N lowestCommonAncestor( N u , N v );
 template< KeyedBinaryNode N , KeyedBinaryNode M ,
-    class Equal = std::equal_to<> > [[nodiscard]] bool equalTrees( N t , M s ,
-    Equal eq = {} );
+          class Equal = std::equal_to<> >
+[[nodiscard]] bool equalTrees( N t , M s , Equal eq = {} );
 template< KeyedBinaryNode N , class Compare = std::less<> >
-    [[nodiscard]] bool isSearchTree( N t , Compare less = {} );
-template< BinaryNode N , class Red > [[nodiscard]] bool isRedBlackTree( N t ,
-    Red red );
+[[nodiscard]] bool isSearchTree( N t , Compare less = {} );
+template< BinaryNode N , class Red >
+[[nodiscard]] bool isRedBlackTree( N t , Red red );
 template< KeyedBinaryNode N , class K , class F , class Compare = std::less<> >
-    std::size_t searchTreeRange( N t , const K & lo , const K & hi , F && f ,
-    Compare less = {} );
-template< ParentBinaryNode N > [[nodiscard]] N nextPreorder( N u );
-template< ParentBinaryNode N > [[nodiscard]] N nextInorder( N u );
-template< ParentBinaryNode N > [[nodiscard]] N nextPostorder( N u );
-template< BinaryNode N > [[nodiscard]] N firstInorder( N u );
-template< BinaryNode N > [[nodiscard]] N firstPostorder( N u );
-template< ParentBinaryNode N > [[nodiscard]] std::size_t subtreeSize( N u );
-template< ParentBinaryNode N > [[nodiscard]] long subtreeHeight( N u );
-template< BinaryNode N > [[nodiscard]] bool isSizeBalanced( N t );
-template< BinaryNode N , class F > void orderNumbers( N t , F && f );
-template< BinaryNode N > [[nodiscard]] std::vector< bool > shapeCode( N t );
-inline BinaryTree< std::size_t > * fromShapeCode(
-    const std::vector< bool > & c , std::size_t n );
+std::size_t searchTreeRange( N t , const K & lo , const K & hi , F && f ,
+                             Compare less = {} );
+template< ParentBinaryNode N >
+[[nodiscard]] N nextPreorder( N u );
+template< ParentBinaryNode N >
+[[nodiscard]] N nextInorder( N u );
+template< ParentBinaryNode N >
+[[nodiscard]] N nextPostorder( N u );
+template< BinaryNode N >
+[[nodiscard]] N firstInorder( N u );
+template< BinaryNode N >
+[[nodiscard]] N firstPostorder( N u );
+template< ParentBinaryNode N >
+[[nodiscard]] std::size_t subtreeSize( N u );
+template< ParentBinaryNode N >
+[[nodiscard]] long subtreeHeight( N u );
+template< BinaryNode N >
+[[nodiscard]] bool isSizeBalanced( N t );
+template< BinaryNode N , class F >
+void orderNumbers( N t , F && f );
+template< BinaryNode N >
+[[nodiscard]] std::vector< bool > shapeCode( N t );
+inline BinaryTree< std::size_t > *
+fromShapeCode( const std::vector< bool > & c , std::size_t n );
 template< KeyedBinaryNode N , class K , class F , class Compare = std::less<> >
-    std::size_t lessOrEqual( N t , const K & x , F && f , Compare less = {} );
+std::size_t lessOrEqual( N t , const K & x , F && f , Compare less = {} );
 template< class T , class Make , class Compare = std::less<> >
-    auto minimumHeightSearchTree( const std::vector< T > & A , Make make ,
-    Compare less = {} ) -> std::invoke_result_t< Make & , const T & ,
-    std::nullptr_t , std::nullptr_t >;
+auto minimumHeightSearchTree( const std::vector< T > & A , Make make ,
+                              Compare less = {} )
+  -> std::invoke_result_t< Make & , const T & , std::nullptr_t ,
+                           std::nullptr_t >;
 template< class T , class Compare = std::less<> >
-    requires std::predicate< Compare & , const T & , const T & >
-    BinaryTree< T > * minimumHeightSearchTree( const std::vector< T > & A ,
-    Compare less = {} );
-template< class T > BinaryTree< T > * fromPreorderInorder(
-    const std::vector< T > & pre , const std::vector< T > & in );
+ requires std::predicate< Compare & , const T & , const T & >
+BinaryTree< T > * minimumHeightSearchTree( const std::vector< T > & A ,
+                                           Compare less = {} );
+template< class T >
+BinaryTree< T > * fromPreorderInorder( const std::vector< T > & pre ,
+                                       const std::vector< T > & in );
 template< class T , class Compare = std::less< T > >
-    BinaryTree< T > * cartesianBinaryTree( const std::vector< T > & A ,
-    Compare less = {} );
+BinaryTree< T > * cartesianBinaryTree( const std::vector< T > & A ,
+                                       Compare less = {} );
 ```
 
 ```cpp
 // declarations of <ADS/tree/SearchTree.h>
 enum class Color : unsigned char { RED , BLACK };
-struct NotJoinable {
+struct NotJoinable
+{
  public:
  };
 template< std::totally_ordered K , class V , bool RB >
-    class SearchTree : public std::conditional_t< RB ,
-    Joinable< SearchTree< K , V , RB > , SearchTreeNodes< K , V , RB > , K ,
-    V > , NotJoinable > {
+class SearchTree
+    : public std::conditional_t<
+        RB ,
+        Joinable< SearchTree< K , V , RB > , SearchTreeNodes< K , V , RB > ,
+                  K , V > ,
+        NotJoinable >
+{
  public:
-  using Key = K;
-  using Value = V;
-  SearchTree( void );
-  SearchTree( const SearchTree & o );
-  SearchTree( SearchTree && o ) noexcept;
-  SearchTree & operator=( SearchTree o ) noexcept;
-  void swap( SearchTree & o ) noexcept;
-  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
-  void insert( const K & k , const V & v );
-  void remove( const K & k );
-  [[nodiscard]] bool contains( const K & k ) const;
-  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-      const K & k ) const;
-  [[nodiscard]] const K * findKey( const K & k ) const;
-  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] bool empty( void ) const;
-  void clear( void );
-  [[nodiscard]] Link * root( void ) const;
-  [[nodiscard]] bool isNil( const Link * u ) const;
-  [[nodiscard]] static const K & key( const Link * u );
-  [[nodiscard]] static const V & value( const Link * u );
-  [[nodiscard]] Link * lookupNode( const K & x ) const;
-  [[nodiscard]] Link * lowerBoundNode( const K & x ) const;
-  [[nodiscard]] Link * min( void ) const;
-  [[nodiscard]] Link * max( void ) const;
-  [[nodiscard]] Link * successorNode( Link * t ) const;
-  template< class F > void forEach( F && f ) const;
-  [[nodiscard]] Link * predecessorNode( Link * t ) const;
-  using value_type = std::pair< const K & , const V & >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ using Key = K;
+ using Value = V;
+ SearchTree( void );
+ SearchTree( const SearchTree & o );
+ SearchTree( SearchTree && o ) noexcept;
+ SearchTree & operator=( SearchTree o ) noexcept;
+ void swap( SearchTree & o ) noexcept;
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ [[nodiscard]] bool contains( const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
+ [[nodiscard]] const K * findKey( const K & k ) const;
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] bool empty( void ) const;
+ void clear( void );
+ [[nodiscard]] Link * root( void ) const;
+ [[nodiscard]] bool isNil( const Link * u ) const;
+ [[nodiscard]] static const K & key( const Link * u );
+ [[nodiscard]] static const V & value( const Link * u );
+ [[nodiscard]] Link * lookupNode( const K & x ) const;
+ [[nodiscard]] Link * lowerBoundNode( const K & x ) const;
+ [[nodiscard]] Link * min( void ) const;
+ [[nodiscard]] Link * max( void ) const;
+ [[nodiscard]] Link * successorNode( Link * t ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ [[nodiscard]] Link * predecessorNode( Link * t ) const;
+ using value_type = std::pair< const K & , const V & >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 template< std::totally_ordered K , class V >
-    using BinarySearchTree = SearchTree< K , V , false >;
+using BinarySearchTree = SearchTree< K , V , false >;
 template< std::totally_ordered K , class V >
-    using RedBlackTree = SearchTree< K , V , true >;
+using RedBlackTree = SearchTree< K , V , true >;
 ```
 
 ```cpp
 // declarations of <ADS/tree/MeasuredSearchTree.h>
-template< std::totally_ordered K , class V > class MeasuredSearchTree {
+template< std::totally_ordered K , class V >
+class MeasuredSearchTree
+{
  public:
-  using Key = K;
-  using Value = V;
-  MeasuredSearchTree( void ) = default;
-  MeasuredSearchTree( MeasuredSearchTree && other ) noexcept;
-  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
-  void insert( const K & k , const V & v );
-  void remove( const K & k );
-  [[nodiscard]] bool contains( const K & k ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] long height( void ) const;
-  [[nodiscard]] std::optional< Measures > measures( const K & k ) const;
-  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-      const K & k ) const;
-  [[nodiscard]] const K * findKey( const K & k ) const;
-  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
-  [[nodiscard]] std::vector< std::pair< K , V > > getLE( const K & x ) const;
-  template< class F > void forEach( F && f ) const;
-  using value_type = std::pair< const K & , const V & >;
-  using const_iterator = PathIterator< MeasuredSearchTree , Shape >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ using Key = K;
+ using Value = V;
+ MeasuredSearchTree( void ) = default;
+ MeasuredSearchTree( MeasuredSearchTree && other ) noexcept;
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ [[nodiscard]] bool contains( const K & k ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] long height( void ) const;
+ [[nodiscard]] std::optional< Measures > measures( const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
+ [[nodiscard]] const K * findKey( const K & k ) const;
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+ [[nodiscard]] std::vector< std::pair< K , V > > getLE( const K & x ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ using value_type = std::pair< const K & , const V & >;
+ using const_iterator = PathIterator< MeasuredSearchTree , Shape >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/Treap.h>
 template< std::totally_ordered K , class V >
-    class Treap : public Joinable< Treap< K , V > , TreapNodes< K , V > , K ,
-    V > {
+class Treap : public Joinable< Treap< K , V > , TreapNodes< K , V > , K , V >
+{
  public:
-  using Key = K;
-  using Value = V;
-  explicit Treap( std::uint64_t seed = 1 );
-  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
-  void insert( const K & k , const V & v );
-  void remove( const K & k );
-  [[nodiscard]] bool contains( const K & k ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] int height( void ) const;
-  template< class F > void forEach( F && f ) const;
-  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-      const K & k ) const;
-  [[nodiscard]] const K * findKey( const K & k ) const;
-  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
-  [[nodiscard]] std::pair< K , V > select( std::size_t i ) const;
-  [[nodiscard]] std::size_t rank( const K & k ) const;
-  [[nodiscard]] static Treap fromSorted( const std::vector< std::pair< K ,
-      V > > & A , std::uint64_t seed = 1 );
-  using value_type = std::pair< const K & , const V & >;
-  using const_iterator = PathIterator< Treap , Shape >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ using Key = K;
+ using Value = V;
+ explicit Treap( std::uint64_t seed = 1 );
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ [[nodiscard]] bool contains( const K & k ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] int height( void ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
+ [[nodiscard]] const K * findKey( const K & k ) const;
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+ [[nodiscard]] std::pair< K , V > select( std::size_t i ) const;
+ [[nodiscard]] std::size_t rank( const K & k ) const;
+ [[nodiscard]] static Treap
+ fromSorted( const std::vector< std::pair< K , V > > & A ,
+             std::uint64_t seed = 1 );
+ using value_type = std::pair< const K & , const V & >;
+ using const_iterator = PathIterator< Treap , Shape >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/HashedTreap.h>
-template< std::totally_ordered K , class V > class HashedTreap {
+template< std::totally_ordered K , class V >
+class HashedTreap
+{
  public:
-  using Key = K;
-  using Value = V;
-  explicit HashedTreap( std::uint64_t seed = 1 );
-  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
-  void insert( const K & k , const V & v );
-  void remove( const K & k );
-  [[nodiscard]] bool contains( const K & k ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] int height( void ) const;
-  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-      const K & k ) const;
-  [[nodiscard]] const K * findKey( const K & k ) const;
-  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
-  template< class F > void forEach( F && f ) const;
-  using value_type = std::pair< const K & , const V & >;
-  using const_iterator = PathIterator< HashedTreap , Shape >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ using Key = K;
+ using Value = V;
+ explicit HashedTreap( std::uint64_t seed = 1 );
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ [[nodiscard]] bool contains( const K & k ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] int height( void ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
+ [[nodiscard]] const K * findKey( const K & k ) const;
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ using value_type = std::pair< const K & , const V & >;
+ using const_iterator = PathIterator< HashedTreap , Shape >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/FingerTreap.h>
-template< std::totally_ordered K , class V > class FingerTreap {
+template< std::totally_ordered K , class V >
+class FingerTreap
+{
  public:
-  using Key = K;
-  using Value = V;
-  explicit FingerTreap( std::uint64_t seed = 1 );
-  FingerTreap( FingerTreap && other ) noexcept;
-  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
-  [[nodiscard]] std::optional< V > fingerLookup( const K & k );
-  [[nodiscard]] std::optional< V > lookupFrom( const K & k , Finger f ) const;
-  [[nodiscard]] Finger finger( const K & k ) const;
-  void insert( const K & k , const V & v );
-  void remove( const K & k );
-  [[nodiscard]] bool contains( const K & k ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] int height( void ) const;
-  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-      const K & k ) const;
-  [[nodiscard]] const K * findKey( const K & k ) const;
-  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
-  [[nodiscard]] std::pair< K , V > select( std::size_t i ) const;
-  [[nodiscard]] std::size_t rank( const K & k ) const;
-  template< class F > void forEach( F && f ) const;
-  using value_type = std::pair< const K & , const V & >;
-  using const_iterator = PathIterator< FingerTreap , Shape >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ using Key = K;
+ using Value = V;
+ explicit FingerTreap( std::uint64_t seed = 1 );
+ FingerTreap( FingerTreap && other ) noexcept;
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+ [[nodiscard]] std::optional< V > fingerLookup( const K & k );
+ [[nodiscard]] std::optional< V > lookupFrom( const K & k , Finger f ) const;
+ [[nodiscard]] Finger finger( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ [[nodiscard]] bool contains( const K & k ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] int height( void ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
+ [[nodiscard]] const K * findKey( const K & k ) const;
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+ [[nodiscard]] std::pair< K , V > select( std::size_t i ) const;
+ [[nodiscard]] std::size_t rank( const K & k ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ using value_type = std::pair< const K & , const V & >;
+ using const_iterator = PathIterator< FingerTreap , Shape >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/RandomizedSearchTree.h>
-template< std::totally_ordered K , class V > class RandomizedSearchTree {
+template< std::totally_ordered K , class V >
+class RandomizedSearchTree
+{
  public:
-  using Key = K;
-  using Value = V;
-  explicit RandomizedSearchTree( std::uint64_t seed = 1 );
-  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
-  void insert( const K & k , const V & v );
-  void remove( const K & k );
-  [[nodiscard]] bool contains( const K & k ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] int height( void ) const;
-  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-      const K & k ) const;
-  [[nodiscard]] const K * findKey( const K & k ) const;
-  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
-  [[nodiscard]] std::pair< K , V > select( std::size_t i ) const;
-  [[nodiscard]] std::size_t rank( const K & k ) const;
-  template< class F > void forEach( F && f ) const;
-  using value_type = std::pair< const K & , const V & >;
-  using const_iterator = PathIterator< RandomizedSearchTree , Shape >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ using Key = K;
+ using Value = V;
+ explicit RandomizedSearchTree( std::uint64_t seed = 1 );
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ [[nodiscard]] bool contains( const K & k ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] int height( void ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
+ [[nodiscard]] const K * findKey( const K & k ) const;
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+ [[nodiscard]] std::pair< K , V > select( std::size_t i ) const;
+ [[nodiscard]] std::size_t rank( const K & k ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ using value_type = std::pair< const K & , const V & >;
+ using const_iterator = PathIterator< RandomizedSearchTree , Shape >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/AVLTree.h>
 template< std::totally_ordered K , class V >
-    class AVLTree : public Joinable< AVLTree< K , V > , AVLTreeNodes< K , V > ,
-    K , V > {
+class AVLTree : public Joinable< AVLTree< K , V > , AVLTreeNodes< K , V > , K ,
+                                 V >
+{
  public:
-  using Key = K;
-  using Value = V;
-  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
-  void insert( const K & k , const V & v );
-  void remove( const K & k );
-  [[nodiscard]] bool contains( const K & k ) const;
-  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-      const K & k ) const;
-  [[nodiscard]] const K * findKey( const K & k ) const;
-  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] bool empty( void ) const;
-  [[nodiscard]] int height( void ) const;
-  template< class F > void forEach( F && f ) const;
-  [[nodiscard]] std::pair< std::size_t , std::size_t > rebalancings(
-      void ) const;
-  using value_type = std::pair< const K & , const V & >;
-  using const_iterator = PathIterator< AVLTree , Shape >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ using Key = K;
+ using Value = V;
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ [[nodiscard]] bool contains( const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
+ [[nodiscard]] const K * findKey( const K & k ) const;
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] bool empty( void ) const;
+ [[nodiscard]] int height( void ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ rebalancings( void ) const;
+ using value_type = std::pair< const K & , const V & >;
+ using const_iterator = PathIterator< AVLTree , Shape >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/SplayTree.h>
-template< std::totally_ordered K , class V > class SplayTree {
+template< std::totally_ordered K , class V >
+class SplayTree
+{
  public:
-  using Key = K;
-  using Value = V;
-  SplayTree( void ) = default;
-  SplayTree( SplayTree && other ) noexcept;
-  [[nodiscard]] std::optional< V > lookup( const K & k );
-  void insert( const K & k , const V & v );
-  void remove( const K & k );
-  [[nodiscard]] bool contains( const K & k );
-  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound( const K & k );
-  [[nodiscard]] const K * findKey( const K & k );
-  [[nodiscard]] const K * lowerBoundKey( const K & k );
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] std::optional< K > root( void ) const;
-  template< class F > void forEach( F && f ) const;
-  using value_type = std::pair< const K & , const V & >;
-  using const_iterator = PathIterator< SplayTree , Shape >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ using Key = K;
+ using Value = V;
+ SplayTree( void ) = default;
+ SplayTree( SplayTree && other ) noexcept;
+ [[nodiscard]] std::optional< V > lookup( const K & k );
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ [[nodiscard]] bool contains( const K & k );
+ [[nodiscard]] std::optional< std::pair< K , V > > lowerBound( const K & k );
+ [[nodiscard]] const K * findKey( const K & k );
+ [[nodiscard]] const K * lowerBoundKey( const K & k );
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] std::optional< K > root( void ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ using value_type = std::pair< const K & , const V & >;
+ using const_iterator = PathIterator< SplayTree , Shape >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/ScapegoatTree.h>
 template< std::totally_ordered K , class V , bool StoredSizes = false >
-    class ScapegoatTree {
+class ScapegoatTree
+{
  public:
-  using Key = K;
-  using Value = V;
-  enum class Sizes { RECOMPUTE , REUSE };
-  enum class Scapegoats { HEIGHT , WEIGHT };
-  enum class Rebuilds { ARRAY , LIST };
-  explicit ScapegoatTree( double b = 1.5 , Sizes sizes = Sizes::REUSE ,
-      Rebuilds rebuilds = Rebuilds::ARRAY ,
-      Scapegoats scapegoats = Scapegoats::HEIGHT );
-  ScapegoatTree( ScapegoatTree && other ) noexcept;
-  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
-  void insert( const K & k , const V & v );
-  void remove( const K & k );
-  [[nodiscard]] bool contains( const K & k ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] long height( void ) const;
-  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-      const K & k ) const;
-  [[nodiscard]] const K * findKey( const K & k ) const;
-  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
-  template< class F > void forEach( F && f ) const;
-  [[nodiscard]] std::size_t rebuilds( void ) const;
-  [[nodiscard]] std::size_t rebuiltNodes( void ) const;
-  using value_type = std::pair< const K & , const V & >;
-  using const_iterator = PathIterator< ScapegoatTree , Shape >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ using Key = K;
+ using Value = V;
+ enum class Sizes { RECOMPUTE , REUSE };
+ enum class Scapegoats { HEIGHT , WEIGHT };
+ enum class Rebuilds { ARRAY , LIST };
+ explicit ScapegoatTree( double b = 1.5 , Sizes sizes = Sizes::REUSE ,
+                         Rebuilds rebuilds = Rebuilds::ARRAY ,
+                         Scapegoats scapegoats = Scapegoats::HEIGHT );
+ ScapegoatTree( ScapegoatTree && other ) noexcept;
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ [[nodiscard]] bool contains( const K & k ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] long height( void ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
+ [[nodiscard]] const K * findKey( const K & k ) const;
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ [[nodiscard]] std::size_t rebuilds( void ) const;
+ [[nodiscard]] std::size_t rebuiltNodes( void ) const;
+ using value_type = std::pair< const K & , const V & >;
+ using const_iterator = PathIterator< ScapegoatTree , Shape >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 ```
 
@@ -7947,449 +8027,517 @@ template< std::totally_ordered K , class V , bool StoredSizes = false >
 // declarations of <ADS/tree/PartialRebuildingTree.h>
 enum class RebuildPolicy { WEIGHT , COUNTDOWN , DYNAMITE };
 template< std::totally_ordered K , class V , RebuildPolicy P >
-    class PartialRebuildingTree {
+class PartialRebuildingTree
+{
  public:
-  using Key = K;
-  using Value = V;
-  explicit PartialRebuildingTree( std::uint64_t seed = 1 );
-  PartialRebuildingTree( PartialRebuildingTree && other ) noexcept;
-  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
-  void insert( const K & k , const V & v );
-  void remove( const K & k );
-  [[nodiscard]] bool contains( const K & k ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] long height( void ) const;
-  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-      const K & k ) const;
-  [[nodiscard]] const K * findKey( const K & k ) const;
-  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
-  template< class F > void forEach( F && f ) const;
-  [[nodiscard]] std::size_t rebuilds( void ) const;
-  [[nodiscard]] std::size_t rebuiltNodes( void ) const;
-  using value_type = std::pair< const K & , const V & >;
-  using const_iterator = PathIterator< PartialRebuildingTree , Shape >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ using Key = K;
+ using Value = V;
+ explicit PartialRebuildingTree( std::uint64_t seed = 1 );
+ PartialRebuildingTree( PartialRebuildingTree && other ) noexcept;
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ [[nodiscard]] bool contains( const K & k ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] long height( void ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
+ [[nodiscard]] const K * findKey( const K & k ) const;
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ [[nodiscard]] std::size_t rebuilds( void ) const;
+ [[nodiscard]] std::size_t rebuiltNodes( void ) const;
+ using value_type = std::pair< const K & , const V & >;
+ using const_iterator = PathIterator< PartialRebuildingTree , Shape >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 template< std::totally_ordered K , class V >
-    using WeightRebuildTree = PartialRebuildingTree< K , V ,
-    RebuildPolicy::WEIGHT >;
+using WeightRebuildTree = PartialRebuildingTree< K , V ,
+                                                 RebuildPolicy::WEIGHT >;
 template< std::totally_ordered K , class V >
-    using CountdownTree = PartialRebuildingTree< K , V ,
-    RebuildPolicy::COUNTDOWN >;
+using CountdownTree = PartialRebuildingTree< K , V ,
+                                             RebuildPolicy::COUNTDOWN >;
 template< std::totally_ordered K , class V >
-    using DynamiteTree = PartialRebuildingTree< K , V ,
-    RebuildPolicy::DYNAMITE >;
+using DynamiteTree = PartialRebuildingTree< K , V , RebuildPolicy::DYNAMITE >;
 ```
 
 ```cpp
 // declarations of <ADS/tree/LeftLeaningRedBlackTree.h>
-template< std::totally_ordered K , class V > class LeftLeaningRedBlackTree {
+template< std::totally_ordered K , class V >
+class LeftLeaningRedBlackTree
+{
  public:
-  using Key = K;
-  using Value = V;
-  LeftLeaningRedBlackTree( void ) = default;
-  LeftLeaningRedBlackTree( LeftLeaningRedBlackTree && other ) noexcept;
-  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
-  void insert( const K & k , const V & v );
-  void remove( const K & k );
-  [[nodiscard]] bool contains( const K & k ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] long height( void ) const;
-  [[nodiscard]] long blackHeight( void ) const;
-  [[nodiscard]] std::array< std::size_t , 3 > twoFourDegrees( void ) const;
-  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-      const K & k ) const;
-  [[nodiscard]] const K * findKey( const K & k ) const;
-  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
-  void absorb( LeftLeaningRedBlackTree & t );
-  template< class F > void forEach( F && f ) const;
-  using value_type = std::pair< const K & , const V & >;
-  using const_iterator = PathIterator< LeftLeaningRedBlackTree , Shape >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ using Key = K;
+ using Value = V;
+ LeftLeaningRedBlackTree( void ) = default;
+ LeftLeaningRedBlackTree( LeftLeaningRedBlackTree && other ) noexcept;
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ [[nodiscard]] bool contains( const K & k ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] long height( void ) const;
+ [[nodiscard]] long blackHeight( void ) const;
+ [[nodiscard]] std::array< std::size_t , 3 > twoFourDegrees( void ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
+ [[nodiscard]] const K * findKey( const K & k ) const;
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+ void absorb( LeftLeaningRedBlackTree & t );
+ template< class F >
+ void forEach( F && f ) const;
+ using value_type = std::pair< const K & , const V & >;
+ using const_iterator = PathIterator< LeftLeaningRedBlackTree , Shape >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/BTree.h>
-template< std::totally_ordered K , class V > class BTree {
+template< std::totally_ordered K , class V >
+class BTree
+{
  public:
-  using Key = K;
-  using Value = V;
-  explicit BTree( int t = 3 );
-  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
-  void insert( const K & k , const V & v );
-  void remove( const K & k );
-  [[nodiscard]] bool contains( const K & k ) const;
-  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-      const K & k ) const;
-  [[nodiscard]] const K * findKey( const K & k ) const;
-  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] bool empty( void ) const;
-  [[nodiscard]] int height( void ) const;
-  [[nodiscard]] std::vector< std::vector< std::vector< K > > > levels(
-      void ) const;
-  template< class F > void forEach( F && f ) const;
-  using value_type = std::pair< const K & , const V & >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ using Key = K;
+ using Value = V;
+ explicit BTree( int t = 3 );
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ [[nodiscard]] bool contains( const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
+ [[nodiscard]] const K * findKey( const K & k ) const;
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] bool empty( void ) const;
+ [[nodiscard]] int height( void ) const;
+ [[nodiscard]] std::vector< std::vector< std::vector< K > > >
+ levels( void ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ using value_type = std::pair< const K & , const V & >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/BPlusTree.h>
-template< std::totally_ordered K , class V > class BPlusTree {
+template< std::totally_ordered K , class V >
+class BPlusTree
+{
  public:
-  using Key = K;
-  using Value = V;
-  explicit BPlusTree( int m );
-  [[nodiscard]] std::optional< V > lookup( const K & x ) const;
-  void insert( const K & x , const V & v );
-  void remove( const K & x );
-  [[nodiscard]] bool contains( const K & x ) const;
-  [[nodiscard]] const K * lowerBound( const K & x ) const;
-  [[nodiscard]] const K * findKey( const K & k ) const;
-  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
-  [[nodiscard]] std::vector< std::pair< K , V > > findRange( const K & x ,
-      const K & y ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] int order( void ) const;
-  [[nodiscard]] std::vector< std::pair< K , V > > range( const K & A ,
-      const K & B ) const;
-  [[nodiscard]] std::vector< std::vector< std::vector< K > > > levels(
-      void ) const;
-  void check( void ) const;
-  using value_type = std::pair< const K & , const V & >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ using Key = K;
+ using Value = V;
+ explicit BPlusTree( int m );
+ [[nodiscard]] std::optional< V > lookup( const K & x ) const;
+ void insert( const K & x , const V & v );
+ void remove( const K & x );
+ [[nodiscard]] bool contains( const K & x ) const;
+ [[nodiscard]] const K * lowerBound( const K & x ) const;
+ [[nodiscard]] const K * findKey( const K & k ) const;
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+ [[nodiscard]] std::vector< std::pair< K , V > > findRange( const K & x ,
+                                                           const K & y ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] int order( void ) const;
+ [[nodiscard]] std::vector< std::pair< K , V > > range( const K & A ,
+                                                       const K & B ) const;
+ [[nodiscard]] std::vector< std::vector< std::vector< K > > >
+ levels( void ) const;
+ void check( void ) const;
+ using value_type = std::pair< const K & , const V & >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/BTreeMap.h>
 template< class K , class V , class Less = std::less< K > ,
-    std::size_t B = 512 , bool R = false >
-    requires std::default_initializable< K > && std::default_initializable< V >
-    class BTreeMap {
+          std::size_t B = 512 ,
+          bool R = false >
+ requires std::default_initializable< K > && std::default_initializable< V >
+class BTreeMap
+{
  public:
-  using Key = K;
-  using Value = V;
-  static constexpr std::size_t L = std::clamp< std::size_t >( B / ( sizeof(
-      K ) + sizeof( V ) ) , 4 , 255 );
-  static constexpr std::size_t I = std::clamp< std::size_t >( B / ( sizeof(
-      K ) + sizeof( void * ) ) , 4 , 255 );
-  explicit BTreeMap( Less less = Less() );
-  BTreeMap( const BTreeMap & o );
-  BTreeMap( BTreeMap && o ) noexcept;
-  BTreeMap & operator=( BTreeMap o ) noexcept;
-  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
-  [[nodiscard]] const V * find( const K & k ) const;
-  [[nodiscard]] V * find( const K & k );
-  bool insert( const K & k , const V & v );
-  bool remove( const K & k );
-  [[nodiscard]] bool contains( const K & k ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] bool empty( void ) const;
-  [[nodiscard]] int height( void ) const;
-  void clear( void );
-  template< std::input_iterator It > void build( It first , It last );
-  template< class F > void forEach( F && f ) const;
-  template< class F > void forRange( const K & lo , const K & hi ,
-      F && f ) const;
-  void swap( BTreeMap & o ) noexcept;
-  class const_iterator;
-  using value_type = std::pair< const K & , const V & >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
-  [[nodiscard]] const_iterator lowerBound( const K & k ) const;
-  [[nodiscard]] const K * findKey( const K & k ) const;
-  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
-  [[nodiscard]] const_iterator upperBound( const K & k ) const;
-  const_iterator erase( const_iterator it );
-  [[nodiscard]] std::size_t rank( const K & k ) const requires R;
-  [[nodiscard]] const_iterator select( std::size_t i ) const requires R;
+ using Key = K;
+ using Value = V;
+ static constexpr std::size_t L =
+   std::clamp< std::size_t >( B / ( sizeof( K ) + sizeof( V ) ) , 4 , 255 );
+ static constexpr std::size_t I =
+   std::clamp< std::size_t >( B / ( sizeof( K ) + sizeof( void * ) ) , 4 ,
+                              255 );
+ explicit BTreeMap( Less less = Less() );
+ BTreeMap( const BTreeMap & o );
+ BTreeMap( BTreeMap && o ) noexcept;
+ BTreeMap & operator=( BTreeMap o ) noexcept;
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+ [[nodiscard]] const V * find( const K & k ) const;
+ [[nodiscard]] V * find( const K & k );
+ bool insert( const K & k , const V & v );
+ bool remove( const K & k );
+ [[nodiscard]] bool contains( const K & k ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] bool empty( void ) const;
+ [[nodiscard]] int height( void ) const;
+ void clear( void );
+ template< std::input_iterator It >
+ void build( It first , It last );
+ template< class F >
+ void forEach( F && f ) const;
+ template< class F >
+ void forRange( const K & lo , const K & hi , F && f ) const;
+ void swap( BTreeMap & o ) noexcept;
+ class const_iterator;
+ using value_type = std::pair< const K & , const V & >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
+ [[nodiscard]] const_iterator lowerBound( const K & k ) const;
+ [[nodiscard]] const K * findKey( const K & k ) const;
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+ [[nodiscard]] const_iterator upperBound( const K & k ) const;
+ const_iterator erase( const_iterator it );
+ [[nodiscard]] std::size_t rank( const K & k ) const
+  requires R;
+ [[nodiscard]] const_iterator select( std::size_t i ) const
+  requires R;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/JoinAlgorithms.h>
 inline constexpr std::size_t kJoinGrain = 2048;
-template< class A > concept JoinAdaptor = requires( typename A::Node * t ,
-    typename A::Node * & l , const typename A::Key & k ,
-    typename A::Rank r ) { ... };
-template< class A > struct AVLJoin {
+template< class A >
+concept JoinAdaptor =
+  requires( typename A::Node * t , typename A::Node *& l ,
+            const typename A::Key & k , typename A::Rank r )
+{ ... };
+template< class A >
+struct AVLJoin
+{
  public:
-  using Node = typename A::Node;
-  static Node * join( Node * l , Node * m , Node * r );
-  static Node * joinRight( Node * l , Node * m , Node * r );
-  static Node * joinLeft( Node * l , Node * m , Node * r );
+ using Node = typename A::Node;
+ static Node * join( Node * l , Node * m , Node * r );
+ static Node * joinRight( Node * l , Node * m , Node * r );
+ static Node * joinLeft( Node * l , Node * m , Node * r );
  };
-template< class A > struct RedBlackJoin {
+template< class A >
+struct RedBlackJoin
+{
  public:
-  using Node = typename A::Node;
-  static std::pair< Node * , int > join( Node * l , int bl , Node * m ,
-      Node * r , int br );
-  static Node * joinRight( Node * l , int bl , Node * m , Node * r , int br );
-  static Node * joinLeft( Node * l , int bl , Node * m , Node * r , int br );
+ using Node = typename A::Node;
+ static std::pair< Node * , int > join( Node * l , int bl , Node * m ,
+                                        Node * r ,
+                                       int br );
+ static Node * joinRight( Node * l , int bl , Node * m , Node * r , int br );
+ static Node * joinLeft( Node * l , int bl , Node * m , Node * r , int br );
  };
-template< class A > struct WeightBalancedJoin {
+template< class A >
+struct WeightBalancedJoin
+{
  public:
-  using Node = typename A::Node;
-  static constexpr std::size_t kAlphaNum = 29;
-  static constexpr std::size_t kAlphaDen = 100;
-  static Node * join( Node * l , Node * m , Node * r );
-  static Node * joinRight( Node * l , Node * m , Node * r );
-  static Node * joinLeft( Node * l , Node * m , Node * r );
-  static bool like( std::size_t a , std::size_t b );
-  static std::size_t weight( const Node * t );
+ using Node = typename A::Node;
+ static constexpr std::size_t kAlphaNum = 29;
+ static constexpr std::size_t kAlphaDen = 100;
+ static Node * join( Node * l , Node * m , Node * r );
+ static Node * joinRight( Node * l , Node * m , Node * r );
+ static Node * joinLeft( Node * l , Node * m , Node * r );
+ static bool like( std::size_t a , std::size_t b );
+ static std::size_t weight( const Node * t );
  };
-template< class A > struct TreapJoin {
+template< class A >
+struct TreapJoin
+{
  public:
-  using Node = typename A::Node;
-  static Node * join( Node * l , Node * m , Node * r );
+ using Node = typename A::Node;
+ static Node * join( Node * l , Node * m , Node * r );
  };
-template< JoinAdaptor A > struct JoinAlgorithms {
+template< JoinAdaptor A >
+struct JoinAlgorithms
+{
  public:
-  using Node = typename A::Node;
-  using Key = typename A::Key;
-  using Value = typename A::Value;
-  using Rank = typename A::Rank;
-  [[nodiscard]] static Tree empty( void );
-  [[nodiscard]] static Tree whole( Node * t );
-  [[nodiscard]] static Exposed expose( Tree x );
-  [[nodiscard]] static Tree join( Tree l , Node * m , Tree r );
-  static Node * split( Tree x , const Key & k , Tree & l , Tree & r );
-  static Node * splitLast( Tree x , Tree & rest );
-  [[nodiscard]] static Tree join2( Tree l , Tree r );
-  [[nodiscard]] static Tree insert( Tree x , Node * n , bool & fresh );
-  [[nodiscard]] static Tree remove( Tree x , const Key & k , bool & gone );
-  template< Executor E , class F > [[nodiscard]] static Tree unite( E & ex ,
-      Tree a , Tree b , const F & f );
-  template< Executor E , class F > [[nodiscard]] static Tree intersect(
-      E & ex , Tree a , Tree b , const F & f );
-  template< Executor E > [[nodiscard]] static Tree subtract( E & ex , Tree a ,
-      Tree b );
-  template< Executor E > [[nodiscard]] static Tree build( E & ex ,
-      Node * const * N , std::size_t n );
-  template< Executor E , class F > [[nodiscard]] static Tree multiInsert(
-      E & ex , Tree x , Node * const * N , std::size_t n , const F & f );
-  template< Executor E > [[nodiscard]] static Tree multiRemove( E & ex ,
-      Tree x , const Key * K , std::size_t n , std::size_t & gone );
-  template< Executor E , class P > [[nodiscard]] static Tree filter( E & ex ,
-      Tree x , const P & p );
-  template< Executor E , class M , class R , class U >
-      [[nodiscard]] static U mapReduce( E & ex , Node * t , const M & map ,
-      const R & reduce , const U & id );
-  [[nodiscard]] static Tree extract( Tree & x , const Key & lo ,
-      const Key & hi );
-  [[nodiscard]] static const Key & firstKey( Node * t );
-  [[nodiscard]] static const Key & lastKey( Node * t );
+ using Node = typename A::Node;
+ using Key = typename A::Key;
+ using Value = typename A::Value;
+ using Rank = typename A::Rank;
+ [[nodiscard]] static Tree empty( void );
+ [[nodiscard]] static Tree whole( Node * t );
+ [[nodiscard]] static Exposed expose( Tree x );
+ [[nodiscard]] static Tree join( Tree l , Node * m , Tree r );
+ static Node * split( Tree x , const Key & k , Tree & l , Tree & r );
+ static Node * splitLast( Tree x , Tree & rest );
+ [[nodiscard]] static Tree join2( Tree l , Tree r );
+ [[nodiscard]] static Tree insert( Tree x , Node * n , bool & fresh );
+ [[nodiscard]] static Tree remove( Tree x , const Key & k , bool & gone );
+ template< Executor E , class F >
+ [[nodiscard]] static Tree unite( E & ex , Tree a , Tree b , const F & f );
+ template< Executor E , class F >
+ [[nodiscard]] static Tree intersect( E & ex , Tree a , Tree b , const F & f );
+ template< Executor E >
+ [[nodiscard]] static Tree subtract( E & ex , Tree a , Tree b );
+ template< Executor E >
+ [[nodiscard]] static Tree build( E & ex , Node * const * N , std::size_t n );
+ template< Executor E , class F >
+ [[nodiscard]] static Tree multiInsert( E & ex , Tree x , Node * const * N ,
+                                        std::size_t n , const F & f );
+ template< Executor E >
+ [[nodiscard]] static Tree multiRemove( E & ex , Tree x , const Key * K ,
+                                        std::size_t n , std::size_t & gone );
+ template< Executor E , class P >
+ [[nodiscard]] static Tree filter( E & ex , Tree x , const P & p );
+ template< Executor E , class M , class R , class U >
+ [[nodiscard]] static U mapReduce( E & ex , Node * t , const M & map ,
+                                   const R & reduce , const U & id );
+ [[nodiscard]] static Tree extract( Tree & x , const Key & lo ,
+                                    const Key & hi );
+ [[nodiscard]] static const Key & firstKey( Node * t );
+ [[nodiscard]] static const Key & lastKey( Node * t );
  };
-struct TakeSecond {
+struct TakeSecond
+{
  public:
-  template< class V > V operator()( const V & , const V & b ) const;
+ template< class V >
+ V operator()( const V & , const V & b ) const;
  };
-struct TakeFirst {
+struct TakeFirst
+{
  public:
-  template< class V > V operator()( const V & a , const V & ) const;
+ template< class V >
+ V operator()( const V & a , const V & ) const;
  };
-template< class T , class A , class Key , class Value > class Joinable {
+template< class T , class A , class Key , class Value >
+class Joinable
+{
  public:
-  [[nodiscard]] std::tuple< T , std::optional< Value > , T > split(
-      const Key & k ) &&;
-  [[nodiscard]] static T join( T && l , const Key & k , const Value & v ,
-      T && r );
-  [[nodiscard]] static T join2( T && l , T && r );
-  [[nodiscard]] T extractRange( const Key & lo , const Key & hi );
-  template< class F = TakeSecond > void unionWith( T && o , F f = F() );
-  template< Executor E , class F = TakeSecond > void unionWith( E & ex ,
-      T && o , F f = F() );
-  template< class F = TakeFirst > void intersectWith( T && o , F f = F() );
-  template< Executor E , class F = TakeFirst > void intersectWith( E & ex ,
-      T && o , F f = F() );
-  void differenceWith( T && o );
-  template< Executor E > void differenceWith( E & ex , T && o );
-  template< class F = TakeSecond > void multiInsert(
-      std::span< const std::pair< Key , Value > > B , F f = F() );
-  template< Executor E , class F = TakeSecond > void multiInsert( E & ex ,
-      std::span< const std::pair< Key , Value > > B , F f = F() );
-  void multiRemove( std::span< const Key > B );
-  template< Executor E > void multiRemove( E & ex , std::span< const Key > B );
-  template< class P > void filter( P p );
-  template< Executor E , class P > void filter( E & ex , P p );
-  template< class M , class R , class U > [[nodiscard]] U mapReduce( M map ,
-      R reduce , U id ) const;
-  template< Executor E , class M , class R , class U >
-      [[nodiscard]] U mapReduce( E & ex , M map , R reduce , U id ) const;
+ [[nodiscard]] std::tuple< T , std::optional< Value > , T >
+ split( const Key & k ) &&;
+ [[nodiscard]] static T join( T && l , const Key & k , const Value & v ,
+                              T && r );
+ [[nodiscard]] static T join2( T && l , T && r );
+ [[nodiscard]] T extractRange( const Key & lo , const Key & hi );
+ template< class F = TakeSecond >
+ void unionWith( T && o , F f = F() );
+ template< Executor E , class F = TakeSecond >
+ void unionWith( E & ex , T && o , F f = F() );
+ template< class F = TakeFirst >
+ void intersectWith( T && o , F f = F() );
+ template< Executor E , class F = TakeFirst >
+ void intersectWith( E & ex , T && o , F f = F() );
+ void differenceWith( T && o );
+ template< Executor E >
+ void differenceWith( E & ex , T && o );
+ template< class F = TakeSecond >
+ void multiInsert( std::span< const std::pair< Key , Value > > B , F f = F() );
+ template< Executor E , class F = TakeSecond >
+ void multiInsert( E & ex , std::span< const std::pair< Key , Value > > B ,
+                   F f = F() );
+ void multiRemove( std::span< const Key > B );
+ template< Executor E >
+ void multiRemove( E & ex , std::span< const Key > B );
+ template< class P >
+ void filter( P p );
+ template< Executor E , class P >
+ void filter( E & ex , P p );
+ template< class M , class R , class U >
+ [[nodiscard]] U mapReduce( M map , R reduce , U id ) const;
+ template< Executor E , class M , class R , class U >
+ [[nodiscard]] U mapReduce( E & ex , M map , R reduce , U id ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/JoinTree.h>
-struct AVLBalance {
+struct AVLBalance
+{
  public:
  };
-struct RedBlackBalance {
+struct RedBlackBalance
+{
  public:
  };
-struct WeightBalance {
+struct WeightBalance
+{
  public:
  };
-struct TreapBalance {
+struct TreapBalance
+{
  public:
  };
-template< class G , class K , class V > concept Augmentation = requires(
-    const K & k , const V & v , const typename G::Value & a ) { ... };
-struct NoAugmentation {
+template< class G , class K , class V >
+concept Augmentation =
+  requires( const K & k , const V & v , const typename G::Value & a )
+{ ... };
+struct NoAugmentation
+{
  public:
-  static Value identity( void );
-  template< class K , class V > static Value from( const K & , const V & );
-  static Value combine( const Value & , const Value & );
+ static Value identity( void );
+ template< class K , class V >
+ static Value from( const K & , const V & );
+ static Value combine( const Value & , const Value & );
  };
-template< class V > struct SumAugmentation {
+template< class V >
+struct SumAugmentation
+{
  public:
-  using Value = V;
-  static constexpr bool commutative = true;
-  static Value identity( void );
-  template< class K > static Value from( const K & , const V & v );
-  static Value combine( const Value & a , const Value & b );
-  static Value inverse( const Value & a ) requires requires { -a; };
+ using Value = V;
+ static constexpr bool commutative = true;
+ static Value identity( void );
+ template< class K >
+ static Value from( const K & , const V & v );
+ static Value combine( const Value & a , const Value & b );
+ static Value inverse( const Value & a )
+  requires requires { -a; };
  };
-template< class V > struct MaxAugmentation {
+template< class V >
+struct MaxAugmentation
+{
  public:
-  using Value = V;
-  static constexpr bool commutative = true;
-  static constexpr bool selective = true;
-  static Value identity( void );
-  template< class K > static Value from( const K & , const V & v );
-  static Value combine( const Value & a , const Value & b );
+ using Value = V;
+ static constexpr bool commutative = true;
+ static constexpr bool selective = true;
+ static Value identity( void );
+ template< class K >
+ static Value from( const K & , const V & v );
+ static Value combine( const Value & a , const Value & b );
  };
-template< std::totally_ordered K , class V , class B , class G ,
-    class Policy > requires Augmentation< G , K , V >
-    class JoinTree : public Joinable< JoinTree< K , V , B , G , Policy > ,
-    JoinTreeNodes< K , V , B , G , Policy > , K , V > {
+template< std::totally_ordered K , class V , class B , class G , class Policy >
+ requires Augmentation< G , K , V >
+class JoinTree : public Joinable< JoinTree< K , V , B , G , Policy > ,
+                                  JoinTreeNodes< K , V , B , G , Policy > , K ,
+                                  V >
+{
  public:
-  using Key = K;
-  using Value = V;
-  using AugValue = typename G::Value;
-  using Augmented = G;
-  using Inserted = mod::Inserted< K , K , V >;
-  using Erased = mod::Erased< K , K , V >;
-  using Assigned = mod::Assigned< K , V >;
-  using modifications = mod::list< Inserted , Erased , Assigned ,
-      mod::Cleared , mod::Rebuilt >;
-  using Subject = typename Policy::template bind< modifications ,
-      JoinTree >;
-  explicit JoinTree( std::uint64_t seed = 1 )
-      requires detail::unbound_v< Policy >;
-  template< class ... O > requires( sizeof...( O ) > 0 )
-      JoinTree( std::uint64_t seed , O & ... o );
-  JoinTree( const JoinTree & o );
-  JoinTree( JoinTree && o ) noexcept requires detail::unbound_v< Policy >;
-  JoinTree & operator=( JoinTree o ) noexcept
-      requires detail::unbound_v< Policy >;
-  void swap( JoinTree & o ) noexcept;
-  [[nodiscard]] Subject & subject( void );
-  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
-  void insert( const K & k , const V & v );
-  void remove( const K & k );
-  bool assign( const K & k , const V & v );
-  [[nodiscard]] bool contains( const K & k ) const;
-  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-      const K & k ) const;
-  [[nodiscard]] const K * findKey( const K & k ) const;
-  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
-  [[nodiscard]] std::size_t size( void ) const;
-  [[nodiscard]] bool empty( void ) const;
-  void clear( void );
-  [[nodiscard]] int height( void ) const;
-  template< class F > void forEach( F && f ) const;
-  [[nodiscard]] AugValue augValue( void ) const;
-  [[nodiscard]] AugValue augRange( const K & lo , const K & hi ) const;
-  [[nodiscard]] AugValue augPrefix( const K & k ) const;
-  template< class F > void augVisit( const K & lo , const K & hi ,
-      F && f ) const;
-  template< class P > [[nodiscard]] std::optional< std::pair< K , V > >
-      augSelect( P && p ) const;
-  template< class Q , class F > void augFilter( Q && q , F && f ) const;
-  [[nodiscard]] const Node * root( void ) const;
-  using value_type = std::pair< const K & , const V & >;
-  using const_iterator = PathIterator< JoinTree , Shape >;
-  [[nodiscard]] const_iterator begin( void ) const;
-  [[nodiscard]] const_iterator end( void ) const;
+ using Key = K;
+ using Value = V;
+ using AugValue = typename G::Value;
+ using Augmented = G;
+ using Inserted = mod::Inserted< K , K , V >;
+ using Erased = mod::Erased< K , K , V >;
+ using Assigned = mod::Assigned< K , V >;
+ using modifications =
+   mod::list< Inserted , Erased , Assigned , mod::Cleared , mod::Rebuilt >;
+ using Subject = typename Policy::template bind< modifications , JoinTree >;
+ explicit JoinTree( std::uint64_t seed = 1 )
+  requires detail::unbound_v< Policy >;
+ template< class... O >
+  requires( sizeof...( O ) > 0 )
+ JoinTree( std::uint64_t seed , O &... o );
+ JoinTree( const JoinTree & o );
+ JoinTree( JoinTree && o ) noexcept
+  requires detail::unbound_v< Policy >;
+ JoinTree & operator=( JoinTree o ) noexcept
+  requires detail::unbound_v< Policy >;
+ void swap( JoinTree & o ) noexcept;
+ [[nodiscard]] Subject & subject( void );
+ [[nodiscard]] std::optional< V > lookup( const K & k ) const;
+ void insert( const K & k , const V & v );
+ void remove( const K & k );
+ bool assign( const K & k , const V & v );
+ [[nodiscard]] bool contains( const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
+ [[nodiscard]] const K * findKey( const K & k ) const;
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+ [[nodiscard]] std::size_t size( void ) const;
+ [[nodiscard]] bool empty( void ) const;
+ void clear( void );
+ [[nodiscard]] int height( void ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ [[nodiscard]] AugValue augValue( void ) const;
+ [[nodiscard]] AugValue augRange( const K & lo , const K & hi ) const;
+ [[nodiscard]] AugValue augPrefix( const K & k ) const;
+ template< class F >
+ void augVisit( const K & lo , const K & hi , F && f ) const;
+ template< class P >
+ [[nodiscard]] std::optional< std::pair< K , V > > augSelect( P && p ) const;
+ template< class Q , class F >
+ void augFilter( Q && q , F && f ) const;
+ [[nodiscard]] const Node * root( void ) const;
+ using value_type = std::pair< const K & , const V & >;
+ using const_iterator = PathIterator< JoinTree , Shape >;
+ [[nodiscard]] const_iterator begin( void ) const;
+ [[nodiscard]] const_iterator end( void ) const;
  };
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-    class Policy = NoObservers >
-    using JoinAVLTree = JoinTree< K , V , AVLBalance , G , Policy >;
+          class Policy = NoObservers >
+using JoinAVLTree = JoinTree< K , V , AVLBalance , G , Policy >;
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-    class Policy = NoObservers >
-    using JoinRedBlackTree = JoinTree< K , V , RedBlackBalance , G ,
-    Policy >;
+          class Policy = NoObservers >
+using JoinRedBlackTree = JoinTree< K , V , RedBlackBalance , G , Policy >;
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-    class Policy = NoObservers >
-    using WeightBalancedTree = JoinTree< K , V , WeightBalance , G ,
-    Policy >;
+          class Policy = NoObservers >
+using WeightBalancedTree = JoinTree< K , V , WeightBalance , G , Policy >;
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-    class Policy = NoObservers >
-    using JoinTreap = JoinTree< K , V , TreapBalance , G , Policy >;
+          class Policy = NoObservers >
+using JoinTreap = JoinTree< K , V , TreapBalance , G , Policy >;
 template< std::totally_ordered K , class V , class G ,
-    class Policy = NoObservers >
-    using AugmentedMap = JoinTree< K , V , WeightBalance , G , Policy >;
+          class Policy = NoObservers >
+using AugmentedMap = JoinTree< K , V , WeightBalance , G , Policy >;
 ```
 
 ```cpp
 // declarations of <ADS/tree/MaterializedAggregate.h>
 template< class G , std::size_t Period = 1024 >
-    requires CommutativeMonoid< G >
-    class MaterializedAggregate {
+ requires CommutativeMonoid< G >
+class MaterializedAggregate
+{
  public:
-  using Value = typename G::Value;
-  enum class Kind { Group , Selective , Monoid };
-  static constexpr Kind kind = AbelianGroup< G > ? Kind::Group
-      : ( Selective< G > && std::equality_comparable< Value > )
-      ? Kind::Selective : Kind::Monoid;
-  MaterializedAggregate( void ) = default;
-  template< detail::pair_visitable S > explicit MaterializedAggregate(
-      const S & s );
-  template< detail::pair_visitable S > void bind( const S & s );
-  template< class H , class K , class V > void on(
-      const mod::Inserted< H , K , V > & e );
-  template< class H , class K , class V > void on(
-      const mod::Erased< H , K , V > & e ) noexcept;
-  template< class H , class V > void on( const mod::Assigned< H , V > & e );
-  void on( const mod::Cleared & ) noexcept;
-  void on( const mod::Rebuilt & ) noexcept;
-  [[nodiscard]] Value value( void ) const;
-  [[nodiscard]] bool stale( void ) const;
-  [[nodiscard]] bool bound( void ) const;
-  [[nodiscard]] std::size_t recomputations( void ) const;
-  template< detail::pair_visitable S > [[nodiscard]] bool audit(
-      const S & s ) const;
+ using Value = typename G::Value;
+ enum class Kind { Group , Selective , Monoid };
+ static constexpr Kind kind =
+   AbelianGroup< G >                                         ? Kind::Group
+   : ( Selective< G > && std::equality_comparable< Value > ) ? Kind::Selective
+                                                             : Kind::Monoid;
+ MaterializedAggregate( void ) = default;
+ template< detail::pair_visitable S >
+ explicit MaterializedAggregate( const S & s );
+ template< detail::pair_visitable S >
+ void bind( const S & s );
+ template< class H , class K , class V >
+ void on( const mod::Inserted< H , K , V > & e );
+ template< class H , class K , class V >
+ void on( const mod::Erased< H , K , V > & e ) noexcept;
+ template< class H , class V >
+ void on( const mod::Assigned< H , V > & e );
+ void on( const mod::Cleared & ) noexcept;
+ void on( const mod::Rebuilt & ) noexcept;
+ [[nodiscard]] Value value( void ) const;
+ [[nodiscard]] bool stale( void ) const;
+ [[nodiscard]] bool bound( void ) const;
+ [[nodiscard]] std::size_t recomputations( void ) const;
+ template< detail::pair_visitable S >
+ [[nodiscard]] bool audit( const S & s ) const;
  };
 ```
 
 ```cpp
 // declarations of <ADS/tree/LinkCutTree.h>
-template< class T = long long , class Op = std::plus< T > > class LinkCutTree {
+template< class T = long long , class Op = std::plus< T > >
+class LinkCutTree
+{
  public:
-  using Value = T;
-  explicit LinkCutTree( int n = 0 , const T & id = T() , Op op = Op() );
-  [[nodiscard]] int n( void ) const;
-  int addNode( const T & x );
-  [[nodiscard]] const T & value( int v ) const;
-  void setValue( int v , const T & x );
-  void evert( int v );
-  [[nodiscard]] int findRoot( int v );
-  void useSplay( void );
-  [[nodiscard]] bool splayed( void ) const;
-  [[nodiscard]] bool connected( int u , int v );
-  void link( int u , int v );
-  void cut( int u , int v );
-  bool cutParent( int v );
-  [[nodiscard]] int lca( int u , int v );
-  [[nodiscard]] T aggregate( int u , int v );
+ using Value = T;
+ explicit LinkCutTree( int n = 0 , const T & id = T() , Op op = Op() );
+ [[nodiscard]] int n( void ) const;
+ int addNode( const T & x );
+ [[nodiscard]] const T & value( int v ) const;
+ void setValue( int v , const T & x );
+ void evert( int v );
+ [[nodiscard]] int findRoot( int v );
+ void useSplay( void );
+ [[nodiscard]] bool splayed( void ) const;
+ [[nodiscard]] bool connected( int u , int v );
+ void link( int u , int v );
+ void cut( int u , int v );
+ bool cutParent( int v );
+ [[nodiscard]] int lca( int u , int v );
+ [[nodiscard]] T aggregate( int u , int v );
  };
 ```
 
@@ -8717,15 +8865,14 @@ a proof by the lemmas cited.
     exercise 7.9](Z-bibliography.md#ref-morin-cpp)). Solved by
     `FingerTreap` ([Lemma 8.41](08-tree.md#lem-8-41)). Test:
     `ods_trees.ods-ex7.9.finger-treap`.
-60. Add to a treap the access by rank, `get(i)`, by the sizes of the
-    subtrees ([Morin 2013, exercise
-    7.10](Z-bibliography.md#ref-morin-cpp)). Solved by `Treap::select()`
-    and `Treap::rank()` ([Algorithm 8.34](08-tree.md#alg-8-34)).
-    Test: `ods_trees.ods7.2.treap-exercises`.
-61. Realize the LIST on a treap ordered by the positions, with `get(i)`,
-    `set(i,x)`, `add(i,x)` and `remove(i)` in $O( \log n )$ expected time
-    ([Morin 2013, exercise 7.11](Z-bibliography.md#ref-morin-cpp)). Solved
-    by `TreapList` ([Chapter 2](02-sequence.md#ch-2)). Test:
+60. Add to a treap the access by rank, `get( i )`, by the sizes of the
+    subtrees ([Morin 2013, exercise 7.10](Z-bibliography.md#ref-morin-cpp)).
+    Solved by `Treap::select()` and `Treap::rank()` ([Algorithm
+    8.34](08-tree.md#alg-8-34)). Test: `ods_trees.ods7.2.treap-exercises`.
+61. Realize the LIST on a treap ordered by the positions, with `get( i )`,
+    `set(i,x)`, `add( i , x )` and `remove( i )` in $O( \log n )$ expected
+    time ([Morin 2013, exercise 7.11](Z-bibliography.md#ref-morin-cpp)).
+    Solved by `TreapList` ([Chapter 2](02-sequence.md#ch-2)). Test:
     `ods_trees.ods-ex7.11.treap-list`.
 62. Split a treap at a key into the keys not larger and the larger ones, in
     $O( \log n )$ expected time ([Morin 2013, exercise

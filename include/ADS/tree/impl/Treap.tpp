@@ -14,20 +14,23 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< std::totally_ordered K , class V >
 Treap< K , V >::Treap( std::uint64_t seed ) : f_g( seed )
-{
- }
+{ }
 
 template< std::totally_ordered K , class V >
 std::optional< V > Treap< K , V >::lookup( const K & k ) const
 {
  for( const Node * t = f_root.get() ; t ; )
-  if( k < t->key ) t = t->left.get();
-  else if( t->key < k ) t = t->right.get();
-  else return( t->value );
+  if( k < t->key )
+   t = t->left.get();
+  else if( t->key < k )
+   t = t->right.get();
+  else
+   return( t->value );
  return( std::nullopt );
  }
 
@@ -58,19 +61,21 @@ bool Treap< K , V >::insert( Ptr & t , const K & k , const V & v )
 {
  if( ! t ) {
   t = std::make_unique< Node >( Node{ k , v , f_g() , 1 , nullptr ,
-                                      nullptr } );
+				      nullptr } );
   return( true );
   }
  if( k < t->key ) {
   const bool fresh = insert( t->left , k , v );
   update( t );
-  if( t->left->priority > t->priority ) rotateRight( t );   // up the heap
+  if( t->left->priority > t->priority )
+   rotateRight( t );  // up the heap
   return( fresh );
   }
  if( t->key < k ) {
   const bool fresh = insert( t->right , k , v );
   update( t );
-  if( t->right->priority > t->priority ) rotateLeft( t );
+  if( t->right->priority > t->priority )
+   rotateLeft( t );
   return( fresh );
   }
  t->value = v;
@@ -101,7 +106,7 @@ bool Treap< K , V >::remove( Ptr & t , const K & k )
   update( t );
   return( gone );
   }
- if( ! t->left ) {                          // a leaf, or one child: away
+ if( ! t->left ) {  // a leaf, or one child: away
   t = std::move( t->right );
   return( true );
   }
@@ -110,8 +115,8 @@ bool Treap< K , V >::remove( Ptr & t , const K & k )
   return( true );
   }
  bool gone;
- if( t->left->priority > t->right->priority ) {   // down, the child of
-  rotateRight( t );                               // higher priority up
+ if( t->left->priority > t->right->priority ) {  // down, the child of
+  rotateRight( t );                              // higher priority up
   gone = remove( t->right , k );
   }
  else {
@@ -166,7 +171,8 @@ template< std::totally_ordered K , class V >
 template< class F >
 void Treap< K , V >::visit( const Ptr & t , F & f )
 {
- if( ! t ) return;
+ if( ! t )
+  return;
  visit( t->left , f );
  f( t->key , t->value );
  visit( t->right , f );
@@ -177,7 +183,7 @@ bool Treap< K , V >::valid( const Ptr & t , const K * lo , const K * hi )
 {
  if( ! t )
   return( true );
- if( ( lo && !( *lo < t->key ) ) || ( hi && !( t->key < *hi ) ) )
+ if( ( lo && ! ( *lo < t->key ) ) || ( hi && ! ( t->key < *hi ) ) )
   return( false );
  if( ( t->left && ( t->left->priority > t->priority ) ) ||
      ( t->right && ( t->right->priority > t->priority ) ) ||
@@ -187,15 +193,16 @@ bool Treap< K , V >::valid( const Ptr & t , const K * lo , const K * hi )
  }
 
 template< std::totally_ordered K , class V >
-auto Treap< K , V >::lowerBoundNode( const K & k ) const
- -> const Node *
+auto Treap< K , V >::lowerBoundNode( const K & k ) const -> const Node *
 {
  const Node * best = nullptr;
  for( const Node * t = f_root.get() ; t ; )
-  if( t->key < k ) t = t->right.get();
+  if( t->key < k )
+   t = t->right.get();
   else {
    best = t;
-   if( !( k < t->key ) ) break;
+   if( ! ( k < t->key ) )
+    break;
    t = t->left.get();
    }
  return( best );
@@ -203,19 +210,19 @@ auto Treap< K , V >::lowerBoundNode( const K & k ) const
 
 template< std::totally_ordered K , class V >
 auto Treap< K , V >::lowerBound( const K & k ) const
- -> std::optional< std::pair< K , V > >
+  -> std::optional< std::pair< K , V > >
 {
  const Node * b = lowerBoundNode( k );
  return( b ? std::optional< std::pair< K , V > >(
-              std::pair< K , V >( b->key , b->value ) )
-           : std::nullopt );
+		std::pair< K , V >( b->key , b->value ) )
+	    : std::nullopt );
  }
 
 template< std::totally_ordered K , class V >
 const K * Treap< K , V >::findKey( const K & k ) const
 {
  const Node * b = lowerBoundNode( k );
- return( ( b && !( k < b->key ) ) ? &b->key : nullptr );
+ return( ( b && ! ( k < b->key ) ) ? &b->key : nullptr );
  }
 
 template< std::totally_ordered K , class V >
@@ -232,8 +239,10 @@ std::pair< K , V > Treap< K , V >::select( std::size_t i ) const
  const Node * t = f_root.get();
  for( ; ; ) {
   const std::size_t l = sz( t->left );
-  if( i < l ) t = t->left.get();
-  else if( i == l ) break;
+  if( i < l )
+   t = t->left.get();
+  else if( i == l )
+   break;
   else {
    i -= l + 1;
    t = t->right.get();
@@ -258,22 +267,22 @@ std::size_t Treap< K , V >::rank( const K & k ) const
 
 template< std::totally_ordered K , class V >
 auto Treap< K , V >::fromSorted( const std::vector< std::pair< K , V > > & A ,
-                                 std::uint64_t seed ) -> Treap
+				std::uint64_t seed ) -> Treap
 {
  ADS_PRE( std::adjacent_find( A.begin() , A.end() ,
-                              []( const auto & a , const auto & b ) {
-                               return( !( a.first < b.first ) ); } ) ==
-          A.end() );
+			      []( const auto & a , const auto & b ) {
+			       return( ! ( a.first < b.first ) );
+			       } ) == A.end() );
  Treap T( seed );
- std::vector< Ptr > S;                      // the right spine, the root
- for( const auto & [ k , v ] : A ) {        // first; a node owns its left
-  Ptr u = std::make_unique< Node >(         // subtree, and its right one
-   Node{ k , v , T.f_g() , 1 , nullptr , nullptr } );   // once popped
+ std::vector< Ptr > S;               // the right spine, the root
+ for( const auto & [ k , v ] : A ) {  // first; a node owns its left
+  Ptr u = std::make_unique< Node >(  // subtree, and its right one
+    Node{ k , v , T.f_g() , 1 , nullptr , nullptr } );  // once popped
   Ptr l;
   while( ! S.empty() && ( S.back()->priority < u->priority ) ) {
    Ptr top = std::move( S.back() );
    S.pop_back();
-   top->right = std::move( l );             // the spine below it, done
+   top->right = std::move( l );  // the spine below it, done
    update( top );
    l = std::move( top );
    }
@@ -299,7 +308,8 @@ auto Treap< K , V >::fromSorted( const std::vector< std::pair< K , V > > & A ,
 /*--------------------------------------------------------------------------*/
 
 template< std::totally_ordered K , class V >
-struct TreapNodes {
+struct TreapNodes
+{
  using T = Treap< K , V >;
  using Node = typename T::Node;
  using Key = K;
@@ -313,7 +323,7 @@ struct TreapNodes {
  static V & value( Node * t ) { return( t->value ); }
  static std::size_t size( const Node * t ) { return( t ? t->s : 0 ); }
  static std::uint64_t priority( const Node * t ) { return( t->priority ); }
- static void expose( Node * t , Node * & l , Node * & r ) {
+ static void expose( Node * t , Node *& l , Node *& r ) {
   l = t->left.release();
   r = t->right.release();
   }
@@ -327,9 +337,11 @@ struct TreapNodes {
  static Rank rank( const Node * ) { return( 0 ); }
  static Rank childRank( const Node * , Rank , const Node * ) { return( 0 ); }
  static std::pair< Node * , Rank > join( Node * l , Rank , Node * m ,
-                                         Node * r , Rank ) {
-  return( std::pair< Node * , Rank >(
-           TreapJoin< TreapNodes >::join( l , m , r ) , 0 ) );
+					 Node * r ,
+					Rank ) {
+  return(
+    std::pair< Node * , Rank >( TreapJoin< TreapNodes >::join( l , m , r ) ,
+				0 ) );
   }
 
  static Node * take( T & t ) {
@@ -344,14 +356,14 @@ struct TreapNodes {
  static T fresh( T & t ) { return( T( t.f_g() ) ); }
  static bool valid( const T & t ) {
   return( t.valid( t.f_root , nullptr , nullptr ) &&
-          ( t.f_size == size( t.f_root.get() ) ) );
+	   ( t.f_size == size( t.f_root.get() ) ) );
   }
  static std::uint64_t salt( T & t ) { return( t.f_g() ); }
  static Node * make( const K & k , const V & v , std::uint64_t s ,
-                     std::size_t i ) {
-  return( new Node{ k , v , splitmix64( s + 0x9e3779b97f4a7c15ULL *
-                                            std::uint64_t( i ) ) ,
-                    1 , nullptr , nullptr } );
+		     std::size_t i ) {
+  return( new Node{
+    k , v , splitmix64( s + 0x9e3779b97f4a7c15ULL * std::uint64_t( i ) ) , 1 ,
+    nullptr , nullptr } );
   }
  };
 

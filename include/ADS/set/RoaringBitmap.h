@@ -95,7 +95,7 @@
 
 #ifndef __ADS_RoaringBitmap
  #define __ADS_RoaringBitmap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -115,19 +115,20 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS RoaringBitmap ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a set of integers of 32 bits as a Roaring bitmap
-class RoaringBitmap {
+class RoaringBitmap
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = std::uint32_t;   ///< the type of the items
+ using Item = std::uint32_t;  ///< the type of the items
 
  /// the items of an array container at most
  static constexpr std::uint32_t ARRAY = 4096;
@@ -257,25 +258,25 @@ class RoaringBitmap {
  [[nodiscard]] std::size_t rank( std::uint32_t x ) const;
 
  friend RoaringBitmap setUnion( const RoaringBitmap & A ,
-                                const RoaringBitmap & B );
+				const RoaringBitmap & B );
  friend RoaringBitmap setIntersection( const RoaringBitmap & A ,
-                                       const RoaringBitmap & B );
+				       const RoaringBitmap & B );
  friend RoaringBitmap setDifference( const RoaringBitmap & A ,
-                                     const RoaringBitmap & B );
+				     const RoaringBitmap & B );
  friend RoaringBitmap setSymmetricDifference( const RoaringBitmap & A ,
-                                              const RoaringBitmap & B );
+					      const RoaringBitmap & B );
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static constexpr std::size_t WORDS = 1024;   ///< the words of a bitmap
+ static constexpr std::size_t WORDS = 1024;  ///< the words of a bitmap
 
  /// a container: the low bits of its items, sorted, or its bitmap
- struct Block {
-  std::uint16_t key = 0;                 ///< the top bits of the chunk
-  std::uint32_t card = 0;                ///< the items
+ struct Block
+ {
+  std::uint16_t key = 0;   ///< the top bits of the chunk
+  std::uint32_t card = 0;  ///< the items
   std::vector< std::uint16_t , detail::UninitAllocator< std::uint16_t > > a;
-                                         ///< the array, if not a bitmap
+  ///< the array, if not a bitmap
   std::unique_ptr< std::uint64_t[] > w;  ///< the bitmap, if one
 
   /// whether the container is a bitmap
@@ -284,16 +285,16 @@ class RoaringBitmap {
 
  /// the operation of two sets
  enum class Op {
-  AND ,      ///< the intersection
-  OR ,       ///< the union
-  ANDNOT ,   ///< the difference
-  XOR        ///< the symmetric difference
+  AND ,     ///< the intersection
+  OR ,      ///< the union
+  ANDNOT ,  ///< the difference
+  XOR      ///< the symmetric difference
   };
 
  /// the operation `O` of two sets, by the merge of their containers
  template< Op O >
  static RoaringBitmap combine( const RoaringBitmap & A ,
-                               const RoaringBitmap & B );
+			       const RoaringBitmap & B );
 
  /// the operation `O` of two containers of the same chunk
  template< Op O >
@@ -311,8 +312,8 @@ class RoaringBitmap {
  /// the container of the chunk `key` with the words \f$ w \f$ of `card`
  /// items, an array if they are at most 4096
  static Block fromWords( std::uint16_t key ,
-                         std::unique_ptr< std::uint64_t[] > w ,
-                         std::uint32_t card );
+			 std::unique_ptr< std::uint64_t[] > w ,
+			 std::uint32_t card );
 
  /// the first container whose chunk is not smaller than `key`, by a
  /// binary search with no branch
@@ -341,21 +342,21 @@ class RoaringBitmap {
  /// the chunks of the containers, which a search reads
  void rekey( void );
 
- std::vector< Block > f_B;              ///< the containers by their chunks
- std::vector< std::uint16_t > f_K;      ///< their chunks, apart
- std::size_t f_size = 0;                ///< the items
+ std::vector< Block > f_B;          ///< the containers by their chunks
+ std::vector< std::uint16_t > f_K;  ///< their chunks, apart
+ std::size_t f_size = 0;            ///< the items
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
  public:
-
  // a constant view of the items in increasing order, forward
 
  /// the iterator on the items in increasing order, forward
- class const_iterator {
+ class const_iterator
+ {
   public:
-  using value_type = std::uint32_t;                  ///< the items
-  using reference = std::uint32_t;                   ///< an item, by value
-  using difference_type = std::ptrdiff_t;            ///< the distances
+  using value_type = std::uint32_t;        ///< the items
+  using reference = std::uint32_t;         ///< an item, by value
+  using difference_type = std::ptrdiff_t;  ///< the distances
   /// forward for the concepts of C++20
   using iterator_concept = std::forward_iterator_tag;
   /// input for the older algorithms, since `*it` is a value
@@ -370,7 +371,7 @@ class RoaringBitmap {
   /// to the next item: the next bit of the word of a bitmap, or the next
   /// place, word or container
   const_iterator & operator++( void ) {
-   if( f_word ) {                           // the next bit of the word
+   if( f_word ) {  // the next bit of the word
     f_word &= f_word - 1;
     if( f_word ) {
      f_x = f_base + std::uint32_t( std::countr_zero( f_word ) );
@@ -382,7 +383,11 @@ class RoaringBitmap {
    return( *this );
    }
   /// to the next item, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// equal on the same item of the same container
   bool operator==( const const_iterator & o ) const {
@@ -407,14 +412,14 @@ class RoaringBitmap {
   std::uint32_t f_base = 0;             ///< the item of its bit 0
   std::uint32_t f_x = 0;                ///< the item
 
- };  // end( class const_iterator )
+  };  // end( class const_iterator )
 
- using value_type = std::uint32_t;          ///< the items
- using size_type = std::size_t;             ///< the sizes
- using difference_type = std::ptrdiff_t;    ///< the distances
- using reference = std::uint32_t;           ///< an item, by value
- using const_reference = std::uint32_t;     ///< an item, by value
- using iterator = const_iterator;           ///< the same, constant
+ using value_type = std::uint32_t;        ///< the items
+ using size_type = std::size_t;           ///< the sizes
+ using difference_type = std::ptrdiff_t;  ///< the distances
+ using reference = std::uint32_t;         ///< an item, by value
+ using const_reference = std::uint32_t;   ///< an item, by value
+ using iterator = const_iterator;         ///< the same, constant
 
  /// the iterator on the smallest item
  [[nodiscard]] const_iterator begin( void ) const {
@@ -511,7 +516,7 @@ RoaringBitmap setUnion( const RoaringBitmap & A , const RoaringBitmap & B );
 /// \end{array}}
 /// \f]
 RoaringBitmap setIntersection( const RoaringBitmap & A ,
-                               const RoaringBitmap & B );
+			       const RoaringBitmap & B );
 
 /// the difference, by the merge of the containers
 ///
@@ -532,7 +537,7 @@ RoaringBitmap setIntersection( const RoaringBitmap & A ,
 /// \end{array}}
 /// \f]
 RoaringBitmap setDifference( const RoaringBitmap & A ,
-                             const RoaringBitmap & B );
+			     const RoaringBitmap & B );
 
 /// the symmetric difference, by the merge of the containers
 ///
@@ -553,7 +558,7 @@ RoaringBitmap setDifference( const RoaringBitmap & A ,
 /// \end{array}}
 /// \f]
 RoaringBitmap setSymmetricDifference( const RoaringBitmap & A ,
-                                      const RoaringBitmap & B );
+				      const RoaringBitmap & B );
 
 /*--------------------------------------------------------------------------*/
 
@@ -567,7 +572,7 @@ RoaringBitmap setSymmetricDifference( const RoaringBitmap & A ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RoaringBitmap.h included */
+#endif /* RoaringBitmap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File RoaringBitmap.h ------------------------*/

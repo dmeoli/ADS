@@ -87,7 +87,7 @@
 
 #ifndef __ADS_FMIndex
  #define __ADS_FMIndex
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -112,7 +112,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS FMIndex ------------------------------*/
@@ -121,11 +122,11 @@ namespace ADS {
 /// the FM-index of a text: its transform with the counts for the rank every
 /// \f$ b \f$ places and the places of the suffixes at the multiples of
 /// \f$ \mu \f$
-class FMIndex {
+class FMIndex
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the index of \f$ s \f$
  ///
  /// In pseudocode (the FM-index of Ferragina and Manzini, beyond the book),
@@ -148,7 +149,7 @@ class FMIndex {
  /// \f]
  /// \pre `b > 0`, `mu > 0`, \f$ |s| < 2^{32} \f$
  explicit FMIndex( std::string_view s , std::size_t b = 64 ,
-                   std::size_t mu = 32 );
+		   std::size_t mu = 32 );
 
  /// the length \f$ n \f$ of the text
  [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
@@ -198,8 +199,8 @@ class FMIndex {
  /// \end{array}}
  /// \f]
  /// \pre \f$ P \f$ is not empty
- [[nodiscard]] std::pair< std::size_t , std::size_t > range(
-                                                  std::string_view P ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ range( std::string_view P ) const;
 
  /// the number of the occurrences of \f$ P \f$
  ///
@@ -264,7 +265,6 @@ class FMIndex {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the row of the suffix one place to the left of that of the row
  /// \f$ r \f$
  /// \pre \f$ r \f$ is not the row of the suffix 0
@@ -277,15 +277,15 @@ class FMIndex {
  [[nodiscard]] bool marked( std::size_t r ) const { return( f_mark[ r ] ); }
 
  std::size_t f_n , f_b , f_mu;
- std::string f_L;                       ///< \f$ L \f$, 0 for the \f$ \$ \f$
- std::size_t f_dollar;                  ///< the row of the \f$ \$ \f$
- std::array< std::size_t , 257 > f_C;   ///< 1 + the symbols below \f$ c \f$
- std::array< int , 256 > f_id;          ///< the index of a symbol, or -1
- std::size_t f_sigma = 0;               ///< the distinct symbols
- std::vector< std::uint32_t > f_occ;    ///< the counts every \f$ b \f$ rows
- RankSelect f_mark;                     ///< the marked rows, with rank
- std::vector< std::size_t > f_place;    ///< the places of the marked rows
- std::vector< std::size_t > f_row;      ///< the row of suffix \f$ k \mu \f$
+ std::string f_L;                     ///< \f$ L \f$, 0 for the \f$ \$ \f$
+ std::size_t f_dollar;                ///< the row of the \f$ \$ \f$
+ std::array< std::size_t , 257 > f_C;  ///< 1 + the symbols below \f$ c \f$
+ std::array< int , 256 > f_id;         ///< the index of a symbol, or -1
+ std::size_t f_sigma = 0;             ///< the distinct symbols
+ std::vector< std::uint32_t > f_occ;  ///< the counts every \f$ b \f$ rows
+ RankSelect f_mark;                   ///< the marked rows, with rank
+ std::vector< std::size_t > f_place;  ///< the places of the marked rows
+ std::vector< std::size_t > f_row;    ///< the row of suffix \f$ k \mu \f$
 
  };  // end( class FMIndex )
 
@@ -301,7 +301,7 @@ class FMIndex {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* FMIndex.h included */
+#endif /* FMIndex.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File FMIndex.h ---------------------------*/

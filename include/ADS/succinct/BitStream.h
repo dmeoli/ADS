@@ -49,7 +49,7 @@
 
 #ifndef __ADS_BitStream
  #define __ADS_BitStream
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -69,18 +69,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS BitWriter -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a stream of bits written at its end, on a `BitVector`
-class BitWriter {
+class BitWriter
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// an empty stream
  BitWriter( void ) = default;
 
@@ -133,7 +134,6 @@ class BitWriter {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  BitVector f_b;
 
  };  // end( class BitWriter )
@@ -144,11 +144,11 @@ class BitWriter {
 
 /// a stream of bits read forward from a place of a `BitVector`, which must
 /// outlive the reader
-class BitReader {
+class BitReader
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the bits of \f$ b \f$ from the place \f$ p \f$
  /// \pre \f$ p \le \f$ `b.size()`
  explicit BitReader( const BitVector & b , std::size_t p = 0 );
@@ -203,7 +203,6 @@ class BitReader {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  const BitVector * f_b;
  std::size_t f_p;
 
@@ -221,7 +220,7 @@ class BitReader {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BitStream.h included */
+#endif /* BitStream.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File BitStream.h --------------------------*/

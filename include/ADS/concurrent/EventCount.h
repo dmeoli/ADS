@@ -75,7 +75,7 @@
 
 #ifndef __ADS_EventCount
  #define __ADS_EventCount
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 // under the sanitizer of threads, which does not model the fences, the
 // notifier reads the waiters by a read-modify-write instead (reading the
@@ -97,8 +97,8 @@
 #include <chrono>
 #include <cstdint>
 
-#if defined( __linux__ ) && ! defined( ADS_EVENTCOUNT_RMW ) && \
-    __has_include( <linux/membarrier.h> )
+#if defined( __linux__ ) && ! defined( ADS_EVENTCOUNT_RMW ) &&                \
+  __has_include( <linux/membarrier.h> )
  #define ADS_EVENTCOUNT_MEMBARRIER
  #include <linux/membarrier.h>
  #include <sys/syscall.h>
@@ -109,9 +109,11 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// true if the process may use the asymmetric fences: on Linux, the
 /// expedited private barrier of `membarrier(2)`, registered once
@@ -121,8 +123,8 @@ inline bool asymmetricFences( void ) noexcept
  static const bool ok = [] {
   const long q = syscall( SYS_membarrier , MEMBARRIER_CMD_QUERY , 0 );
   return( ( q >= 0 ) && ( q & MEMBARRIER_CMD_PRIVATE_EXPEDITED ) &&
-          ( syscall( SYS_membarrier ,
-                     MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED , 0 ) == 0 ) );
+	   ( syscall( SYS_membarrier ,
+		      MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED , 0 ) == 0 ) );
   }();
  return( ok );
 #else
@@ -146,8 +148,8 @@ inline void heavyFence( void ) noexcept
 {
 #ifdef ADS_EVENTCOUNT_MEMBARRIER
  if( asymmetricFences() &&
-     ( syscall( SYS_membarrier , MEMBARRIER_CMD_PRIVATE_EXPEDITED , 0 ) ==
-       0 ) )
+     ( syscall( SYS_membarrier , MEMBARRIER_CMD_PRIVATE_EXPEDITED ,
+		0 ) == 0 ) )
   return;
 #endif
  std::atomic_thread_fence( std::memory_order_seq_cst );
@@ -160,12 +162,12 @@ inline void heavyFence( void ) noexcept
 /*--------------------------------------------------------------------------*/
 
 /// the sleep of threads until a condition holds, woken by `notify()`
-class EventCount {
+class EventCount
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = std::uint32_t;   ///< the epoch a waiter saw
+ using Key = std::uint32_t;  ///< the epoch a waiter saw
 
  /// the event count of epoch 0 and no waiter
  EventCount( void ) = default;
@@ -210,9 +212,10 @@ class EventCount {
  /// \f]
  void cancelWait( Key k ) noexcept {
   std::uint64_t v = f_state.load( std::memory_order_relaxed );
-  while( ( Key( v >> 32 ) == k ) &&
-         ! f_state.compare_exchange_weak( v , v - 1 ,
-                                          std::memory_order_relaxed ) ) {}
+  while( ( Key( v >> 32 ) == k ) && ! f_state.compare_exchange_weak(
+				      v , v - 1 ,
+				      std::memory_order_relaxed ) ) {
+   }
   }
 
  /// sleeps while the epoch is \f$ k \f$; the notifier that advanced it
@@ -263,8 +266,8 @@ class EventCount {
 #endif
   while( v & waiterMask ) [[unlikely]]
    if( f_state.compare_exchange_weak( v , ( ( v >> 32 ) + 1 ) << 32 ,
-                                      std::memory_order_acq_rel ,
-                                      std::memory_order_relaxed ) ) {
+				      std::memory_order_acq_rel ,
+				      std::memory_order_relaxed ) ) {
     raiseEpoch( Key( ( v >> 32 ) + 1 ) );
     f_epoch.notify_all();
     return;
@@ -293,9 +296,9 @@ class EventCount {
  void await( P && p , std::int64_t spin = 20000 ) {
   if( p() )
    return;
-  const auto end = std::chrono::steady_clock::now() +
-                   std::chrono::nanoseconds( spin );
-  for( unsigned i = 1 ; ; ++i ) {           // the clock every 64 looks
+  const auto end =
+    std::chrono::steady_clock::now() + std::chrono::nanoseconds( spin );
+  for( unsigned i = 1 ; ; ++i ) {  // the clock every 64 looks
    relax();
    if( p() )
     return;
@@ -314,13 +317,12 @@ class EventCount {
 
  /// the number of the threads announced as waiters at some moment
  [[nodiscard]] std::uint32_t waiters( void ) const noexcept {
-  return( std::uint32_t( f_state.load( std::memory_order_relaxed ) &
-                         waiterMask ) );
+  return(
+    std::uint32_t( f_state.load( std::memory_order_relaxed ) & waiterMask ) );
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a pause of the processor in a loop that looks at memory
  static void relax( void ) noexcept {
 #if defined( __x86_64__ ) || defined( __i386__ )
@@ -346,9 +348,9 @@ class EventCount {
  void raiseEpoch( Key e ) noexcept {
   Key c = f_epoch.load( std::memory_order_relaxed );
   while( ( std::int32_t( e - c ) > 0 ) &&
-         ! f_epoch.compare_exchange_weak( c , e ,
-                                          std::memory_order_release ,
-                                          std::memory_order_relaxed ) ) {}
+	 ! f_epoch.compare_exchange_weak( c , e , std::memory_order_release ,
+					  std::memory_order_relaxed ) ) {
+   }
   }
 
  static constexpr std::uint64_t waiterMask = 0xFFFFFFFFu;
@@ -370,7 +372,7 @@ class EventCount {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* EventCount.h included */
+#endif /* EventCount.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File EventCount.h --------------------------*/

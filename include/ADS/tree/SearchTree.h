@@ -98,7 +98,7 @@
 
 #ifndef __ADS_SearchTree
  #define __ADS_SearchTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -121,16 +121,18 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS SearchTree ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the color of a node of a Red-Black tree
-enum class Color : unsigned char { RED ,     ///< a red node
-                                   BLACK     ///< a black node
-                                   };
+enum class Color : unsigned char {
+ RED ,   ///< a red node
+ BLACK  ///< a black node
+ };
 
 template< std::totally_ordered K , class V , bool RB >
 class SearchTree;
@@ -141,39 +143,42 @@ struct SearchTreeNodes;
 
 /// the base of a binary search tree that is not balanced: no operation
 /// based on join, whose recursion would be as deep as the tree
-struct NotJoinable {};
+struct NotJoinable
+{ };
 
 /// a binary search tree, balanced as a Red-Black tree if `RB`, and then
 /// with the operations based on join [see `Joinable`]
 template< std::totally_ordered K , class V , bool RB >
 class SearchTree
- : public std::conditional_t< RB ,
-                              Joinable< SearchTree< K , V , RB > ,
-                                        SearchTreeNodes< K , V , RB > ,
-                                        K , V > ,
-                              NotJoinable > {
+    : public std::conditional_t<
+	RB ,
+	Joinable< SearchTree< K , V , RB > , SearchTreeNodes< K , V , RB > ,
+		  K , V > ,
+	NotJoinable >
+{
 
  friend struct SearchTreeNodes< K , V , RB >;
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the links of a node; the sentinel leaf is a Link and nothing more
- struct Link {
-  Link * parent;                ///< the parent
-  Link * left;                  ///< the left child
-  Link * right;                 ///< the right child
-  Color color = Color::BLACK;   ///< the color, read only if `RB`
-  std::size_t size = 0;         ///< the nodes of the subtree, 0 for nil
+ struct Link
+ {
+  Link * parent;               ///< the parent
+  Link * left;                 ///< the left child
+  Link * right;                ///< the right child
+  Color color = Color::BLACK;  ///< the color, read only if `RB`
+  std::size_t size = 0;        ///< the nodes of the subtree, 0 for nil
   };
 
  /// a node of the tree, with its key and its value
- struct Node : Link {
-  K key;     ///< the key
-  V value;   ///< the value
+ struct Node : Link
+ {
+  K key;    ///< the key
+  V value;  ///< the value
   };
 
  /// an empty tree
@@ -311,8 +316,8 @@ class SearchTree
  /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
  /// (the `find( x )` of an SSet of Morin), by `lowerBoundNode()` in
  /// \f$ O( h ) \f$ time
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-  const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
 
  /// the address of the key \f$ k \f$ in the tree, nil if absent, in
  /// \f$ O( h ) \f$ time: the `find( x )` of a USet of Morin, which makes
@@ -438,12 +443,13 @@ class SearchTree
  // end
 
  /// the constant iterator on the pairs, by increasing key
- class const_iterator {
+ class const_iterator
+ {
   public:
   /// a pair of references to a key and its value
   using reference = std::pair< const K & , const V & >;
-  using value_type = reference;             ///< the pairs read
-  using difference_type = std::ptrdiff_t;   ///< the type of the distances
+  using value_type = reference;            ///< the pairs read
+  using difference_type = std::ptrdiff_t;  ///< the type of the distances
   /// bidirectional for the concepts of C++20
   using iterator_concept = std::bidirectional_iterator_tag;
   /// input for the older algorithms, since `*it` is a value
@@ -453,7 +459,7 @@ class SearchTree
   const_iterator( void ) = default;
 
   /// on the node \f$ x \f$ of the tree \f$ t \f$
-  const_iterator( const SearchTree * t , Link * x ) : f_t( t ) , f_x( x ) {}
+  const_iterator( const SearchTree * t , Link * x ) : f_t( t ) , f_x( x ) { }
 
   /// the pair of the node
   reference operator*( void ) const {
@@ -470,9 +476,17 @@ class SearchTree
    return( *this );
    }
   /// to the next key, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
   /// to the previous key, returning the iterator before the step
-  const_iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+  const_iterator operator--( int ) {
+   auto t = *this;
+   --*this;
+   return( t );
+   }
 
   /// equal on the same node
   bool operator==( const const_iterator & o ) const {
@@ -489,11 +503,11 @@ class SearchTree
 
  /// the pairs of references to a key and its value
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
- using iterator = const_iterator;          ///< the constant iterator
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
+ using iterator = const_iterator;         ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
@@ -510,7 +524,6 @@ class SearchTree
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the order of the keys, the parents, the number of nodes, the sizes of
  /// the subtrees and, if `RB`, the constraints (V1)-(V4), \f$ O( n ) \f$
  [[nodiscard]] bool valid( void ) const;
@@ -570,8 +583,8 @@ class SearchTree
  /// the sentinel leaf, one for all the trees of the type, never written
  static Link s_nil;
 
- Link * f_root = &s_nil;          ///< the root, the sentinel if empty
- std::size_t f_size = 0;          ///< the number of keys
+ Link * f_root = &s_nil;  ///< the root, the sentinel if empty
+ std::size_t f_size = 0;  ///< the number of keys
 
  };  // end( class SearchTree )
 
@@ -597,7 +610,7 @@ using RedBlackTree = SearchTree< K , V , true >;
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SearchTree.h included */
+#endif /* SearchTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File SearchTree.h --------------------------*/

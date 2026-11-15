@@ -40,7 +40,7 @@
 
 #ifndef __ADS_Backoff
  #define __ADS_Backoff
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -55,7 +55,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS Backoff -------------------------------*/
@@ -63,11 +64,11 @@ namespace ADS {
 
 /// the exponential backoff of a waiting thread: \f$ 2^k \f$ pauses at the
 /// \f$ k \f$-th call up to \f$ S \f$, then a yield to the system
-class Backoff {
+class Backoff
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the backoff that spins on the first \f$ S + 1 \f$ calls
  /// \pre \f$ 0 \le S \le 16 \f$
  explicit Backoff( int S = 6 ) : f_limit( S ) {
@@ -112,9 +113,8 @@ class Backoff {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- int f_limit;    ///< the last step that spins, \f$ S \f$
- int f_k = 0;    ///< the step, \f$ k \f$
+ int f_limit;  ///< the last step that spins, \f$ S \f$
+ int f_k = 0;  ///< the step, \f$ k \f$
 
  };  // end( class Backoff )
 
@@ -124,7 +124,7 @@ class Backoff {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Backoff.h included */
+#endif /* Backoff.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Backoff.h ---------------------------*/

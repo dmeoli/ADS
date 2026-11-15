@@ -41,7 +41,8 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- HELPERS ---------------------------------*/
@@ -56,7 +57,10 @@ std::vector< typename S::Item > items( const S & s )
  return( v );
  }
 
-bool near( double a , double b ) { return( std::abs( a - b ) <= 1e-12 ); }
+bool near( double a , double b )
+{
+ return( std::abs( a - b ) <= 1e-12 );
+ }
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- ESERCIZI 3.1 E 3.2 -----------------------------*/
@@ -66,12 +70,12 @@ bool near( double a , double b ) { return( std::abs( a - b ) <= 1e-12 ); }
 /// (real and imaginary part, argument, modulus, construction from the
 /// Cartesian and from the trigonometric form, sum, difference, product,
 /// conjugate, quotient) and realized with a record
-class Complex {
+class Complex
+{
  double f_re , f_im;
- Complex( double re , double im ) : f_re( re ) , f_im( im ) {}
+ Complex( double re , double im ) : f_re( re ) , f_im( im ) { }
 
  public:
-
  static Complex cartesian( double re , double im ) {
   return( Complex( re , im ) );
   }
@@ -83,7 +87,7 @@ class Complex {
  double im( void ) const { return( f_im ); }
  double modulus( void ) const { return( std::hypot( f_re , f_im ) ); }
  double argument( void ) const { return( std::atan2( f_im , f_re ) ); }
- Complex conjugate( void ) const { return( Complex( f_re , - f_im ) ); }
+ Complex conjugate( void ) const { return( Complex( f_re , -f_im ) ); }
  Complex operator+( const Complex & z ) const {
   return( Complex( f_re + z.f_re , f_im + z.f_im ) );
   }
@@ -91,8 +95,8 @@ class Complex {
   return( Complex( f_re - z.f_re , f_im - z.f_im ) );
   }
  Complex operator*( const Complex & z ) const {
-  return( Complex( f_re * z.f_re - f_im * z.f_im ,
-                   f_re * z.f_im + f_im * z.f_re ) );
+  return(
+    Complex( f_re * z.f_re - f_im * z.f_im , f_re * z.f_im + f_im * z.f_re ) );
   }
  /// \f$ z / w = z \bar{w} / |w|^2 \f$, w not 0, by the method of Smith:
  /// w is first divided by its larger part, so that |w|^2 neither
@@ -120,21 +124,21 @@ ADS_TEST( "ex3.1-3.2" )
 {
  const auto z = Complex::cartesian( 1 , 2 );
  const auto w = Complex::cartesian( 3 , -1 );
- const auto p = z * w;   // ( 1 + 2i )( 3 - i ) = 5 + 5i
+ const auto p = z * w;  // ( 1 + 2i )( 3 - i ) = 5 + 5i
  CHECK( near( p.re() , 5 ) && near( p.im() , 5 ) );
- const auto q = p / w;   // back to z
+ const auto q = p / w;  // back to z
  CHECK( near( q.re() , 1 ) && near( q.im() , 2 ) );
  const auto s = z + w , d = z - w;
  CHECK( near( s.re() , 4 ) && near( s.im() , 1 ) );
  CHECK( near( d.re() , -2 ) && near( d.im() , 3 ) );
  CHECK( near( z.conjugate().im() , -2 ) );
- const auto u = Complex::trigonometric( 2 , std::numbers::pi / 2 );   // 2i
+ const auto u = Complex::trigonometric( 2 , std::numbers::pi / 2 );  // 2i
  CHECK( near( u.re() , 0 ) && near( u.im() , 2 ) );
  CHECK( near( u.modulus() , 2 ) );
  CHECK( near( u.argument() , std::numbers::pi / 2 ) );
  CHECK_THROWS( z / Complex::cartesian( 0 , 0 ) , std::domain_error );
  CHECK_THROWS( Complex::cartesian( 0 , 0 ) / Complex::cartesian( -0.0 , 0 ) ,
-               std::domain_error );
+	       std::domain_error );
  const auto o = Complex::cartesian( 0 , 0 );
  CHECK( o.modulus() == 0 && o.argument() == 0 );
  const auto oz = o / z;
@@ -143,21 +147,21 @@ ADS_TEST( "ex3.1-3.2" )
  CHECK( near( Complex::cartesian( 3 , 0 ).argument() , 0 ) );
  CHECK( near( Complex::cartesian( -3 , 0 ).argument() , pi ) );
  CHECK( near( Complex::cartesian( 0 , 3 ).argument() , pi / 2 ) );
- CHECK( near( Complex::cartesian( 0 , -3 ).argument() , - pi / 2 ) );
+ CHECK( near( Complex::cartesian( 0 , -3 ).argument() , -pi / 2 ) );
  const auto t = Complex::trigonometric( 0 , 1.234 );
  CHECK( t.re() == 0 && t.im() == 0 );
- const auto v = Complex::trigonometric( 3 , - pi );     // -3
+ const auto v = Complex::trigonometric( 3 , -pi );  // -3
  CHECK( near( v.re() , -3 ) && near( v.modulus() , 3 ) );
- const auto i2 = z / Complex::cartesian( 0 , 2 );       // ( 1 + 2i ) / 2i
+ const auto i2 = z / Complex::cartesian( 0 , 2 );  // ( 1 + 2i ) / 2i
  CHECK( near( i2.re() , 1 ) && near( i2.im() , -0.5 ) );
  const auto tiny = z / Complex::cartesian( 1e-200 , 1e-200 );
  CHECK( std::abs( tiny.re() / 1.5e200 - 1 ) < 1e-12 &&
-        std::abs( tiny.im() / 0.5e200 - 1 ) < 1e-12 );
+	std::abs( tiny.im() / 0.5e200 - 1 ) < 1e-12 );
  const auto huge = Complex::cartesian( 1e200 , 0 ) /
-                   Complex::cartesian( 1e200 , 1e200 );  // ( 1 - i ) / 2
+		   Complex::cartesian( 1e200 , 1e200 );  // ( 1 - i ) / 2
  CHECK( near( huge.re() , 0.5 ) && near( huge.im() , -0.5 ) );
- CHECK( std::abs( Complex::cartesian( 3e300 , 4e300 ).modulus() / 5e300 - 1 )
-        < 1e-12 );
+ CHECK( std::abs( Complex::cartesian( 3e300 , 4e300 ).modulus() / 5e300 - 1 ) <
+	1e-12 );
  const auto c = Complex::cartesian( 7 , 0 ).conjugate();
  CHECK( c.re() == 7 && c.im() == 0 );
  }
@@ -168,12 +172,13 @@ ADS_TEST( "ex3.1-3.2" )
 // the first and the last place, and every place hit once
 ADS_TEST( "ex3.3" )
 {
- for( const auto & [ n , m , k ] : { std::tuple( 3 , 4 , 2 ) ,
-        std::tuple( 1 , 1 , 1 ) , std::tuple( 1 , 5 , 1 ) ,
-        std::tuple( 5 , 1 , 1 ) , std::tuple( 1 , 1 , 5 ) ,
-        std::tuple( 2 , 3 , 1 ) } ) {
+ for( const auto & [ n , m , k ] :
+      { std::tuple( 3 , 4 , 2 ) , std::tuple( 1 , 1 , 1 ) ,
+	std::tuple( 1 , 5 , 1 ) ,
+	std::tuple( 5 , 1 , 1 ) , std::tuple( 1 , 1 , 5 ) ,
+	std::tuple( 2 , 3 , 1 ) } ) {
   std::vector< int > v;
-  for( int h = 0 ; h < k ; ++h )    // by columns: i varies first
+  for( int h = 0 ; h < k ; ++h )  // by columns: i varies first
    for( int j = 0 ; j < m ; ++j )
     for( int i = 0 ; i < n ; ++i )
      v.push_back( 100 * i + 10 * j + h );
@@ -188,7 +193,7 @@ ADS_TEST( "ex3.3" )
      }
   CHECK( std::count( hit.begin() , hit.end() , 1 ) == int( hit.size() ) );
   CHECK( v.front() == 0 &&
-         v.back() == 100 * ( n - 1 ) + 10 * ( m - 1 ) + k - 1 );
+	 v.back() == 100 * ( n - 1 ) + 10 * ( m - 1 ) + k - 1 );
   }
  }
 
@@ -200,27 +205,34 @@ ADS_TEST( "ex3.3" )
 ADS_TEST( "ex3.4" )
 {
  using V = std::vector< int >;
- for( const auto & b : { std::pair( V{ -1 , 2 , 0 } , V{ 1 , 4 , 3 } ) ,
-        std::pair( V{ 5 } , V{ 9 } ) , std::pair( V{ 7 } , V{ 7 } ) ,
-        std::pair( V{ -4 , -9 , 3 } , V{ -2 , -9 , 3 } ) ,
-        std::pair( V{ -3 , -3 , -3 , -3 } , V{ -2 , -1 , -3 , -2 } ) ,
-        std::pair( V{ 1000000 , -1000000 } , V{ 1000002 , -999999 } ) } ) {
-  const V & lo = b.first , & hi = b.second;
+ for( const auto & b :
+      { std::pair( V{ -1 , 2 , 0 } , V{ 1 , 4 , 3 } ) ,
+	std::pair( V{ 5 } , V{ 9 } ) ,
+	std::pair( V{ 7 } , V{ 7 } ) ,
+	std::pair( V{ -4 , -9 , 3 } , V{ -2 , -9 , 3 } ) ,
+	std::pair( V{ -3 , -3 , -3 , -3 } , V{ -2 , -1 , -3 , -2 } ) ,
+	std::pair( V{ 1000000 , -1000000 } , V{ 1000002 , -999999 } ) } ) {
+  const V &lo = b.first , &hi = b.second;
   auto p = [ & ]( const V & idx ) {
    long pos = 0;
    for( std::size_t j = 0 ; j < idx.size() ; ++j )
     pos = pos * ( hi[ j ] - lo[ j ] + 1 ) + ( idx[ j ] - lo[ j ] );
    return( pos );
    };
-  long expected = 0;   // by rows: the visit in this order fills v[ 0 , ... ]
+  long expected = 0;  // by rows: the visit in this order fills v[ 0 , ... ]
   V idx = lo;
   CHECK( p( lo ) == 0 );
-  for( bool more = true ; more ; ) {      // the last index varies first
+  for( bool more = true ; more ; ) {  // the last index varies first
    CHECK( p( idx ) == expected++ );
    more = false;
    for( std::size_t j = idx.size() ; j-- > 0 ; )
-    if( idx[ j ] < hi[ j ] ) { ++idx[ j ]; more = true; break; }
-    else idx[ j ] = lo[ j ];
+    if( idx[ j ] < hi[ j ] ) {
+     ++idx[ j ];
+     more = true;
+     break;
+     }
+    else
+     idx[ j ] = lo[ j ];
    }
   long size = 1;
   for( std::size_t j = 0 ; j < lo.size() ; ++j )
@@ -229,14 +241,17 @@ ADS_TEST( "ex3.4" )
   }
  }
 
-namespace {
+namespace
+{
 
 /// Exercise 3.5: the polynomial of degree at most k, with its coefficients
 /// a_0 , ... , a_k, evaluated by the rule of Horner
-class Polynomial {
+class Polynomial
+{
  std::vector< double > f_a;
+
  public:
- explicit Polynomial( int k ) : f_a( k + 1 , 0.0 ) {}
+ explicit Polynomial( int k ) : f_a( k + 1 , 0.0 ) { }
  int degree( void ) const { return( int( f_a.size() ) - 1 ); }
  void set( int i , double a ) { f_a[ i ] = a; }
  double coefficient( int i ) const {
@@ -281,31 +296,35 @@ class Polynomial {
 ADS_TEST( "ex3.5" )
 {
  Polynomial p( 1 ) , q( 1 );
- p.set( 0 , 1 ); p.set( 1 , 1 );    // 1 + x
- q.set( 0 , 1 ); q.set( 1 , -1 );   // 1 - x
+ p.set( 0 , 1 );
+ p.set( 1 , 1 );  // 1 + x
+ q.set( 0 , 1 );
+ q.set( 1 , -1 );  // 1 - x
  const auto r = p * q;
  CHECK( r.degree() == 2 );
  CHECK( near( r.coefficient( 0 ) , 1 ) && near( r.coefficient( 1 ) , 0 ) &&
-        near( r.coefficient( 2 ) , -1 ) );
+	near( r.coefficient( 2 ) , -1 ) );
  for( double x : { -2.0 , 0.0 , 0.5 , 3.0 } ) {
   CHECK( near( r( x ) , 1 - x * x ) );
   CHECK( near( ( p + q )( x ) , 2 ) );
   CHECK( near( ( p - q )( x ) , 2 * x ) );
   }
- Polynomial c( 0 );   // a constant
+ Polynomial c( 0 );  // a constant
  c.set( 0 , 4 );
  CHECK( near( c( 10 ) , 4 ) );
- const Polynomial z( 0 );                       // 0
+ const Polynomial z( 0 );  // 0
  CHECK( z.degree() == 0 && z( 5 ) == 0 && z.coefficient( 3 ) == 0 );
  const auto pz = p * z;
  CHECK( pz.degree() == 1 && pz( 7 ) == 0 && pz( -7 ) == 0 );
- const auto pc = p * c;                         // 4 + 4 x
+ const auto pc = p * c;  // 4 + 4 x
  CHECK( near( pc.coefficient( 0 ) , 4 ) && near( pc.coefficient( 1 ) , 4 ) );
- const auto pp = p - p;                         // 0 x + 0, degree 1
+ const auto pp = p - p;  // 0 x + 0, degree 1
  CHECK( pp.degree() == 1 && pp.coefficient( 0 ) == 0 &&
-        pp.coefficient( 1 ) == 0 );
- Polynomial h( 4 );                             // x^4 - 2 x + 3
- h.set( 4 , 1 ); h.set( 1 , -2 ); h.set( 0 , 3 );
+	pp.coefficient( 1 ) == 0 );
+ Polynomial h( 4 );  // x^4 - 2 x + 3
+ h.set( 4 , 1 );
+ h.set( 1 , -2 );
+ h.set( 0 , 3 );
  CHECK( h.coefficient( 3 ) == 0 && h.coefficient( 5 ) == 0 );
  CHECK( near( h( 0 ) , 3 ) );
  for( double x : { -3.0 , -1.0 , -0.5 , 0.25 , 2.0 } ) {
@@ -314,13 +333,14 @@ ADS_TEST( "ex3.5" )
   CHECK( near( ( h + p )( x ) , hx + 1 + x ) );  // degrees 4 and 1
   CHECK( near( ( p + h )( x ) , hx + 1 + x ) );
   CHECK( near( ( p - h )( x ) , 1 + x - hx ) );
-  CHECK( std::abs( ( h * r )( x ) - hx * ( 1 - x * x ) ) <= 1e-9 );
+  CHECK( std::abs( ( h * r )( x )-hx * ( 1 - x * x ) ) <= 1e-9 );
   }
  CHECK( ( h + p ).degree() == 4 && ( p + h ).degree() == 4 &&
-        ( h * r ).degree() == 6 );
+	( h * r ).degree() == 6 );
  }
 
-namespace {
+namespace
+{
 
 // Solution of exercise 3.6: stampaDifferenze(), the items equal to the
 // difference of the one before and the one after; three positions are
@@ -393,10 +413,10 @@ typename S::Item rango( S & L , typename S::Pos p )
 ADS_TEST( "ex3.6" )
 {
  using V = std::vector< int >;
- CHECK( stampaDifferenze( List< int >{ 5 , 2 , 3 , 1 , 2 } ) ==
-        V( { 2 , 1 } ) );
+ CHECK( stampaDifferenze( List< int >{ 5 , 2 , 3 , 1 , 2 } ) == V( { 2 ,
+								     1 } ) );
  CHECK( stampaDifferenze( ArraySequence< int >{ 5 , 2 , 3 , 1 , 2 } ) ==
-        V( { 2 , 1 } ) );
+	V( { 2 , 1 } ) );
  CHECK( stampaDifferenze( List< int >{ 1 , 1 , 1 } ).empty() );
  CHECK( stampaDifferenze( List< int >() ).empty() );
  CHECK( stampaDifferenze( ArraySequence< int >() ).empty() );
@@ -410,10 +430,12 @@ ADS_TEST( "ex3.6" )
  std::mt19937 g( 9 );
  for( int t = 0 ; t < 100 ; ++t ) {
   V v( g() % 8 );
-  for( auto & x : v ) x = int( g() % 5 ) - 2;
+  for( auto & x : v )
+   x = int( g() % 5 ) - 2;
   V want;
   for( std::size_t i = 1 ; i + 1 < v.size() ; ++i )
-   if( v[ i ] == v[ i - 1 ] - v[ i + 1 ] ) want.push_back( v[ i ] );
+   if( v[ i ] == v[ i - 1 ] - v[ i + 1 ] )
+    want.push_back( v[ i ] );
   List< int > L;
   ArraySequence< int > A;
   for( int x : v ) {
@@ -433,20 +455,22 @@ ADS_TEST( "ex3.7" )
  List< int > L{ 3 , 7 , 8 , 1 , 4 };
  oddBeforeEven( L );
  CHECK( items( L ) == V( { 3 , 7 , 1 , 8 , 4 } ) );
- List< int > E{ 2 , 4 , 6 };   // all even: unchanged
+ List< int > E{ 2 , 4 , 6 };  // all even: unchanged
  oddBeforeEven( E );
  CHECK( items( E ) == V( { 2 , 4 , 6 } ) );
  List< int > Z;
  oddBeforeEven( Z );
  CHECK( Z.empty() );
- for( const V & v : { V{ 1 } , V{ 2 } , V{ 1 , 3 , 5 } , V{ 2 , 1 } ,
-                      V{ 1 , 2 } , V{ 4 , 3 , 2 , 1 } , V{ 0 , -1 , -2 , -3 } ,
-                      V{ 2 , 2 , 1 , 1 , 2 } } ) {
-  List< int > L2;                         // against a stable partition
-  for( int x : v ) L2.insert( L2.next( L2.tail() ) , x );
+ for( const V & v :
+      { V{ 1 } , V{ 2 } , V{ 1 , 3 , 5 } , V{ 2 , 1 } , V{ 1 , 2 } ,
+	V{ 4 , 3 , 2 , 1 } ,
+	V{ 0 , -1 , -2 , -3 } , V{ 2 , 2 , 1 , 1 , 2 } } ) {
+  List< int > L2;  // against a stable partition
+  for( int x : v )
+   L2.insert( L2.next( L2.tail() ) , x );
   V want = v;
   std::stable_partition( want.begin() , want.end() ,
-                         []( int x ) { return( x % 2 != 0 ); } );
+			 []( int x ) { return( x % 2 != 0 ); } );
   oddBeforeEven( L2 );
   CHECK( items( L2 ) == want );
   }
@@ -474,7 +498,8 @@ ADS_TEST( "ex3.8" )
  List< int > Z{ 0 , 0 , 0 };
  CHECK( rango( Z , Z.head() ) == 0 && items( Z ) == V( 3 , 0 ) );
  List< long > B;
- for( long i = 0 ; i < 10000 ; ++i ) B.insert( B.next( B.tail() ) , i );
+ for( long i = 0 ; i < 10000 ; ++i )
+  B.insert( B.next( B.tail() ) , i );
  CHECK( rango( B , B.head() ) == 10000L * 9999 / 2 );
  long i = 0;
  for( auto p = B.head() ; ! B.finished( p ) ; p = B.next( p ) , ++i )

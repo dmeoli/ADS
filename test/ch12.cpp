@@ -48,7 +48,8 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ints = std::vector< int >;
 using Longs = std::vector< long >;
@@ -64,9 +65,10 @@ std::vector< T > items( const List< T > & L )
  }
 
 /// a counting comparison
-struct Counting {
+struct Counting
+{
  long * c;
- bool operator()( int a , int b ) const {   // not those of the contracts
+ bool operator()( int a , int b ) const {  // not those of the contracts
   *c += ! checkingContract();
   return( a < b );
   }
@@ -87,26 +89,28 @@ ADS_TEST( "sec12.1.interpolation" )
  const Ints A = { 1 , 5 , 7 , 8 , 13 , 17 , 21 , 27 , 33 , 37 , 40 , 42 };
  std::vector< std::tuple< long , long , long > > probes;
  CHECK( interpolationSearch( A , 13 , [ & ]( long i , long j , long m ) {
-         probes.emplace_back( i , j , m ); } ) == 4 );
- const std::vector< std::tuple< long , long , long > > book = {
-  { 0 , 11 , 3 } , { 4 , 11 , 4 } };
+	 probes.emplace_back( i , j , m );
+	 } ) == 4 );
+ const std::vector< std::tuple< long , long , long > > book = { { 0 , 11 ,
+								  3 } ,
+							      { 4 , 11 , 4 } };
  CHECK( probes == book );
  CHECK( interpolationSearch( A , 14 ) == -1 );
  CHECK( interpolationSearch( A , 0 ) == -1 );
- CHECK( interpolationSearch( A , 43 ) == -1 );            // past the last
- CHECK( interpolationSearch( A , 1 ) == 0 );              // the first
- CHECK( interpolationSearch( A , 42 ) == 11 );            // the last
+ CHECK( interpolationSearch( A , 43 ) == -1 );  // past the last
+ CHECK( interpolationSearch( A , 1 ) == 0 );    // the first
+ CHECK( interpolationSearch( A , 42 ) == 11 );  // the last
  CHECK( interpolationSearch( Ints( { 5 , 5 , 5 } ) , 5 ) >= 0 );
  CHECK( interpolationSearch( Ints( { 5 , 5 , 5 } ) , 4 ) == -1 );
  CHECK( interpolationSearch( Ints( { 5 , 5 , 5 } ) , 6 ) == -1 );
- CHECK( interpolationSearch( Ints() , 5 ) == -1 );         // empty
- CHECK( interpolationSearch( Ints( { 5 } ) , 5 ) == 0 );   // one item
+ CHECK( interpolationSearch( Ints() , 5 ) == -1 );        // empty
+ CHECK( interpolationSearch( Ints( { 5 } ) , 5 ) == 0 );  // one item
  CHECK( interpolationSearch( Ints( { 5 } ) , 3 ) == -1 );
  // the extremes of long long: v - A[ i ] would overflow, the probe stays
  // in A
  using LLs = std::vector< long long >;
  const long long LO = std::numeric_limits< long long >::min() ,
-                 HI = std::numeric_limits< long long >::max();
+		 HI = std::numeric_limits< long long >::max();
  const LLs X = { LO , LO + 1 , -1 , 0 , 1 , HI - 1 , HI };
  for( std::size_t i = 0 ; i < X.size() ; ++i )
   CHECK( interpolationSearch( X , X[ i ] ) == long( i ) );
@@ -129,21 +133,23 @@ ADS_TEST( "sec12.1.interpolation" )
  for( int v : { 1 , 2 , 9 } )
   CHECK( R[ interpolationSearch( R , v ) ] == v );
  CHECK_THROWS( interpolationSearch( Ints( { 3 , 1 , 2 } ) , 7 ) ,
-               std::logic_error );                    // not sorted, audit
+	       std::logic_error );  // not sorted, audit
  std::mt19937 g( 1 );
  const int n = 1 << 20;
  Longs U( n );
- for( auto & u : U ) u = long( g() );
+ for( auto & u : U )
+  u = long( g() );
  std::sort( U.begin() , U.end() );
  long total = 0;
  for( int t = 0 ; t < 1000 ; ++t ) {
   const long v = U[ g() % n ];
   long c = 0;
-  CHECK( U[ interpolationSearch( U , v , [ & ]( long , long , long ) {
-          ++c; } ) ] == v );
+  CHECK(
+    U[ interpolationSearch( U , v , [ & ]( long , long , long ) { ++c; } ) ] ==
+    v );
   total += c;
   }
- CHECK( total / 1000.0 < 6 );                   // log2 log2 n = 4.3
+ CHECK( total / 1000.0 < 6 );  // log2 log2 n = 4.3
  }
 
 // Figure 12.1: perno() on 9 12 8 18 6 13 11 3 5 10 puts the pivot in j = 4;
@@ -166,7 +172,7 @@ ADS_TEST( "sec12.2.perno" )
  CHECK( partition( E , 0 , 5 ) == 0 && E == Ints( 6 , 2 ) );
  Ints F = { 8 , 6 , 9 , 1 , 7 , 0 };
  CHECK( partition( F , 1 , 4 ) == 2 && F[ 0 ] == 8 && F[ 5 ] == 0 &&
-        F[ 1 ] == 1 && F[ 2 ] == 6 );
+	F[ 1 ] == 1 && F[ 2 ] == 6 );
  // start > end, end out of the vector, an empty vector
  CHECK_THROWS( partition( B , 2 , 1 ) , std::logic_error );
  CHECK_THROWS( partition( B , 0 , 3 ) , std::logic_error );
@@ -191,7 +197,8 @@ ADS_TEST( "sec12.2.quicksort" )
  CHECK( c == long( n ) * ( n - 1 ) / 2 );
  std::mt19937 g( 2 );
  double H = 0;
- for( int k = 3 ; k <= n + 1 ; ++k ) H += 1.0 / k;
+ for( int k = 3 ; k <= n + 1 ; ++k )
+  H += 1.0 / k;
  double avg = 0;
  for( int t = 0 ; t < 50 ; ++t ) {
   Ints R = S;
@@ -212,9 +219,9 @@ ADS_TEST( "sec12.2.quicksort" )
  // empty, one, two in both orders, the extremes of int, no comparison
  // on fewer than two items
  for( Ints X : { Ints() , Ints( { 4 } ) , Ints( { 1 , 2 } ) ,
-                 Ints( { 2 , 1 } ) ,
-                 Ints( { 0 , std::numeric_limits< int >::max() , -1 ,
-                         std::numeric_limits< int >::min() , 0 } ) } ) {
+		 Ints( { 2 , 1 } ) ,
+		 Ints( { 0 , std::numeric_limits< int >::max() , -1 ,
+			 std::numeric_limits< int >::min() , 0 } ) } ) {
   Ints Y = X;
   long f = 0;
   quickSort( X , Counting{ &f } );
@@ -244,9 +251,12 @@ ADS_TEST( "sec12.2.tuned" )
   std::iota( inputs[ 0 ].begin() , inputs[ 0 ].end() , 0 );
   inputs[ 1 ] = inputs[ 0 ];
   std::reverse( inputs[ 1 ].begin() , inputs[ 1 ].end() );
-  for( auto & x : inputs[ 2 ] ) x = 7;
-  for( auto & x : inputs[ 3 ] ) x = g() % 10;
-  for( auto & x : inputs[ 4 ] ) x = int( g() );
+  for( auto & x : inputs[ 2 ] )
+   x = 7;
+  for( auto & x : inputs[ 3 ] )
+   x = g() % 10;
+  for( auto & x : inputs[ 4 ] )
+   x = int( g() );
   for( auto A : inputs ) {
    Ints B = A;
    std::size_t depth = 0;
@@ -262,18 +272,19 @@ ADS_TEST( "sec12.2.tuned" )
  // the cutoffs 0 , 1 , 2 (taken as 3), at the size, past it (insertion
  // only), and one below; organ pipes, two values, the extremes of int
  const int MAXI = std::numeric_limits< int >::max() ,
-           MINI = std::numeric_limits< int >::min();
+	   MINI = std::numeric_limits< int >::min();
  for( int n : { 2 , 3 , 4 , 16 , 17 , 33 , 1000 } ) {
   std::vector< Ints > inputs( 3 , Ints( n ) );
   for( int i = 0 ; i < n ; ++i ) {
    inputs[ 0 ][ i ] = std::min( i , n - 1 - i );
    inputs[ 1 ][ i ] = int( g() % 2 );
-   inputs[ 2 ][ i ] = ( g() % 3 == 0 ) ? MAXI : ( g() % 2 ) ? MINI :
-                                          int( g() );
+   inputs[ 2 ][ i ] = ( g() % 3 == 0 ) ? MAXI
+		      : ( g() % 2 )    ? MINI
+				       : int( g() );
    }
-  for( std::size_t cut : { std::size_t( 0 ) , std::size_t( 1 ) ,
-                           std::size_t( 2 ) , std::size_t( n - 1 ) ,
-                           std::size_t( n ) , std::size_t( n + 1 ) } )
+  for( std::size_t cut :
+       { std::size_t( 0 ) , std::size_t( 1 ) , std::size_t( 2 ) ,
+	 std::size_t( n - 1 ) , std::size_t( n ) , std::size_t( n + 1 ) } )
    for( auto A : inputs ) {
     Ints B = A;
     quickSortTuned( A , cut );
@@ -289,30 +300,31 @@ ADS_TEST( "sec12.2.tuned" )
 // lengths one off a power of two
 ADS_TEST( "sec12.3.polynomials" )
 {
- const Longs p = { 1 , 2 , 3 } , q = { 4 , 5 };      // 1 + 2x + 3x^2 ...
+ const Longs p = { 1 , 2 , 3 } , q = { 4 , 5 };  // 1 + 2x + 3x^2 ...
  CHECK( multiplyNaive( p , q ) == Longs( { 4 , 13 , 22 , 15 } ) );
  CHECK( multiplyKaratsuba( p , q ) == Longs( { 4 , 13 , 22 , 15 } ) );
  CHECK( multiplyFour( p , q ) == Longs( { 4 , 13 , 22 , 15 } ) );
  CHECK( multiplyKaratsuba( Longs() , q ).empty() );
  // an empty factor gives the empty product, with no multiplication
  for( auto [ a , b ] : { std::pair( Longs() , q ) , std::pair( p , Longs() ) ,
-                         std::pair( Longs() , Longs() ) } ) {
+			std::pair( Longs() , Longs() ) } ) {
   long m1 = 0 , m2 = 0 , m3 = 0;
   CHECK( multiplyNaive( a , b , &m1 ).empty() &&
-         multiplyFour( a , b , &m2 ).empty() &&
-         multiplyKaratsuba( a , b , &m3 ).empty() );
+	 multiplyFour( a , b , &m2 ).empty() &&
+	 multiplyKaratsuba( a , b , &m3 ).empty() );
   CHECK( m1 == 0 && m2 == 0 && m3 == 0 );
   }
  // constants, a constant times a long one, the zero polynomial, and
  // lengths one off a power of two
  CHECK( multiplyKaratsuba( Longs( { -3 } ) , Longs( { 5 } ) ) ==
-        Longs( { -15 } ) );
+	Longs( { -15 } ) );
  CHECK( multiplyFour( Longs( { 2 } ) , Longs( { 1 , 0 , -1 , 4 , 0 } ) ) ==
-        Longs( { 2 , 0 , -2 , 8 , 0 } ) );
- CHECK( multiplyKaratsuba( Longs( { 1 , 0 , -1 , 4 , 0 } ) , Longs( { 2 } ) )
-        == Longs( { 2 , 0 , -2 , 8 , 0 } ) );
- CHECK( multiplyKaratsuba( Longs( 7 , 0 ) , Longs( 9 , 0 ) ) ==
-        Longs( 15 , 0 ) );
+	Longs( { 2 , 0 , -2 , 8 , 0 } ) );
+ CHECK( multiplyKaratsuba( Longs( { 1 , 0 , -1 , 4 , 0 } ) ,
+			   Longs( { 2 } ) ) ==
+	Longs( { 2 , 0 , -2 , 8 , 0 } ) );
+ CHECK( multiplyKaratsuba( Longs( 7 , 0 ) , Longs( 9 , 0 ) ) == Longs( 15 ,
+								       0 ) );
  for( std::size_t n : { 3 , 5 , 7 , 9 , 15 , 17 , 31 , 33 } ) {
   Longs a( n ) , b( n );
   std::iota( a.begin() , a.end() , -long( n / 2 ) );
@@ -324,8 +336,10 @@ ADS_TEST( "sec12.3.polynomials" )
  for( int k = 0 ; k <= 8 ; ++k ) {
   const std::size_t n = std::size_t( 1 ) << k;
   Longs a( n ) , b( n );
-  for( auto & x : a ) x = long( g() % 21 ) - 10;
-  for( auto & x : b ) x = long( g() % 21 ) - 10;
+  for( auto & x : a )
+   x = long( g() % 21 ) - 10;
+  for( auto & x : b )
+   x = long( g() % 21 ) - 10;
   long m1 = 0 , m2 = 0 , m3 = 0;
   const auto r = multiplyNaive( a , b , &m1 );
   CHECK( multiplyFour( a , b , &m2 ) == r );
@@ -333,10 +347,12 @@ ADS_TEST( "sec12.3.polynomials" )
   CHECK( m1 == long( n * n ) && m2 == long( n * n ) );
   CHECK( m3 == long( std::pow( 3.0 , k ) ) );
   }
- for( int t = 0 ; t < 50 ; ++t ) {                 // lengths of any kind
+ for( int t = 0 ; t < 50 ; ++t ) {  // lengths of any kind
   Longs a( 1 + g() % 40 ) , b( 1 + g() % 40 );
-  for( auto & x : a ) x = long( g() % 7 );
-  for( auto & x : b ) x = long( g() % 7 );
+  for( auto & x : a )
+   x = long( g() % 7 );
+  for( auto & x : b )
+   x = long( g() % 7 );
   CHECK( multiplyKaratsuba( a , b ) == multiplyNaive( a , b ) );
   CHECK( multiplyFour( a , b ) == multiplyNaive( a , b ) );
   }
@@ -350,8 +366,12 @@ ADS_TEST( "sec12.4.strassen" )
  std::mt19937 g( 5 );
  for( std::size_t n : { 1 , 2 , 3 , 4 , 7 , 8 , 16 , 33 } ) {
   Matrix< long > A( n , Longs( n ) ) , B = A;
-  for( auto & r : A ) for( auto & x : r ) x = long( g() % 11 ) - 5;
-  for( auto & r : B ) for( auto & x : r ) x = long( g() % 11 ) - 5;
+  for( auto & r : A )
+   for( auto & x : r )
+    x = long( g() % 11 ) - 5;
+  for( auto & r : B )
+   for( auto & x : r )
+    x = long( g() % 11 ) - 5;
   long mn = 0 , ms = 0;
   const auto C = multiplyNaive( A , B , &mn );
   CHECK( strassen( A , B , 1 , &ms ) == C );
@@ -360,29 +380,30 @@ ADS_TEST( "sec12.4.strassen" )
    CHECK( ms == long( std::pow( 7.0 , std::log2( double( n ) ) ) + 0.5 ) );
   }
  CHECK_THROWS( strassen( Matrix< long >( 2 , Longs( 2 ) ) ,
-                         Matrix< long >( 3 , Longs( 3 ) ) ) ,
-               contract_violation );
+			 Matrix< long >( 3 , Longs( 3 ) ) ) ,
+	       contract_violation );
  // n = 0, the cutoff 0 (taken as 1) and past n (one naive product of the
  // matrices bordered to 8 x 8), the identity, the zero matrix
  CHECK( strassen( Matrix< long >() , Matrix< long >() ).empty() );
  Matrix< long > I( 5 , Longs( 5 , 0 ) ) , A( 5 , Longs( 5 ) ) ,
-                Z( 5 , Longs( 5 , 0 ) );
+   Z( 5 , Longs( 5 , 0 ) );
  for( std::size_t i = 0 ; i < 5 ; ++i ) {
   I[ i ][ i ] = 1;
-  for( auto & x : A[ i ] ) x = long( g() % 11 ) - 5;
+  for( auto & x : A[ i ] )
+   x = long( g() % 11 ) - 5;
   }
  CHECK( strassen( A , I , 0 ) == A && strassen( I , A , 1 ) == A );
  long m0 = 0;
  CHECK( strassen( A , Z , 100 , &m0 ) == Z && strassen( Z , A ) == Z );
- CHECK( m0 == 8 * 8 * 8 );                   // bordered to 8, then naive
+ CHECK( m0 == 8 * 8 * 8 );  // bordered to 8, then naive
  // rectangular and ragged factors break the contract
  CHECK_THROWS( strassen( Matrix< long >( 2 , Longs( 3 ) ) ,
-                         Matrix< long >( 2 , Longs( 3 ) ) ) ,
-               contract_violation );
+			 Matrix< long >( 2 , Longs( 3 ) ) ) ,
+	       contract_violation );
  Matrix< long > R( 3 , Longs( 3 ) );
  R[ 1 ].pop_back();
  CHECK_THROWS( strassen( R , Matrix< long >( 3 , Longs( 3 ) ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -401,8 +422,10 @@ ADS_TEST( "ex12.1" )
    List< int > L , M;
    Ints ref;
    for( int i = 0 ; i < n ; ++i ) {
-    const int x = kind == 0 ? int( g() % 100 ) : kind == 1 ? i :
-                  kind == 2 ? n - i : 7;
+    const int x = kind == 0   ? int( g() % 100 )
+		  : kind == 1 ? i
+		  : kind == 2 ? n - i
+			      : 7;
     L.insert( L.next( L.tail() ) , x );
     M.insert( M.next( M.tail() ) , x );
     ref.push_back( x );
@@ -422,7 +445,8 @@ long maxsum3( const Longs & A )
  for( std::size_t i = 0 ; i < A.size() ; ++i )
   for( std::size_t j = i ; j < A.size() ; ++j ) {
    long sum = 0;
-   for( std::size_t k = i ; k <= j ; ++k ) sum += A[ k ];
+   for( std::size_t k = i ; k <= j ; ++k )
+    sum += A[ k ];
    max = std::max( max , sum );
    }
  return( max );
@@ -443,8 +467,10 @@ long maxsum2( const Longs & A )
 
 long maxsumRec( const Longs & A , long i , long j )
 {
- if( i > j ) return( 0 );
- if( i == j ) return( std::max( 0L , A[ i ] ) );
+ if( i > j )
+  return( 0 );
+ if( i == j )
+  return( std::max( 0L , A[ i ] ) );
  const long m = i + ( j - i ) / 2;
  const long ms = maxsumRec( A , i , m ) , md = maxsumRec( A , m + 1 , j );
  long sum = 0 , ls = 0 , rs = 0;
@@ -480,18 +506,24 @@ ADS_TEST( "ex12.2" )
  // empty, one item of each sign, all negative, all positive (the whole
  // vector), the best at the first or the last place, huge items
  const long B = std::numeric_limits< long >::max() / 4;
- for( const auto & [ A , r ] : std::vector< std::pair< Longs , long > >( {
-       { {} , 0 } , { { 5 } , 5 } , { { -5 } , 0 } , { { 0 } , 0 } ,
-       { { -1 , -7 , -3 } , 0 } , { { 1 , 2 , 3 } , 6 } ,
-       { { 9 , -10 , 1 , 1 } , 9 } , { { 1 , 1 , -10 , 9 } , 9 } ,
-       { { B , -1 , B , -3 * B , B } , 2 * B - 1 } } ) ) {
+ for( const auto & [ A , r ] : std::vector< std::pair< Longs , long > >(
+	{ { {} , 0 } ,
+	  { { 5 } , 5 } ,
+	  { { -5 } , 0 } ,
+	  { { 0 } , 0 } ,
+	  { { -1 , -7 , -3 } , 0 } ,
+	  { { 1 , 2 , 3 } , 6 } ,
+	  { { 9 , -10 , 1 , 1 } , 9 } ,
+	  { { 1 , 1 , -10 , 9 } , 9 } ,
+	  { { B , -1 , B , -3 * B , B } , 2 * B - 1 } } ) ) {
   CHECK( maxsum3( A ) == r && maxsum2( A ) == r );
   CHECK( maxsumRec( A , 0 , long( A.size() ) - 1 ) == r );
   CHECK( maxsumKadane( A ) == r );
   }
  for( int t = 0 ; t < 100 ; ++t ) {
   Longs A( g() % 60 );
-  for( auto & a : A ) a = long( g() % 21 ) - 10;
+  for( auto & a : A )
+   a = long( g() % 21 ) - 10;
   const long r = maxsum3( A );
   CHECK( maxsum2( A ) == r );
   CHECK( maxsumRec( A , 0 , long( A.size() ) - 1 ) == r );
@@ -514,12 +546,13 @@ ADS_TEST( "ex12.3" )
  CHECK( countInversions( S ) == 0 && countInversions( Q ) == 0 );
  Ints Rv( 65536 );
  std::iota( Rv.rbegin() , Rv.rend() , 0 );
- CHECK( (long long)( countInversions( Rv ) ) == 65536LL * 65535 / 2 );
+ CHECK( ( long long )( countInversions( Rv ) ) == 65536LL * 65535 / 2 );
  CHECK( std::is_sorted( Rv.begin() , Rv.end() ) );
  std::mt19937 g( 8 );
  for( int t = 0 ; t < 50 ; ++t ) {
   Ints B( g() % 300 );
-  for( auto & b : B ) b = int( g() % 50 );
+  for( auto & b : B )
+   b = int( g() % 50 );
   long ref = 0;
   for( std::size_t i = 0 ; i < B.size() ; ++i )
    for( std::size_t j = i + 1 ; j < B.size() ; ++j )
@@ -559,13 +592,16 @@ ADS_TEST( "ex12.5" )
  std::mt19937 g( 9 );
  for( int n : { 0 , 1 , 2 , 3 , 5 , 64 , 100 , 1023 , 1025 } ) {
   std::vector< std::pair< int , int > > A( n );
-  for( int i = 0 ; i < n ; ++i ) A[ i ] = { int( g() % 10 ) , i };
+  for( int i = 0 ; i < n ; ++i )
+   A[ i ] = { int( g() % 10 ) , i };
   auto byKey = []( auto & a , auto & b ) { return( a.first < b.first ); };
-  for( int kind = 0 ; kind < 3 ; ++kind ) {    // random, one key, reversed
+  for( int kind = 0 ; kind < 3 ; ++kind ) {  // random, one key, reversed
    if( kind == 1 )
-    for( auto & a : A ) a.first = 4;
+    for( auto & a : A )
+     a.first = 4;
    if( kind == 2 )
-    for( int i = 0 ; i < n ; ++i ) A[ i ].first = n - i;
+    for( int i = 0 ; i < n ; ++i )
+     A[ i ].first = n - i;
    auto B = A;
    mergeSortBottomUp( A , byKey );
    std::stable_sort( B.begin() , B.end() , byKey );
@@ -585,8 +621,12 @@ ADS_TEST( "ex12.6" )
   steps = 0;
   while( ( i < n ) && ( j >= 0 ) ) {
    ++steps;
-   if( M[ i ][ j ] == k ) return( true );
-   if( M[ i ][ j ] < k ) ++i; else --j;
+   if( M[ i ][ j ] == k )
+    return( true );
+   if( M[ i ][ j ] < k )
+    ++i;
+   else
+    --j;
    }
   return( false );
   };
@@ -596,11 +636,13 @@ ADS_TEST( "ex12.6" )
   Matrix< int > M( n , Ints( n ) );
   for( int i = 0 ; i < n ; ++i )
    for( int j = 0 ; j < n ; ++j )
-    M[ i ][ j ] = std::max( i ? M[ i - 1 ][ j ] : 0 , j ? M[ i ][ j - 1 ] : 0 )
-                  + int( g() % 3 );
+    M[ i ][ j ] =
+      std::max( i ? M[ i - 1 ][ j ] : 0 , j ? M[ i ][ j - 1 ] : 0 ) +
+      int( g() % 3 );
   for( int k = -1 ; k < 4 * n ; ++k ) {
    bool ref = false;
-   for( auto & r : M ) ref = ref || std::count( r.begin() , r.end() , k );
+   for( auto & r : M )
+    ref = ref || std::count( r.begin() , r.end() , k );
    int steps;
    CHECK( search( M , k , steps ) == ref && steps <= 2 * n - 1 );
    }
@@ -610,8 +652,8 @@ ADS_TEST( "ex12.6" )
  // column
  int steps;
  CHECK( ! search( Matrix< int >() , 3 , steps ) && steps == 0 );
- CHECK( search( Matrix< int >( 1 , Ints( 1 , 3 ) ) , 3 , steps ) &&
-        steps == 1 );
+ CHECK( search( Matrix< int >( 1 , Ints( 1 , 3 ) ) , 3 ,
+		steps ) && steps == 1 );
  CHECK( ! search( Matrix< int >( 1 , Ints( 1 , 3 ) ) , 4 , steps ) );
  const Matrix< int > E( 6 , Ints( 6 , 2 ) );
  CHECK( search( E , 2 , steps ) && steps == 1 );
@@ -622,7 +664,7 @@ ADS_TEST( "ex12.6" )
 // the tennis tournament of n = 2^k players: in the day j each player i
 // meets M[ i ][ j ], who meets i; each pair meets once, in n - 1 days
 void torneo( Matrix< int > & M , int imin , int imax , int jmin , int jmax ,
-             int gmin , int gmax )
+	     int gmin , int gmax )
 {
  if( gmin == gmax - 1 ) {
   M[ imin ][ jmin ] = gmin;
@@ -632,7 +674,7 @@ void torneo( Matrix< int > & M , int imin , int imax , int jmin , int jmax ,
   return;
   }
  const int imed = ( imin + imax ) / 2 , jmed = ( jmin + jmax ) / 2 ,
-           gmed = ( gmin + gmax ) / 2;
+	   gmed = ( gmin + gmax ) / 2;
  torneo( M , imin , imed , jmin , jmed , gmin , gmed );
  torneo( M , imed + 1 , imax , jmed + 1 , jmax , gmin , gmed );
  torneo( M , imed + 1 , imax , jmin , jmed , gmed + 1 , gmax );
@@ -649,7 +691,7 @@ ADS_TEST( "ex12.7" )
    CHECK( M[ i ][ 0 ] == i );
    for( int j = 1 ; j < n ; ++j ) {
     const int o = M[ i ][ j ];
-    CHECK( o != i && M[ o ][ j ] == i );            // a match of the day
+    CHECK( o != i && M[ o ][ j ] == i );  // a match of the day
     met.insert( { std::min( i , o ) , std::max( i , o ) } );
     }
    }
@@ -658,8 +700,11 @@ ADS_TEST( "ex12.7" )
  if( true ) {
   Matrix< int > M( 4 , Ints( 4 ) );
   torneo( M , 0 , 3 , 0 , 3 , 0 , 3 );
-  CHECK( M == Matrix< int >( { { 0 , 1 , 2 , 3 } , { 1 , 0 , 3 , 2 } ,
-                               { 2 , 3 , 0 , 1 } , { 3 , 2 , 1 , 0 } } ) );
+  CHECK(
+    M ==
+    Matrix< int >(
+      { { 0 , 1 , 2 , 3 } , { 1 , 0 , 3 , 2 } , { 2 , 3 , 0 , 1 } ,
+	{ 3 , 2 , 1 , 0 } } ) );
   }
  }
 
@@ -671,26 +716,27 @@ ADS_TEST( "ex12.8" )
  std::mt19937 g( 11 );
  for( int t = 0 ; t < 1000 ; ++t ) {
   const long a = long( g() % 201 ) - 100 , b = long( g() % 201 ) - 100 ,
-             c = long( g() % 201 ) - 100 , d = long( g() % 201 ) - 100;
+	     c = long( g() % 201 ) - 100 , d = long( g() % 201 ) - 100;
   int mults = 0;
-  auto mul = [ & ]( long x , long y ) { ++mults; return( x * y ); };
+  auto mul = [ & ]( long x , long y ) {
+   ++mults;
+   return( x * y );
+   };
   const long k1 = mul( c , a + b ) , k2 = mul( a , d - c ) ,
-             k3 = mul( b , c + d );
-  const std::complex< long > ref = std::complex< long >( a , b ) *
-                                   std::complex< long >( c , d );
+    k3 = mul( b , c + d );
+  const std::complex< long > ref =
+    std::complex< long >( a , b ) * std::complex< long >( c , d );
   CHECK( k1 - k3 == ref.real() && k1 + k2 == ref.imag() && mults == 3 );
   }
  // zero, real and imaginary factors, i^2 = -1, and factors near 2^31
  // whose products need 64 bits
  using LL = long long;
  const LL H = 1LL << 31;
- for( auto [ a , b , c , d ] : { std::tuple( LL( 0 ) , LL( 0 ) , LL( 7 ) ,
-                                             LL( -3 ) ) ,
-                                 std::tuple( LL( 5 ) , LL( 0 ) , LL( -2 ) ,
-                                             LL( 0 ) ) ,
-                                 std::tuple( LL( 0 ) , LL( 1 ) , LL( 0 ) ,
-                                             LL( 1 ) ) ,
-                                 std::tuple( H , -H , H - 1 , H ) } ) {
+ for( auto [ a , b , c , d ] :
+      { std::tuple( LL( 0 ) , LL( 0 ) , LL( 7 ) , LL( -3 ) ) ,
+	std::tuple( LL( 5 ) , LL( 0 ) , LL( -2 ) , LL( 0 ) ) ,
+	std::tuple( LL( 0 ) , LL( 1 ) , LL( 0 ) , LL( 1 ) ) ,
+	std::tuple( H , -H , H - 1 , H ) } ) {
   const LL k1 = c * ( a + b ) , k2 = a * ( d - c ) , k3 = b * ( c + d );
   CHECK( k1 - k3 == a * c - b * d && k1 + k2 == a * d + b * c );
   }
@@ -704,8 +750,10 @@ ADS_TEST( "ex12.8" )
 ADS_TEST( "ex12.9.gallop-comparisons" )
 {
  long c = 0;
- auto count = [ & ]( int a , int b ) { c += ! checkingContract();
-                                       return( a < b ); };
+ auto count = [ & ]( int a , int b ) {
+  c += ! checkingContract();
+  return( a < b );
+  };
  const Ints A = { 3 , 8 , 12 , 20 , 31 , 40 , 44 , 51 , 60 , 72 , 85 };
  CHECK( gallopSearch( A , 31 , count ) == 4 && c == 6 );
  c = 0;
@@ -713,12 +761,13 @@ ADS_TEST( "ex12.9.gallop-comparisons" )
  bool within = true;
  for( int n = 1 ; n <= 300 ; ++n ) {
   Ints V( n );
-  for( int i = 0 ; i < n ; ++i ) V[ i ] = 2 * i;
+  for( int i = 0 ; i < n ; ++i )
+   V[ i ] = 2 * i;
   for( int v = -1 ; v <= 2 * n ; ++v ) {
    c = 0;
    const std::size_t h = gallopSearch( V , v , count );
-   const long bound = h == 0 ? 1 :
-                      2 * long( std::bit_width( std::size_t( h ) ) );
+   const long bound =
+     h == 0 ? 1 : 2 * long( std::bit_width( std::size_t( h ) ) );
    within = within && ( h == lowerBound( V , v ) ) && ( c <= bound );
    }
   }
@@ -732,13 +781,17 @@ ADS_TEST( "ex12.9" )
 {
  for( int n : { 1 , 10 , 1000 , 100000 } )
   for( int h : { 0 , 1 , 2 , 7 , n / 2 , n } ) {
-   if( h > n ) continue;
+   if( h > n )
+    continue;
    Ints V( n , 0 );
-   for( int i = h ; i < n ; ++i ) V[ i ] = 1;
+   for( int i = h ; i < n ; ++i )
+    V[ i ] = 1;
    CHECK( int( lowerBound( V , 1 ) ) == h );
    long c = 0;
    CHECK( int( gallopSearch( V , 1 , [ & ]( int a , int b ) {
-           c += ! checkingContract(); return( a < b ); } ) ) == h );
+	   c += ! checkingContract();
+	   return( a < b );
+	   } ) ) == h );
    CHECK( c <= 2 * long( std::log2( h + 1.0 ) ) + 3 );
    }
  // the empty vector: 0 for both, and the range [ lo , hi ) of lowerBound()
@@ -748,9 +801,9 @@ ADS_TEST( "ex12.9" )
  CHECK( lowerBound( V , 1 , 3 , 3 , std::less<>() ) == 3 );
  CHECK( lowerBound( V , 1 , 0 , 2 , std::less<>() ) == 2 );
  CHECK_THROWS( lowerBound( V , 1 , 3 , 2 , std::less<>() ) ,
-               std::logic_error );
+	       std::logic_error );
  CHECK_THROWS( lowerBound( V , 1 , 0 , 5 , std::less<>() ) ,
-               std::logic_error );
+	       std::logic_error );
  CHECK_THROWS( gallopSearch( Ints( { 1 , 0 } ) , 1 ) , std::logic_error );
  }
 
@@ -760,18 +813,19 @@ ADS_TEST( "ex12.9" )
 ADS_TEST( "ex12.10" )
 {
  std::function< int( const Matrix< int > & , int , int , int , long & ) > mn =
-  [ & ]( const Matrix< int > & M , int r , int c , int s , long & cmp ) {
-   if( s == 1 ) return( M[ r ][ c ] );
-   const int h = s / 2;
-   int m = mn( M , r , c , h , cmp );
-   for( auto [ dr , dc ] : { std::pair( 0 , h ) , std::pair( h , 0 ) ,
-                             std::pair( h , h ) } ) {
-    const int x = mn( M , r + dr , c + dc , h , cmp );
-    ++cmp;
-    m = std::min( m , x );
-    }
-   return( m );
-   };
+   [ & ]( const Matrix< int > & M , int r , int c , int s , long & cmp ) {
+    if( s == 1 )
+     return( M[ r ][ c ] );
+    const int h = s / 2;
+    int m = mn( M , r , c , h , cmp );
+    for( auto [ dr , dc ] :
+	 { std::pair( 0 , h ) , std::pair( h , 0 ) , std::pair( h , h ) } ) {
+     const int x = mn( M , r + dr , c + dc , h , cmp );
+     ++cmp;
+     m = std::min( m , x );
+     }
+    return( m );
+    };
  std::mt19937 g( 12 );
  for( int n : { 1 , 2 , 8 , 64 } ) {
   Matrix< int > M( n , Ints( n ) );
@@ -787,7 +841,9 @@ ADS_TEST( "ex12.10" )
   M[ n - 1 ][ n - 1 ] = -1;
   cmp = 0;
   CHECK( mn( M , 0 , 0 , n , cmp ) == -1 && cmp == long( n ) * n - 1 );
-  for( auto & r : M ) for( auto & x : r ) x = 3;
+  for( auto & r : M )
+   for( auto & x : r )
+    x = 3;
   CHECK( mn( M , 0 , 0 , n , cmp ) == 3 );
   }
  }
@@ -801,16 +857,22 @@ ADS_TEST( "ex12.11" )
   std::size_t lo = 0 , hi = V.size();
   while( lo < hi ) {
    const std::size_t m = lo + ( hi - lo ) / 2;
-   if( V[ m ] == int( m ) ) lo = m + 1; else hi = m;
+   if( V[ m ] == int( m ) )
+    lo = m + 1;
+   else
+    hi = m;
    }
   return( int( lo ) );
   };
  for( int n : { 0 , 1 , 2 , 9 , 1000 } ) {
-  Ints xs = { n };                               // the last one missing
-  for( int x = 0 ; x < n ; x += std::max( 1 , n / 7 ) ) xs.push_back( x );
+  Ints xs = { n };  // the last one missing
+  for( int x = 0 ; x < n ; x += std::max( 1 , n / 7 ) )
+   xs.push_back( x );
   for( int x : xs ) {
    Ints V;
-   for( int v = 0 ; v <= n ; ++v ) if( v != x ) V.push_back( v );
+   for( int v = 0 ; v <= n ; ++v )
+    if( v != x )
+     V.push_back( v );
    CHECK( missing( V ) == x );
    }
   }
@@ -825,7 +887,10 @@ ADS_TEST( "ex12.12" )
   std::size_t lo = 0 , hi = a.size() - 1;
   while( lo < hi ) {
    const std::size_t m = lo + ( hi - lo ) / 2;
-   if( a[ m ] < a[ m + 1 ] ) lo = m + 1; else hi = m;
+   if( a[ m ] < a[ m + 1 ] )
+    lo = m + 1;
+   else
+    hi = m;
    }
   return( lo );
   };
@@ -833,7 +898,7 @@ ADS_TEST( "ex12.12" )
  for( int t = 0 ; t < 200 ; ++t ) {
   const int n = 1 + int( g() % 50 ) , top = int( g() % n );
   Ints a( n );
-  for( int i = 0 ; i < n ; ++i )         // increasing, then decreasing
+  for( int i = 0 ; i < n ; ++i )  // increasing, then decreasing
    a[ i ] = i <= top ? i : -i;
   CHECK( int( peak( a ) ) == top );
   }
@@ -853,11 +918,12 @@ ADS_TEST( "ex12.13" )
  std::mt19937 g( 14 );
  for( int t = 0 ; t < 100 ; ++t ) {
   Ints A( g() % 200 );
-  for( auto & a : A ) a = int( g() % 20 );
+  for( auto & a : A )
+   a = int( g() % 20 );
   std::sort( A.begin() , A.end() );
   for( int k = -1 ; k <= 20 ; ++k )
    CHECK( long( upperBound( A , k ) - lowerBound( A , k ) ) ==
-          std::count( A.begin() , A.end() , k ) );
+	  std::count( A.begin() , A.end() , k ) );
   }
  // empty, all equal (all of them, none of a neighbour), and the audit on
  // an unsorted vector

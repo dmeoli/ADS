@@ -28,7 +28,7 @@
 
 #ifndef __ADS_PigeonholeSort
  #define __ADS_PigeonholeSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -47,7 +47,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the pairs sorted by key, the values of a key in their first order
 ///
@@ -70,8 +71,8 @@ namespace ADS {
 /// \post as many pairs as in \f$ A \f$, the keys sorted and each key with its
 ///       items in their order (audit)
 template< class V >
-std::vector< std::pair< int , V > > pigeonholeSort(
-                    const std::vector< std::pair< int , V > > & A , int k );
+std::vector< std::pair< int , V > >
+pigeonholeSort( const std::vector< std::pair< int , V > > & A , int k );
 
 /*--------------------------------------------------------------------------*/
 
@@ -85,7 +86,7 @@ std::vector< std::pair< int , V > > pigeonholeSort(
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PigeonholeSort.h included */
+#endif /* PigeonholeSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File PigeonholeSort.h ------------------------*/

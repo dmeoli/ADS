@@ -14,14 +14,16 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class W , class P >
 std::set< std::string > anagrams( const std::string & s , W && word ,
-                                  P && prefix )
+				  P && prefix )
 {
  std::map< char , int > left;
- for( char c : s ) ++left[ c ];
+ for( char c : s )
+  ++left[ c ];
  std::set< std::string > out;
  std::string sentence , current;
  auto rec = [ & ]( auto & self , std::size_t placed ) -> void {
@@ -31,12 +33,13 @@ std::set< std::string > anagrams( const std::string & s , W && word ,
    return;
    }
   for( auto & [ c , k ] : left ) {
-   if( k == 0 ) continue;
+   if( k == 0 )
+    continue;
    --k;
    current += c;
    if( prefix( current ) ) {
-    self( self , placed + 1 );                   // the word goes on
-    if( word( current ) ) {                      // or it ends here
+    self( self , placed + 1 );  // the word goes on
+    if( word( current ) ) {    // or it ends here
      const std::string w = current , before = sentence;
      sentence += w + ' ';
      current.clear();
@@ -55,7 +58,8 @@ std::set< std::string > anagrams( const std::string & s , W && word ,
   std::string u = s;
   std::sort( t.begin() , t.end() );
   std::sort( u.begin() , u.end() );
-  return( t == u ); } ) );
+  return( t == u );
+  } ) );
  return( out );
  }
 

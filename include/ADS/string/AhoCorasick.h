@@ -59,7 +59,7 @@
 
 #ifndef __ADS_AhoCorasick
  #define __ADS_AhoCorasick
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -79,18 +79,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS AhoCorasick ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the automaton of Aho and Corasick of a set of patterns
-class AhoCorasick {
+class AhoCorasick
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// no pattern
  AhoCorasick( void );
 
@@ -171,7 +172,7 @@ class AhoCorasick {
  /// \pre built
  /// \post the occurrences of `naiveMatching()` for each pattern (audit)
  [[nodiscard]] std::vector< std::pair< std::size_t , std::size_t > >
-  findAll( std::string_view T ) const;
+ findAll( std::string_view T ) const;
 
  /// the number of the occurrences of the patterns in \f$ T \f$, by the
  /// scan of `findAll()`
@@ -185,7 +186,8 @@ class AhoCorasick {
  template< class F >
  void forEach( std::string_view T , F && report ) const {
   scan( T , [ & ]( std::size_t j , std::uint32_t id ) {
-   report( j + 1 - f_P[ id ].size() , std::size_t( id ) ); } );
+   report( j + 1 - f_P[ id ].size() , std::size_t( id ) );
+   } );
   }
 
  /// the number of patterns
@@ -196,14 +198,13 @@ class AhoCorasick {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the occurrences in T, each ( end , number ) given to report()
  template< class F >
  void scan( std::string_view T , F && report ) const;
 
- std::vector< std::string > f_P;                 ///< the patterns
+ std::vector< std::string > f_P;                        ///< the patterns
  std::vector< std::array< std::uint32_t , 256 > > f_go;  ///< delta
- std::vector< std::uint32_t > f_fail;            ///< the failures
+ std::vector< std::uint32_t > f_fail;                   ///< the failures
  std::vector< std::uint32_t > f_out;  ///< the next state of a pattern, 0
  std::vector< std::vector< std::uint32_t > > f_ends;  ///< its patterns
  bool f_built = true;
@@ -222,7 +223,7 @@ class AhoCorasick {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* AhoCorasick.h included */
+#endif /* AhoCorasick.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File AhoCorasick.h --------------------------*/

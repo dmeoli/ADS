@@ -49,7 +49,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
@@ -65,15 +66,15 @@ void flag( const std::vector< int > & C )
   S.push_back( std::string( 1 , char( '0' + c ) ) );
  std::size_t sa = 0 , ss = 0;
  const auto a = dutchNationalFlag( A , []( int c ) { return( c ); } , &sa );
- const auto s = dutchNationalFlag( S , []( const std::string & x ) {
-  return( x[ 0 ] - '0' ); } , &ss );
+ const auto s = dutchNationalFlag(
+   S , []( const std::string & x ) { return( x[ 0 ] - '0' ); } , &ss );
  CHECK( a == s && sa == ss );
  for( std::size_t h = 0 ; h < A.size() ; ++h )
   CHECK( A[ h ] == S[ h ][ 0 ] - '0' );
  std::vector< int > R( C );
  std::sort( R.begin() , R.end() );
- CHECK( A == R && a.first == std::size_t( std::count( C.begin() , C.end() ,
-                                                       0 ) ) );
+ CHECK( A == R &&
+	a.first == std::size_t( std::count( C.begin() , C.end() , 0 ) ) );
  }
 
 // the Dutch national flag, with no branch on the integers and by swaps on
@@ -91,17 +92,19 @@ ADS_TEST( "dutch-flag-branchless" )
  flag( { 0 , 0 , 1 , 1 , 2 , 2 } );
  flag( { 2 , 2 , 1 , 1 , 0 , 0 } );
  std::vector< int > Z;
- for( int i = 0 ; i < 99 ; ++i ) Z.push_back( i % 3 );
+ for( int i = 0 ; i < 99 ; ++i )
+  Z.push_back( i % 3 );
  flag( Z );
  std::mt19937 g( 5 );
  for( int t = 0 ; t < 50 ; ++t ) {
   std::vector< int > C( g() % 300 );
-  for( auto & c : C ) c = int( g() % 3 );
+  for( auto & c : C )
+   c = int( g() % 3 );
   flag( C );
   }
  std::vector< int > B{ 0 , 3 , 1 };
  CHECK_THROWS( dutchNationalFlag( B , []( int c ) { return( c ); } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the sort of a k-sorted vector by one sift per item against std::sort, on
@@ -111,18 +114,19 @@ ADS_TEST( "k-sorted-sift" )
 {
  std::mt19937 g( 9 );
  for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) ,
-                        std::size_t( 2 ) , std::size_t( 17 ) ,
-                        std::size_t( 1000 ) } )
+			std::size_t( 2 ) ,
+			std::size_t( 17 ) , std::size_t( 1000 ) } )
   for( std::size_t k : { std::size_t( 0 ) , std::size_t( 1 ) ,
-                         std::size_t( 2 ) , std::size_t( 16 ) ,
-                         std::size_t( 5000 ) } ) {
+			 std::size_t( 2 ) ,
+			 std::size_t( 16 ) , std::size_t( 5000 ) } ) {
    for( int few = 0 ; few < 2 ; ++few ) {
     std::vector< int > A( n );
-    for( auto & x : A ) x = few ? int( g() % 3 ) : int( g() % 100000 );
+    for( auto & x : A )
+     x = few ? int( g() % 3 ) : int( g() % 100000 );
     std::sort( A.begin() , A.end() );
-    for( std::size_t i = 0 ; i + k + 1 <= n ; i += k + 1 )   // k-sorted
+    for( std::size_t i = 0 ; i + k + 1 <= n ; i += k + 1 )  // k-sorted
      std::shuffle( A.begin() + std::ptrdiff_t( i ) ,
-                   A.begin() + std::ptrdiff_t( i + k + 1 ) , g );
+		   A.begin() + std::ptrdiff_t( i + k + 1 ) , g );
     std::vector< int > R( A );
     std::sort( R.begin() , R.end() );
     sortKSorted( A , k );
@@ -159,14 +163,15 @@ void merging( const std::vector< int > & X )
  for( std::size_t i = 1 ; i < X.size() ; ++i )
   runs += X[ i ] < X[ i - 1 ];
  long expected = 0;
- for( long r = runs ; r > 1 ; r = ( r + 1 ) / 2 ) ++expected;
+ for( long r = runs ; r > 1 ; r = ( r + 1 ) / 2 )
+  ++expected;
  CHECK( ( passes >= 0 ) && ( passes <= expected ) );
- const S m = mergeSorted( s , s );           // every item twice
+ const S m = mergeSorted( s , s );  // every item twice
  std::vector< int > Z;
  for( auto p = m.head() ; ! m.finished( p ) ; p = m.next( p ) )
   Z.push_back( m.read( p ) );
  CHECK( Z.size() == 2 * R.size() && std::is_sorted( Z.begin() , Z.end() ) );
- if( ! X.empty() ) {                        // the whole sequence
+ if( ! X.empty() ) {  // the whole sequence
   const S t = sublist( s , s.head() , s.tail() );
   std::vector< int > W;
   for( auto p = t.head() ; ! t.finished( p ) ; p = t.next( p ) )
@@ -180,13 +185,14 @@ void merging_all( void )
 {
  merging< S >( {} );
  merging< S >( { 4 } );
- merging< S >( { 1 , 2 , 3 , 4 } );          // one run
- merging< S >( { 4 , 3 , 2 , 1 } );          // n runs
+ merging< S >( { 1 , 2 , 3 , 4 } );        // one run
+ merging< S >( { 4 , 3 , 2 , 1 } );        // n runs
  merging< S >( { 2 , 2 , 2 , 1 , 1 , 1 } );  // equal items
  std::mt19937 g( 3 );
  for( int t = 0 ; t < 10 ; ++t ) {
   std::vector< int > X( g() % 400 );
-  for( auto & x : X ) x = int( g() % 50 );
+  for( auto & x : X )
+   x = int( g() % 50 );
   merging< S >( X );
   }
  }
@@ -205,10 +211,11 @@ ADS_TEST( "merge-sort-appender" )
  }
 
 /// an item whose copy throws when the countdown reaches 0
-struct Bomb {
+struct Bomb
+{
  static inline int left = -1;
  int v;
- explicit Bomb( int x ) : v( x ) {}
+ explicit Bomb( int x ) : v( x ) { }
  Bomb( const Bomb & o ) : v( o.v ) {
   if( ( left >= 0 ) && ( left-- == 0 ) )
    throw( std::runtime_error( "copy" ) );
@@ -217,7 +224,8 @@ struct Bomb {
  };
 
 /// an item aligned beyond the words
-struct alignas( 64 ) Wide {
+struct alignas( 64 ) Wide
+{
  int v;
  };
 
@@ -244,17 +252,17 @@ void small( unsigned seed , int steps , Make && make )
    A.resize( n , make( -t ) );
    R.resize( n , make( -t ) );
    }
-  else if( c < 18 ) {                       // an item of itself
+  else if( c < 18 ) {  // an item of itself
    A.push_back( A[ 0 ] );
    R.push_back( R[ 0 ] );
    }
-  else if( c < 19 ) {                       // a copy, and a move back
+  else if( c < 19 ) {  // a copy, and a move back
    SmallVector< T , N > B( A );
    CHECK( B == A );
    A = std::move( B );
    CHECK( B.empty() && B.small() );
    }
-  else if( c < 20 ) {                       // a swap with a short one
+  else if( c < 20 ) {  // a swap with a short one
    SmallVector< T , N > B{ make( 1 ) };
    A.swap( B );
    B.swap( A );
@@ -279,36 +287,39 @@ ADS_TEST( "small-vector" )
 {
  SmallVector< int , 4 > E;
  CHECK( E.empty() && E.small() && E.capacity() == 4 );
- CHECK_THROWS( (void) E.front() , contract_violation );
- CHECK_THROWS( (void) E.back() , contract_violation );
+ CHECK_THROWS( ( void )E.front() , contract_violation );
+ CHECK_THROWS( ( void )E.back() , contract_violation );
  CHECK_THROWS( E.pop_back() , contract_violation );
- CHECK_THROWS( (void) E[ 0 ] , contract_violation );
- for( int i = 0 ; i < 4 ; ++i ) E.push_back( i );
+ CHECK_THROWS( ( void )E[ 0 ] , contract_violation );
+ for( int i = 0 ; i < 4 ; ++i )
+  E.push_back( i );
  CHECK( E.small() && E.capacity() == 4 );
- E.push_back( E[ 2 ] );                     // out, with an item of its own
+ E.push_back( E[ 2 ] );  // out, with an item of its own
  CHECK( ! E.small() && E.capacity() == 8 && E.back() == 2 );
  auto & self = E;
  E = self;
  CHECK( E.size() == 5 && E[ 4 ] == 2 );
- SmallVector< int , 4 > M( std::move( E ) );   // the memory taken
+ SmallVector< int , 4 > M( std::move( E ) );  // the memory taken
  CHECK( E.empty() && E.small() && M.size() == 5 );
 
  small< int , 1 >( 1 , 3000 , []( int t ) { return( t ); } );
  small< int , 4 >( 2 , 3000 , []( int t ) { return( t ); } );
  small< std::string , 4 >( 3 , 3000 , []( int t ) {
-  return( std::to_string( t ) + std::string( 25 , 'z' ) ); } );
- small< std::string , 16 >( 4 , 3000 , []( int t ) {
-  return( std::to_string( t ) ); } );
+  return( std::to_string( t ) + std::string( 25 , 'z' ) );
+  } );
+ small< std::string , 16 >( 4 , 3000 ,
+			   []( int t ) { return( std::to_string( t ) ); } );
 
  SmallVector< Wide , 3 > W;
  for( int i = 0 ; i < 10 ; ++i ) {
   W.push_back( Wide{ i } );
   CHECK( reinterpret_cast< std::uintptr_t >( &W.back() ) % 64 == 0 );
   }
- for( int i = 0 ; i < 10 ; ++i ) CHECK( W[ i ].v == i );
+ for( int i = 0 ; i < 10 ; ++i )
+  CHECK( W[ i ].v == i );
 
- SmallVector< Bomb , 2 > X;                 // a copy that throws as the
- X.push_back( Bomb( 0 ) );                  // items move out
+ SmallVector< Bomb , 2 > X;  // a copy that throws as the
+ X.push_back( Bomb( 0 ) );  // items move out
  X.push_back( Bomb( 1 ) );
  Bomb::left = 1;
  CHECK_THROWS( X.push_back( Bomb( 9 ) ) , std::runtime_error );
@@ -332,9 +343,9 @@ void sorted( const std::vector< T > & X , C less )
  for( auto p = L.head() ; ! L.finished( p ) ; p = L.next( p ) )
   Y.push_back( L.read( p ) );
  CHECK( Y == R );
- for( std::size_t i = 0 ; i < X.size() ; ++i )   // the cells kept
+ for( std::size_t i = 0 ; i < X.size() ; ++i )  // the cells kept
   CHECK( P[ i ]->value == X[ i ] );
- std::vector< T > B;                         // and linked both ways
+ std::vector< T > B;  // and linked both ways
  for( auto p = L.tail() ; ! L.finished( p ) ; p = L.prev( p ) )
   B.push_back( L.read( p ) );
  CHECK( std::equal( B.rbegin() , B.rend() , R.begin() , R.end() ) );
@@ -346,13 +357,14 @@ void patterns( std::size_t n , C less , Key key )
 {
  std::mt19937 g{ unsigned( n ) };
  std::vector< T > A( n );
- for( std::size_t i = 0 ; i < n ; ++i ) A[ i ] = key( i , g );
- sorted( A , less );                         // random
+ for( std::size_t i = 0 ; i < n ; ++i )
+  A[ i ] = key( i , g );
+ sorted( A , less );  // random
  std::vector< T > S( A );
  std::stable_sort( S.begin() , S.end() , less );
- sorted( S , less );                         // sorted
+ sorted( S , less );  // sorted
  std::reverse( S.begin() , S.end() );
- sorted( S , less );                         // reversed (equal items too)
+ sorted( S , less );  // reversed (equal items too)
  }
 
 // the sort of a List by relinking its cells against std::stable_sort, by
@@ -363,24 +375,31 @@ void patterns( std::size_t n , C less , Key key )
 // and the predecessors are relinked
 ADS_TEST( "list-sort" )
 {
- for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) ,
-                        std::size_t( 2 ) , std::size_t( 3 ) ,
-                        std::size_t( 100 ) , std::size_t( 5000 ) } ) {
+ for( std::size_t n :
+      { std::size_t( 0 ) , std::size_t( 1 ) , std::size_t( 2 ) ,
+	std::size_t( 3 ) ,
+	std::size_t( 100 ) , std::size_t( 5000 ) } ) {
   patterns< int >( n , std::less<>() , []( std::size_t , auto & g ) {
-   return( int( g() % 2001 ) - 1000 ); } );
-  patterns< double >( n , std::less< double >() , []( std::size_t ,
-                                                      auto & g ) {
-   return( double( int( g() % 200 ) - 100 ) / 8 ); } );
-  patterns< std::string >( n , std::less<>() , []( std::size_t ,
-                                                  auto & g ) {
-   return( std::to_string( g() % 300 ) ); } );
+   return( int( g() % 2001 ) - 1000 );
+   } );
+  patterns< double >( n , std::less< double >() ,
+		      []( std::size_t , auto & g ) {
+   return( double( int( g() % 200 ) - 100 ) / 8 );
+   } );
+  patterns< std::string >( n , std::less<>() , []( std::size_t , auto & g ) {
+   return( std::to_string( g() % 300 ) );
+   } );
   using Pair = std::pair< int , int >;
-  patterns< Pair >( n , []( const Pair & a , const Pair & b ) {
-   return( a.first < b.first ); } , []( std::size_t i , auto & g ) {
-   return( Pair( int( g() % 7 ) , int( i ) ) ); } );
+  patterns< Pair >(
+    n ,
+    []( const Pair & a , const Pair & b ) { return( a.first < b.first ); } ,
+    []( std::size_t i , auto & g ) {
+     return( Pair( int( g() % 7 ) , int( i ) ) );
+     } );
   patterns< int >( n , std::greater<>() , []( std::size_t , auto & g ) {
-   return( int( g() % 50 ) ); } );          // not the natural order
-  sorted( std::vector< int >( n , 4 ) , std::less<>() );   // all equal
+   return( int( g() % 50 ) );
+   } );  // not the natural order
+  sorted( std::vector< int >( n , 4 ) , std::less<>() );  // all equal
   }
  }
 
@@ -411,7 +430,7 @@ void tiered( unsigned seed , int steps , unsigned ins , Make && make )
    }
   }
  CHECK( A.size() == R.size() &&
-        std::equal( A.begin() , A.end() , R.begin() , R.end() ) );
+	std::equal( A.begin() , A.end() , R.begin() , R.end() ) );
  }
 
 // the comparisons of listSort(): the cut into runs compares each pair of
@@ -420,7 +439,8 @@ void tiered( unsigned seed , int steps , unsigned ins , Make && make )
 // the contracts n - 1 more
 ADS_TEST( "list-sort-comparisons" )
 {
- struct Item {
+ struct Item
+ {
   int v;
   };
  long c = 0;
@@ -428,13 +448,14 @@ ADS_TEST( "list-sort-comparisons" )
   ++c;
   return( a.v < b.v );
   };
- const long passes = ADS_CONTRACTS >= 3 ? 2 : 1;   // the cut, the audit
+ const long passes = ADS_CONTRACTS >= 3 ? 2 : 1;  // the cut, the audit
  for( long n = 0 ; n <= 40 ; ++n )
   for( int order = 0 ; order < 3 ; ++order ) {
    List< Item > L;
-   for( long i = 0 ; i < n ; ++i )         // rising, falling, all equal
-    L.push_back( Item{ order == 0 ? int( i ) : order == 1 ? int( n - i ) :
-                       7 } );
+   for( long i = 0 ; i < n ; ++i )  // rising, falling, all equal
+    L.push_back( Item{ order == 0   ? int( i )
+		       : order == 1 ? int( n - i )
+				    : 7 } );
    c = 0;
    listSort( L , less );
    const long cut = n > 1 ? n - 1 : 0;
@@ -455,12 +476,15 @@ ADS_TEST( "tiered-vector" )
  CHECK( E.empty() && E.block() == 64 && E.begin() == E.end() );
  CHECK_THROWS( E.erase( 0 ) , contract_violation );
  CHECK_THROWS( E.pop_back() , contract_violation );
- CHECK_THROWS( (void) E[ 0 ] , contract_violation );
+ CHECK_THROWS( ( void )E[ 0 ] , contract_violation );
  CHECK_THROWS( E.insert( 1 , 5 ) , contract_violation );
- for( int i = 0 ; i < 1000 ; ++i )           // the front and the end
-  if( i % 2 ) E.insert( 0 , -i ); else E.push_back( i );
+ for( int i = 0 ; i < 1000 ; ++i )  // the front and the end
+  if( i % 2 )
+   E.insert( 0 , -i );
+  else
+   E.push_back( i );
  CHECK( E.size() == 1000 && E[ 0 ] == -999 && E[ 999 ] == 998 );
- E.insert( 500 , E[ 0 ] );                   // an item of itself
+ E.insert( 500 , E[ 0 ] );  // an item of itself
  CHECK( E[ 500 ] == -999 && E.size() == 1001 );
  std::sort( E.begin() , E.end() );
  CHECK( std::is_sorted( E.begin() , E.end() ) );
@@ -475,14 +499,17 @@ ADS_TEST( "tiered-vector" )
  E.clear();
  CHECK( E.empty() && E.block() == 64 );
  tiered< int >( 1 , 5000 , 5 , []( int t ) { return( t ); } );
- tiered< int >( 2 , 150000 , 7 , []( int t ) { return( t ); } );   // grow
- TieredVector< int > G;                      // past 4 b^2 and back
- for( int i = 0 ; i < 70000 ; ++i ) G.insert( std::size_t( i ) / 2 , i );
+ tiered< int >( 2 , 150000 , 7 , []( int t ) { return( t ); } );  // grow
+ TieredVector< int > G;  // past 4 b^2 and back
+ for( int i = 0 ; i < 70000 ; ++i )
+  G.insert( std::size_t( i ) / 2 , i );
  CHECK( G.block() == 256 && G.size() == 70000 );
- while( G.size() > 100 ) G.erase( G.size() / 3 );
+ while( G.size() > 100 )
+  G.erase( G.size() / 3 );
  CHECK( G.block() == 64 && G.size() == 100 );
  tiered< std::string >( 3 , 4000 , 6 , []( int t ) {
-  return( std::to_string( t ) + std::string( 20 , 'w' ) ); } );
+  return( std::to_string( t ) + std::string( 20 , 'w' ) );
+  } );
  }
 
 }  // end( namespace )

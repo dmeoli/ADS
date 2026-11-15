@@ -14,13 +14,12 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , class H >
-HashMultiset< T , H >::HashMultiset( void )
- : f_count( 7 , true )
-{
- }
+HashMultiset< T , H >::HashMultiset( void ) : f_count( 7 , true )
+{ }
 
 template< class T , class H >
 std::size_t HashMultiset< T , H >::size( void ) const

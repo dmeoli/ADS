@@ -17,23 +17,27 @@
 
 #include <algorithm>
 
-namespace ADS {
+namespace ADS
+{
 
 inline SuffixAutomaton::SuffixAutomaton( void )
- : f_len( 1 , 0 ) , f_link( 1 , none ) , f_next( 1 ) , f_prefix( 1 , 0 ) {}
+    : f_len( 1 , 0 ) , f_link( 1 , none ) , f_next( 1 ) , f_prefix( 1 , 0 )
+{ }
 
 inline SuffixAutomaton::SuffixAutomaton( std::string_view S )
- : SuffixAutomaton()
+    : SuffixAutomaton()
 {
  f_len.reserve( 2 * S.size() + 1 );
- for( unsigned char c : S ) extend( c );
+ for( unsigned char c : S )
+  extend( c );
  }
 
 inline std::uint32_t SuffixAutomaton::next( std::uint32_t v ,
-                                            unsigned char c ) const
+					    unsigned char c ) const
 {
  for( const auto & [ b , w ] : f_next[ v ] )
-  if( b == c ) return( w );
+  if( b == c )
+   return( w );
  return( none );
  }
 
@@ -50,8 +54,9 @@ inline void SuffixAutomaton::extend( unsigned char c )
   f_next[ p ].emplace_back( c , cur );
  if( p != none ) {
   const std::uint32_t q = next( p , c );
-  if( f_len[ q ] == f_len[ p ] + 1 ) f_link[ cur ] = q;
-  else {                              // q cloned at the length of p + 1
+  if( f_len[ q ] == f_len[ p ] + 1 )
+   f_link[ cur ] = q;
+  else {  // q cloned at the length of p + 1
    const std::uint32_t r = std::uint32_t( f_len.size() );
    f_len.push_back( f_len[ p ] + 1 );
    f_link.push_back( f_link[ q ] );
@@ -59,7 +64,8 @@ inline void SuffixAutomaton::extend( unsigned char c )
    f_prefix.push_back( 0 );
    for( ; ( p != none ) && ( next( p , c ) == q ) ; p = f_link[ p ] )
     for( auto & e : f_next[ p ] )
-     if( e.first == c ) e.second = r;
+     if( e.first == c )
+      e.second = r;
    f_link[ q ] = f_link[ cur ] = r;
    }
   }
@@ -72,33 +78,42 @@ inline bool SuffixAutomaton::contains( std::string_view P ) const
 {
  std::uint32_t v = 0;
  for( unsigned char c : P )
-  if( ( v = next( v , c ) ) == none ) return( false );
+  if( ( v = next( v , c ) ) == none )
+   return( false );
  return( true );
  }
 
 inline void SuffixAutomaton::counts( void ) const
 {
- if( ! f_count.empty() ) return;
+ if( ! f_count.empty() )
+  return;
  const std::size_t S = f_len.size();
  // the states by decreasing length, by a counting sort on the lengths
  std::vector< std::size_t > by( f_n + 2 , 0 ) , order( S );
- for( std::size_t v = 0 ; v < S ; ++v ) ++by[ f_len[ v ] + 1 ];
- for( std::size_t l = 1 ; l < by.size() ; ++l ) by[ l ] += by[ l - 1 ];
- for( std::size_t v = 0 ; v < S ; ++v ) order[ by[ f_len[ v ] ]++ ] = v;
+ for( std::size_t v = 0 ; v < S ; ++v )
+  ++by[ f_len[ v ] + 1 ];
+ for( std::size_t l = 1 ; l < by.size() ; ++l )
+  by[ l ] += by[ l - 1 ];
+ for( std::size_t v = 0 ; v < S ; ++v )
+  order[ by[ f_len[ v ] ]++ ] = v;
  f_count.assign( S , 0 );
- for( std::size_t v = 0 ; v < S ; ++v ) f_count[ v ] = f_prefix[ v ];
+ for( std::size_t v = 0 ; v < S ; ++v )
+  f_count[ v ] = f_prefix[ v ];
  for( std::size_t k = S ; k-- > 1 ; ) {
   const std::size_t v = order[ k ];
-  if( f_link[ v ] != none ) f_count[ f_link[ v ] ] += f_count[ v ];
+  if( f_link[ v ] != none )
+   f_count[ f_link[ v ] ] += f_count[ v ];
   }
  }
 
 inline std::size_t SuffixAutomaton::occurrences( std::string_view P ) const
 {
- if( P.empty() ) return( f_n + 1 );
+ if( P.empty() )
+  return( f_n + 1 );
  std::uint32_t v = 0;
  for( unsigned char c : P )
-  if( ( v = next( v , c ) ) == none ) return( 0 );
+  if( ( v = next( v , c ) ) == none )
+   return( 0 );
  counts();
  return( f_count[ v ] );
  }
@@ -112,14 +127,14 @@ inline std::size_t SuffixAutomaton::distinctSubstrings( void ) const
  }
 
 inline std::pair< std::size_t , std::size_t >
- SuffixAutomaton::longestCommonSubstring( std::string_view T ) const
+SuffixAutomaton::longestCommonSubstring( std::string_view T ) const
 {
  std::uint32_t v = 0;
  std::size_t l = 0 , best = 0 , end = 0;
  for( std::size_t j = 0 ; j < T.size() ; ++j ) {
   const unsigned char c = static_cast< unsigned char >( T[ j ] );
   while( ( v != 0 ) && ( next( v , c ) == none ) ) {
-   v = f_link[ v ];                   // a shorter suffix of the match
+   v = f_link[ v ];  // a shorter suffix of the match
    l = f_len[ v ];
    }
   const std::uint32_t w = next( v , c );

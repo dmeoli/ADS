@@ -62,7 +62,7 @@
 
 #ifndef __ADS_BPTree
  #define __ADS_BPTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -80,7 +80,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ CLASS BPTree ------------------------------*/
@@ -88,12 +89,12 @@ namespace ADS {
 
 /// an ordered tree in \f$ 2 n \f$ bits by balanced parentheses, its nodes in
 /// preorder
-class BPTree {
+class BPTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- static constexpr std::size_t nil = std::size_t( -1 );   ///< no node
+ static constexpr std::size_t nil = std::size_t( -1 );  ///< no node
 
  /// the empty tree
  BPTree( void ) = default;
@@ -198,11 +199,10 @@ class BPTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the place of the open parenthesis of \f$ v \f$
  [[nodiscard]] std::size_t open( std::size_t v ) const;
 
- BalancedParentheses f_p;   ///< the parentheses of the visit in depth
+ BalancedParentheses f_p;  ///< the parentheses of the visit in depth
 
  };  // end( class BPTree )
 
@@ -218,7 +218,7 @@ class BPTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BPTree.h included */
+#endif /* BPTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File BPTree.h ---------------------------*/

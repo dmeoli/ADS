@@ -46,13 +46,15 @@
 
 using namespace zc;
 
-namespace {
+namespace
+{
 
-constexpr int N = 512;                 ///< the nodes of the graphs
-constexpr std::size_t OPS = 4096;      ///< the changes, used in a cycle
+constexpr int N = 512;             ///< the nodes of the graphs
+constexpr std::size_t OPS = 4096;  ///< the changes, used in a cycle
 
 /// a change: an edge ( u , v ) and a weight, or a place u and a key w
-struct Op {
+struct Op
+{
  int u , v;
  long long w;
  };
@@ -82,8 +84,9 @@ std::vector< Op > weightOps( void )
  static const int D[ 3 ] = { 1 , 7 , 31 };
  for( std::size_t i = 0 ; i < OPS ; ++i ) {
   const int u = int( next( x ) % N );
-  P.push_back( { u , ( u + D[ next( x ) % 3 ] ) % N ,
-                 (long long)( next( x ) % 1000 ) } );
+  P.push_back(
+    { u , ( u + D[ next( x ) % 3 ] ) % N ,
+      ( long long )( next( x ) % 1000 ) } );
   }
  return( P );
  }
@@ -95,7 +98,7 @@ std::vector< Op > edgeOps( void )
  unsigned x = 54321;
  for( std::size_t i = 0 ; i < OPS ; ++i ) {
   const int u = int( next( x ) % N );
-  P.push_back( { u , ( u + 100 ) % N , (long long)( next( x ) % 1000 ) } );
+  P.push_back( { u , ( u + 100 ) % N , ( long long )( next( x ) % 1000 ) } );
   }
  return( P );
  }
@@ -103,7 +106,7 @@ std::vector< Op > edgeOps( void )
 /// n changes f( op ), the ops in a cycle
 template< class F >
 [[gnu::noinline]] void loop( F && f , const std::vector< Op > & P ,
-                             long long n )
+			     long long n )
 {
  for( long long i = 0 ; i < n ; ++i )
   f( P[ std::size_t( i ) & ( OPS - 1 ) ] );
@@ -143,23 +146,24 @@ long long graphCase( const std::string & work , Make && make , long long n )
   const auto P = weightOps();
   if constexpr( requires { og.setWeight( 0 , 1 , 1LL ); } ) {
    if( work == "array-weight" ) {
-    loop( [ & ]( const Op & o ) { og.setWeight( o.u , o.v , o.w ); } ,
-          P , n );
+    loop( [ & ]( const Op & o ) { og.setWeight( o.u , o.v , o.w ); } , P , n );
     return( weights( g ) );
     }
    }
   if constexpr( requires { og.insertEdge( 0 , 1 , 1LL ); } ) {
-   loop( [ & ]( const Op & o ) { og.insertEdge( o.u , o.v , o.w ); } ,
-         P , n );
+   loop( [ & ]( const Op & o ) { og.insertEdge( o.u , o.v , o.w ); } , P , n );
    return( weights( g ) );
    }
   }
  if constexpr( requires { og.deleteEdge( 0 , 1 ); } ) {
   if( work == "list-edge" ) {
    const auto P = edgeOps();
-   loop( [ & ]( const Op & o ) {
-    og.insertEdge( o.u , o.v , o.w );
-    og.deleteEdge( o.u , o.v ); } , P , n );
+   loop(
+     [ & ]( const Op & o ) {
+      og.insertEdge( o.u , o.v , o.w );
+      og.deleteEdge( o.u , o.v );
+      } ,
+     P , n );
    return( weights( g ) );
    }
   }
@@ -171,7 +175,8 @@ long long graphCase( const std::string & work , Make && make , long long n )
 /// counterpart of `Observable::setWeight()` reads the weight and replaces
 /// it, as that does
 template< class G >
-struct Plain {
+struct Plain
+{
  G & g;
  bool setWeight( int u , int v , long long w ) {
   if constexpr( requires { g.setWeight( u , v , w ); } )
@@ -184,51 +189,65 @@ struct Plain {
    }
   }
  void insertEdge( int u , int v , long long w )
-  requires ADS::DynamicGraph< G > { g.insertEdge( u , v , w ); }
+  requires ADS::DynamicGraph< G >
+ {
+  g.insertEdge( u , v , w );
+  }
  void deleteEdge( int u , int v )
-  requires ADS::DynamicGraph< G > { g.deleteEdge( u , v ); }
+  requires ADS::DynamicGraph< G >
+ {
+  g.deleteEdge( u , v );
+  }
  };
 
 /// the workloads of the graph G on the variant var
 template< class G >
 long long graph( const std::string & work , const std::string & var ,
-                 long long n )
+		 long long n )
 {
  if( var == "plain" )
-  return( graphCase< G >( work , []( G & g ) { return( Plain< G >{ g } ); } ,
-                          n ) );
+  return(
+    graphCase< G >( work , []( G & g ) { return( Plain< G >{ g } ); } , n ) );
  if( var == "observable" )
-  return( graphCase< G >( work , []( G & g ) {
-                           return( ADS::Observable< G >( g ) ); } , n ) );
+  return( graphCase< G >(
+    work , []( G & g ) { return( ADS::Observable< G >( g ) ); } , n ) );
  if( var == "observable-excl" ) {
   static LegacyExcluding x;
-  return( graphCase< G >( work , []( G & g ) {
-                           return( ADS::Observable< G , LegacyExcluding >(
-                                    g , x ) ); } , n ) );
+  return( graphCase< G >(
+    work ,
+    []( G & g ) { return( ADS::Observable< G , LegacyExcluding >( g ,
+								  x ) ); } ,
+    n ) );
   }
 #ifdef ZC_POLICIES
  if( var == "none" )
-  return( graphCase< G >( work , []( G & g ) {
-                           return( ADS::ObservedGraph< G >( g ) ); } , n ) );
+  return( graphCase< G >(
+    work , []( G & g ) { return( ADS::ObservedGraph< G >( g ) ); } , n ) );
  if( var == "static-excl" ) {
   static Excluding x;
-  return( graphCase< G >( work , []( G & g ) {
-                           return( ADS::ObservedGraph< G ,
-                                    ADS::Static< Excluding > >( g , x ) ); } ,
-                          n ) );
+  return( graphCase< G >(
+    work ,
+    []( G & g ) {
+     return( ADS::ObservedGraph< G , ADS::Static< Excluding > >( g , x ) );
+     } ,
+    n ) );
   }
  if( var == "static-count" ) {
   static CountDecreases x;
-  return( graphCase< G >( work , []( G & g ) {
-                           return( ADS::ObservedGraph< G ,
-                                    ADS::Static< CountDecreases > >( g ,
-                                                                     x ) ); } ,
-                          n ) + x.n );
+  return( graphCase< G >(
+	     work ,
+	     []( G & g ) {
+	      return( ADS::ObservedGraph< G , ADS::Static< CountDecreases > >(
+		g , x ) );
+	      } ,
+	     n ) +
+	   x.n );
   }
  if( var == "dynamic" )
-  return( graphCase< G >( work , []( G & g ) {
-                           return( ADS::ObservedGraph< G , ADS::Dynamic<> >(
-                                    g ) ); } , n ) );
+  return( graphCase< G >(
+    work ,
+    []( G & g ) { return( ADS::ObservedGraph< G , ADS::Dynamic<> >( g ) ); } ,
+    n ) );
 #endif
  std::fprintf( stderr , "no variant %s\n" , var.c_str() );
  std::exit( 2 );
@@ -242,16 +261,20 @@ long long keys( const std::string & var , long long n )
  const auto P = weightOps();
  auto run = [ & ]( auto & a ) {
   loop( [ & ]( const Op & o ) { a.set( std::size_t( o.u ) , int( o.w ) ); } ,
-        P , n );
+	P ,
+	n );
   long long s = 0;
   for( int u = 0 ; u < N ; ++u )
    s += a.get( std::size_t( u ) );
   return( s );
   };
  if( var == "plain" ) {
-  struct { std::vector< int > k = std::vector< int >( N );
-           void set( std::size_t h , int x ) { k[ h ] = x; }
-           int get( std::size_t h ) const { return( k[ h ] ); } } a;
+  struct
+  {
+   std::vector< int > k = std::vector< int >( N );
+   void set( std::size_t h , int x ) { k[ h ] = x; }
+   int get( std::size_t h ) const { return( k[ h ] ); }
+   } a;
   return( run( a ) );
   }
  if( var == "none" ) {
@@ -282,9 +305,12 @@ long long grid( const std::string & var , long long n )
 {
  const auto P = weightOps();
  auto run = [ & ]( auto & g ) {
-  loop( [ & ]( const Op & o ) {
-   g.setCost( o.u * 8 + int( o.w & 7 ) , int( o.w % 10 ) ); } , P , n );
-  return( (long long)( g.n() ) + g.minCost() );
+  loop(
+    [ & ]( const Op & o ) {
+     g.setCost( o.u * 8 + int( o.w & 7 ) , int( o.w % 10 ) );
+     } ,
+    P , n );
+  return( ( long long )( g.n() ) + g.minCost() );
   };
  const std::vector< int > cost( std::size_t( N ) * 8 , 1 );
  if( ( var == "plain" ) || ( var == "none" ) ) {
@@ -293,11 +319,10 @@ long long grid( const std::string & var , long long n )
   }
  if( var == "static-count" ) {
   GridCountDecreases x;
-  Grid< ADS::Static< GridCountDecreases > > g( N , 8 , cost ,
-                                               ADS::GridMoves::FOUR ,
-                                               ADS::Corners::NO_CUT , 1 ,
-                                               std::nullopt ,
-                                               ADS::MoveCost::ENTERED , x );
+  Grid< ADS::Static< GridCountDecreases > > g(
+    N , 8 , cost , ADS::GridMoves::FOUR , ADS::Corners::NO_CUT , 1 ,
+    std::nullopt ,
+    ADS::MoveCost::ENTERED , x );
   return( run( g ) + x.n );
   }
  if( var == "dynamic" ) {
@@ -310,16 +335,19 @@ long long grid( const std::string & var , long long n )
 
 /// the workload work of the tree on the variant var
 long long trees( const std::string & work , const std::string & var ,
-                 long long n )
+		 long long n )
 {
  const auto P = weightOps();
  auto run = [ & ]( auto & t ) {
   for( int u = 0 ; u < N ; ++u )
    t.insert( u , 100 );
   if( work == "tree-insert" )
-   loop( [ & ]( const Op & o ) {
-    t.insert( N + o.u , o.w );
-    t.remove( N + o.u ); } , P , n );
+   loop(
+     [ & ]( const Op & o ) {
+      t.insert( N + o.u , o.w );
+      t.remove( N + o.u );
+      } ,
+     P , n );
   else if( work == "tree-overwrite" )
    loop( [ & ]( const Op & o ) { t.insert( o.u , o.w ); } , P , n );
 #ifndef ZC_BEFORE
@@ -330,7 +358,7 @@ long long trees( const std::string & work , const std::string & var ,
    std::fprintf( stderr , "no workload %s\n" , work.c_str() );
    std::exit( 2 );
    }
-  return( (long long)( t.augValue() ) );
+  return( ( long long )( t.augValue() ) );
   };
  if( var == "none" ) {
   JT t;
@@ -362,7 +390,7 @@ long long trees( const std::string & work , const std::string & var ,
 /// epochs): n objects made, each second one freed in the pool, and with
 /// epochs a clear() per OPS objects
 long long allocation( const std::string & work , const std::string & var ,
-                      long long n )
+		      long long n )
 {
  const bool epochs = var == "epochs";
  if( ! epochs && ( var != "plain" ) ) {
@@ -372,27 +400,33 @@ long long allocation( const std::string & work , const std::string & var ,
  long long s = 0;
  if( work == "arena-make" ) {
   ADS::Arena< Op > a;
-  loop( [ & ]( const Op & o ) {
-   s += a.make( o )->u;
-   if( epochs && ( a.size() == OPS ) )
-    a.clear(); } , weightOps() , n );
-  return( s + (long long)( a.size() ) );
+  loop(
+    [ & ]( const Op & o ) {
+     s += a.make( o )->u;
+     if( epochs && ( a.size() == OPS ) )
+      a.clear();
+     } ,
+    weightOps() , n );
+  return( s + ( long long )( a.size() ) );
   }
  ADS::ObjectPool< Op > p;
  Op * last = nullptr;
  std::size_t made = 0;
- loop( [ & ]( const Op & o ) {
-  Op * x = p.make( o );
-  s += x->u;
-  if( ( ++made & 1 ) == 0 )
-   p.free( std::exchange( last , nullptr ) );
-  else
-   last = x;
-  if( epochs && ( made % OPS == 0 ) ) {
-   p.clear();
-   last = nullptr;
-   } } , weightOps() , n );
- return( s + (long long)( p.size() ) );
+ loop(
+   [ & ]( const Op & o ) {
+    Op * x = p.make( o );
+    s += x->u;
+    if( ( ++made & 1 ) == 0 )
+     p.free( std::exchange( last , nullptr ) );
+    else
+     last = x;
+    if( epochs && ( made % OPS == 0 ) ) {
+     p.clear();
+     last = nullptr;
+     }
+    } ,
+   weightOps() , n );
+ return( s + ( long long )( p.size() ) );
  }
 
 /// the workload heap on the variant var: the n0 ids of a heap pushed, then
@@ -404,10 +438,13 @@ long long heapCase( H & h , long long n )
  const auto P = weightOps();
  for( int u = 0 ; u < N ; ++u )
   h.push( u , 1000 + u );
- loop( [ & ]( const Op & o ) {
-  h.update( o.u , int( o.w ) + 1 );
-  const auto e = h.pop();
-  h.push( e.id , e.key + int( o.w % 7 ) ); } , P , n );
+ loop(
+   [ & ]( const Op & o ) {
+    h.update( o.u , int( o.w ) + 1 );
+    const auto e = h.pop();
+    h.push( e.id , e.key + int( o.w % 7 ) );
+    } ,
+   P , n );
  long long s = 0;
  while( ! h.empty() )
   s += h.pop().key;
@@ -429,7 +466,7 @@ long long heap( const std::string & var , long long n )
  if( var == "static-count" ) {
   HeapCountDecreases x;
   ADS::IndexedDaryHeap< int , 4 , ADS::Static< HeapCountDecreases > > h( N ,
-                                                                        x );
+									 x );
   return( heapCase( h , n ) + x.n );
   }
  if( var == "dynamic" ) {
@@ -449,16 +486,20 @@ long long oarray( const std::string & var , long long n )
  const auto P = weightOps();
  auto run = [ & ]( auto & a ) {
   loop( [ & ]( const Op & o ) { a.set( std::size_t( o.u ) , int( o.w ) ); } ,
-        P , n );
+	P ,
+	n );
   long long s = 0;
   for( int u = 0 ; u < N ; ++u )
    s += a[ std::size_t( u ) ];
   return( s );
   };
  if( var == "plain" ) {
-  struct { std::vector< int > k = std::vector< int >( N );
-           void set( std::size_t h , int x ) { k[ h ] = x; }
-           int operator[]( std::size_t h ) const { return( k[ h ] ); } } a;
+  struct
+  {
+   std::vector< int > k = std::vector< int >( N );
+   void set( std::size_t h , int x ) { k[ h ] = x; }
+   int operator[]( std::size_t h ) const { return( k[ h ] ); }
+   } a;
   return( run( a ) );
   }
  if( var == "none" ) {

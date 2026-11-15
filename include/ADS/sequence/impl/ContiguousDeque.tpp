@@ -15,27 +15,29 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 ContiguousDeque< T >::ContiguousDeque( std::initializer_list< T > l )
 {
- for( const T & x : l ) push_back( x );
+ for( const T & x : l )
+  push_back( x );
  }
 
 template< class T >
 ContiguousDeque< T >::ContiguousDeque( const ContiguousDeque & o )
 {
- for( const T & x : o ) push_back( x );
+ for( const T & x : o )
+  push_back( x );
  }
 
 template< class T >
 ContiguousDeque< T >::ContiguousDeque( ContiguousDeque && o ) noexcept
- : f_A( std::exchange( o.f_A , nullptr ) ) ,
-   f_c( std::exchange( o.f_c , 0 ) ) , f_h( std::exchange( o.f_h , 0 ) ) ,
-   f_n( std::exchange( o.f_n , 0 ) )
-{
- }
+    : f_A( std::exchange( o.f_A , nullptr ) ) ,
+      f_c( std::exchange( o.f_c , 0 ) ) ,
+      f_h( std::exchange( o.f_h , 0 ) ) , f_n( std::exchange( o.f_n , 0 ) )
+{ }
 
 template< class T >
 ContiguousDeque< T > &
@@ -67,11 +69,11 @@ void ContiguousDeque< T >::rebuild( void )
 {
  const std::size_t c = 3 * f_n + 8 , h = ( c - f_n ) / 2;
  if constexpr( std::is_trivially_copyable_v< T > )
-  if( f_A && ( c <= f_c ) && ( 9 * f_n + 24 >= f_c ) ) {   // in place
+  if( f_A && ( c <= f_c ) && ( 9 * f_n + 24 >= f_c ) ) {  // in place
    const std::size_t g = ( f_c - f_n ) / 2;
    if( f_n )
     std::memmove( static_cast< void * >( f_A + g ) , f_A + f_h ,
-                  f_n * sizeof( T ) );
+		  f_n * sizeof( T ) );
    f_h = g;
    ADS_INVARIANT( fits() );
    return;
@@ -94,7 +96,7 @@ template< class T >
 void ContiguousDeque< T >::push_front( const T & x )
 {
  if( f_h == 0 ) {
-  T y = x;                                  // x may be an item
+  T y = x;  // x may be an item
   rebuild();
   ::new( static_cast< void * >( f_A + f_h - 1 ) ) T( std::move( y ) );
   }
@@ -131,16 +133,18 @@ void ContiguousDeque< T >::insert( std::size_t i , const T & x )
   }
  [[maybe_unused]] const std::size_t n = f_n;
  T y = x;
- if( i < f_n / 2 ) {                        // the front i items back by one
-  if( f_h == 0 ) rebuild();
+ if( i < f_n / 2 ) {  // the front i items back by one
+  if( f_h == 0 )
+   rebuild();
   T * a = f_A + f_h;
   ::new( static_cast< void * >( a - 1 ) ) T( std::move( a[ 0 ] ) );
   std::move( a + 1 , a + i , a );
   a[ i - 1 ] = std::move( y );
   --f_h;
   }
- else {                                     // the back n - i items on
-  if( f_h + f_n == f_c ) rebuild();
+ else {  // the back n - i items on
+  if( f_h + f_n == f_c )
+   rebuild();
   T * a = f_A + f_h;
   ::new( static_cast< void * >( a + f_n ) ) T( std::move( a[ f_n - 1 ] ) );
   std::move_backward( a + i , a + f_n - 1 , a + f_n );

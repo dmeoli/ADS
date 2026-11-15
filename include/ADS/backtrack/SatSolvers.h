@@ -64,7 +64,7 @@
 
 #ifndef __ADS_SatSolvers
  #define __ADS_SatSolvers
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -84,7 +84,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a model of the formula \f$ F \f$ of \f$ n \f$ variables by DPLL, the
 /// variables left free false, or nothing if \f$ F \f$ is unsatisfiable
@@ -133,16 +134,16 @@ inline std::optional< std::vector< bool > > dpll( const Cnf & F , int n );
 /// `DaryHeap.h`], with the same decisions and conflicts, since the pairs are
 /// ordered totally
 template< class Heap = std::priority_queue< std::pair< double , int > > >
-class BasicCdcl {
+class BasicCdcl
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the outcome of `solve()`
  enum class Result {
-  SAT ,      ///< a model found, in `model()`
-  UNSAT ,    ///< the formula is unsatisfiable
-  UNKNOWN    ///< the conflicts allowed are over before an answer
+  SAT ,     ///< a model found, in `model()`
+  UNSAT ,   ///< the formula is unsatisfiable
+  UNKNOWN  ///< the conflicts allowed are over before an answer
   };
 
  /// the solver of the formula \f$ F \f$ of \f$ n \f$ variables, its clauses
@@ -235,7 +236,6 @@ class BasicCdcl {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the literal ±( v + 1 ) as 2 v + ( negative )
  static int code( int lit ) {
   return( 2 * ( std::abs( lit ) - 1 ) + ( lit < 0 ) );
@@ -245,20 +245,20 @@ class BasicCdcl {
  [[nodiscard]] int value( int c ) const;
 
  void enqueue( int c , int reason );
- [[nodiscard]] int propagate( void );      ///< a conflict clause, or -1
+ [[nodiscard]] int propagate( void );  ///< a conflict clause, or -1
  void analyze( int confl , std::vector< int > & learnt , int & back );
  void cancelUntil( int level );
  void bump( int v );
- [[nodiscard]] int pickBranch( void );     ///< a free variable, or -1
+ [[nodiscard]] int pickBranch( void );  ///< a free variable, or -1
  [[nodiscard]] int level( void ) const { return( int( f_trailLim.size() ) ); }
  int addClause( std::vector< int > c );
 
  Cnf f_F;
  int f_n;
- bool f_empty = false;                      ///< an empty clause or a
-                                            ///< conflict at level 0
- std::vector< std::vector< int > > f_C;     ///< the clauses, as codes
- std::vector< std::vector< int > > f_watch; ///< the clauses by literal
+ bool f_empty = false;                       ///< an empty clause or a
+					     ///< conflict at level 0
+ std::vector< std::vector< int > > f_C;      ///< the clauses, as codes
+ std::vector< std::vector< int > > f_watch;  ///< the clauses by literal
  std::vector< int > f_assign , f_level , f_reason;
  std::vector< bool > f_phase , f_seen , f_model;
  std::vector< int > f_trail , f_trailLim;
@@ -285,7 +285,7 @@ using Cdcl = BasicCdcl<>;
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SatSolvers.h included */
+#endif /* SatSolvers.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File SatSolvers.h --------------------------*/

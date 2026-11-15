@@ -50,7 +50,7 @@
 
 #ifndef __ADS_PriorityQueue
  #define __ADS_PriorityQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -68,28 +68,33 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- THE ITEMS --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
 template< class Q >
-struct queue_item {};
+struct queue_item
+{ };
 
 template< class Q >
- requires( requires { typename Q::value_type; } &&
-          ! requires { typename Q::Item; } )
-struct queue_item< Q > {
+ requires(
+   requires { typename Q::value_type; } && ! requires { typename Q::Item; } )
+struct queue_item< Q >
+{
  using type = typename Q::value_type;
  };
 
 template< class Q >
  requires requires { typename Q::Item; }
-struct queue_item< Q > {
+struct queue_item< Q >
+{
  using type = typename Q::Item;
  };
 
@@ -105,20 +110,25 @@ using queue_item_t = typename detail::queue_item< Q >::type;
 /*--------------------------------------------------------------------------*/
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
-void queue_min( void ) = delete;        // the free ones, only by ADL
+void queue_min( void ) = delete;  // the free ones, only by ADL
 void queue_deleteMin( void ) = delete;
 void queue_insert( void ) = delete;
 
 template< class Q >
-concept member_min = requires( Q & q ) { q.min(); };
+concept member_min = requires( Q & q )
+{ q.min(); };
 template< class Q >
-concept free_min = requires( Q & q ) { queue_min( q ); };
+concept free_min = requires( Q & q )
+{ queue_min( q ); };
 template< class Q >
-concept top_min = requires( Q & q ) { q.top(); };
+concept top_min = requires( Q & q )
+{ q.top(); };
 
-struct QueueMin {
+struct QueueMin
+{
  template< class Q >
   requires( member_min< Q > || free_min< Q > || top_min< Q > )
  constexpr decltype( auto ) operator()( Q & q ) const {
@@ -132,23 +142,28 @@ struct QueueMin {
  };
 
 template< class Q >
-concept member_deleteMin = requires( Q & q ) { q.deleteMin(); };
+concept member_deleteMin = requires( Q & q )
+{ q.deleteMin(); };
 template< class Q >
-concept free_deleteMin = requires( Q & q ) { queue_deleteMin( q ); };
+concept free_deleteMin = requires( Q & q )
+{ queue_deleteMin( q ); };
 template< class Q >
-concept item_pop = requires( Q & q ) {
+concept item_pop = requires( Q & q )
+{
  { q.pop() } -> std::convertible_to< typename queue_item< Q >::type >;
  };
 template< class Q >
-concept top_pop = requires( Q & q ) {
+concept top_pop = requires( Q & q )
+{
  typename queue_item< Q >::type( q.top() );
  q.pop();
  };
 
-struct QueueDeleteMin {
+struct QueueDeleteMin
+{
  template< class Q >
-  requires( member_deleteMin< Q > || free_deleteMin< Q > ||
-            item_pop< Q > || top_pop< Q > )
+  requires( member_deleteMin< Q > || free_deleteMin< Q > || item_pop< Q > ||
+	    top_pop< Q > )
  constexpr auto operator()( Q & q ) const {
   if constexpr( member_deleteMin< Q > )
    return( q.deleteMin() );
@@ -157,31 +172,33 @@ struct QueueDeleteMin {
   else if constexpr( item_pop< Q > )
    return( typename queue_item< Q >::type( q.pop() ) );
   else {
-   typename queue_item< Q >::type x = q.top();   // the pop() of the
-   q.pop();                                      // standard: no item
+   typename queue_item< Q >::type x = q.top();  // the pop() of the
+   q.pop();                                     // standard: no item
    return( x );
    }
   }
  };
 
-template< class Q , class ... A >
-concept member_insert = requires( Q & q , A && ... a ) {
- q.insert( std::forward< A >( a )... );
- };
-template< class Q , class ... A >
-concept free_insert = requires( Q & q , A && ... a ) {
+template< class Q , class... A >
+concept member_insert =
+  requires( Q & q , A &&... a )
+{ q.insert( std::forward< A >( a )... ); };
+template< class Q , class... A >
+concept free_insert = requires( Q & q , A &&... a )
+{
  queue_insert( q , std::forward< A >( a )... );
  };
-template< class Q , class ... A >
-concept push_insert = requires( Q & q , A && ... a ) {
- q.push( std::forward< A >( a )... );
- };
+template< class Q , class... A >
+concept push_insert =
+  requires( Q & q , A &&... a )
+{ q.push( std::forward< A >( a )... ); };
 
-struct QueueInsert {
- template< class Q , class ... A >
+struct QueueInsert
+{
+ template< class Q , class... A >
   requires( member_insert< Q , A... > || free_insert< Q , A... > ||
-            push_insert< Q , A... > )
- constexpr decltype( auto ) operator()( Q & q , A && ... a ) const {
+	    push_insert< Q , A... > )
+ constexpr decltype( auto ) operator()( Q & q , A &&... a ) const {
   if constexpr( member_insert< Q , A... > )
    return( q.insert( std::forward< A >( a )... ) );
   else if constexpr( free_insert< Q , A... > )
@@ -215,22 +232,25 @@ inline constexpr detail::QueueInsert queue_insert{};
 /*--------------------------------------------------------------------------*/
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
-template< class Q , class ... A >
-concept queue_insertable = requires( Q & q , const queue_item_t< Q > & x ,
-                                     const A & ... a ) {
- ADS::queue_insert( q , x , a... );
- };
+template< class Q , class... A >
+concept queue_insertable =
+  requires( Q & q , const queue_item_t< Q > & x , const A &... a )
+{
+   ADS::queue_insert( q , x , a... );
+   };
 
 template< class Q >
-concept queue_keys = ( requires { typename Q::Priority; } &&
-                       queue_insertable< Q , typename Q::Priority > ) ||
-                     ( requires { typename Q::Key; } &&
-                       ( queue_insertable< Q , typename Q::Key > ||
-                         queue_insertable< Q , typename Q::Key ,
-                                           typename Q::Key > ) ) ||
-                     queue_insertable< Q >;
+concept queue_keys =
+  ( requires { typename Q::Priority; } &&
+    queue_insertable< Q , typename Q::Priority > ) ||
+  ( requires
+{ typename Q::Key; } &&
+    ( queue_insertable< Q , typename Q::Key > ||
+      queue_insertable< Q , typename Q::Key , typename Q::Key > )) ||
+  queue_insertable< Q >;
 
 }  // end( namespace detail )
 /// \endcond
@@ -241,7 +261,8 @@ concept queue_keys = ( requires { typename Q::Priority; } &&
 /// `Key`s, or none), `queue_min()` and `queue_deleteMin()`, the item of
 /// smallest priority read and removed
 template< class Q >
-concept PriorityQueue = requires( Q & q , const Q & cq ) {
+concept PriorityQueue = requires( Q & q , const Q & cq )
+{
  typename queue_item_t< Q >;
  { cq.empty() } -> std::convertible_to< bool >;
  { ADS::queue_min( q ) } -> std::convertible_to< queue_item_t< Q > >;
@@ -253,23 +274,23 @@ concept PriorityQueue = requires( Q & q , const Q & cq ) {
 /// `deleteMin()`, `insert( x , p )`, which gives the handle of \f$ x \f$,
 /// and `decrease( y , p )`
 template< class Q >
-concept AddressablePriorityQueue = PriorityQueue< Q > &&
-                                   requires( Q q , const Q cq ,
-                                             const typename Q::Item & x ,
-                                             const typename Q::Priority & p ,
-                                             typename Q::Handle y ) {
- { cq.empty() } -> std::same_as< bool >;
- { cq.min() } -> std::convertible_to< typename Q::Item >;
- { q.deleteMin() } -> std::convertible_to< typename Q::Item >;
- { q.insert( x , p ) } -> std::same_as< typename Q::Handle >;
- q.decrease( y , p );
- };
+concept AddressablePriorityQueue =
+  PriorityQueue< Q > &&
+  requires( Q q , const Q cq , const typename Q::Item & x ,
+	    const typename Q::Priority & p , typename Q::Handle y )
+{
+   { cq.empty() } -> std::same_as< bool >;
+   { cq.min() } -> std::convertible_to< typename Q::Item >;
+   { q.deleteMin() } -> std::convertible_to< typename Q::Item >;
+   { q.insert( x , p ) } -> std::same_as< typename Q::Handle >;
+   q.decrease( y , p );
+   };
 
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PriorityQueue.h included */
+#endif /* PriorityQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File PriorityQueue.h ------------------------*/

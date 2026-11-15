@@ -74,7 +74,7 @@
 
 #ifndef __ADS_MFSet
  #define __ADS_MFSet
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -91,23 +91,24 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ CLASS MFSet -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the union of disjoint sets on a forest
-class MFSet {
+class MFSet
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// how `merge()` chooses the root that goes under the other one
  enum class Union {
-  NONE ,   ///< the root of \f$ y \f$ under that of \f$ x \f$
-  RANK ,   ///< the lower tree under the higher one
-  SIZE     ///< the smaller tree under the larger one
+  NONE ,  ///< the root of \f$ y \f$ under that of \f$ x \f$
+  RANK ,  ///< the lower tree under the higher one
+  SIZE   ///< the smaller tree under the larger one
   };
 
  /// the \f$ n \f$ components \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$ (the
@@ -189,7 +190,6 @@ class MFSet {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the root of \f$ x \f$, without compressing the path
  [[nodiscard]] int root( int x ) const;
 
@@ -197,13 +197,13 @@ class MFSet {
  /// upwards if the heuristic is on, \f$ O( n ) \f$
  [[nodiscard]] bool forest( void ) const;
 
- std::vector< int > f_p;      ///< the parents
- std::vector< int > f_rank;   ///< the ranks
- std::vector< int > f_size;   ///< the sizes of the trees, at the roots
- Union f_union;               ///< the heuristic of the union
- bool f_compress;             ///< the compression of the paths
- int f_count;                 ///< the number of components
- long f_steps = 0;            ///< see `steps()`
+ std::vector< int > f_p;     ///< the parents
+ std::vector< int > f_rank;  ///< the ranks
+ std::vector< int > f_size;  ///< the sizes of the trees, at the roots
+ Union f_union;              ///< the heuristic of the union
+ bool f_compress;            ///< the compression of the paths
+ int f_count;                ///< the number of components
+ long f_steps = 0;           ///< see `steps()`
 
  };  // end( class MFSet )
 
@@ -240,7 +240,7 @@ MFSet components( const G & g );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MFSet.h included */
+#endif /* MFSet.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File MFSet.h ----------------------------*/

@@ -150,7 +150,8 @@
 
 using namespace ADS::bench;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------- INPUTS ---------------------------------*/
@@ -161,16 +162,15 @@ using LEdge = std::tuple< int , int , long long >;
 
 /// a graph: n nodes, its edges (an unoriented one given once), oriented or
 /// not
-struct Input {
+struct Input
+{
  int n = 0;
  std::vector< Edge > E;
  bool directed = true;
- std::size_t arcs( void ) const {
-  return( ( directed ? 1 : 2 ) * E.size() );
-  }
+ std::size_t arcs( void ) const { return( ( directed ? 1 : 2 ) * E.size() ); }
  };
 
-constexpr int MAXW = 100000;   ///< the costs are in [ 1 , MAXW ]
+constexpr int MAXW = 100000;  ///< the costs are in [ 1 , MAXW ]
 
 /// m edges of G( n , m ), no loop
 Input gnm( int n , std::size_t m , bool directed , std::mt19937_64 & g )
@@ -197,8 +197,10 @@ Input grid( int n , bool directed , std::mt19937_64 & g )
   };
  for( int r = 0 ; r < s ; ++r )
   for( int c = 0 ; c < s ; ++c ) {
-   if( c + 1 < s ) add( r * s + c , r * s + c + 1 );
-   if( r + 1 < s ) add( r * s + c , ( r + 1 ) * s + c );
+   if( c + 1 < s )
+    add( r * s + c , r * s + c + 1 );
+   if( r + 1 < s )
+    add( r * s + c , ( r + 1 ) * s + c );
    }
  return( I );
  }
@@ -209,7 +211,8 @@ Input grid( int n , bool directed , std::mt19937_64 & g )
 Input rmat( int n , std::size_t m , bool directed , std::mt19937_64 & g )
 {
  int levels = 0;
- while( ( 1 << levels ) < n ) ++levels;
+ while( ( 1 << levels ) < n )
+  ++levels;
  Input I{ n , {} , directed };
  I.E.reserve( m );
  std::uniform_real_distribution< double > U( 0 , 1 );
@@ -226,7 +229,8 @@ Input rmat( int n , std::size_t m , bool directed , std::mt19937_64 & g )
  // the node names of R-MAT follow the degrees: shuffled, as in the
  // generators of Graph500
  std::vector< int > p( n );
- for( int i = 0 ; i < n ; ++i ) p[ i ] = i;
+ for( int i = 0 ; i < n ; ++i )
+  p[ i ] = i;
  std::shuffle( p.begin() , p.end() , g );
  for( auto & [ u , v , w ] : I.E ) {
   u = p[ u ];
@@ -243,7 +247,8 @@ Input dimacs( const std::string & path , bool directed )
  std::ifstream in( path );
  std::string line;
  while( std::getline( in , line ) ) {
-  if( line.empty() ) continue;
+  if( line.empty() )
+   continue;
   if( line[ 0 ] == 'p' ) {
    std::istringstream s( line.substr( 4 ) );
    std::size_t m;
@@ -266,7 +271,10 @@ Input geometric( int n , bool directed , std::mt19937_64 & g )
 {
  std::uniform_real_distribution< double > U( 0 , 1 );
  std::vector< double > x( n ) , y( n );
- for( int i = 0 ; i < n ; ++i ) { x[ i ] = U( g ); y[ i ] = U( g ); }
+ for( int i = 0 ; i < n ; ++i ) {
+  x[ i ] = U( g );
+  y[ i ] = U( g );
+  }
  const int s = std::max( 1 , int( std::sqrt( n / 2.0 ) ) );
  std::vector< std::vector< int > > B( std::size_t( s ) * s );
  auto cell = [ & ]( double t ) { return( std::min( s - 1 , int( t * s ) ) ); };
@@ -280,11 +288,11 @@ Input geometric( int n , bool directed , std::mt19937_64 & g )
   for( int dy = -1 ; dy <= 1 ; ++dy )
    for( int dx = -1 ; dx <= 1 ; ++dx ) {
     const int a = cx + dx , b = cy + dy;
-    if( a < 0 || b < 0 || a >= s || b >= s ) continue;
+    if( a < 0 || b < 0 || a >= s || b >= s )
+     continue;
     for( int j : B[ b * s + a ] )
      if( j != i )
-      near.emplace_back( std::hypot( x[ i ] - x[ j ] , y[ i ] - y[ j ] ) ,
-                         j );
+      near.emplace_back( std::hypot( x[ i ] - x[ j ] , y[ i ] - y[ j ] ) , j );
     }
   std::sort( near.begin() , near.end() );
   for( std::size_t k = 0 ; k < std::min< std::size_t >( 3 , near.size() ) ;
@@ -305,8 +313,10 @@ Input geometric( int n , bool directed , std::mt19937_64 & g )
 Input road( int n , bool directed , std::mt19937_64 & g )
 {
  if( const char * dir = std::getenv( "ADS_DIMACS" ) ) {
-  Input I = dimacs( std::string( dir ) + ( n <= 300000 ?
-                    "/USA-road-d.NY.gr" : "/USA-road-d.FLA.gr" ) , directed );
+  Input I =
+    dimacs( std::string( dir ) +
+	      ( n <= 300000 ? "/USA-road-d.NY.gr" : "/USA-road-d.FLA.gr" ) ,
+	    directed );
   if( I.n > 0 )
    return( I );
   }
@@ -317,11 +327,14 @@ Input road( int n , bool directed , std::mt19937_64 & g )
 Input make( const std::string & c , int n , bool directed , unsigned seed )
 {
  std::mt19937_64 g( seed + unsigned( n ) );
- if( c == "gnm4" ) return( gnm( n , 4 * std::size_t( n ) , directed , g ) );
+ if( c == "gnm4" )
+  return( gnm( n , 4 * std::size_t( n ) , directed , g ) );
  if( c == "gnm16" )
   return( gnm( n , 16 * std::size_t( n ) , directed , g ) );
- if( c == "grid" ) return( grid( n , directed , g ) );
- if( c == "road" ) return( road( n , directed , g ) );
+ if( c == "grid" )
+  return( grid( n , directed , g ) );
+ if( c == "road" )
+  return( road( n , directed , g ) );
  return( rmat( n , 8 * std::size_t( n ) , directed , g ) );
  }
 
@@ -346,10 +359,12 @@ std::vector< Edge > arcs( const Input & I )
     A.emplace_back( v , u , w );
    }
  std::sort( A.begin() , A.end() );
- A.erase( std::unique( A.begin() , A.end() , []( const Edge & a ,
-          const Edge & b ) { return( std::get< 0 >( a ) == std::get< 0 >( b )
-                               && std::get< 1 >( a ) == std::get< 1 >( b ) );
-          } ) , A.end() );
+ A.erase( std::unique( A.begin() , A.end() ,
+		       []( const Edge & a , const Edge & b ) {
+			return( std::get< 0 >( a ) == std::get< 0 >( b ) &&
+				 std::get< 1 >( a ) == std::get< 1 >( b ) );
+		        } ) ,
+	  A.end() );
  return( A );
  }
 
@@ -378,19 +393,25 @@ using Priority = std::pair< int , int >;
 /// a GRAPH on a std::vector of rows of std::pairs ( head , weight ), or of
 /// heads only if not Weighted
 template< bool Weighted = true >
-struct StdGraph {
+struct StdGraph
+{
  using Weight = int;
  using Arc = std::conditional_t< Weighted , std::pair< int , int > , int >;
  std::vector< std::vector< Arc > > out;
  bool dir = true;
  StdGraph( int n , const std::vector< Edge > & A , bool d )
-  : out( std::size_t( n ) ) , dir( d ) {
+     : out( std::size_t( n ) ) , dir( d ) {
   for( const auto & [ u , v , w ] : A )
-   if constexpr( Weighted ) out[ u ].emplace_back( v , w );
-   else out[ u ].push_back( v );
+   if constexpr( Weighted )
+    out[ u ].emplace_back( v , w );
+   else
+    out[ u ].push_back( v );
   }
  static int head( const Arc & a ) {
-  if constexpr( Weighted ) return( a.first ); else return( a );
+  if constexpr( Weighted )
+   return( a.first );
+  else
+   return( a );
   }
  int n( void ) const { return( int( out.size() ) ); }
  int bound( void ) const { return( n() ); }
@@ -398,42 +419,54 @@ struct StdGraph {
  bool hasNode( int u ) const { return( ( u >= 0 ) && ( u < n() ) ); }
  std::vector< int > V( void ) const {
   std::vector< int > R( out.size() );
-  for( int u = 0 ; u < n() ; ++u ) R[ u ] = u;
+  for( int u = 0 ; u < n() ; ++u )
+   R[ u ] = u;
   return( R );
   }
  std::vector< int > adj( int u ) const {
   std::vector< int > R;
   R.reserve( out[ u ].size() );
-  for( const auto & a : out[ u ] ) R.push_back( head( a ) );
+  for( const auto & a : out[ u ] )
+   R.push_back( head( a ) );
   return( R );
   }
  template< class F >
  void forEachAdj( int u , F && f ) const {
-  for( const auto & a : out[ u ] ) f( head( a ) );
+  for( const auto & a : out[ u ] )
+   f( head( a ) );
   }
  template< class F >
- void forEachEdge( int u , F && f ) const requires( Weighted ) {
-  for( const auto & a : out[ u ] ) f( a.first , a.second );
+ void forEachEdge( int u , F && f ) const
+  requires( Weighted )
+ {
+  for( const auto & a : out[ u ] )
+   f( a.first , a.second );
   }
  };
 
 /// std::queue with the names of the book
-struct StdQueue {
+struct StdQueue
+{
  std::queue< int > q;
  bool empty( void ) const { return( q.empty() ); }
  void enqueue( int v ) { q.push( v ); }
- int dequeue( void ) { const int v = q.front(); q.pop(); return( v ); }
+ int dequeue( void ) {
+  const int v = q.front();
+  q.pop();
+  return( v );
+  }
  };
 
 /// a priority queue of the nodes on a std::set of their priorities, the
 /// decrease an erase and an insert, the node its own handle
-struct StdSetQueue {
+struct StdSetQueue
+{
  using Item = int;
  using Priority = std::pair< int , int >;
  using Handle = int;
  std::set< Priority > s;
  std::vector< Priority > key;
- explicit StdSetQueue( int n ) : key( std::size_t( n ) ) {}
+ explicit StdSetQueue( int n ) : key( std::size_t( n ) ) { }
  bool empty( void ) const { return( s.empty() ); }
  int min( void ) const { return( s.begin()->second ); }
  int deleteMin( void ) {
@@ -460,14 +493,16 @@ struct StdSetQueue {
 /// the compressed rows of Boost with nodes and offsets of 32 bits, the
 /// weights in the bundle of the arcs or none
 template< bool Weighted >
-using BCsr = boost::compressed_sparse_row_graph< boost::directedS ,
-             boost::no_property , std::conditional_t< Weighted , int ,
-             boost::no_property > , boost::no_property , unsigned ,
-             unsigned >;
+using BCsr = boost::compressed_sparse_row_graph<
+  boost::directedS , boost::no_property ,
+  std::conditional_t< Weighted , int , boost::no_property > ,
+  boost::no_property ,
+  unsigned , unsigned >;
 
 /// a GRAPH on a compressed_sparse_row_graph, weighted or not
 template< bool Weighted = true >
-struct BoostGraph {
+struct BoostGraph
+{
  using Weight = int;
  BCsr< Weighted > g;
  bool dir = true;
@@ -480,10 +515,10 @@ struct BoostGraph {
    }
   if constexpr( Weighted )
    g = BCsr< Weighted >( boost::edges_are_sorted , P.begin() , P.end() ,
-                         W.begin() , unsigned( n ) );
+			 W.begin() , unsigned( n ) );
   else
    g = BCsr< Weighted >( boost::edges_are_sorted , P.begin() , P.end() ,
-                         unsigned( n ) );
+			 unsigned( n ) );
   }
  int n( void ) const { return( int( boost::num_vertices( g ) ) ); }
  int bound( void ) const { return( n() ); }
@@ -491,40 +526,41 @@ struct BoostGraph {
  bool hasNode( int u ) const { return( ( u >= 0 ) && ( u < n() ) ); }
  std::vector< int > V( void ) const {
   std::vector< int > R( static_cast< std::size_t >( n() ) );
-  for( int u = 0 ; u < n() ; ++u ) R[ u ] = u;
+  for( int u = 0 ; u < n() ; ++u )
+   R[ u ] = u;
   return( R );
   }
  std::vector< int > adj( int u ) const {
   std::vector< int > R;
-  for( auto [ a , b ] = boost::out_edges( unsigned( u ) , g ) ; a != b ;
-       ++a )
+  for( auto [ a , b ] = boost::out_edges( unsigned( u ) , g ) ; a != b ; ++a )
    R.push_back( int( boost::target( *a , g ) ) );
   return( R );
   }
  template< class F >
  void forEachAdj( int u , F && f ) const {
-  for( auto [ a , b ] = boost::out_edges( unsigned( u ) , g ) ; a != b ;
-       ++a )
+  for( auto [ a , b ] = boost::out_edges( unsigned( u ) , g ) ; a != b ; ++a )
    f( int( boost::target( *a , g ) ) );
   }
  template< class F >
- void forEachEdge( int u , F && f ) const requires( Weighted ) {
-  for( auto [ a , b ] = boost::out_edges( unsigned( u ) , g ) ; a != b ;
-       ++a )
+ void forEachEdge( int u , F && f ) const
+  requires( Weighted )
+ {
+  for( auto [ a , b ] = boost::out_edges( unsigned( u ) , g ) ; a != b ; ++a )
    f( int( boost::target( *a , g ) ) , g[ *a ] );
   }
  };
 
 /// a GRAPH on the grid_graph of Boost, the cells of cost 0 blocked and
 /// skipped, a move into a cell of cost c of weight 5 c
-struct BoostGrid {
+struct BoostGrid
+{
  using Weight = int;
  boost::grid_graph< 2 > g;
  const std::vector< unsigned char > & cost;
  BoostGrid( int s , const std::vector< unsigned char > & c )
-  : g( boost::array< std::size_t , 2 >{ { std::size_t( s ) ,
-                                          std::size_t( s ) } } ) ,
-    cost( c ) {}
+     : g( boost::array< std::size_t , 2 >{
+	 { std::size_t( s ) , std::size_t( s ) } } ) ,
+       cost( c ) { }
  int n( void ) const { return( int( num_vertices( g ) ) ); }
  int bound( void ) const { return( n() ); }
  bool directed( void ) const { return( true ); }
@@ -533,7 +569,9 @@ struct BoostGrid {
   }
  std::vector< int > V( void ) const {
   std::vector< int > R;
-  for( int u = 0 ; u < n() ; ++u ) if( cost[ u ] ) R.push_back( u );
+  for( int u = 0 ; u < n() ; ++u )
+   if( cost[ u ] )
+    R.push_back( u );
   return( R );
   }
  template< class F >
@@ -542,7 +580,8 @@ struct BoostGrid {
   const auto x = vertex( std::size_t( u ) , g );
   for( auto [ a , b ] = out_edges( x , g ) ; a != b ; ++a ) {
    const int v = int( get( boost::vertex_index , g , target( *a , g ) ) );
-   if( cost[ v ] ) f( v , 5 * int( cost[ v ] ) );
+   if( cost[ v ] )
+    f( v , 5 * int( cost[ v ] ) );
    }
   }
  template< class F >
@@ -557,23 +596,29 @@ struct BoostGrid {
  };
 
 /// boost::queue with the names of the book
-struct BoostQueue {
+struct BoostQueue
+{
  boost::queue< int > q;
  bool empty( void ) const { return( q.empty() ); }
  void enqueue( int v ) { q.push( v ); }
- int dequeue( void ) { const int v = q.top(); q.pop(); return( v ); }
+ int dequeue( void ) {
+  const int v = q.top();
+  q.pop();
+  return( v );
+  }
  };
 
 /// a mutable heap of Boost.Heap as a priority queue of the nodes: the
 /// least priority on top (the order std::greater), a decrease its
 /// increase()
 template< class H >
-struct BoostHeapQueue {
+struct BoostHeapQueue
+{
  using Item = int;
  using Priority = std::pair< int , int >;
  using Handle = typename H::handle_type;
  H h;
- explicit BoostHeapQueue( int ) {}
+ explicit BoostHeapQueue( int ) { }
  bool empty( void ) const { return( h.empty() ); }
  int min( void ) const { return( h.top().second ); }
  int deleteMin( void ) {
@@ -586,29 +631,31 @@ struct BoostHeapQueue {
  };
 
 using Greater = boost::heap::compare< std::greater< Priority > >;
-using BoostDary2 = BoostHeapQueue< boost::heap::d_ary_heap< Priority ,
-                   boost::heap::arity< 2 > , boost::heap::mutable_< true > ,
-                   Greater > >;
-using BoostDary4 = BoostHeapQueue< boost::heap::d_ary_heap< Priority ,
-                   boost::heap::arity< 4 > , boost::heap::mutable_< true > ,
-                   Greater > >;
-using BoostFibonacci = BoostHeapQueue< boost::heap::fibonacci_heap<
-                       Priority , Greater > >;
-using BoostPairing = BoostHeapQueue< boost::heap::pairing_heap< Priority ,
-                     Greater > >;
+using BoostDary2 = BoostHeapQueue<
+  boost::heap::d_ary_heap< Priority , boost::heap::arity< 2 > ,
+			   boost::heap::mutable_< true > , Greater > >;
+using BoostDary4 = BoostHeapQueue<
+  boost::heap::d_ary_heap< Priority , boost::heap::arity< 4 > ,
+			   boost::heap::mutable_< true > , Greater > >;
+using BoostFibonacci =
+  BoostHeapQueue< boost::heap::fibonacci_heap< Priority , Greater > >;
+using BoostPairing =
+  BoostHeapQueue< boost::heap::pairing_heap< Priority , Greater > >;
 
 /// disjoint_sets of Boost, the union by rank with the compression of the
 /// paths, as an MFSET: merge() joins the roots and tells whether they were
 /// apart
-struct BoostSets {
- using Map = boost::iterator_property_map< int * ,
-             boost::typed_identity_property_map< std::size_t > >;
+struct BoostSets
+{
+ using Map = boost::iterator_property_map<
+   int * , boost::typed_identity_property_map< std::size_t > >;
  std::vector< int > rank , parent;
  boost::disjoint_sets< Map , Map > D;
- explicit BoostSets( int n ) : rank( std::size_t( n ) ) ,
-                               parent( std::size_t( n ) ) ,
-                               D( Map( rank.data() ) , Map( parent.data() ) ) {
-  for( int i = 0 ; i < n ; ++i ) D.make_set( i );
+ explicit BoostSets( int n )
+     : rank( std::size_t( n ) ) , parent( std::size_t( n ) ) ,
+       D( Map( rank.data() ) , Map( parent.data() ) ) {
+  for( int i = 0 ; i < n ; ++i )
+   D.make_set( i );
   }
  bool merge( int a , int b ) {
   const int x = D.find_set( a ) , y = D.find_set( b );
@@ -627,16 +674,24 @@ struct BoostSets {
 
 /// the value of the first structure of a cell, which the others match: the
 /// result, or a count
-struct Check {
+struct Check
+{
  std::string what;
  long long value = 0;
  bool set = false;
- void start( const std::string & c ) { what = c; set = false; }
+ void start( const std::string & c ) {
+  what = c;
+  set = false;
+  }
  void operator()( const std::string & who , long long v ) {
-  if( ! set ) { value = v; set = true; return; }
+  if( ! set ) {
+   value = v;
+   set = true;
+   return;
+   }
   if( v != value ) {
    std::fprintf( stderr , "MISMATCH %s: %s gives %lld, not %lld\n" ,
-                 what.c_str() , who.c_str() , v , value );
+		 what.c_str() , who.c_str() , v , value );
    std::exit( 1 );
    }
   }
@@ -657,7 +712,8 @@ long long digest( const std::vector< int > & d , int inf )
 {
  long long s = 0;
  for( int x : d )
-  if( x != inf ) s += x + 1;
+  if( x != inf )
+   s += x + 1;
  return( s );
  }
 
@@ -665,7 +721,8 @@ long long digest( const std::vector< int > & d , int inf )
 using Counts = std::vector< std::pair< const char * , long long > >;
 
 /// the checks of the result and of each count of a cell
-struct Cell {
+struct Cell
+{
  const char * bench;
  std::string c;
  std::size_t n , ops;
@@ -674,8 +731,9 @@ struct Cell {
  std::vector< Check > counts;
 
  Cell( const char * b , const std::string & cs , std::size_t nn ,
-       std::size_t o , int rr ) : bench( b ) , c( cs ) , n( nn ) , ops( o ) ,
-                                   r( rr ) {
+       std::size_t o ,
+       int rr )
+     : bench( b ) , c( cs ) , n( nn ) , ops( o ) , r( rr ) {
   result.start( std::string( b ) + " " + cs );
   }
 
@@ -688,7 +746,10 @@ struct Cell {
    return;
   long long res = 0;
   Counts k;
-  auto run = [ & ]( int ) { k.clear(); res = work( k ); };
+  auto run = [ & ]( int ) {
+   k.clear();
+   res = work( k );
+   };
   auto none = []() { return( 0 ); };
   double t = median( none , run , 1 , ops );
   if( ( r > 1 ) && ( t * double( ops ) < 5e9 ) )
@@ -697,13 +758,12 @@ struct Cell {
   if( counts.size() < k.size() )
    for( std::size_t i = counts.size() ; i < k.size() ; ++i ) {
     counts.emplace_back();
-    counts.back().start( std::string( bench ) + " " + c + " " +
-                         k[ i ].first );
+    counts.back().start( std::string( bench ) + " " + c + " " + k[ i ].first );
     }
   for( std::size_t i = 0 ; i < k.size() ; ++i ) {
    counts[ i ]( who , k[ i ].second );
    std::printf( "%s:count\t%s\t%zu\t%s %s\t%lld\n" , bench , c.c_str() , n ,
-                who.c_str() , k[ i ].first , k[ i ].second );
+		who.c_str() , k[ i ].first , k[ i ].second );
    }
   print( bench , c , n , who , t );
   }
@@ -711,8 +771,10 @@ struct Cell {
 
 Counts counts( const ADS::FrontierCounts & k )
 {
- return( Counts{ { "adds" , k.adds } , { "extracts" , k.extracts } ,
-                 { "decreases" , k.decreases } , { "edges" , k.edges } } );
+ return( Counts{ { "adds" , k.adds } ,
+		  { "extracts" , k.extracts } ,
+		  { "decreases" , k.decreases } ,
+		  { "edges" , k.edges } } );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -738,23 +800,24 @@ void bfs( const std::string & c , int n0 , int r , unsigned seed )
  if( measured( { "std vector queue" , "std vector queue A/A" } ) ) {
   const StdGraph< false > G( n , A , false );
   for( const char * who : { "std vector queue" , "std vector queue A/A" } )
-   C( who , [ & ]( Counts & k ) {
-    return( bfsRun( G , src , StdQueue() , k ) ); } );
+   C( who ,
+      [ & ]( Counts & k ) { return( bfsRun( G , src , StdQueue() , k ) ); } );
   }
 #ifdef ADS_HAS_BOOST
  if( measured( { "Boost csr queue" } ) ) {
   const BoostGraph< false > G( n , A , false );
-  C( "Boost csr queue" , [ & ]( Counts & k ) {
-   return( bfsRun( G , src , BoostQueue() , k ) ); } );
+  C( "Boost csr queue" ,
+     [ & ]( Counts & k ) { return( bfsRun( G , src , BoostQueue() , k ) ); } );
   }
 #endif
  if( ! measured( { "ADS StaticGraph ArrayQueue" } ) )
   return;
- const ADS::StaticGraph<> S( ADS::StaticGraph< int >( n , edgesOf( I , A ) ,
-                                                      false ) );
+ const ADS::StaticGraph<> S(
+   ADS::StaticGraph< int >( n , edgesOf( I , A ) , false ) );
  C( "ADS StaticGraph ArrayQueue" , [ & ]( Counts & k ) {
   return( bfsRun( S , src , ADS::ArrayQueue< int >( std::max( n , 1 ) ) ,
-                  k ) ); } );
+		  k ) );
+  } );
  }
 
 /// shortestPaths() of the book on the priority queue Q or the queue Q
@@ -777,16 +840,19 @@ long long spRun( const G & g , int src , Q & q , Counts & k )
 
 /// a run of an algorithm on a priority queue made for n nodes
 template< class Q , class G , class Run >
-auto withQueue( const G & g , int src , Run && run ) {
- return( [ & g , src , run ]( Counts & k ) {
+auto withQueue( const G & g , int src , Run && run )
+{
+ return( [ &g , src , run ]( Counts & k ) {
   Q q( std::max( g.bound() , 1 ) );
-  return( run( g , src , q , k ) ); } );
+  return( run( g , src , q , k ) );
+  } );
  }
 
 /// the priority queues of each family on the run given
 template< class Run >
 void priorityQueues( Cell & C , const Input & I ,
-                     const std::vector< Edge > & A , int src , Run && run )
+		     const std::vector< Edge > & A ,
+		     int src , Run && run )
 {
  const int n = I.n;
  using P = Priority;
@@ -797,7 +863,7 @@ void priorityQueues( Cell & C , const Input & I ,
   }
 #ifdef ADS_HAS_BOOST
  if( measured( { "Boost csr d_ary_heap<4>" , "Boost csr d_ary_heap<2>" ,
-                 "Boost csr pairing_heap" , "Boost csr fibonacci_heap" } ) ) {
+		 "Boost csr pairing_heap" , "Boost csr fibonacci_heap" } ) ) {
   const BoostGraph<> G( n , A , I.directed );
   C( "Boost csr d_ary_heap<4>" , withQueue< BoostDary4 >( G , src , run ) );
   C( "Boost csr d_ary_heap<2>" , withQueue< BoostDary2 >( G , src , run ) );
@@ -807,11 +873,11 @@ void priorityQueues( Cell & C , const Input & I ,
   }
 #endif
  if( ! measured( { "ADS StaticGraph HeapPriorityQueue<4>" ,
-                   "ADS StaticGraph HeapPriorityQueue<2>" ,
-                   "ADS StaticGraph IndexedDaryHeap<4>" ,
-                   "ADS StaticGraph IndexedDaryHeap<2>" ,
-                   "ADS StaticGraph PairingHeap" ,
-                   "ADS StaticGraph FibonacciHeapPriorityQueue" } ) )
+		   "ADS StaticGraph HeapPriorityQueue<2>" ,
+		   "ADS StaticGraph IndexedDaryHeap<4>" ,
+		   "ADS StaticGraph IndexedDaryHeap<2>" ,
+		   "ADS StaticGraph PairingHeap" ,
+		   "ADS StaticGraph FibonacciHeapPriorityQueue" } ) )
   return;
  const ADS::StaticGraph< int > S( n , edgesOf( I , A ) , I.directed );
  C( "ADS StaticGraph HeapPriorityQueue<4>" ,
@@ -824,10 +890,12 @@ void priorityQueues( Cell & C , const Input & I ,
     withQueue< ADS::IndexedDaryHeap< P , 2 > >( S , src , run ) );
  C( "ADS StaticGraph PairingHeap" , [ & ]( Counts & k ) {
   ADS::PairingHeap< int , P > q;
-  return( run( S , src , q , k ) ); } );
+  return( run( S , src , q , k ) );
+  } );
  C( "ADS StaticGraph FibonacciHeapPriorityQueue" , [ & ]( Counts & k ) {
   ADS::FibonacciHeapPriorityQueue< int , P > q;
-  return( run( S , src , q , k ) ); } );
+  return( run( S , src , q , k ) );
+  } );
  }
 
 void dijkstra( const std::string & c , int n0 , int r , unsigned seed )
@@ -835,9 +903,10 @@ void dijkstra( const std::string & c , int n0 , int r , unsigned seed )
  const Input I = make( c , n0 , true , seed );
  const auto A = arcs( I );
  Cell C( "dijkstra" , c , std::size_t( I.n ) , A.size() , r );
- priorityQueues( C , I , A , source( I ) , []( const auto & g , int s ,
-                 auto & q , Counts & k ) { return( spRun( g , s , q , k ) );
-                 } );
+ priorityQueues( C , I , A , source( I ) ,
+		 []( const auto & g , int s , auto & q , Counts & k ) {
+		  return( spRun( g , s , q , k ) );
+		  } );
  }
 
 void bfm( const std::string & c , int n0 , int r , unsigned seed )
@@ -851,14 +920,16 @@ void bfm( const std::string & c , int n0 , int r , unsigned seed )
   for( const char * who : { "std vector queue" , "std vector queue A/A" } )
    C( who , [ & ]( Counts & k ) {
     StdQueue q;
-    return( spRun( G , src , q , k ) ); } );
+    return( spRun( G , src , q , k ) );
+    } );
   }
 #ifdef ADS_HAS_BOOST
  if( measured( { "Boost csr queue" } ) ) {
   const BoostGraph<> G( n , A , true );
   C( "Boost csr queue" , [ & ]( Counts & k ) {
    BoostQueue q;
-   return( spRun( G , src , q , k ) ); } );
+   return( spRun( G , src , q , k ) );
+   } );
   }
 #endif
  if( ! measured( { "ADS StaticGraph ArrayQueue" } ) )
@@ -866,7 +937,8 @@ void bfm( const std::string & c , int n0 , int r , unsigned seed )
  const ADS::StaticGraph< int > S( n , edgesOf( I , A ) , true );
  C( "ADS StaticGraph ArrayQueue" , [ & ]( Counts & k ) {
   ADS::ArrayQueue< int > q( std::max( n , 1 ) );
-  return( spRun( S , src , q , k ) ); } );
+  return( spRun( S , src , q , k ) );
+  } );
  }
 
 /// prim() of the book on the priority queue q: a digest of the parents,
@@ -888,21 +960,23 @@ void prim( const std::string & c , int n0 , int r , unsigned seed )
  const Input I = make( c , n0 , false , seed );
  const auto A = arcs( I );
  Cell C( "prim" , c , std::size_t( I.n ) , A.size() , r );
- priorityQueues( C , I , A , source( I ) , []( const auto & g , int s ,
-                 auto & q , Counts & k ) { return( primRun( g , s , q , k ) );
-                 } );
+ priorityQueues( C , I , A , source( I ) ,
+		 []( const auto & g , int s , auto & q , Counts & k ) {
+		  return( primRun( g , s , q , k ) );
+		  } );
  }
 
 /// kruskal() of the book on the MFSET M: the weight of the forest
 template< class M >
 long long kruskalRun( int n ,
-                      const std::vector< ADS::WeightedEdge< int > > & E ,
-                      Counts & k )
+		      const std::vector< ADS::WeightedEdge< int > > & E ,
+		      Counts & k )
 {
  M sets( std::max( n , 1 ) );
  ADS::MergeCounts c;
  long long s = 0;
- for( const auto & e : ADS::kruskal( n , E , sets , 0 , &c ) ) s += e.w;
+ for( const auto & e : ADS::kruskal( n , E , sets , 0 , &c ) )
+  s += e.w;
  k = { { "merges" , c.merges } , { "unions" , c.unions } };
  return( s );
  }
@@ -919,17 +993,19 @@ void kruskal( const std::string & c , int n0 , int r , unsigned seed )
  using ADS::Compression;
 #ifdef ADS_HAS_BOOST
  for( const char * who : { "Boost disjoint_sets" ,
-                           "Boost disjoint_sets A/A" } )
-  C( who , [ & ]( Counts & k ) {
-   return( kruskalRun< BoostSets >( n , E , k ) ); } );
+			   "Boost disjoint_sets A/A" } )
+  C( who ,
+     [ & ]( Counts & k ) { return( kruskalRun< BoostSets >( n , E , k ) ); } );
 #endif
  C( "ADS UnionFind" , [ & ]( Counts & k ) {
-  return( kruskalRun< ADS::UnionFind >( n , E , k ) ); } );
+  return( kruskalRun< ADS::UnionFind >( n , E , k ) );
+  } );
  C( "ADS DisjointSets rank full" , [ & ]( Counts & k ) {
   return( kruskalRun< ADS::DisjointSets< Union::RANK , Compression::FULL > >(
-          n , E , k ) ); } );
- C( "ADS MFSet" , [ & ]( Counts & k ) {
-  return( kruskalRun< ADS::MFSet >( n , E , k ) ); } );
+    n , E , k ) );
+  } );
+ C( "ADS MFSet" ,
+    [ & ]( Counts & k ) { return( kruskalRun< ADS::MFSet >( n , E , k ) ); } );
  }
 
 /// the components of scc of the graph g by one of scc() of the book,
@@ -947,8 +1023,7 @@ long long sccRun( const G & g , Counts & k , F && scc )
 template< class G >
 long long sccRun( const G & g , Counts & k )
 {
- return( sccRun( g , k , []( const auto & h ) { return( ADS::scc( h ) ); }
-                 ) );
+ return( sccRun( g , k , []( const auto & h ) { return( ADS::scc( h ) ); } ) );
  }
 
 void scc( const std::string & c , int n0 , int r , unsigned seed )
@@ -971,42 +1046,48 @@ void scc( const std::string & c , int n0 , int r , unsigned seed )
   const BoostGraph< false > G( n , A , true );
   C( "Boost csr strong_components" , [ & ]( Counts & k ) {
    std::vector< unsigned > c( static_cast< std::size_t >( n ) );
-   const long long K = n == 0 ? 0 : (long long) boost::strong_components(
-                       G.g , boost::make_iterator_property_map( c.begin() ,
-                       boost::get( boost::vertex_index , G.g ) ) );
+   const long long K =
+     n == 0 ? 0
+	    : ( long long )boost::strong_components(
+		G.g , boost::make_iterator_property_map(
+		       c.begin() , boost::get( boost::vertex_index , G.g ) ) );
    k = { { "components" , K } };
-   return( K ); } );
+   return( K );
+   } );
   }
 #endif
  if( ! measured( { "ADS StaticGraph" , "ADS StaticGraph sccTarjan" ,
-                   "ADS StaticGraph sccPearce" } ) )
+		   "ADS StaticGraph sccPearce" } ) )
   return;
- const ADS::StaticGraph<> S( ADS::StaticGraph< int >( n , edgesOf( I , A ) ,
-                                                      true ) );
+ const ADS::StaticGraph<> S(
+   ADS::StaticGraph< int >( n , edgesOf( I , A ) , true ) );
  C( "ADS StaticGraph" , [ & ]( Counts & k ) { return( sccRun( S , k ) ); } );
  C( "ADS StaticGraph sccTarjan" , [ & ]( Counts & k ) {
-  return( sccRun( S , k , []( const auto & h ) {
-   return( ADS::sccTarjan( h ) ); } ) ); } );
+  return(
+    sccRun( S , k ,
+	    []( const auto & h ) { return( ADS::sccTarjan( h ) ); } ) );
+  } );
  C( "ADS StaticGraph sccPearce" , [ & ]( Counts & k ) {
-  return( sccRun( S , k , []( const auto & h ) {
-   return( ADS::sccPearce( h ) ); } ) ); } );
+  return(
+    sccRun( S , k ,
+	    []( const auto & h ) { return( ADS::sccPearce( h ) ); } ) );
+  } );
  }
 
 /// a closed walk of m distinct edges among n nodes, oriented or not, each
 /// step to a random node by an edge not yet used: an Eulerian graph
-Input closedWalk( int n , std::size_t m , bool directed ,
-                  std::mt19937_64 & g )
+Input closedWalk( int n , std::size_t m , bool directed , std::mt19937_64 & g )
 {
  Input I{ n , {} , directed };
  std::set< std::pair< int , int > > used;
  auto key = [ & ]( int u , int v ) {
-  return( directed ? std::pair( u , v ) : std::pair( std::min( u , v ) ,
-                                                     std::max( u , v ) ) );
+  return( directed ? std::pair( u , v )
+		    : std::pair( std::min( u , v ) , std::max( u , v ) ) );
   };
  int at = 0;
- for( ;; ) {
-  const bool close = ( I.E.size() + 1 >= m ) && ( at != 0 ) &&
-                     ! used.count( key( at , 0 ) );
+ for( ; ; ) {
+  const bool close =
+    ( I.E.size() + 1 >= m ) && ( at != 0 ) && ! used.count( key( at , 0 ) );
   const int v = close ? 0 : int( g() % unsigned( n ) );
   if( ( v == at ) || used.count( key( at , v ) ) )
    continue;
@@ -1027,7 +1108,7 @@ long long eulerRun( const G & g , Counts & k )
  if( T )
   for( std::size_t i = 0 ; i < T->size() ; ++i )
    s += ( long long )( i % 7 + 1 ) * ( ( *T )[ i ] + 1 );
- k = { { "nodes" , T ? (long long) T->size() : -1 } };
+ k = { { "nodes" , T ? ( long long )T->size() : -1 } };
  return( s );
  }
 
@@ -1052,8 +1133,8 @@ void euler( const std::string & c , int n , int r , unsigned seed )
 #endif
  if( ! measured( { "ADS StaticGraph" } ) )
   return;
- const ADS::StaticGraph<> S( ADS::StaticGraph< int >( n , edgesOf( I , A ) ,
-                                                      I.directed ) );
+ const ADS::StaticGraph<> S(
+   ADS::StaticGraph< int >( n , edgesOf( I , A ) , I.directed ) );
  C( "ADS StaticGraph" , [ & ]( Counts & k ) { return( eulerRun( S , k ) ); } );
  }
 
@@ -1077,17 +1158,18 @@ void matching( const std::string & c , int n0 , int r , unsigned seed )
  Cell C( "matching" , c , std::size_t( n ) , E.size() , r );
 #ifdef ADS_HAS_BOOST
  if( measured( { "Boost adjacency_list edmonds" } ) ) {
-  using BG = boost::adjacency_list< boost::vecS , boost::vecS ,
-                                    boost::undirectedS >;
+  using BG =
+    boost::adjacency_list< boost::vecS , boost::vecS , boost::undirectedS >;
   BG G( static_cast< std::size_t >( n ) );
   for( const auto & [ u , v , w ] : E )
    boost::add_edge( std::size_t( u ) , std::size_t( v ) , G );
   C( "Boost adjacency_list edmonds" , [ & ]( Counts & k ) {
    std::vector< std::size_t > mate( static_cast< std::size_t >( n ) );
    boost::edmonds_maximum_cardinality_matching( G , mate.data() );
-   const long long s = (long long) boost::matching_size( G , mate.data() );
+   const long long s = ( long long )boost::matching_size( G , mate.data() );
    k = { { "matched" , 2 * s } };
-   return( s ); } );
+   return( s );
+   } );
   }
 #endif
  if( measured( { "std vector" , "std vector A/A" } ) ) {
@@ -1098,8 +1180,8 @@ void matching( const std::string & c , int n0 , int r , unsigned seed )
  if( ! measured( { "ADS StaticGraph" } ) )
   return;
  const ADS::StaticGraph<> S( ADS::StaticGraph< int >( n , E , false ) );
- C( "ADS StaticGraph" , [ & ]( Counts & k ) {
-  return( matchingRun( S , k ) ); } );
+ C( "ADS StaticGraph" ,
+    [ & ]( Counts & k ) { return( matchingRun( S , k ) ); } );
  }
 
 void wmatching( int n , int r , unsigned seed )
@@ -1111,29 +1193,35 @@ void wmatching( int n , int r , unsigned seed )
  const auto E = edgesOf( I , arcs( I ) );
  Cell C( "wmatching" , "gnm4" , std::size_t( n ) , E.size() , r );
  std::vector< std::tuple< int , int , long long > > L;
- for( const auto & [ u , v , w ] : E ) L.emplace_back( u , v , w );
+ for( const auto & [ u , v , w ] : E )
+  L.emplace_back( u , v , w );
  for( const char * who : { "ADS" , "ADS A/A" } )
   C( who , [ & ]( Counts & k ) {
    const auto M = ADS::maxWeightMatching( n , L );
-   k = { { "edges" , (long long) M.second.size() } };
-   return( M.first ); } );
+   k = { { "edges" , ( long long )M.second.size() } };
+   return( M.first );
+   } );
 #ifdef ADS_HAS_BOOST
  if( measured( { "Boost adjacency_list" } ) ) {
-  using BG = boost::adjacency_list< boost::vecS , boost::vecS ,
-             boost::undirectedS , boost::no_property ,
-             boost::property< boost::edge_weight_t , long long > >;
+  using BG = boost::adjacency_list<
+    boost::vecS , boost::vecS , boost::undirectedS , boost::no_property ,
+    boost::property< boost::edge_weight_t , long long > >;
   BG G( static_cast< std::size_t >( n ) );
   for( const auto & [ u , v , w ] : L )
    boost::add_edge( std::size_t( u ) , std::size_t( v ) , w , G );
   C( "Boost adjacency_list" , [ & ]( Counts & k ) {
    std::vector< boost::graph_traits< BG >::vertex_descriptor > mate(
-                                         static_cast< std::size_t >( n ) );
+     static_cast< std::size_t >( n ) );
    boost::maximum_weighted_matching( G , mate.data() );
    long long s = 0 , e = 0;
    for( const auto & [ u , v , w ] : L )
-    if( mate[ std::size_t( u ) ] == std::size_t( v ) ) { s += w; ++e; }
+    if( mate[ std::size_t( u ) ] == std::size_t( v ) ) {
+     s += w;
+     ++e;
+     }
    k = { { "edges" , e } };
-   return( s ); } );
+   return( s );
+   } );
   }
 #endif
  }
@@ -1141,13 +1229,15 @@ void wmatching( int n , int r , unsigned seed )
 /// n random merges and n finds on the MFSET M
 template< class M >
 long long setsRun( int n , const std::vector< std::pair< int , int > > & U ,
-                   const std::vector< std::pair< int , int > > & F ,
-                   Counts & k )
+		   const std::vector< std::pair< int , int > > & F ,
+		   Counts & k )
 {
  M sets( n );
  long long unions = 0 , s = 0;
- for( const auto & [ a , b ] : U ) unions += sets.merge( a , b );
- for( const auto & [ a , b ] : F ) s += sets.same( a , b );
+ for( const auto & [ a , b ] : U )
+  unions += sets.merge( a , b );
+ for( const auto & [ a , b ] : F )
+  s += sets.same( a , b );
  k = { { "unions" , unions } };
  return( s );
  }
@@ -1156,25 +1246,35 @@ void unionFind( int n , int r , unsigned seed )
 {
  std::mt19937_64 g( seed + unsigned( n ) );
  std::vector< std::pair< int , int > > U( n ) , F( n );
- for( auto & [ a , b ] : U ) { a = int( g() % n ); b = int( g() % n ); }
- for( auto & [ a , b ] : F ) { a = int( g() % n ); b = int( g() % n ); }
+ for( auto & [ a , b ] : U ) {
+  a = int( g() % n );
+  b = int( g() % n );
+  }
+ for( auto & [ a , b ] : F ) {
+  a = int( g() % n );
+  b = int( g() % n );
+  }
  Cell C( "union-find" , "random" , std::size_t( n ) , 2 * std::size_t( n ) ,
-         r );
+	 r );
  using ADS::Union;
  using ADS::Compression;
 #ifdef ADS_HAS_BOOST
  for( const char * who : { "Boost disjoint_sets" ,
-                           "Boost disjoint_sets A/A" } )
-  C( who , [ & ]( Counts & k ) {
-   return( setsRun< BoostSets >( n , U , F , k ) ); } );
+			   "Boost disjoint_sets A/A" } )
+  C( who ,
+     [ & ]( Counts & k ) { return( setsRun< BoostSets >( n , U , F ,
+							 k ) ); } );
 #endif
  C( "ADS UnionFind" , [ & ]( Counts & k ) {
-  return( setsRun< ADS::UnionFind >( n , U , F , k ) ); } );
+  return( setsRun< ADS::UnionFind >( n , U , F , k ) );
+  } );
  C( "ADS DisjointSets rank full" , [ & ]( Counts & k ) {
   return( setsRun< ADS::DisjointSets< Union::RANK , Compression::FULL > >(
-          n , U , F , k ) ); } );
- C( "ADS MFSet" , [ & ]( Counts & k ) {
-  return( setsRun< ADS::MFSet >( n , U , F , k ) ); } );
+    n , U , F , k ) );
+  } );
+ C( "ADS MFSet" ,
+    [ & ]( Counts & k ) { return( setsRun< ADS::MFSet >( n , U , F ,
+							 k ) ); } );
  }
 
 /// the costs of a square map of side s, a fifth of the cells blocked
@@ -1184,25 +1284,29 @@ std::vector< unsigned char > gridMap( int s , bool unit , unsigned seed )
  std::mt19937_64 g( seed + unsigned( s ) );
  std::vector< unsigned char > c( std::size_t( s ) * std::size_t( s ) );
  for( auto & x : c )
-  x = ( g() % 5 == 0 ) ? 0 : unit ? 1 : (unsigned char)( 1 + g() % 9 );
+  x = ( g() % 5 == 0 ) ? 0 : unit ? 1 : ( unsigned char )( 1 + g() % 9 );
  return( c );
  }
 
 /// distance() (grid-bfs) or shortestPaths() on IndexedDaryHeap< P , 4 >
 /// (grid-dijkstra) on the implicit grid and on its explicit graph
 void gridSearch( const char * bench , int n0 , bool eight , int r ,
-                 unsigned seed )
+		 unsigned seed )
 {
  const bool sp = std::string( bench ) == "grid-dijkstra";
  const int s = std::max( 2 , int( std::sqrt( double( n0 ) ) ) );
  const auto cost = gridMap( s , ! sp , seed );
  using Grid = ADS::GridGraph< int , unsigned char >;
- const Grid G( s , s , cost , eight ? ADS::GridMoves::EIGHT :
-               ADS::GridMoves::FOUR , ADS::Corners::NO_CUT , 5 , 7 );
+ const Grid G( s , s , cost ,
+	       eight ? ADS::GridMoves::EIGHT : ADS::GridMoves::FOUR ,
+	       ADS::Corners::NO_CUT , 5 , 7 );
  // the source: the free cell nearest to the centre
  int src = G.V().front();
  for( int d = 0 , c = s / 2 ; d < s ; ++d )
-  if( G.hasNode( c * s + c + d ) ) { src = c * s + c + d; break; }
+  if( G.hasNode( c * s + c + d ) ) {
+   src = c * s + c + d;
+   break;
+   }
  std::size_t arcs = 0;
  for( int u : G.V() )
   G.forEachAdj( u , [ & ]( int ) { ++arcs; } );
@@ -1210,8 +1314,8 @@ void gridSearch( const char * bench , int n0 , bool eight , int r ,
  Cell C( bench , c , std::size_t( s ) * std::size_t( s ) , arcs , r );
  auto run = [ & ]( const auto & g , Counts & k ) -> long long {
   if( ! sp )
-   return( bfsRun( g , src , ADS::ArrayQueue< int >( std::max( g.n() , 1 ) )
-                   , k ) );
+   return(
+     bfsRun( g , src , ADS::ArrayQueue< int >( std::max( g.n() , 1 ) ) , k ) );
   ADS::IndexedDaryHeap< Priority , 4 > q( std::max( g.bound() , 1 ) );
   return( spRun( g , src , q , k ) );
   };
@@ -1240,7 +1344,8 @@ int main( int argc , char ** argv )
  // ADS_GRAPHS, if set, the benchmarks to run, separated by commas
  const char * only = std::getenv( "ADS_GRAPHS" );
  auto want = [ & ]( const std::string & b ) {
-  if( ! only ) return( true );
+  if( ! only )
+   return( true );
   const std::string l = std::string( "," ) + only + ",";
   return( l.find( "," + b + "," ) != std::string::npos );
   };

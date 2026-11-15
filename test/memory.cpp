@@ -43,7 +43,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /// whether the calls of the plain operator new are counted, and how many
 std::atomic< bool > countNews{ false };
@@ -77,7 +78,8 @@ void operator delete( void * p , std::size_t ) noexcept
  std::free( p );
  }
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
@@ -94,34 +96,34 @@ ADS_TEST( "huge-page-cache" )
 {
  using A = HugePageAllocator< std::uint64_t >;
  A a;
- const std::size_t n = ( std::size_t( 8 ) << 20 ) / 8;   // 8 MB
+ const std::size_t n = ( std::size_t( 8 ) << 20 ) / 8;  // 8 MB
  std::uint64_t * p = a.allocate( n );
  std::memset( p , 1 , n * 8 );
  a.deallocate( p , n );
- std::uint64_t * q = a.allocate( n );       // the same block again
+ std::uint64_t * q = a.allocate( n );  // the same block again
  CHECK( q == p && reinterpret_cast< std::uintptr_t >( q ) % A::PAGE == 0 );
  q[ n - 1 ] = 7;
- std::uint64_t * r = a.allocate( 2 * n );   // another size: a new one
+ std::uint64_t * r = a.allocate( 2 * n );  // another size: a new one
  CHECK( r != q );
  a.deallocate( q , n );
  a.deallocate( r , 2 * n );
- std::vector< std::uint64_t * > V;          // more than 16 blocks
+ std::vector< std::uint64_t * > V;  // more than 16 blocks
  for( int i = 0 ; i < 20 ; ++i )
   V.push_back( a.allocate( A::PAGE / 8 ) );
  for( auto * v : V )
   a.deallocate( v , A::PAGE / 8 );
- const std::size_t big = ( std::size_t( 80 ) << 20 ) / 8;   // over 64 MB
+ const std::size_t big = ( std::size_t( 80 ) << 20 ) / 8;  // over 64 MB
  std::uint64_t * b = a.allocate( big );
  a.deallocate( b , big );
- std::uint64_t * s = a.allocate( 16 );      // a small block
+ std::uint64_t * s = a.allocate( 16 );  // a small block
  a.deallocate( s , 16 );
- std::thread t( [](){                       // a thread of its own
+ std::thread t( []() {  // a thread of its own
   A c;
   std::uint64_t * x = c.allocate( ( std::size_t( 2 ) << 20 ) / 8 );
   c.deallocate( x , ( std::size_t( 2 ) << 20 ) / 8 );
   } );
  t.join();
- for( int round = 0 ; round < 2 ; ++round ) {   // built twice
+ for( int round = 0 ; round < 2 ; ++round ) {  // built twice
   std::vector< std::uint64_t , A > W;
   for( std::uint64_t i = 0 ; i < ( std::uint64_t( 1 ) << 20 ) ; ++i )
    W.push_back( i );
@@ -150,7 +152,8 @@ ADS_TEST( "size-class-allocator" )
   }
  CHECK_THROWS( S().allocate( 0 ) , contract_violation );
  S A;
- struct Live {
+ struct Live
+ {
   unsigned char * p;
   std::size_t n;
   unsigned char tag;
@@ -161,8 +164,8 @@ ADS_TEST( "size-class-allocator" )
   if( L.empty() || ( g() % 3 ) ) {
    const std::size_t n = ( g() % 10 ) ? 1 + g() % 600 : 1 + g() % 40000;
    auto * p = static_cast< unsigned char * >( A.allocate( n ) );
-   CHECK( ( n <= 8 ) || ( reinterpret_cast< std::uintptr_t >( p ) % 16 ==
-                          0 ) );
+   CHECK( ( n <= 8 ) ||
+	  ( reinterpret_cast< std::uintptr_t >( p ) % 16 == 0 ) );
    const auto tag = static_cast< unsigned char >( t );
    std::memset( p , tag , n );
    L.push_back( { p , n , tag } );
@@ -180,15 +183,15 @@ ADS_TEST( "size-class-allocator" )
    }
  for( const Live & l : L )
   A.deallocate( l.p , l.n );
- void * q = A.allocate( 100 );               // the last one given back
+ void * q = A.allocate( 100 );  // the last one given back
  A.deallocate( q , 100 );
  CHECK( A.allocate( 100 ) == q );
- S B( std::move( A ) );                      // a move
+ S B( std::move( A ) );  // a move
  CHECK( A.bytes() == 0 && B.bytes() > 0 );
  B.deallocate( q , 100 );
  B.release();
  CHECK( B.bytes() == 0 );
- void * r = B.allocate( 7 );                 // usable after release()
+ void * r = B.allocate( 7 );  // usable after release()
  B.deallocate( r , 7 );
  }
 
@@ -206,7 +209,7 @@ ADS_TEST( "pool-raw-slots" )
  std::destroy_at( a );
  P.deallocate( a );
  CHECK( P.size() == 1 );
- std::string * c = P.make( "c" );            // the slot of a again
+ std::string * c = P.make( "c" );  // the slot of a again
  CHECK( c == a && *c == "c" );
  P.free( b );
  P.free( c );
@@ -222,13 +225,13 @@ ADS_TEST( "page-heap-segments" )
 {
  constexpr std::size_t C = 1023 , S = 16;
  auto H = std::make_unique< detail::PageHeap< C > >();
- const std::size_t slots = S * ( detail::PageHeap< C >::SEGMENT /
-                                 detail::PageHeap< C >::PAGE ) * 8;
+ const std::size_t slots =
+   S * ( detail::PageHeap< C >::SEGMENT / detail::PageHeap< C >::PAGE ) * 8;
  news = 0;
  countNews = true;
  for( std::size_t i = 0 ; i < slots ; ++i )
   if( ! H->local( C - 1 ) )
-   (void) H->more( C - 1 );
+   ( void )H->more( C - 1 );
  countNews = false;
  CHECK( H->bytes() == S * detail::PageHeap< C >::SEGMENT );
  CHECK( H->live() == slots );

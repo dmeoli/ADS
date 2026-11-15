@@ -127,7 +127,7 @@
 
 #ifndef __ADS_BinaryTreeAlgorithms
  #define __ADS_BinaryTreeAlgorithms
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -152,44 +152,54 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- THE NODES -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace detail {
+namespace detail
+{
 
 /// the left child of \f$ n \f$, by `left()` or by the field `left`
 template< class N >
 auto nodeLeft( N * n )
 {
- if constexpr( requires { n->left(); } ) return( n->left() );
- else return( n->left );
+ if constexpr( requires { n->left(); } )
+  return( n->left() );
+ else
+  return( n->left );
  }
 
 /// the right child of \f$ n \f$, by `right()` or by the field `right`
 template< class N >
 auto nodeRight( N * n )
 {
- if constexpr( requires { n->right(); } ) return( n->right() );
- else return( n->right );
+ if constexpr( requires { n->right(); } )
+  return( n->right() );
+ else
+  return( n->right );
  }
 
 /// the parent of \f$ n \f$, by `parent()` or by the field `parent`
 template< class N >
 auto nodeParent( N * n )
 {
- if constexpr( requires { n->parent(); } ) return( n->parent() );
- else return( n->parent );
+ if constexpr( requires { n->parent(); } )
+  return( n->parent() );
+ else
+  return( n->parent );
  }
 
 /// the key of \f$ n \f$, by `read()` or by the field `key`
 template< class N >
 decltype( auto ) nodeKey( N * n )
 {
- if constexpr( requires { n->read(); } ) return( n->read() );
- else return( ( n->key ) );
+ if constexpr( requires { n->read(); } )
+  return( n->read() );
+ else
+  return( ( n->key ) );
  }
 
 }  // end( namespace detail )
@@ -197,22 +207,23 @@ decltype( auto ) nodeKey( N * n )
 /// a node of a binary tree: a pointer to a struct whose children are read
 /// by `left()` and `right()` or by the fields `left` and `right`
 template< class N >
-concept BinaryNode = std::is_pointer_v< N > && requires( N n ) {
+concept BinaryNode = std::is_pointer_v< N > && requires( N n )
+{
  detail::nodeLeft( n );
  detail::nodeRight( n );
  };
 
 /// a node of a binary tree with the link to its parent
 template< class N >
-concept ParentBinaryNode = BinaryNode< N > && requires( N n ) {
- detail::nodeParent( n );
- };
+concept ParentBinaryNode =
+  BinaryNode< N > && requires( N n )
+{ detail::nodeParent( n ); };
 
 /// a node of a binary tree with a key
 template< class N >
-concept KeyedBinaryNode = BinaryNode< N > && requires( N n ) {
- detail::nodeKey( n );
- };
+concept KeyedBinaryNode =
+  BinaryNode< N > && requires( N n )
+{ detail::nodeKey( n ); };
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- THE ANCESTORS -------------------------------*/
@@ -264,7 +275,7 @@ N lowestCommonAncestor( N u , N v );
 /// \end{array}}
 /// \f]
 template< KeyedBinaryNode N , KeyedBinaryNode M ,
-          class Equal = std::equal_to<> >
+	  class Equal = std::equal_to<> >
 [[nodiscard]] bool equalTrees( N t , M s , Equal eq = {} );
 
 /// whether the keys of \f$ t \f$ are strictly increasing in the invisit,
@@ -344,10 +355,9 @@ template< BinaryNode N , class Red >
 /// \end{array}}
 /// \f]
 /// \pre not `less( hi , lo )`
-template< KeyedBinaryNode N , class K , class F ,
-          class Compare = std::less<> >
+template< KeyedBinaryNode N , class K , class F , class Compare = std::less<> >
 std::size_t searchTreeRange( N t , const K & lo , const K & hi , F && f ,
-                             Compare less = {} );
+			     Compare less = {} );
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- THE TRAVERSALS WITH NO STACK -----------------------*/
@@ -541,8 +551,8 @@ template< BinaryNode N >
 /// \end{array}}
 /// \f]
 /// \pre \f$ c \f$ has \f$ 2 ( n - 1 ) \f$ bits, the code of a tree
-inline BinaryTree< std::size_t > * fromShapeCode(
- const std::vector< bool > & c , std::size_t n );
+inline BinaryTree< std::size_t > *
+fromShapeCode( const std::vector< bool > & c , std::size_t n );
 
 /// `f( u )` on the nodes \f$ u \f$ of the binary search tree \f$ t \f$ whose
 /// keys are not larger than \f$ x \f$, in increasing order, and their
@@ -562,8 +572,7 @@ inline BinaryTree< std::size_t > * fromShapeCode(
 /// 4 & \qquad \textbf{else}\ t \gets t.\mathit{left}
 /// \end{array}}
 /// \f]
-template< KeyedBinaryNode N , class K , class F ,
-          class Compare = std::less<> >
+template< KeyedBinaryNode N , class K , class F , class Compare = std::less<> >
 std::size_t lessOrEqual( N t , const K & x , F && f , Compare less = {} );
 
 /*--------------------------------------------------------------------------*/
@@ -590,9 +599,9 @@ std::size_t lessOrEqual( N t , const K & x , F && f , Compare less = {} );
 ///       audit)
 template< class T , class Make , class Compare = std::less<> >
 auto minimumHeightSearchTree( const std::vector< T > & A , Make make ,
-                              Compare less = {} )
- -> std::invoke_result_t< Make & , const T & , std::nullptr_t ,
-                          std::nullptr_t >;
+			      Compare less = {} )
+  -> std::invoke_result_t< Make & , const T & , std::nullptr_t ,
+			   std::nullptr_t >;
 
 /// the tree of `minimumHeightSearchTree()` above as a `BinaryTree`, which the
 /// caller owns
@@ -600,7 +609,7 @@ auto minimumHeightSearchTree( const std::vector< T > & A , Make make ,
 template< class T , class Compare = std::less<> >
  requires std::predicate< Compare & , const T & , const T & >
 BinaryTree< T > * minimumHeightSearchTree( const std::vector< T > & A ,
-                                           Compare less = {} );
+					   Compare less = {} );
 
 /// the binary tree whose previsit is `pre` and whose invisit is `in`, nil
 /// if they are empty; \f$ O( n ) \f$ time; the caller owns it
@@ -629,7 +638,7 @@ BinaryTree< T > * minimumHeightSearchTree( const std::vector< T > & A ,
 /// \pre `pre` and `in` are the visits of a binary tree of distinct values
 template< class T >
 BinaryTree< T > * fromPreorderInorder( const std::vector< T > & pre ,
-                                       const std::vector< T > & in );
+				       const std::vector< T > & in );
 
 /// the Cartesian tree of \f$ A \f$, the leftmost minimum by `less` at the
 /// root, a heap whose invisit is \f$ A \f$, nil if \f$ A \f$ is empty;
@@ -654,7 +663,7 @@ BinaryTree< T > * fromPreorderInorder( const std::vector< T > & pre ,
 /// \post the invisit is A (an audit)
 template< class T , class Compare = std::less< T > >
 BinaryTree< T > * cartesianBinaryTree( const std::vector< T > & A ,
-                                       Compare less = {} );
+				       Compare less = {} );
 
 /*--------------------------------------------------------------------------*/
 
@@ -668,7 +677,7 @@ BinaryTree< T > * cartesianBinaryTree( const std::vector< T > & A ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BinaryTreeAlgorithms.h included */
+#endif /* BinaryTreeAlgorithms.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- End File BinaryTreeAlgorithms.h ---------------------*/

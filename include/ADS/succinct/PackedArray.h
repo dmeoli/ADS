@@ -59,7 +59,7 @@
 
 #ifndef __ADS_PackedArray
  #define __ADS_PackedArray
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -79,7 +79,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS PackedArray -----------------------------*/
@@ -88,16 +89,16 @@ namespace ADS {
 /// \f$ n \f$ unsigned fields of \f$ B \f$ bits, \f$ 64 / B \f$ to a word, the
 /// values above \f$ 2^B - 1 \f$ clamped to it if `Saturate`
 template< unsigned B , bool Saturate = false >
-class PackedArray {
+class PackedArray
+{
 
  static_assert( ( B == 1 ) || ( B == 2 ) || ( B == 4 ) || ( B == 8 ) ||
-                ( B == 16 ) || ( B == 32 ) ,
-                "a field of 1, 2, 4, 8, 16 or 32 bits" );
+		  ( B == 16 ) || ( B == 32 ) ,
+		"a field of 1, 2, 4, 8, 16 or 32 bits" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Word = std::uint64_t;   ///< the type of the words
+ using Word = std::uint64_t;  ///< the type of the words
 
  /// the fields in a word
  static constexpr std::size_t PER = 64 / B;
@@ -195,13 +196,12 @@ class PackedArray {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the bits past the last field are 0
  [[nodiscard]] bool clean( void ) const;
 
- std::vector< Word > f_w;       ///< the words
- std::size_t f_n = 0;           ///< the fields
- std::size_t f_clamped = 0;     ///< the values clamped
+ std::vector< Word > f_w;    ///< the words
+ std::size_t f_n = 0;        ///< the fields
+ std::size_t f_clamped = 0;  ///< the values clamped
 
  };  // end( class PackedArray )
 
@@ -210,11 +210,11 @@ class PackedArray {
 /*--------------------------------------------------------------------------*/
 
 /// \f$ n \f$ values in \f$ \{ 0 , 1 , 2 \} \f$, five to a byte in base 3
-class TritArray {
+class TritArray
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty array
  TritArray( void ) = default;
 
@@ -295,16 +295,15 @@ class TritArray {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the five digits of each byte below 243, 1215 bytes
- static constexpr std::array< std::array< std::uint8_t , 5 > , 243 >
-  DIGITS = [] {
-   std::array< std::array< std::uint8_t , 5 > , 243 > d{};
-   for( int b = 0 ; b < 243 ; ++b )
-    for( int j = 0 , x = b ; j < 5 ; ++j , x /= 3 )
-     d[ std::size_t( b ) ][ std::size_t( j ) ] = std::uint8_t( x % 3 );
-   return( d );
-   }();
+ static constexpr std::array< std::array< std::uint8_t , 5 > , 243 > DIGITS =
+   [] {
+    std::array< std::array< std::uint8_t , 5 > , 243 > d{};
+    for( int b = 0 ; b < 243 ; ++b )
+     for( int j = 0 , x = b ; j < 5 ; ++j , x /= 3 )
+      d[ std::size_t( b ) ][ std::size_t( j ) ] = std::uint8_t( x % 3 );
+    return( d );
+    }();
 
  /// \f$ 3^j \f$, \f$ j < 5 \f$
  static constexpr std::uint8_t POW3[ 5 ] = { 1 , 3 , 9 , 27 , 81 };
@@ -313,8 +312,8 @@ class TritArray {
  /// past the last value 0
  [[nodiscard]] bool clean( void ) const;
 
- std::vector< std::uint8_t > f_y;   ///< the bytes
- std::size_t f_n = 0;               ///< the values
+ std::vector< std::uint8_t > f_y;  ///< the bytes
+ std::size_t f_n = 0;              ///< the values
 
  };  // end( class TritArray )
 
@@ -330,7 +329,7 @@ class TritArray {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PackedArray.h included */
+#endif /* PackedArray.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File PackedArray.h -------------------------*/

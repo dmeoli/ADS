@@ -20,7 +20,8 @@
 #include <atomic>
 #include <cstdint>
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 
@@ -31,7 +32,7 @@ inline std::vector< int > randomOrder( int n , unsigned long long seed )
  for( int i = 0 ; i < n ; ++i )
   p[ i ] = i;
  std::uint64_t x = seed;
- auto next = [ & ]( void ) {             // SplitMix64
+ auto next = [ & ]( void ) {  // SplitMix64
   std::uint64_t z = ( x += 0x9e3779b97f4a7c15ULL );
   z = ( z ^ ( z >> 30 ) ) * 0xbf58476d1ce4e5b9ULL;
   z = ( z ^ ( z >> 27 ) ) * 0x94d049bb133111ebULL;
@@ -42,14 +43,15 @@ inline std::vector< int > randomOrder( int n , unsigned long long seed )
  return( p );
  }
 
-namespace detail {
+namespace detail
+{
 
 /// the union-find of the parallel greedy algorithms: the roots linked by
 /// the commits, with no rank, and the paths halved by the finds, which run
 /// only while no link does; the parents read and written as atomics
-class GreedyUnionFind {
+class GreedyUnionFind
+{
  public:
-
  /// the \f$ n \f$ singletons \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$
  explicit GreedyUnionFind( int n ) {
   ADS_PRE( n >= 0 );
@@ -67,8 +69,7 @@ class GreedyUnionFind {
     return( x );
    const int z = load( y );
    if( z != y )
-    std::atomic_ref< int >( f_p[ x ] ).store( z ,
-                                              std::memory_order_relaxed );
+    std::atomic_ref< int >( f_p[ x ] ).store( z , std::memory_order_relaxed );
    x = z;
    }
   }
@@ -79,27 +80,25 @@ class GreedyUnionFind {
   }
 
  private:
-
  /// the parent of \f$ x \f$
  int load( int x ) {
-  return( std::atomic_ref< int >( f_p[ x ] ).load(
-                                  std::memory_order_relaxed ) );
+  return(
+    std::atomic_ref< int >( f_p[ x ] ).load( std::memory_order_relaxed ) );
   }
 
- std::vector< int > f_p;                       ///< the parents
+ std::vector< int > f_p;  ///< the parents
  };
 
 /// the greedy algorithm on the edges \f$ A[ \mathit{ids}[ i ] ] \f$ in the
 /// order of \f$ i \f$, their ends given by `ends`, on the union-find
 /// \f$ U \f$: the places of the edges taken appended to `out`
 template< class X , class GetEnds >
-void greedyForest( X & ex , const std::vector< int > & ids ,
-                   GetEnds && ends , GreedyUnionFind & U ,
-                   std::vector< int > & out )
+void greedyForest( X & ex , const std::vector< int > & ids , GetEnds && ends ,
+		   GreedyUnionFind & U , std::vector< int > & out )
 {
  const std::size_t k = ids.size();
  if( ( ex.concurrency() <= 1 ) || ( k < 4096 ) ) {
-  for( int id : ids ) {                   // the sequential greedy
+  for( int id : ids ) {  // the sequential greedy
    const auto [ u , v ] = ends( id );
    const int ru = U.find( u ) , rv = U.find( v );
    if( ru != rv ) {
@@ -117,12 +116,13 @@ void greedyForest( X & ex , const std::vector< int > & ids ,
  std::vector< Reservation > R( static_cast< std::size_t >( n ) );
  std::vector< int > ru( k ) , rv( k );
  std::vector< char > taken( k , 0 );
- struct Step {
+ struct Step
+ {
   const std::vector< int > & ids;
   GetEnds & ends;
   GreedyUnionFind & U;
   std::vector< Reservation > & R;
-  std::vector< int > & ru , & rv;
+  std::vector< int > &ru , &rv;
   std::vector< char > & taken;
 
   bool reserve( std::size_t i ) {
@@ -130,7 +130,7 @@ void greedyForest( X & ex , const std::vector< int > & ids ,
    ru[ i ] = U.find( u );
    rv[ i ] = U.find( v );
    if( ru[ i ] == rv[ i ] )
-    return( false );                      // left out
+    return( false );  // left out
    R[ ru[ i ] ].reserve( i );
    R[ rv[ i ] ].reserve( i );
    return( true );
@@ -163,26 +163,27 @@ void greedyForest( X & ex , const std::vector< int > & ids ,
 /// parallel
 template< class X , class P >
 std::vector< int > parallelFilter( X & ex , const std::vector< int > & ids ,
-                                   P && keep )
+				   P && keep )
 {
  const std::size_t k = ids.size();
  std::vector< char > flag( k );
  parallelFor( ex , 0 , k , [ & ]( std::size_t i ) {
-  flag[ i ] = keep( ids[ i ] ) ? 1 : 0; } );
+  flag[ i ] = keep( ids[ i ] ) ? 1 : 0;
+  } );
  std::vector< std::size_t > I( ids.begin() , ids.end() ) , out( k );
  const std::size_t c = packKept( ex , I , flag , k , out );
- return( std::vector< int >( out.begin() , out.begin() +
-                                           std::ptrdiff_t( c ) ) );
+ return(
+   std::vector< int >( out.begin() , out.begin() + std::ptrdiff_t( c ) ) );
  }
 
 /// whether `taken` holds the edges of the sequential greedy algorithm on
 /// the order `ids`
 template< class GetEnds >
 bool sameGreedy( int n , const std::vector< int > & ids , GetEnds && ends ,
-                 const std::vector< int > & taken )
+		 const std::vector< int > & taken )
 {
- GreedyUnionFind U( n );                // no audit of its own, unlike
- std::vector< int > seq;                // UnionFind's, n per merge
+ GreedyUnionFind U( n );  // no audit of its own, unlike
+ std::vector< int > seq;  // UnionFind's, n per merge
  for( int id : ids ) {
   const auto [ u , v ] = ends( id );
   const int a = U.find( u ) , b = U.find( v );
@@ -198,12 +199,13 @@ bool sameGreedy( int n , const std::vector< int > & ids , GetEnds && ends ,
 /// \f$ ( w , \mathit{place} ) \f$, in parallel
 template< class X , class W >
 std::vector< int > byWeight( X & ex ,
-                             const std::vector< WeightedEdge< W > > & A ,
-                             std::vector< int > ids )
+			     const std::vector< WeightedEdge< W > > & A ,
+			     std::vector< int > ids )
 {
  ADS::sort( ex , ids , [ & ]( int a , int b ) {
   return( ( A[ a ].w < A[ b ].w ) ||
-          ( ! ( A[ b ].w < A[ a ].w ) && ( a < b ) ) ); } );
+	   ( ! ( A[ b ].w < A[ a ].w ) && ( a < b ) ) );
+  } );
  return( ids );
  }
 
@@ -212,19 +214,20 @@ std::vector< int > byWeight( X & ex ,
 /*--------------------------------------------------------------------------*/
 
 template< Executor E , class W >
-std::vector< int > parallelKruskal( E & ex , int n ,
-                                const std::vector< WeightedEdge< W > > & A )
+std::vector< int >
+parallelKruskal( E & ex , int n , const std::vector< WeightedEdge< W > > & A )
 {
  ADS_PRE( n >= 0 );
  std::vector< int > ids( A.size() );
  for( std::size_t i = 0 ; i < A.size() ; ++i ) {
   ADS_PRE( ( A[ i ].u >= 0 ) && ( A[ i ].u < n ) && ( A[ i ].v >= 0 ) &&
-           ( A[ i ].v < n ) );
+	   ( A[ i ].v < n ) );
   ids[ i ] = int( i );
   }
  ids = detail::byWeight( ex , A , std::move( ids ) );
  auto ends = [ & ]( int id ) {
-  return( std::pair< int , int >( A[ id ].u , A[ id ].v ) ); };
+  return( std::pair< int , int >( A[ id ].u , A[ id ].v ) );
+  };
  detail::GreedyUnionFind U( n );
  std::vector< int > out;
  detail::greedyForest( ex , ids , ends , U , out );
@@ -233,29 +236,32 @@ std::vector< int > parallelKruskal( E & ex , int n ,
  }
 
 template< Executor E , class W >
-std::vector< int > filterKruskal( E & ex , int n ,
-                                const std::vector< WeightedEdge< W > > & A )
+std::vector< int >
+filterKruskal( E & ex , int n , const std::vector< WeightedEdge< W > > & A )
 {
  ADS_PRE( n >= 0 );
  std::vector< int > ids( A.size() );
  for( std::size_t i = 0 ; i < A.size() ; ++i ) {
   ADS_PRE( ( A[ i ].u >= 0 ) && ( A[ i ].u < n ) && ( A[ i ].v >= 0 ) &&
-           ( A[ i ].v < n ) );
+	   ( A[ i ].v < n ) );
   ids[ i ] = int( i );
   }
  auto ends = [ & ]( int id ) {
-  return( std::pair< int , int >( A[ id ].u , A[ id ].v ) ); };
+  return( std::pair< int , int >( A[ id ].u , A[ id ].v ) );
+  };
  auto less = [ & ]( int a , int b ) {
   return( ( A[ a ].w < A[ b ].w ) ||
-          ( ! ( A[ b ].w < A[ a ].w ) && ( a < b ) ) ); };
+	   ( ! ( A[ b ].w < A[ a ].w ) && ( a < b ) ) );
+  };
  detail::GreedyUnionFind U( n );
  std::vector< int > out;
- const std::size_t base = std::max< std::size_t >( 4096 ,
-                                                   2 * std::size_t( n ) );
+ const std::size_t base =
+   std::max< std::size_t >( 4096 , 2 * std::size_t( n ) );
  auto rec = [ & ]( auto && self , std::vector< int > I ) -> void {
   if( I.size() <= base ) {
    detail::greedyForest( ex , detail::byWeight( ex , A , std::move( I ) ) ,
-                         ends , U , out );
+			 ends ,
+			 U , out );
    return;
    }
   // the pivot: the median of a sample of 1023 places, evenly spaced
@@ -264,15 +270,16 @@ std::vector< int > filterKruskal( E & ex , int n ,
    S.push_back( I[ j * I.size() / 1023 ] );
   std::nth_element( S.begin() , S.begin() + 511 , S.end() , less );
   const int p = S[ 511 ];
-  std::vector< int > light = detail::parallelFilter( ex , I ,
-                             [ & ]( int x ) { return( less( x , p ) ); } );
-  std::vector< int > heavy = detail::parallelFilter( ex , I ,
-                             [ & ]( int x ) { return( ! less( x , p ) ); } );
+  std::vector< int > light = detail::parallelFilter(
+    ex , I , [ & ]( int x ) { return( less( x , p ) ); } );
+  std::vector< int > heavy = detail::parallelFilter(
+    ex , I , [ & ]( int x ) { return( ! less( x , p ) ); } );
   I.clear();
   I.shrink_to_fit();
   self( self , std::move( light ) );
   heavy = detail::parallelFilter( ex , heavy , [ & ]( int x ) {
-   return( U.find( A[ x ].u ) != U.find( A[ x ].v ) ); } );
+   return( U.find( A[ x ].u ) != U.find( A[ x ].v ) );
+   } );
   self( self , std::move( heavy ) );
   };
  rec( rec , std::move( ids ) );
@@ -287,14 +294,15 @@ std::vector< int > filterKruskal( E & ex , int n ,
  }
 
 template< Executor E >
-std::vector< int > spanningForest( E & ex , int n ,
-                          const std::vector< std::pair< int , int > > & A )
+std::vector< int >
+spanningForest( E & ex , int n ,
+		const std::vector< std::pair< int , int > > & A )
 {
  ADS_PRE( n >= 0 );
  std::vector< int > ids( A.size() );
  for( std::size_t i = 0 ; i < A.size() ; ++i ) {
   ADS_PRE( ( A[ i ].first >= 0 ) && ( A[ i ].first < n ) &&
-           ( A[ i ].second >= 0 ) && ( A[ i ].second < n ) );
+	   ( A[ i ].second >= 0 ) && ( A[ i ].second < n ) );
   ids[ i ] = int( i );
   }
  auto ends = [ & ]( int id ) { return( A[ id ] ); };
@@ -308,9 +316,8 @@ std::vector< int > spanningForest( E & ex , int n ,
 /*--------------------------------------------------------------------------*/
 
 template< Executor E , class W >
-std::vector< int > maximalIndependentSet( E & ex ,
-                                          const StaticGraph< W > & g ,
-                                          const std::vector< int > & pi )
+std::vector< int > maximalIndependentSet( E & ex , const StaticGraph< W > & g ,
+					  const std::vector< int > & pi )
 {
  using G = StaticGraph< W >;
  const int n = g.n();
@@ -339,10 +346,11 @@ std::vector< int > maximalIndependentSet( E & ex ,
   state = sequential();
  else {
   std::vector< char > next( n , UNDECIDED );
-  struct Step {
+  struct Step
+  {
    const G & g;
-   const std::vector< int > & pi , & rank;
-   std::vector< char > & state , & next;
+   const std::vector< int > &pi , &rank;
+   std::vector< char > &state , &next;
 
    bool reserve( std::size_t i ) {
     const int v = pi[ i ];
@@ -379,9 +387,10 @@ std::vector< int > maximalIndependentSet( E & ex ,
  }
 
 template< Executor E >
-std::vector< int > maximalMatching( E & ex , int n ,
-                          const std::vector< std::pair< int , int > > & A ,
-                          const std::vector< int > & pi )
+std::vector< int >
+maximalMatching( E & ex , int n ,
+		 const std::vector< std::pair< int , int > > & A ,
+		 const std::vector< int > & pi )
 {
  ADS_PRE( ( n >= 0 ) && ( pi.size() == A.size() ) );
  const std::size_t m = A.size();
@@ -389,12 +398,12 @@ std::vector< int > maximalMatching( E & ex , int n ,
   std::vector< char > seen( m , 0 );
   for( std::size_t i = 0 ; i < m ; ++i ) {
    ADS_PRE( ( A[ i ].first >= 0 ) && ( A[ i ].first < n ) &&
-            ( A[ i ].second >= 0 ) && ( A[ i ].second < n ) );
+	    ( A[ i ].second >= 0 ) && ( A[ i ].second < n ) );
    ADS_PRE( ( pi[ i ] >= 0 ) && ( std::size_t( pi[ i ] ) < m ) &&
-            ! seen[ pi[ i ] ] );
+	    ! seen[ pi[ i ] ] );
    seen[ pi[ i ] ] = 1;
    }
- }
+  }
  std::vector< char > taken( m , 0 );
  auto sequential = [ & ]( void ) {
   std::vector< char > busy( n , 0 ) , t( m , 0 );
@@ -412,10 +421,11 @@ std::vector< int > maximalMatching( E & ex , int n ,
  else {
   std::vector< char > busy( n , 0 );
   std::vector< Reservation > R( static_cast< std::size_t >( n ) );
-  struct Step {
+  struct Step
+  {
    const std::vector< std::pair< int , int > > & A;
    const std::vector< int > & pi;
-   std::vector< char > & busy , & taken;
+   std::vector< char > &busy , &taken;
    std::vector< Reservation > & R;
 
    bool reserve( std::size_t i ) {

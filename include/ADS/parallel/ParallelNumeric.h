@@ -58,7 +58,7 @@
 
 #ifndef __ADS_ParallelNumeric
  #define __ADS_ParallelNumeric
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -78,7 +78,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the product \f$ y = A x \f$ of the sparse matrix \f$ A \f$ by rows on
 /// the threads of `ex`
@@ -123,8 +124,8 @@ void multiply( E & ex , const CsrMatrix & A , const double * x , double * y );
 /// \f]
 /// \pre \f$ x \f$ has `A.cols()` entries
 template< Executor E >
-[[nodiscard]] std::vector< double > multiply( E & ex , const CsrMatrix & A ,
-                                            const std::vector< double > & x );
+[[nodiscard]] std::vector< double >
+multiply( E & ex , const CsrMatrix & A , const std::vector< double > & x );
 
 /// the product \f$ y = A x \f$ of the sparse matrix \f$ A \f$ by chunks of
 /// \f$ C \f$ rows on the threads of `ex`
@@ -156,7 +157,7 @@ template< Executor E >
 ///      from \f$ x \f$
 template< Executor E , std::size_t C >
 void multiply( E & ex , const SellMatrix< C > & A , const double * x ,
-               double * y );
+	       double * y );
 
 /// the product \f$ A x \f$ of the sparse matrix \f$ A \f$ by chunks on the
 /// threads of `ex`, as a new vector
@@ -171,9 +172,9 @@ void multiply( E & ex , const SellMatrix< C > & A , const double * x ,
 /// \f]
 /// \pre \f$ x \f$ has `A.cols()` entries
 template< Executor E , std::size_t C >
-[[nodiscard]] std::vector< double > multiply( E & ex ,
-                                            const SellMatrix< C > & A ,
-                                            const std::vector< double > & x );
+[[nodiscard]] std::vector< double >
+multiply( E & ex , const SellMatrix< C > & A ,
+	  const std::vector< double > & x );
 
 /// \f$ C \gets \alpha A B + \beta C \f$ on the threads of `ex`, for
 /// \f$ A \f$ of \f$ m \times k \f$, \f$ B \f$ of \f$ k \times n \f$ and
@@ -198,8 +199,9 @@ template< Executor E , std::size_t C >
 ///      \f$ \mathit{ldc} \ge n \f$
 template< Executor E , class T >
 void gemm( E & ex , std::size_t m , std::size_t n , std::size_t k , T alpha ,
-           const T * A , std::size_t lda , const T * B , std::size_t ldb ,
-           T beta , T * C , std::size_t ldc );
+	   const T * A , std::size_t lda , const T * B , std::size_t ldb ,
+	   T beta ,
+	   T * C , std::size_t ldc );
 
 /// the product \f$ A B \f$ of two dense matrices on the threads of `ex`
 ///
@@ -214,7 +216,7 @@ void gemm( E & ex , std::size_t m , std::size_t n , std::size_t k , T alpha ,
 /// \pre `A.cols() == B.rows()`
 template< Executor E , class T >
 [[nodiscard]] DenseMatrix< T > multiply( E & ex , const DenseMatrix< T > & A ,
-                                         const DenseMatrix< T > & B );
+					 const DenseMatrix< T > & B );
 
 /*--------------------------------------------------------------------------*/
 
@@ -228,7 +230,7 @@ template< Executor E , class T >
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ParallelNumeric.h included */
+#endif /* ParallelNumeric.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File ParallelNumeric.h -----------------------*/

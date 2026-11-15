@@ -14,19 +14,20 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class F >
 void hanoi_recursive( int n , int source , int dest , int middle , F && f )
 {
  ADS_PRE( ( n >= 1 ) && ( source != dest ) && ( source != middle ) &&
-          ( dest != middle ) );
+	  ( dest != middle ) );
  if( n == 1 )
   f( source , dest );
  else {
-  hanoi_recursive( n - 1 , source , middle , dest , f );   // (1)
+  hanoi_recursive( n - 1 , source , middle , dest , f );  // (1)
   f( source , dest );
-  hanoi_recursive( n - 1 , middle , dest , source , f );   // (2)
+  hanoi_recursive( n - 1 , middle , dest , source , f );  // (2)
   }
  }
 
@@ -34,7 +35,7 @@ template< class F >
 void hanoi_iterative( int n , int source , int dest , int middle , F && f )
 {
  ADS_PRE( ( n >= 1 ) && ( source != dest ) && ( source != middle ) &&
-          ( dest != middle ) );
+	  ( dest != middle ) );
  ArrayStack< std::tuple< int , int , int , int > > S( n > 0 ? n : 1 );
  bool end_of_the_world = false;
  while( ! end_of_the_world ) {
@@ -57,10 +58,10 @@ void hanoi_iterative( int n , int source , int dest , int middle , F && f )
 
 template< class F >
 void hanoi_iterative_labels( int n , int source , int dest , int middle ,
-                             F && f )
+			     F && f )
 {
  ADS_PRE( ( n >= 1 ) && ( source != dest ) && ( source != middle ) &&
-          ( dest != middle ) );
+	  ( dest != middle ) );
  enum Label { START , AFTER1 , END , STOP };
  using Frame = std::tuple< int , int , int , int , Label >;
  ArrayStack< Frame > S( 2 * ( n > 0 ? n : 1 ) );
@@ -77,19 +78,18 @@ void hanoi_iterative_labels( int n , int source , int dest , int middle ,
     std::swap( dest , middle );
     }
    }
-  else
-   if( pos == AFTER1 ) {
-    f( source , dest );
-    S.push( { n , source , dest , middle , END } );
-    --n;
-    std::swap( source , middle );
-    pos = START;
-    }
-   else   // END
-    if( S.empty() )
-     pos = STOP;
-    else
-     std::tie( n , source , dest , middle , pos ) = S.pop();
+  else if( pos == AFTER1 ) {
+   f( source , dest );
+   S.push( { n , source , dest , middle , END } );
+   --n;
+   std::swap( source , middle );
+   pos = START;
+   }
+  else  // END
+   if( S.empty() )
+    pos = STOP;
+   else
+    std::tie( n , source , dest , middle , pos ) = S.pop();
  }
 
 /*--------------------------------------------------------------------------*/

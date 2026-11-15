@@ -59,7 +59,7 @@
 
 #ifndef __ADS_SpeculativeFor
  #define __ADS_SpeculativeFor
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -78,26 +78,26 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS Reservation ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a place reserved by the least of the iterations that want it
-class Reservation {
+class Reservation
+{
  public:
-
  /// no iteration
- static constexpr std::size_t NONE =
-                              std::numeric_limits< std::size_t >::max();
+ static constexpr std::size_t NONE = std::numeric_limits< std::size_t >::max();
 
  /// keeps \f$ i \f$ if it is less than the iteration there (a priority
  /// write, by compare-and-swap)
  void reserve( std::size_t i ) noexcept {
   std::size_t c = f_r.load( std::memory_order_relaxed );
   while( ( i < c ) &&
-         ! f_r.compare_exchange_weak( c , i , std::memory_order_relaxed ) )
+	 ! f_r.compare_exchange_weak( c , i , std::memory_order_relaxed ) )
    ;
   }
 
@@ -112,9 +112,7 @@ class Reservation {
   }
 
  /// frees the place
- void reset( void ) noexcept {
-  f_r.store( NONE , std::memory_order_relaxed );
-  }
+ void reset( void ) noexcept { f_r.store( NONE , std::memory_order_relaxed ); }
 
  /// frees the place if \f$ i \f$ holds it; whether it did
  bool checkReset( std::size_t i ) noexcept {
@@ -125,20 +123,21 @@ class Reservation {
   }
 
  private:
-
- std::atomic< std::size_t > f_r{ NONE };        ///< the iteration there
+ std::atomic< std::size_t > f_r{ NONE };  ///< the iteration there
  };  // end( class Reservation )
 
 /// what `speculativeFor()` did: its rounds and the iterations tried, the
 /// failed ones counted again
-struct SpeculativeCounts {
- long long rounds = 0;                           ///< the rounds
- long long tried = 0;                            ///< the iterations tried
+struct SpeculativeCounts
+{
+ long long rounds = 0;  ///< the rounds
+ long long tried = 0;   ///< the iterations tried
  };
 
 /// the two steps of an iteration [see `speculativeFor()`]
 template< class S >
-concept SpeculativeStep = requires( S & s , std::size_t i ) {
+concept SpeculativeStep = requires( S & s , std::size_t i )
+{
  { s.reserve( i ) } -> std::convertible_to< bool >;
  { s.commit( i ) } -> std::convertible_to< bool >;
  };
@@ -178,7 +177,7 @@ concept SpeculativeStep = requires( S & s , std::size_t i ) {
 ///      commits
 template< Executor E , SpeculativeStep S >
 void speculativeFor( E & ex , S & step , std::size_t s , std::size_t e ,
-                     std::size_t g = 50 , SpeculativeCounts * c = nullptr );
+		     std::size_t g = 50 , SpeculativeCounts * c = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
@@ -192,7 +191,7 @@ void speculativeFor( E & ex , S & step , std::size_t s , std::size_t e ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SpeculativeFor.h included */
+#endif /* SpeculativeFor.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File SpeculativeFor.h ------------------------*/

@@ -56,7 +56,7 @@
 
 #ifndef __ADS_YFastTrie
  #define __ADS_YFastTrie
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -78,7 +78,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS YFastTrie ------------------------------*/
@@ -87,16 +88,16 @@ namespace ADS {
 /// the y-fast trie: an x-fast trie of representatives over treaps of
 /// \f$ O( w ) \f$ keys
 template< std::unsigned_integral U , class V = std::monostate ,
-          int W = std::numeric_limits< U >::digits >
+	  int W = std::numeric_limits< U >::digits >
  requires TrieWidth< U , W >
-class YFastTrie {
+class YFastTrie
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = U;     ///< the type of the keys
- using Item = U;    ///< the items of the SSet, the keys
- using Value = V;   ///< the type of the values
+ using Key = U;    ///< the type of the keys
+ using Item = U;   ///< the items of the SSet, the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty trie, its coins drawn from the seed
  explicit YFastTrie( std::uint64_t seed = 1 );
@@ -206,13 +207,12 @@ class YFastTrie {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- using Group = Treap< U , V >;   ///< a group of consecutive keys
+ using Group = Treap< U , V >;  ///< a group of consecutive keys
 
  /// the largest key, \f$ 2^w - 1 \f$
- static constexpr U TOP = ( W == std::numeric_limits< U >::digits ) ?
-                          std::numeric_limits< U >::max() :
-                          U( ( U( 1 ) << W ) - 1 );
+ static constexpr U TOP = ( W == std::numeric_limits< U >::digits )
+			    ? std::numeric_limits< U >::max()
+			    : U( ( U( 1 ) << W ) - 1 );
 
  /// the smallest key \f$ \ge x \f$ of \f$ T \f$, or nil, by the descent of
  /// a binary search tree
@@ -222,9 +222,9 @@ class YFastTrie {
  /// group but the last, and `size()` their total; for \f$ n \le 256 \f$
  [[nodiscard]] bool consistent( void ) const;
 
- XFastTrie< U , Group * , W > f_x;   ///< the representatives
- SplitMix64 f_g;                     ///< the coins and the seeds
- std::size_t f_n = 0;                ///< the number of keys
+ XFastTrie< U , Group * , W > f_x;  ///< the representatives
+ SplitMix64 f_g;                  ///< the coins and the seeds
+ std::size_t f_n = 0;             ///< the number of keys
 
  };  // end( class YFastTrie )
 
@@ -240,7 +240,7 @@ class YFastTrie {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* YFastTrie.h included */
+#endif /* YFastTrie.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File YFastTrie.h ---------------------------*/

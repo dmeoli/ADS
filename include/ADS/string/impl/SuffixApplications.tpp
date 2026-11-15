@@ -14,23 +14,27 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// x is a substring of at least k of the strings S
 inline bool inAtLeast( const std::vector< std::string > & S ,
-                       const std::string & x , std::size_t k )
+		       const std::string & x , std::size_t k )
 {
- return( std::size_t( std::count_if( S.begin() , S.end() ,
-          [ & ]( const std::string & s ) {
-           return( s.find( x ) != std::string::npos ); } ) ) >= k );
+ return( std::size_t(
+	    std::count_if( S.begin() , S.end() ,
+			   [ & ]( const std::string & s ) {
+	     return( s.find( x ) != std::string::npos );
+	     } ) ) >= k );
  }
 
 }  // end( namespace detail )
 
-inline std::pair< std::size_t , std::size_t > longestRepeatedSubstring(
-                                                    const SuffixArray & SA )
+inline std::pair< std::size_t , std::size_t >
+longestRepeatedSubstring( const SuffixArray & SA )
 {
  std::size_t pos = 0 , best = 0;
  for( std::size_t r = 0 ; r < SA.lcp().size() ; ++r )
@@ -41,19 +45,22 @@ inline std::pair< std::size_t , std::size_t > longestRepeatedSubstring(
  return( std::pair( pos , best ) );
  }
 
-inline std::optional< std::size_t > repeatedSubstring(
-                    const SuffixArray & SA , std::size_t L , std::size_t C )
+inline std::optional< std::size_t >
+repeatedSubstring( const SuffixArray & SA , std::size_t L , std::size_t C )
 {
  ADS_PRE( C >= 1 );
  const std::size_t n = SA.size();
- if( L == 0 )                     // the empty string, at n + 1 places
+ if( L == 0 )  // the empty string, at n + 1 places
   return( C <= n + 1 ? std::optional< std::size_t >( 0 ) : std::nullopt );
- if( L > n ) return( std::nullopt );
- if( C == 1 ) return( 0 );
- std::size_t run = 0;             // the entries >= L ending at r
+ if( L > n )
+  return( std::nullopt );
+ if( C == 1 )
+  return( 0 );
+ std::size_t run = 0;  // the entries >= L ending at r
  for( std::size_t r = 0 ; r < SA.lcp().size() ; ++r )
   if( SA.lcp()[ r ] >= L ) {
-   if( ++run >= C - 1 ) return( SA[ r ] );
+   if( ++run >= C - 1 )
+    return( SA[ r ] );
    }
   else
    run = 0;
@@ -64,19 +71,21 @@ inline std::uint64_t distinctSubstrings( const SuffixArray & SA )
 {
  const std::uint64_t n = SA.size();
  std::uint64_t d = n * ( n + 1 ) / 2;
- for( std::size_t h : SA.lcp() ) d -= h;
+ for( std::size_t h : SA.lcp() )
+  d -= h;
  return( d );
  }
 
-inline std::string longestCommonSubstring(
-                        const std::vector< std::string > & S , std::size_t k )
+inline std::string
+longestCommonSubstring( const std::vector< std::string > & S , std::size_t k )
 {
  const std::size_t m = S.size();
  ADS_PRE( ( k >= 1 ) && ( k <= m ) );
  if( k == 1 )
-  return( *std::max_element( S.begin() , S.end() ,
-           []( const std::string & a , const std::string & b ) {
-            return( a.size() < b.size() ); } ) );
+  return( *std::max_element(
+    S.begin() , S.end() , []( const std::string & a , const std::string & b ) {
+     return( a.size() < b.size() );
+     } ) );
 
  // the join of the strings, each followed by its own separator s < m,
  // the bytes shifted to m , ... , m + 255
@@ -96,14 +105,16 @@ inline std::string longestCommonSubstring(
  std::vector< std::size_t > cnt( m , 0 );
  std::size_t distinct = 0 , best = 0 , at = 0;
  for( std::size_t lo = 0 , hi = 0 ; hi < A.size() ; ++hi ) {
-  if( cnt[ owner[ A[ hi ] ] ]++ == 0 ) ++distinct;
+  if( cnt[ owner[ A[ hi ] ] ]++ == 0 )
+   ++distinct;
   while( distinct >= k ) {
    const std::size_t l = A.lce( A[ lo ] , A[ hi ] );
    if( l > best ) {
     best = l;
     at = A[ lo ];
     }
-   if( --cnt[ owner[ A[ lo ] ] ] == 0 ) --distinct;
+   if( --cnt[ owner[ A[ lo ] ] ] == 0 )
+    --distinct;
    ++lo;
    }
   }
@@ -114,8 +125,8 @@ inline std::string longestCommonSubstring(
  return( x );
  }
 
-inline std::vector< std::pair< std::size_t , std::size_t > > maximalRepeats(
-                                                      const SuffixTree & ST )
+inline std::vector< std::pair< std::size_t , std::size_t > >
+maximalRepeats( const SuffixTree & ST )
 {
  // the symbol before the occurrences below each node, or diverse; the
  // occurrence at 0 has the terminator 0, which precedes nothing else
@@ -132,7 +143,8 @@ inline std::vector< std::pair< std::size_t , std::size_t > > maximalRepeats(
    }
   left[ u ] = left[ x.child.begin()->second ];
   for( const auto & e : x.child )
-   if( left[ e.second ] != left[ u ] ) left[ u ] = diverse;
+   if( left[ e.second ] != left[ u ] )
+    left[ u ] = diverse;
   }
  for( std::size_t u : pre )
   if( ( u != ST.root() ) && ( ST.node( u ).suffix == SuffixTree::npos ) &&
@@ -142,11 +154,13 @@ inline std::vector< std::pair< std::size_t , std::size_t > > maximalRepeats(
  }
 
 inline bool proximity( const SuffixArray & SA , std::string_view P ,
-                       std::string_view Q , std::size_t k )
+		       std::string_view Q , std::size_t k )
 {
  std::vector< std::pair< std::size_t , int > > O;
- for( std::size_t i : SA.locate( P ) ) O.emplace_back( i , 0 );
- for( std::size_t i : SA.locate( Q ) ) O.emplace_back( i , 1 );
+ for( std::size_t i : SA.locate( P ) )
+  O.emplace_back( i , 0 );
+ for( std::size_t i : SA.locate( Q ) )
+  O.emplace_back( i , 1 );
  std::sort( O.begin() , O.end() );
  for( std::size_t t = 1 ; t < O.size() ; ++t )
   if( ( O[ t ].second != O[ t - 1 ].second ) &&
@@ -155,15 +169,16 @@ inline bool proximity( const SuffixArray & SA , std::string_view P ,
  return( false );
  }
 
-inline std::vector< std::size_t > kMismatches( std::string_view T ,
-                                               std::string_view P ,
-                                               std::size_t k )
+inline std::vector< std::size_t >
+kMismatches( std::string_view T , std::string_view P , std::size_t k )
 {
  const std::size_t n = T.size() , p = P.size();
  std::vector< std::size_t > out;
- if( p > n ) return( out );
+ if( p > n )
+  return( out );
  if( p == 0 ) {
-  for( std::size_t i = 0 ; i <= n ; ++i ) out.push_back( i );
+  for( std::size_t i = 0 ; i <= n ; ++i )
+   out.push_back( i );
   return( out );
   }
 
@@ -184,7 +199,8 @@ inline std::vector< std::size_t > kMismatches( std::string_view T ,
     ++j;
     }
    }
-  if( m <= k ) out.push_back( i );
+  if( m <= k )
+   out.push_back( i );
   }
  return( out );
  }
@@ -211,13 +227,15 @@ inline std::vector< CopyPhrase > lz77ByTree( std::string_view T )
   for( ; ; ) {
    const SuffixTree::Node & x = ST.node( u );
    const std::size_t c = x.child.at( ST.symbol( i + x.depth ) );
-   if( least[ c ] >= i ) break;
+   if( least[ c ] >= i )
+    break;
    u = c;
    }
   CopyPhrase z;
   z.length = ST.node( u ).depth;
   z.distance = z.length > 0 ? i - least[ u ] : 0;
-  if( i + z.length < n ) z.next = T[ i + z.length ];
+  if( i + z.length < n )
+   z.next = T[ i + z.length ];
   Z.push_back( z );
   i += z.length + 1;
   }
@@ -234,7 +252,8 @@ inline std::string decodeCopyPhrases( const std::vector< CopyPhrase > & Z )
   const std::size_t start = out.size() - z.distance;
   for( std::size_t t = 0 ; t < z.length ; ++t )
    out.push_back( out[ start + t ] );
-  if( z.next ) out.push_back( *z.next );
+  if( z.next )
+   out.push_back( *z.next );
   }
  return( out );
  }

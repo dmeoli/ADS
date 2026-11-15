@@ -15,12 +15,15 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline void PackedBitWriter::put( bool b )
 {
- if( f_size % 8 == 0 ) f_bytes.push_back( 0 );
- if( b ) f_bytes.back() |= std::uint8_t( 0x80u >> ( f_size % 8 ) );
+ if( f_size % 8 == 0 )
+  f_bytes.push_back( 0 );
+ if( b )
+  f_bytes.back() |= std::uint8_t( 0x80u >> ( f_size % 8 ) );
  ++f_size;
  }
 
@@ -43,7 +46,8 @@ inline void PackedBitWriter::put( const std::string & s )
 inline bool PackedBitReader::get( void )
 {
  const std::size_t i = f_pos++;
- if( i / 8 >= f_bytes.size() ) return( false );
+ if( i / 8 >= f_bytes.size() )
+  return( false );
  return( ( ( f_bytes[ i / 8 ] >> ( 7 - i % 8 ) ) & 1u ) != 0 );
  }
 

@@ -36,7 +36,7 @@
 
 #ifndef __ADS_ThreadedTree
  #define __ADS_ThreadedTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -54,7 +54,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS ThreadedTree ----------------------------*/
@@ -62,11 +63,11 @@ namespace ADS {
 
 /// a binary search tree with threads in symmetric order
 template< std::totally_ordered K >
-class ThreadedTree {
+class ThreadedTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty tree, the head node alone, its left link a thread to itself
  ThreadedTree( void );
 
@@ -125,39 +126,39 @@ class ThreadedTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node: the key, the two links and whether they are threads
- struct Node {
-  K key{};                                   ///< the key
-  Node * left = nullptr ,                    ///< the left link
-       * right = nullptr;                    ///< the right link
-  bool lthread = true ,                      ///< the left link is a thread
-       rthread = true;                       ///< the right link is a thread
+ struct Node
+ {
+  K key{};               ///< the key
+  Node *left = nullptr ,  ///< the left link
+    *right = nullptr;    ///< the right link
+  bool lthread = true ,   ///< the left link is a thread
+    rthread = true;      ///< the right link is a thread
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the keys in increasing order, bidirectional by the
  // threads with no stack, the head node being the end
 
  /// the constant iterator in symmetric order, by the threads
- class const_iterator {
+ class const_iterator
+ {
   public:
   /// the category of the iterator, bidirectional
   using iterator_category = std::bidirectional_iterator_tag;
-  using value_type = K;                     ///< the type of the keys
-  using difference_type = std::ptrdiff_t;   ///< the type of the distances
-  using reference = const K &;              ///< a constant reference
-  using pointer = const K *;                ///< a constant pointer
+  using value_type = K;                    ///< the type of the keys
+  using difference_type = std::ptrdiff_t;  ///< the type of the distances
+  using reference = const K &;             ///< a constant reference
+  using pointer = const K *;               ///< a constant pointer
 
   /// an iterator on no tree
   const_iterator( void ) = default;
 
   /// on the node \f$ x \f$ of \f$ t \f$, the end if \f$ x \f$ is the head
   const_iterator( const ThreadedTree * t , const Node * x )
-   : f_t( t ) , f_x( x ) {}
+      : f_t( t ) , f_x( x ) { }
 
   /// the key
   reference operator*( void ) const { return( f_x->key ); }
@@ -174,9 +175,17 @@ class ThreadedTree {
    return( *this );
    }
   /// to the successor, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
   /// to the predecessor, returning the iterator before the step
-  const_iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+  const_iterator operator--( int ) {
+   auto t = *this;
+   --*this;
+   return( t );
+   }
   /// equal on the same node
   bool operator==( const const_iterator & o ) const {
    return( f_x == o.f_x );
@@ -187,12 +196,12 @@ class ThreadedTree {
   const Node * f_x = nullptr;
   };
 
- using value_type = K;                     ///< the type of the keys
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = const K &;              ///< a constant reference
- using const_reference = const K &;        ///< a constant reference
- using iterator = const_iterator;          ///< a constant iterator
+ using value_type = K;                    ///< the type of the keys
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = const K &;             ///< a constant reference
+ using const_reference = const K &;       ///< a constant reference
+ using iterator = const_iterator;         ///< a constant iterator
 
  /// the iterator on the least key, the successor of the head
  [[nodiscard]] const_iterator begin( void ) const {
@@ -211,7 +220,6 @@ class ThreadedTree {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// the successor of \f$ x \f$ in symmetric order, the head after the last
  ///
  /// In pseudocode (Algorithm S of Knuth, section 2.3.1, beyond the book):
@@ -235,8 +243,8 @@ class ThreadedTree {
  /// the visit by threads gives size() increasing keys, \f$ O( n ) \f$
  [[nodiscard]] bool threaded( void ) const;
 
- Node f_head;               ///< left: the root (or itself if empty)
- std::size_t f_size = 0;   ///< the number of keys
+ Node f_head;             ///< left: the root (or itself if empty)
+ std::size_t f_size = 0;  ///< the number of keys
 
  };  // end( class ThreadedTree )
 
@@ -252,7 +260,7 @@ class ThreadedTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ThreadedTree.h included */
+#endif /* ThreadedTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File ThreadedTree.h -------------------------*/

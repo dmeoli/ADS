@@ -89,7 +89,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using I64 = std::int64_t;
 using U64 = std::uint64_t;
@@ -127,8 +128,10 @@ BinaryTree< T > * randomTree( std::mt19937 & g , int n , F && val )
   return( nullptr );
  const int k = randInt( g , 0 , n - 1 );
  auto t = new BinaryTree< T >( val() );
- if( auto l = randomTree( g , k , val ) ) t->insertLeft( l );
- if( auto r = randomTree( g , n - 1 - k , val ) ) t->insertRight( r );
+ if( auto l = randomTree( g , k , val ) )
+  t->insertLeft( l );
+ if( auto r = randomTree( g , n - 1 - k , val ) )
+  t->insertRight( r );
  return( t );
  }
 
@@ -156,9 +159,12 @@ std::vector< T > visit( BinaryTree< T > * t , int which )
 {
  std::vector< T > out;
  auto f = [ & ]( BinaryTree< T > * u ) { out.push_back( u->read() ); };
- if( which == 0 ) pre_visit( t , f );
- else if( which == 1 ) in_visit( t , f );
- else post_visit( t , f );
+ if( which == 0 )
+  pre_visit( t , f );
+ else if( which == 1 )
+  in_visit( t , f );
+ else
+  post_visit( t , f );
  return( out );
  }
 
@@ -172,13 +178,16 @@ int countNodes( const BT * t )
 std::vector< std::pair< BT * , int > > depths( BT * t )
 {
  std::vector< std::pair< BT * , int > > out , S;
- if( t ) S.push_back( std::pair( t , 0 ) );
+ if( t )
+  S.push_back( std::pair( t , 0 ) );
  while( ! S.empty() ) {
   const auto [ u , d ] = S.back();
   S.pop_back();
   out.push_back( std::pair( u , d ) );
-  if( u->right() ) S.push_back( std::pair( u->right() , d + 1 ) );
-  if( u->left() ) S.push_back( std::pair( u->left() , d + 1 ) );
+  if( u->right() )
+   S.push_back( std::pair( u->right() , d + 1 ) );
+  if( u->left() )
+   S.push_back( std::pair( u->left() , d + 1 ) );
   }
  return( out );
  }
@@ -194,7 +203,8 @@ bool near( double a , double b , double eps = 1e-9 )
 /// orders g * n^{eps} and g / n^{eps} drift by more than that factor
 template< class F , class Gf >
 bool order( F && T , Gf && g , const std::vector< double > & at ,
-            double spread , double eps )
+	    double spread ,
+	    double eps )
 {
  double lo = 1e300 , hi = 0;
  for( double n : at ) {
@@ -204,16 +214,16 @@ bool order( F && T , Gf && g , const std::vector< double > & at ,
   }
  const double a = at.front() , b = at.back();
  const double up = ( T( b ) / ( g( b ) * std::pow( b , eps ) ) ) /
-                   ( T( a ) / ( g( a ) * std::pow( a , eps ) ) );
+		   ( T( a ) / ( g( a ) * std::pow( a , eps ) ) );
  const double down = ( T( b ) * std::pow( b , eps ) / g( b ) ) /
-                     ( T( a ) * std::pow( a , eps ) / g( a ) );
- return( ( hi <= spread * lo ) && ( up * spread < 1 ) &&
-         ( down > spread ) );
+		     ( T( a ) * std::pow( a , eps ) / g( a ) );
+ return( ( hi <= spread * lo ) && ( up * spread < 1 ) && ( down > spread ) );
  }
 
 }  // end( namespace )
 
-namespace collezioni {
+namespace collezioni
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------- 02-analisi, 1.1, Trova la costante -------------------*/
@@ -241,7 +251,7 @@ ADS_TEST( "collezioni-02-analisi-1-1-1" )
  auto g = []( I64 n ) { return( 2 * n * n * n ); };
  const auto [ a , b ] = constantAtTwo( f , g );
  CHECK( ( a == 7 ) && ( b == 16 ) );
- CHECK( b * f( 2 ) == a * g( 2 ) );           // no smaller c
+ CHECK( b * f( 2 ) == a * g( 2 ) );  // no smaller c
  for( I64 n = 2 ; n <= 100000 ; ++n )
   CHECK( b * f( n ) <= a * g( n ) );
  for( I64 n = 2 ; n <= 1000 ; ++n )
@@ -249,26 +259,28 @@ ADS_TEST( "collezioni-02-analisi-1-1-1" )
  // the fraction in lowest terms when f( 2 ) and g( 2 ) share a factor, a
  // zero f, and g( 2 ) = 0 refused
  CHECK( constantAtTwo( []( I64 n ) { return( 3 * n ); } ,
-                       []( I64 n ) { return( 3 * n * n ); } ) ==
-        std::pair( I64( 1 ) , I64( 2 ) ) );
+		       []( I64 n ) { return( 3 * n * n ); } ) ==
+	std::pair( I64( 1 ) , I64( 2 ) ) );
  CHECK( constantAtTwo( []( I64 ) { return( I64( 0 ) ); } , g ) ==
-        std::pair( I64( 0 ) , I64( 1 ) ) );
+	std::pair( I64( 0 ) , I64( 1 ) ) );
  CHECK_THROWS( constantAtTwo( f , []( I64 n ) { return( n - 2 ); } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // f = n sqrt( n ) + n^2 and g = n^2: f / g = 1 + 1 / sqrt( n ) decreases,
 // c = 1 + 1 / sqrt( 2 ) = ( 2 + sqrt( 2 ) ) / 2
 ADS_TEST( "collezioni-02-analisi-1-1-2" )
 {
- auto r = []( double n ) { return( ( n * std::sqrt( n ) + n * n ) /
-                                   ( n * n ) ); };
+ auto r = []( double n ) {
+  return( ( n * std::sqrt( n ) + n * n ) / ( n * n ) );
+  };
  const double c = r( 2 );
  CHECK( near( c , 1 + 1 / std::sqrt( 2.0 ) ) &&
-        near( c , ( 2 + std::sqrt( 2.0 ) ) / 2 ) );
+	near( c , ( 2 + std::sqrt( 2.0 ) ) / 2 ) );
  for( int n = 2 ; n <= 1000000 ; ++n ) {
   CHECK( r( n ) <= c * ( 1 + 1e-15 ) );
-  if( n > 2 ) CHECK( r( n ) < r( n - 1 ) );
+  if( n > 2 )
+   CHECK( r( n ) < r( n - 1 ) );
   }
  }
 
@@ -278,9 +290,9 @@ ADS_TEST( "collezioni-02-analisi-1-1-3" )
 {
  auto f = []( I64 n ) { return( n * n - n + 1 ); };
  for( I64 n = 2 ; n <= 1000000 ; ++n )
-  CHECK( 2 * f( n ) <= 2 * ( n * n ) );       // f <= 2 g, g = n^2 / 2
+  CHECK( 2 * f( n ) <= 2 * ( n * n ) );  // f <= 2 g, g = n^2 / 2
  CHECK( 2.0 * f( 1000 ) / ( 1000.0 * 1000.0 ) > 1.99 );
- for( double c : { 1.5 , 1.9 , 1.999 } ) {   // c < 2 fails for some n
+ for( double c : { 1.5 , 1.9 , 1.999 } ) {  // c < 2 fails for some n
   I64 n = 2;
   while( 2.0 * f( n ) <= c * double( n * n ) )
    ++n;
@@ -316,7 +328,7 @@ ADS_TEST( "collezioni-02-analisi-1-4" )
   const int n = randInt( g , 0 , 30 );
   const Ints A = randInts( g , n , 0 , std::max( 1 , 2 * n ) );
   CHECK( hasDuplicate( A ) ==
-         ( std::set< int >( A.begin() , A.end() ).size() < A.size() ) );
+	 ( std::set< int >( A.begin() , A.end() ).size() < A.size() ) );
   }
  CHECK( ! hasDuplicate( {} ) && ! hasDuplicate( { 5 } ) );
  CHECK( hasDuplicate( { 7 , 7 } ) && hasDuplicate( Ints( 100 , 3 ) ) );
@@ -330,13 +342,13 @@ ADS_TEST( "collezioni-02-analisi-1-4" )
   CHECK( hasDuplicate( B ) );
   }
  CHECK( hasDuplicate( { std::numeric_limits< int >::max() , 0 ,
-                        std::numeric_limits< int >::max() } ) );
+			std::numeric_limits< int >::max() } ) );
  // the repetition at the two ends, and the two extremes of int distinct
  CHECK( hasDuplicate( { 4 , 1 , 2 , 3 , 4 } ) );
  CHECK( ! hasDuplicate( { std::numeric_limits< int >::min() ,
-                          std::numeric_limits< int >::max() } ) );
+			  std::numeric_limits< int >::max() } ) );
  CHECK( hasDuplicate( { std::numeric_limits< int >::min() , 5 ,
-                        std::numeric_limits< int >::min() } ) );
+			std::numeric_limits< int >::min() } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -349,7 +361,7 @@ ADS_TEST( "collezioni-02-analisi-1-4" )
 int compareGrowth( const Growth & a , const Growth & b )
 {
  for( auto [ x , y ] : { std::pair( a.c , b.c ) , std::pair( a.p , b.p ) ,
-                         std::pair( a.q , b.q ) , std::pair( a.r , b.r ) } )
+			std::pair( a.q , b.q ) , std::pair( a.r , b.r ) } )
   if( std::abs( x - y ) > 1e-9 )
    return( x < y ? -1 : 1 );
  return( 0 );
@@ -375,9 +387,9 @@ void masterCase( double beta , const Growth & e , const Growth & below )
  auto T = [ & ]( double n ) { return( fourHalves( n , beta ) ); };
  auto G = [ & ]( double n ) { return( g.at( n ) ); };
  const std::vector< double > at = { std::ldexp( 1.0 , 10 ) ,
-                                    std::ldexp( 1.0 , 20 ) ,
-                                    std::ldexp( 1.0 , 30 ) ,
-                                    std::ldexp( 1.0 , 40 ) };
+				    std::ldexp( 1.0 , 20 ) ,
+				    std::ldexp( 1.0 , 30 ) ,
+				    std::ldexp( 1.0 , 40 ) };
  CHECK( order( T , G , at , 1.2 , 0.1 ) );
  const double a = at.front() , b = at.back();
  CHECK( ( T( b ) / below.at( b ) ) / ( T( a ) / below.at( a ) ) > 3 );
@@ -407,15 +419,15 @@ ADS_TEST( "collezioni-02-analisi-1-5-3" )
 /// \pre n >= 0
 template< class F >
 double eighthsQuarters( I64 n , F && f ,
-                        std::unordered_map< I64 , double > & memo )
+			std::unordered_map< I64 , double > & memo )
 {
  ADS_PRE( n >= 0 );
  if( n <= 1 )
   return( 1 );
- if( const auto it = memo.find( n ) ; it != memo.end() )
+ if( const auto it = memo.find( n ); it != memo.end() )
   return( it->second );
  const double v = 2 * eighthsQuarters( n / 8 , f , memo ) +
-                  2 * eighthsQuarters( n / 4 , f , memo ) + f( double( n ) );
+		  2 * eighthsQuarters( n / 4 , f , memo ) + f( double( n ) );
  memo[ n ] = v;
  return( v );
  }
@@ -428,8 +440,8 @@ ADS_TEST( "collezioni-02-analisi-1-6" )
 {
  std::unordered_map< I64 , double > memo;
  auto T = [ & ]( double n ) {
-  return( eighthsQuarters( I64( n ) , []( double x ) { return( x ); } ,
-                           memo ) );
+  return(
+    eighthsQuarters( I64( n ) , []( double x ) { return( x ); } , memo ) );
   };
  for( I64 n = 1 ; n <= 100000 ; ++n )
   CHECK( ( T( n ) >= n ) && ( T( n ) <= 4.0 * n ) );
@@ -438,13 +450,16 @@ ADS_TEST( "collezioni-02-analisi-1-6" )
   const I64 n = I64( g() % 1000000000000000 ) + 1;
   CHECK( ( T( n ) >= n ) && ( T( n ) <= 4.0 * n ) );
   }
- CHECK( order( T , []( double n ) { return( n ); } ,
-               { 1e4 , 1e6 , 1e8 , 1e10 , 1e12 } , 2 , 0.1 ) );
+ CHECK( order(
+   T , []( double n ) { return( n ); } , { 1e4 , 1e6 , 1e8 , 1e10 , 1e12 } ,
+   2 ,
+   0.1 ) );
  CHECK( T( 0 ) == 1 && T( 1 ) == 1 && T( 2 ) == 6 );
  // the first n with a nonzero n / 4 and n / 8, and n < 0 refused
  CHECK( T( 4 ) == 2 * 1 + 2 * 1 + 4 && T( 8 ) == 2 * 1 + 2 * 6 + 8 );
- CHECK_THROWS( eighthsQuarters( -1 , []( double x ) { return( x ); } ,
-                                memo ) , contract_violation );
+ CHECK_THROWS( eighthsQuarters(
+		 -1 , []( double x ) { return( x ); } , memo ) ,
+	       contract_violation );
  }
 
 // T( n ) = 2 T( n / 8 ) + 2 T( n / 4 ) + n log n: n log n <= T( n ) <= 4 n
@@ -540,7 +555,8 @@ ADS_TEST( "collezioni-02-analisi-1-9" )
   CHECK( mystery2( Z , n , loops ) == 0 );
   for( int m = n ; ; m -= 2 ) {
    e += m;
-   if( m <= 44 ) break;
+   if( m <= 44 )
+    break;
    }
   CHECK( loops == e );
   }
@@ -550,8 +566,8 @@ ADS_TEST( "collezioni-02-analisi-1-9" )
  CHECK( ( r > 0.99 ) && ( r < 1.01 ) );
  loops = 0;
  CHECK( near( mystery2( O , 44 , loops ) , 1 ) && loops == 44 );
- CHECK( near( mystery2( O , 46 , loops ) , 4 ) );    // 3 * 1 + 1
- CHECK( near( mystery2( O , 48 , loops ) , 13 ) );   // 3 * 4 + 1
+ CHECK( near( mystery2( O , 46 , loops ) , 4 ) );   // 3 * 1 + 1
+ CHECK( near( mystery2( O , 48 , loops ) , 13 ) );  // 3 * 4 + 1
  // n = 0 (no loop, the mean 0), an odd n above 44 (45 then 43), and n out
  // of [ 0 , |A| ] refused
  loops = 0;
@@ -594,7 +610,7 @@ ADS_TEST( "collezioni-02-analisi-1-11" )
  for( int a = 1 ; a <= 40 ; ++a )
   CHECK( recursiveVsQuadratic( a ) == ( a < 16 ? -1 : ( a == 16 ? 0 : 1 ) ) );
  CHECK( compareGrowth( master( 1 , 4 , 0 ) , Growth{ 1 , 0 , 1 , 0 } ) ==
-        0 );                                   // log n for a = 1
+	0 );  // log n for a = 1
  for( int a : { 2 , 5 , 16 , 20 } ) {
   auto T = [ & ]( double n ) {
    double t = n <= 1 ? n : 1;
@@ -603,9 +619,11 @@ ADS_TEST( "collezioni-02-analisi-1-11" )
    return( t );
    };
   const Growth g = master( a , 4 , 0 );
-  CHECK( order( T , [ & ]( double n ) { return( g.at( n ) ); } ,
-                { std::ldexp( 1.0 , 20 ) , std::ldexp( 1.0 , 40 ) ,
-                  std::ldexp( 1.0 , 60 ) } , 1.5 , 0.1 ) );
+  CHECK( order(
+    T , [ & ]( double n ) { return( g.at( n ) ); } ,
+    { std::ldexp( 1.0 , 20 ) , std::ldexp( 1.0 , 40 ) ,
+      std::ldexp( 1.0 , 60 ) } ,
+    1.5 , 0.1 ) );
   }
  CHECK_THROWS( recursiveVsQuadratic( 0 ) , contract_violation );
  }
@@ -617,10 +635,8 @@ ADS_TEST( "collezioni-02-analisi-1-12" )
  const Growth A = master( 7 , 2 , 2 );
  CHECK( compareGrowth( master( 49 , 4 , 2 ) , A ) == 0 );
  CHECK( compareGrowth( master( 47 , 4 , 2 ) , A ) < 0 );
- CHECK( compareGrowth( master( 16 , 4 , 2 ) , Growth{ 1 , 2 , 1 , 0 } ) ==
-        0 );
- CHECK( compareGrowth( master( 15 , 4 , 2 ) , Growth{ 1 , 2 , 0 , 0 } ) ==
-        0 );
+ CHECK( compareGrowth( master( 16 , 4 , 2 ) , Growth{ 1 , 2 , 1 , 0 } ) == 0 );
+ CHECK( compareGrowth( master( 15 , 4 , 2 ) , Growth{ 1 , 2 , 0 , 0 } ) == 0 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -643,10 +659,9 @@ double thirds( I64 n , std::unordered_map< I64 , double > & memo )
  ADS_PRE( n >= 0 );
  if( n <= 1 )
   return( 1 );
- if( const auto it = memo.find( n ) ; it != memo.end() )
+ if( const auto it = memo.find( n ); it != memo.end() )
   return( it->second );
- const double v = 2 * thirds( n / 3 , memo ) + thirds( 2 * n / 3 , memo ) +
-                  1;
+ const double v = 2 * thirds( n / 3 , memo ) + thirds( 2 * n / 3 , memo ) + 1;
  memo[ n ] = v;
  return( v );
  }
@@ -663,8 +678,9 @@ ADS_TEST( "collezioni-02-analisi-1-13" )
  auto T = [ & ]( double n ) { return( thirds( I64( n ) , memo ) ); };
  for( I64 n = 1 ; n <= 100000 ; ++n )
   CHECK( ( T( n ) >= n ) && ( T( n ) <= 3.0 * n * n ) );
- CHECK( order( T , [ & ]( double n ) { return( std::pow( n , p ) ); } ,
-               { 1e3 , 1e5 , 1e7 , 1e9 , 1e11 , 1e12 } , 3 , 0.15 ) );
+ CHECK( order(
+   T , [ & ]( double n ) { return( std::pow( n , p ) ); } ,
+   { 1e3 , 1e5 , 1e7 , 1e9 , 1e11 , 1e12 } , 3 , 0.15 ) );
  // the base cases and the first values by hand, n < 0 refused
  CHECK( T( 0 ) == 1 && T( 1 ) == 1 && T( 2 ) == 2 * 1 + 1 + 1 );
  CHECK( T( 3 ) == 2 * 1 + T( 2 ) + 1 );
@@ -709,8 +725,8 @@ ADS_TEST( "collezioni-02-analisi-1-19" )
  std::mt19937_64 g( 19 );
  for( int t = 0 ; t < 10000 ; ++t ) {
   const U64 n = ( g() >> ( g() % 62 ) ) | 3;
-  const double d = double( sqrtRecurrence( n ) ) -
-                   std::log2( std::log2( double( n ) ) );
+  const double d =
+    double( sqrtRecurrence( n ) ) - std::log2( std::log2( double( n ) ) );
   CHECK( ( d >= 0 ) && ( d <= 2 ) );
   }
  const U64 top = std::numeric_limits< U64 >::max();
@@ -720,8 +736,7 @@ ADS_TEST( "collezioni-02-analisi-1-19" )
  for( U64 r = 2 ; r <= 100000 ; r += 997 )
   CHECK( isqrt( r * r ) == r && isqrt( r * r - 1 ) == r - 1 );
  CHECK( isqrt( U64( 4294967295u ) * 4294967295u ) == 4294967295u );
- CHECK( compareGrowth( master( 1 , 2 , 0 ) , Growth{ 1 , 0 , 1 , 0 } ) ==
-        0 );
+ CHECK( compareGrowth( master( 1 , 2 , 0 ) , Growth{ 1 , 0 , 1 , 0 } ) == 0 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -760,10 +775,10 @@ ADS_TEST( "collezioni-02-analisi-1-20-1" )
   return( n <= 2 ? 1 : 2 * T( std::sqrt( n ) ) + std::log2( n ) );
   };
  auto L = []( double n ) { return( std::log2( n ) ); };
- substitution( T , [ & ]( double n ) { return( L( n ) * std::log2( L( n ) ) );
-                                       } ,
-               L , [ & ]( double n ) { return( L( n ) * L( n ) ); } );
- CHECK( T( 16 ) == 2 * ( 2 * 1 + 2 ) + 4 );   // T( 4 ) = 4, T( 16 ) = 12
+ substitution(
+   T , [ & ]( double n ) { return( L( n ) * std::log2( L( n ) ) ); } , L ,
+   [ & ]( double n ) { return( L( n ) * L( n ) ); } );
+ CHECK( T( 16 ) == 2 * ( 2 * 1 + 2 ) + 4 );  // T( 4 ) = 4, T( 16 ) = 12
  }
 
 // T( n ) = sqrt( n ) T( sqrt( n ) ) + n log sqrt( n ): the text prints the
@@ -773,17 +788,19 @@ ADS_TEST( "collezioni-02-analisi-1-20-1" )
 ADS_TEST( "collezioni-02-analisi-1-20-2" )
 {
  std::function< double( double ) > T = [ & ]( double n ) {
-  return( n <= 2 ? 1 : std::sqrt( n ) * T( std::sqrt( n ) ) +
-                       n * std::log2( std::sqrt( n ) ) );
+  return( n <= 2 ? 1
+		  : std::sqrt( n ) * T( std::sqrt( n ) ) +
+		      n * std::log2( std::sqrt( n ) ) );
   };
  auto L = []( double n ) { return( std::log2( n ) ); };
- substitution( T , [ & ]( double n ) { return( n * L( n ) ); } ,
-               [ & ]( double n ) { return( n * std::log2( L( n ) ) ); } ,
-               [ & ]( double n ) { return( n * L( n ) * L( n ) ); } );
- for( int j = 1 ; j <= 9 ; ++j ) {            // S( 2^j ) = 2^j - 1 / 2
+ substitution(
+   T , [ & ]( double n ) { return( n * L( n ) ); } ,
+   [ & ]( double n ) { return( n * std::log2( L( n ) ) ); } ,
+   [ & ]( double n ) { return( n * L( n ) * L( n ) ); } );
+ for( int j = 1 ; j <= 9 ; ++j ) {  // S( 2^j ) = 2^j - 1 / 2
   const double k = std::ldexp( 1.0 , j );
   CHECK( near( T( std::ldexp( 1.0 , 1 << j ) ) / std::ldexp( 1.0 , 1 << j ) ,
-               k - 0.5 ) );
+	       k - 0.5 ) );
   }
  }
 
@@ -795,9 +812,10 @@ ADS_TEST( "collezioni-02-analisi-1-20-3" )
   return( n <= 2 ? 1 : std::sqrt( n ) * T( std::sqrt( n ) ) + n );
   };
  auto LL = []( double n ) { return( std::log2( std::log2( n ) ) ); };
- substitution( T , [ & ]( double n ) { return( n * LL( n ) ); } ,
-               []( double n ) { return( n ); } ,
-               []( double n ) { return( n * std::log2( n ) ); } );
+ substitution(
+   T , [ & ]( double n ) { return( n * LL( n ) ); } ,
+   []( double n ) { return( n ); } ,
+   []( double n ) { return( n * std::log2( n ) ); } );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -815,7 +833,7 @@ enum class Flag { VERDE , BIANCO , ROSSO };
 int ordinaBandiera( std::vector< Flag > & B )
 {
  std::size_t swaps = 0;
- dutchNationalFlag( B , []( Flag f ) { return( int( f ) ); } , & swaps );
+ dutchNationalFlag( B , []( Flag f ) { return( int( f ) ); } , &swaps );
  return( int( swaps ) );
  }
 
@@ -830,14 +848,16 @@ ADS_TEST( "collezioni-02-analisi-1-26" )
   std::sort( C.begin() , C.end() );
   CHECK( ( B == C ) && ( swaps <= int( A.size() ) ) );
   std::vector< int > D;
-  for( Flag f : A ) D.push_back( int( f ) );
+  for( Flag f : A )
+   D.push_back( int( f ) );
   threeWayQuickSort( D );
   for( std::size_t i = 0 ; i < D.size() ; ++i )
    CHECK( D[ i ] == int( B[ i ] ) );
   };
  for( int n = 0 ; n <= 8 ; ++n ) {
   int all = 1;
-  for( int i = 0 ; i < n ; ++i ) all *= 3;
+  for( int i = 0 ; i < n ; ++i )
+   all *= 3;
   for( int c = 0 ; c < all ; ++c ) {
    std::vector< Flag > A;
    for( int x = c , i = 0 ; i < n ; ++i , x /= 3 )
@@ -848,11 +868,12 @@ ADS_TEST( "collezioni-02-analisi-1-26" )
  std::mt19937 g( 26 );
  for( int t = 0 ; t < 100 ; ++t ) {
   std::vector< Flag > A( randInt( g , 100 , 2000 ) );
-  for( auto & f : A ) f = Flag( randInt( g , 0 , 2 ) );
+  for( auto & f : A )
+   f = Flag( randInt( g , 0 , 2 ) );
   check( A );
   }
  std::vector< Flag > R( 1000 , Flag::ROSSO );
- CHECK( ordinaBandiera( R ) == 1000 );         // each red swapped once
+ CHECK( ordinaBandiera( R ) == 1000 );  // each red swapped once
  }
 
 /*--------------------------------------------------------------------------*/
@@ -865,8 +886,8 @@ ADS_TEST( "collezioni-02-analisi-1-26" )
 /// \pre the values are positive and distinct (audit)
 bool somma17( const std::vector< int > & V )
 {
- ADS_PRE( std::all_of( V.begin() , V.end() ,
-                       []( int x ) { return( x > 0 ); } ) );
+ ADS_PRE(
+   std::all_of( V.begin() , V.end() , []( int x ) { return( x > 0 ); } ) );
  ADS_AUDIT( std::set< int >( V.begin() , V.end() ).size() == V.size() );
  bool P[ 17 ] = {};
  for( int x : V )
@@ -931,10 +952,10 @@ U64 follia( U64 n , I64 & calls , I64 & loops )
 {
  ++calls;
  if( n > 10 ) {
-  for( int i = 0 ; i < 4 ; ++i )           // i = n downto n - 3
+  for( int i = 0 ; i < 4 ; ++i )  // i = n downto n - 3
    ++loops;
-  return( follia( n / 2 , calls , loops ) * follia( n / 2 , calls , loops )
-          + 5 * n );
+  return( follia( n / 2 , calls , loops ) * follia( n / 2 , calls , loops ) +
+	   5 * n );
   }
  if( n > 20 )
   return( follia( n + 1 , calls , loops ) );
@@ -1009,15 +1030,13 @@ ADS_TEST( "collezioni-02-analisi-1-28-2" )
 // visits of different labels or lengths refused
 ADS_TEST( "collezioni-05-alberi-1-1" )
 {
- const std::vector< char > pre = { 'A' , 'E' , 'B' , 'F' , 'G' , 'C' , 'D' ,
-                                   'I' , 'H' } ,
-                           in = { 'B' , 'E' , 'G' , 'F' , 'C' , 'A' , 'D' ,
-                                  'H' , 'I' } ,
-                           post = { 'B' , 'G' , 'C' , 'F' , 'E' , 'H' , 'I' ,
-                                    'D' , 'A' };
+ const std::vector< char >
+   pre = { 'A' , 'E' , 'B' , 'F' , 'G' , 'C' , 'D' , 'I' , 'H' } ,
+   in = { 'B' , 'E' , 'G' , 'F' , 'C' , 'A' , 'D' , 'H' , 'I' } ,
+   post = { 'B' , 'G' , 'C' , 'F' , 'E' , 'H' , 'I' , 'D' , 'A' };
  std::unique_ptr< BinaryTree< char > > t( fromPreorderInorder( pre , in ) );
  CHECK( to_list( t.get() ) == "( A ( E ( B () () ) ( F ( G () () ) ( C () () "
-                              ") ) ) ( D () ( I ( H () () ) () ) ) )" );
+			      ") ) ) ( D () ( I ( H () () ) () ) ) )" );
  CHECK( visit( t.get() , 2 ) == post );
  std::mt19937 g( 51 );
  for( int r = 0 ; r < 500 ; ++r ) {
@@ -1028,24 +1047,24 @@ ADS_TEST( "collezioni-05-alberi-1-1" )
   std::size_t next = 0;
   BTPtr u( randomTree( g , n , [ & ]() { return( L[ next++ ] ); } ) );
   BTPtr v( fromPreorderInorder( visit( u.get() , 0 ) ,
-                                visit( u.get() , 1 ) ) );
+				visit( u.get() , 1 ) ) );
   CHECK( to_list( u.get() ) == to_list( v.get() ) );
   }
  CHECK( fromPreorderInorder( Ints() , Ints() ) == nullptr );
  CHECK_THROWS( fromPreorderInorder( Ints( { 1 , 2 } ) , Ints( { 1 , 3 } ) ) ,
-               contract_violation );
+	       contract_violation );
  // one node, a left chain (in order reversed), a right chain (the same
  // order), visits of different lengths refused
  BTPtr one( fromPreorderInorder( Ints( { 5 } ) , Ints( { 5 } ) ) );
  CHECK( to_list( one.get() ) == "( 5 () () )" );
  BTPtr lc( fromPreorderInorder( Ints( { 1 , 2 , 3 } ) ,
-                               Ints( { 3 , 2 , 1 } ) ) );
+				Ints( { 3 , 2 , 1 } ) ) );
  CHECK( to_list( lc.get() ) == "( 1 ( 2 ( 3 () () ) () ) () )" );
  BTPtr rc( fromPreorderInorder( Ints( { 1 , 2 , 3 } ) ,
-                               Ints( { 1 , 2 , 3 } ) ) );
+				Ints( { 1 , 2 , 3 } ) ) );
  CHECK( to_list( rc.get() ) == "( 1 () ( 2 () ( 3 () () ) ) )" );
  CHECK_THROWS( fromPreorderInorder( Ints( { 1 , 2 } ) , Ints( { 1 } ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1059,7 +1078,7 @@ int pathLength( const BT * t , int l = 0 )
  if( ! t )
   return( 0 );
  return( l + pathLength( t->left() , l + 1 ) +
-         pathLength( t->right() , l + 1 ) );
+	  pathLength( t->right() , l + 1 ) );
  }
 
 // the perfect trees, 10 for the height 2, and random trees against the
@@ -1069,19 +1088,22 @@ ADS_TEST( "collezioni-05-alberi-1-2" )
  for( int h = 0 ; h <= 12 ; ++h ) {
   BTPtr t( perfectTree( h ) );
   int e = 0;
-  for( int d = 0 ; d <= h ; ++d ) e += d << d;
+  for( int d = 0 ; d <= h ; ++d )
+   e += d << d;
   CHECK( pathLength( t.get() ) == e );
-  if( h == 2 ) CHECK( e == 10 );
+  if( h == 2 )
+   CHECK( e == 10 );
   }
  std::mt19937 g( 52 );
  for( int r = 0 ; r < 500 ; ++r ) {
   BTPtr t( randomTree( g , randInt( g , 0 , 60 ) ) );
   int e = 0;
-  for( auto [ u , d ] : depths( t.get() ) ) e += d;
+  for( auto [ u , d ] : depths( t.get() ) )
+   e += d;
   CHECK( pathLength( t.get() ) == e );
   }
  CHECK( pathLength( nullptr ) == 0 );
- BT * p = new BT( 0 );                        // a path of 100 nodes
+ BT * p = new BT( 0 );  // a path of 100 nodes
  BTPtr path( p );
  for( int i = 1 ; i < 100 ; ++i ) {
   p->insertRight( new BT( i ) );
@@ -1114,7 +1136,7 @@ int minHeight( const BT * t )
 ADS_TEST( "collezioni-05-alberi-1-3" )
 {
  BTPtr t( from_list< int >( "( 1 ( 2 () ( 4 ( 6 () () ) () ) ) ( 3 ( 5 () () "
-                            ") ( 7 ( 8 () () ) () ) ) )" ) );
+			    ") ( 7 ( 8 () () ) () ) ) )" ) );
  CHECK( minHeight( t.get() ) == 2 && minHeight( t->left() ) == 2 );
  std::mt19937 g( 53 );
  for( int r = 0 ; r < 300 ; ++r ) {
@@ -1125,9 +1147,12 @@ ADS_TEST( "collezioni-05-alberi-1-3" )
    for( int level = 0 ; e < 0 ; ++level ) {
     std::vector< BT * > N;
     for( BT * x : L ) {
-     if( ! x->left() && ! x->right() ) e = level;
-     if( x->left() ) N.push_back( x->left() );
-     if( x->right() ) N.push_back( x->right() );
+     if( ! x->left() && ! x->right() )
+      e = level;
+     if( x->left() )
+      N.push_back( x->left() );
+     if( x->right() )
+      N.push_back( x->right() );
      }
     L = N;
     }
@@ -1179,7 +1204,7 @@ ADS_TEST( "collezioni-05-alberi-1-4" )
  BTPtr t( from_list< int >( "( 1 ( 3 ( 2 () () ) ( 1 () () ) ) () )" ) );
  addChild( t.get() );
  CHECK( to_list( t.get() ) == "( 1 ( 3 ( 2 ( 6 () () ) () ) ( 1 ( 5 () () ) "
-                              "() ) ) () )" );
+			      "() ) ) () )" );
  std::mt19937 g( 54 );
  for( int r = 0 ; r < 500 ; ++r ) {
   const int n = randInt( g , 1 , 50 );
@@ -1187,16 +1212,19 @@ ADS_TEST( "collezioni-05-alberi-1-4" )
   std::vector< std::pair< BT * , int > > leaves;
   std::function< void( BT * , int ) > rec = [ & ]( BT * v , int s ) {
    s += v->read();
-   if( ! v->left() && ! v->right() ) leaves.push_back( std::pair( v , s ) );
-   if( v->left() ) rec( v->left() , s );
-   if( v->right() ) rec( v->right() , s );
+   if( ! v->left() && ! v->right() )
+    leaves.push_back( std::pair( v , s ) );
+   if( v->left() )
+    rec( v->left() , s );
+   if( v->right() )
+    rec( v->right() , s );
    };
   rec( u.get() , 0 );
   addChild( u.get() );
   CHECK( countNodes( u.get() ) == n + int( leaves.size() ) );
   for( auto [ v , s ] : leaves )
    CHECK( v->left() && ! v->right() && ( v->left()->read() == s ) &&
-          ! v->left()->left() && ! v->left()->right() );
+	  ! v->left()->left() && ! v->left()->right() );
   }
  addChild( nullptr );
  BTPtr one( new BT( 7 ) );
@@ -1217,8 +1245,8 @@ int countDepthK( const BT * t , int k )
   return( 0 );
  if( k == 0 )
   return( 1 );
- return( countDepthK( t->left() , k - 1 ) +
-         countDepthK( t->right() , k - 1 ) );
+ return( countDepthK( t->left() , k - 1 ) + countDepthK( t->right() ,
+							 k - 1 ) );
  }
 
 /// chkRec(): the height of t, -1 if empty, and its nodes of height k
@@ -1245,7 +1273,8 @@ ADS_TEST( "collezioni-05-alberi-1-5" )
  for( int r = 0 ; r < 500 ; ++r ) {
   BTPtr t( randomTree( g , randInt( g , 0 , 60 ) ) );
   std::map< int , int > level;
-  for( auto [ u , d ] : depths( t.get() ) ) ++level[ d ];
+  for( auto [ u , d ] : depths( t.get() ) )
+   ++level[ d ];
   for( int k = 0 ; k <= 62 ; ++k )
    CHECK( countDepthK( t.get() , k ) == level[ k ] );
   }
@@ -1262,13 +1291,14 @@ ADS_TEST( "collezioni-05-alberi-1-6" )
 {
  std::function< int( const BT * ) > height = [ & ]( const BT * u ) {
   return( u ? 1 + std::max( height( u->left() ) , height( u->right() ) )
-            : -1 );
+	     : -1 );
   };
  std::mt19937 g( 56 );
  for( int r = 0 ; r < 500 ; ++r ) {
   BTPtr t( randomTree( g , randInt( g , 0 , 60 ) ) );
   std::map< int , int > byHeight;
-  for( auto [ u , d ] : depths( t.get() ) ) ++byHeight[ height( u ) ];
+  for( auto [ u , d ] : depths( t.get() ) )
+   ++byHeight[ height( u ) ];
   for( int k = -1 ; k <= 61 ; ++k )
    CHECK( countHeightK( t.get() , k ) == ( k < 0 ? 0 : byHeight[ k ] ) );
   }
@@ -1314,13 +1344,13 @@ int breadthDfs( Tree< T > * t )
  ADS_PRE( t != nullptr );
  std::vector< int > count;
  std::function< void( Tree< T > * , std::size_t ) > rec =
-  [ & ]( Tree< T > * u , std::size_t level ) {
-  if( count.size() == level )
-   count.push_back( 0 );
-  ++count[ level ];
-  for( Tree< T > * c = u->leftmostChild() ; c ; c = c->rightSibling() )
-   rec( c , level + 1 );
-  };
+   [ & ]( Tree< T > * u , std::size_t level ) {
+    if( count.size() == level )
+     count.push_back( 0 );
+    ++count[ level ];
+    for( Tree< T > * c = u->leftmostChild() ; c ; c = c->rightSibling() )
+     rec( c , level + 1 );
+    };
  rec( t , 0 );
  return( *std::max_element( count.begin() , count.end() ) );
  }
@@ -1342,15 +1372,17 @@ ADS_TEST( "collezioni-05-alberi-1-7" )
   std::map< int , int > level;
   bfs( root.get() , [ & ]( Tree< int > * u ) {
    int d = 0;
-   for( ; u->parent() ; u = u->parent() ) ++d;
+   for( ; u->parent() ; u = u->parent() )
+    ++d;
    ++level[ d ];
    } );
   int e = 0;
-  for( auto [ d , c ] : level ) e = std::max( e , c );
+  for( auto [ d , c ] : level )
+   e = std::max( e , c );
   CHECK( breadthBfs( root.get() ) == e && breadthDfs( root.get() ) == e );
   }
  std::unique_ptr< Tree< int > > star( new Tree< int >( 0 ) ) ,
-                                path( new Tree< int >( 0 ) );
+   path( new Tree< int >( 0 ) );
  Tree< int > * p = path.get();
  for( int i = 1 ; i <= 100 ; ++i ) {
   star->insertChild( new Tree< int >( i ) );
@@ -1373,11 +1405,13 @@ void mirrorInPlace( BinaryTree< T > * t )
 {
  if( ! t )
   return;
- BinaryTree< T > * l = t->detachLeft() , * r = t->detachRight();
+ BinaryTree< T > *l = t->detachLeft() , *r = t->detachRight();
  mirrorInPlace( l );
  mirrorInPlace( r );
- if( r ) t->insertLeft( r );
- if( l ) t->insertRight( l );
+ if( r )
+  t->insertLeft( r );
+ if( l )
+  t->insertRight( l );
  }
 
 /// specular(): the mirror of t, with left and right swapped at each node,
@@ -1404,7 +1438,8 @@ ADS_TEST( "collezioni-05-alberi-1-8" )
   CHECK( visit( m.get() , 1 ) == in );
   Ints rl;
   std::function< void( BT * ) > rec = [ & ]( BT * u ) {
-   if( ! u ) return;
+   if( ! u )
+    return;
    rl.push_back( u->read() );
    rec( u->right() );
    rec( u->left() );
@@ -1467,9 +1502,10 @@ ADS_TEST( "collezioni-05-alberi-1-10-1" )
  for( int n = 0 ; n <= 9 ; ++n ) {
   const auto s = shapes( n );
   CHECK( std::set< std::string >( s.begin() , s.end() ).size() ==
-         binaryTreeShapes( n ) );
+	 binaryTreeShapes( n ) );
   CHECK( U64( nestedParentheses( n , []( const std::string & ) {
-               return( false ); } ) ) == binaryTreeShapes( n ) );
+	  return( false );
+	  } ) ) == binaryTreeShapes( n ) );
   }
  }
 
@@ -1481,9 +1517,9 @@ ADS_TEST( "collezioni-05-alberi-1-10-2" )
  for( int n = 0 ; n <= 30 ; ++n )
   CHECK( binaryTreeShapes( n ) == C[ 2 * n ][ n ] / U64( n + 1 ) );
  CHECK( binaryTreeShapes( 35 ) == 3116285494907301262u );
- CHECK( binaryTreeShapes( 0 ) == 1 );           // the empty tree
+ CHECK( binaryTreeShapes( 0 ) == 1 );  // the empty tree
  CHECK_THROWS( binaryTreeShapes( -1 ) , contract_violation );
- CHECK_THROWS( binaryTreeShapes( 36 ) , contract_violation );   // > 2^64
+ CHECK_THROWS( binaryTreeShapes( 36 ) , contract_violation );  // > 2^64
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1503,8 +1539,10 @@ std::vector< T > preorderIterative( BinaryTree< T > * t )
  while( ! S.empty() ) {
   BinaryTree< T > * u = S.pop();
   out.push_back( u->read() );
-  if( u->right() ) S.push( u->right() );
-  if( u->left() ) S.push( u->left() );
+  if( u->right() )
+   S.push( u->right() );
+  if( u->left() )
+   S.push( u->left() );
   }
  return( out );
  }
@@ -1527,10 +1565,14 @@ std::vector< T > flaggedIterative( BinaryTree< T > * t , bool in )
    out.push_back( u->read() );
    continue;
    }
-  if( ! in ) S.push( P( u , true ) );
-  if( u->right() ) S.push( P( u->right() , false ) );
-  if( in ) S.push( P( u , true ) );
-  if( u->left() ) S.push( P( u->left() , false ) );
+  if( ! in )
+   S.push( P( u , true ) );
+  if( u->right() )
+   S.push( P( u->right() , false ) );
+  if( in )
+   S.push( P( u , true ) );
+  if( u->left() )
+   S.push( P( u->left() , false ) );
   }
  return( out );
  }
@@ -1584,8 +1626,8 @@ ADS_TEST( "collezioni-05-alberi-1-11" )
  CHECK( postorderIterative( right.get() ) == up );
  BTPtr one( new BT( 9 ) );
  CHECK( preorderIterative( one.get() ) == Ints( 1 , 9 ) &&
-        inorderIterative( one.get() ) == Ints( 1 , 9 ) &&
-        postorderIterative( one.get() ) == Ints( 1 , 9 ) );
+	inorderIterative( one.get() ) == Ints( 1 , 9 ) &&
+	postorderIterative( one.get() ) == Ints( 1 , 9 ) );
  CHECK_THROWS( preorderIterative< int >( nullptr ) , contract_violation );
  CHECK_THROWS( inorderIterative< int >( nullptr ) , contract_violation );
  CHECK_THROWS( postorderIterative< int >( nullptr ) , contract_violation );
@@ -1622,8 +1664,10 @@ BT * fromSearchTree( const Tr & t , typename Tr::Link * u )
  if( t.isNil( u ) )
   return( nullptr );
  BT * b = new BT( Tr::key( u ) );
- if( BT * l = fromSearchTree( t , u->left ) ) b->insertLeft( l );
- if( BT * r = fromSearchTree( t , u->right ) ) b->insertRight( r );
+ if( BT * l = fromSearchTree( t , u->left ) )
+  b->insertLeft( l );
+ if( BT * r = fromSearchTree( t , u->right ) )
+  b->insertRight( r );
  return( b );
  }
 
@@ -1632,8 +1676,8 @@ BT * fromSearchTree( const Tr & t , typename Tr::Link * u )
 /// \pre K is strictly increasing and has as many keys as t has nodes
 void labelSearchTree( BT * t , const std::vector< int > & K )
 {
- ADS_PRE( std::adjacent_find( K.begin() , K.end() ,
-                              std::greater_equal<>() ) == K.end() );
+ ADS_PRE( std::adjacent_find( K.begin() , K.end() , std::greater_equal<>() ) ==
+	  K.end() );
  ADS_PRE( int( K.size() ) == countNodes( t ) );
  std::size_t i = 0;
  in_visit( t , [ & ]( BT * u ) { u->write( K[ i++ ] ); } );
@@ -1646,24 +1690,25 @@ void labelSearchTree( BT * t , const std::vector< int > & K )
 ADS_TEST( "collezioni-06-abr-1-1" )
 {
  BTPtr t( from_list< int >( "( 0 ( 0 ( 0 ( 0 () () ) ( 0 () () ) ) ( 0 ( 0 ()"
-                            " () ) () ) ) ( 0 ( 0 () () ) ( 0 () () ) ) )" ) );
- labelSearchTree( t.get() , { 7 , 12 , 15 , 17 , 18 , 21 , 23 , 32 , 33 ,
-                              37 } );
+			    " () ) () ) ) ( 0 ( 0 () () ) ( 0 () () ) ) )" ) );
+ labelSearchTree( t.get() ,
+		  { 7 , 12 , 15 , 17 , 18 , 21 , 23 , 32 , 33 , 37 } );
  CHECK( to_list( t.get() ) == "( 23 ( 17 ( 12 ( 7 () () ) ( 15 () () ) ) ( 2"
-                              "1 ( 18 () () ) () ) ) ( 33 ( 32 () () ) ( 37 "
-                              "() () ) ) )" );
+			      "1 ( 18 () () ) () ) ) ( 33 ( 32 () () ) ( 37 "
+			      "() () ) ) )" );
  CHECK( isSearchTree( t.get() ) );
  std::mt19937 g( 61 );
  for( int r = 0 ; r < 300 ; ++r ) {
   const int n = randInt( g , 0 , 40 );
   BTPtr u( randomTree( g , n ) );
   std::set< int > S;
-  while( int( S.size() ) < n ) S.insert( randInt( g , -1000 , 1000 ) );
+  while( int( S.size() ) < n )
+   S.insert( randInt( g , -1000 , 1000 ) );
   const Ints K( S.begin() , S.end() );
   labelSearchTree( u.get() , K );
   CHECK( isSearchTree( u.get() ) && ( visit( u.get() , 1 ) == K ) );
   }
- for( int n = 1 ; n <= 6 ; ++n ) {            // the labelling is unique
+ for( int n = 1 ; n <= 6 ; ++n ) {  // the labelling is unique
   BTPtr u( randomTree( g , n ) );
   Ints K( n );
   std::iota( K.begin() , K.end() , 1 );
@@ -1682,7 +1727,7 @@ ADS_TEST( "collezioni-06-abr-1-1" )
  CHECK_THROWS( labelSearchTree( two.get() , { 3 , 3 } ) , contract_violation );
  CHECK_THROWS( labelSearchTree( two.get() , { 4 , 3 } ) , contract_violation );
  labelSearchTree( two.get() , { std::numeric_limits< int >::min() ,
-                                std::numeric_limits< int >::max() } );
+			       std::numeric_limits< int >::max() } );
  CHECK( two->read() == std::numeric_limits< int >::max() );
  }
 
@@ -1704,12 +1749,16 @@ KV * insertNodeRec( KV * t , int x , int v )
   return( new KV( std::pair( x , v ) ) );
  const int k = t->read().first;
  if( x < k ) {
-  if( t->left() ) insertNodeRec( t->left() , x , v );
-  else t->insertLeft( new KV( std::pair( x , v ) ) );
+  if( t->left() )
+   insertNodeRec( t->left() , x , v );
+  else
+   t->insertLeft( new KV( std::pair( x , v ) ) );
   }
  else if( x > k ) {
-  if( t->right() ) insertNodeRec( t->right() , x , v );
-  else t->insertRight( new KV( std::pair( x , v ) ) );
+  if( t->right() )
+   insertNodeRec( t->right() , x , v );
+  else
+   t->insertRight( new KV( std::pair( x , v ) ) );
   }
  else
   t->write( std::pair( x , v ) );
@@ -1731,14 +1780,16 @@ ADS_TEST( "collezioni-06-abr-1-2" )
   for( int i = 0 ; i < n ; ++i ) {
    const int k = randInt( g , 0 , 50 );
    KV * root = insertNodeRec( t.get() , k , i );
-   if( ! t ) t.reset( root );
+   if( ! t )
+    t.reset( root );
    CHECK( root == t.get() );
    ads.insert( k , i );
    m[ k ] = i;
    }
   std::vector< int > pre , inK , inV;
   std::function< void( KV * ) > rec = [ & ]( KV * u ) {
-   if( ! u ) return;
+   if( ! u )
+    return;
    pre.push_back( u->read().first );
    for( KV * c : { u->left() , u->right() } )
     CHECK( ! c || ( c->parent() == u ) );
@@ -1750,7 +1801,10 @@ ADS_TEST( "collezioni-06-abr-1-2" )
   rec( t.get() );
   CHECK( pre == searchPre( ads ) );
   std::vector< int > mk , mv;
-  for( auto [ k , v ] : m ) { mk.push_back( k ); mv.push_back( v ); }
+  for( auto [ k , v ] : m ) {
+   mk.push_back( k );
+   mv.push_back( v );
+   }
   CHECK( ( inK == mk ) && ( inV == mv ) );
   }
  // the first key makes the root, a repeated root only changes its value,
@@ -1783,24 +1837,25 @@ ADS_TEST( "collezioni-06-abr-1-3" )
   BTPtr t( randomTree( g , randInt( g , 0 , 8 ) , 0 , 9 ) );
   const Ints in = visit( t.get() , 1 );
   const bool e = std::adjacent_find( in.begin() , in.end() ,
-                                     std::greater_equal<>() ) == in.end();
+				     std::greater_equal<>() ) == in.end();
   CHECK( isSearchTree( t.get() ) == e );
   yes += e;
   }
  CHECK( yes > 100 );
  for( int r = 0 ; r < 100 ; ++r ) {
   BinarySearchTree< int , int > s;
-  for( int i = 0 ; i < 60 ; ++i ) s.insert( randInt( g , 0 , 99 ) , 0 );
+  for( int i = 0 ; i < 60 ; ++i )
+   s.insert( randInt( g , 0 , 99 ) , 0 );
   BTPtr t( fromSearchTree( s , s.root() ) );
   CHECK( isSearchTree( t.get() ) );
   }
  BTPtr w( from_list< int >( "( 10 ( 5 () ( 12 () () ) ) ( 15 () () ) )" ) );
- CHECK( ! isSearchTree( w.get() ) );             // each parent agrees
+ CHECK( ! isSearchTree( w.get() ) );  // each parent agrees
  w->left()->right()->write( 7 );
  CHECK( isSearchTree( w.get() ) );
  BTPtr d( from_list< int >( "( 5 ( 5 () () ) () )" ) );
  CHECK( ! isSearchTree( d.get() ) &&
-        isSearchTree( static_cast< BT * >( nullptr ) ) );
+	isSearchTree( static_cast< BT * >( nullptr ) ) );
  BTPtr x( from_list< int >( "( -2147483648 () ( 2147483647 () () ) )" ) );
  CHECK( isSearchTree( x.get() ) );
  }
@@ -1835,9 +1890,14 @@ ADS_TEST( "collezioni-06-abr-1-5" )
  const Ints K = { 2 , 1 , 4 , 3 };
  CHECK( ! removalsCommute( K , 1 , 2 ) );
  BinarySearchTree< int , int > a , b;
- for( int k : K ) { a.insert( k , k ); b.insert( k , k ); }
- a.remove( 1 ); a.remove( 2 );
- b.remove( 2 ); b.remove( 1 );
+ for( int k : K ) {
+  a.insert( k , k );
+  b.insert( k , k );
+  }
+ a.remove( 1 );
+ a.remove( 2 );
+ b.remove( 2 );
+ b.remove( 1 );
  CHECK( searchPre( a ) == Ints( { 4 , 3 } ) );
  CHECK( searchPre( b ) == Ints( { 3 , 4 } ) );
  std::mt19937 g( 65 );
@@ -1845,14 +1905,15 @@ ADS_TEST( "collezioni-06-abr-1-5" )
  for( int r = 0 ; r < 2000 ; ++r ) {
   Ints L = randInts( g , randInt( g , 2 , 12 ) , 0 , 20 );
   const int x = L[ randInt( g , 0 , int( L.size() ) - 1 ) ] ,
-            y = L[ randInt( g , 0 , int( L.size() ) - 1 ) ];
+	    y = L[ randInt( g , 0 , int( L.size() ) - 1 ) ];
   differ += ! removalsCommute( L , x , y );
   CHECK( removalsCommute( L , x , x ) );
   std::set< int > S( L.begin() , L.end() );
   S.erase( x );
   S.erase( y );
   BinarySearchTree< int , int > c;
-  for( int k : L ) c.insert( k , k );
+  for( int k : L )
+   c.insert( k , k );
   c.remove( x );
   c.remove( y );
   const Ints left = searchPre( c );
@@ -1893,17 +1954,20 @@ ADS_TEST( "collezioni-06-abr-1-6" )
  for( int r = 0 ; r < 500 ; ++r ) {
   std::set< int > S;
   const int n = randInt( g , 2 , 60 );
-  while( int( S.size() ) < n ) S.insert( randInt( g , 0 , 999 ) );
+  while( int( S.size() ) < n )
+   S.insert( randInt( g , 0 , 999 ) );
   const Ints K( S.begin() , S.end() );
   const int cut = randInt( g , 1 , n - 1 );
   BinarySearchTree< int , int > a , b;
   Ints A( K.begin() , K.begin() + cut ) , B( K.begin() + cut , K.end() );
   std::shuffle( A.begin() , A.end() , g );
   std::shuffle( B.begin() , B.end() , g );
-  for( int k : A ) a.insert( k , 0 );
-  for( int k : B ) b.insert( k , 0 );
+  for( int k : A )
+   a.insert( k , 0 );
+  for( int k : B )
+   b.insert( k , 0 );
   BTPtr t( concatenate( fromSearchTree( a , a.root() ) ,
-                        fromSearchTree( b , b.root() ) ) );
+			fromSearchTree( b , b.root() ) ) );
   CHECK( isSearchTree( t.get() ) && ( visit( t.get() , 1 ) == K ) );
   CHECK( countNodes( t.get() ) == n );
   }
@@ -1939,7 +2003,7 @@ std::pair< typename Tr::Key , typename Tr::Key > minDistance( const Tr & T )
 {
  using K = typename Tr::Key;
  ADS_PRE( T.size() >= 2 );
- auto gap = []( const K & a , const K & b ) {     // b - a, a <= b
+ auto gap = []( const K & a , const K & b ) {  // b - a, a <= b
   if constexpr( std::is_integral_v< K > )
    return( std::make_unsigned_t< K >( b ) - std::make_unsigned_t< K >( a ) );
   else
@@ -1972,7 +2036,8 @@ ADS_TEST( "collezioni-06-abr-1-7" )
   int e = INFI;
   for( int x : S )
    for( int y : S )
-    if( x < y ) e = std::min( e , y - x );
+    if( x < y )
+     e = std::min( e , y - x );
   const auto [ x , y ] = minDistance( t );
   CHECK( S.count( x ) && S.count( y ) && ( x < y ) && ( y - x == e ) );
   }
@@ -1986,7 +2051,7 @@ ADS_TEST( "collezioni-06-abr-1-7" )
  // 2^31, larger than INT_MAX - 0; a tie (the first pair); no key
  BinarySearchTree< int , int > ext;
  for( int k : { 0 , std::numeric_limits< int >::max() ,
-                std::numeric_limits< int >::min() } )
+		std::numeric_limits< int >::min() } )
   ext.insert( k , 0 );
  CHECK( minDistance( ext ) == std::pair( 0 , INFI ) );
  BinarySearchTree< int , int > tie;
@@ -1994,7 +2059,7 @@ ADS_TEST( "collezioni-06-abr-1-7" )
   tie.insert( k , 0 );
  CHECK( minDistance( tie ) == std::pair( 1 , 3 ) );
  CHECK_THROWS( minDistance( BinarySearchTree< int , int >() ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2005,8 +2070,7 @@ ADS_TEST( "collezioni-06-abr-1-7" )
 template< class T >
 int height( const BinaryTree< T > * t )
 {
- return( t ? 1 + std::max( height( t->left() ) , height( t->right() ) )
-           : -1 );
+ return( t ? 1 + std::max( height( t->left() ) , height( t->right() ) ) : -1 );
  }
 
 // minimumHeightSearchTree() of the library, the middle key at the root and
@@ -2018,23 +2082,26 @@ ADS_TEST( "collezioni-06-abr-1-8" )
 {
  for( int n = 1 ; n <= 1000 ; ++n ) {
   Ints A( n );
-  for( int i = 0 ; i < n ; ++i ) A[ i ] = 3 * i - n;
+  for( int i = 0 ; i < n ; ++i )
+   A[ i ] = 3 * i - n;
   BTPtr t( minimumHeightSearchTree( A ) );
   int h = 0;
-  while( ( 2 << h ) - 1 < n ) ++h;             // 2^{h + 1} - 1 >= n
+  while( ( 2 << h ) - 1 < n )
+   ++h;  // 2^{h + 1} - 1 >= n
   CHECK( height( t.get() ) == h );
   CHECK( h == int( std::ceil( std::log2( n + 1.0 ) ) ) - 1 );
   CHECK( isSearchTree( t.get() ) && ( visit( t.get() , 1 ) == A ) );
   BinarySearchTree< int , int > s;
   const Ints pre = visit( t.get() , 0 );
-  for( int k : pre ) s.insert( k , 0 );
+  for( int k : pre )
+   s.insert( k , 0 );
   CHECK( searchPre( s ) == pre );
   }
  CHECK( minimumHeightSearchTree( Ints() ) == nullptr );
  CHECK_THROWS( minimumHeightSearchTree( Ints( { 1 , 3 , 2 } ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( minimumHeightSearchTree( Ints( { 1 , 1 } ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2054,7 +2121,7 @@ bool isRedBlack( const Shape * t , const Reds & red )
  bool ok = ! red.count( t );
  std::function< int( const Shape * ) > rec = [ & ]( const Shape * u ) {
   if( ! u )
-   return( 1 );                            // the black leaf nil
+   return( 1 );  // the black leaf nil
   const bool r = red.count( u );
   for( const Shape * c : { u->left() , u->right() } )
    if( r && c && red.count( c ) )
@@ -2077,12 +2144,12 @@ bool isRedBlack( const Shape * t , const Reds & red )
 bool redBlackColoring( const Shape * t , Reds * red = nullptr )
 {
  ADS_PRE( t != nullptr );
- using Sets = std::array< std::set< int > , 2 >;   // [ 0 ] black, [ 1 ] red
+ using Sets = std::array< std::set< int > , 2 >;  // [ 0 ] black, [ 1 ] red
  std::map< const Shape * , Sets > B;
  auto of = [ & ]( const Shape * u ) -> Sets {
   if( ! u ) {
    Sets s;
-   s[ 0 ].insert( 0 );                     // nil is black, not counted
+   s[ 0 ].insert( 0 );  // nil is black, not counted
    return( s );
    }
   return( B[ u ] );
@@ -2110,21 +2177,22 @@ bool redBlackColoring( const Shape * t , Reds * red = nullptr )
  if( red ) {
   red->clear();
   std::function< void( const Shape * , int , int ) > down =
-   [ & ]( const Shape * u , int c , int b ) {
-   if( ! u )
-    return;
-   if( c == 1 ) red->insert( u );
-   const int bc = b - ( c == 0 );          // the black height below
-   const Sets l = of( u->left() ) , r = of( u->right() );
-   for( int cl = 0 ; cl < 2 ; ++cl )
-    for( int cr = 0 ; cr < 2 ; ++cr )
-     if( ( ( c == 0 ) || ( ( cl == 0 ) && ( cr == 0 ) ) ) &&
-         l[ cl ].count( bc ) && r[ cr ].count( bc ) ) {
-      down( u->left() , cl , bc );
-      down( u->right() , cr , bc );
+    [ & ]( const Shape * u , int c , int b ) {
+     if( ! u )
       return;
-      }
-   };
+     if( c == 1 )
+      red->insert( u );
+     const int bc = b - ( c == 0 );  // the black height below
+     const Sets l = of( u->left() ) , r = of( u->right() );
+     for( int cl = 0 ; cl < 2 ; ++cl )
+      for( int cr = 0 ; cr < 2 ; ++cr )
+       if( ( ( c == 0 ) || ( ( cl == 0 ) && ( cr == 0 ) ) ) &&
+	   l[ cl ].count( bc ) && r[ cr ].count( bc ) ) {
+	down( u->left() , cl , bc );
+	down( u->right() , cr , bc );
+	return;
+        }
+     };
   down( t , 0 , *B[ t ][ 0 ].begin() );
   ADS_POST( isRedBlack( t , *red ) );
   }
@@ -2146,38 +2214,40 @@ const Shape * named( const Shape * t , char c )
 // refused
 ADS_TEST( "collezioni-06-abr-1-9" )
 {
- std::unique_ptr< Shape >
-  a( from_list< char >( "( A ( B () () ) ( C ( D () () ) ( E () () ) ) )" ) ) ,
-  b( from_list< char >( "( A ( B ( D ( F () () ) ( G ( J () () ) () ) ) ( E ("
-                        " H () () ) ( I () () ) ) ) ( C () () ) )" ) ) ,
-  c( from_list< char >( "( A ( B ( D ( H () () ) ( I ( L () () ) () ) ) ( E ("
-                        " J () () ) ( K () () ) ) ) ( C ( F () () ) ( G () ()"
-                        " ) ) )" ) ) ,
-  d( from_list< char >( "( A ( B ( D ( F () () ) ( G ( J () () ) ( K () () ) "
-                        ") ) ( E ( L () () ) ( M () () ) ) ) ( C ( H () () ) "
-                        "( I () () ) ) )" ) );
+ std::unique_ptr< Shape > a(
+   from_list< char >( "( A ( B () () ) ( C ( D () () ) ( E () () ) ) )" ) ) ,
+   b( from_list< char >( "( A ( B ( D ( F () () ) ( G ( J () () ) () ) ) ( E ("
+			 " H () () ) ( I () () ) ) ) ( C () () ) )" ) ) ,
+   c( from_list< char >( "( A ( B ( D ( H () () ) ( I ( L () () ) () ) ) ( E ("
+			 " J () () ) ( K () () ) ) ) ( C ( F () () ) ( G () ()"
+			 " ) ) )" ) ) ,
+   d( from_list< char >( "( A ( B ( D ( F () () ) ( G ( J () () ) ( K () () ) "
+			 ") ) ( E ( L () () ) ( M () () ) ) ) ( C ( H () () ) "
+			 "( I () () ) ) )" ) );
  Reds red;
  CHECK( redBlackColoring( a.get() , &red ) && isRedBlack( a.get() , red ) );
  CHECK( ! redBlackColoring( b.get() ) );
  CHECK( redBlackColoring( c.get() , &red ) && isRedBlack( c.get() , red ) );
  CHECK( redBlackColoring( d.get() , &red ) && isRedBlack( d.get() , red ) );
  CHECK( isRedBlack( a.get() , { named( a.get() , 'C' ) } ) );
- CHECK( isRedBlack( c.get() , { named( c.get() , 'B' ) ,
-                                named( c.get() , 'L' ) } ) );
- CHECK( isRedBlack( d.get() , { named( d.get() , 'B' ) ,
-                                named( d.get() , 'J' ) ,
-                                named( d.get() , 'K' ) } ) );
- CHECK( ! isRedBlack( a.get() , {} ) );       // all black fails in (a)
+ CHECK(
+   isRedBlack( c.get() ,
+	       { named( c.get() , 'B' ) , named( c.get() , 'L' ) } ) );
+ CHECK( isRedBlack( d.get() ,
+		    { named( d.get() , 'B' ) , named( d.get() , 'J' ) ,
+			       named( d.get() , 'K' ) } ) );
+ CHECK( ! isRedBlack( a.get() , {} ) );  // all black fails in (a)
  std::mt19937 g( 69 );
  int some = 0;
  for( int r = 0 ; r < 1500 ; ++r ) {
   const int n = randInt( g , 1 , 12 );
   char next = 'A';
-  std::unique_ptr< Shape > t( randomTree( g , n , [ & ]() {
-                                          return( next++ ); } ) );
+  std::unique_ptr< Shape > t(
+    randomTree( g , n , [ & ]() { return( next++ ); } ) );
   std::vector< const Shape * > N;
   std::function< void( const Shape * ) > rec = [ & ]( const Shape * u ) {
-   if( ! u ) return;
+   if( ! u )
+    return;
    N.push_back( u );
    rec( u->left() );
    rec( u->right() );
@@ -2187,7 +2257,8 @@ ADS_TEST( "collezioni-06-abr-1-9" )
   for( int mask = 0 ; ( mask < ( 1 << n ) ) && ! e ; ++mask ) {
    Reds R;
    for( int i = 0 ; i < n ; ++i )
-    if( mask >> i & 1 ) R.insert( N[ i ] );
+    if( mask >> i & 1 )
+     R.insert( N[ i ] );
    e = isRedBlack( t.get() , R );
    }
   CHECK( redBlackColoring( t.get() , &red ) == e );
@@ -2198,13 +2269,13 @@ ADS_TEST( "collezioni-06-abr-1-9" )
  // coloring: the black heights of the two sides of the root differ), a
  // perfect tree (all black)
  std::unique_ptr< Shape > s1( from_list< char >( "( A () () )" ) ) ,
-  s2( from_list< char >( "( A ( B () () ) () )" ) ) ,
-  s3( from_list< char >( "( A ( B ( C () () ) () ) () )" ) ) ,
-  s7( from_list< char >( "( A ( B ( D () () ) ( E () () ) ) ( C ( F () () )"
-                         " ( G () () ) ) )" ) );
+   s2( from_list< char >( "( A ( B () () ) () )" ) ) ,
+   s3( from_list< char >( "( A ( B ( C () () ) () ) () )" ) ) ,
+   s7( from_list< char >( "( A ( B ( D () () ) ( E () () ) ) ( C ( F () () )"
+			  " ( G () () ) ) )" ) );
  CHECK( redBlackColoring( s1.get() , &red ) && red.empty() );
  CHECK( redBlackColoring( s2.get() , &red ) &&
-        ( red == Reds( { named( s2.get() , 'B' ) } ) ) );
+	( red == Reds( { named( s2.get() , 'B' ) } ) ) );
  CHECK( ! redBlackColoring( s3.get() ) );
  CHECK( redBlackColoring( s7.get() ) && isRedBlack( s7.get() , {} ) );
  CHECK_THROWS( redBlackColoring( nullptr ) , contract_violation );
@@ -2223,28 +2294,31 @@ enum class SetOp { UNION , INTERSECTION , DIFFERENCE };
 /// 1 ) ) time
 template< class K >
 RedBlackTree< K , int > setOperation( const RedBlackTree< K , int > & A ,
-                                     const RedBlackTree< K , int > & B ,
-                                     SetOp op )
+				     const RedBlackTree< K , int > & B ,
+				     SetOp op )
 {
  using Tr = RedBlackTree< K , int >;
  Tr R;
  auto a = A.min();
  auto b = B.min();
  while( ! A.isNil( a ) || ! B.isNil( b ) ) {
-  const bool takeA = ! A.isNil( a ) &&
-                     ( B.isNil( b ) || ( Tr::key( a ) < Tr::key( b ) ) );
-  const bool takeB = ! B.isNil( b ) &&
-                     ( A.isNil( a ) || ( Tr::key( b ) < Tr::key( a ) ) );
+  const bool takeA =
+    ! A.isNil( a ) && ( B.isNil( b ) || ( Tr::key( a ) < Tr::key( b ) ) );
+  const bool takeB =
+    ! B.isNil( b ) && ( A.isNil( a ) || ( Tr::key( b ) < Tr::key( a ) ) );
   if( takeA ) {
-   if( op != SetOp::INTERSECTION ) R.insert( Tr::key( a ) , 0 );
+   if( op != SetOp::INTERSECTION )
+    R.insert( Tr::key( a ) , 0 );
    a = A.successorNode( a );
    }
   else if( takeB ) {
-   if( op == SetOp::UNION ) R.insert( Tr::key( b ) , 0 );
+   if( op == SetOp::UNION )
+    R.insert( Tr::key( b ) , 0 );
    b = B.successorNode( b );
    }
-  else {                                   // the same key
-   if( op != SetOp::DIFFERENCE ) R.insert( Tr::key( a ) , 0 );
+  else {  // the same key
+   if( op != SetOp::DIFFERENCE )
+    R.insert( Tr::key( a ) , 0 );
    a = A.successorNode( a );
    b = B.successorNode( b );
    }
@@ -2280,17 +2354,17 @@ ADS_TEST( "collezioni-06-abr-1-10" )
    }
   Ints u , in , d;
   std::set_union( SA.begin() , SA.end() , SB.begin() , SB.end() ,
-                  std::back_inserter( u ) );
+		  std::back_inserter( u ) );
   std::set_intersection( SA.begin() , SA.end() , SB.begin() , SB.end() ,
-                         std::back_inserter( in ) );
+			 std::back_inserter( in ) );
   std::set_difference( SA.begin() , SA.end() , SB.begin() , SB.end() ,
-                       std::back_inserter( d ) );
+		       std::back_inserter( d ) );
   const RB U = setOperation( A , B , SetOp::UNION ) ,
-           I = setOperation( A , B , SetOp::INTERSECTION ) ,
-           D = setOperation( A , B , SetOp::DIFFERENCE );
+	   I = setOperation( A , B , SetOp::INTERSECTION ) ,
+	   D = setOperation( A , B , SetOp::DIFFERENCE );
   CHECK( keys( U ) == u && keys( I ) == in && keys( D ) == d );
   CHECK( U.size() == u.size() && I.size() == in.size() &&
-         D.size() == d.size() );
+	 D.size() == d.size() );
   }
  const RB E;
  CHECK( setOperation( E , E , SetOp::UNION ).empty() );
@@ -2301,7 +2375,8 @@ ADS_TEST( "collezioni-06-abr-1-10" )
 /*--------------------------------------------------------------------------*/
 
 /// the hash h( k ) = k of the text
-struct Identity {
+struct Identity
+{
  std::size_t operator()( int k ) const { return( std::size_t( k ) ); }
  };
 
@@ -2346,7 +2421,7 @@ ADS_TEST( "collezioni-07-hashing-1-1" )
  const Ints e = { 33 , 23 , 24 , 14 , 11 , 16 , 13 , 18 , -1 , 31 , 10 };
  for( std::size_t i = 0 ; i < 11 ; ++i )
   CHECK( ( e[ i ] == -1 ) ? ( T.slot( i ) == decltype( T )::Slot::NIL )
-                          : ( T.keyAt( i ) == e[ i ] ) );
+			  : ( T.keyAt( i ) == e[ i ] ) );
  const Ints seq = { 7 , 0 , 6 , 3 , 2 , 3 , 6 , 0 , 7 , 5 , 5 };
  for( int i = 0 ; i < 11 ; ++i )
   CHECK( int( Probing::quadratic( 3 , 1 ).at( 7 , i , 11 ) ) == seq[ i ] );
@@ -2363,7 +2438,7 @@ ADS_TEST( "collezioni-07-hashing-1-1" )
  std::mt19937 g( 71 );
  for( int r = 0 ; r < 500 ; ++r ) {
   const int m = std::vector< int >( { 5 , 7 , 11 , 13 } )[ randInt( g , 0 ,
-                                                                    3 ) ];
+								    3 ) ];
   std::set< int > distinct;
   for( int i = randInt( g , 0 , m ) ; i > 0 ; --i )
    distinct.insert( randInt( g , 0 , 100 ) );
@@ -2373,13 +2448,17 @@ ADS_TEST( "collezioni-07-hashing-1-1" )
   OpenHashTable< int , int , Identity > U( m , Probing::quadratic( 3 , 1 ) );
   for( std::size_t i = 0 ; i < L.size() ; ++i ) {
    bool thrown = false;
-   try { U.insert( L[ i ] , 0 ); }
-   catch( const std::overflow_error & ) { thrown = true; }
+   try {
+    U.insert( L[ i ] , 0 );
+    }
+   catch( const std::overflow_error & ) {
+    thrown = true;
+    }
    CHECK( thrown == ( Ps[ i ] == 0 ) );
    }
   for( int i = 0 ; i < m ; ++i )
    CHECK( ( Ts[ i ] == -1 ) ? ( U.slot( i ) == decltype( U )::Slot::NIL )
-                            : ( U.keyAt( i ) == Ts[ i ] ) );
+			    : ( U.keyAt( i ) == Ts[ i ] ) );
   }
  // a table of one place (the second key finds none), no key, and the
  // contracts of the simulation: m = 0, a negative key
@@ -2399,7 +2478,8 @@ ADS_TEST( "collezioni-07-hashing-1-1" )
 /// places, and the inspection linear H( k , i ) = ( H0( k ) + delta i ) mod
 /// m or quadratic H( k , i ) = ( H0( k ) + delta i^2 ) mod m, H0( k ) = k
 /// mod m
-struct ScanTable {
+struct ScanTable
+{
  enum State { NIL , FULL , DELETED };
  std::vector< int > key;
  std::vector< State > state;
@@ -2408,7 +2488,7 @@ struct ScanTable {
 
  /// \pre m > 0, delta coprime with m if linear, m prime if quadratic
  ScanTable( int m , int d , bool q )
-  : key( m , 0 ) , state( m , NIL ) , delta( d ) , quadratic( q ) {
+     : key( m , 0 ) , state( m , NIL ) , delta( d ) , quadratic( q ) {
   ADS_PRE( ( m > 0 ) && ( d > 0 ) );
   ADS_PRE( q || ( std::gcd( d , m ) == 1 ) );
   }
@@ -2427,7 +2507,7 @@ struct ScanTable {
   long i = 0;
   int j = H( k , 0 ) , firstDeleted = -1;
   while( ! ( state[ j ] == FULL && key[ j ] == k ) && ( state[ j ] != NIL ) &&
-         ( i < m() ) ) {
+	 ( i < m() ) ) {
    if( ( state[ j ] == DELETED ) && ( firstDeleted == -1 ) )
     firstDeleted = j;
    j = H( k , ++i );
@@ -2474,17 +2554,22 @@ ADS_TEST( "collezioni-07-hashing-1-2" )
   const int m = q ? 13 : 16 , d = q ? 1 + r % 4 / 2 : ( r % 4 < 2 ? 1 : 3 );
   ScanTable T( m , d , q );
   OpenHashTable< int , int , Identity > U( m , q ? Probing::quadratic( 0 , d )
-                                                 : Probing::linear( d ) );
+					      : Probing::linear( d ) );
   std::set< int > S;
   for( int i = 0 ; i < 300 ; ++i ) {
    const int k = randInt( g , 0 , 3 * m ) , op = randInt( g , 0 , 9 );
    if( op < 5 ) {
     const bool ok = T.insert( k );
     bool thrown = false;
-    try { U.insert( k , 0 ); }
-    catch( const std::overflow_error & ) { thrown = true; }
+    try {
+     U.insert( k , 0 );
+     }
+    catch( const std::overflow_error & ) {
+     thrown = true;
+     }
     CHECK( ok != thrown );
-    if( ok ) S.insert( k );
+    if( ok )
+     S.insert( k );
     }
    else if( op < 8 ) {
     T.remove( k );
@@ -2498,17 +2583,19 @@ ADS_TEST( "collezioni-07-hashing-1-2" )
     using Slot = decltype( U )::Slot;
     CHECK( ( T.state[ j ] == ScanTable::NIL ) == ( s == Slot::NIL ) );
     CHECK( ( T.state[ j ] == ScanTable::DELETED ) == ( s == Slot::DELETED ) );
-    if( s == Slot::FULL ) CHECK( U.keyAt( j ) == T.key[ j ] );
+    if( s == Slot::FULL )
+     CHECK( U.keyAt( j ) == T.key[ j ] );
     }
    }
   for( int k = 0 ; k <= 3 * m ; ++k )
    CHECK( T.lookup( k ) == bool( S.count( k ) ) );
   }
  ScanTable F( 5 , 1 , false );
- for( int k = 0 ; k < 5 ; ++k ) CHECK( F.insert( 5 * k ) );
- CHECK( ! F.insert( 7 ) && F.insert( 10 ) );   // full; 10 is there
+ for( int k = 0 ; k < 5 ; ++k )
+  CHECK( F.insert( 5 * k ) );
+ CHECK( ! F.insert( 7 ) && F.insert( 10 ) );  // full; 10 is there
  F.remove( 10 );
- CHECK( F.scan( 7 , true ) == 2 && F.insert( 7 ) );   // the deleted place
+ CHECK( F.scan( 7 , true ) == 2 && F.insert( 7 ) );  // the deleted place
  CHECK_THROWS( ScanTable( 16 , 2 , false ) , contract_violation );
  // a key inserted twice stays once, a removal of an absent key changes
  // nothing, a key found after a deleted place, one place only; m = 0 and
@@ -2536,23 +2623,26 @@ ADS_TEST( "collezioni-07-hashing-1-2" )
 /// and the comparisons of the files of the same digest. The groups, each
 /// sorted, in increasing order
 template< class D >
-std::vector< std::vector< int > > equalFiles(
-                                   const std::vector< std::string > & F ,
-                                   D && digest )
+std::vector< std::vector< int > >
+equalFiles( const std::vector< std::string > & F , D && digest )
 {
  std::unordered_map< std::string , std::vector< int > > bucket;
  for( int i = 0 ; i < int( F.size() ) ; ++i )
   bucket[ std::to_string( F[ i ].size() ) + ":" +
-          std::to_string( digest( F[ i ] ) ) ].push_back( i );
+	  std::to_string( digest( F[ i ] ) ) ]
+    .push_back( i );
  std::vector< std::vector< int > > out;
  for( auto & [ k , L ] : bucket ) {
   std::vector< std::vector< int > > split;  // by content, byte by byte
   for( int i : L ) {
    auto it = std::find_if( split.begin() , split.end() ,
-                           [ & ]( const std::vector< int > & s ) {
-                            return( F[ s[ 0 ] ] == F[ i ] ); } );
-   if( it == split.end() ) split.push_back( { i } );
-   else it->push_back( i );
+			   [ & ]( const std::vector< int > & s ) {
+			    return( F[ s[ 0 ] ] == F[ i ] );
+			    } );
+   if( it == split.end() )
+    split.push_back( { i } );
+   else
+    it->push_back( i );
    }
   for( auto & s : split )
    if( s.size() >= 2 )
@@ -2570,7 +2660,8 @@ ADS_TEST( "collezioni-07-hashing-1-3" )
 {
  std::mt19937 g( 73 );
  auto good = []( const std::string & s ) {
-  return( std::hash< std::string >()( s ) ); };
+  return( std::hash< std::string >()( s ) );
+  };
  auto bad = []( const std::string & ) { return( std::size_t( 42 ) ); };
  for( int r = 0 ; r < 500 ; ++r ) {
   std::vector< std::string > F( randInt( g , 0 , 25 ) );
@@ -2580,27 +2671,32 @@ ADS_TEST( "collezioni-07-hashing-1-3" )
   std::vector< std::vector< int > > e;
   std::vector< bool > used( F.size() , false );
   for( std::size_t i = 0 ; i < F.size() ; ++i ) {
-   if( used[ i ] ) continue;
+   if( used[ i ] )
+    continue;
    std::vector< int > c = { int( i ) };
    for( std::size_t j = i + 1 ; j < F.size() ; ++j )
-    if( F[ j ] == F[ i ] ) { c.push_back( int( j ) ); used[ j ] = true; }
-   if( c.size() >= 2 ) e.push_back( c );
+    if( F[ j ] == F[ i ] ) {
+     c.push_back( int( j ) );
+     used[ j ] = true;
+     }
+   if( c.size() >= 2 )
+    e.push_back( c );
    }
   std::sort( e.begin() , e.end() );
   CHECK( equalFiles( F , good ) == e && equalFiles( F , bad ) == e );
   }
  CHECK( equalFiles( {} , good ).empty() );
  const std::vector< std::string > same( 10 , "abc" );
- CHECK( equalFiles( same , bad ) ==
-        std::vector< std::vector< int > >( { { 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 ,
-                                               8 , 9 } } ) );
+ CHECK( equalFiles( same , bad ) == std::vector< std::vector< int > >(
+				     { { 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 ,
+					 9 } } ) );
  CHECK( equalFiles( { "ab" , "ba" , "a" , "" } , bad ).empty() );
  // one file, empty files (equal), two groups of the same length and digest
  CHECK( equalFiles( { "x" } , good ).empty() );
  CHECK( equalFiles( { "" , "a" , "" } , good ) ==
-        std::vector< std::vector< int > >( 1 , { 0 , 2 } ) );
+	std::vector< std::vector< int > >( 1 , { 0 , 2 } ) );
  CHECK( equalFiles( { "ab" , "ba" , "ab" , "ba" } , bad ) ==
-        std::vector< std::vector< int > >( { { 0 , 2 } , { 1 , 3 } } ) );
+	std::vector< std::vector< int > >( { { 0 , 2 } , { 1 , 3 } } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2616,7 +2712,7 @@ using Event = std::pair< int , int >;
 /// \pre r is a node
 template< Graph G >
 std::vector< Event > dfsIterative( const G & g , int r ,
-                                   std::vector< bool > & visited )
+				   std::vector< bool > & visited )
 {
  ADS_PRE( g.hasNode( r ) && ( int( visited.size() ) == g.bound() ) );
  std::vector< Event > out;
@@ -2647,8 +2743,9 @@ std::vector< Event > dfsIterative( const G & g , int r ,
 
 /// a graph of n nodes with the edges E, inserted in this order
 template< class W = std::monostate >
-ListGraph< W > makeGraph( int n , const std::vector< std::pair< int , int > >
-                          & E , bool directed , W w = W() )
+ListGraph< W > makeGraph( int n ,
+			  const std::vector< std::pair< int , int > > & E ,
+			  bool directed , W w = W() )
 {
  ListGraph< W > g( n , directed );
  for( auto [ u , v ] : E )
@@ -2660,7 +2757,8 @@ ListGraph< W > makeGraph( int n , const std::vector< std::pair< int , int > >
 /// inserted by increasing ends, so that the lists are sorted
 template< class W = std::monostate >
 ListGraph< W > randomGraph( std::mt19937 & g , int n , double p ,
-                            bool directed , W w = W() )
+			    bool directed ,
+			    W w = W() )
 {
  // p as 2.0 / n is more than 1 for n = 1, which bernoulli_distribution
  // does not take (an assertion of libstdc++ with _GLIBCXX_ASSERTIONS)
@@ -2690,22 +2788,35 @@ ListGraph<> randomFreeTree( std::mt19937 & g , int n )
 ADS_TEST( "collezioni-09-grafi-1-1" )
 {
  enum { A , B , C , D , E , F , G , H , I };
- const ListGraph<> fig = makeGraph( 9 , { { A , B } , { A , C } , { A , D } ,
-                                          { A , F } , { A , H } , { B , D } ,
-                                          { B , E } , { B , G } , { B , I } ,
-                                          { C , F } , { D , E } , { G , H } ,
-                                          { G , I } } , false );
+ const ListGraph<> fig = makeGraph( 9 ,
+				    { { A , B } ,
+				      { A , C } ,
+				      { A , D } ,
+				      { A , F } ,
+				      { A , H } ,
+				      { B , D } ,
+				      { B , E } ,
+				      { B , G } ,
+				      { B , I } ,
+				      { C , F } ,
+				      { D , E } ,
+				      { G , H } ,
+				      { G , I } } ,
+				    false );
  std::vector< bool > visited( 9 , false );
  std::string s;
  for( auto [ u , v ] : dfsIterative( fig , A , visited ) ) {
-  if( ! s.empty() ) s += ", ";
-  if( v < 0 ) s += char( 'A' + u );
-  else s += std::string( "(" ) + char( 'A' + u ) + "," + char( 'A' + v ) + ")";
+  if( ! s.empty() )
+   s += ", ";
+  if( v < 0 )
+   s += char( 'A' + u );
+  else
+   s += std::string( "(" ) + char( 'A' + u ) + "," + char( 'A' + v ) + ")";
   }
  CHECK( s == "A, (A,B), B, (B,A), (B,D), D, (D,A), (D,B), (D,E), E, (E,B), "
-             "(E,D), (B,E), (B,G), G, (G,B), (G,H), H, (H,A), (H,G), (G,I), "
-             "I, (I,B), (I,G), (B,I), (A,C), C, (C,A), (C,F), F, (F,A), (F,"
-             "C), (A,D), (A,F), (A,H)" );
+	     "(E,D), (B,E), (B,G), G, (G,B), (G,H), H, (H,A), (H,G), (G,I), "
+	     "I, (I,B), (I,G), (B,I), (A,C), C, (C,A), (C,F), F, (F,A), (F,"
+	     "C), (A,D), (A,F), (A,H)" );
  std::mt19937 g( 91 );
  for( int r = 0 ; r < 300 ; ++r ) {
   const int n = randInt( g , 1 , 20 );
@@ -2713,16 +2824,17 @@ ADS_TEST( "collezioni-09-grafi-1-1" )
   const int root = randInt( g , 0 , n - 1 );
   std::vector< Event > e;
   std::vector< bool > v1( n , false ) , v2( n , false );
-  dfs( G , root , v1 , [ & ]( int u ) { e.push_back( Event( u , -1 ) ); } ,
-       [ & ]( int u , int v ) { e.push_back( Event( u , v ) ); } ,
-       []( int ) {} );
+  dfs(
+    G , root , v1 , [ & ]( int u ) { e.push_back( Event( u , -1 ) ); } ,
+    [ & ]( int u , int v ) { e.push_back( Event( u , v ) ); } ,
+    []( int ) { } );
   CHECK( dfsIterative( G , root , v2 ) == e && v1 == v2 );
   }
  // one node, a root already visited marks nothing new, and the contracts:
  // a root out of the graph, a vector of marks of the wrong size
  std::vector< bool > one( 1 , false );
  CHECK( dfsIterative( ListGraph<>( 1 , false ) , 0 , one ) ==
-        std::vector< Event >( 1 , Event( 0 , -1 ) ) );
+	std::vector< Event >( 1 , Event( 0 , -1 ) ) );
  std::vector< bool > v9( 9 , false );
  CHECK_THROWS( dfsIterative( fig , 9 , v9 ) , contract_violation );
  std::vector< bool > v3( 3 , false );
@@ -2748,7 +2860,8 @@ int graphWidth( const G & g , int r )
   g.forEachAdj( u , [ & ]( int v ) {
    if( dist[ v ] < 0 ) {
     dist[ v ] = dist[ u ] + 1;
-    if( int( count.size() ) == dist[ v ] ) count.push_back( 0 );
+    if( int( count.size() ) == dist[ v ] )
+     count.push_back( 0 );
     ++count[ dist[ v ] ];
     Q.push_back( v );
     }
@@ -2767,9 +2880,11 @@ ADS_TEST( "collezioni-09-grafi-1-3" )
   const ListGraph<> T = randomFreeTree( g , n );
   const int root = randInt( g , 0 , n - 1 );
   std::map< int , int > level;
-  for( int d : distance( T , root ).first ) ++level[ d ];
+  for( int d : distance( T , root ).first )
+   ++level[ d ];
   int e = 0;
-  for( auto [ d , c ] : level ) e = std::max( e , c );
+  for( auto [ d , c ] : level )
+   e = std::max( e , c );
   CHECK( graphWidth( T , root ) == e );
   }
  CHECK( graphWidth( ListGraph<>( 1 , false ) , 0 ) == 1 );
@@ -2798,11 +2913,12 @@ ADS_TEST( "collezioni-09-grafi-1-4" )
  int trees = 0;
  for( int r = 0 ; r < 1500 ; ++r ) {
   const int n = randInt( g , 1 , 12 );
-  ListGraph<> G = r % 3 ? randomFreeTree( g , n )
-                        : randomGraph( g , n , 2.0 / n , false );
+  ListGraph<> G =
+    r % 3 ? randomFreeTree( g , n ) : randomGraph( g , n , 2.0 / n , false );
   if( ( r % 3 == 1 ) && ( n >= 3 ) ) {
    const int u = randInt( g , 0 , n - 1 ) , v = randInt( g , 0 , n - 1 );
-   if( u != v ) G.insertEdge( u , v );
+   if( u != v )
+    G.insertEdge( u , v );
    }
   if( ( r % 3 == 2 ) && ( n >= 2 ) ) {
    const auto E = edges( G );
@@ -2810,8 +2926,8 @@ ADS_TEST( "collezioni-09-grafi-1-4" )
    G.deleteEdge( e.u , e.v );
    }
   const auto c = cc( G );
-  const bool e = ( *std::max_element( c.begin() , c.end() ) == 1 ) &&
-                 ( G.m() == n - 1 );
+  const bool e =
+    ( *std::max_element( c.begin() , c.end() ) == 1 ) && ( G.m() == n - 1 );
   CHECK( isTree( G ) == e );
   trees += e;
   }
@@ -2865,13 +2981,14 @@ ADS_TEST( "collezioni-09-grafi-1-5" )
   for( int x : G.V() )
    for( int u : G.adj( x ) )
     for( int y : G.adj( u ) )
-     if( y != x ) e[ x ][ y ] = 1;
+     if( y != x )
+      e[ x ][ y ] = 1;
   CHECK( square( matrixOf( G ) ) == e );
   }
  CHECK( square( Adj() ).empty() );
  CHECK( square( Adj( 1 , std::vector< int >( 1 , 0 ) ) ) ==
-        Adj( 1 , std::vector< int >( 1 , 0 ) ) );
- const Adj cyc = { { 0 , 1 } , { 1 , 0 } };    // 0 -> 1 -> 0: no loop
+	Adj( 1 , std::vector< int >( 1 , 0 ) ) );
+ const Adj cyc = { { 0 , 1 } , { 1 , 0 } };  // 0 -> 1 -> 0: no loop
  CHECK( square( cyc ) == Adj( { { 0 , 0 } , { 0 , 0 } } ) );
  }
 
@@ -2891,11 +3008,12 @@ ADS_TEST( "collezioni-09-grafi-1-6" )
  for( int r = 0 ; r < 300 ; ++r ) {
   const int n = randInt( g , 1 , 30 );
   ListGraph< int > G( n , false );
-  for( int i = 1 ; i < n ; ++i ) G.insertEdge( randInt( g , 0 , i - 1 ) , i ,
-                                               1 );
+  for( int i = 1 ; i < n ; ++i )
+   G.insertEdge( randInt( g , 0 , i - 1 ) , i , 1 );
   for( int k = randInt( g , 0 , n ) ; k > 0 ; --k ) {
    const int u = randInt( g , 0 , n - 1 ) , v = randInt( g , 0 , n - 1 );
-   if( u != v ) G.insertEdge( u , v , 1 );
+   if( u != v )
+    G.insertEdge( u , v , 1 );
    }
   const auto R = floydWarshall( G );
   int e = 0;
@@ -2904,9 +3022,11 @@ ADS_TEST( "collezioni-09-grafi-1-6" )
   CHECK( diameter( G ) == e );
   }
  ListGraph<> path( 40 , false ) , K( 10 , false );
- for( int i = 1 ; i < 40 ; ++i ) path.insertEdge( i - 1 , i );
+ for( int i = 1 ; i < 40 ; ++i )
+  path.insertEdge( i - 1 , i );
  for( int i = 0 ; i < 10 ; ++i )
-  for( int j = i + 1 ; j < 10 ; ++j ) K.insertEdge( i , j );
+  for( int j = i + 1 ; j < 10 ; ++j )
+   K.insertEdge( i , j );
  CHECK( diameter( path ) == 39 && diameter( K ) == 1 );
  CHECK( diameter( ListGraph<>( 1 , false ) ) == 0 );
  CHECK_THROWS( diameter( ListGraph<>( 2 , false ) ) , contract_violation );
@@ -2924,7 +3044,10 @@ std::pair< std::vector< int > , std::vector< int > > degrees( const G & g )
 {
  std::vector< int > out( g.bound() , 0 ) , in( g.bound() , 0 );
  for( int u : g.V() )
-  g.forEachAdj( u , [ & ]( int v ) { ++out[ u ]; ++in[ v ]; } );
+  g.forEachAdj( u , [ & ]( int v ) {
+   ++out[ u ];
+   ++in[ v ];
+   } );
  return( std::pair( out , in ) );
  }
 
@@ -2937,12 +3060,16 @@ ADS_TEST( "collezioni-09-grafi-1-7" )
   std::set< std::pair< int , int > > E;
   for( int k = n > 1 ? randInt( g , 0 , 3 * n ) : 0 ; k > 0 ; --k ) {
    const int u = randInt( g , 0 , n - 1 ) , v = randInt( g , 0 , n - 1 );
-   if( u != v ) E.insert( std::pair( u , v ) );
+   if( u != v )
+    E.insert( std::pair( u , v ) );
    }
-  const ListGraph<> G = makeGraph( n , std::vector< std::pair< int , int > >(
-                                   E.begin() , E.end() ) , true );
+  const ListGraph<> G = makeGraph(
+    n , std::vector< std::pair< int , int > >( E.begin() , E.end() ) , true );
   std::vector< int > out( n , 0 ) , in( n , 0 );
-  for( auto [ u , v ] : E ) { ++out[ u ]; ++in[ v ]; }
+  for( auto [ u , v ] : E ) {
+   ++out[ u ];
+   ++in[ v ];
+   }
   CHECK( degrees( G ) == std::pair( out , in ) );
   }
  }
@@ -2977,10 +3104,10 @@ ADS_TEST( "collezioni-09-grafi-1-8" )
    for( int v = 0 ; v < n ; ++v )
     if( u != v )
      CHECK( ( G.hasEdge( u , v ) == T.hasEdge( v , u ) ) &&
-            ( G.hasEdge( u , v ) == TT.hasEdge( u , v ) ) );
+	    ( G.hasEdge( u , v ) == TT.hasEdge( u , v ) ) );
   CHECK( transposeMatrix( matrixOf( G ) ) == matrixOf( T ) );
   CHECK( transposeMatrix( transposeMatrix( matrixOf( G ) ) ) ==
-         matrixOf( G ) );
+	 matrixOf( G ) );
   }
  }
 
@@ -3007,13 +3134,17 @@ ADS_TEST( "collezioni-09-grafi-1-9" )
    const int s = randInt( g , 0 , n - 1 );
    for( int j = 0 ; j < n ; ++j ) {
     M[ s ][ j ] = 0;
-    if( j != s ) M[ j ][ s ] = 1;
+    if( j != s )
+     M[ j ][ s ] = 1;
     }
    }
   bool e = false;
   for( int c = 0 ; c < n ; ++c ) {
    int out = 0 , in = 0;
-   for( int j = 0 ; j < n ; ++j ) { out += M[ c ][ j ]; in += M[ j ][ c ]; }
+   for( int j = 0 ; j < n ; ++j ) {
+    out += M[ c ][ j ];
+    in += M[ j ][ c ];
+    }
    e = e || ( ( out == 0 ) && ( in == n - 1 ) );
    }
   CHECK( ( universalSink( M ) != NIL ) == e );
@@ -3045,8 +3176,12 @@ int maxdist( const G & g , int s )
    if( dist[ v ] < 0 ) {
     dist[ v ] = dist[ u ] + 1;
     Q.push_back( v );
-    if( dist[ v ] > best ) { best = dist[ v ]; count = 1; }
-    else if( dist[ v ] == best ) ++count;
+    if( dist[ v ] > best ) {
+     best = dist[ v ];
+     count = 1;
+     }
+    else if( dist[ v ] == best )
+     ++count;
     }
    } );
   }
@@ -3067,17 +3202,21 @@ ADS_TEST( "collezioni-09-grafi-1-10" )
   const auto d = distance( G , s ).first;
   int best = 0 , count = 0;
   for( int x : d )
-   if( x != INF ) best = std::max( best , x );
-  for( int x : d ) count += ( x == best );
+   if( x != INF )
+    best = std::max( best , x );
+  for( int x : d )
+   count += ( x == best );
   CHECK( maxdist( G , s ) == count );
   }
  CHECK( maxdist( ListGraph<>( 3 , true ) , 1 ) == 1 );
  // an oriented cycle (one node at n - 1), a star out of s (all leaves),
  // a node out of the graph refused
- const ListGraph<> cyc = makeGraph( 5 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } ,
-                                          { 3 , 4 } , { 4 , 0 } } , true );
- const ListGraph<> star = makeGraph( 5 , { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } ,
-                                           { 0 , 4 } } , true );
+ const ListGraph<> cyc =
+   makeGraph( 5 ,
+	      { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } , { 3 , 4 } , { 4 , 0 } } ,
+	      true );
+ const ListGraph<> star =
+   makeGraph( 5 , { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } , { 0 , 4 } } , true );
  CHECK( maxdist( cyc , 2 ) == 1 && maxdist( star , 0 ) == 4 );
  CHECK( maxdist( star , 3 ) == 1 );
  CHECK_THROWS( maxdist( star , 5 ) , contract_violation );
@@ -3094,7 +3233,7 @@ ADS_TEST( "collezioni-09-grafi-1-10" )
 I64 listsBeatMatrix( I64 n )
 {
  ADS_PRE( n >= 0 );
- const I64 room = n * n - 32 * n - 1;            // 64 m <= room
+ const I64 room = n * n - 32 * n - 1;  // 64 m <= room
  return( room < 0 ? -1 : room / 64 );
  }
 
@@ -3105,15 +3244,16 @@ ADS_TEST( "collezioni-09-grafi-1-11" )
 {
  CHECK( listsBeatMatrix( 1000 ) == 15124 );
  CHECK( 64 * 15124 + 32 * 1000 < 1000 * 1000 &&
-        64 * 15125 + 32 * 1000 >= 1000 * 1000 );
+	64 * 15125 + 32 * 1000 >= 1000 * 1000 );
  for( I64 n = 0 ; n <= 400 ; ++n ) {
   I64 e = -1;
   for( I64 m = 0 ; m <= n * ( n - 1 ) ; ++m )
-   if( 32 * n + 64 * m < n * n ) e = m;
+   if( 32 * n + 64 * m < n * n )
+    e = m;
   CHECK( listsBeatMatrix( n ) == e );
   }
  CHECK( listsBeatMatrix( 32 ) == -1 && listsBeatMatrix( 33 ) == 0 );
- CHECK( listsBeatMatrix( 0 ) == -1 );            // nothing beats 0 bits
+ CHECK( listsBeatMatrix( 0 ) == -1 );  // nothing beats 0 bits
  CHECK_THROWS( listsBeatMatrix( -1 ) , contract_violation );
  }
 
@@ -3156,7 +3296,8 @@ ADS_TEST( "collezioni-09-grafi-1-12-1" )
 {
  for( int n = 0 ; n <= 40 ; ++n ) {
   Adj K( n , std::vector< int >( n , 1 ) );
-  for( int i = 0 ; i < n ; ++i ) K[ i ][ i ] = 0;
+  for( int i = 0 ; i < n ; ++i )
+   K[ i ][ i ] = 0;
   CHECK( trianglesMatrix( K ) == trianglesComplete( n ) );
   CHECK( trianglesMatrix( K ) == I64( n ) * ( n - 1 ) * ( n - 2 ) / 6 );
   }
@@ -3179,13 +3320,14 @@ ADS_TEST( "collezioni-09-grafi-1-12-2" )
    for( int b = 0 ; b < n ; ++b )
     for( int c = 0 ; c < n ; ++c )
      e += ( a != b ) && ( b != c ) && ( a != c ) && G.hasEdge( a , b ) &&
-          G.hasEdge( b , c ) && G.hasEdge( a , c );
+	  G.hasEdge( b , c ) && G.hasEdge( a , c );
   CHECK( trianglesMatrix( matrixOf( G ) ) == e / 6 );
   CHECK( countTriangles( G ) == e / 6 );
   }
  ListGraph<> K( 30 , false );
  for( int i = 0 ; i < 30 ; ++i )
-  for( int j = i + 1 ; j < 30 ; ++j ) K.insertEdge( j , i );
+  for( int j = i + 1 ; j < 30 ; ++j )
+   K.insertEdge( j , i );
  CHECK( countTriangles( K ) == I64( binomial( 30 , 3 ) ) );
  }
 
@@ -3197,8 +3339,8 @@ ADS_TEST( "collezioni-09-grafi-1-12-2" )
 /// are examined and their distances, -1 if not reached; the row of each
 /// node scanned in full, Theta( n^2 ) time, Theta( n ) space
 /// \pre r is a row of M
-std::pair< std::vector< int > , std::vector< int > >
-bfsMatrix( const Adj & M , int r )
+std::pair< std::vector< int > , std::vector< int > > bfsMatrix( const Adj & M ,
+							       int r )
 {
  ADS_PRE( ( r >= 0 ) && ( std::size_t( r ) < M.size() ) );
  const int n = int( M.size() );
@@ -3228,11 +3370,12 @@ ADS_TEST( "collezioni-09-grafi-1-14" )
   MatrixGraph<> G( n , r % 2 );
   for( int u = 0 ; u < n ; ++u )
    for( int v = 0 ; v < n ; ++v )
-    if( M[ u ][ v ] ) G.insertEdge( u , v );
+    if( M[ u ][ v ] )
+     G.insertEdge( u , v );
   const int s = randInt( g , 0 , n - 1 );
   std::vector< int > order;
   bfs( G , s , [ & ]( int u ) { order.push_back( u ); } ,
-       []( int , int ) {} );
+       []( int , int ) { } );
   const auto [ o , d ] = bfsMatrix( M , s );
   CHECK( o == order );
   const auto e = distance( G , s ).first;
@@ -3243,8 +3386,8 @@ ADS_TEST( "collezioni-09-grafi-1-14" )
  // one node, a node with no arc out (only itself), r out of the rows
  const Adj two = { { 0 , 0 } , { 1 , 0 } };
  CHECK( bfsMatrix( Adj( 1 , std::vector< int >( 1 , 0 ) ) , 0 ) ==
-        std::pair( std::vector< int >( 1 , 0 ) ,
-                   std::vector< int >( 1 , 0 ) ) );
+	std::pair( std::vector< int >( 1 , 0 ) ,
+		   std::vector< int >( 1 , 0 ) ) );
  CHECK( bfsMatrix( two , 0 ).second == std::vector< int >( { 0 , -1 } ) );
  CHECK( bfsMatrix( two , 1 ).first == std::vector< int >( { 1 , 0 } ) );
  CHECK_THROWS( bfsMatrix( two , 2 ) , contract_violation );
@@ -3266,7 +3409,8 @@ int treeCount( const G & g )
  std::vector< bool > seen( g.bound() , false );
  int trees = 0;
  for( int r : g.V() ) {
-  if( seen[ r ] ) continue;
+  if( seen[ r ] )
+   continue;
   long nodes = 0 , degrees = 0;
   std::vector< int > Q = { r };
   seen[ r ] = true;
@@ -3274,7 +3418,10 @@ int treeCount( const G & g )
    ++nodes;
    g.forEachAdj( Q[ h ] , [ & ]( int v ) {
     ++degrees;
-    if( ! seen[ v ] ) { seen[ v ] = true; Q.push_back( v ); }
+    if( ! seen[ v ] ) {
+     seen[ v ] = true;
+     Q.push_back( v );
+     }
     } );
    }
   trees += ( degrees / 2 == nodes - 1 );
@@ -3293,28 +3440,35 @@ ADS_TEST( "collezioni-09-grafi-1-15" )
   const int n = randInt( g , 0 , 40 );
   ListGraph<> G( n , false );
   for( int i = 1 ; i < n ; ++i )
-   if( randInt( g , 0 , 3 ) ) G.insertEdge( randInt( g , 0 , i - 1 ) , i );
+   if( randInt( g , 0 , 3 ) )
+    G.insertEdge( randInt( g , 0 , i - 1 ) , i );
   for( int k = randInt( g , 0 , 4 ) ; ( k > 0 ) && ( n > 1 ) ; --k ) {
    const int u = randInt( g , 0 , n - 1 ) , v = randInt( g , 0 , n - 1 );
-   if( u != v ) G.insertEdge( u , v );
+   if( u != v )
+    G.insertEdge( u , v );
    }
   const auto c = cc( G );
   std::map< int , int > nodes , edgesOf;
-  for( int u = 0 ; u < n ; ++u ) ++nodes[ c[ u ] ];
-  for( const auto & e : edges( G ) ) ++edgesOf[ c[ e.u ] ];
+  for( int u = 0 ; u < n ; ++u )
+   ++nodes[ c[ u ] ];
+  for( const auto & e : edges( G ) )
+   ++edgesOf[ c[ e.u ] ];
   int e = 0;
-  for( auto [ k , v ] : nodes ) e += ( edgesOf[ k ] == v - 1 );
+  for( auto [ k , v ] : nodes )
+   e += ( edgesOf[ k ] == v - 1 );
   CHECK( treeCount( G ) == e );
   }
  CHECK( treeCount( ListGraph<>( 0 , false ) ) == 0 );
- CHECK( treeCount( ListGraph<>( 7 , false ) ) == 7 );   // isolated nodes
+ CHECK( treeCount( ListGraph<>( 7 , false ) ) == 7 );  // isolated nodes
  // a cycle (no tree), a cycle beside a path (one tree), an oriented graph
  // refused
- const ListGraph<> cyc = makeGraph( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } ,
-                                    false );
+ const ListGraph<> cyc =
+   makeGraph( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } , false );
  CHECK( treeCount( cyc ) == 0 );
- CHECK( treeCount( makeGraph( 6 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } ,
-                                    { 3 , 4 } , { 4 , 5 } } , false ) ) == 1 );
+ CHECK( treeCount( makeGraph(
+	  6 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } , { 3 , 4 } , { 4 , 5 } } ,
+	  false ) ) ==
+	1 );
  CHECK_THROWS( treeCount( ListGraph<>( 2 , true ) ) , contract_violation );
  }
 
@@ -3347,35 +3501,36 @@ ADS_TEST( "collezioni-09-grafi-1-16" )
  const ListGraph<> P = makeGraph( 3 , { { 0 , 1 } , { 1 , 2 } } , false );
  CHECK( near( averageDistance( P , 1 ) , 1 ) );
  CHECK( near( averageDistance( P , 0 ) , 1.5 ) &&
-        near( averageDistance( P , 2 ) , 1.5 ) );
+	near( averageDistance( P , 2 ) , 1.5 ) );
  std::mt19937 g( 916 );
  for( int r = 0 ; r < 300 ; ++r ) {
   const int n = randInt( g , 2 , 30 );
   ListGraph< int > G( n , false );
-  for( int i = 1 ; i < n ; ++i ) G.insertEdge( randInt( g , 0 , i - 1 ) , i ,
-                                               1 );
+  for( int i = 1 ; i < n ; ++i )
+   G.insertEdge( randInt( g , 0 , i - 1 ) , i , 1 );
   for( int k = randInt( g , 0 , n ) ; k > 0 ; --k ) {
    const int u = randInt( g , 0 , n - 1 ) , v = randInt( g , 0 , n - 1 );
-   if( u != v ) G.insertEdge( u , v , 1 );
+   if( u != v )
+    G.insertEdge( u , v , 1 );
    }
   const auto R = floydWarshall( G );
   const int s = randInt( g , 0 , n - 1 );
-  const double e = std::accumulate( R.d[ s ].begin() , R.d[ s ].end() , 0.0 )
-                   / ( n - 1 );
+  const double e =
+    std::accumulate( R.d[ s ].begin() , R.d[ s ].end() , 0.0 ) / ( n - 1 );
   CHECK( near( averageDistance( G , s ) , e ) );
   }
  CHECK_THROWS( averageDistance( ListGraph<>( 1 , false ) , 0 ) ,
-               contract_violation );
+	       contract_violation );
  // two nodes (1), a star from its center (1) and from a leaf, and the
  // contracts: a graph not connected, s out of the graph
  CHECK( near( averageDistance( makeGraph( 2 , { { 0 , 1 } } , false ) , 1 ) ,
-              1 ) );
- const ListGraph<> star = makeGraph( 5 , { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } ,
-                                           { 0 , 4 } } , false );
+	      1 ) );
+ const ListGraph<> star =
+   makeGraph( 5 , { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } , { 0 , 4 } } , false );
  CHECK( near( averageDistance( star , 0 ) , 1 ) &&
-        near( averageDistance( star , 4 ) , ( 1 + 2 * 3 ) / 4.0 ) );
+	near( averageDistance( star , 4 ) , ( 1 + 2 * 3 ) / 4.0 ) );
  CHECK_THROWS( averageDistance( ListGraph<>( 2 , false ) , 0 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( averageDistance( star , 5 ) , contract_violation );
  }
 
@@ -3394,23 +3549,27 @@ std::pair< std::vector< int > , std::vector< std::vector< int > > >
 sccTrace( const G & g , const std::vector< int > & start )
 {
  DfsSchema< G > first( g );
- auto none = []( int , int , EdgeKind ) {};
+ auto none = []( int , int , EdgeKind ) { };
  for( int u : start )
-  if( first.dt( u ) == 0 ) first.visit( u , none );
+  if( first.dt( u ) == 0 )
+   first.visit( u , none );
  for( int u : g.V() )
-  if( first.dt( u ) == 0 ) first.visit( u , none );
+  if( first.dt( u ) == 0 )
+   first.visit( u , none );
  std::vector< int > ft( g.bound() , 0 ) , S = g.V();
- for( int u : S ) ft[ u ] = first.ft( u );
+ for( int u : S )
+  ft[ u ] = first.ft( u );
  std::sort( S.begin() , S.end() ,
-            [ & ]( int a , int b ) { return( ft[ a ] > ft[ b ] ); } );
+	    [ & ]( int a , int b ) { return( ft[ a ] > ft[ b ] ); } );
  const ListGraph<> T = transpose( g );
  std::vector< bool > visited( g.bound() , false );
  std::vector< std::vector< int > > comps;
  for( int u : S )
   if( ! visited[ u ] ) {
    comps.emplace_back();
-   dfs( T , u , visited , [ & ]( int v ) { comps.back().push_back( v ); } ,
-        []( int , int ) {} , []( int ) {} );
+   dfs(
+     T , u , visited , [ & ]( int v ) { comps.back().push_back( v ); } ,
+     []( int , int ) { } , []( int ) { } );
    std::sort( comps.back().begin() , comps.back().end() );
    }
  return( std::pair( ft , comps ) );
@@ -3423,15 +3582,27 @@ sccTrace( const G & g , const std::vector< int > & start )
 ADS_TEST( "collezioni-09-grafi-1-17" )
 {
  enum { a , b , c , d , e , f , g , h };
- const ListGraph<> G = makeGraph( 8 , { { a , b } , { a , e } , { b , c } ,
-                                        { b , f } , { c , f } , { c , d } ,
-                                        { c , h } , { c , g } , { d , h } ,
-                                        { e , f } , { e , a } , { f , b } ,
-                                        { g , h } , { h , d } } , true );
+ const ListGraph<> G = makeGraph( 8 ,
+				  { { a , b } ,
+				    { a , e } ,
+				    { b , c } ,
+				    { b , f } ,
+				    { c , f } ,
+				    { c , d } ,
+				    { c , h } ,
+				    { c , g } ,
+				    { d , h } ,
+				    { e , f } ,
+				    { e , a } ,
+				    { f , b } ,
+				    { g , h } ,
+				    { h , d } } ,
+				  true );
  const auto [ ft , comps ] = sccTrace( G , { b , a } );
  CHECK( ft == Ints( { 16 , 12 , 11 , 8 , 15 , 4 , 10 , 7 } ) );
- CHECK( comps == std::vector< Ints >( { { a , e } , { b , c , f } , { g } ,
-                                         { d , h } } ) );
+ CHECK( comps ==
+	std::vector< Ints >( { { a , e } , { b , c , f } , { g } ,
+			       { d , h } } ) );
  std::mt19937 rng( 917 );
  for( int r = 0 ; r < 300 ; ++r ) {
   const int n = randInt( rng , 1 , 20 );
@@ -3439,10 +3610,12 @@ ADS_TEST( "collezioni-09-grafi-1-17" )
   const auto C = sccTrace( R , {} ).second;
   const auto id = scc( R );
   std::vector< std::vector< int > > reach( n );
-  for( int u = 0 ; u < n ; ++u ) reach[ u ] = distance( R , u ).first;
+  for( int u = 0 ; u < n ; ++u )
+   reach[ u ] = distance( R , u ).first;
   std::vector< int > mine( n , -1 );
   for( std::size_t k = 0 ; k < C.size() ; ++k )
-   for( int u : C[ k ] ) mine[ u ] = int( k );
+   for( int u : C[ k ] )
+    mine[ u ] = int( k );
   for( int u = 0 ; u < n ; ++u )
    for( int v = 0 ; v < n ; ++v ) {
     const bool same = ( reach[ u ][ v ] != INF ) && ( reach[ v ][ u ] != INF );
@@ -3468,10 +3641,16 @@ int facebook3( const G & g )
   int c = 0;
   mark[ v ] = v;
   for( int u : g.adj( v ) )
-   if( mark[ u ] != v ) { mark[ u ] = v; ++c; }
+   if( mark[ u ] != v ) {
+    mark[ u ] = v;
+    ++c;
+    }
   for( int u : g.adj( v ) )
    for( int w : g.adj( u ) )
-    if( mark[ w ] != v ) { mark[ w ] = v; ++c; }
+    if( mark[ w ] != v ) {
+     mark[ w ] = v;
+     ++c;
+     }
   best = std::max( best , c );
   }
  return( best );
@@ -3489,21 +3668,24 @@ ADS_TEST( "collezioni-09-grafi-1-18" )
   for( int v = 0 ; v < n ; ++v ) {
    const auto d = distance( G , v ).first;
    e = std::max( e , int( std::count( d.begin() , d.end() , 1 ) +
-                          std::count( d.begin() , d.end() , 2 ) ) );
+			 std::count( d.begin() , d.end() , 2 ) ) );
    }
   CHECK( facebook3( G ) == e );
   }
  ListGraph<> star( 20 , false );
- for( int i = 1 ; i < 20 ; ++i ) star.insertEdge( 0 , i );
+ for( int i = 1 ; i < 20 ; ++i )
+  star.insertEdge( 0 , i );
  CHECK( facebook3( star ) == 19 && facebook3( ListGraph<>( 1 ) ) == 0 );
  // no node, a path (the middle sees four), a triangle (no node counted
  // twice)
  CHECK( facebook3( ListGraph<>( 0 , false ) ) == 0 );
  ListGraph<> path( 7 , false );
- for( int i = 1 ; i < 7 ; ++i ) path.insertEdge( i - 1 , i );
+ for( int i = 1 ; i < 7 ; ++i )
+  path.insertEdge( i - 1 , i );
  CHECK( facebook3( path ) == 4 );
  CHECK( facebook3( makeGraph( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } ,
-                              false ) ) == 2 );
+			      false ) ) ==
+	2 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3522,8 +3704,10 @@ bool hasGreenCycle( const G & g , const std::vector< bool > & green )
   state[ u ] = 1;
   for( int v : g.adj( u ) )
    if( green[ v ] ) {
-    if( state[ v ] == 1 ) return( true );
-    if( ( state[ v ] == 0 ) && rec( v ) ) return( true );
+    if( state[ v ] == 1 )
+     return( true );
+    if( ( state[ v ] == 0 ) && rec( v ) )
+     return( true );
     }
   state[ u ] = 2;
   return( false );
@@ -3546,26 +3730,29 @@ ADS_TEST( "collezioni-09-grafi-1-19" )
   const int n = randInt( g , 1 , 15 );
   const ListGraph<> G = randomGraph( g , n , 1.5 / n , true );
   std::vector< bool > green( n );
-  for( int u = 0 ; u < n ; ++u ) green[ u ] = randInt( g , 0 , 3 ) > 0;
+  for( int u = 0 ; u < n ; ++u )
+   green[ u ] = randInt( g , 0 , 3 ) > 0;
   ListGraph<> S( n , true );
   for( int u = 0 ; u < n ; ++u )
    for( int v : G.adj( u ) )
-    if( green[ u ] && green[ v ] ) S.insertEdge( u , v );
+    if( green[ u ] && green[ v ] )
+     S.insertEdge( u , v );
   const bool e = hasCycle( S );
   CHECK( hasGreenCycle( G , green ) == e );
   cycles += e;
   CHECK( ! hasGreenCycle( G , std::vector< bool >( n , false ) ) );
-  CHECK( hasGreenCycle( G , std::vector< bool >( n , true ) ) ==
-         hasCycle( G ) );
+  CHECK( hasGreenCycle( G ,
+			std::vector< bool >( n , true ) ) == hasCycle( G ) );
   }
  CHECK( cycles > 100 && cycles < 900 );
  // a 2-cycle green, with one end not green, a long green cycle; colors of
  // the wrong size refused
  const ListGraph<> two = makeGraph( 2 , { { 0 , 1 } , { 1 , 0 } } , true );
  CHECK( hasGreenCycle( two , { true , true } ) &&
-        ! hasGreenCycle( two , { true , false } ) );
+	! hasGreenCycle( two , { true , false } ) );
  ListGraph<> ring( 500 , true );
- for( int i = 0 ; i < 500 ; ++i ) ring.insertEdge( i , ( i + 1 ) % 500 );
+ for( int i = 0 ; i < 500 ; ++i )
+  ring.insertEdge( i , ( i + 1 ) % 500 );
  std::vector< bool > all( 500 , true );
  CHECK( hasGreenCycle( ring , all ) );
  all[ 250 ] = false;
@@ -3588,8 +3775,10 @@ sourcesSinks( const G & g )
  for( int u : g.V() )
   g.forEachAdj( u , [ & ]( int v ) { in[ v ] = true; } );
  for( int u : g.V() ) {
-  if( ! in[ u ] ) sources.push_back( u );
-  if( g.adj( u ).empty() ) sinks.push_back( u );
+  if( ! in[ u ] )
+   sources.push_back( u );
+  if( g.adj( u ).empty() )
+   sinks.push_back( u );
   }
  return( std::pair( sources , sinks ) );
  }
@@ -3605,21 +3794,26 @@ ADS_TEST( "collezioni-09-grafi-1-20" )
   std::vector< int > in( n , 0 ) , out( n , 0 ) , so , si;
   for( int u = 0 ; u < n ; ++u )
    for( int v = 0 ; v < n ; ++v )
-    if( ( u != v ) && G.hasEdge( u , v ) ) { ++out[ u ]; ++in[ v ]; }
+    if( ( u != v ) && G.hasEdge( u , v ) ) {
+     ++out[ u ];
+     ++in[ v ];
+     }
   for( int u = 0 ; u < n ; ++u ) {
-   if( in[ u ] == 0 ) so.push_back( u );
-   if( out[ u ] == 0 ) si.push_back( u );
+   if( in[ u ] == 0 )
+    so.push_back( u );
+   if( out[ u ] == 0 )
+    si.push_back( u );
    }
   CHECK( sourcesSinks( G ) == std::pair( so , si ) );
   }
  // a node alone is both, a 2-cycle has neither, a path has one of each
  using Ns = std::vector< int >;
  CHECK( sourcesSinks( ListGraph<>( 1 , true ) ) ==
-        std::pair( Ns( { 0 } ) , Ns( { 0 } ) ) );
+	std::pair( Ns( { 0 } ) , Ns( { 0 } ) ) );
  CHECK( sourcesSinks( makeGraph( 2 , { { 0 , 1 } , { 1 , 0 } } , true ) ) ==
-        std::pair( Ns() , Ns() ) );
+	std::pair( Ns() , Ns() ) );
  CHECK( sourcesSinks( makeGraph( 3 , { { 2 , 1 } , { 1 , 0 } } , true ) ) ==
-        std::pair( Ns( { 2 } ) , Ns( { 0 } ) ) );
+	std::pair( Ns( { 2 } ) , Ns( { 0 } ) ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3643,10 +3837,13 @@ ADS_TEST( "collezioni-09-grafi-1-21" )
   BTPtr t( randomTree( g , n , [ & ]() { return( next++ ); } ) );
   ListGraph<> G( n , false );
   pre_visit( t.get() , [ & ]( BT * u ) {
-   if( u->parent() ) G.insertEdge( u->parent()->read() , u->read() ); } );
+   if( u->parent() )
+    G.insertEdge( u->parent()->read() , u->read() );
+   } );
   int e = 0;
   for( int u = 0 ; u < n ; ++u )
-   for( int x : distance( G , u ).first ) e = std::max( e , x );
+   for( int x : distance( G , u ).first )
+    e = std::max( e , x );
   const auto [ h , d ] = treeDiameter( t.get() );
   CHECK( d == e && h == height( t.get() ) );
   }
@@ -3690,16 +3887,18 @@ ADS_TEST( "collezioni-09-grafi-1-22" )
    e += ( R.d[ s1 ][ u ] != INF ) && ( R.d[ s1 ][ u ] == R.d[ s2 ][ u ] );
   CHECK( sameDistance( G , s1 , s2 ) == e );
   int reach = 0;
-  for( int u = 0 ; u < n ; ++u ) reach += R.d[ s1 ][ u ] != INF;
+  for( int u = 0 ; u < n ; ++u )
+   reach += R.d[ s1 ][ u ] != INF;
   CHECK( sameDistance( G , s1 , s1 ) == reach );
   }
  // a node unreachable from both is not counted, an undirected path from
  // its two ends (only the middle when the length is even), nodes out of
  // the graph refused
  ListGraph<> path( 5 , false );
- for( int i = 1 ; i < 5 ; ++i ) path.insertEdge( i - 1 , i );
- CHECK( sameDistance( path , 0 , 4 ) == 1 &&
-        sameDistance( path , 0 , 3 ) == 0 );
+ for( int i = 1 ; i < 5 ; ++i )
+  path.insertEdge( i - 1 , i );
+ CHECK( sameDistance( path , 0 , 4 ) == 1 && sameDistance( path , 0 ,
+							   3 ) == 0 );
  CHECK( sameDistance( ListGraph<>( 3 , true ) , 0 , 1 ) == 0 );
  CHECK_THROWS( sameDistance( path , 0 , 5 ) , contract_violation );
  CHECK_THROWS( sameDistance( path , -1 , 0 ) , contract_violation );
@@ -3739,35 +3938,40 @@ ADS_TEST( "collezioni-10-heap-1-2" )
 {
  const std::vector< std::string > e = {
   "ORDINAMENTO" , "ORDITAMENNO" , "ORDNTAMEINO" , "ORMNTADEINO" ,
-  "OTMNRADEINO" , "TRMNOADEINO" , "ORMNOADEINT" , "ROMNOADEINT" ,
-  "NOMNOADEIRT" , "OOMNNADEIRT" , "IOMNNADEORT" , "ONMINADEORT" ,
-  "ENMINADOORT" , "NNMIEADOORT" , "DNMIEANOORT" , "NIMDEANOORT" ,
-  "AIMDENNOORT" , "MIADENNOORT" , "EIADMNNOORT" , "IEADMNNOORT" ,
-  "DEAIMNNOORT" , "EDAIMNNOORT" , "ADEIMNNOORT" , "DAEIMNNOORT" ,
-  "ADEIMNNOORT" };
+  "OTMNRADEINO" ,
+  "TRMNOADEINO" , "ORMNOADEINT" , "ROMNOADEINT" , "NOMNOADEIRT" ,
+  "OOMNNADEIRT" ,
+  "IOMNNADEORT" , "ONMINADEORT" , "ENMINADOORT" , "NNMIEADOORT" ,
+  "DNMIEANOORT" ,
+  "NIMDEANOORT" , "AIMDENNOORT" , "MIADENNOORT" , "EIADMNNOORT" ,
+  "IEADMNNOORT" ,
+  "DEAIMNNOORT" , "EDAIMNNOORT" , "ADEIMNNOORT" , "DAEIMNNOORT" , "ADEIMNNOORT"
+  };
  const auto T = heapsortTrace( "ORDINAMENTO" );
  CHECK( T.size() == e.size() + 1 && T.back() == e.back() );
  CHECK( std::equal( e.begin() , e.end() , T.begin() ) );
  std::mt19937 g( 102 );
  for( int r = 0 ; r < 500 ; ++r ) {
   std::string w( randInt( g , 0 , 30 ) , ' ' );
-  for( char & ch : w ) ch = char( 'A' + randInt( g , 0 , 5 ) );
+  for( char & ch : w )
+   ch = char( 'A' + randInt( g , 0 , 5 ) );
   std::vector< char > V( w.begin() , w.end() );
   heapsort( V );
   std::string s = w;
   std::sort( s.begin() , s.end() );
   CHECK( heapsortTrace( w ).back() == s &&
-         std::string( V.begin() , V.end() ) == s );
+	 std::string( V.begin() , V.end() ) == s );
   }
  std::vector< std::pair< int , char > > P = { { 1 , 'a' } , { 1 , 'b' } };
- heapsort( P , []( const auto & x , const auto & y ) {
-  return( x.first < y.first ); } );
- CHECK( P[ 0 ].second == 'b' );               // not stable
+ heapsort(
+   P ,
+   []( const auto & x , const auto & y ) { return( x.first < y.first ); } );
+ CHECK( P[ 0 ].second == 'b' );  // not stable
  // the empty word (only itself), one letter (no restore, no swap), two
  CHECK( heapsortTrace( "" ) == std::vector< std::string >( 1 , "" ) );
  CHECK( heapsortTrace( "Q" ) == std::vector< std::string >( 1 , "Q" ) );
  CHECK( heapsortTrace( "AB" ) ==
-        std::vector< std::string >( { "AB" , "BA" , "AB" , "AB" } ) );
+	std::vector< std::string >( { "AB" , "BA" , "AB" , "AB" } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3777,12 +3981,14 @@ ADS_TEST( "collezioni-10-heap-1-2" )
 /// the recursive maxHeapRestore() of the book, the oracle of the iterative
 /// one of the library
 void maxHeapRestoreRec( std::vector< int > & A , std::size_t i ,
-                        std::size_t dim )
+			std::size_t dim )
 {
  std::size_t max = i;
  const std::size_t l = 2 * i + 1 , r = 2 * i + 2;
- if( ( l < dim ) && ( A[ l ] > A[ max ] ) ) max = l;
- if( ( r < dim ) && ( A[ r ] > A[ max ] ) ) max = r;
+ if( ( l < dim ) && ( A[ l ] > A[ max ] ) )
+  max = l;
+ if( ( r < dim ) && ( A[ r ] > A[ max ] ) )
+  max = r;
  if( max != i ) {
   std::swap( A[ i ] , A[ max ] );
   maxHeapRestoreRec( A , max , dim );
@@ -3817,7 +4023,7 @@ ADS_TEST( "collezioni-10-heap-1-4" )
  // equal items (nothing moves), the root down a whole path, a leaf (no
  // child), a dim smaller than the vector (the rest untouched)
  Ints eq( 15 , 4 ) , path = { 0 , 9 , 8 , 7 , 6 , 5 , 4 } ,
-      cut = { 1 , 9 , 9 };
+   cut = { 1 , 9 , 9 };
  maxHeapRestore( eq , 0 , 15 );
  CHECK( eq == Ints( 15 , 4 ) );
  Ints rp = path;
@@ -3848,9 +4054,11 @@ ADS_TEST( "collezioni-10-heap-1-6-1" )
   Ints H = A;
   heapBuildByInsertion( H );
   HeapPriorityQueue< int , int > Q( std::max( int( A.size() ) , 1 ) );
-  for( int x : A ) Q.insert( x , -x );
+  for( int x : A )
+   Q.insert( x , -x );
   Ints q = Q.priorities();
-  for( int & x : q ) x = -x;
+  for( int & x : q )
+   x = -x;
   CHECK( H == q && isMaxHeap( H , H.size() ) );
   Ints s = A , t = H;
   std::sort( s.begin() , s.end() );
@@ -3933,9 +4141,9 @@ ADS_TEST( "collezioni-10-heap-1-7-2" )
  CHECK( kMerge( {} ).empty() && kMerge( { {} , {} } ).empty() );
  CHECK( kMerge( { { 1 , 5 } } ) == Ints( { 1 , 5 } ) );
  CHECK( kMerge( { { std::numeric_limits< int >::max() } ,
-                  { std::numeric_limits< int >::min() } } ) ==
-        Ints( { std::numeric_limits< int >::min() ,
-                std::numeric_limits< int >::max() } ) );
+		  { std::numeric_limits< int >::min() } } ) ==
+	Ints( { std::numeric_limits< int >::min() ,
+		std::numeric_limits< int >::max() } ) );
  CHECK_THROWS( kMerge( { { 2 , 1 } , { 0 } } ) , contract_violation );
  }
 
@@ -3962,7 +4170,8 @@ void maxHeapify3( std::vector< int > & A , std::size_t i , std::size_t n )
 {
  std::size_t max = i;
  for( std::size_t c = 3 * i + 1 ; ( c <= 3 * i + 3 ) && ( c < n ) ; ++c )
-  if( A[ c ] > A[ max ] ) max = c;
+  if( A[ c ] > A[ max ] )
+   max = c;
  if( max != i ) {
   std::swap( A[ i ] , A[ max ] );
   maxHeapify3( A , max , n );
@@ -3978,7 +4187,8 @@ int deleteMax3( std::vector< int > & A )
  const int top = A[ 0 ];
  A[ 0 ] = A.back();
  A.pop_back();
- if( ! A.empty() ) maxHeapify3( A , 0 , A.size() );
+ if( ! A.empty() )
+  maxHeapify3( A , 0 , A.size() );
  return( top );
  }
 
@@ -4007,11 +4217,12 @@ ADS_TEST( "collezioni-10-heap-1-8-2" )
 {
  for( I64 n = 1 ; n <= 100000 ; ++n ) {
   int level = 0;
-  for( long i = long( n - 1 ) ; i > 0 ; i = dary_parent( i , 3 ) ) ++level;
+  for( long i = long( n - 1 ) ; i > 0 ; i = dary_parent( i , 3 ) )
+   ++level;
   CHECK( ternaryHeight( n ) == level );
   }
  CHECK( ternaryHeight( 1 ) == 0 && ternaryHeight( 4 ) == 1 &&
-        ternaryHeight( 5 ) == 2 );
+	ternaryHeight( 5 ) == 2 );
  CHECK_THROWS( ternaryHeight( 0 ) , contract_violation );
  }
 
@@ -4028,7 +4239,10 @@ ADS_TEST( "collezioni-10-heap-1-8-3" )
   std::shuffle( A.begin() , A.end() , g );
   Ints H;
   DaryHeap< int , std::greater< int > , 3 > D;
-  for( int x : A ) { insert3( H , x ); D.push( x ); }
+  for( int x : A ) {
+   insert3( H , x );
+   D.push( x );
+   }
   Ints popped;
   while( ! H.empty() ) {
    CHECK( Ints( D.begin() , D.end() ) == H );
@@ -4108,15 +4322,18 @@ ADS_TEST( "collezioni-10-heap-1-10" )
 {
  for( int n = 0 ; n <= 7 ; ++n ) {
   int all = 1;
-  for( int i = 0 ; i < n ; ++i ) all *= 3;
+  for( int i = 0 ; i < n ; ++i )
+   all *= 3;
   for( int c = 0 ; c < all ; ++c ) {
    Ints A;
-   for( int x = c , i = 0 ; i < n ; ++i , x /= 3 ) A.push_back( x % 3 );
+   for( int x = c , i = 0 ; i < n ; ++i , x /= 3 )
+    A.push_back( x % 3 );
    for( int dim = 0 ; dim <= n ; ++dim ) {
     bool e = true;
     for( int i = 0 ; i < dim ; ++i )
      for( int ch : { 2 * i + 1 , 2 * i + 2 } )
-      if( ( ch < dim ) && ( A[ i ] < A[ ch ] ) ) e = false;
+      if( ( ch < dim ) && ( A[ i ] < A[ ch ] ) )
+       e = false;
     CHECK( isMaxHeap( A , dim ) == e );
     }
    }

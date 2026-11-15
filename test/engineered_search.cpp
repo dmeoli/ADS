@@ -63,14 +63,16 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a node of a search: its state and its cost
-struct Node {
+struct Node
+{
  std::uint64_t state;
  int g;
  };
@@ -91,11 +93,11 @@ ADS_TEST( "pointer-table-presize" )
  for( std::size_t n = 1 ; n < 100000 ; n = n * 3 + 1 ) {
   const std::size_t m = T::slotsFor( n );
   CHECK( std::has_single_bit( m ) && ( n * 10 <= m * 7 ) );
-  CHECK( ( m == 16 ) || ( n * 10 > ( m / 2 ) * 7 ) );   // the least one
+  CHECK( ( m == 16 ) || ( n * 10 > ( m / 2 ) * 7 ) );  // the least one
   }
  Arena< Node > N;
  for( std::size_t n : { std::size_t( 11 ) , std::size_t( 12 ) ,
-                        std::size_t( 700 ) , std::size_t( 5000 ) } ) {
+			std::size_t( 700 ) , std::size_t( 5000 ) } ) {
   T A( T::slotsFor( n ) );
   T R;
   R.reserve( n );
@@ -103,23 +105,23 @@ ADS_TEST( "pointer-table-presize" )
   const std::size_t ca = A.capacity();
   for( std::uint64_t s = 0 ; s < n ; ++s )
    for( T * t : { &A , &R } )
-    t->find_or_insert( s , splitmix64( s ) , [ & ]( void ) {
-     return( N.make( Node{ s , 0 } ) ); } );
+    t->find_or_insert( s , splitmix64( s ) ,
+		       [ & ]( void ) { return( N.make( Node{ s , 0 } ) ); } );
   CHECK( A.capacity() == ca && R.capacity() == T::slotsFor( n ) );
   CHECK( A.size() == n && R.size() == n );
-  R.reserve( 1 );                               // below the size: no change
+  R.reserve( 1 );  // below the size: no change
   CHECK( R.capacity() == T::slotsFor( n ) && R.size() == n );
   }
  const std::size_t n = test::scaled< std::size_t >( 200000 , 5000 );
- PointerTable< Node , StateEqual , HugePageAllocator< std::byte > >
-  H( T::slotsFor( n ) );
+ PointerTable< Node , StateEqual , HugePageAllocator< std::byte > > H(
+   T::slotsFor( n ) );
  const std::size_t c = H.capacity();
  std::vector< Node * > P( n );
- for( std::uint64_t s = 0 ; s < n ; ++s ) {     // the hashes of owner 3
-  const std::uint64_t h = ( splitmix64( s ) << 3 ) | 3;   // of 8
+ for( std::uint64_t s = 0 ; s < n ; ++s ) {  // the hashes of owner 3
+  const std::uint64_t h = ( splitmix64( s ) << 3 ) | 3;  // of 8
   H.prefetch( h );
-  const auto [ p , fresh ] = H.find_or_insert( s , h , [ & ]( void ) {
-   return( N.make( Node{ s , 3 } ) ); } );
+  const auto [ p , fresh ] = H.find_or_insert(
+    s , h , [ & ]( void ) { return( N.make( Node{ s , 3 } ) ); } );
   CHECK( fresh && p->state == s );
   P[ s ] = p;
   }
@@ -127,8 +129,11 @@ ADS_TEST( "pointer-table-presize" )
  for( std::uint64_t s = 0 ; s < n ; s += 7 ) {
   const std::uint64_t h = ( splitmix64( s ) << 3 ) | 3;
   CHECK( H.find( s , h ) == P[ s ] );
-  CHECK( ! H.find_or_insert( s , h , [ & ]( void ) {
-   return( static_cast< Node * >( nullptr ) ); } ).second );
+  CHECK(
+    ! H.find_or_insert(
+	 s , h ,
+	 [ & ]( void ) { return( static_cast< Node * >( nullptr ) ); } )
+	.second );
   }
  }
 
@@ -142,11 +147,12 @@ ADS_TEST( "indexed-heap-erase" )
  for( unsigned run = 0 ; run < 2 ; ++run ) {
   constexpr int n = 300;
   IndexedDaryHeap< int > H( n );
-  std::map< int , int > K;                       // id -> key
+  std::map< int , int > K;  // id -> key
   std::mt19937 g( 3 + run );
   auto least = [ & ]( void ) {
    int b = K.begin()->second;
-   for( const auto & e : K ) b = std::min( b , e.second );
+   for( const auto & e : K )
+    b = std::min( b , e.second );
    return( b );
    };
   for( int op = 0 ; op < 20000 ; ++op ) {
@@ -154,7 +160,10 @@ ADS_TEST( "indexed-heap-erase" )
    const int k = int( g() % 1000 ) - 500;
    const unsigned c = g() % 7;
    if( ! H.contains( id ) ) {
-    if( c < 5 ) { H.push( id , k ); K[ id ] = k; }
+    if( c < 5 ) {
+     H.push( id , k );
+     K[ id ] = k;
+     }
     }
    else if( c == 0 ) {
     const int d = std::min( k , K[ id ] );
@@ -166,10 +175,18 @@ ADS_TEST( "indexed-heap-erase" )
     H.increase( id , u );
     K[ id ] = u;
     }
-   else if( c == 2 ) { H.update( id , k ); K[ id ] = k; }
-   else if( c == 3 ) { H.update( id , K[ id ] ); }   // the same key
-   else if( c == 4 ) { H.erase( id ); K.erase( id ); }
-   else if( c == 5 ) {                         // the root itself
+   else if( c == 2 ) {
+    H.update( id , k );
+    K[ id ] = k;
+    }
+   else if( c == 3 ) {
+    H.update( id , K[ id ] );
+    }  // the same key
+   else if( c == 4 ) {
+    H.erase( id );
+    K.erase( id );
+    }
+   else if( c == 5 ) {  // the root itself
     const int r = H.top().id;
     H.erase( r );
     K.erase( r );
@@ -185,28 +202,31 @@ ADS_TEST( "indexed-heap-erase" )
     CHECK( H.key( H.top().id ) == H.top().key );
     }
    }
-  for( const auto & e : K ) CHECK( H.contains( e.first ) );
+  for( const auto & e : K )
+   CHECK( H.contains( e.first ) );
   }
- IndexedDaryHeap< int , 2 > B( 8 );            // the holes, by hand:
- for( int k : { 0 , 1 , 100 , 2 , 3 , 101 , 102 , 4 } )   // the places in
-  B.push( k < 100 ? k : k - 95 , k );           // the order of the pushes
- B.erase( 6 );                                  // the key 101: the last
- CHECK( B.key( 5 ) == 100 && B.size() == 7 );   // item, 4, goes up
+ IndexedDaryHeap< int , 2 > B( 8 );                // the holes, by hand:
+ for( int k : { 0 , 1 , 100 , 2 , 3 , 101 , 102 , 4 } )  // the places in
+  B.push( k < 100 ? k : k - 95 , k );              // the order of the pushes
+ B.erase( 6 );                                    // the key 101: the last
+ CHECK( B.key( 5 ) == 100 && B.size() == 7 );     // item, 4, goes up
  std::vector< int > O;
  IndexedDaryHeap< int , 2 > C = B;
- while( ! C.empty() ) O.push_back( C.pop().key );
+ while( ! C.empty() )
+  O.push_back( C.pop().key );
  CHECK( O == std::vector< int >( { 0 , 1 , 2 , 3 , 4 , 100 , 102 } ) );
- B.erase( 7 );                                  // the last item itself
- B.erase( 0 );                                  // the root: 100 sinks
+ B.erase( 7 );  // the last item itself
+ B.erase( 0 );  // the root: 100 sinks
  CHECK( B.top().id == 1 && B.size() == 5 );
- while( ! B.empty() ) B.erase( B.top().id );
+ while( ! B.empty() )
+  B.erase( B.top().id );
  CHECK( B.empty() );
  CHECK_THROWS( B.erase( 1 ) , contract_violation );
  CHECK_THROWS( B.update( 1 , 0 ) , contract_violation );
  B.push( 1 , 5 );
  CHECK_THROWS( B.increase( 1 , 4 ) , contract_violation );
  CHECK_THROWS( B.decrease( 1 , 6 ) , contract_violation );
- B.increase( 1 , 5 );                           // not less: allowed
+ B.increase( 1 , 5 );  // not less: allowed
  CHECK( B.key( 1 ) == 5 );
  B.erase( 1 );
  CHECK( B.empty() && ! B.contains( 1 ) );
@@ -222,7 +242,7 @@ ADS_TEST( "indexed-heap-grow" )
 {
  IndexedDaryHeap< int > H;
  CHECK( H.ids() == 0 && H.empty() );
- std::map< int , int > K;                        // id -> key
+ std::map< int , int > K;  // id -> key
  std::mt19937 g( 11 );
  for( int n = 0 ; n < 20000 ; ) {
   const int m = g() % 5 ? n + 1 : n + 1 + int( g() % 300 );
@@ -232,9 +252,9 @@ ADS_TEST( "indexed-heap-grow" )
    CHECK( ! H.contains( id ) );
   n = m;
   const int id = n - 1 , k = int( g() % 1000 );
-  H.push( id , k );                              // the new id
+  H.push( id , k );  // the new id
   K[ id ] = k;
-  const int o = int( g() % unsigned( n ) );      // an old one
+  const int o = int( g() % unsigned( n ) );  // an old one
   if( H.contains( o ) ) {
    const int d = std::min( K[ o ] , int( g() % 1000 ) );
    H.decrease( o , d );
@@ -247,13 +267,14 @@ ADS_TEST( "indexed-heap-grow" )
    }
   if( ! K.empty() ) {
    int b = K.begin()->second;
-   for( const auto & e : K ) b = std::min( b , e.second );
+   for( const auto & e : K )
+    b = std::min( b , e.second );
    CHECK( H.top().key == b );
    }
   }
  for( const auto & e : K )
   CHECK( H.contains( e.first ) && H.key( e.first ) == e.second );
- IndexedDaryHeap< int > G( 1 );                  // one id at a time
+ IndexedDaryHeap< int > G( 1 );  // one id at a time
  G.push( 0 , 5 );
  constexpr int N = 1 << 16;
  for( int n = 2 ; n <= N ; ++n ) {
@@ -262,7 +283,7 @@ ADS_TEST( "indexed-heap-grow" )
   }
  CHECK( G.size() == std::size_t( N ) && G.top().key == -( N - 1 ) );
  CHECK( G.key( 0 ) == 5 && G.key( N - 1 ) == N );
- G.grow( G.ids() );                              // the same range
+ G.grow( G.ids() );  // the same range
  CHECK( G.size() == std::size_t( N ) && G.ids() == N );
  CHECK_THROWS( G.grow( 5 ) , contract_violation );
  G.reset( 3 );
@@ -281,7 +302,7 @@ void pairingErase( unsigned seed )
 {
  using H = PairingHeap< int , int , Aux >;
  H Q;
- std::set< std::pair< int , int > > R;           // ( priority , id )
+ std::set< std::pair< int , int > > R;  // ( priority , id )
  std::unordered_map< int , typename H::Handle > h;
  std::unordered_map< int , int > p;
  std::mt19937 g( seed );
@@ -291,7 +312,7 @@ void pairingErase( unsigned seed )
   h.erase( id );
   p.erase( id );
   };
- auto any = [ & ]( void ) {                     // an id in the heap
+ auto any = [ & ]( void ) {  // an id in the heap
   auto it = h.begin();
   std::advance( it , g() % h.size() );
   return( it->first );
@@ -335,7 +356,7 @@ void pairingErase( unsigned seed )
    CHECK( Q.erase( h[ id ] ) == id );
    drop( id );
    }
-  else {                                        // the minimum, by handle
+  else {  // the minimum, by handle
    const int id = Q.min();
    CHECK( p[ id ] == R.begin()->first );
    if( g() % 2 ) {
@@ -349,22 +370,24 @@ void pairingErase( unsigned seed )
     }
    }
   CHECK( std::size_t( Q.size() ) == R.size() );
-  if( ! R.empty() ) CHECK( Q.minPriority() == R.begin()->first );
+  if( ! R.empty() )
+   CHECK( Q.minPriority() == R.begin()->first );
   }
- while( ! R.empty() ) {                         // emptied by erasures
+ while( ! R.empty() ) {  // emptied by erasures
   const int id = any();
   CHECK( Q.erase( h[ id ] ) == id );
   drop( id );
-  if( ! R.empty() ) CHECK( Q.minPriority() == R.begin()->first );
+  if( ! R.empty() )
+   CHECK( Q.minPriority() == R.begin()->first );
   }
  CHECK( Q.empty() );
- auto a = Q.insert( 1 , 10 );                    // one item: the root
+ auto a = Q.insert( 1 , 10 );  // one item: the root
  Q.increase( a , 20 );
  CHECK( Q.minPriority() == 20 );
  auto b = Q.insert( 2 , 5 );
  auto c = Q.insert( 3 , 30 );
- CHECK( Q.erase( b ) == 2 && Q.min() == 1 );    // the least
- CHECK( Q.erase( a ) == 1 && Q.min() == 3 );    // the root, alone
+ CHECK( Q.erase( b ) == 2 && Q.min() == 1 );  // the least
+ CHECK( Q.erase( a ) == 1 && Q.min() == 3 );  // the root, alone
  CHECK_THROWS( Q.increase( c , 29 ) , contract_violation );
  CHECK( Q.erase( c ) == 3 && Q.empty() );
  }
@@ -373,15 +396,15 @@ ADS_TEST( "pairing-heap-erase" )
 {
  pairingErase< false >( 1 );
  pairingErase< true >( 2 );
- PairingHeap< int , int , true > A;             // the root not the least
- auto r = A.insert( 0 , 50 );                   // the root
- auto x = A.insert( 1 , 10 );                   // the least, in the list
+ PairingHeap< int , int , true > A;  // the root not the least
+ auto r = A.insert( 0 , 50 );       // the root
+ auto x = A.insert( 1 , 10 );       // the least, in the list
  A.insert( 2 , 70 );
  CHECK( A.min() == 1 );
- CHECK( A.erase( r ) == 0 && A.min() == 1 );    // the list goes on
+ CHECK( A.erase( r ) == 0 && A.min() == 1 );  // the list goes on
  A.increase( x , 90 );
  CHECK( A.min() == 2 && A.size() == 2 );
- auto y = A.insert( 3 , 80 );                   // in the list, no child
+ auto y = A.insert( 3 , 80 );  // in the list, no child
  CHECK( A.erase( y ) == 3 && A.min() == 2 && A.size() == 2 );
  }
 
@@ -393,8 +416,8 @@ ADS_TEST( "indexed-heap-pair" )
 {
  constexpr int n = 200;
  IndexedHeapPair< std::pair< int , int > , int > Q( n );
- std::set< std::tuple< int , int , int > > SK;   // key , id
- std::set< std::pair< int , int > > SB;          // bound , id
+ std::set< std::tuple< int , int , int > > SK;  // key , id
+ std::set< std::pair< int , int > > SB;        // bound , id
  std::vector< std::pair< int , int > > key( n );
  std::vector< int > bound( n );
  std::mt19937 g( 11 );
@@ -404,7 +427,7 @@ ADS_TEST( "indexed-heap-pair" )
   };
  for( int op = 0 ; op < 20000 ; ++op ) {
   const int id = int( g() % n );
-  const std::pair< int , int > k( int( g() % 20 ) , - int( g() % 5 ) );
+  const std::pair< int , int > k( int( g() % 20 ) , -int( g() % 5 ) );
   const int b = int( g() % 30 );
   const unsigned c = g() % 6;
   if( ! Q.contains( id ) ) {
@@ -424,13 +447,18 @@ ADS_TEST( "indexed-heap-pair" )
    SK.emplace( k.first , k.second , id );
    SB.emplace( b , id );
    }
-  else if( c == 1 ) Q.update( id , key[ id ] , bound[ id ] );
-  else if( c == 2 ) { Q.erase( id ); out( id ); }
+  else if( c == 1 )
+   Q.update( id , key[ id ] , bound[ id ] );
+  else if( c == 2 ) {
+   Q.erase( id );
+   out( id );
+   }
   else if( ( c == 3 ) && ! Q.empty() ) {
    const int t = Q.pop();
-   CHECK( std::pair( key[ t ].first , key[ t ].second ) ==
-          std::pair( std::get< 0 >( *SK.begin() ) ,
-                     std::get< 1 >( *SK.begin() ) ) );
+   CHECK(
+     std::pair( key[ t ].first , key[ t ].second ) ==
+     std::pair( std::get< 0 >( *SK.begin() ) ,
+		std::get< 1 >( *SK.begin() ) ) );
    out( t );
    }
   else if( ! Q.empty() ) {
@@ -443,14 +471,14 @@ ADS_TEST( "indexed-heap-pair" )
    CHECK( Q.minBound() == SB.begin()->first );
    CHECK( Q.bound( Q.minBoundId() ) == Q.minBound() );
    CHECK( Q.topKey().first == std::get< 0 >( *SK.begin() ) &&
-          Q.topKey().second == std::get< 1 >( *SK.begin() ) );
+	  Q.topKey().second == std::get< 1 >( *SK.begin() ) );
    CHECK( Q.key( Q.top() ) == Q.topKey() );
    }
   }
  Q.clear();
  CHECK( Q.empty() );
- CHECK_THROWS( (void) Q.pop() , contract_violation );
- CHECK_THROWS( (void) Q.popMinBound() , contract_violation );
+ CHECK_THROWS( ( void )Q.pop() , contract_violation );
+ CHECK_THROWS( ( void )Q.popMinBound() , contract_violation );
  CHECK_THROWS( Q.erase( 3 ) , contract_violation );
  CHECK_THROWS( Q.update( 3 , { 0 , 0 } , 0 ) , contract_violation );
  Q.push( 3 , { 1 , 0 } , 9 );
@@ -458,7 +486,7 @@ ADS_TEST( "indexed-heap-pair" )
  CHECK_THROWS( Q.push( n , { 1 , 0 } , 9 ) , contract_violation );
  CHECK( Q.top() == 3 && Q.minBoundId() == 3 && Q.pop() == 3 );
  CHECK( Q.empty() );
- IndexedHeapPair< int > E( 0 );                 // no id at all
+ IndexedHeapPair< int > E( 0 );  // no id at all
  CHECK( E.empty() && E.ids() == 0 );
  }
 
@@ -476,12 +504,12 @@ ADS_TEST( "ordered-frontier" )
  int id = 0;
  for( int round = 0 ; round < 60 ; ++round ) {
   for( int i = 0 ; i < 200 ; ++i ) {
-   const Key k( int( g() % 50 ) , - int( g() % 10 ) , id++ );
+   const Key k( int( g() % 50 ) , -int( g() % 10 ) , id++ );
    CHECK( T.insert( k , 0 ) );
    R.insert( k );
    }
-  auto t = T.begin();                           // the first 64, every
-  auto r = R.begin();                           // third one erased
+  auto t = T.begin();  // the first 64, every
+  auto r = R.begin();  // third one erased
   for( int i = 0 ; ( i < 64 ) && ( t != T.end() ) ; ++i ) {
    CHECK( r != R.end() && ( *t ).first == *r );
    if( i % 3 == 0 ) {
@@ -494,19 +522,20 @@ ADS_TEST( "ordered-frontier" )
     }
    }
   CHECK( T.size() == R.size() );
-  if( round % 10 == 9 ) {                       // the last one
+  if( round % 10 == 9 ) {  // the last one
    auto l = std::ranges::prev( T.end() );
    CHECK( ( *l ).first == *R.rbegin() );
    CHECK( T.erase( l ) == T.end() );
    R.erase( std::prev( R.end() ) );
    }
-  const Key probe( int( g() % 50 ) , 1 , 0 );   // g = -1: no such key
+  const Key probe( int( g() % 50 ) , 1 , 0 );  // g = -1: no such key
   auto lb = T.lowerBound( probe );
   auto rb = R.lower_bound( probe );
   CHECK( ( lb == T.end() ) == ( rb == R.end() ) );
-  if( rb != R.end() ) CHECK( ( *lb ).first == *rb );
+  if( rb != R.end() )
+   CHECK( ( *lb ).first == *rb );
   }
- while( T.begin() != T.end() ) {                // all, from the least on
+ while( T.begin() != T.end() ) {  // all, from the least on
   CHECK( ( *T.begin() ).first == *R.begin() );
   T.erase( T.begin() );
   R.erase( R.begin() );
@@ -523,12 +552,13 @@ void packedArray( void )
  using P = PackedArray< B , S >;
  constexpr std::uint64_t M = P::MAX;
  std::mt19937_64 g( B );
- for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) ,
-                        P::PER - 1 , P::PER , P::PER + 1 ,
-                        3 * P::PER + 5 } ) {
-  P A( n , M );                                 // all ones but past n
+ for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) , P::PER - 1 ,
+			P::PER ,
+			P::PER + 1 , 3 * P::PER + 5 } ) {
+  P A( n , M );  // all ones but past n
   CHECK( A.size() == n && A.words().size() == ( n + P::PER - 1 ) / P::PER );
-  for( std::size_t i = 0 ; i < n ; ++i ) CHECK( A[ i ] == M );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   CHECK( A[ i ] == M );
   if( n % P::PER )
    CHECK( ( A.words().back() >> ( ( n % P::PER ) * B ) ) == 0 );
   std::vector< std::uint64_t > R( n , M );
@@ -538,13 +568,15 @@ void packedArray( void )
    CHECK( ! A.set( i , v ) );
    R[ i ] = v;
    }
-  for( std::size_t i = 0 ; i < n ; ++i ) CHECK( A.get( i ) == R[ i ] );
-  CHECK_THROWS( (void) A.get( n ) , contract_violation );
-  P C;                                          // the same, by push_back
-  for( std::uint64_t v : R ) C.push_back( v );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   CHECK( A.get( i ) == R[ i ] );
+  CHECK_THROWS( ( void )A.get( n ) , contract_violation );
+  P C;  // the same, by push_back
+  for( std::uint64_t v : R )
+   C.push_back( v );
   CHECK( C == A );
   }
- if constexpr( B < 32 ) {                       // a value too large
+ if constexpr( B < 32 ) {  // a value too large
   P A( 3 );
   if constexpr( S ) {
    CHECK( A.set( 1 , M + 1 ) && A.get( 1 ) == M && A.clamped() == 1 );
@@ -564,7 +596,7 @@ void packedArray( void )
  // the parallel construction, on executors of 1, 3 and 8 threads, equal
  // to the sequential one; the blocks of 2048 words make many of them
  const std::size_t n = test::scaled< std::size_t >( 2048 * P::PER * 9 + 3 ,
-                                                    4096 * P::PER / 64 + 3 );
+						    4096 * P::PER / 64 + 3 );
  auto f = [ & ]( std::size_t i ) {
   return( splitmix64( i ) % ( S && ( B < 32 ) ? 2 * M + 2 : M + 1 ) );
   };
@@ -581,9 +613,12 @@ void packedArray( void )
   ThreadPool pool( p );
   P W( pool , n , f );
   CHECK( W == Q && W.clamped() == Q.clamped() );
-  if constexpr( ! S && ( B < 32 ) )             // a value too large, in a
-   CHECK_THROWS( P( pool , n , [ & ]( std::size_t i ) {   // worker
-    return( i == n / 2 ? M + 1 : 0 ); } ) , contract_violation );
+  if constexpr( ! S && ( B < 32 ) )  // a value too large, in a
+   CHECK_THROWS( P( pool , n ,
+		    [ & ]( std::size_t i ) {  // worker
+		     return( i == n / 2 ? M + 1 : 0 );
+		     } ) ,
+		 contract_violation );
   }
  P Z( s , 0 , f );
  CHECK( Z.empty() && Z.words().empty() );
@@ -607,7 +642,7 @@ ADS_TEST( "packed-array" )
  packedArray< 4 , true >();
  packedArray< 8 , true >();
  packedArray< 32 , true >();
- CHECK( PackedArray< 2 >( 33 ).bytes() == 16 );   // 32 fields a word
+ CHECK( PackedArray< 2 >( 33 ).bytes() == 16 );  // 32 fields a word
  }
 
 // the trits, five to a byte: every length up to 12 against a vector on
@@ -620,39 +655,46 @@ ADS_TEST( "trit-array" )
  for( std::size_t n = 0 ; n <= 12 ; ++n ) {
   TritArray A( n , 2 );
   CHECK( A.size() == n && A.bytes() == ( n + 4 ) / 5 );
-  if( n >= 5 ) CHECK( A.data()[ 0 ] == 242 );
-  for( std::size_t i = 0 ; i < n ; ++i ) CHECK( A[ i ] == 2 );
+  if( n >= 5 )
+   CHECK( A.data()[ 0 ] == 242 );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   CHECK( A[ i ] == 2 );
   std::vector< unsigned > R( n , 2 );
   for( int k = 0 ; k < 100 && n ; ++k ) {
    const std::size_t i = g() % n;
    const unsigned v = g() % 3;
    A.set( i , v );
    R[ i ] = v;
-   for( std::size_t j = 0 ; j < n ; ++j ) CHECK( A.get( j ) == R[ j ] );
+   for( std::size_t j = 0 ; j < n ; ++j )
+    CHECK( A.get( j ) == R[ j ] );
    }
   TritArray C;
-  for( unsigned v : R ) C.push_back( v );
+  for( unsigned v : R )
+   C.push_back( v );
   CHECK( C == A );
-  CHECK_THROWS( (void) A.get( n ) , contract_violation );
+  CHECK_THROWS( ( void )A.get( n ) , contract_violation );
   }
  TritArray A( 4 );
  CHECK_THROWS( A.set( 0 , 3 ) , contract_violation );
  CHECK_THROWS( A.push_back( 3 ) , contract_violation );
  CHECK_THROWS( TritArray( 2 , 3 ) , contract_violation );
  CHECK( A.get( 0 ) == 0 && A.size() == 4 );
- const std::size_t n = test::scaled< std::size_t >( 16384 * 5 * 7 + 4 ,
-                                                    16384 * 2 + 4 );
+ const std::size_t n =
+   test::scaled< std::size_t >( 16384 * 5 * 7 + 4 , 16384 * 2 + 4 );
  auto f = []( std::size_t i ) { return( unsigned( splitmix64( i ) % 3 ) ); };
  TritArray Q;
- for( std::size_t i = 0 ; i < n ; ++i ) Q.push_back( f( i ) );
+ for( std::size_t i = 0 ; i < n ; ++i )
+  Q.push_back( f( i ) );
  CHECK( Q.bytes() * 5 >= n && Q.bytes() * 5 < n + 5 );
  Sequential s;
  CHECK( TritArray( s , n , f ) == Q );
  for( std::size_t p : { 1 , 3 , 8 } ) {
   ThreadPool pool( p );
   CHECK( TritArray( pool , n , f ) == Q );
-  CHECK_THROWS( TritArray( pool , n , [ & ]( std::size_t i ) {
-   return( i == n - 1 ? 3u : 0u ); } ) , contract_violation );
+  CHECK_THROWS(
+    TritArray( pool , n ,
+	       [ & ]( std::size_t i ) { return( i == n - 1 ? 3u : 0u ); } ) ,
+    contract_violation );
   }
  }
 
@@ -667,13 +709,13 @@ ADS_TEST( "zobrist-ranges" )
  const std::vector< int > V( S.begin() , S.end() );
  const std::uint64_t h = Z.hash( S );
  CHECK( h == Z.hash( V ) && h == Z.hash( std::span( S ) ) );
- std::uint64_t u = h;                           // the blank goes up
+ std::uint64_t u = h;  // the blank goes up
  u = Z.update( u , 8 , 0 , 6 );
  u = Z.update( u , 5 , 6 , 0 );
  std::swap( S[ 5 ] , S[ 8 ] );
  CHECK( u == Z.hash( S ) && u != h );
- CHECK_THROWS( (void) Z.hash( std::span( S ).first( 8 ) ) ,
-               contract_violation );
+ CHECK_THROWS( ( void )Z.hash( std::span( S ).first( 8 ) ) ,
+	       contract_violation );
  }
 
 // the steps of the backoff: S + 1 calls that spin, then yields, a reset
@@ -689,7 +731,7 @@ ADS_TEST( "backoff-threads" )
    b.pause();
    }
   CHECK( ! b.spinning() );
-  b.pause();                                     // a yield
+  b.pause();  // a yield
   CHECK( ! b.spinning() && b.step() == S + 1 );
   b.reset();
   CHECK( b.spinning() && b.step() == 0 );
@@ -711,7 +753,8 @@ ADS_TEST( "backoff-threads" )
   go.store( true , std::memory_order_release );
   } );
  s.join();
- for( auto & t : T ) t.join();
+ for( auto & t : T )
+  t.join();
  CHECK( done.load() == 4 );
  }
 
@@ -724,7 +767,7 @@ ADS_TEST( "affinity" )
  const std::vector< int > & C = affinityCpus();
  CHECK( std::is_sorted( C.begin() , C.end() ) );
  CHECK( std::adjacent_find( C.begin() , C.end() ) == C.end() );
- CHECK( &C == &affinityCpus() );                // computed once
+ CHECK( &C == &affinityCpus() );  // computed once
  if( C.empty() ) {
   CHECK( ! pinThread( 0 ) );
   return;
@@ -738,7 +781,8 @@ ADS_TEST( "affinity" )
    cpu = currentCpu();
    } );
   t.join();
-  if( ok ) CHECK( cpu == C[ i % C.size() ] );
+  if( ok )
+   CHECK( cpu == C[ i % C.size() ] );
   }
  }
 

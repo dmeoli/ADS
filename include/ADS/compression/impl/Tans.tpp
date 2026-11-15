@@ -16,25 +16,26 @@
 
 #include "ADS/compression/impl/Unaligned.h"
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
-inline constexpr int kTansLog = 11;                   ///< R
-inline constexpr std::uint32_t kTansStates =
- 1u << kTansLog;                                      ///< L
-inline constexpr std::size_t kTansWays = 4;           ///< the states
-inline constexpr std::size_t kTansStreams = 2;        ///< the streams
+inline constexpr int kTansLog = 11;                           ///< R
+inline constexpr std::uint32_t kTansStates = 1u << kTansLog;  ///< L
+inline constexpr std::size_t kTansWays = 4;                   ///< the states
+inline constexpr std::size_t kTansStreams = 2;                ///< the streams
 inline constexpr std::size_t kTansHead =
- 8 + 512 + 8 * kTansStreams;                          ///< header
+  8 + 512 + 8 * kTansStreams;  ///< header
 
 /// the symbol of each state, dealt by the step L / 2 + L / 8 + 3
-inline std::array< std::uint8_t , kTansStates > tansSpread(
-                               const std::array< std::uint32_t , 256 > & f )
+inline std::array< std::uint8_t , kTansStates >
+tansSpread( const std::array< std::uint32_t , 256 > & f )
 {
  std::array< std::uint8_t , kTansStates > sym{};
- constexpr std::uint32_t step = ( kTansStates >> 1 ) +
-                                ( kTansStates >> 3 ) + 3;
+ constexpr std::uint32_t step =
+   ( kTansStates >> 1 ) + ( kTansStates >> 3 ) + 3;
  std::uint32_t pos = 0;
  for( std::uint32_t s = 0 ; s < 256 ; ++s )
   for( std::uint32_t i = 0 ; i < f[ s ] ; ++i ) {
@@ -46,8 +47,8 @@ inline std::array< std::uint8_t , kTansStates > tansSpread(
 
 }  // end( namespace detail )
 
-inline std::vector< std::uint8_t > tansCompress(
-                                          std::span< const std::uint8_t > in )
+inline std::vector< std::uint8_t >
+tansCompress( std::span< const std::uint8_t > in )
 {
  using namespace detail;
  constexpr std::uint32_t L = kTansStates;
@@ -66,19 +67,25 @@ inline std::vector< std::uint8_t > tansCompress(
  // state X, ( X + delta_s ) >> 16, which bring X >> k into [ f_s , 2 f_s )
  const auto sym = tansSpread( f );
  std::array< std::uint32_t , 256 > cum{} , fill{};
- for( int s = 1 ; s < 256 ; ++s ) cum[ s ] = cum[ s - 1 ] + f[ s - 1 ];
+ for( int s = 1 ; s < 256 ; ++s )
+  cum[ s ] = cum[ s - 1 ] + f[ s - 1 ];
  std::array< std::uint16_t , L > next;
  for( std::uint32_t x = 0 ; x < L ; ++x )
   next[ cum[ sym[ x ] ] + fill[ sym[ x ] ]++ ] = std::uint16_t( L + x );
- struct Sym { std::uint32_t delta; std::int32_t find; };
+ struct Sym
+ {
+  std::uint32_t delta;
+  std::int32_t find;
+  };
  std::array< Sym , 256 > Y{};
  for( int s = 0 ; s < 256 ; ++s ) {
-  if( f[ s ] == 0 ) continue;
+  if( f[ s ] == 0 )
+   continue;
   if( f[ s ] == 1 )
    Y[ s ].delta = ( std::uint32_t( kTansLog ) << 16 ) - L;
   else {
    const std::uint32_t mb = std::uint32_t( kTansLog ) -
-                            std::uint32_t( std::bit_width( f[ s ] - 1 ) - 1 );
+			    std::uint32_t( std::bit_width( f[ s ] - 1 ) - 1 );
    Y[ s ].delta = ( mb << 16 ) - ( f[ s ] << mb );
    }
   Y[ s ].find = std::int32_t( cum[ s ] ) - std::int32_t( f[ s ] );
@@ -116,7 +123,7 @@ inline std::vector< std::uint8_t > tansCompress(
    put( X[ ( i - 1 ) % kTansWays ] , in[ a + i - 1 ] );
    flush();
    }
-  for( ; i > 0 ; i -= kTansWays ) {         // 4 symbols of 11 bits at most
+  for( ; i > 0 ; i -= kTansWays ) {  // 4 symbols of 11 bits at most
    for( std::size_t k = kTansWays ; k-- > 0 ; )
     put( X[ k ] , in[ a + i - kTansWays + k ] );
    flush();
@@ -126,7 +133,7 @@ inline std::vector< std::uint8_t > tansCompress(
    bits += kTansLog;
    flush();
    }
-  const std::size_t all = total + bits;    // the last byte, if partial
+  const std::size_t all = total + bits;  // the last byte, if partial
   bits += 7;
   flush();
   storeLE< std::uint64_t >( out.data() + 8 + 512 + 8 * g , all );
@@ -137,15 +144,16 @@ inline std::vector< std::uint8_t > tansCompress(
  return( out );
  }
 
-inline std::vector< std::uint8_t > tansDecompress(
-                                          std::span< const std::uint8_t > in )
+inline std::vector< std::uint8_t >
+tansDecompress( std::span< const std::uint8_t > in )
 {
  using namespace detail;
  constexpr std::uint32_t L = kTansStates;
  ADS_PRE( in.size() >= kTansHead + 8 );
  const std::size_t n = std::size_t( loadLE< std::uint64_t >( in.data() ) );
  std::vector< std::uint8_t > out( n );
- if( n == 0 ) return( out );
+ if( n == 0 )
+  return( out );
  std::array< std::uint32_t , 256 > f;
  std::uint32_t sum = 0;
  for( int s = 0 ; s < 256 ; ++s ) {
@@ -156,8 +164,8 @@ inline std::vector< std::uint8_t > tansDecompress(
  std::array< std::size_t , kTansStreams > total;
  std::size_t bytes = 0;
  for( std::size_t g = 0 ; g < kTansStreams ; ++g ) {
-  total[ g ] = std::size_t( loadLE< std::uint64_t >( in.data() + 8 + 512 +
-                                                     8 * g ) );
+  total[ g ] =
+    std::size_t( loadLE< std::uint64_t >( in.data() + 8 + 512 + 8 * g ) );
   bytes += ( total[ g ] + 7 ) / 8;
   ADS_PRE( total[ g ] >= kTansWays * kTansLog );
   }
@@ -169,26 +177,27 @@ inline std::vector< std::uint8_t > tansDecompress(
  std::array< std::uint32_t , 256 > cnt = f;
  for( std::uint32_t x = 0 ; x < L ; ++x ) {
   const std::uint32_t s = sym[ x ] , nx = cnt[ s ]++;
-  const std::uint32_t nb = std::uint32_t( kTansLog ) -
-                           std::uint32_t( std::bit_width( nx ) - 1 );
+  const std::uint32_t nb =
+    std::uint32_t( kTansLog ) - std::uint32_t( std::bit_width( nx ) - 1 );
   D[ x ] = s | ( nb << 8 ) | ( ( ( nx << nb ) - L ) << 16 );
   }
  // each stream read backward from its last bit: a word holds the 57 bits
  // or more below the place, refilled every 4 symbols (the bytes before the
  // stream pad the loads near its start); the two halves decoded together,
  // a round of 4 symbols of each in turn, so that their chains overlap
- struct Reader {
+ struct Reader
+ {
   const std::uint8_t * s0;
-  std::ptrdiff_t left;                      // the place less 8 base
+  std::ptrdiff_t left;  // the place less 8 base
   std::uint64_t w = 0;
-  std::ptrdiff_t base = 0;                  // the byte of the bit 0 of w
+  std::ptrdiff_t base = 0;  // the byte of the bit 0 of w
   void refill( void ) {
    const std::ptrdiff_t b = base + ( ( left - 57 ) >> 3 );
    left -= 8 * ( b - base );
    base = b;
    w = loadLE< std::uint64_t >( s0 + base );
    }
-  std::uint32_t read( unsigned k ) {        // the k bits below the place
+  std::uint32_t read( unsigned k ) {  // the k bits below the place
    left -= k;
    // left = 64 only for k = 0, whose mask is 0
    const std::uint64_t v = w >> ( unsigned( left ) & 63 );
@@ -206,7 +215,8 @@ inline std::vector< std::uint8_t > tansDecompress(
  std::array< Reader , kTansStreams > R{
   Reader{ in.data() + kTansHead , std::ptrdiff_t( total[ 0 ] ) } ,
   Reader{ in.data() + kTansHead + ( total[ 0 ] + 7 ) / 8 ,
-          std::ptrdiff_t( total[ 1 ] ) } };
+	  std::ptrdiff_t( total[ 1 ] ) }
+  };
  std::array< std::array< std::uint32_t , kTansWays > , kTansStreams > x;
  for( std::size_t g = 0 ; g < kTansStreams ; ++g ) {
   R[ g ].refill();
@@ -214,24 +224,24 @@ inline std::vector< std::uint8_t > tansDecompress(
    x[ g ][ k ] = R[ g ].read( kTansLog );
   R[ g ].refill();
   }
- auto step = [ & ]( Reader & r , std::uint32_t & y ) {   // a symbol
+ auto step = [ & ]( Reader & r , std::uint32_t & y ) {  // a symbol
   const std::uint32_t e = D[ y ];
   y = ( e >> 16 ) + r.read( ( e >> 8 ) & 0xFF );
   return( std::uint8_t( e ) );
   };
  const std::size_t len[ 2 ] = { h , n - h };
- const std::size_t common = std::min( len[ 0 ] , len[ 1 ] ) &
-                            ~std::size_t( 3 );
+ const std::size_t common = std::min( len[ 0 ] ,
+				      len[ 1 ] ) & ~std::size_t( 3 );
  std::size_t i = 0;
  for( ; i < common ; i += kTansWays ) {
   for( std::size_t g = 0 ; g < kTansStreams ; ++g ) {
    std::uint8_t * o = out.data() + ( g == 0 ? 0 : h ) + i;
-   for( std::size_t k = 0 ; k < kTansWays ; ++k ) o[ k ] = step( R[ g ] ,
-                                                                 x[ g ][ k ] );
+   for( std::size_t k = 0 ; k < kTansWays ; ++k )
+    o[ k ] = step( R[ g ] , x[ g ][ k ] );
    R[ g ].refill();
    }
   }
- for( std::size_t g = 0 ; g < kTansStreams ; ++g )   // the rest of each
+ for( std::size_t g = 0 ; g < kTansStreams ; ++g )  // the rest of each
   for( std::size_t j = i ; j < len[ g ] ; ++j ) {
    out[ ( g == 0 ? 0 : h ) + j ] = step( R[ g ] , x[ g ][ j % kTansWays ] );
    R[ g ].refill();

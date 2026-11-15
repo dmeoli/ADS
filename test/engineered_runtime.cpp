@@ -76,14 +76,15 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 #if defined( ADS_WITH_TBB )
 /// the threads that the tests of TBB may ask for, at most 4
 std::size_t tbbThreads( void )
 {
- return( std::clamp< std::size_t >( std::thread::hardware_concurrency() ,
-                                    1 , 4 ) );
+ return(
+   std::clamp< std::size_t >( std::thread::hardware_concurrency() , 1 , 4 ) );
  }
 #endif
 
@@ -118,19 +119,21 @@ void onEach( F && f )
  }
 
 /// a barrier of p workers that fails after 20 s instead of hanging
-class Meet {
+class Meet
+{
  public:
- explicit Meet( std::size_t p ) : f_p( p ) {}
+ explicit Meet( std::size_t p ) : f_p( p ) { }
  void wait( void ) {
   f_in.fetch_add( 1 );
-  const auto end = std::chrono::steady_clock::now() +
-                   std::chrono::seconds( 20 );
+  const auto end =
+    std::chrono::steady_clock::now() + std::chrono::seconds( 20 );
   while( f_in.load() < f_p ) {
    if( std::chrono::steady_clock::now() > end )
     throw( ADS::test::Failure( "the workers did not run together" ) );
    std::this_thread::yield();
    }
   }
+
  private:
  std::size_t f_p;
  std::atomic< std::size_t > f_in{ 0 };
@@ -146,7 +149,8 @@ std::uint64_t mix( std::uint64_t x )
  }
 
 /// a node of a random tree: its key and its depth
-struct Node {
+struct Node
+{
  std::uint64_t key;
  std::uint32_t depth;
  };
@@ -154,8 +158,7 @@ struct Node {
 /// the children of a node of the random tree of the seed: 0 to 3 of them
 /// above the depth d, none at d
 template< class F >
-void children( const Node & v , std::uint32_t d , std::uint64_t seed ,
-               F && f )
+void children( const Node & v , std::uint32_t d , std::uint64_t seed , F && f )
 {
  if( v.depth >= d )
   return;
@@ -200,8 +203,8 @@ ADS_TEST( "worker-run" )
  onEach( []( auto & ex ) {
   static_assert( WorkerExecutor< std::remove_reference_t< decltype( ex ) > > );
   const std::size_t P = workersOf( ex );
-  for( std::size_t p : { P , std::size_t( 1 ) , std::size_t( 0 ) ,
-                         ( P + 1 ) / 2 } )
+  for( std::size_t p :
+       { P , std::size_t( 1 ) , std::size_t( 0 ) , ( P + 1 ) / 2 } )
    for( int round = 0 ; round < 3 ; ++round ) {
     Meet meet( p );
     std::vector< std::atomic< int > > calls( p );
@@ -210,13 +213,15 @@ ADS_TEST( "worker-run" )
      calls[ i ].fetch_add( 1 );
      meet.wait();
      // a job nested in the worker, on the same executor
-     sums[ i ] = parallelReduce( ex , 0 , 5000 , 0L ,
-                                 [ & ]( std::size_t lo , std::size_t hi ) {
-                                  long s = 0;
-                                  for( std::size_t j = lo ; j < hi ; ++j )
-                                   s += long( j + i );
-                                  return( s ); } ,
-                                 std::plus<>() , 64 );
+     sums[ i ] = parallelReduce(
+       ex , 0 , 5000 , 0L ,
+       [ & ]( std::size_t lo , std::size_t hi ) {
+	long s = 0;
+	for( std::size_t j = lo ; j < hi ; ++j )
+	 s += long( j + i );
+	return( s );
+        } ,
+       std::plus<>() , 64 );
      } );
     for( std::size_t i = 0 ; i < p ; ++i ) {
      CHECK( calls[ i ].load() == 1 );
@@ -226,12 +231,14 @@ ADS_TEST( "worker-run" )
   if( P >= 2 ) {
    Meet meet( P );
    std::atomic< std::size_t > done{ 0 };
-   CHECK_THROWS( ex.run( P , [ & ]( std::size_t i ) {
-                  meet.wait();
-                  if( i == 1 )
-                   throw( std::runtime_error( "worker" ) );
-                  done.fetch_add( 1 );
-                  } ) , std::runtime_error );
+   CHECK_THROWS( ex.run( P ,
+			 [ & ]( std::size_t i ) {
+			  meet.wait();
+			  if( i == 1 )
+			   throw( std::runtime_error( "worker" ) );
+			  done.fetch_add( 1 );
+			  } ) ,
+		 std::runtime_error );
    CHECK( done.load() == P - 1 );
    }
   } );
@@ -266,7 +273,8 @@ ADS_TEST( "worker-locks" )
    other = lock.try_lock();
    if( other )
     lock.unlock();
-   } ).join();
+   } )
+    .join();
   CHECK( other );
   CHECK( lock.try_lock() );
   lock.unlock();
@@ -287,7 +295,7 @@ ADS_TEST( "worker-locks" )
   CHECK( taken.load() + skipped.load() == 20000L * long( p ) );
   CHECK( ( p > 1 ) || ( skipped.load() == 0 ) );
   } );
-}
+ }
 
 // the two loops of FastFlowExecutor, each built at its first call: bulk()
 // and run() in turn on an executor that spins, the spinning threads put to
@@ -358,7 +366,7 @@ ADS_TEST( "run-caller" )
    std::vector< char > nested( p , 0 ) , after( p , 1 );
    Meet meet( p );
    ex.run( p , [ & ]( std::size_t i ) {
-    meet.wait();                           // all at the same time
+    meet.wait();  // all at the same time
     caller[ i ] = isRunCaller() ? 1 : 0;
     const bool before = isRunCaller();
     Sequential s;
@@ -390,11 +398,13 @@ ADS_TEST( "run-caller" )
  CHECK( ! isRunCaller() );
  }
 
-namespace {
+namespace
+{
 
 /// a message of the tests of the channels: its sender, its receiver and
 /// its number among those of the pair
-struct Msg {
+struct Msg
+{
  std::uint32_t from = 0;
  std::uint32_t to = 0;
  std::uint64_t seq = 0;
@@ -417,14 +427,14 @@ void channelsAlone( C & c )
  auto port = c.port( 0 );
  CHECK( port.drain( [ & ]( Msg && x ) { CHECK( x.seq == next++ ); } ) == k );
  CHECK( next == k );
- CHECK( port.drain( []( Msg && ) {} ) == 0 );
+ CHECK( port.drain( []( Msg && ) { } ) == 0 );
  }
 
 /// p workers on a pool send random batches to random workers, retrying
 /// what a bounded family refuses and draining while they send, until each
 /// has received all its messages; the messages of each pair in order
-template< class C , class ... A >
-void channelsTraffic( std::size_t p , std::uint64_t seed , A ... args )
+template< class C , class... A >
+void channelsTraffic( std::size_t p , std::uint64_t seed , A... args )
 {
  C c( p , args... );
  const std::size_t N = 3000;
@@ -439,8 +449,8 @@ void channelsTraffic( std::size_t p , std::uint64_t seed , A ... args )
    }
   }
  ThreadPool pool( p );
- std::vector< std::vector< std::uint64_t > > seen( p ,
-                                   std::vector< std::uint64_t >( p , 0 ) );
+ std::vector< std::vector< std::uint64_t > > seen(
+   p , std::vector< std::uint64_t >( p , 0 ) );
  std::atomic< bool > bad{ false };
  pool.run( p , [ & ]( std::size_t me ) {
   std::mt19937_64 g( seed * 7 + me );
@@ -464,15 +474,15 @@ void channelsTraffic( std::size_t p , std::uint64_t seed , A ... args )
     }
    std::size_t sent = 0;
    while( sent < batch.size() ) {
-    sent += c.tryPush( me , to , std::span< const Msg >( batch ).subspan(
-                                                                 sent ) );
+    sent +=
+      c.tryPush( me , to , std::span< const Msg >( batch ).subspan( sent ) );
     c.drain( me , take );
     }
    if( b == 0 )
     c.drain( me , take );
    }
-  const auto end = std::chrono::steady_clock::now() +
-                   std::chrono::seconds( 20 );
+  const auto end =
+    std::chrono::steady_clock::now() + std::chrono::seconds( 20 );
   while( got < expect[ me ] ) {
    if( c.drain( me , take ) == 0 ) {
     if( std::chrono::steady_clock::now() > end ) {
@@ -493,8 +503,8 @@ void channelsTraffic( std::size_t p , std::uint64_t seed , A ... args )
  }
 
 /// the tests of a family, with the arguments of its constructor
-template< class C , class ... A >
-void channelsFamily( A ... args )
+template< class C , class... A >
+void channelsFamily( A... args )
 {
  static_assert( ChannelFamily< C > );
  {
@@ -534,8 +544,8 @@ ADS_TEST( "channels" )
  CHECK( mesh.tryPush( 0 , 1 , std::span< const Msg >( five ) ) == 2 );
  CHECK( mesh.tryPush( 0 , 1 , std::span< const Msg >( five ) ) == 0 );
  CHECK( mesh.tryPush( 1 , 1 , std::span< const Msg >( five ) ) == 2 );
- CHECK( mesh.drain( 1 , []( Msg && ) {} ) == 4 );
- CHECK( mesh.drain( 0 , []( Msg && ) {} ) == 0 );
+ CHECK( mesh.drain( 1 , []( Msg && ) { } ) == 4 );
+ CHECK( mesh.drain( 0 , []( Msg && ) { } ) == 0 );
  }
 
 // the tree of tasks 1 .. L, each task t with the children 2t and 2t + 1,
@@ -554,41 +564,56 @@ ADS_TEST( "feedback-farm" )
   for( std::size_t w : { std::size_t( 0 ) , ff ? P : P - 1 } ) {
    const long L = 5000;
    long sum = 0 , results = 0;
-   feedbackFarm< long , long >( ex , w ,
-    []( auto emit ) { emit( 1L ); } ,
-    [ & ]( long r , auto emit ) {
-     sum += r;
-     ++results;
-     if( 2 * r <= L )
-      emit( 2 * r );
-     if( 2 * r + 1 <= L )
-      emit( 2 * r + 1 );
-     return( true ); } ,
-    []( long t ) { return( t ); } );
+   feedbackFarm< long , long >(
+     ex , w , []( auto emit ) { emit( 1L ); } ,
+     [ & ]( long r , auto emit ) {
+      sum += r;
+      ++results;
+      if( 2 * r <= L )
+       emit( 2 * r );
+      if( 2 * r + 1 <= L )
+       emit( 2 * r + 1 );
+      return( true );
+      } ,
+     []( long t ) { return( t ); } );
    CHECK( results == L );
    CHECK( sum == L * ( L + 1 ) / 2 );
    // no task
    bool called = false;
-   feedbackFarm< long , long >( ex , w , []( auto ) {} ,
-    [ & ]( long , auto ) { called = true; return( true ); } ,
-    []( long t ) { return( t ); } );
+   feedbackFarm< long , long >(
+     ex , w , []( auto ) { } ,
+     [ & ]( long , auto ) {
+      called = true;
+      return( true );
+      } ,
+     []( long t ) { return( t ); } );
    CHECK( ! called );
    // stopped after K results, with many tasks left
    const long K = 37;
    results = 0;
-   feedbackFarm< long , long >( ex , w ,
-    []( auto emit ) { for( long t = 0 ; t < 1000 ; ++t ) emit( t ); } ,
-    [ & ]( long , auto ) { return( ++results < K ); } ,
-    []( long t ) { return( t + 1 ); } );
+   feedbackFarm< long , long >(
+     ex , w ,
+     []( auto emit ) {
+      for( long t = 0 ; t < 1000 ; ++t )
+       emit( t );
+      } ,
+     [ & ]( long , auto ) { return( ++results < K ); } ,
+     []( long t ) { return( t + 1 ); } );
    CHECK( results == K );
    // an exception of a worker
-   CHECK_THROWS( ( feedbackFarm< long , long >( ex , w ,
-    []( auto emit ) { for( long t = 0 ; t < 100 ; ++t ) emit( t ); } ,
-    []( long , auto ) { return( true ); } ,
-    []( long t ) -> long {
-     if( t == 42 )
-      throw( std::runtime_error( "work" ) );
-     return( t ); } ) ) , std::runtime_error );
+   CHECK_THROWS( ( feedbackFarm< long , long >(
+		   ex , w ,
+		   []( auto emit ) {
+		    for( long t = 0 ; t < 100 ; ++t )
+		     emit( t );
+		    } ,
+		   []( long , auto ) { return( true ); } ,
+		   []( long t ) -> long {
+		    if( t == 42 )
+		     throw( std::runtime_error( "work" ) );
+		    return( t );
+		    } ) ) ,
+		 std::runtime_error );
    }
   } );
  }
@@ -623,27 +648,31 @@ ADS_TEST( "farm-indices" )
    std::atomic< bool > bad{ false };
    const long L = 3000;
    long sum = 0;
-   feedbackFarm< long , long >( ex , w ,
-    [ & ]( auto emit , std::size_t i ) {
-     index = i;
-     master = std::this_thread::get_id();
-     masterCaller = isRunCaller();
-     emit( 1L ); } ,
-    [ & ]( long r , auto emit ) {
-     sum += r;
-     if( 2 * r <= L )
-      emit( 2 * r );
-     if( 2 * r + 1 <= L )
-      emit( 2 * r + 1 );
-     return( true ); } ,
-    [ & ]( long t , std::size_t i ) {
-     if( i >= slots )
-      bad.store( true );
-     else {
-      std::lock_guard< std::mutex > g( m );
-      who[ i ].insert( std::this_thread::get_id() );
-      }
-     return( t ); } );
+   feedbackFarm< long , long >(
+     ex , w ,
+     [ & ]( auto emit , std::size_t i ) {
+      index = i;
+      master = std::this_thread::get_id();
+      masterCaller = isRunCaller();
+      emit( 1L );
+      } ,
+     [ & ]( long r , auto emit ) {
+      sum += r;
+      if( 2 * r <= L )
+       emit( 2 * r );
+      if( 2 * r + 1 <= L )
+       emit( 2 * r + 1 );
+      return( true );
+      } ,
+     [ & ]( long t , std::size_t i ) {
+      if( i >= slots )
+       bad.store( true );
+      else {
+       std::lock_guard< std::mutex > g( m );
+       who[ i ].insert( std::this_thread::get_id() );
+       }
+      return( t );
+      } );
    CHECK( ! bad.load() );
    CHECK( sum == L * ( L + 1 ) / 2 );
    CHECK( index == w );
@@ -658,7 +687,7 @@ ADS_TEST( "farm-indices" )
    if( w == 0 ) {
     CHECK( masterCaller );
     CHECK( ( used == 1 ) &&
-           ( *who[ 0 ].begin() == std::this_thread::get_id() ) );
+	   ( *who[ 0 ].begin() == std::this_thread::get_id() ) );
     }
    else {
     CHECK( all.count( master ) == 0 );
@@ -671,15 +700,16 @@ ADS_TEST( "farm-indices" )
   } );
  }
 
-namespace {
+namespace
+{
 
 /// the random tree of the seed explored by the p workers of ex over the
 /// mailbox of the channels C with batches of b messages, each node sent to
 /// the worker that owns its key; every worker checks, when it sees the
 /// end, that all the nodes were explored
-template< class C , class E , class ... A >
+template< class C , class E , class... A >
 void mailboxTree( E & ex , std::size_t p , std::size_t b , std::uint32_t d ,
-                  std::uint64_t seed , bool root , A ... args )
+		  std::uint64_t seed , bool root , A... args )
 {
  const std::uint64_t n = root ? treeSize( d , seed ) : 0;
  Mailbox< Node , C > mb( p , b , args... );
@@ -690,7 +720,7 @@ void mailboxTree( E & ex , std::size_t p , std::size_t b , std::uint32_t d ,
   if( root && ( ownerOf( seed , p ) == me ) )
    stack.push_back( Node{ seed , 0 } );
   unsigned k = 0;
-  for( ;; ) {
+  for( ; ; ) {
    mb.poll( me , [ & ]( Node && v ) { stack.push_back( v ); } );
    if( ! stack.empty() ) {
     for( int j = 0 ; ( j < 16 ) && ! stack.empty() ; ++j ) {
@@ -727,7 +757,7 @@ void mailboxTree( E & ex , std::size_t p , std::size_t b , std::uint32_t d ,
   }
  CHECK( sent == received );
  // nothing is left after a termination
- CHECK( mb.leftovers( []( Node && ) {} ) == 0 );
+ CHECK( mb.leftovers( []( Node && ) { } ) == 0 );
  }
 
 /// the random tree of the seed explored by the p workers of a pool over the
@@ -736,14 +766,15 @@ void mailboxTree( E & ex , std::size_t p , std::size_t b , std::uint32_t d ,
 /// after `delay` microseconds, racing with the sends; every message sent
 /// is handed once, by a poll or by leftovers(), as the counts and the sums
 /// of the keys of the sends tell
-template< class C , class ... A >
+template< class C , class... A >
 void mailboxStop( std::size_t p , std::size_t b , std::uint64_t seed ,
-                  long limit , long delay , A ... args )
+		  long limit ,
+		  long delay , A... args )
 {
  const std::uint32_t d = 14;
  Mailbox< Node , C > mb( p , b , args... );
  std::atomic< std::uint64_t > sends{ 0 } , sendSum{ 0 } , polls{ 0 } ,
-                              pollSum{ 0 };
+   pollSum{ 0 };
  ThreadPool pool( p );
  std::thread stopper;
  if( delay >= 0 )
@@ -802,11 +833,12 @@ void mailboxStop( std::size_t p , std::size_t b , std::uint64_t seed ,
  std::uint64_t left = 0 , leftSum = 0;
  const std::size_t got = mb.leftovers( [ & ]( Node && v ) {
   ++left;
-  leftSum += mix( v.key ); } );
+  leftSum += mix( v.key );
+  } );
  CHECK( got == left );
  CHECK( sends.load() == polls.load() + left );
  CHECK( sendSum.load() == pollSum.load() + leftSum );
- CHECK( mb.leftovers( []( Node && ) {} ) == 0 );
+ CHECK( mb.leftovers( []( Node && ) { } ) == 0 );
  std::uint64_t pushed = 0 , received = 0;
  for( std::size_t i = 0 ; i < p ; ++i ) {
   pushed += mb.sent( i );
@@ -818,8 +850,8 @@ void mailboxStop( std::size_t p , std::size_t b , std::uint64_t seed ,
 
 /// the stops of a family on 1, 2 and 4 workers, batches of 1 and 16, by a
 /// worker after few and many nodes, at once, and by another thread
-template< class C , class ... A >
-void stopFamily( A ... args )
+template< class C , class... A >
+void stopFamily( A... args )
 {
  for( std::size_t p : { 1 , 2 , 4 } )
   for( std::size_t b : { 1 , 16 } ) {
@@ -832,8 +864,8 @@ void stopFamily( A ... args )
 
 /// the trees of a family on pools of 1, 2 and 4 workers, batches of 1, 7
 /// and 64, with no root and with random roots
-template< class C , class ... A >
-void mailboxFamily( A ... args )
+template< class C , class... A >
+void mailboxFamily( A... args )
 {
  for( std::size_t p : { 1 , 2 , 4 } ) {
   ThreadPool pool( p );
@@ -852,28 +884,30 @@ void mailboxFamily( A ... args )
 /// workers active, or only the owner of the root; every third phase is
 /// stopped by the worker 0 after a few nodes, and its messages recovered by
 /// leftovers() before the mailbox is rearmed
-template< class C , class ... A >
-void mailboxPhases( std::size_t p , std::size_t b , A ... args )
+template< class C , class... A >
+void mailboxPhases( std::size_t p , std::size_t b , A... args )
 {
  const std::uint32_t d = 11;
  const int phases = 12;
  Mailbox< Node , C > mb( p , b , args... );
  std::atomic< std::uint64_t > done{ 0 } , sends{ 0 } , sendSum{ 0 } ,
-                              polls{ 0 } , pollSum{ 0 };
+   polls{ 0 } ,
+   pollSum{ 0 };
  int phase = 0 , bad = 0;
  auto stopped = []( int t ) { return( t % 3 == 2 ); };
  auto seed = []( int t ) { return( std::uint64_t( t + 1 ) ); };
- auto check = [ & ]( void ) noexcept {      // the phase, by one thread
+ auto check = [ & ]( void ) noexcept {  // the phase, by one thread
   std::uint64_t left = 0 , leftSum = 0;
   mb.leftovers( [ & ]( Node && v ) {
    ++left;
-   leftSum += mix( v.key ); } );
+   leftSum += mix( v.key );
+   } );
   if( stopped( phase ) )
    bad += ! mb.stopped() || ( sends != polls + left ) ||
-          ( sendSum != pollSum + leftSum );
+	  ( sendSum != pollSum + leftSum );
   else
    bad += mb.stopped() || ( left != 0 ) || ( sends != polls ) ||
-          ( sendSum != pollSum ) || ( done != treeSize( d , seed( phase ) ) );
+	  ( sendSum != pollSum ) || ( done != treeSize( d , seed( phase ) ) );
   done = sends = sendSum = polls = pollSum = 0;
   const std::size_t owner = ownerOf( seed( ++phase ) , p );
   if( phase % 2 )
@@ -898,7 +932,7 @@ void mailboxPhases( std::size_t p , std::size_t b , A ... args )
      ks += mix( v.key );
      stack.push_back( v );
      };
-    for( ;; ) {
+    for( ; ; ) {
      mb.poll( me , take );
      if( ! stack.empty() && ! mb.stopped() ) {
       for( int j = 0 ; ( j < 16 ) && ! stack.empty() ; ++j ) {
@@ -906,16 +940,16 @@ void mailboxPhases( std::size_t p , std::size_t b , A ... args )
        stack.pop_back();
        ++x;
        if( ( me == 0 ) && stopped( t ) && ( ++work == 40 ) )
-        mb.stop();
+	mb.stop();
        children( v , d , seed( t ) , [ & ]( Node c ) {
-        const std::size_t o = ownerOf( c.key , p );
-        if( o == me )
-         stack.push_back( c );
-        else {
-         ++n;
-         s += mix( c.key );
-         mb.send( me , o , c );
-         }
+	const std::size_t o = ownerOf( c.key , p );
+	if( o == me )
+	 stack.push_back( c );
+	else {
+	 ++n;
+	 s += mix( c.key );
+	 mb.send( me , o , c );
+	 }
         } );
        }
       spin = 0;
@@ -975,7 +1009,7 @@ ADS_TEST( "mailbox-stop" )
  for( std::size_t i = 0 ; i < 3 ; ++i ) {
   CHECK( mb.quiescent( i ) );
   mb.send( i , ( i + 1 ) % 3 , Node{ i , 0 } );
-  CHECK( mb.poll( i , []( Node && ) {} ) == 0 );
+  CHECK( mb.poll( i , []( Node && ) { } ) == 0 );
   CHECK( ! mb.flush( i ) );
   CHECK( mb.sent( i ) == 0 );
   }
@@ -998,7 +1032,7 @@ ADS_TEST( "mailbox-full" )
   mb.send( 0 , 1 , k );
  CHECK( ( mb.sent( 0 ) == 2 ) && ( mb.batches( 0 ) == 1 ) );
  for( std::uint64_t k = 4 ; k < 8 ; ++k )
-  mb.send( 0 , 1 , k );                    // a push at 6 left, refused
+  mb.send( 0 , 1 , k );  // a push at 6 left, refused
  CHECK( ( mb.sent( 0 ) == 2 ) && ( mb.batches( 0 ) == 1 ) );
  CHECK( ! mb.flush( 0 ) );
  CHECK( ! mb.quiescent( 0 ) );
@@ -1011,7 +1045,7 @@ ADS_TEST( "mailbox-full" )
   }
  CHECK( rounds == 2 );
  CHECK( ( mb.sent( 0 ) == 8 ) && ( mb.batches( 0 ) == 4 ) );
- CHECK( ! mb.quiescent( 0 ) );             // passive, two on their way
+ CHECK( ! mb.quiescent( 0 ) );  // passive, two on their way
  CHECK( ! mb.terminated() );
  CHECK( mb.poll( 1 , take ) == 2 );
  CHECK( mb.quiescent( 1 ) && mb.quiescent( 0 ) && mb.terminated() );
@@ -1019,7 +1053,7 @@ ADS_TEST( "mailbox-full" )
  for( std::size_t i = 0 ; i < got.size() ; ++i )
   CHECK( got[ i ] == i );
  CHECK( mb.received( 1 ) == 8 );
- CHECK( mb.leftovers( []( std::uint64_t && ) {} ) == 0 );
+ CHECK( mb.leftovers( []( std::uint64_t && ) { } ) == 0 );
  }
 
 // one mailbox for a sequence of computations: the phases of mailboxPhases
@@ -1039,50 +1073,53 @@ ADS_TEST( "mailbox-rearm" )
    mailboxPhases< MeshChannels< Node > >( p , b , std::size_t( 1024 ) );
    }
  Mailbox< std::uint64_t > mb( 2 , 4 );
- auto none = []( std::uint64_t && ) {};
- mb.send( 0 , 1 , 7 );                        // in the outbox
+ auto none = []( std::uint64_t && ) { };
+ mb.send( 0 , 1 , 7 );  // in the outbox
  CHECK_THROWS( mb.rearm() , contract_violation );
- CHECK( ! mb.quiescent( 0 ) );                // pushed, 0 passive
- CHECK_THROWS( mb.rearm() , contract_violation );   // 1 active
+ CHECK( ! mb.quiescent( 0 ) );                    // pushed, 0 passive
+ CHECK_THROWS( mb.rearm() , contract_violation );  // 1 active
  CHECK( mb.poll( 1 , none ) == 1 );
  CHECK( mb.quiescent( 1 ) && mb.quiescent( 0 ) && mb.terminated() );
  mb.rearm( []( std::size_t me ) { return( me == 1 ); } );
- CHECK( ! mb.terminated() && ! mb.quiescent( 0 ) );   // 0 passive
+ CHECK( ! mb.terminated() && ! mb.quiescent( 0 ) );  // 0 passive
  mb.send( 1 , 0 , 8 );
  CHECK( mb.flush( 1 ) && ! mb.quiescent( 0 ) );
- CHECK( mb.poll( 0 , none ) == 1 );          // 0 active by receiving
+ CHECK( mb.poll( 0 , none ) == 1 );  // 0 active by receiving
  CHECK( ! mb.quiescent( 0 ) );
  CHECK( mb.quiescent( 1 ) && mb.terminated() );
  mb.rearm();
  mb.send( 0 , 1 , 9 );
  CHECK( mb.flush( 0 ) );
- mb.stop();                                   // 9 left in the inbox of 1
+ mb.stop();  // 9 left in the inbox of 1
  CHECK_THROWS( mb.rearm() , contract_violation );
- mb.rearm();                                  // the audit took it
+ mb.rearm();  // the audit took it
  CHECK( ! mb.stopped() && ( mb.leftovers( none ) == 0 ) );
  mb.send( 1 , 0 , 10 );
  mb.stop();
- CHECK( mb.leftovers( none ) == 1 );          // from the outbox of 1
+ CHECK( mb.leftovers( none ) == 1 );  // from the outbox of 1
  mb.rearm();
  CHECK( ! mb.stopped() && ! mb.terminated() && ! mb.quiescent( 0 ) );
  CHECK( mb.quiescent( 1 ) && mb.terminated() );
  CHECK( ( mb.sent( 0 ) == 2 ) && ( mb.sent( 1 ) == 1 ) &&
-        ( mb.received( 0 ) == 1 ) && ( mb.received( 1 ) == 1 ) );
+	( mb.received( 0 ) == 1 ) && ( mb.received( 1 ) == 1 ) );
  }
 
-namespace {
+namespace
+{
 
 /// a message of the shortest paths: a relaxation of the vertex v to the
 /// distance d, or a probe of v (kind 1), whose order with the relaxations
 /// of v the merge keeps
-struct Label {
+struct Label
+{
  std::uint32_t v;
  std::uint64_t d;
  std::uint8_t kind;
  };
 
 /// the key of a label, its vertex
-struct LabelHead {
+struct LabelHead
+{
  std::uint32_t operator()( const Label & x ) const { return( x.v ); }
  };
 
@@ -1105,8 +1142,8 @@ using LabelBox = Mailbox< Label , C , CoalesceBy< LabelHead , M > >;
 constexpr std::uint64_t kFar = ~std::uint64_t( 0 );
 
 /// a random digraph of n vertices, 1 to 4 arcs out of each, of costs 1 to 9
-using Arcs = std::vector< std::vector< std::pair< std::uint32_t ,
-                                                  std::uint64_t > > >;
+using Arcs =
+  std::vector< std::vector< std::pair< std::uint32_t , std::uint64_t > > >;
 
 Arcs randomArcs( std::uint32_t n , std::uint64_t seed )
 {
@@ -1141,9 +1178,10 @@ std::vector< std::uint64_t > dijkstra( const Arcs & a , std::uint32_t s )
  }
 
 /// what a worker of the shortest paths counts
-struct PathCounts {
- std::uint64_t sends = 0;     ///< the calls of send()
- std::uint64_t taken = 0;     ///< the messages handed by poll()
+struct PathCounts
+{
+ std::uint64_t sends = 0;  ///< the calls of send()
+ std::uint64_t taken = 0;  ///< the messages handed by poll()
  };
 
 /// the loop of the worker me of p over the mailbox mb of labels, the
@@ -1153,8 +1191,8 @@ struct PathCounts {
 /// vertices (never if negative); every seventh send is followed by a probe
 template< class MB , class Lower , class Dist >
 PathCounts pathWorker( MB & mb , const Arcs & a , std::uint32_t s ,
-                       std::size_t me , long stop , Lower && lower ,
-                       Dist && dist )
+		       std::size_t me , long stop , Lower && lower ,
+		       Dist && dist )
 {
  const std::size_t p = mb.size();
  PathCounts c;
@@ -1168,7 +1206,7 @@ PathCounts pathWorker( MB & mb , const Arcs & a , std::uint32_t s ,
   if( ( x.kind == 0 ) && lower( x.v , x.d ) )
    stack.push_back( x.v );
   };
- for( ;; ) {
+ for( ; ; ) {
   mb.poll( me , take );
   if( ! stack.empty() && ! mb.stopped() ) {
    for( int j = 0 ; ( j < 16 ) && ! stack.empty() ; ++j ) {
@@ -1206,25 +1244,27 @@ PathCounts pathWorker( MB & mb , const Arcs & a , std::uint32_t s ,
 /// same as Dijkstra's, and every message sent handed once or merged; with
 /// a stop by the worker 0, every message sent handed once, by a poll or by
 /// leftovers(), or merged; the merges, summed into *merged
-template< class C , class M = void , class ... A >
+template< class C , class M = void , class... A >
 void coalescedPaths( std::size_t p , std::size_t b , std::uint64_t seed ,
-                     long stop , std::uint64_t * merged , A ... args )
+		     long stop , std::uint64_t * merged , A... args )
 {
  const std::uint32_t n = 400;
  const Arcs a = randomArcs( n , seed );
  const auto ref = dijkstra( a , 0 );
  LabelBox< C , M > mb( p , b , args... );
- std::vector< std::uint64_t > d( n , kFar );   // d[ v ] of its owner only
+ std::vector< std::uint64_t > d( n , kFar );  // d[ v ] of its owner only
  std::atomic< std::uint64_t > sends{ 0 } , taken{ 0 };
  ThreadPool pool( p );
  pool.run( p , [ & ]( std::size_t me ) {
-  const PathCounts c = pathWorker( mb , a , 0 , me , stop ,
-   [ & ]( std::uint32_t v , std::uint64_t x ) {
-    if( x >= d[ v ] )
-     return( false );
-    d[ v ] = x;
-    return( true ); } ,
-   [ & ]( std::uint32_t v ) { return( d[ v ] ); } );
+  const PathCounts c = pathWorker(
+    mb , a , 0 , me , stop ,
+    [ & ]( std::uint32_t v , std::uint64_t x ) {
+     if( x >= d[ v ] )
+      return( false );
+     d[ v ] = x;
+     return( true );
+     } ,
+    [ & ]( std::uint32_t v ) { return( d[ v ] ); } );
   sends += c.sends;
   taken += c.taken;
   } );
@@ -1234,7 +1274,7 @@ void coalescedPaths( std::size_t p , std::size_t b , std::uint64_t seed ,
   pushed += mb.sent( i );
   m += mb.merged( i );
   }
- const std::uint64_t left = mb.leftovers( []( Label && ) {} );
+ const std::uint64_t left = mb.leftovers( []( Label && ) { } );
  CHECK( got == taken.load() );
  CHECK( sends.load() == got + left + m );
  CHECK( pushed <= sends.load() - m );
@@ -1249,30 +1289,31 @@ void coalescedPaths( std::size_t p , std::size_t b , std::uint64_t seed ,
 /// the paths of a family on 1, 2 and 4 workers, batches of 1, 16 and 64,
 /// to the end and stopped after few and many vertices, by the map M (void
 /// for the default); some merge
-template< class C , class M = void , class ... A >
-void coalescedFamily( A ... args )
+template< class C , class M = void , class... A >
+void coalescedFamily( A... args )
 {
  std::uint64_t merged = 0;
  for( std::size_t p : { 1 , 2 , 4 } )
   for( std::size_t b : { 1 , 16 , 64 } )
    for( std::uint64_t seed : { 1 , 2 } ) {
-    coalescedPaths< C , M >( p , b , seed , -1 , & merged , args... );
+    coalescedPaths< C , M >( p , b , seed , -1 , &merged , args... );
     for( long stop : { 1L , 30L } )
-     coalescedPaths< C , M >( p , b , seed + 10 , stop , & merged ,
-                              args... );
+     coalescedPaths< C , M >( p , b , seed + 10 , stop , &merged , args... );
     }
  CHECK( merged > 0 );
  }
 
 /// the distance of a vertex as an observer keeps it, incrementally: the
 /// state of the consumer
-struct LeastLabel {
+struct LeastLabel
+{
  std::vector< std::uint64_t > d;
  void on( const Label & e ) { d[ e.v ] = std::min( d[ e.v ] , e.d ); }
  };
 
 /// the distances recomputed from scratch from all the labels seen
-struct LabelLog {
+struct LabelLog
+{
  std::size_t n = 0;
  std::vector< Label > log;
  void on( const Label & e ) { log.push_back( e ); }
@@ -1295,8 +1336,8 @@ struct LabelLog {
 /// only Dijkstra's sees, the phase 3 is stopped, its messages recovered by
 /// leftovers() and audited by the shadow alone, which holds; the others
 /// are kept as they are, and the audit holds
-template< class C , class ... A >
-void auditedPhases( std::size_t p , std::size_t b , A ... args )
+template< class C , class... A >
+void auditedPhases( std::size_t p , std::size_t b , A... args )
 {
  const std::uint32_t n = 300;
  const int phases = 6;
@@ -1314,8 +1355,7 @@ void auditedPhases( std::size_t p , std::size_t b , A ... args )
  auto source = []( int t ) { return( std::uint32_t( 7 * t ) ); };
  auto stopped = []( int t ) { return( t == 3 ); };
  auto both = []( auto & o ) {
-  if constexpr( std::is_same_v< std::decay_t< decltype( o ) > ,
-                                LeastLabel > )
+  if constexpr( std::is_same_v< std::decay_t< decltype( o ) > , LeastLabel > )
    return( o.d );
   else
    return( o.distances() );
@@ -1328,11 +1368,11 @@ void auditedPhases( std::size_t p , std::size_t b , A ... args )
     return( false );
   return( true );
   };
- auto check = [ & ]( void ) noexcept {      // the phase, by one thread
+ auto check = [ & ]( void ) noexcept {  // the phase, by one thread
   bool fired = false;
   try {
    if( stopped( phase ) ) {
-    mb.leftovers( []( Label && ) {} );
+    mb.leftovers( []( Label && ) { } );
     mb.audit( [ & ]( std::size_t me ) { return( sd[ me ].agree( both ) ); } );
     }
    else {
@@ -1347,7 +1387,8 @@ void auditedPhases( std::size_t p , std::size_t b , A ... args )
     if( phase == 2 )
      sd[ o ].on( Label{ v , ref[ v ] - 1 , 0 } );
     mb.audit( [ & ]( std::size_t me ) {
-     return( sd[ me ].agree( both ) && exact( me ) ); } );
+     return( sd[ me ].agree( both ) && exact( me ) );
+     } );
     }
    }
   catch( const contract_violation & ) {
@@ -1372,9 +1413,8 @@ void auditedPhases( std::size_t p , std::size_t b , A ... args )
      sd[ me ].on( Label{ v , x , 0 } );
      return( true );
      };
-    pathWorker( mb , a , source( t ) , me , stopped( t ) ? 25 : -1 ,
-                lower , [ & ]( std::uint32_t v ) {
-                 return( inc[ me ].d[ v ] ); } );
+    pathWorker( mb , a , source( t ) , me , stopped( t ) ? 25 : -1 , lower ,
+		[ & ]( std::uint32_t v ) { return( inc[ me ].d[ v ] ); } );
     sync.arrive_and_wait();
     }
    } );
@@ -1401,35 +1441,35 @@ void coalescedUnit( void )
  std::vector< Label > got;
  auto take = [ & ]( Label && x ) { got.push_back( x ); };
  auto is = [ & ]( std::size_t i , std::uint32_t v , std::uint64_t d ,
-                  std::uint8_t k ) {
+		  std::uint8_t k ) {
   return( ( got[ i ].v == v ) && ( got[ i ].d == d ) &&
-          ( got[ i ].kind == k ) );
+	   ( got[ i ].kind == k ) );
   };
  {
   LabelBox< LockedChannels< Label > , M > mb( 2 , 4 );
   mb.send( 0 , 1 , Label{ 5 , 10 , 0 } , lowest );
-  mb.send( 0 , 1 , Label{ 5 , 7 , 0 } , lowest );    // merged
+  mb.send( 0 , 1 , Label{ 5 , 7 , 0 } , lowest );  // merged
   mb.send( 0 , 1 , Label{ 6 , 3 , 0 } , lowest );
-  mb.send( 0 , 1 , Label{ 5 , 0 , 1 } , lowest );    // a probe, kept
+  mb.send( 0 , 1 , Label{ 5 , 0 , 1 } , lowest );  // a probe, kept
   CHECK( ( mb.merged( 0 ) == 1 ) && ( mb.sent( 0 ) == 0 ) );
-  mb.send( 0 , 1 , Label{ 5 , 3 , 0 } , lowest );    // after the probe
-  CHECK( mb.sent( 0 ) == 4 );                        // pushed, 4 messages
-  mb.send( 0 , 1 , Label{ 5 , 2 , 0 } , lowest );    // the map is empty
+  mb.send( 0 , 1 , Label{ 5 , 3 , 0 } , lowest );  // after the probe
+  CHECK( mb.sent( 0 ) == 4 );                 // pushed, 4 messages
+  mb.send( 0 , 1 , Label{ 5 , 2 , 0 } , lowest );  // the map is empty
   mb.send( 0 , 1 , Label{ 5 , 1 , 0 } , lowest );
-  mb.send( 0 , 1 , Label{ 6 , 9 , 0 } );             // unknown to the map
+  mb.send( 0 , 1 , Label{ 6 , 9 , 0 } );  // unknown to the map
   mb.send( 0 , 1 , Label{ 6 , 8 , 0 } , lowest );
   mb.send( 0 , 1 , Label{ 6 , 4 , 0 } ,
-           []( Label & q , const Label & x ) { q.d += x.d; } );
+	   []( Label & q , const Label & x ) { q.d += x.d; } );
   CHECK( mb.merged( 0 ) == 3 );
   CHECK( mb.flush( 0 ) );
   CHECK( mb.poll( 1 , take ) == 7 );
   CHECK( got.size() == 7 );
   CHECK( is( 0 , 5 , 7 , 0 ) && is( 1 , 6 , 3 , 0 ) && is( 2 , 5 , 0 , 1 ) &&
-         is( 3 , 5 , 3 , 0 ) && is( 4 , 5 , 1 , 0 ) && is( 5 , 6 , 9 , 0 ) &&
-         is( 6 , 6 , 12 , 0 ) );
+	 is( 3 , 5 , 3 , 0 ) && is( 4 , 5 , 1 , 0 ) && is( 5 , 6 , 9 , 0 ) &&
+	 is( 6 , 6 , 12 , 0 ) );
   CHECK( ( mb.sent( 0 ) == 7 ) && ( mb.received( 1 ) == 7 ) );
   CHECK( ! mb.quiescent( 0 ) && mb.quiescent( 1 ) && mb.quiescent( 0 ) &&
-         mb.terminated() );
+	 mb.terminated() );
   // after a stop the merges go on in the outbox, and leftovers() hands
   // what they left and empties the map
   mb.rearm();
@@ -1440,7 +1480,7 @@ void coalescedUnit( void )
   CHECK( mb.leftovers( take ) == 1 );
   CHECK( is( 0 , 2 , 4 , 0 ) && ( mb.merged( 1 ) == 1 ) );
   mb.rearm();
-  mb.send( 1 , 0 , Label{ 2 , 8 , 0 } , lowest );   // no stale place
+  mb.send( 1 , 0 , Label{ 2 , 8 , 0 } , lowest );  // no stale place
   CHECK( mb.flush( 1 ) );
   got.clear();
   CHECK( ( mb.poll( 0 , take ) == 1 ) && is( 0 , 2 , 8 , 0 ) );
@@ -1451,25 +1491,25 @@ void coalescedUnit( void )
   for( std::uint32_t v = 1 ; v <= 4 ; ++v )
    mb.send( 0 , 1 , Label{ v , 10 * v , 0 } , lowest );
   CHECK( mb.sent( 0 ) == 2 );
-  mb.send( 0 , 1 , Label{ 3 , 5 , 0 } , lowest );    // places shifted
+  mb.send( 0 , 1 , Label{ 3 , 5 , 0 } , lowest );  // places shifted
   CHECK( mb.merged( 0 ) == 0 );
-  mb.send( 0 , 1 , Label{ 3 , 4 , 0 } , lowest );    // into the last 3
+  mb.send( 0 , 1 , Label{ 3 , 4 , 0 } , lowest );  // into the last 3
   CHECK( mb.merged( 0 ) == 1 );
   mb.send( 0 , 1 , Label{ 5 , 50 , 0 } , lowest );
   mb.send( 0 , 1 , Label{ 6 , 60 , 0 } , lowest );
-  mb.send( 0 , 1 , Label{ 7 , 70 , 0 } , lowest );   // 6: a push refused
+  mb.send( 0 , 1 , Label{ 7 , 70 , 0 } , lowest );  // 6: a push refused
   CHECK( mb.sent( 0 ) == 2 );
-  mb.send( 0 , 1 , Label{ 5 , 1 , 0 } , lowest );    // the map was kept
+  mb.send( 0 , 1 , Label{ 5 , 1 , 0 } , lowest );  // the map was kept
   CHECK( mb.merged( 0 ) == 2 );
   got.clear();
   while( ! mb.flush( 0 ) )
    mb.poll( 1 , take );
   mb.poll( 1 , take );
   CHECK( got.size() == 8 );
-  CHECK( is( 0 , 1 , 10 , 0 ) && is( 1 , 2 , 20 , 0 ) &&
-         is( 2 , 3 , 30 , 0 ) && is( 3 , 4 , 40 , 0 ) &&
-         is( 4 , 3 , 4 , 0 ) && is( 5 , 5 , 1 , 0 ) &&
-         is( 6 , 6 , 60 , 0 ) && is( 7 , 7 , 70 , 0 ) );
+  CHECK( is( 0 , 1 , 10 , 0 ) && is( 1 , 2 , 20 , 0 ) && is( 2 , 3 , 30 ,
+							     0 ) &&
+	 is( 3 , 4 , 40 , 0 ) && is( 4 , 3 , 4 , 0 ) && is( 5 , 5 , 1 , 0 ) &&
+	 is( 6 , 6 , 60 , 0 ) && is( 7 , 7 , 70 , 0 ) );
   CHECK( ( mb.sent( 0 ) == 8 ) && ( mb.received( 1 ) == 8 ) );
   }
  }
@@ -1479,12 +1519,10 @@ ADS_TEST( "mailbox-coalesce" )
  using Dense = DenseHashMap< std::uint32_t , std::size_t >;
  using Flat = FlatHashTable< std::uint32_t , std::size_t >;
  static_assert( MailboxCoalescing< NoCoalescing , Label > &&
-                MailboxCoalescing< CoalesceBy< LabelHead > , Label > &&
-                MailboxCoalescing< CoalesceBy< LabelHead , Dense > ,
-                                   Label > &&
-                MailboxCoalescing< CoalesceBy< LabelHead , Flat > ,
-                                   Label > &&
-                ! MailboxCoalescing< CoalesceBy< LabelHead > , int > );
+		MailboxCoalescing< CoalesceBy< LabelHead > , Label > &&
+		MailboxCoalescing< CoalesceBy< LabelHead , Dense > , Label > &&
+		MailboxCoalescing< CoalesceBy< LabelHead , Flat > , Label > &&
+		! MailboxCoalescing< CoalesceBy< LabelHead > , int > );
  coalescedUnit< void >();
  coalescedUnit< Dense >();
  coalescedUnit< Flat >();
@@ -1503,11 +1541,11 @@ ADS_TEST( "mailbox-coalesce-paths" )
  coalescedFamily< MeshChannels< Label > >( std::size_t( 2 ) );
  coalescedFamily< MeshChannels< Label > >( std::size_t( 1024 ) );
  coalescedFamily< MeshChannels< Label > ,
-                  DenseHashMap< std::uint32_t , std::size_t > >(
-  std::size_t( 2 ) );
+		  DenseHashMap< std::uint32_t , std::size_t > >(
+   std::size_t( 2 ) );
  coalescedFamily< MeshChannels< Label > ,
-                  FlatHashTable< std::uint32_t , std::size_t > >(
-  std::size_t( 2 ) );
+		  FlatHashTable< std::uint32_t , std::size_t > >(
+   std::size_t( 2 ) );
  }
 
 // the audit at a quiescent point: the phases of auditedPhases on every
@@ -1525,25 +1563,25 @@ ADS_TEST( "mailbox-audit" )
    auditedPhases< MeshChannels< Label > >( p , b , std::size_t( 2 ) );
    }
  Mailbox< std::uint64_t > mb( 2 , 4 );
- auto none = []( std::uint64_t && ) {};
+ auto none = []( std::uint64_t && ) { };
  auto yes = []( void ) { return( true ); };
- mb.send( 0 , 1 , 7 );                        // in the outbox
+ mb.send( 0 , 1 , 7 );  // in the outbox
  CHECK_THROWS( mb.audit( yes ) , contract_violation );
- CHECK( ! mb.quiescent( 0 ) );                // pushed, 1 active
+ CHECK( ! mb.quiescent( 0 ) );  // pushed, 1 active
  CHECK_THROWS( mb.audit( yes ) , contract_violation );
  CHECK( mb.poll( 1 , none ) == 1 );
  CHECK( mb.quiescent( 1 ) && mb.quiescent( 0 ) );
  mb.audit( yes );
  mb.audit( []( std::size_t me ) { return( me < 2 ); } );
  CHECK_THROWS( mb.audit( []( void ) { return( false ); } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( mb.audit( []( std::size_t me ) { return( me == 0 ); } ) ,
-               contract_violation );
+	       contract_violation );
  mb.rearm();
  mb.send( 0 , 1 , 9 );
  CHECK( mb.flush( 0 ) );
- mb.stop();                                   // 9 left in the inbox of 1
- CHECK_THROWS( mb.audit( yes ) , contract_violation );   // drains it
+ mb.stop();  // 9 left in the inbox of 1
+ CHECK_THROWS( mb.audit( yes ) , contract_violation );  // drains it
  mb.audit( yes );
  }
 
@@ -1558,20 +1596,21 @@ ADS_TEST( "owner-of" )
   CHECK( ownerOf( k , 1 ) == 0 );
   }
  CHECK( used.size() == 7 );
- CHECK( ownerOf( 10 , 4 , []( int k ) { return( std::size_t( k * 3 ) ); } )
-        == 2 );
+ CHECK( ownerOf( 10 , 4 , []( int k ) { return( std::size_t( k * 3 ) ); } ) ==
+	2 );
  }
 
-namespace {
+namespace
+{
 
 /// the frontier of a best-first search of the nodes of the random tree
 using Frontier = StealingFrontier< std::uint64_t , Node >;
 
 /// the counts of a search on a frontier
-struct Counts {
- std::atomic< std::uint64_t > pushed{ 0 } , popped{ 0 } , sum{ 0 } ,
-                              seen{ 0 };
- std::atomic< bool > up{ true };            // the keys of each worker
+struct Counts
+{
+ std::atomic< std::uint64_t > pushed{ 0 } , popped{ 0 } , sum{ 0 } , seen{ 0 };
+ std::atomic< bool > up{ true };  // the keys of each worker
  };
 
 /// the best-first search of the random tree of depth d on the frontier F
@@ -1580,7 +1619,7 @@ struct Counts {
 /// `boom`
 template< class E >
 void search( E & ex , Frontier & F , std::uint32_t d , std::uint64_t seed ,
-             bool root , Counts & c , long limit = -1 , bool boom = false )
+	     bool root , Counts & c , long limit = -1 , bool boom = false )
 {
  if( root ) {
   F.push( 0 , 0 , Node{ seed , 0 } );
@@ -1651,7 +1690,7 @@ ADS_TEST( "stealing-frontier" )
    CHECK( c.pushed.load() == c.popped.load() );
    CHECK( c.sum.load() == treeSum( d , seed ) );
    CHECK( ( p > 1 ) || c.up.load() );
-   CHECK( F.leftovers( []( Frontier::Entry && ) {} ) == 0 );
+   CHECK( F.leftovers( []( Frontier::Entry && ) { } ) == 0 );
    CHECK( ( p > 1 ) || ( F.steals() == 0 ) );
    }
   Frontier E( p );
@@ -1687,11 +1726,11 @@ ADS_TEST( "stealing-frontier-stop" )
     CHECK( threw == boom );
     CHECK( F.stopped() );
     std::uint64_t left = 0;
-    const std::size_t got = F.leftovers( [ & ]( Frontier::Entry && ) {
-     ++left; } );
+    const std::size_t got =
+      F.leftovers( [ & ]( Frontier::Entry && ) { ++left; } );
     CHECK( got == left );
     CHECK( c.pushed.load() == c.popped.load() + left );
-    CHECK( F.leftovers( []( Frontier::Entry && ) {} ) == 0 );
+    CHECK( F.leftovers( []( Frontier::Entry && ) { } ) == 0 );
     }
   } );
  }
@@ -1709,11 +1748,11 @@ ADS_TEST( "stealing-frontier-bound" )
  using F = StealingFrontier< Key , Node , std::less< Key > , std::uint64_t >;
  onEach( []( auto & ex ) {
   const std::size_t p = workersOf( ex );
-  for( std::uint64_t cutoff : { std::uint64_t( 40 ) , std::uint64_t( 400 ) ,
-                                ~std::uint64_t( 0 ) } ) {
+  for( std::uint64_t cutoff :
+       { std::uint64_t( 40 ) , std::uint64_t( 400 ) , ~std::uint64_t( 0 ) } ) {
    F f( p , 11 );
    std::atomic< std::uint64_t > pushed{ 1 } , popped{ 0 } , drained{ 0 } ,
-                                stamp{ 0 };
+     stamp{ 0 };
    std::atomic< bool > right{ true };
    f.push( 0 , Key( 0 , 0 ) , 0 , Node{ 5 , 0 } );
    f.run( ex , [ & ]( std::size_t i ) {
@@ -1723,24 +1762,26 @@ ADS_TEST( "stealing-frontier-bound" )
      children( e->item , 14 , 5 , [ & ]( Node v ) {
       const std::uint64_t s = stamp.fetch_add( 1 );
       f.push( i , Key( -std::int64_t( v.depth ) , ~s ) ,
-              b + 1 + ( v.key & 63 ) , v );
+	      b + 1 + ( v.key & 63 ) ,
+	      v );
       pushed.fetch_add( 1 );
       } );
      const auto m = f.minBound( i );
      if( m && ( *m > cutoff ) ) {
       drained.fetch_add( f.drain( i , [ & ]( F::Entry && d ) {
-       if( d.bound < *m )                   // below the least bound
-        right = false; } ) );
+       if( d.bound < *m )  // below the least bound
+	right = false;
+       } ) );
       if( f.minBound( i ) || ! f.queue( i ).empty() )
-       right = false;                       // the drain left a pair
+       right = false;  // the drain left a pair
       }
      }
     } );
    CHECK( f.terminated() && right.load() );
    CHECK( pushed.load() == popped.load() + drained.load() );
    CHECK( ( cutoff != ~std::uint64_t( 0 ) ) ||
-          ( popped.load() == treeSize( 14 , 5 ) ) );
-   CHECK( f.leftovers( []( F::Entry && ) {} ) == 0 );
+	  ( popped.load() == treeSize( 14 , 5 ) ) );
+   CHECK( f.leftovers( []( F::Entry && ) { } ) == 0 );
    }
   } );
  }

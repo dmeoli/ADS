@@ -69,7 +69,7 @@
 
 #ifndef __ADS_ObjectPool
  #define __ADS_ObjectPool
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -91,7 +91,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS ObjectPool ----------------------------*/
@@ -99,16 +100,16 @@ namespace ADS {
 
 /// a pool of objects of type `T` in blocks of at most \f$ n \f$ slots
 template< class T , class A = HugePageAllocator< T > >
-class ObjectPool {
+class ObjectPool
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty pool whose blocks grow up to \f$ n \f$ slots, taken from
  /// `alloc`
  /// \pre \f$ n \ge 1 \f$
  explicit ObjectPool( std::size_t n = std::size_t( 1 ) << 24 ,
-                      const A & alloc = A() );
+		      const A & alloc = A() );
 
  /// no copy, since its objects are reached by their addresses
  ObjectPool( const ObjectPool & ) = delete;
@@ -229,9 +230,9 @@ class ObjectPool {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a slot: an object, or the next free slot
- union Slot {
+ union Slot
+ {
   /// the next free slot
   Slot * next;
   /// the room of the object
@@ -239,16 +240,17 @@ class ObjectPool {
   };
 
  /// the header of a block, in its first H slots
- struct Block {
-  Block * prev;    ///< the block before, nil for the first one
-  std::size_t k;   ///< the slots of the block, the header's included
+ struct Block
+ {
+  Block * prev;   ///< the block before, nil for the first one
+  std::size_t k;  ///< the slots of the block, the header's included
   };
 
  static constexpr std::size_t H =
-  ( sizeof( Block ) + sizeof( Slot ) - 1 ) / sizeof( Slot );
+   ( sizeof( Block ) + sizeof( Slot ) - 1 ) / sizeof( Slot );
 
  using SlotAlloc =
-  typename std::allocator_traits< A >::template rebind_alloc< Slot >;
+   typename std::allocator_traits< A >::template rebind_alloc< Slot >;
 
  /// frees the blocks
  void release( void ) noexcept;
@@ -259,14 +261,14 @@ class ObjectPool {
  /// the slots of the next block kept by clear(), or of a new block
  void refill( void );
 
- Slot * f_free = nullptr;   ///< the free slots, the last one freed first
- Slot * f_next = nullptr;   ///< the first slot never used of the last block
- Slot * f_end = nullptr;    ///< the end of the last block
- Block * f_last = nullptr;  ///< the last block, which leads to the others
- Block * f_reuse = nullptr; ///< the next block kept by clear(), if any
- std::size_t f_n;           ///< the slots of the largest block
- std::size_t f_size = 0;    ///< the objects alive
- ADS_NO_UNIQUE_ADDRESS SlotAlloc f_alloc;   ///< the allocator of the blocks
+ Slot * f_free = nullptr;    ///< the free slots, the last one freed first
+ Slot * f_next = nullptr;    ///< the first slot never used of the last block
+ Slot * f_end = nullptr;     ///< the end of the last block
+ Block * f_last = nullptr;   ///< the last block, which leads to the others
+ Block * f_reuse = nullptr;  ///< the next block kept by clear(), if any
+ std::size_t f_n;            ///< the slots of the largest block
+ std::size_t f_size = 0;     ///< the objects alive
+ ADS_NO_UNIQUE_ADDRESS SlotAlloc f_alloc;  ///< the allocator of the blocks
 
  };  // end( class ObjectPool )
 
@@ -282,7 +284,7 @@ class ObjectPool {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ObjectPool.h included */
+#endif /* ObjectPool.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File ObjectPool.h --------------------------*/

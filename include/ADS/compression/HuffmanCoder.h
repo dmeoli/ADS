@@ -74,7 +74,7 @@
 
 #ifndef __ADS_HuffmanCoder
  #define __ADS_HuffmanCoder
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -95,7 +95,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the code of Huffman of the bytes of `in`, with the lengths and the size
 ///
@@ -123,8 +124,8 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \post the output decompresses to the input (audit)
-[[nodiscard]] inline std::vector< std::uint8_t > huffmanCompress(
-                                          std::span< const std::uint8_t > in );
+[[nodiscard]] inline std::vector< std::uint8_t >
+huffmanCompress( std::span< const std::uint8_t > in );
 
 /// the bytes that `huffmanCompress()` coded in `in`
 ///
@@ -154,8 +155,8 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \pre `in` is an output of `huffmanCompress()`
-[[nodiscard]] inline std::vector< std::uint8_t > huffmanDecompress(
-                                          std::span< const std::uint8_t > in );
+[[nodiscard]] inline std::vector< std::uint8_t >
+huffmanDecompress( std::span< const std::uint8_t > in );
 
 /// the optimal lengths of at most \f$ L \f$ bits of the codes of the 256
 /// bytes of frequencies \f$ f \f$, 0 for a byte of frequency 0, by
@@ -188,9 +189,8 @@ namespace ADS {
 /// \f]
 /// \pre \f$ 1 \le L \le 64 \f$, and \f$ 2^L \f$ is at least the number of
 ///      the bytes of positive frequency
-[[nodiscard]] inline std::array< std::uint8_t , 256 > limitedHuffmanLengths(
-                             const std::array< std::uint64_t , 256 > & f ,
-                             int L );
+[[nodiscard]] inline std::array< std::uint8_t , 256 >
+limitedHuffmanLengths( const std::array< std::uint64_t , 256 > & f , int L );
 
 /*--------------------------------------------------------------------------*/
 
@@ -204,7 +204,7 @@ namespace ADS {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* HuffmanCoder.h included */
+#endif /* HuffmanCoder.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File HuffmanCoder.h -------------------------*/

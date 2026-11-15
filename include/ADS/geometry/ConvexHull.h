@@ -73,7 +73,7 @@
 
 #ifndef __ADS_ConvexHull
  #define __ADS_ConvexHull
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -93,12 +93,14 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a point of the plane, of integer coordinates
-struct Point {
- long x ,   ///< the abscissa
-      y;    ///< the ordinate
+struct Point
+{
+ long x ,  ///< the abscissa
+   y;     ///< the ordinate
  /// true if the two points have the same coordinates
  bool operator==( const Point & ) const = default;
  };
@@ -112,8 +114,7 @@ struct Point {
 ///   ( x_b - x_a ) ( y_c - y_a ) - ( y_b - y_a ) ( x_c - x_a ) ,
 /// \f]
 /// twice the signed area of the triangle \f$ a b c \f$.
-inline long long cross( const Point & a , const Point & b ,
-                        const Point & c );
+inline long long cross( const Point & a , const Point & b , const Point & c );
 
 /// true if \f$ p \f$ and \f$ q \f$ are on the same side of the line through
 /// \f$ p_1 \f$ and \f$ p_2 \f$, or on it (the stessaparte() of the book)
@@ -129,7 +130,7 @@ inline long long cross( const Point & a , const Point & b ,
 /// \end{array}}
 /// \f]
 inline bool sameSide( const Point & p1 , const Point & p2 , const Point & p ,
-                      const Point & q );
+		      const Point & q );
 
 /// an increasing function of the angle of the vector
 /// \f$ ( \mathit{dx} , \mathit{dy} ) \f$, in \f$ [ 0 , 4 ) \f$ and with no
@@ -254,7 +255,7 @@ inline std::vector< Point > convexHull( const std::vector< Point > & P );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ConvexHull.h included */
+#endif /* ConvexHull.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File ConvexHull.h --------------------------*/

@@ -35,7 +35,7 @@
 
 #ifndef __ADS_SplayTree
  #define __ADS_SplayTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -55,7 +55,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS SplayTree ------------------------------*/
@@ -63,13 +64,13 @@ namespace ADS {
 
 /// a DICTIONARY on a splay tree
 template< std::totally_ordered K , class V >
-class SplayTree {
+class SplayTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty tree
  SplayTree( void ) = default;
@@ -170,8 +171,7 @@ class SplayTree {
  /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
  /// (the `find( x )` of an SSet of Morin), by `lowerBoundNode()` in
  /// \f$ O( \log n ) \f$ amortized time
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-  const K & k );
+ [[nodiscard]] std::optional< std::pair< K , V > > lowerBound( const K & k );
 
  /// the address of the key \f$ k \f$, nil if absent, splayed as by
  /// `lookup()` in \f$ O( \log n ) \f$ amortized time: the `find( x )` of a
@@ -196,17 +196,16 @@ class SplayTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node, with no balance information
- struct Node {
-  K key;                         ///< the key
-  V value;                       ///< the value
-  Node * left = nullptr ,        ///< the left child
-       * right = nullptr;        ///< the right child
+ struct Node
+ {
+  K key;                 ///< the key
+  V value;               ///< the value
+  Node *left = nullptr ,  ///< the left child
+    *right = nullptr;    ///< the right child
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ) by increasing key,
@@ -214,7 +213,8 @@ class SplayTree {
  // and invalidates it
 
  /// the shape of the tree, for `PathIterator`
- struct Shape {
+ struct Shape
+ {
   /// the root of the tree `o`
   static auto root( const auto & o ) { return( o.f_root ); }
   /// the left child of the node `n`
@@ -229,13 +229,13 @@ class SplayTree {
 
  /// the pairs of references to a key and its value
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
  /// the constant iterator by increasing key, along the path from the root
  using const_iterator = PathIterator< SplayTree , Shape >;
- using iterator = const_iterator;          ///< the constant iterator
+ using iterator = const_iterator;  ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
@@ -251,7 +251,6 @@ class SplayTree {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// the top-down splay of \f$ k \f$ in \f$ t \f$: the new root
  static Node * splay( Node * t , const K & k );
 
@@ -303,7 +302,7 @@ class SplayTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SplayTree.h included */
+#endif /* SplayTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File SplayTree.h --------------------------*/

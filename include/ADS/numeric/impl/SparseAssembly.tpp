@@ -15,9 +15,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// true if the z indices of x are below n
 template< class J >
@@ -37,20 +39,20 @@ bool indicesBelow( const J * x , std::size_t z , std::size_t n )
 
 template< class I , class V , class J >
 std::size_t compressTriplets( std::size_t nmajor , std::size_t nminor ,
-                              std::size_t z , const J * major ,
-                              const J * minor , const V * value , I * beg ,
-                              I * ind , V * val ,
-                              AssemblyWorkspace< I , V > & work )
+			      std::size_t z , const J * major ,
+			      const J * minor ,
+			      const V * value , I * beg , I * ind , V * val ,
+			      AssemblyWorkspace< I , V > & work )
 {
  static_assert( std::is_integral_v< I > && std::is_integral_v< J > );
- ADS_PRE( ( beg != nullptr ) && ( ( z == 0 ) ||
-          ( ( major != nullptr ) && ( minor != nullptr ) &&
-            ( value != nullptr ) && ( ind != nullptr ) &&
-            ( val != nullptr ) ) ) );
+ ADS_PRE( ( beg != nullptr ) &&
+	  ( ( z == 0 ) || ( ( major != nullptr ) && ( minor != nullptr ) &&
+			    ( value != nullptr ) && ( ind != nullptr ) &&
+			    ( val != nullptr ) ) ) );
  ADS_PRE( ( z <= std::size_t( std::numeric_limits< I >::max() ) ) &&
-          ( nminor <= std::size_t( std::numeric_limits< I >::max() ) ) );
+	  ( nminor <= std::size_t( std::numeric_limits< I >::max() ) ) );
  ADS_PRE( detail::indicesBelow( major , z , nmajor ) &&
-          detail::indicesBelow( minor , z , nminor ) );
+	  detail::indicesBelow( minor , z , nminor ) );
 
  // the distribution by the major index, into the arrays of the caller
  std::fill( beg , beg + nmajor + 1 , I( 0 ) );
@@ -80,7 +82,7 @@ std::size_t compressTriplets( std::size_t nmajor , std::size_t nminor ,
   for( std::size_t k = s ; k < e ; ++k ) {
    const I j = ind[ k ];
    I & w = mark[ std::size_t( j ) ];
-   if( std::size_t( w ) > f )               // a repetition of the place
+   if( std::size_t( w ) > f )  // a repetition of the place
     val[ std::size_t( w ) - 1 ] += val[ k ];
    else {
     w = I( o + 1 );
@@ -89,7 +91,7 @@ std::size_t compressTriplets( std::size_t nmajor , std::size_t nminor ,
     ++o;
     }
    }
-  if( o - f <= 32 )                         // by insertion
+  if( o - f <= 32 )  // by insertion
    for( std::size_t k = f + 1 ; k < o ; ++k ) {
     const I x = ind[ k ];
     if( ! ( x < ind[ k - 1 ] ) )
@@ -104,13 +106,14 @@ std::size_t compressTriplets( std::size_t nmajor , std::size_t nminor ,
     ind[ h ] = x;
     val[ h ] = y;
     }
-  else {                                    // the pairs, distinct
+  else {  // the pairs, distinct
    auto & P = work.pairs;
    P.resize( o - f );
    for( std::size_t k = f ; k < o ; ++k )
     P[ k - f ] = { ind[ k ] , val[ k ] };
    std::sort( P.begin() , P.end() , []( const auto & a , const auto & b ) {
-               return( a.first < b.first ); } );
+    return( a.first < b.first );
+    } );
    for( std::size_t k = f ; k < o ; ++k ) {
     ind[ k ] = P[ k - f ].first;
     val[ k ] = P[ k - f ].second;
@@ -125,33 +128,34 @@ std::size_t compressTriplets( std::size_t nmajor , std::size_t nminor ,
 
 template< class I , class V , class J >
 std::size_t compressTriplets( std::size_t nmajor , std::size_t nminor ,
-                              std::size_t z , const J * major ,
-                              const J * minor , const V * value , I * beg ,
-                              I * ind , V * val )
+			      std::size_t z , const J * major ,
+			      const J * minor ,
+			      const V * value , I * beg , I * ind , V * val )
 {
  AssemblyWorkspace< I , V > work;
- return( compressTriplets( nmajor , nminor , z , major , minor , value ,
-                           beg , ind , val , work ) );
+ return( compressTriplets( nmajor , nminor , z , major , minor , value , beg ,
+			   ind ,
+			    val , work ) );
  }
 
 template< class I , class V , class J >
 std::size_t assembleCsc( std::size_t m , std::size_t n , std::size_t z ,
-                         const J * row , const J * col , const V * value ,
-                         I * beg , I * ind , V * val ,
-                         AssemblyWorkspace< I , V > & work )
+			 const J * row , const J * col , const V * value ,
+			 I * beg , I * ind , V * val ,
+			 AssemblyWorkspace< I , V > & work )
 {
  return( compressTriplets( n , m , z , col , row , value , beg , ind , val ,
-                           work ) );
+			   work ) );
  }
 
 template< class I , class V , class J >
 std::size_t assembleCsr( std::size_t m , std::size_t n , std::size_t z ,
-                         const J * row , const J * col , const V * value ,
-                         I * beg , I * ind , V * val ,
-                         AssemblyWorkspace< I , V > & work )
+			 const J * row , const J * col , const V * value ,
+			 I * beg , I * ind , V * val ,
+			 AssemblyWorkspace< I , V > & work )
 {
  return( compressTriplets( m , n , z , row , col , value , beg , ind , val ,
-                           work ) );
+			   work ) );
  }
 
 /*--------------------------------------------------------------------------*/

@@ -76,7 +76,7 @@
 
 #ifndef __ADS_Tans
  #define __ADS_Tans
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -100,7 +100,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the tANS code of order 0 of the bytes of `in`, with the frequencies and
 /// the size
@@ -127,8 +128,8 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \post the output decompresses to the input (audit)
-[[nodiscard]] inline std::vector< std::uint8_t > tansCompress(
-                                          std::span< const std::uint8_t > in );
+[[nodiscard]] inline std::vector< std::uint8_t >
+tansCompress( std::span< const std::uint8_t > in );
 
 /// the bytes that `tansCompress()` coded in `in`
 ///
@@ -154,8 +155,8 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \pre `in` is an output of `tansCompress()`
-[[nodiscard]] inline std::vector< std::uint8_t > tansDecompress(
-                                          std::span< const std::uint8_t > in );
+[[nodiscard]] inline std::vector< std::uint8_t >
+tansDecompress( std::span< const std::uint8_t > in );
 
 /*--------------------------------------------------------------------------*/
 
@@ -169,7 +170,7 @@ namespace ADS {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Tans.h included */
+#endif /* Tans.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File Tans.h -----------------------------*/

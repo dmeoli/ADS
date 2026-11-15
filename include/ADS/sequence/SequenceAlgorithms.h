@@ -50,7 +50,7 @@
 
 #ifndef __ADS_SequenceAlgorithms
  #define __ADS_SequenceAlgorithms
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -67,7 +67,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- SEARCH -----------------------------------*/
@@ -133,7 +134,7 @@ long searchOrdered( const S & s , const typename S::Item & v );
 /// \pre \f$ s \f$ is sorted (an audit)
 template< Sequence S >
 std::pair< typename S::Pos , bool > lowerBound( const S & s ,
-                                                const typename S::Item & v );
+					       const typename S::Item & v );
 
 /// the sequence of the items of \f$ s \f$ from the position \f$ p \f$ to the
 /// position \f$ q \f$, both included, empty if \f$ p \f$ is
@@ -163,14 +164,15 @@ S sublist( const S & s , typename S::Pos p , typename S::Pos q );
 /*--------------------------------------------------------------------------*/
 
 /// the order of a sequence, the most specific that holds
-enum class Order { EMPTY ,           ///< no item
-                   CONSTANT ,        ///< all the items equal
-                   INCREASING ,      ///< each item larger than the one before
-                   DECREASING ,      ///< each item smaller than the one before
-                   NONDECREASING ,   ///< increasing, with some equal items
-                   NONINCREASING ,   ///< decreasing, with some equal items
-                   NONE              ///< neither increasing nor decreasing
-                   };
+enum class Order {
+ EMPTY ,          ///< no item
+ CONSTANT ,       ///< all the items equal
+ INCREASING ,     ///< each item larger than the one before
+ DECREASING ,     ///< each item smaller than the one before
+ NONDECREASING ,  ///< increasing, with some equal items
+ NONINCREASING ,  ///< decreasing, with some equal items
+ NONE            ///< neither increasing nor decreasing
+ };
 
 /// the order of \f$ s \f$, the most specific that holds
 ///
@@ -312,7 +314,7 @@ void removeDuplicates( S & s );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SequenceAlgorithms.h included */
+#endif /* SequenceAlgorithms.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File SequenceAlgorithms.h ----------------------*/

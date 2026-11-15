@@ -65,7 +65,7 @@
 
 #ifndef __ADS_Treap
  #define __ADS_Treap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -89,7 +89,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ CLASS Treap -------------------------------*/
@@ -105,16 +106,15 @@ struct TreapNodes;
 /// a DICTIONARY on a treap, with the operations based on join [see
 /// `Joinable`]
 template< std::totally_ordered K , class V >
-class Treap
- : public Joinable< Treap< K , V > , TreapNodes< K , V > , K , V > {
+class Treap : public Joinable< Treap< K , V > , TreapNodes< K , V > , K , V >
+{
 
  friend struct TreapNodes< K , V >;
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty treap, its priorities drawn from the seed
  explicit Treap( std::uint64_t seed = 1 );
@@ -190,8 +190,8 @@ class Treap
  /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
  /// (the `find(x)` of an SSet of Morin), in \f$ O( \log n ) \f$ expected
  /// time
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-  const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
 
  /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
  /// expected time: the `find( x )` of a USet of Morin [see `DictionarySet`];
@@ -252,31 +252,32 @@ class Treap
  /// \end{array}}
  /// \f]
  /// \pre the keys of \f$ A \f$ strictly increasing
- [[nodiscard]] static Treap fromSorted(
-  const std::vector< std::pair< K , V > > & A , std::uint64_t seed = 1 );
+ [[nodiscard]] static Treap
+ fromSorted( const std::vector< std::pair< K , V > > & A ,
+	     std::uint64_t seed = 1 );
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node, with its priority and the size of its subtree
- struct Node {
+ struct Node
+ {
   K key;                         ///< the key
   V value;                       ///< the value
   std::uint64_t priority;        ///< the random priority
   std::size_t s = 1;             ///< the nodes of the subtree
-  std::unique_ptr< Node > left ,   ///< the left child
-                          right;   ///< the right child
+  std::unique_ptr< Node > left ,  ///< the left child
+    right;                       ///< the right child
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ) by increasing key,
  // bidirectional, along the path from the root (the nodes have no parent)
 
  /// the shape of the tree, for `PathIterator`
- struct Shape {
+ struct Shape
+ {
   /// the root of the tree `o`
   static auto root( const auto & o ) { return( o.f_root.get() ); }
   /// the left child of the node `n`
@@ -291,13 +292,13 @@ class Treap
 
  /// the pairs of references to a key and its value
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
  /// the constant iterator by increasing key, along the path from the root
  using const_iterator = PathIterator< Treap , Shape >;
- using iterator = const_iterator;          ///< the constant iterator
+ using iterator = const_iterator;  ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
@@ -347,7 +348,7 @@ class Treap
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Treap.h included */
+#endif /* Treap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File Treap.h ----------------------------*/

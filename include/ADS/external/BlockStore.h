@@ -46,7 +46,7 @@
 
 #ifndef __ADS_BlockStore
  #define __ADS_BlockStore
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -63,7 +63,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS BlockStore -----------------------------*/
@@ -71,13 +72,13 @@ namespace ADS {
 
 /// a disk of blocks of type `T`, read and written one at a time
 template< class T >
-class BlockStore {
+class BlockStore
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty store, whose I/Os are also counted by `mem`, if given
- explicit BlockStore( TwoLevelMemory * mem = nullptr ) : f_mem( mem ) {}
+ explicit BlockStore( TwoLevelMemory * mem = nullptr ) : f_mem( mem ) { }
 
  /// a copy of the block \f$ i \f$, one read
  /// \pre the block \f$ i \f$ is in use
@@ -127,13 +128,12 @@ class BlockStore {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- std::vector< T > f_B;                 ///< the blocks
- std::vector< bool > f_used;           ///< which ones are in use
- std::vector< std::size_t > f_free;    ///< the free ones, a stack
- TwoLevelMemory * f_mem;               ///< the model that counts too
- mutable std::uint64_t f_reads = 0;    ///< the reads
- std::uint64_t f_writes = 0;           ///< the writes
+ std::vector< T > f_B;               ///< the blocks
+ std::vector< bool > f_used;         ///< which ones are in use
+ std::vector< std::size_t > f_free;  ///< the free ones, a stack
+ TwoLevelMemory * f_mem;             ///< the model that counts too
+ mutable std::uint64_t f_reads = 0;  ///< the reads
+ std::uint64_t f_writes = 0;         ///< the writes
 
  };  // end( class BlockStore )
 
@@ -149,7 +149,7 @@ class BlockStore {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BlockStore.h included */
+#endif /* BlockStore.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File BlockStore.h --------------------------*/

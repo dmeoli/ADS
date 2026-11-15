@@ -58,7 +58,7 @@
 
 #ifndef __ADS_IntervalTree
  #define __ADS_IntervalTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -78,7 +78,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS IntervalTree ----------------------------*/
@@ -86,15 +87,16 @@ namespace ADS {
 
 /// a multiset of closed intervals of `T` with stabbing queries
 template< std::totally_ordered T >
-class IntervalTree {
+class IntervalTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Interval = std::pair< T , T >;   ///< \f$ [ a , b ] \f$
+ using Interval = std::pair< T , T >;  ///< \f$ [ a , b ] \f$
 
  /// the augmentation: the largest right end, nothing for no interval
- struct MaxEnd {
+ struct MaxEnd
+ {
   /// the largest right end, or nothing
   using Value = std::optional< T >;
   /// no interval, the identity of the maximum
@@ -105,8 +107,10 @@ class IntervalTree {
    }
   /// \f$ \max( x , y ) \f$, nothing being smaller than any end
   static Value combine( const Value & x , const Value & y ) {
-   if( ! x ) return( y );
-   if( ! y ) return( x );
+   if( ! x )
+    return( y );
+   if( ! y )
+    return( x );
    return( *x < *y ? y : x );
    }
   };
@@ -228,12 +232,11 @@ class IntervalTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  using Map = JoinTree< Interval , std::size_t , WeightBalance , MaxEnd >;
 
  /// the sorted intervals with their multiplicities
- static std::vector< std::pair< Interval , std::size_t > > counted(
-                                             std::vector< Interval > & I );
+ static std::vector< std::pair< Interval , std::size_t > >
+ counted( std::vector< Interval > & I );
 
  Map f_map;            ///< \f$ ( a , b ) \mapsto \f$ its copies
  std::size_t f_n = 0;  ///< the intervals, with their copies
@@ -252,7 +255,7 @@ class IntervalTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* IntervalTree.h included */
+#endif /* IntervalTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File IntervalTree.h ------------------------*/

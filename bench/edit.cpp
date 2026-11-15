@@ -58,27 +58,32 @@
 
 using namespace ADS::bench;
 
-namespace {
+namespace
+{
 
 /// a random string of n letters of an alphabet of sigma
 std::string letters( std::mt19937_64 & g , std::size_t n , unsigned sigma )
 {
  std::string s( n , ' ' );
- for( auto & c : s ) c = "ACGTBDEFHIJKLMNOPQRSUVWXYZ"[ g() % sigma ];
+ for( auto & c : s )
+  c = "ACGTBDEFHIJKLMNOPQRSUVWXYZ"[ g() % sigma ];
  return( s );
  }
 
 /// a with e random edits
 std::string mutate( std::mt19937_64 & g , std::string a , std::size_t e ,
-                    unsigned sigma )
+		    unsigned sigma )
 {
  for( std::size_t k = 0 ; k < e ; ++k ) {
   const std::size_t i = g() % ( a.size() + 1 );
   const char c = "ACGTBDEFHIJKLMNOPQRSUVWXYZ"[ g() % sigma ];
   const auto r = g() % 3;
-  if( ( r == 0 ) && ( i < a.size() ) ) a[ i ] = c;
-  else if( r == 1 ) a.insert( a.begin() + std::ptrdiff_t( i ) , c );
-  else if( i < a.size() ) a.erase( a.begin() + std::ptrdiff_t( i ) );
+  if( ( r == 0 ) && ( i < a.size() ) )
+   a[ i ] = c;
+  else if( r == 1 )
+   a.insert( a.begin() + std::ptrdiff_t( i ) , c );
+  else if( i < a.size() )
+   a.erase( a.begin() + std::ptrdiff_t( i ) );
   }
  return( a );
  }
@@ -89,47 +94,69 @@ int main( int argc , char ** argv )
 {
  const Options o( argc , argv , { 100 , 1000 , 10000 , 100000 } );
  using Pair = std::pair< std::string , std::string >;
- using Of = std::function< std::size_t( const std::string & ,
-                                        const std::string & ) >;
+ using Of =
+   std::function< std::size_t( const std::string & , const std::string & ) >;
  // the distances and the LCS, with the largest length they are run at
  const std::vector< std::tuple< const char * , const char * , Of ,
-                                std::size_t > > D = {
-  { "edit distance" , "ADS::levenshtein" , []( const auto & a ,
-                                               const auto & b ) {
-    return( ADS::levenshtein( a , b ) ); } , 1u << 30 } ,
-  { "edit distance" , "ADS::levenshtein A/A" , []( const auto & a ,
-                                                   const auto & b ) {
-    return( ADS::levenshtein( a , b ) ); } , 1u << 30 } ,
-  { "edit distance" , "ADS::editDistance" , []( const auto & a ,
-                                                const auto & b ) {
-    return( std::size_t( ADS::editDistance( a , b ) ) ); } , 1000 } ,
+				std::size_t > >
+   D = {
+    { "edit distance" , "ADS::levenshtein" ,
+      []( const auto & a , const auto & b ) {
+       return( ADS::levenshtein( a , b ) );
+       } ,
+      1u << 30 } ,
+    { "edit distance" , "ADS::levenshtein A/A" ,
+      []( const auto & a , const auto & b ) {
+       return( ADS::levenshtein( a , b ) );
+       } ,
+      1u << 30 } ,
+    { "edit distance" , "ADS::editDistance" ,
+      []( const auto & a , const auto & b ) {
+       return( std::size_t( ADS::editDistance( a , b ) ) );
+       } ,
+      1000 } ,
 #ifdef ADS_HAS_EDLIB
-  { "edit distance" , "edlib" , []( const auto & a , const auto & b ) {
-    EdlibAlignResult r = edlibAlign( a.data() , int( a.size() ) ,
-                                     b.data() , int( b.size() ) ,
-                                     edlibDefaultAlignConfig() );
-    const auto d = std::size_t( r.editDistance );
-    edlibFreeAlignResult( r );
-    return( d ); } , 1u << 30 } ,
+    { "edit distance" , "edlib" ,
+      []( const auto & a , const auto & b ) {
+       EdlibAlignResult r =
+	 edlibAlign( a.data() , int( a.size() ) , b.data() , int( b.size() ) ,
+		     edlibDefaultAlignConfig() );
+       const auto d = std::size_t( r.editDistance );
+       edlibFreeAlignResult( r );
+       return( d );
+       } ,
+      1u << 30 } ,
 #endif
 #ifdef ADS_HAS_RAPIDFUZZ
-  { "edit distance" , "rapidfuzz" , []( const auto & a , const auto & b ) {
-    return( std::size_t( rapidfuzz::levenshtein_distance( a , b ) ) ); } ,
-    1u << 30 } ,
+    { "edit distance" , "rapidfuzz" ,
+      []( const auto & a , const auto & b ) {
+       return( std::size_t( rapidfuzz::levenshtein_distance( a , b ) ) );
+       } ,
+      1u << 30 } ,
 #endif
-  { "lcs" , "ADS::lcsLength" , []( const auto & a , const auto & b ) {
-    return( ADS::lcsLength( a , b ) ); } , 1u << 30 } ,
-  { "lcs" , "ADS::lcsLength A/A" , []( const auto & a , const auto & b ) {
-    return( ADS::lcsLength( a , b ) ); } , 1u << 30 } ,
-  { "lcs" , "ADS::lcsTable" , []( const auto & a , const auto & b ) {
-    return( std::size_t( ADS::lcsTable( a , b ).back().back() ) ); } ,
-    1000 } ,
+    { "lcs" , "ADS::lcsLength" ,
+      []( const auto & a , const auto & b ) {
+       return( ADS::lcsLength( a , b ) );
+       } ,
+      1u << 30 } ,
+    { "lcs" , "ADS::lcsLength A/A" ,
+      []( const auto & a , const auto & b ) {
+       return( ADS::lcsLength( a , b ) );
+       } ,
+      1u << 30 } ,
+    { "lcs" , "ADS::lcsTable" ,
+      []( const auto & a , const auto & b ) {
+       return( std::size_t( ADS::lcsTable( a , b ).back().back() ) );
+       } ,
+      1000 } ,
 #ifdef ADS_HAS_RAPIDFUZZ
-  { "lcs" , "rapidfuzz" , []( const auto & a , const auto & b ) {
-    return( std::size_t( rapidfuzz::lcs_seq_similarity( a , b ) ) ); } ,
-    1u << 30 } ,
+    { "lcs" , "rapidfuzz" ,
+      []( const auto & a , const auto & b ) {
+       return( std::size_t( rapidfuzz::lcs_seq_similarity( a , b ) ) );
+       } ,
+      1u << 30 } ,
 #endif
-  };
+    };
  for( unsigned sigma : { 4u , 26u } )
   for( const char * what : { "1%" , "10%" , "unrelated" } )
    for( std::size_t n : o.sizes ) {
@@ -138,24 +165,31 @@ int main( int argc , char ** argv )
     std::vector< Pair > P;
     for( std::size_t k = 0 ; k < pairs ; ++k ) {
      std::string a = letters( g , n , sigma );
-     std::string b = what[ 0 ] == 'u' ? letters( g , n , sigma ) :
-                     mutate( g , a , n / ( what[ 1 ] == '%' ? 100 : 10 ) ,
-                             sigma );
+     std::string b =
+       what[ 0 ] == 'u'
+	 ? letters( g , n , sigma )
+	 : mutate( g , a , n / ( what[ 1 ] == '%' ? 100 : 10 ) , sigma );
      P.emplace_back( std::move( a ) , std::move( b ) );
      }
     const std::string c = "sigma" + std::to_string( sigma ) + " " + what;
-    std::map< std::string , std::size_t > first;    // the result of each
+    std::map< std::string , std::size_t > first;  // the result of each
     for( const auto & [ bench , who , of , upto ] : D ) {
-     if( ( n > upto ) || skip( who ) ) continue;
+     if( ( n > upto ) || skip( who ) )
+      continue;
      std::size_t sum = 0;
-     const double t = median( [](){ return( 0 ); } , [ & ]( int ) {
-      sum = 0;
-      for( const auto & [ a , b ] : P ) sum += of( a , b );
-      sink = sink + sum; } , o.runs , pairs * n );
-     if( ! first.count( bench ) ) first[ bench ] = sum;
+     const double t = median( []() { return( 0 ); } ,
+			      [ & ]( int ) {
+			       sum = 0;
+			       for( const auto & [ a , b ] : P )
+				sum += of( a , b );
+			       sink = sink + sum;
+			       } ,
+			      o.runs , pairs * n );
+     if( ! first.count( bench ) )
+      first[ bench ] = sum;
      else if( first[ bench ] != sum ) {
       std::fprintf( stderr , "%s: %zu, not %zu\n" , who , sum ,
-                    first[ bench ] );
+		    first[ bench ] );
       return( 1 );
       }
      print( bench , c , n , who , t );
@@ -167,42 +201,54 @@ int main( int argc , char ** argv )
   for( std::size_t m : { 16 , 64 , 256 } ) {
    std::mt19937_64 g( o.seed + n + m );
    const std::string T = letters( g , n , 4 );
-   const std::string P = mutate( g , T.substr( g() % ( n - m ) , m ) ,
-                                 m / 16 , 4 );
+   const std::string P =
+     mutate( g , T.substr( g() % ( n - m ) , m ) , m / 16 , 4 );
    const std::size_t k = m / 8;
    const std::string c = "sigma4 m=" + std::to_string( m );
    std::size_t best = 0;
-   [[maybe_unused]] bool found = false;     // whether best is known
-   for( const char * who : { "ADS::approximateMatches" ,
-                             "ADS::approximateMatches A/A" } ) {
-    if( skip( who ) ) continue;
+   [[maybe_unused]] bool found = false;  // whether best is known
+   for( const char * who :
+	{ "ADS::approximateMatches" , "ADS::approximateMatches A/A" } ) {
+    if( skip( who ) )
+     continue;
     found = true;
-    print( "approximate search" , c , n , who , median(
-            [](){ return( 0 ); } , [ & ]( int ) {
-             const auto R = ADS::approximateMatches( T , P , k );
-             best = k + 1;
-             for( const auto & e : R ) best = std::min( best , e.second );
-             sink = sink + best; } , o.runs , n ) );
+    print( "approximate search" , c , n , who ,
+	   median( []() { return( 0 ); } ,
+		   [ & ]( int ) {
+		    const auto R = ADS::approximateMatches( T , P , k );
+		    best = k + 1;
+		    for( const auto & e : R )
+		     best = std::min( best , e.second );
+		    sink = sink + best;
+		    } ,
+		   o.runs , n ) );
     }
    if( ( n <= 100000 ) && ( m <= 64 ) &&
        ! skip( "ADS::stringMatchingSingleRow" ) )
     print( "approximate search" , c , n , "ADS::stringMatchingSingleRow" ,
-           median( [](){ return( 0 ); } , [ & ]( int ) {
-            sink = sink + std::uint64_t( ADS::stringMatchingSingleRow(
-                                          P , T ) ); } , o.runs , n ) );
+	   median( []() { return( 0 ); } ,
+		   [ & ]( int ) {
+		    sink = sink + std::uint64_t(
+				    ADS::stringMatchingSingleRow( P , T ) );
+		    } ,
+		   o.runs , n ) );
 #ifdef ADS_HAS_EDLIB
    std::size_t e = 0;
    if( ! skip( "edlib" ) )
-    print( "approximate search" , c , n , "edlib" , median(
-            [](){ return( 0 ); } , [ & ]( int ) {
-             EdlibAlignResult r = edlibAlign( P.data() , int( P.size() ) ,
-                                   T.data() , int( n ) ,
-                                   edlibNewAlignConfig( int( k ) ,
-                                   EDLIB_MODE_HW , EDLIB_TASK_DISTANCE ,
-                                   nullptr , 0 ) );
-             e = r.editDistance < 0 ? k + 1 : std::size_t( r.editDistance );
-             edlibFreeAlignResult( r );
-             sink = sink + e; } , o.runs , n ) );
+    print( "approximate search" , c , n , "edlib" ,
+	   median( []() { return( 0 ); } ,
+		   [ & ]( int ) {
+		    EdlibAlignResult r = edlibAlign(
+		      P.data() , int( P.size() ) , T.data() , int( n ) ,
+		      edlibNewAlignConfig( int( k ) , EDLIB_MODE_HW ,
+					   EDLIB_TASK_DISTANCE , nullptr ,
+					   0 ) );
+		    e = r.editDistance < 0 ? k + 1
+					   : std::size_t( r.editDistance );
+		    edlibFreeAlignResult( r );
+		    sink = sink + e;
+		    } ,
+		   o.runs , n ) );
    if( found && ! skip( "edlib" ) && ( e != best ) ) {
     std::fprintf( stderr , "edlib: %zu, not %zu\n" , e , best );
     return( 1 );

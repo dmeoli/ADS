@@ -15,9 +15,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the word of the key x, in the order of the keys
 template< RadixKey T >
@@ -29,7 +31,7 @@ std::uint64_t rangeWord( const T & x )
 /// the words of the keys, sorted and once each
 template< RadixKey T , class F >
 std::vector< std::uint64_t > rangeWords( const std::vector< T > & keys ,
-                                         F && f )
+					 F && f )
 {
  std::vector< std::uint64_t > W;
  W.reserve( keys.size() );
@@ -48,8 +50,8 @@ std::vector< std::uint64_t > rangeWords( const std::vector< T > & keys ,
 
 template< RadixKey T >
 GrafiteFilter< T >::GrafiteFilter( const std::vector< T > & keys , int B ,
-                                   std::uint64_t seed )
- : f_B( B )
+				   std::uint64_t seed )
+    : f_B( B )
 {
  ADS_PRE( ( B >= 2 ) && ( B <= 40 ) );
  ADS_PRE( std::bit_width( std::uint64_t( keys.size() ) ) + B - 2 <= 63 );
@@ -58,21 +60,22 @@ GrafiteFilter< T >::GrafiteFilter( const std::vector< T > & keys , int B ,
  f_blo = hashWord( seed , 3 );
  f_bhi = hashWord( seed , 4 );
  {
-  std::vector< std::uint64_t > K;           // the distinct keys
+  std::vector< std::uint64_t > K;  // the distinct keys
   K.reserve( keys.size() );
   for( const T & k : keys )
    K.push_back( detail::rangeWord( k ) );
   radixSort( K );
   K.erase( std::unique( K.begin() , K.end() ) , K.end() );
   f_n = K.size();
- }
+  }
  f_r = std::max< std::uint64_t >( 1 , std::uint64_t( f_n ) << ( B - 2 ) );
- const auto C = detail::rangeWords( keys , [ this ]( std::uint64_t x ) {
-  return( code( x ) ); } );
+ const auto C = detail::rangeWords(
+   keys , [ this ]( std::uint64_t x ) { return( code( x ) ); } );
  f_codes = EliasFano( C , f_r );
  f_first = C.empty() ? 0 : C.front();
- ADS_AUDIT( std::all_of( keys.begin() , keys.end() ,
-                         [ this ]( const T & k ) { return( maybe( k ) ); } ) );
+ ADS_AUDIT( std::all_of( keys.begin() , keys.end() , [ this ]( const T & k ) {
+  return( maybe( k ) );
+  } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -84,10 +87,10 @@ std::uint64_t GrafiteFilter< T >::code( std::uint64_t x ) const
  const std::uint64_t j = x / f_r;
  const Product128 p = product128( f_alo , j );
  const std::uint64_t lo = p.lo + f_blo;
- const std::uint64_t hi = p.hi + f_ahi * j + f_bhi +
-                          std::uint64_t( lo < f_blo );
+ const std::uint64_t hi =
+   p.hi + f_ahi * j + f_bhi + std::uint64_t( lo < f_blo );
  const std::uint64_t q = product128( hi , f_r ).hi;
- const std::uint64_t c = q + x % f_r;      // < 2 r < 2^64
+ const std::uint64_t c = q + x % f_r;  // < 2 r < 2^64
  return( c >= f_r ? c - f_r : c );
  }
 
@@ -105,19 +108,18 @@ bool GrafiteFilter< T >::meets( std::uint64_t x , std::uint64_t y ) const
 template< RadixKey T >
 bool GrafiteFilter< T >::mayContain( const T & a , const T & b ) const
 {
- const std::uint64_t x = detail::rangeWord( a ) ,
-                     y = detail::rangeWord( b );
+ const std::uint64_t x = detail::rangeWord( a ) , y = detail::rangeWord( b );
  ADS_PRE( x <= y );
  if( f_n == 0 )
   return( false );
- if( y - x >= f_r )                         // the bound is 1
+ if( y - x >= f_r )  // the bound is 1
   return( true );
  const std::uint64_t ja = x / f_r , jb = y / f_r;
  if( ja == jb )
   return( meets( code( x ) , code( y ) ) );
- const std::uint64_t c = jb * f_r;          // the first key of y's block
- return( meets( code( x ) , code( c - 1 ) ) ||
-         meets( code( c ) , code( y ) ) );
+ const std::uint64_t c = jb * f_r;  // the first key of y's block
+ return( meets( code( x ) , code( c - 1 ) ) || meets( code( c ) ,
+						      code( y ) ) );
  }
 
 template< RadixKey T >
@@ -167,8 +169,7 @@ std::size_t GrafiteFilter< T >::sizeInBits( void ) const
 /*--------------------------------------------------------------------------*/
 
 template< RadixKey T >
-BucketingFilter< T >::BucketingFilter( const std::vector< T > & keys ,
-                                       int B )
+BucketingFilter< T >::BucketingFilter( const std::vector< T > & keys , int B )
 {
  ADS_PRE( ( B >= 2 ) && ( B <= 40 ) );
  ADS_PRE( std::bit_width( std::uint64_t( keys.size() ) ) + B - 2 <= 63 );
@@ -187,15 +188,15 @@ BucketingFilter< T >::BucketingFilter( const std::vector< T > & keys ,
   x /= f_s;
  K.erase( std::unique( K.begin() , K.end() ) , K.end() );
  f_buckets = EliasFano( K , ~std::uint64_t( 0 ) / f_s + 1 );
- ADS_AUDIT( std::all_of( keys.begin() , keys.end() ,
-                         [ this ]( const T & k ) { return( maybe( k ) ); } ) );
+ ADS_AUDIT( std::all_of( keys.begin() , keys.end() , [ this ]( const T & k ) {
+  return( maybe( k ) );
+  } ) );
  }
 
 template< RadixKey T >
 bool BucketingFilter< T >::mayContain( const T & a , const T & b ) const
 {
- const std::uint64_t x = detail::rangeWord( a ) ,
-                     y = detail::rangeWord( b );
+ const std::uint64_t x = detail::rangeWord( a ) , y = detail::rangeWord( b );
  ADS_PRE( x <= y );
  const std::size_t p = f_buckets.nextGEQ( x / f_s );
  return( ( p < f_buckets.size() ) && ( f_buckets.access( p ) <= y / f_s ) );

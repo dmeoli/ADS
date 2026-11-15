@@ -15,16 +15,17 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 
 template< class T , class F , class H >
  requires( std::is_unsigned_v< F > && ( sizeof( F ) <= 4 ) )
-BinaryFuseFilter< T , F , H >::BinaryFuseFilter(
-                                const std::vector< T > & keys ,
-                                std::uint64_t seed , H h )
- : f_seed( seed ) , f_h( h )
+BinaryFuseFilter< T , F ,
+		  H >::BinaryFuseFilter( const std::vector< T > & keys ,
+					       std::uint64_t seed , H h )
+    : f_seed( seed ) , f_h( h )
 {
  ADS_PRE( keys.size() < ( std::size_t( 1 ) << 31 ) );
  std::vector< std::uint64_t > B;
@@ -36,10 +37,10 @@ BinaryFuseFilter< T , F , H >::BinaryFuseFilter(
  for( ; ; ) {
   if( ++f_trials > kMaxTrials )
    throw( std::runtime_error( "BinaryFuseFilter: no seed peels the keys" ) );
-  f_seed = hashWord( f_seed , f_trials );   // a new seed at each trial
+  f_seed = hashWord( f_seed , f_trials );  // a new seed at each trial
   if( build( B ) )
    break;
-  if( ! unique ) {                         // equal hashes cannot peel
+  if( ! unique ) {  // equal hashes cannot peel
    std::sort( B.begin() , B.end() );
    B.erase( std::unique( B.begin() , B.end() ) , B.end() );
    layout( B.size() );
@@ -47,8 +48,9 @@ BinaryFuseFilter< T , F , H >::BinaryFuseFilter(
    }
   }
  f_n = B.size();
- ADS_AUDIT( std::all_of( keys.begin() , keys.end() ,
-                         [ this ]( const T & k ) { return( maybe( k ) ); } ) );
+ ADS_AUDIT( std::all_of( keys.begin() , keys.end() , [ this ]( const T & k ) {
+  return( maybe( k ) );
+  } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -57,9 +59,8 @@ template< class T , class F , class H >
  requires( std::is_unsigned_v< F > && ( sizeof( F ) <= 4 ) )
 std::uint64_t BinaryFuseFilter< T , F , H >::base( const T & x ) const
 {
- if constexpr( std::is_integral_v< T > &&
-               std::is_same_v< H , FastHash< T > > )
-  return( std::uint64_t( x ) );           // mixed once, with the seed
+ if constexpr( std::is_integral_v< T > && std::is_same_v< H , FastHash< T > > )
+  return( std::uint64_t( x ) );  // mixed once, with the seed
  else if constexpr( requires { typename H::is_avalanching; } )
   return( std::uint64_t( f_h( x ) ) );
  else
@@ -83,14 +84,17 @@ F BinaryFuseFilter< T , F , H >::fingerprint( std::uint64_t h )
 template< class T , class F , class H >
  requires( std::is_unsigned_v< F > && ( sizeof( F ) <= 4 ) )
 std::uint32_t BinaryFuseFilter< T , F , H >::place( std::uint64_t h ,
-                                                    int i ) const
+						  int i ) const
 {
  const auto h0 = std::uint32_t( product128( h , f_CL ).hi );
  const std::uint32_t m = f_L - 1;
  switch( i ) {
-  case( 0 ): return( h0 );
-  case( 1 ): return( ( h0 + f_L ) ^ ( std::uint32_t( h >> 18 ) & m ) );
-  default: return( ( h0 + 2 * f_L ) ^ ( std::uint32_t( h ) & m ) );
+  case( 0 ):
+   return( h0 );
+  case( 1 ):
+   return( ( h0 + f_L ) ^ ( std::uint32_t( h >> 18 ) & m ) );
+  default:
+   return( ( h0 + 2 * f_L ) ^ ( std::uint32_t( h ) & m ) );
   }
  }
 
@@ -102,15 +106,15 @@ void BinaryFuseFilter< T , F , H >::layout( std::size_t n )
  // + 2.25 ), at most 2^18, and about max( 1.125 , 0.875 + 0.25 log 10^6
  // / log n ) n places, but at least 34 segments while L > 256
  const double ln = std::log( double( std::max< std::size_t >( n , 1 ) ) );
- f_L = std::uint32_t( 1 ) << std::min( 18 , int( std::floor(
-                                         ln / std::log( 3.33 ) + 2.25 ) ) );
- const double factor = n <= 1 ? 0 : std::max( 1.125 , 0.875 + 0.25 *
-                                              std::log( 1e6 ) / ln );
+ f_L = std::uint32_t( 1 ) << std::min(
+	 18 , int( std::floor( ln / std::log( 3.33 ) + 2.25 ) ) );
+ const double factor =
+   n <= 1 ? 0 : std::max( 1.125 , 0.875 + 0.25 * std::log( 1e6 ) / ln );
  const auto capacity = std::size_t( std::round( double( n ) * factor ) );
  while( ( f_L > 256 ) && ( ( capacity + f_L - 1 ) / f_L < 34 ) )
   f_L /= 2;
- const auto c = std::max< std::ptrdiff_t >( 1 , std::ptrdiff_t(
-                 ( capacity + f_L - 1 ) / f_L ) - 2 );
+ const auto c = std::max< std::ptrdiff_t >(
+   1 , std::ptrdiff_t( ( capacity + f_L - 1 ) / f_L ) - 2 );
  f_CL = std::uint32_t( std::size_t( c ) * f_L );
  f_F.assign( n == 0 ? 0 : std::size_t( c + 2 ) * f_L , F( 0 ) );
  }
@@ -118,7 +122,7 @@ void BinaryFuseFilter< T , F , H >::layout( std::size_t n )
 template< class T , class F , class H >
  requires( std::is_unsigned_v< F > && ( sizeof( F ) <= 4 ) )
 bool BinaryFuseFilter< T , F , H >::build(
-                                     const std::vector< std::uint64_t > & B )
+  const std::vector< std::uint64_t > & B )
 {
  const std::size_t n = B.size() , m = f_F.size();
  if( n == 0 )
@@ -144,10 +148,10 @@ bool BinaryFuseFilter< T , F , H >::build(
  for( std::size_t k = 0 ; k < n ; ++k ) {
   const std::uint64_t h = S[ k ];
   const std::uint32_t P[ 3 ] = { place( h , 0 ) , place( h , 1 ) ,
-                                 place( h , 2 ) };
+				 place( h , 2 ) };
   for( int i = 0 ; i < 3 ; ++i ) {
    const std::uint32_t p = P[ i ];
-   if( count[ p ] >= 252 )                 // 63 keys, a degenerate seed
+   if( count[ p ] >= 252 )  // 63 keys, a degenerate seed
     return( false );
    count[ p ] = std::uint8_t( ( count[ p ] + 4 ) ^ i );
    xh[ p ] ^= h;
@@ -163,7 +167,7 @@ bool BinaryFuseFilter< T , F , H >::build(
   q += ( count[ p ] >> 2 ) == 1;
   }
  auto which = std::make_unique_for_overwrite< std::uint8_t[] >( n );
- constexpr int kNext[ 4 ] = { 1 , 2 , 0 , 1 };   // ( i + 1 ) mod 3, ...
+ constexpr int kNext[ 4 ] = { 1 , 2 , 0 , 1 };  // ( i + 1 ) mod 3, ...
  std::size_t k = 0;
  while( q > 0 ) {
   const std::uint32_t p = Q[ --q ];
@@ -175,11 +179,11 @@ bool BinaryFuseFilter< T , F , H >::build(
   which[ k++ ] = std::uint8_t( i );
   count[ p ] = 0;
   const std::uint32_t P[ 3 ] = { place( h , 0 ) , place( h , 1 ) ,
-                                 place( h , 2 ) };
+				 place( h , 2 ) };
   for( int j : { kNext[ i ] , kNext[ i + 1 ] } ) {
    const std::uint32_t r = P[ j ];
    Q[ q ] = r;
-   q += ( count[ r ] >> 2 ) == 2;          // one key left after this one
+   q += ( count[ r ] >> 2 ) == 2;  // one key left after this one
    count[ r ] = std::uint8_t( ( count[ r ] - 4 ) ^ j );
    xh[ r ] ^= h;
    }
@@ -191,7 +195,7 @@ bool BinaryFuseFilter< T , F , H >::build(
  for( std::size_t k = n ; k-- > 0 ; ) {
   const std::uint64_t h = S[ k ];
   const std::uint32_t p0 = place( h , 0 ) , p1 = place( h , 1 ) ,
-                      p2 = place( h , 2 );
+		      p2 = place( h , 2 );
   const std::uint32_t p = which[ k ] == 0 ? p0 : which[ k ] == 1 ? p1 : p2;
   f_F[ p ] = F( fingerprint( h ) ^ f_F[ p0 ] ^ f_F[ p1 ] ^ f_F[ p2 ] );
   }
@@ -208,7 +212,7 @@ bool BinaryFuseFilter< T , F , H >::maybe( const T & x ) const
   return( false );
  const std::uint64_t h = mixed( base( x ) );
  return( F( f_F[ place( h , 0 ) ] ^ f_F[ place( h , 1 ) ] ^
-            f_F[ place( h , 2 ) ] ) == fingerprint( h ) );
+	     f_F[ place( h , 2 ) ] ) == fingerprint( h ) );
  }
 
 template< class T , class F , class H >

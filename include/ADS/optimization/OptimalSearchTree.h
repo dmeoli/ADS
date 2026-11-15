@@ -61,7 +61,7 @@
 
 #ifndef __ADS_OptimalSearchTree
  #define __ADS_OptimalSearchTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -77,17 +77,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// an optimal binary search tree on the keys \f$ 0 , \ldots , n - 1 \f$: its
 /// cost, its root and the children of each key, \f$ -1 \f$ for none (and for
 /// the root of the empty tree)
 template< class T >
-struct OptimalSearchTree {
- T cost;                       ///< the weighted path length
- int root;                     ///< the key at the root
- std::vector< int > left;      ///< the left child of each key
- std::vector< int > right;     ///< the right child of each key
+struct OptimalSearchTree
+{
+ T cost;                    ///< the weighted path length
+ int root;                  ///< the key at the root
+ std::vector< int > left;   ///< the left child of each key
+ std::vector< int > right;  ///< the right child of each key
  };
 
 /// the optimal binary search tree of the keys of weights \f$ p \f$ and of the
@@ -120,7 +122,7 @@ struct OptimalSearchTree {
 ///       cost found (audit)
 template< class T >
 OptimalSearchTree< T > optimalSearchTree( const std::vector< T > & p ,
-                                          const std::vector< T > & q );
+					  const std::vector< T > & q );
 
 /// the tree of `optimalSearchTree()` above, with the gaps of weight 0
 /// \f[
@@ -146,7 +148,7 @@ OptimalSearchTree< T > optimalSearchTree( const std::vector< T > & p );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* OptimalSearchTree.h included */
+#endif /* OptimalSearchTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File OptimalSearchTree.h ----------------------*/

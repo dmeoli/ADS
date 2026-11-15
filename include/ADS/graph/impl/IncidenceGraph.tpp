@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline IncidenceGraph::IncidenceGraph( int n ) : f_n( n )
 {
@@ -90,7 +91,7 @@ inline void IncidenceGraph::deleteEdge( int i , int j )
   return;
  const std::size_t n = std::size_t( f_n );
  std::copy_n( f_A.data() + std::size_t( f_m - 1 ) * n , n ,
-              f_A.data() + std::size_t( e ) * n );
+	      f_A.data() + std::size_t( e ) * n );
  f_A.resize( f_A.size() - n );
  --f_m;
  ADS_INVARIANT( ( e == f_m ) || columnOk( e ) );

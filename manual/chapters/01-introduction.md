@@ -119,7 +119,8 @@ gives a `bool`, and the operations `push()`, `pop()` and `top()`:
 ```cpp
 // declarations of <ADS/ADT.h>
 template< class S >
-concept Stack = requires( S s , const S cs , const typename S::Item & v ) {
+concept Stack = requires( S s , const S cs , const typename S::Item & v )
+{
  typename S::Item;
  { cs.empty() } -> std::same_as< bool >;
  s.push( v );
@@ -369,17 +370,17 @@ $\mathrm{empty}( s ) = \mathrm{finished}( \mathrm{head}( s ) )$, which makes
 index of a vector, the address of a cell, a cursor in a vector of cells),
 and so does the cost of each operation, while (1.4) holds on all of them.
 
-The LIST of [Morin 2013, §1.2.2](Z-bibliography.md#ref-morin-cpp) reaches
-the items by their *rank* instead: its `get( i )` and `set( i , x )` read
-and write $x_i$, its `add( i , x )` sets $x_{j+1} \gets x_j$ for $j = n - 1
-, \ldots , i$, then $x_i \gets x$ and $n \gets n + 1$, and its `remove( i
-)` sets $x_j \gets x_{j+1}$ for $j = i , \ldots , n - 2$ and $n \gets n - 1$
-([Figure 1.1](01-introduction.md#fig-1-1)). The concept `IndexedList` of
-`ADS/sequence/IndexedList.h` requires these operations with the names of the
-standard library, i.e., `size()`, `operator[]` for both `get()` and `set()`,
-`insert( i , x )` and `erase( i )`; it is not called `List`, since that is
-the name of the doubly linked list of `ADS/sequence/List.h`. A LIST realizes
-a DEQUE by
+The LIST of [Morin 2013, §1.2.2](Z-bibliography.md#ref-morin-cpp) reaches the
+items by their *rank* instead: its `get( i )` and `set( i , x )` read and
+write $x_i$, its `add( i , x )` sets $x_{j+1} \gets x_j$ for
+$j = n - 1 , \ldots , i$, then $x_i \gets x$ and $n \gets n + 1$, and its
+`remove( i )` sets $x_j \gets x_{j+1}$ for $j = i , \ldots , n - 2$ and
+$n \gets n - 1$ ([Figure 1.1](01-introduction.md#fig-1-1)). The concept
+`IndexedList` of `ADS/sequence/IndexedList.h` requires these operations with
+the names of the standard library, i.e., `size()`, `operator[]` for both
+`get()` and `set()`, `insert( i , x )` and `erase( i )`; it is not called
+`List`, since that is the name of the doubly linked list of
+`ADS/sequence/List.h`. A LIST realizes a DEQUE by
 
 $$
 \begin{array}{ll}
@@ -431,37 +432,35 @@ $$
 ( x \ne y ) \land \mathrm{contains}( x , A ) , \tag{1.6}
 $$
 
-with $\mathrm{contains}( x , \mathrm{create} ) = \mathbf{false}$; inserting
-an item already there, or removing one that is not, thus leaves the set as
-it is, and in this way the library relaxes the preconditions $x \notin A$
-and $x \in A$ that some specifications state. The DICTIONARY of [Montresor
-2025, §3.2.3](Z-bibliography.md#ref-montresor2025) is a univocal relation
-from keys to values. Its `lookup( k )` gives the value of the key $k$ or
-nothing (the nil of the book, `std::nullopt` in the code), `insert( k , v
-)` associates $v$ with $k$, replacing the value that $k$ had, and `remove(
-k )` removes $k$. Its axioms are those of (1.6) with `lookup()` in place of
-`contains()`, and both `lookup()` and `remove()` are total, i.e., the key
-need not be there.
+with $\mathrm{contains}( x , \mathrm{create} ) = \mathbf{false}$; inserting an
+item already there, or removing one that is not, thus leaves the set as it is,
+and in this way the library relaxes the preconditions $x \notin A$ and
+$x \in A$ that some specifications state. The DICTIONARY of [Montresor 2025,
+§3.2.3](Z-bibliography.md#ref-montresor2025) is a univocal relation from keys
+to values. Its `lookup( k )` gives the value of the key $k$ or nothing (the
+nil of the book, `std::nullopt` in the code), `insert( k , v )` associates $v$
+with $k$, replacing the value that $k$ had, and `remove( k )` removes $k$. Its
+axioms are those of (1.6) with `lookup()` in place of `contains()`, and both
+`lookup()` and `remove()` are total, i.e., the key need not be there.
 
-The USet of [Morin 2013, §1.2.3](Z-bibliography.md#ref-morin-cpp) has
-`size()` and three more operations. Its `insert( x )` (Morin's `add( x )`)
-adds $x$ unless an item equal to $x$ is there, and returns whether it did,
-`remove( x )` returns whether it removed an item equal to $x$, and `find( x
-)` gives the address of the item $y$ of the set equal to $x$, or nil. The
-distinction between $x$ and $y$ matters, since two items may be equal
-without being identical. If a pair $( k , v )$ is equal to another when the
-keys are equal, the pair stored in a USet is found by $\mathrm{find}( ( k ,
-\cdot ) )$ with any value, and the USet then serves as a dictionary. The
-SSet of [Morin 2013, §1.2.4](Z-bibliography.md#ref-morin-cpp) keeps items
-of a total order, and adds the *successor search* of the least item $y \ge
-x$, which is meaningful even when no item equals $x$. It is Morin's `find( x
-)` of an SSet, and `lowerBound( x )` in ADS, where `find( x )` keeps the
-meaning it has in the USet. Order usually costs something (perhaps more
-than one would like): for instance, the search trees of
-chapter [8](08-tree.md#ch-8) answer a successor search in $O( \log n )$
-time, while a hash table gives the `find()` of a USet in $O( 1 )$ expected
-time (chapter [7](07-dictionary.md#ch-7)); a program had better use an
-SSet only when it needs the order.
+The USet of [Morin 2013, §1.2.3](Z-bibliography.md#ref-morin-cpp) has `size()`
+and three more operations. Its `insert( x )` (Morin's `add( x )`) adds $x$
+unless an item equal to $x$ is there, and returns whether it did,
+`remove( x )` returns whether it removed an item equal to $x$, and `find( x )`
+gives the address of the item $y$ of the set equal to $x$, or nil. The
+distinction between $x$ and $y$ matters, since two items may be equal without
+being identical. If a pair $( k , v )$ is equal to another when the keys are
+equal, the pair stored in a USet is found by $\mathrm{find}( ( k , \cdot ) )$
+with any value, and the USet then serves as a dictionary. The SSet of [Morin
+2013, §1.2.4](Z-bibliography.md#ref-morin-cpp) keeps items of a total order,
+and adds the *successor search* of the least item $y \ge x$, which is
+meaningful even when no item equals $x$. It is Morin's `find( x )` of an SSet,
+and `lowerBound( x )` in ADS, where `find( x )` keeps the meaning it has in
+the USet. Order usually costs something (perhaps more than one would like):
+for instance, the search trees of chapter [8](08-tree.md#ch-8) answer a
+successor search in $O( \log n )$ time, while a hash table gives the `find()`
+of a USet in $O( 1 )$ expected time (chapter [7](07-dictionary.md#ch-7)); a
+program had better use an SSet only when it needs the order.
 
 In `ADS/set/SetInterfaces.h`, the concepts `USet` and `SSet` require these
 operations, with `insert()` and `remove()` that give a `bool`, and `find()`
@@ -513,23 +512,19 @@ without gaps ([Figure 1.2](01-introduction.md#fig-1-2) and
 In the code, we move the last item instead of copying it, and we do
 not move it at all when the item removed is the last one.
 
-`ArraySSet`, instead, keeps the items in strictly increasing
-order by the order `C` (`std::less<>` by default), two items
-being equal when neither is smaller than the other. This is
-the invariant that its contracts check at the level 3
-([§1.7](01-introduction.md#sec-1-7)), and both classes give
-their vector, read-only, by `items()`. Hence we can make
-`lowerBound( x )` a binary search, which [Morin 2013,
-exercise 1.7](Z-bibliography.md#ref-morin-cpp) suggests among
-the improvements of the realization on a vector, and `find( x
-)` is a `lowerBound( x )` followed by a test of equality. We
-search for the place of an insertion (or of a removal) in the
-same way. Then we move the items after that place by one
-place, as a single block, which is the other improvement that
-the exercise suggests ([Figure
-1.3](01-introduction.md#fig-1-3)); the `insert()` of
-`std::vector` makes the move, and it becomes one `memmove()`
-when the items are trivially copyable.
+`ArraySSet`, instead, keeps the items in strictly increasing order by the
+order `C` (`std::less<>` by default), two items being equal when neither is
+smaller than the other. This is the invariant that its contracts check at the
+level 3 ([§1.7](01-introduction.md#sec-1-7)), and both classes give their
+vector, read-only, by `items()`. Hence we can make `lowerBound( x )` a binary
+search, which [Morin 2013, exercise 1.7](Z-bibliography.md#ref-morin-cpp)
+suggests among the improvements of the realization on a vector, and
+`find( x )` is a `lowerBound( x )` followed by a test of equality. We search
+for the place of an insertion (or of a removal) in the same way. Then we move
+the items after that place by one place, as a single block, which is the other
+improvement that the exercise suggests ([Figure
+1.3](01-introduction.md#fig-1-3)); the `insert()` of `std::vector` makes the
+move, and it becomes one `memmove()` when the items are trivially copyable.
 
 ![Figure 1.3. An `ArraySSet` of six items, and `insert(5)`: the binary search probes the places 3, 1 and 2 (in violet, in this order), the items 7, 8 and 9 move by one place as one block, and 5 is written in the place 3 (in orange).](../figures/intro-sset.svg){#fig-1-3}
 
@@ -615,28 +610,30 @@ In `ADS/set/SetInterfaces.h`, the declarations of `ArrayUSet` and
 ```cpp
 // declarations of <ADS/set/SetInterfaces.h>
 template< class T , class Eq = std::equal_to<> >
-class ArrayUSet {
+class ArrayUSet
+{
  public:
-  using Item = T;
-  explicit ArrayUSet( Eq eq = Eq() );
-  std::size_t size( void ) const;
-  const T * find( const T & x ) const;
-  bool insert( const T & x );
-  bool remove( const T & x );
-  const std::vector< T > & items( void ) const;
-  };
+ using Item = T;
+ explicit ArrayUSet( Eq eq = Eq() );
+ std::size_t size( void ) const;
+ const T * find( const T & x ) const;
+ bool insert( const T & x );
+ bool remove( const T & x );
+ const std::vector< T > & items( void ) const;
+ };
 template< class T , class C = std::less<> >
-class ArraySSet {
+class ArraySSet
+{
  public:
-  using Item = T;
-  explicit ArraySSet( C less = C() );
-  std::size_t size( void ) const;
-  const T * find( const T & x ) const;
-  const T * lowerBound( const T & x ) const;
-  bool insert( const T & x );
-  bool remove( const T & x );
-  const std::vector< T > & items( void ) const;
-  };
+ using Item = T;
+ explicit ArraySSet( C less = C() );
+ std::size_t size( void ) const;
+ const T * find( const T & x ) const;
+ const T * lowerBound( const T & x ) const;
+ bool insert( const T & x );
+ bool remove( const T & x );
+ const std::vector< T > & items( void ) const;
+ };
 ```
 
 In `ADS/set/Bag.h`, the declarations of `Bag` that a user calls are
@@ -644,20 +641,21 @@ In `ADS/set/Bag.h`, the declarations of `Bag` that a user calls are
 ```cpp
 // declarations of <ADS/set/Bag.h>
 template< class T , class H = DefaultHash< T > ,
-     class Eq = std::equal_to< T > >
-class Bag {
+          class Eq = std::equal_to< T > >
+class Bag
+{
  public:
-  using Item = T;
-  explicit Bag( H h = H() , Eq eq = Eq() );
-  std::size_t size( void ) const;
-  bool empty( void ) const;
-  std::size_t distinct( void ) const;
-  bool insert( const T & x );
-  bool remove( const T & x );
-  const T * find( const T & x ) const;
-  std::vector< T > findAll( const T & x ) const;
-  std::size_t count( const T & x ) const;
-  };
+ using Item = T;
+ explicit Bag( H h = H() , Eq eq = Eq() );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t distinct( void ) const;
+ bool insert( const T & x );
+ bool remove( const T & x );
+ const T * find( const T & x ) const;
+ std::vector< T > findAll( const T & x ) const;
+ std::size_t count( const T & x ) const;
+ };
 ```
 
 ## 1.5 Mathematical background {#sec-1-5}
@@ -1826,99 +1824,97 @@ only, by chapter.
 ## 1.13 Typed modifications {#sec-1-13}
 
 A structure often has dependents, i.e., objects derived from it that must
-follow its changes (e.g., an index of its items, an aggregate of their
-values, or a certificate that a solution computed on it is still optimal).
-The pattern Observer ([Gamma et al. 1994](Z-bibliography.md#ref-gamma1994))
-lets the structure inform them, and `Modification.h` (beyond the book) gives
-the form in which a structure of ADS does it, at no cost when nobody
-listens. We call *event* the value by which a change is sent, an aggregate
-of one of the templates of the namespace `ADS::mod`. An event carries the
-state before the change as well as the state after it; hence, an observer
-that reads the events, without reading the structure, stays correct whatever
-happens to the structure later. The events of the item of handle $h$ are
-`Inserted<H, K, V>` and `Erased<H, K, V>`, with its key and its value (none
-when `V` is `void`), and `Changed<A, H, V>`, a change of its attribute `A`
-from `from` to `to`. The aliases `Assigned` and `KeyChanged` stand for the
-attributes `Value` and `Key`, while `Cost`, `Upper`, `Lower`, `Supply` or any
-other tag name the others. We call *global* the events of the structure as
-a whole, i.e., `Relocated`, `Permuted`, `BulkInserted`, `BulkErased`,
-`Shifted<A, D>` (each value of `A` moved by `delta`), `Replaced<A>`,
-`Cleared` and `Rebuilt`, the last of which means that anything may have
-changed. Each template has a static mask `effects`, a subset of
-`effect::grows`, `shrinks`, `up` and `down` in which a bit not set is a
+follow its changes (e.g., an index of its items, an aggregate of their values,
+or a certificate that a solution computed on it is still optimal). The pattern
+Observer ([Gamma et al. 1994](Z-bibliography.md#ref-gamma1994)) lets the
+structure inform them, and `Modification.h` (beyond the book) gives the form
+in which a structure of ADS does it, at no cost when nobody listens. We call
+*event* the value by which a change is sent, an aggregate of one of the
+templates of the namespace `ADS::mod`. An event carries the state before the
+change as well as the state after it; hence, an observer that reads the
+events, without reading the structure, stays correct whatever happens to the
+structure later. The events of the item of handle $h$ are
+`Inserted< H , K , V >` and `Erased< H , K , V >`, with its key and its value
+(none when `V` is `void`), and `Changed< A , H , V >`, a change of its
+attribute `A` from `from` to `to`. The aliases `Assigned` and `KeyChanged`
+stand for the attributes `Value` and `Key`, while `Cost`, `Upper`, `Lower`,
+`Supply` or any other tag name the others. We call *global* the events of the
+structure as a whole, i.e., `Relocated`, `Permuted`, `BulkInserted`,
+`BulkErased`, `Shifted< A , D >` (each value of `A` moved by `delta`),
+`Replaced< A >`, `Cleared` and `Rebuilt`, the last of which means that
+anything may have changed. Each template has a static mask `effects`, a subset
+of `effect::grows`, `shrinks`, `up` and `down` in which a bit not set is a
 guarantee (e.g., an insertion makes no value decrease). Also, the changes and
-the shifts have `direction()`, and `inverse(e)` gives the event that undoes
-$e$. A structure declares the events it emits as a list, `using
-modifications = mod::list<...>`.
+the shifts have `direction()`, and `inverse( e )` gives the event that undoes
+$e$. A structure declares the events it emits as a list,
+`using modifications = mod::list< ... >`.
 
-An observer of a structure is any object with an `on(e)` for at least one of
+An observer of a structure is any object with an `on( e )` for at least one of
 its events. Its other parts are optional, and the subject finds them at
 compile time by the design by introspection of Alexandrescu. They are
-`on(s)` for a `std::span` of one kind, or of the variant of all the kinds,
+`on( s )` for a `std::span` of one kind, or of the variant of all the kinds,
 which a batch prefers to the events one by one, and the group hooks
 `group_begin()` (possibly with the versions before and after the batch) and
-`group_end()`. Furthermore, an observer may have `prepare(e)`, which may
-refuse a change before it is made, `audit(s)`, a check of the observer
+`group_end()`. Furthermore, an observer may have `prepare( e )`, which may
+refuse a change before it is made, `audit( s )`, a check of the observer
 against the structure $s$, and `mask()`, a filter of the kinds at run time.
 Each of these members is tested by a concept of the namespace `mod`:
-`observes<O, E>` for `on(e)` on the event `E`, `observes_span<O, E>` for
-`on(s)` on a span, `groups`, `refuses`, `auditable<O, S>`, `masked<O>`,
-`lazy<O>` for an observer that queues the events and works at its next
-`flush()`, and `counted<O>` for one that reports counts of its own by
-`counts()`;
-`observer_of<O, L>` holds when $O$ observes at least one event of the list
-$L$, and an event with an inverse (cf. `UndoLog` below) satisfies
-`invertible<E>`. The kinds of an event, as seen by the coalescing of a
-batch, are the values of the enumeration `mod::Role`, and
-`mod::variant_t<L>` is the `std::variant` of the events of $L$, i.e., the
+`observes< O , E >` for `on( e )` on the event `E`, `observes_span< O , E >`
+for `on( s )` on a span, `groups`, `refuses`, `auditable< O , S >`,
+`masked< O >`, `lazy< O >` for an observer that queues the events and works at
+its next `flush()`, and `counted< O >` for one that reports counts of its own
+by `counts()`; `observer_of< O , L >` holds when $O$ observes at least one
+event of the list $L$, and an event with an inverse (cf. `UndoLog` below)
+satisfies `invertible< E >`. The kinds of an event, as seen by the coalescing
+of a batch, are the values of the enumeration `mod::Role`, and
+`mod::variant_t< L >` is the `std::variant` of the events of $L$, i.e., the
 type `Event` of a subject and the type of the buffer of a batch. A subject
-policy (`NoObservers`, `Static<O...>`, `Dynamic<L>` or `Both`) gives the subject
-of a structure of the events $L$ as its member template `bind<L>`.
+policy (`NoObservers`, `Static< O... >`, `Dynamic< L >` or `Both`) gives the
+subject of a structure of the events $L$ as its member template `bind< L >`.
 Two lists complete it, `requires_modifications`, of the events without which
 the observer cannot work, and `depends_on`, of the static observers that must
 precede it. An `on()` may also return `Keep::Detach` to leave with no
 exception. We remark that a wrong attachment does not compile. This is the
-case of an object with an `on()` for none of the events, of one that
-requires an event the structure never emits, and of one whose `on()` of an
-erasure, a clearing, a rebuilding or a replacement may throw, since an
-observer left half updated by these could not be repaired.
+case of an object with an `on()` for none of the events, of one that requires
+an event the structure never emits, and of one whose `on()` of an erasure, a
+clearing, a rebuilding or a replacement may throw, since an observer left half
+updated by these could not be repaired.
 
 The observers that listen are a parameter of the type of the structure, its
 *subject policy* ([Alexandrescu
-2001](Z-bibliography.md#ref-alexandrescu2001)), which takes one of four
-forms. `NoObservers`, the default, is an empty member, and `Static<O...>`
-holds references to the observers, which are called directly in the order
-of the arguments. `Dynamic<>` holds the observers attached at run time by
-`attach()`, each kept as a pointer together with the pointers to the
-functions that restore its type, while `Both<Static<O...>, Dynamic<>>`
-combines the two and calls the static ones first. Before a mutator builds
-the event, or reads the old state that only the event needs, it tests
-`listened<E>`, a constant of the subject, and then `live<E>()`, i.e., whether
-someone wants $E$ now. With `NoObservers`, and with static observers that do
-not want $E$, the first test is false at compile time; hence, the change is
-the code of the plain structure. With `Dynamic<>` and nobody attached, the
-change costs a load and a test of the union of the masks, since the path
-that sends the event is a cold function out of line. We check both claims
-with the script `bench/zerocost.py`, by the instructions that callgrind
-counts and by the code of the changes, compared byte for byte. `GridGraph`
-takes the subject as a parameter of its own, for the changes of the costs of
-its cells ([§14.13.3](14-graph.md#sec-14-13-3)). A structure
-whose code cannot change (e.g., one of another library) is wrapped instead,
-as `ObservedGraph` wraps the graphs ([§14.13.1](14-graph.md#sec-14-13-1));
-`JoinTree`, instead, tells its changes from inside its mutators
-([§8.12.7](08-tree.md#sec-8-12-7)).
+2001](Z-bibliography.md#ref-alexandrescu2001)), which takes one of four forms.
+`NoObservers`, the default, is an empty member, and `Static< O... >` holds
+references to the observers, which are called directly in the order of the
+arguments. `Dynamic<>` holds the observers attached at run time by `attach()`,
+each kept as a pointer together with the pointers to the functions that
+restore its type, while `Both< Static< O... > , Dynamic<> >` combines the two
+and calls the static ones first. Before a mutator builds the event, or reads
+the old state that only the event needs, it tests `listened< E >`, a constant
+of the subject, and then `live< E >()`, i.e., whether someone wants $E$ now.
+With `NoObservers`, and with static observers that do not want $E$, the first
+test is false at compile time; hence, the change is the code of the plain
+structure. With `Dynamic<>` and nobody attached, the change costs a load and a
+test of the union of the masks, since the path that sends the event is a cold
+function out of line. We check both claims with the script
+`bench/zerocost.py`, by the instructions that callgrind counts and by the code
+of the changes, compared byte for byte. `GridGraph` takes the subject as a
+parameter of its own, for the changes of the costs of its cells
+([§14.13.3](14-graph.md#sec-14-13-3)). A structure whose code cannot change
+(e.g., one of another library) is wrapped instead, as `ObservedGraph` wraps
+the graphs ([§14.13.1](14-graph.md#sec-14-13-1)); `JoinTree`, instead, tells
+its changes from inside its mutators ([§8.12.7](08-tree.md#sec-8-12-7)).
 
-`batch(s)` opens a group of RAII on the structure $s$. Its events are
+`batch( s )` opens a group of RAII on the structure $s$. Its events are
 collected until the outermost group closes (the nested ones only count the
-depth), and then they are sent coalesced into their *net effect*, as one
-span per observer of the kinds that it wants, between its group hooks. We
-model the structure as a partial map $\sigma$ from the handles to the states
-of the items; the net effect of a batch $B$ is then a sequence that leads
-from the state before $B$ to the state after it. The coalescing drops
-everything before the last `Cleared` or `Rebuilt` and keeps the global events
-in place, adding up consecutive shifts and merging consecutive replacements.
-Between two global events, it reduces the events of each handle by pushing
-them on a list $N$ of the handle, with the rules
+depth), and then they are sent coalesced into their *net effect*, as one span
+per observer of the kinds that it wants, between its group hooks. We model the
+structure as a partial map $\sigma$ from the handles to the states of the
+items; the net effect of a batch $B$ is then a sequence that leads from the
+state before $B$ to the state after it. The coalescing drops everything before
+the last `Cleared` or `Rebuilt` and keeps the global events in place, adding
+up consecutive shifts and merging consecutive replacements. Between two global
+events, it reduces the events of each handle by pushing them on a list $N$ of
+the handle, with the rules
 
 $$
 \begin{array}{rcl}
@@ -1975,11 +1971,11 @@ twice; for the same reason, a relocation and a permutation, which change the
 meaning of the handles, bound the runs. The bulk events carry spans, which a
 batch copies; hence, the caller may reuse its arrays.
 
-The events have three further uses, i.e., (i) the safety under exceptions, (ii)
-the suppression of the events, and (iii) the versions and the audits. As for
-(i), outside a batch an insertion and a change are sent after they are made,
-and an erasure before it. If an `on()` throws, `emit(e, undo)` sends
-`inverse(e)` to the observers already informed, in the reverse order, then
+The events have three further uses, i.e., (i) the safety under exceptions,
+(ii) the suppression of the events, and (iii) the versions and the audits. As
+for (i), outside a batch an insertion and a change are sent after they are
+made, and an erasure before it. If an `on()` throws, `emit( e , undo )` sends
+`inverse( e )` to the observers already informed, in the reverse order, then
 calls the undo of the structure and lets the exception go on. This is the
 strong guarantee of [Abrahams 2000](Z-bibliography.md#ref-abrahams2000),
 provided that the undo does not throw. `prepare()` gives the same guarantee
@@ -1988,102 +1984,98 @@ indices of Boost.MultiIndex do. A batch sends its events only at its close;
 hence, a batch left by an exception is discarded. The structure then goes back
 to its checkpoint if it has `checkpoint()` and `rollback()` (also called by
 `Batch::rollback()`), and otherwise the observers get `Rebuilt`. Furthermore,
-`UndoLog<L>` records the events, which carry the old states, and brings any
+`UndoLog< L >` records the events, which carry the old states, and brings any
 structure with `apply()` back to one of its checkpoints by the inverses in the
 reverse order, in one batch (a hole in the log at an event with no inverse,
 such as the deletion of a node of a graph); the graph wrapper is undoable in
-this way within its batches ([§14.13.4](14-graph.md#sec-14-13-4)). As for (ii),
-`quiet(s)` suspends the events while
-it lives and sends `Rebuilt` at its end, while `quiet(s, no_rebuild)` is the
-promise that nobody needs to know, checked by the audits of the observers at
-its end. Inside a batch, the events collected before a mute are replaced by
-`Rebuilt`. As for (iii), the subject keeps a revision per kind of event (the
-events of that kind sent to someone) and `version()`, their sum. A lazy
-observer, which queues the events and works at its next query, can therefore
-tell by one comparison whether anything it depends on changed. At the level 3
-of the contracts (cf. [§1.7.1](01-introduction.md#sec-1-7-1)), the subject
-calls `audit()` of each observer after each event outside a batch and after
-each batch, and it counts the events, the batches and the rebuildings that each
-observer receives. Finally, `Shadow<Inc, Scratch>` sends every event to an
+this way within its batches ([§14.13.4](14-graph.md#sec-14-13-4)). As for
+(ii), `quiet( s )` suspends the events while it lives and sends `Rebuilt` at
+its end, while `quiet( s , no_rebuild )` is the promise that nobody needs to
+know, checked by the audits of the observers at its end. Inside a batch, the
+events collected before a mute are replaced by `Rebuilt`. As for (iii), the
+subject keeps a revision per kind of event (the events of that kind sent to
+someone) and `version()`, their sum. A lazy observer, which queues the events
+and works at its next query, can therefore tell by one comparison whether
+anything it depends on changed. At the level 3 of the contracts
+(cf. [§1.7.1](01-introduction.md#sec-1-7-1)), the subject calls `audit()` of
+each observer after each event outside a batch and after each batch, and it
+counts the events, the batches and the rebuildings that each observer
+receives. Finally, `Shadow< Inc , Scratch >` sends every event to an
 incremental observer and to one that computes from scratch, and compares their
-answers at each query, i.e., the audit by recomputation of [Frangioni and Manca
-2006](Z-bibliography.md#ref-frangioni2006). An observer that keeps a
+answers at each query, i.e., the audit by recomputation of [Frangioni and
+Manca 2006](Z-bibliography.md#ref-frangioni2006). An observer that keeps a
 solution decides between a repair and a computation from scratch by a
 recompute policy of its own (`ReoptPolicy`, `RatioPolicy` by default), on
-counts of work and never on times, and the subject sends it `Rebuilt` in
-place of a batch when the policy asks so at the close; we describe it with
-the observers of the graphs, in [§14.13.4](14-graph.md#sec-14-13-4).
+counts of work and never on times, and the subject sends it `Rebuilt` in place
+of a batch when the policy asks so at the close; we describe it with the
+observers of the graphs, in [§14.13.4](14-graph.md#sec-14-13-4).
 
 ## 1.14 Capabilities {#sec-1-14}
 
-An algorithm that takes a structure as a parameter of its type may choose
-its faster path at compile time from what the structure offers, and
+An algorithm that takes a structure as a parameter of its type may choose its
+faster path at compile time from what the structure offers, and
 `Capabilities.h` (beyond the book) gives the vocabulary of these choices,
-shared by all the areas. A concept of C++20 decides a matter of syntax but
-not one of meaning, since a `rank()` that scans the items satisfies the same
+shared by all the areas. A concept of C++20 decides a matter of syntax but not
+one of meaning, since a `rank()` that scans the items satisfies the same
 concept as one that reads a counter. Hence we distinguish three kinds of
 capability. A *syntactic* capability is a concept on members, e.g.,
-`splittable<S>` and `joinable<S>` for `split()` and `join2()` of the trees
-of [§8.12](08-tree.md#sec-8-12), `undoable<S>` for the `checkpoint()` and
-`rollback(t)` that the batches of [§1.13](01-introduction.md#sec-1-13) use,
-and `addressable<Q>` for the handles of a priority queue with `decrease()`,
-`increase()` and `erase()`. The others of this kind are the bulk
-operations, `rank()` and `select()`, `prefetch()`, the operations of the
-node tables of a search (`erasable<T>`, `epoch_clearable<T>`) and those of
-the graphs (`in_arcs<G>`, `batch_updatable<G>`). A *semantic* capability,
-which the syntax cannot show, is an explicit opt-in of the structure, as
+`splittable< S >` and `joinable< S >` for `split()` and `join2()` of the trees
+of [§8.12](08-tree.md#sec-8-12), `undoable< S >` for the `checkpoint()` and
+`rollback( t )` that the batches of [§1.13](01-introduction.md#sec-1-13) use,
+and `addressable< Q >` for the handles of a priority queue with `decrease()`,
+`increase()` and `erase()`. The others of this kind are the bulk operations,
+`rank()` and `select()`, `prefetch()`, the operations of the node tables of a
+search (`erasable< T >`, `epoch_clearable< T >`) and those of the graphs
+(`in_arcs< G >`, `batch_updatable< G >`). A *semantic* capability, which the
+syntax cannot show, is an explicit opt-in of the structure, as
 `std::ranges::enable_borrowed_range` is in the standard library. It is a
 variable template that the structure specializes, such as
-`enable_stable_references<S>` (the items keep their addresses, a handle may
+`enable_stable_references< S >` (the items keep their addresses, a handle may
 be a pointer and the structure never emits `Relocated`) and
-`nonmonotone_values<T>`, or a static member that it declares, such as
+`nonmonotone_values< T >`, or a static member that it declares, such as
 `S::monotone`, the only direction in which its values move, by which an
 observer compiles out the path of the other direction. A structure that
-declares none of them gets the conservative answer. We remark that a
-concept whose members no structure of ADS has yet (e.g.,
-`shiftable_keys<Q>` or `batch_extract<Q>`) is defined all the same, since
-it is the name under which the next structure will be found.
+declares none of them gets the conservative answer. We remark that a concept
+whose members no structure of ADS has yet (e.g., `shiftable_keys< Q >` or
+`batch_extract< Q >`) is defined all the same, since it is the name under
+which the next structure will be found.
 
-A third kind is a property that a wrapper must pass on without knowing
-it, because a wrapper written today cannot list the properties of the
-structures of tomorrow. We call it a *query*, `s.query(tag)`, after the
-environments of P2300 ([Dominiak et al.
-2024](Z-bibliography.md#ref-dominiak2024)). Its tag derives from
-`forwarding_query` (`stable_references_t`, `thread_safe_reads_t`,
+A third kind is a property that a wrapper must pass on without knowing it,
+because a wrapper written today cannot list the properties of the structures
+of tomorrow. We call it a *query*, `s.query( tag )`, after the environments of
+P2300 ([Dominiak et al. 2024](Z-bibliography.md#ref-dominiak2024)). Its tag
+derives from `forwarding_query` (`stable_references_t`, `thread_safe_reads_t`,
 `rank_complexity_t` or `event_set_t`), the structure answers it by a static
-member `query(tag)` if it has one, the tag gives the default otherwise, and
-`query_v<S, Tag>` reads the answer at compile time. `ObservedGraph`
-forwards every query to the graph it wraps, except the events, which are
-those of the wrapper. In turn, `Shadow` composes the answers of its two
-observers by the meet of the tag, i.e., the conjunction for the stable
-references and for the reads that may run with writes, and the worse of
-the two classes of time for `rank()`. The customization point objects in
-the form of [Niebler 2015](Z-bibliography.md#ref-niebler2015) serve only
-the operations that a type which ADS does not own may lack, each with a
-default (e.g., `reserve(s, n)` does not act on a `std::list`, and
-`insert_bulk(s, r)` inserts the items one by one). Each of them calls the
-member if there is one, then a free function found by argument-dependent
-lookup, and then the default.
+member `query( tag )` if it has one, the tag gives the default otherwise, and
+`query_v< S , Tag >` reads the answer at compile time. `ObservedGraph`
+forwards every query to the graph it wraps, except the events, which are those
+of the wrapper. In turn, `Shadow` composes the answers of its two observers by
+the meet of the tag, i.e., the conjunction for the stable references and for
+the reads that may run with writes, and the worse of the two classes of time
+for `rank()`. The customization point objects in the form of [Niebler
+2015](Z-bibliography.md#ref-niebler2015) serve only the operations that a type
+which ADS does not own may lack, each with a default (e.g., `reserve( s , n )`
+does not act on a `std::list`, and `insert_bulk( s , r )` inserts the items
+one by one). Each of them calls the member if there is one, then a free
+function found by argument-dependent lookup, and then the default.
 
 Accordingly, we split the PRIORITY QUEUE of [chapter 9](09-priority.md#ch-9)
-into two concepts. `PriorityQueue` requires the items,
-`empty()`, the item of least priority read and removed, and an insertion
-with the keys of the order of the queue (a priority, one or two keys, or
-none for items ordered by themselves). It reads them through the
-customization points `queue_min()`, `queue_deleteMin()` and
-`queue_insert()`, which try the members of the book first and the spelling
-of the standard library last; hence `DaryHeap`, `BucketQueue`, `RadixHeap`
-and `std::priority_queue` model it as they are. `AddressablePriorityQueue`
-adds the handles of the book and `decrease()`, and it is the former
-concept, with the same meaning for the queues with handles. How a queue
-lowers a key is then a capability in its turn, which `decrease_key_of<Q>()`
-returns: `native` with `decrease()` on the handles, `lazy` for a
-`PriorityQueue` without them, and `none` otherwise. On a lazy queue the
-item is inserted again with the lower key, and its stale copies are
+into two concepts. `PriorityQueue` requires the items, `empty()`, the item of
+least priority read and removed, and an insertion with the keys of the order
+of the queue (a priority, one or two keys, or none for items ordered by
+themselves). It reads them through the customization points `queue_min()`,
+`queue_deleteMin()` and `queue_insert()`, which try the members of the book
+first and the spelling of the standard library last; hence `DaryHeap`,
+`BucketQueue`, `RadixHeap` and `std::priority_queue` model it as they are.
+`AddressablePriorityQueue` adds the handles of the book and `decrease()`, and
+it is the former concept, with the same meaning for the queues with handles.
+How a queue lowers a key is then a capability in its turn, which
+`decrease_key_of< Q >()` returns: `native` with `decrease()` on the handles,
+`lazy` for a `PriorityQueue` without them, and `none` otherwise. On a lazy
+queue the item is inserted again with the lower key, and its stale copies are
 skipped when they come out. An opt-in `Q::decrease_key` wins over the
-inference, and `MultiQueue`, a relaxed queue with no exact `min()`,
-declares by it that it is lazy
-([Algorithm 1.8](01-introduction.md#alg-1-8)).
+inference, and `MultiQueue`, a relaxed queue with no exact `min()`, declares
+by it that it is lazy ([Algorithm 1.8](01-introduction.md#alg-1-8)).
 
 <span id="alg-1-8"></span>**Algorithm 1.8.** The capability of a queue to
 lower a priority, computed at compile time.
@@ -2169,28 +2161,27 @@ by concepts in the manner of `Capabilities.h`
 
 ### 1.15.1 The indexed heap and the observable array {#sec-1-15-1}
 
-`IndexedDaryHeap<K, D, Policy>` takes a subject policy as its last
+`IndexedDaryHeap< K , D , Policy >` takes a subject policy as its last
 parameter, `NoObservers` by default, and declares the events
-`Inserted<int, K>`, `Erased<int, K>`, `KeyChanged<int, K>`,
-`Relocated<std::size_t>`, `Cleared` and `Rebuilt`. Its ids are the handles
-of the events, which are stable while an id is in the heap. Hence, an
-observer that needs the keys only (e.g., an index of the open nodes of a
-search, usually by another order) may follow the heap through the first three
-events, which `push()` sends, `erase()` and `pop()` send before the removal,
-and `decrease()`, `increase()` and `update()` send. The places of the vector
-are internal maintenance of the heap, which never travels on the optional
-channel; `Relocated` carries them only to an observer that wants them,
-since otherwise each level of a walk would build an event. We remark that a
-relocation is an exchange, i.e., `Relocated(p, q)` swaps the contents of the
-places $p$ and $q$, an empty place included. Also, the event of the item
-comes before those of its walk: the new item is at the place $s$ after the
-last one, the key changes where the item is, and an erased item leaves its
-place empty.
+`Inserted< int , K >`, `Erased< int , K >`, `KeyChanged< int , K >`,
+`Relocated< std::size_t >`, `Cleared` and `Rebuilt`. Its ids are the handles
+of the events, which are stable while an id is in the heap. Hence, an observer
+that needs the keys only (e.g., an index of the open nodes of a search,
+usually by another order) may follow the heap through the first three events,
+which `push()` sends, `erase()` and `pop()` send before the removal, and
+`decrease()`, `increase()` and `update()` send. The places of the vector are
+internal maintenance of the heap, which never travels on the optional channel;
+`Relocated` carries them only to an observer that wants them, since otherwise
+each level of a walk would build an event. We remark that a relocation is an
+exchange, i.e., `Relocated( p , q )` swaps the contents of the places $p$ and
+$q$, an empty place included. Also, the event of the item comes before those
+of its walk: the new item is at the place $s$ after the last one, the key
+changes where the item is, and an erased item leaves its place empty.
 
-<span id="lem-1-16"></span>**Lemma 1.16.** *Let an observer keep a copy $M$
-of the vector of the ids of the heap, place an inserted id at the place $s$,
+<span id="lem-1-16"></span>**Lemma 1.16.** *Let an observer keep a copy $M$ of
+the vector of the ids of the heap, place an inserted id at the place $s$,
 empty the place of an erased id and exchange $M[p]$ and $M[q]$ at each
-`Relocated(p, q)`, dropping the empty places at the end. Then, after each
+`Relocated( p , q )`, dropping the empty places at the end. Then, after each
 operation, $M$ is the vector of the ids of the heap, and the operation sends
 at most $\lceil \log_D ( ( D - 1 ) s + 1 ) \rceil + 1$ events.*
 
@@ -2219,30 +2210,31 @@ Clang 18.1), and the code of `push()`, `decrease()`, `increase()`, `erase()`
 and `pop()` is the same byte for byte, the padding after the last instruction
 excluded.
 
-The simplest structure that emits is `ObservableArray<T, Policy>`, a
-vector whose writes go through the subject policy, with the index as the
-handle and as the key. `set(i, v)` and `add(i, d)` send `Assigned` with the
-value before and the value after, `push_back()` sends `Inserted`, and
-`pop_back()` sends `Erased` before the removal; `clear()` and `assign()`
-send `Cleared` and `Rebuilt` ([Algorithm 1.9](01-introduction.md#alg-1-9)).
-Its reads are those of the vector, and `apply(e)` makes the change of an
-event, by which an `UndoLog` of the array brings it back to a checkpoint.
-The array inserts and erases at its end only; hence, an index never changes
-meaning between two events of a batch, and the coalescing of (1.15) applies
-as it does to a structure with stable handles (cf.
-[Lemma 1.14](01-introduction.md#lem-1-14)). For instance, two writes of one
-index become one `Assigned`, while an append and a removal cancel.
+The simplest structure that emits is `ObservableArray< T , Policy >`, a vector
+whose writes go through the subject policy, with the index as the handle and
+as the key. `set(i, v)` and `add( i , d )` send `Assigned` with the value
+before and the value after, `push_back()` sends `Inserted`, and `pop_back()`
+sends `Erased` before the removal; `clear()` and `assign()` send `Cleared` and
+`Rebuilt` ([Algorithm 1.9](01-introduction.md#alg-1-9)). Its reads are those
+of the vector, and `apply( e )` makes the change of an event, by which an
+`UndoLog` of the array brings it back to a checkpoint. The array inserts and
+erases at its end only; hence, an index never changes meaning between two
+events of a batch, and the coalescing of (1.15) applies as it does to a
+structure with stable handles (cf. [Lemma 1.14](01-introduction.md#lem-1-14)).
+For instance, two writes of one index become one `Assigned`, while an append
+and a removal cancel.
 
 ```cpp
 // declarations of <ADS/sequence/ObservableArray.h>
-template< class T , class Policy = NoObservers > class ObservableArray {
+template< class T , class Policy = NoObservers >
+class ObservableArray
+{
  public:
  using Assign = mod::Assigned< std::size_t , T >;
  using Insert = mod::Inserted< std::size_t , std::size_t , T >;
  using Erase = mod::Erased< std::size_t , std::size_t , T >;
- template< class ... O >
- explicit ObservableArray( std::size_t n = 0 , const T & v = T() ,
-                           O & ... o );
+ template< class... O >
+ explicit ObservableArray( std::size_t n = 0 , const T & v = T() , O &... o );
  std::size_t size( void ) const;
  const T & operator[]( std::size_t i ) const;
  const std::vector< T > & values( void ) const;
@@ -2256,7 +2248,8 @@ template< class T , class Policy = NoObservers > class ObservableArray {
  void apply( const Assign & e );
  Subject & subject( void );
  template< class O >
- int attach( O & o ) requires( Subject::dynamic );
+ int attach( O & o )
+  requires( Subject::dynamic );
  };
 ```
 
@@ -2274,59 +2267,65 @@ instructions, the load and the test of the union of the masks included.
 
 ### 1.15.2 The algebra of the aggregates {#sec-1-15-2}
 
-An aggregate is the combination $a_1 \oplus \cdots \oplus a_n$ of some
-values by an associative operation with an identity $e$, and its update
-after a change depends on the algebra of $\oplus$ rather than on the
-structure that keeps it. `Algebra.h` (beyond the book) names the algebras
-by concepts on the static members of a type `G`; they refine the
-augmentations of `JoinTree` ([§8.12](08-tree.md#sec-8-12)), which are
-monoids as they are, and they are those by which `assign()` of the tree and
-`MaterializedAggregate` choose their updates
-([§8.12.7](08-tree.md#sec-8-12-7)). A `Monoid` has `identity()` and `combine()`, and a
-`CommutativeMonoid` declares the flag `commutative`. A `Group` has
-`inverse()`, an `AbelianGroup` is both, and a `Selective` monoid declares
-`selective`, the promise that $a \oplus b$ is always $a$ or $b$ (e.g., the
-least of two values). An `Action<A, G>` is a monoid of maps on the values of
-$G$, with the identity map, the composition and the application of a map to
-the aggregate of $n$ values, i.e., the ingredients of the lazy updates of a
-range. Finally, `exact_v<G>` is false for the floating point values, whose
-groups accumulate the rounding errors of the inverses. These flags are
-opt-ins, since no syntax shows that an operation commutes or selects. Of
-course, the concepts do not prove the laws; the tests check them on
-`SumOf<T>` (an abelian group), on `MinOf<T>` and `MaxOf<T>` (selective
-commutative monoids), and on operations that do not commute.
+An aggregate is the combination $a_1 \oplus \cdots \oplus a_n$ of some values
+by an associative operation with an identity $e$, and its update after a
+change depends on the algebra of $\oplus$ rather than on the structure that
+keeps it. `Algebra.h` (beyond the book) names the algebras by concepts on the
+static members of a type `G`; they refine the augmentations of `JoinTree`
+([§8.12](08-tree.md#sec-8-12)), which are monoids as they are, and they are
+those by which `assign()` of the tree and `MaterializedAggregate` choose their
+updates ([§8.12.7](08-tree.md#sec-8-12-7)). A `Monoid` has `identity()` and
+`combine()`, and a `CommutativeMonoid` declares the flag `commutative`. A
+`Group` has `inverse()`, an `AbelianGroup` is both, and a `Selective` monoid
+declares `selective`, the promise that $a \oplus b$ is always $a$ or $b$
+(e.g., the least of two values). An `Action< A , G >` is a monoid of maps on
+the values of $G$, with the identity map, the composition and the application
+of a map to the aggregate of $n$ values, i.e., the ingredients of the lazy
+updates of a range. Finally, `exact_v< G >` is false for the floating point
+values, whose groups accumulate the rounding errors of the inverses. These
+flags are opt-ins, since no syntax shows that an operation commutes or
+selects. Of course, the concepts do not prove the laws; the tests check them
+on `SumOf< T >` (an abelian group), on `MinOf< T >` and `MaxOf< T >`
+(selective commutative monoids), and on operations that do not commute.
 
 ```cpp
 // declarations of <ADS/Algebra.h>
-template< class G > concept Monoid = requires( const typename G::Value & a )
- { ... };
+template< class G >
+concept Monoid = requires( const typename G::Value & a )
+{ ... };
 template< class G >
 concept CommutativeMonoid = Monoid< G > && detail::commutativeFlag< G >();
 template< class G >
 concept Group = Monoid< G > && requires( const typename G::Value & a )
- { ... };
+{ ... };
 template< class G >
 concept AbelianGroup = Group< G > && CommutativeMonoid< G >;
 template< class G >
 concept Selective = Monoid< G > && detail::selectiveFlag< G >();
 template< class G >
 inline constexpr bool exact_v =
- ! std::is_floating_point_v< typename G::Value >;
-template< class T > struct SumOf {
+  ! std::is_floating_point_v< typename G::Value >;
+template< class T >
+struct SumOf
+{
  using Value = T;
  static constexpr bool commutative = true;
  static constexpr Value identity( void );
  static constexpr Value combine( const Value & a , const Value & b );
  static constexpr Value inverse( const Value & a );
  };
-template< class T > struct MinOf {
+template< class T >
+struct MinOf
+{
  using Value = T;
  static constexpr bool commutative = true;
  static constexpr bool selective = true;
  static constexpr Value identity( void );
  static constexpr Value combine( const Value & a , const Value & b );
  };
-template< class T > struct MaxOf {
+template< class T >
+struct MaxOf
+{
  using Value = T;
  static constexpr bool selective = true;
  static constexpr Value identity( void );
@@ -2366,7 +2365,7 @@ tests catch a drift beyond their tolerance.
 
 ### 1.15.3 Prefix aggregates {#sec-1-15-3}
 
-`Fenwick<G>` keeps the values $a_0 , \ldots , a_{n-1}$ of a monoid $G$ and,
+`Fenwick< G >` keeps the values $a_0 , \ldots , a_{n-1}$ of a monoid $G$ and,
 for $j = 1 , \ldots , n$, the nodes
 
 $$
@@ -2374,18 +2373,20 @@ t_j = a_{j - \lambda( j )} \oplus \cdots \oplus a_{j - 1} , \tag{1.16}
 $$
 
 where $\lambda( j )$ is the lowest bit of $j$, i.e., the largest power of 2
-that divides it ([Fenwick 1994](Z-bibliography.md#ref-fenwick1994)). For
-any monoid the tree answers `prefix(r)`, the aggregate
+that divides it ([Fenwick 1994](Z-bibliography.md#ref-fenwick1994)). For any
+monoid the tree answers `prefix( r )`, the aggregate
 $\pi_r = a_0 \oplus \cdots \oplus a_{r-1}$ ([Algorithm
 1.10](01-introduction.md#alg-1-10)). For a group it also answers
-`range(l, r)` $= \pi_l^{-1} \oplus \pi_r$, which needs no commutativity
+`range( l , r )` $= \pi_l^{-1} \oplus \pi_r$, which needs no commutativity
 since $\pi_r = \pi_l \oplus ( a_l \oplus \cdots \oplus a_{r-1} )$. A value
 changes by `set()`, by `add()` in a commutative monoid, and at the end by
 `push_back()` and `pop_back()`.
 
 ```cpp
 // declarations of <ADS/sequence/Fenwick.h>
-template< Monoid G > class Fenwick {
+template< Monoid G >
+class Fenwick
+{
  public:
  using Value = typename G::Value;
  explicit Fenwick( std::size_t n = 0 );
@@ -2397,7 +2398,8 @@ template< Monoid G > class Fenwick {
  Value range( std::size_t l , std::size_t r ) const
   requires Group< G >;
  void set( std::size_t i , const Value & v );
- void add( std::size_t i , const Value & d ) requires CommutativeMonoid< G >;
+ void add( std::size_t i , const Value & d )
+  requires CommutativeMonoid< G >;
  void push_back( const Value & v );
  void pop_back( void );
  template< std::input_iterator I >
@@ -2441,11 +2443,10 @@ $j' - \lambda( j' ) \le j - \lambda( j ) \le i$, so that $t_{j'}$ contains
 it; since $\lambda$ at least doubles at each step, the steps are at most
 $\lfloor \log_2 n \rfloor + 1$. $\square$
 
-Thus `prefix(r)` takes $O( \log n )$ combinations, and the nodes are built
+Thus `prefix( r )` takes $O( \log n )$ combinations, and the nodes are built
 by (ii) in increasing order in $\sum_{j \le n} \log_2 \lambda( j ) = O( n )$
-combinations. A value appended gets its node in $O( \log n )$, with no
-other node changed, and the removal of the last value drops its node
-only.
+combinations. A value appended gets its node in $O( \log n )$, with no other
+node changed, and the removal of the last value drops its node only.
 
 <span id="alg-1-11"></span>**Algorithm 1.11.** The update of a value, by
 the difference in an abelian group and by the parts of the nodes in any
@@ -2470,14 +2471,14 @@ increasing order, while the others are unchanged. Each recomputation takes
 $O( \log n )$ combinations, for at most $\lfloor \log_2 n \rfloor + 1$
 nodes. $\square$
 
-`FenwickObserver<G>` is the tree of [Algorithm
+`FenwickObserver< G >` is the tree of [Algorithm
 1.11](01-introduction.md#alg-1-11) kept by the events of an `ObservableArray`
 of the values of $G$. It applies `Assigned` by `set()`, `Inserted` and
 `Erased` by `push_back()` and `pop_back()`, and `Cleared` by emptying the
-tree. `Rebuilt` carries no values; on it the observer marks its tree stale
-and ignores the events until its next query, at which it builds the tree
-again from the vector of the array, in $O( n )$. For a static policy one
-builds the observer before its array, and gives it the array by `rebuild(a)`.
+tree. `Rebuilt` carries no values; on it the observer marks its tree stale and
+ignores the events until its next query, at which it builds the tree again
+from the vector of the array, in $O( n )$. For a static policy one builds the
+observer before its array, and gives it the array by `rebuild( a )`.
 
 <span id="lem-1-20"></span>**Lemma 1.20.** *After each event sent outside a
 batch, and after each batch, the tree of `FenwickObserver` is, at its next
@@ -2504,36 +2505,44 @@ the example below, we attach the observer of the prefix sums at run time.
 ADS::ObservableArray< long long , ADS::Dynamic<> > a( 8 , 1 );
 ADS::FenwickObserver< ADS::SumOf< long long > > p( a );
 a.attach( p );
-a.set( 3 , 10 );                      // Assigned( 3 , 1 , 10 )
+a.set( 3 , 10 );                       // Assigned( 3 , 1 , 10 )
 a.push_back( 5 );                     // Inserted( 8 , 8 , 5 )
 const long long s = p.prefix( 9 );    // 1 + 1 + 1 + 10 + 1 + 1 + 1 + 1 + 5
-const long long r = p.range( 3 , 4 ); // 10
+const long long r = p.range( 3 , 4 );  // 10
 ```
 
 ### 1.15.4 The aggregate of a sliding window {#sec-1-15-4}
 
-`SlidingAggregate<G, Policy>` (in `queue/`) is a QUEUE of values
+`SlidingAggregate< G , Policy >` (in `queue/`) is a QUEUE of values
 $x_1 , \ldots , x_n$ of a monoid $G$ with `aggregate()`, the combination
 $\alpha = x_1 \oplus \cdots \oplus x_n$ from the front to the back, which the
 queues with the minimum of [§4.8](04-queue.md#sec-4-8) and
 [§4.9](04-queue.md#sec-4-9) compute for $\oplus = \min$. With the policy
 `Amortized`, the default, the algebra chooses the algorithm, i.e.,
-subtract-on-evict for a group, the monotone deque for a selective monoid
-whose values compare by `==` ([Algorithm 1.12](01-introduction.md#alg-1-12)),
-and Two-Stacks Lite ([Tangwongsan et al.
-2021](Z-bibliography.md#ref-tangwongsan2021)) for any other monoid
-([Algorithm 1.13](01-introduction.md#alg-1-13)). With `WorstCase`, any
-monoid takes the real-time queue of Hood and Melville of `RealTimeMinQueue`,
-on stacks whose cells hold aggregates instead of places. Its constant
-`kind` names the algorithm chosen.
+subtract-on-evict for a group, the monotone deque for a selective monoid whose
+values compare by `==` ([Algorithm 1.12](01-introduction.md#alg-1-12)), and
+Two-Stacks Lite ([Tangwongsan et
+al. 2021](Z-bibliography.md#ref-tangwongsan2021)) for any other monoid
+([Algorithm 1.13](01-introduction.md#alg-1-13)). With `WorstCase`, any monoid
+takes the real-time queue of Hood and Melville of `RealTimeMinQueue`, on
+stacks whose cells hold aggregates instead of places. Its constant `kind`
+names the algorithm chosen.
 
 ```cpp
 // declarations of <ADS/queue/SlidingAggregate.h>
-struct Amortized {};
-struct WorstCase {};
-enum class window_kind { subtract_on_evict , monotone_deque , two_stacks ,
-                         real_time };
-template< Monoid G , class Policy = Amortized > class SlidingAggregate {
+struct Amortized
+{ };
+struct WorstCase
+{ };
+enum class window_kind {
+ subtract_on_evict ,
+ monotone_deque ,
+ two_stacks ,
+ real_time
+ };
+template< Monoid G , class Policy = Amortized >
+class SlidingAggregate
+{
  public:
  using Value = typename G::Value;
  static constexpr window_kind kind = detail::windowKindOf< G , Policy >();
@@ -2629,7 +2638,8 @@ of the concatenations does not commute, and the window takes Two-Stacks
 Lite.
 
 ```cpp
-struct Concat {
+struct Concat
+{
  using Value = std::string;
  static Value identity( void ) { return( Value() ); }
  static Value combine( const Value & a , const Value & b ) { return( a + b ); }
@@ -2639,7 +2649,7 @@ w.enqueue( "ab" );
 w.enqueue( "c" );
 w.dequeue();
 w.enqueue( "d" );
-const std::string s = w.aggregate();   // "cd"
+const std::string s = w.aggregate();  // "cd"
 static_assert( ADS::SlidingAggregate< Concat >::kind ==
                ADS::window_kind::two_stacks );
 static_assert( ADS::SlidingAggregate< ADS::SumOf< int > >::kind ==

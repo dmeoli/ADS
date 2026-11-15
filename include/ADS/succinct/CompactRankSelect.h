@@ -78,7 +78,7 @@
 
 #ifndef __ADS_CompactRankSelect
  #define __ADS_CompactRankSelect
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -104,7 +104,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS CompactRankSelect ------------------------*/
@@ -112,13 +113,13 @@ namespace ADS {
 
 /// a static vector of bits with rank and select in about 3.5% of its bits
 /// more
-class CompactRankSelect {
+class CompactRankSelect
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the directory of no bit
- CompactRankSelect( void ) : CompactRankSelect( BitVector() ) {}
+ CompactRankSelect( void ) : CompactRankSelect( BitVector() ) { }
 
  /// the directory of the bits \f$ b \f$, which it keeps
  explicit CompactRankSelect( BitVector b );
@@ -273,12 +274,11 @@ class CompactRankSelect {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static constexpr std::size_t kSuper = 4096;  ///< the bits of a superblock
- static constexpr std::size_t kBlock = 512;   ///< the bits of a block
- static constexpr std::size_t kSample = 4096; ///< bits b between samples
+ static constexpr std::size_t kSuper = 4096;   ///< the bits of a superblock
+ static constexpr std::size_t kBlock = 512;    ///< the bits of a block
+ static constexpr std::size_t kSample = 4096;  ///< bits b between samples
 #ifndef ADS_COMPACT_TOP
- static constexpr int kTop = 32;              ///< log of a top region
+ static constexpr int kTop = 32;  ///< log of a top region
 #else
  static constexpr int kTop = ADS_COMPACT_TOP;  // a test of the top level
 #endif
@@ -286,16 +286,17 @@ class CompactRankSelect {
  /// an entry: the 1s before the superblock since its top region in the
  /// low 32 bits of lo, and the 1s before its block k since the superblock
  /// in the 12 bits from 32 + 12 k of the 128 bits ( hi , lo )
- struct Entry {
-  std::uint64_t lo = 0 ,   ///< the low 64 bits of the entry
-                hi = 0;   ///< the high 64 bits of the entry
+ struct Entry
+ {
+  std::uint64_t lo = 0 ,  ///< the low 64 bits of the entry
+    hi = 0;              ///< the high 64 bits of the entry
   };
 
  /// the 1s before the block k of the entry e since its superblock
  [[nodiscard]] static std::size_t inSuper( const Entry & e , std::size_t k ) {
-  const std::size_t s = 32 + 12 * k;        // 32 , 44 , ... , 116
-  const std::uint64_t v = s < 64 ? ( e.lo >> s ) | ( e.hi << ( 64 - s ) )
-                                 : e.hi >> ( s - 64 );
+  const std::size_t s = 32 + 12 * k;  // 32 , 44 , ... , 116
+  const std::uint64_t v =
+    s < 64 ? ( e.lo >> s ) | ( e.hi << ( 64 - s ) ) : e.hi >> ( s - 64 );
   return( std::size_t( v & 0xFFF ) );
   }
 
@@ -304,7 +305,7 @@ class CompactRankSelect {
 #ifndef ADS_RANKSELECT_FUSE
  static constexpr std::size_t kFuse = std::size_t( 1 ) << 23;
 #else
- static constexpr std::size_t kFuse = ADS_RANKSELECT_FUSE;   // a test
+ static constexpr std::size_t kFuse = ADS_RANKSELECT_FUSE;  // a test
 #endif
 
  /// the directory of the bits, the words first copied from w where w is
@@ -315,7 +316,7 @@ class CompactRankSelect {
 #ifndef ADS_COMPACT_CHUNK
  static constexpr std::size_t kChunk = 256;
 #else
- static constexpr std::size_t kChunk = ADS_COMPACT_CHUNK;   // a test
+ static constexpr std::size_t kChunk = ADS_COMPACT_CHUNK;  // a test
 #endif
 
  /// the directory of the bits on the threads of ex, the words first copied
@@ -336,9 +337,9 @@ class CompactRankSelect {
  [[nodiscard]] bool consistent( void ) const;
 
  BitVector f_b;
- std::vector< Entry > f_e;                ///< for each superblock and one more
- std::vector< std::uint64_t > f_top;      ///< the 1s before each top region
- std::vector< std::uint32_t > f_s[ 2 ];   ///< superblocks of the samples
+ std::vector< Entry > f_e;               ///< for each superblock and one more
+ std::vector< std::uint64_t > f_top;     ///< the 1s before each top region
+ std::vector< std::uint32_t > f_s[ 2 ];  ///< superblocks of the samples
  std::size_t f_ones = 0;
 
  };  // end( class CompactRankSelect )
@@ -355,7 +356,7 @@ class CompactRankSelect {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CompactRankSelect.h included */
+#endif /* CompactRankSelect.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File CompactRankSelect.h ----------------------*/

@@ -15,9 +15,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// whether a is a subsequence of b
 template< class S >
@@ -25,7 +27,8 @@ bool isSubsequence( const S & a , const S & b )
 {
  std::size_t i = 0;
  for( std::size_t j = 0 ; ( i < a.size() ) && ( j < b.size() ) ; ++j )
-  if( a[ i ] == b[ j ] ) ++i;
+  if( a[ i ] == b[ j ] )
+   ++i;
  return( i == a.size() );
  }
 
@@ -38,8 +41,9 @@ std::vector< std::vector< int > > lcsTable( const S & P , const S & T )
  std::vector< std::vector< int > > DP( m + 1 , std::vector< int >( n + 1 ) );
  for( std::size_t i = 1 ; i <= m ; ++i )
   for( std::size_t j = 1 ; j <= n ; ++j )
-   DP[ i ][ j ] = P[ i - 1 ] == T[ j - 1 ] ? DP[ i - 1 ][ j - 1 ] + 1 :
-                  std::max( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] );
+   DP[ i ][ j ] = P[ i - 1 ] == T[ j - 1 ]
+		    ? DP[ i - 1 ][ j - 1 ] + 1
+		    : std::max( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] );
  return( DP );
  }
 
@@ -47,7 +51,7 @@ template< class S >
 int lcsMemo( const S & P , const S & T , long * solved )
 {
  std::vector< std::vector< int > > DP(
-                   P.size() + 1 , std::vector< int >( T.size() + 1 , -1 ) );
+   P.size() + 1 , std::vector< int >( T.size() + 1 , -1 ) );
  auto at = [ & ]( std::size_t i , std::size_t j ) {
   return( ( i == 0 ) || ( j == 0 ) ? 0 : DP[ i ][ j ] );
   };
@@ -67,12 +71,16 @@ int lcsMemo( const S & P , const S & T , long * solved )
     }
    else {
     const bool up = at( i - 1 , j ) < 0 , left = at( i , j - 1 ) < 0;
-    if( up ) calls.emplace_back( i - 1 , j );
-    if( left ) calls.emplace_back( i , j - 1 );
-    if( up || left ) continue;
+    if( up )
+     calls.emplace_back( i - 1 , j );
+    if( left )
+     calls.emplace_back( i , j - 1 );
+    if( up || left )
+     continue;
     DP[ i ][ j ] = std::max( at( i - 1 , j ) , at( i , j - 1 ) );
     }
-   if( solved ) ++*solved;
+   if( solved )
+    ++*solved;
    }
   calls.pop_back();
   }
@@ -87,7 +95,8 @@ S lcs( const S & P , const S & T )
  for( std::size_t i = P.size() , j = T.size() ; ( i > 0 ) && ( j > 0 ) ; )
   if( P[ i - 1 ] == T[ j - 1 ] ) {
    out.push_back( P[ i - 1 ] );
-   --i; --j;
+   --i;
+   --j;
    }
   else if( DP[ i - 1 ][ j ] >= DP[ i ][ j - 1 ] )
    --i;
@@ -96,13 +105,13 @@ S lcs( const S & P , const S & T )
  std::reverse( out.begin() , out.end() );
  ADS_POST( int( out.size() ) == DP[ P.size() ][ T.size() ] );
  ADS_AUDIT( detail::isSubsequence( out , P ) &&
-            detail::isSubsequence( out , T ) );
+	    detail::isSubsequence( out , T ) );
  return( out );
  }
 
 template< class S >
-std::vector< std::pair< char , typename S::value_type > > diff(
-                                                 const S & P , const S & T )
+std::vector< std::pair< char , typename S::value_type > > diff( const S & P ,
+							       const S & T )
 {
  const auto DP = lcsTable( P , T );
  std::vector< std::pair< char , typename S::value_type > > out;
@@ -110,10 +119,11 @@ std::vector< std::pair< char , typename S::value_type > > diff(
  while( ( i > 0 ) || ( j > 0 ) )
   if( ( i > 0 ) && ( j > 0 ) && ( P[ i - 1 ] == T[ j - 1 ] ) ) {
    out.emplace_back( ' ' , P[ i - 1 ] );
-   --i; --j;
+   --i;
+   --j;
    }
   else if( ( j > 0 ) &&
-           ( ( i == 0 ) || ( DP[ i ][ j - 1 ] >= DP[ i - 1 ][ j ] ) ) )
+	   ( ( i == 0 ) || ( DP[ i ][ j - 1 ] >= DP[ i - 1 ][ j ] ) ) )
    out.emplace_back( '+' , T[ --j ] );
   else
    out.emplace_back( '-' , P[ --i ] );
@@ -131,12 +141,16 @@ longestCommonSubstring( const S & P , const S & T )
   std::swap( prev , DP );
   for( std::size_t j = 1 ; j <= T.size() ; ++j ) {
    DP[ j ] = P[ i - 1 ] == T[ j - 1 ] ? prev[ j - 1 ] + 1 : 0;
-   if( DP[ j ] > best ) { best = DP[ j ]; ei = i; ej = j; }
+   if( DP[ j ] > best ) {
+    best = DP[ j ];
+    ei = i;
+    ej = j;
+    }
    }
   }
  ADS_POST( ( best <= ei ) && ( best <= ej ) );
  ADS_AUDIT( std::equal( P.begin() + ( ei - best ) , P.begin() + ei ,
-                        T.begin() + ( ej - best ) ) );
+			T.begin() + ( ej - best ) ) );
  return( std::tuple( best , ei , ej ) );
  }
 

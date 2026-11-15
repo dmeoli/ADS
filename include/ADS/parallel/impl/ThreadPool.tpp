@@ -15,18 +15,19 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the slot of the caller for the time of a call
-class ThreadPool::Enter {
+class ThreadPool::Enter
+{
  public:
-
  explicit Enter( ThreadPool & p ) : f_pool( p ) {
-  if( tl_self.pool == &p ) {                // a thread of the pool
+  if( tl_self.pool == &p ) {  // a thread of the pool
    f_slot = tl_self.slot;
    return;
    }
-  p.f_master.lock();                        // the p-th, one at a time
+  p.f_master.lock();  // the p-th, one at a time
   f_saved = tl_self;
   f_outside = true;
   tl_self = Self{ &p , 0 };
@@ -46,7 +47,6 @@ class ThreadPool::Enter {
  [[nodiscard]] std::size_t slot( void ) const { return( f_slot ); }
 
  private:
-
  ThreadPool & f_pool;
  Self f_saved{ nullptr , 0 };
  std::size_t f_slot = 0;
@@ -57,7 +57,8 @@ class ThreadPool::Enter {
 
 /// a job of bulk(): the calls not claimed, the tokens out, the first error
 template< class F >
-struct ThreadPool::BulkJob : Task {
+struct ThreadPool::BulkJob : Task
+{
  F * f;
  std::size_t n;
  alignas( 64 ) std::atomic< std::size_t > next{ 0 };
@@ -96,7 +97,8 @@ struct ThreadPool::BulkJob : Task {
 
 /// the task of invoke(): g, and whether it has returned
 template< class G >
-struct ThreadPool::InvokeTask : Task {
+struct ThreadPool::InvokeTask : Task
+{
  G * g;
  std::atomic< bool > done{ false };
  std::exception_ptr error;
@@ -116,7 +118,7 @@ struct ThreadPool::InvokeTask : Task {
 /*--------------------------------------------------------------------------*/
 
 inline ThreadPool::ThreadPool( std::size_t p , std::int64_t spin )
- : f_spin( spin )
+    : f_spin( spin )
 {
  if( p == 0 )
   p = std::max< std::size_t >( std::thread::hardware_concurrency() , 1 );
@@ -186,7 +188,7 @@ inline bool ThreadPool::help( std::size_t s )
 inline bool ThreadPool::claim( void )
 {
  std::size_t i;
- void ( * call )( void * , std::size_t );
+ void ( *call )( void * , std::size_t );
  void * ctx;
  {
   std::lock_guard< std::mutex > g( f_runLock );
@@ -210,13 +212,15 @@ inline void ThreadPool::loop( std::size_t s )
  for( ; ; ) {
   Task * t = nullptr;
   bool open = false;
-  f_event.await( [ & ] {
-   // a call of a run first: only an idle worker takes one
-   if( ( open = f_runOpen.load( std::memory_order_acquire ) ) )
-    return( true );
-   t = find( s );
-   return( ( t != nullptr ) || f_stop.load( std::memory_order_acquire ) );
-   } , f_spin );
+  f_event.await(
+    [ & ] {
+     // a call of a run first: only an idle worker takes one
+     if( ( open = f_runOpen.load( std::memory_order_acquire ) ) )
+      return( true );
+     t = find( s );
+     return( ( t != nullptr ) || f_stop.load( std::memory_order_acquire ) );
+     } ,
+    f_spin );
   if( open ) {
    claim();
    continue;
@@ -305,9 +309,9 @@ void ThreadPool::invoke( F && f , G && g )
  if( const auto o = d.take() )
   t = *o;
  if( t == &k )
-  Inv::entry( &k );                         // not stolen: here
+  Inv::entry( &k );  // not stolen: here
  else {
-  if( t )                                   // a task of an enclosing call
+  if( t )  // a task of an enclosing call
    d.push( t );
   unsigned w = 0;
   while( ! k.done.load( std::memory_order_acquire ) )

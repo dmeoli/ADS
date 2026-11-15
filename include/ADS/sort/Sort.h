@@ -119,7 +119,7 @@
 
 #ifndef __ADS_Sort
  #define __ADS_Sort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -150,7 +150,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the items from which the numbers go to `radixSort()`
 inline constexpr std::size_t kRadix = 512;
@@ -248,7 +249,7 @@ void stableSort( std::vector< T > & A , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Sort.h included */
+#endif /* Sort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File Sort.h -----------------------------*/

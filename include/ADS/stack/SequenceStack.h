@@ -31,7 +31,7 @@
 
 #ifndef __ADS_SequenceStack
  #define __ADS_SequenceStack
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -46,7 +46,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS SequenceStack ---------------------------*/
@@ -54,12 +55,12 @@ namespace ADS {
 
 /// a STACK simulated with the operations of a SEQUENCE `S`, the top first
 template< Sequence S >
-class SequenceStack {
+class SequenceStack
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = typename S::Item;   ///< the type of the items
+ using Item = typename S::Item;  ///< the type of the items
 
  /// true if there is no item, `empty()` of the sequence
  [[nodiscard]] bool empty( void ) const;
@@ -86,20 +87,21 @@ class SequenceStack {
 
  /// the iterator of the sequence on the item on top
  [[nodiscard]] auto begin( void ) const
-  requires std::ranges::range< const S > {
+  requires std::ranges::range< const S >
+ {
   return( std::ranges::cbegin( f_s ) );
   }
 
  /// the iterator of the sequence past the item at the bottom
  [[nodiscard]] auto end( void ) const
-  requires std::ranges::range< const S > {
+  requires std::ranges::range< const S >
+ {
   return( std::ranges::cend( f_s ) );
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
- S f_s;   ///< the sequence, the top as its first item
+ S f_s;  ///< the sequence, the top as its first item
 
  };  // end( class SequenceStack )
 
@@ -115,7 +117,7 @@ class SequenceStack {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SequenceStack.h included */
+#endif /* SequenceStack.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File SequenceStack.h ------------------------*/

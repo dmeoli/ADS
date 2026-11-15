@@ -33,7 +33,7 @@
 
 #ifndef __ADS_CountLess
  #define __ADS_CountLess
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -52,7 +52,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS::detail {
+namespace ADS::detail
+{
 
 /// the number of the items of \f$ a[ 0 .. N ) \f$ smaller than \f$ x \f$
 /// (not larger, if `Up`)
@@ -78,7 +79,7 @@ template< std::size_t N , bool Up = false , class T >
  constexpr bool F64 = std::is_same_v< T , double >;
  constexpr bool S = std::is_signed_v< T >;
 #if defined( __AVX512F__ )
- constexpr std::size_t W = 64 / sizeof( T );    // the items of a vector
+ constexpr std::size_t W = 64 / sizeof( T );  // the items of a vector
  if constexpr( ( I32 || I64 || F32 || F64 ) && ( N % W == 0 ) ) {
   std::size_t r = 0;
   for( std::size_t i = 0 ; i < N ; i += W ) {
@@ -86,22 +87,22 @@ template< std::size_t N , bool Up = false , class T >
    constexpr int P = Up ? _MM_CMPINT_LE : _MM_CMPINT_LT;
    if constexpr( I32 && S )
     m = _mm512_cmp_epi32_mask( _mm512_loadu_si512( a + i ) ,
-                               _mm512_set1_epi32( std::int32_t( x ) ) , P );
+			       _mm512_set1_epi32( std::int32_t( x ) ) , P );
    else if constexpr( I32 )
     m = _mm512_cmp_epu32_mask( _mm512_loadu_si512( a + i ) ,
-                               _mm512_set1_epi32( std::int32_t( x ) ) , P );
+			       _mm512_set1_epi32( std::int32_t( x ) ) , P );
    else if constexpr( I64 && S )
     m = _mm512_cmp_epi64_mask( _mm512_loadu_si512( a + i ) ,
-                               _mm512_set1_epi64( std::int64_t( x ) ) , P );
+			       _mm512_set1_epi64( std::int64_t( x ) ) , P );
    else if constexpr( I64 )
     m = _mm512_cmp_epu64_mask( _mm512_loadu_si512( a + i ) ,
-                               _mm512_set1_epi64( std::int64_t( x ) ) , P );
+			       _mm512_set1_epi64( std::int64_t( x ) ) , P );
    else if constexpr( F32 )
     m = _mm512_cmp_ps_mask( _mm512_loadu_ps( a + i ) , _mm512_set1_ps( x ) ,
-                            Up ? _CMP_LE_OQ : _CMP_LT_OQ );
+			    Up ? _CMP_LE_OQ : _CMP_LT_OQ );
    else
     m = _mm512_cmp_pd_mask( _mm512_loadu_pd( a + i ) , _mm512_set1_pd( x ) ,
-                            Up ? _CMP_LE_OQ : _CMP_LT_OQ );
+			    Up ? _CMP_LE_OQ : _CMP_LT_OQ );
    r += std::size_t( std::popcount( m ) );
    }
   return( r );
@@ -113,48 +114,47 @@ template< std::size_t N , bool Up = false , class T >
   for( std::size_t i = 0 ; i < N ; i += W ) {
    int m;
    if constexpr( I32 || I64 ) {
-    __m256i v = _mm256_loadu_si256( reinterpret_cast< const __m256i * >(
-                                     a + i ) );
-    __m256i k = I32 ? _mm256_set1_epi32( std::int32_t( x ) ) :
-                      _mm256_set1_epi64x( std::int64_t( x ) );
-    if constexpr( ! S ) {                   // unsigned as signed
-     const __m256i b = I32 ? _mm256_set1_epi32( INT32_MIN ) :
-                             _mm256_set1_epi64x( INT64_MIN );
+    __m256i v =
+      _mm256_loadu_si256( reinterpret_cast< const __m256i * >( a + i ) );
+    __m256i k = I32 ? _mm256_set1_epi32( std::int32_t( x ) )
+		    : _mm256_set1_epi64x( std::int64_t( x ) );
+    if constexpr( ! S ) {  // unsigned as signed
+     const __m256i b =
+       I32 ? _mm256_set1_epi32( INT32_MIN ) : _mm256_set1_epi64x( INT64_MIN );
      v = _mm256_xor_si256( v , b );
      k = _mm256_xor_si256( k , b );
      }
     // \f$ a < x \f$ is \f$ x > a \f$, \f$ a \le x \f$ is not \f$ a > x \f$
-    const __m256i c = I32 ? ( Up ? _mm256_cmpgt_epi32( v , k ) :
-                                   _mm256_cmpgt_epi32( k , v ) ) :
-                            ( Up ? _mm256_cmpgt_epi64( v , k ) :
-                                   _mm256_cmpgt_epi64( k , v ) );
-    m = I32 ? _mm256_movemask_ps( _mm256_castsi256_ps( c ) ) :
-              _mm256_movemask_pd( _mm256_castsi256_pd( c ) );
+    const __m256i c =
+      I32 ? ( Up ? _mm256_cmpgt_epi32( v , k ) : _mm256_cmpgt_epi32( k , v ) )
+	  : ( Up ? _mm256_cmpgt_epi64( v , k ) : _mm256_cmpgt_epi64( k , v ) );
+    m = I32 ? _mm256_movemask_ps( _mm256_castsi256_ps( c ) )
+	    : _mm256_movemask_pd( _mm256_castsi256_pd( c ) );
     if constexpr( Up )
      m ^= ( 1 << W ) - 1;
     }
    else if constexpr( F32 )
     m = _mm256_movemask_ps( _mm256_cmp_ps( _mm256_loadu_ps( a + i ) ,
-                                           _mm256_set1_ps( x ) ,
-                                           Up ? _CMP_LE_OQ : _CMP_LT_OQ ) );
+					   _mm256_set1_ps( x ) ,
+					   Up ? _CMP_LE_OQ : _CMP_LT_OQ ) );
    else
     m = _mm256_movemask_pd( _mm256_cmp_pd( _mm256_loadu_pd( a + i ) ,
-                                           _mm256_set1_pd( x ) ,
-                                           Up ? _CMP_LE_OQ : _CMP_LT_OQ ) );
+					   _mm256_set1_pd( x ) ,
+					   Up ? _CMP_LE_OQ : _CMP_LT_OQ ) );
    r += std::size_t( std::popcount( unsigned( m ) ) );
    }
   return( r );
   }
 #endif
- ( void ) I32;
- ( void ) I64;
- ( void ) F32;
- ( void ) F64;
- ( void ) S;
+ ( void )I32;
+ ( void )I64;
+ ( void )F32;
+ ( void )F64;
+ ( void )S;
  std::size_t r = 0;
  for( std::size_t i = 0 ; i < N ; ++i )
   if constexpr( Up )
-   r += !( x < a[ i ] );
+   r += ! ( x < a[ i ] );
   else
    r += a[ i ] < x;
  return( r );
@@ -191,26 +191,26 @@ template< std::size_t N , class T >
    std::uint64_t m;
    if constexpr( I32 && S )
     m = _mm512_cmp_epi32_mask( _mm512_loadu_si512( a + i ) ,
-                               _mm512_set1_epi32( std::int32_t( x ) ) ,
-                               _MM_CMPINT_NLE );
+			       _mm512_set1_epi32( std::int32_t( x ) ) ,
+			       _MM_CMPINT_NLE );
    else if constexpr( I32 )
     m = _mm512_cmp_epu32_mask( _mm512_loadu_si512( a + i ) ,
-                               _mm512_set1_epi32( std::int32_t( x ) ) ,
-                               _MM_CMPINT_NLE );
+			       _mm512_set1_epi32( std::int32_t( x ) ) ,
+			       _MM_CMPINT_NLE );
    else if constexpr( I64 && S )
     m = _mm512_cmp_epi64_mask( _mm512_loadu_si512( a + i ) ,
-                               _mm512_set1_epi64( std::int64_t( x ) ) ,
-                               _MM_CMPINT_NLE );
+			       _mm512_set1_epi64( std::int64_t( x ) ) ,
+			       _MM_CMPINT_NLE );
    else if constexpr( I64 )
     m = _mm512_cmp_epu64_mask( _mm512_loadu_si512( a + i ) ,
-                               _mm512_set1_epi64( std::int64_t( x ) ) ,
-                               _MM_CMPINT_NLE );
+			       _mm512_set1_epi64( std::int64_t( x ) ) ,
+			       _MM_CMPINT_NLE );
    else if constexpr( F32 )
     m = _mm512_cmp_ps_mask( _mm512_loadu_ps( a + i ) , _mm512_set1_ps( x ) ,
-                            _CMP_GT_OQ );
+			    _CMP_GT_OQ );
    else
     m = _mm512_cmp_pd_mask( _mm512_loadu_pd( a + i ) , _mm512_set1_pd( x ) ,
-                            _CMP_GT_OQ );
+			    _CMP_GT_OQ );
    r |= m << i;
    }
   return( r );
@@ -222,39 +222,39 @@ template< std::size_t N , class T >
   for( std::size_t i = 0 ; i < N ; i += W ) {
    int m;
    if constexpr( I32 || I64 ) {
-    __m256i v = _mm256_loadu_si256( reinterpret_cast< const __m256i * >(
-                                     a + i ) );
-    __m256i k = I32 ? _mm256_set1_epi32( std::int32_t( x ) ) :
-                      _mm256_set1_epi64x( std::int64_t( x ) );
-    if constexpr( ! S ) {                   // unsigned as signed
-     const __m256i b = I32 ? _mm256_set1_epi32( INT32_MIN ) :
-                             _mm256_set1_epi64x( INT64_MIN );
+    __m256i v =
+      _mm256_loadu_si256( reinterpret_cast< const __m256i * >( a + i ) );
+    __m256i k = I32 ? _mm256_set1_epi32( std::int32_t( x ) )
+		    : _mm256_set1_epi64x( std::int64_t( x ) );
+    if constexpr( ! S ) {  // unsigned as signed
+     const __m256i b =
+       I32 ? _mm256_set1_epi32( INT32_MIN ) : _mm256_set1_epi64x( INT64_MIN );
      v = _mm256_xor_si256( v , b );
      k = _mm256_xor_si256( k , b );
      }
-    const __m256i c = I32 ? _mm256_cmpgt_epi32( v , k ) :
-                            _mm256_cmpgt_epi64( v , k );
-    m = I32 ? _mm256_movemask_ps( _mm256_castsi256_ps( c ) ) :
-              _mm256_movemask_pd( _mm256_castsi256_pd( c ) );
+    const __m256i c =
+      I32 ? _mm256_cmpgt_epi32( v , k ) : _mm256_cmpgt_epi64( v , k );
+    m = I32 ? _mm256_movemask_ps( _mm256_castsi256_ps( c ) )
+	    : _mm256_movemask_pd( _mm256_castsi256_pd( c ) );
     }
    else if constexpr( F32 )
     m = _mm256_movemask_ps( _mm256_cmp_ps( _mm256_loadu_ps( a + i ) ,
-                                           _mm256_set1_ps( x ) ,
-                                           _CMP_GT_OQ ) );
+					   _mm256_set1_ps( x ) ,
+					   _CMP_GT_OQ ) );
    else
     m = _mm256_movemask_pd( _mm256_cmp_pd( _mm256_loadu_pd( a + i ) ,
-                                           _mm256_set1_pd( x ) ,
-                                           _CMP_GT_OQ ) );
+					   _mm256_set1_pd( x ) ,
+					   _CMP_GT_OQ ) );
    r |= std::uint64_t( unsigned( m ) ) << i;
    }
   return( r );
   }
 #endif
- ( void ) I32;
- ( void ) I64;
- ( void ) F32;
- ( void ) F64;
- ( void ) S;
+ ( void )I32;
+ ( void )I64;
+ ( void )F32;
+ ( void )F64;
+ ( void )S;
  std::uint64_t r = 0;
  for( std::size_t i = 0 ; i < N ; ++i )
   r |= std::uint64_t( x < a[ i ] ) << i;
@@ -265,7 +265,7 @@ template< std::size_t N , class T >
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CountLess.h included */
+#endif /* CountLess.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File CountLess.h --------------------------*/

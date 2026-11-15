@@ -89,7 +89,7 @@
 
 #ifndef __ADS_RearCoding
  #define __ADS_RearCoding
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -113,7 +113,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a pair \f$ ( r , \hat s ) \f$ of the rear coding, the characters taken
 /// off the end of the string before and the rest
@@ -135,8 +136,8 @@ using RearPair = std::pair< std::size_t , std::string >;
 /// \end{array}}
 /// \f]
 /// \post `rearDecode()` of the result is \f$ D \f$ (audit)
-[[nodiscard]] inline std::vector< RearPair > rearCode(
-                                       const std::vector< std::string > & D );
+[[nodiscard]] inline std::vector< RearPair >
+rearCode( const std::vector< std::string > & D );
 
 /// the strings of the rear coding \f$ R \f$
 ///
@@ -154,8 +155,8 @@ using RearPair = std::pair< std::size_t , std::string >;
 /// \f]
 /// \pre each \f$ r \f$ is at most the length of the string before (0 for
 ///      the first one)
-[[nodiscard]] inline std::vector< std::string > rearDecode(
-                                       const std::vector< RearPair > & R );
+[[nodiscard]] inline std::vector< std::string >
+rearDecode( const std::vector< RearPair > & R );
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- CLASS RearCodedDictionary ------------------------*/
@@ -163,11 +164,11 @@ using RearPair = std::pair< std::size_t , std::string >;
 
 /// a sorted dictionary of strings in the rear coding with buckets, in one
 /// string of bytes
-class RearCodedDictionary {
+class RearCodedDictionary
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty dictionary
  RearCodedDictionary( void ) = default;
 
@@ -200,7 +201,7 @@ class RearCodedDictionary {
  /// \pre \f$ D \f$ is sorted (audit), its strings shorter than
  ///      \f$ 2^{30} \f$ bytes, and \f$ b \ge 1 \f$
  explicit RearCodedDictionary( const std::vector< std::string > & D ,
-                               std::size_t b = 16 );
+			       std::size_t b = 16 );
 
  /// the number \f$ n \f$ of strings
  [[nodiscard]] std::size_t size( void ) const;
@@ -271,8 +272,8 @@ class RearCodedDictionary {
 
  /// the range \f$ [ l , r ) \f$ of the strings prefixed by \f$ P \f$, by
  /// `lexicographicPosition()` and `prefixEnd()`
- [[nodiscard]] std::pair< std::size_t , std::size_t > prefixRange(
-                                                   std::string_view P ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ prefixRange( std::string_view P ) const;
 
  /// the bytes of the coding, \f$ \mathit{RC}_H( D ) \f$ with the first
  /// strings and the lengths
@@ -284,7 +285,6 @@ class RearCodedDictionary {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the longest codeword, \f$ 2^{11} \f$ entries in a table of decoding
  static constexpr int kMax = 11;
 
@@ -298,10 +298,11 @@ class RearCodedDictionary {
  /// a canonical code of Huffman on the 256 bytes, of codewords of at most
  /// `kMax` bits written with their first bit in the lowest place, and its
  /// table of decoding by the next `kMax` bits
- struct Code {
-  std::array< std::uint8_t , 256 > len{};     ///< the lengths, 0 if unused
-  std::array< std::uint32_t , 256 > word{};   ///< the codewords, turned
-  std::vector< std::uint16_t > table;         ///< a byte and its length
+ struct Code
+ {
+  std::array< std::uint8_t , 256 > len{};    ///< the lengths, 0 if unused
+  std::array< std::uint32_t , 256 > word{};  ///< the codewords, turned
+  std::vector< std::uint16_t > table;       ///< a byte and its length
   /// the bytes of up to 3 codewords whole in a window of kWide bits, their
   /// number and their bits, from the bit 24 and 26
   std::vector< std::uint32_t > multi;
@@ -321,7 +322,7 @@ class RearCodedDictionary {
  /// the length of the code \f$ c \f$ at the bit `pos`, 255 followed by 30
  /// bits for one of 255 or more, moved past it
  [[nodiscard]] std::size_t getLength( const Code & c ,
-                                      std::size_t & pos ) const;
+				      std::size_t & pos ) const;
 
  /// appends the length \f$ v \f$ in the code \f$ c \f$
  void putLength( const Code & c , std::size_t v );
@@ -336,8 +337,7 @@ class RearCodedDictionary {
 
  /// appends to \f$ s \f$ the \f$ \mathit{len} \f$ characters at the bit
  /// `pos`, moved past them
- void readRest( std::string & s , std::size_t len , std::size_t & pos )
-  const;
+ void readRest( std::string & s , std::size_t len , std::size_t & pos ) const;
 
  /// moves `pos` past the \f$ n \f$ characters at it, which stand at the
  /// places from \f$ a \f$ of a string that shares its first \f$ l \f$
@@ -347,8 +347,8 @@ class RearCodedDictionary {
  /// which `pos` stops if not `S`
  template< bool S >
  [[nodiscard]] unsigned follow( std::string_view Q , std::size_t & l ,
-                                std::size_t a , std::size_t n ,
-                                std::size_t & pos ) const;
+				std::size_t a , std::size_t n ,
+				std::size_t & pos ) const;
 
  /// the first string of the bucket \f$ k \f$, and where the coding of the
  /// next string begins
@@ -358,17 +358,17 @@ class RearCodedDictionary {
  /// `upper`, and in `*eq`, if given, whether the string of that rank is
  /// \f$ Q \f$
  [[nodiscard]] std::size_t rank( std::string_view Q , bool upper ,
-                                 bool * eq = nullptr ) const;
+				 bool * eq = nullptr ) const;
 
- std::size_t f_n = 0;           ///< the strings
- std::size_t f_b = 16;          ///< the strings of a bucket
- BitVector f_C;                 ///< the coding
- EliasFano f_P;                 ///< the bits where the buckets begin
- std::string f_common;          ///< the prefix of all the strings
- std::vector< std::uint64_t > f_head;   ///< kHead bytes of each first
- Code f_char;                   ///< the code of the characters
- Code f_rear;                   ///< the code of the rears
- Code f_size;                   ///< the code of the lengths of the rests
+ std::size_t f_n = 0;                  ///< the strings
+ std::size_t f_b = 16;                 ///< the strings of a bucket
+ BitVector f_C;                        ///< the coding
+ EliasFano f_P;                        ///< the bits where the buckets begin
+ std::string f_common;                 ///< the prefix of all the strings
+ std::vector< std::uint64_t > f_head;  ///< kHead bytes of each first
+ Code f_char;                          ///< the code of the characters
+ Code f_rear;                          ///< the code of the rears
+ Code f_size;  ///< the code of the lengths of the rests
 
  };  // end( class RearCodedDictionary )
 
@@ -384,7 +384,7 @@ class RearCodedDictionary {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RearCoding.h included */
+#endif /* RearCoding.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File RearCoding.h --------------------------*/

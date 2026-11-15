@@ -15,13 +15,14 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< std::totally_ordered T >
  requires std::semiregular< T >
-SpaceEfficientSortedSet< T >::SpaceEfficientSortedSet(
- std::size_t b , std::uint64_t seed )
- : f_b( b ) , f_index( seed )
+SpaceEfficientSortedSet< T >::SpaceEfficientSortedSet( std::size_t b ,
+						       std::uint64_t seed )
+    : f_b( b ) , f_index( seed )
 {
  ADS_PRE( b >= 3 );
  }
@@ -48,13 +49,15 @@ auto SpaceEfficientSortedSet< T >::blockOf( const T & x ) const -> Block *
 template< std::totally_ordered T >
  requires std::semiregular< T >
 std::size_t SpaceEfficientSortedSet< T >::place( const Block * B ,
-                                               const T & x ) const
+						 const T & x ) const
 {
- std::size_t lo = 0 , hi = B->s;            // binary search
+ std::size_t lo = 0 , hi = B->s;  // binary search
  while( lo < hi ) {
   const std::size_t m = lo + ( hi - lo ) / 2;
-  if( at( B , m ) < x ) lo = m + 1;
-  else hi = m;
+  if( at( B , m ) < x )
+   lo = m + 1;
+  else
+   hi = m;
   }
  return( lo );
  }
@@ -71,7 +74,7 @@ template< std::totally_ordered T >
 const T * SpaceEfficientSortedSet< T >::find( const T & x ) const
 {
  const T * y = lowerBound( x );
- return( y && !( x < *y ) ? y : nullptr );
+ return( y && ! ( x < *y ) ? y : nullptr );
  }
 
 template< std::totally_ordered T >
@@ -102,7 +105,7 @@ template< std::totally_ordered T >
  requires std::semiregular< T >
 void SpaceEfficientSortedSet< T >::freeBlock( Block * B )
 {
- if( B->s > 0 )                             // indexed by its largest item
+ if( B->s > 0 )  // indexed by its largest item
   f_index.remove( Key{ this , B , nullptr } );
  ( B->prev ? B->prev->next : f_first ) = B->next;
  ( B->next ? B->next->prev : f_last ) = B->prev;
@@ -114,7 +117,7 @@ template< std::totally_ordered T >
  requires std::semiregular< T >
 void SpaceEfficientSortedSet< T >::shiftForward( Block * B , Block * C )
 {
- C->h = ( C->h + f_b ) % ( f_b + 1 );       // one place back
+ C->h = ( C->h + f_b ) % ( f_b + 1 );  // one place back
  C->a[ C->h ] = std::move( at( B , B->s - 1 ) );
  ++C->s;
  --B->s;
@@ -137,8 +140,9 @@ bool SpaceEfficientSortedSet< T >::insert( const T & x )
  bool fresh = true;
  for( ; ; ) {
   Block * B = blockOf( x );
-  if( ! B ) B = f_last;
-  if( ! B ) {                               // the first item
+  if( ! B )
+   B = f_last;
+  if( ! B ) {  // the first item
    B = newBlock( nullptr );
    B->a[ 0 ] = x;
    B->s = 1;
@@ -147,19 +151,19 @@ bool SpaceEfficientSortedSet< T >::insert( const T & x )
    break;
    }
   std::size_t i = place( B , x );
-  if( ( i < B->s ) && !( x < at( B , i ) ) ) {
+  if( ( i < B->s ) && ! ( x < at( B , i ) ) ) {
    fresh = false;
    break;
    }
-  if( B->s <= f_b ) {                       // room: x in its place
-   if( i == B->s ) {                        // a new largest item of the
-    f_index.remove( Key{ this , B , nullptr } );   // last block: indexed
-    at( B , i ) = x;                        // again
+  if( B->s <= f_b ) {                           // room: x in its place
+   if( i == B->s ) {                            // a new largest item of the
+    f_index.remove( Key{ this , B , nullptr } );  // last block: indexed
+    at( B , i ) = x;                             // again
     ++B->s;
     f_index.insert( Key{ this , B , nullptr } , B );
     }
    else {
-    if( i < B->s / 2 ) {                    // the shorter side moves
+    if( i < B->s / 2 ) {  // the shorter side moves
      B->h = ( B->h + f_b ) % ( f_b + 1 );
      for( std::size_t j = 0 ; j < i ; ++j )
       at( B , j ) = std::move( at( B , j + 1 ) );
@@ -176,22 +180,26 @@ bool SpaceEfficientSortedSet< T >::insert( const T & x )
   // B full: room from the next b blocks, or a spread over a new one
   std::size_t r = 1;
   Block * C = B->next;
-  for( ; C && ( r < f_b ) && ( C->s == f_b + 1 ) ; ++r ) C = C->next;
+  for( ; C && ( r < f_b ) && ( C->s == f_b + 1 ) ; ++r )
+   C = C->next;
   if( r < f_b ) {
-   if( ! C ) {                              // a new last block takes the
-    C = newBlock( f_last );                 // last item of the old one
+   if( ! C ) {               // a new last block takes the
+    C = newBlock( f_last );  // last item of the old one
     shiftForward( C->prev , C );
     f_index.insert( Key{ this , C , nullptr } , C );
     }
    for( ; C != B ; C = C->prev )
-    if( C->prev->s == f_b + 1 ) shiftForward( C->prev , C );
+    if( C->prev->s == f_b + 1 )
+     shiftForward( C->prev , C );
    }
-  else {                                    // b full blocks: spread
+  else {  // b full blocks: spread
    Block * N = newBlock( C ? C->prev : f_last );
-   while( N->s < f_b ) shiftForward( N->prev , N );
+   while( N->s < f_b )
+    shiftForward( N->prev , N );
    f_index.insert( Key{ this , N , nullptr } , N );
    for( C = N->prev ; C != B ; C = C->prev )
-    while( C->s < f_b ) shiftForward( C->prev , C );
+    while( C->s < f_b )
+     shiftForward( C->prev , C );
    }
   }
  ADS_POST( contains( x ) );
@@ -207,16 +215,16 @@ bool SpaceEfficientSortedSet< T >::remove( const T & x )
  bool gone = false;
  if( B ) {
   const std::size_t i = place( B , x );
-  if( !( x < at( B , i ) ) ) {
+  if( ! ( x < at( B , i ) ) ) {
    gone = true;
-   if( B->s == 1 ) {                        // the last block, now empty
+   if( B->s == 1 ) {  // the last block, now empty
     freeBlock( B );
     --f_size;
     ADS_INVARIANT( valid() );
     return( true );
     }
-   if( i == B->s - 1 )                      // the largest item goes: the
-    f_index.remove( Key{ this , B , nullptr } );   // block indexed again
+   if( i == B->s - 1 )                          // the largest item goes: the
+    f_index.remove( Key{ this , B , nullptr } );  // block indexed again
    if( i < B->s / 2 ) {
     for( std::size_t j = i ; j > 0 ; --j )
      at( B , j ) = std::move( at( B , j - 1 ) );
@@ -229,16 +237,17 @@ bool SpaceEfficientSortedSet< T >::remove( const T & x )
    if( i == B->s )
     f_index.insert( Key{ this , B , nullptr } , B );
    --f_size;
-   if( B->next && ( B->s + 2 == f_b ) ) {   // too few: borrow or gather
+   if( B->next && ( B->s + 2 == f_b ) ) {  // too few: borrow or gather
     std::size_t r = 1;
     Block * C = B->next;
     for( ; ( r < f_b ) && C->next && ( C->s + 1 == f_b ) ; ++r )
      C = C->next;
     if( r < f_b ) {
-     if( ! C->next && ( C->s == 1 ) ) {     // the last block is emptied
+     if( ! C->next && ( C->s == 1 ) ) {  // the last block is emptied
       f_index.remove( Key{ this , C , nullptr } );
       }
-     for( Block * D = B ; D != C ; D = D->next ) shiftBack( D , D->next );
+     for( Block * D = B ; D != C ; D = D->next )
+      shiftBack( D , D->next );
      if( C->s == 0 ) {
       ( C->prev ? C->prev->next : f_first ) = C->next;
       f_last = C->prev;
@@ -246,13 +255,14 @@ bool SpaceEfficientSortedSet< T >::remove( const T & x )
       --f_blocks;
       }
      }
-    else {                                  // b blocks: gather into b - 1
+    else {  // b blocks: gather into b - 1
      f_index.remove( Key{ this , C->prev , nullptr } );
-     Block * E = C->prev;                   // the one that empties
+     Block * E = C->prev;  // the one that empties
      for( Block * D = B ; D != E ; D = D->next )
       while( ( D->s < f_b ) && ( D->next->s > 0 ) ) {
        shiftBack( D , D->next );
-       if( ( D->next == E ) && ( E->s == 0 ) ) break;
+       if( ( D->next == E ) && ( E->s == 0 ) )
+	break;
        }
      freeBlock( E );
      }
@@ -270,7 +280,8 @@ template< class F >
 void SpaceEfficientSortedSet< T >::forEach( F && f ) const
 {
  for( const Block * B = f_first ; B ; B = B->next )
-  for( std::size_t i = 0 ; i < B->s ; ++i ) f( at( B , i ) );
+  for( std::size_t i = 0 ; i < B->s ; ++i )
+   f( at( B , i ) );
  }
 
 template< std::totally_ordered T >
@@ -283,15 +294,18 @@ bool SpaceEfficientSortedSet< T >::valid( void ) const
   if( ( B->s == 0 ) || ( B->s > f_b + 1 ) ||
       ( B->next && ( B->s + 1 < f_b ) ) )
    return( false );
-  if( ( B->next ? B->next->prev : f_last ) != B ) return( false );
+  if( ( B->next ? B->next->prev : f_last ) != B )
+   return( false );
   for( std::size_t i = 0 ; i < B->s ; ++i , ++n ) {
-   if( last && !( *last < at( B , i ) ) ) return( false );
+   if( last && ! ( *last < at( B , i ) ) )
+    return( false );
    last = &at( B , i );
    }
-  if( blockOf( at( B , B->s - 1 ) ) != B ) return( false );
+  if( blockOf( at( B , B->s - 1 ) ) != B )
+   return( false );
   }
  return( ( n == f_size ) && ( m == f_blocks ) &&
-         ( f_index.size() == f_blocks ) );
+	  ( f_index.size() == f_blocks ) );
  }
 
 /*--------------------------------------------------------------------------*/

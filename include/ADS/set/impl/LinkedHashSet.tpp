@@ -14,17 +14,16 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , class H >
-LinkedHashSet< T , H >::LinkedHashSet( void )
- : f_index( 7 , true )
-{
- }
+LinkedHashSet< T , H >::LinkedHashSet( void ) : f_index( 7 , true )
+{ }
 
 template< class T , class H >
 LinkedHashSet< T , H >::LinkedHashSet( const LinkedHashSet & o )
- : LinkedHashSet()
+    : LinkedHashSet()
 {
  o.forEach( [ & ]( const T & x ) { insert( x ); } );
  }
@@ -51,8 +50,7 @@ template< class T , class H >
 void LinkedHashSet< T , H >::insert( const T & x )
 {
  if( ! f_index.contains( x ) )
-  f_index.insert( x , f_order.insert( f_order.next( f_order.tail() ) ,
-                                      x ) );
+  f_index.insert( x , f_order.insert( f_order.next( f_order.tail() ) , x ) );
  ADS_POST( contains( x ) );
  ADS_INVARIANT( indexed() );
  }

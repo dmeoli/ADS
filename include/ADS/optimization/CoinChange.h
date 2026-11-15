@@ -30,7 +30,7 @@
 
 #ifndef __ADS_CoinChange
  #define __ADS_CoinChange
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -49,7 +49,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the coins taken by the greedy choice, the coins given in any order;
 /// nothing if it cannot pay
@@ -71,8 +72,8 @@ namespace ADS {
 /// \f]
 /// \pre \f$ c \ge 0 \f$ and the coins positive
 /// \post the change sums to \f$ c \f$
-inline std::optional< std::vector< long > > greedyChange(
-                                       std::vector< long > coins , long c );
+inline std::optional< std::vector< long > >
+greedyChange( std::vector< long > coins , long c );
 
 /// the fewest coins that pay \f$ c \f$, nothing if none
 ///
@@ -94,7 +95,7 @@ inline std::optional< std::vector< long > > greedyChange(
 ///      vector, and the coins positive
 /// \post at most \f$ c \f$ coins
 inline std::optional< long > optimalChange( const std::vector< long > & coins ,
-                                            long c );
+					    long c );
 
 /*--------------------------------------------------------------------------*/
 
@@ -108,7 +109,7 @@ inline std::optional< long > optimalChange( const std::vector< long > & coins ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CoinChange.h included */
+#endif /* CoinChange.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File CoinChange.h --------------------------*/

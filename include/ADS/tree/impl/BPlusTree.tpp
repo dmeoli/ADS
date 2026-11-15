@@ -14,11 +14,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< std::totally_ordered K , class V >
-BPlusTree< K , V >::BPlusTree( int m )
- : f_m( m )
+BPlusTree< K , V >::BPlusTree( int m ) : f_m( m )
 {
  ADS_PRE( m > 2 );
  f_root = new Node( true );
@@ -34,8 +34,8 @@ template< std::totally_ordered K , class V >
 std::optional< V > BPlusTree< K , V >::lookup( const K & x ) const
 {
  const Node * f = leaf( x );
- const auto i = std::lower_bound( f->k.begin() , f->k.end() , x ) -
-                f->k.begin();
+ const auto i = std::lower_bound( f->k.begin() , f->k.end() ,
+				  x ) - f->k.begin();
  if( ( i < long( f->k.size() ) ) && ( f->k[ i ] == x ) )
   return( f->v[ i ] );
  return( std::nullopt );
@@ -45,23 +45,23 @@ template< std::totally_ordered K , class V >
 void BPlusTree< K , V >::insert( const K & x , const V & v )
 {
  Node * f = leaf( x );
- const auto i = std::lower_bound( f->k.begin() , f->k.end() , x ) -
-                f->k.begin();
+ const auto i = std::lower_bound( f->k.begin() , f->k.end() ,
+				  x ) - f->k.begin();
  if( ( i < long( f->k.size() ) ) && ( f->k[ i ] == x ) ) {
-  f->v[ i ] = v;                         // the key is there
+  f->v[ i ] = v;  // the key is there
   ADS_POST( lookup( x ).has_value() );
   return;
   }
  f->k.insert( f->k.begin() + i , x );
  f->v.insert( f->v.begin() + i , v );
  ++f_size;
- if( int( f->k.size() ) <= f_m ) {       // the leaf was not full
+ if( int( f->k.size() ) <= f_m ) {  // the leaf was not full
   ADS_INVARIANT( shaped() );
   return;
   }
 
  // the leaf f splits: the first a keys to a new leaf g on its left
- const int a = ( f_m + 2 ) / 2;          // ceil( ( m + 1 ) / 2 )
+ const int a = ( f_m + 2 ) / 2;  // ceil( ( m + 1 ) / 2 )
  Node * g = new Node( true );
  g->k.assign( f->k.begin() , f->k.begin() + a );
  g->v.assign( f->v.begin() , f->v.begin() + a );
@@ -69,7 +69,8 @@ void BPlusTree< K , V >::insert( const K & x , const V & v )
  f->v.erase( f->v.begin() , f->v.begin() + a );
  g->prev = f->prev;
  g->next = f;
- if( f->prev ) f->prev->next = g;
+ if( f->prev )
+  f->prev->next = g;
  f->prev = g;
  up( f , g , g->k.back() );
  ADS_INVARIANT( shaped() );
@@ -79,8 +80,8 @@ template< std::totally_ordered K , class V >
 void BPlusTree< K , V >::remove( const K & x )
 {
  Node * f = leaf( x );
- const auto i = std::lower_bound( f->k.begin() , f->k.end() , x ) -
-                f->k.begin();
+ const auto i = std::lower_bound( f->k.begin() , f->k.end() ,
+				  x ) - f->k.begin();
  if( ( i == long( f->k.size() ) ) || ( f->k[ i ] != x ) )
   return;
  f->k.erase( f->k.begin() + i );
@@ -102,18 +103,18 @@ void BPlusTree< K , V >::remove( const K & x )
 template< std::totally_ordered K , class V >
 auto BPlusTree< K , V >::fix( Node * u ) -> Node *
 {
- const std::size_t h = std::size_t( ( f_m + 1 ) / 2 );   // ceil( m / 2 )
+ const std::size_t h = std::size_t( ( f_m + 1 ) / 2 );  // ceil( m / 2 )
  const std::size_t size = u->is_leaf ? u->k.size() : u->p.size();
  if( size >= h )
   return( nullptr );
  Node * b = u->parent;
- const std::size_t j = std::size_t( std::find( b->p.begin() , b->p.end() ,
-                                               u ) - b->p.begin() );
+ const std::size_t j =
+   std::size_t( std::find( b->p.begin() , b->p.end() , u ) - b->p.begin() );
  const bool left = j > 0;
  Node * s = left ? b->p[ j - 1 ] : b->p[ j + 1 ];
- K & sep = b->k[ left ? j - 1 : j ];   // between the two
+ K & sep = b->k[ left ? j - 1 : j ];  // between the two
  const std::size_t ss = s->is_leaf ? s->k.size() : s->p.size();
- if( ss > h ) {   // a borrow through the separator
+ if( ss > h ) {  // a borrow through the separator
   if( u->is_leaf ) {
    if( left ) {
     u->k.insert( u->k.begin() , s->k.back() );
@@ -149,8 +150,8 @@ auto BPlusTree< K , V >::fix( Node * u ) -> Node *
   return( nullptr );
   }
  // a merge of the right one of the two into the left one
- Node * l = left ? s : u , * r = left ? u : s;
- const std::size_t at = left ? j - 1 : j;   // the separator in b
+ Node *l = left ? s : u , *r = left ? u : s;
+ const std::size_t at = left ? j - 1 : j;  // the separator in b
  if( l->is_leaf ) {
   l->k.insert( l->k.end() , r->k.begin() , r->k.end() );
   l->v.insert( l->v.end() , r->v.begin() , r->v.end() );
@@ -254,7 +255,7 @@ void BPlusTree< K , V >::check( void ) const
 {
  if( ! shaped() )
   detail::violated( "invariant" , "shaped()" , __func__ , __FILE__ ,
-                    __LINE__ );
+		    __LINE__ );
  }
 
 template< std::totally_ordered K , class V >
@@ -263,7 +264,7 @@ bool BPlusTree< K , V >::shaped( void ) const
  int depth = -1;
  const Node * last = nullptr;
  return( shaped( f_root , nullptr , nullptr , 0 , depth , last ) &&
-         ! ( last && last->next ) );
+	  ! ( last && last->next ) );
  }
 
 template< std::totally_ordered K , class V >
@@ -272,7 +273,7 @@ auto BPlusTree< K , V >::leaf( const K & x ) const -> Node *
  Node * u = f_root;
  while( ! u->is_leaf ) {
   const auto i = std::lower_bound( u->k.begin() , u->k.end() , x ) -
-                 u->k.begin();            // the first k[ i ] >= x
+		 u->k.begin();  // the first k[ i ] >= x
   u = u->p[ i ];
   }
  return( u );
@@ -282,7 +283,7 @@ template< std::totally_ordered K , class V >
 void BPlusTree< K , V >::up( Node * f , Node * g , const K & s )
 {
  Node * b = f->parent;
- if( ! b ) {                              // f was the root
+ if( ! b ) {  // f was the root
   b = f_root = new Node( false );
   b->k = { s };
   b->p = { g , f };
@@ -311,38 +312,38 @@ void BPlusTree< K , V >::up( Node * f , Node * g , const K & s )
  }
 
 template< std::totally_ordered K , class V >
-bool BPlusTree< K , V >::shaped( const Node * u , const K * lo ,
-                                 const K * hi , int d , int & depth ,
-                                 const Node * & last ) const
+bool BPlusTree< K , V >::shaped( const Node * u , const K * lo , const K * hi ,
+				int d , int & depth ,
+				const Node *& last ) const
 {
  if( ! std::is_sorted( u->k.begin() , u->k.end() ) ||
      ( std::adjacent_find( u->k.begin() , u->k.end() ) != u->k.end() ) )
-  return( false );                       // the keys of a node increase
+  return( false );  // the keys of a node increase
  for( const K & x : u->k )
   if( ( lo && ! ( *lo < x ) ) || ( hi && ( *hi < x ) ) )
-   return( false );                      // within their interval
+   return( false );  // within their interval
  if( u->is_leaf ) {
   if( ( int( u->k.size() ) < ( u == f_root ? 0 : ( f_m + 1 ) / 2 ) ) ||
       ( int( u->k.size() ) > f_m ) || ( u->k.size() != u->v.size() ) )
-   return( false );                      // ceil( m / 2 ) to m keys, but
-                                         // in the root, one value each
+   return( false );  // ceil( m / 2 ) to m keys, but
+		      // in the root, one value each
   if( depth < 0 )
    depth = d;
   else if( depth != d )
-   return( false );                      // the leaves on one level
+   return( false );  // the leaves on one level
   if( ( u->prev != last ) || ( last && ( last->next != u ) ) )
-   return( false );                      // and linked in order
+   return( false );  // and linked in order
   last = u;
   return( true );
   }
  const int f = int( u->p.size() );
  if( ( f > f_m ) || ( f < ( u == f_root ? 2 : ( f_m + 1 ) / 2 ) ) ||
      ( int( u->k.size() ) != f - 1 ) )
-  return( false );                       // the children of a node
+  return( false );  // the children of a node
  for( int i = 0 ; i < f ; ++i )
   if( ( u->p[ i ]->parent != u ) ||
       ! shaped( u->p[ i ] , i > 0 ? &u->k[ i - 1 ] : lo ,
-                i < f - 1 ? &u->k[ i ] : hi , d + 1 , depth , last ) )
+		i < f - 1 ? &u->k[ i ] : hi , d + 1 , depth , last ) )
    return( false );
  return( true );
  }

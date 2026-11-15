@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- THE OPERATIONS ------------------------------*/
@@ -22,7 +23,7 @@ namespace ADS {
 
 template< class W , class T >
 MatrixGraph< W , T >::MatrixGraph( int n , bool directed )
- : B( n , directed ) , f_M( n , std::vector< std::optional< W > >( n ) )
+    : B( n , directed ) , f_M( n , std::vector< std::optional< W > >( n ) )
 {
  ADS_INVARIANT( consistent() );
  }
@@ -70,8 +71,10 @@ void MatrixGraph< W , T >::deleteNode( int u )
  B::check( u );
  for( int v = 0 ; v < B::bound() ; ++v )
   if( B::f_alive[ v ] && ( v != u ) ) {
-   if( f_M[ u ][ v ] ) deleteEdge( u , v );
-   if( f_M[ v ][ u ] ) deleteEdge( v , u );
+   if( f_M[ u ][ v ] )
+    deleteEdge( u , v );
+   if( f_M[ v ][ u ] )
+    deleteEdge( v , u );
    }
  B::f_alive[ u ] = false;
  --B::f_n;
@@ -104,7 +107,7 @@ std::vector< int > MatrixGraph< W , T >::adj( int u ) const
 template< class W , class T >
 std::vector< int > MatrixGraph< W , T >::inAdj( int u ) const
 {
- ( void ) B::check( u );
+ ( void )B::check( u );
  std::vector< int > in;
  for( int v = 0 ; v < B::bound() ; ++v )
   if( f_M[ v ][ u ] )

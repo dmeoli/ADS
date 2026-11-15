@@ -15,15 +15,16 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class K , class V , class H >
-CuckooHashTable< K , V , H >::CuckooHashTable( std::size_t m ,
-                                               double maxLoad ,
-                                               std::size_t s ,
-                                               std::uint64_t seed , H h )
- : f_T( m + s ) , f_m( m ) , f_m0( m ) , f_s( s ) , f_maxLoad( maxLoad ) ,
-   f_seeds( seed ) , f_g1( f_seeds() ) , f_g2( f_seeds() ) , f_h( h )
+CuckooHashTable< K , V , H >::CuckooHashTable( std::size_t m , double maxLoad ,
+					     std::size_t s ,
+					     std::uint64_t seed ,
+					     H h )
+    : f_T( m + s ) , f_m( m ) , f_m0( m ) , f_s( s ) , f_maxLoad( maxLoad ) ,
+      f_seeds( seed ) , f_g1( f_seeds() ) , f_g2( f_seeds() ) , f_h( h )
 {
  ADS_PRE( ( m >= 2 ) && ( maxLoad > 0 ) && ( maxLoad < 0.5 ) );
  }
@@ -43,15 +44,15 @@ std::size_t CuckooHashTable< K , V , H >::place( const K & k , int i ) const
  }
 
 template< class K , class V , class H >
-std::optional< std::size_t > CuckooHashTable< K , V , H >::find(
-                                                       const K & k ) const
+std::optional< std::size_t >
+CuckooHashTable< K , V , H >::find( const K & k ) const
 {
  for( int i = 0 ; i < 2 ; ++i ) {
   const std::size_t p = place( k , i );
   if( f_T[ p ].full && ( f_T[ p ].key == k ) )
    return( p );
   }
- for( std::size_t p = f_m ; p < f_T.size() ; ++p )   // the stash
+ for( std::size_t p = f_m ; p < f_T.size() ; ++p )  // the stash
   if( f_T[ p ].full && ( f_T[ p ].key == k ) )
    return( p );
  return( std::nullopt );
@@ -74,14 +75,14 @@ bool CuckooHashTable< K , V , H >::walk( Cell & c )
  // maxLoad ) the slack of the load, at least the 8 log2 m + 16 that suits
  // the small tables
  const double g = 1 / ( 2 * f_maxLoad );
- const int maxLoop = std::max( 8 * int( std::bit_width( f_m - 1 ) ) + 16 ,
-                               int( std::ceil( 3 * std::log( double( f_m ) )
-                                               / std::log( g ) ) ) );
+ const int maxLoop = std::max(
+   8 * int( std::bit_width( f_m - 1 ) ) + 16 ,
+   int( std::ceil( 3 * std::log( double( f_m ) ) / std::log( g ) ) ) );
  for( int t = 0 ; t < maxLoop ; ++t ) {
-  std::swap( c , f_T[ p ] );                // c is the key evicted from p
+  std::swap( c , f_T[ p ] );  // c is the key evicted from p
   ++f_evictions;
   const std::size_t a = place( c.key , 0 );
-  p = a == p ? place( c.key , 1 ) : a;      // to its other place
+  p = a == p ? place( c.key , 1 ) : a;  // to its other place
   if( ! f_T[ p ].full ) {
    f_T[ p ] = std::move( c );
    return( true );
@@ -95,7 +96,7 @@ bool CuckooHashTable< K , V , H >::settle( Cell & c )
 {
  if( walk( c ) )
   return( true );
- for( std::size_t p = f_m ; p < f_T.size() ; ++p )   // the stash
+ for( std::size_t p = f_m ; p < f_T.size() ; ++p )  // the stash
   if( ! f_T[ p ].full ) {
    f_T[ p ] = std::move( c );
    return( true );
@@ -105,12 +106,14 @@ bool CuckooHashTable< K , V , H >::settle( Cell & c )
 
 template< class K , class V , class H >
 void CuckooHashTable< K , V , H >::rebuild( std::size_t m ,
-                                            std::optional< Cell > extra )
+					  std::optional< Cell > extra )
 {
  std::vector< Cell > items;
  for( auto & c : f_T )
-  if( c.full ) items.push_back( std::move( c ) );
- if( extra ) items.push_back( std::move( *extra ) );
+  if( c.full )
+   items.push_back( std::move( c ) );
+ if( extra )
+  items.push_back( std::move( *extra ) );
  for( ; ; ) {
   f_m = m;
   f_T.assign( m + f_s , Cell() );
@@ -120,7 +123,8 @@ void CuckooHashTable< K , V , H >::rebuild( std::size_t m ,
    Cell c = items[ i ];
    ok = settle( c );
    }
-  if( ok ) break;
+  if( ok )
+   break;
   ++f_rehashes;
   }
  }
@@ -139,9 +143,9 @@ void CuckooHashTable< K , V , H >::insert( const K & k , const V & v )
   f_T[ *p ].value = v;
  else {
   if( double( f_n + 1 ) > f_maxLoad * double( f_m ) )
-   rebuild( 2 * f_m , std::nullopt );      // the global rebuilding
+   rebuild( 2 * f_m , std::nullopt );  // the global rebuilding
   Cell c{ true , k , v };
-  if( ! settle( c ) ) {                     // c holds the homeless key
+  if( ! settle( c ) ) {  // c holds the homeless key
    ++f_rehashes;
    rebuild( f_m , std::move( c ) );
    }
@@ -157,8 +161,7 @@ void CuckooHashTable< K , V , H >::remove( const K & k )
  if( const auto p = find( k ) ) {
   f_T[ *p ] = Cell();
   --f_n;
-  if( ( f_m > f_m0 ) &&
-      ( double( f_n ) < f_maxLoad * double( f_m ) / 4 ) )
+  if( ( f_m > f_m0 ) && ( double( f_n ) < f_maxLoad * double( f_m ) / 4 ) )
    rebuild( std::max( f_m0 , f_m / 2 ) , std::nullopt );
   }
  ADS_POST( ! contains( k ) );
@@ -207,15 +210,16 @@ std::size_t CuckooHashTable< K , V , H >::stashed( void ) const
 template< class K , class V , class H >
 bool CuckooHashTable< K , V , H >::placed( const K & k ) const
 {
- std::size_t c = 0;                         // k at most once
+ std::size_t c = 0;  // k at most once
  const std::size_t p1 = place( k , 0 ) , p2 = place( k , 1 );
  c += f_T[ p1 ].full && ( f_T[ p1 ].key == k );
- if( p2 != p1 ) c += f_T[ p2 ].full && ( f_T[ p2 ].key == k );
+ if( p2 != p1 )
+  c += f_T[ p2 ].full && ( f_T[ p2 ].key == k );
  for( std::size_t p = f_m ; p < f_T.size() ; ++p )
   c += f_T[ p ].full && ( f_T[ p ].key == k );
  if( c > 1 )
   return( false );
- if( f_T.size() > 1024 )                    // a long sequence stays linear
+ if( f_T.size() > 1024 )  // a long sequence stays linear
   return( true );
  std::size_t n = 0;
  for( std::size_t p = 0 ; p < f_T.size() ; ++p )

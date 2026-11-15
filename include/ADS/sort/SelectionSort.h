@@ -26,7 +26,7 @@
 
 #ifndef __ADS_SelectionSort
  #define __ADS_SelectionSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -46,7 +46,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// \f$ A \f$ in increasing order by `less`, by selection of the minimum
 ///
@@ -76,7 +77,7 @@ void selectionSort( std::vector< T > & A , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SelectionSort.h included */
+#endif /* SelectionSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File SelectionSort.h ------------------------*/

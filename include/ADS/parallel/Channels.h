@@ -63,7 +63,7 @@
 
 #ifndef __ADS_Channels
  #define __ADS_Channels
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -88,7 +88,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the families of channels among \f$ p \f$ workers: `tryPush( from , to ,
 /// m )` pushes a span of messages and returns how many, `drain( me , f )`
@@ -96,8 +97,9 @@ namespace ADS {
 /// many, `size()` is \f$ p \f$
 template< class C >
 concept ChannelFamily = requires( C & c , const C & k , std::size_t i ,
-                                  std::span< const typename C::Message > m ,
-                                  void ( & f )( typename C::Message && ) ) {
+				  std::span< const typename C::Message > m ,
+				  void ( &f )( typename C::Message && ) )
+{
  { k.size() } -> std::convertible_to< std::size_t >;
  { c.tryPush( i , i , m ) } -> std::convertible_to< std::size_t >;
  { c.drain( i , f ) } -> std::convertible_to< std::size_t >;
@@ -109,15 +111,15 @@ concept ChannelFamily = requires( C & c , const C & k , std::size_t i ,
 
 /// the channels of a family seen by one worker
 template< class C >
-class ChannelPort {
+class ChannelPort
+{
  public:
-
  /// the port of the worker \f$ i \f$ on the channels \f$ c \f$
- ChannelPort( C & c , std::size_t i ) : f_c( &c ) , f_me( i ) {}
+ ChannelPort( C & c , std::size_t i ) : f_c( &c ) , f_me( i ) { }
 
  /// the messages of \f$ m \f$ pushed to the inbox of `to`, as many as fit
  std::size_t tryPush( std::size_t to ,
-                      std::span< const typename C::Message > m ) {
+		      std::span< const typename C::Message > m ) {
   return( f_c->tryPush( f_me , to , m ) );
   }
 
@@ -131,9 +133,8 @@ class ChannelPort {
  [[nodiscard]] std::size_t index( void ) const { return( f_me ); }
 
  private:
-
- C * f_c;                                  ///< the channels
- std::size_t f_me;                         ///< the worker
+ C * f_c;           ///< the channels
+ std::size_t f_me;  ///< the worker
  };  // end( class ChannelPort )
 
 /*--------------------------------------------------------------------------*/
@@ -142,12 +143,12 @@ class ChannelPort {
 
 /// the inboxes as vectors under a lock, the portable baseline
 template< class Msg , class Lock = std::mutex >
-class LockedChannels {
+class LockedChannels
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Message = Msg;   ///< the type of the messages
+ using Message = Msg;  ///< the type of the messages
  /// whether a push may push fewer messages than given
  static constexpr bool bounded = false;
 
@@ -178,7 +179,7 @@ class LockedChannels {
  /// \f]
  /// \pre `from` and `to` are workers
  std::size_t tryPush( std::size_t from , std::size_t to ,
-                      std::span< const Msg > m ) {
+		      std::span< const Msg > m ) {
   ADS_PRE( ( from < size() ) && ( to < size() ) );
   if( m.empty() )
    return( 0 );
@@ -230,16 +231,16 @@ class LockedChannels {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// an inbox, on lines of its own
- struct alignas( 128 ) Box {
-  Lock lock;                               ///< the lock of the inbox
-  std::vector< Msg > items;                ///< the messages, under it
-  std::atomic< std::size_t > count{ 0 };   ///< their number, published
-  std::vector< Msg > taken;                ///< the owner's, drained
+ struct alignas( 128 ) Box
+ {
+  Lock lock;                              ///< the lock of the inbox
+  std::vector< Msg > items;               ///< the messages, under it
+  std::atomic< std::size_t > count{ 0 };  ///< their number, published
+  std::vector< Msg > taken;               ///< the owner's, drained
   };
 
- std::vector< std::unique_ptr< Box > > f_box;   ///< one per worker
+ std::vector< std::unique_ptr< Box > > f_box;  ///< one per worker
  };  // end( class LockedChannels )
 
 /*--------------------------------------------------------------------------*/
@@ -248,12 +249,12 @@ class LockedChannels {
 
 /// the inboxes as stacks of Treiber of batches [see `MPSCInbox.h`]
 template< class Msg >
-class InboxChannels {
+class InboxChannels
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Message = Msg;   ///< the type of the messages
+ using Message = Msg;  ///< the type of the messages
  /// whether a push may push fewer messages than given
  static constexpr bool bounded = false;
 
@@ -283,7 +284,7 @@ class InboxChannels {
  /// \f]
  /// \pre `from` and `to` are workers
  std::size_t tryPush( std::size_t from , std::size_t to ,
-                      std::span< const Msg > m ) {
+		      std::span< const Msg > m ) {
   ADS_PRE( ( from < size() ) && ( to < size() ) );
   if( m.empty() )
    return( 0 );
@@ -328,13 +329,13 @@ class InboxChannels {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// an inbox, on lines of its own
- struct alignas( 128 ) Box {
-  MPSCInbox< std::vector< Msg > > inbox;   ///< the batches
+ struct alignas( 128 ) Box
+ {
+  MPSCInbox< std::vector< Msg > > inbox;  ///< the batches
   };
 
- std::vector< std::unique_ptr< Box > > f_box;   ///< one per worker
+ std::vector< std::unique_ptr< Box > > f_box;  ///< one per worker
  };  // end( class InboxChannels )
 
 /*--------------------------------------------------------------------------*/
@@ -343,12 +344,12 @@ class InboxChannels {
 
 /// the inboxes as queues with a lane per sender [see `MPSCQueue.h`]
 template< class Msg , std::size_t B = 256 >
-class LaneChannels {
+class LaneChannels
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Message = Msg;   ///< the type of the messages
+ using Message = Msg;  ///< the type of the messages
  /// whether a push may push fewer messages than given
  static constexpr bool bounded = false;
 
@@ -382,7 +383,7 @@ class LaneChannels {
  /// \f]
  /// \pre `from` and `to` are workers
  std::size_t tryPush( std::size_t from , std::size_t to ,
-                      std::span< const Msg > m ) {
+		      std::span< const Msg > m ) {
   ADS_PRE( ( from < size() ) && ( to < size() ) );
   auto & l = f_lane[ from * size() + to ];
   for( const auto & x : m )
@@ -430,14 +431,14 @@ class LaneChannels {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// an inbox and the buffer of its drains, on lines of their own
- struct alignas( 128 ) Box {
-  MPSCQueue< Msg , B > queue;              ///< the lanes
-  Msg buffer[ B ];                         ///< the owner's, drained
+ struct alignas( 128 ) Box
+ {
+  MPSCQueue< Msg , B > queue;  ///< the lanes
+  Msg buffer[ B ];            ///< the owner's, drained
   };
 
- std::vector< std::unique_ptr< Box > > f_box;   ///< one per worker
+ std::vector< std::unique_ptr< Box > > f_box;  ///< one per worker
  /// the lane of each sender in each inbox, the sender first
  std::vector< typename MPSCQueue< Msg , B >::Producer > f_lane;
  };  // end( class LaneChannels )
@@ -449,12 +450,12 @@ class LaneChannels {
 /// the \f$ p^2 \f$ bounded queues of the pairs of workers [see
 /// `SPSCQueue.h`]
 template< class Msg >
-class MeshChannels {
+class MeshChannels
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Message = Msg;   ///< the type of the messages
+ using Message = Msg;  ///< the type of the messages
  /// whether a push may push fewer messages than given
  static constexpr bool bounded = true;
 
@@ -462,7 +463,7 @@ class MeshChannels {
  /// each
  /// \pre \f$ p \ge 1 \f$, \f$ c \ge 2 \f$ a power of 2
  explicit MeshChannels( std::size_t p , std::size_t c = 1024 )
-  : f_q( p * p ) , f_start( p ) {
+     : f_q( p * p ) , f_start( p ) {
   ADS_PRE( p >= 1 );
   for( auto & q : f_q )
    q = std::make_unique< SPSCQueue< Msg > >( c );
@@ -486,7 +487,7 @@ class MeshChannels {
  /// \f]
  /// \pre `from` and `to` are workers
  std::size_t tryPush( std::size_t from , std::size_t to ,
-                      std::span< const Msg > m ) {
+		      std::span< const Msg > m ) {
   ADS_PRE( ( from < size() ) && ( to < size() ) );
   if( m.empty() )
    return( 0 );
@@ -528,15 +529,15 @@ class MeshChannels {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the first sender of the next drain of a worker, on a line of its own
- struct alignas( 64 ) Start {
-  std::size_t s = 0;                       ///< the sender
+ struct alignas( 64 ) Start
+ {
+  std::size_t s = 0;  ///< the sender
   };
 
  /// the queue from each sender to each receiver, the receiver first
  std::vector< std::unique_ptr< SPSCQueue< Msg > > > f_q;
- std::vector< Start > f_start;             ///< one per worker
+ std::vector< Start > f_start;  ///< one per worker
  };  // end( class MeshChannels )
 
 /*--------------------------------------------------------------------------*/
@@ -549,7 +550,8 @@ class MeshChannels {
 /// round trips on the pool, OpenMP and FastFlow, with the trees a tie; a
 /// specialization may give an executor a family of its own
 template< class E >
-struct ChannelsOf {
+struct ChannelsOf
+{
  /// the family for the messages `Msg`
  template< class Msg >
  using type = MeshChannels< Msg >;
@@ -565,7 +567,7 @@ using DefaultChannels = typename ChannelsOf< E >::template type< Msg >;
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Channels.h included */
+#endif /* Channels.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File Channels.h ----------------------------*/

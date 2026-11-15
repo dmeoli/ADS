@@ -42,7 +42,7 @@
 
 #ifndef __ADS_Enumeration
  #define __ADS_Enumeration
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -58,7 +58,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the subsets of \f$ k \f$ of the items \f$ 0 , \ldots , n - 1 \f$, as
 /// vectors of \f$ n \f$ booleans, `f( S )` on each and true from it to stop;
@@ -85,7 +86,8 @@ namespace ADS {
 template< class F >
 long subsets( int n , int k , F && f );
 
-namespace detail {
+namespace detail
+{
 
 /// the permutations of \f$ A \f$, or its derangements if `derange`
 template< class T , class F >
@@ -180,7 +182,7 @@ long subsetSum( const std::vector< T > & A , T k , F && f );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Enumeration.h included */
+#endif /* Enumeration.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File Enumeration.h -------------------------*/

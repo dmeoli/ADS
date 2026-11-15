@@ -59,7 +59,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- HELPERS ----------------------------------*/
@@ -72,14 +73,16 @@ std::vector< bool > randomBits( std::mt19937 & g , std::size_t n , double p )
 {
  std::bernoulli_distribution b( p );
  std::vector< bool > v( n );
- for( std::size_t i = 0 ; i < n ; ++i ) v[ i ] = b( g );
+ for( std::size_t i = 0 ; i < n ; ++i )
+  v[ i ] = b( g );
  return( v );
  }
 
 BitVector toBits( const std::vector< bool > & v )
 {
  BitVector b;
- for( const bool x : v ) b.push_back( x );
+ for( const bool x : v )
+  b.push_back( x );
  return( b );
  }
 
@@ -100,7 +103,8 @@ Lists randomTree( std::mt19937 & g , std::size_t n , std::size_t spread )
   const std::size_t lo = u > spread ? u - spread : 0;
   c[ lo + g() % ( u - lo ) ].push_back( u );
   }
- for( auto & l : c ) std::shuffle( l.begin() , l.end() , g );
+ for( auto & l : c )
+  std::shuffle( l.begin() , l.end() , g );
  return( c );
  }
 
@@ -108,9 +112,11 @@ Lists randomTree( std::mt19937 & g , std::size_t n , std::size_t spread )
 std::vector< std::size_t > byLevels( const Lists & c )
 {
  std::vector< std::size_t > Q;
- if( ! c.empty() ) Q.push_back( 0 );
+ if( ! c.empty() )
+  Q.push_back( 0 );
  for( std::size_t h = 0 ; h < Q.size() ; ++h )
-  for( const auto u : c[ Q[ h ] ] ) Q.push_back( u );
+  for( const auto u : c[ Q[ h ] ] )
+   Q.push_back( u );
  return( Q );
  }
 
@@ -118,7 +124,8 @@ std::vector< std::size_t > byLevels( const Lists & c )
 std::vector< std::size_t > inPreorder( const Lists & c )
 {
  std::vector< std::size_t > P , S;
- if( ! c.empty() ) S.push_back( 0 );
+ if( ! c.empty() )
+  S.push_back( 0 );
  while( ! S.empty() ) {
   const std::size_t u = S.back();
   S.pop_back();
@@ -133,7 +140,8 @@ std::vector< std::size_t > inPreorder( const Lists & c )
 std::vector< std::size_t > inverse( const std::vector< std::size_t > & o )
 {
  std::vector< std::size_t > r( o.size() );
- for( std::size_t i = 0 ; i < o.size() ; ++i ) r[ o[ i ] ] = i;
+ for( std::size_t i = 0 ; i < o.size() ; ++i )
+  r[ o[ i ] ] = i;
  return( r );
  }
 
@@ -142,7 +150,8 @@ std::vector< std::size_t > parents( const Lists & c , std::size_t nil )
 {
  std::vector< std::size_t > p( c.size() , nil );
  for( std::size_t u = 0 ; u < c.size() ; ++u )
-  for( const auto v : c[ u ] ) p[ v ] = u;
+  for( const auto v : c[ u ] )
+   p[ v ] = u;
  return( p );
  }
 
@@ -150,7 +159,7 @@ std::vector< std::size_t > parents( const Lists & c , std::size_t nil )
 /// locality, the successors near the node and often copied from the list
 /// before
 Lists randomGraph( std::mt19937 & g , std::size_t n , std::size_t deg ,
-                   bool locality )
+		   bool locality )
 {
  Lists a( n );
  for( std::size_t u = 0 ; u < n ; ++u ) {
@@ -158,13 +167,16 @@ Lists randomGraph( std::mt19937 & g , std::size_t n , std::size_t deg ,
   const std::size_t d = n ? g() % ( deg + 1 ) : 0;
   if( locality && u > 0 && g() % 2 )
    for( const auto v : a[ u - 1 ] )
-    if( g() % 4 ) s.insert( v );
+    if( g() % 4 )
+     s.insert( v );
   for( std::size_t k = 0 ; k < d ; ++k )
    if( locality ) {
     const std::size_t run = 1 + g() % 6 , at = u + g() % 32;
-    for( std::size_t j = 0 ; j < run ; ++j ) s.insert( ( at + j ) % n );
+    for( std::size_t j = 0 ; j < run ; ++j )
+     s.insert( ( at + j ) % n );
     }
-   else s.insert( g() % n );
+   else
+    s.insert( g() % n );
   a[ u ].assign( s.begin() , s.end() );
   }
  return( a );
@@ -192,7 +204,8 @@ ADS_TEST( "bit-vector" )
    const int len = int( g() % 65 );
    const std::uint64_t v = len ? randomWide( g ) >> ( 64 - len ) : 0;
    B.append( v , len );
-   for( int i = 0 ; i < len ; ++i ) R.push_back( ( v >> i ) & 1 );
+   for( int i = 0 ; i < len ; ++i )
+    R.push_back( ( v >> i ) & 1 );
    }
   }
  CHECK( B.size() == R.size() );
@@ -202,37 +215,40 @@ ADS_TEST( "bit-vector" )
   const int len = int( g() % 65 );
   const std::size_t i = g() % ( B.size() - std::size_t( len ) + 1 );
   std::uint64_t r = 0;
-  for( int k = 0 ; k < len ; ++k ) r |= std::uint64_t( R[ i + k ] ) << k;
+  for( int k = 0 ; k < len ; ++k )
+   r |= std::uint64_t( R[ i + k ] ) << k;
   CHECK( B.get( i , len ) == r );
   const std::uint64_t v = len ? randomWide( g ) >> ( 64 - len ) : 0;
   B.put( i , v , len );
-  for( int k = 0 ; k < len ; ++k ) R[ i + k ] = ( v >> k ) & 1;
+  for( int k = 0 ; k < len ; ++k )
+   R[ i + k ] = ( v >> k ) & 1;
   const std::size_t j = g() % B.size();
   B.set( j , ! B[ j ] );
   R[ j ] = ! R[ j ];
   }
  CHECK( std::equal( B.begin() , B.end() , R.begin() , R.end() ) );
- const auto it = B.begin() + 100;           // random access
- CHECK( ( it[ 5 ] == R[ 105 ] ) && ( B.end() - B.begin() ==
-                                      std::ptrdiff_t( R.size() ) ) );
+ const auto it = B.begin() + 100;  // random access
+ CHECK( ( it[ 5 ] == R[ 105 ] ) &&
+	( B.end() - B.begin() == std::ptrdiff_t( R.size() ) ) );
  CHECK( std::random_access_iterator< BitVector::const_iterator > );
  CHECK( BitVector( "0010111" ).toString() == "0010111" );
  CHECK( BitVector( "0010111" ).count() == 4 );
  CHECK( BitVector( 130 , true ).count() == 130 );
  CHECK( BitVector().empty() && BitVector( "" ).size() == 0 );
  CHECK( BitVector( "0101" ) == BitVector( "0101" ) );
- BitVector A;                               // fields of 0 and 64 bits
+ BitVector A;  // fields of 0 and 64 bits
  A.append( 0 , 0 );
  CHECK( A.empty() && A.get( 0 , 0 ) == 0 );
  A.append( ~Word( 0 ) , 64 );
  A.append( 1 , 1 );
- A.append( 0x8000000000000001ULL , 64 );    // across two words
+ A.append( 0x8000000000000001ULL , 64 );  // across two words
  CHECK( A.size() == 129 && A.count() == 67 );
- CHECK( A.get( 0 , 64 ) == ~Word( 0 ) && A.get( 65 , 64 ) ==
-        0x8000000000000001ULL && A.get( 64 , 64 ) == 0x0000000000000003ULL );
+ CHECK( A.get( 0 , 64 ) == ~Word( 0 ) &&
+	A.get( 65 , 64 ) == 0x8000000000000001ULL &&
+	A.get( 64 , 64 ) == 0x0000000000000003ULL );
  A.put( 1 , 0 , 64 );
  CHECK( A.get( 0 , 1 ) == 1 && A.get( 1 , 64 ) == 0 && A.count() == 3 );
- A.put( 129 , 0 , 0 );                      // nothing at the end
+ A.put( 129 , 0 , 0 );  // nothing at the end
  CHECK( A.size() == 129 && A.get( 129 , 0 ) == 0 );
  CHECK_THROWS( BitVector( "012" ) , contract_violation );
  CHECK_THROWS( B.get( B.size() - 3 , 4 ) , contract_violation );
@@ -255,12 +271,13 @@ ADS_TEST( "select-in-word" )
  std::mt19937 g( 1 );
  auto scan = []( Word x , int k ) {
   for( int i = 0 ; i < 64 ; ++i )
-   if( ( ( x >> i ) & 1 ) && ( k-- == 0 ) ) return( i );
+   if( ( ( x >> i ) & 1 ) && ( k-- == 0 ) )
+    return( i );
   return( -1 );
   };
  for( int t = 0 ; t < 20000 ; ++t ) {
   Word x = ( Word( g() ) << 32 ) | g();
-  for( int d = int( g() % 4 ) ; d > 0 ; --d )   // sparser words
+  for( int d = int( g() % 4 ) ; d > 0 ; --d )  // sparser words
    x &= ( Word( g() ) << 32 ) | g();
   for( int k = 0 ; k < sidewaysSum( x ) ; ++k )
    CHECK( selectInWord( x , k ) == scan( x , k ) );
@@ -282,30 +299,43 @@ ADS_TEST( "bit-stream" )
 {
  std::mt19937 g( 1 );
  BitWriter w;
- struct Op { int kind , len; std::uint64_t v; };
+ struct Op
+ {
+  int kind , len;
+  std::uint64_t v;
+  };
  std::vector< Op > ops;
  for( int t = 0 ; t < 20000 ; ++t ) {
   const int kind = int( g() % 4 );
   const int len = int( g() % 65 );
   std::uint64_t v = len ? randomWide( g ) >> ( 64 - len ) : 0;
-  if( kind == 2 ) v = g() % 300;
+  if( kind == 2 )
+   v = g() % 300;
   ops.push_back( { kind , len , v } );
-  if( kind == 0 ) w.write( v , len );
-  else if( kind == 1 ) w.writeBinary( v , len );
-  else if( kind == 2 ) w.writeUnary( v );
-  else w.writeBit( v & 1 );
+  if( kind == 0 )
+   w.write( v , len );
+  else if( kind == 1 )
+   w.writeBinary( v , len );
+  else if( kind == 2 )
+   w.writeUnary( v );
+  else
+   w.writeBit( v & 1 );
   }
  const BitVector B = w.release();
  CHECK( w.size() == 0 );
  BitReader r( B );
  for( const Op & o : ops )
-  if( o.kind == 0 ) CHECK( r.read( o.len ) == o.v );
-  else if( o.kind == 1 ) CHECK( r.readBinary( o.len ) == o.v );
-  else if( o.kind == 2 ) CHECK( r.readUnary() == o.v );
-  else CHECK( r.readBit() == bool( o.v & 1 ) );
+  if( o.kind == 0 )
+   CHECK( r.read( o.len ) == o.v );
+  else if( o.kind == 1 )
+   CHECK( r.readBinary( o.len ) == o.v );
+  else if( o.kind == 2 )
+   CHECK( r.readUnary() == o.v );
+  else
+   CHECK( r.readBit() == bool( o.v & 1 ) );
  CHECK( r.atEnd() && ( r.position() == B.size() ) );
  BitWriter m;
- m.writeBinary( 9 , 4 );                    // most significant bit first
+ m.writeBinary( 9 , 4 );  // most significant bit first
  m.write( 9 , 4 );
  m.writeUnary( 2 );
  CHECK( m.bits().toString() == "10011001001" );
@@ -314,19 +344,19 @@ ADS_TEST( "bit-stream" )
  CHECK( e.readUnary() == 2 );
  CHECK_THROWS( ( void )e.readBit() , contract_violation );
  CHECK_THROWS( ( void )e.readUnary() , contract_violation );
- CHECK( e.read( 0 ) == 0 && e.readBinary( 0 ) == 0 );   // none at the end
+ CHECK( e.read( 0 ) == 0 && e.readBinary( 0 ) == 0 );  // none at the end
  CHECK_THROWS( ( void )e.read( 1 ) , contract_violation );
  CHECK_THROWS( e.seek( m.bits().size() + 1 ) , contract_violation );
  CHECK_THROWS( BitReader( m.bits() , m.bits().size() + 1 ) ,
-               contract_violation );
- BitWriter u;                               // a unary code of 3 words
+	       contract_violation );
+ BitWriter u;  // a unary code of 3 words
  u.writeUnary( 200 );
  u.write( ~Word( 0 ) , 64 );
  u.writeBinary( ~Word( 0 ) , 64 );
  BitReader ru( u.bits() );
  CHECK( ru.readUnary() == 200 && ru.read( 64 ) == ~Word( 0 ) &&
-        ru.readBinary( 64 ) == ~Word( 0 ) && ru.atEnd() );
- const BitVector Z( 10 , false );           // zeros up to the end
+	ru.readBinary( 64 ) == ~Word( 0 ) && ru.atEnd() );
+ const BitVector Z( 10 , false );  // zeros up to the end
  BitReader rz( Z );
  CHECK_THROWS( ( void )rz.readUnary() , contract_violation );
  CHECK_THROWS( u.write( 4 , 2 ) , contract_violation );
@@ -344,7 +374,7 @@ ADS_TEST( "elias-codes" )
   enc( w , x );
   return( w.bits().toString() );
   };
- CHECK( code( encodeGamma , 9 ) == "0001001" );   // figure 11.1
+ CHECK( code( encodeGamma , 9 ) == "0001001" );  // figure 11.1
  // figure 11.2 prints delta( 14 ) with one 0 more than the 9 bits of
  // gamma( 4 ) = 00100 and B( 14 ) = 1110, which the formula gives
  CHECK( code( encodeDelta , 14 ) == "001001110" );
@@ -352,40 +382,44 @@ ADS_TEST( "elias-codes" )
  CHECK( code( encodeGamma , 1 ) == "1" && code( encodeDelta , 1 ) == "11" );
  std::mt19937 g( 1 );
  std::vector< std::uint64_t > X;
- for( std::uint64_t x = 1 ; x <= 5000 ; ++x ) X.push_back( x );
- for( int t = 0 ; t < 5000 ; ++t ) X.push_back( randomWide( g ) );
+ for( std::uint64_t x = 1 ; x <= 5000 ; ++x )
+  X.push_back( x );
+ for( int t = 0 ; t < 5000 ; ++t )
+  X.push_back( randomWide( g ) );
  X.push_back( ~std::uint64_t( 0 ) );
  X.push_back( std::uint64_t( 1 ) << 63 );
  BitWriter w;
  for( const auto x : X ) {
   const int L = 1 + int( std::floor( std::log2( double( x ) ) ) );
-  const int B = binaryLength( x );          // the double rounds near 2^k
+  const int B = binaryLength( x );  // the double rounds near 2^k
   CHECK( ( B == L ) || ( x > ( std::uint64_t( 1 ) << 50 ) ) );
   CHECK( gammaLength( x ) == 2 * ( B - 1 ) + 1 );
-  CHECK( deltaLength( x ) == 1 + 2 * ( binaryLength( std::uint64_t( B ) ) -
-                                       1 ) + B );
+  CHECK( deltaLength( x ) ==
+	 1 + 2 * ( binaryLength( std::uint64_t( B ) ) - 1 ) + B );
   CHECK( code( encodeGamma , x ).size() == std::size_t( gammaLength( x ) ) );
   encodeGamma( w , x );
   encodeDelta( w , x );
-  if( x <= 300 ) encodeUnary( w , x );
+  if( x <= 300 )
+   encodeUnary( w , x );
   }
  BitReader r( w.bits() );
  for( const auto x : X ) {
   CHECK( decodeGamma( r ) == x );
   CHECK( decodeDelta( r ) == x );
-  if( x <= 300 ) CHECK( decodeUnary( r ) == x );
+  if( x <= 300 )
+   CHECK( decodeUnary( r ) == x );
   }
  CHECK( r.atEnd() );
  CHECK( code( encodeGamma , ~std::uint64_t( 0 ) ).size() == 127 &&
-        deltaLength( ~std::uint64_t( 0 ) ) == 1 + 2 * 6 + 64 );
+	deltaLength( ~std::uint64_t( 0 ) ) == 1 + 2 * 6 + 64 );
  CHECK( binaryLength( 1 ) == 1 && binaryLength( ~std::uint64_t( 0 ) ) == 64 );
- BitWriter c;                               // a gamma of 64 zeros: past
- c.write( 0 , 64 );                         // 2^64 - 1
+ BitWriter c;       // a gamma of 64 zeros: past
+ c.write( 0 , 64 );  // 2^64 - 1
  c.writeBit( true );
  c.write( 0 , 64 );
  BitReader rc( c.bits() );
  CHECK_THROWS( ( void )decodeGamma( rc ) , contract_violation );
- BitWriter d;                               // a delta of length 65
+ BitWriter d;  // a delta of length 65
  encodeGamma( d , 65 );
  d.write( 0 , 64 );
  d.write( 0 , 1 );
@@ -406,25 +440,36 @@ ADS_TEST( "rice-golomb" )
 {
  BitWriter f;
  encodeRice( f , 83 , 4 );
- CHECK( f.bits().toString() == "0000010010" );   // figure 11.3
- BitWriter t;                    // b = 5: the remainders 00 01 10 110 111
- for( std::uint64_t x = 1 ; x <= 5 ; ++x ) encodeGolomb( t , x , 5 );
- CHECK( t.bits().toString() ==
-        "1" "00" "1" "01" "1" "10" "1" "110" "1" "111" );
+ CHECK( f.bits().toString() == "0000010010" );  // figure 11.3
+ BitWriter t;  // b = 5: the remainders 00 01 10 110 111
+ for( std::uint64_t x = 1 ; x <= 5 ; ++x )
+  encodeGolomb( t , x , 5 );
+ CHECK( t.bits().toString() == "1"
+			       "00"
+			       "1"
+			       "01"
+			       "1"
+			       "10"
+			       "1"
+			       "110"
+			       "1"
+			       "111" );
  std::mt19937 g( 1 );
  for( int k = 0 ; k <= 12 ; ++k ) {
   BitWriter w , v;
   std::vector< std::uint64_t > X;
-  for( int i = 0 ; i < 500 ; ++i ) X.push_back( 1 + g() % ( 40u << k ) );
+  for( int i = 0 ; i < 500 ; ++i )
+   X.push_back( 1 + g() % ( 40u << k ) );
   for( const auto x : X ) {
    CHECK( riceLength( x , k ) ==
-          ( x - 1 ) / ( std::uint64_t( 1 ) << k ) + 1 + std::uint64_t( k ) );
+	  ( x - 1 ) / ( std::uint64_t( 1 ) << k ) + 1 + std::uint64_t( k ) );
    encodeRice( w , x , k );
    encodeGolomb( v , x , std::uint64_t( 1 ) << k );
    }
   CHECK( w.bits() == v.bits() );
   BitReader r( w.bits() );
-  for( const auto x : X ) CHECK( decodeRice( r , k ) == x );
+  for( const auto x : X )
+   CHECK( decodeRice( r , k ) == x );
   }
  for( std::uint64_t b = 1 ; b <= 70 ; ++b ) {
   BitWriter w;
@@ -441,22 +486,22 @@ ADS_TEST( "rice-golomb" )
  encodeRice( e , ~std::uint64_t( 0 ) , 60 );
  BitReader re( e.bits() );
  CHECK( decodeRice( re , 60 ) == ~std::uint64_t( 0 ) );
- BitWriter h;                               // the largest modulus, 2^63
+ BitWriter h;  // the largest modulus, 2^63
  const std::uint64_t b63 = std::uint64_t( 1 ) << 63;
- for( const std::uint64_t x : { std::uint64_t( 1 ) , b63 , b63 + 1 ,
-                                ~std::uint64_t( 0 ) } ) {
+ for( const std::uint64_t x :
+      { std::uint64_t( 1 ) , b63 , b63 + 1 , ~std::uint64_t( 0 ) } ) {
   const std::size_t before = h.size();
   encodeGolomb( h , x , b63 );
   CHECK( h.size() - before == golombLength( x , b63 ) );
   encodeRice( h , x , 63 );
   }
  BitReader rh( h.bits() );
- for( const std::uint64_t x : { std::uint64_t( 1 ) , b63 , b63 + 1 ,
-                                ~std::uint64_t( 0 ) } )
+ for( const std::uint64_t x :
+      { std::uint64_t( 1 ) , b63 , b63 + 1 , ~std::uint64_t( 0 ) } )
   CHECK( decodeGolomb( rh , b63 ) == x && decodeRice( rh , 63 ) == x );
  CHECK( rh.atEnd() );
  CHECK( riceLength( 1 , 0 ) == 1 && golombLength( 1 , 1 ) == 1 &&
-        golombLength( 1000 , 1 ) == 1000 );
+	golombLength( 1000 , 1 ) == 1000 );
  CHECK_THROWS( encodeRice( e , 1 , 64 ) , contract_violation );
  CHECK_THROWS( encodeRice( e , 1 , -1 ) , contract_violation );
  CHECK_THROWS( encodeRice( e , 0 , 3 ) , contract_violation );
@@ -474,15 +519,15 @@ ADS_TEST( "rice-golomb" )
 // empty block, and b outside [ 1 , 63 ] and f outside ( 0 , 1 ]
 ADS_TEST( "pfordelta" )
 {
- const std::vector< std::uint64_t > S{ 1 , 2 , 10 , 16 , 2 , 6 , 4 , 5 ,
-                                       22 , 2 };
+ const std::vector< std::uint64_t > S{ 1 , 2 , 10 , 16 , 2 , 6 , 4 , 5 , 22 ,
+				       2 };
  const PForDeltaBlock p = encodePForDelta( S , 3 , 0 );
  CHECK( p.exceptions == std::vector< std::uint64_t >( { 10 , 16 , 22 } ) );
  CHECK( p.slots.get( 2 * 3 , 3 ) == 7 && p.slots.get( 5 * 3 , 3 ) == 6 );
  CHECK( decodePForDelta( p ) == S );
  CHECK( p.codeBits() == 10 * 3 + 3 * 64 && p.size() == 10 );
- CHECK( pforDeltaWidth( S , 0 , 0.7 ) == 3 );    // 7 of the 10 in [ 0 , 6 ]
- CHECK( pforDeltaWidth( S , 0 , 1.0 ) == 5 );    // 22 <= 30
+ CHECK( pforDeltaWidth( S , 0 , 0.7 ) == 3 );  // 7 of the 10 in [ 0 , 6 ]
+ CHECK( pforDeltaWidth( S , 0 , 1.0 ) == 5 );  // 22 <= 30
  std::mt19937 g( 1 );
  std::normal_distribution< double > N( 1000 , 20 );
  for( int t = 0 ; t < 50 ; ++t ) {
@@ -493,24 +538,25 @@ ADS_TEST( "pfordelta" )
   const int b = pforDeltaWidth( X , base );
   std::size_t in = 0;
   for( const auto x : X )
-   if( ( x >= base ) && ( x - base < ( std::uint64_t( 1 ) << b ) - 1 ) ) ++in;
+   if( ( x >= base ) && ( x - base < ( std::uint64_t( 1 ) << b ) - 1 ) )
+    ++in;
   CHECK( double( in ) >= 0.9 * double( X.size() ) );
   const PForDeltaBlock q = encodePForDelta( X , b , base );
   CHECK( decodePForDelta( q ) == X );
-  CHECK( q.codeBits() == X.size() * std::size_t( b ) +
-                         64 * q.exceptions.size() );
+  CHECK( q.codeBits() ==
+	 X.size() * std::size_t( b ) + 64 * q.exceptions.size() );
   }
  CHECK( decodePForDelta( encodePForDelta( {} , 5 ) ).empty() );
  const std::vector< std::uint64_t > T{ 0 , 5 , ~std::uint64_t( 0 ) , 7 , 6 };
- const PForDeltaBlock a = encodePForDelta( T , 1 , 6 );   // 1 bit, base 6
- CHECK( a.exceptions == std::vector< std::uint64_t >( { 0 , 5 ,
-                                       ~std::uint64_t( 0 ) , 7 } ) );
- CHECK( decodePForDelta( a ) == T );        // all but one exceptions
- const PForDeltaBlock w = encodePForDelta( T , 63 , 0 );   // 63 bits
- CHECK( w.exceptions == std::vector< std::uint64_t >(
-                                       { ~std::uint64_t( 0 ) } ) );
+ const PForDeltaBlock a = encodePForDelta( T , 1 , 6 );  // 1 bit, base 6
+ CHECK( a.exceptions ==
+	std::vector< std::uint64_t >( { 0 , 5 , ~std::uint64_t( 0 ) , 7 } ) );
+ CHECK( decodePForDelta( a ) == T );  // all but one exceptions
+ const PForDeltaBlock w = encodePForDelta( T , 63 , 0 );  // 63 bits
+ CHECK( w.exceptions ==
+	std::vector< std::uint64_t >( { ~std::uint64_t( 0 ) } ) );
  CHECK( decodePForDelta( w ) == T );
- CHECK( pforDeltaWidth( T , 0 , 1.0 ) == 63 );   // 2^64 - 1 never fits
+ CHECK( pforDeltaWidth( T , 0 , 1.0 ) == 63 );  // 2^64 - 1 never fits
  CHECK( pforDeltaWidth( {} , 0 ) == 1 );
  CHECK( pforDeltaWidth( T , ~std::uint64_t( 0 ) , 0.2 ) == 1 );
  CHECK_THROWS( ( void )encodePForDelta( S , 0 ) , contract_violation );
@@ -528,12 +574,14 @@ ADS_TEST( "pfordelta" )
 ADS_TEST( "vbyte-dense" )
 {
  std::vector< std::uint8_t > v;
- encodeVByte( v , 1 << 16 );                     // figure 11.5
+ encodeVByte( v , 1 << 16 );  // figure 11.5
  CHECK( v == std::vector< std::uint8_t >( { 0x84 , 0x80 , 0x00 } ) );
  std::mt19937 g( 1 );
- std::vector< std::uint64_t > X{ 0 , 1 , 127 , 128 , 16383 , 16384 ,
-                                 ~std::uint64_t( 0 ) };
- for( int t = 0 ; t < 3000 ; ++t ) X.push_back( randomWide( g ) );
+ std::vector< std::uint64_t > X{
+  0 , 1 , 127 , 128 , 16383 , 16384 , ~std::uint64_t( 0 )
+  };
+ for( int t = 0 ; t < 3000 ; ++t )
+  X.push_back( randomWide( g ) );
  v.clear();
  for( const auto x : X ) {
   const std::size_t before = v.size();
@@ -543,7 +591,8 @@ ADS_TEST( "vbyte-dense" )
   CHECK( vbyteLength( x ) == ( B + 6 ) / 7 );
   }
  std::size_t p = 0;
- for( const auto x : X ) CHECK( decodeVByte( v , p ) == x );
+ for( const auto x : X )
+  CHECK( decodeVByte( v , p ) == x );
  CHECK( p == v.size() );
  auto words = []( std::uint64_t x , std::uint32_t s , std::uint32_t c ) {
   std::vector< std::uint32_t > o;
@@ -551,7 +600,7 @@ ADS_TEST( "vbyte-dense" )
   std::string r;
   for( const auto d : o )
    r += std::string( 1 , char( '0' + ( d >> 2 ) ) ) +
-        char( '0' + ( ( d >> 1 ) & 1 ) ) + char( '0' + ( d & 1 ) );
+	char( '0' + ( ( d >> 1 ) & 1 ) ) + char( '0' + ( d & 1 ) );
   return( r );
   };
  CHECK( words( 3 , 4 , 4 ) == "011" && words( 4 , 4 , 4 ) == "100000" );
@@ -560,38 +609,45 @@ ADS_TEST( "vbyte-dense" )
  CHECK( words( 11 , 6 , 2 ) == "110101" && words( 12 , 6 , 2 ) == "111000" );
  CHECK( words( 17 , 6 , 2 ) == "111101" );
  const std::vector< std::pair< std::uint32_t , std::uint32_t > > SC{
-                       { 4 , 4 } , { 6 , 2 } , { 128 , 128 } , { 200 , 56 } ,
-                       { 1 , 7 } };
+  { 4 , 4 } , { 6 , 2 } , { 128 , 128 } , { 200 , 56 } , { 1 , 7 }
+  };
  for( const auto & [ s , c ] : SC ) {
   std::vector< std::uint64_t > count( 6 , 0 );
   std::uint64_t x = 0;
   for( ; x < 20000 ; ++x ) {
    const int k = denseLength( x , s , c );
-   if( k < 6 ) ++count[ std::size_t( k ) ];
+   if( k < 6 )
+    ++count[ std::size_t( k ) ];
    }
-  for( int k = 1 ; k < 6 ; ++k ) {          // s c^( k - 1 ) in k words
+  for( int k = 1 ; k < 6 ; ++k ) {  // s c^( k - 1 ) in k words
    std::uint64_t e = s;
-   for( int i = 1 ; i < k ; ++i ) e *= c;
+   for( int i = 1 ; i < k ; ++i )
+    e *= c;
    std::uint64_t below = 0;
-   for( int i = 1 ; i < k ; ++i ) below += count[ std::size_t( i ) ];
-   if( below + e <= 20000 ) CHECK( count[ std::size_t( k ) ] == e );
+   for( int i = 1 ; i < k ; ++i )
+    below += count[ std::size_t( i ) ];
+   if( below + e <= 20000 )
+    CHECK( count[ std::size_t( k ) ] == e );
    }
   std::vector< std::uint32_t > o;
   std::vector< std::uint64_t > Y{ 0 , 1 , s , s + 1 , s * ( c + 1 ) };
-  for( int t = 0 ; t < 500 ; ++t ) Y.push_back( randomWide( g ) >> 8 );
+  for( int t = 0 ; t < 500 ; ++t )
+   Y.push_back( randomWide( g ) >> 8 );
   for( const auto y : Y ) {
    const std::size_t before = o.size();
    encodeDense( o , y , s , c );
    CHECK( int( o.size() - before ) == denseLength( y , s , c ) );
    }
   std::size_t q = 0;
-  for( const auto y : Y ) CHECK( decodeDense( o , q , s , c ) == y );
-  if( s == 128 )                            // never longer than vbyte
-   for( const auto y : Y ) CHECK( denseLength( y , s , c ) <=
-                                  vbyteLength( y ) );
+  for( const auto y : Y )
+   CHECK( decodeDense( o , q , s , c ) == y );
+  if( s == 128 )  // never longer than vbyte
+   for( const auto y : Y )
+    CHECK( denseLength( y , s , c ) <= vbyteLength( y ) );
   }
- std::vector< std::uint64_t > F( 3000 );    // Zipf, the best s by the codes
- for( std::size_t i = 0 ; i < F.size() ; ++i ) F[ i ] = 1000000 / ( i + 1 );
+ std::vector< std::uint64_t > F( 3000 );  // Zipf, the best s by the codes
+ for( std::size_t i = 0 ; i < F.size() ; ++i )
+  F[ i ] = 1000000 / ( i + 1 );
  const std::uint32_t s = denseOptimalS( F , 8 );
  auto cost = [ & ]( std::uint32_t t ) {
   std::uint64_t z = 0;
@@ -602,24 +658,24 @@ ADS_TEST( "vbyte-dense" )
    }
   return( z );
   };
- for( std::uint32_t t = 1 ; t < 256 ; t += 5 ) CHECK( cost( s ) <= cost( t ) );
+ for( std::uint32_t t = 1 ; t < 256 ; t += 5 )
+  CHECK( cost( s ) <= cost( t ) );
  CHECK( ( s > 128 ) && ( cost( s ) < cost( 128 ) ) );
  std::vector< std::uint32_t > o;
- encodeDense( o , ~std::uint64_t( 0 ) , 128 , 128 );   // the largest
+ encodeDense( o , ~std::uint64_t( 0 ) , 128 , 128 );  // the largest
  std::size_t at = 0;
  CHECK( decodeDense( o , at , 128 , 128 ) == ~std::uint64_t( 0 ) &&
-        at == o.size() && int( o.size() ) <= vbyteLength( ~std::uint64_t(
-                                                         0 ) ) );
+	at == o.size() &&
+	int( o.size() ) <= vbyteLength( ~std::uint64_t( 0 ) ) );
  CHECK( denseOptimalS( {} , 4 ) == 1 && denseOptimalS( { 5 } , 1 ) == 1 );
- const std::vector< std::uint8_t > cut{ 0x81 };   // no stopper
+ const std::vector< std::uint8_t > cut{ 0x81 };  // no stopper
  std::size_t pc = 0;
  CHECK_THROWS( ( void )decodeVByte( cut , pc ) , contract_violation );
  const std::vector< std::uint32_t > bad{ 8 } , none;
  std::size_t pd = 0;
  CHECK_THROWS( ( void )decodeDense( bad , pd , 4 , 4 ) , contract_violation );
  pd = 0;
- CHECK_THROWS( ( void )decodeDense( none , pd , 4 , 4 ) ,
-               contract_violation );
+ CHECK_THROWS( ( void )decodeDense( none , pd , 4 , 4 ) , contract_violation );
  CHECK_THROWS( encodeDense( o , 1 , 0 , 4 ) , contract_violation );
  CHECK_THROWS( encodeDense( o , 1 , 4 , 0 ) , contract_violation );
  CHECK_THROWS( ( void )denseOptimalS( F , 0 ) , contract_violation );
@@ -634,14 +690,21 @@ ADS_TEST( "vbyte-dense" )
 // bit), and items repeated or outside [ low , hi ]
 ADS_TEST( "interpolative" )
 {
- const std::vector< std::uint64_t > S{ 1 , 2 , 3 , 5 , 7 , 9 , 11 , 15 , 18 ,
-                                       19 , 20 , 21 };
+ const std::vector< std::uint64_t > S{
+  1 , 2 , 3 , 5 , 7 , 9 , 11 , 15 , 18 , 19 , 20 , 21
+  };
  BitWriter w;
  encodeInterpolative( w , S , 1 , 21 );
- CHECK( w.bits().toString() == "0011" "00" "01" "01" "110" "001" "011" );
+ CHECK( w.bits().toString() == "0011"
+			       "00"
+			       "01"
+			       "01"
+			       "110"
+			       "001"
+			       "011" );
  BitReader r( w.bits() );
  CHECK( decodeInterpolative( r , S.size() , 1 , 21 ) == S );
- BitWriter z;                                    // a run: no bit
+ BitWriter z;  // a run: no bit
  std::vector< std::uint64_t > run( 100 );
  std::iota( run.begin() , run.end() , 50 );
  encodeInterpolative( z , run , 50 , 149 );
@@ -656,7 +719,8 @@ ADS_TEST( "interpolative" )
   for( std::size_t i = 0 ; i < n ; ++i ) {
    const std::uint64_t at = g() % u;
    for( std::uint64_t j = 0 ; j < ( t % 3 ? 1 : 8 ) ; ++j )
-    if( at + j < u ) s.insert( at + j );
+    if( at + j < u )
+     s.insert( at + j );
    }
   const std::vector< std::uint64_t > X( s.begin() , s.end() );
   BitWriter e;
@@ -671,7 +735,7 @@ ADS_TEST( "interpolative" )
  encodeInterpolative( wu , U , 0 , top );
  BitReader ru( wu.bits() );
  CHECK( decodeInterpolative( ru , U.size() , 0 , top ) == U && ru.atEnd() );
- BitWriter wo;                                   // empty, one, low = hi
+ BitWriter wo;  // empty, one, low = hi
  encodeInterpolative( wo , {} , 0 , 9 );
  encodeInterpolative( wo , { 7 } , 7 , 7 );
  CHECK( wo.size() == 0 );
@@ -679,16 +743,16 @@ ADS_TEST( "interpolative" )
  CHECK( wo.size() == 4 );
  BitReader ro( wo.bits() );
  CHECK( decodeInterpolative( ro , 0 , 0 , 9 ).empty() &&
-        decodeInterpolative( ro , 1 , 7 , 7 ) ==
-        std::vector< std::uint64_t >( { 7 } ) &&
-        decodeInterpolative( ro , 1 , 0 , 9 ) ==
-        std::vector< std::uint64_t >( { 4 } ) );
+	decodeInterpolative( ro , 1 , 7 , 7 ) ==
+	  std::vector< std::uint64_t >( { 7 } ) &&
+	decodeInterpolative( ro , 1 , 0 , 9 ) ==
+	  std::vector< std::uint64_t >( { 4 } ) );
  CHECK_THROWS( encodeInterpolative( w , { 3 , 3 } , 0 , 9 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( encodeInterpolative( w , { 3 , 4 } , 4 , 9 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( encodeInterpolative( w , { 3 , 10 } , 0 , 9 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( encodeBounded( w , 10 , 0 , 9 ) , contract_violation );
  CHECK_THROWS( ( void )decodeBounded( r , 5 , 4 ) , contract_violation );
  }
@@ -703,23 +767,24 @@ ADS_TEST( "signed-gaps" )
  CHECK( signedToNatural( 0 ) == 0 );
  for( std::int64_t x = -1000 ; x <= 1000 ; ++x )
   CHECK( naturalToSigned( signedToNatural( x ) ) == x );
- const std::vector< std::uint64_t > S{ 13 , 15 , 16 , 17 , 18 , 19 , 23 ,
-                                       24 , 203 , 315 , 1034 };
- const std::vector< std::uint64_t > G{ 13 , 2 , 1 , 1 , 1 , 1 , 4 , 1 ,
-                                       179 , 112 , 719 };
+ const std::vector< std::uint64_t > S{ 13 , 15 , 16 ,  17 ,  18 ,  19 ,
+				       23 , 24 , 203 , 315 , 1034 };
+ const std::vector< std::uint64_t > G{
+  13 , 2 , 1 , 1 , 1 , 1 , 4 , 1 , 179 , 112 , 719
+  };
  CHECK( dGaps( S ) == G && prefixSums( G ) == S );
  CHECK( dGaps( {} ).empty() && prefixSums( {} ).empty() );
- const std::int64_t M = ( std::int64_t( 1 ) << 62 ) - 1;   // the extremes
+ const std::int64_t M = ( std::int64_t( 1 ) << 62 ) - 1;  // the extremes
  CHECK( signedToNatural( M ) == ( std::uint64_t( 1 ) << 63 ) - 2 &&
-        signedToNatural( -M ) == ( std::uint64_t( 1 ) << 63 ) - 1 );
+	signedToNatural( -M ) == ( std::uint64_t( 1 ) << 63 ) - 1 );
  CHECK( naturalToSigned( signedToNatural( M ) ) == M &&
-        naturalToSigned( signedToNatural( -M ) ) == -M );
+	naturalToSigned( signedToNatural( -M ) ) == -M );
  CHECK( naturalToSigned( ~std::uint64_t( 0 ) ) ==
-        -std::int64_t( ~std::uint64_t( 0 ) / 2 ) );
+	-std::int64_t( ~std::uint64_t( 0 ) / 2 ) );
  const std::vector< std::uint64_t > D{ 0 , 0 , 5 , 5 , ~std::uint64_t( 0 ) };
- CHECK( dGaps( D ) == std::vector< std::uint64_t >( { 0 , 0 , 5 , 0 ,
-                                        ~std::uint64_t( 0 ) - 5 } ) &&
-        prefixSums( dGaps( D ) ) == D );         // repeated items, gap 0
+ CHECK( dGaps( D ) == std::vector< std::uint64_t >(
+			{ 0 , 0 , 5 , 0 , ~std::uint64_t( 0 ) - 5 } ) &&
+	prefixSums( dGaps( D ) ) == D );  // repeated items, gap 0
  CHECK_THROWS( ( void )signedToNatural( M + 1 ) , contract_violation );
  CHECK_THROWS( ( void )signedToNatural( -M - 1 ) , contract_violation );
  CHECK_THROWS( ( void )dGaps( { 2 , 1 } ) , contract_violation );
@@ -731,11 +796,11 @@ ADS_TEST( "signed-gaps" )
 // of rank (i <= n) and select (1 <= k <= the bits of that value)
 ADS_TEST( "rank-select" )
 {
- const RankSelect E( BitVector( "00101001010" ) );   // Example 15.1
+ const RankSelect E( BitVector( "00101001010" ) );  // Example 15.1
  CHECK( E.rank1( 6 ) == 2 && E.select1( 3 ) == 7 );
  std::mt19937 g( 1 );
- for( const std::size_t n : { 0 , 1 , 63 , 64 , 65 , 511 , 512 , 513 , 4097 ,
-                              70000 , 300000 } )
+ for( const std::size_t n :
+      { 0 , 1 , 63 , 64 , 65 , 511 , 512 , 513 , 4097 , 70000 , 300000 } )
   for( const double p : { 0.0 , 0.001 , 0.1 , 0.5 , 0.97 , 1.0 } ) {
    const std::vector< bool > R = randomBits( g , n , p );
    const RankSelect S( toBits( R ) );
@@ -744,9 +809,14 @@ ADS_TEST( "rank-select" )
    std::vector< std::size_t > P1 , P0;
    for( std::size_t i = 0 ; i <= n ; ++i ) {
     CHECK( S.rank1( i ) == ones && S.rank0( i ) == i - ones );
-    if( i == n ) break;
-    if( R[ i ] ) { ++ones; P1.push_back( i ); }
-    else P0.push_back( i );
+    if( i == n )
+     break;
+    if( R[ i ] ) {
+     ++ones;
+     P1.push_back( i );
+     }
+    else
+     P0.push_back( i );
     }
    CHECK( S.ones() == P1.size() && S.zeros() == P0.size() );
    for( std::size_t k = 0 ; k < P1.size() ; ++k )
@@ -780,39 +850,40 @@ ADS_TEST( "elias-fano" )
  const EliasFano F( S , 32 );
  CHECK( F.lowWidth() == 2 );
  const std::vector< std::uint64_t > low{ 1 , 0 , 3 , 2 , 0 , 2 , 2 , 3 };
- for( std::size_t i = 0 ; i < 8 ; ++i ) CHECK( F.low().get( 2 * i , 2 ) ==
-                                               low[ i ] );
+ for( std::size_t i = 0 ; i < 8 ; ++i )
+  CHECK( F.low().get( 2 * i , 2 ) == low[ i ] );
  CHECK( F.high().bits().toString() == "1011000100110110" );
  CHECK( F.access( 4 ) == 24 && F[ F.nextGEQ( 25 ) ] == 26 );
- CHECK( F.codeBits() <= 2 * 8 + 8 * 2 );         // Theorem 11.1
- const EliasFano X( { 2 , 4 , 7 , 9 } , 11 );   // Example 15.3, from 0
- CHECK( X[ 3 ] == 9 );                           // Select_1( B , 4 ) = 10
+ CHECK( F.codeBits() <= 2 * 8 + 8 * 2 );   // Theorem 11.1
+ const EliasFano X( { 2 , 4 , 7 , 9 } , 11 );  // Example 15.3, from 0
+ CHECK( X[ 3 ] == 9 );                     // Select_1( B , 4 ) = 10
  CHECK( X.nextGEQ( 8 ) == 3 && X.nextGEQ( 7 ) == 2 && X.nextGEQ( 9 ) == 3 );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 300 ; ++t ) {
   const std::size_t n = t < 3 ? std::size_t( t ) : g() % 2000;
-  std::uint64_t u = 1 + ( t % 5 == 0 ? randomWide( g ) >> 1
-                                     : g() % ( 1 + 50 * ( n + 1 ) ) );
-  if( t % 7 == 0 ) u = 1 + g() % 4;              // many repetitions
+  std::uint64_t u =
+    1 + ( t % 5 == 0 ? randomWide( g ) >> 1 : g() % ( 1 + 50 * ( n + 1 ) ) );
+  if( t % 7 == 0 )
+   u = 1 + g() % 4;  // many repetitions
   std::vector< std::uint64_t > A( n );
-  for( auto & a : A ) a = ( ( std::uint64_t( g() ) << 32 ) | g() ) % u;
+  for( auto & a : A )
+   a = ( ( std::uint64_t( g() ) << 32 ) | g() ) % u;
   std::sort( A.begin() , A.end() );
   const EliasFano E( A , u );
   const LazyEliasFano Lz( A , u );
   CHECK( E.size() == n && E.universe() == u && Lz.decode() == A );
   CHECK( std::equal( E.begin() , E.end() , A.begin() , A.end() ) );
   CHECK( E.decode() == A );
-  const double ell = n ? std::ceil( std::log2( double( u ) / double( n ) ) )
-                       : 0;
-  CHECK( double( E.codeBits() ) <= 2.0 * double( n ) + double( n ) *
-                                   std::max( ell , 0.0 ) + 1 );
+  const double ell =
+    n ? std::ceil( std::log2( double( u ) / double( n ) ) ) : 0;
+  CHECK( double( E.codeBits() ) <=
+	 2.0 * double( n ) + double( n ) * std::max( ell , 0.0 ) + 1 );
   for( int q = 0 ; q < 300 ; ++q ) {
-   const std::uint64_t x = q % 3 || A.empty() ? ( ( std::uint64_t( g() ) <<
-                                                    32 ) | g() ) % ( u + 2 )
-                                              : A[ g() % A.size() ];
-   const std::size_t r = std::size_t( std::lower_bound( A.begin() ,
-                                                        A.end() , x ) -
-                                      A.begin() );
+   const std::uint64_t x =
+     q % 3 || A.empty() ? ( ( std::uint64_t( g() ) << 32 ) | g() ) % ( u + 2 )
+			: A[ g() % A.size() ];
+   const std::size_t r =
+     std::size_t( std::lower_bound( A.begin() , A.end() , x ) - A.begin() );
    CHECK( E.nextGEQ( x ) == r && Lz.nextGEQ( x ) == r );
    CHECK( E.contains( x ) == std::binary_search( A.begin() , A.end() , x ) );
    }
@@ -826,26 +897,25 @@ ADS_TEST( "elias-fano" )
  CHECK( EK.lowWidth() > 0 );
  bool okK = true;
  for( std::uint64_t x = 0 ; okK && ( x <= K.back() + 1 ) ; ++x )
-  okK = EK.nextGEQ( x ) == std::size_t( std::lower_bound( K.begin() ,
-                                                          K.end() , x ) -
-                                        K.begin() );
+  okK = EK.nextGEQ( x ) ==
+	std::size_t( std::lower_bound( K.begin() , K.end() , x ) - K.begin() );
  CHECK( okK );
  const EliasFano Z;
  CHECK( Z.empty() && Z.nextGEQ( 5 ) == 0 );
  const EliasFano W( { 0 , ~std::uint64_t( 0 ) - 1 } );
  CHECK( W[ 1 ] == ~std::uint64_t( 0 ) - 1 && W.nextGEQ( 1 ) == 1 );
  const std::uint64_t top = ~std::uint64_t( 0 );
- const EliasFano O( { 5 } , top );               // 64 low bits per item
+ const EliasFano O( { 5 } , top );  // 64 low bits per item
  CHECK( O.lowWidth() == 64 && O[ 0 ] == 5 && O.nextGEQ( 5 ) == 0 &&
-        O.nextGEQ( 6 ) == 1 && O.nextGEQ( top ) == 1 && ! O.contains( 4 ) );
- const EliasFano R( { 7 , 7 , 7 } );             // all equal, u = 8
+	O.nextGEQ( 6 ) == 1 && O.nextGEQ( top ) == 1 && ! O.contains( 4 ) );
+ const EliasFano R( { 7 , 7 , 7 } );  // all equal, u = 8
  CHECK( R.decode() == std::vector< std::uint64_t >( { 7 , 7 , 7 } ) &&
-        R.nextGEQ( 7 ) == 0 && R.nextGEQ( 0 ) == 0 && R.nextGEQ( 8 ) == 3 );
- const EliasFano U( { 0 , 0 } , 1 );             // the universe { 0 }
+	R.nextGEQ( 7 ) == 0 && R.nextGEQ( 0 ) == 0 && R.nextGEQ( 8 ) == 3 );
+ const EliasFano U( { 0 , 0 } , 1 );  // the universe { 0 }
  CHECK( U[ 1 ] == 0 && U.nextGEQ( 0 ) == 0 && U.nextGEQ( 1 ) == 2 );
  const EliasFano V( {} , 100 );
  CHECK( V.empty() && V.universe() == 100 && V.nextGEQ( 0 ) == 0 &&
-        ! V.contains( 0 ) && V.begin() == V.end() );
+	! V.contains( 0 ) && V.begin() == V.end() );
  CHECK_THROWS( ( void )O.access( 1 ) , contract_violation );
  CHECK_THROWS( ( void )V[ 0 ] , contract_violation );
  CHECK_THROWS( EliasFano( { 3 , 1 } ) , contract_violation );
@@ -869,22 +939,27 @@ ADS_TEST( "jacobson-tree" )
  for( int t = 0 ; t < 200 ; ++t ) {
   const std::size_t n = t < 2 ? std::size_t( t ) : 1 + g() % 600;
   std::vector< std::pair< std::size_t , std::size_t > > c( n , { nil , nil } );
-  std::vector< std::uint64_t > key( n );   // a random search tree
+  std::vector< std::uint64_t > key( n );  // a random search tree
   for( std::size_t u = 0 ; u < n ; ++u ) {
    key[ u ] = g();
-   if( u == 0 ) continue;
+   if( u == 0 )
+    continue;
    for( std::size_t x = 0 ; ; ) {
     auto & next = key[ u ] < key[ x ] ? c[ x ].first : c[ x ].second;
-    if( next == nil ) { next = u; break; }
+    if( next == nil ) {
+     next = u;
+     break;
+     }
     x = next;
     }
    }
   const JacobsonTree J( c );
   CHECK( J.size() == n && J.bits().size() == 2 * n + 1 );
-  Lists ch( n );                             // the levels, from the left
+  Lists ch( n );  // the levels, from the left
   for( std::size_t u = 0 ; u < n ; ++u )
    for( const auto v : { c[ u ].first , c[ u ].second } )
-    if( v != nil ) ch[ u ].push_back( v );
+    if( v != nil )
+     ch[ u ].push_back( v );
   const auto L = byLevels( ch );
   const auto at = inverse( L );
   const auto P = parents( ch , nil );
@@ -898,28 +973,28 @@ ADS_TEST( "jacobson-tree" )
    }
   }
  CHECK( JacobsonTree().size() == 0 && JacobsonTree().root() == nil );
- const JacobsonTree O( BitVector( "100" ) );    // one node
+ const JacobsonTree O( BitVector( "100" ) );  // one node
  CHECK( O.size() == 1 && O.isLeaf( 0 ) && O.left( 0 ) == nil &&
-        O.right( 0 ) == nil && O.parent( 0 ) == nil );
+	O.right( 0 ) == nil && O.parent( 0 ) == nil );
  std::vector< std::pair< std::size_t , std::size_t > > chain( 100000 ,
-                                                              { nil , nil } );
+							     { nil , nil } );
  for( std::size_t u = 0 ; u + 1 < chain.size() ; ++u )
-  chain[ u ].second = u + 1;                     // a right chain, deep
+  chain[ u ].second = u + 1;  // a right chain, deep
  const JacobsonTree C( chain );
  CHECK( C.right( 99998 ) == 99999 && C.parent( 99999 ) == 99998 &&
-        C.left( 500 ) == nil && C.isLeaf( 99999 ) );
+	C.left( 500 ) == nil && C.isLeaf( 99999 ) );
  CHECK_THROWS( O.left( 1 ) , contract_violation );
  CHECK_THROWS( O.right( 1 ) , contract_violation );
  CHECK_THROWS( O.parent( 1 ) , contract_violation );
  using Kids = std::vector< std::pair< std::size_t , std::size_t > >;
  CHECK_THROWS( JacobsonTree( Kids{ { 0 , nil } } ) , contract_violation );
  CHECK_THROWS( JacobsonTree( Kids{ { 1 , nil } , { nil , 1 } } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( JacobsonTree( Kids{ { 1 , 1 } , { nil , nil } ,
-                                   { nil , nil } } ) ,
-               contract_violation );            // 1 twice, 2 never
+				   { nil , nil } } ) ,
+	       contract_violation );  // 1 twice, 2 never
  CHECK_THROWS( JacobsonTree( BitVector( "10100" ) ).left( 3 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( JacobsonTree( BitVector( "10010" ) ) , contract_violation );
  }
 
@@ -929,11 +1004,13 @@ ADS_TEST( "jacobson-tree" )
 // with a self-loop, a cycle, a node twice or a node unreached
 ADS_TEST( "louds-tree" )
 {
- const std::vector< std::size_t > deg{ 3 , 2 , 0 , 3 , 0 , 1 , 0 , 2 , 0 , 0 ,
-                                       0 , 0 };   // figure 15.8, by levels
+ const std::vector< std::size_t > deg{
+  3 , 2 , 0 , 3 , 0 , 1 , 0 , 2 , 0 , 0 , 0 , 0
+  };  // figure 15.8, by levels
  Lists c( deg.size() );
  for( std::size_t u = 0 , next = 1 ; u < deg.size() ; ++u )
-  for( std::size_t k = 0 ; k < deg[ u ] ; ++k ) c[ u ].push_back( next++ );
+  for( std::size_t k = 0 ; k < deg[ u ] ; ++k )
+   c[ u ].push_back( next++ );
  const LoudsTree E( c );
  CHECK( E.bits().toString() == "0100010011000110110011111" );
  constexpr std::size_t nil = LoudsTree::nil;
@@ -958,23 +1035,24 @@ ADS_TEST( "louds-tree" )
    for( std::size_t i = 0 ; i < k.size() ; ++i ) {
     CHECK( D.child( v , i ) == at[ k[ i ] ] );
     CHECK( D.rightSibling( at[ k[ i ] ] ) ==
-           ( i + 1 < k.size() ? at[ k[ i + 1 ] ] : nil ) );
+	   ( i + 1 < k.size() ? at[ k[ i + 1 ] ] : nil ) );
     }
    }
   }
  CHECK( LoudsTree().size() == 0 && LoudsTree().root() == nil );
- const LoudsTree O( Lists( 1 ) );               // one node
+ const LoudsTree O( Lists( 1 ) );  // one node
  CHECK( O.size() == 1 && O.isLeaf( 0 ) && O.parent( 0 ) == nil &&
-        O.leftmostChild( 0 ) == nil && O.rightSibling( 0 ) == nil );
- Lists star( 100000 ) , chain( 100000 );        // wide and deep
- for( std::size_t u = 1 ; u < star.size() ; ++u ) star[ 0 ].push_back( u );
+	O.leftmostChild( 0 ) == nil && O.rightSibling( 0 ) == nil );
+ Lists star( 100000 ) , chain( 100000 );  // wide and deep
+ for( std::size_t u = 1 ; u < star.size() ; ++u )
+  star[ 0 ].push_back( u );
  for( std::size_t u = 0 ; u + 1 < chain.size() ; ++u )
   chain[ u ].push_back( u + 1 );
  const LoudsTree S( star ) , C( chain );
  CHECK( S.degree( 0 ) == 99999 && S.child( 0 , 99998 ) == 99999 &&
-        S.parent( 99999 ) == 0 && S.rightSibling( 99999 ) == nil );
+	S.parent( 99999 ) == 0 && S.rightSibling( 99999 ) == nil );
  CHECK( C.degree( 99998 ) == 1 && C.parent( 99999 ) == 99998 &&
-        C.isLeaf( 99999 ) );
+	C.isLeaf( 99999 ) );
  CHECK_THROWS( O.degree( 1 ) , contract_violation );
  CHECK_THROWS( O.parent( 1 ) , contract_violation );
  CHECK_THROWS( O.leftmostChild( 1 ) , contract_violation );
@@ -983,7 +1061,7 @@ ADS_TEST( "louds-tree" )
  CHECK_THROWS( LoudsTree( Lists{ { 0 } } ) , contract_violation );
  CHECK_THROWS( LoudsTree( Lists{ { 1 } , { 1 } } ) , contract_violation );
  CHECK_THROWS( LoudsTree( Lists{ { 1 , 1 } , {} , {} } ) ,
-               contract_violation );            // 1 twice, 2 never
+	       contract_violation );  // 1 twice, 2 never
  CHECK_THROWS( LoudsTree( Lists{ { 1 } , {} , {} } ) , contract_violation );
  CHECK_THROWS( LoudsTree( BitVector( "00111" ) ) , contract_violation );
  }
@@ -1019,33 +1097,41 @@ ADS_TEST( "balanced-parentheses" )
     CHECK( B.findClose( i ) == match[ i ] );
     CHECK( B.enclose( i ) == up[ i ] );
     }
-   else CHECK( B.findOpen( i ) == match[ i ] );
+   else
+    CHECK( B.findOpen( i ) == match[ i ] );
   };
- for( int t = 0 ; t < 120 ; ++t ) {        // random walks kept balanced
+ for( int t = 0 ; t < 120 ; ++t ) {  // random walks kept balanced
   const std::size_t n = t < 2 ? std::size_t( t ) : 1 + g() % 5000;
   std::vector< bool > R;
   std::size_t open = 0 , left = n;
   while( left > 0 || open > 0 ) {
-   const bool o = left > 0 &&
-                  ( open == 0 || g() % 100 < 50u + unsigned( t % 3 ) * 10 );
+   const bool o =
+     left > 0 && ( open == 0 || g() % 100 < 50u + unsigned( t % 3 ) * 10 );
    R.push_back( o );
-   if( o ) { --left; ++open; } else --open;
+   if( o ) {
+    --left;
+    ++open;
+    }
+   else
+    --open;
    }
   check( R );
   }
  std::vector< bool > deep( 6000 , true ) , flat;
  deep.insert( deep.end() , 6000 , false );
  check( deep );
- for( int i = 0 ; i < 3000 ; ++i ) { flat.push_back( true );
-                                     flat.push_back( false ); }
+ for( int i = 0 ; i < 3000 ; ++i ) {
+  flat.push_back( true );
+  flat.push_back( false );
+  }
  check( flat );
  CHECK_THROWS( BalancedParentheses( BitVector( "1001" ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( BalancedParentheses( BitVector( "1" ) ) , contract_violation );
  CHECK_THROWS( BalancedParentheses( BitVector( "0" ) ) , contract_violation );
  const BalancedParentheses B( BitVector( "1100" ) ) , E( BitVector( "" ) );
  CHECK( E.size() == 0 && B.enclose( 0 ) == BalancedParentheses::nil &&
-        B.enclose( 1 ) == 0 && B.excess( 3 ) == 0 );
+	B.enclose( 1 ) == 0 && B.excess( 3 ) == 0 );
  CHECK_THROWS( ( void )B.findClose( 2 ) , contract_violation );
  CHECK_THROWS( ( void )B.findClose( 4 ) , contract_violation );
  CHECK_THROWS( ( void )B.findOpen( 0 ) , contract_violation );
@@ -1073,10 +1159,12 @@ ADS_TEST( "bp-tree" )
   const auto at = inverse( P );
   const auto par = parents( T , nil );
   std::vector< std::size_t > size( n , 1 ) , depth( n , 0 );
-  for( std::size_t i = n ; i-- > 0 ; )      // children after their parent
-   if( par[ P[ i ] ] != nil ) size[ par[ P[ i ] ] ] += size[ P[ i ] ];
+  for( std::size_t i = n ; i-- > 0 ; )  // children after their parent
+   if( par[ P[ i ] ] != nil )
+    size[ par[ P[ i ] ] ] += size[ P[ i ] ];
   for( std::size_t i = 0 ; i < n ; ++i )
-   if( par[ P[ i ] ] != nil ) depth[ P[ i ] ] = depth[ par[ P[ i ] ] ] + 1;
+   if( par[ P[ i ] ] != nil )
+    depth[ P[ i ] ] = depth[ par[ P[ i ] ] ] + 1;
   for( std::size_t v = 0 ; v < n ; ++v ) {
    const std::size_t u = P[ v ];
    const auto & k = T[ u ];
@@ -1086,32 +1174,34 @@ ADS_TEST( "bp-tree" )
    CHECK( B.subtreeSize( v ) == size[ u ] && B.depth( v ) == depth[ u ] );
    for( std::size_t i = 0 ; i < k.size() ; ++i )
     CHECK( B.rightSibling( at[ k[ i ] ] ) ==
-           ( i + 1 < k.size() ? at[ k[ i + 1 ] ] : nil ) );
-   const std::size_t w = g() % n;           // an ancestor by the parents
+	   ( i + 1 < k.size() ? at[ k[ i + 1 ] ] : nil ) );
+   const std::size_t w = g() % n;  // an ancestor by the parents
    bool anc = false;
-   for( std::size_t x = P[ w ] ; x != nil ; x = par[ x ] ) anc |= x == u;
+   for( std::size_t x = P[ w ] ; x != nil ; x = par[ x ] )
+    anc |= x == u;
    CHECK( B.isAncestor( v , w ) == anc );
    }
   const LoudsTree L( T );
   const auto lv = inverse( byLevels( T ) );
   for( std::size_t v = 0 ; v < n ; ++v )
    CHECK( L.degree( lv[ P[ v ] ] ) == B.degree( v ) );
-  if( n > 0 ) CHECK( B.subtreeSize( 0 ) == n && B.parent( 0 ) == nil );
+  if( n > 0 )
+   CHECK( B.subtreeSize( 0 ) == n && B.parent( 0 ) == nil );
   }
  CHECK( BPTree( BitVector( "110100" ) ).degree( 0 ) == 2 );
- const BPTree E( Lists{} ) , O( Lists( 1 ) );   // empty, one node
- CHECK( E.size() == 0 && E.root() == nil && BPTree( BitVector( "" ) ).size()
-        == 0 );
+ const BPTree E( Lists{} ) , O( Lists( 1 ) );  // empty, one node
+ CHECK( E.size() == 0 && E.root() == nil &&
+	BPTree( BitVector( "" ) ).size() == 0 );
  CHECK( O.size() == 1 && O.isLeaf( 0 ) && O.parent( 0 ) == nil &&
-        O.depth( 0 ) == 0 && O.subtreeSize( 0 ) == 1 &&
-        O.rightSibling( 0 ) == nil && O.isAncestor( 0 , 0 ) );
- Lists chain( 100000 );                          // deep: no recursion
+	O.depth( 0 ) == 0 && O.subtreeSize( 0 ) == 1 &&
+	O.rightSibling( 0 ) == nil && O.isAncestor( 0 , 0 ) );
+ Lists chain( 100000 );  // deep: no recursion
  for( std::size_t u = 0 ; u + 1 < chain.size() ; ++u )
   chain[ u ].push_back( u + 1 );
  const BPTree C( chain );
  CHECK( C.depth( 99999 ) == 99999 && C.subtreeSize( 1 ) == 99999 &&
-        C.parent( 99999 ) == 99998 && C.isAncestor( 0 , 99999 ) &&
-        ! C.isAncestor( 99999 , 0 ) );
+	C.parent( 99999 ) == 99998 && C.isAncestor( 0 , 99999 ) &&
+	! C.isAncestor( 99999 , 0 ) );
  CHECK_THROWS( O.parent( 1 ) , contract_violation );
  CHECK_THROWS( O.leftmostChild( 1 ) , contract_violation );
  CHECK_THROWS( O.subtreeSize( 1 ) , contract_violation );
@@ -1120,7 +1210,7 @@ ADS_TEST( "bp-tree" )
  CHECK_THROWS( BPTree( Lists{ { 0 } } ) , contract_violation );
  CHECK_THROWS( BPTree( Lists{ { 1 } , { 1 } } ) , contract_violation );
  CHECK_THROWS( BPTree( Lists{ { 1 , 1 } , {} , {} } ) ,
-               contract_violation );            // 1 twice, 2 never
+	       contract_violation );  // 1 twice, 2 never
  CHECK_THROWS( BPTree( Lists{ { 1 } , {} , {} } ) , contract_violation );
  CHECK_THROWS( BPTree( BitVector( "1010" ) ) , contract_violation );
  }
@@ -1144,23 +1234,23 @@ ADS_TEST( "elias-fano-graph" )
     CHECK( G.successor( u , i ) == A[ u ][ i ] );
    for( std::size_t v = 0 ; v < n ; ++v )
     CHECK( G.hasEdge( u , v ) ==
-           std::binary_search( A[ u ].begin() , A[ u ].end() , v ) );
+	   std::binary_search( A[ u ].begin() , A[ u ].end() , v ) );
    }
   CHECK( G.order() == n && G.edges() == m );
   }
- const EliasFanoGraph L( Lists{ { 0 } } ) , E( Lists{} );   // a self-loop
+ const EliasFanoGraph L( Lists{ { 0 } } ) , E( Lists{} );  // a self-loop
  CHECK( L.order() == 1 && L.edges() == 1 && L.hasEdge( 0 , 0 ) &&
-        L.successor( 0 , 0 ) == 0 && E.order() == 0 && E.edges() == 0 );
- const EliasFanoGraph N( Lists( 5 ) );           // no edge
+	L.successor( 0 , 0 ) == 0 && E.order() == 0 && E.edges() == 0 );
+ const EliasFanoGraph N( Lists( 5 ) );  // no edge
  CHECK( N.edges() == 0 && N.outdegree( 4 ) == 0 && ! N.hasEdge( 4 , 4 ) &&
-        N.successors( 2 ).empty() );
+	N.successors( 2 ).empty() );
  CHECK_THROWS( L.outdegree( 1 ) , contract_violation );
  CHECK_THROWS( L.successor( 0 , 1 ) , contract_violation );
  CHECK_THROWS( L.hasEdge( 0 , 1 ) , contract_violation );
  CHECK_THROWS( L.hasEdge( 1 , 0 ) , contract_violation );
  CHECK_THROWS( EliasFanoGraph( Lists{ { 1 } } ) , contract_violation );
  CHECK_THROWS( EliasFanoGraph( Lists{ { 1 , 0 } , {} } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the k^2-tree: T and L of figure 15.9, then random graphs of sides that are
@@ -1170,8 +1260,10 @@ ADS_TEST( "elias-fano-graph" )
 // queries and of the edges, and k = 1
 ADS_TEST( "k2-tree" )
 {
- const K2Tree E( 4 , { { 0 , 0 } , { 0 , 1 } , { 1 , 1 } , { 2 , 2 } ,
-                       { 2 , 3 } , { 3 , 2 } , { 0 , 1 } } );
+ const K2Tree E(
+   4 ,
+   { { 0 , 0 } , { 0 , 1 } , { 1 , 1 } , { 2 , 2 } , { 2 , 3 } , { 3 , 2 } ,
+     { 0 , 1 } } );
  CHECK( E.levels().toString() == "1001" );
  CHECK( E.leaves().toString() == "11011110" );
  CHECK( E.edges() == 6 );
@@ -1196,27 +1288,30 @@ ADS_TEST( "k2-tree" )
    CHECK( K.neighbors( u ) == A[ u ] );
    std::vector< std::size_t > in;
    for( std::size_t v = 0 ; v < n ; ++v ) {
-    if( M[ v ][ u ] ) in.push_back( v );
+    if( M[ v ][ u ] )
+     in.push_back( v );
     CHECK( K.hasEdge( u , v ) == M[ u ][ v ] );
     }
    CHECK( K.reverseNeighbors( u ) == in );
    }
   }
- const K2Tree O( 1 , { { 0 , 0 } , { 0 , 0 } } );   // a self-loop, twice
+ const K2Tree O( 1 , { { 0 , 0 } , { 0 , 0 } } );  // a self-loop, twice
  CHECK( O.edges() == 1 && O.hasEdge( 0 , 0 ) &&
-        O.neighbors( 0 ) == std::vector< std::size_t >( { 0 } ) );
- const K2Tree N( 5 , {} ) , W( 3 , { { 2 , 0 } } , 16 );   // k > n
+	O.neighbors( 0 ) == std::vector< std::size_t >( { 0 } ) );
+ const K2Tree N( 5 , {} ) , W( 3 , { { 2 , 0 } } , 16 );  // k > n
  CHECK( N.edges() == 0 && N.neighbors( 4 ).empty() && ! N.hasEdge( 4 , 4 ) &&
-        N.reverseNeighbors( 0 ).empty() );
+	N.reverseNeighbors( 0 ).empty() );
  CHECK( W.hasEdge( 2 , 0 ) && ! W.hasEdge( 0 , 2 ) &&
-        W.reverseNeighbors( 0 ) == std::vector< std::size_t >( { 2 } ) );
- const K2Tree F( 70 , [] {                       // the complete graph
+	W.reverseNeighbors( 0 ) == std::vector< std::size_t >( { 2 } ) );
+ const K2Tree F( 70 , [] {  // the complete graph
   std::vector< K2Tree::Edge > c;
   for( std::size_t u = 0 ; u < 70 ; ++u )
-   for( std::size_t v = 0 ; v < 70 ; ++v ) c.emplace_back( u , v );
-  return( c ); }() );
+   for( std::size_t v = 0 ; v < 70 ; ++v )
+    c.emplace_back( u , v );
+  return( c );
+  }() );
  CHECK( F.edges() == 4900 && F.neighbors( 69 ).size() == 70 &&
-        F.reverseNeighbors( 0 ).size() == 70 && F.hasEdge( 69 , 0 ) );
+	F.reverseNeighbors( 0 ).size() == 70 && F.hasEdge( 69 , 0 ) );
  CHECK_THROWS( O.neighbors( 1 ) , contract_violation );
  CHECK_THROWS( O.reverseNeighbors( 1 ) , contract_violation );
  CHECK_THROWS( O.hasEdge( 0 , 1 ) , contract_violation );
@@ -1234,24 +1329,25 @@ ADS_TEST( "k2-tree" )
 // a target past the nodes, w = 0, r = 0, lmin < 2
 ADS_TEST( "bv-graph" )
 {
- const BVGraph::List S15{ 13 , 15 , 16 , 17 , 18 , 19 , 23 , 24 , 203 ,
-                          315 , 1034 };
+ const BVGraph::List S15{ 13 , 15 , 16 , 17 , 18 , 19 , 23 , 24 , 203 , 315 ,
+			  1034 };
  const BVGraph::List S16{ 15 , 16 , 17 , 22 , 23 , 24 , 315 , 316 , 317 ,
-                          3041 };
+			  3041 };
  const BVGraph::List S18{ 13 , 15 , 16 , 17 , 50 };
  CHECK( BVGraph::copyList( S16 , S15 ).toString() == "01110011010" );
  CHECK( BVGraph::copyList( S18 , S15 ).toString() == "11110000000" );
  const auto b16 = BVGraph::copyBlocks( BVGraph::copyList( S16 , S15 ) );
- CHECK( ! b16.first && b16.second ==
-        std::vector< std::size_t >( { 0 , 2 , 1 , 1 , 0 , 0 } ) );
+ CHECK( ! b16.first &&
+	b16.second == std::vector< std::size_t >( { 0 , 2 , 1 , 1 , 0 ,
+						    0 } ) );
  const auto b18 = BVGraph::copyBlocks( BVGraph::copyList( S18 , S15 ) );
  CHECK( b18.first && b18.second == std::vector< std::size_t >( { 3 } ) );
  const auto [ iv , res ] = BVGraph::intervals( S15 , 2 );
  CHECK( iv == std::vector< BVGraph::Interval >( { { 15 , 5 } ,
-                                                  { 23 , 2 } } ) );
+						  { 23 , 2 } } ) );
  CHECK( res == BVGraph::List( { 13 , 203 , 315 , 1034 } ) );
  CHECK( BVGraph::residualGaps( res , 15 ) ==
-        std::vector< std::uint64_t >( { 5 , 189 , 111 , 718 } ) );
+	std::vector< std::uint64_t >( { 5 , 189 , 111 , 718 } ) );
  std::vector< BVGraph::List > A( 3042 );
  A[ 15 ] = S15;
  A[ 16 ] = S16;
@@ -1270,24 +1366,26 @@ ADS_TEST( "bv-graph" )
   for( std::size_t x = 0 ; x < n ; ++x ) {
    m += L[ x ].size();
    CHECK( G.successors( x ) == L[ x ] && G.outdegree( x ) == L[ x ].size() );
-   std::size_t depth = 0;                   // the chain of references
+   std::size_t depth = 0;  // the chain of references
    for( std::size_t y = x ; G.reference( y ) ; y -= G.reference( y ) )
     ++depth;
    CHECK( depth <= r && G.reference( x ) <= w );
    }
   CHECK( G.order() == n && G.edges() == m );
-  if( ( t % 3 != 0 ) && ( m > 1000 ) )      // locality pays
-   CHECK( double( G.codeBits() ) < 0.75 * double( m ) *
-                                   std::log2( double( n ) ) );
+  if( ( t % 3 != 0 ) && ( m > 1000 ) )  // locality pays
+   CHECK( double( G.codeBits() ) <
+	  0.75 * double( m ) * std::log2( double( n ) ) );
   }
- const BVGraph E( std::vector< BVGraph::List >{} );   // empty, self-loops
+ const BVGraph E( std::vector< BVGraph::List >{} );  // empty, self-loops
  CHECK( E.order() == 0 && E.edges() == 0 );
  std::vector< BVGraph::List > Y( 50 );
- for( std::size_t x = 0 ; x < 50 ; ++x ) Y[ x ] = { x };
+ for( std::size_t x = 0 ; x < 50 ; ++x )
+  Y[ x ] = { x };
  Y[ 49 ] = BVGraph::List( 50 );
  std::iota( Y[ 49 ].begin() , Y[ 49 ].end() , std::size_t( 0 ) );
  const BVGraph G( Y , 1 , 1 , 2 );
- for( std::size_t x = 0 ; x < 50 ; ++x ) CHECK( G.successors( x ) == Y[ x ] );
+ for( std::size_t x = 0 ; x < 50 ; ++x )
+  CHECK( G.successors( x ) == Y[ x ] );
  CHECK( G.edges() == 99 && G.outdegree( 49 ) == 50 );
  CHECK_THROWS( G.successors( 50 ) , contract_violation );
  CHECK_THROWS( G.outdegree( 50 ) , contract_violation );

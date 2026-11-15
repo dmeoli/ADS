@@ -14,12 +14,12 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 std::vector< T > multiplyNaive( const std::vector< T > & p ,
-                                const std::vector< T > & q ,
-                                long * mults )
+				const std::vector< T > & q , long * mults )
 {
  if( p.empty() || q.empty() )
   return( std::vector< T >() );
@@ -32,11 +32,12 @@ std::vector< T > multiplyNaive( const std::vector< T > & p ,
  return( r );
  }
 
-namespace detail {
+namespace detail
+{
 
 template< class T >
 void addShifted( std::vector< T > & r , const std::vector< T > & a ,
-                 std::size_t s , T sign )
+		 std::size_t s , T sign )
 {
  if( r.size() < a.size() + s )
   r.resize( a.size() + s , T( 0 ) );
@@ -46,25 +47,25 @@ void addShifted( std::vector< T > & r , const std::vector< T > & a ,
 
 template< class T >
 std::vector< T > multiplyRec( const std::vector< T > & p ,
-                              const std::vector< T > & q , bool three ,
-                              long * mults )
+			      const std::vector< T > & q , bool three ,
+			      long * mults )
 {
  ADS_PRE( ( p.size() == q.size() ) && ! p.empty() );
  const std::size_t n = p.size();
  if( n == 1 ) {
-  if( mults ) ++*mults;
+  if( mults )
+   ++*mults;
   return( std::vector< T >{ p[ 0 ] * q[ 0 ] } );
   }
- const std::size_t h = n / 2;                    // x^h splits them
+ const std::size_t h = n / 2;  // x^h splits them
  const std::vector< T > pD( p.begin() , p.begin() + h ) ,
-                        pS( p.begin() + h , p.end() ) ,
-                        qD( q.begin() , q.begin() + h ) ,
-                        qS( q.begin() + h , q.end() );
+   pS( p.begin() + h , p.end() ) , qD( q.begin() , q.begin() + h ) ,
+   qS( q.begin() + h , q.end() );
  auto pad = []( std::vector< T > a , std::size_t m ) {
   a.resize( m , T( 0 ) );
   return( a );
   };
- const std::size_t m = n - h;                    // pS and qS, m >= h
+ const std::size_t m = n - h;  // pS and qS, m >= h
  std::vector< T > r( 2 * n - 1 , T( 0 ) );
  const auto rS = multiplyRec( pS , qS , three , mults );
  const auto rD = multiplyRec( pad( pD , m ) , pad( qD , m ) , three , mults );
@@ -91,7 +92,7 @@ std::vector< T > multiplyRec( const std::vector< T > & p ,
 
 template< class T >
 std::vector< T > multiplySame( std::vector< T > p , std::vector< T > q ,
-                               bool three , long * mults )
+			       bool three , long * mults )
 {
  if( p.empty() || q.empty() )
   return( std::vector< T >() );
@@ -108,8 +109,7 @@ std::vector< T > multiplySame( std::vector< T > p , std::vector< T > q ,
 
 template< class T >
 std::vector< T > multiplyFour( const std::vector< T > & p ,
-                               const std::vector< T > & q ,
-                               long * mults )
+			       const std::vector< T > & q , long * mults )
 {
  auto r = detail::multiplySame( p , q , false , mults );
  ADS_AUDIT( r == multiplyNaive( p , q ) );
@@ -118,8 +118,8 @@ std::vector< T > multiplyFour( const std::vector< T > & p ,
 
 template< class T >
 std::vector< T > multiplyKaratsuba( const std::vector< T > & p ,
-                                    const std::vector< T > & q ,
-                                    long * mults )
+				    const std::vector< T > & q ,
+				    long * mults )
 {
  auto r = detail::multiplySame( p , q , true , mults );
  ADS_AUDIT( r == multiplyNaive( p , q ) );

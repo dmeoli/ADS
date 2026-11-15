@@ -14,16 +14,19 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// no code is a prefix of another, and none is empty
 template< class C >
 bool prefixFree( const std::map< C , std::string > & code )
 {
  for( const auto & [ c , s ] : code ) {
-  if( s.empty() ) return( false );
+  if( s.empty() )
+   return( false );
   for( const auto & [ d , t ] : code )
    if( ( c != d ) && ( t.compare( 0 , s.size() , s ) == 0 ) )
     return( false );
@@ -38,9 +41,14 @@ std::map< C , std::string > huffman( const std::map< C , F > & freq )
 {
  ADS_PRE( ! freq.empty() );
  ADS_PRE( std::all_of( freq.begin() , freq.end() , []( const auto & e ) {
-  return( !( e.second < F( 0 ) ) ); } ) );
- struct Node { int left , right; C c; };
- std::vector< Node > T;                         // the nodes of the tree
+  return( ! ( e.second < F( 0 ) ) );
+  } ) );
+ struct Node
+ {
+  int left , right;
+  C c;
+  };
+ std::vector< Node > T;  // the nodes of the tree
  HeapPriorityQueue< int , F > Q( int( 2 * freq.size() ) );
  for( const auto & [ c , f ] : freq ) {
   T.push_back( { -1 , -1 , c } );
@@ -51,7 +59,7 @@ std::map< C , std::string > huffman( const std::map< C , F > & freq )
   const int c1 = Q.deleteMin();
   const F f2 = Q.minPriority();
   const int c2 = Q.deleteMin();
-  T.push_back( { c1 , c2 , C() } );              // a virtual character
+  T.push_back( { c1 , c2 , C() } );  // a virtual character
   Q.insert( int( T.size() ) - 1 , f1 + f2 );
   }
  std::map< C , std::string > code;
@@ -71,7 +79,7 @@ std::map< C , std::string > huffman( const std::map< C , F > & freq )
 
 template< class C >
 std::string encode( const std::basic_string< C > & text ,
-                    const std::map< C , std::string > & code )
+		    const std::map< C , std::string > & code )
 {
  std::string bits;
  for( C c : text ) {
@@ -83,7 +91,7 @@ std::string encode( const std::basic_string< C > & text ,
 
 template< class C >
 std::basic_string< C > decode( const std::string & bits ,
-                               const std::map< C , std::string > & code )
+			       const std::map< C , std::string > & code )
 {
  ADS_AUDIT( detail::prefixFree( code ) );
  std::map< std::string , C > back;
@@ -93,12 +101,12 @@ std::basic_string< C > decode( const std::string & bits ,
  std::string s;
  for( char b : bits ) {
   s += b;
-  if( auto it = back.find( s ) ; it != back.end() ) {
+  if( auto it = back.find( s ); it != back.end() ) {
    text += it->second;
    s.clear();
    }
   }
- ADS_PRE( s.empty() );                   // no bits left over
+ ADS_PRE( s.empty() );  // no bits left over
  return( text );
  }
 

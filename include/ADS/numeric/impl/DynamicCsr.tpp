@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class I , class V >
 void DynamicCsr< I , V >::reserve( std::size_t r , std::size_t z )
@@ -34,11 +35,11 @@ void DynamicCsr< I , V >::clear( void )
 
 template< class I , class V >
 std::size_t DynamicCsr< I , V >::append( std::span< const I > ind ,
-                                         std::span< const V > val )
+					std::span< const V > val )
 {
  ADS_PRE( ( ind.size() == val.size() ) &&
-          ( f_ind.size() + ind.size() <=
-            std::size_t( std::numeric_limits< I >::max() ) ) );
+	  ( f_ind.size() + ind.size() <=
+	    std::size_t( std::numeric_limits< I >::max() ) ) );
  f_ind.insert( f_ind.end() , ind.begin() , ind.end() );
  f_val.insert( f_val.end() , val.begin() , val.end() );
  f_beg.push_back( I( f_ind.size() ) );
@@ -48,17 +49,15 @@ std::size_t DynamicCsr< I , V >::append( std::span< const I > ind ,
 
 template< class I , class V >
 std::size_t DynamicCsr< I , V >::append( std::size_t r , const I * beg ,
-                                         const I * ind , const V * val )
+					const I * ind , const V * val )
 {
  const std::size_t first = rows();
  if( r == 0 )
   return( first );
- ADS_PRE( ( beg != nullptr ) &&
-          std::is_sorted( beg , beg + r + 1 ) &&
-          ( f_ind.size() + std::size_t( beg[ r ] - beg[ 0 ] ) <=
-            std::size_t( std::numeric_limits< I >::max() ) ) );
- const std::size_t s = std::size_t( beg[ 0 ] ) ,
-                   e = std::size_t( beg[ r ] );
+ ADS_PRE( ( beg != nullptr ) && std::is_sorted( beg , beg + r + 1 ) &&
+	  ( f_ind.size() + std::size_t( beg[ r ] - beg[ 0 ] ) <=
+	    std::size_t( std::numeric_limits< I >::max() ) ) );
+ const std::size_t s = std::size_t( beg[ 0 ] ) , e = std::size_t( beg[ r ] );
  const I shift = I( f_ind.size() ) - beg[ 0 ];
  f_ind.insert( f_ind.end() , ind + s , ind + e );
  f_val.insert( f_val.end() , val + s , val + e );
@@ -77,12 +76,12 @@ void DynamicCsr< I , V >::remove( const Range & E )
  using K = std::ranges::range_value_t< Range >;
  static_assert( std::is_integral_v< K > );
  const auto R = std::span< const K >( std::ranges::data( E ) ,
-                                      std::size_t( std::ranges::size( E ) ) );
- ADS_PRE( std::adjacent_find( R.begin() , R.end() ,
-                              []( K a , K b ) { return( ! ( a < b ) ); } )
-          == R.end() );
+				      std::size_t( std::ranges::size( E ) ) );
+ ADS_PRE( std::adjacent_find( R.begin() , R.end() , []( K a , K b ) {
+	   return( ! ( a < b ) );
+	   } ) == R.end() );
  ADS_PRE( R.empty() || ( std::cmp_greater_equal( R.front() , 0 ) &&
-                         std::cmp_less( R.back() , rows() ) ) );
+			 std::cmp_less( R.back() , rows() ) ) );
  if( R.empty() )
   return;
  const std::size_t r = rows();
@@ -97,9 +96,8 @@ void DynamicCsr< I , V >::remove( const Range & E )
    ++k;
    continue;
    }
-  const std::size_t s = std::size_t( B[ i ] ) ,
-                    e = std::size_t( B[ i + 1 ] );
-  B[ out++ ] = I( o );                         // out < i: B[ i ] is read
+  const std::size_t s = std::size_t( B[ i ] ) , e = std::size_t( B[ i + 1 ] );
+  B[ out++ ] = I( o );  // out < i: B[ i ] is read
   std::copy( X + s , X + e , X + o );
   std::copy( Y + s , Y + e , Y + o );
   o += e - s;
@@ -118,7 +116,7 @@ void DynamicCsr< I , V >::remove( std::size_t first , std::size_t last )
  if( first == last )
   return;
  const std::size_t s = std::size_t( f_beg[ first ] ) ,
-                   e = std::size_t( f_beg[ last ] );
+		   e = std::size_t( f_beg[ last ] );
  f_ind.erase( f_ind.begin() + s , f_ind.begin() + e );
  f_val.erase( f_val.begin() + s , f_val.begin() + e );
  const I d = I( e - s );
@@ -133,7 +131,7 @@ std::span< const I > DynamicCsr< I , V >::indices( std::size_t i ) const
 {
  ADS_PRE( i < rows() );
  return( std::span< const I >( f_ind.data() + f_beg[ i ] ,
-                               std::size_t( f_beg[ i + 1 ] - f_beg[ i ] ) ) );
+				std::size_t( f_beg[ i + 1 ] - f_beg[ i ] ) ) );
  }
 
 template< class I , class V >
@@ -141,7 +139,7 @@ std::span< const V > DynamicCsr< I , V >::values( std::size_t i ) const
 {
  ADS_PRE( i < rows() );
  return( std::span< const V >( f_val.data() + f_beg[ i ] ,
-                               std::size_t( f_beg[ i + 1 ] - f_beg[ i ] ) ) );
+				std::size_t( f_beg[ i + 1 ] - f_beg[ i ] ) ) );
  }
 
 template< class I , class V >
@@ -149,16 +147,16 @@ std::span< V > DynamicCsr< I , V >::values( std::size_t i )
 {
  ADS_PRE( i < rows() );
  return( std::span< V >( f_val.data() + f_beg[ i ] ,
-                         std::size_t( f_beg[ i + 1 ] - f_beg[ i ] ) ) );
+			  std::size_t( f_beg[ i + 1 ] - f_beg[ i ] ) ) );
  }
 
 template< class I , class V >
 bool DynamicCsr< I , V >::consistent( void ) const
 {
  return( ( ! f_beg.empty() ) && ( f_beg.front() == I( 0 ) ) &&
-         std::is_sorted( f_beg.begin() , f_beg.end() ) &&
-         ( std::size_t( f_beg.back() ) == f_ind.size() ) &&
-         ( f_ind.size() == f_val.size() ) );
+	  std::is_sorted( f_beg.begin() , f_beg.end() ) &&
+	  ( std::size_t( f_beg.back() ) == f_ind.size() ) &&
+	  ( f_ind.size() == f_val.size() ) );
  }
 
 /*--------------------------------------------------------------------------*/

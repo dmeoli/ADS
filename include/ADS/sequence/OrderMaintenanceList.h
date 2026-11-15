@@ -69,7 +69,7 @@
 
 #ifndef __ADS_OrderMaintenanceList
  #define __ADS_OrderMaintenanceList
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -87,7 +87,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- CLASS OrderMaintenanceList -----------------------*/
@@ -96,15 +97,15 @@ namespace ADS {
 /// a list of items of type `T` whose order between two elements is
 /// tested in \f$ O( 1 ) \f$ by labels on two levels
 template< class T >
-class OrderMaintenanceList {
+class OrderMaintenanceList
+{
 
  struct Node;
  struct Bucket;
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;    ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// an element of the list, valid until it is removed
  using Element = const Node *;
@@ -169,7 +170,7 @@ class OrderMaintenanceList {
  [[nodiscard]] bool testBefore( Element a , Element b ) const {
   ADS_PRE( a && b && a->bucket && b->bucket );
   return( a->bucket == b->bucket ? a->label < b->label
-                                 : a->bucket->label < b->bucket->label );
+				  : a->bucket->label < b->bucket->label );
   }
 
  /// the item of \f$ e \f$
@@ -187,30 +188,31 @@ class OrderMaintenanceList {
 
  /// the number of the relabelings of a range of buckets so far, and the
  /// labels written by them and by the buckets labeled again
- [[nodiscard]] std::pair< std::size_t , std::size_t > relabelWork( void )
-  const {
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ relabelWork( void ) const {
   return( std::pair< std::size_t , std::size_t >( f_relabels , f_work ) );
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// an element of the list
- struct Node {
-  T item;                       ///< the item
-  Node * prev = nullptr;        ///< the previous element in the list
-  Node * next = nullptr;        ///< the next element in the list
-  Bucket * bucket = nullptr;    ///< its bucket, nil once removed
-  std::uint64_t label = 0;      ///< the local label
+ struct Node
+ {
+  T item;                     ///< the item
+  Node * prev = nullptr;      ///< the previous element in the list
+  Node * next = nullptr;      ///< the next element in the list
+  Bucket * bucket = nullptr;  ///< its bucket, nil once removed
+  std::uint64_t label = 0;    ///< the local label
   };
 
  /// a bucket, a run of consecutive elements
- struct Bucket {
-  Bucket * prev = nullptr;      ///< the previous bucket
-  Bucket * next = nullptr;      ///< the next bucket
-  Node * head = nullptr;        ///< its first element
-  std::size_t size = 0;         ///< its elements
-  std::uint64_t label = 0;      ///< the label
+ struct Bucket
+ {
+  Bucket * prev = nullptr;  ///< the previous bucket
+  Bucket * next = nullptr;  ///< the next bucket
+  Node * head = nullptr;    ///< its first element
+  std::size_t size = 0;     ///< its elements
+  std::uint64_t label = 0;  ///< the label
   };
 
  /// the labels, local or not, are below \f$ 2^{63} \f$
@@ -259,11 +261,11 @@ class OrderMaintenanceList {
  /// the thresholds \f$ ( 2 / T )^i \f$ of the ranges of \f$ 2^i \f$ labels
  [[nodiscard]] static const std::array< double , 64 > & caps( void );
 
- Bucket f_head;                    ///< the sentinel bucket, of label 0
- Node * f_first = nullptr;         ///< the first element
- std::size_t f_n = 0;              ///< the elements
- std::size_t f_relabels = 0;       ///< the relabelings of a range
- std::size_t f_work = 0;           ///< the labels written
+ Bucket f_head;               ///< the sentinel bucket, of label 0
+ Node * f_first = nullptr;    ///< the first element
+ std::size_t f_n = 0;         ///< the elements
+ std::size_t f_relabels = 0;  ///< the relabelings of a range
+ std::size_t f_work = 0;      ///< the labels written
 
  };  // end( class OrderMaintenanceList )
 
@@ -279,7 +281,7 @@ class OrderMaintenanceList {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* OrderMaintenanceList.h included */
+#endif /* OrderMaintenanceList.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File OrderMaintenanceList.h --------------------*/

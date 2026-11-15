@@ -57,7 +57,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using BT = BinaryTree< int >;
 using Owner = std::unique_ptr< BT >;
@@ -75,13 +76,16 @@ int rnd( std::mt19937 & g , int a , int b )
 
 /// a random shape of n nodes, the values given by next() in previsit
 BT * randomTree( std::mt19937 & g , int n ,
-                 const std::function< int( void ) > & next )
+		 const std::function< int( void ) > & next )
 {
- if( n == 0 ) return( nullptr );
+ if( n == 0 )
+  return( nullptr );
  auto * t = new BT( next() );
  const int k = rnd( g , 0 , n - 1 );
- if( auto * l = randomTree( g , k , next ) ) t->insertLeft( l );
- if( auto * r = randomTree( g , n - 1 - k , next ) ) t->insertRight( r );
+ if( auto * l = randomTree( g , k , next ) )
+  t->insertLeft( l );
+ if( auto * r = randomTree( g , n - 1 - k , next ) )
+  t->insertRight( r );
  return( t );
  }
 
@@ -96,10 +100,13 @@ Ints visit( BT * t , int which )
 {
  Ints V;
  auto add = [ & ]( BT * u ) { V.push_back( u->read() ); };
- auto none = []( BT * ) {};
- if( which == 0 ) dfs( t , add , none , none );
- else if( which == 1 ) dfs( t , none , add , none );
- else dfs( t , none , none , add );
+ auto none = []( BT * ) { };
+ if( which == 0 )
+  dfs( t , add , none , none );
+ else if( which == 1 )
+  dfs( t , none , add , none );
+ else
+  dfs( t , none , none , add );
  return( V );
  }
 
@@ -115,7 +122,7 @@ std::vector< BT * > nodesOf( BT * t )
 int heightOf( const BT * t )
 {
  return( t ? 1 + std::max( heightOf( t->left() ) , heightOf( t->right() ) )
-           : -1 );
+	    : -1 );
  }
 
 /// the insertion of k into the search tree t, made of BT
@@ -128,20 +135,24 @@ void bstInsert( Owner & t , int k )
  BT * u = t.get();
  for( ; ; ) {
   BT * c = k < u->read() ? u->left() : u->right();
-  if( ! c ) break;
+  if( ! c )
+   break;
   u = c;
   }
- if( k < u->read() ) u->insertLeft( new BT( k ) );
- else u->insertRight( new BT( k ) );
+ if( k < u->read() )
+  u->insertLeft( new BT( k ) );
+ else
+  u->insertRight( new BT( k ) );
  }
 
 /// a node of a plain struct, as in the pseudocode of the book
-struct Node {
- int key = 0;                   ///< the key
- bool red = false;              ///< the color
- Node * left = nullptr;         ///< the left child
- Node * right = nullptr;        ///< the right child
- Node * parent = nullptr;       ///< the parent
+struct Node
+{
+ int key = 0;              ///< the key
+ bool red = false;         ///< the color
+ Node * left = nullptr;    ///< the left child
+ Node * right = nullptr;   ///< the right child
+ Node * parent = nullptr;  ///< the parent
  };
 
 /// the nodes, at fixed addresses
@@ -154,15 +165,18 @@ Node * makeNode( Pool & P , int key , Node * l , Node * r )
  t.key = key;
  t.left = l;
  t.right = r;
- if( l ) l->parent = &t;
- if( r ) r->parent = &t;
+ if( l )
+  l->parent = &t;
+ if( r )
+  r->parent = &t;
  return( &t );
  }
 
 /// the copy of t as nodes of P
 Node * toNodes( Pool & P , const BT * t )
 {
- if( ! t ) return( nullptr );
+ if( ! t )
+  return( nullptr );
  Node * l = toNodes( P , t->left() );
  Node * r = toNodes( P , t->right() );
  return( makeNode( P , t->read() , l , r ) );
@@ -171,13 +185,16 @@ Node * toNodes( Pool & P , const BT * t )
 /// the mirror of t, in place, by detaching and reinserting its subtrees
 void mirror( BT * t )
 {
- if( ! t ) return;
+ if( ! t )
+  return;
  BT * l = t->detachLeft();
  BT * r = t->detachRight();
  mirror( l );
  mirror( r );
- if( r ) t->insertLeft( r );
- if( l ) t->insertRight( l );
+ if( r )
+  t->insertLeft( r );
+ if( l )
+  t->insertRight( l );
  }
 
 /// the Cartesian tree of A[ i .. j - 1 ] by its definition, the leftmost
@@ -185,21 +202,26 @@ void mirror( BT * t )
 template< class Compare >
 BT * cartesianRec( const Ints & A , int i , int j , Compare less )
 {
- if( i >= j ) return( nullptr );
+ if( i >= j )
+  return( nullptr );
  int m = i;
  for( int k = i + 1 ; k < j ; ++k )
-  if( less( A[ k ] , A[ m ] ) ) m = k;
+  if( less( A[ k ] , A[ m ] ) )
+   m = k;
  auto * t = new BT( A[ m ] );
- if( auto * l = cartesianRec( A , i , m , less ) ) t->insertLeft( l );
- if( auto * r = cartesianRec( A , m + 1 , j , less ) ) t->insertRight( r );
+ if( auto * l = cartesianRec( A , i , m , less ) )
+  t->insertLeft( l );
+ if( auto * r = cartesianRec( A , m + 1 , j , less ) )
+  t->insertRight( r );
  return( t );
  }
 
 /// a value whose comparison throws on a negative one, the values alive
 /// counted
-struct Picky {
- static inline int alive = 0;   ///< the values alive
- int v;                         ///< the value
+struct Picky
+{
+ static inline int alive = 0;  ///< the values alive
+ int v;                        ///< the value
 
  /// the value x
  Picky( int x ) : v( x ) { ++alive; }
@@ -209,7 +231,8 @@ struct Picky {
  ~Picky() { --alive; }
  /// the equality, which throws on a negative value
  bool operator==( const Picky & o ) const {
-  if( ( v < 0 ) || ( o.v < 0 ) ) throw( std::domain_error( "negative" ) );
+  if( ( v < 0 ) || ( o.v < 0 ) )
+   throw( std::domain_error( "negative" ) );
   return( v == o.v );
   }
  };
@@ -220,7 +243,8 @@ Ints valuesOf( const Places & t , const std::vector< int > & N )
 {
  Ints v;
  v.reserve( N.size() );
- for( int n : N ) v.push_back( t.read( n ) );
+ for( int n : N )
+  v.push_back( t.read( n ) );
  return( v );
  }
 
@@ -232,11 +256,12 @@ int deepPath( Places & t , int n )
 {
  int last = t.root();
  while( t.size() < n ) {
-  int s = t.root();                         // the lower n - size nodes
+  int s = t.root();  // the lower n - size nodes
   for( int d = std::max( 0 , 2 * t.size() - n ) ; d > 0 ; --d )
    s = t.leftmostChild( s );
   last = t.insertChildTree( last , t , s );
-  while( t.leftmostChild( last ) != t.NIL ) last = t.leftmostChild( last );
+  while( t.leftmostChild( last ) != t.NIL )
+   last = t.leftmostChild( last );
   }
  int k = 0;
  for( int u = t.root() ; u != t.NIL ; u = t.leftmostChild( u ) )
@@ -288,22 +313,29 @@ ADS_TEST( "binarytree-postorder" )
  for( int k = 0 ; k < 500 ; ++k ) {
   Owner t( randomTree( g , rnd( g , 1 , 80 ) , 0 , 99 ) );
   Ints a , b , c;
-  for( BT * u : preorder( t.get() ) ) a.push_back( u->read() );
-  for( BT * u : inorder( t.get() ) ) b.push_back( u->read() );
-  for( BT * u : postorder( t.get() ) ) c.push_back( u->read() );
+  for( BT * u : preorder( t.get() ) )
+   a.push_back( u->read() );
+  for( BT * u : inorder( t.get() ) )
+   b.push_back( u->read() );
+  for( BT * u : postorder( t.get() ) )
+   c.push_back( u->read() );
   CHECK( a == visit( t.get() , 0 ) && b == visit( t.get() , 1 ) &&
-         c == visit( t.get() , 2 ) );
+	 c == visit( t.get() , 2 ) );
   BT * sub = nodesOf( t.get() )[ rnd( g , 0 , int( a.size() ) - 1 ) ];
   Ints d;
-  for( BT * u : postorder( sub ) ) d.push_back( u->read() );
+  for( BT * u : postorder( sub ) )
+   d.push_back( u->read() );
   CHECK( d == visit( sub , 2 ) );
   }
  const int n = 100000;
  std::vector< BT * > P( n );
- for( int i = 0 ; i < n ; ++i ) P[ i ] = new BT( i );
+ for( int i = 0 ; i < n ; ++i )
+  P[ i ] = new BT( i );
  for( int i = n - 1 ; i > 0 ; --i )
-  if( i % 2 ) P[ i - 1 ]->insertLeft( P[ i ] );
-  else P[ i - 1 ]->insertRight( P[ i ] );
+  if( i % 2 )
+   P[ i - 1 ]->insertLeft( P[ i ] );
+  else
+   P[ i - 1 ]->insertRight( P[ i ] );
  int expect = n - 1 , count = 0;
  bool ok = true;
  for( BT * u : postorder( P[ 0 ] ) ) {
@@ -311,11 +343,12 @@ ADS_TEST( "binarytree-postorder" )
   ++count;
   }
  CHECK( ok && ( count == n ) );
- for( int i = n - 1 ; i > 0 ; --i )        // freed from the bottom
-  delete ( i % 2 ? P[ i - 1 ]->detachLeft() : P[ i - 1 ]->detachRight() );
+ for( int i = n - 1 ; i > 0 ; --i )  // freed from the bottom
+  delete( i % 2 ? P[ i - 1 ]->detachLeft() : P[ i - 1 ]->detachRight() );
  delete P[ 0 ];
  Owner one( new BT( 7 ) );
- for( BT * u : postorder( one.get() ) ) CHECK( u == one.get() );
+ for( BT * u : postorder( one.get() ) )
+  CHECK( u == one.get() );
  }
 
 // the lowest common ancestor against the first ancestor of v among those
@@ -325,8 +358,8 @@ ADS_TEST( "binarytree-postorder" )
 ADS_TEST( "lowest-common-ancestor" )
 {
  Owner e( from_list< int >( "( 1 ( 2 ( 4 () () ) ( 5 ( 6 () () ) () ) ) ( 3 "
-                            "() () ) )" ) );
- BT * n4 = e->left()->left() , * n6 = e->left()->right()->left();
+			    "() () ) )" ) );
+ BT *n4 = e->left()->left() , *n6 = e->left()->right()->left();
  CHECK( lowestCommonAncestor( n4 , n6 ) == e->left() );
  CHECK( lowestCommonAncestor( n6 , e->right() ) == e.get() );
  CHECK( lowestCommonAncestor( e->left() , n6 ) == e->left() );
@@ -334,29 +367,34 @@ ADS_TEST( "lowest-common-ancestor" )
  Owner o( new BT( 1 ) );
  CHECK_THROWS( lowestCommonAncestor( n4 , o.get() ) , contract_violation );
  CHECK_THROWS( lowestCommonAncestor( n4 , static_cast< BT * >( nullptr ) ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 3 );
  for( int k = 0 ; k < 300 ; ++k ) {
   Owner t( randomTree( g , 1 + k % 25 , 0 , 0 ) );
   Pool P;
   Node * s = toNodes( P , t.get() );
   std::vector< Node * > M;
-  for( Node & x : P ) M.push_back( &x );
+  for( Node & x : P )
+   M.push_back( &x );
   const auto N = nodesOf( t.get() );
   for( BT * u : N )
    for( BT * v : N ) {
     std::set< BT * > A;
-    for( BT * x = u ; x ; x = x->parent() ) A.insert( x );
+    for( BT * x = u ; x ; x = x->parent() )
+     A.insert( x );
     BT * a = v;
-    while( ! A.count( a ) ) a = a->parent();
+    while( ! A.count( a ) )
+     a = a->parent();
     CHECK( lowestCommonAncestor( u , v ) == a );
     }
   for( Node * u : M )
    for( Node * v : M ) {
     std::set< Node * > A;
-    for( Node * x = u ; x ; x = x->parent ) A.insert( x );
+    for( Node * x = u ; x ; x = x->parent )
+     A.insert( x );
     Node * a = v;
-    while( ! A.count( a ) ) a = a->parent;
+    while( ! A.count( a ) )
+     a = a->parent;
     CHECK( lowestCommonAncestor( u , v ) == a );
     }
   CHECK( lowestCommonAncestor( M.front() , s ) == s );
@@ -364,11 +402,13 @@ ADS_TEST( "lowest-common-ancestor" )
  // a chain of 100000 nodes: the climb is not recursive; one node alone
  const int n = 100000;
  std::vector< BT * > C( n );
- for( int i = 0 ; i < n ; ++i ) C[ i ] = new BT( i );
- for( int i = n - 1 ; i > 0 ; --i ) C[ i - 1 ]->insertLeft( C[ i ] );
+ for( int i = 0 ; i < n ; ++i )
+  C[ i ] = new BT( i );
+ for( int i = n - 1 ; i > 0 ; --i )
+  C[ i - 1 ]->insertLeft( C[ i ] );
  CHECK( lowestCommonAncestor( C[ n - 1 ] , C[ 0 ] ) == C[ 0 ] &&
-        lowestCommonAncestor( C[ n / 2 ] , C[ n - 1 ] ) == C[ n / 2 ] );
- for( int i = n - 1 ; i > 0 ; --i )        // freed from the bottom
+	lowestCommonAncestor( C[ n / 2 ] , C[ n - 1 ] ) == C[ n / 2 ] );
+ for( int i = n - 1 ; i > 0 ; --i )  // freed from the bottom
   delete C[ i - 1 ]->detachLeft();
  delete C[ 0 ];
  CHECK( lowestCommonAncestor( o.get() , o.get() ) == o.get() );
@@ -385,19 +425,21 @@ ADS_TEST( "equal-trees" )
   Owner a( randomTree( g , rnd( g , 0 , 6 ) , 0 , 1 ) );
   Owner b( randomTree( g , rnd( g , 0 , 6 ) , 0 , 1 ) );
   CHECK( equalTrees( a.get() , b.get() ) ==
-         ( to_list( a.get() ) == to_list( b.get() ) ) );
+	 ( to_list( a.get() ) == to_list( b.get() ) ) );
   CHECK( equalTrees( a.get() , a.get() ) );
   Pool P;
   CHECK( equalTrees( a.get() , toNodes( P , b.get() ) ) ==
-         ( to_list( a.get() ) == to_list( b.get() ) ) );
+	 ( to_list( a.get() ) == to_list( b.get() ) ) );
   Owner sa( copy( a.get() ) ) , sb( copy( b.get() ) );
-  for( BT * u : nodesOf( sa.get() ) ) u->write( 0 );
-  for( BT * u : nodesOf( sb.get() ) ) u->write( 0 );
+  for( BT * u : nodesOf( sa.get() ) )
+   u->write( 0 );
+  for( BT * u : nodesOf( sb.get() ) )
+   u->write( 0 );
   CHECK( equalTrees( a.get() , b.get() , any ) ==
-         ( to_list( sa.get() ) == to_list( sb.get() ) ) );
+	 ( to_list( sa.get() ) == to_list( sb.get() ) ) );
   }
  CHECK( equalTrees( static_cast< BT * >( nullptr ) ,
-                    static_cast< BT * >( nullptr ) ) );
+		    static_cast< BT * >( nullptr ) ) );
  Owner one( new BT( 1 ) );
  CHECK( ! equalTrees( one.get() , static_cast< BT * >( nullptr ) ) );
  }
@@ -413,12 +455,12 @@ ADS_TEST( "is-search-tree" )
   Owner t( randomTree( g , rnd( g , 0 , 8 ) , 0 , 9 ) );
   const Ints in = visit( t.get() , 1 );
   const bool e = std::adjacent_find( in.begin() , in.end() ,
-                                     std::greater_equal<>() ) == in.end();
+				     std::greater_equal<>() ) == in.end();
   CHECK( isSearchTree( t.get() ) == e );
   Pool P;
   CHECK( isSearchTree( toNodes( P , t.get() ) ) == e );
   const bool d = std::adjacent_find( in.begin() , in.end() ,
-                                     std::less_equal<>() ) == in.end();
+				     std::less_equal<>() ) == in.end();
   CHECK( isSearchTree( t.get() , std::greater<>() ) == d );
   yes += e;
   }
@@ -427,14 +469,15 @@ ADS_TEST( "is-search-tree" )
   Owner t;
   std::set< int > S;
   for( int i = 0 ; i < 60 ; ++i )
-   if( int x = rnd( g , 0 , 999 ) ; S.insert( x ).second ) bstInsert( t , x );
+   if( int x = rnd( g , 0 , 999 ); S.insert( x ).second )
+    bstInsert( t , x );
   CHECK( isSearchTree( t.get() ) );
   }
  Owner w( from_list< int >( "( 10 ( 5 () ( 12 () () ) ) ( 15 () () ) )" ) );
- CHECK( ! isSearchTree( w.get() ) );        // each parent agrees
+ CHECK( ! isSearchTree( w.get() ) );  // each parent agrees
  w->left()->right()->write( 7 );
  CHECK( isSearchTree( w.get() ) );
- w->left()->right()->write( 10 );           // equal keys refused
+ w->left()->right()->write( 10 );  // equal keys refused
  CHECK( ! isSearchTree( w.get() ) );
  CHECK( isSearchTree( static_cast< BT * >( nullptr ) ) );
  }
@@ -454,20 +497,22 @@ ADS_TEST( "is-red-black-tree" )
   Node * s = toNodes( P , t.get() );
   for( int mask = 0 ; mask < ( 1 << n ) ; ++mask ) {
    auto red = [ & ]( BT * u ) { return( ( mask >> u->read() ) & 1 ); };
-   bool ok = ! red( t.get() );                  // by the paths
+   bool ok = ! red( t.get() );  // by the paths
    std::set< int > bh;
    std::function< void( BT * , int ) > down = [ & ]( BT * u , int b ) {
     if( ! u ) {
      bh.insert( b );
      return;
      }
-    if( red( u ) && u->parent() && red( u->parent() ) ) ok = false;
+    if( red( u ) && u->parent() && red( u->parent() ) )
+     ok = false;
     down( u->left() , b + ( red( u ) ? 0 : 1 ) );
     down( u->right() , b + ( red( u ) ? 0 : 1 ) );
     };
    down( t.get() , 0 );
-   std::function< void( BT * ) > each = [ & ]( BT * u ) {   // every node
-    if( ! u ) return;
+   std::function< void( BT * ) > each = [ & ]( BT * u ) {  // every node
+    if( ! u )
+     return;
     std::set< int > h;
     std::function< void( BT * , int ) > d = [ & ]( BT * v , int b ) {
      if( ! v ) {
@@ -485,15 +530,16 @@ ADS_TEST( "is-red-black-tree" )
    each( t.get() );
    ok = ok && ( bh.size() == 1 );
    CHECK( isRedBlackTree( t.get() , red ) == ok );
-   for( Node & x : P ) x.red = ( mask >> x.key ) & 1;
-   CHECK( isRedBlackTree( s , []( const Node * u ) { return( u->red ); } )
-          == ok );
+   for( Node & x : P )
+    x.red = ( mask >> x.key ) & 1;
+   CHECK( isRedBlackTree( s , []( const Node * u ) { return( u->red ); } ) ==
+	  ok );
    yes += ok;
    }
   }
  CHECK( yes > 100 );
  CHECK( isRedBlackTree( static_cast< BT * >( nullptr ) ,
-                        []( BT * ) { return( true ); } ) );
+			[]( BT * ) { return( true ); } ) );
  }
 
 // searchTreeRange() against the keys of the invisit in the range, reported
@@ -502,37 +548,41 @@ ADS_TEST( "is-red-black-tree" )
 ADS_TEST( "search-tree-range" )
 {
  Owner T;
- for( int k : { 15 , 10 , 20 , 3 , 12 , 18 , 23 } ) bstInsert( T , k );
+ for( int k : { 15 , 10 , 20 , 3 , 12 , 18 , 23 } )
+  bstInsert( T , k );
  Ints got;
- searchTreeRange( T.get() , 11 , 18 , [ & ]( BT * u ) {
-  got.push_back( u->read() ); } );
+ searchTreeRange( T.get() , 11 , 18 ,
+		  [ & ]( BT * u ) { got.push_back( u->read() ); } );
  CHECK( got == Ints( { 12 , 15 , 18 } ) );
  std::mt19937 g( 7 );
  for( int t = 0 ; t < 500 ; ++t ) {
   Owner R;
   std::set< int > S;
   for( int i = rnd( g , 0 , 60 ) ; i > 0 ; --i )
-   if( int x = rnd( g , 0 , 239 ) ; S.insert( x ).second ) bstInsert( R , x );
+   if( int x = rnd( g , 0 , 239 ); S.insert( x ).second )
+    bstInsert( R , x );
   int lo = rnd( g , -5 , 245 ) , hi = rnd( g , -5 , 245 );
-  if( lo > hi ) std::swap( lo , hi );
+  if( lo > hi )
+   std::swap( lo , hi );
   Ints K;
   for( int x : S )
-   if( ( lo <= x ) && ( x <= hi ) ) K.push_back( x );
+   if( ( lo <= x ) && ( x <= hi ) )
+    K.push_back( x );
   Ints out;
-  const std::size_t seen = searchTreeRange( R.get() , lo , hi ,
-                            [ & ]( BT * u ) { out.push_back( u->read() ); } );
+  const std::size_t seen = searchTreeRange(
+    R.get() , lo , hi , [ & ]( BT * u ) { out.push_back( u->read() ); } );
   CHECK( out == K );
   CHECK( seen <= K.size() + 2 * std::size_t( heightOf( R.get() ) + 1 ) );
   Pool P;
   Ints pn;
   searchTreeRange( toNodes( P , R.get() ) , lo , hi ,
-                   [ & ]( Node * u ) { pn.push_back( u->key ); } );
+		   [ & ]( Node * u ) { pn.push_back( u->key ); } );
   CHECK( pn == K );
   }
  CHECK( searchTreeRange( static_cast< BT * >( nullptr ) , 0 , 0 ,
-                         []( BT * ) {} ) == 0 );
- CHECK_THROWS( searchTreeRange( T.get() , 2 , 1 , []( BT * ) {} ) ,
-               contract_violation );
+			 []( BT * ) { } ) == 0 );
+ CHECK_THROWS( searchTreeRange( T.get() , 2 , 1 , []( BT * ) { } ) ,
+	       contract_violation );
  }
 
 // minimumHeightSearchTree() for n = 0 to 1000: a search tree whose invisit
@@ -543,28 +593,32 @@ ADS_TEST( "minimum-height-search-tree" )
  std::mt19937 g( 8 );
  for( int n = 0 ; n <= 1000 ; ++n ) {
   Ints A( n );
-  for( int i = 0 , v = -50 ; i < n ; ++i ) A[ i ] = v += rnd( g , 1 , 9 );
+  for( int i = 0 , v = -50 ; i < n ; ++i )
+   A[ i ] = v += rnd( g , 1 , 9 );
   Owner T( minimumHeightSearchTree( A ) );
   int h = -1;
-  while( ( 1 << ( h + 1 ) ) - 1 < n ) ++h;
+  while( ( 1 << ( h + 1 ) ) - 1 < n )
+   ++h;
   CHECK( heightOf( T.get() ) == h && visit( T.get() , 1 ) == A );
   CHECK( isSearchTree( T.get() ) );
   Pool P;
-  Node * s = minimumHeightSearchTree( A , [ & ]( int k , Node * l ,
-                                                 Node * r ) {
-   return( makeNode( P , k , l , r ) ); } );
+  Node * s = minimumHeightSearchTree( A ,
+				      [ & ]( int k , Node * l , Node * r ) {
+   return( makeNode( P , k , l , r ) );
+   } );
   CHECK( ( n == 0 ) == ( s == nullptr ) );
   CHECK( equalTrees( T.get() , s ) );
-  if( n > 0 ) CHECK( s->parent == nullptr );
+  if( n > 0 )
+   CHECK( s->parent == nullptr );
   }
  Ints D = { 9 , 5 , 1 };
  Owner d( minimumHeightSearchTree( D , std::greater<>() ) );
  CHECK( to_list( d.get() ) == "( 5 ( 9 () () ) ( 1 () () ) )" );
  CHECK( minimumHeightSearchTree( Ints() ) == nullptr );
  CHECK_THROWS( minimumHeightSearchTree( Ints( { 1 , 1 } ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( minimumHeightSearchTree( Ints( { 1 , 3 , 2 } ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // fromPreorderInorder() on the example of the book's exercises, on random
@@ -573,11 +627,11 @@ ADS_TEST( "minimum-height-search-tree" )
 ADS_TEST( "from-preorder-inorder" )
 {
  const std::string pre = "AEBFGCDIH" , in = "BEGFCADHI";
- std::unique_ptr< BinaryTree< char > > T( fromPreorderInorder(
-  std::vector< char >( pre.begin() , pre.end() ) ,
-  std::vector< char >( in.begin() , in.end() ) ) );
+ std::unique_ptr< BinaryTree< char > > T(
+   fromPreorderInorder( std::vector< char >( pre.begin() , pre.end() ) ,
+			std::vector< char >( in.begin() , in.end() ) ) );
  CHECK( to_list( T.get() ) == "( A ( E ( B () () ) ( F ( G () () ) ( C () () "
-                              ") ) ) ( D () ( I ( H () () ) () ) ) )" );
+			      ") ) ) ( D () ( I ( H () () ) () ) ) )" );
  std::mt19937 g( 9 );
  for( int r = 0 ; r < 600 ; ++r ) {
   const int n = r < 590 ? rnd( g , 0 , 40 ) : 2000;
@@ -587,7 +641,7 @@ ADS_TEST( "from-preorder-inorder" )
   std::size_t next = 0;
   Owner u( randomTree( g , n , [ & ]() { return( L[ next++ ] ); } ) );
   Owner v( fromPreorderInorder( visit( u.get() , 0 ) ,
-                                visit( u.get() , 1 ) ) );
+				visit( u.get() , 1 ) ) );
   CHECK( to_list( u.get() ) == to_list( v.get() ) );
   }
  Ints up( 50 ) , down( 50 );
@@ -599,12 +653,12 @@ ADS_TEST( "from-preorder-inorder" )
  CHECK( heightOf( right.get() ) == 49 && ! right->left() );
  CHECK( fromPreorderInorder( Ints() , Ints() ) == nullptr );
  CHECK_THROWS( fromPreorderInorder( Ints( { 1 , 2 } ) , Ints( { 1 , 3 } ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( fromPreorderInorder( Ints( { 1 , 2 , 3 } ) ,
-                                    Ints( { 3 , 1 , 2 } ) ) ,
-               contract_violation );
+				    Ints( { 3 , 1 , 2 } ) ) ,
+	       contract_violation );
  CHECK_THROWS( fromPreorderInorder( Ints( { 1 } ) , Ints() ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // fromPreorderInorder() when the comparison of the values throws, after
@@ -613,13 +667,13 @@ ADS_TEST( "from-preorder-inorder" )
 ADS_TEST( "from-preorder-inorder-throwing" )
 {
  const std::vector< Picky > pre = { 1 , 2 , 3 } , in = { -1 , 2 , 3 } ,
-                            ok = { 2 , 1 , 3 };
+			    ok = { 2 , 1 , 3 };
  const int alive = Picky::alive;
  CHECK_THROWS( fromPreorderInorder( pre , in ) , std::domain_error );
  CHECK( Picky::alive == alive );
  std::unique_ptr< BinaryTree< Picky > > t( fromPreorderInorder( pre , ok ) );
  CHECK( t->read().v == 1 && t->left()->read().v == 2 &&
-        t->right()->read().v == 3 && Picky::alive == alive + 3 );
+	t->right()->read().v == 3 && Picky::alive == alive + 3 );
  t.reset();
  CHECK( Picky::alive == alive );
  }
@@ -631,17 +685,18 @@ ADS_TEST( "from-preorder-inorder-throwing" )
 ADS_TEST( "cartesian-binary-tree" )
 {
  Owner a( cartesianBinaryTree( Ints( { 2 , 3 , -1 , 8 , 4 , 5 } ) ,
-                               std::greater< int >() ) );
+			       std::greater< int >() ) );
  CHECK( to_list( a.get() ) == "( 8 ( 3 ( 2 () () ) ( -1 () () ) ) ( 5 ( 4 () "
-                              "() ) () ) )" );
+			      "() ) () ) )" );
  Owner b( cartesianBinaryTree( Ints( { 2 , 1 , 5 , 3 , 0 , 4 } ) ,
-                               std::greater< int >() ) );
+			       std::greater< int >() ) );
  CHECK( to_list( b.get() ) == "( 5 ( 2 () ( 1 () () ) ) ( 4 ( 3 () ( 0 () () "
-                              ") ) () ) )" );
+			      ") ) () ) )" );
  std::mt19937 g( 10 );
  for( int r = 0 ; r < 1000 ; ++r ) {
   Ints A( r % 40 );
-  for( int & x : A ) x = rnd( g , 0 , r % 3 ? 99 : 4 );
+  for( int & x : A )
+   x = rnd( g , 0 , r % 3 ? 99 : 4 );
   const int n = int( A.size() );
   Owner m( cartesianBinaryTree( A ) );
   Owner mr( cartesianRec( A , 0 , n , std::less< int >() ) );
@@ -673,7 +728,8 @@ ADS_TEST( "heap-by-insertion" )
  int differ = 0;
  for( int r = 0 ; r < 1000 ; ++r ) {
   Ints V( rnd( g , 0 , 60 ) );
-  for( int & x : V ) x = rnd( g , -20 , 20 );
+  for( int & x : V )
+   x = rnd( g , -20 , 20 );
   Ints H = V , S = V , F = V;
   heapBuildByInsertion( H );
   for( std::size_t i = 1 ; i <= S.size() ; ++i )
@@ -694,7 +750,7 @@ ADS_TEST( "heap-by-insertion" )
  maxHeapSiftUp( one , 0 );
  CHECK( one == Ints( { 5 } ) );
  CHECK_THROWS( maxHeapSiftUp( one , 1 ) , contract_violation );
- Ints bad = { 1 , 5 , 3 };                   // A[ 0 .. 1 ] not a heap
+ Ints bad = { 1 , 5 , 3 };  // A[ 0 .. 1 ] not a heap
  CHECK_THROWS( maxHeapSiftUp( bad , 2 ) , contract_violation );
  }
 
@@ -706,7 +762,7 @@ ADS_TEST( "heap-by-insertion" )
 ADS_TEST( "deep-binary-trees" )
 {
  const int n = ADS::test::scaled( 1000000 , 10000 );
- Owner p( new BT( n - 1 ) );                    // up from the deepest node
+ Owner p( new BT( n - 1 ) );  // up from the deepest node
  for( int k = n - 2 ; k >= 0 ; --k ) {
   auto * u = new BT( k );
   u->insertRight( p.release() );
@@ -724,26 +780,30 @@ ADS_TEST( "deep-binary-trees" )
  Owner j( join( -1 , static_cast< BT * >( nullptr ) , c.get() ) );
  CHECK( path( j.get() , -1 , n + 1 , true ) );
  BT * last = c.get();
- while( last->right() ) last = last->right();
- last->write( -1 );                             // the deepest key out
+ while( last->right() )
+  last = last->right();
+ last->write( -1 );  // the deepest key out
  CHECK( ! equalTrees( p.get() , c.get() ) && isSearchTree( p.get() ) &&
-        ! isSearchTree( c.get() ) );
+	! isSearchTree( c.get() ) );
  CHECK( ! isRedBlackTree( p.get() , []( const BT * ) { return( false ); } ) );
  Ints in;
- const std::size_t seen = searchTreeRange( p.get() , n - 3 , n - 1 ,
-  [ & ]( const BT * u ) { in.push_back( u->read() ); } );
+ const std::size_t seen =
+   searchTreeRange( p.get() , n - 3 , n - 1 ,
+		    [ & ]( const BT * u ) { in.push_back( u->read() ); } );
  CHECK( ( in == Ints( { n - 3 , n - 2 , n - 1 } ) ) &&
-        ( seen == std::size_t( n ) ) );
- std::string list;                              // ( 0 () ( 1 () ... () ) )
- for( int k = 0 ; k < n ; ++k ) list += "( " + std::to_string( k ) + " () ";
+	( seen == std::size_t( n ) ) );
+ std::string list;  // ( 0 () ( 1 () ... () ) )
+ for( int k = 0 ; k < n ; ++k )
+  list += "( " + std::to_string( k ) + " () ";
  list += "()";
- for( int k = 0 ; k < n ; ++k ) list += " )";
+ for( int k = 0 ; k < n ; ++k )
+  list += " )";
  const std::string s = to_list( p.get() );
  CHECK( s == list );
  Owner f( from_list< int >( s ) );
  CHECK( path( f.get() , 0 , n , true ) && ( to_list( f.get() ) == s ) );
  std::unique_ptr< Tree< int > > o( new Tree< int >( n - 1 ) );
- for( int k = n - 2 ; k >= 0 ; --k ) {         // a chain of first children
+ for( int k = n - 2 ; k >= 0 ; --k ) {  // a chain of first children
   auto * u = new Tree< int >( k );
   u->insertChild( o.release() );
   o.reset( u );
@@ -765,7 +825,7 @@ ADS_TEST( "deep-ordered-trees" )
  std::iota( up.begin() , up.end() , 0 );
  const Ints down( up.rbegin() , up.rend() );
  using OT = Tree< int >;
- std::unique_ptr< OT > t( new OT( n - 1 ) );   // up from the deepest node
+ std::unique_ptr< OT > t( new OT( n - 1 ) );  // up from the deepest node
  for( int k = n - 2 ; k >= 0 ; --k ) {
   auto * u = new OT( k );
   u->insertChild( t.release() );
@@ -774,14 +834,17 @@ ADS_TEST( "deep-ordered-trees" )
  auto chain = []( const OT * u , int count ) {
   int k = 0;
   for( ; u ; u = u->leftmostChild() , ++k )
-   if( ( u->read() != k ) || u->rightSibling() ) return( false );
+   if( ( u->read() != k ) || u->rightSibling() )
+    return( false );
   return( k == count );
   };
  std::unique_ptr< OT > c( copy( t.get() ) );
  CHECK( chain( c.get() , n ) && ! c->parent() );
- std::string list = "( 0";                       // ( 0 ( 1 ( ... ) ) )
- for( int k = 1 ; k < n ; ++k ) list += " ( " + std::to_string( k );
- for( int k = 0 ; k < n ; ++k ) list += " )";
+ std::string list = "( 0";  // ( 0 ( 1 ( ... ) ) )
+ for( int k = 1 ; k < n ; ++k )
+  list += " ( " + std::to_string( k );
+ for( int k = 0 ; k < n ; ++k )
+  list += " )";
  const std::string s = to_list( t.get() );
  CHECK( s == list );
  std::unique_ptr< OT > f( tree_from_list< int >( s ) );
@@ -793,15 +856,14 @@ ADS_TEST( "deep-ordered-trees" )
  const int cl = deepPath( C , n );
  CHECK( ( C.size() == n ) && C.isLeaf( cl ) && ( C.read( cl ) == n - 1 ) );
  CHECK( ( valuesOf( C , C.previsit() ) == up ) &&
-        ( valuesOf( C , C.postvisit() ) == down ) &&
-        ( valuesOf( C , C.invisit( 0 ) ) == up ) &&
-        ( valuesOf( C , C.invisit( 1 ) ) == down ) );
+	( valuesOf( C , C.postvisit() ) == down ) &&
+	( valuesOf( C , C.invisit( 0 ) ) == up ) &&
+	( valuesOf( C , C.invisit( 1 ) ) == down ) );
  CursorTree< int > D( -1 );
  D.insertChildTree( D.root() , C , C.root() );
- Ints below = down;                             // the path, then -1
+ Ints below = down;  // the path, then -1
  below.push_back( -1 );
- CHECK( ( D.size() == n + 1 ) &&
-        ( valuesOf( D , D.postvisit() ) == below ) );
+ CHECK( ( D.size() == n + 1 ) && ( valuesOf( D , D.postvisit() ) == below ) );
  C.remove( C.leftmostChild( C.root() ) );
  CHECK( ( C.size() == 1 ) && C.isLeaf( C.root() ) );
  D.remove( D.root() );
@@ -810,31 +872,33 @@ ADS_TEST( "deep-ordered-trees" )
  const int ll = deepPath( L , n );
  CHECK( ( L.size() == n ) && L.isLeaf( ll ) && ( L.read( ll ) == n - 1 ) );
  CHECK( ( valuesOf( L , L.previsit() ) == up ) &&
-        ( valuesOf( L , L.postvisit() ) == down ) &&
-        ( valuesOf( L , L.invisit( 0 ) ) == up ) &&
-        ( valuesOf( L , L.invisit( 1 ) ) == down ) );
- ChildListTree< int > M( L );                   // the copy of the whole tree
+	( valuesOf( L , L.postvisit() ) == down ) &&
+	( valuesOf( L , L.invisit( 0 ) ) == up ) &&
+	( valuesOf( L , L.invisit( 1 ) ) == down ) );
+ ChildListTree< int > M( L );  // the copy of the whole tree
  L.remove( L.leftmostChild( L.root() ) );
  CHECK( ( L.size() == 1 ) && L.isLeaf( L.root() ) );
  CHECK( ( M.size() == n ) && ( valuesOf( M , M.previsit() ) == up ) );
  M.insertSibling( M.leftmostChild( M.root() ) , -1 );
  CHECK( ( M.size() == n + 1 ) &&
-        ( M.read( M.rightSibling( M.leftmostChild( M.root() ) ) ) == -1 ) );
+	( M.read( M.rightSibling( M.leftmostChild( M.root() ) ) ) == -1 ) );
  M.remove( M.root() );
  CHECK( M.empty() && ( M.size() == 0 ) );
  CursorBinaryTree< int > B( 0 );
  int bl = B.root();
- while( B.size() < n ) {                        // the left path, as above
+ while( B.size() < n ) {  // the left path, as above
   int x = B.root();
   for( int d = std::max( 0 , 2 * B.size() - n ) ; d > 0 ; --d )
    x = B.left( x );
   bl = B.insertLeft( bl , B , x );
-  while( B.left( bl ) != B.NIL ) bl = B.left( bl );
+  while( B.left( bl ) != B.NIL )
+   bl = B.left( bl );
   }
  int k = 0;
- for( int u = B.root() ; u != B.NIL ; u = B.left( u ) ) B.write( u , k++ );
+ for( int u = B.root() ; u != B.NIL ; u = B.left( u ) )
+  B.write( u , k++ );
  CHECK( ( B.size() == n ) && B.isLeaf( bl ) &&
-        ( valuesOf( B , B.preorder() ) == up ) );
+	( valuesOf( B , B.preorder() ) == up ) );
  CursorBinaryTree< int > E( -1 );
  E.insertRight( E.root() , B , B.root() );
  CHECK( ( E.size() == n + 1 ) && ( E.read( E.right( E.root() ) ) == 0 ) );
@@ -853,7 +917,8 @@ ADS_TEST( "deep-expression-tree" )
  auto repeat = []( const std::string & a , int k ) {
   std::string r;
   r.reserve( a.size() * std::size_t( k ) );
-  for( ; k > 0 ; --k ) r += a;
+  for( ; k > 0 ; --k )
+   r += a;
   return( r );
   };
  using ET = std::unique_ptr< BinaryTree< std::string > >;
@@ -861,16 +926,16 @@ ADS_TEST( "deep-expression-tree" )
  ET l( expressionTree( "x" + repeat( " 1 +" , n - 1 ) ) );
  CHECK( evaluate( l.get() , env ) == n - 0.5 );
  CHECK( prefixForm( l.get() ) ==
-        repeat( "(+" , n - 1 ) + "(x)" + repeat( "(1))" , n - 1 ) );
+	repeat( "(+" , n - 1 ) + "(x)" + repeat( "(1))" , n - 1 ) );
  CHECK( infixForm( l.get() ) ==
-        repeat( "( " , n - 1 ) + "x" + repeat( " + 1 )" , n - 1 ) );
- ET r( expressionTree( repeat( "1 " , n - 1 ) + "x" +
-                       repeat( " +" , n - 1 ) ) );
+	repeat( "( " , n - 1 ) + "x" + repeat( " + 1 )" , n - 1 ) );
+ ET r( expressionTree( repeat( "1 " , n - 1 ) + "x" + repeat( " +" ,
+							      n - 1 ) ) );
  CHECK( evaluate( r.get() , env ) == n - 0.5 );
  CHECK( prefixForm( r.get() ) ==
-        repeat( "(+(1)" , n - 1 ) + "(x)" + repeat( ")" , n - 1 ) );
+	repeat( "(+(1)" , n - 1 ) + "(x)" + repeat( ")" , n - 1 ) );
  CHECK( infixForm( r.get() ) ==
-        repeat( "( 1 + " , n - 1 ) + "x" + repeat( " )" , n - 1 ) );
+	repeat( "( 1 + " , n - 1 ) + "x" + repeat( " )" , n - 1 ) );
  CHECK_THROWS( evaluate( l.get() , {} ) , contract_violation );
  }
 

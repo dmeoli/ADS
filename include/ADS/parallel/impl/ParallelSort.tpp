@@ -26,17 +26,20 @@
 #include <type_traits>
 #include <utility>
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the numbers whose natural order is less, which the classifier by the
 /// highest bits of radixKey() handles
 template< class T , class C >
-inline constexpr bool naturalNumbers = []() {
+inline constexpr bool naturalNumbers = []()
+{
  if constexpr( RadixKey< T > )
   return( std::is_same_v< C , std::less<> > ||
-          std::is_same_v< C , std::less< T > > );
+	   std::is_same_v< C , std::less< T > > );
  else
   return( false );
  }();
@@ -46,10 +49,12 @@ template< class T , class K >
 auto fromRadixKey( K k )
 {
  constexpr K sign = K( K( 1 ) << ( 8 * sizeof( K ) - 1 ) );
- using U = std::conditional_t< sizeof( T ) == 1 , std::uint8_t ,
-           std::conditional_t< sizeof( T ) == 2 , std::uint16_t ,
-           std::conditional_t< sizeof( T ) == 4 , std::uint32_t ,
-                                                  std::uint64_t > > >;
+ using U = std::conditional_t<
+   sizeof( T ) == 1 , std::uint8_t ,
+   std::conditional_t<
+     sizeof( T ) == 2 , std::uint16_t ,
+     std::conditional_t< sizeof( T ) == 4 , std::uint32_t ,
+			 std::uint64_t > > >;
  if constexpr( std::is_floating_point_v< T > )
   return( U( ( k & sign ) ? ( k ^ sign ) : ~k ) );
  else if constexpr( std::is_signed_v< T > )
@@ -71,18 +76,19 @@ auto sortKey( T x )
 /// whether the distribution writes the items a line of the cache at a
 /// time: those copied as bytes, several to a line
 template< class T >
-inline constexpr bool lined = std::is_trivially_copyable_v< T > &&
-                              ( sizeof( T ) <= 16 ) &&
-                              ( 64 % sizeof( T ) == 0 );
+inline constexpr bool lined =
+  std::is_trivially_copyable_v< T > && ( sizeof( T ) <= 16 ) &&
+  ( 64 % sizeof( T ) == 0 );
 
 /// whether the buckets are sorted in their places by vectorQuickSort():
 /// numbers of 32 or 64 bits in their natural order with the vector
 /// registers there, not the floating point numbers of the stable sort (it
 /// would put -0 before +0, which std::less finds equal)
 template< bool Stable , class T , class C >
-inline constexpr bool inPlace = []() {
+inline constexpr bool inPlace = []()
+{
  if constexpr( VectorKey< T > && naturalNumbers< T , C > )
-  return( kVectorSort && ( ! Stable || std::is_integral_v< T > ) );
+  return( kVectorSort && ( ! Stable || std::is_integral_v< T > ));
  else
   return( false );
  }();
@@ -100,12 +106,12 @@ void sequentialSort( std::vector< T > & A , C & less )
 /// the classifier by k - 1 splitters in an implicit binary tree, with
 /// the buckets of the items equal to a splitter if eq
 template< class T , class C >
-class TreeClassifier {
+class TreeClassifier
+{
  public:
-
  /// the splitters from a sample of A, k a power of 2 at least 2
  TreeClassifier( const std::vector< T > & A , std::size_t k , C & less )
-  : f_less( less ) , f_k( k ) , f_levels( std::countr_zero( k ) ) {
+     : f_less( less ) , f_k( k ) , f_levels( std::countr_zero( k ) ) {
   const std::size_t n = A.size() , s = std::min( n , 16 * k );
   std::vector< T > S;
   S.reserve( s );
@@ -117,7 +123,7 @@ class TreeClassifier {
    S.push_back( A[ r % n ] );
    }
   sort( S , f_less );
-  std::vector< T > sp;                      // the splitters, distinct
+  std::vector< T > sp;  // the splitters, distinct
   sp.reserve( k - 1 );
   for( std::size_t i = 1 ; i < k ; ++i ) {
    const T & x = S[ i * s / k ];
@@ -126,8 +132,8 @@ class TreeClassifier {
    else
     f_eq = true;
    }
-  while( sp.size() < k - 1 )                // a perfect tree: the last
-   sp.push_back( sp.back() );               // repeated, empty buckets
+  while( sp.size() < k - 1 )   // a perfect tree: the last
+   sp.push_back( sp.back() );  // repeated, empty buckets
   f_sorted = sp;
   f_tree.resize( k );
   build( sp , 1 , 0 , k - 1 );
@@ -157,8 +163,8 @@ class TreeClassifier {
     j[ u ] = 1;
    for( int l = 0 ; l < f_levels ; ++l )
     for( int u = 0 ; u < 8 ; ++u )
-     j[ u ] = 2 * j[ u ] + std::size_t( f_less( f_tree[ j[ u ] ] ,
-                                                a[ i + u ] ) );
+     j[ u ] =
+       2 * j[ u ] + std::size_t( f_less( f_tree[ j[ u ] ] , a[ i + u ] ) );
    for( int u = 0 ; u < 8 ; ++u )
     id[ i + u ] = Id( finish( j[ u ] - f_k , a[ i + u ] ) );
    }
@@ -171,18 +177,17 @@ class TreeClassifier {
   }
 
  private:
-
  /// the bucket of x, b splitters less than it
  std::size_t finish( std::size_t b , const T & x ) const {
   if( ! f_eq )
    return( b );
-  return( 2 * b + std::size_t( ( b + 1 < f_k ) &&
-                               ! f_less( x , f_sorted[ b ] ) ) );
+  return( 2 * b +
+	   std::size_t( ( b + 1 < f_k ) && ! f_less( x , f_sorted[ b ] ) ) );
   }
 
  /// the node j of the tree on the splitters [ lo , hi )
  void build( const std::vector< T > & sp , std::size_t j , std::size_t lo ,
-             std::size_t hi ) {
+	     std::size_t hi ) {
   if( lo >= hi )
    return;
   const std::size_t mid = lo + ( hi - lo ) / 2;
@@ -195,8 +200,8 @@ class TreeClassifier {
  std::size_t f_k;
  int f_levels;
  bool f_eq = false;
- std::vector< T > f_tree;                  ///< the nodes 1 .. k - 1
- std::vector< T > f_sorted;                ///< the splitters in order
+ std::vector< T > f_tree;    ///< the nodes 1 .. k - 1
+ std::vector< T > f_sorted;  ///< the splitters in order
  };
 
 /// the classifier of the numbers by the highest bits in which their keys
@@ -204,9 +209,9 @@ class TreeClassifier {
 /// below the least go to the first bucket and those above the greatest to
 /// the last, so that the order of the buckets stays that of the keys
 template< class T >
-class RadixClassifier {
+class RadixClassifier
+{
  public:
-
  using Key = decltype( radixKey( T() ) );
 
  /// the bounds from a sample of 1024 items of A
@@ -249,7 +254,7 @@ class RadixClassifier {
  /// numbers of a few exponents, or integers of a power law, are not)
  [[nodiscard]] bool spread( void ) const {
   return( ( f_shift == 0 ) ||
-          ( f_full <= int( 4 * 1024 / ( f_last + 1 ) ) + 32 ) );
+	   ( f_full <= int( 4 * 1024 / ( f_last + 1 ) ) + 32 ) );
   }
 
  [[nodiscard]] std::size_t buckets( void ) const { return( f_last + 1 ); }
@@ -271,18 +276,17 @@ class RadixClassifier {
 
  [[nodiscard]] std::size_t operator()( const T & x ) const {
   const Key k = sortKey( x );
-  const std::size_t b = k < f_lo ? 0 : std::size_t( Key( k - f_lo ) >>
-                                                    f_shift );
+  const std::size_t b =
+    k < f_lo ? 0 : std::size_t( Key( k - f_lo ) >> f_shift );
   return( std::min( b , f_last ) );
   }
 
  private:
-
  Key f_lo;
  int f_shift;
  std::size_t f_last;
- int f_full = 0;                           ///< the fullest of the sample
- std::size_t f_distinct = 0;               ///< the keys of the sample
+ int f_full = 0;              ///< the fullest of the sample
+ std::size_t f_distinct = 0;  ///< the keys of the sample
  };
 
 /// the classifier of the numbers by the model of the CDF of a sample of
@@ -291,25 +295,26 @@ class RadixClassifier {
 /// on the range of the sample by kCellSplitters comparisons with no
 /// branch instead of the log2 k of the tree
 template< class T >
-class CdfClassifier {
+class CdfClassifier
+{
  public:
-
  using Key = decltype( sortKey( T() ) );
 
  /// the model of a sample of A for k buckets, k a power of 2 at least 2
  CdfClassifier( const std::vector< T > & A , std::size_t k )
-  : f_k( k ) , f_m( [ & ]() {
-   const std::size_t n = A.size() , s = std::min( n , 16 * k );
-   std::vector< Key > S( s );
-   std::uint64_t r = 0x9E3779B97F4A7C15ull ^ ( n + 2 );
-   for( std::size_t i = 0 ; i < s ; ++i ) {
-    r ^= r << 13;
-    r ^= r >> 7;
-    r ^= r << 17;
-    S[ i ] = sortKey( A[ r % n ] );
-    }
-   std::sort( S.begin() , S.end() );
-   return( CdfModel< Key >( S.data() , s , k ) ); }() ) {}
+     : f_k( k ) , f_m( [ & ]() {
+	const std::size_t n = A.size() , s = std::min( n , 16 * k );
+	std::vector< Key > S( s );
+	std::uint64_t r = 0x9E3779B97F4A7C15ull ^ ( n + 2 );
+	for( std::size_t i = 0 ; i < s ; ++i ) {
+	 r ^= r << 13;
+	 r ^= r >> 7;
+	 r ^= r << 17;
+	 S[ i ] = sortKey( A[ r % n ] );
+	 }
+	std::sort( S.begin() , S.end() );
+	return( CdfModel< Key >( S.data() , s , k ) );
+        }() ) { }
 
  /// whether the model fits the sample: a grid of at most kCellSplitters
  /// splitters per cell, and at least k / 2 distinct splitters
@@ -329,7 +334,6 @@ class CdfClassifier {
   }
 
  private:
-
  std::size_t f_k;
  CdfModel< Key > f_m;
  };
@@ -342,19 +346,21 @@ void parallelSort( E & ex , std::vector< T > & A , C & less , int depth );
 /// the classifier is cheap enough to run twice)
 template< bool Stable , class Id , class E , class T , class C , class K >
 void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
-                 int depth )
+		 int depth )
 {
- const std::size_t n = A.size() , p = ex.concurrency() ,
-                   k = cls.buckets();
+ const std::size_t n = A.size() , p = ex.concurrency() , k = cls.buckets();
  const std::size_t nb = std::min( 4 * p , std::max( p , n / 16384 ) ) ,
-                   bs = ( n + nb - 1 ) / nb;
+		   bs = ( n + nb - 1 ) / nb;
  std::vector< std::size_t > cnt( nb * k , 0 );
  // the integers of few distinct keys, each with a bucket of its own: the
  // counts are a counting sort, and each bucket is filled with its key
- constexpr bool counting = std::is_integral_v< T > &&
-                           std::is_same_v< K , RadixClassifier< T > >;
+ constexpr bool counting =
+   std::is_integral_v< T > && std::is_same_v< K , RadixClassifier< T > >;
  const bool exact = [ & ]() {
-  if constexpr( counting ) return( cls.exact() ); else return( false );
+  if constexpr( counting )
+   return( cls.exact() );
+  else
+   return( false );
   }();
  std::atomic< bool > outside{ false };
  std::vector< T > key( counting && exact ? k : 0 );
@@ -380,9 +386,9 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
     for( std::size_t i = lo ; i < hi ; ++i ) {
      out |= ! cls.inBounds( A[ i ] );
      const std::size_t b = cls( A[ i ] );
-     if( c[ b ]++ == 0 )                    // the key of the bucket
-      std::atomic_ref< T >( key[ b ] ).store( A[ i ] ,
-                                             std::memory_order_relaxed );
+     if( c[ b ]++ == 0 )  // the key of the bucket
+      std::atomic_ref< T >( key[ b ] )
+	.store( A[ i ] , std::memory_order_relaxed );
      }
     if( out )
      outside.store( true , std::memory_order_relaxed );
@@ -413,17 +419,21 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
  if constexpr( counting )
   if( exact && ! outside.load() ) {
    // the buckets filled with their keys
-   parallelForBlocks( ex , 0 , n , [ & ]( std::size_t lo , std::size_t hi ) {
-    std::size_t b = std::size_t( std::upper_bound( start.begin() ,
-                                                   start.end() , lo ) -
-                                 start.begin() ) - 1;
-    for( std::size_t i = lo ; i < hi ; ++b ) {
-     const std::size_t e = std::min( hi , start[ b + 1 ] );
-     std::fill( A.begin() + std::ptrdiff_t( i ) ,
-                A.begin() + std::ptrdiff_t( e ) , key[ b ] );
-     i = e;
-     }
-    } , 16384 );
+   parallelForBlocks(
+     ex , 0 , n ,
+     [ & ]( std::size_t lo , std::size_t hi ) {
+      std::size_t b =
+	std::size_t( std::upper_bound( start.begin() , start.end() , lo ) -
+		     start.begin() ) -
+	1;
+      for( std::size_t i = lo ; i < hi ; ++b ) {
+       const std::size_t e = std::min( hi , start[ b + 1 ] );
+       std::fill( A.begin() + std::ptrdiff_t( i ) ,
+		  A.begin() + std::ptrdiff_t( e ) , key[ b ] );
+       i = e;
+       }
+      } ,
+     16384 );
    return;
    }
  ScratchBuffer< T > buf( n );
@@ -431,7 +441,7 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
  ex.bulk( nb , [ & ]( std::size_t j ) {
   const std::size_t lo = j * bs , hi = std::min( n , lo + bs );
   std::vector< std::size_t > c( cnt.begin() + std::ptrdiff_t( j * k ) ,
-                                cnt.begin() + std::ptrdiff_t( j * k + k ) );
+				cnt.begin() + std::ptrdiff_t( j * k + k ) );
   auto bucket = [ & ]( std::size_t i ) {
    if constexpr( keep )
     return( std::size_t( id[ i ] ) );
@@ -448,14 +458,14 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
     line[ b ][ fill[ b ] ] = A[ i ];
     if( ++fill[ b ] == L ) {
      std::memcpy( static_cast< void * >( B + c[ b ] ) , line[ b ].data() ,
-                  64 );
+		  64 );
      c[ b ] += L;
      fill[ b ] = 0;
      }
     }
    for( std::size_t b = 0 ; b < k ; ++b )
     std::memcpy( static_cast< void * >( B + c[ b ] ) , line[ b ].data() ,
-                 fill[ b ] * sizeof( T ) );
+		 fill[ b ] * sizeof( T ) );
    }
   else
    for( std::size_t i = lo ; i < hi ; ++i )
@@ -467,14 +477,13 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
  for( std::size_t b = 0 ; b < k ; ++b )
   order[ b ] = b;
  std::sort( order.begin() , order.end() ,
-            [ & ]( std::size_t a , std::size_t b ) {
-             return( start[ a + 1 ] - start[ a ] >
-                     start[ b + 1 ] - start[ b ] );
-             } );
+	    [ & ]( std::size_t a , std::size_t b ) {
+  return( start[ a + 1 ] - start[ a ] > start[ b + 1 ] - start[ b ] );
+  } );
  std::size_t first = 0;
  for( ; first < k ; ++first ) {
   const std::size_t b = order[ first ] , s = start[ b ] ,
-                    m = start[ b + 1 ] - s;
+  m = start[ b + 1 ] - s;
   if( ( m <= n / p ) || cls.equal( b ) )
    break;
   std::vector< T > v( m );
@@ -483,9 +492,8 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
    std::destroy_at( B + s + i );
    } );
   parallelSort< Stable >( ex , v , less , depth + 1 );
-  parallelFor( ex , 0 , m , [ & ]( std::size_t i ) {
-   A[ s + i ] = std::move( v[ i ] );
-   } );
+  parallelFor( ex , 0 , m ,
+	       [ & ]( std::size_t i ) { A[ s + i ] = std::move( v[ i ] ); } );
   }
  std::atomic< std::size_t > next{ first };
  ex.bulk( std::min( p , k - first ) , [ & ]( std::size_t ) {
@@ -494,8 +502,7 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
    const std::size_t r = next.fetch_add( 1 , std::memory_order_relaxed );
    if( r >= k )
     return;
-   const std::size_t b = order[ r ] , s = start[ b ] ,
-                     m = start[ b + 1 ] - s;
+   const std::size_t b = order[ r ] , s = start[ b ] , m = start[ b + 1 ] - s;
    if( ( m <= 1 ) || cls.equal( b ) ) {
     for( std::size_t i = s ; i < s + m ; ++i ) {
      A[ i ] = std::move( B[ i ] );
@@ -524,7 +531,7 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
     continue;
     }
    v.assign( std::make_move_iterator( B + s ) ,
-             std::make_move_iterator( B + s + m ) );
+	     std::make_move_iterator( B + s + m ) );
    std::destroy( B + s , B + s + m );
    sequentialSort< Stable >( v , less );
    std::move( v.begin() , v.end() , A.begin() + std::ptrdiff_t( s ) );
@@ -541,53 +548,60 @@ template< bool Stable , class E , class T , class C >
 bool fewRuns( E & ex , std::vector< T > & A , C & less )
 {
  const std::size_t n = A.size() ,
-                   B = std::max< std::size_t >( 8 , ex.concurrency() );
+		   B = std::max< std::size_t >( 8 , ex.concurrency() );
  constexpr std::size_t cap = 8;
  // the starts of the runs of each block, and their directions
  std::vector< std::vector< std::pair< std::size_t , bool > > > R( B );
  std::atomic< bool > many{ false };
- parallelFor( ex , 0 , B , [ & ]( std::size_t b ) {
-  const std::size_t lo = n * b / B , hi = n * ( b + 1 ) / B;
-  auto & r = R[ b ];
-  for( std::size_t i = lo ; i < hi ; ) {
-   if( ( r.size() == cap ) || many.load( std::memory_order_relaxed ) ) {
-    many.store( true , std::memory_order_relaxed );
-    return;
-    }
-   const bool down = ( i + 1 < hi ) && less( A[ i + 1 ] , A[ i ] );
-   r.emplace_back( i , down );
-   std::size_t j = i + 1;
-   if( down )
-    while( ( j < hi ) && less( A[ j ] , A[ j - 1 ] ) ) ++j;
-   else
-    while( ( j < hi ) && ! less( A[ j ] , A[ j - 1 ] ) ) ++j;
-   i = j;
-   }
-  } , 1 );
+ parallelFor(
+   ex , 0 , B ,
+   [ & ]( std::size_t b ) {
+    const std::size_t lo = n * b / B , hi = n * ( b + 1 ) / B;
+    auto & r = R[ b ];
+    for( std::size_t i = lo ; i < hi ; ) {
+     if( ( r.size() == cap ) || many.load( std::memory_order_relaxed ) ) {
+      many.store( true , std::memory_order_relaxed );
+      return;
+      }
+     const bool down = ( i + 1 < hi ) && less( A[ i + 1 ] , A[ i ] );
+     r.emplace_back( i , down );
+     std::size_t j = i + 1;
+     if( down )
+      while( ( j < hi ) && less( A[ j ] , A[ j - 1 ] ) )
+       ++j;
+     else
+      while( ( j < hi ) && ! less( A[ j ] , A[ j - 1 ] ) )
+       ++j;
+     i = j;
+     }
+    } ,
+   1 );
  if( many.load() )
   return( false );
  std::vector< std::pair< T * , T * > > runs;
  for( std::size_t b = 0 ; b < B ; ++b )
   for( std::size_t q = 0 ; q < R[ b ].size() ; ++q ) {
-   const std::size_t s = R[ b ][ q ].first ,
-                     e = q + 1 < R[ b ].size() ? R[ b ][ q + 1 ].first :
-                                                 n * ( b + 1 ) / B;
+   const std::size_t s = R[ b ][ q ].first , e = q + 1 < R[ b ].size()
+						  ? R[ b ][ q + 1 ].first
+						  : n * ( b + 1 ) / B;
    if( R[ b ][ q ].second )
     std::reverse( A.begin() + std::ptrdiff_t( s ) ,
-                  A.begin() + std::ptrdiff_t( e ) );
+		  A.begin() + std::ptrdiff_t( e ) );
    runs.emplace_back( A.data() + s , A.data() + e );
    }
  if constexpr( std::is_trivially_copyable_v< T > ) {
   ScratchBuffer< T > buf( n );
   multiwayMerge( ex , runs , buf.data() , less );
-  parallelFor( ex , 0 , n , [ & ]( std::size_t i ) {
-   A[ i ] = buf.data()[ i ]; } , 16384 );
+  parallelFor(
+    ex , 0 , n , [ & ]( std::size_t i ) { A[ i ] = buf.data()[ i ]; } ,
+    16384 );
   }
  else {
   std::vector< T > out( n );
   multiwayMerge( ex , runs , out.begin() , less );
-  parallelFor( ex , 0 , n , [ & ]( std::size_t i ) {
-   A[ i ] = std::move( out[ i ] ); } , 4096 );
+  parallelFor(
+    ex , 0 , n , [ & ]( std::size_t i ) { A[ i ] = std::move( out[ i ] ); } ,
+    4096 );
   }
  return( true );
  }
@@ -618,57 +632,65 @@ bool fewKeys( E & ex , std::vector< T > & A )
  const std::size_t d = key.size();
  if( d > D )
   return( false );
- std::array< Key , D > K;                  // the keys, the last repeated
+ std::array< Key , D > K;  // the keys, the last repeated
  for( std::size_t i = 0 ; i < D ; ++i )
   K[ i ] = key[ std::min( i , d - 1 ) ];
- const std::size_t B = std::max< std::size_t >( 1 , std::min( n / 16384 ,
-                                         4 * ex.concurrency() ) );
+ const std::size_t B =
+   std::max< std::size_t >( 1 , std::min( n / 16384 , 4 * ex.concurrency() ) );
  std::vector< std::array< std::size_t , D > > cnt( B );
  std::atomic< bool > other{ false };
- parallelFor( ex , 0 , B , [ & ]( std::size_t b ) {
-  // the counts, the keys and the bounds in locals of the thread, which no
-  // store of a count may alias
-  std::size_t c[ D ] = {};
-  const std::array< Key , D > k = K;
-  const T * a = A.data();
-  const std::size_t i0 = n * b / B , i1 = n * ( b + 1 ) / B;
-  bool out = false;
-  for( std::size_t i = i0 ; i < i1 ; ++i ) {
-   const Key x = radixKey( a[ i ] );
-   unsigned j = 0;                          // the keys less than x, by
-   for( std::size_t q = 0 ; q < D ; ++q )   // comparisons in vectors
-    j += k[ q ] < x;
-   j = std::min( j , unsigned( D - 1 ) );
-   out |= k[ j ] != x;
-   ++c[ j ];
-   }
-  std::copy( c , c + D , cnt[ b ].begin() );
-  if( out )
-   other.store( true , std::memory_order_relaxed );
-  } , 1 );
+ parallelFor(
+   ex , 0 , B ,
+   [ & ]( std::size_t b ) {
+    // the counts, the keys and the bounds in locals of the thread, which no
+    // store of a count may alias
+    std::size_t c[ D ] = {};
+    const std::array< Key , D > k = K;
+    const T * a = A.data();
+    const std::size_t i0 = n * b / B , i1 = n * ( b + 1 ) / B;
+    bool out = false;
+    for( std::size_t i = i0 ; i < i1 ; ++i ) {
+     const Key x = radixKey( a[ i ] );
+     unsigned j = 0;                       // the keys less than x, by
+     for( std::size_t q = 0 ; q < D ; ++q )  // comparisons in vectors
+      j += k[ q ] < x;
+     j = std::min( j , unsigned( D - 1 ) );
+     out |= k[ j ] != x;
+     ++c[ j ];
+     }
+    std::copy( c , c + D , cnt[ b ].begin() );
+    if( out )
+     other.store( true , std::memory_order_relaxed );
+    } ,
+   1 );
  if( other.load() )
   return( false );
  // the start of each value, and A filled
  std::array< std::size_t , D + 1 > start{};
  for( std::size_t j = 0 ; j < D ; ++j ) {
   std::size_t t = 0;
-  for( std::size_t b = 0 ; b < B ; ++b ) t += cnt[ b ][ j ];
+  for( std::size_t b = 0 ; b < B ; ++b )
+   t += cnt[ b ][ j ];
   start[ j + 1 ] = start[ j ] + t;
   }
  std::array< T , D > value;
  for( std::size_t j = 0 ; j < D ; ++j )
   value[ j ] = std::bit_cast< T >( fromRadixKey< T >( K[ j ] ) );
- parallelForBlocks( ex , 0 , n , [ & ]( std::size_t lo , std::size_t hi ) {
-  std::size_t j = std::size_t( std::upper_bound( start.begin() ,
-                                                 start.end() , lo ) -
-                               start.begin() ) - 1;
-  for( std::size_t i = lo ; i < hi ; ++j ) {
-   const std::size_t e = std::min( hi , start[ j + 1 ] );
-   std::fill( A.begin() + std::ptrdiff_t( i ) ,
-              A.begin() + std::ptrdiff_t( e ) , value[ j ] );
-   i = e;
-   }
-  } , 16384 );
+ parallelForBlocks(
+   ex , 0 , n ,
+   [ & ]( std::size_t lo , std::size_t hi ) {
+    std::size_t j =
+      std::size_t( std::upper_bound( start.begin() , start.end() , lo ) -
+		   start.begin() ) -
+      1;
+    for( std::size_t i = lo ; i < hi ; ++j ) {
+     const std::size_t e = std::min( hi , start[ j + 1 ] );
+     std::fill( A.begin() + std::ptrdiff_t( i ) ,
+		A.begin() + std::ptrdiff_t( e ) , value[ j ] );
+     i = e;
+     }
+    } ,
+   16384 );
  return( true );
  }
 
@@ -694,7 +716,8 @@ void learnedParallelSort( E & ex , std::vector< T > & A )
  }
 
 /// the survey of the order of A: whether sorted, whether decreasing
-struct Survey {
+struct Survey
+{
  bool up = true , down = true;
  };
 
@@ -702,56 +725,58 @@ template< bool Stable , class E , class T , class C >
 void parallelSort( E & ex , std::vector< T > & A , C & less , int depth )
 {
  const std::size_t n = A.size() , p = ex.concurrency();
- if( ( p < kParallelSortThreads ) || ( n < kParallelSort ) ||
-     ( depth > 3 ) ) {
+ if( ( p < kParallelSortThreads ) || ( n < kParallelSort ) || ( depth > 3 ) ) {
   sequentialSort< Stable >( A , less );
   return;
   }
  constexpr bool numbers = naturalNumbers< T , C >;
  using S = Survey;
- const S sv = parallelReduce( ex , 0 , n , S() ,
-  [ & ]( std::size_t lo , std::size_t hi ) {
-   S s;
-   const std::size_t e = std::min( hi , n - 1 );
-   // stretches of 32 pairs with no branch inside, which vectorize; the
-   // order looked for only while it may still hold
-   bool up = true , down = true;
-   for( std::size_t i = lo ; ( i < e ) && ( up || down ) ; ) {
-    const std::size_t f = std::min( e , i + 32 );
-    bool u = true , d = true;
-    if( up )
-     for( std::size_t j = i ; j < f ; ++j )
-      u &= ! less( A[ j + 1 ] , A[ j ] );
-    if( down )
-     for( std::size_t j = i ; j < f ; ++j )
-      d &= Stable ? less( A[ j + 1 ] , A[ j ] )
-                  : ! less( A[ j ] , A[ j + 1 ] );
-    up = up && u;
-    down = down && d;
-    i = f;
-    }
-   s.up = up;
-   s.down = down;
-   return( s );
-   } ,
-  []( S a , const S & b ) {
-   a.up = a.up && b.up;
-   a.down = a.down && b.down;
-   return( a );
-   } , 16384 );
+ const S sv = parallelReduce(
+   ex , 0 , n , S() ,
+   [ & ]( std::size_t lo , std::size_t hi ) {
+    S s;
+    const std::size_t e = std::min( hi , n - 1 );
+    // stretches of 32 pairs with no branch inside, which vectorize; the
+    // order looked for only while it may still hold
+    bool up = true , down = true;
+    for( std::size_t i = lo ; ( i < e ) && ( up || down ) ; ) {
+     const std::size_t f = std::min( e , i + 32 );
+     bool u = true , d = true;
+     if( up )
+      for( std::size_t j = i ; j < f ; ++j )
+       u &= ! less( A[ j + 1 ] , A[ j ] );
+     if( down )
+      for( std::size_t j = i ; j < f ; ++j )
+       d &= Stable ? less( A[ j + 1 ] , A[ j ] ) : ! less( A[ j ] ,
+							   A[ j + 1 ] );
+     up = up && u;
+     down = down && d;
+     i = f;
+     }
+    s.up = up;
+    s.down = down;
+    return( s );
+    } ,
+   []( S a , const S & b ) {
+    a.up = a.up && b.up;
+    a.down = a.down && b.down;
+    return( a );
+    } ,
+   16384 );
  if( sv.up )
   return;
  if( sv.down ) {
-  parallelFor( ex , 0 , n / 2 , [ & ]( std::size_t i ) {
-   std::swap( A[ i ] , A[ n - 1 - i ] );
-   } , 16384 );
+  parallelFor(
+    ex , 0 , n / 2 ,
+    [ & ]( std::size_t i ) { std::swap( A[ i ] , A[ n - 1 - i ] ); } , 16384 );
   return;
   }
  if( fewRuns< Stable >( ex , A , less ) )
   return;
- const std::size_t k = n >= 256 * 4096 ? 256 :
-                       std::max( std::bit_ceil( 4 * p ) ,
-                                 std::bit_floor( n / 4096 ) );
+ const std::size_t k =
+   n >= 256 * 4096
+     ? 256
+     : std::max( std::bit_ceil( 4 * p ) , std::bit_floor( n / 4096 ) );
  if constexpr( numbers ) {
   const RadixClassifier< T > cls( A );
   if( cls.spread() && ( cls.exact() || ( cls.distinct() > 32 ) ) ) {
@@ -766,8 +791,7 @@ void parallelSort( E & ex , std::vector< T > & A , C & less , int depth )
     return;
   }
  {
-  TreeClassifier< T , C > cls( A , std::min( k , std::size_t( 256 ) ) ,
-                               less );
+  TreeClassifier< T , C > cls( A , std::min( k , std::size_t( 256 ) ) , less );
   if( cls.buckets() <= 256 )
    distribute< Stable , std::uint8_t >( ex , A , less , cls , depth );
   else
@@ -799,7 +823,8 @@ void learnedSort( E & ex , std::vector< T > & A )
  const auto before = detail::auditCopy( A );
  detail::learnedParallelSort< false >( ex , A );
  ADS_AUDIT( detail::sortedPermutation( A , before , []( T x , T y ) {
-  return( detail::sortKey( x ) < detail::sortKey( y ) ); } ) );
+  return( detail::sortKey( x ) < detail::sortKey( y ) );
+  } ) );
  }
 
 template< Executor E , VectorKey T >
@@ -808,7 +833,8 @@ void learnedStableSort( E & ex , std::vector< T > & A )
  const auto before = detail::auditCopy( A );
  detail::learnedParallelSort< true >( ex , A );
  ADS_AUDIT( detail::sortedPermutation( A , before , []( T x , T y ) {
-  return( detail::sortKey( x ) < detail::sortKey( y ) ); } ) );
+  return( detail::sortKey( x ) < detail::sortKey( y ) );
+  } ) );
  }
 
 /*--------------------------------------------------------------------------*/

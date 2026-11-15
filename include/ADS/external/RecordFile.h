@@ -48,7 +48,7 @@
 
 #ifndef __ADS_RecordFile
  #define __ADS_RecordFile
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -67,7 +67,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS RecordFile ----------------------------*/
@@ -77,21 +78,21 @@ namespace ADS {
 
 template< class T >
  requires std::is_trivially_copyable_v< T >
-class RecordFile {
+class RecordFile
+{
 
 /*--------------------------------------------------------------------------*/
 
  public:
-
  using value_type = T;           ///< the type of the records
  using size_type = std::size_t;  ///< the type of the sizes
 
  /// the records of a buffer of 1 MB, the default of the scans and of the
  /// writers
  static constexpr std::size_t defaultBuffer =
-  sizeof( T ) >= ( std::size_t( 1 ) << 20 ) ? 1
-                                           : ( std::size_t( 1 ) << 20 ) /
-                                             sizeof( T );
+   sizeof( T ) >= ( std::size_t( 1 ) << 20 )
+     ? 1
+     : ( std::size_t( 1 ) << 20 ) / sizeof( T );
 
  /// the file at `path`, whose records are those already there, if any
  explicit RecordFile( std::filesystem::path path );
@@ -131,8 +132,7 @@ class RecordFile {
 /*--------------------------------------------------------------------------*/
 
  private:
-
- std::filesystem::path f_path;   ///< where the file is
+ std::filesystem::path f_path;  ///< where the file is
 
  };  // end( class RecordFile )
 
@@ -145,17 +145,17 @@ class RecordFile {
 
 template< class T >
  requires std::is_trivially_copyable_v< T >
-class RecordWriter {
+class RecordWriter
+{
 
 /*--------------------------------------------------------------------------*/
 
  public:
-
  /// the writer at the end of `file` (which must outlive it), with a buffer
  /// of `buffer` records
  /// \pre `buffer` \f$ \ge 1 \f$
  explicit RecordWriter( RecordFile< T > & file ,
-                        std::size_t buffer = RecordFile< T >::defaultBuffer );
+			std::size_t buffer = RecordFile< T >::defaultBuffer );
 
  /// the writer moved, its buffer with it
  RecordWriter( RecordWriter && ) noexcept = default;
@@ -197,10 +197,9 @@ class RecordWriter {
 /*--------------------------------------------------------------------------*/
 
  private:
-
- RecordFile< T > * f_file;   ///< the file written
- std::size_t f_cap;          ///< the records of a full buffer
- std::vector< T > f_buf;     ///< the records not written yet
+ RecordFile< T > * f_file;  ///< the file written
+ std::size_t f_cap;         ///< the records of a full buffer
+ std::vector< T > f_buf;    ///< the records not written yet
 
  };  // end( class RecordWriter )
 
@@ -210,16 +209,16 @@ class RecordWriter {
 
 /// a directory of its own, removed with what it holds at its destruction
 
-class TempDirectory {
+class TempDirectory
+{
 
 /*--------------------------------------------------------------------------*/
 
  public:
-
  /// a new directory, of a name not taken, in `parent` (the temporary
  /// directory of the system if empty), its name beginning by `prefix`
  explicit TempDirectory( const std::filesystem::path & parent = {} ,
-                         const std::string & prefix = "ads-" );
+			 const std::string & prefix = "ads-" );
 
  /// the directory moved: the moved one removes nothing
  TempDirectory( TempDirectory && other ) noexcept;
@@ -237,14 +236,13 @@ class TempDirectory {
  [[nodiscard]] const std::filesystem::path & path( void ) const;
 
  /// the path of the file `name` in the directory
- [[nodiscard]] std::filesystem::path operator/( const std::string & name )
-  const;
+ [[nodiscard]] std::filesystem::path
+ operator/( const std::string & name ) const;
 
 /*--------------------------------------------------------------------------*/
 
  private:
-
- std::filesystem::path f_path;   ///< the directory, empty once moved
+ std::filesystem::path f_path;  ///< the directory, empty once moved
 
  };  // end( class TempDirectory )
 
@@ -260,7 +258,7 @@ class TempDirectory {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RecordFile.h included */
+#endif /* RecordFile.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File RecordFile.h --------------------------*/

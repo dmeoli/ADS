@@ -15,23 +15,24 @@ $$
 A[ i - 1 ] \le A[ i ] \qquad \text{for each } 0 < i < n , \tag{12.1}
 $$
 
-where $\le$ is a total preorder given by the comparator `less` of the
-call (the relation $a < b$ being `less(a,b)`). In `ADS/sort` the headers
+where $\le$ is a total preorder given by the comparator `less` of the call
+(the relation $a < b$ being `less( a , b )`). In `ADS/sort` the headers
 realize the sorts of [Montresor 2025](Z-bibliography.md#ref-montresor2025)
 (the elementary ones of its section 2.7, Quicksort of section 12.2, heapsort
 of section 10.1.4 and Shell Sort of section 15.1) and those of chapter 11 of
-[Morin 2013](Z-bibliography.md#ref-morin-cpp), with their exercises. Many
-more go beyond both books: the internal sorts of [Knuth
+[Morin 2013](Z-bibliography.md#ref-morin-cpp), with their exercises. Many more
+go beyond both books: the internal sorts of [Knuth
 1998](Z-bibliography.md#ref-knuth1998v3) that the textbooks leave out, the
 sorts engineered for the caches and for the vector registers of today,
 samplesort and the learned sort, the sorts of strings, the sorting networks
-and the sort of a file larger than the memory. Of all of them, `sort()` and `stableSort()` of `Sort.h` choose one
-for each input ([§12.14](12-sort.md#sec-12-14)). We open the chapter with
-the definitions ([§12.1](12-sort.md#sec-12-1)) and with the lower bound
-that no sort by comparisons can beat ([§12.2](12-sort.md#sec-12-2)). It
-then follows the families of algorithms, from the elementary sorts to the
-sorts by digits, giving for each one the property on which its
-correctness rests and the argument behind its bound.
+and the sort of a file larger than the memory. Of all of them, `sort()` and
+`stableSort()` of `Sort.h` choose one for each input
+([§12.14](12-sort.md#sec-12-14)). We open the chapter with the definitions
+([§12.1](12-sort.md#sec-12-1)) and with the lower bound that no sort by
+comparisons can beat ([§12.2](12-sort.md#sec-12-2)). It then follows the
+families of algorithms, from the elementary sorts to the sorts by digits,
+giving for each one the property on which its correctness rests and the
+argument behind its bound.
 
 ## 12.1 Definitions and notation {#sec-12-1}
 
@@ -82,24 +83,23 @@ by a sorted and by a reversed vector of distinct items, and that $H$ lies
 between 0 (one run) and $\log_2 n$ ($n$ runs of one item).
 
 Every sort of the area ends, at the level of the audits of the contracts
-(`ADS_CONTRACTS` at least 3, see `Contract.h`), with the checks of
-`Sorted.h`. Before the sort, `detail::auditCopy()` keeps a copy of the
-input (an empty vector when the audits are off, and hence no cost in a
-production build). After it, `detail::sortedPermutation()`
-checks that the output is sorted and holds the items of the input. It sorts
-the copy with `std::sort` and compares the two vectors item by item through
-the equivalence of `less`, in $O( n \log n )$ time instead of the $O( n^2 )$
-of `std::is_permutation` with a predicate. The function
-`detail::samePermutation()` makes the second check only (e.g., for
-`shellSort()` with a single gap $h > 1$, which leaves the vector only partly
-sorted), and `detail::sequenceSorted()` checks a sequence such as a `List`.
-These checks call the comparator of the caller. A comparator that counts its
-calls, as in the tests that count the comparisons of a sort, may ask
-`checkingContract()`, which is true while a check of a contract runs
+(`ADS_CONTRACTS` at least 3, see `Contract.h`), with the checks of `Sorted.h`.
+Before the sort, `detail::auditCopy()` keeps a copy of the input (an empty
+vector when the audits are off, and hence no cost in a production build).
+After it, `detail::sortedPermutation()` checks that the output is sorted and
+holds the items of the input. It sorts the copy with `std::sort` and compares
+the two vectors item by item through the equivalence of `less`, in
+$O( n \log n )$ time instead of the $O( n^2 )$ of `std::is_permutation` with a
+predicate. The function `detail::samePermutation()` makes the second check
+only (e.g., for `shellSort()` with a single gap $h > 1$, which leaves the
+vector only partly sorted), and `detail::sequenceSorted()` checks a sequence
+such as a `List`. These checks call the comparator of the caller. A comparator
+that counts its calls, as in the tests that count the comparisons of a sort,
+may ask `checkingContract()`, which is true while a check of a contract runs
 (`detail::contract()` sets it around the predicate it evaluates); hence the
 calls made by the audits need not be counted. Finally,
-`detail::naturalOrder<T,C>` is true if `C` is `std::less<>` or
-`std::less<T>`, the order under which the sorts of numbers may use their
+`detail::naturalOrder< T , C >` is true if `C` is `std::less<>` or
+`std::less< T >`, the order under which the sorts of numbers may use their
 keys instead of `less` ([§12.10](12-sort.md#sec-12-10)).
 
 [Table 12.2](12-sort.md#tab-12-2) compares the sorts of the area by their
@@ -286,7 +286,7 @@ template< class T , class C = std::less<> >
 void binaryInsertionSort( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
 void listInsertionSort( std::vector< T > & A , C less = C() ,
-                        std::size_t *moves = nullptr );
+                        std::size_t * moves = nullptr );
 template< class T >
 void addressCalculationSort( std::vector< T > & A , std::size_t M = 0 );
 template< RadixKey T >
@@ -364,8 +364,8 @@ In `ADS/sort/InsertionSort.h`, the functions are declared as
 ```cpp
 // declarations of <ADS/sort/InsertionSort.h>
 template< class T , class C = std::less<> >
-void insertionSort( std::vector< T > & A , std::size_t lo ,
-                    std::size_t hi , C less = C() );
+void insertionSort( std::vector< T > & A , std::size_t lo , std::size_t hi ,
+                    C less = C() );
 template< class T , class C = std::less<> >
 void insertionSort( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
@@ -473,7 +473,7 @@ template< class T , class C = std::less<> >
 void cocktailShakerSort( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
 void oddEvenSort( std::vector< T > & A , C less = C() ,
-                  std::size_t *rounds = nullptr );
+                  std::size_t * rounds = nullptr );
 template< class T , class C = std::less<> >
 void combSort( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
@@ -547,7 +547,8 @@ std::vector< std::size_t > prattGaps( std::size_t n );
 std::vector< std::size_t > ciuraGaps( std::size_t n );
 template< class T , class C = std::less<> >
 void shellSort( std::vector< T > & A ,
-                const std::vector< std::size_t > & gaps , C less = C() );
+                const std::vector< std::size_t > & gaps ,
+                C less = C() );
 template< class T , class C = std::less<> >
 void shellSort( std::vector< T > & A , C less = C() );
 ```
@@ -586,16 +587,16 @@ first) and $y$ those of the second, shows that after the pass, which sorts
 each class, $A[ p_k ] = x'_k \le y'_{s+k} = A[ p_k + h ]$ for each
 $k \le r$, in particular at $i$. $\square$
 
-Its time depends on the gaps, which the five generators of the header give
-in increasing order, from 1 (the contracts check both properties):
-`knuthGaps()`, the $h = ( 3^i - 1 ) / 2$ of the book, i.e., $1 , 4 , 13 , 40
-, 121 , \ldots$, the default of `shellSort(A)`; `shellGaps()`, the $\lfloor
-n / 2^j \rfloor$ of Shell; `hibbardGaps()`, the $2^k - 1$ of [Hibbard
-1963](Z-bibliography.md#ref-hibbard1963); `prattGaps()`, all the $2^i 3^j$
-up to $n$ ([Pratt 1971](Z-bibliography.md#ref-pratt1971)); and
-`ciuraGaps()`, $1 , 4 , 10 , 23 , 57 , 132 , 301 , 701$ and then the factor
-$2.25$, found by experiment ([Ciura 2001](Z-bibliography.md#ref-ciura2001))
-and usually among the fastest in practice, with no bound proved.
+Its time depends on the gaps, which the five generators of the header give in
+increasing order, from 1 (the contracts check both properties): `knuthGaps()`,
+the $h = ( 3^i - 1 ) / 2$ of the book, i.e., $1 , 4 , 13 , 40 , 121 , \ldots$,
+the default of `shellSort( A )`; `shellGaps()`, the $\lfloor n / 2^j \rfloor$
+of Shell; `hibbardGaps()`, the $2^k - 1$ of [Hibbard
+1963](Z-bibliography.md#ref-hibbard1963); `prattGaps()`, all the $2^i 3^j$ up
+to $n$ ([Pratt 1971](Z-bibliography.md#ref-pratt1971)); and `ciuraGaps()`,
+$1 , 4 , 10 , 23 , 57 , 132 , 301 , 701$ and then the factor $2.25$, found by
+experiment ([Ciura 2001](Z-bibliography.md#ref-ciura2001)) and usually among
+the fastest in practice, with no bound proved.
 
 <span id="lem-12-10"></span>**Lemma 12.10.** *(i) A vector that is
 2-sorted and 3-sorted is sorted by one pass of insertion with gap 1 that
@@ -642,11 +643,11 @@ copies the merged items back. Both call the recursion, `mergeSortRec()`:
 // declarations of <ADS/sort/MergeSort.h>
 template< class T , class C = std::less<> >
 void mergeParts( std::vector< T > & A , std::vector< T > & B ,
-                 std::size_t start , std::size_t mid , std::size_t end ,
-                 C less = C() , long long *inv = nullptr );
+                 std::size_t start ,
+                 std::size_t mid , std::size_t end , C less = C() ,
+                 long long * inv = nullptr );
 template< class T , class C = std::less<> >
-void mergeSort( std::vector< T > & A , std::size_t cutoff = 1 ,
-                C less = C() );
+void mergeSort( std::vector< T > & A , std::size_t cutoff = 1 , C less = C() );
 template< class T , class C = std::less<> >
 void mergeSort( List< T > & L , C less = C() );
 template< class T , class C = std::less<> >
@@ -655,9 +656,8 @@ template< class T , class C = std::less<> >
 long long countInversions( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
 void mergeSortRec( std::vector< T > & A , std::vector< T > & B ,
-                   std::size_t start , std::size_t end ,
-                   std::size_t cutoff , C less = C() ,
-                   long long *inv = nullptr );
+                   std::size_t start , std::size_t end , std::size_t cutoff ,
+                   C less = C() , long long * inv = nullptr );
 ```
 
 <span id="alg-12-6"></span>**Algorithm 12.6.** Merge Sort and its merge
@@ -676,18 +676,17 @@ less( A[ j ] , A[ i ] )`: an item of the left half goes first
 when the two are equal, which makes the merge, and hence the sort, stable,
 and that the items are moved, not copied.
 
-When the right half runs out first, the rest of the left one is copied to
-$B$. When the left one does, the rest of the right one is already in its
-place, and the copy back stops at $k$. With a cutoff larger than 1,
-`mergeSort(A, cutoff)` sorts the parts of at most $\mathit{cutoff}$ items by
-`insertionSort()`, which is faster on few items ([Montresor 2025,
+When the right half runs out first, the rest of the left one is copied to $B$.
+When the left one does, the rest of the right one is already in its place, and
+the copy back stops at $k$. With a cutoff larger than 1,
+`mergeSort( A , cutoff )` sorts the parts of at most $\mathit{cutoff}$ items
+by `insertionSort()`, which is faster on few items ([Montresor 2025,
 §2.8](Z-bibliography.md#ref-montresor2025)), and it skips the merge of two
-halves already in order, $A[ \mathit{mid} ] \le A[ \mathit{mid} + 1 ]$,
-which makes a sorted input cost $O( n )$ ([Lemma 12.13](12-sort.md#lem-12-13)
-below). With the default cutoff 1 it is
-the plain sort of the book. [Figure 12.4](12-sort.md#fig-12-4) shows the
-sort on the vector of exercise 11.1 of [Morin
-2013](Z-bibliography.md#ref-morin-cpp).
+halves already in order, $A[ \mathit{mid} ] \le A[ \mathit{mid} + 1 ]$, which
+makes a sorted input cost $O( n )$ ([Lemma 12.13](12-sort.md#lem-12-13)
+below). With the default cutoff 1 it is the plain sort of the book. [Figure
+12.4](12-sort.md#fig-12-4) shows the sort on the vector of exercise 11.1 of
+[Morin 2013](Z-bibliography.md#ref-morin-cpp).
 
 ![Figure 12.4. `mergeSort()` on $1 , 7 , 4 , 6 , 2 , 8 , 3 , 5$ (exercise 11.1 of [Morin 2013]): the vector after the merges of the parts of two, of four and of eight items; in each merged part the items that come from its left half are in violet, those from its right half in the light tint.](../figures/sort-mergesort.svg){#fig-12-4}
 
@@ -757,21 +756,20 @@ it is $\log_2 e - \log_2 \log_2 e > 1 - 0.0861$, and $\log_2 e - 1 + 0.0861 <
 0.529$. $\square$
 
 Three more functions of the header reuse the merge ([Algorithm
-12.7](12-sort.md#alg-12-7)). The bottom-up sort, `mergeSortBottomUp()`,
-merges the runs of lengths $1 , 2 , 4 , \ldots$ with no recursion and no
-stack (exercise 12.5 of [Montresor
-2025](Z-bibliography.md#ref-montresor2025)). The overload `mergeSort(L)`
-sorts a `List` with pointers (exercise 12.1 of the book) only through the
-operations of the SEQUENCE: its second half is moved into a list $R$, both
-halves are sorted, and the items of $R$ are inserted into $L$ at their
-places, since the abstract data type moves no cells between lists. The merge sort
-of a list that relinks its cells instead, with no auxiliary array
-(exercise 11.2 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)), is
-`listSort()` of `ListSort.h`, in [Chapter 2](02-sequence.md#ch-2), which
-merges the natural runs of the list as a binary counter.
-`countInversions()` counts the pairs $i < j$ with $A[ i ] > A[ j ]$
-(exercise 12.3 of the book) as a side effect of the merges, by the next
-lemma.
+12.7](12-sort.md#alg-12-7)). The bottom-up sort, `mergeSortBottomUp()`, merges
+the runs of lengths $1 , 2 , 4 , \ldots$ with no recursion and no stack
+(exercise 12.5 of [Montresor 2025](Z-bibliography.md#ref-montresor2025)). The
+overload `mergeSort( L )` sorts a `List` with pointers (exercise 12.1 of the
+book) only through the operations of the SEQUENCE: its second half is moved
+into a list $R$, both halves are sorted, and the items of $R$ are inserted
+into $L$ at their places, since the abstract data type moves no cells between
+lists. The merge sort of a list that relinks its cells instead, with no
+auxiliary array (exercise 11.2 of [Morin
+2013](Z-bibliography.md#ref-morin-cpp)), is `listSort()` of `ListSort.h`, in
+[Chapter 2](02-sequence.md#ch-2), which merges the natural runs of the list as
+a binary counter. `countInversions()` counts the pairs $i < j$ with
+$A[ i ] > A[ j ]$ (exercise 12.3 of the book) as a side effect of the merges,
+by the next lemma.
 
 <span id="alg-12-7"></span>**Algorithm 12.7.** The merge sort from the
 bottom up, the merge sort of a list, and the count of the inversions
@@ -787,23 +785,23 @@ bottom up, the merge sort of a list, and the count of the inversions
 <span id="lem-12-13"></span>**Lemma 12.13.** *With a cutoff $c > 1$,
 `mergeSort( A , c )` sorts a sorted vector in $O( c n )$ time.
 `mergeSortBottomUp()` makes, for $n$ a power of 2, the merges and the
-comparisons of the recursive sort, and at most $( n - 1 ) \lceil \log_2 n
-\rceil$ comparisons for any $n$. `mergeSort(L)` sorts a list of $n$
-items in $O( n \log n )$ time with
-$n$ copies of items per level of the recursion.*
+comparisons of the recursive sort, and at most
+$( n - 1 ) \lceil \log_2 n \rceil$ comparisons for any $n$. `mergeSort( L )`
+sorts a list of $n$ items in $O( n \log n )$ time with $n$ copies of items per
+level of the recursion.*
 
-*Proof.* On a sorted vector each insertion sort of a part of at most $c$
-items makes fewer than $c$ comparisons and no move, and each merge is
-skipped after one comparison; the parts and the merges are $O( n )$. For $n
-= 2^t$, the passes of the bottom-up sort merge the same parts as the levels
-of the recursion, the pass of the runs of length $2^i$ the level $t - i -
-1$. For any $n$, the runs double in length at each pass, and
-hence there are $\lceil \log_2 n \rceil$ passes, each of at most $n - 1$
-comparisons by [Lemma 12.11](12-sort.md#lem-12-11). Finally, a call of
-`mergeSort(L)` on $m$ items moves its $\lfloor m / 2 \rfloor$ last items into
-$R$ and back into $L$, and the merge walks the two lists once, i.e., $O( m
-)$ time and $m$ copies at most; the recursion has $\lceil \log_2 n \rceil$
-levels, whose parts cover the $n$ items. $\square$
+*Proof.* On a sorted vector each insertion sort of a part of at most $c$ items
+makes fewer than $c$ comparisons and no move, and each merge is skipped after
+one comparison; the parts and the merges are $O( n )$. For $n = 2^t$, the
+passes of the bottom-up sort merge the same parts as the levels of the
+recursion, the pass of the runs of length $2^i$ the level $t - i - 1$. For any
+$n$, the runs double in length at each pass, and hence there are
+$\lceil \log_2 n \rceil$ passes, each of at most $n - 1$ comparisons by [Lemma
+12.11](12-sort.md#lem-12-11). Finally, a call of `mergeSort( L )` on $m$ items
+moves its $\lfloor m / 2 \rfloor$ last items into $R$ and back into $L$, and
+the merge walks the two lists once, i.e., $O( m )$ time and $m$ copies at
+most; the recursion has $\lceil \log_2 n \rceil$ levels, whose parts cover the
+$n$ items. $\square$
 
 <span id="lem-12-14"></span>**Lemma 12.14.** *The number of inversions of a
 vector is the sum, over the merges of `mergeSort()` with cutoff 1, of
@@ -832,7 +830,7 @@ In `ADS/sort/StrandSort.h`, the functions are declared as
 // declarations of <ADS/sort/StrandSort.h>
 template< class T , class C = std::less<> >
 void strandSort( List< T > & L , C less = C() ,
-                 std::size_t *strands = nullptr );
+                 std::size_t * strands = nullptr );
 ```
 
 <span id="alg-12-8"></span>**Algorithm 12.8.** The strand sort.
@@ -894,7 +892,7 @@ In `ADS/sort/RunSorts.h`, the functions are declared as
 // declarations of <ADS/sort/RunSorts.h>
 template< class T , class C = std::less<> >
 void powerSort( std::vector< T > & A , C less = C() ,
-                std::size_t *runs = nullptr );
+                std::size_t * runs = nullptr );
 ```
 
 --8<-- "generated/RunSorts-nodePower.pseudo.md"
@@ -1018,19 +1016,18 @@ template< class T , class C = std::less<> >
 std::size_t partition( std::vector< T > & A , std::size_t start ,
                        std::size_t end , C less = C() );
 template< class T , class C = std::less<> >
-void quickSort( std::vector< T > & A , std::size_t start ,
-                std::size_t end , C less = C() );
+void quickSort( std::vector< T > & A , std::size_t start , std::size_t end ,
+                C less = C() );
 template< class T , class C = std::less<> >
 void quickSort( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
 void quickSort( List< T > & L , C less = C() );
 template< class T , class C = std::less<> >
 void quickSortTuned( std::vector< T > & A , std::size_t cutoff = 16 ,
-                     C less = C() , std::size_t *depth = nullptr );
+                     C less = C() , std::size_t * depth = nullptr );
 template< class T , class C = std::less<> >
 std::size_t partitionByValue( std::vector< T > & A , std::size_t start ,
-                              std::size_t end , const T & x ,
-                              C less = C() );
+                              std::size_t end , const T & x , C less = C() );
 ```
 
 <span id="alg-12-10"></span>**Algorithm 12.10.** The partition and
@@ -1236,18 +1233,20 @@ comparisons in expectation, about $1.188 \, n \log_2 n$.*
 
 *Proof.* When the stack holds $s$ parts, the part being sorted has at most
 $n / 2^s$ items, since each push keeps the smaller part, of at most half the
-items of the part split; a push needs more than 3 items, and hence $s \le
-\lfloor \log_2 n \rfloor$. On equal items both scans stop at every item, and
-they meet in the middle of the part, where the pivot goes; the parts halve,
-which gives $T( n ) = 2 T( n / 2 ) + O( n )$. The constant of the median of
-three is that of [Sedgewick 1978](Z-bibliography.md#ref-sedgewick1978) (cf.
-[Knuth 1998, §5.2.2](Z-bibliography.md#ref-knuth1998v3)), under the
-hypothesis of [Lemma 12.18](12-sort.md#lem-12-18) on the parts. $\square$ Also, `partitionByValue()`
-partitions by a value $x$ not necessarily in the part, the items not larger
-than $x$ first, and returns how many they are. Finally, `quickSort(L)` sorts
-a `List` by moving its items into three lists, smaller, equal and larger
-than the pivot, which it concatenates after the two recursive sorts
-(exercise 12.1 of [Montresor 2025](Z-bibliography.md#ref-montresor2025)).
+items of the part split; a push needs more than 3 items, and hence
+$s \le \lfloor \log_2 n \rfloor$. On equal items both scans stop at every
+item, and they meet in the middle of the part, where the pivot goes; the parts
+halve, which gives $T( n ) = 2 T( n / 2 ) + O( n )$. The constant of the
+median of three is that of [Sedgewick
+1978](Z-bibliography.md#ref-sedgewick1978) (cf. [Knuth 1998,
+§5.2.2](Z-bibliography.md#ref-knuth1998v3)), under the hypothesis of [Lemma
+12.18](12-sort.md#lem-12-18) on the parts. $\square$ Also,
+`partitionByValue()` partitions by a value $x$ not necessarily in the part,
+the items not larger than $x$ first, and returns how many they are. Finally,
+`quickSort( L )` sorts a `List` by moving its items into three lists, smaller,
+equal and larger than the pivot, which it concatenates after the two recursive
+sorts (exercise 12.1 of [Montresor
+2025](Z-bibliography.md#ref-montresor2025)).
 
 <span id="alg-12-11"></span>**Algorithm 12.11.** The tuned Quicksort, the
 partition by a value, and the Quicksort of a list ([Montresor 2025, §12.2
@@ -1279,10 +1278,11 @@ The public members of `QuicksortAdversary` are
 
 ```cpp
 // declarations of <ADS/sort/QuicksortAdversary.h>
-class QuicksortAdversary {
+class QuicksortAdversary
+{
  public:
  explicit QuicksortAdversary( std::size_t n );
- class Less;                     // the comparator of the adversary
+ class Less;  // the comparator of the adversary
  Less less( void );
  std::vector< std::size_t > items( void ) const;
  std::size_t comparisons( void ) const;
@@ -1479,7 +1479,7 @@ In `ADS/sort/VectorQuickSort.h`, the functions are declared as
 template< VectorKey T >
 void vectorQuickSort( std::vector< T > & A );
 template< VectorKey T >
-void vectorQuickSort( T *a , std::size_t n );
+void vectorQuickSort( T * a , std::size_t n );
 ```
 
 <span id="alg-12-15"></span>**Algorithm 12.15.** The quicksort in the
@@ -1753,18 +1753,18 @@ the reference of the technique.
 
 ## 12.9 Heapsort and the sorts by trees {#sec-12-9}
 
-A max-heap on a vector has $A[ \lfloor ( i - 1 ) / 2 \rfloor ] \ge A[ i ]$
-for each $i > 0$, and hence its maximum in $A[ 0 ]$. It is the binary heap
-of [§9.3](09-priority.md#sec-9-3), with the order reversed. Heapsort
-([Williams 1964](Z-bibliography.md#ref-williams1964); [Montresor 2025,
+A max-heap on a vector has $A[ \lfloor ( i - 1 ) / 2 \rfloor ] \ge A[ i ]$ for
+each $i > 0$, and hence its maximum in $A[ 0 ]$. It is the binary heap of
+[§9.3](09-priority.md#sec-9-3), with the order reversed. Heapsort ([Williams
+1964](Z-bibliography.md#ref-williams1964); [Montresor 2025,
 §10.1.4](Z-bibliography.md#ref-montresor2025); [Morin 2013,
 §11.1.3](Z-bibliography.md#ref-morin-cpp)) builds such a heap in the vector
-and then extracts its maximum $n - 1$ times, each time into the place that
-the heap frees at its end ([Algorithm 12.18](12-sort.md#alg-12-18)).
-`maxHeapRestore(A, i, dim)` of `Heapsort.h` moves the item of $A[ i ]$ down,
-swapping it with its larger child, when the subtrees of the children are
-max-heaps in $A[ 0 .. \mathit{dim} - 1 ]$. It is a loop, not the recursion
-of the book (exercise 10.4 of [Montresor
+and then extracts its maximum $n - 1$ times, each time into the place that the
+heap frees at its end ([Algorithm 12.18](12-sort.md#alg-12-18)).
+`maxHeapRestore( A , i , dim )` of `Heapsort.h` moves the item of $A[ i ]$
+down, swapping it with its larger child, when the subtrees of the children are
+max-heaps in $A[ 0 .. \mathit{dim} - 1 ]$. It is a loop, not the recursion of
+the book (exercise 10.4 of [Montresor
 2025](Z-bibliography.md#ref-montresor2025)), so that the sort uses $O( 1 )$
 extra space.
 
@@ -1773,15 +1773,14 @@ In `ADS/sort/Heapsort.h`, the functions are declared as
 ```cpp
 // declarations of <ADS/sort/Heapsort.h>
 template< class T , class C = std::less<> >
-void maxHeapRestore( std::vector< T > & A , std::size_t i ,
-                     std::size_t dim , C less = C() );
+void maxHeapRestore( std::vector< T > & A , std::size_t i , std::size_t dim ,
+                     C less = C() );
 template< class T , class C = std::less<> >
 void heapBuild( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
 void heapsort( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
-bool isMaxHeap( const std::vector< T > & A , std::size_t dim ,
-                C less = C() );
+bool isMaxHeap( const std::vector< T > & A , std::size_t dim , C less = C() );
 ```
 
 <span id="alg-12-18"></span>**Algorithm 12.18.** The restoration of a
@@ -2455,8 +2454,8 @@ In `ADS/sort/SortingNetworks.h`, the functions are declared as
 std::vector< Comparator > mergeExchangeNetwork( std::size_t n );
 std::vector< Comparator > bitonicNetwork( std::size_t n );
 template< class T , class C = std::less<> >
-void applyNetwork( std::vector< T > & A ,
-                   const std::vector< Comparator > & N , C less = C() );
+void applyNetwork( std::vector< T > & A , const std::vector< Comparator > & N ,
+                   C less = C() );
 ```
 
 <span id="alg-12-27"></span>**Algorithm 12.27.** The application of a
@@ -2554,11 +2553,10 @@ replacementSelection( const std::vector< T > & input , std::size_t M ,
 template< class T , class C = std::less<> >
 std::vector< T > polyphaseMerge( std::vector< std::vector< T > > runs ,
                                  std::size_t tapes , C less = C() ,
-                                 std::size_t *phases = nullptr );
+                                 std::size_t * phases = nullptr );
 template< class T , class C = std::less<> >
-std::vector< T > externalSort( const std::vector< T > & input ,
-                               std::size_t M , std::size_t tapes ,
-                               C less = C() );
+std::vector< T > externalSort( const std::vector< T > & input , std::size_t M ,
+                               std::size_t tapes , C less = C() );
 ```
 
 <span id="alg-12-28"></span>**Algorithm 12.28.** The replacement selection,

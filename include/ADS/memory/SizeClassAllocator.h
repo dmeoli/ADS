@@ -58,7 +58,7 @@
 
 #ifndef __ADS_SizeClassAllocator
  #define __ADS_SizeClassAllocator
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -76,18 +76,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- CLASS SizeClassAllocator -------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// an allocator of small blocks by size classes, for one thread
-class SizeClassAllocator {
+class SizeClassAllocator
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the largest request served by the classes
  static constexpr std::size_t LARGEST = 32768;
 
@@ -181,18 +182,19 @@ class SizeClassAllocator {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the classes: 8, 16 .. 128 by 16, then 4 per power of 2 up to LARGEST
  static constexpr unsigned CLASSES = 9 + 4 * 8;
 
  /// a block given back: the next one of its list
- struct Free {
+ struct Free
+ {
   /// the next block of the list
   Free * next;
   };
 
  /// the header of a page, the pages linked for release()
- struct Page {
+ struct Page
+ {
   /// the page taken before
   Page * prev;
   /// the bytes of the page
@@ -202,11 +204,11 @@ class SizeClassAllocator {
  /// a new page for the class c, its blocks cut from f_next[ c ]
  void * fresh( unsigned c );
 
- Free * f_free[ CLASSES ] = {};      ///< the blocks given back
- char * f_next[ CLASSES ] = {};      ///< the next block of the page
- char * f_end[ CLASSES ] = {};       ///< the end of the page
- Page * f_pages = nullptr;           ///< the pages, the last first
- std::size_t f_bytes = 0;            ///< the memory of the pages
+ Free * f_free[ CLASSES ] = {};  ///< the blocks given back
+ char * f_next[ CLASSES ] = {};  ///< the next block of the page
+ char * f_end[ CLASSES ] = {};   ///< the end of the page
+ Page * f_pages = nullptr;       ///< the pages, the last first
+ std::size_t f_bytes = 0;        ///< the memory of the pages
 
  };  // end( class SizeClassAllocator )
 
@@ -222,7 +224,7 @@ class SizeClassAllocator {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SizeClassAllocator.h included */
+#endif /* SizeClassAllocator.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File SizeClassAllocator.h ---------------------*/

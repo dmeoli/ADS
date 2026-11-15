@@ -14,9 +14,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the len bits of v in the reverse order: the bits of each byte turned
 /// around in 3 rounds of masks, then the bytes by a swap of the processor
@@ -24,7 +26,8 @@ namespace detail {
 /// Bitwise.h] in a constant expression)
 constexpr Word reverseField( Word v , int len )
 {
- if( len == 0 ) return( 0 );
+ if( len == 0 )
+  return( 0 );
 #if defined( __GNUC__ ) || defined( __clang__ )
  if( ! std::is_constant_evaluated() ) {
   v = ( ( v >> 1 ) & 0x5555555555555555ULL ) |
@@ -65,7 +68,8 @@ inline void BitWriter::writeBinary( Word v , int len )
 
 inline void BitWriter::writeUnary( std::uint64_t q )
 {
- for( ; q >= 64 ; q -= 64 ) f_b.append( 0 , 64 );
+ for( ; q >= 64 ; q -= 64 )
+  f_b.append( 0 , 64 );
  f_b.append( Word( 1 ) << q , int( q ) + 1 );
  }
 
@@ -82,7 +86,7 @@ inline BitVector BitWriter::release( void )
  }
 
 inline BitReader::BitReader( const BitVector & b , std::size_t p )
- : f_b( &b ) , f_p( p )
+    : f_b( &b ) , f_p( p )
 {
  ADS_PRE( p <= b.size() );
  }
@@ -131,7 +135,7 @@ inline std::uint64_t BitReader::readUnary( void )
   const std::size_t left = f_b->size() - f_p;
   const int len = left < 64 ? int( left ) : 64;
   const Word w = f_b->get( f_p , len );
-  if( w ) {                                 // the 1 is in this word
+  if( w ) {  // the 1 is in this word
    const int z = std::countr_zero( w );
    f_p += std::size_t( z ) + 1;
    return( q + std::uint64_t( z ) );

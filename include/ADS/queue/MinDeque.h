@@ -37,7 +37,7 @@
 
 #ifndef __ADS_MinDeque
  #define __ADS_MinDeque
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -56,7 +56,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS MinDeque -----------------------------*/
@@ -65,16 +66,16 @@ namespace ADS {
 /// a double ended queue with its least item in \f$ O( 1 ) \f$ amortized
 /// time
 template< class T , class C = std::less<> >
-class MinDeque {
+class MinDeque
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty deque, ordered by `less`
  explicit MinDeque( C less = C() )
-  : f_F( less ) , f_B( less ) , f_less( less ) {}
+     : f_F( less ) , f_B( less ) , f_less( less ) { }
 
  /// true if there is no item
  [[nodiscard]] bool empty( void ) const {
@@ -127,11 +128,13 @@ class MinDeque {
  [[nodiscard]] const T & min( void ) const;
 
  /// removes all the items
- void clear( void ) { f_F.clear(); f_B.clear(); }
+ void clear( void ) {
+  f_F.clear();
+  f_B.clear();
+  }
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the items of \f$ s \f$, which \f$ t \f$ (empty) lacks, dealt again:
  /// the half nearer to the end of \f$ t \f$ to \f$ t \f$, the end on top
  ///
@@ -148,9 +151,9 @@ class MinDeque {
  /// \f]
  static void deal( MinStack< T , C > & s , MinStack< T , C > & t );
 
- MinStack< T , C > f_F;   ///< the front, the first item on top
- MinStack< T , C > f_B;   ///< the back, the last item on top
- ADS_NO_UNIQUE_ADDRESS C f_less;   ///< the order
+ MinStack< T , C > f_F;            ///< the front, the first item on top
+ MinStack< T , C > f_B;            ///< the back, the last item on top
+ ADS_NO_UNIQUE_ADDRESS C f_less;  ///< the order
 
  };  // end( class MinDeque )
 
@@ -166,7 +169,7 @@ class MinDeque {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MinDeque.h included */
+#endif /* MinDeque.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File MinDeque.h ---------------------------*/

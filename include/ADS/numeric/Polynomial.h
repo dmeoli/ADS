@@ -45,7 +45,7 @@
 
 #ifndef __ADS_Polynomial
  #define __ADS_Polynomial
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -61,7 +61,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the product \f$ p q \f$ by all the products of two coefficients,
 /// \f$ \Theta( n^2 ) \f$ (the moltiplicaPolinomi() of the book); their
@@ -80,28 +81,29 @@ namespace ADS {
 /// \f]
 template< class T >
 std::vector< T > multiplyNaive( const std::vector< T > & p ,
-                                const std::vector< T > & q ,
-                                long * mults = nullptr );
+				const std::vector< T > & q ,
+				long * mults = nullptr );
 
-namespace detail {
+namespace detail
+{
 
 /// \f$ r \gets r + \mathit{sign} \cdot x^s a \f$
 template< class T >
 void addShifted( std::vector< T > & r , const std::vector< T > & a ,
-                 std::size_t s , T sign = T( 1 ) );
+		 std::size_t s , T sign = T( 1 ) );
 
 /// the product of two polynomials of \f$ n \f$ coefficients, by three or
 /// four recursive products
 template< class T >
 std::vector< T > multiplyRec( const std::vector< T > & p ,
-                              const std::vector< T > & q , bool three ,
-                              long * mults );
+			      const std::vector< T > & q , bool three ,
+			      long * mults );
 
 /// the product of \f$ p \f$ and \f$ q \f$ padded with zeros to the same
 /// length
 template< class T >
 std::vector< T > multiplySame( std::vector< T > p , std::vector< T > q ,
-                               bool three , long * mults );
+			       bool three , long * mults );
 
 }  // end( namespace detail )
 
@@ -127,8 +129,8 @@ std::vector< T > multiplySame( std::vector< T > p , std::vector< T > q ,
 /// \post the result is \f$ p q \f$ (audit)
 template< class T >
 std::vector< T > multiplyFour( const std::vector< T > & p ,
-                               const std::vector< T > & q ,
-                               long * mults = nullptr );
+			       const std::vector< T > & q ,
+			       long * mults = nullptr );
 
 /// the product \f$ p q \f$ by the three recursive products of Karatsuba,
 /// \f$ O( n^{1.59} ) \f$ (the moltiplicaPolinomiD&I() of the book); the
@@ -151,8 +153,8 @@ std::vector< T > multiplyFour( const std::vector< T > & p ,
 /// \post the result is \f$ p q \f$ (audit)
 template< class T >
 std::vector< T > multiplyKaratsuba( const std::vector< T > & p ,
-                                    const std::vector< T > & q ,
-                                    long * mults = nullptr );
+				    const std::vector< T > & q ,
+				    long * mults = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
@@ -166,7 +168,7 @@ std::vector< T > multiplyKaratsuba( const std::vector< T > & p ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Polynomial.h included */
+#endif /* Polynomial.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File Polynomial.h --------------------------*/

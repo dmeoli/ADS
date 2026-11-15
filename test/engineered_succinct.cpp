@@ -73,14 +73,18 @@ ADS_TEST( "compact-rank-select" )
  std::mt19937_64 g( 2 );
  auto check = [ & ]( const std::vector< bool > & R ) {
   BitVector b;
-  for( const bool x : R ) b.push_back( x );
+  for( const bool x : R )
+   b.push_back( x );
   const CompactRankSelect S( b );
   std::size_t ones = 0 , zeros = 0;
   for( std::size_t i = 0 ; i <= R.size() ; ++i ) {
    CHECK( S.rank1( i ) == ones && S.rank0( i ) == zeros );
-   if( i == R.size() ) break;
-   if( R[ i ] ) CHECK( S.select1( ++ones ) == i );
-   else CHECK( S.select0( ++zeros ) == i );
+   if( i == R.size() )
+    break;
+   if( R[ i ] )
+    CHECK( S.select1( ++ones ) == i );
+   else
+    CHECK( S.select0( ++zeros ) == i );
    }
   CHECK( S.ones() == ones && S.zeros() == zeros && S.size() == R.size() );
   CHECK( S.directoryBits() <= R.size() / 25 + 1024 );
@@ -89,15 +93,17 @@ ADS_TEST( "compact-rank-select" )
   CHECK_THROWS( ( void )S.rank1( R.size() + 1 ) , contract_violation );
   };
  for( const std::size_t n : { 0 , 1 , 511 , 512 , 513 , 4095 , 4096 , 4097 ,
-                              70000 } )
+			      70000 } )
   for( const double p : { 0.0 , 0.001 , 0.1 , 0.5 , 0.99 , 1.0 } ) {
    std::vector< bool > R( n );
    std::bernoulli_distribution B( p );
-   for( std::size_t i = 0 ; i < n ; ++i ) R[ i ] = B( g );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    R[ i ] = B( g );
    check( R );
    }
  std::vector< bool > runs;
- for( int k = 0 ; k < 8 ; ++k ) runs.insert( runs.end() , 30000 , k % 2 );
+ for( int k = 0 ; k < 8 ; ++k )
+  runs.insert( runs.end() , 30000 , k % 2 );
  check( runs );
  }
 
@@ -133,7 +139,7 @@ ADS_TEST( "rank-select-lazy" )
      for( std::size_t k = std::size_t( t ) ; k < zero.size() ; k += 8 )
       bad[ t ] += S.select0( k + 1 ) != zero[ k ];
      } );
-  }
+   }
   CHECK( std::count( bad.begin() , bad.end() , 0 ) == 8 );
   CHECK( S.directoryBits() == bits && Eager.directoryBits() == bits );
   const LazyRankSelect after( S );
@@ -149,7 +155,7 @@ ADS_TEST( "rank-select-lazy" )
    return( ok );
    };
   CHECK( same( before ) && same( after ) && same( assigned ) &&
-         same( Eager ) && same( eagerCopy ) );
+	 same( Eager ) && same( eagerCopy ) );
   }
  }
 
@@ -161,18 +167,20 @@ ADS_TEST( "rank-select-lazy" )
 ADS_TEST( "rank-select-words" )
 {
  std::mt19937_64 g( 11 );
- for( const std::size_t n : { 0 , 1 , 63 , 64 , 65 , 255 , 256 , 257 , 511 ,
-                              1000 , 1024 , 4099 , 70001 } )
+ for( const std::size_t n :
+      { 0 , 1 , 63 , 64 , 65 , 255 , 256 , 257 , 511 , 1000 , 1024 , 4099 ,
+	70001 } )
   for( const double p : { 0.0 , 0.05 , 0.5 , 1.0 } ) {
    std::vector< Word > w( ( n + 63 ) / 64 + 3 );
    std::bernoulli_distribution B( p );
    for( auto & x : w )
-    for( int i = 0 ; i < 64 ; ++i ) x |= Word( B( g ) ) << i;
-   w.back() = ~Word( 0 );                  // past the size
+    for( int i = 0 ; i < 64 ; ++i )
+     x |= Word( B( g ) ) << i;
+   w.back() = ~Word( 0 );  // past the size
    const RankSelect A( std::span< const Word >( w ) , n );
    const RankSelect C( BitVector( std::span< const Word >( w ) , n ) );
-   bool ok = A.size() == n && A.ones() == C.ones() &&
-             A.bits() == C.bits() && A.directoryBits() == C.directoryBits();
+   bool ok = A.size() == n && A.ones() == C.ones() && A.bits() == C.bits() &&
+	     A.directoryBits() == C.directoryBits();
    for( std::size_t i = 0 ; ok && i <= n ; ++i )
     ok = A.rank1( i ) == C.rank1( i );
    for( std::size_t k = 1 ; ok && k <= A.ones() ; ++k )
@@ -183,7 +191,7 @@ ADS_TEST( "rank-select-words" )
    const CompactRankSelect X( std::span< const Word >( w ) , n );
    const CompactRankSelect Y( BitVector( std::span< const Word >( w ) , n ) );
    ok = X.size() == n && X.ones() == Y.ones() && X.bits() == Y.bits() &&
-        X.directoryBits() == Y.directoryBits() && X.ones() == A.ones();
+	X.directoryBits() == Y.directoryBits() && X.ones() == A.ones();
    for( std::size_t i = 0 ; ok && i <= n ; ++i )
     ok = X.rank1( i ) == A.rank1( i );
    for( std::size_t k = 1 ; ok && k <= X.ones() ; ++k )
@@ -207,7 +215,8 @@ void huffmanTreeCheck( std::mt19937_64 & g )
   const HuffmanWaveletTree< RS > T( x );
   CHECK( T.size() == x.size() );
   std::uint32_t top = 0;
-  for( const auto c : x ) top = std::max( top , c );
+  for( const auto c : x )
+   top = std::max( top , c );
   std::vector< std::size_t > seen( std::size_t( top ) + 2 , 0 );
   bool ok = true;
   for( std::size_t i = 0 ; ok && ( i < x.size() ) ; ++i ) {
@@ -221,12 +230,14 @@ void huffmanTreeCheck( std::mt19937_64 & g )
   for( std::size_t i = 0 ; ok && ( i <= x.size() ) ; i += 1 + i / 64 ) {
    for( std::uint32_t c = 0 ; ok && ( c <= top + 1 ) ; ++c ) {
     std::size_t r = 0;
-    for( std::size_t j = 0 ; j < i ; ++j ) r += x[ j ] == c;
+    for( std::size_t j = 0 ; j < i ; ++j )
+     r += x[ j ] == c;
     ok = T.rank( c , i ) == r;
     }
    }
   CHECK( ok );
-  if( x.empty() ) return;
+  if( x.empty() )
+   return;
   // the bits of the codes within the entropy plus 1 per item
   double h = 0;
   std::size_t bits = 0;
@@ -236,14 +247,15 @@ void huffmanTreeCheck( std::mt19937_64 & g )
     h -= double( seen[ c ] ) * std::log2( p );
     bits += seen[ c ] * std::size_t( T.codeLength( c ) );
     for( std::uint32_t d = 0 ; d <= top ; ++d )
-     if( ( seen[ d ] > seen[ c ] ) && ( T.codeLength( d ) >
-                                        T.codeLength( c ) ) ) ok = false;
+     if( ( seen[ d ] > seen[ c ] ) &&
+	 ( T.codeLength( d ) > T.codeLength( c ) ) )
+      ok = false;
     }
   CHECK( ok && ( double( bits ) <= h + double( x.size() ) + 1e-6 ) );
   CHECK_THROWS( ( void )T.access( x.size() ) , contract_violation );
   CHECK_THROWS( ( void )T.rank( 0 , x.size() + 1 ) , contract_violation );
   CHECK_THROWS( ( void )T.select( x[ 0 ] , seen[ x[ 0 ] ] + 1 ) ,
-                contract_violation );
+		contract_violation );
   CHECK_THROWS( ( void )T.select( top + 1 , 1 ) , contract_violation );
   };
  check( {} );
@@ -255,7 +267,7 @@ void huffmanTreeCheck( std::mt19937_64 & g )
    std::geometric_distribution< std::uint32_t > G( 0.3 );
    for( std::size_t i = 0 ; i < n ; ++i ) {
     u[ i ] = std::uint32_t( g() % sigma );
-    k[ i ] = std::min( G( g ) , sigma - 1 ) * 2;   // the odd ones absent
+    k[ i ] = std::min( G( g ) , sigma - 1 ) * 2;  // the odd ones absent
     }
    check( u );
    check( k );
@@ -281,7 +293,8 @@ void huffmanFMCheck( std::mt19937_64 & g )
  for( const int sigma : { 1 , 4 , 256 } )
   for( const std::size_t mu : { 1 , 3 , 32 } ) {
    std::string s( 700 , 'a' );
-   for( auto & c : s ) c = static_cast< char >( g() % unsigned( sigma ) );
+   for( auto & c : s )
+    c = static_cast< char >( g() % unsigned( sigma ) );
    const HuffmanFMIndex< RS > F( s , mu );
    CHECK( F.size() == s.size() );
    bool ok = true;
@@ -290,16 +303,17 @@ void huffmanFMCheck( std::mt19937_64 & g )
      const std::string P = s.substr( i , len );
      std::vector< std::size_t > at;
      for( std::size_t j = 0 ; j + len <= s.size() ; ++j )
-      if( s.compare( j , len , P ) == 0 ) at.push_back( j );
+      if( s.compare( j , len , P ) == 0 )
+       at.push_back( j );
      ok = ( F.count( P ) == at.size() ) && ( F.locate( P ) == at );
      }
    CHECK( ok );
    CHECK( F.count( s ) == 1 &&
-          F.locate( s ) == std::vector< std::size_t >{ 0 } );
+	  F.locate( s ) == std::vector< std::size_t >{ 0 } );
    CHECK( F.count( s + "x" ) == 0 && F.locate( s + "x" ).empty() );
    for( std::size_t i = 0 ; ok && ( i <= s.size() ) ; i += 13 )
     for( std::size_t j = i ; ok && ( j <= std::min( s.size() , i + 40 ) ) ;
-         j += 5 )
+	 j += 5 )
      ok = F.extract( i , j ) == s.substr( i , j - i );
    CHECK( ok && F.extract( 0 , s.size() ) == s );
    CHECK_THROWS( ( void )F.count( "" ) , contract_violation );
@@ -309,9 +323,10 @@ void huffmanFMCheck( std::mt19937_64 & g )
  CHECK( E.size() == 0 && E.count( "a" ) == 0 && E.extract( 0 , 0 ).empty() );
  std::string t( 20000 , 'e' );
  std::geometric_distribution< int > G( 0.4 );
- for( auto & c : t ) c = static_cast< char >( 'a' + std::min( G( g ) , 25 ) );
+ for( auto & c : t )
+  c = static_cast< char >( 'a' + std::min( G( g ) , 25 ) );
  CHECK( HuffmanFMIndex< RS >( t , 32 ).sizeInBits() <
-        FMIndex( t , 64 , 32 ).sizeInBits() );
+	FMIndex( t , 64 , 32 ).sizeInBits() );
  }
 
 ADS_TEST( "huffman-fm-index" )
@@ -332,24 +347,25 @@ ADS_TEST( "partitioned-elias-fano" )
  std::mt19937_64 g( 23 );
  std::array< std::size_t , 3 > seen{};
  auto check = [ & ]( const std::vector< std::uint64_t > & x ,
-                     std::uint64_t u ) {
+		     std::uint64_t u ) {
   const PartitionedEliasFano P( x , u );
   CHECK( P.size() == x.size() && P.universe() == u );
   bool ok = std::equal( x.begin() , x.end() , P.begin() );
   const std::uint64_t top = x.empty() ? 3 : x.back() + 3;
   const std::uint64_t step = 1 + top / 5000;
   for( std::uint64_t v = 0 ; ok && ( v <= top ) ; v += step ) {
-   const std::size_t r = std::size_t( std::lower_bound( x.begin() , x.end() ,
-                                                        v ) - x.begin() );
+   const std::size_t r =
+     std::size_t( std::lower_bound( x.begin() , x.end() , v ) - x.begin() );
    ok = ( P.nextGEQ( v ) == r ) &&
-        ( P.contains( v ) == ( ( r < x.size() ) && ( x[ r ] == v ) ) );
+	( P.contains( v ) == ( ( r < x.size() ) && ( x[ r ] == v ) ) );
    }
   for( std::size_t i = 0 ; ok && ( i < x.size() ) ; i += 1 + i / 100 )
    ok = ( P.nextGEQ( x[ i ] ) == i ) && P.contains( x[ i ] ) &&
-        ( ( x[ i ] == 0 ) || ( P.nextGEQ( x[ i ] - 1 ) <= i ) );
+	( ( x[ i ] == 0 ) || ( P.nextGEQ( x[ i ] - 1 ) <= i ) );
   CHECK( ok );
   const auto k = P.kinds();
-  for( int t = 0 ; t < 3 ; ++t ) seen[ t ] += k[ t ];
+  for( int t = 0 ; t < 3 ; ++t )
+   seen[ t ] += k[ t ];
   CHECK_THROWS( ( void )P.access( x.size() ) , contract_violation );
   };
  check( {} , 0 );
@@ -359,11 +375,12 @@ ADS_TEST( "partitioned-elias-fano" )
   std::vector< std::uint64_t > uni , dense , run , mix;
   std::uint64_t a = 0 , b = 0 , c = g() % 1000 , d = 0;
   for( std::size_t i = 0 ; i < n ; ++i ) {
-   a += 1 + g() % 300;                     // gaps of mean 150
-   b += 1 + g() % 3;                       // gaps of mean 2
-   c += 1;                                 // a run
-   d += ( i / 128 ) % 3 == 0 ? 1 : ( i / 128 ) % 3 == 1 ? 1 + g() % 2
-                                                     : 1 + g() % 5000;
+   a += 1 + g() % 300;  // gaps of mean 150
+   b += 1 + g() % 3;    // gaps of mean 2
+   c += 1;              // a run
+   d += ( i / 128 ) % 3 == 0   ? 1
+	: ( i / 128 ) % 3 == 1 ? 1 + g() % 2
+			       : 1 + g() % 5000;
    uni.push_back( a );
    dense.push_back( b );
    run.push_back( c );
@@ -375,7 +392,7 @@ ADS_TEST( "partitioned-elias-fano" )
   check( mix , mix.back() + 1000 );
   if( n == 20000 )
    CHECK( PartitionedEliasFano( mix ).sizeInBits() <
-          EliasFano( mix ).sizeInBits() / 2 );
+	  EliasFano( mix ).sizeInBits() / 2 );
   }
  CHECK( seen[ 0 ] > 0 && seen[ 1 ] > 0 && seen[ 2 ] > 0 );
  }
@@ -390,14 +407,13 @@ ADS_TEST( "partitioned-elias-fano" )
 ADS_TEST( "binary-packing" )
 {
  std::mt19937_64 g( 29 );
- for( const std::size_t n : { 0 , 1 , 4 , 127 , 128 , 129 , 2047 , 2048 ,
-                              2049 , 5000 } )
+ for( const std::size_t n :
+      { 0 , 1 , 4 , 127 , 128 , 129 , 2047 , 2048 , 2049 , 5000 } )
   for( int t = 0 ; t < 6 ; ++t ) {
    std::vector< std::uint32_t > x( n );
    for( std::size_t i = 0 ; i < n ; ++i ) {
     const int b = t == 5 ? int( ( i / 128 ) % 33 ) : t * 6 + 2;
-    x[ i ] = b == 0 ? 0
-                    : std::uint32_t( g() ) >> ( 32 - std::min( b , 32 ) );
+    x[ i ] = b == 0 ? 0 : std::uint32_t( g() ) >> ( 32 - std::min( b , 32 ) );
     }
    const auto c = binaryPack( x );
    std::size_t bytes = 16 * ( ( n + 2047 ) / 2048 );
@@ -420,11 +436,10 @@ ADS_TEST( "binary-packing" )
   out[ i ] = i % 50 == 7 ? std::uint32_t( g() ) : std::uint32_t( g() % 16 );
  const auto pc = patchedPack( out );
  CHECK( patchedUnpack( pc , out.size() ) == out &&
-        pc.size() < binaryPack( out ).size() / 3 );
+	pc.size() < binaryPack( out ).size() / 3 );
  auto pt = pc;
  pt.pop_back();
- CHECK_THROWS( ( void )patchedUnpack( pt , out.size() ) ,
-               contract_violation );
+ CHECK_THROWS( ( void )patchedUnpack( pt , out.size() ) , contract_violation );
  std::vector< std::uint32_t > big( 3000 );
  for( std::size_t i = 0 ; i < big.size() ; ++i )
   big[ i ] = 0xFFFFF000u + std::uint32_t( i );
@@ -450,17 +465,18 @@ ADS_TEST( "r-index" )
   bool ok = true;
   for( std::size_t len = 1 ; ok && ( len <= 8 ) ; ++len )
    for( std::size_t i = 0 ; ok && ( i + len <= s.size() ) ;
-        i += 1 + s.size() / 150 ) {
+	i += 1 + s.size() / 150 ) {
     const std::string P = s.substr( i , len );
     std::vector< std::size_t > at;
     for( std::size_t j = 0 ; j + len <= s.size() ; ++j )
-     if( s.compare( j , len , P ) == 0 ) at.push_back( j );
+     if( s.compare( j , len , P ) == 0 )
+      at.push_back( j );
     ok = ( X.count( P ) == at.size() ) && ( X.locate( P ) == at );
     }
   CHECK( ok );
   if( ! s.empty() )
    CHECK( X.count( s ) == 1 &&
-          X.locate( s ) == std::vector< std::size_t >{ 0 } );
+	  X.locate( s ) == std::vector< std::size_t >{ 0 } );
   CHECK( X.count( s + "\x7f\x7f" ) == 0 && X.locate( s + "\x7f" ).empty() );
   CHECK_THROWS( ( void )X.count( "" ) , contract_violation );
   return( X.runs() );
@@ -470,16 +486,20 @@ ADS_TEST( "r-index" )
  check( std::string( 300 , 'z' ) );
  for( const int sigma : { 1 , 2 , 4 , 256 } ) {
   std::string s( 900 , 'a' );
-  for( auto & c : s ) c = static_cast< char >( 'a' + g() % unsigned( sigma ) );
+  for( auto & c : s )
+   c = static_cast< char >( 'a' + g() % unsigned( sigma ) );
   if( sigma == 256 )
-   for( auto & c : s ) c = static_cast< char >( g() % 256 );
+   for( auto & c : s )
+    c = static_cast< char >( g() % 256 );
   check( s );
   }
  std::string base( 400 , 'a' ) , rep;
- for( auto & c : base ) c = static_cast< char >( 'a' + g() % 20 );
+ for( auto & c : base )
+  c = static_cast< char >( 'a' + g() % 20 );
  for( int k = 0 ; k < 20 ; ++k ) {
   std::string copy = base;
-  for( int e = 0 ; e < 2 ; ++e ) copy[ g() % copy.size() ] = 'Z';
+  for( int e = 0 ; e < 2 ; ++e )
+   copy[ g() % copy.size() ] = 'Z';
   rep += copy;
   }
  CHECK( check( rep ) < rep.size() / 8 );
@@ -495,9 +515,11 @@ ADS_TEST( "move-structure" )
  std::mt19937_64 g( 37 );
  for( const std::size_t m : { 1 , 2 , 5 , 40 , 300 } ) {
   std::vector< std::uint64_t > len( m );
-  for( auto & l : len ) l = g() % 4 == 0 ? 1 + g() % 200 : 1 + g() % 3;
+  for( auto & l : len )
+   l = g() % 4 == 0 ? 1 + g() % 200 : 1 + g() % 3;
   std::vector< std::size_t > order( m );
-  for( std::size_t i = 0 ; i < m ; ++i ) order[ i ] = i;
+  for( std::size_t i = 0 ; i < m ; ++i )
+   order[ i ] = i;
   std::shuffle( order.begin() , order.end() , g );
   std::vector< std::uint64_t > p( m ) , q( m );
   std::vector< std::uint32_t > tag( m );
@@ -507,7 +529,7 @@ ADS_TEST( "move-structure" )
    n += len[ i ];
    tag[ i ] = std::uint32_t( i % 7 );
    }
-  for( const auto i : order ) {             // the images in that order
+  for( const auto i : order ) {  // the images in that order
    q[ i ] = at;
    at += len[ i ];
    }
@@ -516,17 +538,16 @@ ADS_TEST( "move-structure" )
   bool ok = true;
   for( std::uint64_t x = 0 ; ok && ( x < n ) ; ++x ) {
    const std::size_t i = M.interval( x );
-   const std::size_t o = std::size_t( std::upper_bound( p.begin() , p.end() ,
-                                                        x ) - p.begin() ) -
-                         1;
+   const std::size_t o =
+     std::size_t( std::upper_bound( p.begin() , p.end() ,
+				    x ) - p.begin() ) - 1;
    const auto [ y , j ] = M.move( x , i );
    ok = ( M.start( i ) <= x ) && ( x < M.start( i + 1 ) ) &&
-        ( M.tag( i ) == tag[ o ] ) && ( y == q[ o ] + ( x - p[ o ] ) ) &&
-        ( M.start( j ) <= y ) && ( y < M.start( j + 1 ) );
+	( M.tag( i ) == tag[ o ] ) && ( y == q[ o ] + ( x - p[ o ] ) ) &&
+	( M.start( j ) <= y ) && ( y < M.start( j + 1 ) );
    }
   CHECK( ok );
-  CHECK_THROWS( ( void )M.move( n , M.intervals() - 1 ) ,
-                contract_violation );
+  CHECK_THROWS( ( void )M.move( n , M.intervals() - 1 ) , contract_violation );
   }
  }
 
@@ -543,17 +564,18 @@ ADS_TEST( "move-r-index" )
   bool ok = true;
   for( std::size_t len = 1 ; ok && ( len <= 8 ) ; ++len )
    for( std::size_t i = 0 ; ok && ( i + len <= s.size() ) ;
-        i += 1 + s.size() / 150 ) {
+	i += 1 + s.size() / 150 ) {
     const std::string P = s.substr( i , len );
     std::vector< std::size_t > at;
     for( std::size_t j = 0 ; j + len <= s.size() ; ++j )
-     if( s.compare( j , len , P ) == 0 ) at.push_back( j );
+     if( s.compare( j , len , P ) == 0 )
+      at.push_back( j );
     ok = ( X.count( P ) == at.size() ) && ( X.locate( P ) == at );
     }
   CHECK( ok );
   if( ! s.empty() )
    CHECK( X.count( s ) == 1 &&
-          X.locate( s ) == std::vector< std::size_t >{ 0 } );
+	  X.locate( s ) == std::vector< std::size_t >{ 0 } );
   CHECK( X.count( s + "\x7f\x7f" ) == 0 && X.locate( s + "\x7f" ).empty() );
   CHECK_THROWS( ( void )X.count( "" ) , contract_violation );
   };
@@ -562,16 +584,20 @@ ADS_TEST( "move-r-index" )
  check( std::string( 300 , 'z' ) );
  for( const int sigma : { 1 , 2 , 4 , 256 } ) {
   std::string s( 900 , 'a' );
-  for( auto & c : s ) c = static_cast< char >( 'a' + g() % unsigned( sigma ) );
+  for( auto & c : s )
+   c = static_cast< char >( 'a' + g() % unsigned( sigma ) );
   if( sigma == 256 )
-   for( auto & c : s ) c = static_cast< char >( g() % 256 );
+   for( auto & c : s )
+    c = static_cast< char >( g() % 256 );
   check( s );
   }
  std::string base( 400 , 'a' ) , rep;
- for( auto & c : base ) c = static_cast< char >( 'a' + g() % 20 );
+ for( auto & c : base )
+  c = static_cast< char >( 'a' + g() % 20 );
  for( int k = 0 ; k < 20 ; ++k ) {
   std::string copy = base;
-  for( int e = 0 ; e < 2 ; ++e ) copy[ g() % copy.size() ] = 'Z';
+  for( int e = 0 ; e < 2 ; ++e )
+   copy[ g() % copy.size() ] = 'Z';
   rep += copy;
   }
  check( rep );
@@ -586,19 +612,23 @@ ADS_TEST( "interleaved-rank-select" )
  std::mt19937_64 g( 43 );
  auto check = [ & ]( const std::vector< bool > & R ) {
   BitVector b;
-  for( const bool x : R ) b.push_back( x );
+  for( const bool x : R )
+   b.push_back( x );
   const InterleavedRankSelect S( b );
   const InterleavedRankSelect T( std::span< const Word >( b.words() ) ,
-                                 b.size() );
+				 b.size() );
   std::size_t ones = 0 , zeros = 0;
   bool ok = ( S.size() == R.size() ) && ( T.ones() == S.ones() );
   for( std::size_t i = 0 ; ok && ( i <= R.size() ) ; ++i ) {
    ok = ( S.rank1( i ) == ones ) && ( S.rank0( i ) == zeros ) &&
-        ( T.rank1( i ) == ones );
-   if( i == R.size() ) break;
+	( T.rank1( i ) == ones );
+   if( i == R.size() )
+    break;
    ok = ok && ( S[ i ] == R[ i ] );
-   if( R[ i ] ) ok = ok && ( S.select1( ++ones ) == i );
-   else ok = ok && ( S.select0( ++zeros ) == i );
+   if( R[ i ] )
+    ok = ok && ( S.select1( ++ones ) == i );
+   else
+    ok = ok && ( S.select0( ++zeros ) == i );
    }
   CHECK( ok && S.ones() == ones && S.zeros() == zeros );
   CHECK( S.directoryBits() <= R.size() / 20 + 2048 );
@@ -606,12 +636,13 @@ ADS_TEST( "interleaved-rank-select" )
   CHECK_THROWS( ( void )S.select0( zeros + 1 ) , contract_violation );
   CHECK_THROWS( ( void )S.rank1( R.size() + 1 ) , contract_violation );
   };
- for( const std::size_t n : { 0 , 1 , 495 , 496 , 497 , 4096 , 63487 ,
-                              63488 , 63489 , 140000 } )
+ for( const std::size_t n :
+      { 0 , 1 , 495 , 496 , 497 , 4096 , 63487 , 63488 , 63489 , 140000 } )
   for( const double p : { 0.0 , 0.002 , 0.1 , 0.5 , 0.99 , 1.0 } ) {
    std::vector< bool > R( n );
    std::bernoulli_distribution B( p );
-   for( std::size_t i = 0 ; i < n ; ++i ) R[ i ] = B( g );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    R[ i ] = B( g );
    check( R );
    }
  std::vector< bool > runs;
@@ -632,20 +663,25 @@ ADS_TEST( "rrr-bit-vector" )
   for( const double p : { 0.0 , 0.01 , 0.2 , 0.5 , 0.97 , 1.0 } ) {
    BitVector b;
    std::bernoulli_distribution B( p );
-   for( std::size_t i = 0 ; i < n ; ++i ) b.push_back( B( g ) );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    b.push_back( B( g ) );
    const RRRBitVector R( b );
    std::size_t ones = 0 , zeros = 0;
    for( std::size_t i = 0 ; i <= n ; ++i ) {
     CHECK( R.rank1( i ) == ones && R.rank0( i ) == zeros );
-    if( i == n ) break;
+    if( i == n )
+     break;
     CHECK( R[ i ] == b[ i ] );
-    if( b[ i ] ) CHECK( R.select1( ++ones ) == i );
-    else CHECK( R.select0( ++zeros ) == i );
+    if( b[ i ] )
+     CHECK( R.select1( ++ones ) == i );
+    else
+     CHECK( R.select0( ++zeros ) == i );
     }
    CHECK( R.ones() == ones && R.zeros() == zeros && R.size() == n );
    const double q = n ? double( ones ) / double( n ) : 0.0;
-   const double h = ( q <= 0 || q >= 1 ) ? 0 :
-                    -q * std::log2( q ) - ( 1 - q ) * std::log2( 1 - q );
+   const double h = ( q <= 0 || q >= 1 )
+		      ? 0
+		      : -q * std::log2( q ) - ( 1 - q ) * std::log2( 1 - q );
    CHECK( double( R.sizeInBits() ) <= double( n ) * ( h + 0.18 ) + 512 );
    CHECK_THROWS( ( void )R.select1( ones + 1 ) , contract_violation );
    CHECK_THROWS( ( void )R.rank1( n + 1 ) , contract_violation );
@@ -665,18 +701,21 @@ ADS_TEST( "wavelet-matrix" )
   const std::size_t n = x.size();
   CHECK( M.size() == n && M.empty() == ( n == 0 ) );
   CHECK( std::equal( x.begin() , x.end() , M.begin() , M.end() ) );
-  std::vector< std::uint64_t > C = x;       // the symbols, and two absent
+  std::vector< std::uint64_t > C = x;  // the symbols, and two absent
   C.push_back( 0 );
   C.push_back( w < 64 ? ( std::uint64_t( 1 ) << w ) - 1 : ~0ULL );
-  if( w < 64 ) C.push_back( std::uint64_t( 1 ) << w );   // too wide
+  if( w < 64 )
+   C.push_back( std::uint64_t( 1 ) << w );  // too wide
   std::sort( C.begin() , C.end() );
   C.erase( std::unique( C.begin() , C.end() ) , C.end() );
-  if( C.size() > 40 ) C.resize( 40 );
+  if( C.size() > 40 )
+   C.resize( 40 );
   for( const auto c : C ) {
    std::size_t r = 0;
    for( std::size_t i = 0 ; i <= n ; ++i ) {
     CHECK( M.rank( c , i ) == r );
-    if( i == n ) break;
+    if( i == n )
+     break;
     if( x[ i ] == c ) {
      ++r;
      CHECK( M.select( c , r ) == i );
@@ -686,17 +725,18 @@ ADS_TEST( "wavelet-matrix" )
    }
   for( int q = 0 ; ( q < 200 ) && ( n > 0 ) ; ++q ) {
    std::size_t i = g() % ( n + 1 ) , j = g() % ( n + 1 );
-   if( i > j ) std::swap( i , j );
+   if( i > j )
+    std::swap( i , j );
    std::vector< std::uint64_t > R( x.begin() + std::ptrdiff_t( i ) ,
-                                   x.begin() + std::ptrdiff_t( j ) );
+				   x.begin() + std::ptrdiff_t( j ) );
    std::sort( R.begin() , R.end() );
    for( std::size_t k = 0 ; k < R.size() ; k += 1 + R.size() / 7 )
     CHECK( M.quantile( i , j , k ) == R[ k ] );
-   CHECK_THROWS( ( void )M.quantile( i , j , R.size() ) ,
-                 contract_violation );
+   CHECK_THROWS( ( void )M.quantile( i , j , R.size() ) , contract_violation );
    const std::uint64_t c = n > 0 ? x[ g() % n ] + ( g() % 3 ) - 1 : 0;
-   CHECK( M.countLess( i , j , c ) == std::size_t(
-           std::lower_bound( R.begin() , R.end() , c ) - R.begin() ) );
+   CHECK(
+     M.countLess( i , j , c ) ==
+     std::size_t( std::lower_bound( R.begin() , R.end() , c ) - R.begin() ) );
    }
   CHECK_THROWS( ( void )M.access( n ) , contract_violation );
   CHECK_THROWS( ( void )M.rank( 0 , n + 1 ) , contract_violation );
@@ -709,20 +749,20 @@ ADS_TEST( "wavelet-matrix" )
     v = w == 64 ? g() : g() % ( std::uint64_t( 1 ) << w );
    check( x , w );
    }
- check( std::vector< std::uint64_t >( 1000 , 5 ) , 3 );   // one symbol
+ check( std::vector< std::uint64_t >( 1000 , 5 ) , 3 );  // one symbol
  std::vector< std::uint64_t > big = { ~0ULL , 0 , ~0ULL - 1 , 1ULL << 63 };
  check( big , 64 );
- const WaveletMatrix A( big );              // the width of the largest
+ const WaveletMatrix A( big );  // the width of the largest
  CHECK( A.width() == 64 && A[ 0 ] == ~0ULL );
  const WaveletMatrix B( std::vector< std::uint64_t >{ 4 , 1 } );
  CHECK( B.width() == 3 && B.quantile( 0 , 2 , 0 ) == 1 &&
-        B.countLess( 0 , 2 , 100 ) == 2 && B.rank( 9 , 2 ) == 0 );
+	B.countLess( 0 , 2 , 100 ) == 2 && B.rank( 9 , 2 ) == 0 );
  const WaveletMatrix E;
  CHECK( E.empty() && E.sizeInBits() == 0 );
  CHECK_THROWS( WaveletMatrix( std::vector< std::uint64_t >{ 8 } , 3 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( WaveletMatrix( std::vector< std::uint64_t >{ 1 } , 65 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /// the strings of the round trips of the coders: empty, one byte, one
@@ -732,23 +772,27 @@ ADS_TEST( "wavelet-matrix" )
 std::vector< std::vector< std::uint8_t > > coderInputs( void )
 {
  std::mt19937_64 g( 7 );
- std::vector< std::vector< std::uint8_t > > S = { {} , { 42 } ,
-  std::vector< std::uint8_t >( 1000 , 9 ) , { 0 , 255 } };
+ std::vector< std::vector< std::uint8_t > > S = {
+  {} , { 42 } , std::vector< std::uint8_t >( 1000 , 9 ) , { 0 , 255 }
+  };
  std::vector< std::uint8_t > all( 256 );
- for( int i = 0 ; i < 256 ; ++i ) all[ std::size_t( i ) ] = std::uint8_t( i );
+ for( int i = 0 ; i < 256 ; ++i )
+  all[ std::size_t( i ) ] = std::uint8_t( i );
  S.push_back( all );
  for( const std::size_t n : { 2 , 3 , 5 , 7 , 15 , 16 , 17 , 100003 } ) {
   std::vector< std::uint8_t > u( n ) , z( n );
-  for( auto & c : u ) c = std::uint8_t( g() );
+  for( auto & c : u )
+   c = std::uint8_t( g() );
   // Fibonacci-like frequencies: byte k with probability about 2^-k
-  for( auto & c : z ) c = std::uint8_t( std::min( 40 , std::countr_zero(
-                                          g() | ( 1ULL << 40 ) ) ) );
+  for( auto & c : z )
+   c =
+     std::uint8_t( std::min( 40 , std::countr_zero( g() | ( 1ULL << 40 ) ) ) );
   S.push_back( u );
   S.push_back( z );
   }
  const std::string t = "it was the best of times, it was the worst of "
-                       "times, it was the age of wisdom, it was the age of "
-                       "foolishness";
+		       "times, it was the age of wisdom, it was the age of "
+		       "foolishness";
  std::vector< std::uint8_t > text;
  for( int r = 0 ; r < 2000 ; ++r )
   text.insert( text.end() , t.begin() , t.end() );
@@ -768,14 +812,14 @@ ADS_TEST( "huffman-coder" )
   CHECK( huffmanDecompress( c ) == s );
   if( s.size() > 1000 ) {
    const double h = entropy( std::string_view(
-                     reinterpret_cast< const char * >( s.data() ) ,
-                     s.size() ) );
-   CHECK( 8.0 * double( c.size() ) <= double( s.size() ) * ( h + 1 ) +
-                                       8 * 200 );
+     reinterpret_cast< const char * >( s.data() ) , s.size() ) );
+   CHECK( 8.0 * double( c.size() ) <=
+	  double( s.size() ) * ( h + 1 ) + 8 * 200 );
    }
   }
  std::array< std::uint64_t , 256 > f{};
- for( int k = 0 ; k < 40 ; ++k ) f[ std::size_t( k ) ] = 1ULL << ( 40 - k );
+ for( int k = 0 ; k < 40 ; ++k )
+  f[ std::size_t( k ) ] = 1ULL << ( 40 - k );
  const auto len = limitedHuffmanLengths( f , 11 );
  std::uint64_t kraft = 0;
  for( int k = 0 ; k < 256 ; ++k ) {
@@ -784,29 +828,31 @@ ADS_TEST( "huffman-coder" )
   if( len[ std::size_t( k ) ] > 0 )
    kraft += 1ULL << ( 11 - len[ std::size_t( k ) ] );
   }
- CHECK( kraft == 2048 );                    // complete
- const auto free = limitedHuffmanLengths( f , 40 );   // Huffman: 1, 2, ...
+ CHECK( kraft == 2048 );                            // complete
+ const auto free = limitedHuffmanLengths( f , 40 );  // Huffman: 1, 2, ...
  CHECK( free[ 0 ] == 1 && free[ 1 ] == 2 && free[ 38 ] == 39 &&
-        free[ 39 ] == 39 );
+	free[ 39 ] == 39 );
  std::array< std::uint64_t , 256 > one{};
  one[ 5 ] = 3;
  CHECK( limitedHuffmanLengths( one , 11 )[ 5 ] == 1 );
  CHECK_THROWS( ( void )huffmanDecompress( std::vector< std::uint8_t >( 5 ) ) ,
-               contract_violation );
+	       contract_violation );
  // the window of 12 bits, from 2^18 bytes on: skewed (codes up to 11
  // bits) and uniform bytes, at the threshold and past it
  std::mt19937_64 g( 13 );
- for( const std::size_t n : { std::size_t( 1 ) << 18 ,
-                              std::size_t( 300001 ) } ) {
+ for( const std::size_t n :
+      { std::size_t( 1 ) << 18 , std::size_t( 300001 ) } ) {
   std::vector< std::uint8_t > z( n ) , u( n );
-  for( auto & x : z ) x = std::uint8_t( std::min( 40 , std::countr_zero(
-                                          g() | ( 1ULL << 40 ) ) ) );
-  for( auto & x : u ) x = std::uint8_t( g() );
+  for( auto & x : z )
+   x =
+     std::uint8_t( std::min( 40 , std::countr_zero( g() | ( 1ULL << 40 ) ) ) );
+  for( auto & x : u )
+   x = std::uint8_t( g() );
   CHECK( huffmanDecompress( huffmanCompress( z ) ) == z &&
-         huffmanDecompress( huffmanCompress( u ) ) == u );
+	 huffmanDecompress( huffmanCompress( u ) ) == u );
   }
  auto c = huffmanCompress( coderInputs().back() );
- c[ 9 ] = 0x11;                            // two codes of 1 bit too many
+ c[ 9 ] = 0x11;  // two codes of 1 bit too many
  CHECK_THROWS( ( void )huffmanDecompress( c ) , contract_violation );
  }
 
@@ -821,15 +867,15 @@ ADS_TEST( "rans-coder" )
   CHECK( ransDecompress( c ) == s );
   if( s.size() > 10000 ) {
    const double h = entropy( std::string_view(
-                     reinterpret_cast< const char * >( s.data() ) ,
-                     s.size() ) );
-   CHECK( 8.0 * double( c.size() ) <= double( s.size() ) * h * 1.01 +
-                                       8 * 600 );
+     reinterpret_cast< const char * >( s.data() ) , s.size() ) );
+   CHECK( 8.0 * double( c.size() ) <=
+	  double( s.size() ) * h * 1.01 + 8 * 600 );
    }
   }
  std::array< std::uint64_t , 256 > f{};
  f[ 0 ] = 1000000;
- for( int k = 1 ; k < 256 ; ++k ) f[ std::size_t( k ) ] = 1;
+ for( int k = 1 ; k < 256 ; ++k )
+  f[ std::size_t( k ) ] = 1;
  const auto g = scaleFrequencies( f , 12 );
  std::uint64_t sum = 0;
  for( const auto x : g ) {
@@ -842,9 +888,9 @@ ADS_TEST( "rans-coder" )
  CHECK( scaleFrequencies( one , 12 )[ 200 ] == 4096 );
  CHECK_THROWS( ( void )scaleFrequencies( {} , 12 ) , contract_violation );
  CHECK_THROWS( ( void )ransDecompress( std::vector< std::uint8_t >( 20 ) ) ,
-               contract_violation );
+	       contract_violation );
  auto c = ransCompress( coderInputs().back() );
- c[ 8 ] ^= 1;                              // the frequencies sum wrong
+ c[ 8 ] ^= 1;  // the frequencies sum wrong
  CHECK_THROWS( ( void )ransDecompress( c ) , contract_violation );
  }
 
@@ -865,34 +911,38 @@ ADS_TEST( "rans-corrupted" )
   };
  for( const auto & s : coderInputs() ) {
   const auto c = ransCompress( s );
-  for( const std::size_t k : { std::size_t( 1 ) , std::size_t( 2 ) ,
-                               std::size_t( 8 ) , std::size_t( 9 ) ,
-                               ( c.size() - 536 ) / 2 , c.size() - 536 ,
-                               c.size() - 535 , c.size() } ) {
-   if( ( k == 0 ) || ( k > c.size() ) ) continue;
+  for( const std::size_t k :
+       { std::size_t( 1 ) , std::size_t( 2 ) , std::size_t( 8 ) ,
+	 std::size_t( 9 ) , ( c.size() - 536 ) / 2 , c.size() - 536 ,
+	 c.size() - 535 , c.size() } ) {
+   if( ( k == 0 ) || ( k > c.size() ) )
+    continue;
    const std::vector< std::uint8_t > t( c.begin() ,
-                                        c.end() - std::ptrdiff_t( k ) );
+					c.end() - std::ptrdiff_t( k ) );
    CHECK_THROWS( ( void )ransDecompress( t ) , contract_violation );
    }
-  if( s.empty() ) continue;
-  for( std::size_t b = 0 ; b < 128 ; b += 5 ) {   // the four states
+  if( s.empty() )
+   continue;
+  for( std::size_t b = 0 ; b < 128 ; b += 5 ) {  // the four states
    auto d = c;
    d[ 8 + 512 + b / 8 ] ^= std::uint8_t( 1u << ( b % 8 ) );
    CHECK( safe( d , s.size() ) );
    }
-  std::size_t top = 0;                     // the most frequent byte
+  std::size_t top = 0;  // the most frequent byte
   for( std::size_t x = 1 ; x < 256 ; ++x )
    if( c[ 8 + 2 * x ] + 256 * c[ 9 + 2 * x ] >
        c[ 8 + 2 * top ] + 256 * c[ 9 + 2 * top ] )
     top = x;
-  for( const std::size_t x : { std::size_t( 0 ) , std::size_t( 39 ) ,
-                               std::size_t( 255 ) } ) {
+  for( const std::size_t x :
+       { std::size_t( 0 ) , std::size_t( 39 ) , std::size_t( 255 ) } ) {
    if( ( x == top ) || ( c[ 8 + 2 * top ] + 256 * c[ 9 + 2 * top ] < 2 ) )
     continue;
    auto d = c;
    d[ 8 + 2 * top ] = std::uint8_t( d[ 8 + 2 * top ] - 1 );
-   if( d[ 8 + 2 * top ] == 0xFF ) --d[ 9 + 2 * top ];
-   if( ++d[ 8 + 2 * x ] == 0 ) ++d[ 9 + 2 * x ];
+   if( d[ 8 + 2 * top ] == 0xFF )
+    --d[ 9 + 2 * top ];
+   if( ++d[ 8 + 2 * x ] == 0 )
+    ++d[ 9 + 2 * x ];
    CHECK( safe( d , s.size() ) );
    }
   }
@@ -907,19 +957,18 @@ ADS_TEST( "tans-coder" )
   CHECK( tansDecompress( c ) == s );
   if( s.size() > 10000 ) {
    const double h = entropy( std::string_view(
-                     reinterpret_cast< const char * >( s.data() ) ,
-                     s.size() ) );
-   CHECK( 8.0 * double( c.size() ) <= double( s.size() ) * h * 1.01 +
-                                       8 * 600 );
+     reinterpret_cast< const char * >( s.data() ) , s.size() ) );
+   CHECK( 8.0 * double( c.size() ) <=
+	  double( s.size() ) * h * 1.01 + 8 * 600 );
    }
   }
  CHECK_THROWS( ( void )tansDecompress( std::vector< std::uint8_t >( 20 ) ) ,
-               contract_violation );
+	       contract_violation );
  auto c = tansCompress( coderInputs().back() );
- c[ 8 ] ^= 1;                              // the frequencies sum wrong
+ c[ 8 ] ^= 1;  // the frequencies sum wrong
  CHECK_THROWS( ( void )tansDecompress( c ) , contract_violation );
  auto d = tansCompress( coderInputs().back() );
- d[ 8 + 512 ] ^= 0x40;                     // a wrong length of the stream
+ d[ 8 + 512 ] ^= 0x40;  // a wrong length of the stream
  CHECK_THROWS( ( void )tansDecompress( d ) , contract_violation );
  }
 
@@ -937,24 +986,30 @@ ADS_TEST( "direct-access-codes" )
   CHECK( D.size() == x.size() && D.empty() == x.empty() );
   CHECK( std::equal( x.begin() , x.end() , D.begin() , D.end() ) );
   std::uint64_t m = 0;
-  for( const auto v : x ) m |= v;
+  for( const auto v : x )
+   m |= v;
   int sum = 0;
   for( const int b : D.widths() ) {
    CHECK( b >= 1 );
    sum += b;
    }
-  if( ! x.empty() ) CHECK( sum == std::max( 1 , int( std::bit_width( m ) ) ) );
-  CHECK( D.sizeInBits() <= std::size_t( 1.05 * double( x.size() ) *
-                                        std::max( 1 , sum ) ) + 2048 );
+  if( ! x.empty() )
+   CHECK( sum == std::max( 1 , int( std::bit_width( m ) ) ) );
+  CHECK( D.sizeInBits() <=
+	 std::size_t( 1.05 * double( x.size() ) * std::max( 1 , sum ) ) +
+	   2048 );
   CHECK_THROWS( ( void )D.access( x.size() ) , contract_violation );
   return( D.sizeInBits() );
   };
  std::geometric_distribution< std::uint64_t > G( 0.01 );
  for( const std::size_t n : { 1 , 2 , 100 , 5000 } ) {
   std::vector< std::uint64_t > a( n ) , b( n ) , c( n );
-  for( auto & v : a ) v = G( g );
-  for( auto & v : b ) v = g() >> ( g() % 64 );
-  for( auto & v : c ) v = g() % 4;
+  for( auto & v : a )
+   v = G( g );
+  for( auto & v : b )
+   v = g() >> ( g() % 64 );
+  for( auto & v : c )
+   v = g() % 4;
   check( a );
   check( b );
   check( c );
@@ -963,18 +1018,20 @@ ADS_TEST( "direct-access-codes" )
  check( std::vector< std::uint64_t >( 300 , ~0ULL ) );
  check( std::vector< std::uint64_t >{ 1ULL << 63 , 0 , 5 } );
  check( {} );
- for( const int b : { 1 , 4 , 8 , 64 } ) {   // the levels of fixed width
+ for( const int b : { 1 , 4 , 8 , 64 } ) {  // the levels of fixed width
   std::vector< std::uint64_t > a( 3000 );
-  for( auto & v : a ) v = G( g ) << ( g() % 20 );
+  for( auto & v : a )
+   v = G( g ) << ( g() % 20 );
   const DirectAccessCodes D( a , b );
   CHECK( std::equal( a.begin() , a.end() , D.begin() , D.end() ) );
   const auto W = D.widths();
-  for( std::size_t k = 0 ; k + 1 < W.size() ; ++k ) CHECK( W[ k ] == b );
+  for( std::size_t k = 0 ; k + 1 < W.size() ; ++k )
+   CHECK( W[ k ] == b );
   CHECK( W.back() <= b );
   }
  CHECK_THROWS( DirectAccessCodes( std::vector< std::uint64_t >{ 1 } , 0 ) ,
-               contract_violation );
- std::vector< std::uint64_t > z( 20000 );      // 3 bits but a few of 40
+	       contract_violation );
+ std::vector< std::uint64_t > z( 20000 );  // 3 bits but a few of 40
  for( std::size_t i = 0 ; i < z.size() ; ++i )
   z[ i ] = i % 1000 == 0 ? ( 1ULL << 40 ) + i : i % 8;
  CHECK( check( z ) < 20000 * 5 );
@@ -997,7 +1054,8 @@ ADS_TEST( "lz77-linear" )
  for( const int sigma : { 1 , 2 , 4 , 26 } )
   for( const std::size_t n : { 1 , 2 , 3 , 10 , 200 , 3000 } ) {
    std::string s;
-   for( std::size_t i = 0 ; i < n ; ++i ) s += char( 'a' + g() % sigma );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    s += char( 'a' + g() % sigma );
    check( s );
    }
  check( "" );
@@ -1006,7 +1064,7 @@ ADS_TEST( "lz77-linear" )
  check( "abracadabra abracadabra abracadabra" );
  const auto P = lz77ParseLinear( "aaaa" );
  CHECK( P.size() == 2 && P[ 1 ].distance == 1 && P[ 1 ].length == 3 &&
-        ! P[ 1 ].next );
+	! P[ 1 ].next );
  }
 
 // Stream VByte: the round trip and the size of every count of integers
@@ -1016,34 +1074,38 @@ ADS_TEST( "lz77-linear" )
 ADS_TEST( "stream-vbyte" )
 {
  std::mt19937_64 g( 11 );
- const std::uint32_t edge[] = { 0 , 1 , 255 , 256 , 65535 , 65536 ,
-                                16777215 , 16777216 , 4294967295u };
+ const std::uint32_t edge[] = { 0 ,     1 ,        255 ,      256 ,
+				65535 ,
+				65536 , 16777215 , 16777216 , 4294967295u };
  auto bytes = []( std::uint32_t v ) {
-  return( std::size_t( 1 + ( v > 0xFF ) + ( v > 0xFFFF ) +
-                       ( v > 0xFFFFFF ) ) );
+  return(
+    std::size_t( 1 + ( v > 0xFF ) + ( v > 0xFFFF ) + ( v > 0xFFFFFF ) ) );
   };
  auto check = [ & ]( const std::vector< std::uint32_t > & x ) {
   const auto c = streamVByteEncode( x );
   std::size_t size = ( x.size() + 3 ) / 4;
-  for( const auto v : x ) size += bytes( v );
+  for( const auto v : x )
+   size += bytes( v );
   CHECK( c.size() == size );
   CHECK( streamVByteDecode( c , x.size() ) == x );
   };
  for( std::size_t n = 0 ; n < 42 ; ++n ) {
   std::vector< std::uint32_t > x( n );
-  for( auto & v : x ) v = edge[ g() % 9 ];
+  for( auto & v : x )
+   v = edge[ g() % 9 ];
   check( x );
   }
  std::vector< std::uint32_t > x( 100000 );
- for( auto & v : x ) v = std::uint32_t( g() ) >> ( 8 * ( g() % 4 ) );
+ for( auto & v : x )
+  v = std::uint32_t( g() ) >> ( 8 * ( g() % 4 ) );
  check( x );
  const auto c = streamVByteEncode( x );
- CHECK_THROWS( ( void )streamVByteDecode( std::span( c ).first( c.size() -
-                                                                1 ) ,
-                                          x.size() ) ,
-               contract_violation );
+ CHECK_THROWS(
+   ( void )streamVByteDecode( std::span( c ).first( c.size() - 1 ) ,
+			      x.size() ) ,
+   contract_violation );
  CHECK_THROWS( ( void )streamVByteDecode( c , x.size() - 1 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the LA-vector against the sorted vector: every access and select, and the
@@ -1073,10 +1135,11 @@ ADS_TEST( "la-vector" )
    Q.push_back( a + 1 );
    Q.push_back( a - 1 );
    }
-  for( int q = 0 ; q < 200 ; ++q ) Q.push_back( g() );
+  for( int q = 0 ; q < 200 ; ++q )
+   Q.push_back( g() );
   for( const U q : Q ) {
-   const std::size_t r = std::size_t( std::lower_bound( x.begin() , x.end() ,
-                                                        q ) - x.begin() );
+   const std::size_t r =
+     std::size_t( std::lower_bound( x.begin() , x.end() , q ) - x.begin() );
    CHECK( v.nextGEQ( q ) == r );
    CHECK( v.rank( q ) == r );
    CHECK( v.contains( q ) == ( ( r < x.size() ) && ( x[ r ] == q ) ) );
@@ -1084,19 +1147,31 @@ ADS_TEST( "la-vector" )
   CHECK( v.decode() == x );
   CHECK( std::vector< U >( v.begin() , v.end() ) == x );
   };
- std::vector< std::vector< U > > cases = { {} , { 0 } , { ~U( 0 ) } ,
-                                           { 0 , ~U( 0 ) } ,
-                                           std::vector< U >( 1000 , 42 ) };
+ std::vector< std::vector< U > > cases = {
+  {} , { 0 } , { ~U( 0 ) } , { 0 , ~U( 0 ) } , std::vector< U >( 1000 , 42 )
+  };
  for( int t = 0 ; t < 6 ; ++t ) {
   std::vector< U > x( 3000 );
   for( std::size_t i = 0 ; i < x.size() ; ++i )
    switch( t ) {
-    case 0: x[ i ] = 7 + 13 * i; break;                    // a line
-    case 1: x[ i ] = 5 * i + g() % 9; break;               // noisy
-    case 2: x[ i ] = ( i / 4 ) * 3; break;                 // runs
-    case 3: x[ i ] = ( i / 300 ) * 1000000 + g() % 1000; break;
-    case 4: x[ i ] = g() % ( 128 * x.size() ); break;      // random gaps
-    default: x[ i ] = g(); break;                          // 64 bits
+    case 0:
+     x[ i ] = 7 + 13 * i;
+     break;  // a line
+    case 1:
+     x[ i ] = 5 * i + g() % 9;
+     break;  // noisy
+    case 2:
+     x[ i ] = ( i / 4 ) * 3;
+     break;  // runs
+    case 3:
+     x[ i ] = ( i / 300 ) * 1000000 + g() % 1000;
+     break;
+    case 4:
+     x[ i ] = g() % ( 128 * x.size() );
+     break;  // random gaps
+    default:
+     x[ i ] = g();
+     break;  // 64 bits
     }
   std::sort( x.begin() , x.end() );
   cases.push_back( x );
@@ -1107,19 +1182,19 @@ ADS_TEST( "la-vector" )
   check( x , LAVector( x , 63 ) );
   check( x , LAVector::tuned( x ) );
   }
- {                                          // a line: one segment
+ {  // a line: one segment
   const LAVector v( cases[ 5 ] , 2 );
   CHECK( v.segments() == 1 );
   CHECK( v.correctionsInBits() <= v.size() );
   }
  for( const std::size_t k : { std::size_t( 5 ) , std::size_t( 8 ) } ) {
-  const LAVector v = LAVector::tuned( cases[ k ] );   // a line, clusters
+  const LAVector v = LAVector::tuned( cases[ k ] );  // a line, clusters
   CHECK( v.sizeInBits() < EliasFano( cases[ k ] ).sizeInBits() );
   }
  CHECK_THROWS( LAVector( std::vector< U >{ 3 , 1 } ) , contract_violation );
  CHECK_THROWS( LAVector( cases[ 5 ] , 64 ) , contract_violation );
  CHECK_THROWS( ( void )LAVector( cases[ 5 ] ).access( 3000 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
