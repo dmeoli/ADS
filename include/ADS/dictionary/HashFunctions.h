@@ -104,11 +104,11 @@ std::uint64_t int_bin( std::string_view k );
 /// In pseudocode (section 7.1):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{extraction}( k , p , s ) \cr
-/// 2 & \quad b \gets 0 \cr
-/// 3 & \quad \textbf{for}\ j \gets 0\ \textbf{to}\ p - 1\ \textbf{do}\ b
-///     \gets 2 b + \mathrm{bin}( k )[ s + j ] \cr
-/// 4 & \quad \textbf{return}\ b
+/// 1 & \textbf{function}\ \mathrm{extraction}( k , p , s )\quad
+///     \triangleright\ \text{the } p \text{ bits of } k \text{ from the } s
+///     \text{-th} \cr
+/// 2 & \quad \textbf{return}\ \text{the number written in binary by }
+///     \mathrm{bin}( k )[ s .. s + p - 1 ] \text{, the first bit the highest}
 /// \end{array}}
 /// \f]
 /// \pre \f$ 1 \le p \le 63 \f$
@@ -123,10 +123,9 @@ std::uint64_t hash_extraction( std::string_view k , int p , std::size_t s );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{xor}( k , p ) \cr
-/// 2 & \quad b \gets 0;\ s \gets 0 \cr
-/// 3 & \quad \textbf{while}\ s < \ell\ \textbf{do}\ b \gets b \oplus
-///     \mathrm{extraction}( k , p , s );\ s \gets s + p \cr
-/// 4 & \quad \textbf{return}\ b
+/// 2 & \quad \textbf{return}\ \bigoplus_{s = 0 , p , 2 p , \ldots ,\ s <
+///     \ell} \mathrm{extraction}( k , p , s )\quad \triangleright
+///     \ \text{the blocks of } p \text{ bits}
 /// \end{array}}
 /// \f]
 /// \pre \f$ 1 \le p \le 63 \f$
@@ -144,11 +143,13 @@ std::uint64_t hash_xor( std::string_view k , int p );
 /// \beta + c \pmod{m} \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{division}( k , m , \beta ,
-///     \mathit{seed} ) \cr
+/// 1 & \textbf{function}\ \mathrm{division}( k , m , \beta , \mathit{seed}
+///     )\quad \triangleright\ k = c_1 c_2 \cdots c_\ell \text{ in base }
+///     \beta \cr
 /// 2 & \quad b \gets \mathit{seed} \bmod m \cr
-/// 3 & \quad \textbf{for}\ j \gets 1\ \textbf{to}\ \ell\ \textbf{do}\ b
-///     \gets ( b \beta + c_j ) \bmod m \cr
+/// 3 & \quad \textbf{foreach}\ \text{digit } c_j \text{ of } k
+///     \text{, from } c_1\ \textbf{do}\ b \gets ( \beta b + c_j ) \bmod
+///     m\quad \triangleright\ \text{Horner, reduced at each step} \cr
 /// 4 & \quad \textbf{return}\ b
 /// \end{array}}
 /// \f]
@@ -198,7 +199,8 @@ std::uint64_t hash_fibonacci( std::uint64_t i , int p );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{midsquare}( i , p ) \cr
-/// 2 & \quad q \gets i^2 \bmod 2^{64} \cr
+/// 2 & \quad q \gets i^2 \bmod 2^{64}\quad \triangleright\ \text{the } p
+///     \text{ bits about the middle of } q \cr
 /// 3 & \quad \textbf{return}\ \lfloor q / 2^{32 - \lfloor p / 2 \rfloor}
 ///     \rfloor \bmod 2^p
 /// \end{array}}

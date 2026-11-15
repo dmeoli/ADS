@@ -139,12 +139,12 @@ class DisjointSets
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{merge}( x , y ) \cr
- /// 2 & \quad x \gets \mathrm{find}( x );\ y \gets \mathrm{find}( y ) \cr
- /// 3 & \quad \textbf{if}\ x = y\ \textbf{then return false} \cr
- /// 4 & \quad \textbf{if}\ p[ x ] < p[ y ]\ \textbf{then}\ \text{swap } x
- ///     \text{ and } y\quad \triangleright\ x \text{ the smaller} \cr
- /// 5 & \quad p[ y ] \gets p[ y ] + p[ x ];\ p[ x ] \gets y \cr
- /// 6 & \quad \textbf{return true}
+ /// 2 & \quad x \gets \mathrm{find}( x );\ y \gets \mathrm{find}( y );
+ ///     \ \textbf{if}\ x = y\ \textbf{then return false} \cr
+ /// 3 & \quad \textbf{if}\ p[ y ] > p[ x ]\ \textbf{then}\ x \leftrightarrow
+ ///     y\quad \triangleright\ \text{now } y \text{ is the larger tree} \cr
+ /// 4 & \quad p[ y ] \gets p[ y ] + p[ x ];\ p[ x ] \gets y;
+ ///     \ \textbf{return true}
  /// \end{array}}
  /// \f]
  /// and with `RANK` a root holds \f$ -1 - \mathit{rank}[ r ] \f$, the rank

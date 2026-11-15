@@ -96,11 +96,14 @@ class LinkedHashSet
  /// \f$ D \f$ the table of the positions:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{procedure}\ \mathrm{insert}( x ) \cr
- /// 2 & \quad \textbf{if}\ D.\mathrm{lookup}( x ) = \textbf{nil}
- ///     \ \textbf{then} \cr
- /// 3 & \qquad p \gets L.\mathrm{insert}( L.\mathrm{next}( L.\mathrm{tail}() )
- ///     , x );\ D.\mathrm{insert}( x , p )
+ /// 1 & \textbf{procedure}\ \mathrm{insert}( x )\quad \triangleright\ D
+ ///     \text{ maps an item to its cell in } L \cr
+ /// 2 & \quad \textbf{if}\ D.\mathrm{lookup}( x ) \ne \textbf{nil}
+ ///     \ \textbf{then return} \cr
+ /// 3 & \quad p \gets L.\mathrm{insert}( L.\mathrm{next}( L.\mathrm{tail}()
+ ///     ) , x )\quad \triangleright\ \text{last, in the order of insertion}
+ ///     \cr
+ /// 4 & \quad D.\mathrm{insert}( x , p )
  /// \end{array}}
  /// \f]
  /// \post \f$ x \f$ is in the set
@@ -112,9 +115,10 @@ class LinkedHashSet
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{remove}( x ) \cr
- /// 2 & \quad p \gets D.\mathrm{lookup}( x ) \cr
- /// 3 & \quad \textbf{if}\ p \ne \textbf{nil}\ \textbf{then}
- ///     \ L.\mathrm{remove}( p );\ D.\mathrm{remove}( x )
+ /// 2 & \quad p \gets D.\mathrm{lookup}( x );\ \textbf{if}\ p =
+ ///     \textbf{nil}\ \textbf{then return} \cr
+ /// 3 & \quad D.\mathrm{remove}( x );\ L.\mathrm{remove}( p )\quad
+ ///     \triangleright\ O( 1 ) \text{, the cell is known}
  /// \end{array}}
  /// \f]
  /// \post \f$ x \f$ is not in the set

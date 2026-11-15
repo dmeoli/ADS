@@ -78,13 +78,14 @@ class ListMFSet
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{merge}( x , y ) \cr
- /// 2 & \quad a \gets \mathit{head}[ x ];\ b \gets \mathit{head}[ y ] \cr
- /// 3 & \quad \textbf{if}\ a = b\ \textbf{then return false} \cr
- /// 4 & \quad \textbf{if}\ |L[ a ]| < |L[ b ]|\ \textbf{then}\ \text{swap }
- ///     a \text{ and } b \cr
- /// 5 & \quad \textbf{foreach}\ z \in L[ b ]\ \textbf{do}\ \mathit{head}[ z ]
- ///     \gets a;\ \text{append } z \text{ to } L[ a ] \cr
- /// 6 & \quad L[ b ] \gets \emptyset;\ \textbf{return true}
+ /// 2 & \quad a \gets \mathit{head}[ x ];\ b \gets \mathit{head}[ y ];
+ ///     \ \textbf{if}\ a = b\ \textbf{then return false} \cr
+ /// 3 & \quad \textbf{if}\ |L[ a ]| < |L[ b ]|\ \textbf{then}\ a
+ ///     \leftrightarrow b\quad \triangleright\ \text{the shorter list is }
+ ///     L[ b ] \cr
+ /// 4 & \quad \textbf{foreach}\ z \in L[ b ]\ \textbf{do}\ \text{append } z
+ ///     \text{ to } L[ a ];\ \mathit{head}[ z ] \gets a \cr
+ /// 5 & \quad \text{empty } L[ b ];\ \textbf{return true}
  /// \end{array}}
  /// \f]
  /// \pre \f$ x , y \in [ 0 , n ) \f$

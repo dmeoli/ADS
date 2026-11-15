@@ -130,12 +130,13 @@ class MFSet
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{find}( x ) \cr
- /// 2 & \quad r \gets x \cr
- /// 3 & \quad \textbf{while}\ p[ r ] \ne r\ \textbf{do}\ r \gets p[ r ] \cr
- /// 4 & \quad \textbf{if}\ \mathit{compress}\ \textbf{then} \cr
- /// 5 & \qquad \textbf{while}\ p[ x ] \ne r\ \textbf{do}\ t \gets p[ x ];
- ///     \ p[ x ] \gets r;\ x \gets t \cr
- /// 6 & \quad \textbf{return}\ r
+ /// 2 & \quad r \gets \text{the root above } x \text{, by following } p
+ ///     \text{ until } p[ r ] = r \cr
+ /// 3 & \quad \textbf{if}\ \mathit{compress}\ \textbf{then}\quad
+ ///     \triangleright\ \text{a second pass, which hangs the path on } r \cr
+ /// 4 & \qquad \textbf{while}\ x \ne r\ \textbf{do}\ ( x , p[ x ] ) \gets (
+ ///     p[ x ] , r ) \cr
+ /// 5 & \quad \textbf{return}\ r
  /// \end{array}}
  /// \f]
  /// \pre \f$ x \in [ 0 , n ) \f$
@@ -149,15 +150,17 @@ class MFSet
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{merge}( x , y ) \cr
- /// 2 & \quad r_x \gets \mathrm{find}( x );\ r_y \gets \mathrm{find}( y ) \cr
- /// 3 & \quad \textbf{if}\ r_x = r_y\ \textbf{then return false} \cr
- /// 4 & \quad \textbf{if}\ \mathit{rank}[ r_x ] > \mathit{rank}[ r_y ]
+ /// 2 & \quad r_x \gets \mathrm{find}( x );\ r_y \gets \mathrm{find}( y );
+ ///     \ \textbf{if}\ r_x = r_y\ \textbf{then return false} \cr
+ /// 3 & \quad \textbf{if}\ \mathit{rank}[ r_x ] < \mathit{rank}[ r_y ]
+ ///     \ \textbf{then}\ p[ r_x ] \gets r_y\quad \triangleright
+ ///     \ \text{the lower tree goes under} \cr
+ /// 4 & \quad \textbf{else if}\ \mathit{rank}[ r_y ] < \mathit{rank}[ r_x ]
  ///     \ \textbf{then}\ p[ r_y ] \gets r_x \cr
- /// 5 & \quad \textbf{else if}\ \mathit{rank}[ r_y ] > \mathit{rank}[ r_x
- ///     ]\ \textbf{then}\ p[ r_x ] \gets r_y \cr
- /// 6 & \quad \textbf{else}\ p[ r_x ] \gets r_y;\ \mathit{rank}[ r_y ]
- ///     \gets \mathit{rank}[ r_y ] + 1 \cr
- /// 7 & \quad \textbf{return true}
+ /// 5 & \quad \textbf{else}\ p[ r_x ] \gets r_y;\ \mathit{rank}[ r_y ] \gets
+ ///     \mathit{rank}[ r_y ] + 1\quad \triangleright
+ ///     \ \text{a tie: one level more} \cr
+ /// 6 & \quad \textbf{return true}
  /// \end{array}}
  /// \f]
  /// and with the union by size the root of the smaller tree goes under the
@@ -219,8 +222,9 @@ class MFSet
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{components}( G ) \cr
-/// 2 & \quad M \gets \mathrm{Mfset}( G.\mathrm{bound}() ) \cr
-/// 3 & \quad \textbf{foreach}\ u \in V ,\ v \in G.\mathrm{adj}( u )
+/// 2 & \quad M \gets \mathrm{Mfset}( G.\mathrm{bound}() )\quad
+///     \triangleright\ \text{each node alone} \cr
+/// 3 & \quad \textbf{foreach}\ \text{edge } ( u , v ) \text{ of } G
 ///     \ \textbf{do}\ M.\mathrm{merge}( u , v ) \cr
 /// 4 & \quad \textbf{return}\ M
 /// \end{array}}

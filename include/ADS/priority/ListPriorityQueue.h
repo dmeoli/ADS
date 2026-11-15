@@ -86,10 +86,9 @@ class ListPriorityQueue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{min}() \cr
- /// 2 & \quad \textbf{if}\ \mathit{Sorted}\ \textbf{then return}
- ///     \ \text{the item of the head of } L \cr
- /// 3 & \quad \textbf{return}\ \text{the item of the first cell of } L
- ///     \text{ of least } p \text{, by a scan}
+ /// 2 & \quad q \gets \text{the head of } L \text{ if } \mathit{Sorted}
+ ///     \text{, else the first cell of least priority, by a scan} \cr
+ /// 3 & \quad \textbf{return}\ \text{the item of } q
  /// \end{array}}
  /// \f]
  /// \pre the queue is not empty
@@ -102,12 +101,10 @@ class ListPriorityQueue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{deleteMin}() \cr
- /// 2 & \quad q \gets \text{the head of } L \cr
- /// 3 & \quad \textbf{if not}\ \mathit{Sorted}\ \textbf{then}\ q \gets
- ///     \text{the first cell of } L \text{ of least } p \cr
- /// 4 & \quad x \gets \text{the item of } q;\ \text{remove } q
- ///     \text{ from } L;\ n \gets n - 1 \cr
- /// 5 & \quad \textbf{return}\ x
+ /// 2 & \quad q \gets \text{the cell that } \mathrm{min}() \text{ reads};\ x
+ ///     \gets \text{the item of } q \cr
+ /// 3 & \quad \text{remove } q \text{ from } L;\ n \gets n - 1;
+ ///     \ \textbf{return}\ x
  /// \end{array}}
  /// \f]
  /// \pre the queue is not empty
@@ -121,14 +118,12 @@ class ListPriorityQueue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{insert}( x , p ) \cr
- /// 2 & \quad n \gets n + 1 \cr
- /// 3 & \quad \textbf{if}\ \mathit{Sorted}\ \textbf{then} \cr
- /// 4 & \qquad q \gets \text{the first cell of } L \text{ of priority}
- ///     \text{ larger than } p \text{, the end if none} \cr
- /// 5 & \qquad \textbf{return}\ \text{the cell of } ( p , x )
- ///     \text{ inserted before } q \cr
- /// 6 & \quad \textbf{return}\ \text{the cell of } ( p , x )
- ///     \text{ inserted at the head of } L
+ /// 2 & \quad q \gets \text{the head of } L \cr
+ /// 3 & \quad \textbf{if}\ \mathit{Sorted}\ \textbf{then}\ q \gets
+ ///     \text{the first cell of priority above } p \text{, or the end of }
+ ///     L\quad \triangleright\ \text{stable} \cr
+ /// 4 & \quad n \gets n + 1;\ \textbf{return}\ \text{the cell of } ( p , x )
+ ///     \text{ inserted before } q
  /// \end{array}}
  /// \f]
  /// \post one item more
@@ -142,12 +137,12 @@ class ListPriorityQueue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{decrease}( y , p ) \cr
- /// 2 & \quad \textbf{if}\ \mathit{Sorted}\ \textbf{then} \cr
- /// 3 & \qquad x \gets \text{the item of } y;\ \text{remove } y
- ///     \text{ from } L \cr
- /// 4 & \qquad y \gets \mathrm{insert}( x , p )\quad \triangleright
- ///     \ \text{without counting it again} \cr
- /// 5 & \quad \textbf{else}\ \text{the priority of } y \gets p
+ /// 2 & \quad \textbf{if}\ \textbf{not}\ \mathit{Sorted}\ \textbf{then}
+ ///     \ \text{set the priority of } y \text{ to } p;\ \textbf{return} \cr
+ /// 3 & \quad x \gets \text{the item of } y;\ \text{remove } y \text{ from }
+ ///     L \cr
+ /// 4 & \quad y \gets \mathrm{insert}( x , p )\quad \triangleright
+ ///     \ \text{in its new place, } n \text{ unchanged}
  /// \end{array}}
  /// \f]
  /// \pre \f$ y \f$ is an item of this queue and \f$ p \f$ is not larger

@@ -152,11 +152,10 @@ class BoolSet
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{min}() \cr
- /// 2 & \quad \textbf{for}\ k \gets 0\ \textbf{to}\ \lceil N / 64 \rceil - 1
- ///     \ \textbf{do} \cr
- /// 3 & \qquad \textbf{if}\ W[ k ] \ne 0\ \textbf{then return}\ 64 k +
- ///     \mathrm{ctz}( W[ k ] ) \cr
- /// 4 & \quad \textbf{return nil}
+ /// 2 & \quad k \gets \text{the first word of } W \text{ that is not zero};
+ ///     \ \textbf{if}\ \text{none}\ \textbf{then return nil} \cr
+ /// 3 & \quad \textbf{return}\ 64 k + \mathrm{ctz}( W[ k ] )\quad
+ ///     \triangleright\ \text{its lowest bit set}
  /// \end{array}}
  /// \f]
  [[nodiscard]] std::optional< long > min( void ) const;
@@ -168,11 +167,10 @@ class BoolSet
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{max}() \cr
- /// 2 & \quad \textbf{for}\ k \gets \lceil N / 64 \rceil - 1\ \textbf{downto}
- ///     0\ \textbf{do} \cr
- /// 3 & \qquad \textbf{if}\ W[ k ] \ne 0\ \textbf{then return}\ 64 k + 63 -
- ///     \mathrm{clz}( W[ k ] ) \cr
- /// 4 & \quad \textbf{return nil}
+ /// 2 & \quad k \gets \text{the last word of } W \text{ that is not zero};
+ ///     \ \textbf{if}\ \text{none}\ \textbf{then return nil} \cr
+ /// 3 & \quad \textbf{return}\ 64 k + 63 - \mathrm{clz}( W[ k ] )\quad
+ ///     \triangleright\ \text{its highest bit set}
  /// \end{array}}
  /// \f]
  [[nodiscard]] std::optional< long > max( void ) const;
@@ -184,11 +182,11 @@ class BoolSet
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{forEach}( f ) \cr
- /// 2 & \quad \textbf{for}\ k \gets 0\ \textbf{to}\ \lceil N / 64 \rceil - 1
- ///     \ \textbf{do} \cr
- /// 3 & \qquad w \gets W[ k ] \cr
- /// 4 & \qquad \textbf{while}\ w \ne 0\ \textbf{do}\ f( 64 k +
- ///     \mathrm{ctz}( w ) );\ w \gets w \wedge ( w - 1 )
+ /// 2 & \quad \textbf{foreach}\ \text{word } w = W[ k ]
+ ///     \text{, by increasing } k\ \textbf{do} \cr
+ /// 3 & \qquad \textbf{while}\ w \ne 0\ \textbf{do}\ f( 64 k + \mathrm{ctz}(
+ ///     w ) );\ w \gets w \wedge ( w - 1 )\quad \triangleright
+ ///     \ \text{the lowest bit cleared}
  /// \end{array}}
  /// \f]
  template< class F >
@@ -273,10 +271,10 @@ class BoolSet
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{setUnion}( A , B ) \cr
 /// 2 & \quad C \gets \text{a set of dimension } \max( \mathrm{dim}( A ) ,
-///     \mathrm{dim}( B ) ) \cr
-/// 3 & \quad \textbf{foreach}\ \text{word } k \text{ of } C\ \textbf{do}
-///     \ C.W[ k ] \gets A.W[ k ] \vee B.W[ k ] \cr
-/// 4 & \quad \textbf{return}\ C
+///     \mathrm{dim}( B ) )\quad \triangleright
+///     \ \text{a missing word is zero} \cr
+/// 3 & \quad C.W[ k ] \gets A.W[ k ] \vee B.W[ k ] \text{ for each word } k
+///     \text{ of } C;\ \textbf{return}\ C
 /// \end{array}}
 /// \f]
 inline BoolSet setUnion( const BoolSet & A , const BoolSet & B );
@@ -291,9 +289,8 @@ inline BoolSet setUnion( const BoolSet & A , const BoolSet & B );
 /// 1 & \textbf{function}\ \mathrm{setIntersection}( A , B ) \cr
 /// 2 & \quad C \gets \text{a set of dimension } \min( \mathrm{dim}( A ) ,
 ///     \mathrm{dim}( B ) ) \cr
-/// 3 & \quad \textbf{foreach}\ \text{word } k \text{ of } C\ \textbf{do}
-///     \ C.W[ k ] \gets A.W[ k ] \wedge B.W[ k ] \cr
-/// 4 & \quad \textbf{return}\ C
+/// 3 & \quad C.W[ k ] \gets A.W[ k ] \wedge B.W[ k ] \text{ for each word }
+///     k \text{ of } C;\ \textbf{return}\ C
 /// \end{array}}
 /// \f]
 inline BoolSet setIntersection( const BoolSet & A , const BoolSet & B );
@@ -306,9 +303,8 @@ inline BoolSet setIntersection( const BoolSet & A , const BoolSet & B );
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{setDifference}( A , B ) \cr
 /// 2 & \quad C \gets \text{a set of dimension } \mathrm{dim}( A ) \cr
-/// 3 & \quad \textbf{foreach}\ \text{word } k \text{ of } C\ \textbf{do}
-///     \ C.W[ k ] \gets A.W[ k ] \wedge \lnot B.W[ k ] \cr
-/// 4 & \quad \textbf{return}\ C
+/// 3 & \quad C.W[ k ] \gets A.W[ k ] \wedge \lnot B.W[ k ]
+///     \text{ for each word } k \text{ of } C;\ \textbf{return}\ C
 /// \end{array}}
 /// \f]
 inline BoolSet setDifference( const BoolSet & A , const BoolSet & B );
@@ -324,9 +320,8 @@ inline BoolSet setDifference( const BoolSet & A , const BoolSet & B );
 /// 1 & \textbf{function}\ \mathrm{setSymmetricDifference}( A , B ) \cr
 /// 2 & \quad C \gets \text{a set of dimension } \max( \mathrm{dim}( A ) ,
 ///     \mathrm{dim}( B ) ) \cr
-/// 3 & \quad \textbf{foreach}\ \text{word } k \text{ of } C\ \textbf{do}
-///     \ C.W[ k ] \gets A.W[ k ] \oplus B.W[ k ] \cr
-/// 4 & \quad \textbf{return}\ C
+/// 3 & \quad C.W[ k ] \gets A.W[ k ] \oplus B.W[ k ] \text{ for each word }
+///     k \text{ of } C;\ \textbf{return}\ C
 /// \end{array}}
 /// \f]
 inline BoolSet setSymmetricDifference( const BoolSet & A , const BoolSet & B );

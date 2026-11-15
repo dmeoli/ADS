@@ -286,23 +286,24 @@ class OpenHashTable
  /// inspections, and for an insertion remembers the first deleted place:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{scan}( k , \mathit{insert} ) \cr
- /// 2 & \quad d \gets \textbf{nil};\ i \gets 0;\ j \gets H( k , 0 ) \cr
- /// 3 & \quad \textbf{while}\ i < m\ \textbf{and}\ T[ j ] \ne
- ///     \text{nil}\ \textbf{and not}\ ( T[ j ] \text{ full with key } k )
- ///     \ \textbf{do} \cr
- /// 4 & \qquad \textbf{if}\ T[ j ] \text{ is deleted }\ \textbf{and}\ d =
- ///     \textbf{nil}\ \textbf{then}\ d \gets j \cr
+ /// 1 & \textbf{function}\ \mathrm{scan}( k , \mathit{insert} )\quad
+ ///     \triangleright\ \text{the probes } H( k , 0 ) , H( k , 1 ) , \ldots
+ ///     \cr
+ /// 2 & \quad i \gets 0;\ j \gets H( k , 0 );\ d \gets \textbf{nil}\quad
+ ///     \triangleright\ d \text{ the first deleted place met} \cr
+ /// 3 & \quad \textbf{while}\ T[ j ] \text{ does not hold } k\ \textbf{and}
+ ///     \ T[ j ] \text{ is not nil}\ \textbf{and}\ i < m\ \textbf{do} \cr
+ /// 4 & \qquad \textbf{if}\ d = \textbf{nil}\ \textbf{and}\ T[ j ]
+ ///     \text{ is deleted}\ \textbf{then}\ d \gets j \cr
  /// 5 & \qquad i \gets i + 1;\ j \gets H( k , i ) \cr
- /// 6 & \quad \textbf{if}\ \mathit{insert} \ \textbf{and not}\ ( T[ j ]
- ///     \text{ } \text{full with key } k )\ \textbf{and}\ d \ne \textbf{nil}
- ///     \ \textbf{then return}\ d \cr
+ /// 6 & \quad \textbf{if}\ \mathit{insert}\ \textbf{and}\ d \ne
+ ///     \textbf{nil}\ \textbf{and}\ T[ j ] \text{ does not hold } k
+ ///     \ \textbf{then return}\ d\quad \triangleright\ \text{reuse it} \cr
  /// 7 & \quad \textbf{return}\ j \cr
  /// 8 & \textbf{function}\ \mathrm{lookup}( k ) \cr
  /// 9 & \quad j \gets \mathrm{scan}( k , \textbf{false} ) \cr
- /// 10 & \quad \textbf{if}\ T[ j ] \text{ is full with key } k
- ///     \ \textbf{then return}\ T[ j ].\mathit{value}\ \textbf{else return
- ///     nil}
+ /// 10 & \quad \textbf{return}\ T[ j ].\mathit{value} \text{ if } T[ j ]
+ ///     \text{ holds } k \text{, else } \textbf{nil}
  /// \end{array}}
  /// \f]
  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
@@ -316,14 +317,15 @@ class OpenHashTable
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{insert}( k , v ) \cr
  /// 2 & \quad j \gets \mathrm{scan}( k , \textbf{true} ) \cr
- /// 3 & \quad \textbf{if}\ T[ j ] \text{ is full with key } k\ \textbf{then}
- ///     \ T[ j ].\mathit{value} \gets v;\ \textbf{return} \cr
- /// 4 & \quad \textbf{if}\ T[ j ] \text{ is full}\ \textbf{then}
- ///     \ \text{throw an overflow} \cr
- /// 5 & \quad T[ j ] \gets ( k , v ) \text{, full};\ n \gets n + 1 \cr
- /// 6 & \quad \textbf{if}\ \text{the full and deleted places exceed } m / 2
- ///     \ \textbf{then}\ \text{rebuild on } \mathrm{resized}( m )
- ///     \text{ places}
+ /// 3 & \quad \textbf{if}\ T[ j ] \text{ is full with a key other than } k
+ ///     \ \textbf{then}\ \text{throw an overflow}\quad \triangleright\ m
+ ///     \text{ probes, no place} \cr
+ /// 4 & \quad \textbf{if}\ T[ j ] \text{ is not full}\ \textbf{then}\ n
+ ///     \gets n + 1 \cr
+ /// 5 & \quad T[ j ] \gets ( k , v ) \text{, full} \cr
+ /// 6 & \quad \textbf{if}\ m < 2 ( \text{the full places} +
+ ///     \text{the deleted places} )\ \textbf{then}\ \text{rebuild on }
+ ///     \mathrm{resized}( m ) \text{ places}
  /// \end{array}}
  /// \f]
  /// \post \f$ k \f$ is in the table

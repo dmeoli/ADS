@@ -95,13 +95,11 @@ class SortedListSet
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{insert}( x ) \cr
- /// 2 & \quad p \gets L.\mathrm{head}() \cr
- /// 3 & \quad \textbf{while not}\ L.\mathrm{finished}( p )\ \textbf{and}
- ///     \ L.\mathrm{read}( p ) < x\ \textbf{do}\ p \gets L.\mathrm{next}( p )
- ///     \cr
- /// 4 & \quad \textbf{if}\ L.\mathrm{finished}( p )\ \textbf{or}
- ///     \ L.\mathrm{read}( p ) \ne x\ \textbf{then}\ L.\mathrm{insert}( p , x
- ///     )
+ /// 2 & \quad p \gets \text{the first position of } L
+ ///     \text{ that is finished or holds an item } \ge x \cr
+ /// 3 & \quad \textbf{if}\ L.\mathrm{finished}( p )\ \textbf{or}\ x <
+ ///     L.\mathrm{read}( p )\ \textbf{then}\ L.\mathrm{insert}( p , x )\quad
+ ///     \triangleright\ \text{before } p
  /// \end{array}}
  /// \f]
  /// \post \f$ x \f$ is in the set
@@ -118,10 +116,11 @@ class SortedListSet
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{remove}( x ) \cr
- /// 2 & \quad p \gets \text{the first position of } L \text{ not smaller }
- ///     \text{than } x \cr
- /// 3 & \quad \textbf{if not}\ L.\mathrm{finished}( p )\ \textbf{and}
- ///     \ L.\mathrm{read}( p ) = x\ \textbf{then}\ L.\mathrm{remove}( p )
+ /// 2 & \quad p \gets \text{the first position of } L
+ ///     \text{ that is finished or holds an item } \ge x \cr
+ /// 3 & \quad \textbf{if}\ \textbf{not}\ L.\mathrm{finished}( p )
+ ///     \ \textbf{and}\ L.\mathrm{read}( p ) = x\ \textbf{then}
+ ///     \ L.\mathrm{remove}( p )
  /// \end{array}}
  /// \f]
  /// \post \f$ x \f$ is not in the set
@@ -184,30 +183,32 @@ class SortedListSet
 /// In pseudocode (section 8.3), each comparison passing at least one item:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{merge}( A , B , a , b , \mathit{both} ) \cr
-/// 2 & \quad C \gets \text{an empty set};\ p \gets A.\mathrm{head}();\ q
-///     \gets B.\mathrm{head}() \cr
+/// 1 & \textbf{function}\ \mathrm{merge}( A , B , a , b , \mathit{both}
+///     )\quad \triangleright\ \text{which items to keep} \cr
+/// 2 & \quad C \gets \emptyset;\ p \gets A.\mathrm{head}();\ q \gets
+///     B.\mathrm{head}() \cr
 /// 3 & \quad \textbf{while not}\ A.\mathrm{finished}( p )\ \textbf{and not}
 ///     \ B.\mathrm{finished}( q )\ \textbf{do} \cr
 /// 4 & \qquad x \gets A.\mathrm{read}( p );\ y \gets B.\mathrm{read}( q ) \cr
-/// 5 & \qquad \textbf{if}\ x = y\ \textbf{then} \cr
-/// 6 & \qquad\quad \textbf{if}\ \mathit{both}\ \textbf{then}
-///     \ C.\mathrm{insertLast}( x ) \cr
-/// 7 & \qquad\quad p \gets A.\mathrm{next}( p );\ q \gets B.\mathrm{next}( q )
+/// 5 & \qquad \textbf{if}\ x < y\ \textbf{then}\quad \triangleright\ x
+///     \text{ is only in } A \cr
+/// 6 & \qquad\quad \textbf{if}\ a\ \textbf{then}\ C.\mathrm{insertLast}( x )
 ///     \cr
-/// 8 & \qquad \textbf{else if}\ x < y\ \textbf{then} \cr
-/// 9 & \qquad\quad \textbf{if}\ a\ \textbf{then}\ C.\mathrm{insertLast}( x )
+/// 7 & \qquad\quad p \gets A.\mathrm{next}( p ) \cr
+/// 8 & \qquad \textbf{else if}\ y < x\ \textbf{then}\quad \triangleright\ y
+///     \text{ is only in } B \cr
+/// 9 & \qquad\quad \textbf{if}\ b\ \textbf{then}\ C.\mathrm{insertLast}( y )
 ///     \cr
-/// 10 & \qquad\quad p \gets A.\mathrm{next}( p ) \cr
+/// 10 & \qquad\quad q \gets B.\mathrm{next}( q ) \cr
 /// 11 & \qquad \textbf{else} \cr
-/// 12 & \qquad\quad \textbf{if}\ b\ \textbf{then}\ C.\mathrm{insertLast}( y )
-///     \cr
-/// 13 & \qquad\quad q \gets B.\mathrm{next}( q ) \cr
-/// 14 & \quad \textbf{if}\ a\ \textbf{then}\ \text{append to } C \text{ the }
-///     \text{items of } A \text{ from } p \cr
-/// 15 & \quad \textbf{if}\ b\ \textbf{then}\ \text{append to } C \text{ the }
-///     \text{items of } B \text{ from } q \cr
-/// 16 & \quad \textbf{return}\ C
+/// 12 & \qquad\quad \textbf{if}\ \mathit{both}\ \textbf{then}
+///     \ C.\mathrm{insertLast}( x ) \cr
+/// 13 & \qquad\quad p \gets A.\mathrm{next}( p );\ q \gets B.\mathrm{next}(
+///     q ) \cr
+/// 14 & \quad \text{append to } C \text{ the rest of } A \text{ from } p
+///     \text{ if } a \text{, and the rest of } B \text{ from } q \text{ if }
+///     b \cr
+/// 15 & \quad \textbf{return}\ C
 /// \end{array}}
 /// \f]
 template< class T >

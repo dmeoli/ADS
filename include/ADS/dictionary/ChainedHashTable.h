@@ -133,13 +133,13 @@ class ChainedHashTable
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{lookup}( k ) \cr
- /// 2 & \quad L \gets T[ H( k ) ] \cr
- /// 3 & \quad \textbf{foreach}\ ( k' , v ) \in L\ \textbf{do} \cr
- /// 4 & \qquad \textbf{if}\ k' = k\ \textbf{then} \cr
- /// 5 & \qquad\quad \textbf{if}\ \text{the list moves to the front }
- ///     \ \textbf{then}\ \text{move } ( k , v ) \text{ to the head of } L \cr
- /// 6 & \qquad\quad \textbf{return}\ v \cr
- /// 7 & \quad \textbf{return nil}
+ /// 2 & \quad L \gets T[ H( k ) ];\ c \gets \text{the cell of } L
+ ///     \text{ with key } k \text{, by a scan}\quad \triangleright
+ ///     \ \text{only this list} \cr
+ /// 3 & \quad \textbf{if}\ c = \textbf{nil}\ \textbf{then return nil} \cr
+ /// 4 & \quad \textbf{if}\ \text{the lists move to the front}
+ ///     \ \textbf{then}\ \text{move } c \text{ to the head of } L \cr
+ /// 5 & \quad \textbf{return}\ \text{the value of } c
  /// \end{array}}
  /// \f]
  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
@@ -151,14 +151,16 @@ class ChainedHashTable
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{insert}( k , v ) \cr
- /// 2 & \quad L \gets T[ H( k ) ] \cr
- /// 3 & \quad \textbf{if}\ k \text{ is in } L\ \textbf{then}\ \text{give }
- ///     \text{it the value } v;\ \textbf{return} \cr
- /// 4 & \quad \text{put } ( k , v ) \text{ at the head of } L \text{, or in}
- ///     \text{ order if } L \text{ is sorted} \cr
- /// 5 & \quad n \gets n + 1 \cr
- /// 6 & \quad \textbf{if}\ n > g m\ \textbf{then}\ \text{move every pair }
- ///     \text{to a table of } \mathrm{resized}( m ) \text{ lists}
+ /// 2 & \quad L \gets T[ H( k ) ];\ c \gets \text{the cell of } L
+ ///     \text{ with key } k \text{, by a scan} \cr
+ /// 3 & \quad \textbf{if}\ c \ne \textbf{nil}\ \textbf{then}
+ ///     \ \text{set the value of } c \text{ to } v;\ \textbf{return} \cr
+ /// 4 & \quad \text{insert } ( k , v ) \text{ in } L
+ ///     \text{, in its order if the lists are sorted, else at the head};\ n
+ ///     \gets n + 1 \cr
+ /// 5 & \quad \textbf{if}\ g m < n\ \textbf{then}
+ ///     \ \text{rehash all the pairs into } \mathrm{resized}( m )
+ ///     \text{ new lists}\quad \triangleright\ \text{the load above } g
  /// \end{array}}
  /// \f]
  /// \post \f$ k \f$ is in the table

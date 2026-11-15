@@ -76,10 +76,10 @@ concept IterableSet =
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{setUnion}( A , B ) \cr
-/// 2 & \quad C \gets \text{a copy of } A \cr
-/// 3 & \quad \textbf{foreach}\ x \in B\ \textbf{do}\ C.\mathrm{insert}( x )
-///     \cr
-/// 4 & \quad \textbf{return}\ C
+/// 2 & \quad C \gets A;\ \textbf{foreach}\ x \in B\ \textbf{do}
+///     \ C.\mathrm{insert}( x )\quad \triangleright
+///     \ \text{a copy is ignored} \cr
+/// 3 & \quad \textbf{return}\ C
 /// \end{array}}
 /// \f]
 template< IterableSet S >
@@ -92,12 +92,12 @@ S setUnion( const S & A , const S & B );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{setIntersection}( A , B ) \cr
-/// 2 & \quad ( X , Y ) \gets ( A , B )\ \text{if } | A | \le | B | \text{, }
-///     ( B , A ) \text{ otherwise} \cr
-/// 3 & \quad C \gets \text{a copy of } X \cr
-/// 4 & \quad \textbf{foreach}\ x \in X\ \textbf{with not}
-///     \ Y.\mathrm{contains}( x )\ \textbf{do}\ C.\mathrm{remove}( x ) \cr
-/// 5 & \quad \textbf{return}\ C
+/// 2 & \quad X \gets \text{the smaller of } A \text{ and } B \text{ (} A
+///     \text{ on a tie)};\ Y \gets \text{the other} \cr
+/// 3 & \quad C \gets X;\ \textbf{foreach}\ x \in X\ \textbf{do}
+///     \ \textbf{if}\ \textbf{not}\ Y.\mathrm{contains}( x )\ \textbf{then}
+///     \ C.\mathrm{remove}( x ) \cr
+/// 4 & \quad \textbf{return}\ C
 /// \end{array}}
 /// \f]
 template< IterableSet S >
@@ -109,10 +109,10 @@ S setIntersection( const S & A , const S & B );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{setDifference}( A , B ) \cr
-/// 2 & \quad C \gets \text{a copy of } A \cr
-/// 3 & \quad \textbf{foreach}\ x \in A\ \textbf{with}
-///     \ B.\mathrm{contains}( x )\ \textbf{do}\ C.\mathrm{remove}( x ) \cr
-/// 4 & \quad \textbf{return}\ C
+/// 2 & \quad C \gets A;\ \textbf{foreach}\ x \in A\ \textbf{do}
+///     \ \textbf{if}\ B.\mathrm{contains}( x )\ \textbf{then}
+///     \ C.\mathrm{remove}( x ) \cr
+/// 3 & \quad \textbf{return}\ C
 /// \end{array}}
 /// \f]
 template< IterableSet S >
@@ -126,8 +126,9 @@ S setDifference( const S & A , const S & B );
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{setSymmetricDifference}( A , B ) \cr
 /// 2 & \quad C \gets \mathrm{setDifference}( A , B ) \cr
-/// 3 & \quad \textbf{foreach}\ x \in B\ \textbf{with not}
-///     \ A.\mathrm{contains}( x )\ \textbf{do}\ C.\mathrm{insert}( x ) \cr
+/// 3 & \quad \textbf{foreach}\ x \in B\ \textbf{do}\ \textbf{if}
+///     \ \textbf{not}\ A.\mathrm{contains}( x )\ \textbf{then}
+///     \ C.\mathrm{insert}( x ) \cr
 /// 4 & \quad \textbf{return}\ C
 /// \end{array}}
 /// \f]

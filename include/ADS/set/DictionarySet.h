@@ -111,14 +111,15 @@ class DictionarySet
  /// In pseudocode (section 8.4), \f$ D \f$ the dictionary:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{insert}( x ) \cr
- /// 2 & \quad \textbf{if}\ D.\mathrm{insert}\ \text{answers}
- ///     \ \textbf{then return}\ D.\mathrm{insert}( x , \textbf{true} )
- ///     \cr
- /// 3 & \quad \textbf{if}\ \mathrm{contains}( x )\ \textbf{then return
- ///     false} \cr
- /// 4 & \quad D.\mathrm{insert}( x , \textbf{true} );\ \textbf{return
- ///     true}
+ /// 1 & \textbf{function}\ \mathrm{insert}( x )\quad \triangleright
+ ///     \ \text{true if } x \text{ is new} \cr
+ /// 2 & \quad \textbf{if}\ \text{the insertion of } D
+ ///     \text{ tells whether the key was new}\ \textbf{then return}
+ ///     \ D.\mathrm{insert}( x , \textbf{true} ) \cr
+ /// 3 & \quad \mathit{fresh} \gets \textbf{not}\ \mathrm{contains}( x );
+ ///     \ \textbf{if}\ \mathit{fresh}\ \textbf{then}\ D.\mathrm{insert}( x ,
+ ///     \textbf{true} ) \cr
+ /// 4 & \quad \textbf{return}\ \mathit{fresh}
  /// \end{array}}
  /// \f]
  /// \post \f$ x \f$ is in the set
@@ -129,12 +130,14 @@ class DictionarySet
  /// In pseudocode (section 8.4):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{remove}( x ) \cr
- /// 2 & \quad \textbf{if}\ D.\mathrm{remove}\ \text{answers}
- ///     \ \textbf{then return}\ D.\mathrm{remove}( x ) \cr
- /// 3 & \quad \textbf{if not}\ \mathrm{contains}( x )\ \textbf{then
- ///     return false} \cr
- /// 4 & \quad D.\mathrm{remove}( x );\ \textbf{return true}
+ /// 1 & \textbf{function}\ \mathrm{remove}( x )\quad \triangleright
+ ///     \ \text{true if } x \text{ was there} \cr
+ /// 2 & \quad \textbf{if}\ \text{the removal of } D
+ ///     \text{ tells whether the key was there}\ \textbf{then return}
+ ///     \ D.\mathrm{remove}( x ) \cr
+ /// 3 & \quad \mathit{found} \gets \mathrm{contains}( x );\ \textbf{if}
+ ///     \ \mathit{found}\ \textbf{then}\ D.\mathrm{remove}( x ) \cr
+ /// 4 & \quad \textbf{return}\ \mathit{found}
  /// \end{array}}
  /// \f]
  /// \post \f$ x \f$ is not in the set

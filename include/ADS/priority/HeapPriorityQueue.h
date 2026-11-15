@@ -147,21 +147,20 @@ class HeapPriorityQueue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{deleteMin}() \cr
- /// 2 & \quad x \gets H[ 0 ];\ n \gets n - 1 \cr
- /// 3 & \quad \mathrm{swap}( H , 0 , n );\ \mathrm{minHeapRestore}( H ,
- ///     0 , n ) \cr
+ /// 2 & \quad \mathit{dim} \gets n - 1;\ \mathrm{swap}( H , 0 , \mathit{dim}
+ ///     )\quad \triangleright\ \text{the last leaf at the root} \cr
+ /// 3 & \quad \mathrm{minHeapRestore}( H , 0 , \mathit{dim} );\ x \gets
+ ///     \text{the item of } H[ \mathit{dim} ];\ n \gets \mathit{dim} \cr
  /// 4 & \quad \textbf{return}\ x \cr
  /// 5 & \textbf{procedure}\ \mathrm{minHeapRestore}( H , i , \mathit{dim}
- ///     ) \cr
- /// 6 & \quad \mathit{min} \gets i \cr
- /// 7 & \quad \textbf{for}\ j \gets 1\ \textbf{to}\ d\ \textbf{do} \cr
- /// 8 & \qquad c \gets d i + j \cr
- /// 9 & \qquad \textbf{if}\ c < \mathit{dim}\ \textbf{and}\ H[ c
- ///     ].\mathit{priority} < H[ \mathit{min} ].\mathit{priority}
- ///     \ \textbf{then}\ \mathit{min} \gets c \cr
- /// 10 & \quad \textbf{if}\ i \ne \mathit{min}\ \textbf{then} \cr
- /// 11 & \qquad \mathrm{swap}( H , i , \mathit{min} );
- ///     \ \mathrm{minHeapRestore}( H , \mathit{min} , \mathit{dim} )
+ ///     )\quad \triangleright\ \text{the } d \text{ children of } i
+ ///     \text{ are } d i + 1 .. d i + d \cr
+ /// 6 & \quad \textbf{loop} \cr
+ /// 7 & \qquad \mathit{min} \gets \text{the place of least priority among }
+ ///     i \text{ and its children below } \mathit{dim} \cr
+ /// 8 & \qquad \textbf{if}\ \mathit{min} = i\ \textbf{then return} \cr
+ /// 9 & \qquad \mathrm{swap}( H , i , \mathit{min} );\ i \gets
+ ///     \mathit{min}\quad \triangleright\ \text{one level down}
  /// \end{array}}
  /// \f]
  /// \pre the queue is not empty
@@ -177,13 +176,16 @@ class HeapPriorityQueue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{insert}( x , p ) \cr
- /// 2 & \quad i \gets n;\ n \gets n + 1 \cr
- /// 3 & \quad H[ i ] \gets \text{a new item } ( p , x , i ) \cr
- /// 4 & \quad \textbf{while}\ i > 0\ \textbf{and}\ H[ i ].\mathit{priority}
+ /// 2 & \quad h \gets \text{a new item } ( p , x ) \text{ at the place } n;
+ ///     \ H[ n ] \gets h;\ n \gets n + 1 \cr
+ /// 3 & \quad \mathrm{up}( n - 1 );\ \textbf{return}\ h \cr
+ /// 4 & \textbf{procedure}\ \mathrm{up}( i )\quad \triangleright
+ ///     \ \text{the item in } i
+ ///     \text{ climbs while its parent has a larger priority} \cr
+ /// 5 & \quad \textbf{while}\ i > 0\ \textbf{and}\ H[ i ].\mathit{priority}
  ///     < H[ \mathrm{parent}( i ) ].\mathit{priority}\ \textbf{do} \cr
- /// 5 & \qquad \mathrm{swap}( H , i , \mathrm{parent}( i ) );\ i \gets
- ///     \mathrm{parent}( i ) \cr
- /// 6 & \quad \textbf{return}\ \text{the new item}
+ /// 6 & \qquad \mathrm{swap}( H , i , \mathrm{parent}( i ) );\ i \gets
+ ///     \mathrm{parent}( i )
  /// \end{array}}
  /// \f]
  /// \pre the queue is not full
@@ -197,11 +199,9 @@ class HeapPriorityQueue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{decrease}( y , p ) \cr
- /// 2 & \quad y.\mathit{priority} \gets p;\ i \gets y.\mathit{pos} \cr
- /// 3 & \quad \textbf{while}\ i > 0\ \textbf{and}\ H[ i ].\mathit{priority}
- ///     < H[ \mathrm{parent}( i ) ].\mathit{priority}\ \textbf{do} \cr
- /// 4 & \qquad \mathrm{swap}( H , i , \mathrm{parent}( i ) );\ i \gets
- ///     \mathrm{parent}( i )
+ /// 2 & \quad y.\mathit{priority} \gets p;\ \mathrm{up}( y.\mathit{pos}
+ ///     )\quad \triangleright\ \mathrm{swap} \text{ keeps } \mathit{pos}
+ ///     \text{ up to date}
  /// \end{array}}
  /// \f]
  /// \pre \f$ y \f$ is an item of this queue and \f$ p \f$ is not larger

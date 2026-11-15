@@ -78,17 +78,16 @@ class DirectTable
  /// empty (nil) or holding a value, and \f$ n \f$ the places not empty:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{lookup}( k ) \cr
- /// 2 & \quad \textbf{return}\ A[ k - a ]\quad \triangleright\ \text{a }
- ///     \text{value, or nil} \cr
+ /// 1 & \textbf{function}\ \mathrm{lookup}( k )\quad \triangleright
+ ///     \ \text{the key } k \text{ in the cell } k - a \cr
+ /// 2 & \quad \textbf{return}\ A[ k - a ]\quad \triangleright\ \textbf{nil}
+ ///     \text{ if } k \text{ is absent} \cr
  /// 3 & \textbf{procedure}\ \mathrm{insert}( k , v ) \cr
- /// 4 & \quad \textbf{if}\ A[ k - a ] = \textbf{nil}\ \textbf{then}\ n
- ///     \gets n + 1 \cr
- /// 5 & \quad A[ k - a ] \gets v \cr
- /// 6 & \textbf{procedure}\ \mathrm{remove}( k ) \cr
- /// 7 & \quad \textbf{if}\ A[ k - a ] \ne \textbf{nil}\ \textbf{then}\ n
- ///     \gets n - 1 \cr
- /// 8 & \quad A[ k - a ] \gets \textbf{nil}
+ /// 4 & \quad n \gets n + [ A[ k - a ] = \textbf{nil} ];\ A[ k - a ] \gets v
+ ///     \cr
+ /// 5 & \textbf{procedure}\ \mathrm{remove}( k ) \cr
+ /// 6 & \quad n \gets n - [ A[ k - a ] \ne \textbf{nil} ];\ A[ k - a ] \gets
+ ///     \textbf{nil}
  /// \end{array}}
  /// \f]
  /// \pre \f$ k \in [ a , b ] \f$

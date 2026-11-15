@@ -93,9 +93,10 @@ class TreePriorityQueue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{deleteMin}() \cr
- /// 2 & \quad ( k , x ) \gets \text{the leftmost node of } T \cr
- /// 3 & \quad \mathrm{remove}( T , k ) \cr
- /// 4 & \quad \textbf{return}\ x
+ /// 2 & \quad ( k , x ) \gets
+ ///     \text{the key and the value of the leftmost node of } T\quad
+ ///     \triangleright\ \text{the least } ( p , i ) \cr
+ /// 3 & \quad \mathrm{remove}( T , k );\ \textbf{return}\ x
  /// \end{array}}
  /// \f]
  /// \pre the queue is not empty
@@ -110,10 +111,10 @@ class TreePriorityQueue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{insert}( x , p ) \cr
- /// 2 & \quad i \gets |\mathit{pr}|;\ \mathrm{insert}( T , ( p , i ) , x
- ///     ) \cr
- /// 3 & \quad \text{append } p \text{ to } \mathit{pr} \cr
- /// 4 & \quad \textbf{return}\ i
+ /// 2 & \quad i \gets |\mathit{pr}|\quad \triangleright
+ ///     \ \text{the handle, which breaks the ties} \cr
+ /// 3 & \quad \mathrm{insert}( T , ( p , i ) , x );\ \text{append } p
+ ///     \text{ to } \mathit{pr};\ \textbf{return}\ i
  /// \end{array}}
  /// \f]
  /// \post one item more
@@ -126,10 +127,9 @@ class TreePriorityQueue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{decrease}( y , p ) \cr
- /// 2 & \quad x \gets \mathrm{lookup}( T , ( \mathit{pr}[ y ] , y ) );
- ///     \ \mathrm{remove}( T , ( \mathit{pr}[ y ] , y ) ) \cr
- /// 3 & \quad \mathrm{insert}( T , ( p , y ) , x );\ \mathit{pr}[ y ]
- ///     \gets p
+ /// 2 & \quad k \gets ( \mathit{pr}[ y ] , y );\ x \gets \mathrm{lookup}( T
+ ///     , k );\ \mathrm{remove}( T , k ) \cr
+ /// 3 & \quad \mathit{pr}[ y ] \gets p;\ \mathrm{insert}( T , ( p , y ) , x )
  /// \end{array}}
  /// \f]
  /// \pre \f$ y \f$ is an item still in the queue and \f$ p \f$ is not

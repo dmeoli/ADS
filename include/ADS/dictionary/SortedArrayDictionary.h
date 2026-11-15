@@ -74,16 +74,16 @@ class SortedArrayDictionary
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{lookup}( k ) \cr
- /// 2 & \quad \mathit{lo} \gets 0;\ \mathit{hi} \gets n \cr
+ /// 2 & \quad ( \mathit{lo} , \mathit{hi} ) \gets ( 0 , n )\quad
+ ///     \triangleright\ \text{the keys before } \mathit{lo} \text{ are} < k
+ ///     \text{, those from } \mathit{hi} \text{ are} \ge k \cr
  /// 3 & \quad \textbf{while}\ \mathit{lo} < \mathit{hi}\ \textbf{do} \cr
- /// 4 & \qquad m \gets \lfloor ( \mathit{lo} + \mathit{hi} ) / 2 \rfloor
- ///     \cr
- /// 5 & \qquad \textbf{if}\ A[ m ].\mathit{key} < k\ \textbf{then}
- ///     \ \mathit{lo} \gets m + 1\ \textbf{else}\ \mathit{hi} \gets m \cr
- /// 6 & \quad \textbf{if}\ \mathit{lo} < n\ \textbf{and}\ A[ \mathit{lo}
- ///     ].\mathit{key} = k\ \textbf{then return}\ A[ \mathit{lo}
- ///     ].\mathit{value} \cr
- /// 7 & \quad \textbf{return nil}
+ /// 4 & \qquad m \gets \lfloor ( \mathit{lo} + \mathit{hi} ) / 2 \rfloor \cr
+ /// 5 & \qquad \textbf{if}\ k \le A[ m ].\mathit{key}\ \textbf{then}
+ ///     \ \mathit{hi} \gets m\ \textbf{else}\ \mathit{lo} \gets m + 1 \cr
+ /// 6 & \quad \textbf{return}\ A[ \mathit{lo} ].\mathit{value} \text{ if }
+ ///     \mathit{lo} < n \text{ and } A[ \mathit{lo} ].\mathit{key} = k
+ ///     \text{, else } \textbf{nil}
  /// \end{array}}
  /// \f]
  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
@@ -95,13 +95,14 @@ class SortedArrayDictionary
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{insert}( k , v ) \cr
- /// 2 & \quad \mathit{lo} \gets \text{the first place with key not }
- ///     \text{smaller than } k \cr
- /// 3 & \quad \textbf{if}\ \mathit{lo} < n\ \textbf{and}\ A[ \mathit{lo}
- ///     ].\mathit{key} = k\ \textbf{then}\ A[ \mathit{lo} ].\mathit{value}
- ///     \gets v \cr
- /// 4 & \quad \textbf{else}\ \text{move } A[ \mathit{lo} .. n - 1 ]
- ///     \text{ one place on};\ A[ \mathit{lo} ] \gets ( k , v )
+ /// 2 & \quad \mathit{lo} \gets
+ ///     \text{the first place whose key is not smaller than } k
+ ///     \text{, by a binary search} \cr
+ /// 3 & \quad \textbf{if}\ \mathit{lo} = n\ \textbf{or}\ A[ \mathit{lo}
+ ///     ].\mathit{key} \ne k\ \textbf{then}\ \text{shift } A[ \mathit{lo} ..
+ ///     n - 1 ] \text{ one place right};\ n \gets n + 1 \cr
+ /// 4 & \quad A[ \mathit{lo} ] \gets ( k , v )\quad \triangleright
+ ///     \ \text{a new pair, or a new value}
  /// \end{array}}
  /// \f]
  /// \post \f$ k \f$ has the value \f$ v \f$

@@ -90,9 +90,10 @@ class HashMultiset
  /// In pseudocode (exercise 8.10), \f$ D \f$ the table of the counters:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{procedure}\ \mathrm{insert}( x ) \cr
- /// 2 & \quad c \gets D.\mathrm{lookup}( x ),\ 0 \text{ if nil} \cr
- /// 3 & \quad D.\mathrm{insert}( x , c + 1 )
+ /// 1 & \textbf{procedure}\ \mathrm{insert}( x )\quad \triangleright\ D
+ ///     \text{ maps an item to its copies} \cr
+ /// 2 & \quad D.\mathrm{insert}( x , 1 + \text{the copies of } x \text{, } 0
+ ///     \text{ if } D.\mathrm{lookup}( x ) = \textbf{nil} )
  /// \end{array}}
  /// \f]
  /// \post one occurrence of \f$ x \f$ more
@@ -103,11 +104,12 @@ class HashMultiset
  /// In pseudocode (exercise 8.10):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{procedure}\ \mathrm{remove}( x ) \cr
- /// 2 & \quad c \gets D.\mathrm{lookup}( x ),\ 0 \text{ if nil} \cr
- /// 3 & \quad \textbf{if}\ c = 1\ \textbf{then}\ D.\mathrm{remove}( x ) \cr
- /// 4 & \quad \textbf{else if}\ c > 1\ \textbf{then}\ D.\mathrm{insert}( x ,
- ///     c - 1 )
+ /// 1 & \textbf{procedure}\ \mathrm{remove}( x )\quad \triangleright
+ ///     \ \text{one copy} \cr
+ /// 2 & \quad c \gets D.\mathrm{lookup}( x );\ \textbf{if}\ c =
+ ///     \textbf{nil}\ \textbf{then return} \cr
+ /// 3 & \quad \textbf{if}\ c > 1\ \textbf{then}\ D.\mathrm{insert}( x , c -
+ ///     1 )\ \textbf{else}\ D.\mathrm{remove}( x )
  /// \end{array}}
  /// \f]
  /// \post one occurrence of \f$ x \f$ less, or none

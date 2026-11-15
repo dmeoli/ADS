@@ -109,10 +109,10 @@ class ListSet
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{remove}( x ) \cr
- /// 2 & \quad p \gets \text{the position of } x \text{ in } L,
- ///     \ \text{found by a scan} \cr
- /// 3 & \quad \textbf{if}\ p \ne \textbf{nil}\ \textbf{then}
- ///     \ L.\mathrm{remove}( p )
+ /// 2 & \quad \textbf{foreach}\ \text{position } p \text{ of } L
+ ///     \ \textbf{do}\quad \triangleright\ x \text{ appears once at most} \cr
+ /// 3 & \qquad \textbf{if}\ L.\mathrm{read}( p ) = x\ \textbf{then}
+ ///     \ L.\mathrm{remove}( p );\ \textbf{return}
  /// \end{array}}
  /// \f]
  /// \post \f$ x \f$ is not in the set
@@ -170,9 +170,11 @@ class ListSet
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{setUnion}( A , B ) \cr
-/// 2 & \quad C \gets \text{a copy of } B \cr
-/// 3 & \quad \textbf{foreach}\ x \in A\ \textbf{with not}
-///     \ B.\mathrm{contains}( x )\ \textbf{do}\ C.\mathrm{insertNew}( x ) \cr
+/// 2 & \quad C \gets B \cr
+/// 3 & \quad \textbf{foreach}\ x \in A\ \textbf{do}\ \textbf{if}
+///     \ \textbf{not}\ B.\mathrm{contains}( x )\ \textbf{then}
+///     \ C.\mathrm{insertNew}( x )\quad \triangleright\ \text{no test in } C
+///     \cr
 /// 4 & \quad \textbf{return}\ C
 /// \end{array}}
 /// \f]
@@ -185,9 +187,10 @@ ListSet< T > setUnion( const ListSet< T > & A , const ListSet< T > & B );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{setIntersection}( A , B ) \cr
-/// 2 & \quad C \gets \text{an empty set} \cr
-/// 3 & \quad \textbf{foreach}\ x \in A\ \textbf{with}
-///     \ B.\mathrm{contains}( x )\ \textbf{do}\ C.\mathrm{insertNew}( x ) \cr
+/// 2 & \quad C \gets \emptyset \cr
+/// 3 & \quad \textbf{foreach}\ x \in A\ \textbf{do}\ \textbf{if}
+///     \ B.\mathrm{contains}( x )\ \textbf{then}\ C.\mathrm{insertNew}( x )
+///     \cr
 /// 4 & \quad \textbf{return}\ C
 /// \end{array}}
 /// \f]
@@ -201,9 +204,10 @@ ListSet< T > setIntersection( const ListSet< T > & A ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{setDifference}( A , B ) \cr
-/// 2 & \quad C \gets \text{an empty set} \cr
-/// 3 & \quad \textbf{foreach}\ x \in A\ \textbf{with not}
-///     \ B.\mathrm{contains}( x )\ \textbf{do}\ C.\mathrm{insertNew}( x ) \cr
+/// 2 & \quad C \gets \emptyset \cr
+/// 3 & \quad \textbf{foreach}\ x \in A\ \textbf{do}\ \textbf{if}
+///     \ \textbf{not}\ B.\mathrm{contains}( x )\ \textbf{then}
+///     \ C.\mathrm{insertNew}( x ) \cr
 /// 4 & \quad \textbf{return}\ C
 /// \end{array}}
 /// \f]
@@ -216,9 +220,11 @@ ListSet< T > setDifference( const ListSet< T > & A , const ListSet< T > & B );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{setSymmetricDifference}( A , B ) \cr
-/// 2 & \quad C \gets \mathrm{setDifference}( A , B ) \cr
-/// 3 & \quad \textbf{foreach}\ x \in B\ \textbf{with not}
-///     \ A.\mathrm{contains}( x )\ \textbf{do}\ C.\mathrm{insertNew}( x ) \cr
+/// 2 & \quad C \gets \mathrm{setDifference}( A , B )\quad \triangleright
+///     \ \text{then the items of } B \text{ alone} \cr
+/// 3 & \quad \textbf{foreach}\ x \in B\ \textbf{do}\ \textbf{if}
+///     \ \textbf{not}\ A.\mathrm{contains}( x )\ \textbf{then}
+///     \ C.\mathrm{insertNew}( x ) \cr
 /// 4 & \quad \textbf{return}\ C
 /// \end{array}}
 /// \f]
