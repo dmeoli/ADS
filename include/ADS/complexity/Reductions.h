@@ -102,15 +102,19 @@ inline int tileVar( int h , int i , int j , int n );
 /// fit wherever two squares touch:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{dominoToClique}( D , n ) \cr
-/// 2 & \quad G \gets \text{the nodes } u_{hij} \text{ and no edge} \cr
-/// 3 & \quad \textbf{foreach}\ u_{hij} , u_{gab} \text{ of distinct squares,}
-///     \ \text{neither of } ( 0 , 0 ) \text{ but } u_{000}\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ ( i , j ) \text{ and } ( a , b ) \text{ are not}
-///     \ \text{adjacent}\ \textbf{then}\ \text{join them} \cr
-/// 5 & \qquad \textbf{else if}\ \text{the tiles } h \text{ and } g
-///     \ \text{fit on their common side}\ \textbf{then}\ \text{join them} \cr
-/// 6 & \quad \textbf{return}\ ( G , n^2 )
+/// 1 & \textbf{function}\ \mathrm{dominoToClique}( D , n )\quad
+///     \triangleright\ u_{hij} \text{: the tile } h \text{ on the square } (
+///     i , j ) \cr
+/// 2 & \quad G \gets \text{the nodes } u_{hij} \text{, the square } ( 0 , 0
+///     ) \text{ with } u_{000} \text{ only, and no edge} \cr
+/// 3 & \quad \textbf{foreach}\ \text{two nodes } u_{hij} , u_{gab}
+///     \text{ on distinct squares}\ \textbf{do} \cr
+/// 4 & \qquad \textbf{if}\ ( i , j ) , ( a , b )
+///     \text{ are not adjacent, or the tiles } h , g
+///     \text{ match on their common side}\ \textbf{then}\ \text{join them}
+///     \cr
+/// 5 & \quad \textbf{return}\ ( G , n^2 )\quad \triangleright
+///     \ \text{a clique of } n^2 \text{ nodes is a tiling}
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 1 \f$ and \f$ D \f$ is not empty
@@ -125,21 +129,17 @@ dominoToClique( const std::vector< Tile > & D , int n );
 /// is in \f$ ( i , j ) \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{dominoToSat}( D , n ) \cr
+/// 1 & \textbf{function}\ \mathrm{dominoToSat}( D , n )\quad \triangleright
+///     \ u_{hij} \text{ true: the tile } h \text{ on } ( i , j ) \cr
 /// 2 & \quad F \gets ( u_{000} ) \cr
-/// 3 & \quad \textbf{foreach}\ ( i , j )\ \textbf{do}\ \text{add }
-///     u_{0ij} \vee \cdots \vee u_{m-1,ij}\quad \triangleright
-///     \ \text{a tile at least} \cr
-/// 4 & \quad \textbf{foreach}\ ( i , j ) \text{ and } h < g\ \textbf{do}
-///     \ \text{add } \neg u_{hij} \vee \neg u_{gij}\quad \triangleright
-///     \ \text{one at most} \cr
-/// 5 & \quad \textbf{foreach}\ h , g \text{ with } D[ h ].\mathit{right} \ne
-///     D[ g ].\mathit{left}\ \textbf{do}\ \text{add } \neg u_{hij} \vee \neg
-///     u_{g,i+1,j} \cr
-/// 6 & \quad \textbf{foreach}\ h , g \text{ with } D[ h ].\mathit{up} \ne D[
-///     g ].\mathit{down}\ \textbf{do}\ \text{add } \neg u_{hij} \vee \neg
-///     u_{g,i,j+1} \cr
-/// 7 & \quad \textbf{return}\ F
+/// 3 & \quad \text{add, for each square } ( i , j ) \text{, the clause }
+///     u_{0ij} \vee \cdots \vee u_{m-1,ij} \text{ and the clauses } \neg
+///     u_{hij} \vee \neg u_{gij} \text{, } h < g \cr
+/// 4 & \quad \text{add } \neg u_{hij} \vee \neg u_{g,i+1,j} \text{ when } D[
+///     h ].\mathit{right} \ne D[ g ].\mathit{left} \text{, and } \neg
+///     u_{hij} \vee \neg u_{g,i,j+1} \text{ when } D[ h ].\mathit{up} \ne D[
+///     g ].\mathit{down} \cr
+/// 5 & \quad \textbf{return}\ F
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 1 \f$ and \f$ D \f$ is not empty
@@ -153,18 +153,19 @@ inline Cnf dominoToSat( const std::vector< Tile > & D , int n );
 /// in \f$ ( i , j ) \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{dominoToLp01}( D , n ) \cr
-/// 2 & \quad \text{add } x_{000} = 1 \cr
-/// 3 & \quad \textbf{foreach}\ ( i , j )\ \textbf{do}\ \text{add }
-///     \sum_h x_{hij} = 1 \cr
-/// 4 & \quad \textbf{foreach}\ h , ( i , j )\ \textbf{do} \cr
-/// 5 & \qquad \text{add } x_{hij} + \sum x_{g,i+1,j} \le 1
-///     \text{, over the tiles } g\ \text{that do not fit right of } h \cr
-/// 6 & \qquad \text{add } x_{hij} + \sum x_{g,i,j+1} \le 1
-///     \text{, over the tiles } g\ \text{that do not fit above } h \cr
-/// 7 & \quad \textbf{return}\ ( A , b )\quad \triangleright
-///     \ \text{an equation } a x = c \text{ as } a x \le c \text{ and }
-///     -a x \le -c
+/// 1 & \textbf{function}\ \mathrm{dominoToLp01}( D , n )\quad
+///     \triangleright\ x_{hij} = 1 \text{: the tile } h \text{ on } ( i , j
+///     ) \cr
+/// 2 & \quad \text{the rows } x_{000} = 1 \text{ and } \textstyle\sum_h
+///     x_{hij} = 1 \text{ for each square} \cr
+/// 3 & \quad \textbf{foreach}\ h \text{ and } ( i , j )\ \textbf{do}
+///     \ \text{the rows } x_{hij} + \textstyle\sum_g x_{g,i+1,j} \le 1
+///     \text{ and } x_{hij} + \textstyle\sum_g x_{g,i,j+1} \le 1 \text{,} \cr
+///   & \qquad \text{the first over the tiles } g \text{ that do not fit on the}
+///     \text{ right of } h \text{, the second over those that do not fit}
+///     \text{ above } h \cr
+/// 4 & \quad \textbf{return}\ ( A , b )\quad \triangleright
+///     \ \text{each equation as two inequalities}
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 1 \f$ and \f$ D \f$ is not empty
@@ -178,10 +179,10 @@ dominoToLp01( const std::vector< Tile > & D , int n );
 /// In pseudocode (Theorem 18.5):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{complement}( G ) \cr
-/// 2 & \quad \textbf{foreach}\ u , v\ \textbf{do}\ C[ u ][ v ] \gets u \ne v
-///     \ \textbf{and not}\ G[ u ][ v ] \cr
-/// 3 & \quad \textbf{return}\ C
+/// 1 & \textbf{function}\ \mathrm{complement}( G )\quad \triangleright
+///     \ \text{a clique of } G \text{ is an independent set of } C \cr
+/// 2 & \quad \textbf{return}\ C \text{ with } C[ u ][ v ] \text{ iff } u \ne
+///     v \text{ and not } G[ u ][ v ]
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is square
@@ -194,11 +195,11 @@ inline Adjacency complement( const Adjacency & G );
 /// of \f$ G \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{hamiltonToTsp}( G ) \cr
-/// 2 & \quad \textbf{foreach}\ i \ne j\ \textbf{do}\ D[ i ][ j ] \gets ( 1
-///     \text{ if } G[ i ][ j ] \text{, else } 2 );\quad D[ i ][ i ] \gets 0
+/// 1 & \textbf{function}\ \mathrm{hamiltonToTsp}( G )\quad \triangleright
+///     \ \text{a circuit of cost } n \text{ iff } G \text{ is Hamiltonian}
 ///     \cr
-/// 3 & \quad \textbf{return}\ D
+/// 2 & \quad \textbf{return}\ D \text{ with } D[ i ][ i ] = 0 \text{, } D[ i
+///     ][ j ] = 1 \text{ on the edges of } G \text{ and } 2 \text{ elsewhere}
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric
@@ -213,10 +214,10 @@ inline std::vector< std::vector< long > > hamiltonToTsp( const Adjacency & G );
 /// profits and the volumes equal to the numbers:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{halfSum}( A ) \cr
-/// 2 & \quad s \gets \sum_i A[ i ] \cr
-/// 3 & \quad \textbf{return}\ ( -1 \text{ if } s \text{ is odd, else } s / 2
-///     )
+/// 1 & \textbf{function}\ \mathrm{halfSum}( A )\quad \triangleright
+///     \ \text{the target of the subset sum for a partition} \cr
+/// 2 & \quad s \gets \textstyle\sum_i A[ i ];\ \textbf{return}\ s / 2
+///     \text{ if } s \text{ is even, else } -1
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is not negative
@@ -231,14 +232,14 @@ inline long halfSum( const std::vector< long > & A );
 /// copy \f$ n \f$ of 0 to 0, and conversely:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{cycleToPath}( G ) \cr
-/// 2 & \quad H \gets \text{a graph of the nodes } 0 , \ldots , n
-///     \text{ and no edge} \cr
+/// 1 & \textbf{function}\ \mathrm{cycleToPath}( G )\quad \triangleright
+///     \ \text{the node } 0 \text{ split into a start } 0
+///     \text{ and an end } n \cr
+/// 2 & \quad H \gets \text{the nodes } 0 , \ldots , n \text{ and no edge} \cr
 /// 3 & \quad \textbf{foreach}\ ( u , v ) \in E \text{ with } u \ne v
-///     \ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ u = 0\ \textbf{then}\ \text{insert } ( n , v )
-///     \ \textbf{else}\ \text{insert } ( u , v ) \cr
-/// 5 & \quad \textbf{return}\ H
+///     \ \textbf{do}\ \text{insert } ( n , v ) \text{ in } H \text{ if } u =
+///     0 \text{, else } ( u , v ) \cr
+/// 4 & \quad \textbf{return}\ H
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is square and not empty (no node 0 to split otherwise)
@@ -256,16 +257,18 @@ inline Adjacency cycleToPath( const Adjacency & G );
 /// \f$ v_{out} \f$, and the pendant nodes fix its two ends:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{cycleToChain}( G ) \cr
+/// 1 & \textbf{function}\ \mathrm{cycleToChain}( G )\quad \triangleright
+///     \ \text{each node } v \text{ of the path becomes the chain }
+///     v_{\mathrm{in}} , v_{\mathrm{mid}} , v_{\mathrm{out}} \cr
 /// 2 & \quad P \gets \mathrm{cycleToPath}( G );\ N \gets n + 1 \cr
-/// 3 & \quad \textbf{foreach}\ v \in [ 0 , N )\ \textbf{do}\ \text{join }
-///     v_{in} , v_{mid} \text{ and } v_{mid} , v_{out} \cr
-/// 4 & \quad \textbf{foreach}\ ( u , v ) \text{ of } P\ \textbf{do}
-///     \ \text{join } u_{out} , v_{in} \cr
-/// 5 & \quad \text{join a new node to } n_{in} \text{ and another to }
-///     0_{out} \cr
-/// 6 & \quad \textbf{return}\ \text{the graph of the } 3 N + 2
-///     \text{ nodes}
+/// 3 & \quad \text{join } v_{\mathrm{in}} \text{ to } v_{\mathrm{mid}}
+///     \text{ and } v_{\mathrm{mid}} \text{ to } v_{\mathrm{out}}
+///     \text{ for each } v < N \text{, and } u_{\mathrm{out}} \text{ to }
+///     v_{\mathrm{in}} \text{ for each edge } ( u , v ) \text{ of } P \cr
+/// 4 & \quad \text{join a new node to } n_{\mathrm{in}}
+///     \text{ and another to } 0_{\mathrm{out}}\quad \triangleright
+///     \ \text{they fix the two ends} \cr
+/// 5 & \quad \textbf{return}\ \text{the graph of the } 3 N + 2 \text{ nodes}
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is square and not empty
@@ -278,7 +281,9 @@ inline Adjacency cycleToChain( const Adjacency & G );
 /// increasing \f$ a \f$, from the leftmost one, and so sorts the numbers:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{sortToHull}( a ) \cr
+/// 1 & \textbf{function}\ \mathrm{sortToHull}( a )\quad \triangleright
+///     \ \text{the points on the parabola } y = x^2
+///     \text{ are all on the hull} \cr
 /// 2 & \quad \textbf{return}\ ( ( a_i , a_i^2 ) : i = 1 , \ldots , n )
 /// \end{array}}
 /// \f]

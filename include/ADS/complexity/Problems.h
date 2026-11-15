@@ -95,12 +95,10 @@ using Nodes = std::vector< int >;                      ///< a set, a path
 /// In pseudocode (chapter 18), \f$ O( |S|^2 ) \f$ time:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{cliqueCertificate}( G , S , k ) \cr
-/// 2 & \quad \textbf{if}\ |S| < k\ \textbf{then return false} \cr
-/// 3 & \quad \textbf{foreach}\ a < b \text{ places of } S\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ S[ a ] = S[ b ]\ \textbf{or not}\ G[ S[ a ] ][ S[
-///     b ] ]\ \textbf{then return false} \cr
-/// 5 & \quad \textbf{return true}
+/// 1 & \textbf{function}\ \mathrm{cliqueCertificate}( G , S , k )\quad
+///     \triangleright\ O( |S|^2 ) \cr
+/// 2 & \quad \textbf{return}\ k \le |S| \text{ and every two places } a < b
+///     \text{ of } S \text{ hold distinct nodes with } G[ S[ a ] ][ S[ b ] ]
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is square
@@ -122,19 +120,19 @@ bool chooseK( int n , int k , Ok && ok , Done && done );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{clique}( G , k ) \cr
-/// 2 & \quad \textbf{if}\ k \le 0\ \textbf{then return}\ \emptyset \cr
-/// 3 & \quad \textbf{return}\ \mathrm{choose}( \emptyset , 0 ) \cr
-/// 4 & \textbf{function}\ \mathrm{choose}( S , i ) \cr
-/// 5 & \quad \textbf{if}\ |S| = k\ \textbf{then return}\ S \cr
-/// 6 & \quad \textbf{if}\ |S| + n - i < k\ \textbf{then return nil}\quad
-///     \triangleright\ \text{too few nodes left} \cr
-/// 7 & \quad \textbf{for}\ v \gets i\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 8 & \qquad \textbf{if}\ G[ u ][ v ] \text{ for each } u \in S
-///     \ \textbf{then} \cr
-/// 9 & \qquad\quad R \gets \mathrm{choose}( S \cup \{ v \} , v + 1 ) \cr
-/// 10 & \qquad\quad \textbf{if}\ R \ne \textbf{nil}\ \textbf{then return}\ R
-///     \cr
-/// 11 & \quad \textbf{return nil}
+/// 2 & \quad \textbf{return}\ \emptyset \text{ if } k \le 0 \text{, else }
+///     \mathrm{choose}( \emptyset , 0 ) \cr
+/// 3 & \textbf{function}\ \mathrm{choose}( S , i )\quad \triangleright\ S
+///     \text{ a clique of nodes before } i \cr
+/// 4 & \quad \textbf{if}\ |S| = k\ \textbf{then return}\ S \cr
+/// 5 & \quad \textbf{if}\ k - |S| > n - i\ \textbf{then return nil}\quad
+///     \triangleright\ \text{not enough nodes left} \cr
+/// 6 & \quad \textbf{foreach}\ v \in [ i , n )
+///     \text{ adjacent to every node of } S \text{, in increasing order}
+///     \ \textbf{do} \cr
+/// 7 & \qquad R \gets \mathrm{choose}( S \cup \{ v \} , v + 1 );
+///     \ \textbf{if}\ R \ne \textbf{nil}\ \textbf{then return}\ R \cr
+/// 8 & \quad \textbf{return nil}
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric
@@ -148,10 +146,9 @@ inline std::optional< Nodes > clique( const Adjacency & G , int k );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{independentSet}( G , k ) \cr
-/// 2 & \quad \textbf{if}\ k \le 0\ \textbf{then return}\ \emptyset \cr
-/// 3 & \quad \textbf{return}\ \mathrm{choose}( \emptyset , 0 )\quad
-///     \triangleright\ \text{that of } \mathrm{clique}() \text{, } v
-///     \text{ added}\ \text{if no } u \in S \text{ has } G[ u ][ v ]
+/// 2 & \quad \textbf{return}\ \text{as } \mathrm{clique}( G , k )
+///     \text{, a node } v
+///     \text{ being added when it is adjacent to no node of } S
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric
@@ -163,14 +160,14 @@ inline std::optional< Nodes > independentSet( const Adjacency & G , int k );
 /// In pseudocode (chapter 18), the sets by increasing size:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{vertexCover}( G , k ) \cr
-/// 2 & \quad \textbf{for}\ s \gets 0\ \textbf{to}\ \min\{ k , n \}
+/// 1 & \textbf{function}\ \mathrm{vertexCover}( G , k )\quad \triangleright
+///     \ \text{the smallest first} \cr
+/// 2 & \quad \textbf{foreach}\ S \subseteq V \text{, by size } 0 , 1 ,
+///     \ldots , \min\{ k , n \} \text{ and then in lexicographic order}
 ///     \ \textbf{do} \cr
-/// 3 & \qquad \textbf{foreach}\ S \subseteq V \text{ with } |S| = s
-///     \text{, in}\ \text{lexicographic order}\ \textbf{do} \cr
-/// 4 & \qquad\quad \textbf{if}\ \text{each edge } [ u , v ] \text{ has } u
-///     \in S \text{ or } v \in S\ \textbf{then return}\ S \cr
-/// 5 & \quad \textbf{return nil}
+/// 3 & \qquad \textbf{if}\ \text{every edge has an end in } S
+///     \ \textbf{then return}\ S \cr
+/// 4 & \quad \textbf{return nil}
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric
@@ -185,19 +182,18 @@ inline std::optional< Nodes > vertexCover( const Adjacency & G , int k );
 /// are not both tried:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{color}( u )\quad \triangleright
-///     \ \text{started with } u = 0 \cr
+/// 1 & \textbf{function}\ \mathrm{color}( u )\quad \triangleright\ c[ 0 .. u
+///     - 1 ] \text{ a proper coloring, from } u = 0 \cr
 /// 2 & \quad \textbf{if}\ u = n\ \textbf{then return true} \cr
-/// 3 & \quad \mathit{used} \gets 1 + \max_{v < u} c[ v ]\quad
-///     \triangleright\ 0 \text{ if } u = 0 \cr
-/// 4 & \quad \textbf{for}\ x \gets 0\ \textbf{to}\ \min\{ k , \mathit{used} +
-///     1 \} - 1\ \textbf{do} \cr
-/// 5 & \qquad \textbf{if}\ c[ v ] \ne x \text{ for each } v < u \text{ with }
-///     G[ u ][ v ]\ \textbf{then} \cr
-/// 6 & \qquad\quad c[ u ] \gets x \cr
-/// 7 & \qquad\quad \textbf{if}\ \mathrm{color}( u + 1 )
+/// 3 & \quad \mathit{used} \gets \text{the number of the colors on } 0 ,
+///     \ldots , u - 1 \text{, i.e., } 1 + \max_{v < u} c[ v ] \text{ or }
+///     0\quad \triangleright\ \text{colors in order} \cr
+/// 4 & \quad \textbf{foreach}\ x \in [ 0 , \min\{ k , \mathit{used} + 1 \} )
+///     \text{ on no neighbor } v < u \text{ of } u\ \textbf{do}\quad
+///     \triangleright\ \text{one new color at most} \cr
+/// 5 & \qquad c[ u ] \gets x;\ \textbf{if}\ \mathrm{color}( u + 1 )
 ///     \ \textbf{then return true} \cr
-/// 8 & \quad \textbf{return false}
+/// 6 & \quad \textbf{return false}
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric, and
@@ -213,13 +209,11 @@ inline std::optional< std::vector< int > > coloring( const Adjacency & G ,
 /// partition is tried once:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{bisection}( G , k ) \cr
+/// 1 & \textbf{function}\ \mathrm{bisection}( G , k )\quad \triangleright\ 0
+///     \in S \text{ breaks the symmetry of the two halves} \cr
 /// 2 & \quad \textbf{if}\ n \text{ is odd}\ \textbf{then return nil} \cr
-/// 3 & \quad \textbf{foreach}\ S \subseteq V \text{ with } 0 \in S
-///     \text{ and } |S| = n / 2\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ |\{ [ u , v ] \in E : u \in S , v \notin S \}|
-///     \le k\ \textbf{then return}\ S \cr
-/// 5 & \quad \textbf{return nil}
+/// 3 & \quad \textbf{return}\ \text{the first } S \ni 0 \text{ of } n / 2
+///     \text{ nodes crossed by at most } k \text{ edges, or } \textbf{nil}
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric
@@ -234,10 +228,9 @@ inline std::optional< Nodes > bisection( const Adjacency & G , int k );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{tspCertificate}( D , k , P ) \cr
-/// 2 & \quad \textbf{if}\ P \text{ is not a permutation of the }
-///     \text{cities}\ \textbf{then return false} \cr
-/// 3 & \quad \textbf{return}\ D[ P[ n - 1 ] ][ P[ 0 ] ] + \sum_{i=1}^{n-1}
-///     D[ P[ i - 1 ] ][ P[ i ] ] \le k
+/// 2 & \quad \textbf{return}\ P
+///     \text{ is a permutation of the cities and the circuit } P[ 0 ] ,
+///     \ldots , P[ n - 1 ] , P[ 0 ] \text{ costs } \le k
 /// \end{array}}
 /// \f]
 /// \pre \f$ D \f$ is square
@@ -251,17 +244,16 @@ bool tspCertificate( const std::vector< std::vector< T > > & D , T k ,
 /// In pseudocode (chapter 18), the permutations that start with the city 0:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{extend}( S , \ell )\quad \triangleright
-///     \ \text{started with } S = ( 0 ) ,\ \ell = 0 \cr
-/// 2 & \quad \textbf{if}\ \ell > k\ \textbf{then return false}\quad
-///     \triangleright\ \text{pruned} \cr
-/// 3 & \quad \textbf{if}\ |S| = n\ \textbf{then return}\ \ell + D[ S[ n - 1 ]
-///     ][ 0 ] \le k \cr
-/// 4 & \quad \textbf{foreach}\ c \notin S \text{, in increasing order}
-///     \ \textbf{do} \cr
-/// 5 & \qquad \textbf{if}\ \mathrm{extend}( S \cdot ( c ) , \ell + D[ S[ |S|
-///     - 1 ] ][ c ] )\ \textbf{then return true} \cr
-/// 6 & \quad \textbf{return false}
+/// 1 & \textbf{function}\ \mathrm{extend}( S , \ell )\quad \triangleright\ S
+///     \text{ a path from } 0 \text{ of length } \ell \text{, from } ( ( 0 )
+///     , 0 ) \cr
+/// 2 & \quad \textbf{if}\ k < \ell\ \textbf{then return false}\quad
+///     \triangleright\ \text{the costs are not negative} \cr
+/// 3 & \quad \textbf{if}\ |S| = n\ \textbf{then return}\ \ell + D[ S[ n - 1
+///     ] ][ 0 ] \le k \cr
+/// 4 & \quad \textbf{return}\ \text{whether } \mathrm{extend}( S \cdot ( c )
+///     , \ell + D[ S[ |S| - 1 ] ][ c ] ) \text{ holds for a } c \notin S
+///     \text{, tried by increasing } c
 /// \end{array}}
 /// \f]
 /// \pre \f$ D \f$ is square, with no negative distance, which would make the
@@ -293,17 +285,14 @@ inline Nodes all( int n );
 /// given:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{hamilton}( P ) \cr
-/// 2 & \quad \textbf{if}\ |P| = n\ \textbf{then return}\ ( \textbf{not}
-///     \ \mathit{closed}\ \textbf{or}\ G[ P[ n - 1 ] ][ P[ 0 ] ] )
-///     \ \textbf{and}\ ( \mathit{end} = \textbf{nil}\ \textbf{or}\ P[ n - 1 ]
-///     =
-///     \mathit{end} ) \cr
-/// 3 & \quad \textbf{foreach}\ v \notin P \text{ with } G[ P[ |P| - 1 ] ][ v
-///     ] \text{, in increasing order}\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ \mathrm{hamilton}( P \cdot ( v ) )
-///     \ \textbf{then return true} \cr
-/// 5 & \quad \textbf{return false}
+/// 1 & \textbf{function}\ \mathrm{hamilton}( P )\quad \triangleright\ P
+///     \text{ a path of } G \cr
+/// 2 & \quad \textbf{if}\ |P| = n\ \textbf{then return}\ ( P
+///     \text{ ends at } \mathit{end} \text{, if given} ) \text{ and } (
+///     \text{an edge closes it, if } \mathit{closed} ) \cr
+/// 3 & \quad \textbf{return}\ \text{whether } \mathrm{hamilton}( P \cdot ( v
+///     ) ) \text{ holds for a } v \notin P \text{ after the last node of } P
+///     \text{, by increasing } v
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric
@@ -316,10 +305,10 @@ inline std::optional< Nodes > hamiltonianCircuit( const Adjacency & G );
 /// on the oriented edges:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{hamiltonianCycle}( G ) \cr
-/// 2 & \quad \textbf{if}\ n < 2\ \textbf{then return nil} \cr
-/// 3 & \quad \textbf{return}\ \mathrm{hamilton}( ( 0 ) )\quad
-///     \triangleright\ \text{closed, with no end given}
+/// 1 & \textbf{function}\ \mathrm{hamiltonianCycle}( G )\quad
+///     \triangleright\ \text{a cycle passes by } 0 \cr
+/// 2 & \quad \textbf{return}\ \textbf{nil} \text{ if } n < 2 \text{, else }
+///     \mathrm{hamilton}( ( 0 ) ) \text{, closed and with no end}
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is square
@@ -333,13 +322,13 @@ inline std::optional< Nodes > hamiltonianCycle( const Adjacency & G );
 /// from each possible start:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{hamiltonianPath}( G , r , t ) \cr
-/// 2 & \quad \textbf{foreach}\ s \in \{ r \} \text{ if } r \ge 0
-///     \text{, else } s \in V\ \textbf{do} \cr
-/// 3 & \qquad \textbf{if}\ \mathrm{hamilton}( ( s ) )
-///     \text{, open and with end } t \text{, succeeds}
+/// 1 & \textbf{function}\ \mathrm{hamiltonianPath}( G , r , t )\quad
+///     \triangleright\ r , t \text{ the ends, } -1 \text{ if free} \cr
+/// 2 & \quad \textbf{foreach}\ \text{start } s \text{, only } r \text{ if }
+///     r \ge 0\ \textbf{do}\ \textbf{if}\ \mathrm{hamilton}( ( s ) )
+///     \text{, open and ending at } t \text{, finds } P
 ///     \ \textbf{then return}\ P \cr
-/// 4 & \quad \textbf{return nil}
+/// 3 & \quad \textbf{return nil}
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is square, \f$ r \f$ and \f$ t \f$ are nodes or \f$ -1 \f$
@@ -354,9 +343,9 @@ inline std::optional< Nodes > hamiltonianPath( const Adjacency & G ,
 /// In pseudocode (exercise 18.14):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{hamiltonianChain}( G ) \cr
-/// 2 & \quad \textbf{return}\ \mathrm{hamiltonianPath}( G , -1 , -1 )\quad
-///     \triangleright\ \text{on the symmetric matrix}
+/// 1 & \textbf{function}\ \mathrm{hamiltonianChain}( G )\quad
+///     \triangleright\ G \text{ unoriented: a symmetric matrix} \cr
+/// 2 & \quad \textbf{return}\ \mathrm{hamiltonianPath}( G , -1 , -1 )
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric
@@ -370,15 +359,12 @@ inline std::optional< Nodes > hamiltonianChain( const Adjacency & G );
 /// not extended, since it could not come back to \f$ t \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{extend}( P )\quad \triangleright
-///     \ \text{started with } P = ( r ) \cr
-/// 2 & \quad \textbf{if}\ P[ |P| - 1 ] = t\ \textbf{then return}\ |P| - 1
-///     \ge k \cr
-/// 3 & \quad \textbf{foreach}\ v \notin P \text{ with } G[ P[ |P| - 1 ] ][ v
-///     ]\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ \mathrm{extend}( P \cdot ( v ) )
-///     \ \textbf{then return true} \cr
-/// 5 & \quad \textbf{return false}
+/// 1 & \textbf{function}\ \mathrm{extend}( P )\quad \triangleright\ P
+///     \text{ a simple path from } r \text{, from } P = ( r ) \cr
+/// 2 & \quad \textbf{if}\ P \text{ ends at } t\ \textbf{then return}\ k \le
+///     |P| - 1\quad \triangleright\ \text{its edges} \cr
+/// 3 & \quad \textbf{return}\ \text{whether } \mathrm{extend}( P \cdot ( v )
+///     ) \text{ holds for a } v \notin P \text{ after the last node of } P
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is square, \f$ r \f$ and \f$ t \f$ are nodes
@@ -396,14 +382,15 @@ inline std::optional< Nodes > longestPath( const Adjacency & G , int r ,
 /// `dagLongestPaths()` of `Paths.h`:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{longestPathDag}( G , r , t ) \cr
-/// 2 & \quad \textbf{foreach}\ v \in V\ \textbf{do}\ L[ v ] \gets -1 \cr
-/// 3 & \quad L[ r ] \gets 0 \cr
-/// 4 & \quad \textbf{foreach}\ u \text{ in topological order, with } L[ u ]
+/// 1 & \textbf{function}\ \mathrm{longestPathDag}( G , r , t )\quad
+///     \triangleright\ L[ v ] \text{ the longest path from } r \text{, } -1
+///     \text{ if none} \cr
+/// 2 & \quad L[ v ] \gets -1 \text{ for every node } v;\ L[ r ] \gets 0 \cr
+/// 3 & \quad \textbf{foreach}\ u \text{ in a topological order with } L[ u ]
 ///     \ge 0\ \textbf{do} \cr
-/// 5 & \qquad \textbf{foreach}\ v \text{ with } G[ u ][ v ]\ \textbf{do}
-///     \ L[ v ] \gets \max\{ L[ v ] , L[ u ] + 1 \} \cr
-/// 6 & \quad \textbf{return}\ L[ t ]
+/// 4 & \qquad L[ v ] \gets \max\{ L[ v ] , L[ u ] + 1 \}
+///     \text{ for each edge } ( u , v ) \cr
+/// 5 & \quad \textbf{return}\ L[ t ]
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is square and acyclic, \f$ r \f$ and \f$ t \f$ are nodes
@@ -418,16 +405,18 @@ inline int longestPathDag( const Adjacency & G , int r , int t );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{extend}( T , i )\quad \triangleright
-///     \ \text{started with } T = \emptyset ,\ i = 1 \cr
-/// 2 & \quad \textbf{if}\ |T| = n - 1\ \textbf{then return true} \cr
-/// 3 & \quad \textbf{if}\ i > m \text{ or } |T| + m - i + 1 < n - 1
-///     \ \textbf{then return false} \cr
+///     \ \text{the edges } E[ i ] , \ldots , E[ m ] \text{ to decide, from }
+///     ( \emptyset , 1 ) \cr
+/// 2 & \quad \textbf{if}\ |T| = n - 1\ \textbf{then return true}\quad
+///     \triangleright\ \text{a spanning tree of degree} \le k \cr
+/// 3 & \quad \textbf{if}\ n - 1 - |T| > m - i + 1
+///     \ \textbf{then return false}\quad \triangleright
+///     \ \text{too few edges left, } i > m \text{ included} \cr
 /// 4 & \quad [ u , v ] \gets E[ i ] \cr
-/// 5 & \quad \textbf{if}\ d_T( u ) < k \text{, } d_T( v ) < k \text{ and } u
-///     , v \text{ are apart in } T\ \textbf{then} \cr
-/// 6 & \qquad \textbf{if}\ \mathrm{extend}( T \cup \{ [ u , v ] \} , i + 1 )
-///     \ \textbf{then return true} \cr
-/// 7 & \quad \textbf{return}\ \mathrm{extend}( T , i + 1 )
+/// 5 & \quad \textbf{if}\ u , v \text{ have degree } < k \text{ in } T
+///     \text{, are in two trees of } T \text{, and } \mathrm{extend}( T \cup
+///     \{ [ u , v ] \} , i + 1 )\ \textbf{then return true} \cr
+/// 6 & \quad \textbf{return}\ \mathrm{extend}( T , i + 1 )
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric
@@ -446,10 +435,8 @@ boundedSpanningTree( const Adjacency & G , int k );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{satCertificate}( F , x ) \cr
-/// 2 & \quad \textbf{foreach}\ c \in F\ \textbf{do} \cr
-/// 3 & \qquad \textbf{if}\ \text{no literal of } c \text{ is true under }
-///     x\ \textbf{then return false} \cr
-/// 4 & \quad \textbf{return true}
+/// 2 & \quad \textbf{return}\ \text{whether every clause of } F
+///     \text{ has a literal true under } x
 /// \end{array}}
 /// \f]
 /// \pre the literals of \f$ F \f$ are variables of \f$ x \f$
@@ -463,19 +450,16 @@ inline bool satCertificate( const Cnf & F , const std::vector< bool > & x );
 /// variable of the clause \f$ c \f$, counted from 1:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{assign}( v )\quad \triangleright
-///     \ \text{started with } v = 0 \cr
-/// 2 & \quad \textbf{foreach}\ c \in F \text{ with } \mathit{last}( c ) = v
-///     \ \textbf{do} \cr
-/// 3 & \qquad \textbf{if}\ c \text{ is false under } x
-///     \ \textbf{then return false} \cr
-/// 4 & \quad \textbf{if}\ v = n\ \textbf{then return true} \cr
-/// 5 & \quad \textbf{foreach}\ b \in ( \textbf{false} , \textbf{true} )
-///     \ \textbf{do} \cr
-/// 6 & \qquad x[ v ] \gets b \cr
-/// 7 & \qquad \textbf{if}\ \mathrm{assign}( v + 1 )
-///     \ \textbf{then return true} \cr
-/// 8 & \quad \textbf{return false}
+/// 1 & \textbf{function}\ \mathrm{assign}( v )\quad \triangleright\ x[ 0 ..
+///     v - 1 ] \text{ fixed, from } v = 0 \cr
+/// 2 & \quad \textbf{if}\ \text{a clause whose last variable is } v
+///     \text{ is false under } x\ \textbf{then return false}\quad
+///     \triangleright\ \text{now fully fixed} \cr
+/// 3 & \quad \textbf{if}\ v = n\ \textbf{then return true} \cr
+/// 4 & \quad \textbf{foreach}\ b \in ( \textbf{false} , \textbf{true} )
+///     \ \textbf{do}\ x[ v ] \gets b;\ \textbf{if}\ \mathrm{assign}( v + 1
+///     )\ \textbf{then return true} \cr
+/// 5 & \quad \textbf{return false}
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 0 \f$ and the literals of \f$ F \f$ are variables of
@@ -491,10 +475,9 @@ inline std::optional< std::vector< bool > > satisfiable( const Cnf & F ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{lp01}( A , b , n ) \cr
-/// 2 & \quad \textbf{foreach}\ x \in \{ 0 , 1 \}^n
-///     \text{, in lexicographic order}\ \textbf{do} \cr
-/// 3 & \qquad \textbf{if}\ A x \le b\ \textbf{then return}\ x \cr
-/// 4 & \quad \textbf{return nil}
+/// 2 & \quad \textbf{return}\ \text{the first } x \in \{ 0 , 1 \}^n
+///     \text{ in lexicographic order with } A x \le b \text{, or }
+///     \textbf{nil}\quad \triangleright\ 2^n \text{ tries}
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 0 \f$, \f$ A \f$ has \f$ n \f$ columns and as many rows as
@@ -516,13 +499,14 @@ lp01( const std::vector< std::vector< long > > & A ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{extend}( S , i , s )\quad \triangleright
-///     \ \text{started with } S = \emptyset ,\ i = 0 ,\ s = 0 \cr
+///     \ s \text{ the sum of } S \text{, from } ( \emptyset , 0 , 0 ) \cr
 /// 2 & \quad \textbf{if}\ s = k\ \textbf{then return true} \cr
-/// 3 & \quad \textbf{if}\ i = n \text{ or } s > k\ \textbf{then return false}
-///     \cr
-/// 4 & \quad \textbf{if}\ \mathrm{extend}( S \cup \{ i \} , i + 1 , s + A[ i ]
-///     )\ \textbf{then return true} \cr
-/// 5 & \quad \textbf{return}\ \mathrm{extend}( S , i + 1 , s )
+/// 3 & \quad \textbf{if}\ k < s\ \textbf{or}\ i = n
+///     \ \textbf{then return false}\quad \triangleright
+///     \ \text{the items are not negative} \cr
+/// 4 & \quad \textbf{return}\ \mathrm{extend}( S \cup \{ i \} , i + 1 , s +
+///     A[ i ] )\ \textbf{or}\ \mathrm{extend}( S , i + 1 , s )\quad
+///     \triangleright\ \text{with } i \text{ first}
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is not negative
@@ -535,10 +519,11 @@ inline std::optional< Nodes > subsetSumExists( const std::vector< long > & A ,
 /// In pseudocode (chapter 18):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{partition}( A ) \cr
-/// 2 & \quad s \gets \sum_i A[ i ] \cr
-/// 3 & \quad \textbf{if}\ s \text{ is odd}\ \textbf{then return nil} \cr
-/// 4 & \quad \textbf{return}\ \mathrm{subsetSumExists}( A , s / 2 )
+/// 1 & \textbf{function}\ \mathrm{partition}( A )\quad \triangleright
+///     \ \text{a subset of half the sum} \cr
+/// 2 & \quad s \gets \textstyle\sum_i A[ i ] \cr
+/// 3 & \quad \textbf{return}\ \textbf{nil} \text{ if } s
+///     \text{ is odd, else } \mathrm{subsetSumExists}( A , s / 2 )
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is not negative
@@ -553,16 +538,15 @@ inline std::optional< Nodes > partition( const std::vector< long > & A );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{extend}( S , i , \mathit{tp} , \mathit{tv}
-///     )\quad \triangleright\ \text{started with } S = \emptyset
-///     \text{ and } 0 , 0 , 0 \cr
-/// 2 & \quad \textbf{if}\ \mathit{tv} > C\ \textbf{then return false} \cr
-/// 3 & \quad \textbf{if}\ \mathit{tp} \ge k\ \textbf{then return true} \cr
+///     )\quad \triangleright\ \text{the profit and the volume of } S
+///     \text{, from } ( \emptyset , 0 , 0 , 0 ) \cr
+/// 2 & \quad \textbf{if}\ C < \mathit{tv}\ \textbf{then return false}\quad
+///     \triangleright\ \text{too heavy} \cr
+/// 3 & \quad \textbf{if}\ k \le \mathit{tp}\ \textbf{then return true} \cr
 /// 4 & \quad \textbf{if}\ i = n\ \textbf{then return false} \cr
-/// 5 & \quad \textbf{if}\ \mathrm{extend}( S \cup \{ i \} , i + 1 ,
-///     \mathit{tp} + p[ i ] , \mathit{tv} + v[ i ] )
-///     \ \textbf{then return true} \cr
-/// 6 & \quad \textbf{return}\ \mathrm{extend}( S , i + 1 , \mathit{tp} ,
-///     \mathit{tv} )
+/// 5 & \quad \textbf{return}\ \mathrm{extend}( S \cup \{ i \} , i + 1 ,
+///     \mathit{tp} + p[ i ] , \mathit{tv} + v[ i ] )\ \textbf{or}
+///     \ \mathrm{extend}( S , i + 1 , \mathit{tp} , \mathit{tv} )
 /// \end{array}}
 /// \f]
 /// \pre \f$ p \f$ and \f$ v \f$ have the same size, \f$ v \f$ not negative
@@ -581,19 +565,19 @@ inline std::optional< Nodes > knapsackDecision( const std::vector< long > & p ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{assign}( i )\quad \triangleright
-///     \ \text{started with } i = 0 \text{, all the loads } 0 \cr
+///     \ \text{the jobs before } i \text{ placed, from } i = 0
+///     \text{ and no load} \cr
 /// 2 & \quad \textbf{if}\ i = n\ \textbf{then return true} \cr
-/// 3 & \quad \textbf{for}\ q \gets 0\ \textbf{to}\ m - 1\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ \mathit{load}[ q ] + t[ i ] > d
-///     \ \textbf{then continue} \cr
-/// 5 & \qquad \mathit{load}[ q ] \gets \mathit{load}[ q ] + t[ i ];\ a[ i ]
-///     \gets q \cr
-/// 6 & \qquad \textbf{if}\ \mathrm{assign}( i + 1 )
+/// 3 & \quad \textbf{foreach}\ \text{processor } q \text{, in order, with }
+///     \mathit{load}[ q ] + t[ i ] \le d\ \textbf{do} \cr
+/// 4 & \qquad ( \mathit{load}[ q ] , a[ i ] ) \gets ( \mathit{load}[ q ] +
+///     t[ i ] , q );\ \textbf{if}\ \mathrm{assign}( i + 1 )
 ///     \ \textbf{then return true} \cr
-/// 7 & \qquad \mathit{load}[ q ] \gets \mathit{load}[ q ] - t[ i ] \cr
-/// 8 & \qquad \textbf{if}\ \mathit{load}[ q ] = 0
-///     \ \textbf{then return false} \cr
-/// 9 & \quad \textbf{return false}
+/// 5 & \qquad \mathit{load}[ q ] \gets \mathit{load}[ q ] - t[ i ] \cr
+/// 6 & \qquad \textbf{if}\ \mathit{load}[ q ] = 0
+///     \ \textbf{then return false}\quad \triangleright
+///     \ \text{the other empty processors are the same} \cr
+/// 7 & \quad \textbf{return false}
 /// \end{array}}
 /// \f]
 /// \pre \f$ m \ge 1 \f$ and \f$ t \f$ is not negative
@@ -610,15 +594,15 @@ multiprocessorScheduling( const std::vector< long > & t , int m , long d );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{extend}( S , j , \mathit{left} )\quad
-///     \triangleright\ \text{started with } S = \emptyset ,\ j = 0 ,
-///     \ \mathit{left} = m \cr
+///     \triangleright\ \mathit{left} \text{ the elements not covered, from }
+///     ( \emptyset , 0 , m ) \cr
 /// 2 & \quad \textbf{if}\ \mathit{left} = 0\ \textbf{then return true} \cr
 /// 3 & \quad \textbf{if}\ j = |Y|\ \textbf{then return false} \cr
-/// 4 & \quad \textbf{if}\ Y[ j ] \text{ has three distinct elements, none }
-///     \text{covered}\ \textbf{then} \cr
-/// 5 & \qquad \textbf{if}\ \mathrm{extend}( S \cup \{ j \} , j + 1 ,
-///     \mathit{left} - 3 )\ \textbf{then return true} \cr
-/// 6 & \quad \textbf{return}\ \mathrm{extend}( S , j + 1 , \mathit{left} )
+/// 4 & \quad \textbf{if}\ Y[ j ]
+///     \text{ has three distinct elements, none covered by } S \text{, and }
+///     \mathrm{extend}( S \cup \{ j \} , j + 1 , \mathit{left} - 3 )
+///     \ \textbf{then return true} \cr
+/// 5 & \quad \textbf{return}\ \mathrm{extend}( S , j + 1 , \mathit{left} )
 /// \end{array}}
 /// \f]
 /// \pre each set has three distinct elements of \f$ [ 0 , m ) \f$
@@ -634,9 +618,10 @@ exactCover3( const std::vector< std::array< int , 3 > > & Y , int m );
 /// with the three coordinates made disjoint:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{threeDimensionalMatching}( M , q ) \cr
-/// 2 & \quad Y \gets ( \{ w , q + x , 2 q + v \} : ( w , x , v ) \in M ) \cr
-/// 3 & \quad \textbf{return}\ \mathrm{exactCover3}( Y , 3 q )
+/// 1 & \textbf{function}\ \mathrm{threeDimensionalMatching}( M , q )\quad
+///     \triangleright\ \text{the three sets one after the other} \cr
+/// 2 & \quad \textbf{return}\ \mathrm{exactCover3}( ( \{ w , q + x , 2 q + v
+///     \} : ( w , x , v ) \in M ) , 3 q )
 /// \end{array}}
 /// \f]
 /// \pre the coordinates are in \f$ [ 0 , q ) \f$
@@ -654,13 +639,13 @@ threeDimensionalMatching( const std::vector< std::array< int , 3 > > & M ,
 /// lexicographic order:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{bribes}( M , \mathit{ps} ) \cr
-/// 2 & \quad \textbf{foreach}\ \text{permutation } \pi \text{ of } M
-///     \text{, in}\ \text{lexicographic order}\ \textbf{do} \cr
-/// 3 & \qquad \textbf{if}\ \sum_{i : \mathit{ps}[ i ]} \pi[ i ] = 2
-///     \sum_{i : \textbf{not}\ \mathit{ps}[ i ]} \pi[ i ]
-///     \ \textbf{then return}\ \pi \cr
-/// 4 & \quad \textbf{return nil}
+/// 1 & \textbf{function}\ \mathrm{bribes}( M , \mathit{ps} )\quad
+///     \triangleright\ \text{by enumeration of the permutations} \cr
+/// 2 & \quad \textbf{return}\ \text{the first permutation } \pi \text{ of }
+///     M \text{ in lexicographic order with} \cr
+///   & \qquad \textstyle\sum_{i : \mathit{ps}[ i ]} \pi[ i ] = 2
+///     \textstyle\sum_{i : \textbf{not}\ \mathit{ps}[ i ]} \pi[ i ]
+///     \text{, or } \textbf{nil}
 /// \end{array}}
 /// \f]
 /// \pre \f$ M \f$ and \f$ \mathit{ps} \f$ have the same size

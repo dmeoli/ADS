@@ -64,11 +64,12 @@ class Chooser
  /// (choice, alternatives) and \f$ t \f$ the choices made in this run:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{choice}( k ) \cr
+ /// 1 & \textbf{function}\ \mathrm{choice}( k )\quad \triangleright\ P
+ ///     \text{ the pairs (choice, arity) of the run, } t \text{ the next} \cr
  /// 2 & \quad \textbf{if}\ t = |P|\ \textbf{then}\ \text{append } ( 0 , k )
- ///     \text{ to } P \cr
- /// 3 & \quad t \gets t + 1 \cr
- /// 4 & \quad \textbf{return}\ \text{the choice of } P[ t ]
+ ///     \text{ to } P\quad \triangleright\ \text{a new choice starts from }
+ ///     0 \cr
+ /// 3 & \quad t \gets t + 1;\ \textbf{return}\ \text{the choice of } P[ t ]
  /// \end{array}}
  /// \f]
  /// \pre \f$ k \ge 1 \f$
@@ -83,17 +84,18 @@ class Chooser
  /// advancing the last one:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{run}( \mathit{alg} ) \cr
- /// 2 & \quad P \gets \text{the empty sequence} \cr
+ /// 1 & \textbf{function}\ \mathrm{run}( \mathit{alg} )\quad \triangleright
+ ///     \ \text{the runs in the lexicographic order of their choices} \cr
+ /// 2 & \quad P \gets () \cr
  /// 3 & \quad \textbf{loop} \cr
- /// 4 & \qquad t \gets 0 \cr
- /// 5 & \qquad \textbf{if}\ \mathit{alg}()\ \textbf{then return true}\quad
- ///     \triangleright\ \text{success} \cr
- /// 6 & \qquad \text{truncate } P \text{ to its first } t \text{ pairs} \cr
- /// 7 & \qquad \textbf{while}\ P \ne \emptyset \text{ and its last pair is }
- ///     ( k - 1 , k )\ \textbf{do}\ \text{drop it} \cr
- /// 8 & \qquad \textbf{if}\ P = \emptyset\ \textbf{then return false} \cr
- /// 9 & \qquad \text{add 1 to the choice of the last pair of } P
+ /// 4 & \qquad t \gets 0;\ \textbf{if}\ \mathit{alg}()
+ ///     \ \textbf{then return true} \cr
+ /// 5 & \qquad \text{keep the first } t \text{ pairs of } P
+ ///     \text{, then drop from its end the pairs } ( k - 1 , k )
+ ///     \text{ already at their last choice} \cr
+ /// 6 & \qquad \textbf{if}\ P = ()\ \textbf{then return false}\quad
+ ///     \triangleright\ \text{every run failed} \cr
+ /// 7 & \qquad \text{raise by one the choice of the last pair of } P
  /// \end{array}}
  /// \f]
  template< class A >

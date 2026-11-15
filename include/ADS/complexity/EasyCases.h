@@ -118,20 +118,21 @@ inline std::optional< std::vector< bool > > twoSat( const Cnf & F , int n );
 /// reached, which gives each node the side opposite to that of its parent:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{twoColoring}( G ) \cr
-/// 2 & \quad \textbf{foreach}\ v \in V\ \textbf{do}\ c[ v ] \gets
-///     \textbf{nil} \cr
-/// 3 & \quad \textbf{foreach}\ r \in V \text{ with } c[ r ] = \textbf{nil}
+/// 1 & \textbf{function}\ \mathrm{twoColoring}( G )\quad \triangleright
+///     \ \text{a visit in breadth of each component} \cr
+/// 2 & \quad c[ v ] \gets \textbf{nil} \text{ for every node } v \cr
+/// 3 & \quad \textbf{foreach}\ r \text{ with } c[ r ] = \textbf{nil}
 ///     \ \textbf{do} \cr
 /// 4 & \qquad c[ r ] \gets 0;\ Q \gets ( r ) \cr
 /// 5 & \qquad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
 /// 6 & \qquad\quad u \gets \mathrm{dequeue}( Q ) \cr
 /// 7 & \qquad\quad \textbf{foreach}\ v \ne u \text{ with } G[ u ][ v ]
-///     \ \textbf{do} \cr
-/// 8 & \qquad\qquad \textbf{if}\ c[ v ] = c[ u ]\ \textbf{then return nil} \cr
-/// 9 & \qquad\qquad \textbf{if}\ c[ v ] = \textbf{nil}\ \textbf{then}\ c[ v ]
-///     \gets 1 - c[ u ];\ \mathrm{enqueue}( Q , v ) \cr
-/// 10 & \quad \textbf{return}\ c
+///     \ \textbf{do}\quad \triangleright
+///     \ \text{the other color, or an odd cycle} \cr
+/// 8 & \qquad\qquad \textbf{if}\ c[ v ] = \textbf{nil}\ \textbf{then}\ c[ v
+///     ] \gets 1 - c[ u ];\ \mathrm{enqueue}( Q , v )\ \textbf{else if}\ c[
+///     v ] = c[ u ]\ \textbf{then return nil} \cr
+/// 9 & \quad \textbf{return}\ c
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric
@@ -145,17 +146,16 @@ inline std::optional< std::vector< int > > twoColoring( const Adjacency & G );
 /// In pseudocode (the conclusion), the reduction of section 15.2:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{bipartiteMatching}( p , q , E ) \cr
-/// 2 & \quad N \gets \text{a network of the nodes } 0 , \ldots , p + q + 1;
-///     \ s \gets p + q;\ t \gets p + q + 1 \cr
-/// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ p - 1\ \textbf{do}
-///     \ \text{add } ( s , i ) \text{ of capacity } 1 \cr
-/// 4 & \quad \textbf{for}\ j \gets 0\ \textbf{to}\ q - 1\ \textbf{do}
-///     \ \text{add } ( p + j , t ) \text{ of capacity } 1 \cr
-/// 5 & \quad \textbf{foreach}\ ( i , j ) \in E\ \textbf{do}\ \text{add } ( i ,
-///     p + j ) \text{ of capacity } 1 \cr
-/// 6 & \quad N.\mathrm{maxFlow}( s , t ) \cr
-/// 7 & \quad \textbf{return}\ \text{the } ( i , j ) \in E
+/// 1 & \textbf{function}\ \mathrm{bipartiteMatching}( p , q , E )\quad
+///     \triangleright\ \text{a maximum flow of unit capacities} \cr
+/// 2 & \quad N \gets \text{a network on } 0 , \ldots , p + q + 1
+///     \text{, with the source } s = p + q \text{ and the sink } t = p + q +
+///     1 \cr
+/// 3 & \quad \text{add } ( s , i ) \text{, } ( i , p + j ) \text{ and } ( p
+///     + j , t ) \text{ of capacity } 1 \text{ for each } i < p \text{, } (
+///     i , j ) \in E \text{, } j < q \cr
+/// 4 & \quad N.\mathrm{maxFlow}( s , t ) \cr
+/// 5 & \quad \textbf{return}\ \text{the pairs } ( i , j ) \in E
 ///     \text{ whose edge carries flow}
 /// \end{array}}
 /// \f]
@@ -174,10 +174,9 @@ bipartiteMatching( int p , int q ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{intervalGraph}( I ) \cr
-/// 2 & \quad \textbf{foreach}\ u < v\ \textbf{do} \cr
-/// 3 & \qquad G[ u ][ v ] \gets G[ v ][ u ] \gets \max\{ a_u , a_v \} <
-///     \min\{ b_u , b_v \} \cr
-/// 4 & \quad \textbf{return}\ G
+/// 2 & \quad \textbf{return}\ \text{the graph with } G[ u ][ v ]
+///     \text{ iff } u \ne v \text{ and } \max\{ a_u , a_v \} < \min\{ b_u ,
+///     b_v \}\quad \triangleright\ \text{they meet}
 /// \end{array}}
 /// \f]
 /// \pre each interval \f$ [ a , b ) \f$ has \f$ a \le b \f$
@@ -193,14 +192,15 @@ intervalGraph( const std::vector< std::pair< long , long > > & I );
 /// and so a clique is a set of intervals through one point:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{intervalClique}( I ) \cr
-/// 2 & \quad P \gets \text{the pairs } ( a , +1 ) \text{ and } ( b , -1 )
-///     \text{ of each } [ a , b ) \in I \cr
-/// 3 & \quad \text{sort } P \text{, at equal abscissa } -1 \text{ first} \cr
-/// 4 & \quad c \gets 0;\ \mathit{best} \gets 0 \cr
-/// 5 & \quad \textbf{foreach}\ ( x , \delta ) \in P\ \textbf{do}\ c \gets c +
-///     \delta;\ \mathit{best} \gets \max\{ \mathit{best} , c \} \cr
-/// 6 & \quad \textbf{return}\ \mathit{best}
+/// 1 & \textbf{function}\ \mathrm{intervalClique}( I )\quad \triangleright
+///     \ \text{the most intervals over one point} \cr
+/// 2 & \quad P \gets \text{the ends of } I \text{, a left end as } ( a , +1
+///     ) \text{, a right end as } ( b , -1 ) \cr
+/// 3 & \quad \text{sort } P
+///     \text{ by abscissa, a right end first on a tie}\quad \triangleright
+///     \ [ a , b ) \text{ is open on the right} \cr
+/// 4 & \quad \textbf{return}\ \text{the largest prefix sum of the signs of }
+///     P \text{, or } 0
 /// \end{array}}
 /// \f]
 /// \pre each interval \f$ [ a , b ) \f$ has \f$ a \le b \f$

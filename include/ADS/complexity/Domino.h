@@ -83,17 +83,17 @@ using Tiling = std::vector< std::vector< int > >;  ///< the tile of ( i , j )
 /// In pseudocode (chapter 18), the certificate in \f$ O( n^2 ) \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{legalTiling}( D , n , T ) \cr
-/// 2 & \quad \textbf{if}\ n < 1 \text{, } T \text{ is not } n \times n
-///     \text{ or not of tiles of } D\ \textbf{then return false} \cr
-/// 3 & \quad \textbf{if}\ T[ 0 ][ 0 ] \ne 0\ \textbf{then return false} \cr
-/// 4 & \quad \textbf{foreach}\ \text{square } ( i , j )\ \textbf{do} \cr
-/// 5 & \qquad \textbf{if}\ i + 1 < n \text{ and } D[ T[ i ][ j ]
-///     ].\mathit{right} \ne D[ T[ i + 1 ][ j ] ].\mathit{left}
+/// 1 & \textbf{function}\ \mathrm{legalTiling}( D , n , T )\quad
+///     \triangleright\ T[ i ][ j ] \text{ the tile of the square in column }
+///     i \text{, row } j \cr
+/// 2 & \quad \textbf{if}\ n < 1 \text{, or } T \text{ is not an } n \times n
+///     \text{ table of tiles of } D \text{, or } T[ 0 ][ 0 ] \ne 0
 ///     \ \textbf{then return false} \cr
-/// 6 & \qquad \textbf{if}\ j + 1 < n \text{ and } D[ T[ i ][ j ] ].\mathit{up}
-///     \ne D[ T[ i ][ j + 1 ] ].\mathit{down}\ \textbf{then return false} \cr
-/// 7 & \quad \textbf{return true}
+/// 3 & \quad \textbf{return}\ \text{whether every two neighbors match:} \cr
+///   & \qquad D[ T[ i ][ j ] ].\mathit{right} = D[ T[ i + 1 ][ j ]
+///     ].\mathit{left} \text{ and } D[ T[ i ][ j ] ].\mathit{up} = D[ T[ i
+///     ][ j + 1 ] ].\mathit{down} \cr
+///   & \qquad \text{wherever the second square exists}
 /// \end{array}}
 /// \f]
 inline bool legalTiling( const std::vector< Tile > & D , int n ,
@@ -108,19 +108,17 @@ inline bool legalTiling( const std::vector< Tile > & D , int n ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{place}( s )\quad \triangleright
-///     \ \text{started with } s = 0 \cr
+///     \ \text{the squares } s = i + j n \text{ by rows, from } s = 0 \cr
 /// 2 & \quad \textbf{if}\ s = n^2\ \textbf{then return true} \cr
-/// 3 & \quad i \gets s \bmod n;\ j \gets \lfloor s / n \rfloor \cr
-/// 4 & \quad \textbf{foreach}\ t \in ( \{ 0 \} \text{ if } s = 0
-///     \text{, else } 0 , \ldots , m - 1 )\ \textbf{do} \cr
-/// 5 & \qquad \textbf{if}\ i > 0 \text{ and } D[ T[ i - 1 ][ j ]
-///     ].\mathit{right} \ne D[ t ].\mathit{left}\ \textbf{then continue} \cr
-/// 6 & \qquad \textbf{if}\ j > 0 \text{ and } D[ T[ i ][ j - 1 ] ].\mathit{up}
-///     \ne D[ t ].\mathit{down}\ \textbf{then continue} \cr
-/// 7 & \qquad T[ i ][ j ] \gets t \cr
-/// 8 & \qquad \textbf{if}\ \mathrm{place}( s + 1 )
-///     \ \textbf{then return true} \cr
-/// 9 & \quad \textbf{return false}
+/// 3 & \quad ( i , j ) \gets ( s \bmod n , \lfloor s / n \rfloor ) \cr
+/// 4 & \quad \textbf{foreach}\ \text{tile } t \text{, only } t = 0
+///     \text{ on the first square}\ \textbf{do} \cr
+/// 5 & \qquad \textbf{if}\ t
+///     \text{ matches the tile on its left, if any, and the one below, if }
+///     \text{any}\ \textbf{then} \cr
+/// 6 & \qquad\quad T[ i ][ j ] \gets t;\ \textbf{if}\ \mathrm{place}( s + 1
+///     )\ \textbf{then return true} \cr
+/// 7 & \quad \textbf{return false}
 /// \end{array}}
 /// \f]
 /// \post a covering returned passes `legalTiling()`
@@ -137,21 +135,24 @@ inline std::optional< Tiling > squareTiling( const std::vector< Tile > & D ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{visit}( u )\quad \triangleright
-///     \ \mathit{state}[ u ] \text{ new, open or done} \cr
+///     \ \text{the graph of the tiles, } u \to v \text{ if } v
+///     \text{ fits right of } u \cr
 /// 2 & \quad \mathit{state}[ u ] \gets \text{open} \cr
-/// 3 & \quad \textbf{foreach}\ v \text{ with } D[ u ].\mathit{right} = D[ v
-///     ].\mathit{left}\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ \mathit{state}[ v ] = \text{open}\ \textbf{then}
-///     \ \mathit{cycle} \gets \textbf{true} \cr
-/// 5 & \qquad \textbf{else if}\ \mathit{state}[ v ] = \text{new}
-///     \ \textbf{then}\ \mathrm{visit}( v ) \cr
-/// 6 & \qquad L[ u ] \gets \max\{ L[ u ] , 1 + L[ v ] \} \cr
-/// 7 & \quad \mathit{state}[ u ] \gets \text{done} \cr
-/// 8 & \textbf{function}\ \mathrm{linearTiling}( D , n ) \cr
-/// 9 & \quad \textbf{if}\ n < 1 \text{ or } m = 0
+/// 3 & \quad \textbf{foreach}\ v \text{ with } D[ v ].\mathit{left} = D[ u
+///     ].\mathit{right}\ \textbf{do} \cr
+/// 4 & \qquad \textbf{if}\ \mathit{state}[ v ] = \text{new}\ \textbf{then}
+///     \ \mathrm{visit}( v )\ \textbf{else if}\ \mathit{state}[ v ] =
+///     \text{open}\ \textbf{then}\ \mathit{cycle} \gets \textbf{true} \cr
+/// 5 & \qquad L[ u ] \gets \max\{ L[ u ] , L[ v ] + 1 \}\quad
+///     \triangleright\ \text{the longest row from } u \cr
+/// 6 & \quad \mathit{state}[ u ] \gets \text{done} \cr
+/// 7 & \textbf{function}\ \mathrm{linearTiling}( D , n )\quad
+///     \triangleright\ \text{a row of } n \text{ tiles from the tile } 0 \cr
+/// 8 & \quad \textbf{if}\ n < 1\ \textbf{or}\ m = 0
 ///     \ \textbf{then return false} \cr
-/// 10 & \quad \mathrm{visit}( 0 ) \cr
-/// 11 & \quad \textbf{return}\ \mathit{cycle}\ \textbf{or}\ L[ 0 ] \ge n - 1
+/// 9 & \quad \mathrm{visit}( 0 );\ \textbf{return}\ \mathit{cycle}
+///     \text{ or } n - 1 \le L[ 0 ]\quad \triangleright
+///     \ \text{a cycle gives rows of any length}
 /// \end{array}}
 /// \f]
 inline bool linearTiling( const std::vector< Tile > & D , long n );
