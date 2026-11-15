@@ -3373,7 +3373,7 @@ potentials for a warm start. The class is
 
 ```cpp
 // declarations of <ADS/graph/Assignment.h>
-template< class W = long long >
+template< class W = long long , ReoptPolicy P = RatioPolicy >
 requires std::is_arithmetic_v< W >
 class Assignment {
  public:
@@ -3393,6 +3393,9 @@ class Assignment {
  [[nodiscard]] W columnPotential( int j );
  [[nodiscard]] int outcome( void ) const;
  [[nodiscard]] long long count( int outcome ) const;
+ [[nodiscard]] int cause( void ) const;
+ [[nodiscard]] long long byCause( int c ) const;
+ [[nodiscard]] P & policy( void );
  [[nodiscard]] long long augmentations( void ) const;
  };
 ```
@@ -3783,23 +3786,24 @@ the solution optimal by conditions each of which touches a single edge. It
 models the concept `Reoptimizable`: `apply(e)` and `apply(s)` give it one
 event or a span of them (`notify()` is the same, for the wrapper), and
 `solve()` brings the solution up to date. Then `outcome()` records how the
-last `solve()` with events to apply did it, as a value of `Reopt`: `SCRATCH`
-(0) by the algorithm of the earlier sections, `WARM` (1) by repairing the
-previous solution, and `CERTIFIED` (2) with no computation at all. Events
-are queued, and the work is done at the next query (the lazy flush), which
-the base class `EventQueue<W>` organizes. First, the queue $Q$ is coalesced
-by (14.11) into $P$. If $\lvert P \rvert > \rho \max( m , 1 )$, $\rho$ the
-ratio of `setRecomputeRatio()` ($1 / 4$ by default; the test is
-`tooMany()` of `EventQueue<W>`, which an observer derived from it calls),
-the solution is
-computed from scratch, since a repair that touches a large part of the graph
-costs about as much and is often slower by a constant. Otherwise each event of
+last `solve()` with events to apply did it, as a value of `Reopt` (of
+`Modification.h`): `SCRATCH` (0) by the algorithm of the earlier sections,
+`WARM` (1) by repairing the previous solution, and `CERTIFIED` (2) with no
+computation at all. Events are queued, and the work is done at the next
+query (the lazy flush), which the base class `EventQueue<W, P>` organizes,
+`P` the recompute policy of the observer ([§14.13.3](14-graph.md#sec-14-13-3)).
+First, the queue $Q$ is coalesced by (14.11) into $P$. If the policy says so
+(by default, if $\lvert P \rvert > \rho \max( m , 1 )$, $\rho$ the ratio of
+`setRecomputeRatio()`, $1 / 4$ by default), the solution is computed from
+scratch, since a repair that touches a large part of the graph costs about
+as much and is often slower by a constant. Otherwise each event of
 $P$ is tested against the certificate of the previous solution and found
 *harmless*, *repairable* or *fatal* ([Algorithm
 14.21](14-graph.md#alg-14-21)). Hence the outcome is from scratch if one
 event is fatal, by a repair if one is repairable, and certified if all are
 harmless. `pending()` counts the events waiting, `count(o)` the queries of
-each outcome, and `mask()` contains all the kinds.
+each outcome, `byCause(c)` those of each cause (`cause()` the last one), and
+`mask()` contains all the kinds.
 
 <span id="alg-14-21"></span>**Algorithm 14.21.** The query of every
 observer (beyond the book).
@@ -3885,7 +3889,8 @@ found by lists of the children of $T$, updated whenever a parent changes;
 thus a batch that touches few nodes costs no $\Theta( n )$. When $\lvert A
 \rvert > n / 2$ the tree is computed from scratch, which then costs about as
 much. Only that threshold, the threshold $\rho$ of the events and a negative
-cycle are still fatal.
+cycle are still fatal (the threshold of $n / 2$ is the `abandon()` of the
+policy, see [§14.13.3](14-graph.md#sec-14-13-3)).
 
 For the minimum spanning forest $F$ of an unoriented graph
 (`SpanningForestObserver(g)`, with `forest()`, `weight()` and
@@ -4036,12 +4041,6 @@ and the declarations are
 
 ```cpp
 // declarations of <ADS/graph/Reoptimization.h>
-struct Reopt {
- static constexpr int SCRATCH = 0;
- static constexpr int WARM = 1;
- static constexpr int CERTIFIED = 2;
- };
-
 template< class R , class W >
 concept Reoptimizable = GraphObserver< R , W > &&
  requires( R & r , const GraphEvent< W > & e ,
@@ -4052,23 +4051,29 @@ concept Reoptimizable = GraphObserver< R , W > &&
  { r.outcome() } -> std::convertible_to< int >;
  };
 
-template< class W >
+template< class W , ReoptPolicy P = RatioPolicy >
 class EventQueue {
  public:
  using Event = GraphEvent< W >;
+ using Policy = P;
  [[nodiscard]] static constexpr unsigned mask( void );
  void apply( const Event & e );
  void apply( std::span< const Event > s );
  void notify( const Event & e );
  void notify( std::span< const Event > s );
+ void on( const mod::Rebuilt & ) noexcept;
  [[nodiscard]] std::size_t pending( void ) const;
  [[nodiscard]] int outcome( void ) const;
+ [[nodiscard]] int cause( void ) const;
  [[nodiscard]] long long count( int outcome ) const;
- void setRecomputeRatio( double ratio );
+ [[nodiscard]] long long byCause( int c ) const;
+ [[nodiscard]] P & policy( void );
+ void setRecomputeRatio( double ratio )
+  requires requires( P & p ) { p.rho = 0.0; };
  };
 
-template< Graph G >
-class ShortestPathsObserver : public EventQueue< typename G::Weight > {
+template< Graph G , ReoptPolicy P = RatioPolicy >
+class ShortestPathsObserver : public EventQueue< typename G::Weight , P > {
  public:
  using Weight = typename G::Weight;
  ShortestPathsObserver( const G & g , int r ,
@@ -4076,10 +4081,11 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight > {
  void solve( void );
  [[nodiscard]] const ShortestPathTree< Weight > & tree( void );
  [[nodiscard]] Weight distance( int v );
+ [[nodiscard]] ReoptStats reoptStats( std::size_t k ) const;
  };
 
-template< Graph G >
-class SpanningForestObserver : public EventQueue< typename G::Weight > {
+template< Graph G , ReoptPolicy P = RatioPolicy >
+class SpanningForestObserver : public EventQueue< typename G::Weight , P > {
  public:
  using Weight = typename G::Weight;
  explicit SpanningForestObserver( const G & g );
@@ -4087,11 +4093,12 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
  [[nodiscard]] std::vector< WeightedEdge< Weight > > forest( void );
  [[nodiscard]] Weight weight( void );
  [[nodiscard]] bool inForest( int u , int v );
+ [[nodiscard]] ReoptStats reoptStats( std::size_t k ) const;
  };
 
-template< Graph G >
+template< Graph G , ReoptPolicy P = RatioPolicy >
 requires std::is_integral_v< typename G::Weight >
-class MaxFlowObserver : public EventQueue< typename G::Weight > {
+class MaxFlowObserver : public EventQueue< typename G::Weight , P > {
  public:
  using Weight = typename G::Weight;
  MaxFlowObserver( const G & g , int s , int t ,
@@ -4099,11 +4106,12 @@ class MaxFlowObserver : public EventQueue< typename G::Weight > {
  void solve( void );
  [[nodiscard]] long long value( void );
  [[nodiscard]] const std::vector< bool > & minCut( void );
+ [[nodiscard]] ReoptStats reoptStats( std::size_t k ) const;
  };
 
-template< Graph G >
+template< Graph G , ReoptPolicy P = RatioPolicy >
 requires std::is_arithmetic_v< typename G::Weight >
-class AssignmentObserver : public EventQueue< typename G::Weight > {
+class AssignmentObserver : public EventQueue< typename G::Weight , P > {
  public:
  using Weight = typename G::Weight;
  AssignmentObserver( const G & g , int k );
@@ -4111,6 +4119,8 @@ class AssignmentObserver : public EventQueue< typename G::Weight > {
  [[nodiscard]] Assignment< Weight > & assignment( void );
  [[nodiscard]] int partner( int i );
  [[nodiscard]] Weight total( void );
+ [[nodiscard]] P & policy( void );
+ [[nodiscard]] ReoptStats reoptStats( std::size_t k ) const;
  };
 ```
 
@@ -4146,6 +4156,236 @@ change of the edge $( u , v )$, and the work of each outcome.
 | `SpanningForestObserver` | (14.13) still true, $O( \log n )$ | a swap on a cycle, $O( \log n )$; an edge of $F$ raised or deleted, the lightest edge out of the smaller part | more than $\rho m$ events |
 | `MaxFlowObserver` | $c' \ge f( u , v )$ off the cut, $O( 1 )$ | an edge of the cut raised, the maximum from $f$; $c' < f( u , v )$, the excess and the deficit routed first | more than $\rho m$ events |
 | `AssignmentObserver` | a cost off the assignment with reduced cost still $\ge 0$, $O( 1 )$ | a row or a column changed, one augmentation | more than $n / 2$ rows and columns changed |
+
+### 14.13.3 The recompute policy {#sec-14-13-3}
+
+We now make explicit the thresholds of the previous section, which are the
+answers of an object owned by each observer, its *recompute policy*. This
+is a model of the concept `ReoptPolicy` of `Modification.h`, which the
+observer consults at three points: before the repair, by `scratch(s)`, with
+the net events and the size of the instance in a `ReoptStats` $s$; while
+the repair runs, by `abandon(s, w)`, with its work $w$ so far and the work
+of a computation from scratch; after it, by `record(c, w)`, with the cause
+$c$ of the outcome. The work is a count of elementary operations that the
+observer typically keeps anyway (e.g., nodes, edges, extractions, rows),
+never a time; hence, a policy decides in the same way on any machine, and its
+thresholds may be tuned on a busy one. This follows the dynamic algorithms
+that stop a reconstruction on its measured work, instead of on the number
+of the events (cf. the survey of [Hanauer, Henzinger and Schulz
+2022](Z-bibliography.md#ref-hanauer2022)).
+
+The default `RatioPolicy` computes from scratch when
+$k > \rho \max( s , 1 )$, with $k$ the events and $s$ the size, and
+abandons a repair when $w > \alpha \ell$, with $\ell$ the work of a
+computation from scratch, or (for the shortest paths) when a node is
+extracted more than $\beta > 0$ times beyond its first. Its defaults are
+$\rho = 1 / 4$, $\alpha = 1 / 2$ and $\beta = 0$, i.e., no limit on the
+extractions, and the forest sets $\alpha = 1$ in its object. Thus, the
+shortest paths consult `abandon()` with $w = \lvert A \rvert$ of [Lemma
+14.49](14-graph.md#lem-14-49) and $\ell = n$, the nodes that a computation
+from scratch settles at most, when $A$ is not empty, and again whenever a
+node is extracted twice or more. In the forest, $w$ is the cuts times the
+mean work of its replacements so far, and $\ell$ is the nodes plus the
+edges off $F$, which is the work of the join of the trees (done, on a yes,
+in place of the replacements one at a time). For the assignment
+$w = \lvert D_r \rvert + \lvert D_c \rvert$ and $\ell = n$, while the
+maximum flow uses only `scratch()`. Also, each observer counts its queries
+by cause (`byCause(c)`): `CERTIFIED` and `WARM` as the outcomes,
+`SCRATCH_BY_SIZE` after a yes of `scratch()`, `SCRATCH_BY_ABORT` after a
+yes of `abandon()`, and `SCRATCH_BY_EVENT` with no solution yet, after a
+`Rebuilt` or on a negative cycle. A last cause, `PARTIAL`, is for a repair
+stopped by a budget, which none of these observers has (at least for now).
+Summed by
+`Reopt::outcomeOf()`, the causes give the counts of `count()`.
+
+<span id="lem-14-52"></span>**Lemma 14.52.** *With `RatioPolicy` and its
+default values, each observer computes from scratch at the same queries as
+with the fixed thresholds of [§14.13.2](14-graph.md#sec-14-13-2) and of
+[§14.11.3](14-graph.md#sec-14-11-3), and repairs or certifies at the
+others; hence, it gives the same solutions with the same counts of the
+outcomes.*
+
+*Proof.* As for the events, the test is the same expression of floating
+point as before. For the others, $w > \ell / 2$ with $w$ and $\ell$ integers
+below $2^{53}$ is the same as $2 w > \ell$, since $\ell / 2$ is exact in
+floating point, and $w > 1 \cdot \ell$ is the same as $w > \ell$. This
+gives $2 \lvert A \rvert > n$, the batch of the forest when its cuts times
+the mean work exceed $n$ plus the edges off $F$, and $2 ( \lvert D_r \rvert
++ \lvert D_c \rvert ) > n$. Also, the shortest paths skip the test when
+$A = \emptyset$, where $2 \lvert A \rvert > n$ is false anyway. At an
+extraction beyond the first the answer is no, since $\beta = 0$ switches
+off the second part of the test and its first part is
+$2 \lvert A \rvert > n$, already false; also, the detection of a negative
+cycle (more than $n$ extractions) comes before it, as before. At the close
+of a batch `scratch()` is called with `closing` set, and it answers no
+unless `early` is set; hence, the subject sends the events as before.
+Finally, the policy keeps no state (its `record()` is empty), the
+tests come in the order of the old ones, each cause maps to the outcome of
+before, and the periodic sum of the floating total of the forest changes
+that total only (it is skipped for exact weights). $\square$
+
+We also checked the counts by running the observers of before and of now
+on the same sequences of changes and queries (the shortest paths with and
+without damage to the tree, the forest with one and with forty changes at a
+time, the flow and the assignment, at five values of $\rho$), which gave
+the same counts of each outcome and the same answers. By the next lemma, a
+policy written by the user may change the work, but not the solutions.
+
+<span id="lem-14-53"></span>**Lemma 14.53.** *At any query of an
+observer, and at any point of its repair, a computation from scratch in
+place of the repair gives an optimal solution of the graph of now, whatever
+the policy answered, and also after a `Rebuilt` that made the observer
+drop its queue.*
+
+*Proof.* A computation from scratch reads only the graph, or a copy of it
+updated by the events of the query, and it overwrites the state that the
+repair may have touched. Indeed, the shortest paths compute the tree by the
+algorithm of [§14.8.1](14-graph.md#sec-14-8-1) on the graph, and rebuild
+the lists of the children of $T$ (the marks of $A$ are cleared before, the
+counts of the extractions are reset by the repair before it returns, and
+the lists of the entering edges are dropped, to be built again when
+needed). The forest runs Kruskal on its copy of the edges, to which the
+query has already applied the events of $P$, or on a copy made again from
+the graph after `Rebuilt`. The maximum flow builds its network again from
+the graph. The assignment computes from its costs, into which the events of
+$P$ were written (or which are read again from the graph after `Rebuilt`).
+In each case the solution is optimal by the correctness of the algorithm of
+the earlier sections, and its certificate is the one that the next query
+tests. $\square$
+
+On floating weights the total weight of the forest, kept by additions and
+subtractions, drifts: after $k$ terms a plain sum has an error of the order
+of $k \varepsilon$ times the largest magnitude added ([Higham 2002, chapter
+4](Z-bibliography.md#ref-higham2002)), and an edge raised to $10^{17}$ and
+lowered back may make it larger than the total of the other edges. The
+policy bounds the drift in two ways. First, the total is summed again from
+$F$ after `period` times $\lvert F \rvert$ changes (`period` $= 1$ by
+default), at an amortized cost of $O( 1 )$ per change. Second, with
+`compensated` the sum is that of [Neumaier
+1974](Z-bibliography.md#ref-neumaier1974) (`NeumaierSum`), whose error is
+of the order of $\varepsilon$ times the sum of the absolute values of the
+terms, independently of $k$. At the level of the audits, the observer
+compares its total with the sum over $F$ within $10^{-9}$ times the sum of
+the absolute weights of $F$. Of course, the default periodic sum may fail
+this test on adversarial magnitudes between two sums, and the tests rely on
+the audit to catch such cases.
+
+With `early`, a yes of `scratch()` at the close of a batch makes the
+subject send `Rebuilt` to that observer instead of the events (the early
+stop of [Hammer et al. 2014](Z-bibliography.md#ref-hammer2014)). The
+observer then forgets its queue, ignores the events until its next query,
+and computes from scratch there, correctly by [Lemma
+14.53](14-graph.md#lem-14-53). This saves the copy and the coalescing of a
+batch that would be thrown away anyway. However, it may change the counts,
+since the events after the batch might cancel enough of it to fall below the
+threshold at the query, and for this reason it is not the default. We also
+made the wrapper undoable within its batches (`checkpoint()` and
+`rollback()`), which gives the strong guarantee to a batch that exits by
+an exception, as follows.
+
+<span id="lem-14-54"></span>**Lemma 14.54.** *Let a batch collect the
+events $e_1 , \ldots , e_k$ of changes of edges only, with every kind
+listened to. Applying the inverses $e_k^{-1} , \ldots , e_1^{-1}$ under a
+mute gives back the weight of each edge (or its absence), and the
+observers, which receive nothing, are as before the batch.*
+
+*Proof.* A change of an edge through the wrapper emits its event, since
+all the kinds are wanted, and the batch collects it with the old value. The
+inverse $e_i^{-1}$ restores the state of the edge of $e_i$ before $e_i$;
+hence, by induction from $i = k$ down to $1$, each edge gets back its state
+before the batch. The inverses emit no event under the mute, and the events
+of the batch are dropped. $\square$
+
+The graph is then the same up to the order of the edges in its lists,
+which the observers read only to break ties. A node inserted or deleted has
+no such inverse, since the numbers of the nodes are not reused; a batch
+that holds one is therefore sent to the observers, as on a structure that
+cannot be undone. Speculative changes outside a batch are undone by an
+`UndoLog` attached to the wrapper, whose `rollback()` applies the inverses
+through `apply()` in one batch, and the observers then repair by its net
+effect (a change of a node is a hole in the log). The declarations are
+
+```cpp
+// declarations of <ADS/Modification.h>
+struct Reopt {
+ static constexpr int SCRATCH = 0;
+ static constexpr int WARM = 1;
+ static constexpr int CERTIFIED = 2;
+ static constexpr int SCRATCH_BY_SIZE = 3;
+ static constexpr int SCRATCH_BY_ABORT = 4;
+ static constexpr int SCRATCH_BY_EVENT = 5;
+ static constexpr int PARTIAL = 6;
+ static constexpr int CAUSES = 7;
+ [[nodiscard]] static constexpr int outcomeOf( int c );
+ };
+
+struct ReoptStats {
+ std::size_t events = 0;
+ std::size_t size = 0;
+ double work = 0;
+ double lastScratch = 0;
+ std::size_t reinsertions = 0;
+ bool closing = false;
+ };
+
+template< class P >
+concept ReoptPolicy = requires( P & p , const ReoptStats & s , int outcome ,
+                                double w ) {
+ { p.scratch( s ) } -> std::convertible_to< bool >;
+ { p.abandon( s , w ) } -> std::convertible_to< bool >;
+ p.record( outcome , w );
+ };
+
+struct RatioPolicy {
+ double rho = 0.25;
+ double alpha = 0.5;
+ int beta = 0;
+ bool early = false;
+ double period = 1;
+ bool compensated = false;
+ [[nodiscard]] bool scratch( const ReoptStats & s ) const;
+ [[nodiscard]] bool abandon( const ReoptStats & s , double w ) const;
+ void record( int , double ) const;
+ [[nodiscard]] bool refresh( std::size_t c , std::size_t n ) const;
+ };
+
+template< class T >
+class NeumaierSum {
+ public:
+ explicit NeumaierSum( bool compensated = false );
+ void add( const T & x );
+ void sub( const T & x );
+ [[nodiscard]] T value( void ) const;
+ void reset( const T & x = T() );
+ void compensate( bool on );
+ [[nodiscard]] bool compensated( void ) const;
+ };
+```
+
+--8<-- "generated/Modification-NeumaierSum-add.pseudo.md"
+
+For instance, with the headers of the example of
+[§14.13.2](14-graph.md#sec-14-13-2),
+
+```cpp
+ADS::ListGraph< int > g( 3 );              // oriented
+g.insertEdge( 0 , 1 , 2 );
+g.insertEdge( 1 , 2 , 2 );
+using SP = ADS::ShortestPathsObserver< ADS::ListGraph< int > >;
+SP P( g , 0 );
+ADS::Observable< ADS::ListGraph< int > , SP > G( g , P );
+int d = P.distance( 2 );                   // d is 4, by SCRATCH_BY_EVENT
+P.policy().rho = 0;                        // every event too many
+G.setWeight( 1 , 2 , 1 );
+d = P.distance( 2 );                       // d is 3, by SCRATCH_BY_SIZE
+try {
+ auto b = G.batch();
+ G.setWeight( 0 , 1 , 9 );
+ throw( std::runtime_error( "abort" ) );   // the weight is 2 again,
+ }                                         // and P told nothing
+catch( const std::runtime_error & ) {}
+long long k = P.byCause( ADS::Reopt::SCRATCH_BY_SIZE );   // k is 1
+```
 
 ## 14.14 Discussion and references {#sec-14-14}
 

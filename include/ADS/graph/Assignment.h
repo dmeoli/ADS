@@ -20,7 +20,11 @@
  *
  * The changes are queued by `setCost()`, `setRow()` and `setColumn()`, and
  * worked at the next query, as the observers of `Reoptimization.h` do,
- * which hold the same counts of the outcomes [see `Reopt`]; the observer
+ * which hold the same counts of the outcomes and of their causes [see
+ * `Reopt`]; the scratch when more than half of the rows and the columns
+ * changed is the `abandon()` of the recompute policy `P` [see
+ * `RatioPolicy`, with \f$ \alpha = 1 / 2 \f$ against the \f$ n \f$ rows
+ * that a scratch frees]; the observer
  * `AssignmentObserver` of `Reoptimization.h` keeps an assignment on the
  * weights of a bipartite graph that changes. The libraries of graphs solve
  * the assignment from scratch (LEMON by its minimum cost flows, SciPy by
@@ -73,6 +77,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Modification.h"
 #include "ADS/graph/ShortestPaths.h"
 
 #include <cstddef>
@@ -92,7 +97,7 @@ namespace ADS {
 
 /// an assignment of least cost of \f$ n \f$ rows to \f$ n \f$ columns, kept
 /// optimal after the changes of the costs
-template< class W = long long >
+template< class W = long long , ReoptPolicy P = RatioPolicy >
 requires std::is_arithmetic_v< W >
 class Assignment {
 
@@ -128,7 +133,7 @@ class Assignment {
 
  /// brings the assignment up to date
  ///
- /// In pseudocode (beyond the book; it is correct by Lemma 9 of
+ /// In pseudocode (beyond the book; it is correct by Lemma 15 of
  /// \ref theory_graph_assign), with \f$ u \f$ and \f$ v \f$ the
  /// potentials of the rows and of the columns, \f$ D_r \f$ and \f$ D_c \f$
  /// the rows and the columns changed since the last query:
@@ -136,7 +141,8 @@ class Assignment {
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{solve}() \cr
  /// 2 & \quad \textbf{if}\ \text{there is no assignment yet}
- ///     \textbf{ or } 2 ( |D_r| + |D_c| ) > n\ \textbf{then} \cr
+ ///     \textbf{ or } p.\mathrm{abandon}( |D_r| + |D_c| , n )
+ ///     \ \textbf{then} \cr
  /// 3 & \qquad v \gets 0;\ u_i \gets \min_j c( i , j ) \text{ for each }
  ///     i;\ \text{every row free} \cr
  /// 4 & \quad \textbf{else} \cr
@@ -176,7 +182,7 @@ class Assignment {
  [[nodiscard]] W columnPotential( int j );
 
  /// how the last `solve()` with changes, or with no assignment yet, did
- /// it [see `Reopt` of `Reoptimization.h`]: 0 from scratch, 1 by the
+ /// it [see `Reopt` of `Modification.h`]: 0 from scratch, 1 by the
  /// augmentations of the rows freed, 2 with no work
  [[nodiscard]] int outcome( void ) const { return( f_outcome ); }
 
@@ -184,6 +190,22 @@ class Assignment {
  [[nodiscard]] long long count( int outcome ) const {
   return( f_count[ outcome ] );
   }
+
+ /// why: the cause of the last outcome [see `Reopt`]
+ [[nodiscard]] int cause( void ) const { return( f_cause ); }
+
+ /// the solves of each cause so far
+ /// \pre \f$ c \in [ 1 , \mathrm{Reopt::CAUSES} ) \f$
+ [[nodiscard]] long long byCause( int c ) const {
+  ADS_PRE( ( c > 0 ) && ( c < Reopt::CAUSES ) );
+  return( f_byCause[ c ] );
+  }
+
+ /// the recompute policy, whose `abandon()` decides the scratch of line 2
+ /// [see `RatioPolicy`]
+ [[nodiscard]] P & policy( void ) { return( f_policy ); }
+ /// the recompute policy
+ [[nodiscard]] const P & policy( void ) const { return( f_policy ); }
 
  /// the augmentations so far
  [[nodiscard]] long long augmentations( void ) const { return( f_aug ); }
@@ -260,7 +282,10 @@ class Assignment {
  bool f_ready = false;                     ///< whether there is one
  bool f_pending = false;                   ///< whether changes wait
  int f_outcome = 0;                        ///< the last outcome
+ int f_cause = Reopt::SCRATCH_BY_EVENT;    ///< the last cause
  long long f_count[ 3 ] = { 0 , 0 , 0 };   ///< the solves by outcome
+ long long f_byCause[ Reopt::CAUSES ] = {};   ///< the solves by cause
+ P f_policy{};                             ///< the recompute policy
  long long f_aug = 0;                      ///< the augmentations
 
  };  // end( class Assignment )

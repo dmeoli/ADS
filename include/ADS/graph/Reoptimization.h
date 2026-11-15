@@ -21,21 +21,31 @@
  * `Reopt::WARM` (1) by repairing the previous solution, and
  * `Reopt::CERTIFIED` (2) with no computation at all. The events are queued
  * and the work is done at the next query, i.e., `solve()` or any read of
- * the solution: the queue is coalesced, and if its net events exceed
- * \f$ \rho \max( m , 1 ) \f$ (\f$ \rho \f$ of `setRecomputeRatio()`,
- * \f$ 1 / 4 \f$ by default) the solution is computed from scratch, else
- * each event is tested against the certificate in \f$ O( 1 ) \f$ (in
- * \f$ O( \log n ) \f$ for the forest), and by Lemma 7 of
- * \ref theory_graph_dynamic the events all harmless prove the solution
- * still optimal. The shortest paths are repaired after the raises and the
- * deletions of the edges of the tree as well as after the decreases, on
- * the subtrees whose distances are lost (Lemma 8 of
- * \ref theory_graph_dynamic). The maximum flow starts again from the flow
- * there is when an edge of the minimum cut grows, and when a capacity falls
- * below the flow of its edge, after its excess and its deficit are routed
- * [see `FlowNetwork::setCapacity()`], by the augmenting paths or by the
- * push-relabel: a warm start that the maximum flow of OR-Tools leaves to
- * do.
+ * the solution: the queue is coalesced, and if the recompute policy of the
+ * observer says so [see `ReoptPolicy` of `Modification.h`; by default
+ * `RatioPolicy`, i.e., when its net events exceed \f$ \rho \max( m , 1 )
+ * \f$, \f$ \rho \f$ of `setRecomputeRatio()`, \f$ 1 / 4 \f$ by default]
+ * the solution is computed from scratch, else each event is tested against
+ * the certificate in \f$ O( 1 ) \f$ (in \f$ O( \log n ) \f$ for the
+ * forest), and by Lemma 13 of \ref theory_graph_dynamic the events all
+ * harmless prove the solution still optimal. A repair may be abandoned by
+ * the policy for one from scratch, on its work counted in nodes, edges or
+ * extractions (never a time), and each observer counts its queries by
+ * cause (`byCause()`, the causes of `Reopt`); the default policy decides
+ * as the fixed thresholds of the observers did (Lemma 16 of
+ * \ref theory_graph_policy), and a computation from scratch in place of a
+ * repair is always correct (Lemma 17). An observer that gets `Rebuilt`
+ * (which a batch sends instead of its events when the policy asks it at
+ * the close, with `RatioPolicy::early`) forgets its queue, takes no event
+ * until its next query, and computes the solution from scratch there. The
+ * shortest paths are repaired after the raises and the deletions of the
+ * edges of the tree as well as after the decreases, on the subtrees whose
+ * distances are lost (Lemma 14 of \ref theory_graph_dynamic). The maximum
+ * flow starts again from the flow there is when an edge of the minimum cut
+ * grows, and when a capacity falls below the flow of its edge, after its
+ * excess and its deficit are routed [see `FlowNetwork::setCapacity()`], by
+ * the augmenting paths or by the push-relabel: a warm start that the
+ * maximum flow of OR-Tools leaves to do.
  *
  * The contracts [see `Contract.h`]: the root, and the source and the sink,
  * stay nodes of the graph; the graph of `SpanningForestObserver` is
@@ -44,8 +54,10 @@
  * that sends it the events (or one changed in the same way). At the level
  * of the audits each `solve()` checks its result: the conditions of
  * Bellman by `isShortestPathTree()`, the forest by
- * `isMinimumSpanningForest()` on the graphs of at most 2000 edges, and
- * \f$ | f | = c( S , V \setminus S ) \f$ on the graph. The operations are
+ * `isMinimumSpanningForest()` on the graphs of at most 2000 edges, and its
+ * total weight within \f$ 10^{-9} \f$ times the sum of the absolute weights
+ * (exactly, on exact weights), and \f$ | f | = c( S , V \setminus S ) \f$
+ * on the graph. The operations are
  * defined in `Reoptimization.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 11, 14
@@ -132,13 +144,6 @@ namespace ADS {
 /*-------------------------------- CONCEPTS --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// how a `solve()` brought the solution up to date
-struct Reopt {
- static constexpr int SCRATCH = 0;     ///< from scratch
- static constexpr int WARM = 1;        ///< by a repair
- static constexpr int CERTIFIED = 2;   ///< by the certificate, no work
- };
-
 /// a solution that follows the events of weights `W`
 template< class R , class W >
 concept Reoptimizable = GraphObserver< R , W > &&
@@ -154,53 +159,68 @@ concept Reoptimizable = GraphObserver< R , W > &&
 /*--------------------------- CLASS EventQueue -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the queue of the events and the counts that the observers share
+/// the queue of the events, the recompute policy `P` [see `ReoptPolicy`]
+/// and the counts that the observers share
 ///
 /// In pseudocode (beyond the book; Lemma 13 of \ref theory_graph_dynamic
-/// proves it correct), the query of every observer, with \f$ Q \f$ the
-/// queue and \f$ \rho \f$ the ratio of `setRecomputeRatio()`:
+/// and Lemma 17 of \ref theory_graph_policy prove it correct), the query
+/// of every observer, with \f$ Q \f$ the queue and \f$ p \f$ the policy:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{solve}() \cr
-/// 2 & \quad \textbf{if}\ \text{there is no solution yet}\ \textbf{then}
+/// 2 & \quad \textbf{if}\ \text{there is no solution yet, or }
+///     \mathrm{Rebuilt}\ \text{came}\ \textbf{then}
 ///     \ \text{compute it from scratch};\ \textbf{return} \cr
 /// 3 & \quad P \gets \mathrm{coalesce}( Q );\ Q \gets \emptyset \cr
-/// 4 & \quad \textbf{if}\ |P| > \rho \max( m , 1 )\ \textbf{then}
+/// 4 & \quad \textbf{if}\ p.\mathrm{scratch}( |P| , m )\ \textbf{then}
 ///     \ \text{compute from scratch};\ \textbf{return} \cr
 /// 5 & \quad \textbf{foreach}\ e \in P\ \textbf{do}\ \text{test } e
 ///     \text{ against the certificate} \cr
-/// 6 & \quad \textbf{if}\ \text{an event is fatal}\ \textbf{then}
-///     \ \text{compute from scratch} \cr
+/// 6 & \quad \textbf{if}\ \text{an event is fatal, or } p.\mathrm{abandon}(
+///     \text{the work})\ \textbf{then}\ \text{compute from scratch} \cr
 /// 7 & \quad \textbf{else if}\ \text{an event is repairable}
 ///     \ \textbf{then}\ \text{repair the solution} \cr
-/// 8 & \quad \textbf{else}\ \text{keep it, certified}
+/// 8 & \quad \textbf{else}\ \text{keep it, certified} \cr
+/// 9 & \quad p.\mathrm{record}( \text{the cause} , \text{the work} )
 /// \end{array}}
 /// \f]
-template< class W >
+template< class W , ReoptPolicy P = RatioPolicy >
 class EventQueue {
 
 /*--------------------------------------------------------------------------*/
  public:
 
  using Event = GraphEvent< W >;   ///< the type of the events
+ using Policy = P;                ///< the type of the policy
 
  /// all the kinds of event
  [[nodiscard]] static constexpr unsigned mask( void ) {
   return( GraphEvents::ALL );
   }
 
- /// queues \f$ e \f$
- void apply( const Event & e ) { f_q.push_back( e ); }
+ /// queues \f$ e \f$, unless `Rebuilt` came since the last query
+ void apply( const Event & e ) {
+  if( ! f_stale )
+   f_q.push_back( e );
+  }
 
- /// queues the events of \f$ s \f$
+ /// queues the events of \f$ s \f$, unless `Rebuilt` came
  void apply( std::span< const Event > s ) {
-  f_q.insert( f_q.end() , s.begin() , s.end() );
+  if( ! f_stale )
+   f_q.insert( f_q.end() , s.begin() , s.end() );
   }
 
  /// `apply( e )`, for the `Observable`
  void notify( const Event & e ) { apply( e ); }
  /// `apply( s )`, for the `Observable`
  void notify( std::span< const Event > s ) { apply( s ); }
+
+ /// forgets the queue, and takes no event until the next query, which
+ /// computes the solution from scratch
+ void on( const mod::Rebuilt & ) noexcept {
+  f_q.clear();
+  f_stale = true;
+  }
 
  /// the events waiting for the next query
  [[nodiscard]] std::size_t pending( void ) const { return( f_q.size() ); }
@@ -209,17 +229,33 @@ class EventQueue {
  /// did it [see `Reopt`]
  [[nodiscard]] int outcome( void ) const { return( f_outcome ); }
 
+ /// why: the cause of the last outcome [see `Reopt`]
+ [[nodiscard]] int cause( void ) const { return( f_cause ); }
+
  /// the solves of each outcome so far
  [[nodiscard]] long long count( int outcome ) const {
   return( f_count[ outcome ] );
   }
 
+ /// the solves of each cause so far
+ /// \pre \f$ c \in [ 1 , \mathrm{Reopt::CAUSES} ) \f$
+ [[nodiscard]] long long byCause( int c ) const {
+  ADS_PRE( ( c > 0 ) && ( c < Reopt::CAUSES ) );
+  return( f_byCause[ c ] );
+  }
+
+ /// the recompute policy
+ [[nodiscard]] P & policy( void ) { return( f_policy ); }
+ /// the recompute policy
+ [[nodiscard]] const P & policy( void ) const { return( f_policy ); }
+
  /// from scratch when the events coalesced exceed \f$ \mathit{ratio} \f$
- /// times the edges
+ /// times the edges: \f$ \rho \f$ of the policy
  /// \pre \f$ \mathit{ratio} \ge 0 \f$
- void setRecomputeRatio( double ratio ) {
+ void setRecomputeRatio( double ratio )
+  requires requires( P & p ) { p.rho = 0.0; } {
   ADS_PRE( ratio >= 0 );
-  f_ratio = ratio;
+  f_policy.rho = ratio;
   }
 
 /*--------------------------------------------------------------------------*/
@@ -227,26 +263,57 @@ class EventQueue {
 
  /// the queue coalesced, emptied
  std::vector< Event > take( void ) {
-  std::vector< Event > P = coalesce< W >( std::span< const Event >( f_q ) );
+  std::vector< Event > E = coalesce< W >( std::span< const Event >( f_q ) );
   f_q.clear();
-  return( P );
+  return( E );
   }
 
- /// whether \f$ k \f$ events are too many for \f$ m \f$ edges
- [[nodiscard]] bool tooMany( std::size_t k , long long m ) const {
-  return( double( k ) > f_ratio * double( m > 1 ? m : 1 ) );
+ /// the statistics of \f$ k \f$ events on \f$ m \f$ edges
+ [[nodiscard]] static ReoptStats stats( std::size_t k , long long m ) {
+  ReoptStats s;
+  s.events = k;
+  s.size = std::size_t( m > 0 ? m : 0 );
+  return( s );
   }
 
- /// the outcome of a `solve()` recorded
- void done( int outcome ) {
-  f_outcome = outcome;
-  ++f_count[ outcome ];
+ /// whether the policy wants \f$ k \f$ events on \f$ m \f$ edges from
+ /// scratch
+ [[nodiscard]] bool tooMany( std::size_t k , long long m ) {
+  return( bool( f_policy.scratch( stats( k , m ) ) ) );
+  }
+
+ /// whether a solve from scratch is due before any event: no solution
+ /// yet, or `Rebuilt`; the queue then emptied
+ [[nodiscard]] bool fresh( bool ready ) {
+  if( ready && ! f_stale )
+   return( false );
+  f_q.clear();
+  f_stale = false;
+  return( true );
+  }
+
+ /// the cause of a `solve()` counted, not told to the policy
+ void tally( int cause ) {
+  f_cause = cause;
+  f_outcome = Reopt::outcomeOf( cause );
+  ++f_count[ f_outcome ];
+  ++f_byCause[ cause ];
+  }
+
+ /// the cause of a `solve()` counted and told to the policy with the work
+ /// \f$ w \f$
+ void done( int cause , double w ) {
+  tally( cause );
+  f_policy.record( cause , w );
   }
 
  std::vector< Event > f_q;              ///< the events queued
- double f_ratio = 0.25;                 ///< the ratio of `setRecomputeRatio()`
+ P f_policy{};                          ///< the recompute policy
+ bool f_stale = false;                  ///< whether `Rebuilt` came
  int f_outcome = Reopt::SCRATCH;        ///< the last outcome
+ int f_cause = Reopt::SCRATCH_BY_EVENT; ///< the last cause
  long long f_count[ 3 ] = { 0 , 0 , 0 };   ///< the solves by outcome
+ long long f_byCause[ Reopt::CAUSES ] = {};   ///< the solves by cause
 
  };  // end( class EventQueue )
 
@@ -254,9 +321,10 @@ class EventQueue {
 /*---------------------- CLASS ShortestPathsObserver -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the shortest paths from \f$ r \f$ in \f$ g \f$, kept up to date
-template< Graph G >
-class ShortestPathsObserver : public EventQueue< typename G::Weight > {
+/// the shortest paths from \f$ r \f$ in \f$ g \f$, kept up to date, by
+/// the recompute policy `P`
+template< Graph G , ReoptPolicy P = RatioPolicy >
+class ShortestPathsObserver : public EventQueue< typename G::Weight , P > {
 
 /*--------------------------------------------------------------------------*/
  public:
@@ -284,8 +352,9 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight > {
  /// 3 & \quad L \gets \text{the arcs lowered or inserted in } P \cr
  /// 4 & \quad A \gets \text{the nodes of the subtrees of } T \text{ under }
  ///     R \cr
- /// 5 & \quad \textbf{if}\ 2 |A| > n\ \textbf{then}\ \text{from scratch};
- ///     \ \textbf{return} \cr
+ /// 5 & \quad \textbf{if}\ p.\mathrm{abandon}( |A| , n )\ \textbf{then}
+ ///     \ \text{from scratch};\ \textbf{return}
+ ///     \quad \triangleright\ \text{by default } 2 |A| > n \cr
  /// 6 & \quad \textbf{foreach}\ x \in A\ \textbf{do}\ d[ x ] \gets \infty;
  ///     \ T[ x ] \gets \textbf{nil} \cr
  /// 7 & \quad S \gets \emptyset \cr
@@ -305,9 +374,12 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight > {
  /// 16 & \qquad \textbf{if}\ u \text{ was extracted more than } n
  ///     \text{ times}\ \textbf{then}\ \text{Bellman-Ford-Moore};
  ///     \ \textbf{return} \cr
- /// 17 & \qquad \textbf{foreach}\ ( u , v ) \in E\ \textbf{with}
+ /// 17 & \qquad \textbf{if}\ u \text{ was extracted before and }
+ ///     p.\mathrm{abandon}\ \text{on its reinsertions}\ \textbf{then}
+ ///     \ \text{from scratch};\ \textbf{return} \cr
+ /// 18 & \qquad \textbf{foreach}\ ( u , v ) \in E\ \textbf{with}
  ///     \ d[ u ] + w( u , v ) < d[ v ]\ \textbf{do} \cr
- /// 18 & \qquad\quad d[ v ] \gets d[ u ] + w( u , v );\ T[ v ] \gets u;
+ /// 19 & \qquad\quad d[ v ] \gets d[ u ] + w( u , v );\ T[ v ] \gets u;
  ///     \ \mathrm{insert}( H , v , d[ v ] )
  /// \end{array}}
  /// \f]
@@ -326,19 +398,29 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight > {
   return( f_R.d[ v ] );
   }
 
+ /// the statistics of a query after \f$ k \f$ more events, for the
+ /// policy: the events queued and the edges
+ [[nodiscard]] ReoptStats reoptStats( std::size_t k ) const;
+
 /*--------------------------------------------------------------------------*/
  private:
 
- using B = EventQueue< Weight >;
+ using B = EventQueue< Weight , P >;
 
  /// the tree from scratch, by `how`
  void scratch( Frontier how );
 
  using Event = GraphEvent< Weight >;   ///< the type of the events
 
- /// the prototype from the seeds \f$ S \f$, which it empties; false if a
- /// node was extracted more than \f$ n \f$ times (a negative cycle)
- bool repair( std::vector< int > & S );
+ /// the prototype from the seeds \f$ S \f$, which it leaves with the
+ /// nodes extracted: `REPAIRED`, `CYCLE` if a node was extracted more than
+ /// \f$ n \f$ times (a negative cycle), `ABANDONED` if the policy gave up
+ /// on the reinsertions, polled with the statistics \f$ s \f$
+ int repair( std::vector< int > & S , ReoptStats & s );
+
+ static constexpr int REPAIRED = 0;    ///< the repair ended
+ static constexpr int CYCLE = 1;       ///< a negative cycle found
+ static constexpr int ABANDONED = 2;   ///< the repair abandoned
 
  /// the lists of the children of \f$ T \f$, from the parents
  void buildTree( void );
@@ -358,8 +440,8 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight > {
  /// the arcs that enter each node, from the graph
  void buildIn( void );
 
- /// the events \f$ P \f$ on the arcs that enter each node
- void applyIn( std::span< const Event > P );
+ /// the events \f$ C \f$ on the arcs that enter each node
+ void applyIn( std::span< const Event > C );
 
  /// `f( u , w )` for each arc \f$ ( u , x ) \f$ of weight \f$ w \f$
  template< class F >
@@ -386,16 +468,18 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight > {
 /*---------------------- CLASS SpanningForestObserver ----------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the minimum spanning forest of an unoriented \f$ g \f$, kept up to date
-template< Graph G >
-class SpanningForestObserver : public EventQueue< typename G::Weight > {
+/// the minimum spanning forest of an unoriented \f$ g \f$, kept up to
+/// date, by the recompute policy `P`
+template< Graph G , ReoptPolicy P = RatioPolicy >
+class SpanningForestObserver : public EventQueue< typename G::Weight , P > {
 
 /*--------------------------------------------------------------------------*/
  public:
 
  using Weight = typename G::Weight;   ///< the type of the weights
 
- /// the forest of \f$ g \f$, computed by Kruskal at the first query
+ /// the forest of \f$ g \f$, computed by Kruskal at the first query;
+ /// \f$ \alpha = 1 \f$ if the policy is a `RatioPolicy`
  /// \pre \f$ g \f$ is unoriented
  explicit SpanningForestObserver( const G & g );
 
@@ -431,28 +515,36 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
  /// \end{array}}
  /// \f]
  /// When the cuts of \f$ P \f$ (the edges of \f$ F \f$ raised or deleted)
- /// are many, i.e., when their number times the mean work of the
- /// replacements so far exceeds \f$ n \f$ plus the edges off \f$ F \f$,
- /// the lines 5 to 7 only cut, the edges of the lines 8 to 11 wait, and
- /// `join()` joins the trees again before those edges are taken one at a
- /// time.
+ /// are many, i.e., when the policy abandons the replacements one at a
+ /// time on their work, the number of the cuts times the mean work of the
+ /// replacements so far, against that of `join()`, \f$ n \f$ plus the
+ /// edges off \f$ F \f$ (by default with \f$ \alpha = 1 \f$, which this
+ /// observer sets), the lines 5 to 7 only cut, the edges of the lines 8 to
+ /// 11 wait, and `join()` joins the trees again before those edges are
+ /// taken one at a time.
  void solve( void );
 
  /// the edges of the forest, up to date, in no given order
  [[nodiscard]] std::vector< WeightedEdge< Weight > > forest( void );
 
  /// the total weight of the forest, kept as it changes when the weights
- /// subtract (up to the rounding of floating weights), \f$ O( 1 ) \f$
- /// after the query, and summed otherwise
+ /// subtract, \f$ O( 1 ) \f$ after the query, and summed otherwise; a
+ /// floating total is summed again after `period` times \f$ |F| \f$
+ /// changes, and compensated if `compensated`, when the policy has them
+ /// [see `RatioPolicy`]
  [[nodiscard]] Weight weight( void );
 
  /// whether \f$ [ u , v ] \f$ is in the forest
  [[nodiscard]] bool inForest( int u , int v );
 
+ /// the statistics of a query after \f$ k \f$ more events, for the
+ /// policy: the events queued and the edges
+ [[nodiscard]] ReoptStats reoptStats( std::size_t k ) const;
+
 /*--------------------------------------------------------------------------*/
  private:
 
- using B = EventQueue< Weight >;
+ using B = EventQueue< Weight , P >;
  using Event = GraphEvent< Weight >;   ///< the type of the events
 
  /// an edge of the copy: its weight, its node in the link-cut tree if it
@@ -598,9 +690,24 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
   };
  double f_replAvg = 0;                           ///< the mean work of
                                                  ///< `replacement()`
- Weight f_total = Weight();                      ///< the total weight of
+ double f_steps = 0;                             ///< the work of the
+                                                 ///< replacements of now
+ NeumaierSum< Weight > f_total;                  ///< the total weight of
                                                  ///< \f$ F \f$, if they do
+ std::size_t f_changes = 0;                      ///< the changes since the
+                                                 ///< total was summed
  int f_stamp = 0;                                ///< the visit of now
+
+ /// the total summed again from \f$ F \f$ after \f$ \mathit{changes} \f$
+ /// more, when it drifts (floating weights) and the policy asks it
+ void refreshTotal( std::size_t changes );
+
+ /// whether the policy asks the total compensated
+ [[nodiscard]] bool compensated( void ) const;
+
+ /// whether the total is that of \f$ F \f$: exactly, or within
+ /// \f$ 10^{-9} \f$ times the sum of the absolute weights if floating
+ [[nodiscard]] bool totalHolds( void ) const;
 
  };  // end( class SpanningForestObserver )
 
@@ -610,9 +717,9 @@ class SpanningForestObserver : public EventQueue< typename G::Weight > {
 
 /// the maximum flow from \f$ s \f$ to \f$ t \f$ in \f$ g \f$, the weights
 /// the capacities, kept up to date
-template< Graph G >
+template< Graph G , ReoptPolicy P = RatioPolicy >
 requires std::is_integral_v< typename G::Weight >
-class MaxFlowObserver : public EventQueue< typename G::Weight > {
+class MaxFlowObserver : public EventQueue< typename G::Weight , P > {
 
 /*--------------------------------------------------------------------------*/
  public:
@@ -663,10 +770,14 @@ class MaxFlowObserver : public EventQueue< typename G::Weight > {
   return( f_S );
   }
 
+ /// the statistics of a query after \f$ k \f$ more events, for the
+ /// policy: the events queued and the edges
+ [[nodiscard]] ReoptStats reoptStats( std::size_t k ) const;
+
 /*--------------------------------------------------------------------------*/
  private:
 
- using B = EventQueue< Weight >;
+ using B = EventQueue< Weight , P >;
 
  /// the key of \f$ ( u , v ) \f$
  static std::uint64_t key( int u , int v ) {
@@ -701,9 +812,9 @@ class MaxFlowObserver : public EventQueue< typename G::Weight > {
 /// k - 1 \f$ of \f$ g \f$ to its \f$ k \f$ columns \f$ k , \ldots ,
 /// 2 k - 1 \f$, the weights of the edges between them the costs, kept up
 /// to date [see `Assignment.h`]
-template< Graph G >
+template< Graph G , ReoptPolicy P = RatioPolicy >
 requires std::is_arithmetic_v< typename G::Weight >
-class AssignmentObserver : public EventQueue< typename G::Weight > {
+class AssignmentObserver : public EventQueue< typename G::Weight , P > {
 
 /*--------------------------------------------------------------------------*/
  public:
@@ -724,10 +835,12 @@ class AssignmentObserver : public EventQueue< typename G::Weight > {
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{solve}() \cr
- /// 2 & \quad \textbf{foreach}\ ( i , k + j ) \text{ from } w \text{ to }
+ /// 2 & \quad \textbf{if}\ \mathrm{Rebuilt}\ \text{came}\ \textbf{then}
+ ///     \ \text{every row of } c \text{ again from } g \cr
+ /// 3 & \quad \textbf{foreach}\ ( i , k + j ) \text{ from } w \text{ to }
  ///     w' \text{ in } P\ \textbf{do}\ c( i , j ) \gets w' \text{, or }
  ///     \infty \text{ if deleted} \cr
- /// 3 & \quad A.\mathrm{solve}()
+ /// 4 & \quad A.\mathrm{solve}()
  /// \end{array}}
  /// \f]
  void solve( void );
@@ -753,14 +866,27 @@ class AssignmentObserver : public EventQueue< typename G::Weight > {
   return( f_A.total() );
   }
 
+ /// the recompute policy, that of the `Assignment`, which weighs the
+ /// events only through the rows and the columns that they touch
+ [[nodiscard]] P & policy( void ) { return( f_A.policy() ); }
+ /// the recompute policy
+ [[nodiscard]] const P & policy( void ) const { return( f_A.policy() ); }
+
+ /// the statistics of a query after \f$ k \f$ more events, for the
+ /// policy: the events queued and the \f$ k^2 \f$ costs
+ [[nodiscard]] ReoptStats reoptStats( std::size_t k ) const;
+
 /*--------------------------------------------------------------------------*/
  private:
 
- using B = EventQueue< Weight >;
+ using B = EventQueue< Weight , P >;
+
+ /// every row of the costs again from the graph, after `Rebuilt`
+ ADS_COLD_PATH void reload( void );
 
  const G & f_g;                     ///< the graph
  int f_k;                           ///< the rows
- Assignment< Weight > f_A;          ///< the assignment
+ Assignment< Weight , P > f_A;      ///< the assignment
 
  };  // end( class AssignmentObserver )
 

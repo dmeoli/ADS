@@ -18,9 +18,9 @@
 
 namespace ADS {
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-Assignment< W >::Assignment( int n , std::vector< W > C )
+Assignment< W , P >::Assignment( int n , std::vector< W > C )
  : f_n( n ) , f_C( std::move( C ) )
 {
  ADS_PRE( ( n >= 0 ) &&
@@ -36,17 +36,17 @@ Assignment< W >::Assignment( int n , std::vector< W > C )
  f_scanned.assign( f_n , 0 );
  }
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-W Assignment< W >::cost( int i , int j ) const
+W Assignment< W , P >::cost( int i , int j ) const
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) && ( j >= 0 ) && ( j < f_n ) );
  return( f_C[ std::size_t( i ) * std::size_t( f_n ) + std::size_t( j ) ] );
  }
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-void Assignment< W >::setCost( int i , int j , W c )
+void Assignment< W , P >::setCost( int i , int j , W c )
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) && ( j >= 0 ) && ( j < f_n ) );
  W & x = f_C[ std::size_t( i ) * std::size_t( f_n ) + std::size_t( j ) ];
@@ -59,9 +59,9 @@ void Assignment< W >::setCost( int i , int j , W c )
  f_pending = true;
  }
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-void Assignment< W >::setRow( int i , const std::vector< W > & R )
+void Assignment< W , P >::setRow( int i , const std::vector< W > & R )
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) && ( int( R.size() ) == f_n ) );
  std::copy( R.begin() , R.end() ,
@@ -73,9 +73,9 @@ void Assignment< W >::setRow( int i , const std::vector< W > & R )
   }
  }
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-void Assignment< W >::setColumn( int j , const std::vector< W > & K )
+void Assignment< W , P >::setColumn( int j , const std::vector< W > & K )
 {
  ADS_PRE( ( j >= 0 ) && ( j < f_n ) && ( int( K.size() ) == f_n ) );
  for( int i = 0 ; i < f_n ; ++i )
@@ -87,9 +87,9 @@ void Assignment< W >::setColumn( int j , const std::vector< W > & K )
   }
  }
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-void Assignment< W >::freeRow( int i )
+void Assignment< W , P >::freeRow( int i )
 {
  if( f_col[ i ] >= 0 ) {
   f_row[ f_col[ i ] ] = -1;
@@ -99,9 +99,9 @@ void Assignment< W >::freeRow( int i )
 
 /*--------------------------------------------------------------------------*/
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-bool Assignment< W >::augment( int i0 )
+bool Assignment< W , P >::augment( int i0 )
 {
  const W INF = infinity< W >();
  const int n = f_n;
@@ -161,9 +161,9 @@ bool Assignment< W >::augment( int i0 )
  return( true );
  }
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-bool Assignment< W >::optimal( void ) const
+bool Assignment< W , P >::optimal( void ) const
 {
  for( int i = 0 ; i < f_n ; ++i ) {
   for( int j = 0 ; j < f_n ; ++j )
@@ -188,9 +188,9 @@ bool Assignment< W >::optimal( void ) const
  return( true );
  }
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-void Assignment< W >::solve( void )
+void Assignment< W , P >::solve( void )
 {
  const W INF = infinity< W >();
  const int n = f_n;
@@ -207,8 +207,20 @@ void Assignment< W >::solve( void )
    }
   }
  f_cells.clear();
- const bool scratch = ! f_ready || ( 2 * ( f_DR.size() + f_DC.size() ) >
-                                     std::size_t( n ) );
+ // the policy abandons the repair of the rows and of the columns changed
+ // on their number against n, the rows that a scratch frees
+ ReoptStats st;
+ st.events = f_DR.size() + f_DC.size();
+ st.size = std::size_t( n );
+ st.work = double( st.events );
+ st.lastScratch = double( n );
+ int cause = Reopt::CERTIFIED;
+ if( ! f_ready )
+  cause = Reopt::SCRATCH_BY_EVENT;
+ else if( f_policy.abandon( st , st.work ) )
+  cause = Reopt::SCRATCH_BY_ABORT;
+ const bool scratch = cause != Reopt::CERTIFIED;
+ const long long aug = f_aug;
  int outcome;
  if( scratch ) {
   std::fill( f_v.begin() , f_v.end() , W() );
@@ -255,36 +267,41 @@ void Assignment< W >::solve( void )
     outcome = 1;
    augment( i );
    }
+ if( ( outcome == Reopt::WARM ) && ( cause == Reopt::CERTIFIED ) )
+  cause = Reopt::WARM;
  f_ready = true;
  f_pending = false;
  f_outcome = outcome;
+ f_cause = cause;
  ++f_count[ outcome ];
+ ++f_byCause[ cause ];
+ f_policy.record( cause , double( f_aug - aug ) );
  ADS_AUDIT( optimal() );
  }
 
 /*--------------------------------------------------------------------------*/
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-int Assignment< W >::column( int i )
+int Assignment< W , P >::column( int i )
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) );
  solve();
  return( f_col[ i ] );
  }
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-int Assignment< W >::row( int j )
+int Assignment< W , P >::row( int j )
 {
  ADS_PRE( ( j >= 0 ) && ( j < f_n ) );
  solve();
  return( f_row[ j ] );
  }
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-bool Assignment< W >::perfect( void )
+bool Assignment< W , P >::perfect( void )
 {
  solve();
  for( int i = 0 ; i < f_n ; ++i )
@@ -293,9 +310,9 @@ bool Assignment< W >::perfect( void )
  return( true );
  }
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-W Assignment< W >::total( void )
+W Assignment< W , P >::total( void )
 {
  solve();
  W s = W();
@@ -305,18 +322,18 @@ W Assignment< W >::total( void )
  return( s );
  }
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-W Assignment< W >::rowPotential( int i )
+W Assignment< W , P >::rowPotential( int i )
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) );
  solve();
  return( f_u[ i ] );
  }
 
-template< class W >
+template< class W , ReoptPolicy P >
 requires std::is_arithmetic_v< W >
-W Assignment< W >::columnPotential( int j )
+W Assignment< W , P >::columnPotential( int j )
 {
  ADS_PRE( ( j >= 0 ) && ( j < f_n ) );
  solve();

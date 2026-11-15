@@ -48,7 +48,15 @@
  * which nest, are collected and sent as one span, coalesced into their net
  * effect per edge by (8) of \ref theory_graph_dynamic, when the outermost
  * one closes; (iv) an observer may defer its work to the next query, as
- * those of `Reoptimization.h` do. A change sent at once costs
+ * those of `Reoptimization.h` do, and an observer with a recompute policy
+ * may get `Rebuilt` instead of a batch [see `mod::with_policy`]. The changes
+ * of the edges have their inverses, so that `UndoLog` undoes them through
+ * `apply()`, and the wrapper with observers is undoable within its
+ * batches (`checkpoint()`, `rollback()`): a batch that exits by an
+ * exception undoes its changes of the edges, and the graph and the
+ * observers are as before it, when every kind is listened to and no node
+ * was inserted or deleted (otherwise its events are sent, as on a
+ * structure that cannot be undone). A change sent at once costs
  * \f$ O( 1 ) \f$ per observer that wants it, and a batch of \f$ k \f$
  * events costs \f$ O( k ) \f$ expected time to coalesce, plus
  * \f$ O( k ) \f$ for each observer that does not want all its kinds (a
@@ -185,6 +193,29 @@ struct WeightChanged {
  bool operator==( const WeightChanged & ) const = default;
  };
 
+/// the inverse of an insertion of an edge, its deletion
+template< class W >
+[[nodiscard]] constexpr EdgeDeleted< W > inverse( const EdgeInserted< W > & e )
+{
+ return( EdgeDeleted< W >{ e.u , e.v , e.w } );
+ }
+
+/// the inverse of a deletion of an edge, its insertion with the weight it
+/// had
+template< class W >
+[[nodiscard]] constexpr EdgeInserted< W > inverse( const EdgeDeleted< W > & e )
+{
+ return( EdgeInserted< W >{ e.u , e.v , e.w } );
+ }
+
+/// the inverse of a change of a weight, the change back
+template< class W >
+[[nodiscard]] constexpr WeightChanged< W > inverse(
+                                               const WeightChanged< W > & e )
+{
+ return( WeightChanged< W >{ e.u , e.v , e.to , e.from } );
+ }
+
 /// the events of a graph of weights `W`, in the order of their kinds
 template< class W >
 using GraphModifications = mod::list< NodeInserted , NodeDeleted ,
@@ -305,6 +336,17 @@ struct GraphNotify {
  static std::uint64_t mask( const O & o ) {
   return( std::uint64_t( unsigned( o.mask() ) ) );
   }
+ /// whether the policy of \f$ o \f$ wants `Rebuilt` instead of
+ /// \f$ k \f$ events [see `mod::with_policy`]
+ template< class O >
+  requires( mod::with_policy< O > && mod::observes< O , mod::Rebuilt > )
+ static bool early( O & o , std::size_t k ) {
+  return( mod::Direct::early( o , k ) );
+  }
+ /// `o.on( Rebuilt{} )`
+ template< class O >
+  requires( mod::with_policy< O > && mod::observes< O , mod::Rebuilt > )
+ static void rebuilt( O & o ) noexcept { mod::Direct::rebuilt( o ); }
  };
 
 }  // end( namespace detail )
@@ -496,6 +538,42 @@ class ObservedGraph {
    return( true );
    }
   }
+
+/*---------------------------- THE UNDO ------------------------------------*/
+
+ /// the insertion of the edge of \f$ e \f$, for `UndoLog`
+ void apply( const EdgeInserted< Weight > & e ) requires DynamicGraph< G > {
+  insertEdge( e.u , e.v , e.w );
+  }
+ /// the deletion of the edge of \f$ e \f$, for `UndoLog`
+ void apply( const EdgeDeleted< Weight > & e ) requires DynamicGraph< G > {
+  deleteEdge( e.u , e.v );
+  }
+ /// the change of the weight of \f$ e \f$, for `UndoLog`
+ void apply( const WeightChanged< Weight > & e ) {
+  setWeight( e.u , e.v , e.to );
+  }
+
+ /// a checkpoint of the batches open, the number of their events so far:
+ /// with `rollback()` it makes the wrapper undoable, so that a batch that
+ /// exits by an exception leaves the graph and the observers as they were
+ /// [see `Batch`]
+ [[nodiscard]] std::size_t checkpoint( void ) const
+  requires( ! Subject::none ) {
+  return( f_sub.buffered() );
+  }
+
+ /// whether the changes since the checkpoint \f$ t \f$ can be undone: all
+ /// on edges, and every kind listened to, so that each is collected
+ [[nodiscard]] bool revertible( std::size_t t ) const
+  requires( ! Subject::none );
+
+ /// back to the checkpoint \f$ t \f$ of the batches open: the changes
+ /// collected since undone by their inverses, the last first (under the
+ /// mute of the batch, which tells nobody); the graph is then the one at
+ /// \f$ t \f$, up to the order of the edges in its lists
+ /// \pre `revertible( t )`
+ void rollback( std::size_t t ) requires( ! Subject::none );
 
 /*--------------------------- THE OBSERVERS --------------------------------*/
 
