@@ -36,7 +36,7 @@
  * algorithm wants them (the device of Sundell and Tsigas); two pairs of
  * equal keys come out in the order of their stamps.
  *
- * The guarantees, proved in \ref theory_concurrent_lfpq:
+ * The guarantees, which \ref theory_concurrent_lfpq proves, are these:
  * - `insert()` and `tryDeleteMin()` are linearizable, `insert()` at the
  *   compare-and-swap that links its node at level 0, `tryDeleteMin()` at
  *   the fetch-and-or that marks the pointer to the node it returns, or, when
