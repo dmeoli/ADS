@@ -57,14 +57,16 @@ jobs:
           bash docs/build.sh
       # the code and the pseudocode of the headers that the chapters include,
       # the check that the bibliography holds every work the library cites,
-      # then the site of the manual, as manual/build/Makefile makes it
+      # then the site of the manual, as manual/build/Makefile makes it, from
+      # its folder, to which the snippets of mkdocs.yml are relative
       - name: the manual
         run: |
           pip install mkdocs-material pymdown-extensions
           python3 manual/build/snarf.py include manual/generated
           python3 manual/build/bibcheck.py .
-          mkdocs build -f manual/build/mkdocs.yml \
-                 -d "$PWD/build-docs/html/manual"
+          cd manual/build
+          mkdocs build -f mkdocs.yml \
+                 -d "$GITHUB_WORKSPACE/build-docs/html/manual"
       - if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:

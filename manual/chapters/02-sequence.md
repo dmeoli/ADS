@@ -2805,8 +2805,8 @@ numbering of the C++ edition, as the text does.
    random, with every operation in $O( 1 )$ amortized time ([Morin 2013,
    exercise 2.2](Z-bibliography.md#ref-morin-cpp)). Test:
    `ods_lists.ods-ex2.2.random-queue`.
-9. Realize the treque, with insertions and removals in $O( 1 + \min\{ i , n
-   - i , | n / 2 - i | \} )$ time ([Morin 2013, exercise
+9. Realize the treque, with insertions and removals in $O( 1 + \min\{ i , n -
+   i , | n / 2 - i | \} )$ time ([Morin 2013, exercise
    2.3](Z-bibliography.md#ref-morin-cpp)). Test: `ods_lists.ods-ex2.3.treque`.
 10. Rotate an array by $r$ places in place ([Morin 2013, exercise
     2.4](Z-bibliography.md#ref-morin-cpp)). Test:

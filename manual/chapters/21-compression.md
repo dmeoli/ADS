@@ -954,7 +954,8 @@ significant bytes, $\ell_i = \max( 1 , \lceil \mathrm{bitwidth}( x_i ) / 8
 \rceil )$, and moves the lengths apart. They take 2 bits per integer: the
 lengths less 1 of the integers $4 i$, $4 i + 1$, $4 i + 2$ and $4 i + 3$
 are in the bits 0-1, 2-3, 4-5 and 6-7 of the control byte $i$, and all the
-control bytes come before the data. In all, the code takes $$
+control bytes come before the data. In all, the code takes
+$$
 \lceil n / 4 \rceil + \sum_{i=0}^{n-1} \ell_i \tag{21.15}
 $$
 

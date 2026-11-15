@@ -8973,8 +8973,8 @@ a proof by the lemmas cited.
     8.55](08-tree.md#fig-8-55) and [Figure
     8.53](08-tree.md#fig-8-53). Test:
     `ods_trees.ods-ex9.3.red-black-remove-figure`.
-81. Show that there are red-black trees of $n$ nodes and height $2 \log_2 n
-    - O( 1 )$ for arbitrarily large $n$, and sequences of insertions and
+81. Show that there are red-black trees of $n$ nodes and height $2 \log_2 n -
+    O( 1 )$ for arbitrarily large $n$, and sequences of insertions and
     removals that build them ([Morin 2013, exercises 9.4 and
     9.6](Z-bibliography.md#ref-morin-cpp), [Lemma
     8.70](08-tree.md#lem-8-70)). Test:

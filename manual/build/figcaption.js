@@ -9,7 +9,21 @@ document$.subscribe(() => {
     if (img.closest("figure")) return;
     const fig = document.createElement("figure");
     const cap = document.createElement("figcaption");
-    cap.textContent = img.getAttribute("alt") || "";
+    // the text of the alt, with \textit{x} out of the math set as x in
+    // italics, as LaTeX sets it in the PDF
+    const alt = img.getAttribute("alt") || "";
+    alt.split(/(\\\(.*?\\\))/).forEach((part, i) => {
+      if (i % 2) { cap.append(part); return; }
+      part.split(/\\textit\{([^{}]*)\}/).forEach((t, j) => {
+        if (j % 2) {
+          const em = document.createElement("em");
+          em.textContent = t;
+          cap.append(em);
+        } else {
+          cap.append(t);
+        }
+      });
+    });
     img.parentNode.insertBefore(fig, img);
     fig.appendChild(img);
     fig.appendChild(cap);
