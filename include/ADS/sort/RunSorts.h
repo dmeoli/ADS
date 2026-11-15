@@ -140,6 +140,24 @@ void powerSort( std::vector< T > & A , C less = C() ,
 		std::size_t * runs = nullptr );
 
 /*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `powerSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to
+/// a vector, sorted there with the other arguments as for a vector, and moved
+/// back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{ powerSort( v , std::forward< P >( p )... ); }
+decltype( auto ) powerSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( powerSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 

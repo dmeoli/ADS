@@ -173,6 +173,84 @@ template< class T , class C = std::less<> >
 void gnomeSort( std::vector< T > & A , C less = C() );
 
 /*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `bubbleSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to
+/// a vector, sorted there with the other arguments as for a vector, and moved
+/// back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{ bubbleSort( v , std::forward< P >( p )... ); }
+decltype( auto ) bubbleSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( bubbleSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `cocktailShakerSort()` on the range \f$ A \f$ [see `SortRange`]: its items
+/// moved to a vector, sorted there with the other arguments as for a vector,
+/// and moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  cocktailShakerSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) cocktailShakerSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( cocktailShakerSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `oddEvenSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved
+/// to a vector, sorted there with the other arguments as for a vector, and
+/// moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  oddEvenSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) oddEvenSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( oddEvenSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `combSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to a
+/// vector, sorted there with the other arguments as for a vector, and moved
+/// back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{ combSort( v , std::forward< P >( p )... ); }
+decltype( auto ) combSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( combSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `gnomeSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to
+/// a vector, sorted there with the other arguments as for a vector, and moved
+/// back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{ gnomeSort( v , std::forward< P >( p )... ); }
+decltype( auto ) gnomeSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( gnomeSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 

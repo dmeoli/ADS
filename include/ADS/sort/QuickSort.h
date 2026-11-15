@@ -249,6 +249,40 @@ template< class T , class C = std::less<> >
 void quickSort( List< T > & L , C less = C() );
 
 /*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `quickSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to
+/// a vector, sorted there with the other arguments as for a vector, and moved
+/// back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{ quickSort( v , std::forward< P >( p )... ); }
+decltype( auto ) quickSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( quickSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `quickSortTuned()` on the range \f$ A \f$ [see `SortRange`]: its items
+/// moved to a vector, sorted there with the other arguments as for a vector,
+/// and moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  quickSortTuned( v , std::forward< P >( p )... );
+  }
+decltype( auto ) quickSortTuned( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( quickSortTuned( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 

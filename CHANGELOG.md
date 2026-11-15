@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The interoperation with Boost and with the standard library, in
+  include/ADS/interop/ (with ADS_WITH_BOOST, the component Boost of
+  find_package(ADS), for the headers of Boost): boost/Graph.h, the
+  graph_traits and the property maps of StaticGraph, ArrayGraph, ListGraph
+  and ObservedGraph, on which the visits, Dijkstra, Bellman-Ford, the strong
+  components, the topological order and the maximum flows of Boost.Graph
+  run with no copy and whose add_edge() and remove_edge() reach the
+  observers; boost/FromBGL.h, a graph of Boost.Graph as a graph of ADS, also
+  dynamic and observable on vecS; boost/Dijkstra.h, any priority queue of
+  ADS in the visit of Boost.Graph; boost/Heap.h, queue_decrease() for the
+  mutable heaps of Boost.Heap; boost/Iterator.h, the traversal of the
+  iterators of ADS that build their item; std/FlatMap.h, StdSequence and
+  TieredFlatSet and TieredFlatMap on std::flat_set and std::flat_map;
+  std/Pmr.h, PmrResource; the members by iterator of a sequence container
+  in TieredVector, RootishArrayStack, Treque, CubishArrayStack and
+  DualArrayDeque; every sort of sort/ and of ParallelSort.h on a SortRange
+  (std::span, std::deque, the sequences of ADS) beside std::vector;
+  queue_decrease() and queue_handle_t in PriorityQueue.h, which
+  decrease_key_of(), PriorityFrontier and prim() read, with FrontierQueue,
+  so that std::priority_queue and the heaps of Boost.Heap of pairs
+  ( distance , node ) serve as frontiers; offsets(), heads() and
+  weightData() of ArrayGraph; BigInteger::fromGmp(), toGmp() and the
+  constructors from mpz_class and mpq_class, and the same in Rational,
+  with ADS_WITH_GMP; the test program engineered_interop, section 1.8.1
+  of the manual and the README
+
 - ADS_WITH_BOOST, the backend of the headers of Boost 1.83 or later (AUTO
   with CMake, auto with the makefile, as for GMP and the CBLAS, off in the
   packages; cmake/ADSBoost.cmake and extlib/makefile-libBoost find it, and
@@ -2984,6 +3010,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   multiplies its polynomials by multiplyKaratsuba()
 
 ### Fixed
+
+- The audit of prim() on a graph with parallel edges: the tree is checked
+  with the lightest of the parallel edges to each parent, the one that
+  Prim's algorithm takes, instead of the first one in the list, which made
+  the audit fail on an unoriented graph with both (u,v) and (v,u)
 
 - deltaStepping() and rhoStepping() size their distances by g.bound(), the
   names of the nodes, where they took g.n() and wrote past the end of the

@@ -130,6 +130,7 @@
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/RunSorts.h"
 #include "ADS/sort/SampleSort.h"
+#include "ADS/sort/Sorted.h"
 #include "ADS/sort/StringSort.h"
 #include "ADS/sort/VectorQuickSort.h"
 
@@ -236,6 +237,38 @@ void sort( std::vector< T > & A , C less = C() );
 ///       order (audit)
 template< class T , class C = std::less<> >
 void stableSort( std::vector< T > & A , C less = C() );
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `sort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to a
+/// vector, sorted there with the other arguments as for a vector, and moved
+/// back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{ sort( v , std::forward< P >( p )... ); }
+decltype( auto ) sort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( sort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `stableSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to
+/// a vector, sorted there with the other arguments as for a vector, and moved
+/// back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{ stableSort( v , std::forward< P >( p )... ); }
+decltype( auto ) stableSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( stableSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
 
 /*--------------------------------------------------------------------------*/
 

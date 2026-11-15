@@ -111,6 +111,42 @@ template< class T , class C = std::less<> >
 void insertionSort( std::vector< T > & A , C less = C() );
 
 /*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `insertionSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved
+/// to a vector, sorted there with the other arguments as for a vector, and
+/// moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  insertionSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) insertionSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( insertionSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `insertionSortSentinel()` on the range \f$ A \f$ [see `SortRange`]: its
+/// items moved to a vector, sorted there with the other arguments as for a
+/// vector, and moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  insertionSortSentinel( v , std::forward< P >( p )... );
+  }
+decltype( auto ) insertionSortSentinel( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( insertionSortSentinel( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 

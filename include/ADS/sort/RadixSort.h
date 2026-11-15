@@ -257,6 +257,72 @@ void americanFlagSort( std::vector< T > & A );
 inline void msdRadixSort( std::vector< std::string > & A );
 
 /*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `radixSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to
+/// a vector, sorted there with the other arguments as for a vector, and moved
+/// back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{ radixSort( v , std::forward< P >( p )... ); }
+decltype( auto ) radixSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( radixSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `radixSortBy()` on the range \f$ A \f$ [see `SortRange`]: its items moved
+/// to a vector, sorted there with the other arguments as for a vector, and
+/// moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  radixSortBy( v , std::forward< P >( p )... );
+  }
+decltype( auto ) radixSortBy( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( radixSortBy( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `americanFlagSort()` on the range \f$ A \f$ [see `SortRange`]: its items
+/// moved to a vector, sorted there with the other arguments as for a vector,
+/// and moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  americanFlagSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) americanFlagSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( americanFlagSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `msdRadixSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved
+/// to a vector, sorted there with the other arguments as for a vector, and
+/// moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  msdRadixSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) msdRadixSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( msdRadixSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 

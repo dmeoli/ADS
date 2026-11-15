@@ -75,6 +75,26 @@ template< class T >
 void countingSort( std::vector< T > & A , std::size_t k );
 
 /*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `countingSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved
+/// to a vector, sorted there with the other arguments as for a vector, and
+/// moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  countingSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) countingSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( countingSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 

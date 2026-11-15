@@ -152,6 +152,52 @@ class Treque
  /// \post one item less
  void erase( std::size_t i );
 
+ /// \f$ x \f$ before the item of \f$ p \f$, i.e., `insert( i , x )` with
+ /// \f$ i \f$ the rank of \f$ p \f$: the members by iterator of a
+ /// SequenceContainer of the standard library, by which `std::flat_set` and
+ /// `std::flat_map` keep their keys here; an iterator on \f$ x \f$
+ /// \pre \f$ p \f$ is an iterator of this sequence or its end
+ iterator insert( const_iterator p , const T & x ) {
+  const std::size_t i = rankOf( p );
+  insert( i , x );
+  return( begin() + std::ptrdiff_t( i ) );
+  }
+
+ /// the items of \f$ [ \mathit{first} , \mathit{last} ) \f$ before the item
+ /// of \f$ p \f$, in their order, one `insert( i , x )` each; an iterator on
+ /// the first of them
+ template< std::input_iterator I , std::sentinel_for< I > E >
+ iterator insert( const_iterator p , I first , E last ) {
+  const std::size_t i0 = rankOf( p );
+  for( std::size_t i = i0 ; first != last ; ++first )
+   insert( i++ , T( *first ) );
+  return( begin() + std::ptrdiff_t( i0 ) );
+  }
+
+ /// an item built from \f$ a \f$ before the item of \f$ p \f$
+ template< class... A >
+ iterator emplace( const_iterator p , A &&... a ) {
+  return( insert( p , T( std::forward< A >( a )... ) ) );
+  }
+
+ /// the item of \f$ p \f$ removed, i.e., `erase( i )` with \f$ i \f$ its
+ /// rank; an iterator on the item after it
+ /// \pre \f$ p \f$ is an iterator on an item of this sequence
+ iterator erase( const_iterator p ) {
+  const std::size_t i = rankOf( p );
+  erase( i );
+  return( begin() + std::ptrdiff_t( i ) );
+  }
+
+ /// the items of \f$ [ \mathit{first} , \mathit{last} ) \f$ removed, one
+ /// `erase( i )` each; an iterator on the item after them
+ iterator erase( const_iterator first , const_iterator last ) {
+  const std::size_t i = rankOf( first );
+  for( std::size_t k = rankOf( last ) - i ; k > 0 ; --k )
+   erase( i );
+  return( begin() + std::ptrdiff_t( i ) );
+  }
+
  /// \f$ x \f$ at the front
  void push_front( const T & x ) { insert( 0 , x ); }
 
@@ -187,9 +233,18 @@ class Treque
  [[nodiscard]] const_iterator end( void ) const {
   return( const_iterator( this , size() ) );
   }
+ /// the constant iterator on the first item
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ /// the constant iterator past the last item
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
 /*--------------------------------------------------------------------------*/
  private:
+ /// the rank of the item of \f$ p \f$
+ std::size_t rankOf( const_iterator p ) const {
+  return( std::size_t( p - begin() ) );
+  }
+
  /// one item from the longer deque to the shorter one, if they differ by
  /// more than one item
  ///

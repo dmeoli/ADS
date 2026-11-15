@@ -106,6 +106,25 @@ bool sequenceSorted( const S & L , C less )
   } ) );
  }
 
+template< class R , class F >
+auto throughVector( R & r , F && f )
+{
+ using T = std::ranges::range_value_t< R >;
+ std::vector< T > v;
+ v.reserve( std::size_t( std::ranges::size( r ) ) );
+ for( auto it = std::ranges::begin( r ) ; it != std::ranges::end( r ) ; ++it )
+  v.push_back( std::ranges::iter_move( it ) );
+ if constexpr( std::is_void_v< decltype( f( v ) ) > ) {
+  f( v );
+  std::ranges::move( v , std::ranges::begin( r ) );
+  }
+ else {
+  auto x = f( v );
+  std::ranges::move( v , std::ranges::begin( r ) );
+  return( x );
+  }
+ }
+
 }  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/

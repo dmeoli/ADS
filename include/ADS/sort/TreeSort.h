@@ -78,6 +78,24 @@ template< std::totally_ordered T >
 void treeSort( std::vector< T > & A , bool balanced = true );
 
 /*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `treeSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to a
+/// vector, sorted there with the other arguments as for a vector, and moved
+/// back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{ treeSort( v , std::forward< P >( p )... ); }
+decltype( auto ) treeSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( treeSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 

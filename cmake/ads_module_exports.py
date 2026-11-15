@@ -8,10 +8,12 @@
 # namespace ADS or of one nested in it, but for the namespaces detail:        #
 #                                                                             #
 #   python3 cmake/ads_module_exports.py -- -fopenmp -DADS_WITH_TBB \          #
-#           -DADS_WITH_FASTFLOW -I<fastflow> -DADS_WITH_MPI -I<mpi>           #
+#           -DADS_WITH_FASTFLOW -I<fastflow> -DADS_WITH_MPI -I<mpi> \         #
+#           -DADS_WITH_BOOST                                                  #
 #                                                                             #
-# The headers of the optional executors are compiled only with their          #
-# library [see include/ADS/parallel and include/ADS/distributed]: their       #
+# The headers of the optional executors and of the interoperation with Boost  #
+# are compiled only with their library [see include/ADS/parallel,             #
+# include/ADS/distributed and include/ADS/interop/boost]: their               #
 # names are exported inside the #if of their header, and they are read        #
 # only if the flags define the macro. To be run whenever a header gains or    #
 # loses a name.                                                               #
@@ -40,7 +42,12 @@ OPTIONAL = { "ADS/parallel/OpenMPExecutor.h": "_OPENMP",
              "ADS/parallel/FastFlowExecutor.h": "ADS_WITH_FASTFLOW",
              "ADS/distributed/DistributedSort.h": "ADS_WITH_MPI",
              "ADS/distributed/MPIExecutor.h": "ADS_WITH_MPI",
-             "ADS/distributed/MPIMailbox.h": "ADS_WITH_MPI" }
+             "ADS/distributed/MPIMailbox.h": "ADS_WITH_MPI",
+             "ADS/interop/boost/Dijkstra.h": "ADS_WITH_BOOST",
+             "ADS/interop/boost/FromBGL.h": "ADS_WITH_BOOST",
+             "ADS/interop/boost/Graph.h": "ADS_WITH_BOOST",
+             "ADS/interop/boost/Heap.h": "ADS_WITH_BOOST",
+             "ADS/interop/boost/Iterator.h": "ADS_WITH_BOOST" }
 
 
 def dump_ast( clang , inc , headers , flags ):

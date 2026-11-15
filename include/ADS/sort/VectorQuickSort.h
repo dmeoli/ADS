@@ -256,6 +256,26 @@ template< VectorKey T >
 void vectorQuickSort( T * a , std::size_t n );
 
 /*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `vectorQuickSort()` on the range \f$ A \f$ [see `SortRange`]: its items
+/// moved to a vector, sorted there with the other arguments as for a vector,
+/// and moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  vectorQuickSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) vectorQuickSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( vectorQuickSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 

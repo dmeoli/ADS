@@ -195,6 +195,26 @@ bool learnedSortIf( std::vector< T > & A );
 }  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `learnedSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved
+/// to a vector, sorted there with the other arguments as for a vector, and
+/// moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  learnedSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) learnedSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( learnedSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 

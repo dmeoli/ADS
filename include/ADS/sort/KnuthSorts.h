@@ -248,6 +248,106 @@ void mergeInsertionSort( std::vector< T > & A , C less = C() );
 inline long fordJohnsonBound( std::size_t n );
 
 /*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `binaryInsertionSort()` on the range \f$ A \f$ [see `SortRange`]: its items
+/// moved to a vector, sorted there with the other arguments as for a vector,
+/// and moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  binaryInsertionSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) binaryInsertionSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( binaryInsertionSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `listInsertionSort()` on the range \f$ A \f$ [see `SortRange`]: its items
+/// moved to a vector, sorted there with the other arguments as for a vector,
+/// and moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  listInsertionSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) listInsertionSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( listInsertionSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `addressCalculationSort()` on the range \f$ A \f$ [see `SortRange`]: its
+/// items moved to a vector, sorted there with the other arguments as for a
+/// vector, and moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  addressCalculationSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) addressCalculationSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( addressCalculationSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `radixExchangeSort()` on the range \f$ A \f$ [see `SortRange`]: its items
+/// moved to a vector, sorted there with the other arguments as for a vector,
+/// and moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  radixExchangeSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) radixExchangeSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( radixExchangeSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `tournamentSort()` on the range \f$ A \f$ [see `SortRange`]: its items
+/// moved to a vector, sorted there with the other arguments as for a vector,
+/// and moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  tournamentSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) tournamentSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( tournamentSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `mergeInsertionSort()` on the range \f$ A \f$ [see `SortRange`]: its items
+/// moved to a vector, sorted there with the other arguments as for a vector,
+/// and moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  mergeInsertionSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) mergeInsertionSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( mergeInsertionSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 

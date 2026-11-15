@@ -307,6 +307,76 @@ template< Executor E , VectorKey T >
 void learnedStableSort( E & ex , std::vector< T > & A );
 
 /*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `sort( ex , A )` on the range \f$ A \f$ [see `SortRange`]: its items moved
+/// to a vector, sorted there with the other arguments as for a vector, and
+/// moved back
+template< Executor E , SortRange R , class... P >
+ requires requires( E & ex ,
+		    std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{ sort( ex , v , std::forward< P >( p )... ); }
+decltype( auto ) sort( E & ex , R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( sort( ex , v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `stableSort( ex , A )` on the range \f$ A \f$ [see `SortRange`]: its items
+/// moved to a vector, sorted there with the other arguments as for a vector,
+/// and moved back
+template< Executor E , SortRange R , class... P >
+ requires requires( E & ex ,
+		    std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  stableSort( ex , v , std::forward< P >( p )... );
+  }
+decltype( auto ) stableSort( E & ex , R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( stableSort( ex , v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `learnedSort( ex , A )` on the range \f$ A \f$ [see `SortRange`]: its items
+/// moved to a vector, sorted there with the other arguments as for a vector,
+/// and moved back
+template< Executor E , SortRange R , class... P >
+ requires requires( E & ex ,
+		    std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  learnedSort( ex , v , std::forward< P >( p )... );
+  }
+decltype( auto ) learnedSort( E & ex , R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( learnedSort( ex , v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `learnedStableSort( ex , A )` on the range \f$ A \f$ [see `SortRange`]: its
+/// items moved to a vector, sorted there with the other arguments as for a
+/// vector, and moved back
+template< Executor E , SortRange R , class... P >
+ requires requires( E & ex ,
+		    std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  learnedStableSort( ex , v , std::forward< P >( p )... );
+  }
+decltype( auto ) learnedStableSort( E & ex , R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( learnedStableSort( ex , v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 

@@ -59,6 +59,7 @@
 #include "ADS/numeric/BigInteger.h"
 
 #include <compare>
+#include <concepts>
 #include <cstddef>
 #include <string>
 #include <utility>
@@ -98,6 +99,37 @@ class Rational
 
  /// the text `u/u'`, or `u` when \f$ u' = 1 \f$
  [[nodiscard]] std::string toString( void ) const;
+
+#if defined( ADS_WITH_GMP )
+ /// the fraction of GMP \f$ q \f$ (an `mpq_t`), its terms copied [see
+ /// `BigInteger::fromGmp()`] and brought to lowest terms if they are not
+ /// \pre the denominator of \f$ q \f$ is not 0
+ static Rational fromGmp( mpq_srcptr q );
+
+ /// the fraction of the rational \f$ q \f$ of the C++ interface of GMP
+ /// (`mpq_class`, or any type whose `get_mpq_t()` gives an `mpq_t`)
+ template< class Q >
+  requires requires( const Q & q ) {
+   { q.get_mpq_t() } -> std::convertible_to< mpq_srcptr >;
+   }
+ explicit Rational( const Q & q ) : Rational( fromGmp( q.get_mpq_t() ) ) { }
+
+ /// \f$ a \f$ written in the fraction of GMP \f$ q \f$, initialized, in
+ /// canonical form
+ void toGmp( mpq_ptr q ) const;
+
+ /// \f$ a \f$ as a rational of the C++ interface of GMP, `toGmp<
+ /// mpq_class >()`
+ template< class Q >
+  requires requires( Q & q ) {
+   { q.get_mpq_t() } -> std::convertible_to< mpq_ptr >;
+   }
+ [[nodiscard]] Q toGmp( void ) const {
+  Q q;
+  toGmp( q.get_mpq_t() );
+  return( q );
+  }
+#endif
 
  /// the sum \f$ a + b \f$, by the gcds of the smaller numbers
  ///

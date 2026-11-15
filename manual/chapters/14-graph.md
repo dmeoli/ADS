@@ -2147,7 +2147,15 @@ handle of each node for its decrease when the queue has handles, and otherwise
 it inserts the node again at each fall of its distance and skips the stale
 copies when they come out, as `decrease_key_of()` chooses
 ([§1.14](01-introduction.md#sec-1-14)). When the priority is a pair, it is the
-pair $( d , v )$, which breaks the ties by the names of the nodes. Thus we
+pair $( d , v )$, which breaks the ties by the names of the nodes; a queue
+without a priority of its own (`std::priority_queue`, or a heap of
+Boost.Heap, [§1.8.1](01-introduction.md#sec-1-8-1)) holds these pairs as its
+items, with the order that puts the least on top. The frontier reaches the
+queue only through the customization points of `PriorityQueue.h`
+(`queue_insert()`, `queue_deleteMin()` and `queue_decrease()`), so that a
+queue of another library needs no wrapper, and the queues it takes are
+those of the concept `FrontierQueue`, which Prim's algorithm takes as well.
+Thus we
 have that all the priority queues extract the same nodes in the same order,
 and a `FrontierCounts` (the additions, the extractions, the decreases and the
 edges examined) measures the same work on any of them. `QueueFrontier`,
@@ -2571,10 +2579,7 @@ template< Graph G >
 auto kruskal( const G & g , long k = 0 );
 template< Graph G >
 std::vector< int > prim( const G & g , int r , Frontier how = Frontier::HEAP );
-template< Graph G , PriorityQueue Q >
- requires( ( decrease_key_of< Q >() != decrease_key_kind::none ) &&
-           requires
-{ typename Q::Priority; } )
+template< Graph G , FrontierQueue Q >
 std::vector< int > prim( const G & g , int r , Q & q ,
                          FrontierCounts * c = nullptr );
 template< class W >

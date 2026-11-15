@@ -1239,6 +1239,28 @@ inline BigInteger BigInteger::gmpTake( mpz_ptr z )
 
 #endif
 
+#if defined( ADS_WITH_GMP )
+
+inline BigInteger BigInteger::fromGmp( mpz_srcptr z )
+{
+ if( mpz_sgn( z ) == 0 )
+  return( BigInteger() );
+ std::size_t k = ( mpz_sizeinbase( z , 2 ) + 63 ) / 64;
+ Mag d( k );
+ mpz_export( d.data() , &k , -1 , sizeof( Limb ) , 0 , 0 , z );
+ d.resize( k );
+ return( BigInteger( mpz_sgn( z ) < 0 , std::move( d ) ) );
+ }
+
+inline void BigInteger::toGmp( mpz_ptr z ) const
+{
+ mpz_import( z , f_d.size() , -1 , sizeof( Limb ) , 0 , 0 , f_d.data() );
+ if( f_neg )
+  mpz_neg( z , z );
+ }
+
+#endif
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )

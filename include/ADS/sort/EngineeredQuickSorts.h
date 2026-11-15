@@ -241,6 +241,56 @@ template< class T , class C = std::less<> >
 void threeWayQuickSort( std::vector< T > & A , C less = C() );
 
 /*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `pdqSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to a
+/// vector, sorted there with the other arguments as for a vector, and moved
+/// back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{ pdqSort( v , std::forward< P >( p )... ); }
+decltype( auto ) pdqSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( pdqSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `dualPivotQuickSort()` on the range \f$ A \f$ [see `SortRange`]: its items
+/// moved to a vector, sorted there with the other arguments as for a vector,
+/// and moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  dualPivotQuickSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) dualPivotQuickSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( dualPivotQuickSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/// `threeWayQuickSort()` on the range \f$ A \f$ [see `SortRange`]: its items
+/// moved to a vector, sorted there with the other arguments as for a vector,
+/// and moved back
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  threeWayQuickSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) threeWayQuickSort( R && A , P &&... p )
+{
+ return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+  return( threeWayQuickSort( v , std::forward< P >( p )... ) );
+  } ) );
+ }
+
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 
