@@ -1461,21 +1461,21 @@ engineered parts to new headers.
 Each set has an *entry point*, a header that includes all the headers of
 the set and the core. Thus `#include "ADS/base.h"` gives the base set,
 `ADS/advanced.h` the advanced one, `ADS/core.h` the core and `ADS/ADS.h`
-the three. Also, each header keeps its path, and one can still include
-any of them as before. The modules follow the same division: `ads.core`,
+the three. Also, each header keeps its path, and one can still include any
+of them as before. The modules follow the same division: `ads.core`,
 `ads.base` and `ads.advanced` export the names of the headers of their sets
-(the last two also export `ads.core`), and `ads` exports the three. A program that
-writes `import ads;` gets all the names as before, whereas one that writes
-`import ads.base;` compiles neither the concurrent structures nor the
-executors of OpenMP, oneTBB and MPI. The file `cmake/ads_sets.txt` gives
-the set of each header, and from it the script `cmake/ads_sets.py` writes
-the entry points and the table of the sets in the README. CMake, the
+(the last two also export `ads.core`), and `ads` exports the three. A
+program that writes `import ads;` gets all the names as before, whereas one
+that writes `import ads.base;` compiles neither the concurrent structures
+nor the executors of OpenMP, oneTBB and MPI. The file `cmake/ads_sets.txt`
+gives the set of each header, and from it the script `cmake/ads_sets.py`
+writes the entry points and the table of the sets in the README. CMake, the
 makefile and the continuous integration run the script, so a new header
 with no set (or an include across the sets that the file does not allow)
 stops the build. Finally, in [Table 1.5](01-introduction.md#tab-1-5) the
 column Set gives the set of each header with classes, and the opening
-paragraph of each chapter lists which of its headers are base and which
-are advanced.
+paragraph of each chapter lists which of its headers are base and which are
+advanced.
 
 ## 1.10 Building, testing and using the library {#sec-1-10}
 
