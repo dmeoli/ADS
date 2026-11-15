@@ -82,6 +82,11 @@ int Slots< L , Obs >::attach( D & o )
    A::begin( *static_cast< D * >( p ) , g ); };
   s.end = []( void * p ) { A::end( *static_cast< D * >( p ) ); };
   }
+ if constexpr( calls_policy< A , D > ) {
+  s.early = []( void * p , std::size_t k ) -> bool {
+   return( A::early( *static_cast< D * >( p ) , k ) ); };
+  s.rebuilt = []( void * p ) { A::rebuilt( *static_cast< D * >( p ) ); };
+  }
  if constexpr( ! std::is_void_v< Obs > ) {
   if constexpr( calls_audit< A , D , Obs > )
    s.audit = []( const void * p , const void * x ) -> bool {
@@ -224,6 +229,16 @@ void Slots< L , Obs >::deliverGroup( std::span< const Var > C ,
    continue;
   if constexpr( ADS_CONTRACTS >= 3 )
    ++s.counts.groups;
+  if( s.early && s.early( s.o , eventsFor( C , m , ( kinds & ~m ) == 0 ) ) ) {
+   if constexpr( ADS_CONTRACTS >= 3 )
+    ++s.counts.rebuilds;                // Rebuilt instead of the events
+   if( s.begin )
+    s.begin( s.o , g );
+   s.rebuilt( s.o );
+   if( s.end )
+    s.end( s.o );
+   continue;
+   }
   if( s.begin )
    s.begin( s.o , g );
   bool leave = false;

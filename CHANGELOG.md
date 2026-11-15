@@ -51,6 +51,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (p = 1, 2, 4, 8) and lockfree-pq-linearizable (histories checked by the
   search of Wing and Gong), also under ThreadSanitizer in the CI
 
+- The recompute policy of the observers that keep a solution, in
+  Modification.h: Reopt (moved from Reoptimization.h) with the causes
+  SCRATCH_BY_SIZE, SCRATCH_BY_ABORT, SCRATCH_BY_EVENT and PARTIAL and
+  outcomeOf(), ReoptStats, the concept ReoptPolicy with scratch(),
+  abandon() and record() on counts of work, never on times, the default
+  RatioPolicy (rho, alpha, beta, early, and the drift parameters period
+  and compensated), NeumaierSum, and the concept with_policy, by which the
+  subject sends Rebuilt to an observer instead of the events of a batch
+  when its policy asks it at the close; the four observers of
+  Reoptimization.h and Assignment take the policy as a template parameter
+  defaulted to RatioPolicy, own it (policy()), and count their queries by
+  cause (cause(), byCause()); the default reproduces the fixed thresholds
+  of before, with the same solutions and counts (Lemma 16 of the theory
+  page, Lemma 14.54 of the manual), and a scratch in place of a repair is
+  always correct (Lemma 17, Lemma 14.55); the floating total of
+  SpanningForestObserver is summed again every period times |F| changes,
+  compensated on demand, and checked by the audit; the graph events of
+  the edges have their inverses, ObservedGraph has apply() for UndoLog and
+  is undoable within its batches (checkpoint(), revertible(), rollback()),
+  so that a batch that exits by an exception leaves the graph and every
+  observer as before when it changed only edges and every kind is
+  listened to (Lemma 18, Lemma 14.56); section 14.13.4 of the manual, the
+  section theory_graph_policy of the theory of graphs, and the test
+  engineered_reopt.
+
 - Capabilities.h, the vocabulary by which an algorithm asks a structure
   what it can do: the syntactic capabilities as concepts on members
   (bulk_insertable, bulk_erasable, splittable, joinable, rankable,
@@ -1950,6 +1975,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   --before against the headers of a revision, by counts and by code, the
   padding after the last instruction left out
 
+- A batch of ObservedGraph with observers that exits by an exception
+  undoes its changes of the edges and tells nothing to the observers, when
+  every kind is listened to and no node was inserted or deleted in it,
+  where it sent its events; otherwise it sends them, as before; the
+  EventQueue of the observers takes no event after a Rebuilt until its
+  next query, which computes from scratch.
+
 - The concept PriorityQueue of PriorityQueue.h is the queue without
   handles, read through the customization points queue_insert(),
   queue_min() and queue_deleteMin(), which take the members of the book
@@ -2860,6 +2892,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   items the comparisons are unchanged, and the test
   ordered.nth-element-adversary runs the adversary of McIlroy also with 2,
   10 and 100 items per value
+
+- UndoLog forgets its records at an event of its list that has no inverse,
+  where it ignored it and a later rollback() undid the changes after it
+  but not the event itself; the header of Reoptimization.h and the
+  pseudocode of Assignment::solve() cite the lemmas of the theory page
+  that they rest on (14 and 13, and 15), where they cited 8, 7 and 9.
 
 - CuckooHashTable evicts up to the bound 3 log_c m of Pagh and Rodler, with
   c = 1 / ( 2 maxLoad ), when it exceeds the 8 log2 m + 16 kept for the

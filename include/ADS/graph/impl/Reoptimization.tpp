@@ -68,16 +68,16 @@ long long edgesOf( const G & g )
 /*---------------------- CLASS ShortestPathsObserver -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< Graph G >
-ShortestPathsObserver< G >::ShortestPathsObserver( const G & g , int r ,
+template< Graph G , ReoptPolicy P >
+ShortestPathsObserver< G , P >::ShortestPathsObserver( const G & g , int r ,
                                                    Frontier how )
  : f_g( g ) , f_r( r ) , f_how( how )
 {
  ADS_PRE( g.hasNode( r ) );
  }
 
-template< Graph G >
-void ShortestPathsObserver< G >::scratch( Frontier how )
+template< Graph G , ReoptPolicy P >
+void ShortestPathsObserver< G , P >::scratch( Frontier how )
 {
  f_R = shortestPaths( f_g , f_r , how );
  f_ready = true;
@@ -85,8 +85,8 @@ void ShortestPathsObserver< G >::scratch( Frontier how )
  buildTree();
  }
 
-template< Graph G >
-void ShortestPathsObserver< G >::buildTree( void )
+template< Graph G , ReoptPolicy P >
+void ShortestPathsObserver< G , P >::buildTree( void )
 {
  const int n = int( f_R.T.size() );
  f_child.assign( n , NIL );
@@ -99,8 +99,8 @@ void ShortestPathsObserver< G >::buildTree( void )
    link( v , f_R.T[ v ] );
  }
 
-template< Graph G >
-void ShortestPathsObserver< G >::grow( void )
+template< Graph G , ReoptPolicy P >
+void ShortestPathsObserver< G , P >::grow( void )
 {
  const std::size_t n = std::size_t( f_g.bound() );
  if( f_R.d.size() >= n )
@@ -116,8 +116,8 @@ void ShortestPathsObserver< G >::grow( void )
   f_in.resize( n );
  }
 
-template< Graph G >
-void ShortestPathsObserver< G >::link( int x , int p )
+template< Graph G , ReoptPolicy P >
+void ShortestPathsObserver< G , P >::link( int x , int p )
 {
  f_prev[ x ] = NIL;
  f_next[ x ] = f_child[ p ];
@@ -126,8 +126,8 @@ void ShortestPathsObserver< G >::link( int x , int p )
  f_child[ p ] = x;
  }
 
-template< Graph G >
-void ShortestPathsObserver< G >::unlink( int x )
+template< Graph G , ReoptPolicy P >
+void ShortestPathsObserver< G , P >::unlink( int x )
 {
  const int p = f_R.T[ x ];
  if( p == NIL )
@@ -141,8 +141,8 @@ void ShortestPathsObserver< G >::unlink( int x )
  f_prev[ x ] = f_next[ x ] = NIL;
  }
 
-template< Graph G >
-void ShortestPathsObserver< G >::buildIn( void )
+template< Graph G , ReoptPolicy P >
+void ShortestPathsObserver< G , P >::buildIn( void )
 {
  f_in.assign( std::size_t( f_g.bound() ) , {} );
  for( int u : f_g.V() )
@@ -151,10 +151,10 @@ void ShortestPathsObserver< G >::buildIn( void )
  f_inOk = true;
  }
 
-template< Graph G >
-void ShortestPathsObserver< G >::applyIn( std::span< const Event > P )
+template< Graph G , ReoptPolicy P >
+void ShortestPathsObserver< G , P >::applyIn( std::span< const Event > C )
 {
- for( const auto & e : P ) {
+ for( const auto & e : C ) {
   int u , v;
   std::optional< Weight > w0 , w1;
   if( ! detail::edgeChange( e , u , v , w0 , w1 ) )
@@ -175,9 +175,9 @@ void ShortestPathsObserver< G >::applyIn( std::span< const Event > P )
   }
  }
 
-template< Graph G >
+template< Graph G , ReoptPolicy P >
 template< class F >
-void ShortestPathsObserver< G >::forEachIn( int x , F && f ) const
+void ShortestPathsObserver< G , P >::forEachIn( int x , F && f ) const
 {
  if( f_g.directed() ) {
   for( const auto & [ u , w ] : f_in[ x ] )
@@ -187,8 +187,8 @@ void ShortestPathsObserver< G >::forEachIn( int x , F && f ) const
   f_g.forEachEdge( x , [ & ]( int u , const Weight & w ) { f( u , w ); } );
  }
 
-template< Graph G >
-void ShortestPathsObserver< G >::setParent( int v , int u )
+template< Graph G , ReoptPolicy P >
+void ShortestPathsObserver< G , P >::setParent( int v , int u )
 {
  unlink( v );
  f_R.T[ v ] = u;
@@ -196,8 +196,9 @@ void ShortestPathsObserver< G >::setParent( int v , int u )
   link( v , u );
  }
 
-template< Graph G >
-bool ShortestPathsObserver< G >::repair( std::vector< int > & seeds )
+template< Graph G , ReoptPolicy P >
+int ShortestPathsObserver< G , P >::repair( std::vector< int > & seeds ,
+                                            ReoptStats & s )
 {
  using D = Weight;
  const D INF = infinity< D >();
@@ -209,18 +210,25 @@ bool ShortestPathsObserver< G >::repair( std::vector< int > & seeds )
    H.push( { f_R.d[ u ] , u } );
  std::vector< int > & popped = seeds;     // the nodes whose count to reset
  popped.clear();
- bool ok = true;
+ int r = REPAIRED;
  while( ! H.empty() ) {
   const auto [ du , u ] = H.top();
   H.pop();
   if( du != f_R.d[ u ] )
    continue;                              // a stale entry
-  if( f_pops[ u ]++ == 0 )
-   popped.push_back( u );
-  if( f_pops[ u ] > n ) {
-   ok = false;
-   break;
+  if( f_pops[ u ]++ != 0 ) [[unlikely]] {   // extracted again
+   if( f_pops[ u ] > n ) {
+    r = CYCLE;
+    break;
+    }
+   s.reinsertions = std::size_t( f_pops[ u ] - 1 );
+   if( this->f_policy.abandon( s , s.work ) ) {
+    r = ABANDONED;
+    break;
+    }
    }
+  else
+   popped.push_back( u );
   f_g.forEachEdge( u , [ & ]( int v , const D & w ) {
    if( f_R.d[ u ] + w < f_R.d[ v ] ) {
     f_R.d[ v ] = f_R.d[ u ] + w;
@@ -230,31 +238,38 @@ bool ShortestPathsObserver< G >::repair( std::vector< int > & seeds )
   }
  for( int u : popped )
   f_pops[ u ] = 0;
- return( ok );
+ return( r );
  }
 
-template< Graph G >
-void ShortestPathsObserver< G >::solve( void )
+template< Graph G , ReoptPolicy P >
+ReoptStats ShortestPathsObserver< G , P >::reoptStats( std::size_t k ) const
+{
+ return( B::stats( k + this->f_q.size() , detail::edgesOf( f_g ) ) );
+ }
+
+template< Graph G , ReoptPolicy P >
+void ShortestPathsObserver< G , P >::solve( void )
 {
  ADS_PRE( f_g.hasNode( f_r ) );
- if( ! f_ready ) {
-  this->f_q.clear();
+ if( this->fresh( f_ready ) ) {           // no tree yet, or Rebuilt
   scratch( f_how );
-  this->done( Reopt::SCRATCH );
+  this->done( Reopt::SCRATCH_BY_EVENT , double( f_g.n() ) );
   return;
   }
  if( this->f_q.empty() )
   return;                                 // nothing to do
- const auto P = this->take();
- if( this->tooMany( P.size() , detail::edgesOf( f_g ) ) ||
-     f_R.negativeCycle ) {
+ const auto C = this->take();
+ const long long m = detail::edgesOf( f_g );
+ const bool many = this->tooMany( C.size() , m );
+ if( many || f_R.negativeCycle ) {
   scratch( f_R.negativeCycle ? Frontier::QUEUE : f_how );
-  this->done( Reopt::SCRATCH );
+  this->done( many ? Reopt::SCRATCH_BY_SIZE : Reopt::SCRATCH_BY_EVENT ,
+              double( f_g.n() ) );
   return;
   }
  grow();
  if( f_inOk )
-  applyIn( P );
+  applyIn( C );
 
  // the tests on the tree before P: the heads of the arcs of T raised or
  // deleted root the subtrees whose distances are lost; the tails of the
@@ -274,7 +289,7 @@ void ShortestPathsObserver< G >::solve( void )
   else if( w1 && ( ! w0 || ( *w1 < *w0 ) ) )
    lighter.push_back( { a , b , *w1 } );
   };
- for( const auto & e : P ) {
+ for( const auto & e : C ) {
   int u , v;
   std::optional< Weight > w0 , w1;
   if( detail::edgeChange( e , u , v , w0 , w1 ) ) {
@@ -300,11 +315,16 @@ void ShortestPathsObserver< G >::solve( void )
      A.push_back( c );
      }
   }
- if( 2 * A.size() > std::size_t( f_g.n() ) ) {
+ // the damage, the nodes whose distance is lost, against the n nodes that
+ // a computation from scratch settles at most, when there is some
+ ReoptStats st = B::stats( C.size() , m );
+ st.work = double( A.size() );
+ st.lastScratch = double( f_g.n() );
+ if( ! A.empty() && this->f_policy.abandon( st , st.work ) ) {
   for( int x : A )                        // most of the tree is lost
    f_inA[ x ] = 0;
   scratch( f_how );
-  this->done( Reopt::SCRATCH );
+  this->done( Reopt::SCRATCH_BY_ABORT , st.lastScratch );
   return;
   }
  for( int x : A ) {
@@ -333,21 +353,23 @@ void ShortestPathsObserver< G >::solve( void )
  for( const auto & c : lighter )
   if( ( f_R.d[ c.a ] != INF ) && ( f_R.d[ c.a ] + c.w < f_R.d[ c.b ] ) )
    seeds.push_back( c.a );
- for( const auto & e : P )                // the nodes gone, unreached
+ for( const auto & e : C )               // the nodes gone, unreached
   if( const auto * x = std::get_if< NodeDeleted >( & e ) ) {
    setParent( x->u , NIL );
    f_R.d[ x->u ] = INF;
    }
 
  if( A.empty() && seeds.empty() )
-  this->done( Reopt::CERTIFIED );
+  this->done( Reopt::CERTIFIED , double( C.size() ) );
  else {
   f_R.order.clear();
-  if( repair( seeds ) )
-   this->done( Reopt::WARM );
-  else {                                  // a negative cycle
-   scratch( Frontier::QUEUE );
-   this->done( Reopt::SCRATCH );
+  const int r = repair( seeds , st );
+  if( r == REPAIRED )
+   this->done( Reopt::WARM , st.work + double( seeds.size() ) );
+  else {                                  // a negative cycle, or given up
+   scratch( r == CYCLE ? Frontier::QUEUE : f_how );
+   this->done( r == CYCLE ? Reopt::SCRATCH_BY_EVENT :
+                            Reopt::SCRATCH_BY_ABORT , st.lastScratch );
    }
   }
  ADS_AUDIT( f_R.negativeCycle || isShortestPathTree( f_g , f_r , f_R ) );
@@ -357,24 +379,82 @@ void ShortestPathsObserver< G >::solve( void )
 /*---------------------- CLASS SpanningForestObserver ----------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< Graph G >
-SpanningForestObserver< G >::SpanningForestObserver( const G & g )
+template< Graph G , ReoptPolicy P >
+SpanningForestObserver< G , P >::SpanningForestObserver( const G & g )
  : f_g( g )
 {
  ADS_PRE( ! g.directed() );
+ if constexpr( std::is_same_v< P , RatioPolicy > )
+  this->f_policy.alpha = 1;               // the join against the cuts
  }
 
-template< Graph G >
-typename SpanningForestObserver< G >::Inc &
-SpanningForestObserver< G >::inc( int a , int b )
+template< Graph G , ReoptPolicy P >
+ReoptStats SpanningForestObserver< G , P >::reoptStats( std::size_t k ) const
+{
+ return( B::stats( k + this->f_q.size() , detail::edgesOf( f_g ) ) );
+ }
+
+template< Graph G , ReoptPolicy P >
+bool SpanningForestObserver< G , P >::compensated( void ) const
+{
+ if constexpr( requires { bool( this->f_policy.compensated ); } )
+  return( bool( this->f_policy.compensated ) );
+ else
+  return( false );
+ }
+
+template< Graph G , ReoptPolicy P >
+void SpanningForestObserver< G , P >::refreshTotal( std::size_t changes )
+{
+ if constexpr( SUBTRACT && std::is_floating_point_v< Weight > ) {
+  f_changes += changes;
+  f_total.compensate( compensated() );
+  if constexpr( requires { this->f_policy.refresh( changes , changes ); } )
+   if( this->f_policy.refresh( f_changes , f_F.size() ) ) {
+    NeumaierSum< Weight > t( compensated() );
+    for( const std::uint64_t k : f_F )
+     t.add( f_E.at( k ).w );
+    f_total = t;
+    f_changes = 0;
+    }
+  }
+ }
+
+template< Graph G , ReoptPolicy P >
+bool SpanningForestObserver< G , P >::totalHolds( void ) const
+{
+ if constexpr( ! SUBTRACT )
+  return( true );
+ else {
+  Weight t = Weight() , a = Weight();
+  for( const std::uint64_t k : f_F ) {
+   const Weight & w = f_E.at( k ).w;
+   t = t + w;
+   a = a + ( w < Weight() ? Weight() - w : w );
+   }
+  if constexpr( std::is_floating_point_v< Weight > ) {
+   const Weight d = f_total.value() - t;
+   return( ( d < Weight() ? -d : d ) <=
+           Weight( 1e-9 ) * ( a > Weight( 1 ) ? a : Weight( 1 ) ) );
+   }
+  else if constexpr( std::equality_comparable< Weight > )
+   return( f_total.value() == t );
+  else
+   return( true );
+  }
+ }
+
+template< Graph G , ReoptPolicy P >
+typename SpanningForestObserver< G , P >::Inc &
+SpanningForestObserver< G , P >::inc( int a , int b )
 {
  auto & L = f_inc[ a ];
  return( *std::find_if( L.begin() , L.end() , [ b ]( const Inc & c ) {
   return( c.y == b ); } ) );
  }
 
-template< Graph G >
-void SpanningForestObserver< G >::grow( int n )
+template< Graph G , ReoptPolicy P >
+void SpanningForestObserver< G , P >::grow( int n )
 {
  if( n <= f_n )
   return;
@@ -386,8 +466,8 @@ void SpanningForestObserver< G >::grow( int n )
  f_n = n;
  }
 
-template< Graph G >
-void SpanningForestObserver< G >::addTree( std::uint64_t k )
+template< Graph G , ReoptPolicy P >
+void SpanningForestObserver< G , P >::addTree( std::uint64_t k )
 {
  Rec & r = f_E.at( k );
  const auto [ u , v ] = ends( k );
@@ -403,7 +483,7 @@ void SpanningForestObserver< G >::addTree( std::uint64_t k )
  f_edgeOf[ x ] = k;
  f_off.erase( std::pair< Weight , std::uint64_t >( r.w , k ) );
  if constexpr( SUBTRACT )
-  f_total = f_total + r.w;
+  f_total.add( r.w );
  f_lct.setValue( x , Heavy{ true , r.w , x } );
  f_lct.link( x , f_vid[ u ] );
  f_lct.link( f_vid[ v ] , x );
@@ -414,8 +494,8 @@ void SpanningForestObserver< G >::addTree( std::uint64_t k )
  f_adjF[ v ].push_back( u );
  }
 
-template< Graph G >
-void SpanningForestObserver< G >::removeTree( std::uint64_t k )
+template< Graph G , ReoptPolicy P >
+void SpanningForestObserver< G , P >::removeTree( std::uint64_t k )
 {
  Rec & r = f_E.at( k );
  const auto [ u , v ] = ends( k );
@@ -425,7 +505,7 @@ void SpanningForestObserver< G >::removeTree( std::uint64_t k )
  f_free.push_back( r.node );
  f_off.emplace( r.w , k );
  if constexpr( SUBTRACT )
-  f_total = f_total - r.w;
+  f_total.sub( r.w );
  r.node = NIL;
  f_E.at( f_F.back() ).at = r.at;            // the last one into its place
  f_F[ r.at ] = f_F.back();
@@ -439,8 +519,8 @@ void SpanningForestObserver< G >::removeTree( std::uint64_t k )
   }
  }
 
-template< Graph G >
-void SpanningForestObserver< G >::scratch( bool fromGraph )
+template< Graph G , ReoptPolicy P >
+void SpanningForestObserver< G , P >::scratch( bool fromGraph )
 {
  std::vector< WeightedEdge< Weight > > A;
  if( fromGraph ) {
@@ -474,7 +554,9 @@ void SpanningForestObserver< G >::scratch( bool fromGraph )
  f_free.clear();
  f_F.clear();
  f_off.clear();
- f_total = Weight();
+ f_total.reset();
+ f_total.compensate( compensated() );
+ f_changes = 0;
  for( const auto & [ k , r ] : f_E )
   f_off.emplace( r.w , k );
  for( auto & L : f_adjF )
@@ -484,8 +566,8 @@ void SpanningForestObserver< G >::scratch( bool fromGraph )
  f_ready = true;
  }
 
-template< Graph G >
-bool SpanningForestObserver< G >::replacement( int u , int v ,
+template< Graph G , ReoptPolicy P >
+bool SpanningForestObserver< G , P >::replacement( int u , int v ,
                                                std::uint64_t & best )
 {
  if( ( ++f_stamp == 0 ) || ( 2 * f_stamp < 0 ) ) {   // the stamps wrapped
@@ -510,6 +592,7 @@ bool SpanningForestObserver< G >::replacement( int u , int v ,
  double steps = 0;
  auto done = [ & ]( bool r ) {
   f_replAvg = 0.875 * f_replAvg + 0.125 * steps;
+  f_steps += steps;
   return( r );
   };
  for( ; ; steps += 16 ) {
@@ -564,8 +647,8 @@ bool SpanningForestObserver< G >::replacement( int u , int v ,
   }
  }
 
-template< Graph G >
-void SpanningForestObserver< G >::join( void )
+template< Graph G , ReoptPolicy P >
+void SpanningForestObserver< G , P >::join( void )
 {
  // the trees of F, by a union-find on its edges, which are in a row
  UnionFind T( f_n );
@@ -617,19 +700,19 @@ void SpanningForestObserver< G >::join( void )
   }
  }
 
-template< Graph G >
-void SpanningForestObserver< G >::solve( void )
+template< Graph G , ReoptPolicy P >
+void SpanningForestObserver< G , P >::solve( void )
 {
- if( ! f_ready ) {
-  this->f_q.clear();
+ if( this->fresh( f_ready ) ) {           // no forest yet, or Rebuilt
   scratch( true );
-  this->done( Reopt::SCRATCH );
+  this->done( Reopt::SCRATCH_BY_EVENT , double( f_E.size() ) );
   return;
   }
  if( this->f_q.empty() )
   return;                                 // nothing to do
- const auto P = this->take();
- const bool many = this->tooMany( P.size() , detail::edgesOf( f_g ) );
+ const auto C = this->take();
+ const long long m = detail::edgesOf( f_g );
+ const bool many = this->tooMany( C.size() , m );
  grow( f_g.bound() );
 
  // the edges of F raised or deleted, each a cut to join again: one at a
@@ -637,7 +720,7 @@ void SpanningForestObserver< G >::solve( void )
  // when that costs less, as the work of the replacements so far tells
  std::size_t cuts = 0;
  if( ! many )
-  for( const auto & e : P ) {
+  for( const auto & e : C ) {
    int u , v;
    std::optional< Weight > w0 , w1;
    if( ! detail::edgeChange( e , u , v , w0 , w1 ) )
@@ -647,13 +730,17 @@ void SpanningForestObserver< G >::solve( void )
        ( ! w1 || ( *w0 < *w1 ) ) )
     ++cuts;
    }
- const bool batch = ( cuts > 1 ) && ( double( cuts ) * f_replAvg >
-                                      double( f_n ) + double( f_off.size() ) );
+ // the work of the replacements one at a time against that of join()
+ ReoptStats st = B::stats( C.size() , m );
+ st.lastScratch = double( f_n ) + double( f_off.size() );
+ const bool batch = ( cuts > 1 ) &&
+                    this->f_policy.abandon( st , double( cuts ) * f_replAvg );
+ f_steps = 0;
  std::vector< std::uint64_t > lowered;    // those of a batch, off F
 
  // each event in turn: the copy, and the forest unless there are many
  bool changed = false;                    // another edge entered F
- for( const auto & e : P ) {
+ for( const auto & e : C ) {
   int u , v;
   std::optional< Weight > w0 , w1;
   if( ! detail::edgeChange( e , u , v , w0 , w1 ) )
@@ -692,8 +779,10 @@ void SpanningForestObserver< G >::solve( void )
    }
   else {
    if constexpr( SUBTRACT )
-    if( tree )                            // the total follows the weight
-     f_total = f_total - it->second.w + *w1;
+    if( tree ) {                          // the total follows the weight
+     f_total.sub( it->second.w );
+     f_total.add( *w1 );
+     }
    if( ! tree && ! many ) {
     f_off.erase( std::pair< Weight , std::uint64_t >( it->second.w , k ) );
     f_off.emplace( *w1 , k );
@@ -762,10 +851,13 @@ void SpanningForestObserver< G >::solve( void )
   }
  if( many ) {
   scratch( false );                       // Kruskal on the copy
-  this->done( Reopt::SCRATCH );
+  this->done( Reopt::SCRATCH_BY_SIZE , double( f_E.size() ) );
   }
- else
-  this->done( changed ? Reopt::WARM : Reopt::CERTIFIED );
+ else {
+  refreshTotal( C.size() );
+  this->done( changed ? Reopt::WARM : Reopt::CERTIFIED ,
+              changed ? f_steps : double( C.size() ) );
+  }
  ADS_AUDIT( ( [ & ]( void ) {
   std::vector< WeightedEdge< Weight > > A , F;
   for( const auto & [ k , r ] : f_E ) {
@@ -776,11 +868,12 @@ void SpanningForestObserver< G >::solve( void )
    }
   return( ( A.size() > 2000 ) || isMinimumSpanningForest( f_n , A , F ) );
   }() ) );
+ ADS_AUDIT( totalHolds() );
  }
 
-template< Graph G >
+template< Graph G , ReoptPolicy P >
 std::vector< WeightedEdge< typename G::Weight > >
-SpanningForestObserver< G >::forest( void )
+SpanningForestObserver< G , P >::forest( void )
 {
  solve();
  std::vector< WeightedEdge< Weight > > F;
@@ -792,12 +885,12 @@ SpanningForestObserver< G >::forest( void )
  return( F );
  }
 
-template< Graph G >
-typename G::Weight SpanningForestObserver< G >::weight( void )
+template< Graph G , ReoptPolicy P >
+typename G::Weight SpanningForestObserver< G , P >::weight( void )
 {
  if constexpr( SUBTRACT ) {
   solve();
-  return( f_total );
+  return( f_total.value() );
   }
  Weight s = Weight();
  for( const auto & e : forest() )
@@ -805,8 +898,8 @@ typename G::Weight SpanningForestObserver< G >::weight( void )
  return( s );
  }
 
-template< Graph G >
-bool SpanningForestObserver< G >::inForest( int u , int v )
+template< Graph G , ReoptPolicy P >
+bool SpanningForestObserver< G , P >::inForest( int u , int v )
 {
  solve();
  const auto it = f_E.find( key( u , v ) );
@@ -817,18 +910,18 @@ bool SpanningForestObserver< G >::inForest( int u , int v )
 /*------------------------- CLASS MaxFlowObserver --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< Graph G >
+template< Graph G , ReoptPolicy P >
 requires std::is_integral_v< typename G::Weight >
-MaxFlowObserver< G >::MaxFlowObserver( const G & g , int s , int t ,
+MaxFlowObserver< G , P >::MaxFlowObserver( const G & g , int s , int t ,
                                        Augment how )
  : f_g( g ) , f_s( s ) , f_t( t ) , f_how( how )
 {
  ADS_PRE( g.hasNode( s ) && g.hasNode( t ) && ( s != t ) );
  }
 
-template< Graph G >
+template< Graph G , ReoptPolicy P >
 requires std::is_integral_v< typename G::Weight >
-void MaxFlowObserver< G >::scratch( void )
+void MaxFlowObserver< G , P >::scratch( void )
 {
  f_net = FlowNetwork( f_g.bound() );
  f_arc.clear();
@@ -845,9 +938,16 @@ void MaxFlowObserver< G >::scratch( void )
  f_ready = true;
  }
 
-template< Graph G >
+template< Graph G , ReoptPolicy P >
 requires std::is_integral_v< typename G::Weight >
-long long MaxFlowObserver< G >::cutCapacity( void ) const
+ReoptStats MaxFlowObserver< G , P >::reoptStats( std::size_t k ) const
+{
+ return( B::stats( k + this->f_q.size() , detail::edgesOf( f_g ) ) );
+ }
+
+template< Graph G , ReoptPolicy P >
+requires std::is_integral_v< typename G::Weight >
+long long MaxFlowObserver< G , P >::cutCapacity( void ) const
 {
  long long c = 0;
  for( int u : f_g.V() )
@@ -858,23 +958,22 @@ long long MaxFlowObserver< G >::cutCapacity( void ) const
  return( c );
  }
 
-template< Graph G >
+template< Graph G , ReoptPolicy P >
 requires std::is_integral_v< typename G::Weight >
-void MaxFlowObserver< G >::solve( void )
+void MaxFlowObserver< G , P >::solve( void )
 {
  ADS_PRE( f_g.hasNode( f_s ) && f_g.hasNode( f_t ) );
- if( ! f_ready ) {
-  this->f_q.clear();
+ if( this->fresh( f_ready ) ) {           // no flow yet, or Rebuilt
   scratch();
-  this->done( Reopt::SCRATCH );
+  this->done( Reopt::SCRATCH_BY_EVENT , double( f_arc.size() ) );
   return;
   }
  if( this->f_q.empty() )
   return;                                 // nothing to do
- const auto P = this->take();
- if( this->tooMany( P.size() , detail::edgesOf( f_g ) ) ) {
+ const auto C = this->take();
+ if( this->tooMany( C.size() , detail::edgesOf( f_g ) ) ) {
   scratch();
-  this->done( Reopt::SCRATCH );
+  this->done( Reopt::SCRATCH_BY_SIZE , double( f_arc.size() ) );
   return;
   }
  while( f_net.n() < f_g.bound() ) {
@@ -900,7 +999,7 @@ void MaxFlowObserver< G >::solve( void )
    warm = true;                           // the cut grows
   A.push_back( { a , b , c1 } );
   };
- for( const auto & e : P ) {
+ for( const auto & e : C ) {
   int u , v;
   std::optional< Weight > w0 , w1;
   if( ! detail::edgeChange( e , u , v , w0 , w1 ) )
@@ -920,10 +1019,10 @@ void MaxFlowObserver< G >::solve( void )
  if( warm ) {                             // from the flow there is
   f_value += f_net.maxFlow( f_s , f_t , f_how );
   f_S = f_net.minCut( f_s );
-  this->done( Reopt::WARM );
+  this->done( Reopt::WARM , double( A.size() ) );
   }
  else
-  this->done( Reopt::CERTIFIED );
+  this->done( Reopt::CERTIFIED , double( A.size() ) );
  ADS_AUDIT( cutCapacity() == f_value );
  }
 
@@ -952,19 +1051,43 @@ std::vector< typename G::Weight > assignmentCosts( const G & g , int k )
 
 }  // end( namespace detail )
 
-template< Graph G >
+template< Graph G , ReoptPolicy P >
 requires std::is_arithmetic_v< typename G::Weight >
-AssignmentObserver< G >::AssignmentObserver( const G & g , int k )
+AssignmentObserver< G , P >::AssignmentObserver( const G & g , int k )
  : f_g( g ) , f_k( k ) , f_A( k , detail::assignmentCosts( g , k ) )
 {
  }
 
-template< Graph G >
+template< Graph G , ReoptPolicy P >
 requires std::is_arithmetic_v< typename G::Weight >
-void AssignmentObserver< G >::solve( void )
+ReoptStats AssignmentObserver< G , P >::reoptStats( std::size_t k ) const
 {
- const auto P = this->take();
- for( const auto & e : P ) {
+ return( B::stats( k + this->f_q.size() ,
+                   static_cast< long long >( f_k ) * f_k ) );
+ }
+
+template< Graph G , ReoptPolicy P >
+requires std::is_arithmetic_v< typename G::Weight >
+void AssignmentObserver< G , P >::reload( void )
+{
+ this->f_stale = false;
+ const auto C = detail::assignmentCosts( f_g , f_k );
+ std::vector< Weight > R( static_cast< std::size_t >( f_k ) );
+ for( int i = 0 ; i < f_k ; ++i ) {
+  std::copy_n( C.begin() + std::ptrdiff_t( i ) * f_k , f_k , R.begin() );
+  f_A.setRow( i , R );
+  }
+ }
+
+template< Graph G , ReoptPolicy P >
+requires std::is_arithmetic_v< typename G::Weight >
+void AssignmentObserver< G , P >::solve( void )
+{
+ const bool rebuilt = this->f_stale;
+ if( rebuilt )
+  reload();
+ const auto E = this->take();
+ for( const auto & e : E ) {
   int u , v;
   std::optional< Weight > w0 , w1;
   const bool edge = detail::edgeChange( e , u , v , w0 , w1 );
@@ -978,11 +1101,11 @@ void AssignmentObserver< G >::solve( void )
   }
  const long long before = f_A.count( 0 ) + f_A.count( 1 ) +
                           f_A.count( 2 );
- f_A.solve();
+ f_A.solve();                             // the policy is its own
  if( f_A.count( 0 ) + f_A.count( 1 ) + f_A.count( 2 ) > before )
-  this->done( f_A.outcome() );
- else if( ! P.empty() )
-  this->done( Reopt::CERTIFIED );
+  this->tally( rebuilt ? Reopt::SCRATCH_BY_EVENT : f_A.cause() );
+ else if( ! E.empty() || rebuilt )
+  this->tally( Reopt::CERTIFIED );
  }
 
 }  // end( namespace ADS )

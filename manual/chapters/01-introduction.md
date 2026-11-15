@@ -1529,7 +1529,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `Algebra.h` | `SumOf`, `MinOf`, `MaxOf` | [1](01-introduction.md#ch-1) |
 | `Capabilities.h` | `forwarding_query`, `stable_references_t`, `thread_safe_reads_t`, `rank_complexity_t`, `event_set_t` | [1](01-introduction.md#ch-1) |
 | `Contract.h` | `contract_violation` | [1](01-introduction.md#ch-1) |
-| `Modification.h` | `Refused`, `no_rebuild_t`, `effect`, `Value`, `Key`, `Cost`, `Upper`, `Lower`, `Supply`, `last`, `min`, `max`, `sum`, `reduction_of`, `list`, `Inserted`, `Erased`, `Changed`, `Relocated`, `Permuted`, `BulkInserted`, `BulkErased`, `Shifted`, `Replaced`, `Cleared`, `Rebuilt`, `Group`, `Counts`, `Direct`, `Via`, `coalesce_traits`, `NoObservers`, `Static`, `Dynamic`, `Both`, `Batch`, `Quiet`, `UndoLog`, `Shadow`, `Assigned`, `KeyChanged` | [1](01-introduction.md#ch-1) |
+| `Modification.h` | `Refused`, `no_rebuild_t`, `effect`, `Value`, `Key`, `Cost`, `Upper`, `Lower`, `Supply`, `last`, `min`, `max`, `sum`, `reduction_of`, `list`, `Inserted`, `Erased`, `Changed`, `Relocated`, `Permuted`, `BulkInserted`, `BulkErased`, `Shifted`, `Replaced`, `Cleared`, `Rebuilt`, `Group`, `Counts`, `Direct`, `Via`, `coalesce_traits`, `NoObservers`, `Static`, `Dynamic`, `Both`, `Batch`, `Quiet`, `UndoLog`, `Shadow`, `Assigned`, `KeyChanged`, `Reopt`, `ReoptStats`, `RatioPolicy`, `NeumaierSum` | [1](01-introduction.md#ch-1), [14](14-graph.md#ch-14) |
 | `Iterators.h` | `LinkedIterator`, `IndexIterator`, `CircularIterator`, `RankIterator`, `IndirectIterator`, `SlotIterator`, `KeyIterator`, `PathIterator`, `WalkIterator` | [1](01-introduction.md#ch-1) |
 | `set/Bag.h` | `Bag` | [1](01-introduction.md#ch-1) |
 | `set/SetInterfaces.h` | `ArrayUSet`, `ArraySSet` | [1](01-introduction.md#ch-1) |
@@ -1695,7 +1695,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `graph/MinimumSpanningTree.h` | `WeightedEdge`, `MergeCounts` | [14](14-graph.md#ch-14) |
 | `graph/Observable.h` | `NodeInserted`, `NodeDeleted`, `EdgeInserted`, `EdgeDeleted`, `WeightChanged`, `GraphEvents`, `coalesce_traits`, `ObservedGraph`, `Observable` | [14](14-graph.md#ch-14) |
 | `graph/PointerGraph.h` | `PointerGraph` | [14](14-graph.md#ch-14) |
-| `graph/Reoptimization.h` | `Reopt`, `EventQueue`, `ShortestPathsObserver`, `SpanningForestObserver`, `MaxFlowObserver`, `AssignmentObserver` | [14](14-graph.md#ch-14) |
+| `graph/Reoptimization.h` | `EventQueue`, `ShortestPathsObserver`, `SpanningForestObserver`, `MaxFlowObserver`, `AssignmentObserver` | [14](14-graph.md#ch-14) |
 | `graph/ShortestPaths.h` | `ShortestPathTree`, `FrontierCounts`, `PriorityFrontier`, `QueueFrontier`, `StackFrontier`, `DequeFrontier` | [14](14-graph.md#ch-14) |
 | `graph/StaticGraph.h` | `WeightedArc`, `StaticGraph` | [14](14-graph.md#ch-14) |
 | `graph/Visit.h` | `VisitCounts`, `DfsSchema` | [14](14-graph.md#ch-14) |
@@ -1990,7 +1990,10 @@ to its checkpoint if it has `checkpoint()` and `rollback()` (also called by
 `Batch::rollback()`), and otherwise the observers get `Rebuilt`. Furthermore,
 `UndoLog<L>` records the events, which carry the old states, and brings any
 structure with `apply()` back to one of its checkpoints by the inverses in the
-reverse order, in one batch. As for (ii), `quiet(s)` suspends the events while
+reverse order, in one batch (a hole in the log at an event with no inverse,
+such as the deletion of a node of a graph); the graph wrapper is undoable in
+this way within its batches ([§14.13.4](14-graph.md#sec-14-13-4)). As for (ii),
+`quiet(s)` suspends the events while
 it lives and sends `Rebuilt` at its end, while `quiet(s, no_rebuild)` is the
 promise that nobody needs to know, checked by the audits of the observers at
 its end. Inside a batch, the events collected before a mute are replaced by
@@ -2004,7 +2007,12 @@ each batch, and it counts the events, the batches and the rebuildings that each
 observer receives. Finally, `Shadow<Inc, Scratch>` sends every event to an
 incremental observer and to one that computes from scratch, and compares their
 answers at each query, i.e., the audit by recomputation of [Frangioni and Manca
-2006](Z-bibliography.md#ref-frangioni2006).
+2006](Z-bibliography.md#ref-frangioni2006). An observer that keeps a
+solution decides between a repair and a computation from scratch by a
+recompute policy of its own (`ReoptPolicy`, `RatioPolicy` by default), on
+counts of work and never on times, and the subject sends it `Rebuilt` in
+place of a batch when the policy asks so at the close; we describe it with
+the observers of the graphs, in [§14.13.4](14-graph.md#sec-14-13-4).
 
 ## 1.14 Capabilities {#sec-1-14}
 

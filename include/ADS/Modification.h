@@ -45,6 +45,20 @@
  * observer against one that computes from scratch, and answers the queries
  * of `Capabilities.h` by the meet of those of the two observers.
  *
+ * An observer that keeps a solution decides between a repair and a
+ * computation from scratch by a recompute policy (the concept
+ * `ReoptPolicy`, whose `scratch()` is asked before the repair, `abandon()`
+ * while it runs and `record()` after it, on counts of elementary
+ * operations and never on times, so that it decides the same on every
+ * machine), and counts its outcomes by their causes (`Reopt`); the default
+ * `RatioPolicy` computes from scratch above \f$ \rho \f$ times the size of
+ * net events, abandons a repair whose work exceeds \f$ \alpha \f$ times
+ * that of a scratch or that extracts an element more than \f$ \beta \f$
+ * times again, and bounds the drift of the floating values by summing them
+ * again periodically or by `NeumaierSum`. When an observer models
+ * `with_policy` and its policy asks it at the close of a batch, the
+ * subject sends it `Rebuilt` instead of the events.
+ *
  * The contracts [see `Contract.h`]: `on()` of `Erased`, `BulkErased`,
  * `Cleared`, `Rebuilt` and `Replaced` is `noexcept` (checked at compile
  * time); an observer neither changes its subject nor attaches or detaches
@@ -82,6 +96,12 @@
  * \see Y. Solodkyy, G. Dos Reis, B. Stroustrup, Open and efficient type
  *      switch for C++, Proceedings of OOPSLA, 963-982, 2012,
  *      doi:10.1145/2384616.2384686
+ * \see A. Neumaier, Rundungsfehleranalyse einiger Verfahren zur Summation
+ *      endlicher Summen, Zeitschrift für Angewandte Mathematik und Mechanik
+ *      54(1), 39-51, 1974, doi:10.1002/zamm.19740540106
+ * \see M. A. Hammer, K. Y. Phang, M. Hicks, J. S. Foster, Adapton:
+ *      composable, demand-driven incremental computation, Proceedings of
+ *      PLDI, 156-166, 2014, doi:10.1145/2594291.2594324
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -148,6 +168,182 @@ struct no_rebuild_t {
 
 /// the promise of `quiet( s , no_rebuild )`
 inline constexpr no_rebuild_t no_rebuild{};
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- THE RECOMPUTE POLICY ------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// how a query of an observer brought its solution up to date (the
+/// outcomes, \f$ 0 \f$ to \f$ 2 \f$), and why (the causes, which refine
+/// the outcome from scratch and the repair)
+struct Reopt {
+ static constexpr int SCRATCH = 0;           ///< from scratch
+ static constexpr int WARM = 1;              ///< by a repair
+ static constexpr int CERTIFIED = 2;         ///< by the certificate
+ static constexpr int SCRATCH_BY_SIZE = 3;   ///< from scratch, too many
+                                             ///< events
+ static constexpr int SCRATCH_BY_ABORT = 4;  ///< from scratch, a repair
+                                             ///< abandoned
+ static constexpr int SCRATCH_BY_EVENT = 5;  ///< from scratch, `Rebuilt`,
+                                             ///< a fatal event or no
+                                             ///< solution yet
+ static constexpr int PARTIAL = 6;           ///< a repair stopped by a
+                                             ///< budget, the rest queued
+ static constexpr int CAUSES = 7;            ///< the number of the causes
+
+ /// the outcome of the cause \f$ c \f$
+ [[nodiscard]] static constexpr int outcomeOf( int c ) {
+  return( c < SCRATCH_BY_SIZE ? c : ( c == PARTIAL ? WARM : SCRATCH ) );
+  }
+ };
+
+/// what a recompute policy reads: the work is a count of elementary
+/// operations of the observer (nodes, edges, extractions), never a time,
+/// so that a policy decides the same on every machine
+struct ReoptStats {
+ std::size_t events = 0;        ///< the net events to apply
+ std::size_t size = 0;          ///< the size of the instance
+ double work = 0;               ///< the work of the repair so far
+ double lastScratch = 0;        ///< the work of a computation from scratch
+ std::size_t reinsertions = 0;  ///< the extractions of one element beyond
+                                ///< its first, in the repair
+ bool closing = false;          ///< whether asked at the close of a batch,
+                                ///< before the events are queued
+ };
+
+/// a recompute policy: whether to compute from scratch before a repair,
+/// whether to abandon a repair while it runs (polled by the observer with
+/// its work \f$ w \f$ so far), and the record of the outcome after it
+template< class P >
+concept ReoptPolicy = requires( P & p , const ReoptStats & s , int outcome ,
+                                double w ) {
+ { p.scratch( s ) } -> std::convertible_to< bool >;
+ { p.abandon( s , w ) } -> std::convertible_to< bool >;
+ p.record( outcome , w );
+ };
+
+/// the default recompute policy: from scratch when the net events exceed
+/// \f$ \rho \f$ times the size, a repair abandoned when its work exceeds
+/// \f$ \alpha \f$ times that of a computation from scratch or when an
+/// element is extracted again more than \f$ \beta \f$ times; the values
+/// that are not exact (floating point) summed again after
+/// \f$ \mathit{period} \f$ times the size of changes, by the compensated
+/// sum of Neumaier when asked
+struct RatioPolicy {
+ double rho = 0.25;          ///< the ratio of the events to the size
+ double alpha = 0.5;         ///< the ratio of the work to a scratch
+ int beta = 0;               ///< the reinsertions of one element, 0 off
+ bool early = false;         ///< whether `scratch()` acts at the close of
+                             ///< a batch, which then sends `Rebuilt`
+ double period = 1;          ///< the changes between two sums, in units
+                             ///< of the size, 0 never
+ bool compensated = false;   ///< whether the sums are compensated
+
+ /// whether to compute from scratch: \f$ e > \rho \max( n , 1 ) \f$, with
+ /// \f$ e \f$ and \f$ n \f$ the events and the size of \f$ s \f$, and at
+ /// the close of a batch only if `early`
+ [[nodiscard]] bool scratch( const ReoptStats & s ) const {
+  if( s.closing && ! early )
+   return( false );
+  const std::size_t n = s.size > 1 ? s.size : 1;
+  return( double( s.events ) > rho * double( n ) );
+  }
+
+ /// whether to abandon the repair after the work \f$ w \f$:
+ /// \f$ w > \alpha \f$ times the work of a scratch, or more than
+ /// \f$ \beta > 0 \f$ reinsertions of one element
+ [[nodiscard]] bool abandon( const ReoptStats & s , double w ) const {
+  return( ( w > alpha * s.lastScratch ) ||
+          ( ( beta > 0 ) && ( s.reinsertions > std::size_t( beta ) ) ) );
+  }
+
+ /// nothing: this policy keeps no history
+ void record( int , double ) const {}
+
+ /// whether the values that are not exact are to be summed again after
+ /// \f$ c \f$ changes of an instance of size \f$ n \f$:
+ /// \f$ c \ge \mathit{period} \max( n , 1 ) \f$
+ [[nodiscard]] bool refresh( std::size_t c , std::size_t n ) const {
+  const std::size_t m = n > 1 ? n : 1;
+  return( ( period > 0 ) && ( double( c ) >= period * double( m ) ) );
+  }
+ };
+
+/// a sum of values of `T` that follows additions and subtractions, with
+/// the compensation of Neumaier when `T` is floating and it is asked: the
+/// error after \f$ k \f$ terms is then of the order of \f$ \varepsilon \f$
+/// times the sum of their absolute values, instead of
+/// \f$ k \varepsilon \f$ times
+///
+/// In pseudocode (beyond the book), \f$ s \f$ the sum and \f$ c \f$ the
+/// compensation, the value \f$ s + c \f$:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{add}( x ) \cr
+/// 2 & \quad t \gets s + x \cr
+/// 3 & \quad \textbf{if}\ | s | \ge | x |\ \textbf{then}\ c \gets c + ( ( s
+///     - t ) + x )\ \textbf{else}\ c \gets c + ( ( x - t ) + s ) \cr
+/// 4 & \quad s \gets t
+/// \end{array}}
+/// \f]
+template< class T >
+class NeumaierSum {
+ public:
+
+ /// the sum \f$ 0 \f$, compensated if `compensated`
+ explicit NeumaierSum( bool compensated = false ) : f_on( compensated ) {}
+
+ /// adds \f$ x \f$
+ void add( const T & x ) {
+  if constexpr( std::is_floating_point_v< T > )
+   if( f_on ) {
+    const T t = f_s + x;
+    const T as = f_s < T() ? -f_s : f_s;
+    const T ax = x < T() ? -x : x;
+    f_c += as >= ax ? ( f_s - t ) + x : ( x - t ) + f_s;
+    f_s = t;
+    return;
+    }
+  f_s = f_s + x;
+  }
+
+ /// subtracts \f$ x \f$
+ void sub( const T & x ) {
+  if constexpr( std::is_floating_point_v< T > )
+   if( f_on ) {
+    add( -x );
+    return;
+    }
+  f_s = f_s - x;
+  }
+
+ /// the sum
+ [[nodiscard]] T value( void ) const {
+  if constexpr( std::is_floating_point_v< T > )
+   return( f_s + f_c );
+  else
+   return( f_s );
+  }
+
+ /// the sum set to \f$ x \f$, with no compensation
+ void reset( const T & x = T() ) {
+  f_s = x;
+  f_c = T();
+  }
+
+ /// compensated or not from now on
+ void compensate( bool on ) { f_on = on; }
+
+ /// whether the sum is compensated
+ [[nodiscard]] bool compensated( void ) const { return( f_on ); }
+
+ private:
+
+ T f_s = T();                  ///< the sum
+ T f_c = T();                  ///< the compensation
+ bool f_on;                    ///< whether compensated
+
+ };  // end( class NeumaierSum )
 
 namespace mod {
 
@@ -557,6 +753,16 @@ concept lazy = requires( O & o ) { o.flush(); };
 template< class O >
 concept counted = requires( const O & o ) { o.counts(); };
 
+/// an observer with a recompute policy [see `ReoptPolicy`], and the
+/// statistics of a query after \f$ k \f$ more events: at the close of a
+/// batch the subject asks its `scratch()`, and sends `Rebuilt` instead of
+/// the events when it answers yes
+template< class O >
+concept with_policy = requires( O & o , std::size_t k ) {
+ { o.policy() } -> ReoptPolicy;
+ { o.reoptStats( k ) } -> std::convertible_to< ReoptStats >;
+ };
+
 /// an observer with a filter of the kinds at run time: the bit \f$ i \f$
 /// of `mask()` for the \f$ i \f$-th event of the structure
 template< class O >
@@ -630,6 +836,19 @@ struct Direct {
  static std::uint64_t mask( const O & o ) {
   return( std::uint64_t( o.mask() ) );
   }
+ /// whether the policy of \f$ o \f$ wants `Rebuilt` instead of the
+ /// \f$ k \f$ events of a batch [see `with_policy`]
+ template< class O >
+  requires( with_policy< O > && observes< O , Rebuilt > )
+ static bool early( O & o , std::size_t k ) {
+  ReoptStats s = o.reoptStats( k );
+  s.closing = true;
+  return( bool( o.policy().scratch( s ) ) );
+  }
+ /// `o.on( Rebuilt{} )`
+ template< class O >
+  requires( with_policy< O > && observes< O , Rebuilt > )
+ static void rebuilt( O & o ) noexcept { o.on( Rebuilt{} ); }
  };
 
 /// the observer `O` called through the adapter `A`, an argument of `Static`
@@ -732,6 +951,26 @@ template< class A , class O >
 concept calls_mask = requires( const O & o ) {
  { A::mask( o ) } -> std::convertible_to< std::uint64_t >;
  };
+
+/// whether the adapter `A` asks the policy of `O` at the close of a batch
+template< class A , class O >
+concept calls_policy = requires( O & o , std::size_t k ) {
+ { A::early( o , k ) } -> std::same_as< bool >;
+ A::rebuilt( o );
+ };
+
+/// the events of \f$ C \f$ of the kinds \f$ m \f$, all if \f$ \mathit{all} \f$
+template< class Var >
+std::size_t eventsFor( std::span< const Var > C , std::uint64_t m ,
+                       bool all )
+{
+ if( all )
+  return( C.size() );
+ std::size_t k = 0;
+ for( const auto & e : C )
+  k += std::size_t( ( m >> e.index() ) & 1u );
+ return( k );
+ }
 
 /// the kinds of the list `L` that `O` wants through `A`, as bits
 template< class A , class O , class L >
@@ -1048,6 +1287,11 @@ class StaticSet {
    return;
   auto & o = std::get< I >( f_o );
   f_counts.group( I );
+  if constexpr( calls_policy< Ai< I > , Oi< I > > )
+   if( Ai< I >::early( o , eventsFor( C , m , ( kinds & ~m ) == 0 ) ) ) {
+    rebuiltOne< I >( g );                // Rebuilt instead of the events
+    return;
+    }
   if constexpr( calls_group< Ai< I > , Oi< I > > )
    Ai< I >::begin( o , g );
   bool leave = false;
@@ -1083,6 +1327,17 @@ class StaticSet {
   if constexpr( may_leave )
    if( leave )
     f_off.set( I );
+  }
+
+ template< std::size_t I >
+ ADS_COLD_PATH void rebuiltOne( const Group & g ) {
+  auto & o = std::get< I >( f_o );
+  f_counts.rebuild( I );
+  if constexpr( calls_group< Ai< I > , Oi< I > > )
+   Ai< I >::begin( o , g );
+  Ai< I >::rebuilt( o );
+  if constexpr( calls_group< Ai< I > , Oi< I > > )
+   Ai< I >::end( o );
   }
 
  template< std::size_t ... I >
@@ -1163,6 +1418,9 @@ class Slots {
   void ( * end )( void * ) = nullptr;   ///< its `group_end()`
   /// its `audit( s )`
   bool ( * audit )( const void * , const void * ) = nullptr;
+  /// whether its policy wants `Rebuilt` instead of \f$ k \f$ events
+  bool ( * early )( void * , std::size_t ) = nullptr;
+  void ( * rebuilt )( void * ) = nullptr;   ///< its `Rebuilt`
   Counts counts;                       ///< its counts
   };
 
@@ -1371,6 +1629,11 @@ class Subject {
 
  /// the events collected so far
  [[nodiscard]] std::size_t buffered( void ) const { return( f_buf.size() ); }
+
+ /// the events collected so far, in their order
+ [[nodiscard]] std::span< const Event > collected( void ) const {
+  return( std::span< const Event >( f_buf ) );
+  }
 
  /// closes a batch, dropping the events collected after the first
  /// \f$ m \f$
@@ -1644,9 +1907,14 @@ class Batch {
  /// 4 & \quad \textbf{foreach}\ \text{observer } o\ \textbf{do} \cr
  /// 5 & \qquad C_o \gets \text{the events of } C \text{ whose kind is in }
  ///     M_o \cr
- /// 6 & \qquad \textbf{if}\ C_o \ne \emptyset\ \textbf{then}
- ///     \ o.\mathrm{group\_begin}();\ o.\mathrm{on}( C_o );
- ///     \ o.\mathrm{group\_end}()
+ /// 6 & \qquad \textbf{if}\ C_o = \emptyset\ \textbf{then}
+ ///     \ \textbf{continue} \cr
+ /// 7 & \qquad o.\mathrm{group\_begin}() \cr
+ /// 8 & \qquad \textbf{if}\ o \text{ has a policy } p \textbf{ and }
+ ///     p.\mathrm{scratch}( o.\mathrm{reoptStats}( |C_o| ) )
+ ///     \ \textbf{then}\ o.\mathrm{on}( \mathrm{Rebuilt} ) \cr
+ /// 9 & \qquad \textbf{else}\ o.\mathrm{on}( C_o ) \cr
+ /// 10 & \qquad o.\mathrm{group\_end}()
  /// \end{array}}
  /// \f]
  void close( void ) {
@@ -1658,27 +1926,41 @@ class Batch {
 
  /// brings the structure back to where it was when the batch opened, and
  /// drops its events: the observers see nothing
+ /// \pre the structure can go back to the checkpoint (`revertible()`,
+ ///      when it has it)
  void rollback( void ) requires undoable< S > {
-  if( f_s )
+  if( f_s ) {
+   ADS_PRE( revertible( *f_s ) );
    undo( *std::exchange( f_s , nullptr ) );
+   }
   }
 
  private:
+
+ /// whether \f$ s \f$ can go back to the checkpoint of the batch: always,
+ /// unless it tells otherwise by `revertible( t )`
+ bool revertible( const S & s ) const {
+  if constexpr( requires { s.revertible( f_t ); } )
+   return( s.revertible( f_t ) );
+  else
+   return( true );
+  }
 
  void abandon( void ) noexcept {
   S * s = std::exchange( f_s , nullptr );
   using L = typename std::remove_cvref_t<
                      decltype( s->subject() ) >::modifications;
   if constexpr( undoable< S > )
-   undo( *s );
-  else {
-   if constexpr( mod::contains_v< mod::Rebuilt , L > )
-    s->subject().spoil();
-   try {
-    s->subject().close( mod::detail::observed( *s ) );
+   if( revertible( *s ) ) {
+    undo( *s );
+    return;
     }
-   catch( ... ) {}                      // the first exception wins
+  if constexpr( mod::contains_v< mod::Rebuilt , L > )
+   s->subject().spoil();
+  try {
+   s->subject().close( mod::detail::observed( *s ) );
    }
+  catch( ... ) {}                       // the first exception wins
   }
 
  void undo( S & s ) noexcept {
@@ -1808,6 +2090,15 @@ class UndoLog {
    }
   else
    f_log.push_back( Event( e ) );
+  }
+
+ /// forgets the events recorded, which can no longer be undone: an event
+ /// with no inverse (the deletion of a node of a graph) is a hole
+ template< class E >
+  requires( mod::contains_v< E , L > && ! mod::invertible< E > )
+ void on( const E & ) noexcept {
+  if( ! f_replay )
+   forget();
   }
 
  /// forgets the events recorded, which can no longer be undone

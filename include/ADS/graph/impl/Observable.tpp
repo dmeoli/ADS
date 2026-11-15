@@ -209,6 +209,32 @@ bool ObservedGraph< G , Policy >::setWeightTold( int u , int v ,
  return( true );
  }
 
+template< Graph G , class Policy >
+bool ObservedGraph< G , Policy >::revertible( std::size_t t ) const
+ requires( ! Subject::none )
+{
+ const auto B = f_sub.collected();
+ if( ( t > B.size() ) || ( f_sub.mask() != GraphEvents::ALL ) )
+  return( false );
+ for( std::size_t i = t ; i < B.size() ; ++i )
+  if( ( kindOf( B[ i ] ) & GraphEvents::EDGES ) == 0 )
+   return( false );                     // a node: no inverse
+ return( true );
+ }
+
+template< Graph G , class Policy >
+void ObservedGraph< G , Policy >::rollback( std::size_t t )
+ requires( ! Subject::none )
+{
+ ADS_PRE( revertible( t ) );
+ const auto B = f_sub.collected();
+ const std::vector< Event > R( B.begin() + std::ptrdiff_t( t ) , B.end() );
+ for( auto it = R.rbegin() ; it != R.rend() ; ++it )
+  std::visit( [ & ]( const auto & x ) {
+   if constexpr( mod::invertible< std::decay_t< decltype( x ) > > )
+    apply( inverse( x ) ); } , *it );
+ }
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

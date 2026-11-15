@@ -543,9 +543,14 @@ export namespace ADS {
  using ADS::Batch;
  using ADS::Dynamic;
  using ADS::Keep;
+ using ADS::NeumaierSum;
  using ADS::NoObservers;
  using ADS::Quiet;
+ using ADS::RatioPolicy;
  using ADS::Refused;
+ using ADS::Reopt;
+ using ADS::ReoptPolicy;
+ using ADS::ReoptStats;
  using ADS::Shadow;
  using ADS::Static;
  using ADS::UndoLog;
@@ -1234,6 +1239,7 @@ export namespace ADS {
  using ADS::WeightChanged;
  using ADS::coalesce;
  using ADS::endsOf;
+ using ADS::inverse;
  using ADS::kindOf;
 
  // ADS/graph/Paths.h
@@ -1262,7 +1268,6 @@ export namespace ADS {
  using ADS::AssignmentObserver;
  using ADS::EventQueue;
  using ADS::MaxFlowObserver;
- using ADS::Reopt;
  using ADS::Reoptimizable;
  using ADS::ShortestPathsObserver;
  using ADS::SpanningForestObserver;
@@ -2653,6 +2658,7 @@ export namespace ADS {
   using ADS::mod::refuses;
   using ADS::mod::role_of;
   using ADS::mod::variant_t;
+  using ADS::mod::with_policy;
  }
 }
 

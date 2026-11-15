@@ -1851,6 +1851,12 @@ engineered_dynamic  link-cut-tree          link-cut tree contro un vettore di pa
 engineered_dynamic  link-cut-tree-contracts  link-cut tree, contratti non contati
 engineered_dynamic  rollback-union-find    union-find con rollback
 engineered_dynamic  offline-connectivity   connettività dinamica offline
+engineered_reopt  reopt-causes          cause degli esiti dei quattro osservatori
+engineered_reopt  reopt-early           Rebuilt alla chiusura del lotto
+engineered_reopt  reopt-custom-policy   politiche proprie, ripiego da zero
+engineered_reopt  reopt-drift           deriva del totale in virgola mobile
+engineered_reopt  reopt-undo-batch      garanzia forte del lotto interrotto
+engineered_reopt  reopt-undo-log        modifiche speculative e UndoLog
 
 # the typed modifications, their subjects and batches, beyond the book
 engineered_modification  mod-events          eventi, effetti, direzioni, inversi
