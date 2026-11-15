@@ -54,6 +54,7 @@ constexpr std::uint64_t detail::mulxPortable( std::uint64_t a ,
 
 namespace detail
 {
+ADS_ABI_BEGIN
 
 /// the fingerprint of each low byte b of a mixed hash, b or 1 for 0, in
 /// each of 4 bytes, so that SSE2 spreads it by one shuffle of words
@@ -65,7 +66,10 @@ alignas( 64 ) inline constexpr auto flatTags = []( void )
  return( t );
  }();
 
+ADS_ABI_END
 }  // end( namespace detail )
+
+ADS_ABI_BEGIN
 
 #if ! ADS_FLATHASH_BOOST
 
@@ -1185,6 +1189,8 @@ FlatHashTable< K , V , H , Eq >::erase( const_iterator it )
 #endif
 
 /*--------------------------------------------------------------------------*/
+
+ADS_ABI_END
 
 }  // end( namespace ADS )
 

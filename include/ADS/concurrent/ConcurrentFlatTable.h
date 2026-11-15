@@ -177,6 +177,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Abi.h"
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
 #include "ADS/dictionary/FastHash.h"
@@ -194,29 +195,14 @@
 #include <utility>
 #include <vector>
 
-// the compare-and-swap of 16 bytes without locks, on little-endian x86-64
-// and AArch64, unless turned off; not with the GCC of macOS on AArch64 (the
-// port of Homebrew), which gives its caspal a pair of registers that does
-// not start at an even one, and the assembler refuses it
-#ifndef ADS_FLAT_CAS16
- #if defined( __GCC_HAVE_SYNC_COMPARE_AND_SWAP_16 ) &&                        \
-   ( defined( __x86_64__ ) || defined( __aarch64__ ) ) &&                     \
-   defined( __BYTE_ORDER__ ) &&                                               \
-   ( __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ ) &&                           \
-   ! ( defined( __APPLE__ ) && defined( __aarch64__ ) &&                      \
-       ! defined( __clang__ ) )
-  #define ADS_FLAT_CAS16 1
- #else
-  #define ADS_FLAT_CAS16 0
- #endif
-#endif
-
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 namespace ADS
 {
+
+ADS_ABI_BEGIN
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ THE POLICIES OF clear() -------------------------*/
@@ -237,8 +223,11 @@ struct EpochClear
  using Stamp = S;  ///< the type of the stamps and of the epoch
  };
 
+ADS_ABI_END
+
 namespace detail
 {
+ADS_ABI_BEGIN
 
 /// the type of the stamps of the policy C of clear(), and whether it has
 /// epochs
@@ -257,7 +246,10 @@ struct ClearStamps< EpochClear< S > >
  static constexpr bool epochs = true;
  };
 
+ADS_ABI_END
 }  // end( namespace detail )
+
+ADS_ABI_BEGIN
 
 /// a policy of `clear()` of `ConcurrentFlatTable`
 template< class C >
@@ -813,6 +805,8 @@ class ConcurrentFlatTable
  };  // end( class ConcurrentFlatTable )
 
 /*--------------------------------------------------------------------------*/
+
+ADS_ABI_END
 
 }  // end( namespace ADS )
 

@@ -26,6 +26,7 @@
 #define ADS_WAVELET_SLICE 64
 
 #include "ADSTest.h"
+#include "InteropExecutors.h"
 
 #include "ADS/parallel/Executor.h"
 #include "ADS/parallel/FastFlowExecutor.h"
@@ -83,7 +84,8 @@ namespace
 {
 
 /// f( ex , name ) on each executor: Sequential, pools of 1, 2, 3 and 8
-/// threads, and the executors of the libraries compiled in
+/// threads, the executors of the libraries compiled in, and those on the
+/// runtimes of a program
 template< class F >
 void onEach( F && f )
 {
@@ -109,6 +111,8 @@ void onEach( F && f )
  TBBExecutor tbb( 4 );
  f( tbb );
 #endif
+ // the executors on the runtimes of a program [see InteropExecutors.h]
+ test::onEachInterop( f );
  }
 
 /// the number of Fibonacci by the fork and join of its recursion

@@ -24,6 +24,11 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.cmakeFeature "ADS_WITH_BOOST" "OFF")
     (lib.cmakeFeature "ADS_WITH_LEMON" "OFF")
     (lib.cmakeFeature "ADS_WITH_MPI" "OFF")
+    (lib.cmakeFeature "ADS_WITH_STDPAR" "OFF")
+    (lib.cmakeFeature "ADS_WITH_STDEXEC" "OFF")
+    (lib.cmakeFeature "ADS_WITH_TASKFLOW" "OFF")
+    (lib.cmakeFeature "ADS_WITH_KOKKOS" "OFF")
+    (lib.cmakeFeature "ADS_WITH_BOOST_MPI" "OFF")
   ];
 
   doCheck = true;

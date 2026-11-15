@@ -4,23 +4,34 @@
 /** @file
  * The executor [see `Executor.h`] on the threads of oneTBB, beyond the book,
  * compiled only with `ADS_WITH_TBB` (the CMake option of the same name, OFF
- * by default) and oneTBB on the path: the executor holds a `task_arena` of
- * \f$ p \f$ threads, `bulk( n , f )` is a `parallel_for` of oneTBB on the
- * \f$ n \f$ indices with the simple partitioner (a task per index, since the
- * patterns of ADS already give it blocks), and `invoke( f , g )` is
- * `parallel_invoke`, both run in the arena, so that the parallel algorithms
- * of ADS run on the scheduler of oneTBB unchanged, and nest as its tasks do.
- * The thread that calls joins the arena and works. `run( p , f )` is the
+ * by default) and oneTBB on the path: the executor runs in a `task_arena`,
+ * `bulk( n , f )` is a `parallel_for` of oneTBB on the \f$ n \f$ indices
+ * with the simple partitioner (a task per index, since the patterns of ADS
+ * already give it blocks), and `invoke( f , g )` is `parallel_invoke`, both
+ * run in the arena, so that the parallel algorithms of ADS run on the
+ * scheduler of oneTBB unchanged, and nest as its tasks do. The arena is one
+ * of three: its own, of \f$ p \f$ threads (`TBBExecutor( p )`); one of the
+ * program, which the executor refers to without owning it
+ * (`TBBExecutor( arena )`), so that the constraints of that arena (its NUMA
+ * node, its type of core, its priority, its number of threads) hold for the
+ * calls of ADS too; or the arena of the thread that makes each call
+ * (`TBBExecutor( TBBExecutor::current )`), so that an algorithm of ADS
+ * called from inside a loop of oneTBB of the program runs in the arena of
+ * that loop, whatever it is. Since the arenas of a process share the
+ * workers of oneTBB, none of the three starts threads of its own; the last
+ * two add nothing to the calls of oneTBB but `execute()`. The thread that
+ * calls joins the arena and works. `run( p , f )` is the
  * same `parallel_for` on the \f$ p \f$ calls of long-lived workers, each
  * made inside `this_task_arena::isolate()`, so that a thread that waits
  * inside a call (for a job nested in it) takes only the tasks of that job,
  * never the call of another worker, which it would hold under its own; the
  * \f$ p \f$ calls then run at the same time as soon as the arena has
- * \f$ p \f$ threads, i.e., when the threads of oneTBB are not fewer, which
- * \f$ p \f$ not larger than the hardware threads ensures. The caller joins
- * the arena and may make any of the calls or none of them, so that
- * `isRunCaller()` holds in at most one call, whose index is not known in
- * advance. Its lock is the spin mutex of oneTBB (`tbb::spin_mutex`), for
+ * \f$ p \f$ threads free, i.e., when the threads of oneTBB are not fewer,
+ * which \f$ p \f$ not larger than the hardware threads ensures for an arena
+ * of its own (an arena of the program must have them free as well). The
+ * caller joins the arena and may make any of the calls or none of them, so
+ * that `isRunCaller()` holds in at most one call, whose index is not known
+ * in advance. Its lock is the spin mutex of oneTBB (`tbb::spin_mutex`), for
  * the short sections of the workers.
  *
  * The contracts [see `Contract.h`]: \f$ p \ge 1 \f$; an exception thrown by
@@ -65,7 +76,9 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <optional>
 #include <thread>
+#include <utility>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -84,19 +97,44 @@ class TBBExecutor
 
 /*--------------------------------------------------------------------------*/
  public:
- /// the executor of an arena of \f$ p \f$ threads (the hardware threads if
- /// \f$ p = 0 \f$)
+ /// the tag of the executor on the arena of the calling thread
+ struct Current
+ { };
+
+ /// the executor on the arena of the thread that makes each call [see
+ /// `TBBExecutor( Current )`]
+ static constexpr Current current{};
+
+ /// the executor of an arena of its own, of \f$ p \f$ threads (the
+ /// hardware threads if \f$ p = 0 \f$)
  /// \pre \f$ p \ge 1 \f$ once the hardware threads are counted
  explicit TBBExecutor( std::size_t p = 0 )
      : f_p( p ? p
 	      : std::max< std::size_t >( std::thread::hardware_concurrency() ,
 					 1 ) ) ,
-       f_arena( int( f_p ) ) {
+       f_own( std::in_place , int( f_p ) ) {
   ADS_PRE( f_p >= 1 );
   }
 
- /// the number of threads of the arena
- [[nodiscard]] std::size_t concurrency( void ) const { return( f_p ); }
+ /// the executor on the arena of the program, which it does not own and
+ /// which must outlive it; its threads are those of the arena
+ explicit TBBExecutor( tbb::task_arena & arena )
+     : f_p( 0 ) , f_user( &arena ) { }
+
+ /// the executor on the arena of the thread that makes each call (the
+ /// arena of a loop of oneTBB that calls an algorithm of ADS, the implicit
+ /// arena of the process elsewhere); its threads are those of that arena
+ explicit TBBExecutor( Current ) : f_p( 0 ) { }
+
+ /// the number of threads of the arena: \f$ p \f$ for its own, the
+ /// concurrency of the arena of the program, or of the current one
+ [[nodiscard]] std::size_t concurrency( void ) const {
+  if( f_p )
+   return( f_p );
+  const int c = f_user ? f_user->max_concurrency()
+		       : tbb::this_task_arena::max_concurrency();
+  return( std::size_t( c > 0 ? c : 1 ) );
+  }
 
  /// the calls \f$ f( 0 ) , \ldots , f( n - 1 ) \f$ on the threads of the
  /// arena
@@ -113,12 +151,12 @@ class TBBExecutor
  /// \f]
  template< class F >
  void bulk( std::size_t n , F && f ) {
-  if( ( n <= 1 ) || ( f_p == 1 ) ) {
+  if( ( n <= 1 ) || ( concurrency() == 1 ) ) {
    for( std::size_t i = 0 ; i < n ; ++i )
     f( i );
    return;
    }
-  f_arena.execute( [ & ] {
+  execute( [ & ] {
    tbb::parallel_for(
      tbb::blocked_range< std::size_t >( 0 , n , 1 ) ,
      [ & ]( const tbb::blocked_range< std::size_t > & r ) {
@@ -133,12 +171,12 @@ class TBBExecutor
  /// oneTBB in the arena
  template< class F , class G >
  void invoke( F && f , G && g ) {
-  if( f_p == 1 ) {
+  if( concurrency() == 1 ) {
    f();
    g();
    return;
    }
-  f_arena.execute( [ & ] { tbb::parallel_invoke( f , g ); } );
+  execute( [ & ] { tbb::parallel_invoke( f , g ); } );
   }
 
  /// the lock of the data shared by the workers of `run()`
@@ -164,7 +202,7 @@ class TBBExecutor
  ///       threads
  template< class F >
  void run( std::size_t p , F && f ) {
-  ADS_PRE( p <= f_p );
+  ADS_PRE( p <= concurrency() );
   detail::RunCaller caller;
   if( p <= 1 ) {
    if( p == 1 )
@@ -172,7 +210,7 @@ class TBBExecutor
    return;
    }
   detail::FirstError error;
-  f_arena.execute( [ & ] {
+  execute( [ & ] {
    tbb::parallel_for(
      tbb::blocked_range< std::size_t >( 0 , p , 1 ) ,
      [ & ]( const tbb::blocked_range< std::size_t > & r ) {
@@ -193,8 +231,20 @@ class TBBExecutor
 
 /*--------------------------------------------------------------------------*/
  private:
- std::size_t f_p;          ///< the threads
- tbb::task_arena f_arena;  ///< where they run
+ /// the call `body()` in the arena of the executor
+ template< class B >
+ void execute( B && body ) {
+  if( f_user )
+   f_user->execute( body );
+  else if( f_own )
+   f_own->execute( body );
+  else
+   body();
+  }
+
+ std::size_t f_p;                         ///< the threads of its own arena
+ std::optional< tbb::task_arena > f_own;  ///< its own arena, if any
+ tbb::task_arena * f_user = nullptr;      ///< the arena of the program
  };  // end( class TBBExecutor )
 
 /*--------------------------------------------------------------------------*/

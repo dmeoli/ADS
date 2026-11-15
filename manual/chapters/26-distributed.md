@@ -1,14 +1,16 @@
 # 26. Distributed computing {#ch-26}
 
 [Source: `include/ADS/distributed/DistributedSort.h`, `MPIExecutor.h`,
-`MPIMailbox.h`]
+`MPIMailbox.h`, `BoostMPI.h`]
 
 We are concerned in this chapter with the computations whose data are
 spread over the processes of MPI ([Message Passing Interface Forum
 2023](Z-bibliography.md#ref-mpi2023)), each with a separate memory, which exchange them only by messages. In `ADS/distributed`, the headers
-are compiled only with `ADS_WITH_MPI` (the option of CMake of the same
-name, AUTO by default, i.e., on whenever an implementation of MPI such as
-Open MPI or MPICH is found, and the macro of the makefiles). They give a
+are compiled only with `ADS_WITH_MPI`, the option of CMake of the same name
+and the macro of the makefiles. It is off by default, as for the other
+runtimes, since the target `ADS::ADS` built with it carries MPI to every
+program that links it, and AUTO turns it on whenever an implementation of
+MPI such as Open MPI or MPICH is found. They give a
 sort of the items of all the processes ([§26.2](26-distributed.md#sec-26-2)),
 and the runtime that lets the processes act as the workers of one
 computation: an executor and a distributed minimum
@@ -17,8 +19,9 @@ computation: an executor and a distributed minimum
 the computation ([§26.5](26-distributed.md#sec-26-5)). The threads inside a process, and the mailbox of the threads of which the
 one of the processes is the counterpart, are those of
 [chapter 25](25-parallel.md#ch-25). In the sets of
-[§1.9](01-introduction.md#sec-1-9), the headers of this chapter are all
-advanced.
+[§1.9](01-introduction.md#sec-1-9), the headers of this chapter are
+advanced, but for `BoostMPI.h`, which includes the headers of Boost.MPI
+and is of the set interop.
 
 ## 26.1 The model {#sec-26-1}
 
@@ -380,7 +383,15 @@ is not trivially copyable is an `MPIByteMailbox` whose bytes are those of
 `MPICodec< Msg >`, the customization point that encodes a message
 (`encode( x , out )` appends its bytes to `out`) and decodes it (`decode( b )`
 rebuilds it from those bytes), given for `std::string` and for the vectors of
-trivially copyable items. A record carries at most $2^{32} - 1$ bytes. The
+trivially copyable items. A program of Boost.MPI
+([Gregor and Troyer](Z-bibliography.md#ref-gregor-boostmpi)) passes its
+`boost::mpi::communicator` wherever the library takes a communicator, since
+it converts to `MPI_Comm` implicitly. For its messages,
+`ADS/distributed/BoostMPI.h` gives `BoostMPICodec< Msg >`, the bytes of a
+message by Boost.Serialization in the packed archives of Boost.MPI; a
+message that the program already serializes then goes through the mailbox
+by one specialization, `template<> struct MPICodec< Msg > : BoostMPICodec<
+Msg > { };`, as in the test `engineered_boost_mpi`. A record carries at most $2^{32} - 1$ bytes. The
 bytes $b$ that `poll( f )` of `MPIByteMailbox` passes to `f( t , b )` are
 valid during the call, at an offset multiple of 8 of a buffer that `new`
 allocated (hence aligned for the types of up to 8 bytes). `MPIMailbox< Msg >`

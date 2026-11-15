@@ -19,16 +19,23 @@
 # queue, the priority queue without locks, the concurrent hash tables, the    #
 # parallel operations of the trees by join, the parallel builds of the        #
 # succinct structures, the stepping algorithms of the shortest paths and the  #
-# runtime of the workers under ThreadSanitizer, and FlatHashTable on its      #
-# broadword fallback; it measures the coverage of the tests, run four at a    #
-# time and with the cases there for their scale alone made smaller, and sends #
-# it to Coveralls; it builds the C++20 module ads and runs the test that      #
-# imports it, by CMake and Ninja with Clang and GCC 15 on Linux and the Clang #
-# of LLVM on macOS, and by the makefile with clang++ and g++ 15.              #
-# On a pull request, the lines that it changes are checked in the style of    #
-# the repository code-style, whose action posts the changes that put them     #
-# there as suggestions on them; on every push, all the C++ sources and the    #
-# theory pages are checked whole, since the whole tree is in the style.       #
+# runtime of the workers under ThreadSanitizer, FlatHashTable on its          #
+# broadword fallback, the executors on the runtimes of a program (oneTBB on   #
+# the arenas of the program, OpenMP inside a region, the parallel algorithms  #
+# of the standard library, stdexec, Taskflow and Kokkos) under the parallel   #
+# tests, and two units built with different flags linked into one program; on #
+# ARM64 it runs the tests on Linux and, not yet required, on Windows with     #
+# MSVC, and ThreadSanitizer on the concurrent structures, and on s390x,       #
+# big-endian, by QEMU and not yet required, the structures with branches for  #
+# the order of the bytes; it measures the coverage of the tests, run four at  #
+# a time and with the cases there for their scale alone made smaller, and     #
+# sends it to Coveralls; it builds the C++20 module ads and runs the test     #
+# that imports it, by CMake and Ninja with Clang and GCC 15 on Linux and the  #
+# Clang of LLVM on macOS, and by the makefile with clang++ and g++ 15. On a   #
+# pull request, the lines that it changes are checked in the style of the     #
+# repository code-style, whose action posts the changes that put them there   #
+# as suggestions on them; on every push, all the C++ sources and the theory   #
+# pages are checked whole, since the whole tree is in the style.              #
 ###############################################################################
 
 name: CI
@@ -115,7 +122,12 @@ jobs:
               msystem: UCRT64 , cc: gcc }
           - { os: windows-latest , compiler: clang++ , cxx: clang++ ,
               msystem: CLANG64 , cc: clang }
+          # ARM64: Linux (the NEON matching of the hash tables) and, not yet
+          # required, Windows with MSVC (the branches of _M_ARM64)
+          - { os: ubuntu-24.04-arm , compiler: g++ , cxx: g++ }
+          - { os: windows-11-arm , compiler: msvc , experimental: true }
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental == true }}
     timeout-minutes: 120
     defaults:
       run:
@@ -212,6 +224,16 @@ jobs:
           g++ -std=c++20 -O2 -march=x86-64-v3 -Iinclude -Itest \
               -DADS_CONTRACTS=3 -o vectors test/hashing.cpp -pthread
           ./vectors fast-hash
+      - name: two units on SSE2 and on AVX2 with the CAS of 16 bytes, linked
+        run: |
+          for u in A B; do
+            flags="-DADS_FLAT_SIMD=0 -DADS_FLAT_CAS16=0"
+            [ $u = B ] && flags="-march=x86-64-v3 -mcx16"
+            g++ -std=c++20 -O2 -Wall -Wextra -Iinclude -DADS_CONTRACTS=3 \
+                -DADS_ABI_UNIT=$u $flags -c -o abi_$u.o test/abi_unit.cpp
+          done
+          g++ -std=c++20 -O2 -o abi test/abi_units.cpp abi_A.o abi_B.o -pthread
+          ./abi
       - name: vectorQuickSort() and sort() on AVX2, and on AVX-512 if there
         run: |
           march="x86-64-v3"
@@ -297,8 +319,17 @@ jobs:
             for t in $(build-exec/$p -l); do build-exec/$p $t; done
           done
 
+  # the concurrent structures and the parallel algorithms under
+  # ThreadSanitizer, on x86-64 and on ARM64, whose weaker order of the
+  # memory shows an acquire or a release that is missing, where the total
+  # store order of x86-64 hides it
   threads:
-    runs-on: ubuntu-latest
+    name: threads (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest , ubuntu-24.04-arm ]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: ThreadSanitizer on the queues between threads
@@ -334,9 +365,12 @@ jobs:
           ./tsan concurrent-flat-table-find-key
           ./tsan single-writer-flat-table-threads
           ./tsan concurrent-cuckoo-threads
-          g++ -std=c++20 -O1 -g -fsanitize=thread -mcx16 -Iinclude -Itest \
-              -DADS_CONTRACTS=3 -o tsan16 test/engineered.cpp -pthread
-          ./tsan16 concurrent-flat-table-words
+          if [ "$(uname -m)" = x86_64 ]; then
+            g++ -std=c++20 -O1 -g -fsanitize=thread -mcx16 -Iinclude \
+                -Itest -DADS_CONTRACTS=3 -o tsan16 test/engineered.cpp \
+                -pthread
+            ./tsan16 concurrent-flat-table-words
+          fi
       - name: ThreadSanitizer on the backoff and the packed arrays
         run: |
           sudo sysctl vm.mmap_rnd_bits=28
@@ -379,16 +413,18 @@ jobs:
           for t in $(./tsan-rt -l); do ./tsan-rt $t; done
 
   # the sort and the runtime over the processes of MPI on 1 to 4 processes,
-  # by the makefile and by CMake, on Open MPI and on MPICH; the other jobs
-  # find no MPI, and build ADS without it
+  # by the makefile and by CMake, on Open MPI (with a program of Boost.MPI
+  # too) and on MPICH; MPI is off by default, so that the other jobs build
+  # ADS without it
   mpi:
     name: mpi (${{ matrix.mpi }})
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { mpi: openmpi , packages: libopenmpi-dev openmpi-bin ,
-              preflags: --oversubscribe }
+          - { mpi: openmpi , packages: libopenmpi-dev openmpi-bin
+                libboost-mpi-dev libboost-serialization-dev ,
+              preflags: --oversubscribe , boost: true }
           - { mpi: mpich , packages: libmpich-dev mpich , preflags: "" }
     runs-on: ubuntu-latest
     # the runners have no InfiniBand: UCX on its shared memory and TCP alone,
@@ -403,17 +439,122 @@ jobs:
           sudo apt-get install -y ${{ matrix.packages }}
       - name: the tests over MPI, by the makefile
         run: |
-          make backends | tee backends.log
+          make backends ADS_WITH_MPI=auto | tee backends.log
           grep -q 'ADS: MPI ON' backends.log
-          make test-mpi BUILD=build-mpi
+          make test-mpi BUILD=build-mpi ADS_WITH_MPI=auto
+      - name: the same in a program of Boost.MPI, by the makefile
+        if: matrix.boost
+        run: make test-boost-mpi BUILD=build-mpi ADS_WITH_MPI=auto
       - name: the same by CMake, MPI required
         run: |
           set -o pipefail
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DADS_WITH_MPI=ON \
                 -DMPIEXEC_PREFLAGS="${{ matrix.preflags }}" | tee cmake.log
           grep -q 'ADS: MPI ON' cmake.log
-          cmake --build build --parallel 4 --target engineered_mpi
-          ctest --test-dir build -R '^engineered_mpi[.]' --output-on-failure
+          targets=engineered_mpi
+          if [ "${{ matrix.boost }}" = true ]; then
+            grep -q 'runtimes of the program found:.*BoostMPI' cmake.log
+            targets="$targets engineered_boost_mpi"
+          fi
+          cmake --build build --parallel 4 --target $targets
+          ctest --test-dir build -R '^engineered_(boost_)?mpi[.]' \
+                --output-on-failure
+
+  # the executors on the runtimes of a program, required: oneTBB on the
+  # arenas of the program, OpenMP inside a region, the parallel algorithms of
+  # the standard library (libstdc++ on oneTBB), the senders of stdexec,
+  # Taskflow and Kokkos (built on its backend of OpenMP), under the parallel
+  # tests of the library and in their own, by CMake, with the components
+  # found again by an installed package; the senders and Taskflow also under
+  # ThreadSanitizer (OpenMP and oneTBB are not instrumented)
+  interop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      STDEXEC_COMMIT: 2513475
+      TASKFLOW_COMMIT: 9d9cea0
+      KOKKOS_TAG: 4.7.01
+    steps:
+      - uses: actions/checkout@v4
+      - name: oneTBB, stdexec, Taskflow and Kokkos
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtbb-dev ninja-build
+          for r in NVIDIA/stdexec:$STDEXEC_COMMIT \
+                   taskflow/taskflow:$TASKFLOW_COMMIT; do
+            d="$RUNNER_TEMP/${r%%/*}"
+            git clone --quiet "https://github.com/${r%%:*}.git" "$d"
+            git -C "$d" checkout --quiet "${r##*:}"
+          done
+          git clone --quiet --depth 1 --branch "$KOKKOS_TAG" \
+              https://github.com/kokkos/kokkos.git "$RUNNER_TEMP/kokkos"
+          cmake -S "$RUNNER_TEMP/kokkos" -B "$RUNNER_TEMP/kokkos-build" \
+                -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_CXX_STANDARD=20 -DKokkos_ENABLE_OPENMP=ON \
+                -DKokkos_ENABLE_SERIAL=ON \
+                -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/kokkos-inst"
+          cmake --build "$RUNNER_TEMP/kokkos-build"
+          cmake --install "$RUNNER_TEMP/kokkos-build"
+      - name: the executors under the parallel tests, by CMake
+        run: |
+          set -o pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                -DADS_WITH_TBB=ON -DADS_WITH_OPENMP=ON \
+                -DADS_WITH_STDPAR=ON -DADS_WITH_STDEXEC=ON \
+                -DADS_WITH_TASKFLOW=ON -DADS_WITH_KOKKOS=ON \
+                -DSTDEXEC_INCLUDE_DIR="$RUNNER_TEMP/NVIDIA/include" \
+                -DTaskflow_INCLUDE_DIR="$RUNNER_TEMP/taskflow" \
+                -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/kokkos-inst" \
+                -DCMAKE_INSTALL_PREFIX="$PWD/inst" | tee cmake.log
+          grep -q 'found: StdPar;stdexec;Taskflow;Kokkos' cmake.log
+          cmake --build build --target engineered_parallel \
+                engineered_speculative interop_parallel abi_units
+          tests='^(engineered_parallel|engineered_speculative'
+          tests="$tests|interop_parallel)[.]|^abi-units$"
+          ctest --test-dir build --output-on-failure -R "$tests"
+          cmake --install build
+          grep -q 'Taskflow;Kokkos' inst/share/cmake/ADS/ADSConfig.cmake
+      - name: the senders and Taskflow under ThreadSanitizer
+        run: |
+          sudo sysctl vm.mmap_rnd_bits=28
+          g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_CONTRACTS=3 -DADS_WITH_STDEXEC -DADS_WITH_TASKFLOW \
+              -isystem "$RUNNER_TEMP/NVIDIA/include" \
+              -isystem "$RUNNER_TEMP/taskflow" -o tsan-interop \
+              test/interop_parallel.cpp -pthread -ltbb
+          ./tsan-interop sender-executor
+          ./tsan-interop taskflow-executor
+
+  # a big-endian target, s390x: the programs of the structures with
+  # branches for the order of the bytes (the hash tables, the searches of
+  # strings, the packings of integers, the hashes), built by the cross
+  # compiler of Ubuntu and run by the emulator of QEMU; not yet required
+  bigendian:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: the cross compiler and QEMU
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-s390x-linux-gnu qemu-user
+      - name: the tests with branches for the order of the bytes
+        env:
+          QEMU_LD_PREFIX: /usr/s390x-linux-gnu
+        run: |
+          for p in engineered:flat-hash-table \
+                   engineered_strings:string-search,aho-corasick,multi-search \
+                   engineered_succinct:binary-packing,stream-vbyte \
+                   hashing:fast-hash; do
+            prog=${p%%:*}
+            s390x-linux-gnu-g++ -std=c++20 -O2 -Iinclude -Itest \
+                -DADS_CONTRACTS=3 -DADS_TEST_SMALL -o be-$prog \
+                test/$prog.cpp -pthread
+            for t in $(echo ${p##*:} | tr , ' '); do
+              qemu-s390x ./be-$prog $t
+            done
+          done
 
   broadword:
     runs-on: ubuntu-latest

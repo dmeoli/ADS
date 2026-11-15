@@ -34,4 +34,9 @@ class Ads(CMakePackage):
             self.define("ADS_WITH_BOOST", False),
             self.define("ADS_WITH_LEMON", False),
             self.define("ADS_WITH_MPI", False),
+            self.define("ADS_WITH_STDPAR", False),
+            self.define("ADS_WITH_STDEXEC", False),
+            self.define("ADS_WITH_TASKFLOW", False),
+            self.define("ADS_WITH_KOKKOS", False),
+            self.define("ADS_WITH_BOOST_MPI", False),
         ]

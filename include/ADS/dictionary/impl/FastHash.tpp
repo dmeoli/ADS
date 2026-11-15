@@ -35,6 +35,7 @@ namespace ADS
 
 namespace detail
 {
+ADS_ABI_BEGIN
 
 /// the constants of the hashes, the first words of the hexadecimal digits
 /// of pi after the point
@@ -76,7 +77,10 @@ inline constexpr auto kStripeK = []( void )
  return( k );
  }();
 
+ADS_ABI_END
 }  // end( namespace detail )
+
+ADS_ABI_BEGIN
 
 /*--------------------------------------------------------------------------*/
 
@@ -117,8 +121,11 @@ constexpr std::uint64_t hashWord( std::uint64_t x , std::uint64_t seed )
  return( foldedProduct( x , seed ^ detail::kHashK[ 1 ] ) );
  }
 
+ADS_ABI_END
+
 namespace detail
 {
+ADS_ABI_BEGIN
 
 /// the 8 lanes of the stripes of 64 bytes: each adds the product of the
 /// two halves of its word XOR a word of kStripeK, and its word to the
@@ -328,7 +335,10 @@ struct LongHash
 
  };  // end( struct LongHash )
 
+ADS_ABI_END
 }  // end( namespace detail )
+
+ADS_ABI_BEGIN
 
 /*--------------------------------------------------------------------------*/
 
@@ -376,6 +386,8 @@ inline std::uint64_t hashBytes( const void * p , std::size_t n ,
  }
 
 /*--------------------------------------------------------------------------*/
+
+ADS_ABI_END
 
 }  // end( namespace ADS )
 

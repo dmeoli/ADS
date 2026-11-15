@@ -1807,6 +1807,15 @@ engineered_parallel  parallel-stepping   Delta e rho-stepping contro Dijkstra
 engineered_parallel  parallel-stepping-holes  stepping su un grafo con nodi cancellati
 engineered_parallel  concurrent-union-find  union-find concorrente
 
+# the executors on the runtimes of a program, beyond the book
+interop_parallel  tbb-arena               arena di oneTBB del programma e corrente
+interop_parallel  openmp-in-region        esecutore di OpenMP in una regione aperta
+interop_parallel  stdpar-executor         algoritmi paralleli della libreria standard
+interop_parallel  sender-executor         scheduler dei sender di stdexec
+interop_parallel  taskflow-executor       esecutore di Taskflow, chiamate annidate
+interop_parallel  kokkos-executor         spazio dell'host di Kokkos
+interop_parallel  structures-in-runtimes  strutture concorrenti nei cicli del programma
+
 # the runtime of the long-lived workers, beyond the book
 engineered_runtime  worker-run           lavoratori insieme, annidati, eccezioni
 engineered_runtime  worker-locks         il lock di ogni esecutore, try_lock

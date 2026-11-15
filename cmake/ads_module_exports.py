@@ -20,8 +20,10 @@
 # names are exported inside the #if of their macro, given by ads_sets.txt,    #
 # and they are read only if the flags define the macro; those of the set      #
 # interop, which include the headers of another library [see                  #
-# include/ADS/interop], are in no module and are not read. To be run          #
-# whenever a header gains or loses a name or changes its set.                 #
+# include/ADS/interop and distributed/BoostMPI.h], are in no module and are   #
+# not read, and the inline namespace of the configuration [see Abi.h] is      #
+# transparent. To be run whenever a header gains or loses a name or changes   #
+# its set.                                                                    #
 ###############################################################################
 
 import argparse
@@ -205,8 +207,12 @@ def collect( nodes , inc ):
             rng = node.get( "range" , {} )
             at( rng.get( "begin" , {} ) )
             at( rng.get( "end" , {} ) )
+            # an inline namespace (that of the configuration of the
+            # layouts, see Abi.h) is transparent: its names are exported as
+            # those of the namespace around it
             if kind == "NamespaceDecl":
                 walk( node.get( "inner" , [] ) ,
+                      ns if node.get( "isInline" ) else
                       ns + [ node.get( "name" , "" ) ] )
                 continue
             if kind == "LinkageSpecDecl":

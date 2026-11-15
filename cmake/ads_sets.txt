@@ -14,8 +14,9 @@
 #        concurrent and parallel structures, the executors, the distributed   #
 #        layer, the typed modifications and the observers;                    #
 #      - core, the infrastructure that the two include;                       #
-#      - interop, the interoperation with Boost, LEMON and the newest parts   #
-#        of the standard library (interop/), in no entry point and no         #
+#      - interop, the interoperation with Boost, LEMON, the newest parts of   #
+#        the standard library and the parallel runtimes of a program          #
+#        (interop/, and distributed/BoostMPI.h), in no entry point and no     #
 #        module, since each includes the headers of another library and a     #
 #        program includes it next to them.                                    #
 #                                                                             #
@@ -35,6 +36,8 @@
 # --------------------------------------------------------------------------- #
 
 ADT.h                                 base
+Abi.h                                 core     the inline namespace of the
+                                               layouts of the hash tables
 Algebra.h                             advanced
 Capabilities.h                        core     the vocabulary of the
                                                capabilities
@@ -146,6 +149,7 @@ dictionary/UniversalHashing.h         base
 dictionary/XFastTrie.h                base     Morin, on FlatHashTable
 dictionary/YFastTrie.h                base     Morin, with SplitMix64
 
+distributed/BoostMPI.h                interop  with ADS_WITH_BOOST_MPI
 distributed/DistributedSort.h         advanced ?ADS_WITH_MPI
 distributed/MPIExecutor.h             advanced ?ADS_WITH_MPI
 distributed/MPIMailbox.h              advanced ?ADS_WITH_MPI
@@ -212,6 +216,10 @@ interop/lemon/Maps.h                  interop  with ADS_WITH_LEMON
 interop/lemon/Observers.h             interop  with ADS_WITH_LEMON
 interop/lemon/Parallel.h              interop  with ADS_WITH_LEMON
 interop/lemon/Warm.h                  interop  with ADS_LEMON_SHIM
+interop/parallel/KokkosExecutor.h     interop
+interop/parallel/SenderExecutor.h     interop
+interop/parallel/StdParExecutor.h     interop
+interop/parallel/TaskflowExecutor.h   interop
 interop/std/FlatMap.h                 interop
 interop/std/Pmr.h                     interop
 

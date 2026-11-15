@@ -88,6 +88,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Abi.h"
 #include "ADS/Contract.h"
 
 #include <array>
@@ -107,6 +108,8 @@
 
 namespace ADS
 {
+
+ADS_ABI_BEGIN
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- THE HASH FUNCTIONS ---------------------------*/
@@ -235,8 +238,11 @@ template<>
 struct FastHash< const char * > : FastHash< std::string_view >
 { };
 
+ADS_ABI_END
+
 namespace detail
 {
+ADS_ABI_BEGIN
 
 /// `std::hash< K >`, or `FastHash< K >` if it is defined
 template< class K >
@@ -275,7 +281,10 @@ inline void prefetchKey( const K & k )
   }
  }
 
+ADS_ABI_END
 }  // end( namespace detail )
+
+ADS_ABI_BEGIN
 
 /// the hash of the engineered tables and filters of ADS: `FastHash< K >`
 /// for the integers, the enumerations, the pointers, the floating point
@@ -284,6 +293,8 @@ template< class K >
 using DefaultHash = typename detail::DefaultHashOf< K >::type;
 
 /*--------------------------------------------------------------------------*/
+
+ADS_ABI_END
 
 }  // end( namespace ADS )
 

@@ -5,14 +5,26 @@
  * The executor [see `Executor.h`] on the threads of OpenMP, beyond the book,
  * compiled only when the compiler has OpenMP on (`_OPENMP`, e.g.,
  * `-fopenmp`, or the CMake option `ADS_WITH_OPENMP`, OFF by default):
- * `bulk( n , f )` is a loop `#pragma omp parallel for` on \f$ n \f$ indices
- * with the dynamic schedule of chunks of 1 on \f$ \min\{ p , n \} \f$
- * threads, and `invoke( f , g )` is `bulk()` on 2 indices, so that the
- * parallel algorithms of ADS run on the runtime of OpenMP of the compiler
- * (the libgomp of GCC, the libomp of LLVM) unchanged. The thread that calls
- * is one of the \f$ p \f$, as in every region of OpenMP. A call nested in
- * another runs on as many threads as the runtime gives a nested region (by
- * default 1, i.e., in order on that thread). `run( p , f )` is a region
+ * `bulk( n , f )` is, outside a parallel region, a loop
+ * `#pragma omp parallel for` on \f$ n \f$ indices with the dynamic schedule
+ * of chunks of 1 on \f$ \min\{ p , n \} \f$ threads, and `invoke( f , g )`
+ * is `bulk()` on 2 indices, so that the parallel algorithms of ADS run on
+ * the runtime of OpenMP of the compiler (the libgomp of GCC, the libomp of
+ * LLVM) unchanged. The thread that calls is one of the \f$ p \f$, as in
+ * every region of OpenMP. Inside a parallel region that is already open
+ * (`omp_in_parallel()`: a region of the program around the call of an
+ * algorithm of ADS, or a call of `bulk()` nested in another), `bulk()` is
+ * instead a `#pragma omp taskloop` of chunks of 1, whose calls are tasks of
+ * the team that is there, and which waits for them at its implicit
+ * taskgroup, a point where the waiting thread runs tasks too; a nested
+ * region would get one thread (the default of OpenMP), so that the
+ * algorithm would run in order on the caller. In this mode the threads are
+ * those of the team, and `concurrency()` of an executor built with
+ * \f$ p = 0 \f$ is their number; the calls may be made by any thread of
+ * the team that joins the wait, e.g., from inside `omp single` or `omp
+ * masked`, or from each thread on data of its own. The task mode needs
+ * `taskloop`, i.e., OpenMP 4.5 (not the OpenMP 2.0 of MSVC, which keeps the
+ * nested regions). `run( p , f )` is a region
  * `omp parallel` of \f$ p \f$ threads, the thread \f$ i \f$ of the team
  * making the call \f$ f( i ) \f$ of a long-lived worker (the caller is the
  * thread 0, so that `isRunCaller()` holds in \f$ f( 0 ) \f$), and its lock is
@@ -112,15 +124,22 @@ class OpenMPExecutor
 /*--------------------------------------------------------------------------*/
  public:
  /// the executor of \f$ p \f$ threads of OpenMP (`omp_get_max_threads()`
- /// if \f$ p = 0 \f$)
+ /// if \f$ p = 0 \f$, or the team of the caller inside a region)
  /// \pre \f$ p \ge 1 \f$
- explicit OpenMPExecutor( std::size_t p = 0 )
-     : f_p( p ? p : std::size_t( omp_get_max_threads() ) ) {
-  ADS_PRE( f_p >= 1 );
+ explicit OpenMPExecutor( std::size_t p = 0 ) : f_p( p ) {
+  ADS_PRE( concurrency() >= 1 );
   }
 
- /// the number of threads
- [[nodiscard]] std::size_t concurrency( void ) const { return( f_p ); }
+ /// the number of threads: \f$ p \f$, or, if \f$ p = 0 \f$, the threads of
+ /// the team of the caller inside a region and `omp_get_max_threads()`
+ /// outside
+ [[nodiscard]] std::size_t concurrency( void ) const {
+  if( f_p )
+   return( f_p );
+  const int c =
+    omp_in_parallel() ? omp_get_num_threads() : omp_get_max_threads();
+  return( std::size_t( c > 0 ? c : 1 ) );
+  }
 
  /// the calls \f$ f( 0 ) , \ldots , f( n - 1 ) \f$ on the threads
  ///
@@ -130,22 +149,42 @@ class OpenMPExecutor
  /// 1 & \textbf{procedure}\ \mathrm{bulk}( n , f ) \cr
  /// 2 & \quad \textbf{if}\ n \le 1\ \textbf{or}\ p = 1\ \textbf{then}
  ///     \ \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do}\ f( i ) \cr
- /// 3 & \quad \textbf{else}\ \text{a loop } \mathrm{omp\ parallel\ for}
+ /// 3 & \quad \textbf{else if}\ \text{in a parallel region}\ \textbf{then}
+ ///     \ \text{a } \mathrm{omp\ taskloop} \text{ on } [ 0 , n )
+ ///     \text{ of chunks of 1, tasks of the team} \cr
+ /// 4 & \quad \textbf{else}\ \text{a loop } \mathrm{omp\ parallel\ for}
  ///     \text{ on } [ 0 , n ) \text{ of dynamic chunks of 1, on }
  ///     \min\{ p , n \} \text{ threads}
  /// \end{array}}
  /// \f]
  template< class F >
  void bulk( std::size_t n , F && f ) {
-  if( ( n <= 1 ) || ( f_p == 1 ) ) {
+  if( ( n <= 1 ) || ( concurrency() == 1 ) ) {
    for( std::size_t i = 0 ; i < n ; ++i )
     f( i );
    return;
    }
   detail::FirstError error;
+#if _OPENMP >= 201511
+  if( omp_in_parallel() ) {
+   #pragma omp taskloop grainsize( 1 ) shared( error, f )
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    if( error.failed() )
+     continue;
+    try {
+     f( i );
+     }
+    catch( ... ) {
+     error.keep();
+     }
+    }
+   error.rethrow();
+   return;
+   }
+#endif
   const long m = long( n );
   #pragma omp parallel for schedule( dynamic, 1 )                             \
-    num_threads( int( std::min( f_p, n ) ) )
+    num_threads( int( std::min( concurrency(), n ) ) )
   for( long i = 0 ; i < m ; ++i ) {
    if( error.failed() )
     continue;
@@ -193,7 +232,7 @@ class OpenMPExecutor
  /// \pre \f$ p \le \f$ `concurrency()`
  template< class F >
  void run( std::size_t p , F && f ) {
-  ADS_PRE( p <= f_p );
+  ADS_PRE( p <= concurrency() );
   detail::RunCaller caller;
   if( p <= 1 ) {
    if( p == 1 )
@@ -224,7 +263,7 @@ class OpenMPExecutor
 
 /*--------------------------------------------------------------------------*/
  private:
- std::size_t f_p;  ///< the threads
+ std::size_t f_p;  ///< the threads, 0 for those of OpenMP
  };  // end( class OpenMPExecutor )
 
 /*--------------------------------------------------------------------------*/

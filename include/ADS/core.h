@@ -30,6 +30,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Abi.h"
 #include "ADS/Capabilities.h"
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"

@@ -265,11 +265,12 @@ if (ADS_WITH_FASTFLOW)
 endif ()
 
 # The sort and the runtime over the processes of MPI [see
-# include/ADS/distributed]: AUTO, the default, turns them on when FindMPI
-# finds an MPI for C++ (Open MPI, MPICH), ON requires it, OFF leaves them
-# out.
-set(ADS_WITH_MPI AUTO CACHE STRING
-    "the distributed sort and runtime on MPI: AUTO (if found), ON or OFF")
+# include/ADS/distributed]: OFF, the default, as for the other runtimes
+# (OpenMP, oneTBB, FastFlow), since ADS::ADS then carries MPI to every
+# program that links it; AUTO turns them on when FindMPI finds an MPI for
+# C++ (Open MPI, MPICH), ON requires it.
+set(ADS_WITH_MPI OFF CACHE STRING
+    "the distributed sort and runtime on MPI: OFF, AUTO (if found) or ON")
 set_property(CACHE ADS_WITH_MPI PROPERTY STRINGS AUTO ON OFF)
 string(TOUPPER "${ADS_WITH_MPI}" ADS_MPI_MODE)
 set(ADS_USE_MPI OFF)
@@ -287,6 +288,45 @@ if (ADS_USE_MPI)
     target_link_libraries(ADS INTERFACE MPI::MPI_CXX)
 endif ()
 message(STATUS "ADS: MPI ${ADS_USE_MPI}")
+
+# The executors on the runtimes of a program [see include/ADS/interop/
+# parallel and include/ADS/distributed/BoostMPI.h]: the parallel algorithms
+# of the standard library (ADS_WITH_STDPAR), the senders of stdexec
+# (ADS_WITH_STDEXEC), Taskflow (ADS_WITH_TASKFLOW), Kokkos (ADS_WITH_KOKKOS)
+# and Boost.MPI beside MPI (ADS_WITH_BOOST_MPI). AUTO, the default, makes
+# the target ADS::<name> of each runtime found [see ADSInterop.cmake], ON
+# requires it, OFF leaves it out; ADS::ADS never carries them, so that a
+# program takes a runtime only by linking its target, and the tests of the
+# executors run on each one found.
+set(ADS_INTEROP_BUILT "")
+set(ADS_INTEROP_WANT "")
+foreach (r StdPar stdexec Taskflow Kokkos BoostMPI)
+    string(TOUPPER "${r}" R)
+    if (R STREQUAL "BOOSTMPI")
+        set(R "BOOST_MPI")
+    endif ()
+    set(ADS_WITH_${R} AUTO CACHE STRING
+        "the executor on ${r}: AUTO (if found), ON or OFF")
+    set_property(CACHE ADS_WITH_${R} PROPERTY STRINGS AUTO ON OFF)
+    string(TOUPPER "${ADS_WITH_${R}}" ADS_${R}_MODE)
+    if (ADS_${R}_MODE STREQUAL "AUTO" OR ADS_WITH_${R})
+        list(APPEND ADS_INTEROP_WANT ${r})
+    endif ()
+endforeach ()
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ADSInterop.cmake)
+foreach (r IN LISTS ADS_INTEROP_WANT)
+    string(TOUPPER "${r}" R)
+    if (R STREQUAL "BOOSTMPI")
+        set(R "BOOST_MPI")
+    endif ()
+    if (ADS_${r}_FOUND)
+        list(APPEND ADS_INTEROP_BUILT ${r})
+    elseif (NOT ADS_${R}_MODE STREQUAL "AUTO")
+        message(FATAL_ERROR "ADS_WITH_${R} is ON, but ${r} was not found "
+                "[see cmake/ADSInterop.cmake for the hints]")
+    endif ()
+endforeach ()
+message(STATUS "ADS: runtimes of the program found: ${ADS_INTEROP_BUILT}")
 
 # ----- C++20 module -------------------------------------------------------- #
 # The module ads (src/ADS.cppm) exports the names of all the headers, so
@@ -657,8 +697,8 @@ write_basic_package_version_file(
         ARCH_INDEPENDENT)
 
 # Install the package version and configuration files, with the modules of
-# GMP, of the CBLAS, of Boost and of LEMON that the configuration file
-# includes.
+# GMP, of the CBLAS, of Boost, of LEMON and of the runtimes of a program that
+# the configuration file includes.
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfig.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfigVersion.cmake
@@ -667,6 +707,7 @@ install(FILES
         cmake/ADSBoost.cmake
         cmake/ADSLemon.cmake
         cmake/ADSLemonShim.cmake
+        cmake/ADSInterop.cmake
         DESTINATION ${ADS_INSTALL_CMAKEDIR})
 
 # Generate and install ads.pc: its prefix is found from where the file is

@@ -101,6 +101,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Abi.h"
 #include "ADS/Contract.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/dictionary/FlatHashTable.h"
@@ -124,6 +125,8 @@
 
 namespace ADS
 {
+
+ADS_ABI_BEGIN
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS DenseHashMap ---------------------------*/
@@ -447,6 +450,8 @@ class DenseHashMap
  };  // end( class DenseHashMap )
 
 /*--------------------------------------------------------------------------*/
+
+ADS_ABI_END
 
 }  // end( namespace ADS )
 

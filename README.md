@@ -159,6 +159,7 @@ The other folders group the algorithms by technique or by problem:
 - `parallel/`, the executors, the parallel algorithms on threads and the
   runtime of the long-lived workers;
 - `distributed/`, the sort and the runtime over the processes of MPI;
+- `interop/parallel/`, the executors on the runtimes of a program;
 - `external/`, the two-level memory and the algorithms on it;
 - `compression/`, the codes, the compressors and the compressed indexes;
 - `succinct/`, the compressed data structures;
@@ -191,8 +192,9 @@ pool of the nodes, the random hashing) is a third set, core, and a header
 that held a part of each set is split into a base header, which keeps its
 path, and an advanced one that it includes (e.g., `MaxFlow.h` and
 `PushRelabel.h`), so that its includes give the same. The headers of
-`ADS/interop/`, which join ADS to Boost, to LEMON and to the newest parts
-of the standard library, are a set of their own, interop, which no entry
+`ADS/interop/`, which join ADS to Boost, to LEMON, to the newest parts of
+the standard library and to the parallel runtimes of a program, are with
+`distributed/BoostMPI.h` a set of their own, interop, which no entry
 point includes and no module exports, since each is included by the
 program that wants it, next to the headers of the other library.
 `#include "ADS/base.h"` (or `import ads.base;`) gives the base set with
@@ -208,11 +210,11 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-422 headers: 245 base, 153 advanced, 11 core and 13 interop.
+428 headers: 245 base, 153 advanced, 12 core and 18 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
-| `ADS/` | `ADT` | `Algebra`, `Modification` | `Capabilities`, `Contract`, `Iterators`, `Portable` |  |
+| `ADS/` | `ADT` | `Algebra`, `Modification` | `Abi`, `Capabilities`, `Contract`, `Iterators`, `Portable` |  |
 | `algorithm/` | `AkraBazzi`, `BinaryCounter`, `Hanoi`, `MasterTheorem`, `MaximumSegments`, `MonteCarlo`, `Paradigms`, `SequenceQueries`, `Subsequences` |  |  |  |
 | `backtrack/` | `Anagrams`, `DancingLinks`, `Enumeration`, `KnightTour`, `NQueens`, `SatSolvers`, `Sudoku` | `FastExactCover` |  |  |
 | `combinatorial/` | `Bitwise`, `Generation` | `FastBitwise`, `FastGeneration` |  |  |
@@ -220,12 +222,13 @@ file does not allow.
 | `compression/` | `ArithmeticCoding`, `BurrowsWheeler`, `CanonicalHuffman`, `Entropy`, `FMIndex`, `IntegerCodes`, `LempelZiv`, `PPM` | `BinaryPacking`, `DirectAccessCodes`, `HuffmanCoder`, `HuffmanFMIndex`, `LZ77Linear`, `MoveRIndex`, `RIndex`, `Rans`, `StreamVByte`, `Tans` | `PackedBits` |  |
 | `concurrent/` |  | `Backoff`, `ConcurrentCuckooTable`, `ConcurrentFlatTable`, `ConcurrentUnionFind`, `EventCount`, `LockFreePriorityQueue`, `MPMCQueue`, `MPSCInbox`, `MPSCQueue`, `MinBoard`, `MultiQueue`, `SPSCQueue`, `SingleWriterFlatTable`, `StealablePriorityQueue`, `WorkStealingDeque` |  |  |
 | `dictionary/` | `BinaryTrie`, `BitmapTrie`, `ChainedHashTable`, `CuckooHashing`, `DirectTable`, `HashFunctions`, `IndexedSkipList`, `KnuthHashing`, `OpenHashTable`, `PatriciaTrie`, `PerfectHashing`, `SkipList`, `SortedArrayDictionary`, `TableSize`, `Trie`, `TwoLevelDictionary`, `UniversalHashing`, `XFastTrie`, `YFastTrie` | `AdaptiveRadixTree`, `BucketCuckooTable`, `DenseHashMap`, `FastHash`, `FingerprintPerfectHash`, `FlatHashTable`, `MinimalPerfectHash`, `PointerTable`, `PositionIndex`, `RecSplit`, `RowFingerprint`, `SuccinctPatriciaTrie` | `RandomHashing` |  |
-| `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  |  |
+| `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  | `BoostMPI` |
 | `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `RecordFile` |  |
 | `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |
 | `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `Matching`, `MatrixGraph`, `MaxFlow`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths`, `Visit` | `Assignment`, `BlossomMatching`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `PushRelabel`, `Reoptimization`, `StaticGraph`, `StrongComponents` |  |  |
 | `interop/boost/` |  |  |  | `Dijkstra`, `FromBGL`, `Graph`, `Heap`, `Iterator` |
 | `interop/lemon/` |  |  |  | `Digraphs`, `Heaps`, `Maps`, `Observers`, `Parallel`, `Warm` |
+| `interop/parallel/` |  |  |  | `KokkosExecutor`, `SenderExecutor`, `StdParExecutor`, `TaskflowExecutor` |
 | `interop/std/` |  |  |  | `FlatMap`, `Pmr` |
 | `intractable/` | `Approximation`, `BranchAndBound`, `FifteenPuzzle`, `Heuristics`, `Pseudopolynomial` |  |  |  |
 | `memory/` | `Allocators`, `CellHeap` | `Arena`, `ConcurrentPool`, `PageHeap`, `PoolAllocator`, `SizeClassAllocator` | `HugePageAllocator`, `ObjectPool` |  |
@@ -662,6 +665,7 @@ matrices, up to the rounding for the transform).
 | What | Header |
 |---|---|
 | executors: the pool of ADS, OpenMP, oneTBB, FastFlow | [`parallel/ThreadPool.h`](include/ADS/parallel/ThreadPool.h), [`parallel/OpenMPExecutor.h`](include/ADS/parallel/OpenMPExecutor.h), [`parallel/TBBExecutor.h`](include/ADS/parallel/TBBExecutor.h), [`parallel/FastFlowExecutor.h`](include/ADS/parallel/FastFlowExecutor.h) |
+| executors on the runtimes of a program: the parallel algorithms of the standard library, the senders of stdexec, Taskflow, Kokkos | [`interop/parallel/StdParExecutor.h`](include/ADS/interop/parallel/StdParExecutor.h), [`interop/parallel/SenderExecutor.h`](include/ADS/interop/parallel/SenderExecutor.h), [`interop/parallel/TaskflowExecutor.h`](include/ADS/interop/parallel/TaskflowExecutor.h), [`interop/parallel/KokkosExecutor.h`](include/ADS/interop/parallel/KokkosExecutor.h) |
 | parallel loops, reductions and prefix sums, fork and join | [`parallel/Executor.h`](include/ADS/parallel/Executor.h) |
 | the processors of the process and the pinning of a thread to one of them | [`parallel/Affinity.h`](include/ADS/parallel/Affinity.h) |
 | `sort()` and `stableSort()` by distribution (radix classifier for the numbers, tree of splitters with buckets of equality for the rest) | [`parallel/ParallelSort.h`](include/ADS/parallel/ParallelSort.h) |
@@ -698,6 +702,55 @@ of FastFlow defines `NO_DEFAULT_MAPPING` (unless `ADS_FASTFLOW_MAPPING` is
 defined), since FastFlow otherwise pins its threads to the first cores of
 the machine whatever the affinity of the process.
 
+A program that already runs on a runtime gives the algorithms its threads,
+so that the pool of ADS does not run beside them. `TBBExecutor` runs on an
+arena of its own of `p` threads, on an arena of the program
+(`TBBExecutor ex( arena )`, whose constraints of NUMA node, type of core and
+threads then hold for ADS too) or on the arena of each caller
+(`TBBExecutor ex( TBBExecutor::current )`); `OpenMPExecutor`, called inside
+a region `omp parallel` of the program, makes its calls the tasks of a
+`taskloop` of the team that is there, where a nested region would get one
+thread. The headers of
+[`interop/parallel/`](include/ADS/interop/parallel), each compiled where
+the headers of its runtime are found, add `StdParExecutor< Policy >` on the
+parallel algorithms of the standard library (`std::for_each` of
+`std::execution::par` on the indices), `SenderExecutor< Sch >` on a
+scheduler of the senders of stdexec (the `std::execution` of C++26),
+`TaskflowExecutor` on a `tf::Executor` and `KokkosExecutor< Space >` on a
+space of the host of Kokkos:
+
+```cpp
+#include "ADS/interop/parallel/TaskflowExecutor.h"
+
+tf::Executor workers( 8 );               // the executor of the program
+ADS::TaskflowExecutor ex( workers );
+ADS::sort( ex , A );                     // on the workers of Taskflow
+```
+
+The executors on oneTBB, on OpenMP and on the standard library add nothing
+to the calls of their runtime, and their calls nest as its tasks do. Those
+on the senders and on Kokkos run a call of `bulk()` made inside one of
+their calls in order on its thread, since a `sync_wait()` and a dispatch of
+Kokkos hold the thread that waits; the fork and join of ADS (the recursion
+of `parallelInvoke()`, the trees by join, the lower levels of the sorts)
+then lose their nested parallelism, while the loops, the reductions, the
+prefix sums and the top level of the sorts keep theirs. The executor on
+Taskflow nests, by co-running the nested graph on the worker that waits, but
+builds a graph at each call. None of the four has `run()`, since their
+runtimes do not promise that the calls of a loop run at the same time. With
+CMake, `ADS_WITH_STDPAR`, `ADS_WITH_STDEXEC`, `ADS_WITH_TASKFLOW` and
+`ADS_WITH_KOKKOS` are `AUTO` (`ON` to require the runtime, `OFF` to leave it
+out, off in the packages), and each runtime found gives a target,
+`ADS::StdPar`, `ADS::stdexec`, `ADS::Taskflow` or `ADS::Kokkos`, with the
+macro of its header, the runtime and `ADS::ADS`, which itself carries none
+of them; an installed ADS gives the same targets as components,
+`find_package(ADS COMPONENTS Taskflow)`, found again where the runtime was.
+The hints are `STDEXEC_INCLUDE_DIR`, `Taskflow_INCLUDE_DIR` and the
+`CMAKE_PREFIX_PATH` of Kokkos. The makefile takes the first three as
+`auto` (`STDEXEC_ROOT=<dir>`, `Taskflow_ROOT=<dir>`) into `ADSINTEROPINC`
+and `ADSINTEROPLIB` alone, and Kokkos only by CMake, whose package carries
+its flags.
+
 The calls of `bulk()` are tasks, which a thread may run one after the
 other; a computation of workers that live as long as it does and talk to
 each other (a parallel search, a master and its workers) runs instead on
@@ -722,10 +775,17 @@ farm gives each worker and the master an index for a state of its own, and
 is found by the four counters of Mattern on reductions that do not block,
 with the same stop and the same `leftovers()`; messages that are not
 trivially copyable go through `MPICodec`, and messages of bytes with a tag
-through `MPIByteMailbox`. MPI is a backend like GMP: with CMake `ADS_WITH_MPI` is
-`AUTO` by default (on when FindMPI finds Open MPI or MPICH), `ON` to require
-it and `OFF` to leave it out; the makefile asks `mpicxx` for its options
-(`ADS_WITH_MPI=0` turns it off). The sort over the processes,
+through `MPIByteMailbox`. MPI is a runtime like OpenMP and oneTBB, and its
+option is off by default, since `ADS::ADS` built with it carries MPI to
+every program that links it: with CMake `ADS_WITH_MPI` is `OFF` by default,
+`AUTO` to turn it on when FindMPI finds Open MPI or MPICH and `ON` to
+require it, and the makefile, with `ADS_WITH_MPI=auto` or `1`, asks `mpicxx`
+for its options. A program of Boost.MPI passes its
+`boost::mpi::communicator`, which converts to `MPI_Comm`, and
+[`distributed/BoostMPI.h`](include/ADS/distributed/BoostMPI.h) gives
+`BoostMPICodec< Msg >`, the bytes of a message by Boost.Serialization for
+the mailbox (with CMake the target `ADS::BoostMPI`, `ADS_WITH_BOOST_MPI`
+`AUTO`, and `make test-boost-mpi`). The sort over the processes,
 `ADS::distributed::sort()`, and the runtime are tested on 1 to 4 processes
 by `ctest` or by `make test-mpi`.
 
@@ -913,10 +973,12 @@ of Boost are used wherever a program that calls them compiles and links
 (`ADS_WITH_GMP`, `ADS_WITH_BLAS` and `ADS_WITH_BOOST` are `auto`, `0` turns
 them off, `1` requires them, and
 `make backends` tells what was found), and the other optional backends
-are turned on by `ADS_WITH_OPENMP=1`, `ADS_WITH_TBB=1` and
-`ADS_WITH_FASTFLOW=1`, as the CMake options of the same names do, while
-MPI is `auto` as GMP is (`ADS_WITH_MPI`, its options asked to `mpicxx`, or
-to `MPICXX`); they are found where
+are turned on by `ADS_WITH_OPENMP=1`, `ADS_WITH_TBB=1`,
+`ADS_WITH_FASTFLOW=1` and `ADS_WITH_MPI=auto` or `1` (its options asked to
+`mpicxx`, or to `MPICXX`), as the CMake options of the same names do, while
+the runtimes of a program (`ADS_WITH_STDPAR`, `ADS_WITH_STDEXEC`,
+`ADS_WITH_TASKFLOW`) are `auto` and go into `ADSINTEROPINC` and
+`ADSINTEROPLIB` alone; they are found where
 `extlib/makefile-default-paths-<os>` says (GMP, oneTBB and libomp in the
 prefix of Homebrew on macOS and where the compiler looks elsewhere, the
 CBLAS of Accelerate on macOS, FastFlow in `/opt/fastflow`,
@@ -1102,6 +1164,18 @@ compile every translation unit on the same rewritten copies: two different
 copies of a header of LEMON in one binary give two layouts of one class, a
 violation of the one definition rule that compilers do not diagnose, and a
 module of LEMON must be built from them too.
+
+The vector paths of ADS follow the flags of the compilation of the program,
+with no dispatch at run time: a program built for the baseline of x86-64
+gets SSE2, and `-march=x86-64-v3` turns the paths of AVX2 on. The classes
+whose layout or inline code changes with these flags (`FlatHashTable`,
+`DenseHashMap`, `ConcurrentFlatTable`, `FastHash`) are declared in an
+inline namespace named after them [see
+[`Abi.h`](include/ADS/Abi.h)], e.g., `ADS::abi_s1c1b0v3`, so that two
+translation units built with different flags, such as a hot file with
+`-march=x86-64-v3` and the rest with the default, get two classes with the
+same name in `ADS` instead of two definitions of one class that the linker
+would merge; the test `abi-units` links two such units into one program.
 
 ```cpp
 #include "ADS/sequence/List.h"

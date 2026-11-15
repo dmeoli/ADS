@@ -5,7 +5,9 @@
 `Scratch.h`, `ParallelMerge.h`, `ParallelSort.h`, `ParallelNumeric.h`,
 `ParallelGraph.h`, `ParallelText.h`, `SpeculativeFor.h`,
 `ParallelGreedy.h`, `ParallelShortestPaths.h`, `Channels.h`, `Farm.h`,
-`Mailbox.h`, and their `impl/*.tpp`]
+`Mailbox.h`, and their `impl/*.tpp`; `include/ADS/interop/parallel/`
+`StdParExecutor.h`, `SenderExecutor.h`, `TaskflowExecutor.h`,
+`KokkosExecutor.h`]
 
 We are concerned in this chapter with the algorithms of the library that run
 on the threads of one machine with shared memory, and with the layer that
@@ -35,7 +37,9 @@ structures on which the executors rest (the deque of work stealing, the
 queues, the event count) through their operations only; they are described
 in [Chapter 24](24-concurrent.md#ch-24). In the sets of
 [§1.9](01-introduction.md#sec-1-9), the headers of this chapter are all
-advanced, while `Executor.h` is in the core that the two sets include.
+advanced, while `Executor.h` is in the core that the two sets include and
+the executors on the runtimes of a program (`interop/parallel/`,
+[§25.4](25-parallel.md#sec-25-4)) are of the set interop.
 
 ## 25.1 Work, depth and schedules {#sec-25-1}
 
@@ -132,20 +136,27 @@ otherwise makes it from a `bulk()` on two indices ([Algorithm
 25.1](25-parallel.md#alg-25-1)). Of the executors, `Sequential` is the
 simplest: it makes the calls in their order on the calling thread and is the
 reference against which the others are tested. [Table
-25.2](25-parallel.md#tab-25-2) compares the five executors of the library.
+25.2](25-parallel.md#tab-25-2) compares the five executors of the library
+and the four on the runtimes that a program may already have
+([§25.4](25-parallel.md#sec-25-4)).
 
 <span id="tab-25-2"></span>**Table 25.2.** The executors and the way they
 schedule the calls; FastFlow, OpenMP and oneTBB are compiled only with the
 options `ADS_WITH_FASTFLOW`, `ADS_WITH_OPENMP` (or the flag `-fopenmp`) and
-`ADS_WITH_TBB`, all off by default.
+`ADS_WITH_TBB`, all off by default, and the last four only where the headers
+of their runtime are found.
 
 | Executor | Threads | `bulk( n , f )` | `invoke( f , g )` | A call nested in a call |
 |---|---|---|---|---|
 | `Sequential` | the caller | the calls in order | $f$, then $g$ | in order |
 | `ThreadPool` | $p - 1$ workers and the caller | $\min\{ p - 1 , n - 1 \}$ tokens on the deque of the caller, stolen by the others, each claiming calls by a fetch-and-add | $g$ pushed on the deque, $f$ run, $g$ taken back unless stolen | on all the threads, at any depth |
 | `FastFlowExecutor` | $p$ workers, the caller waiting | a `ParallelFor` of FastFlow on $\max\{ n , p \}$ indices, chunks of 1 | by `bulk()` | in order on its thread |
-| `OpenMPExecutor` | $p$, the caller included | `omp parallel for`, dynamic chunks of 1 | by `bulk()` on 2 indices | as the runtime nests a region, by default in order |
-| `TBBExecutor` | an arena of $p$, the caller included | `parallel_for` of oneTBB, a task per index | `parallel_invoke` | as tasks of the arena |
+| `OpenMPExecutor` | $p$, the caller included, or the team of the caller in a region | `omp parallel for`, dynamic chunks of 1, or `omp taskloop` in a region | by `bulk()` on 2 indices | as tasks of the team |
+| `TBBExecutor` | an arena of $p$, one of the program or the current one, the caller included | `parallel_for` of oneTBB, a task per index | `parallel_invoke` | as tasks of the arena |
+| `StdParExecutor` | those of the backend of the standard library | `std::for_each` of the policy on the indices | by `bulk()` | as the backend nests |
+| `SenderExecutor` | those of the scheduler | `sync_wait()` of `schedule( s )` and `bulk( par , n , f )` | by `bulk()` | in order on its thread |
+| `TaskflowExecutor` | the workers of Taskflow | a graph of one `for_each_index`, run or co-run | by `bulk()` | co-run by the worker |
+| `KokkosExecutor` | those of a space of the host | `parallel_for` of a `RangePolicy`, then `fence()` | by `bulk()` | in order on its thread |
 
 The two concepts, the executor that runs everything on the calling thread,
 and the fork and join that the patterns build on are declared as
@@ -403,11 +414,14 @@ parallelism is large, and most tasks run on the thread that made them,
 with their data in its cache. The jobs of `bulk()`, instead, are flat loops on top of it,
 balanced as in [Lemma 25.4](25-parallel.md#lem-25-4).
 
-## 25.4 The executors of FastFlow, OpenMP and oneTBB {#sec-25-4}
+## 25.4 The executors of other runtimes {#sec-25-4}
 
-We now turn to the three other executors, which give the same calls to the threads of an external
-runtime, so that the parallel algorithms of the library run on it unchanged
-([Algorithm 25.4](25-parallel.md#alg-25-4)).
+We now turn to the executors that give the same calls to the threads of an
+external runtime, so that the parallel algorithms of the library run on it
+unchanged ([Algorithm 25.4](25-parallel.md#alg-25-4)). We first describe
+those of FastFlow, OpenMP and oneTBB, then those on the runtimes that a
+program may already have, which take its threads instead of starting the
+pool beside them.
 
 `FastFlowExecutor` keeps a `ParallelFor` of FastFlow ([Aldinucci et al.
 2017](Z-bibliography.md#ref-aldinucci2017); [Danelutto and Torquati
@@ -438,41 +452,130 @@ that explains the order (the test `fastflow-order`). For its lock the
 executor uses the spin lock of FastFlow, `FastFlowLock`, whose `try_lock()`
 is one test-and-set of its flag.
 
-`OpenMPExecutor` runs `bulk( n , f )` as a loop `#pragma omp parallel for`
-with the dynamic schedule of chunks of 1 on $\min\{ p , n \}$ threads, the
-caller being one of them, as in all the regions of OpenMP ([OpenMP ARB
-2021](Z-bibliography.md#ref-openmp2021)). Its `invoke()` is `bulk()` on 2
-indices, and a call nested in another runs on as many threads as the runtime
-gives a nested region (by default 1). Its lock is `omp_lock_t` (the class `OpenMPLock`), built on the
-runtime of LLVM with the hint `omp_sync_hint_uncontended`, which that
-runtime realizes as a test-and-set lock. In fact, the default lock of the runtime of
-LLVM queues the threads and hands over in their order; with more threads
-than cores the next owner is often descheduled, and the others wait behind
-it (libgomp ignores the hint). `TBBExecutor` holds a `task_arena` of $p$
-threads, which the caller joins as one more thread ([Reinders
-2007](Z-bibliography.md#ref-reinders2007); [Voss, Asenjo and Reinders
-2019](Z-bibliography.md#ref-voss2019)). Its `bulk()` is a `parallel_for` of
-oneTBB with the simple partitioner, i.e., a task per index (the patterns of
-the library already cut the loop into blocks), and its `invoke()` is
-`parallel_invoke`, both in the arena; its calls nest as the tasks of oneTBB
-do.
+`OpenMPExecutor` runs `bulk( n , f )`, outside a parallel region, as a loop
+`#pragma omp parallel for` with the dynamic schedule of chunks of 1 on
+$\min\{ p , n \}$ threads, the caller being one of them, as in all the
+regions of OpenMP ([OpenMP ARB 2021](Z-bibliography.md#ref-openmp2021)).
+Inside a region that is already open (a `#pragma omp parallel` of the
+program around the call, or a call nested in another) a nested region would
+get one thread, the default of OpenMP, and the algorithm would run in order
+on the caller. The executor makes there a `#pragma omp taskloop` of chunks of
+1 instead, whose calls are tasks of the team in place and whose implicit
+taskgroup waits for them, the waiting thread running tasks meanwhile. Hence
+the threads are those of the team, which `concurrency()` gives when the
+executor is built with $p = 0$, and the calls nest as the tasks of OpenMP
+do; we remark that the mode needs OpenMP 4.5, which MSVC has only with
+`/openmp:llvm`. Its `invoke()` is `bulk()` on 2 indices. Its lock is
+`omp_lock_t` (the class `OpenMPLock`), built on the runtime of LLVM with the
+hint `omp_sync_hint_uncontended`, which that runtime realizes as a
+test-and-set lock. In fact, the default lock of the runtime of LLVM queues
+the threads and hands over in their order; with more threads than cores the
+next owner is often descheduled, and the others wait behind it (libgomp
+ignores the hint).
 
-As to their interface, the three classes have the members of `ThreadPool` but for their
-constructors, `explicit FastFlowExecutor( std::size_t p = 0 , bool spin =
-true )`, `explicit OpenMPExecutor( std::size_t p = 0 )` and `explicit
-TBBExecutor( std::size_t p = 0 )`, and their `lock_type`
-(`FastFlowLock`, `OpenMPLock` and `tbb::spin_mutex`); `FastFlowExecutor`
-has no `invoke()`, so that `parallelInvoke()` runs its two calls by
-`bulk()` on two indices, as for any executor without it.
+`TBBExecutor` runs in a `task_arena` ([Reinders
+2007](Z-bibliography.md#ref-reinders2007); [Voss, Asenjo and Reinders
+2019](Z-bibliography.md#ref-voss2019)), of one of three kinds. It may own an
+arena of $p$ threads; it may refer to an arena of the program without owning
+it, and then the constraints of that arena (its NUMA node, its type of core,
+its priority and its number of threads) hold for the calls of the library
+too; or it may take, at each call, the arena of the calling thread, which is
+the arena of the loop of oneTBB from which the program calls an algorithm of
+the library. The arenas of a process share the workers of oneTBB, and
+therefore none of the three starts threads, while the caller joins the arena
+as one more thread. Its `bulk()` is a `parallel_for` of oneTBB with the
+simple partitioner, i.e., a task per index (the patterns of the library
+already cut the loop into blocks), and its `invoke()` is `parallel_invoke`,
+both in the arena; its calls nest as the tasks of oneTBB do.
+
+As to their interface, the three classes have the members of `ThreadPool` but
+for their constructors, `explicit FastFlowExecutor( std::size_t p = 0 , bool
+spin = true )`, `explicit OpenMPExecutor( std::size_t p = 0 )` and `explicit
+TBBExecutor( std::size_t p = 0 )`, with `explicit TBBExecutor(
+tbb::task_arena & arena )` for an arena of the program and `explicit
+TBBExecutor( Current )` for the current one (by the tag
+`TBBExecutor::current`), and for their `lock_type` (`FastFlowLock`,
+`OpenMPLock` and `tbb::spin_mutex`). `FastFlowExecutor` has no `invoke()`,
+and `parallelInvoke()` runs its two calls by `bulk()` on two indices, as for
+any executor without it.
+
+A program that already runs on another runtime usually wants the algorithms
+of the library on its threads, since the pool would compete with them and
+spin for 2 ms after each call (as libgomp and oneTBB do after theirs). The
+headers of `ADS/interop/parallel/` give four more executors for this purpose.
+Each is compiled where the headers of its runtime are found.
+`StdParExecutor< Policy >` runs `bulk( n , f )` as `std::for_each( Policy()
+, first , last , g )` on the indices, with `std::execution::par` by default.
+Its threads are then those of the backend of the standard library, e.g.,
+oneTBB under libstdc++, the pool of MSVC or the threads of `nvc++
+-stdpar=multicore`. We take the indices from an iterator of the library, since
+those of `std::views::iota` are only input iterators of C++17. The standard
+has no query of the threads of a policy either, and `concurrency()` is the
+number given to the constructor. `SenderExecutor< Sch >` runs `bulk()` as
+the sender `schedule( s ) | bulk( par , n , f )` of a scheduler, waited by
+`sync_wait()`, on stdexec, the implementation of reference of the senders
+and the receivers of C++26 ([Dominiak et al.
+2024](Z-bibliography.md#ref-dominiak2024)). `TaskflowExecutor` runs it as a
+graph of Taskflow ([Huang et al. 2022](Z-bibliography.md#ref-huang2022))
+made of one `for_each_index`, run and waited from a thread outside the
+executor of Taskflow and co-run from one of its workers, which keeps running
+tasks while it waits. `KokkosExecutor< Space >` runs it as a
+`Kokkos::parallel_for` on a space of the host ([Trott et al.
+2022](Z-bibliography.md#ref-trott2022)), followed by the `fence()` of the
+space; the spaces of the devices do not fit, since the calls of the library
+run code of the host on memory of the host.
+
+These four executors do not come at the same price. On oneTBB, on OpenMP and
+on the parallel algorithms of the standard library the executor adds no cost
+to the call of the runtime but the `execute()` of an arena, and the calls
+nest as the tasks of the runtime do. A `sync_wait()` of the senders and a
+dispatch of Kokkos hold instead the thread that waits, and Kokkos forbids a
+dispatch from inside a kernel. Thus a call of `bulk()` made inside a call of
+these two executors, or inside a kernel of the program, runs its calls in
+order on its thread, which the contract of
+[§25.2](25-parallel.md#sec-25-2) allows. In this case the fork and join of
+the library (the recursion of `parallelInvoke()`, the trees by join, the
+lower levels of the sorts) loses its nested parallelism, while the loops, the
+reductions, the prefix sums and the top level of the sorts keep theirs.
+Taskflow nests. Its cost is a graph with its nodes on the heap at each call
+of `bulk()`, which the patterns of the library make once per loop of at most
+`kBlocks` indices. None of the four has `run()`, since their runtimes
+do not promise that the calls of a loop run at the same time; the
+long-lived workers of [§25.5](25-parallel.md#sec-25-5) need one of the
+other executors.
+
+Their constructors are `explicit StdParExecutor( std::size_t p = 0 )`,
+`SenderExecutor( Sch s , std::size_t p )`, `explicit TaskflowExecutor(
+tf::Executor & e )` and `explicit KokkosExecutor( Space s = Space() )`, and
+their other members are `concurrency()` and `bulk()`. With CMake each
+runtime found gives a target (`ADS::StdPar`, `ADS::stdexec`,
+`ADS::Taskflow` or `ADS::Kokkos`) with the macro of the header, the runtime
+and `ADS::ADS`, a component of the installed package as well (cf.
+`find_package( ADS COMPONENTS Taskflow )`). Since `ADS::ADS` carries none
+of them, a program takes a runtime only by linking its target. The
+options `ADS_WITH_STDPAR`, `ADS_WITH_STDEXEC`, `ADS_WITH_TASKFLOW` and
+`ADS_WITH_KOKKOS` are AUTO, and off in the packages. We run the tests of the
+parallel algorithms on all the executors found, those of the runtimes
+included, against the results of `Sequential` (`engineered_parallel`,
+`engineered_speculative` and `interop_parallel`).
 
 <span id="alg-25-4"></span>**Algorithm 25.4.** The `bulk()` of
-`FastFlowExecutor`, `OpenMPExecutor` and `TBBExecutor`.
+`FastFlowExecutor`, `OpenMPExecutor` and `TBBExecutor`, and of the executors
+on the runtimes of a program.
 
 --8<-- "generated/FastFlowExecutor-bulk.pseudo.md"
 
 --8<-- "generated/OpenMPExecutor-bulk.pseudo.md"
 
 --8<-- "generated/TBBExecutor-bulk.pseudo.md"
+
+--8<-- "generated/StdParExecutor-bulk.pseudo.md"
+
+--8<-- "generated/SenderExecutor-bulk.pseudo.md"
+
+--8<-- "generated/TaskflowExecutor-bulk.pseudo.md"
+
+--8<-- "generated/KokkosExecutor-bulk.pseudo.md"
 
 ## 25.5 Long-lived workers {#sec-25-5}
 
