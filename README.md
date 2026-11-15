@@ -206,7 +206,7 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-420 headers: 243 base, 151 advanced, 11 core, 13 interop and 2 in both sets until they are split.
+421 headers: 244 base, 152 advanced, 11 core, 13 interop and 1 in both sets until they are split.
 
 | Folder | Base | Advanced | Core | Interop | Both |
 |---|---|---|---|---|---|
@@ -236,7 +236,7 @@ file does not allow.
 | `search/` | `BinarySearch`, `InterpolationSearch`, `KnuthSearches`, `LocalOptima`, `Minimum`, `MonotoneSearch`, `PGMIndex`, `Selection`, `SortedSearches` | `CompressedPGMIndex`, `CountLess`, `DynamicPGMIndex`, `NthElement`, `RangeMinimum`, `StaticSearch`, `WordRangeMinimum` |  |  |  |
 | `sequence/` | `ArraySequence`, `ContiguousDeque`, `CubishArrayStack`, `CursorList`, `DualArrayDeque`, `IndexedList`, `List`, `OrderMaintenanceList`, `Rearrangements`, `RootishArrayStack`, `SEList`, `SequenceAlgorithms`, `SequenceRange`, `SinglyList`, `SkipListSequence`, `TreapList`, `Treque`, `XorList` | `Fenwick`, `ListSort`, `ObservableArray`, `SmallVector`, `TieredVector` |  |  |  |
 | `set/` | `Bag`, `BloomFilter`, `BloomVariants`, `BoolSet`, `DictionarySet`, `HashMultiset`, `LinkedHashSet`, `ListSet`, `SetInterfaces`, `SetOperations`, `SortedIntersection`, `SortedListSet`, `SpaceEfficientSortedSet` | `BinaryFuseFilter`, `BlockedBloomFilter`, `CuckooFilter`, `GrafiteFilter`, `PrefixFilter`, `RibbonFilter`, `RoaringBitmap`, `VectorIntersection` |  |  |  |
-| `sort/` | `CountingSort`, `ExchangeSorts`, `ExternalSort`, `Heapsort`, `InsertionSort`, `KnuthSorts`, `MergeSort`, `MultikeyQuickSort`, `PigeonholeSort`, `QuickSort`, `SelectionSort`, `ShellSort`, `SortingNetworks`, `StrandSort`, `TreeSort` | `LearnedSort`, `QuicksortAdversary`, `RadixSort`, `RunSorts`, `SampleSort`, `Sort`, `StringSort`, `VectorQuickSort` | `Sorted` |  | `EngineeredQuickSorts` |
+| `sort/` | `CountingSort`, `EngineeredQuickSorts`, `ExchangeSorts`, `ExternalSort`, `Heapsort`, `InsertionSort`, `KnuthSorts`, `MergeSort`, `MultikeyQuickSort`, `PigeonholeSort`, `QuickSort`, `SelectionSort`, `ShellSort`, `SortingNetworks`, `StrandSort`, `TreeSort` | `LearnedSort`, `PdqSort`, `QuicksortAdversary`, `RadixSort`, `RunSorts`, `SampleSort`, `Sort`, `StringSort`, `VectorQuickSort` | `Sorted` |  |  |
 | `stack/` | `ArrayStack`, `Expressions`, `MinStack`, `MultiStack`, `SequenceStack`, `StackAlgorithms` |  |  |  |  |
 | `string/` | `Alignment`, `Anagrams`, `ApproximateMatching`, `FrontCoding`, `Huffman`, `LongestCommonSubsequence`, `Lyndon`, `Palindromes`, `Parentheses`, `PrefixSearch`, `RearCoding`, `Segmentations`, `StringBreaking`, `StringMatching`, `SubsequenceProblems`, `SuffixApplications`, `SuffixArray`, `SuffixTree`, `WordBreak` | `AhoCorasick`, `EditDistance`, `LongestCommonExtension`, `MultiSearch`, `StringSearch`, `SuffixAutomaton`, `SuffixSorting` |  |  |  |
 | `succinct/` | `BPTree`, `BVGraph`, `BalancedParentheses`, `BitStream`, `BitVector`, `EliasFano`, `EliasFanoGraph`, `HuffmanWaveletTree`, `JacobsonTree`, `K2Tree`, `LoudsTree`, `RankSelect` | `CompactRankSelect`, `InterleavedRankSelect`, `LAVector`, `MoveStructure`, `PackedArray`, `PartitionedEliasFano`, `RRRBitVector`, `WaveletMatrix` |  |  |  |
@@ -627,7 +627,7 @@ thresholds chosen on the measures of [`results/`](results/README.md).
 | bubble, cocktail shaker, odd-even transposition, comb and gnome sort | [`sort/ExchangeSorts.h`](include/ADS/sort/ExchangeSorts.h) |
 | tree sort, strand sort | [`sort/TreeSort.h`](include/ADS/sort/TreeSort.h), [`sort/StrandSort.h`](include/ADS/sort/StrandSort.h) |
 | sorting networks of Batcher (merge exchange, bitonic) | [`sort/SortingNetworks.h`](include/ADS/sort/SortingNetworks.h) |
-| pdqsort, dual-pivot and three-way quicksort | [`sort/EngineeredQuickSorts.h`](include/ADS/sort/EngineeredQuickSorts.h) |
+| pdqsort, dual-pivot and three-way quicksort | [`sort/PdqSort.h`](include/ADS/sort/PdqSort.h), [`sort/EngineeredQuickSorts.h`](include/ADS/sort/EngineeredQuickSorts.h) |
 | Powersort | [`sort/RunSorts.h`](include/ADS/sort/RunSorts.h) |
 | LSD radix sort of numbers and by a key, American flag sort, MSD radix sort of strings | [`sort/RadixSort.h`](include/ADS/sort/RadixSort.h) |
 | multikey quicksort of strings | [`sort/MultikeyQuickSort.h`](include/ADS/sort/MultikeyQuickSort.h) |

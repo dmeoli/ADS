@@ -1,0 +1,382 @@
+/*--------------------------------------------------------------------------*/
+/*---------------------------- File PdqSort.tpp ----------------------------*/
+/*--------------------------------------------------------------------------*/
+/** @file
+ * The sort of PdqSort.h [see PdqSort.h], with its contracts.
+ *
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Università di Pisa \n
+ *
+ * \copyright &copy; by Donato Meoli
+ */
+/*--------------------------------------------------------------------------*/
+/*-------------------------- IMPLEMENTATION --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+namespace ADS
+{
+
+namespace detail
+{
+
+/// heapsort of A[ lo .. hi )
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+void heapRange( Store && A , std::size_t lo , std::size_t hi , C & less )
+{
+ std::make_heap( A.begin() + lo , A.begin() + hi , less );
+ std::sort_heap( A.begin() + lo , A.begin() + hi , less );
+ }
+
+/// ---------------------------------------------------------------- pdq
+
+/// insertion sort of A[ lo .. hi ) that gives up after 8 moves; true if
+/// it sorted the part
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+bool partialInsertion( Store && A , std::size_t lo , std::size_t hi ,
+		       C & less )
+{
+ T *const first = A.data() + lo , *const last = A.data() + hi;
+ std::size_t moves = 0;
+ for( T * i = first + 1 ; i < last ; ++i ) {
+  if( ! less( *i , *( i - 1 ) ) )
+   continue;
+  T x = std::move( *i );
+  T * j = i;
+  do {
+   *j = std::move( *( j - 1 ) );
+   --j;
+   } while( ( j > first ) && less( x , *( j - 1 ) ) );
+  *j = std::move( x );
+  moves += std::size_t( i - j );
+  if( moves > 8 )
+   return( false );
+  }
+ return( true );
+ }
+
+/// the partition of A[ lo .. hi ) around the pivot A[ lo ], the equal
+/// keys on the right; its place, and whether nothing had to move
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+std::pair< std::size_t , bool > partitionRight( Store && A , std::size_t lo ,
+					       std::size_t hi , C & less )
+{
+ T * const a = A.data();          // pointers, not indices: no
+ T pivot = std::move( a[ lo ] );  // scaling in the scans
+ T *i = a + lo , *j = a + hi;      // the pivot is a median: an
+ do
+  ++i;
+ while( less( *i , pivot ) );  // item >= it stops i, and one
+ if( i - 1 == a + lo )  // < it passed by i stops j
+  do
+   --j;
+  while( ( j > i ) && ! less( *j , pivot ) );
+ else
+  do
+   --j;
+  while( ! less( *j , pivot ) );
+ const bool already = i >= j;
+ while( i < j ) {  // *i >= pivot > *j
+  std::swap( *i , *j );
+  do
+   ++i;
+  while( less( *i , pivot ) );
+  do
+   --j;
+  while( ! less( *j , pivot ) );
+  }
+ T * const p = i - 1;
+ if( p != a + lo )
+  a[ lo ] = std::move( *p );
+ *p = std::move( pivot );
+ return( std::pair( std::size_t( p - a ) , already ) );
+ }
+
+/// partitionRight() by blocks (BlockQuicksort): the items of a block of
+/// 64 on the left that belong to the right, and those of a block on the
+/// right that belong to the left, are first collected as offsets, with an
+/// increment and no branch per comparison, and then swapped in pairs, so
+/// that the comparisons cause no mispredicted branch; for the arithmetic
+/// types with their natural order, whose comparison is a single instruction
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+std::pair< std::size_t , bool >
+partitionRightBlocks( Store && A , std::size_t lo , std::size_t hi , C & less )
+{
+ T * const a = A.data();
+ constexpr std::ptrdiff_t B = 64;
+ const T pivot = a[ lo ];
+ T *pl = a + lo , *pr = a + hi;  // as in partitionRight()
+ do
+  ++pl;
+ while( less( *pl , pivot ) );
+ if( pl - 1 == a + lo )
+  do
+   --pr;
+  while( ( pr > pl ) && ! less( *pr , pivot ) );
+ else
+  do
+   --pr;
+  while( ! less( *pr , pivot ) );
+ std::ptrdiff_t l = pl - a , r = pr - a;
+ const bool already = l >= r;
+ if( ! already ) {                  // a[ l ] >= pivot > a[ r ]
+  std::swap( a[ l++ ] , a[ r-- ] );  // [ l , r ] unknown
+  unsigned char offL[ B ] , offR[ B ];
+  std::ptrdiff_t numL = 0 , numR = 0 , startL = 0 , startR = 0;
+  auto swaps = [ & ]( void ) {  // a cycle: 2 num + 1 moves
+   const std::ptrdiff_t num = std::min( numL , numR );
+   if( ( num > 0 ) && ( numL == numR ) ) {   // as many on both sides: in
+    T *const bL = a + l , *const bR = a + r;  // pairs, so that a part
+    const unsigned char *const oL = offL + startL ,
+			       *const oR =
+				 offR + startR;  // in reverse ends with both
+    for( std::ptrdiff_t k = 0 ; k < num ; ++k )    // its sides sorted
+     std::swap( bL[ oL[ k ] ] , bR[ -std::ptrdiff_t( oR[ k ] ) ] );
+    }
+   else if( num > 0 ) {                      // through two pointers, each
+    T *const bL = a + l , *const bR = a + r;  // place found once
+    const unsigned char *const oL = offL + startL , *const oR = offR + startR;
+    T *pL = bL + oL[ 0 ] , *pR = bR - oR[ 0 ];
+    T t = std::move( *pL );
+    *pL = std::move( *pR );
+    for( std::ptrdiff_t k = 1 ; k < num ; ++k ) {
+     pL = bL + oL[ k ];
+     *pR = std::move( *pL );
+     pR = bR - oR[ k ];
+     *pL = std::move( *pR );
+     }
+    *pR = std::move( t );
+    }
+   numL -= num;
+   numR -= num;
+   startL += num;
+   startR += num;
+   };
+  while( r - l + 1 > 2 * B ) {
+   if( numL == 0 ) {                            // the misplaced on the left,
+    startL = 0;                                 // 8 at a time, which the
+    const T * const x = a + l;                  // compiler unrolls: no test
+    for( std::ptrdiff_t i = 0 ; i < B ; i += 8 )  // per item
+     for( std::ptrdiff_t u = i ; u < i + 8 ; ++u ) {
+      offL[ numL ] = static_cast< unsigned char >( u );
+      numL += ! less( x[ u ] , pivot );
+      }
+    }
+   if( numR == 0 ) {  // the misplaced on the right
+    startR = 0;
+    const T * const y = a + r;
+    for( std::ptrdiff_t i = 0 ; i < B ; i += 8 )
+     for( std::ptrdiff_t u = i ; u < i + 8 ; ++u ) {
+      offR[ numR ] = static_cast< unsigned char >( u );
+      numR += less( y[ -u ] , pivot );
+      }
+    }
+   swaps();
+   if( numL == 0 )
+    l += B;
+   if( numR == 0 )
+    r -= B;
+   }
+  const std::ptrdiff_t unknown = r - l + 1;  // at most 2 B: the last blocks
+  std::ptrdiff_t ls , rs;
+  if( ( numL == 0 ) && ( numR == 0 ) ) {
+   ls = unknown / 2;
+   rs = unknown - ls;
+   }
+  else if( numL == 0 ) {
+   ls = unknown - B;
+   rs = B;
+   }
+  else {
+   ls = B;
+   rs = unknown - B;
+   }
+  if( numL == 0 ) {
+   startL = 0;
+   for( std::ptrdiff_t i = 0 ; i < ls ; ++i ) {
+    offL[ numL ] = static_cast< unsigned char >( i );
+    numL += ! less( a[ l + i ] , pivot );
+    }
+   }
+  if( numR == 0 ) {
+   startR = 0;
+   for( std::ptrdiff_t i = 0 ; i < rs ; ++i ) {
+    offR[ numR ] = static_cast< unsigned char >( i );
+    numR += less( a[ r - i ] , pivot );
+    }
+   }
+  swaps();
+  if( numL == 0 )
+   l += ls;
+  if( numR == 0 )
+   r -= rs;
+  if( numL > 0 ) {      // the misplaced left to the
+   while( numL > 0 ) {  // end of the block, the last
+    --numL;             // offset first
+    std::swap( a[ l + offL[ startL + numL ] ] , a[ r-- ] );
+    }
+   l = r + 1;
+   }
+  else
+   while( numR > 0 ) {  // the misplaced right to the
+    --numR;             // start of the block
+    std::swap( a[ r - offR[ startR + numR ] ] , a[ l++ ] );
+    }
+  }
+ const std::size_t p = std::size_t( l - 1 );  // a[ l ] is the first >= pivot
+ a[ lo ] = std::move( a[ p ] );
+ a[ p ] = pivot;
+ return( std::pair( p , already ) );
+ }
+
+/// the partition of A[ lo .. hi ) around the pivot A[ lo ], the equal
+/// keys on the left; its place
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+std::size_t partitionLeft( Store && A , std::size_t lo , std::size_t hi ,
+			   C & less )
+{
+ T * const a = A.data();
+ T pivot = std::move( a[ lo ] );
+ T *i = a + lo , *j = a + hi;  // the pivot is a median: an
+ do
+  --j;
+ while( less( pivot , *j ) );  // item <= it stops j, and one
+ if( j + 1 == a + hi )  // > it passed by j stops i
+  do
+   ++i;
+  while( ( i < j ) && ! less( pivot , *i ) );
+ else
+  do
+   ++i;
+  while( ! less( pivot , *i ) );
+ while( i < j ) {  // *i > pivot >= *j
+  std::swap( *i , *j );
+  do
+   --j;
+  while( less( pivot , *j ) );
+  do
+   ++i;
+  while( ! less( pivot , *i ) );
+  }
+ if( j != a + lo )
+  a[ lo ] = std::move( *j );
+ *j = std::move( pivot );
+ return( std::size_t( j - a ) );
+ }
+
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+void pdq( Store && A , std::size_t lo , std::size_t hi , int bad ,
+	  bool leftmost ,
+	  C & less )
+{
+ T * const a = A.data();
+ for( ; ; ) {
+  const std::size_t n = hi - lo;
+  if( n < 24 ) {
+   if( leftmost )
+    insertionSort( A , lo , hi , less );
+   else  // A[ lo - 1 ] is a sentinel
+    for( T * i = a + lo + 1 ; i < a + hi ; ++i ) {
+     T x = std::move( *i );
+     T * j = i;
+     for( ; less( x , *( j - 1 ) ) ; --j )
+      *j = std::move( *( j - 1 ) );
+     *j = std::move( x );
+     }
+   return;
+   }
+  const std::size_t s = n / 2;  // the pivot to a[ lo ]
+  if( n > 128 ) {               // the ninther of Tukey
+   sort3( A , lo , lo + s , hi - 1 , less );
+   sort3( A , lo + 1 , lo + s - 1 , hi - 2 , less );
+   sort3( A , lo + 2 , lo + s + 1 , hi - 3 , less );
+   sort3( A , lo + s - 1 , lo + s , lo + s + 1 , less );
+   std::swap( a[ lo ] , a[ lo + s ] );
+   }
+  else
+   sort3( A , lo + s , lo , hi - 1 , less );
+  if( ! leftmost && ! less( a[ lo - 1 ] , a[ lo ] ) ) {
+   lo = partitionLeft( A , lo , hi , less ) + 1;  // a run of equals
+   continue;
+   }
+  std::pair< std::size_t , bool > part;
+  if constexpr( std::is_arithmetic_v< T > && naturalOrder< T , C > )
+   part = partitionRightBlocks( A , lo , hi , less );
+  else
+   part = partitionRight( A , lo , hi , less );
+  const auto [ p , already ] = part;
+  const std::size_t l = p - lo , r = hi - p - 1;
+  if( ( l < n / 8 ) || ( r < n / 8 ) ) {  // too unbalanced
+   if( --bad == 0 ) {
+    heapRange( A , lo , hi , less );
+    return;
+    }
+   if( l >= 24 ) {  // break the pattern
+    std::swap( a[ lo ] , a[ lo + l / 4 ] );
+    std::swap( a[ p - 1 ] , a[ p - l / 4 ] );
+    if( l > 128 ) {  // and the ninther's samples
+     std::swap( a[ lo + 1 ] , a[ lo + l / 4 + 1 ] );
+     std::swap( a[ lo + 2 ] , a[ lo + l / 4 + 2 ] );
+     std::swap( a[ p - 2 ] , a[ p - l / 4 - 1 ] );
+     std::swap( a[ p - 3 ] , a[ p - l / 4 - 2 ] );
+     }
+    }
+   if( r >= 24 ) {
+    std::swap( a[ p + 1 ] , a[ p + 1 + r / 4 ] );
+    std::swap( a[ hi - 1 ] , a[ hi - r / 4 ] );
+    if( r > 128 ) {
+     std::swap( a[ p + 2 ] , a[ p + 2 + r / 4 ] );
+     std::swap( a[ p + 3 ] , a[ p + 3 + r / 4 ] );
+     std::swap( a[ hi - 2 ] , a[ hi - 1 - r / 4 ] );
+     std::swap( a[ hi - 3 ] , a[ hi - 2 - r / 4 ] );
+     }
+    }
+   }
+  else if( already && partialInsertion( A , lo , p , less ) &&
+	   partialInsertion( A , p + 1 , hi , less ) )
+   return;  // a run, already sorted
+  pdq( A , lo , p , bad , leftmost , less );
+  lo = p + 1;
+  leftmost = false;
+  }
+ }
+
+}  // end( namespace detail )
+
+template< SortStore Store , class T , class C >
+void pdqSort( Store && A , C less )
+{
+ const auto before = detail::auditCopy( A );
+ if( A.size() > 1 )
+  detail::pdq( A , 0 , A.size() , int( std::bit_width( A.size() ) ) , true ,
+	       less );
+ ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T , class C >
+ADS_SORT_FORWARD void pdqSort( std::vector< T > & A , C less )
+{
+ return( pdqSort( std::move( A ) , less ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+}  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- End File PdqSort.tpp --------------------------*/
+/*--------------------------------------------------------------------------*/

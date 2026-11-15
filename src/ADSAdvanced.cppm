@@ -584,10 +584,8 @@ using ADS::setUnion;
 // set/VectorIntersection.h
 using ADS::intersect;
 
-// sort/EngineeredQuickSorts.h
-using ADS::dualPivotQuickSort;
+// sort/PdqSort.h
 using ADS::pdqSort;
-using ADS::threeWayQuickSort;
 
 // sort/QuicksortAdversary.h
 using ADS::QuicksortAdversary;

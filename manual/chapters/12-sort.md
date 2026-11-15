@@ -3,10 +3,10 @@
 [Source: `include/ADS/sort/Sort.h`, `Sorted.h`, `SelectionSort.h`,
 `InsertionSort.h`, `ExchangeSorts.h`, `ShellSort.h`, `KnuthSorts.h`,
 `MergeSort.h`, `RunSorts.h`, `StrandSort.h`, `TreeSort.h`, `QuickSort.h`,
-`QuicksortAdversary.h`, `EngineeredQuickSorts.h`, `VectorQuickSort.h`,
-`SampleSort.h`, `LearnedSort.h`, `Heapsort.h`, `CountingSort.h`,
-`PigeonholeSort.h`, `RadixSort.h`, `MultikeyQuickSort.h`, `StringSort.h`,
-`SortingNetworks.h`, `ExternalSort.h`]
+`QuicksortAdversary.h`, `EngineeredQuickSorts.h`, `PdqSort.h`,
+`VectorQuickSort.h`, `SampleSort.h`, `LearnedSort.h`, `Heapsort.h`,
+`CountingSort.h`, `PigeonholeSort.h`, `RadixSort.h`, `MultikeyQuickSort.h`,
+`StringSort.h`, `SortingNetworks.h`, `ExternalSort.h`]
 
 We are concerned in this chapter with the rearrangement of a vector
 $A[ 0 .. n - 1 ]$ into non-decreasing order, i.e., so that
@@ -33,12 +33,12 @@ comparisons can beat ([§12.2](12-sort.md#sec-12-2)). It then follows the
 families of algorithms, from the elementary sorts to the sorts by digits,
 giving for each one the property on which its correctness rests and the
 argument behind its bound. In the sets of
-[§1.9](01-introduction.md#sec-1-9), `LearnedSort.h`,
+[§1.9](01-introduction.md#sec-1-9), `LearnedSort.h`, `PdqSort.h` (the
+quicksort of Peters, which `EngineeredQuickSorts.h` includes),
 `QuicksortAdversary.h`, `RadixSort.h`, `RunSorts.h`, `SampleSort.h`,
 `Sort.h`, `StringSort.h` and `VectorQuickSort.h` are advanced and the other
 headers of this chapter are base, while `Sorted.h` is in the core that the
-two sets include, and `EngineeredQuickSorts.h` holds a part of each until
-it is split.
+two sets include.
 
 ## 12.1 Definitions and notation {#sec-12-1}
 
@@ -1364,14 +1364,14 @@ while a random input costs it an order of magnitude fewer.
 
 ## 12.7 Engineered quicksorts {#sec-12-7}
 
-In `EngineeredQuickSorts.h` and `VectorQuickSort.h`, the variants act on the
-weak points of (12.4), i.e., the worst case, the equal keys and the
-constant. On a modern processor the constant usually depends less on the
-comparisons than on the branches mispredicted and on the misses of the
-cache. All of these sorts are in place but not stable. They recur into the
-smaller part and loop on the larger, which keeps the stack within $O( \log n
-)$ (`pdqSort()` recurs into the left part, whose depth its budget of bad
-partitions bounds).
+In `EngineeredQuickSorts.h`, `PdqSort.h` and `VectorQuickSort.h`, the
+variants act on the weak points of (12.4), i.e., the worst case, the equal
+keys and the constant. On a modern processor the constant usually depends
+less on the comparisons than on the branches mispredicted and on the misses
+of the cache. All of these sorts are in place but not stable. They recur
+into the smaller part and loop on the larger, which keeps the stack within
+$O( \log n )$ (`pdqSort()` recurs into the left part, whose depth its
+budget of bad partitions bounds).
 
 `pdqSort()`, the pattern-defeating quicksort of [Peters
 2021](Z-bibliography.md#ref-peters2021), is an introsort ([Musser
@@ -1393,12 +1393,19 @@ partition that puts the equals on its left and skips them, which [Peters
 time on $k$ distinct keys; and a partition too unbalanced swaps a few items
 of each side to break the pattern that caused it.
 
-In `ADS/sort/EngineeredQuickSorts.h`, the functions are declared as
+In `ADS/sort/PdqSort.h`, which `ADS/sort/EngineeredQuickSorts.h` includes,
+and in the latter, the functions are declared as
+
+```cpp
+// declarations of <ADS/sort/PdqSort.h>
+template< class T , class C = std::less<> >
+void pdqSort( std::vector< T > & A , C less = C() );
+```
+
+and
 
 ```cpp
 // declarations of <ADS/sort/EngineeredQuickSorts.h>
-template< class T , class C = std::less<> >
-void pdqSort( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
 void dualPivotQuickSort( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
@@ -1409,7 +1416,7 @@ void threeWayQuickSort( std::vector< T > & A , C less = C() );
 quicksort ([Peters 2021](Z-bibliography.md#ref-peters2021)),
 $\mathit{bad}$ starting from $\lfloor \log_2 n \rfloor + 1$.
 
---8<-- "generated/EngineeredQuickSorts-pdq.pseudo.md"
+--8<-- "generated/PdqSort-pdq.pseudo.md"
 
 <span id="lem-12-24"></span>**Lemma 12.24.** *`pdqSort()` makes
 $O( n \log n )$ comparisons on any input of $n$ items.*

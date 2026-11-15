@@ -1057,7 +1057,6 @@ using ADS::countingSort;
 
 // sort/EngineeredQuickSorts.h
 using ADS::dualPivotQuickSort;
-using ADS::pdqSort;
 using ADS::threeWayQuickSort;
 
 // sort/ExchangeSorts.h

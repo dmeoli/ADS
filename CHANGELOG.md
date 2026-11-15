@@ -2103,6 +2103,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The pattern-defeating quicksort, pdqSort() with its helpers, moved from
+  EngineeredQuickSorts.h to the new advanced header sort/PdqSort.h, which
+  EngineeredQuickSorts.h, now base with the dual-pivot and the three-way
+  quicksorts of Ferragina's book, includes; the module ads.base no longer
+  exports pdqSort(), which ads.advanced and ads export; the test programs
+  split_quicksorts and split_pdqsort include each header alone
+
 - The strongly connected components by one visit in depth, sccTarjan()
   and sccPearce(), moved from Visit.h to the new advanced header
   graph/StrongComponents.h, which Visit.h, now base with the visits of the

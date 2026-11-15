@@ -390,8 +390,7 @@ set/SpaceEfficientSortedSet.h         base
 set/VectorIntersection.h              advanced
 
 sort/CountingSort.h                   base
-sort/EngineeredQuickSorts.h           both     TODO split: the quicksorts of
-                                               the Pearls and pdqSort
+sort/EngineeredQuickSorts.h           base
 sort/ExchangeSorts.h                  base
 sort/ExternalSort.h                   base
 sort/Heapsort.h                       base
@@ -400,6 +399,8 @@ sort/KnuthSorts.h                     base
 sort/LearnedSort.h                    advanced
 sort/MergeSort.h                      base
 sort/MultikeyQuickSort.h              base
+sort/PdqSort.h                        advanced pdqSort, split off
+                                               EngineeredQuickSorts.h
 sort/PigeonholeSort.h                 base
 sort/QuickSort.h                      base
 sort/QuicksortAdversary.h             advanced
@@ -538,6 +539,8 @@ sequence/Treque.h                     uses queue/RingDeque.h
                                            the two halves
 set/Bag.h                             uses dictionary/FlatHashTable.h
                                            the groups of equal items
+sort/EngineeredQuickSorts.h           uses sort/PdqSort.h
+                                           the quicksort of Peters
 sort/ExternalSort.h                   uses priority/DaryHeap.h
                                            the merge of the runs
 sort/KnuthSorts.h                     uses sort/RadixSort.h

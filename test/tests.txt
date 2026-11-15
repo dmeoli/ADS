@@ -1965,6 +1965,8 @@ split_matching     matching-old-include     Matching.h dà anche i blossom
 split_blossommatching  blossommatching-alone  BlossomMatching.h da solo
 split_visit        visit-old-include        Visit.h dà anche Tarjan e Pearce
 split_strongcomponents  strongcomponents-alone  StrongComponents.h da solo
+split_quicksorts   quicksorts-old-include   EngineeredQuickSorts.h dà anche pdqSort
+split_pdqsort      pdqsort-alone            PdqSort.h da solo
 
 # Open Data Structures (Morin), chapters 1, 2 and 3
 ods_lists  ods-1.2.interfaces           List, Deque, USet, SSet come concetti
