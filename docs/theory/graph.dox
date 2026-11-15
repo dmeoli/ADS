@@ -1381,14 +1381,43 @@
  repairs of ADS go on.
 
  Indeed, \f$ c( i , j ) - u_i - v_j = c( i , j ) + \pi( r_i ) - \pi( b_j )
- \f$, which is the slack of the inequality of LEMON. The warm repairs of the
- assignment, of the shortest paths, of the forest and of the flow stay with
- ADS: a warm start of an algorithm of LEMON (a `Preflow` from a given flow
- with its deficits, a `MinCostAssignment` from given potentials and a
- partial matching, a `NetworkSimplex` from a basis) is not part of LEMON's
- interface, and `MaxFlowObserver` takes its solves from an engine, the
- concept `FlowEngine` of `Reoptimization.h`, `AugmentEngine` of ADS by
- default, where such an entry plugs in when it exists.
+ \f$, which is the slack of the inequality of LEMON. The same conversion
+ holds for the potentials of `NetworkSimplex` on the network of the
+ assignment, whose reduced cost of an arc is \f$ c + \pi( \mathit{tail} )
+ - \pi( \mathit{head} ) \f$, and `NetworkSimplexAssignment` gives them to
+ `Assignment` in the same way.
+
+ LEMON has no warm start of its minimum cost flows nor of its maximum flow,
+ and ADS writes one into private copies of six of its headers, rewritten at
+ configure time by the rules of `ADS/interop/lemon/shim/rewrites.txt`, each
+ a line `header|anchor|what` whose anchor must occur once in the header,
+ and put on the include path before LEMON. `NetworkSimplex` goes on from the
+ basis of the last run, `CostScaling` and `CycleCanceling` from its flow
+ made feasible again, `CapacityScaling` from its flow and potentials, each
+ with setters of one arc or node in \f$ O( 1 ) \f$, and `Preflow` from a
+ flow repaired as follows.
+
+ <em>Lemma 23 (the repair of the deficits).</em> Let \f$ f \f$ satisfy the
+ capacities, and let the nodes \f$ v \ne s \f$ with more flow out than in
+ be repeatedly taken, the flow of an arc out of \f$ v \f$ that carries
+ \f$ f( a ) > 0 \f$ lowered by \f$ \min\{ f( a ) , -e( v ) \} \f$,
+ \f$ e( v ) \f$ the excess of \f$ v \f$. With integer values the repair
+ ends after at most \f$ \sum_a f( a ) \f$ steps, and it leaves a preflow,
+ i.e., no node but \f$ s \f$ with a negative excess, of value at least
+ that of \f$ f \f$ less the deficits removed.
+
+ Indeed, a node with \f$ e( v ) < 0 \f$ has an arc out with positive
+ flow, since its outflow exceeds its inflow \f$ \ge 0 \f$; each step lowers
+ the total flow by at least 1, and moves the deficit removed at \f$ v \f$
+ to the head of the arc, so that the excesses of the other nodes do not
+ fall below 0 but by the step that marks them again. A preflow is what the
+ two phases of Goldberg and Tarjan start from, and `Preflow::initWarm()`
+ hands it to `init()`. `MaxFlowObserver` takes its solves from an engine,
+ the concept `FlowEngine` of `Reoptimization.h`, the augmentations of ADS by
+ default and `PreflowEngine` on this warm start; the choice between them
+ waits for the measures of the two. A program must see one rewritten
+ copy of each header of LEMON, since two layouts of one class in one binary
+ violate the one definition rule, which compilers do not diagnose.
 
  \section theory_graph_refs References
 

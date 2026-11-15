@@ -1,0 +1,46 @@
+# The rewrites of the headers of LEMON that insert the warm start of its
+# algorithms, read by the CMake build [see ADSLemonShim.cmake] and by the
+# makefiles [see rewrite.awk]: one a line, header|anchor|what, the anchor a
+# whole line of the header, which has to be there exactly once, and what
+# <file (the file inserted before the line), +text (appended to the line)
+# or =text (in place of the line). The rules of a header apply in their
+# order, and two that insert before one anchor insert in that order.
+#
+# runWarm() of the four minimum cost flow algorithms (*_runwarm.inc): a run
+# records whether it has left a basis or a flow to start from, and a change
+# of the lower bounds, of the supply type, of the digraph or of all the
+# parameters drops it; in NetworkSimplex a change of an upper bound or of a
+# supply marks the basis to be repaired.
+network_simplex.h| /// \brief The cycle that proves the problem unbounded.|<ns_runwarm.inc
+network_simplex.h| NetworkSimplex & lowerMap( const LowerMap & map ) {|+ _warm = false;
+network_simplex.h|   _upper[ _arc_id[ a ] ] = map[ a ];|=   warmUpper( _arc_id[ a ] , map[ a ] );
+network_simplex.h|   _supply[ _node_id[ n ] ] = map[ n ];|=   warmSupply( _node_id[ n ] , map[ n ] );
+network_simplex.h| NetworkSimplex & stSupply( const Node & s , const Node & t , Value k ) {|+ _warm = false;
+network_simplex.h| NetworkSimplex & supplyType( SupplyType supply_type ) {|+ _warm = false;
+network_simplex.h| NetworkSimplex & resetParams() {|+ _warm = false;
+network_simplex.h| NetworkSimplex & reset() {|+ _warm = false;
+network_simplex.h|  const ProblemType pt = solve( pivot_rule );|=  const ProblemType pt = finish( solve( pivot_rule ) );
+cost_scaling.h| /// \brief The cycle that proves the problem unbounded.|<cs_runwarm.inc
+cost_scaling.h|  _result = pt;|+ _warm = pt == OPTIMAL;
+cost_scaling.h| CostScaling & lowerMap( const LowerMap & map ) {|+ _warm = false;
+cost_scaling.h| CostScaling & resetParams() {|+ _warm = false;
+cost_scaling.h| CostScaling & reset() {|+ _warm = false;
+cycle_canceling.h| /// \brief The cycle that proves the problem unbounded.|<cc_runwarm.inc
+cycle_canceling.h|  _result = pt;|+ _warm = pt == OPTIMAL;
+cycle_canceling.h| CycleCanceling & lowerMap( const LowerMap & map ) {|+ _warm = false;
+cycle_canceling.h| CycleCanceling & resetParams() {|+ _warm = false;
+cycle_canceling.h| CycleCanceling & reset() {|+ _warm = false;
+capacity_scaling.h| /// \brief The cycle that proves the problem unbounded.|<capsc_runwarm.inc
+capacity_scaling.h|  _result = pt;|+ _warm = pt == OPTIMAL;
+capacity_scaling.h| CapacityScaling & lowerMap( const LowerMap & map ) {|+ _warm = false;
+capacity_scaling.h| CapacityScaling & resetParams() {|+ _warm = false;
+capacity_scaling.h| CapacityScaling & reset() {|+ _warm = false;
+bits/mcf_feasible_flow.h|   Value f = -ex[ v ];|=   Value f = mcf._warm_flow ? mcf._res_cap[ rj ] : -ex[ v ];
+# the setters of one arc or of one node, in constant time, of the four
+# algorithms (*_warmset.inc)
+network_simplex.h| /// \brief The cycle that proves the problem unbounded.|<ns_warmset.inc
+cost_scaling.h| /// \brief The cycle that proves the problem unbounded.|<cs_warmset.inc
+cycle_canceling.h| /// \brief The cycle that proves the problem unbounded.|<cc_warmset.inc
+capacity_scaling.h| /// \brief The cycle that proves the problem unbounded.|<capsc_warmset.inc
+# Preflow from a flow with deficits, and its warm run (preflow_warm.inc)
+preflow.h| /// \brief Starts the first phase of the preflow algorithm.|<preflow_warm.inc

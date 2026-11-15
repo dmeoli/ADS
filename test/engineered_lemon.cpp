@@ -54,6 +54,13 @@
  #include "ADS/interop/lemon/Maps.h"
  #include "ADS/interop/lemon/Observers.h"
  #include "ADS/interop/lemon/Parallel.h"
+ #if defined( ADS_LEMON_SHIM )
+  #include "ADS/interop/lemon/Warm.h"
+
+  #include <lemon/capacity_scaling.h>
+  #include <lemon/cost_scaling.h>
+  #include <lemon/cycle_canceling.h>
+ #endif
  #include "ADS/parallel/ParallelShortestPaths.h"
  #include "ADS/parallel/ThreadPool.h"
  #include "ADS/priority/DialQueue.h"
@@ -125,9 +132,10 @@ struct Counting
   return( net.maxFlow( s , t , h ) );
   }
  /// the warm solve of ADS
- static long long warm( FlowNetwork & net , int s , int t , Augment h ) {
+ static long long warm( FlowNetwork & net , int s , int t , Augment h ,
+			long long v ) {
   ++warms;
-  return( net.maxFlow( s , t , h ) );
+  return( v + net.maxFlow( s , t , h ) );
   }
  };
 
@@ -997,6 +1005,291 @@ ADS_TEST( "lemon-flow-engine" )
   }
  CHECK( ( Counting::scratches >= 1 ) &&
 	( Counting::scratches + Counting::warms >= 2 ) );
+ }
+
+// the warm starts of the four minimum cost flows of LEMON written by the
+// rules of the shim: after each random change of a cost, of an upper bound
+// or of a pair of supplies, runWarm() against a new run() from scratch
+// (the same outcome and the same total cost), with the warm path entered;
+// and the setters of one arc or node against the map setters
+ADS_TEST( "lemon-warm-mcf" )
+{
+ checkBackends();
+#if defined( ADS_LEMON_SHIM )
+ using G = lemon::SmartDigraph;
+ using VM = G::ArcMap< long long >;
+ using SM = G::NodeMap< long long >;
+ auto check = [ & ]< class A >( unsigned seed ) {
+  std::mt19937 rng( seed );
+  G g;
+  const int n = 50;
+  for( int i = 0 ; i < n ; ++i )
+   g.addNode();
+  VM c( g ) , u( g );
+  SM s( g , 0 );
+  std::vector< G::Arc > arcs;
+  for( int k = 0 ; k < 350 ; ++k ) {
+   const int a = int( rng() % n ) , b = int( rng() % n );
+   if( a == b )
+    continue;
+   arcs.push_back( g.addArc( g.nodeFromId( a ) , g.nodeFromId( b ) ) );
+   c.set( arcs.back() , 1 + static_cast< long long >( rng() % 100 ) );
+   u.set( arcs.back() , 1 + rng() % 30 );
+   }
+  s.set( g.nodeFromId( 0 ) , 25 );
+  s.set( g.nodeFromId( n - 1 ) , -25 );
+  A w( g ) , m( g );  // by the setters of one item, by the maps
+  w.costMap( c ).upperMap( u ).supplyMap( s );
+  m.costMap( c ).upperMap( u ).supplyMap( s );
+  CHECK( w.run() == m.run() );
+  int warm = 0;
+  for( int step = 0 ; step < 120 ; ++step ) {
+   const G::Arc a = arcs[ rng() % arcs.size() ];
+   const int kind = int( rng() % 3 );
+   if( kind == 0 ) {
+    c.set( a , rng() % 100 );
+    w.warmCost( a , c[ a ] );
+    m.costMap( c );
+    }
+   else if( kind == 1 ) {
+    u.set( a , rng() % 30 );
+    w.warmUpper( a , u[ a ] );
+    m.upperMap( u );
+    }
+   else {  // a unit of supply moved, the sum kept 0
+    const G::Node x = g.nodeFromId( int( rng() % n ) ) ,
+		  y = g.nodeFromId( int( rng() % n ) );
+    s.set( x , s[ x ] + 1 );
+    s.set( y , s[ y ] - 1 );
+    w.warmSupply( x , s[ x ] ).warmSupply( y , s[ y ] );
+    m.supplyMap( s );
+    }
+   warm += w.warmReady() ? 1 : 0;
+   const auto rw = w.runWarm() , rm = m.runWarm();
+   A cold( g );
+   cold.costMap( c ).upperMap( u ).supplyMap( s );
+   const auto rc = cold.run();
+   CHECK( ( rw == rc ) && ( rm == rc ) );
+   if( rc == A::OPTIMAL )
+    CHECK( ( w.totalCost() == cold.totalCost() ) &&
+	   ( m.totalCost() == cold.totalCost() ) );
+   }
+  CHECK( warm > 60 );  // the warm path taken after most changes
+  };
+ check.template operator()< lemon::NetworkSimplex< G , long long ,
+						   long long > >(
+   21 );
+ check.template operator()< lemon::CostScaling< G , long long , long long > >(
+   22 );
+ check.template operator()< lemon::CycleCanceling< G , long long ,
+						   long long > >(
+   23 );
+ check.template
+ operator()< lemon::CapacityScaling< G , long long , long long > >( 24 );
+#endif
+ }
+
+// Preflow from a flow with deficits: initWarm() of a flow whose arcs were
+// cut below their flow against Preflow from scratch, and runWarm() after
+// random changes of the capacities, raises and cuts
+ADS_TEST( "lemon-warm-preflow" )
+{
+ checkBackends();
+#if defined( ADS_LEMON_SHIM )
+ using G = lemon::SmartDigraph;
+ using VM = G::ArcMap< long long >;
+ std::mt19937 rng( 25 );
+ G g;
+ const int n = 80;
+ for( int i = 0 ; i < n ; ++i )
+  g.addNode();
+ VM cap( g );
+ for( int k = 0 ; k < 600 ; ++k ) {
+  const int a = int( rng() % n ) , b = int( rng() % n );
+  if( a != b )
+   cap.set( g.addArc( g.nodeFromId( a ) , g.nodeFromId( b ) ) ,
+	    1 + rng() % 40 );
+  }
+ const G::Node s = g.nodeFromId( 0 ) , t = g.nodeFromId( n - 1 );
+ using PF = lemon::Preflow< G , VM >;
+ auto cold = [ & ]( void ) {
+  PF p( g , cap , s , t );
+  p.run();
+  return( p.flowValue() );
+  };
+ PF w( g , cap , s , t );
+ CHECK( ! w.warmReady() );
+ w.run();
+ CHECK( w.warmReady() && ( w.flowValue() == cold() ) );
+ int cuts = 0;
+ for( int step = 0 ; step < 200 ; ++step ) {
+  const bool raise = rng() % 2;
+  G::Arc a = g.arcFromId( int( rng() % unsigned( g.arcNum() ) ) );
+  for( int k = 0 ; ! raise && ( k < g.arcNum() ) && ( w.flow( a ) == 0 ) ;
+       ++k )  // a cut of an arc with flow
+   a = g.arcFromId( ( g.id( a ) + 1 ) % g.arcNum() );
+  const long long f = w.flow( a );
+  const long long c = raise
+			? cap[ a ] + 1 + static_cast< long long >( rng() % 20 )
+			: static_cast< long long >( rng() % ( f + 1 ) );
+  cuts += c < f ? 1 : 0;  // a deficit at the head
+  cap.set( a , c );
+  w.runWarm();
+  CHECK( w.flowValue() == cold() );
+  }
+ CHECK( cuts > 10 );
+ {  // a flow that init( flow ) refuses, which initWarm() repairs
+  VM f( g );
+  for( G::ArcIt a( g ) ; a != lemon::INVALID ; ++a )
+   f.set( a , w.flow( a ) );
+  for( G::ArcIt a( g ) ; a != lemon::INVALID ; ++a )
+   if( f[ a ] > 1 ) {
+    cap.set( a , f[ a ] / 2 );
+    break;
+    }
+  PF p( g , cap , s , t );
+  p.initWarm( f );
+  p.startFirstPhase();
+  p.startSecondPhase();
+  CHECK( p.flowValue() == cold() );
+  }
+#endif
+ }
+
+// the solvers of ADS on the warm starts of LEMON: MaxFlowObserver on
+// PreflowEngine against the push-relabel of ADS, Assignment on
+// NetworkSimplexAssignment against the code of ADS, and
+// MinCostFlowObserver, through the maps and the tap observed, against a
+// NetworkSimplex from scratch; each with its warm solves counted
+ADS_TEST( "lemon-warm-observers" )
+{
+ checkBackends();
+#if defined( ADS_LEMON_SHIM )
+ {
+  using G = ListGraph< long long >;
+  std::mt19937 rng( 26 );
+  const int n = 60;
+  G g( n , true );
+  for( int k = 0 ; k < 400 ; ++k ) {
+   const int u = int( rng() % n ) , v = int( rng() % n );
+   if( u != v )
+    g.insertEdge( u , v , 1 + rng() % 50 );
+   }
+  using L = MaxFlowObserver< G , RatioPolicy , LI::PreflowEngine >;
+  MaxFlowObserver< G > a( g , 0 , n - 1 , Augment::PUSH_RELABEL );
+  L b( g , 0 , n - 1 );
+  Observable< G , MaxFlowObserver< G > , L > og( g , a , b );
+  CHECK( a.value() == b.value() );
+  for( int step = 0 ; step < 150 ; ++step ) {
+   const int u = int( rng() % n ) , v = int( rng() % n );
+   if( u == v )
+    continue;
+   if( g.weight( u , v ) )
+    og.setWeight( u , v , static_cast< long long >( rng() % 60 ) );
+   else
+    og.insertEdge( u , v , 1 + rng() % 50 );
+   CHECK( a.value() == b.value() );
+   }
+  }
+ {
+  std::mt19937 rng( 27 );
+  const int n = 30;
+  std::vector< long long > C( std::size_t( n * n ) );
+  for( auto & c : C )
+   c = static_cast< long long >( rng() % 1000 );
+  Assignment< long long > a( n , C );
+  Assignment< long long , RatioPolicy , LI::NetworkSimplexAssignment<> > b( n ,
+									  C );
+  CHECK( a.total() == b.total() );
+  for( int step = 0 ; step < 60 ; ++step ) {
+   const int i = int( rng() % n ) , j = int( rng() % n );
+   const long long c = ( step % 10 == 9 )
+			 ? infinity< long long >()
+			 : static_cast< long long >( rng() % 1000 );
+   a.setCost( i , j , c );
+   b.setCost( i , j , c );
+   if( step % 7 == 3 ) {
+    std::vector< long long > R( static_cast< std::size_t >( n ) );
+    for( auto & x : R )
+     x = static_cast< long long >( rng() % 1000 );
+    a.setRow( i , R );
+    b.setRow( i , R );
+    }
+   CHECK( a.perfect() == b.perfect() );
+   if( a.perfect() )
+    CHECK( a.total() == b.total() );
+   }
+  CHECK( b.count( Reopt::WARM ) > 30 );
+  }
+ {
+  using G = lemon::ListDigraph;
+  using VM = G::ArcMap< long long >;
+  using SM = G::NodeMap< long long >;
+  using A = lemon::NetworkSimplex< G , long long , long long >;
+  using O = LI::MinCostFlowObserver< G , A , VM , VM , SM >;
+  std::mt19937 rng( 28 );
+  G g;
+  VM c( g ) , u( g );
+  SM s( g , 0 );
+  const int n = 40;
+  std::vector< G::Node > V;
+  for( int i = 0 ; i < n ; ++i )
+   V.push_back( g.addNode() );
+  for( int k = 0 ; k < 250 ; ++k ) {
+   const int a = int( rng() % n ) , b = int( rng() % n );
+   if( a != b ) {
+    const G::Arc x = g.addArc( V[ a ] , V[ b ] );
+    c.set( x , rng() % 100 );
+    u.set( x , 1 + rng() % 20 );
+    }
+   }
+  s.set( V[ 0 ] , 15 );
+  s.set( V[ n - 1 ] , -15 );
+  O o( g , c , u , s );
+  LI::ObservedMap< G , VM , mod::Cost > oc( g , c );
+  LI::ObservedMap< G , VM , mod::Upper > ou( g , u );
+  LI::ObservedMap< G , SM , mod::Supply > os( g , s );
+  LI::LemonTap< G > tap( g );
+  oc.attach( o );
+  ou.attach( o );
+  os.attach( o );
+  tap.attach( o );
+  auto cold = [ & ]( void ) {
+   A x( g );
+   x.costMap( c ).upperMap( u ).supplyMap( s );
+   const auto r = x.run();
+   return( std::pair( r , r == A::OPTIMAL ? x.totalCost() : 0LL ) );
+   };
+  for( int step = 0 ; step < 120 ; ++step ) {
+   G::ArcIt a( g );
+   for( unsigned k = rng() % 50 ; k > 0 && ( a != lemon::INVALID ) ; --k )
+    ++a;
+   if( a == lemon::INVALID )
+    a = G::ArcIt( g );
+   const int kind = int( rng() % 4 );
+   if( kind == 0 )
+    oc.set( a , rng() % 100 );
+   else if( kind == 1 )
+    ou.set( a , rng() % 20 );
+   else if( kind == 2 ) {
+    const G::Node x = V[ rng() % V.size() ] , y = V[ rng() % V.size() ];
+    os.set( x , s[ x ] + 1 );
+    os.set( y , s[ y ] - 1 );
+    }
+   else {  // a new arc: the algorithm reset
+    const G::Arc x = g.addArc( V[ rng() % V.size() ] , V[ rng() % V.size() ] );
+    oc.set( x , rng() % 100 );
+    ou.set( x , 1 + rng() % 20 );
+    }
+   const auto r = o.solve();
+   const auto [ rc , tc ] = cold();
+   CHECK( r == rc );
+   if( r == A::OPTIMAL )
+    CHECK( o.algorithm().totalCost() == tc );
+   }
+  CHECK( ( o.warms > 60 ) && ( o.scratches >= 1 ) );
+  }
+#endif
  }
 
 /*--------------------------------------------------------------------------*/

@@ -1720,6 +1720,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `interop/lemon/Heaps.h` | `CmpKey`, `DaryHeap`, `MonotoneHeap` | [14](14-graph.md#ch-14) |
 | `interop/lemon/Maps.h` | `DenseMap`, `IndexMap`, `ObservedMap` | [14](14-graph.md#ch-14) |
 | `interop/lemon/Observers.h` | `Ends`, `LemonTap`, `LemonMirror` | [14](14-graph.md#ch-14) |
+| `interop/lemon/Warm.h` | `PreflowEngine`, `NetworkSimplexAssignment`, `MinCostFlowObserver` | [14](14-graph.md#ch-14) |
 | `string/AhoCorasick.h` | `AhoCorasick` | [15](15-string.md#ch-15) |
 | `string/FrontCoding.h` | `FrontCodedDictionary` | [15](15-string.md#ch-15) |
 | `string/LongestCommonExtension.h` | `LceIndex` | [15](15-string.md#ch-15) |

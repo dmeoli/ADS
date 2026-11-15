@@ -19,9 +19,10 @@
 namespace ADS
 {
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-Assignment< W , P >::Assignment( int n , std::vector< W > C )
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	    ( std::is_void_v< E > || AssignmentEngine< E , W > )
+Assignment< W , P , E >::Assignment( int n , std::vector< W > C )
     : f_n( n ) , f_C( std::move( C ) )
 {
  ADS_PRE( ( n >= 0 ) &&
@@ -37,17 +38,19 @@ Assignment< W , P >::Assignment( int n , std::vector< W > C )
  f_scanned.assign( f_n , 0 );
  }
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-W Assignment< W , P >::cost( int i , int j ) const
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+W Assignment< W , P , E >::cost( int i , int j ) const
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) && ( j >= 0 ) && ( j < f_n ) );
  return( f_C[ std::size_t( i ) * std::size_t( f_n ) + std::size_t( j ) ] );
  }
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-void Assignment< W , P >::setCost( int i , int j , W c )
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+void Assignment< W , P , E >::setCost( int i , int j , W c )
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) && ( j >= 0 ) && ( j < f_n ) );
  W & x = f_C[ std::size_t( i ) * std::size_t( f_n ) + std::size_t( j ) ];
@@ -60,9 +63,10 @@ void Assignment< W , P >::setCost( int i , int j , W c )
  f_pending = true;
  }
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-void Assignment< W , P >::setRow( int i , const std::vector< W > & R )
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+void Assignment< W , P , E >::setRow( int i , const std::vector< W > & R )
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) && ( int( R.size() ) == f_n ) );
  std::copy( R.begin() , R.end() , f_C.begin() + std::ptrdiff_t( i ) * f_n );
@@ -73,9 +77,10 @@ void Assignment< W , P >::setRow( int i , const std::vector< W > & R )
   }
  }
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-void Assignment< W , P >::setColumn( int j , const std::vector< W > & K )
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+void Assignment< W , P , E >::setColumn( int j , const std::vector< W > & K )
 {
  ADS_PRE( ( j >= 0 ) && ( j < f_n ) && ( int( K.size() ) == f_n ) );
  for( int i = 0 ; i < f_n ; ++i )
@@ -87,9 +92,10 @@ void Assignment< W , P >::setColumn( int j , const std::vector< W > & K )
   }
  }
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-void Assignment< W , P >::freeRow( int i )
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+void Assignment< W , P , E >::freeRow( int i )
 {
  if( f_col[ i ] >= 0 ) {
   f_row[ f_col[ i ] ] = -1;
@@ -99,9 +105,10 @@ void Assignment< W , P >::freeRow( int i )
 
 /*--------------------------------------------------------------------------*/
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-bool Assignment< W , P >::augment( int i0 )
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+bool Assignment< W , P , E >::augment( int i0 )
 {
  const W INF = infinity< W >();
  const int n = f_n;
@@ -161,9 +168,10 @@ bool Assignment< W , P >::augment( int i0 )
  return( true );
  }
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-bool Assignment< W , P >::optimal( void ) const
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+bool Assignment< W , P , E >::optimal( void ) const
 {
  for( int i = 0 ; i < f_n ; ++i ) {
   for( int j = 0 ; j < f_n ; ++j )
@@ -189,9 +197,10 @@ bool Assignment< W , P >::optimal( void ) const
  }
 
 #if defined( ADS_ASSIGNMENT_LEMON ) && ADS_ASSIGNMENT_LEMON
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-bool Assignment< W , P >::lemonScratch( void )
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+bool Assignment< W , P , E >::lemonScratch( void )
 {
  using BG = ::lemon::SmartBpGraph;
  const int n = f_n;
@@ -224,14 +233,68 @@ bool Assignment< W , P >::lemonScratch( void )
  }
 #endif
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-void Assignment< W , P >::solve( void )
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+bool Assignment< W , P , E >::engineSolve( void )
+{
+ if constexpr( std::is_void_v< E > )
+  return( false );
+ else {
+  const int n = f_n;
+  // the pairs changed: the single costs, and the rows and the columns
+  std::vector< std::pair< int , int > > D = f_cells;
+  for( int i : f_DR )
+   for( int j = 0 ; j < n ; ++j )
+    D.emplace_back( i , j );
+  for( int j : f_DC )
+   for( int i = 0 ; i < n ; ++i )
+    D.emplace_back( i , j );
+  std::vector< int > col( static_cast< std::size_t >( n ) , -1 );
+  std::vector< W > u( static_cast< std::size_t >( n ) , W{} );
+  std::vector< W > v( static_cast< std::size_t >( n ) , W{} );
+  const int outcome = f_engine.solve( n , f_C , ! f_ready , D , col , u , v );
+  if( outcome < 0 )
+   return( false );
+  f_col = std::move( col );
+  f_u = std::move( u );
+  f_v = std::move( v );
+  std::fill( f_row.begin() , f_row.end() , -1 );
+  for( int i = 0 ; i < n ; ++i )
+   f_row[ f_col[ i ] ] = i;
+  for( int i : f_DR )
+   f_dirtyR[ i ] = 0;
+  for( int j : f_DC )
+   f_dirtyC[ j ] = 0;
+  f_DR.clear();
+  f_DC.clear();
+  f_cells.clear();
+  const int cause =
+    outcome == Reopt::WARM ? Reopt::WARM : Reopt::SCRATCH_BY_EVENT;
+  f_ready = true;
+  f_pending = false;
+  f_outcome = outcome == Reopt::WARM ? Reopt::WARM : 0;
+  f_cause = cause;
+  ++f_count[ f_outcome ];
+  ++f_byCause[ cause ];
+  f_policy.record( cause , double( D.size() ) );
+  ADS_AUDIT( optimal() );
+  return( true );
+  }
+ }
+
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+void Assignment< W , P , E >::solve( void )
 {
  const W INF = infinity< W >();
  const int n = f_n;
  if( f_ready && ! f_pending )
   return;
+ if constexpr( ! std::is_void_v< E > )
+  if( engineSolve() )
+   return;
  // the single costs: harmless unless on a pair, or below the duals
  for( const auto & [ i , j ] : f_cells ) {
   if( f_dirtyR[ i ] || f_dirtyC[ j ] )
@@ -325,27 +388,30 @@ void Assignment< W , P >::solve( void )
 
 /*--------------------------------------------------------------------------*/
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-int Assignment< W , P >::column( int i )
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+int Assignment< W , P , E >::column( int i )
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) );
  solve();
  return( f_col[ i ] );
  }
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-int Assignment< W , P >::row( int j )
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+int Assignment< W , P , E >::row( int j )
 {
  ADS_PRE( ( j >= 0 ) && ( j < f_n ) );
  solve();
  return( f_row[ j ] );
  }
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-bool Assignment< W , P >::perfect( void )
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+bool Assignment< W , P , E >::perfect( void )
 {
  solve();
  for( int i = 0 ; i < f_n ; ++i )
@@ -354,9 +420,10 @@ bool Assignment< W , P >::perfect( void )
  return( true );
  }
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-W Assignment< W , P >::total( void )
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+W Assignment< W , P , E >::total( void )
 {
  solve();
  W s = W();
@@ -366,18 +433,20 @@ W Assignment< W , P >::total( void )
  return( s );
  }
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-W Assignment< W , P >::rowPotential( int i )
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+W Assignment< W , P , E >::rowPotential( int i )
 {
  ADS_PRE( ( i >= 0 ) && ( i < f_n ) );
  solve();
  return( f_u[ i ] );
  }
 
-template< class W , ReoptPolicy P >
- requires std::is_arithmetic_v< W >
-W Assignment< W , P >::columnPotential( int j )
+template< class W , ReoptPolicy P , class E >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
+W Assignment< W , P , E >::columnPotential( int j )
 {
  ADS_PRE( ( j >= 0 ) && ( j < f_n ) );
  solve();

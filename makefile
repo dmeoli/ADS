@@ -74,7 +74,7 @@ include $(ADSSDR)/lib/makefile-c
 INC      = $(ADSINC) $(ADSLEMONINC) -Itest -DADS_CONTRACTS=3
 LIBS     = $(ADSLIB) $(if $(filter Windows,$(UNAME_S)),\
            -Wl$(ADScomma)--stack$(ADScomma)8388608)
-HEADERS  = $(ADSH) test/ADSTest.h
+HEADERS  = $(ADSH) $(ADSLEMONH) test/ADSTest.h
 PROGRAMS = $(shell awk '/^[a-z]/{print $$1}' test/tests.txt | sort -u)
 BINS     = $(addprefix $(BUILD)/,$(addsuffix $(ADSEXE),$(PROGRAMS)))
 

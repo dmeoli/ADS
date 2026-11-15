@@ -949,7 +949,7 @@ void MaxFlowObserver< G , P , E >::scratch( void )
      f_arc[ key( v , u ) ] = f_net.addEdge( v , u , w );
     }
    } );
- f_value = E::scratch( f_net , f_s , f_t , f_how );
+ f_value = f_engine.scratch( f_net , f_s , f_t , f_how );
  f_S = f_net.minCut( f_s );
  f_ready = true;
  }
@@ -1035,7 +1035,7 @@ void MaxFlowObserver< G , P , E >::solve( void )
    f_net.setCapacity( it->second , a.c );
   }
  if( warm ) {  // from the flow there is
-  f_value += E::warm( f_net , f_s , f_t , f_how );
+  f_value = f_engine.warm( f_net , f_s , f_t , f_how , f_value );
   f_S = f_net.minCut( f_s );
   this->done( Reopt::WARM , double( A.size() ) );
   }

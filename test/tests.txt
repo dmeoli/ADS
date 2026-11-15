@@ -1937,6 +1937,9 @@ engineered_lemon  lemon-parallel         k Dijkstra di LEMON sui thread di ADS
 engineered_lemon  lemon-matching         abbinamenti, LEMON o ADS
 engineered_lemon  lemon-assignment       assegnamento da zero, LEMON o ADS
 engineered_lemon  lemon-flow-engine      motore dei flussi di MaxFlowObserver
+engineered_lemon  lemon-warm-mcf         flussi di costo minimo a caldo
+engineered_lemon  lemon-warm-preflow     Preflow da un flusso con deficit
+engineered_lemon  lemon-warm-observers   osservatori sui riavvii a caldo
 
 # Open Data Structures (Morin), chapters 1, 2 and 3
 ods_lists  ods-1.2.interfaces           List, Deque, USet, SSet come concetti

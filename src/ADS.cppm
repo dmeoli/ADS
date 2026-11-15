@@ -1160,6 +1160,7 @@ using ADS::ArrayGraph;
 
 // ADS/graph/Assignment.h
 using ADS::Assignment;
+using ADS::AssignmentEngine;
 
 // ADS/graph/EulerianCycle.h
 using ADS::eulerianCycle;

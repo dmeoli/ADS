@@ -978,6 +978,27 @@ LEMON is not where the compiler looks); unlike the other backends,
 not ask for it compiles none of it, the headers are left out of the module
 `ads`, and the packages are built with it off.
 
+With LEMON, ADS also writes the warm starts that LEMON lacks into private
+copies of six of its headers (`network_simplex.h`, `cost_scaling.h`,
+`cycle_canceling.h`, `capacity_scaling.h`, `bits/mcf_feasible_flow.h` and
+`preflow.h`): `runWarm()` of the four minimum cost flows from the last basis
+or flow, the setters of one arc or node in constant time (`warmCost()`,
+`warmUpper()`, `warmSupply()`), and `Preflow::initWarm()` from a flow with
+deficits, with its `runWarm()`. The copies are rewritten at configure time
+by the rules of `include/ADS/interop/lemon/shim/rewrites.txt` (each a line
+`header|anchor|what`, the anchor a line of LEMON that must be there exactly
+once, or the rewrite stops), in the build directory by CMake and in
+`$(ADSODR)/lemon-shim` by the makefile (`ADS_LEMON_WARM=0` leaves them out),
+and they come before LEMON on the include path of `ADS::LEMON` and of
+`$(ADSLEMONINC)`, which define `ADS_LEMON_SHIM`; an installed ADS writes them
+again from the LEMON that its user finds. `ADS/interop/lemon/Warm.h` builds
+on them an engine of `MaxFlowObserver` on `Preflow`, one of `Assignment` on
+`NetworkSimplex` and an observer of a minimum cost flow. A program must
+compile every translation unit on the same rewritten copies: two different
+copies of a header of LEMON in one binary give two layouts of one class, a
+violation of the one definition rule that compilers do not diagnose, and a
+module of LEMON must be built from them too.
+
 ```cpp
 #include "ADS/sequence/List.h"
 

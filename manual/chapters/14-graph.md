@@ -2799,6 +2799,10 @@ class FlowNetwork
  void setCapacity( int e , long long c );
  [[nodiscard]] long long flow( int e ) const;
  [[nodiscard]] long long capacity( int e ) const;
+ [[nodiscard]] int places( void ) const;
+ [[nodiscard]] int tail( int e ) const;
+ [[nodiscard]] int head( int e ) const;
+ void assignFlow( const std::vector< long long > & F );
  long long maxFlow( int s , int t , Augment how = Augment::DINIC ,
                     long long * paths = nullptr );
  [[nodiscard]] std::vector< bool > minCut( int s ) const;
@@ -3374,8 +3378,20 @@ warm start. The class is
 
 ```cpp
 // declarations of <ADS/graph/Assignment.h>
-template< class W = long long , ReoptPolicy P = RatioPolicy >
- requires std::is_arithmetic_v< W >
+template< class E , class W >
+concept AssignmentEngine =
+  std::default_initializable< E > &&
+  requires( E & x , int n , const std::vector< W > & C , bool all ,
+            const std::vector< std::pair< int , int > > & D ,
+            std::vector< int > & col , std::vector< W > & u ,
+            std::vector< W > & v )
+{
+   { x.solve( n , C , all , D , col , u , v ) } -> std::convertible_to< int >;
+   };
+
+template< class W = long long , ReoptPolicy P = RatioPolicy , class E = void >
+ requires std::is_arithmetic_v< W > &&
+          ( std::is_void_v< E > || AssignmentEngine< E , W > )
 class Assignment
 {
  public:
@@ -4112,10 +4128,12 @@ class SpanningForestObserver : public EventQueue< typename G::Weight , P >
 
 template< class E >
 concept FlowEngine =
-  requires( FlowNetwork & net , int s , int t , Augment how )
+  std::default_initializable< E > &&
+  requires( E & x , FlowNetwork & net , int s , int t , Augment how ,
+            long long v )
 {
-   { E::scratch( net , s , t , how ) } -> std::convertible_to< long long >;
-   { E::warm( net , s , t , how ) } -> std::convertible_to< long long >;
+   { x.scratch( net , s , t , how ) } -> std::convertible_to< long long >;
+   { x.warm( net , s , t , how , v ) } -> std::convertible_to< long long >;
    };
 
 struct AugmentEngine
@@ -4123,7 +4141,8 @@ struct AugmentEngine
  static long long scratch( FlowNetwork & net , int s , int t , Augment how ) {
   ...
   }
- static long long warm( FlowNetwork & net , int s , int t , Augment how ) {
+ static long long warm( FlowNetwork & net , int s , int t , Augment how ,
+                        long long v ) {
   ...
   }
  };
@@ -4689,16 +4708,62 @@ book's part. Similarly, the solve from scratch of the `Assignment` of
 whose potentials, with the sign of the rows changed, are a dual solution of
 the assignment (Lemma 22 of the theory page); from them the repairs after
 `setCost()`, `setRow()` and `setColumn()` go on as before. These warm
-repairs, which LEMON does not have, stay with ADS, and `ADS_MATCHING_LEMON`
-or `ADS_ASSIGNMENT_LEMON` defined to 0 keeps the code of ADS, as the
-benchmarks do.
+repairs stay with ADS by default. Defining `ADS_MATCHING_LEMON` or
+`ADS_ASSIGNMENT_LEMON` to 0 keeps the code of ADS, as the benchmarks do.
 
-We do not delegate the flows. `MaxFlowObserver` of
+### 14.14.4 The warm starts of LEMON {#sec-14-14-4}
+
+LEMON has no warm start of its minimum cost flows nor of its maximum flow,
+and ADS writes one into private copies of six of its headers
+(`network_simplex.h`, `cost_scaling.h`, `cycle_canceling.h`,
+`capacity_scaling.h`, `bits/mcf_feasible_flow.h` and `preflow.h`). The
+copies are rewritten at configure time by the rules of
+`ADS/interop/lemon/shim/rewrites.txt`, and put on the include path before
+LEMON, which defines `ADS_LEMON_SHIM`; CMake applies the rules by
+`ads_lemon_shim()` of `ADSLemonShim.cmake`, and the makefiles by
+`rewrite.awk`, so that the two agree by construction. Each rule has the form
+`header|anchor|what`, where the anchor is a whole line of the header of
+LEMON, and `what` either inserts a block of the shim before it, or appends a
+text to it, or replaces it. The anchor must occur exactly once, and
+otherwise the rewrite stops and names the line, rather than go on with a
+header rewritten in part; CMake then leaves the warm start off when
+`ADS_WITH_LEMON` is `AUTO`. The rules give `runWarm()` to the four minimum
+cost flows. `NetworkSimplex` goes on from the basis of the last run, whose
+tree flow is computed again and repaired after a change of the bounds or of
+the supplies, while `CostScaling` and `CycleCanceling` start from the flow
+of the last run, put within the new bounds and made feasible again, and
+`CapacityScaling` from the last flow and potentials. The rules also give the
+setters of one arc or of one node, `warmCost()`, `warmUpper()` and
+`warmSupply()`, in $O( 1 )$ time instead of the $\Theta( m )$ of the setters
+of a map. Finally, `Preflow` gets `initWarm( flow )`, which repairs a flow
+with deficits by moving each deficit forward along the arcs that carry flow
+out of its node, and `runWarm()`, which does so from the last flow.
+
+`Warm.h` builds three solvers on them. `MaxFlowObserver` of
 [§14.13.2](14-graph.md#sec-14-13-2) takes its solves from an engine, the
 concept `FlowEngine`, whose default `AugmentEngine` runs the augmentations
-of ADS from scratch and from the flow that the network keeps. A solver of
-another library may plug in there, but only when it has an entry that starts
-from a given flow, which the interface of LEMON does not offer today.
+of ADS from scratch and from the flow that the network keeps.
+`PreflowEngine` is the engine on the `Preflow` of LEMON, on a copy of the
+network of ADS whose flow is given back by `FlowNetwork::assignFlow()`, and
+the default stays that of ADS until the measures decide (we have not taken
+them). `NetworkSimplexAssignment< W >` is an engine of `Assignment`, the
+third template argument, which after changes of finite costs gives one
+`warmCost()` per pair to a `NetworkSimplex` and runs it warm. Finally,
+`MinCostFlowObserver< GR , A , CM , UM , SM >` keeps a minimum cost flow of
+a digraph of LEMON by any of the four algorithms. It observes the
+`ObservedMap`s of the costs, of the upper bounds and of the supplies and a
+`LemonTap`, and it runs `runWarm()` or, after a change of the digraph,
+`run()`.
+
+The one constraint is on the build of a program. A program must see one
+rewritten copy of each of these headers, i.e., it may not compile some
+translation units on the copies of ADS and others on the plain headers of
+LEMON, or on a copy rewritten by other rules. Two layouts of one class in
+one binary violate the one definition rule, which compilers and linkers do
+not diagnose. The same holds for a module of C++20 of LEMON, which must be
+built from the rewritten headers, the shim first on its include path.
+
+
 
 ## 14.15 Discussion and references {#sec-14-15}
 

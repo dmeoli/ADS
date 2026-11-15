@@ -5,21 +5,21 @@
 #    solves that ADS delegates to it [see Matching.h, Assignment.h]: the      #
 #    target ADS::LEMON_library, with the headers of LEMON found by            #
 #    find_path() (LEMON_INCLUDE_DIR in the cache points to another LEMON,     #
-#    ADS_LEMON_HINTS are directories to look in first) and its library, or    #
-#    LEMON_ONLY_TEMPLATES where there is none, and ADS_LEMON_FOUND, true      #
-#    when they are found and, where C++ is enabled, a program with a map of   #
-#    arcs of a ListDigraph and Dijkstra's algorithm compiles in C++20 with    #
-#    them (abLEMON does, LEMON 1.3 does not, since its maps call members of   #
-#    std::allocator that C++20 removed); ADS_LEMON_PC_CFLAGS and              #
-#    ADS_LEMON_PC_LIBS, the flags of ads-lemon.pc. CMakeLists.txt and         #
-#    ADSConfig.cmake include it.                                              #
+#    ADS_LEMON_HINTS and LEMON_ROOT are directories to look in first) and its #
+#    library, or LEMON_ONLY_TEMPLATES where there is none, and                #
+#    ADS_LEMON_FOUND, true when they are found and, where C++ is enabled, a   #
+#    program with a map of arcs of a ListDigraph and Dijkstra's algorithm     #
+#    compiles in C++20 with them (abLEMON does, LEMON 1.3 does not, since its #
+#    maps call members of std::allocator that C++20 removed);                 #
+#    ADS_LEMON_PC_CFLAGS and ADS_LEMON_PC_LIBS, the flags of ads-lemon.pc.    #
+#    CMakeLists.txt and ADSConfig.cmake include it.                           #
 # --------------------------------------------------------------------------- #
 
 find_path(LEMON_INCLUDE_DIR lemon/config.h
-          HINTS ${ADS_LEMON_HINTS} ENV LEMON_ROOT
+          HINTS ${ADS_LEMON_HINTS} ${LEMON_ROOT} ENV LEMON_ROOT
           PATH_SUFFIXES include)
 find_library(LEMON_LIBRARY NAMES lemon emon
-             HINTS ${ADS_LEMON_HINTS} ENV LEMON_ROOT
+             HINTS ${ADS_LEMON_HINTS} ${LEMON_ROOT} ENV LEMON_ROOT
              PATH_SUFFIXES lib lib64)
 set(ADS_LEMON_FOUND FALSE)
 if (LEMON_INCLUDE_DIR)
@@ -54,7 +54,10 @@ if (ADS_LEMON_FOUND)
         add_library(ADS::LEMON_library INTERFACE IMPORTED)
         set_target_properties(ADS::LEMON_library PROPERTIES
                 INTERFACE_INCLUDE_DIRECTORIES "${LEMON_INCLUDE_DIR}")
-        # the library defines lemon::INVALID; without it, the headers do
+        # the library defines lemon::INVALID, and the epsilons of the
+        # tolerances of the floating types that some algorithms read (e.g.,
+        # CycleCanceling); without it, the headers define the first, and a
+        # program that needs the others links the library itself
         if (LEMON_LIBRARY)
             set_target_properties(ADS::LEMON_library PROPERTIES
                     INTERFACE_LINK_LIBRARIES "${LEMON_LIBRARY}")

@@ -179,8 +179,36 @@ if (ADS_USE_LEMON)
     target_link_libraries(ADS_LEMON INTERFACE ADS ADS::LEMON_library)
     target_compile_definitions(ADS_LEMON INTERFACE ADS_WITH_LEMON)
     set(ADS_LEMON_HINTS "${LEMON_INCLUDE_DIR}")
+    # the warm start of the algorithms of LEMON [see
+    # include/ADS/interop/lemon/Warm.h], private copies of some of its
+    # headers rewritten by the rules of include/ADS/interop/lemon/shim, put
+    # on the include path before LEMON; with a LEMON whose lines are not
+    # those of the rules, ON stops and AUTO goes on without it. An installed
+    # ADS writes them again from the LEMON that its user finds [see
+    # ADSConfig.cmake].
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ADSLemonShim.cmake)
+    set(ADS_LEMON_SHIM_DIR ${CMAKE_CURRENT_BINARY_DIR}/lemon-shim)
+    ads_lemon_shim(${ADS_LEMON_SHIM_DIR} ${LEMON_INCLUDE_DIR}
+                   ${CMAKE_CURRENT_SOURCE_DIR}/include/ADS/interop/lemon/shim
+                   ADS_USE_LEMON_SHIM)
+    if (ADS_USE_LEMON_SHIM)
+        target_include_directories(ADS_LEMON BEFORE INTERFACE
+                $<BUILD_INTERFACE:${ADS_LEMON_SHIM_DIR}>)
+        target_compile_definitions(ADS_LEMON INTERFACE
+                $<BUILD_INTERFACE:ADS_LEMON_SHIM>)
+    elseif (ADS_LEMON_MODE STREQUAL "AUTO")
+        message(STATUS "ADS: no warm start of LEMON: ${ADS_USE_LEMON_SHIM_WHY}")
+    else ()
+        message(FATAL_ERROR "ADS: ${ADS_USE_LEMON_SHIM_WHY}")
+    endif ()
 endif ()
-message(STATUS "ADS: LEMON ${ADS_USE_LEMON}")
+if (ADS_USE_LEMON_SHIM)
+    message(STATUS "ADS: LEMON ON, its warm start ON")
+elseif (ADS_USE_LEMON)
+    message(STATUS "ADS: LEMON ON, its warm start OFF")
+else ()
+    message(STATUS "ADS: LEMON OFF")
+endif ()
 
 # The executors of the parallel algorithms beyond the pool of ADS [see
 # include/ADS/parallel]: OpenMP, oneTBB and FastFlow, OFF by default.
@@ -603,6 +631,7 @@ install(FILES
         cmake/ADSBLAS.cmake
         cmake/ADSBoost.cmake
         cmake/ADSLemon.cmake
+        cmake/ADSLemonShim.cmake
         DESTINATION ${ADS_INSTALL_CMAKEDIR})
 
 # Generate and install ads.pc: its prefix is found from where the file is
