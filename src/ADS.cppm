@@ -87,6 +87,7 @@ module;
 #include "ADS/concurrent/ConcurrentFlatTable.h"
 #include "ADS/concurrent/ConcurrentUnionFind.h"
 #include "ADS/concurrent/EventCount.h"
+#include "ADS/concurrent/LockFreePriorityQueue.h"
 #include "ADS/concurrent/MPMCQueue.h"
 #include "ADS/concurrent/MPSCInbox.h"
 #include "ADS/concurrent/MPSCQueue.h"
@@ -880,6 +881,9 @@ export namespace ADS {
 
  // ADS/concurrent/EventCount.h
  using ADS::EventCount;
+
+ // ADS/concurrent/LockFreePriorityQueue.h
+ using ADS::LockFreePriorityQueue;
 
  // ADS/concurrent/MPMCQueue.h
  using ADS::MPMCQueue;

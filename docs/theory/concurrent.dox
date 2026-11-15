@@ -10,14 +10,14 @@
  the fewest locks: the queues between producers and consumers, the deque of
  work stealing, the union-find and the hash tables shared by threads, the
  relaxed priority queue, the event count on which a thread sleeps until a
- condition holds, and the priority queues of the workers of a search that
- the idle workers steal from. This page
- collects what the headers take for granted: the model of the threads and of
- the memory and the meaning of correct and of nonblocking (see
+ condition holds, the priority queues of the workers of a search that the
+ idle workers steal from, and an exact priority queue without locks. This
+ page collects what the headers take for granted: the model of the threads
+ and of the memory and the meaning of correct and of nonblocking (see
  \ref theory_concurrent_notation), the structures and the cost of their
  operations (see \ref theory_concurrent_real), and, for each family, the
  property on which its correctness rests and the argument behind its cost
- (from \ref theory_concurrent_queues to \ref theory_concurrent_spq). The
+ (from \ref theory_concurrent_queues to \ref theory_concurrent_lfpq). The
  pseudocode of each operation is instead on the page of its header, in the
  comment of its function, together with the paper that it follows, and with
  the order of memory of each access to a shared word written as a comment.
@@ -157,6 +157,13 @@
      <td>\f$ O( \log m ) \f$ for the owner, no read-modify-write; one
          exchange per steal, \f$ O( 1 ) \f$ or \f$ O( m ) \f$ for the
          answer of the owner</td></tr>
+ <tr><td><tt>LockFreePriorityQueue</tt></td><td>any, by a handle
+     each</td>
+     <td>lock-free but for the allocation of a node; the reclamation by
+         epochs blocking</td>
+     <td>\f$ O( \log m ) \f$ expected per insertion, two compare-and-swaps
+         on average; one fetch-and-or per DeleteMin, plus the prefix
+         walked; exact</td></tr>
  <tr><td><tt>EventCount</tt></td><td>any</td>
      <td>a waiter sleeps, a notifier never waits</td>
      <td>a fence and a read when nobody waits</td></tr>
@@ -782,6 +789,115 @@
  if no thief has claimed it, and empties both heaps, so that a queue
  pruned by its \f$ \beta \f$ holds nothing afterwards.
 
+ \section theory_concurrent_lfpq An exact priority queue without locks
+
+ A search that wants one OPEN shared by all its threads in the exact order
+ of the keys (e.g., SPA* of Burns et al.) cannot use the MultiQueue (see
+ \ref theory_concurrent_mq), and a heap under one lock serializes its
+ threads. The skiplist of Lindén and Jonsson is linearizable and
+ lock-free, and its DeleteMin pays one read-modify-write in the common
+ case: the pointer of level 0 of a node \f$ p \f$ carries in its lowest bit
+ the mark \f$ d( p ) \f$, which tells that the node <em>after</em> \f$ p \f$
+ is deleted, so that an insertion, which swings the pointer by a
+ compare-and-swap from its value unmarked, never links a node in front of
+ a deleted one, and the deleted nodes stay in the list as a prefix, to be
+ cut off in batches by one compare-and-swap on the head when a DeleteMin
+ walked more than \f$ b \f$ of them. The keys are made distinct by a stamp
+ of the insertion, \f$ \kappa = ( k , s ) \f$, and \f$ x \prec y \f$ means
+ that \f$ x \f$ comes before \f$ y \f$ in the list of level 0.
+
+ <em>Lemma 13 (the list of level 0).</em> The words of level 0 change only
+ by the compare-and-swap of an insertion, which links a node between two
+ adjacent ones, by the fetch-and-or of a DeleteMin, which sets a mark, and
+ by the cut, which moves the word of the head forward, marked. Hence
+ \f$ \prec \f$ is fixed, the deleted nodes are a prefix of the list, the
+ word of the head is marked after the first deletion, and the nodes not
+ deleted have increasing \f$ \kappa \f$.
+
+ Indeed, a fetch-and-or marks the word of the head or of a node reached by
+ a marked word, and an insertion succeeds only on an unmarked word, whose
+ node \f$ S_0 \f$ is then not deleted, with a greater key, while its
+ predecessor is the head, a deleted node, or a node of smaller key.
+
+ The upper lists are shortcuts, and need not hold every node, but every
+ pointer must lead forward in \f$ \prec \f$. Lindén and Jonsson stop an
+ insertion at the level \f$ i \f$ when the successor \f$ S_i \f$ is deleted,
+ which they detect by \f$ d( S_i ) \f$ or, for the last deleted node, by
+ comparing it with the last deleted node met by the walk of level 0; that
+ walk, however, starts from \f$ P_1 \f$, and misses \f$ S_i \f$ when the
+ list of level 1 has a branch past which \f$ P_1 \f$ lies (a node linked
+ after a node already cut off), and the node would then be linked
+ backwards. The queue tests instead the successor \f$ f \f$ of
+ \f$ S_i \f$.
+
+ <em>Lemma 14 (no pointer backwards).</em> Let \f$ n \f$ be linked at level
+ 0 and \f$ c \f$ its successor found at an upper level. If the word of
+ \f$ c \f$ is not marked, \f$ f \ne n \f$, and \f$ f \f$ is the tail or
+ \f$ \kappa( f ) > \kappa( n ) \f$, then \f$ n \prec c \f$; hence every
+ pointer of every level leads forward.
+
+ Indeed, if \f$ c \prec n \f$, then \f$ c \f$ precedes the predecessor
+ \f$ P_0 \f$ of \f$ n \f$ and has a key not less than \f$ \kappa( n ) \f$,
+ and therefore it is deleted (a node not deleted before \f$ P_0 \f$ has a
+ smaller key, by Lemma 13); if its word is not marked, \f$ c \f$ is the
+ last deleted node, \f$ n \f$ is not deleted, and \f$ f \f$ is the first
+ node not deleted, either \f$ n \f$ or a node before it of a smaller key.
+ The other upper pointer written, that of \f$ P_i \f$ to \f$ n \f$, leads
+ forward since the walk moves forward and \f$ P_i \preceq P_0 \prec n \f$.
+
+ <em>Lemma 15 (linearizability).</em> With the abstract queue the pairs of
+ the nodes not deleted in the order of level 0, `insert()` takes effect at
+ the compare-and-swap that links its node at level 0, `tryDeleteMin()` at
+ the fetch-and-or that finds unmarked the word of the node it returns, or
+ at the read of a pointer to the tail from the head or from a deleted node
+ when it returns nothing, and `tryMinKey()` at the read of the first
+ unmarked word.
+
+ Indeed, by Lemma 13 the node reached by the first unmarked word is the
+ least of the abstract queue, only one fetch-and-or finds that word
+ unmarked, and no word that does not reach the tail comes to reach it, so
+ that no fetch-and-or marks the tail.
+
+ <em>Lemma 16 (the reclamation).</em> Let a cut move the head from
+ \f$ o \f$ to \f$ \nu \f$. The cuts and their restructures run one at a
+ time (the bit 1 of the word of the head, held by the thread of the cut);
+ no node being inserted lies before \f$ \nu \f$; after the restructure every
+ word of the head reaches \f$ \nu \f$ or a node after it, ever after; and a
+ node cut off, stamped with the epoch \f$ r \f$ read after the restructure,
+ is freed only when no thread that may hold a pointer to it is inside an
+ operation.
+
+ Indeed, the DeleteMin of the cut visited each node from \f$ o \f$ to
+ \f$ \nu \f$ and read its flag of insertion clear, but for \f$ \nu \f$;
+ every node before \f$ \nu \f$ has its successor deleted, and the
+ restructure, alone, writes each upper word of the head to a node whose
+ successor is not deleted, read after the cut, or leaves it on such a node;
+ the insertions write to the head only nodes being inserted. A thread that
+ reaches a node cut off issued the fence after its announce before the
+ last compare-and-swap of the cut and of its restructure (otherwise its
+ reads see their words, and by Lemma 14 lead to no node cut), and hence
+ announced an epoch \f$ a \le r \f$, which the scan that would raise the
+ epoch from \f$ r + 1 \f$ to \f$ r + 2 \f$ sees in the total order of the
+ sequentially consistent operations; the node waits for the epoch
+ \f$ r + 2 \f$.
+
+ <em>Lemma 17 (lock-freedom and the prefix).</em> The operations are
+ lock-free but for the allocation of a node, and in a run of one thread a
+ DeleteMin walks at most \f$ b + 1 \f$ nodes and the list holds at most
+ \f$ b \f$ deleted nodes between two operations.
+
+ Indeed, each operation completes after at most \f$ L + 2 \f$ successful
+ read-modify-writes of its own; if none completed after some moment, the
+ finitely many operations running would make finitely many successful
+ ones, after which no word changes, no compare-and-swap fails and no walk
+ is longer than the list, a contradiction. With one thread, a DeleteMin
+ that finds \f$ j \f$ deleted nodes walks \f$ j + 1 \f$ nodes and leaves
+ \f$ j + 1 \f$, or 1 after a cut when \f$ j + 1 > b \f$. A thread stopped
+ inside an insertion or inside a cut keeps the head where it is, and the
+ prefix then grows with the deletions; the epochs are blocking in the same
+ way, since a thread stopped inside an operation keeps the nodes cut off
+ afterwards from being freed.
+
  \section theory_concurrent_refs References
 
  \see T. E. Anderson, The performance of spin lock alternatives for
@@ -899,6 +1015,18 @@
  \see P. Sanders, Randomized priority queues for fast parallel access,
       Journal of Parallel and Distributed Computing 49(1), 86-97, 1998,
       doi:10.1006/jpdc.1998.1429
+ \see J. Lindén, B. Jonsson, A skiplist-based concurrent priority queue
+      with minimal memory contention, International Conference on
+      Principles of Distributed Systems (OPODIS), LNCS 8304, 206-220,
+      2013, doi:10.1007/978-3-319-03850-6_15
+ \see H. Sundell, P. Tsigas, Fast and lock-free concurrent priority queues
+      for multi-thread systems, Journal of Parallel and Distributed
+      Computing 65(5), 609-627, 2005, doi:10.1016/j.jpdc.2004.12.005
+ \see E. Burns, S. Lemons, W. Ruml, R. Zhou, Best-first heuristic search
+      for multicore machines, Journal of Artificial Intelligence Research
+      39, 689-743, 2010, doi:10.1613/jair.3094
+ \see K. Fraser, Practical lock-freedom, PhD thesis, technical report
+      UCAM-CL-TR-579, University of Cambridge, 2004, doi:10.48456/tr-579
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File concurrent.dox -------------------------*/

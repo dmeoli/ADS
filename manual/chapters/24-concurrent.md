@@ -4,16 +4,17 @@
 `MPSCInbox.h`, `MPMCQueue.h`, `WorkStealingDeque.h`,
 `ConcurrentUnionFind.h`, `ConcurrentCuckooTable.h`,
 `ConcurrentFlatTable.h`, `MultiQueue.h`, `EventCount.h`, `Backoff.h`,
-`StealablePriorityQueue.h`, and their `impl/*.tpp`]
+`StealablePriorityQueue.h`, `LockFreePriorityQueue.h`, and their
+`impl/*.tpp`]
 
 We are concerned in this chapter with the structures that several threads
 of one process read and change at the same time, without a lock or with as
 few locks as possible. They are the queues between producers and
 consumers, the deque of the scheduling by work stealing, the union-find and
 the hash tables that the threads share, the relaxed priority queue, the
-event count on which a thread sleeps until a condition holds, and the
+event count on which a thread sleeps until a condition holds, the
 priority queues of the workers of a parallel search, from which the idle
-workers steal. These structures are the bricks of the parallel algorithms
+workers steal, and an exact priority queue without locks. These structures are the bricks of the parallel algorithms
 and of the runtime of the workers of [chapter 25](25-parallel.md#ch-25), and of the parallel
 searches of the library. Each of them gives, in a precise sense, the
 result of a sequential structure of the earlier chapters; its cost,
@@ -31,8 +32,10 @@ structures and their costs. Then [§24.3](24-concurrent.md#sec-24-3) and
 [§24.7](24-concurrent.md#sec-24-7) and [§24.8](24-concurrent.md#sec-24-8)
 the two hash tables. We treat the MultiQueue in
 [§24.9](24-concurrent.md#sec-24-9), the ways in which a thread waits in
-[§24.10](24-concurrent.md#sec-24-10), and the priority queues that are
-stolen in [§24.11](24-concurrent.md#sec-24-11). The file `impl/Spin.tpp`
+[§24.10](24-concurrent.md#sec-24-10), the priority queues that are
+stolen in [§24.11](24-concurrent.md#sec-24-11), and the exact priority
+queue without locks in [§24.12](24-concurrent.md#sec-24-12). The file
+`impl/Spin.tpp`
 holds only two helpers that the other headers share (the pause of the
 processor in a loop that spins, and the prefetch of a line of cache), and
 we describe them where they are used.
@@ -145,6 +148,7 @@ MultiQueue, and $k$ that of the messages taken at once.
 | `ConcurrentFlatTable` | any | wait-free lookups but across a growth, insertions blocking only during a growth (and the renewal of a group, with epochs) | $O( 1 )$ expected, $O( 1 )$ amortized for the growths; no removals; `clear()` $O( 1 )$ amortized with epochs |
 | `MultiQueue` | any, by a handle each | blocking (a lock per queue, taken at the first try) | $O( \log m )$ amortized, $q / ( q - 1 )$ draws expected; relaxed |
 | `StealablePriorityQueue` | one owner, many thieves | wait-free for the owner, lock-free steal | $O( \log m )$ for the owner, no read-modify-write; one exchange per steal |
+| `LockFreePriorityQueue` | any, by a handle each | lock-free but for the allocation of a node; reclamation blocking | $O( \log m )$ expected insertion, two CAS on average; one FAO per DeleteMin, plus the prefix walked; exact |
 | `EventCount` | any | a waiter sleeps, a notifier never waits | a fence and a read when nobody waits |
 
 We remark that the queues of one producer or of one consumer are cheaper than the general
@@ -2146,7 +2150,360 @@ returned; afterwards,
 `leftovers()` hands to a function the pairs left in the queues, which bound
 the optimum of what was not explored.
 
-## 24.12 Discussion and references {#sec-24-12}
+## 24.12 An exact priority queue without locks {#sec-24-12}
+
+The MultiQueue of [§24.9](24-concurrent.md#sec-24-9) relaxes the order of
+the pops, and the queues of [§24.11](24-concurrent.md#sec-24-11) keep it
+exact only within each worker. Some parallel searches, however, want one
+OPEN shared by all the threads in the exact order of the keys (e.g., the
+SPA* of [Burns et al. 2010](Z-bibliography.md#ref-burns2010), whose
+threads take the best open node of the search). A heap under one lock
+serializes them, and its root is a line that they all write.
+`LockFreePriorityQueue` is the skiplist of [Lindén and Jonsson
+2013](Z-bibliography.md#ref-linden2013), which is linearizable and
+lock-free, and whose DeleteMin pays one read-modify-write in the common
+case. The earlier queues on skiplists ([Lotan and Shavit
+2000](Z-bibliography.md#ref-lotan2000); [Sundell and Tsigas
+2005](Z-bibliography.md#ref-sundell2005)) unlink each node that they
+delete. A DeleteMin then writes the pointers of the first nodes of the
+list (one CAS to mark the node and one per level to unlink it), and the
+other DeleteMin, which read those pointers, usually miss on them; Sundell and
+Tsigas, moreover, keep at most one deleted node in the list, and make the
+threads that meet it help to unlink it. Lindén and Jonsson leave instead the
+deleted nodes in the list, and cut them off in batches.
+
+The pairs are the nodes of a skiplist ([Pugh
+1990](Z-bibliography.md#ref-pugh1990)) of $L = 32$ levels between a head and
+a tail, a node of height $h$ (drawn with probability $2^{-h}$) being in the
+lists of the levels $0 , \ldots , h - 1$. The keys are made distinct by a
+stamp of the insertion, $\kappa = ( k , s )$, where $s$ is the count of the
+insertions of the handle and its number, so that two pairs of equal keys
+come out in the order of their stamps (the device of [Sundell and Tsigas
+2005](Z-bibliography.md#ref-sundell2005)); we compare the nodes by
+$\kappa$, the tail having the greatest. The pointer of level 0 of a node
+$p$ carries in its lowest bit, as in the lists of [Harris
+2001](Z-bibliography.md#ref-harris2001), a mark, which we write $d( p )$;
+note that the mark tells that the node *after* $p$ is deleted, and a node
+is *deleted* when the word that reaches it at level 0 is marked. An
+insertion swings that word by a CAS from its value unmarked, and therefore
+never links a node in front of a deleted one. A DeleteMin walks the list of
+level 0 from the head over the marked words and marks the first word not
+marked by a fetch-and-or (FAO), which deletes the node that the word
+reaches. A DeleteMin that walked more than $b$ nodes (the parameter `offset`
+of the constructor, $b \ge 1$) moves the word of level 0 of the head past the
+deleted nodes by one CAS (a *cut*), the upper words of the head after them
+(the *restructure*), and hands the nodes cut off to the reclamation by
+epochs described below. We write $x \prec y$ when the node $x$ comes before
+$y$ in the list of level 0.
+
+<span id="lem-24-28"></span>**Lemma 24.28.** *The words of level 0 change
+only by the CAS of an insertion, which links a new node between two
+adjacent ones, by the FAO of a DeleteMin, which sets a mark, and by the cut,
+which moves the word of the head forward with its mark set. Hence $\prec$
+is a fixed order of the nodes ever linked, and at each moment (i) the
+marked words form a prefix of the list, i.e., the deleted nodes are a prefix
+of it, (ii) after the first deletion the word of the head is marked, and
+(iii) the nodes not deleted have increasing $\kappa$ along the list.*
+
+*Proof.* No other statement writes a word of level 0 once its node is
+linked, and none of the three moves a node or unlinks one but the cut,
+which unlinks only from the head. As to (i), a FAO marks $x.\mathit{next}[ 0
+]$ where $x$ is the head or a node reached by a marked word, and hence
+extends the prefix, while the CAS of an insertion succeeds only on an
+unmarked word, and writes an unmarked word to the new node, whose own word,
+$\langle S_0 , 0 \rangle$, is unmarked as well. Property (ii) holds since
+the first FAO marks the word of the head and the cut writes it with its mark
+set. As to (iii), the walk of $\mathrm{locate}( \kappa )$ stops at level 0
+at a node $S_0$ that is the tail or has a greater key. Its predecessor
+$P_0$ is the head, a node of key less than $\kappa$, or a deleted node,
+since the walk passes a node only for its key, for a mark on the word
+that reaches it, or for a mark on its own word, i.e., when its successor
+is deleted (the start $P_1$ of the walk of level 0 falls in the same cases,
+by induction on the levels). The CAS succeeds only if
+$P_0.\mathit{next}[ 0 ]$ is still $\langle S_0 , 0 \rangle$; hence $S_0$
+is not deleted at that moment, and the new node lies after the deleted
+nodes and between two nodes not deleted of smaller and greater keys.
+$\square$
+
+We now turn to the upper lists. They are only shortcuts, and need not
+hold all the nodes (an insertion links its node there from the bottom up,
+after the CAS of level 0, and stops at the first level where its test
+fails); we need, however, that the pointers of all the levels lead forward
+in $\prec$, since the walks and the safety of the reclamation rest on it.
+Lindén and Jonsson try to ensure it by stopping the insertion when the
+successor $S_i$ found at the level $i$ is deleted, which they detect by
+$d( S_i )$, or, for the last deleted node, whose $d$ is not set, by
+comparing $S_i$ with the last deleted node met by the walk of level 0. This
+walk, however, starts from $P_1$, and it misses $S_i$ when $P_1$ lies past
+it. This may happen when the list of level 1 has a branch: a node linked at
+level 1 after a node that the head has already passed is reachable at
+level 1 only from that node, and yet it may be linked at level 2 after the
+head. The insertion would then link its node $n$ before $S_i \prec n$, i.e.,
+backwards, and a later walk may reach through it the nodes freed. Hence we
+use instead the test $\mathrm{behind}( S_i , n )$ of [Algorithm
+24.13](24-concurrent.md#alg-24-13), which reads the successor of $S_i$.
+
+<span id="lem-24-29"></span>**Lemma 24.29.** *Let $n$ be linked at level
+0, and let $c$ be the successor found at an upper level by a walk for
+$\kappa( n )$ made after the CAS that linked $n$ (or by the walk before it,
+when $c$ is compared after that CAS). If $\mathrm{behind}( c , n )$ is
+false, then $n \prec c$.*
+
+*Proof.* Let $c \prec n$, and let us see that the test is true. The tail
+comes after all the nodes, and therefore $c$ is not the tail, and
+$\kappa( c ) > \kappa( n )$, since the walk did not pass $c$ at its
+level. Let $P_0$ be
+the predecessor of $n$ found by the walk of level 0; then $c \preceq P_0$.
+If $c$ were not deleted when $n$ was linked, then neither would $P_0$ be,
+by [Lemma 24.28](24-concurrent.md#lem-24-28) (i), and $P_0$ would have a key
+less than $\kappa( n )$, as in its proof; by (iii) $\kappa( c ) \le \kappa(
+P_0 ) < \kappa( n )$, which is false. Hence $c$ is deleted, and so is it at
+the read of $c.\mathit{next}[ 0 ]$ in $\mathrm{behind}$. If the word read is
+marked, the test is true. Otherwise $c$ is the last deleted node and its
+successor $f$ is the first node not deleted; $n$ is not deleted, since
+$c \prec n$ and the deleted nodes are a prefix, whose last is $c$, and
+therefore $f \preceq n$. Either $f = n$, or $f \prec n$, and then
+$\kappa( f ) < \kappa( n )$ by (iii), and $f$ is not the tail; in both cases
+the test is true. $\square$
+
+The test may be true when $n \prec c$ as well, but only if $n$ is deleted
+by then (cf. the last case of the proof), and the insertion then just stops
+its tower, as it does anyway when $d( n )$ is set.
+
+<span id="lem-24-30"></span>**Lemma 24.30.** *A pointer of any level of a
+node, when not null, reaches a node after it in $\prec$, and each
+walk of [Algorithm 24.13](24-concurrent.md#alg-24-13) moves forward.*
+
+*Proof.* The words of the head and of level 0 do so by [Lemma
+24.28](24-concurrent.md#lem-24-28). An upper pointer of a node is written
+only by an insertion, either $n.\mathit{next}[ i ] \gets S_i$ after the
+test of line 7, which gives $n \prec S_i$ by [Lemma
+24.29](24-concurrent.md#lem-24-29), or by the CAS that sets
+$P_i.\mathit{next}[ i ]$ to $n$. In the latter case, by induction on the
+steps, the walk of $\mathrm{locate}$ moves forward, and $P_i \preceq P_{i -
+1} \preceq \cdots \preceq P_0$, while $P_0$ is the predecessor of $n$: in the
+first round by the CAS of level 0, and after a new $\mathrm{locate}$ by the
+test $S_0 = n$ of line 10. Hence $P_i \prec n$. $\square$
+
+<span id="lem-24-31"></span>**Lemma 24.31.** *Let the abstract queue be the
+sequence of the pairs of the nodes not deleted, in the order of the list of
+level 0. Then `insert()` and `tryDeleteMin()` are linearizable as the
+operations of a priority queue at the points of the header: `insert()` at
+the CAS that links its node at level 0, `tryDeleteMin()` at the FAO that
+marks the word that reaches the node it returns, or, when it returns
+nothing, at the read of a pointer to the tail; `tryMinKey()` at the read of
+the first unmarked word.*
+
+*Proof.* By [Lemma 24.28](24-concurrent.md#lem-24-28) (iii) the abstract
+queue is ordered by $\kappa$, and each point lies between the invocation
+and the response of its operation. At the CAS of `insert()` the new node
+joins the nodes not deleted at the place of its $\kappa$, and nothing else
+changes. A DeleteMin applies its FAO to the word of a node $x$ that is the
+head or a deleted node, since it reached $x$ by marked words. If the word
+was not marked, the node $y$ that it reaches is the first not deleted, by
+(i), i.e., the pair of least key; the FAO removes it from the abstract
+queue, and no other DeleteMin returns it, since only one FAO finds the word
+unmarked. If it was marked, another DeleteMin deleted $y$ in the meantime,
+nothing changes, and the walk goes on. A DeleteMin that reads a pointer to
+the tail from the head or from a deleted node $x$ finds no node after $x$,
+and hence an empty abstract queue. Note that no FAO marks a pointer to the
+tail: the FAO follows a read of the same word that did not reach the tail,
+and such a word never comes to reach it (an insertion links a node before
+its old successor). The same argument gives the point of
+`tryMinKey()`. The responses are therefore those of the sequential queue
+on the operations in the order of their points. $\square$
+
+<span id="lem-24-32"></span>**Lemma 24.32.** *Let a cut move the word of
+level 0 of the head from the node $o$ to the node $\nu$. Then (i) the cuts
+and their restructures run one at a time; (ii) no node being inserted lies
+before $\nu$; (iii) once the restructure of the cut is over, each word of
+the head reaches $\nu$ or a node after it, and does so ever after; (iv) a
+thread whose reads of the list follow the end of that restructure reaches no
+node before $\nu$.*
+
+*Proof.* (i) The CAS of a cut expects a word without the bit of a cut and
+writes it with the bit, which only the thread of the cut clears, after its
+restructure, and no other statement writes the word of the head once it is
+marked. (ii) The values of the word of the head never repeat, since they
+move forward; hence the walk of the DeleteMin that cut read the word as
+$o$, and visited as its node $x$ each node from $o$ to $\nu$, the last
+excluded. Then $\nu$ is the first of them whose flag $\mathit{inserting}$
+it read set, or the node that it deleted; a node before $\nu$ was read
+with its flag clear, which an insertion clears once and at its end. (iii)
+Each node before $\nu$ has $d$ set at the cut: those visited were passed by
+marked words, and those before $o$ were cut before by induction. The
+restructure, alone by (i), reads each upper word $h$ of the head after the
+cut, leaves it if $d( h )$ is clear, and then $\nu \preceq h$, or writes it
+by a CAS from $h$ to the first node $c$ with $d( c )$ clear that it finds,
+and then $\nu \preceq c$. The only other writes of an upper word of the
+head are those of the restructures of the later cuts, which by the same
+argument write nodes after their own $\nu' \succeq \nu$, and the CAS of
+the insertions with $P_i$ the head, which write a node being inserted,
+after $\nu$ by (ii). (iv) Follows from (iii) and from [Lemma
+24.30](24-concurrent.md#lem-24-30), since the pointers lead forward.
+$\square$
+
+The memory of the nodes cut off is reclaimed by epochs ([Fraser
+2004](Z-bibliography.md#ref-fraser2004); [Hart et al.
+2007](Z-bibliography.md#ref-hart2007)), which the queue owns, since the
+area has no other reclamation that fits a structure of nodes (the epochs of
+`ConcurrentFlatTable` clear a table, they do not free memory). The queue
+keeps an epoch $E$, and each handle a record with the epoch announced,
+$2 e + 1$ inside an operation of the epoch $e$ and 0 outside. An operation
+reads $E$, stores the announce, and issues a sequentially consistent fence
+before it reads the list. The thread of a cut stamps the nodes cut off
+with $E$, read with sequential consistency after the cut and the
+restructure, keeps them in its record, and then raises $E$ by a CAS if all the
+records inside an operation announce $E$; a node stamped $r$ is freed once
+its thread reads $E \ge r + 2$. Let a thread $t$ reach a node stamped $r$
+inside an operation. If the fence of $t$ followed in the total order $S$ of
+[§24.1](24-concurrent.md#sec-24-1) the last CAS of the cut and of its
+restructure, the reads of $t$ would see the words written by them, and $t$
+would reach no node cut, by [Lemma 24.32](24-concurrent.md#lem-24-32) (iv).
+Hence the fence of $t$ precedes that CAS in $S$, which precedes the read of
+$E = r$; the read of $E$ by which $t$ made its announce $a$ precedes its
+fence, and therefore $a \le r$, and the read of $E = r$ precedes the CAS
+from $r$ to $r + 1$. The scan that would raise $E$ from $r + 1$ to $r + 2$
+follows that CAS, and hence the fence of $t$, in $S$; it sees the announce
+$a \ne r + 1$, or a later value of the record, and cannot raise $E$ while
+$t$ stays inside its operation. No node is leaked: the destructor frees those
+that wait for their epoch and those still in the list. The reclamation is
+blocking, as in the paper: a thread stopped inside an operation keeps $E$
+from growing, and the nodes cut off afterwards from being freed, while the
+operations of the other threads go on.
+
+<span id="lem-24-33"></span>**Lemma 24.33.** *The operations are
+lock-free but for the allocation of the nodes: in an infinite run of
+$p$ threads, some operation completes infinitely often.*
+
+*Proof.* Each operation completes after a bounded number of its own
+successful read-modify-writes: an insertion after at most $L$, a DeleteMin
+after one FAO and, if it cuts, one CAS, at most $L - 1$ in its restructure
+and the clear of the bit. Let no operation complete after some moment of an
+infinite run; then each of the $p$ operations running performs finitely
+many successful read-modify-writes, and after a later moment none at all.
+From then on no word of the list changes, and therefore no CAS fails, no
+FAO finds a mark set by another, and no walk passes more than the finitely
+many nodes of the list. Some operation, however, takes infinitely many
+steps, since the run is infinite and the threads are $p$, and it then
+performs a successful read-modify-write or completes, a contradiction. We
+remark that no step waits for another thread (the flag
+$\mathit{inserting}$ and the bit of a cut only keep a cut from moving past
+a node, or from starting), and that a restructure retries a level only
+after a CAS of an insertion on the same word, since no other restructure
+runs at the same time, by [Lemma 24.32](24-concurrent.md#lem-24-32) (i).
+$\square$
+
+A thread stopped inside an insertion (with its flag set), or inside a cut
+(with the bit set), keeps the head where it is, and the prefix then grows
+with the deletions, which all the later DeleteMin walk; Lindén and Jonsson
+remark the first case. Without such a thread, the prefix is bounded as
+follows.
+
+<span id="lem-24-34"></span>**Lemma 24.34.** *In a run of one thread, a
+DeleteMin walks at most $b + 1$ nodes (the head included), the list holds at
+most $b$ deleted nodes between two operations, and the deleted nodes are cut
+off once per $b$ DeleteMin that delete a node, from the $( b + 1 )$-th on.*
+
+*Proof.* Let $j$ be the number of the deleted nodes in the list before a
+DeleteMin that deletes a node. Its walk visits the head and the $j$ deleted
+nodes, $o = j + 1$ nodes, and deletes one more; if $o > b$, its cut leaves
+only the node just deleted, the new first node of the head, and $j = 1$
+afterwards, and otherwise $j + 1$. From $j = 0$ the values after each
+DeleteMin are $1 , 2 , \ldots , b$, then the cut gives 1, and the cycle
+repeats with $b$ DeleteMin per cut. An insertion does not change $j$, and a
+DeleteMin that finds the queue empty walks the same $j + 1 \le b + 1$ nodes
+and changes nothing. $\square$
+
+With $p$ threads the walk is (possibly) longer by the deletions of the
+others that take place during it. Also, a cut may fail because another one
+started since its DeleteMin read the head, and then the next DeleteMin that
+walks more than $b$ nodes cuts. The test `engineered_queues.lockfree-pq`
+checks the bound of the lemma. Furthermore, each handle counts in
+`counts()` its read-modify-writes, those that failed, the nodes walked and
+the cuts, by which two queues can be compared on a busy machine without
+timing them. The public members of the queue are
+
+```cpp
+// declarations of <ADS/concurrent/LockFreePriorityQueue.h>
+template< class K , class T , class Less = std::less< K > >
+class LockFreePriorityQueue {
+ public:
+ struct Entry { K key; T item; };
+ struct Counts {
+  std::uint64_t rmw = 0;
+  std::uint64_t failed = 0;
+  std::uint64_t walked = 0;
+  std::uint64_t cuts = 0;
+  };
+ class Handle {
+  public:
+  void insert( K k , T x );
+  std::optional< Entry > tryDeleteMin( void );
+  std::optional< K > tryMinKey( void );
+  bool empty( void );
+  const Counts & counts( void ) const;
+  };
+ explicit LockFreePriorityQueue( unsigned offset = 32 ,
+                                 std::uint64_t seed = 1 ,
+                                 Less less = Less() );
+ Handle handle( void );
+ unsigned offset( void ) const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t prefix( void ) const;
+ bool consistent( void ) const;
+ };
+```
+
+where `size()`, `empty()`, `prefix()` and `consistent()` of the queue are
+called with no operation running, while `empty()` of a handle is
+linearizable, as `tryMinKey()`; as in the MultiQueue, the constant
+`decrease_key` declares that a key is lowered by a new pair. Each thread
+takes its own handle, which holds its record of the epochs:
+
+```cpp
+ADS::LockFreePriorityQueue< int , int > Q;  // b = 32
+std::vector< std::thread > T;
+for( int k = 0 ; k < 4 ; ++k )
+ T.emplace_back( [ & , k ]() {
+  auto h = Q.handle();
+  for( int i = 0 ; i < 100 ; ++i ) h.insert( 4 * i + k , i );
+  } );
+for( auto & t : T ) t.join();
+auto h = Q.handle();
+while( auto e = h.tryDeleteMin() ) {}       // the keys 0, 1, 2, ...
+```
+
+<span id="alg-24-13"></span>**Algorithm 24.13.** The insertion and the
+DeleteMin of `LockFreePriorityQueue::Handle` ([Lindén and Jonsson
+2013](Z-bibliography.md#ref-linden2013), with the test $\mathrm{behind}$
+and the bit of a cut of ours); $P$ and $S$ are the predecessors and the
+successors at each level, $d( p )$ the mark of $p.\mathit{next}[ 0 ]$, and
+$b$ = `offset()`.
+
+--8<-- "generated/LockFreePriorityQueue-insert.pseudo.md"
+
+--8<-- "generated/LockFreePriorityQueue-tryDeleteMin.pseudo.md"
+
+As to the cost, an insertion is the search of a skiplist, $O( \log m )$
+expected on $m$ nodes, plus the deleted prefix that its walk of level 0 may
+pass, and one CAS per level of its tower, two on average. A DeleteMin walks
+the prefix, $O( b )$ nodes on one thread by [Lemma
+24.34](24-concurrent.md#lem-24-34), and pays one FAO, plus one cut per $b$
+deletions, whose restructure walks, at each level, the nodes of that level
+among the $O( b )$ cut off. We remark that the nodes of the prefix are read
+by all the DeleteMin and written by none but for the word that each
+DeleteMin marks. Indeed, this is the reason of the design: the reads of
+lines that nobody writes are "cheap", while a write to the first nodes (as
+in the queues that unlink each node) makes the other DeleteMin miss on
+them. The FAO on the first unmarked word, however, is still one word
+that all the DeleteMin contend for, and at most one of them succeeds per
+deletion. With many threads the queue therefore (typically)
+serves the DeleteMin one at a time at that word, which the relaxed queue of
+[§24.9](24-concurrent.md#sec-24-9) avoids at the price of the order.
+
+## 24.13 Discussion and references {#sec-24-13}
 
 We follow the model of [Herlihy and Shavit
 2008](Z-bibliography.md#ref-herlihy2008), whose book covers
@@ -2215,12 +2572,20 @@ the best subproblems of the parallel branch-and-bound ([Tschöke et al.
 1998](Z-bibliography.md#ref-sanders1998)). [Wimmer et al.
 2014](Z-bibliography.md#ref-wimmer2014) and [Postnikova et al.
 2022](Z-bibliography.md#ref-postnikova2022) study other ways of stealing
-priority work. A comparison of these structures with those of other
+priority work. The exact queue without locks is that of [Lindén
+and Jonsson 2013](Z-bibliography.md#ref-linden2013), on the skiplists of
+[Pugh 1990](Z-bibliography.md#ref-pugh1990) and the marked pointers of
+[Harris 2001](Z-bibliography.md#ref-harris2001), after the queues of
+[Lotan and Shavit 2000](Z-bibliography.md#ref-lotan2000) and of [Sundell
+and Tsigas 2005](Z-bibliography.md#ref-sundell2005); its reclamation by
+epochs is that of [Fraser 2004](Z-bibliography.md#ref-fraser2004), compared
+with the hazard pointers and the other schemes by [Hart et al.
+2007](Z-bibliography.md#ref-hart2007). A comparison of these structures with those of other
 libraries (e.g., oneTBB, Folly, the queues of FastFlow) belongs to the
 benchmarks of appendix B, made on an idle machine, and it is not reported
 here.
 
-## 24.13 Exercises {#sec-24-13}
+## 24.14 Exercises {#sec-24-14}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
@@ -2278,3 +2643,9 @@ Each exercise names the test of the library that solves it (run it with
     `engineered_runtime.stealing-frontier`,
     `engineered_runtime.stealing-frontier-stop`,
     `engineered_runtime.stealing-frontier-bound`.
+14. Realize the skiplist of Lindén and Jonsson with its memory reclaimed by
+    epochs, check that every pair comes out once with $p$ threads, and find
+    a linearization of short histories of the operations by the search of
+    Wing and Gong. Tests: `engineered_queues.lockfree-pq`,
+    `engineered_queues.lockfree-pq-threads`,
+    `engineered_queues.lockfree-pq-linearizable`.

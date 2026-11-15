@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- LockFreePriorityQueue.h, an exact priority queue shared by threads,
+  linearizable and lock-free: the skiplist of Lindén and Jonsson, whose
+  DeleteMin marks the first unmarked pointer of level 0 by one fetch-and-or
+  and leaves the deleted nodes in the list as a prefix, cut off by one
+  compare-and-swap on the head once a DeleteMin walked more than offset of
+  them; the keys made distinct by a stamp of the insertion, a lazy
+  decrease-key, tryDeleteMin() and tryMinKey() returning optional, a
+  handle per thread with its counts of read-modify-writes, and the memory
+  of the nodes cut off reclaimed by epochs owned by the queue. Two
+  departures from the paper: the insertion checks that the successor at an
+  upper level is not behind its node by reading the successor of that
+  successor, since the test of the paper misses a deleted successor when
+  the upper lists have branches and then links the node backwards, and the
+  cuts run one at a time under a bit of the head; the theory with the
+  lemmas of the order, of the pointers, of the linearization points, of
+  the reclamation, of lock-freedom and of the prefix, section 24.12 of the
+  manual, and the tests engineered_queues lockfree-pq, lockfree-pq-threads
+  (p = 1, 2, 4, 8) and lockfree-pq-linearizable (histories checked by the
+  search of Wing and Gong), also under ThreadSanitizer in the CI
+
 - Capabilities.h, the vocabulary by which an algorithm asks a structure
   what it can do: the syntactic capabilities as concepts on members
   (bulk_insertable, bulk_erasable, splittable, joinable, rankable,

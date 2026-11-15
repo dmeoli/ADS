@@ -1766,6 +1766,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `concurrent/ConcurrentFlatTable.h` | `ConcurrentFlatTable`, `ZeroingClear`, `EpochClear` | [24](24-concurrent.md#ch-24) |
 | `concurrent/ConcurrentUnionFind.h` | `ConcurrentUnionFind` | [24](24-concurrent.md#ch-24) |
 | `concurrent/EventCount.h` | `EventCount` | [24](24-concurrent.md#ch-24) |
+| `concurrent/LockFreePriorityQueue.h` | `LockFreePriorityQueue` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MPMCQueue.h` | `MPMCQueue` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MPSCInbox.h` | `MPSCInbox` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MPSCQueue.h` | `MPSCQueue` | [24](24-concurrent.md#ch-24) |
