@@ -14,17 +14,19 @@
 #        concurrent and parallel structures, the executors, the distributed   #
 #        layer, the typed modifications and the observers;                    #
 #      - core, the infrastructure that the two include;                       #
-#      - interop, the interoperation with other libraries (interop/), in      #
-#        no entry point and no module: a program includes each of them        #
-#        next to the headers of the other library;                            #
-#      - both, the headers with a part of each set, until it is split off.    #
+#      - interop, the interoperation with Boost, LEMON and the newest parts   #
+#        of the standard library (interop/), in no entry point and no         #
+#        module, since each includes the headers of another library and a     #
+#        program includes it next to them.                                    #
 #                                                                             #
 #    A line "<header> <set> [?<macro>] [<reason>]" gives the set of a header  #
 #    (relative to include/ADS), the macro without which the header declares   #
 #    nothing (the optional executors) and the reason of a borderline case;    #
 #    an indented line goes on with the reason of the line above. A line       #
-#    "<header> uses <header>" allows a header of core to include one of base, #
-#    advanced or both, or one of base or both to include one of advanced,     #
+#    "<header> uses <header>" allows a header of core to include one of base  #
+#    or advanced, or one of base to include one of advanced (e.g., the        #
+#    engineered half of a header of the book, split off it, which the latter  #
+#    includes so that its includes give the same),                            #
 #    which is otherwise an error of ads_sets.py: the entry point of the set   #
 #    then pulls that header, without exporting its names from the module.     #
 #    A header of advanced includes those of base freely, since it extends     #

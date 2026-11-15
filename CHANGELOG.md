@@ -12,8 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The two sets of the headers, by their origin: base, what follows a
   textbook or an academic source (Montresor, TAOCP, Ferragina, Morin), and
   advanced, what is written for speed beyond them, with core, the
-  infrastructure that both include, and both, the five headers that hold a
-  part of each until they are split; cmake/ads_sets.txt gives the set of
+  infrastructure that both include; cmake/ads_sets.txt gives the set of
   every header and the includes across the sets that it allows, and
   cmake/ads_sets.py, run by CMake at configure time, by each make and by
   the CI with --check, writes from it the entry points ADS/core.h,
@@ -2109,8 +2108,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   priority/QueueCustomization.h, which PriorityQueue.h, now base with the
   concepts PriorityQueue and AddressablePriorityQueue of the book,
   includes; the module ads.base no longer exports the points, which
-  ads.advanced and ads export; the five headers marked both in
-  cmake/ads_sets.txt are thus split, and none is left in both; the test
+  ads.advanced and ads export; with it the five headers that held a part
+  of each set are split, and the set both, which held them, is gone from
+  cmake/ads_sets.py and cmake/ads_sets.txt; the test
   programs split_priorityqueue and split_queuecustomization include each
   header alone
 

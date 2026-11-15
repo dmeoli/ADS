@@ -399,7 +399,12 @@ header a block of using-declarations, e.g.,
 
 A new header is first given its set by a line of `cmake/ads_sets.txt`
 (e.g., `stack/MinStack.h base`), with a line `uses` if it is a base header
-that includes an advanced one. Otherwise `cmake/ads_sets.py` stops the
+that includes an advanced one. A header that would hold a part of each set
+is written as two, the base one including the advanced one at its end
+(e.g., `graph/MaxFlow.h` and `graph/PushRelabel.h`); a header of
+`ADS/interop/`, which includes the headers of another library, is given
+the set `interop`, which no entry point includes and no module exports,
+so that the script reads none of its names. Otherwise `cmake/ads_sets.py` stops the
 configuration and the make, and the job `sets` of the continuous
 integration fails. Then a new header, or one that gains or
 loses a public name, needs the module script to be run again (`python3

@@ -9,7 +9,7 @@
 # include/ADS (dumped by clang), and each module exports, with a              #
 # using-declaration, every name that the headers of its set declare at the    #
 # scope of the namespace ADS or of one nested in it, but for the namespaces   #
-# detail (the names of a header of both from ads.base and ads.advanced):      #
+# detail:                                                                     #
 #                                                                             #
 #   python3 cmake/ads_module_exports.py -- -fopenmp -DADS_WITH_TBB \          #
 #           -DADS_WITH_FASTFLOW -I<fastflow> -DADS_WITH_MPI -I<mpi> \         #

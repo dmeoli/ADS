@@ -5,11 +5,11 @@
  * The advanced set of ADS: the structures and the algorithms written for
  * speed beyond the textbooks, the concurrent and the parallel ones, the
  * executors, the distributed layer, the typed modifications and the
- * observers, with the headers of `core.h` and those that hold a part of each
- * set. A header of this set extends those of the base set by composition, and
- * includes those it needs, without the module ads.advanced exporting their
- * names. The executors of OpenMP, oneTBB and FastFlow and the headers of MPI
- * are included only with their macros, as in the module.
+ * observers, with the headers of `core.h`. A header of this set extends those
+ * of the base set by composition, and includes those it needs, without the
+ * module ads.advanced exporting their names. The executors of OpenMP, oneTBB
+ * and FastFlow and the headers of MPI are included only with their macros, as
+ * in the module.
  *
  * This file is written by `cmake/ads_sets.py` from `cmake/ads_sets.txt`: it
  * is not to be edited by hand.

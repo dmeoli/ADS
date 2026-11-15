@@ -6,11 +6,10 @@
  * textbook or an academic source (Montresor, The Art of Computer Programming,
  * Ferragina's book and notes, Morin's Open Data Structures), written to be
  * read and checked against the text, even when they are fast, with the
- * headers of `core.h` and those that hold a part of each set. A header of
- * this set may use one of the advanced set inside (e.g., `SuffixArray.h`
- * sorts the ranks by `RadixSort.h`), which this file then includes without
- * the module ads.base exporting its names; the uses allowed are the lines
- * "uses" of `cmake/ads_sets.txt`.
+ * headers of `core.h`. A header of this set may use one of the advanced set
+ * inside (e.g., `SuffixArray.h` sorts the ranks by `RadixSort.h`), which this
+ * file then includes without the module ads.base exporting its names; the
+ * uses allowed are the lines "uses" of `cmake/ads_sets.txt`.
  *
  * This file is written by `cmake/ads_sets.py` from `cmake/ads_sets.txt`: it
  * is not to be edited by hand.

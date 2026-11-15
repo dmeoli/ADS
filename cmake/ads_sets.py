@@ -3,8 +3,8 @@
 #                                ads_sets.py                                  #
 #                                                                             #
 # Reads cmake/ads_sets.txt, the set of each public header of include/ADS      #
-# (core, base, advanced, interop or both), checks it against the headers and  #
-# their includes, and writes from it the entry points ADS/core.h, ADS/base.h, #
+# (core, base, advanced or interop), checks it against the headers and their  #
+# includes, and writes from it the entry points ADS/core.h, ADS/base.h,       #
 # ADS/advanced.h and ADS/ADS.h and the table of the sets in the README:       #
 #                                                                             #
 #   python3 cmake/ads_sets.py            writes the files that changed        #
@@ -14,12 +14,12 @@
 #                                        checks the headers that it pulls     #
 #                                                                             #
 # A header with no set, a set given to a header that is not there, and an     #
-# include from core to another set, from base or both to advanced, or from    #
-# any other set to interop, that no line "uses" allows, are errors; so is,    #
-# for --check, a module of src/ that exports the names of a header of another #
-# set [see ads_module_exports.py, which imports this file]. The headers of    #
-# interop are in no entry point and no module. CMake runs it at configure     #
-# time and the makefile at each make, and the CI with --check.                #
+# include from core to another set, from base to advanced, or from any other  #
+# set to interop, that no line "uses" allows, are errors; so is, for --check, #
+# a module of src/ that exports the names of a header of another set [see     #
+# ads_module_exports.py, which imports this file]. The headers of interop     #
+# are in no entry point and no module. CMake runs it at configure time and    #
+# the makefile at each make, and the CI with --check.                         #
 ###############################################################################
 
 import argparse
@@ -31,7 +31,7 @@ import sys
 import tempfile
 import textwrap
 
-SETS = ( "core" , "base" , "advanced" , "interop" , "both" )
+SETS = ( "core" , "base" , "advanced" , "interop" )
 
 # the entry point of each set, and the modules [see ads_module_exports.py]
 ENTRY = { "core" : "ADS/core.h" , "base" : "ADS/base.h" ,
@@ -42,8 +42,8 @@ MODULE = { "core" : ( "ads.core" , "src/ADSCore.cppm" ) ,
            "advanced" : ( "ads.advanced" , "src/ADSAdvanced.cppm" ) }
 
 # the sets of the headers that an entry point includes
-MEMBERS = { "core" : ( "core" , ) , "base" : ( "base" , "both" ) ,
-            "advanced" : ( "advanced" , "both" ) }
+MEMBERS = { "core" : ( "core" , ) , "base" : ( "base" , ) ,
+            "advanced" : ( "advanced" , ) }
 
 ROOT = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
 INC = os.path.join( ROOT , "include" )
@@ -157,7 +157,7 @@ def crossing( src , dst ):
         return dst != "core"
     if dst == "interop":
         return src != "interop"
-    return ( src in ( "base" , "both" ) ) and ( dst == "advanced" )
+    return ( src == "base" ) and ( dst == "advanced" )
 
 
 def check( sets , deps ):
@@ -240,8 +240,8 @@ ABOUT = {
              "follow a textbook or an academic source (Montresor, The Art of "
              "Computer Programming, Ferragina's book and notes, Morin's Open "
              "Data Structures), written to be read and checked against the "
-             "text, even when they are fast, with the headers of `core.h` "
-             "and those that hold a part of each set. A header of this set "
+             "text, even when they are fast, with the headers of `core.h`. "
+             "A header of this set "
              "may use one of the advanced set inside (e.g., `SuffixArray.h` "
              "sorts the ranks by `RadixSort.h`), which this file then "
              "includes without the module ads.base exporting its names; "
@@ -251,8 +251,8 @@ ABOUT = {
                  "written for speed beyond the textbooks, the concurrent and "
                  "the parallel ones, the executors, the distributed layer, "
                  "the typed modifications and the observers, with the "
-                 "headers of `core.h` and those that hold a part of each "
-                 "set. A header of this set extends those of the base set by "
+                 "headers of `core.h`. A header of this set extends those of "
+                 "the base set by "
                  "composition, and includes those it needs, without the "
                  "module ads.advanced exporting their names. The executors "
                  "of OpenMP, oneTBB and FastFlow and the headers of MPI are "
@@ -309,12 +309,8 @@ def readme( sets , text ):
         rows[ folder ][ s ].append( os.path.splitext(
             os.path.basename( h ) )[ 0 ] )
     count = collections.Counter( sets.set.values() )
-    # the columns of the sets that have headers, both only until it is empty
-    cols = [ s for s in ( "base" , "advanced" , "core" , "interop" , "both" )
-             if count[ s ] ]
-    told = [ f"{count[ s ]} {s}" for s in cols if s != "both" ]
-    if count[ "both" ]:
-        told.append( f"{count[ 'both' ]} in both sets until they are split" )
+    cols = ( "base" , "advanced" , "core" , "interop" )
+    told = [ f"{count[ s ]} {s}" for s in cols ]
     out = [ README_BEGIN , "" ,
             f"{len( sets.set )} headers: " + ", ".join( told[ :-1 ] ) +
             f" and {told[ -1 ]}." , "" ,
@@ -335,7 +331,7 @@ def readme( sets , text ):
 
 def module_errors( sets ):
     """The headers whose names a module of src/ exports, if it is not the
-    module of their set (a header of both in the modules of the two)."""
+    module of their set."""
     errors = []
     for s , ( name , path ) in MODULE.items():
         p = os.path.join( ROOT , path )
