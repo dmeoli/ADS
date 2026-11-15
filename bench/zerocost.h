@@ -12,12 +12,17 @@
  * ArrayGraph (`setWeight()`), ListGraph (`insertEdge()` of an edge that is
  * there, i.e., a change of weight, and `insertEdge()` followed by
  * `deleteEdge()`), an array of keys written on the subject policies of
- * Modification.h with the pattern of the mutators of the library, and
- * GridGraph (`setCost()`), whose plain variant is the grid with
- * `NoObservers`, since the grid had no change before its subject. The
- * variants on the subject policies exist only when Modification.h does.
- * The allocation paths of Arena and ObjectPool, with and without their
- * epochs, are counted by zerocost.cpp alone.
+ * Modification.h with the pattern of the mutators of the library, GridGraph
+ * (`setCost()`), whose plain variant is the grid with `NoObservers`, since
+ * the grid had no change before its subject, ObservableArray (`set()`)
+ * against a plain vector, and IndexedDaryHeap (`update()`, `pop()` and
+ * `push()`), whose plain variant is the heap with `NoObservers`. The
+ * variants on the subject policies exist only when Modification.h does,
+ * and those of the heap and of the array only when their headers have them
+ * (not with `ZC_BEFORE`, the build on the headers of an older revision, see
+ * the option --before of zerocost.py). The allocation paths of Arena and
+ * ObjectPool, with and without their epochs, are counted by zerocost.cpp
+ * alone.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -49,10 +54,21 @@
  #define ZC_POLICIES 1
 #endif
 
+#include "ADS/priority/IndexedDaryHeap.h"
+
+#if defined( ZC_POLICIES ) && ! defined( ZC_BEFORE ) && \
+    __has_include( "ADS/sequence/ObservableArray.h" )
+ #include "ADS/sequence/ObservableArray.h"
+ #define ZC_EMITTERS 1
+#endif
+
 #include <cstddef>
 #include <vector>
 
 namespace zc {
+
+/// the heap of the check: with `NoObservers`, or the heap of the tree before
+using Heap = ADS::IndexedDaryHeap< int >;
 
 using AG = ADS::ArrayGraph< long long >;
 using LG = ADS::ListGraph< long long >;
@@ -177,6 +193,50 @@ struct GridCountDecreases {
  long long n = 0;
  void on( const CellSet & e ) { n += ( e.to < e.from ) ? 1 : 0; }
  };
+
+#endif
+
+#ifdef ZC_EMITTERS
+
+/*--------------------------------------------------------------------------*/
+/*--------------------- THE OBSERVERS OF THE EMITTERS ----------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// an observer of the heap that wants only its clearing
+struct HeapExcluding {
+ long long n = 0;
+ void on( const ADS::mod::Cleared & ) noexcept { ++n; }
+ };
+
+/// an observer of the heap that counts the keys that decrease
+struct HeapCountDecreases {
+ long long n = 0;
+ void on( const ADS::mod::KeyChanged< int , int > & e ) {
+  n += ( e.to < e.from ) ? 1 : 0;
+  }
+ };
+
+/// the array of the check
+template< class Policy >
+using OArray = ADS::ObservableArray< int , Policy >;
+
+/// an observer of the array that wants only its clearing
+struct ArrayExcluding {
+ long long n = 0;
+ void on( const ADS::mod::Cleared & ) noexcept { ++n; }
+ };
+
+/// an observer of the array that counts the values that decrease
+struct ArrayCountDecreases {
+ long long n = 0;
+ void on( const ADS::mod::Assigned< std::size_t , int > & e ) {
+  n += ( e.to < e.from ) ? 1 : 0;
+  }
+ };
+
+static_assert( sizeof( OArray< ADS::NoObservers > ) ==
+               sizeof( std::vector< int > ) );
+static_assert( sizeof( Heap ) == 2 * sizeof( std::vector< int > ) );
 
 #endif
 

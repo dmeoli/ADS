@@ -1858,6 +1858,17 @@ engineered_modification  mod-audit           audit e conteggi per osservatore
 engineered_modification  mod-shadow          Shadow contro il ricalcolo
 engineered_modification  mod-observed-graph  grafo osservato, osservatori nuovi
 
+# the structures that tell their changes and the aggregates they feed,
+# beyond the book
+engineered_emitters  emit-heap            eventi dello heap indicizzato
+engineered_emitters  emit-heap-relocated  scambi dello heap su una copia
+engineered_emitters  emit-heap-batch      lotti e silenzi dello heap
+engineered_emitters  emit-array           array osservabile, lotti, UndoLog
+engineered_emitters  fenwick              Fenwick su gruppi e monoidi
+engineered_emitters  fenwick-observer     somme prefisse, Shadow e ricalcolo
+engineered_emitters  sliding-aggregate    finestre scorrevoli, ogni algoritmo
+engineered_emitters  sliding-minqueue     finestre contro MinQueue
+
 # the capabilities of the structures, their queries and opt-ins, beyond
 # the book
 engineered_capabilities  cap-queue-points   punti di personalizzazione delle code

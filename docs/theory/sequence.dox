@@ -24,7 +24,9 @@
  Morin's Open Data Structures with the answers to their exercises (see
  \ref theory_sequence_ods), and the sequences by rank on skip lists and
  treaps and the order maintenance of his chapters 4, 7 and 8 (see
- \ref theory_sequence_morin). The pseudocode of each operation and of each
+ \ref theory_sequence_morin), and the array that tells its changes with the
+ prefix aggregates of Fenwick that it feeds (see
+ \ref theory_sequence_fenwick). The pseudocode of each operation and of each
  algorithm is on the page of its header, in the comment of its function,
  together with the section of the book, or the paper, that it follows.
 
@@ -891,6 +893,126 @@
  narrower one, never by \f$ g() \bmod j \f$, which carries the bias of the
  remainder.
 
+ \section theory_sequence_fenwick Prefix aggregates of an observable array
+
+ `ObservableArray< T , Policy >` is a vector whose writes go through a
+ subject policy of `Modification.h` (see \ref theory_ADS_modifications):
+ the handle of a value is its index, which is also its key, `set()` and
+ `add()` send \f$ \mathrm{Assigned}( i , u , v ) \f$, `push_back()` sends
+ \f$ \mathrm{Inserted}( n , n , v ) \f$ and `pop_back()`
+ \f$ \mathrm{Erased}( n - 1 , n - 1 , v ) \f$, `clear()` and `assign()` send
+ \f$ \mathrm{Cleared} \f$ and \f$ \mathrm{Rebuilt} \f$. Since the indices
+ that it emits are those of the end only, an index never changes meaning
+ between two events of a batch, and the coalescing of Lemma 1 of
+ \ref theory_ADS_modifications applies as it does to a structure with
+ stable handles (an erasure and an insertion at the same index become one
+ \f$ \mathrm{Assigned} \f$, whose events the array emits). With
+ `NoObservers` every write is that of the vector, which the check of zero
+ cost confirms by the instructions and by the code.
+
+ `Fenwick< G >` keeps the values \f$ a_0 , \ldots , a_{n-1} \f$ of a monoid
+ \f$ ( G , \oplus , e ) \f$ (see \ref theory_ADS_algebra) and the nodes
+ \f[
+   t_j = a_{j - \lambda( j )} \oplus \cdots \oplus a_{j - 1} , \qquad
+   j = 1 , \ldots , n , \tag{8}
+ \f]
+ with \f$ \lambda( j ) \f$ the lowest bit of \f$ j \f$, i.e., the largest
+ power of 2 that divides it (Fenwick).
+
+ <em>Lemma 16 (the nodes of Fenwick).</em> (i) For \f$ 0 \le r \le n \f$,
+ the sequence \f$ j_1 = r \f$, \f$ j_{k+1} = j_k - \lambda( j_k ) \f$, ends
+ at 0 after at most \f$ \lfloor \log_2 r \rfloor + 1 \f$ steps, and
+ \f$ a_0 \oplus \cdots \oplus a_{r-1} = t_{j_m} \oplus \cdots \oplus
+ t_{j_1} \f$. (ii) For \f$ j \ge 1 \f$,
+ \f$ t_j = t_{j - \lambda( j ) / 2} \oplus \cdots \oplus t_{j - 2} \oplus
+ t_{j - 1} \oplus a_{j - 1} \f$, the nodes \f$ t_{j - 2^k} \f$,
+ \f$ 2^k < \lambda( j ) \f$, taken by decreasing \f$ k \f$. (iii) The nodes
+ that contain \f$ a_i \f$ are those of the sequence \f$ j_1 = i + 1 \f$,
+ \f$ j_{k+1} = j_k + \lambda( j_k ) \f$, while \f$ j_k \le n \f$, at most
+ \f$ \lfloor \log_2 n \rfloor + 1 \f$ of them.
+
+ Indeed, (i): each step clears the lowest bit set of \f$ j \f$, so that
+ the steps are at most the bits set in \f$ r \f$, and the node \f$ t_{j_k}
+ \f$ covers the indices \f$ [ j_{k+1} , j_k ) \f$ by (8); these intervals
+ are consecutive and, from \f$ k = m \f$ down to 1, go from 0 to \f$ r \f$,
+ so that their combination in this order is the prefix, by associativity
+ alone. (ii): the indices \f$ [ j - \lambda( j ) , j - 1 ) \f$ split into the
+ intervals \f$ [ j - 2^{k+1} , j - 2^k ) \f$ for \f$ 2^k < \lambda( j ) \f$,
+ the bits below the lowest of \f$ j \f$ being zero, and
+ \f$ \lambda( j - 2^k ) = 2^k \f$, so that the interval of
+ \f$ 2^k \f$ is that of \f$ t_{j - 2^k} \f$; by decreasing \f$ k \f$ they
+ go from left to right, and \f$ a_{j - 1} \f$ is last. (iii): \f$ a_i \f$
+ is in \f$ t_j \f$ iff \f$ j - \lambda( j ) \le i < j \f$, so that the least
+ such \f$ j \f$ is \f$ i + 1 \f$. Let \f$ t_j \f$ contain \f$ a_i \f$. For
+ \f$ j' = j + m \f$, \f$ 0 < m < \lambda( j ) \f$, the lowest bit of
+ \f$ j' \f$ is that of \f$ m \f$, and \f$ j' - \lambda( j' ) \ge j' - m = j
+ > i \f$, so that \f$ t_{j'} \f$ does not contain \f$ a_i \f$; for
+ \f$ j' = j + \lambda( j ) \f$ the addition carries, \f$ \lambda( j' ) \ge
+ 2 \lambda( j ) \f$, and \f$ j' - \lambda( j' ) \le j - \lambda( j ) \le i
+ \f$, so that \f$ t_{j'} \f$ contains it. Thus \f$ \lambda \f$ at least
+ doubles at each step. Hence `prefix( r )` costs \f$ O( \log n ) \f$
+ combinations, the nodes are built in increasing \f$ j \f$ in
+ \f$ \sum_{j \le n} \log_2 \lambda( j ) = O( n ) \f$, and a new value
+ \f$ a_n \f$ gets its node \f$ t_{n+1} \f$ by (ii) in \f$ O( \log n ) \f$,
+ with no other node changed; the removal of \f$ a_{n-1} \f$ drops
+ \f$ t_n \f$ only.
+
+ <em>Lemma 17 (the updates of Fenwick).</em> Let \f$ a_i \f$ become
+ \f$ v \f$. (i) If \f$ G \f$ is an abelian group, replacing each node
+ \f$ t_j \f$ of Lemma 16 (iii) by \f$ t_j \oplus \delta \f$,
+ \f$ \delta = a_i^{-1} \oplus v \f$, gives the nodes of the new values, in
+ \f$ O( \log n ) \f$ combinations. (ii) If \f$ G \f$ is a commutative monoid
+ and \f$ v = a_i \oplus d \f$, the same with \f$ \delta = d \f$. (iii) For
+ any monoid, recomputing those nodes by Lemma 16 (ii) in increasing
+ \f$ j \f$ gives the new nodes, in \f$ O( \log^2 n ) \f$ combinations.
+
+ Indeed, a node that does not contain \f$ a_i \f$ does not change, and one
+ that does is \f$ x \oplus a_i \oplus y \f$, which (i) and (ii) update by
+ Lemma 3 (i) and (ii) of \ref theory_ADS_algebra. For (iii), the nodes of
+ Lemma 16 (ii) that \f$ t_j \f$ combines have indices less than \f$ j \f$, so
+ that those that contain \f$ a_i \f$ have been recomputed before
+ \f$ t_j \f$ when the nodes are taken in increasing order, and the others
+ are unchanged; each recomputation takes \f$ O( \log n ) \f$ combinations,
+ for at most \f$ \lfloor \log_2 n \rfloor + 1 \f$ nodes.
+
+ For a group, the range \f$ a_l \oplus \cdots \oplus a_{r-1} \f$ is
+ \f$ \pi_l^{-1} \oplus \pi_r \f$, \f$ \pi_r \f$ the prefix of length
+ \f$ r \f$, since \f$ \pi_r = \pi_l \oplus ( a_l \oplus \cdots \oplus a_{r-1}
+ ) \f$, which needs no commutativity. When the values are floating point,
+ the differences of (i) accumulate the rounding of every update, and the
+ tree is rebuilt from its values every `period()` such updates, at
+ \f$ O( n ) \f$ per rebuild, i.e., \f$ O( 1 ) \f$ amortized when the period is
+ at least \f$ n \f$.
+
+ `FenwickObserver< G >` is an observer of an array of values of \f$ G \f$
+ that applies \f$ \mathrm{Assigned}( i , u , v ) \f$ by the update of
+ Lemma 17, \f$ \mathrm{Inserted} \f$ and \f$ \mathrm{Erased} \f$ at the end
+ by Lemma 16, and \f$ \mathrm{Cleared} \f$ by emptying the tree, and on
+ \f$ \mathrm{Rebuilt} \f$ marks its tree stale: it ignores the events until
+ its next query, at which it builds the tree again from the vector of the
+ array, in \f$ O( n ) \f$.
+
+ <em>Lemma 18 (the observer of the prefixes).</em> After each event sent
+ outside a batch and after each batch, the tree of `FenwickObserver`, at
+ its next query, is the tree of the values of the array.
+
+ Indeed, by induction on the events received. Outside a batch each event
+ starts from the state of the array that the observer knows, and Lemmas 16
+ and 17 keep the tree equal to that of the array; a batch delivers its net
+ effect, which is a history from the state before the batch to the state
+ after it by Lemma 1 of \ref theory_ADS_modifications, with
+ \f$ \mathrm{Cleared} \f$ or \f$ \mathrm{Rebuilt} \f$ first if there was
+ one. After \f$ \mathrm{Rebuilt} \f$ the events are ignored and the tree is
+ built at the next query from the array as it is then, i.e., after every
+ event delivered so far, which is the state that a history that went on
+ from there would reach.
+
+ The test `fenwick-observer` checks Lemma 18 by `Shadow` of
+ `Modification.h`, which sends every event to the observer and to one
+ that recomputes each prefix by a scan of its own copy of the values, and
+ compares their answers at each query, on random writes, appends,
+ removals, batches, clearings and rebuildings.
+
  \section theory_sequence_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 3.2.1, 4.1,
@@ -904,6 +1026,9 @@
       tables)
  \see R. E. Tarjan, Amortized computational complexity, SIAM Journal on
       Algebraic Discrete Methods 6(2), 306-318, 1985, doi:10.1137/0606031
+ \see P. M. Fenwick, A new data structure for cumulative frequency
+      tables, Software: Practice and Experience 24(3), 327-336, 1994,
+      doi:10.1002/spe.4380240306
  \see M. T. Goodrich, J. G. Kloss II, Tiered vectors: efficient dynamic
       arrays for rank-based sequences, Algorithms and Data Structures
       (WADS 1999), Lecture Notes in Computer Science 1663, 205-216, 1999,

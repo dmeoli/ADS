@@ -12,7 +12,11 @@
  * compared with zc_none_<workload>_ref, i.e., with the wrapper that nobody
  * listens to, since the wrapper holds a reference to the graph that the
  * plain graph does not; the array of keys holds its vector, so that its
- * functions by reference are compared with zc_plain_key_ref.
+ * functions by reference are compared with zc_plain_key_ref, those of
+ * ObservableArray with it too. The functions zc_heap_<op> take the heap
+ * with `NoObservers`, and zerocost.py compares each with the function of
+ * the same name compiled on the tree before the subject policy of the
+ * heap; zc_<variant>_heap_<op> are compared with zc_heap_<op>.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -180,6 +184,81 @@ void zc_static_count_grid_cost_ref(
 void zc_dynamic_grid_cost_ref( Grid< ADS::Dynamic<> > & g , int u , int c )
 {
  g.setCost( u , c );
+ }
+
+#endif
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- IndexedDaryHeap -----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+void zc_heap_push( Heap & h , int id , int k )
+{
+ h.push( id , k );
+ }
+
+void zc_heap_decrease( Heap & h , int id , int k )
+{
+ h.decrease( id , k );
+ }
+
+void zc_heap_increase( Heap & h , int id , int k )
+{
+ h.increase( id , k );
+ }
+
+void zc_heap_erase( Heap & h , int id )
+{
+ h.erase( id );
+ }
+
+int zc_heap_pop( Heap & h )
+{
+ return( h.pop().id );
+ }
+
+#ifdef ZC_EMITTERS
+
+void zc_static_excl_heap_decrease(
+      ADS::IndexedDaryHeap< int , 4 , ADS::Static< HeapExcluding > > & h ,
+      int id , int k )
+{
+ h.decrease( id , k );
+ }
+
+int zc_static_excl_heap_pop(
+      ADS::IndexedDaryHeap< int , 4 , ADS::Static< HeapExcluding > > & h )
+{
+ return( h.pop().id );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- ObservableArray -----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+void zc_none_oarray_ref( OArray< ADS::NoObservers > & a , std::size_t h ,
+                         int k )
+{
+ a.set( h , k );
+ }
+
+void zc_static_excl_oarray_ref( OArray< ADS::Static< ArrayExcluding > > & a ,
+                                std::size_t h , int k )
+{
+ a.set( h , k );
+ }
+
+void zc_static_count_oarray_ref(
+      OArray< ADS::Static< ArrayCountDecreases > > & a , std::size_t h ,
+      int k )
+{
+ a.set( h , k );
+ }
+
+void zc_dynamic_oarray_ref( OArray< ADS::Dynamic<> > & a , std::size_t h ,
+                            int k )
+{
+ a.set( h , k );
  }
 
 #endif

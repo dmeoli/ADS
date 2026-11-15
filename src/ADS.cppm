@@ -32,6 +32,7 @@
 module;
 
 #include "ADS/ADT.h"
+#include "ADS/Algebra.h"
 #include "ADS/Capabilities.h"
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
@@ -274,6 +275,7 @@ module;
 #include "ADS/queue/RealTimeMinDeque.h"
 #include "ADS/queue/RealTimeMinQueue.h"
 #include "ADS/queue/RingDeque.h"
+#include "ADS/queue/SlidingAggregate.h"
 #include "ADS/queue/UniqueQueue.h"
 #include "ADS/search/BinarySearch.h"
 #include "ADS/search/CompressedPGMIndex.h"
@@ -296,9 +298,11 @@ module;
 #include "ADS/sequence/CubishArrayStack.h"
 #include "ADS/sequence/CursorList.h"
 #include "ADS/sequence/DualArrayDeque.h"
+#include "ADS/sequence/Fenwick.h"
 #include "ADS/sequence/IndexedList.h"
 #include "ADS/sequence/List.h"
 #include "ADS/sequence/ListSort.h"
+#include "ADS/sequence/ObservableArray.h"
 #include "ADS/sequence/OrderMaintenanceList.h"
 #include "ADS/sequence/Rearrangements.h"
 #include "ADS/sequence/RootishArrayStack.h"
@@ -454,6 +458,18 @@ export namespace ADS {
  using ADS::Sequence;
  using ADS::Set;
  using ADS::Stack;
+
+ // ADS/Algebra.h
+ using ADS::AbelianGroup;
+ using ADS::Action;
+ using ADS::CommutativeMonoid;
+ using ADS::Group;
+ using ADS::MaxOf;
+ using ADS::MinOf;
+ using ADS::Monoid;
+ using ADS::Selective;
+ using ADS::SumOf;
+ using ADS::exact_v;
 
  // ADS/Capabilities.h
  using ADS::addressable;
@@ -1789,6 +1805,12 @@ export namespace ADS {
  // ADS/queue/RingDeque.h
  using ADS::RingDeque;
 
+ // ADS/queue/SlidingAggregate.h
+ using ADS::Amortized;
+ using ADS::SlidingAggregate;
+ using ADS::WorstCase;
+ using ADS::window_kind;
+
  // ADS/queue/UniqueQueue.h
  using ADS::Duplicate;
  using ADS::UniqueQueue;
@@ -1874,6 +1896,10 @@ export namespace ADS {
  // ADS/sequence/DualArrayDeque.h
  using ADS::DualArrayDeque;
 
+ // ADS/sequence/Fenwick.h
+ using ADS::Fenwick;
+ using ADS::FenwickObserver;
+
  // ADS/sequence/IndexedList.h
  using ADS::IndexedDeque;
  using ADS::IndexedList;
@@ -1885,6 +1911,9 @@ export namespace ADS {
 
  // ADS/sequence/ListSort.h
  using ADS::listSort;
+
+ // ADS/sequence/ObservableArray.h
+ using ADS::ObservableArray;
 
  // ADS/sequence/OrderMaintenanceList.h
  using ADS::OrderMaintenanceList;
