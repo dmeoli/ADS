@@ -1,4 +1,4 @@
-# Algorithms and Data Structures
+# ADS: Algorithms and Data Structures, and Advanced ones
 
 [![CI](https://github.com/dmeoli/ADS/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dmeoli/ADS/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/dmeoli/ADS/badge.svg?branch=main)](https://coveralls.io/github/dmeoli/ADS?branch=main)
@@ -9,8 +9,16 @@
 [![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)](https://github.com/dmeoli/ADS/actions/workflows/ci.yml)
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 
-ADS is a header-only C++20 library of the algorithms and the data
-structures of the (Italian) textbook
+ADS: Algorithms and Data Structures, and Advanced ones. ADS is a
+header-only C++20 library of the data structures and the parallelism that
+the other libraries lack, with typed modifications that observers follow
+incrementally, contracts checked at a level chosen at compile time, and
+capabilities that the algorithms query through concepts. It is made to
+work together with LEMON, Boost and the standard library rather than in
+place of them, and it leaves to them what they already do as well.
+
+ADS also realizes the algorithms and the data structures of the (Italian)
+textbook
 
 > A. Montresor, *Algoritmi e Strutture Dati*, 2025,
 > <https://algoritmicamente.it> (CC BY-NC 4.0)
