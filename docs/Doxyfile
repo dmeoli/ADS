@@ -87,6 +87,13 @@ HTML_OUTPUT            = doxygen
 HTML_EXTRA_STYLESHEET  = docs/doxygen/awesome/doxygen-awesome.css
 HTML_EXTRA_STYLESHEET += docs/doxygen/awesome/doxygen-awesome-sidebar-only.css
 HTML_EXTRA_STYLESHEET += docs/doxygen/custom.css
+# the fonts of the PDF of the manual, which custom.css sets
+HTML_EXTRA_FILES       = manual/build/fonts/lmroman10-regular.otf \
+                         manual/build/fonts/lmroman10-bold.otf \
+                         manual/build/fonts/lmroman10-italic.otf \
+                         manual/build/fonts/lmroman10-bolditalic.otf \
+                         manual/build/fonts/lmmono10-regular.otf \
+                         manual/build/fonts/lmmono10-italic.otf
 HTML_COLORSTYLE        = LIGHT
 GENERATE_TREEVIEW      = YES
 FULL_SIDEBAR           = NO

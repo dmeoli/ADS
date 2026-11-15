@@ -1853,6 +1853,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The web site of the manual, the Doxygen site and the Sphinx site look
+  as the PDF of the manual: the Latin Modern fonts of TeX for the text and
+  the code (in manual/build/fonts, under the GUST Font License), the size
+  of a book, justified text, a white header, the code within the prose
+  without a box, plain tables, and the purple 7030A0 only for the links
+
 - The concept PriorityQueue of PriorityQueue.h is the queue without
   handles, read through the customization points queue_insert(),
   queue_min() and queue_deleteMin(), which take the members of the book

@@ -219,13 +219,16 @@ table_captions()
 html_theme = 'sphinx_rtd_theme'
 html_title = 'ADS: Algorithms and Data Structures'
 # the content as wide as the formulae and the signatures need, the cells of
-# the tables on more lines (see _static/ads.css)
-html_static_path = ['_static']
+# the tables on more lines, and the look of the PDF of the manual, whose
+# fonts are copied next to it (see _static/ads.css)
+html_static_path = ['_static'] + sorted(
+    glob.glob(os.path.join(ROOT, 'manual', 'build', 'fonts', '*.otf')))
 html_css_files = ['ads.css']
 # the sidebar stays in place while the page scrolls and scrolls on its own;
 # it holds the areas and the branch of the page down to its classes
 html_theme_options = {'navigation_depth': 5, 'collapse_navigation': True,
-                      'sticky_navigation': True}
+                      'sticky_navigation': True,
+                      'style_nav_header_background': '#ffffff'}
 html_context = {
     'display_github': True,
     'github_user': 'dmeoli',
