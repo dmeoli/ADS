@@ -1551,12 +1551,13 @@ use an advanced one inside (e.g., `SuffixArray.h` sorts the ranks by
 `RadixSort.h`, and `ExternalSort.h` merges its runs on a `DaryHeap`). We
 list each use of this kind, with its reason, in the file of the sets; the
 advanced header is then compiled with the base one, but its names are not
-part of the base set. Four headers still hold a part of each set
-(`Matching.h`, `Visit.h`, `EngineeredQuickSorts.h` and `PriorityQueue.h`),
-and we put them in both sets until we move their engineered parts to new
-headers, as we did for `MaxFlow.h`. Its push-relabel is now in
-`PushRelabel.h`, which `MaxFlow.h` includes, so that an include of the
-header of the book still gives the whole of it.
+part of the base set. Three headers still hold a part of each set
+(`Visit.h`, `EngineeredQuickSorts.h` and `PriorityQueue.h`), and we put
+them in both sets until we move their engineered parts to new headers, as
+we did for `MaxFlow.h` and `Matching.h`. The push-relabel of the first is
+now in `PushRelabel.h` and the blossoms of the second in
+`BlossomMatching.h`, each included by the header of the book, so that an
+include of the latter still gives the whole of it.
 
 Each set has an *entry point*, a header that includes all the headers of
 the set and the core. Thus `#include "ADS/base.h"` gives the base set,
@@ -2005,7 +2006,7 @@ only, by chapter.
 | [10](10-set.md#ch-10) | `set/SetOperations.h`, `set/VectorIntersection.h` |
 | [12](12-sort.md#ch-12) | `sort/CountingSort.h`, `sort/EngineeredQuickSorts.h`, `sort/ExchangeSorts.h`, `sort/ExternalSort.h`, `sort/Heapsort.h`, `sort/InsertionSort.h`, `sort/KnuthSorts.h`, `sort/LearnedSort.h`, `sort/MergeSort.h`, `sort/MultikeyQuickSort.h`, `sort/PigeonholeSort.h`, `sort/QuickSort.h`, `sort/RadixSort.h`, `sort/RunSorts.h`, `sort/SampleSort.h`, `sort/SelectionSort.h`, `sort/ShellSort.h`, `sort/Sort.h`, `sort/Sorted.h`, `sort/SortingNetworks.h`, `sort/StrandSort.h`, `sort/StringSort.h`, `sort/TreeSort.h`, `sort/VectorQuickSort.h` |
 | [13](13-algorithm.md#ch-13) | `algorithm/AkraBazzi.h`, `algorithm/BinaryCounter.h`, `algorithm/Hanoi.h`, `algorithm/MonteCarlo.h`, `algorithm/Paradigms.h`, `algorithm/SequenceQueries.h`, `algorithm/Subsequences.h`, `optimization/CoinChange.h`, `optimization/CoinGame.h`, `optimization/FractionalKnapsack.h`, `optimization/HouseProblems.h`, `optimization/IntervalCover.h`, `optimization/Intervals.h`, `optimization/Knapsack.h`, `optimization/KnapsackVariants.h`, `optimization/LinearPartition.h`, `optimization/SequenceProblems.h`, `optimization/ShortestJobFirst.h`, `optimization/StockTrading.h` |
-| [14](14-graph.md#ch-14) | `graph/EulerianCycle.h`, `graph/FlowApplications.h`, `graph/Grid.h`, `graph/Matching.h`, `graph/Paths.h`, `graph/Properties.h`, `graph/PushRelabel.h`, `interop/lemon/Parallel.h` |
+| [14](14-graph.md#ch-14) | `graph/BlossomMatching.h`, `graph/EulerianCycle.h`, `graph/FlowApplications.h`, `graph/Grid.h`, `graph/Matching.h`, `graph/Paths.h`, `graph/Properties.h`, `graph/PushRelabel.h`, `interop/lemon/Parallel.h` |
 | [15](15-string.md#ch-15) | `string/Alignment.h`, `string/Anagrams.h`, `string/ApproximateMatching.h`, `string/EditDistance.h`, `string/Huffman.h`, `string/LongestCommonSubsequence.h`, `string/Lyndon.h`, `string/Parentheses.h`, `string/Segmentations.h`, `string/StringBreaking.h`, `string/StringMatching.h`, `string/SubsequenceProblems.h`, `string/SuffixSorting.h`, `string/WordBreak.h` |
 | [16](16-geometry.md#ch-16) | `geometry/ClosestPair.h` |
 | [17](17-numeric.md#ch-17) | `numeric/BinaryInteger.h`, `numeric/Catalan.h`, `numeric/Matrix.h`, `numeric/MatrixChain.h`, `numeric/Polynomial.h`, `numeric/RandomSampling.h` |

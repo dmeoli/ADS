@@ -491,8 +491,6 @@ using ADS::ListGraph;
 // graph/Matching.h
 using ADS::bipartiteBMatching;
 using ADS::branchAndBoundMatching;
-using ADS::maxCardinalityMatching;
-using ADS::maxWeightMatching;
 
 // graph/MatrixGraph.h
 using ADS::MatrixGraph;

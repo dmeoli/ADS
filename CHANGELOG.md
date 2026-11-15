@@ -2103,6 +2103,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The matchings of a general graph by the blossoms of Edmonds,
+  maxCardinalityMatching() and maxWeightMatching() with their delegation to
+  LEMON, moved from Matching.h to the new advanced header
+  graph/BlossomMatching.h, which Matching.h, now base with the b-matching
+  and the branch and bound of the book, includes; the module ads.base no
+  longer exports the two, which ads.advanced and ads export; the test
+  programs split_matching and split_blossommatching include each header
+  alone
+
 - The push-relabel of FlowNetwork::maxFlow() (PUSH_RELABEL, with its warm
   start and its pseudocode) moved from MaxFlow.h to the new advanced header
   graph/PushRelabel.h, which MaxFlow.h, now base, includes, so that every

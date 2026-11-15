@@ -248,6 +248,10 @@ using ADS::RangeTree;
 using ADS::Assignment;
 using ADS::AssignmentEngine;
 
+// graph/BlossomMatching.h
+using ADS::maxCardinalityMatching;
+using ADS::maxWeightMatching;
+
 // graph/GraphBuilder.h
 using ADS::GraphBuilder;
 
@@ -262,12 +266,6 @@ using ADS::gridHeuristic;
 using ADS::manhattan;
 using ADS::octile;
 using ADS::readGridMap;
-
-// graph/Matching.h
-using ADS::bipartiteBMatching;
-using ADS::branchAndBoundMatching;
-using ADS::maxCardinalityMatching;
-using ADS::maxWeightMatching;
 
 // graph/Observable.h
 using ADS::EdgeDeleted;

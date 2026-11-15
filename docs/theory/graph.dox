@@ -699,12 +699,12 @@
  <em>Hungarian</em>: no augmenting path can ever use its nodes, since its
  odd nodes cover all the edges of its even nodes, and so they are left out
  of every later search, a free root that failed never being reached again.
- `maxCardinalityMatching()` of `Matching.h` keeps the blossoms as the sets
- of a union-find with the union by rank and the halving of the paths, the
- representative of a set storing its base; the base common to two even
- nodes is found by walking from both towards the root one step at a time,
- which costs no more than twice the cycle shrunk. For each odd node that
- a blossom makes even it records the edge \f$ ( a , b ) \f$ that closed
+ `maxCardinalityMatching()` of `BlossomMatching.h` keeps the blossoms as
+ the sets of a union-find with the union by rank and the halving of the
+ paths, the representative of a set storing its base; the base common to
+ two even nodes is found by walking from both towards the root one step at
+ a time, which costs no more than twice the cycle shrunk. For each odd node
+ that a blossom makes even it records the edge \f$ ( a , b ) \f$ that closed
  the blossom, its own side first, as the labels of Gabow do: the path from
  such a node to the root goes back along the path of \f$ a \f$ down to
  \f$ a \f$ and then follows that of \f$ b \f$, and the augmentation
@@ -749,7 +749,7 @@
  and the \f$ y_v \f$ may be shifted by a constant, the free nodes having
  the least dual.
 
- `maxWeightMatching()` of `Matching.h` keeps the three conditions but
+ `maxWeightMatching()` of `BlossomMatching.h` keeps the three conditions but
  (ii), which it approaches: every \f$ y_v \f$ starts at the largest weight
  and the matching empty, and the free nodes, whose duals are always equal
  and the least, are the roots of the trees grown on the edges of slack 0

@@ -165,6 +165,8 @@ graph/AllPairsShortestPaths.h         base
 graph/ArrayGraph.h                    base     the vectors of adjacency of
                                                section 9.4
 graph/Assignment.h                    advanced
+graph/BlossomMatching.h               advanced the blossoms of
+                                               Matching.h, split off it
 graph/EulerianCycle.h                 base
 graph/FlowApplications.h              base
 graph/Graph.h                         base
@@ -173,8 +175,7 @@ graph/Grid.h                          base
 graph/GridGraph.h                     advanced
 graph/IncidenceGraph.h                base
 graph/ListGraph.h                     base
-graph/Matching.h                      both     TODO split: the b-matching of
-                                               the book and Edmonds
+graph/Matching.h                      base
 graph/MatrixGraph.h                   base
 graph/MaxFlow.h                       base
 graph/MinimumSpanningTree.h           base
@@ -524,6 +525,8 @@ geometry/ClosestPair.h                uses sort/Sort.h
                                            the sort of the points
 geometry/ConvexHull.h                 uses sort/Sort.h
                                            the sort of the points
+graph/Matching.h                      uses graph/BlossomMatching.h
+                                           the matchings of Edmonds
 graph/MaxFlow.h                       uses graph/PushRelabel.h
                                            the way PUSH_RELABEL
 numeric/RandomSampling.h              uses priority/DaryHeap.h

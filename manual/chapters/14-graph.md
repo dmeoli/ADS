@@ -5,9 +5,9 @@
 `IncidenceGraph.h`, `Visit.h`, `Grid.h`, `GridGraph.h`, `Paths.h`,
 `Properties.h`, `ShortestPaths.h`, `AllPairsShortestPaths.h`,
 `MinimumSpanningTree.h`, `MaxFlow.h`, `PushRelabel.h`, `FlowApplications.h`,
-`Matching.h`, `Assignment.h`, `EulerianCycle.h`, `Observable.h`,
-`Reoptimization.h`, and `include/ADS/interop/lemon/Heaps.h`, `Maps.h`,
-`Digraphs.h`, `Observers.h`, `Parallel.h`]
+`Matching.h`, `BlossomMatching.h`, `Assignment.h`, `EulerianCycle.h`,
+`Observable.h`, `Reoptimization.h`, and `include/ADS/interop/lemon/Heaps.h`,
+`Maps.h`, `Digraphs.h`, `Observers.h`, `Parallel.h`]
 
 We are concerned in this chapter with the *graph*, i.e., a set of nodes
 together with a set of pairs of nodes (the edges). A graph models any binary
@@ -36,13 +36,14 @@ The adjacency matrix, the lists of adjacency, the matrix of incidence and
 the two visits of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin-cpp)
 are all here, with each of his exercises solved on the code of the library
 ([§14.16](14-graph.md#sec-14-16)). In the sets of
-[§1.9](01-introduction.md#sec-1-9), `Assignment.h`, `GraphBuilder.h`,
+[§1.9](01-introduction.md#sec-1-9), `Assignment.h`, `BlossomMatching.h`
+(the blossoms of `Matching.h`, which includes it), `GraphBuilder.h`,
 `GridGraph.h`, `Observable.h`, `PointerGraph.h`, `PushRelabel.h` (the
 push-relabel of `MaxFlow.h`, which includes it), `Reoptimization.h` and
 `StaticGraph.h` are advanced and the other headers of this chapter are
-base, while `Matching.h` and `Visit.h` hold a part of each until they are
-split; the headers of `interop/lemon/`
-([§14.14](14-graph.md#sec-14-14)) are of the set interop.
+base, while `Visit.h` holds a part of each until it is split; the headers
+of `interop/lemon/` ([§14.14](14-graph.md#sec-14-14)) are of the set
+interop.
 
 ## 14.1 Definitions and the interface {#sec-14-1}
 
@@ -3054,7 +3055,8 @@ $M / C$. $\square$
 
 ![Figure 14.13. A blossom shrunk by `maxCardinalityMatching()`: the tree of the search from the free node $r$, the matched edges in violet, and the edge $[ d , e ]$ between two even nodes, which closes the odd cycle $b , c , d , e , f$ of base $b$ (in violet); the cycle becomes the node $B$ (in orange), and the edge $[ B , g ]$ to the free node $g$ ends an augmenting path, which lifts to $r , a , b , c , d , g$, the even way from $d$ to the base $b$ around the cycle starting with the matched edge $[ d , c ]$.](../figures/graph-blossom.svg){#fig-14-13}
 
-Thus the search of `maxCardinalityMatching( g )` (beyond the book) shrinks
+Thus the search of `maxCardinalityMatching( g )` (beyond the book, in
+`BlossomMatching.h`) shrinks
 each blossom it closes, each node of the cycle becoming even (the odd ones are
 then searched too). It stops at the first augmenting path, which it lifts
 through the blossoms, or with a tree in which each edge from an even node goes
@@ -3078,9 +3080,9 @@ for a node left unmatched.
 <span id="alg-14-17"></span>**Algorithm 14.17.** The matching of largest
 size by the blossoms (Edmonds' algorithm, beyond the book).
 
---8<-- "generated/Matching-maxCardinalityMatching.pseudo.md"
+--8<-- "generated/BlossomMatching-maxCardinalityMatching.pseudo.md"
 
---8<-- "generated/Matching-augment.pseudo.md"
+--8<-- "generated/BlossomMatching-augment.pseudo.md"
 
 <span id="lem-14-38"></span>**Lemma 14.38.** *Let a search from the
 free node $r$ fail, and let $T$ be the set of the nodes of its tree, the
@@ -3188,7 +3190,7 @@ expanded.
 weight (the primal-dual algorithm of Edmonds in the form of Galil, beyond
 the book).
 
---8<-- "generated/Matching-maxWeightMatching.pseudo.md"
+--8<-- "generated/BlossomMatching-maxWeightMatching.pseudo.md"
 
 <span id="lem-14-40"></span>**Lemma 14.40.** *A stage, which ends at the
 first augmentation, makes $O( n )$ changes of the duals, and costs
@@ -3243,7 +3245,7 @@ programming on the subsets of the nodes takes $\Theta( 2^n n )$.
 
 --8<-- "generated/Matching-search.pseudo.md"
 
-In `Matching.h` we declare
+In `Matching.h` we declare the matchings of the book,
 
 ```cpp
 // declarations of <ADS/graph/Matching.h>
@@ -3251,6 +3253,17 @@ inline std::vector< std::pair< int , int > >
 bipartiteBMatching( const std::vector< std::vector< int > > & A , int nr ,
                     const std::vector< long long > & capL ,
                     const std::vector< long long > & capR );
+template< class W >
+std::pair< W , std::vector< std::size_t > >
+branchAndBoundMatching( int n ,
+                        const std::vector< std::tuple< int , int , W > > & E );
+```
+
+and in `BlossomMatching.h`, which `Matching.h` includes, those of the
+blossoms,
+
+```cpp
+// declarations of <ADS/graph/BlossomMatching.h>
 template< Graph G >
 std::vector< int > maxCardinalityMatching( const G & g );
 template< class W >
@@ -3259,10 +3272,6 @@ std::pair< W , std::vector< std::size_t > >
 maxWeightMatching( int n ,
                    const std::vector< std::tuple< int , int , W > > & E ,
                    bool maxCardinality = false );
-template< class W >
-std::pair< W , std::vector< std::size_t > >
-branchAndBoundMatching( int n ,
-                        const std::vector< std::tuple< int , int , W > > & E );
 ```
 
 where `bipartiteBMatching()` returns the pairs $( u , v )$ of the
