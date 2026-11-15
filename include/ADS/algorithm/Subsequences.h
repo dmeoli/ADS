@@ -68,16 +68,19 @@ namespace ADS
 /// \f$ A[ i ] \f$ in the best subsequence ending there:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{lis}( A[ 0 .. n - 1 ] ) \cr
-/// 2 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 3 & \qquad L[ i ] \gets 1;\ \mathit{prev}[ i ] \gets \textbf{nil} \cr
-/// 4 & \qquad \textbf{for}\ j \gets 0\ \textbf{to}\ i - 1\ \textbf{do} \cr
-/// 5 & \qquad\quad \textbf{if}\ A[ j ] < A[ i ]\ \textbf{and}\ L[ j ] + 1 >
-///     L[ i ]\ \textbf{then} \cr
-/// 6 & \qquad\qquad L[ i ] \gets L[ j ] + 1;\ \mathit{prev}[ i ] \gets j \cr
-/// 7 & \quad b \gets \text{the first place of the largest } L[ b ] \cr
-/// 8 & \quad \textbf{return}\ \text{the items } A[ b ] ,
-///     A[ \mathit{prev}[ b ] ] , \ldots \text{ in reverse order}
+/// 1 & \textbf{function}\ \mathrm{lis}( A[ 0 .. n - 1 ] )\quad
+///     \triangleright\ L[ i ] \text{ the longest ending at } A[ i ] \cr
+/// 2 & \quad \mathit{best} \gets 0 \cr
+/// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
+/// 4 & \qquad L[ i ] \gets 1;\ \mathit{prev}[ i ] \gets \textbf{nil} \cr
+/// 5 & \qquad \textbf{for}\ j \gets 0\ \textbf{to}\ i - 1\ \textbf{do}
+///     \ \textbf{if}\ A[ j ] < A[ i ]\ \textbf{and}\ L[ i ] < L[ j ] + 1
+///     \ \textbf{then}\ ( L[ i ] , \mathit{prev}[ i ] ) \gets ( L[ j ] + 1 ,
+///     j ) \cr
+/// 6 & \qquad \textbf{if}\ L[ i ] > L[ \mathit{best} ]\ \textbf{then}
+///     \ \mathit{best} \gets i \cr
+/// 7 & \quad \textbf{return}\ \text{the chain } A[ \mathit{best} ] , A[
+///     \mathit{prev}[ \mathit{best} ] ] , \ldots \text{, reversed}
 /// \end{array}}
 /// \f]
 /// \post a strictly increasing subsequence of \f$ A \f$ of the largest length
@@ -112,12 +115,13 @@ std::size_t lisLength( const std::vector< T > & A );
 /// ending in the current item:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{maxSubarraySum}( A[ 0 .. n - 1 ] ) \cr
-/// 2 & \quad \mathit{best} \gets 0;\ t \gets 0 \cr
-/// 3 & \quad \textbf{foreach}\ a \in A\ \textbf{do} \cr
-/// 4 & \qquad t \gets \max\{ t + a , 0 \};\ \mathit{best} \gets \max\{
-///     \mathit{best} , t \} \cr
-/// 5 & \quad \textbf{return}\ \mathit{best}
+/// 1 & \textbf{function}\ \mathrm{maxSubarraySum}( A[ 0 .. n - 1 ] )\quad
+///     \triangleright\ \text{the empty segment counts } 0 \cr
+/// 2 & \quad \mathit{best} \gets 0;\ t \gets 0\quad \triangleright\ t
+///     \text{ the best sum of a segment ending here} \cr
+/// 3 & \quad \textbf{foreach}\ a \in A\ \textbf{do}\ t \gets \max\{ 0 , t +
+///     a \};\ \mathit{best} \gets \max\{ t , \mathit{best} \} \cr
+/// 4 & \quad \textbf{return}\ \mathit{best}
 /// \end{array}}
 /// \f]
 /// \post the result is not negative

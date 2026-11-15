@@ -63,16 +63,16 @@ namespace ADS
 /// In pseudocode (section 4.4):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{hanoi}( n , \mathit{src} , \mathit{dest} ,
-///     \mathit{mid} ) \cr
-/// 2 & \quad \textbf{if}\ n = 1\ \textbf{then}\ \mathrm{f}( \mathit{src} ,
-///     \mathit{dest} ) \cr
-/// 3 & \quad \textbf{else} \cr
-/// 4 & \qquad \mathrm{hanoi}( n - 1 , \mathit{src} , \mathit{mid} ,
-///     \mathit{dest} )\quad \triangleright\ \text{the call (1)} \cr
-/// 5 & \qquad \mathrm{f}( \mathit{src} , \mathit{dest} ) \cr
-/// 6 & \qquad \mathrm{hanoi}( n - 1 , \mathit{mid} , \mathit{dest} ,
-///     \mathit{src} )\quad \triangleright\ \text{the call (2)}
+/// 1 & \textbf{procedure}\ \mathrm{hanoi}( n , \mathit{src} , \mathit{dest}
+///     , \mathit{mid} ) \cr
+/// 2 & \quad \textbf{if}\ n > 1\ \textbf{then}\ \mathrm{hanoi}( n - 1 ,
+///     \mathit{src} , \mathit{mid} , \mathit{dest} )\quad \triangleright
+///     \ \text{(1): the } n - 1 \text{ smaller disks aside} \cr
+/// 3 & \quad \mathrm{f}( \mathit{src} , \mathit{dest} )\quad \triangleright
+///     \ \text{the largest disk} \cr
+/// 4 & \quad \textbf{if}\ n > 1\ \textbf{then}\ \mathrm{hanoi}( n - 1 ,
+///     \mathit{mid} , \mathit{dest} , \mathit{src} )\quad \triangleright
+///     \ \text{(2): back on top of it}
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 1 \f$, and `source`, `dest` and `middle` distinct
@@ -91,17 +91,22 @@ void hanoi_recursive( int n , int source , int dest , int middle , F && f );
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{hanoiIterative}( n , \mathit{src} ,
 ///     \mathit{dest} , \mathit{mid} ) \cr
-/// 2 & \quad S \gets \text{an empty stack} \cr
+/// 2 & \quad S \gets \text{an empty stack of frames } ( n , \mathit{src} ,
+///     \mathit{dest} , \mathit{mid} ) \cr
 /// 3 & \quad \textbf{loop} \cr
-/// 4 & \qquad \textbf{while}\ n \ne 1\ \textbf{do} \cr
+/// 4 & \qquad \textbf{while}\ n > 1\ \textbf{do}\quad \triangleright
+///     \ \text{down the calls (1)} \cr
 /// 5 & \qquad\quad \mathrm{push}( S , ( n , \mathit{src} , \mathit{dest} ,
-///     \mathit{mid} ) );\ n \gets n - 1;\ \mathit{dest} \leftrightarrow
-///     \mathit{mid} \cr
-/// 6 & \qquad \mathrm{f}( \mathit{src} , \mathit{dest} ) \cr
+///     \mathit{mid} ) );\ ( n , \mathit{dest} , \mathit{mid} ) \gets ( n - 1
+///     , \mathit{mid} , \mathit{dest} ) \cr
+/// 6 & \qquad \mathrm{f}( \mathit{src} , \mathit{dest} )\quad
+///     \triangleright\ \text{one disk} \cr
 /// 7 & \qquad \textbf{if}\ S = \emptyset\ \textbf{then return} \cr
 /// 8 & \qquad ( n , \mathit{src} , \mathit{dest} , \mathit{mid} ) \gets
 ///     \mathrm{pop}( S );\ \mathrm{f}( \mathit{src} , \mathit{dest} ) \cr
-/// 9 & \qquad n \gets n - 1;\ \mathit{src} \leftrightarrow \mathit{mid}
+/// 9 & \qquad ( n , \mathit{src} , \mathit{mid} ) \gets ( n - 1 ,
+///     \mathit{mid} , \mathit{src} )\quad \triangleright
+///     \ \text{the call (2), a tail call: no frame}
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 1 \f$, and `source`, `dest` and `middle` distinct
@@ -120,27 +125,30 @@ void hanoi_iterative( int n , int source , int dest , int middle , F && f );
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{hanoiLabels}( n , \mathit{src} ,
 ///     \mathit{dest} , \mathit{mid} ) \cr
-/// 2 & \quad S \gets \text{an empty stack};\ \mathit{pos} \gets \text{START}
-///     \cr
-/// 3 & \quad \textbf{while}\ \mathit{pos} \ne \text{STOP}\ \textbf{do} \cr
+/// 2 & \quad S \gets \text{an empty stack};\ \mathit{pos} \gets
+///     \text{START}\quad \triangleright\ \mathit{pos}
+///     \text{ the point of the recursive body} \cr
+/// 3 & \quad \textbf{loop} \cr
 /// 4 & \qquad \textbf{if}\ \mathit{pos} = \text{START}\ \textbf{and}\ n = 1
 ///     \ \textbf{then}\ \mathrm{f}( \mathit{src} , \mathit{dest} );
 ///     \ \mathit{pos} \gets \text{END} \cr
-/// 5 & \qquad \textbf{else if}\ \mathit{pos} = \text{START}\ \textbf{then} \cr
+/// 5 & \qquad \textbf{else if}\ \mathit{pos} = \text{START}
+///     \ \textbf{then}\quad \triangleright\ \text{the call (1)} \cr
 /// 6 & \qquad\quad \mathrm{push}( S , ( n , \mathit{src} , \mathit{dest} ,
-///     \mathit{mid} , \text{AFTER1} ) );\ n \gets n - 1;\ \mathit{dest}
-///     \leftrightarrow \mathit{mid} \cr
-/// 7 & \qquad \textbf{else if}\ \mathit{pos} = \text{AFTER1}\ \textbf{then}
-///     \cr
-/// 8 & \qquad\quad \mathrm{f}( \mathit{src} , \mathit{dest} );\ \mathrm{push}(
-///     S , ( n , \mathit{src} , \mathit{dest} , \mathit{mid} , \text{END} ) )
-///     \cr
-/// 9 & \qquad\quad n \gets n - 1;\ \mathit{src} \leftrightarrow \mathit{mid};
-///     \ \mathit{pos} \gets \text{START} \cr
-/// 10 & \qquad \textbf{else if}\ S = \emptyset\ \textbf{then}\ \mathit{pos}
-///     \gets \text{STOP} \cr
-/// 11 & \qquad \textbf{else}\ ( n , \mathit{src} , \mathit{dest} ,
-///     \mathit{mid} , \mathit{pos} ) \gets \mathrm{pop}( S )
+///     \mathit{mid} , \text{AFTER1} ) );\ ( n , \mathit{dest} , \mathit{mid}
+///     ) \gets ( n - 1 , \mathit{mid} , \mathit{dest} ) \cr
+/// 7 & \qquad \textbf{else if}\ \mathit{pos} = \text{AFTER1}
+///     \ \textbf{then}\quad \triangleright
+///     \ \text{the move, then the call (2)} \cr
+/// 8 & \qquad\quad \mathrm{f}( \mathit{src} , \mathit{dest} );
+///     \ \mathrm{push}( S , ( n , \mathit{src} , \mathit{dest} ,
+///     \mathit{mid} , \text{END} ) ) \cr
+/// 9 & \qquad\quad ( n , \mathit{src} , \mathit{mid} , \mathit{pos} ) \gets
+///     ( n - 1 , \mathit{mid} , \mathit{src} , \text{START} ) \cr
+/// 10 & \qquad \textbf{else if}\ S \ne \emptyset\ \textbf{then}\ ( n ,
+///     \mathit{src} , \mathit{dest} , \mathit{mid} , \mathit{pos} ) \gets
+///     \mathrm{pop}( S )\quad \triangleright\ \text{the return} \cr
+/// 11 & \qquad \textbf{else return}
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 1 \f$, and `source`, `dest` and `middle` distinct

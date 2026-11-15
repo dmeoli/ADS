@@ -118,17 +118,19 @@ struct Growth
 /// In pseudocode (Theorem 2.4 of section 2.9):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{master}( a , b , \beta , k ) \cr
-/// 2 & \quad \alpha \gets \log_b a \cr
-/// 3 & \quad \textbf{if}\ \beta < \alpha\ \textbf{then return}\ \Theta(
+/// 1 & \textbf{function}\ \mathrm{master}( a , b , \beta , k )\quad
+///     \triangleright\ T( n ) = a T( n / b ) + \Theta( n^\beta \log^k n ) \cr
+/// 2 & \quad \alpha \gets \log_b a\quad \triangleright
+///     \ \text{the exponent of the leaves of the recursion} \cr
+/// 3 & \quad \textbf{if}\ \alpha > \beta\ \textbf{then return}\ \Theta(
 ///     n^\alpha ) \cr
-/// 4 & \quad \textbf{if}\ \beta > \alpha\ \textbf{then return}\ \Theta(
+/// 4 & \quad \textbf{if}\ \alpha < \beta\ \textbf{then return}\ \Theta(
 ///     n^\beta \log^k n ) \cr
-/// 5 & \quad \textbf{if}\ k > -1\ \textbf{then return}\ \Theta( n^\alpha
-///     \log^{k+1} n ) \cr
+/// 5 & \quad \textbf{if}\ k < -1\ \textbf{then return}\ \Theta( n^\alpha
+///     )\quad \triangleright\ \alpha = \beta \text{ from here on} \cr
 /// 6 & \quad \textbf{if}\ k = -1\ \textbf{then return}\ \Theta( n^\alpha
 ///     \log \log n ) \cr
-/// 7 & \quad \textbf{return}\ \Theta( n^\alpha )
+/// 7 & \quad \textbf{return}\ \Theta( n^\alpha \log^{k+1} n )
 /// \end{array}}
 /// \f]
 /// \pre \f$ a \ge 1 \f$ and \f$ b > 1 \f$
@@ -140,11 +142,12 @@ inline Growth master( double a , double b , double beta , double k = 0 );
 /// In pseudocode (Theorem 2.5 of section 2.9):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{linear}( a , \beta ) \cr
-/// 2 & \quad \textbf{if}\ a = 1\ \textbf{then return}\ \Theta( n^{\beta + 1}
-///     ) \cr
-/// 3 & \quad \textbf{return}\ O( a^n n^\beta )\quad \triangleright
-///     \ \text{an upper bound only}
+/// 1 & \textbf{function}\ \mathrm{linear}( a , \beta )\quad \triangleright
+///     \ T( n ) = a T( n - 1 ) + \Theta( n^\beta ) \cr
+/// 2 & \quad \textbf{if}\ a > 1\ \textbf{then return}\ O( a^n n^\beta )\quad
+///     \triangleright\ \text{a bound from above only} \cr
+/// 3 & \quad \textbf{return}\ \Theta( n^{\beta + 1} )\quad \triangleright\ a
+///     = 1
 /// \end{array}}
 /// \f]
 /// \pre \f$ a \ge 1 \f$

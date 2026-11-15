@@ -215,7 +215,8 @@ using U64 = std::uint64_t;  ///< the unsigned integers of 64 bits
 /// \f$ \gcd( s , m ) = \gcd( m , s \bmod m ) \f$ kept at each step:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{gcd}( s , m ) \cr
+/// 1 & \textbf{function}\ \mathrm{gcd}( s , m )\quad \triangleright
+///     \ \mathrm{gcd}( s , m ) = \mathrm{gcd}( m , s \bmod m ) \cr
 /// 2 & \quad \textbf{while}\ m \ne 0\ \textbf{do}\ ( s , m ) \gets ( m , s
 ///     \bmod m ) \cr
 /// 3 & \quad \textbf{return}\ s
@@ -250,9 +251,11 @@ inline U64 gcd( U64 s , U64 m );
 /// In pseudocode (exercise 17.2):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{extendedEuclid}( s , m ) \cr
+/// 1 & \textbf{function}\ \mathrm{extendedEuclid}( s , m )\quad
+///     \triangleright\ ( d , p , q ) \text{ with } d = p s + q m \cr
 /// 2 & \quad \textbf{if}\ m = 0\ \textbf{then return}\ ( s , 1 , 0 ) \cr
-/// 3 & \quad ( d , p' , q' ) \gets \mathrm{extendedEuclid}( m , s \bmod m )
+/// 3 & \quad ( d , p' , q' ) \gets \mathrm{extendedEuclid}( m , s \bmod m
+///     )\quad \triangleright\ d = p' m + q' ( s - \lfloor s / m \rfloor m )
 ///     \cr
 /// 4 & \quad \textbf{return}\ ( d , q' , p' - \lfloor s / m \rfloor q' )
 /// \end{array}}
@@ -270,8 +273,10 @@ extendedEuclid( long long s , long long m );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{modInverse}( s , m ) \cr
-/// 2 & \quad ( d , p , q ) \gets \mathrm{extendedEuclid}( s , m ) \cr
-/// 3 & \quad \textbf{return}\ p \bmod m \text{, in } [ 0 , m )
+/// 2 & \quad ( d , p , q ) \gets \mathrm{extendedEuclid}( s , m )\quad
+///     \triangleright\ p s \equiv d = 1 \pmod{m} \cr
+/// 3 & \quad \textbf{return}\ \text{the representative of } p \text{ in } [
+///     0 , m )
 /// \end{array}}
 /// \f]
 /// \pre \f$ m \ge 1 \f$, \f$ s \ge 0 \f$ and \f$ \gcd( s , m ) = 1 \f$
@@ -395,13 +400,14 @@ class Montgomery64
  /// \f$ v \f$, the bit selecting the product with no branch:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{pow}( x , v ) \cr
+ /// 1 & \textbf{function}\ \mathrm{pow}( x , v )\quad \triangleright\ r
+ ///     \cdot x^v \text{ stays the result} \cr
  /// 2 & \quad r \gets \mathrm{one}() \cr
- /// 3 & \quad \textbf{while}\ v > 0\ \textbf{do} \cr
- /// 4 & \qquad \textbf{if}\ v \text{ is odd}\ \textbf{then}\ r \gets
+ /// 3 & \quad \textbf{while}\ v \ne 0\ \textbf{do} \cr
+ /// 4 & \qquad \textbf{if}\ v \bmod 2 = 1\ \textbf{then}\ r \gets
  ///     \mathrm{mul}( r , x ) \cr
- /// 5 & \qquad x \gets \mathrm{mul}( x , x );\ v \gets \lfloor v / 2 \rfloor
- ///     \cr
+ /// 5 & \qquad ( x , v ) \gets ( \mathrm{mul}( x , x ) , \lfloor v / 2
+ ///     \rfloor ) \cr
  /// 6 & \quad \textbf{return}\ r
  /// \end{array}}
  /// \f]
@@ -440,13 +446,14 @@ class Montgomery64
 /// product of Montgomery when \f$ m \f$ is odd [see `Montgomery64`]:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{powMod}( x , v , m ) \cr
+/// 1 & \textbf{function}\ \mathrm{powMod}( x , v , m )\quad \triangleright
+///     \ \text{as } \mathrm{pow} \text{, every product reduced} \cr
 /// 2 & \quad r \gets 1 \bmod m;\ x \gets x \bmod m \cr
-/// 3 & \quad \textbf{while}\ v > 0\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ v \text{ is odd}\ \textbf{then}\ r \gets
+/// 3 & \quad \textbf{while}\ v \ne 0\ \textbf{do} \cr
+/// 4 & \qquad \textbf{if}\ v \bmod 2 = 1\ \textbf{then}\ r \gets
 ///     \mathrm{mulMod}( r , x , m ) \cr
-/// 5 & \qquad x \gets \mathrm{mulMod}( x , x , m );\ v \gets \lfloor v / 2
-///     \rfloor \cr
+/// 5 & \qquad ( x , v ) \gets ( \mathrm{mulMod}( x , x , m ) , \lfloor v / 2
+///     \rfloor ) \cr
 /// 6 & \quad \textbf{return}\ r
 /// \end{array}}
 /// \f]
@@ -461,10 +468,10 @@ inline U64 powMod( U64 x , U64 v , U64 m );
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{isPrimeTrial}( n ) \cr
 /// 2 & \quad \textbf{if}\ n < 2\ \textbf{then return false} \cr
-/// 3 & \quad \textbf{for}\ j \gets 2\ \textbf{to}\ \lfloor \sqrt{n} \rfloor
-///     \ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ n \bmod j = 0\ \textbf{then return false} \cr
-/// 5 & \quad \textbf{return true}
+/// 3 & \quad \textbf{return}\ \text{whether no } j \text{ with } 2 \le j \le
+///     \lfloor \sqrt{n} \rfloor \text{ divides } n\quad \triangleright
+///     \ \text{a factor } \le \sqrt{n} \text{ exists if } n
+///     \text{ is composite}
 /// \end{array}}
 /// \f]
 inline bool isPrimeTrial( U64 n );
@@ -474,16 +481,19 @@ inline bool isPrimeTrial( U64 n );
 /// In pseudocode (section 17.2), \f$ n - 1 = 2^v m \f$ with \f$ m \f$ odd:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{witness}( n , b ) \cr
-/// 2 & \quad \textbf{if}\ \mathrm{gcd}( n , b ) \ne 1\ \textbf{then return
-///     true} \cr
+/// 1 & \textbf{function}\ \mathrm{witness}( n , b )\quad \triangleright\ n -
+///     1 = 2^v m \text{, } m \text{ odd} \cr
+/// 2 & \quad \textbf{if}\ \mathrm{gcd}( n , b ) \ne 1
+///     \ \textbf{then return true} \cr
 /// 3 & \quad x \gets \mathrm{powMod}( b , m , n ) \cr
-/// 4 & \quad \textbf{if}\ x = 1\ \textbf{or}\ x = n - 1\ \textbf{then return
-///     false} \cr
-/// 5 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ v - 1\ \textbf{do} \cr
-/// 6 & \qquad x \gets \mathrm{mulMod}( x , x , n ) \cr
-/// 7 & \qquad \textbf{if}\ x = n - 1\ \textbf{then return false} \cr
-/// 8 & \quad \textbf{return true}
+/// 4 & \quad \textbf{if}\ x \in \{ 1 , n - 1 \}\ \textbf{then return false}
+///     \cr
+/// 5 & \quad \textbf{repeat}\ v - 1 \text{ times}\quad \triangleright\ x =
+///     b^{2^i m} \text{ after } i \text{ squarings} \cr
+/// 6 & \qquad x \gets \mathrm{mulMod}( x , x , n );\ \textbf{if}\ x = n - 1
+///     \ \textbf{then return false} \cr
+/// 7 & \quad \textbf{return true}\quad \triangleright\ b \text{ proves } n
+///     \text{ composite}
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 3 \f$ odd and \f$ 1 \le b < n \f$
@@ -496,15 +506,14 @@ inline bool witness( U64 n , U64 b );
 /// In pseudocode (section 17.2):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{millerRabin}( n , K ) \cr
-/// 2 & \quad \textbf{if}\ n < 4\ \textbf{then return}\ n = 2\ \textbf{or}\ n
-///     = 3 \cr
-/// 3 & \quad \textbf{if}\ n \text{ is even}\ \textbf{then return false} \cr
-/// 4 & \quad \textbf{for}\ j \gets 1\ \textbf{to}\ K\ \textbf{do} \cr
-/// 5 & \qquad b \gets \text{a random integer in } [ 2 , n - 2 ] \cr
-/// 6 & \qquad \textbf{if}\ \mathrm{witness}( n , b )\ \textbf{then return
-///     false} \cr
-/// 7 & \quad \textbf{return true}
+/// 1 & \textbf{function}\ \mathrm{millerRabin}( n , K )\quad \triangleright
+///     \ \text{a wrong true with probability} \le 4^{-K} \cr
+/// 2 & \quad \textbf{if}\ n < 4\ \textbf{then return}\ n \in \{ 2 , 3 \} \cr
+/// 3 & \quad \textbf{if}\ n \bmod 2 = 0\ \textbf{then return false} \cr
+/// 4 & \quad \textbf{repeat}\ K \text{ times}\ \textbf{if}
+///     \ \mathrm{witness}( n , b ) \text{ for a } b \text{ drawn in } [ 2 ,
+///     n - 2 ]\ \textbf{then return false} \cr
+/// 5 & \quad \textbf{return true}
 /// \end{array}}
 /// \f]
 /// \pre \f$ K \ge 0 \f$

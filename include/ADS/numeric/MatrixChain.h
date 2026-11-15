@@ -69,20 +69,19 @@ namespace ADS
 /// In pseudocode (section 13.3), by increasing length of the chain:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{matrixChain}( c )\quad \triangleright
-///     \ n = |c| - 1 \cr
-/// 2 & \quad \textbf{foreach}\ i\ \textbf{do}\ \mathit{DP}[ i ][ i ] \gets 0
-///     \cr
-/// 3 & \quad \textbf{for}\ h \gets 2\ \textbf{to}\ n\ \textbf{do} \cr
+/// 1 & \textbf{function}\ \mathrm{matrixChain}( c )\quad \triangleright\ A_i
+///     \text{ is } c[ i ] \times c[ i + 1 ] \text{, } n = |c| - 1 \cr
+/// 2 & \quad \mathit{DP}[ i ][ i ] \gets 0 \text{ for every } i \cr
+/// 3 & \quad \textbf{for}\ h \gets 2\ \textbf{to}\ n\ \textbf{do}\quad
+///     \triangleright\ \text{the chains of } h \text{ matrices} \cr
 /// 4 & \qquad \textbf{for}\ i \gets 0\ \textbf{to}\ n - h\ \textbf{do} \cr
-/// 5 & \qquad\quad j \gets i + h - 1;\ \mathit{DP}[ i ][ j ] \gets \infty \cr
-/// 6 & \qquad\quad \textbf{for}\ k \gets i\ \textbf{to}\ j - 1\ \textbf{do}
-///     \cr
-/// 7 & \qquad\qquad t \gets \mathit{DP}[ i ][ k ] + \mathit{DP}[ k + 1 ][ j
-///     ] + c[ i ] c[ k + 1 ] c[ j + 1 ] \cr
-/// 8 & \qquad\qquad \textbf{if}\ t < \mathit{DP}[ i ][ j ]\ \textbf{then}
-///     \ \mathit{DP}[ i ][ j ] \gets t;\ S[ i ][ j ] \gets k \cr
-/// 9 & \quad \textbf{return}\ ( \mathit{DP}[ 0 ][ n - 1 ] , S )
+/// 5 & \qquad\quad j \gets i + h - 1 \cr
+/// 6 & \qquad\quad S[ i ][ j ] \gets \text{the } k \in [ i , j )
+///     \text{ that minimizes } t_k = \mathit{DP}[ i ][ k ] + \mathit{DP}[ k
+///     + 1 ][ j ] + c[ i ] c[ k + 1 ] c[ j + 1 ] \cr
+///   & \qquad\qquad \text{(the first one on a tie)};\ \mathit{DP}[ i ][ j ]
+///     \gets t_{S[ i ][ j ]} \cr
+/// 7 & \quad \textbf{return}\ ( \mathit{DP}[ 0 ][ n - 1 ] , S )
 /// \end{array}}
 /// \f]
 /// \pre \f$ c \f$ is not empty and its items are positive (audit)
@@ -96,11 +95,10 @@ matrixChain( const std::vector< long > & c );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{parenthesization}( S , i , j ) \cr
-/// 2 & \quad \textbf{if}\ i = j\ \textbf{then return}\ \text{the name }
-///     A_i \cr
-/// 3 & \quad k \gets S[ i ][ j ] \cr
-/// 4 & \quad \textbf{return}\ ( \mathrm{parenthesization}( S , i , k ) \cdot
-///     \mathrm{parenthesization}( S , k + 1 , j ) )
+/// 2 & \quad \textbf{if}\ i < j\ \textbf{then return}\ (
+///     \mathrm{parenthesization}( S , i , S[ i ][ j ] ) \cdot
+///     \mathrm{parenthesization}( S , S[ i ][ j ] + 1 , j ) ) \cr
+/// 3 & \quad \textbf{return}\ \text{the name } A_i
 /// \end{array}}
 /// \f]
 /// \pre \f$ i \le j < n \f$

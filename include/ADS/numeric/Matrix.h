@@ -83,11 +83,12 @@ using Matrix = std::vector< std::vector< T > >;  ///< by rows
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{multiplyNaive}( A , B ) \cr
 /// 2 & \quad C \gets \text{the } n \times n \text{ zero matrix} \cr
-/// 3 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ n\ \textbf{do} \cr
-/// 4 & \qquad \textbf{for}\ k \gets 1\ \textbf{to}\ n\ \textbf{do} \cr
-/// 5 & \qquad\quad \textbf{for}\ j \gets 1\ \textbf{to}\ n\ \textbf{do}
-///     \ c_{ij} \gets c_{ij} + a_{ik} b_{kj} \cr
-/// 6 & \quad \textbf{return}\ C
+/// 3 & \quad \textbf{for}\ i , k \gets 1\ \textbf{to}\ n\ \textbf{do}\quad
+///     \triangleright\ \text{the order } i , k , j \text{ reads } B
+///     \text{ by rows} \cr
+/// 4 & \qquad \text{add } a_{ik} \text{ times the row } k \text{ of } B
+///     \text{ to the row } i \text{ of } C \cr
+/// 5 & \quad \textbf{return}\ C
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ and \f$ B \f$ are \f$ n \times n \f$
@@ -160,12 +161,14 @@ Matrix< T > strassenRec( const Matrix< T > & A , const Matrix< T > & B ,
 /// 1 & \textbf{function}\ \mathrm{strassenRec}( A , B ) \cr
 /// 2 & \quad \textbf{if}\ n \le \mathit{cutoff}\ \textbf{then return}
 ///     \ \mathrm{multiplyNaive}( A , B ) \cr
-/// 3 & \quad \text{split } A \text{ and } B \text{ in the blocks }
-///     A_{ij} \text{ and } B_{ij} \text{ of } n / 2 \text{ rows} \cr
-/// 4 & \quad X_1 , \ldots , X_7 \gets \text{the seven products of the }
-///     \text{file, each by } \mathrm{strassenRec} \cr
+/// 3 & \quad A_{11} , A_{12} , A_{21} , A_{22} \gets
+///     \text{the four blocks of } A \text{ of } n / 2 \text{ rows};
+///     \ \text{the same for } B \cr
+/// 4 & \quad X_1 , \ldots , X_7 \gets
+///     \text{the seven products of Strassen, each computed by }
+///     \mathrm{strassenRec} \cr
 /// 5 & \quad C_{11} \gets X_1 + X_4 - X_5 + X_7;\ C_{12} \gets X_3 + X_5 \cr
-/// 6 & \quad C_{21} \gets X_2 + X_4;\ C_{22} \gets X_1 + X_3 - X_2 + X_6 \cr
+/// 6 & \quad C_{21} \gets X_2 + X_4;\ C_{22} \gets X_1 - X_2 + X_3 + X_6 \cr
 /// 7 & \quad \textbf{return}\ \text{the matrix of the blocks } C_{ij}
 /// \end{array}}
 /// \f]

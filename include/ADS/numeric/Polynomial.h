@@ -72,11 +72,10 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{multiplyNaive}( p , q ) \cr
-/// 2 & \quad r \gets \text{a vector of } |p| + |q| - 1 \text{ zeros} \cr
-/// 3 & \quad \textbf{for}\ h \gets 0\ \textbf{to}\ |p| - 1\ \textbf{do} \cr
-/// 4 & \qquad \textbf{for}\ k \gets 0\ \textbf{to}\ |q| - 1\ \textbf{do} \cr
-/// 5 & \qquad\quad r_{h+k} \gets r_{h+k} + p_h q_k \cr
-/// 6 & \quad \textbf{return}\ r
+/// 2 & \quad r \gets |p| + |q| - 1 \text{ zero coefficients} \cr
+/// 3 & \quad \textbf{foreach}\ \text{pair } h , k \text{ of indices of } p
+///     \text{ and } q\ \textbf{do}\ r_{h+k} \gets r_{h+k} + p_h q_k \cr
+/// 4 & \quad \textbf{return}\ r
 /// \end{array}}
 /// \f]
 template< class T >
@@ -115,15 +114,16 @@ std::vector< T > multiplySame( std::vector< T > p , std::vector< T > q ,
 /// the same length \f$ n \f$, \f$ h = \lfloor n / 2 \rfloor \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{multiplyFour}( p , q ) \cr
+/// 1 & \textbf{function}\ \mathrm{multiplyFour}( p , q )\quad
+///     \triangleright\ n \text{ coefficients each, } h = \lceil n / 2 \rceil
+///     \cr
 /// 2 & \quad \textbf{if}\ n = 1\ \textbf{then return}\ ( p_0 q_0 ) \cr
-/// 3 & \quad p_D , q_D \gets \text{the } h \text{ lowest coefficients};
-///     \ p_S , q_S \gets \text{the others} \cr
-/// 4 & \quad r_S \gets \mathrm{multiplyFour}( p_S , q_S );\ r_D \gets
-///     \mathrm{multiplyFour}( p_D , q_D ) \cr
-/// 5 & \quad r_M \gets \mathrm{multiplyFour}( p_D , q_S ) +
-///     \mathrm{multiplyFour}( p_S , q_D ) \cr
-/// 6 & \quad \textbf{return}\ x^{2h} r_S + x^h r_M + r_D
+/// 3 & \quad p = x^h p_S + p_D \text{, } q = x^h q_S + q_D\quad
+///     \triangleright\ D \text{ the lower halves} \cr
+/// 4 & \quad \textbf{return}\ x^{2h} \mathrm{multiplyFour}( p_S , q_S ) +
+///     x^h ( \mathrm{multiplyFour}( p_S , q_D ) + \mathrm{multiplyFour}( p_D
+///     , q_S ) ) \cr
+///   & \qquad + \mathrm{multiplyFour}( p_D , q_D )
 /// \end{array}}
 /// \f]
 /// \post the result is \f$ p q \f$ (audit)
@@ -142,12 +142,13 @@ std::vector< T > multiplyFour( const std::vector< T > & p ,
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{multiplyKaratsuba}( p , q ) \cr
 /// 2 & \quad \textbf{if}\ n = 1\ \textbf{then return}\ ( p_0 q_0 ) \cr
-/// 3 & \quad p_D , q_D \gets \text{the } h \text{ lowest coefficients};
-///     \ p_S , q_S \gets \text{the others} \cr
+/// 3 & \quad p = x^h p_S + p_D \text{, } q = x^h q_S + q_D \text{ as in }
+///     \mathrm{multiplyFour} \cr
 /// 4 & \quad r_S \gets \mathrm{multiplyKaratsuba}( p_S , q_S );\ r_D \gets
 ///     \mathrm{multiplyKaratsuba}( p_D , q_D ) \cr
-/// 5 & \quad r_M \gets \mathrm{multiplyKaratsuba}( p_S + p_D , q_S + q_D ) \cr
-/// 6 & \quad \textbf{return}\ x^{2h} r_S + x^h ( r_M - r_S - r_D ) + r_D
+/// 5 & \quad r_M \gets \mathrm{multiplyKaratsuba}( p_S + p_D , q_S + q_D ) -
+///     r_S - r_D\quad \triangleright\ \text{three products, not four} \cr
+/// 6 & \quad \textbf{return}\ x^{2h} r_S + x^h r_M + r_D
 /// \end{array}}
 /// \f]
 /// \post the result is \f$ p q \f$ (audit)

@@ -72,11 +72,12 @@ namespace ADS
 /// leaf returns 1:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{binomial}( n , k ) \cr
-/// 2 & \quad \textbf{if}\ k = 0\ \textbf{or}\ k = n\ \textbf{then return}\ 1
+/// 1 & \textbf{function}\ \mathrm{binomial}( n , k )\quad \triangleright
+///     \ \text{exponential: no table} \cr
+/// 2 & \quad \textbf{if}\ 0 < k < n\ \textbf{then return}
+///     \ \mathrm{binomial}( n - 1 , k ) + \mathrm{binomial}( n - 1 , k - 1 )
 ///     \cr
-/// 3 & \quad \textbf{return}\ \mathrm{binomial}( n - 1 , k - 1 ) +
-///     \mathrm{binomial}( n - 1 , k )
+/// 3 & \quad \textbf{return}\ 1
 /// \end{array}}
 /// \f]
 /// \pre \f$ 0 \le k \le n \le 67 \f$
@@ -89,11 +90,12 @@ inline std::uint64_t binomial( int n , int k , long * calls = nullptr );
 /// before:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{tartaglia}( n ) \cr
+/// 1 & \textbf{function}\ \mathrm{tartaglia}( n )\quad \triangleright
+///     \ \text{the triangle, row by row} \cr
 /// 2 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n\ \textbf{do} \cr
-/// 3 & \qquad C[ i ][ 0 ] \gets C[ i ][ i ] \gets 1 \cr
-/// 4 & \qquad \textbf{for}\ j \gets 1\ \textbf{to}\ i - 1\ \textbf{do}\ C[
-///     i ][ j ] \gets C[ i - 1 ][ j - 1 ] + C[ i - 1 ][ j ] \cr
+/// 3 & \qquad C[ i ][ 0 ] \gets 1;\ C[ i ][ i ] \gets 1 \cr
+/// 4 & \qquad C[ i ][ j ] \gets C[ i - 1 ][ j ] + C[ i - 1 ][ j - 1 ]
+///     \text{ for } j = 1 , \ldots , i - 1 \cr
 /// 5 & \quad \textbf{return}\ C
 /// \end{array}}
 /// \f]
@@ -106,9 +108,9 @@ inline std::vector< std::vector< std::uint64_t > > tartaglia( int n );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{fibonacciTable}( n ) \cr
-/// 2 & \quad F[ 0 ] \gets F[ 1 ] \gets 1 \cr
-/// 3 & \quad \textbf{for}\ i \gets 2\ \textbf{to}\ n\ \textbf{do}\ F[ i ]
-///     \gets F[ i - 1 ] + F[ i - 2 ] \cr
+/// 2 & \quad F[ 0 ] \gets 1;\ F[ 1 ] \gets 1 \cr
+/// 3 & \quad F[ i ] \gets F[ i - 2 ] + F[ i - 1 ] \text{ for } i = 2 ,
+///     \ldots , n\quad \triangleright\ O( n ) \text{ space} \cr
 /// 4 & \quad \textbf{return}\ F[ n ]
 /// \end{array}}
 /// \f]
@@ -121,11 +123,12 @@ inline std::uint64_t fibonacciTable( int n );
 /// In pseudocode (section 13.4), the last three numbers only:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{fibonacci}( n ) \cr
-/// 2 & \quad F_0 \gets F_1 \gets F_2 \gets 1 \cr
-/// 3 & \quad \textbf{for}\ i \gets 2\ \textbf{to}\ n\ \textbf{do} \cr
-/// 4 & \qquad F_0 \gets F_1;\ F_1 \gets F_2;\ F_2 \gets F_0 + F_1 \cr
-/// 5 & \quad \textbf{return}\ F_2
+/// 1 & \textbf{function}\ \mathrm{fibonacci}( n )\quad \triangleright
+///     \ \text{the last three terms only} \cr
+/// 2 & \quad F_0 \gets 1;\ F_1 \gets 1;\ F_2 \gets 1 \cr
+/// 3 & \quad \textbf{for}\ i \gets 2\ \textbf{to}\ n\ \textbf{do}\ ( F_0 ,
+///     F_1 , F_2 ) \gets ( F_1 , F_2 , F_1 + F_2 ) \cr
+/// 4 & \quad \textbf{return}\ F_2
 /// \end{array}}
 /// \f]
 /// \pre \f$ 0 \le n \le 92 \f$

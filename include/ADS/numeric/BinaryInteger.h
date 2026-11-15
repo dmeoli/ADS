@@ -122,15 +122,14 @@ inline Bits carry( const std::vector< long > & c );
 /// In pseudocode (section 2.6), \f$ X_i = Y_i = 0 \f$ beyond their bits:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{binaryAdd}( X , Y ) \cr
-/// 2 & \quad r \gets 0 \cr
+/// 1 & \textbf{function}\ \mathrm{binaryAdd}( X , Y )\quad \triangleright
+///     \ X_0 , Y_0 \text{ the lowest bits; a missing bit is } 0 \cr
+/// 2 & \quad r \gets 0\quad \triangleright\ \text{the carry} \cr
 /// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ \max( |X| , |Y| ) - 1
-///     \ \textbf{do} \cr
-/// 4 & \qquad s \gets X_i + Y_i + r;\ Z_i \gets s \bmod 2;\ r \gets \lfloor
-///     s / 2 \rfloor \cr
-/// 5 & \quad \textbf{if}\ r = 1\ \textbf{then}\ \text{append } r \text{ to }
-///     Z \cr
-/// 6 & \quad \textbf{return}\ Z
+///     \ \textbf{do}\ ( r , Z_i ) \gets ( \lfloor ( X_i + Y_i + r ) / 2
+///     \rfloor , ( X_i + Y_i + r ) \bmod 2 ) \cr
+/// 4 & \quad \textbf{return}\ Z \text{, with one more bit } 1 \text{ if } r
+///     = 1
 /// \end{array}}
 /// \f]
 /// \pre the items of \f$ X \f$ and \f$ Y \f$ are bits (audit)
@@ -195,12 +194,13 @@ inline Bits multiplyBinaryKaratsuba( const Bits & X , const Bits & Y ,
 /// In pseudocode (section 1.4), \f$ p + a b \f$ the same at each step:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{ahmes}( a , b ) \cr
+/// 1 & \textbf{function}\ \mathrm{ahmes}( a , b )\quad \triangleright\ p + a b
+///     \text{ stays the product} \cr
 /// 2 & \quad p \gets 0 \cr
-/// 3 & \quad \textbf{while}\ a > 0\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ a \text{ is odd}\ \textbf{then}\ p \gets p + b \cr
-/// 5 & \qquad a \gets \lfloor a / 2 \rfloor;\ b \gets 2 b \cr
-/// 6 & \quad \textbf{return}\ p
+/// 3 & \quad \textbf{while}\ a \ne 0\ \textbf{do} \cr
+/// 4 & \qquad p \gets p + ( a \bmod 2 ) \cdot b;\ ( a , b ) \gets ( \lfloor
+///     a / 2 \rfloor , 2 b ) \cr
+/// 5 & \quad \textbf{return}\ p
 /// \end{array}}
 /// \f]
 /// \post the result is \f$ a b \bmod 2^{64} \f$

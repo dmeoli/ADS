@@ -78,11 +78,10 @@ struct RsaKey
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{randomPrime}( \mathit{bits} ) \cr
-/// 2 & \quad \textbf{repeat} \cr
-/// 3 & \qquad c \gets \text{a random integer in } [ 2^{\mathit{bits} - 1} ,
-///     2^{\mathit{bits}} ) \text{, made odd} \cr
-/// 4 & \quad \textbf{until}\ \mathrm{millerRabin}( c , 40 ) \cr
-/// 5 & \quad \textbf{return}\ c
+/// 2 & \quad \textbf{repeat}\ c \gets \text{an odd integer drawn in } [
+///     2^{\mathit{bits} - 1} , 2^{\mathit{bits}} )\ \textbf{until}
+///     \ \mathrm{millerRabin}( c , 40 ) \cr
+/// 3 & \quad \textbf{return}\ c
 /// \end{array}}
 /// \f]
 /// \pre \f$ 2 \le \mathit{bits} \le 63 \f$
@@ -96,16 +95,15 @@ U64 randomPrime( int bits , R & rng );
 /// does not divide \f$ \varphi = ( x - 1 ) ( y - 1 ) \f$, hence prime to it:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{rsaKeys}() \cr
-/// 2 & \quad \textbf{loop} \cr
-/// 3 & \qquad x \gets \mathrm{randomPrime}( 31 );\ y \gets
-///     \mathrm{randomPrime}( 31 ) \cr
-/// 4 & \qquad s \gets \mathrm{randomPrime}( 24 );\ \varphi \gets ( x - 1 ) (
-///     y - 1 ) \cr
-/// 5 & \qquad \textbf{if}\ x = y\ \textbf{or}\ s \mid \varphi
-///     \ \textbf{then}\ \textbf{continue} \cr
-/// 6 & \qquad p \gets \mathrm{modInverse}( s , \varphi ) \cr
-/// 7 & \qquad \textbf{return}\ ( ( x y , p ) , ( x y , s ) )
+/// 1 & \textbf{function}\ \mathrm{rsaKeys}()\quad \triangleright\ (
+///     \text{secret} , \text{public} ) \cr
+/// 2 & \quad \textbf{repeat} \cr
+/// 3 & \qquad x , y \gets \text{two primes of 31 bits};\ s \gets
+///     \text{a prime of 24 bits};\ \varphi \gets ( x - 1 ) ( y - 1 ) \cr
+/// 4 & \quad \textbf{until}\ x \ne y\ \textbf{and}\ s \nmid \varphi\quad
+///     \triangleright\ s \text{ prime: invertible modulo } \varphi \cr
+/// 5 & \quad \textbf{return}\ ( ( x y , \mathrm{modInverse}( s , \varphi ) )
+///     , ( x y , s ) )
 /// \end{array}}
 /// \f]
 /// \post each key undoes the other, checked on the message 2

@@ -71,13 +71,13 @@ namespace ADS
 /// subtree:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{catalan}( n ) \cr
+/// 1 & \textbf{function}\ \mathrm{catalan}( n )\quad \triangleright\ C[ i ]
+///     \text{ the binary trees of } i \text{ nodes} \cr
 /// 2 & \quad C[ 0 ] \gets 1 \cr
-/// 3 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ n\ \textbf{do} \cr
-/// 4 & \qquad C[ i ] \gets 0 \cr
-/// 5 & \qquad \textbf{for}\ k \gets 0\ \textbf{to}\ i - 1\ \textbf{do}\ C[ i
-///     ] \gets C[ i ] + C[ k ] \cdot C[ i - 1 - k ] \cr
-/// 6 & \quad \textbf{return}\ C[ n ]
+/// 3 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ n\ \textbf{do}\ C[ i ]
+///     \gets \textstyle\sum_{k=0}^{i-1} C[ k ] \, C[ i - 1 - k ]\quad
+///     \triangleright\ k \text{ nodes on the left} \cr
+/// 4 & \quad \textbf{return}\ C[ n ]
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 0 \f$ and \f$ C_n \f$ representable in `T`

@@ -107,17 +107,18 @@ akraBazziExponent( const std::vector< std::pair< double , double > > & ab );
 /// with \f$ p \f$ in place of \f$ \log_b a \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{akraBazzi}( ( a_i , b_i )_{i=1}^k , \beta ,
-///     k ) \cr
-/// 2 & \quad p \gets \mathrm{akraBazziExponent}( ( a_i , b_i )_{i=1}^k ) \cr
-/// 3 & \quad \textbf{if}\ \beta < p\ \textbf{then return}\ \Theta( n^p ) \cr
-/// 4 & \quad \textbf{if}\ \beta > p\ \textbf{then return}\ \Theta( n^\beta
+/// 1 & \textbf{function}\ \mathrm{akraBazzi}( ( a_i , b_i )_{i=1}^k , \beta
+///     , k ) \cr
+/// 2 & \quad p \gets \mathrm{akraBazziExponent}( ( a_i , b_i )_{i=1}^k
+///     )\quad \triangleright\ \textstyle\sum_i a_i b_i^p = 1 \cr
+/// 3 & \quad \textbf{if}\ p > \beta\ \textbf{then return}\ \Theta( n^p ) \cr
+/// 4 & \quad \textbf{if}\ p < \beta\ \textbf{then return}\ \Theta( n^\beta
 ///     \log^k n ) \cr
-/// 5 & \quad \textbf{if}\ k > -1\ \textbf{then return}\ \Theta( n^p
-///     \log^{k+1} n ) \cr
+/// 5 & \quad \textbf{if}\ k < -1\ \textbf{then return}\ \Theta( n^p )\quad
+///     \triangleright\ p = \beta \text{ from here on} \cr
 /// 6 & \quad \textbf{if}\ k = -1\ \textbf{then return}\ \Theta( n^p \log
 ///     \log n ) \cr
-/// 7 & \quad \textbf{return}\ \Theta( n^p )
+/// 7 & \quad \textbf{return}\ \Theta( n^p \log^{k+1} n )
 /// \end{array}}
 /// \f]
 /// \pre at least one term, \f$ a_i > 0 \f$ and \f$ 0 < b_i < 1 \f$

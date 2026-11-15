@@ -82,11 +82,13 @@ namespace ADS
 /// In pseudocode (the enumerative method):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{enumerateSearch}( z ) \cr
-/// 2 & \quad \textbf{loop} \cr
-/// 3 & \qquad \textbf{if}\ a( z )\ \textbf{then return}\ o( z ) \cr
-/// 4 & \qquad \textbf{if}\ \mathrm{last}( z )\ \textbf{then return}\ \bot \cr
-/// 5 & \qquad z \gets \mathrm{next}( z )
+/// 1 & \textbf{function}\ \mathrm{enumerateSearch}( z )\quad \triangleright
+///     \ z \text{ the first candidate} \cr
+/// 2 & \quad \textbf{while}\ \textbf{not}\ a( z )\ \textbf{do} \cr
+/// 3 & \qquad \textbf{if}\ \mathrm{last}( z )\ \textbf{then return}
+///     \ \bot\quad \triangleright\ \text{no admissible candidate} \cr
+/// 4 & \qquad z \gets \mathrm{next}( z ) \cr
+/// 5 & \quad \textbf{return}\ o( z )
 /// \end{array}}
 /// \f]
 template< class Z , class Next , class Last , class A , class O >
@@ -101,16 +103,15 @@ auto enumerateSearch( Z z , Next && next , Last && last , A && a , O && o )
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{enumerateOptimize}( z ) \cr
-/// 2 & \quad b \gets \textbf{nil} \cr
+/// 2 & \quad b \gets \textbf{nil}\quad \triangleright
+///     \ \text{the best admissible candidate so far} \cr
 /// 3 & \quad \textbf{loop} \cr
 /// 4 & \qquad \textbf{if}\ a( z )\ \textbf{and}\ ( b = \textbf{nil}
 ///     \ \textbf{or}\ \mathrm{better}( m( z ) , m( b ) ) )\ \textbf{then}\ b
 ///     \gets z \cr
-/// 5 & \qquad \textbf{if}\ \mathrm{last}( z )\ \textbf{then}\ \textbf{break}
-///     \cr
-/// 6 & \qquad z \gets \mathrm{next}( z ) \cr
-/// 7 & \quad \textbf{if}\ b = \textbf{nil}\ \textbf{then return}\ \bot
-///     \ \textbf{else return}\ o( b )
+/// 5 & \qquad \textbf{if}\ \mathrm{last}( z )\ \textbf{then return}\ o( b )
+///     \text{ if } b \ne \textbf{nil} \text{, else } \bot \cr
+/// 6 & \qquad z \gets \mathrm{next}( z )
 /// \end{array}}
 /// \f]
 template< class Z , class Next , class Last , class A , class O , class M ,
@@ -127,14 +128,14 @@ auto enumerateOptimize( Z z , Next && next , Last && last , A && a , O && o ,
 /// In pseudocode (the scheme of chapter 16):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{backtrack}( N ) \cr
+/// 1 & \textbf{function}\ \mathrm{backtrack}( N )\quad \triangleright
+///     \ \text{true when a visit asks to stop} \cr
 /// 2 & \quad \textbf{if}\ \mathrm{prune}( N )\ \textbf{then return false} \cr
 /// 3 & \quad \textbf{if}\ \mathrm{leaf}( N )\ \textbf{then return}
 ///     \ \mathrm{visit}( N ) \cr
-/// 4 & \quad \textbf{foreach}\ C \in \mathrm{children}( N )\ \textbf{do} \cr
-/// 5 & \qquad \textbf{if}\ \mathrm{backtrack}( C )\ \textbf{then return true}
-///     \cr
-/// 6 & \quad \textbf{return false}
+/// 4 & \quad \textbf{return}\ \text{whether } \mathrm{backtrack}( C )
+///     \text{ is true for a child } C \text{ of } N
+///     \text{, trying them in order}
 /// \end{array}}
 /// \f]
 template< class N , class C , class P , class L , class V >
@@ -149,12 +150,13 @@ bool backtrack( const N & node , C && children , P && prune , L && leaf ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{greedy}( k ) \cr
-/// 2 & \quad x \gets \text{the empty sequence} \cr
+/// 2 & \quad x \gets ()\quad \triangleright
+///     \ \text{the choices made, never undone} \cr
 /// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ k - 1\ \textbf{do} \cr
-/// 4 & \qquad C \gets \mathrm{candidates}( i , x ) \cr
-/// 5 & \qquad \textbf{if}\ C \ne \emptyset\ \textbf{then}\ x \gets x \cdot (
-///     \mathrm{best}( C ) ) \cr
-/// 6 & \quad \textbf{return}\ x
+/// 4 & \qquad C \gets \mathrm{candidates}( i , x );\ \textbf{if}\ C \ne
+///     \emptyset\ \textbf{then}\ \text{append } \mathrm{best}( C )
+///     \text{ to } x \cr
+/// 5 & \quad \textbf{return}\ x
 /// \end{array}}
 /// \f]
 template< class X , class Cand , class Best >
@@ -168,11 +170,11 @@ std::vector< X > greedy( int k , Cand && candidates , Best && best );
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{divideEtImpera}( x ) \cr
 /// 2 & \quad \textbf{if}\ \mathrm{small}( x )\ \textbf{then return}
-///     \ \mathrm{direct}( x ) \cr
-/// 3 & \quad S \gets \text{the empty sequence} \cr
-/// 4 & \quad \textbf{foreach}\ y \in \mathrm{divide}( x )\ \textbf{do}\ S
-///     \gets S \cdot ( \mathrm{divideEtImpera}( y ) ) \cr
-/// 5 & \quad \textbf{return}\ \mathrm{combine}( S )
+///     \ \mathrm{direct}( x )\quad \triangleright
+///     \ \text{the base of the recursion} \cr
+/// 3 & \quad \textbf{return}\ \mathrm{combine}( \text{the solutions }
+///     \mathrm{divideEtImpera}( y ) \text{ of the parts } y \in
+///     \mathrm{divide}( x ) \text{, in order} )
 /// \end{array}}
 /// \f]
 template< class X , class S , class D , class V , class C >

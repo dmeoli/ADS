@@ -104,20 +104,22 @@ namespace ADS
 /// pairs:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{smallerToTheRight}( A[ 0 .. n - 1 ] ) \cr
-/// 2 & \quad c \gets ( 0 , \ldots , 0 );\ P \gets ( 0 , 1 , \ldots , n - 1 );
-///     \ w \gets 1 \cr
-/// 3 & \quad \textbf{while}\ w < n\ \textbf{do} \cr
-/// 4 & \qquad \textbf{foreach}\ \text{pair of runs } P[ \mathit{lo} .. m - 1
-///     ] , P[ m .. \mathit{hi} - 1 ]\ \textbf{do} \cr
-/// 5 & \qquad\quad \text{merge them by } A \text{, the left item first on a }
-///     \text{tie} \cr
-/// 6 & \qquad\quad \textbf{when}\ P[ i ] \text{ of the left run is output}
+/// 1 & \textbf{function}\ \mathrm{smallerToTheRight}( A[ 0 .. n - 1 ] )\quad
+///     \triangleright\ \text{a bottom-up merge sort of the indices} \cr
+/// 2 & \quad c \gets ( 0 , \ldots , 0 );\ P \gets ( 0 , 1 , \ldots , n - 1 )
+///     \cr
+/// 3 & \quad \textbf{for}\ w \gets 1 , 2 , 4 , \ldots \text{ while } w < n
 ///     \ \textbf{do} \cr
-/// 7 & \qquad\qquad c[ P[ i ] ] \gets c[ P[ i ] ] + ( \text{the items of }
-///     \text{the right run output so far} ) \cr
-/// 8 & \qquad w \gets 2 w \cr
-/// 9 & \quad \textbf{return}\ c
+/// 4 & \qquad \textbf{foreach}\ \text{two neighboring runs } P[ \mathit{lo}
+///     .. m - 1 ] , P[ m .. \mathit{hi} - 1 ] \text{ of length } w
+///     \ \textbf{do} \cr
+/// 5 & \qquad\quad \text{merge them by the values in } A
+///     \text{, the left run first on a tie} \cr
+/// 6 & \qquad\quad \text{and, as each } P[ i ]
+///     \text{ of the left run is output, add to } c[ P[ i ] ] \cr
+///   & \qquad\qquad
+///     \text{the number of the items of the right run already output} \cr
+/// 7 & \quad \textbf{return}\ c
 /// \end{array}}
 /// \f]
 /// \post the sum of \f$ c \f$ is the number of inversions of \f$ A \f$
@@ -186,9 +188,11 @@ largestGap( std::vector< std::pair< T , T > > I );
 /// order being optimal by an exchange argument:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{lineAssignment}( H , L ) \cr
-/// 2 & \quad \text{sort } H \text{ and } L \cr
-/// 3 & \quad \textbf{return}\ \sum_{i=0}^{n-1} | H[ i ] - L[ i ] |
+/// 1 & \textbf{function}\ \mathrm{lineAssignment}( H , L )\quad
+///     \triangleright\ \text{the } i \text{-th smallest with the } i
+///     \text{-th smallest} \cr
+/// 2 & \quad \text{sort } H \text{ and } L;\ \textbf{return}
+///     \ \textstyle\sum_{i=0}^{n-1} | H[ i ] - L[ i ] |
 /// \end{array}}
 /// \f]
 /// \pre \f$ H \f$ and \f$ L \f$ have the same size

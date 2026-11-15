@@ -82,12 +82,13 @@ namespace ADS
 /// a point where \f$ p \ne 0 \f$ proves that \f$ p \f$ is not zero:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{zeroPolynomial}( p , n , d , K ) \cr
-/// 2 & \quad \textbf{repeat}\ K \text{ times} \cr
-/// 3 & \qquad x \gets \text{a point of } \{ 1 , \ldots , 2 \max( d , 1 )
-///     \}^n \text{ at random} \cr
-/// 4 & \qquad \textbf{if}\ p( x ) \ne 0\ \textbf{then return false} \cr
-/// 5 & \quad \textbf{return true}
+/// 1 & \textbf{function}\ \mathrm{zeroPolynomial}( p , n , d , K )\quad
+///     \triangleright\ \text{a wrong true with probability } \le 2^{-K} \cr
+/// 2 & \quad \textbf{for}\ t \gets 1\ \textbf{to}\ K\ \textbf{do} \cr
+/// 3 & \qquad \textbf{if}\ p( x ) \ne 0 \text{ for a point } x
+///     \text{ drawn from } \{ 1 , \ldots , 2 \max( d , 1 ) \}^n
+///     \ \textbf{then return false} \cr
+/// 4 & \quad \textbf{return true}
 /// \end{array}}
 /// \f]
 /// \pre \f$ K \ge 0 \f$ and \f$ 2 d \f$ is a `long`, i.e.,
@@ -100,11 +101,14 @@ bool zeroPolynomial( F && p , std::size_t n , long d , int K , R & rng );
 /// In pseudocode (exercise 17.4, the algorithm of Freivalds):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{freivalds}( A , B , C , K ) \cr
-/// 2 & \quad \textbf{repeat}\ K \text{ times} \cr
-/// 3 & \qquad x \gets \text{a vector of } n \text{ random items of }
-///     \{ -1 , +1 \} \cr
-/// 4 & \qquad \textbf{if}\ A ( B x ) \ne C x\ \textbf{then return false} \cr
+/// 1 & \textbf{function}\ \mathrm{freivalds}( A , B , C , K )\quad
+///     \triangleright\ \text{whether } A B = C \text{, in } O( K n^2 ) \cr
+/// 2 & \quad \textbf{for}\ t \gets 1\ \textbf{to}\ K\ \textbf{do} \cr
+/// 3 & \qquad x \gets \text{a vector of } n \text{ signs } \pm 1
+///     \text{ drawn at random} \cr
+/// 4 & \qquad \textbf{if}\ C x \ne A ( B x )
+///     \ \textbf{then return false}\quad \triangleright
+///     \ \text{a certain answer} \cr
 /// 5 & \quad \textbf{return true}
 /// \end{array}}
 /// \f]
@@ -122,11 +126,9 @@ bool freivalds( const std::vector< std::vector< T > > & A ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{halfSatisfiable}( f , n , K ) \cr
-/// 2 & \quad y \gets 0 \cr
-/// 3 & \quad \textbf{repeat}\ K \text{ times} \cr
-/// 4 & \qquad x \gets n \text{ random bits};\ \textbf{if}\ f( x )
-///     \ \textbf{then}\ y \gets y + 1 \cr
-/// 5 & \quad \textbf{return}\ 2 y > K
+/// 2 & \quad y \gets \text{the number of the } K \text{ assignments of } n
+///     \text{ random bits that satisfy } f \cr
+/// 3 & \quad \textbf{return}\ y > K / 2
 /// \end{array}}
 /// \f]
 /// \pre \f$ K \ge 0 \f$

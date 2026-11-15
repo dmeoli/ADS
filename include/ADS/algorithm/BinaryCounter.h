@@ -65,13 +65,16 @@ namespace ADS
 /// In pseudocode (section 4.2.1), the carry running over the ones:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{add}( A[ 0 .. k - 1 ] ) \cr
+/// 1 & \textbf{function}\ \mathrm{add}( A[ 0 .. k - 1 ] )\quad
+///     \triangleright\ A[ 0 ]
+///     \text{ the lowest bit; returns the bits changed} \cr
 /// 2 & \quad i \gets 0 \cr
-/// 3 & \quad \textbf{while}\ i < k\ \textbf{and}\ A[ i ] = 1\ \textbf{do} \cr
-/// 4 & \qquad A[ i ] \gets 0;\ i \gets i + 1 \cr
-/// 5 & \quad \textbf{if}\ i < k\ \textbf{then}\ A[ i ] \gets 1;
-///     \ \textbf{return}\ i + 1 \cr
-/// 6 & \quad \textbf{return}\ k
+/// 3 & \quad \textbf{while}\ i < k\ \textbf{and}\ A[ i ] = 1\ \textbf{do}
+///     \ A[ i ] \gets 0;\ i \gets i + 1\quad \triangleright
+///     \ \text{the carry moves up} \cr
+/// 4 & \quad \textbf{if}\ i = k\ \textbf{then return}\ k\quad
+///     \triangleright\ \text{an overflow: all zeros} \cr
+/// 5 & \quad A[ i ] \gets 1;\ \textbf{return}\ i + 1
 /// \end{array}}
 /// \f]
 /// \pre the items of \f$ A \f$ are bits (audit)
