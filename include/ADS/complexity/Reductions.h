@@ -159,11 +159,11 @@ inline Cnf dominoToSat( const std::vector< Tile > & D , int n );
 /// 2 & \quad \text{the rows } x_{000} = 1 \text{ and } \textstyle\sum_h
 ///     x_{hij} = 1 \text{ for each square} \cr
 /// 3 & \quad \textbf{foreach}\ h \text{ and } ( i , j )\ \textbf{do}
-///     \ \text{the rows } x_{hij} + \textstyle\sum_g x_{g,i+1,j} \le 1
-///     \text{ and } x_{hij} + \textstyle\sum_g x_{g,i,j+1} \le 1 \text{,} \cr
-///   & \qquad \text{the first over the tiles } g
-///     \text{ that do not fit on the right of } h \text{, the second over}
-///     \text{ those that do not fit above } h \cr
+///     \ \text{the rows } x_{hij} + \textstyle\sum_g x_{g,i+1,j} \le 1 \cr
+///   & \qquad \text{and } x_{hij} + \textstyle\sum_g x_{g,i,j+1} \le 1
+///     \text{,} \cr
+///   & \qquad \text{the sums over the tiles } g
+///     \text{ that do not fit on the right of } h \text{, and above } h \cr
 /// 4 & \quad \textbf{return}\ ( A , b )\quad \triangleright
 ///     \ \text{each equation as two inequalities}
 /// \end{array}}

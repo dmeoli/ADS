@@ -599,8 +599,9 @@ multiprocessorScheduling( const std::vector< long > & t , int m , long d );
 /// 2 & \quad \textbf{if}\ \mathit{left} = 0\ \textbf{then return true} \cr
 /// 3 & \quad \textbf{if}\ j = |Y|\ \textbf{then return false} \cr
 /// 4 & \quad \textbf{if}\ Y[ j ]
-///     \text{ has three distinct elements, none covered by } S \text{, and }
-///     \mathrm{extend}( S \cup \{ j \} , j + 1 , \mathit{left} - 3 )
+///     \text{ has three distinct elements, none covered by } S \text{, and}
+///     \cr
+///   & \qquad \mathrm{extend}( S \cup \{ j \} , j + 1 , \mathit{left} - 3 )
 ///     \ \textbf{then return true} \cr
 /// 5 & \quad \textbf{return}\ \mathrm{extend}( S , j + 1 , \mathit{left} )
 /// \end{array}}

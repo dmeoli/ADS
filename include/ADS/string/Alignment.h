@@ -120,9 +120,9 @@ int alignmentScore( const S & P , const S & T , Alignment kind );
 ///     \triangleright\ \text{back along a choice that gives } \mathit{DP}[ i
 ///     ][ j ] \cr
 /// 4 & \qquad \textbf{if}\ i , j > 0 \text{ and } \mathit{DP}[ i ][ j ] =
-///     \mathit{DP}[ i - 1 ][ j - 1 ] + \delta_{ij}\ \textbf{then}
-///     \ \text{put } P[ i - 1 ] \text{ over } T[ j - 1 ];\ ( i , j ) \gets (
-///     i - 1 , j - 1 ) \cr
+///     \mathit{DP}[ i - 1 ][ j - 1 ] + \delta_{ij}\ \textbf{then} \cr
+///   & \qquad\quad \text{put } P[ i - 1 ] \text{ over } T[ j - 1 ];
+///     \ ( i , j ) \gets ( i - 1 , j - 1 ) \cr
 /// 5 & \qquad \textbf{else if}\ i > 0 \text{ and } \mathit{DP}[ i ][ j ] =
 ///     \mathit{DP}[ i - 1 ][ j ] - 2\ \textbf{then}\ \text{put } P[ i - 1 ]
 ///     \text{ over a space};\ i \gets i - 1 \cr
