@@ -203,6 +203,32 @@ class RunCaller
  bool f_old;  ///< the mark before
  };
 
+/// marks the running thread, for its scope, as inside a call made by an
+/// executor of the tag \f$ T \f$, so that a call of `bulk()` nested in it
+/// runs inline: for the runtimes whose wait for a job holds the thread
+/// that waits (a `sync_wait` of the senders, a dispatch of Kokkos), where a
+/// nested job would hold all the threads of the runtime
+template< class T >
+class InsideCall
+{
+ public:
+ /// the mark set, the previous one kept
+ InsideCall( void ) : f_old( tl_inside ) { tl_inside = true; }
+ /// no copy
+ InsideCall( const InsideCall & ) = delete;
+ /// no copy
+ InsideCall & operator=( const InsideCall & ) = delete;
+ /// the previous mark back
+ ~InsideCall() { tl_inside = f_old; }
+
+ /// whether the running thread is inside a call of an executor of the tag
+ [[nodiscard]] static bool active( void ) { return( tl_inside ); }
+
+ private:
+ static inline thread_local bool tl_inside = false;  ///< the mark
+ bool f_old;                                         ///< the mark before
+ };
+
 }  // end( namespace detail )
 
 /// true if the running thread is the thread that called a `run()` of an

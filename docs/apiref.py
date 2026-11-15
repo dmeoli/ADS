@@ -56,6 +56,7 @@ NAMES = {
     'intractable': 'Intractable problems', 'memory': 'Memory',
     'concurrent': 'Concurrency', 'parallel': 'Parallelism',
     'distributed': 'Distributed algorithms',
+    'interop/parallel': 'Executors on the runtimes of a program',
     'external': 'External memory', 'compression': 'Compression',
     'succinct': 'Succinct structures',
     'combinatorial': 'Combinatorial algorithms',
@@ -301,9 +302,10 @@ def read_xml():
 # ----- the areas and the headers ------------------------------------------- #
 
 def area_of(path):
-    """the area of a header: its folder in include/ADS, else TOP"""
-    m = re.match(r'ADS/(?:([^/]+)/)?[^/]+$', path)
-    if not m:
+    """the area of a header: its folder in include/ADS (with the folders
+    above it, e.g., interop/parallel), else TOP"""
+    m = re.match(r'ADS/(?:(.+)/)?[^/]+$', path)
+    if not m or '/impl/' in path:
         return ''
     return m.group(1) or TOP
 
@@ -318,7 +320,7 @@ def readme_lines():
     lists = re.findall(r'(?:^- .*\n(?:  .*\n)*)+', part, re.M)
     types, lines = [], {}
     for k, items in enumerate(lists):
-        for m in re.finditer(r'^- `(\w+)/`, (.*\n(?:  .*\n)*)', items,
+        for m in re.finditer(r'^- `([\w/]+?)/`, (.*\n(?:  .*\n)*)', items,
                              re.M):
             line = ' '.join(m.group(2).split()).rstrip(';.')
             lines[m.group(1)] = line[:1].upper() + line[1:] + '.'

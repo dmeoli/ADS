@@ -66,6 +66,59 @@ if (ADS_USE_MPI)
     endforeach ()
 endif ()
 
+# the executors on the runtimes of a program found [see ADSInterop.cmake]
+# under the parallel algorithms, and their own tests [see
+# InteropExecutors.h and interop_parallel.cpp]
+foreach (program engineered_parallel engineered_speculative interop_parallel)
+    foreach (r IN LISTS ADS_INTEROP_BUILT)
+        if (NOT r STREQUAL "BoostMPI")
+            target_link_libraries(${program} PRIVATE ADS::${r})
+        endif ()
+    endforeach ()
+endforeach ()
+
+# the processes of MPI in a program of Boost.MPI, not in tests.txt: on 1 to
+# 4 processes [see engineered_boost_mpi.cpp]
+if ("BoostMPI" IN_LIST ADS_INTEROP_BUILT)
+    add_executable(engineered_boost_mpi engineered_boost_mpi.cpp)
+    target_link_libraries(engineered_boost_mpi PRIVATE ADS::BoostMPI
+                          Threads::Threads)
+    target_compile_definitions(engineered_boost_mpi PRIVATE ADS_CONTRACTS=3)
+    foreach (t boost-mpi-sort boost-mpi-codec)
+        foreach (np 1 2 3 4)
+            add_test(NAME engineered_boost_mpi.${t}.np${np}
+                     COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG}
+                             ${np} ${MPIEXEC_PREFLAGS}
+                             $<TARGET_FILE:engineered_boost_mpi>
+                             ${MPIEXEC_POSTFLAGS} ${t})
+        endforeach ()
+    endforeach ()
+endif ()
+
+# the configurations of the layouts [see Abi.h and abi_units.cpp]: one
+# program from two units of abi_unit.cpp, the first without the vector
+# matching and the compare-and-swap of 16 bytes, the second with the
+# defaults of the target and -mcx16 where the compiler takes it
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-mcx16 ADS_HAS_MCX16)
+add_library(abi_unit_a OBJECT abi_unit.cpp)
+target_compile_definitions(abi_unit_a PRIVATE ADS_ABI_UNIT=A ADS_FLAT_SIMD=0
+                           ADS_FLAT_CAS16=0)
+add_library(abi_unit_b OBJECT abi_unit.cpp)
+target_compile_definitions(abi_unit_b PRIVATE ADS_ABI_UNIT=B)
+if (ADS_HAS_MCX16)
+    target_compile_options(abi_unit_b PRIVATE -mcx16)
+endif ()
+add_executable(abi_units abi_units.cpp $<TARGET_OBJECTS:abi_unit_a>
+                         $<TARGET_OBJECTS:abi_unit_b>)
+foreach (t abi_unit_a abi_unit_b abi_units)
+    target_link_libraries(${t} PRIVATE ADS::ADS Threads::Threads)
+    target_compile_options(${t} PRIVATE
+            $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra>
+            $<$<CXX_COMPILER_ID:MSVC>:/W3 /permissive- /utf-8>)
+endforeach ()
+add_test(NAME abi-units COMMAND abi_units)
+
 # the order of the includes of FastFlowExecutor.h, a test of the compiler
 # [see fastflow_order.cpp]: the build of a program that includes a header of
 # FastFlow first must fail with the error of the header

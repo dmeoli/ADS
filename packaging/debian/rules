@@ -14,4 +14,7 @@ override_dh_auto_configure:
 	dh_auto_configure -- -DADS_BUILD_TESTS=$(ADS_TESTS) \
 	                     -DBUILD_TESTING=$(ADS_TESTS) \
 	                     -DADS_WITH_GMP=OFF -DADS_WITH_BLAS=OFF \
-	                     -DADS_WITH_BOOST=OFF -DADS_WITH_MPI=OFF
+	                     -DADS_WITH_BOOST=OFF -DADS_WITH_MPI=OFF \
+	                     -DADS_WITH_STDPAR=OFF -DADS_WITH_STDEXEC=OFF \
+	                     -DADS_WITH_TASKFLOW=OFF -DADS_WITH_KOKKOS=OFF \
+	                     -DADS_WITH_BOOST_MPI=OFF

@@ -536,9 +536,15 @@ def file_text(inc, name):
 _file_cache = {}
 
 
+# the macros that open and close the inline namespace of the configuration
+# of the layouts [see Abi.h], read as the braces they expand to
+ABI_MACROS = {'ADS_ABI_BEGIN': '{', 'ADS_ABI_END': '}'}
+
+
 def file_tokens(inc, name):
     if name not in _file_cache:
-        _file_cache[name] = tokenize(file_text(inc, name))
+        _file_cache[name] = [ABI_MACROS.get(t, t)
+                             for t in tokenize(file_text(inc, name))]
     return _file_cache[name]
 
 

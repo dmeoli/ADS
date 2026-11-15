@@ -33,13 +33,22 @@
 #                                  TBBExecutor.h]                             #
 #           $(ADS_WITH_FASTFLOW) = 1 for the executor of FastFlow [see        #
 #                                  FastFlowExecutor.h]                        #
-#           $(ADS_WITH_MPI)      = the same as $(ADS_WITH_GMP) for the sort   #
-#                                  and the runtime over the processes of MPI  #
-#                                  [see include/ADS/distributed], the         #
-#                                  options of MPI asked to $(MPICXX)          #
+#           $(ADS_WITH_MPI)      = 1 or auto for the sort and the runtime     #
+#                                  over the processes of MPI [see             #
+#                                  include/ADS/distributed], the options of   #
+#                                  MPI asked to $(MPICXX); 0, the default, as #
+#                                  for the other runtimes                     #
+#           $(ADS_WITH_STDPAR), $(ADS_WITH_STDEXEC), $(ADS_WITH_TASKFLOW)     #
+#                                = the same as $(ADS_WITH_GMP) for the        #
+#                                  executors on the parallel algorithms of    #
+#                                  the standard library, on stdexec and on    #
+#                                  Taskflow [see include/ADS/interop/         #
+#                                  parallel], in $(ADSINTEROPINC) and         #
+#                                  $(ADSINTEROPLIB) alone                     #
 #           $(GMP_ROOT), $(BLAS_ROOT), $(Boost_ROOT), $(OpenMP_ROOT),         #
 #           $(TBB_ROOT), $(FastFlow_ROOT),                                    #
-#           $(MPI_ROOT)          = where the libraries are, see               #
+#           $(MPI_ROOT), $(STDEXEC_ROOT),                                     #
+#           $(Taskflow_ROOT)     = where the libraries are, see               #
 #                                  extlib/makefile-paths (GMP=<prefix>,       #
 #                                  BLAS=<prefix> and BOOST=<prefix> on the    #
 #                                  command line are the same as               #
@@ -55,6 +64,10 @@
 #           $(ADSGMPON), $(ADSBLASON), $(ADSBOOSTON), $(ADSMPION) = 1 if the  #
 #                                  backend of GMP, of the CBLAS, of Boost, of #
 #                                  MPI is on                                  #
+#           $(ADSINTEROPINC), $(ADSINTEROPLIB) = the -I, -D and libraries of  #
+#                                  the runtimes of a program found, which     #
+#                                  $(ADSINC) and $(ADSLIB) do not carry       #
+#           $(ADSSTDPARON), $(ADSSTDEXECON), $(ADSTASKFLOWON) = 1 if found    #
 #                                                                             #
 ###############################################################################
 
@@ -163,9 +176,9 @@ ifeq ($(ADS_WITH_FASTFLOW),1)
     ADSINC += -DADS_WITH_FASTFLOW $(libFastFlowINC)
 endif
 
-# MPI, for the sort and the runtime over its processes: on where it is
-# found unless turned off, auto by default
-ADS_WITH_MPI ?= auto
+# MPI, for the sort and the runtime over its processes: off by default, as
+# the other runtimes, on where it is found with auto
+ADS_WITH_MPI ?= 0
 ifneq ($(ADS_WITH_MPI),0)
     include $(ADSSDR)/extlib/makefile-libMPI
     ADSMPION := $(strip $(if $(filter auto,$(ADS_WITH_MPI)),\
@@ -174,6 +187,42 @@ endif
 ifeq ($(ADSMPION),1)
     ADSINC += -DADS_WITH_MPI $(libMPIINC)
     ADSLIB += $(libMPILIB)
+endif
+
+# the runtimes of a program, for the executors on them: on where they are
+# found unless turned off, auto by default, in ADSINTEROPINC and
+# ADSINTEROPLIB alone, so that a program takes them only by asking
+ADS_WITH_STDPAR ?= auto
+ADS_WITH_STDEXEC ?= auto
+ADS_WITH_TASKFLOW ?= auto
+ADSINTEROPINC :=
+ADSINTEROPLIB :=
+ifneq ($(ADS_WITH_STDPAR)$(ADS_WITH_STDEXEC)$(ADS_WITH_TASKFLOW),000)
+    include $(ADSSDR)/extlib/makefile-libInterop
+endif
+ifneq ($(ADS_WITH_STDPAR),0)
+    ADSSTDPARON := $(strip $(if $(filter auto,$(ADS_WITH_STDPAR)),\
+	$(libStdParFOUND),$(filter 1,$(ADS_WITH_STDPAR))))
+endif
+ifeq ($(ADSSTDPARON),1)
+    ADSINTEROPINC += $(libStdParINC)
+    ADSINTEROPLIB += $(filter-out none,$(libStdParLIB))
+endif
+ifneq ($(ADS_WITH_STDEXEC),0)
+    ADSSTDEXECON := $(strip $(if $(filter auto,$(ADS_WITH_STDEXEC)),\
+	$(libStdexecFOUND),$(filter 1,$(ADS_WITH_STDEXEC))))
+endif
+ifeq ($(ADSSTDEXECON),1)
+    ADSINTEROPINC += $(libStdexecINC)
+    ADSINTEROPLIB += $(filter-out none,$(libStdexecLIB))
+endif
+ifneq ($(ADS_WITH_TASKFLOW),0)
+    ADSTASKFLOWON := $(strip $(if $(filter auto,$(ADS_WITH_TASKFLOW)),\
+	$(libTaskflowFOUND),$(filter 1,$(ADS_WITH_TASKFLOW))))
+endif
+ifeq ($(ADSTASKFLOWON),1)
+    ADSINTEROPINC += $(libTaskflowINC)
+    ADSINTEROPLIB += $(filter-out none,$(libTaskflowLIB))
 endif
 
 # include the ADS makefile requiring all external modules in input

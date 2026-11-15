@@ -67,12 +67,20 @@ EXCLUDE_SYMBOLS        = detail \
 MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = YES
 # the optional libraries taken as present, so that what only they enable
-# (the executors of FastFlow, OpenMP and TBB, the sort of MPI) is documented
-# too
+# (the executors of FastFlow, OpenMP and TBB and those on the runtimes of a
+# program, the sort of MPI) is documented too, and the inline namespace of
+# the configuration of the layouts [see Abi.h] taken as absent
 PREDEFINED             = ADS_WITH_FASTFLOW \
                          ADS_WITH_MPI \
                          ADS_WITH_TBB \
+                         ADS_WITH_STDPAR \
+                         ADS_WITH_STDEXEC \
+                         ADS_WITH_TASKFLOW \
+                         ADS_WITH_KOKKOS \
+                         ADS_WITH_BOOST_MPI \
                          _OPENMP \
+                         ADS_ABI_BEGIN= \
+                         ADS_ABI_END= \
                          ADS_FLAT_INLINE= \
                          ADS_FLAT_NOINLINE= \
                          ADS_RING_INLINE= \

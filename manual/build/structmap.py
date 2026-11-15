@@ -29,6 +29,7 @@ CHAPTER = {
     'backtrack': 19, 'complexity': 20, 'intractable': 20, 'compression': 21,
     'succinct': 22, 'external': 23, 'concurrent': 24, 'parallel': 25,
     'distributed': 26,
+    'interop/parallel': 25,
 }
 # the file of each chapter
 FILE = {

@@ -164,6 +164,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Abi.h"
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/FastHash.h"
@@ -182,21 +183,6 @@
 #include <utility>
 #include <vector>
 
-/// the matching of the 15 control bytes of a group: 1 by SSE2, 2 by NEON,
-/// 0 by broadword operations, on any machine; by default the first that
-/// the target has, and the same in all the translation units of a program
-#ifndef ADS_FLAT_SIMD
- #if defined( __SSE2__ ) || defined( _M_X64 ) ||                              \
-   ( defined( _M_IX86_FP ) && ( _M_IX86_FP >= 2 ) )
-  #define ADS_FLAT_SIMD 1
- #elif ( defined( __ARM_NEON ) && defined( __AARCH64EL__ ) ) ||               \
-   defined( _M_ARM64 )
-  #define ADS_FLAT_SIMD 2
- #else
-  #define ADS_FLAT_SIMD 0
- #endif
-#endif
-
 #if ADS_FLAT_SIMD == 1
  #include <emmintrin.h>
 #elif ADS_FLAT_SIMD == 2
@@ -207,13 +193,7 @@
  #include <intrin.h>
 #endif
 
-// the pairs of boost::unordered_flat_map, with ADS_WITH_BOOST
-#if defined( ADS_WITH_BOOST ) && ! defined( ADS_FLATHASH_BOOST )
- #define ADS_FLATHASH_BOOST 1
-#endif
-#ifndef ADS_FLATHASH_BOOST
- #define ADS_FLATHASH_BOOST 0
-#endif
+// the pairs of boost::unordered_flat_map, with ADS_WITH_BOOST [see Abi.h]
 #if ADS_FLATHASH_BOOST
  #include <iterator>
 
@@ -257,6 +237,7 @@ namespace ADS
 
 namespace detail
 {
+ADS_ABI_BEGIN
 
 /// the high 64 bits of the product \f$ a b \f$ on 128 bits XOR its low 64
 /// bits
@@ -266,7 +247,10 @@ namespace detail
 [[nodiscard]] constexpr std::uint64_t mulxPortable( std::uint64_t a ,
 						    std::uint64_t b );
 
+ADS_ABI_END
 }  // end( namespace detail )
+
+ADS_ABI_BEGIN
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS FlatHashTable ---------------------------*/
@@ -826,6 +810,8 @@ class FlatHashTable
  };  // end( class FlatHashTable )
 
 /*--------------------------------------------------------------------------*/
+
+ADS_ABI_END
 
 }  // end( namespace ADS )
 

@@ -7,7 +7,9 @@
 #    defines ADS::ADS, ADS::ADS_module when ADS was built with                #
 #    ADS_BUILD_MODULE, and ADS::GMP, ADS::BLAS and ADS::Boost when it was     #
 #    built on GMP, on a CBLAS and on Boost, and it finds again the threads,   #
-#    OpenMP, oneTBB and MPI when ADS was built with their executors.          #
+#    OpenMP, oneTBB and MPI when ADS was built with their executors, and the  #
+#    runtimes of the components ADS::StdPar, ADS::stdexec, ADS::Taskflow,     #
+#    ADS::Kokkos and ADS::BoostMPI [see ADSInterop.cmake].                    #
 #                                                                             #
 #    ADSTargets.cmake (to be found alongside this file) is the target import  #
 #    file that tells where the headers are.                                   #
@@ -67,6 +69,32 @@ endif ()
 # ----- Import target ------------------------------------------------------- #
 if (NOT TARGET ADS::ADS)
     include("${ADS_CMAKE_DIR}/ADSTargets.cmake")
+endif ()
+
+# ----- Components ---------------------------------------------------------- #
+# the runtimes of a program that ADS was built with, each the component and
+# the target ADS::<name> [see ADSInterop.cmake]: those asked by
+# find_package(ADS COMPONENTS ...), or all of them if none is asked, found
+# again here, first where they were found when ADS was built; a component
+# not found is not there, an error only if it was asked as required
+set(ADS_INTEROP_BUILT "@ADS_INTEROP_BUILT@")
+set(ADS_INTEROP_WANT "")
+foreach (c IN LISTS ADS_INTEROP_BUILT)
+    if (NOT ADS_FIND_COMPONENTS OR c IN_LIST ADS_FIND_COMPONENTS)
+        list(APPEND ADS_INTEROP_WANT ${c})
+    endif ()
+endforeach ()
+if (ADS_INTEROP_WANT)
+    if (NOT STDEXEC_INCLUDE_DIR)
+        set(STDEXEC_INCLUDE_DIR "@STDEXEC_INCLUDE_DIR@")
+    endif ()
+    if (NOT Taskflow_INCLUDE_DIR)
+        set(Taskflow_INCLUDE_DIR "@Taskflow_INCLUDE_DIR@")
+    endif ()
+    if (NOT Kokkos_DIR)
+        set(Kokkos_DIR "@Kokkos_DIR@")
+    endif ()
+    include("${ADS_CMAKE_DIR}/ADSInterop.cmake")
 endif ()
 
 set(ADS_LIBRARIES ADS::ADS)

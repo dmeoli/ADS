@@ -15,14 +15,17 @@
 #     make test        runs them (make -j<n> test builds and runs n programs  #
 #                      at a time)                                             #
 #     make test-mpi    the sort and the runtime over the processes of MPI,    #
-#                      by mpirun                                              #
+#                      by mpirun (ADS_WITH_MPI=auto or 1)                     #
+#     make test-boost-mpi                                                     #
+#                      the same in a program of Boost.MPI                     #
 #     make test ADS_WITH_GMP=0 ADS_WITH_BLAS=0 ADS_WITH_BOOST=0               #
 #                      the same without the backends of GMP, of a CBLAS and   #
 #                      of Boost, on by default where they are found           #
 #                      [GMP=<prefix>] [BLAS=<prefix>] [BOOST=<prefix>]        #
 #     make test ADSMOD=1                                                      #
 #                      also the C++20 module ads and the test that imports it #
-#     make backends    tells whether GMP, a CBLAS, Boost and MPI were found   #
+#     make backends    tells whether GMP, a CBLAS, Boost, MPI and the         #
+#                      runtimes of a program were found                       #
 #     make bench       builds the benchmarks in $(BUILD)                      #
 #     bench/run.sh     runs them and writes the tables of the README          #
 #     make install     copies include/ADS into $(PREFIX)/include, with        #
@@ -36,11 +39,12 @@
 #           optional: $(PREFIX)   = where make install copies the headers     #
 #                                   (/usr/local if not given)                 #
 #           optional: the macros of the backends, ADS_WITH_GMP,               #
-#                     ADS_WITH_BLAS, ADS_WITH_BOOST and ADS_WITH_MPI (auto    #
-#                     by default, 0 or 1),                                    #
-#                     ADS_WITH_OPENMP=1, ADS_WITH_TBB=1, ADS_WITH_FASTFLOW=1, #
-#                     and their *_ROOT [see lib/makefile-c]; ADSMOD=1 [see    #
-#                     lib/makefile-mod]                                       #
+#                     ADS_WITH_BLAS, ADS_WITH_BOOST, ADS_WITH_STDPAR,         #
+#                     ADS_WITH_STDEXEC and ADS_WITH_TASKFLOW (auto by         #
+#                     default, 0 or 1), ADS_WITH_MPI (0 by default, auto or   #
+#                     1), ADS_WITH_OPENMP=1, ADS_WITH_TBB=1,                  #
+#                     ADS_WITH_FASTFLOW=1, and their *_ROOT [see              #
+#                     lib/makefile-c]; ADSMOD=1 [see lib/makefile-mod]        #
 #                                                                             #
 ###############################################################################
 
@@ -94,6 +98,29 @@ $(BUILD)/%$(ADSEXE): test/%.cpp $(HEADERS) | $(BUILD)
 $(BUILD):
 	mkdir -p $@
 
+# the executors on the runtimes of a program found, under the parallel
+# algorithms and in their own tests [see test/InteropExecutors.h]
+INTEROPBINS = $(addprefix $(BUILD)/,$(addsuffix $(ADSEXE),\
+              engineered_parallel engineered_speculative interop_parallel))
+$(INTEROPBINS): INC += $(ADSINTEROPINC)
+$(INTEROPBINS): LIBS += $(ADSINTEROPLIB)
+
+# the configurations of the layouts, not in tests.txt [see ADS/Abi.h and
+# test/abi_units.cpp]: one program from two units of test/abi_unit.cpp, the
+# first without the vector matching and the compare-and-swap of 16 bytes,
+# the second with the defaults of the target and -mcx16 where the compiler
+# takes it
+ABIMCX16 = $(shell $(CXX) -mcx16 -x c++ -fsyntax-only /dev/null \
+           2>/dev/null && echo -mcx16)
+test-abi: | $(BUILD)
+	$(CXX) $(CXXFLAGS) $(INC) -DADS_ABI_UNIT=A -DADS_FLAT_SIMD=0 \
+	 -DADS_FLAT_CAS16=0 -c -o $(BUILD)/abi_unit_a.o test/abi_unit.cpp
+	$(CXX) $(CXXFLAGS) $(INC) -DADS_ABI_UNIT=B $(ABIMCX16) \
+	 -c -o $(BUILD)/abi_unit_b.o test/abi_unit.cpp
+	$(CXX) $(CXXFLAGS) -o $(BUILD)/abi_units$(ADSEXE) test/abi_units.cpp \
+	 $(BUILD)/abi_unit_a.o $(BUILD)/abi_unit_b.o $(LIBS)
+	$(BUILD)/abi_units$(ADSEXE)
+
 # the sort and the runtime over the processes of MPI, not in tests.txt:
 # make test-mpi [MPICXX=mpicxx] [MPIRUN=mpirun], on 1 to 4 processes, with
 # the options of MPI that MPICXX tells (Open MPI is told that the processes
@@ -111,6 +138,20 @@ test-mpi: | $(BUILD)
 	         mpi-stop; do \
 	  for np in 1 2 3 4; do \
 	    $(MPIRUN) -np $$np $(BUILD)/engineered_mpi $$t || exit 1; \
+	  done; \
+	done
+
+# the same in a program of Boost.MPI [see test/engineered_boost_mpi.cpp]:
+# make test-boost-mpi, with MPI on and Boost.MPI and Boost.Serialization
+# where $(MPICXX) finds them
+test-boost-mpi: | $(BUILD)
+	$(if $(filter 1,$(ADSMPION)),,$(error MPI was not found [see \
+	 extlib/makefile-libMPI]))
+	$(CXX) $(CXXFLAGS) $(INC) -o $(BUILD)/engineered_boost_mpi \
+	 test/engineered_boost_mpi.cpp $(LIBS) -lboost_mpi -lboost_serialization
+	for t in boost-mpi-sort boost-mpi-codec; do \
+	  for np in 1 2 3 4; do \
+	    $(MPIRUN) -np $$np $(BUILD)/engineered_boost_mpi $$t || exit 1; \
 	  done; \
 	done
 
@@ -170,7 +211,7 @@ test-modification-attach: | $(BUILD)
 	@echo "PASSED modification-attach"
 
 test: $(addprefix test-,$(PROGRAMS)) $(MODBIN) test-fastflow-order \
-      test-modification-attach
+      test-modification-attach test-abi
 	@failed=$$(cat $(addprefix $(BUILD)/,$(addsuffix .failed,$(PROGRAMS))) \
 	| awk '{s += $$1} END {print s + 0}'); \
 	$(if $(MODBIN),$(MODBIN) || failed=$$((failed + 1));) \
@@ -183,6 +224,9 @@ backends:
 	      "CBLAS $(if $(filter 1,$(ADSBLASON)),ON,OFF)"
 	@echo "ADS: Boost $(if $(filter 1,$(ADSBOOSTON)),ON,OFF)"
 	@echo "ADS: MPI $(if $(filter 1,$(ADSMPION)),ON,OFF)"
+	@echo "ADS: StdPar $(if $(filter 1,$(ADSSTDPARON)),ON,OFF)," \
+	      "stdexec $(if $(filter 1,$(ADSSTDEXECON)),ON,OFF)," \
+	      "Taskflow $(if $(filter 1,$(ADSTASKFLOWON)),ON,OFF)"
 
 # bench target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -559,6 +603,7 @@ install:
 clean::
 	rm -rf $(BUILD)
 
-.PHONY: all test test-mpi bench install clean backends
+.PHONY: all test test-mpi test-boost-mpi test-abi bench install clean \
+        backends
 
 ############################### End of makefile ###############################

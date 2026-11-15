@@ -33,6 +33,7 @@ namespace ADS
 
 namespace detail
 {
+ADS_ABI_BEGIN
 
 /// the mask of the bytes equal to 0 in the word w, their bits 7 set,
 /// exactly (no false byte after a borrow)
@@ -49,7 +50,10 @@ inline std::atomic< std::uint64_t > flatTableIds{ 0 };
 /// the identities of the threads, which pick their counters
 inline std::atomic< unsigned > flatThreadIds{ 0 };
 
+ADS_ABI_END
 }  // end( namespace detail )
+
+ADS_ABI_BEGIN
 
 /*------------------------------- THE WORDS --------------------------------*/
 
@@ -1184,6 +1188,8 @@ bool ConcurrentFlatTable< K , V , H , Eq , C >::consistent( void ) const
  }
 
 /*--------------------------------------------------------------------------*/
+
+ADS_ABI_END
 
 }  // end( namespace ADS )
 

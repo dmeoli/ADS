@@ -13,8 +13,10 @@
 # The headers of the optional executors are compiled only with their          #
 # library [see include/ADS/parallel and include/ADS/distributed]: their       #
 # names are exported inside the #if of their header, and they are read        #
-# only if the flags define the macro. To be run whenever a header gains or    #
-# loses a name.                                                               #
+# only if the flags define the macro. The executors on the runtimes of a      #
+# program [see include/ADS/interop/parallel] are left out, and the inline     #
+# namespace of the configuration [see Abi.h] is transparent. To be run        #
+# whenever a header gains or loses a name.                                    #
 ###############################################################################
 
 import argparse
@@ -41,6 +43,10 @@ OPTIONAL = { "ADS/parallel/OpenMPExecutor.h": "_OPENMP",
              "ADS/distributed/DistributedSort.h": "ADS_WITH_MPI",
              "ADS/distributed/MPIExecutor.h": "ADS_WITH_MPI",
              "ADS/distributed/MPIMailbox.h": "ADS_WITH_MPI" }
+
+# the headers on the runtimes of a program, left out of the module: a
+# program with the runtime includes them, after the module or the headers
+EXCLUDED = ( "ADS/interop/parallel/" , "ADS/distributed/BoostMPI.h" )
 
 
 def dump_ast( clang , inc , headers , flags ):
@@ -105,8 +111,12 @@ def collect( ast , inc ):
             rng = node.get( "range" , {} )
             at( rng.get( "begin" , {} ) )
             at( rng.get( "end" , {} ) )
+            # an inline namespace (that of the configuration of the
+            # layouts, see Abi.h) is transparent: its names are exported as
+            # those of the namespace around it
             if kind == "NamespaceDecl":
                 walk( node.get( "inner" , [] ) ,
+                      ns if node.get( "isInline" ) else
                       ns + [ node.get( "name" , "" ) ] )
                 continue
             if kind == "LinkageSpecDecl":
@@ -272,6 +282,7 @@ def main():
                       for d , _ , fs in os.walk( os.path.join( inc , "ADS" ) )
                       for f in fs if f.endswith( ".h" ) and
                       os.path.basename( d ) != "impl" )
+    headers = [ h for h in headers if not h.startswith( EXCLUDED ) ]
     # an optional header whose macro the flags do not define is not there
     defined = { f[ 2: ].split( "=" )[ 0 ] for f in args.flags
                 if f.startswith( "-D" ) }

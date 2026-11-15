@@ -9,6 +9,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the executors on the runtimes that a program may already have, in
+  include/ADS/interop/parallel: StdParExecutor on the parallel algorithms
+  of the standard library (std::for_each of a policy on the indices),
+  SenderExecutor on a scheduler of the senders of stdexec, TaskflowExecutor
+  on a tf::Executor (co-run from its workers) and KokkosExecutor on a space
+  of the host of Kokkos, each compiled where the headers of its runtime are
+  found; the calls nested in a call of the senders and of Kokkos run in
+  order on their thread, since their wait holds it (detail::InsideCall),
+  the nested parallelism being the price; with CMake the options
+  ADS_WITH_STDPAR, ADS_WITH_STDEXEC, ADS_WITH_TASKFLOW, ADS_WITH_KOKKOS and
+  ADS_WITH_BOOST_MPI (AUTO, off in the packages; cmake/ADSInterop.cmake)
+  give the targets ADS::StdPar, ADS::stdexec, ADS::Taskflow, ADS::Kokkos
+  and ADS::BoostMPI, components of the installed package, while ADS::ADS
+  carries none of them; the makefile takes the first three as auto into
+  ADSINTEROPINC and ADSINTEROPLIB (extlib/makefile-libInterop); the
+  parallel tests of engineered_parallel and engineered_speculative run on
+  every executor found (test/InteropExecutors.h), with the tests of
+  interop_parallel and the job interop of the CI, and the executors in
+  section 25.4 of the manual, in its Table 1.5 and in the README
+
+- distributed/BoostMPI.h, BoostMPICodec, the bytes of a message by
+  Boost.Serialization in the packed archives of Boost.MPI for MPIMailbox,
+  whose functions take a boost::mpi::communicator as their communicator;
+  the test program engineered_boost_mpi on 1 to 4 processes, by CMake and
+  by make test-boost-mpi
+
+- Abi.h, the inline namespace of the configuration of the layouts, named
+  after ADS_FLAT_SIMD, ADS_FLAT_CAS16, ADS_FLATHASH_BOOST and the level of
+  the vector instructions (whose defaults it now defines), in which
+  FlatHashTable, DenseHashMap, ConcurrentFlatTable and FastHash are
+  declared, so that two translation units built with different flags (a
+  file with -march=x86-64-v3 or -mcx16 beside the rest) get two classes
+  instead of two definitions of one that the linker merges; the test
+  abi-units links two such units into one program (by CMake and by make
+  test-abi), and the module script takes the inline namespaces as
+  transparent
+
+- the CI on ARM64 (the tests on ubuntu-24.04-arm and ThreadSanitizer on the
+  concurrent structures there, the tests with MSVC on windows-11-arm, not
+  yet required), on s390x, big-endian, by the cross compiler and QEMU (the
+  structures with branches for the order of the bytes, not yet required),
+  and the two units of abi-units on SSE2 and on AVX2
+
 - ADS_WITH_BOOST, the backend of the headers of Boost 1.83 or later (AUTO
   with CMake, auto with the makefile, as for GMP and the CBLAS, off in the
   packages; cmake/ADSBoost.cmake and extlib/makefile-libBoost find it, and
@@ -2013,6 +2056,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- ADS_WITH_MPI is OFF by default with CMake and 0 with the makefile, as
+  for the other runtimes (OpenMP, oneTBB, FastFlow), since ADS::ADS built
+  with MPI carries it to every program that links it; AUTO (auto) turns it
+  on where MPI is found, ON (1) requires it
+
 - the memoization of the 0-1 knapsack is knapsackMemo(), an English name
   like the rest of the interface, and zaino(), the name of the book, is kept
   as an alias of it
@@ -2984,6 +3032,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   multiplies its polynomials by multiplyKaratsuba()
 
 ### Fixed
+
+- TBBExecutor runs in an arena of the program (TBBExecutor( arena )) or in
+  the arena of each caller (TBBExecutor( TBBExecutor::current )), besides
+  its own, where it always made an arena of its own and dropped the
+  constraints of the arena of the program
+
+- OpenMPExecutor called inside a parallel region of the program, or nested
+  in a call of its own, makes its calls the tasks of a taskloop of the team
+  that is there, where its nested region ran them on one thread; with
+  p = 0 its concurrency() is that of the team
 
 - deltaStepping() and rhoStepping() size their distances by g.bound(), the
   names of the nodes, where they took g.n() and wrote past the end of the

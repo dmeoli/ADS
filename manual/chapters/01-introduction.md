@@ -1413,9 +1413,32 @@ for the integers of any length, a CBLAS for the products of matrices, the
 headers of Boost for the four structures that delegate to it where it is
 found (`PointerTable`, `FlatHashTable`, `SmallVector` and the generators
 xoshiro256, [§7.6](07-dictionary.md#sec-7-6)), OpenMP,
-oneTBB and FastFlow for the parallel executors, and MPI for the distributed
-ones. The library is also available as a module of C++20, `ads`, which
-exports all the names that the headers declare in the namespace `ADS`.
+oneTBB and FastFlow for the parallel executors, the runtimes that a program
+may already have (the parallel algorithms of the standard library, stdexec,
+Taskflow, Kokkos and Boost.MPI) for the executors on them
+([§25.4](25-parallel.md#sec-25-4)), and MPI for the distributed ones. The
+library is also available as a module of C++20, `ads`, which exports all
+the names that the headers declare in the namespace `ADS`.
+
+The flags of the compiler change some of the inline code of the library,
+and in a few classes the layout, through four options: the matching of the
+control bytes of the hash tables (`ADS_FLAT_SIMD`), the compare-and-swap of
+16 bytes of `ConcurrentFlatTable` (`ADS_FLAT_CAS16`, turned on by `-mcx16`
+and by `-march=x86-64-v2`), the delegation of `FlatHashTable` to Boost, and
+the level of the vector instructions of x86-64. A program often compiles a
+hot file with `-march=x86-64-v3` and the rest with the default, and its two
+translation units then hold two definitions of one class, which the linker
+merges without a word; an object of one unit may then run the code of the
+other. For this reason `ADS/Abi.h` spells the four options in the name
+of an inline namespace, e.g., `abi_s1c1b0v3`, in which `FlatHashTable`,
+`DenseHashMap`, `ConcurrentFlatTable` and `FastHash` are declared. Their
+names in `ADS` stay the same, while the names that the linker sees change
+with the options, and the two units get two distinct classes. We check it
+by the test `abi-units`, which links two such units into one program and
+checks that the tables of each hold what it put in them; without the
+namespace the same program fails. It is fair to remark, however, that the
+other macros of the configuration (e.g., the level of the contracts) must
+still be the same in all the units of a program.
 
 ## 1.10 Building, testing and using the library {#sec-1-10}
 
@@ -1803,6 +1826,10 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `concurrent/StealablePriorityQueue.h` | `StealablePriorityQueue`, `StealingFrontier` | [24](24-concurrent.md#ch-24) |
 | `concurrent/WorkStealingDeque.h` | `WorkStealingDeque` | [24](24-concurrent.md#ch-24) |
 | `parallel/Channels.h` | `ChannelPort`, `LockedChannels`, `InboxChannels`, `LaneChannels`, `MeshChannels`, `ChannelsOf` | [25](25-parallel.md#ch-25) |
+| `interop/parallel/KokkosExecutor.h` | `KokkosExecutor` | [25](25-parallel.md#ch-25) |
+| `interop/parallel/SenderExecutor.h` | `SenderExecutor` | [25](25-parallel.md#ch-25) |
+| `interop/parallel/StdParExecutor.h` | `StdParExecutor` | [25](25-parallel.md#ch-25) |
+| `interop/parallel/TaskflowExecutor.h` | `TaskflowExecutor` | [25](25-parallel.md#ch-25) |
 | `parallel/Executor.h` | `Sequential` | [25](25-parallel.md#ch-25) |
 | `parallel/FastFlowExecutor.h` | `FastFlowLock`, `FastFlowExecutor` | [25](25-parallel.md#ch-25) |
 | `parallel/Mailbox.h` | `Mailbox`, `NoCoalescing`, `CoalesceBy` | [25](25-parallel.md#ch-25) |
@@ -1811,6 +1838,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `parallel/TBBExecutor.h` | `TBBExecutor` | [25](25-parallel.md#ch-25) |
 | `parallel/ThreadPool.h` | `ThreadPool` | [25](25-parallel.md#ch-25) |
 | `distributed/MPIExecutor.h` | `MPIEnvironment`, `MPIExecutor`, `DistributedMin` | [26](26-distributed.md#ch-26) |
+| `distributed/BoostMPI.h` | `BoostMPICodec` | [26](26-distributed.md#ch-26) |
 | `distributed/MPIMailbox.h` | `MPICodec`, `MPIByteMailbox`, `MPIMailbox` | [26](26-distributed.md#ch-26) |
 
 <span id="tab-1-6"></span>**Table 1.6.** The headers that declare functions
@@ -1818,7 +1846,7 @@ only, by chapter.
 
 | Chapter | Headers of functions |
 |-----|-----------------------------------------------|
-| [1](01-introduction.md#ch-1) | `ADT.h`, `Portable.h` |
+| [1](01-introduction.md#ch-1) | `ADT.h`, `Abi.h`, `Portable.h` |
 | [2](02-sequence.md#ch-2) | `sequence/IndexedList.h`, `sequence/ListSort.h`, `sequence/Rearrangements.h`, `sequence/SequenceAlgorithms.h` |
 | [3](03-stack.md#ch-3) | `stack/Expressions.h`, `stack/StackAlgorithms.h` |
 | [4](04-queue.md#ch-4) | `queue/QueueAlgorithms.h` |

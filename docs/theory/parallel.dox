@@ -87,7 +87,10 @@
  threads and returns when all have returned (`bulk( n , f )`, the concept
  `Executor` of `Executor.h`), and may run two calls in parallel
  (`invoke( f , g )`); every parallel algorithm of the library takes one as its
- first argument, so that the same algorithm runs on any of the five.
+ first argument, so that the same algorithm runs on any of the five, and on
+ the four over the runtimes that a program may already have (the parallel
+ algorithms of the standard library, the senders of stdexec, Taskflow and
+ Kokkos, in `ADS/interop/parallel`).
 
  <table>
  <caption>The executors and the way they schedule the calls</caption>
@@ -107,15 +110,41 @@
      <td>a <tt>ParallelFor</tt> of FastFlow, chunks of 1</td>
      <td>by <tt>bulk()</tt></td><td>in order on its thread</td></tr>
  <tr><td><tt>OpenMPExecutor</tt></td><td>\f$ p \f$, the caller
-     included</td>
-     <td><tt>omp parallel for</tt>, dynamic chunks of 1</td>
+     included, or the team of the caller inside a region</td>
+     <td><tt>omp parallel for</tt>, dynamic chunks of 1, or
+         <tt>omp taskloop</tt> inside a region</td>
      <td>by <tt>bulk()</tt> on 2 indices</td>
-     <td>as the runtime nests a region, by default in order</td></tr>
- <tr><td><tt>TBBExecutor</tt></td><td>an arena of \f$ p \f$, the caller
-     included</td>
+     <td>as tasks of the team</td></tr>
+ <tr><td><tt>TBBExecutor</tt></td><td>an arena of \f$ p \f$, one of the
+     program or the current one, the caller included</td>
      <td><tt>parallel_for</tt> of oneTBB, a task per index</td>
      <td><tt>parallel_invoke</tt></td><td>as tasks of the arena</td></tr>
+ <tr><td><tt>StdParExecutor</tt></td><td>those of the backend of the
+     standard library</td>
+     <td><tt>std::for_each</tt> of the policy on the indices</td>
+     <td>by <tt>bulk()</tt></td><td>as the backend nests</td></tr>
+ <tr><td><tt>SenderExecutor</tt></td><td>those of the scheduler</td>
+     <td><tt>sync_wait()</tt> of a bulk sender</td>
+     <td>by <tt>bulk()</tt></td><td>in order on its thread</td></tr>
+ <tr><td><tt>TaskflowExecutor</tt></td><td>the workers of Taskflow</td>
+     <td>a graph of one <tt>for_each_index</tt>, run or co-run</td>
+     <td>by <tt>bulk()</tt></td><td>co-run by the worker</td></tr>
+ <tr><td><tt>KokkosExecutor</tt></td><td>those of a space of the host</td>
+     <td><tt>parallel_for</tt> of a range, then <tt>fence()</tt></td>
+     <td>by <tt>bulk()</tt></td><td>in order on its thread</td></tr>
  </table>
+
+ A call nested in a call that runs in order on its thread is correct on every
+ executor, since a thread may run several calls of a job one after the other
+ and the patterns never make a call wait for one that is not yet claimed (the
+ first block not done of a scan has no block to wait for, and the barrier of
+ the stepping admits the calls that come late). What is lost is the
+ parallelism below the top level: a loop of \f$ B \f$ blocks still runs on
+ \f$ \min\{ p , B \} \f$ threads, while a recursion by `parallelInvoke()`,
+ whose top level is one call of `bulk()` on 2 indices, runs on at most 2,
+ i.e., in time at least \f$ W / 2 \f$ in place of \f$ W / p + D \f$. It is
+ the price that `SenderExecutor` and `KokkosExecutor` pay, since their wait
+ holds the thread that waits and a nested wait would hold all of them.
 
  <em>Lemma 1 (the greedy schedule).</em> A schedule that never leaves a thread
  idle while a task is ready runs in

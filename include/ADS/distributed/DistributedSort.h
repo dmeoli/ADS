@@ -3,7 +3,7 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The sort of the items spread over the processes of MPI, beyond the book,
- * compiled only with `ADS_WITH_MPI` (the CMake option of the same name, AUTO
+ * compiled only with `ADS_WITH_MPI` (the CMake option of the same name, OFF
  * by default) and an implementation of MPI (Open MPI or MPICH): each of the
  * \f$ P \f$ processes of a communicator holds a vector of items, and after
  * `sort( comm , A , less )` each holds a sorted vector, those of the ranks

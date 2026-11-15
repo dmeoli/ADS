@@ -25,6 +25,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADSTest.h"
+#include "InteropExecutors.h"
 
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/graph/StaticGraph.h"
@@ -55,7 +56,8 @@ namespace
 {
 
 /// f( ex ) on each executor: Sequential, pools of 1, 2, 3 and 8 threads,
-/// and the executors of the libraries compiled in
+/// the executors of the libraries compiled in, and those on the runtimes
+/// of a program
 template< class F >
 void onEach( F && f )
 {
@@ -77,6 +79,8 @@ void onEach( F && f )
  TBBExecutor tbb( 4 );
  f( tbb );
 #endif
+ // the executors on the runtimes of a program [see InteropExecutors.h]
+ test::onEachInterop( f );
  }
 
 /// m random edges on n nodes, weights in [ lo , hi ], loops and parallel

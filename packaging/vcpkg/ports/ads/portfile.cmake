@@ -18,6 +18,11 @@ vcpkg_cmake_configure(
         -DADS_WITH_BLAS=OFF
         -DADS_WITH_BOOST=OFF
         -DADS_WITH_MPI=OFF
+        -DADS_WITH_STDPAR=OFF
+        -DADS_WITH_STDEXEC=OFF
+        -DADS_WITH_TASKFLOW=OFF
+        -DADS_WITH_KOKKOS=OFF
+        -DADS_WITH_BOOST_MPI=OFF
 )
 vcpkg_cmake_install()
 vcpkg_cmake_config_fixup(PACKAGE_NAME ads CONFIG_PATH share/cmake/ADS)

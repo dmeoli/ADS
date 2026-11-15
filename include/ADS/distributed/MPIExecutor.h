@@ -4,7 +4,7 @@
 /** @file
  * The processes of MPI as the workers of a distributed computation, beyond
  * the book, compiled only with `ADS_WITH_MPI` (the CMake option of the same
- * name, AUTO by default, and its macro of the makefiles) and an
+ * name, OFF by default, and its macro of the makefiles) and an
  * implementation of MPI (Open MPI or MPICH): `MPIExecutor` holds a
  * communicator and tells the rank of the process and the number of the
  * processes, and `run( f )` makes the call `f( rank )`, the worker of the
