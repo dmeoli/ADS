@@ -215,7 +215,7 @@ $( 2 B )^d$ nodes, which gives the upper one. Taking the logarithm of the
 first inequality, $h - 1 \le \log_B ( \ell / 2 ) \le \log_B \ell$.
 $\square$
 
-A node holds $O( B )$ data, and $B$ is chosen so that a node fills a block;
+A node holds $O( B )$ data, and we choose $B$ so that a node fills a block;
 the cost of an operation in the external memory is then the number of nodes
 that it reads or writes. With keys and indices of 4 bytes each, for
 instance, a node of $2 B$ keys and $2 B$ indices fills a block of 4096
@@ -479,8 +479,8 @@ otherwise; a node in underflow shares them with two siblings, into two
 nodes or three in the same way. Thus each node that these moves write has
 between about $7 B / 6$ and $7 B / 4$ keys, as in the B*-trees of [Knuth
 1998, §6.2.4](Z-bibliography.md#ref-knuth1998v3), whose overflow is shared
-with a sibling. The procedures that choose the restructuring of
-an overflow and of an underflow by the policy are given next, as calls of
+with a sibling. We give next the procedures that choose the restructuring of an
+overflow and of an underflow by the policy, as calls of
 `deal()` ([Algorithm 23.6](23-external.md#alg-23-6)); with `THREE`, the
 two leaves of a root are merged into one only while it keeps $\lfloor B /
 4 \rfloor$ keys of room.
@@ -607,7 +607,7 @@ $$
 *plus the $\lceil n / B \rceil$ writes of the output ([Aggarwal and Vitter
 1988](Z-bibliography.md#ref-aggarwal1988)).*
 
-*Proof.* Consider the tree of the executions, each node a read and its
+*Proof.* We consider the tree of the executions, each node a read and its
 children the outcomes of the read. A read brings $B$ items into a memory
 that holds $M - B$ others. Its outcome can only be the positions of the new
 items among the old ones, at most $\binom{M}{B}$ outcomes, times the $B!$
@@ -729,7 +729,7 @@ $( a + 1 ) k - 1$ items, with $a + 1 = \lceil 12 \ln k \rceil$. Then with
 probability at least $1 / 2$ each bucket between two consecutive pivots
 has fewer than $4 n / k$ items.*
 
-*Proof.* Cut the sorted input into $k / 2$ segments of $2 n / k$ items
+*Proof.* We cut the sorted input into $k / 2$ segments of $2 n / k$ items
 each. A bucket with $4 n / k$ items or more contains a whole segment, and
 then no more than $a$ items of the sample fall in that segment, since two
 consecutive pivots have $a$ items of the sample between them. The number
