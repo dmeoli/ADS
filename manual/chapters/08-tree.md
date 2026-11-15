@@ -23,7 +23,11 @@ change. The search trees are the subject of chapters 6 to 9 of [Morin
 2013](Z-bibliography.md#ref-morin-cpp), whose every section, lemma,
 theorem and exercise is here, proved or solved on our code; the exercises
 on the illustration of an operation are solved by figures drawn from the
-states that the classes of the library reach on the data of his figures.
+states that the classes of the library reach on the data of his figures. In
+the sets of [§1.9](01-introduction.md#sec-1-9), `BTreeMap.h`,
+`JoinAlgorithms.h`, `JoinTree.h`, `LinkCutTree.h`,
+`MaterializedAggregate.h` and `SplayTree.h` are advanced and the other
+headers of this chapter are base.
 
 After the definitions and the interfaces ([§8.1](08-tree.md#sec-8-1)), the
 ordered trees and their five representations come in

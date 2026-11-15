@@ -31,7 +31,11 @@ transform of Burrows and Wheeler sorts the contexts of the symbols, after
 which the symbols are easy to code ([§21.10](21-compression.md#sec-21-10)).
 The transform is also an index of the text, which
 [§21.11](21-compression.md#sec-21-11) builds in four forms of decreasing
-space.
+space. In the sets of [§1.9](01-introduction.md#sec-1-9),
+`ArithmeticCoding.h`, `BurrowsWheeler.h`, `CanonicalHuffman.h`,
+`Entropy.h`, `FMIndex.h`, `IntegerCodes.h`, `LempelZiv.h` and `PPM.h` are
+base and the other headers of this chapter are advanced, while
+`PackedBits.h` is in the core that the two sets include.
 
 ## 21.1 Entropy {#sec-21-1}
 

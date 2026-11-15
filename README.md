@@ -171,6 +171,72 @@ their contracts, and the definitions of its templates are in the folder
 `impl/` next to it (e.g., `ADS/graph/impl/ListGraph.tpp`), included at the
 end of the header, as in Boost; hence, `include/` is the whole library.
 
+## Base and advanced
+
+The headers are divided into two sets by their origin, and the division
+changes no path. The base set holds what follows a textbook or an academic
+source (Montresor, The Art of Computer Programming, Ferragina's book and
+notes, Morin's Open Data Structures), written to be read side by side with
+the text even when it is fast, e.g., the red-black tree of the book,
+`BigInteger` on GMP and the PGM-index; the advanced set holds what is
+written for speed beyond those sources (e.g., `UnionFind`, `DaryHeap`,
+`StaticGraph`, `CompactRankSelect`), the concurrent and parallel
+structures, the executors, the distributed layer, the typed modifications
+and the observers. An advanced structure extends a base one by the same
+concepts and by composition, not by inheritance, and a few base headers use
+an advanced one inside (e.g., `SuffixArray.h` sorts by `RadixSort.h`). The
+infrastructure that both sets include (the contracts, the iterators, the
+portable primitives, the capabilities, the concept of the executors, the
+pool of the nodes, the random hashing) is a third set, core, and the
+headers that still hold a part of each set are in both.
+`#include "ADS/base.h"` (or `import ads.base;`) gives the base set with
+core, `ADS/advanced.h` (`import ads.advanced;`) the advanced one with core,
+`ADS/core.h` (`import ads.core;`) the core alone, and `ADS/ADS.h` (`import
+ads;`) everything, so that a program that wants only the book compiles
+neither the concurrent structures nor the backends of MPI and oneTBB. The
+set of each header is given in one place, [`cmake/ads_sets.txt`](cmake/ads_sets.txt),
+from which `cmake/ads_sets.py` writes the entry points and the table below;
+CMake runs it at configure time and the makefile at each `make`, and it
+stops on a header with no set, or on an include across the sets that the
+file does not allow.
+
+<!-- sets: written by cmake/ads_sets.py -->
+
+404 headers: 240 base, 148 advanced, 11 core and 5 in both sets until they are split.
+
+| Folder | Base | Advanced | Core | Both |
+|---|---|---|---|---|
+| `ADS/` | `ADT` | `Algebra`, `Modification` | `Capabilities`, `Contract`, `Iterators`, `Portable` |  |
+| `algorithm/` | `AkraBazzi`, `BinaryCounter`, `Hanoi`, `MasterTheorem`, `MaximumSegments`, `MonteCarlo`, `Paradigms`, `SequenceQueries`, `Subsequences` |  |  |  |
+| `backtrack/` | `Anagrams`, `DancingLinks`, `Enumeration`, `KnightTour`, `NQueens`, `SatSolvers`, `Sudoku` | `FastExactCover` |  |  |
+| `combinatorial/` | `Bitwise`, `Generation` | `FastBitwise`, `FastGeneration` |  |  |
+| `complexity/` | `Domino`, `EasyCases`, `Nondeterminism`, `Problems`, `Reductions` |  |  |  |
+| `compression/` | `ArithmeticCoding`, `BurrowsWheeler`, `CanonicalHuffman`, `Entropy`, `FMIndex`, `IntegerCodes`, `LempelZiv`, `PPM` | `BinaryPacking`, `DirectAccessCodes`, `HuffmanCoder`, `HuffmanFMIndex`, `LZ77Linear`, `MoveRIndex`, `RIndex`, `Rans`, `StreamVByte`, `Tans` | `PackedBits` |  |
+| `concurrent/` |  | `Backoff`, `ConcurrentCuckooTable`, `ConcurrentFlatTable`, `ConcurrentUnionFind`, `EventCount`, `LockFreePriorityQueue`, `MPMCQueue`, `MPSCInbox`, `MPSCQueue`, `MinBoard`, `MultiQueue`, `SPSCQueue`, `SingleWriterFlatTable`, `StealablePriorityQueue`, `WorkStealingDeque` |  |  |
+| `dictionary/` | `BinaryTrie`, `BitmapTrie`, `ChainedHashTable`, `CuckooHashing`, `DirectTable`, `HashFunctions`, `IndexedSkipList`, `KnuthHashing`, `OpenHashTable`, `PatriciaTrie`, `PerfectHashing`, `SkipList`, `SortedArrayDictionary`, `TableSize`, `Trie`, `TwoLevelDictionary`, `UniversalHashing`, `XFastTrie`, `YFastTrie` | `AdaptiveRadixTree`, `BucketCuckooTable`, `DenseHashMap`, `FastHash`, `FingerprintPerfectHash`, `FlatHashTable`, `MinimalPerfectHash`, `PointerTable`, `PositionIndex`, `RecSplit`, `RowFingerprint`, `SuccinctPatriciaTrie` | `RandomHashing` |  |
+| `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  |  |
+| `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `RecordFile` |  |
+| `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |
+| `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `MatrixGraph`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths` | `Assignment`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `Reoptimization`, `StaticGraph` |  | `Matching`, `MaxFlow`, `Visit` |
+| `intractable/` | `Approximation`, `BranchAndBound`, `FifteenPuzzle`, `Heuristics`, `Pseudopolynomial` |  |  |  |
+| `memory/` | `Allocators`, `CellHeap` | `Arena`, `ConcurrentPool`, `PageHeap`, `PoolAllocator`, `SizeClassAllocator` | `HugePageAllocator`, `ObjectPool` |  |
+| `mfset/` | `ListMFSet`, `MFSet` | `RemUnionFind`, `RollbackUnionFind`, `UnionFind` |  |  |
+| `numeric/` | `BigInteger`, `BinaryInteger`, `Catalan`, `Combinatorics`, `Matrix`, `MatrixChain`, `NumberTheory`, `Polynomial`, `RSA`, `RandomNumbers`, `RandomSampling`, `Rational`, `SparseMatrix` | `CsrMatrix`, `DenseMatrix`, `DynamicCsr`, `RandomGenerators`, `SellMatrix`, `SparseAssembly` |  |  |
+| `optimization/` | `CoinChange`, `CoinGame`, `FractionalKnapsack`, `GridPaths`, `HouseProblems`, `IntervalCover`, `Intervals`, `Knapsack`, `KnapsackVariants`, `LinearPartition`, `OptimalSearchTree`, `SequenceProblems`, `ShortestJobFirst`, `StockTrading`, `WeightedIntervals` |  |  |  |
+| `parallel/` |  | `Affinity`, `Channels`, `Farm`, `FastFlowExecutor`, `Mailbox`, `OpenMPExecutor`, `ParallelGraph`, `ParallelGreedy`, `ParallelMerge`, `ParallelNumeric`, `ParallelShortestPaths`, `ParallelSort`, `ParallelText`, `Scratch`, `SpeculativeFor`, `TBBExecutor`, `ThreadPool` | `Executor` |  |
+| `priority/` | `FibonacciHeapPriorityQueue`, `HeapPriorityQueue`, `ListPriorityQueue`, `LoserTree`, `MeldableHeap`, `TreePriorityQueue` | `BucketQueue`, `DaryHeap`, `DialQueue`, `IndexedDaryHeap`, `IndexedHeapPair`, `LinkedHeapPriorityQueue`, `MinMaxHeap`, `MultiwayMerge`, `OrderKey`, `PairingHeap`, `RadixHeap`, `SequenceHeap` |  | `PriorityQueue` |
+| `queue/` | `ArrayQueue`, `Dequeue`, `LinkedQueue`, `MinDeque`, `MinQueue`, `QueueAlgorithms`, `RandomQueue`, `RealTimeMinDeque`, `RealTimeMinQueue`, `UniqueQueue` | `RingDeque`, `SlidingAggregate` |  |  |
+| `search/` | `BinarySearch`, `InterpolationSearch`, `KnuthSearches`, `LocalOptima`, `Minimum`, `MonotoneSearch`, `PGMIndex`, `Selection`, `SortedSearches` | `CompressedPGMIndex`, `CountLess`, `DynamicPGMIndex`, `NthElement`, `RangeMinimum`, `StaticSearch`, `WordRangeMinimum` |  |  |
+| `sequence/` | `ArraySequence`, `ContiguousDeque`, `CubishArrayStack`, `CursorList`, `DualArrayDeque`, `IndexedList`, `List`, `OrderMaintenanceList`, `Rearrangements`, `RootishArrayStack`, `SEList`, `SequenceAlgorithms`, `SequenceRange`, `SinglyList`, `SkipListSequence`, `TreapList`, `Treque`, `XorList` | `Fenwick`, `ListSort`, `ObservableArray`, `SmallVector`, `TieredVector` |  |  |
+| `set/` | `Bag`, `BloomFilter`, `BloomVariants`, `BoolSet`, `DictionarySet`, `HashMultiset`, `LinkedHashSet`, `ListSet`, `SetInterfaces`, `SetOperations`, `SortedIntersection`, `SortedListSet`, `SpaceEfficientSortedSet` | `BinaryFuseFilter`, `BlockedBloomFilter`, `CuckooFilter`, `GrafiteFilter`, `PrefixFilter`, `RibbonFilter`, `RoaringBitmap`, `VectorIntersection` |  |  |
+| `sort/` | `CountingSort`, `ExchangeSorts`, `ExternalSort`, `Heapsort`, `InsertionSort`, `KnuthSorts`, `MergeSort`, `MultikeyQuickSort`, `PigeonholeSort`, `QuickSort`, `SelectionSort`, `ShellSort`, `SortingNetworks`, `StrandSort`, `TreeSort` | `LearnedSort`, `QuicksortAdversary`, `RadixSort`, `RunSorts`, `SampleSort`, `Sort`, `StringSort`, `VectorQuickSort` | `Sorted` | `EngineeredQuickSorts` |
+| `stack/` | `ArrayStack`, `Expressions`, `MinStack`, `MultiStack`, `SequenceStack`, `StackAlgorithms` |  |  |  |
+| `string/` | `Alignment`, `Anagrams`, `ApproximateMatching`, `FrontCoding`, `Huffman`, `LongestCommonSubsequence`, `Lyndon`, `Palindromes`, `Parentheses`, `PrefixSearch`, `RearCoding`, `Segmentations`, `StringBreaking`, `StringMatching`, `SubsequenceProblems`, `SuffixApplications`, `SuffixArray`, `SuffixTree`, `WordBreak` | `AhoCorasick`, `EditDistance`, `LongestCommonExtension`, `MultiSearch`, `StringSearch`, `SuffixAutomaton`, `SuffixSorting` |  |  |
+| `succinct/` | `BPTree`, `BVGraph`, `BalancedParentheses`, `BitStream`, `BitVector`, `EliasFano`, `EliasFanoGraph`, `HuffmanWaveletTree`, `JacobsonTree`, `K2Tree`, `LoudsTree`, `RankSelect` | `CompactRankSelect`, `InterleavedRankSelect`, `LAVector`, `MoveStructure`, `PackedArray`, `PartitionedEliasFano`, `RRRBitVector`, `WaveletMatrix` |  |  |
+| `tree/` | `AVLTree`, `ArrayBinaryTree`, `BPlusTree`, `BTree`, `BinaryTree`, `BinaryTreeAlgorithms`, `ChildListTree`, `CursorBinaryTree`, `CursorTree`, `ExpressionTree`, `FingerTreap`, `HashedTreap`, `HeapByInsertion`, `LeftLeaningRedBlackTree`, `MeasuredSearchTree`, `ParentTree`, `PartialRebuildingTree`, `PreorderArrayTree`, `RandomizedSearchTree`, `ScapegoatTree`, `SearchTree`, `ThreadedTree`, `Treap`, `Tree` | `BTreeMap`, `JoinAlgorithms`, `JoinTree`, `LinkCutTree`, `MaterializedAggregate`, `SplayTree` |  |  |
+
+<!-- end of sets -->
+
 ## Where each thing comes from
 
 Each header and each test cites the section, the example or the exercise
@@ -968,11 +1034,18 @@ for( int x : L ) std::cout << x;
 The module `ads` (`src/ADS.cppm`) exports every name that the headers
 declare in the namespace `ADS` and in those nested in it (but for the
 namespaces `detail`), so that a translation unit can write `import ads;` in
-place of the `#include` of the headers, which keep working as before. With
-CMake 3.28 or later, the Ninja generator and Clang 16 (with `clang-scan-deps`)
-or GCC 15 or later, `-DADS_BUILD_MODULE=ON` (off by default; turned off with a
+place of the `#include` of the headers, which keep working as before. It
+does so by exporting the modules of the three sets of [Base and
+advanced](#base-and-advanced), `ads.core`, `ads.base` and `ads.advanced`
+(`src/ADSCore.cppm`, `src/ADSBase.cppm`, `src/ADSAdvanced.cppm`), each of
+which exports the names of the headers of its set, and the last two also
+`ads.core`; `import ads.base;` thus compiles only the base headers, the
+core and the few advanced headers that the base ones use inside. With CMake
+3.28 or later, the Ninja generator and Clang 16 (with `clang-scan-deps`) or
+GCC 15 or later, `-DADS_BUILD_MODULE=ON` (off by default; turned off with a
 warning where one of these is missing) builds the target `ADS::ADS_module`,
-installed with the package,
+and `ADS::ADS_module_core`, `ADS::ADS_module_base` and
+`ADS::ADS_module_advanced` for the sets, installed with the package,
 
 ```cmake
 find_package(ADS REQUIRED)
@@ -992,9 +1065,10 @@ exported by a module, so a file that uses those of the contracts (e.g.,
 headers (e.g., `ADS_CONTRACTS`, `ADS_WITH_GMP`) take the value they have
 where the module is compiled; the executors of OpenMP, oneTBB and FastFlow
 and the sort on MPI are in the module only when it is compiled with their
-library. The file of the module is written by `cmake/ads_module_exports.py`
-from the AST of the headers, and it is written again when a header gains or
-loses a name.
+library. The files of the modules are written by
+`cmake/ads_module_exports.py` from the AST of the headers and from
+`cmake/ads_sets.txt`, and they are written again when a header gains or
+loses a name or changes its set.
 
 The gain is small, since the library is made of templates, which an importer
 still instantiates and compiles: on a server with 384 cores and a load of 55

@@ -33,7 +33,9 @@ long-lived workers that talk by messages: their channels
 the termination ([§25.15](25-parallel.md#sec-25-15)). We use the concurrent
 structures on which the executors rest (the deque of work stealing, the
 queues, the event count) through their operations only; they are described
-in [Chapter 24](24-concurrent.md#ch-24).
+in [Chapter 24](24-concurrent.md#ch-24). In the sets of
+[§1.9](01-introduction.md#sec-1-9), the headers of this chapter are all
+advanced, while `Executor.h` is in the core that the two sets include.
 
 ## 25.1 Work, depth and schedules {#sec-25-1}
 

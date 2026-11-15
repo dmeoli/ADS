@@ -32,7 +32,13 @@ and the sort of a file larger than the memory. Of all of them, `sort()` and
 comparisons can beat ([§12.2](12-sort.md#sec-12-2)). It then follows the
 families of algorithms, from the elementary sorts to the sorts by digits,
 giving for each one the property on which its correctness rests and the
-argument behind its bound.
+argument behind its bound. In the sets of
+[§1.9](01-introduction.md#sec-1-9), `LearnedSort.h`,
+`QuicksortAdversary.h`, `RadixSort.h`, `RunSorts.h`, `SampleSort.h`,
+`Sort.h`, `StringSort.h` and `VectorQuickSort.h` are advanced and the other
+headers of this chapter are base, while `Sorted.h` is in the core that the
+two sets include, and `EngineeredQuickSorts.h` holds a part of each until
+it is split.
 
 ## 12.1 Definitions and notation {#sec-12-1}
 

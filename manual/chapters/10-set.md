@@ -25,7 +25,12 @@ chapter 6](Z-bibliography.md#ref-ferragina2023)
 sets that may answer yes for an item that they do not hold, in exchange for
 a space that does not depend on the items ([§10.7](10-set.md#sec-10-7) to
 [§10.10](10-set.md#sec-10-10)), together with the filters of ranges of
-[§10.11](10-set.md#sec-10-11).
+[§10.11](10-set.md#sec-10-11). In the sets of
+[§1.9](01-introduction.md#sec-1-9), `BinaryFuseFilter.h`,
+`BlockedBloomFilter.h`, `CuckooFilter.h`, `GrafiteFilter.h`,
+`PrefixFilter.h`, `RibbonFilter.h`, `RoaringBitmap.h` and
+`VectorIntersection.h` are advanced and the other headers of this chapter
+are base.
 
 ## 10.1 The interface {#sec-10-1}
 

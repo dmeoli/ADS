@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The two sets of the headers, by their origin: base, what follows a
+  textbook or an academic source (Montresor, TAOCP, Ferragina, Morin), and
+  advanced, what is written for speed beyond them, with core, the
+  infrastructure that both include, and both, the five headers that hold a
+  part of each until they are split; cmake/ads_sets.txt gives the set of
+  every header and the includes across the sets that it allows, and
+  cmake/ads_sets.py, run by CMake at configure time, by each make and by
+  the CI with --check, writes from it the entry points ADS/core.h,
+  ADS/base.h, ADS/advanced.h and ADS/ADS.h and the table of the README,
+  and stops on a header with no set; the modules ads.core, ads.base and
+  ads.advanced, which ads exports (the targets ADS::ADS_module_core,
+  ADS::ADS_module_base and ADS::ADS_module_advanced, and the rules of
+  lib/makefile-mod), with a name exported by every module of a set that
+  declares it; the tests sets.core, sets.base and sets.advanced, which
+  compile each entry point alone and check the headers that it pulls, and
+  module.core, module.base and module.advanced; the sets in chapter 1 of
+  the manual, in Table 1.5 and in the opening of each chapter
+
 - ADS_WITH_BOOST, the backend of the headers of Boost 1.83 or later (AUTO
   with CMake, auto with the makefile, as for GMP and the CBLAS, off in the
   packages; cmake/ADSBoost.cmake and extlib/makefile-libBoost find it, and

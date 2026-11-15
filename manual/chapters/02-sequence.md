@@ -19,7 +19,10 @@ of a sequence: the vector, whose items are contiguous and are reached by
 index in constant time, and the linked list, whose items are in cells that
 point to each other. In `ADS/sequence` the headers realize both in several
 forms, which differ in the cost of an insertion in the middle, in the space
-wasted and in the operations that come for free.
+wasted and in the operations that come for free. In the sets of
+[§1.9](01-introduction.md#sec-1-9), `ListSort.h`, `SmallVector.h` and
+`TieredVector.h` are advanced and the other headers of this chapter are
+base.
 
 After the interfaces ([§2.1](02-sequence.md#sec-2-1)), we describe the
 vector that doubles and halves ([§2.2](02-sequence.md#sec-2-2)) and the

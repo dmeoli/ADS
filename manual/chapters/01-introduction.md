@@ -1415,7 +1415,64 @@ found (`PointerTable`, `FlatHashTable`, `SmallVector` and the generators
 xoshiro256, [§7.6](07-dictionary.md#sec-7-6)), OpenMP,
 oneTBB and FastFlow for the parallel executors, and MPI for the distributed
 ones. The library is also available as a module of C++20, `ads`, which
-exports all the names that the headers declare in the namespace `ADS`.
+exports all the names that the headers declare in the namespace `ADS`, and
+as one module for each of the sets that we describe next.
+
+The two levels are also two sets of headers, which a program may take
+apart, and we divide them by the origin of the code, whatever its speed.
+The *base* set holds what follows a textbook or an academic source, i.e.,
+[Montresor 2025](Z-bibliography.md#ref-montresor2025), [Knuth
+1997](Z-bibliography.md#ref-knuth1997), [Morin
+2013](Z-bibliography.md#ref-morin-cpp) and the book and the notes of
+[Ferragina 2023](Z-bibliography.md#ref-ferragina2023), even when the result
+is fast. For instance, the Red-Black tree of `SearchTree.h`, the B+-tree of
+`BPlusTree.h`, the hash tables of the book, `BigInteger` and `Rational`
+(which run on GMP where it is found), the rank and select of `RankSelect.h`
+and the PGM-index are all base. In turn, the *advanced* set holds what is written
+for speed beyond those sources (e.g., `UnionFind`, `DaryHeap`,
+`StaticGraph`, `CompactRankSelect`, `FastBitwise` and `MultiwayMerge`),
+together with the concurrent and parallel structures, the executors, the
+distributed layer, the typed modifications and the observers. Hence a
+structure of a textbook and its engineered counterpart lie in different
+sets (e.g., `MFSet` and `UnionFind`, `HeapPriorityQueue` and `DaryHeap`,
+`ArrayGraph` and `StaticGraph`, `DancingLinks` and `FastExactCover`). An
+advanced structure extends a base one through the same concepts and by
+composition, i.e., by algorithms written once on a concept and by members
+of the base types; we do not derive one from the other, as a hierarchy of
+classes with virtual calls would cost the speed for which the advanced set
+exists.
+
+A third set, the *core*, holds the infrastructure that both sets include
+(the contracts, the iterators, the primitives of `Portable.h`, the
+capabilities, the concept of the executors, the pool of the nodes with its
+huge pages, the random hashing of the randomized structures, the checks of
+the sorts, the bits of the coders and the files of records). A base header
+may also use an advanced one inside, as `SuffixArray.h` sorts the ranks by
+`RadixSort.h` and `ExternalSort.h` merges its runs on a `DaryHeap`. We
+list each use of this kind, with its reason, in the file of the sets; the
+advanced header is then compiled with the base one, but its names are not
+part of the base set. Five headers still hold a part of each set
+(`MaxFlow.h`, `Matching.h`, `Visit.h`, `EngineeredQuickSorts.h` and
+`PriorityQueue.h`), and we put them in both sets until we move their
+engineered parts to new headers.
+
+Each set has an *entry point*, a header that includes all the headers of
+the set and the core: `#include "ADS/base.h"` gives the base set,
+`ADS/advanced.h` the advanced one, `ADS/core.h` the core and `ADS/ADS.h`
+the three, while each header keeps its path and can still be included as
+before. The modules follow the same division, since `ads.core`,
+`ads.base` and `ads.advanced` export the names of the headers of their sets
+(the last two also export `ads.core`), and `ads` exports the three. Thus
+`import ads;` gives all the names as before, whereas a program that writes
+`import ads.base;` compiles neither the concurrent structures nor the
+executors of OpenMP, oneTBB and MPI. The file `cmake/ads_sets.txt` gives
+the set of each header, and the script `cmake/ads_sets.py` writes from it
+the entry points and the table of the sets in the README. CMake, the
+makefile and the continuous integration run the script, so a new header
+with no set (or an include across the sets that the file does not allow)
+stops the build. In [Table 1.5](01-introduction.md#tab-1-5) the column Set
+gives the set of each header with classes, and the opening paragraph of
+each chapter lists which of its headers are base and which are advanced.
 
 ## 1.10 Building, testing and using the library {#sec-1-10}
 
@@ -1541,277 +1598,277 @@ the same representation.
 <span id="tab-1-5"></span>**Table 1.5.** Every class of the library, by
 header (relative to `include/ADS`), and the chapter that describes it.
 
-| Header | Classes | Chapter |
-|-----------------|-------------------------------|-----|
-| `Algebra.h` | `SumOf`, `MinOf`, `MaxOf` | [1](01-introduction.md#ch-1) |
-| `Capabilities.h` | `forwarding_query`, `stable_references_t`, `thread_safe_reads_t`, `rank_complexity_t`, `event_set_t` | [1](01-introduction.md#ch-1) |
-| `Contract.h` | `contract_violation` | [1](01-introduction.md#ch-1) |
-| `Modification.h` | `Refused`, `no_rebuild_t`, `effect`, `Value`, `Key`, `Cost`, `Upper`, `Lower`, `Supply`, `last`, `min`, `max`, `sum`, `reduction_of`, `list`, `Inserted`, `Erased`, `Changed`, `Relocated`, `Permuted`, `BulkInserted`, `BulkErased`, `Shifted`, `Replaced`, `Cleared`, `Rebuilt`, `Group`, `Counts`, `Direct`, `Via`, `coalesce_traits`, `NoObservers`, `Static`, `Dynamic`, `Both`, `Batch`, `Quiet`, `UndoLog`, `Shadow`, `Assigned`, `KeyChanged`, `Reopt`, `ReoptStats`, `RatioPolicy`, `NeumaierSum` | [1](01-introduction.md#ch-1), [14](14-graph.md#ch-14) |
-| `Iterators.h` | `LinkedIterator`, `IndexIterator`, `CircularIterator`, `RankIterator`, `IndirectIterator`, `SlotIterator`, `KeyIterator`, `PairRef`, `PathIterator`, `WalkIterator` | [1](01-introduction.md#ch-1) |
-| `set/Bag.h` | `Bag` | [1](01-introduction.md#ch-1) |
-| `set/SetInterfaces.h` | `ArrayUSet`, `ArraySSet` | [1](01-introduction.md#ch-1) |
-| `sequence/ArraySequence.h` | `ArraySequence` | [2](02-sequence.md#ch-2) |
-| `sequence/ContiguousDeque.h` | `ContiguousDeque` | [2](02-sequence.md#ch-2) |
-| `sequence/CubishArrayStack.h` | `CubishArrayStack` | [2](02-sequence.md#ch-2) |
-| `sequence/CursorList.h` | `CursorSpace`, `CursorList` | [2](02-sequence.md#ch-2) |
-| `sequence/DualArrayDeque.h` | `DualArrayDeque` | [2](02-sequence.md#ch-2) |
-| `sequence/Fenwick.h` | `Fenwick`, `FenwickObserver` | [1](01-introduction.md#ch-1) |
-| `sequence/List.h` | `List` | [2](02-sequence.md#ch-2) |
-| `sequence/ObservableArray.h` | `ObservableArray` | [1](01-introduction.md#ch-1) |
-| `sequence/OrderMaintenanceList.h` | `OrderMaintenanceList` | [2](02-sequence.md#ch-2) |
-| `sequence/RootishArrayStack.h` | `RootishArrayStack` | [2](02-sequence.md#ch-2) |
-| `sequence/SEList.h` | `SEList` | [2](02-sequence.md#ch-2) |
-| `sequence/SequenceRange.h` | `SequenceRange` | [2](02-sequence.md#ch-2) |
-| `sequence/SinglyList.h` | `SinglyList` | [2](02-sequence.md#ch-2) |
-| `sequence/SkipListSequence.h` | `SkipListSequence` | [2](02-sequence.md#ch-2) |
-| `sequence/SmallVector.h` | `SmallVector` | [2](02-sequence.md#ch-2) |
-| `sequence/TieredVector.h` | `TieredVector` | [2](02-sequence.md#ch-2) |
-| `sequence/TreapList.h` | `TreapList` | [2](02-sequence.md#ch-2) |
-| `sequence/Treque.h` | `Treque` | [2](02-sequence.md#ch-2) |
-| `sequence/XorList.h` | `XorList` | [2](02-sequence.md#ch-2) |
-| `stack/ArrayStack.h` | `ArrayStack` | [3](03-stack.md#ch-3) |
-| `stack/MinStack.h` | `MinStack` | [3](03-stack.md#ch-3) |
-| `stack/MultiStack.h` | `MultiStack` | [3](03-stack.md#ch-3) |
-| `stack/SequenceStack.h` | `SequenceStack` | [3](03-stack.md#ch-3) |
-| `queue/ArrayQueue.h` | `ArrayQueue` | [4](04-queue.md#ch-4) |
-| `queue/Dequeue.h` | `Dequeue` | [4](04-queue.md#ch-4) |
-| `queue/LinkedQueue.h` | `LinkedQueue` | [4](04-queue.md#ch-4) |
-| `queue/MinDeque.h` | `MinDeque` | [4](04-queue.md#ch-4) |
-| `queue/MinQueue.h` | `MinQueue` | [4](04-queue.md#ch-4) |
-| `queue/RandomQueue.h` | `RandomQueue` | [4](04-queue.md#ch-4) |
-| `queue/RealTimeMinDeque.h` | `RealTimeMinDeque` | [4](04-queue.md#ch-4) |
-| `queue/RealTimeMinQueue.h` | `RealTimeMinQueue` | [4](04-queue.md#ch-4) |
-| `queue/RingDeque.h` | `RingDeque` | [4](04-queue.md#ch-4) |
-| `queue/SlidingAggregate.h` | `Amortized`, `WorstCase`, `SlidingAggregate` | [1](01-introduction.md#ch-1) |
-| `queue/UniqueQueue.h` | `UniqueQueue` | [4](04-queue.md#ch-4) |
-| `memory/Allocators.h` | `BoundaryTagAllocator`, `BuddyAllocator` | [5](05-memory.md#ch-5) |
-| `memory/Arena.h` | `Arena` | [5](05-memory.md#ch-5) |
-| `memory/CellHeap.h` | `CellHeap` | [5](05-memory.md#ch-5) |
-| `memory/ConcurrentPool.h` | `ConcurrentPoolResource` | [5](05-memory.md#ch-5) |
-| `memory/HugePageAllocator.h` | `HugePageAllocator` | [5](05-memory.md#ch-5) |
-| `memory/ObjectPool.h` | `ObjectPool` | [5](05-memory.md#ch-5) |
-| `memory/PoolAllocator.h` | `PoolResource`, `PoolAllocator` | [5](05-memory.md#ch-5) |
-| `memory/SizeClassAllocator.h` | `SizeClassAllocator` | [5](05-memory.md#ch-5) |
-| `search/CompressedPGMIndex.h` | `CompressedPGMIndex` | [6](06-search.md#ch-6) |
-| `search/DynamicPGMIndex.h` | `DynamicPGMIndex` | [6](06-search.md#ch-6) |
-| `search/PGMIndex.h` | `PGMIndex` | [6](06-search.md#ch-6) |
-| `search/RangeMinimum.h` | `SparseTable`, `PlusMinusOneRangeMinimum`, `RangeMinimum` | [6](06-search.md#ch-6) |
-| `search/StaticSearch.h` | `SPlusTree` | [6](06-search.md#ch-6) |
-| `search/WordRangeMinimum.h` | `WordRangeMinimum` | [6](06-search.md#ch-6) |
-| `dictionary/AdaptiveRadixTree.h` | `AdaptiveRadixTree` | [7](07-dictionary.md#ch-7) |
-| `dictionary/BinaryTrie.h` | `BinaryTrie`, `SimpleBinaryTrie` | [7](07-dictionary.md#ch-7) |
-| `dictionary/BitmapTrie.h` | `BitmapTrie` | [7](07-dictionary.md#ch-7) |
-| `dictionary/BucketCuckooTable.h` | `BucketCuckooTable` | [7](07-dictionary.md#ch-7) |
-| `dictionary/ChainedHashTable.h` | `ChainedHashTable` | [7](07-dictionary.md#ch-7) |
-| `dictionary/CuckooHashing.h` | `CuckooHashTable` | [7](07-dictionary.md#ch-7) |
-| `dictionary/DenseHashMap.h` | `DenseHashMap` | [7](07-dictionary.md#ch-7) |
-| `dictionary/DirectTable.h` | `DirectTable` | [7](07-dictionary.md#ch-7) |
-| `dictionary/FastHash.h` | `Product128`, `FastHash` | [7](07-dictionary.md#ch-7) |
-| `dictionary/FingerprintPerfectHash.h` | `FingerprintPerfectHash` | [7](07-dictionary.md#ch-7) |
-| `dictionary/FlatHashTable.h` | `FlatHashTable` | [7](07-dictionary.md#ch-7) |
-| `dictionary/IndexedSkipList.h` | `IndexedSkipList` | [7](07-dictionary.md#ch-7) |
-| `dictionary/KnuthHashing.h` | `CoalescedHashTable`, `BrentHashTable` | [7](07-dictionary.md#ch-7) |
-| `dictionary/MinimalPerfectHash.h` | `MinimalPerfectHash` | [7](07-dictionary.md#ch-7) |
-| `dictionary/OpenHashTable.h` | `Probing`, `OpenHashTable` | [7](07-dictionary.md#ch-7) |
-| `dictionary/PatriciaTrie.h` | `PatriciaTrie` | [7](07-dictionary.md#ch-7) |
-| `dictionary/PerfectHashing.h` | `PerfectHashTable`, `OrderedMinimalPerfectHash` | [7](07-dictionary.md#ch-7) |
-| `dictionary/PointerTable.h` | `StateEqual`, `PointerTable` | [7](07-dictionary.md#ch-7) |
-| `dictionary/PositionIndex.h` | `PositionIndex` | [7](07-dictionary.md#ch-7) |
-| `dictionary/RandomHashing.h` | `SplitMix64`, `ZobristTable`, `TabulationHash` | [7](07-dictionary.md#ch-7) |
-| `dictionary/RecSplit.h` | `RecSplit` | [7](07-dictionary.md#ch-7) |
-| `dictionary/SkipList.h` | `SkipList` | [7](07-dictionary.md#ch-7) |
-| `dictionary/SortedArrayDictionary.h` | `SortedArrayDictionary` | [7](07-dictionary.md#ch-7) |
-| `dictionary/SuccinctPatriciaTrie.h` | `SuccinctPatriciaTrie` | [7](07-dictionary.md#ch-7) |
-| `dictionary/Trie.h` | `Trie`, `RadixTree` | [7](07-dictionary.md#ch-7) |
-| `dictionary/TwoLevelDictionary.h` | `TwoLevelDictionary` | [7](07-dictionary.md#ch-7) |
-| `dictionary/UniversalHashing.h` | `CarterWegmanHash`, `DotProductHash`, `MultiplyShiftHash`, `StringHash`, `MultiplicativeHash`, `CompoundHash`, `SequenceHash`, `DLeftHashTable` | [7](07-dictionary.md#ch-7) |
-| `dictionary/XFastTrie.h` | `XFastTrie`, `ListXFastTrie` | [7](07-dictionary.md#ch-7) |
-| `dictionary/YFastTrie.h` | `YFastTrie` | [7](07-dictionary.md#ch-7) |
-| `tree/AVLTree.h` | `AVLTree` | [8](08-tree.md#ch-8) |
-| `tree/ArrayBinaryTree.h` | `ArrayBinaryTree` | [8](08-tree.md#ch-8) |
-| `tree/BPlusTree.h` | `BPlusTree` | [8](08-tree.md#ch-8) |
-| `tree/BTree.h` | `BTree` | [8](08-tree.md#ch-8) |
-| `tree/BTreeMap.h` | `BTreeMap` | [8](08-tree.md#ch-8) |
-| `tree/BinaryTree.h` | `BinaryTree` | [8](08-tree.md#ch-8) |
-| `tree/ChildListTree.h` | `ChildListTree` | [8](08-tree.md#ch-8) |
-| `tree/CursorBinaryTree.h` | `CursorBinaryTree` | [8](08-tree.md#ch-8) |
-| `tree/CursorTree.h` | `CursorTree` | [8](08-tree.md#ch-8) |
-| `tree/FingerTreap.h` | `FingerTreap` | [8](08-tree.md#ch-8) |
-| `tree/HashedTreap.h` | `HashedTreap` | [8](08-tree.md#ch-8) |
-| `tree/JoinAlgorithms.h` | `AVLJoin`, `RedBlackJoin`, `WeightBalancedJoin`, `TreapJoin`, `JoinAlgorithms`, `TakeSecond`, `TakeFirst`, `Joinable` | [8](08-tree.md#ch-8) |
-| `tree/JoinTree.h` | `AVLBalance`, `RedBlackBalance`, `WeightBalance`, `TreapBalance`, `NoAugmentation`, `SumAugmentation`, `MaxAugmentation`, `JoinTree`, `JoinAVLTree`, `JoinRedBlackTree`, `WeightBalancedTree`, `JoinTreap`, `AugmentedMap` | [8](08-tree.md#ch-8) |
-| `tree/LeftLeaningRedBlackTree.h` | `LeftLeaningRedBlackTree` | [8](08-tree.md#ch-8) |
-| `tree/LinkCutTree.h` | `LinkCutTree` | [8](08-tree.md#ch-8) |
-| `tree/MaterializedAggregate.h` | `MaterializedAggregate` | [8](08-tree.md#ch-8) |
-| `tree/MeasuredSearchTree.h` | `MeasuredSearchTree` | [8](08-tree.md#ch-8) |
-| `tree/ParentTree.h` | `ParentTree` | [8](08-tree.md#ch-8) |
-| `tree/PartialRebuildingTree.h` | `PartialRebuildingTree`, `WeightRebuildTree`, `CountdownTree`, `DynamiteTree` | [8](08-tree.md#ch-8) |
-| `tree/PreorderArrayTree.h` | `PreorderArrayTree` | [8](08-tree.md#ch-8) |
-| `tree/RandomizedSearchTree.h` | `RandomizedSearchTree` | [8](08-tree.md#ch-8) |
-| `tree/ScapegoatTree.h` | `ScapegoatTree` | [8](08-tree.md#ch-8) |
-| `tree/SearchTree.h` | `NotJoinable`, `SearchTree`, `BinarySearchTree`, `RedBlackTree` | [8](08-tree.md#ch-8) |
-| `tree/SplayTree.h` | `SplayTree` | [8](08-tree.md#ch-8) |
-| `tree/ThreadedTree.h` | `ThreadedTree` | [8](08-tree.md#ch-8) |
-| `tree/Treap.h` | `Treap` | [8](08-tree.md#ch-8) |
-| `tree/Tree.h` | `Tree` | [8](08-tree.md#ch-8) |
-| `priority/BucketQueue.h` | `BucketQueue`, `BucketHeap`, `LargestSecondKey`, `LeastSecondKey` | [9](09-priority.md#ch-9) |
-| `priority/DaryHeap.h` | `DaryHeap` | [9](09-priority.md#ch-9) |
-| `priority/DialQueue.h` | `DialQueue` | [9](09-priority.md#ch-9) |
-| `priority/FibonacciHeapPriorityQueue.h` | `FibonacciHeapPriorityQueue` | [9](09-priority.md#ch-9) |
-| `priority/HeapPriorityQueue.h` | `HeapPriorityQueue` | [9](09-priority.md#ch-9) |
-| `priority/IndexedDaryHeap.h` | `IndexedDaryHeap` | [9](09-priority.md#ch-9) |
-| `priority/IndexedHeapPair.h` | `IndexedHeapPair` | [9](09-priority.md#ch-9) |
-| `priority/LinkedHeapPriorityQueue.h` | `LinkedHeapPriorityQueue` | [9](09-priority.md#ch-9) |
-| `priority/ListPriorityQueue.h` | `ListPriorityQueue` | [9](09-priority.md#ch-9) |
-| `priority/LoserTree.h` | `LoserTree` | [9](09-priority.md#ch-9) |
-| `priority/MeldableHeap.h` | `MeldableHeap` | [9](09-priority.md#ch-9) |
-| `priority/MinMaxHeap.h` | `MinMaxHeap`, `IntervalHeap` | [9](09-priority.md#ch-9) |
-| `priority/MultiwayMerge.h` | `FlatLoserTree` | [9](09-priority.md#ch-9) |
-| `priority/PairingHeap.h` | `PairingHeap` | [9](09-priority.md#ch-9) |
-| `priority/RadixHeap.h` | `RadixHeap` | [9](09-priority.md#ch-9) |
-| `priority/SequenceHeap.h` | `SequenceHeap` | [9](09-priority.md#ch-9) |
-| `priority/TreePriorityQueue.h` | `TreePriorityQueue` | [9](09-priority.md#ch-9) |
-| `set/BinaryFuseFilter.h` | `BinaryFuseFilter` | [10](10-set.md#ch-10) |
-| `set/BlockedBloomFilter.h` | `BlockedBloomFilter` | [10](10-set.md#ch-10) |
-| `set/BloomFilter.h` | `BloomFilter` | [10](10-set.md#ch-10) |
-| `set/BloomVariants.h` | `SpectralBloomFilter`, `PartitionedBloomFilter` | [10](10-set.md#ch-10) |
-| `set/BoolSet.h` | `BoolSet` | [10](10-set.md#ch-10) |
-| `set/CuckooFilter.h` | `CuckooFilter` | [10](10-set.md#ch-10) |
-| `set/DictionarySet.h` | `DictionarySet`, `ChainedHashSet`, `OpenHashSet`, `TreeSet` | [10](10-set.md#ch-10) |
-| `set/GrafiteFilter.h` | `GrafiteFilter`, `BucketingFilter` | [10](10-set.md#ch-10) |
-| `set/HashMultiset.h` | `HashMultiset` | [10](10-set.md#ch-10) |
-| `set/LinkedHashSet.h` | `LinkedHashSet` | [10](10-set.md#ch-10) |
-| `set/ListSet.h` | `ListSet` | [10](10-set.md#ch-10) |
-| `set/PrefixFilter.h` | `PrefixFilter` | [10](10-set.md#ch-10) |
-| `set/RibbonFilter.h` | `RibbonFilter` | [10](10-set.md#ch-10) |
-| `set/RoaringBitmap.h` | `RoaringBitmap` | [10](10-set.md#ch-10) |
-| `set/SortedIntersection.h` | `PermutedBuckets` | [10](10-set.md#ch-10) |
-| `set/SortedListSet.h` | `SortedListSet` | [10](10-set.md#ch-10) |
-| `set/SpaceEfficientSortedSet.h` | `SpaceEfficientSortedSet` | [10](10-set.md#ch-10) |
-| `mfset/ListMFSet.h` | `ListMFSet` | [11](11-mfset.md#ch-11) |
-| `mfset/MFSet.h` | `MFSet` | [11](11-mfset.md#ch-11) |
-| `mfset/RemUnionFind.h` | `RemUnionFind` | [11](11-mfset.md#ch-11) |
-| `mfset/RollbackUnionFind.h` | `RollbackUnionFind`, `ConnectivityOp` | [11](11-mfset.md#ch-11) |
-| `mfset/UnionFind.h` | `DisjointSets`, `UnionFind` | [11](11-mfset.md#ch-11) |
-| `sort/QuicksortAdversary.h` | `QuicksortAdversary` | [12](12-sort.md#ch-12) |
-| `algorithm/MasterTheorem.h` | `Growth` | [13](13-algorithm.md#ch-13) |
-| `algorithm/MaximumSegments.h` | `Segment` | [13](13-algorithm.md#ch-13) |
-| `optimization/GridPaths.h` | `GridSquare` | [13](13-algorithm.md#ch-13) |
-| `optimization/OptimalSearchTree.h` | `OptimalSearchTree` | [13](13-algorithm.md#ch-13) |
-| `optimization/WeightedIntervals.h` | `WeightedInterval` | [13](13-algorithm.md#ch-13) |
-| `graph/AllPairsShortestPaths.h` | `AllPairs` | [14](14-graph.md#ch-14) |
-| `graph/ArrayGraph.h` | `ArrayGraph` | [14](14-graph.md#ch-14) |
-| `graph/Assignment.h` | `Assignment` | [14](14-graph.md#ch-14) |
-| `graph/Graph.h` | `GraphNodes` | [14](14-graph.md#ch-14) |
-| `graph/GraphBuilder.h` | `GraphBuilder` | [14](14-graph.md#ch-14) |
-| `graph/GridGraph.h` | `GridGraph` | [14](14-graph.md#ch-14) |
-| `graph/IncidenceGraph.h` | `IncidenceGraph` | [14](14-graph.md#ch-14) |
-| `graph/ListGraph.h` | `ListGraph` | [14](14-graph.md#ch-14) |
-| `graph/MatrixGraph.h` | `MatrixGraph` | [14](14-graph.md#ch-14) |
-| `graph/MaxFlow.h` | `FlowNetwork`, `BoundedEdge` | [14](14-graph.md#ch-14) |
-| `graph/MinimumSpanningTree.h` | `WeightedEdge`, `MergeCounts` | [14](14-graph.md#ch-14) |
-| `graph/Observable.h` | `NodeInserted`, `NodeDeleted`, `EdgeInserted`, `EdgeDeleted`, `WeightChanged`, `GraphEvents`, `coalesce_traits`, `ObservedGraph`, `Observable` | [14](14-graph.md#ch-14) |
-| `graph/PointerGraph.h` | `PointerGraph` | [14](14-graph.md#ch-14) |
-| `graph/Reoptimization.h` | `EventQueue`, `ShortestPathsObserver`, `SpanningForestObserver`, `MaxFlowObserver`, `AssignmentObserver` | [14](14-graph.md#ch-14) |
-| `graph/ShortestPaths.h` | `ShortestPathTree`, `FrontierCounts`, `PriorityFrontier`, `QueueFrontier`, `StackFrontier`, `DequeFrontier` | [14](14-graph.md#ch-14) |
-| `graph/StaticGraph.h` | `WeightedArc`, `StaticGraph` | [14](14-graph.md#ch-14) |
-| `graph/Visit.h` | `VisitCounts`, `DfsSchema` | [14](14-graph.md#ch-14) |
-| `string/AhoCorasick.h` | `AhoCorasick` | [15](15-string.md#ch-15) |
-| `string/FrontCoding.h` | `FrontCodedDictionary` | [15](15-string.md#ch-15) |
-| `string/LongestCommonExtension.h` | `LceIndex` | [15](15-string.md#ch-15) |
-| `string/MultiSearch.h` | `MultiSearcher` | [15](15-string.md#ch-15) |
-| `string/Palindromes.h` | `Eertree` | [15](15-string.md#ch-15) |
-| `string/PrefixSearch.h` | `BinnedSearch`, `BinnedStringSearch` | [15](15-string.md#ch-15) |
-| `string/RearCoding.h` | `RearCodedDictionary` | [15](15-string.md#ch-15) |
-| `string/StringSearch.h` | `StringSearcher` | [15](15-string.md#ch-15) |
-| `string/SuffixApplications.h` | `CopyPhrase` | [15](15-string.md#ch-15) |
-| `string/SuffixArray.h` | `SuffixArray` | [15](15-string.md#ch-15) |
-| `string/SuffixAutomaton.h` | `SuffixAutomaton` | [15](15-string.md#ch-15) |
-| `string/SuffixTree.h` | `SuffixTree` | [15](15-string.md#ch-15) |
-| `geometry/ConvexHull.h` | `Point` | [16](16-geometry.md#ch-16) |
-| `geometry/IntervalTree.h` | `IntervalTree` | [16](16-geometry.md#ch-16) |
-| `geometry/RangeTree.h` | `RangeTree` | [16](16-geometry.md#ch-16) |
-| `numeric/BigInteger.h` | `BigInteger` | [17](17-numeric.md#ch-17) |
-| `numeric/Combinatorics.h` | `FibonacciCache` | [17](17-numeric.md#ch-17) |
-| `numeric/CsrMatrix.h` | `CsrMatrix` | [17](17-numeric.md#ch-17) |
-| `numeric/DenseMatrix.h` | `DenseMatrix` | [17](17-numeric.md#ch-17) |
-| `numeric/DynamicCsr.h` | `DynamicCsr`, `DynamicCsc` | [17](17-numeric.md#ch-17) |
-| `numeric/NumberTheory.h` | `Montgomery64` | [17](17-numeric.md#ch-17) |
-| `numeric/RSA.h` | `RsaKey` | [17](17-numeric.md#ch-17) |
-| `numeric/RandomGenerators.h` | `Xoshiro256T`, `WyRand`, `PhiloxT`, `AliasTable`, `Xoshiro256`, `Xoshiro256StarStar`, `Philox4x32`, `Philox4x64` | [17](17-numeric.md#ch-17) |
-| `numeric/RandomNumbers.h` | `LinearCongruential`, `LinearCongruentialT`, `MinStd`, `Mmix` | [17](17-numeric.md#ch-17) |
-| `numeric/Rational.h` | `Rational` | [17](17-numeric.md#ch-17) |
-| `numeric/SellMatrix.h` | `SellMatrix` | [17](17-numeric.md#ch-17) |
-| `numeric/SparseAssembly.h` | `AssemblyWorkspace` | [17](17-numeric.md#ch-17) |
-| `numeric/SparseMatrix.h` | `SparseMatrix` | [17](17-numeric.md#ch-17) |
-| `backtrack/DancingLinks.h` | `ExactCover` | [19](19-backtrack.md#ch-19) |
-| `backtrack/FastExactCover.h` | `FastExactCover` | [19](19-backtrack.md#ch-19) |
-| `backtrack/SatSolvers.h` | `BasicCdcl`, `Cdcl` | [19](19-backtrack.md#ch-19) |
-| `complexity/Domino.h` | `Tile` | [20](20-complexity.md#ch-20) |
-| `complexity/Nondeterminism.h` | `Chooser` | [20](20-complexity.md#ch-20) |
-| `intractable/Heuristics.h` | `Buckets` | [20](20-complexity.md#ch-20) |
-| `intractable/Pseudopolynomial.h` | `Piece` | [20](20-complexity.md#ch-20) |
-| `compression/ArithmeticCoding.h` | `RangeEncoder`, `RangeDecoder` | [21](21-compression.md#ch-21) |
-| `compression/BurrowsWheeler.h` | `BWT` | [21](21-compression.md#ch-21) |
-| `compression/CanonicalHuffman.h` | `CanonicalHuffman` | [21](21-compression.md#ch-21) |
-| `compression/DirectAccessCodes.h` | `DirectAccessCodes` | [21](21-compression.md#ch-21) |
-| `compression/FMIndex.h` | `FMIndex` | [21](21-compression.md#ch-21) |
-| `compression/HuffmanFMIndex.h` | `HuffmanFMIndex` | [21](21-compression.md#ch-21) |
-| `compression/IntegerCodes.h` | `PForDeltaBlock` | [21](21-compression.md#ch-21) |
-| `compression/LempelZiv.h` | `LZ77Phrase`, `LZSSPhrase`, `LZ78Phrase` | [21](21-compression.md#ch-21) |
-| `compression/MoveRIndex.h` | `MoveRIndex` | [21](21-compression.md#ch-21) |
-| `compression/PPM.h` | `PPMModel` | [21](21-compression.md#ch-21) |
-| `compression/PackedBits.h` | `PackedBitWriter`, `PackedBitReader` | [21](21-compression.md#ch-21) |
-| `compression/RIndex.h` | `RIndex` | [21](21-compression.md#ch-21) |
-| `succinct/BPTree.h` | `BPTree` | [22](22-succinct.md#ch-22) |
-| `succinct/BVGraph.h` | `BVGraph` | [22](22-succinct.md#ch-22) |
-| `succinct/BalancedParentheses.h` | `BalancedParentheses` | [22](22-succinct.md#ch-22) |
-| `succinct/BitStream.h` | `BitWriter`, `BitReader` | [22](22-succinct.md#ch-22) |
-| `succinct/BitVector.h` | `SubscriptIterator`, `BitVector` | [22](22-succinct.md#ch-22) |
-| `succinct/CompactRankSelect.h` | `CompactRankSelect` | [22](22-succinct.md#ch-22) |
-| `succinct/EliasFano.h` | `BasicEliasFano`, `EliasFano`, `LazyEliasFano` | [22](22-succinct.md#ch-22) |
-| `succinct/EliasFanoGraph.h` | `EliasFanoGraph` | [22](22-succinct.md#ch-22) |
-| `succinct/HuffmanWaveletTree.h` | `HuffmanWaveletTree` | [22](22-succinct.md#ch-22) |
-| `succinct/InterleavedRankSelect.h` | `InterleavedRankSelect` | [22](22-succinct.md#ch-22) |
-| `succinct/JacobsonTree.h` | `JacobsonTree` | [22](22-succinct.md#ch-22) |
-| `succinct/K2Tree.h` | `K2Tree` | [22](22-succinct.md#ch-22) |
-| `succinct/LAVector.h` | `LAVector` | [22](22-succinct.md#ch-22) |
-| `succinct/LoudsTree.h` | `LoudsTree` | [22](22-succinct.md#ch-22) |
-| `succinct/MoveStructure.h` | `MoveStructure` | [22](22-succinct.md#ch-22) |
-| `succinct/PackedArray.h` | `PackedArray`, `TritArray` | [22](22-succinct.md#ch-22) |
-| `succinct/PartitionedEliasFano.h` | `PartitionedEliasFano` | [22](22-succinct.md#ch-22) |
-| `succinct/RRRBitVector.h` | `RRRBitVector` | [22](22-succinct.md#ch-22) |
-| `succinct/RankSelect.h` | `RankSelectOptions`, `BasicRankSelect`, `RankSelect`, `LazyRankSelect` | [22](22-succinct.md#ch-22) |
-| `succinct/WaveletMatrix.h` | `WaveletMatrix` | [22](22-succinct.md#ch-22) |
-| `external/BlockBTree.h` | `BlockBTree` | [23](23-external.md#ch-23) |
-| `external/BlockStore.h` | `BlockStore` | [23](23-external.md#ch-23) |
-| `external/RecordFile.h` | `RecordFile`, `RecordWriter`, `TempDirectory` | [23](23-external.md#ch-23) |
-| `external/TwoLevelMemory.h` | `TwoLevelMemory`, `MemoryLease`, `DiskFile`, `DiskReader`, `DiskWriter` | [23](23-external.md#ch-23) |
-| `concurrent/Backoff.h` | `Backoff` | [24](24-concurrent.md#ch-24) |
-| `concurrent/ConcurrentCuckooTable.h` | `ConcurrentCuckooTable` | [24](24-concurrent.md#ch-24) |
-| `concurrent/ConcurrentFlatTable.h` | `ConcurrentFlatTable`, `ZeroingClear`, `EpochClear` | [24](24-concurrent.md#ch-24) |
-| `concurrent/ConcurrentUnionFind.h` | `ConcurrentUnionFind` | [24](24-concurrent.md#ch-24) |
-| `concurrent/EventCount.h` | `EventCount` | [24](24-concurrent.md#ch-24) |
-| `concurrent/LockFreePriorityQueue.h` | `LockFreePriorityQueue` | [24](24-concurrent.md#ch-24) |
-| `concurrent/MPMCQueue.h` | `MPMCQueue` | [24](24-concurrent.md#ch-24) |
-| `concurrent/MPSCInbox.h` | `MPSCInbox` | [24](24-concurrent.md#ch-24) |
-| `concurrent/MPSCQueue.h` | `MPSCQueue` | [24](24-concurrent.md#ch-24) |
-| `concurrent/MinBoard.h` | `MinBoard` | [24](24-concurrent.md#ch-24) |
-| `concurrent/MultiQueue.h` | `MultiQueue`, `MultiQueueHeap` | [24](24-concurrent.md#ch-24) |
-| `concurrent/SPSCQueue.h` | `SPSCQueue` | [24](24-concurrent.md#ch-24) |
-| `concurrent/SingleWriterFlatTable.h` | `SingleWriterFlatTable` | [24](24-concurrent.md#ch-24) |
-| `concurrent/StealablePriorityQueue.h` | `StealablePriorityQueue`, `StealingFrontier` | [24](24-concurrent.md#ch-24) |
-| `concurrent/WorkStealingDeque.h` | `WorkStealingDeque` | [24](24-concurrent.md#ch-24) |
-| `parallel/Channels.h` | `ChannelPort`, `LockedChannels`, `InboxChannels`, `LaneChannels`, `MeshChannels`, `ChannelsOf` | [25](25-parallel.md#ch-25) |
-| `parallel/Executor.h` | `Sequential` | [25](25-parallel.md#ch-25) |
-| `parallel/FastFlowExecutor.h` | `FastFlowLock`, `FastFlowExecutor` | [25](25-parallel.md#ch-25) |
-| `parallel/Mailbox.h` | `Mailbox`, `NoCoalescing`, `CoalesceBy` | [25](25-parallel.md#ch-25) |
-| `parallel/OpenMPExecutor.h` | `OpenMPLock`, `OpenMPExecutor` | [25](25-parallel.md#ch-25) |
-| `parallel/SpeculativeFor.h` | `Reservation`, `SpeculativeCounts` | [25](25-parallel.md#ch-25) |
-| `parallel/TBBExecutor.h` | `TBBExecutor` | [25](25-parallel.md#ch-25) |
-| `parallel/ThreadPool.h` | `ThreadPool` | [25](25-parallel.md#ch-25) |
-| `distributed/MPIExecutor.h` | `MPIEnvironment`, `MPIExecutor`, `DistributedMin` | [26](26-distributed.md#ch-26) |
-| `distributed/MPIMailbox.h` | `MPICodec`, `MPIByteMailbox`, `MPIMailbox` | [26](26-distributed.md#ch-26) |
+| Header | Set | Classes | Chapter |
+|-----------------|------|-------------------------------|-----|
+| `Algebra.h` | advanced | `SumOf`, `MinOf`, `MaxOf` | [1](01-introduction.md#ch-1) |
+| `Capabilities.h` | core | `forwarding_query`, `stable_references_t`, `thread_safe_reads_t`, `rank_complexity_t`, `event_set_t` | [1](01-introduction.md#ch-1) |
+| `Contract.h` | core | `contract_violation` | [1](01-introduction.md#ch-1) |
+| `Modification.h` | advanced | `Refused`, `no_rebuild_t`, `effect`, `Value`, `Key`, `Cost`, `Upper`, `Lower`, `Supply`, `last`, `min`, `max`, `sum`, `reduction_of`, `list`, `Inserted`, `Erased`, `Changed`, `Relocated`, `Permuted`, `BulkInserted`, `BulkErased`, `Shifted`, `Replaced`, `Cleared`, `Rebuilt`, `Group`, `Counts`, `Direct`, `Via`, `coalesce_traits`, `NoObservers`, `Static`, `Dynamic`, `Both`, `Batch`, `Quiet`, `UndoLog`, `Shadow`, `Assigned`, `KeyChanged`, `Reopt`, `ReoptStats`, `RatioPolicy`, `NeumaierSum` | [1](01-introduction.md#ch-1), [14](14-graph.md#ch-14) |
+| `Iterators.h` | core | `LinkedIterator`, `IndexIterator`, `CircularIterator`, `RankIterator`, `IndirectIterator`, `SlotIterator`, `KeyIterator`, `PairRef`, `PathIterator`, `WalkIterator` | [1](01-introduction.md#ch-1) |
+| `set/Bag.h` | base | `Bag` | [1](01-introduction.md#ch-1) |
+| `set/SetInterfaces.h` | base | `ArrayUSet`, `ArraySSet` | [1](01-introduction.md#ch-1) |
+| `sequence/ArraySequence.h` | base | `ArraySequence` | [2](02-sequence.md#ch-2) |
+| `sequence/ContiguousDeque.h` | base | `ContiguousDeque` | [2](02-sequence.md#ch-2) |
+| `sequence/CubishArrayStack.h` | base | `CubishArrayStack` | [2](02-sequence.md#ch-2) |
+| `sequence/CursorList.h` | base | `CursorSpace`, `CursorList` | [2](02-sequence.md#ch-2) |
+| `sequence/DualArrayDeque.h` | base | `DualArrayDeque` | [2](02-sequence.md#ch-2) |
+| `sequence/Fenwick.h` | advanced | `Fenwick`, `FenwickObserver` | [1](01-introduction.md#ch-1) |
+| `sequence/List.h` | base | `List` | [2](02-sequence.md#ch-2) |
+| `sequence/ObservableArray.h` | advanced | `ObservableArray` | [1](01-introduction.md#ch-1) |
+| `sequence/OrderMaintenanceList.h` | base | `OrderMaintenanceList` | [2](02-sequence.md#ch-2) |
+| `sequence/RootishArrayStack.h` | base | `RootishArrayStack` | [2](02-sequence.md#ch-2) |
+| `sequence/SEList.h` | base | `SEList` | [2](02-sequence.md#ch-2) |
+| `sequence/SequenceRange.h` | base | `SequenceRange` | [2](02-sequence.md#ch-2) |
+| `sequence/SinglyList.h` | base | `SinglyList` | [2](02-sequence.md#ch-2) |
+| `sequence/SkipListSequence.h` | base | `SkipListSequence` | [2](02-sequence.md#ch-2) |
+| `sequence/SmallVector.h` | advanced | `SmallVector` | [2](02-sequence.md#ch-2) |
+| `sequence/TieredVector.h` | advanced | `TieredVector` | [2](02-sequence.md#ch-2) |
+| `sequence/TreapList.h` | base | `TreapList` | [2](02-sequence.md#ch-2) |
+| `sequence/Treque.h` | base | `Treque` | [2](02-sequence.md#ch-2) |
+| `sequence/XorList.h` | base | `XorList` | [2](02-sequence.md#ch-2) |
+| `stack/ArrayStack.h` | base | `ArrayStack` | [3](03-stack.md#ch-3) |
+| `stack/MinStack.h` | base | `MinStack` | [3](03-stack.md#ch-3) |
+| `stack/MultiStack.h` | base | `MultiStack` | [3](03-stack.md#ch-3) |
+| `stack/SequenceStack.h` | base | `SequenceStack` | [3](03-stack.md#ch-3) |
+| `queue/ArrayQueue.h` | base | `ArrayQueue` | [4](04-queue.md#ch-4) |
+| `queue/Dequeue.h` | base | `Dequeue` | [4](04-queue.md#ch-4) |
+| `queue/LinkedQueue.h` | base | `LinkedQueue` | [4](04-queue.md#ch-4) |
+| `queue/MinDeque.h` | base | `MinDeque` | [4](04-queue.md#ch-4) |
+| `queue/MinQueue.h` | base | `MinQueue` | [4](04-queue.md#ch-4) |
+| `queue/RandomQueue.h` | base | `RandomQueue` | [4](04-queue.md#ch-4) |
+| `queue/RealTimeMinDeque.h` | base | `RealTimeMinDeque` | [4](04-queue.md#ch-4) |
+| `queue/RealTimeMinQueue.h` | base | `RealTimeMinQueue` | [4](04-queue.md#ch-4) |
+| `queue/RingDeque.h` | advanced | `RingDeque` | [4](04-queue.md#ch-4) |
+| `queue/SlidingAggregate.h` | advanced | `Amortized`, `WorstCase`, `SlidingAggregate` | [1](01-introduction.md#ch-1) |
+| `queue/UniqueQueue.h` | base | `UniqueQueue` | [4](04-queue.md#ch-4) |
+| `memory/Allocators.h` | base | `BoundaryTagAllocator`, `BuddyAllocator` | [5](05-memory.md#ch-5) |
+| `memory/Arena.h` | advanced | `Arena` | [5](05-memory.md#ch-5) |
+| `memory/CellHeap.h` | base | `CellHeap` | [5](05-memory.md#ch-5) |
+| `memory/ConcurrentPool.h` | advanced | `ConcurrentPoolResource` | [5](05-memory.md#ch-5) |
+| `memory/HugePageAllocator.h` | core | `HugePageAllocator` | [5](05-memory.md#ch-5) |
+| `memory/ObjectPool.h` | core | `ObjectPool` | [5](05-memory.md#ch-5) |
+| `memory/PoolAllocator.h` | advanced | `PoolResource`, `PoolAllocator` | [5](05-memory.md#ch-5) |
+| `memory/SizeClassAllocator.h` | advanced | `SizeClassAllocator` | [5](05-memory.md#ch-5) |
+| `search/CompressedPGMIndex.h` | advanced | `CompressedPGMIndex` | [6](06-search.md#ch-6) |
+| `search/DynamicPGMIndex.h` | advanced | `DynamicPGMIndex` | [6](06-search.md#ch-6) |
+| `search/PGMIndex.h` | base | `PGMIndex` | [6](06-search.md#ch-6) |
+| `search/RangeMinimum.h` | advanced | `SparseTable`, `PlusMinusOneRangeMinimum`, `RangeMinimum` | [6](06-search.md#ch-6) |
+| `search/StaticSearch.h` | advanced | `SPlusTree` | [6](06-search.md#ch-6) |
+| `search/WordRangeMinimum.h` | advanced | `WordRangeMinimum` | [6](06-search.md#ch-6) |
+| `dictionary/AdaptiveRadixTree.h` | advanced | `AdaptiveRadixTree` | [7](07-dictionary.md#ch-7) |
+| `dictionary/BinaryTrie.h` | base | `BinaryTrie`, `SimpleBinaryTrie` | [7](07-dictionary.md#ch-7) |
+| `dictionary/BitmapTrie.h` | base | `BitmapTrie` | [7](07-dictionary.md#ch-7) |
+| `dictionary/BucketCuckooTable.h` | advanced | `BucketCuckooTable` | [7](07-dictionary.md#ch-7) |
+| `dictionary/ChainedHashTable.h` | base | `ChainedHashTable` | [7](07-dictionary.md#ch-7) |
+| `dictionary/CuckooHashing.h` | base | `CuckooHashTable` | [7](07-dictionary.md#ch-7) |
+| `dictionary/DenseHashMap.h` | advanced | `DenseHashMap` | [7](07-dictionary.md#ch-7) |
+| `dictionary/DirectTable.h` | base | `DirectTable` | [7](07-dictionary.md#ch-7) |
+| `dictionary/FastHash.h` | advanced | `Product128`, `FastHash` | [7](07-dictionary.md#ch-7) |
+| `dictionary/FingerprintPerfectHash.h` | advanced | `FingerprintPerfectHash` | [7](07-dictionary.md#ch-7) |
+| `dictionary/FlatHashTable.h` | advanced | `FlatHashTable` | [7](07-dictionary.md#ch-7) |
+| `dictionary/IndexedSkipList.h` | base | `IndexedSkipList` | [7](07-dictionary.md#ch-7) |
+| `dictionary/KnuthHashing.h` | base | `CoalescedHashTable`, `BrentHashTable` | [7](07-dictionary.md#ch-7) |
+| `dictionary/MinimalPerfectHash.h` | advanced | `MinimalPerfectHash` | [7](07-dictionary.md#ch-7) |
+| `dictionary/OpenHashTable.h` | base | `Probing`, `OpenHashTable` | [7](07-dictionary.md#ch-7) |
+| `dictionary/PatriciaTrie.h` | base | `PatriciaTrie` | [7](07-dictionary.md#ch-7) |
+| `dictionary/PerfectHashing.h` | base | `PerfectHashTable`, `OrderedMinimalPerfectHash` | [7](07-dictionary.md#ch-7) |
+| `dictionary/PointerTable.h` | advanced | `StateEqual`, `PointerTable` | [7](07-dictionary.md#ch-7) |
+| `dictionary/PositionIndex.h` | advanced | `PositionIndex` | [7](07-dictionary.md#ch-7) |
+| `dictionary/RandomHashing.h` | core | `SplitMix64`, `ZobristTable`, `TabulationHash` | [7](07-dictionary.md#ch-7) |
+| `dictionary/RecSplit.h` | advanced | `RecSplit` | [7](07-dictionary.md#ch-7) |
+| `dictionary/SkipList.h` | base | `SkipList` | [7](07-dictionary.md#ch-7) |
+| `dictionary/SortedArrayDictionary.h` | base | `SortedArrayDictionary` | [7](07-dictionary.md#ch-7) |
+| `dictionary/SuccinctPatriciaTrie.h` | advanced | `SuccinctPatriciaTrie` | [7](07-dictionary.md#ch-7) |
+| `dictionary/Trie.h` | base | `Trie`, `RadixTree` | [7](07-dictionary.md#ch-7) |
+| `dictionary/TwoLevelDictionary.h` | base | `TwoLevelDictionary` | [7](07-dictionary.md#ch-7) |
+| `dictionary/UniversalHashing.h` | base | `CarterWegmanHash`, `DotProductHash`, `MultiplyShiftHash`, `StringHash`, `MultiplicativeHash`, `CompoundHash`, `SequenceHash`, `DLeftHashTable` | [7](07-dictionary.md#ch-7) |
+| `dictionary/XFastTrie.h` | base | `XFastTrie`, `ListXFastTrie` | [7](07-dictionary.md#ch-7) |
+| `dictionary/YFastTrie.h` | base | `YFastTrie` | [7](07-dictionary.md#ch-7) |
+| `tree/AVLTree.h` | base | `AVLTree` | [8](08-tree.md#ch-8) |
+| `tree/ArrayBinaryTree.h` | base | `ArrayBinaryTree` | [8](08-tree.md#ch-8) |
+| `tree/BPlusTree.h` | base | `BPlusTree` | [8](08-tree.md#ch-8) |
+| `tree/BTree.h` | base | `BTree` | [8](08-tree.md#ch-8) |
+| `tree/BTreeMap.h` | advanced | `BTreeMap` | [8](08-tree.md#ch-8) |
+| `tree/BinaryTree.h` | base | `BinaryTree` | [8](08-tree.md#ch-8) |
+| `tree/ChildListTree.h` | base | `ChildListTree` | [8](08-tree.md#ch-8) |
+| `tree/CursorBinaryTree.h` | base | `CursorBinaryTree` | [8](08-tree.md#ch-8) |
+| `tree/CursorTree.h` | base | `CursorTree` | [8](08-tree.md#ch-8) |
+| `tree/FingerTreap.h` | base | `FingerTreap` | [8](08-tree.md#ch-8) |
+| `tree/HashedTreap.h` | base | `HashedTreap` | [8](08-tree.md#ch-8) |
+| `tree/JoinAlgorithms.h` | advanced | `AVLJoin`, `RedBlackJoin`, `WeightBalancedJoin`, `TreapJoin`, `JoinAlgorithms`, `TakeSecond`, `TakeFirst`, `Joinable` | [8](08-tree.md#ch-8) |
+| `tree/JoinTree.h` | advanced | `AVLBalance`, `RedBlackBalance`, `WeightBalance`, `TreapBalance`, `NoAugmentation`, `SumAugmentation`, `MaxAugmentation`, `JoinTree`, `JoinAVLTree`, `JoinRedBlackTree`, `WeightBalancedTree`, `JoinTreap`, `AugmentedMap` | [8](08-tree.md#ch-8) |
+| `tree/LeftLeaningRedBlackTree.h` | base | `LeftLeaningRedBlackTree` | [8](08-tree.md#ch-8) |
+| `tree/LinkCutTree.h` | advanced | `LinkCutTree` | [8](08-tree.md#ch-8) |
+| `tree/MaterializedAggregate.h` | advanced | `MaterializedAggregate` | [8](08-tree.md#ch-8) |
+| `tree/MeasuredSearchTree.h` | base | `MeasuredSearchTree` | [8](08-tree.md#ch-8) |
+| `tree/ParentTree.h` | base | `ParentTree` | [8](08-tree.md#ch-8) |
+| `tree/PartialRebuildingTree.h` | base | `PartialRebuildingTree`, `WeightRebuildTree`, `CountdownTree`, `DynamiteTree` | [8](08-tree.md#ch-8) |
+| `tree/PreorderArrayTree.h` | base | `PreorderArrayTree` | [8](08-tree.md#ch-8) |
+| `tree/RandomizedSearchTree.h` | base | `RandomizedSearchTree` | [8](08-tree.md#ch-8) |
+| `tree/ScapegoatTree.h` | base | `ScapegoatTree` | [8](08-tree.md#ch-8) |
+| `tree/SearchTree.h` | base | `NotJoinable`, `SearchTree`, `BinarySearchTree`, `RedBlackTree` | [8](08-tree.md#ch-8) |
+| `tree/SplayTree.h` | advanced | `SplayTree` | [8](08-tree.md#ch-8) |
+| `tree/ThreadedTree.h` | base | `ThreadedTree` | [8](08-tree.md#ch-8) |
+| `tree/Treap.h` | base | `Treap` | [8](08-tree.md#ch-8) |
+| `tree/Tree.h` | base | `Tree` | [8](08-tree.md#ch-8) |
+| `priority/BucketQueue.h` | advanced | `BucketQueue`, `BucketHeap`, `LargestSecondKey`, `LeastSecondKey` | [9](09-priority.md#ch-9) |
+| `priority/DaryHeap.h` | advanced | `DaryHeap` | [9](09-priority.md#ch-9) |
+| `priority/DialQueue.h` | advanced | `DialQueue` | [9](09-priority.md#ch-9) |
+| `priority/FibonacciHeapPriorityQueue.h` | base | `FibonacciHeapPriorityQueue` | [9](09-priority.md#ch-9) |
+| `priority/HeapPriorityQueue.h` | base | `HeapPriorityQueue` | [9](09-priority.md#ch-9) |
+| `priority/IndexedDaryHeap.h` | advanced | `IndexedDaryHeap` | [9](09-priority.md#ch-9) |
+| `priority/IndexedHeapPair.h` | advanced | `IndexedHeapPair` | [9](09-priority.md#ch-9) |
+| `priority/LinkedHeapPriorityQueue.h` | advanced | `LinkedHeapPriorityQueue` | [9](09-priority.md#ch-9) |
+| `priority/ListPriorityQueue.h` | base | `ListPriorityQueue` | [9](09-priority.md#ch-9) |
+| `priority/LoserTree.h` | base | `LoserTree` | [9](09-priority.md#ch-9) |
+| `priority/MeldableHeap.h` | base | `MeldableHeap` | [9](09-priority.md#ch-9) |
+| `priority/MinMaxHeap.h` | advanced | `MinMaxHeap`, `IntervalHeap` | [9](09-priority.md#ch-9) |
+| `priority/MultiwayMerge.h` | advanced | `FlatLoserTree` | [9](09-priority.md#ch-9) |
+| `priority/PairingHeap.h` | advanced | `PairingHeap` | [9](09-priority.md#ch-9) |
+| `priority/RadixHeap.h` | advanced | `RadixHeap` | [9](09-priority.md#ch-9) |
+| `priority/SequenceHeap.h` | advanced | `SequenceHeap` | [9](09-priority.md#ch-9) |
+| `priority/TreePriorityQueue.h` | base | `TreePriorityQueue` | [9](09-priority.md#ch-9) |
+| `set/BinaryFuseFilter.h` | advanced | `BinaryFuseFilter` | [10](10-set.md#ch-10) |
+| `set/BlockedBloomFilter.h` | advanced | `BlockedBloomFilter` | [10](10-set.md#ch-10) |
+| `set/BloomFilter.h` | base | `BloomFilter` | [10](10-set.md#ch-10) |
+| `set/BloomVariants.h` | base | `SpectralBloomFilter`, `PartitionedBloomFilter` | [10](10-set.md#ch-10) |
+| `set/BoolSet.h` | base | `BoolSet` | [10](10-set.md#ch-10) |
+| `set/CuckooFilter.h` | advanced | `CuckooFilter` | [10](10-set.md#ch-10) |
+| `set/DictionarySet.h` | base | `DictionarySet`, `ChainedHashSet`, `OpenHashSet`, `TreeSet` | [10](10-set.md#ch-10) |
+| `set/GrafiteFilter.h` | advanced | `GrafiteFilter`, `BucketingFilter` | [10](10-set.md#ch-10) |
+| `set/HashMultiset.h` | base | `HashMultiset` | [10](10-set.md#ch-10) |
+| `set/LinkedHashSet.h` | base | `LinkedHashSet` | [10](10-set.md#ch-10) |
+| `set/ListSet.h` | base | `ListSet` | [10](10-set.md#ch-10) |
+| `set/PrefixFilter.h` | advanced | `PrefixFilter` | [10](10-set.md#ch-10) |
+| `set/RibbonFilter.h` | advanced | `RibbonFilter` | [10](10-set.md#ch-10) |
+| `set/RoaringBitmap.h` | advanced | `RoaringBitmap` | [10](10-set.md#ch-10) |
+| `set/SortedIntersection.h` | base | `PermutedBuckets` | [10](10-set.md#ch-10) |
+| `set/SortedListSet.h` | base | `SortedListSet` | [10](10-set.md#ch-10) |
+| `set/SpaceEfficientSortedSet.h` | base | `SpaceEfficientSortedSet` | [10](10-set.md#ch-10) |
+| `mfset/ListMFSet.h` | base | `ListMFSet` | [11](11-mfset.md#ch-11) |
+| `mfset/MFSet.h` | base | `MFSet` | [11](11-mfset.md#ch-11) |
+| `mfset/RemUnionFind.h` | advanced | `RemUnionFind` | [11](11-mfset.md#ch-11) |
+| `mfset/RollbackUnionFind.h` | advanced | `RollbackUnionFind`, `ConnectivityOp` | [11](11-mfset.md#ch-11) |
+| `mfset/UnionFind.h` | advanced | `DisjointSets`, `UnionFind` | [11](11-mfset.md#ch-11) |
+| `sort/QuicksortAdversary.h` | advanced | `QuicksortAdversary` | [12](12-sort.md#ch-12) |
+| `algorithm/MasterTheorem.h` | base | `Growth` | [13](13-algorithm.md#ch-13) |
+| `algorithm/MaximumSegments.h` | base | `Segment` | [13](13-algorithm.md#ch-13) |
+| `optimization/GridPaths.h` | base | `GridSquare` | [13](13-algorithm.md#ch-13) |
+| `optimization/OptimalSearchTree.h` | base | `OptimalSearchTree` | [13](13-algorithm.md#ch-13) |
+| `optimization/WeightedIntervals.h` | base | `WeightedInterval` | [13](13-algorithm.md#ch-13) |
+| `graph/AllPairsShortestPaths.h` | base | `AllPairs` | [14](14-graph.md#ch-14) |
+| `graph/ArrayGraph.h` | base | `ArrayGraph` | [14](14-graph.md#ch-14) |
+| `graph/Assignment.h` | advanced | `Assignment` | [14](14-graph.md#ch-14) |
+| `graph/Graph.h` | base | `GraphNodes` | [14](14-graph.md#ch-14) |
+| `graph/GraphBuilder.h` | advanced | `GraphBuilder` | [14](14-graph.md#ch-14) |
+| `graph/GridGraph.h` | advanced | `GridGraph` | [14](14-graph.md#ch-14) |
+| `graph/IncidenceGraph.h` | base | `IncidenceGraph` | [14](14-graph.md#ch-14) |
+| `graph/ListGraph.h` | base | `ListGraph` | [14](14-graph.md#ch-14) |
+| `graph/MatrixGraph.h` | base | `MatrixGraph` | [14](14-graph.md#ch-14) |
+| `graph/MaxFlow.h` | both | `FlowNetwork`, `BoundedEdge` | [14](14-graph.md#ch-14) |
+| `graph/MinimumSpanningTree.h` | base | `WeightedEdge`, `MergeCounts` | [14](14-graph.md#ch-14) |
+| `graph/Observable.h` | advanced | `NodeInserted`, `NodeDeleted`, `EdgeInserted`, `EdgeDeleted`, `WeightChanged`, `GraphEvents`, `coalesce_traits`, `ObservedGraph`, `Observable` | [14](14-graph.md#ch-14) |
+| `graph/PointerGraph.h` | advanced | `PointerGraph` | [14](14-graph.md#ch-14) |
+| `graph/Reoptimization.h` | advanced | `EventQueue`, `ShortestPathsObserver`, `SpanningForestObserver`, `MaxFlowObserver`, `AssignmentObserver` | [14](14-graph.md#ch-14) |
+| `graph/ShortestPaths.h` | base | `ShortestPathTree`, `FrontierCounts`, `PriorityFrontier`, `QueueFrontier`, `StackFrontier`, `DequeFrontier` | [14](14-graph.md#ch-14) |
+| `graph/StaticGraph.h` | advanced | `WeightedArc`, `StaticGraph` | [14](14-graph.md#ch-14) |
+| `graph/Visit.h` | both | `VisitCounts`, `DfsSchema` | [14](14-graph.md#ch-14) |
+| `string/AhoCorasick.h` | advanced | `AhoCorasick` | [15](15-string.md#ch-15) |
+| `string/FrontCoding.h` | base | `FrontCodedDictionary` | [15](15-string.md#ch-15) |
+| `string/LongestCommonExtension.h` | advanced | `LceIndex` | [15](15-string.md#ch-15) |
+| `string/MultiSearch.h` | advanced | `MultiSearcher` | [15](15-string.md#ch-15) |
+| `string/Palindromes.h` | base | `Eertree` | [15](15-string.md#ch-15) |
+| `string/PrefixSearch.h` | base | `BinnedSearch`, `BinnedStringSearch` | [15](15-string.md#ch-15) |
+| `string/RearCoding.h` | base | `RearCodedDictionary` | [15](15-string.md#ch-15) |
+| `string/StringSearch.h` | advanced | `StringSearcher` | [15](15-string.md#ch-15) |
+| `string/SuffixApplications.h` | base | `CopyPhrase` | [15](15-string.md#ch-15) |
+| `string/SuffixArray.h` | base | `SuffixArray` | [15](15-string.md#ch-15) |
+| `string/SuffixAutomaton.h` | advanced | `SuffixAutomaton` | [15](15-string.md#ch-15) |
+| `string/SuffixTree.h` | base | `SuffixTree` | [15](15-string.md#ch-15) |
+| `geometry/ConvexHull.h` | base | `Point` | [16](16-geometry.md#ch-16) |
+| `geometry/IntervalTree.h` | advanced | `IntervalTree` | [16](16-geometry.md#ch-16) |
+| `geometry/RangeTree.h` | advanced | `RangeTree` | [16](16-geometry.md#ch-16) |
+| `numeric/BigInteger.h` | base | `BigInteger` | [17](17-numeric.md#ch-17) |
+| `numeric/Combinatorics.h` | base | `FibonacciCache` | [17](17-numeric.md#ch-17) |
+| `numeric/CsrMatrix.h` | advanced | `CsrMatrix` | [17](17-numeric.md#ch-17) |
+| `numeric/DenseMatrix.h` | advanced | `DenseMatrix` | [17](17-numeric.md#ch-17) |
+| `numeric/DynamicCsr.h` | advanced | `DynamicCsr`, `DynamicCsc` | [17](17-numeric.md#ch-17) |
+| `numeric/NumberTheory.h` | base | `Montgomery64` | [17](17-numeric.md#ch-17) |
+| `numeric/RSA.h` | base | `RsaKey` | [17](17-numeric.md#ch-17) |
+| `numeric/RandomGenerators.h` | advanced | `Xoshiro256T`, `WyRand`, `PhiloxT`, `AliasTable`, `Xoshiro256`, `Xoshiro256StarStar`, `Philox4x32`, `Philox4x64` | [17](17-numeric.md#ch-17) |
+| `numeric/RandomNumbers.h` | base | `LinearCongruential`, `LinearCongruentialT`, `MinStd`, `Mmix` | [17](17-numeric.md#ch-17) |
+| `numeric/Rational.h` | base | `Rational` | [17](17-numeric.md#ch-17) |
+| `numeric/SellMatrix.h` | advanced | `SellMatrix` | [17](17-numeric.md#ch-17) |
+| `numeric/SparseAssembly.h` | advanced | `AssemblyWorkspace` | [17](17-numeric.md#ch-17) |
+| `numeric/SparseMatrix.h` | base | `SparseMatrix` | [17](17-numeric.md#ch-17) |
+| `backtrack/DancingLinks.h` | base | `ExactCover` | [19](19-backtrack.md#ch-19) |
+| `backtrack/FastExactCover.h` | advanced | `FastExactCover` | [19](19-backtrack.md#ch-19) |
+| `backtrack/SatSolvers.h` | base | `BasicCdcl`, `Cdcl` | [19](19-backtrack.md#ch-19) |
+| `complexity/Domino.h` | base | `Tile` | [20](20-complexity.md#ch-20) |
+| `complexity/Nondeterminism.h` | base | `Chooser` | [20](20-complexity.md#ch-20) |
+| `intractable/Heuristics.h` | base | `Buckets` | [20](20-complexity.md#ch-20) |
+| `intractable/Pseudopolynomial.h` | base | `Piece` | [20](20-complexity.md#ch-20) |
+| `compression/ArithmeticCoding.h` | base | `RangeEncoder`, `RangeDecoder` | [21](21-compression.md#ch-21) |
+| `compression/BurrowsWheeler.h` | base | `BWT` | [21](21-compression.md#ch-21) |
+| `compression/CanonicalHuffman.h` | base | `CanonicalHuffman` | [21](21-compression.md#ch-21) |
+| `compression/DirectAccessCodes.h` | advanced | `DirectAccessCodes` | [21](21-compression.md#ch-21) |
+| `compression/FMIndex.h` | base | `FMIndex` | [21](21-compression.md#ch-21) |
+| `compression/HuffmanFMIndex.h` | advanced | `HuffmanFMIndex` | [21](21-compression.md#ch-21) |
+| `compression/IntegerCodes.h` | base | `PForDeltaBlock` | [21](21-compression.md#ch-21) |
+| `compression/LempelZiv.h` | base | `LZ77Phrase`, `LZSSPhrase`, `LZ78Phrase` | [21](21-compression.md#ch-21) |
+| `compression/MoveRIndex.h` | advanced | `MoveRIndex` | [21](21-compression.md#ch-21) |
+| `compression/PPM.h` | base | `PPMModel` | [21](21-compression.md#ch-21) |
+| `compression/PackedBits.h` | core | `PackedBitWriter`, `PackedBitReader` | [21](21-compression.md#ch-21) |
+| `compression/RIndex.h` | advanced | `RIndex` | [21](21-compression.md#ch-21) |
+| `succinct/BPTree.h` | base | `BPTree` | [22](22-succinct.md#ch-22) |
+| `succinct/BVGraph.h` | base | `BVGraph` | [22](22-succinct.md#ch-22) |
+| `succinct/BalancedParentheses.h` | base | `BalancedParentheses` | [22](22-succinct.md#ch-22) |
+| `succinct/BitStream.h` | base | `BitWriter`, `BitReader` | [22](22-succinct.md#ch-22) |
+| `succinct/BitVector.h` | base | `SubscriptIterator`, `BitVector` | [22](22-succinct.md#ch-22) |
+| `succinct/CompactRankSelect.h` | advanced | `CompactRankSelect` | [22](22-succinct.md#ch-22) |
+| `succinct/EliasFano.h` | base | `BasicEliasFano`, `EliasFano`, `LazyEliasFano` | [22](22-succinct.md#ch-22) |
+| `succinct/EliasFanoGraph.h` | base | `EliasFanoGraph` | [22](22-succinct.md#ch-22) |
+| `succinct/HuffmanWaveletTree.h` | base | `HuffmanWaveletTree` | [22](22-succinct.md#ch-22) |
+| `succinct/InterleavedRankSelect.h` | advanced | `InterleavedRankSelect` | [22](22-succinct.md#ch-22) |
+| `succinct/JacobsonTree.h` | base | `JacobsonTree` | [22](22-succinct.md#ch-22) |
+| `succinct/K2Tree.h` | base | `K2Tree` | [22](22-succinct.md#ch-22) |
+| `succinct/LAVector.h` | advanced | `LAVector` | [22](22-succinct.md#ch-22) |
+| `succinct/LoudsTree.h` | base | `LoudsTree` | [22](22-succinct.md#ch-22) |
+| `succinct/MoveStructure.h` | advanced | `MoveStructure` | [22](22-succinct.md#ch-22) |
+| `succinct/PackedArray.h` | advanced | `PackedArray`, `TritArray` | [22](22-succinct.md#ch-22) |
+| `succinct/PartitionedEliasFano.h` | advanced | `PartitionedEliasFano` | [22](22-succinct.md#ch-22) |
+| `succinct/RRRBitVector.h` | advanced | `RRRBitVector` | [22](22-succinct.md#ch-22) |
+| `succinct/RankSelect.h` | base | `RankSelectOptions`, `BasicRankSelect`, `RankSelect`, `LazyRankSelect` | [22](22-succinct.md#ch-22) |
+| `succinct/WaveletMatrix.h` | advanced | `WaveletMatrix` | [22](22-succinct.md#ch-22) |
+| `external/BlockBTree.h` | base | `BlockBTree` | [23](23-external.md#ch-23) |
+| `external/BlockStore.h` | base | `BlockStore` | [23](23-external.md#ch-23) |
+| `external/RecordFile.h` | core | `RecordFile`, `RecordWriter`, `TempDirectory` | [23](23-external.md#ch-23) |
+| `external/TwoLevelMemory.h` | base | `TwoLevelMemory`, `MemoryLease`, `DiskFile`, `DiskReader`, `DiskWriter` | [23](23-external.md#ch-23) |
+| `concurrent/Backoff.h` | advanced | `Backoff` | [24](24-concurrent.md#ch-24) |
+| `concurrent/ConcurrentCuckooTable.h` | advanced | `ConcurrentCuckooTable` | [24](24-concurrent.md#ch-24) |
+| `concurrent/ConcurrentFlatTable.h` | advanced | `ConcurrentFlatTable`, `ZeroingClear`, `EpochClear` | [24](24-concurrent.md#ch-24) |
+| `concurrent/ConcurrentUnionFind.h` | advanced | `ConcurrentUnionFind` | [24](24-concurrent.md#ch-24) |
+| `concurrent/EventCount.h` | advanced | `EventCount` | [24](24-concurrent.md#ch-24) |
+| `concurrent/LockFreePriorityQueue.h` | advanced | `LockFreePriorityQueue` | [24](24-concurrent.md#ch-24) |
+| `concurrent/MPMCQueue.h` | advanced | `MPMCQueue` | [24](24-concurrent.md#ch-24) |
+| `concurrent/MPSCInbox.h` | advanced | `MPSCInbox` | [24](24-concurrent.md#ch-24) |
+| `concurrent/MPSCQueue.h` | advanced | `MPSCQueue` | [24](24-concurrent.md#ch-24) |
+| `concurrent/MinBoard.h` | advanced | `MinBoard` | [24](24-concurrent.md#ch-24) |
+| `concurrent/MultiQueue.h` | advanced | `MultiQueue`, `MultiQueueHeap` | [24](24-concurrent.md#ch-24) |
+| `concurrent/SPSCQueue.h` | advanced | `SPSCQueue` | [24](24-concurrent.md#ch-24) |
+| `concurrent/SingleWriterFlatTable.h` | advanced | `SingleWriterFlatTable` | [24](24-concurrent.md#ch-24) |
+| `concurrent/StealablePriorityQueue.h` | advanced | `StealablePriorityQueue`, `StealingFrontier` | [24](24-concurrent.md#ch-24) |
+| `concurrent/WorkStealingDeque.h` | advanced | `WorkStealingDeque` | [24](24-concurrent.md#ch-24) |
+| `parallel/Channels.h` | advanced | `ChannelPort`, `LockedChannels`, `InboxChannels`, `LaneChannels`, `MeshChannels`, `ChannelsOf` | [25](25-parallel.md#ch-25) |
+| `parallel/Executor.h` | core | `Sequential` | [25](25-parallel.md#ch-25) |
+| `parallel/FastFlowExecutor.h` | advanced | `FastFlowLock`, `FastFlowExecutor` | [25](25-parallel.md#ch-25) |
+| `parallel/Mailbox.h` | advanced | `Mailbox`, `NoCoalescing`, `CoalesceBy` | [25](25-parallel.md#ch-25) |
+| `parallel/OpenMPExecutor.h` | advanced | `OpenMPLock`, `OpenMPExecutor` | [25](25-parallel.md#ch-25) |
+| `parallel/SpeculativeFor.h` | advanced | `Reservation`, `SpeculativeCounts` | [25](25-parallel.md#ch-25) |
+| `parallel/TBBExecutor.h` | advanced | `TBBExecutor` | [25](25-parallel.md#ch-25) |
+| `parallel/ThreadPool.h` | advanced | `ThreadPool` | [25](25-parallel.md#ch-25) |
+| `distributed/MPIExecutor.h` | advanced | `MPIEnvironment`, `MPIExecutor`, `DistributedMin` | [26](26-distributed.md#ch-26) |
+| `distributed/MPIMailbox.h` | advanced | `MPICodec`, `MPIByteMailbox`, `MPIMailbox` | [26](26-distributed.md#ch-26) |
 
 <span id="tab-1-6"></span>**Table 1.6.** The headers that declare functions
 only, by chapter.

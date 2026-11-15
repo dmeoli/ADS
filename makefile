@@ -21,7 +21,11 @@
 #                      of Boost, on by default where they are found           #
 #                      [GMP=<prefix>] [BLAS=<prefix>] [BOOST=<prefix>]        #
 #     make test ADSMOD=1                                                      #
-#                      also the C++20 module ads and the test that imports it #
+#                      also the C++20 module ads, those of the sets and the   #
+#                      tests that import them                                 #
+#     make sets        writes the entry points of the sets of the headers     #
+#                      [see cmake/ads_sets.txt], as each make does            #
+#     make test-sets   compiles each alone, which make test also does         #
 #     make backends    tells whether GMP, a CBLAS, Boost and MPI were found   #
 #     make bench       builds the benchmarks in $(BUILD)                      #
 #     bench/run.sh     runs them and writes the tables of the README          #
@@ -76,17 +80,47 @@ PROGRAMS = $(shell awk '/^[a-z]/{print $$1}' test/tests.txt | sort -u)
 BINS     = $(addprefix $(BUILD)/,$(addsuffix $(ADSEXE),$(PROGRAMS)))
 
 # with the module, $(BUILD)/module, the test that imports it in place of the
-# headers [see test/module.cpp]
+# headers [see test/module.cpp], and $(BUILD)/module_<set>, those that
+# import the modules of the sets, each linked only with its own and ads.core
+# [see test/module_sets.cpp]
 .DEFAULT_GOAL := all
 ifneq ($(ADSOBJ),)
-MODBIN   = $(BUILD)/module$(ADSEXE)
-$(MODBIN): test/module.cpp $(ADSOBJ) | $(BUILD)
+MODBIN   = $(BUILD)/module$(ADSEXE) $(foreach s,core base advanced,\
+           $(BUILD)/module_$(s)$(ADSEXE))
+$(BUILD)/module$(ADSEXE): test/module.cpp $(ADSOBJ) | $(BUILD)
 	$(CXX) $(CXXFLAGS) $(ADSMODSW) -o $@ $< $(ADSOBJ) $(LIBS)
+MODSET_core     = 1
+MODSET_base     = 2
+MODSET_advanced = 3
+define MODSETrule
+$(BUILD)/module_$(1)$(ADSEXE): test/module_sets.cpp $(ADSMODOBJ_$(1)) \
+                               | $(BUILD)
+	$$(CXX) $$(CXXFLAGS) $$(ADSMODSW) -DADS_MODULE_SET=$(MODSET_$(1)) \
+	-o $$@ $$< $(ADSMODOBJ_$(1)) $$(LIBS)
+endef
+$(foreach s,core base advanced,$(eval $(call MODSETrule,$(s))))
 endif
+
+# the entry points of the sets [see cmake/ads_sets.txt], written again by
+# each make where python3 is found [see cmake/ads_sets.py]; test-sets
+# compiles each alone and checks the headers of ADS that it pulls
+PYTHON  ?= python3
+HASPY    = $(shell command -v $(PYTHON) 2>/dev/null)
+
+sets:
+	$(if $(HASPY),@$(PYTHON) cmake/ads_sets.py,@echo "$(PYTHON) not found: \
+	the entry points of the sets are not written again")
+
+test-sets:
+	$(if $(HASPY),,$(error test-sets needs $(PYTHON)))
+	@for s in core base advanced; do \
+	  $(PYTHON) cmake/ads_sets.py --test $$s --cxx $(CXX) || exit 1; \
+	done
+	@$(PYTHON) cmake/ads_sets.py --check && echo "PASSED sets.check"
 
 # default target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-all: $(BINS) $(MODBIN)
+all: sets $(BINS) $(MODBIN)
 
 $(BUILD)/%$(ADSEXE): test/%.cpp $(HEADERS) | $(BUILD)
 	$(CXX) $(CXXFLAGS) $(INC) -o $@ $< $(LIBS)
@@ -170,10 +204,10 @@ test-modification-attach: | $(BUILD)
 	@echo "PASSED modification-attach"
 
 test: $(addprefix test-,$(PROGRAMS)) $(MODBIN) test-fastflow-order \
-      test-modification-attach
+      test-modification-attach $(if $(HASPY),test-sets)
 	@failed=$$(cat $(addprefix $(BUILD)/,$(addsuffix .failed,$(PROGRAMS))) \
 	| awk '{s += $$1} END {print s + 0}'); \
-	$(if $(MODBIN),$(MODBIN) || failed=$$((failed + 1));) \
+	$(foreach m,$(MODBIN),$(m) || failed=$$((failed + 1));) \
 	echo "$$failed failed"; test $$failed -eq 0
 
 # the backends found, as the tests are built [see lib/makefile-c] - - - - - -
@@ -559,6 +593,6 @@ install:
 clean::
 	rm -rf $(BUILD)
 
-.PHONY: all test test-mpi bench install clean backends
+.PHONY: all test test-mpi bench install clean backends sets test-sets
 
 ############################### End of makefile ###############################

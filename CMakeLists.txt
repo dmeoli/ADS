@@ -67,6 +67,28 @@ add_library(ADS::ADS ALIAS ADS)
 # it is installed with the headers, none of which includes it.
 configure_file(cmake/ADSConfig.h.in include/ADS/ADSConfig.h @ONLY)
 
+# ----- Sets of the headers ------------------------------------------------- #
+# The entry points ADS/core.h, ADS/base.h, ADS/advanced.h and ADS/ADS.h are
+# written from cmake/ads_sets.txt by cmake/ads_sets.py, which stops on a
+# header with no set or on an include across the sets that the file does
+# not allow; it is run here when ADS is the main project and Python is
+# found, and the target ads_sets runs it again.
+find_package(Python3 QUIET COMPONENTS Interpreter)
+if (PROJECT_IS_TOP_LEVEL AND Python3_FOUND)
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+                 ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ads_sets.txt)
+    execute_process(COMMAND ${Python3_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ads_sets.py
+                    RESULT_VARIABLE _sets ERROR_VARIABLE _sets_err)
+    if (NOT _sets EQUAL 0)
+        message(FATAL_ERROR "${_sets_err}")
+    endif ()
+    add_custom_target(ads_sets
+            COMMAND ${Python3_EXECUTABLE}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ads_sets.py
+            COMMENT "the entry points of the sets [see cmake/ads_sets.txt]")
+endif ()
+
 # ----- Requirements -------------------------------------------------------- #
 # The pool of threads of ADS [see include/ADS/parallel].
 find_package(Threads REQUIRED)
@@ -209,7 +231,10 @@ message(STATUS "ADS: MPI ${ADS_USE_MPI}")
 # ----- C++20 module -------------------------------------------------------- #
 # The module ads (src/ADS.cppm) exports the names of all the headers, so
 # that a translation unit can write "import ads;" in place of including
-# them; it is built when ADS_BUILD_MODULE is ON, which needs CMake 3.28, a
+# them, by exporting the modules of the three sets [see cmake/ads_sets.txt],
+# ads.core, ads.base and ads.advanced, each a target of its own (e.g.,
+# ADS::ADS_module_base, which compiles only the base headers and the core);
+# they are built when ADS_BUILD_MODULE is ON, which needs CMake 3.28, a
 # generator that scans the module dependencies and a compiler that builds
 # modules. Where one is missing, the option is turned off with a warning
 # [see ADSCheckModule.cmake].
@@ -220,24 +245,33 @@ if (ADS_BUILD_MODULE)
     # the scan of the module dependencies, which cmake_minimum_required()
     # above leaves off
     cmake_policy(SET CMP0155 NEW)
-    add_library(ADS_module)
-    target_sources(ADS_module PUBLIC
-            FILE_SET CXX_MODULES
-            BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
-            FILES src/ADS.cppm)
-    target_compile_features(ADS_module PUBLIC cxx_std_20)
-    target_link_libraries(ADS_module PUBLIC ADS)
-    # the include directories and the macros of ADS also on the module
+    # the include directories and the macros of ADS also on each module
     # itself, as the importer of the installed one compiles it again with
     # these alone, CMake 3.28 dropping those of the libraries it links
     get_target_property(ADS_DEFINITIONS ADS INTERFACE_COMPILE_DEFINITIONS)
-    target_include_directories(ADS_module PRIVATE
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-            $<INSTALL_INTERFACE:include>)
-    if (ADS_DEFINITIONS)
-        target_compile_definitions(ADS_module PRIVATE ${ADS_DEFINITIONS})
-    endif ()
-    add_library(ADS::ADS_module ALIAS ADS_module)
+    # a module of ADS, the target <target> of src/<file>.cppm, which
+    # imports the modules of the targets that follow
+    function(ads_add_module target file)
+        add_library(${target})
+        target_sources(${target} PUBLIC
+                FILE_SET CXX_MODULES
+                BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
+                FILES src/${file}.cppm)
+        target_compile_features(${target} PUBLIC cxx_std_20)
+        target_link_libraries(${target} PUBLIC ADS ${ARGN})
+        target_include_directories(${target} PRIVATE
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                $<INSTALL_INTERFACE:include>)
+        if (ADS_DEFINITIONS)
+            target_compile_definitions(${target} PRIVATE ${ADS_DEFINITIONS})
+        endif ()
+        add_library(ADS::${target} ALIAS ${target})
+    endfunction()
+    ads_add_module(ADS_module_core ADSCore)
+    ads_add_module(ADS_module_base ADSBase ADS_module_core)
+    ads_add_module(ADS_module_advanced ADSAdvanced ADS_module_core)
+    ads_add_module(ADS_module ADS ADS_module_core ADS_module_base
+                   ADS_module_advanced)
 endif ()
 
 # ----- Subdirectories ------------------------------------------------------ #
@@ -513,9 +547,10 @@ set(ADS_INSTALL_PKGCONFIGDIR ${CMAKE_INSTALL_DATADIR}/pkgconfig
 # Install the library
 install(TARGETS ADS EXPORT ADSTargets)
 
-# Install the module, whose interface is compiled again by each importer
+# Install the modules, whose interfaces are compiled again by each importer
 if (ADS_BUILD_MODULE)
-    install(TARGETS ADS_module EXPORT ADSTargets
+    install(TARGETS ADS_module_core ADS_module_base ADS_module_advanced
+            ADS_module EXPORT ADSTargets
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
             FILE_SET CXX_MODULES
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ADS/modules)

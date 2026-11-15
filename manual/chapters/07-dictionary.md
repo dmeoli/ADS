@@ -39,7 +39,13 @@ three chapters of Morin are covered section by section, with each of his
 lemmas, figures and exercises restated on the code of the library. The
 exercises that ask to illustrate an operation are solved by the figures of
 this chapter, and the others by the tests named in
-[§7.13](07-dictionary.md#sec-7-13).
+[§7.13](07-dictionary.md#sec-7-13). In the sets of
+[§1.9](01-introduction.md#sec-1-9), `AdaptiveRadixTree.h`,
+`BucketCuckooTable.h`, `DenseHashMap.h`, `FastHash.h`,
+`FingerprintPerfectHash.h`, `FlatHashTable.h`, `MinimalPerfectHash.h`,
+`PointerTable.h`, `PositionIndex.h`, `RecSplit.h`, `RowFingerprint.h` and
+`SuccinctPatriciaTrie.h` are advanced and the other headers of this chapter
+are base, while `RandomHashing.h` is in the core that the two sets include.
 
 ## 7.1 The interface {#sec-7-1}
 

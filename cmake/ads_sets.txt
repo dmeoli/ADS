@@ -1,0 +1,546 @@
+# --------------------------------------------------------------------------- #
+#    ads_sets.txt                                                             #
+#                                                                             #
+#    The set of each public header of include/ADS, the only list of them:     #
+#    cmake/ads_sets.py writes from it the entry points ADS/core.h,            #
+#    ADS/base.h, ADS/advanced.h and ADS/ADS.h and the table of the README,    #
+#    cmake/ads_module_exports.py the modules ads.core, ads.base, ads.advanced #
+#    and ads, and manual/build/structmap.py the column of the sets of Table   #
+#    1.5 of the manual. The sets are                                          #
+#      - base, the structures and the algorithms that follow a textbook or    #
+#        an academic source (Montresor, TAOCP, Ferragina's book and notes,    #
+#        Morin), written to be read, even when they are fast;                 #
+#      - advanced, those written for speed beyond those sources, the          #
+#        concurrent and parallel structures, the executors, the distributed   #
+#        layer, the typed modifications and the observers;                    #
+#      - core, the infrastructure that the two include;                       #
+#      - both, the headers with a part of each set, until it is split off.    #
+#                                                                             #
+#    A line "<header> <set> [?<macro>] [<reason>]" gives the set of a header  #
+#    (relative to include/ADS), the macro without which the header declares   #
+#    nothing (the optional executors) and the reason of a borderline case;    #
+#    an indented line goes on with the reason of the line above. A line       #
+#    "<header> uses <header>" allows a header of core to include one of base, #
+#    advanced or both, or one of base or both to include one of advanced,     #
+#    which is otherwise an error of ads_sets.py: the entry point of the set   #
+#    then pulls that header, without exporting its names from the module.     #
+#    A header of advanced includes those of base freely, since it extends     #
+#    them. A new header is added here before anything else is run.            #
+# --------------------------------------------------------------------------- #
+
+ADT.h                                 base
+Algebra.h                             advanced
+Capabilities.h                        core     the vocabulary of the
+                                               capabilities
+Contract.h                            core     the contracts of every header
+Iterators.h                           core     the iterators of the containers
+Modification.h                        advanced
+Portable.h                            core     the primitives of the processor
+
+algorithm/AkraBazzi.h                 base
+algorithm/BinaryCounter.h             base
+algorithm/Hanoi.h                     base
+algorithm/MasterTheorem.h             base
+algorithm/MaximumSegments.h           base
+algorithm/MonteCarlo.h                base
+algorithm/Paradigms.h                 base
+algorithm/SequenceQueries.h           base
+algorithm/Subsequences.h              base
+
+backtrack/Anagrams.h                  base
+backtrack/DancingLinks.h              base     TAOCP 7.2.2.1
+backtrack/Enumeration.h               base
+backtrack/FastExactCover.h            advanced DancingLinks for speed
+backtrack/KnightTour.h                base
+backtrack/NQueens.h                   base
+backtrack/SatSolvers.h                base
+backtrack/Sudoku.h                    base
+
+combinatorial/Bitwise.h               base     TAOCP 7.1.3
+combinatorial/FastBitwise.h           advanced Bitwise for speed
+combinatorial/FastGeneration.h        advanced Generation for speed
+combinatorial/Generation.h            base     TAOCP 7.2.1
+
+complexity/Domino.h                   base
+complexity/EasyCases.h                base
+complexity/Nondeterminism.h           base
+complexity/Problems.h                 base
+complexity/Reductions.h               base
+
+compression/ArithmeticCoding.h        base
+compression/BinaryPacking.h           advanced
+compression/BurrowsWheeler.h          base
+compression/CanonicalHuffman.h        base
+compression/DirectAccessCodes.h       advanced
+compression/Entropy.h                 base
+compression/FMIndex.h                 base
+compression/HuffmanCoder.h            advanced
+compression/HuffmanFMIndex.h          advanced
+compression/IntegerCodes.h            base     Ferragina's book, even if fast
+compression/LZ77Linear.h              advanced
+compression/LempelZiv.h               base
+compression/MoveRIndex.h              advanced
+compression/PPM.h                     base
+compression/PackedBits.h              core     the bit streams of the coders
+compression/RIndex.h                  advanced
+compression/Rans.h                    advanced
+compression/StreamVByte.h             advanced
+compression/Tans.h                    advanced
+
+concurrent/Backoff.h                  advanced
+concurrent/ConcurrentCuckooTable.h    advanced
+concurrent/ConcurrentFlatTable.h      advanced
+concurrent/ConcurrentUnionFind.h      advanced
+concurrent/EventCount.h               advanced
+concurrent/LockFreePriorityQueue.h    advanced
+concurrent/MPMCQueue.h                advanced
+concurrent/MPSCInbox.h                advanced
+concurrent/MPSCQueue.h                advanced
+concurrent/MinBoard.h                 advanced
+concurrent/MultiQueue.h               advanced
+concurrent/SPSCQueue.h                advanced
+concurrent/SingleWriterFlatTable.h    advanced
+concurrent/StealablePriorityQueue.h   advanced
+concurrent/WorkStealingDeque.h        advanced
+
+dictionary/AdaptiveRadixTree.h        advanced
+dictionary/BinaryTrie.h               base     Morin, on FlatHashTable
+dictionary/BitmapTrie.h               base
+dictionary/BucketCuckooTable.h        advanced
+dictionary/ChainedHashTable.h         base     the book, on a par with
+                                               std::unordered_map
+dictionary/CuckooHashing.h            base
+dictionary/DenseHashMap.h             advanced
+dictionary/DirectTable.h              base
+dictionary/FastHash.h                 advanced
+dictionary/FingerprintPerfectHash.h   advanced
+dictionary/FlatHashTable.h            advanced
+dictionary/HashFunctions.h            base
+dictionary/IndexedSkipList.h          base
+dictionary/KnuthHashing.h             base
+dictionary/MinimalPerfectHash.h       advanced
+dictionary/OpenHashTable.h            base     the book, on a par with
+                                               std::unordered_map
+dictionary/PatriciaTrie.h             base
+dictionary/PerfectHashing.h           base
+dictionary/PointerTable.h             advanced
+dictionary/PositionIndex.h            advanced
+dictionary/RandomHashing.h            core     SplitMix64 and the universal
+                                               hashing of the randomized
+                                               structures
+dictionary/RecSplit.h                 advanced
+dictionary/RowFingerprint.h           advanced
+dictionary/SkipList.h                 base     Morin, with SplitMix64
+dictionary/SortedArrayDictionary.h    base
+dictionary/SuccinctPatriciaTrie.h     advanced
+dictionary/TableSize.h                base
+dictionary/Trie.h                     base
+dictionary/TwoLevelDictionary.h       base
+dictionary/UniversalHashing.h         base
+dictionary/XFastTrie.h                base     Morin, on FlatHashTable
+dictionary/YFastTrie.h                base     Morin, with SplitMix64
+
+distributed/DistributedSort.h         advanced ?ADS_WITH_MPI
+distributed/MPIExecutor.h             advanced ?ADS_WITH_MPI
+distributed/MPIMailbox.h              advanced ?ADS_WITH_MPI
+
+external/BlockBTree.h                 base
+external/BlockStore.h                 base
+external/ExternalSorting.h            base
+external/ListRanking.h                base
+external/RecordFile.h                 core     the files of records of the
+                                               external memory
+external/TwoLevelMemory.h             base
+
+geometry/ClosestPair.h                base
+geometry/ConvexHull.h                 base
+geometry/IntervalTree.h               advanced
+geometry/RangeTree.h                  advanced
+
+graph/AllPairsShortestPaths.h         base
+graph/ArrayGraph.h                    base     the vectors of adjacency of
+                                               section 9.4
+graph/Assignment.h                    advanced
+graph/EulerianCycle.h                 base
+graph/FlowApplications.h              base
+graph/Graph.h                         base
+graph/GraphBuilder.h                  advanced
+graph/Grid.h                          base
+graph/GridGraph.h                     advanced
+graph/IncidenceGraph.h                base
+graph/ListGraph.h                     base
+graph/Matching.h                      both     TODO split: the b-matching of
+                                               the book and Edmonds
+graph/MatrixGraph.h                   base
+graph/MaxFlow.h                       both     TODO split: the flows of the
+                                               book and the engineered push-
+                                               relabel
+graph/MinimumSpanningTree.h           base
+graph/Observable.h                    advanced
+graph/Paths.h                         base
+graph/PointerGraph.h                  advanced
+graph/Properties.h                    base
+graph/Reoptimization.h                advanced
+graph/ShortestPaths.h                 base
+graph/StaticGraph.h                   advanced the CSR of ArrayGraph written
+                                               for speed
+graph/Visit.h                         both     TODO split: the visits of the
+                                               book and the one-pass SCC
+
+intractable/Approximation.h           base
+intractable/BranchAndBound.h          base
+intractable/FifteenPuzzle.h           base
+intractable/Heuristics.h              base
+intractable/Pseudopolynomial.h        base
+
+memory/Allocators.h                   base
+memory/Arena.h                        advanced
+memory/CellHeap.h                     base
+memory/ConcurrentPool.h               advanced
+memory/HugePageAllocator.h            core     the allocator under ObjectPool
+                                               and PGMIndex
+memory/ObjectPool.h                   core     the pool of the nodes of the
+                                               linked structures
+memory/PageHeap.h                     advanced
+memory/PoolAllocator.h                advanced
+memory/SizeClassAllocator.h           advanced
+
+mfset/ListMFSet.h                     base
+mfset/MFSet.h                         base     section 10.2 of the book, with
+                                               both heuristics
+mfset/RemUnionFind.h                  advanced Rem's algorithm, for speed
+mfset/RollbackUnionFind.h             advanced
+mfset/UnionFind.h                     advanced MFSet in one vector of integers,
+                                               for speed
+
+numeric/BigInteger.h                  base     TAOCP 4.3, on GMP with
+                                               ADS_WITH_GMP
+numeric/BinaryInteger.h               base
+numeric/Catalan.h                     base
+numeric/Combinatorics.h               base
+numeric/CsrMatrix.h                   advanced
+numeric/DenseMatrix.h                 advanced
+numeric/DynamicCsr.h                  advanced
+numeric/Matrix.h                      base
+numeric/MatrixChain.h                 base
+numeric/NumberTheory.h                base
+numeric/Polynomial.h                  base
+numeric/RSA.h                         base
+numeric/RandomGenerators.h            advanced
+numeric/RandomNumbers.h               base
+numeric/RandomSampling.h              base
+numeric/Rational.h                    base     TAOCP 4.5, on GMP with
+                                               ADS_WITH_GMP
+numeric/SellMatrix.h                  advanced
+numeric/SparseAssembly.h              advanced
+numeric/SparseMatrix.h                base
+
+optimization/CoinChange.h             base
+optimization/CoinGame.h               base
+optimization/FractionalKnapsack.h     base
+optimization/GridPaths.h              base
+optimization/HouseProblems.h          base
+optimization/IntervalCover.h          base
+optimization/Intervals.h              base
+optimization/Knapsack.h               base
+optimization/KnapsackVariants.h       base
+optimization/LinearPartition.h        base
+optimization/OptimalSearchTree.h      base
+optimization/SequenceProblems.h       base
+optimization/ShortestJobFirst.h       base
+optimization/StockTrading.h           base
+optimization/WeightedIntervals.h      base
+
+parallel/Affinity.h                   advanced
+parallel/Channels.h                   advanced
+parallel/Executor.h                   core     the concept of the executors
+parallel/Farm.h                       advanced
+parallel/FastFlowExecutor.h           advanced ?ADS_WITH_FASTFLOW
+parallel/Mailbox.h                    advanced
+parallel/OpenMPExecutor.h             advanced ?_OPENMP
+parallel/ParallelGraph.h              advanced
+parallel/ParallelGreedy.h             advanced
+parallel/ParallelMerge.h              advanced
+parallel/ParallelNumeric.h            advanced
+parallel/ParallelShortestPaths.h      advanced
+parallel/ParallelSort.h               advanced
+parallel/ParallelText.h               advanced
+parallel/Scratch.h                    advanced
+parallel/SpeculativeFor.h             advanced
+parallel/TBBExecutor.h                advanced ?ADS_WITH_TBB
+parallel/ThreadPool.h                 advanced
+
+priority/BucketQueue.h                advanced
+priority/DaryHeap.h                   advanced the heap of section 10.1 written
+                                               for speed
+priority/DialQueue.h                  advanced
+priority/FibonacciHeapPriorityQueue.h base
+priority/HeapPriorityQueue.h          base     the heap of section 10.1
+priority/IndexedDaryHeap.h            advanced
+priority/IndexedHeapPair.h            advanced
+priority/LinkedHeapPriorityQueue.h    advanced
+priority/ListPriorityQueue.h          base
+priority/LoserTree.h                  base     TAOCP 5.4.1
+priority/MeldableHeap.h               base     Morin, with SplitMix64
+priority/MinMaxHeap.h                 advanced
+priority/MultiwayMerge.h              advanced LoserTree for speed
+priority/OrderKey.h                   advanced
+priority/PairingHeap.h                advanced
+priority/PriorityQueue.h              both     TODO split: the concept of the
+                                               book and the CPOs of foreign
+                                               queues
+priority/RadixHeap.h                  advanced
+priority/SequenceHeap.h               advanced
+priority/TreePriorityQueue.h          base
+
+queue/ArrayQueue.h                    base
+queue/Dequeue.h                       base
+queue/LinkedQueue.h                   base
+queue/MinDeque.h                      base
+queue/MinQueue.h                      base
+queue/QueueAlgorithms.h               base
+queue/RandomQueue.h                   base
+queue/RealTimeMinDeque.h              base
+queue/RealTimeMinQueue.h              base
+queue/RingDeque.h                     advanced
+queue/SlidingAggregate.h              advanced
+queue/UniqueQueue.h                   base
+
+search/BinarySearch.h                 base
+search/CompressedPGMIndex.h           advanced
+search/CountLess.h                    advanced
+search/DynamicPGMIndex.h              advanced
+search/InterpolationSearch.h          base
+search/KnuthSearches.h                base
+search/LocalOptima.h                  base
+search/Minimum.h                      base
+search/MonotoneSearch.h               base
+search/NthElement.h                   advanced
+search/PGMIndex.h                     base     Ferragina's notes, even if fast
+search/RangeMinimum.h                 advanced
+search/Selection.h                    base
+search/SortedSearches.h               base
+search/StaticSearch.h                 advanced
+search/WordRangeMinimum.h             advanced
+
+sequence/ArraySequence.h              base
+sequence/ContiguousDeque.h            base
+sequence/CubishArrayStack.h           base
+sequence/CursorList.h                 base
+sequence/DualArrayDeque.h             base
+sequence/Fenwick.h                    advanced
+sequence/IndexedList.h                base
+sequence/List.h                       base
+sequence/ListSort.h                   advanced
+sequence/ObservableArray.h            advanced
+sequence/OrderMaintenanceList.h       base
+sequence/Rearrangements.h             base
+sequence/RootishArrayStack.h          base
+sequence/SEList.h                     base
+sequence/SequenceAlgorithms.h         base
+sequence/SequenceRange.h              base
+sequence/SinglyList.h                 base
+sequence/SkipListSequence.h           base
+sequence/SmallVector.h                advanced
+sequence/TieredVector.h               advanced
+sequence/TreapList.h                  base
+sequence/Treque.h                     base
+sequence/XorList.h                    base
+
+set/Bag.h                             base
+set/BinaryFuseFilter.h                advanced
+set/BlockedBloomFilter.h              advanced
+set/BloomFilter.h                     base
+set/BloomVariants.h                   base
+set/BoolSet.h                         base
+set/CuckooFilter.h                    advanced
+set/DictionarySet.h                   base
+set/GrafiteFilter.h                   advanced
+set/HashMultiset.h                    base
+set/LinkedHashSet.h                   base
+set/ListSet.h                         base
+set/PrefixFilter.h                    advanced
+set/RibbonFilter.h                    advanced
+set/RoaringBitmap.h                   advanced
+set/SetInterfaces.h                   base
+set/SetOperations.h                   base
+set/SortedIntersection.h              base
+set/SortedListSet.h                   base
+set/SpaceEfficientSortedSet.h         base
+set/VectorIntersection.h              advanced
+
+sort/CountingSort.h                   base
+sort/EngineeredQuickSorts.h           both     TODO split: the quicksorts of
+                                               the Pearls and pdqSort
+sort/ExchangeSorts.h                  base
+sort/ExternalSort.h                   base
+sort/Heapsort.h                       base
+sort/InsertionSort.h                  base
+sort/KnuthSorts.h                     base
+sort/LearnedSort.h                    advanced
+sort/MergeSort.h                      base
+sort/MultikeyQuickSort.h              base
+sort/PigeonholeSort.h                 base
+sort/QuickSort.h                      base
+sort/QuicksortAdversary.h             advanced
+sort/RadixSort.h                      advanced
+sort/RunSorts.h                       advanced
+sort/SampleSort.h                     advanced
+sort/SelectionSort.h                  base
+sort/ShellSort.h                      base
+sort/Sort.h                           advanced
+sort/Sorted.h                         core     the checks of the contracts of
+                                               the sorts
+sort/SortingNetworks.h                base
+sort/StrandSort.h                     base
+sort/StringSort.h                     advanced
+sort/TreeSort.h                       base
+sort/VectorQuickSort.h                advanced
+
+stack/ArrayStack.h                    base
+stack/Expressions.h                   base
+stack/MinStack.h                      base
+stack/MultiStack.h                    base
+stack/SequenceStack.h                 base
+stack/StackAlgorithms.h               base
+
+string/AhoCorasick.h                  advanced
+string/Alignment.h                    base
+string/Anagrams.h                     base
+string/ApproximateMatching.h          base
+string/EditDistance.h                 advanced
+string/FrontCoding.h                  base
+string/Huffman.h                      base
+string/LongestCommonExtension.h       advanced
+string/LongestCommonSubsequence.h     base
+string/Lyndon.h                       base
+string/MultiSearch.h                  advanced
+string/Palindromes.h                  base
+string/Parentheses.h                  base
+string/PrefixSearch.h                 base
+string/RearCoding.h                   base
+string/Segmentations.h                base
+string/StringBreaking.h               base
+string/StringMatching.h               base
+string/StringSearch.h                 advanced
+string/SubsequenceProblems.h          base
+string/SuffixApplications.h           base
+string/SuffixArray.h                  base
+string/SuffixAutomaton.h              advanced
+string/SuffixSorting.h                advanced
+string/SuffixTree.h                   base
+string/WordBreak.h                    base
+
+succinct/BPTree.h                     base
+succinct/BVGraph.h                    base
+succinct/BalancedParentheses.h        base
+succinct/BitStream.h                  base
+succinct/BitVector.h                  base     Ferragina's notes, the words of
+                                               rank and select
+succinct/CompactRankSelect.h          advanced beyond the notes, for speed
+succinct/EliasFano.h                  base     Ferragina's notes, even if fast
+succinct/EliasFanoGraph.h             base
+succinct/HuffmanWaveletTree.h         base
+succinct/InterleavedRankSelect.h      advanced beyond the notes, for speed
+succinct/JacobsonTree.h               base
+succinct/K2Tree.h                     base
+succinct/LAVector.h                   advanced beyond the notes, for speed
+succinct/LoudsTree.h                  base
+succinct/MoveStructure.h              advanced
+succinct/PackedArray.h                advanced
+succinct/PartitionedEliasFano.h       advanced
+succinct/RRRBitVector.h               advanced beyond the notes, for speed
+succinct/RankSelect.h                 base     Ferragina's notes, even if fast
+succinct/WaveletMatrix.h              advanced
+
+tree/AVLTree.h                        base
+tree/ArrayBinaryTree.h                base
+tree/BPlusTree.h                      base     the reality check of chapter 6,
+                                               even if fast
+tree/BTree.h                          base
+tree/BTreeMap.h                       advanced
+tree/BinaryTree.h                     base
+tree/BinaryTreeAlgorithms.h           base
+tree/ChildListTree.h                  base
+tree/CursorBinaryTree.h               base
+tree/CursorTree.h                     base
+tree/ExpressionTree.h                 base
+tree/FingerTreap.h                    base
+tree/HashedTreap.h                    base
+tree/HeapByInsertion.h                base
+tree/JoinAlgorithms.h                 advanced
+tree/JoinTree.h                       advanced
+tree/LeftLeaningRedBlackTree.h        base
+tree/LinkCutTree.h                    advanced
+tree/MaterializedAggregate.h          advanced
+tree/MeasuredSearchTree.h             base
+tree/ParentTree.h                     base
+tree/PartialRebuildingTree.h          base
+tree/PreorderArrayTree.h              base
+tree/RandomizedSearchTree.h           base
+tree/ScapegoatTree.h                  base     Morin, with the pool of the
+                                               nodes
+tree/SearchTree.h                     base     the book, even if faster than
+                                               std::map
+tree/SplayTree.h                      advanced
+tree/ThreadedTree.h                   base
+tree/Treap.h                          base     Morin, with SplitMix64
+tree/Tree.h                           base
+
+# the headers of core, base and both that include one of another set
+Capabilities.h                        uses priority/PriorityQueue.h
+                                           the CPOs of the queues (TODO split)
+dictionary/BinaryTrie.h               uses dictionary/FlatHashTable.h
+                                           the tables of the prefixes
+dictionary/UniversalHashing.h         uses dictionary/FastHash.h
+                                           the product of 64 by 64 bits
+dictionary/XFastTrie.h                uses dictionary/FlatHashTable.h
+                                           the tables of the prefixes
+external/ExternalSorting.h            uses priority/DaryHeap.h
+                                           the merge of the runs
+external/ExternalSorting.h            uses sort/Sort.h
+                                           the sort of the runs in memory
+geometry/ClosestPair.h                uses numeric/RandomGenerators.h
+                                           the shuffle of the points
+geometry/ClosestPair.h                uses sort/Sort.h
+                                           the sort of the points
+geometry/ConvexHull.h                 uses sort/Sort.h
+                                           the sort of the points
+numeric/RandomSampling.h              uses priority/DaryHeap.h
+                                           the weighted sample of the keys
+sequence/Treque.h                     uses queue/RingDeque.h
+                                           the two halves
+set/Bag.h                             uses dictionary/FlatHashTable.h
+                                           the groups of equal items
+sort/ExternalSort.h                   uses priority/DaryHeap.h
+                                           the merge of the runs
+sort/KnuthSorts.h                     uses sort/RadixSort.h
+                                           the concept of the radix keys
+string/RearCoding.h                   uses compression/HuffmanCoder.h
+                                           the lengths of the limited codes
+string/SuffixArray.h                  uses search/RangeMinimum.h
+                                           the minima of the LCP array
+string/SuffixArray.h                  uses sort/RadixSort.h
+                                           the radix sort of the ranks
+string/SuffixTree.h                   uses search/RangeMinimum.h
+                                           the minima of the Euler tour
+succinct/BalancedParentheses.h        uses succinct/CompactRankSelect.h
+                                           the directory of the ranks
+succinct/HuffmanWaveletTree.h         uses succinct/CompactRankSelect.h
+                                           the bit vectors of the nodes
+tree/AVLTree.h                        uses tree/JoinAlgorithms.h
+                                           the operations based on join
+tree/BinaryTreeAlgorithms.h           uses search/RangeMinimum.h
+                                           the cartesian tree
+tree/PartialRebuildingTree.h          uses numeric/RandomGenerators.h
+                                           the uniform draws
+tree/RandomizedSearchTree.h           uses numeric/RandomGenerators.h
+                                           the uniform draws
+tree/SearchTree.h                     uses tree/JoinAlgorithms.h
+                                           the operations based on join
+tree/Treap.h                          uses tree/JoinAlgorithms.h
+                                           the operations based on join
+
+# --------------------------------------------------------------------------- #
+#    End ads_sets.txt                                                         #
+# --------------------------------------------------------------------------- #

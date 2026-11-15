@@ -17,7 +17,9 @@ heuristics of [Montresor 2025, §10.2](Z-bibliography.md#ref-montresor2025)
 on which we answer offline the connectivity of a graph whose edges come and
 go ([§11.5](11-mfset.md#sec-11-5)). [Table 11.1](11-mfset.md#tab-11-1)
 summarizes the costs, and [§11.6](11-mfset.md#sec-11-6) compares the
-realizations on what each one is meant for.
+realizations on what each one is meant for. In the sets of
+[§1.9](01-introduction.md#sec-1-9), `ListMFSet.h` and `MFSet.h` are base
+and the other headers of this chapter are advanced.
 
 ## 11.1 The interface {#sec-11-1}
 

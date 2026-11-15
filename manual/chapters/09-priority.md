@@ -36,7 +36,12 @@ heaps, the binary heap and the meldable heap, follow
 [Morin 2013, chapter 10](Z-bibliography.md#ref-morin-cpp) section by
 section, with all the exercises of that chapter, and the heaps with
 decrease-key follow [Montresor 2025, §10.1 and
-§11.5](Z-bibliography.md#ref-montresor2025).
+§11.5](Z-bibliography.md#ref-montresor2025). In the sets of
+[§1.9](01-introduction.md#sec-1-9), `FibonacciHeapPriorityQueue.h`,
+`HeapPriorityQueue.h`, `ListPriorityQueue.h`, `LoserTree.h`,
+`MeldableHeap.h` and `TreePriorityQueue.h` are base and the other headers
+of this chapter are advanced, while `PriorityQueue.h` holds a part of each
+until it is split.
 
 ## 9.1 The interface {#sec-9-1}
 

@@ -32,7 +32,8 @@ and to the exchange arguments that prove them optimal, and
 [§13.12](13-algorithm.md#sec-13-12) to the algorithms of Monte Carlo.
 Throughout the chapter we write $n$ for the size of the input (the number of items,
 objects, intervals or keys), and we take the logarithms binary unless their
-base is written.
+base is written. In the sets of [§1.9](01-introduction.md#sec-1-9), the
+headers of this chapter are all base.
 
 ## 13.1 Orders of growth and recurrences {#sec-13-1}
 

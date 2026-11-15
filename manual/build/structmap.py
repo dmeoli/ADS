@@ -12,13 +12,23 @@ chapter of a header is that of its area (`OUTLINE.md`), but for the headers
 of `EXCEPT`, which are described elsewhere. OUT_MD gets two Markdown tables
 for chapter 1: one row per header with classes, and one row per chapter
 with its headers of functions only; with --check, every header and class
-of the two tables must appear in CHAPTER_MD. The counts go on stderr.
+of the two tables must appear in CHAPTER_MD, and the set of each header of
+the first table [see cmake/ads_sets.txt] must be the one that CHAPTER_MD
+gives. The counts go on stderr.
 """
 import os
 import re
 import sys
 
 INC, OUT = sys.argv[1], sys.argv[2]
+
+# the set of each header, from the file that gives them
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(INC)),
+                                'cmake'))
+import ads_sets  # noqa: E402
+SET = ads_sets.Sets(os.path.join(os.path.dirname(os.path.abspath(INC)),
+                                 'cmake', 'ads_sets.txt')).set
+ENTRY = set(h[4:] for h in ads_sets.ENTRY.values()) | {ads_sets.ALL[4:]}
 
 # the chapter of each area, as in OUTLINE.md
 CHAPTER = {
@@ -167,6 +177,8 @@ for root, _, files in os.walk(os.path.join(INC, 'ADS')):
             continue
         p = os.path.join(root, f)
         rel = os.path.relpath(p, os.path.join(INC, 'ADS'))
+        if rel in ENTRY:                 # the entry points of the sets
+            continue
         area = os.path.dirname(rel)
         found, aliases = classes(p)
         rows.append([rel, area, found, aliases])
@@ -183,8 +195,8 @@ def link(ch):
 
 out, n, funcs = [], 0, {}
 # the lengths of the dashes give the widths of the columns in the PDF
-out.append('| Header | Classes | Chapter |\n'
-           '|-----------------|-------------------------------|-----|\n')
+out.append('| Header | Set | Classes | Chapter |\n'
+           '|-----------------|------|-------------------------------|-----|\n')
 for rel, area, found, aliases in rows:
     ch = EXCEPT.get(rel, CHAPTER[area])
     # a class with partial specializations, once
@@ -193,7 +205,8 @@ for rel, area, found, aliases in rows:
         funcs.setdefault(ch, []).append(rel)
         continue
     n += len(names)
-    out.append(f'| `{rel}` | ' + ', '.join(f'`{x}`' for x in names) +
+    out.append(f'| `{rel}` | {SET.get(rel, "?")} | ' +
+               ', '.join(f'`{x}`' for x in names) +
                f' | {link(ch)} |\n')
 out.append('\n| Chapter | Headers of functions |\n'
            '|-----|-----------------------------------------------|\n')
@@ -210,5 +223,11 @@ if OUT == '--check':                 # every name of the map in the chapter
                if f'`{x}`' not in chapter]
     for x in missing:
         print('missing:', x, file=sys.stderr)
-    sys.exit(1 if missing else 0)
+    # the set of each header of the map as the chapter gives it
+    wrong = [(h, s, SET.get(h)) for h, s in
+             re.findall(r'^\| `([^`]+\.h)` \| (\w+) \|', chapter, re.M)
+             if SET.get(h) != s]
+    for h, s, t in wrong:
+        print(f'set: {h} is {t}, not {s}', file=sys.stderr)
+    sys.exit(1 if missing or wrong else 0)
 open(OUT, 'w', encoding='utf-8').write(text)

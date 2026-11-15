@@ -4,11 +4,13 @@
 #                                                                             #
 #   makefile of the C++20 module ads                                          #
 #                                                                             #
-#   The module ads, whose interface src/ADS.cppm includes the headers and     #
-#   exports their names, lets a source write "import ads;" in place of the    #
-#   #include. This makefile gives the rule that compiles the interface into   #
-#   the module file and into an object, which goes with the program that      #
-#   imports the module. The module is built only if $(ADSMOD) is not empty    #
+#   The module ads, whose interface src/ADS.cppm exports the modules of the   #
+#   sets ads.core, ads.base and ads.advanced [see cmake/ads_sets.txt], whose  #
+#   interfaces include the headers and export their names, lets a source      #
+#   write "import ads;" (or "import ads.base;") in place of the #include.     #
+#   This makefile gives the rules that compile each interface into its        #
+#   module file and into an object, which go with the program that imports    #
+#   the module. The modules are built only if $(ADSMOD) is not empty          #
 #   nor 0 (e.g., make ADSMOD=1), with clang++ 16 or g++ 15 or later;          #
 #   otherwise, or with another compiler (which is reported by a warning),     #
 #   nothing here does anything. g++ finds the module file by a mapper,        #
@@ -34,9 +36,11 @@
 #                            of the contracts), the same for the importers    #
 #           $(ADSCLANG)    = not empty if $(CXX) is clang++ [see makefile-OS] #
 #                                                                             #
-#   Output: $(ADSMODOBJ)   = the object of the module, empty if it is not     #
-#                            built                                            #
-#           $(ADSMODFILE)  = the module file                                  #
+#   Output: $(ADSMODOBJ)   = the objects of the module ads and of those of    #
+#                            the sets, empty if they are not built            #
+#           $(ADSMODOBJ_<set>) = those that a program importing ads.<set>     #
+#                            links (core, base or advanced)                   #
+#           $(ADSMODFILE)  = the module file of ads                           #
 #           $(ADSMODSW)    = the options of whatever imports the module       #
 #                                                                             #
 ###############################################################################
@@ -61,43 +65,73 @@ ifneq ($(filter-out 0,$(ADSMOD)),)
 endif
 
 # macros to be exported - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# the module ads, and those of the sets that it exports [see
+# cmake/ads_sets.txt], each with its interface and the modules it imports
+
+ADSMODSETS = ads.core ads.base ads.advanced
+ADSMODsrc_ads.core = ADSCore
+ADSMODsrc_ads.base = ADSBase
+ADSMODsrc_ads.advanced = ADSAdvanced
+ADSMODsrc_ads = ADS
+ADSMODimp_ads.base = ads.core
+ADSMODimp_ads.advanced = ads.core
+ADSMODimp_ads = $(ADSMODSETS)
 
 ifeq ($(ADSMODkind),clang)
-    ADSMODOBJ = $(ADSODR)/ads.o
-    ADSMODFILE = $(ADSODR)/ads.pcm
+    ADSMODext = pcm
     ADSMODSW = -fprebuilt-module-path=$(ADSODR)
 endif
 ifeq ($(ADSMODkind),gcc)
-    ADSMODOBJ = $(ADSODR)/ads.o
-    ADSMODFILE = $(ADSODR)/ads.gcm
+    ADSMODext = gcm
     ADSMODSW = -fmodules -fmodule-mapper=$(ADSODR)/ads.map
 endif
+ifneq ($(ADSMODkind),)
+    ADSMODOBJ = $(foreach m,$(ADSMODSETS) ads,$(ADSODR)/$(m).o)
+    ADSMODFILE = $(ADSODR)/ads.$(ADSMODext)
+    ADSMODOBJ_core = $(ADSODR)/ads.core.o
+    ADSMODOBJ_base = $(ADSODR)/ads.core.o $(ADSODR)/ads.base.o
+    ADSMODOBJ_advanced = $(ADSODR)/ads.core.o $(ADSODR)/ads.advanced.o
+endif
 
-# the rule of the module- - - - - - - - - - - - - - - - - - - - - - - - - - -
+# the rules of the modules- - - - - - - - - - - - - - - - - - - - - - - - - -
+# $(call ADSMODrule,<module>): the object and the module file of <module>,
+# after those of the modules it imports
 
 ifeq ($(ADSMODkind),clang)
-$(ADSMODOBJ): $(ADSSDR)/src/ADS.cppm $(ADSH)
-	@mkdir -p $(ADSODR)
-	$(CXX) $(CXXFLAGS) $(filter -I% -D% -U%,$(ADSINC)) $(ADSMODFLAGS) \
-	-x c++-module -c $< -fmodule-output=$(ADSMODFILE) -o $@ -pthread
+define ADSMODrule
+$$(ADSODR)/$(1).o: $$(ADSSDR)/src/$$(ADSMODsrc_$(1)).cppm $$(ADSH) \
+                   $$(foreach m,$$(ADSMODimp_$(1)),$$(ADSODR)/$$(m).o)
+	@mkdir -p $$(ADSODR)
+	$$(CXX) $$(CXXFLAGS) $$(filter -I% -D% -U%,$$(ADSINC)) $$(ADSMODFLAGS) \
+	$$(ADSMODSW) -x c++-module -c $$< -fmodule-output=$$(ADSODR)/$(1).pcm \
+	-o $$@ -pthread
+endef
 endif
 ifeq ($(ADSMODkind),gcc)
-$(ADSMODOBJ): $(ADSSDR)/src/ADS.cppm $(ADSH)
+define ADSMODrule
+$$(ADSODR)/$(1).o: $$(ADSSDR)/src/$$(ADSMODsrc_$(1)).cppm $$(ADSH) \
+                   $$(foreach m,$$(ADSMODimp_$(1)),$$(ADSODR)/$$(m).o) \
+                   | $$(ADSODR)/ads.map
+	$$(CXX) $$(CXXFLAGS) $$(filter -I% -D% -U%,$$(ADSINC)) $$(ADSMODFLAGS) \
+	$$(ADSMODSW) -x c++ -c $$< -o $$@ -pthread
+endef
+
+$(ADSODR)/ads.map:
 	@mkdir -p $(ADSODR)
-	echo "ads $(abspath $(ADSMODFILE))" > $(ADSODR)/ads.map
-	$(CXX) $(CXXFLAGS) $(filter -I% -D% -U%,$(ADSINC)) $(ADSMODFLAGS) \
-	$(ADSMODSW) -x c++ -c $< -o $@ -pthread
+	for m in $(ADSMODSETS) ads; do \
+	  echo "$$m $(abspath $(ADSODR))/$$m.gcm"; done > $@
 endif
 
-ifneq ($(ADSMODOBJ),)
-$(ADSMODFILE): $(ADSMODOBJ) ;
+ifneq ($(ADSMODkind),)
+$(foreach m,$(ADSMODSETS) ads,$(eval $(call ADSMODrule,$(m))))
+$(ADSMODFILE): $(ADSODR)/ads.o ;
 endif
 
 # clean - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# the module is cleaned also by a make without $(ADSMOD)
+# the modules are cleaned also by a make without $(ADSMOD)
 
 clean::
-	rm -f $(ADSODR)/ads.o $(ADSODR)/ads.pcm $(ADSODR)/ads.gcm \
-	$(ADSODR)/ads.map
+	rm -f $(foreach m,ads.core ads.base ads.advanced ads,$(ADSODR)/$(m).o \
+	$(ADSODR)/$(m).pcm $(ADSODR)/$(m).gcm) $(ADSODR)/ads.map
 
 ############################# End of makefile-mod #############################

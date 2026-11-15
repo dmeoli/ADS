@@ -100,11 +100,36 @@ foreach (c 1 2 3 4)
             PASS_REGULAR_EXPRESSION "${err}")
 endforeach ()
 
-# the module ads, imported in place of the headers [see module.cpp]
+# the module ads, imported in place of the headers [see module.cpp], and
+# those of the sets, each linked alone with ads.core [see module_sets.cpp]
 if (ADS_BUILD_MODULE)
     add_executable(module module.cpp)
     target_link_libraries(module PRIVATE ADS::ADS_module)
     add_test(NAME module COMMAND module)
+    set(_n 0)
+    foreach (s IN ITEMS core base advanced)
+        math(EXPR _n "${_n} + 1")
+        add_executable(module_${s} module_sets.cpp)
+        target_link_libraries(module_${s} PRIVATE ADS::ADS_module_${s})
+        target_compile_definitions(module_${s} PRIVATE ADS_MODULE_SET=${_n})
+        add_test(NAME module.${s} COMMAND module_${s})
+    endforeach ()
+endif ()
+
+# each entry point of the sets compiled alone, with the headers of ADS that
+# it pulls checked against cmake/ads_sets.txt, and the files that the sets
+# write up to date [see cmake/ads_sets.py]
+if (Python3_FOUND AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    foreach (s IN ITEMS core base advanced)
+        add_test(NAME sets.${s}
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${PROJECT_SOURCE_DIR}/cmake/ads_sets.py --test ${s}
+                         --cxx ${CMAKE_CXX_COMPILER} --
+                         -I${PROJECT_BINARY_DIR}/include)
+    endforeach ()
+    add_test(NAME sets.check
+             COMMAND ${Python3_EXECUTABLE}
+                     ${PROJECT_SOURCE_DIR}/cmake/ads_sets.py --check)
 endif ()
 
 # --------------------------------------------------------------------------- #

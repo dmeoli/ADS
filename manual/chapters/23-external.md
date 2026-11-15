@@ -20,7 +20,9 @@ the ranking of a list ([§23.5](23-external.md#sec-23-5)). Finally,
 [§23.6](23-external.md#sec-23-6) describes the files of records on the
 disk of the machine, where the model meets the real one. Note that the B-trees and
 the B+-trees kept in the internal memory (`BTree.h` and `BPlusTree.h`) are
-in [chapter 8](08-tree.md#ch-8).
+in [chapter 8](08-tree.md#ch-8). In the sets of
+[§1.9](01-introduction.md#sec-1-9), the headers of this chapter are all
+base, while `RecordFile.h` is in the core that the two sets include.
 
 ## 23.1 The two-level memory {#sec-23-1}
 

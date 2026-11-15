@@ -83,6 +83,16 @@ jobs:
             tee style.txt
           test ! -s style.txt
 
+  # the set of every header given in cmake/ads_sets.txt, and the entry
+  # points, the table of the README and the modules up to date with it, so
+  # that a new header with no set fails here [see cmake/ads_sets.py]
+  sets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the sets of the headers
+        run: python3 cmake/ads_sets.py --check
+
   # every program built and every test run by CMake and by the makefiles,
   # four at a time, and the installed package used through find_package and
   # pkg-config [see packaging/test]; on Windows, MSVC by CMake alone and the
@@ -526,14 +536,17 @@ jobs:
                 -DADS_BUILD_MODULE=ON \
                 -DCMAKE_INSTALL_PREFIX="$PWD/inst" 2>&1 | tee cmake.log
           ! grep -q 'ADS_BUILD_MODULE is turned OFF' cmake.log
-          cmake --build build --target module
-          ctest --test-dir build -R '^module$' --no-tests=error \
+          cmake --build build --target module module_core module_base \
+                module_advanced
+          ctest --test-dir build -R '^module' --no-tests=error \
                 --output-on-failure
       - name: installed and imported through find_package
         shell: bash
         run: |
           cmake --install build
-          test -f inst/include/ADS/modules/ADS.cppm
+          for f in ADS ADSCore ADSBase ADSAdvanced; do
+            test -f inst/include/ADS/modules/$f.cppm
+          done
           cmake -S packaging/test -B build-use -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PWD/inst"
           cmake --build build-use --target use-module
@@ -557,7 +570,10 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          make ADSMOD=1 CXX=${{ matrix.cxx }} build-make/module 2>&1 \
-               | tee make.log
+          make ADSMOD=1 CXX=${{ matrix.cxx }} build-make/module \
+               build-make/module_core build-make/module_base \
+               build-make/module_advanced 2>&1 | tee make.log
           ! grep -q 'ADSMOD is turned off' make.log
-          build-make/module
+          for m in module module_core module_base module_advanced; do
+            build-make/$m
+          done

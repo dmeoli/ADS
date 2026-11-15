@@ -23,7 +23,9 @@ two headers, one that follows the text of Knuth and one written for speed,
 and the tests check that the two give the same results. We leave to
 [Chapter 19](19-backtrack.md#ch-19) the enumeration by backtracking of the
 subsets, of the permutations and of the other configurations with
-constraints.
+constraints. In the sets of [§1.9](01-introduction.md#sec-1-9),
+`FastBitwise.h` and `FastGeneration.h` are advanced and the other headers
+of this chapter are base.
 
 ## 18.1 Words as sets of bits {#sec-18-1}
 

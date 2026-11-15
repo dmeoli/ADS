@@ -31,7 +31,12 @@ changes, often by a test of the certificate of the previous solution alone.
 The adjacency matrix, the lists of adjacency, the matrix of incidence and
 the two visits of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin-cpp)
 are all here, with each of his exercises solved on the code of the library
-([§14.15](14-graph.md#sec-14-15)).
+([§14.15](14-graph.md#sec-14-15)). In the sets of
+[§1.9](01-introduction.md#sec-1-9), `Assignment.h`, `GraphBuilder.h`,
+`GridGraph.h`, `Observable.h`, `PointerGraph.h`, `Reoptimization.h` and
+`StaticGraph.h` are advanced and the other headers of this chapter are
+base, while `Matching.h`, `MaxFlow.h` and `Visit.h` hold a part of each
+until they are split.
 
 ## 14.1 Definitions and the interface {#sec-14-1}
 

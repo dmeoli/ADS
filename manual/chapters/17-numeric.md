@@ -31,7 +31,10 @@ numbers and samplings ([§17.9](17-numeric.md#sec-17-9) and
 library (GMP for the integers and the fractions, a CBLAS for the dense
 products); each backend is discussed with the operation it replaces, and
 [Lemma 17.11](17-numeric.md#lem-17-11) states what it changes in the
-results.
+results. In the sets of [§1.9](01-introduction.md#sec-1-9), `CsrMatrix.h`,
+`DenseMatrix.h`, `DynamicCsr.h`, `RandomGenerators.h`, `SellMatrix.h` and
+`SparseAssembly.h` are advanced and the other headers of this chapter are
+base.
 
 ## 17.1 Notation and representations {#sec-17-1}
 

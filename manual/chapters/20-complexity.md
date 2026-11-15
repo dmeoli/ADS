@@ -26,7 +26,9 @@ order of the book: the pseudopolynomial algorithms, the approximations,
 the branch-and-bound, the heuristics and the search of the fifteen puzzle.
 Throughout the chapter $n$ is the number of the nodes, the cities, the
 objects or the variables of an instance, and the words in small capitals
-of the book are written in capitals (e.g., CLIQUE).
+of the book are written in capitals (e.g., CLIQUE). In the sets of
+[§1.9](01-introduction.md#sec-1-9), the headers of this chapter are all
+base.
 
 ## 20.1 Problems, certificates and the classes P and NP {#sec-20-1}
 

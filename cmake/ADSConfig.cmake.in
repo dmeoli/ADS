@@ -4,10 +4,12 @@
 #    This file contains instructions on how to generate ADSConfig.cmake,      #
 #    that is, the file that tells CMake how the package should be             #
 #    configured when found by other projects using find_package(ADS): it      #
-#    defines ADS::ADS, ADS::ADS_module when ADS was built with                #
-#    ADS_BUILD_MODULE, and ADS::GMP, ADS::BLAS and ADS::Boost when it was     #
-#    built on GMP, on a CBLAS and on Boost, and it finds again the threads,   #
-#    OpenMP, oneTBB and MPI when ADS was built with their executors.          #
+#    defines ADS::ADS, ADS::ADS_module and the modules of the sets            #
+#    ADS::ADS_module_core, ADS::ADS_module_base and ADS::ADS_module_advanced  #
+#    when ADS was built with ADS_BUILD_MODULE, and ADS::GMP, ADS::BLAS and    #
+#    ADS::Boost when it was built on GMP, on a CBLAS and on Boost, and it     #
+#    finds again the threads, OpenMP, oneTBB and MPI when ADS was built with  #
+#    their executors.                                                         #
 #                                                                             #
 #    ADSTargets.cmake (to be found alongside this file) is the target import  #
 #    file that tells where the headers are.                                   #

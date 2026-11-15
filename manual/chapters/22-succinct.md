@@ -23,7 +23,11 @@ and the vector compressed to its entropy
 of small fields ([§22.7](22-succinct.md#sec-22-7)), the trees
 ([§22.8](22-succinct.md#sec-22-8)), the sequences of symbols and the
 permutations ([§22.9](22-succinct.md#sec-22-9)) and the graphs ([§22.10](22-succinct.md#sec-22-10)). Finally, [§22.11](22-succinct.md#sec-22-11) describes how the directories and the wavelet structures are built on
-several threads.
+several threads. In the sets of [§1.9](01-introduction.md#sec-1-9),
+`CompactRankSelect.h`, `InterleavedRankSelect.h`, `LAVector.h`,
+`MoveStructure.h`, `PackedArray.h`, `PartitionedEliasFano.h`,
+`RRRBitVector.h` and `WaveletMatrix.h` are advanced and the other headers
+of this chapter are base.
 
 Some members are common to the classes of the chapter, and we describe
 them once here. All the static sequences (`BitVector`, the directories of

@@ -20,7 +20,11 @@ keys, in the static, compressed and dynamic forms of the PGM-index
 minimum and the local optima ([§6.7](06-search.md#sec-6-7)), the
 selection ([§6.8](06-search.md#sec-6-8)) and the range minima
 ([§6.9](06-search.md#sec-6-9)) precede a comparison of the searches on
-what each one is meant for ([§6.10](06-search.md#sec-6-10)).
+what each one is meant for ([§6.10](06-search.md#sec-6-10)). In the sets of
+[§1.9](01-introduction.md#sec-1-9), `CompressedPGMIndex.h`, `CountLess.h`,
+`DynamicPGMIndex.h`, `NthElement.h`, `RangeMinimum.h`, `StaticSearch.h` and
+`WordRangeMinimum.h` are advanced and the other headers of this chapter are
+base.
 
 ## 6.1 Definitions and notation {#sec-6-1}
 

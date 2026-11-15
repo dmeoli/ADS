@@ -16,7 +16,9 @@ computation: an executor and a distributed minimum
 ([§26.4](26-distributed.md#sec-26-4)) that also detects the termination of
 the computation ([§26.5](26-distributed.md#sec-26-5)). The threads inside a process, and the mailbox of the threads of which the
 one of the processes is the counterpart, are those of
-[chapter 25](25-parallel.md#ch-25).
+[chapter 25](25-parallel.md#ch-25). In the sets of
+[§1.9](01-introduction.md#sec-1-9), the headers of this chapter are all
+advanced.
 
 ## 26.1 The model {#sec-26-1}
 

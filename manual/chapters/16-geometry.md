@@ -21,7 +21,9 @@ sorted ordinates of the points, respectively. Throughout the chapter $n$
 is the number of points or intervals of the input, $h$ the number of
 vertices of a hull, $k$ the number of points that survive a filter (or of
 intervals that a query reports), and $\delta$ the least distance of two
-points found so far.
+points found so far. In the sets of [§1.9](01-introduction.md#sec-1-9),
+`IntervalTree.h` and `RangeTree.h` are advanced and the other headers of
+this chapter are base.
 
 ## 16.1 Points and orientation {#sec-16-1}
 

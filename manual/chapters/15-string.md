@@ -31,7 +31,11 @@ in [§15.5](15-string.md#sec-15-5), and the dictionaries searched by
 prefix in [§15.6](15-string.md#sec-15-6). Finally,
 [§15.7](15-string.md#sec-15-7) and [§15.8](15-string.md#sec-15-8)
 collect the combinatorial problems, the segmentations, the cuts of a
-string and the code of Huffman.
+string and the code of Huffman. In the sets of
+[§1.9](01-introduction.md#sec-1-9), `AhoCorasick.h`, `EditDistance.h`,
+`LongestCommonExtension.h`, `MultiSearch.h`, `StringSearch.h`,
+`SuffixAutomaton.h` and `SuffixSorting.h` are advanced and the other
+headers of this chapter are base.
 
 ## 15.1 Definitions and notation {#sec-15-1}
 

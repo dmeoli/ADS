@@ -20,7 +20,8 @@ through its operations only, and hence run on any realization
 ([§3.7](03-stack.md#sec-3-7)), and relate the stack to the balanced
 sequences, i.e., the Dyck words and the matched strings of brackets
 ([§3.8](03-stack.md#sec-3-8)). [Table 3.1](03-stack.md#tab-3-1)
-summarizes the costs.
+summarizes the costs. In the sets of [§1.9](01-introduction.md#sec-1-9),
+the headers of this chapter are all base.
 
 ## 3.1 The interface {#sec-3-1}
 

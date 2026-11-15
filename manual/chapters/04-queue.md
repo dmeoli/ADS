@@ -28,7 +28,8 @@ amortized time and then in constant time in the worst case;
 [§4.10](04-queue.md#sec-4-10) collects the algorithms that reach a queue
 through its operations only, and [§4.11](04-queue.md#sec-4-11) the
 engineered variants. [Table 4.1](04-queue.md#tab-4-1) summarizes the
-costs.
+costs. In the sets of [§1.9](01-introduction.md#sec-1-9), `RingDeque.h` is
+advanced and the other headers of this chapter are base.
 
 ## 4.1 The interfaces {#sec-4-1}
 

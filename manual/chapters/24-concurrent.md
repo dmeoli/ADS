@@ -19,7 +19,8 @@ and of the runtime of the workers of [chapter 25](25-parallel.md#ch-25), and of 
 searches of the library. Each of them gives, in a precise sense, the
 result of a sequential structure of the earlier chapters; its cost,
 however, depends on how the threads meet in memory more than on the number
-of its operations.
+of its operations. In the sets of [§1.9](01-introduction.md#sec-1-9), the
+headers of this chapter are all advanced.
 
 We organize the chapter as follows. In
 [§24.1](24-concurrent.md#sec-24-1) we fix the model of the threads and of

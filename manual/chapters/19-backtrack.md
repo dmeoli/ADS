@@ -23,7 +23,9 @@ rest on the same scheme: the exact cover of Knuth, on dancing links
 conjunctive normal form, by DPLL and by the learning of clauses
 ([§19.7](19-backtrack.md#sec-19-7)). Generating the combinatorial
 objects in a fixed order, without tests, is instead the subject of
-[Chapter 18](18-combinatorial.md#ch-18).
+[Chapter 18](18-combinatorial.md#ch-18). In the sets of
+[§1.9](01-introduction.md#sec-1-9), `FastExactCover.h` is advanced and the
+other headers of this chapter are base.
 
 ## 19.1 The scheme of the enumeration {#sec-19-1}
 

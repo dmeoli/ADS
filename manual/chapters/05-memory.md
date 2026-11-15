@@ -23,7 +23,11 @@ cells it no longer reaches; [§5.11](05-memory.md#sec-5-11) compares the
 allocators on what each one is meant for. All the allocators but the
 first two and the last one give real memory (those three give indices of a
 vector). Most of them serve the structures of the other chapters (e.g.,
-the nodes of the lists, of the search trees and of the hash tables).
+the nodes of the lists, of the search trees and of the hash tables). In the
+sets of [§1.9](01-introduction.md#sec-1-9), `Allocators.h` and `CellHeap.h`
+are base and the other headers of this chapter are advanced, while
+`HugePageAllocator.h` and `ObjectPool.h` are in the core that the two sets
+include.
 
 ## 5.1 Definitions and notation {#sec-5-1}
 
