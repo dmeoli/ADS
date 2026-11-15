@@ -337,7 +337,7 @@ the end is moved to the last item, as if items larger than all the others
 filled the vector up to the next Fibonacci number. Second, the uniform
 binary search (`uniformBinarySearch()`, Algorithms 6.2.1U and 6.2.1C) keeps
 a place $i$ and the width $\delta_j = \lfloor ( n + 2^{j-1} ) / 2^j \rfloor$
-of the step $j$, taken from a table computed once. A step adds or
+of the step $j$, taken from a table computed at the start of the call. A step adds or
 subtracts the next width, and the search thus moves on a fixed tree of
 differences with no endpoint to update, in at most
 $\lfloor \log_2 n \rfloor + 1$ comparisons; its places 0 and $n + 1$ stand
@@ -371,14 +371,47 @@ otherwise, with $j$ decreased by 2. In both cases the places left out
 hold items smaller (or larger) than $v$, since $A$ is sorted, and the new
 part thus still holds $v$ if it occurs. Its loop runs while $f \ge 2 = F_3$, i.e., at most $k - 2$ times, and leaves at most one
 place, which the last test reads. Since $F_j \ge \phi^{j-2}$, $F_{k-1} <
-n$ gives $k - 3 < \log_\phi n$. As for `uniformBinarySearch()`, it is
-Algorithm C of [Knuth 1998, §6.2.1](Z-bibliography.md#ref-knuth1998v3)
-with the widths $\delta_j = \lfloor ( n + 2^{j-1} ) / 2^j \rfloor$, whose
-correctness Knuth proves; each probe takes the next width, and the search
-stops at the first $\delta_j = 0$. Since $\delta_j \ge 1$ if and only if
-$2^j \le 2 n$, i.e., $j \le \lfloor \log_2 n \rfloor + 1$, there are at
-most $\lfloor \log_2 n \rfloor + 1$ probes, and those at the places 0 and
-$n + 1$ read no item. $\square$
+n$ gives $k - 3 < \log_\phi n$.
+
+As for `uniformBinarySearch()` (Algorithm C of [Knuth 1998,
+§6.2.1](Z-bibliography.md#ref-knuth1998v3)), write $\delta_j( n )$ for the
+widths of $n$ items, and let the places $1 , \ldots , n$ hold a sorted
+sequence, of an order extended by $-\infty$ and $+\infty$, which a probe at
+a place $q < 1$ answers as smaller than $v$ and one at $q > n$ as larger, as
+the code does. We show by induction on $n$ that the search from the place
+$\delta_1( n )$ returns a place of $v$ if $v$ is among the $n$ items, and
+$-1$ otherwise; for $n = 0$ it returns $-1$ with no probe, since $\delta_1(
+0 ) = 0$. For $n \ge 1$, the first probe is at $r = \delta_1( n ) = \lfloor
+( n + 1 ) / 2 \rfloor$, with $1 \le r \le n$, and the two sides of $r$ hold
+$r - 1$ and $n - r = \lfloor n / 2 \rfloor$ places. For $j \ge 1$,
+$\lfloor n / 2 \rfloor + 2^{j-1} = \lfloor ( n + 2^j ) / 2 \rfloor$, hence
+
+$$
+\delta_j( \lfloor n / 2 \rfloor ) = \Bigl\lfloor \frac{ \lfloor ( n + 2^j
+) / 2 \rfloor }{ 2^j } \Bigr\rfloor = \Bigl\lfloor \frac{ n + 2^j }{
+2^{j+1} } \Bigr\rfloor = \delta_{j+1}( n ) ,
+$$
+
+so that, after a probe that finds $A[ r ] < v$, the places $r + \delta_2( n
+) \pm \delta_3( n ) \pm \cdots$ are those of the search on the $\lfloor n /
+2 \rfloor$ places $r + 1 , \ldots , n$, shifted by $r$; its place 0 is $r$,
+which answers again as smaller than $v$, and its place $\lfloor n / 2
+\rfloor + 1$ is $n + 1$, which answers as larger. By induction, it finds $v$
+if $v$ is among those places, the only ones that may hold it. After a probe
+that finds $A[ r ] > v$, the places $r - \delta_2( n ) \mp \cdots$ are those
+of the same search on the places $r - 1 , r - 2 , \ldots , r - \lfloor n /
+2 \rfloor$, read at the distance from $r$ and in the reverse order; these
+are the $r - 1$ places before $r$, and, for $n$ even, the place 0 too, a
+$-\infty$ that is the largest item in the reverse order. Its place 0 is
+again $r$, and its place $\lfloor n / 2 \rfloor + 1$ is $0$ or $-1$, which
+answer as larger than $v$ in the reverse order, and by induction it finds
+$v$ if $v$ is before $r$. A probe that finds $A[ r ] = v$ returns $r$. As
+for the cost, each probe takes the next width, and the search stops at the
+first $\delta_j = 0$. Since $\delta_j \ge 1$ if and only if $2^j \le 2 n$,
+i.e., $j \le \lfloor \log_2 n \rfloor + 1$, there are at most $\lfloor
+\log_2 n \rfloor + 1$ probes, and those at the places $q < 1$ and $q > n$
+(which the induction shows to be among $-1$, $0$ and $n + 1$) read no item.
+$\square$
 
 Finally, the searches of `SortedSearches.h` apply the invariant (6.2) to
 other predicates that are false and then true along a sorted vector
