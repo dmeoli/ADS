@@ -1276,7 +1276,9 @@ using ADS::universalSink;
 
 // ADS/graph/Reoptimization.h
 using ADS::AssignmentObserver;
+using ADS::AugmentEngine;
 using ADS::EventQueue;
+using ADS::FlowEngine;
 using ADS::MaxFlowObserver;
 using ADS::Reoptimizable;
 using ADS::ShortestPathsObserver;

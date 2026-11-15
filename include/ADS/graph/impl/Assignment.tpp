@@ -188,6 +188,42 @@ bool Assignment< W , P >::optimal( void ) const
  return( true );
  }
 
+#if defined( ADS_ASSIGNMENT_LEMON ) && ADS_ASSIGNMENT_LEMON
+template< class W , ReoptPolicy P >
+ requires std::is_arithmetic_v< W >
+bool Assignment< W , P >::lemonScratch( void )
+{
+ using BG = ::lemon::SmartBpGraph;
+ const int n = f_n;
+ BG L;
+ std::vector< BG::RedNode > R;
+ std::vector< BG::BlueNode > B;
+ for( int i = 0 ; i < n ; ++i )
+  R.push_back( L.addRedNode() );
+ for( int j = 0 ; j < n ; ++j )
+  B.push_back( L.addBlueNode() );
+ BG::EdgeMap< W > c( L );
+ for( int i = 0 ; i < n ; ++i )
+  for( int j = 0 ; j < n ; ++j )
+   if( finite( i , j ) )
+    c.set( L.addEdge( R[ std::size_t( i ) ] , B[ std::size_t( j ) ] ) ,
+	   cost( i , j ) );
+ ::lemon::MinCostAssignment< BG , BG::EdgeMap< W > > M( L , c );
+ if( ! M.run() )
+  return( false );
+ for( int i = 0 ; i < n ; ++i ) {
+  const int j = L.id( L.blueNode( M.matching( R[ std::size_t( i ) ] ) ) );
+  f_col[ i ] = j;
+  f_row[ j ] = i;
+  f_u[ i ] = -M.potential( R[ std::size_t( i ) ] );
+  }
+ for( int j = 0 ; j < n ; ++j )
+  f_v[ j ] = M.potential( B[ std::size_t( j ) ] );
+ f_aug += n;  // the augmentations of LEMON, one per row
+ return( true );
+ }
+#endif
+
 template< class W , ReoptPolicy P >
  requires std::is_arithmetic_v< W >
 void Assignment< W , P >::solve( void )
@@ -222,7 +258,15 @@ void Assignment< W , P >::solve( void )
  const bool scratch = cause != Reopt::CERTIFIED;
  const long long aug = f_aug;
  int outcome;
- if( scratch ) {
+ bool done = false;  // a perfect assignment from LEMON
+#if defined( ADS_ASSIGNMENT_LEMON ) && ADS_ASSIGNMENT_LEMON
+ if constexpr( std::is_signed_v< W > )
+  if( scratch )
+   done = lemonScratch();
+#endif
+ if( done )
+  outcome = 0;
+ else if( scratch ) {
   std::fill( f_v.begin() , f_v.end() , W() );
   std::fill( f_col.begin() , f_col.end() , -1 );
   std::fill( f_row.begin() , f_row.end() , -1 );

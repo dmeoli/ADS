@@ -7,7 +7,9 @@
 #    defines ADS::ADS, ADS::ADS_module when ADS was built with                #
 #    ADS_BUILD_MODULE, and ADS::GMP, ADS::BLAS and ADS::Boost when it was     #
 #    built on GMP, on a CBLAS and on Boost, and it finds again the threads,   #
-#    OpenMP, oneTBB and MPI when ADS was built with their executors.          #
+#    OpenMP, oneTBB and MPI when ADS was built with their executors; the      #
+#    component LEMON, ADS::LEMON, when ADS was built with it and LEMON is     #
+#    found again (find_package(ADS COMPONENTS LEMON) requires it).            #
 #                                                                             #
 #    ADSTargets.cmake (to be found alongside this file) is the target import  #
 #    file that tells where the headers are.                                   #
@@ -67,6 +69,16 @@ endif ()
 # ----- Import target ------------------------------------------------------- #
 if (NOT TARGET ADS::ADS)
     include("${ADS_CMAKE_DIR}/ADSTargets.cmake")
+endif ()
+
+# the component LEMON, if ADS was built with it and LEMON is found again
+set(ADS_LEMON_FOUND FALSE)
+if (@ADS_USE_LEMON@)
+    set(ADS_LEMON_HINTS "@ADS_LEMON_HINTS@")
+    include("${ADS_CMAKE_DIR}/ADSLemon.cmake")
+    if (ADS_LEMON_FOUND AND NOT TARGET ADS::LEMON)
+        include("${ADS_CMAKE_DIR}/ADSLemonTargets.cmake")
+    endif ()
 endif ()
 
 set(ADS_LIBRARIES ADS::ADS)

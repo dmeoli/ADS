@@ -14,6 +14,7 @@ package("ads")
         import("package.tools.cmake").install(package,
             {"-DADS_BUILD_TESTS=OFF", "-DADS_WITH_GMP=OFF",
              "-DADS_WITH_BLAS=OFF", "-DADS_WITH_BOOST=OFF",
+             "-DADS_WITH_LEMON=OFF",
              "-DADS_WITH_MPI=OFF"})
     end)
 

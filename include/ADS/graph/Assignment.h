@@ -30,6 +30,15 @@
  * the assignment from scratch (LEMON by its minimum cost flows, SciPy by
  * the algorithm of Crouse), and none keeps the duals for a warm start.
  *
+ * With `ADS_WITH_LEMON` and a LEMON that has `MinCostAssignment` (abLEMON)
+ * [see \ref theory_graph_lemon], the solve from scratch of a signed `W` is
+ * delegated to it, on a copy of the finite costs in a `lemon::SmartBpGraph`,
+ * and its matching and its potentials, \f$ u_i = -\pi( r_i ) \f$ and
+ * \f$ v_j = \pi( b_j ) \f$, become those of the assignment, from which the
+ * warm repair of ADS goes on; when it finds no perfect matching, the code of
+ * ADS solves again. `ADS_ASSIGNMENT_LEMON` defined to 0 keeps the code of
+ * ADS.
+ *
  * The contracts [see `Contract.h`]: \f$ n \ge 0 \f$, the rows and the
  * columns in \f$ [ 0 , n ) \f$, the costs finite or `infinity()`; at the
  * level of the audits each `solve()` checks the duals: every reduced cost
@@ -84,6 +93,18 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+// the solve from scratch on the MinCostAssignment of LEMON with
+// ADS_WITH_LEMON, where LEMON has it (abLEMON), unless ADS_ASSIGNMENT_LEMON
+// is 0 (the benchmarks keep the code of ADS)
+#if defined( ADS_WITH_LEMON ) && ! defined( ADS_ASSIGNMENT_LEMON ) &&         \
+  __has_include( <lemon/bipartite_matching.h> )
+ #define ADS_ASSIGNMENT_LEMON 1
+#endif
+#if defined( ADS_ASSIGNMENT_LEMON ) && ADS_ASSIGNMENT_LEMON
+ #include <lemon/bipartite_matching.h>
+ #include <lemon/smart_graph.h>
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -227,6 +248,12 @@ class Assignment
 
  /// the row \f$ i \f$ and its column freed
  void freeRow( int i );
+
+#if defined( ADS_ASSIGNMENT_LEMON ) && ADS_ASSIGNMENT_LEMON
+ /// the assignment and its potentials from scratch by the MinCostAssignment
+ /// of LEMON; false, with nothing changed, if it is not perfect
+ bool lemonScratch( void );
+#endif
 
  /// the shortest augmenting path from the free row \f$ i_0 \f$ in the
  /// reduced costs, and the potentials that keep them nonnegative; false if

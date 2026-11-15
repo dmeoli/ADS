@@ -953,6 +953,31 @@ off, as with the other backends, and `ADS_POINTERTABLE_BOOST`,
 0 keeps the code of ADS for one structure (the benchmarks do so for all four,
 since they compare it with Boost).
 
+With [LEMON](https://lemon.cs.elte.hu) (the maintained fork abLEMON, or
+any LEMON whose headers compile in C++20, which LEMON 1.3 does not), the
+headers of `include/ADS/interop/lemon` let a program written on LEMON take
+a structure of ADS where it does better, by the named template parameters
+of the algorithms of LEMON, and the algorithms of ADS run on the graphs of
+LEMON: the heaps of ADS as heaps of LEMON (e.g.,
+`Dijkstra< GR , LM >::SetStandardHeap< ADS::lemon_interop::DaryHeap< int ,
+GR::NodeMap< int > > >`), the arrays of ADS as maps of LEMON, a
+`StaticGraph` as a digraph of LEMON and a digraph of LEMON as a GRAPH of
+ADS, the notifier of LEMON told to the observers of ADS and a
+`ListDigraph` kept in step with a graph of ADS, and the runs of LEMON on
+the threads of ADS (see the chapter of the graphs of the manual). With
+them, `maxCardinalityMatching()` and `maxWeightMatching()` solve on the
+matchings of LEMON, and the solve from scratch of `Assignment` on the
+`MinCostAssignment` of abLEMON, the warm repairs staying those of ADS
+(`ADS_MATCHING_LEMON` or `ADS_ASSIGNMENT_LEMON` defined to 0 keeps the
+code of ADS, as the benchmarks do). `ADS_WITH_LEMON` is `AUTO` with CMake,
+which then builds the target `ADS::LEMON` (the component `LEMON` of
+`find_package(ADS COMPONENTS LEMON)`, and `ads-lemon.pc`), and `auto` with
+the makefile, whose flags go in `$(ADSLEMONINC)` (`LEMON=<prefix>` where
+LEMON is not where the compiler looks); unlike the other backends,
+`ADS::ADS` and `$(ADSINC)` never include LEMON, so that a program that does
+not ask for it compiles none of it, the headers are left out of the module
+`ads`, and the packages are built with it off.
+
 ```cpp
 #include "ADS/sequence/List.h"
 

@@ -42,6 +42,11 @@ OPTIONAL = { "ADS/parallel/OpenMPExecutor.h": "_OPENMP",
              "ADS/distributed/MPIExecutor.h": "ADS_WITH_MPI",
              "ADS/distributed/MPIMailbox.h": "ADS_WITH_MPI" }
 
+# the directories of headers left out of the module: those of the
+# interoperation with LEMON, which include its headers, are included by
+# whoever uses them, next to LEMON's own headers or module
+EXCLUDED = { os.path.join( "ADS" , "interop" , "lemon" ) }
+
 
 def dump_ast( clang , inc , headers , flags ):
     """Returns the JSON AST of a translation unit that includes the given
@@ -271,7 +276,8 @@ def main():
     headers = sorted( os.path.relpath( os.path.join( d , f ) , inc )
                       for d , _ , fs in os.walk( os.path.join( inc , "ADS" ) )
                       for f in fs if f.endswith( ".h" ) and
-                      os.path.basename( d ) != "impl" )
+                      os.path.basename( d ) != "impl" and
+                      os.path.relpath( d , inc ) not in EXCLUDED )
     # an optional header whose macro the flags do not define is not there
     defined = { f[ 2: ].split( "=" )[ 0 ] for f in args.flags
                 if f.startswith( "-D" ) }

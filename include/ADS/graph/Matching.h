@@ -53,6 +53,17 @@
  *   it suits graphs of some tens of nodes; it is kept as an independent
  *   check of the blossoms, which share none of its code.
  *
+ * With `ADS_WITH_LEMON` [see \ref theory_graph_lemon],
+ * `maxCardinalityMatching()` and `maxWeightMatching()` (without
+ * `maxCardinality`) are delegated to the `MaxMatching` and to the
+ * `MaxWeightedMatching` of LEMON, on a copy of the graph in a
+ * `lemon::SmartGraph`, in \f$ \Theta( n + m ) \f$ time and space more, with
+ * the same contracts and audits, the matching given being one of the same
+ * size or of the same weight, not necessarily the same edges;
+ * `ADS_MATCHING_LEMON` defined to 0 keeps the code of ADS, which, with
+ * `bipartiteBMatching()` and `branchAndBoundMatching()`, the book's part,
+ * is always there.
+ *
  * The contracts [see `Contract.h`]: the nodes on the right of the edges are
  * in [ 0 , nr ), the capacities are not negative, an edge joins two
  * distinct nodes of the graph, the graph of `maxCardinalityMatching()` is
@@ -122,6 +133,16 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+// the solves from scratch on the matchings of LEMON with ADS_WITH_LEMON,
+// unless ADS_MATCHING_LEMON is 0 (the benchmarks keep the code of ADS)
+#if defined( ADS_WITH_LEMON ) && ! defined( ADS_MATCHING_LEMON )
+ #define ADS_MATCHING_LEMON 1
+#endif
+#if defined( ADS_MATCHING_LEMON ) && ADS_MATCHING_LEMON
+ #include <lemon/matching.h>
+ #include <lemon/smart_graph.h>
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/

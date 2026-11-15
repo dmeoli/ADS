@@ -27,6 +27,10 @@
 #                                  to the headers of Boost [see               #
 #                                  PointerTable.h, FlatHashTable.h,           #
 #                                  SmallVector.h and RandomGenerators.h]      #
+#           $(ADS_WITH_LEMON)    = the same for the interoperation with LEMON #
+#                                  [see include/ADS/interop/lemon], whose     #
+#                                  flags go in $(ADSLEMONINC) alone, so that  #
+#                                  only who asks for them includes LEMON      #
 #           $(ADS_WITH_OPENMP)   = 1 for the executor of OpenMP [see          #
 #                                  OpenMPExecutor.h]                          #
 #           $(ADS_WITH_TBB)      = 1 for the executor of oneTBB [see          #
@@ -37,8 +41,8 @@
 #                                  and the runtime over the processes of MPI  #
 #                                  [see include/ADS/distributed], the         #
 #                                  options of MPI asked to $(MPICXX)          #
-#           $(GMP_ROOT), $(BLAS_ROOT), $(Boost_ROOT), $(OpenMP_ROOT),         #
-#           $(TBB_ROOT), $(FastFlow_ROOT),                                    #
+#           $(GMP_ROOT), $(BLAS_ROOT), $(Boost_ROOT), $(LEMON_ROOT),          #
+#           $(OpenMP_ROOT), $(TBB_ROOT), $(FastFlow_ROOT),                    #
 #           $(MPI_ROOT)          = where the libraries are, see               #
 #                                  extlib/makefile-paths (GMP=<prefix>,       #
 #                                  BLAS=<prefix> and BOOST=<prefix> on the    #
@@ -55,6 +59,9 @@
 #           $(ADSGMPON), $(ADSBLASON), $(ADSBOOSTON), $(ADSMPION) = 1 if the  #
 #                                  backend of GMP, of the CBLAS, of Boost, of #
 #                                  MPI is on                                  #
+#           $(ADSLEMONINC)       = -DADS_WITH_LEMON and the flags of LEMON,   #
+#                                  if found, for the programs that use it     #
+#           $(ADSLEMONON)        = 1 if LEMON is on                           #
 #                                                                             #
 ###############################################################################
 
@@ -141,6 +148,21 @@ ifneq ($(ADS_WITH_BOOST),0)
 endif
 ifeq ($(ADSBOOSTON),1)
     ADSINC += -DADS_WITH_BOOST $(libBoostINC)
+endif
+
+# LEMON, for the interoperation with it: the same, its flags apart
+ADS_WITH_LEMON ?= auto
+ifdef LEMON
+    LEMON_ROOT = $(filter-out 1,$(LEMON))
+endif
+ADSLEMONINC :=
+ifneq ($(ADS_WITH_LEMON),0)
+    include $(ADSSDR)/extlib/makefile-libLEMON
+    ADSLEMONON := $(strip $(if $(filter auto,$(ADS_WITH_LEMON)),\
+	$(libLEMONFOUND),$(filter 1,$(ADS_WITH_LEMON))))
+endif
+ifeq ($(ADSLEMONON),1)
+    ADSLEMONINC := -DADS_WITH_LEMON $(libLEMONINC)
 endif
 
 # OpenMP, for its executor

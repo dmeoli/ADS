@@ -3,10 +3,12 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The benchmark of the assignment problem of Assignment.h, from scratch
- * and after the change of a row, against the minimum cost flows of LEMON
- * (NetworkSimplex, LEMON=1; its CostScaling does not build in C++20, its
- * StaticDigraph using the members of std::allocator removed by it) on the
- * bipartite network of the assignment, and the weighted matching of the
+ * and after the change of a row, against the MinCostAssignment of abLEMON
+ * (the shortest augmenting paths with potentials, the first competitor,
+ * with LEMON=1 or ADS_WITH_LEMON), the minimum cost flows of LEMON
+ * (NetworkSimplex; the CostScaling of LEMON 1.3 does not build in C++20,
+ * its StaticDigraph using the members of std::allocator removed by it) on
+ * the bipartite network of the assignment, and the weighted matching of the
  * Boost Graph Library (maximum_weighted_matching, Edmonds' blossoms on a
  * general graph, the weights a large constant minus the costs), when
  * their headers are found, and the weighted matching of this library
@@ -19,8 +21,8 @@
  * - reassign, 64 changes of a random row to new random costs, each
  *   followed by the total cost, in nanoseconds per change: Assignment by
  *   setRow() ("ADS warm"), against a new Assignment solved from scratch
- *   ("ADS scratch", the copy of the costs included) and NetworkSimplex
- *   run again on the costs changed.
+ *   ("ADS scratch", the copy of the costs included), MinCostAssignment
+ *   and NetworkSimplex run again on the costs changed.
  *
  * Each structure runs only if ADS_BENCH_WHO names it, or with no such
  * variable [see Bench.h]; the first structure of each cell is run twice,
@@ -56,10 +58,15 @@
 #include <utility>
 #include <vector>
 
-#if __has_include( <lemon/network_simplex.h> ) && defined( ADS_HAS_LEMON )
+#if __has_include( <lemon/network_simplex.h> ) && \
+    ( defined( ADS_HAS_LEMON ) || defined( ADS_WITH_LEMON ) )
  #include <lemon/network_simplex.h>
  #include <lemon/smart_graph.h>
  #define ADS_LEMON_MCF 1
+ #if __has_include( <lemon/bipartite_matching.h> )
+  #include <lemon/bipartite_matching.h>
+  #define ADS_LEMON_ASSIGN 1
+ #endif
 #endif
 
 #if __has_include( <boost/graph/maximum_weighted_matching.hpp> )
@@ -103,6 +110,41 @@ struct LemonNet
  long long run( void ) {
   A a( g );
   a.costMap( cost ).supplyMap( supply );
+  a.run();
+  return( a.totalCost() );
+  }
+ };
+#endif
+
+#ifdef ADS_LEMON_ASSIGN
+/// the complete bipartite graph of the assignment in abLEMON, for its
+/// MinCostAssignment
+struct LemonBp
+{
+ lemon::SmartBpGraph g;
+ lemon::SmartBpGraph::EdgeMap< long long > cost{ g };
+ std::vector< lemon::SmartBpGraph::Edge > edge;
+
+ LemonBp( int n , const std::vector< long long > & C ) {
+  std::vector< lemon::SmartBpGraph::RedNode > R;
+  std::vector< lemon::SmartBpGraph::BlueNode > B;
+  for( int i = 0 ; i < n ; ++i ) {
+   R.push_back( g.addRedNode() );
+   B.push_back( g.addBlueNode() );
+   }
+  for( int i = 0 ; i < n ; ++i )
+   for( int j = 0 ; j < n ; ++j ) {
+    edge.push_back(
+      g.addEdge( R[ std::size_t( i ) ] , B[ std::size_t( j ) ] ) );
+    cost[ edge.back() ] =
+      C[ std::size_t( i ) * std::size_t( n ) + std::size_t( j ) ];
+    }
+  }
+
+ long long run( void ) {
+  lemon::MinCostAssignment< lemon::SmartBpGraph ,
+			    lemon::SmartBpGraph::EdgeMap< long long > >
+    a( g , cost );
   a.run();
   return( a.totalCost() );
   }
@@ -153,6 +195,15 @@ void assign( int n , int r , unsigned seed )
        [ & ]( auto & A ) { ADS::bench::sink = std::uint64_t( A->total() ); } ,
        r , N ) );
   }
+#ifdef ADS_LEMON_ASSIGN
+ if( ! ADS::bench::skip( "LEMON MinCostAssignment" ) )
+  ADS::bench::print(
+    "assign" , "random" , N , "LEMON MinCostAssignment" ,
+    ADS::bench::median(
+      [ & ]( void ) { return( std::make_unique< LemonBp >( n , C ) ); } ,
+      [ & ]( auto & L ) { ADS::bench::sink = std::uint64_t( L->run() ); } , r ,
+      N ) );
+#endif
 #ifdef ADS_LEMON_MCF
  if( ! ADS::bench::skip( "LEMON NetworkSimplex" ) )
   ADS::bench::print(
@@ -237,6 +288,24 @@ void assign( int n , int r , unsigned seed )
 			ADS::bench::sink = h;
 		        } ,
 		       r , k ) );
+#ifdef ADS_LEMON_ASSIGN
+ if( ! ADS::bench::skip( "LEMON MinCostAssignment" ) )
+  ADS::bench::print(
+    "reassign" , "random" , N , "LEMON MinCostAssignment" ,
+    ADS::bench::median(
+      [ & ]( void ) { return( std::make_unique< LemonBp >( n , C ) ); } ,
+      [ & ]( auto & L ) {
+       std::uint64_t h = 0;
+       for( const auto & [ i , row ] : R ) {
+	for( int j = 0 ; j < n ; ++j )
+	 L->cost[ L->edge[ std::size_t( i ) * N + std::size_t( j ) ] ] =
+	   row[ j ];
+	h += std::uint64_t( L->run() );
+        }
+       ADS::bench::sink = h;
+       } ,
+      r , k ) );
+#endif
 #ifdef ADS_LEMON_MCF
  if( ! ADS::bench::skip( "LEMON NetworkSimplex" ) )
   ADS::bench::print(

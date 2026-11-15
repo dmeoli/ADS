@@ -170,7 +170,7 @@ jobs:
           make backends
           make -j4 test
           make -j4 test ADS_WITH_GMP=0 ADS_WITH_BLAS=0 ADS_WITH_BOOST=0 \
-               BUILD=build-off
+               ADS_WITH_LEMON=0 BUILD=build-off
 
   portable:
     runs-on: ubuntu-latest

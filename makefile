@@ -17,12 +17,15 @@
 #     make test-mpi    the sort and the runtime over the processes of MPI,    #
 #                      by mpirun                                              #
 #     make test ADS_WITH_GMP=0 ADS_WITH_BLAS=0 ADS_WITH_BOOST=0               #
-#                      the same without the backends of GMP, of a CBLAS and   #
-#                      of Boost, on by default where they are found           #
+#               ADS_WITH_LEMON=0                                              #
+#                      the same without the backends of GMP, of a CBLAS, of   #
+#                      Boost and of LEMON, on by default where they are found #
 #                      [GMP=<prefix>] [BLAS=<prefix>] [BOOST=<prefix>]        #
+#                      [LEMON=<prefix>]                                       #
 #     make test ADSMOD=1                                                      #
 #                      also the C++20 module ads and the test that imports it #
-#     make backends    tells whether GMP, a CBLAS, Boost and MPI were found   #
+#     make backends    tells whether GMP, a CBLAS, Boost, LEMON and MPI were  #
+#                      found                                                  #
 #     make bench       builds the benchmarks in $(BUILD)                      #
 #     bench/run.sh     runs them and writes the tables of the README          #
 #     make install     copies include/ADS into $(PREFIX)/include, with        #
@@ -36,8 +39,8 @@
 #           optional: $(PREFIX)   = where make install copies the headers     #
 #                                   (/usr/local if not given)                 #
 #           optional: the macros of the backends, ADS_WITH_GMP,               #
-#                     ADS_WITH_BLAS, ADS_WITH_BOOST and ADS_WITH_MPI (auto    #
-#                     by default, 0 or 1),                                    #
+#                     ADS_WITH_BLAS, ADS_WITH_BOOST, ADS_WITH_LEMON and       #
+#                     ADS_WITH_MPI (auto by default, 0 or 1),                 #
 #                     ADS_WITH_OPENMP=1, ADS_WITH_TBB=1, ADS_WITH_FASTFLOW=1, #
 #                     and their *_ROOT [see lib/makefile-c]; ADSMOD=1 [see    #
 #                     lib/makefile-mod]                                       #
@@ -68,7 +71,7 @@ include $(ADSSDR)/lib/makefile-c
 # solutions of the exercises on chains of 10^4 nodes (2 MB by default with
 # MinGW)
 
-INC      = $(ADSINC) -Itest -DADS_CONTRACTS=3
+INC      = $(ADSINC) $(ADSLEMONINC) -Itest -DADS_CONTRACTS=3
 LIBS     = $(ADSLIB) $(if $(filter Windows,$(UNAME_S)),\
            -Wl$(ADScomma)--stack$(ADScomma)8388608)
 HEADERS  = $(ADSH) test/ADSTest.h
@@ -182,6 +185,7 @@ backends:
 	@echo "ADS: GMP $(if $(filter 1,$(ADSGMPON)),ON,OFF)," \
 	      "CBLAS $(if $(filter 1,$(ADSBLASON)),ON,OFF)"
 	@echo "ADS: Boost $(if $(filter 1,$(ADSBOOSTON)),ON,OFF)"
+	@echo "ADS: LEMON $(if $(filter 1,$(ADSLEMONON)),ON,OFF)"
 	@echo "ADS: MPI $(if $(filter 1,$(ADSMPION)),ON,OFF)"
 
 # bench target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -506,9 +510,11 @@ $(BUILD)/bench-greedy: bench/greedy.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	       $(if $(PARLAY),-isystem $(PARLAY)/include -isystem $(PARLAY)) \
 	       -pthread
 
-# the maximum flows and the assignment: LEMON=1 (or LEMON=<prefix>) the
-# Preflow and the minimum cost flows of LEMON; the push-relabel and the
-# weighted matching of Boost when their headers are found
+# the maximum flows, the assignment and the matchings: LEMON=1 (or
+# LEMON=<prefix>) the Preflow, the MinCostAssignment (abLEMON), the minimum
+# cost flows and the matchings of LEMON, the first competitors; the
+# push-relabel and the weighted matching of Boost when their headers are
+# found
 LEMONFLAGS = $(if $(LEMON),-DADS_HAS_LEMON $(if $(filter-out 1,$(LEMON)),\
              -I$(LEMON)/include -L$(LEMON)/lib) -llemon)
 $(BUILD)/bench-flows: bench/flows.cpp bench/Bench.h $(HEADERS) | $(BUILD)
@@ -516,6 +522,9 @@ $(BUILD)/bench-flows: bench/flows.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 
 $(BUILD)/bench-assignment: bench/assignment.cpp bench/Bench.h $(HEADERS) \
                           | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(LEMONFLAGS)
+
+$(BUILD)/bench-graphs: bench/graphs.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(LEMONFLAGS)
 
 # the sort and the mailbox over the processes of MPI, by mpicxx (not among

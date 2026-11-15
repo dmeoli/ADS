@@ -18,6 +18,11 @@ foreach (line IN LISTS lines)
         list(APPEND programs ${program})
         add_executable(${program} ${program}.cpp)
         target_link_libraries(${program} PRIVATE ADS::ADS Threads::Threads)
+        # with LEMON, the tests run on the solves that ADS delegates to it,
+        # and engineered_lemon on the interoperation
+        if (ADS_USE_LEMON)
+            target_link_libraries(${program} PRIVATE ADS::LEMON)
+        endif ()
         # the tests check all the contracts, invariants included
         target_compile_definitions(${program} PRIVATE ADS_CONTRACTS=3)
         target_compile_options(${program} PRIVATE

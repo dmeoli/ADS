@@ -11,6 +11,7 @@ class Ads < Formula
   def install
     system "cmake", "-S", ".", "-B", "build", "-DADS_BUILD_TESTS=OFF",
            "-DADS_WITH_GMP=OFF", "-DADS_WITH_BLAS=OFF", "-DADS_WITH_BOOST=OFF",
+           "-DADS_WITH_LEMON=OFF",
            "-DADS_WITH_MPI=OFF",
            *std_cmake_args
     system "cmake", "--install", "build"

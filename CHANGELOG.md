@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- ADS_WITH_LEMON and include/ADS/interop/lemon, the interoperation with
+  LEMON (abLEMON, or a LEMON whose headers compile in C++20; AUTO with
+  CMake, which builds the target ADS::LEMON, the component LEMON of the
+  package and ads-lemon.pc, auto with the makefile in $(ADSLEMONINC), off in
+  the packages, never in ADS::ADS nor in the module ads): DaryHeap and
+  MonotoneHeap, the heaps of ADS as heaps of LEMON on its cross-reference
+  map; DenseMap, IndexMap (over ObservableArray, Fenwick) and ObservedMap,
+  the maps; StaticDigraphView, GraphView and toStatic(), the graphs either
+  way; LemonTap and LemonMirror, the changes either way; dijkstraFrom() and
+  sortedArcs(), the runs of LEMON on the threads of ADS; with it,
+  maxCardinalityMatching() and maxWeightMatching() solve on the matchings
+  of LEMON and the solve from scratch of Assignment on MinCostAssignment
+  (ADS_MATCHING_LEMON and ADS_ASSIGNMENT_LEMON at 0 keep the code of ADS);
+  the engine of the solves of MaxFlowObserver (FlowEngine, AugmentEngine by
+  default); LEMON among the competitors of bench/graphs.cpp,
+  bench/flows.cpp and bench/assignment.cpp; the test program
+  engineered_lemon, section 14.14 of the manual and the theory page
+
 - ADS_WITH_BOOST, the backend of the headers of Boost 1.83 or later (AUTO
   with CMake, auto with the makefile, as for GMP and the CBLAS, off in the
   packages; cmake/ADSBoost.cmake and extlib/makefile-libBoost find it, and

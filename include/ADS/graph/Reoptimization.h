@@ -722,9 +722,41 @@ class SpanningForestObserver : public EventQueue< typename G::Weight , P >
 /*------------------------- CLASS MaxFlowObserver --------------------------*/
 /*--------------------------------------------------------------------------*/
 
+/// the engines of the solves of a `MaxFlowObserver`: `scratch( net , s ,
+/// t , how )` the maximum flow of `net` from the zero flow, and `warm( net ,
+/// s , t , how )` the value added to the flow that `net` keeps, after the
+/// capacities changed (a capacity cut below its flow leaving the excess and
+/// the deficit that `FlowNetwork::maxFlow()` routes first); each leaves a
+/// maximum flow in `net`, whose minimum cut the observer reads. It is the
+/// point where a solve by another library plugs in, e.g., one that starts
+/// a solver of LEMON from the flow of `net` and writes its flow back [see
+/// \ref theory_graph_lemon]
+template< class E >
+concept FlowEngine = requires( FlowNetwork & net , int s , int t ,
+			       Augment how )
+{
+ { E::scratch( net , s , t , how ) } -> std::convertible_to< long long >;
+ { E::warm( net , s , t , how ) } -> std::convertible_to< long long >;
+ };
+
+/// the engine of ADS, both solves by the augmentations `how` of
+/// `FlowNetwork::maxFlow()` [see `MaxFlow.h`]
+struct AugmentEngine
+{
+ /// the maximum flow from the zero flow
+ static long long scratch( FlowNetwork & net , int s , int t , Augment how ) {
+  return( net.maxFlow( s , t , how ) );
+  }
+ /// the value added to the flow of `net`
+ static long long warm( FlowNetwork & net , int s , int t , Augment how ) {
+  return( net.maxFlow( s , t , how ) );
+  }
+ };
+
 /// the maximum flow from \f$ s \f$ to \f$ t \f$ in \f$ g \f$, the weights
-/// the capacities, kept up to date
-template< Graph G , ReoptPolicy P = RatioPolicy >
+/// the capacities, kept up to date, the solves made by the engine `E`
+template< Graph G , ReoptPolicy P = RatioPolicy ,
+	  FlowEngine E = AugmentEngine >
  requires std::is_integral_v< typename G::Weight >
 class MaxFlowObserver : public EventQueue< typename G::Weight , P >
 {
