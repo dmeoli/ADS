@@ -512,8 +512,8 @@
  does nothing where no prefetch is known, and `insert_bulk( s , r )`
  inserts the items one by one; each calls the member if there is one, else
  a free function found by argument-dependent lookup, else the default. The
- three of the priority queues in `PriorityQueue.h` read the members of the
- book first and the spelling of the standard last, so that
+ three of the priority queues in `QueueCustomization.h` read the members
+ of the book first and the spelling of the standard last, so that
  `std::priority_queue` models the base `PriorityQueue` as it is.
 
  A priority queue lowers the key of an item in one of two ways, and

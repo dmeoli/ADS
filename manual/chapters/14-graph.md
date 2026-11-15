@@ -2170,7 +2170,7 @@ pair $( d , v )$, which breaks the ties by the names of the nodes; a queue
 without a priority of its own (`std::priority_queue`, or a heap of
 Boost.Heap, [§1.8.1](01-introduction.md#sec-1-8-1)) holds these pairs as its
 items, with the order that puts the least on top. The frontier reaches the
-queue only through the customization points of `PriorityQueue.h`
+queue only through the customization points of `QueueCustomization.h`
 (`queue_insert()`, `queue_deleteMin()` and `queue_decrease()`), so that a
 queue of another library needs no wrapper, and the queues it takes are
 those of the concept `FrontierQueue`, which Prim's algorithm takes as well.

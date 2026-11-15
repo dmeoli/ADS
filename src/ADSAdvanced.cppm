@@ -492,9 +492,7 @@ using ADS::FlatLoserTree;
 // priority/PairingHeap.h
 using ADS::PairingHeap;
 
-// priority/PriorityQueue.h
-using ADS::AddressablePriorityQueue;
-using ADS::PriorityQueue;
+// priority/QueueCustomization.h
 using ADS::queue_decrease;
 using ADS::queue_deleteMin;
 using ADS::queue_handle_t;

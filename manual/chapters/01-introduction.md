@@ -1551,14 +1551,15 @@ use an advanced one inside (e.g., `SuffixArray.h` sorts the ranks by
 `RadixSort.h`, and `ExternalSort.h` merges its runs on a `DaryHeap`). We
 list each use of this kind, with its reason, in the file of the sets; the
 advanced header is then compiled with the base one, but its names are not
-part of the base set. One header still holds a part of each set
-(`PriorityQueue.h`), and we put it in both sets until we move its
-engineered part to a new header, as we did for `MaxFlow.h`, `Matching.h`,
-`Visit.h` and `EngineeredQuickSorts.h`. The push-relabel of the first is
-now in `PushRelabel.h`, the blossoms of the second in `BlossomMatching.h`,
-the components by one visit of the third in `StrongComponents.h` and the
-quicksort of Peters in `PdqSort.h`, each included by the header of the
-book, so that an include of the latter still gives the whole of it.
+part of the base set. Five headers held a part of each set, and we split
+each of them into a base header, which keeps its path, and a new advanced
+one, which the base header includes; an include of the former thus gives
+every name it gave before. Hence the push-relabel of `MaxFlow.h` is in
+`PushRelabel.h`, the blossoms of `Matching.h` in `BlossomMatching.h`, the
+components by one visit of `Visit.h` in `StrongComponents.h`, the
+quicksort of Peters of `EngineeredQuickSorts.h` in `PdqSort.h`, and the
+customization points of the queues of `PriorityQueue.h` in
+`QueueCustomization.h`.
 
 Each set has an *entry point*, a header that includes all the headers of
 the set and the core. Thus `#include "ADS/base.h"` gives the base set,
@@ -2003,7 +2004,7 @@ only, by chapter.
 | [6](06-search.md#ch-6) | `search/BinarySearch.h`, `search/CountLess.h`, `search/InterpolationSearch.h`, `search/KnuthSearches.h`, `search/LocalOptima.h`, `search/Minimum.h`, `search/MonotoneSearch.h`, `search/NthElement.h`, `search/Selection.h`, `search/SortedSearches.h` |
 | [7](07-dictionary.md#ch-7) | `dictionary/HashFunctions.h`, `dictionary/RowFingerprint.h`, `dictionary/TableSize.h` |
 | [8](08-tree.md#ch-8) | `tree/BinaryTreeAlgorithms.h`, `tree/ExpressionTree.h`, `tree/HeapByInsertion.h` |
-| [9](09-priority.md#ch-9) | `priority/OrderKey.h`, `priority/PriorityQueue.h` |
+| [9](09-priority.md#ch-9) | `priority/OrderKey.h`, `priority/PriorityQueue.h`, `priority/QueueCustomization.h` |
 | [10](10-set.md#ch-10) | `set/SetOperations.h`, `set/VectorIntersection.h` |
 | [12](12-sort.md#ch-12) | `sort/CountingSort.h`, `sort/EngineeredQuickSorts.h`, `sort/ExchangeSorts.h`, `sort/ExternalSort.h`, `sort/Heapsort.h`, `sort/InsertionSort.h`, `sort/KnuthSorts.h`, `sort/LearnedSort.h`, `sort/MergeSort.h`, `sort/MultikeyQuickSort.h`, `sort/PdqSort.h`, `sort/PigeonholeSort.h`, `sort/QuickSort.h`, `sort/RadixSort.h`, `sort/RunSorts.h`, `sort/SampleSort.h`, `sort/SelectionSort.h`, `sort/ShellSort.h`, `sort/Sort.h`, `sort/Sorted.h`, `sort/SortingNetworks.h`, `sort/StrandSort.h`, `sort/StringSort.h`, `sort/TreeSort.h`, `sort/VectorQuickSort.h` |
 | [13](13-algorithm.md#ch-13) | `algorithm/AkraBazzi.h`, `algorithm/BinaryCounter.h`, `algorithm/Hanoi.h`, `algorithm/MonteCarlo.h`, `algorithm/Paradigms.h`, `algorithm/SequenceQueries.h`, `algorithm/Subsequences.h`, `optimization/CoinChange.h`, `optimization/CoinGame.h`, `optimization/FractionalKnapsack.h`, `optimization/HouseProblems.h`, `optimization/IntervalCover.h`, `optimization/Intervals.h`, `optimization/Knapsack.h`, `optimization/KnapsackVariants.h`, `optimization/LinearPartition.h`, `optimization/SequenceProblems.h`, `optimization/ShortestJobFirst.h`, `optimization/StockTrading.h` |

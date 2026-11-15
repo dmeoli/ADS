@@ -1,11 +1,12 @@
 # 9. Priority queues {#ch-9}
 
-[Source: `include/ADS/priority/PriorityQueue.h`, `ListPriorityQueue.h`,
-`TreePriorityQueue.h`, `HeapPriorityQueue.h`, `DaryHeap.h`,
-`IndexedDaryHeap.h`, `IndexedHeapPair.h`, `LinkedHeapPriorityQueue.h`,
-`MeldableHeap.h`, `FibonacciHeapPriorityQueue.h`, `PairingHeap.h`,
-`RadixHeap.h`, `DialQueue.h`, `BucketQueue.h`, `MinMaxHeap.h`,
-`LoserTree.h`, `MultiwayMerge.h`, `SequenceHeap.h`, `OrderKey.h`]
+[Source: `include/ADS/priority/PriorityQueue.h`, `QueueCustomization.h`,
+`ListPriorityQueue.h`, `TreePriorityQueue.h`, `HeapPriorityQueue.h`,
+`DaryHeap.h`, `IndexedDaryHeap.h`, `IndexedHeapPair.h`,
+`LinkedHeapPriorityQueue.h`, `MeldableHeap.h`,
+`FibonacciHeapPriorityQueue.h`, `PairingHeap.h`, `RadixHeap.h`,
+`DialQueue.h`, `BucketQueue.h`, `MinMaxHeap.h`, `LoserTree.h`,
+`MultiwayMerge.h`, `SequenceHeap.h`, `OrderKey.h`]
 
 We are concerned in this chapter with the *priority queue*, i.e., a
 multiset of items, each with a priority taken from a totally ordered set,
@@ -39,9 +40,10 @@ decrease-key follow [Montresor 2025, §10.1 and
 §11.5](Z-bibliography.md#ref-montresor2025). In the sets of
 [§1.9](01-introduction.md#sec-1-9), `FibonacciHeapPriorityQueue.h`,
 `HeapPriorityQueue.h`, `ListPriorityQueue.h`, `LoserTree.h`,
-`MeldableHeap.h` and `TreePriorityQueue.h` are base and the other headers
-of this chapter are advanced, while `PriorityQueue.h` holds a part of each
-until it is split.
+`MeldableHeap.h`, `PriorityQueue.h` (the concepts of the book) and
+`TreePriorityQueue.h` are base and the other headers of this chapter are
+advanced, among them `QueueCustomization.h` (the customization points of
+the queues, which `PriorityQueue.h` includes).
 
 ## 9.1 The interface {#sec-9-1}
 
@@ -74,7 +76,8 @@ types `Item`, `Priority` and `Handle`, and its models are `ListPriorityQueue`,
 `TreePriorityQueue`, `HeapPriorityQueue`, `IndexedDaryHeap`,
 `FibonacciHeapPriorityQueue` and `PairingHeap`. The concept `PriorityQueue`
 drops the handles and `decrease()`, and reads the queue through the
-customization points `queue_insert()`, `queue_min()` and `queue_deleteMin()`,
+customization points `queue_insert()`, `queue_min()` and `queue_deleteMin()`
+of `ADS/priority/QueueCustomization.h` (which `PriorityQueue.h` includes),
 which call the members of the book when the queue has them and otherwise the
 free functions of the same names found by the lookup of the arguments, and
 which also take the spelling of the standard library

@@ -523,7 +523,7 @@ enum class decrease_key_kind { none , lazy , native };
 
 /// how the queue `Q` lowers a priority: `Q::decrease_key` if it declares
 /// it (e.g., a queue whose `decrease()` is an insertion), else `native` if
-/// `queue_decrease( q , h , p )` of `PriorityQueue.h` takes its handles
+/// `queue_decrease( q , h , p )` of `QueueCustomization.h` takes its handles
 /// (its member `decrease( h , p )`, or a free function for a queue of
 /// another library), else `lazy` if it is a
 /// `PriorityQueue`, else `none` (the shortest paths and Prim's algorithm)

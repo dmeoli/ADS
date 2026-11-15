@@ -187,8 +187,10 @@ concepts and by composition, not by inheritance, and a few base headers use
 an advanced one inside (e.g., `SuffixArray.h` sorts by `RadixSort.h`). The
 infrastructure that both sets include (the contracts, the iterators, the
 portable primitives, the capabilities, the concept of the executors, the
-pool of the nodes, the random hashing) is a third set, core, and the
-headers that still hold a part of each set are in both. The headers of
+pool of the nodes, the random hashing) is a third set, core, and a header
+that held a part of each set is split into a base header, which keeps its
+path, and an advanced one that it includes (e.g., `MaxFlow.h` and
+`PushRelabel.h`), so that its includes give the same. The headers of
 `ADS/interop/`, which join ADS to Boost, to LEMON and to the newest parts
 of the standard library, are a set of their own, interop, which no entry
 point includes and no module exports, since each is included by the
@@ -206,41 +208,41 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-421 headers: 244 base, 152 advanced, 11 core, 13 interop and 1 in both sets until they are split.
+422 headers: 245 base, 153 advanced, 11 core and 13 interop.
 
-| Folder | Base | Advanced | Core | Interop | Both |
-|---|---|---|---|---|---|
-| `ADS/` | `ADT` | `Algebra`, `Modification` | `Capabilities`, `Contract`, `Iterators`, `Portable` |  |  |
-| `algorithm/` | `AkraBazzi`, `BinaryCounter`, `Hanoi`, `MasterTheorem`, `MaximumSegments`, `MonteCarlo`, `Paradigms`, `SequenceQueries`, `Subsequences` |  |  |  |  |
-| `backtrack/` | `Anagrams`, `DancingLinks`, `Enumeration`, `KnightTour`, `NQueens`, `SatSolvers`, `Sudoku` | `FastExactCover` |  |  |  |
-| `combinatorial/` | `Bitwise`, `Generation` | `FastBitwise`, `FastGeneration` |  |  |  |
-| `complexity/` | `Domino`, `EasyCases`, `Nondeterminism`, `Problems`, `Reductions` |  |  |  |  |
-| `compression/` | `ArithmeticCoding`, `BurrowsWheeler`, `CanonicalHuffman`, `Entropy`, `FMIndex`, `IntegerCodes`, `LempelZiv`, `PPM` | `BinaryPacking`, `DirectAccessCodes`, `HuffmanCoder`, `HuffmanFMIndex`, `LZ77Linear`, `MoveRIndex`, `RIndex`, `Rans`, `StreamVByte`, `Tans` | `PackedBits` |  |  |
-| `concurrent/` |  | `Backoff`, `ConcurrentCuckooTable`, `ConcurrentFlatTable`, `ConcurrentUnionFind`, `EventCount`, `LockFreePriorityQueue`, `MPMCQueue`, `MPSCInbox`, `MPSCQueue`, `MinBoard`, `MultiQueue`, `SPSCQueue`, `SingleWriterFlatTable`, `StealablePriorityQueue`, `WorkStealingDeque` |  |  |  |
-| `dictionary/` | `BinaryTrie`, `BitmapTrie`, `ChainedHashTable`, `CuckooHashing`, `DirectTable`, `HashFunctions`, `IndexedSkipList`, `KnuthHashing`, `OpenHashTable`, `PatriciaTrie`, `PerfectHashing`, `SkipList`, `SortedArrayDictionary`, `TableSize`, `Trie`, `TwoLevelDictionary`, `UniversalHashing`, `XFastTrie`, `YFastTrie` | `AdaptiveRadixTree`, `BucketCuckooTable`, `DenseHashMap`, `FastHash`, `FingerprintPerfectHash`, `FlatHashTable`, `MinimalPerfectHash`, `PointerTable`, `PositionIndex`, `RecSplit`, `RowFingerprint`, `SuccinctPatriciaTrie` | `RandomHashing` |  |  |
-| `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  |  |  |
-| `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `RecordFile` |  |  |
-| `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |  |
-| `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `Matching`, `MatrixGraph`, `MaxFlow`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths`, `Visit` | `Assignment`, `BlossomMatching`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `PushRelabel`, `Reoptimization`, `StaticGraph`, `StrongComponents` |  |  |  |
-| `interop/boost/` |  |  |  | `Dijkstra`, `FromBGL`, `Graph`, `Heap`, `Iterator` |  |
-| `interop/lemon/` |  |  |  | `Digraphs`, `Heaps`, `Maps`, `Observers`, `Parallel`, `Warm` |  |
-| `interop/std/` |  |  |  | `FlatMap`, `Pmr` |  |
-| `intractable/` | `Approximation`, `BranchAndBound`, `FifteenPuzzle`, `Heuristics`, `Pseudopolynomial` |  |  |  |  |
-| `memory/` | `Allocators`, `CellHeap` | `Arena`, `ConcurrentPool`, `PageHeap`, `PoolAllocator`, `SizeClassAllocator` | `HugePageAllocator`, `ObjectPool` |  |  |
-| `mfset/` | `ListMFSet`, `MFSet` | `RemUnionFind`, `RollbackUnionFind`, `UnionFind` |  |  |  |
-| `numeric/` | `BigInteger`, `BinaryInteger`, `Catalan`, `Combinatorics`, `Matrix`, `MatrixChain`, `NumberTheory`, `Polynomial`, `RSA`, `RandomNumbers`, `RandomSampling`, `Rational`, `SparseMatrix` | `CsrMatrix`, `DenseMatrix`, `DynamicCsr`, `RandomGenerators`, `SellMatrix`, `SparseAssembly` |  |  |  |
-| `optimization/` | `CoinChange`, `CoinGame`, `FractionalKnapsack`, `GridPaths`, `HouseProblems`, `IntervalCover`, `Intervals`, `Knapsack`, `KnapsackVariants`, `LinearPartition`, `OptimalSearchTree`, `SequenceProblems`, `ShortestJobFirst`, `StockTrading`, `WeightedIntervals` |  |  |  |  |
-| `parallel/` |  | `Affinity`, `Channels`, `Farm`, `FastFlowExecutor`, `Mailbox`, `OpenMPExecutor`, `ParallelGraph`, `ParallelGreedy`, `ParallelMerge`, `ParallelNumeric`, `ParallelShortestPaths`, `ParallelSort`, `ParallelText`, `Scratch`, `SpeculativeFor`, `TBBExecutor`, `ThreadPool` | `Executor` |  |  |
-| `priority/` | `FibonacciHeapPriorityQueue`, `HeapPriorityQueue`, `ListPriorityQueue`, `LoserTree`, `MeldableHeap`, `TreePriorityQueue` | `BucketQueue`, `DaryHeap`, `DialQueue`, `IndexedDaryHeap`, `IndexedHeapPair`, `LinkedHeapPriorityQueue`, `MinMaxHeap`, `MultiwayMerge`, `OrderKey`, `PairingHeap`, `RadixHeap`, `SequenceHeap` |  |  | `PriorityQueue` |
-| `queue/` | `ArrayQueue`, `Dequeue`, `LinkedQueue`, `MinDeque`, `MinQueue`, `QueueAlgorithms`, `RandomQueue`, `RealTimeMinDeque`, `RealTimeMinQueue`, `UniqueQueue` | `RingDeque`, `SlidingAggregate` |  |  |  |
-| `search/` | `BinarySearch`, `InterpolationSearch`, `KnuthSearches`, `LocalOptima`, `Minimum`, `MonotoneSearch`, `PGMIndex`, `Selection`, `SortedSearches` | `CompressedPGMIndex`, `CountLess`, `DynamicPGMIndex`, `NthElement`, `RangeMinimum`, `StaticSearch`, `WordRangeMinimum` |  |  |  |
-| `sequence/` | `ArraySequence`, `ContiguousDeque`, `CubishArrayStack`, `CursorList`, `DualArrayDeque`, `IndexedList`, `List`, `OrderMaintenanceList`, `Rearrangements`, `RootishArrayStack`, `SEList`, `SequenceAlgorithms`, `SequenceRange`, `SinglyList`, `SkipListSequence`, `TreapList`, `Treque`, `XorList` | `Fenwick`, `ListSort`, `ObservableArray`, `SmallVector`, `TieredVector` |  |  |  |
-| `set/` | `Bag`, `BloomFilter`, `BloomVariants`, `BoolSet`, `DictionarySet`, `HashMultiset`, `LinkedHashSet`, `ListSet`, `SetInterfaces`, `SetOperations`, `SortedIntersection`, `SortedListSet`, `SpaceEfficientSortedSet` | `BinaryFuseFilter`, `BlockedBloomFilter`, `CuckooFilter`, `GrafiteFilter`, `PrefixFilter`, `RibbonFilter`, `RoaringBitmap`, `VectorIntersection` |  |  |  |
-| `sort/` | `CountingSort`, `EngineeredQuickSorts`, `ExchangeSorts`, `ExternalSort`, `Heapsort`, `InsertionSort`, `KnuthSorts`, `MergeSort`, `MultikeyQuickSort`, `PigeonholeSort`, `QuickSort`, `SelectionSort`, `ShellSort`, `SortingNetworks`, `StrandSort`, `TreeSort` | `LearnedSort`, `PdqSort`, `QuicksortAdversary`, `RadixSort`, `RunSorts`, `SampleSort`, `Sort`, `StringSort`, `VectorQuickSort` | `Sorted` |  |  |
-| `stack/` | `ArrayStack`, `Expressions`, `MinStack`, `MultiStack`, `SequenceStack`, `StackAlgorithms` |  |  |  |  |
-| `string/` | `Alignment`, `Anagrams`, `ApproximateMatching`, `FrontCoding`, `Huffman`, `LongestCommonSubsequence`, `Lyndon`, `Palindromes`, `Parentheses`, `PrefixSearch`, `RearCoding`, `Segmentations`, `StringBreaking`, `StringMatching`, `SubsequenceProblems`, `SuffixApplications`, `SuffixArray`, `SuffixTree`, `WordBreak` | `AhoCorasick`, `EditDistance`, `LongestCommonExtension`, `MultiSearch`, `StringSearch`, `SuffixAutomaton`, `SuffixSorting` |  |  |  |
-| `succinct/` | `BPTree`, `BVGraph`, `BalancedParentheses`, `BitStream`, `BitVector`, `EliasFano`, `EliasFanoGraph`, `HuffmanWaveletTree`, `JacobsonTree`, `K2Tree`, `LoudsTree`, `RankSelect` | `CompactRankSelect`, `InterleavedRankSelect`, `LAVector`, `MoveStructure`, `PackedArray`, `PartitionedEliasFano`, `RRRBitVector`, `WaveletMatrix` |  |  |  |
-| `tree/` | `AVLTree`, `ArrayBinaryTree`, `BPlusTree`, `BTree`, `BinaryTree`, `BinaryTreeAlgorithms`, `ChildListTree`, `CursorBinaryTree`, `CursorTree`, `ExpressionTree`, `FingerTreap`, `HashedTreap`, `HeapByInsertion`, `LeftLeaningRedBlackTree`, `MeasuredSearchTree`, `ParentTree`, `PartialRebuildingTree`, `PreorderArrayTree`, `RandomizedSearchTree`, `ScapegoatTree`, `SearchTree`, `ThreadedTree`, `Treap`, `Tree` | `BTreeMap`, `JoinAlgorithms`, `JoinTree`, `LinkCutTree`, `MaterializedAggregate`, `SplayTree` |  |  |  |
+| Folder | Base | Advanced | Core | Interop |
+|---|---|---|---|---|
+| `ADS/` | `ADT` | `Algebra`, `Modification` | `Capabilities`, `Contract`, `Iterators`, `Portable` |  |
+| `algorithm/` | `AkraBazzi`, `BinaryCounter`, `Hanoi`, `MasterTheorem`, `MaximumSegments`, `MonteCarlo`, `Paradigms`, `SequenceQueries`, `Subsequences` |  |  |  |
+| `backtrack/` | `Anagrams`, `DancingLinks`, `Enumeration`, `KnightTour`, `NQueens`, `SatSolvers`, `Sudoku` | `FastExactCover` |  |  |
+| `combinatorial/` | `Bitwise`, `Generation` | `FastBitwise`, `FastGeneration` |  |  |
+| `complexity/` | `Domino`, `EasyCases`, `Nondeterminism`, `Problems`, `Reductions` |  |  |  |
+| `compression/` | `ArithmeticCoding`, `BurrowsWheeler`, `CanonicalHuffman`, `Entropy`, `FMIndex`, `IntegerCodes`, `LempelZiv`, `PPM` | `BinaryPacking`, `DirectAccessCodes`, `HuffmanCoder`, `HuffmanFMIndex`, `LZ77Linear`, `MoveRIndex`, `RIndex`, `Rans`, `StreamVByte`, `Tans` | `PackedBits` |  |
+| `concurrent/` |  | `Backoff`, `ConcurrentCuckooTable`, `ConcurrentFlatTable`, `ConcurrentUnionFind`, `EventCount`, `LockFreePriorityQueue`, `MPMCQueue`, `MPSCInbox`, `MPSCQueue`, `MinBoard`, `MultiQueue`, `SPSCQueue`, `SingleWriterFlatTable`, `StealablePriorityQueue`, `WorkStealingDeque` |  |  |
+| `dictionary/` | `BinaryTrie`, `BitmapTrie`, `ChainedHashTable`, `CuckooHashing`, `DirectTable`, `HashFunctions`, `IndexedSkipList`, `KnuthHashing`, `OpenHashTable`, `PatriciaTrie`, `PerfectHashing`, `SkipList`, `SortedArrayDictionary`, `TableSize`, `Trie`, `TwoLevelDictionary`, `UniversalHashing`, `XFastTrie`, `YFastTrie` | `AdaptiveRadixTree`, `BucketCuckooTable`, `DenseHashMap`, `FastHash`, `FingerprintPerfectHash`, `FlatHashTable`, `MinimalPerfectHash`, `PointerTable`, `PositionIndex`, `RecSplit`, `RowFingerprint`, `SuccinctPatriciaTrie` | `RandomHashing` |  |
+| `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  |  |
+| `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `RecordFile` |  |
+| `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |
+| `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `Matching`, `MatrixGraph`, `MaxFlow`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths`, `Visit` | `Assignment`, `BlossomMatching`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `PushRelabel`, `Reoptimization`, `StaticGraph`, `StrongComponents` |  |  |
+| `interop/boost/` |  |  |  | `Dijkstra`, `FromBGL`, `Graph`, `Heap`, `Iterator` |
+| `interop/lemon/` |  |  |  | `Digraphs`, `Heaps`, `Maps`, `Observers`, `Parallel`, `Warm` |
+| `interop/std/` |  |  |  | `FlatMap`, `Pmr` |
+| `intractable/` | `Approximation`, `BranchAndBound`, `FifteenPuzzle`, `Heuristics`, `Pseudopolynomial` |  |  |  |
+| `memory/` | `Allocators`, `CellHeap` | `Arena`, `ConcurrentPool`, `PageHeap`, `PoolAllocator`, `SizeClassAllocator` | `HugePageAllocator`, `ObjectPool` |  |
+| `mfset/` | `ListMFSet`, `MFSet` | `RemUnionFind`, `RollbackUnionFind`, `UnionFind` |  |  |
+| `numeric/` | `BigInteger`, `BinaryInteger`, `Catalan`, `Combinatorics`, `Matrix`, `MatrixChain`, `NumberTheory`, `Polynomial`, `RSA`, `RandomNumbers`, `RandomSampling`, `Rational`, `SparseMatrix` | `CsrMatrix`, `DenseMatrix`, `DynamicCsr`, `RandomGenerators`, `SellMatrix`, `SparseAssembly` |  |  |
+| `optimization/` | `CoinChange`, `CoinGame`, `FractionalKnapsack`, `GridPaths`, `HouseProblems`, `IntervalCover`, `Intervals`, `Knapsack`, `KnapsackVariants`, `LinearPartition`, `OptimalSearchTree`, `SequenceProblems`, `ShortestJobFirst`, `StockTrading`, `WeightedIntervals` |  |  |  |
+| `parallel/` |  | `Affinity`, `Channels`, `Farm`, `FastFlowExecutor`, `Mailbox`, `OpenMPExecutor`, `ParallelGraph`, `ParallelGreedy`, `ParallelMerge`, `ParallelNumeric`, `ParallelShortestPaths`, `ParallelSort`, `ParallelText`, `Scratch`, `SpeculativeFor`, `TBBExecutor`, `ThreadPool` | `Executor` |  |
+| `priority/` | `FibonacciHeapPriorityQueue`, `HeapPriorityQueue`, `ListPriorityQueue`, `LoserTree`, `MeldableHeap`, `PriorityQueue`, `TreePriorityQueue` | `BucketQueue`, `DaryHeap`, `DialQueue`, `IndexedDaryHeap`, `IndexedHeapPair`, `LinkedHeapPriorityQueue`, `MinMaxHeap`, `MultiwayMerge`, `OrderKey`, `PairingHeap`, `QueueCustomization`, `RadixHeap`, `SequenceHeap` |  |  |
+| `queue/` | `ArrayQueue`, `Dequeue`, `LinkedQueue`, `MinDeque`, `MinQueue`, `QueueAlgorithms`, `RandomQueue`, `RealTimeMinDeque`, `RealTimeMinQueue`, `UniqueQueue` | `RingDeque`, `SlidingAggregate` |  |  |
+| `search/` | `BinarySearch`, `InterpolationSearch`, `KnuthSearches`, `LocalOptima`, `Minimum`, `MonotoneSearch`, `PGMIndex`, `Selection`, `SortedSearches` | `CompressedPGMIndex`, `CountLess`, `DynamicPGMIndex`, `NthElement`, `RangeMinimum`, `StaticSearch`, `WordRangeMinimum` |  |  |
+| `sequence/` | `ArraySequence`, `ContiguousDeque`, `CubishArrayStack`, `CursorList`, `DualArrayDeque`, `IndexedList`, `List`, `OrderMaintenanceList`, `Rearrangements`, `RootishArrayStack`, `SEList`, `SequenceAlgorithms`, `SequenceRange`, `SinglyList`, `SkipListSequence`, `TreapList`, `Treque`, `XorList` | `Fenwick`, `ListSort`, `ObservableArray`, `SmallVector`, `TieredVector` |  |  |
+| `set/` | `Bag`, `BloomFilter`, `BloomVariants`, `BoolSet`, `DictionarySet`, `HashMultiset`, `LinkedHashSet`, `ListSet`, `SetInterfaces`, `SetOperations`, `SortedIntersection`, `SortedListSet`, `SpaceEfficientSortedSet` | `BinaryFuseFilter`, `BlockedBloomFilter`, `CuckooFilter`, `GrafiteFilter`, `PrefixFilter`, `RibbonFilter`, `RoaringBitmap`, `VectorIntersection` |  |  |
+| `sort/` | `CountingSort`, `EngineeredQuickSorts`, `ExchangeSorts`, `ExternalSort`, `Heapsort`, `InsertionSort`, `KnuthSorts`, `MergeSort`, `MultikeyQuickSort`, `PigeonholeSort`, `QuickSort`, `SelectionSort`, `ShellSort`, `SortingNetworks`, `StrandSort`, `TreeSort` | `LearnedSort`, `PdqSort`, `QuicksortAdversary`, `RadixSort`, `RunSorts`, `SampleSort`, `Sort`, `StringSort`, `VectorQuickSort` | `Sorted` |  |
+| `stack/` | `ArrayStack`, `Expressions`, `MinStack`, `MultiStack`, `SequenceStack`, `StackAlgorithms` |  |  |  |
+| `string/` | `Alignment`, `Anagrams`, `ApproximateMatching`, `FrontCoding`, `Huffman`, `LongestCommonSubsequence`, `Lyndon`, `Palindromes`, `Parentheses`, `PrefixSearch`, `RearCoding`, `Segmentations`, `StringBreaking`, `StringMatching`, `SubsequenceProblems`, `SuffixApplications`, `SuffixArray`, `SuffixTree`, `WordBreak` | `AhoCorasick`, `EditDistance`, `LongestCommonExtension`, `MultiSearch`, `StringSearch`, `SuffixAutomaton`, `SuffixSorting` |  |  |
+| `succinct/` | `BPTree`, `BVGraph`, `BalancedParentheses`, `BitStream`, `BitVector`, `EliasFano`, `EliasFanoGraph`, `HuffmanWaveletTree`, `JacobsonTree`, `K2Tree`, `LoudsTree`, `RankSelect` | `CompactRankSelect`, `InterleavedRankSelect`, `LAVector`, `MoveStructure`, `PackedArray`, `PartitionedEliasFano`, `RRRBitVector`, `WaveletMatrix` |  |  |
+| `tree/` | `AVLTree`, `ArrayBinaryTree`, `BPlusTree`, `BTree`, `BinaryTree`, `BinaryTreeAlgorithms`, `ChildListTree`, `CursorBinaryTree`, `CursorTree`, `ExpressionTree`, `FingerTreap`, `HashedTreap`, `HeapByInsertion`, `LeftLeaningRedBlackTree`, `MeasuredSearchTree`, `ParentTree`, `PartialRebuildingTree`, `PreorderArrayTree`, `RandomizedSearchTree`, `ScapegoatTree`, `SearchTree`, `ThreadedTree`, `Treap`, `Tree` | `BTreeMap`, `JoinAlgorithms`, `JoinTree`, `LinkCutTree`, `MaterializedAggregate`, `SplayTree` |  |  |
 
 <!-- end of sets -->
 

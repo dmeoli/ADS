@@ -2103,6 +2103,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The customization points of the priority queues, queue_item_t,
+  queue_insert(), queue_min(), queue_deleteMin(), queue_handle_t and
+  queue_decrease(), moved from PriorityQueue.h to the new advanced header
+  priority/QueueCustomization.h, which PriorityQueue.h, now base with the
+  concepts PriorityQueue and AddressablePriorityQueue of the book,
+  includes; the module ads.base no longer exports the points, which
+  ads.advanced and ads export; the five headers marked both in
+  cmake/ads_sets.txt are thus split, and none is left in both; the test
+  programs split_priorityqueue and split_queuecustomization include each
+  header alone
+
 - The pattern-defeating quicksort, pdqSort() with its helpers, moved from
   EngineeredQuickSorts.h to the new advanced header sort/PdqSort.h, which
   EngineeredQuickSorts.h, now base with the dual-pivot and the three-way

@@ -306,9 +306,9 @@ priority/MinMaxHeap.h                 advanced
 priority/MultiwayMerge.h              advanced LoserTree for speed
 priority/OrderKey.h                   advanced
 priority/PairingHeap.h                advanced
-priority/PriorityQueue.h              both     TODO split: the concept of the
-                                               book and the CPOs of foreign
-                                               queues
+priority/PriorityQueue.h              base
+priority/QueueCustomization.h         advanced the CPOs of the queues,
+                                               split off PriorityQueue.h
 priority/RadixHeap.h                  advanced
 priority/SequenceHeap.h               advanced
 priority/TreePriorityQueue.h          base
@@ -510,7 +510,7 @@ tree/Tree.h                           base
 
 # the headers of core, base and both that include one of another set
 Capabilities.h                        uses priority/PriorityQueue.h
-                                           the CPOs of the queues (TODO split)
+                                           the concepts of the queues
 dictionary/BinaryTrie.h               uses dictionary/FlatHashTable.h
                                            the tables of the prefixes
 dictionary/UniversalHashing.h         uses dictionary/FastHash.h
@@ -535,6 +535,8 @@ graph/Visit.h                         uses graph/StrongComponents.h
                                            the components by one visit
 numeric/RandomSampling.h              uses priority/DaryHeap.h
                                            the weighted sample of the keys
+priority/PriorityQueue.h              uses priority/QueueCustomization.h
+                                           the access to the queues
 sequence/Treque.h                     uses queue/RingDeque.h
                                            the two halves
 set/Bag.h                             uses dictionary/FlatHashTable.h

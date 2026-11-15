@@ -829,12 +829,6 @@ using ADS::MeldableHeap;
 // priority/PriorityQueue.h
 using ADS::AddressablePriorityQueue;
 using ADS::PriorityQueue;
-using ADS::queue_decrease;
-using ADS::queue_deleteMin;
-using ADS::queue_handle_t;
-using ADS::queue_insert;
-using ADS::queue_item_t;
-using ADS::queue_min;
 
 // priority/TreePriorityQueue.h
 using ADS::TreePriorityQueue;

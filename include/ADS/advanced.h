@@ -144,7 +144,7 @@
 #include "ADS/priority/MultiwayMerge.h"
 #include "ADS/priority/OrderKey.h"
 #include "ADS/priority/PairingHeap.h"
-#include "ADS/priority/PriorityQueue.h"
+#include "ADS/priority/QueueCustomization.h"
 #include "ADS/priority/RadixHeap.h"
 #include "ADS/priority/SequenceHeap.h"
 #include "ADS/queue/RingDeque.h"
