@@ -2604,7 +2604,9 @@ $$
 $$
 
 *$M$ the least item of the vector, and $s + ( k - 2 ) m$ is the least cost
-of the sorts of the cycle by swaps of its own items.*
+of the sorts of the cycle by swaps of its own items. If no item is
+negative, the sum of (2.11) over the cycles is the least cost of all the
+sorts of the vector by swaps, which may also join the cycles.*
 
 *Proof.* Either $m$ is swapped in turn with each other item of the cycle,
 which takes part in one swap while $m$ takes part in $k - 1$, at the cost $(
@@ -2616,13 +2618,39 @@ by swaps of the items of the cycle makes at least $k - 1$ swaps by [Lemma
 item in a swap, and each of the $k$ items takes part once at least, since
 none is in its place. The cost, i.e., the sum of the items over the
 participations, is therefore at least $s$ for the first participation of
-each item, plus $m$ for each of the other $2 ( k - 1 ) - k = k - 2$. $\square$
+each item, plus $m$ for each of the other $2 ( k - 1 ) - k = k - 2$.
 
-Summed over the cycles, (2.11) gives the least cost over all the sequences
-of swaps, which may also join the cycles; this is the classical solution of
-the problem, which we do not prove here, and the test
-`lib_search.rearrangements` checks it against a search of the least cost
-(Dijkstra's algorithm on the permutations) on the vectors of up to 6
+For the last claim, write the cost (2.11) of a cycle $Z$ of $k \ge 1$ items
+as $f( Z ) = s - m + \varphi( k , m )$, with $\varphi( k , m ) = \min\{ ( k
+- 1 ) m , 2 m + ( k + 1 ) M \}$; for $k = 1$ this is 0, since $m , M \ge 0$.
+Let $\Phi$ be the sum of $f$ over the cycles of the permutation that sorts
+the vector, which is 0 on the sorted vector. We show that a swap of the
+items $x$ and $y$ lowers $\Phi$ by at most $x + y$, so that any sort costs
+at least the initial $\Phi$, which the sorts of the cycles above reach.
+If $x$ and $y$ are in two cycles $Z_1 \ni x$ and $Z_2 \ni y$, of $k_i$
+items, sum $s_i$ and least item $m_i$, with $m_1 \le m_2$, the swap joins
+them; since $x \ge m_1$ and $y \ge m_2$, it is enough that $\varphi( k_1 ,
+m_1 ) + \varphi( k_2 , m_2 ) \le \varphi( k_1 + k_2 , m_1 ) + m_1 + 2 m_2$.
+If $\varphi( k_1 + k_2 , m_1 ) = ( k_1 + k_2 - 1 ) m_1$, this follows from
+$\varphi( k_1 , m_1 ) \le ( k_1 - 1 ) m_1$ and $\varphi( k_2 , m_2 ) \le 2
+m_2 + ( k_2 + 1 ) m_1$, as $M \le m_1$; otherwise from the second terms of
+the two minima, whose sum is $2 m_1 + 2 m_2 + ( k_1 + k_2 + 2 ) M \le 3 m_1
++ 2 m_2 + ( k_1 + k_2 + 1 ) M$. If $x$ and $y$ are in one cycle $Z$ of $k$
+items and least item $m$, the swap splits it into $Z_1 \ni x$ and $Z_2 \ni
+y$, say with $m$ in $Z_1$, and it is enough that $\varphi( k_1 + k_2 , m )
+\le \varphi( k_1 , m ) + \varphi( k_2 , m_2 ) + m$. Of the four choices of
+the two terms on the right, $( k_1 - 1 ) m + ( k_2 - 1 ) m_2 + m \ge ( k_1
++ k_2 - 1 ) m$, since $m_2 \ge m$; the three others are at least $2 m + (
+k_1 + k_2 + 1 ) M$, since $k_1 m + 2 m_2 + ( k_2 + 1 ) M$ exceeds it by $k_1
+( m - M ) + 2 ( m_2 - m ) \ge 0$, $3 m + ( k_1 + 1 ) M + ( k_2 - 1 ) m_2$ by
+$( m - M ) + ( k_2 - 1 ) ( m_2 - M ) \ge 0$, and $3 m + 2 m_2 + ( k_1 + k_2
++ 2 ) M$ by more. $\square$
+
+The hypothesis on the signs cannot be dropped: if two items have a negative
+sum, repeating their swap twice lowers any cost, and no least cost exists,
+while `minimumSwapSort()` still returns the sum of (2.11). The test
+`lib_search.rearrangements` checks the sum against a search of the least
+cost (Dijkstra's algorithm on the permutations) on the vectors of up to 6
 distinct items.
 
 We remark that the two optima, the fewest swaps and the least cost, may come

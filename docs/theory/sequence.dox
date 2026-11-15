@@ -364,7 +364,12 @@
  with each other item of the cycle, which takes part in one swap while
  \f$ m \f$ takes part in \f$ k - 1 \f$, or \f$ M \f$ enters the cycle by a
  swap with \f$ m \f$, does the same \f$ k - 1 \f$ swaps, and is swapped back
- (Knuth, section 1.3.3, on the cycles of a permutation).
+ (Knuth, section 1.3.3, on the cycles of a permutation). When no item is
+ negative, the sum of (5) over the cycles is the least cost of all the sorts
+ by swaps: written as \f$ s - m + \min\{ ( k - 1 ) m , 2 m + ( k + 1 ) M \}
+ \f$, which is 0 on a cycle of one item, it falls by at most \f$ x + y \f$
+ at a swap of \f$ x \f$ and \f$ y \f$, whether the swap joins two cycles
+ or splits one; with two items of negative sum no least cost exists.
 
  \section theory_sequence_ods Lists by rank (Morin's book)
 
