@@ -139,20 +139,24 @@ class CoalescedHashTable
   /// the pair of the place \f$ i \f$
   static auto read( const auto & o , std::size_t i ) {
    return(
-     std::pair< const K & , const V & >( o.f_T[ i ].key , o.f_T[ i ].value ) );
+     PairRef< const K & , const V & >( o.f_T[ i ].key , o.f_T[ i ].value ) );
    }
   };
 
  /// the type of the items, for the standard library
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ /// the type of the keys
+ using key_type = K;
+ /// the type of the values
+ using mapped_type = V;
  /// the type of the sizes
  using size_type = std::size_t;
  /// the type of the distances between two iterators
  using difference_type = std::ptrdiff_t;
  /// a reference to an item
- using reference = std::pair< const K & , const V & >;
+ using reference = PairRef< const K & , const V & >;
  /// a constant reference to an item
- using const_reference = std::pair< const K & , const V & >;
+ using const_reference = PairRef< const K & , const V & >;
  /// the iterator on the items, constant
  using const_iterator = SlotIterator< CoalescedHashTable , Places >;
  /// the iterator on the items
@@ -270,6 +274,10 @@ class BrentHashTable
 
  /// the type of the items, for the standard library
  using value_type = std::pair< K , V >;
+ /// the type of the keys
+ using key_type = K;
+ /// the type of the values
+ using mapped_type = V;
  /// the type of the sizes
  using size_type = std::size_t;
  /// the type of the distances between two iterators

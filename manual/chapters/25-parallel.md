@@ -1650,7 +1650,10 @@ depth by $O( d L \log n + \log^2 n )$, $L$ the largest distance. With
 $\Delta$ at the least cost one has the algorithm of Dijkstra by buckets,
 with the least work and the most steps.
 
-The two stepping algorithms are declared as
+The two stepping algorithms are declared as below, and both return a vector
+of `g.bound()` places, indexed by the names of the nodes: on a graph whose
+nodes were deleted the names run up to `bound()`, beyond `n()`, and a name left
+unused holds `infinity()`, as a node not reached does.
 
 ```cpp
 // declarations of <ADS/parallel/ParallelShortestPaths.h>

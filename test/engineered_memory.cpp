@@ -123,6 +123,52 @@ void requests( R & r , std::size_t b , std::size_t a )
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
+
+/*--------------------------------------------------------------------------*/
+
+ADS_TEST( "pool-epochs-value-init" )
+{
+ // make() with no arguments value-initializes, in every epoch: an object
+ // of trivial type is all zeros on a place or a slot of an old epoch, or
+ // freed, whatever the old object held
+ struct Plain
+ {
+  long a;
+  double b;
+  int c[ 3 ];
+  };
+ auto zero = []( const Plain & x ) {
+  return( ( x.a == 0 ) && ( x.b == 0 ) && ( x.c[ 0 ] == 0 ) &&
+	   ( x.c[ 1 ] == 0 ) && ( x.c[ 2 ] == 0 ) );
+  };
+ Arena< Plain > E( 4 );
+ ObjectPool< Plain > O( 4 );
+ Arena< long > L( 4 );
+ ObjectPool< long > M( 4 );
+ for( int e = 0 ; e < 3 ; ++e ) {
+  std::vector< Plain * > F;
+  for( int i = 0 ; i < 10 ; ++i ) {
+   Plain * x = E.make();
+   Plain * y = O.make();
+   CHECK( zero( *x ) && zero( *y ) );
+   CHECK( ( *L.make() == 0 ) && ( *M.make() == 0 ) );
+   *x = *y = Plain{ -1 , 2.5 , { 7 , 8 , 9 } };
+   F.push_back( y );
+   }
+  // the freed slots, taken again in the epoch
+  for( Plain * y : F )
+   O.free( y );
+  for( int i = 0 ; i < 10 ; ++i )
+   CHECK( zero( *O.make() ) );
+  for( long & x : L )
+   x = -3;
+  E.clear();
+  O.clear();
+  L.clear();
+  M.clear();
+  }
+ }
+
 /*--------------------------------------------------------------------------*/
 
 // PoolResource: every size from 1 to past the largest class, at the

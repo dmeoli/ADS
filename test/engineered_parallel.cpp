@@ -31,6 +31,7 @@
 #include "ADS/parallel/FastFlowExecutor.h"
 #include "ADS/concurrent/ConcurrentUnionFind.h"
 #include "ADS/graph/ArrayGraph.h"
+#include "ADS/graph/ListGraph.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
 #include "ADS/numeric/CsrMatrix.h"
@@ -1270,6 +1271,43 @@ ADS_TEST( "parallel-stepping" )
     { 1e-9 , 0.1 , 1e300 } );
   }
  detail::keepFrom = 4096;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ADS_TEST( "parallel-stepping-holes" )
+{
+ // a graph with deleted nodes, whose names run up to bound() > n(): the
+ // distances have bound() places, infinity() at the unused names
+ const int INF = infinity< int >();
+ ListGraph< int > h( 5 );
+ h.insertEdge( 0 , 2 , 2 );
+ h.insertEdge( 2 , 4 , 3 );
+ h.insertEdge( 0 , 4 , 7 );
+ h.deleteNode( 1 );
+ h.deleteNode( 3 );
+ const std::vector< int > e{ 0 , INF , 2 , INF , 5 };
+ // on 2000 names, one in three deleted, against dijkstra()
+ std::mt19937_64 r( 41 );
+ ListGraph< int > g( 2000 );
+ for( int k = 0 ; k < 8000 ; ++k ) {
+  const int u = int( r() % 2000 ) , v = int( r() % 2000 );
+  if( u != v )
+   g.insertEdge( u , v , int( r() % 100 ) );
+  }
+ for( int v = 1 ; v < 2000 ; v += 3 )
+  g.deleteNode( v );
+ const auto ref = dijkstra( g , 0 ).d;
+ onEach( [ & ]( auto & ex ) {
+  for( const int delta : { 1 , 16 , 1 << 30 } ) {
+   CHECK( deltaStepping( ex , h , 0 , delta ) == e );
+   CHECK( deltaStepping( ex , g , 0 , delta ) == ref );
+   }
+  for( const std::size_t rho : { std::size_t( 1 ) , std::size_t( 50 ) } ) {
+   CHECK( rhoStepping( ex , h , 0 , rho ) == e );
+   CHECK( rhoStepping( ex , g , 0 , rho ) == ref );
+   }
+  } );
  }
 
 /*--------------------------------------------------------------------------*/

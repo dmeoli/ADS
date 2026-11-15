@@ -304,6 +304,12 @@ $\beta$ the number of the blocks.
 
 We call an *epoch* of the arena the time from its construction, or from a
 call of `clear()`, to the next call of `clear()` (or to the destruction).
+Since `make()` builds the object as `T( args... )`, a call with no
+arguments value-initializes it in every epoch, so that an object of trivial
+type made on a place of an old epoch is all zeros, whatever the object of
+that epoch held (the test `engineered_memory.pool-epochs-value-init`
+checks it, and the same holds for `ObjectPool` below, on a freed slot as on
+a slot of an old epoch).
 
 <span id="lem-5-4"></span>**Lemma 5.4.** *After $z$ calls of `make()`
 in an epoch that return an object, and any number of calls that throw, an

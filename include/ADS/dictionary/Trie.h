@@ -54,6 +54,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
 #include <cstddef>
 #include <iterator>
@@ -89,9 +90,9 @@ class TrieIterator
 {
  public:
  /// a reference to an item
- using reference = std::pair< std::string , const V & >;
+ using reference = PairRef< std::string , const V & >;
  /// the type of the items, for the standard library
- using value_type = reference;
+ using value_type = std::pair< std::string , V >;
  /// the type of the distances between two iterators
  using difference_type = std::ptrdiff_t;
  /// the concept of the iterator, for C++20
@@ -242,15 +243,19 @@ class Trie
  // forward; the key is rebuilt along the path
 
  /// the type of the items, for the standard library
- using value_type = std::pair< std::string , const V & >;
+ using value_type = std::pair< std::string , V >;
+ /// the type of the keys
+ using key_type = std::string;
+ /// the type of the values
+ using mapped_type = V;
  /// the type of the sizes
  using size_type = std::size_t;
  /// the type of the distances between two iterators
  using difference_type = std::ptrdiff_t;
  /// a reference to an item
- using reference = value_type;
+ using reference = PairRef< std::string , const V & >;
  /// a constant reference to an item
- using const_reference = value_type;
+ using const_reference = reference;
  /// the iterator on the items, constant
  using const_iterator = detail::TrieIterator< Node , V , false >;
  /// the iterator on the items
@@ -367,15 +372,19 @@ class RadixTree
  // forward; the key is rebuilt along the path
 
  /// the type of the items, for the standard library
- using value_type = std::pair< std::string , const V & >;
+ using value_type = std::pair< std::string , V >;
+ /// the type of the keys
+ using key_type = std::string;
+ /// the type of the values
+ using mapped_type = V;
  /// the type of the sizes
  using size_type = std::size_t;
  /// the type of the distances between two iterators
  using difference_type = std::ptrdiff_t;
  /// a reference to an item
- using reference = value_type;
+ using reference = PairRef< std::string , const V & >;
  /// a constant reference to an item
- using const_reference = value_type;
+ using const_reference = reference;
  /// the iterator on the items, constant
  using const_iterator = detail::TrieIterator< Node , V , true >;
  /// the iterator on the items

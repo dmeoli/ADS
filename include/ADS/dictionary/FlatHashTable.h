@@ -394,15 +394,19 @@ class FlatHashTable
  // removed pair, an insertion that rebuilds the table all of them
 
  /// the type of the items, for the standard library
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ /// the type of the keys
+ using key_type = K;
+ /// the type of the values
+ using mapped_type = V;
  /// the type of the sizes
  using size_type = std::size_t;
  /// the type of the distances between two iterators
  using difference_type = std::ptrdiff_t;
  /// a reference to an item
- using reference = std::pair< const K & , const V & >;
+ using reference = PairRef< const K & , const V & >;
  /// a constant reference to an item
- using const_reference = std::pair< const K & , const V & >;
+ using const_reference = PairRef< const K & , const V & >;
 
  /// the iterator on the full places [see below]
  class const_iterator;
@@ -645,9 +649,9 @@ class FlatHashTable
  {
   public:
   /// the type of the items, for the standard library
-  using value_type = std::pair< const K & , const V & >;
+  using value_type = std::pair< K , V >;
   /// a reference to an item
-  using reference = value_type;
+  using reference = PairRef< const K & , const V & >;
   /// the type of the distances between two iterators
   using difference_type = std::ptrdiff_t;
   /// the concept of the iterator, for C++20

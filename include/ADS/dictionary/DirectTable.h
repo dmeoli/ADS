@@ -126,20 +126,24 @@ class DirectTable
    }
   /// the pair of the place \f$ i \f$, its key computed as \f$ a + i \f$
   static auto read( const auto & o , std::size_t i ) {
-   return( std::pair< long , const V & >( o.f_a + long( i ) , *o.f_A[ i ] ) );
+   return( PairRef< long , const V & >( o.f_a + long( i ) , *o.f_A[ i ] ) );
    }
   };
 
  /// the type of the items, for the standard library
- using value_type = std::pair< long , const V & >;
+ using value_type = std::pair< long , V >;
+ /// the type of the keys
+ using key_type = long;
+ /// the type of the values
+ using mapped_type = V;
  /// the type of the sizes
  using size_type = std::size_t;
  /// the type of the distances between two iterators
  using difference_type = std::ptrdiff_t;
  /// a reference to an item
- using reference = std::pair< long , const V & >;
+ using reference = PairRef< long , const V & >;
  /// a constant reference to an item
- using const_reference = std::pair< long , const V & >;
+ using const_reference = PairRef< long , const V & >;
  /// the iterator on the items, constant
  using const_iterator = SlotIterator< DirectTable , Places >;
  /// the iterator on the items

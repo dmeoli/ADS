@@ -74,6 +74,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/dictionary/RandomHashing.h"
 
 #include <algorithm>
@@ -248,9 +249,9 @@ class SkipList
  {
   public:
   /// a reference to an item
-  using reference = std::pair< const K & , const V & >;
+  using reference = PairRef< const K & , const V & >;
   /// the type of the items, for the standard library
-  using value_type = reference;
+  using value_type = std::pair< K , V >;
   /// the type of the distances between two iterators
   using difference_type = std::ptrdiff_t;
   /// the concept of the iterator, for C++20
@@ -288,15 +289,19 @@ class SkipList
   };
 
  /// the type of the items, for the standard library
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ /// the type of the keys
+ using key_type = K;
+ /// the type of the values
+ using mapped_type = V;
  /// the type of the sizes
  using size_type = std::size_t;
  /// the type of the distances between two iterators
  using difference_type = std::ptrdiff_t;
  /// a reference to an item
- using reference = value_type;
+ using reference = PairRef< const K & , const V & >;
  /// a constant reference to an item
- using const_reference = value_type;
+ using const_reference = reference;
  /// the iterator on the items
  using iterator = const_iterator;
 

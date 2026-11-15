@@ -241,20 +241,20 @@ class LinkedHeapPriorityQueue
    }
   /// the priority and the item of the node \f$ n \f$
   static auto read( const auto * n ) {
-   return( std::pair< const P & , const T & >( n->priority , n->value ) );
+   return( PairRef< const P & , const T & >( n->priority , n->value ) );
    }
   };
 
  /// the type of the items of the view
- using value_type = std::pair< const P & , const T & >;
+ using value_type = std::pair< P , T >;
  /// the type of the sizes
  using size_type = std::size_t;
  /// the type of the distances between iterators
  using difference_type = std::ptrdiff_t;
  /// the type of a reference to an item of the view
- using reference = value_type;
+ using reference = PairRef< const P & , const T & >;
  /// the type of a constant reference to an item
- using const_reference = value_type;
+ using const_reference = reference;
  /// the iterator of the view, constant
  using const_iterator = PathIterator< LinkedHeapPriorityQueue , Shape >;
  /// the same as `const_iterator`

@@ -253,9 +253,9 @@ class FibonacciHeapPriorityQueue
   public:
   /// the pair of the priority and of the item of a node
   /// the type of a reference to an item of the view
-  using reference = std::pair< const P & , const T & >;
+  using reference = PairRef< const P & , const T & >;
   /// the type of the items of the view
-  using value_type = reference;
+  using value_type = std::pair< P , T >;
   /// the type of the distances between iterators
   using difference_type = std::ptrdiff_t;
   /// a forward iterator for the concepts of C++20
@@ -310,15 +310,15 @@ class FibonacciHeapPriorityQueue
   };
 
  /// the type of the items of the view
- using value_type = std::pair< const P & , const T & >;
+ using value_type = std::pair< P , T >;
  /// the type of the sizes
  using size_type = std::size_t;
  /// the type of the distances between iterators
  using difference_type = std::ptrdiff_t;
  /// the type of a reference to an item of the view
- using reference = value_type;
+ using reference = PairRef< const P & , const T & >;
  /// the type of a constant reference to an item
- using const_reference = value_type;
+ using const_reference = reference;
  /// the same as `const_iterator`
  using iterator = const_iterator;
 

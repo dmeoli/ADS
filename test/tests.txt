@@ -641,6 +641,7 @@ interop  restricted           viste di pile, code e heap
 interop  dictionaries         viste di dizionari e insiemi
 interop  trees                viste di alberi e heap
 interop  nodes-and-graphs     alberi di nodi, grafi, MFSet, matrici, arena
+interop  dictionary-values    coppie per valore dei dizionari, ranges::to
 
 # the classic problems of the exams, promoted to the library
 lib_strings palindromic-substring sottostringa palindroma più lunga, Manacher
@@ -1777,6 +1778,7 @@ engineered_memory  concurrent-pool-threads    liberazioni da altri thread
 engineered_memory  arena-epochs               clear() di Arena, blocchi riusati
 engineered_memory  object-pool-epochs         clear() di ObjectPool, blocchi
 engineered_memory  pool-epochs-threads        epoche dei pool di più lavoratori
+engineered_memory  pool-epochs-value-init     make() dopo clear(), oggetti a zero
 
 # the engineered structures of the rows of a model, beyond the book
 engineered_sparse  position-index             indice delle posizioni, Robin Hood
@@ -1796,6 +1798,7 @@ engineered_parallel  parallel-rank-select  rank e select costruiti sugli esecuto
 engineered_parallel  parallel-wavelet-matrix  wavelet matrix, 8 livelli a passata
 engineered_parallel  parallel-huffman-wavelet-tree  wavelet tree di Huffman parallelo
 engineered_parallel  parallel-stepping   Delta e rho-stepping contro Dijkstra
+engineered_parallel  parallel-stepping-holes  stepping su un grafo con nodi cancellati
 engineered_parallel  concurrent-union-find  union-find concorrente
 
 # the runtime of the long-lived workers, beyond the book

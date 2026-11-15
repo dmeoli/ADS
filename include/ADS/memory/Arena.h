@@ -103,7 +103,9 @@ class Arena
  ~Arena();
 
  /// a new object built from `args`, whose address never changes in the
- /// epoch
+ /// epoch; with no `args` the object is value-initialized, `T()`, in every
+ /// epoch and on every place, so that an object of trivial type is all
+ /// zeros whatever the place held in an old epoch
  ///
  /// In pseudocode (the arena of Hanson, beyond the book), with
  /// \f$ \mathit{used} \f$ the objects of the block \f$ c \f$ in use and

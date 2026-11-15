@@ -52,6 +52,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/dictionary/RandomHashing.h"
 
 #include <algorithm>
@@ -218,9 +219,9 @@ class IndexedSkipList
  {
   public:
   /// a reference to an item
-  using reference = std::pair< const K & , const V & >;
+  using reference = PairRef< const K & , const V & >;
   /// the type of the items, for the standard library
-  using value_type = reference;
+  using value_type = std::pair< K , V >;
   /// the type of the distances between two iterators
   using difference_type = std::ptrdiff_t;
   /// the concept of the iterator, for C++20
@@ -258,12 +259,16 @@ class IndexedSkipList
   };
 
  /// the type of the items, for the standard library
- using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;           ///< the type of the sizes
- using difference_type = std::ptrdiff_t;  ///< the distances
- using reference = value_type;            ///< a pair, by value
- using const_reference = value_type;      ///< a pair, by value
- using iterator = const_iterator;         ///< the constant iterator
+ using value_type = std::pair< K , V >;
+ /// the type of the keys
+ using key_type = K;
+ /// the type of the values
+ using mapped_type = V;
+ using size_type = std::size_t;                      ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;             ///< the distances
+ using reference = PairRef< const K & , const V & >;  ///< references, by value
+ using const_reference = reference;                  ///< the same
+ using iterator = const_iterator;                    ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {

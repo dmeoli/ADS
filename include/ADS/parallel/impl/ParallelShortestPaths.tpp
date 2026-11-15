@@ -98,7 +98,7 @@ std::vector< typename G::Weight > stepping( E & ex , const G & g , int s ,
 					    T && theta )
 {
  using D = typename G::Weight;
- const int n = g.n();
+ const int n = g.bound();  // the names, some unused if nodes were deleted
  std::vector< D > d( std::size_t( n ) , infinity< D >() );
  std::vector< std::uint8_t > in( std::size_t( n ) , 0 );
  d[ std::size_t( s ) ] = D( 0 );
@@ -290,7 +290,7 @@ std::vector< typename G::Weight > bucketStepping( E & ex , const G & g ,
  using D = typename G::Weight;
  constexpr std::size_t kWindow = 1024 , kFuse = 1000 , kChunk = 64;
  constexpr std::size_t kNone = std::numeric_limits< std::size_t >::max();
- const int n = g.n();
+ const int n = g.bound();  // the names, some unused if nodes were deleted
  std::vector< D > d( std::size_t( n ) , infinity< D >() );
  d[ std::size_t( s ) ] = D( 0 );
  auto bucket = [ delta ]( D x ) -> std::size_t {
@@ -510,7 +510,9 @@ bool steppingFixedPoint( const G & g , int s ,
 {
  using D = typename G::Weight;
  bool ok = d[ std::size_t( s ) ] == D( 0 );
- for( int v = 0 ; v < g.n() ; ++v )
+ if( d.size() != std::size_t( g.bound() ) )
+  return( false );
+ for( const int v : g.V() )
   g.forEachEdge( v , [ & ]( int u , const D & w ) {
    ok = ok && ( w >= D( 0 ) );
    if( d[ std::size_t( v ) ] < infinity< D >() )

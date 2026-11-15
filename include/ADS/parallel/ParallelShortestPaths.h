@@ -125,7 +125,8 @@ namespace ADS
 {
 
 /// the distances from \f$ s \f$ by the \f$ \Delta \f$-stepping of Meyer and
-/// Sanders, `infinity()` for the nodes not reached
+/// Sanders, `infinity()` for the nodes not reached and for the unused names,
+/// in a vector of `g.bound()` places
 ///
 /// In pseudocode (Meyer and Sanders, on the buckets of each thread of the
 /// GAP benchmark suite, beyond the book), \f$ B_k[ b ] \f$ the bucket
@@ -195,7 +196,8 @@ template< Executor E , Graph G >
 deltaStepping( E & ex , const G & g , int s , typename G::Weight delta );
 
 /// the distances from \f$ s \f$ by the \f$ \rho \f$-stepping of Dong, Gu,
-/// Sun and Zhang, `infinity()` for the nodes not reached
+/// Sun and Zhang, `infinity()` for the nodes not reached and for the unused
+/// names, in a vector of `g.bound()` places
 ///
 /// In pseudocode (Dong, Gu, Sun and Zhang, beyond the book), \f$ A \f$
 /// the active nodes:

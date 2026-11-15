@@ -128,6 +128,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 #include "ADS/Portable.h"
 #include "ADS/memory/ObjectPool.h"
 #include "ADS/search/CountLess.h"
@@ -396,13 +397,17 @@ class BTreeMap
 
  class const_iterator;
 
- /// the pairs of constant references ( key , value )
- using value_type = std::pair< const K & , const V & >;
+ /// the pairs ( key , value ) by value, which own their copies
+ using value_type = std::pair< K , V >;
+ /// the type of the keys
+ using key_type = K;
+ /// the type of the values
+ using mapped_type = V;
  using size_type = std::size_t;           ///< the type of the sizes
  using difference_type = std::ptrdiff_t;  ///< the type of the distances
- using reference = value_type;            ///< a pair, by value
- using const_reference = value_type;      ///< a pair, by value
- using iterator = const_iterator;         ///< the constant iterator
+ using reference = PairRef< const K & , const V & >;  ///< references, by value
+ using const_reference = reference;                  ///< the same
+ using iterator = const_iterator;                    ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const;
@@ -630,9 +635,10 @@ class BTreeMap
  class const_iterator
  {
   public:
-  /// a pair of constant references, the key and its value
-  using value_type = std::pair< const K & , const V & >;
-  using reference = value_type;            ///< a pair, by value
+  /// the pairs ( key , value ) by value, which own their copies
+  using value_type = std::pair< K , V >;
+  /// a pair of references, by value
+  using reference = PairRef< const K & , const V & >;
   using difference_type = std::ptrdiff_t;  ///< the type of the distances
   /// the category of the iterator for the concepts of C++20, bidirectional
   using iterator_concept = std::bidirectional_iterator_tag;

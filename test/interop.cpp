@@ -25,15 +25,23 @@
 
 #include "ADSTest.h"
 
+#include "ADS/dictionary/AdaptiveRadixTree.h"
+#include "ADS/dictionary/BinaryTrie.h"
+#include "ADS/dictionary/BitmapTrie.h"
+#include "ADS/dictionary/BucketCuckooTable.h"
 #include "ADS/dictionary/ChainedHashTable.h"
+#include "ADS/dictionary/CuckooHashing.h"
 #include "ADS/dictionary/DirectTable.h"
-#include "ADS/dictionary/KnuthHashing.h"
 #include "ADS/dictionary/FlatHashTable.h"
+#include "ADS/dictionary/IndexedSkipList.h"
+#include "ADS/dictionary/KnuthHashing.h"
 #include "ADS/dictionary/OpenHashTable.h"
 #include "ADS/dictionary/PointerTable.h"
 #include "ADS/dictionary/SkipList.h"
 #include "ADS/dictionary/SortedArrayDictionary.h"
 #include "ADS/dictionary/Trie.h"
+#include "ADS/dictionary/UniversalHashing.h"
+#include "ADS/dictionary/XFastTrie.h"
 #include "ADS/graph/ArrayGraph.h"
 #include "ADS/graph/ListGraph.h"
 #include "ADS/graph/MatrixGraph.h"
@@ -69,10 +77,19 @@
 #include "ADS/tree/ArrayBinaryTree.h"
 #include "ADS/tree/BPlusTree.h"
 #include "ADS/tree/BTree.h"
+#include "ADS/tree/BTreeMap.h"
 #include "ADS/tree/BinaryTree.h"
 #include "ADS/tree/CursorBinaryTree.h"
 #include "ADS/tree/CursorTree.h"
+#include "ADS/tree/FingerTreap.h"
+#include "ADS/tree/HashedTreap.h"
+#include "ADS/tree/JoinTree.h"
+#include "ADS/tree/LeftLeaningRedBlackTree.h"
+#include "ADS/tree/MeasuredSearchTree.h"
+#include "ADS/tree/PartialRebuildingTree.h"
 #include "ADS/tree/PreorderArrayTree.h"
+#include "ADS/tree/RandomizedSearchTree.h"
+#include "ADS/tree/ScapegoatTree.h"
 #include "ADS/tree/SearchTree.h"
 #include "ADS/tree/SplayTree.h"
 #include "ADS/tree/ThreadedTree.h"
@@ -92,6 +109,10 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <version>
+#if defined( __cpp_lib_format_ranges )
+ #include <format>
+#endif
 
 #if __has_include( <boost/range/algorithm/count.hpp> )
 #include <boost/range/algorithm/count.hpp>
@@ -917,6 +938,158 @@ ADS_TEST( "nodes-and-graphs" )
   R0.make( k );
  CHECK( std::ranges::equal( R0 , std::views::iota( 0 , 8 ) ) );
  CHECK( *std::prev( R0.end() ) == 7 && R0.end() - R0.begin() == 8 );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+/// the items of the dictionary that make() gives, filled by insert( k , v )
+/// for the keys k = key( i ) and the values 10 i, i = 0 , ... , 49: their
+/// value type is the pair of the copies, so that a vector of them outlives
+/// the dictionary, and their reference a PairRef (or a true reference, for
+/// the tables that keep the pairs), tuple-like, of iterators of the
+/// concepts of C++20
+template< class D , class M , class Key >
+void checkValueType( M && make , Key && key )
+{
+ using It = decltype( std::ranges::begin( std::declval< const D & >() ) );
+ using R = std::iter_reference_t< It >;
+ using P = std::ranges::range_value_t< const D >;
+ static_assert( std::forward_iterator< It > );
+ static_assert( std::constructible_from< P , R > &&
+		std::common_reference_with< R && , P & > );
+ static_assert( ! std::is_reference_v< typename P::first_type > &&
+		! std::is_reference_v< typename P::second_type > &&
+		! std::same_as< typename P::first_type , std::string_view > );
+ static_assert( std::same_as< P , typename D::value_type > );
+ static_assert( std::same_as< R , typename D::reference > );
+ std::vector< P > out;
+ {
+  std::unique_ptr< D > d = make();
+  for( int i = 0 ; i < 50 ; ++i )
+   d->insert( key( i ) , 10 * i );
+#if defined( __cpp_lib_ranges_to_container )
+  out = std::ranges::to< std::vector >( *d );
+#else
+  out.assign( std::ranges::begin( *d ) , std::ranges::end( *d ) );
+#endif
+  // the keys by std::views::keys, the pairs by the structured bindings
+  std::size_t n = 0;
+#if ! defined( __cpp_lib_ranges_zip )
+  static_assert( requires { *d | std::views::keys; } );
+#endif
+  if constexpr( requires { *d | std::views::keys; } )
+   for( const auto & k : *d | std::views::keys )
+    n += std::ranges::find( out , k , &P::first ) != out.end();
+  else  // C++23 takes no PairRef of class type for std::views::keys
+   for( const auto & p : *d )
+    n += std::ranges::find( out , P( p ).first , &P::first ) != out.end();
+  CHECK( n == 50 );
+  for( const auto & [ k , v ] : *d )
+   CHECK( std::ranges::find( out , P( k , v ) ) != out.end() );
+  CHECK( std::ranges::count_if(
+	   *d , []( const auto & p ) { return( p.second >= 250 ); } ) == 25 );
+#if defined( __cpp_lib_format_ranges )
+  CHECK( std::format( "{}" , *std::ranges::begin( *d ) ) ==
+	 std::format( "{}" , out.front() ) );
+#endif
+  }  // the dictionary is gone, the pairs of out are copies
+ CHECK( out.size() == 50 );
+ std::vector< int > v;
+ for( const auto & p : out )
+  v.push_back( int( p.second ) );
+ std::ranges::sort( v );
+ for( int i = 0 ; i < 50 ; ++i )
+  CHECK( v[ std::size_t( i ) ] == 10 * i );
+ }
+
+/// checkValueType() on a dictionary D built by its default constructor
+template< class D , class Key >
+void checkValueType( Key && key )
+{
+ checkValueType< D >( []() { return( std::make_unique< D >() ); } , key );
+ }
+
+ADS_TEST( "dictionary-values" )
+{
+ auto i = []( int i ) { return( i ); };
+ auto u = []( int i ) { return( unsigned( i ) ); };
+ auto l = []( int i ) { return( long( i ) ); };
+ auto w = []( int i ) { return( "k" + std::to_string( i ) ); };
+ // the dictionaries whose constructor takes a size
+ checkValueType< ChainedHashTable< int , int > >(
+   []() { return( std::make_unique< ChainedHashTable< int ,
+						      int > >( 37 ) ); } ,
+   i );
+ checkValueType< OpenHashTable< int , int > >(
+   []() {
+    return( std::make_unique< OpenHashTable< int , int > >(
+      211 , Probing::linear() ) );
+    } ,
+   i );
+ checkValueType< BrentHashTable< int , int > >(
+   []() { return( std::make_unique< BrentHashTable< int , int > >( 211 ) ); } ,
+   i );
+ checkValueType< CoalescedHashTable< int , int > >(
+   []() {
+    return( std::make_unique< CoalescedHashTable< int , int > >( 180 , 31 ) );
+    } ,
+   i );
+ checkValueType< DLeftHashTable< int , int > >(
+   []() {
+    return( std::make_unique< DLeftHashTable< int , int > >( 64 , 2 ) );
+    } ,
+   i );
+ checkValueType< DirectTable< int > >(
+   []() { return( std::make_unique< DirectTable< int > >( 0 , 99 ) ); } , l );
+ checkValueType< BPlusTree< int , int > >(
+   []() { return( std::make_unique< BPlusTree< int , int > >( 4 ) ); } , i );
+ // the others
+ checkValueType< FlatHashTable< int , int > >( i );
+ checkValueType< BucketCuckooTable< int , int > >( i );
+ checkValueType< CuckooHashTable< int , int > >( i );
+ checkValueType< SkipList< int , int > >( i );
+ checkValueType< IndexedSkipList< int , int > >( i );
+ checkValueType< Trie< int > >( w );
+ checkValueType< RadixTree< int > >( w );
+ checkValueType< AdaptiveRadixTree< int > >( w );
+ checkValueType< BitmapTrie< int > >( w );
+ checkValueType< BinaryTrie< unsigned , int > >( u );
+ checkValueType< XFastTrie< unsigned , int > >( u );
+ checkValueType< BTreeMap< int , int > >( i );
+ checkValueType< BTree< int , int > >( i );
+ checkValueType< RedBlackTree< int , int > >( i );
+ checkValueType< AVLTree< int , int > >( i );
+ checkValueType< LeftLeaningRedBlackTree< int , int > >( i );
+ checkValueType< SplayTree< int , int > >( i );
+ checkValueType< Treap< int , int > >( i );
+ checkValueType< FingerTreap< int , int > >( i );
+ checkValueType< HashedTreap< int , int > >( i );
+ checkValueType< RandomizedSearchTree< int , int > >( i );
+ checkValueType< MeasuredSearchTree< int , int > >( i );
+ checkValueType< ScapegoatTree< int , int > >( i );
+ checkValueType< WeightRebuildTree< int , int > >( i );
+ checkValueType< JoinTree< int , int > >( i );
+ // the priority queues, whose pairs are ( priority , item )
+ std::vector< std::pair< int , int > > q , h;
+ {
+  FibonacciHeapPriorityQueue< int > Q2;
+  LinkedHeapPriorityQueue< int > H2;
+  for( int k = 0 ; k < 20 ; ++k ) {
+   Q2.insert( k , 3 * k );
+   H2.insert( k , 3 * k );
+   }
+  static_assert( std::same_as< std::ranges::range_value_t< decltype( Q2 ) > ,
+			       std::pair< int , int > > );
+  static_assert( std::same_as< std::ranges::range_value_t< decltype( H2 ) > ,
+			       std::pair< int , int > > );
+  q.assign( Q2.begin() , Q2.end() );
+  h.assign( H2.begin() , H2.end() );
+  }
+ std::ranges::sort( q );
+ std::ranges::sort( h );
+ CHECK( q.size() == 20 && q == h );
+ for( int k = 0 ; k < 20 ; ++k )
+  CHECK( q[ std::size_t( k ) ] == std::pair( 3 * k , k ) );
  }
 
 }  // end( namespace )

@@ -68,6 +68,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Iterators.h"
 
 #include <array>
 #include <bit>
@@ -246,12 +247,16 @@ class BitmapTrie
   public:
   /// the category of the iterator
   using iterator_category = std::bidirectional_iterator_tag;
-  /// the pair of references to a string and its value
-  using value_type = std::pair< const std::string & , const V & >;
+  /// the pairs ( key , value ) by value, which own their copies
+  using value_type = std::pair< std::string , V >;
+  /// the type of the keys
+  using key_type = std::string;
+  /// the type of the values
+  using mapped_type = V;
   /// the type of the distances between two iterators
   using difference_type = std::ptrdiff_t;
-  /// a pair, by value
-  using reference = value_type;
+  /// a pair of references, by value
+  using reference = PairRef< const std::string & , const V & >;
   /// no pointer: the pairs are made on the fly
   using pointer = void;
 
@@ -305,10 +310,10 @@ class BitmapTrie
  using size_type = std::size_t;
  /// the type of the distances between two iterators
  using difference_type = std::ptrdiff_t;
- /// a pair, by value
- using reference = value_type;
- /// a pair, by value
- using const_reference = value_type;
+ /// a pair of references, by value
+ using reference = typename const_iterator::reference;
+ /// a pair of references, by value
+ using const_reference = reference;
  /// the iterator on the items
  using iterator = const_iterator;
 

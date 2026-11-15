@@ -2552,8 +2552,8 @@ Like the other dictionaries of the library, the class is also a range of the pai
 constant bidirectional iterators `begin()`, `end()`, `cbegin()` and
 `cend()`. Since the nodes have no link to the parent, a `PathIterator` of
 `ADS/Iterators.h` ([§1.8](01-introduction.md#sec-1-8)) keeps the path
-from the root, reading the tree through the nested `Shape`. Its member types (`value_type`, the pair of references to a key and to its value,
-`size_type`, `difference_type`, `reference`, `const_reference`,
+from the root, reading the tree through the nested `Shape`. Its member types (`value_type`, the pair by value of a key and its value,
+`key_type`, `mapped_type`, `size_type`, `difference_type`, `reference`, `const_reference`,
 `const_iterator` and `iterator`) are those that the standard library
 expects; `HashedTreap`, `FingerTreap` and `RandomizedSearchTree` below give
 the same range in the same way.
@@ -3968,7 +3968,7 @@ the interface is that of the other dictionaries of the chapter:
 `cend()` (a `PathIterator` on the nested `Shape`, see
 [§8.3](08-tree.md#sec-8-3)), and `lowerBound()`, `findKey()` and
 `lowerBoundKey()` of [§8.14](08-tree.md#sec-8-14). The nested types `Key`,
-`Value`, `value_type` (a pair of references to a key and its value),
+`Value`, `value_type` (the pair by value of a key and its value),
 `const_iterator` and `iterator` are those of the other dictionaries, as
 in the two classes that follow. The nodes are linked by
 pointers, and the tree can therefore be moved but not copied; the
@@ -5136,7 +5136,8 @@ to the first ancestor with a key left at its index, whence the costs of
 key, since `lowerBound()` returns a pair, and the $k$ pairs of an interval
 are thus reached from `begin()`, after the $i$ pairs before it, in $O( i +
 k + \log_t n )$ time. Its iterator is the nested
-`const_iterator`, forward, on pairs of constant references. With it the class
+`const_iterator`, forward, on pairs of constant references (whose value type is
+the pair by value). With it the class
 gives `begin()`, `end()`, `cbegin()`, `cend()` and the aliases of a container
 (`value_type`, `size_type`, `reference`, and so on), as do `BPlusTree` and
 `BTreeMap` with their bidirectional iterators, so that the algorithms of the
@@ -6319,8 +6320,8 @@ Then `size()` and `empty()` take $O( 1 )$, `height()` takes $O( n )$, and
 `clear()` frees the nodes, while, by increasing key, `forEach()` and the constant
 iterators of `PathIterator` on `Shape` give the pairs. These iterators
 (`begin()`, `end()`, `cbegin()` and `cend()`) come with the types of a
-standard container: `value_type`, a pair of references to a key and its
-value, `size_type`, `difference_type`, `reference`, `const_reference`,
+standard container: `value_type`, the pair by value of a key and its
+value, `key_type`, `mapped_type`, `size_type`, `difference_type`, `reference`, `const_reference`,
 `iterator` and `const_iterator`. For a reading of the nodes, `root()` gives
 the root. A copy constructor copies the tree node by node with the same
 shape, in $O( n )$, while the move constructor and `swap()` take
@@ -7762,7 +7763,10 @@ class SearchTree
  template< class F >
  void forEach( F && f ) const;
  [[nodiscard]] Link * predecessorNode( Link * t ) const;
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
  };
@@ -7796,7 +7800,10 @@ class MeasuredSearchTree
  [[nodiscard]] std::vector< std::pair< K , V > > getLE( const K & x ) const;
  template< class F >
  void forEach( F && f ) const;
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  using const_iterator = PathIterator< MeasuredSearchTree , Shape >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
@@ -7829,7 +7836,10 @@ class Treap : public Joinable< Treap< K , V > , TreapNodes< K , V > , K , V >
  [[nodiscard]] static Treap
  fromSorted( const std::vector< std::pair< K , V > > & A ,
              std::uint64_t seed = 1 );
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  using const_iterator = PathIterator< Treap , Shape >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
@@ -7857,7 +7867,10 @@ class HashedTreap
  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
  template< class F >
  void forEach( F && f ) const;
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  using const_iterator = PathIterator< HashedTreap , Shape >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
@@ -7891,7 +7904,10 @@ class FingerTreap
  [[nodiscard]] std::size_t rank( const K & k ) const;
  template< class F >
  void forEach( F && f ) const;
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  using const_iterator = PathIterator< FingerTreap , Shape >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
@@ -7921,7 +7937,10 @@ class RandomizedSearchTree
  [[nodiscard]] std::size_t rank( const K & k ) const;
  template< class F >
  void forEach( F && f ) const;
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  using const_iterator = PathIterator< RandomizedSearchTree , Shape >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
@@ -7952,7 +7971,10 @@ class AVLTree : public Joinable< AVLTree< K , V > , AVLTreeNodes< K , V > , K ,
  void forEach( F && f ) const;
  [[nodiscard]] std::pair< std::size_t , std::size_t >
  rebalancings( void ) const;
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  using const_iterator = PathIterator< AVLTree , Shape >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
@@ -7980,7 +8002,10 @@ class SplayTree
  [[nodiscard]] std::optional< K > root( void ) const;
  template< class F >
  void forEach( F && f ) const;
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  using const_iterator = PathIterator< SplayTree , Shape >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
@@ -8016,7 +8041,10 @@ class ScapegoatTree
  void forEach( F && f ) const;
  [[nodiscard]] std::size_t rebuilds( void ) const;
  [[nodiscard]] std::size_t rebuiltNodes( void ) const;
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  using const_iterator = PathIterator< ScapegoatTree , Shape >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
@@ -8048,7 +8076,10 @@ class PartialRebuildingTree
  void forEach( F && f ) const;
  [[nodiscard]] std::size_t rebuilds( void ) const;
  [[nodiscard]] std::size_t rebuiltNodes( void ) const;
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  using const_iterator = PathIterator< PartialRebuildingTree , Shape >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
@@ -8088,7 +8119,10 @@ class LeftLeaningRedBlackTree
  void absorb( LeftLeaningRedBlackTree & t );
  template< class F >
  void forEach( F && f ) const;
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  using const_iterator = PathIterator< LeftLeaningRedBlackTree , Shape >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
@@ -8119,7 +8153,10 @@ class BTree
  levels( void ) const;
  template< class F >
  void forEach( F && f ) const;
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
  };
@@ -8150,7 +8187,10 @@ class BPlusTree
  [[nodiscard]] std::vector< std::vector< std::vector< K > > >
  levels( void ) const;
  void check( void ) const;
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
  };
@@ -8194,7 +8234,10 @@ class BTreeMap
  void forRange( const K & lo , const K & hi , F && f ) const;
  void swap( BTreeMap & o ) noexcept;
  class const_iterator;
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
  [[nodiscard]] const_iterator lowerBound( const K & k ) const;
@@ -8459,7 +8502,10 @@ class JoinTree : public Joinable< JoinTree< K , V , B , G , Policy > ,
  template< class Q , class F >
  void augFilter( Q && q , F && f ) const;
  [[nodiscard]] const Node * root( void ) const;
- using value_type = std::pair< const K & , const V & >;
+ using value_type = std::pair< K , V >;
+ using key_type = K;
+ using mapped_type = V;
+ using reference = PairRef< const K & , const V & >;
  using const_iterator = PathIterator< JoinTree , Shape >;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;

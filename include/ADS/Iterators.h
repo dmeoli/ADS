@@ -40,6 +40,23 @@
  * - `KeyIterator` reads the member `first` of what another iterator reads,
  *   the keys of a dictionary as the items of a set.
  *
+ * - `PairRef` is the pair of references ( key , value ) that the iterators
+ *   of the dictionaries read, a `std::pair< const K & , const V & >` whose
+ *   value type is the pair of the copies, `std::pair< K , V >`: the
+ *   `std::ranges::range_value_t` of a dictionary is then a pair that owns
+ *   its key and its value, so that `std::ranges::to< std::vector >()` and
+ *   the vectors of `range_value_t` copy the items instead of keeping
+ *   references into the dictionary, which a rebuilding or the end of the
+ *   dictionary would leave dangling. Since C++23 the standard library gives
+ *   the common reference of a pair of references and of a pair of values,
+ *   and `PairRef` is the `std::pair` itself; C++20 gives none, and there
+ *   (or where the value type is not that of the references, a
+ *   `std::string` for a `std::string_view`) `PairRef` is a class derived
+ *   from the pair that declares it, so that the iterators are iterators of
+ *   the concepts of C++20, tuple-like as the pair for the structured
+ *   bindings and `std::views::keys` (of C++20; that of C++23 takes only the
+ *   types of the standard library).
+ *
  * - `PathIterator` visits a binary tree in symmetric order keeping the path
  *   from the root to the current node, so that it needs no link to the
  *   parent and goes both ways; a policy `P` gives the root, the children and
@@ -87,9 +104,14 @@
 #include <compare>
 #include <cstddef>
 #include <iterator>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <version>
+#if defined( __cpp_lib_format_ranges )
+ #include <format>
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -575,6 +597,89 @@ class IndirectIterator
  };  // end( class IndirectIterator )
 
 /*--------------------------------------------------------------------------*/
+/*---------------------------- CLASS PairRef -------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+namespace detail
+{
+
+/// a pair \f$ ( a , b ) \f$ whose value type is \f$ ( V_A , V_B ) \f$, the
+/// `PairRef` that the standard library cannot take as the pair itself
+template< class A , class B , class VA , class VB >
+class PairProxy : public std::pair< A , B >
+{
+ public:
+ /// the pair of the copies, the value type of the iterators
+ using value_type = std::pair< VA , VB >;
+
+ using std::pair< A , B >::pair;  ///< the constructors of the pair
+
+ /// the pair of the copies, also where the pair does not convert by
+ /// itself (a `std::string_view` to a `std::string`)
+ [[nodiscard]] operator value_type( void ) const {
+  return( value_type( VA( this->first ) , VB( this->second ) ) );
+  }
+
+ };  // end( class PairProxy )
+
+/// whether \f$ ( V_A , V_B ) \f$ are \f$ ( A , B ) \f$ without references and
+/// qualifiers, and the standard library declares the common reference of
+/// the two pairs (C++23)
+template< class A , class B , class VA , class VB >
+inline constexpr bool plainPair =
+#if defined( __cpp_lib_ranges_zip )
+  std::is_same_v< VA , std::remove_cvref_t< A > > &&
+  std::is_same_v< VB , std::remove_cvref_t< B > >;
+#else
+  false;
+#endif
+
+}  // end( namespace detail )
+
+/// the pair \f$ ( a , b ) \f$ that an iterator reads by value, in general
+/// two references into the container, whose value type is the pair of the
+/// copies \f$ ( V_A , V_B ) \f$, what `std::ranges::range_value_t` gives:
+/// the `std::pair` itself where the standard library declares the common
+/// reference of the two pairs (C++23, with \f$ V_A \f$ and \f$ V_B \f$ the
+/// types of \f$ a \f$ and \f$ b \f$), a class derived from it that declares
+/// it otherwise
+template< class A , class B , class VA = std::remove_cvref_t< A > ,
+	  class VB = std::remove_cvref_t< B > >
+using PairRef =
+  std::conditional_t< detail::plainPair< A , B , VA , VB > ,
+		      std::pair< A , B > ,
+		      detail::PairProxy< A , B , VA , VB > >;
+
+namespace detail
+{
+
+/// the value type of the items that an iterator reads as `R`: the pair of
+/// the copies for a `PairRef`, `R` without references and qualifiers
+/// otherwise
+template< class R >
+struct ItemValue
+{
+ using type = std::remove_cvref_t< R >;  ///< the value type
+ };
+
+template< class A , class B , class VA , class VB >
+struct ItemValue< PairProxy< A , B , VA , VB > >
+{
+ using type = std::pair< VA , VB >;  ///< the pair of the copies
+ };
+
+#if defined( __cpp_lib_ranges_zip )
+template< class A , class B >
+struct ItemValue< std::pair< A , B > >
+{
+ /// the pair of the copies
+ using type = std::pair< std::remove_cvref_t< A > , std::remove_cvref_t< B > >;
+ };
+#endif
+
+}  // end( namespace detail )
+
+/*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS SlotIterator ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
@@ -587,8 +692,9 @@ class SlotIterator
  public:
  /// what `P::read()` gives
  using reference = decltype( P::read( std::declval< const O & >() , 0 ) );
- using value_type = std::remove_cvref_t< reference >;  ///< the items
- using difference_type = std::ptrdiff_t;               ///< the distances
+ /// the items, the pair of the copies for a `PairRef`
+ using value_type = typename detail::ItemValue< reference >::type;
+ using difference_type = std::ptrdiff_t;  ///< the distances
  /// bidirectional for the concepts of C++20
  using iterator_concept = std::bidirectional_iterator_tag;
  /// bidirectional for the older algorithms if `P::read()` gives a
@@ -765,8 +871,9 @@ class PathIterator
  public:
  /// what `P::read()` gives
  using reference = decltype( P::read( std::declval< N * >() ) );
- using value_type = std::remove_cvref_t< reference >;  ///< the items
- using difference_type = std::ptrdiff_t;               ///< the distances
+ /// the items, the pair of the copies for a `PairRef`
+ using value_type = typename detail::ItemValue< reference >::type;
+ using difference_type = std::ptrdiff_t;  ///< the distances
  /// bidirectional for the concepts of C++20
  using iterator_concept = std::bidirectional_iterator_tag;
  /// bidirectional for the older algorithms if `P::read()` gives a
@@ -946,6 +1053,51 @@ class WalkIterator
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
+
+/*--------------------------------------------------------------------------*/
+/*------------------------ PairRef IN THE STANDARD -------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the common reference of a `PairRef` of class type and of its value type,
+/// the `PairRef`, which the standard library does not find by itself
+template< class A , class B , class VA , class VB ,
+	  template< class > class TQ ,
+	  template< class > class UQ >
+struct std::basic_common_reference< ADS::detail::PairProxy< A , B , VA , VB > ,
+				    std::pair< VA , VB > , TQ , UQ >
+{
+ using type = ADS::detail::PairProxy< A , B , VA , VB >;  ///< the `PairRef`
+ };
+
+/// the common reference of the value type of a `PairRef` and of it
+template< class A , class B , class VA , class VB ,
+	  template< class > class TQ ,
+	  template< class > class UQ >
+struct std::basic_common_reference<
+  std::pair< VA , VB > , ADS::detail::PairProxy< A , B , VA , VB > , TQ , UQ >
+{
+ using type = ADS::detail::PairProxy< A , B , VA , VB >;  ///< the `PairRef`
+ };
+
+/// a `PairRef` of class type has two elements, as its pair
+template< class A , class B , class VA , class VB >
+struct std::tuple_size< ADS::detail::PairProxy< A , B , VA , VB > >
+    : std::integral_constant< std::size_t , 2 >
+{ };
+
+/// the elements of a `PairRef`, those of its pair
+template< std::size_t I , class A , class B , class VA , class VB >
+struct std::tuple_element< I , ADS::detail::PairProxy< A , B , VA , VB > >
+    : std::tuple_element< I , std::pair< A , B > >
+{ };
+
+#if defined( __cpp_lib_format_ranges )
+/// a `PairRef` formatted as its pair
+template< class A , class B , class VA , class VB , class C >
+struct std::formatter< ADS::detail::PairProxy< A , B , VA , VB > , C >
+    : std::formatter< std::pair< A , B > , C >
+{ };
+#endif
 
 /*--------------------------------------------------------------------------*/
 

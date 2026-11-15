@@ -1346,6 +1346,22 @@ the standard library do; with it, one should use `std::ranges::prev` and
 the algorithms of `std::ranges`. Also, the iterators are adaptors with no
 contracts, and the containers check theirs.
 
+The pair that the iterators of a dictionary read is a `PairRef< A , B >`,
+two references into the dictionary (or a key rebuilt and a reference),
+while the `value_type` of the iterator and of the dictionary is the pair
+of the copies, `std::pair< K , V >`, as in the containers of the standard
+library, which also give `key_type` and `mapped_type`. A vector of
+`std::ranges::range_value_t` of a dictionary, or the one that
+`std::ranges::to< std::vector >()` builds from it, thus holds copies, which
+neither a rebuilding nor the destruction of the dictionary invalidates
+(with a pair of references as its value type, it would hold references
+into the dictionary, left dangling by either). Where C++23 declares the
+common reference of a pair of references and of a pair of values,
+`PairRef` is the `std::pair` itself; otherwise it is a class derived from
+the pair that declares that common reference, so that the iterators model
+the concepts of C++20, and it is tuple-like as the pair, for the
+structured bindings, `std::views::keys` (of C++20) and `std::format`.
+
 ## 1.9 The two levels of the library {#sec-1-9}
 
 The library has two levels, written to be read and used side by side. At
@@ -1528,7 +1544,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `Capabilities.h` | `forwarding_query`, `stable_references_t`, `thread_safe_reads_t`, `rank_complexity_t`, `event_set_t` | [1](01-introduction.md#ch-1) |
 | `Contract.h` | `contract_violation` | [1](01-introduction.md#ch-1) |
 | `Modification.h` | `Refused`, `no_rebuild_t`, `effect`, `Value`, `Key`, `Cost`, `Upper`, `Lower`, `Supply`, `last`, `min`, `max`, `sum`, `reduction_of`, `list`, `Inserted`, `Erased`, `Changed`, `Relocated`, `Permuted`, `BulkInserted`, `BulkErased`, `Shifted`, `Replaced`, `Cleared`, `Rebuilt`, `Group`, `Counts`, `Direct`, `Via`, `coalesce_traits`, `NoObservers`, `Static`, `Dynamic`, `Both`, `Batch`, `Quiet`, `UndoLog`, `Shadow`, `Assigned`, `KeyChanged`, `Reopt`, `ReoptStats`, `RatioPolicy`, `NeumaierSum` | [1](01-introduction.md#ch-1), [14](14-graph.md#ch-14) |
-| `Iterators.h` | `LinkedIterator`, `IndexIterator`, `CircularIterator`, `RankIterator`, `IndirectIterator`, `SlotIterator`, `KeyIterator`, `PathIterator`, `WalkIterator` | [1](01-introduction.md#ch-1) |
+| `Iterators.h` | `LinkedIterator`, `IndexIterator`, `CircularIterator`, `RankIterator`, `IndirectIterator`, `SlotIterator`, `KeyIterator`, `PairRef`, `PathIterator`, `WalkIterator` | [1](01-introduction.md#ch-1) |
 | `set/Bag.h` | `Bag` | [1](01-introduction.md#ch-1) |
 | `set/SetInterfaces.h` | `ArrayUSet`, `ArraySSet` | [1](01-introduction.md#ch-1) |
 | `sequence/ArraySequence.h` | `ArraySequence` | [2](02-sequence.md#ch-2) |

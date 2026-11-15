@@ -145,7 +145,10 @@ class ObjectPool
  /// \pre the two allocators are equal
  void adopt( ObjectPool & other ) noexcept;
 
- /// a new object built from `args`, in the slot freed last if any
+ /// a new object built from `args`, in the slot freed last if any; with
+ /// no `args` the object is value-initialized, `T()`, in every epoch and on
+ /// every slot, freed or of an old epoch, so that an object of trivial type
+ /// is all zeros whatever the slot held before
  ///
  /// In pseudocode (the list AVAIL of section 2.2.3 of TAOCP, beyond the
  /// book), \f$ F \f$ the free slots and

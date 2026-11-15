@@ -1958,6 +1958,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The contracts of make() of Arena and of ObjectPool state that a call with
+  no arguments value-initializes the object in every epoch, on a place of
+  an old epoch as on a freed slot, which the parallel search asks of the
+  pools that it clears; the code already did so, and the test
+  engineered_memory.pool-epochs-value-init checks it
+
 - ADS is released under the Boost Software License 1.0, the license of Boost
   and of LEMON, in place of the LGPL v3, so that a program that already uses
   those libraries can take its structures with no further obligation; the
@@ -2896,6 +2902,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   multiplies its polynomials by multiplyKaratsuba()
 
 ### Fixed
+
+- deltaStepping() and rhoStepping() size their distances by g.bound(), the
+  names of the nodes, where they took g.n() and wrote past the end of the
+  vectors on a graph with deleted nodes, an unused name holding infinity()
+  as a node not reached; their fixed-point audit visits g.V(), and the test
+  engineered_parallel.parallel-stepping-holes checks both on graphs with
+  deleted nodes against dijkstra() (the other parallel graph algorithms
+  take a StaticGraph, which deletes no node)
+
+- The value_type of the dictionaries, of the search trees and of the views
+  of the linked priority queues is the pair by value, std::pair< K , V >,
+  where it was the pair of references that their iterators read, so that
+  std::ranges::to< std::vector >() and a vector of range_value_t hold
+  copies instead of references into the dictionary, left dangling by a
+  rebuilding or by its end; the reference stays the pair of references,
+  now a PairRef of Iterators.h (the std::pair itself where C++23 declares
+  the common reference of the two pairs, a class derived from it that
+  declares it otherwise, tuple-like and formatted as the pair), and the
+  dictionaries give key_type and mapped_type; the test
+  interop.dictionary-values checks 33 dictionaries and both queues
 
 - nthElement takes linear time in the worst case also on repeated items: a
   round of the median of the medians whose part on the right of the pivot
