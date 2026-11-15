@@ -294,7 +294,8 @@ template< SortStore Store ,
 	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
 	  class C >
 void pdq( Store && A , std::size_t lo , std::size_t hi , int bad ,
-	  bool leftmost , C & less )
+	  bool leftmost ,
+	  C & less )
 {
  T * const a = A.data();
  for( ; ; ) {

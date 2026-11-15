@@ -109,7 +109,7 @@ class Sorter
 
 template< class T , class C , class S >
 void Sorter< T , C , S >::build( const T * s , std::size_t j , std::size_t a ,
-			    std::size_t b )
+			       std::size_t b )
 {
  const std::size_t m = a + ( b - a ) / 2;
  tree[ j ] = s[ m ];

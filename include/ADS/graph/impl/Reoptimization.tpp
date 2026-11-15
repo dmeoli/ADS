@@ -928,7 +928,7 @@ bool SpanningForestObserver< G , P >::inForest( int u , int v )
 template< Graph G , ReoptPolicy P , FlowEngine E >
  requires std::is_integral_v< typename G::Weight >
 MaxFlowObserver< G , P , E >::MaxFlowObserver( const G & g , int s , int t ,
-					  Augment how )
+					     Augment how )
     : f_g( g ) , f_s( s ) , f_t( t ) , f_how( how )
 {
  ADS_PRE( g.hasNode( s ) && g.hasNode( t ) && ( s != t ) );

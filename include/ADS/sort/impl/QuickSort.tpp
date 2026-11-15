@@ -158,7 +158,8 @@ void quickSort( List< T > & L , C less )
 
 template< RankStore Store , class T , class C >
 std::size_t partitionByValue( Store && A , std::size_t start ,
-			      std::size_t end , const T & x , C less )
+			      std::size_t end ,
+			      const T & x , C less )
 {
  ADS_PRE( ( start <= end ) && ( end < A.size() ) );
  const auto before = detail::auditCopy( A , start , end + 1 );

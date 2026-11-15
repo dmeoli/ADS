@@ -346,7 +346,7 @@ class Assignment
  /// the engine of the solves, if any
  ADS_NO_UNIQUE_ADDRESS
  std::conditional_t< std::is_void_v< E > , std::monostate , E > f_engine{};
- long long f_aug = 0;                        ///< the augmentations
+ long long f_aug = 0;  ///< the augmentations
 
  };  // end( class Assignment )
 
