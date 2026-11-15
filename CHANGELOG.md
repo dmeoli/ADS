@@ -3183,6 +3183,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- StdParExecutor::bulk() passes std::for_each() a policy by name, which
+  the parallel algorithms of libstdc++ 13 require, where a temporary policy
+  did not compile there
+
 - KokkosExecutor compiles on every execution space: it asks whether the
   thread runs a kernel by the in_parallel() that the space has, that of an
   instance on OpenMP, the static one on Serial, or none, where it called

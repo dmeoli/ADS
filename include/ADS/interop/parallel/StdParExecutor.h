@@ -187,7 +187,10 @@ class StdParExecutor
    return;
    }
   detail::FirstError error;
-  std::for_each( Policy() , detail::IndexIterator{ 0 } ,
+  // a policy by name: the parallel algorithms of libstdc++ 13 do not take
+  // a temporary one
+  Policy policy{};
+  std::for_each( policy , detail::IndexIterator{ 0 } ,
 		 detail::IndexIterator{ n } , [ & ]( std::size_t i ) {
 		  if( error.failed() )
 		   return;
