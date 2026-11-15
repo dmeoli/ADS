@@ -27,7 +27,8 @@
 # of LLVM on macOS, and by the makefile with clang++ and g++ 15.              #
 # On a pull request, the lines that it changes are checked in the style of    #
 # the repository code-style, whose action posts the changes that put them     #
-# there as suggestions on them.                                               #
+# there as suggestions on them; on every push, all the C++ sources and the    #
+# theory pages are checked whole, since the whole tree is in the style.       #
 ###############################################################################
 
 name: CI
@@ -60,6 +61,27 @@ jobs:
         with:
           fetch-depth: 0
       - uses: dmeoli/code-style@v1
+
+  # every C++ source, header and theory page in the style, by format.py of
+  # code-style (the version of its tag v1) with the .clang-format at the
+  # root, which is that of code-style
+  style-all:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: dmeoli/code-style
+          ref: v1
+          path: .code-style
+      - name: Install clang-format
+        run: pip install -q "clang-format==22.1.5"
+      - name: Check the style of every file
+        run: |
+          git ls-files '*.h' '*.tpp' '*.cpp' '*.cppm' '*.dox' ':!manual' |
+            xargs -P 4 -n 20 python3 .code-style/format.py --check |
+            tee style.txt
+          test ! -s style.txt
 
   # every program built and every test run by CMake and by the makefiles,
   # four at a time, and the installed package used through find_package and
