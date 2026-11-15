@@ -2193,6 +2193,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with MPI carries it to every program that links it; AUTO (auto) turns it
   on where MPI is found, ON (1) requires it
 
+- The descents of the binary search trees written once in
+  BinaryTreeAlgorithms.h, on the concepts of its nodes, whose children may
+  now be std::unique_ptr and which gain SizedBinaryNode (the size of the
+  subtree in the field s or size): searchTreeFind(), searchTreeLookup(),
+  searchTreeLowerBound() with searchTreeFindKey(), searchTreeLowerBoundKey()
+  and searchTreeLowerBoundEntry(), searchTreeSelect(), searchTreeRank(),
+  searchTreeLink() and searchTreeSplice() (the removal of section 6.2.3 of
+  Morin, with the path recorded) and treeHeight() (by levels); AVLTree,
+  Treap, RandomizedSearchTree, HashedTreap, FingerTreap,
+  MeasuredSearchTree, PartialRebuildingTree, ScapegoatTree,
+  LeftLeaningRedBlackTree and JoinTree call them instead of ten copies of
+  each loop and lose their private lowerBoundNode(), the instruction counts
+  of their operations under callgrind equal, lower or at most 0.25 percent
+  higher (a different allocation of the registers); SearchTree
+  (the sentinel nil of the book), SplayTree (which splays while it
+  descends), BTree and BPlusTree (not binary) keep their descent; section
+  8.4.7 of the manual and the test lib_trees.search-tree-descents
+
 - the memoization of the 0-1 knapsack is knapsackMemo(), an English name
   like the rest of the interface, and zaino(), the name of the book, is kept
   as an alias of it

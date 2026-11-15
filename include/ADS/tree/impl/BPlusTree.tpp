@@ -182,6 +182,7 @@ bool BPlusTree< K , V >::contains( const K & x ) const
 template< std::totally_ordered K , class V >
 const K * BPlusTree< K , V >::lowerBound( const K & x ) const
 {
+ // along the leaves, not binary: not searchTreeLowerBound()
  for( const Node * f = leaf( x ) ; f ; f = f->next ) {
   const auto i = std::lower_bound( f->k.begin() , f->k.end() , x );
   if( i != f->k.end() )

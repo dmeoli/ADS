@@ -74,6 +74,7 @@
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/RandomHashing.h"
+#include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/JoinAlgorithms.h"
 
 #include <algorithm>
@@ -331,8 +332,6 @@ class Treap : public Joinable< Treap< K , V > , TreapNodes< K , V > , K , V >
  static void visit( const Ptr & t , F & f );
  static bool valid( const Ptr & t , const K * lo , const K * hi );
 
- /// the node of the smallest key not smaller than \f$ k \f$, nil if none
- [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
  Ptr f_root;
  std::size_t f_size = 0;

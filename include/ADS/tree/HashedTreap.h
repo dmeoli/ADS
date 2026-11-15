@@ -217,8 +217,6 @@ class HashedTreap
  static int height( const Ptr & t );
  bool valid( const Ptr & t , const K * lo , const K * hi ) const;
 
- /// the node of the smallest key not smaller than \f$ k \f$, nil if none
- [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
  Ptr f_root;              ///< the root
  std::size_t f_size = 0;  ///< the number of keys
@@ -234,6 +232,7 @@ class HashedTreap
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/impl/HashedTreap.tpp"
 
 /*--------------------------------------------------------------------------*/

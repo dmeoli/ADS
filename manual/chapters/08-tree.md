@@ -990,9 +990,11 @@ representation of the nodes. A node is reached by a pointer, nil being
 `nullptr`, and its links and its key are read either by the member functions
 `left()`, `right()`, `parent()` and `read()` of `BinaryTree`, or by the fields
 `left`, `right`, `parent` and `key` of a plain struct, as in the pseudocode of
-the books. Three concepts state what each function needs: `BinaryNode` (the
-two children), `ParentBinaryNode` (also the parent) and `KeyedBinaryNode`
-(also a key). Those that build a tree return a `BinaryTree`, or take a
+the books, the children being pointers or `std::unique_ptr`. Four concepts
+state what each function needs: `BinaryNode` (the two children),
+`ParentBinaryNode` (also the parent), `KeyedBinaryNode` (also a key) and
+`SizedBinaryNode` (a key and the size of the subtree, in the field `s` or
+`size`). Those that build a tree return a `BinaryTree`, or take a
 callable `make( v , l , r )` that makes a node of value $v$ over the subtrees
 $l$ and $r$, for any other representation.
 
@@ -1393,12 +1395,22 @@ examines; the contracts require $\mathit{lo} \le \mathit{hi}$.
 ![Figure 8.18. The query `searchTreeRange(t,4,10)` on a binary search tree of 13 keys: the six keys reported in violet, and the edges that the visit follows in violet; the nodes 3, 12 and 11 are examined and not reported, the visit going on from each only on the side of the range (the left subtree of 11 being empty).](../figures/tree-range.svg){#fig-8-18}
 
 <span id="alg-8-23"></span>**Algorithm 8.23.** The keys of a
-binary search tree in a range, and those not larger than $x$ ([Morin 2013,
-exercise 6.14](Z-bibliography.md#ref-morin-cpp)).
+binary search tree in a range, those not larger than $x$ ([Morin 2013,
+exercise 6.14](Z-bibliography.md#ref-morin-cpp)), and the descents that the
+search trees of this chapter share ([Morin 2013, §6.2 and exercise
+7.10](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/BinaryTreeAlgorithms-range.pseudo.md"
 
 --8<-- "generated/BinaryTreeAlgorithms-getLE.pseudo.md"
+
+--8<-- "generated/BinaryTreeAlgorithms-find.pseudo.md"
+
+--8<-- "generated/BinaryTreeAlgorithms-lowerBound.pseudo.md"
+
+--8<-- "generated/BinaryTreeAlgorithms-select.pseudo.md"
+
+--8<-- "generated/BinaryTreeAlgorithms-splice.pseudo.md"
 
 <span id="lem-8-20"></span>**Lemma 8.20.** *`searchTreeRange()`
 examines at most $k + 2 ( h + 1 )$ nodes of a tree of height $h$, $k$ the
@@ -1432,6 +1444,35 @@ trees built by insertions and on plain nodes. The second function is the
 2013](Z-bibliography.md#ref-morin-cpp), and it returns the number $n'$ of the
 keys reported. `MeasuredSearchTree::getLE()` of [§8.5](08-tree.md#sec-8-5) is
 this function on its nodes.
+
+The descents of the search trees of this chapter are written here once, on the
+concepts above. Each tree then writes only the parts that its balance changes,
+i.e., the insertion, the removal and the rotations. Thus
+`searchTreeFind( t , k )` returns the node of the key $k$, nil if absent, while
+`searchTreeLowerBound( t , k )` returns the node of the smallest key not
+smaller than $k$ (the `find( x )` of a sorted set of Morin). Its descent takes
+$O( h )$ time and remembers the last node where the search turned left
+([Algorithm 8.23](08-tree.md#alg-8-23)). From it, `searchTreeFindKey()`,
+`searchTreeLowerBoundKey()` and `searchTreeLowerBoundEntry()` give the address
+of the key, that of the smallest key not smaller and the pair that the
+dictionaries return, and `searchTreeLookup()` gives the value from the former.
+On the nodes of a `SizedBinaryNode`, `searchTreeSelect( t , i )` goes down by
+the sizes of the left subtrees to the node of rank $i$, and
+`searchTreeRank( t , k )` adds those sizes along the search of $k$ (exercise
+7.10 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)). In turn, the removal of
+section 6.2.3 of Morin is split in two: `searchTreeLink()` finds the link of a
+key and records the path above it, and `searchTreeSplice()` takes out the node
+at that link, or its successor if the node has two children. On the recorded
+path, the scapegoat trees and the trees of partial rebuilding then climb to the
+subtree that they rebuild. Finally, `treeHeight( t )` measures the height by
+levels, with no recursion, which a degenerate tree would pay with a frame per
+level. `AVLTree`, `Treap`, `RandomizedSearchTree`, `HashedTreap`,
+`FingerTreap`, `MeasuredSearchTree`, `PartialRebuildingTree`, `ScapegoatTree`,
+`LeftLeaningRedBlackTree` and `JoinTree` call these functions under their
+members, with no work added at any level of a descent. We remark that three
+trees keep their descent, each for a reason: `SearchTree` follows the
+pseudocode of the book on its sentinel nil, `SplayTree` restructures the tree
+while it descends, and the nodes of `BTree` and `BPlusTree` are not binary.
 
 Conversely, `minimumHeightSearchTree( A , make )` builds the binary search
 tree of the strictly increasing keys of $A$ of the least height, by putting
@@ -6315,7 +6356,8 @@ one salt per batch, and a run is thus reproducible. As in a binary search
 tree, `lookup()`, `contains()` and `lowerBound()` take $O( \log n )$ time,
 by a descent from the root. Of these, `lowerBound()` gives the smallest key
 not smaller than the one given, with its value (the `find( x )` of a
-sorted set of Morin), by the private `lowerBoundNode()`. Likewise,
+sorted set of Morin), by `searchTreeLowerBound()` of
+[§8.4.7](08-tree.md#sec-8-4-7). Likewise,
 `findKey()` and `lowerBoundKey()` give the addresses of the key and of that
 smallest key. Through them `DictionarySet` makes the tree a `USet` and an
 `SSet` (cf. [§10.4](10-set.md#sec-10-4) and [§8.14](08-tree.md#sec-8-14)).
@@ -7667,6 +7709,8 @@ concept ParentBinaryNode = BinaryNode< N > && requires( N n )
 template< class N >
 concept KeyedBinaryNode = BinaryNode< N > && requires( N n )
 { ... };
+template< class N >
+concept SizedBinaryNode = KeyedBinaryNode< N > && detail::SizedNode< N >;
 template< ParentBinaryNode N >
 N lowestCommonAncestor( N u , N v );
 template< KeyedBinaryNode N , KeyedBinaryNode M ,
@@ -7679,6 +7723,33 @@ template< BinaryNode N , class Red >
 template< KeyedBinaryNode N , class K , class F , class Compare = std::less<> >
 std::size_t searchTreeRange( N t , const K & lo , const K & hi , F && f ,
                              Compare less = {} );
+template< KeyedBinaryNode N , class K , class Compare = std::less<> >
+[[nodiscard]] N searchTreeFind( N t , const K & k , Compare less = {} );
+template< KeyedBinaryNode N , class K , class Compare = std::less<> >
+[[nodiscard]] auto searchTreeLookup( N t , const K & k , Compare less = {} );
+template< KeyedBinaryNode N , class K , class Compare = std::less<> >
+[[nodiscard]] N searchTreeLowerBound( N t , const K & k , Compare less = {} );
+template< KeyedBinaryNode N , class K , class Compare = std::less<> >
+[[nodiscard]] auto searchTreeFindKey( N t , const K & k , Compare less = {} );
+template< KeyedBinaryNode N , class K , class Compare = std::less<> >
+[[nodiscard]] auto searchTreeLowerBoundKey( N t , const K & k ,
+                                            Compare less = {} );
+template< KeyedBinaryNode N , class K , class Compare = std::less<> >
+[[nodiscard]] auto searchTreeLowerBoundEntry( N t , const K & k ,
+                                              Compare less = {} );
+template< SizedBinaryNode N >
+[[nodiscard]] N searchTreeSelect( N t , std::size_t i );
+template< SizedBinaryNode N , class K , class Compare = std::less<> >
+[[nodiscard]] std::size_t searchTreeRank( N t , const K & k ,
+                                          Compare less = {} );
+template< class N , class K , class Compare = std::less<> >
+ requires KeyedBinaryNode< N * > && std::is_pointer_v< decltype( N::left ) >
+[[nodiscard]] N ** searchTreeLink( N ** link , const K & k ,
+                                   std::vector< N * > & P ,
+                                   Compare less = {} );
+template< class N >
+ requires BinaryNode< N * > && std::is_pointer_v< decltype( N::left ) >
+[[nodiscard]] N * searchTreeSplice( N ** link , std::vector< N * > & P );
 template< ParentBinaryNode N >
 [[nodiscard]] N nextPreorder( N u );
 template< ParentBinaryNode N >
@@ -7689,6 +7760,8 @@ template< BinaryNode N >
 [[nodiscard]] N firstInorder( N u );
 template< BinaryNode N >
 [[nodiscard]] N firstPostorder( N u );
+template< BinaryNode N >
+[[nodiscard]] long treeHeight( N t );
 template< ParentBinaryNode N >
 [[nodiscard]] std::size_t subtreeSize( N u );
 template< ParentBinaryNode N >

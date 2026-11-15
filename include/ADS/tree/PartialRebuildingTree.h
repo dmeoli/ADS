@@ -92,6 +92,7 @@
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/numeric/RandomGenerators.h"
+#include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/ScapegoatTree.h"
 
 #include <algorithm>
@@ -302,8 +303,6 @@ class PartialRebuildingTree
  /// the order, the sizes and the balance of the weights
  [[nodiscard]] bool valid( void ) const;
 
- /// the node of the smallest key not smaller than \f$ k \f$, nil if none
- [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
  Node * f_root = nullptr;       ///< the root
  std::vector< Node * > f_path;  ///< the path of the last operation

@@ -326,6 +326,7 @@ template< std::totally_ordered K , class V >
 auto BTree< K , V >::lowerBoundPlace( const K & key ) const
   -> std::pair< const Node * , std::size_t >
 {
+ // a node of many keys, not binary: not searchTreeLowerBound()
  std::pair< const Node * , std::size_t > best( nullptr , 0 );
  for( const Node * x = f_root.get() ; x ; ) {
   const std::size_t i = place( x , key );

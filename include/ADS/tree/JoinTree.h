@@ -125,6 +125,7 @@
 #include "ADS/Modification.h"
 #include "ADS/Portable.h"
 #include "ADS/dictionary/RandomHashing.h"
+#include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/JoinAlgorithms.h"
 
 #include <concepts>
@@ -631,8 +632,6 @@ class JoinTree : public Joinable< JoinTree< K , V , B , G , Policy > ,
  /// scheme, \f$ O( n ) \f$
  [[nodiscard]] bool valid( void ) const;
 
- /// the node of the smallest key not smaller than \f$ k \f$, nil if none
- [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
  /// the node of \f$ k \f$, nil if absent
  [[nodiscard]] Node * findNode( const K & k ) const;

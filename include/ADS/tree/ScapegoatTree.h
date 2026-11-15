@@ -473,8 +473,6 @@ class ScapegoatTree
  /// the order, the height, the bounds of \f$ q \f$ and the sizes
  [[nodiscard]] bool valid( void ) const;
 
- /// the node of the smallest key not smaller than \f$ k \f$, nil if none
- [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
  Node * f_root = nullptr;       ///< the root
  std::size_t f_n = 0;           ///< the number \f$ n \f$ of keys
@@ -499,6 +497,7 @@ class ScapegoatTree
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/impl/ScapegoatTree.tpp"
 
 /*--------------------------------------------------------------------------*/
