@@ -1419,9 +1419,9 @@ exports all the names that the headers declare in the namespace `ADS`, and
 as one module for each of the sets that we describe next.
 
 The two levels are also two sets of headers, which a program may take
-apart; we divide them by the origin of the code, whatever its speed. In
-the *base* set lies what follows a textbook or an academic source
-([Montresor 2025](Z-bibliography.md#ref-montresor2025), [Knuth
+apart; we divide them by the origin of the code, whatever its speed. In the
+*base* set lies what follows a textbook or an academic source ([Montresor
+2025](Z-bibliography.md#ref-montresor2025), [Knuth
 1997](Z-bibliography.md#ref-knuth1997), [Morin
 2013](Z-bibliography.md#ref-morin-cpp), and the book and the notes of
 [Ferragina 2023](Z-bibliography.md#ref-ferragina2023)), even when the
@@ -1434,14 +1434,14 @@ lies what is written for speed beyond those sources (e.g., `UnionFind`,
 `MultiwayMerge`), with the concurrent and parallel structures, the
 executors and the distributed layer. It also holds the typed modifications
 and the observers (cf. [§1.13](01-introduction.md#sec-1-13)), which no
-textbook treats. Hence a structure of a textbook and its engineered counterpart lie
-in different sets (e.g., `MFSet` and `UnionFind`, `HeapPriorityQueue` and
-`DaryHeap`, `ArrayGraph` and `StaticGraph`, `DancingLinks` and
-`FastExactCover`). An advanced structure extends a base one through the
-same concepts and by composition, i.e., by algorithms written once on a
-concept and by members of the base types. We do not derive one from the
-other, since a hierarchy of classes with virtual calls would cost the speed
-for which the advanced set exists.
+textbook treats. Hence a structure of a textbook and its engineered
+counterpart lie in different sets (e.g., `MFSet` and `UnionFind`,
+`HeapPriorityQueue` and `DaryHeap`, `ArrayGraph` and `StaticGraph`,
+`DancingLinks` and `FastExactCover`). An advanced structure extends a base
+one through the same concepts and by composition, i.e., by algorithms
+written once on a concept and by members of the base types. We do not
+derive one from the other, since a hierarchy of classes with virtual calls
+would cost the speed for which the advanced set exists.
 
 A third set, the *core*, holds the infrastructure that both sets include
 (the contracts, the iterators, the primitives of `Portable.h`, the
