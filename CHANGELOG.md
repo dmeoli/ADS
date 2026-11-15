@@ -25,7 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   declares it; the tests sets.core, sets.base and sets.advanced, which
   compile each entry point alone and check the headers that it pulls, and
   module.core, module.base and module.advanced; the sets in chapter 1 of
-  the manual, in Table 1.5 and in the opening of each chapter
+  the manual, in Table 1.5 and in the opening of each chapter; the set
+  interop, the headers of ADS/interop/ (Boost, LEMON and the standard
+  library), which no entry point includes and no module exports, since each
+  is included next to the headers of the other library, in place of the
+  list of the folders that ads_module_exports.py left out
 
 - The interoperation with Boost and with the standard library, in
   include/ADS/interop/ (with ADS_WITH_BOOST, the component Boost of
