@@ -341,9 +341,10 @@ class RingDeque
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{emplace\_front}( \mathit{args} ) \cr
  /// 2 & \quad \textbf{if}\ t - h = m\ \textbf{then}\ \text{double } A
- ///     \text{ as in } \mathrm{emplace\_back} \cr
- /// 3 & \quad h \gets h - 1;\ A[ h \bmod m ] \gets \text{the item built }
- ///     \text{from } \mathit{args} \cr
+ ///     \text{ as } \mathrm{emplace\_back} \text{ does}\quad \triangleright
+ ///     \ A \text{ is full} \cr
+ /// 3 & \quad h \gets h - 1;\ \text{build in } A[ h \bmod m ]
+ ///     \text{ the item of } \mathit{args} \cr
  /// 4 & \quad \textbf{return}\ A[ h \bmod m ]
  /// \end{array}}
  /// \f]

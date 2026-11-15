@@ -56,15 +56,15 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{pigeonholeSort}( A , k ) \cr
-/// 2 & \quad \textbf{for}\ v \gets 0\ \textbf{to}\ k - 1\ \textbf{do}\ B[ v ]
-///     \gets \text{an empty list} \cr
-/// 3 & \quad \textbf{foreach}\ ( \mathit{key} , x ) \in A\ \textbf{do}
-///     \ \text{append } x \text{ to } B[ \mathit{key} ] \cr
-/// 4 & \quad R \gets \text{an empty vector} \cr
-/// 5 & \quad \textbf{for}\ v \gets 0\ \textbf{to}\ k - 1\ \textbf{do} \cr
-/// 6 & \qquad \textbf{foreach}\ x \in B[ v ] \text{ from its head}
-///     \ \textbf{do}\ \text{append } ( v , x ) \text{ to } R \cr
-/// 7 & \quad \textbf{return}\ R
+/// 2 & \quad B \gets k \text{ empty lists};\ \mathit{out} \gets \text{an
+///     empty vector} \cr
+/// 3 & \quad \textbf{foreach}\ ( \mathit{key} , v ) \in A\ \textbf{do}
+///     \ \text{append } v \text{ to } B[ \mathit{key} ]\quad \triangleright
+///     \ \text{stable} \cr
+/// 4 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ k - 1\ \textbf{do} \cr
+/// 5 & \qquad \textbf{foreach}\ v \in B[ i ] \text{ from its head}
+///     \ \textbf{do}\ \text{append } ( i , v ) \text{ to } \mathit{out} \cr
+/// 6 & \quad \textbf{return}\ \mathit{out}
 /// \end{array}}
 /// \f]
 /// \pre \f$ k \ge 0 \f$ and each key of \f$ A \f$ is in \f$ [ 0 , k ) \f$

@@ -90,12 +90,14 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{findPeak}( A ) \cr
-/// 2 & \quad \mathit{lo} \gets 0;\ \mathit{hi} \gets n - 1 \cr
+/// 2 & \quad ( \mathit{lo} , \mathit{hi} ) \gets ( 0 , n - 1 )\quad
+///     \triangleright\ A[ \mathit{lo} .. \mathit{hi} ] \text{ holds a peak}
+///     \cr
 /// 3 & \quad \textbf{while}\ \mathit{lo} < \mathit{hi}\ \textbf{do} \cr
 /// 4 & \qquad m \gets \mathit{lo} + \lfloor ( \mathit{hi} - \mathit{lo} ) / 2
 ///     \rfloor \cr
-/// 5 & \qquad \textbf{if}\ A[ m ] < A[ m + 1 ]\ \textbf{then}\ \mathit{lo}
-///     \gets m + 1\ \textbf{else}\ \mathit{hi} \gets m \cr
+/// 5 & \qquad \textbf{if}\ A[ m + 1 ] \le A[ m ]\ \textbf{then}\ \mathit{hi}
+///     \gets m\ \textbf{else}\ \mathit{lo} \gets m + 1 \cr
 /// 6 & \quad \textbf{return}\ \mathit{lo}
 /// \end{array}}
 /// \f]
@@ -114,8 +116,8 @@ std::size_t findPeak( const std::vector< T > & A , C less = C() );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{localMinimum}( A ) \cr
-/// 2 & \quad \textbf{return}\ \mathrm{findPeak}( A ) \text{ with } >
-///     \text{ in place of } <
+/// 2 & \quad \textbf{return}\ \text{the index found by } \mathrm{findPeak}( A
+///     ) \text{ with the order reversed}
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is not empty
@@ -133,9 +135,11 @@ std::size_t localMinimum( const std::vector< T > & A , C less = C() );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{localMinimum}( t ) \cr
-/// 2 & \quad \textbf{loop} \cr
+/// 2 & \quad \textbf{loop}\quad \triangleright\ \text{down to a smaller child
+///     while there is one} \cr
 /// 3 & \qquad \textbf{if}\ t.\mathit{left} \ne \textbf{nil}\ \textbf{and}
-///     \ t.\mathit{left}.\mathit{key} < t.\mathit{key}\ \textbf{then}\ t \gets
+///     \ t.\mathit{left}.\mathit{key} < t.\mathit{key}\ \textbf{then}\ t
+///     \gets
 ///     t.\mathit{left} \cr
 /// 4 & \qquad \textbf{else if}\ t.\mathit{right} \ne \textbf{nil}
 ///     \ \textbf{and}\ t.\mathit{right}.\mathit{key} < t.\mathit{key}

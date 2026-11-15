@@ -80,12 +80,14 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{search}( s , v ) \cr
-/// 2 & \quad i \gets 0;\ p \gets s.\mathrm{head}() \cr
-/// 3 & \quad \textbf{while not}\ s.\mathrm{finished}( p )\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ s.\mathrm{read}( p ) = v\ \textbf{then return}\ i
-///     \cr
-/// 5 & \qquad p \gets s.\mathrm{next}( p );\ i \gets i + 1 \cr
-/// 6 & \quad \textbf{return}\ -( i + 1 )
+/// 2 & \quad p \gets s.\mathrm{head}();\ i \gets 0\quad \triangleright\ i
+///     \text{ the index of } p \cr
+/// 3 & \quad \textbf{while not}\ s.\mathrm{finished}( p )\ \textbf{and}
+///     \ s.\mathrm{read}( p ) \ne v\ \textbf{do}\ p \gets s.\mathrm{next}( p
+///     );\ i \gets i + 1 \cr
+/// 4 & \quad \textbf{if}\ s.\mathrm{finished}( p )\ \textbf{then return}\ -(
+///     i + 1 )\quad \triangleright\ i = n \cr
+/// 5 & \quad \textbf{return}\ i
 /// \end{array}}
 /// \f]
 template< Sequence S >
@@ -100,13 +102,13 @@ long search( const S & s , const typename S::Item & v );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{searchOrdered}( s , v ) \cr
-/// 2 & \quad c \gets 0;\ p \gets s.\mathrm{head}() \cr
+/// 2 & \quad p \gets s.\mathrm{head}();\ c \gets 0\quad \triangleright\ c
+///     \text{ the items read} \cr
 /// 3 & \quad \textbf{while not}\ s.\mathrm{finished}( p )\ \textbf{do} \cr
-/// 4 & \qquad c \gets c + 1 \cr
-/// 5 & \qquad \textbf{if}\ s.\mathrm{read}( p ) = v\ \textbf{then return}\ c
-///     - 1 \cr
-/// 6 & \qquad \textbf{if}\ v < s.\mathrm{read}( p )\ \textbf{then}
-///     \ \textbf{return}\ -c \cr
+/// 4 & \qquad x \gets s.\mathrm{read}( p );\ c \gets c + 1 \cr
+/// 5 & \qquad \textbf{if}\ v < x\ \textbf{then return}\ -c\quad
+///     \triangleright\ v \text{ would go before } x \cr
+/// 6 & \qquad \textbf{if}\ v = x\ \textbf{then return}\ c - 1 \cr
 /// 7 & \qquad p \gets s.\mathrm{next}( p ) \cr
 /// 8 & \quad \textbf{return}\ -\max( c , 1 )
 /// \end{array}}
@@ -123,12 +125,11 @@ long searchOrdered( const S & s , const typename S::Item & v );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{lowerBound}( s , v ) \cr
-/// 2 & \quad p \gets s.\mathrm{head}() \cr
-/// 3 & \quad \textbf{while not}\ s.\mathrm{finished}( p )\ \textbf{and}
-///     \ s.\mathrm{read}( p ) < v\ \textbf{do}\ p \gets s.\mathrm{next}( p )
-///     \cr
-/// 4 & \quad \textbf{return}\ ( p , \textbf{not}\ s.\mathrm{finished}( p )
-///     \ \textbf{and}\ s.\mathrm{read}( p ) = v )
+/// 2 & \quad p \gets \text{the first position of } s
+///     \text{ that is finished or holds an item } \ge v \cr
+/// 3 & \quad \mathit{found} \gets \textbf{not}\ s.\mathrm{finished}( p )
+///     \ \textbf{and}\ s.\mathrm{read}( p ) = v \cr
+/// 4 & \quad \textbf{return}\ ( p , \mathit{found} )
 /// \end{array}}
 /// \f]
 /// \pre \f$ s \f$ is sorted (an audit)
@@ -146,12 +147,12 @@ std::pair< typename S::Pos , bool > lowerBound( const S & s ,
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{sublist}( s , p , q ) \cr
 /// 2 & \quad r \gets \text{an empty sequence} \cr
-/// 3 & \quad \textbf{if}\ s.\mathrm{finished}( p )\ \textbf{then return}\ r
-///     \cr
-/// 4 & \quad \textbf{loop} \cr
-/// 5 & \qquad \text{append } s.\mathrm{read}( p ) \text{ to } r \cr
-/// 6 & \qquad \textbf{if}\ p = q\ \textbf{then return}\ r \cr
-/// 7 & \qquad p \gets s.\mathrm{next}( p )
+/// 3 & \quad \textbf{while not}\ s.\mathrm{finished}( p )\ \textbf{do}\quad
+///     \triangleright\ \text{from } p \text{ to } q \text{ included} \cr
+/// 4 & \qquad \text{append } s.\mathrm{read}( p ) \text{ to } r;
+///     \ \textbf{if}\ p = q\ \textbf{then}\ \textbf{break} \cr
+/// 5 & \qquad p \gets s.\mathrm{next}( p ) \cr
+/// 6 & \quad \textbf{return}\ r
 /// \end{array}}
 /// \f]
 /// \pre \f$ q \f$ is \f$ p \f$ or follows it, and holds an item unless
@@ -182,22 +183,19 @@ enum class Order {
 /// 1 & \textbf{function}\ \mathrm{order}( s ) \cr
 /// 2 & \quad \textbf{if}\ s.\mathrm{empty}()\ \textbf{then return}
 ///     \ \text{EMPTY} \cr
-/// 3 & \quad \mathit{up} \gets \mathit{down} \gets \mathit{equal} \gets
-///     \textbf{false} \cr
-/// 4 & \quad \textbf{foreach}\ \text{pair } ( x , y ) \text{ of }
-///     \text{neighbors of } s\ \textbf{do} \cr
-/// 5 & \qquad \textbf{if}\ x < y\ \textbf{then}\ \mathit{up} \gets
-///     \textbf{true}\ \textbf{else if}\ y < x\ \textbf{then}
-///     \ \mathit{down} \gets \textbf{true}\ \textbf{else}\ \mathit{equal}
-///     \gets \textbf{true} \cr
-/// 6 & \quad \textbf{if}\ \mathit{up}\ \textbf{and}\ \mathit{down}
+/// 3 & \quad \textbf{foreach}\ \text{two neighbors } x , y \text{ of } s
+///     \ \textbf{do}\ \text{note whether } x < y \text{, } y < x \text{ or }
+///     x = y \cr
+/// 4 & \quad \mathit{up} , \mathit{down} , \mathit{equal} \gets
+///     \text{whether each of the three was seen} \cr
+/// 5 & \quad \textbf{if}\ \mathit{up}\ \textbf{and}\ \mathit{down}
 ///     \ \textbf{then return}\ \text{NONE} \cr
-/// 7 & \quad \textbf{if not}\ \mathit{up}\ \textbf{and not}
-///     \ \mathit{down}\ \textbf{then return}\ \text{CONSTANT} \cr
-/// 8 & \quad \textbf{if}\ \mathit{up}\ \textbf{then return}\ (
+/// 6 & \quad \textbf{if}\ \mathit{up}\ \textbf{then return}\ (
 ///     \text{NONDECREASING if } \mathit{equal} \text{, else INCREASING} ) \cr
-/// 9 & \quad \textbf{return}\ ( \text{NONINCREASING if } \mathit{equal}
-///     \text{, else DECREASING} )
+/// 7 & \quad \textbf{if}\ \mathit{down}\ \textbf{then return}\ (
+///     \text{NONINCREASING if } \mathit{equal} \text{, else DECREASING} ) \cr
+/// 8 & \quad \textbf{return}\ \text{CONSTANT}\quad \triangleright
+///     \ \text{one item, or all equal}
 /// \end{array}}
 /// \f]
 template< Sequence S >
@@ -214,15 +212,15 @@ Order order( const S & s );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{bubbleSort}( s ) \cr
-/// 2 & \quad \textbf{repeat} \cr
-/// 3 & \qquad \mathit{swapped} \gets \textbf{false} \cr
-/// 4 & \qquad \textbf{foreach}\ \text{pair of positions } ( p , q ) ,\ q =
-///     s.\mathrm{next}( p ) ,\ \text{in order}\ \textbf{do} \cr
-/// 5 & \qquad\quad \textbf{if}\ s.\mathrm{read}( q ) < s.\mathrm{read}( p )
-///     \ \textbf{then} \cr
-/// 6 & \qquad\qquad \text{swap the items in } p \text{ and } q;
-///     \ \mathit{swapped} \gets \textbf{true} \cr
-/// 7 & \quad \textbf{until not}\ \mathit{swapped}
+/// 2 & \quad \mathit{swapped} \gets \textbf{true} \cr
+/// 3 & \quad \textbf{while}\ \mathit{swapped}\ \textbf{do}\quad
+///     \triangleright\ \text{a pass over } s \cr
+/// 4 & \qquad \mathit{swapped} \gets \textbf{false} \cr
+/// 5 & \qquad \textbf{foreach}\ \text{position } p \text{ with a successor }
+///     q = s.\mathrm{next}( p ) \text{, in order}\ \textbf{do} \cr
+/// 6 & \qquad\quad \textbf{if}\ s.\mathrm{read}( q ) < s.\mathrm{read}( p )
+///     \ \textbf{then}\ \text{exchange the two items};\ \mathit{swapped}
+///     \gets \textbf{true}
 /// \end{array}}
 /// \f]
 /// \post \f$ s \f$ is sorted, with the same length (an audit)
@@ -237,17 +235,18 @@ void bubbleSort( S & s );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{mergeSorted}( a , b ) \cr
-/// 2 & \quad c \gets \text{an empty sequence};\ p \gets a.\mathrm{head}();
-///     \ q \gets b.\mathrm{head}() \cr
-/// 3 & \quad \textbf{while not}\ a.\mathrm{finished}( p )\ \textbf{and not}
-///     \ b.\mathrm{finished}( q )\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ b.\mathrm{read}( q ) < a.\mathrm{read}( p )
-///     \ \textbf{then}\ \text{append } b.\mathrm{read}( q ) \text{ to } c;\ q
-///     \gets b.\mathrm{next}( q ) \cr
-/// 5 & \qquad \textbf{else}\ \text{append } a.\mathrm{read}( p ) \text{ to }
-///     c;\ p \gets a.\mathrm{next}( p ) \cr
-/// 6 & \quad \text{append the items left in } a \text{, then those left in }
-///     b \text{, to } c \cr
+/// 2 & \quad c \gets \text{an empty sequence};\ ( p , q ) \gets (
+///     a.\mathrm{head}() , b.\mathrm{head}() ) \cr
+/// 3 & \quad \textbf{while}\ \text{neither } p \text{ nor } q
+///     \text{ is finished}\ \textbf{do}\quad \triangleright
+///     \ \text{on ties, } a \text{ first} \cr
+/// 4 & \qquad \textbf{if}\ a.\mathrm{read}( p ) \le b.\mathrm{read}( q )
+///     \ \textbf{then}\ \text{append } a.\mathrm{read}( p ) \text{ to } c;
+///     \ p \gets a.\mathrm{next}( p ) \cr
+/// 5 & \qquad \textbf{else}\ \text{append } b.\mathrm{read}( q ) \text{ to }
+///     c;\ q \gets b.\mathrm{next}( q ) \cr
+/// 6 & \quad \text{append to } c \text{ what is left of } a
+///     \text{, then what is left of } b \cr
 /// 7 & \quad \textbf{return}\ c
 /// \end{array}}
 /// \f]
@@ -265,18 +264,17 @@ S mergeSorted( const S & a , const S & b );
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{naturalMergeSort}( s ) \cr
 /// 2 & \quad \textbf{loop} \cr
-/// 3 & \qquad a \gets b \gets \text{empty sequences};\ r \gets 0 \cr
-/// 4 & \qquad \textbf{foreach}\ \text{run of } s \text{, in order}
+/// 3 & \qquad \text{deal the maximal nondecreasing runs of } s \text{ to } a
+///     \text{ and } b \text{ in turn} \cr
+/// 4 & \qquad r \gets \text{the number of runs};\ \textbf{if}\ r \le 1
+///     \ \textbf{then return} \cr
+/// 5 & \qquad m \gets \text{an empty sequence} \cr
+/// 6 & \qquad \textbf{while}\ a \text{ or } b \text{ is not exhausted}
 ///     \ \textbf{do} \cr
-/// 5 & \qquad\quad \text{append it to } a \text{ if } r \text{ is even, }
-///     \text{to } b \text{ otherwise};\ r \gets r + 1 \cr
-/// 6 & \qquad \textbf{if}\ r \le 1\ \textbf{then return} \cr
-/// 7 & \qquad m \gets \text{an empty sequence} \cr
-/// 8 & \qquad \textbf{while}\ a \text{ or } b \text{ has items left}
-///     \ \textbf{do} \cr
-/// 9 & \qquad\quad \text{append to } m \text{ the merge of the next run }
-///     \text{of } a \text{ with the next run of } b \cr
-/// 10 & \qquad s \gets m
+/// 7 & \qquad\quad \text{append to } m \text{ the merge of the next run of }
+///     a \text{ and the next run of } b \cr
+/// 8 & \qquad s \gets m\quad \triangleright
+///     \ \text{about half the runs of before}
 /// \end{array}}
 /// \f]
 /// \post \f$ s \f$ is sorted, with the same length (an audit)
@@ -289,13 +287,11 @@ void naturalMergeSort( S & s , long * passes = nullptr );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{removeDuplicates}( s ) \cr
-/// 2 & \quad \textbf{foreach}\ \text{position } p \text{ of } s \text{, in }
-///     \text{order}\ \textbf{do} \cr
-/// 3 & \qquad q \gets s.\mathrm{next}( p ) \cr
-/// 4 & \qquad \textbf{while not}\ s.\mathrm{finished}( q )\ \textbf{do} \cr
-/// 5 & \qquad\quad \textbf{if}\ s.\mathrm{read}( q ) = s.\mathrm{read}( p
-///     )\ \textbf{then}\ q \gets s.\mathrm{remove}( q )\ \textbf{else}\ q
-///     \gets s.\mathrm{next}( q )
+/// 2 & \quad \textbf{foreach}\ \text{position } p \text{ of } s
+///     \text{, in order}\ \textbf{do}\quad \triangleright
+///     \ \text{the first copy stays} \cr
+/// 3 & \qquad \text{remove from } s \text{ every later position } q
+///     \text{ with } s.\mathrm{read}( q ) = s.\mathrm{read}( p )
 /// \end{array}}
 /// \f]
 /// \post no item appears twice (an audit)

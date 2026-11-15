@@ -56,8 +56,9 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{extractPositive}( q , \mathit{out} ) \cr
-/// 2 & \quad \textbf{while not}\ \mathrm{empty}( q )\ \textbf{do} \cr
-/// 3 & \qquad x \gets \mathrm{dequeue}( q );\ \textbf{if}\ x > 0
+/// 2 & \quad \textbf{while not}\ \mathrm{empty}( q )\ \textbf{do}\quad
+///     \triangleright\ q \text{ ends empty} \cr
+/// 3 & \qquad x \gets \mathrm{dequeue}( q );\ \textbf{if}\ 0 < x
 ///     \ \textbf{then}\ \mathrm{enqueue}( \mathit{out} , x )
 /// \end{array}}
 /// \f]
@@ -74,12 +75,14 @@ void extractPositive( Q & q , Q & out );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{copyPositive}( q , \mathit{out} ) \cr
-/// 2 & \quad A \gets \text{an empty queue} \cr
+/// 2 & \quad A \gets \text{an empty queue}\quad \triangleright
+///     \ \text{the items of } q \text{, in order} \cr
 /// 3 & \quad \textbf{while not}\ \mathrm{empty}( q )\ \textbf{do} \cr
-/// 4 & \qquad x \gets \mathrm{dequeue}( q );\ \mathrm{enqueue}( A , x ) \cr
-/// 5 & \qquad \textbf{if}\ x > 0\ \textbf{then}\ \mathrm{enqueue}(
+/// 4 & \qquad x \gets \mathrm{dequeue}( q ) \cr
+/// 5 & \qquad \textbf{if}\ 0 < x\ \textbf{then}\ \mathrm{enqueue}(
 ///     \mathit{out} , x ) \cr
-/// 6 & \quad \textbf{while not}\ \mathrm{empty}( A )\ \textbf{do}
+/// 6 & \qquad \mathrm{enqueue}( A , x ) \cr
+/// 7 & \quad \textbf{while not}\ \mathrm{empty}( A )\ \textbf{do}
 ///     \ \mathrm{enqueue}( q , \mathrm{dequeue}( A ) )
 /// \end{array}}
 /// \f]

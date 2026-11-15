@@ -70,14 +70,14 @@ namespace ADS
 /// 2 & \quad i \gets 0;\ j \gets n - 1 \cr
 /// 3 & \quad \textbf{while}\ i \le j\ \textbf{and}\ A[ i ] \le v \le A[ j ]
 ///     \ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ A[ i ] = A[ j ]\ \textbf{then}\ m \gets i \cr
-/// 5 & \qquad \textbf{else}\ m \gets i + \lfloor ( j - i ) ( v - A[ i ] ) / (
-///     A[ j ] - A[ i ] ) \rfloor \cr
-/// 6 & \qquad \mathrm{trace}( i , j , m ) \cr
-/// 7 & \qquad \textbf{if}\ A[ m ] = v\ \textbf{then return}\ m \cr
-/// 8 & \qquad \textbf{else if}\ A[ m ] < v\ \textbf{then}\ i \gets m + 1 \cr
-/// 9 & \qquad \textbf{else}\ j \gets m - 1 \cr
-/// 10 & \quad \textbf{return}\ -1
+/// 4 & \qquad m \gets i \text{ if } A[ i ] = A[ j ] \text{, else } i +
+///     \lfloor ( j - i ) ( v - A[ i ] ) / ( A[ j ] - A[ i ] ) \rfloor \cr
+/// 5 & \qquad \mathrm{trace}( i , j , m )\quad \triangleright\ \text{the
+///     probe, linear in } v \cr
+/// 6 & \qquad \textbf{if}\ v < A[ m ]\ \textbf{then}\ j \gets m - 1 \cr
+/// 7 & \qquad \textbf{else if}\ A[ m ] < v\ \textbf{then}\ i \gets m + 1 \cr
+/// 8 & \qquad \textbf{else return}\ m \cr
+/// 9 & \quad \textbf{return}\ -1
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is sorted

@@ -142,12 +142,12 @@ class CursorBinaryTree
  /// 1 & \textbf{function}\ \mathrm{copy}( t , s , p ) \cr
  /// 2 & \quad \textbf{if}\ s = \mathrm{NIL}\ \textbf{then return}
  ///     \ \mathrm{NIL} \cr
- /// 3 & \quad c \gets \text{a new node of value } t.\mathrm{read}( s )
- ///     \text{ under } p \cr
+ /// 3 & \quad c \gets \text{a new node under } p \text{, of value }
+ ///     t.\mathrm{read}( s ) \cr
  /// 4 & \quad N[ c ].\mathit{left} \gets \mathrm{copy}( t , t.\mathrm{left}(
- ///     s ) , c );\ N[ c ].\mathit{right} \gets \mathrm{copy}( t ,
- ///     t.\mathrm{right}( s ) , c ) \cr
- /// 5 & \quad \textbf{return}\ c
+ ///     s ) , c ) \cr
+ /// 5 & \quad N[ c ].\mathit{right} \gets \mathrm{copy}( t ,
+ ///     t.\mathrm{right}( s ) , c );\ \textbf{return}\ c
  /// \end{array}}
  /// \f]
  /// \pre \f$ n \f$ is a node with no left child, \f$ s \f$ a node of

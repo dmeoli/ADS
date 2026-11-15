@@ -246,14 +246,15 @@ class BTree
  /// nodes of many keys):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{procedure}\ \mathrm{visit}( x , f ) \cr
+ /// 1 & \textbf{procedure}\ \mathrm{visit}( x , f )\quad \triangleright\ x
+ ///     \text{ of } j \text{ keys} \cr
  /// 2 & \quad \textbf{if}\ x = \textbf{nil}\ \textbf{then return} \cr
- /// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ j - 1\ \textbf{do} \cr
- /// 4 & \qquad \textbf{if}\ x \text{ is not a leaf}\ \textbf{then}
+ /// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ j\ \textbf{do}\quad
+ ///     \triangleright
+ ///     \ \text{the subtree on the left of each key, then the key} \cr
+ /// 4 & \qquad \textbf{if}\ x \text{ is an inner node}\ \textbf{then}
  ///     \ \mathrm{visit}( x.c[ i ] , f ) \cr
- /// 5 & \qquad f( x.k[ i ] , x.v[ i ] ) \cr
- /// 6 & \quad \textbf{if}\ x \text{ is not a leaf}\ \textbf{then}
- ///     \ \mathrm{visit}( x.c[ j ] , f )
+ /// 5 & \qquad \textbf{if}\ i < j\ \textbf{then}\ f( x.k[ i ] , x.v[ i ] )
  /// \end{array}}
  /// \f]
  template< class F >

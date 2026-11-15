@@ -70,15 +70,17 @@ namespace ADS
 /// `Expressions.h` with trees in place of values):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{expressionTree}( e ) \cr
-/// 2 & \quad S \gets \text{an empty stack} \cr
-/// 3 & \quad \textbf{foreach}\ \text{token } x \text{ of } e\ \textbf{do}
-///     \cr
-/// 4 & \qquad \textbf{if}\ x \text{ is an operand}\ \textbf{then}
-///     \ \mathrm{push}( S , \text{a leaf } x ) \cr
-/// 5 & \qquad \textbf{else}\ r \gets \mathrm{pop}( S );\ l \gets
-///     \mathrm{pop}( S );\ \mathrm{push}( S , \mathrm{join}( x , l , r ) ) \cr
-/// 6 & \quad \textbf{return}\ \mathrm{pop}( S )
+/// 1 & \textbf{function}\ \mathrm{expressionTree}( e )\quad \triangleright
+///     \ e \text{ in postfix form} \cr
+/// 2 & \quad S \gets \text{an empty stack of trees} \cr
+/// 3 & \quad \textbf{foreach}\ \text{token } x \text{ of } e
+///     \text{, from the left}\ \textbf{do} \cr
+/// 4 & \qquad \textbf{if}\ x \text{ is an operator}\ \textbf{then}\ r \gets
+///     \mathrm{pop}( S );\ l \gets \mathrm{pop}( S );\ \mathrm{push}( S ,
+///     \mathrm{join}( x , l , r ) ) \cr
+/// 5 & \qquad \textbf{else}\ \mathrm{push}( S , \text{the leaf } x ) \cr
+/// 6 & \quad \textbf{return}\ \mathrm{pop}( S )\quad \triangleright
+///     \ \text{the only tree left}
 /// \end{array}}
 /// \f]
 /// \pre \f$ e \f$ is a well formed postfix expression
@@ -93,11 +95,11 @@ BinaryTree< std::string > * expressionTree( std::string_view e );
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{evaluate}( t ) \cr
 /// 2 & \quad \textbf{if}\ t \text{ is a leaf}\ \textbf{then return}
-///     \ \text{its number, or the value of its variable} \cr
-/// 3 & \quad a \gets \mathrm{evaluate}( t.\mathrm{left}() );\ b \gets
-///     \mathrm{evaluate}( t.\mathrm{right}() ) \cr
-/// 4 & \quad \textbf{return}\ a \mathbin{\mathrm{op}} b \text{, for the }
-///     \text{operator op of } t
+///     \ \text{the number in } t \text{, or the value of the variable in } t
+///     \cr
+/// 3 & \quad \textbf{return}\ \text{the operator of } t \text{ applied to }
+///     \mathrm{evaluate}( t.\mathrm{left}() ) \text{ and }
+///     \mathrm{evaluate}( t.\mathrm{right}() )
 /// \end{array}}
 /// \f]
 /// \pre \f$ t \f$ is not nil, `env` values each variable, no division by
@@ -119,9 +121,9 @@ std::string prefixForm( const BinaryTree< std::string > * t );
 /// 1 & \textbf{function}\ \mathrm{infixForm}( t ) \cr
 /// 2 & \quad \textbf{if}\ t \text{ is a leaf}\ \textbf{then return}
 ///     \ t.\mathrm{read}() \cr
-/// 3 & \quad \textbf{return}\ \text{“(”},\ \mathrm{infixForm}(
-///     t.\mathrm{left}() ),\ t.\mathrm{read}(),\ \mathrm{infixForm}(
-///     t.\mathrm{right}() ),\ \text{“)”}
+/// 3 & \quad \textbf{return}\ \text{“(”} \cdot \mathrm{infixForm}(
+///     t.\mathrm{left}() ) \cdot t.\mathrm{read}() \cdot \mathrm{infixForm}(
+///     t.\mathrm{right}() ) \cdot \text{“)”}
 /// \end{array}}
 /// \f]
 /// \pre \f$ t \f$ is not nil

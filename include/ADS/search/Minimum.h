@@ -68,12 +68,12 @@ namespace ADS
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{argmin}( A , \mathit{start} , \mathit{end}
 ///     ) \cr
-/// 2 & \quad \mathit{pos} \gets \mathit{start} \cr
+/// 2 & \quad \mathit{pos} \gets \mathit{start}\quad \triangleright\ \text{the
+///     first minimum so far} \cr
 /// 3 & \quad \textbf{for}\ j \gets \mathit{start} + 1\ \textbf{to}
-///     \ \mathit{end}\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ A[ j ] < A[ \mathit{pos} ]\ \textbf{then}
-///     \ \mathit{pos} \gets j \cr
-/// 5 & \quad \textbf{return}\ \mathit{pos}
+///     \ \mathit{end}\ \textbf{do}\ \textbf{if}\ A[ j ] < A[ \mathit{pos} ]
+///     \ \textbf{then}\ \mathit{pos} \gets j \cr
+/// 4 & \quad \textbf{return}\ \mathit{pos}
 /// \end{array}}
 /// \f]
 /// \pre \f$ \mathit{start} \le \mathit{end} < n \f$

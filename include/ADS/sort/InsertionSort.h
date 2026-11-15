@@ -60,11 +60,12 @@ namespace ADS
 /// 1 & \textbf{procedure}\ \mathrm{insertionSort}( A , \mathit{lo} ,
 ///     \mathit{hi} ) \cr
 /// 2 & \quad \textbf{for}\ i \gets \mathit{lo} + 1\ \textbf{to}\ \mathit{hi} -
-///     1\ \textbf{do} \cr
+///     1\ \textbf{do}\quad \triangleright\ \text{insert } A[ i ] \cr
 /// 3 & \qquad \mathit{temp} \gets A[ i ];\ j \gets i \cr
 /// 4 & \qquad \textbf{while}\ j > \mathit{lo}\ \textbf{and}\ \mathit{temp} <
 ///     A[ j - 1 ]\ \textbf{do} \cr
-/// 5 & \qquad\quad A[ j ] \gets A[ j - 1 ];\ j \gets j - 1 \cr
+/// 5 & \qquad\quad A[ j ] \gets A[ j - 1 ];\ j \gets j - 1\quad
+///     \triangleright\ \text{a larger item one step right} \cr
 /// 6 & \qquad A[ j ] \gets \mathit{temp}
 /// \end{array}}
 /// \f]
@@ -85,11 +86,12 @@ void insertionSort( std::vector< T > & A , std::size_t lo , std::size_t hi ,
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{insertionSortSentinel}( A , n ) \cr
 /// 2 & \quad \textbf{if}\ n < 2\ \textbf{then return} \cr
-/// 3 & \quad A[ 0 ] \leftrightarrow A[ \mathrm{argmin}( A , 0 , n - 1 ) ] \cr
+/// 3 & \quad m \gets \mathrm{argmin}( A , 0 , n - 1 );\ A[ 0 ] \leftrightarrow
+///     A[ m ]\quad \triangleright\ \text{the sentinel} \cr
 /// 4 & \quad \textbf{for}\ i \gets 2\ \textbf{to}\ n - 1\ \textbf{do} \cr
 /// 5 & \qquad x \gets A[ i ];\ j \gets i \cr
 /// 6 & \qquad \textbf{while}\ x < A[ j - 1 ]\ \textbf{do}\ A[ j ] \gets A[ j
-///     - 1 ];\ j \gets j - 1 \cr
+///     - 1 ];\ j \gets j - 1\quad \triangleright\ \text{no test on } j \cr
 /// 7 & \qquad A[ j ] \gets x
 /// \end{array}}
 /// \f]

@@ -99,11 +99,11 @@ class Tree
  /// height may be \f$ n \f$):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{procedure}\ \mathrm{destroy}( t ) \cr
- /// 2 & \quad S \gets \text{the children of } t \cr
- /// 3 & \quad \textbf{while}\ S \ne \emptyset\ \textbf{do} \cr
- /// 4 & \qquad u \gets \mathrm{pop}( S );\ \text{push the children of } u
- ///     \text{ on } S;\ \text{free } u
+ /// 1 & \textbf{procedure}\ \mathrm{destroy}( t )\quad \triangleright
+ ///     \ \text{no recursion: the height may be } n \cr
+ /// 2 & \quad S \gets \text{a stack of the children of } t \cr
+ /// 3 & \quad \textbf{while}\ S \ne \emptyset\ \textbf{do}\ u \gets
+ ///     \mathrm{pop}( S );\ \text{push the children of } u;\ \text{free } u
  /// \end{array}}
  /// \f]
  ~Tree();
@@ -201,10 +201,12 @@ class Tree
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{dfs}( t ) \cr
-/// 2 & \quad \mathrm{pre}( t ) \cr
-/// 3 & \quad \textbf{foreach}\ \text{child } c \text{ of } t \text{, from }
-///     \text{the leftmost}\ \textbf{do}\ \mathrm{dfs}( c ) \cr
-/// 4 & \quad \mathrm{post}( t )
+/// 2 & \quad \mathrm{pre}( t )\quad \triangleright\ \text{on the way down}
+///     \cr
+/// 3 & \quad \textbf{for}\ c \gets t.\mathrm{leftmostChild}() ,
+///     c.\mathrm{rightSibling}() , \ldots \text{ while } c \ne \textbf{nil}
+///     \ \textbf{do}\ \mathrm{dfs}( c ) \cr
+/// 4 & \quad \mathrm{post}( t )\quad \triangleright\ \text{on the way up}
 /// \end{array}}
 /// \f]
 /// \pre \f$ t \f$ is a node
@@ -243,15 +245,15 @@ void post_visit( Tree< T > * t , F && f );
 /// keeps its own stack as `dfs()` does:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{in\_visit}( t , i , f ) \cr
-/// 2 & \quad c \gets t.\mathrm{leftmostChild}();\ k \gets 0 \cr
-/// 3 & \quad \textbf{while}\ c \ne \textbf{nil}\ \textbf{and}\ k < i
-///     \ \textbf{do} \cr
-/// 4 & \qquad \mathrm{in\_visit}( c , i , f );\ c \gets
-///     c.\mathrm{rightSibling}();\ k \gets k + 1 \cr
-/// 5 & \quad f( t ) \cr
-/// 6 & \quad \textbf{while}\ c \ne \textbf{nil}\ \textbf{do}
-///     \ \mathrm{in\_visit}( c , i , f );\ c \gets c.\mathrm{rightSibling}()
+/// 1 & \textbf{procedure}\ \mathrm{in\_visit}( t , i , f )\quad
+///     \triangleright\ t \text{ after its first } i \text{ children} \cr
+/// 2 & \quad k \gets 0 \cr
+/// 3 & \quad \textbf{foreach}\ \text{child } c \text{ of } t
+///     \text{, from the leftmost}\ \textbf{do} \cr
+/// 4 & \qquad \textbf{if}\ k = i\ \textbf{then}\ f( t ) \cr
+/// 5 & \qquad \mathrm{in\_visit}( c , i , f );\ k \gets k + 1 \cr
+/// 6 & \quad \textbf{if}\ k \le i\ \textbf{then}\ f( t )\quad
+///     \triangleright\ \text{at most } i \text{ children}
 /// \end{array}}
 /// \f]
 /// \pre \f$ t \f$ is a node and \f$ i \ge 0 \f$
@@ -267,13 +269,14 @@ void in_visit( Tree< T > * t , int i , F && f );
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{copy}( t ) \cr
 /// 2 & \quad c \gets \mathrm{Tree}( t.\mathrm{read}() );\ \ell \gets
-///     \textbf{nil} \cr
-/// 3 & \quad \textbf{foreach}\ \text{child } u \text{ of } t \text{, from }
-///     \text{the leftmost}\ \textbf{do} \cr
+///     \textbf{nil}\quad \triangleright\ \ell \text{ the last child copied}
+///     \cr
+/// 3 & \quad \textbf{foreach}\ \text{child } u \text{ of } t
+///     \text{, from the leftmost}\ \textbf{do} \cr
 /// 4 & \qquad x \gets \mathrm{copy}( u ) \cr
-/// 5 & \qquad \textbf{if}\ \ell = \textbf{nil}\ \textbf{then}
-///     \ c.\mathrm{insertChild}( x )\ \textbf{else}
-///     \ \ell.\mathrm{insertSibling}( x ) \cr
+/// 5 & \qquad \textbf{if}\ \ell \ne \textbf{nil}\ \textbf{then}
+///     \ \ell.\mathrm{insertSibling}( x )\ \textbf{else}
+///     \ c.\mathrm{insertChild}( x ) \cr
 /// 6 & \qquad \ell \gets x \cr
 /// 7 & \quad \textbf{return}\ c
 /// \end{array}}
@@ -288,12 +291,12 @@ Tree< T > * copy( const Tree< T > * t );
 /// In pseudocode (section 5.3):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{bfs}( t , f ) \cr
-/// 2 & \quad Q \gets \text{an empty queue};\ \mathrm{enqueue}( Q , t ) \cr
+/// 1 & \textbf{procedure}\ \mathrm{bfs}( t , f )\quad \triangleright
+///     \ \text{by levels, each from left to right} \cr
+/// 2 & \quad Q \gets \text{a queue holding only } t \cr
 /// 3 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
-/// 4 & \qquad u \gets \mathrm{dequeue}( Q );\ f( u ) \cr
-/// 5 & \qquad \textbf{foreach}\ \text{child } c \text{ of } u \text{, from }
-///     \text{the leftmost}\ \textbf{do}\ \mathrm{enqueue}( Q , c )
+/// 4 & \qquad u \gets \mathrm{dequeue}( Q );\ f( u );
+///     \ \text{enqueue the children of } u \text{, from the leftmost}
 /// \end{array}}
 /// \f]
 /// \pre \f$ t \f$ is a node
@@ -307,13 +310,15 @@ void bfs( Tree< T > * t , F && f );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{maxWeightLevel}( t ) \cr
-/// 2 & \quad L \gets ( t );\ \ell \gets 0;\ b \gets 0 \cr
+/// 2 & \quad L \gets ( t );\ \ell \gets 0;\ b \gets 0;\ W \gets -\infty\quad
+///     \triangleright\ L \text{ the nodes of level } \ell \cr
 /// 3 & \quad \textbf{while}\ L \ne \emptyset\ \textbf{do} \cr
-/// 4 & \qquad w \gets \text{the sum of the values of } L;\ N \gets
-///     \text{the children of the nodes of } L \cr
-/// 5 & \qquad \textbf{if}\ \ell = 0\ \textbf{or}\ w > W\ \textbf{then}
-///     \ b \gets \ell;\ W \gets w \cr
-/// 6 & \qquad L \gets N;\ \ell \gets \ell + 1 \cr
+/// 4 & \qquad w \gets \text{the sum of the values of the nodes of } L \cr
+/// 5 & \qquad \textbf{if}\ w > W\ \textbf{then}\ ( b , W ) \gets ( \ell , w
+///     )\quad \triangleright\ \text{the first level of the largest weight}
+///     \cr
+/// 6 & \qquad L \gets \text{the children of the nodes of } L;\ \ell \gets
+///     \ell + 1 \cr
 /// 7 & \quad \textbf{return}\ b
 /// \end{array}}
 /// \f]
@@ -330,10 +335,9 @@ int maxWeightLevel( Tree< T > * t );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{to\_list}( t ) \cr
-/// 2 & \quad s \gets \text{“( ” followed by } t.\mathrm{read}() \cr
-/// 3 & \quad \textbf{foreach}\ \text{child } c \text{ of } t\ \textbf{do}
-///     \ s \gets s \text{ followed by a space and } \mathrm{to\_list}( c ) \cr
-/// 4 & \quad \textbf{return}\ s \text{ followed by “ )”}
+/// 2 & \quad \textbf{return}\ \text{“(”, } t.\mathrm{read}() \text{, the }
+///     \mathrm{to\_list} \text{ of each child of } t
+///     \text{ and “)”, joined by single spaces}
 /// \end{array}}
 /// \f]
 /// \pre \f$ t \f$ is a node
@@ -347,11 +351,12 @@ std::string to_list( const Tree< T > * t );
 /// \f$ T \to ( \, v \, T^* \, ) \f$ on the tokens of \f$ s \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{readTree}() \cr
-/// 2 & \quad \text{read “(”};\ t \gets \mathrm{Tree}( \text{the value read} )
-///     \cr
-/// 3 & \quad \textbf{while}\ \text{the next token is “(”}\ \textbf{do}
-///     \ \text{append } \mathrm{readTree}() \text{ to the children of } t \cr
+/// 1 & \textbf{function}\ \mathrm{readTree}()\quad \triangleright
+///     \ \text{the inverse of } \mathrm{to\_list} \cr
+/// 2 & \quad \text{read “(” and the value } v \text{ that follows};\ t \gets
+///     \mathrm{Tree}( v ) \cr
+/// 3 & \quad \textbf{while}\ \text{“(” follows}\ \textbf{do}\ \text{make }
+///     \mathrm{readTree}() \text{ the last child of } t \cr
 /// 4 & \quad \text{read “)”};\ \textbf{return}\ t
 /// \end{array}}
 /// \f]
@@ -414,14 +419,14 @@ auto children( Tree< T > * t )
 /// In pseudocode (section 5.3), the step to the next node of the preorder:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{next}( u , t ) \cr
-/// 2 & \quad \textbf{if}\ u \text{ has a child}\ \textbf{then return}
-///     \ u.\mathrm{leftmostChild}() \cr
-/// 3 & \quad \textbf{while}\ u \ne t\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ u.\mathrm{rightSibling}() \ne \textbf{nil}
-///     \ \textbf{then return}\ u.\mathrm{rightSibling}() \cr
-/// 5 & \qquad u \gets u.\mathrm{parent}() \cr
-/// 6 & \quad \textbf{return nil}
+/// 1 & \textbf{function}\ \mathrm{next}( u , t )\quad \triangleright
+///     \ \text{the node after } u \text{ in the previsit of } t \cr
+/// 2 & \quad \textbf{if}\ u.\mathrm{leftmostChild}() \ne \textbf{nil}
+///     \ \textbf{then return}\ u.\mathrm{leftmostChild}() \cr
+/// 3 & \quad \textbf{while}\ u \ne t \text{ and } u.\mathrm{rightSibling}()
+///     = \textbf{nil}\ \textbf{do}\ u \gets u.\mathrm{parent}() \cr
+/// 4 & \quad \textbf{if}\ u = t\ \textbf{then return nil}
+///     \ \textbf{else return}\ u.\mathrm{rightSibling}()
 /// \end{array}}
 /// \f]
 template< class T >

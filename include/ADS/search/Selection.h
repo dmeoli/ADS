@@ -82,18 +82,20 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{selection}( A , k ) \cr
-/// 2 & \quad \mathit{start} \gets 0;\ \mathit{end} \gets n - 1 \cr
-/// 3 & \quad \textbf{loop} \cr
-/// 4 & \qquad \textbf{if}\ \mathit{start} = \mathit{end}\ \textbf{then
-///     return}\ A[ \mathit{start} ] \cr
-/// 5 & \qquad \text{swap } A[ \mathit{start} ] \text{ with an item of }
-///     A[ \mathit{start} .. \mathit{end} ] \text{ at random} \cr
-/// 6 & \qquad j \gets \mathrm{partition}( A , \mathit{start} , \mathit{end}
-///     );\ q \gets j - \mathit{start} + 1 \cr
-/// 7 & \qquad \textbf{if}\ k = q\ \textbf{then return}\ A[ j ] \cr
-/// 8 & \qquad \textbf{else if}\ k < q\ \textbf{then}\ \mathit{end} \gets j
-///     - 1 \cr
-/// 9 & \qquad \textbf{else}\ \mathit{start} \gets j + 1;\ k \gets k - q
+/// 2 & \quad ( \mathit{start} , \mathit{end} ) \gets ( 0 , n - 1 )\quad
+///     \triangleright\ \text{the } k \text{-th of } A[ \mathit{start} ..
+///     \mathit{end} ] \cr
+/// 3 & \quad \textbf{while}\ \mathit{start} < \mathit{end}\ \textbf{do} \cr
+/// 4 & \qquad A[ \mathit{start} ] \leftrightarrow A[ r ] \text{ for an } r
+///     \text{ drawn in } [ \mathit{start} , \mathit{end} ] \cr
+/// 5 & \qquad j \gets \mathrm{partition}( A , \mathit{start} , \mathit{end}
+///     );\ q \gets j - \mathit{start} + 1\quad \triangleright\ \text{the rank}
+///     \cr
+/// 6 & \qquad \textbf{if}\ k < q\ \textbf{then}\ \mathit{end} \gets j - 1 \cr
+/// 7 & \qquad \textbf{else if}\ k > q\ \textbf{then}\ ( \mathit{start} , k )
+///     \gets ( j + 1 , k - q ) \cr
+/// 8 & \qquad \textbf{else return}\ A[ j ] \cr
+/// 9 & \quad \textbf{return}\ A[ \mathit{start} ]
 /// \end{array}}
 /// \f]
 /// \pre \f$ 1 \le k \le n \f$

@@ -191,12 +191,14 @@ class List
  /// \f$ p \f$ and its predecessor, which the sentinel guarantees:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{insert}( p , v ) \cr
- /// 2 & \quad t \gets \text{a new cell};\ t.\mathit{value} \gets v \cr
- /// 3 & \quad t.\mathit{pred} \gets p.\mathit{pred};\ t.\mathit{succ} \gets
- ///     p \cr
- /// 4 & \quad p.\mathit{pred}.\mathit{succ} \gets t;\ p.\mathit{pred} \gets
- ///     t \cr
+ /// 1 & \textbf{function}\ \mathrm{insert}( p , v )\quad \triangleright
+ ///     \ \text{before the cell } p \cr
+ /// 2 & \quad t \gets \text{a new cell of value } v;\ q \gets
+ ///     p.\mathit{pred} \cr
+ /// 3 & \quad t.\mathit{succ} \gets p;\ t.\mathit{pred} \gets q \cr
+ /// 4 & \quad q.\mathit{succ} \gets t;\ p.\mathit{pred} \gets t\quad
+ ///     \triangleright\ \text{the sentinel if } q \text{ or } p
+ ///     \text{ is none} \cr
  /// 5 & \quad \textbf{return}\ t
  /// \end{array}}
  /// \f]
@@ -212,10 +214,10 @@ class List
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{remove}( p ) \cr
- /// 2 & \quad p.\mathit{pred}.\mathit{succ} \gets p.\mathit{succ};
- ///     \ p.\mathit{succ}.\mathit{pred} \gets p.\mathit{pred} \cr
- /// 3 & \quad t \gets p.\mathit{succ};\ \text{free the cell } p \cr
- /// 4 & \quad \textbf{return}\ t
+ /// 2 & \quad q \gets p.\mathit{pred};\ t \gets p.\mathit{succ} \cr
+ /// 3 & \quad q.\mathit{succ} \gets t;\ t.\mathit{pred} \gets q\quad
+ ///     \triangleright\ p \text{ is out of the chain} \cr
+ /// 4 & \quad \text{free the cell } p;\ \textbf{return}\ t
  /// \end{array}}
  /// \f]
  /// \pre \f$ p \f$ holds an item of this list (an audit)

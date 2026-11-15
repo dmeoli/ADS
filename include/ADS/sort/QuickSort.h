@@ -91,12 +91,14 @@ namespace ADS
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{partition}( A , \mathit{start} ,
 ///     \mathit{end} ) \cr
-/// 2 & \quad x \gets A[ \mathit{start} ];\ j \gets \mathit{start} \cr
+/// 2 & \quad x \gets A[ \mathit{start} ];\ j \gets \mathit{start}\quad
+///     \triangleright\ A[ \mathit{start} + 1 .. j ] < x \cr
 /// 3 & \quad \textbf{for}\ i \gets \mathit{start} + 1\ \textbf{to}
 ///     \ \mathit{end}\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ A[ i ] < x\ \textbf{then}\ j \gets j + 1;\ A[ i ]
-///     \leftrightarrow A[ j ] \cr
-/// 5 & \quad A[ \mathit{start} ] \gets A[ j ];\ A[ j ] \gets x \cr
+/// 4 & \qquad \textbf{if}\ A[ i ] < x\ \textbf{then}\ j \gets j + 1;\ A[ j ]
+///     \leftrightarrow A[ i ] \cr
+/// 5 & \quad A[ \mathit{start} ] \gets A[ j ];\ A[ j ] \gets x\quad
+///     \triangleright\ \text{the pivot between the two parts} \cr
 /// 6 & \quad \textbf{return}\ j
 /// \end{array}}
 /// \f]
@@ -119,16 +121,17 @@ std::size_t partition( std::vector< T > & A , std::size_t start ,
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{partitionByValue}( A , \mathit{start} ,
 ///     \mathit{end} , x ) \cr
-/// 2 & \quad i \gets \mathit{start};\ j \gets \mathit{end} + 1 \cr
+/// 2 & \quad i \gets \mathit{start};\ j \gets \mathit{end} + 1\quad
+///     \triangleright\ A[ \mathit{start} .. i - 1 ] \le x < A[ j ..
+///     \mathit{end} ] \cr
 /// 3 & \quad \textbf{loop} \cr
-/// 4 & \qquad \textbf{while}\ i < j\ \textbf{and}\ A[ i ] \le x\ \textbf{do}
-///     \ i \gets i + 1 \cr
-/// 5 & \qquad \textbf{while}\ i < j\ \textbf{and}\ A[ j - 1 ] > x
+/// 4 & \qquad \textbf{while}\ i < j\ \textbf{and}\ \textbf{not}\ x < A[ i ]
+///     \ \textbf{do}\ i \gets i + 1 \cr
+/// 5 & \qquad \textbf{while}\ i < j\ \textbf{and}\ x < A[ j - 1 ]
 ///     \ \textbf{do}\ j \gets j - 1 \cr
 /// 6 & \qquad \textbf{if}\ i + 1 \ge j\ \textbf{then return}\ i -
-///     \mathit{start} \cr
-/// 7 & \qquad A[ i ] \leftrightarrow A[ j - 1 ];\ i \gets i + 1;\ j \gets j -
-///     1
+///     \mathit{start}\quad \triangleright\ \text{the items} \le x \cr
+/// 7 & \qquad j \gets j - 1;\ A[ i ] \leftrightarrow A[ j ];\ i \gets i + 1
 /// \end{array}}
 /// \f]
 /// \pre \f$ \mathit{start} \le \mathit{end} < n \f$
@@ -147,11 +150,12 @@ std::size_t partitionByValue( std::vector< T > & A , std::size_t start ,
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{quickSort}( A , \mathit{start} ,
 ///     \mathit{end} ) \cr
-/// 2 & \quad \textbf{if}\ \mathit{start} < \mathit{end}\ \textbf{then} \cr
-/// 3 & \qquad j \gets \mathrm{partition}( A , \mathit{start} , \mathit{end} )
-///     \cr
-/// 4 & \qquad \mathrm{quickSort}( A , \mathit{start} , j - 1 ) \cr
-/// 5 & \qquad \mathrm{quickSort}( A , j + 1 , \mathit{end} )
+/// 2 & \quad \textbf{if}\ \mathit{start} \ge \mathit{end}\ \textbf{then
+///     return} \cr
+/// 3 & \quad j \gets \mathrm{partition}( A , \mathit{start} , \mathit{end}
+///     )\quad \triangleright\ \text{the pivot is now in } A[ j ] \cr
+/// 4 & \quad \mathrm{quickSort}( A , \mathit{start} , j - 1 );
+///     \ \mathrm{quickSort}( A , j + 1 , \mathit{end} )
 /// \end{array}}
 /// \f]
 /// \pre \f$ \mathit{start} > \mathit{end} \f$ or \f$ \mathit{end} < n \f$
@@ -181,8 +185,8 @@ void quickSort( std::vector< T > & A , C less = C() );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{quickSortTuned}( A , \mathit{cutoff} ) \cr
-/// 2 & \quad S \gets \text{an empty stack};\ ( \mathit{lo} , \mathit{hi} )
-///     \gets ( 0 , n - 1 ) \cr
+/// 2 & \quad S \gets \text{an empty stack of intervals};\ ( \mathit{lo} ,
+///     \mathit{hi} ) \gets ( 0 , n - 1 ) \cr
 /// 3 & \quad \textbf{loop} \cr
 /// 4 & \qquad \textbf{if}\ \mathit{hi} - \mathit{lo} + 1 \le \mathit{cutoff}
 ///     \ \textbf{then} \cr
@@ -191,22 +195,25 @@ void quickSort( std::vector< T > & A , C less = C() );
 /// 6 & \qquad\quad \textbf{if}\ S = \emptyset\ \textbf{then return} \cr
 /// 7 & \qquad\quad ( \mathit{lo} , \mathit{hi} ) \gets \mathrm{pop}( S );
 ///     \ \textbf{continue} \cr
-/// 8 & \qquad \text{sort } A[ \mathit{lo} ] , A[ \mathit{mid} ] , A[
-///     \mathit{hi} ];\ A[ \mathit{mid} ] \leftrightarrow A[ \mathit{hi} - 1
-///     ];\ x \gets A[ \mathit{hi} - 1 ] \cr
-/// 9 & \qquad i \gets \mathit{lo};\ j \gets \mathit{hi} - 1 \cr
-/// 10 & \qquad \textbf{loop} \cr
-/// 11 & \qquad\quad \textbf{repeat}\ i \gets i + 1\ \textbf{until}\ A[ i ] \ge
-///     x \cr
-/// 12 & \qquad\quad \textbf{repeat}\ j \gets j - 1\ \textbf{until}\ A[ j ] \le
-///     x \cr
-/// 13 & \qquad\quad \textbf{if}\ i \ge j\ \textbf{then}\ \textbf{break} \cr
-/// 14 & \qquad\quad A[ i ] \leftrightarrow A[ j ] \cr
+/// 8 & \qquad \mathit{mid} \gets \mathit{lo} + \lfloor ( \mathit{hi} -
+///     \mathit{lo} ) / 2 \rfloor \cr
+/// 9 & \qquad \text{order } A[ \mathit{lo} ] , A[ \mathit{mid} ] , A[
+///     \mathit{hi} ] \text{ by three exchanges} \cr
+/// 10 & \qquad A[ \mathit{mid} ] \leftrightarrow A[ \mathit{hi} - 1 ];\ x
+///     \gets A[ \mathit{hi} - 1 ]\quad \triangleright\ \text{the median} \cr
+/// 11 & \qquad i \gets \mathit{lo};\ j \gets \mathit{hi} - 1\quad
+///     \triangleright\ A[ \mathit{lo} ] , A[ \mathit{hi} - 1 ] \text{ stop
+///     the scans} \cr
+/// 12 & \qquad \textbf{loop} \cr
+/// 13 & \qquad\quad \textbf{repeat}\ i \gets i + 1\ \textbf{until}\ x \le A[
+///     i ];\ \textbf{repeat}\ j \gets j - 1\ \textbf{until}\ A[ j ] \le x \cr
+/// 14 & \qquad\quad \textbf{if}\ i \ge j\ \textbf{then}\ \textbf{break}
+///     \ \textbf{else}\ A[ i ] \leftrightarrow A[ j ] \cr
 /// 15 & \qquad A[ i ] \leftrightarrow A[ \mathit{hi} - 1 ] \quad
 ///     \triangleright\ \text{the pivot in its place } i \cr
-/// 16 & \qquad \mathrm{push}( S , \text{the larger of } [ \mathit{lo} , i - 1
+/// 16 & \qquad \mathrm{push}( S , \text{the longer of } [ \mathit{lo} , i - 1
 ///     ] \text{ and } [ i + 1 , \mathit{hi} ] ) \cr
-/// 17 & \qquad ( \mathit{lo} , \mathit{hi} ) \gets \text{the smaller one}
+/// 17 & \qquad ( \mathit{lo} , \mathit{hi} ) \gets \text{the shorter one}
 /// \end{array}}
 /// \f]
 /// where a part that is empty is neither pushed nor sorted.
@@ -223,15 +230,18 @@ void quickSortTuned( std::vector< T > & A , std::size_t cutoff = 16 ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{quickSort}( L ) \cr
-/// 2 & \quad \textbf{if}\ L \text{ has fewer than two items}\ \textbf{then
+/// 2 & \quad \textbf{if}\ L \text{ has at most one item}\ \textbf{then
 ///     return} \cr
-/// 3 & \quad x \gets \text{the first item of } L \cr
-/// 4 & \quad S , E , G \gets \text{three empty lists} \cr
-/// 5 & \quad \textbf{foreach}\ y \in L\ \textbf{do}\ \text{move } y \text{ }
-///     \text{to the end of } S \text{, } E \text{ or } G \text{ as } y < x
-///     \text{, } y = x \text{ or } y > x \cr
+/// 3 & \quad x \gets \text{the item at the head of } L;\ S , E , G \gets
+///     \text{three empty lists} \cr
+/// 4 & \quad \textbf{while}\ L \text{ is not empty}\ \textbf{do} \cr
+/// 5 & \qquad \text{remove the head } y \text{ of } L \text{ and append it}
+///     \cr
+///   & \qquad\quad \text{to } S \text{ if } y < x \text{, to } G \text{ if }
+///     x < y \text{, to } E \text{ otherwise} \cr
 /// 6 & \quad \mathrm{quickSort}( S );\ \mathrm{quickSort}( G ) \cr
-/// 7 & \quad L \gets S \cdot E \cdot G
+/// 7 & \quad \text{append to } L \text{ the items of } S \text{, then } E
+///     \text{, then } G
 /// \end{array}}
 /// \f]
 /// \post \f$ L \f$ is sorted (audit)

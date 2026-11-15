@@ -117,12 +117,12 @@ class CursorTree
  /// nodes:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{insertChild}( n , v ) \cr
- /// 2 & \quad c \gets \text{a free place, or a new one};\ N[ c ] \gets ( v
- ///     , n , \mathrm{NIL} , \mathrm{NIL} ) \cr
- /// 3 & \quad N[ c ].\mathit{sibling} \gets N[ n ].\mathit{child};\ N[ n
- ///     ].\mathit{child} \gets c \cr
- /// 4 & \quad \textbf{return}\ c
+ /// 1 & \textbf{function}\ \mathrm{insertChild}( n , v )\quad
+ ///     \triangleright\ \text{the new leftmost child of } n \cr
+ /// 2 & \quad c \gets \text{a place from the free list, or a new one} \cr
+ /// 3 & \quad N[ c ] \gets ( v , n , \mathrm{NIL} , N[ n ].\mathit{child}
+ ///     )\quad \triangleright\ \text{value, parent, child, sibling} \cr
+ /// 4 & \quad N[ n ].\mathit{child} \gets c;\ \textbf{return}\ c
  /// \end{array}}
  /// \f]
  /// \pre \f$ n \f$ is a node
@@ -142,13 +142,14 @@ class CursorTree
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{copy}( t , s , p ) \cr
- /// 2 & \quad c \gets \text{a new node of value } t.\mathrm{read}( s )
- ///     \text{ under } p;\ \ell \gets \mathrm{NIL} \cr
- /// 3 & \quad \textbf{foreach}\ \text{child } u \text{ of } s \text{ in }
- ///     t \text{, in order}\ \textbf{do} \cr
+ /// 2 & \quad c \gets \text{a new node under } p \text{, of value }
+ ///     t.\mathrm{read}( s );\ \ell \gets \mathrm{NIL}\quad \triangleright
+ ///     \ \ell \text{ the last copied child} \cr
+ /// 3 & \quad \textbf{foreach}\ \text{child } u \text{ of } s \text{ in } t
+ ///     \text{, in order}\ \textbf{do} \cr
  /// 4 & \qquad x \gets \mathrm{copy}( t , u , c ) \cr
- /// 5 & \qquad \textbf{if}\ \ell = \mathrm{NIL}\ \textbf{then}\ N[ c
- ///     ].\mathit{child} \gets x\ \textbf{else}\ N[ \ell ].\mathit{sibling}
+ /// 5 & \qquad \textbf{if}\ \ell \ne \mathrm{NIL}\ \textbf{then}\ N[ \ell
+ ///     ].\mathit{sibling} \gets x\ \textbf{else}\ N[ c ].\mathit{child}
  ///     \gets x \cr
  /// 6 & \qquad \ell \gets x \cr
  /// 7 & \quad \textbf{return}\ c
@@ -173,12 +174,11 @@ class CursorTree
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{remove}( n ) \cr
  /// 2 & \quad p \gets N[ n ].\mathit{parent} \cr
- /// 3 & \quad \textbf{if}\ p = \mathrm{NIL}\ \textbf{then}
- ///     \ \mathit{root} \gets \mathrm{NIL} \cr
- /// 4 & \quad \textbf{else}\ \text{unlink } n \text{ from the list of the }
- ///     \text{children of } p \text{, by a scan} \cr
- /// 5 & \quad \text{give the places of the subtree of } n \text{ back to the }
- ///     \text{free list, in postvisit}
+ /// 3 & \quad \textbf{if}\ p \ne \mathrm{NIL}\ \textbf{then}\ \text{find } n
+ ///     \text{ among the children of } p \text{ and unlink it}
+ ///     \ \textbf{else}\ \mathit{root} \gets \mathrm{NIL} \cr
+ /// 4 & \quad \text{put the places of the nodes of the subtree of } n
+ ///     \text{ on the free list, children before parents}
  /// \end{array}}
  /// \f]
  /// \pre \f$ n \f$ is a node
@@ -197,10 +197,11 @@ class CursorTree
  /// previsit and the postvisit being the same with the node first or last:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{procedure}\ \mathrm{invisit}( n , i ) \cr
+ /// 1 & \textbf{procedure}\ \mathrm{invisit}( n , i )\quad \triangleright\ n
+ ///     \text{ after its first } i \text{ subtrees} \cr
  /// 2 & \quad k \gets 0 \cr
- /// 3 & \quad \textbf{foreach}\ \text{child } u \text{ of } n \text{, in }
- ///     \text{order}\ \textbf{do} \cr
+ /// 3 & \quad \textbf{foreach}\ \text{child } u \text{ of } n
+ ///     \text{, in order}\ \textbf{do} \cr
  /// 4 & \qquad \textbf{if}\ k = i\ \textbf{then}\ \text{append } n \cr
  /// 5 & \qquad \mathrm{invisit}( u , i );\ k \gets k + 1 \cr
  /// 6 & \quad \textbf{if}\ k \le i\ \textbf{then}\ \text{append } n

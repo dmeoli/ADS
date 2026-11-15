@@ -91,15 +91,16 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{exponentialSearch}( p , \mathit{lo} ) \cr
-/// 2 & \quad a \gets \mathit{lo};\ b \gets \mathit{lo};\ s \gets 1 \cr
-/// 3 & \quad \textbf{while not}\ p( b )\ \textbf{do} \cr
-/// 4 & \qquad a \gets b + 1;\ b \gets a + s - 1;\ s \gets 2 s \cr
-/// 5 & \quad \textbf{while}\ a < b\ \textbf{do}\quad \triangleright
-///     \ \text{a binary search, } p( b ) \text{ true} \cr
-/// 6 & \qquad m \gets a + \lfloor ( b - a ) / 2 \rfloor \cr
-/// 7 & \qquad \textbf{if}\ p( m )\ \textbf{then}\ b \gets m\ \textbf{else}
+/// 2 & \quad ( a , b , s ) \gets ( \mathit{lo} , \mathit{lo} , 1 )\quad
+///     \triangleright\ p \text{ false before } a \cr
+/// 3 & \quad \textbf{while not}\ p( b )\ \textbf{do}\ ( a , b , s ) \gets ( b
+///     + 1 , b + s , 2 s ) \cr
+/// 4 & \quad \textbf{while}\ a < b\ \textbf{do}\quad \triangleright\ p( b )
+///     \text{ is true} \cr
+/// 5 & \qquad m \gets a + \lfloor ( b - a ) / 2 \rfloor \cr
+/// 6 & \qquad \textbf{if}\ p( m )\ \textbf{then}\ b \gets m\ \textbf{else}
 ///     \ a \gets m + 1 \cr
-/// 8 & \quad \textbf{return}\ a
+/// 7 & \quad \textbf{return}\ a
 /// \end{array}}
 /// \f]
 /// \pre \f$ p( i ) \f$ for some \f$ i \ge \mathit{lo} \f$ of the type `I`
@@ -136,12 +137,13 @@ std::size_t unboundedSearch( G && get , P && pred );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{integerSqrt}( n ) \cr
-/// 2 & \quad \mathit{lo} \gets 0;\ \mathit{hi} \gets 2^{w / 2} \cr
-/// 3 & \quad \textbf{while}\ \mathit{hi} - \mathit{lo} > 1\ \textbf{do} \cr
+/// 2 & \quad ( \mathit{lo} , \mathit{hi} ) \gets ( 0 , 2^{w / 2} )\quad
+///     \triangleright\ \mathit{lo}^2 \le n < \mathit{hi}^2 \cr
+/// 3 & \quad \textbf{while}\ \mathit{lo} + 1 < \mathit{hi}\ \textbf{do} \cr
 /// 4 & \qquad m \gets \mathit{lo} + \lfloor ( \mathit{hi} - \mathit{lo} ) / 2
 ///     \rfloor \cr
-/// 5 & \qquad \textbf{if}\ m \le \lfloor n / m \rfloor\ \textbf{then}
-///     \ \mathit{lo} \gets m\ \textbf{else}\ \mathit{hi} \gets m \cr
+/// 5 & \qquad \textbf{if}\ \lfloor n / m \rfloor < m\ \textbf{then}
+///     \ \mathit{hi} \gets m\ \textbf{else}\ \mathit{lo} \gets m \cr
 /// 6 & \quad \textbf{return}\ \mathit{lo}
 /// \end{array}}
 /// \f]

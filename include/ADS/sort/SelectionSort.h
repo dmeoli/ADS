@@ -57,8 +57,9 @@ namespace ADS
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{selectionSort}( A , n ) \cr
 /// 2 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 2\ \textbf{do} \cr
-/// 3 & \qquad j \gets \mathrm{argmin}( A , i , n - 1 ) \cr
-/// 4 & \qquad A[ i ] \leftrightarrow A[ j ]
+/// 3 & \qquad \mathit{pos} \gets \mathrm{argmin}( A , i , n - 1 ) \cr
+/// 4 & \qquad A[ i ] \leftrightarrow A[ \mathit{pos} ]\quad \triangleright
+///     \ \text{the sorted prefix grows by one}
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)

@@ -94,10 +94,10 @@ class ArrayQueue
  /// vector:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{dequeue}() \cr
- /// 2 & \quad t \gets A[ h ] \cr
- /// 3 & \quad h \gets ( h + 1 ) \bmod m;\ n \gets n - 1 \cr
- /// 4 & \quad \textbf{return}\ t
+ /// 1 & \textbf{function}\ \mathrm{dequeue}()\quad \triangleright\ A[ h ]
+ ///     \text{ is the oldest item} \cr
+ /// 2 & \quad t \gets A[ h ];\ n \gets n - 1;\ h \gets ( h + 1 ) \bmod m \cr
+ /// 3 & \quad \textbf{return}\ t
  /// \end{array}}
  /// \f]
  /// \pre the queue is not empty
@@ -110,7 +110,9 @@ class ArrayQueue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{enqueue}( v ) \cr
- /// 2 & \quad A[ ( h + n ) \bmod m ] \gets v;\ n \gets n + 1
+ /// 2 & \quad A[ ( h + n ) \bmod m ] \gets v\quad \triangleright
+ ///     \ \text{the first free cell after the tail} \cr
+ /// 3 & \quad n \gets n + 1
  /// \end{array}}
  /// \f]
  /// \pre the queue is not full

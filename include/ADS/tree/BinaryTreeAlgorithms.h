@@ -265,13 +265,14 @@ N lowestCommonAncestor( N u , N v );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{equalTrees}( t , s ) \cr
-/// 2 & \quad \textbf{if}\ t = \textbf{nil}\ \textbf{or}\ s =
-///     \textbf{nil}\ \textbf{then return}\ t = s = \textbf{nil} \cr
-/// 3 & \quad \textbf{return}\ \mathrm{eq}( t.\mathit{key} , s.\mathit{key}
-///     )\ \textbf{and}\ \mathrm{equalTrees}( t.\mathit{left} ,
-///     s.\mathit{left} ) \cr
-/// & \qquad \textbf{and}\ \mathrm{equalTrees}( t.\mathit{right} ,
-///     s.\mathit{right} )
+/// 2 & \quad \textbf{if}\ t = \textbf{nil}\ \textbf{or}\ s = \textbf{nil}
+///     \ \textbf{then return}\ ( t = \textbf{nil}\ \textbf{and}\ s =
+///     \textbf{nil} ) \cr
+/// 3 & \quad \textbf{if}\ \textbf{not}\ \mathrm{eq}( t.\mathit{key} ,
+///     s.\mathit{key} )\ \textbf{then return false} \cr
+/// 4 & \quad \textbf{return}\ \mathrm{equalTrees}( t.\mathit{left} ,
+///     s.\mathit{left} )\ \textbf{and}\ \mathrm{equalTrees}(
+///     t.\mathit{right} , s.\mathit{right} )
 /// \end{array}}
 /// \f]
 template< KeyedBinaryNode N , KeyedBinaryNode M ,
@@ -286,13 +287,13 @@ template< KeyedBinaryNode N , KeyedBinaryNode M ,
 /// \f$ a = -\infty \f$ and \f$ b = +\infty \f$ at the root:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{between}( t , a , b ) \cr
+/// 1 & \textbf{function}\ \mathrm{between}( t , a , b )\quad \triangleright
+///     \ \text{every key of } t \text{ strictly inside } ( a , b ) \cr
 /// 2 & \quad \textbf{if}\ t = \textbf{nil}\ \textbf{then return true} \cr
-/// 3 & \quad \textbf{if}\ t.\mathit{key} \le a\ \textbf{or}
-///     \ t.\mathit{key} \ge b\ \textbf{then return false} \cr
-/// 4 & \quad \textbf{return}\ \mathrm{between}( t.\mathit{left} , a ,
-///     t.\mathit{key} )\ \textbf{and}\ \mathrm{between}(
-///     t.\mathit{right} , t.\mathit{key} , b )
+/// 3 & \quad \textbf{return}\ a < t.\mathit{key} < b\ \textbf{and}
+///     \ \mathrm{between}( t.\mathit{left} , a , t.\mathit{key} )
+///     \ \textbf{and}\ \mathrm{between}( t.\mathit{right} , t.\mathit{key} ,
+///     b )
 /// \end{array}}
 /// \f]
 template< KeyedBinaryNode N , class Compare = std::less<> >
@@ -309,19 +310,18 @@ template< KeyedBinaryNode N , class Compare = std::less<> >
 /// constraint:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{bh}( t ) \cr
+/// 1 & \textbf{function}\ \mathrm{bh}( t )\quad \triangleright
+///     \ \text{the black height counting the leaves nil, or } -1 \cr
 /// 2 & \quad \textbf{if}\ t = \textbf{nil}\ \textbf{then return}\ 1 \cr
-/// 3 & \quad \textbf{if}\ t \text{ and a child of it are red}
-///     \ \textbf{then return}\ -1 \cr
-/// 4 & \quad l \gets \mathrm{bh}( t.\mathit{left} );\ r \gets \mathrm{bh}(
+/// 3 & \quad l \gets \mathrm{bh}( t.\mathit{left} );\ r \gets \mathrm{bh}(
 ///     t.\mathit{right} ) \cr
-/// 5 & \quad \textbf{if}\ l < 0\ \textbf{or}\ l \ne r\ \textbf{then
-///     return}\ -1 \cr
-/// 6 & \quad \textbf{return}\ l + ( 0 \text{ if } t \text{ is red, } 1
-///     \text{ otherwise} ) \cr
-/// 7 & \textbf{function}\ \mathrm{isRedBlackTree}( t ) \cr
-/// 8 & \quad \textbf{return}\ ( t = \textbf{nil}\ \textbf{or}\ t \text{ is }
-///     \text{black} )\ \textbf{and}\ \mathrm{bh}( t ) > 0
+/// 4 & \quad \textbf{if}\ l < 0\ \textbf{or}\ r \ne l\ \textbf{or}\ ( t
+///     \text{ is red and has a red child} )\ \textbf{then return}\ -1 \cr
+/// 5 & \quad \textbf{if}\ t \text{ is red}\ \textbf{then return}\ l
+///     \ \textbf{else return}\ l + 1 \cr
+/// 6 & \textbf{function}\ \mathrm{isRedBlackTree}( t ) \cr
+/// 7 & \quad \textbf{return}\ \mathrm{bh}( t ) > 0\ \textbf{and}\ ( t =
+///     \textbf{nil}\ \textbf{or}\ t \text{ is black} )
 /// \end{array}}
 /// \f]
 template< BinaryNode N , class Red >
@@ -340,18 +340,17 @@ template< BinaryNode N , class Red >
 /// In pseudocode (section 6.1), an invisit pruned out of the range:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{range}( t , \mathit{lo} , \mathit{hi} )
-///     \cr
+/// 1 & \textbf{procedure}\ \mathrm{range}( t , \mathit{lo} , \mathit{hi}
+///     )\quad \triangleright\ f \text{ on the keys in } [ \mathit{lo} ,
+///     \mathit{hi} ] \text{, in order} \cr
 /// 2 & \quad \textbf{if}\ t = \textbf{nil}\ \textbf{then return} \cr
-/// 3 & \quad \textbf{if}\ t.\mathit{key} < \mathit{lo}\ \textbf{then}
-///     \ \mathrm{range}( t.\mathit{right} , \mathit{lo} , \mathit{hi} );
-///     \ \textbf{return} \cr
-/// 4 & \quad \textbf{if}\ t.\mathit{key} > \mathit{hi}\ \textbf{then}
-///     \ \mathrm{range}( t.\mathit{left} , \mathit{lo} , \mathit{hi} );
-///     \ \textbf{return} \cr
-/// 5 & \quad \mathrm{range}( t.\mathit{left} , \mathit{lo} , \mathit{hi} );
-///     \ f( t );\ \mathrm{range}( t.\mathit{right} , \mathit{lo} ,
-///     \mathit{hi} )
+/// 3 & \quad \textbf{if}\ \mathit{lo} \le t.\mathit{key}\ \textbf{then}
+///     \ \mathrm{range}( t.\mathit{left} , \mathit{lo} , \mathit{hi} )\quad
+///     \triangleright\ \text{else no key on the left is in range} \cr
+/// 4 & \quad \textbf{if}\ \mathit{lo} \le t.\mathit{key} \le \mathit{hi}
+///     \ \textbf{then}\ f( t ) \cr
+/// 5 & \quad \textbf{if}\ t.\mathit{key} \le \mathit{hi}\ \textbf{then}
+///     \ \mathrm{range}( t.\mathit{right} , \mathit{lo} , \mathit{hi} )
 /// \end{array}}
 /// \f]
 /// \pre not `less( hi , lo )`
@@ -587,11 +586,13 @@ std::size_t lessOrEqual( N t , const K & x , F && f , Compare less = {} );
 /// In pseudocode (section 6.1), on \f$ A[ i .. j ) \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{build}( A , i , j ) \cr
-/// 2 & \quad \textbf{if}\ i \ge j\ \textbf{then return nil} \cr
-/// 3 & \quad m \gets i + \lfloor ( j - i - 1 ) / 2 \rfloor \cr
-/// 4 & \quad \textbf{return}\ \mathrm{make}( A[ m ] , \mathrm{build}( A , i ,
-///     m ) , \mathrm{build}( A , m + 1 , j ) )
+/// 1 & \textbf{function}\ \mathrm{build}( A , i , j )\quad \triangleright
+///     \ \text{a tree of the sorted } A[ i .. j - 1 ] \cr
+/// 2 & \quad \textbf{if}\ j \le i\ \textbf{then return nil} \cr
+/// 3 & \quad m \gets i + \lfloor ( j - i - 1 ) / 2 \rfloor\quad
+///     \triangleright\ \text{the median, the lower one if two} \cr
+/// 4 & \quad \textbf{return}\ \mathrm{make}( A[ m ] , \mathrm{build}( A , i
+///     , m ) , \mathrm{build}( A , m + 1 , j ) )
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ strictly increasing by `less`

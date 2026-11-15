@@ -92,11 +92,11 @@ class LinkedQueue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{enqueue}( v ) \cr
- /// 2 & \quad t \gets \text{a new cell};\ t.\mathit{value} \gets v;
- ///     \ t.\mathit{next} \gets \textbf{nil} \cr
- /// 3 & \quad \textbf{if}\ \mathit{back} = \textbf{nil}\ \textbf{then}
- ///     \ \mathit{front} \gets t\ \textbf{else}\ \mathit{back}.\mathit{next}
- ///     \gets t \cr
+ /// 2 & \quad t \gets \text{a new cell of value } v \text{ and no successor}
+ ///     \cr
+ /// 3 & \quad \textbf{if}\ \mathit{back} \ne \textbf{nil}\ \textbf{then}
+ ///     \ \mathit{back}.\mathit{next} \gets t\ \textbf{else}\ \mathit{front}
+ ///     \gets t\quad \triangleright\ \text{an empty queue} \cr
  /// 4 & \quad \mathit{back} \gets t
  /// \end{array}}
  /// \f]
@@ -110,12 +110,12 @@ class LinkedQueue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{dequeue}() \cr
- /// 2 & \quad t \gets \mathit{front};\ \mathit{front} \gets
- ///     t.\mathit{next} \cr
+ /// 2 & \quad t \gets \mathit{front};\ v \gets t.\mathit{value};
+ ///     \ \mathit{front} \gets t.\mathit{next} \cr
  /// 3 & \quad \textbf{if}\ \mathit{front} = \textbf{nil}\ \textbf{then}
- ///     \ \mathit{back} \gets \textbf{nil} \cr
- /// 4 & \quad v \gets t.\mathit{value};\ \text{free the cell } t;
- ///     \ \textbf{return}\ v
+ ///     \ \mathit{back} \gets \textbf{nil}\quad \triangleright\ t
+ ///     \text{ was the only cell} \cr
+ /// 4 & \quad \text{free the cell } t;\ \textbf{return}\ v
  /// \end{array}}
  /// \f]
  /// \pre the queue is not empty

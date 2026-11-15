@@ -231,15 +231,16 @@ class SmallVector
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{emplace\_back}( \mathit{args} ) \cr
- /// 2 & \quad x \gets \text{the item made from } \mathit{args}\quad
- ///     \triangleright\ \text{first, as they may be in } A \cr
- /// 3 & \quad \textbf{if}\ n = c\ \textbf{then} \cr
- /// 4 & \qquad B \gets \text{a block of } 2 c \text{ places from the }
- ///     \text{allocator} \cr
- /// 5 & \qquad \text{move } A[ 0 .. n ) \text{ to } B;\ \text{free } A
- ///     \text{ unless it is inside};\ A \gets B;\ c \gets 2 c \cr
- /// 6 & \quad A[ n ] \gets x;\ n \gets n + 1 \cr
- /// 7 & \quad \textbf{return}\ A[ n - 1 ]
+ /// 2 & \quad x \gets \text{the item of } \mathit{args}\quad \triangleright
+ ///     \ \text{built before any move, since } \mathit{args}
+ ///     \text{ may lie in } A \cr
+ /// 3 & \quad \textbf{if}\ n = c\ \textbf{then}\quad \triangleright
+ ///     \ \text{full: a block twice as large} \cr
+ /// 4 & \qquad B \gets 2 c \text{ places from the allocator};\ \text{move }
+ ///     A[ 0 .. n - 1 ] \text{ into } B \cr
+ /// 5 & \qquad \text{give } A \text{ back unless it is the inner buffer};\ (
+ ///     A , c ) \gets ( B , 2 c ) \cr
+ /// 6 & \quad A[ n ] \gets x;\ n \gets n + 1;\ \textbf{return}\ A[ n - 1 ]
  /// \end{array}}
  /// \f]
  template< class... Args >

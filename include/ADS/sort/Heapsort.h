@@ -82,14 +82,14 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{maxHeapRestore}( A , i , \mathit{dim} ) \cr
-/// 2 & \quad \textbf{loop} \cr
-/// 3 & \qquad \mathit{max} \gets i;\ l \gets 2 i + 1;\ r \gets 2 i + 2 \cr
-/// 4 & \qquad \textbf{if}\ l < \mathit{dim}\ \textbf{and}\ A[ l ] > A[
-///     \mathit{max} ]\ \textbf{then}\ \mathit{max} \gets l \cr
-/// 5 & \qquad \textbf{if}\ r < \mathit{dim}\ \textbf{and}\ A[ r ] > A[
-///     \mathit{max} ]\ \textbf{then}\ \mathit{max} \gets r \cr
-/// 6 & \qquad \textbf{if}\ \mathit{max} = i\ \textbf{then return} \cr
-/// 7 & \qquad A[ i ] \leftrightarrow A[ \mathit{max} ];\ i \gets \mathit{max}
+/// 2 & \quad \textbf{loop}\quad \triangleright\ \text{only } A[ i ] \text{ may
+///     be smaller than a child} \cr
+/// 3 & \qquad \mathit{max} \gets \text{the index of the largest of } A[ i ] ,
+///     A[ 2 i + 1 ] , A[ 2 i + 2 ] \cr
+///   & \qquad\quad \text{among those below } \mathit{dim} \cr
+/// 4 & \qquad \textbf{if}\ \mathit{max} = i\ \textbf{then return} \cr
+/// 5 & \qquad A[ i ] \leftrightarrow A[ \mathit{max} ];\ i \gets \mathit{max}
+///     \quad \triangleright\ \text{one level down}
 /// \end{array}}
 /// \f]
 /// \pre \f$ i < \mathit{dim} \le n \f$
@@ -104,7 +104,7 @@ void maxHeapRestore( std::vector< T > & A , std::size_t i , std::size_t dim ,
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{heapBuild}( A , n ) \cr
 /// 2 & \quad \textbf{for}\ i \gets \lfloor n / 2 \rfloor - 1\ \textbf{downto}
-///    \ 0\ \textbf{do} \cr
+///     \ 0\ \textbf{do}\quad \triangleright\ \text{the leaves are heaps} \cr
 /// 3 & \qquad \mathrm{maxHeapRestore}( A , i , n )
 /// \end{array}}
 /// \f]
@@ -120,9 +120,10 @@ void heapBuild( std::vector< T > & A , C less = C() );
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{heapsort}( A , n ) \cr
 /// 2 & \quad \mathrm{heapBuild}( A , n ) \cr
-/// 3 & \quad \textbf{for}\ i \gets n - 1\ \textbf{downto}\ 1\ \textbf{do} \cr
-/// 4 & \qquad A[ 0 ] \leftrightarrow A[ i ] \cr
-/// 5 & \qquad \mathrm{maxHeapRestore}( A , 0 , i )
+/// 3 & \quad \textbf{for}\ i \gets n - 1\ \textbf{downto}\ 1\ \textbf{do}
+///     \quad \triangleright\ A[ i + 1 .. n - 1 ] \text{ sorted} \cr
+/// 4 & \qquad A[ 0 ] \leftrightarrow A[ i ];\ \mathrm{maxHeapRestore}( A , 0
+///     , i )
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)

@@ -104,14 +104,14 @@ inline std::vector< std::size_t > ciuraGaps( std::size_t n );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{shellSort}( A , n , H ) \cr
-/// 2 & \quad \textbf{foreach}\ h \in H \text{ in decreasing order}
-///     \ \textbf{do} \cr
-/// 3 & \qquad \textbf{for}\ i \gets h\ \textbf{to}\ n - 1\ \textbf{do} \cr
+/// 2 & \quad \textbf{foreach}\ h \in H \text{ from the largest}\ \textbf{do}
+///     \quad \triangleright\ \text{the last } h \text{ is } 1 \cr
+/// 3 & \qquad \textbf{for}\ i \gets h\ \textbf{to}\ n - 1\ \textbf{do}\quad
+///     \triangleright\ \text{insert } A[ i ] \text{ in its chain} \cr
 /// 4 & \qquad\quad \mathit{temp} \gets A[ i ];\ j \gets i \cr
 /// 5 & \qquad\quad \textbf{while}\ j \ge h\ \textbf{and}\ \mathit{temp} < A[ j
-///     - h ]\ \textbf{do} \cr
-/// 6 & \qquad\qquad A[ j ] \gets A[ j - h ];\ j \gets j - h \cr
-/// 7 & \qquad\quad A[ j ] \gets \mathit{temp}
+///     - h ]\ \textbf{do}\ A[ j ] \gets A[ j - h ];\ j \gets j - h \cr
+/// 6 & \qquad\quad A[ j ] \gets \mathit{temp}
 /// \end{array}}
 /// \f]
 /// \pre the gaps are positive and increase

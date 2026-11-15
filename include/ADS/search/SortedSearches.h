@@ -105,12 +105,14 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{rotatedMinimum}( A ) \cr
-/// 2 & \quad \mathit{lo} \gets 0;\ \mathit{hi} \gets n - 1 \cr
+/// 2 & \quad ( \mathit{lo} , \mathit{hi} ) \gets ( 0 , n - 1 )\quad
+///     \triangleright\ \text{the minimum is in } A[ \mathit{lo} .. \mathit{hi}
+///     ] \cr
 /// 3 & \quad \textbf{while}\ \mathit{lo} < \mathit{hi}\ \textbf{do} \cr
 /// 4 & \qquad m \gets \mathit{lo} + \lfloor ( \mathit{hi} - \mathit{lo} ) / 2
 ///     \rfloor \cr
-/// 5 & \qquad \textbf{if}\ A[ \mathit{hi} ] < A[ m ]\ \textbf{then}
-///     \ \mathit{lo} \gets m + 1\ \textbf{else}\ \mathit{hi} \gets m \cr
+/// 5 & \qquad \textbf{if}\ A[ m ] \le A[ \mathit{hi} ]\ \textbf{then}
+///     \ \mathit{hi} \gets m\ \textbf{else}\ \mathit{lo} \gets m + 1 \cr
 /// 6 & \quad \textbf{return}\ \mathit{lo}
 /// \end{array}}
 /// \f]
@@ -128,12 +130,14 @@ std::size_t rotatedMinimum( const std::vector< T > & A , C less = C() );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{closestValue}( A , x ) \cr
-/// 2 & \quad r \gets \mathrm{lowerBound}( A , x ) \cr
+/// 2 & \quad r \gets \mathrm{lowerBound}( A , x )\quad \triangleright\ A[ r
+///     ] \text{ is the first } \ge x \cr
 /// 3 & \quad \textbf{if}\ r = n\ \textbf{then return}\ \mathrm{lowerBound}(
 ///     A , A[ n - 1 ] ) \cr
-/// 4 & \quad \textbf{if}\ r > 0\ \textbf{and}\ x - A[ r - 1 ] \le A[ r ] -
-///     x\ \textbf{then return}\ \mathrm{lowerBound}( A , A[ r - 1 ] ) \cr
-/// 5 & \quad \textbf{return}\ r
+/// 4 & \quad \textbf{if}\ r = 0\ \textbf{or}\ A[ r ] - x < x - A[ r - 1 ]
+///     \ \textbf{then return}\ r \cr
+/// 5 & \quad \textbf{return}\ \mathrm{lowerBound}( A , A[ r - 1 ] )\quad
+///     \triangleright\ \text{the first copy}
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is not empty and sorted
@@ -152,14 +156,14 @@ std::size_t closestValue( const std::vector< T > & A , const T & x );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{pairWithSum}( A , x ) \cr
-/// 2 & \quad i \gets 0;\ j \gets n - 1 \cr
+/// 2 & \quad ( i , j ) \gets ( 0 , n - 1 )\quad \triangleright\ \text{no pair
+///     out of } [ i , j ] \text{ sums to } x \cr
 /// 3 & \quad \textbf{while}\ i < j\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ A[ i ] + A[ j ] = x\ \textbf{then return}\ ( i ,
+/// 4 & \qquad s \gets A[ i ] + A[ j ] \cr
+/// 5 & \qquad \textbf{if}\ s < x\ \textbf{then}\ i \gets i + 1\ \textbf{else
+///     if}\ s > x\ \textbf{then}\ j \gets j - 1\ \textbf{else return}\ ( i ,
 ///     j ) \cr
-/// 5 & \qquad \textbf{else if}\ A[ i ] + A[ j ] < x\ \textbf{then}\ i \gets
-///     i + 1 \cr
-/// 6 & \qquad \textbf{else}\ j \gets j - 1 \cr
-/// 7 & \quad \textbf{return nil}
+/// 6 & \quad \textbf{return nil}
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is sorted

@@ -166,12 +166,11 @@ class ArraySequence
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{insert}( p , v ) \cr
- /// 2 & \quad \textbf{if}\ n = c\ \textbf{then}\ \mathrm{resize}( \max( 2 c ,
- ///     1 ) )\quad \triangleright\ \text{full: twice the size} \cr
- /// 3 & \quad \textbf{for}\ i \gets n\ \textbf{downto}\ p + 1\ \textbf{do}
- ///     \ A[ i ] \gets A[ i - 1 ] \cr
- /// 4 & \quad A[ p ] \gets v;\ n \gets n + 1 \cr
- /// 5 & \quad \textbf{return}\ p
+ /// 2 & \quad \textbf{if}\ n = c\ \textbf{then}\ \mathrm{resize}( \max( 2 c
+ ///     , 1 ) )\quad \triangleright\ \text{no room: the vector doubles} \cr
+ /// 3 & \quad \text{shift } A[ p .. n - 1 ]
+ ///     \text{ one place right, from the end} \cr
+ /// 4 & \quad A[ p ] \gets v;\ n \gets n + 1;\ \textbf{return}\ p
  /// \end{array}}
  /// \f]
  /// \pre \f$ 0 \le p \le n \f$
@@ -212,12 +211,12 @@ class ArraySequence
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{remove}( p ) \cr
- /// 2 & \quad \textbf{for}\ i \gets p\ \textbf{to}\ n - 2\ \textbf{do}
- ///     \ A[ i ] \gets A[ i + 1 ] \cr
- /// 3 & \quad n \gets n - 1 \cr
- /// 4 & \quad \textbf{if}\ n \le c / 4\ \textbf{then}\ \mathrm{resize}(
- ///     c / 2 )\quad \triangleright\ \text{no vector if } n = 0 \cr
- /// 5 & \quad \textbf{return}\ p
+ /// 2 & \quad \text{shift } A[ p + 1 .. n - 1 ] \text{ one place left};\ n
+ ///     \gets n - 1 \cr
+ /// 3 & \quad \textbf{if}\ 4 n \le c\ \textbf{then}\ \mathrm{resize}( c / 2
+ ///     )\quad \triangleright\ \text{a quarter full: the vector halves} \cr
+ /// 4 & \quad \textbf{return}\ p\quad \triangleright
+ ///     \ \text{now the position of the next item}
  /// \end{array}}
  /// \f]
  /// \pre \f$ 0 \le p < n \f$

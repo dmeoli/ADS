@@ -89,15 +89,16 @@ namespace ADS
 ///     \mathit{start} \cr
 /// 3 & \quad \textbf{while}\ i \le \mathit{mid}\ \textbf{and}\ j \le
 ///     \mathit{end}\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ A[ i ] \le A[ j ]\ \textbf{then}\ B[ k ] \gets A[ i
-///     ];\ i \gets i + 1 \cr
-/// 5 & \qquad \textbf{else}\ B[ k ] \gets A[ j ];\ j \gets j + 1;
-///     \ \mathit{inv} \gets \mathit{inv} + \mathit{mid} - i + 1 \cr
-/// 6 & \qquad k \gets k + 1 \cr
-/// 7 & \quad \textbf{while}\ i \le \mathit{mid}\ \textbf{do}\ B[ k ] \gets A[
-///     i ];\ i \gets i + 1;\ k \gets k + 1 \cr
-/// 8 & \quad \textbf{for}\ t \gets \mathit{start}\ \textbf{to}\ k - 1
-///     \ \textbf{do}\ A[ t ] \gets B[ t ]
+/// 4 & \qquad \textbf{if}\ A[ j ] < A[ i ]\ \textbf{then}\quad \triangleright
+///     \ A[ j ] \text{ passes } A[ i .. \mathit{mid} ] \cr
+/// 5 & \qquad\quad \mathit{inv} \gets \mathit{inv} + \mathit{mid} - i + 1;
+///     \ B[ k ] \gets A[ j ];\ j \gets j + 1 \cr
+/// 6 & \qquad \textbf{else}\ B[ k ] \gets A[ i ];\ i \gets i + 1 \cr
+/// 7 & \qquad k \gets k + 1 \cr
+/// 8 & \quad \text{append } A[ i .. \mathit{mid} ] \text{ to } B \text{ from }
+///     B[ k ] \text{, advancing } k \cr
+/// 9 & \quad \text{copy } B[ \mathit{start} .. k - 1 ] \text{ back to } A
+///     \quad \triangleright\ A[ k .. \mathit{end} ] \text{ is in place}
 /// \end{array}}
 /// \f]
 /// \pre \f$ \mathit{start} \le \mathit{mid} < \mathit{end} < n \le |B| \f$,
@@ -125,16 +126,16 @@ void mergeParts( std::vector< T > & A , std::vector< T > & B ,
 ///     \mathit{cutoff}\ \textbf{then} \cr
 /// 3 & \qquad \mathrm{insertionSort}( A , \mathit{start} , \mathit{end} + 1
 ///     );\ \textbf{return} \cr
-/// 4 & \quad \mathit{mid} \gets \lfloor ( \mathit{start} + \mathit{end} ) / 2
-///     \rfloor \cr
+/// 4 & \quad \mathit{mid} \gets \mathit{start} + \lfloor ( \mathit{end} -
+///     \mathit{start} ) / 2 \rfloor \cr
 /// 5 & \quad \mathrm{mergeSortRec}( A , B , \mathit{start} , \mathit{mid} ,
 ///     \mathit{cutoff} ) \cr
 /// 6 & \quad \mathrm{mergeSortRec}( A , B , \mathit{mid} + 1 , \mathit{end} ,
 ///     \mathit{cutoff} ) \cr
-/// 7 & \quad \textbf{if}\ \mathit{cutoff} > 1\ \textbf{and}\ A[ \mathit{mid}
-///     ] \le A[ \mathit{mid} + 1 ]\ \textbf{then return} \cr
-/// 8 & \quad \mathrm{mergeParts}( A , B , \mathit{start} , \mathit{mid} ,
-///     \mathit{end} )
+/// 7 & \quad \textbf{if}\ \mathit{cutoff} = 1\ \textbf{or}\ A[ \mathit{mid} +
+///     1 ] < A[ \mathit{mid} ]\ \textbf{then} \cr
+/// 8 & \qquad \mathrm{mergeParts}( A , B , \mathit{start} , \mathit{mid} ,
+///     \mathit{end} )\quad \triangleright\ \text{else already in order}
 /// \end{array}}
 /// \f]
 /// \pre \f$ \mathit{start} \le \mathit{end} < n \le |B| \f$ and
@@ -165,13 +166,13 @@ void mergeSort( std::vector< T > & A , std::size_t cutoff = 1 , C less = C() );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{mergeSortBottomUp}( A , n ) \cr
-/// 2 & \quad w \gets 1 \cr
-/// 3 & \quad \textbf{while}\ w < n\ \textbf{do} \cr
-/// 4 & \qquad \textbf{for}\ s \gets 0 , 2 w , 4 w , \ldots \text{ while } s +
-///     w < n\ \textbf{do} \cr
-/// 5 & \qquad\quad \mathrm{mergeParts}( A , B , s , s + w - 1 , \min\{ s + 2 w
-///     , n \} - 1 ) \cr
-/// 6 & \qquad w \gets 2 w
+/// 2 & \quad \textbf{for}\ w \gets 1 , 2 , 4 , \ldots \text{ while } w < n
+///     \ \textbf{do}\quad \triangleright\ \text{the runs of length } w
+///     \text{ sorted} \cr
+/// 3 & \qquad \textbf{for}\ \mathit{start} \gets 0 , 2 w , 4 w , \ldots
+///     \text{ while } \mathit{start} + w < n\ \textbf{do} \cr
+/// 4 & \qquad\quad \mathrm{mergeParts}( A , B , \mathit{start} ,
+///     \mathit{start} + w - 1 , \min\{ \mathit{start} + 2 w , n \} - 1 )
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
@@ -188,8 +189,9 @@ void mergeSortBottomUp( std::vector< T > & A , C less = C() );
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{countInversions}( A ) \cr
 /// 2 & \quad \mathit{inv} \gets 0 \cr
-/// 3 & \quad \textbf{if}\ n > 1\ \textbf{then}\ \mathrm{mergeSortRec}( A , B ,
-///     0 , n - 1 , 1 )\quad \triangleright\ \text{adding to } \mathit{inv} \cr
+/// 3 & \quad \textbf{if}\ n \ge 2\ \textbf{then}\ \mathrm{mergeSortRec}( A , B
+///     , 0 , n - 1 , 1 )\quad \triangleright\ \mathrm{mergeParts} \text{ adds}
+///     \cr
 /// 4 & \quad \textbf{return}\ \mathit{inv}
 /// \end{array}}
 /// \f]
@@ -207,15 +209,17 @@ long long countInversions( std::vector< T > & A , C less = C() );
 /// 1 & \textbf{procedure}\ \mathrm{mergeSort}( L ) \cr
 /// 2 & \quad n \gets \text{the length of } L;\ \textbf{if}\ n < 2
 ///     \ \textbf{then return} \cr
-/// 3 & \quad R \gets \text{the last } n - \lfloor n / 2 \rfloor \text{ items }
-///     \text{of } L \text{, removed from } L \cr
-/// 4 & \quad \mathrm{mergeSort}( L );\ \mathrm{mergeSort}( R ) \cr
-/// 5 & \quad q \gets L.\mathrm{head}() \cr
+/// 3 & \quad R \gets \text{an empty list} \cr
+/// 4 & \quad \text{move the items of } L \text{ after its first } \lfloor n /
+///     2 \rfloor \text{ to the end of } R \cr
+/// 5 & \quad \mathrm{mergeSort}( L );\ \mathrm{mergeSort}( R );\ q \gets
+///     L.\mathrm{head}() \cr
 /// 6 & \quad \textbf{foreach}\ x \in R \text{ from its head}\ \textbf{do} \cr
-/// 7 & \qquad \textbf{while}\ q \text{ is not past the end}\ \textbf{and}
-///     \ L.\mathrm{read}( q ) \le x\ \textbf{do}\ q \gets L.\mathrm{next}( q )
-///     \cr
-/// 8 & \qquad L.\mathrm{insert}( q , x )\quad \triangleright\ \text{before } q
+/// 7 & \qquad \textbf{while}\ \textbf{not}\ L.\mathrm{finished}( q )
+///     \ \textbf{and}\ \textbf{not}\ x < L.\mathrm{read}( q )\ \textbf{do} \cr
+/// 8 & \qquad\quad q \gets L.\mathrm{next}( q ) \cr
+/// 9 & \qquad L.\mathrm{insert}( q , x )\quad \triangleright\ \text{before the
+///     first larger item}
 /// \end{array}}
 /// \f]
 /// \post \f$ L \f$ is sorted (audit)

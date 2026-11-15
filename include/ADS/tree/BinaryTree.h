@@ -222,9 +222,10 @@ class BinaryTree
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{dfs}( t ) \cr
-/// 2 & \quad \textbf{if}\ t \ne \textbf{nil}\ \textbf{then} \cr
-/// 3 & \qquad \mathrm{pre}( t );\ \mathrm{dfs}( t.\mathrm{left}() );
-///     \ \mathrm{in}( t );\ \mathrm{dfs}( t.\mathrm{right}() );
+/// 2 & \quad \textbf{if}\ t = \textbf{nil}\ \textbf{then return} \cr
+/// 3 & \quad \mathrm{pre}( t );\ \mathrm{dfs}( t.\mathrm{left}() )\quad
+///     \triangleright\ \text{then the node in the middle} \cr
+/// 4 & \quad \mathrm{in}( t );\ \mathrm{dfs}( t.\mathrm{right}() );
 ///     \ \mathrm{post}( t )
 /// \end{array}}
 /// \f]
@@ -250,7 +251,8 @@ void post_visit( BinaryTree< T > * t , F && f );
 /// In pseudocode (section 5.6), a previsit:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{copy}( t ) \cr
+/// 1 & \textbf{function}\ \mathrm{copy}( t )\quad \triangleright
+///     \ \text{a deep copy} \cr
 /// 2 & \quad \textbf{if}\ t = \textbf{nil}\ \textbf{then return nil} \cr
 /// 3 & \quad c \gets \mathrm{BinaryTree}( t.\mathrm{read}() ) \cr
 /// 4 & \quad c.\mathrm{insertLeft}( \mathrm{copy}( t.\mathrm{left}() ) );
@@ -267,10 +269,12 @@ BinaryTree< T > * copy( const BinaryTree< T > * t );
 /// In pseudocode (section 5.6):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{join}( v , l , r ) \cr
-/// 2 & \quad t \gets \mathrm{BinaryTree}( v ) \cr
-/// 3 & \quad t.\mathrm{insertLeft}( \mathrm{copy}( l ) );
-///     \ t.\mathrm{insertRight}( \mathrm{copy}( r ) );\ \textbf{return}\ t
+/// 1 & \textbf{function}\ \mathrm{join}( v , l , r )\quad \triangleright\ l
+///     \text{ and } r \text{ are copied} \cr
+/// 2 & \quad t \gets \mathrm{BinaryTree}( v );\ t.\mathrm{insertLeft}(
+///     \mathrm{copy}( l ) );\ t.\mathrm{insertRight}( \mathrm{copy}( r ) )
+///     \cr
+/// 3 & \quad \textbf{return}\ t
 /// \end{array}}
 /// \f]
 template< class T >
@@ -289,9 +293,10 @@ BinaryTree< T > * join( const T & v , const BinaryTree< T > * l ,
 /// 1 & \textbf{function}\ \mathrm{to\_list}( t ) \cr
 /// 2 & \quad \textbf{if}\ t = \textbf{nil}\ \textbf{then return}
 ///     \ \text{“()”} \cr
-/// 3 & \quad \textbf{return}\ \text{“( ”},\ t.\mathrm{read}(),
-///     \ \mathrm{to\_list}( t.\mathrm{left}() ),\ \mathrm{to\_list}(
-///     t.\mathrm{right}() ),\ \text{“ )”} \text{ separated by spaces}
+/// 3 & \quad \textbf{return}\ \text{the words “(”, } t.\mathrm{read}()
+///     \text{, } \mathrm{to\_list}( t.\mathrm{left}() ) \text{, }
+///     \mathrm{to\_list}( t.\mathrm{right}() ) \text{, “)”} \cr
+///   & \qquad \text{joined by single spaces}
 /// \end{array}}
 /// \f]
 template< class T >
@@ -305,14 +310,15 @@ std::string to_list( const BinaryTree< T > * t );
 /// \f$ s \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{readTree}() \cr
-/// 2 & \quad \text{read “(”} \cr
-/// 3 & \quad \textbf{if}\ \text{the next token is “)”}\ \textbf{then}
-///     \ \text{read it};\ \textbf{return nil} \cr
-/// 4 & \quad t \gets \mathrm{BinaryTree}( \text{the value read} ) \cr
-/// 5 & \quad t.\mathrm{insertLeft}( \mathrm{readTree}() );
+/// 1 & \textbf{function}\ \mathrm{readTree}()\quad \triangleright
+///     \ \text{the inverse of } \mathrm{to\_list} \cr
+/// 2 & \quad \text{read “(”};\ \textbf{if}\ \text{“)” follows}
+///     \ \textbf{then}\ \text{read it};\ \textbf{return nil}\quad
+///     \triangleright\ \text{the empty tree} \cr
+/// 3 & \quad t \gets \mathrm{BinaryTree}( \text{the value that follows} ) \cr
+/// 4 & \quad t.\mathrm{insertLeft}( \mathrm{readTree}() );
 ///     \ t.\mathrm{insertRight}( \mathrm{readTree}() ) \cr
-/// 6 & \quad \text{read “)”};\ \textbf{return}\ t
+/// 5 & \quad \text{read “)”};\ \textbf{return}\ t
 /// \end{array}}
 /// \f]
 /// \pre \f$ s \f$ is the list of a binary tree, and `>>` reads each atom
@@ -327,14 +333,14 @@ BinaryTree< T > * from_list( std::string_view s );
 /// In pseudocode (section 5.5, figure 5.9):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{to\_binary}( t ) \cr
+/// 1 & \textbf{function}\ \mathrm{to\_binary}( t )\quad \triangleright
+///     \ \text{left: the first child, right: the next sibling} \cr
 /// 2 & \quad \textbf{if}\ t = \textbf{nil}\ \textbf{then return nil} \cr
 /// 3 & \quad b \gets \mathrm{BinaryTree}( t.\mathrm{read}() ) \cr
 /// 4 & \quad b.\mathrm{insertLeft}( \mathrm{to\_binary}(
-///     t.\mathrm{leftmostChild}() ) ) \cr
-/// 5 & \quad b.\mathrm{insertRight}( \mathrm{to\_binary}(
-///     t.\mathrm{rightSibling}() ) ) \cr
-/// 6 & \quad \textbf{return}\ b
+///     t.\mathrm{leftmostChild}() ) );\ b.\mathrm{insertRight}(
+///     \mathrm{to\_binary}( t.\mathrm{rightSibling}() ) ) \cr
+/// 5 & \quad \textbf{return}\ b
 /// \end{array}}
 /// \f]
 /// \pre \f$ t \f$ is a node

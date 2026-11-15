@@ -86,14 +86,15 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{binarySearch}( A , v ) \cr
-/// 2 & \quad i \gets 0;\ j \gets n - 1 \cr
+/// 2 & \quad i \gets 0;\ j \gets n - 1\quad \triangleright\ v \text{ can only
+///     be in } A[ i .. j ] \cr
 /// 3 & \quad \textbf{while}\ i \le j\ \textbf{do} \cr
 /// 4 & \qquad m \gets i + \lfloor ( j - i ) / 2 \rfloor;\ \mathrm{trace}( i ,
 ///     j , m ) \cr
-/// 5 & \qquad \textbf{if}\ A[ m ] = v\ \textbf{then return}\ m \cr
+/// 5 & \qquad \textbf{if}\ v < A[ m ]\ \textbf{then}\ j \gets m - 1 \cr
 /// 6 & \qquad \textbf{else if}\ A[ m ] < v\ \textbf{then}\ i \gets m + 1 \cr
-/// 7 & \qquad \textbf{else}\ j \gets m - 1 \cr
-/// 8 & \quad \textbf{return}\ -1
+/// 7 & \qquad \textbf{else return}\ m \cr
+/// 8 & \quad \textbf{return}\ -1\quad \triangleright\ \text{an empty range}
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is sorted
@@ -112,12 +113,13 @@ long binarySearch( const std::vector< T > & A , const T & v );
 /// section 1.2), the calls of the search made nodes:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{decision}( A , i , j ) \cr
-/// 2 & \quad \textbf{if}\ i > j\ \textbf{then return nil} \cr
-/// 3 & \quad m \gets i + \lfloor ( j - i ) / 2 \rfloor \cr
-/// 4 & \quad t \gets \text{a node of item } A[ m ] \cr
-/// 5 & \quad t.\mathit{left} \gets \mathrm{decision}( A , i , m - 1 );
-///     \ t.\mathit{right} \gets \mathrm{decision}( A , m + 1 , j ) \cr
+/// 1 & \textbf{function}\ \mathrm{decision}( A , i , j )\quad \triangleright
+///     \ \text{the tree of the search in } A[ i .. j ] \cr
+/// 2 & \quad \textbf{if}\ j < i\ \textbf{then return nil} \cr
+/// 3 & \quad m \gets i + \lfloor ( j - i ) / 2 \rfloor;\ t \gets \text{a new
+///     node of item } A[ m ] \cr
+/// 4 & \quad t.\mathit{left} \gets \mathrm{decision}( A , i , m - 1 ) \cr
+/// 5 & \quad t.\mathit{right} \gets \mathrm{decision}( A , m + 1 , j ) \cr
 /// 6 & \quad \textbf{return}\ t \cr
 /// 7 & \textbf{function}\ \mathrm{decisionTree}( A ) \cr
 /// 8 & \quad \textbf{return}\ \mathrm{decision}( A , 0 , n - 1 )
@@ -138,11 +140,12 @@ BinaryTree< T > * decisionTree( const std::vector< T > & A );
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{lowerBound}( A , v , \mathit{lo} ,
 ///     \mathit{hi} ) \cr
-/// 2 & \quad \textbf{while}\ \mathit{lo} < \mathit{hi}\ \textbf{do} \cr
+/// 2 & \quad \textbf{while}\ \mathit{lo} < \mathit{hi}\ \textbf{do}\quad
+///     \triangleright\ A[ .. \mathit{lo} - 1 ] < v \le A[ \mathit{hi} .. ] \cr
 /// 3 & \qquad m \gets \mathit{lo} + \lfloor ( \mathit{hi} - \mathit{lo} ) / 2
 ///     \rfloor \cr
-/// 4 & \qquad \textbf{if}\ A[ m ] < v\ \textbf{then}\ \mathit{lo} \gets m + 1
-///     \ \textbf{else}\ \mathit{hi} \gets m \cr
+/// 4 & \qquad \textbf{if}\ v \le A[ m ]\ \textbf{then}\ \mathit{hi} \gets m
+///     \ \textbf{else}\ \mathit{lo} \gets m + 1 \cr
 /// 5 & \quad \textbf{return}\ \mathit{lo}
 /// \end{array}}
 /// \f]
@@ -167,12 +170,13 @@ std::size_t lowerBound( const std::vector< T > & A , const T & v ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{upperBound}( A , v ) \cr
-/// 2 & \quad \mathit{lo} \gets 0;\ \mathit{hi} \gets n \cr
+/// 2 & \quad ( \mathit{lo} , \mathit{hi} ) \gets ( 0 , n )\quad
+///     \triangleright\ A[ .. \mathit{lo} - 1 ] \le v < A[ \mathit{hi} .. ] \cr
 /// 3 & \quad \textbf{while}\ \mathit{lo} < \mathit{hi}\ \textbf{do} \cr
 /// 4 & \qquad m \gets \mathit{lo} + \lfloor ( \mathit{hi} - \mathit{lo} ) / 2
 ///     \rfloor \cr
-/// 5 & \qquad \textbf{if}\ v < A[ m ]\ \textbf{then}\ \mathit{hi} \gets m
-///     \ \textbf{else}\ \mathit{lo} \gets m + 1 \cr
+/// 5 & \qquad \textbf{if}\ A[ m ] \le v\ \textbf{then}\ \mathit{lo} \gets m +
+///     1\ \textbf{else}\ \mathit{hi} \gets m \cr
 /// 6 & \quad \textbf{return}\ \mathit{lo}
 /// \end{array}}
 /// \f]
@@ -192,14 +196,15 @@ std::size_t upperBound( const std::vector< T > & A , const T & v ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{gallopSearch}( A , v ) \cr
-/// 2 & \quad \mathit{lo} \gets 0;\ \mathit{hi} \gets 0;\ s \gets 1 \cr
+/// 2 & \quad ( \mathit{lo} , \mathit{hi} , s ) \gets ( 0 , 0 , 1 )\quad
+///     \triangleright\ s \text{ doubles at each probe} \cr
 /// 3 & \quad \textbf{while}\ \mathit{hi} < n\ \textbf{and}\ A[ \mathit{hi} ]
 ///     < v\ \textbf{do} \cr
-/// 4 & \qquad \mathit{lo} \gets \mathit{hi} + 1;\ \mathit{hi} \gets
-///     \mathit{hi} + s;\ s \gets 2 s \cr
+/// 4 & \qquad ( \mathit{lo} , \mathit{hi} , s ) \gets ( \mathit{hi} + 1 ,
+///     \mathit{hi} + s , 2 s ) \cr
 /// 5 & \quad \textbf{return}\ \mathrm{lowerBound}( A , v , \mathit{lo} ,
-///     \min\{ \mathit{hi} , n \} )\quad \triangleright\ A[ \mathit{hi} ]
-///     \ge v \text{ if } \mathit{hi} < n
+///     \min\{ \mathit{hi} , n \} )\quad \triangleright\ v \le A[ \mathit{hi} ]
+///     \text{ if } \mathit{hi} < n
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is sorted

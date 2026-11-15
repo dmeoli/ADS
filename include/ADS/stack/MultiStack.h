@@ -112,9 +112,10 @@ class MultiStack
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{pop}( i ) \cr
- /// 2 & \quad c \gets \mathit{top}[ i ];\ v \gets C[ c ].\mathit{value} \cr
- /// 3 & \quad \mathit{top}[ i ] \gets C[ c ].\mathit{below};\ C[ c
- ///     ].\mathit{below} \gets \mathit{free};\ \mathit{free} \gets c \cr
+ /// 2 & \quad c \gets \mathit{top}[ i ];\ v \gets C[ c ].\mathit{value};
+ ///     \ \mathit{top}[ i ] \gets C[ c ].\mathit{below} \cr
+ /// 3 & \quad C[ c ].\mathit{below} \gets \mathit{free};\ \mathit{free}
+ ///     \gets c\quad \triangleright\ c \text{ back on the free list} \cr
  /// 4 & \quad \textbf{return}\ v
  /// \end{array}}
  /// \f]

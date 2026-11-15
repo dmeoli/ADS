@@ -132,12 +132,14 @@ dutchNationalFlag( std::vector< T > & A , F && colour ,
 /// swaps of neighbors, each keeping the order of the pair before it:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{wiggleSort}( A ) \cr
+/// 1 & \textbf{procedure}\ \mathrm{wiggleSort}( A )\quad \triangleright\ A[
+///     0 ] \le A[ 1 ] \ge A[ 2 ] \le \cdots \cr
 /// 2 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 2\ \textbf{do} \cr
-/// 3 & \qquad \textbf{if}\ ( i \text{ even }\ \textbf{and}\ A[ i + 1 ] <
-///     A[ i ] )\ \textbf{or}\ ( i \text{ odd }\ \textbf{and}\ A[ i ] < A[
-///     i + 1 ] )\ \textbf{then} \cr
-/// 4 & \qquad\quad \text{swap } A[ i ] \text{ and } A[ i + 1 ]
+/// 3 & \qquad \textbf{if}\ A[ i ] , A[ i + 1 ]
+///     \text{ are out of the order that the parity of } i \text{ asks} \cr
+///   & \qquad\quad \text{(}A[ i ] \le A[ i + 1 ] \text{ for } i
+///     \text{ even, } \ge \text{ for } i \text{ odd)}\ \textbf{then}\ A[ i ]
+///     \leftrightarrow A[ i + 1 ]
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ alternates, and holds its items (an audit)
@@ -154,12 +156,14 @@ void wiggleSort( std::vector< T > & A , C less = C() );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{sortKSorted}( A , k ) \cr
-/// 2 & \quad w \gets \min( k , n - 1 ) + 1;\ H \gets \text{a heap of }
-///     A[ 0 .. w ) \cr
-/// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 4 & \qquad A[ i ] \gets \mathrm{deleteMin}( H ) \cr
-/// 5 & \qquad \textbf{if}\ i + w < n\ \textbf{then}\ \mathrm{insert}( H , A[
-///     i + w ] )\quad \triangleright\ \text{one sift for both}
+/// 2 & \quad w \gets \min( k , n - 1 ) + 1\quad \triangleright\ A[ i ]
+///     \text{ is among the first } w \text{ items not yet placed} \cr
+/// 3 & \quad H \gets \text{a min-heap of } A[ 0 .. w - 1 ] \cr
+/// 4 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
+/// 5 & \qquad \textbf{if}\ i + w < n\ \textbf{then}\ A[ i ] \gets
+///     \text{the minimum of } H \text{, replaced by } A[ i + w ]
+///     \text{ (one sift)} \cr
+/// 6 & \qquad \textbf{else}\ A[ i ] \gets \mathrm{deleteMin}( H )
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is \f$ k \f$-sorted (an audit)

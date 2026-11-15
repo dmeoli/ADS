@@ -153,9 +153,11 @@ class SinglyList
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{tail}() \cr
- /// 2 & \quad \textbf{if}\ \mathit{first} = \textbf{nil}\ \textbf{then
- ///     return}\ \mathit{pos}_{-1} \cr
- /// 3 & \quad p \gets \textbf{nil} \cr
+ /// 2 & \quad \textbf{if}\ \mathit{first} = \textbf{nil}
+ ///     \ \textbf{then return}\ \mathit{pos}_{-1}\quad \triangleright
+ ///     \ \text{no item} \cr
+ /// 3 & \quad p \gets \textbf{nil}\quad \triangleright
+ ///     \ \text{the position of the first item} \cr
  /// 4 & \quad \textbf{while not}\ \mathrm{finished}( \mathrm{next}( p ) )
  ///     \ \textbf{do}\ p \gets \mathrm{next}( p ) \cr
  /// 5 & \quad \textbf{return}\ p
@@ -175,12 +177,11 @@ class SinglyList
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{prev}( p ) \cr
  /// 2 & \quad \textbf{if}\ p = \textbf{nil}\ \textbf{then return}
- ///     \ \mathit{pos}_{-1} \cr
- /// 3 & \quad \textbf{if}\ p = \mathit{first}\ \textbf{then return nil} \cr
- /// 4 & \quad q \gets \mathit{first} \cr
- /// 5 & \quad \textbf{while}\ q.\mathit{next} \ne p\ \textbf{do}\ q \gets
- ///     q.\mathit{next} \cr
- /// 6 & \quad \textbf{return}\ q
+ ///     \ \mathit{pos}_{-1};\ \textbf{if}\ p = \mathit{first}
+ ///     \ \textbf{then return nil} \cr
+ /// 3 & \quad q \gets \text{the cell of the list whose } \mathit{next}
+ ///     \text{ is } p \text{, by a scan from } \mathit{first} \cr
+ /// 4 & \quad \textbf{return}\ q
  /// \end{array}}
  /// \f]
  [[nodiscard]] Pos prev( Pos p ) const;
@@ -193,12 +194,12 @@ class SinglyList
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{insert}( p , v ) \cr
- /// 2 & \quad t \gets \text{a new cell};\ t.\mathit{value} \gets v \cr
- /// 3 & \quad \textbf{if}\ p = \textbf{nil}\ \textbf{then}\ t.\mathit{next}
- ///     \gets \mathit{first};\ \mathit{first} \gets t \cr
- /// 4 & \quad \textbf{else}\ t.\mathit{next} \gets p.\mathit{next};
- ///     \ p.\mathit{next} \gets t \cr
- /// 5 & \quad \textbf{return}\ p
+ /// 2 & \quad \ell \gets \mathit{first} \text{ if } p = \textbf{nil}
+ ///     \text{, else } p.\mathit{next}\quad \triangleright
+ ///     \ \text{the link to change} \cr
+ /// 3 & \quad \ell \gets \text{a new cell of value } v \text{ whose }
+ ///     \mathit{next} \text{ is the old } \ell \cr
+ /// 4 & \quad \textbf{return}\ p
  /// \end{array}}
  /// \f]
  /// \pre \f$ p \f$ is not \f$ \mathit{pos}_{-1} \f$
@@ -212,11 +213,12 @@ class SinglyList
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{remove}( p ) \cr
- /// 2 & \quad \textbf{if}\ p = \textbf{nil}\ \textbf{then}\ t \gets
- ///     \mathit{first};\ \mathit{first} \gets t.\mathit{next} \cr
- /// 3 & \quad \textbf{else}\ t \gets p.\mathit{next};\ p.\mathit{next}
- ///     \gets t.\mathit{next} \cr
- /// 4 & \quad \text{free the cell } t;\ \textbf{return}\ p
+ /// 2 & \quad \ell \gets \mathit{first} \text{ if } p = \textbf{nil}
+ ///     \text{, else } p.\mathit{next};\ t \gets \text{the cell } \ell
+ ///     \text{ points to} \cr
+ /// 3 & \quad \ell \gets t.\mathit{next};\ \text{free the cell } t \cr
+ /// 4 & \quad \textbf{return}\ p\quad \triangleright
+ ///     \ \text{now before the next item}
  /// \end{array}}
  /// \f]
  /// \pre \f$ p \f$ holds an item

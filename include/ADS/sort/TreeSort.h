@@ -62,16 +62,15 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{treeSort}( A ) \cr
-/// 2 & \quad S \gets \text{an empty search tree of pairs } ( \mathit{key} ,
-///     \mathit{count} ) \cr
+/// 2 & \quad S \gets \text{an empty search tree from a key to its copies} \cr
 /// 3 & \quad \textbf{foreach}\ x \in A\ \textbf{do} \cr
-/// 4 & \qquad c \gets S.\mathrm{lookup}( x ) \cr
-/// 5 & \qquad \textbf{if}\ c = \textbf{nil}\ \textbf{then}\ S.\mathrm{insert}(
-///     x , 1 )\ \textbf{else}\ S.\mathrm{insert}( x , c + 1 ) \cr
-/// 6 & \quad i \gets 0 \cr
-/// 7 & \quad \textbf{foreach}\ ( k , c ) \in S \text{ in symmetric order}
+/// 4 & \qquad c \gets S.\mathrm{lookup}( x );\ S.\mathrm{insert}( x , 1 )
+///     \text{ if } c = \textbf{nil} \text{, else } S.\mathrm{insert}( x , c +
+///     1 ) \cr
+/// 5 & \quad i \gets 0 \cr
+/// 6 & \quad \textbf{foreach}\ ( k , c ) \in S \text{ in symmetric order}
 ///     \ \textbf{do} \cr
-/// 8 & \qquad \text{write } k \text{ in } A[ i .. i + c - 1 ];\ i \gets i + c
+/// 7 & \qquad \text{write } k \text{ in } A[ i .. i + c - 1 ];\ i \gets i + c
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)

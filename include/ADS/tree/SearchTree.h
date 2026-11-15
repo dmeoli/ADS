@@ -215,47 +215,51 @@ class SearchTree
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{insertNode}( T , x , v ) \cr
- /// 2 & \quad p \gets \textbf{nil};\ u \gets T \cr
- /// 3 & \quad \textbf{while}\ u \ne \textbf{nil}\ \textbf{and}\ u.\mathit{key}
- ///     \ne x\ \textbf{do}\ p \gets u;\ u \gets \text{the child of } u
+ /// 2 & \quad p \gets \textbf{nil};\ u \gets T\quad \triangleright\ p
+ ///     \text{ is the parent of } u \cr
+ /// 3 & \quad \textbf{while}\ u \ne \textbf{nil}\ \textbf{and}
+ ///     \ u.\mathit{key} \ne x\ \textbf{do}\ ( p , u ) \gets ( u ,
+ ///     \text{the child of } u \text{ on the side of } x ) \cr
+ /// 4 & \quad \textbf{if}\ u \ne \textbf{nil}\ \textbf{then}
+ ///     \ u.\mathit{value} \gets v;\ \textbf{return}\ T\quad \triangleright
+ ///     \ x \text{ was there} \cr
+ /// 5 & \quad n \gets \text{a new node of } ( x , v ) \text{, hung under } p
  ///     \text{ on the side of } x \cr
- /// 4 & \quad \textbf{if}\ u \ne \textbf{nil}\ \textbf{then}\ u.\mathit{value}
- ///     \gets v;\ \textbf{return}\ T \cr
- /// 5 & \quad n \gets \text{a new node of } ( x , v ) \text{, the child of }
- ///     p \text{ on the side of } x \cr
- /// 6 & \quad \textbf{if}\ \mathit{RB}\ \textbf{then}
- ///     \ \mathrm{balanceInsert}( n );\ \textbf{return}\ \text{the root} \cr
- /// 7 & \quad \textbf{if}\ p = \textbf{nil}\ \textbf{then return}\ n
- ///     \ \textbf{else return}\ T \cr
- /// 8 & \textbf{procedure}\ \mathrm{balanceInsert}( t ) \cr
- /// 9 & \quad t.\mathit{color} \gets \text{red} \cr
- /// 10 & \quad \textbf{while}\ t \ne \textbf{nil}\ \textbf{do} \cr
- /// 11 & \qquad p \gets t.\mathit{parent};\ n \gets p.\mathit{parent};\ z
- ///     \gets \text{the other child of } n \cr
- /// 12 & \qquad \textbf{if}\ p = \textbf{nil}\ \textbf{then}
- ///     \ t.\mathit{color} \gets \text{black};\ t \gets \textbf{nil}\quad
- ///     \triangleright\ \text{(1)} \cr
- /// 13 & \qquad \textbf{else if}\ p \text{ is black}\ \textbf{then}\ t
- ///     \gets \textbf{nil}\quad \triangleright\ \text{(2)} \cr
- /// 14 & \qquad \textbf{else if}\ z \text{ is red}\ \textbf{then}\quad
- ///     \triangleright\ \text{(3)} \cr
- /// 15 & \qquad\quad p.\mathit{color} \gets z.\mathit{color} \gets
- ///     \text{black};\ n.\mathit{color} \gets \text{red};\ t \gets n \cr
- /// 16 & \qquad \textbf{else if}\ t = p.\mathit{right}\ \textbf{and}\ p =
- ///     n.\mathit{left}\ \textbf{then}\ \mathrm{rotateLeft}( p );\ t \gets
- ///     p\quad \triangleright\ \text{(4a), and (4b) its mirror} \cr
- /// 17 & \qquad \textbf{else} \cr
- /// 18 & \qquad\quad \text{rotate } n \text{ away from } t \text{ (right }
- ///     \text{if } p = n.\mathit{left} \text{)}\quad \triangleright
- ///     \ \text{(5a), (5b)} \cr
- /// 19 & \qquad\quad p.\mathit{color} \gets \text{black};
- ///     \ n.\mathit{color} \gets \text{red};\ t \gets \textbf{nil} \cr
- /// 20 & \textbf{function}\ \mathrm{rotateLeft}( x ) \cr
- /// 21 & \quad y \gets x.\mathit{right};\ x.\mathit{right} \gets
+ /// 6 & \quad \text{add } 1 \text{ to the size of } p
+ ///     \text{ and of each node above it} \cr
+ /// 7 & \quad \textbf{if}\ \mathit{RB}\ \textbf{then}
+ ///     \ \mathrm{balanceInsert}( n );\ \textbf{return}
+ ///     \ \text{the root above } n \cr
+ /// 8 & \quad \textbf{return}\ n \text{ if } p = \textbf{nil} \text{, else }
+ ///     T \cr
+ /// 9 & \textbf{procedure}\ \mathrm{balanceInsert}( t )\quad \triangleright
+ ///     \ \text{only } t \text{ and its parent may be both red} \cr
+ /// 10 & \quad t.\mathit{color} \gets \text{red} \cr
+ /// 11 & \quad \textbf{while}\ t \text{ is not the root and its parent } p
+ ///     \text{ is red}\ \textbf{do} \cr
+ /// 12 & \qquad n \gets p.\mathit{parent};\ z \gets \text{the child of } n
+ ///     \text{ other than } p\quad \triangleright\ n \text{ is black} \cr
+ /// 13 & \qquad \textbf{if}\ z \text{ is red}\ \textbf{then}
+ ///     \ p.\mathit{color} \gets z.\mathit{color} \gets \text{black};
+ ///     \ n.\mathit{color} \gets \text{red};\ t \gets n \cr
+ /// 14 & \qquad \textbf{else} \cr
+ /// 15 & \qquad\quad \textbf{if}\ t \text{ and } p
+ ///     \text{ hang on opposite sides}\ \textbf{then} \cr
+ /// 16 & \qquad\qquad \text{rotate at } p \text{, so that } t
+ ///     \text{ takes its place};\ ( t , p ) \gets ( p , t ) \cr
+ /// 17 & \qquad\quad \text{rotate at } n \text{, so that } p
+ ///     \text{ takes its place};\ p.\mathit{color} \gets \text{black};
+ ///     \ n.\mathit{color} \gets \text{red} \cr
+ /// 18 & \quad \text{color the root black} \cr
+ /// 19 & \textbf{function}\ \mathrm{rotateLeft}( x )\quad \triangleright
+ ///     \ \text{the right child } y \text{ of } x \text{ goes up} \cr
+ /// 20 & \quad y \gets x.\mathit{right};\ x.\mathit{right} \gets
  ///     y.\mathit{left};\ y.\mathit{left} \gets x \cr
- /// 22 & \quad \text{the parent of } x \text{ takes } y \text{ as its child;}
- ///     \ \text{update the parents and the sizes of } x \text{ and } y \cr
- /// 23 & \quad \textbf{return}\ y
+ /// 21 & \quad y \text{ replaces } x
+ ///     \text{ as the child of the old parent of } x;
+ ///     \ \text{fix the parents} \cr
+ /// 22 & \quad \text{recompute the size of } x \text{, then that of } y;
+ ///     \ \textbf{return}\ y
  /// \end{array}}
  /// \f]
  void insert( const K & k , const V & v );
@@ -263,48 +267,52 @@ class SearchTree
  /// removes the key \f$ k \f$, if present, in \f$ O( h ) \f$ time
  ///
  /// In pseudocode (sections 6.1 and 6.2), the removal of the binary search
- /// tree and `balanceDelete()` for a Red-Black tree, the cases (1) to (4)
- /// with \f$ t \f$ a left child of \f$ p \f$ and their mirrors (5) to (8):
+ /// tree and `balanceDelete()` for a Red-Black tree, written once for the
+ /// two sides of \f$ p \f$ by naming \f$ \mathit{near} \f$ the side of
+ /// \f$ t \f$:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{removeNode}( T , x ) \cr
  /// 2 & \quad u \gets \mathrm{lookupNode}( T , x );\ \textbf{if}\ u =
  ///     \textbf{nil}\ \textbf{then return}\ T \cr
  /// 3 & \quad \textbf{if}\ u \text{ has two children}\ \textbf{then}\quad
- ///     \triangleright\ \text{(3): the successor } s \text{ in its place} \cr
- /// 4 & \qquad s \gets \mathrm{min}( u.\mathit{right} );\ ( u.\mathit{key} ,
- ///     u.\mathit{value} ) \gets ( s.\mathit{key} , s.\mathit{value} );\ u
- ///     \gets s \cr
- /// 5 & \quad t \gets \text{the only child of } u \text{, or }
- ///     \textbf{nil}\quad \triangleright\ \text{(1), (2)} \cr
- /// 6 & \quad \text{hang } t \text{ in the place of } u \text{ under }
- ///     u.\mathit{parent} \cr
+ ///     \triangleright\ \text{the node to cut has one child at most} \cr
+ /// 4 & \qquad s \gets \mathrm{min}( u.\mathit{right} );
+ ///     \ \text{copy the key and the value of } s \text{ into } u;\ u \gets
+ ///     s \cr
+ /// 5 & \quad t \gets \text{the child of } u \text{ if it has one, else }
+ ///     \textbf{nil} \cr
+ /// 6 & \quad \text{subtract } 1 \text{ from the size of each node above }
+ ///     u;\ \text{put } t \text{ in the place of } u \cr
  /// 7 & \quad \textbf{if}\ \mathit{RB}\ \textbf{and}\ u \text{ is black}
  ///     \ \textbf{then}\ \mathrm{balanceDelete}( t , u.\mathit{parent} ) \cr
  /// 8 & \quad \text{free } u;\ \textbf{return}\ \text{the root} \cr
- /// 9 & \textbf{procedure}\ \mathrm{balanceDelete}( t , p ) \cr
- /// 10 & \quad \textbf{while}\ p \ne \textbf{nil}\ \textbf{and}\ t \text{ is }
- ///     \text{black}\ \textbf{do} \cr
- /// 11 & \qquad f \gets p.\mathit{right};\ ( a , b ) \gets (
- ///     f.\mathit{left} , f.\mathit{right} )\quad \triangleright
- ///     \ \text{sibling and nephews} \cr
- /// 12 & \qquad \textbf{if}\ f \text{ is red}\ \textbf{then}
+ /// 9 & \textbf{procedure}\ \mathrm{balanceDelete}( t , p )\quad
+ ///     \triangleright\ \text{a black node is missing below } p
+ ///     \text{ on the side of } t \cr
+ /// 10 & \quad \textbf{while}\ p \ne \textbf{nil}\ \textbf{and}\ t
+ ///     \text{ is black}\ \textbf{do} \cr
+ /// 11 & \qquad \mathit{near} \gets \text{the side of } p
+ ///     \text{ that holds } t;\ \mathit{far} \gets \text{the other side} \cr
+ /// 12 & \qquad f \gets p.\mathit{far};\ a \gets f.\mathit{near};\ b \gets
+ ///     f.\mathit{far}\quad \triangleright
+ ///     \ \text{the sibling and the nephews} \cr
+ /// 13 & \qquad \textbf{if}\ f \text{ is red}\ \textbf{then}
  ///     \ p.\mathit{color} \gets \text{red};\ f.\mathit{color} \gets
- ///     \text{black};\ \mathrm{rotateLeft}( p )\quad \triangleright
- ///     \ \text{(1)} \cr
- /// 13 & \qquad \textbf{else if}\ a \text{ and } b \text{ are black}
- ///     \ \textbf{then}\ f.\mathit{color} \gets \text{red};\ t \gets p;\ p
- ///     \gets t.\mathit{parent}\quad \triangleright\ \text{(2)} \cr
- /// 14 & \qquad \textbf{else if}\ b \text{ is black}\ \textbf{then}
+ ///     \text{black};\ \text{rotate } p \text{ down to } \mathit{near} \cr
+ /// 14 & \qquad \textbf{else if}\ a \text{ and } b \text{ are black}
+ ///     \ \textbf{then}\ f.\mathit{color} \gets \text{red};\ ( t , p ) \gets
+ ///     ( p , p.\mathit{parent} ) \cr
+ /// 15 & \qquad \textbf{else if}\ b \text{ is black}\ \textbf{then}
  ///     \ a.\mathit{color} \gets \text{black};\ f.\mathit{color} \gets
- ///     \text{red};\ \mathrm{rotateRight}( f )\quad \triangleright
- ///     \ \text{(3)} \cr
- /// 15 & \qquad \textbf{else}\quad \triangleright\ \text{(4)} \cr
- /// 16 & \qquad\quad f.\mathit{color} \gets p.\mathit{color};
+ ///     \text{red};\ \text{rotate } f \text{ down to } \mathit{far} \cr
+ /// 16 & \qquad \textbf{else} \cr
+ /// 17 & \qquad\quad f.\mathit{color} \gets p.\mathit{color};
  ///     \ p.\mathit{color} \gets b.\mathit{color} \gets \text{black};
- ///     \ \mathrm{rotateLeft}( p ) \cr
- /// 17 & \qquad\quad t \gets \text{the root};\ p \gets \textbf{nil} \cr
- /// 18 & \quad \textbf{if}\ t \ne \textbf{nil}\ \textbf{then}
+ ///     \ \text{rotate } p \text{ down to } \mathit{near} \cr
+ /// 18 & \qquad\quad ( t , p ) \gets ( \text{the root} , \textbf{nil} )\quad
+ ///     \triangleright\ \text{the missing black is restored} \cr
+ /// 19 & \quad \textbf{if}\ t \ne \textbf{nil}\ \textbf{then}
  ///     \ t.\mathit{color} \gets \text{black}
  /// \end{array}}
  /// \f]
@@ -367,11 +375,11 @@ class SearchTree
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{lookupNode}( T , x ) \cr
- /// 2 & \quad \textbf{while}\ T \ne \textbf{nil}\ \textbf{and}\ T.\mathit{key}
- ///     \ne x\ \textbf{do} \cr
- /// 3 & \qquad \textbf{if}\ x < T.\mathit{key}\ \textbf{then}\ T \gets
- ///     T.\mathit{left}\ \textbf{else}\ T \gets T.\mathit{right} \cr
- /// 4 & \quad \textbf{return}\ T
+ /// 2 & \quad \textbf{while}\ T \ne \textbf{nil}\ \textbf{and}
+ ///     \ T.\mathit{key} \ne x\ \textbf{do}\ T \gets \text{the child of } T
+ ///     \text{ on the side of } x \cr
+ /// 3 & \quad \textbf{return}\ T\quad \triangleright\ \textbf{nil}
+ ///     \text{ if } x \text{ is not in the tree}
  /// \end{array}}
  /// \f]
  [[nodiscard]] Link * lookupNode( const K & x ) const;
@@ -413,14 +421,15 @@ class SearchTree
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{successorNode}( t ) \cr
- /// 2 & \quad \textbf{if}\ t = \textbf{nil}\ \textbf{then return}\ t \cr
+ /// 2 & \quad \textbf{if}\ t = \textbf{nil}\ \textbf{then return}
+ ///     \ \textbf{nil} \cr
  /// 3 & \quad \textbf{if}\ t.\mathit{right} \ne \textbf{nil}
  ///     \ \textbf{then return}\ \mathrm{min}( t.\mathit{right} ) \cr
- /// 4 & \quad p \gets t.\mathit{parent} \cr
- /// 5 & \quad \textbf{while}\ p \ne \textbf{nil}\ \textbf{and}\ t =
- ///     p.\mathit{right}\ \textbf{do}\ t \gets p;\ p \gets p.\mathit{parent}
- ///     \cr
- /// 6 & \quad \textbf{return}\ p
+ /// 4 & \quad \textbf{while}\ t \text{ is the right child of its parent}
+ ///     \ \textbf{do}\ t \gets t.\mathit{parent} \cr
+ /// 5 & \quad \textbf{return}\ t.\mathit{parent}\quad \triangleright
+ ///     \ \text{the first ancestor with } t \text{ on its left, or }
+ ///     \textbf{nil}
  /// \end{array}}
  /// \f]
  /// \pre \f$ t \f$ is not a null pointer

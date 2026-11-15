@@ -243,9 +243,9 @@ class CursorList
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{remove}( p ) \cr
- /// 2 & \quad k \gets \ell;\ \ell \gets S[ k ].\mathit{next};
- ///     \ S.\mathrm{give}( k ) \cr
- /// 3 & \quad \textbf{return}\ p
+ /// 2 & \quad k \gets \ell;\ \ell \gets S[ k ].\mathit{next}\quad
+ ///     \triangleright\ \text{unlink the first cell} \cr
+ /// 3 & \quad S.\mathrm{give}( k );\ \textbf{return}\ p
  /// \end{array}}
  /// \f]
  /// \pre \f$ p \f$ holds an item

@@ -59,14 +59,14 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{countingSort}( A , n , k ) \cr
-/// 2 & \quad \textbf{for}\ v \gets 0\ \textbf{to}\ k - 1\ \textbf{do}\ B[ v ]
-///     \gets 0 \cr
-/// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do}\ B[ A[
-///     i ] ] \gets B[ A[ i ] ] + 1 \cr
+/// 2 & \quad B \gets \text{a vector of } k \text{ zeros}\quad \triangleright
+///     \ \text{the occurrences} \cr
+/// 3 & \quad \textbf{foreach}\ a \in A\ \textbf{do}\ B[ a ] \gets B[ a ] + 1
+///     \cr
 /// 4 & \quad j \gets 0 \cr
-/// 5 & \quad \textbf{for}\ v \gets 0\ \textbf{to}\ k - 1\ \textbf{do} \cr
-/// 6 & \qquad \textbf{while}\ B[ v ] > 0\ \textbf{do} \cr
-/// 7 & \qquad\quad A[ j ] \gets v;\ j \gets j + 1;\ B[ v ] \gets B[ v ] - 1
+/// 5 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ k - 1\ \textbf{do} \cr
+/// 6 & \qquad \text{write } i \text{ in } A[ j .. j + B[ i ] - 1 ];\ j \gets j
+///     + B[ i ]
 /// \end{array}}
 /// \f]
 /// \pre each key of \f$ A \f$ is in \f$ [ 0 , k ) \f$

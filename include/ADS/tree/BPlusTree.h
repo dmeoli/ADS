@@ -136,18 +136,18 @@ class BPlusTree
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{lookup}( x ) \cr
- /// 2 & \quad u \gets \mathrm{leaf}( x ) \cr
- /// 3 & \quad i \gets \text{the first place of } u \text{ with } u.k[ i ]
- ///     \ge x \cr
- /// 4 & \quad \textbf{if}\ i \text{ is a place of } u\ \textbf{and}\ u.k[
- ///     i ] = x\ \textbf{then return}\ u.v[ i ]\ \textbf{else return nil} \cr
- /// 5 & \textbf{function}\ \mathrm{leaf}( x )\quad \triangleright
- ///     \ \text{the leaf where } x \text{ is, or would be} \cr
- /// 6 & \quad u \gets \mathit{root} \cr
- /// 7 & \quad \textbf{while}\ u \text{ is not a leaf}\ \textbf{do}\ u
- ///     \gets u.p[ i ] \text{, } i \text{ the first place with } u.k[ i ]
- ///     \ge x \cr
- /// 8 & \quad \textbf{return}\ u
+ /// 2 & \quad u \gets \mathrm{leaf}( x );\ i \gets
+ ///     \text{the least place of } u \text{ with } x \le u.k[ i ] \cr
+ /// 3 & \quad \textbf{return}\ u.v[ i ]
+ ///     \text{ if there is such a place and } u.k[ i ] = x \text{, else }
+ ///     \textbf{nil} \cr
+ /// 4 & \textbf{function}\ \mathrm{leaf}( x )\quad \triangleright
+ ///     \ \text{the leaf that holds } x \text{, or would hold it} \cr
+ /// 5 & \quad u \gets \mathit{root} \cr
+ /// 6 & \quad \textbf{while}\ u \text{ is an inner node}\ \textbf{do}\ u
+ ///     \gets u.p[ i ] \text{ for the least } i \text{ with } x \le u.k[ i ]
+ ///     \cr
+ /// 7 & \quad \textbf{return}\ u
  /// \end{array}}
  /// \f]
  [[nodiscard]] std::optional< V > lookup( const K & x ) const;
@@ -160,31 +160,33 @@ class BPlusTree
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{insert}( x , v ) \cr
  /// 2 & \quad f \gets \mathrm{leaf}( x ) \cr
- /// 3 & \quad \textbf{if}\ x \text{ is in } f\ \textbf{then}
- ///     \ \text{give it the value } v;\ \textbf{return} \cr
- /// 4 & \quad \text{put } ( x , v ) \text{ in } f \text{ in the order of }
- ///     \text{the keys} \cr
- /// 5 & \quad \textbf{if}\ f \text{ has } m \text{ keys or fewer}
- ///     \ \textbf{then return} \cr
- /// 6 & \quad g \gets \text{a new leaf with the first }
- ///     \lceil ( m + 1 ) / 2 \rceil \text{ pairs of } f \text{, linked }
- ///     \text{before } f \cr
- /// 7 & \quad \mathrm{up}( f , g , \text{the largest key of } g ) \cr
- /// 8 & \textbf{procedure}\ \mathrm{up}( f , g , s )\quad \triangleright
- ///     \ g \text{ goes before its sibling } f \cr
+ /// 3 & \quad \textbf{if}\ f \text{ holds } x\ \textbf{then}
+ ///     \ \text{replace its value by } v;\ \textbf{return} \cr
+ /// 4 & \quad \text{insert } ( x , v ) \text{ into } f
+ ///     \text{, keeping the keys sorted} \cr
+ /// 5 & \quad \textbf{if}\ f \text{ has more than } m \text{ keys}
+ ///     \ \textbf{then}\quad \triangleright\ \text{an overflow: split} \cr
+ /// 6 & \qquad g \gets \text{a new leaf, chained before } f
+ ///     \text{, that takes the first } \lceil ( m + 1 ) / 2 \rceil
+ ///     \text{ pairs of } f \cr
+ /// 7 & \qquad \mathrm{up}( f , g , \text{the largest key of } g ) \cr
+ /// 8 & \textbf{procedure}\ \mathrm{up}( f , g , s )\quad \triangleright\ g
+ ///     \text{, a new sibling to the left of } f \text{, and its separator }
+ ///     s \cr
  /// 9 & \quad b \gets \text{the parent of } f \cr
- /// 10 & \quad \textbf{if}\ b = \textbf{nil}\ \textbf{then}
- ///     \ \mathit{root} \gets \text{a node with the key } s \text{ and the }
- ///     \text{children } g , f;\ \textbf{return} \cr
- /// 11 & \quad \text{put } g \text{ before } f \text{ in } b \text{, and } s
- ///     \text{ before the key that follows } g \cr
- /// 12 & \quad \textbf{if}\ b \text{ has } m \text{ children or fewer}
- ///     \ \textbf{then return} \cr
- /// 13 & \quad c \gets \text{a new node with the first }
- ///     \lceil ( m + 1 ) / 2 \rceil \text{ children of } b \text{ and the }
- ///     \text{keys between them} \cr
- /// 14 & \quad \mathrm{up}( b , c , \text{the key that separated } c
- ///     \text{ from the rest of } b )
+ /// 10 & \quad \textbf{if}\ b = \textbf{nil}\ \textbf{then}\ \mathit{root}
+ ///     \gets \text{a new node of children } g , f \text{ and key } s;
+ ///     \ \textbf{return} \cr
+ /// 11 & \quad \text{in } b \text{, insert } g \text{ just before } f
+ ///     \text{ and } s \text{ just before the key on the right of } g \cr
+ /// 12 & \quad \textbf{if}\ b \text{ has more than } m \text{ children}
+ ///     \ \textbf{then}\quad \triangleright
+ ///     \ \text{the split goes one level up} \cr
+ /// 13 & \qquad c \gets \text{a new node that takes the first } \lceil ( m +
+ ///     1 ) / 2 \rceil \text{ children of } b
+ ///     \text{ and the keys among them} \cr
+ /// 14 & \qquad \mathrm{up}( b , c , \text{the key of } b
+ ///     \text{ that separated } c \text{ from the rest} )
  /// \end{array}}
  /// \f]
  void insert( const K & x , const V & v );
@@ -253,17 +255,17 @@ class BPlusTree
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{range}( A , B ) \cr
- /// 2 & \quad \mathit{out} \gets \text{the empty sequence};\ f \gets
- ///     \mathrm{leaf}( A ) \cr
- /// 3 & \quad \textbf{while}\ f \ne \textbf{nil}\ \textbf{do} \cr
- /// 4 & \qquad \textbf{foreach}\ ( k , v ) \text{ of } f \text{, in order}
- ///     \ \textbf{do} \cr
- /// 5 & \qquad\quad \textbf{if}\ k > B\ \textbf{then return}
- ///     \ \mathit{out} \cr
- /// 6 & \qquad\quad \textbf{if}\ k \ge A\ \textbf{then}\ \text{append }
- ///     ( k , v ) \text{ to } \mathit{out} \cr
- /// 7 & \qquad f \gets f.\mathit{next} \cr
- /// 8 & \quad \textbf{return}\ \mathit{out}
+ /// 2 & \quad \mathit{out} \gets \text{an empty sequence} \cr
+ /// 3 & \quad \textbf{for}\ f \gets \mathrm{leaf}( A ) , f.\mathit{next} ,
+ ///     \ldots \text{ while } f \ne \textbf{nil}\ \textbf{do}\quad
+ ///     \triangleright\ \text{along the chain of the leaves} \cr
+ /// 4 & \qquad \textbf{foreach}\ ( k , v ) \text{ of } f
+ ///     \text{, by increasing } k\ \textbf{do} \cr
+ /// 5 & \qquad\quad \textbf{if}\ B < k\ \textbf{then return}\ \mathit{out}
+ ///     \cr
+ /// 6 & \qquad\quad \textbf{if}\ A \le k\ \textbf{then}\ \text{append } ( k
+ ///     , v ) \text{ to } \mathit{out} \cr
+ /// 7 & \quad \textbf{return}\ \mathit{out}
  /// \end{array}}
  /// \f]
  [[nodiscard]] std::vector< std::pair< K , V > > range( const K & A ,

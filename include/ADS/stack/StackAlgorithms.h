@@ -91,12 +91,14 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{isPalindrome}( s ) \cr
-/// 2 & \quad S \gets \text{an empty stack} \cr
+/// 2 & \quad S \gets \text{an empty stack};\ \textbf{foreach}
+///     \ \text{character } c \text{ of } s\ \textbf{do}\ \mathrm{push}( S ,
+///     c ) \cr
 /// 3 & \quad \textbf{foreach}\ \text{character } c \text{ of } s
-///     \ \textbf{do}\ \mathrm{push}( S , c ) \cr
-/// 4 & \quad \textbf{foreach}\ \text{character } c \text{ of } s
-///     \ \textbf{do}\ \textbf{if}\ \mathrm{pop}( S ) \ne c\ \textbf{then
-///     return false} \cr
+///     \ \textbf{do}\quad \triangleright\ S \text{ gives } s
+///     \text{ backwards} \cr
+/// 4 & \qquad \textbf{if}\ c \ne \mathrm{pop}( S )
+///     \ \textbf{then return false} \cr
 /// 5 & \quad \textbf{return true}
 /// \end{array}}
 /// \f]
@@ -108,17 +110,17 @@ inline bool isPalindrome( const std::string & s );
 /// passes, each carrying the largest item it meets to the bottom:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{pass}( s ) \cr
+/// 1 & \textbf{procedure}\ \mathrm{pass}( s )\quad \triangleright
+///     \ \text{the largest item to the bottom} \cr
 /// 2 & \quad \textbf{if}\ \mathrm{empty}( s )\ \textbf{then return} \cr
 /// 3 & \quad a \gets \mathrm{pop}( s ) \cr
-/// 4 & \quad \textbf{if}\ \mathrm{empty}( s )\ \textbf{then}\ \mathrm{push}(
-///     s , a );\ \textbf{return} \cr
-/// 5 & \quad b \gets \mathrm{pop}( s );\ \mathrm{push}( s , \max( a , b ) )
+/// 4 & \quad \textbf{if}\ \textbf{not}\ \mathrm{empty}( s )\ \textbf{then}
 ///     \cr
-/// 6 & \quad \mathrm{pass}( s );\ \mathrm{push}( s , \min( a , b ) ) \cr
+/// 5 & \qquad b \gets \mathrm{pop}( s );\ \mathrm{push}( s , \max( a , b )
+///     );\ \mathrm{pass}( s );\ a \gets \min( a , b ) \cr
+/// 6 & \quad \mathrm{push}( s , a ) \cr
 /// 7 & \textbf{procedure}\ \mathrm{sortStack}( s ) \cr
-/// 8 & \quad \textbf{for}\ k \gets 1\ \textbf{to}\ n - 1\ \textbf{do}
-///     \ \mathrm{pass}( s )
+/// 8 & \quad \mathrm{pass}( s ) \text{, } n - 1 \text{ times}
 /// \end{array}}
 /// \f]
 /// \post \f$ s \f$ is sorted, the least on top, with the same number of
@@ -133,12 +135,14 @@ void sortStack( S & s );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{removeGreater}( s , k ) \cr
-/// 2 & \quad A \gets \text{an empty stack} \cr
+/// 2 & \quad A \gets \text{an empty stack}\quad \triangleright
+///     \ \text{the kept items, reversed} \cr
 /// 3 & \quad \textbf{while not}\ \mathrm{empty}( s )\ \textbf{do} \cr
-/// 4 & \qquad x \gets \mathrm{pop}( s );\ \textbf{if}\ x \le k
+/// 4 & \qquad x \gets \mathrm{pop}( s );\ \textbf{if}\ \textbf{not}\ x > k
 ///     \ \textbf{then}\ \mathrm{push}( A , x ) \cr
 /// 5 & \quad \textbf{while not}\ \mathrm{empty}( A )\ \textbf{do}
-///     \ \mathrm{push}( s , \mathrm{pop}( A ) )
+///     \ \mathrm{push}( s , \mathrm{pop}( A ) )\quad \triangleright
+///     \ \text{the order restored}
 /// \end{array}}
 /// \f]
 /// \post no item is larger than \f$ k \f$ (an audit)
@@ -152,10 +156,11 @@ void removeGreater( S & s , const typename S::Item & k );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{forEachBottomUp}( s , f ) \cr
-/// 2 & \quad \textbf{if}\ \mathrm{empty}( s )\ \textbf{then return} \cr
-/// 3 & \quad x \gets \mathrm{pop}( s ) \cr
-/// 4 & \quad \mathrm{forEachBottomUp}( s , f ) \cr
-/// 5 & \quad f( x );\ \mathrm{push}( s , x )
+/// 2 & \quad \textbf{if}\ \textbf{not}\ \mathrm{empty}( s )\ \textbf{then}
+///     \cr
+/// 3 & \qquad x \gets \mathrm{pop}( s );\ \mathrm{forEachBottomUp}( s , f
+///     )\quad \triangleright\ \text{the items below } x \text{ first} \cr
+/// 4 & \qquad f( x );\ \mathrm{push}( s , x )
 /// \end{array}}
 /// \f]
 /// \post \f$ s \f$ is as it was (an audit)

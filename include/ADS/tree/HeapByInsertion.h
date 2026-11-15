@@ -83,10 +83,12 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{maxHeapSiftUp}( A , i ) \cr
-/// 2 & \quad \textbf{while}\ i > 0\ \textbf{and}\ A[ \lfloor ( i - 1 ) / 2
-///     \rfloor ] < A[ i ]\ \textbf{do} \cr
-/// 3 & \qquad \text{swap } A[ i ] \text{ and } A[ \lfloor ( i - 1 ) / 2
-///     \rfloor ];\ i \gets \lfloor ( i - 1 ) / 2 \rfloor
+/// 2 & \quad \textbf{while}\ i > 0\ \textbf{do}\quad \triangleright
+///     \ \text{the heap order holds but between } i \text{ and its parent}
+///     \cr
+/// 3 & \qquad p \gets \lfloor ( i - 1 ) / 2 \rfloor;\ \textbf{if}
+///     \ \textbf{not}\ A[ p ] < A[ i ]\ \textbf{then return} \cr
+/// 4 & \qquad A[ i ] \leftrightarrow A[ p ];\ i \gets p
 /// \end{array}}
 /// \f]
 /// \pre \f$ i < n \f$ and \f$ A[ 0 .. i - 1 ] \f$ is a max-heap (an

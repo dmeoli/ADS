@@ -95,8 +95,8 @@ class Dequeue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{removeHead}() \cr
- /// 2 & \quad v \gets L.\mathrm{read}( L.\mathrm{head}() );
- ///     \ L.\mathrm{remove}( L.\mathrm{head}() );\ \textbf{return}\ v
+ /// 2 & \quad p \gets L.\mathrm{head}();\ v \gets L.\mathrm{read}( p );
+ ///     \ L.\mathrm{remove}( p );\ \textbf{return}\ v
  /// \end{array}}
  /// \f]
  /// \pre the dequeue is not empty
@@ -108,8 +108,8 @@ class Dequeue
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{removeTail}() \cr
- /// 2 & \quad v \gets L.\mathrm{read}( L.\mathrm{tail}() );
- ///     \ L.\mathrm{remove}( L.\mathrm{tail}() );\ \textbf{return}\ v
+ /// 2 & \quad p \gets L.\mathrm{tail}();\ v \gets L.\mathrm{read}( p );
+ ///     \ L.\mathrm{remove}( p );\ \textbf{return}\ v
  /// \end{array}}
  /// \f]
  /// \pre the dequeue is not empty

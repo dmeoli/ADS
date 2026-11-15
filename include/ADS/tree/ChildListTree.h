@@ -164,13 +164,15 @@ class ChildListTree
  /// `insertChild()`:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{copy}( t , s , p ) \cr
- /// 2 & \quad c \gets \text{a new node of value } t.\mathrm{read}( s )
- ///     \text{ under } p \cr
- /// 3 & \quad \textbf{foreach}\ \text{child } u \text{ of } s \text{ in }
- ///     t \text{, in order}\ \textbf{do} \cr
- /// 4 & \qquad x \gets \mathrm{copy}( t , u , c );\ N[ x ].\mathit{where}
- ///     \gets C_c.\mathrm{insert}( \text{after the last cell} , x ) \cr
+ /// 1 & \textbf{function}\ \mathrm{copy}( t , s , p )\quad \triangleright
+ ///     \ \text{the subtree of } s \text{ in } t \text{, hung under } p \cr
+ /// 2 & \quad c \gets \text{a new node under } p \text{, of value }
+ ///     t.\mathrm{read}( s ) \cr
+ /// 3 & \quad \textbf{foreach}\ \text{child } u \text{ of } s \text{ in } t
+ ///     \text{, in order}\ \textbf{do} \cr
+ /// 4 & \qquad x \gets \mathrm{copy}( t , u , c );\ \text{append } x
+ ///     \text{ to } C_c \text{ and keep its cell in } N[ x ].\mathit{where}
+ ///     \cr
  /// 5 & \quad \textbf{return}\ c
  /// \end{array}}
  /// \f]
