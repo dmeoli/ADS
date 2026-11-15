@@ -384,23 +384,24 @@ $-1$ otherwise; for $n = 0$ it returns $-1$ with no probe, since $\delta_1(
 0 ) = 0$. For $n \ge 1$, the first probe is at $r = \delta_1( n ) = \lfloor
 ( n + 1 ) / 2 \rfloor$, with $1 \le r \le n$, and the two sides of $r$ hold
 $r - 1$ and $n - r = \lfloor n / 2 \rfloor$ places. For $j \ge 1$,
-$\lfloor n / 2 \rfloor + 2^{j-1} = \lfloor ( n + 2^j ) / 2 \rfloor$, hence
+$\lfloor n / 2 \rfloor + 2^{j-1} = \lfloor ( n + 2^j ) / 2 \rfloor$, so
+that
 
 $$
 \delta_j( \lfloor n / 2 \rfloor ) = \Bigl\lfloor \frac{ \lfloor ( n + 2^j
 ) / 2 \rfloor }{ 2^j } \Bigr\rfloor = \Bigl\lfloor \frac{ n + 2^j }{
-2^{j+1} } \Bigr\rfloor = \delta_{j+1}( n ) ,
+2^{j+1} } \Bigr\rfloor = \delta_{j+1}( n ) .
 $$
 
-so that, after a probe that finds $A[ r ] < v$, the places $r + \delta_2( n
+Hence, after a probe that finds $A[ r ] < v$, the places $r + \delta_2( n
 ) \pm \delta_3( n ) \pm \cdots$ are those of the search on the $\lfloor n /
-2 \rfloor$ places $r + 1 , \ldots , n$, shifted by $r$; its place 0 is $r$,
+2 \rfloor$ places $r + 1 , \ldots , n$, shifted by $r$. Its place 0 is $r$,
 which answers again as smaller than $v$, and its place $\lfloor n / 2
 \rfloor + 1$ is $n + 1$, which answers as larger. By induction, it finds $v$
 if $v$ is among those places, the only ones that may hold it. After a probe
 that finds $A[ r ] > v$, the places $r - \delta_2( n ) \mp \cdots$ are those
 of the same search on the places $r - 1 , r - 2 , \ldots , r - \lfloor n /
-2 \rfloor$, read at the distance from $r$ and in the reverse order; these
+2 \rfloor$, read at the distance from $r$ and in the reverse order. These
 are the $r - 1$ places before $r$, and, for $n$ even, the place 0 too, a
 $-\infty$ that is the largest item in the reverse order. Its place 0 is
 again $r$, and its place $\lfloor n / 2 \rfloor + 1$ is $0$ or $-1$, which
@@ -1375,11 +1376,11 @@ items, which a random order hardly ever exhausts (by (6.12), the rounds of
 a random range of more than 600 items partition about $1.5 n$ items at
 most). A round whose part the rest of the budget does not cover takes as its
 pivot the median of the medians, as the selection of [Musser
-1997](Z-bibliography.md#ref-musser1997) does by the same device; when the
+1997](Z-bibliography.md#ref-musser1997) does by the same device. When the
 part such a round leaves on the right of its pivot holds more than $7 m /
 10 + 2$ of its $m$ items, which on distinct items never happens, a second
 partition of that part puts the items equal to the pivot on its left as
-well, and the part kept holds the larger items only.
+well; the part kept then holds the larger items only.
 
 <span id="lem-6-20"></span>**Lemma 6.20.** *On $n$ items, distinct or
 not, `nthElement()` takes $O( n )$ time in the worst case.*
@@ -1427,8 +1428,8 @@ scan of `nthElement()` for a range in order adds $O( n )$. $\square$
 
 On distinct items the part on the right of a pivot of the median of the
 medians never exceeds $7 m / 10$, so that the second partition never runs
-and the comparisons are, one by one, those of the selection without it;
-without it, on the other hand, a first partition that leaves on the right
+and the comparisons are, one by one, those of the selection without it.
+Without it, on the other hand, a first partition that leaves on the right
 all the items equal to the pivot may keep almost the whole part, and the
 argument above would fail. Against the adversary of [McIlroy
 1999](Z-bibliography.md#ref-mcilroy1999), which fixes the order of the
