@@ -85,6 +85,17 @@
  *   ones by at most \f$ n / 2^{64} \f$ each, as for the products of Lemire
  *   with no rejection.
  *
+ * With `ADS_WITH_BOOST` defined (by the option of CMake of the same name,
+ * which defines it whenever the headers of Boost 1.83 or later are found, by
+ * the makefile, which does the same, or by hand) and Boost 1.86 or later,
+ * `Xoshiro256` and `Xoshiro256StarStar` are `boost::random::xoshiro256pp`
+ * and `boost::random::xoshiro256mm` of Boost.Random, the same generators
+ * seeded in the same way (the words of SplitMix64 from the seed), so that
+ * they give the same numbers, with the same interface but for `constexpr`,
+ * which Boost does not offer; `ADS_RANDOM_BOOST` defined to 0 keeps the
+ * code of ADS. The other generators and functions have no counterpart in
+ * Boost, and stay those of ADS.
+ *
  * The generators meet `std::uniform_random_bit_generator`, with
  * \f$ \mathrm{min}() = 0 \f$ and \f$ \mathrm{max}() = 2^{64} - 1 \f$, so that
  * they serve the distributions of `std`; the functions above need such a
@@ -162,6 +173,23 @@
 #include <utility>
 #include <vector>
 
+// xoshiro256++ and xoshiro256** of Boost.Random (Boost 1.86 or later), with
+// ADS_WITH_BOOST
+#if defined( ADS_WITH_BOOST ) && ! defined( ADS_RANDOM_BOOST )
+ #include <boost/version.hpp>
+ #if BOOST_VERSION >= 108600
+  #define ADS_RANDOM_BOOST 1
+ #endif
+#endif
+#ifndef ADS_RANDOM_BOOST
+ #define ADS_RANDOM_BOOST 0
+#endif
+#if ADS_RANDOM_BOOST
+ #include <type_traits>
+
+ #include <boost/random/xoshiro.hpp>
+#endif
+
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -194,6 +222,7 @@ concept FullWordGenerator =
 /*--------------------------- CLASS Xoshiro256 -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#if ! ADS_RANDOM_BOOST
 /// xoshiro256++ (or xoshiro256** if `StarStar`), a
 /// `std::uniform_random_bit_generator` of 64 bits
 template< bool StarStar >
@@ -254,6 +283,44 @@ class Xoshiro256T
  private:
  std::uint64_t f_s[ 4 ];  ///< the state \f$ s_0 , \ldots , s_3 \f$
  };  // end( class Xoshiro256T )
+#else
+/// xoshiro256++ (or xoshiro256** if `StarStar`) of Boost.Random, a
+/// `std::uniform_random_bit_generator` of 64 bits
+template< bool StarStar >
+class Xoshiro256T
+{
+ /// the generator of Boost
+ using G = std::conditional_t< StarStar , boost::random::xoshiro256mm ,
+			       boost::random::xoshiro256pp >;
+
+ public:
+ using result_type = std::uint64_t;  ///< the type of the numbers
+
+ /// the state from the seed by SplitMix64, never all zero, as the code of
+ /// ADS fills it (Boost takes the seed 0 for another one)
+ explicit Xoshiro256T( std::uint64_t seed = 1 );
+
+ /// the next number
+ std::uint64_t operator()( void ) { return( f_g() ); }
+
+ /// advances by \f$ 2^{128} \f$ steps, a stream of \f$ 2^{128} \f$ numbers
+ /// apart
+ void jump( void ) { f_g.jump(); }
+
+ /// the least number, 0
+ static constexpr std::uint64_t min( void ) { return( 0 ); }
+ /// the largest number, \f$ 2^{64} - 1 \f$
+ static constexpr std::uint64_t max( void ) {
+  return( std::numeric_limits< std::uint64_t >::max() );
+  }
+
+ /// true if the two states are equal
+ bool operator==( const Xoshiro256T & o ) const { return( f_g == o.f_g ); }
+
+ private:
+ G f_g;  ///< the generator of Boost
+ };  // end( class Xoshiro256T )
+#endif
 
 using Xoshiro256 = Xoshiro256T< false >;         ///< xoshiro256++
 using Xoshiro256StarStar = Xoshiro256T< true >;  ///< xoshiro256**

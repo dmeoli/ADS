@@ -473,7 +473,10 @@
  `ADS_WITH_GMP` is defined, and `gemm()` of `double` and `float` on a CBLAS
  (OpenBLAS, the reference CBLAS, Accelerate) when `ADS_WITH_BLAS` is; CMake
  and the makefile define each macro whenever the library is found, and
- leave it undefined otherwise. The dispatch is therefore the presence of the
+ leave it undefined otherwise. Likewise, with `ADS_WITH_BOOST` defined and
+ Boost 1.86 or later, `Xoshiro256` and `Xoshiro256StarStar` are the
+ generators of Boost.Random, seeded as those of ADS and hence giving the same
+ numbers. The dispatch is therefore the presence of the
  backend alone, with no threshold of length: the library chooses its own
  algorithms for the processor it was built for. Without the backend, as on
  a compiler for which none is installed, the headers run the algorithms of

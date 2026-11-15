@@ -177,8 +177,11 @@ static_assert( ! std::output_iterator< ArrayQueue< int >::iterator , int > );
 static_assert( std::ranges::forward_range< ChainedHashTable< int , int > > );
 static_assert( std::ranges::bidirectional_range< OpenHashTable< int ,
 								int > > );
-static_assert( std::ranges::bidirectional_range< FlatHashTable< int ,
+// forward with the iterators of Boost [see FlatHashTable.h]
+static_assert( ADS_FLATHASH_BOOST ||
+	       std::ranges::bidirectional_range< FlatHashTable< int ,
 								int > > );
+static_assert( std::ranges::forward_range< FlatHashTable< int , int > > );
 static_assert(
   std::ranges::bidirectional_range< BrentHashTable< int , int > > );
 static_assert(

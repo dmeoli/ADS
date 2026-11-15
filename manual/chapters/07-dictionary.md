@@ -1776,6 +1776,19 @@ if( double * p = F.find( 7 ) )
 const bool there = F.contains( 8 );  // false
 ```
 
+**Backend of Boost.** With `ADS_WITH_BOOST` defined (by the option of CMake
+of the same name, which defines it whenever the headers of Boost 1.83 or
+later are found, by the makefile, which does the same, or by hand), the pairs of `FlatHashTable` are those of `boost::unordered_flat_map`,
+the table whose layout it follows and with which it is on a par on our
+benchmark (`ADS_FLATHASH_BOOST` defined to 0 keeps the code of ADS, the one
+that [Lemma 7.11](07-dictionary.md#lem-7-11) describes). The interface and
+the contracts are kept, but for three points. First, `capacity()` is the
+number of places of Boost, which fills all of them up to 29 places. Also,
+`deleted()` counts the places that Boost no longer offers to the insertions
+(the difference between its maximum load after a rebuild and its maximum
+load now, in $O( 1 )$ time). Finally, the iterators are those of Boost,
+which are forward, and hence a visit cannot go backwards.
+
 `DenseHashMap` separates the pairs from the index ([Hettinger
 2012](Z-bibliography.md#ref-hettinger2012) describes the same layout of the
 dictionaries of CPython). The pairs are the items $0 , \ldots , n - 1$ of a
@@ -1923,6 +1936,20 @@ class PointerTable
  using const_iterator = SlotIterator< PointerTable , Places >;
  };
 ```
+
+**Backend of Boost.** With `ADS_WITH_BOOST` defined, as for `FlatHashTable`
+above, the places of `PointerTable` are those of `boost::unordered_flat_set`, which on
+our benchmark of the dictionaries inserts and finds faster than the linear
+inspection above (`ADS_POINTERTABLE_BOOST` defined to 0 keeps the code of
+ADS). The class, its members and their signatures stay the same, and the
+allocator is rebound to the places of Boost (a table on huge pages stays
+on them). However, the load may reach $7 / 8$, the maximum load of Boost,
+and we give a table built with $m$ places room for $7 m / 10$ objects, as
+many as the places of ADS hold; hence, a table of `slotsFor( n )` places
+still takes $n$ objects with no growth, in about as many bytes. Also,
+`capacity()` is then the number of places of Boost ($15$ times a power of
+2, less 1), the iterator is forward, and `prefetch()` does nothing, since
+Boost offers no prefetch of the group of a hash.
 
 `PositionIndex` maps the address of an object to its position, of 32 bits (the
 type `Position`), in a vector that holds it, e.g., the constraints or the

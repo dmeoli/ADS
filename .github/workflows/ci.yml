@@ -162,14 +162,15 @@ jobs:
                 -DCMAKE_PREFIX_PATH="$INST"
           cmake --build build-use --config Release
           ctest --test-dir build-use -C Release --output-on-failure
-      - name: makefile, on the backends found and with both off
+      - name: makefile, on the backends found and with them off
         if: matrix.compiler != 'msvc'
         env:
           OPENBLAS_NUM_THREADS: 2
         run: |
           make backends
           make -j4 test
-          make -j4 test ADS_WITH_GMP=0 ADS_WITH_BLAS=0 BUILD=build-off
+          make -j4 test ADS_WITH_GMP=0 ADS_WITH_BLAS=0 ADS_WITH_BOOST=0 \
+               BUILD=build-off
 
   portable:
     runs-on: ubuntu-latest
@@ -213,27 +214,30 @@ jobs:
             done
           done
 
-  # the backends required, by the makefile and by CMake, the installed
-  # package found again, and the parallel gemm() on OpenBLAS under
-  # ThreadSanitizer
+  # the backends required (GMP, OpenBLAS and the headers of Boost), by the
+  # makefile and by CMake, the installed package found again, and the
+  # parallel gemm() on OpenBLAS under ThreadSanitizer
   backends:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: GMP and OpenBLAS
+      - name: GMP, OpenBLAS and Boost
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgmp-dev libopenblas-dev
-      - name: the tests on GMP and OpenBLAS, by the makefile
+          sudo apt-get install -y libgmp-dev libopenblas-dev libboost-dev
+      - name: the tests on GMP, OpenBLAS and Boost, by the makefile
         env:
           OPENBLAS_NUM_THREADS: 2
-        run: make -j4 test ADS_WITH_GMP=1 ADS_WITH_BLAS=1 BUILD=build-on
+        run: |
+          make -j4 test ADS_WITH_GMP=1 ADS_WITH_BLAS=1 ADS_WITH_BOOST=1 \
+               BUILD=build-on
       - name: the same by CMake, installed and found by find_package
         env:
           OPENBLAS_NUM_THREADS: 2
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DADS_WITH_GMP=ON \
-                -DADS_WITH_BLAS=ON -DCMAKE_INSTALL_PREFIX="$PWD/inst"
+                -DADS_WITH_BLAS=ON -DADS_WITH_BOOST=ON \
+                -DCMAKE_INSTALL_PREFIX="$PWD/inst"
           cmake --build build --parallel 4
           ctest --test-dir build --parallel 4 --output-on-failure
           cmake --install build
@@ -250,12 +254,14 @@ jobs:
               -DADS_CONTRACTS=3 -DADS_WITH_BLAS -o tsan-blas \
               test/engineered_parallel.cpp -pthread -lopenblas
           ./tsan-blas parallel-numeric
-      - name: CMake with both off
+      - name: CMake with the three off
         run: |
           set -o pipefail
           cmake -S . -B build-off -DCMAKE_BUILD_TYPE=Release \
-                -DADS_WITH_GMP=OFF -DADS_WITH_BLAS=OFF | tee cmake.log
+                -DADS_WITH_GMP=OFF -DADS_WITH_BLAS=OFF \
+                -DADS_WITH_BOOST=OFF | tee cmake.log
           grep -q 'ADS: GMP OFF, CBLAS OFF' cmake.log
+          grep -q 'ADS: Boost OFF' cmake.log
           cmake --build build-off --parallel 4
           ctest --test-dir build-off --parallel 4 --output-on-failure
 

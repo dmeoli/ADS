@@ -67,6 +67,8 @@ alignas( 64 ) inline constexpr auto flatTags = []( void )
 
 }  // end( namespace detail )
 
+#if ! ADS_FLATHASH_BOOST
+
 /*--------------------------------------------------------------------------*/
 /*---------------------- CONSTRUCTION AND DESTRUCTION ----------------------*/
 /*--------------------------------------------------------------------------*/
@@ -962,6 +964,225 @@ bool FlatHashTable< K , V , H , Eq >::consistent( std::uint64_t x ) const
   } );
  return( ok && ( full == f_size ) );
  }
+
+#else
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE PAIRS OF BOOST -----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+template< class K , class V , class H , class Eq >
+FlatHashTable< K , V , H , Eq >::FlatHashTable( std::size_t n , H h , Eq eq )
+    : f_map( 0 , std::move( h ) , std::move( eq ) )
+{
+ if( n > 0 )
+  f_map.reserve( n );
+ }
+
+template< class K , class V , class H , class Eq >
+FlatHashTable< K , V , H , Eq >::FlatHashTable( const FlatHashTable & o )
+    : f_map( o.f_map.bucket_count() , o.f_map.hash_function() ,
+	     o.f_map.key_eq() )
+{
+ f_map.insert( o.f_map.begin() , o.f_map.end() );  // the same places
+ }
+
+template< class K , class V , class H , class Eq >
+FlatHashTable< K , V , H , Eq >::FlatHashTable( FlatHashTable && o ) noexcept
+    : f_map( std::move( o.f_map ) )
+{
+ o.f_map.clear();
+ }
+
+template< class K , class V , class H , class Eq >
+FlatHashTable< K , V , H , Eq > &
+FlatHashTable< K , V , H , Eq >::operator=( FlatHashTable o ) noexcept
+{
+ swap( o );
+ return( *this );
+ }
+
+template< class K , class V , class H , class Eq >
+FlatHashTable< K , V , H , Eq >::~FlatHashTable()
+{ }
+
+template< class K , class V , class H , class Eq >
+void FlatHashTable< K , V , H , Eq >::swap( FlatHashTable & o ) noexcept
+{
+ f_map.swap( o.f_map );
+ }
+
+template< class K , class V , class H , class Eq >
+std::optional< V > FlatHashTable< K , V , H , Eq >::lookup( const K & k ) const
+{
+ const auto it = f_map.find( k );
+ if( it == f_map.end() )
+  return( std::nullopt );
+ return( it->second );
+ }
+
+template< class K , class V , class H , class Eq >
+const V * FlatHashTable< K , V , H , Eq >::find( const K & k ) const
+{
+ const auto it = f_map.find( k );
+ return( it == f_map.end() ? nullptr : &it->second );
+ }
+
+template< class K , class V , class H , class Eq >
+V * FlatHashTable< K , V , H , Eq >::find( const K & k )
+{
+ const auto it = f_map.find( k );
+ return( it == f_map.end() ? nullptr : &it->second );
+ }
+
+template< class K , class V , class H , class Eq >
+bool FlatHashTable< K , V , H , Eq >::insert( const K & k , const V & v )
+{
+ const bool fresh = f_map.insert_or_assign( k , v ).second;
+ ADS_POST( f_map.contains( k ) );
+ ADS_INVARIANT( f_map.size() <= f_map.bucket_count() );
+ return( fresh );
+ }
+
+template< class K , class V , class H , class Eq >
+bool FlatHashTable< K , V , H , Eq >::insert( K && k , V && v )
+{
+ const auto [ it , fresh ] =
+   f_map.insert_or_assign( std::move( k ) , std::move( v ) );
+ ADS_POST( f_map.contains( it->first ) );
+ ADS_INVARIANT( f_map.size() <= f_map.bucket_count() );
+ return( fresh );
+ }
+
+template< class K , class V , class H , class Eq >
+template< class... A >
+auto FlatHashTable< K , V , H , Eq >::try_emplace( const K & k , A &&... a )
+  -> std::pair< V * , bool >
+{
+ const auto [ it , fresh ] = f_map.try_emplace( k ,
+						std::forward< A >( a )... );
+ ADS_POST( f_map.contains( k ) );
+ return( std::pair( &it->second , fresh ) );
+ }
+
+template< class K , class V , class H , class Eq >
+template< class... A >
+auto FlatHashTable< K , V , H , Eq >::try_emplace( K && k , A &&... a )
+  -> std::pair< V * , bool >
+{
+ const auto [ it , fresh ] =
+   f_map.try_emplace( std::move( k ) , std::forward< A >( a )... );
+ ADS_POST( f_map.contains( it->first ) );
+ return( std::pair( &it->second , fresh ) );
+ }
+
+template< class K , class V , class H , class Eq >
+bool FlatHashTable< K , V , H , Eq >::remove( const K & k )
+{
+ const bool was = f_map.erase( k ) > 0;
+ ADS_POST( ! f_map.contains( k ) );
+ return( was );
+ }
+
+template< class K , class V , class H , class Eq >
+bool FlatHashTable< K , V , H , Eq >::contains( const K & k ) const
+{
+ return( f_map.contains( k ) );
+ }
+
+template< class K , class V , class H , class Eq >
+std::size_t FlatHashTable< K , V , H , Eq >::size( void ) const
+{
+ return( f_map.size() );
+ }
+
+template< class K , class V , class H , class Eq >
+bool FlatHashTable< K , V , H , Eq >::empty( void ) const
+{
+ return( f_map.empty() );
+ }
+
+template< class K , class V , class H , class Eq >
+std::size_t FlatHashTable< K , V , H , Eq >::capacity( void ) const
+{
+ return( f_map.bucket_count() );
+ }
+
+template< class K , class V , class H , class Eq >
+double FlatHashTable< K , V , H , Eq >::load( void ) const
+{
+ const std::size_t c = f_map.bucket_count();
+ return( c ? double( f_map.size() ) / c : 0.0 );
+ }
+
+template< class K , class V , class H , class Eq >
+std::size_t FlatHashTable< K , V , H , Eq >::fullLoad( void ) const
+{
+ const std::size_t c = f_map.bucket_count();
+ return( c <= 29 ? c : std::size_t( 0.875f * float( c ) ) );
+ }
+
+template< class K , class V , class H , class Eq >
+std::size_t FlatHashTable< K , V , H , Eq >::deleted( void ) const
+{
+ const std::size_t f = fullLoad() , m = f_map.max_load();
+ return( f > m ? f - m : 0 );
+ }
+
+template< class K , class V , class H , class Eq >
+void FlatHashTable< K , V , H , Eq >::reserve( std::size_t n )
+{
+ if( n > f_map.max_load() )  // never a shrink
+  f_map.reserve( n );
+ }
+
+template< class K , class V , class H , class Eq >
+void FlatHashTable< K , V , H , Eq >::clear( void )
+{
+ f_map.clear();
+ }
+
+template< class K , class V , class H , class Eq >
+template< class F >
+void FlatHashTable< K , V , H , Eq >::forEach( F && f ) const
+{
+ for( const auto & kv : f_map )
+  f( kv.first , kv.second );
+ }
+
+template< class K , class V , class H , class Eq >
+template< class F >
+void FlatHashTable< K , V , H , Eq >::forEach( F && f )
+{
+ for( auto & kv : f_map )
+  f( std::as_const( kv.first ) , kv.second );
+ }
+
+template< class K , class V , class H , class Eq >
+typename FlatHashTable< K , V , H , Eq >::const_iterator
+FlatHashTable< K , V , H , Eq >::begin( void ) const
+{
+ return( const_iterator( f_map.cbegin() ) );
+ }
+
+template< class K , class V , class H , class Eq >
+typename FlatHashTable< K , V , H , Eq >::const_iterator
+FlatHashTable< K , V , H , Eq >::end( void ) const
+{
+ return( const_iterator( f_map.cend() ) );
+ }
+
+template< class K , class V , class H , class Eq >
+typename FlatHashTable< K , V , H , Eq >::const_iterator
+FlatHashTable< K , V , H , Eq >::erase( const_iterator it )
+{
+ ADS_PRE( it.f_i != f_map.cend() );
+ const const_iterator next = std::next( it );  // Boost moves no other pair
+ f_map.erase( it.f_i );
+ return( next );
+ }
+
+#endif
 
 /*--------------------------------------------------------------------------*/
 

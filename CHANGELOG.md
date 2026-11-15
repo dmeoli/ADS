@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- ADS_WITH_BOOST, the backend of the headers of Boost 1.83 or later (AUTO
+  with CMake, auto with the makefile, as for GMP and the CBLAS, off in the
+  packages; cmake/ADSBoost.cmake and extlib/makefile-libBoost find it, and
+  ADSConfig.cmake and ads.pc carry it): PointerTable runs on
+  boost::unordered_flat_set, with the same members, the equality and the
+  allocator of ADS and room for 7/10 of the places asked, FlatHashTable on
+  boost::unordered_flat_map, SmallVector on boost::container::small_vector
+  with the growth factor 2, and Xoshiro256 and Xoshiro256StarStar, from
+  Boost 1.86, on Boost.Random, seeded as before; ADS_POINTERTABLE_BOOST,
+  ADS_FLATHASH_BOOST, ADS_SMALLVECTOR_BOOST and ADS_RANDOM_BOOST defined to
+  0 keep the code of ADS, as the benchmarks do; the test program
+  engineered_boost, run with and without Boost by the CI, the backend in
+  sections 7.6, 2.2 and 17.9 of the manual and in the theory pages, and
+  pdqSort() and powerSort() stated as the engines of sort() and
+  stableSort()
+
 - BucketHeap, a BucketQueue behind the interface of a heap of pairs whose
   key of 64 bits packs f and the complement of g (packFG(), keyF(),
   keyG()), so that the keys under std::less come by least f and then

@@ -1409,7 +1409,10 @@ of items of the structure at hand.
 We test the library with GCC and Clang on Linux, macOS and Windows, and with
 MSVC on Windows. Besides `ADS/Portable.h`, the few dependencies on the
 platform are optional backends, each used only when it is found, i.e., GMP
-for the integers of any length, a CBLAS for the products of matrices, OpenMP,
+for the integers of any length, a CBLAS for the products of matrices, the
+headers of Boost for the four structures that delegate to it where it is
+found (`PointerTable`, `FlatHashTable`, `SmallVector` and the generators
+xoshiro256, [§7.6](07-dictionary.md#sec-7-6)), OpenMP,
 oneTBB and FastFlow for the parallel executors, and MPI for the distributed
 ones. The library is also available as a module of C++20, `ads`, which
 exports all the names that the headers declare in the namespace `ADS`.

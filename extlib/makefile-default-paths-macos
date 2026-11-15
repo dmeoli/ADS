@@ -39,6 +39,7 @@ ADSBREW = $(or $(HOMEBREW_PREFIX),$(if $(filter arm%,$(UNAME_P)),\
 GMP_ROOT = $(ADSBREW)
 BLAS_ROOT =
 BLAS_LIB =
+Boost_ROOT = $(ADSBREW)
 OpenMP_ROOT = $(ADSBREW)/opt/libomp
 TBB_ROOT = $(ADSBREW)
 FastFlow_ROOT = /Library/fastflow

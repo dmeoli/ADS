@@ -2627,6 +2627,17 @@ the halves are sorted with the other array as their room and merged back
 with no branch on the order, from both ends at once. Any other item goes to
 `powerSort()`.
 
+Hence, `pdqSort()` and `powerSort()` are, besides the algorithms of their
+sections, the engines of `sort()` and of `stableSort()` on the items that
+none of the faster routes takes, and the two functions keep them also where
+Boost is found. On our benchmark `boost::sort::pdqsort` and
+`boost::sort::spinsort` are usually no slower, and faster on reversed keys
+(which the check for one run below takes first, when the items are copied
+as bytes) and on few distinct keys, respectively. A program that wants them
+may call them directly on the vector; we have not changed the engines
+inside the dispatch, since the change should first be measured on an idle
+machine.
+
 Two fast paths come before the choices. A vector of $2^{14}$ items or more
 (`detail::kOneRun`) copied as bytes, of any type and order, is first checked
 for one run. If it is strictly decreasing, it is reversed in the same pass

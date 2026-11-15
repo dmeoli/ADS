@@ -23,6 +23,10 @@
 #                                  a program that calls it compiles and links #
 #           $(ADS_WITH_BLAS)     = the same for gemm() on a CBLAS [see        #
 #                                  DenseMatrix.h]                             #
+#           $(ADS_WITH_BOOST)    = the same for the structures that delegate  #
+#                                  to the headers of Boost [see               #
+#                                  PointerTable.h, FlatHashTable.h,           #
+#                                  SmallVector.h and RandomGenerators.h]      #
 #           $(ADS_WITH_OPENMP)   = 1 for the executor of OpenMP [see          #
 #                                  OpenMPExecutor.h]                          #
 #           $(ADS_WITH_TBB)      = 1 for the executor of oneTBB [see          #
@@ -33,13 +37,14 @@
 #                                  and the runtime over the processes of MPI  #
 #                                  [see include/ADS/distributed], the         #
 #                                  options of MPI asked to $(MPICXX)          #
-#           $(GMP_ROOT), $(BLAS_ROOT), $(OpenMP_ROOT), $(TBB_ROOT),           #
-#           $(FastFlow_ROOT),                                                 #
+#           $(GMP_ROOT), $(BLAS_ROOT), $(Boost_ROOT), $(OpenMP_ROOT),         #
+#           $(TBB_ROOT), $(FastFlow_ROOT),                                    #
 #           $(MPI_ROOT)          = where the libraries are, see               #
-#                                  extlib/makefile-paths (GMP=<prefix> and    #
-#                                  BLAS=<prefix> on the command line are the  #
-#                                  same as GMP_ROOT=<prefix> and              #
-#                                  BLAS_ROOT=<prefix>), $(BLAS_LIB) the name  #
+#                                  extlib/makefile-paths (GMP=<prefix>,       #
+#                                  BLAS=<prefix> and BOOST=<prefix> on the    #
+#                                  command line are the same as               #
+#                                  GMP_ROOT=<prefix>, BLAS_ROOT=<prefix> and  #
+#                                  Boost_ROOT=<prefix>), $(BLAS_LIB) the name #
 #                                  of the CBLAS [see extlib/makefile-libBLAS] #
 #                                                                             #
 #   Output: $(ADSOBJ)            = the object of the module ads, if built     #
@@ -47,8 +52,9 @@
 #           $(ADSINC)            = all the -I$( include dirs ), -D and        #
 #                                  compiler options of ADS                    #
 #           $(ADSLIB)            = the external libraries + -L< libdirs >     #
-#           $(ADSGMPON), $(ADSBLASON), $(ADSMPION) = 1 if the backend of      #
-#                                  GMP, of the CBLAS, of MPI is on            #
+#           $(ADSGMPON), $(ADSBLASON), $(ADSBOOSTON), $(ADSMPION) = 1 if the  #
+#                                  backend of GMP, of the CBLAS, of Boost, of #
+#                                  MPI is on                                  #
 #                                                                             #
 ###############################################################################
 
@@ -82,13 +88,16 @@ endif
 # when pushing changes
 -include $(ADSSDR)/extlib/makefile-paths
 
-# the prefixes of GMP and of the CBLAS given as GMP=<prefix> and
-# BLAS=<prefix>, as the benchmarks take them
+# the prefixes of GMP, of the CBLAS and of Boost given as GMP=<prefix>,
+# BLAS=<prefix> and BOOST=<prefix>, as the benchmarks take the first two
 ifdef GMP
     GMP_ROOT = $(GMP)
 endif
 ifdef BLAS
     BLAS_ROOT = $(BLAS)
+endif
+ifdef BOOST
+    Boost_ROOT = $(BOOST)
 endif
 
 # define & include the necessary modules- - - - - - - - - - - - - - - - - - -
@@ -121,6 +130,17 @@ endif
 ifeq ($(ADSBLASON),1)
     ADSINC += -DADS_WITH_BLAS $(libBLASINC)
     ADSLIB += $(libBLASLIB)
+endif
+
+# the headers of Boost, for the structures that delegate to them: the same
+ADS_WITH_BOOST ?= auto
+ifneq ($(ADS_WITH_BOOST),0)
+    include $(ADSSDR)/extlib/makefile-libBoost
+    ADSBOOSTON := $(strip $(if $(filter auto,$(ADS_WITH_BOOST)),\
+	$(libBoostFOUND),$(filter 1,$(ADS_WITH_BOOST))))
+endif
+ifeq ($(ADSBOOSTON),1)
+    ADSINC += -DADS_WITH_BOOST $(libBoostINC)
 endif
 
 # OpenMP, for its executor

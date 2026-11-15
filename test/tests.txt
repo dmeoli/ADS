@@ -1916,6 +1916,13 @@ engineered_search  zobrist-ranges         Zobrist su array e span
 engineered_search  backoff-threads        attesa con backoff esponenziale
 engineered_search  affinity               thread fissati ai processori
 
+# the structures that delegate to Boost with ADS_WITH_BOOST, beyond the
+# book, on the code of ADS and on that of Boost alike
+engineered_boost  boost-pointer-table    tabella di puntatori, ADS o Boost
+engineered_boost  boost-flat-hash-table  tabella a gruppi, ADS o Boost
+engineered_boost  boost-small-vector     vettore con spazio interno
+engineered_boost  boost-xoshiro          xoshiro256, ADS o Boost.Random
+
 # Open Data Structures (Morin), chapters 1, 2 and 3
 ods_lists  ods-1.2.interfaces           List, Deque, USet, SSet come concetti
 ods_lists  ods-ex1.1.lines              i nove problemi sulle righe

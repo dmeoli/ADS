@@ -2131,6 +2131,10 @@ generator also compares equal to another in the same state.
   `Xoshiro256StarStar` is xoshiro256** on the same state, with the output
   $\mathrm{rotl}( 5 s_1 , 7 ) \cdot 9$. The seed fills the state by
   SplitMix64 ([Steele et al. 2014](Z-bibliography.md#ref-steele2014)).
+  With `ADS_WITH_BOOST` defined and Boost 1.86 or later, both are
+  `boost::random::xoshiro256pp` and `boost::random::xoshiro256mm`, filled
+  from the seed in the same way and hence giving the same numbers, but not
+  `constexpr` (`ADS_RANDOM_BOOST` defined to 0 keeps the code of ADS).
 - `WyRand` is the generator of [Wang Yi](Z-bibliography.md#ref-wangyi):
   the Weyl sequence $s_{i+1} = s_i + c \bmod 2^{64}$, $c$ odd, of period
   $2^{64}$, hashed by the folding of a product of 128 bits, $h \oplus l$

@@ -16,6 +16,15 @@
  * items are on the allocator, and moves the items one by one, at most
  * \f$ N \f$, when they are inside it; the vector moved from is left empty.
  *
+ * With `ADS_WITH_BOOST` defined (by the option of CMake of the same name,
+ * which defines it whenever the headers of Boost 1.83 or later are found, by
+ * the makefile, which does the same, or by hand), the items are those of
+ * `boost::container::small_vector` with the growth factor 2 of its options,
+ * the same vector with the same doubling, and `ADS_SMALLVECTOR_BOOST`
+ * defined to 0 keeps the code of ADS; the interface, the iterators (the
+ * pointers to the items), the costs and the contracts stay those above,
+ * `small()` telling whether the room is still the inner one of Boost.
+ *
  * The contracts [see `Contract.h`]: an index is below `size()`, and
  * `front()`, `back()` and `pop_back()` need a vector that is not empty; the
  * invariant is \f$ n \leq c \f$ and \f$ c \geq N \f$, \f$ c \f$ the
@@ -55,6 +64,18 @@
 #include <new>
 #include <type_traits>
 #include <utility>
+
+// the items of boost::container::small_vector, with ADS_WITH_BOOST
+#if defined( ADS_WITH_BOOST ) && ! defined( ADS_SMALLVECTOR_BOOST )
+ #define ADS_SMALLVECTOR_BOOST 1
+#endif
+#ifndef ADS_SMALLVECTOR_BOOST
+ #define ADS_SMALLVECTOR_BOOST 0
+#endif
+#if ADS_SMALLVECTOR_BOOST
+ #include <boost/container/options.hpp>
+ #include <boost/container/small_vector.hpp>
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -100,7 +121,11 @@ class SmallVector
  using const_reverse_iterator = std::reverse_iterator< const_iterator >;
 
  /// the empty vector, its items inside it
+#if ! ADS_SMALLVECTOR_BOOST
  SmallVector( void ) noexcept : f_A( inner() ) { }
+#else
+ SmallVector( void ) noexcept { }
+#endif
 
  /// \f$ n \f$ items made from \f$ x \f$
  explicit SmallVector( std::size_t n , const T & x = T() );
@@ -133,8 +158,9 @@ class SmallVector
  void swap( SmallVector & other );
 
  /// true if there is no item
- [[nodiscard]] bool empty( void ) const { return( f_n == 0 ); }
+ [[nodiscard]] bool empty( void ) const { return( size() == 0 ); }
 
+#if ! ADS_SMALLVECTOR_BOOST
  /// the number of items, \f$ n \f$
  [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
 
@@ -148,15 +174,35 @@ class SmallVector
  [[nodiscard]] T * data( void ) { return( f_A ); }
  /// the vector of the items, constant
  [[nodiscard]] const T * data( void ) const { return( f_A ); }
+#else
+ /// the number of items, \f$ n \f$
+ [[nodiscard]] std::size_t size( void ) const { return( f_v.size() ); }
+
+ /// the room, \f$ c \f$ items, at least \f$ N \f$
+ [[nodiscard]] std::size_t capacity( void ) const {
+  return( f_v.capacity() );
+  }
+
+ /// the items are inside the vector: the room is still the inner one,
+ /// which Boost leaves only for a larger one
+ [[nodiscard]] bool small( void ) const {
+  return( f_v.capacity() == Vector::internal_capacity() );
+  }
+
+ /// the vector of the items
+ [[nodiscard]] T * data( void ) { return( f_v.data() ); }
+ /// the vector of the items, constant
+ [[nodiscard]] const T * data( void ) const { return( f_v.data() ); }
+#endif
 
  /// the iterator on the first item
- [[nodiscard]] iterator begin( void ) { return( f_A ); }
+ [[nodiscard]] iterator begin( void ) { return( data() ); }
  /// the iterator past the last item
- [[nodiscard]] iterator end( void ) { return( f_A + f_n ); }
+ [[nodiscard]] iterator end( void ) { return( data() + size() ); }
  /// the constant iterator on the first item
- [[nodiscard]] const_iterator begin( void ) const { return( f_A ); }
+ [[nodiscard]] const_iterator begin( void ) const { return( data() ); }
  /// the constant iterator past the last item
- [[nodiscard]] const_iterator end( void ) const { return( f_A + f_n ); }
+ [[nodiscard]] const_iterator end( void ) const { return( data() + size() ); }
  /// the constant iterator on the first item
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
  /// the constant iterator past the last item
@@ -181,39 +227,39 @@ class SmallVector
  /// the item at the index \f$ i \f$
  /// \pre \f$ i < n \f$
  [[nodiscard]] T & operator[]( std::size_t i ) {
-  ADS_PRE( i < f_n );
-  return( f_A[ i ] );
+  ADS_PRE( i < size() );
+  return( data()[ i ] );
   }
  /// the item at the index \f$ i \f$, constant
  /// \pre \f$ i < n \f$
  [[nodiscard]] const T & operator[]( std::size_t i ) const {
-  ADS_PRE( i < f_n );
-  return( f_A[ i ] );
+  ADS_PRE( i < size() );
+  return( data()[ i ] );
   }
 
  /// the first item
  /// \pre the vector is not empty
  [[nodiscard]] T & front( void ) {
-  ADS_PRE( f_n > 0 );
-  return( f_A[ 0 ] );
+  ADS_PRE( ! empty() );
+  return( data()[ 0 ] );
   }
  /// the first item, constant
  /// \pre the vector is not empty
  [[nodiscard]] const T & front( void ) const {
-  ADS_PRE( f_n > 0 );
-  return( f_A[ 0 ] );
+  ADS_PRE( ! empty() );
+  return( data()[ 0 ] );
   }
  /// the last item
  /// \pre the vector is not empty
  [[nodiscard]] T & back( void ) {
-  ADS_PRE( f_n > 0 );
-  return( f_A[ f_n - 1 ] );
+  ADS_PRE( ! empty() );
+  return( data()[ size() - 1 ] );
   }
  /// the last item, constant
  /// \pre the vector is not empty
  [[nodiscard]] const T & back( void ) const {
-  ADS_PRE( f_n > 0 );
-  return( f_A[ f_n - 1 ] );
+  ADS_PRE( ! empty() );
+  return( data()[ size() - 1 ] );
   }
 
  /// \f$ x \f$ at the end, \f$ O( 1 ) \f$ amortized; \f$ x \f$ may be an
@@ -266,6 +312,7 @@ class SmallVector
 
 /*--------------------------------------------------------------------------*/
  private:
+#if ! ADS_SMALLVECTOR_BOOST
  T * inner( void ) { return( reinterpret_cast< T * >( f_room ) ); }
  const T * inner( void ) const {
   return( reinterpret_cast< const T * >( f_room ) );
@@ -283,6 +330,22 @@ class SmallVector
  std::size_t f_cap = N;  ///< the room
  /// the room for \f$ N \f$ items inside
  alignas( T ) unsigned char f_room[ N * sizeof( T ) ];
+#else
+ /// the growth factor 2 of the options of Boost
+ using Doubling =
+   boost::container::growth_factor< boost::container::growth_factor_100 >;
+
+ /// the small vector of Boost, which doubles its room as this one does, on
+ /// std::allocator, which aligns any T as the code of ADS does
+ using Vector = boost::container::small_vector<
+   T , N , std::allocator< T > ,
+   typename boost::container::small_vector_options< Doubling >::type >;
+
+ /// empty, the items inside, as a vector moved from is left
+ void renew( void ) noexcept;
+
+ Vector f_v;  ///< the items
+#endif
 
  };  // end( class SmallVector )
 

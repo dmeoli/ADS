@@ -18,6 +18,7 @@
 namespace ADS
 {
 
+#if ! ADS_RANDOM_BOOST
 template< bool StarStar >
 constexpr Xoshiro256T< StarStar >::Xoshiro256T( std::uint64_t seed ) : f_s
 {} {
@@ -63,6 +64,20 @@ constexpr void Xoshiro256T< StarStar >::jump( void )
  for( int i = 0 ; i < 4 ; ++i )
   f_s[ i ] = s[ i ];
  }
+#else
+template< bool StarStar >
+Xoshiro256T< StarStar >::Xoshiro256T( std::uint64_t seed )
+{
+ std::array< std::uint64_t , 4 > s;
+ for( auto & w : s ) {  // the words of SplitMix64
+  w = splitmix64( seed );
+  seed += 0x9e3779b97f4a7c15ULL;
+  }
+ if( ( s[ 0 ] | s[ 1 ] | s[ 2 ] | s[ 3 ] ) == 0 )
+  s[ 0 ] = 1;  // the only state to avoid
+ f_g.seed( s.begin() , s.end() );
+ }
+#endif
 
 constexpr std::uint64_t WyRand::operator()( void )
 {

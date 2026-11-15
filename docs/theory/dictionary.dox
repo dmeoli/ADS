@@ -313,7 +313,13 @@
  of \f$ 7 / 8 \f$ happens to few groups; the removals leave no deleted mark,
  the bits of overflow staying set until the next rebuild, which Lemma 3 pays
  for. `PointerTable` keeps the pointers of the closed list of a search with
- their whole hashes, by the linear inspection.
+ their whole hashes, by the linear inspection. With `ADS_WITH_BOOST` defined,
+ `FlatHashTable` runs on `boost::unordered_flat_map`, the table whose groups
+ it follows, and `PointerTable` on `boost::unordered_flat_set`, whose load
+ stays below \f$ 7 / 8 \f$ (a table of \f$ m \f$ places still takes the
+ \f$ 7 m / 10 \f$ objects of the places of ADS with no growth); the
+ interfaces stay the same, with forward iterators, and the lemmas above are
+ those of the code of ADS.
 
  \section theory_dictionary_cuckoo Cuckoo hashing
 

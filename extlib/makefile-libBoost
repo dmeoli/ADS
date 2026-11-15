@@ -1,0 +1,48 @@
+###############################################################################
+############################## makefile-libBoost ##############################
+###############################################################################
+#                                                                             #
+#   makefile of the headers of Boost, for the structures that delegate to     #
+#   them [see PointerTable.h, FlatHashTable.h, SmallVector.h and              #
+#   RandomGenerators.h]                                                       #
+#                                                                             #
+#   Input:  $(Boost_ROOT) = the prefix where Boost is installed, empty if     #
+#                           it is where the compiler looks                    #
+#                                                                             #
+#   Output: accordingly, there is no *H and *OBJ in output, since there is    #
+#           no need to check for changes in the .h and rebuild the .o / .a    #
+#                                                                             #
+#           $(libBoostINC)   = the -I$(include directories) for Boost         #
+#           $(libBoostLIB)   = nothing, the headers alone are used            #
+#           $(libBoostFOUND) = 1 if a program that uses the flat tables and   #
+#                              the small vector of Boost 1.83 or later        #
+#                              compiles with them, empty otherwise            #
+#                              (evaluated once, when first used)              #
+#                                                                             #
+###############################################################################
+
+# internal macros - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# basic Boost directory without quotes, if any
+libBoostBSCDIR = $(subst $\",,$(Boost_ROOT))
+
+# macros to be exported - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+libBoostINC = $(if $(libBoostBSCDIR),-I"$(libBoostBSCDIR)/include")
+libBoostLIB =
+
+# a program with the two flat tables and the small vector of Boost 1.83 or
+# later, compiled once
+libBoostFOUND = $(eval libBoostFOUND := $$(shell printf '$$(ADShash)include \
+	<boost/version.hpp>\n$$(ADShash)include \
+	<boost/container/small_vector.hpp>\n$$(ADShash)include \
+	<boost/unordered/unordered_flat_map.hpp>\n$$(ADShash)include \
+	<boost/unordered/unordered_flat_set.hpp>\n$$(ADShash)if BOOST_VERSION \
+	< 108300\n$$(ADShash)error old\n$$(ADShash)endif\nint main(){\
+	boost::unordered_flat_set<int> s;boost::unordered_flat_map<int,int> m;\
+	boost::container::small_vector<int,2> v;s.insert(1);m[2]=3;\
+	v.push_back(4);return int(s.size()+m.size()+v.size())-3;}\n' | \
+	$$(CXX) -x c++ -fsyntax-only - $$(libBoostINC) \
+	2>/dev/null && echo 1))$(libBoostFOUND)
+
+########################## End of makefile-libBoost ###########################

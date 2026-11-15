@@ -122,6 +122,34 @@ if (ADS_USE_BLAS)
 endif ()
 message(STATUS "ADS: GMP ${ADS_USE_GMP}, CBLAS ${ADS_USE_BLAS}")
 
+# PointerTable and FlatHashTable on the tables of Boost, SmallVector on
+# boost::container::small_vector and Xoshiro256 on Boost.Random [see
+# PointerTable.h, FlatHashTable.h, SmallVector.h and RandomGenerators.h]:
+# AUTO, the default, turns them on when the headers of Boost 1.83 or later
+# are found, ON requires them, OFF leaves the code of ADS. Boost is used
+# by its headers alone, so that nothing is linked.
+set(ADS_WITH_BOOST AUTO CACHE STRING
+    "the delegations to the headers of Boost: AUTO (if found), ON or OFF")
+set_property(CACHE ADS_WITH_BOOST PROPERTY STRINGS AUTO ON OFF)
+string(TOUPPER "${ADS_WITH_BOOST}" ADS_BOOST_MODE)
+set(ADS_USE_BOOST OFF)
+if (ADS_BOOST_MODE STREQUAL "AUTO" OR ADS_WITH_BOOST)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ADSBoost.cmake)
+    if (ADS_BOOST_FOUND)
+        set(ADS_USE_BOOST ON)
+    elseif (NOT ADS_BOOST_MODE STREQUAL "AUTO")
+        message(FATAL_ERROR "ADS_WITH_BOOST is ON, but the headers of Boost "
+                "1.83 or later were not found: install them (libboost-dev, "
+                "boost-devel, boost) or set Boost_INCLUDE_DIR")
+    endif ()
+endif ()
+if (ADS_USE_BOOST)
+    target_compile_definitions(ADS INTERFACE ADS_WITH_BOOST)
+    target_link_libraries(ADS INTERFACE ADS::Boost)
+    set(ADS_BOOST_HINTS "${Boost_INCLUDE_DIR}")
+endif ()
+message(STATUS "ADS: Boost ${ADS_USE_BOOST}")
+
 # The executors of the parallel algorithms beyond the pool of ADS [see
 # include/ADS/parallel]: OpenMP, oneTBB and FastFlow, OFF by default.
 option(ADS_WITH_OPENMP "the executor of OpenMP [see OpenMPExecutor.h]" OFF)
@@ -254,7 +282,11 @@ if (ADS_BENCHMARKS)
                assignment runtime bestfirst hashattack ssets)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
-        target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
+        # the code of ADS, which the benchmarks compare with Boost, also
+        # where ADS::ADS delegates to it
+        target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0
+                ADS_POINTERTABLE_BOOST=0 ADS_FLATHASH_BOOST=0
+                ADS_SMALLVECTOR_BOOST=0 ADS_RANDOM_BOOST=0)
         if (Boost_FOUND)
             target_include_directories(bench-${b}
                                        PRIVATE ${Boost_INCLUDE_DIRS})
@@ -512,13 +544,14 @@ write_basic_package_version_file(
         COMPATIBILITY SameMajorVersion
         ARCH_INDEPENDENT)
 
-# Install the package version and configuration files, with the module of
-# GMP that the configuration file includes.
+# Install the package version and configuration files, with the modules of
+# GMP, of the CBLAS and of Boost that the configuration file includes.
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfig.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfigVersion.cmake
         cmake/ADSGMP.cmake
         cmake/ADSBLAS.cmake
+        cmake/ADSBoost.cmake
         DESTINATION ${ADS_INSTALL_CMAKEDIR})
 
 # Generate and install ads.pc: its prefix is found from where the file is
@@ -526,7 +559,8 @@ install(FILES
 # that is relative, so that an install with --prefix moved elsewhere still
 # points to its own headers; its include directory is ${prefix}/include
 # when that is relative; with GMP it has the define and the library, by
-# gmp.pc, and with a CBLAS its define, its headers and its library.
+# gmp.pc, with a CBLAS its define, its headers and its library, and with
+# Boost its define and its headers.
 if (IS_ABSOLUTE "${ADS_INSTALL_PKGCONFIGDIR}")
     set(ADS_PC_PREFIX "${CMAKE_INSTALL_PREFIX}")
 else ()
@@ -550,6 +584,9 @@ endif ()
 if (ADS_USE_BLAS)
     string(APPEND ADS_PC_CFLAGS " -DADS_WITH_BLAS ${ADS_BLAS_PC_CFLAGS}")
     set(ADS_PC_LIBS "${ADS_BLAS_PC_LIBS}")
+endif ()
+if (ADS_USE_BOOST)
+    string(APPEND ADS_PC_CFLAGS " -DADS_WITH_BOOST${ADS_BOOST_PC_CFLAGS}")
 endif ()
 configure_file(cmake/ads.pc.in ${CMAKE_CURRENT_BINARY_DIR}/ads.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ads.pc

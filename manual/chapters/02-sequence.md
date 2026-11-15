@@ -390,7 +390,13 @@ The bound on the space holds for a vector that has grown by pushes alone:
 and `reserve()` may set any larger one. Furthermore, the class has the
 interface of a vector (`push_back()`, `emplace_back()`, `pop_back()`,
 `front()`, `back()`, `operator[]`, `data()`, `reserve()`, `resize()`,
-`clear()`, `capacity()` and the iterators), and no positions.
+`clear()`, `capacity()` and the iterators), and no positions. With
+`ADS_WITH_BOOST` defined (by the option of CMake of the same name, whenever
+the headers of Boost 1.83 or later are found), the items are those of
+`boost::container::small_vector` with the growth factor 2 of its options,
+i.e., the same vector with the same doubling, so that the interface, the
+iterators (the pointers to the items) and Lemma 2.5 still hold
+(`ADS_SMALLVECTOR_BOOST` defined to 0 keeps the code of ADS).
 
 ![Figure 2.2. A `SmallVector` with $N = 4$: the four places inside the object hold `a b c d`, and `push_back(e)` moves them (in violet) to a block of $2 N = 8$ places of the allocator and writes `e` (in orange), the places inside being no longer used.](../figures/sequence-smallvector.svg){#fig-2-2}
 

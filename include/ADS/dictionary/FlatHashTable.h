@@ -99,6 +99,20 @@
  * not rebuild it keeps them, the new pair visited or not), and an insertion
  * of a key already there replaces its value in place.
  *
+ * With `ADS_WITH_BOOST` defined (by the option of CMake of the same name,
+ * which defines it whenever the headers of Boost 1.83 or later are found, by
+ * the makefile, which does the same, or by hand), the pairs are those of
+ * `boost::unordered_flat_map`, the table that the one above follows, which
+ * on the benchmark of the dictionaries is on a par with it (the ratio of
+ * the times a median of 0.93); `ADS_FLATHASH_BOOST` defined to 0 keeps the
+ * code of ADS. The interface and the contracts stay those above, with three
+ * differences: `capacity()` is the number of places of Boost, \f$ 15 \f$
+ * times a power of 2, less 1 (one place is its sentinel), and Boost fills
+ * all of them up to 29 places; `deleted()` counts the places that Boost no
+ * longer offers to the insertions, the difference between its maximum load
+ * after a rebuild and its maximum load now, in \f$ O( 1 ) \f$ time; and the
+ * iterators are forward, those of Boost.
+ *
  * The contracts [see `Contract.h`]: after `insert()` the key is in the table
  * and after `remove()` it is not; the invariant is that each full place is
  * reached by the inspection of its key, the bit of the key set in the
@@ -191,6 +205,19 @@
 
 #if defined( _MSC_VER ) && ( defined( _M_X64 ) || defined( _M_ARM64 ) )
  #include <intrin.h>
+#endif
+
+// the pairs of boost::unordered_flat_map, with ADS_WITH_BOOST
+#if defined( ADS_WITH_BOOST ) && ! defined( ADS_FLATHASH_BOOST )
+ #define ADS_FLATHASH_BOOST 1
+#endif
+#ifndef ADS_FLATHASH_BOOST
+ #define ADS_FLATHASH_BOOST 0
+#endif
+#if ADS_FLATHASH_BOOST
+ #include <iterator>
+
+ #include <boost/unordered/unordered_flat_map.hpp>
 #endif
 
 /// a hint to bring the line of `p` into the cache, or nothing
@@ -390,8 +417,9 @@ class FlatHashTable
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ), in the order of the
- // places, bidirectional; a removal invalidates only the iterators on the
- // removed pair, an insertion that rebuilds the table all of them
+ // places, bidirectional (forward with Boost); a removal invalidates only
+ // the iterators on the removed pair, an insertion that rebuilds the table
+ // all of them
 
  /// the type of the items, for the standard library
  using value_type = std::pair< K , V >;
@@ -427,6 +455,7 @@ class FlatHashTable
  /// \pre `it` is on a pair of the table
  const_iterator erase( const_iterator it );
 
+#if ! ADS_FLATHASH_BOOST
 /*--------------------------------------------------------------------------*/
  private:
  static constexpr std::uint8_t EMPTY = 0;  ///< a place never used
@@ -727,6 +756,72 @@ class FlatHashTable
   Mask f_m = FIRST;             ///< the full places from this one on
 
   };  // end( class const_iterator )
+#else
+/*--------------------------------------------------------------------------*/
+ private:
+ /// the map of Boost
+ using Map = boost::unordered_flat_map< K , V , H , Eq >;
+
+ /// the maximum load of Boost on its places with no removal: all of them
+ /// up to 29, \f$ 7 / 8 \f$ of them beyond
+ [[nodiscard]] std::size_t fullLoad( void ) const;
+
+ Map f_map;  ///< the pairs
+
+/*--------------------------------------------------------------------------*/
+ public:
+ /// the iterator of the map of Boost, forward, on the pairs as constant
+ /// pairs of references
+ class const_iterator
+ {
+  public:
+  /// the type of the items, for the standard library
+  using value_type = std::pair< K , V >;
+  /// a reference to an item
+  using reference = PairRef< const K & , const V & >;
+  /// the type of the distances between two iterators
+  using difference_type = std::ptrdiff_t;
+  /// the concept of the iterator, for C++20
+  using iterator_concept = std::forward_iterator_tag;
+  /// the category of the iterator
+  using iterator_category = std::input_iterator_tag;
+
+  /// an iterator on no table
+  const_iterator( void ) = default;
+
+  /// the pair of the place
+  reference operator*( void ) const {
+   return( reference( f_i->first , f_i->second ) );
+   }
+
+  /// to the next pair
+  const_iterator & operator++( void ) {
+   ++f_i;
+   return( *this );
+   }
+
+  /// to the next pair, returning the iterator before the step
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++f_i;
+   return( t );
+   }
+
+  /// equal on the same place
+  bool operator==( const const_iterator & o ) const {
+   return( f_i == o.f_i );
+   }
+
+  private:
+  friend class FlatHashTable;
+
+  /// on the pair of `i`
+  explicit const_iterator( typename Map::const_iterator i ) : f_i( i ) { }
+
+  typename Map::const_iterator f_i;  ///< the place
+
+  };  // end( class const_iterator )
+#endif
 
  };  // end( class FlatHashTable )
 

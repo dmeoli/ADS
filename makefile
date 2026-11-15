@@ -16,13 +16,13 @@
 #                      at a time)                                             #
 #     make test-mpi    the sort and the runtime over the processes of MPI,    #
 #                      by mpirun                                              #
-#     make test ADS_WITH_GMP=0 ADS_WITH_BLAS=0                                #
-#                      the same without the backends of GMP and of a CBLAS,   #
-#                      on by default where they are found [GMP=<prefix>]      #
-#                      [BLAS=<prefix>]                                        #
+#     make test ADS_WITH_GMP=0 ADS_WITH_BLAS=0 ADS_WITH_BOOST=0               #
+#                      the same without the backends of GMP, of a CBLAS and   #
+#                      of Boost, on by default where they are found           #
+#                      [GMP=<prefix>] [BLAS=<prefix>] [BOOST=<prefix>]        #
 #     make test ADSMOD=1                                                      #
 #                      also the C++20 module ads and the test that imports it #
-#     make backends    tells whether GMP, a CBLAS and MPI were found          #
+#     make backends    tells whether GMP, a CBLAS, Boost and MPI were found   #
 #     make bench       builds the benchmarks in $(BUILD)                      #
 #     bench/run.sh     runs them and writes the tables of the README          #
 #     make install     copies include/ADS into $(PREFIX)/include, with        #
@@ -36,8 +36,8 @@
 #           optional: $(PREFIX)   = where make install copies the headers     #
 #                                   (/usr/local if not given)                 #
 #           optional: the macros of the backends, ADS_WITH_GMP,               #
-#                     ADS_WITH_BLAS and ADS_WITH_MPI (auto by default, 0 or   #
-#                     1),                                                     #
+#                     ADS_WITH_BLAS, ADS_WITH_BOOST and ADS_WITH_MPI (auto    #
+#                     by default, 0 or 1),                                    #
 #                     ADS_WITH_OPENMP=1, ADS_WITH_TBB=1, ADS_WITH_FASTFLOW=1, #
 #                     and their *_ROOT [see lib/makefile-c]; ADSMOD=1 [see    #
 #                     lib/makefile-mod]                                       #
@@ -181,6 +181,7 @@ test: $(addprefix test-,$(PROGRAMS)) $(MODBIN) test-fastflow-order \
 backends:
 	@echo "ADS: GMP $(if $(filter 1,$(ADSGMPON)),ON,OFF)," \
 	      "CBLAS $(if $(filter 1,$(ADSBLASON)),ON,OFF)"
+	@echo "ADS: Boost $(if $(filter 1,$(ADSBOOSTON)),ON,OFF)"
 	@echo "ADS: MPI $(if $(filter 1,$(ADSMPION)),ON,OFF)"
 
 # bench target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

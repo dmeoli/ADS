@@ -53,6 +53,12 @@
  * part and loops on the larger (`pdqSort()` goes into the left part, the
  * other partitions leaving at most \f$ 7 / 8 \f$ of the items on each side),
  * so that the stack stays \f$ O( \log n ) \f$.
+ * Besides its own use, `pdqSort()` is the engine of `sort()` [see `Sort.h`]
+ * for the short vectors, for few distinct keys and for the items that no
+ * faster route takes, and it stays so also where Boost is found:
+ * `boost::sort::pdqsort` is no slower on the benchmark of the sorts, and a
+ * program that wants it calls it directly.
+ *
  * The contracts [see `Contract.h`]: each sort ends with the same items sorted,
  * an audit. The functions are defined in `EngineeredQuickSorts.tpp`.
  *

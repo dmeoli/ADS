@@ -219,7 +219,9 @@
  (Cormen, Leiserson, Rivest and Stein, section 17.4, after Tarjan).
  `CursorSpace` grows in the same way, and `SmallVector` doubles once its
  \f$ N \f$ inner places are full, so that \f$ n \f$ insertions move fewer than
- \f$ 2 n \f$ items and the space is at most \f$ 2 n + N \f$ items.
+ \f$ 2 n \f$ items and the space is at most \f$ 2 n + N \f$ items; with
+ `ADS_WITH_BOOST` defined it runs on `boost::container::small_vector` with the
+ growth factor 2, so that the same bounds hold.
 
  The tiered vector of Goodrich and Kloss trades the access in
  \f$ O( 1 ) \f$ of a vector for an insertion and a removal at any index in

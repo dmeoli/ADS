@@ -8,7 +8,10 @@
  * pages, the hashing with random tables, the queues between threads and
  * the concurrent cuckoo table. Each one is checked against a reference of
  * the standard library on random operations, at the level 3 of the
- * contracts, and the structures between threads on real threads.
+ * contracts, and the structures between threads on real threads. The
+ * tables are those of ADS also where `ADS_WITH_BOOST` delegates them to
+ * Boost, since these tests look at their places one by one [see
+ * `engineered_boost.cpp` for the delegations].
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -19,6 +22,10 @@
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+// the code of ADS, not that of Boost
+#define ADS_FLATHASH_BOOST 0
+#define ADS_POINTERTABLE_BOOST 0
 
 #include "ADSTest.h"
 

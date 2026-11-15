@@ -16,6 +16,7 @@ vcpkg_cmake_configure(
         -DADS_BENCHMARKS=OFF
         -DADS_WITH_GMP=OFF
         -DADS_WITH_BLAS=OFF
+        -DADS_WITH_BOOST=OFF
         -DADS_WITH_MPI=OFF
 )
 vcpkg_cmake_install()

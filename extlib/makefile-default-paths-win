@@ -33,6 +33,7 @@
 GMP_ROOT =
 BLAS_ROOT =
 BLAS_LIB =
+Boost_ROOT =
 OpenMP_ROOT =
 TBB_ROOT =
 FastFlow_ROOT = C:/fastflow

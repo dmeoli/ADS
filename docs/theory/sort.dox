@@ -11,10 +11,13 @@
  many beyond it, from the internal sorts of Knuth to the quicksorts, the
  merge sorts and the radix sorts engineered for the memory and for the vector
  registers of today, of which `sort()` and `stableSort()` of `Sort.h` choose
- one for each input. This page collects what the headers take for granted:
- the definitions and the notation shared by all of them (see
- \ref theory_sort_notation), the lower bound that the sorts by comparisons
- cannot beat (see \ref theory_sort_lower), and, for each family of
+ one for each input (`pdqSort()` and `powerSort()` are their engines for the
+ items that no faster route takes, kept also where Boost is found, whose
+ `boost::sort::pdqsort` and `spinsort` a program may call directly). This
+ page collects what the headers take for granted: the definitions and the
+ notation shared by all of them (see \ref theory_sort_notation), the lower
+ bound that the sorts by comparisons cannot beat (see
+ \ref theory_sort_lower), and, for each family of
  algorithms, the property on which its correctness rests and the argument
  behind its bound (from \ref theory_sort_elementary to
  \ref theory_sort_other), with a table that compares them all (see

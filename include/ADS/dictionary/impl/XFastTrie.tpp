@@ -146,7 +146,7 @@ auto ListXFastTrie< U , V , W >::successor( U x ) const -> Leaf *
 {
  if( f_n == 0 )
   return( f_dummy );
- Entry e;
+ Entry e{};
  const int l = deepest( x , 0 , W + 1 , e );
  return( follow( x , e , l ) );
  }
@@ -190,7 +190,7 @@ const U * ListXFastTrie< U , V , W >::findNear( U x ) const
  for( int K = 1 ; ; K = std::min( 2 * K , W ) ) {
   const int d = W - K;
   const U p = detail::triePrefix< U , W >( x , d );
-  Entry e;
+  Entry e{};
   if( entry( p , d , e ) ) {
    const int l = deepest( x , d , h , e );
    const Leaf * s = follow( x , e , l );

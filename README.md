@@ -464,9 +464,9 @@ library, Boost and Eigen; their tests are in
 | pairing heap with decrease-key, increase-key and erase by handle, two-pass or auxiliary two-pass (Fredman et al.; Stasko and Vitter) | [`priority/PairingHeap.h`](include/ADS/priority/PairingHeap.h) | `heaps.pairing-heap`, `engineered_search.pairing-heap-erase` |
 | sort of a List by relinking its cells: radix sort of ( key , cell ) or merge of the natural runs | [`sequence/ListSort.h`](include/ADS/sequence/ListSort.h) | `sequences.list-sort` |
 | tiered vector: access in O( 1 ), insertion and removal anywhere in O( sqrt n ) (Goodrich and Kloss) | [`sequence/TieredVector.h`](include/ADS/sequence/TieredVector.h) | `sequences.tiered-vector` |
-| vector with room for N items inside itself | [`sequence/SmallVector.h`](include/ADS/sequence/SmallVector.h) | `sequences.small-vector` |
-| hash table with control bytes in groups of 15 matched by SSE2, NEON or SWAR, the hash mixed on 128 bits, at most 7/8 full (Swiss tables; Boost's `unordered_flat_map`) | [`dictionary/FlatHashTable.h`](include/ADS/dictionary/FlatHashTable.h) | `engineered.flat-hash-table` |
-| hash table of pointers, linear probing, Fibonacci hashing of a hash given, sized in advance by `slotsFor()`, the places from any allocator | [`dictionary/PointerTable.h`](include/ADS/dictionary/PointerTable.h) | `engineered.pointer-table`, `engineered_search.pointer-table-presize` |
+| vector with room for N items inside itself | [`sequence/SmallVector.h`](include/ADS/sequence/SmallVector.h) | `sequences.small-vector`, `engineered_boost.boost-small-vector` |
+| hash table with control bytes in groups of 15 matched by SSE2, NEON or SWAR, the hash mixed on 128 bits, at most 7/8 full (Swiss tables; Boost's `unordered_flat_map`) | [`dictionary/FlatHashTable.h`](include/ADS/dictionary/FlatHashTable.h) | `engineered.flat-hash-table`, `engineered_boost.boost-flat-hash-table` |
+| hash table of pointers, linear probing, Fibonacci hashing of a hash given, sized in advance by `slotsFor()`, the places from any allocator | [`dictionary/PointerTable.h`](include/ADS/dictionary/PointerTable.h) | `engineered.pointer-table`, `engineered_search.pointer-table-presize`, `engineered_boost.boost-pointer-table` |
 | arena of objects in blocks, stable addresses | [`memory/Arena.h`](include/ADS/memory/Arena.h) | `engineered.arena` |
 | pool of objects in doubling blocks, the slot freed last made first | [`memory/ObjectPool.h`](include/ADS/memory/ObjectPool.h) | `engineered.pool` |
 | allocator of small blocks by size classes, a free list and a page of 64 KB per class (mimalloc, TLSF) | [`memory/SizeClassAllocator.h`](include/ADS/memory/SizeClassAllocator.h) | `memory.size-class-allocator` |
@@ -521,7 +521,7 @@ library, Boost and Eigen; their tests are in
 | event count, the sleep of a thread until a condition holds, with asymmetric fences | [`concurrent/EventCount.h`](include/ADS/concurrent/EventCount.h) | `engineered_queues.event-count` |
 | exponential backoff of a waiting thread, pauses then yields (Anderson) | [`concurrent/Backoff.h`](include/ADS/concurrent/Backoff.h) | `engineered_search.backoff-threads` |
 | sparse matrices in compressed rows and in SELL-C-sigma (Kreutzer et al.) | [`numeric/CsrMatrix.h`](include/ADS/numeric/CsrMatrix.h), [`numeric/SellMatrix.h`](include/ADS/numeric/SellMatrix.h) | `engineered_numeric.csr-matrix`, `.sell-matrix` |
-| generators xoshiro256++, xoshiro256**, wyrand and the counter-based Philox4x32 and Philox4x64 (Salmon et al.), the alias method, normal and exponential deviates by ziggurats (Marsaglia and Tsang) | [`numeric/RandomGenerators.h`](include/ADS/numeric/RandomGenerators.h) | `engineered_numeric.generators`, `.philox`, `.ziggurat` |
+| generators xoshiro256++, xoshiro256**, wyrand and the counter-based Philox4x32 and Philox4x64 (Salmon et al.), the alias method, normal and exponential deviates by ziggurats (Marsaglia and Tsang) | [`numeric/RandomGenerators.h`](include/ADS/numeric/RandomGenerators.h) | `engineered_numeric.generators`, `.philox`, `.ziggurat`, `engineered_boost.boost-xoshiro` |
 | work-stealing deque (Chase and Lev; Lê et al.) | [`concurrent/WorkStealingDeque.h`](include/ADS/concurrent/WorkStealingDeque.h) | `engineered_queues.work-stealing-deque` |
 | wavelet tree shaped by the code of Huffman, n(H0+1) bits (Makinen and Navarro) | [`succinct/HuffmanWaveletTree.h`](include/ADS/succinct/HuffmanWaveletTree.h) | `engineered_succinct.huffman-wavelet-tree` |
 | FM-index on the wavelet tree of Huffman, the succinct suffix array (Makinen and Navarro) | [`compression/HuffmanFMIndex.h`](include/ADS/compression/HuffmanFMIndex.h) | `engineered_succinct.huffman-fm-index` |
@@ -833,9 +833,10 @@ headers), `ADSINC` (the `-I`, the `-D` and the options of the backends
 turned on) and `ADSLIB` (their libraries, and `-pthread`), and `ADSOBJ`,
 the object of the C++20 module when it is built; `lib/makefile` gives only
 the headers, `lib/makefile-OS` the settings of the operating system and of
-the compiler, `lib/makefile-mod` the module. GMP and a CBLAS are used
-wherever a program that calls them compiles and links (`ADS_WITH_GMP` and
-`ADS_WITH_BLAS` are `auto`, `0` turns them off, `1` requires them, and
+the compiler, `lib/makefile-mod` the module. GMP, a CBLAS and the headers
+of Boost are used wherever a program that calls them compiles and links
+(`ADS_WITH_GMP`, `ADS_WITH_BLAS` and `ADS_WITH_BOOST` are `auto`, `0` turns
+them off, `1` requires them, and
 `make backends` tells what was found), and the other optional backends
 are turned on by `ADS_WITH_OPENMP=1`, `ADS_WITH_TBB=1` and
 `ADS_WITH_FASTFLOW=1`, as the CMake options of the same names do, while
@@ -937,6 +938,20 @@ and the parallel `gemm()` hands it the whole product in one call, leaving
 the threads to it. GMP is under
 the LGPL v3 (or the GPL v2), whose terms apply to a program that enables
 it; without the macros nothing of either library is included.
+
+With the headers of [Boost](https://www.boost.org) 1.83 or later,
+`PointerTable` and `FlatHashTable` run on `boost::unordered_flat_set` and
+`boost::unordered_flat_map`, `SmallVector` on `boost::container::small_vector`,
+and, from Boost 1.86, `Xoshiro256` and `Xoshiro256StarStar` on Boost.Random,
+with the same names and members (the differences, e.g., the forward
+iterators of the tables, are in the comments of the headers); without Boost
+each runs its own code. `ADS_WITH_BOOST` is `AUTO` with CMake and `auto`
+with the makefile (`BOOST=<prefix>` where Boost is not where the compiler
+looks), as for GMP, and nothing is linked; the packages are built with it
+off, as with the other backends, and `ADS_POINTERTABLE_BOOST`,
+`ADS_FLATHASH_BOOST`, `ADS_SMALLVECTOR_BOOST` or `ADS_RANDOM_BOOST` defined to
+0 keeps the code of ADS for one structure (the benchmarks do so for all four,
+since they compare it with Boost).
 
 ```cpp
 #include "ADS/sequence/List.h"

@@ -38,6 +38,12 @@
  * order they do not gallop, whose steps cost more than the comparisons that it
  * saves.
  *
+ * Besides its own use, `powerSort()` is the engine of `stableSort()` [see
+ * `Sort.h`] for few runs and for the items that no faster route takes, and
+ * it stays so also where Boost is found: `boost::sort::spinsort` is no
+ * slower on the benchmark of the sorts, and a program that wants it calls it
+ * directly.
+ *
  * The contracts [see `Contract.h`]: the sort ends with the same items sorted,
  * an audit. The function is defined in `RunSorts.tpp`.
  *

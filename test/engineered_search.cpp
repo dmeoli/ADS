@@ -82,7 +82,8 @@ struct Node
 // built with slotsFor( n ) or reserved for n that takes n objects with no
 // growth, a reserve() below the size that changes nothing, the places on
 // huge pages (the allocator of HugePageAllocator.h) and the hashes biased by
-// an owner in their low bits, which the Fibonacci hashing spreads
+// an owner in their low bits, which the Fibonacci hashing spreads; on the
+// places of ADS and on those of Boost
 ADS_TEST( "pointer-table-presize" )
 {
  using T = PointerTable< Node >;
@@ -101,16 +102,17 @@ ADS_TEST( "pointer-table-presize" )
   T A( T::slotsFor( n ) );
   T R;
   R.reserve( n );
-  CHECK( R.capacity() == T::slotsFor( n ) );
-  const std::size_t ca = A.capacity();
+  const std::size_t ca = A.capacity() , cr = R.capacity();
+  // the places of ADS, or those that Boost computes [see PointerTable.h]
+  CHECK( ADS_POINTERTABLE_BOOST || cr == T::slotsFor( n ) );
   for( std::uint64_t s = 0 ; s < n ; ++s )
    for( T * t : { &A , &R } )
     t->find_or_insert( s , splitmix64( s ) ,
 		       [ & ]( void ) { return( N.make( Node{ s , 0 } ) ); } );
-  CHECK( A.capacity() == ca && R.capacity() == T::slotsFor( n ) );
+  CHECK( A.capacity() == ca && R.capacity() == cr );
   CHECK( A.size() == n && R.size() == n );
   R.reserve( 1 );  // below the size: no change
-  CHECK( R.capacity() == T::slotsFor( n ) && R.size() == n );
+  CHECK( R.capacity() == cr && R.size() == n );
   }
  const std::size_t n = test::scaled< std::size_t >( 200000 , 5000 );
  PointerTable< Node , StateEqual , HugePageAllocator< std::byte > > H(
