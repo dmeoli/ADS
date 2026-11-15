@@ -397,15 +397,15 @@
  \f[
  \begin{array}{rcl}
  N \cdot \mathrm{Inserted}( h , s ) \cdot \mathrm{Erased}( h , s ) & \to &
-   N , \\
+   N , \cr
  \mathrm{Inserted}( h , s ) \cdot \mathrm{Changed}_A( h , a , b ) & \to &
    \mathrm{Inserted}( h , s[ A := b ] ) \quad A \in \{ \mathrm{Key} ,
-   \mathrm{Value} \} , \\
+   \mathrm{Value} \} , \cr
  \mathrm{Changed}_A( h , a , b ) \cdot \mathrm{Changed}_A( h , b , c ) &
    \to & \mathrm{Changed}_A( h , a , c ) , \ \text{or nothing if } a = c ,
-   \\
+   \cr
  \mathrm{Changed}_A( h , a , b ) \cdot \mathrm{Erased}( h , s ) & \to &
-   \mathrm{Erased}( h , s[ A := a ] ) , \\
+   \mathrm{Erased}( h , s[ A := a ] ) , \cr
  \mathrm{Erased}( h , s ) \cdot \mathrm{Inserted}( h , t ) & \to &
    \prod_{A : s_A \ne t_A} \mathrm{Changed}_A( h , s_A , t_A ) ,
  \end{array} \tag{8}

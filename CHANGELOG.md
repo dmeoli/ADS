@@ -650,28 +650,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   operations return, replayed in their order (-b rank)
 - graph/Assignment.h: Assignment< W >, the assignment problem by the
   shortest augmenting paths of Jonker and Volgenant in the form of Crouse,
-  $O( n^3 )$, with the costs that change by setCost(), setRow() and
+  O( n^3 ), with the costs that change by setCost(), setRow() and
   setColumn(): a change of a row or of a column frees one pair, restores
-  the dual by one potential and augments once, $O( n^2 )$ (the incremental
+  the dual by one potential and augments once, O( n^2 ) (the incremental
   assignment of Toroslu and Üçoluk, the dynamic Hungarian algorithm of
   Mills-Tettey, Stentz and Dias), and a single cost raised off the
-  assignment, or lowered within the duals, costs $O( 1 )$; the observer
+  assignment, or lowered within the duals, costs O( 1 ); the observer
   AssignmentObserver of Reoptimization.h on a bipartite graph; the tests
   assignment and reopt-assignment; bench/assignment.cpp, against
   NetworkSimplex of LEMON (LEMON=1) and maximum_weighted_matching of Boost
 - tree/LinkCutTree.h: LinkCutTree< T , Op >, the link-cut trees of Sleator
   and Tarjan on splay trees in vectors, with link(), cut(), cutParent(),
   evert(), findRoot(), connected(), lca() and the aggregate of a
-  commutative monoid on a path, $O( \log n )$ amortized; the test
+  commutative monoid on a path, O( log n ) amortized; the test
   link-cut-tree and the cell link-cut of bench/dynamic.cpp
 - SpanningForestObserver on a link-cut tree, an edge kept by a node of its
   own: each event applied in turn, an edge lowered or inserted swapped
-  with the heaviest of its cycle in $O( \log n )$ amortized, an edge of
+  with the heaviest of its cycle in O( log n ) amortized, an edge of
   the forest raised or deleted replaced by the lightest edge between its
   two sides, sought in turn from the smaller side (two visits of the
   forest, one node each) and in the edges off the forest by weight; the
   total weight kept as the edges change, when the weights subtract;
-  the binary lifting, built again in $O( n \log n )$ at each change of the
+  the binary lifting, built again in O( n log n ) at each change of the
   shape of the forest, and the table of the replacements are gone
 - FlowNetwork: Augment::PUSH_RELABEL, the push-relabel of Goldberg and
   Tarjan with the highest label first, the global relabelings and the gaps
@@ -691,7 +691,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Ramalingam and Reps in the batch form of Bauer and Wagner), the arcs
   that enter each node kept for an oriented graph from the first raise on
   and the lists of the children of the tree updated with each parent, so
-  that a batch touching few nodes costs no $\Theta( n )$; from scratch only
+  that a batch touching few nodes costs no Theta( n ); from scratch only
   past the threshold of the events, on a negative cycle or when more than
   half of the tree is lost; the test reopt-shortest-paths-increase
 - MultiQueue (concurrent/MultiQueue.h), the relaxed priority queue of
@@ -875,9 +875,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   FlowNetwork: addNode() and setCapacity()
 - mfset/RollbackUnionFind.h: the union-find by rank without compression
   whose merges are undone by undo() and rollback() to a checkpoint(), in
-  $O( \log n )$ per find; offlineConnectivity(), the dynamic
+  O( log n ) per find; offlineConnectivity(), the dynamic
   connectivity of a known sequence of insertions, deletions and questions
-  by a segment tree over the times, $O( k \log k \log n )$
+  by a segment tree over the times, O( k log k log n )
 - parallel/SpeculativeFor.h: speculativeFor() and Reservation, the
   deterministic reservations of Blelloch, Fineman, Gibbons and Shun on any
   executor; parallel/ParallelGreedy.h: parallelKruskal(), filterKruskal(),
