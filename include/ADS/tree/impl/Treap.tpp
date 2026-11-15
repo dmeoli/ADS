@@ -24,14 +24,7 @@ Treap< K , V >::Treap( std::uint64_t seed ) : f_g( seed )
 template< std::totally_ordered K , class V >
 std::optional< V > Treap< K , V >::lookup( const K & k ) const
 {
- for( const Node * t = f_root.get() ; t ; )
-  if( k < t->key )
-   t = t->left.get();
-  else if( t->key < k )
-   t = t->right.get();
-  else
-   return( t->value );
- return( std::nullopt );
+ return( searchTreeLookup( f_root.get() , k ) );
  }
 
 template< std::totally_ordered K , class V >
@@ -193,76 +186,35 @@ bool Treap< K , V >::valid( const Ptr & t , const K * lo , const K * hi )
  }
 
 template< std::totally_ordered K , class V >
-auto Treap< K , V >::lowerBoundNode( const K & k ) const -> const Node *
-{
- const Node * best = nullptr;
- for( const Node * t = f_root.get() ; t ; )
-  if( t->key < k )
-   t = t->right.get();
-  else {
-   best = t;
-   if( ! ( k < t->key ) )
-    break;
-   t = t->left.get();
-   }
- return( best );
- }
-
-template< std::totally_ordered K , class V >
 auto Treap< K , V >::lowerBound( const K & k ) const
   -> std::optional< std::pair< K , V > >
 {
- const Node * b = lowerBoundNode( k );
- return( b ? std::optional< std::pair< K , V > >(
-		std::pair< K , V >( b->key , b->value ) )
-	    : std::nullopt );
+ return( searchTreeLowerBoundEntry( f_root.get() , k ) );
  }
 
 template< std::totally_ordered K , class V >
 const K * Treap< K , V >::findKey( const K & k ) const
 {
- const Node * b = lowerBoundNode( k );
- return( ( b && ! ( k < b->key ) ) ? &b->key : nullptr );
+ return( searchTreeFindKey( f_root.get() , k ) );
  }
 
 template< std::totally_ordered K , class V >
 const K * Treap< K , V >::lowerBoundKey( const K & k ) const
 {
- const Node * b = lowerBoundNode( k );
- return( b ? &b->key : nullptr );
+ return( searchTreeLowerBoundKey( f_root.get() , k ) );
  }
 
 template< std::totally_ordered K , class V >
 std::pair< K , V > Treap< K , V >::select( std::size_t i ) const
 {
- ADS_PRE( i < f_size );
- const Node * t = f_root.get();
- for( ; ; ) {
-  const std::size_t l = sz( t->left );
-  if( i < l )
-   t = t->left.get();
-  else if( i == l )
-   break;
-  else {
-   i -= l + 1;
-   t = t->right.get();
-   }
-  }
+ const Node * t = searchTreeSelect( f_root.get() , i );
  return( std::pair< K , V >( t->key , t->value ) );
  }
 
 template< std::totally_ordered K , class V >
 std::size_t Treap< K , V >::rank( const K & k ) const
 {
- std::size_t r = 0;
- for( const Node * t = f_root.get() ; t ; )
-  if( t->key < k ) {
-   r += sz( t->left ) + 1;
-   t = t->right.get();
-   }
-  else
-   t = t->left.get();
- return( r );
+ return( searchTreeRank( f_root.get() , k ) );
  }
 
 template< std::totally_ordered K , class V >

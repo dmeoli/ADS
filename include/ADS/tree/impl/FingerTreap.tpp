@@ -187,95 +187,41 @@ void FingerTreap< K , V >::remove( const K & k )
  }
 
 template< std::totally_ordered K , class V >
-auto FingerTreap< K , V >::lowerBoundNode( const K & k ) const -> const Node *
-{
- const Node * best = nullptr;
- for( const Node * t = f_root ; t ; )
-  if( t->key < k )
-   t = t->right;
-  else {
-   best = t;
-   if( ! ( k < t->key ) )
-    break;
-   t = t->left;
-   }
- return( best );
- }
-
-template< std::totally_ordered K , class V >
 auto FingerTreap< K , V >::lowerBound( const K & k ) const
   -> std::optional< std::pair< K , V > >
 {
- const Node * b = lowerBoundNode( k );
- return( b ? std::optional< std::pair< K , V > >(
-		std::pair< K , V >( b->key , b->value ) )
-	    : std::nullopt );
+ return( searchTreeLowerBoundEntry( f_root , k ) );
  }
 
 template< std::totally_ordered K , class V >
 const K * FingerTreap< K , V >::findKey( const K & k ) const
 {
- const Node * b = lowerBoundNode( k );
- return( ( b && ! ( k < b->key ) ) ? &b->key : nullptr );
+ return( searchTreeFindKey( f_root , k ) );
  }
 
 template< std::totally_ordered K , class V >
 const K * FingerTreap< K , V >::lowerBoundKey( const K & k ) const
 {
- const Node * b = lowerBoundNode( k );
- return( b ? &b->key : nullptr );
+ return( searchTreeLowerBoundKey( f_root , k ) );
  }
 
 template< std::totally_ordered K , class V >
 std::pair< K , V > FingerTreap< K , V >::select( std::size_t i ) const
 {
- ADS_PRE( i < f_size );
- const Node * t = f_root;
- for( ; ; ) {
-  const std::size_t l = t->left ? t->left->size : 0;
-  if( i < l )
-   t = t->left;
-  else if( i == l )
-   break;
-  else {
-   i -= l + 1;
-   t = t->right;
-   }
-  }
+ const Node * t = searchTreeSelect( f_root , i );
  return( std::pair< K , V >( t->key , t->value ) );
  }
 
 template< std::totally_ordered K , class V >
 std::size_t FingerTreap< K , V >::rank( const K & k ) const
 {
- std::size_t r = 0;
- for( const Node * t = f_root ; t ; )
-  if( t->key < k ) {
-   r += ( t->left ? t->left->size : 0 ) + 1;
-   t = t->right;
-   }
-  else
-   t = t->left;
- return( r );
+ return( searchTreeRank( f_root , k ) );
  }
 
 template< std::totally_ordered K , class V >
 int FingerTreap< K , V >::height( void ) const
 {
- int h = -1;  // by levels, with no recursion
- std::vector< const Node * > L , M;
- if( f_root )
-  L.push_back( f_root );
- for( ; ! L.empty() ; ++h , L.swap( M ) ) {
-  M.clear();
-  for( const Node * u : L ) {
-   if( u->left )
-    M.push_back( u->left );
-   if( u->right )
-    M.push_back( u->right );
-   }
-  }
- return( h );
+ return( int( treeHeight( f_root ) ) );
  }
 
 template< std::totally_ordered K , class V >

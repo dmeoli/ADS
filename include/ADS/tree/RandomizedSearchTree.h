@@ -259,8 +259,6 @@ class RandomizedSearchTree
  static int height( const Ptr & t );
  static bool valid( const Ptr & t , const K * lo , const K * hi );
 
- /// the node of the smallest key not smaller than \f$ k \f$, nil if none
- [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
  Ptr f_root;      ///< the root
  SplitMix64 f_g;  ///< the generator of the random choices
@@ -275,6 +273,7 @@ class RandomizedSearchTree
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/impl/RandomizedSearchTree.tpp"
 
 /*--------------------------------------------------------------------------*/

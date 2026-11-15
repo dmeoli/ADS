@@ -380,8 +380,6 @@ class LeftLeaningRedBlackTree
  /// the order, the parents and the three properties
  [[nodiscard]] bool valid( void ) const;
 
- /// the node of the smallest key not smaller than \f$ k \f$, nil if none
- [[nodiscard]] const Link * lowerBoundNode( const K & k ) const;
 
  Link * f_root = nullptr;  ///< the root
  std::size_t f_n = 0;      ///< the number of keys
@@ -396,6 +394,7 @@ class LeftLeaningRedBlackTree
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/impl/LeftLeaningRedBlackTree.tpp"
 
 /*--------------------------------------------------------------------------*/

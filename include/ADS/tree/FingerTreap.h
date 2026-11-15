@@ -302,8 +302,6 @@ class FingerTreap
  /// the order, the heap, the parents, the sizes and the extremes
  [[nodiscard]] bool valid( void ) const;
 
- /// the node of the smallest key not smaller than \f$ k \f$, nil if none
- [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
  Node * f_root = nullptr;    ///< the root
  Node * f_finger = nullptr;  ///< the node of the last finger search
@@ -320,6 +318,7 @@ class FingerTreap
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/impl/FingerTreap.tpp"
 
 /*--------------------------------------------------------------------------*/

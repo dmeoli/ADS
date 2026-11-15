@@ -20,14 +20,7 @@ namespace ADS
 template< std::totally_ordered K , class V >
 std::optional< V > HashedTreap< K , V >::lookup( const K & k ) const
 {
- for( const Node * t = f_root.get() ; t ; )
-  if( k < t->key )
-   t = t->left.get();
-  else if( t->key < k )
-   t = t->right.get();
-  else
-   return( t->value );
- return( std::nullopt );
+ return( searchTreeLookup( f_root.get() , k ) );
  }
 
 template< std::totally_ordered K , class V >
@@ -37,43 +30,22 @@ bool HashedTreap< K , V >::contains( const K & k ) const
  }
 
 template< std::totally_ordered K , class V >
-auto HashedTreap< K , V >::lowerBoundNode( const K & k ) const -> const Node *
-{
- const Node * best = nullptr;
- for( const Node * t = f_root.get() ; t ; )
-  if( t->key < k )
-   t = t->right.get();
-  else {
-   best = t;
-   if( ! ( k < t->key ) )
-    break;
-   t = t->left.get();
-   }
- return( best );
- }
-
-template< std::totally_ordered K , class V >
 auto HashedTreap< K , V >::lowerBound( const K & k ) const
   -> std::optional< std::pair< K , V > >
 {
- const Node * b = lowerBoundNode( k );
- return( b ? std::optional< std::pair< K , V > >(
-		std::pair< K , V >( b->key , b->value ) )
-	    : std::nullopt );
+ return( searchTreeLowerBoundEntry( f_root.get() , k ) );
  }
 
 template< std::totally_ordered K , class V >
 const K * HashedTreap< K , V >::findKey( const K & k ) const
 {
- const Node * b = lowerBoundNode( k );
- return( ( b && ! ( k < b->key ) ) ? &b->key : nullptr );
+ return( searchTreeFindKey( f_root.get() , k ) );
  }
 
 template< std::totally_ordered K , class V >
 const K * HashedTreap< K , V >::lowerBoundKey( const K & k ) const
 {
- const Node * b = lowerBoundNode( k );
- return( b ? &b->key : nullptr );
+ return( searchTreeLowerBoundKey( f_root.get() , k ) );
  }
 
 template< std::totally_ordered K , class V >

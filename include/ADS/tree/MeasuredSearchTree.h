@@ -268,8 +268,6 @@ class MeasuredSearchTree
  /// the measures exact everywhere and the keys in order, \f$ O( n ) \f$
  [[nodiscard]] bool valid( void ) const;
 
- /// the node of the smallest key not smaller than \f$ k \f$, nil if none
- [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
  Node * f_root = nullptr;  ///< the root
  std::size_t f_size = 0;   ///< the number of keys

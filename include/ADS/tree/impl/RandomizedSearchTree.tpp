@@ -21,14 +21,7 @@ namespace ADS
 template< std::totally_ordered K , class V >
 auto RandomizedSearchTree< K , V >::find( const K & k ) const -> Node *
 {
- for( Node * t = f_root.get() ; t ; )
-  if( k < t->key )
-   t = t->left.get();
-  else if( t->key < k )
-   t = t->right.get();
-  else
-   return( t );
- return( nullptr );
+ return( searchTreeFind( f_root.get() , k ) );
  }
 
 template< std::totally_ordered K , class V >
@@ -135,73 +128,35 @@ void RandomizedSearchTree< K , V >::remove( const K & k )
  }
 
 template< std::totally_ordered K , class V >
-auto RandomizedSearchTree< K , V >::lowerBoundNode( const K & k ) const
-  -> const Node *
-{
- const Node * best = nullptr;
- for( const Node * t = f_root.get() ; t ; )
-  if( t->key < k )
-   t = t->right.get();
-  else {
-   best = t;
-   if( ! ( k < t->key ) )
-    break;
-   t = t->left.get();
-   }
- return( best );
- }
-
-template< std::totally_ordered K , class V >
 auto RandomizedSearchTree< K , V >::lowerBound( const K & k ) const
   -> std::optional< std::pair< K , V > >
 {
- const Node * b = lowerBoundNode( k );
- return( b ? std::optional< std::pair< K , V > >(
-		std::pair< K , V >( b->key , b->value ) )
-	    : std::nullopt );
+ return( searchTreeLowerBoundEntry( f_root.get() , k ) );
  }
 
 template< std::totally_ordered K , class V >
 const K * RandomizedSearchTree< K , V >::findKey( const K & k ) const
 {
- const Node * b = lowerBoundNode( k );
- return( ( b && ! ( k < b->key ) ) ? &b->key : nullptr );
+ return( searchTreeFindKey( f_root.get() , k ) );
  }
 
 template< std::totally_ordered K , class V >
 const K * RandomizedSearchTree< K , V >::lowerBoundKey( const K & k ) const
 {
- const Node * b = lowerBoundNode( k );
- return( b ? &b->key : nullptr );
+ return( searchTreeLowerBoundKey( f_root.get() , k ) );
  }
 
 template< std::totally_ordered K , class V >
 std::pair< K , V > RandomizedSearchTree< K , V >::select( std::size_t i ) const
 {
- ADS_PRE( i < size() );
- const Node * t = f_root.get();
- for( std::size_t l ; i != ( l = sz( t->left ) ) ; )
-  if( i < l )
-   t = t->left.get();
-  else {
-   i -= l + 1;
-   t = t->right.get();
-   }
+ const Node * t = searchTreeSelect( f_root.get() , i );
  return( std::pair< K , V >( t->key , t->value ) );
  }
 
 template< std::totally_ordered K , class V >
 std::size_t RandomizedSearchTree< K , V >::rank( const K & k ) const
 {
- std::size_t r = 0;
- for( const Node * t = f_root.get() ; t ; )
-  if( t->key < k ) {
-   r += sz( t->left ) + 1;
-   t = t->right.get();
-   }
-  else
-   t = t->left.get();
- return( r );
+ return( searchTreeRank( f_root.get() , k ) );
  }
 
 template< std::totally_ordered K , class V >

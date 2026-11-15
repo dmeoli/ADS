@@ -717,6 +717,7 @@ lib_trees  equal-trees                 uguaglianza di alberi e di forme
 lib_trees  is-search-tree              verifica di un albero binario di ricerca
 lib_trees  is-red-black-tree           verifica di una colorazione Red-Black
 lib_trees  search-tree-range           chiavi di un ABR in un intervallo
+lib_trees  search-tree-descents        discese di un ABR su tre forme di nodi
 lib_trees  minimum-height-search-tree  ABR di altezza minima da un vettore
 lib_trees  from-preorder-inorder       albero dalla previsita e dall'invisita
 lib_trees  from-preorder-inorder-throwing  un confronto che lancia
