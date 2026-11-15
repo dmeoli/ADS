@@ -583,6 +583,9 @@ engineered_queues  stealable-pq            coda di priorità da cui si ruba met�
 engineered_queues  stealable-pq-threads    furti, ordine esatto e ultima coppia
 engineered_queues  stealable-pq-bound      bound minimo esatto, offerte e potature
 engineered_queues  stealable-pq-bound-threads bound minimo con i ladri
+engineered_queues  lockfree-pq             coda di priorità esatta senza lock
+engineered_queues  lockfree-pq-threads     più thread, ogni coppia una volta, in ordine
+engineered_queues  lockfree-pq-linearizable storie brevi, un ordine che le spiega
 
 # the engineered memory beyond the arena and the pool
 memory  huge-page-cache       blocchi grandi tenuti per la stessa misura

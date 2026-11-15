@@ -22,6 +22,7 @@
 #include "ADSTest.h"
 
 #include "ADS/concurrent/EventCount.h"
+#include "ADS/concurrent/LockFreePriorityQueue.h"
 #include "ADS/concurrent/MPMCQueue.h"
 #include "ADS/concurrent/MPSCInbox.h"
 #include "ADS/concurrent/MPSCQueue.h"
@@ -1515,6 +1516,263 @@ ADS_TEST( "stealable-pq-bound-threads" )
  CHECK( std::all_of( got.begin() , got.end() ,
                      []( const std::atomic< int > & x ) {
                       return( x.load() == 1 ); } ) );
+ }
+
+/// the same pairs as an ordered set by ( key , insertion ), the order of a
+/// queue of one handle, its prefix within the bound, and no item leaked
+ADS_TEST( "lockfree-pq" )
+{
+ static_assert( decrease_key_of< LockFreePriorityQueue< int , int > >() ==
+                decrease_key_kind::lazy );
+ const long alive = Counted::alive;
+ for( unsigned b : { 1u , 2u , 4u , 32u } ) {
+  LockFreePriorityQueue< std::uint64_t , Counted > Q( b , 71 );
+  auto h = Q.handle();
+  CHECK( Q.offset() == b && Q.empty() && h.empty() && ! h.tryDeleteMin() &&
+         ! h.tryMinKey() && Q.consistent() );
+  std::set< std::pair< std::uint64_t , int > > R;
+  std::mt19937_64 g( 72 + b );
+  bool right = true;
+  for( int s = 0 ; s < 30000 ; ++s ) {
+   if( ( g() % 3 ) || R.empty() ) {
+    const std::uint64_t k = g() % 64;      // many equal keys
+    h.insert( k , Counted( std::to_string( s ) ) );
+    R.insert( { k , s } );
+    }
+   else {
+    const auto m = h.tryMinKey();
+    const auto e = h.tryDeleteMin();
+    right = right && m && e && ( *m == R.begin()->first ) &&
+            ( e->key == R.begin()->first ) &&
+            ( e->item.s == std::to_string( R.begin()->second ) );
+    R.erase( R.begin() );
+    }
+   right = right && ( Q.prefix() <= b );
+   if( s % 2000 == 0 )
+    right = right && Q.consistent() && ( Q.size() == R.size() );
+   }
+  CHECK( right && Q.consistent() && ( Q.size() == R.size() ) );
+  while( ! R.empty() ) {
+   const auto e = h.tryDeleteMin();
+   right = right && e && ( e->key == R.begin()->first ) &&
+           ( e->item.s == std::to_string( R.begin()->second ) ) &&
+           ( Q.prefix() <= b );
+   R.erase( R.begin() );
+   }
+  CHECK( right && ! h.tryDeleteMin() && Q.empty() && h.empty() &&
+         Q.consistent() );
+  // one thread: no read-modify-write fails, and a cut once per b + 1
+  // DeleteMin at least
+  CHECK( h.counts().failed == 0 && h.counts().cuts > 0 );
+  }
+ CHECK( Counted::alive == alive );
+
+ // a record given back and taken again keeps its stamps distinct, and two
+ // handles of one thread share the order; the greatest first by greater
+ {
+  LockFreePriorityQueue< int , int , std::greater< int > > Q( 2 );
+  {
+   auto a = Q.handle();
+   for( int i = 0 ; i < 10 ; ++i )
+    a.insert( 5 , i );
+   }
+  auto b = Q.handle();
+  auto c = Q.handle();
+  for( int i = 10 ; i < 20 ; ++i )
+   ( i % 2 ? b : c ).insert( 5 , i );
+  b.insert( 9 , 100 );
+  c.insert( 1 , 101 );
+  CHECK( Q.size() == 22 && Q.consistent() && b.tryMinKey() == 9 );
+  auto e = c.tryDeleteMin();
+  CHECK( e && e->key == 9 && e->item == 100 );
+  // equal keys by their stamps, the count of the record and then its
+  // number: the record of a, taken again by b, goes on counting
+  std::vector< int > order;
+  for( e = b.tryDeleteMin() ; e && e->key == 5 ; e = b.tryDeleteMin() )
+   order.push_back( e->item );
+  CHECK( order == std::vector< int >( { 0 , 10 , 1 , 12 , 2 , 14 , 3 , 16 ,
+                                         4 , 18 , 5 , 6 , 7 , 8 , 9 , 11 ,
+                                         13 , 15 , 17 , 19 } ) );
+  CHECK( e && e->key == 1 &&
+         ! b.tryDeleteMin() && Q.empty() && Q.consistent() );
+  }
+ }
+
+/// p threads that insert, then delete, then do both: every pair comes out
+/// once, the DeleteMin of a thread come in order when nobody inserts, and
+/// the queue drained at the end comes in order
+ADS_TEST( "lockfree-pq-threads" )
+{
+ for( unsigned b : { 1u , 32u } )
+  for( int p : { 1 , 2 , 4 , 8 } ) {
+   const std::uint64_t n = 20000;
+   LockFreePriorityQueue< std::uint64_t , std::uint64_t > Q( b , 73 );
+   std::vector< std::atomic< int > > got( n * std::uint64_t( p ) );
+   for( auto & x : got )
+    x = 0;
+   std::atomic< bool > ordered{ true };
+   std::vector< std::thread > T;
+   for( int t = 0 ; t < p ; ++t )
+    T.emplace_back( [ & , t ] {
+     auto h = Q.handle();
+     std::mt19937_64 g( 74 + std::uint64_t( t ) );
+     for( std::uint64_t i = 0 ; i < n ; ++i )
+      h.insert( g() % 4096 , std::uint64_t( t ) * n + i );
+     } );
+   for( auto & t : T )
+    t.join();
+   T.clear();
+   CHECK( Q.size() == n * std::uint64_t( p ) && Q.consistent() );
+   for( int t = 0 ; t < p ; ++t )
+    T.emplace_back( [ & ] {
+     auto h = Q.handle();
+     std::uint64_t last = 0;
+     for( auto e = h.tryDeleteMin() ; e ; e = h.tryDeleteMin() ) {
+      if( e->key < last )
+       ordered = false;              // linearizable: in order
+      last = e->key;
+      got[ e->item ].fetch_add( 1 );
+      }
+     } );
+   for( auto & t : T )
+    t.join();
+   T.clear();
+   CHECK( ordered.load() && Q.empty() && Q.consistent() );
+   CHECK( std::all_of( got.begin() , got.end() ,
+                       []( const std::atomic< int > & x ) {
+                        return( x.load() == 1 ); } ) );
+   for( auto & x : got )
+    x = 0;
+   for( int t = 0 ; t < p ; ++t )
+    T.emplace_back( [ & , t ] {
+     auto h = Q.handle();
+     std::mt19937_64 g( 75 + std::uint64_t( t ) );
+     std::uint64_t i = 0;
+     while( i < n )
+      if( g() % 3 ) {
+       h.insert( g() % 4096 , std::uint64_t( t ) * n + i );
+       ++i;
+       }
+      else if( const auto e = h.tryDeleteMin() )
+       got[ e->item ].fetch_add( 1 );
+     } );
+   for( auto & t : T )
+    t.join();
+   CHECK( Q.consistent() );
+   auto h = Q.handle();
+   std::uint64_t last = 0;
+   for( auto e = h.tryDeleteMin() ; e ; e = h.tryDeleteMin() ) {
+    if( e->key < last )
+     ordered = false;
+    last = e->key;
+    got[ e->item ].fetch_add( 1 );
+    }
+   CHECK( ordered.load() && Q.empty() && Q.consistent() );
+   CHECK( std::all_of( got.begin() , got.end() ,
+                       []( const std::atomic< int > & x ) {
+                        return( x.load() == 1 ); } ) );
+   }
+ }
+
+namespace {
+
+/// an operation of a history: an insertion of ( k , id ), or a DeleteMin
+/// that returned ( k , id ) or nothing ( id < 0 ), between the ticks of its
+/// invocation and of its response
+struct PqOp {
+ bool insert;
+ std::uint64_t k;
+ int id;
+ std::uint64_t inv , res;
+ };
+
+/// whether the operations not in done can be linearized after those in
+/// done, by the search of Wing and Gong: the first one is one invoked
+/// before every remaining one responded, and the state of the queue is the
+/// set of the pairs inserted and not deleted by the operations in done,
+/// the failures memoized by done
+bool linearizable( const std::vector< PqOp > & h , std::uint32_t done ,
+                   std::vector< char > & failed )
+{
+ const std::uint32_t all = ( std::uint32_t( 1 ) << h.size() ) - 1;
+ if( done == all )
+  return( true );
+ if( failed[ done ] )
+  return( false );
+ std::set< std::pair< std::uint64_t , int > > S;
+ for( std::size_t i = 0 ; i < h.size() ; ++i )     // the insertions first,
+  if( ( ( done >> i ) & 1 ) && h[ i ].insert )      // since the pairs are
+   S.insert( { h[ i ].k , h[ i ].id } );            // distinct
+ for( std::size_t i = 0 ; i < h.size() ; ++i )
+  if( ( ( done >> i ) & 1 ) && ( ! h[ i ].insert ) && ( h[ i ].id >= 0 ) )
+   S.erase( { h[ i ].k , h[ i ].id } );
+ std::uint64_t first = ~std::uint64_t( 0 );
+ for( std::size_t i = 0 ; i < h.size() ; ++i )
+  if( ! ( ( done >> i ) & 1 ) )
+   first = std::min( first , h[ i ].res );
+ for( std::size_t i = 0 ; i < h.size() ; ++i ) {
+  if( ( ( done >> i ) & 1 ) || ( h[ i ].inv > first ) )
+   continue;
+  const PqOp & o = h[ i ];
+  const bool legal = o.insert ||
+   ( ( o.id < 0 ) ? S.empty() :
+     ( ! S.empty() && ( S.begin()->first == o.k ) &&
+       S.count( { o.k , o.id } ) ) );
+  if( legal && linearizable( h , done | ( std::uint32_t( 1 ) << i ) ,
+                             failed ) )
+   return( true );
+  }
+ failed[ done ] = 1;
+ return( false );
+ }
+
+}  // end( namespace )
+
+/// short histories of p threads on a fresh queue, each operation between
+/// two ticks of a clock: a linearization exists that explains the answers
+ADS_TEST( "lockfree-pq-linearizable" )
+{
+ for( int p : { 2 , 3 , 4 } )
+  for( int round = 0 ; round < 400 ; ++round ) {
+   const int m = 16 / p;                    // operations per thread
+   LockFreePriorityQueue< std::uint64_t , int > Q( unsigned( 1 + round % 3 ) );
+   std::atomic< std::uint64_t > clock{ 0 };
+   std::atomic< int > ready{ 0 };
+   std::vector< std::vector< PqOp > > H( static_cast< std::size_t >( p ) );
+   std::vector< std::thread > T;
+   for( int t = 0 ; t < p ; ++t )
+    T.emplace_back( [ & , t ] {
+     auto h = Q.handle();
+     std::mt19937_64 g( 76 + std::uint64_t( round * 8 + t ) );
+     ready.fetch_add( 1 );
+     while( ready.load() < p ) {}
+     for( int i = 0 ; i < m ; ++i ) {
+      PqOp o{};
+      o.insert = ( g() % 2 ) == 0;
+      o.inv = clock.fetch_add( 1 );
+      if( o.insert ) {
+       o.k = g() % 4;                       // equal keys too
+       o.id = t * 100 + i;
+       h.insert( o.k , o.id );
+       }
+      else if( const auto e = h.tryDeleteMin() ) {
+       o.k = e->key;
+       o.id = e->item;
+       }
+      else
+       o.id = -1;
+      o.res = clock.fetch_add( 1 );
+      H[ std::size_t( t ) ].push_back( o );
+      }
+     } );
+   for( auto & t : T )
+    t.join();
+   std::vector< PqOp > h;
+   for( const auto & v : H )
+    h.insert( h.end() , v.begin() , v.end() );
+   std::vector< char > failed( std::size_t( 1 ) << h.size() , 0 );
+   CHECK( linearizable( h , 0 , failed ) && Q.consistent() );
+   }
  }
 
 }  // end( namespace )
