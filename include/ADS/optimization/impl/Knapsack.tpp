@@ -67,8 +67,9 @@ knapsack( const std::vector< long > & p , const std::vector< long > & v ,
  return( std::pair( DP[ n ][ C ] , S ) );
  }
 
-inline long zaino( const std::vector< long > & p ,
-		   const std::vector< long > & v , long C , long * solved )
+inline long knapsackMemo( const std::vector< long > & p ,
+			  const std::vector< long > & v , long C ,
+			  long * solved )
 {
  ADS_PRE( detail::knapsackInput( p , v , C ) );
  const long NEG = std::numeric_limits< long >::min() / 2;
@@ -93,6 +94,12 @@ inline long zaino( const std::vector< long > & p ,
   return( r );
   };
  return( rec( rec , long( p.size() ) , C ) );
+ }
+
+inline long zaino( const std::vector< long > & p ,
+		   const std::vector< long > & v , long C , long * solved )
+{
+ return( knapsackMemo( p , v , C , solved ) );
  }
 
 /*--------------------------------------------------------------------------*/

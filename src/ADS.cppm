@@ -1599,6 +1599,7 @@ using ADS::towers;
 
 // ADS/optimization/Knapsack.h
 using ADS::knapsack;
+using ADS::knapsackMemo;
 using ADS::zaino;
 
 // ADS/optimization/KnapsackVariants.h

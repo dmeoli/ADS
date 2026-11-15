@@ -86,14 +86,14 @@
  written as it stands takes exponential time; the dynamic programming solves
  each of them once, either bottom up, filling the table in an order in which
  every entry comes after those it reads, or top down, by the recursion with
- a memo of the values already found (`zaino()`, the memoization of the book,
- which keeps the memo in a hash table and solves only the subproblems that
- the recursion reaches). The cost is the number of the subproblems times the
- cost of one recurrence, i.e., \f$ \Theta( n C ) \f$ for (1), and the
+ a memo of the values already found (`knapsackMemo()`, the `zaino()` of the
+ book, which keeps the memo in a hash table and solves only the subproblems
+ that the recursion reaches). The cost is the number of the subproblems times
+ the cost of one recurrence, i.e., \f$ \Theta( n C ) \f$ for (1), and the
  solution itself is read back from the table by retracing the choices that
- gave each optimum. The subproblems and their dependences form a DAG, and
- a dynamic programming is a longest or a shortest path in it, which is how
- the problems of `HouseProblems.h` read.
+ gave each optimum. The subproblems and their dependences form a DAG, and a
+ dynamic programming is a longest or a shortest path in it, which is how the
+ problems of `HouseProblems.h` read.
 
  A bound such as \f$ \Theta( n C ) \f$ is <em>pseudopolynomial</em>: it is
  polynomial in the value \f$ C \f$, but \f$ C \f$ takes only \f$ \log C \f$

@@ -1997,6 +1997,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the memoization of the 0-1 knapsack is knapsackMemo(), an English name
+  like the rest of the interface, and zaino(), the name of the book, is kept
+  as an alias of it
+
 - The pseudocode of the comments of the headers, and so of the manual, that
   followed the book of Montresor (CC BY-NC 4.0, whose text a repository
   under the Boost Software License may not hold) written anew from the code

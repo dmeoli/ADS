@@ -96,13 +96,13 @@ ADS_TEST( "change" )
   }
  }
 
-// knapsack() and zaino(): inputs not allowed, and the two equal on random
-// instances, the objects of knapsack() feasible
+// knapsack() and knapsackMemo(): inputs not allowed, and the two equal on
+// random instances, the objects of knapsack() feasible
 ADS_TEST( "knapsack" )
 {
  CHECK_THROWS( knapsack( { 1 , 2 } , { 1 } , 5 ) , contract_violation );
  CHECK_THROWS( knapsack( { 1 } , { 1 } , -1 ) , contract_violation );
- CHECK_THROWS( zaino( { 1 } , { -1 } , 3 ) , contract_violation );
+ CHECK_THROWS( knapsackMemo( { 1 } , { -1 } , 3 ) , contract_violation );
  std::mt19937 g( 6 );
  for( int t = 0 ; t < 200 ; ++t ) {
   const std::size_t n = g() % 8;
@@ -112,7 +112,7 @@ ADS_TEST( "knapsack" )
    v[ i ] = long( g() % 10 );
    }
   const long C = long( g() % 25 );
-  CHECK( knapsack( p , v , C ).first == zaino( p , v , C ) );
+  CHECK( knapsack( p , v , C ).first == knapsackMemo( p , v , C ) );
   }
  }
 
@@ -376,9 +376,10 @@ ADS_TEST( "other-optimization" )
  CHECK( fractionalKnapsack( { 1 } , { 1 } , 0 )[ 0 ] == 0 &&
 	fractionalKnapsack( {} , {} , 5 ).empty() );
  CHECK_THROWS( ( void )knapsack( { -1 } , { 1 } , 1 ) , contract_violation );
- CHECK_THROWS( ( void )zaino( { 1 } , { 1 , 1 } , 1 ) , contract_violation );
- CHECK( knapsack( {} , {} , 0 ).first == 0 && zaino( { 5 } , { 1 } ,
-						     0 ) == 0 &&
+ CHECK_THROWS( ( void )knapsackMemo( { 1 } , { 1 , 1 } , 1 ) ,
+	       contract_violation );
+ CHECK( knapsack( {} , {} , 0 ).first == 0 &&
+	knapsackMemo( { 5 } , { 1 } , 0 ) == 0 &&
 	knapsack( { 5 } , { 1 } , 1 ).first == 5 );
  CHECK( greedyChange( { 1 , 5 } , 0 )->empty() &&
 	optimalChange( { 1 , 5 } , 0 ) == 0L && ! greedyChange( {} , 3 ) &&

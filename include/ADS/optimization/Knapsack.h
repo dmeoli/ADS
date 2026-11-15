@@ -13,9 +13,10 @@
  * column \f$ c = 0 \f$ follows the same maximum instead of being 0.
  *
  * `knapsack()` fills the table bottom up in \f$ \Theta( n C ) \f$ time and
- * reads the set back; `zaino()` is the memoization of the book, top down,
- * which solves only the subproblems it reaches, in a hash table per object,
- * of key \f$ c \f$, rather than in a table of \f$ n C \f$ places, whose
+ * reads the set back; `knapsackMemo()` (`zaino()` in the book) is the
+ * memoization, top down, which solves only the subproblems it reaches, in a
+ * hash table per object, of key \f$ c \f$, rather than in a table of
+ * \f$ n C \f$ places, whose
  * initialization alone would cost \f$ \Theta( n C ) \f$; so any capacity up to
  * the largest `long` is allowed. Either is pseudopolynomial: \f$ C \f$ takes
  * \f$ \log C \f$ bits of the input.
@@ -101,20 +102,25 @@ knapsack( const std::vector< long > & p , const std::vector< long > & v ,
 /// \f$ i \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{zaino}( i , c )\quad \triangleright
+/// 1 & \textbf{function}\ \mathrm{knapsackMemo}( i , c )\quad \triangleright
 ///     \ \text{the best with the first } i \text{ objects and capacity } c
 ///     \cr
 /// 2 & \quad \textbf{if}\ c < 0\ \textbf{then return}\ -\infty\quad
 ///     \triangleright\ \text{an object that did not fit} \cr
 /// 3 & \quad \textbf{if}\ i = 0\ \textbf{then return}\ 0 \cr
 /// 4 & \quad \textbf{if}\ T_i \text{ has no entry for } c\ \textbf{then}
-///     \ T_i[ c ] \gets \max\{ \mathrm{zaino}( i - 1 , c - v_{i-1} ) +
-///     p_{i-1} , \mathrm{zaino}( i - 1 , c ) \} \cr
+///     \ T_i[ c ] \gets \max\{ \mathrm{knapsackMemo}( i - 1 , c - v_{i-1} ) +
+///     p_{i-1} , \mathrm{knapsackMemo}( i - 1 , c ) \} \cr
 /// 5 & \quad \textbf{return}\ T_i[ c ]
 /// \end{array}}
 /// \f]
-/// called as \f$ \mathrm{zaino}( n , C ) \f$.
+/// called as \f$ \mathrm{knapsackMemo}( n , C ) \f$.
 /// \pre \f$ |p| = |v| \f$, \f$ p_i , v_i \ge 0 \f$, \f$ C \ge 0 \f$
+inline long knapsackMemo( const std::vector< long > & p ,
+			  const std::vector< long > & v , long C ,
+			  long * solved = nullptr );
+
+/// knapsackMemo() under the name of the book
 inline long zaino( const std::vector< long > & p ,
 		   const std::vector< long > & v , long C ,
 		   long * solved = nullptr );

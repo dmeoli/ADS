@@ -997,8 +997,8 @@ up ([Montresor 2025, §13.6](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/Knapsack-knapsack.pseudo.md"
 
-`zaino()` is the memoization of the book ([Algorithm 13.24](13-algorithm.md#alg-13-24)),
-which solves only the subproblems that the recursion from $( n , C )$
+`knapsackMemo()` (`zaino()` in the book, kept as an alias) is the
+memoization ([Algorithm 13.24](13-algorithm.md#alg-13-24)), which solves only the subproblems that the recursion from $( n , C )$
 reaches. Its memo is a hash table per object (a `ChainedHashTable` of
 [§7.4](07-dictionary.md#sec-7-4), of key $c$) instead of a table of $( n + 1 ) ( C + 1 )$ places,
 whose initialization alone would cost $\Theta( n C )$; hence any capacity
@@ -1010,19 +1010,19 @@ to compare them with the $n C$ entries of the full table.
 
 <span id="alg-13-24"></span>**Algorithm 13.24.** The 0-1 knapsack by
 memoization ([Montresor 2025, §13.6](Z-bibliography.md#ref-montresor2025)),
-called as $\mathrm{zaino}( n , C )$.
+called as $\mathrm{knapsackMemo}( n , C )$.
 
---8<-- "generated/Knapsack-zaino.pseudo.md"
+--8<-- "generated/Knapsack-knapsackMemo.pseudo.md"
 
 <span id="lem-13-12"></span>**Lemma 13.12.** *`knapsack()` returns a set of
 largest profit among those of volume at most $C$, in $\Theta( n C )$ time
-and space; `zaino()` returns its profit in $O( \min\{ n C , 2^n \} )$ expected time and
+and space; `knapsackMemo()` returns its profit in $O( \min\{ n C , 2^n \} )$ expected time and
 space.*
 
 *Proof.* The correctness of (13.9) is [Lemma 13.11](13-algorithm.md#lem-13-11)
 with the two choices for the last object, and the reading back retraces a
 choice that attains each optimum. Also, the table has $( n + 1 ) ( C + 1 )$
-entries, each computed in $O( 1 )$. `zaino()` solves each pair $( i , c )$
+entries, each computed in $O( 1 )$. `knapsackMemo()` solves each pair $( i , c )$
 once, and the pairs reached are at most $n ( C + 1 )$ and at most $2^{n+1}$,
 since the recursion branches in two; each costs $O( 1 )$ expected time of
 the hash table. $\square$
@@ -1048,7 +1048,7 @@ transactions, and $m \times n$ the size of a grid.
 
 | Subproblems | Functions | Table kept | Time |
 |---|---|---|---|
-| a prefix and a capacity | `knapsack()`, `zaino()`, `subsetSumCount()` | $n \times C$, or one row | $\Theta( n C )$ |
+| a prefix and a capacity | `knapsack()`, `knapsackMemo()`, `subsetSumCount()` | $n \times C$, or one row | $\Theta( n C )$ |
 | a capacity, items in unlimited supply | `unboundedKnapsack()`, `rodCutting()`, `minValueExactWeight()`, `coinChangeWays()`, `optimalChange()` | one row of $C + 1$ | $\Theta( n C )$ |
 | a prefix of a sequence | `maxinterval()`, `maxNonAdjacentSum()`, `paintHouses()`, `maxProfit()` | $n$ (times the states) | $O( n )$ to $O( n k )$ |
 | a prefix, the best predecessor among all | `lis()`, `largestDivisibleSubset()`, `longestChainSubsequence()` | $n$ | $\Theta( n^2 )$ |
@@ -1065,6 +1065,9 @@ taken:
 std::pair< long , std::vector< std::size_t > >
 knapsack( const std::vector< long > & p , const std::vector< long > & v ,
           long C );
+long knapsackMemo( const std::vector< long > & p ,
+                   const std::vector< long > & v , long C ,
+                   long * solved = nullptr );
 long zaino( const std::vector< long > & p , const std::vector< long > & v ,
             long C , long * solved = nullptr );
 ```

@@ -383,7 +383,7 @@ ADS_TEST( "sec13.5.floyd-warshall" )
 // the knapsack: the table and the memoization against all the subsets;
 // with large volumes the memoization solves far fewer subproblems than n C;
 // no object, capacity 0, none or all fitting, the largest capacity for
-// zaino(), and the contracts
+// knapsackMemo(), and the contracts
 ADS_TEST( "sec13.6.knapsack" )
 {
  std::mt19937 g( 5 );
@@ -413,44 +413,47 @@ ADS_TEST( "sec13.6.knapsack" )
    sv += v[ i ];
    }
   CHECK( val == best && sp == best && sv <= C );
-  CHECK( zaino( p , v , C ) == best );
+  CHECK( knapsackMemo( p , v , C ) == best );
   }
  CHECK( knapsack( { 5 , 1 } , { 0 , 3 } , 3 ).first == 6 &&  // a free
-	zaino( { 5 , 1 } , { 0 , 3 } , 3 ) == 6 &&           // object
+	knapsackMemo( { 5 , 1 } , { 0 , 3 } , 3 ) == 6 &&    // object
 	knapsack( { 5 } , { 0 } , 0 ).first == 5 );
  Longs p( 20 , 1 ) , v( 20 );
  for( int i = 0 ; i < 20 ; ++i )
   v[ i ] = 1000 * ( i + 1 );
  long solved = 0;
- zaino( p , v , 100000 , &solved );
+ knapsackMemo( p , v , 100000 , &solved );
  CHECK( solved < 20 * 100000 / 100 );
  // no object, the capacity 0, no object fits, all fit, one exactly fits
  using Places = std::vector< std::size_t >;
  CHECK( knapsack( {} , {} , 5 ) == std::pair( 0L , Places() ) &&
-	zaino( {} , {} , 5 ) == 0 );
+	knapsackMemo( {} , {} , 5 ) == 0 );
  CHECK( knapsack( { 3 , 4 } , { 1 , 2 } , 0 ) == std::pair( 0L , Places() ) &&
-	zaino( { 3 , 4 } , { 1 , 2 } , 0 ) == 0 );
+	knapsackMemo( { 3 , 4 } , { 1 , 2 } , 0 ) == 0 );
  CHECK( knapsack( { 3 , 4 } , { 6 , 7 } , 5 ).first == 0 &&
-	zaino( { 3 , 4 } , { 6 , 7 } , 5 ) == 0 );
+	knapsackMemo( { 3 , 4 } , { 6 , 7 } , 5 ) == 0 );
  CHECK( knapsack( { 3 , 4 } , { 2 , 3 } , 5 ) ==
 	std::pair( 7L , Places( { 0 , 1 } ) ) );
- CHECK( zaino( { 3 , 4 } , { 2 , 3 } , 100 ) == 7 );
+ CHECK( knapsackMemo( { 3 , 4 } , { 2 , 3 } , 100 ) == 7 );
+ // zaino(), the name of the book, is knapsackMemo()
+ CHECK( zaino( { 3 , 4 , 5 } , { 2 , 3 , 4 } , 5 ) ==
+	knapsackMemo( { 3 , 4 , 5 } , { 2 , 3 , 4 } , 5 ) );
  CHECK( knapsack( { 9 } , { 5 } , 5 ).first == 9 &&
 	knapsack( { 9 } , { 5 } , 4 ).first == 0 );
- // zaino() with the largest capacity: the key of a subproblem must not
+ // knapsackMemo() with the largest capacity: the key of a subproblem must not
  // overflow (it was i ( C + 1 ) + c in one table)
  const long M = INFL;
- CHECK( zaino( { 3 , 4 , 5 } , { M / 2 , M / 2 , 1 } , M ) == 12 );
- CHECK( zaino( { 3 , 4 , 5 } , { M / 2 , M / 2 , 2 } , M ) == 9 );
- CHECK( zaino( { 3 , 4 } , { M , M } , M ) == 4 );
+ CHECK( knapsackMemo( { 3 , 4 , 5 } , { M / 2 , M / 2 , 1 } , M ) == 12 );
+ CHECK( knapsackMemo( { 3 , 4 , 5 } , { M / 2 , M / 2 , 2 } , M ) == 9 );
+ CHECK( knapsackMemo( { 3 , 4 } , { M , M } , M ) == 4 );
  // the contracts: lengths that differ, a negative profit, volume or
  // capacity
  CHECK_THROWS( knapsack( { 1 } , {} , 3 ) , std::logic_error );
- CHECK_THROWS( zaino( { 1 } , {} , 3 ) , std::logic_error );
+ CHECK_THROWS( knapsackMemo( { 1 } , {} , 3 ) , std::logic_error );
  CHECK_THROWS( knapsack( { -1 } , { 1 } , 3 ) , std::logic_error );
- CHECK_THROWS( zaino( { 1 } , { -1 } , 3 ) , std::logic_error );
+ CHECK_THROWS( knapsackMemo( { 1 } , { -1 } , 3 ) , std::logic_error );
  CHECK_THROWS( knapsack( { 1 } , { 1 } , -1 ) , std::logic_error );
- CHECK_THROWS( zaino( { 1 } , { 1 } , -1 ) , std::logic_error );
+ CHECK_THROWS( knapsackMemo( { 1 } , { 1 } , -1 ) , std::logic_error );
  }
 
 // the LCS: the table, the memoization, the subsequence, against the
