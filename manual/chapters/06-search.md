@@ -337,7 +337,7 @@ the end is moved to the last item, as if items larger than all the others
 filled the vector up to the next Fibonacci number. Second, the uniform
 binary search (`uniformBinarySearch()`, Algorithms 6.2.1U and 6.2.1C) keeps
 a place $i$ and the width $\delta_j = \lfloor ( n + 2^{j-1} ) / 2^j \rfloor$
-of the step $j$, taken from a table computed once. A step adds or
+of the step $j$, taken from a table computed at the start of the call. A step adds or
 subtracts the next width, and the search thus moves on a fixed tree of
 differences with no endpoint to update, in at most
 $\lfloor \log_2 n \rfloor + 1$ comparisons; its places 0 and $n + 1$ stand
@@ -371,14 +371,48 @@ otherwise, with $j$ decreased by 2. In both cases the places left out
 hold items smaller (or larger) than $v$, since $A$ is sorted, and the new
 part thus still holds $v$ if it occurs. Its loop runs while $f \ge 2 = F_3$, i.e., at most $k - 2$ times, and leaves at most one
 place, which the last test reads. Since $F_j \ge \phi^{j-2}$, $F_{k-1} <
-n$ gives $k - 3 < \log_\phi n$. As for `uniformBinarySearch()`, it is
-Algorithm C of [Knuth 1998, §6.2.1](Z-bibliography.md#ref-knuth1998v3)
-with the widths $\delta_j = \lfloor ( n + 2^{j-1} ) / 2^j \rfloor$, whose
-correctness Knuth proves; each probe takes the next width, and the search
-stops at the first $\delta_j = 0$. Since $\delta_j \ge 1$ if and only if
-$2^j \le 2 n$, i.e., $j \le \lfloor \log_2 n \rfloor + 1$, there are at
-most $\lfloor \log_2 n \rfloor + 1$ probes, and those at the places 0 and
-$n + 1$ read no item. $\square$
+n$ gives $k - 3 < \log_\phi n$.
+
+As for `uniformBinarySearch()` (Algorithm C of [Knuth 1998,
+§6.2.1](Z-bibliography.md#ref-knuth1998v3)), write $\delta_j( n )$ for the
+widths of $n$ items, and let the places $1 , \ldots , n$ hold a sorted
+sequence, of an order extended by $-\infty$ and $+\infty$, which a probe at
+a place $q < 1$ answers as smaller than $v$ and one at $q > n$ as larger, as
+the code does. We show by induction on $n$ that the search from the place
+$\delta_1( n )$ returns a place of $v$ if $v$ is among the $n$ items, and
+$-1$ otherwise; for $n = 0$ it returns $-1$ with no probe, since $\delta_1(
+0 ) = 0$. For $n \ge 1$, the first probe is at $r = \delta_1( n ) = \lfloor
+( n + 1 ) / 2 \rfloor$, with $1 \le r \le n$, and the two sides of $r$ hold
+$r - 1$ and $n - r = \lfloor n / 2 \rfloor$ places. For $j \ge 1$,
+$\lfloor n / 2 \rfloor + 2^{j-1} = \lfloor ( n + 2^j ) / 2 \rfloor$, so
+that
+
+$$
+\delta_j( \lfloor n / 2 \rfloor ) = \Bigl\lfloor \frac{ \lfloor ( n + 2^j
+) / 2 \rfloor }{ 2^j } \Bigr\rfloor = \Bigl\lfloor \frac{ n + 2^j }{
+2^{j+1} } \Bigr\rfloor = \delta_{j+1}( n ) .
+$$
+
+Hence, after a probe that finds $A[ r ] < v$, the places $r + \delta_2( n
+) \pm \delta_3( n ) \pm \cdots$ are those of the search on the $\lfloor n /
+2 \rfloor$ places $r + 1 , \ldots , n$, shifted by $r$. Its place 0 is $r$,
+which answers again as smaller than $v$, and its place $\lfloor n / 2
+\rfloor + 1$ is $n + 1$, which answers as larger. By induction, it finds $v$
+if $v$ is among those places, the only ones that may hold it. After a probe
+that finds $A[ r ] > v$, the places $r - \delta_2( n ) \mp \cdots$ are those
+of the same search on the places $r - 1 , r - 2 , \ldots , r - \lfloor n /
+2 \rfloor$, read at the distance from $r$ and in the reverse order. These
+are the $r - 1$ places before $r$, and, for $n$ even, the place 0 too, a
+$-\infty$ that is the largest item in the reverse order. Its place 0 is
+again $r$, and its place $\lfloor n / 2 \rfloor + 1$ is $0$ or $-1$, which
+answer as larger than $v$ in the reverse order, and by induction it finds
+$v$ if $v$ is before $r$. A probe that finds $A[ r ] = v$ returns $r$. As
+for the cost, each probe takes the next width, and the search stops at the
+first $\delta_j = 0$. Since $\delta_j \ge 1$ if and only if $2^j \le 2 n$,
+i.e., $j \le \lfloor \log_2 n \rfloor + 1$, there are at most $\lfloor
+\log_2 n \rfloor + 1$ probes, and those at the places $q < 1$ and $q > n$
+(which the induction shows to be among $-1$, $0$ and $n + 1$) read no item.
+$\square$
 
 Finally, the searches of `SortedSearches.h` apply the invariant (6.2) to
 other predicates that are false and then true along a sorted vector
@@ -1342,40 +1376,67 @@ items, which a random order hardly ever exhausts (by (6.12), the rounds of
 a random range of more than 600 items partition about $1.5 n$ items at
 most). A round whose part the rest of the budget does not cover takes as its
 pivot the median of the medians, as the selection of [Musser
-1997](Z-bibliography.md#ref-musser1997) does by the same device.
+1997](Z-bibliography.md#ref-musser1997) does by the same device. When the
+part such a round leaves on the right of its pivot holds more than $7 m /
+10 + 2$ of its $m$ items, which on distinct items never happens, a second
+partition of that part puts the items equal to the pivot on its left as
+well; the part kept then holds the larger items only.
 
-<span id="lem-6-20"></span>**Lemma 6.20.** *On $n$ distinct items,
-`nthElement()` takes $O( n )$ time in the worst case.*
+<span id="lem-6-20"></span>**Lemma 6.20.** *On $n$ items, distinct or
+not, `nthElement()` takes $O( n )$ time in the worst case.*
 
 *Proof.* Let $S( n )$ be the worst-case time of `select()` on a part of $n$
-items, which has its own budget of $4 n$. In a call, the rounds act on nested parts, each smaller than the one before, since the pivot is left
-out. Those charged to the budget partition at most $4 n$ items in all.
-A round with $m > 600$ selects recursively a sample of $\mathit{hi} -
-\mathit{lo} + 1 \le s + | d | + 2$ items, with $s = m^{2/3} / 2$ and $| d
-| \le \sqrt{s \ln m} / 2$; the three ratios to $m$ decrease for $m \ge
-601$, and there they sum to less than $0.0592 + 0.0126 + 0.0034 < 0.076$,
-so that the samples hold fewer than $0.076 \cdot 4 n < 0.31 n$ items in all.
-As for the rounds of the median of the medians, on the parts $m_1 > m_2 > \cdots$
-(all above 24), select recursively the $\lfloor m_j / 5 \rfloor$ medians of the groups. On distinct items the part kept after such a round has at
-most $7 m_j / 10 + 2$ items, by the argument of
-[Lemma 6.18](06-search.md#lem-6-18); hence $m_{j+1} + 20 / 3 \le 0.7 (
-m_j + 20 / 3 )$, $\sum_j m_j \le ( n + 20 / 3 ) / 0.3$, and the medians
-hold at most $( n + 20 / 3 ) / 1.5 < 0.67 n + 5$ items in all. Besides the
-recursive calls, a call spends $O( 1 )$ per round (at most $n$ rounds) and
-$O( m )$ per partition, per sort of the groups and per test of an order
-in a round on $m$ items, i.e., at most $a n + a'$ for two constants. The recursive calls are on fewer than $0.98 n + 5$ items in all. By induction, therefore, $S( n ) \le a n + a' + c ( 0.98 n + 5 ) \le c n$ for $n \ge
-n_0$, with $c$ large enough for $n < n_0$ as well. The scan of
-`nthElement()` for a range in order adds $O( n )$. $\square$
+items, which has its own budget of $4 n$. In a call, the rounds act on
+nested parts, each smaller than the one before, since the pivot is left
+out; there are therefore at most $n$ of them, and those charged to the
+budget partition at most $4 n$ items in all. A round with $m > 600$
+selects recursively a sample of $\mathit{hi} - \mathit{lo} + 1 \le s + | d
+| + 2$ items, with $s = m^{2/3} / 2$ and $| d | \le \sqrt{s \ln m} / 2$;
+the three ratios to $m$ decrease for $m \ge 601$, and there they sum to
+less than $0.0592 + 0.0126 + 0.0034 < 0.076$, so that the samples hold
+fewer than $0.076 \cdot 4 n < 0.31 n$ items in all.
 
-On repeated items the rounds of the median of the medians are not covered
-by the argument, since a partition in two ways may put all the items equal
-to the pivot on one side, and we have no proof of a linear worst case
-there.
-Against the adversary of [McIlroy 1999](Z-bibliography.md#ref-mcilroy1999),
-which fixes the order of the items while they are compared, the
-comparisons stay below $16 n$ from $n = 2^{12}$ to $2^{18}$ (the test
-`ordered.nth-element-adversary`), where a budget counted in rounds let them
-grow with $\log n$.
+Let $m_1 > m_2 > \cdots > m_J$ (all above 24) be the parts of the rounds of
+the median of the medians. Such a round on $m$ items sorts $g = \lfloor m /
+5 \rfloor \ge ( m - 4 ) / 5$ disjoint groups of 5 (the exchange that moves
+the median of a group to the front touches only places of the groups
+already sorted), and its pivot $p$ is the item of rank $\lfloor g / 2
+\rfloor$, from 0, of their medians. Hence $\lfloor g / 2 \rfloor + 1$
+medians are not larger than $p$ and $\lceil g / 2 \rceil$ are not smaller,
+each with two more items of its group on the same side, so that at least
+$3 ( \lfloor g / 2 \rfloor + 1 ) \ge 3 ( m + 1 ) / 10$ items are not larger
+than $p$ and at least $3 \lceil g / 2 \rceil \ge 3 ( m - 4 ) / 10$ are not
+smaller. The part kept is one of three: the items smaller than $p$, at most
+$m - 3 ( m - 4 ) / 10 = 7 m / 10 + 6 / 5$; the items after $p$ when the
+first partition puts them on the right, kept only if they are at most $7 m
+/ 10 + 2$; or the items larger than $p$ (after the second partition, or
+when the items equal to $p$ go left at once), at most $m - 3 ( m + 1 ) / 10
+< 7 m / 10$. Therefore $m_{j+1} \le 7 m_j / 10 + 2$, i.e., $m_{j+1} - 20 /
+3 \le 0.7 ( m_j - 20 / 3 )$, whence $m_j - 20 / 3 \le 0.7^{j-1} n$; since
+$m_j > 24$, this gives $J \le 1 + \log_{10/7}( n / 17 )$, and $\sum_j m_j
+\le n / 0.3 + 20 J / 3$, so that the medians hold at most $\sum_j \lfloor
+m_j / 5 \rfloor \le n / 1.5 + 4 J / 3 < 0.67 n + 4 J / 3$ items in all.
+
+Besides the recursive calls, a call spends $O( 1 )$ per round and $O( m )$
+per partition (at most two), per sort of the groups and per test of an
+order in a round on $m$ items; by the two sums above, this is at most $a n$
+for a constant $a$. The recursive calls are on fewer than $0.31 n + 0.67 n
++ 4 J / 3 < 0.98 n$ items in all for $n \ge n_0$, since $J = O( \log n )$.
+By induction, therefore, $S( n ) \le a n + 0.98 c n \le c n$ for $n \ge
+n_0$ and $c \ge 50 a$, with $c$ large enough for $n < n_0$ as well. The
+scan of `nthElement()` for a range in order adds $O( n )$. $\square$
+
+On distinct items the part on the right of a pivot of the median of the
+medians never exceeds $7 m / 10$, so that the second partition never runs
+and the comparisons are, one by one, those of the selection without it.
+Without it, on the other hand, a first partition that leaves on the right
+all the items equal to the pivot may keep almost the whole part, and the
+argument above would fail. Against the adversary of [McIlroy
+1999](Z-bibliography.md#ref-mcilroy1999), which fixes the order of the
+items while they are compared, the comparisons stay below $16 n$ from $n
+= 2^{12}$ to $2^{18}$, where a budget counted in rounds let them grow with
+$\log n$, and they stay there when the adversary gives each value to 2, 10
+or 100 items (the test `ordered.nth-element-adversary`).
 [Table 6.2](06-search.md#tab-6-2) compares the three selections.
 
 <span id="tab-6-2"></span>**Table 6.2.** The selections of the item of
@@ -1385,7 +1446,7 @@ rank $k$ in `ADS/search`.
 |---|---|---|
 | `selection()` | at random, or the first item | $O( n )$ expected by (6.10), $\Theta( n^2 )$ in the worst case |
 | `medianOfMedians()` | the median of the medians of the groups of 5 | $O( n )$ in the worst case, by (6.11) |
-| `nthElement()` | the sample of Floyd and Rivest, the median of three on short parts | (6.12) expected, $O( n )$ in the worst case on distinct items |
+| `nthElement()` | the sample of Floyd and Rivest, the median of three on short parts | (6.12) expected, $O( n )$ in the worst case |
 
 In `ADS/search/Selection.h`, the functions are declared as
 

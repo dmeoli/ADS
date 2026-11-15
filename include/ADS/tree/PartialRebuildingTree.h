@@ -38,11 +38,14 @@
  *   explodes with probability \f$ 1 / s( u ) \f$, its size after the
  *   operation, and the highest one that explodes is rebuilt. The expected
  *   cost of the explosions of a node is \f$ s \cdot 1 / s = O( 1 ) \f$ per
- *   operation through it, and a node rebuilt with \f$ s \f$ nodes survives
- *   the \f$ s / 3 \f$ operations it takes to unbalance it past
- *   \f$ \frac34 \f$ with probability at most \f$ e^{-1/4} \f$, which gives
- *   a depth \f$ O( \log n ) \f$ in expectation and \f$ O( \log n ) \f$
- *   expected time per operation.
+ *   operation through it; on a sequence of insertions fixed in advance, a
+ *   node rebuilt with \f$ s \f$ nodes survives the more than \f$ s \f$
+ *   insertions it takes to unbalance it past \f$ \frac34 \f$ with
+ *   probability below \f$ 1 / 2 \f$, also given the levels above it, which
+ *   gives a path of at most \f$ 2 \lfloor \log_{4/3} n \rfloor + 2 \f$
+ *   nodes in expectation and \f$ O( \log n ) \f$ expected time per
+ *   operation. With removals, the rebuilds still cost \f$ O( 1 ) \f$
+ *   expected per node of the path, but no bound on the depth is proved.
  *
  * The analyses are in \ref theory_tree_partial. The random choices of
  * `DynamiteTree` come from `SplitMix64` [see `RandomHashing.h`] by
@@ -148,7 +151,8 @@ class PartialRebuildingTree {
  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
 
  /// associates \f$ v \f$ to \f$ k \f$, in \f$ O( \log n ) \f$ amortized time
- /// (expected for `DynamiteTree`)
+ /// (for `DynamiteTree`, expected after insertions only, and \f$ O( h ) \f$
+ /// expected, \f$ h \f$ the height, after removals)
  ///
  /// In pseudocode (exercises 8.8 to 8.10 of Morin), \f$ P \f$ the path from
  /// the root to the new leaf:
@@ -172,8 +176,9 @@ class PartialRebuildingTree {
  void insert( const K & k , const V & v );
 
  /// removes \f$ k \f$, if it is there, in \f$ O( \log n ) \f$ amortized time
- /// (expected for `DynamiteTree`), by the removal of a binary search tree
- /// and the rule of `insert()` on its path
+ /// (for `DynamiteTree`, \f$ O( h ) \f$ expected, \f$ h \f$ the height), by
+ /// the removal of a binary search tree and the rule of `insert()` on its
+ /// path
  /// \post \f$ k \f$ is not there
  void remove( const K & k );
 

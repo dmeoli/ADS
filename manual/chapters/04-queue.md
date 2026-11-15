@@ -88,8 +88,8 @@ of a container of the standard library (`value_type`, `size_type`,
 `const_iterator`, and `reverse_iterator` and `const_reverse_iterator` where
 the iterators go backwards), with `begin()`, `end()`, `cbegin()` and
 `cend()` (and `rbegin()` and `rend()` for `Dequeue` and `RingDeque`); hence
-the algorithms and the ranges of the standard library run on them, and the
-kind of each iterator is given below with its class. `LinkedQueue` and
+the algorithms and the ranges of the standard library run on them, and we
+give the kind of each iterator below with its class. `LinkedQueue` and
 `RingDeque` declare the five special members: the destructor destroys the
 items, a copy is made item by item, and a move takes the representation in
 $O( 1 )$ time. Their assignment `operator=` takes its argument by value, a
@@ -272,8 +272,8 @@ only if $n = 0$. Hence the queue satisfies the axioms (4.1); each operation
 takes $O( 1 )$ time, and the space is $\Theta( n )$ cells besides those
 kept free by the pool.*
 
-*Proof.* By induction on the operations, the empty queue having both
-pointers nil. An `enqueue(v)` builds a cell $t$ with no successor; if the
+*Proof.* We argue by induction on the operations, the empty queue having
+both pointers nil. An `enqueue(v)` builds a cell $t$ with no successor; if the
 queue is empty, line 3 makes $t$ the only cell, and otherwise it links $t$
 after the last one, and in both cases line 4 makes $t$ the last cell. A
 `dequeue()` on a queue that is not empty unlinks the first cell, whose
@@ -706,7 +706,8 @@ still in the queue, and the item of `enqueue(v)` is in the queue afterwards.
 An `enqueue()` and a `contains()` make at most $n$ comparisons, and `dequeue()`,
 `top()` and `size()` take $O( 1 )$ time.*
 
-*Proof.* By induction on the operations, the empty queue having no item.
+*Proof.* We argue by induction on the operations, the empty queue having
+no item.
 Let $v$ be enqueued. If no item is equal to $v$, then $v$ is appended
 (line 6), and no two items are equal afterwards. If one is, there is only
 one, by induction; with `IGNORE_NEW` the queue does not change, and with
@@ -1058,7 +1059,8 @@ the least place $\mu( i )$ of each live cell $i$ is the place of a least
 item among $a[ 0 .. i ]$; in particular, the cell on top gives a least item
 of the array, and each `push()` and `pop()` takes $O( 1 )$ time.*
 
-*Proof.* By induction on the operations, the empty array having no cell. A
+*Proof.* We argue by induction on the operations, the empty array having
+no cell. A
 `push(x)` at the place $i = \mathit{hi}$ sets $\mu( i ) = i$ when $i = 0$
 or when $x$ is less than the item at $\mu( i - 1 )$, which by induction is
 a least item of $a[ 0 .. i - 1 ]$; otherwise it sets $\mu( i ) = \mu( i -
@@ -1366,7 +1368,7 @@ template< Queue Q > void copyPositive( Q & q , Q & out );
 
 ## 4.11 Engineered variants {#sec-4-11}
 
-The realizations of the book are kept as they are written, but for three
+We keep the realizations of the book as they are written, but for three
 changes that do not alter their interface. First, `ArrayQueue` computes
 the modulo of (4.2) by a comparison and a subtraction, which is correct
 because the sum of two places is below $2 m$ ([§4.2](04-queue.md#sec-4-2)).
@@ -1399,8 +1401,8 @@ pieces. Unlike `boost::circular_buffer`, its vector grows when full; unlike
 insertions at the other, and a queue used as a FIFO never moves its items.
 Its price is the space of the largest size, at most $2 N + 8$ places for $N$
 items ([Lemma 4.5](04-queue.md#lem-4-5)), until `shrink_to_fit()`. We leave
-the running times against these libraries to the campaign of [Appendix B](B-benchmarks.md#app-B), and
-no number is given here.
+the running times against these libraries to the campaign of [Appendix
+B](B-benchmarks.md#app-B), and we give no number here.
 
 `RandomQueue` draws its places with no division in the common case
 ([Lemma 4.10](04-queue.md#lem-4-10)), whereas the obvious $w \bmod n$ costs

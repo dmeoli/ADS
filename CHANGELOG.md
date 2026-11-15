@@ -2761,6 +2761,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- nthElement takes linear time in the worst case also on repeated items: a
+  round of the median of the medians whose part on the right of the pivot
+  holds more than 7 m / 10 + 2 of its m items, which happens only when many
+  items equal the pivot, partitions that part again with the equal items on
+  the left, so that the part kept holds only the larger items; on distinct
+  items the comparisons are unchanged, and the test
+  ordered.nth-element-adversary runs the adversary of McIlroy also with 2,
+  10 and 100 items per value
+
 - CuckooHashTable evicts up to the bound 3 log_c m of Pagh and Rodler, with
   c = 1 / ( 2 maxLoad ), when it exceeds the 8 log2 m + 16 kept for the
   small tables, which fell below it past about 2^12 places, so that the

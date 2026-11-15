@@ -291,8 +291,37 @@ $P$ is periodic (i.e., $u$ is a suffix of $P[ 0 .. p + | u | - 1 ]$), the
 prefix of $P$ known to match after such a shift is remembered in $\mu$, and
 otherwise the shift is $\max( | u | , | v | ) + 1$. By the critical
 factorization neither shift passes an occurrence, and the algorithm makes
-at most $2 n$ comparisons ([Crochemore and Perrin
-1991](Z-bibliography.md#ref-crochemore1991)).
+at most $2 n$ comparisons, as the next lemma states.
+
+<span id="lem-15-6"></span>**Lemma 15.6.** *([Crochemore and Perrin
+1991](Z-bibliography.md#ref-crochemore1991).) Let $P$ be a nonempty string
+on a totally ordered alphabet, $p( x )$ the period of a string $x$, and $P =
+u v$ with $v$ the shorter of the two maximal suffixes of $P$, for the order
+of the symbols and for its reverse. Then (i) $u v$ is a critical
+factorization, i.e., its local period equals $p( P )$, and $| u | < p( P
+)$; (ii) if $u$ is a suffix of $v[ 0 .. p( v ) - 1 ]$, then $p( P ) = p( v
+)$, and otherwise $p( P ) > \max( | u | , | v | )$; (iii) with these $u$,
+$v$ and shifts, the search of [Algorithm 15.2](15-string.md#alg-15-2)
+reports each occurrence of $P$ in $T$, and only those, in at most $2 n$
+comparisons of symbols.*
+
+*Proof.* Part (i) is the critical factorization theorem of the paper,
+with the choice of the shorter maximal suffix proved there; part (ii) and
+the correctness and the cost of the search are proved there for the search
+as written in [Algorithm 15.2](15-string.md#alg-15-2), with the memory
+$\mu$ in the first case and the shift $\max( | u | , | v | ) + 1$ in the
+second. We check the hypotheses against the code. The symbols are bytes,
+compared as `unsigned char`, a total order, and `maximalSuffix()` runs the
+procedure of the paper for that order and, with its flag, for the reverse
+one, and returns the start of the maximal suffix and the period of that
+suffix; the code takes the later start (the shorter suffix) as $\ell + 1 = |
+u |$, with its period $p( v )$. Its test $P[ 0 .. \ell ] = P[ p .. p + \ell
+]$ is the condition of (ii), since $| u | = \ell + 1$ and the suffix of
+length $| u |$ of $v[ 0 .. p - 1 ]$ is $P[ p .. p + \ell ]$, which lies in
+$P$ because $p( v ) \le | v |$. Finally, the code shifts by $i - \ell$
+after a mismatch at the place $i$ of $v$, by $p$ after the scan of $u$, and
+sets $\mu = m - p - 1$ only in the first case, as the algorithm of the
+paper. $\square$
 
 <span id="alg-15-2"></span>**Algorithm 15.2.** The Two-Way algorithm
 ([Crochemore and Perrin 1991](Z-bibliography.md#ref-crochemore1991));
@@ -363,7 +392,7 @@ $s + \mathit{shift}[ h( T[ s + m - q .. s + m - 1 ] ) ]$, and a window of
 shift 0 is compared with $P$ and then moves by the shift that the last
 q-gram of $P$ has among the others. No shift passes an occurrence.
 
-<span id="lem-15-6"></span>**Lemma 15.6.** *Let the window at $s$ end
+<span id="lem-15-7"></span>**Lemma 15.7.** *Let the window at $s$ end
 with the q-gram $g$, and $\delta$ be its shift by (15.4). No occurrence of
 $P$ starts at a place $s'$ with $s < s' < s + \delta$.*
 
@@ -399,7 +428,7 @@ search begun at $s_0$. In this fallback the Two-Way algorithm compares 8 bytes a
 both directions, and its factorization ($O( m )$) is computed only when a
 search comes to it.
 
-<span id="lem-15-7"></span>**Lemma 15.7.** *`StringSearcher::findAll()`
+<span id="lem-15-8"></span>**Lemma 15.8.** *`StringSearcher::findAll()`
 takes $O( n + m )$ time on any text, after a preparation of
 $O( 256 + m )$ time and 4 KB of space.*
 
@@ -515,7 +544,7 @@ text costs one lookup.
 
 ![Figure 15.2. The trie of the patterns `he`, `she`, `his`, `hers`, the states that end a pattern in violet, and the failure links that do not lead to the root (dashed): after reading `she` the automaton is in the state `she`, whose output link `he` reports the second pattern that ends there.](../figures/string-aho.svg){#fig-15-2}
 
-<span id="lem-15-8"></span>**Lemma 15.8.** *After the automaton has read
+<span id="lem-15-9"></span>**Lemma 15.9.** *After the automaton has read
 $T[ 0 .. j ]$, its state is the longest suffix of $T[ 0 .. j ]$ that is a
 prefix of some pattern, and the patterns that end at $j$ are the suffixes
 of that state that are patterns. Also, for a state $u c$,
@@ -740,7 +769,7 @@ $$
 This bound is looser than that of (15.7), since the buckets hold twice the
 patterns; when it fails, the filter of stride 1 searches.
 
-<span id="lem-15-9"></span>**Lemma 15.9.** *Neither filter misses an
+<span id="lem-15-10"></span>**Lemma 15.10.** *Neither filter misses an
 occurrence: the place of each occurrence of $P_j$ is a candidate for the
 bucket of $P_j$ (in the filter of shuffles), or its start is sent to the
 table of the prefixes (in the filters of shift-or).*
@@ -791,7 +820,7 @@ go on from that place $f$: it scans $T$ from $\max( f - \ell_{\max} ,
 0 )$ and reports only the occurrences that start at $f$ or later, the
 earlier ones being the filter's.
 
-<span id="lem-15-10"></span>**Lemma 15.10.** *`MultiSearcher::findAll()`
+<span id="lem-15-11"></span>**Lemma 15.11.** *`MultiSearcher::findAll()`
 gives $\mathrm{Occ}( P_j , T )$ for each $j$. Before the switch the
 filter compares at most $16 n + 4096$ bytes plus those of its last block,
 at most $64 ( M + 8 k )$. Hence the search takes $O( n + M +
@@ -799,10 +828,10 @@ at most $64 ( M + 8 k )$. Hence the search takes $O( n + M +
 for the final sort, after a construction of $O( 256 M + k \log k \,
 \ell_{\max} )$ time.*
 
-*Proof.* By [Lemma 15.9](15-string.md#lem-15-9) the filter reports every
+*Proof.* By [Lemma 15.10](15-string.md#lem-15-10) the filter reports every
 occurrence that starts before $f$, and none that starts later, since it
 stops after testing all the starts before $f$. The automaton reports, by
-[Lemma 15.8](15-string.md#lem-15-8), all the occurrences that lie in
+[Lemma 15.9](15-string.md#lem-15-9), all the occurrences that lie in
 $T[ \max( f - \ell_{\max} , 0 ) .. ]$, which include those that
 start at $f$ or later, and of these it keeps exactly the latter. As for
 the time, the filter costs $O( 1 )$ per place, a check costs $O( 1 )$ per
@@ -882,7 +911,7 @@ edit distance of $P$ and $T$ is the same table with
 $\mathit{DP}[ 0 ][ j ] = j$ in the first row, read at
 $\mathit{DP}[ m ][ n ]$.
 
-<span id="lem-15-11"></span>**Lemma 15.11.** *The table (15.10) gives the
+<span id="lem-15-12"></span>**Lemma 15.12.** *The table (15.10) gives the
 least number of errors of an occurrence of $P( i )$ ending at $j$; with
 $\mathit{DP}[ 0 ][ j ] = j$ it gives the edit distance of $P( i )$ and
 $T( j )$. Either table takes $\Theta( m n )$ time.*
@@ -990,7 +1019,7 @@ $$
 \end{cases} \tag{15.11}
 $$
 
-<span id="lem-15-12"></span>**Lemma 15.12.** *$\mathit{DP}[ i ][ j ]$ of
+<span id="lem-15-13"></span>**Lemma 15.13.** *$\mathit{DP}[ i ][ j ]$ of
 (15.11) is the length of a longest common subsequence of $P( i )$ and
 $T( j )$.*
 
@@ -1058,7 +1087,7 @@ $+1$ if the symbols are equal, $-1$ if they differ and $-2$ if one is a
 space. Here the best score of the prefixes $P( i )$ and $T( j )$ is the maximum
 of $\mathit{DP}[ i ][ j - 1 ] - 2$, $\mathit{DP}[ i - 1 ][ j ] - 2$ and
 $\mathit{DP}[ i - 1 ][ j - 1 ] + \delta_{ij}$, with $\delta_{ij} = \pm 1$,
-by the argument of [Lemma 15.11](15-string.md#lem-15-11). Also, the three kinds
+by the argument of [Lemma 15.12](15-string.md#lem-15-12). Also, the three kinds
 differ only at the borders and in where the score is read: the *global*
 alignment of [Needleman and Wunsch 1970](Z-bibliography.md#ref-needleman1970)
 has the borders $-2 i$ and $-2 j$ and its score in
@@ -1103,7 +1132,7 @@ space. A shortest common supersequence of $X$ and $Y$
 (`shortestCommonSupersequence()`) writes the items of a longest common
 subsequence once and the others in their order.
 
-<span id="lem-15-13"></span>**Lemma 15.13.** *The shortest common
+<span id="lem-15-14"></span>**Lemma 15.14.** *The shortest common
 supersequence of $X$ and $Y$ has length
 $n + m - | \mathrm{LCS}( X , Y ) |$.*
 
@@ -1116,7 +1145,7 @@ from the table of the LCS attains the bound. $\square$
 `scsLength()` gives only this length, from one row of the table of the
 LCS, i.e., in $\Theta( n m )$ time and $O( m )$ space.
 
-<span id="lem-15-14"></span>**Lemma 15.14.** *The recurrence of $D$
+<span id="lem-15-15"></span>**Lemma 15.15.** *The recurrence of $D$
 decides whether $Z[ 0 .. i + j )$ is an interleaving of $X[ 0 .. i )$ and
 $Y[ 0 .. j )$, and $C[ i ][ j ]$ of the recurrence below counts the
 occurrences of $P( j )$ as a subsequence of $T( i )$.*
@@ -1185,7 +1214,7 @@ functions of [§15.4.1](15-string.md#sec-15-4-1) and
 [§15.4.2](15-string.md#sec-15-4-2) remain the reference. Both rest on two
 properties of the table of the distances.
 
-<span id="lem-15-15"></span>**Lemma 15.15.** *In the table (15.10), with
+<span id="lem-15-16"></span>**Lemma 15.16.** *In the table (15.10), with
 either first row, two adjacent entries in a row or in a column differ by
 $-1$, 0 or $+1$, and the entries never decrease along a diagonal:*
 
@@ -1260,7 +1289,7 @@ and the wavefronts of [Marco-Sola et al.
 2021](Z-bibliography.md#ref-marcosola2021)). We compare 8 bytes at
 a time in the slides.
 
-<span id="lem-15-16"></span>**Lemma 15.16.** *The rounds $h \le d$ of
+<span id="lem-15-17"></span>**Lemma 15.17.** *The rounds $h \le d$ of
 (15.14) compute the edit distance $d$ in $O( ( n + m ) d )$ time in the
 worst case and $O( d )$ space; on random strings the expected time is
 $O( n + d^2 )$.*
@@ -1286,7 +1315,7 @@ diagonal costs 1 ([Ukkonen 1985a](Z-bibliography.md#ref-ukkonen1985a)).
 Hence, with $t$ a guess of $d$, the blocks of the band give the distance
 if it is at most $t$, and we double the guess until it is.
 
-<span id="lem-15-17"></span>**Lemma 15.17.** *Let $r_t$ be the least
+<span id="lem-15-18"></span>**Lemma 15.18.** *Let $r_t$ be the least
 cost of a path of the table within the band of $t$. Then $r_t \ge d$, and
 $r_t \le t$ implies $r_t = d$; doubling $t$ from $t_0 \ge 64$ until
 $r_t \le t$ computes $O( n ( d / 64 + \log ( 2 + d / 64 ) ) )$ blocks.*
@@ -1426,7 +1455,7 @@ several strings joined by distinct separators
 
 ![Figure 15.3. The suffix array and the LCP array of $T = \texttt{banana}$, with the suffixes in rank order; the suffixes prefixed by $P = \texttt{an}$ are the range of the ranks 1 and 2 (violet), which `range()` finds by two binary searches.](../figures/string-sa.svg){#fig-15-3}
 
-<span id="lem-15-18"></span>**Lemma 15.18.** *The suffixes prefixed by
+<span id="lem-15-19"></span>**Lemma 15.19.** *The suffixes prefixed by
 $P$ are consecutive in $\mathit{SA}$: they are the suffixes not smaller
 than $P$ and smaller than $P \#$, where $\#$ is a symbol larger than all
 the others.*
@@ -1450,7 +1479,7 @@ suffix at the left end, and if $\mathit{Llcp}[ M ] < l$, $P$ is smaller;
 otherwise the comparison starts from the place $l$
 ([Algorithm 15.8](15-string.md#alg-15-8)).
 
-<span id="lem-15-19"></span>**Lemma 15.19.** *`rangeLcp()` finds the
+<span id="lem-15-20"></span>**Lemma 15.20.** *`rangeLcp()` finds the
 range of $P$ with $O( m + \log n )$ comparisons of symbols.*
 
 *Proof.* Note that $\max( l , r )$ never decreases: a step decided by
@@ -1489,7 +1518,7 @@ and $\mathit{LCP}$ by themselves, which we describe below, take either the bytes
 the algorithm of [Kasai et al. 2001](Z-bibliography.md#ref-kasai2001)
 (`lcpArray()`), which rests on the following property.
 
-<span id="lem-15-20"></span>**Lemma 15.20.** *Let $\mathit{PLCP}[ i ]$ be
+<span id="lem-15-21"></span>**Lemma 15.21.** *Let $\mathit{PLCP}[ i ]$ be
 the lcp of the suffix $i$ with the suffix before it in $\mathit{SA}$ (0
 for the first). Then*
 
@@ -1587,7 +1616,7 @@ suffix array is $11 , 10 , 7 , 4 , 1 , 0 , 9 , 8 , 6 , 3 , 5 , 2$.
 | type | L | S | L | L | S | L | L | S | L | L | L | S |
 | LMS | | $\ast$ | | | $\ast$ | | | $\ast$ | | | | $\ast$ |
 
-<span id="lem-15-21"></span>**Lemma 15.21.** *Let the LMS-suffixes be
+<span id="lem-15-22"></span>**Lemma 15.22.** *Let the LMS-suffixes be
 placed, in their sorted order, at the ends of the buckets of their first
 symbols. Then a scan of $\mathit{SA}$ from left to right that puts each
 suffix $i - 1$ of type L at the head of its bucket, after it meets the
@@ -1732,7 +1761,7 @@ come from vector comparisons, with the bits reversed so that the higher
 places are the lower bits; the place $n - 1$ has neither bit and is of
 type L, as if $T[ n ]$ were smaller than every symbol.
 
-<span id="lem-15-22"></span>**Lemma 15.22.** *Let $c$ be the type of the
+<span id="lem-15-23"></span>**Lemma 15.23.** *Let $c$ be the type of the
 place that follows the word (1 for S, 0 for L, and 0 after the last word),
 and let $X$ be the carries out of the bits of the sum $G + ( G \vee E ) +
 c$ on 64 bits. Then the bit of $X$ of the place $i$ is 1 if and only if
@@ -1815,7 +1844,7 @@ in all.
 
 **Partial induction and names.** Otherwise the LMS-substrings (from an
 LMS place to the next one) are sorted by the two scans of
-[Lemma 15.21](15-string.md#lem-15-21), started from the LMS places in the
+[Lemma 15.22](15-string.md#lem-15-22), started from the LMS places in the
 order of the text. To this end, the array is split by the type of the suffix
 before each entry. An *area A* holds, for each symbol $c$, an LL part (the
 L-suffixes after an L-suffix) and an LMS part (the seeds), i.e., the
@@ -1889,7 +1918,7 @@ limit are still tied after a round, or once $h$ exceeds $2^{16}$, i.e.,
 after 17 rounds. Finally, the ranks found are mapped back to the LMS places, listed
 in the order of the text by their bit vector.
 
-<span id="lem-15-23"></span>**Lemma 15.23.** *Each of the three methods
+<span id="lem-15-24"></span>**Lemma 15.24.** *Each of the three methods
 gives the LMS-suffixes in their order. The names written after the first
 one satisfy the following: equal names imply equal LMS-substrings, and
 among the LMS-suffixes with different names a smaller name means a smaller
@@ -1912,7 +1941,7 @@ recursion. $\square$
 first symbol, so that each group is moved at once by `memmove()` to the
 end of its bucket, from the last symbol to the first, and the places in
 between are cleared. Then the two scans of
-[Lemma 15.21](15-string.md#lem-15-21) sort all the suffixes, the scan
+[Lemma 15.22](15-string.md#lem-15-22) sort all the suffixes, the scan
 from left to right being started by the suffix $n - 1$ at the head of its
 bucket. An entry is stored with its top bit set when the suffix before it
 is of the other type, i.e., of type S for an L-suffix stored by the first
@@ -1938,13 +1967,13 @@ less.
 
 --8<-- "generated/SuffixSorting-suffixArray-2.pseudo.md"
 
-<span id="lem-15-24"></span>**Lemma 15.24.** *`suffixArray()` returns
+<span id="lem-15-25"></span>**Lemma 15.25.** *`suffixArray()` returns
 the suffix array of $T$ in $O( ( n + K ) \log n )$ time in the worst case,
 and in $O( n + K )$ time when the radix sorts and the recursion settle the
 order of the LMS-suffixes.*
 
-*Proof.* The order is correct by [Lemma 15.21](15-string.md#lem-15-21),
-whose hypothesis the three methods of [Lemma 15.23](15-string.md#lem-15-23)
+*Proof.* The order is correct by [Lemma 15.22](15-string.md#lem-15-22),
+whose hypothesis the three methods of [Lemma 15.24](15-string.md#lem-15-24)
 and the direct sort establish (the latter sorts the LMS-suffixes as
 strings, window after window). A level of the recursion makes the
 classification, the scans and the placement in $O( n + K )$ time; the
@@ -2011,7 +2040,7 @@ lexicographic order.
 
 ![Figure 15.4. The suffix tree of $\texttt{banana\$}$: the internal nodes (discs) with their string depth, the leaves (boxes) with the start of their suffix, and the suffix links of the internal nodes (dashed), from $\texttt{ana}$ to $\texttt{na}$, from $\texttt{na}$ to $\texttt{a}$ and from $\texttt{a}$ to the root; the lowest common ancestor of the leaves 1 and 3 spells $\texttt{ana}$, their longest common prefix.](../figures/string-stree.svg){#fig-15-4}
 
-<span id="lem-15-25"></span>**Lemma 15.25.** *The suffix tree of $T$ has
+<span id="lem-15-26"></span>**Lemma 15.26.** *The suffix tree of $T$ has
 $n + 1$ leaves and at most $n$ internal nodes, and it takes $O( n )$
 space. A node $u$ is internal if and only if the string $s[ u ]$ that it
 spells occurs at least twice in $T \$$ followed by distinct symbols, and
@@ -2075,7 +2104,7 @@ depth at most $\mathit{LCP}[ r - 1 ]$, and splits the edge below it when
 that depth is smaller (the procedure fromSuffixArray of the
 same pseudocode).
 
-<span id="lem-15-26"></span>**Lemma 15.26.** *The construction from
+<span id="lem-15-27"></span>**Lemma 15.27.** *The construction from
 $\mathit{SA}$ and $\mathit{LCP}$ takes $O( n )$ time besides the two
 arrays.*
 
@@ -2103,7 +2132,7 @@ common ancestor of two nodes in $O( 1 )$ by the Euler tour of the tree
 and the range minima of its depths ([Bender and Farach-Colton
 2000](Z-bibliography.md#ref-bender2000)), and hence `lce()` gives the
 longest common extension of two suffixes by
-[Lemma 15.25](15-string.md#lem-15-25). `toSuffixArray()` reads
+[Lemma 15.26](15-string.md#lem-15-26). `toSuffixArray()` reads
 $\mathit{SA}$ and $\mathit{LCP}$ back by a visit in order: the leaves give
 $\mathit{SA}$, and the shallowest internal node met between two leaves
 their lcp.
@@ -2198,7 +2227,7 @@ $$
 \mathrm{endpos}( u ) = \{ j : S[ j - | u | + 1 .. j ] = u \} . \tag{15.19}
 $$
 
-<span id="lem-15-27"></span>**Lemma 15.27.** *Two sets (15.19) are either
+<span id="lem-15-28"></span>**Lemma 15.28.** *Two sets (15.19) are either
 disjoint or nested, and a class holds the suffixes of its longest member
 $v$ whose lengths lie in
 $( \mathit{len}( \mathit{link}( v ) ) , \mathit{len}( v ) ]$, where the
@@ -2244,7 +2273,7 @@ state of $P$, counted once for all by adding the count of each state (1 if
 it ends a prefix of $S$, 0 for a clone) to its link, in decreasing order of
 the lengths. `distinctSubstrings()` sums
 $\mathit{len}( v ) - \mathit{len}( \mathit{link}( v ) )$ over the states
-but the start, by [Lemma 15.27](15-string.md#lem-15-27); and
+but the start, by [Lemma 15.28](15-string.md#lem-15-28); and
 `longestCommonSubstring()` scans a second string keeping the longest
 suffix of its prefix that is a substring of $S$, following the links on a
 mismatch, in $O( | T | \sigma )$.
@@ -2295,7 +2324,7 @@ range of $\mathit{SA}$ whose entries of $\mathit{LCP}$ are all at least
 $L$. Hence a scan of $\mathit{LCP}$, or a visit of the internal nodes of
 the suffix tree, answers the questions on the repeats in $O( n )$ time.
 
-<span id="lem-15-28"></span>**Lemma 15.28.** *The number of distinct
+<span id="lem-15-29"></span>**Lemma 15.29.** *The number of distinct
 nonempty substrings of $T$ is*
 
 $$
@@ -2306,7 +2335,7 @@ $$
 $\mathit{SA}[ r ]$ has $n - \mathit{SA}[ r ]$ prefixes, of which the
 $\mathit{LCP}[ r - 1 ]$ shortest are prefixes of the suffix before it, and
 all the others are prefixes of no smaller suffix (by
-[Lemma 15.18](15-string.md#lem-15-18)). Summing over $r$ gives (15.20).
+[Lemma 15.19](15-string.md#lem-15-19)). Summing over $r$ gives (15.20).
 $\square$
 
 `longestRepeatedSubstring()` is the largest entry of $\mathit{LCP}$.
@@ -2328,7 +2357,7 @@ $Q$ lie within $k$ places, which happens exactly when two adjacent ones of
 different patterns do in their merged sorted list, in
 $O( | P | + | Q | + \mathit{occ} \log \mathit{occ} )$.
 
-<span id="lem-15-29"></span>**Lemma 15.29.** *Some occurrence of $P$
+<span id="lem-15-30"></span>**Lemma 15.30.** *Some occurrence of $P$
 and some of $Q$ lie within $k$ places if and only if two consecutive items
 of the merged sorted list of their places, one of each pattern, do; and
 `kMismatches()` reports exactly the places with at most $k$ mismatches.*
@@ -2444,7 +2473,7 @@ with few long repeats). Second, the longer extensions go to a range
 minimum on $\mathit{LCP}$, cut into blocks of 16 entries, each one line of
 the cache.
 
-<span id="lem-15-30"></span>**Lemma 15.30.** *For the entry $r$ of a
+<span id="lem-15-31"></span>**Lemma 15.31.** *For the entry $r$ of a
 block that starts at $s$, let the word $M_r$ of 16 bits have the bit $k$
 set if $\mathit{LCP}[ s + k ] < \mathit{LCP}[ s + k' ]$ for every
 $k < k' \le r - s$. Then the minimum of $\mathit{LCP}[ s + a .. r ]$ is
@@ -2505,7 +2534,7 @@ We now turn to a sorted array of $n$ strings, the *dictionary*, in which
 one searches the strings prefixed by a pattern $P$ of $p$ symbols, as in
 the autocompletion of a query ([Ferragina 2023, chapter
 9](Z-bibliography.md#ref-ferragina2023)). By
-[Lemma 15.18](15-string.md#lem-15-18), applied to the dictionary instead of
+[Lemma 15.19](15-string.md#lem-15-19), applied to the dictionary instead of
 the suffixes, those strings are consecutive, between the *lexicographic
 position* of $P$ (the number of strings smaller than $P$) and that of
 $P \#$.
@@ -2533,7 +2562,7 @@ $b = \lceil ( x_m - x_1 + 1 ) / m \rceil$, an array gives where each bin
 starts in $X$, and $y$ is searched by a binary search in its bin
 $\lfloor ( y - x_1 ) / b \rfloor$.
 
-<span id="lem-15-31"></span>**Lemma 15.31.** *Let $\Delta$ be the ratio
+<span id="lem-15-32"></span>**Lemma 15.32.** *Let $\Delta$ be the ratio
 of the largest to the smallest gap between consecutive items of $X$. Then
 a bin holds $O( \Delta )$ items, and a search takes
 $O( \log \min( \Delta , m ) )$ time.*
@@ -2726,7 +2755,7 @@ $= 12$ and `kHead` $= 16$ are the bounds above.
 In the scan of a bucket we compare a string with the pattern $Q$ only when it
 must, and rebuild no string ([Algorithm 15.12](15-string.md#alg-15-12)).
 
-<span id="lem-15-32"></span>**Lemma 15.32.** *Let the current string $s$
+<span id="lem-15-33"></span>**Lemma 15.33.** *Let the current string $s$
 be smaller than $Q$ and share with it a prefix of $\lambda$ symbols, and
 let the next string keep $\kappa = | s | - r$ symbols of $s$. If
 $\kappa > \lambda$, the next string is smaller than $Q$ too, and it shares
@@ -2877,7 +2906,7 @@ centre $i < r$ starts from the radius of its mirror $l + r - 1 - i$,
 capped at $r - i$, since the palindrome is symmetric, and compares only the
 items past $r$.
 
-<span id="lem-15-33"></span>**Lemma 15.33.** *The algorithm of Manacher
+<span id="lem-15-34"></span>**Lemma 15.34.** *The algorithm of Manacher
 takes $\Theta( n )$ time and space.*
 
 *Proof.* As in [Lemma 15.5](15-string.md#lem-15-5): inside $[ l , r )$
@@ -2919,7 +2948,7 @@ distinct nonempty palindrome of the string, two roots of lengths $-1$ and
 0, the edge $c$ from $v$ to $c v c$, and the suffix link of $v$ to its
 longest proper palindromic suffix.
 
-<span id="lem-15-34"></span>**Lemma 15.34.** *A symbol appended to a
+<span id="lem-15-35"></span>**Lemma 15.35.** *A symbol appended to a
 string creates at most one new palindrome, its longest palindromic suffix;
 hence a string of $n$ symbols has at most $n$ distinct nonempty
 palindromes.*
@@ -3029,17 +3058,60 @@ resumes after them ([Algorithm 15.13](15-string.md#alg-15-13)).
 
 --8<-- "generated/Lyndon-leastRotation.pseudo.md"
 
-<span id="lem-15-35"></span>**Lemma 15.35.** *The algorithm of Duval
-takes $O( n )$ time and $O( 1 )$ space besides the factors.*
+<span id="lem-15-36"></span>**Lemma 15.36.** *The factorization
+(15.24) is unique, and the algorithm of Duval returns it, in at most $2 n$
+comparisons and $O( 1 )$ space besides the factors.*
 
-*Proof.* A run of the scan from the place $i$ makes one comparison for
-each value of $j$ from $i + 1$ to the place $j$ where it stops, i.e., at
-most $j - i$ comparisons, and stops with $s_2 = T[ i .. j - 1 ] = w^h w'$,
-$h \ge 1$ and $| w' | < | w |$; hence $j - i < ( h + 1 ) | w | \le 2 h
-| w |$. We see that the run then outputs the $h$ copies of $w$ and the next run starts
-at $i + h | w |$, so that the comparisons of a run are at most twice the
-symbols that it moves past, and at most $2 n$ in all. The space is that of
-$i$, $j$ and $k$. $\square$
+*Proof.* We use two facts on a Lyndon word $w$. First, $w$ has no border:
+a proper suffix $x$ of $w$ that were also a prefix would be smaller than
+$w$, a longer word that it starts, against $w < x$. Hence $w$ and each proper
+suffix $x$ of it differ at some place $t < | x |$, with $x[ t ] > w[ t ]$;
+in particular, no symbol of $w$ is smaller than $w[ 0 ]$.
+
+Uniqueness. In a factorization (15.24), $w_1$ is the longest prefix of $S$
+that is a Lyndon word. Otherwise, a longer Lyndon prefix would be $y = w_1
+\cdots w_i x$ with $i \ge 1$ and $x$ a nonempty prefix of $w_{i+1}$; then $x
+\le w_{i+1} \le w_1 \le y$, the first and the last since a prefix is not
+larger than the word, while $y < x$ since $x$ is a proper suffix of $y$.
+Hence $w_1$ is determined by $S$, and by induction on the length so are
+the other factors.
+
+Correctness. A run of lines 4 to 7 from the place $i$ keeps the invariant
+that $S[ i .. j - 1 ] = w^h w'$, with $w = S[ i .. i + p - 1 ]$ a Lyndon
+word, $p = j - k$, $h \ge 1$ and $w'$ a proper prefix of $w$; it holds at
+the start, with $w = S[ i ]$ and $w'$ empty. Line 5 compares $c = S[ j ]$
+with $S[ k ] = S[ j - p ] = w[ | w' | ]$. If they are equal, $w' c$ is a
+prefix of $w$, or $w$ itself (and $h$ grows by 1), and $k$ and $j$ advance
+together. If $c > w[ | w' | ]$, we show that $z = w^h w' c$ is a Lyndon
+word, which line 6 makes the new $w$, with $h = 1$ and $p = j + 1 - i$. Let
+$x$ be a proper suffix of $z$. If $x = w^g w' c$ with $0 \le g \le h$, then
+$z$ and $x$ agree on $w^g w'$ and differ next, where $z$ has $w[ | w' | ] <
+c$. Otherwise $x$ starts at a place $r \ge 1$ of a copy of $w$, or at a place
+$1 \le r \le | w' |$ of $w'$ (the place $| w' |$ being that of $c$), and $y =
+w[ r .. p - 1 ]$, a proper suffix of $w$, differs from $w$ first at a place
+$t < | y |$, with $y[ t ] > w[ t ]$. If $x$ starts in a copy of $w$, it
+starts with $y$, and $x > z$ by the place $t$. If it starts in $w'$, then $x
+= w[ r .. | w' | - 1 ] c$: when $t < | w' | - r$, the
+place $t$ decides as before; when $t \ge | w' | - r$, the two agree on the
+first $| w' | - r$ places and $x$ has there $c > w[ | w' | ] = y[ | w' | - r
+] \ge w[ | w' | - r ] = z[ | w' | - r ]$. In all cases $x > z$.
+
+The run stops at $j = n$ or at $c < w[ | w' | ]$, and line 8 outputs $h$
+copies of $w$, since $i \le k$ holds exactly for $i = i_0 , i_0 + p ,
+\ldots , i_0 + ( h - 1 ) p$, $i_0$ the start of the run, and the next run
+starts at the place of $w'$. Each factor is thus a Lyndon word, the copies of
+a run are equal, and a factor $x$ of the next run is not larger than $w$:
+$x$ is a prefix of the rest of the string from the place of $w'$, and either
+it is a prefix of $w'$, hence of $w$, or it starts with $w' c$, which is
+smaller than $w$ at the place $| w' |$. The factors cover $S$, since each run
+outputs at least one; by the uniqueness, they are (15.24).
+
+Cost. A run from $i$ makes one comparison for each value of $j$ from $i +
+1$ to the place $j$ where it stops, i.e., at most $j - i$ comparisons,
+and $j - i < ( h + 1 ) | w | \le 2 h | w |$; the next run starts at $i + h
+| w |$, so that the comparisons of a run are at most twice the symbols that
+it moves past, and at most $2 n$ in all. The space is that of $i$, $j$ and
+$k$. $\square$
 
 `leastRotation()` gives the start of the lexicographically least rotation
 of $S$ (the first one, if several) by the same scan on $S S$: the least
@@ -3082,7 +3154,7 @@ $O( 1 )$ space.
 
 --8<-- "generated/Parentheses-longestBalancedSubstring.pseudo.md"
 
-<span id="lem-15-36"></span>**Lemma 15.36.** *The scan of
+<span id="lem-15-37"></span>**Lemma 15.37.** *The scan of
 `longestBalancedSubsequence()` matches as many pairs as a balanced
 subsequence can have.*
 
@@ -3205,7 +3277,7 @@ $$
 the scheme of the chain of matrices and of the optimal search tree, in
 $\Theta( n^3 )$ time.
 
-<span id="lem-15-37"></span>**Lemma 15.37.** *Let $K[ i ][ j ]$ be the
+<span id="lem-15-38"></span>**Lemma 15.38.** *Let $K[ i ][ j ]$ be the
 largest $k$ that attains the minimum of (15.25). Then
 $K[ i ][ j - 1 ] \le K[ i ][ j ] \le K[ i + 1 ][ j ]$, and (15.25) can be
 filled in $\Theta( n^2 )$ time.*

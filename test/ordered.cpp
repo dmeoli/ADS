@@ -468,7 +468,9 @@ ADS_TEST( "nth-element" )
 // the items while they are compared: the budget of 4 n items keeps the
 // comparisons linear, below 16 n for n = 2^12 to 2^18 and the ranks n / 2
 // and n / 10, where a budget of rounds let them grow with log n (38 n at
-// 2^16); the item put at its place is the right one for the values given
+// 2^16); the item put at its place is the right one for the values given;
+// the same with 2, 10 and 100 copies of each value given, where a round of
+// the median of the medians may find many items equal to its pivot
 ADS_TEST( "nth-element-adversary" )
 {
  for( std::size_t n : { std::size_t( 1 ) << 12 , std::size_t( 1 ) << 16 ,
@@ -482,6 +484,35 @@ ADS_TEST( "nth-element-adversary" )
    const auto v = a.input();
    CHECK( v[ *nth ] == k );
    }
+ constexpr std::size_t gas = std::size_t( -1 );
+ for( std::size_t r : { 2 , 10 , 100 } )
+  for( std::size_t n : { std::size_t( 1 ) << 12 , std::size_t( 1 ) << 16 ,
+                         std::size_t( 1 ) << 18 } )
+   for( std::size_t k : { n / 2 , n / 10 } ) {
+    std::vector< std::size_t > v( n , gas );  // the values, gas the largest
+    std::size_t solid = 0 , candidate = 0 , calls = 0;
+    auto less = [ & ]( std::size_t x , std::size_t y ) {
+     ++calls;
+     if( ( v[ x ] == gas ) && ( v[ y ] == gas ) )
+      v[ x == candidate ? x : y ] = solid++ / r;   // r copies of a value
+     if( v[ x ] == gas )
+      candidate = x;
+     else if( v[ y ] == gas )
+      candidate = y;
+     return( v[ x ] < v[ y ] );
+     };
+    std::vector< std::size_t > A( n );
+    for( std::size_t i = 0 ; i < n ; ++i ) A[ i ] = i;
+    const auto nth = A.begin() + std::ptrdiff_t( k );
+    nthElement( A.begin() , nth , A.end() , less );
+    CHECK( calls <= 16 * n );
+    std::size_t below = 0 , upto = 0;       // the rank of the value put
+    for( std::size_t x = 0 ; x < n ; ++x ) {
+     below += v[ x ] < v[ *nth ];
+     upto += v[ x ] <= v[ *nth ];
+     }
+    CHECK( ( below <= k ) && ( k < upto ) );
+    }
  }
 
 // the range minima against a scan: the empty array, one item, sizes around

@@ -235,7 +235,8 @@ void select( It first , It nth , It last , C & less )
   const std::ptrdiff_t n = last - first;
   It p;
   bool ordered = false;
-  if( budget < n )
+  const bool mom = budget < n;              // a round not charged
+  if( mom )
    p = selectMedianOfMedians( first , last , less );
   else if( budget -= n ; n > 600 ) {        // charged, and the sample of
                                             // Floyd and Rivest
@@ -281,6 +282,14 @@ void select( It first , It nth , It last , C & less )
    last = m;
   else {
    floor = *m;
+   // after the median of the medians, a part of more than 7 / 10 of the
+   // range plus 2 (never on distinct items) lets the items equal to the
+   // pivot go left too, so that it keeps only the larger items, fewer
+   if( mom && ( 10 * ( last - m - 1 ) > 7 * n + 20 ) ) {
+    m = selectPartition< true >( m , last , less , ordered );
+    if( nth <= m )
+     return;
+    }
    first = m + 1;
    }
   }

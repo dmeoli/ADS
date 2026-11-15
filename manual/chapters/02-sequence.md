@@ -87,8 +87,8 @@ with `begin()` and `end()`. `ArraySequence`, `SmallVector`, `List`,
 `SinglyList`, `CursorList`, `TieredVector`, `SkipListSequence` and
 `TreapList` also have `cbegin()` and `cend()`, and the four classes with
 reverse iterators have `rbegin()` and `rend()`; hence the algorithms and the
-ranges of the standard library run on them, and the kind of each iterator
-is given below with its class.
+ranges of the standard library run on them, and we give the kind of each
+iterator below with its class.
 
 The LIST of [Morin 2013, §1.2.2](Z-bibliography.md#ref-morin-cpp) reaches
 the items by their rank instead, by `get( i )`, `set( i , x )`, `add( i , x
@@ -231,7 +231,7 @@ distance.
 and removals at the end of an `ArraySequence`, starting from the empty
 one, costs $O( m )$ time, i.e., $O( 1 )$ amortized time per operation.*
 
-*Proof.* Let the potential be
+*Proof.* We take as potential
 
 $$
 \Phi = \begin{cases} 2 n - c & \text{if } \alpha \ge 1 / 2 , \\
@@ -1324,7 +1324,7 @@ $\mathit{pos}_n$ are both the sentinel, for which `finished()` looks.
 links; it is the `addBefore( w )` of Morin ([Algorithm
 2.16](02-sequence.md#alg-2-16) and [Figure 2.14](02-sequence.md#fig-2-14)),
 which [Morin 2013, exercise 3.6](Z-bibliography.md#ref-morin-cpp) proposes
-to rewrite from memory. `remove( p )` unlinks the cell $p$ in two
+to rewrite from memory. Then `remove( p )` unlinks the cell $p$ in two
 assignments.
 
 ![Figure 2.13. A `List` of the items `a b c d e`, i.e., a circular doubly linked list with a sentinel, each cell with its link to the successor above and to the predecessor below; the link of `e` to its successor and that of the sentinel to its predecessor close the circle.](../figures/sequence-dllist.svg){#fig-2-13}
@@ -1374,7 +1374,7 @@ also makes the walk from the sentinel come back to it.
 
 The exercises of chapter 3 of Morin on the doubly linked list require
 operations that change the links of the existing cells, without making new
-ones. `checkSize()` counts the cells (exercise 3.5), and `isPalindrome()`
+ones. Next, `checkSize()` counts the cells (exercise 3.5), and `isPalindrome()`
 walks inward from the two ends, with $\lfloor n / 2 \rfloor$ comparisons in
 all (exercise 3.7). Next, `rotate( r )` moves the sentinel before the cell
 of rank $n - r$; this cell becomes the first one, in $O( 1 + \min\{ r , n -
@@ -1425,11 +1425,11 @@ which is linear in the number of the blocks of the pool that adopts. Both
 merges are stable.*
 
 *Proof.* `isPalindrome()` compares the cells of rank $j$ and $n - 1 - j$ for
-$j < \lfloor n / 2 \rfloor$, walking inward from both ends. `rotate( r )`
+$j < \lfloor n / 2 \rfloor$, walking inward from both ends. Then `rotate( r )`
 unlinks the sentinel and links it again before the cell of rank $n - r$,
 found by `position()` in $O( 1 + \min\{ r , n - r \} )$ time
 ([Theorem 2.5](02-sequence.md#thm-2-5)); this cell becomes the first one,
-and the cell of rank $i$ gets the rank $( i + r ) \bmod n$. `reverse()`
+and the cell of rank $i$ gets the rank $( i + r ) \bmod n$. Last, `reverse()`
 exchanges the two links of each of the $n + 1$ cells, which makes each
 successor a predecessor, the sentinel's included. With cells from `new`,
 `truncate( i )` finds the cell of rank $i$ and rewrites the four links that
@@ -1495,8 +1495,8 @@ class List {
 ### 2.10.1 Sorting a list {#sec-2-10-1}
 
 The merge sort of [Morin 2013, exercise 3.13](Z-bibliography.md#ref-morin-cpp)
-is made of three pieces. `takeFirst( l )` moves the first cell of $l$ to the
-end of the list, as `push_back( l.erase( 0 ) )` but with no cell made;
+is made of three pieces. First, `takeFirst( l )` moves the first cell of $l$ to
+the end of the list, as `push_back( l.erase( 0 ) )` but with no cell made;
 `merge( l_1 , l_2 )` empties two sorted lists into a new sorted one by
 `takeFirst()`; and `mergeSort()` truncates the list at its middle, sorts
 the two halves and merges them ([Algorithm 2.19](02-sequence.md#alg-2-19)).
@@ -1574,7 +1574,7 @@ of memory, realizes linked lists with *cursors*. The cells of the lists are
 the places of a vector, a `CursorSpace`, and a link is the index of the next
 cell, 0 being nil (the place 0 is never used). Several lists can share one
 space, each being the cursor of its first cell, and the free cells form one
-more list in the same vector, the free list. `take()` removes its first
+more list in the same vector, the free list. Then `take()` removes its first
 cell, and `give()` returns a cell to it, each in $O( 1 )$ time ([Algorithm
 2.21](02-sequence.md#alg-2-21) and [Figure 2.15](02-sequence.md#fig-2-15)).
 When the free list is empty the vector doubles (it starts with 8 cells,
@@ -2101,11 +2101,11 @@ binary search tree on the indices, and `get()`, `set()`, `add()`,
 $0 , \ldots , n - 1$, and it is a random binary search tree by [Lemma
 8.33](08-tree.md#lem-8-33); by [Lemma 8.34](08-tree.md#lem-8-34), the path
 to a node, and the path of a search that ends between two nodes, have
-expected length at most $2 \ln n + O( 1 )$. `get()` and `set()` follow the
-path to the node, `add()` follows the path to the leaf of the new node and
+expected length at most $2 \ln n + O( 1 )$. Both `get()` and `set()` follow
+the path to the node, `add()` follows the path to the leaf of the new node and
 rotates it back up along it, and `remove()` follows the path to the node and
 makes fewer than 2 rotations in expectation ([Lemma
-8.36](08-tree.md#lem-8-36)). `truncate( i )` splits along the path of a
+8.36](08-tree.md#lem-8-36)). Last, `truncate( i )` splits along the path of a
 search between the indices $i - 1$ and $i$, and `absorb()` joins along the
 right spine of the first treap and the left spine of the second, the paths
 of a search beyond all the indices of each. $\square$
@@ -2287,16 +2287,16 @@ class OrderMaintenanceList {
 The functions of `ADS/sequence/SequenceAlgorithms.h` use only the operations
 of the SEQUENCE, and therefore they run on any realization (a `List` and an
 `ArraySequence` alike), with the cost of the scan (2.1), i.e., $\Theta( n )$
-calls of `next()` and `read()`. `search()` compares the item with the items
-in order and returns its place counted from 0, or $-( n + 1 )$ when it
+calls of `next()` and `read()`. First, `search()` compares the item with the
+items in order and returns its place counted from 0, or $-( n + 1 )$ when it
 misses. On a sorted sequence `searchOrdered()` stops at the first larger
 item and returns $-c$ when it misses, $c$ the items compared ($-1$ on the
 empty sequence); however, the comparisons stay $\Theta( n )$ in the worst
 case, since the positions give no access to the middle (the binary search of
-chapter [6](06-search.md#ch-6) needs the access by index). `lowerBound()` returns
-the position of the first item not smaller than $v$ in a sorted sequence,
-i.e., where $v$ goes to keep it sorted, together with whether $v$ is there,
-so that a search and an insertion share the same scan. Also, `sublist()`
+chapter [6](06-search.md#ch-6) needs the access by index). Then `lowerBound()`
+returns the position of the first item not smaller than $v$ in a sorted
+sequence, i.e., where $v$ goes to keep it sorted, together with whether $v$ is
+there, so that a search and an insertion share the same scan. Also, `sublist()`
 copies the items from a position to another one (the empty sequence being a
 sublist of any sequence), and `order()` determines, in one scan, whether a
 sequence is empty, constant, increasing, decreasing, nondecreasing,
@@ -2339,21 +2339,21 @@ the duplicates and the two sorts of a sequence ([Montresor 2025,
 $n_2$ items, `search()` and `lowerBound()` make at most $n$ comparisons,
 `searchOrdered()` at most $2 n$ and `order()` at most $2 ( n - 1 )$. The
 merge `mergeSorted()` is stable, and it makes at most $n_1 + n_2 - 1$
-comparisons (none if a sequence is empty). `removeDuplicates()` makes at most $n ( n - 1 ) /
-2$ comparisons and $n - 1$ calls of `remove()`, and `bubbleSort()` makes at
-most $n$ passes of $n - 1$ comparisons each, and as many swaps as the
-inversions of the sequence, at most $n ( n - 1 ) / 2$.*
+comparisons (none if a sequence is empty). Also, `removeDuplicates()` makes at
+most $n ( n - 1 ) / 2$ comparisons and $n - 1$ calls of `remove()`, and
+`bubbleSort()` makes at most $n$ passes of $n - 1$ comparisons each, and as
+many swaps as the inversions of the sequence, at most $n ( n - 1 ) / 2$.*
 
 *Proof.* `search()` and `lowerBound()` compare each item once, and
 `searchOrdered()` and `order()` twice at most (an equality and an order, or
 two orders). Each step of the merge compares two items and appends one, and
 the last item is appended with no comparison, after one sequence is
 exhausted; an item of the second sequence goes first only if it is smaller,
-which keeps the order of the equal items. `removeDuplicates()` compares the
-item at each position with the items after it that are left, and it removes
-an item at most once. As for `bubbleSort()`, a pass carries the largest item
-of the places it has not yet sorted to the last of them, since each
-comparison that meets it moves it one place on; hence after $k$ passes the
+which keeps the order of the equal items. Finally, `removeDuplicates()`
+compares the item at each position with the items after it that are left, and
+it removes an item at most once. As for `bubbleSort()`, a pass carries the
+largest item of the places it has not yet sorted to the last of them, since
+each comparison that meets it moves it one place on; hence after $k$ passes the
 $k$ largest items are in their places, and the pass that follows the $( n -
 1 )$-th has no swap. A swap of two adjacent items out of order removes one
 inversion and creates none, and the sequence with no inversion is sorted.
@@ -2604,7 +2604,9 @@ $$
 $$
 
 *$M$ the least item of the vector, and $s + ( k - 2 ) m$ is the least cost
-of the sorts of the cycle by swaps of its own items.*
+of the sorts of the cycle by swaps of its own items. If no item is
+negative, the sum of (2.11) over the cycles is the least cost of all the
+sorts of the vector by swaps, which may also join the cycles.*
 
 *Proof.* Either $m$ is swapped in turn with each other item of the cycle,
 which takes part in one swap while $m$ takes part in $k - 1$, at the cost $(
@@ -2616,13 +2618,40 @@ by swaps of the items of the cycle makes at least $k - 1$ swaps by [Lemma
 item in a swap, and each of the $k$ items takes part once at least, since
 none is in its place. The cost, i.e., the sum of the items over the
 participations, is therefore at least $s$ for the first participation of
-each item, plus $m$ for each of the other $2 ( k - 1 ) - k = k - 2$. $\square$
+each item, plus $m$ for each of the other $2 ( k - 1 ) - k = k - 2$.
 
-Summed over the cycles, (2.11) gives the least cost over all the sequences
-of swaps, which may also join the cycles; this is the classical solution of
-the problem, which we do not prove here, and the test
-`lib_search.rearrangements` checks it against a search of the least cost
-(Dijkstra's algorithm on the permutations) on the vectors of up to 6
+For the last claim, write the cost (2.11) of a cycle $Z$ of $k \ge 1$ items
+as $f( Z ) = s - m + \varphi( k , m )$, with $\varphi( k , m ) = \min\{ ( k
+- 1 ) m , 2 m + ( k + 1 ) M \}$; for $k = 1$ this is 0, since $m , M \ge 0$.
+Let $\Phi$ be the sum of $f$ over the cycles of the permutation that sorts
+the vector, which is 0 on the sorted vector. We show that a swap of the
+items $x$ and $y$ lowers $\Phi$ by at most $x + y$, so that any sort costs
+at least the initial $\Phi$, which the sorts of the cycles above reach.
+If $x$ and $y$ are in two cycles $Z_1 \ni x$ and $Z_2 \ni y$, of $k_i$
+items, sum $s_i$ and least item $m_i$, with $m_1 \le m_2$, the swap joins
+them. Since $x \ge m_1$ and $y \ge m_2$, it is then enough that $\varphi( k_1 ,
+m_1 ) + \varphi( k_2 , m_2 ) \le \varphi( k_1 + k_2 , m_1 ) + m_1 + 2 m_2$.
+If $\varphi( k_1 + k_2 , m_1 ) = ( k_1 + k_2 - 1 ) m_1$, this follows from
+$\varphi( k_1 , m_1 ) \le ( k_1 - 1 ) m_1$ and $\varphi( k_2 , m_2 ) \le 2
+m_2 + ( k_2 + 1 ) m_1$, as $M \le m_1$; otherwise from the second terms of
+the two minima, whose sum is $2 m_1 + 2 m_2 + ( k_1 + k_2 + 2 ) M \le 3 m_1
++ 2 m_2 + ( k_1 + k_2 + 1 ) M$. If $x$ and $y$ are in one cycle $Z$ of $k$
+items and least item $m$, the swap splits it into $Z_1 \ni x$ and $Z_2 \ni
+y$, say with $m$ in $Z_1$. It is then enough that $\varphi( k_1 + k_2 , m )
+\le \varphi( k_1 , m ) + \varphi( k_2 , m_2 ) + m$. The right side takes
+one of four values, by the terms that the two minima take. With the first
+terms it is $( k_1 - 1 ) m + ( k_2 - 1 ) m_2 + m \ge ( k_1 + k_2 - 1 ) m$,
+since $m_2 \ge m$. The three other values are at least $2 m + ( k_1 + k_2 +
+1 ) M$: $k_1 m + 2 m_2 + ( k_2 + 1 ) M$ exceeds it by $k_1 ( m - M ) + 2 (
+m_2 - m ) \ge 0$, $3 m + ( k_1 + 1 ) M + ( k_2 - 1 ) m_2$ by $( m - M ) + (
+k_2 - 1 ) ( m_2 - M ) \ge 0$, and $3 m + 2 m_2 + ( k_1 + k_2 + 2 ) M$ by
+more. $\square$
+
+The hypothesis on the signs cannot be dropped: if two items have a negative
+sum, repeating their swap twice lowers any cost, and no least cost exists,
+while `minimumSwapSort()` still returns the sum of (2.11). The test
+`lib_search.rearrangements` checks the sum against a search of the least
+cost (Dijkstra's algorithm on the permutations) on the vectors of up to 6
 distinct items.
 
 We remark that the two optima, the fewest swaps and the least cost, may come

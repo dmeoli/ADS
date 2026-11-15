@@ -326,9 +326,11 @@
  \f$ n + \min( k , n - k ) + o( n ) \f$ (Kiwiel), which is optimal up to the
  term \f$ o( n ) \f$. Each round charges the items of its part to a budget
  of \f$ 4 n \f$ items, and a round whose part the rest of the budget does not
- cover falls back to the median of the medians, whose rounds cost (9) (the
- introselect of Musser, with the budget counted in items rather than in
- rounds); the other rounds partition at most \f$ 4 n \f$ items, and their
+ cover falls back to the median of the medians, whose rounds cost (9) (on
+ many items equal to the pivot, a second partition takes them away when the
+ part kept would exceed \f$ 7 m / 10 + 2 \f$ items of a part of \f$ m \f$;
+ the device is the introselect of Musser, with the budget counted in items
+ rather than in rounds); the other rounds partition at most \f$ 4 n \f$ items, and their
  samples, of \f$ O( m^{2/3} ) \f$ items for a part of \f$ m > 600 \f$, less
  than \f$ m / 16 \f$, are selected within their own budgets, so that by
  induction the worst case is \f$ O( n ) \f$.

@@ -168,7 +168,8 @@ void sortKSorted( std::vector< T > & A , std::size_t k , C less = C() );
 
 /// the fewest swaps that sort \f$ A \f$, and the least total cost of the
 /// swaps that sort it, a swap costing the sum of its two items, computed in
-/// the type `W`; \f$ O( n \log n ) \f$
+/// the type `W` (the least when no item is negative; with two items of
+/// negative sum no least cost exists); \f$ O( n \log n ) \f$
 ///
 /// In pseudocode (Knuth, section 1.3.3, on the cycles of a permutation,
 /// beyond the book), each cycle of \f$ k > 1 \f$ items needing
