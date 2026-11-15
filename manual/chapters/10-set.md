@@ -1013,7 +1013,7 @@ engineers the two regimes. On lists of similar lengths (the longer at most
 happens, the count of the output advances on equality, and each list
 advances when its item is not larger, three additions in place of the
 jumps of the merge (lines 3 to 7 of
-[Algorithm 10.7](10-set.md#alg-10-6)).
+[Algorithm 10.6](10-set.md#alg-10-6)).
 
 <span id="lem-10-11"></span>**Lemma 10.11.** *The merge with no branch writes in
 $\mathit{out}[ 0 , k )$ exactly the items common to $a$ and $b$, in

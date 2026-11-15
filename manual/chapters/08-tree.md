@@ -6481,8 +6481,9 @@ commutative $\otimes$, `inverse( a )`, the inverse $a^{-1}$ of a group, and
 `selective`, for an operation such that $a \otimes b$ is $a$ or $b$.
 `SumAugmentation` is an abelian group when its values have the opposites,
 and `MaxAugmentation` is commutative and selective (the concepts that read
-these members are, for the time being, in the namespace `detail` of
-`JoinTree.h`). We call a value *exact* when its type is not a floating one.
+these members are those of `Algebra.h`,
+[§1.15.2](01-introduction.md#sec-1-15-2)). We call a value *exact* when its
+type is not a floating one, as `exact_v` of the same header does.
 `assign( k , v )` changes the value of a key that is there, and keeps the
 shape of the tree, since it makes no join. When `G` is an abelian group of
 exact values, it combines the augmented value of each node of the path to
@@ -8341,13 +8342,13 @@ template< std::totally_ordered K , class V , class G ,
 ```cpp
 // declarations of <ADS/tree/MaterializedAggregate.h>
 template< class G , std::size_t Period = 1024 >
-    requires detail::CommutativeMonoid< G >
+    requires CommutativeMonoid< G >
     class MaterializedAggregate {
  public:
   using Value = typename G::Value;
   enum class Kind { Group , Selective , Monoid };
-  static constexpr Kind kind = detail::AbelianGroup< G > ? Kind::Group
-      : ( detail::Selective< G > && std::equality_comparable< Value > )
+  static constexpr Kind kind = AbelianGroup< G > ? Kind::Group
+      : ( Selective< G > && std::equality_comparable< Value > )
       ? Kind::Selective : Kind::Monoid;
   MaterializedAggregate( void ) = default;
   template< detail::pair_visitable S > explicit MaterializedAggregate(

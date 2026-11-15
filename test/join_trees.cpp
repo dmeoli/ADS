@@ -662,13 +662,13 @@ struct RealSum {
  static Value inverse( const Value & a ) { return( -a ); }
  };
 
-static_assert( detail::AbelianGroup< SumAugmentation< long long > > );
-static_assert( ! detail::Group< MaxAugmentation< int > > &&
-               detail::Selective< MaxAugmentation< int > > );
-static_assert( detail::CommutativeMonoid< OrAugmentation > &&
-               ! detail::Group< OrAugmentation > &&
-               ! detail::Selective< OrAugmentation > );
-static_assert( ! detail::exact_v< RealSum > );
+static_assert( AbelianGroup< SumAugmentation< long long > > );
+static_assert( ! Group< MaxAugmentation< int > > &&
+               Selective< MaxAugmentation< int > > );
+static_assert( CommutativeMonoid< OrAugmentation > &&
+               ! Group< OrAugmentation > &&
+               ! Selective< OrAugmentation > );
+static_assert( ! exact_v< RealSum > );
 static_assert( MaterializedAggregate< SumAugmentation< long long > >::kind ==
                MaterializedAggregate< SumAugmentation< long long > >::Kind::
                 Group );
@@ -836,7 +836,7 @@ void materialized( std::uint64_t seed )
           } );
   CHECK( ( ob.sh.counts().mismatches == 0 ) &&
          ( ob.sh.counts().queries > 0 ) );
-  if constexpr( MA::kind == MA::Kind::Group && ! detail::exact_v< G > )
+  if constexpr( MA::kind == MA::Kind::Group && ! exact_v< G > )
    CHECK( ob.inc.recomputations() > 2 );   // the periodic ones
   }
  {

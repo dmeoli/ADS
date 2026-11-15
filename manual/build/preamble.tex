@@ -26,6 +26,9 @@
 \captionsetup[figure]{labelformat=empty}
 \makeatletter
 \renewcommand{\fps@figure}{htbp}
+% the page numbers of the table of contents take four digits past page 999
+\renewcommand{\@pnumwidth}{2em}
+\renewcommand{\@tocrmarg}{3em}
 \makeatother
 
 % --- Breakable URLs and inline code, so long paths/links do not run past

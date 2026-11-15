@@ -1059,7 +1059,8 @@
 
  An augmentation may declare that \f$ \otimes \f$ commutes (`commutative`),
  that it has the inverses \f$ a^{-1} \f$ of a group (`inverse()`), and that
- \f$ a \otimes b \in \{ a , b \} \f$ (`selective`); a value is exact if its
+ \f$ a \otimes b \in \{ a , b \} \f$ (`selective`), which the concepts of
+ `Algebra.h` read (see \ref theory_ADS_algebra); a value is exact if its
  type is not a floating one.
 
  <em>Lemma 13 (an assignment by its difference).</em> Let the value of the

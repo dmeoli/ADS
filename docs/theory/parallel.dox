@@ -811,7 +811,7 @@
 
  <em>Lemma 8 (the deficit counter).</em> At any time
  \f[
-   C \ge A + M , \tag{10}
+   C \ge A + M , \tag{9}
  \f]
  \f$ A \f$ the number of the active workers and \f$ M \f$ that of the
  messages pushed and not yet handled; and \f$ C = 0 \f$ if and only if the
@@ -823,7 +823,7 @@
  before the messages that bring it are handled, and the messages and the
  activities are subtracted only after they have ended; the operations on
  \f$ C \f$ are atomic, so that they follow each other in one order, and
- (10) holds after each of them. If \f$ C = 0 \f$, (10) gives \f$ A = 0 \f$
+ (9) holds after each of them. If \f$ C = 0 \f$, (9) gives \f$ A = 0 \f$
  and \f$ M = 0 \f$, and no outbox holds a message, since its owner would be
  active: the computation has terminated, and since every increase of
  \f$ C \f$ is made by an active worker or for a message, \f$ C \f$ stays at
@@ -857,7 +857,7 @@
  and Lemma 8 holds as it is.
 
  Indeed, a worker with a message in an outbox fails its `flush()`, stays
- active and holds its activity in \f$ C \f$, so that (10) and the argument
+ active and holds its activity in \f$ C \f$, so that (9) and the argument
  of Lemma 8 do not change: the retained messages are not in \f$ M \f$, but
  their sender is in \f$ A \f$. A queue is full only of messages pushed and
  not yet drained, and its receiver drains all its queues at each poll; since
@@ -911,9 +911,9 @@
  that follows, with \f$ A \f$ the workers made active.
 
  Indeed, no message exists at the call: the outboxes are empty, and the
- channels too, since \f$ C = 0 \f$ gives \f$ M = 0 \f$ by (10), while after
+ channels too, since \f$ C = 0 \f$ gives \f$ M = 0 \f$ by (9), while after
  a stop `leftovers()` has drained them. After `rearm()`, \f$ M = 0 \f$ and
- \f$ C = A \f$, so that (10) holds with equality, as at the construction,
+ \f$ C = A \f$, so that (9) holds with equality, as at the construction,
  and the barrier orders the writes of `rearm()` before every operation of
  the next computation; the arguments of Lemmas 8 and 10 do not depend on
  how many workers are active at the start, provided every worker with work
@@ -960,7 +960,7 @@
  message only from the addition before its push (Lemma 8): the message
  merged is removed before it is ever counted, while \f$ y \f$ stays where
  it was, uncounted. Hence a merge changes neither \f$ C \f$, nor \f$ A \f$,
- nor \f$ M \f$, and (10) with the argument of Lemma 8 is unchanged; it
+ nor \f$ M \f$, and (9) with the argument of Lemma 8 is unchanged; it
  does not lengthen an outbox, so that a `flush()` succeeds no later than
  without it, and Lemma 9 is unchanged too. After a stop the merges go on
  in the outboxes, which `leftovers()` hands as they are, and the three
@@ -1008,7 +1008,7 @@
  and no worker writes while it runs.
 
  Indeed, with the outboxes and the inboxes empty, no message exists: in a
- channel there is none when \f$ C = 0 \f$, by (10), and none after a stop
+ channel there is none when \f$ C = 0 \f$, by (9), and none after a stop
  once `leftovers()` has drained them, which the drain of the precondition
  checks. The barrier orders every operation of the workers before the
  call and the call before every operation of the next computation, so

@@ -49,10 +49,10 @@
  * tree are augmented maps.
  *
  * An augmentation may declare its algebra by static members, which refine
- * `Augmentation`: `commutative`, `inverse( a )` (a group), `selective`
- * (the combination of two values is one of them), as `SumAugmentation` (an
- * abelian group when its values have opposites) and `MaxAugmentation`
- * (commutative and selective) do. `assign( k , v )` changes the value of a
+ * `Augmentation` by the concepts of `Algebra.h`: `commutative`,
+ * `inverse( a )` (a group), `selective` (the combination of two values is
+ * one of them), as `SumAugmentation` (an abelian group when its values
+ * have opposites) and `MaxAugmentation` (commutative and selective) do. `assign( k , v )` changes the value of a
  * key that is there and keeps the shape: when `G` is an abelian group of
  * exact values, it combines each augmented value of the path to \f$ k \f$
  * with the difference of the new and the old value, otherwise it
@@ -118,6 +118,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Algebra.h"
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/Modification.h"
@@ -163,34 +164,6 @@ concept Augmentation = requires( const K & k , const V & v ,
 
 /// \cond
 namespace detail {
-
-/// the refinements of a monoid by its algebra, read from the static
-/// members of `G`: `commutative`, `inverse( a )`, `selective` (the
-/// combination of two values is one of them); a value is exact unless of a
-/// floating type
-template< class G >
-concept Monoid = requires( const typename G::Value & a ) {
- { G::identity() } -> std::convertible_to< typename G::Value >;
- { G::combine( a , a ) } -> std::convertible_to< typename G::Value >;
- };
-
-template< class G >
-concept CommutativeMonoid = Monoid< G > && G::commutative;
-
-template< class G >
-concept Group = Monoid< G > && requires( const typename G::Value & a ) {
- { G::inverse( a ) } -> std::convertible_to< typename G::Value >;
- };
-
-template< class G >
-concept AbelianGroup = Group< G > && CommutativeMonoid< G >;
-
-template< class G >
-concept Selective = Monoid< G > && G::selective;
-
-template< class G >
-inline constexpr bool exact_v =
- ! std::is_floating_point_v< typename G::Value >;
 
 /// whether a tree of the subject policy `P` can be made with no observer
 /// (a copy, a move, the second tree of a split)
@@ -643,8 +616,8 @@ class JoinTree
  [[nodiscard]] Node * findNode( const K & k ) const;
 
  /// whether `G` updates the path of an assignment by a difference
- static constexpr bool kDelta = detail::AbelianGroup< G > &&
-                                detail::exact_v< G >;
+ static constexpr bool kDelta = AbelianGroup< G > &&
+                                exact_v< G >;
 
 /*------------------------ THE CHANGES, UNOBSERVED -------------------------*/
 

@@ -653,7 +653,7 @@
  the place \f$ s \f$ after the last, the key changed where the item is, the
  place of an erased item left empty.
 
- <em>Lemma 11 (the exchanges of a heap).</em> Let an observer keep a copy
+ <em>Lemma 7 (the exchanges of a heap).</em> Let an observer keep a copy
  \f$ M \f$ of the vector of the ids, placing an inserted id at the place
  \f$ s \f$, emptying the place of an erased one, and exchanging
  \f$ M[ p ] \f$ and \f$ M[ q ] \f$ at each \f$ \mathrm{Relocated}( p , q ) \f$

@@ -810,7 +810,7 @@ the segment is allocated, so that the append that follows cannot fail and
 lose it; when the vector is full, its room doubles. Thus $s$ segments copy
 fewer than $2 s$ addresses in all, i.e., $O( 1 )$ amortized time per
 segment, a cost that belongs to the allocation of a segment (cf. [Lemma
-5.7](05-memory.md#lem-5-8)) and is negligible next to the 32 pages that
+5.8](05-memory.md#lem-5-8)) and is negligible next to the 32 pages that
 each segment serves.
 
 `PoolResource<M>` serves the requests of $1 \le b \le M$ bytes aligned to

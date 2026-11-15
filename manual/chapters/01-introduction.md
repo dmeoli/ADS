@@ -2280,7 +2280,9 @@ after a change depends on the algebra of $\oplus$ rather than on the
 structure that keeps it. `Algebra.h` (beyond the book) names the algebras
 by concepts on the static members of a type `G`; they refine the
 augmentations of `JoinTree` ([§8.12](08-tree.md#sec-8-12)), which are
-monoids as they are. A `Monoid` has `identity()` and `combine()`, and a
+monoids as they are, and they are those by which `assign()` of the tree and
+`MaterializedAggregate` choose their updates
+([§8.12.7](08-tree.md#sec-8-12-7)). A `Monoid` has `identity()` and `combine()`, and a
 `CommutativeMonoid` declares the flag `commutative`. A `Group` has
 `inverse()`, an `AbelianGroup` is both, and a `Selective` monoid declares
 `selective`, the promise that $a \oplus b$ is always $a$ or $b$ (e.g., the

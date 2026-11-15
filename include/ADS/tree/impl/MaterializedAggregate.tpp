@@ -17,7 +17,7 @@
 namespace ADS {
 
 template< class G , std::size_t Period >
- requires detail::CommutativeMonoid< G >
+ requires CommutativeMonoid< G >
 template< detail::pair_visitable S >
 void MaterializedAggregate< G , Period >::bind( const S & s )
 {
@@ -37,7 +37,7 @@ void MaterializedAggregate< G , Period >::bind( const S & s )
  }
 
 template< class G , std::size_t Period >
- requires detail::CommutativeMonoid< G >
+ requires CommutativeMonoid< G >
 template< class H , class K , class V >
 void MaterializedAggregate< G , Period >::on(
                                         const mod::Inserted< H , K , V > & e )
@@ -53,7 +53,7 @@ void MaterializedAggregate< G , Period >::on(
  }
 
 template< class G , std::size_t Period >
- requires detail::CommutativeMonoid< G >
+ requires CommutativeMonoid< G >
 template< class H , class K , class V >
 void MaterializedAggregate< G , Period >::on(
                               const mod::Erased< H , K , V > & e ) noexcept
@@ -75,7 +75,7 @@ void MaterializedAggregate< G , Period >::on(
  }
 
 template< class G , std::size_t Period >
- requires detail::CommutativeMonoid< G >
+ requires CommutativeMonoid< G >
 template< class H , class V >
 void MaterializedAggregate< G , Period >::on(
                                           const mod::Assigned< H , V > & e )
@@ -99,7 +99,7 @@ void MaterializedAggregate< G , Period >::on(
  }
 
 template< class G , std::size_t Period >
- requires detail::CommutativeMonoid< G >
+ requires CommutativeMonoid< G >
 void MaterializedAggregate< G , Period >::on( const mod::Cleared & ) noexcept
 {
  if constexpr( kind == Kind::Selective )
@@ -110,7 +110,7 @@ void MaterializedAggregate< G , Period >::on( const mod::Cleared & ) noexcept
  }
 
 template< class G , std::size_t Period >
- requires detail::CommutativeMonoid< G >
+ requires CommutativeMonoid< G >
 auto MaterializedAggregate< G , Period >::value( void ) const -> Value
 {
  if( f_stale )
@@ -119,7 +119,7 @@ auto MaterializedAggregate< G , Period >::value( void ) const -> Value
  }
 
 template< class G , std::size_t Period >
- requires detail::CommutativeMonoid< G >
+ requires CommutativeMonoid< G >
 template< detail::pair_visitable S >
 bool MaterializedAggregate< G , Period >::audit( const S & s ) const
 {
@@ -135,17 +135,17 @@ bool MaterializedAggregate< G , Period >::audit( const S & s ) const
  }
 
 template< class G , std::size_t Period >
- requires detail::CommutativeMonoid< G >
+ requires CommutativeMonoid< G >
 void MaterializedAggregate< G , Period >::changed( void ) noexcept
 {
- if constexpr( ( kind == Kind::Group ) && ! detail::exact_v< G > &&
+ if constexpr( ( kind == Kind::Group ) && ! exact_v< G > &&
                ( Period > 0 ) )
   if( ( ++f_drift >= Period ) && f_src )
    f_stale = true;
  }
 
 template< class G , std::size_t Period >
- requires detail::CommutativeMonoid< G >
+ requires CommutativeMonoid< G >
 void MaterializedAggregate< G , Period >::recompute( void ) const
 {
  ADS_PRE( f_src != nullptr );
@@ -156,7 +156,7 @@ void MaterializedAggregate< G , Period >::recompute( void ) const
  }
 
 template< class G , std::size_t Period >
- requires detail::CommutativeMonoid< G >
+ requires CommutativeMonoid< G >
 template< class S >
 auto MaterializedAggregate< G , Period >::fold( const S & s ) -> Value
 {

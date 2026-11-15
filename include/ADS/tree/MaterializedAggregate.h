@@ -59,6 +59,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Algebra.h"
 #include "ADS/Contract.h"
 #include "ADS/Modification.h"
 #include "ADS/tree/JoinTree.h"
@@ -99,7 +100,7 @@ concept pair_visitable = requires( const S & s ) { s.forEach( AnyPair() ); };
 /// of a dictionary, kept by its events; for an abelian group of inexact
 /// values, recomputed from the structure bound every `Period` changes
 template< class G , std::size_t Period = 1024 >
- requires detail::CommutativeMonoid< G >
+ requires CommutativeMonoid< G >
 class MaterializedAggregate {
 
 /*--------------------------------------------------------------------------*/
@@ -115,8 +116,8 @@ class MaterializedAggregate {
   };
 
  /// the kind of `G`
- static constexpr Kind kind = detail::AbelianGroup< G > ? Kind::Group
-                              : ( detail::Selective< G > &&
+ static constexpr Kind kind = AbelianGroup< G > ? Kind::Group
+                              : ( Selective< G > &&
                                   std::equality_comparable< Value > )
                                 ? Kind::Selective : Kind::Monoid;
 

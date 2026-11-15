@@ -142,9 +142,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   distributive predicate, entering only the subtrees whose aggregate
   satisfies it, in O( 1 + m log n ) for m pairs given; the static members
   commutative and inverse() of SumAugmentation, commutative and selective
-  of MaxAugmentation, read by the concepts Monoid, CommutativeMonoid,
-  Group, AbelianGroup, Selective and exact_v of the namespace detail of
-  JoinTree.h until the header of the algebraic concepts
+  of MaxAugmentation, read by the concepts CommutativeMonoid,
+  AbelianGroup, Selective and exact_v of Algebra.h
 - tree/MaterializedAggregate.h, the aggregate by a commutative monoid of
   the values of a dictionary kept by an observer of its events: by the
   inverse for a group, by the multiset of the values for a selective
