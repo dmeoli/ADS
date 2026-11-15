@@ -68,19 +68,23 @@ namespace ADS
 /// In pseudocode (section 13.6), the table filled by rows and read back:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{knapsack}( p , v , C ) \cr
+/// 1 & \textbf{function}\ \mathrm{knapsack}( p , v , C )\quad
+///     \triangleright\ \mathit{DP}[ i ][ c ]
+///     \text{ the best with the first } i \text{ objects and capacity } c \cr
 /// 2 & \quad \mathit{DP}[ 0 ][ 0 .. C ] \gets 0 \cr
 /// 3 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ n\ \textbf{do} \cr
-/// 4 & \qquad \textbf{for}\ c \gets 0\ \textbf{to}\ C\ \textbf{do} \cr
-/// 5 & \qquad\quad \mathit{DP}[ i ][ c ] \gets \mathit{DP}[ i - 1 ][ c ] \cr
-/// 6 & \qquad\quad \textbf{if}\ v_{i-1} \le c\ \textbf{then}\ \mathit{DP}[ i
-///     ][ c ] \gets \max\{ \mathit{DP}[ i ][ c ] , \mathit{DP}[ i - 1 ][ c -
-///     v_{i-1} ] + p_{i-1} \} \cr
-/// 7 & \quad S \gets \emptyset;\ c \gets C \cr
-/// 8 & \quad \textbf{for}\ i \gets n\ \textbf{downto}\ 1\ \textbf{do} \cr
-/// 9 & \qquad \textbf{if}\ \mathit{DP}[ i ][ c ] \ne \mathit{DP}[ i - 1 ][ c
+/// 4 & \qquad \textbf{for}\ c \gets 0\ \textbf{to}\ C\ \textbf{do}\quad
+///     \triangleright\ \text{without the object } i - 1
+///     \text{, or with it if it fits} \cr
+/// 5 & \qquad\quad \mathit{DP}[ i ][ c ] \gets \max\{ \mathit{DP}[ i - 1 ][
+///     c ] , \mathit{DP}[ i - 1 ][ c - v_{i-1} ] + p_{i-1} \text{ if }
+///     v_{i-1} \le c \} \cr
+/// 6 & \quad S \gets \emptyset;\ c \gets C \cr
+/// 7 & \quad \textbf{for}\ i \gets n\ \textbf{downto}\ 1\ \textbf{do}\quad
+///     \triangleright\ \text{the object was taken iff the value changed} \cr
+/// 8 & \qquad \textbf{if}\ \mathit{DP}[ i ][ c ] \ne \mathit{DP}[ i - 1 ][ c
 ///     ]\ \textbf{then}\ S \gets S \cup \{ i - 1 \};\ c \gets c - v_{i-1} \cr
-/// 10 & \quad \textbf{return}\ ( \mathit{DP}[ n ][ C ] , S )
+/// 9 & \quad \textbf{return}\ ( \mathit{DP}[ n ][ C ] , S )
 /// \end{array}}
 /// \f]
 /// \pre \f$ |p| = |v| \f$, \f$ p_i , v_i \ge 0 \f$, \f$ C \ge 0 \f$, the
@@ -97,13 +101,16 @@ knapsack( const std::vector< long > & p , const std::vector< long > & v ,
 /// \f$ i \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{zaino}( i , c ) \cr
-/// 2 & \quad \textbf{if}\ c < 0\ \textbf{then return}\ -\infty \cr
+/// 1 & \textbf{function}\ \mathrm{zaino}( i , c )\quad \triangleright
+///     \ \text{the best with the first } i \text{ objects and capacity } c
+///     \cr
+/// 2 & \quad \textbf{if}\ c < 0\ \textbf{then return}\ -\infty\quad
+///     \triangleright\ \text{an object that did not fit} \cr
 /// 3 & \quad \textbf{if}\ i = 0\ \textbf{then return}\ 0 \cr
-/// 4 & \quad \textbf{if}\ c \in T_i\ \textbf{then return}\ T_i[ c ] \cr
-/// 5 & \quad r \gets \max\{ \mathrm{zaino}( i - 1 , c ) , \mathrm{zaino}( i -
-///     1 , c - v_{i-1} ) + p_{i-1} \} \cr
-/// 6 & \quad T_i[ c ] \gets r;\ \textbf{return}\ r
+/// 4 & \quad \textbf{if}\ T_i \text{ has no entry for } c\ \textbf{then}
+///     \ T_i[ c ] \gets \max\{ \mathrm{zaino}( i - 1 , c - v_{i-1} ) +
+///     p_{i-1} , \mathrm{zaino}( i - 1 , c ) \} \cr
+/// 5 & \quad \textbf{return}\ T_i[ c ]
 /// \end{array}}
 /// \f]
 /// called as \f$ \mathrm{zaino}( n , C ) \f$.

@@ -95,17 +95,18 @@ namespace ADS
 /// highest columns met from the left and from the right:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{trappingRainWater}( h[ 0 .. n - 1 ] ) \cr
-/// 2 & \quad i \gets 0;\ j \gets n - 1;\ \ell \gets h[ 0 ];\ r \gets h[ n - 1
-///     ];\ w \gets 0 \cr
-/// 3 & \quad \textbf{while}\ i < j\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ \ell < r\ \textbf{then} \cr
-/// 5 & \qquad\quad i \gets i + 1;\ \ell \gets \max\{ \ell , h[ i ] \};\ w
-///     \gets w + \ell - h[ i ] \cr
-/// 6 & \qquad \textbf{else} \cr
-/// 7 & \qquad\quad j \gets j - 1;\ r \gets \max\{ r , h[ j ] \};\ w \gets w +
-///     r - h[ j ] \cr
-/// 8 & \quad \textbf{return}\ w
+/// 1 & \textbf{function}\ \mathrm{trappingRainWater}( h[ 0 .. n - 1 ] )\quad
+///     \triangleright\ \ell , r \text{ the highest bars met from each side}
+///     \cr
+/// 2 & \quad ( i , j , \ell , r , w ) \gets ( 0 , n - 1 , h[ 0 ] , h[ n - 1
+///     ] , 0 ) \cr
+/// 3 & \quad \textbf{while}\ i < j\ \textbf{do}\quad \triangleright
+///     \ \text{the lower side bounds the water on its next bar} \cr
+/// 4 & \qquad \textbf{if}\ r \le \ell\ \textbf{then}\ j \gets j - 1;\ r
+///     \gets \max\{ r , h[ j ] \};\ w \gets w + r - h[ j ] \cr
+/// 5 & \qquad \textbf{else}\ i \gets i + 1;\ \ell \gets \max\{ \ell , h[ i ]
+///     \};\ w \gets w + \ell - h[ i ] \cr
+/// 6 & \quad \textbf{return}\ w
 /// \end{array}}
 /// \f]
 /// \post the result is not negative
@@ -121,16 +122,17 @@ T trappingRainWater( const std::vector< T > & h );
 /// sorted:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{largestDivisibleSubset}( A ) \cr
+/// 1 & \textbf{function}\ \mathrm{largestDivisibleSubset}( A )\quad
+///     \triangleright\ L[ i ]
+///     \text{ the longest chain of divisors ending at } A[ i ] \cr
 /// 2 & \quad \text{sort } A \cr
 /// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 4 & \qquad L[ i ] \gets 1;\ \mathit{pred}[ i ] \gets \textbf{nil} \cr
-/// 5 & \qquad \textbf{for}\ j \gets 0\ \textbf{to}\ i - 1\ \textbf{do} \cr
-/// 6 & \qquad\quad \textbf{if}\ A[ j ] \mid A[ i ]\ \textbf{and}\ L[ j ] + 1 >
-///     L[ i ]\ \textbf{then}\ L[ i ] \gets L[ j ] + 1;\ \mathit{pred}[ i ]
-///     \gets j \cr
-/// 7 & \quad \textbf{return}\ \text{the chain of } \mathit{pred} \text{ from }
-///     \text{the first largest } L[ i ] \text{, reversed}
+/// 4 & \qquad ( L[ i ] , \mathit{pred}[ i ] ) \gets ( 1 , \textbf{nil} ) \cr
+/// 5 & \qquad \textbf{foreach}\ j < i \text{ with } A[ j ] \mid A[ i ]
+///     \text{ and } L[ i ] < L[ j ] + 1\ \textbf{do}\ ( L[ i ] ,
+///     \mathit{pred}[ i ] ) \gets ( L[ j ] + 1 , j ) \cr
+/// 6 & \quad \textbf{return}\ \text{the chain of } \mathit{pred}
+///     \text{ back from the first largest } L[ i ] \text{, reversed}
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ positive and distinct
@@ -170,15 +172,16 @@ T maxSumIncreasingSubsequence( const std::vector< T > & A );
 /// Esercizi Programmazione dinamica of the book):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{longestChainSubsequence}( S , \prec ) \cr
+/// 1 & \textbf{function}\ \mathrm{longestChainSubsequence}( S , \prec )\quad
+///     \triangleright\ \text{as } \mathrm{largestDivisibleSubset}
+///     \text{, with } \prec \cr
 /// 2 & \quad \textbf{for}\ j \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 3 & \qquad L[ j ] \gets 1;\ \mathit{pred}[ j ] \gets \textbf{nil} \cr
-/// 4 & \qquad \textbf{for}\ i \gets 0\ \textbf{to}\ j - 1\ \textbf{do} \cr
-/// 5 & \qquad\quad \textbf{if}\ L[ i ] + 1 > L[ j ]\ \textbf{and}\ S[ i ]
-///     \prec S[ j ]\ \textbf{then}\ L[ j ] \gets L[ i ] + 1;
-///     \ \mathit{pred}[ j ] \gets i \cr
-/// 6 & \quad \textbf{return}\ \text{the chain of } \mathit{pred} \text{ from }
-///     \text{the first largest } L[ j ] \text{, reversed}
+/// 3 & \qquad ( L[ j ] , \mathit{pred}[ j ] ) \gets ( 1 , \textbf{nil} ) \cr
+/// 4 & \qquad \textbf{foreach}\ i < j \text{ with } S[ i ] \prec S[ j ]
+///     \text{ and } L[ j ] < L[ i ] + 1\ \textbf{do}\ ( L[ j ] ,
+///     \mathit{pred}[ j ] ) \gets ( L[ i ] + 1 , i ) \cr
+/// 5 & \quad \textbf{return}\ \text{the chain of } \mathit{pred}
+///     \text{ back from the first largest } L[ j ] \text{, reversed}
 /// \end{array}}
 /// \f]
 /// \post increasing places, `less` on each two consecutive items (audit)
@@ -195,17 +198,16 @@ std::vector< std::size_t > longestChainSubsequence( const std::vector< T > & S ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{longestDistinctSegment}( A[ 0 .. n - 1 ]
-///     ) \cr
-/// 2 & \quad s \gets 0;\ \ell \gets 0;\ b \gets 0 \cr
+///     )\quad \triangleright\ A[ s .. e ] \text{ the window, } \mathit{last}
+///     \text{ a table} \cr
+/// 2 & \quad ( s , b , \ell ) \gets ( 0 , 0 , 0 ) \cr
 /// 3 & \quad \textbf{for}\ e \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ A[ e ] \in \mathit{last}\ \textbf{and}
-///     \ \mathit{last}[ A[ e ] ] \ge s\ \textbf{then}\ s \gets \mathit{last}[
-///     A[
-///     e ] ] + 1 \cr
-/// 5 & \qquad \mathit{last}[ A[ e ] ] \gets e \cr
-/// 6 & \qquad \textbf{if}\ e + 1 - s > \ell\ \textbf{then}\ ( b , \ell ) \gets
-///     ( s , e + 1 - s ) \cr
-/// 7 & \quad \textbf{return}\ ( b , \ell )
+/// 4 & \qquad \textbf{if}\ \mathit{last} \text{ holds } A[ e ]
+///     \text{ at a place } \ge s\ \textbf{then}\ s \gets \mathit{last}[ A[ e
+///     ] ] + 1\quad \triangleright\ \text{past the repeat} \cr
+/// 5 & \qquad \mathit{last}[ A[ e ] ] \gets e;\ \textbf{if}\ \ell < e + 1 -
+///     s\ \textbf{then}\ ( b , \ell ) \gets ( s , e + 1 - s ) \cr
+/// 6 & \quad \textbf{return}\ ( b , \ell )
 /// \end{array}}
 /// \f]
 /// \post the values of the segment distinct (audit)

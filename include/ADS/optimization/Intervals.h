@@ -69,13 +69,13 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{independentSet}( I ) \cr
-/// 2 & \quad S \gets \emptyset;\ e \gets -\infty\quad \triangleright
-///     \ \text{the right end of the last one taken} \cr
-/// 3 & \quad \textbf{foreach}\ [ a , b ) \in I \text{ by increasing } b
-///     \ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ a \ge e\ \textbf{then}\ S \gets S \cup \{ [ a , b
-///     ) \};\ e \gets b \cr
-/// 5 & \quad \textbf{return}\ S
+/// 2 & \quad S \gets \emptyset;\ e \gets -\infty\quad \triangleright\ e
+///     \text{ the right end of the last interval taken} \cr
+/// 3 & \quad \textbf{foreach}\ [ a , b ) \in I \text{, by increasing } b
+///     \ \textbf{do}\ \textbf{if}\ e \le a\ \textbf{then}\ S \gets S \cup \{
+///     [ a , b ) \};\ e \gets b \cr
+/// 4 & \quad \textbf{return}\ S\quad \triangleright
+///     \ \text{the earliest end first leaves the most room}
 /// \end{array}}
 /// \f]
 /// \pre \f$ a < b \f$ for each interval
@@ -89,16 +89,22 @@ independentSet( const std::vector< std::pair< long , long > > & I );
 /// In pseudocode (exercise 14.6), the free colors on a stack \f$ F \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{intervalColoring}( I ) \cr
-/// 2 & \quad F \gets \text{an empty stack};\ u \gets 0 \cr
-/// 3 & \quad \textbf{foreach}\ \text{end of } I \text{ by position, a right }
-///     \text{end before a left one}\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ \text{it is the left end of } i\ \textbf{then} \cr
-/// 5 & \qquad\quad \textbf{if}\ F = \emptyset\ \textbf{then}\ \mathrm{push}(
-///     F , u );\ u \gets u + 1 \cr
-/// 6 & \qquad\quad \mathit{color}[ i ] \gets \mathrm{pop}( F ) \cr
-/// 7 & \qquad \textbf{else}\ \mathrm{push}( F , \mathit{color}[ i ] ) \cr
-/// 8 & \quad \textbf{return}\ \mathit{color}
+/// 1 & \textbf{function}\ \mathrm{intervalColoring}( I )\quad
+///     \triangleright\ \mathit{free} \text{ the colors released, }
+///     \mathit{used} \text{ those made} \cr
+/// 2 & \quad \mathit{free} \gets \text{an empty stack};\ \mathit{used} \gets
+///     0 \cr
+/// 3 & \quad \textbf{foreach}\ \text{end of an interval } i
+///     \text{, by position, a right end before a left one}\ \textbf{do} \cr
+/// 4 & \qquad \textbf{if}\ \text{it is the right end}\ \textbf{then}
+///     \ \mathrm{push}( \mathit{free} , \mathit{color}[ i ] )\quad
+///     \triangleright\ i \text{ is over} \cr
+/// 5 & \qquad \textbf{else if}\ \mathit{free} = \emptyset\ \textbf{then}
+///     \ \mathit{color}[ i ] \gets \mathit{used};\ \mathit{used} \gets
+///     \mathit{used} + 1 \cr
+/// 6 & \qquad \textbf{else}\ \mathit{color}[ i ] \gets \mathrm{pop}(
+///     \mathit{free} ) \cr
+/// 7 & \quad \textbf{return}\ \mathit{color}
 /// \end{array}}
 /// \f]
 /// \pre \f$ a < b \f$ for each interval
@@ -112,12 +118,14 @@ intervalColoring( const std::vector< std::pair< long , long > > & I );
 /// In pseudocode (exercise 14.7):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{towers}( k , d ) \cr
-/// 2 & \quad S \gets \text{the empty sequence} \cr
-/// 3 & \quad \textbf{foreach}\ x \in k \text{ by increasing value}
-///     \ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ S \text{ is empty}\ \textbf{or}\ x > \text{the }
-///     \text{last of } S + d\ \textbf{then}\ S \gets S \cdot ( x + d ) \cr
+/// 1 & \textbf{function}\ \mathrm{towers}( k , d )\quad \triangleright
+///     \ \text{a tower covers } d \text{ on each side} \cr
+/// 2 & \quad S \gets () \cr
+/// 3 & \quad \textbf{foreach}\ x \in k \text{, by increasing value}
+///     \ \textbf{do}\quad \triangleright
+///     \ \text{the leftmost point still uncovered} \cr
+/// 4 & \qquad \textbf{if}\ S = ()\ \textbf{or}\ \text{the last tower of } S
+///     + d < x\ \textbf{then}\ \text{append } x + d \text{ to } S \cr
 /// 5 & \quad \textbf{return}\ S
 /// \end{array}}
 /// \f]

@@ -73,13 +73,17 @@ namespace ADS
 /// \f$ D[ i ][ i + h ] \f$ for the current length \f$ h \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{coinsInALine}( V[ 0 .. n - 1 ] ) \cr
-/// 2 & \quad D[ 0 .. n ] \gets 0 \cr
-/// 3 & \quad \textbf{for}\ h \gets 1\ \textbf{to}\ n\ \textbf{do} \cr
-/// 4 & \qquad \textbf{for}\ i \gets 0\ \textbf{to}\ n - h\ \textbf{do} \cr
-/// 5 & \qquad\quad D[ i ] \gets \max\{ V[ i ] - D[ i + 1 ] , V[ i + h - 1 ]
-///     - D[ i ] \} \cr
-/// 6 & \quad \textbf{return}\ ( V[ 0 ] + \cdots + V[ n - 1 ] + D[ 0 ] ) / 2
+/// 1 & \textbf{function}\ \mathrm{coinsInALine}( V[ 0 .. n - 1 ] )\quad
+///     \triangleright\ D[ i ] \text{ the best lead on } V[ i .. i + h - 1 ]
+///     \cr
+/// 2 & \quad D[ 0 .. n ] \gets 0\quad \triangleright\ h = 0 \text{: no coin}
+///     \cr
+/// 3 & \quad \textbf{for}\ h \gets 1\ \textbf{to}\ n\ \textbf{do}\quad
+///     \triangleright\ \text{one row for each length, in place} \cr
+/// 4 & \qquad D[ i ] \gets \max\{ V[ i ] - D[ i + 1 ] , V[ i + h - 1 ] - D[
+///     i ] \} \text{ for } i = 0 , \ldots , n - h \cr
+/// 5 & \quad \textbf{return}\ ( D[ 0 ] + \textstyle\sum_i V[ i ] ) / 2\quad
+///     \triangleright\ \text{the first player's total}
 /// \end{array}}
 /// \f]
 template< class T >

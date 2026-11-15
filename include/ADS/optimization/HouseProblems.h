@@ -79,12 +79,13 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{maxNonAdjacentSum}( A ) \cr
-/// 2 & \quad \mathit{prev} \gets 0;\ \mathit{cur} \gets 0\quad
-///     \triangleright\ D[ i - 2 ] \text{ and } D[ i - 1 ] \cr
-/// 3 & \quad \textbf{foreach}\ x \in A\ \textbf{do} \cr
-/// 4 & \qquad ( \mathit{prev} , \mathit{cur} ) \gets ( \mathit{cur} , \max\{
-///     \mathit{cur} , \mathit{prev} + x \} ) \cr
-/// 5 & \quad \textbf{return}\ \mathit{cur}
+/// 2 & \quad ( \mathit{prev} , \mathit{cur} ) \gets ( 0 , 0 )\quad
+///     \triangleright
+///     \ \text{the best of the prefixes shorter by two and by one} \cr
+/// 3 & \quad \textbf{foreach}\ x \in A\ \textbf{do}\ ( \mathit{prev} ,
+///     \mathit{cur} ) \gets ( \mathit{cur} , \max\{ \mathit{prev} + x ,
+///     \mathit{cur} \} ) \cr
+/// 4 & \quad \textbf{return}\ \mathit{cur}
 /// \end{array}}
 /// \f]
 /// \post the result is not negative
@@ -97,17 +98,18 @@ T maxNonAdjacentSum( const std::vector< T > & A );
 /// In pseudocode (the same exercise), the table read back from its end:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{nonAdjacentSelection}( A[ 0 .. n - 1 ] ) \cr
-/// 2 & \quad D[ 0 ] \gets 0 \cr
-/// 3 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ n\ \textbf{do}\ D[ i ]
-///     \gets \max\{ D[ i - 1 ] , D[ i - 2 ] + A[ i - 1 ] \}\quad
-///     \triangleright\ D[ -1 ] = 0 \cr
-/// 4 & \quad S \gets \emptyset;\ i \gets n \cr
-/// 5 & \quad \textbf{while}\ i > 0\ \textbf{do} \cr
-/// 6 & \qquad \textbf{if}\ D[ i - 1 ] < D[ i ]\ \textbf{then}\ S \gets S \cup
-///     \{ i - 1 \};\ i \gets \max\{ i - 2 , 0 \} \cr
-/// 7 & \qquad \textbf{else}\ i \gets i - 1 \cr
-/// 8 & \quad \textbf{return}\ ( D[ n ] , S )
+/// 1 & \textbf{function}\ \mathrm{nonAdjacentSelection}( A[ 0 .. n - 1 ]
+///     )\quad \triangleright\ D[ i ] \text{ the best of } A[ 0 .. i - 1 ] \cr
+/// 2 & \quad D[ 0 ] \gets 0;\ D[ i ] \gets \max\{ D[ i - 2 ] + A[ i - 1 ] ,
+///     D[ i - 1 ] \} \text{ for } i = 1 , \ldots , n\quad \triangleright\ D[
+///     -1 ] = 0 \cr
+/// 3 & \quad S \gets \emptyset;\ i \gets n \cr
+/// 4 & \quad \textbf{while}\ i > 0\ \textbf{do}\quad \triangleright\ A[ i -
+///     1 ] \text{ is taken iff it raised } D \cr
+/// 5 & \qquad \textbf{if}\ D[ i ] = D[ i - 1 ]\ \textbf{then}\ i \gets i -
+///     1\ \textbf{else}\ S \gets S \cup \{ i - 1 \};\ i \gets \max\{ i - 2 ,
+///     0 \} \cr
+/// 6 & \quad \textbf{return}\ ( D[ n ] , S )
 /// \end{array}}
 /// \f]
 /// \post no two places adjacent, the items of the sum found
@@ -124,20 +126,21 @@ nonAdjacentSelection( const std::vector< T > & A );
 /// the least and of the second least entry of the row before:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{paintHouses}( \mathit{cost} ) \cr
+/// 1 & \textbf{function}\ \mathrm{paintHouses}( \mathit{cost} )\quad
+///     \triangleright\ D[ h ][ c ] \text{ the best of the houses up to } h
+///     \text{, } h \text{ of color } c \cr
 /// 2 & \quad D[ 0 ] \gets \mathit{cost}[ 0 ] \cr
 /// 3 & \quad \textbf{for}\ h \gets 1\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 4 & \qquad b , s \gets \text{the colors of the two least entries of } D[
-///     h - 1 ] \cr
-/// 5 & \qquad \textbf{foreach}\ \text{color } c\ \textbf{do} \cr
-/// 6 & \qquad\quad q \gets s\ \textbf{if}\ c = b\ \textbf{else}\ b \cr
-/// 7 & \qquad\quad D[ h ][ c ] \gets \mathit{cost}[ h ][ c ] + D[ h - 1 ][ q
+/// 4 & \qquad b \gets \text{the color of the least entry of } D[ h - 1 ];\ s
+///     \gets \text{that of the second least} \cr
+/// 5 & \qquad D[ h ][ c ] \gets \mathit{cost}[ h ][ c ] + D[ h - 1 ][ s
+///     \text{ if } c = b \text{, else } b ] \text{ for every color } c\quad
+///     \triangleright\ O( k ) \text{ a house} \cr
+/// 6 & \quad c_{n-1} \gets \text{the color of the least entry of } D[ n - 1
 ///     ] \cr
-/// 8 & \quad c_{n-1} \gets \text{the color of the least entry of } D[ n - 1 ]
-///     \cr
-/// 9 & \quad \textbf{for}\ h \gets n - 1\ \textbf{downto}\ 1\ \textbf{do}
-///     \ c_{h-1} \gets \text{the least of } D[ h - 1 ] \text{ but } c_h \cr
-/// 10 & \quad \textbf{return}\ ( D[ n - 1 ][ c_{n-1} ] , c )
+/// 7 & \quad c_{h-1} \gets \text{the color of the least entry of } D[ h - 1
+///     ] \text{ other than } c_h \text{, for } h = n - 1 , \ldots , 1 \cr
+/// 8 & \quad \textbf{return}\ ( D[ n - 1 ][ c_{n-1} ] , c )
 /// \end{array}}
 /// \f]
 /// \pre the rows of the same size \f$ k \f$, \f$ k \ge 2 \f$ if there are two

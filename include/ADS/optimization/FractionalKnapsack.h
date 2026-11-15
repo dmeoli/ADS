@@ -60,13 +60,14 @@ namespace ADS
 /// \f$ p_a v_b > p_b v_a \f$, with no division:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{fractionalKnapsack}( p , v , C ) \cr
-/// 2 & \quad x[ 1 .. n ] \gets 0 \cr
-/// 3 & \quad \textbf{foreach}\ i \text{ by decreasing } p_i / v_i
-///     \ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ C \le 0\ \textbf{then}\ \textbf{break} \cr
-/// 5 & \qquad x[ i ] \gets \min\{ C / v_i , 1 \};\ C \gets C - x[ i ] v_i \cr
-/// 6 & \quad \textbf{return}\ x
+/// 1 & \textbf{function}\ \mathrm{fractionalKnapsack}( p , v , C )\quad
+///     \triangleright\ x_i \text{ the fraction of the object } i \cr
+/// 2 & \quad x \gets ( 0 , \ldots , 0 ) \cr
+/// 3 & \quad \textbf{foreach}\ i \text{, by decreasing profit per unit } p_i
+///     / v_i \text{, while } C > 0\ \textbf{do} \cr
+/// 4 & \qquad x_i \gets \min\{ 1 , C / v_i \};\ C \gets C - x_i v_i\quad
+///     \triangleright\ \text{only the last one may be split} \cr
+/// 5 & \quad \textbf{return}\ x
 /// \end{array}}
 /// \f]
 /// \pre \f$ |p| = |v| \f$, \f$ v_i > 0 \f$, \f$ p_i \ge 0 \f$, \f$ C \ge 0 \f$

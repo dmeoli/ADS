@@ -74,24 +74,25 @@ struct WeightedInterval
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{maxinterval}( I ) \cr
-/// 2 & \quad \text{sort } I \text{ by right end} \cr
-/// 3 & \quad \textbf{foreach}\ \text{end by position, a right end before a }
-///     \text{left one}\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ \text{it is the left end of } i\ \textbf{then}
-///     \ \mathit{pred}[ i ] \gets h \cr
-/// 5 & \qquad \textbf{else}\ h \gets \max\{ h , \text{its interval} \} \cr
-/// 6 & \quad \mathit{DP}[ 0 ] \gets 0 \cr
-/// 7 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ n\ \textbf{do}
-///     \ \mathit{DP}[ i ] \gets \max\{ \mathit{DP}[ i - 1 ] , w_i +
-///     \mathit{DP}[
-///     \mathit{pred}[ i ] ] \} \cr
-/// 8 & \quad S \gets \emptyset;\ i \gets n \cr
-/// 9 & \quad \textbf{while}\ i > 0\ \textbf{do} \cr
-/// 10 & \qquad \textbf{if}\ \mathit{DP}[ i - 1 ] \ge w_i + \mathit{DP}[
-///     \mathit{pred}[ i ] ]\ \textbf{then}\ i \gets i - 1 \cr
-/// 11 & \qquad \textbf{else}\ S \gets S \cup \{ i \};\ i \gets \mathit{pred}[
-///     i ] \cr
-/// 12 & \quad \textbf{return}\ ( S , \mathit{DP}[ n ] )
+/// 2 & \quad \text{number the intervals } 1 , \ldots , n
+///     \text{ by increasing right end};\ h \gets 0 \cr
+/// 3 & \quad \textbf{foreach}\ \text{end of an interval } i
+///     \text{, by position, a right end before a left one}\ \textbf{do} \cr
+/// 4 & \qquad \textbf{if}\ \text{it is the right end}\ \textbf{then}\ h
+///     \gets \max\{ h , i \}\ \textbf{else}\ \mathit{pred}[ i ] \gets h \cr
+/// 5 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ n\ \textbf{do}\quad
+///     \triangleright\ \mathit{pred}[ i ]
+///     \text{ the last interval ending before } i \text{ starts} \cr
+/// 6 & \qquad \mathit{DP}[ i ] \gets \max\{ \mathit{DP}[ i - 1 ] , w_i +
+///     \mathit{DP}[ \mathit{pred}[ i ] ] \}\quad \triangleright
+///     \ \mathit{DP}[ 0 ] = 0 \cr
+/// 7 & \quad S \gets \emptyset;\ i \gets n \cr
+/// 8 & \quad \textbf{while}\ i > 0\ \textbf{do}\quad \triangleright\ i
+///     \text{ is taken iff skipping it is worse} \cr
+/// 9 & \qquad \textbf{if}\ w_i + \mathit{DP}[ \mathit{pred}[ i ] ] >
+///     \mathit{DP}[ i - 1 ]\ \textbf{then}\ S \gets S \cup \{ i \};\ i \gets
+///     \mathit{pred}[ i ]\ \textbf{else}\ i \gets i - 1 \cr
+/// 10 & \quad \textbf{return}\ ( S , \mathit{DP}[ n ] )
 /// \end{array}}
 /// \f]
 /// \pre \f$ a < b \f$ and \f$ w \ge 0 \f$ for each interval

@@ -70,9 +70,11 @@ namespace ADS
 /// In pseudocode (exercise 14.5):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{shortestJobFirst}( t ) \cr
-/// 2 & \quad \textbf{return}\ \text{the places } 0 , \ldots , n - 1 \text{ }
-///     \text{sorted by increasing } t_i \text{, stably}
+/// 1 & \textbf{function}\ \mathrm{shortestJobFirst}( t )\quad
+///     \triangleright
+///     \ \text{an exchange of two jobs out of order lowers the total} \cr
+/// 2 & \quad \textbf{return}\ ( 0 , \ldots , n - 1 )
+///     \text{ stably sorted by } t_i
 /// \end{array}}
 /// \f]
 /// \pre no time negative

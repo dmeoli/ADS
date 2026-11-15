@@ -81,19 +81,22 @@ struct GridSquare
 /// \f$ \mathit{diag} \f$ the entry above and to the left:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{largestSquare}( A ) \cr
+/// 1 & \textbf{function}\ \mathrm{largestSquare}( A )\quad \triangleright
+///     \ S[ j + 1 ] \text{ the side of the largest square ending at } ( i ,
+///     j ) \cr
 /// 2 & \quad S[ 0 .. n ] \gets 0;\ \mathit{best} \gets 0 \cr
 /// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ m - 1\ \textbf{do} \cr
-/// 4 & \qquad \mathit{diag} \gets 0 \cr
+/// 4 & \qquad \mathit{diag} \gets 0\quad \triangleright\ \text{the old } S[
+///     j ] \text{, the cell up and left} \cr
 /// 5 & \qquad \textbf{for}\ j \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 6 & \qquad\quad u \gets S[ j + 1 ] \cr
-/// 7 & \qquad\quad \textbf{if}\ A[ i ][ j ] \ne 0\ \textbf{then}\ S[ j + 1 ]
-///     \gets 1 + \min\{ u , \mathit{diag} , S[ j ] \} \cr
-/// 8 & \qquad\quad \textbf{else}\ S[ j + 1 ] \gets 0 \cr
-/// 9 & \qquad\quad \mathit{diag} \gets u \cr
-/// 10 & \qquad\quad \textbf{if}\ S[ j + 1 ] > \mathit{best}\ \textbf{then}
-///     \ \mathit{best} \gets S[ j + 1 ] \text{, at } ( i , j ) \cr
-/// 11 & \quad \textbf{return}\ \mathit{best} \text{ and its upper left cell}
+/// 6 & \qquad\quad ( u , S[ j + 1 ] ) \gets ( S[ j + 1 ] , 0 \text{ if } A[
+///     i ][ j ] = 0 \text{, else } 1 + \min\{ S[ j ] , S[ j + 1 ] ,
+///     \mathit{diag} \} ) \cr
+/// 7 & \qquad\quad \mathit{diag} \gets u;\ \textbf{if}\ \mathit{best} < S[ j
+///     + 1 ]\ \textbf{then}\ \text{record } \mathit{best} \gets S[ j + 1 ]
+///     \text{ at } ( i , j ) \cr
+/// 8 & \quad \textbf{return}\ \mathit{best}
+///     \text{ and the upper left cell of its square}
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is a rectangle
@@ -110,15 +113,16 @@ GridSquare largestSquare( const std::vector< std::vector< T > > & A );
 /// the table kept, each entry adding the one on its left:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{countLatticePaths}( B ) \cr
-/// 2 & \quad N[ 0 ] \gets 1;\ N[ 1 .. n - 1 ] \gets 0 \cr
-/// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ m - 1\ \textbf{do} \cr
-/// 4 & \qquad \textbf{for}\ j \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 5 & \qquad\quad \textbf{if}\ B[ i ][ j ] = 0\ \textbf{then}\ N[ j ] \gets 0
-///     \cr
-/// 6 & \qquad\quad \textbf{else if}\ j > 0\ \textbf{then}\ N[ j ] \gets N[ j ]
-///     + N[ j - 1 ] \cr
-/// 7 & \quad \textbf{return}\ N[ n - 1 ]
+/// 1 & \textbf{function}\ \mathrm{countLatticePaths}( B )\quad
+///     \triangleright\ N[ j ] \text{ the paths to } ( i , j )
+///     \text{, one row at a time} \cr
+/// 2 & \quad N \gets ( 1 , 0 , \ldots , 0 ) \cr
+/// 3 & \quad \textbf{foreach}\ \text{cell } ( i , j ) \text{, by rows}
+///     \ \textbf{do} \cr
+/// 4 & \qquad N[ j ] \gets 0 \text{ if } B[ i ][ j ] = 0
+///     \text{ (a blocked cell), else } N[ j ] + ( N[ j - 1 ] \text{ if } j >
+///     0 ) \cr
+/// 5 & \quad \textbf{return}\ N[ n - 1 ]
 /// \end{array}}
 /// \f]
 /// \pre \f$ B \f$ is a rectangle

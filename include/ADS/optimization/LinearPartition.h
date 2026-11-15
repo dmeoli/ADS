@@ -88,19 +88,20 @@ namespace ADS
 /// of the first \f$ i \f$ items in \f$ t \f$ parts:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{linearPartition}( A , k ) \cr
-/// 2 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ n\ \textbf{do}\ D[ 1 ][ i
-///     ] \gets S[ i ] \cr
+/// 1 & \textbf{function}\ \mathrm{linearPartition}( A , k )\quad
+///     \triangleright\ S \text{ the prefix sums, } D[ t ][ i ]
+///     \text{ the best of } A[ 0 .. i - 1 ] \text{ in } t \text{ parts} \cr
+/// 2 & \quad D[ 1 ][ i ] \gets S[ i ] \text{ for } i = 1 , \ldots , n \cr
 /// 3 & \quad \textbf{for}\ t \gets 2\ \textbf{to}\ k\ \textbf{do} \cr
-/// 4 & \qquad \textbf{for}\ i \gets t\ \textbf{to}\ n\ \textbf{do} \cr
-/// 5 & \qquad\quad D[ t ][ i ] \gets \infty \cr
-/// 6 & \qquad\quad \textbf{for}\ j \gets t - 1\ \textbf{to}\ i - 1
-///     \ \textbf{do} \cr
-/// 7 & \qquad\qquad x \gets \max\{ D[ t - 1 ][ j ] , S[ i ] - S[ j ] \} \cr
-/// 8 & \qquad\qquad \textbf{if}\ x < D[ t ][ i ]\ \textbf{then}\ D[ t ][ i ]
-///     \gets x;\ \mathit{cut}[ t ][ i ] \gets j \cr
-/// 9 & \quad \text{read the starts back from } \mathit{cut}[ k ][ n ] \cr
-/// 10 & \quad \textbf{return}\ D[ k ][ n ] \text{ and the starts}
+/// 4 & \qquad \textbf{for}\ i \gets t\ \textbf{to}\ n\ \textbf{do}\quad
+///     \triangleright\ \text{the last part is } A[ j .. i - 1 ] \cr
+/// 5 & \qquad\quad \mathit{cut}[ t ][ i ] \gets \text{the least } j \in [ t
+///     - 1 , i ) \text{ that minimizes } \max\{ D[ t - 1 ][ j ] , S[ i ] -
+///     S[ j ] \} \cr
+/// 6 & \qquad\quad D[ t ][ i ] \gets \text{that minimum} \cr
+/// 7 & \quad \textbf{return}\ D[ k ][ n ]
+///     \text{ and the starts of the parts, read back from } \mathit{cut}[ k
+///     ][ n ]
 /// \end{array}}
 /// \f]
 /// \pre \f$ 1 \le k \le n \f$

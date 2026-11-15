@@ -60,14 +60,13 @@ namespace ADS
 /// fits:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{greedyChange}( D , c ) \cr
-/// 2 & \quad S \gets \text{the empty sequence} \cr
-/// 3 & \quad \textbf{foreach}\ d \in D \text{ by decreasing value}
-///     \ \textbf{do} \cr
-/// 4 & \qquad \textbf{while}\ c \ge d\ \textbf{do}\ S \gets S \cdot ( d );\ c
-///     \gets c - d \cr
-/// 5 & \quad \textbf{if}\ c \ne 0\ \textbf{then return nil} \cr
-/// 6 & \quad \textbf{return}\ S
+/// 1 & \textbf{function}\ \mathrm{greedyChange}( D , c )\quad
+///     \triangleright\ \text{optimal for some systems } D \text{ only} \cr
+/// 2 & \quad S \gets () \cr
+/// 3 & \quad \textbf{foreach}\ d \in D \text{, from the largest}
+///     \ \textbf{do}\ \text{append } \lfloor c / d \rfloor \text{ coins } d
+///     \text{ to } S;\ c \gets c \bmod d \cr
+/// 4 & \quad \textbf{return}\ S \text{ if } c = 0 \text{, else } \textbf{nil}
 /// \end{array}}
 /// \f]
 /// \pre \f$ c \ge 0 \f$ and the coins positive

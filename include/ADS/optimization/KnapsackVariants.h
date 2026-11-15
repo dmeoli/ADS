@@ -112,17 +112,17 @@ namespace ADS
 /// piece of a best cut of the length \f$ l \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{rodCutting}( \mathit{price} , L ) \cr
+/// 1 & \textbf{function}\ \mathrm{rodCutting}( \mathit{price} , L )\quad
+///     \triangleright\ R[ l ] \text{ the best of a rod of length } l \cr
 /// 2 & \quad R[ 0 ] \gets 0 \cr
-/// 3 & \quad \textbf{for}\ l \gets 1\ \textbf{to}\ L\ \textbf{do} \cr
-/// 4 & \qquad R[ l ] \gets -\infty \cr
-/// 5 & \qquad \textbf{for}\ t \gets 1\ \textbf{to}\ \min( l , m )\ \textbf{do}
+/// 3 & \quad \textbf{for}\ l \gets 1\ \textbf{to}\ L\ \textbf{do}\quad
+///     \triangleright\ \text{the first piece of length } t \le m \cr
+/// 4 & \qquad \mathit{cut}[ l ] \gets \text{the least } t \in [ 1 , \min( l
+///     , m ) ] \text{ that maximizes } \mathit{price}[ t - 1 ] + R[ l - t ]
 ///     \cr
-/// 6 & \qquad\quad \textbf{if}\ \mathit{price}[ t - 1 ] + R[ l - t ] > R[ l
-///     ]\ \textbf{then} \cr
-/// 7 & \qquad\qquad R[ l ] \gets \mathit{price}[ t - 1 ] + R[ l - t ];
-///     \ \mathit{cut}[ l ] \gets t \cr
-/// 8 & \quad \textbf{return}\ R[ L ] \text{ and the pieces } \mathit{cut}[ L
+/// 5 & \qquad R[ l ] \gets \mathit{price}[ \mathit{cut}[ l ] - 1 ] + R[ l -
+///     \mathit{cut}[ l ] ] \cr
+/// 6 & \quad \textbf{return}\ R[ L ] \text{ and the pieces } \mathit{cut}[ L
 ///     ] , \mathit{cut}[ L - \mathit{cut}[ L ] ] , \ldots
 /// \end{array}}
 /// \f]
@@ -171,14 +171,15 @@ unboundedKnapsack( const std::vector< T > & p , const std::vector< V > & v ,
 /// weight that no coins make:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{minValueExactWeight}( w , v , W ) \cr
+/// 1 & \textbf{function}\ \mathrm{minValueExactWeight}( w , v , W )\quad
+///     \triangleright\ \textbf{nil} \text{: no exact weight} \cr
 /// 2 & \quad D[ 0 ] \gets 0;\ D[ 1 .. W ] \gets \textbf{nil} \cr
-/// 3 & \quad \textbf{for}\ x \gets 1\ \textbf{to}\ W\ \textbf{do} \cr
-/// 4 & \qquad \textbf{foreach}\ i\ \textbf{with}\ w_i \le x \text{ and } D[ x
-///     - w_i ] \ne \textbf{nil}\ \textbf{do} \cr
-/// 5 & \qquad\quad D[ x ] \gets \min\{ D[ x ] , D[ x - w_i ] + v_i \}\quad
-///     \triangleright\ \textbf{nil} \text{ the largest} \cr
-/// 6 & \quad \textbf{return}\ D[ W ]
+/// 3 & \quad \textbf{for}\ x \gets 1\ \textbf{to}\ W\ \textbf{do}\quad
+///     \triangleright\ \text{each coin in any number} \cr
+/// 4 & \qquad D[ x ] \gets \min\{ D[ x - w_i ] + v_i : w_i \le x \text{, }
+///     D[ x - w_i ] \ne \textbf{nil} \} \text{, or } \textbf{nil}
+///     \text{ if no such } i \cr
+/// 5 & \quad \textbf{return}\ D[ W ]
 /// \end{array}}
 /// \f]
 /// \pre \f$ |w| = |v| \f$, \f$ w_i > 0 \f$, \f$ W \ge 0 \f$
@@ -194,11 +195,14 @@ std::optional< T > minValueExactWeight( const std::vector< V > & w ,
 /// time:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{coinChangeWays}( D , T ) \cr
-/// 2 & \quad N[ 0 ] \gets 1;\ N[ 1 .. T ] \gets 0 \cr
-/// 3 & \quad \textbf{foreach}\ d \in D\ \textbf{do} \cr
-/// 4 & \qquad \textbf{for}\ x \gets d\ \textbf{to}\ T\ \textbf{do}\ N[ x ]
-///     \gets N[ x ] + N[ x - d ] \cr
+/// 1 & \textbf{function}\ \mathrm{coinChangeWays}( D , T )\quad
+///     \triangleright\ N[ x ] \text{ the ways to pay } x
+///     \text{ with the coins so far} \cr
+/// 2 & \quad N \gets ( 1 , 0 , \ldots , 0 ) \cr
+/// 3 & \quad \textbf{foreach}\ d \in D\ \textbf{do}\quad \triangleright
+///     \ \text{one coin at a time: each multiset counted once} \cr
+/// 4 & \qquad N[ x ] \gets N[ x ] + N[ x - d ] \text{ for } x = d , \ldots ,
+///     T \text{, by increasing } x \cr
 /// 5 & \quad \textbf{return}\ N[ T ]
 /// \end{array}}
 /// \f]
