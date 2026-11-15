@@ -4071,40 +4071,91 @@ subtree is not larger than the sum of the subtrees of the nodes that
 explode; a node $u$ of the path contributes $s( u ) \cdot 1 / s( u ) = 1$
 to the expectation of that sum. $\square$
 
-We have no proof that the depth of a `DynamiteTree` is $O( \log n )$ in
-expectation, only a reduction of it to an assumption, which the next lemma
-states. Its motivation is [Lemma 8.60](08-tree.md#lem-8-60): a child of a
-node rebuilt with $s$ nodes goes past $\frac34$ of its subtree only after $k
-> s / 3$ operations through the node, the $t$-th of which leaves it with at
-most $s + t$ nodes and explodes it (and rebuilds it, by itself or within an
-ancestor) with probability at least $1 / ( s + t )$, independently of the
-past. A node fixed in advance thus survives $k$ such operations with
-probability at most $\prod_{t=1}^{k} ( 1 - 1 / ( s + t ) ) = s / ( s + k )
-< 3 / 4$. We call an edge of a path from the root *bad* when the child holds
-more than $\frac34$ of the subtree of the parent, and *good* otherwise.
+For the depth of a `DynamiteTree` we prove a bound on the sequences of
+insertions (and searches), and we state below what holds when removals are
+mixed in. We take the operations fixed in advance, independently of the
+draws, and the draws of `uniformBelow()` as independent and uniform (the
+reduction of Lemire that it uses is exact, and only the generator
+`SplitMix64` is taken as a source of independent words). Since the rule
+tests the nodes of the path from the top and stops at the first that
+explodes, we may as well let the node at the depth $j$ of the path of the
+$t$-th operation draw $U_{t,j}$, from a family of independent uniform
+variables of $[ 0 , 1 )$, and explode when $U_{t,j} < 1 / s$, $s$ its size
+after the operation. For a key $x$, let $K_j( t )$ be the set of the keys of
+the subtree at the depth $j$ of the path of the search of $x$ after the
+$t$-th operation (empty below the end of the path), and let $\mathcal{F}_j$
+be the information carried by the variables $U_{t,i}$ with $i \le j$. We
+call the edge from the depth $j$ to the depth $j + 1$ *bad* at the time $T$
+when $| K_{j+1}( T ) | > \frac34 | K_j( T ) |$, and *good* otherwise.
 
-<span id="lem-8-61"></span>**Lemma 8.61.** *Assume that, on the path from
-the root of a `DynamiteTree` of $n \ge 1$ nodes to any of its nodes, each
-edge is bad with probability at most $3 / 4$ given the edges above it on the
-path and the explosions that made them. Then the expected depth of each
-node is at most $4 \log_{4/3} n + 4$, and an operation costs $O( \log n )$
-expected time.*
+<span id="lem-8-61"></span>**Lemma 8.61.** *Let a `DynamiteTree` receive a
+sequence of insertions and searches fixed in advance, under the model of
+the draws above, and let it hold $n \ge 1$ keys at the time $T$. Then the
+path of the search of any key $x$ has at most $2 \lfloor \log_{4/3} n
+\rfloor + 2$ nodes in expectation, and the next operation costs $O( \log n
+)$ expected time.*
 
-*Proof.* The subtree below a good edge has at most $\frac34$ of the nodes of
-the subtree above it, and hence a path from the root has fewer than $L =
-\lfloor \log_{4/3} n \rfloor + 1$ good edges. Let us extend the edges of
-the path, from the top, by independent trials that are good with
-probability $1 / 4$ after its last edge. By the assumption, the number $T$
-of edges and trials up to the $L$-th good one is dominated by the number of
-independent trials of success probability $1 / 4$ up to the $L$-th success,
-whose expectation is $4 L$. The depth is less than $T$, whence the first
-claim, and the second follows from it and from
+*Proof.* We first show that $K_j( t )$, for every $t$, and the key at the
+depth $j - 1$ of the path are determined by $\mathcal{F}_{j-1}$. For $j =
+0$, $K_0( t )$ is the set of all the keys, fixed by the operations. Assume
+it for $K_i$, $i \le j$. With no removal the node at the depth $j$ changes
+key only when its subtree is rebuilt, and then takes the middle key of $K_j$
+at that time, since a rebuild makes each subtree of the middle key of its
+own keys; such a rebuild happens at the $t$-th operation exactly when a node
+at a smaller depth of the path of $x$ explodes, an event that the sizes $|
+K_i( t ) |$ and the variables $U_{t,i}$, $i < j$, decide, or when the
+operation enters the subtree, no node above explodes and $U_{t,j} < 1 / |
+K_j( t ) |$. Between two rebuilds an insertion that enters the subtree adds
+its key to $K_j$ and leaves the key of the node as it is. The key at the
+depth $j$ is thus determined by $\mathcal{F}_j$, and so is $K_{j+1}( t )$,
+the keys of $K_j( t )$ on the side of $x$ of that key; the edge from the
+depth $j$ is therefore bad, or missing, by an event of $\mathcal{F}_j$.
+
+We bound the probability that it is bad given $\mathcal{F}_{j-1}$. Let
+$\beta$ be the last time not after $T$ at which a node at a smaller depth
+of the path of $x$ explodes (or the time of the insertion that creates the
+node at the depth $j$, if later); $\beta$ and the sizes $s_t = | K_j(
+t ) |$ are given by $\mathcal{F}_{j-1}$, while the variables $U_{t,j}$ of
+the operations after $\beta$ are independent of $\mathcal{F}_{j-1}$. Let
+$\tau \ge \beta$ be the last rebuild of the node at the depth $j$, with $s
+= s_\tau$ keys, and $i$ the insertions that enter its subtree in $( \tau , T
+]$. A child holds at most $s / 2 + i$ keys of the $s + i$ of the subtree,
+by [Lemma 8.52](08-tree.md#lem-8-52), and more than $\frac34$ of them only
+if $i > s$. Going back in time by one insertion that enters the subtree
+raises $i$ by 1 and lowers $s$ by 1; hence the edge is bad exactly when
+$\tau \le \theta$, for the last time $\theta$ with $i_\theta > s_\theta$,
+and it is never bad if $\theta < \beta$. Otherwise it is bad only if the
+node does not explode in the $i_\theta$ insertions after $\theta$, the
+$q$-th of which leaves it with $s_\theta + q$ keys, which happens with
+probability
+$$
+\prod_{q=1}^{i_\theta} \left( 1 - \frac{1}{s_\theta + q} \right) =
+\frac{s_\theta}{s_\theta + i_\theta} < \frac12 .
+$$
+
+Each good edge leaves at most $\frac34$ of the keys of the subtree above
+it, so that a path has fewer than $L = \lfloor \log_{4/3} n \rfloor + 1$
+good edges. Call the $j$-th trial a success when the edge from the depth
+$j$ is good or missing; by the above, it succeeds with probability at least
+$\frac12$ given the trials before it. A path of $D$ nodes has $D - 1$ edges
+and fewer than $L$ successes among them, so that the $L$-th success comes
+at the trial $N \ge D$. The sum of the successes of the first $m$ trials
+less $m / 2$ is a submartingale, which at the trial $\min( N , m )$ is at
+most $L - \min( N , m ) / 2$; its expectation is not negative, hence $E[
+\min( N , m ) ] \le 2 L$ for each $m$, and $E[ D ] \le E[ N ] \le 2 L$.
+The cost of the next operation is that of its path, plus the rebuilds,
+$O( \delta )$ in expectation given a path of depth $\delta$ by
 [Theorem 8.8](08-tree.md#thm-8-8). $\square$
 
-The assumption is what we cannot prove: the bound $s / ( s + k )$ holds for
-a node fixed in advance, while the node at a given depth of the path, and
-the time of its last rebuild, depend on the same explosions, and conditioning
-on them may raise the probability that its edge is bad above $3 / 4$.
+A removal breaks the first step of the proof. When it splices out a node
+with at most one child, the subtree of that child rises by one level, so
+that the subtree at the depth $j$ of a path may come from rebuilds decided by
+variables of the depth $j + 1$, on which $\mathcal{F}_{j-1}$ does not leave
+it free. On sequences with removals, therefore, we can only state that the
+tree is a correct search tree and that its rebuilds cost $O( \delta )$
+expected time per operation of depth $\delta$, by
+[Theorem 8.8](08-tree.md#thm-8-8); we have no proof that its expected depth
+stays $O( \log n )$, although the argument of the lemma suggests it.
 Our tests check the invariants and a
 differential run of 20000 operations against `std::map` for each tree.
 They also compare the height of the trees built by $2^{12}$ insertions in
@@ -6024,7 +6075,8 @@ pairs (or keys) go into (or out of) a tree of $t$ keys balanced by any of
 the four schemes, and let $m = \min( b , t )$ and $n = \max( b , t )$.
 Then `multiInsert()` takes the work $O( m \log( n / m + 1 ) + b )$ and the
 span $O( \log m \log n )$, and `multiRemove()` the work $O( m \log^2( n /
-m + 1 ) )$ and the span $O( \log^2 n )$ (in expectation for the treaps).*
+m + 1 ) )$, $O( m \log( n / m + 1 ) )$ on the treaps, and the span $O(
+\log^2 n )$ (in expectation for the treaps).*
 
 *Proof.* `multiInsert()` is the union of [Blelloch, Ferizovic and Sun 2016,
 figure 1](Z-bibliography.md#ref-blelloch2016) with the tree as the pivot
@@ -6035,40 +6087,69 @@ only other difference is the base case of an empty tree, which builds the
 rest of the batch in $O( b_c )$ work, on pieces of the batch that are
 disjoint, i.e., $O( b )$ in all. Their Theorems 5 to 8, whose proof is
 stated for either tree being the larger (their section 5), give the rest.
-For `multiRemove()` we argue directly. Its recursion follows the tree from
-the root, each call holding a subtree $T_v$ of a node $v$ and the keys of
-the batch that fall in it, and it stops where either is empty; hence the
-calls that do work are at the nodes $v$ of the union $P$ of the search paths
-of the $b$ keys, at most $\min( 2^i , b )$ at the depth $i$. Such a call
-makes a binary search of $O( \log( b_c + 2 ) )$ and a `join()` or a
-`join2()` of two trees no larger than the subtrees of the children of $v$,
-whose ranks the removals do not increase (a join adds at most 1 to the
-larger rank of its arguments, [Lemma 8.82](08-tree.md#lem-8-82), and the
-ranks of the children of $v$ are at least 1 below that of $v$, or below by
-the constant $\log_2( 1 / ( 1 - \alpha ) )$ for the weights), i.e., $O(
-\rho( T_v ) + 1 )$ by [Lemma 8.82](08-tree.md#lem-8-82) and
-[Table 8.7](08-tree.md#tab-8-7). The binary searches at the depth $i$ add
-up, by the concavity of the logarithm, to $O( k_i \log( b / k_i + 2 ) )$
-with $k_i \le \min( 2^i , b , t )$, and over the $O( \log t )$ depths to
-$O( m \log( n / m + 1 ) + m )$, by the computation of [Lemma
-8.84](08-tree.md#lem-8-84). For the joins, the nodes of rank between $r$
-and $r + 1$ are at most $c \, t \, \gamma^{-r}$ for constants $c$ and
-$\gamma > 1$ of the scheme, since their subtrees hold at least $\gamma^r$
-keys each (by [Lemma 8.45](08-tree.md#lem-8-45) for the heights of the AVL
-trees, by the black height for the Red-Black trees, by the weight itself
-for the trees balanced by weight) and at most a constant number of them lie
-on one path from the root. Hence, with $R = \log_\gamma( t / m + 1 )$,
+For `multiRemove()` we argue directly. Its recursion is that of
+`multiInsert()` on the same tree and the same batch (the same root exposed,
+the same binary search, the same parts of the batch), but for the base
+case, where it stops also on an empty tree instead of building the rest of
+the batch; its calls and its binary searches are thus among those of
+`multiInsert()` outside the builds, whose work is $O( m \log( n / m + 1 )
+)$ by the first part. It remains to bound the joins. Each call holds a
+subtree $T_v$ of a node $v$ and the keys of the batch that fall in it, and
+it stops where either is empty; hence the calls that join are at the nodes
+$v$ of the union $P$ of the search paths of the $b$ keys. Such a call makes
+a `join()` or a `join2()` of two trees no larger than the subtrees of the
+children of $v$, whose ranks the removals do not increase (a join adds at
+most 1 to the larger rank of its arguments, [Lemma 8.82](08-tree.md#lem-8-82),
+and the ranks of the children of $v$ are at least 1 below that of $v$, or
+below by the constant $\log_2( 1 / ( 1 - \alpha ) )$ for the weights), i.e.,
+$O( \rho( T_v ) + 1 )$ by [Lemma 8.82](08-tree.md#lem-8-82) and
+[Table 8.7](08-tree.md#tab-8-7). For the three deterministic schemes, the
+nodes of rank between $r$ and $r + 1$ are at most $c \, t \, \gamma^{-r}$
+for constants $c$ and $\gamma > 1$ of the scheme, since their subtrees hold
+at least $\gamma^r$ keys each (by [Lemma 8.45](08-tree.md#lem-8-45) for the
+heights of the AVL trees, by the black height for the Red-Black trees, by
+the weight itself for the trees balanced by weight) and at most a constant
+number of them lie on one path from the root, hence at most a constant
+times $m$ of them in $P$. Therefore, with $R = \log_\gamma( t / m + 1 )$,
 the joins cost $O( \sum_{r \le R} ( r + 1 ) m + \sum_{r > R} ( r + 1 ) c
-\, t \, \gamma^{-r} ) = O( m R^2 + m R + m )$, which is $O( m \log^2( n
-/ m + 1 ) )$ for $b \le t$; for $b > t$ the same sum over all the $t$ nodes
+\, t \, \gamma^{-r} ) = O( m R^2 + m R + m )$, which is $O( m \log^2( n /
+m + 1 ) )$ for $b \le t$; for $b > t$ the same sum over all the $t$ nodes
 is $O( t )$. The recursion has the depth of the tree, $O( \log t )$, and
 each level waits for one binary search and one join of $O( \log n )$,
-whence the span. For the treaps, the subtrees of height $r$ have in expectation
-at least $\gamma^r$ keys for a constant $\gamma > 1$, and the same sums
-hold in expectation. $\square$
+whence the span.
 
-The bound of `multiRemove()` is a factor $\log( n / m + 1 )$ above that of
-`multiInsert()`, since the removals may lower the ranks below a node, and
+For the treaps, with the priorities independent, uniform and distinct, a
+join costs $O( 1 )$ in expectation. If the key of $v$ stays, its priority
+is higher than those of all the keys below it, and the join of the treaps
+of [Algorithm 8.61](08-tree.md#alg-8-61) returns $\mathrm{node}( L' , v ,
+R' )$ at once, $L'$ and $R'$ being the results of the two recursive calls.
+If it leaves, `join2( L' , R' )` of [Algorithm 8.62](08-tree.md#alg-8-62)
+goes down the right spine of $L'$ to its last
+key $u$, and then joins the rest with $R'$ by $u$, which goes down the right
+spine of the rest (that of $L'$ without $u$, and that of the left subtree of
+$u$) and the left spine of $R'$. Here $L'$ and $R'$ are the treaps of the
+keys of the two subtrees of $v$ that stay, with their priorities, since a
+treap is determined by its keys and its priorities. A key $w < v$ that
+stays is on the right spine of $L'$ only if $v$ has the highest priority of
+the keys of $[ w , v ]$, and $w$ the highest of the keys that stay in $[ w
+, v )$; if $d$ of them lie strictly between $w$ and $v$, this has
+probability at most $\frac{1}{d + 2} \cdot \frac{1}{d + 1}$, since given the
+first event the other priorities are still independent and identically
+distributed. The keys $w$ give distinct values of $d$, and the spine has
+expected length at most $\sum_{d \ge 0} 1 / ( ( d + 1 ) ( d + 2 ) ) = 1$.
+The same holds for the left spine of $R'$, and for the right spine of the
+left subtree of $u$, with $u$ in place of $v$ and the keys that stay. The
+joins thus cost $O( | P | )$ in expectation, where $| P |$ is at most the
+number of calls, and `multiRemove()` takes $O( m \log( n / m + 1 ) )$
+expected work on a treap. As for the span, a join goes down spines of at
+most $H$ nodes, $H$ the height of the treap, so that the span is $O( H (
+\log ( b + 2 ) + H ) )$. The shape of a treap is that of a random binary
+search tree, whose height has expectation $O( \log t )$ and variance $O( 1 )$
+([Reed 2003](Z-bibliography.md#ref-reed2003)); hence $\mathrm{E}[ H^2 ] =
+O( \log^2 t )$, and the span is $O( \log^2 n )$ in expectation. $\square$
+
+On the three deterministic schemes, the bound of `multiRemove()` is a factor
+$\log( n / m + 1 )$ above that of `multiInsert()`, since the removals may lower the ranks below a node, and
 the join that restores the balance may then cost the rank of the node; we
 expect the true cost to be lower, as that of a removal after another, which
 amortizes, but we have not proved it.
@@ -6737,7 +6818,7 @@ degree of a B-tree, $r$ the distance in rank from a finger.
 | `AVLTree` | [8.7](08-tree.md#sec-8-7) | heights of siblings differ by $\le 1$ | $< 1.4405 \log_2( n + 2 )$ | $O( \log n )$ | the operations by join of [§8.12](08-tree.md#sec-8-12) |
 | `SplayTree` | [8.8](08-tree.md#sec-8-8) | none | $n - 1$ at worst | $O( \log n )$ amortized | static optimality |
 | `ScapegoatTree` | [8.9](08-tree.md#sec-8-9) | depth $\le \log_b q$ | $\le \log_b q$ | $O( \log n )$, updates amortized | the base $b$, sizes stored or not |
-| `WeightRebuildTree`, `CountdownTree`, `DynamiteTree` | [8.9](08-tree.md#sec-8-9) | sizes (timers) | $O( \log n )$ (expected for the last, under the assumption of [§8.9.5](08-tree.md#sec-8-9-5)) | $O( \log n )$ amortized or expected | none |
+| `WeightRebuildTree`, `CountdownTree`, `DynamiteTree` | [8.9](08-tree.md#sec-8-9) | sizes (timers) | $O( \log n )$ (expected for the last after insertions, by [Lemma 8.61](08-tree.md#lem-8-61)) | $O( \log n )$ amortized or expected | none |
 | `LeftLeaningRedBlackTree` | [8.10](08-tree.md#sec-8-10) | a 2-4 tree, left-leaning | $\le 2 \log_2( n + 1 )$ | $O( \log n )$, $O( 1 )$ amortized restructuring | `absorb()` |
 | `BTree`, `BPlusTree`, `BTreeMap` | [8.11](08-tree.md#sec-8-11) | node fill, leaves at one depth | $\le \log_t \frac{ n + 1 }{ 2 }$ for `BTree`, [Lemma 8.77](08-tree.md#lem-8-77) and [§8.11.3](08-tree.md#sec-8-11-3) for the others | $O( t \log_t n )$ | intervals; `rank()`, `select()` in `BTreeMap` |
 | `JoinAVLTree`, `JoinRedBlackTree`, `WeightBalancedTree`, `JoinTreap` | [8.12](08-tree.md#sec-8-12) | that of the scheme | $O( \log n )$ | $O( \log n )$ | split, join, set operations in parallel, augmentation |

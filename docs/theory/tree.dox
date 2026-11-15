@@ -275,7 +275,7 @@
      rebuilds</td></tr>
  <tr><td><tt>PartialRebuildingTree</tt></td><td>the sizes (and
      timers)</td><td>\f$ O( \log n ) \f$ (expected for the dynamite
-     tree)</td><td>\f$ O( \log n ) \f$ amortized or
+     tree, after insertions only)</td><td>\f$ O( \log n ) \f$ amortized or
      expected</td><td>none, rebuilds</td></tr>
  <tr><td><tt>LeftLeaningRedBlackTree</tt></td><td>colors, left-leaning
      (a 2-4 tree)</td><td>\f$ \le 2 \log_2( n + 1 ) \f$</td>
@@ -930,16 +930,18 @@
  rebuilt with an ancestor start their timers again with the new sizes.
  For `DynamiteTree` (exercise 8.10) a node of size \f$ s \f$ on the path
  explodes with probability \f$ 1 / s \f$, at a cost \f$ s \f$, i.e.,
- \f$ O( 1 ) \f$ expected per node and per operation; by Lemma 11, a node
- rebuilt with \f$ s \f$ nodes goes past \f$ \frac34 \f$ only after
- \f$ k > s / 3 \f$ operations through it, and it survives them with
- probability at most \f$ \prod_{t=1}^{k} ( 1 - 1 / ( s + t ) ) = s / ( s + k )
- < 3 / 4 \f$. If each edge of a path is bad (the child past \f$ \frac34 \f$)
- with probability at most \f$ 3 / 4 \f$ given the nodes above it, the
- expected depth is at most \f$ 4 \log_{4/3} n + O( 1 ) \f$, and an operation
- costs \f$ O( \log n ) \f$ in expectation. This conditional bound is
- assumed, not proved: the node at a given depth, and the time of its last
- rebuild, depend on the same explosions.
+ \f$ O( 1 ) \f$ expected per node and per operation. On a sequence of
+ insertions fixed in advance, a node rebuilt with \f$ s \f$ nodes goes past
+ \f$ \frac34 \f$ only after \f$ k > s \f$ insertions through it, and it
+ survives them with probability \f$ \prod_{t=1}^{k} ( 1 - 1 / ( s + t ) ) =
+ s / ( s + k ) < 1 / 2 \f$; with no removal, the keys of the subtree at each
+ depth of the path of a key, and the key of its root, depend only on the
+ draws of that depth and of those above, so that the bound holds for each
+ edge of the path given the edges above it, and the path has at most
+ \f$ 2 \lfloor \log_{4/3} n \rfloor + 2 \f$ nodes in expectation, an
+ operation costing \f$ O( \log n ) \f$ expected time. A removal that
+ splices out a node lifts its subtree by one level, built by the draws of
+ the level below, and with removals no bound on the depth is proved.
 
  The order maintenance of exercise 8.11 is in the area of the sequences
  (`OrderMaintenanceList.h`): labels that encode the paths of a tree change
