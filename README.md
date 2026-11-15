@@ -14,8 +14,9 @@ header-only C++20 library of the data structures and the parallelism that
 the other libraries lack, with typed modifications that observers follow
 incrementally, contracts checked at a level chosen at compile time, and
 capabilities that the algorithms query through concepts. It is made to
-work together with LEMON, Boost and the standard library rather than in
-place of them, and it leaves to them what they already do as well.
+work together with the standard library, Boost, LEMON and GMP rather than
+in place of them, leaving to them what they already do as well, and to run
+its parallelism on TBB, OpenMP or MPI.
 
 ADS also realizes the algorithms and the data structures of the (Italian)
 textbook
