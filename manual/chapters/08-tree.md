@@ -8275,8 +8275,8 @@ class BPlusTree
 ```cpp
 // declarations of <ADS/tree/BTreeMap.h>
 template< class K , class V , class Less = std::less< K > ,
-          std::size_t B = 512 ,
-          bool R = false >
+          std::size_t B = 512 , bool R = false ,
+          class A = HugePageAllocator< std::pair< const K , V > > >
  requires std::default_initializable< K > && std::default_initializable< V >
 class BTreeMap
 {
@@ -8289,9 +8289,11 @@ class BTreeMap
    std::clamp< std::size_t >( B / ( sizeof( K ) + sizeof( void * ) ) , 4 ,
                               255 );
  explicit BTreeMap( Less less = Less() );
- BTreeMap( const BTreeMap & o );
+ BTreeMap( const BTreeMap & o )
+  requires( PLAIN );
  BTreeMap( BTreeMap && o ) noexcept;
- BTreeMap & operator=( BTreeMap o ) noexcept;
+ BTreeMap & operator=( BTreeMap o ) noexcept
+  requires( PLAIN );
  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
  [[nodiscard]] const V * find( const K & k ) const;
  [[nodiscard]] V * find( const K & k );
@@ -8524,11 +8526,12 @@ struct MaxAugmentation
  static Value from( const K & , const V & v );
  static Value combine( const Value & a , const Value & b );
  };
-template< std::totally_ordered K , class V , class B , class G , class Policy >
+template< std::totally_ordered K , class V , class B , class G , class Policy ,
+          class A >
  requires Augmentation< G , K , V >
-class JoinTree : public Joinable< JoinTree< K , V , B , G , Policy > ,
-                                  JoinTreeNodes< K , V , B , G , Policy > , K ,
-                                  V >
+class JoinTree : public Joinable< JoinTree< K , V , B , G , Policy , A > ,
+                                  JoinTreeNodes< K , V , B , G , Policy , A > ,
+                                  K , V >
 {
  public:
  using Key = K;
@@ -8587,20 +8590,25 @@ class JoinTree : public Joinable< JoinTree< K , V , B , G , Policy > ,
  [[nodiscard]] const_iterator end( void ) const;
  };
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-          class Policy = NoObservers >
-using JoinAVLTree = JoinTree< K , V , AVLBalance , G , Policy >;
+          class Policy = NoObservers ,
+          class A = std::allocator< std::pair< const K , V > > >
+using JoinAVLTree = JoinTree< K , V , AVLBalance , G , Policy , A >;
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-          class Policy = NoObservers >
-using JoinRedBlackTree = JoinTree< K , V , RedBlackBalance , G , Policy >;
+          class Policy = NoObservers ,
+          class A = std::allocator< std::pair< const K , V > > >
+using JoinRedBlackTree = JoinTree< K , V , RedBlackBalance , G , Policy , A >;
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-          class Policy = NoObservers >
-using WeightBalancedTree = JoinTree< K , V , WeightBalance , G , Policy >;
+          class Policy = NoObservers ,
+          class A = std::allocator< std::pair< const K , V > > >
+using WeightBalancedTree = JoinTree< K , V , WeightBalance , G , Policy , A >;
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-          class Policy = NoObservers >
-using JoinTreap = JoinTree< K , V , TreapBalance , G , Policy >;
+          class Policy = NoObservers ,
+          class A = std::allocator< std::pair< const K , V > > >
+using JoinTreap = JoinTree< K , V , TreapBalance , G , Policy , A >;
 template< std::totally_ordered K , class V , class G ,
-          class Policy = NoObservers >
-using AugmentedMap = JoinTree< K , V , WeightBalance , G , Policy >;
+          class Policy = NoObservers ,
+          class A = std::allocator< std::pair< const K , V > > >
+using AugmentedMap = JoinTree< K , V , WeightBalance , G , Policy , A >;
 ```
 
 ```cpp

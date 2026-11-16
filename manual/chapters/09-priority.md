@@ -124,11 +124,11 @@ library:
 ```cpp
 // declarations of <ADS/priority/DaryHeap.h>
 template< class T , class Better = std::less< T > , unsigned D = 4 ,
-          bool BottomUp = false >
+          bool BottomUp = false , class A = HugePageAllocator< T > >
 class DaryHeap
 {
  public:
- explicit DaryHeap( Better better = Better() );
+ explicit DaryHeap( Better better = Better() , const A & alloc = A() );
  void push( const T & x );
  const T & top( void ) const;
  T pop( void );
@@ -704,7 +704,8 @@ The public members of `IndexedDaryHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/IndexedDaryHeap.h>
-template< class K , unsigned D = 4 , class Policy = NoObservers >
+template< class K , unsigned D = 4 , class Policy = NoObservers ,
+          class A = std::allocator< K > >
 class IndexedDaryHeap
 {
  public:
@@ -1071,12 +1072,14 @@ The public members of `FibonacciHeapPriorityQueue` are the following:
 
 ```cpp
 // declarations of <ADS/priority/FibonacciHeapPriorityQueue.h>
-template< class T , std::totally_ordered P = int >
+template< class T , std::totally_ordered P = int ,
+          class A = HugePageAllocator< T > >
 class FibonacciHeapPriorityQueue
 {
  public:
  using Handle = Node *;
  FibonacciHeapPriorityQueue( void );
+ explicit FibonacciHeapPriorityQueue( const A & alloc );
  bool empty( void ) const;
  int size( void ) const;
  const T & min( void ) const;
@@ -1187,12 +1190,14 @@ The public members of `PairingHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/PairingHeap.h>
-template< class T , std::totally_ordered P = int , bool Aux = false >
+template< class T , std::totally_ordered P = int , bool Aux = false ,
+          class A = HugePageAllocator< T > >
 class PairingHeap
 {
  public:
  using Handle = Node *;
  PairingHeap( void );
+ explicit PairingHeap( const A & alloc );
  bool empty( void ) const;
  int size( void ) const;
  const T & min( void ) const;
@@ -1307,7 +1312,8 @@ The public members of `RadixHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/RadixHeap.h>
-template< class T , std::integral K = std::uint32_t , unsigned B = 4 >
+template< class T , std::integral K = std::uint32_t , unsigned B = 4 ,
+          class A = std::allocator< T > >
 class RadixHeap
 {
  public:
@@ -1629,11 +1635,12 @@ The public members of `MinMaxHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/MinMaxHeap.h>
-template< class T , class Better = std::less< T > >
+template< class T , class Better = std::less< T > ,
+          class A = std::allocator< T > >
 class MinMaxHeap
 {
  public:
- explicit MinMaxHeap( Better better = Better() );
+ explicit MinMaxHeap( Better better = Better() , const A & alloc = A() );
  void push( const T & x );
  const T & min( void ) const;
  const T & max( void ) const;
@@ -1672,11 +1679,12 @@ The public members of `IntervalHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/MinMaxHeap.h>
-template< class T , class Better = std::less< T > >
+template< class T , class Better = std::less< T > ,
+          class A = std::allocator< T > >
 class IntervalHeap
 {
  public:
- explicit IntervalHeap( Better better = Better() );
+ explicit IntervalHeap( Better better = Better() , const A & alloc = A() );
  void push( const T & x );
  const T & min( void ) const;
  const T & max( void ) const;

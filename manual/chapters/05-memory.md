@@ -2,7 +2,8 @@
 
 [Source: `include/ADS/memory/Allocators.h`, `Arena.h`, `ObjectPool.h`,
 `SizeClassAllocator.h`, `PageHeap.h`, `PoolAllocator.h`,
-`ConcurrentPool.h`, `HugePageAllocator.h`, `CellHeap.h`]
+`ConcurrentPool.h`, `HugePageAllocator.h`, `CellHeap.h`,
+`AllocatorAware.h`]
 
 We are concerned in this chapter with the *dynamic storage allocation*,
 i.e., with the management of a memory from which a program takes blocks
@@ -20,14 +21,16 @@ many ([§5.8](05-memory.md#sec-5-8)), and the huge pages
 ([§5.9](05-memory.md#sec-5-9)). In [§5.10](05-memory.md#sec-5-10) the
 program never gives a block back, since a garbage collector finds the
 cells it no longer reaches; [§5.11](05-memory.md#sec-5-11) compares the
-allocators on what each one is meant for. All the allocators but the
+allocators on what each one is meant for, and
+[§5.12](05-memory.md#sec-5-12) gives them to the containers of the other
+chapters. All the allocators but the
 first two and the last one give real memory (those three give indices of a
 vector). Most of them serve the structures of the other chapters (e.g.,
 the nodes of the lists, of the search trees and of the hash tables). In the
 sets of [§1.9](01-introduction.md#sec-1-9), `Allocators.h` and `CellHeap.h`
 are base and the other headers of this chapter are advanced, while
-`HugePageAllocator.h` and `ObjectPool.h` are in the core that the two sets
-include.
+`AllocatorAware.h`, `HugePageAllocator.h` and `ObjectPool.h` are in the core
+that the two sets include.
 
 ## 5.1 Definitions and notation {#sec-5-1}
 
@@ -68,6 +71,7 @@ objects that a pool has held at once.
 | `BoundaryTagAllocator` | any size | $O( f )$ | $O( 1 )$, merging both neighbors | 2 words of tags, external fragmentation |
 | `BuddyAllocator` | powers of 2 | $O( m )$ splits | $O( m )$ merges | less than half of each block |
 | `Arena` | objects of one type | $O( 1 )$, a pointer bump | only all at once, by `clear()` in $O( 1 )$ for a trivial destructor | part of the last block |
+| `ArenaResource` | bytes of any type and alignment | $O( 1 )$, a pointer bump | only all at once, by `release()` | part of each block, and the padding of the alignments |
 | `ObjectPool` | objects of one type | $O( 1 )$, but for a new block | $O( 1 )$, and all at once by `clear()` in $O( 1 )$ | at most $2 k + n$ slots |
 | `SizeClassAllocator` | 41 classes up to 32768 bytes | $O( 1 )$ | $O( 1 )$, sized | below 20% of a block past 128 bytes |
 | `PoolResource` | classes of 8 bytes up to $M$ | $O( 1 )$ | $O( 1 )$ | below $\max( a , g )$ bytes a slot |
@@ -1361,7 +1365,149 @@ comparison of our allocators with the allocator of the system and with
 mimalloc, on the workloads of the containers of the library, belongs to
 Appendix B, where it will be made on an idle machine.
 
-## 5.12 Discussion and references {#sec-5-12}
+## 5.12 The allocators of the containers {#sec-5-12}
+
+The containers of the other chapters that manage their memory take an
+allocator `A` as their last template parameter (see
+[Table 5.2](05-memory.md#tab-5-2)). Hence the allocators of this chapter,
+those of `std::pmr` and the general allocators of today reach their nodes,
+places and blocks, which would otherwise come from the global
+`operator new`. The containers follow the rules of the allocator-aware
+containers of the standard library, which `ADS/memory/AllocatorAware.h`
+writes once for all of them. A container rebinds `A` to the type of what it
+allocates, by `std::allocator_traits`, and makes a copy on the allocator
+that `select_on_container_copy_construction()` gives. A copy assignment, a
+move assignment and a swap take the allocator of the other container only
+when the corresponding trait of `A` is true, i.e.,
+`propagate_on_container_copy_assignment`,
+`propagate_on_container_move_assignment` or `propagate_on_container_swap`.
+
+A move assignment between two containers whose allocators are not equal
+and do not propagate cannot take the memory of its source, since that
+memory must go back to the allocator that gave it. It thus moves the items
+one by one into memory of the target, in time linear in their number, and
+this is the only case that costs more than with `std::allocator`, whose
+instances are all equal. A swap of two such containers is not allowed, as
+in the standard, and a container whose allocator does not propagate on a
+swap checks the equality of the two allocators as a precondition (see
+[§1.6](01-introduction.md#sec-1-6) for the contracts).
+
+The default allocator of each container is the one it used before it took a
+parameter. This is `std::allocator` for most of them, and the
+`HugePageAllocator` of [§5.9](05-memory.md#sec-5-9) for the vector of
+`DaryHeap` and for the containers that pool their nodes in an `ObjectPool`,
+which then takes the allocator under its blocks. Such an allocator is empty,
+and the container holds it as an empty base or as an empty member. The paths
+that only a stateful allocator needs (a stored size, a move item by item, a
+check of equality) are discarded at compile time. Hence the code and the
+layout of a container with its default allocator are those it had before; in
+fact, the instructions that Callgrind counts on the same work are equal to the
+unit with and without the parameter. The one exception is `IndexedDaryHeap`
+compiled by GCC 13 without Boost, whose `push()` executes one instruction more
+since its registers are allocated differently (the same source gives equal
+counts with clang and with Boost). The same holds for any allocator whose
+instances are all equal and default-constructible (e.g., `mi_stl_allocator` of
+mimalloc). We remark that a stateful allocator instead costs a pointer in the
+container. For the hash tables of open addressing it also costs a call of the
+allocator in place of the aligned `operator new`, which one may expect to
+matter only for small tables rebuilt often.
+
+<span id="tab-5-2"></span>**Table 5.2.** The containers that take an
+allocator `A`, what they allocate from it and their default allocator;
+"pool" means that the blocks of an `ObjectPool` come from `A`, and
+"stateless" that `A` must have all its instances equal.
+
+| Container | From `A` | Default `A` |
+|---------------------------|----------------------------|-------------------------|
+| `FlatHashTable` | the places and the control bytes, in lines of 64 bytes (with Boost, the memory of `boost::unordered_flat_map`) | `std::allocator` |
+| `DenseHashMap` | the pairs and the groups | `std::allocator` |
+| `BucketCuckooTable`, `CuckooHashTable` | the tags and the places | `std::allocator` |
+| `PointerTable` | the places | `std::allocator` |
+| `BTreeMap` | the leaves and the internal nodes, pools | `HugePageAllocator` |
+| `JoinTree` and its aliases | the nodes, stateless | `std::allocator` |
+| `PairingHeap`, `FibonacciHeapPriorityQueue` | the nodes, a pool | `HugePageAllocator` |
+| `MeldableHeap` | the nodes | `std::allocator` |
+| `DaryHeap` | the vector | `HugePageAllocator` |
+| `MinMaxHeap`, `IntervalHeap`, `RadixHeap`, `IndexedDaryHeap` | the vectors | `std::allocator` |
+| `RootishArrayStack`, `TieredVector` | the blocks and the vector of the blocks | `std::allocator` |
+| `SmallVector` | the items beyond the inner room | `std::allocator` |
+
+Any allocator of the standard plugs in. With `std::pmr::polymorphic_allocator`
+over a `std::pmr::monotonic_buffer_resource`, the memory of a container comes
+from the buffers of the resource and goes back with it, while its copies are
+made on the default resource, the one that
+`select_on_container_copy_construction()` of `std::pmr` gives. With
+`mi_stl_allocator`, which is stateless, the code is that of `std::allocator`
+on the heaps of mimalloc. jemalloc has no allocator of the standard, but an
+allocator of a few lines over its `mallocx()` and `sdallocx()` serves, and
+passes back to jemalloc the size of each block it frees. The arenas of
+[§5.4](05-memory.md#sec-5-4) serve the containers through `ArenaResource`, an
+arena of bytes of any type and alignment, which is a resource of the
+`PoolAllocator` of [§5.7](05-memory.md#sec-5-7). A request of $b$ bytes
+aligned to $a$ moves a pointer in the current block, and a block of $\max( n ,
+b + a )$ bytes is taken from the allocator of the resource when the request
+does not fit. A deallocation leaves the block as it is, and the blocks go back
+only with `release()` or with the resource, as those of
+`std::pmr::monotonic_buffer_resource`, though with no virtual call. The other
+way round, `PmrResource` of `ADS/interop/std/Pmr.h` makes any resource of the
+library, `ArenaResource` included, a `std::pmr::memory_resource`. For
+instance, with the headers `ADS/memory/Arena.h` and
+`ADS/memory/PoolAllocator.h`, a table on a monotonic buffer and a heap on an
+arena are
+
+```cpp
+#include "ADS/dictionary/FlatHashTable.h"
+#include "ADS/priority/DaryHeap.h"
+#include <memory_resource>
+std::pmr::monotonic_buffer_resource m;
+using PA = std::pmr::polymorphic_allocator< std::pair< const int , double > >;
+ADS::FlatHashTable< int , double , ADS::DefaultHash< int > ,
+                    std::equal_to< int > , PA >
+  T{ PA( &m ) };
+T.insert( 1 , 2.5 );  // the places from the buffers of m
+ADS::ArenaResource<> r;
+using AA = ADS::PoolAllocator< int , ADS::ArenaResource<> >;
+ADS::DaryHeap< int , std::less< int > , 4 , false , AA > H( {} , AA( r ) );
+H.push( 7 );  // the vector from the blocks of r
+```
+
+In `ADS/memory/Arena.h`, the declarations of `ArenaResource` that a user
+calls are
+
+```cpp
+// declarations of <ADS/memory/Arena.h>
+template< class A = std::allocator< std::max_align_t > >
+class ArenaResource
+{
+ public:
+ explicit ArenaResource( std::size_t n = std::size_t( 1 ) << 16 ,
+                         const A & alloc = A() );
+ void * allocate( std::size_t b ,
+                  std::size_t a = alignof( std::max_align_t ) );
+ void release( void ) noexcept;
+ std::size_t bytes( void ) const { ... }
+ std::size_t size( void ) const { ... }
+ };
+```
+
+We remark three limits of the scheme. First, the join trees of
+[chapter 8](08-tree.md#ch-8) take only a stateless allocator, since the
+algorithms of `ADS/tree/JoinAlgorithms.h` build and free their nodes with
+no tree at hand (and from many threads in the parallel set operations),
+and a stateful allocator would thus have nowhere to be kept. Second, the
+containers that build their items in the memory they manage (e.g., the
+places of a hash table, the nodes of a pool and the blocks of
+`TieredVector`) build them by a placement `new`, without `construct()` of
+the allocator. The construction with an allocator of `std::pmr` thus does
+not reach the items, and a key of type `std::pmr::string` usually keeps the
+resource it was built with (cf. the vectors of the other containers, whose
+`construct()` passes their resource on).
+Third, the scratch arrays of a rebuild or of a bulk load live for one call
+and come from `operator new`, e.g., the counts of the groups of
+`DenseHashMap` and the levels that `BTreeMap` builds from a sorted range.
+Only the memory that a container keeps comes from its allocator.
+
+## 5.13 Discussion and references {#sec-5-13}
 
 The dynamic storage allocation of [Knuth 1997,
 §2.5](Z-bibliography.md#ref-knuth1997), with the fits, the boundary tags,
@@ -1391,7 +1537,7 @@ Algorithm 2.3.5E](Z-bibliography.md#ref-knuth1997). We do not treat here
 the copying and the generational collectors, nor the collectors that run
 concurrently with the program, since the library has none of them.
 
-## 5.13 Exercises {#sec-5-13}
+## 5.14 Exercises {#sec-5-14}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
@@ -1432,3 +1578,12 @@ Each exercise names the test of the library that solves it (run it with
    page, and keeps the large blocks given back for the next request of the
    same size. Tests: `engineered.huge-page-allocator`,
    `memory.huge-page-cache`.
+9. Give an allocator to the hash tables of open addressing, to the heaps
+   and to the sequences of blocks, with the rules of the allocator-aware
+   containers of the standard, so that their memory comes from a
+   `std::pmr::monotonic_buffer_resource`, from an arena of bytes and from
+   a stateful allocator whose ledger is empty when the containers die,
+   while the default allocator leaves the code as it was. Tests:
+   `engineered_allocators.alloc-flat-hash`,
+   `engineered_allocators.alloc-sequences`,
+   `engineered_allocators.alloc-arena-resource`.

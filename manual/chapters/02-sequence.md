@@ -413,11 +413,12 @@ user calls are
 
 ```cpp
 // declarations of <ADS/sequence/SmallVector.h>
-template< class T , std::size_t N = 8 >
+template< class T , std::size_t N = 8 , class A = std::allocator< T > >
 class SmallVector
 {
  public:
  SmallVector( void ) noexcept;
+ explicit SmallVector( const A & alloc ) noexcept;
  explicit SmallVector( std::size_t n , const T & x = T() );
  SmallVector( std::initializer_list< T > items );
  template< std::input_iterator I , std::sentinel_for< I > S >
@@ -949,11 +950,12 @@ In `ADS/sequence/RootishArrayStack.h`, the declarations of
 
 ```cpp
 // declarations of <ADS/sequence/RootishArrayStack.h>
-template< class T >
+template< class T , class A = std::allocator< T > >
 class RootishArrayStack
 {
  public:
  RootishArrayStack( void );
+ explicit RootishArrayStack( const A & alloc );
  RootishArrayStack( std::initializer_list< T > l );
  bool empty( void ) const;
  std::size_t size( void ) const;
@@ -1068,11 +1070,12 @@ user calls are
 
 ```cpp
 // declarations of <ADS/sequence/TieredVector.h>
-template< class T >
+template< class T , class A = std::allocator< T > >
 class TieredVector
 {
  public:
  TieredVector( void );
+ explicit TieredVector( const A & alloc );
  bool empty( void ) const;
  std::size_t size( void ) const;
  std::size_t block( void ) const;

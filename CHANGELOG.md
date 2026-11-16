@@ -23,6 +23,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `declcheck.py` compiles each example with the flags of its library
   (`// with <library>`, skipped where the library is not found) and checks
   with `--tests` that its code is still in the test.
+- An allocator A as the last template parameter of the advanced containers
+  that manage their memory, with the rules of the allocator-aware
+  containers of the standard written once in memory/AllocatorAware.h
+  (rebind, select_on_container_copy_construction, the three
+  propagate_on_container traits, the items moved one by one between
+  unequal allocators, a precondition on the allocators of a swap):
+  FlatHashTable, on its own path and on Boost, DenseHashMap,
+  BucketCuckooTable, CuckooHashTable, BTreeMap, PairingHeap and
+  FibonacciHeapPriorityQueue through their ObjectPool, which takes the
+  allocator under its blocks, the join trees on a stateless allocator,
+  DaryHeap, MinMaxHeap, IntervalHeap, RadixHeap, IndexedDaryHeap,
+  RootishArrayStack, TieredVector and SmallVector, on its own path and on
+  Boost, each with allocator_type and get_allocator(); the default
+  allocator of each one is the one it used before (std::allocator, or
+  HugePageAllocator), held as an empty base or member, so that its code and
+  its layout are unchanged (the instructions counted by Callgrind on the
+  same work are equal, but for one per push of IndexedDaryHeap by GCC 13
+  without Boost, whose registers are allocated differently); ArenaResource in memory/Arena.h, an arena of bytes
+  of any alignment under PoolAllocator; ObjectPool::get_allocator() and its
+  swap with an allocator that cannot be assigned, as those of std::pmr; the
+  test engineered_allocators, each container on a
+  std::pmr::monotonic_buffer_resource, on counting allocators that
+  propagate or not and whose ledgers are empty at the end, and on an
+  ArenaResource, and boost-allocators in engineered_boost; section 5.12
+  and Table 5.2 of the manual.
 - The two sets of the headers, by their origin: base, what follows a
   textbook or an academic source (Montresor, TAOCP, Ferragina, Morin), and
   advanced, what is written for speed beyond them, with core, the

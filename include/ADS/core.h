@@ -38,6 +38,7 @@
 #include "ADS/compression/PackedBits.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/external/RecordFile.h"
+#include "ADS/memory/AllocatorAware.h"
 #include "ADS/memory/HugePageAllocator.h"
 #include "ADS/memory/ObjectPool.h"
 #include "ADS/parallel/Executor.h"

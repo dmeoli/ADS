@@ -211,7 +211,7 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-428 headers: 245 base, 153 advanced, 12 core and 18 interop.
+429 headers: 245 base, 153 advanced, 13 core and 18 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
@@ -232,7 +232,7 @@ file does not allow.
 | `interop/parallel/` |  |  |  | `KokkosExecutor`, `SenderExecutor`, `StdParExecutor`, `TaskflowExecutor` |
 | `interop/std/` |  |  |  | `FlatMap`, `Pmr` |
 | `intractable/` | `Approximation`, `BranchAndBound`, `FifteenPuzzle`, `Heuristics`, `Pseudopolynomial` |  |  |  |
-| `memory/` | `Allocators`, `CellHeap` | `Arena`, `ConcurrentPool`, `PageHeap`, `PoolAllocator`, `SizeClassAllocator` | `HugePageAllocator`, `ObjectPool` |  |
+| `memory/` | `Allocators`, `CellHeap` | `Arena`, `ConcurrentPool`, `PageHeap`, `PoolAllocator`, `SizeClassAllocator` | `AllocatorAware`, `HugePageAllocator`, `ObjectPool` |  |
 | `mfset/` | `ListMFSet`, `MFSet` | `RemUnionFind`, `RollbackUnionFind`, `UnionFind` |  |  |
 | `numeric/` | `BigInteger`, `BinaryInteger`, `Catalan`, `Combinatorics`, `Matrix`, `MatrixChain`, `NumberTheory`, `Polynomial`, `RSA`, `RandomNumbers`, `RandomSampling`, `Rational`, `SparseMatrix` | `CsrMatrix`, `DenseMatrix`, `DynamicCsr`, `RandomGenerators`, `SellMatrix`, `SparseAssembly` |  |  |
 | `optimization/` | `CoinChange`, `CoinGame`, `FractionalKnapsack`, `GridPaths`, `HouseProblems`, `IntervalCover`, `Intervals`, `Knapsack`, `KnapsackVariants`, `LinearPartition`, `OptimalSearchTree`, `SequenceProblems`, `ShortestJobFirst`, `StockTrading`, `WeightedIntervals` |  |  |  |

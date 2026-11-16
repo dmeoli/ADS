@@ -1785,7 +1785,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `queue/SlidingAggregate.h` | advanced | `Amortized`, `WorstCase`, `SlidingAggregate` | [1](01-introduction.md#ch-1) |
 | `queue/UniqueQueue.h` | base | `UniqueQueue` | [4](04-queue.md#ch-4) |
 | `memory/Allocators.h` | base | `BoundaryTagAllocator`, `BuddyAllocator` | [5](05-memory.md#ch-5) |
-| `memory/Arena.h` | advanced | `Arena` | [5](05-memory.md#ch-5) |
+| `memory/Arena.h` | advanced | `Arena`, `ArenaResource` | [5](05-memory.md#ch-5) |
 | `memory/CellHeap.h` | base | `CellHeap` | [5](05-memory.md#ch-5) |
 | `memory/ConcurrentPool.h` | advanced | `ConcurrentPoolResource` | [5](05-memory.md#ch-5) |
 | `memory/HugePageAllocator.h` | core | `HugePageAllocator` | [5](05-memory.md#ch-5) |
@@ -2032,7 +2032,7 @@ only, by chapter.
 | [2](02-sequence.md#ch-2) | `sequence/IndexedList.h`, `sequence/ListSort.h`, `sequence/Rearrangements.h`, `sequence/SequenceAlgorithms.h` |
 | [3](03-stack.md#ch-3) | `stack/Expressions.h`, `stack/StackAlgorithms.h` |
 | [4](04-queue.md#ch-4) | `queue/QueueAlgorithms.h` |
-| [5](05-memory.md#ch-5) | `memory/PageHeap.h` |
+| [5](05-memory.md#ch-5) | `memory/AllocatorAware.h`, `memory/PageHeap.h` |
 | [6](06-search.md#ch-6) | `search/BinarySearch.h`, `search/CountLess.h`, `search/InterpolationSearch.h`, `search/KnuthSearches.h`, `search/LocalOptima.h`, `search/Minimum.h`, `search/MonotoneSearch.h`, `search/NthElement.h`, `search/Selection.h`, `search/SortedSearches.h` |
 | [7](07-dictionary.md#ch-7) | `dictionary/HashFunctions.h`, `dictionary/RowFingerprint.h`, `dictionary/TableSize.h` |
 | [8](08-tree.md#ch-8) | `tree/BinaryTreeAlgorithms.h`, `tree/ExpressionTree.h`, `tree/HeapByInsertion.h` |

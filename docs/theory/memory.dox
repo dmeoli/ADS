@@ -270,6 +270,30 @@
  of the same size, so that a structure that grows and shrinks through the
  same sizes pays the faults of its pages once.
 
+ \section theory_memory_containers The allocators of the containers
+
+ The containers that manage their memory take an allocator `A` with the
+ rules of the allocator-aware containers of the standard
+ ([container.reqmts]), written once in `AllocatorAware.h`: `A` is rebound
+ to what the container allocates, a copy is made on the allocator that
+ `select_on_container_copy_construction()` gives, and an assignment or a
+ swap takes the allocator of the other container only when the
+ corresponding trait `propagate_on_container_copy_assignment`,
+ `propagate_on_container_move_assignment` or `propagate_on_container_swap`
+ is true. A move assignment between unequal allocators that do not
+ propagate moves the items one by one, in \f$ O( n ) \f$ time, since the
+ memory of the source must go back to the allocator that gave it; it is
+ the only operation that costs more than with `std::allocator`, whose
+ instances are all equal. The default allocator of each container is the
+ one it used before (`std::allocator`, or the `HugePageAllocator` of its
+ `ObjectPool`); it is empty, held as an empty base or member, and the paths
+ of a stateful allocator are discarded at compile time, so that the code
+ and the layout are unchanged. `ArenaResource` [see `Arena.h`] is the arena
+ of Hanson for the bytes of any type, a resource of `PoolAllocator`, so that
+ the containers take their memory from a few blocks freed all at once. The
+ join trees take only a stateless allocator, since their algorithms build
+ and free nodes with no tree at hand, also from many threads.
+
  \section theory_memory_gc Garbage collection
 
  In `CellHeap` the cells have two fields, each nil, an atom or the address

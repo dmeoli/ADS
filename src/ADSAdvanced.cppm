@@ -308,6 +308,7 @@ using ADS::sccTarjan;
 
 // memory/Arena.h
 using ADS::Arena;
+using ADS::ArenaResource;
 
 // memory/ConcurrentPool.h
 using ADS::ConcurrentPoolResource;

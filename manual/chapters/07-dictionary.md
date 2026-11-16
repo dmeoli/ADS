@@ -1736,25 +1736,30 @@ Below are the declarations of `FlatHashTable`, followed by an example of use.
 ```cpp
 // declarations of <ADS/dictionary/FlatHashTable.h>
 template< class K , class V , class H = DefaultHash< K > ,
-          class Eq = std::equal_to< K > >
+          class Eq = std::equal_to< K > ,
+          class A = std::allocator< std::pair< const K , V > > >
 class FlatHashTable
 {
  public:
  using Key = K;
  using Value = V;
  explicit FlatHashTable( std::size_t n = 0 , H h = H() , Eq eq = Eq() );
+ FlatHashTable( std::size_t n , H h , Eq eq , const A & alloc );
+ explicit FlatHashTable( const A & alloc );
  FlatHashTable( const FlatHashTable & o );
+ FlatHashTable( const FlatHashTable & o , const A & alloc );
  FlatHashTable( FlatHashTable && o ) noexcept;
+ FlatHashTable( FlatHashTable && o , const A & alloc );
  ~FlatHashTable();
  std::optional< V > lookup( const K & k ) const;
  const V * find( const K & k ) const;
  V * find( const K & k );
  bool insert( const K & k , const V & v );
  bool insert( K && k , V && v );
- template< class... A >
- std::pair< V * , bool > try_emplace( const K & k , A &&... a );
- template< class... A >
- std::pair< V * , bool > try_emplace( K && k , A &&... a );
+ template< class... Args >
+ std::pair< V * , bool > try_emplace( const K & k , Args &&... a );
+ template< class... Args >
+ std::pair< V * , bool > try_emplace( K && k , Args &&... a );
  bool remove( const K & k );
  bool contains( const K & k ) const;
  std::size_t size( void ) const;
@@ -1841,25 +1846,29 @@ We declare `DenseHashMap` as follows.
 ```cpp
 // declarations of <ADS/dictionary/DenseHashMap.h>
 template< class K , class V , class H = DefaultHash< K > ,
-          class Eq = std::equal_to< K > >
+          class Eq = std::equal_to< K > ,
+          class A = std::allocator< std::pair< const K , V > > >
 class DenseHashMap
 {
  public:
  using Key = K;
  using Value = V;
- explicit DenseHashMap( std::size_t n = 0 , H h = H() , Eq eq = Eq() );
+ explicit DenseHashMap( std::size_t n = 0 , H h = H() , Eq eq = Eq() ,
+                        const A & alloc = A() );
  DenseHashMap( const DenseHashMap & o );
+ DenseHashMap( const DenseHashMap & o , const A & alloc );
  DenseHashMap( DenseHashMap && o ) noexcept;
+ DenseHashMap( DenseHashMap && o , const A & alloc );
  ~DenseHashMap() = default;
  std::optional< V > lookup( const K & k ) const;
  const V * find( const K & k ) const;
  V * find( const K & k );
  bool insert( const K & k , const V & v );
  bool insert( K && k , V && v );
- template< class... A >
- std::pair< V * , bool > try_emplace( const K & k , A &&... a );
- template< class... A >
- std::pair< V * , bool > try_emplace( K && k , A &&... a );
+ template< class... Args >
+ std::pair< V * , bool > try_emplace( const K & k , Args &&... a );
+ template< class... Args >
+ std::pair< V * , bool > try_emplace( K && k , Args &&... a );
  bool remove( const K & k );
  bool contains( const K & k ) const;
  std::size_t size( void ) const;
@@ -1874,7 +1883,7 @@ class DenseHashMap
  const std::pair< K , V > * data( void ) const;
  void swap( DenseHashMap & o ) noexcept;
  using const_iterator =
-   typename std::vector< std::pair< K , V > >::const_iterator;
+   typename detail::AllocVector< A , std::pair< K , V > >::const_iterator;
  };
 ```
 
@@ -2071,7 +2080,8 @@ We declare `CuckooHashTable` as follows.
 
 ```cpp
 // declarations of <ADS/dictionary/CuckooHashing.h>
-template< class K , class V , class H = std::hash< K > >
+template< class K , class V , class H = std::hash< K > ,
+          class A = std::allocator< std::pair< const K , V > > >
 class CuckooHashTable
 {
  public:
@@ -2079,7 +2089,7 @@ class CuckooHashTable
  using Value = V;
  explicit CuckooHashTable( std::size_t m = 16 , double maxLoad = 0.4 ,
                            std::size_t s = 0 , std::uint64_t seed = 1 ,
-                           H h = H() );
+                           H h = H() , const A & alloc = A() );
  std::optional< V > lookup( const K & k ) const;
  void insert( const K & k , const V & v );
  void remove( const K & k );
@@ -2266,13 +2276,15 @@ In C++, `BucketCuckooTable` is declared as follows.
 ```cpp
 // declarations of <ADS/dictionary/BucketCuckooTable.h>
 template< class K , class V , class H = DefaultHash< K > ,
-          class Eq = std::equal_to< K > >
+          class Eq = std::equal_to< K > ,
+          class A = std::allocator< std::pair< const K , V > > >
 class BucketCuckooTable
 {
  public:
  using Key = K;
  using Value = V;
- explicit BucketCuckooTable( std::size_t n = 0 , H h = H() , Eq eq = Eq() );
+ explicit BucketCuckooTable( std::size_t n = 0 , H h = H() , Eq eq = Eq() ,
+                             const A & alloc = A() );
  std::optional< V > lookup( const K & k ) const;
  const V * find( const K & k ) const;
  V * find( const K & k );
