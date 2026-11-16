@@ -2207,6 +2207,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The stripes of the hash of the strings of more than 256 bytes
+  (FastHash.tpp) on the kernel of Highway (ADS/impl/simd/Hash.tpp), 2 to 8
+  lanes at a time with the words of the scalar code, so that the hashes
+  are those of every machine; the lanes of AVX-512 and AVX2 are gone.
+
 - The intersection of sorted arrays of integers of 32 bits
   (VectorIntersection.h), the operations of two `BoolSet` and of two
   bitmaps of `RoaringBitmap`, and the intersection, the difference and the

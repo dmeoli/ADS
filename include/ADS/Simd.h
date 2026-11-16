@@ -97,6 +97,7 @@ HWY_EXPORT( windowsCommonU32 );
 HWY_EXPORT( intersectBlocks16 );
 HWY_EXPORT( differenceBlocks16 );
 HWY_EXPORT( unionBlocks16 );
+HWY_EXPORT( hashStripes );
 
 /// the 1 bits of the words \f$ w[ 0 .. n - 1 ] \f$
 inline std::uint64_t popcount( const std::uint64_t * w , std::size_t n )
@@ -205,6 +206,16 @@ inline std::size_t unionBlocks16( const std::uint16_t * a , std::size_t na ,
 				  std::uint16_t * out )
 {
  return( HWY_DYNAMIC_DISPATCH( unionBlocks16 )( a , na , b , nb , out ) );
+ }
+
+/// the 8 lanes of the stripes of 64 bytes of \f$ s[ 0 .. n ) \f$,
+/// \f$ n > 64 \f$, with the seed and the salts \f$ k \f$ of the hash of
+/// FastHash.tpp, into \f$ out \f$ [see Hash.tpp]
+inline void hashStripes( const unsigned char * s , std::size_t n ,
+			 std::uint64_t seed , const std::uint64_t * k ,
+			 std::uint64_t * out )
+{
+ HWY_DYNAMIC_DISPATCH( hashStripes )( s , n , seed , k , out );
  }
 
 /*--------------------------------------------------------------------------*/
