@@ -154,8 +154,9 @@ boost::dijkstra_shortest_paths(
 ```
 
 A scan of the out-arcs is the scan of a row of the graph, and a weight is read
-where it lies, next to its head. Thus the algorithm reads about the same memory
-as on `compressed_sparse_row_graph`, and the edge descriptor (the pair of its
+where it lies, in the array of the weights at the place of its arc. Thus the
+algorithm reads the same memory as on `compressed_sparse_row_graph`, which
+also keeps the properties of the edges apart from the heads, and the edge descriptor (the pair of its
 tail and of its place in the rows) is also its `edge_index`. `ArrayGraph` is
 adapted in the same way, whereas `ListGraph` and an `ObservedGraph` on it are
 mutable graphs of Boost.Graph, whose weight is looked up in $O( \deg u )$ time

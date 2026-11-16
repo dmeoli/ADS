@@ -1751,6 +1751,7 @@ engineered_pearls  book-mergesort-selectors mergesort delle note, selettori
 # on them
 engineered_graph  static-graph        grafo a righe compresse
 engineered_graph  static-graph-macros nessuna macro di prefetch inutilizzata
+engineered_graph  static-graph-arrays le tre schiere di un grafo pesato come CSR
 engineered_graph  indexed-dary-heap   heap d-ario indicizzato con decrease
 engineered_graph  union-find          union-find per dimensione o rango
 engineered_graph  book-on-structures  algoritmi del libro su ogni struttura

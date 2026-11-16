@@ -4,21 +4,32 @@
 /** @file
  * A static GRAPH for the engineered algorithms, beyond the book [see
  * `Graph.h`]: the compressed sparse rows of `ArrayGraph` [see `ArrayGraph.h`]
- * (the format CSR of the sparse matrices), with each arc of a weighted
- * graph stored next to its weight, so that a scan of the arcs of u reads
- * one contiguous run of ( head , weight ) pairs, and the arcs of each node
- * sorted by head, which makes the reads of the visits that follow them go
- * forward in memory. With \f$ a = m \f$ arcs if oriented and
- * \f$ a = 2 m \f$ if not, the arcs of u are the places
+ * (the format CSR of the sparse matrices), with the arcs of each node sorted
+ * by head, which makes the reads of the visits that follow them go forward
+ * in memory. The graph is three plain arrays, as a structure of arrays: the
+ * offsets of the rows, the heads of the arcs and, if the graph is weighted,
+ * their weights in the same places, so that a visit that needs only the
+ * heads reads none of the weights, and the offsets and the heads are the
+ * arrays `xadj` and `adjncy` of METIS and the arrays `Ap` and `Aj` of the
+ * compressed rows of GraphBLAS, with the weights as `adjwgt` and `Ax`, which
+ * those libraries take without a copy. With \f$ a = m \f$ arcs if oriented
+ * and \f$ a = 2 m \f$ if not, the arcs of u are the places
  * \f[
  *   \mathit{off}( u ) \leq k < \mathit{off}( u + 1 ) , \qquad
  *   \mathit{off}( 0 ) = 0 , \quad \mathit{off}( n ) = a ,
  * \f]
  * so that the graph takes \f$ 4 ( n + 1 ) + ( 4 + s ) a \f$ bytes, s the
- * size of a weight (0 if unweighted). The graph is built from a list of
+ * size of a weight (0 if unweighted), with no padding between a head and a
+ * weight wider than it. The graph is built from a list of
  * edges in \f$ \Theta( n + a ) \f$ time by two passes of counting sort, by
  * head and then, stably, by tail, and an unoriented edge [ u , v ] gives
  * the two arcs ( u , v ) and ( v , u ). There may be parallel arcs.
+ *
+ * An arc is still read as a whole, a head with its weight: `out( u )` is the
+ * row of u as a range of random access of `WeightedArc` values, made from
+ * the two arrays as it is read, and `arcData()` is the cursor at the first
+ * arc, which takes the indexing and the arithmetic of a pointer; on an
+ * unweighted graph they are a `std::span` and a pointer of the heads.
  *
  * `transpose()` gives the graph with the arcs reversed, which the visits
  * from the bottom up and the strongly connected components of a reversed
@@ -67,7 +78,9 @@
 #include "ADS/graph/Graph.h"
 
 #include <algorithm>
+#include <compare>
 #include <cstddef>
+#include <iterator>
 #include <optional>
 #include <ranges>
 #include <span>
@@ -88,7 +101,7 @@ namespace ADS
 /*---------------------------- CLASS StaticGraph ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// an arc of a weighted `StaticGraph`, its head next to its weight
+/// an arc of a weighted `StaticGraph`, its head with its weight
 template< class W >
 struct WeightedArc
 {
@@ -96,8 +109,114 @@ struct WeightedArc
  W w;     ///< the weight
  };
 
+namespace detail
+{
+
+/// the arcs of a weighted `StaticGraph` from a place on, read from the array
+/// of the heads and from that of the weights: a random access iterator whose
+/// reference is the `WeightedArc` value, which also takes the indexing and
+/// the arithmetic of a pointer to the arcs
+template< class W >
+class WeightedArcCursor
+{
+ public:
+ using iterator_concept = std::random_access_iterator_tag;
+ using iterator_category = std::input_iterator_tag;
+ using value_type = WeightedArc< W >;
+ using difference_type = std::ptrdiff_t;
+ using reference = WeightedArc< W >;
+
+ /// the arc read, for the arrow
+ struct Pointer
+ {
+  WeightedArc< W > a;  ///< the arc
+  const WeightedArc< W > * operator->( void ) const { return( &a ); }
+  };
+ using pointer = Pointer;
+
+ WeightedArcCursor( void ) = default;
+
+ /// at the place of the head \f$ h \f$ and of the weight \f$ w \f$
+ WeightedArcCursor( const int * h , const W * w ) : f_h( h ) , f_w( w ) { }
+
+ /// the arc here
+ reference operator*( void ) const { return( reference{ *f_h , *f_w } ); }
+ /// the arc here, for the arrow
+ pointer operator->( void ) const { return( Pointer{ **this } ); }
+ /// the arc \f$ k \f$ places further
+ reference operator[]( difference_type k ) const {
+  return( reference{ f_h[ k ] , f_w[ k ] } );
+  }
+
+ WeightedArcCursor & operator++( void ) {
+  ++f_h;
+  ++f_w;
+  return( *this );
+  }
+ WeightedArcCursor operator++( int ) {
+  WeightedArcCursor c = *this;
+  ++*this;
+  return( c );
+  }
+ WeightedArcCursor & operator--( void ) {
+  --f_h;
+  --f_w;
+  return( *this );
+  }
+ WeightedArcCursor operator--( int ) {
+  WeightedArcCursor c = *this;
+  --*this;
+  return( c );
+  }
+ WeightedArcCursor & operator+=( difference_type k ) {
+  f_h += k;
+  f_w += k;
+  return( *this );
+  }
+ WeightedArcCursor & operator-=( difference_type k ) {
+  f_h -= k;
+  f_w -= k;
+  return( *this );
+  }
+ friend WeightedArcCursor operator+( WeightedArcCursor c ,
+				     difference_type k ) {
+  return( c += k );
+  }
+ friend WeightedArcCursor operator+( difference_type k ,
+				     WeightedArcCursor c ) {
+  return( c += k );
+  }
+ friend WeightedArcCursor operator-( WeightedArcCursor c ,
+				     difference_type k ) {
+  return( c -= k );
+  }
+ friend difference_type operator-( const WeightedArcCursor & a ,
+				   const WeightedArcCursor & b ) {
+  return( a.f_h - b.f_h );
+  }
+ friend bool operator==( const WeightedArcCursor & a ,
+			 const WeightedArcCursor & b ) {
+  return( a.f_h == b.f_h );
+  }
+ friend auto operator<=>( const WeightedArcCursor & a ,
+			  const WeightedArcCursor & b ) {
+  return( a.f_h <=> b.f_h );
+  }
+
+ /// the head here
+ [[nodiscard]] const int * heads( void ) const { return( f_h ); }
+ /// the weight here
+ [[nodiscard]] const W * weights( void ) const { return( f_w ); }
+
+ private:
+ const int * f_h = nullptr;  ///< the head of the place
+ const W * f_w = nullptr;    ///< its weight
+ };  // end( class WeightedArcCursor )
+
+}  // end( namespace detail )
+
 /// a static graph in compressed sparse rows, the arcs of each node sorted
-/// by head, each next to its weight
+/// by head, their heads and their weights in two arrays
 template< class W = std::monostate >
 class StaticGraph
 {
@@ -111,6 +230,17 @@ class StaticGraph
 
  /// an arc: its head, and its weight if the graph is weighted
  using Arc = std::conditional_t< weighted , WeightedArc< W > , int >;
+
+ /// the cursor of the arcs, a pointer to the heads if the graph is
+ /// unweighted
+ using ArcCursor =
+   std::conditional_t< weighted , detail::WeightedArcCursor< W > ,
+		       const int * >;
+
+ /// the arcs of a row, random access
+ using ArcRange =
+   std::conditional_t< weighted , std::ranges::subrange< ArcCursor > ,
+		       std::span< const int > >;
 
  /// the graph with no node
  StaticGraph( void ) : f_off( 1 , 0 ) { }
@@ -132,11 +262,14 @@ class StaticGraph
  /// 5 & \quad \textbf{for}\ u \gets 1\ \textbf{to}\ n\ \textbf{do}
  ///     \ \mathit{off}[ u ] \gets \mathit{off}[ u ] + \mathit{off}[ u - 1 ]
  ///     \cr
- /// 6 & \quad \textbf{foreach}\ ( u , v ) \in A \text{ in order }
- ///     \ \textbf{do}\ \mathit{arc}[ \mathit{next}[ u ] ] \gets v;
- ///     \ \mathit{next}[ u ] \gets \mathit{next}[ u ] + 1\quad \triangleright
- ///     \ \mathit{next}[ u ] \text{ starts at } \mathit{off}[ u ] \cr
- /// 7 & \quad \textbf{return}\ ( \mathit{off} , \mathit{arc} )
+ /// 6 & \quad \textbf{foreach}\ ( u , v , w ) \in A \text{ in order }
+ ///     \ \textbf{do}\ p \gets \mathit{next}[ u ];\ \mathit{next}[ u ]
+ ///     \gets p + 1\quad \triangleright\ \mathit{next}[ u ] \text{ starts }
+ ///     \text{at } \mathit{off}[ u ] \cr
+ /// 7 & \qquad \mathit{head}[ p ] \gets v;\ \mathit{weight}[ p ] \gets w
+ ///     \cr
+ /// 8 & \quad \textbf{return}\ ( \mathit{off} , \mathit{head} ,
+ ///     \mathit{weight} )
  /// \end{array}}
  /// \f]
  /// \pre \f$ n \ge 0 \f$, each edge joins two distinct nodes, fewer than
@@ -167,7 +300,7 @@ class StaticGraph
  [[nodiscard]] int m( void ) const { return( f_m ); }
 
  /// the number of arcs, 2 `m()` if the graph is unoriented
- [[nodiscard]] int arcs( void ) const { return( int( f_arc.size() ) ); }
+ [[nodiscard]] int arcs( void ) const { return( int( f_head.size() ) ); }
 
  [[nodiscard]] int bound( void ) const { return( n() ); }
 
@@ -207,16 +340,35 @@ class StaticGraph
  bool setWeight( int u , int v , const W & w )
   requires( weighted );
 
- /// the arcs out of \f$ u \f$, contiguous
+ /// the arcs out of \f$ u \f$, contiguous, random access: on a weighted
+ /// graph the `WeightedArc` values made from `heads()` and `weightData()`
  /// \pre \f$ u \f$ is a node
- [[nodiscard]] std::span< const Arc > out( int u ) const;
+ [[nodiscard]] ArcRange out( int u ) const;
 
  /// the offsets of the rows: the arcs of u are those in the places
- /// [ `offsets()`[ u ] , `offsets()`[ u + 1 ] ) of `arcData()`
+ /// [ `offsets()`[ u ] , `offsets()`[ u + 1 ] ) of `heads()` and of
+ /// `weightData()`, \f$ n + 1 \f$ of them
  [[nodiscard]] const int * offsets( void ) const { return( f_off.data() ); }
 
- /// all the arcs, row by row
- [[nodiscard]] const Arc * arcData( void ) const { return( f_arc.data() ); }
+ /// the heads of all the arcs, row by row, `arcs()` of them
+ [[nodiscard]] const int * heads( void ) const { return( f_head.data() ); }
+
+ /// the weights of all the arcs, in the places of `heads()`
+ [[nodiscard]] const W * weightData( void ) const
+  requires( weighted )
+ {
+  return( f_w.data() );
+  }
+
+ /// all the arcs, row by row: the cursor at the first, whose place
+ /// \f$ k \f$ is the arc \f$ k \f$ (the pointer `heads()` if the graph is
+ /// unweighted)
+ [[nodiscard]] ArcCursor arcData( void ) const {
+  if constexpr( weighted )
+   return( ArcCursor( f_head.data() , f_w.data() ) );
+  else
+   return( f_head.data() );
+  }
 
  /// the head of an arc
  static int head( const Arc & a ) {
@@ -271,13 +423,14 @@ class StaticGraph
  [[nodiscard]] int find( int u , int v ) const;
 
  /// the offsets do not decrease and end at the number of arcs, whose heads
- /// are nodes, increasing in each row
+ /// are nodes, increasing in each row, with a weight each if weighted
  [[nodiscard]] bool consistent( void ) const;
 
- bool f_directed = true;    ///< oriented or not
- std::vector< int > f_off;  ///< the arcs of u from f_off[ u ]
- std::vector< Arc > f_arc;  ///< the arcs, row by row
- int f_m = 0;               ///< the number of edges
+ bool f_directed = true;     ///< oriented or not
+ std::vector< int > f_off;   ///< the arcs of u from f_off[ u ]
+ std::vector< int > f_head;  ///< the heads of the arcs, row by row
+ std::vector< W > f_w;       ///< their weights, empty if unweighted
+ int f_m = 0;                ///< the number of edges
 
  };  // end( class StaticGraph )
 

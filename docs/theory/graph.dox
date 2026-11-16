@@ -123,8 +123,11 @@
  \f$ 3 ( n - 1 ) \f$ entries of it); on a sparse graph a visit costs
  \f$ \Theta( n^2 ) \f$ on the matrix against \f$ \Theta( n + m ) \f$ on the
  lists, since each row is read whole. Among the static realizations,
- `StaticGraph` stores each arc next to its weight and sorts the arcs of each
- node by head, so that a visit reads the memory forward (cf. `StaticGraph.h`);
+ `StaticGraph` keeps the heads and the weights of the arcs in two arrays of
+ the same places, the offsets of the rows in a third (the arrays of a graph
+ in compressed rows that METIS and GraphBLAS take as they are), and sorts the
+ arcs of each node by head, so that a visit reads the memory forward and
+ reads no weight when it needs only the heads (cf. `StaticGraph.h`);
  both are built from a list of edges by counting sort in
  \f$ \Theta( n + m ) \f$, since the keys are the names of the nodes, i.e.,
  integers in \f$ [ 0 , n ) \f$. The counting sort by tail of `ArrayGraph`
