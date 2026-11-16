@@ -236,6 +236,20 @@ bool BasicCsrMatrix< T , I , P >::sorted( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class T , std::integral I , std::integral P >
+template< class A >
+inline void BasicCsrMatrix< T , I , P >::persist( A & a )
+{
+ a( f_m , f_n , f_row , f_col , f_val );
+ a.require( ( f_row.size() == f_m + 1 ) && ( f_row.front() == 0 ) &&
+	      ( std::size_t( f_row.back() ) == f_col.size() ) &&
+	      ( f_val.size() == f_col.size() ) && fits< I >( f_n ) &&
+	      fits< P >( f_col.size() + 1 ) ,
+	    "the rows of a CsrMatrix" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

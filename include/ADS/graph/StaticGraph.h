@@ -76,15 +76,18 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/graph/Graph.h"
 
 #include <algorithm>
 #include <compare>
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
 #include <optional>
 #include <ranges>
 #include <span>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -412,6 +415,26 @@ class StaticGraph
   }
 
 /*--------------------------------------------------------------------------*/
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "StaticGraph";
+
+ /// the type of the weights, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  if constexpr( weighted )
+   return( detail::persistMix(
+     { sizeof( W ) , std::is_floating_point_v< W > ,
+       std::is_signed_v< W > } ) );
+  else
+   return( 0 );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
  private:
  /// the rows of the arcs \f$ ( u , \mathit{head} , \mathit{weight} ) \f$ of
  /// \f$ E \f$, both ways if unoriented, by counting sort on the head and then
@@ -428,9 +451,12 @@ class StaticGraph
  [[nodiscard]] bool consistent( void ) const;
 
  bool f_directed = true;     ///< oriented or not
- std::vector< int > f_off;   ///< the arcs of u from f_off[ u ]
- std::vector< int > f_head;  ///< the heads of the arcs, row by row
- std::vector< W > f_w;       ///< their weights, empty if unweighted
+ /// the arcs of u from f_off[ u ]
+ std::vector< int , MappableAllocator< int > > f_off;
+ /// the heads of the arcs, row by row
+ std::vector< int , MappableAllocator< int > > f_head;
+ /// their weights, empty if unweighted
+ std::vector< W , MappableAllocator< W > > f_w;
  int f_m = 0;                ///< the number of edges
 
  };  // end( class StaticGraph )

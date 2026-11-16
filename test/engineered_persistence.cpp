@@ -34,6 +34,8 @@
 #include "ADS/compression/RIndex.h"
 #include "ADS/external/Persistence.h"
 #include "ADS/external/RecordFile.h"
+#include "ADS/graph/StaticGraph.h"
+#include "ADS/numeric/CsrMatrix.h"
 #include "ADS/search/CompressedPGMIndex.h"
 #include "ADS/search/PGMIndex.h"
 #include "ADS/succinct/BPTree.h"
@@ -91,6 +93,8 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -700,6 +704,77 @@ ADS_TEST( "persistence-perfect-hash" )
  const auto f = store( RecSplit< std::uint64_t >( keys ) );
  CHECK( message( [ & ] {
 	 ( void )restore< RecSplit< std::uint64_t , 5 > >(
+	   std::span< const std::byte >( f ) );
+	 } )
+	  .find( "of other parameters" ) != std::string::npos );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*---------------------- THE GRAPHS AND THE MATRICES -----------------------*/
+/*--------------------------------------------------------------------------*/
+
+ADS_TEST( "persistence-graphs" )
+{
+ std::mt19937_64 g( 41 );
+ std::vector< std::pair< int , int > > E;
+ std::vector< std::tuple< int , int , double > > W;
+ for( int k = 0 ; k < 5000 ; ++k ) {
+  const int u = int( g() % 700 ) , v = int( g() % 700 );
+  if( u == v )
+   continue;  // no loop
+  E.emplace_back( u , v );
+  W.emplace_back( u , v , double( g() % 1000 ) / 8 );
+  }
+ // the same rows, heads and weights
+ const auto same = []( const auto & a , const auto & b ) {
+  if( ( a.n() != b.n() ) || ( a.m() != b.m() ) || ( a.arcs() != b.arcs() ) ||
+      ( a.directed() != b.directed() ) )
+   return( false );
+  return( std::equal( a.offsets() , a.offsets() + a.n() + 1 , b.offsets() ) &&
+	   std::equal( a.heads() , a.heads() + a.arcs() , b.heads() ) );
+  };
+ roundTrip< StaticGraph<> >( StaticGraph<>( 700 , E ) , same );
+ roundTrip< StaticGraph<> >( StaticGraph<>( 700 , E , false ) , same );
+ roundTrip< StaticGraph<> >( StaticGraph<>() , same );
+ const StaticGraph< double > G( 700 , W );
+ roundTrip< StaticGraph< double > , StaticGraph<> >(
+   G ,
+   [ & ]( const StaticGraph< double > & a , const StaticGraph< double > & b ) {
+    return( same( a , b ) &&
+	     std::equal( a.weightData() , a.weightData() + a.arcs() ,
+			 b.weightData() ) );
+    } );
+ // the three arrays of a mapped graph are views of the file
+ TempDirectory d;
+ store( G , d.path() / "g.ads" );
+ const auto M = restoreMapped< StaticGraph< double > >( d.path() / "g.ads" );
+ CHECK( reinterpret_cast< std::uintptr_t >( M.offsets() ) % 64 == 0 &&
+	reinterpret_cast< std::uintptr_t >( M.heads() ) % 64 == 0 &&
+	reinterpret_cast< std::uintptr_t >( M.weightData() ) % 64 == 0 );
+ // the matrices, of each type of index
+ std::vector< std::tuple< std::size_t , std::size_t , double > > T;
+ for( int k = 0 ; k < 4000 ; ++k )
+  T.emplace_back( g() % 300 , g() % 200 , double( k ) - 1000.5 );
+ std::vector< double > x( 200 );
+ for( std::size_t j = 0 ; j < x.size() ; ++j )
+  x[ j ] = double( j ) / 3;
+ const auto product = [ & ]( const auto & a , const auto & b ) {
+  const std::vector< double > z(
+    x.begin() ,
+    x.begin() + std::ptrdiff_t( std::min( x.size() , a.cols() ) ) );
+  return( a == b &&
+	   ( z.size() < a.cols() || a.multiply( z ) == b.multiply( z ) ) );
+  };
+ roundTrip< CsrMatrix >( CsrMatrix( 300 , 200 , T ) , product );
+ roundTrip< CsrMatrix >( CsrMatrix() , product );
+ roundTrip< BasicCsrMatrix< double , int > >(
+   BasicCsrMatrix< double , int >(
+     300 , 200 ,
+     std::vector< std::tuple< std::size_t , std::size_t , double > >( T ) ) ,
+   product );
+ const auto f = store( CsrMatrix( 300 , 200 , T ) );
+ CHECK( message( [ & ] {
+	 ( void )restore< BasicCsrMatrix< double , int > >(
 	   std::span< const std::byte >( f ) );
 	 } )
 	  .find( "of other parameters" ) != std::string::npos );

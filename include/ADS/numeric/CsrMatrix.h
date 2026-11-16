@@ -83,6 +83,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/numeric/DenseMatrix.h"
 #include "ADS/numeric/SparseMatrix.h"
 
@@ -92,6 +93,7 @@
 #include <cstdint>
 #include <limits>
 #include <numeric>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -231,12 +233,29 @@ class BasicCsrMatrix
  /// true if the two matrices have the same sizes and the same entries kept
  bool operator==( const BasicCsrMatrix & ) const = default;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "CsrMatrix";
+
+ /// the types of the values, of the columns and of the offsets, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( T ) , std::is_floating_point_v< T > ,
+				 sizeof( I ) , std::is_signed_v< I > ,
+				 sizeof( P ) , std::is_signed_v< P > } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
  private:
  /// the offsets not decreasing, the columns of each row increasing
  [[nodiscard]] bool sorted( void ) const;
 
- template< class U >  // not zeroed when they grow
- using Vector = std::vector< U , detail::DefaultInitAllocator< U > >;
+ template< class U >  // not zeroed when they grow, a view of a mapped file
+ using Vector = std::vector< U , MappableAllocator< U , false > >;
 
  /// whether \f$ x \f$ items fit the places \f$ 0 , \ldots , x - 1 \f$ of
  /// the type U

@@ -319,6 +319,23 @@ std::vector< int > bfsOrder( const StaticGraph< W > & g , int r )
 
 /*--------------------------------------------------------------------------*/
 
+template< class W >
+template< class A >
+inline void StaticGraph< W >::persist( A & a )
+{
+ a( f_directed , f_off , f_head );
+ if constexpr( weighted )
+  a( f_w );
+ a( f_m );
+ a.require( ( ! f_off.empty() ) && ( f_off.front() == 0 ) &&
+	      ( std::size_t( f_off.back() ) == f_head.size() ) &&
+	      ( f_w.size() == ( weighted ? f_head.size() : 0 ) ) &&
+	      ( f_m >= 0 ) ,
+	    "the rows of a StaticGraph" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

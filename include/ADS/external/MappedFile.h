@@ -195,8 +195,10 @@ persistMix( std::initializer_list< std::uint64_t > v )
 /*--------------------------------------------------------------------------*/
 
 /// `std::allocator`, which also makes a vector over the bytes of a mapped
-/// file [see `restoreMapped()`]
-template< class T >
+/// file [see `restoreMapped()`]; an item constructed with no argument is
+/// value-initialized if \f$ V \f$, else left uninitialized (the numbers
+/// about to be written of a matrix)
+template< class T , bool V = true >
 class MappableAllocator
 {
  public:
@@ -210,6 +212,12 @@ class MappableAllocator
  using propagate_on_container_swap = std::true_type;
  /// two allocators of different mappings differ
  using is_always_equal = std::false_type;
+ /// the same allocator, of items of the type U
+ template< class U >
+ struct rebind
+ {
+  using other = MappableAllocator< U , V >;
+  };
 
  /// an allocator of new memory only
  MappableAllocator( void ) = default;
@@ -217,7 +225,7 @@ class MappableAllocator
  explicit MappableAllocator( MappedFile m ) noexcept
      : f_map( std::move( m ) ) { }
  template< class U >
- MappableAllocator( const MappableAllocator< U > & o ) noexcept
+ MappableAllocator( const MappableAllocator< U , V > & o ) noexcept
      : f_map( o.f_map ) { }
 
  /// the allocator of a copy, of new memory only
@@ -241,14 +249,16 @@ class MappableAllocator
 
  /// an item constructed with no argument over the mapping is left as the
  /// file has it (an item of a mapped array is trivially copyable, and
- /// there by the bytes of the file), any other one as `std::allocator`
- /// does
+ /// there by the bytes of the file), any other one as \f$ V \f$ asks
  template< class U , class... A >
  void construct( U * p , A &&... a ) {
   if constexpr( ( sizeof...( A ) == 0 ) && std::is_trivially_copyable_v< U > )
    if( f_map && f_map.holds( p ) )
     return;
-  ::new( static_cast< void * >( p ) ) U( std::forward< A >( a )... );
+  if constexpr( ( sizeof...( A ) == 0 ) && ! V )
+   ::new( static_cast< void * >( p ) ) U;
+  else
+   ::new( static_cast< void * >( p ) ) U( std::forward< A >( a )... );
   }
 
  /// whether the two hold the same mapping, or none
@@ -258,7 +268,7 @@ class MappableAllocator
   }
 
  private:
- template< class U >
+ template< class U , bool W >
  friend class MappableAllocator;
 
  MappedFile f_map;  ///< the mapping, if any
