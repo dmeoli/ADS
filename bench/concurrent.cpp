@@ -43,8 +43,9 @@
  *   (ADS_HAS_MOODYCAMEL); case latency: 2000 items, one every 50 us, each
  *   carrying the time of its push (ns from the push to the consumer, the
  *   median); case idle: the processor time of a consumer that waits 200
- *   ms on an empty queue (us per second of wait); case throughput: n items
- *   with a notification each (ns per item).
+ *   ms on an empty queue (us per second of wait, by the thread clock of
+ *   Boost.Chrono, without which the case is left out); case throughput: n
+ *   items with a notification each (ns per item).
  *
  * Each cell is the median of r runs; the contracts are off
  * (ADS_CONTRACTS=0).
@@ -76,11 +77,23 @@
  #include "ADS/concurrent/MPSCQueue.h"
 #endif
 #include "ADS/concurrent/SPSCQueue.h"
+#include "ADS/parallel/Affinity.h"
 
 #include <condition_variable>
 #include <deque>
 #include <mutex>
-#include <time.h>
+
+// the processor time of a thread, by the clock of Boost.Chrono (in its
+// header-only form) where Boost has one; the idle cells need it
+#if __has_include( <boost/chrono/thread_clock.hpp> )
+ #define BOOST_CHRONO_HEADER_ONLY
+ #include <boost/chrono/thread_clock.hpp>
+#endif
+#ifdef BOOST_CHRONO_HAS_THREAD_CLOCK
+ #define ADS_HAS_THREAD_CLOCK 1
+#else
+ #define ADS_HAS_THREAD_CLOCK 0
+#endif
 
 #if __has_include( <boost/lockfree/spsc_queue.hpp> )
  #include <boost/lockfree/queue.hpp>
@@ -100,8 +113,6 @@
 #endif
 
 #include <atomic>
-#include <pthread.h>
-#include <sched.h>
 #include <thread>
 
 using namespace ADS::bench;
@@ -109,33 +120,6 @@ using Item = std::uint64_t;
 
 namespace
 {
-
-/// the k-th processor that the process could use when it started (read
-/// once: a thread pinned to one processor would see only that one, and so
-/// would the threads it creates)
-int cpu( int k )
-{
- static const std::vector< int > C = [] {
-  cpu_set_t s;
-  CPU_ZERO( &s );
-  sched_getaffinity( 0 , sizeof( s ) , &s );
-  std::vector< int > v;
-  for( int c = 0 ; c < CPU_SETSIZE ; ++c )
-   if( CPU_ISSET( c , &s ) )
-    v.push_back( c );
-  return( v );
-  }();
- return( C[ std::size_t( k ) % C.size() ] );
- }
-
-/// the calling thread on the processor c
-void pin( int c )
-{
- cpu_set_t s;
- CPU_ZERO( &s );
- CPU_SET( c , &s );
- pthread_setaffinity_np( pthread_self() , sizeof( s ) , &s );
- }
 
 /// the time in ns per item of a producer thread running produce() while
 /// the calling thread, the consumer, runs consume(); the queue that make()
@@ -149,12 +133,12 @@ double transfer( std::size_t n , int r , M && make , P && produce ,
    [ & ]( auto & q ) {
     std::atomic< bool > go{ false };
     std::thread t( [ & ] {
-     pin( cpu( 1 ) );
+     ADS::pinThread( 1 );
      while( ! go.load( std::memory_order_acquire ) ) {
       }
      produce( *q , n );
      } );
-    pin( cpu( 0 ) );
+    ADS::pinThread( 0 );
     go.store( true , std::memory_order_release );
     sink = sink + consume( *q , n );
     t.join();
@@ -194,7 +178,7 @@ void spsc( const std::string & who , std::size_t n , int r , M && make ,
 		 auto & a = *Q.first;
 		 auto & b = *Q.second;
 		 std::thread t( [ & ] {
-		  pin( cpu( 1 ) );
+		  ADS::pinThread( 1 );
 		  Item x;
 		  for( std::size_t i = 0 ; i < k ; ++i ) {
 		   while( ! pop( a , x ) ) {
@@ -203,7 +187,7 @@ void spsc( const std::string & who , std::size_t n , int r , M && make ,
 		    }
 		   }
 		  } );
-		 pin( cpu( 0 ) );
+		 ADS::pinThread( 0 );
 		 Item x = 0;
 		 for( std::size_t i = 0 ; i < k ; ++i ) {
 		  while( ! push( a , x ) ) {
@@ -226,13 +210,15 @@ Item nowNs( void )
 	   .count() ) );
  }
 
+#if ADS_HAS_THREAD_CLOCK
 /// the processor time of the calling thread, in ns
 Item cpuNs( void )
 {
- timespec t;
- clock_gettime( CLOCK_THREAD_CPUTIME_ID , &t );
- return( Item( t.tv_sec ) * 1000000000u + Item( t.tv_nsec ) );
+ return( Item( boost::chrono::duration_cast< boost::chrono::nanoseconds >(
+		  boost::chrono::thread_clock::now().time_since_epoch() )
+		  .count() ) );
  }
+#endif
 
 /// the wake cells of a queue that make() builds, send( q , x ) pushing x
 /// and waking the consumer, recv( q ) sleeping until an item and taking it
@@ -249,13 +235,13 @@ void wake( const std::string & who , std::size_t n , int r , M && make ,
   auto q = make();
   std::vector< double > d( k );
   std::thread t( [ & ] {
-   pin( cpu( 1 ) );
+   ADS::pinThread( 1 );
    for( int i = 0 ; i < k ; ++i ) {
     std::this_thread::sleep_for( std::chrono::microseconds( 50 ) );
     send( *q , nowNs() );
     }
    } );
-  pin( cpu( 0 ) );
+  ADS::pinThread( 0 );
   for( int i = 0 ; i < k ; ++i ) {
    const Item x = recv( *q );
    d[ i ] = double( nowNs() - x );
@@ -266,17 +252,18 @@ void wake( const std::string & who , std::size_t n , int r , M && make ,
   }
  std::nth_element( lat.begin() , lat.begin() + r / 2 , lat.end() );
  print( "wake" , "latency" , std::size_t( k ) , who , lat[ r / 2 ] );
+#if ADS_HAS_THREAD_CLOCK
  std::vector< double > idle;           // the processor time of 200
  for( int run = 0 ; run < r ; ++run ) {  // ms of wait
   auto q = make();
   double used = 0;
   std::thread c( [ & ] {
-   pin( cpu( 0 ) );
+   ADS::pinThread( 0 );
    const Item a = cpuNs();
    sink = sink + recv( *q );
    used = double( cpuNs() - a );
    } );
-  pin( cpu( 1 ) );
+  ADS::pinThread( 1 );
   std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
   send( *q , 1 );
   c.join();
@@ -284,6 +271,7 @@ void wake( const std::string & who , std::size_t n , int r , M && make ,
   }
  std::nth_element( idle.begin() , idle.begin() + r / 2 , idle.end() );
  print( "wake" , "idle" , 1 , who , idle[ r / 2 ] );
+#endif
  print( "wake" , "throughput" , n , who ,
 	transfer(
 	  n , r , make ,
@@ -320,7 +308,7 @@ struct OneProducer
 
 int main( int argc , char ** argv )
 {
- ( void )cpu( 0 );  // the processors, before any pin
+ ( void )ADS::affinityCpus();  // the processors, before any pin
  const Options o( argc , argv , { 1000000 , 10000000 } );
  const std::size_t cap = 1024;
  for( std::size_t n : o.sizes ) {

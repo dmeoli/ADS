@@ -65,18 +65,10 @@ inline S saisClamp( S x )
  return( x & ~( x >> ( 8 * sizeof( S ) - 1 ) ) );
  }
 
-/// the 8 bytes of x in the reverse order
+/// the 8 bytes of x in the reverse order [see byteSwap() in Portable.h]
 inline std::uint64_t saisSwap( std::uint64_t x )
 {
-#if defined( __GNUC__ ) || defined( __clang__ )
- return( __builtin_bswap64( x ) );
-#else
- x = ( ( x >> 8 ) & 0x00FF00FF00FF00FFull ) |
-     ( ( x & 0x00FF00FF00FF00FFull ) << 8 );
- x = ( ( x >> 16 ) & 0x0000FFFF0000FFFFull ) |
-     ( ( x & 0x0000FFFF0000FFFFull ) << 16 );
- return( ( x >> 32 ) | ( x << 32 ) );
-#endif
+ return( byteSwap( x ) );
  }
 
 /// the 64 bits of x in the reverse order

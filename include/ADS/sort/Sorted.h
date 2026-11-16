@@ -48,6 +48,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -63,13 +64,7 @@
 // the overloads of the sorts on a vector, each one call of the sort on its
 // storage, inlined into the caller, so that a call on a vector runs the code
 // it ran before the sorts took spans and views
-#if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_SORT_FORWARD [[gnu::always_inline]] inline
-#elif defined( _MSC_VER )
- #define ADS_SORT_FORWARD __forceinline
-#else
- #define ADS_SORT_FORWARD inline
-#endif
+#define ADS_SORT_FORWARD ADS_ALWAYS_INLINE
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/

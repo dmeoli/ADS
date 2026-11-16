@@ -67,6 +67,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 
 #include <algorithm>
 #include <bit>
@@ -84,22 +85,10 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#if defined( __GNUC__ ) || defined( __clang__ )
- /// the operations at the ends, inlined even where the compiler would not
- #define ADS_RING_INLINE inline __attribute__( ( always_inline ) )
- /// the growth, never inlined
- #define ADS_RING_NOINLINE __attribute__( ( noinline ) )
-#elif defined( _MSC_VER )
- /// the operations at the ends, inlined even where the compiler would not
- #define ADS_RING_INLINE __forceinline
- /// the growth, never inlined
- #define ADS_RING_NOINLINE __declspec( noinline )
-#else
- /// the operations at the ends, inlined where the compiler chooses
- #define ADS_RING_INLINE inline
- /// the growth, inlined where the compiler chooses
- #define ADS_RING_NOINLINE
-#endif
+/// the operations at the ends, inlined even where the compiler would not
+#define ADS_RING_INLINE ADS_ALWAYS_INLINE
+/// the growth, never inlined
+#define ADS_RING_NOINLINE ADS_NOINLINE
 
 namespace ADS
 {

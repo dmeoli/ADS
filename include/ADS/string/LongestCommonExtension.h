@@ -104,6 +104,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/string/SuffixSorting.h"
 
 #include <concepts>
@@ -206,10 +207,7 @@ class LceIndex
 
  private:
  /// lce( i , j ) past the first chunk of symbols, which match
-#if defined( __GNUC__ ) || defined( __clang__ )
- [[gnu::noinline]]
-#endif
- [[nodiscard]] std::size_t longer( std::size_t i , std::size_t j ,
+ ADS_NOINLINE [[nodiscard]] std::size_t longer( std::size_t i , std::size_t j ,
 				   std::size_t far ) const;
 
  /// the minimum of LCP[ a .. c ], a <= c

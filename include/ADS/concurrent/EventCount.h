@@ -93,6 +93,8 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/concurrent/impl/Spin.tpp"
+
 #include <atomic>
 #include <chrono>
 #include <cstdint>
@@ -324,13 +326,7 @@ class EventCount
 /*--------------------------------------------------------------------------*/
  private:
  /// a pause of the processor in a loop that looks at memory
- static void relax( void ) noexcept {
-#if defined( __x86_64__ ) || defined( __i386__ )
-  __builtin_ia32_pause();
-#elif defined( __aarch64__ )
-  asm volatile( "yield" );
-#endif
-  }
+ static void relax( void ) noexcept { detail::spinPause(); }
 
  /// the copy of the epoch raised to \f$ e \f$, never lowered: two notifiers
  /// that advanced the epoch of `f_state` to \f$ e - 1 \f$ and \f$ e \f$ may

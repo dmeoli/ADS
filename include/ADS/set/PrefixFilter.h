@@ -166,6 +166,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/set/BlockedBloomFilter.h"
 
@@ -183,24 +184,12 @@
 
 /// a function inlined even where the compiler would not
 #ifndef ADS_FILTER_INLINE
- #if defined( __GNUC__ ) || defined( __clang__ )
-  #define ADS_FILTER_INLINE inline __attribute__( ( always_inline ) )
- #elif defined( _MSC_VER )
-  #define ADS_FILTER_INLINE __forceinline
- #else
-  #define ADS_FILTER_INLINE inline
- #endif
+ #define ADS_FILTER_INLINE ADS_ALWAYS_INLINE
 #endif
 
 /// a function never inlined, the rare path out of a query
 #ifndef ADS_FILTER_NOINLINE
- #if defined( __GNUC__ ) || defined( __clang__ )
-  #define ADS_FILTER_NOINLINE __attribute__( ( noinline ) )
- #elif defined( _MSC_VER )
-  #define ADS_FILTER_NOINLINE __declspec( noinline )
- #else
-  #define ADS_FILTER_NOINLINE
- #endif
+ #define ADS_FILTER_NOINLINE ADS_NOINLINE
 #endif
 
 /*--------------------------------------------------------------------------*/

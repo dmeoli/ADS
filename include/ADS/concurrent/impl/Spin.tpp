@@ -18,8 +18,14 @@
  #define __ADS_Spin
 /* self-identification: #endif constant */
 
-#if defined( _MSC_VER ) && ( defined( _M_X64 ) || defined( _M_IX86 ) )
- #include <intrin.h>
+#include <atomic>
+
+// the pause of Boost.Core, which knows the instruction of each processor
+#if __has_include( <boost/core/yield_primitives.hpp> )
+ #include <boost/core/yield_primitives.hpp>
+ #define ADS_SPIN_BOOST 1
+#else
+ #define ADS_SPIN_BOOST 0
 #endif
 
 /*--------------------------------------------------------------------------*/
@@ -32,15 +38,15 @@ namespace ADS
 namespace detail
 {
 
-/// the hint to the processor that the thread spins on a lock
+/// the hint to the processor that the thread spins on a lock: the pause
+/// of Boost.Core (`pause` on x86, `yield` on ARM), or with no Boost only a
+/// barrier of the compiler, so that the loop still reads memory again
 inline void spinPause( void )
 {
-#if defined( __x86_64__ ) || defined( __i386__ )
- __builtin_ia32_pause();
-#elif defined( _MSC_VER ) && ( defined( _M_X64 ) || defined( _M_IX86 ) )
- _mm_pause();
-#elif defined( __aarch64__ )
- asm volatile( "yield" );
+#if ADS_SPIN_BOOST
+ boost::core::sp_thread_pause();
+#else
+ std::atomic_signal_fence( std::memory_order_seq_cst );
 #endif
  }
 

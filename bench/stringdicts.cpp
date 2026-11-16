@@ -64,6 +64,7 @@
 #endif
 
 #include <cstdio>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -390,7 +391,9 @@ int main( int argc , char ** argv )
    // tx-trie builds into a file, read back into memory; its ids are its
    // own, and its prefix search returns the keys
    const std::string file =
-     std::string( "/tmp/ads-bench-tx-" ) + name + "-" + std::to_string( n );
+     ( std::filesystem::temp_directory_path() /
+       ( "ads-bench-tx-" + std::string( name ) + "-" + std::to_string( n ) ) )
+       .string();
    run(
      "tx_tool::tx" , name , D , H , Q , I , R , r ,
      [ & ]() {

@@ -139,6 +139,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/concurrent/Backoff.h"
 #include "ADS/memory/HugePageAllocator.h"
 #include "ADS/priority/DaryHeap.h"
@@ -158,22 +159,10 @@
 
 /// a function of the common path of the owner, inlined even where the
 /// compiler would not
-#if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_SPQ_INLINE inline __attribute__( ( always_inline ) )
-#elif defined( _MSC_VER )
- #define ADS_SPQ_INLINE __forceinline
-#else
- #define ADS_SPQ_INLINE inline
-#endif
+#define ADS_SPQ_INLINE ADS_ALWAYS_INLINE
 
 /// a function never inlined, the rare path out of the common one
-#if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_SPQ_NOINLINE __attribute__( ( noinline ) )
-#elif defined( _MSC_VER )
- #define ADS_SPQ_NOINLINE __declspec( noinline )
-#else
- #define ADS_SPQ_NOINLINE
-#endif
+#define ADS_SPQ_NOINLINE ADS_NOINLINE
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/

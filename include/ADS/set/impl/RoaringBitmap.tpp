@@ -23,11 +23,7 @@
  #include <immintrin.h>
 #endif
 
-#if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_ROAR_KERNEL __attribute__( ( noinline ) )
-#else
- #define ADS_ROAR_KERNEL
-#endif
+#define ADS_ROAR_KERNEL ADS_NOINLINE
 
 namespace ADS
 {

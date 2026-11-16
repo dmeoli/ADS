@@ -121,6 +121,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/concurrent/impl/Spin.tpp"
 
 #include <algorithm>
 #include <atomic>
