@@ -240,10 +240,13 @@ int ShortestPathsObserver< G , P >::repair( std::vector< int > & seeds ,
    }
   else
    popped.push_back( u );
-  f_g.forEachEdge( u , [ & ]( int v , const D & w ) {
-   if( f_R.d[ u ] + w < f_R.d[ v ] ) {
-    f_R.d[ v ] = f_R.d[ u ] + w;
-    setParent( v , u );
+  // not the structured binding u, which clang 18 does not capture in the
+  // regions of OpenMP that forEachEdge() may open
+  const int x = u;
+  f_g.forEachEdge( x , [ & ]( int v , const D & w ) {
+   if( f_R.d[ x ] + w < f_R.d[ v ] ) {
+    f_R.d[ v ] = f_R.d[ x ] + w;
+    setParent( v , x );
     H.push( { f_R.d[ v ] , v } );
     }
    } );
