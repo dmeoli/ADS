@@ -1876,9 +1876,8 @@ left; a mark then means that an entry differs from the one after it, as
 the scan from right to left meets them. At the end the marks of
 $\mathit{SA}[ 0 .. m )$ become the bit vector of the ends of the groups of
 equal LMS-substrings (read 8 entries at a time with AVX2), and their
-number is the number of names. In the code, the scans move two entries a step, keep
-their arrays in functions that declare them not to overlap (`restrict`),
-and prefetch the text of the entries 64 places ahead; beyond 65536 symbols
+number is the number of names. In the code, the scans move two entries a
+step and prefetch the text of the entries 64 places ahead; beyond 65536 symbols
 they also prefetch the parts and the places these point to.
 
 **Ties.** If two LMS-substrings are equal, the order of their suffixes
@@ -1891,8 +1890,9 @@ read 8 bytes a round as one key in the order of the bytes; a suffix that
 ends inside the key comes before one that goes on with the same bytes. A
 group of at most 16 suffixes is sorted on its keys by insertion. A larger
 one is sorted by a radix sort, in passes of 8 bits, on the bits that are
-not the same in all its keys (gathered by `pext`, when they are at most 32
-and no suffix ends inside the keys), or else by a sort of comparisons; the
+not the same in all its keys (gathered in their order, a run of 1s of their
+mask at a time, when they are at most 32 and no suffix ends inside the
+keys), or else by a sort of comparisons; the
 parts still tied go to the next round. The rounds are at most 8 and read
 at most $2 m$ keys. Before them, a first round on the groups that hold the
 first eighth of the tied suffixes decides whether the method is worth its
@@ -1960,11 +1960,6 @@ of type S, moves them, and clears the bit of the others. The text before
 the entries 64 places ahead is prefetched at a place chosen by a select,
 with no branch on an empty entry; beyond 65536 symbols the heads of the
 buckets and the places they point to are prefetched too.
-
-**Memory.** All the arrays built ask for transparent huge pages before
-they are first written (`madvise()`, on Linux), so that their page faults
-are 512 times fewer and the random writes of the induction miss the TLB
-less.
 
 <span id="alg-15-10"></span>**Algorithm 15.10.** The engineered SA-IS of
 `suffixArray()`, for bytes and for integers.

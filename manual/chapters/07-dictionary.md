@@ -2780,8 +2780,8 @@ low bits of all the seeds of a bucket come first, then all their unary
 parts. Both tables `RecSplitTables`, computed once for each $\ell$ and the
 sizes $m < 4096$, give $r$, the low bits of a subtree and its number of
 nodes. Hence, a subtree is skipped by moving a pointer on the low bits and
-by a select on the unary parts (`recSplitSelect()`, one PDEP and one count
-of the trailing zeros where the machine has BMI2). The numbers of keys
+by a select on the unary parts (`recSplitSelect()`, the broadword select
+of `selectInWord()`, [§22.2](22-succinct.md#sec-22-2)). The numbers of keys
 before each bucket and the places of their codes are two sequences of Elias
 and Fano ([Elias 1974](Z-bibliography.md#ref-elias1974); cf. [Chapter
 22](22-succinct.md#ch-22)), less their linear estimates, so that a query

@@ -91,6 +91,7 @@
 #include "ADS/Abi.h"
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
+#include "ADS/Wide.h"
 
 #include <array>
 #include <bit>
@@ -124,8 +125,8 @@ struct Product128
  };
 
 /// the product \f$ a b \f$ on 128 bits
-[[nodiscard]] constexpr Product128 product128( std::uint64_t a ,
-					       std::uint64_t b );
+[[nodiscard]] [[gnu::always_inline]] constexpr Product128
+product128( std::uint64_t a , std::uint64_t b );
 
 /// the folded product: the low half of \f$ a b \f$ on 128 bits XOR its
 /// high half,

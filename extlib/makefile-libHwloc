@@ -1,0 +1,40 @@
+###############################################################################
+############################## makefile-libHwloc ##############################
+###############################################################################
+#                                                                             #
+#   makefile of libhwloc, for the placement of the threads [see Affinity.h]   #
+#                                                                             #
+#   Input:  $(HWLOC_ROOT) = the prefix where hwloc is installed, empty if     #
+#                           it is where the compiler looks                    #
+#                                                                             #
+#   Output: accordingly, there is no *H and *OBJ in output, since there is    #
+#           no need to check for changes in the .h and rebuild the .o / .a    #
+#                                                                             #
+#           $(libHwlocINC)   = the -I$(include directories) for hwloc         #
+#           $(libHwlocLIB)   = external libraries + -L< libdirs > for hwloc   #
+#           $(libHwlocFOUND) = 1 if a program that loads the topology of      #
+#                              hwloc 2 compiles and links with them, empty    #
+#                              otherwise (evaluated once, when first used)    #
+#                                                                             #
+###############################################################################
+
+# internal macros - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# basic hwloc directory without quotes, if any
+libHwlocBSCDIR = $(subst $\",,$(HWLOC_ROOT))
+
+# macros to be exported - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+libHwlocINC = $(if $(libHwlocBSCDIR),-I"$(libHwlocBSCDIR)/include")
+libHwlocLIB = $(if $(libHwlocBSCDIR),-L"$(libHwlocBSCDIR)/lib" \
+	-Wl$(ADScomma)-rpath$(ADScomma)"$(libHwlocBSCDIR)/lib") -lhwloc
+
+# a program that loads the topology of hwloc 2, compiled and linked once
+libHwlocFOUND = $(eval libHwlocFOUND := $$(shell printf '$$(ADShash)include \
+	<hwloc.h>\nstatic_assert(HWLOC_API_VERSION>=0x00020000);\nint main(){\
+	hwloc_topology_t t;if(hwloc_topology_init(&t))return 1;\
+	int r=hwloc_topology_load(t);hwloc_topology_destroy(t);return r;}\n' | \
+	$$(CXX) -std=c++20 -x c++ - -o $$(ADSNULL) $$(libHwlocINC) \
+	$$(libHwlocLIB) 2>/dev/null && echo 1))$(libHwlocFOUND)
+
+########################## End of makefile-libHwloc ###########################

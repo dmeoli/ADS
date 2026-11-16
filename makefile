@@ -276,6 +276,7 @@ backends:
 	@echo "ADS: GMP $(if $(filter 1,$(ADSGMPON)),ON,OFF)," \
 	      "CBLAS $(if $(filter 1,$(ADSBLASON)),ON,OFF)"
 	@echo "ADS: Boost $(if $(filter 1,$(ADSBOOSTON)),ON,OFF)"
+	@echo "ADS: hwloc $(if $(filter 1,$(ADSHWLOCON)),ON,OFF)"
 	@echo "ADS: LEMON $(if $(filter 1,$(ADSLEMONON)),ON,OFF)"
 	@echo "ADS: MPI $(if $(filter 1,$(ADSMPION)),ON,OFF)"
 	@echo "ADS: StdPar $(if $(filter 1,$(ADSSTDPARON)),ON,OFF)," \
@@ -290,6 +291,8 @@ GMPON     = $(if $(filter 1,$(ADSGMPON)),-DADS_WITH_GMP $(libGMPINC) \
             $(libGMPLIB))
 BLASON    = $(if $(filter 1,$(ADSBLASON)),-DADS_WITH_BLAS $(libBLASINC) \
             $(libBLASLIB))
+HWLOCON   = $(if $(filter 1,$(ADSHWLOCON)),-DADS_WITH_HWLOC $(libHwlocINC) \
+            $(libHwlocLIB))
 
 # the benchmarks, with the contracts off and the Boost headers if found;
 # bignum, matrix and parallel on the backends found as the tests are, and
@@ -460,7 +463,7 @@ $(BUILD)/bench-numeric: bench/numeric.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 
 $(BUILD)/bench-concurrent: bench/concurrent.cpp bench/Bench.h $(HEADERS) \
                            | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(CONCURRENTFLAGS) -pthread
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(CONCURRENTFLAGS) $(HWLOCON) -pthread
 
 $(BUILD)/bench-geometry: bench/geometry.cpp bench/Bench.h $(HEADERS) \
                          | $(BUILD)

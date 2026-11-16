@@ -73,8 +73,7 @@
  * costs two selects of one or two words each instead of the searches of a
  * general select, the numbers of keys before the bucket and before the next
  * one coming from the same select; the select in a word, there and in the
- * unary parts, is one PDEP and one count of the trailing zeros where the
- * machine has BMI2.
+ * unary parts, is the broadword select of `selectInWord()`.
  *
  * The search of a leaf uses the rotation fitting of Bez, Kurpicz, Lehmann
  * and Sanders: the keys of the leaf go to two sets \f$ A \f$ and \f$ B \f$
@@ -159,10 +158,6 @@
 #include "ADS/Contract.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/succinct/BitVector.h"
-
-#if defined( __BMI2__ ) && defined( __x86_64__ )
- #include <immintrin.h>
-#endif
 
 #include <algorithm>
 #include <array>

@@ -25,18 +25,16 @@
  *   key is made of zero bytes, whose word could be 0, are kept apart in
  *   one atomic word.
  * - When they do not, but each fits in 8 bytes (e.g., keys and values of
- *   64 bits), and the processor has a compare-and-swap of 16 bytes without
- *   locks (`cmpxchg16b` on x86-64, the pairs of AArch64; `inlined` is then
- *   true), a place is two words, the key and the value, written together
- *   by that compare-and-swap: a lookup reads the key, and the value after
- *   it, from the same line, and returns a copy of the value; the key of
- *   zero bytes is kept apart in one place of two words. The choice is made
- *   when compiling: GCC and Clang declare
- *   `__GCC_HAVE_SYNC_COMPARE_AND_SWAP_16` where such an instruction may be
- *   used (e.g., with `-mcx16` or `-march=native` on x86-64), but for the
- *   GCC of macOS on AArch64, whose assembler refuses the pairs of
- *   registers it gives the instruction, and `ADS_FLAT_CAS16` defined to 0
- *   turns it off.
+ *   64 bits), and the compare-and-swap of 16 bytes of Boost.Atomic is free
+ *   of locks (`cmpxchg16b` on x86-64, the pairs of AArch64; `inlined` is
+ *   then true), a place is two words, the key and the value, written
+ *   together by that compare-and-swap: a lookup reads the key, and the
+ *   value after it, from the same line, and returns a copy of the value;
+ *   the key of zero bytes is kept apart in one place of two words. The
+ *   choice is made when compiling: with `ADS_WITH_BOOST`, Boost.Atomic
+ *   tells whether the instruction may be used (e.g., with `-mcx16` or
+ *   `-march=native` on x86-64), and `ADS_FLAT_CAS16` defined to 0 turns
+ *   it off; without Boost the pairs are in nodes, as below.
  * - Otherwise the word holds the index of a node, where the pair lies
  *   with its hash, and 24 bits of the hash, so that a lookup follows the
  *   index only when those bits match (once in \f$ 2^{24} \f$ for another
@@ -194,6 +192,10 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#if ADS_FLAT_CAS16
+ #include <boost/atomic/atomic_ref.hpp>
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/

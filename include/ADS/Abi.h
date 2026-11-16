@@ -9,7 +9,8 @@
  * the options that change them. These are the matching of the control bytes
  * of the hash tables (`ADS_FLAT_SIMD`: 0 broadword, 1 SSE2, 2 NEON), the
  * compare-and-swap of 16 bytes of `ConcurrentFlatTable` (`ADS_FLAT_CAS16`,
- * which `-mcx16` and `-march=x86-64-v2` or later turn on), the pairs of
+ * that of Boost.Atomic, which `-mcx16` and `-march=x86-64-v2` or later
+ * make free of locks on x86-64), the pairs of
  * `boost::unordered_flat_map` in `FlatHashTable` (`ADS_FLATHASH_BOOST`) and
  * the level of the vector instructions of x86-64 (1 for SSE2, 3 for AVX2, 4
  * for AVX-512, 0 elsewhere), e.g., `abi_s1c1b0v3` for SSE2, the CAS of 16
@@ -59,17 +60,15 @@
  #endif
 #endif
 
-// the compare-and-swap of 16 bytes without locks, on little-endian x86-64
-// and AArch64, unless turned off; not with the GCC of macOS on AArch64 (the
-// port of Homebrew), which gives its caspal a pair of registers that does
-// not start at an even one, and the assembler refuses it
+// the compare-and-swap of 16 bytes of Boost.Atomic, with ADS_WITH_BOOST,
+// where Boost finds it free of locks (e.g., cmpxchg16b on x86-64 with
+// -mcx16, the pairs of AArch64), unless turned off
 #ifndef ADS_FLAT_CAS16
- #if defined( __GCC_HAVE_SYNC_COMPARE_AND_SWAP_16 ) &&                        \
-   ( defined( __x86_64__ ) || defined( __aarch64__ ) ) &&                     \
-   defined( __BYTE_ORDER__ ) &&                                               \
-   ( __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ ) &&                           \
-   ! ( defined( __APPLE__ ) && defined( __aarch64__ ) &&                      \
-       ! defined( __clang__ ) )
+ #if defined( ADS_WITH_BOOST )
+  #include <boost/atomic/capabilities.hpp>
+ #endif
+ #if defined( BOOST_ATOMIC_INT128_LOCK_FREE ) &&                              \
+   ( BOOST_ATOMIC_INT128_LOCK_FREE == 2 )
   #define ADS_FLAT_CAS16 1
  #else
   #define ADS_FLAT_CAS16 0

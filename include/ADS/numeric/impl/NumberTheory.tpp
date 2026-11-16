@@ -35,26 +35,6 @@ constexpr U64 binaryGcd( U64 a , U64 b )
   return( a );
  const int k = std::countr_zero( a | b );  // the common power of 2
  a >>= std::countr_zero( a );
-#if defined( __x86_64__ ) && ( defined( __GNUC__ ) || defined( __clang__ ) )
- if( ! std::is_constant_evaluated() ) {
-  // the shift by the trailing zeros of b - a, which are those of a - b,
-  // starts with the difference, the minimum and | a - b | by two
-  // conditional moves next to it: 5 cycles a step (sub, tzcnt, shrx)
-  b >>= std::countr_zero( b );
-  for( U64 d = b - a ; d != 0 ; d = b - a ) {  // a , b odd
-   const U64 e = a - b;
-   const int s = std::countr_zero( d );
-   asm( "cmpq %[a], %[b]\n\t"
-	"cmovbq %[e], %[d]\n\t"
-	"cmovbq %[b], %[a]"
-	: [d] "+&r"( d ) , [a] "+&r"( a )
-	: [b] "r"( b ) , [e] "r"( e )
-	: "cc" );
-   b = d >> s;
-   }
-  return( a << k );
-  }
-#endif
  do {  // a odd, b not 0
   b >>= std::countr_zero( b );
   const U64 lo = a < b ? a : b , hi = a < b ? b : a;
@@ -67,50 +47,21 @@ constexpr U64 binaryGcd( U64 a , U64 b )
 namespace detail
 {
 
-/// the product of 128 bits of a and b, its high half in hi
-constexpr U64 mul128( U64 a , U64 b , U64 & hi )
+/// the product of 128 bits of a and b, its high half in hi, always
+/// inlined as wideProduct()
+[[gnu::always_inline]] constexpr U64 mul128( U64 a , U64 b , U64 & hi )
 {
-#ifdef __SIZEOF_INT128__
- __extension__ typedef unsigned __int128 U128;  // not ISO C++
- const U128 p = U128( a ) * b;
- hi = U64( p >> 64 );
- return( U64( p ) );
-#else
- const U64 a0 = a & 0xFFFFFFFFULL , a1 = a >> 32 , b0 = b & 0xFFFFFFFFULL ,
-	   b1 = b >> 32;
- const U64 p00 = a0 * b0 , p01 = a0 * b1 , p10 = a1 * b0 , p11 = a1 * b1;
- const U64 mid =
-   ( p00 >> 32 ) + ( p01 & 0xFFFFFFFFULL ) + ( p10 & 0xFFFFFFFFULL );
- hi = p11 + ( p01 >> 32 ) + ( p10 >> 32 ) + ( mid >> 32 );
- return( ( mid << 32 ) | ( p00 & 0xFFFFFFFFULL ) );
-#endif
+ return( wideProduct( a , b , hi ) );
  }
 
-/// ( hi 2^64 + lo ) mod m, by one division of 128 bits by 64 where the
-/// processor has it, instead of the call that divides two of 128 bits
+/// ( hi 2^64 + lo ) mod m, by the division of two words by one of
+/// Wide.h
 /// \pre hi < m
 constexpr U64 mod128( U64 hi , U64 lo , U64 m )
 {
-#if defined( __x86_64__ ) && ( defined( __GNUC__ ) || defined( __clang__ ) )
- if( ! std::is_constant_evaluated() ) {
-  U64 q , r;
-  asm( "divq %4" : "=a"( q ) , "=d"( r ) : "a"( lo ) , "d"( hi ) , "rm"( m ) );
-  return( r );
-  }
-#endif
-#ifdef __SIZEOF_INT128__
- __extension__ typedef unsigned __int128 U128;  // not ISO C++
- return( U64( ( U128( hi ) << 64 | lo ) % m ) );
-#else
- for( int i = 0 ; i < 64 ; ++i ) {  // the bits of lo one by one
-  const bool over = hi >> 63;
-  hi = ( hi << 1 ) | ( lo >> 63 );
-  lo <<= 1;
-  if( over || ( hi >= m ) )
-   hi -= m;
-  }
- return( hi );
-#endif
+ U64 r = 0;
+ wideDivide( hi , lo , m , r );
+ return( r );
  }
 
 }  // end( namespace detail )
@@ -216,17 +167,8 @@ struct Montgomery32
    x *= 2 - n32 * x;
   inv = x;
   r1 = std::uint32_t( ( 0 - n32 ) % n32 );  // 2^32 mod n
-  const U64 sq = U64( r1 ) * r1;            // its square, whose quotient by
-#if defined( __x86_64__ ) && ( defined( __GNUC__ ) || defined( __clang__ ) )
-  std::uint32_t q , r;  // n fits 32 bits: one division
-  asm( "divl %4"
-       : "=a"( q ) , "=d"( r )  // of 64 by 32 bits
-       : "a"( std::uint32_t( sq ) ) , "d"( std::uint32_t( sq >> 32 ) ) ,
-	 "rm"( n32 ) );
-  r2 = r;
-#else
+  const U64 sq = U64( r1 ) * r1;            // its square, by one division
   r2 = std::uint32_t( sq % n );
-#endif
   }
  [[nodiscard]] U64 modulus( void ) const { return( n ); }
  [[nodiscard]] U64 one( void ) const { return( r1 ); }
@@ -262,16 +204,7 @@ struct Montgomery32Lite
  /// x 2^32 mod n, x < n
  [[nodiscard]] U64 to( std::uint32_t x ) const {
   const U64 sq = U64( x ) << 32;
-#if defined( __x86_64__ ) && ( defined( __GNUC__ ) || defined( __clang__ ) )
-  std::uint32_t q , r;
-  asm( "divl %4"
-       : "=a"( q ) , "=d"( r )
-       : "a"( std::uint32_t( sq ) ) , "d"( std::uint32_t( sq >> 32 ) ) ,
-	 "rm"( n ) );
-  return( r );
-#else
   return( sq % n );
-#endif
   }
  /// the form of b^v, v odd, from the form b of b
  [[nodiscard]] U64 powOdd( U64 b , U64 v ) const {
@@ -362,17 +295,9 @@ constexpr U64 mulMod( U64 a , U64 b , U64 m )
  else if( m == kMersenne61 )
   r = mulMod61( a , b );
  else {
-#ifdef __SIZEOF_INT128__
   U64 hi;
   const U64 lo = detail::mul128( a , b , hi );  // hi < m, as a , b < m
   r = detail::mod128( hi , lo , m );
-#else
-  for( ; b ; b >>= 1 ) {  // the doubling of Ahmes
-   if( b & 1 )
-    r = ( r >= m - a ) ? r - ( m - a ) : r + a;
-   a = ( a >= m - a ) ? a - ( m - a ) : a + a;
-   }
-#endif
   }
  ADS_POST( r < m );
  return( r );

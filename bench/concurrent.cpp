@@ -7,9 +7,10 @@
  * (ADS_HAS_RIGTORP), moodycamel::ReaderWriterQueue (ADS_HAS_MOODYCAMEL)
  * and folly::ProducerConsumerQueue (ADS_HAS_FOLLY), and MPSCInbox of ADS
  * against boost::lockfree::queue and moodycamel::ConcurrentQueue, each on
- * two threads pinned to the first two processors that the process may use
- * when it starts (e.g., taskset -c 14,15), read once before any thread is
- * pinned:
+ * two threads pinned by `pinThread()` [see Affinity.h] to the first two
+ * processors that the process may use when it starts (e.g., taskset -c
+ * 14,15), read once before any thread is pinned (with hwloc; without it
+ * the threads are not pinned):
  *
  * - "spsc", case throughput: a producer pushes n integers into a queue of
  *   1024 places, retrying when it is full, while a consumer pops them,
@@ -111,6 +112,8 @@
 #ifdef ADS_HAS_FOLLY
  #include "folly/ProducerConsumerQueue.h"
 #endif
+
+#include "ADS/parallel/Affinity.h"
 
 #include <atomic>
 #include <thread>

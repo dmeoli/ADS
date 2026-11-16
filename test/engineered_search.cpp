@@ -761,12 +761,15 @@ ADS_TEST( "backoff-threads" )
  }
 
 // the processors of the process sorted and distinct, as many as
-// availableCpus() where the placement exists; a thread pinned to the
-// processor i mod c runs there, for i past the count too, and pinThread()
-// is false where the placement does not exist
+// availableCpus() where the placement exists (with hwloc, always); a thread
+// pinned to the processor i mod c runs there, for i past the count too, and
+// pinThread() is false where the placement does not exist
 ADS_TEST( "affinity" )
 {
  const std::vector< int > & C = affinityCpus();
+#if defined( ADS_WITH_HWLOC )
+ CHECK( ! C.empty() );
+#endif
  CHECK( std::is_sorted( C.begin() , C.end() ) );
  CHECK( std::adjacent_find( C.begin() , C.end() ) == C.end() );
  CHECK( &C == &affinityCpus() );  // computed once

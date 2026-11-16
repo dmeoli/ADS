@@ -26,11 +26,11 @@
  * broadword method of Vigna: the sideways sums of the bytes [see
  * `Bitwise.h`] are accumulated by one multiplication, the byte holding the
  * \f$ k \f$-th 1 is found by a comparison of the 8 bytes in parallel and
- * the trailing zeros, and the 1 inside it by clearing the lower 1s, in
- * \f$ O( 1 ) \f$ time and with no loop over the 64 bits (with the
- * instructions BMI2, a single deposit of the bit \f$ 2^k \f$ on the 1s of
- * the word). It is the last step of every select in ADS, in place of the
- * tables of the small blocks of the classical analysis (Jacobson, Clark).
+ * the trailing zeros, and the 1 inside it in a table of 2 KB indexed by
+ * the byte and the rank, in \f$ O( 1 ) \f$ time, with no loop and no
+ * instruction of a particular processor. It is the last step of every
+ * select in ADS, in place of the tables of the small blocks of the
+ * classical analysis (Jacobson, Clark).
  * The kernels that the directories of rank and select share are here too,
  * in `detail`: the 1s of a prefix of a line of 512 bits, one kernel with a
  * variant for AVX2 and a scalar one (with BMI2 or not); the copy and the
@@ -82,6 +82,7 @@
 #include "ADS/memory/HugePageAllocator.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <bit>
 #include <compare>
@@ -259,9 +260,8 @@ using Words = std::vector< Word , detail::LineAllocator< Word > >;
 /// 5 & \quad r \gets k - \text{the byte } b - 1 \text{ of } s
 ///     \ \text{(0 if } b = 0 \text{)} \cr
 /// 6 & \quad v \gets \text{the byte } b \text{ of } x \cr
-/// 7 & \quad \textbf{for}\ t \gets 1\ \textbf{to}\ r\ \textbf{do}\ v \gets v
-///     \wedge ( v - 1 )\quad \triangleright\ \text{its lowest 1 cleared} \cr
-/// 8 & \quad \textbf{return}\ 8 b + \mathrm{ctz}( v )
+/// 7 & \quad \textbf{return}\ 8 b + T[ 8 v + r ]\quad \triangleright
+///     \ T \text{ the places of the 1s of each byte by rank}
 /// \end{array}}
 /// \f]
 /// \pre \f$ k < \f$ `sidewaysSum( x )`

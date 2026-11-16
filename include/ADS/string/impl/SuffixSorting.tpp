@@ -27,23 +27,11 @@
  #include <immintrin.h>
 #endif
 
-#if defined( __linux__ )
- #include <sys/mman.h>
-#endif
-
 namespace ADS
 {
 
 namespace detail
 {
-
-/// a pointer whose array no other pointer of the function reaches; not on
-/// MSVC, whose optimizer fails on these loops with it
-#if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_SAIS_RESTRICT __restrict
-#else
- #define ADS_SAIS_RESTRICT
-#endif
 
 /// how far ahead the scans of the induction prefetch the text; on the
 /// large alphabets the buckets are prefetched half as far and the places
@@ -186,32 +174,11 @@ inline void saisKinds( const unsigned char * x , std::uint64_t t ,
 #endif
  }
 
-/// asks for transparent huge pages under the whole pages of 2 MB of the b
-/// bytes at p, not touched yet: their faults then come 512 times fewer
-inline void saisHuge( void * p , std::size_t b )
-{
-#if defined( __linux__ ) && defined( MADV_HUGEPAGE )
- constexpr std::uintptr_t page = std::uintptr_t( 1 ) << 21;
- const std::uintptr_t from =
-			( std::uintptr_t( p ) + page - 1 ) & ~( page - 1 ) ,
-		      to = ( std::uintptr_t( p ) + b ) & ~( page - 1 );
- if( to > from )
-  madvise( reinterpret_cast< void * >( from ) , to - from , MADV_HUGEPAGE );
-#else
- ( void )p;
- ( void )b;
-#endif
- }
-
-/// a vector of n values, its pages huge where the system allows it
+/// a vector of n values, filled with zeros by one memset
 template< class I >
 std::vector< I > saisVector( std::size_t n )
 {
- std::vector< I > V;
- V.reserve( n );
- saisHuge( V.data() , n * sizeof( I ) );
- V.assign( n , I( 0 ) );  // a fill of zeros: one memset
- return( V );
+ return( std::vector< I >( n , I( 0 ) ) );
  }
 
 /// prefetches the line of p for a read
@@ -266,9 +233,7 @@ inline S saisTop( bool b )
 
 /// the move of the entry h by the scan from left to right
 template< class C , class S >
-inline void saisMoveL( const C * ADS_SAIS_RESTRICT T ,
-		       S * ADS_SAIS_RESTRICT SA ,
-		       S * ADS_SAIS_RESTRICT B , S h )
+inline void saisMoveL( const C * T , S * SA , S * B , S h )
 {
  constexpr S top = std::numeric_limits< S >::min();
  const S q = SA[ h ];
@@ -282,9 +247,7 @@ inline void saisMoveL( const C * ADS_SAIS_RESTRICT T ,
 
 /// the move of the entry h by the scan from right to left
 template< class C , class S >
-inline void saisMoveS( const C * ADS_SAIS_RESTRICT T ,
-		       S * ADS_SAIS_RESTRICT SA ,
-		       S * ADS_SAIS_RESTRICT B , S h )
+inline void saisMoveS( const C * T , S * SA , S * B , S h )
 {
  constexpr S low = std::numeric_limits< S >::max();
  const S q = SA[ h ];
@@ -301,13 +264,9 @@ inline void saisMoveS( const C * ADS_SAIS_RESTRICT T ,
 /// bit set if the suffix before it is of type S, and the top bit of every
 /// entry scanned flipped. Two entries a step, the text before the entries
 /// D ahead prefetched, and on the large alphabets also their buckets (D /
-/// 2 ahead) and the places these point to (D / 4 ahead); the arrays are
-/// declared not to overlap (restrict), so that the loads of the next
-/// entries need not wait for the stores of the moves
+/// 2 ahead) and the places these point to (D / 4 ahead)
 template< bool small , class C , class S >
-void saisInduceL( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
-		  S n ,
-		  const S * size , S * ADS_SAIS_RESTRICT B , S K )
+void saisInduceL( const C * T , S * SA , S n , const S * size , S * B , S K )
 {
  constexpr S D = S( saisAhead ) , low = std::numeric_limits< S >::max();
  saisBuckets( size , B , K , false );
@@ -339,9 +298,7 @@ void saisInduceL( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
 /// top bit set (or 0) restored. Two entries a step, prefetched as in
 /// saisInduceL()
 template< bool small , class C , class S >
-void saisInduceS( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
-		  S n ,
-		  const S * size , S * ADS_SAIS_RESTRICT B , S K )
+void saisInduceS( const C * T , S * SA , S n , const S * size , S * B , S K )
 {
  constexpr S D = S( saisAhead ) , low = std::numeric_limits< S >::max();
  saisBuckets( size , B , K , true );
@@ -587,8 +544,9 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
  std::vector< std::uint64_t > u , w;  // the radix sort of large groups
  std::size_t spent = 0;
  // a group sorted by its keys: by insertion if small, else by a radix
- // sort on the bits that are not the same in all its keys (gathered by
- // pext, in their order), if at most 32 and no suffix ends in the keys
+ // sort on the bits that are not the same in all its keys (gathered in
+ // their order, run of 1s of their mask by run), if at most 32 and no
+ // suffix ends in the keys
  auto sort = [ & ]( Key * a , S g ) {
   if( g <= 16 ) {
    for( S i = 1 ; i < g ; ++i ) {
@@ -600,7 +558,6 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
     }
    return;
    }
-#if defined( __BMI2__ )
   std::uint64_t one = ~std::uint64_t( 0 ) , any = 0;
   S full = 8;
   for( S i = 0 ; i < g ; ++i ) {
@@ -613,11 +570,25 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
   if( ( full == 8 ) && ( b <= 32 ) ) {
    if( b == 0 )
     return;  // all equal
+   // the runs of 1s of the mask, each moved down to its place in the
+   // gathered bits by one shift and one mask
+   int runs = 0 , low[ 32 ] , len[ 32 ];
+   for( std::uint64_t m = mask ; m != 0 ; ++runs ) {
+    low[ runs ] = std::countr_zero( m );
+    len[ runs ] = std::countr_one( m >> low[ runs ] );
+    m &= ~( ( ( std::uint64_t( 2 ) << ( len[ runs ] - 1 ) ) - 1 )
+	    << low[ runs ] );
+    }
    u.resize( std::size_t( g ) );
    w.resize( std::size_t( g ) );
-   for( S i = 0 ; i < g ; ++i )
-    u[ i ] =
-      ( _pext_u64( a[ i ].key , mask ) << 32 ) | std::uint32_t( a[ i ].p );
+   for( S i = 0 ; i < g ; ++i ) {
+    std::uint64_t x = 0;
+    for( int j = 0 , at = 0 ; j < runs ; at += len[ j++ ] )
+     x |= ( ( a[ i ].key >> low[ j ] ) &
+	    ( ( std::uint64_t( 2 ) << ( len[ j ] - 1 ) ) - 1 ) )
+	  << at;
+    u[ i ] = ( x << 32 ) | std::uint32_t( a[ i ].p );
+    }
    for( int shift = 32 ; shift < 32 + b ; shift += 8 ) {
     S count[ 257 ] = {};
     for( S i = 0 ; i < g ; ++i )
@@ -632,7 +603,6 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
     a[ i ] = { u[ i ] >> 32 , 8 , S( std::uint32_t( u[ i ] ) ) };
    return;
    }
-#endif
   std::sort( a , a + g );
   };
  // one round on the groups [ from , to ) of G, the parts still tied to H;
@@ -820,9 +790,8 @@ struct SaisPart
 /// of its symbol by the type of p - 2 , at its start) or from right to left
 /// (forS true: of type S, at its end); the suffix 0 moves nothing
 template< bool forS , class C , class S >
-inline void
-saisPartialMove( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
-		 SaisPart< S > * ADS_SAIS_RESTRICT P , S i , S & d )
+inline void saisPartialMove( const C * T , S * SA , SaisPart< S > * P , S i ,
+			     S & d )
 {
  constexpr S top = std::numeric_limits< S >::min() ,
 	     low = std::numeric_limits< S >::max();
@@ -843,8 +812,8 @@ saisPartialMove( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
 /// a scan of the partial induction over SA[ from .. to ), two entries a
 /// step, with the prefetches of the final scans; returns d
 template< bool forS , bool large , class C , class S >
-S saisPartialScan( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
-		   SaisPart< S > * ADS_SAIS_RESTRICT P , S from , S to , S d )
+S saisPartialScan( const C * T , S * SA , SaisPart< S > * P , S from , S to ,
+		   S d )
 {
  constexpr S D = S( saisAhead ) , low = std::numeric_limits< S >::max();
  // the part of an entry p, with no check (p > 1 , or 0 for an entry not
@@ -958,13 +927,13 @@ S saisClassify( const C * T , S n , S K , std::vector< S > & size4 ,
   lms[ w ] = l;
   m += S( std::popcount( l ) );
   const S base = S( 64 * w );
-  const C * ADS_SAIS_RESTRICT x = T + base;
+  const C * x = T + base;
   // the kind of each place, 2 bits a place: bit 2 j + 1 the type of
   // 64 w + j, bit 2 j that of the place before
   if constexpr( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > )
    if( base + 64 <= n ) {
-    S * ADS_SAIS_RESTRICT even = size4.data();
-    S * ADS_SAIS_RESTRICT o = odd.data();
+    S * even = size4.data();
+    S * o = odd.data();
     alignas( 32 ) std::uint16_t idx[ 64 ];
     saisKinds( x , t , before , idx );
     for( unsigned j = 0 ; j < 64 ; j += 2 ) {
@@ -974,8 +943,8 @@ S saisClassify( const C * T , S n , S K , std::vector< S > & size4 ,
     continue;
     }
   if( smallK && ( base + 64 <= n ) ) {
-   S * ADS_SAIS_RESTRICT even = size4.data();
-   S * ADS_SAIS_RESTRICT o = odd.data();
+   S * even = size4.data();
+   S * o = odd.data();
    for( unsigned j = 0 ; j < 64 ; j += 2 ) {
     const std::size_t k0 = 2 * ( ( t >> j ) & 1 ) + ( ( before >> j ) & 1 ) ,
 		      k1 = 2 * ( ( t >> ( j + 1 ) ) & 1 ) +
@@ -1252,16 +1221,12 @@ inline void saisPack( const unsigned char * T , std::size_t n ,
   have = w - r;
   };
  std::size_t i = 0;
-#if defined( __BMI2__ )
- const std::uint64_t mask =
-   0x0101010101010101ull * ( ( std::uint64_t( 1 ) << b ) - 1 );
- for( ; i + 8 <= n ; i += 8 ) {
+ for( ; i + 8 <= n ; i += 8 ) {  // 8 codes, the first one highest
   std::uint64_t x = 0;
   for( unsigned j = 0 ; j < 8 ; ++j )
-   x |= std::uint64_t( code[ T[ i + j ] ] ) << ( 56 - 8 * j );
-  put( _pext_u64( x , mask ) , 8 * b );
+   x = ( x << b ) | std::uint64_t( code[ T[ i + j ] ] );
+  put( x , 8 * b );
   }
-#endif
  for( ; i < n ; ++i )
   put( code[ T[ i ] ] , b );
  if( have ) {
@@ -1279,10 +1244,9 @@ inline void saisPack( const unsigned char * T , std::size_t n ,
 /// the lowest digit, the counts of all the digits taken in one pass, back
 /// and forth between e and t; count holds P << bits counters
 template< unsigned P , class E , class F , class S >
-void saisLsd( E * ADS_SAIS_RESTRICT e , E * ADS_SAIS_RESTRICT t , S g ,
-	      F keyOf ,
-	      const unsigned * sh , unsigned bits ,
-	      S * ADS_SAIS_RESTRICT count )
+void saisLsd( E * e , E * t , S g , F keyOf , const unsigned * sh ,
+	      unsigned bits ,
+	      S * count )
 {
  const std::size_t width = std::size_t( 1 ) << bits , mask = width - 1;
  std::fill( count , count + P * width , S( 0 ) );
@@ -1719,12 +1683,10 @@ bool isLcpArrayOf( std::string_view T , const std::vector< I > & SA ,
 /// the permuted LCP of T and SA into P, by Phi, and if Y is not null each
 /// value also in Y[ i ], a byte, 255 for 255 or more, until more than n /
 /// 64 values are 255 or more (long repeats): whether Y was filled is
-/// returned (the arrays are declared not to overlap, so that the stores
-/// into P do not reload SA and the text)
+/// returned
 template< bool bytes , class I >
-bool plcp( const unsigned char * ADS_SAIS_RESTRICT t , std::size_t n ,
-	   const I * ADS_SAIS_RESTRICT SA , I * ADS_SAIS_RESTRICT P ,
-	   unsigned char * ADS_SAIS_RESTRICT Y = nullptr )
+bool plcp( const unsigned char * t , std::size_t n , const I * SA , I * P ,
+	   unsigned char * Y = nullptr )
 {
  if( n == 0 )
   return( bytes );
@@ -1790,9 +1752,7 @@ bool plcp( const unsigned char * ADS_SAIS_RESTRICT t , std::size_t n ,
 /// LCP[ r ] = P[ SA[ r ] ] for r in [ 0 , n ), the arrays declared not to
 /// overlap and P prefetched D entries ahead
 template< class I >
-void plcpToLcp( const I * ADS_SAIS_RESTRICT P ,
-		const I * ADS_SAIS_RESTRICT SA ,
-		I * ADS_SAIS_RESTRICT LCP , std::size_t n )
+void plcpToLcp( const I * P , const I * SA , I * LCP , std::size_t n )
 {
  constexpr std::size_t D = saisAhead;
  std::size_t r = 0;
@@ -1813,10 +1773,9 @@ void plcpToLcp( const I * ADS_SAIS_RESTRICT P ,
 /// fall in an array of n bytes, not of n integers, which stays in the
 /// cache four times longer
 template< class I >
-void plcpToLcp( const unsigned char * ADS_SAIS_RESTRICT Y ,
-		const I * ADS_SAIS_RESTRICT P ,
-		const I * ADS_SAIS_RESTRICT SA ,
-		I * ADS_SAIS_RESTRICT LCP , std::size_t n )
+void plcpToLcp( const unsigned char * Y , const I * P , const I * SA ,
+		I * LCP ,
+		std::size_t n )
 {
  constexpr std::size_t D = saisAhead;
  std::size_t r = 0;
@@ -1903,13 +1862,11 @@ std::vector< I > lcpArrayPhi( std::string_view T ,
    detail::isSuffixArrayOf(
      reinterpret_cast< const unsigned char * >( T.data() ) , n , SA.data() ) );
  const auto P = std::make_unique_for_overwrite< I[] >( n );
- detail::saisHuge( P.get() , n * sizeof( I ) );
  const auto * t = reinterpret_cast< const unsigned char * >( T.data() );
  auto LCP = detail::saisVector< I >( n < 2 ? 0 : n - 1 );
  if( n >= detail::lcpBytesFrom ) {
   // the bytes, unless many values do not fit (long repeats)
   const auto Y = std::make_unique_for_overwrite< unsigned char[] >( n );
-  detail::saisHuge( Y.get() , n );
   if( detail::plcp< true >( t , n , SA.data() , P.get() , Y.get() ) )
    detail::plcpToLcp( Y.get() , P.get() , SA.data() + 1 , LCP.data() , n - 1 );
   else

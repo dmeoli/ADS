@@ -1839,8 +1839,8 @@ $k$) the key of the loser together with its source, instead of the index of
 the player. A replay thus reads only the array of the tree, and never the
 sequence of a loser. A key of at most 16 bytes copied as bytes is kept by
 value, a larger one by its address. On integers in their natural order (the
-constant `kNaturalOrder`) a match compares the pairs (key, source) as one
-integer of 128 bits, an exhausted source having the largest key and its index
+constant `kNaturalOrder`) a match compares the pairs (key, source) by two
+flags of the keys and one of the sources, an exhausted source having the largest key and its index
 with the highest bit set. Its matches are then made of flags, and the swaps of
 the winner with the loser of a node of masks, with no jump. This matters since
 the matches of a merge of random keys are won by either side with probability

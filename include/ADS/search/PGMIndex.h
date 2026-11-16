@@ -92,6 +92,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
+#include "ADS/Wide.h"
 #include "ADS/memory/HugePageAllocator.h"
 
 #include <bit>

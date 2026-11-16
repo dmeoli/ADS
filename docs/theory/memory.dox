@@ -262,9 +262,10 @@
  buffer (TLB) at nearly each step when its memory spans more pages than the
  TLB has entries: with \f$ E \f$ entries a TLB covers \f$ 4 E \f$ KB of
  pages of 4 KB, and \f$ 2 E \f$ MB of huge pages of 2 MB, 512 times more.
- `HugePageAllocator` aligns the blocks of at least 2 MB to 2 MB, rounds them
- up to whole huge pages and advises them to the kernel for the transparent
- huge pages (Navarro et al.), at the price of at most one huge page of
+ `HugePageAllocator` aligns the blocks of at least 2 MB to 2 MB and rounds
+ them up to whole huge pages, which the kernel backs by the transparent huge
+ pages (Navarro et al.) where its policy gives them to every large region,
+ at the price of at most one huge page of
  address space per block, which is never touched; the blocks of 8 MB or
  more given back are kept by their thread, up to 64 MB, for the next request
  of the same size, so that a structure that grows and shrinks through the

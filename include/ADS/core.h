@@ -35,6 +35,7 @@
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/Portable.h"
+#include "ADS/Wide.h"
 #include "ADS/compression/PackedBits.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/external/RecordFile.h"

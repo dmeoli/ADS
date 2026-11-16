@@ -24,19 +24,9 @@ namespace ADS
 
 inline std::uint64_t detail::mulx( std::uint64_t a , std::uint64_t b )
 {
-#if defined( __SIZEOF_INT128__ )
- __extension__ typedef unsigned __int128 U128;  // not ISO C++
- const U128 p = static_cast< U128 >( a ) * b;
- return( std::uint64_t( p ) ^ std::uint64_t( p >> 64 ) );
-#elif defined( _MSC_VER ) && defined( _M_X64 )
- std::uint64_t h;
- const std::uint64_t l = _umul128( a , b , &h );
+ std::uint64_t h = 0;
+ const std::uint64_t l = wideProduct( a , b , h );
  return( l ^ h );
-#elif defined( _MSC_VER ) && defined( _M_ARM64 )
- return( ( a * b ) ^ __umulh( a , b ) );
-#else
- return( mulxPortable( a , b ) );
-#endif
  }
 
 constexpr std::uint64_t detail::mulxPortable( std::uint64_t a ,

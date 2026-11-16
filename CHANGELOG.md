@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- ADS_WITH_HWLOC (AUTO by default, OFF in every recipe of packaging/),
+  cmake/ADSHwloc.cmake and extlib/makefile-libHwloc: the placement of the
+  threads of Affinity.h (affinityCpus(), pinThread(), currentCpu()) and the
+  count of the physical cores of FastFlowExecutor.h are those of hwloc,
+  where they were sched_getaffinity(), pthread_setaffinity_np(),
+  sched_getcpu() and the files of /sys under a test on Linux; without
+  hwloc the threads are not pinned, as before on the other systems
+
+- Wide.h (core), the arithmetic of two words that C++20 does not spell:
+  wideProduct() and Int128, moved from Portable.h, and wideDivide(), the
+  division of two words by one of Hacker's Delight after the divisor is
+  shifted to its top bit; the product is that of Boost.Multiprecision with
+  ADS_WITH_BOOST (the same mul as the integers of 128 bits of GCC and
+  Clang, always inlined) and wideProductHalves() otherwise, and Int128 is
+  always the pair of words in two's complement
+
+- bench/portable.cpp and bench/portable.py: the operations whose code
+  changed with the branches on the processor, the compiler and the system
+  (select in a word, PrefixFilter, RecSplit, hashBytes(), mulMod(),
+  powMod(), BigInteger, FlatLoserTree, the CAS of 16 bytes of
+  ConcurrentFlatTable, EventCount, suffixArray()), built on the headers of
+  a revision as "old" and on the present ones as "new", counted by
+  callgrind, and timed with an A/A row by --time for a campaign on an idle
+  machine
+
 - Appendix C of the manual, Working with other libraries: one section per
   library (the standard library, Boost.Graph, Boost.Heap and
   Boost.Unordered, LEMON, GMP, BLAS, oneTBB, OpenMP, std::execution,
@@ -2212,6 +2237,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `-Wl,-rpath` everywhere, and give `-Wfatal-errors` and nothing beyond `-g`,
   which clang++ and g++ both take
 
+- No code of ADS branches any longer on the processor, the compiler or
+  the system for these items: selectInWord() finds the 1 inside its byte
+  in the table of 2 KB of Vigna instead of a deposit by pdep under BMI2,
+  and select(), pdep(), pext(), mortonEncode() and mortonDecode() of
+  FastBitwise.h, recSplitSelect() of RecSplit and the runs of PrefixFilter
+  are the broadword code they had without BMI2; the radix sort of the
+  groups of SuffixSorting gathers the bits of the keys a run of 1s of the
+  mask at a time, and its packing of the text shifts the codes in,
+  instead of pext; FastHash, FlatHashTable, NumberTheory, BigInteger and
+  RandomQueue take the product of two words from Wide.h, and NumberTheory
+  and BigInteger the division of two words by one, instead of
+  unsigned __int128, the intrinsics of MSVC and the asm of divq, divl and
+  of the binary gcd; mulMod() needs no doubling of Ahmes any longer;
+  FlatLoserTree compares the pairs of key and source of the integers by
+  flags, as those of the other arithmetic types, instead of as one integer
+  of 128 bits; the CAS of 16 bytes of ConcurrentFlatTable is that of
+  boost::atomic_ref, where Boost.Atomic finds it free of locks
+  (ADS_FLAT_CAS16 is then 1), instead of __sync_val_compare_and_swap on
+  unsigned __int128, and without Boost the pairs of 16 bytes are in nodes;
+  bench/concurrent.cpp pins its threads by pinThread(); the instructions
+  of one operation before and after are in bench/portable.py, and where
+  the portable code may be slower (the select, the division of two words,
+  the fences of EventCount) the timings are left to the campaign
+
 - The customization points of the priority queues, queue_item_t,
   queue_insert(), queue_min(), queue_deleteMin(), queue_handle_t and
   queue_decrease(), moved from PriorityQueue.h to the new advanced header
@@ -3216,6 +3265,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Strings, and both listed in the table of the book in the README
 
 ### Removed
+
+- The asymmetric fences of EventCount (membarrier(2) of Linux): both
+  sides run a full fence of the standard, or, with ADS_EVENTCOUNT_RMW, the
+  notifier a read-modify-write that adds 0 and neither side a fence; the
+  advice of the transparent huge pages (madvise(MADV_HUGEPAGE)) of
+  HugePageAllocator and of the arrays of SuffixSorting, since neither the
+  standard library nor Boost nor hwloc can ask for huge pages: the large
+  blocks stay aligned to 2 MB, and are huge where the policy of the system
+  gives huge pages to every large region; the macro ADS_BIGINT_WIDE
 
 - introSort() of sort/EngineeredQuickSorts.h and timSort() of
   sort/RunSorts.h, which the benchmark found no faster than std::sort,

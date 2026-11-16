@@ -19,8 +19,8 @@
  *   \f$ p = 2^{61} - 1 \f$ of the universal hashing [see
  *   `UniversalHashing.h`], four products of 32 bits folded by
  *   \f$ 2^{61} \equiv 1 \pmod{p} \f$, faster than a division of 128 bits;
- *   the product of 128 bits where the compiler has one, and the doubling of
- *   Ahmes, \f$ O( \log b ) \f$ additions, where it has not (MSVC);
+ *   otherwise the product of two words and the division of two words by
+ *   one of `Wide.h`;
  * - `powMod()`, \f$ x^v \bmod m \f$ by repeated squaring,
  *   \f$ O( \log v ) \f$ multiplications (exercise 17.1),
  *   \f$ \lfloor \log_2 v \rfloor + 1 \f$ squarings and as many products, each
@@ -186,6 +186,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Wide.h"
 #include "ADS/set/BoolSet.h"
 
 #include <algorithm>
@@ -312,8 +313,8 @@ inline constexpr U64 kMersenne61 = ( U64( 1 ) << 61 ) - 1;
 
 /// the product \f$ a b \bmod m \f$, exact for any \f$ a \f$, \f$ b \f$ and
 /// \f$ m \f$: by the product of 64 bits for \f$ m \le 2^{32} \f$, by
-/// `mulMod61()` for \f$ m = 2^{61} - 1 \f$, by the product of 128 bits or
-/// else by doubling and adding
+/// `mulMod61()` for \f$ m = 2^{61} - 1 \f$, and otherwise by the product
+/// of 128 bits and one division of two words by one
 ///
 /// In pseudocode (beyond the book):
 /// \f[
@@ -323,14 +324,10 @@ inline constexpr U64 kMersenne61 = ( U64( 1 ) << 61 ) - 1;
 /// 3 & \quad \textbf{if}\ m \le 2^{32}\ \textbf{then return}\ a b \bmod m \cr
 /// 4 & \quad \textbf{if}\ m = 2^{61} - 1\ \textbf{then return}
 ///     \ \mathrm{mulMod61}( a , b ) \cr
-/// 5 & \quad \textbf{if}\ \text{there is a product of 128 bits}
-///     \ \textbf{then return}\ a b \bmod m \cr
-/// 6 & \quad r \gets 0 \quad \triangleright\ \text{the doubling of Ahmes} \cr
-/// 7 & \quad \textbf{while}\ b > 0\ \textbf{do} \cr
-/// 8 & \qquad \textbf{if}\ b \text{ is odd}\ \textbf{then}\ r \gets ( r + a )
-///     \bmod m \cr
-/// 9 & \qquad a \gets 2 a \bmod m;\ b \gets \lfloor b / 2 \rfloor \cr
-/// 10 & \quad \textbf{return}\ r
+/// 5 & \quad ( h , l ) \gets \text{the two words of } a b\quad
+///     \triangleright\ h < m \cr
+/// 6 & \quad \textbf{return}\ ( h 2^{64} + l ) \bmod m\quad
+///     \triangleright\ \text{one division of two words by one}
 /// \end{array}}
 /// \f]
 /// \pre \f$ m \ge 1 \f$
@@ -392,7 +389,7 @@ class Montgomery64
  /// \end{array}}
  /// \f]
  /// \pre \f$ a < n \f$ and \f$ b < n \f$
- [[nodiscard]] constexpr U64 mul( U64 a , U64 b ) const;
+ [[nodiscard]] [[gnu::always_inline]] constexpr U64 mul( U64 a , U64 b ) const;
 
  /// the form of \f$ x^v \f$, \f$ x \f$ a form
  ///
@@ -431,7 +428,8 @@ class Montgomery64
  /// \end{array}}
  /// \f]
  /// \pre \f$ \mathit{hi} < n \f$
- [[nodiscard]] constexpr U64 reduce( U64 hi , U64 lo ) const;
+ [[nodiscard]] [[gnu::always_inline]] constexpr U64 reduce( U64 hi ,
+							    U64 lo ) const;
 
  U64 f_n;    ///< the modulus
  U64 f_inv;  ///< \f$ n^{-1} \bmod 2^{64} \f$

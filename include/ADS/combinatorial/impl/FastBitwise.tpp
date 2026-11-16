@@ -244,9 +244,6 @@ inline std::uint64_t popcountAnd( const Word * a , const Word * b ,
 
 inline Word pdep( Word x , Word mask )
 {
-#if defined( __BMI2__ )
- return( Word( _pdep_u64( x , mask ) ) );
-#else
  Word r = 0;
  for( Word b = 1 ; mask ; b += b ) {  // the 1 bits of mask in order
   if( x & b )
@@ -254,14 +251,10 @@ inline Word pdep( Word x , Word mask )
   mask &= mask - 1;
   }
  return( r );
-#endif
  }
 
 inline Word pext( Word x , Word mask )
 {
-#if defined( __BMI2__ )
- return( Word( _pext_u64( x , mask ) ) );
-#else
  Word r = 0;
  for( Word b = 1 ; mask ; b += b ) {
   if( x & mask & ( ~mask + 1 ) )
@@ -269,15 +262,11 @@ inline Word pext( Word x , Word mask )
   mask &= mask - 1;
   }
  return( r );
-#endif
  }
 
 inline int select( Word x , int r )
 {
  ADS_PRE( ( r >= 0 ) && ( r < std::popcount( x ) ) );
-#if defined( __BMI2__ )
- return( std::countr_zero( pdep( Word( 1 ) << r , x ) ) );
-#else
  constexpr Word L8 = 0x0101010101010101ULL , H8 = 0x8080808080808080ULL;
  Word s = x - ( ( x >> 1 ) & 0x5555555555555555ULL );
  s = ( s & 0x3333333333333333ULL ) + ( ( s >> 2 ) & 0x3333333333333333ULL );
@@ -289,27 +278,16 @@ inline int select( Word x , int r )
  while( rr-- > 0 )
   b &= b - 1;
  return( k + std::countr_zero( b ) );
-#endif
  }
 
 inline Word mortonEncode( std::uint32_t x , std::uint32_t y )
 {
-#if defined( __BMI2__ )
- return( pdep( x , 0x5555555555555555ULL ) |
-	  pdep( y , 0xAAAAAAAAAAAAAAAAULL ) );
-#else
  return( interleave( x , y ) );
-#endif
  }
 
 inline std::pair< std::uint32_t , std::uint32_t > mortonDecode( Word z )
 {
-#if defined( __BMI2__ )
- return( std::pair( std::uint32_t( pext( z , 0x5555555555555555ULL ) ) ,
-		     std::uint32_t( pext( z , 0xAAAAAAAAAAAAAAAAULL ) ) ) );
-#else
  return( deinterleave( z ) );
-#endif
  }
 
 /*--------------------------------------------------------------------------*/

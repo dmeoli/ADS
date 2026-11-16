@@ -45,6 +45,7 @@ Contract.h                            core     the contracts of every header
 Iterators.h                           core     the iterators of the containers
 Modification.h                        advanced
 Portable.h                            core     the primitives of the processor
+Wide.h                                core     the arithmetic of two words
 
 algorithm/AkraBazzi.h                 base
 algorithm/BinaryCounter.h             base

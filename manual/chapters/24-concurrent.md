@@ -1168,10 +1168,11 @@ a value of 32 bits, or a key of 64 bits with no value, i.e., a set), the
 word is the pair itself (the constant `packed` of the class). Pairs whose
 key is made of zero bytes, whose word could be 0, are kept apart in
 one atomic word. (ii) When they do not fit together but each fits in 8
-bytes, and the processor has a compare-and-swap of 16 bytes without locks
-(`cmpxchg16b` on x86-64, the pairs of registers of AArch64), a place is two
-words, the key and the value, written together by that instruction
-(`inlined`). (iii) Otherwise the word holds the index of a node, where the
+bytes, and the compare-and-swap of 16 bytes of Boost.Atomic is free of
+locks (`cmpxchg16b` on x86-64, the pairs of registers of AArch64, as Boost
+finds them under the flags of the compiler), a place is two words, the key
+and the value, written together by that instruction (`inlined`); without
+Boost, the pairs are in the form (iii). (iii) Otherwise the word holds the index of a node, where the
 pair lies with its hash, and 24 bits of the hash; a lookup follows the
 index only when those bits match, which happens once in $2^{24}$ times for
 another key. Nodes never move, and the pair returned is a reference to
@@ -1766,15 +1767,20 @@ of the epoch.
 
 --8<-- "generated/EventCount-await.pseudo.md"
 
-We make the fences asymmetric where the system has them, as `membarrier( 2 )`
-on Linux ([Ladan-Mozes, Lee and Vyukov
-2011](Z-bibliography.md#ref-ladanmozes2011)). A waiter, which is about to
-sleep anyway, runs the heavy fence, a system call that makes each running
-thread of the process run a full barrier; the notifier runs the light one,
-which only stops the compiler. When no thread waits, a notification thus costs
-the read of a line that stays shared. A full fence, instead, would wait at
-each item for the stores of the item to reach the caches of the other threads.
-Elsewhere both fences are full ones.
+The notifier and the waiter each run a full fence of the standard. When no
+thread waits, a notification thus costs the fence and the read of a line
+that stays shared. With `ADS_EVENTCOUNT_RMW` defined, the notifier reads
+the waiters by a read-modify-write that adds 0 instead, and neither side
+runs a fence: the read-modify-write reads the last value in the order of the
+modifications of the word, so that it either sees the waiter or is seen by
+it through the release sequence; this is also the form that the sanitizer
+of threads checks, since it does not model the fences. Which of the two
+costs less depends on the processor (a full fence against a line taken
+exclusive at each notification), and we leave the choice of the default to
+the campaign of [Appendix B](B-benchmarks.md#app-B). It is worth noting that
+the asymmetric fences of the system (`membarrier( 2 )` on Linux, [Ladan-Mozes,
+Lee and Vyukov 2011](Z-bibliography.md#ref-ladanmozes2011)), which would let
+the notifier run only a fence of the compiler, have no portable form.
 
 <span id="lem-24-21"></span>**Lemma 24.21.** *Let the read-modify-write of
 the waiter be followed by a full fence, and the write that makes the
@@ -1782,8 +1788,7 @@ condition true be followed by a full fence before the notifier reads the
 waiters. Then a waiter does not sleep through a notification of a
 condition that is true.*
 
-*Proof.* We place the two fences in $S$ (a pair of asymmetric fences orders as a
-pair of full ones). If that of the notifier comes first, the waiter, which
+*Proof.* We place the two fences in $S$. If that of the notifier comes first, the waiter, which
 looks at the condition after its fence, sees it true and does not
 sleep. If that of the waiter comes first, the notifier reads its
 announcement, $w \ge 1$, and advances the epoch by a release on the same
@@ -2808,8 +2813,8 @@ with the engineering of [Williams et al.
 errors are bounded by [Alistarh et al. 2017](Z-bibliography.md#ref-alistarh2017)
 and, exactly in the sequential model, by [Walzer and Williams
 2025](Z-bibliography.md#ref-walzer2025). For the event count we follow [Reed
-and Kanodia 1979](Z-bibliography.md#ref-reed1979), with the asymmetric
-fences of [Ladan-Mozes et al. 2011](Z-bibliography.md#ref-ladanmozes2011).
+and Kanodia 1979](Z-bibliography.md#ref-reed1979); the asymmetric fences
+are those of [Ladan-Mozes et al. 2011](Z-bibliography.md#ref-ladanmozes2011).
 The priority queues that are stolen combine the steal of half of [Hendler
 and Shavit 2002](Z-bibliography.md#ref-hendler2002) with the
 receiver-initiated steals of [Acar et al. 2013](Z-bibliography.md#ref-acar2013),

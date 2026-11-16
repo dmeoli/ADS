@@ -27,6 +27,8 @@
 #                                  to the headers of Boost [see               #
 #                                  PointerTable.h, FlatHashTable.h,           #
 #                                  SmallVector.h and RandomGenerators.h]      #
+#           $(ADS_WITH_HWLOC)    = the same for the placement of the threads  #
+#                                  on hwloc [see Affinity.h] (HWLOC=<prefix>) #
 #           $(ADS_WITH_LEMON)    = the same for the interoperation with LEMON #
 #                                  [see include/ADS/interop/lemon], whose     #
 #                                  flags go in $(ADSLEMONINC) alone, so that  #
@@ -67,7 +69,8 @@
 #           $(ADSLIB)            = the external libraries + -L< libdirs >     #
 #           $(ADSGMPON), $(ADSBLASON), $(ADSBOOSTON), $(ADSMPION) = 1 if the  #
 #                                  backend of GMP, of the CBLAS, of Boost, of #
-#                                  MPI is on                                  #
+#                                  MPI is on; $(ADSHWLOCON) the same for      #
+#                                  hwloc                                      #
 #           $(ADSLEMONINC)       = -DADS_WITH_LEMON and the flags of LEMON,   #
 #                                  if found, for the programs that use it,    #
 #                                  with those of its warm start               #
@@ -153,6 +156,21 @@ endif
 ifeq ($(ADSBLASON),1)
     ADSINC += -DADS_WITH_BLAS $(libBLASINC)
     ADSLIB += $(libBLASLIB)
+endif
+
+# hwloc, for the placement of the threads [see Affinity.h]: the same
+ADS_WITH_HWLOC ?= auto
+ifdef HWLOC
+    HWLOC_ROOT = $(HWLOC)
+endif
+ifneq ($(ADS_WITH_HWLOC),0)
+    include $(ADSSDR)/extlib/makefile-libHwloc
+    ADSHWLOCON := $(strip $(if $(filter auto,$(ADS_WITH_HWLOC)),\
+	$(libHwlocFOUND),$(filter 1,$(ADS_WITH_HWLOC))))
+endif
+ifeq ($(ADSHWLOCON),1)
+    ADSINC += -DADS_WITH_HWLOC $(libHwlocINC)
+    ADSLIB += $(libHwlocLIB)
 endif
 
 # the headers of Boost, for the structures that delegate to them: the same

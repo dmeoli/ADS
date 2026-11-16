@@ -118,16 +118,19 @@ bool ConcurrentFlatTable< K , V , H , Eq , C >::cas16(
   std::uint64_t k1 , std::uint64_t v1 )
 {
 #if ADS_FLAT_CAS16
- // the key in the low word, at the lower address of a little-endian place
- __extension__ typedef unsigned __int128 Pair;
- const Pair e = ( Pair( v0 ) << 64 ) | k0;
- const Pair n = ( Pair( v1 ) << 64 ) | k1;
- const Pair o =
-   __sync_val_compare_and_swap( reinterpret_cast< Pair * >( p ) , e , n );
- if( o == e )
+ // the key in the word at the lower address, the value in the other
+ struct alignas( 16 ) Pair
+ {
+  std::uint64_t k , v;
+  };
+ static_assert( boost::atomic_ref< Pair >::is_always_lock_free );
+ Pair e{ k0 , v0 };
+ boost::atomic_ref< Pair > r( *reinterpret_cast< Pair * >( p ) );
+ if( r.compare_exchange_strong( e , Pair{ k1 , v1 } ,
+				boost::memory_order_seq_cst ) )
   return( true );
- k0 = std::uint64_t( o );
- v0 = std::uint64_t( o >> 64 );
+ k0 = e.k;
+ v0 = e.v;
  return( false );
 #else
  ( void )p;

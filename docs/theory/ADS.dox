@@ -339,9 +339,10 @@
  \section theory_ADS_portable Portable primitives
 
  The product of two words of 64 bits is a number of 128 bits, which the
- processors give in one instruction and the languages do not; `Portable.h`
- takes it from the builtin of the compiler where there is one, and otherwise
- computes it on the halves of 32 bits of the factors. With
+ processors give in one instruction and the languages do not; `Wide.h`
+ takes it from Boost.Multiprecision, which uses that instruction, with
+ `ADS_WITH_BOOST`, and otherwise computes it on the halves of 32 bits of
+ the factors (`wideProductHalves()` of `Portable.h`). With
  \f$ a = a_1 2^{32} + a_0 \f$ and \f$ b = b_1 2^{32} + b_0 \f$,
  \f$ 0 \le a_0 , a_1 , b_0 , b_1 < 2^{32} \f$, one has
  \f[
@@ -352,13 +353,15 @@
  halves of the middle products, i.e., as three numbers below \f$ 2^{32} \f$,
  whose sum is below \f$ 3 \cdot 2^{32} \f$ and fits in a word with no
  overflow; its high half is the carry into the high word of the product.
- This computation is also `wideProductHalves()`, which the integers of any
- length of `BigInteger.h` call in place of the builtin when
- `ADS_BIGINT_PORTABLE` is defined, so that the library has one product of two
- words. In the same way, the signed integers of 128 bits, where the compiler
- has no `__int128`, are two words in two's complement, and the sum carries 1
- into the high word exactly when the sum of the low words, modulo
- \f$ 2^{64} \f$, is smaller than either of them. These are details of the
+ The integers of any length of `BigInteger.h` call `wideProductHalves()`
+ in place of the product of Boost when `ADS_BIGINT_PORTABLE` is defined, so
+ that the library has one product of two words. The quotient of a number of
+ two words by one (`wideDivide()`) is that of two digits of 32 bits by one,
+ twice, after the divisor is shifted to its top bit, each estimate being
+ corrected at most twice (Hacker's Delight, figure 9-3). In the same way,
+ the signed integers of 128 bits are two words in two's complement, and the
+ sum carries 1 into the high word exactly when the sum of the low words,
+ modulo \f$ 2^{64} \f$, is smaller than either of them. These are details of the
  implementation, out of the API reference.
 
  \section theory_ADS_modifications Typed modifications

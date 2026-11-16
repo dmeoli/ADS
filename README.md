@@ -211,11 +211,11 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-429 headers: 245 base, 153 advanced, 13 core and 18 interop.
+430 headers: 245 base, 153 advanced, 14 core and 18 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
-| `ADS/` | `ADT` | `Algebra`, `Modification` | `Abi`, `Capabilities`, `Contract`, `Iterators`, `Portable` |  |
+| `ADS/` | `ADT` | `Algebra`, `Modification` | `Abi`, `Capabilities`, `Contract`, `Iterators`, `Portable`, `Wide` |  |
 | `algorithm/` | `AkraBazzi`, `BinaryCounter`, `Hanoi`, `MasterTheorem`, `MaximumSegments`, `MonteCarlo`, `Paradigms`, `SequenceQueries`, `Subsequences` |  |  |  |
 | `backtrack/` | `Anagrams`, `DancingLinks`, `Enumeration`, `KnightTour`, `NQueens`, `SatSolvers`, `Sudoku` | `FastExactCover` |  |  |
 | `combinatorial/` | `Bitwise`, `Generation` | `FastBitwise`, `FastGeneration` |  |  |
@@ -549,7 +549,7 @@ library, Boost and Eigen; their tests are in
 | arena of objects in blocks, stable addresses | [`memory/Arena.h`](include/ADS/memory/Arena.h) | `engineered.arena` |
 | pool of objects in doubling blocks, the slot freed last made first | [`memory/ObjectPool.h`](include/ADS/memory/ObjectPool.h) | `engineered.pool` |
 | allocator of small blocks by size classes, a free list and a page of 64 KB per class (mimalloc, TLSF) | [`memory/SizeClassAllocator.h`](include/ADS/memory/SizeClassAllocator.h) | `memory.size-class-allocator` |
-| allocator of the large blocks on transparent huge pages | [`memory/HugePageAllocator.h`](include/ADS/memory/HugePageAllocator.h) | `engineered.huge-page-allocator` |
+| allocator of the large blocks aligned to the transparent huge pages | [`memory/HugePageAllocator.h`](include/ADS/memory/HugePageAllocator.h) | `engineered.huge-page-allocator` |
 | standard allocator of size classes of 8 bytes, free lists by page, for the node containers and `std::allocate_shared` (mimalloc) | [`memory/PoolAllocator.h`](include/ADS/memory/PoolAllocator.h) | `engineered_memory.pool-allocator-containers` |
 | pool of size classes shared by threads, a heap per thread, the frees of the others sent back in batches (mimalloc; snmalloc) | [`memory/ConcurrentPool.h`](include/ADS/memory/ConcurrentPool.h) | `engineered_memory.concurrent-pool-threads` |
 | index of the positions of objects in a vector, renumbered in one pass after an erasure by rank (Jacobson) | [`dictionary/PositionIndex.h`](include/ADS/dictionary/PositionIndex.h) | `engineered_sparse.position-index-renumber` |
@@ -597,7 +597,7 @@ library, Boost and Eigen; their tests are in
 | bounded queue of many producers and many consumers, a sequence in each place (Vyukov) | [`concurrent/MPMCQueue.h`](include/ADS/concurrent/MPMCQueue.h) | `engineered_queues.mpmc-queue` |
 | hash table of linear probing that one thread fills and many read, no read-modify-write per insertion, readers that read on across a growth, clear() in O(1) by epochs | [`concurrent/SingleWriterFlatTable.h`](include/ADS/concurrent/SingleWriterFlatTable.h) | `engineered.single-writer-flat-table`, `engineered.single-writer-flat-table-threads` |
 | board of the least keys of p threads, a slot per line of cache, relaxed publishes skipped when unchanged | [`concurrent/MinBoard.h`](include/ADS/concurrent/MinBoard.h) | `engineered_queues.min-board`, `engineered_queues.min-board-threads` |
-| event count, the sleep of a thread until a condition holds, with asymmetric fences | [`concurrent/EventCount.h`](include/ADS/concurrent/EventCount.h) | `engineered_queues.event-count` |
+| event count, the sleep of a thread until a condition holds, a fence and a read when nobody waits | [`concurrent/EventCount.h`](include/ADS/concurrent/EventCount.h) | `engineered_queues.event-count` |
 | exponential backoff of a waiting thread, pauses then yields (Anderson) | [`concurrent/Backoff.h`](include/ADS/concurrent/Backoff.h) | `engineered_search.backoff-threads` |
 | sparse matrices in compressed rows and in SELL-C-sigma (Kreutzer et al.) | [`numeric/CsrMatrix.h`](include/ADS/numeric/CsrMatrix.h), [`numeric/SellMatrix.h`](include/ADS/numeric/SellMatrix.h) | `engineered_numeric.csr-matrix`, `.sell-matrix` |
 | generators xoshiro256++, xoshiro256**, wyrand and the counter-based Philox4x32 and Philox4x64 (Salmon et al.), the alias method, normal and exponential deviates by ziggurats (Marsaglia and Tsang) | [`numeric/RandomGenerators.h`](include/ADS/numeric/RandomGenerators.h) | `engineered_numeric.generators`, `.philox`, `.ziggurat`, `engineered_boost.boost-xoshiro` |

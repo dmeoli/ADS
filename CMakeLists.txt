@@ -172,6 +172,32 @@ if (ADS_USE_BOOST)
 endif ()
 message(STATUS "ADS: Boost ${ADS_USE_BOOST}")
 
+# The placement of the threads on hwloc [see Affinity.h]: AUTO, the default,
+# turns it on when a program that loads the topology of hwloc 2 compiles and
+# links, ON requires it, OFF leaves the threads where the system puts them.
+set(ADS_WITH_HWLOC AUTO CACHE STRING
+    "the placement of the threads on hwloc: AUTO (if found), ON or OFF")
+set_property(CACHE ADS_WITH_HWLOC PROPERTY STRINGS AUTO ON OFF)
+string(TOUPPER "${ADS_WITH_HWLOC}" ADS_HWLOC_MODE)
+set(ADS_USE_HWLOC OFF)
+if (ADS_HWLOC_MODE STREQUAL "AUTO" OR ADS_WITH_HWLOC)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ADSHwloc.cmake)
+    if (ADS_HWLOC_FOUND)
+        set(ADS_USE_HWLOC ON)
+    elseif (NOT ADS_HWLOC_MODE STREQUAL "AUTO")
+        message(FATAL_ERROR "ADS_WITH_HWLOC is ON, but hwloc 2 was not "
+                "found: install it (libhwloc-dev, hwloc-devel, hwloc) or set "
+                "HWLOC_INCLUDE_DIR and HWLOC_LIBRARY")
+    endif ()
+endif ()
+if (ADS_USE_HWLOC)
+    target_compile_definitions(ADS INTERFACE ADS_WITH_HWLOC)
+    target_link_libraries(ADS INTERFACE ADS::Hwloc)
+    get_filename_component(ADS_HWLOC_LIBDIR "${HWLOC_LIBRARY}" DIRECTORY)
+    set(ADS_HWLOC_HINTS "${HWLOC_INCLUDE_DIR};${ADS_HWLOC_LIBDIR}")
+endif ()
+message(STATUS "ADS: hwloc ${ADS_USE_HWLOC}")
+
 # The interoperation with LEMON [see include/ADS/interop/lemon] and the
 # solves from scratch that ADS delegates to it [see Matching.h and
 # Assignment.h], in the target ADS::LEMON, which defines ADS_WITH_LEMON and
@@ -701,14 +727,15 @@ write_basic_package_version_file(
         ARCH_INDEPENDENT)
 
 # Install the package version and configuration files, with the modules of
-# GMP, of the CBLAS, of Boost, of LEMON and of the runtimes of a program that
-# the configuration file includes.
+# GMP, of the CBLAS, of Boost, of hwloc, of LEMON and of the runtimes of a
+# program that the configuration file includes.
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfig.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfigVersion.cmake
         cmake/ADSGMP.cmake
         cmake/ADSBLAS.cmake
         cmake/ADSBoost.cmake
+        cmake/ADSHwloc.cmake
         cmake/ADSLemon.cmake
         cmake/ADSLemonShim.cmake
         cmake/ADSInterop.cmake
@@ -719,8 +746,8 @@ install(FILES
 # that is relative, so that an install with --prefix moved elsewhere still
 # points to its own headers; its include directory is ${prefix}/include
 # when that is relative; with GMP it has the define and the library, by
-# gmp.pc, with a CBLAS its define, its headers and its library, and with
-# Boost its define and its headers.
+# gmp.pc, with a CBLAS its define, its headers and its library, with Boost
+# its define and its headers, and with hwloc its define and hwloc.pc.
 if (IS_ABSOLUTE "${ADS_INSTALL_PKGCONFIGDIR}")
     set(ADS_PC_PREFIX "${CMAKE_INSTALL_PREFIX}")
 else ()
@@ -747,6 +774,10 @@ if (ADS_USE_BLAS)
 endif ()
 if (ADS_USE_BOOST)
     string(APPEND ADS_PC_CFLAGS " -DADS_WITH_BOOST${ADS_BOOST_PC_CFLAGS}")
+endif ()
+if (ADS_USE_HWLOC)
+    string(APPEND ADS_PC_REQUIRES " hwloc")
+    string(APPEND ADS_PC_CFLAGS " -DADS_WITH_HWLOC")
 endif ()
 configure_file(cmake/ads.pc.in ${CMAKE_CURRENT_BINARY_DIR}/ads.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ads.pc

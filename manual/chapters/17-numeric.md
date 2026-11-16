@@ -564,12 +564,11 @@ $r \gets r + a b$. Next to the conversions, `toStringSchool()` and
 with no backend, with which the audits of `toString()` and of the constructor
 compare. Finally, the product of two words of 64 bits into 128, on which the
 school, the short division and the steps of Lehmer rest, is `wideProduct()` of
-`Portable.h` ([§1.6](01-introduction.md#sec-1-6)): the type
-`unsigned __int128` where it exists, the intrinsics of MSVC on x64 otherwise,
-and four products of halves of 32 bits (`wideProductHalves()`) where neither
-is available, or with `ADS_BIGINT_PORTABLE` defined; the macro
-`ADS_BIGINT_WIDE`, which records the choice as 128, 64 or 0, can also be set
-by hand. The class is
+`Wide.h` ([§1.6](01-introduction.md#sec-1-6)): that of Boost.Multiprecision
+with `ADS_WITH_BOOST`, and four products of halves of 32 bits
+(`wideProductHalves()`) without it, or with `ADS_BIGINT_PORTABLE` defined;
+the division of two digits by one is `wideDivide()` of the same header. The
+class is
 
 ```cpp
 // declarations of <ADS/numeric/BigInteger.h>
@@ -1726,20 +1725,16 @@ $\log_2 ( a b ) + 2$ iterations, counting the first one and the last.
 $\square$
 
 In the code we compute the minimum and the difference by conditional
-moves, with no branch to mispredict. On x86-64 with GCC or Clang, the
-count of the trailing zeros starts from $b - a$ (whose trailing zeros are
-those of $| a - b |$), and an iteration is then a subtraction, a count and
-a shift, with the two conditional moves beside them.
+moves, with no branch to mispredict.
 
 **Products and powers modulo $m$.** In `mulMod()`, the product $a b \bmod
 m$ is exact for any modulus of 64 bits, and it is the modular
 product of all of ADS. It uses the product of 64 bits for $m \le 2^{32}$,
 `mulMod61()` for the Mersenne prime $p = 2^{61} - 1$ (`kMersenne61`) of the universal
 hashing (four products of 32 bits folded by $2^{61} \equiv 1 \pmod{p}$,
-typically faster than a division of 128 bits), and the product of 128 bits where the
-compiler has one (e.g., GCC and Clang on 64-bit processors). Where it has not (MSVC), it uses the doubling of Ahmes
-of [Lemma 17.2](17-numeric.md#lem-17-2), i.e., $O( \log b )$ additions
-modulo $m$. As for $x^v \bmod m$, `powMod()` computes it by repeated
+typically faster than a division of 128 bits), and otherwise the product
+of two words and the division of two words by one of `Wide.h`
+([§1.6](01-introduction.md#sec-1-6)). As for $x^v \bmod m$, `powMod()` computes it by repeated
 squaring (exercise 17.1 of the book). With $v = \sum_i v_i 2^i$, one has
 $x^v = \prod_{i : v_i = 1} x^{2^i}$, whose factors are squares of one
 another; the time is thus $\lfloor \log_2 v \rfloor + 1$ squarings and at

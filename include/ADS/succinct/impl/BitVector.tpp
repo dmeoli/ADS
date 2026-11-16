@@ -26,15 +26,26 @@ constexpr Word lowMask( int len )
  return( len >= 64 ? ~Word( 0 ) : ( Word( 1 ) << len ) - 1 );
  }
 
+/// the place of the 1 of rank r in the byte v at 8 v + r, 8 if v has no
+/// such 1 (the table of Vigna, 2 KB)
+inline constexpr std::array< std::uint8_t , 2048 > kSelectInByte = [] {
+ std::array< std::uint8_t , 2048 > t{};
+ for( unsigned v = 0 ; v < 256 ; ++v ) {
+  unsigned r = 0;
+  for( unsigned i = 0 ; i < 8 ; ++i )
+   if( ( v >> i ) & 1 )
+    t[ 8 * v + r++ ] = std::uint8_t( i );
+  for( ; r < 8 ; ++r )
+   t[ 8 * v + r ] = 8;
+  }
+ return( t );
+ }();
+
 }  // end( namespace detail )
 
 constexpr int selectInWord( Word x , int k )
 {
  ADS_PRE( ( k >= 0 ) && ( k < sidewaysSum( x ) ) );
-#ifdef __BMI2__
- if( ! std::is_constant_evaluated() )  // the k-th 1 deposited alone
-  return( std::countr_zero( _pdep_u64( Word( 1 ) << k , x ) ) );
-#endif
  constexpr Word L8 = 0x0101010101010101ULL;
  constexpr Word H8 = 0x8080808080808080ULL;
  Word s = x - ( ( x >> 1 ) & 0x5555555555555555ULL );
@@ -43,11 +54,9 @@ constexpr int selectInWord( Word x , int k )
  // the bytes whose sum is above k get their high bit, in parallel
  const Word b = ( s + ( Word( 127 - k ) * L8 ) ) & H8;
  const int byte = ruler( b ) / 8;
- int r = k - int( ( ( s << 8 ) >> ( 8 * byte ) ) & 0xFF );  // 1s before it
- Word v = ( x >> ( 8 * byte ) ) & 0xFF;
- for( ; r > 0 ; --r )
-  v &= v - 1;  // the lower 1s cleared
- return( 8 * byte + ruler( v ) );
+ const int r = k - int( ( ( s << 8 ) >> ( 8 * byte ) ) & 0xFF );  // 1s before
+ const unsigned v = unsigned( ( x >> ( 8 * byte ) ) & 0xFF );
+ return( 8 * byte + detail::kSelectInByte[ 8 * v + unsigned( r ) ] );
  }
 
 namespace detail

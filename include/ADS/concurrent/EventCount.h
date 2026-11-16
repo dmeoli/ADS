@@ -19,24 +19,27 @@
  * while the woken threads are still on their way, find nobody to wake and
  * cost no system call.
  *
- * The fences are asymmetric where the system has them (membarrier(2) on
- * Linux): the waiter, which is about to sleep anyway, runs the heavy one, a
- * system call that makes every running thread of the process run a full
- * barrier, and the notifier the light one, which only stops the compiler,
- * so that when nobody waits a notification costs the read of a line that
- * stays shared (a full fence would wait, at each item, for the stores of
- * the item to reach the caches of the other threads); elsewhere both are
- * full fences.
+ * The notifier and the waiter each run a full fence of the standard
+ * (`std::atomic_thread_fence( std::memory_order_seq_cst )`), so that when
+ * nobody waits a notification costs the fence and the read of a line that
+ * stays shared. With `ADS_EVENTCOUNT_RMW` defined, the notifier reads the
+ * waiters by a read-modify-write instead and neither side runs a fence:
+ * reading the last value in the order of the modifications of the word, it
+ * either sees the waiter or is seen by it through the release sequence;
+ * this also is the form that the sanitizer of threads, which does not
+ * model the fences, checks. Which of the two costs less depends on the
+ * processor (a full fence against an exclusive line), and the benchmarks
+ * decide the default.
  *
  * No wake-up is lost: the fence of the notifier and the read-modify-write
  * and fence of the waiter are in the single total order of the
- * sequentially consistent operations (a pair of asymmetric fences orders as
- * a pair of full ones); if the notifier reads 0 waiters, its fence comes
- * before the announcement of the waiter, which then sees the condition made
- * true when it looks again, and if it reads 1 or more it advances the epoch
- * by a release on the same word, which the announcement either precedes
- * (and the wait on \f$ e \f$ returns at once or is woken) or follows,
- * reading the new epoch with an acquire and seeing the condition made true.
+ * sequentially consistent operations; if the notifier reads 0 waiters, its
+ * fence comes before the announcement of the waiter, which then sees the
+ * condition made true when it looks again, and if it reads 1 or more it
+ * advances the epoch by a release on the same word, which the announcement
+ * either precedes (and the wait on \f$ e \f$ returns at once or is woken)
+ * or follows, reading the new epoch with an acquire and seeing the
+ * condition made true.
  * A spurious wake-up only makes the waiter look again.
  *
  * `await( p )` packs the loop: it returns when `p()` is true, and `p` is
@@ -60,10 +63,6 @@
  * \see H. Boehm, S. V. Adve, Foundations of the C++ concurrency memory
  *      model, ACM SIGPLAN Conference on Programming Language Design and
  *      Implementation (PLDI), 68-78, 2008, doi:10.1145/1375581.1375591
- * \see E. Ladan-Mozes, I.-T. A. Lee, D. Vyukov, Location-based memory
- *      fences, ACM Symposium on Parallelism in Algorithms and
- *      Architectures (SPAA), 75-84, 2011, doi:10.1145/1989493.1989503
- *      (the asymmetric fences)
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
  *         Università di Pisa \n
@@ -99,65 +98,12 @@
 #include <chrono>
 #include <cstdint>
 
-#if defined( __linux__ ) && ! defined( ADS_EVENTCOUNT_RMW ) &&                \
-  __has_include( <linux/membarrier.h> )
- #define ADS_EVENTCOUNT_MEMBARRIER
- #include <linux/membarrier.h>
- #include <sys/syscall.h>
- #include <unistd.h>
-#endif
-
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 namespace ADS
 {
-
-namespace detail
-{
-
-/// true if the process may use the asymmetric fences: on Linux, the
-/// expedited private barrier of `membarrier(2)`, registered once
-inline bool asymmetricFences( void ) noexcept
-{
-#ifdef ADS_EVENTCOUNT_MEMBARRIER
- static const bool ok = [] {
-  const long q = syscall( SYS_membarrier , MEMBARRIER_CMD_QUERY , 0 );
-  return( ( q >= 0 ) && ( q & MEMBARRIER_CMD_PRIVATE_EXPEDITED ) &&
-	   ( syscall( SYS_membarrier ,
-		      MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED , 0 ) == 0 ) );
-  }();
- return( ok );
-#else
- return( false );
-#endif
- }
-
-/// the light side of a fence: only the compiler's when the heavy side
-/// makes every running thread of the process run a full barrier, a full
-/// fence otherwise
-inline void lightFence( void ) noexcept
-{
- if( asymmetricFences() )
-  std::atomic_signal_fence( std::memory_order_seq_cst );
- else
-  std::atomic_thread_fence( std::memory_order_seq_cst );
- }
-
-/// the heavy side: a full barrier on every running thread of the process
-inline void heavyFence( void ) noexcept
-{
-#ifdef ADS_EVENTCOUNT_MEMBARRIER
- if( asymmetricFences() &&
-     ( syscall( SYS_membarrier , MEMBARRIER_CMD_PRIVATE_EXPEDITED ,
-		0 ) == 0 ) )
-  return;
-#endif
- std::atomic_thread_fence( std::memory_order_seq_cst );
- }
-
-}  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS EventCount -----------------------------*/
@@ -188,14 +134,15 @@ class EventCount
  /// 1 & \textbf{function}\ \mathrm{prepareWait}() \cr
  /// 2 & \quad ( e' , w' ) \gets \mathrm{fetchAdd}( ( e , w ) , 1 )\quad
  ///     \triangleright\ \text{sequentially consistent} \cr
- /// 3 & \quad \text{the heavy fence} \cr
+ /// 3 & \quad \text{a full fence (none with a read-modify-write in}
+ ///     \text{ the notifier)} \cr
  /// 4 & \quad \textbf{return}\ e'
  /// \end{array}}
  /// \f]
  [[nodiscard]] Key prepareWait( void ) noexcept {
   const std::uint64_t v = f_state.fetch_add( 1 , std::memory_order_seq_cst );
 #ifndef ADS_EVENTCOUNT_RMW
-  detail::heavyFence();
+  std::atomic_thread_fence( std::memory_order_seq_cst );
 #endif
   return( Key( v >> 32 ) );
   }
@@ -240,13 +187,14 @@ class EventCount
  /// wakes the waiters, after the condition was made true: it advances the
  /// epoch and withdraws them all at once, so that the notifications that
  /// follow, before they run, find nobody to wake; when nobody waits, a
- /// light fence and a read
+ /// fence and a read
  ///
  /// In pseudocode (beyond the book):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{notify}() \cr
- /// 2 & \quad \text{the light fence};\ ( e' , w' ) \gets ( e , w ) \cr
+ /// 2 & \quad \text{a full fence};\ ( e' , w' ) \gets ( e , w )\quad
+ ///     \triangleright\ \text{or a read-modify-write that adds 0} \cr
  /// 3 & \quad \textbf{while}\ w' > 0\ \textbf{do} \cr
  /// 4 & \qquad \textbf{if}\ \mathrm{CAS}( ( e , w ) , ( e' , w' ) , ( e'
  ///     + 1 , 0 ) )\ \textbf{then}\quad \triangleright\ \text{acquire and}
@@ -261,7 +209,7 @@ class EventCount
  /// \f]
  void notify( void ) noexcept {
 #ifndef ADS_EVENTCOUNT_RMW
-  detail::lightFence();
+  std::atomic_thread_fence( std::memory_order_seq_cst );
   std::uint64_t v = f_state.load( std::memory_order_relaxed );
 #else
   std::uint64_t v = f_state.fetch_add( 0 , std::memory_order_seq_cst );

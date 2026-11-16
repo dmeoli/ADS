@@ -25,16 +25,12 @@ namespace detail
 /*------------------------- THE ARITHMETIC OF WORDS ------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#if ADS_BIGINT_WIDE == 128
-__extension__ typedef unsigned __int128 UInt128;
-#endif
-
-/// a b = hi 2^64 + lo, lo returned: wideProduct() of Portable.h, or its
-/// products of the halves of 32 bits when ADS_BIGINT_WIDE is 0
-inline std::uint64_t digitProduct( std::uint64_t a , std::uint64_t b ,
-				   std::uint64_t & hi )
+/// a b = hi 2^64 + lo, lo returned: wideProduct() of Wide.h, or its
+/// products of the halves of 32 bits when ADS_BIGINT_PORTABLE is defined
+[[gnu::always_inline]] inline std::uint64_t
+digitProduct( std::uint64_t a , std::uint64_t b , std::uint64_t & hi )
 {
-#if ADS_BIGINT_WIDE == 0
+#if defined( ADS_BIGINT_PORTABLE )
  return( wideProductHalves( a , b , hi ) );
 #else
  return( wideProduct( a , b , hi ) );
@@ -72,39 +68,13 @@ inline std::uint64_t subBorrow( std::uint64_t a , std::uint64_t b ,
  return( t );
  }
 
-/// floor( ( u1 2^64 + u0 ) / d ) for d with the top bit set and u1 < d;
-/// in the portable form the division of two digits of 32 bits by one
-/// twice (Hacker's Delight, figure 9-3), also for clang-cl, whose division
-/// of unsigned __int128 needs a library that MSVC lacks
+/// floor( ( u1 2^64 + u0 ) / d ) for d with the top bit set and u1 < d,
+/// by wideDivide() of Wide.h
 inline std::uint64_t divWide( std::uint64_t u1 , std::uint64_t u0 ,
 			      std::uint64_t d )
 {
-#if ( ADS_BIGINT_WIDE == 128 ) && ! defined( _MSC_VER )
- return( std::uint64_t( ( ( UInt128( u1 ) << 64 ) | u0 ) / d ) );
-#elif ADS_BIGINT_WIDE == 64
- unsigned long long r;
- return( _udiv128( u1 , u0 , d , &r ) );
-#else
- constexpr std::uint64_t B = std::uint64_t( 1 ) << 32 , M = B - 1;
- const std::uint64_t d1 = d >> 32 , d0 = d & M , n1 = u0 >> 32 , n0 = u0 & M;
- std::uint64_t q1 = u1 / d1 , r = u1 - q1 * d1;
- while( ( q1 >= B ) || ( q1 * d0 > ( ( r << 32 ) | n1 ) ) ) {
-  --q1;
-  r += d1;
-  if( r >= B )
-   break;
-  }
- const std::uint64_t u21 = ( u1 << 32 ) + n1 - q1 * d;  // modulo 2^64
- std::uint64_t q0 = u21 / d1;
- r = u21 - q0 * d1;
- while( ( q0 >= B ) || ( q0 * d0 > ( ( r << 32 ) | n0 ) ) ) {
-  --q0;
-  r += d1;
-  if( r >= B )
-   break;
-  }
- return( ( q1 << 32 ) + q0 );
-#endif
+ std::uint64_t r = 0;
+ return( wideDivide( u1 , u0 , d , r ) );
  }
 
 /*--------------------------------------------------------------------------*/
