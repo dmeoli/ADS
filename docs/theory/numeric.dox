@@ -440,7 +440,10 @@
  nonzero once with the column that addresses \f$ x \f$, in
  \f$ \Theta( m + \mathit{nnz} ) \f$ time, and its \f$ 2 \, \mathit{nnz} \f$
  operations on \f$ 12 \, \mathit{nnz} \f$ bytes make it bound by the
- bandwidth of the memory rather than by the processor. The transpose is the
+ bandwidth of the memory rather than by the processor (12 bytes for a
+ double and a column of 32 bits; `BasicCsrMatrix` takes the types of the
+ values, of the columns and of the offsets, e.g., `int` for both, the arrays
+ that Eigen and GraphBLAS read without a copy). The transpose is the
  matrix by columns, built by a counting sort on the columns: the counts give
  the starts of the rows of the transpose, and the nonzeros, scanned by row,
  land in each row of the transpose by increasing row, so that it comes out

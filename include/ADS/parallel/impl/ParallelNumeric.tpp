@@ -21,13 +21,13 @@ namespace detail
 {
 
 /// the first i in [ 0 , m ] with i + start[ i ] >= t, start non-decreasing
-inline std::size_t pathRow( const std::size_t * start , std::size_t m ,
-			    std::size_t t )
+template< class P >
+std::size_t pathRow( const P * start , std::size_t m , std::size_t t )
 {
  std::size_t lo = 0 , hi = m;
  while( lo < hi ) {
   const std::size_t mid = lo + ( hi - lo ) / 2;
-  if( mid + start[ mid ] < t )
+  if( mid + std::size_t( start[ mid ] ) < t )
    lo = mid + 1;
   else
    hi = mid;
@@ -39,8 +39,9 @@ inline std::size_t pathRow( const std::size_t * start , std::size_t m ,
 
 /*--------------------------------------------------------------------------*/
 
-template< Executor E >
-void multiply( E & ex , const CsrMatrix & A , const double * x , double * y )
+template< Executor E , class T , std::integral I , std::integral P >
+void multiply( E & ex , const BasicCsrMatrix< T , I , P > & A , const T * x ,
+	       T * y )
 {
  const std::size_t m = A.rows() , nnz = A.nonzeros() , p = ex.concurrency();
  if( ( p == 1 ) || ( m + nnz < ( std::size_t( 1 ) << 15 ) ) ) {
@@ -48,29 +49,29 @@ void multiply( E & ex , const CsrMatrix & A , const double * x , double * y )
   return;
   }
  const std::size_t B = std::min( 4 * p , m );
- const std::size_t * start = A.rowStart();
- const std::uint32_t * col = A.columns();
- const double * val = A.values();
+ const P * start = A.rowStart();
+ const I * col = A.columns();
+ const T * val = A.values();
  ex.bulk( B , [ & ]( std::size_t q ) {
   const std::size_t r0 = detail::pathRow( start , m , q * ( m + nnz ) / B ) ,
 		    r1 =
 		      detail::pathRow( start , m ,
 				       ( q + 1 ) * ( m + nnz ) / B );
-  for( std::size_t i = r0 , k = start[ r0 ] ; i < r1 ; ++i ) {
-   double s = 0;  // the loop of the sequential
-   for( const std::size_t e = start[ i + 1 ] ; k < e ; ++k )  // product
+  for( std::size_t i = r0 , k = std::size_t( start[ r0 ] ) ; i < r1 ; ++i ) {
+   T s = T( 0 );  // the loop of the sequential product
+   for( const auto e = std::size_t( start[ i + 1 ] ) ; k < e ; ++k )
     s += val[ k ] * x[ col[ k ] ];
    y[ i ] = s;
    }
   } );
  }
 
-template< Executor E >
-std::vector< double > multiply( E & ex , const CsrMatrix & A ,
-				const std::vector< double > & x )
+template< Executor E , class T , std::integral I , std::integral P >
+std::vector< T > multiply( E & ex , const BasicCsrMatrix< T , I , P > & A ,
+			   const std::vector< T > & x )
 {
  ADS_PRE( x.size() == A.cols() );
- std::vector< double > y( A.rows() );
+ std::vector< T > y( A.rows() );
  multiply( ex , A , x.data() , y.data() );
  return( y );
  }

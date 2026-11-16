@@ -48,6 +48,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
@@ -1092,6 +1093,72 @@ ADS_TEST( "csr-matrix" )
  CHECK_THROWS( CsrMatrix( 2 , 2 , { { 2 , 0 , 1.0 } } ) , contract_violation );
  CHECK_THROWS( ( void )C.multiply( { 1.0 } ) , contract_violation );
  CHECK_THROWS( ( void )C.get( 5 , 0 ) , contract_violation );
+ }
+
+// BasicCsrMatrix of each type of index against CsrMatrix: the offsets of
+// the type of the columns (size_t for the default 32-bit columns), the
+// three arrays equal to those of CsrMatrix as plain CSR (the layout of a
+// row-major Eigen::SparseMatrix of the same index), the entries, the
+// product, the transpose by rows and by buckets (a matrix large enough
+// for them), from SparseMatrix, and columns beyond the index violating the
+// contracts
+template< class I >
+void checkCsrIndex( void )
+{
+ using A = BasicCsrMatrix< double , I >;
+ static_assert( std::is_same_v< typename A::Offset , I > &&
+		std::is_same_v< typename A::Index , I > );
+ std::mt19937_64 g( 41 );
+ for( const auto [ m , n , z ] :
+      { std::array< std::size_t , 3 >{ 0 , 4 , 0 } ,
+	std::array< std::size_t , 3 >{ 30 , 25 , 200 } ,
+	std::array< std::size_t , 3 >{ 2000 , 3000 , 1 << 19 } } ) {
+  std::vector< CsrMatrix::Triplet > T;
+  for( std::size_t e = 0 ; e < z ; ++e )
+   T.emplace_back( g() % m , g() % n , double( long( g() % 9 ) - 4 ) );
+  const CsrMatrix R( m , n , T );
+  const A M( m , n , T );
+  CHECK( M.rows() == m && M.cols() == n && M.nonzeros() == R.nonzeros() );
+  for( std::size_t i = 0 ; i <= m ; ++i )
+   CHECK( std::size_t( M.rowStart()[ i ] ) == R.rowStart()[ i ] );
+  for( std::size_t k = 0 ; k < R.nonzeros() ; ++k )
+   CHECK( std::size_t( M.columns()[ k ] ) == R.columns()[ k ] &&
+	  M.values()[ k ] == R.values()[ k ] );
+  if( m <= 30 )
+   for( std::size_t i = 0 ; i < m ; ++i )
+    for( std::size_t j = 0 ; j < n ; ++j )
+     CHECK( M.get( i , j ) == R.get( i , j ) );
+  std::vector< double > x( n );
+  for( auto & v : x )
+   v = double( long( g() % 9 ) - 4 );
+  CHECK( M.multiply( x ) == R.multiply( x ) );
+  const A MT = M.transpose();
+  const CsrMatrix RT = R.transpose();
+  CHECK( MT.rows() == n && MT.nonzeros() == RT.nonzeros() &&
+	 MT.transpose() == M );
+  for( std::size_t k = 0 ; k < RT.nonzeros() ; ++k )
+   CHECK( std::size_t( MT.columns()[ k ] ) == RT.columns()[ k ] &&
+	  MT.values()[ k ] == RT.values()[ k ] );
+  }
+ SparseMatrix S( 3 , 4 );
+ S.set( 2 , 3 , 5 );
+ const A C( S );
+ CHECK( C.get( 2 , 3 ) == 5 && C.nonzeros() == 1 && C.rowStart()[ 3 ] == 1 );
+ }
+
+ADS_TEST( "csr-matrix-index" )
+{
+ static_assert(
+   std::is_same_v< CsrMatrix ,
+		   BasicCsrMatrix< double , std::uint32_t , std::size_t > > );
+ checkCsrIndex< int >();
+ checkCsrIndex< std::int64_t >();
+ // a column, or a row for the transpose, beyond 8 bits
+ using Small = BasicCsrMatrix< float , std::int8_t >;
+ CHECK( Small( 3 , 128 , { { 0 , 127 , 1.0f } } ).get( 0 , 127 ) == 1.0f );
+ CHECK_THROWS( Small( 3 , 129 , { { 0 , 128 , 1.0f } } ) ,
+	       contract_violation );
+ CHECK_THROWS( ( void )Small( 200 , 3 ).transpose() , contract_violation );
  }
 
 // SellMatrix: the product against that of CSR on 300 random matrices of

@@ -10,7 +10,8 @@
  * each entry of the output is computed by the same sequential code, with the
  * same order of the sums, by one thread.
  *
- * - `multiply( ex , A , x , y )` for a `CsrMatrix` of \f$ m \f$ rows and
+ * - `multiply( ex , A , x , y )` for a `CsrMatrix` (or any `BasicCsrMatrix`,
+ *   whatever its types of values and indices) of \f$ m \f$ rows and
  *   \f$ \mathit{nnz} \f$ nonzeros cuts the rows into \f$ B = 4 p \f$ parts
  *   of equal \f$ m + \mathit{nnz} \f$, the cost of a row being its nonzeros
  *   plus the store of its sum (the diagonal of the merge path of Merrill and
@@ -108,8 +109,9 @@ namespace ADS
 /// \f]
 /// \pre \f$ x \f$ has `A.cols()` entries and \f$ y \f$ `A.rows()`, apart
 ///      from \f$ x \f$
-template< Executor E >
-void multiply( E & ex , const CsrMatrix & A , const double * x , double * y );
+template< Executor E , class T , std::integral I , std::integral P >
+void multiply( E & ex , const BasicCsrMatrix< T , I , P > & A , const T * x ,
+	       T * y );
 
 /// the product \f$ A x \f$ of the sparse matrix \f$ A \f$ by rows on the
 /// threads of `ex`, as a new vector
@@ -123,9 +125,11 @@ void multiply( E & ex , const CsrMatrix & A , const double * x , double * y );
 /// \end{array}}
 /// \f]
 /// \pre \f$ x \f$ has `A.cols()` entries
-template< Executor E >
-[[nodiscard]] std::vector< double >
-multiply( E & ex , const CsrMatrix & A , const std::vector< double > & x );
+template< Executor E , class T , std::integral I , std::integral P >
+[[nodiscard]] std::vector< T > multiply( E & ex ,
+					 const BasicCsrMatrix< T , I ,
+							       P > & A ,
+					 const std::vector< T > & x );
 
 /// the product \f$ y = A x \f$ of the sparse matrix \f$ A \f$ by chunks of
 /// \f$ C \f$ rows on the threads of `ex`

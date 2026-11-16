@@ -1291,6 +1291,20 @@ $y$ in place, and the three arrays are read by `rowStart()`, `columns()` and
 `values()`, as a solver takes them; two matrices are equal when their arrays
 are.
 
+The class is `BasicCsrMatrix< T , I , P >`, of values of the type `T`,
+columns of the type `I` and offsets of the type `P`, and `CsrMatrix` is
+`BasicCsrMatrix<>`, i.e., doubles, columns `std::uint32_t` and offsets
+`std::size_t`, the types above. Any other integer `I` gives offsets of the
+same type, since the libraries that read a matrix in compressed rows take one
+type for both arrays. With `int` the three arrays are those of a row-major
+`Eigen::SparseMatrix< double , Eigen::RowMajor , int >`, which an
+`Eigen::Map` reads without a copy, and those of GraphBLAS with indices of 32
+bits; with `std::int64_t` they are those of the 64-bit indices of GraphBLAS
+and of MKL. The matrix takes $( s + i ) \, \mathit{nnz} + p ( m + 1 )$
+bytes, $s$, $i$ and $p$ the sizes of `T`, `I` and `P`, and the constructors
+require that the columns fit `I` and the nonzeros `P` (and `transpose()`
+that the rows fit `I`); the code is the same for all the types.
+
 ![Figure 17.5. A $3 \times 4$ matrix in compressed sparse rows, and its transpose (violet), i.e., the same matrix by columns: the row $i$ of the transpose holds the entries of the column $i$, by increasing row.](../figures/numeric-csr.svg){#fig-17-5}
 
 In [Algorithm 17.18](17-numeric.md#alg-17-18), the product $y = A x$
@@ -1300,9 +1314,9 @@ them once, in $\Theta( m + \mathit{nnz} )$ time:
 <span id="alg-17-18"></span>**Algorithm 17.18.** Product of a matrix
 in compressed sparse rows by a vector, and its transpose.
 
---8<-- "generated/CsrMatrix-multiply.pseudo.md"
+--8<-- "generated/CsrMatrix-BasicCsrMatrix-multiply.pseudo.md"
 
---8<-- "generated/CsrMatrix-transpose.pseudo.md"
+--8<-- "generated/CsrMatrix-BasicCsrMatrix-transpose.pseudo.md"
 
 Such a product makes $2 \, \mathit{nnz}$ floating-point operations on
 $12 \, \mathit{nnz} + 8 ( m + 1 )$ bytes of the matrix, with $8 m$ bytes
@@ -1345,26 +1359,32 @@ result is that of [Lemma 17.12](17-numeric.md#lem-17-12). The class is
 
 ```cpp
 // declarations of <ADS/numeric/CsrMatrix.h>
-class CsrMatrix
+template< class T = double , std::integral I = std::uint32_t ,
+          std::integral P = detail::CsrOffset< I > >
+class BasicCsrMatrix
 {
  public:
- using Triplet = std::tuple< std::size_t , std::size_t , double >;
- CsrMatrix( std::size_t m = 0 , std::size_t n = 0 );
- CsrMatrix( std::size_t m , std::size_t n , std::vector< Triplet > T );
- explicit CsrMatrix( const SparseMatrix & S );
+ using Value = T;
+ using Index = I;
+ using Offset = P;
+ using Triplet = std::tuple< std::size_t , std::size_t , T >;
+ BasicCsrMatrix( std::size_t m = 0 , std::size_t n = 0 );
+ BasicCsrMatrix( std::size_t m , std::size_t n , std::vector< Triplet > E );
+ explicit BasicCsrMatrix( const SparseMatrix & S );
  [[nodiscard]] std::size_t rows( void ) const;
  [[nodiscard]] std::size_t cols( void ) const;
  [[nodiscard]] std::size_t nonzeros( void ) const;
- [[nodiscard]] double get( std::size_t i , std::size_t j ) const;
- [[nodiscard]] std::vector< double >
- multiply( const std::vector< double > & x ) const;
- void multiply( const double * x , double * y ) const;
- [[nodiscard]] CsrMatrix transpose( void ) const;
- [[nodiscard]] const std::size_t * rowStart( void ) const;
- [[nodiscard]] const std::uint32_t * columns( void ) const;
- [[nodiscard]] const double * values( void ) const;
- bool operator==( const CsrMatrix & ) const = default;
+ [[nodiscard]] T get( std::size_t i , std::size_t j ) const;
+ [[nodiscard]] std::vector< T > multiply( const std::vector< T > & x ) const;
+ void multiply( const T * x , T * y ) const;
+ [[nodiscard]] BasicCsrMatrix transpose( void ) const;
+ [[nodiscard]] const P * rowStart( void ) const;
+ [[nodiscard]] const I * columns( void ) const;
+ [[nodiscard]] const T * values( void ) const;
+ bool operator==( const BasicCsrMatrix & ) const = default;
  };
+
+using CsrMatrix = BasicCsrMatrix<>;
 ```
 
 and, for instance, with the header `ADS/numeric/CsrMatrix.h`, the matrix of

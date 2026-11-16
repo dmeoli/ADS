@@ -1938,7 +1938,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `geometry/RangeTree.h` | advanced | `RangeTree` | [16](16-geometry.md#ch-16) |
 | `numeric/BigInteger.h` | base | `BigInteger` | [17](17-numeric.md#ch-17) |
 | `numeric/Combinatorics.h` | base | `FibonacciCache` | [17](17-numeric.md#ch-17) |
-| `numeric/CsrMatrix.h` | advanced | `CsrMatrix` | [17](17-numeric.md#ch-17) |
+| `numeric/CsrMatrix.h` | advanced | `BasicCsrMatrix`, `CsrMatrix` | [17](17-numeric.md#ch-17) |
 | `numeric/DenseMatrix.h` | advanced | `DenseMatrix` | [17](17-numeric.md#ch-17) |
 | `numeric/DynamicCsr.h` | advanced | `DynamicCsr`, `DynamicCsc` | [17](17-numeric.md#ch-17) |
 | `numeric/NumberTheory.h` | base | `Montgomery64` | [17](17-numeric.md#ch-17) |
