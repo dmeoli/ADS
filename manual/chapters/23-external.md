@@ -1100,8 +1100,10 @@ allocator of the array (`MappableAllocator`, or the allocator of the words
 of the succinct structures): the reader offers it the bytes of the array,
 and the allocator returns them at its next allocation of that size,
 constructs no item over them, and never gives back to the system a block
-that lies in the mapping. This mapping is private (`MAP_PRIVATE`), and
-therefore a page that the program writes is copied for the process and
+that lies in the mapping. This mapping is private (the mode
+`copy_on_write` of Boost.Interprocess, with `ADS_WITH_BOOST`; without
+Boost, the file is read whole into a block aligned to a page, and the views
+are made over it), and therefore a page that the program writes is copied for the process and
 does not reach the file. Also, a copy of a structure is made on new memory, a
 move keeps the views, and the mapping is released with the last array that
 views it.

@@ -21,12 +21,9 @@
 #include <system_error>
 #include <utility>
 
-#if __has_include( <sys/mman.h> ) && __has_include( <unistd.h> )
- #include <fcntl.h>
- #include <sys/mman.h>
- #include <sys/stat.h>
- #include <unistd.h>
- #define ADS_MAPPED_FILE_POSIX 1
+#ifdef ADS_WITH_BOOST
+ #include <boost/interprocess/file_mapping.hpp>
+ #include <boost/interprocess/mapped_region.hpp>
 #endif
 
 /*--------------------------------------------------------------------------*/
@@ -46,54 +43,45 @@ inline MappedFile::MappedFile( const std::filesystem::path & p )
   throw( PersistError( "ADS: " + p.string() + ": " + what + ": " +
 		       std::generic_category().message( e ) ) );
   };
+ std::error_code ec;
+ const auto n = std::filesystem::file_size( p , ec );
+ if( ec )
+  fail( "cannot open the file" , ec.value() );
  auto * r = new Region;
-#ifdef ADS_MAPPED_FILE_POSIX
- const int fd = ::open( p.c_str() , O_RDONLY );
- if( fd < 0 ) {
-  delete r;
-  fail( "cannot open the file" , errno );
-  }
- struct stat st;
- if( ::fstat( fd , &st ) != 0 ) {
-  const int e = errno;
-  ::close( fd );
-  delete r;
-  fail( "cannot read the size of the file" , e );
-  }
- r->size = std::size_t( st.st_size );
+ r->size = std::size_t( n );
  if( r->size > 0 ) {
-  void * m =
-    ::mmap( nullptr , r->size , PROT_READ | PROT_WRITE , MAP_PRIVATE , fd ,
-	    0 );
-  if( m == MAP_FAILED ) {
-   const int e = errno;
-   ::close( fd );
-   delete r;
-   fail( "cannot map the file" , e );
+#ifdef ADS_WITH_BOOST
+  namespace bi = boost::interprocess;
+  try {  // the mapping outlives the handle of the file
+   const bi::file_mapping f( p.string().c_str() , bi::read_only );
+   auto * m = new bi::mapped_region( f , bi::copy_on_write );
+   r->base = static_cast< std::byte * >( m->get_address() );
+   r->system = true;
+   r->handle = m;
+   r->drop = []( Region & q ) {
+    delete static_cast< bi::mapped_region * >( q.handle );
+    };
    }
-  r->base = static_cast< std::byte * >( m );
-  r->system = true;
-  }
- ::close( fd );  // the mapping outlives the descriptor
+  catch( const bi::interprocess_exception & e ) {
+   delete r;
+   throw( PersistError( "ADS: " + p.string() +
+			": cannot map the file: " + e.what() ) );
+   }
 #else
- std::ifstream in( p , std::ios::binary | std::ios::ate );
- if( ! in ) {
-  delete r;
-  fail( "cannot open the file" , ENOENT );
-  }
- r->size = std::size_t( in.tellg() );
- in.seekg( 0 );
- if( r->size > 0 ) {
+  std::ifstream in( p , std::ios::binary );
   r->base = static_cast< std::byte * >(
-    ::operator new( r->size , std::align_val_t( 64 ) ) );
+    ::operator new( r->size , std::align_val_t( kPage ) ) );
+  r->drop = []( Region & q ) {
+   ::operator delete( q.base , std::align_val_t( kPage ) );
+   };
   if( ! in.read( reinterpret_cast< char * >( r->base ) ,
 		 std::streamsize( r->size ) ) ) {
-   ::operator delete( r->base , std::align_val_t( 64 ) );
+   r->drop( *r );
    delete r;
    fail( "cannot read the file" , EIO );
    }
-  }
 #endif
+  }
  f_r = r;
  }
 
@@ -151,13 +139,8 @@ inline void MappedFile::release( void ) noexcept
   f_r = nullptr;
   return;
   }
- if( f_r->base ) {
-#ifdef ADS_MAPPED_FILE_POSIX
-  ::munmap( f_r->base , f_r->size );
-#else
-  ::operator delete( f_r->base , std::align_val_t( 64 ) );
-#endif
-  }
+ if( f_r->drop )
+  f_r->drop( *f_r );
  delete f_r;
  f_r = nullptr;
  }

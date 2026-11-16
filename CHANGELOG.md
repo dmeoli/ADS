@@ -2238,7 +2238,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   payload, the members in 8-byte numbers and 64-byte aligned arrays, a
   trailer with the size and an xxHash64 checksum), read on a machine of
   the other byte order by swapping its numbers; restoreMapped() maps the
-  file privately and makes the large arrays views over it, through
+  file privately (by Boost.Interprocess with ADS_WITH_BOOST, else it reads
+  it whole into a block aligned to a page) and makes the large arrays
+  views over it, through
   MappableAllocator and the allocator of the words of BitVector, so that
   an index of any size opens in O(1) time; a file that is not of ADS,
   holds another structure, version or parameters, is truncated, has a

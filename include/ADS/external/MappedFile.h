@@ -3,12 +3,13 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * A file mapped in memory, shared by the structures that are read from it
- * in place [see `Persistence.h`]: `MappedFile` maps a whole file privately
- * and writably (`mmap( PROT_READ | PROT_WRITE , MAP_PRIVATE )` on a POSIX
- * system), so that a page is read from the disk at its first access and a
- * page that a structure writes is copied for the process and never reaches
- * the file; elsewhere the file is read whole into a block aligned to a
- * line of the cache. The copies of a `MappedFile` share the mapping, which
+ * in place [see `Persistence.h`]: with `ADS_WITH_BOOST`, `MappedFile` maps
+ * a whole file by Boost.Interprocess in its mode `copy_on_write` (the
+ * private and writable mapping of every system), so that a page is read
+ * from the disk at its first access and a page that a structure writes is
+ * copied for the process and never reaches the file; without Boost, the
+ * file is read whole into a block aligned to a page, on which the views
+ * are made in the same way. The copies of a `MappedFile` share the mapping, which
  * is released with the last of them, as a `std::shared_ptr` does, but in a
  * single pointer, since the allocators of the words of the succinct
  * structures hold one [see `BitVector.h`].
@@ -143,6 +144,9 @@ class MappedFile
 
 /*--------------------------------------------------------------------------*/
  private:
+ /// the alignment of a file that is read, that of a page of the mappings
+ static constexpr std::size_t kPage = 4096;
+
  /// the mapping, and the count of its copies
  struct Region
  {
@@ -150,6 +154,8 @@ class MappedFile
   std::byte * base = nullptr;            ///< the first byte
   std::size_t size = 0;                  ///< the bytes of the file
   bool system = false;                   ///< mapped, rather than read
+  void * handle = nullptr;               ///< the mapping of the system
+  void ( *drop )( Region & ) = nullptr;  ///< which releases it
   void * offered = nullptr;              ///< the bytes offered
   std::size_t offeredSize = 0;           ///< how many
   };
