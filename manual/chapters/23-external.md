@@ -1058,24 +1058,24 @@ system usually work best.
 
 ## 23.7 Persistence and mapped files {#sec-23-7}
 
-We now turn to the static structures of the library, i.e., the succinct
-ones of [chapter 22](22-succinct.md#ch-22), the indexes of texts of
-[chapter 21](21-compression.md#ch-21), the learned indexes of
-[chapter 6](06-search.md#ch-6), the filters of [chapter 10](10-set.md#ch-10),
-the perfect hash functions of [chapter 7](07-dictionary.md#ch-7), and the
-graph and the matrix in compressed rows of [chapter 14](14-graph.md#ch-14)
-and [chapter 17](17-numeric.md#ch-17). Such a
-structure is usually built once and then queried for a long time, often by
-a program that starts many times; building it again at each start may cost
-far more than all of its queries. We therefore write it, by `Persistence.h`,
-to a file, a stream or a buffer by `store()`, and read it back by
-`restore()`. Also, `restoreMapped()` maps the file into the memory of the
-process (`MappedFile.h`) and makes the large arrays of the structure views
-over the bytes of the mapping; hence, a structure of any size is opened in
-$O( 1 )$ time (cf. [Lemma 23.15](23-external.md#lem-23-15)), and its pages
-are read from the disk at their first access.
+We now turn to the static structures of the library. These are the
+succinct ones of [chapter 22](22-succinct.md#ch-22), the indexes of texts
+of [chapter 21](21-compression.md#ch-21), the learned indexes of
+[chapter 6](06-search.md#ch-6), the filters of [chapter 10](10-set.md#ch-10)
+and the perfect hash functions of [chapter 7](07-dictionary.md#ch-7), with
+the graph and the matrix in compressed rows of
+[chapter 14](14-graph.md#ch-14) and [chapter 17](17-numeric.md#ch-17). Such
+a structure is usually built once and then queried for a long time, often
+by a program that starts many times; building it again at each start may
+cost far more than all of its queries. We therefore write it, by
+`Persistence.h`, to a file, a stream or a buffer by `store()`, and read it
+back by `restore()`. Also, `restoreMapped()` maps the file into the memory
+of the process (`MappedFile.h`) and makes the large arrays of the structure
+views over the bytes of the mapping. Hence a structure of any size is
+opened in $O( 1 )$ time (cf. [Lemma 23.15](23-external.md#lem-23-15)), and
+its pages are read from the disk at their first access.
 
-A structure takes part when it names itself, by `persistName`, with a
+A structure takes part when it gives its name in `persistName`, with a
 `persistVersion` that is raised when its layout changes and a
 `persistTag()` of its template parameters. It lists its members once, in a
 member template `persist( a )`, which writes them when `a` is the writer
@@ -1095,26 +1095,27 @@ Most choices of the format follow from the mapping. A number is written in
 of its items, which start at the next multiple of 64 bytes of the file.
 Since a mapping starts on a page, the view of an array is then aligned to a
 line of the cache, as the words of a `BitVector` are in memory. Hence the
-kernels of rank and select read it with no change. A view is made by the
-allocator of the array (`MappableAllocator`, or the allocator of the words
-of the succinct structures): the reader offers it the bytes of the array,
-and the allocator returns them at its next allocation of that size,
-constructs no item over them, and never gives back to the system a block
-that lies in the mapping. This mapping is private (the mode
-`copy_on_write` of Boost.Interprocess, with `ADS_WITH_BOOST`; without
-Boost, the file is read whole into a block aligned to a page, and the views
-are made over it), and therefore a page that the program writes is copied for the process and
-does not reach the file. Also, a copy of a structure is made on new memory, a
-move keeps the views, and the mapping is released with the last array that
-views it.
+kernels of rank and select read it with no change. The view is made by the
+allocator of the array, i.e., `MappableAllocator` or the allocator of the
+words of the succinct structures. In fact, the reader offers the allocator
+the bytes of the array, and the allocator returns them at its next
+allocation of that size; it constructs no item over them, and it never
+gives back to the system a block that lies in the mapping. The mapping is
+private (the mode `copy_on_write` of Boost.Interprocess, with
+`ADS_WITH_BOOST`), and therefore a page that the program writes is copied
+for the process and does not reach the file. Without Boost, the file is
+read into a block aligned to a page, and the views are made over that
+block. Also, a copy of a structure is made on new memory, a move keeps the
+views, and the mapping is released with the last array that views it.
 
 In the file, the payload is in the byte order of the machine that wrote
-it (or in the one given to `store()`), and a machine of the other order swaps the bytes
-of each number while it reads. Thus a mapped file of the other order is
-copied, as is an array whose allocator makes no views. This is the case
-of some small arrays of the directories (e.g., the counts of the top
-level), which `std::allocator` keeps; they usually hold a fraction of a
-percent of the bits, and their copy is therefore somewhat cheap.
+it (or in the one given to `store()`). A machine of the other order swaps
+the bytes of each number while it reads, and thus it copies a mapped file
+of the other order. It also copies an array whose allocator makes no
+views; this is the case of some small arrays of the directories (e.g., the
+counts of the top level), which `std::allocator` keeps. They usually hold
+a fraction of a percent of the bits, and their copy is therefore somewhat
+cheap.
 
 <span id="lem-23-15"></span>**Lemma 23.15.** *Let a file hold a structure
 whose members are $k$ numbers and $m$ arrays of numbers, let the file be of
@@ -1124,31 +1125,32 @@ in $O( k + m )$ time and reads $O( k + m )$ of its bytes, whatever the
 lengths of the arrays.*
 
 *Proof.* Header and trailer have a fixed size and are read once, and the
-size of the file is compared with the one of the payload in the trailer. A number is read in $O( 1 )$ time, and an array costs the reading
-of its size and of its width and one allocation, which returns a pointer
-into the mapping with no item constructed and no byte of the items read.
-Finally, the invariants that `persist()` requires read sizes and numbers,
-in $O( 1 )$ time each. $\square$
+size of the file is compared with the one of the payload in the trailer. A
+number is read in $O( 1 )$ time. An array costs the reading of its size and
+of its width and one allocation, which returns a pointer into the mapping
+with no item constructed and no byte of the items read. Finally, the
+invariants that `persist()` requires read sizes and numbers, in $O( 1 )$
+time each. $\square$
 
 The price of [Lemma 23.15](23-external.md#lem-23-15) is paid in the
 checks. In fact, `restore()` computes the checksum while it reads, and
 rejects a file whose checksum differs from the one of the trailer. Instead,
-`restoreMapped()` checks the magic numbers, the sizes of the header, of the
-payload and of the trailer (which rejects a truncated file) and the
-invariants of the structure, but computes the checksum only if `verify` is
+`restoreMapped()` checks the magic numbers, the invariants of the structure
+and the sizes of the header, of the payload and of the trailer (which
+rejects a truncated file). It computes the checksum only if `verify` is
 true, since this reads all of the file. Hence a mapping that is not
 verified trusts the items of its arrays, and one may want to open a file
-that could have been damaged with `verify` at least once. Each failure throws
-`PersistError`, with a message that names the cause: a file that is not of ADS,
-another structure, another version or other parameters (e.g., a
-`PGMIndex< std::uint64_t , 32 >` read as one with $\epsilon = 64$), a
-truncation, a wrong checksum, or a broken invariant. In any case, no member
-is read past the end of the payload. We remark that a filter or a perfect
-hash function built on `std::hash` holds values that depend on the standard
-library which computed them; its file is thus portable only between
-programs on the same library, while one built on the hashes of ADS
-(`FastHash`, the default) holds their seeds and is read in the same way on
-any machine.
+that could have been damaged with `verify` at least once. Each failure
+throws `PersistError`, with a message that names the cause. This may be a
+file that is not of ADS, another structure, another version or other
+parameters (e.g., a `PGMIndex< std::uint64_t , 32 >` read as one with
+$\epsilon = 64$), a truncation, a wrong checksum or a broken invariant; in
+any case, no member is read past the end of the payload. We remark that a
+filter or a perfect hash function built on `std::hash` holds values that
+depend on the standard library which computed them. Its file is thus
+portable only between programs on the same library, while one built on the
+hashes of ADS (`FastHash`, the default) holds their seeds and is read in
+the same way on any machine.
 
 The same `persist()` serves the archives of cereal
 (<https://uscilab.github.io/cereal/>), through the header
@@ -1158,17 +1160,18 @@ ON). A program may then write a `RankSelect`, an `EliasFano` or a
 `BinaryFuseFilter` by `ar( x )` into binary, portable or JSON
 archives, next to its other data, and the invariants are checked on the
 reading as above. In such archives a `BitVector` is written as sdsl-lite
-writes its `bit_vector` (the width 1, the factor of growth, the number of
-bits and the words), and since the bit $i$ is the bit $i \bmod 64$ of the
-word $\lfloor i / 64 \rfloor$ in both libraries, each reads the vectors of
-bits of the other ([Gog et al. 2014](Z-bibliography.md#ref-gog2014b)).
+writes its `bit_vector`, i.e., the width 1, the factor of growth, the
+number of bits and the words. Since the bit $i$ is the bit $i \bmod 64$ of
+the word $\lfloor i / 64 \rfloor$ in both libraries, each reads the vectors
+of bits of the other ([Gog et al. 2014](Z-bibliography.md#ref-gog2014b)).
 However, the directories of rank and select of the two libraries have
-different layouts, and `PackedArray`, whose fields never cross a word, differs from the
-`int_vector` of sdsl. Finally, the containers that change (the sequences, the hash
-tables, the trees and the heaps) are not persistent yet. We plan to make
-them take part through the same `persist()` once their allocators are
-parameters; they will write their items and rebuild their links on the
-reading, since a pointer of one process is of no use in another.
+different layouts, and `PackedArray`, whose fields never cross a word,
+differs from the `int_vector` of sdsl. Finally, the containers that change
+(the sequences, the hash tables, the trees and the heaps) are not
+persistent yet. We plan to make them take part through the same
+`persist()`, writing their items and loading them back through their
+allocators; their links will be rebuilt on the reading, since a pointer of
+one process is of no use in another.
 
 ```cpp
 // declarations of <ADS/external/Persistence.h>
