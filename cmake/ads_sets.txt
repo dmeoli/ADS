@@ -547,6 +547,8 @@ numeric/RandomSampling.h              uses priority/DaryHeap.h
                                            the weighted sample of the keys
 priority/PriorityQueue.h              uses priority/QueueCustomization.h
                                            the access to the queues
+queue/RealTimeMinQueue.h              uses queue/SlidingAggregate.h
+                                           the real-time queue it shares
 sequence/Treque.h                     uses queue/RingDeque.h
                                            the two halves
 set/Bag.h                             uses dictionary/FlatHashTable.h
