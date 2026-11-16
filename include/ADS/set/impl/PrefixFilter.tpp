@@ -107,16 +107,11 @@ void PrefixFilter< T , H >::run( std::uint64_t w , unsigned q , unsigned & s ,
 template< class T , class H >
 std::uint32_t PrefixFilter< T , H >::equal( const Bin & B , unsigned r )
 {
-#if defined( __AVX512BW__ ) && defined( __AVX512VL__ )
- return( std::uint32_t( _mm256_cmpeq_epi8_mask(
-	    _mm256_load_si256( reinterpret_cast< const __m256i * >( B.b ) ) ,
-	    _mm256_set1_epi8( char( r ) ) ) ) >>
-	  kBody );
-#elif defined( __AVX2__ )
- return( std::uint32_t( _mm256_movemask_epi8( _mm256_cmpeq_epi8(
-	    _mm256_load_si256( reinterpret_cast< const __m256i * >( B.b ) ) ,
-	    _mm256_set1_epi8( char( r ) ) ) ) ) >>
-	  kBody );
+#ifdef ADS_WITH_HIGHWAY
+ // the 32 bytes at once [see SimdInline.h]
+ return( std::uint32_t(
+   detail::simd::here::bytesEqual< 32 >( B.b ,
+					 std::uint8_t( r ) ) >> kBody ) );
 #else
  std::uint32_t v = 0;
  for( unsigned i = 0 ; i < kK ; ++i )
@@ -128,17 +123,10 @@ std::uint32_t PrefixFilter< T , H >::equal( const Bin & B , unsigned r )
 template< class T , class H >
 std::uint32_t PrefixFilter< T , H >::below( const Bin & B , unsigned r )
 {
-#if defined( __AVX512BW__ ) && defined( __AVX512VL__ )
- return( std::uint32_t( _mm256_cmplt_epu8_mask(
-	    _mm256_load_si256( reinterpret_cast< const __m256i * >( B.b ) ) ,
-	    _mm256_set1_epi8( char( r ) ) ) ) >>
-	  kBody );
-#elif defined( __AVX2__ )
- const __m256i b =
-   _mm256_load_si256( reinterpret_cast< const __m256i * >( B.b ) );
- return( std::uint32_t( ~_mm256_movemask_epi8( _mm256_cmpeq_epi8(
-	    _mm256_max_epu8( b , _mm256_set1_epi8( char( r ) ) ) , b ) ) ) >>
-	  kBody );
+#ifdef ADS_WITH_HIGHWAY
+ return( std::uint32_t(
+   detail::simd::here::bytesBelow< 32 >( B.b ,
+					 std::uint8_t( r ) ) >> kBody ) );
 #else
  std::uint32_t v = 0;
  for( unsigned i = 0 ; i < kK ; ++i )
@@ -188,28 +176,6 @@ void PrefixFilter< T , H >::put( Bin & B , std::uint64_t w , unsigned q ,
  const std::uint64_t lo = ( std::uint64_t( 1 ) << p ) - 1;
  const std::uint64_t h =
    ( w & ~kHead ) | ( w & lo ) | ( ( w & kHead & ~lo ) << 1 ) | ( lo + 1 );
-#if defined( __AVX2__ )
- // the bytes from kBody + i moved up by one (across the two lanes by
- // alignr), r at kBody + i, the header in the low 7 bytes, by three blends
- // chosen by comparing the indices of the bytes with kBody + i
- auto * P = reinterpret_cast< __m256i * >( B.b );
- const __m256i v = _mm256_load_si256( P );
- const __m256i up =
-   _mm256_alignr_epi8( v , _mm256_permute2x128_si256( v , v , 0x08 ) , 15 );
- const __m256i idx = _mm256_setr_epi8(
-   0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 ,
-   17 , 18 , 19 , 20 ,
-   21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 );
- const __m256i at = _mm256_set1_epi8( char( kBody + i ) );
- __m256i u = _mm256_blendv_epi8( v , up , _mm256_cmpgt_epi8( idx , at ) );
- u = _mm256_blendv_epi8( u , _mm256_set1_epi8( char( r ) ) ,
-			 _mm256_cmpeq_epi8( idx , at ) );
- u = _mm256_blendv_epi8( u , _mm256_set1_epi64x( std::int64_t( h ) ) ,
-			 _mm256_cmpgt_epi8( _mm256_set1_epi8( kBody ) ,
-					    idx ) );
- _mm256_store_si256( P , u );
- static_cast< void >( c );
-#else
  if constexpr( std::endian::native == std::endian::little ) {
   // the 32 bytes as 4 words, the bytes from kBody + i moved up by one at
   // once, r written at kBody + i and the header in the low 7 bytes
@@ -240,7 +206,6 @@ void PrefixFilter< T , H >::put( Bin & B , std::uint64_t w , unsigned q ,
   B.b[ kBody + i ] = static_cast< unsigned char >( r );
   setHeader( B , h );
   }
-#endif
  ADS_INVARIANT( unsigned( std::popcount( header( B ) & kHead ) ) == c + 1 );
  }
 

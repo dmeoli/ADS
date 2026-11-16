@@ -1,0 +1,50 @@
+###############################################################################
+############################# makefile-libHighway #############################
+###############################################################################
+#                                                                             #
+#   makefile of Google Highway, for the vector kernels [see Simd.h] and the   #
+#   prefetch [see Prefetch.h]                                                 #
+#                                                                             #
+#   Input:  $(HWY_ROOT) = the prefix where Highway is installed, empty if it  #
+#                         is where the compiler looks                         #
+#                                                                             #
+#   Output: accordingly, there is no *H and *OBJ in output, since there is    #
+#           no need to check for changes in the .h and rebuild the .o / .a    #
+#                                                                             #
+#           $(libHighwayINC)   = the -I$(include directories) for Highway     #
+#           $(libHighwayLIB)   = external libraries + -L< libdirs > for       #
+#                                Highway                                      #
+#           $(libHighwayFOUND) = 1 if a program that compares lanes and       #
+#                                calls the sort of Highway compiles and       #
+#                                links with them, empty otherwise (evaluated  #
+#                                once, when first used)                       #
+#                                                                             #
+###############################################################################
+
+# internal macros - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# basic Highway directory without quotes, if any
+libHighwayBSCDIR = $(subst $\",,$(HWY_ROOT))
+
+# macros to be exported - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+libHighwayINC = $(if $(libHighwayBSCDIR),-I"$(libHighwayBSCDIR)/include")
+libHighwayLIB = $(if $(libHighwayBSCDIR),-L"$(libHighwayBSCDIR)/lib") \
+	-lhwy_contrib -lhwy
+
+# a program with a prefetch, a comparison of lanes and the sort of Highway,
+# compiled and linked once
+libHighwayFOUND = $(eval libHighwayFOUND := $$(shell printf \
+	'$$(ADShash)include <hwy/highway.h>\n$$(ADShash)include \
+	<hwy/cache_control.h>\n$$(ADShash)include \
+	<hwy/contrib/sort/vqsort.h>\n$$(ADShash)include <cstdint>\n\
+	namespace hn=hwy::HWY_NAMESPACE;int main(){\
+	const hn::CappedTag<unsigned char,16> d;\
+	unsigned char c[16]={3},b[8]={};hwy::Prefetch(c);\
+	hn::StoreMaskBits(d,hn::Eq(hn::LoadU(d,c),hn::Set(d,3)),b);\
+	std::int64_t k[2]={2,1};hwy::VQSort(k,2,hwy::SortAscending());\
+	return int(k[0])-1+int(b[0]&0);}\n' | \
+	$$(CXX) -x c++ - -o $$(ADSNULL) $$(libHighwayINC) $$(libHighwayLIB) \
+	2>/dev/null && echo 1))$(libHighwayFOUND)
+
+######################### End of makefile-libHighway ##########################

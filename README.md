@@ -211,11 +211,11 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-430 headers: 245 base, 153 advanced, 14 core and 18 interop.
+433 headers: 245 base, 153 advanced, 17 core and 18 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
-| `ADS/` | `ADT` | `Algebra`, `Modification` | `Abi`, `Capabilities`, `Contract`, `Iterators`, `Portable`, `Wide` |  |
+| `ADS/` | `ADT` | `Algebra`, `Modification` | `Abi`, `Capabilities`, `Contract`, `Iterators`, `Portable`, `Simd`, `SimdInline`, `Wide` |  |
 | `algorithm/` | `AkraBazzi`, `BinaryCounter`, `Hanoi`, `MasterTheorem`, `MaximumSegments`, `MonteCarlo`, `Paradigms`, `SequenceQueries`, `Subsequences` |  |  |  |
 | `backtrack/` | `Anagrams`, `DancingLinks`, `Enumeration`, `KnightTour`, `NQueens`, `SatSolvers`, `Sudoku` | `FastExactCover` |  |  |
 | `combinatorial/` | `Bitwise`, `Generation` | `FastBitwise`, `FastGeneration` |  |  |
@@ -232,7 +232,7 @@ file does not allow.
 | `interop/parallel/` |  |  |  | `KokkosExecutor`, `SenderExecutor`, `StdParExecutor`, `TaskflowExecutor` |
 | `interop/std/` |  |  |  | `FlatMap`, `Pmr` |
 | `intractable/` | `Approximation`, `BranchAndBound`, `FifteenPuzzle`, `Heuristics`, `Pseudopolynomial` |  |  |  |
-| `memory/` | `Allocators`, `CellHeap` | `Arena`, `ConcurrentPool`, `PageHeap`, `PoolAllocator`, `SizeClassAllocator` | `AllocatorAware`, `HugePageAllocator`, `ObjectPool` |  |
+| `memory/` | `Allocators`, `CellHeap` | `Arena`, `ConcurrentPool`, `PageHeap`, `PoolAllocator`, `SizeClassAllocator` | `AllocatorAware`, `HugePageAllocator`, `ObjectPool`, `Prefetch` |  |
 | `mfset/` | `ListMFSet`, `MFSet` | `RemUnionFind`, `RollbackUnionFind`, `UnionFind` |  |  |
 | `numeric/` | `BigInteger`, `BinaryInteger`, `Catalan`, `Combinatorics`, `Matrix`, `MatrixChain`, `NumberTheory`, `Polynomial`, `RSA`, `RandomNumbers`, `RandomSampling`, `Rational`, `SparseMatrix` | `CsrMatrix`, `DenseMatrix`, `DynamicCsr`, `RandomGenerators`, `SellMatrix`, `SparseAssembly` |  |  |
 | `optimization/` | `CoinChange`, `CoinGame`, `FractionalKnapsack`, `GridPaths`, `HouseProblems`, `IntervalCover`, `Intervals`, `Knapsack`, `KnapsackVariants`, `LinearPartition`, `OptimalSearchTree`, `SequenceProblems`, `ShortestJobFirst`, `StockTrading`, `WeightedIntervals` |  |  |  |
@@ -1020,10 +1020,10 @@ headers), `ADSINC` (the `-I`, the `-D` and the options of the backends
 turned on) and `ADSLIB` (their libraries, and `-pthread`), and `ADSOBJ`,
 the object of the C++20 module when it is built; `lib/makefile` gives only
 the headers, `lib/makefile-OS` the settings of the operating system and of
-the compiler, `lib/makefile-mod` the module. GMP, a CBLAS and the headers
-of Boost are used wherever a program that calls them compiles and links
-(`ADS_WITH_GMP`, `ADS_WITH_BLAS` and `ADS_WITH_BOOST` are `auto`, `0` turns
-them off, `1` requires them, and
+the compiler, `lib/makefile-mod` the module. GMP, a CBLAS, the headers
+of Boost and Highway are used wherever a program that calls them compiles
+and links (`ADS_WITH_GMP`, `ADS_WITH_BLAS`, `ADS_WITH_BOOST` and
+`ADS_WITH_HIGHWAY` are `auto`, `0` turns them off, `1` requires them, and
 `make backends` tells what was found), and the other optional backends
 are turned on by `ADS_WITH_OPENMP=1`, `ADS_WITH_TBB=1`,
 `ADS_WITH_FASTFLOW=1` and `ADS_WITH_MPI=auto` or `1` (its options asked to
@@ -1141,6 +1141,25 @@ off, as with the other backends, and `ADS_POINTERTABLE_BOOST`,
 `ADS_FLATHASH_BOOST`, `ADS_SMALLVECTOR_BOOST` or `ADS_RANDOM_BOOST` defined to
 0 keeps the code of ADS for one structure (the benchmarks do so for all four,
 since they compare it with Boost).
+
+With [Google Highway](https://github.com/google/highway) (1.0.7 or later,
+its libraries `hwy` and `hwy_contrib`), the vector kernels of ADS (the
+population counts, the intersections of sorted arrays, the containers of
+`RoaringBitmap`, the hash of the long strings, Stream VByte and the binary
+packing, and `vectorQuickSort()` on the quicksort of Highway) are compiled
+for every set of vector instructions that Highway knows. Highway chooses
+the best one of the processor when the program starts, and ADS therefore
+needs no flag of the machine and tests no processor, compiler or system.
+The kernels that run in the middle of a search (the groups of the hash
+tables, the nodes of `AdaptiveRadixTree`, the bins of the filters, the
+searches in the nodes of the B-trees) are inlined at the instructions
+given to the compiler. Without Highway every structure runs its scalar
+code, with the same results, and `ADS::prefetch( p )` does nothing.
+`ADS_WITH_HIGHWAY` is `AUTO` with CMake and `auto` with the makefile
+(`HWY=<prefix>` where Highway is not where the compiler looks), as for GMP,
+and the packages are built with it off. A translation unit that includes
+ADS with Highway may neither include `hwy/highway.h` before it nor run a
+dispatch of Highway of its own, since Highway runs one per unit.
 
 With `ADS_WITH_BOOST` the headers of `include/ADS/interop/boost/` join ADS
 to Boost in both directions, each included by the program that wants it:

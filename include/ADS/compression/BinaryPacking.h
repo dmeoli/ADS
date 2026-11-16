@@ -56,8 +56,10 @@
  * The format: for each group of up to 16 blocks, the 16 widths in a byte
  * each and then the blocks, the last one filled with 0s (with differences
  * of 0); the number of the integers is not written, and the decoder takes
- * it. On a processor with no SSE2 (or with `ADS_BP_SCALAR`, for the tests)
- * the same layout is packed and unpacked a lane at a time.
+ * it. The 4 lanes are those of the vectors of Highway with
+ * `ADS_WITH_HIGHWAY` [see `Simd.h`], on the machines of little-endian
+ * order; without it, on the others, or with `ADS_BP_SCALAR` (for the
+ * tests), the same layout is packed and unpacked a lane at a time.
  *
  * The contracts [see `Contract.h`]: the sorted sequence of the differential
  * code is non-decreasing (an audit); the decoder gets the code of
@@ -96,6 +98,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Simd.h"
 
 #include <algorithm>
 #include <array>
@@ -107,9 +110,10 @@
 #include <utility>
 #include <vector>
 
-#if ( defined( __SSE2__ ) || defined( _M_X64 ) ) && ! defined( ADS_BP_SCALAR )
- #include <emmintrin.h>
- #define ADS_BP_SSE 1
+// the blocks by the kernels of Highway [see Simd.h], on the machines of
+// little-endian order, unless ADS_BP_SCALAR asks for the scalar code
+#if defined( ADS_WITH_HIGHWAY ) && ! defined( ADS_BP_SCALAR )
+ #define ADS_BP_SIMD 1
 #endif
 
 /*--------------------------------------------------------------------------*/

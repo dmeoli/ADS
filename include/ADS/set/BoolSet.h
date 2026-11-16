@@ -15,10 +15,11 @@
  * the processor, which leaves the bounds unchanged and divides the time by
  * up to 64 (\f$ \lceil N / 64 \rceil \f$ operations on words for a set of
  * dimension \f$ N \f$); the size of a result is the count of its bits, in
- * the same pass as the operation, with AVX2 by the method of Muła, Kurz and
- * Lemire (a shuffle of bytes looks up the bits of each half byte, and a sum
- * of absolute differences adds the bytes), 4 words at a time, and the words
- * of a result are written once, not filled with zeros before.
+ * the same pass as the operation, with `ADS_WITH_HIGHWAY` by the kernel of
+ * the vectors of the processor [see `Simd.h`] (the count of the lanes of
+ * Highway, a table of half bytes as in the method of Muła, Kurz and Lemire
+ * where the processor has no count of its own), and the words of a result
+ * are written once, not filled with zeros before.
  *
  * The contracts [see `Contract.h`]: \f$ N \ge 0 \f$, an item inserted is in
  * \f$ [ 0 , N ) \f$, and each operation of two sets gives, item by item,
@@ -51,6 +52,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/Simd.h"
 
 #include <algorithm>
 #include <bit>
@@ -65,10 +67,6 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
-
-#if defined( __AVX2__ )
- #include <immintrin.h>
-#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/

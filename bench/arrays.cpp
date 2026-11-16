@@ -128,7 +128,7 @@ class Eytzinger
  T lower( T x ) const {
   std::size_t i = 1;
   while( i <= f_n ) {
-   __builtin_prefetch( f_b + 16 * i );
+   ADS::prefetch( f_b + 16 * i );
    i = 2 * i + ( f_b[ i ] < x );
    }
   i >>= std::countr_zero( ~i ) + 1;

@@ -17,6 +17,7 @@ vcpkg_cmake_configure(
         -DADS_WITH_GMP=OFF
         -DADS_WITH_BLAS=OFF
         -DADS_WITH_BOOST=OFF
+        -DADS_WITH_HIGHWAY=OFF
         -DADS_WITH_LEMON=OFF
         -DADS_WITH_MPI=OFF
         -DADS_WITH_STDPAR=OFF

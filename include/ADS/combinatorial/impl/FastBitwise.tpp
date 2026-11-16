@@ -37,172 +37,17 @@ inline std::uint64_t popcountScalar( G && get , std::size_t n )
  return( s0 + s1 + s2 + s3 );
  }
 
-#if defined( __AVX512F__ ) && defined( __AVX512BW__ )
-
-/// the 1 bits of each word of v, in its lane
-inline __m512i popcount512( __m512i v )
-{
-#if defined( __AVX512VPOPCNTDQ__ )
- return( _mm512_popcnt_epi64( v ) );
-#else
- const __m512i lut = _mm512_broadcast_i32x4(
-   _mm_setr_epi8( 0 , 1 , 1 , 2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 , 3 ,
-		  4 ) );
- const __m512i low = _mm512_set1_epi8( 0x0F );
- const __m512i lo = _mm512_and_si512( v , low );
- const __m512i hi = _mm512_and_si512( _mm512_srli_epi16( v , 4 ) , low );
- const __m512i c = _mm512_add_epi8( _mm512_shuffle_epi8( lut , lo ) ,
-				    _mm512_shuffle_epi8( lut , hi ) );
- return( _mm512_sad_epu8( c , _mm512_setzero_si512() ) );
-#endif
- }
-
-/// the full adder of three vectors of bits: h the carries, l the sums
-inline void csa512( __m512i & h , __m512i & l , __m512i a , __m512i b ,
-		    __m512i c )
-{
- l = _mm512_ternarylogic_epi64( a , b , c , 0x96 );  // a ^ b ^ c
- h = _mm512_ternarylogic_epi64( a , b , c , 0xE8 );  // the majority
- }
-
-/// Harley-Seal on the vectors load( 0 ) , ... , load( n - 1 )
-template< class L >
-inline std::uint64_t harleySeal( L && load , std::size_t n )
-{
- __m512i total = _mm512_setzero_si512() , ones = total , twos = total ,
-	 fours = total , eights = total , sixteens , twosA , twosB , foursA ,
-	 foursB ,
-	 eightsA , eightsB;
- std::size_t i = 0;
- for( ; i + 16 <= n ; i += 16 ) {
-  csa512( twosA , ones , ones , load( i ) , load( i + 1 ) );
-  csa512( twosB , ones , ones , load( i + 2 ) , load( i + 3 ) );
-  csa512( foursA , twos , twos , twosA , twosB );
-  csa512( twosA , ones , ones , load( i + 4 ) , load( i + 5 ) );
-  csa512( twosB , ones , ones , load( i + 6 ) , load( i + 7 ) );
-  csa512( foursB , twos , twos , twosA , twosB );
-  csa512( eightsA , fours , fours , foursA , foursB );
-  csa512( twosA , ones , ones , load( i + 8 ) , load( i + 9 ) );
-  csa512( twosB , ones , ones , load( i + 10 ) , load( i + 11 ) );
-  csa512( foursA , twos , twos , twosA , twosB );
-  csa512( twosA , ones , ones , load( i + 12 ) , load( i + 13 ) );
-  csa512( twosB , ones , ones , load( i + 14 ) , load( i + 15 ) );
-  csa512( foursB , twos , twos , twosA , twosB );
-  csa512( eightsB , fours , fours , foursA , foursB );
-  csa512( sixteens , eights , eights , eightsA , eightsB );
-  total = _mm512_add_epi64( total , popcount512( sixteens ) );
-  }
- total = _mm512_slli_epi64( total , 4 );
- total =
-   _mm512_add_epi64( total , _mm512_slli_epi64( popcount512( eights ) , 3 ) );
- total =
-   _mm512_add_epi64( total , _mm512_slli_epi64( popcount512( fours ) , 2 ) );
- total =
-   _mm512_add_epi64( total , _mm512_slli_epi64( popcount512( twos ) , 1 ) );
- total = _mm512_add_epi64( total , popcount512( ones ) );
- for( ; i < n ; ++i )
-  total = _mm512_add_epi64( total , popcount512( load( i ) ) );
- return( std::uint64_t( _mm512_reduce_add_epi64( total ) ) );
- }
-
-inline constexpr std::size_t vectorWords = 8;  ///< the words of a vector
-
-#elif defined( __AVX2__ )
-
-/// the 1 bits of each word of v, in its lane
-inline __m256i popcount256( __m256i v )
-{
- const __m256i lut =
-   _mm256_setr_epi8( 0 , 1 , 1 , 2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 ,
-		     3 , 4 , 0 , 1 , 1 ,
-		     2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 , 3 , 4 );
- const __m256i low = _mm256_set1_epi8( 0x0F );
- const __m256i lo = _mm256_and_si256( v , low );
- const __m256i hi = _mm256_and_si256( _mm256_srli_epi16( v , 4 ) , low );
- const __m256i c = _mm256_add_epi8( _mm256_shuffle_epi8( lut , lo ) ,
-				    _mm256_shuffle_epi8( lut , hi ) );
- return( _mm256_sad_epu8( c , _mm256_setzero_si256() ) );
- }
-
-/// the full adder of three vectors of bits: h the carries, l the sums
-inline void csa256( __m256i & h , __m256i & l , __m256i a , __m256i b ,
-		    __m256i c )
-{
- const __m256i u = _mm256_xor_si256( a , b );
- h = _mm256_or_si256( _mm256_and_si256( a , b ) , _mm256_and_si256( u , c ) );
- l = _mm256_xor_si256( u , c );
- }
-
-/// Harley-Seal on the vectors load( 0 ) , ... , load( n - 1 )
-template< class L >
-inline std::uint64_t harleySeal( L && load , std::size_t n )
-{
- __m256i total = _mm256_setzero_si256() , ones = total , twos = total ,
-	 fours = total , eights = total , sixteens , twosA , twosB , foursA ,
-	 foursB ,
-	 eightsA , eightsB;
- std::size_t i = 0;
- for( ; i + 16 <= n ; i += 16 ) {
-  csa256( twosA , ones , ones , load( i ) , load( i + 1 ) );
-  csa256( twosB , ones , ones , load( i + 2 ) , load( i + 3 ) );
-  csa256( foursA , twos , twos , twosA , twosB );
-  csa256( twosA , ones , ones , load( i + 4 ) , load( i + 5 ) );
-  csa256( twosB , ones , ones , load( i + 6 ) , load( i + 7 ) );
-  csa256( foursB , twos , twos , twosA , twosB );
-  csa256( eightsA , fours , fours , foursA , foursB );
-  csa256( twosA , ones , ones , load( i + 8 ) , load( i + 9 ) );
-  csa256( twosB , ones , ones , load( i + 10 ) , load( i + 11 ) );
-  csa256( foursA , twos , twos , twosA , twosB );
-  csa256( twosA , ones , ones , load( i + 12 ) , load( i + 13 ) );
-  csa256( twosB , ones , ones , load( i + 14 ) , load( i + 15 ) );
-  csa256( foursB , twos , twos , twosA , twosB );
-  csa256( eightsB , fours , fours , foursA , foursB );
-  csa256( sixteens , eights , eights , eightsA , eightsB );
-  total = _mm256_add_epi64( total , popcount256( sixteens ) );
-  }
- total = _mm256_slli_epi64( total , 4 );
- total =
-   _mm256_add_epi64( total , _mm256_slli_epi64( popcount256( eights ) , 3 ) );
- total =
-   _mm256_add_epi64( total , _mm256_slli_epi64( popcount256( fours ) , 2 ) );
- total =
-   _mm256_add_epi64( total , _mm256_slli_epi64( popcount256( twos ) , 1 ) );
- total = _mm256_add_epi64( total , popcount256( ones ) );
- for( ; i < n ; ++i )
-  total = _mm256_add_epi64( total , popcount256( load( i ) ) );
- alignas( 32 ) std::uint64_t t[ 4 ];
- _mm256_store_si256( reinterpret_cast< __m256i * >( t ) , total );
- return( t[ 0 ] + t[ 1 ] + t[ 2 ] + t[ 3 ] );
- }
-
-inline constexpr std::size_t vectorWords = 4;  ///< the words of a vector
-
-#endif
+/// the words from which popcount() and popcountAnd() call the kernels of
+/// Highway, whose call through a table costs as much as a few words
+inline constexpr std::size_t kVectorWords = 16;
 
 }  // end( namespace detail )
 
 inline std::uint64_t popcount( const Word * w , std::size_t n )
 {
-#if ( defined( __AVX512F__ ) && defined( __AVX512BW__ ) ) ||                  \
-  defined( __AVX2__ )
- constexpr std::size_t V = detail::vectorWords;
- if( n >= 16 * V ) {  // a block of Harley-Seal
-  const std::size_t nv = n / V;
-#if defined( __AVX512F__ ) && defined( __AVX512BW__ )
-  auto load = [ w ]( std::size_t i ) {
-   return( _mm512_loadu_si512( w + V * i ) );
-   };
-#else
-  auto load = [ w ]( std::size_t i ) {
-   return(
-     _mm256_loadu_si256( reinterpret_cast< const __m256i * >( w + V * i ) ) );
-   };
-#endif
-  const std::uint64_t s = detail::harleySeal( load , nv );
-  const Word * t = w + nv * V;
-  return( s + detail::popcountScalar(
-		 [ t ]( std::size_t i ) { return( t[ i ] ); } , n - nv * V ) );
-  }
+#ifdef ADS_WITH_HIGHWAY
+ if( n >= detail::kVectorWords )  // the kernel of Highway [see Simd.h]
+  return( detail::simd::popcount( w , n ) );
 #endif
  return( detail::popcountScalar(
    [ w ]( std::size_t i ) { return( w[ i ] ); } , n ) );
@@ -211,32 +56,9 @@ inline std::uint64_t popcount( const Word * w , std::size_t n )
 inline std::uint64_t popcountAnd( const Word * a , const Word * b ,
 				  std::size_t n )
 {
-#if ( defined( __AVX512F__ ) && defined( __AVX512BW__ ) ) ||                  \
-  defined( __AVX2__ )
- constexpr std::size_t V = detail::vectorWords;
- if( n >= 16 * V ) {
-  const std::size_t nv = n / V;
-#if defined( __AVX512F__ ) && defined( __AVX512BW__ )
-  auto load = [ a , b ]( std::size_t i ) {
-   return( _mm512_and_si512( _mm512_loadu_si512( a + V * i ) ,
-			      _mm512_loadu_si512( b + V * i ) ) );
-   };
-#else
-  auto load = [ a , b ]( std::size_t i ) {
-   return( _mm256_and_si256(
-     _mm256_loadu_si256( reinterpret_cast< const __m256i * >( a + V * i ) ) ,
-     _mm256_loadu_si256(
-       reinterpret_cast< const __m256i * >( b + V * i ) ) ) );
-   };
-#endif
-  const std::uint64_t s = detail::harleySeal( load , nv );
-  const std::size_t o = nv * V;
-  return(
-    s + detail::popcountScalar(
-	  [ a , b ,
-	    o ]( std::size_t i ) { return( a[ o + i ] & b[ o + i ] ); } ,
-	  n - o ) );
-  }
+#ifdef ADS_WITH_HIGHWAY
+ if( n >= detail::kVectorWords )
+  return( detail::simd::popcountAnd( a , b , n ) );
 #endif
  return( detail::popcountScalar(
    [ a , b ]( std::size_t i ) { return( a[ i ] & b[ i ] ); } , n ) );

@@ -198,6 +198,36 @@ if (ADS_USE_HWLOC)
 endif ()
 message(STATUS "ADS: hwloc ${ADS_USE_HWLOC}")
 
+# The vector kernels on Google Highway [see Simd.h] and the prefetch [see
+# Prefetch.h]: AUTO, the default, turns them on when a program that
+# dispatches a kernel at run time and calls the sort of Highway compiles
+# and links, ON requires it, OFF leaves the scalar code of ADS and a
+# prefetch that does nothing. Highway chooses the instructions of the
+# processor when the program runs, so that no flag of the compiler is
+# needed.
+set(ADS_WITH_HIGHWAY AUTO CACHE STRING
+    "the vector kernels on Google Highway: AUTO (if found), ON or OFF")
+set_property(CACHE ADS_WITH_HIGHWAY PROPERTY STRINGS AUTO ON OFF)
+string(TOUPPER "${ADS_WITH_HIGHWAY}" ADS_HWY_MODE)
+set(ADS_USE_HIGHWAY OFF)
+if (ADS_HWY_MODE STREQUAL "AUTO" OR ADS_WITH_HIGHWAY)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ADSHighway.cmake)
+    if (ADS_HWY_FOUND)
+        set(ADS_USE_HIGHWAY ON)
+    elseif (NOT ADS_HWY_MODE STREQUAL "AUTO")
+        message(FATAL_ERROR "ADS_WITH_HIGHWAY is ON, but Highway was not "
+                "found: install it (libhwy-dev, highway-devel, highway) or "
+                "set HWY_INCLUDE_DIR, HWY_LIBRARY and HWY_CONTRIB_LIBRARY")
+    endif ()
+endif ()
+if (ADS_USE_HIGHWAY)
+    target_compile_definitions(ADS INTERFACE ADS_WITH_HIGHWAY)
+    target_link_libraries(ADS INTERFACE ADS::Highway)
+    get_filename_component(ADS_HWY_LIBDIR "${HWY_LIBRARY}" DIRECTORY)
+    set(ADS_HWY_HINTS "${HWY_INCLUDE_DIR};${ADS_HWY_LIBDIR}")
+endif ()
+message(STATUS "ADS: Highway ${ADS_USE_HIGHWAY}")
+
 # The interoperation with LEMON [see include/ADS/interop/lemon] and the
 # solves from scratch that ADS delegates to it [see Matching.h and
 # Assignment.h], in the target ADS::LEMON, which defines ADS_WITH_LEMON and
@@ -727,8 +757,8 @@ write_basic_package_version_file(
         ARCH_INDEPENDENT)
 
 # Install the package version and configuration files, with the modules of
-# GMP, of the CBLAS, of Boost, of hwloc, of LEMON and of the runtimes of a
-# program that the configuration file includes.
+# GMP, of the CBLAS, of Boost, of hwloc, of Highway, of LEMON and of the
+# runtimes of a program that the configuration file includes.
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfig.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfigVersion.cmake
@@ -736,6 +766,7 @@ install(FILES
         cmake/ADSBLAS.cmake
         cmake/ADSBoost.cmake
         cmake/ADSHwloc.cmake
+        cmake/ADSHighway.cmake
         cmake/ADSLemon.cmake
         cmake/ADSLemonShim.cmake
         cmake/ADSInterop.cmake
@@ -747,7 +778,9 @@ install(FILES
 # points to its own headers; its include directory is ${prefix}/include
 # when that is relative; with GMP it has the define and the library, by
 # gmp.pc, with a CBLAS its define, its headers and its library, with Boost
-# its define and its headers, and with hwloc its define and hwloc.pc.
+# its define and its headers, with hwloc its define and hwloc.pc, and with
+# Highway its define and its two libraries, by libhwy-contrib.pc and
+# libhwy.pc.
 if (IS_ABSOLUTE "${ADS_INSTALL_PKGCONFIGDIR}")
     set(ADS_PC_PREFIX "${CMAKE_INSTALL_PREFIX}")
 else ()
@@ -778,6 +811,10 @@ endif ()
 if (ADS_USE_HWLOC)
     string(APPEND ADS_PC_REQUIRES " hwloc")
     string(APPEND ADS_PC_CFLAGS " -DADS_WITH_HWLOC")
+endif ()
+if (ADS_USE_HIGHWAY)
+    string(APPEND ADS_PC_REQUIRES " libhwy-contrib libhwy")
+    string(APPEND ADS_PC_CFLAGS " -DADS_WITH_HIGHWAY")
 endif ()
 configure_file(cmake/ads.pc.in ${CMAKE_CURRENT_BINARY_DIR}/ads.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ads.pc

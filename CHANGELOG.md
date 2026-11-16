@@ -34,6 +34,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   callgrind, and timed with an A/A row by --time for a campaign on an idle
   machine
 
+- The option `ADS_WITH_HIGHWAY` (AUTO by default, OFF in the recipes of
+  the packages) for the vector kernels on Google Highway, in CMake (the
+  target `ADS::Highway` of cmake/ADSHighway.cmake, the component
+  `Highway` of `find_package(ADS)`), in the makefile
+  (extlib/makefile-libHighway, `HWY=<prefix>`) and in ads.pc (by
+  libhwy-contrib.pc and libhwy.pc); ADS/Simd.h, which compiles the kernels
+  of ADS/impl/simd/ for every set of vector instructions that Highway
+  knows and calls, when the program runs, the best one of the processor,
+  so that no kernel tests a processor, a compiler or a system and no flag
+  of the machine is needed; without Highway every structure runs its
+  scalar code.
+
+- `ADS::prefetch( p )` and `ADS::prefetch( p , l )`, the prefetch of the
+  line of the cache of a pointer with a `Locality` (memory/Prefetch.h), as
+  two forms of the customization point `prefetch` of Capabilities.h, on
+  `hwy::Prefetch()` with Highway and doing nothing without it; every
+  prefetch of ADS (the hash tables, the filters, the trees, the searches,
+  the sorts, the suffix sorting, the queues and the spin waits) is now a
+  call of it, the only place, and the test `engineered_memory.prefetch-any-
+  address`. Highway has one level of prefetch and no prefetch for writing:
+  the localities and the prefetches for writing issue the same prefetch,
+  pending the next campaign of measures on an idle machine.
+
 - Appendix C of the manual, Working with other libraries: one section per
   library (the standard library, Boost.Graph, Boost.Heap and
   Boost.Unordered, LEMON, GMP, BLAS, oneTBB, OpenMP, std::execution,
@@ -2260,6 +2283,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of one operation before and after are in bench/portable.py, and where
   the portable code may be slower (the select, the division of two words,
   the fences of EventCount) the timings are left to the campaign
+
+- Still on the intrinsics under the tests of the target, pending their
+  rewrite on Highway: the strips of the edit distance (EditDistance.tpp),
+  the search of many patterns (MultiSearch.tpp), the vector parts of the
+  suffix sorting (SuffixSorting.tpp), the back substitution of
+  `RibbonFilter` and the comparators of bench/hashing.cpp and
+  bench/sort.cpp. The kernels
+  of Highway on vectors of 16 bytes (Stream VByte, the binary packing, the
+  stripes of the hash) do not compile for the target HWY_SCALAR of one
+  lane, which GCC 13 takes for HWY_COMPILE_ONLY_EMU128; the scalar
+  fallback through Highway is tested with Clang and EMU128.
+
+- bench/simd.cpp and bench/simd.py, the old kernels (on the headers of a
+  revision of git) against the new ones: the instructions of one call by
+  callgrind, and the times with the row A/A, which simd.py takes only on an
+  idle machine. The first counts (16/11) give the new kernels of the sort
+  0.55 to 0.65 times the instructions of the old ones, Stream VByte, the
+  binary packing, the population counts and the hash tables 0.8 to 1.4
+  times, and the inline kernels of the filters, of StringSearcher, of the
+  arrays of Roaring and of the intersections by blocks 2 to 12 times;
+  these are the kernels whose old code the campaign is to weigh, and
+  which stay in the base revision until then.
+
+- The kernels inlined in the searches on Highway (ADS/SimdInline.h): the
+  count of the keys below a key in a node (CountLess.h, for the B-trees
+  and the static searches), the 16 keys of a `Node16` of
+  `AdaptiveRadixTree`, the rank in a line of 512 bits (BitVector.h), the 8
+  words of a block of `BlockedBloomFilter`, the 32 bytes of a bin of
+  `PrefixFilter`, the 8 parities of a line of `RibbonFilter`, the first 32
+  bytes of `lce()` and the filter of `StringSearcher` (`ADS_SEARCH_SIMD` is
+  now 1 with Highway, 32 bytes at a time, and 0 without it), in place of
+  the code of SSE2, AVX2 and AVX-512 under the tests of the target; the
+  insertion of `PrefixFilter` moves the bytes within 4 words on every
+  machine.
+
+- The encoder and the decoder of Stream VByte and the packing and the
+  unpacking of the blocks of the binary packing on the kernels of Highway
+  (ADS/impl/simd/Compression.tpp), with the same bytes, on the machines of
+  little-endian order; the code of SSSE3, SSE4.1 and SSE2 is gone, and the
+  sums at a distance of 4 of the patched packing are the scalar loop,
+  which the compilers vectorize.
+
+- The stripes of the hash of the strings of more than 256 bytes
+  (FastHash.tpp) on the kernel of Highway (ADS/impl/simd/Hash.tpp), 2 to 8
+  lanes at a time with the words of the scalar code, so that the hashes
+  are those of every machine; the lanes of AVX-512 and AVX2 are gone.
+
+- The intersection of sorted arrays of integers of 32 bits
+  (VectorIntersection.h), the operations of two `BoolSet` and of two
+  bitmaps of `RoaringBitmap`, and the intersection, the difference and the
+  union of two arrays of `RoaringBitmap` run on the kernels of Highway
+  (ADS/impl/simd/Sets.tpp and Bitwise.tpp): the blocks of up to 8 items of
+  the vectors of the processor compared with the rotations of the other
+  block and compressed, in place of the shuffles of AVX2 and of the
+  comparisons of strings of SSE4.2. Pending: the times
+  against `pcmpistrm`, which a portable library is the most likely to
+  lose, in the next campaign on an idle machine.
+
+- `vectorQuickSort()` is the vectorized quicksort of Wassenberg et al.,
+  `hwy::VQSort()` of the library of Highway, on the vectors of the
+  processor found at run time, with `ADS_WITH_HIGHWAY` (the floating point
+  numbers by the same keys, so that the order is the same); without it,
+  the quicksort of ADS on its portable registers. The policies of AVX-512
+  and AVX2, the counting sorts of AVX-512 for few keys in a small range or
+  at most 16 distinct keys, and the test of the processors of AMD by
+  `__builtin_cpu_is()` (in VectorQuickSort.tpp and Sort.tpp) are gone; the
+  merge of the runs of `sort()` runs on the portable registers. Pending:
+  the times against the old kernels, in the next campaign on an idle
+  machine (`bench/simd.py --times`).
+
+- The 15 control bytes of a group of FlatHashTable and DenseHashMap are
+  compared, and a place of a group is emptied by one store of the group,
+  by the vectors of Highway inlined at the instructions of the compiler
+  (ADS/SimdInline.h, the static target of Highway: SSE2 on x86-64 and
+  NEON on AArch64 by default) in place of the code of SSE2 and of NEON
+  under the tests of the processor; `ADS_FLAT_SIMD` is 1 with
+  `ADS_WITH_HIGHWAY` and 0 (the broadword code) without it, the masks of
+  a group are the bit j for the place j on every machine, and the name of
+  the configuration of Abi.h spells the namespace of the set of Highway
+  (e.g., `abi_s1c1b0_N_AVX2`, `none` without Highway) in place of the
+  level of the vector instructions of x86-64. Without Highway the hash
+  tables of an x86-64 or AArch64 machine take the broadword code, which
+  the next campaign on an idle machine is to measure against SSE2.
+
+- `popcount( w , n )` and `popcountAnd( a , b , n )` of FastBitwise.h on
+  the kernel of Highway (ADS/impl/simd/Bitwise.tpp: the adders of Harley
+  and Seal on the vectors of the processor found at run time, the counts
+  of the lanes of Highway) in place of the AVX-512 and AVX2 code under the
+  flags of the compiler; the arrays of fewer than 16 words, and all of
+  them without Highway, are counted by `std::popcount()`. The time against
+  the old kernels is pending the next campaign on an idle machine.
 
 - The customization points of the priority queues, queue_item_t,
   queue_insert(), queue_min(), queue_deleteMin(), queue_handle_t and

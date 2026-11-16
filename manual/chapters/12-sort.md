@@ -1502,14 +1502,16 @@ quicksort with the partition in three ([Ferragina 2023, Algorithms 5.4 and
 
 `vectorQuickSort()` of `VectorQuickSort.h` sorts the integers and floating
 point numbers of 32 or 64 bits (the concept `VectorKey`) by their natural
-order in the lanes of the vector registers, $W$ keys per instruction, $W$
-being 16 or 8 on AVX-512 and 8 or 4 on AVX2 ([Algorithm
-12.15](12-sort.md#alg-12-15)); `kVectorSort` is true if the registers are
-real, since without AVX-512 or AVX2 (or with `ADS_VECTOR_SORT` set to
-0) a register is an array of $32 / w$ lanes for keys of $w$ bytes and the
-same algorithm runs in portable code, which the compiler vectorizes as it
-can. Its overloads take a `std::vector` or a pointer and a length. We
-describe its five parts in turn.
+order. With `ADS_WITH_HIGHWAY` it is the vectorized quicksort of
+[Wassenberg et al. 2022](Z-bibliography.md#ref-wassenberg2022),
+`hwy::VQSort()` of the library of Google Highway, on the vectors of the
+processor found when the program runs, and `kVectorSort` is true; without
+it (or with `ADS_VECTOR_SORT` set to 0) it is the quicksort of [Algorithm
+12.15](12-sort.md#alg-12-15), in portable code whose registers are arrays
+of $W = 32 / w$ lanes for keys of $w$ bytes, which the compiler vectorizes
+as it can, and which we describe in its five parts. Its overloads take a
+`std::vector` or a pointer and a length, and both ways sort the floating
+point numbers by the same keys, so that they give the same order.
 
 In `ADS/sort/VectorQuickSort.h`, the functions are declared as
 
@@ -1526,8 +1528,8 @@ vector registers.
 
 --8<-- "generated/VectorQuickSort-vqs.pseudo.md"
 
-First, the keys need no conversion. An integer is its own key, compared signed or
-not on AVX-512 and made signed on AVX2 by flipping its sign bit. A floating
+First, the keys need no conversion. An integer is its own key, made
+signed by flipping its sign bit if it is unsigned. A floating
 point number is sorted as the signed integer $b$ of its bits, which keeps
 the order of the numbers with the sign bit clear and reverses that of the
 negative ones, which all come first, since for them
@@ -1545,11 +1547,10 @@ places at each end. Then $U$ blocks of $W$ keys at a time are read from the
 end with fewer free places, each block is compared with $p$ in one
 instruction into a mask $m$ of $W$ bits, and its $\ell = | m |$ keys below
 $p$ are written at the left end and the $W - \ell$ others at the right one,
-by a compressed store on AVX-512 (or, on the processors of AMD, where that
-instruction is microcoded and much slower, by a compression into a
-register and a masked store), and on AVX2 by a permutation of the lanes
-from a table of $2^W$ entries, as in [Gueron and Krasnov
-2016](Z-bibliography.md#ref-gueron2016). Also, each read of $U$ blocks
+through an array of $2 W$ keys (the vectors of [Bramas
+2017](Z-bibliography.md#ref-bramas2017) and of [Gueron and Krasnov
+2016](Z-bibliography.md#ref-gueron2016) do it by a compressed store or by
+a permutation of the lanes from a table). Also, each read of $U$ blocks
 prefetches the blocks $8 U W$ keys further in the same direction, which
 possibly helps where the hardware prefetcher falls behind the two ends read
 in turn.
@@ -1568,18 +1569,11 @@ just read, however they split. $\square$
 
 The pivot is the median of a sample of $\max\{ 8 , W \}$ keys, one from each
 of as many equal stretches of the part at the same random offset, sorted by
-the network below. If the sample repeats the pivot, on AVX-512 the partition
-goes three-way in one pass. The keys equal to $p$ are not written, and the
-gap they leave between the two sides is filled with $p$ at the end;
-meanwhile the minimum and the maximum of each side are kept, and a side of
-one key is thus done. Elsewhere a second pass puts the keys equal to $p$ apart. Past $2 (
+the network below. If the sample repeats the pivot, the partition keeps the
+minimum and the maximum of the part, and a second pass puts the keys equal
+to $p$ apart. Past $2 (
 \lfloor \log_2 n \rfloor + 1 )$ levels a part is sorted by heapsort, as in
-the introsort of [Musser 1997](Z-bibliography.md#ref-musser1997). From 4096 integers on AVX-512, if a sample of 64 keys spans
-a range of a few tens of values, the keys are counted in one pass with no
-comparison. Its counts go into nibbles of the lanes, added up from time to
-time into bytes and counts, and the keys are written back whole registers at
-a time, in $O( n )$. A key out
-of the window gives up the counting for the quicksort.
+the introsort of [Musser 1997](Z-bibliography.md#ref-musser1997).
 
 <span id="lem-12-27"></span>**Lemma 12.27.** *`vectorQuickSort()` sorts $n$
 keys in $O( n \log n )$ time in the worst case.*
@@ -2631,12 +2625,12 @@ and of `stableSort()`, $r$ the number of runs.
 --8<-- "generated/Sort-stableSort.pseudo.md"
 
 Its choices follow the type of the items and the order. With the natural
-order on integers or floating point numbers of 32 or 64 bits and the vector
-registers there (`kVectorSort`), a short vector goes to `vectorQuickSort()`.
+order on integers or floating point numbers of 32 or 64 bits and the sort
+of Highway there (`kVectorSort`), a short vector goes to `vectorQuickSort()`.
 A long one with at most `kRuns` runs, counted by a pass that stops at the
 run $\mathtt{kRuns} + 1$ and keeps where they end, has its runs merged with
 no second search for them (those of integers of 32 bits two by two in the
-registers on AVX-512, the others by the merges of `powerSort()`,
+registers of the portable code, the others by the merges of `powerSort()`,
 $O( n \log r )$ for $r$ runs). One of integers of 64 bits whose sample of 64
 keys differs in one byte goes to the counting of `radixSort()`, and any
 other to `vectorQuickSort()`. With the natural order on the other numbers,

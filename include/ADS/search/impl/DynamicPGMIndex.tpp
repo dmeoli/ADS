@@ -82,10 +82,8 @@ std::size_t ADS_DPGM::Level::lowerBound( const K & k ) const
  const K * base = key.data();
  while( n > 1 ) {
   const std::size_t h = n / 2;
-#if defined( __GNUC__ ) || defined( __clang__ )
-  __builtin_prefetch( base + ( n - h ) / 2 );  // the two next middles
-  __builtin_prefetch( base + h + ( n - h ) / 2 );
-#endif
+  ADS::detail::prefetchLine( base + ( n - h ) / 2 );  // the two next middles
+  ADS::detail::prefetchLine( base + h + ( n - h ) / 2 );
   base = base[ h ] < k ? base + h : base;
   n -= h;
   }

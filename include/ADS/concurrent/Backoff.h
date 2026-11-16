@@ -47,6 +47,8 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/memory/Prefetch.h"
+// the spin waits, which issue prefetches
 #include "ADS/concurrent/impl/Spin.tpp"
 
 #include <thread>

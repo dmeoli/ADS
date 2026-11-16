@@ -66,42 +66,9 @@ template< bool Scalar >
 inline std::size_t lineRank( const Word * w , unsigned p )
 {
  ADS_PRE( p < 512 );
-#if defined( __AVX2__ )
- if constexpr( ! Scalar ) {
-  const __m256i lut =
-    _mm256_setr_epi8( 0 , 1 , 1 , 2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 ,
-		      3 , 4 , 0 , 1 , 1 ,
-		      2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 , 3 , 4 );
-  const __m256i nib = _mm256_set1_epi8( 0x0F );
-  const __m256i id = _mm256_setr_epi8(
-    0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 ,
-    17 , 18 , 19 , 20 ,
-    21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 );
-  const __m256i nb = _mm256_set1_epi8( char( p / 8 ) );
-  // the counts of the 32 bytes from q, those of place ids or more cut
-  auto bytes = [ & ]( const Word * q , __m256i ids ) {
-   const __m256i v =
-     _mm256_load_si256( reinterpret_cast< const __m256i * >( q ) );
-   const __m256i hi = _mm256_and_si256( _mm256_srli_epi16( v , 4 ) , nib );
-   const __m256i c =
-     _mm256_add_epi8( _mm256_shuffle_epi8( lut ,
-					   _mm256_and_si256( v , nib ) ) ,
-		      _mm256_shuffle_epi8( lut , hi ) );
-   return( _mm256_and_si256( c , _mm256_cmpgt_epi8( nb , ids ) ) );
-   };
-  const __m256i s = _mm256_sad_epu8(
-    _mm256_add_epi8(
-      bytes( w , id ) ,
-      bytes( w + 4 , _mm256_add_epi8( id , _mm256_set1_epi8( 32 ) ) ) ) ,
-    _mm256_setzero_si256() );
-  const __m128i h = _mm_add_epi64( _mm256_castsi256_si128( s ) ,
-				   _mm256_extracti128_si256( s , 1 ) );
-  const unsigned char last =
-    reinterpret_cast< const unsigned char * >( w )[ p / 8 ];
-  return( std::size_t( _mm_cvtsi128_si64( h ) + _mm_extract_epi64( h , 1 ) ) +
-	   std::size_t( std::popcount(
-	     unsigned( last & ( ( 1u << ( p % 8 ) ) - 1 ) ) ) ) );
-  }
+#ifdef ADS_WITH_HIGHWAY
+ if constexpr( ! Scalar )  // the 8 words at once [see SimdInline.h]
+  return( simd::here::lineRank512( w , p ) );
 #endif
  std::size_t r = 0;
  for( unsigned j = 0 ; j < 8 ; ++j ) {

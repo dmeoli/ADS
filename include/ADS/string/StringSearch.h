@@ -26,8 +26,9 @@
  *   \f$ s \f$ is compared with \f$ P \f$ by `memcmp()` only if
  *   \f$ T[ s + o_i ] = b_i \f$ for every \f$ i \f$. The test is made for
  *   \f$ W \f$ consecutive starts at once by \f$ k \f$ vector comparisons of
- *   \f$ W \f$ bytes and their AND, AVX-512 (\f$ W = 64 \f$), AVX2 (32) or
- *   SSE2 (16) as the target allows, four blocks a step with the comparisons
+ *   \f$ W = 32 \f$ bytes and their AND, by the vectors of Highway with
+ *   `ADS_WITH_HIGHWAY` [see `SimdInline.h`], four blocks a step with the
+ *   comparisons
  *   with \f$ P \f$ out of the way of the probes (elsewhere `memchr()` finds
  *   the first probe and the others are checked one by one), so that on a
  *   text of independent bytes of probabilities \f$ p_c \f$ the expected
@@ -141,6 +142,8 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/SimdInline.h"
+#include "ADS/memory/Prefetch.h"
 #include "ADS/string/StringMatching.h"
 
 #include <cstddef>
@@ -152,24 +155,19 @@
 #include <utility>
 #include <vector>
 
-/// the width of the vector comparisons of the filter: 3 AVX-512 (64
-/// bytes), 2 AVX2 (32), 1 SSE2 (16), 0 none (`memchr()` and bytes); by
-/// default the widest that the target has, and the same in all the
-/// translation units of a program
+/// the vector comparisons of the filter: 1 by the vectors of Highway, 32
+/// bytes at a time, at the instructions of the compiler [see
+/// SimdInline.h], 0 none (`memchr()` and bytes); by default 1 with
+/// ADS_WITH_HIGHWAY, and the same in all the translation units of a program
 #ifndef ADS_SEARCH_SIMD
- #if defined( __AVX512BW__ )
-  #define ADS_SEARCH_SIMD 3
- #elif defined( __AVX2__ )
-  #define ADS_SEARCH_SIMD 2
- #elif defined( __SSE2__ ) || defined( _M_X64 )
+ #ifdef ADS_WITH_HIGHWAY
   #define ADS_SEARCH_SIMD 1
  #else
   #define ADS_SEARCH_SIMD 0
  #endif
 #endif
-
-#if ADS_SEARCH_SIMD > 0
- #include <immintrin.h>
+#if ADS_SEARCH_SIMD && ! defined( ADS_WITH_HIGHWAY )
+ #error "ADS_SEARCH_SIMD = 1 needs ADS_WITH_HIGHWAY"
 #endif
 
 /*--------------------------------------------------------------------------*/

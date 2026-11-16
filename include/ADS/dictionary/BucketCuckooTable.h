@@ -93,6 +93,7 @@
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/memory/AllocatorAware.h"
+#include "ADS/memory/Prefetch.h"
 
 #include <bit>
 #include <cstddef>

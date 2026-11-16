@@ -18,11 +18,6 @@
 #include <cmath>
 #include <cstring>
 
-#if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_PGM_PREFETCH( p ) __builtin_prefetch( p )
-#else
- #define ADS_PGM_PREFETCH( p ) ( ( void )0 )
-#endif
 
 namespace ADS
 {
@@ -244,7 +239,7 @@ inline std::size_t pgmLastMile( const T * a , std::size_t n , std::size_t p ,
  std::size_t lo = p > e + 2 ? p - e - 2 : 0;
  std::size_t hi = std::min( n , p + e + 3 );
  for( std::size_t o = lo ; o < hi ; o += 64 / sizeof( T ) )
-  ADS_PGM_PREFETCH( a + o );
+  ADS::detail::prefetchLine( a + o );
  std::size_t r = windowLowerBound( a , lo , hi , v );
  if( ( r == hi ) && ( hi < n ) ) {  // gallop right
   std::size_t d = 1;

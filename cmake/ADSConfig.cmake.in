@@ -6,10 +6,11 @@
 #    configured when found by other projects using find_package(ADS): it      #
 #    defines ADS::ADS, ADS::ADS_module and the modules of the sets            #
 #    ADS::ADS_module_core, ADS::ADS_module_base and ADS::ADS_module_advanced  #
-#    when ADS was built with ADS_BUILD_MODULE, and ADS::GMP, ADS::BLAS and    #
-#    ADS::Boost when it was built on GMP, on a CBLAS and on Boost, which are  #
-#    then the components GMP, BLAS and Boost of find_package(ADS COMPONENTS   #
-#    ...), and it finds again the threads, OpenMP, oneTBB and MPI when ADS    #
+#    when ADS was built with ADS_BUILD_MODULE, and ADS::GMP, ADS::BLAS,       #
+#    ADS::Boost and ADS::Highway when it was built on GMP, on a CBLAS, on     #
+#    Boost and on Highway, which are then the components GMP, BLAS, Boost     #
+#    and Highway of find_package(ADS COMPONENTS ...), and it finds again the  #
+#    threads, OpenMP, oneTBB and MPI when ADS                                 #
 #    was built with their executors; the component LEMON, ADS::LEMON, when    #
 #    ADS was built with it and LEMON is found again (find_package(ADS         #
 #    COMPONENTS LEMON) requires it), and the runtimes of the components       #
@@ -81,6 +82,17 @@ if (ADS_WITH_BOOST)
     endif ()
 endif ()
 
+set(ADS_WITH_HIGHWAY @ADS_USE_HIGHWAY@)
+if (ADS_WITH_HIGHWAY)
+    set(ADS_HWY_HINTS "@ADS_HWY_HINTS@")
+    include("${ADS_CMAKE_DIR}/ADSHighway.cmake")
+    if (NOT ADS_HWY_FOUND)
+        set(ADS_FOUND FALSE)
+        set(ADS_NOT_FOUND_MESSAGE "ADS was built with Highway, not found")
+        return()
+    endif ()
+endif ()
+
 # ----- Import target ------------------------------------------------------- #
 if (NOT TARGET ADS::ADS)
     include("${ADS_CMAKE_DIR}/ADSTargets.cmake")
@@ -148,10 +160,11 @@ set(ADS_LIBRARIES ADS::ADS)
 
 # the components, found when ADS was built on them: find_package(ADS
 # COMPONENTS Boost) for the delegations to Boost and the headers of
-# ADS/interop/boost/, GMP and BLAS for the other backends
+# ADS/interop/boost/, GMP, BLAS and Highway for the other backends
 set(ADS_Boost_FOUND ${ADS_WITH_BOOST})
 set(ADS_GMP_FOUND ${ADS_WITH_GMP})
 set(ADS_BLAS_FOUND ${ADS_WITH_BLAS})
+set(ADS_Highway_FOUND ${ADS_WITH_HIGHWAY})
 
 check_required_components(ADS)
 

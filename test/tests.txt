@@ -1787,6 +1787,7 @@ engineered_memory  arena-epochs               clear() di Arena, blocchi riusati
 engineered_memory  object-pool-epochs         clear() di ObjectPool, blocchi
 engineered_memory  pool-epochs-threads        epoche dei pool di più lavoratori
 engineered_memory  pool-epochs-value-init     make() dopo clear(), oggetti a zero
+engineered_memory  prefetch-any-address       prefetch di ogni indirizzo, nessun effetto
 
 # the allocators of the containers, beyond the book: std::pmr, a counting
 # allocator, ArenaResource

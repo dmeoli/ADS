@@ -20,10 +20,6 @@
 #include <cstring>
 #include <limits>
 
-#if defined( __AVX2__ )
- #include <immintrin.h>
-#endif
-
 namespace ADS
 {
 
@@ -33,27 +29,18 @@ namespace detail
 /// prefetches the line of p for a read
 inline void lcePrefetch( const void * p )
 {
-#if defined( __GNUC__ ) || defined( __clang__ )
- __builtin_prefetch( p , 0 , 3 );
-#else
- ( void )p;
-#endif
+ ADS::detail::prefetchLine( p );
  }
 
 /// the bytes that lce() compares at once, and the first of them where
 /// p and q differ (lceChunk if none)
-#if defined( __AVX2__ )
+#ifdef ADS_WITH_HIGHWAY
 inline constexpr std::size_t lceChunk = 32;
 
 inline std::size_t lceMismatch( const unsigned char * p ,
 				const unsigned char * q )
 {
- using V = __m256i;
- const V a = _mm256_loadu_si256( reinterpret_cast< const V * >( p ) ) ,
-	 b = _mm256_loadu_si256( reinterpret_cast< const V * >( q ) );
- const unsigned e =
-   unsigned( _mm256_movemask_epi8( _mm256_cmpeq_epi8( a , b ) ) );
- return( std::size_t( std::countr_one( e ) ) );
+ return( simd::here::bytesMismatch< lceChunk >( p , q ) );
  }
 #else
 inline constexpr std::size_t lceChunk = 8;

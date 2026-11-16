@@ -98,14 +98,9 @@ inline void ADS_BTM::recount( Inner * u , int h , std::uint32_t from ,
 ADS_BTM_T
 inline void ADS_BTM::fetch( const void * x , std::size_t bytes )
 {
-#if defined( __GNUC__ ) || defined( __clang__ )
  const char * p = static_cast< const char * >( x );
  for( std::size_t o = 0 ; o < bytes ; o += 64 )
-  __builtin_prefetch( p + o );
-#else
- ( void )x;
- ( void )bytes;
-#endif
+  ADS::detail::prefetchLine( p + o );
  }
 
 ADS_BTM_T

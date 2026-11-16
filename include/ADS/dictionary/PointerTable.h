@@ -90,6 +90,7 @@
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/RandomHashing.h"
+#include "ADS/memory/Prefetch.h"
 
 #include <algorithm>
 #include <bit>

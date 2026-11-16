@@ -14,10 +14,6 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#if defined( __AVX2__ ) || defined( __AVX512F__ )
- #include <immintrin.h>
-#endif
-
 /// a function never inlined, the rare path of a long string
 #define ADS_HASH_NOINLINE ADS_NOINLINE
 
@@ -106,102 +102,11 @@ ADS_ABI_BEGIN
 /// words go to a sum of their own, added across the pairs only before a
 /// scrambling and at the end, so that a stripe moves no word across its
 /// lanes. Every 16 stripes a lane is scrambled by a shift, an XOR and a
-/// product. The vectors give the same words as the scalar operations, so
-/// the hash does not depend on the instructions of the machine
+/// product. The kernel of Highway [see Simd.h] gives the same words as
+/// these scalar operations, so that the hash does not depend on the
+/// instructions of the machine
 struct Lanes
 {
-#if defined( __AVX512F__ )
- __m512i a , d;  ///< the lanes and the sum of the words
-
- explicit Lanes( std::uint64_t seed )
-     : a( _mm512_xor_si512(
-	 _mm512_loadu_si512( kStripeK.data() ) ,
-	 _mm512_set1_epi64( static_cast< long long >( seed ) ) ) ) ,
-       d( _mm512_setzero_si512() ) { }
-
- void stripe( const unsigned char * p , int t ) {
-  const __m512i w = _mm512_loadu_si512( p ) ,
-		x = _mm512_xor_si512(
-		  w , _mm512_loadu_si512( kStripeK.data() + t ) );
-  d = _mm512_add_epi64( d , w );
-  a = _mm512_add_epi64(
-    a , _mm512_mul_epu32( x , _mm512_shuffle_epi32( x , _MM_PERM_CDAB ) ) );
-  }
-
- void flush( void ) {
-  a = _mm512_add_epi64( a , _mm512_shuffle_epi32( d , _MM_PERM_BADC ) );
-  d = _mm512_setzero_si512();
-  }
-
- void scramble( void ) {
-  flush();
-  const __m512i c = _mm512_set1_epi64( 0x9E3779B1LL ) ,
-		x = _mm512_xor_si512(
-		  _mm512_xor_si512( a , _mm512_srli_epi64( a , 47 ) ) ,
-		  _mm512_loadu_si512( kStripeK.data() + 16 ) );
-  a = _mm512_add_epi64(
-    _mm512_mul_epu32( x , c ) ,
-    _mm512_slli_epi64( _mm512_mul_epu32( _mm512_srli_epi64( x , 32 ) , c ) ,
-		       32 ) );
-  }
-
- void store( std::uint64_t * w ) {
-  flush();
-  _mm512_storeu_si512( w , a );
-  }
-#elif defined( __AVX2__ )
- __m256i a[ 2 ] , d[ 2 ];  ///< the lanes and the sums of the words
-
- static __m256i load( const void * p ) {
-  return( _mm256_loadu_si256( static_cast< const __m256i * >( p ) ) );
-  }
-
- explicit Lanes( std::uint64_t seed ) {
-  const __m256i s = _mm256_set1_epi64x( static_cast< long long >( seed ) );
-  for( int i = 0 ; i < 2 ; ++i ) {
-   a[ i ] = _mm256_xor_si256( load( kStripeK.data() + 4 * i ) , s );
-   d[ i ] = _mm256_setzero_si256();
-   }
-  }
-
- void stripe( const unsigned char * p , int t ) {
-  for( int i = 0 ; i < 2 ; ++i ) {
-   const __m256i w = load( p + 32 * i ) ,
-		 x =
-		   _mm256_xor_si256( w , load( kStripeK.data() + t + 4 * i ) );
-   d[ i ] = _mm256_add_epi64( d[ i ] , w );
-   a[ i ] = _mm256_add_epi64(
-     a[ i ] , _mm256_mul_epu32( x , _mm256_shuffle_epi32( x , 0xB1 ) ) );
-   }
-  }
-
- void flush( void ) {
-  for( int i = 0 ; i < 2 ; ++i ) {
-   a[ i ] = _mm256_add_epi64( a[ i ] , _mm256_shuffle_epi32( d[ i ] , 0x4E ) );
-   d[ i ] = _mm256_setzero_si256();
-   }
-  }
-
- void scramble( void ) {
-  flush();
-  const __m256i c = _mm256_set1_epi64x( 0x9E3779B1LL );
-  for( int i = 0 ; i < 2 ; ++i ) {
-   const __m256i x = _mm256_xor_si256(
-     _mm256_xor_si256( a[ i ] , _mm256_srli_epi64( a[ i ] , 47 ) ) ,
-     load( kStripeK.data() + 16 + 4 * i ) );
-   a[ i ] = _mm256_add_epi64(
-     _mm256_mul_epu32( x , c ) ,
-     _mm256_slli_epi64( _mm256_mul_epu32( _mm256_srli_epi64( x , 32 ) , c ) ,
-			32 ) );
-   }
-  }
-
- void store( std::uint64_t * w ) {
-  flush();
-  for( int i = 0 ; i < 2 ; ++i )
-   _mm256_storeu_si256( reinterpret_cast< __m256i * >( w + 4 * i ) , a[ i ] );
-  }
-#else
  std::uint64_t a[ 8 ] , d[ 8 ];  ///< the lanes and the sums of the words
 
  explicit Lanes( std::uint64_t seed ) {
@@ -237,7 +142,6 @@ struct Lanes
   for( int i = 0 ; i < 8 ; ++i )
    w[ i ] = a[ i ];
   }
-#endif
  };
 
 /// the hashes of the strings of more than 64 bytes, out of line
@@ -281,14 +185,17 @@ struct LongHash
  /// the hash of more than 256 bytes by stripes of 64 bytes
  ADS_HASH_NOINLINE static std::uint64_t
  stripes( const unsigned char * s , std::size_t n , std::uint64_t seed ) {
+  std::uint64_t a[ 8 ];
+#ifdef ADS_WITH_HIGHWAY
+  // the lanes by the kernel of Highway [see Simd.h]
+  simd::hashStripes( s , n , seed , kStripeK.data() , a );
+#else
   Lanes L( seed );
   const std::size_t m = ( n - 1 ) / 64;  // the stripes, the last apart
   std::size_t j = 0;
   for( ; j + 16 <= m ; j += 16 ) {  // blocks of 1 KB
    for( int t = 0 ; t < 16 ; ++t ) {
-#if defined( __GNUC__ ) || defined( __clang__ )
-    __builtin_prefetch( s + 64 * ( j + std::size_t( t ) ) + 384 );
-#endif
+    ADS::detail::prefetchLine( s + 64 * ( j + std::size_t( t ) ) + 384 );
     L.stripe( s + 64 * ( j + std::size_t( t ) ) , t );
     }
    L.scramble();
@@ -296,8 +203,8 @@ struct LongHash
   for( int t = 0 ; j + std::size_t( t ) < m ; ++t )
    L.stripe( s + 64 * ( j + std::size_t( t ) ) , t );
   L.stripe( s + n - 64 , 16 );  // the last 64 bytes
-  std::uint64_t a[ 8 ];
   L.store( a );
+#endif
   std::uint64_t h = ( seed ^ kHashK[ 0 ] ) + n * kHashK[ 1 ];
   for( int i = 0 ; i < 8 ; i += 2 )
    h += foldedProduct( a[ i ] ^ kStripeK[ 24 + i ] ,

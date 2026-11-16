@@ -74,40 +74,13 @@ streamVByteEncode( std::span< const std::uint32_t > x )
   return( l );
   };
  std::size_t i = 0;
-#if defined( __SSE4_1__ )
- // 8 integers a step, their lengths by saturations with no table: each
- // byte not 0 made 1 (unsigned minimum with 1), each half of 16 bits made
- // 0, 1 or 255 as its bytes are 0, its high byte is 0 or not (saturated
- // pack), the pair of an integer made 0x0101 if its high half is 1 and its
- // low one 255 (signed minimum), then 0x7F00 added with saturation, so that
- // the high bits of its 2 bytes are its length less 1 (0x7F00 , 0x7F01 ->
- // 0; 0x7FFF -> 1; 0x8000 , 0x8001 -> 2; 0xFFFF -> 3): a mask of the 16
- // bytes is the 2 control bytes; then the bytes moved together by the
- // shuffle of each control byte
- const __m128i one = _mm_set1_epi8( 1 ) , cap = _mm_set1_epi16( 0x0101 ) ,
-	       lift = _mm_set1_epi16( 0x7F00 );
- for( ; i + 8 <= n ; i += 8 ) {
-  const __m128i v0 =
-    _mm_loadu_si128( reinterpret_cast< const __m128i * >( x.data() + i ) );
-  const __m128i v1 =
-    _mm_loadu_si128( reinterpret_cast< const __m128i * >( x.data() + i ) + 1 );
-  const __m128i t = _mm_min_epi16(
-    _mm_packus_epi16( _mm_min_epu8( v0 , one ) , _mm_min_epu8( v1 , one ) ) ,
-    cap );
-  const unsigned key =
-    unsigned( _mm_movemask_epi8( _mm_adds_epu16( t , lift ) ) );
-  storeLE< std::uint16_t >( out.data() + i / 4 , std::uint16_t( key ) );
-  auto store = [ & ]( __m128i v , unsigned c ) {
-   _mm_storeu_si128(
-     reinterpret_cast< __m128i * >( d ) ,
-     _mm_shuffle_epi8( v ,
-		       _mm_loadu_si128( reinterpret_cast< const __m128i * >(
-			    kVByte.pack[ c ].data() ) ) ) );
-   d += kVByte.len[ c ];
-   };
-  store( v0 , key & 0xFF );
-  store( v1 , key >> 8 );
-  }
+#ifdef ADS_WITH_HIGHWAY
+ // 4 integers a step by the kernel of Highway [see Simd.h], on the
+ // machines of little-endian order
+ if constexpr( std::endian::native == std::endian::little )
+  i = simd::vbyteEncode( x.data() , n , out.data() , &d ,
+			 kVByte.pack[ 0 ].data() ,
+			 kVByte.len.data() );
 #endif
  for( ; i + 4 <= n ; i += 4 ) {
   const std::uint32_t l0 = put( x[ i ] ) , l1 = put( x[ i + 1 ] ) ,
@@ -134,26 +107,12 @@ streamVByteDecode( std::span< const std::uint8_t > code , std::size_t n )
  const std::uint8_t * d = code.data() + nc;
  const std::uint8_t * const end = code.data() + code.size();
  std::size_t i = 0;
-#if defined( __SSSE3__ )
- // 4 integers a step by the shuffle of their control byte: 32 at a time
- // while 12 more follow, whose bytes leave room for the loads of 16 bytes,
- // with no test on the data, then 4 at a time while 16 bytes are left
- auto step = [ & ]( std::size_t j , unsigned c ) {
-  const __m128i v =
-    _mm_loadu_si128( reinterpret_cast< const __m128i * >( d ) );
-  const __m128i m = _mm_loadu_si128(
-    reinterpret_cast< const __m128i * >( kVByte.shuffle[ c ].data() ) );
-  _mm_storeu_si128( reinterpret_cast< __m128i * >( x.data() + j ) ,
-		    _mm_shuffle_epi8( v , m ) );
-  d += kVByte.len[ c ];
-  };
- for( ; i + 32 + 12 <= n ; i += 32 ) {
-  const std::uint64_t keys = loadLE< std::uint64_t >( code.data() + i / 4 );
-  for( unsigned g = 0 ; g < 8 ; ++g )
-   step( i + 4 * g , unsigned( keys >> ( 8 * g ) ) & 0xFF );
-  }
- for( ; ( i + 4 <= n ) && ( end - d >= 16 ) ; i += 4 )
-  step( i , code[ i / 4 ] );
+#ifdef ADS_WITH_HIGHWAY
+ // 4 integers a step by the shuffle of their control byte, the kernel of
+ // Highway [see Simd.h], on the machines of little-endian order
+ if constexpr( std::endian::native == std::endian::little )
+  i = simd::vbyteDecode( code.data() , &d , end , n , x.data() ,
+			 kVByte.shuffle[ 0 ].data() , kVByte.len.data() );
 #endif
  for( ; i < n ; ++i ) {  // an integer at a time
   const std::uint32_t l = ( ( code[ i / 4 ] >> ( 2 * ( i % 4 ) ) ) & 3 ) + 1;

@@ -12,7 +12,8 @@
  * the low half of the hash of the item. A query then reads one block, i.e.,
  * one line of cache, instead of the \f$ k \f$ lines of the standard filter,
  * and makes its 8 bits by one product, one shift and one variable shift of a
- * vector of 8 words (AVX2), or by 8 products of 32 bits on any machine, with
+ * vector of 8 words (by the vectors of Highway, with `ADS_WITH_HIGHWAY`
+ * [see `SimdInline.h`]), or by 8 products of 32 bits on any machine, with
  * the same result.
  *
  * Putting the bits of an item in one block costs false positives: the
@@ -64,6 +65,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/SimdInline.h"
 #include "ADS/dictionary/FastHash.h"
 
 #include <algorithm>
@@ -71,10 +73,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
-
-#if defined( __AVX2__ )
- #include <immintrin.h>
-#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/

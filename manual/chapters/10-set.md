@@ -178,11 +178,10 @@ its last word, and the counter is the sum of the populations of the words
 written, i.e., the number of the bits set. $\square$
 
 Two details of the engineering may be worth remarking. First, the size of the result is
-counted in the same pass that writes its words; with AVX2, four words at a
-time, by the method of [Muła et al. 2018](Z-bibliography.md#ref-mula2018)
-described in [§18.3](18-combinatorial.md#sec-18-3) (a shuffle of bytes
-looks up the bits of each half byte, and a sum of absolute differences
-adds the bytes). Second, the words of the result are written once, and
+counted in the same pass that writes its words; with `ADS_WITH_HIGHWAY`, a
+vector of the processor at a time, by the kernel of `Simd.h` and the count
+of the lanes of Highway described in
+[§18.3](18-combinatorial.md#sec-18-3). Second, the words of the result are written once, and
 not filled with zeros before, since its vector uses an allocator that
 leaves the items uninitialized; the bits past the dimension of the result
 are cleared in its last word, which keeps the invariant. The boolean
@@ -756,17 +755,19 @@ dropped, according to the operation.
 
 Two containers are combined according to their forms. Two bitmaps are
 combined word by word, with the bits of the result counted in the same
-pass (four words at a time with AVX2, as in `BoolSet`), and a result of at
+pass (a vector at a time with Highway, as in `BoolSet`), and a result of at
 most 4096 items is written as an array. Otherwise, the pair is (ii) a bitmap and an array, by testing,
 setting, clearing or flipping the bits of the array in a copy of the
-bitmap; (iii) two arrays, with SSE4.2, by blocks of 8 items. For the
-intersection and the difference, a block of each array is compared all
-against all by one comparison of strings (the method of [Schlegel et al.
-2011](Z-bibliography.md#ref-schlegel2011)), the items found (or not found
-in any block of the other array) are packed by a shuffle and stored, and
+bitmap; (iii) two arrays, with Highway, by blocks of $L \le 8$ items, the
+lanes of 16 bits of the vectors of the processor. For the intersection
+and the difference, a block of each array is compared all against all by
+the comparisons with the $L$ rotations of the other block (the method of
+[Schlegel et al. 2011](Z-bibliography.md#ref-schlegel2011), who use one
+comparison of strings of SSE4.2), the items found (or not found in any
+block of the other array) are compressed and stored, and
 the block that ends first moves on. For the union, the two blocks are
 merged by the network of minima and maxima of [Inoue and Taura
-2015](Z-bibliography.md#ref-inoue2015), the 8 smallest are written but
+2015](Z-bibliography.md#ref-inoue2015), the $L$ smallest are written but
 those equal to the one before them, and the next block comes from the
 array with the smaller head; a union or a symmetric difference of more than
 4096 items becomes a bitmap. Each pair of containers thus costs
@@ -1056,15 +1057,15 @@ with only the flag $\mathit{both}$ set, and by
 increasing order. Each iteration advances $i$ or $j$, which gives the
 bound. $\square$
 
-On the integers of 32 bits with AVX2 the merge goes a block of 8 items at a
-time on each side, in at most $( n + m ) / 8$ steps. The block of $A$ is
-compared with the 8 rotations of the block of $B$, i.e., 8 comparisons of
-vectors that find all the equal pairs; the items found are packed to the
-front of a vector by a permutation looked up from the mask of the
-comparison, and the block whose last item is not larger moves on (both, on
+On the integers of 32 bits with Highway the merge goes a block of
+$L \le 8$ items at a time on each side, $L$ the lanes of the vectors of the
+processor, in at most $( n + m ) / L$ steps. The block of $A$ is compared
+with the $L$ rotations of the block of $B$, i.e., $L$ comparisons of
+vectors that find all the equal pairs; the items found are compressed to
+the front of a vector, and the block whose last item is not larger moves on (both, on
 a tie). On lists of very different lengths each item of the shorter one is
 looked for in the longer one from the place of the previous one. On any type this is done by galloping
-and a binary search with no branch; on the integers of 32 bits with AVX2,
+and a binary search with no branch; on the integers of 32 bits with Highway,
 through a window of 64 items that moves by
 strides of 1024 and then of 64 items, and the item is compared with the 64
 of the window at once. An item at a gap of $g$ places then costs
@@ -1359,9 +1360,10 @@ the hash of the key.
 
 --8<-- "generated/BlockedBloomFilter-maybeHash.pseudo.md"
 
-With AVX2, the 8 bits are made by one product, one shift and one variable
-shift of a vector of 8 words, and a query tests them by one instruction
-`vptest`; on any machine, by 8 products of 32 bits, with the same result
+With Highway, the 8 bits are made by one product, one shift and one
+variable shift of the vectors of 8 words, and a query tests them by an
+and-not and one test of the vectors; on any machine, by 8 products of 32
+bits, with the same result
 (the mask $M$ of line 2 of the algorithm above has in its word $i$ the
 single bit $\lfloor ( h_0 s_i \bmod 2^{32} ) / 2^{27} \rfloor$).
 
@@ -1539,8 +1541,9 @@ The run of $q$ is the slots $[ z_{q-1} + 1 - q , z_q - q )$ of the body,
 where $z_q$ is the place of the zero of rank $q$ of the header (and
 $z_{-1} = -1$). The two zeros are found by the broadword select of
 `selectInWord()` ([§22.2](22-succinct.md#sec-22-2)) on the complement of the
-header, shifted by one place, with no loop over its bits. A query compares the 32 bytes of the bin
-with $r$ at once (AVX-512 or AVX2, a byte at a time otherwise) and stops if
+header, shifted by one place, with no loop over its bits. A query compares
+the 32 bytes of the bin with $r$ at once (by the vectors of Highway, a byte
+at a time without it) and stops if
 no byte of the body is equal, as happens for about 91 per cent of the keys
 out of $S$; otherwise it checks whether one of the equal bytes is in the run
 of $q$.
@@ -1768,7 +1771,10 @@ inserted one. $\square$
 
 Then the rows are solved from the last, keeping for each of the $r$
 columns the word of the 64 rows below, so that a row costs $r$ parities of
-a word; with AVX-512 the back substitution takes 4 rows at a time.
+a word; with AVX-512 the back substitution takes 4 rows at a time (the
+last kernel of the filters on the intrinsics of the target, until it is
+rewritten on Highway), and a query takes the 8 parities of a line in the
+vectors of Highway.
 We store the solution interleaved, $r$ words per block of 64 rows. A
 query reads the consecutive words of the two blocks of its 64 rows and
 makes each bit of its result by a parity. Also, it compares the 8 bits of

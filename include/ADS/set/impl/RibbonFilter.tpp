@@ -92,50 +92,9 @@ std::uint32_t RibbonFilter< T , F , H >::parities( const std::uint64_t * u ,
 						 std::uint64_t lo ,
 						 std::uint64_t hi )
 {
-#if defined( __AVX512BW__ )
- // ( u_j & lo ) ^ ( v_j & hi ) in the 8 lanes, the parity of each byte by
- // a table of the 16 nibbles, the sum of the 8 bytes of a lane, its bit 0
- const __m512i x = _mm512_ternarylogic_epi64(
-   _mm512_and_si512( _mm512_load_si512( u ) ,
-		     _mm512_set1_epi64( std::int64_t( lo ) ) ) ,
-   _mm512_load_si512( u + kR ) , _mm512_set1_epi64( std::int64_t( hi ) ) ,
-   0x78 );
- const __m512i nib = _mm512_set1_epi8( 0x0F );
- const __m512i odd = _mm512_broadcast_i32x4(
-   _mm_setr_epi8( 0 , 1 , 1 , 0 , 1 , 0 , 0 , 1 , 1 , 0 , 0 , 1 , 0 , 1 , 1 ,
-		  0 ) );
- const __m512i p = _mm512_shuffle_epi8(
-   odd ,
-   _mm512_and_si512( _mm512_xor_si512( x , _mm512_srli_epi64( x , 4 ) ) ,
-		     nib ) );
- return( std::uint32_t( _mm512_test_epi64_mask(
-   _mm512_sad_epu8( p , _mm512_setzero_si512() ) ,
-   _mm512_set1_epi64( 1 ) ) ) );
-#elif defined( __AVX2__ )
- const __m256i L = _mm256_set1_epi64x( std::int64_t( lo ) ) ,
-	       G = _mm256_set1_epi64x( std::int64_t( hi ) );
- const __m256i nib = _mm256_set1_epi8( 0x0F );
- const __m256i odd =
-   _mm256_setr_epi8( 0 , 1 , 1 , 0 , 1 , 0 , 0 , 1 , 1 , 0 , 0 , 1 , 0 , 1 ,
-		     1 , 0 , 0 , 1 , 1 ,
-		     0 , 1 , 0 , 0 , 1 , 1 , 0 , 0 , 1 , 0 , 1 , 1 , 0 );
- std::uint32_t y = 0;
- for( int k = 0 ; k < 2 ; ++k ) {
-  const auto * a = reinterpret_cast< const __m256i * >( u + 4 * k );
-  const auto * b = reinterpret_cast< const __m256i * >( u + kR + 4 * k );
-  const __m256i x =
-    _mm256_xor_si256( _mm256_and_si256( _mm256_load_si256( a ) , L ) ,
-		      _mm256_and_si256( _mm256_load_si256( b ) , G ) );
-  const __m256i p = _mm256_shuffle_epi8(
-    odd ,
-    _mm256_and_si256( _mm256_xor_si256( x , _mm256_srli_epi64( x , 4 ) ) ,
-			   nib ) );
-  const __m256i c =
-    _mm256_slli_epi64( _mm256_sad_epu8( p , _mm256_setzero_si256() ) , 63 );
-  y |= std::uint32_t( _mm256_movemask_pd( _mm256_castsi256_pd( c ) ) )
-       << ( 4 * k );
-  }
- return( y );
+#ifdef ADS_WITH_HIGHWAY
+ // the 8 words at once [see SimdInline.h]
+ return( detail::simd::here::parities8( u , u + kR , lo , hi ) );
 #else
  std::uint32_t y = 0;
  for( int j = 0 ; j < 8 ; ++j )
@@ -159,8 +118,8 @@ bool RibbonFilter< T , F , H >::build( const std::vector< T > & keys )
  auto ahead = [ & ]( std::size_t i ) {
   const std::uint64_t h = mixed( base( keys[ i ] ) );
   const std::size_t s = start( h );
-  ADS_FILTER_PREFETCH( C.data() + s );
-  ADS_FILTER_PREFETCH( R.data() + s );
+  ADS::detail::prefetchLine( C.data() + s );
+  ADS::detail::prefetchLine( R.data() + s );
   ring[ i % kAhead ] = h;
   };
  for( std::size_t i = 0 ; i < std::min( n , kAhead ) ; ++i )

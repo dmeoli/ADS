@@ -236,13 +236,11 @@ void BucketCuckooTable< K , V , H , Eq , A >::grow( void )
   }
  std::size_t i = 0;
  for( ; i < S.size() ; ++i ) {
-#if defined( __GNUC__ ) || defined( __clang__ )
   if( ( i + AHEAD < S.size() ) && full( i + AHEAD ) ) {
    const std::size_t b = first( X[ i + AHEAD ] );
-   __builtin_prefetch( &f_T[ b ] , 1 );
-   __builtin_prefetch( &f_S[ 4 * b ] , 1 );
+   ADS::detail::prefetchLine( &f_T[ b ] );
+   ADS::detail::prefetchLine( &f_S[ 4 * b ] );
    }
-#endif
   if( full( i ) &&
       ! place( X[ i ] , std::move( S[ i ].key ) , std::move( S[ i ].value ) ) )
    break;

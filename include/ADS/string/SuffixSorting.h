@@ -199,6 +199,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
+#include "ADS/memory/Prefetch.h"
 
 #include <concepts>
 #include <cstddef>

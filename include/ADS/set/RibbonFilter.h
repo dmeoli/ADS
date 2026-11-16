@@ -67,12 +67,11 @@
  * \f$ o \f$ the offset of \f$ s \f$ in its block and \f$ u \f$, \f$ v \f$
  * the words of the column in the two blocks. The blocks are aligned to the
  * lines of cache of 64 bytes, each line holding 8 columns of a block, and a
- * query takes the 8 parities of a line at once: with AVX-512 the 8 words of
- * each block in one register, the parity of each byte by a table of the 16
- * nibbles (`vpshufb`) after folding its two halves, and the 8 bytes of a
- * word summed by `vpsadbw`, whose bit 0 is the parity (the population count
- * of Muła, Kurz and Lemire reduced modulo 2); with AVX2 the same on 4 words
- * at a time; on any machine by one popcount per word. A query compares the 8
+ * query takes the 8 parities of a line at once: with `ADS_WITH_HIGHWAY` the
+ * 8 words of each block in the vectors of Highway [see `SimdInline.h`], the
+ * parity of each word the bit 0 of the count of its lanes (one instruction
+ * where the processor has it, the method of Muła, Kurz and Lemire
+ * elsewhere); without it by one popcount per word. A query compares the 8
  * bits of a line with those of \f$ f( h ) \f$ before reading the next line,
  * so that a key out of \f$ S \f$ reads one line of each block with
  * probability \f$ 1 - 2^{-8} \f$: 2 lines for \f$ r = 8 \f$ and
@@ -144,7 +143,9 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
+#include "ADS/SimdInline.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/memory/Prefetch.h"
 
 #include <algorithm>
 #include <bit>
@@ -155,22 +156,13 @@
 #include <type_traits>
 #include <vector>
 
-#if defined( __AVX2__ ) || defined( __AVX512BW__ )
+#if defined( __AVX512BW__ )
  #include <immintrin.h>
 #endif
 
 /// a function inlined even where the compiler would not
 #ifndef ADS_FILTER_INLINE
  #define ADS_FILTER_INLINE ADS_ALWAYS_INLINE
-#endif
-
-/// a hint to bring the line of p into the cache, or nothing
-#ifndef ADS_FILTER_PREFETCH
- #if defined( __GNUC__ ) || defined( __clang__ )
-  #define ADS_FILTER_PREFETCH( p ) __builtin_prefetch( ( const void * )( p ) )
- #else
-  #define ADS_FILTER_PREFETCH( p ) ( ( void )0 )
- #endif
 #endif
 
 /*--------------------------------------------------------------------------*/

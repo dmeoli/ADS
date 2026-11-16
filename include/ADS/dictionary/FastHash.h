@@ -30,9 +30,10 @@
  *   string is cut into stripes of 64 bytes, i.e., 8 lanes of a word, each
  *   adding the product of the two halves of its word XOR a constant, and
  *   its word to the other lane of its pair, scrambled every 16 stripes (the
- *   stripes of XXH3), which vectors of AVX2 or AVX-512 do 4 or 8 lanes at a
- *   time with the same result as the scalar operations, and the 8 lanes are
- *   folded by 4 products and a last one;
+ *   stripes of XXH3), which the vectors of the processor do 2 to 8 lanes
+ *   at a time with `ADS_WITH_HIGHWAY` [see `Simd.h`], with the same result
+ *   as the scalar operations, and the 8 lanes are folded by 4 products and
+ *   a last one;
  * - `FastHash< T >` is the hash of the integers, the enumerations, the
  *   pointers, the floating point numbers (\f$ +0 \f$ and \f$ -0 \f$ hashing
  *   the same) and the strings (`std::string`, `std::string_view` and the C
@@ -92,6 +93,8 @@
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
 #include "ADS/Wide.h"
+#include "ADS/Simd.h"
+#include "ADS/memory/Prefetch.h"
 
 #include <array>
 #include <bit>
@@ -274,13 +277,10 @@ inline constexpr bool kIndirectKey = requires( const K & k )
 template< class K >
 inline void prefetchKey( const K & k )
 {
- if constexpr( kIndirectKey< K > ) {
-#if defined( __GNUC__ ) || defined( __clang__ )
-  __builtin_prefetch( static_cast< const void * >( k.data() ) );
-#else
+ if constexpr( kIndirectKey< K > )
+  ADS::detail::prefetchLine( static_cast< const void * >( k.data() ) );
+ else
   ( void )k;
-#endif
-  }
  }
 
 ADS_ABI_END

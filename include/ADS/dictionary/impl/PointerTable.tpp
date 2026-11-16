@@ -135,12 +135,8 @@ T * PointerTable< T , Eq , A >::find( const K & key ,
 template< class T , class Eq , class A >
 void PointerTable< T , Eq , A >::prefetch( std::uint64_t hash ) const
 {
-#if defined( __GNUC__ ) || defined( __clang__ )
  if( ! f_S.empty() )
-  __builtin_prefetch( &f_S[ place( hash ) ] , 0 , 1 );
-#else
- ( void )hash;
-#endif
+  ADS::detail::prefetchLine( &f_S[ place( hash ) ] , Locality::Low );
  }
 
 template< class T , class Eq , class A >

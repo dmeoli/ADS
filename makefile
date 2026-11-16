@@ -19,19 +19,19 @@
 #     make test-boost-mpi                                                     #
 #                      the same in a program of Boost.MPI                     #
 #     make test ADS_WITH_GMP=0 ADS_WITH_BLAS=0 ADS_WITH_BOOST=0               #
-#               ADS_WITH_LEMON=0                                              #
+#               ADS_WITH_HIGHWAY=0 ADS_WITH_LEMON=0                           #
 #                      the same without the backends of GMP, of a CBLAS, of   #
-#                      Boost and of LEMON, on by default where they are found #
-#                      [GMP=<prefix>] [BLAS=<prefix>] [BOOST=<prefix>]        #
-#                      [LEMON=<prefix>]                                       #
+#                      Boost, of Highway and of LEMON, on by default where    #
+#                      they are found [GMP=<prefix>] [BLAS=<prefix>]          #
+#                      [BOOST=<prefix>] [HWY=<prefix>] [LEMON=<prefix>]       #
 #     make test ADSMOD=1                                                      #
 #                      also the C++20 module ads, those of the sets and the   #
 #                      tests that import them                                 #
 #     make sets        writes the entry points of the sets of the headers     #
 #                      [see cmake/ads_sets.txt], as each make does            #
 #     make test-sets   compiles each alone, which make test also does         #
-#     make backends    tells whether GMP, a CBLAS, Boost, LEMON, MPI and the  #
-#                      runtimes of a program were found                       #
+#     make backends    tells whether GMP, a CBLAS, Boost, Highway, LEMON, MPI #
+#                      and the runtimes of a program were found               #
 #     make bench       builds the benchmarks in $(BUILD)                      #
 #     bench/run.sh     runs them and writes the tables of the README          #
 #     make install     copies include/ADS into $(PREFIX)/include, with        #
@@ -45,7 +45,8 @@
 #           optional: $(PREFIX)   = where make install copies the headers     #
 #                                   (/usr/local if not given)                 #
 #           optional: the macros of the backends, ADS_WITH_GMP,               #
-#                     ADS_WITH_BLAS, ADS_WITH_BOOST, ADS_WITH_LEMON,          #
+#                     ADS_WITH_BLAS, ADS_WITH_BOOST, ADS_WITH_HIGHWAY,        #
+#                     ADS_WITH_LEMON,                                         #
 #                     ADS_WITH_STDPAR, ADS_WITH_STDEXEC and ADS_WITH_TASKFLOW #
 #                     (auto by default, 0 or 1), ADS_WITH_MPI (0 by default,  #
 #                     auto or 1), ADS_WITH_OPENMP=1, ADS_WITH_TBB=1,          #
@@ -277,6 +278,7 @@ backends:
 	      "CBLAS $(if $(filter 1,$(ADSBLASON)),ON,OFF)"
 	@echo "ADS: Boost $(if $(filter 1,$(ADSBOOSTON)),ON,OFF)"
 	@echo "ADS: hwloc $(if $(filter 1,$(ADSHWLOCON)),ON,OFF)"
+	@echo "ADS: Highway $(if $(filter 1,$(ADSHWYON)),ON,OFF)"
 	@echo "ADS: LEMON $(if $(filter 1,$(ADSLEMONON)),ON,OFF)"
 	@echo "ADS: MPI $(if $(filter 1,$(ADSMPION)),ON,OFF)"
 	@echo "ADS: StdPar $(if $(filter 1,$(ADSSTDPARON)),ON,OFF)," \

@@ -19,10 +19,6 @@
 #include <bit>
 #include <new>
 
-#if defined( __SSE2__ ) || defined( _M_X64 )
- #include <emmintrin.h>
- #define ADS_ART_SSE2 1
-#endif
 
 namespace ADS
 {
@@ -162,12 +158,11 @@ inline void * const * AdaptiveRadixTree< V >::child( const Node * n ,
    }
   case( N16 ): {
    const Node16 * m = static_cast< const Node16 * >( n );
-#ifdef ADS_ART_SSE2
-   const __m128i e = _mm_cmpeq_epi8(
-     _mm_set1_epi8( char( c ) ) ,
-     _mm_load_si128( reinterpret_cast< const __m128i * >( m->key ) ) );
-   const unsigned b =
-     unsigned( _mm_movemask_epi8( e ) ) & ( ( 1u << m->count ) - 1 );
+#ifdef ADS_WITH_HIGHWAY
+   // the 16 keys compared at once [see SimdInline.h]
+   const unsigned b = unsigned( detail::simd::here::bytesEqual16(
+			m->key , std::uint8_t( c ) ) ) &
+		      ( ( 1u << m->count ) - 1 );
    return( b ? &m->child[ std::countr_zero( b ) ] : nullptr );
 #else
    for( unsigned i = 0 ; i < m->count ; ++i )
@@ -454,26 +449,29 @@ void AdaptiveRadixTree< V >::shrink( void ** ref , Node * n )
 template< class V >
 inline void AdaptiveRadixTree< V >::ahead( const void * p , unsigned char c )
 {
-#if defined( __GNUC__ ) || defined( __clang__ )
- #pragma GCC diagnostic push
- #pragma GCC diagnostic ignored "-Winvalid-offsetof"
- constexpr std::size_t i48 = offsetof( Node48 , index );
- constexpr std::size_t c256 = offsetof( Node256 , child );
- #pragma GCC diagnostic pop
+ // the places of the index of a Node48 and of the children of a Node256,
+ // read once from two empty nodes, since offsetof() is only conditionally
+ // supported on classes that are not of standard layout
+ static const std::size_t i48 = [] {
+  const Node48 n;
+  return( std::size_t( reinterpret_cast< const char * >( n.index ) -
+			reinterpret_cast< const char * >( &n ) ) );
+  }();
+ static const std::size_t c256 = [] {
+  const Node256 n;
+  return( std::size_t( reinterpret_cast< const char * >( n.child ) -
+			reinterpret_cast< const char * >( &n ) ) );
+  }();
  const char * b = static_cast< const char * >( p );
  if( isLeaf( p ) ) {
-  __builtin_prefetch( b - 1 );
+  ADS::detail::prefetchLine( b - 1 );
   return;
   }
- __builtin_prefetch( b );                 // the header, a Node4, the
- __builtin_prefetch( b + 64 );            // keys and the children of a
- __builtin_prefetch( b + 128 );           // Node16
- __builtin_prefetch( b + i48 + c );       // the index of a Node48
- __builtin_prefetch( b + c256 + 8 * c );  // the child of a Node256
-#else
- ( void )p;
- ( void )c;
-#endif
+ ADS::detail::prefetchLine( b );                 // the header, a Node4, the
+ ADS::detail::prefetchLine( b + 64 );            // keys and the children of a
+ ADS::detail::prefetchLine( b + 128 );           // Node16
+ ADS::detail::prefetchLine( b + i48 + c );       // the index of a Node48
+ ADS::detail::prefetchLine( b + c256 + 8 * c );  // the child of a Node256
  }
 
 template< class V >
@@ -780,7 +778,6 @@ bool AdaptiveRadixTree< V >::remove( std::string_view k )
 template< class V >
 inline void AdaptiveRadixTree< V >::children( const Node * n )
 {
-#if defined( __GNUC__ ) || defined( __clang__ )
  void * const * c;
  if( n->type == N4 )
   c = static_cast< const Node4 * >( n )->child;
@@ -789,11 +786,8 @@ inline void AdaptiveRadixTree< V >::children( const Node * n )
  else
   return;
  for( unsigned i = 0 ; i < n->count ; ++i )
-  __builtin_prefetch( static_cast< const char * >( c[ i ] ) -
-		      ( isLeaf( c[ i ] ) ? 1 : 0 ) );
-#else
- ( void )n;
-#endif
+  ADS::detail::prefetchLine( static_cast< const char * >( c[ i ] ) -
+			     ( isLeaf( c[ i ] ) ? 1 : 0 ) );
  }
 
 template< class V >

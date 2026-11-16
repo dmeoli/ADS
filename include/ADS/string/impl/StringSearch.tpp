@@ -64,11 +64,7 @@ inline constexpr SearchRanks searchRanks{};
 /// prefetches the line of p for a read
 inline void searchPrefetch( const void * p )
 {
-#if defined( __GNUC__ ) || defined( __clang__ )
- __builtin_prefetch( p , 0 , 3 );
-#else
- ( void )p;
-#endif
+ ADS::detail::prefetchLine( p );
  }
 
 /// the vector comparisons of W bytes: equal( p , b ) has bit i set if the
@@ -76,53 +72,22 @@ inline void searchPrefetch( const void * p )
 template< int W >
 struct SearchVector;
 
-#if ADS_SEARCH_SIMD >= 1
-template<>
-struct SearchVector< 16 >
-{
- using V = __m128i;
- static V splat( unsigned char b ) { return( _mm_set1_epi8( char( b ) ) ); }
- static std::uint64_t equal( const unsigned char * p , V b ) {
-  return( std::uint32_t( _mm_movemask_epi8( _mm_cmpeq_epi8(
-    _mm_loadu_si128( reinterpret_cast< const V * >( p ) ) , b ) ) ) );
-  }
- };
-#endif
-
-#if ADS_SEARCH_SIMD >= 2
+#if ADS_SEARCH_SIMD
+/// the 32 bytes from p compared with b at once, by the vectors of Highway
+/// [see SimdInline.h]
 template<>
 struct SearchVector< 32 >
 {
- using V = __m256i;
- static V splat( unsigned char b ) {
-  return( _mm256_set1_epi8( char( b ) ) );
-  }
+ using V = unsigned char;
+ static V splat( unsigned char b ) { return( b ); }
  static std::uint64_t equal( const unsigned char * p , V b ) {
-  return( std::uint32_t( _mm256_movemask_epi8( _mm256_cmpeq_epi8(
-    _mm256_loadu_si256( reinterpret_cast< const V * >( p ) ) , b ) ) ) );
-  }
- };
-#endif
-
-#if ADS_SEARCH_SIMD >= 3
-template<>
-struct SearchVector< 64 >
-{
- using V = __m512i;
- static V splat( unsigned char b ) {
-  return( _mm512_set1_epi8( char( b ) ) );
-  }
- static std::uint64_t equal( const unsigned char * p , V b ) {
-  return( _mm512_cmpeq_epi8_mask( _mm512_loadu_si512( p ) , b ) );
+  return( simd::here::bytesEqual< 32 >( p , b ) );
   }
  };
 #endif
 
 /// the width of the vectors of the filter
-inline constexpr int searchWidth = ADS_SEARCH_SIMD == 3   ? 64
-				   : ADS_SEARCH_SIMD == 2 ? 32
-				   : ADS_SEARCH_SIMD == 1 ? 16
-							  : 0;
+inline constexpr int searchWidth = ADS_SEARCH_SIMD ? 32 : 0;
 
 /// the first place i in [ i , m ) where P[ i ] != T[ i ], m if none,
 /// 8 bytes at a time

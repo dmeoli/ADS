@@ -159,20 +159,7 @@ ADS_FLAT_INLINE typename DenseHashMap< K , V , H , Eq , A >::Mask
 DenseHashMap< K , V , H , Eq , A >::match( const Group & c , std::uint32_t t )
 {
 #if ADS_FLAT_SIMD == 1
- const __m128i w =
-   _mm_load_si128( reinterpret_cast< const __m128i * >( c.c ) );
- return( Mask( _mm_movemask_epi8(
-	    _mm_cmpeq_epi8( w , _mm_set1_epi32( int( t ) ) ) ) ) &
-	  PLACES );
-#elif ADS_FLAT_SIMD == 2
- static constexpr std::uint8_t b[ 16 ] = { 1 , 2 , 4 , 8 , 16 , 32 , 64 , 128 ,
-					   1 , 2 , 4 , 8 , 16 , 32 , 64 ,
-					   128 };
- const uint8x16_t e =
-   vandq_u8( vceqq_u8( vld1q_u8( c.c ) , vdupq_n_u8( std::uint8_t( t ) ) ) ,
-	     vld1q_u8( b ) );
- return( ( Mask( vaddv_u8( vget_low_u8( e ) ) ) |
-	    ( Mask( vaddv_u8( vget_high_u8( e ) ) ) << 8 ) ) &
+ return( Mask( detail::simd::here::bytesEqual16( c.c , std::uint8_t( t ) ) ) &
 	  PLACES );
 #else
  // the bytes 0 to 7 and 8 to 15 as two words, the byte j in the bits 8 j
@@ -205,22 +192,7 @@ ADS_FLAT_INLINE void DenseHashMap< K , V , H , Eq , A >::vacate( Group & c ,
 							     std::size_t j )
 {
 #if ADS_FLAT_SIMD == 1
- const __m128i w = _mm_load_si128( reinterpret_cast< __m128i * >( c.c ) ) ,
-	       at = _mm_cmpeq_epi8( _mm_setr_epi8( 0 , 1 , 2 , 3 , 4 , 5 , 6 ,
-						   7 , 8 ,
-						   9 , 10 , 11 , 12 , 13 , 14 ,
-						   15 ) ,
-				    _mm_set1_epi8( char( j ) ) );
- _mm_store_si128( reinterpret_cast< __m128i * >( c.c ) ,
-		  _mm_andnot_si128( at , w ) );
-#elif ADS_FLAT_SIMD == 2
- static constexpr std::uint8_t iota[ 16 ] = { 0 , 1 , 2 ,  3 ,  4 ,  5 ,  6 ,
-					      7 ,
-					      8 , 9 , 10 , 11 , 12 , 13 , 14 ,
-					      15 };
- const uint8x16_t at =
-   vceqq_u8( vld1q_u8( iota ) , vdupq_n_u8( std::uint8_t( j ) ) );
- vst1q_u8( c.c , vbicq_u8( vld1q_u8( c.c ) , at ) );
+ detail::simd::here::clearByte16( c.c , j );
 #else
  c.c[ j ] = EMPTY;
 #endif

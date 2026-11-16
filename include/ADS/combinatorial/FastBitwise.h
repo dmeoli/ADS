@@ -8,15 +8,16 @@
  *
  * -  `popcount( w , n )` counts the 1 bits of \f$ n \f$ words by the method of
  *   Harley and Seal: 16 vectors at a time are added by a tree of carry-save
- *   adders, each a full adder of three vectors of bits in two operations of
- *   ternary logic on AVX-512 and in five logical operations on AVX2, and
- *   only the vector of the sixteens is counted, so that a block of 16
- *   vectors costs one count instead of 16; a vector is counted by the
- *   instruction of the processor if it has one (AVX-512 VPOPCNTDQ), and
- *   otherwise by the table of the 16 nibbles in a shuffle of bytes and the
- *   sums of 8 bytes by `psadbw` (Mula, Kurz and Lemire). The arrays shorter
- *   than a block, and every array on a machine without AVX2, are counted by
- *   the population count of the processor in four independent sums;
+ *   adders, each a full adder of three vectors of bits in five logical
+ *   operations, and only the vector of the sixteens is counted, so that a
+ *   block of 16 vectors costs one count instead of 16; a vector is counted
+ *   by the count of the lanes of Google Highway, one instruction where the
+ *   processor has it (AVX-512 VPOPCNTDQ, NEON) and otherwise the table of
+ *   the 16 nibbles in a shuffle of bytes (Mula, Kurz and Lemire). The
+ *   kernel is that of `ADS_WITH_HIGHWAY` [see `Simd.h`], which runs the
+ *   vectors of the processor found when the program runs; the arrays of
+ *   fewer than 16 words, and every array without Highway, are counted by
+ *   the population count of `<bit>` in four independent sums;
  * -  `popcountAnd( a , b , n )` the 1 bits of the intersection of two arrays
  *   in the same way, the size of the intersection of two sets of bits;
  * -  `pdep()` and `pext()` scatter the low bits of \f$ x \f$ to the 1 bits of
@@ -58,16 +59,13 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Simd.h"
 #include "ADS/combinatorial/Bitwise.h"
 
 #include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <utility>
-
-#if defined( __AVX2__ ) || defined( __AVX512F__ )
- #include <immintrin.h>
-#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -87,7 +85,7 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{popcount}( w , n ) \cr
-/// 2 & \quad \textbf{if}\ \text{there are no vectors, or } n < 16 V
+/// 2 & \quad \textbf{if}\ \text{there is no Highway, or } n < 16
 ///     \ \textbf{then return}\ \sum_i \nu( w_i ) \text{ in four sums} \cr
 /// 3 & \quad o , t , f , e , T \gets 0\quad \triangleright\ \text{the ones,}
 ///     \text{ twos, fours, eights and the total, by vectors} \cr

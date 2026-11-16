@@ -62,6 +62,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/memory/Prefetch.h"
 #include "ADS/parallel/Executor.h"
 #include "ADS/string/SuffixArray.h"
 #include "ADS/string/SuffixSorting.h"
@@ -250,11 +251,9 @@ std::vector< I > lcpArrayPhi( E & ex , std::string_view T ,
     constexpr std::size_t D = 16;  // the text at Phi, ahead
     std::size_t h = 0;
     for( std::size_t i = i0 ; i < i1 ; ++i ) {
-#if defined( __GNUC__ )
      if( i + D < i1 )
-      __builtin_prefetch(
+      ADS::detail::prefetchLine(
 	t + std::min< std::size_t >( std::size_t( P[ i + D ] ) + h , n - 1 ) );
-#endif
      const std::size_t j = std::size_t( P[ i ] );
      h = j == n ? 0 : lcp( i , j , h );
      P[ i ] = I( h );

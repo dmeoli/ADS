@@ -68,13 +68,12 @@ std::size_t ascendingIn( const T * a , std::size_t n , C & less )
  std::size_t t = 1;
  for( ; t + B <= q ; t += B ) {
   unsigned stop = 0;
-#if defined( __GNUC__ ) || defined( __clang__ )
   if constexpr( P )
    for( std::size_t j = 0 ; j < S ; ++j )  // the block kAhead on
     for( std::size_t c = 0 ; c < B * sizeof( T ) ; c += 64 )
-     __builtin_prefetch( reinterpret_cast< const char * >( b[ j ] + t ) +
-			 kAhead * B * sizeof( T ) + c );
-#endif
+     ADS::detail::prefetchLine(
+       reinterpret_cast< const char * >( b[ j ] + t ) +
+       kAhead * B * sizeof( T ) + c );
   for( std::size_t j = 0 ; j < S ; ++j )
    for( std::size_t k = t ; k < t + B ; ++k )
     stop |= unsigned( less( b[ j ][ k ] , b[ j ][ k - 1 ] ) );
@@ -98,17 +97,15 @@ inline constexpr std::size_t kStreamBytes = std::size_t( 1 ) << 20;
 /// ascendingIn() with one stream, or four on more than kStreamBytes of
 /// items of at most 8 bytes, whose comparisons vectorize and outrun one
 /// stream (larger items are compared one by one, and four streams only
-/// take more of the cache), prefetching but on the cores of AMD, whose
-/// hardware prefetchers keep up [see kZen]: n if
+/// take more of the cache), prefetching on every processor (the cores of
+/// AMD, whose hardware prefetchers keep up, would do without, which the
+/// code no longer tells apart): n if
 /// a[ 0 .. n ) is non-decreasing, otherwise a place p >= 1 such that
 /// a[ 0 .. p ) is, from which the scan of the first run may go on
 template< class T , class C >
 std::size_t ascending( const T * a , std::size_t n , C & less )
 {
  const bool four = ( sizeof( T ) <= 8 ) && ( n * sizeof( T ) > kStreamBytes );
- if( kZen )
-  return( four ? ascendingIn< 4 , false >( a , n , less )
-		: ascendingIn< 1 , false >( a , n , less ) );
  return( four ? ascendingIn< 4 , true >( a , n , less )
 	       : ascendingIn< 1 , true >( a , n , less ) );
  }

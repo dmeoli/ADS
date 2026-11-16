@@ -304,11 +304,14 @@ functions of [§18.2](18-combinatorial.md#sec-18-2): the population count
 scatter and the gather of bits of BMI2 (`pdep`, `pext`). C++20 reaches the
 first ones portably through `std::popcount`, `std::countr_zero` and
 `std::countl_zero` of `<bit>`. `FastBitwise.h` builds on them, and on the
-vectors of AVX2 and AVX-512 when the compiler may use them, for four
-tasks: (i) the count of the 1 bits of an array, (ii) the scatter and the
-gather, (iii) the selection of the 1 of a given rank, and (iv) the Morton
-code. The choice of the instructions is made at compile time, by the
-macros of the target, and never by a test of the processor at run time. Each function also has a portable
+vectors of Google Highway with `ADS_WITH_HIGHWAY`, for four tasks: (i) the
+count of the 1 bits of an array, (ii) the scatter and the gather, (iii) the
+selection of the 1 of a given rank, and (iv) the Morton code. The count of
+an array is a kernel of `Simd.h`, compiled for every set of vector
+instructions that Highway knows and chosen by Highway when the program
+starts, on the processor it finds, so that the code of ADS tests no
+processor; the other three still follow the macros of BMI2 of the target.
+Each function also has a portable
 branch, which gives the same results on a machine without the
 instructions; the test `engineered_combinatorial.fast-bitwise` checks them
 against loops over the bits.
@@ -317,9 +320,9 @@ against loops over the bits.
 of their sideways sums, i.e., $n$ instructions `popcnt` and $n$ additions.
 The function `popcount( w , n )` keeps four independent sums, and hence the additions
 of consecutive words need not wait for one another. This is the algorithm
-on a machine without AVX2, and on the arrays shorter than a block (64 words
-with AVX2, 128 with AVX-512; the header uses AVX-512 only together with
-its instructions on bytes, AVX-512BW, and AVX2 otherwise). On longer
+without Highway, and on the arrays of fewer than 16 words, for which the
+call through the table of the kernels would cost more than it saves. On
+longer
 arrays it uses the method of Harley and Seal in the form of [Muła et al.
 2018](Z-bibliography.md#ref-mula2018), which counts once per 16 vectors. A *carry-save adder* takes three
 vectors of bits $a$, $b$, $c$
@@ -362,17 +365,17 @@ their weights and the vectors left after the last block with weight 1, and
 line 10 adds the words left after the last vector, also with weight 1, so
 that each bit of the array is counted once with its weight. $\square$
 
-An adder costs five logical operations on AVX2 (two exclusive ors, two ands
-and an or). It costs two on AVX-512, whose instruction `vpternlogq`
-computes any function of three vectors of bits (the truth tables
-$\mathtt{0x96}$ for the sum and $\mathtt{0xE8}$ for the majority).
+An adder costs five logical operations of Highway (two exclusive ors, two
+ands and an or), which the compiler may fuse into two on AVX-512, whose
+instruction `vpternlogq` computes any function of three vectors of bits.
 
-A vector is counted by the instruction `vpopcntq` of AVX-512 when the
-compiler may use it (AVX-512 VPOPCNTDQ). Otherwise, the method of [Muła et al.
-2018](Z-bibliography.md#ref-mula2018) keeps the 16 counts of the nibbles as
-a table of bytes in a register, looks up the counts of the two nibbles of
-each byte by a shuffle of bytes (`vpshufb`), and adds the counts of the 8
-bytes of each word by `vpsadbw`. With AVX2, a block of 16 vectors (64
+A vector is counted by the count of the lanes of Highway, the instruction
+`vpopcntq` of AVX-512 VPOPCNTDQ or `cnt` of NEON where the processor has
+one, and otherwise the method of [Muła et al.
+2018](Z-bibliography.md#ref-mula2018), which keeps the 16 counts of the
+nibbles as a table of bytes in a register, looks up the counts of the two
+nibbles of each byte by a shuffle of bytes, and adds the counts of the 8
+bytes of each word. With AVX2, a block of 16 vectors (64
 words) thus costs 75 logical operations for the adders and about 10 for the
 count of $s$, against 64 instructions `popcnt` and 64 additions for the
 scalar loop. Whether this is faster may depend on the processor, although

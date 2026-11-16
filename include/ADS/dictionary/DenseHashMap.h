@@ -18,12 +18,13 @@
  * empty (0) or full, in which case the byte is a fingerprint of 8 bits of
  * the hash of the key, never 0, and the 16th is a byte of overflow, and 12
  * positions of 32 bits in the vector. The control bytes are compared with
- * the fingerprint of a key all at once, by SSE2, NEON or broadword
- * operations as in `FlatHashTable`, and the positions of the places that
- * match are in the same line, so that a search costs one miss in the index
- * and one in the vector. The hash is mixed as in `FlatHashTable`: the top
- * bits give the first group, the low 8 bits the fingerprint and the bits 8
- * to 10 the bit of the key in the bytes of overflow; the \f$ G \f$ groups, a
+ * the fingerprint of a key all at once, by the vectors of Highway or by
+ * broadword operations as in `FlatHashTable`, and the positions of the
+ * places that match are in the same line, so that a search costs one miss
+ * in the index and one in the vector. The hash is mixed as in
+ * `FlatHashTable`: the top bits give the first group, the low 8 bits the
+ * fingerprint and the bits 8 to 10 the bit of the key in the bytes of
+ * overflow; the \f$ G \f$ groups, a
  * power of 2, are inspected in the triangular order
  * \f$ g_i = ( g_0 + i ( i + 1 ) / 2 ) \bmod G \f$, an insertion that goes
  * past a full group sets in its byte of overflow the bit of its key, and a

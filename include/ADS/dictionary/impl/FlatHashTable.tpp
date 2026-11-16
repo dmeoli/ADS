@@ -549,44 +549,8 @@ template< class K , class V , class H , class Eq , class A >
 ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
 FlatHashTable< K , V , H , Eq , A >::match( const Group & c , std::uint32_t t )
 {
- const __m128i w =
-   _mm_load_si128( reinterpret_cast< const __m128i * >( c.c ) );
- return( Mask( _mm_movemask_epi8(
-	    _mm_cmpeq_epi8( w , _mm_set1_epi32( int( t ) ) ) ) ) &
+ return( Mask( detail::simd::here::bytesEqual16( c.c , std::uint8_t( t ) ) ) &
 	  0x7FFF );
- }
-
-template< class K , class V , class H , class Eq , class A >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
-FlatHashTable< K , V , H , Eq , A >::empties( const Group & c )
-{
- const __m128i w =
-   _mm_load_si128( reinterpret_cast< const __m128i * >( c.c ) );
- return(
-   Mask( _mm_movemask_epi8( _mm_cmpeq_epi8( w , _mm_setzero_si128() ) ) ) &
-   0x7FFF );
- }
-
-template< class K , class V , class H , class Eq , class A >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
-FlatHashTable< K , V , H , Eq , A >::fulls( const Group & c )
-{
- return( empties( c ) ^ 0x7FFF );
- }
-
-#elif ADS_FLAT_SIMD == 2
-
-template< class K , class V , class H , class Eq , class A >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
-FlatHashTable< K , V , H , Eq , A >::match( const Group & c , std::uint32_t t )
-{
- // the 16 bytes of 0 or 0xFF narrowed to 16 nibbles, the byte j in the
- // nibble j
- const uint8x16_t e =
-   vceqq_u8( vld1q_u8( c.c ) , vreinterpretq_u8_u32( vdupq_n_u32( t ) ) );
- const uint8x8_t n = vshrn_n_u16( vreinterpretq_u16_u8( e ) , 4 );
- return( vget_lane_u64( vreinterpret_u64_u8( n ) , 0 ) &
-	  0x0888888888888888ULL );
  }
 
 template< class K , class V , class H , class Eq , class A >
@@ -600,7 +564,7 @@ template< class K , class V , class H , class Eq , class A >
 ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
 FlatHashTable< K , V , H , Eq , A >::fulls( const Group & c )
 {
- return( empties( c ) ^ 0x0888888888888888ULL );
+ return( empties( c ) ^ 0x7FFF );
  }
 
 #else
@@ -784,7 +748,7 @@ FlatHashTable< K , V , H , Eq , A >::scan( std::size_t g , Mask m ,
 				       const K & k ) const
 {
  Slot * p = f_slot + g * SLOTS;
- ADS_FLAT_PREFETCH( p );  // issued while m is predicted
+ ADS::detail::prefetchLine( p );  // issued while m is predicted
  do {
   const std::size_t j = lowest( m );
   if( f_eq( p[ j ].kv.first , k ) ) [[likely]]
@@ -951,22 +915,7 @@ ADS_FLAT_INLINE void FlatHashTable< K , V , H , Eq , A >::vacate( Group & c ,
 							      std::size_t j )
 {
 #if ADS_FLAT_SIMD == 1
- const __m128i w = _mm_load_si128( reinterpret_cast< __m128i * >( c.c ) ) ,
-	       at = _mm_cmpeq_epi8( _mm_setr_epi8( 0 , 1 , 2 , 3 , 4 , 5 , 6 ,
-						   7 , 8 ,
-						   9 , 10 , 11 , 12 , 13 , 14 ,
-						   15 ) ,
-				    _mm_set1_epi8( char( j ) ) );
- _mm_store_si128( reinterpret_cast< __m128i * >( c.c ) ,
-		  _mm_andnot_si128( at , w ) );
-#elif ADS_FLAT_SIMD == 2
- static constexpr std::uint8_t iota[ 16 ] = { 0 , 1 , 2 ,  3 ,  4 ,  5 ,  6 ,
-					      7 ,
-					      8 , 9 , 10 , 11 , 12 , 13 , 14 ,
-					      15 };
- const uint8x16_t at =
-   vceqq_u8( vld1q_u8( iota ) , vdupq_n_u8( std::uint8_t( j ) ) );
- vst1q_u8( c.c , vbicq_u8( vld1q_u8( c.c ) , at ) );
+ detail::simd::here::clearByte16( c.c , j );
 #else
  c.c[ j ] = EMPTY;
 #endif

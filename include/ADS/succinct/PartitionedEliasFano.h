@@ -84,6 +84,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/memory/Prefetch.h"
 #include "ADS/succinct/BitVector.h"
 
 #include <algorithm>

@@ -35,6 +35,8 @@
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/Portable.h"
+#include "ADS/Simd.h"
+#include "ADS/SimdInline.h"
 #include "ADS/Wide.h"
 #include "ADS/compression/PackedBits.h"
 #include "ADS/dictionary/RandomHashing.h"
@@ -42,6 +44,7 @@
 #include "ADS/memory/AllocatorAware.h"
 #include "ADS/memory/HugePageAllocator.h"
 #include "ADS/memory/ObjectPool.h"
+#include "ADS/memory/Prefetch.h"
 #include "ADS/parallel/Executor.h"
 #include "ADS/sort/Sorted.h"
 
