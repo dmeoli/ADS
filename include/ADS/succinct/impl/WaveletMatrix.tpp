@@ -450,6 +450,20 @@ inline std::size_t WaveletMatrix::sizeInBits( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class A >
+inline void WaveletMatrix::persist( A & a )
+{
+ a( f_n , f_lev , f_zeros );
+ a.require( ( f_zeros.size() == f_lev.size() ) && ( f_lev.size() <= 64 ) &&
+	      std::all_of( f_lev.begin() , f_lev.end() ,
+			   [ & ]( const RankSelect & r ) {
+			    return( r.size() == f_n );
+			    } ) ,
+	    "the levels of a WaveletMatrix" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

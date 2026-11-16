@@ -228,6 +228,27 @@ std::size_t BucketingFilter< T >::sizeInBits( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< RadixKey T >
+template< class A >
+inline void GrafiteFilter< T >::persist( A & a )
+{
+ a( f_codes , f_r , f_alo , f_ahi , f_blo , f_bhi , f_first , f_n , f_B );
+ a.require( ( f_r >= 1 ) && ( f_B >= 1 ) && ( f_B <= 64 ) ,
+	    "the parameters of a GrafiteFilter" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+template< RadixKey T >
+template< class A >
+inline void BucketingFilter< T >::persist( A & a )
+{
+ a( f_buckets , f_s );
+ a.require( f_s >= 1 , "the buckets of a BucketingFilter" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

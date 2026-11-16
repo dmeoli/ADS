@@ -77,6 +77,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/compression/BurrowsWheeler.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/succinct/BitVector.h"
 #include "ADS/succinct/HuffmanWaveletTree.h"
 
@@ -109,6 +110,9 @@ class HuffmanFMIndex
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// the index of the empty text
+ HuffmanFMIndex( void ) : HuffmanFMIndex( std::string_view() ) { }
+
  /// the index of \f$ s \f$
  ///
  /// In pseudocode (the succinct suffix array of Mäkinen and Navarro, beyond
@@ -221,6 +225,21 @@ class HuffmanFMIndex
  /// the bits of the index: the tree, the marks with their directory, the
  /// samples and the counts of the symbols
  [[nodiscard]] std::size_t sizeInBits( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "HuffmanFMIndex";
+
+ /// the directory of the bits, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistHash( RS::persistName ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

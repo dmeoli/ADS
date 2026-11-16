@@ -157,6 +157,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/succinct/BitVector.h"
 
 #include <algorithm>
@@ -167,6 +168,7 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -218,6 +220,13 @@ class RecSplitSequence
  /// the bits of the sequence and of its inventory
  [[nodiscard]] std::size_t sizeInBits( void ) const;
 
+ /// the members written to, or read from, the archive \f$ a \f$
+ template< class A >
+ void persist( A & a ) {
+  a( f_l , f_low , f_high , f_inv );
+  a.require( ( f_l >= 0 ) && ( f_l < 64 ) , "a sequence of a RecSplit" );
+  }
+
  private:
  /// the place of the 1 of the item \f$ i \f$ in the high bits
  [[nodiscard]] std::size_t select( std::size_t i ) const;
@@ -248,6 +257,9 @@ class RecSplit
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// the function of no key
+ RecSplit( void ) : RecSplit( std::vector< T >() ) { }
+
  using Key = T;  ///< the type of the keys
 
  /// the function of the distinct keys, with \f$ b \f$ keys per bucket on
@@ -329,6 +341,21 @@ class RecSplit
  /// the seeds drawn by the build
  [[nodiscard]] std::size_t trials( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "RecSplit";
+
+ /// the parameters of the layout, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( T ) , L } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  static constexpr std::size_t kMaxTrials = 100;
@@ -377,7 +404,8 @@ class RecSplit
  std::uint64_t f_seed;                 ///< the seed of the hashes
  std::size_t f_n = 0;                  ///< the number of keys
  std::size_t f_nb = 0;                 ///< the buckets
- std::vector< std::uint64_t > f_code;  ///< the codes, two words more
+ /// the codes, two words more
+ std::vector< std::uint64_t , MappableAllocator< std::uint64_t > > f_code;
  /// the keys before the bucket \f$ i \f$, less \f$ i \f$ `f_dk`
  detail::RecSplitSequence f_keys;
  /// the place of the bucket \f$ i \f$, less its estimate

@@ -107,6 +107,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -259,6 +260,16 @@ class LAVector
  /// the items, decoded in \f$ O( n ) \f$ time
  [[nodiscard]] std::vector< std::uint64_t > decode( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "LAVector";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the type of an item
@@ -298,6 +309,7 @@ class LAVector
   std::uint64_t base;  ///< \f$ \beta_j \f$
   double slope;        ///< \f$ \alpha_j \f$, not negative
   std::uint64_t ow;    ///< its first bit in C times 128, plus w_j
+  using persist_unit = std::uint64_t;  ///< three words in a file
   };
 
  /// integers of a fixed number of bits, the least that holds them all,
@@ -309,6 +321,15 @@ class LAVector
   int width = 0;                       ///< the bits of an integer
   std::uint64_t mask = 0;              ///< their mask
   std::size_t bits = 0;                ///< the bits of the integers
+
+  /// the members written to, or read from, the archive \f$ a \f$
+  template< class A >
+  void persist( A & a ) {
+   a( words , width , mask , bits );
+   a.require( ( width >= 0 ) && ( width <= 64 ) &&
+		( words.size() * 64 >= bits ) ,
+	      "the integers of a LAVector" );
+   }
 
   /// the integers of \f$ v \f$
   void pack( const std::vector< std::uint64_t > & v ) {

@@ -164,6 +164,10 @@ namespace ADS
 class CarterWegmanHash
 {
  public:
+ /// the function into one place drawn from the seed 1, to be read from a
+ /// file [see `Persistence.h`]
+ CarterWegmanHash( void ) : CarterWegmanHash( 1 ) { }
+
  /// a function drawn from \f$ H_{p,m} \f$ with \f$ p = 2^{61} - 1 \f$, from
  /// the seed
  /// \pre \f$ m \ge 1 \f$
@@ -192,6 +196,16 @@ class CarterWegmanHash
 
  /// the size \f$ m \f$ of the range
  [[nodiscard]] std::uint64_t m( void ) const { return( f_m ); }
+
+ /// the parameters written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a ) {
+  a( f_p , f_a , f_b , f_m );
+  a.require( ( f_p >= 2 ) && ( f_p < ( std::uint64_t( 1 ) << 63 ) ) &&
+	       ( f_a >= 1 ) && ( f_a < f_p ) && ( f_b < f_p ) && ( f_m >= 1 ) ,
+	     "the parameters of a CarterWegmanHash" );
+  }
 
  private:
  /// \f$ p \f$, \f$ a \f$, \f$ b \f$ and \f$ m \f$

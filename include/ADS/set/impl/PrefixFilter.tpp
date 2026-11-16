@@ -397,6 +397,18 @@ double PrefixFilter< T , H >::falsePositiveRate( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class T , class H >
+template< class A >
+inline void PrefixFilter< T , H >::persist( A & a )
+{
+ a( f_B , f_cap , f_n , f_spareN , f_spare );
+ if constexpr( ! std::is_empty_v< H > )  // a hash function with a state
+  a( f_h );
+ a.require( f_B.size() == binsFor( f_cap ) , "the bins of a PrefixFilter" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

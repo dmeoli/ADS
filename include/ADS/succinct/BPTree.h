@@ -73,6 +73,7 @@
 #include "ADS/succinct/BitVector.h"
 
 #include <cstddef>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -196,6 +197,16 @@ class BPTree
 
  /// the parentheses, with their matching
  [[nodiscard]] const BalancedParentheses & parentheses( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "BPTree";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

@@ -93,12 +93,14 @@
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
 #include "ADS/Wide.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/memory/HugePageAllocator.h"
 #include "ADS/memory/Prefetch.h"
 
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -222,6 +224,22 @@ class PGMIndex
  /// the bytes of the index, the items aside
  [[nodiscard]] std::size_t bytes( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "PGMIndex";
+
+ /// the type of the keys and the errors, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( K ) , std::is_signed_v< K > ,
+				 std::is_floating_point_v< K > , E , R } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  /// the line of a segment: the predicted place of its first key and the
@@ -230,6 +248,7 @@ class PGMIndex
  {
   double icpt;   ///< the predicted place of the first key
   double slope;  ///< the slope
+  using persist_unit = std::uint64_t;  ///< two words in a file
   };
 
  /// a level: the first keys of its segments, their lines, and the first
@@ -240,6 +259,15 @@ class PGMIndex
   std::vector< std::uint64_t > key;    ///< the first keys
   std::vector< Line > line;            ///< the lines
   std::vector< std::uint32_t > start;  ///< the first places below
+
+  /// the members written to, or read from, the archive \f$ a \f$
+  template< class A >
+  void persist( A & a ) {
+   a( key , line , start );
+   a.require( ( line.size() == key.size() ) &&
+		( start.size() == key.size() + 1 ) ,
+	      "a level of a PGMIndex" );
+   }
   };
 
  /// the key in an order of integers of 64 bits

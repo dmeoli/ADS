@@ -248,6 +248,16 @@ class RIndex
  /// lengths, the samples and the function \f$ \phi \f$
  [[nodiscard]] std::size_t sizeInBits( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "RIndex";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  /// the occurrences of \f$ c \f$ in \f$ L[ 0 , i ) \f$

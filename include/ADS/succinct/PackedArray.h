@@ -66,6 +66,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/parallel/Executor.h"
 
 #include <algorithm>
@@ -73,6 +74,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -194,6 +196,21 @@ class PackedArray
   return( ( a.f_n == b.f_n ) && ( a.f_w == b.f_w ) );
   }
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "PackedArray";
+
+ /// the width of the fields, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { B , Saturate } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  /// the bits past the last field are 0
@@ -292,6 +309,16 @@ class TritArray
  friend bool operator==( const TritArray & a , const TritArray & b ) {
   return( ( a.f_n == b.f_n ) && ( a.f_y == b.f_y ) );
   }
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "TritArray";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

@@ -48,11 +48,13 @@
 
 #include "ADS/Contract.h"
 #include "ADS/dictionary/RandomHashing.h"
+#include "ADS/external/MappedFile.h"
 
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <string_view>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -73,6 +75,9 @@ class BloomFilter
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// a filter of 64 bits and one hash, empty
+ BloomFilter( void ) : BloomFilter( 64 , 1 ) { }
+
  /// the empty filter of \f$ m \f$ bits and \f$ k \f$ hashes
  /// \pre \f$ m \ge 1 \f$ and \f$ k \ge 1 \f$
  BloomFilter( std::size_t m , int k , H h = H() );
@@ -126,6 +131,21 @@ class BloomFilter
 
  /// the hashes \f$ k \f$
  [[nodiscard]] int hashes( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "BloomFilter";
+
+ /// the parameters of the layout, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( T ) } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

@@ -245,6 +245,21 @@ std::size_t BinaryFuseFilter< T , F , H >::trials( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class T , class F , class H >
+ requires( std::is_unsigned_v< F > && ( sizeof( F ) <= 4 ) )
+template< class A >
+inline void BinaryFuseFilter< T , F , H >::persist( A & a )
+{
+ a( f_F , f_seed , f_L , f_CL , f_n , f_trials );
+ if constexpr( ! std::is_empty_v< H > )  // a hash function with a state
+  a( f_h );
+ a.require( f_F.empty() ||
+	      ( f_F.size() == std::size_t( f_CL ) + 2 * std::size_t( f_L ) ) ,
+	    "the fingerprints of a BinaryFuseFilter" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

@@ -158,7 +158,7 @@ inline std::vector< std::size_t > RIndex::locate( std::string_view P ) const
  std::sort( R.begin() , R.end() );
 #if ADS_CONTRACTS >= 3
  ADS_AUDIT( std::all_of( R.begin() , R.end() , [ & ]( std::size_t p ) {
-  return( f_text.compare( p , P.size() , P ) == 0 );
+  return( f_text.empty() || ( f_text.compare( p , P.size() , P ) == 0 ) );
   } ) );
 #endif
  return( R );
@@ -169,6 +169,22 @@ inline std::size_t RIndex::sizeInBits( void ) const
  return( f_start.sizeInBits() + f_head.sizeInBits() + f_F.sizeInBits() +
 	  f_end.size() + f_key.sizeInBits() + f_phi.size() +
 	  64 * ( f_C.size() + f_R.size() ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+template< class A >
+inline void RIndex::persist( A & a )
+{
+ a( f_n , f_w , f_start , f_head , f_F , f_R , f_C , f_end , f_key , f_phi ,
+    f_wr );
+ a.require( ( f_w >= 1 ) && ( f_w <= 64 ) && ( f_wr >= 1 ) && ( f_wr <= 64 ) &&
+	      ( f_start.size() == f_head.size() ) ,
+	    "the sizes of an RIndex" );
+#if ADS_CONTRACTS >= 3
+ if constexpr( A::loading )
+  f_text.clear();  // no audit of the text
+#endif
  }
 
 /*--------------------------------------------------------------------------*/

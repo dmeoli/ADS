@@ -163,6 +163,10 @@ external/BlockBTree.h                 base
 external/BlockStore.h                 base
 external/ExternalSorting.h            base
 external/ListRanking.h                base
+external/MappedFile.h                 core     the mappings of the files
+                                               that the structures view
+external/Persistence.h                core     the files of the persistent
+                                               structures
 external/RecordFile.h                 core     the files of records of the
                                                external memory
 external/TwoLevelMemory.h             base
@@ -215,6 +219,7 @@ interop/boost/FromBGL.h               interop  with ADS_WITH_BOOST
 interop/boost/Graph.h                 interop  with ADS_WITH_BOOST
 interop/boost/Heap.h                  interop  with ADS_WITH_BOOST
 interop/boost/Iterator.h              interop  with ADS_WITH_BOOST
+interop/cereal/Cereal.h               interop
 interop/lemon/Digraphs.h              interop  with ADS_WITH_LEMON
 interop/lemon/Heaps.h                 interop  with ADS_WITH_LEMON
 interop/lemon/Maps.h                  interop  with ADS_WITH_LEMON

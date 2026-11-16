@@ -75,12 +75,14 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/succinct/BitVector.h"
 
 #include <array>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -208,6 +210,21 @@ class RRRBitVector
 
  /// the bits of the classes, of the offsets and of the superblocks
  [[nodiscard]] std::size_t sizeInBits( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "RRRBitVector";
+
+ /// the parameters of the layout of the blocks, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { std::uint64_t( kB ) , kSuper } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

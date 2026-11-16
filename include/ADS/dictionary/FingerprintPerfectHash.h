@@ -94,6 +94,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/external/MappedFile.h"
 
 #include <algorithm>
 #include <array>
@@ -102,6 +103,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -124,6 +126,10 @@ class FingerprintPerfectHash
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// the function of no key
+ FingerprintPerfectHash( void )
+     : FingerprintPerfectHash( std::vector< T >() ) { }
+
  using Key = T;  ///< the type of the keys
 
  /// the function of the distinct keys, with \f$ \gamma \f$ bits per key in
@@ -189,6 +195,21 @@ class FingerprintPerfectHash
  /// the number of levels
  [[nodiscard]] std::size_t levels( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "FingerprintPerfectHash";
+
+ /// the parameters of the layout, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( T ) , kBlock } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  static constexpr std::size_t kMaxLevels = 64;
@@ -206,7 +227,8 @@ class FingerprintPerfectHash
 
  std::uint64_t f_seed;
  std::size_t f_n = 0;
- std::vector< std::uint64_t > f_bits;  ///< the levels, one after another
+ /// the levels, one after another
+ std::vector< std::uint64_t , MappableAllocator< std::uint64_t > > f_bits;
  std::vector< std::uint32_t > f_rank;  ///< the 1s before each block
  std::vector< std::size_t > f_at;      ///< the first bit of each level
  std::vector< std::size_t > f_m;       ///< the bits of each level

@@ -268,6 +268,22 @@ std::size_t MinimalPerfectHash< T , H >::trials( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class T , class H >
+template< class A >
+inline void MinimalPerfectHash< T , H >::persist( A & a )
+{
+ a( f_seed , f_n , f_m , f_dense , f_sparse , f_w , f_P , f_free , f_trials );
+ if constexpr( ! std::is_empty_v< H > )  // a hash function with a state
+  a( f_h );
+ a.require(
+   ( f_w >= 0 ) && ( f_w <= 64 ) && ( f_m >= f_n ) &&
+     ( f_free.size() <= f_m ) &&
+     ( f_P.size() * 64 >= ( f_dense + f_sparse ) * std::size_t( f_w ) ) ,
+   "the pilots of a MinimalPerfectHash" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

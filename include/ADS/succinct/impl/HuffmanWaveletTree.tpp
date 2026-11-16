@@ -352,6 +352,31 @@ std::size_t HuffmanWaveletTree< RS >::sizeInBits( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class RS >
+template< class A >
+inline void HuffmanWaveletTree< RS >::persist( A & a )
+{
+ a( f_n , f_code , f_len , f_node , f_B );
+ a.require(
+   ( f_len.size() == f_code.size() ) &&
+     std::all_of( f_len.begin() , f_len.end() ,
+		  []( std::uint8_t l ) { return( l <= 64 ); } ) &&
+     std::all_of( f_node.begin() , f_node.end() ,
+		  [ & ]( const Node & v ) {
+		   // a child is a node, or a leaf -1 - c of a symbol c
+		   const auto in = [ & ]( std::int32_t c ) {
+		    return( c >= 0 ? std::size_t( c ) < f_node.size()
+				    : std::size_t( -1 - std::int64_t( c ) ) <
+					f_code.size() );
+		    };
+		   return( ( v.off <= f_B.size() ) && in( v.child[ 0 ] ) &&
+			    in( v.child[ 1 ] ) );
+		   } ) ,
+   "the nodes of a HuffmanWaveletTree" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

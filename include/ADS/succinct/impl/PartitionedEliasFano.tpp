@@ -258,6 +258,19 @@ inline std::size_t PartitionedEliasFano::sizeInBits( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class A >
+inline void PartitionedEliasFano::persist( A & a )
+{
+ a( f_n , f_u , f_codes , f_rec , f_wl , f_wo , f_wr , f_apart , f_eyt ,
+    f_rank );
+ a.require( ( f_wl >= 1 ) && ( f_wl <= 64 ) && ( f_wo >= 1 ) &&
+	      ( f_wo <= 64 ) && ( f_wr == f_wl + f_wo + 8 ) &&
+	      ( f_eyt.size() == f_rank.size() ) ,
+	    "the records of a PartitionedEliasFano" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

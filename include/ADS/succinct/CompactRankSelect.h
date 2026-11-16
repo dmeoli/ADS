@@ -86,6 +86,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/parallel/Executor.h"
 #include "ADS/succinct/BitVector.h"
 
@@ -95,6 +96,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <string_view>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -269,6 +271,23 @@ class CompactRankSelect
  /// the same as `end()`
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "CompactRankSelect";
+
+ /// the parameters of the layout of the directory, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return(
+    detail::persistMix( { kSuper , kBlock , kSample ,
+			  std::uint64_t( kTop ) } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  static constexpr std::size_t kSuper = 4096;   ///< the bits of a superblock
@@ -285,6 +304,7 @@ class CompactRankSelect
  /// in the 12 bits from 32 + 12 k of the 128 bits ( hi , lo )
  struct Entry
  {
+  using persist_unit = std::uint64_t;  ///< a block of two words in a file
   std::uint64_t lo = 0 ,  ///< the low 64 bits of the entry
     hi = 0;              ///< the high 64 bits of the entry
   };
@@ -346,9 +366,11 @@ class CompactRankSelect
  [[nodiscard]] bool consistent( void ) const;
 
  BitVector f_b;
- std::vector< Entry > f_e;               ///< for each superblock and one more
- std::vector< std::uint64_t > f_top;     ///< the 1s before each top region
- std::vector< std::uint32_t > f_s[ 2 ];  ///< superblocks of the samples
+ /// for each superblock and one more
+ std::vector< Entry , MappableAllocator< Entry > > f_e;
+ std::vector< std::uint64_t > f_top;  ///< the 1s before each top region
+ /// the superblocks of the samples
+ std::vector< std::uint32_t , MappableAllocator< std::uint32_t > > f_s[ 2 ];
  std::size_t f_ones = 0;
 
  };  // end( class CompactRankSelect )

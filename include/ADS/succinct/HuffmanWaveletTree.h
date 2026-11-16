@@ -75,6 +75,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/parallel/Executor.h"
 #include "ADS/succinct/BitVector.h"
 #include "ADS/succinct/CompactRankSelect.h"
@@ -84,6 +85,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -281,6 +283,21 @@ class HuffmanWaveletTree
  /// codes
  [[nodiscard]] std::size_t sizeInBits( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "HuffmanWaveletTree";
+
+ /// the directory of the bits, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistHash( RS::persistName ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  /// an internal node: the place of its bits in \f$ B \f$ and the 1s before
@@ -291,6 +308,12 @@ class HuffmanWaveletTree
   std::uint64_t off = 0 ,               ///< \f$ o_v \f$, the place of its bits
     ones = 0;                          ///< \f$ R_v \f$, the 1s before them
   std::int32_t child[ 2 ] = { 0 , 0 };  ///< its children by the bit
+
+  /// the members written to, or read from, the archive \f$ a \f$
+  template< class A >
+  void persist( A & a ) {
+   a( off , ones , child );
+   }
   };
 
  /// the rank and select of the bits \f$ b \f$, with select if asked for

@@ -293,6 +293,19 @@ std::size_t RibbonFilter< T , F , H >::trials( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class T , class F , class H >
+template< class A >
+inline void RibbonFilter< T , F , H >::persist( A & a )
+{
+ a( f_Z , f_m , f_seed , f_n , f_trials );
+ if constexpr( ! std::is_empty_v< H > )  // a hash function with a state
+  a( f_h );
+ a.require( f_Z.empty() || ( f_Z.size() == ( f_m / 64 + 1 ) * kR / 8 ) ,
+	    "the lines of a RibbonFilter" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

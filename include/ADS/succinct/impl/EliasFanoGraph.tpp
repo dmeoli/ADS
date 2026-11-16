@@ -86,6 +86,15 @@ inline std::size_t EliasFanoGraph::sizeInBits( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class A >
+inline void EliasFanoGraph::persist( A & a )
+{
+ a( f_n , f_edges , f_start );
+ a.require( f_start.size() == f_n + 1 , "the lists of an EliasFanoGraph" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

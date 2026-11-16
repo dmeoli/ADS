@@ -157,7 +157,7 @@ MoveRIndex::locate( std::string_view P ) const
  std::sort( R.begin() , R.end() );
 #if ADS_CONTRACTS >= 3
  ADS_AUDIT( std::all_of( R.begin() , R.end() , [ & ]( std::size_t x ) {
-  return( f_text.compare( x , P.size() , P ) == 0 );
+  return( f_text.empty() || ( f_text.compare( x , P.size() , P ) == 0 ) );
   } ) );
 #endif
  return( R );
@@ -167,6 +167,20 @@ inline std::size_t MoveRIndex::sizeInBits( void ) const
 {
  return( f_lf.sizeInBits() + f_tag.sizeInBits() + f_phi.sizeInBits() +
 	  f_end.size() + f_endPhi.size() + 64 * f_cnt.size() );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+template< class A >
+inline void MoveRIndex::persist( A & a )
+{
+ a( f_n , f_w , f_wi , f_lf , f_tag , f_cnt , f_phi , f_end , f_endPhi );
+ a.require( ( f_w >= 1 ) && ( f_w <= 64 ) && ( f_wi >= 1 ) && ( f_wi <= 64 ) ,
+	    "the sizes of a MoveRIndex" );
+#if ADS_CONTRACTS >= 3
+ if constexpr( A::loading )
+  f_text.clear();  // no audit of the text
+#endif
  }
 
 /*--------------------------------------------------------------------------*/

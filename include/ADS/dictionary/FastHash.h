@@ -197,6 +197,13 @@ struct FastHash< T >
 
  std::uint64_t seed = 0;
 
+ /// the seed written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a ) {
+  a( seed );
+  }
+
  [[nodiscard]] std::size_t operator()( T x ) const noexcept {
   if constexpr( std::is_pointer_v< T > )
    return( std::size_t( hashWord(
@@ -226,6 +233,13 @@ struct FastHash< std::string_view >
  using is_avalanching = void;  ///< the hash needs no further mixing
  using is_transparent = void;  ///< for the lookups by any string
  std::uint64_t seed = 0;       ///< the seed of `hashBytes()`
+
+ /// the seed written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a ) {
+  a( seed );
+  }
 
  /// `hashBytes()` of the characters of \f$ s \f$
  [[nodiscard]] std::size_t operator()( std::string_view s ) const noexcept {

@@ -67,11 +67,13 @@
 #include "ADS/Contract.h"
 #include "ADS/SimdInline.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/external/MappedFile.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -92,6 +94,9 @@ class BlockedBloomFilter
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// a filter of one block, empty
+ BlockedBloomFilter( void ) : BlockedBloomFilter( 1 ) { }
+
  /// the empty filter of about `bitsPerItem` bits for each of \f$ n \f$
  /// items, in at least one block, \f$ \lceil n \cdot
  /// \mathit{bitsPerItem} / 256 \rceil \f$ blocks
@@ -182,12 +187,28 @@ class BlockedBloomFilter
  /// \f]
  [[nodiscard]] double falsePositiveRate( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "BlockedBloomFilter";
+
+ /// the parameters of the layout, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( T ) } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  /// a block of 8 words, aligned to its 32 bytes
  struct alignas( 32 ) Block
  {
   std::uint32_t w[ 8 ];  ///< the words, 32 bits each
+  using persist_unit = std::uint32_t;  ///< eight words in a file
   };
 
  /// the hash of \f$ x \f$, mixed unless `H` avalanches
@@ -196,7 +217,7 @@ class BlockedBloomFilter
  /// the block of the hash \f$ h \f$
  [[nodiscard]] std::size_t block( std::uint64_t h ) const;
 
- std::vector< Block > f_B;  ///< the blocks
+ std::vector< Block , MappableAllocator< Block > > f_B;  ///< the blocks
  std::size_t f_n = 0;       ///< the insertions
  H f_h;                     ///< the hash of the items
 

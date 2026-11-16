@@ -226,6 +226,20 @@ std::size_t ADS_CPGM::bytes( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class K , std::size_t E >
+ requires std::is_arithmetic_v< K >
+template< class A >
+inline void CompressedPGMIndex< K , E >::persist( A & a )
+{
+ a( f_A , f_m , f_key , f_start , f_slope , f_code , f_ws , f_wd , f_dmin );
+ a.require( ( f_ws >= 0 ) && ( f_ws <= 64 ) && ( f_wd >= 0 ) &&
+	      ( f_wd <= 64 ) &&
+	      ( f_code.size() == f_m * std::size_t( f_ws + f_wd ) ) ,
+	    "the segments of a CompressedPGMIndex" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

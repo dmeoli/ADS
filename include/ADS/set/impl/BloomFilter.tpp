@@ -120,6 +120,20 @@ int BloomFilter< T , H >::hashes( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class T , class H >
+template< class A >
+inline void BloomFilter< T , H >::persist( A & a )
+{
+ a( f_B , f_m , f_k , f_n );
+ if constexpr( ! std::is_empty_v< H > )  // a hash function with a state
+  a( f_h );
+ a.require( ( f_m >= 1 ) && ( f_k >= 1 ) &&
+	      ( f_B.size() == ( f_m + 63 ) / 64 ) ,
+	    "the bits of a BloomFilter" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

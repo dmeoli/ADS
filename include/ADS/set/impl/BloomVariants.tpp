@@ -221,6 +221,33 @@ std::size_t PartitionedBloomFilter< T , H >::bits( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class T , class C , class H >
+template< class A >
+inline void SpectralBloomFilter< T , C , H >::persist( A & a )
+{
+ a( f_C , f_r );
+ if constexpr( ! std::is_empty_v< H > )  // a hash function with a state
+  a( f_h );
+ a.require( ( ! f_C.empty() ) && ( f_r >= 1 ) ,
+	    "the counters of a SpectralBloomFilter" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+template< class T , class H >
+template< class A >
+inline void PartitionedBloomFilter< T , H >::persist( A & a )
+{
+ a( f_B , f_w , f_r );
+ if constexpr( ! std::is_empty_v< H > )  // a hash function with a state
+  a( f_h );
+ a.require( ( f_w >= 1 ) && ( f_r >= 1 ) &&
+	      ( f_B.size() == f_w * std::size_t( f_r ) ) ,
+	    "the bits of a PartitionedBloomFilter" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

@@ -190,6 +190,20 @@ std::size_t FingerprintPerfectHash< T , H >::levels( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class T , class H >
+template< class A >
+inline void FingerprintPerfectHash< T , H >::persist( A & a )
+{
+ a( f_seed , f_n , f_bits , f_rank , f_at , f_m );
+ if constexpr( ! std::is_empty_v< H > )  // a hash function with a state
+  a( f_h );
+ a.require( ( f_at.size() == f_m.size() ) && ( f_m.size() <= kMaxLevels ) &&
+	      ( f_rank.size() * kBlock >= f_bits.size() * 64 ) ,
+	    "the levels of a FingerprintPerfectHash" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

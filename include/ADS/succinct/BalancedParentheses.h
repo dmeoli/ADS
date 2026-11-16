@@ -104,6 +104,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -273,6 +274,16 @@ class BalancedParentheses
 
  /// the bits of the range min-max tree
  [[nodiscard]] std::size_t treeBits( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "BalancedParentheses";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

@@ -11,6 +11,9 @@
 #   Input:  $(STDEXEC_ROOT)  = the directory of the sources of stdexec, whose #
 #                              include/ has the headers, empty if they are    #
 #                              where the compiler looks                       #
+#           $(cereal_ROOT)   = the directory of the sources of cereal, whose  #
+#                              include/ has the headers, empty if they are    #
+#                              where the compiler looks                       #
 #           $(Taskflow_ROOT) = the directory of the sources of Taskflow,      #
 #                              which has taskflow/, empty if it is where the  #
 #                              compiler looks                                 #
@@ -22,6 +25,7 @@
 #           $(libStdParINC), $(libStdParLIB), $(libStdParFOUND)               #
 #           $(libStdexecINC), $(libStdexecLIB), $(libStdexecFOUND)            #
 #           $(libTaskflowINC), $(libTaskflowLIB), $(libTaskflowFOUND)         #
+#           $(libCerealINC), $(libCerealLIB), $(libCerealFOUND)               #
 #                            = the -I$(include directories) and the macro of  #
 #                              the header, the libraries, and 1 if a program  #
 #                              that uses the runtime compiles and links with  #
@@ -34,6 +38,7 @@
 
 libStdexecBSCDIR = $(subst $\",,$(STDEXEC_ROOT))
 libTaskflowBSCDIR = $(subst $\",,$(Taskflow_ROOT))
+libCerealBSCDIR = $(subst $\",,$(cereal_ROOT))
 include $(ADSSDR)/extlib/makefile-libTBB
 
 # a program of the parallel algorithms of the standard library
@@ -49,6 +54,11 @@ libStdexecSRC = $(ADShash)include <stdexec/execution.hpp>\n$(ADShash)include \
 libTaskflowSRC = $(ADShash)include <taskflow/taskflow.hpp>\n$(ADShash)include \
 	<taskflow/algorithm/for_each.hpp>\nint main(){tf::Executor e(1);\
 	tf::Taskflow f;f.for_each_index(0,2,1,[](int){});e.run(f).wait();}\n
+
+# a program of cereal [see include/ADS/interop/cereal]
+libCerealSRC = $(ADShash)include <cereal/archives/binary.hpp>\n$(ADShash)include \
+	<sstream>\nint main(){std::stringstream s;cereal::BinaryOutputArchive \
+	a(s);a(1);}\n
 
 # the libraries with which the program $(1) links, given the flags $(2):
 # none, or oneTBB (which the headers of <execution> of libstdc++ may ask
@@ -79,5 +89,11 @@ libTaskflowINC = -DADS_WITH_TASKFLOW $(if $(libTaskflowBSCDIR),\
 libTaskflowLIB = $(eval libTaskflowLIB := $$(call libInteropLINK,\
 	$$(libTaskflowSRC),$$(libTaskflowINC)))$(libTaskflowLIB)
 libTaskflowFOUND = $(if $(filter none,$(libTaskflowLIB)),,1)
+
+libCerealINC = -DADS_WITH_CEREAL $(if $(libCerealBSCDIR),\
+	-isystem "$(libCerealBSCDIR)/include")
+libCerealLIB = $(eval libCerealLIB := $$(call libInteropLINK,\
+	$$(libCerealSRC),$$(libCerealINC)))$(libCerealLIB)
+libCerealFOUND = $(if $(filter none,$(libCerealLIB)),,1)
 
 ######################### End of makefile-libInterop ##########################

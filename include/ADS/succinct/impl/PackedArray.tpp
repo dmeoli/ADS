@@ -217,6 +217,25 @@ inline bool TritArray::clean( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< unsigned B , bool Saturate >
+template< class A >
+inline void PackedArray< B , Saturate >::persist( A & a )
+{
+ a( f_w , f_n , f_clamped );
+ a.require( clean() , "the words of a PackedArray" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+template< class A >
+inline void TritArray::persist( A & a )
+{
+ a( f_y , f_n );
+ a.require( f_y.size() == ( f_n + 4 ) / 5 , "the bytes of a TritArray" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

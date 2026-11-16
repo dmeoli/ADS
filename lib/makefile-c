@@ -282,9 +282,11 @@ endif
 ADS_WITH_STDPAR ?= auto
 ADS_WITH_STDEXEC ?= auto
 ADS_WITH_TASKFLOW ?= auto
+ADS_WITH_CEREAL ?= auto
 ADSINTEROPINC :=
 ADSINTEROPLIB :=
-ifneq ($(ADS_WITH_STDPAR)$(ADS_WITH_STDEXEC)$(ADS_WITH_TASKFLOW),000)
+ADSCEREALINC :=
+ifneq ($(ADS_WITH_STDPAR)$(ADS_WITH_STDEXEC)$(ADS_WITH_TASKFLOW)$(ADS_WITH_CEREAL),0000)
     include $(ADSSDR)/extlib/makefile-libInterop
 endif
 ifneq ($(ADS_WITH_STDPAR),0)
@@ -310,6 +312,15 @@ endif
 ifeq ($(ADSTASKFLOWON),1)
     ADSINTEROPINC += $(libTaskflowINC)
     ADSINTEROPLIB += $(filter-out none,$(libTaskflowLIB))
+endif
+# the archives of cereal, in ADSCEREALINC alone [see
+# include/ADS/interop/cereal]
+ifneq ($(ADS_WITH_CEREAL),0)
+    ADSCEREALON := $(strip $(if $(filter auto,$(ADS_WITH_CEREAL)),\
+	$(libCerealFOUND),$(filter 1,$(ADS_WITH_CEREAL))))
+endif
+ifeq ($(ADSCEREALON),1)
+    ADSCEREALINC += $(libCerealINC)
 endif
 
 # include the ADS makefile requiring all external modules in input

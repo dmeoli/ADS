@@ -211,6 +211,16 @@ class MoveRIndex
  /// and the samples
  [[nodiscard]] std::size_t sizeInBits( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "MoveRIndex";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  /// the backward search of \f$ P \f$: the rows \f$ [ s , e ] \f$ with their

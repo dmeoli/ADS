@@ -662,6 +662,59 @@ inline bool BasicRankSelect< Lazy >::consistent( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< bool Lazy >
+inline bool BasicRankSelect< Lazy >::fits( void ) const
+{
+ const std::size_t n = f_b.size() , nb = n / kBlock + 1;
+ return( ( f_dir.size() == nb + 1 ) && ( f_ones <= n ) &&
+	  ( f_big == ( ( ( nb * kBlock ) >> kTop ) > 0 ) ) &&
+	  ( f_top.size() == ( f_big ? ( n >> kTop ) + 2 : 0 ) ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+template< bool Lazy >
+inline bool BasicRankSelect< Lazy >::fits( bool b ) const
+{
+ Inventory S;
+ std::size_t groups;
+ shape( b , S , groups );
+ const Inventory & I = f_inv[ b ];
+ if( groups == 0 )
+  return( I.pos.empty() && I.off.empty() );
+ return( ( I.l == S.l ) && ( I.g == S.g ) && ( I.s == S.s ) &&
+	  ( I.pos.size() == groups + 1 ) &&
+	  ( I.off.size() == groups << I.s ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+template< bool Lazy >
+template< class A >
+inline void BasicRankSelect< Lazy >::persist( A & a )
+{
+ a( f_b , f_dir , f_top , f_big , f_has , f_ones );
+ a.require( fits() , "the directory of a RankSelect" );
+ for( const bool v : { false , true } ) {
+  bool built = f_has[ v ];  // the inventories built, of a Lazy one
+  if constexpr( Lazy ) {
+   if constexpr( ! A::loading )
+    built = f_once.ready[ v ].load( std::memory_order_acquire );
+   a( built );
+   }
+  if( ! built )
+   continue;
+  a( f_inv[ v ] );
+  a.require( f_has[ v ] && fits( v ) , "an inventory of a RankSelect" );
+  if constexpr( Lazy && A::loading ) {
+   std::call_once( f_once.flag[ v ] , []() { } );
+   f_once.ready[ v ].store( true , std::memory_order_release );
+   }
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

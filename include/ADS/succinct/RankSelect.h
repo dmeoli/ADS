@@ -138,6 +138,7 @@
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
 #include "ADS/combinatorial/Bitwise.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/parallel/Executor.h"
 #include "ADS/succinct/BitVector.h"
 
@@ -149,6 +150,7 @@
 #include <memory>
 #include <mutex>
 #include <span>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -358,6 +360,23 @@ class BasicRankSelect : public RankSelectOptions
  /// the inventories of the selects asked for, built or not
  [[nodiscard]] std::size_t directoryBits( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName =
+   Lazy ? "LazyRankSelect" : "RankSelect";
+
+ /// the parameters of the layout of the directory, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix(
+    { kBlock , std::uint64_t( kRel ) , std::uint64_t( kTop ) , kGroup } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the type of an item
@@ -433,9 +452,16 @@ class BasicRankSelect : public RankSelectOptions
   int l = 0 ,  ///< \f$ l \f$, a group has \f$ 2^l \f$ bits \f$ b \f$
     g = 0 ,    ///< \f$ g \f$, an offset every \f$ 2^g \f$ of them
     s = 0;    ///< \f$ s = l - g \f$
-  std::vector< std::uint64_t > pos;  ///< the place where each group starts
+  /// the place where each group starts
+  std::vector< std::uint64_t , MappableAllocator< std::uint64_t > > pos;
   /// the offsets of the bits \f$ b \f$ of each group from its place
   std::vector< std::uint16_t , detail::LineAllocator< std::uint16_t > > off;
+
+  /// the members written to, or read from, the archive \f$ a \f$
+  template< class A >
+  void persist( A & a ) {
+   a( l , g , s , pos , off );
+   }
   };
 
  /// the bits b before the block t
@@ -493,6 +519,11 @@ class BasicRankSelect : public RankSelectOptions
 
  /// the directory agrees with a scan of the bits
  [[nodiscard]] bool consistent( void ) const;
+
+ /// the sizes of the directory and of the inventory of the bits b agree
+ /// with those of the bits, in \f$ O( 1 ) \f$ time
+ [[nodiscard]] bool fits( void ) const;
+ [[nodiscard]] bool fits( bool b ) const;
 
  BitVector f_b;
  /// for each block and one more, the 1s before it since its top block in

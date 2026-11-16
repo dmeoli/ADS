@@ -141,6 +141,18 @@ std::size_t HuffmanFMIndex< RS >::sizeInBits( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class RS >
+template< class A >
+inline void HuffmanFMIndex< RS >::persist( A & a )
+{
+ a( f_n , f_mu , f_w , f_L , f_C , f_mark , f_place , f_row );
+ a.require( ( f_mu >= 1 ) && ( f_w >= 1 ) && ( f_w <= 64 ) &&
+	      ( f_L.size() == f_n + 1 ) ,
+	    "the sizes of a HuffmanFMIndex" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

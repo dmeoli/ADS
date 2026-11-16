@@ -84,6 +84,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/memory/Prefetch.h"
 #include "ADS/succinct/BitVector.h"
 
@@ -93,6 +94,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <string_view>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -227,6 +229,21 @@ class PartitionedEliasFano
 
  /// the bits of the codes, of the records and of the records apart
  [[nodiscard]] std::size_t sizeInBits( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "PartitionedEliasFano";
+
+ /// the items of a block, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { kB , kApart } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 

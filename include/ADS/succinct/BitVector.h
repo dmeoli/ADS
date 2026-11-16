@@ -81,6 +81,7 @@
 #include "ADS/Contract.h"
 #include "ADS/SimdInline.h"
 #include "ADS/combinatorial/Bitwise.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/memory/HugePageAllocator.h"
 
 #include <algorithm>
@@ -95,6 +96,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -114,20 +116,41 @@ namespace detail
 
 /// the allocator of the words of a BitVector and of the directories built
 /// on them: a block of 2 MB or more on huge pages [see
-/// HugePageAllocator.h], a smaller one aligned to a line of the cache
+/// HugePageAllocator.h], a smaller one aligned to a line of the cache; or
+/// the bytes of a mapped file, which a vector then views [see
+/// `MappedFile.h` and `restoreMapped()`]
 template< class T >
 class LineAllocator
 {
  public:
  /// the type of an item
  using value_type = T;
+ /// a vector on it may be a view of a mapped file
+ using adopts_mapping = void;
+ /// the mapping goes with the memory
+ using propagate_on_container_move_assignment = std::true_type;
+ /// the mapping goes with the memory
+ using propagate_on_container_swap = std::true_type;
+ /// two allocators of different mappings differ
+ using is_always_equal = std::false_type;
  static constexpr std::size_t LINE = 64;  ///< the bytes of a line
 
  LineAllocator( void ) = default;
+ /// an allocator that takes the bytes that \f$ m \f$ offers
+ explicit LineAllocator( MappedFile m ) noexcept : f_map( std::move( m ) ) { }
  template< class U >
- LineAllocator( const LineAllocator< U > & ) noexcept { }
+ LineAllocator( const LineAllocator< U > & o ) noexcept : f_map( o.f_map ) { }
+
+ /// the allocator of a copy, of new memory only
+ [[nodiscard]] LineAllocator
+ select_on_container_copy_construction( void ) const {
+  return( LineAllocator() );
+  }
 
  [[nodiscard]] T * allocate( std::size_t n ) {
+  if( f_map )
+   if( void * p = f_map.take( n * sizeof( T ) ) )
+    return( static_cast< T * >( p ) );
   if( n * sizeof( T ) >= HugePageAllocator< T >::PAGE )
    return( HugePageAllocator< T >().allocate( n ) );
   return( static_cast< T * >(
@@ -146,16 +169,25 @@ class LineAllocator
   }
 
  void deallocate( T * p , std::size_t n ) noexcept {
+  if( f_map && f_map.holds( p ) )
+   return;
   if( n * sizeof( T ) >= HugePageAllocator< T >::PAGE )
    HugePageAllocator< T >().deallocate( p , n );
   else
    ::operator delete( p , std::align_val_t( LINE ) );
   }
 
+ /// whether the two hold the same mapping, or none
  template< class U >
- bool operator==( const LineAllocator< U > & ) const noexcept {
-  return( true );
+ bool operator==( const LineAllocator< U > & o ) const noexcept {
+  return( f_map == o.f_map );
   }
+
+ private:
+ template< class U >
+ friend class LineAllocator;
+
+ MappedFile f_map;  ///< the mapping, if any
  };
 
 /// runs \f$ r = 0 , \ldots , R - 1 \f$ of the places
@@ -542,6 +574,17 @@ class BitVector
 
  /// whether the two vectors have the same bits
  friend bool operator==( const BitVector & a , const BitVector & b ) = default;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "BitVector";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]: the size and the words, a view of a mapped file if
+ /// \f$ a \f$ reads one
+ template< class A >
+ void persist( A & a );
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 

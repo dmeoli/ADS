@@ -79,6 +79,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/memory/HugePageAllocator.h"
 #include "ADS/search/PGMIndex.h"
 #include "ADS/succinct/BitVector.h"
@@ -86,6 +87,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -198,6 +200,22 @@ class CompressedPGMIndex
 
  /// the bytes of the index, the items aside
  [[nodiscard]] std::size_t bytes( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "CompressedPGMIndex";
+
+ /// the type of the keys and the error, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( K ) , std::is_signed_v< K > ,
+				 std::is_floating_point_v< K > , E } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

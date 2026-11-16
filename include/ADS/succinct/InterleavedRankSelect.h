@@ -72,6 +72,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/succinct/BitVector.h"
 
 #include <algorithm>
@@ -79,6 +80,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <string_view>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -188,6 +190,21 @@ class InterleavedRankSelect
  /// samples, beyond the \f$ m \f$ bits
  [[nodiscard]] std::size_t directoryBits( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "InterleavedRankSelect";
+
+ /// the parameters of the layout of the lines, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { kData , kLines , kSample } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  static constexpr std::size_t kData = 496;     ///< the bits of B in a line
@@ -214,9 +231,12 @@ class InterleavedRankSelect
 
  std::size_t f_n = 0 , f_ones = 0;
  std::vector< Word , detail::LineAllocator< Word > > f_L;  ///< the lines
- std::vector< std::uint64_t > f_S;        ///< the 1s before each superblock
- std::vector< std::uint32_t > f_sl[ 2 ];  ///< the lines of the samples
- std::vector< std::uint64_t > f_sc[ 2 ];  ///< the bits b before them
+ /// the 1s before each superblock
+ std::vector< std::uint64_t , MappableAllocator< std::uint64_t > > f_S;
+ /// the lines of the samples
+ std::vector< std::uint32_t , MappableAllocator< std::uint32_t > > f_sl[ 2 ];
+ /// the bits b before them
+ std::vector< std::uint64_t , MappableAllocator< std::uint64_t > > f_sc[ 2 ];
 
  };  // end( class InterleavedRankSelect )
 

@@ -73,6 +73,7 @@
 #include "ADS/succinct/RankSelect.h"
 
 #include <cstddef>
+#include <string_view>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -164,6 +165,16 @@ class LoudsTree
 
  /// \f$ B \f$, the code
  [[nodiscard]] const BitVector & bits( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "LoudsTree";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

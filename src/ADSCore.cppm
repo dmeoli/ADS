@@ -112,6 +112,20 @@ using ADS::ZobristTable;
 using ADS::fibonacciPlace;
 using ADS::splitmix64;
 
+// external/MappedFile.h
+using ADS::MappableAllocator;
+using ADS::MappedFile;
+using ADS::PersistError;
+
+// external/Persistence.h
+using ADS::ByteOrder;
+using ADS::PersistReader;
+using ADS::PersistWriter;
+using ADS::Persistent;
+using ADS::restore;
+using ADS::restoreMapped;
+using ADS::store;
+
 // external/RecordFile.h
 using ADS::RecordFile;
 using ADS::RecordWriter;

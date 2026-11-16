@@ -40,6 +40,8 @@
 #include "ADS/Wide.h"
 #include "ADS/compression/PackedBits.h"
 #include "ADS/dictionary/RandomHashing.h"
+#include "ADS/external/MappedFile.h"
+#include "ADS/external/Persistence.h"
 #include "ADS/external/RecordFile.h"
 #include "ADS/memory/AllocatorAware.h"
 #include "ADS/memory/HugePageAllocator.h"

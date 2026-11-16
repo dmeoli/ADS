@@ -31,6 +31,7 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.cmakeFeature "ADS_WITH_KOKKOS" "OFF")
     (lib.cmakeFeature "ADS_WITH_BOOST_MPI" "OFF")
     (lib.cmakeFeature "ADS_WITH_HWLOC" "OFF")
+    (lib.cmakeFeature "ADS_WITH_CEREAL" "OFF")
   ];
 
   doCheck = true;

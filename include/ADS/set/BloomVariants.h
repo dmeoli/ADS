@@ -94,6 +94,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/dictionary/RandomHashing.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/set/BloomFilter.h"
 
 #include <algorithm>
@@ -102,6 +103,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <string_view>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -208,6 +210,9 @@ class SpectralBloomFilter
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// a filter of 64 counters and one hash, empty
+ SpectralBloomFilter( void ) : SpectralBloomFilter( 64 , 1 ) { }
+
  /// the empty filter of \f$ m \f$ counters and \f$ r \f$ hashes
  /// \pre \f$ m \ge 1 \f$ and \f$ r \ge 1 \f$
  SpectralBloomFilter( std::size_t m , int r , H h = H() );
@@ -269,6 +274,21 @@ class SpectralBloomFilter
  /// the hashes \f$ r \f$
  [[nodiscard]] int hashes( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "SpectralBloomFilter";
+
+ /// the parameters of the layout, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( T ) , sizeof( C ) } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  /// the places of the \f$ r \f$ counters of \f$ x \f$
@@ -292,6 +312,9 @@ class PartitionedBloomFilter
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// a filter of 64 bits and one part, empty
+ PartitionedBloomFilter( void ) : PartitionedBloomFilter( 64 , 1 ) { }
+
  /// the empty filter of about \f$ m \f$ bits in \f$ r \f$ parts
  /// \pre \f$ r \ge 1 \f$ and \f$ m \ge r \f$
  PartitionedBloomFilter( std::size_t m , int r , H h = H() );
@@ -319,6 +342,21 @@ class PartitionedBloomFilter
 
  /// the bits, \f$ r \f$ times those of a part
  [[nodiscard]] std::size_t bits( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "PartitionedBloomFilter";
+
+ /// the parameters of the layout, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( T ) } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

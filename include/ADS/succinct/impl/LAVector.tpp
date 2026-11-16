@@ -356,6 +356,18 @@ inline std::vector< std::uint64_t > LAVector::decode( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class A >
+inline void LAVector::persist( A & a )
+{
+ a( f_n , f_c , f_C , f_seg , f_p , f_J , f_t , f_V , f_l , f_x0 , f_last );
+ a.require( ( f_t >= 0 ) && ( f_t < 64 ) && ( f_l >= 0 ) && ( f_l <= 64 ) ,
+	    "the sizes of a LAVector" );
+ if constexpr( A::loading )
+  f_first.clear();
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

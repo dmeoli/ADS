@@ -2146,3 +2146,18 @@ ods_trees  ods-ex9.10.red-black-join           ex. 9.10 and 9.11, join
 ods_trees  ods-ex9.12.avl-rebalancing          one rebalancing per insertion
 ods_trees  ods-ex9.13.avl                      AVLTree
 ods_trees  ods-ex14.1.btree-one-pass           ex. 14.1 and 14.2 on BTree
+
+# the persistence of the static structures, beyond the book [see
+# include/ADS/external/Persistence.h]
+engineered_persistence  persistence-format  il formato, i rifiuti e i messaggi
+engineered_persistence  persistence-byte-order  il carico nell'altro ordine dei byte
+engineered_persistence  persistence-mapped  i file mappati, viste senza copia
+engineered_persistence  persistence-succinct  bit, rank e select, Elias-Fano, LA-vector
+engineered_persistence  persistence-wavelet  wavelet matrix e wavelet tree di Huffman
+engineered_persistence  persistence-trees  LOUDS, parentesi bilanciate, alberi di Jacobson
+engineered_persistence  persistence-text-indexes  FM-index e r-index
+engineered_persistence  persistence-learned  PGM-index, anche compresso
+engineered_persistence  persistence-succinct-graphs  k2-tree, BV e Elias-Fano, move structure
+engineered_persistence  persistence-filters  Bloom, cuckoo, ribbon, binary fuse, prefix, Grafite
+engineered_persistence  persistence-perfect-hash  PTHash, RecSplit, BBHash, FKS, CHM
+engineered_persistence  persistence-cereal  gli archivi di cereal e il bit_vector di sdsl

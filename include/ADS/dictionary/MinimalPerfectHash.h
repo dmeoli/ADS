@@ -95,6 +95,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/external/MappedFile.h"
 
 #include <algorithm>
 #include <bit>
@@ -103,6 +104,7 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -124,6 +126,9 @@ class MinimalPerfectHash
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// the function of no key
+ MinimalPerfectHash( void ) : MinimalPerfectHash( std::vector< T >() ) { }
+
  using Key = T;  ///< the type of the keys
 
  /// the function of the distinct keys, with \f$ \lambda \f$ keys per bucket
@@ -190,6 +195,21 @@ class MinimalPerfectHash
  /// the seeds drawn by the build
  [[nodiscard]] std::size_t trials( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "MinimalPerfectHash";
+
+ /// the parameters of the layout, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( T ) } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  static constexpr std::size_t kMaxTrials = 100;
@@ -217,7 +237,8 @@ class MinimalPerfectHash
  std::size_t f_dense = 0;              ///< the buckets of 60 % of the keys
  std::size_t f_sparse = 0;             ///< the other buckets
  int f_w = 0;                          ///< the bits of a pilot
- std::vector< std::uint64_t > f_P;     ///< the pilots, `f_w` bits each
+ /// the pilots, `f_w` bits each
+ std::vector< std::uint64_t , MappableAllocator< std::uint64_t > > f_P;
  std::vector< std::uint32_t > f_free;  ///< the place of \f$ p \ge n \f$
  std::size_t f_trials = 0;
  H f_h;

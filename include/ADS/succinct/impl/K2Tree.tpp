@@ -165,6 +165,15 @@ inline std::size_t K2Tree::sizeInBits( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class A >
+inline void K2Tree::persist( A & a )
+{
+ a( f_n , f_k , f_side , f_m , f_t , f_l );
+ a.require( ( f_k >= 2 ) && ( f_side >= 1 ) , "the sizes of a K2Tree" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

@@ -5,14 +5,16 @@
 #    include/ADS/interop/parallel and include/ADS/distributed/BoostMPI.h]:    #
 #    for each name in ADS_INTEROP_WANT, among StdPar (the parallel            #
 #    algorithms of the standard library, on oneTBB with libstdc++), stdexec,  #
-#    Taskflow, Kokkos and BoostMPI, the target ADS::<name>, with the macro    #
+#    Taskflow, Kokkos, BoostMPI and cereal, the target ADS::<name>, with the  #
+#    macro                                                                    #
 #    ADS_WITH_<NAME> of its header, the headers and the libraries of the      #
 #    runtime and ADS::ADS, and ADS_<name>_FOUND, true when the runtime is     #
 #    found and, for the headers alone, a program that uses it compiles and    #
 #    links. ADS::ADS itself never carries them, so that a program links a     #
 #    runtime only by asking for its target. The hints are                     #
-#    STDEXEC_INCLUDE_DIR, Taskflow_INCLUDE_DIR, Kokkos_DIR and Boost_DIR (or  #
-#    CMAKE_PREFIX_PATH). CMakeLists.txt and ADSConfig.cmake include it.       #
+#    STDEXEC_INCLUDE_DIR, Taskflow_INCLUDE_DIR, Kokkos_DIR, Boost_DIR and     #
+#    cereal_INCLUDE_DIR (or CMAKE_PREFIX_PATH). CMakeLists.txt and            #
+#    ADSConfig.cmake include it.                                              #
 # --------------------------------------------------------------------------- #
 
 include(CheckCXXSourceCompiles)
@@ -156,6 +158,27 @@ if ("BoostMPI" IN_LIST ADS_INTEROP_WANT)
             ads_interop_target(BoostMPI ADS_WITH_BOOST_MPI ""
                     "Boost::mpi;Boost::serialization;MPI::MPI_CXX")
         endif ()
+    endif ()
+endif ()
+
+# the archives of cereal, by its headers [see include/ADS/interop/cereal]
+if ("cereal" IN_LIST ADS_INTEROP_WANT)
+    set(ADS_cereal_FOUND FALSE)
+    find_path(cereal_INCLUDE_DIR cereal/cereal.hpp PATH_SUFFIXES include)
+    if (cereal_INCLUDE_DIR)
+        ads_interop_try(cereal ADS_WITH_CEREAL "
+            #include <cereal/archives/binary.hpp>
+            #include <cereal/types/vector.hpp>
+            #include <sstream>
+            #include <vector>
+            int main( void ) {
+             std::stringstream s;
+             std::vector< int > v{ 1 , 2 };
+             { cereal::BinaryOutputArchive a( s ); a( v ); }
+             cereal::BinaryInputArchive a( s );
+             a( v );
+             return( v[ 1 ] - 2 );
+             }" "${cereal_INCLUDE_DIR}" "")
     endif ()
 endif ()
 

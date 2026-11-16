@@ -95,6 +95,7 @@
 #include <cstdint>
 #include <memory>
 #include <span>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -332,6 +333,16 @@ class WaveletMatrix
 
  /// the bits of the levels and of their directories
  [[nodiscard]] std::size_t sizeInBits( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "WaveletMatrix";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 

@@ -358,6 +358,33 @@ auto OrderedMinimalPerfectHash< K >::labelByPeeling(
 
 /*--------------------------------------------------------------------------*/
 
+template< class A >
+inline void PerfectHashTable::persist( A & a )
+{
+ a( f_h , f_B , f_T , f_n , f_trials );
+ a.require( std::all_of( f_B.begin() , f_B.end() ,
+			 [ & ]( const Bucket & b ) {
+			  return( b.offset + b.size <= f_T.size() );
+			  } ) ,
+	    "the tables of a PerfectHashTable" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+template< class K >
+ requires( std::integral< K > ||
+	   std::convertible_to< const K & , std::string_view > )
+template< class A >
+inline void OrderedMinimalPerfectHash< K >::persist( A & a )
+{
+ a( f_r , f_n , f_m , f_block , f_trials , f_seed , f_h , f_g );
+ a.require( ( f_r >= 2 ) && ( f_h.size() == std::size_t( f_r ) ) &&
+	      ( f_g.size() == f_m ) ,
+	    "the graph of an OrderedMinimalPerfectHash" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

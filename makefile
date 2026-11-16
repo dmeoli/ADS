@@ -151,6 +151,9 @@ CXX23 = $(shell $(CXX) -std=c++23 -x c++ -fsyntax-only /dev/null \
         2>/dev/null && echo -std=c++23)
 $(BUILD)/interop_examples$(ADSEXE): CXXFLAGS += $(CXX23)
 
+# the archives of cereal under the persistence, where they are found
+$(BUILD)/engineered_persistence$(ADSEXE): INC += $(ADSCEREALINC)
+
 # the configurations of the layouts, not in tests.txt [see ADS/Abi.h and
 # test/abi_units.cpp]: one program from two units of test/abi_unit.cpp, the
 # first without the vector matching and the compare-and-swap of 16 bytes,
@@ -283,7 +286,8 @@ backends:
 	@echo "ADS: MPI $(if $(filter 1,$(ADSMPION)),ON,OFF)"
 	@echo "ADS: StdPar $(if $(filter 1,$(ADSSTDPARON)),ON,OFF)," \
 	      "stdexec $(if $(filter 1,$(ADSSTDEXECON)),ON,OFF)," \
-	      "Taskflow $(if $(filter 1,$(ADSTASKFLOWON)),ON,OFF)"
+	      "Taskflow $(if $(filter 1,$(ADSTASKFLOWON)),ON,OFF)," \
+	      "cereal $(if $(filter 1,$(ADSCEREALON)),ON,OFF)"
 
 # bench target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

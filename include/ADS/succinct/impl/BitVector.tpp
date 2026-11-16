@@ -293,6 +293,15 @@ inline bool BitVector::clean( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class A >
+inline void BitVector::persist( A & a )
+{
+ a( f_n , f_w );
+ a.require( clean() , "the words of a BitVector" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

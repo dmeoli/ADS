@@ -185,6 +185,22 @@ BasicEliasFano< Lazy >::decode( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< bool Lazy >
+template< class A >
+inline void BasicEliasFano< Lazy >::persist( A & a )
+{
+ a( f_n , f_u , f_l , f_low , f_high );
+ a.require(
+   ( f_l >= 0 ) && ( f_l <= 64 ) &&
+     ( f_low.size() == f_n * std::size_t( f_l ) ) &&
+     ( f_high.ones() == f_n ) &&
+     ( f_high.size() ==
+       ( f_n == 0 ? 0 : f_n + std::size_t( bucket( f_u - 1 ) ) + 1 ) ) ,
+   "the sizes of an EliasFano" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

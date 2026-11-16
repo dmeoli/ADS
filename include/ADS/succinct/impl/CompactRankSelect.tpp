@@ -312,6 +312,20 @@ inline bool CompactRankSelect::consistent( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class A >
+inline void CompactRankSelect::persist( A & a )
+{
+ a( f_b , f_e , f_top , f_s , f_ones );
+ const std::size_t n = f_b.size() , ns = n / kSuper + 1;
+ a.require( ( f_e.size() == ns + 1 ) &&
+	      ( f_top.size() == ( ( ( ns + 1 ) * kSuper ) >> kTop ) + 1 ) &&
+	      ( f_ones <= n ) && ( f_s[ 0 ].size() <= n / kSample + 2 ) &&
+	      ( f_s[ 1 ].size() <= n / kSample + 2 ) ,
+	    "the directory of a CompactRankSelect" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

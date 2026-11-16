@@ -149,6 +149,17 @@ inline std::size_t MoveStructure::sizeInBits( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class A >
+inline void MoveStructure::persist( A & a )
+{
+ a( f_n , f_m , f_wp , f_wd , f_wt , f_P , f_Q , f_D , f_tag );
+ a.require( ( f_wp >= 1 ) && ( f_wp <= 64 ) && ( f_wd >= 1 ) &&
+	      ( f_wd <= 64 ) && ( f_wt >= 1 ) && ( f_wt <= 64 ) ,
+	    "the sizes of a MoveStructure" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

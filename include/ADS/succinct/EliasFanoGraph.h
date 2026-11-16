@@ -65,6 +65,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -137,6 +138,16 @@ class EliasFanoGraph
 
  /// the bits of the two sequences, with their directories
  [[nodiscard]] std::size_t sizeInBits( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "EliasFanoGraph";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

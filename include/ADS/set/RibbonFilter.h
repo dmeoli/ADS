@@ -145,6 +145,7 @@
 #include "ADS/Portable.h"
 #include "ADS/SimdInline.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/memory/Prefetch.h"
 
 #include <algorithm>
@@ -153,6 +154,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -187,6 +189,9 @@ class RibbonFilter
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// the filter of no key
+ RibbonFilter( void ) : RibbonFilter( std::vector< T >() ) { }
+
  /// the filter of the keys, which may repeat
  ///
  /// In pseudocode (Dillinger and Walzer), \f$ C[ i ] \f$ and \f$ R[ i ] \f$
@@ -257,6 +262,21 @@ class RibbonFilter
  /// the seeds drawn by the build
  [[nodiscard]] std::size_t trials( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "RibbonFilter";
+
+ /// the parameters of the layout, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( T ) , sizeof( F ) } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  static constexpr int kR = 8 * sizeof( F );       ///< the bits of a result
@@ -267,6 +287,7 @@ class RibbonFilter
  struct alignas( 64 ) Line
  {
   std::uint64_t w[ 8 ];  ///< the words of the 8 columns
+  using persist_unit = std::uint64_t;  ///< eight words in a file
   };
 
  /// the hash of \f$ x \f$ before the seed, mixed unless `H` avalanches
@@ -299,7 +320,8 @@ class RibbonFilter
  void solve( const std::vector< std::uint64_t > & C ,
 	     const std::vector< F > & R );
 
- std::vector< Line > f_Z;   ///< kR / 8 lines per block of 64 rows
+ /// kR / 8 lines per block of 64 rows
+ std::vector< Line , MappableAllocator< Line > > f_Z;
  std::size_t f_m = 0;       ///< the rows
  std::uint64_t f_seed;      ///< the seed of the last trial
  std::size_t f_n = 0;       ///< the keys, with their repetitions

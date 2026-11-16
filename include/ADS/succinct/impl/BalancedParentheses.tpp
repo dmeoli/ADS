@@ -287,6 +287,17 @@ inline bool BalancedParentheses::balanced( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class A >
+inline void BalancedParentheses::persist( A & a )
+{
+ a( f_b , f_nleaf , f_groups , f_lexc , f_lmin , f_exc , f_min );
+ a.require( ( f_lexc.size() == f_lmin.size() ) &&
+	      ( f_exc.size() == f_min.size() ) ,
+	    "the tree of the excesses of a BalancedParentheses" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

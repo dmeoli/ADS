@@ -218,6 +218,20 @@ std::size_t CuckooFilter< T , F , H >::bits( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class T , class F , class H >
+template< class A >
+inline void CuckooFilter< T , F , H >::persist( A & a )
+{
+ a( f_T , f_mask , f_n , f_vb , f_vt , f_rng );
+ if constexpr( ! std::is_empty_v< H > )  // a hash function with a state
+  a( f_h );
+ a.require( ( f_T.size() == f_mask + 1 ) &&
+	      std::has_single_bit( f_T.size() ) && ( f_vb < f_T.size() ) ,
+	    "the buckets of a CuckooFilter" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

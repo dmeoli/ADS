@@ -101,7 +101,7 @@ endif ()
 foreach (program engineered_parallel engineered_speculative interop_parallel
                  interop_examples)
     foreach (r IN LISTS ADS_INTEROP_BUILT)
-        if (NOT r STREQUAL "BoostMPI")
+        if (NOT r STREQUAL "BoostMPI" AND NOT r STREQUAL "cereal")
             target_link_libraries(${program} PRIVATE ADS::${r})
         endif ()
     endforeach ()
@@ -130,6 +130,12 @@ if (ADS_USE_MPI)
                              ${MPIEXEC_POSTFLAGS} ${t})
         endforeach ()
     endforeach ()
+endif ()
+
+# the archives of cereal under the persistence, where they are found [see
+# engineered_persistence.cpp]
+if ("cereal" IN_LIST ADS_INTEROP_BUILT)
+    target_link_libraries(engineered_persistence PRIVATE ADS::cereal)
 endif ()
 
 # the processes of MPI in a program of Boost.MPI, not in tests.txt: on 1 to

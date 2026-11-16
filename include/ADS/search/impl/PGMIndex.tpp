@@ -451,6 +451,16 @@ std::size_t ADS_PGM::bytes( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class K , std::size_t E , std::size_t R >
+ requires std::is_arithmetic_v< K >
+template< class A >
+inline void PGMIndex< K , E , R >::persist( A & a )
+{
+ a( f_A , f_L );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

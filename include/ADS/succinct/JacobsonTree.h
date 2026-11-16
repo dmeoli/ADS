@@ -66,6 +66,7 @@
 #include "ADS/succinct/RankSelect.h"
 
 #include <cstddef>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -167,6 +168,16 @@ class JacobsonTree
 
  /// \f$ B \f$, the code by levels
  [[nodiscard]] const BitVector & bits( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "JacobsonTree";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

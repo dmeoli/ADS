@@ -207,6 +207,18 @@ double BlockedBloomFilter< T , H >::falsePositiveRate( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class T , class H >
+template< class A >
+inline void BlockedBloomFilter< T , H >::persist( A & a )
+{
+ a( f_B , f_n );
+ if constexpr( ! std::is_empty_v< H > )  // a hash function with a state
+  a( f_h );
+ a.require( ! f_B.empty() , "the blocks of a BlockedBloomFilter" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

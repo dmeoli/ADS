@@ -167,6 +167,7 @@
 #include "ADS/Portable.h"
 #include "ADS/SimdInline.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/set/BlockedBloomFilter.h"
 #include "ADS/succinct/BitVector.h"
 
@@ -176,6 +177,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <string_view>
 #include <vector>
 
 /// a function inlined even where the compiler would not
@@ -207,6 +209,9 @@ class PrefixFilter
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// a filter for one key, empty
+ PrefixFilter( void ) : PrefixFilter( 1 ) { }
+
  /// the empty filter for \f$ n \f$ keys, its bins at the load 0.95 when
  /// they are in, at least one bin
  /// \pre \f$ n < 2^{32} \f$
@@ -299,6 +304,21 @@ class PrefixFilter
  /// analysis of `PrefixFilter.h` over the loads \f$ j \f$ of a bin
  [[nodiscard]] double falsePositiveRate( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "PrefixFilter";
+
+ /// the parameters of the layout, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( T ) } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  /// a pocket dictionary: the header in the low 50 bits, the quotient of
@@ -308,6 +328,7 @@ class PrefixFilter
  {
   /// the bytes, the 6 bits of the quotient at 63 in an empty bin
   unsigned char b[ 32 ] = { 0 , 0 , 0 , 0 , 0 , 0 , 0xFC };
+  using persist_unit = unsigned char;  ///< 32 bytes in a file
   };
 
  static constexpr unsigned kK = 25;            ///< remainders in a bin
@@ -384,7 +405,7 @@ class PrefixFilter
  [[nodiscard]] static std::uint64_t spareHash( std::size_t i ,
 					       std::uint32_t x );
 
- std::vector< Bin > f_B;                       ///< the bins
+ std::vector< Bin , MappableAllocator< Bin > > f_B;  ///< the bins
  std::size_t f_cap;                            ///< n
  std::size_t f_n = 0;                          ///< the keys in
  std::size_t f_spareN = 0;                     ///< the fingerprints spared

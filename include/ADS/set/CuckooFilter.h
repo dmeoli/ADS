@@ -119,11 +119,13 @@
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/external/MappedFile.h"
 
 #include <algorithm>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -155,6 +157,9 @@ class CuckooFilter
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// a filter for one key, empty
+ CuckooFilter( void ) : CuckooFilter( 1 ) { }
+
  /// the empty filter for \f$ n \f$ keys, at the load 0.94 when they are
  /// in, in at least one bucket: \f$ 2^\ell \f$ buckets, the least power of
  /// 2 with \f$ 4 \cdot 0.94 \cdot 2^\ell \ge n \f$
@@ -257,6 +262,21 @@ class CuckooFilter
  /// the bits of the buckets
  [[nodiscard]] std::size_t bits( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "CuckooFilter";
+
+ /// the parameters of the layout, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( T ) , sizeof( F ) } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  /// a bucket: 4 fingerprints in one word
@@ -295,7 +315,7 @@ class CuckooFilter
  /// a random word, for the evictions
  std::uint64_t random( void );
 
- std::vector< W > f_T;                         ///< the buckets
+ std::vector< W , MappableAllocator< W > > f_T;  ///< the buckets
  std::size_t f_mask = 0;                       ///< buckets - 1
  std::size_t f_n = 0;                          ///< the keys in
  std::size_t f_vb = 0;                         ///< the bucket of the victim

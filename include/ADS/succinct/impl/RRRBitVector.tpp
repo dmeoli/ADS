@@ -226,6 +226,18 @@ inline std::size_t RRRBitVector::sizeInBits( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class A >
+inline void RRRBitVector::persist( A & a )
+{
+ a( f_m , f_ones , f_cls , f_off , f_rank , f_ptr , f_wr , f_wp );
+ a.require( ( f_ones <= f_m ) && ( f_wr >= 1 ) && ( f_wr <= 64 ) &&
+	      ( f_wp >= 1 ) && ( f_wp <= 64 ) &&
+	      ( f_cls.size() == 6 * ( ( f_m + kB - 1 ) / kB ) ) ,
+	    "the blocks of an RRRBitVector" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

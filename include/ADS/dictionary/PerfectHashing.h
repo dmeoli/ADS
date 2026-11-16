@@ -115,6 +115,7 @@
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/dictionary/UniversalHashing.h"
+#include "ADS/external/MappedFile.h"
 
 #include <algorithm>
 #include <cmath>
@@ -143,6 +144,11 @@ class PerfectHashTable
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// the table of no key, to be read from a file [see `Persistence.h`]
+ [[nodiscard]] static PerfectHashTable persistEmpty( void ) {
+  return( PerfectHashTable( std::vector< std::uint64_t >() ) );
+  }
+
  using Key = std::uint64_t;  ///< the type of the keys
 
  /// the table of the keys of \f$ S \f$
@@ -210,9 +216,25 @@ class PerfectHashTable
   std::size_t offset = 0;                      ///< of its table in `f_T`
   std::size_t size = 0;                        ///< \f$ n_j^2 \f$, 0 for no key
   CarterWegmanHash h = CarterWegmanHash( 1 );  ///< its function \f$ h_j \f$
+
+  /// the members written to, or read from, the archive \f$ a \f$
+  template< class A >
+  void persist( A & a ) {
+   a( offset , size , h );
+   }
   };
 
  public:
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "PerfectHashTable";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the keys, in the order of the places, bidirectional
@@ -283,6 +305,10 @@ class OrderedMinimalPerfectHash
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// the function of no key
+ OrderedMinimalPerfectHash( void )
+     : OrderedMinimalPerfectHash( std::vector< K >() ) { }
+
  using Key = K;  ///< the type of the keys
 
  /// the function of the distinct keys, on \f$ r = 2 \f$ or 3 functions and
@@ -397,6 +423,21 @@ class OrderedMinimalPerfectHash
  [[nodiscard]] static std::optional< std::vector< std::uint32_t > >
  labelByPeeling( std::size_t m , const std::vector< std::size_t > & E , int r ,
 		 const std::vector< std::size_t > & h , std::size_t n );
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "OrderedMinimalPerfectHash";
+
+ /// the parameters of the layout, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( K ) } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

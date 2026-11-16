@@ -188,6 +188,20 @@ inline bool InterleavedRankSelect::consistent( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class A >
+inline void InterleavedRankSelect::persist( A & a )
+{
+ a( f_n , f_ones , f_L , f_S , f_sl , f_sc );
+ const std::size_t lines = f_n / kData + 1;
+ a.require( ( f_L.size() == 8 * lines ) && ( f_ones <= f_n ) &&
+	      ( f_S.size() == ( lines - 1 ) / kLines + 1 ) &&
+	      ( f_sl[ 0 ].size() == f_sc[ 0 ].size() ) &&
+	      ( f_sl[ 1 ].size() == f_sc[ 1 ].size() ) ,
+	    "the lines of an InterleavedRankSelect" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

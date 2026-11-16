@@ -239,6 +239,15 @@ inline std::size_t BVGraph::sizeInBits( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class A >
+inline void BVGraph::persist( A & a )
+{
+ a( f_n , f_m , f_lmin , f_bits , f_start );
+ a.require( f_start.size() == f_n + 1 , "the lists of a BVGraph" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

@@ -79,6 +79,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/external/MappedFile.h"
 
 #include <algorithm>
 #include <bit>
@@ -87,6 +88,7 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -110,6 +112,9 @@ class BinaryFuseFilter
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// the filter of no key
+ BinaryFuseFilter( void ) : BinaryFuseFilter( std::vector< T >() ) { }
+
  /// the filter of the keys, which may repeat
  ///
  /// In pseudocode (Graf and Lemire), \f$ c[ p ] \f$ the keys of the place
@@ -175,6 +180,21 @@ class BinaryFuseFilter
  /// the seeds drawn by the build
  [[nodiscard]] std::size_t trials( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "BinaryFuseFilter";
+
+ /// the parameters of the layout, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( T ) , sizeof( F ) } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  static constexpr std::size_t kMaxTrials = 1000;  ///< seeds at most
@@ -198,7 +218,7 @@ class BinaryFuseFilter
  /// fails
  bool build( const std::vector< std::uint64_t > & B );
 
- std::vector< F > f_F;      ///< the fingerprints
+ std::vector< F , MappableAllocator< F > > f_F;  ///< the fingerprints
  std::uint64_t f_seed;      ///< the seed of the last trial
  std::uint32_t f_L = 0;     ///< the places of a segment
  std::uint32_t f_CL = 0;    ///< the places of h_0, C L

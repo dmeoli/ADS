@@ -173,6 +173,20 @@ inline std::size_t FMIndex::sizeInBits( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class A >
+inline void FMIndex::persist( A & a )
+{
+ a( f_n , f_b , f_mu , f_L , f_dollar , f_C , f_id , f_sigma , f_occ , f_mark ,
+    f_place ,
+    f_row );
+ a.require( ( f_L.size() == f_n + 1 ) && ( f_b >= 1 ) && ( f_mu >= 1 ) &&
+	      ( f_dollar <= f_n ) && ( f_sigma <= 256 ) &&
+	      ( f_occ.size() == ( ( f_n + 1 ) / f_b + 1 ) * f_sigma ) ,
+	    "the sizes of an FMIndex" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/

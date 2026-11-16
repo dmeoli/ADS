@@ -104,6 +104,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -230,6 +231,17 @@ class BasicEliasFano
 
  /// the items, decoded in \f$ O( n ) \f$ time
  [[nodiscard]] std::vector< std::uint64_t > decode( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName =
+   Lazy ? "LazyEliasFano" : "EliasFano";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 

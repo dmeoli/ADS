@@ -127,6 +127,9 @@ class FMIndex
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// the index of the empty text
+ FMIndex( void ) : FMIndex( std::string_view() ) { }
+
  /// the index of \f$ s \f$
  ///
  /// In pseudocode (the FM-index of Ferragina and Manzini, beyond the book),
@@ -262,6 +265,16 @@ class FMIndex
  /// the bits of the index: \f$ L \f$, the counts, the marks with their
  /// directory, the samples and the arrays of the alphabet
  [[nodiscard]] std::size_t sizeInBits( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "FMIndex";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

@@ -163,6 +163,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/sort/RadixSort.h"
 #include "ADS/succinct/EliasFano.h"
 
@@ -170,6 +171,7 @@
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -192,6 +194,9 @@ class GrafiteFilter
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// the filter of no key
+ GrafiteFilter( void ) : GrafiteFilter( std::vector< T >() ) { }
+
  /// the filter of the keys, which may repeat, in \f$ B \f$ bits per key
  ///
  /// In pseudocode (Costa, Ferragina and Vinciguerra, beyond the book), the
@@ -267,6 +272,21 @@ class GrafiteFilter
  /// the bits of the codes and of the directory of select
  [[nodiscard]] std::size_t sizeInBits( void ) const;
 
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "GrafiteFilter";
+
+ /// the parameters of the layout, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( T ) } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
+
 /*--------------------------------------------------------------------------*/
  private:
  /// the code \f$ h( x ) \f$ of the word \f$ x \f$
@@ -299,6 +319,9 @@ class BucketingFilter
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// the filter of no key
+ BucketingFilter( void ) : BucketingFilter( std::vector< T >() ) { }
+
  /// the filter of the keys, which may repeat, in at most \f$ B \f$ bits per
  /// key
  ///
@@ -343,6 +366,21 @@ class BucketingFilter
 
  /// the bits of the buckets and of the directory of select
  [[nodiscard]] std::size_t sizeInBits( void ) const;
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "BucketingFilter";
+
+ /// the parameters of the layout, in a file
+ [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
+  return( detail::persistMix( { sizeof( T ) } ) );
+  }
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

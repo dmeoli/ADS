@@ -87,6 +87,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -262,6 +263,16 @@ class BVGraph
  /// gaps less 1, \f$ \mathit{res}[ i ] - \mathit{res}[ i - 1 ] - 1 \f$
  [[nodiscard]] static std::vector< std::uint64_t >
  residualGaps( const List & res , std::size_t x );
+
+/*----------------------------- THE PERSISTENCE ----------------------------*/
+
+ /// the name of the structure in a file [see `Persistence.h`]
+ static constexpr std::string_view persistName = "BVGraph";
+
+ /// the members written to, or read from, the archive \f$ a \f$ [see
+ /// `Persistence.h`]
+ template< class A >
+ void persist( A & a );
 
 /*--------------------------------------------------------------------------*/
  private:

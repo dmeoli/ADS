@@ -545,6 +545,20 @@ std::size_t RecSplit< T , L , H >::trials( void ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class T , unsigned L , class H >
+template< class A >
+inline void RecSplit< T , L , H >::persist( A & a )
+{
+ a( f_seed , f_n , f_nb , f_code , f_keys , f_place , f_dk , f_dp , f_beta ,
+    f_trials );
+ if constexpr( ! std::is_empty_v< H > )  // a hash function with a state
+  a( f_h );
+ if constexpr( A::loading )
+  f_t = &tables();  // those of L
+ }
+
+/*--------------------------------------------------------------------------*/
+
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/
