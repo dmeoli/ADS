@@ -336,8 +336,10 @@ std::uint64_t pathCount( const WGraph & g , int s , int t )
 Ints shortestEdgePath( const WGraph & g , int r , int s )
 {
  ADS_PRE( g.hasNode( r ) && g.hasNode( s ) );
- const auto [ dr , pr ] = distance( g , r );
- const auto [ ds , ps ] = distance( transpose( g ) , s );
+ // the distances and the parents by name, which Clang captures in a lambda
+ // under OpenMP, while it captures no structured binding there
+ const auto R = distance( g , r ) , S = distance( transpose( g ) , s );
+ const Ints &dr = R.first , &pr = R.second , &ds = S.first , &ps = S.second;
  int bu = NIL , bv = NIL , bw = 0;
  for( int u : g.V() )
   if( dr[ u ] != ADS::INF )

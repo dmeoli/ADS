@@ -2146,7 +2146,9 @@ ADS_TEST( "generic-visit" )
 	depth == std::vector< int >( { 0 , 1 , 2 , 3 , 3 , 6 , 4 , 6 , 7 ,
 				       5 } ) );
  const auto [ Rb , Bb ] = genericVisit( g , 0 , Choice::OLDEST );
- const auto [ d , p ] = distance( g , 0 );
+ // the distances by name, which Clang captures in a lambda under OpenMP,
+ // while it captures no structured binding there
+ const std::vector< int > d = distance( g , 0 ).first;
  for( auto [ j , k ] : Bb )
   CHECK( d[ k ] == d[ j ] + 1 );
  CHECK( std::is_sorted( Rb.begin() , Rb.end() , [ & ]( int u , int v ) {
