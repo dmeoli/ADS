@@ -239,7 +239,7 @@ inline std::size_t pgmLastMile( const T * a , std::size_t n , std::size_t p ,
  std::size_t lo = p > e + 2 ? p - e - 2 : 0;
  std::size_t hi = std::min( n , p + e + 3 );
  for( std::size_t o = lo ; o < hi ; o += 64 / sizeof( T ) )
-  ADS::prefetch( a + o );
+  ADS::detail::prefetchLine( a + o );
  std::size_t r = windowLowerBound( a , lo , hi , v );
  if( ( r == hi ) && ( hi < n ) ) {  // gallop right
   std::size_t d = 1;

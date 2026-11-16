@@ -15,7 +15,10 @@
  * of ADS that issues it. `ADS::prefetch` is the customization point of
  * Capabilities.h, whose form `prefetch( s , k )` asks a structure \f$ s \f$
  * for the places of a key \f$ k \f$, and whose forms on a pointer, which
- * this header adds, ask for a line of memory; both are noexcept.
+ * this header adds, ask for a line of memory; both are noexcept. The
+ * structures of ADS call `detail::prefetchLine()`, which the forms on a
+ * pointer call, so that a header may issue a prefetch before
+ * Capabilities.h is complete.
  *
  * With `ADS_WITH_HIGHWAY` the prefetch is `hwy::Prefetch()` of Google
  * Highway, which keeps the line in every level of the cache; without it,

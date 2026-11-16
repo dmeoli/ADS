@@ -388,8 +388,8 @@ inline std::size_t RearCodedDictionary::rank( std::string_view Q , bool upper ,
  if( B > 0 ) {
   for( std::size_t n = B ; n > 1 ; ) {
    const std::size_t half = n / 2;
-   ADS::prefetch( f_head.data() + W * ( lo + half / 2 ) );
-   ADS::prefetch( f_head.data() + W * ( lo + half + half / 2 ) );
+   ADS::detail::prefetchLine( f_head.data() + W * ( lo + half / 2 ) );
+   ADS::detail::prefetchLine( f_head.data() + W * ( lo + half + half / 2 ) );
    lo = before( lo + half ) ? lo + half : lo;
    n -= half;
    }

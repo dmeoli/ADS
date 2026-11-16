@@ -23,10 +23,13 @@
  *
  * Highway dispatches by re-including, for every set of instructions, the
  * file of the kernels ADS/impl/Simd.tpp, once per translation unit
- * (hwy/foreach_target.h may run once per unit). A unit that includes this
- * header may therefore not run a dispatch of its own after it, nor include
- * it after one: a program that has kernels of its own on Highway keeps
- * them in units that do not include the vector structures of ADS.
+ * (hwy/foreach_target.h may run once per unit, and before any include of
+ * hwy/highway.h). Every header of ADS that includes Highway includes this
+ * one first, so that the dispatch runs at the first of them; a unit that
+ * includes a header of ADS with Highway may therefore neither include
+ * hwy/highway.h before it nor run a dispatch of its own, and a program
+ * that has kernels of its own on Highway keeps them in units that do not
+ * include the structures of ADS.
  *
  * \see J. Wassenberg, J. Alakuijala, Highway: performance-portable, length-
  *      agnostic SIMD with runtime dispatch,
@@ -54,6 +57,20 @@
 
  #include <cstddef>
  #include <cstdint>
+ #include <cstring>
+ #include <type_traits>
+
+// the prefetch of the kernels, defined in Prefetch.h, which may not be
+// included before the dispatch, since nothing may include hwy/highway.h
+// before hwy/foreach_target.h
+namespace ADS
+{
+enum class Locality : int;
+namespace detail
+{
+inline void prefetchLine( const void * p , Locality l ) noexcept;
+}  // end( namespace detail )
+}  // end( namespace ADS )
 
  #undef HWY_TARGET_INCLUDE
  #define HWY_TARGET_INCLUDE "ADS/impl/Simd.tpp"
@@ -89,6 +106,8 @@ inline std::uint64_t popcountAnd( const std::uint64_t * a ,
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS::detail::simd )
+
+ #include "ADS/memory/Prefetch.h"  // the prefetch of the kernels
 
 #endif
 

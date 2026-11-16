@@ -758,7 +758,7 @@ FlatHashTable< K , V , H , Eq , A >::scan( std::size_t g , Mask m ,
 				       const K & k ) const
 {
  Slot * p = f_slot + g * SLOTS;
- ADS::prefetch( p );  // issued while m is predicted
+ ADS::detail::prefetchLine( p );  // issued while m is predicted
  do {
   const std::size_t j = lowest( m );
   if( f_eq( p[ j ].kv.first , k ) ) [[likely]]

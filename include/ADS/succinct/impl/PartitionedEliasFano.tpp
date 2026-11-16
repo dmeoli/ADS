@@ -195,7 +195,7 @@ inline std::size_t PartitionedEliasFano::nextGEQ( std::uint64_t x ) const
  const std::size_t na = f_eyt.size() - 1;
  std::size_t t = 1;
  while( t <= na ) {
-  ADS::prefetch( E + 8 * t );
+  ADS::detail::prefetchLine( E + 8 * t );
   t = 2 * t + ( E[ t ] < x );
   }
  t >>= std::countr_one( t ) + 1;  // 0 if all are below x

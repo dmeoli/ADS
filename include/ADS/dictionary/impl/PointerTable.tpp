@@ -136,7 +136,7 @@ template< class T , class Eq , class A >
 void PointerTable< T , Eq , A >::prefetch( std::uint64_t hash ) const
 {
  if( ! f_S.empty() )
-  ADS::prefetch( &f_S[ place( hash ) ] , Locality::Low );
+  ADS::detail::prefetchLine( &f_S[ place( hash ) ] , Locality::Low );
  }
 
 template< class T , class Eq , class A >

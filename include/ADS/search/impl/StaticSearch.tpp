@@ -35,8 +35,8 @@ inline std::size_t branchlessLowerBound( const std::vector< T > & A ,
  const T * base = A.data();
  while( n > 1 ) {
   const std::size_t h = n / 2;
-  ADS::prefetch( base + ( n - h ) / 2 );  // the two next middles
-  ADS::prefetch( base + h + ( n - h ) / 2 );
+  ADS::detail::prefetchLine( base + ( n - h ) / 2 );  // the two next middles
+  ADS::detail::prefetchLine( base + h + ( n - h ) / 2 );
   base = less( base[ h ] , v ) ? base + h : base;
   n -= h;
   }

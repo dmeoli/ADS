@@ -252,7 +252,7 @@ std::vector< I > lcpArrayPhi( E & ex , std::string_view T ,
     std::size_t h = 0;
     for( std::size_t i = i0 ; i < i1 ; ++i ) {
      if( i + D < i1 )
-      ADS::prefetch(
+      ADS::detail::prefetchLine(
 	t + std::min< std::size_t >( std::size_t( P[ i + D ] ) + h , n - 1 ) );
      const std::size_t j = std::size_t( P[ i ] );
      h = j == n ? 0 : lcp( i , j , h );

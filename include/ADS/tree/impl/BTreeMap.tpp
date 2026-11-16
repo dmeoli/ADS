@@ -100,7 +100,7 @@ inline void ADS_BTM::fetch( const void * x , std::size_t bytes )
 {
  const char * p = static_cast< const char * >( x );
  for( std::size_t o = 0 ; o < bytes ; o += 64 )
-  ADS::prefetch( p + o );
+  ADS::detail::prefetchLine( p + o );
  }
 
 ADS_BTM_T

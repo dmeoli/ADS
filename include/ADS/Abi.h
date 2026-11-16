@@ -92,7 +92,7 @@
 // namespace (e.g., N_SSE2, N_AVX2), which the flags of the compiler choose
 // [see SimdInline.h], none without Highway
 #ifdef ADS_WITH_HIGHWAY
- #include <hwy/highway.h>
+ #include "ADS/Simd.h"  // before hwy/highway.h, which it includes
 
  #define ADS_ABI_VECTOR HWY_NAMESPACE
 #else

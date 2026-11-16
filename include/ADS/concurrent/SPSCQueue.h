@@ -285,7 +285,7 @@ class SPSCQueue
  /// a hint to load the line of p, so that a consumer that finds the queue
  /// empty fetches the place and the tail together, one miss and not two
  /// in a row when the item has come
- static void prefetch( const T * p ) { ADS::prefetch( p ); }
+ static void prefetch( const T * p ) { ADS::detail::prefetchLine( p ); }
 
  // the queue begins on a pair of lines, which the processor may fetch
  // together (the adjacent line prefetcher of x86), so that each pair

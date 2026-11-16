@@ -225,7 +225,7 @@ std::vector< I > saisVector( std::size_t n )
 /// prefetches the line of p for a read
 inline void saisPrefetch( const void * p )
 {
- ADS::prefetch( p );
+ ADS::detail::prefetchLine( p );
  }
 
 /// prefetches the text before the entry a (T[ a - 1 ] and T[ a - 2 ]),
@@ -241,7 +241,7 @@ inline void saisPrefetch2( const C * T , S a )
 /// prefetches the line of p for a write
 inline void saisPrefetchW( const void * p )
 {
- ADS::prefetch( p );
+ ADS::detail::prefetchLine( p );
  }
 
 /// the first (heads) or the next past the last (tails) place of each of

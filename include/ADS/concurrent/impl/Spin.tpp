@@ -47,7 +47,7 @@ inline void spinPause( void )
 /// the line of cache of p fetched ahead, for reading
 inline void prefetch( const void * p )
 {
- ADS::prefetch( p );
+ ADS::detail::prefetchLine( p );
  }
 
 }  // end( namespace detail )

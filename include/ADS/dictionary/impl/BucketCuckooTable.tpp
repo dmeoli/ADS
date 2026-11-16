@@ -238,8 +238,8 @@ void BucketCuckooTable< K , V , H , Eq , A >::grow( void )
  for( ; i < S.size() ; ++i ) {
   if( ( i + AHEAD < S.size() ) && full( i + AHEAD ) ) {
    const std::size_t b = first( X[ i + AHEAD ] );
-   ADS::prefetch( &f_T[ b ] );
-   ADS::prefetch( &f_S[ 4 * b ] );
+   ADS::detail::prefetchLine( &f_T[ b ] );
+   ADS::detail::prefetchLine( &f_S[ 4 * b ] );
    }
   if( full( i ) &&
       ! place( X[ i ] , std::move( S[ i ].key ) , std::move( S[ i ].value ) ) )

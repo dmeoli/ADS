@@ -39,6 +39,8 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+ #include "ADS/Simd.h"  // before hwy/highway.h, which it includes
+
  #include <hwy/highway.h>
 
  #include <cstddef>
