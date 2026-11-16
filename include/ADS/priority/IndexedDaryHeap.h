@@ -59,6 +59,10 @@
  * vector, which are internal maintenance, travel only on `Relocated`. A heap
  * of keys has no shift of all its keys in \f$ O( 1 ) \f$, hence no `Shifted`.
  *
+ * The vectors come from the allocator `A`, `std::allocator` by default,
+ * given to the constructor that takes `std::allocator_arg` first, with the
+ * rules of the standard [see `AllocatorAware.h`].
+ *
  * The contracts [see `Contract.h`]: the ids are in \f$ [ 0 , n ) \f$,
  * `push()` needs an id not in the heap, `decrease()` one in the heap and a
  * key not greater than its own, `increase()` one in the heap and a key not
@@ -95,6 +99,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Modification.h"
+#include "ADS/memory/AllocatorAware.h"
 #include "ADS/Portable.h"
 
 #include <algorithm>
@@ -114,7 +119,8 @@ namespace ADS
 
 /// a \f$ D \f$-ary heap of the ids \f$ [ 0 , n ) \f$ by their keys, the
 /// least on top, with decrease-key, its changes told through `Policy`
-template< class K , unsigned D = 4 , class Policy = NoObservers >
+template< class K , unsigned D = 4 , class Policy = NoObservers ,
+	  class A = std::allocator< K > >
 class IndexedDaryHeap
 {
 
@@ -149,6 +155,20 @@ class IndexedDaryHeap
  /// \pre \f$ n \ge 0 \f$
  template< class... O >
  explicit IndexedDaryHeap( int n = 0 , O &... o );
+
+ /// the empty heap of the ids \f$ [ 0 , n ) \f$, the static observers
+ /// `o...`, its vectors from `alloc`
+ /// \pre \f$ n \ge 0 \f$
+ template< class... O >
+ IndexedDaryHeap( std::allocator_arg_t , const A & alloc , int n = 0 ,
+		  O &... o );
+
+ /// the type of the allocator
+ using allocator_type = A;
+ /// the allocator of the vectors
+ [[nodiscard]] allocator_type get_allocator( void ) const {
+  return( allocator_type( f_A.get_allocator() ) );
+  }
 
  /// the empty heap of the ids \f$ [ 0 , n ) \f$, the room kept
  /// \pre \f$ n \ge 0 \f$
@@ -385,8 +405,8 @@ class IndexedDaryHeap
  /// on more than 1024 items, those of the root and of the last item only
  [[nodiscard]] bool ordered( void ) const;
 
- std::vector< Entry > f_A;             ///< the heap, the root in f_A[ 0 ]
- std::vector< int > f_pos;             ///< the place of each id, -1 if absent
+ detail::AllocVector< A , Entry > f_A;  ///< the heap, the root in f_A[ 0 ]
+ detail::AllocVector< A , int > f_pos;  ///< the place of each id, -1 if none
  ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  };  // end( class IndexedDaryHeap )

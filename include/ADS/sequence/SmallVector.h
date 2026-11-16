@@ -25,6 +25,12 @@
  * pointers to the items), the costs and the contracts stay those above,
  * `small()` telling whether the room is still the inner one of Boost.
  *
+ * The items beyond the inner room come from the allocator `A`,
+ * `std::allocator` by default, with the rules of the standard [see
+ * `AllocatorAware.h`]; with Boost the allocator is that of
+ * `boost::container::small_vector`. A swap moves the items in three moves,
+ * so that it needs no precondition on the allocators.
+ *
  * The contracts [see `Contract.h`]: an index is below `size()`, and
  * `front()`, `back()` and `pop_back()` need a vector that is not empty; the
  * invariant is \f$ n \leq c \f$ and \f$ c \geq N \f$, \f$ c \f$ the
@@ -55,6 +61,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/memory/AllocatorAware.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -89,9 +96,23 @@ namespace ADS
 /*--------------------------------------------------------------------------*/
 
 /// a vector with room for \f$ N \f$ items inside itself
-template< class T , std::size_t N = 8 >
+template< class T , std::size_t N = 8 , class A = std::allocator< T > >
 class SmallVector
+#if ! ADS_SMALLVECTOR_BOOST
+    : private detail::AllocHolder< detail::RebindAlloc< A , T > >
+#endif
 {
+#if ! ADS_SMALLVECTOR_BOOST
+ /// the allocator of the items, held as a base
+ using Holder = detail::AllocHolder< detail::RebindAlloc< A , T > >;
+ /// its traits
+ using Traits = std::allocator_traits< detail::RebindAlloc< A , T > >;
+#endif
+
+ /// whether the allocators are all equal and need not be copied, as
+ /// `std::allocator`
+ static constexpr bool PLAIN =
+   detail::alwaysEqualAlloc< A > && std::is_default_constructible_v< A >;
 
  static_assert( N >= 1 , "room for one item at least" );
 
@@ -127,6 +148,15 @@ class SmallVector
  SmallVector( void ) noexcept { }
 #endif
 
+ /// the empty vector, its items inside it, the allocator `alloc`
+#if ! ADS_SMALLVECTOR_BOOST
+ explicit SmallVector( const A & alloc ) noexcept
+     : Holder( alloc ) , f_A( inner() ) { }
+#else
+ explicit SmallVector( const A & alloc ) noexcept
+     : f_v( typename Vector::allocator_type( alloc ) ) { }
+#endif
+
  /// \f$ n \f$ items made from \f$ x \f$
  explicit SmallVector( std::size_t n , const T & x = T() );
 
@@ -138,18 +168,61 @@ class SmallVector
  SmallVector( I first , S last );
 
  /// a copy of `other`
- SmallVector( const SmallVector & other );
+ SmallVector( const SmallVector & other )
+  requires( PLAIN );
+
+ /// a copy of `other`, on the allocator that
+ /// `select_on_container_copy_construction()` gives
+ SmallVector( const SmallVector & other )
+  requires( ! PLAIN )
+     : SmallVector( other , detail::copyAlloc( other.get_allocator() ) ) { }
+
+ /// a copy of `other`, on `alloc`
+ SmallVector( const SmallVector & other , const A & alloc );
 
  /// the items of `other`, which is left empty
  SmallVector( SmallVector && other ) noexcept(
    std::is_nothrow_move_constructible_v< T > );
 
+ /// the items of `other`, which is left empty, on `alloc`: its memory if
+ /// the allocators are equal, else its items moved one by one
+ SmallVector( SmallVector && other , const A & alloc );
+
  /// a copy of `other`
- SmallVector & operator=( const SmallVector & other );
+ SmallVector & operator=( const SmallVector & other )
+  requires( PLAIN );
+
+ /// the copy assignment, with the allocator of `other` if it propagates
+ SmallVector & operator=( const SmallVector & other )
+  requires( ! PLAIN )
+ {
+  return( detail::copyAssign( *this , other ) );
+  }
 
  /// the items of `other`, which is left empty
  SmallVector & operator=( SmallVector && other ) noexcept(
-   std::is_nothrow_move_constructible_v< T > );
+   std::is_nothrow_move_constructible_v< T > )
+  requires( PLAIN );
+
+ /// the move assignment: the memory of `other` if its allocator
+ /// propagates or is equal, else its items moved one by one
+ SmallVector & operator=( SmallVector && other )
+  requires( ! PLAIN )
+ {
+  return( detail::moveAssign( *this , std::move( other ) ) );
+  }
+
+ /// the type of the allocator
+ using allocator_type = A;
+
+ /// the allocator of the items
+ [[nodiscard]] allocator_type get_allocator( void ) const {
+#if ! ADS_SMALLVECTOR_BOOST
+  return( allocator_type( this->alloc() ) );
+#else
+  return( allocator_type( f_v.get_allocator() ) );
+#endif
+  }
 
  /// destroys the items, and frees the memory of the allocator if any
  ~SmallVector();
@@ -338,7 +411,7 @@ class SmallVector
  /// the small vector of Boost, which doubles its room as this one does, on
  /// std::allocator, which aligns any T as the code of ADS does
  using Vector = boost::container::small_vector<
-   T , N , std::allocator< T > ,
+   T , N , detail::RebindAlloc< A , T > ,
    typename boost::container::small_vector_options< Doubling >::type >;
 
  /// empty, the items inside, as a vector moved from is left

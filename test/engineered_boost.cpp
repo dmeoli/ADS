@@ -36,6 +36,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <memory_resource>
 #include <random>
 #include <ranges>
 #include <set>
@@ -392,6 +393,38 @@ ADS_TEST( "boost-xoshiro" )
  }
 
 }  // end( namespace )
+
+// the allocators of the table and of the vector, on the code of ADS or of
+// Boost: the memory of a pool resource, the copies on the allocator that the
+// copy asks for, a move between two resources item by item, a vector moved
+// out of its room on a resource
+ADS_TEST( "boost-allocators" )
+{
+ std::pmr::unsynchronized_pool_resource r , q;
+ using PA = std::pmr::polymorphic_allocator< std::pair< const int , int > >;
+ using Table =
+   FlatHashTable< int , int , DefaultHash< int > , std::equal_to< int > , PA >;
+ Table T( 0 , {} , {} , PA( &r ) );
+ for( int i = 0 ; i < 1000 ; ++i )
+  T.insert( i , 2 * i );
+ Table C( T , PA( &q ) ) , D( std::move( C ) , PA( &r ) );
+ CHECK( D.size() == 1000 && D.lookup( 7 ) == 14 &&
+	D.get_allocator().resource() == &r );
+ C = T;  // the allocator of C stays
+ CHECK( C.size() == 1000 && C.get_allocator().resource() == &q );
+ Table E{ PA( &q ) };
+ E = std::move( D );  // two resources: the pairs moved one by one
+ CHECK( E.size() == 1000 && E.get_allocator().resource() == &q );
+ using VA = std::pmr::polymorphic_allocator< std::string >;
+ using Vec = SmallVector< std::string , 2 , VA >;
+ Vec V{ VA( &r ) };
+ for( int i = 0 ; i < 100 ; ++i )
+  V.push_back( std::string( 40 , char( 'a' + i % 26 ) ) );
+ Vec W( std::move( V ) , VA( &q ) ) , X( W , VA( &r ) );
+ CHECK( W.size() == 100 && X == W && W.get_allocator().resource() == &q );
+ V = X;
+ CHECK( V == W && V.get_allocator().resource() == &r );
+ }
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- MAIN ------------------------------------*/

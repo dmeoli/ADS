@@ -32,10 +32,12 @@ namespace detail
 
 /*--------------------------------------------------------------------------*/
 
-template< class K , class V , class H , class Eq >
-BucketCuckooTable< K , V , H , Eq >::BucketCuckooTable( std::size_t n , H h ,
-						     Eq eq )
-    : f_h( h ) , f_eq( eq )
+template< class K , class V , class H , class Eq , class A >
+BucketCuckooTable< K , V , H , Eq , A >::BucketCuckooTable( std::size_t n ,
+							    H h ,
+							Eq eq ,
+							const A & alloc )
+    : f_T( alloc ) , f_S( alloc ) , f_h( h ) , f_eq( eq )
 {
  const std::size_t b = std::bit_ceil(
    std::max< std::size_t >( 2 , ( n * 10 + 35 ) / 36 ) );  // at load 0.9
@@ -44,8 +46,9 @@ BucketCuckooTable< K , V , H , Eq >::BucketCuckooTable( std::size_t n , H h ,
  f_S.resize( 4 * b );
  }
 
-template< class K , class V , class H , class Eq >
-std::uint64_t BucketCuckooTable< K , V , H , Eq >::hash( const K & k ) const
+template< class K , class V , class H , class Eq , class A >
+std::uint64_t BucketCuckooTable< K , V , H , Eq ,
+				 A >::hash( const K & k ) const
 {
  if constexpr( requires { typename H::is_avalanching; } )
   return( std::uint64_t( f_h( k ) ) );
@@ -53,22 +56,24 @@ std::uint64_t BucketCuckooTable< K , V , H , Eq >::hash( const K & k ) const
   return( hashWord( std::uint64_t( f_h( k ) ) ) );
  }
 
-template< class K , class V , class H , class Eq >
-std::uint32_t BucketCuckooTable< K , V , H , Eq >::tag( std::uint64_t h )
+template< class K , class V , class H , class Eq , class A >
+std::uint32_t BucketCuckooTable< K , V , H , Eq , A >::tag( std::uint64_t h )
 {
  const auto t = std::uint32_t( h & 0xFF );
  return( t ? t : 1 );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t BucketCuckooTable< K , V , H , Eq >::first( std::uint64_t h ) const
+template< class K , class V , class H , class Eq , class A >
+std::size_t
+BucketCuckooTable< K , V , H , Eq , A >::first( std::uint64_t h ) const
 {
  return( std::size_t( h >> ( 64 - f_lg ) ) );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t BucketCuckooTable< K , V , H , Eq >::other( std::size_t b ,
-						     std::uint32_t t ) const
+template< class K , class V , class H , class Eq , class A >
+std::size_t
+BucketCuckooTable< K , V , H , Eq , A >::other( std::size_t b ,
+					    std::uint32_t t ) const
 {
  // an odd offset below the buckets, so that the two differ, by the top
  // bits of the product of the tag by the golden ratio
@@ -77,9 +82,10 @@ std::size_t BucketCuckooTable< K , V , H , Eq >::other( std::size_t b ,
  return( b ^ ( d | 1 ) );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t BucketCuckooTable< K , V , H , Eq >::locate( const K & k ,
-						      std::uint64_t h ) const
+template< class K , class V , class H , class Eq , class A >
+std::size_t
+BucketCuckooTable< K , V , H , Eq , A >::locate( const K & k ,
+					     std::uint64_t h ) const
 {
  const std::uint32_t t = tag( h );
  std::size_t b = first( h );
@@ -94,18 +100,18 @@ std::size_t BucketCuckooTable< K , V , H , Eq >::locate( const K & k ,
  return( ~std::size_t( 0 ) );
  }
 
-template< class K , class V , class H , class Eq >
-int BucketCuckooTable< K , V , H , Eq >::freePlace( std::size_t b ) const
+template< class K , class V , class H , class Eq , class A >
+int BucketCuckooTable< K , V , H , Eq , A >::freePlace( std::size_t b ) const
 {
  const std::uint32_t z = detail::zeroBytes( f_T[ b ] );
  return( z ? std::countr_zero( z ) >> 3 : 4 );
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 template< class KK , class VV >
-void BucketCuckooTable< K , V , H , Eq >::put( std::size_t b , int i ,
-					    std::uint32_t t , KK && k ,
-					    VV && v )
+void BucketCuckooTable< K , V , H , Eq , A >::put( std::size_t b , int i ,
+					       std::uint32_t t , KK && k ,
+					       VV && v )
 {
  Slot & s = f_S[ 4 * b + std::size_t( i ) ];
  s.key = std::forward< KK >( k );
@@ -115,8 +121,9 @@ void BucketCuckooTable< K , V , H , Eq >::put( std::size_t b , int i ,
 
 /*--------------------------------------------------------------------------*/
 
-template< class K , class V , class H , class Eq >
-std::size_t BucketCuckooTable< K , V , H , Eq >::makeRoom( std::uint64_t h )
+template< class K , class V , class H , class Eq , class A >
+std::size_t BucketCuckooTable< K , V , H , Eq ,
+			       A >::makeRoom( std::uint64_t h )
 {
  // the nodes of the search: a bucket, the node it comes from and the place
  // of that bucket whose key moves into it
@@ -168,10 +175,11 @@ std::size_t BucketCuckooTable< K , V , H , Eq >::makeRoom( std::uint64_t h )
  return( ~std::size_t( 0 ) );
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 template< class KK , class VV >
-bool BucketCuckooTable< K , V , H , Eq >::place( std::uint64_t h , KK && k ,
-					      VV && v )
+bool BucketCuckooTable< K , V , H , Eq , A >::place( std::uint64_t h ,
+						     KK && k ,
+						 VV && v )
 {
  const std::uint32_t t = tag( h );
  const std::size_t b1 = first( h ) , b2 = other( b1 , t );
@@ -194,14 +202,14 @@ bool BucketCuckooTable< K , V , H , Eq >::place( std::uint64_t h , KK && k ,
  return( true );
  }
 
-template< class K , class V , class H , class Eq >
-void BucketCuckooTable< K , V , H , Eq >::grow( void )
+template< class K , class V , class H , class Eq , class A >
+void BucketCuckooTable< K , V , H , Eq , A >::grow( void )
 {
  // the pairs moved from the old places into a table twice as large; if one
  // finds no place, the ones placed and the ones left are gathered and a
  // larger table is tried
- std::vector< std::uint32_t > T;
- std::vector< Slot > S;
+ Tags T( f_T.get_allocator() );
+ Slots S( f_S.get_allocator() );
  T.swap( f_T );
  S.swap( f_S );
  auto fresh = [ & ]( int lg ) {
@@ -219,7 +227,7 @@ void BucketCuckooTable< K , V , H , Eq >::grow( void )
  auto full = [ & ]( std::size_t j ) {
   return( ( ( T[ j >> 2 ] >> ( 8 * ( j & 3 ) ) ) & 0xFF ) != 0 );
   };
- std::vector< std::uint64_t > X( S.size() );
+ detail::AllocVector< A , std::uint64_t > X( S.size() , S.get_allocator() );
  for( std::size_t j = 0 ; j < S.size() ; ++j ) {
   if( j + AHEAD < S.size() )
    detail::prefetchKey( S[ j + AHEAD ].key );
@@ -241,7 +249,7 @@ void BucketCuckooTable< K , V , H , Eq >::grow( void )
   }
  if( i == S.size() )
   return;
- std::vector< Slot > P;  // the rare case
+ Slots P( f_S.get_allocator() );  // the rare case
  P.reserve( f_n );
  auto gather = [ & ]( void ) {
   for( std::size_t j = 0 ; j < f_S.size() ; ++j )
@@ -261,8 +269,8 @@ void BucketCuckooTable< K , V , H , Eq >::grow( void )
     break;
   if( j == P.size() )
    return;
-  std::vector< Slot > R( std::make_move_iterator( P.begin() + long( j ) ) ,
-			 std::make_move_iterator( P.end() ) );
+  Slots R( std::make_move_iterator( P.begin() + long( j ) ) ,
+	   std::make_move_iterator( P.end() ) , P.get_allocator() );
   P.swap( R );  // the ones not placed,
   gather();     // and the ones placed
   }
@@ -270,30 +278,31 @@ void BucketCuckooTable< K , V , H , Eq >::grow( void )
 
 /*--------------------------------------------------------------------------*/
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 std::optional< V >
-BucketCuckooTable< K , V , H , Eq >::lookup( const K & k ) const
+BucketCuckooTable< K , V , H , Eq , A >::lookup( const K & k ) const
 {
  const V * v = find( k );
  return( v ? std::optional< V >( *v ) : std::nullopt );
  }
 
-template< class K , class V , class H , class Eq >
-const V * BucketCuckooTable< K , V , H , Eq >::find( const K & k ) const
+template< class K , class V , class H , class Eq , class A >
+const V * BucketCuckooTable< K , V , H , Eq , A >::find( const K & k ) const
 {
  const std::size_t i = locate( k , hash( k ) );
  return( i == ~std::size_t( 0 ) ? nullptr : &f_S[ i ].value );
  }
 
-template< class K , class V , class H , class Eq >
-V * BucketCuckooTable< K , V , H , Eq >::find( const K & k )
+template< class K , class V , class H , class Eq , class A >
+V * BucketCuckooTable< K , V , H , Eq , A >::find( const K & k )
 {
  const std::size_t i = locate( k , hash( k ) );
  return( i == ~std::size_t( 0 ) ? nullptr : &f_S[ i ].value );
  }
 
-template< class K , class V , class H , class Eq >
-bool BucketCuckooTable< K , V , H , Eq >::insert( const K & k , const V & v )
+template< class K , class V , class H , class Eq , class A >
+bool BucketCuckooTable< K , V , H , Eq , A >::insert( const K & k ,
+						      const V & v )
 {
  const std::uint64_t h = hash( k );
  const std::size_t i = locate( k , h );
@@ -310,8 +319,8 @@ bool BucketCuckooTable< K , V , H , Eq >::insert( const K & k , const V & v )
  return( true );
  }
 
-template< class K , class V , class H , class Eq >
-bool BucketCuckooTable< K , V , H , Eq >::remove( const K & k )
+template< class K , class V , class H , class Eq , class A >
+bool BucketCuckooTable< K , V , H , Eq , A >::remove( const K & k )
 {
  const std::size_t i = locate( k , hash( k ) );
  if( i == ~std::size_t( 0 ) )
@@ -324,50 +333,50 @@ bool BucketCuckooTable< K , V , H , Eq >::remove( const K & k )
  return( true );
  }
 
-template< class K , class V , class H , class Eq >
-bool BucketCuckooTable< K , V , H , Eq >::contains( const K & k ) const
+template< class K , class V , class H , class Eq , class A >
+bool BucketCuckooTable< K , V , H , Eq , A >::contains( const K & k ) const
 {
  return( locate( k , hash( k ) ) != ~std::size_t( 0 ) );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t BucketCuckooTable< K , V , H , Eq >::size( void ) const
+template< class K , class V , class H , class Eq , class A >
+std::size_t BucketCuckooTable< K , V , H , Eq , A >::size( void ) const
 {
  return( f_n );
  }
 
-template< class K , class V , class H , class Eq >
-bool BucketCuckooTable< K , V , H , Eq >::empty( void ) const
+template< class K , class V , class H , class Eq , class A >
+bool BucketCuckooTable< K , V , H , Eq , A >::empty( void ) const
 {
  return( f_n == 0 );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t BucketCuckooTable< K , V , H , Eq >::capacity( void ) const
+template< class K , class V , class H , class Eq , class A >
+std::size_t BucketCuckooTable< K , V , H , Eq , A >::capacity( void ) const
 {
  return( f_S.size() );
  }
 
-template< class K , class V , class H , class Eq >
-double BucketCuckooTable< K , V , H , Eq >::load( void ) const
+template< class K , class V , class H , class Eq , class A >
+double BucketCuckooTable< K , V , H , Eq , A >::load( void ) const
 {
  return( double( f_n ) / double( f_S.size() ) );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t BucketCuckooTable< K , V , H , Eq >::rehashes( void ) const
+template< class K , class V , class H , class Eq , class A >
+std::size_t BucketCuckooTable< K , V , H , Eq , A >::rehashes( void ) const
 {
  return( f_rehashes );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t BucketCuckooTable< K , V , H , Eq >::moves( void ) const
+template< class K , class V , class H , class Eq , class A >
+std::size_t BucketCuckooTable< K , V , H , Eq , A >::moves( void ) const
 {
  return( f_moves );
  }
 
-template< class K , class V , class H , class Eq >
-bool BucketCuckooTable< K , V , H , Eq >::placed( const K & k ) const
+template< class K , class V , class H , class Eq , class A >
+bool BucketCuckooTable< K , V , H , Eq , A >::placed( const K & k ) const
 {
  auto ok = [ & ]( const K & x ) {  // in one bucket, once
   const std::uint64_t h = hash( x );

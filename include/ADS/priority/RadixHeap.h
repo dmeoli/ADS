@@ -43,6 +43,9 @@
  * state calls no allocator, and the items of a bucket come out last pushed
  * first.
  *
+ * The buckets come from the allocator `A`, `std::allocator` by default,
+ * with the rules of the standard [see `AllocatorAware.h`].
+ *
  * The contracts [see `Contract.h`]: a key pushed is not smaller than any
  * key extracted, by `pop()` or by `extractBelow()`, or read by `top()` and
  * `topKey()` (any key before the first of them and after `clear()`), which
@@ -79,6 +82,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/memory/AllocatorAware.h"
 
 #include <array>
 #include <bit>
@@ -103,7 +107,8 @@ namespace ADS
 
 /// a monotone queue of items with integer keys of the type `K`, the least
 /// key first, in buckets by digits of \f$ B \f$ bits
-template< class T , std::integral K = std::uint32_t , unsigned B = 4 >
+template< class T , std::integral K = std::uint32_t , unsigned B = 4 ,
+	  class A = std::allocator< T > >
 class RadixHeap
 {
 
@@ -113,6 +118,20 @@ class RadixHeap
  public:
  using Item = T;  ///< the type of the items
  using Key = K;   ///< the type of the keys
+
+ /// the empty heap
+ RadixHeap( void ) = default;
+
+ /// the empty heap, its buckets from `alloc`
+ explicit RadixHeap( const A & alloc )
+     : f_B( buckets( alloc , std::make_index_sequence< NB >() ) ) { }
+
+ /// the type of the allocator
+ using allocator_type = A;
+ /// the allocator of the buckets
+ [[nodiscard]] allocator_type get_allocator( void ) const {
+  return( allocator_type( f_B[ 0 ].get_allocator() ) );
+  }
 
  /// pushes \f$ x \f$ with the key \f$ k \f$, in \f$ O( 1 ) \f$ time
  ///
@@ -292,7 +311,18 @@ class RadixHeap
  /// every item in its bucket, the mask and the least keys right
  [[nodiscard]] bool bucketed( void ) const;
 
- std::array< std::vector< Entry > , NB > f_B;   ///< the buckets
+ /// the vector of a bucket
+ using Bucket = detail::AllocVector< A , Entry >;
+
+ /// the buckets, each one on \f$ a \f$
+ template< std::size_t... i >
+ static std::array< Bucket , NB > buckets( const A & a ,
+					  std::index_sequence< i... > ) {
+  return( std::array< Bucket , NB >{
+    { ( static_cast< void >( i ) , Bucket( a ) )... } } );
+  }
+
+ std::array< Bucket , NB > f_B;                 ///< the buckets
  std::array< U , NB > f_min = fill_max();       ///< their least keys
  std::array< std::uint64_t , NW > f_mask = {};  ///< the buckets in use
  U f_last = 0;            ///< the base of the buckets, see bucket()

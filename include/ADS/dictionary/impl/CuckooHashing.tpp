@@ -18,34 +18,37 @@
 namespace ADS
 {
 
-template< class K , class V , class H >
-CuckooHashTable< K , V , H >::CuckooHashTable( std::size_t m , double maxLoad ,
-					     std::size_t s ,
-					     std::uint64_t seed ,
-					     H h )
-    : f_T( m + s ) , f_m( m ) , f_m0( m ) , f_s( s ) , f_maxLoad( maxLoad ) ,
+template< class K , class V , class H , class A >
+CuckooHashTable< K , V , H , A >::CuckooHashTable( std::size_t m ,
+						   double maxLoad ,
+						std::size_t s ,
+						std::uint64_t seed , H h ,
+						const A & alloc )
+    : f_T( m + s , alloc ) , f_m( m ) , f_m0( m ) , f_s( s ) ,
+      f_maxLoad( maxLoad ) ,
       f_seeds( seed ) , f_g1( f_seeds() ) , f_g2( f_seeds() ) , f_h( h )
 {
  ADS_PRE( ( m >= 2 ) && ( maxLoad > 0 ) && ( maxLoad < 0.5 ) );
  }
 
-template< class K , class V , class H >
-void CuckooHashTable< K , V , H >::draw( void )
+template< class K , class V , class H , class A >
+void CuckooHashTable< K , V , H , A >::draw( void )
 {
  f_g1 = TabulationHash( f_seeds() );
  f_g2 = TabulationHash( f_seeds() );
  }
 
-template< class K , class V , class H >
-std::size_t CuckooHashTable< K , V , H >::place( const K & k , int i ) const
+template< class K , class V , class H , class A >
+std::size_t CuckooHashTable< K , V , H , A >::place( const K & k ,
+						     int i ) const
 {
  const auto x = std::uint64_t( f_h( k ) );
  return( std::size_t( ( i ? f_g2( x ) : f_g1( x ) ) % f_m ) );
  }
 
-template< class K , class V , class H >
+template< class K , class V , class H , class A >
 std::optional< std::size_t >
-CuckooHashTable< K , V , H >::find( const K & k ) const
+CuckooHashTable< K , V , H , A >::find( const K & k ) const
 {
  for( int i = 0 ; i < 2 ; ++i ) {
   const std::size_t p = place( k , i );
@@ -58,8 +61,8 @@ CuckooHashTable< K , V , H >::find( const K & k ) const
  return( std::nullopt );
  }
 
-template< class K , class V , class H >
-bool CuckooHashTable< K , V , H >::walk( Cell & c )
+template< class K , class V , class H , class A >
+bool CuckooHashTable< K , V , H , A >::walk( Cell & c )
 {
  std::size_t p = place( c.key , 0 );
  if( ! f_T[ p ].full ) {
@@ -91,8 +94,8 @@ bool CuckooHashTable< K , V , H >::walk( Cell & c )
  return( false );
  }
 
-template< class K , class V , class H >
-bool CuckooHashTable< K , V , H >::settle( Cell & c )
+template< class K , class V , class H , class A >
+bool CuckooHashTable< K , V , H , A >::settle( Cell & c )
 {
  if( walk( c ) )
   return( true );
@@ -104,11 +107,11 @@ bool CuckooHashTable< K , V , H >::settle( Cell & c )
  return( false );
  }
 
-template< class K , class V , class H >
-void CuckooHashTable< K , V , H >::rebuild( std::size_t m ,
-					  std::optional< Cell > extra )
+template< class K , class V , class H , class A >
+void CuckooHashTable< K , V , H , A >::rebuild( std::size_t m ,
+					     std::optional< Cell > extra )
 {
- std::vector< Cell > items;
+ auto items = detail::emptyLike( f_T );
  for( auto & c : f_T )
   if( c.full )
    items.push_back( std::move( c ) );
@@ -129,15 +132,16 @@ void CuckooHashTable< K , V , H >::rebuild( std::size_t m ,
   }
  }
 
-template< class K , class V , class H >
-std::optional< V > CuckooHashTable< K , V , H >::lookup( const K & k ) const
+template< class K , class V , class H , class A >
+std::optional< V > CuckooHashTable< K , V , H ,
+				    A >::lookup( const K & k ) const
 {
  const auto p = find( k );
  return( p ? std::optional< V >( f_T[ *p ].value ) : std::nullopt );
  }
 
-template< class K , class V , class H >
-void CuckooHashTable< K , V , H >::insert( const K & k , const V & v )
+template< class K , class V , class H , class A >
+void CuckooHashTable< K , V , H , A >::insert( const K & k , const V & v )
 {
  if( const auto p = find( k ) )
   f_T[ *p ].value = v;
@@ -155,8 +159,8 @@ void CuckooHashTable< K , V , H >::insert( const K & k , const V & v )
  ADS_INVARIANT( placed( k ) );
  }
 
-template< class K , class V , class H >
-void CuckooHashTable< K , V , H >::remove( const K & k )
+template< class K , class V , class H , class A >
+void CuckooHashTable< K , V , H , A >::remove( const K & k )
 {
  if( const auto p = find( k ) ) {
   f_T[ *p ] = Cell();
@@ -168,38 +172,38 @@ void CuckooHashTable< K , V , H >::remove( const K & k )
  ADS_INVARIANT( placed( k ) );
  }
 
-template< class K , class V , class H >
-bool CuckooHashTable< K , V , H >::contains( const K & k ) const
+template< class K , class V , class H , class A >
+bool CuckooHashTable< K , V , H , A >::contains( const K & k ) const
 {
  return( find( k ).has_value() );
  }
 
-template< class K , class V , class H >
-std::size_t CuckooHashTable< K , V , H >::size( void ) const
+template< class K , class V , class H , class A >
+std::size_t CuckooHashTable< K , V , H , A >::size( void ) const
 {
  return( f_n );
  }
 
-template< class K , class V , class H >
-std::size_t CuckooHashTable< K , V , H >::capacity( void ) const
+template< class K , class V , class H , class A >
+std::size_t CuckooHashTable< K , V , H , A >::capacity( void ) const
 {
  return( f_m );
  }
 
-template< class K , class V , class H >
-std::size_t CuckooHashTable< K , V , H >::rehashes( void ) const
+template< class K , class V , class H , class A >
+std::size_t CuckooHashTable< K , V , H , A >::rehashes( void ) const
 {
  return( f_rehashes );
  }
 
-template< class K , class V , class H >
-std::size_t CuckooHashTable< K , V , H >::evictions( void ) const
+template< class K , class V , class H , class A >
+std::size_t CuckooHashTable< K , V , H , A >::evictions( void ) const
 {
  return( f_evictions );
  }
 
-template< class K , class V , class H >
-std::size_t CuckooHashTable< K , V , H >::stashed( void ) const
+template< class K , class V , class H , class A >
+std::size_t CuckooHashTable< K , V , H , A >::stashed( void ) const
 {
  std::size_t c = 0;
  for( std::size_t p = f_m ; p < f_T.size() ; ++p )
@@ -207,8 +211,8 @@ std::size_t CuckooHashTable< K , V , H >::stashed( void ) const
  return( c );
  }
 
-template< class K , class V , class H >
-bool CuckooHashTable< K , V , H >::placed( const K & k ) const
+template< class K , class V , class H , class A >
+bool CuckooHashTable< K , V , H , A >::placed( const K & k ) const
 {
  std::size_t c = 0;  // k at most once
  const std::size_t p1 = place( k , 0 ) , p2 = place( k , 1 );

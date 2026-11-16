@@ -20,13 +20,14 @@
 namespace ADS
 {
 
-template< class T , class Better , unsigned D , bool BottomUp >
-DaryHeap< T , Better , D , BottomUp >::DaryHeap( Better better )
-    : f_better( std::move( better ) )
+template< class T , class Better , unsigned D , bool BottomUp , class A >
+DaryHeap< T , Better , D , BottomUp , A >::DaryHeap( Better better ,
+						 const A & alloc )
+    : f_A( alloc ) , f_better( std::move( better ) )
 { }
 
-template< class T , class Better , unsigned D , bool BottomUp >
-inline void DaryHeap< T , Better , D , BottomUp >::push( const T & x )
+template< class T , class Better , unsigned D , bool BottomUp , class A >
+inline void DaryHeap< T , Better , D , BottomUp , A >::push( const T & x )
 {
  const std::size_t i = f_A.size();
  const std::size_t p = i > 0 ? ( i - 1 ) / D : 0;
@@ -41,15 +42,15 @@ inline void DaryHeap< T , Better , D , BottomUp >::push( const T & x )
  ADS_INVARIANT( ordered() );
  }
 
-template< class T , class Better , unsigned D , bool BottomUp >
-inline const T & DaryHeap< T , Better , D , BottomUp >::top( void ) const
+template< class T , class Better , unsigned D , bool BottomUp , class A >
+inline const T & DaryHeap< T , Better , D , BottomUp , A >::top( void ) const
 {
  ADS_PRE( ! f_A.empty() );
  return( f_A.front() );
  }
 
-template< class T , class Better , unsigned D , bool BottomUp >
-inline T DaryHeap< T , Better , D , BottomUp >::pop( void )
+template< class T , class Better , unsigned D , bool BottomUp , class A >
+inline T DaryHeap< T , Better , D , BottomUp , A >::pop( void )
 {
  ADS_PRE( ! f_A.empty() );
  T x = std::move( f_A.front() );
@@ -65,8 +66,8 @@ inline T DaryHeap< T , Better , D , BottomUp >::pop( void )
  return( x );
  }
 
-template< class T , class Better , unsigned D , bool BottomUp >
-inline void DaryHeap< T , Better , D , BottomUp >::bottomUp( T x )
+template< class T , class Better , unsigned D , bool BottomUp , class A >
+inline void DaryHeap< T , Better , D , BottomUp , A >::bottomUp( T x )
 {
  const std::size_t n = f_A.size();
  std::size_t i = 0;
@@ -85,8 +86,8 @@ inline void DaryHeap< T , Better , D , BottomUp >::bottomUp( T x )
  up( i , std::move( x ) );  // and x up from there
  }
 
-template< class T , class Better , unsigned D , bool BottomUp >
-T DaryHeap< T , Better , D , BottomUp >::erase( std::size_t i )
+template< class T , class Better , unsigned D , bool BottomUp , class A >
+T DaryHeap< T , Better , D , BottomUp , A >::erase( std::size_t i )
 {
  ADS_PRE( i < f_A.size() );
  T r = std::move( f_A[ i ] );
@@ -102,8 +103,8 @@ T DaryHeap< T , Better , D , BottomUp >::erase( std::size_t i )
  return( r );
  }
 
-template< class T , class Better , unsigned D , bool BottomUp >
-const T * DaryHeap< T , Better , D , BottomUp >::secondTop( void ) const
+template< class T , class Better , unsigned D , bool BottomUp , class A >
+const T * DaryHeap< T , Better , D , BottomUp , A >::secondTop( void ) const
 {
  const std::size_t n = f_A.size();
  if( n < 2 )
@@ -115,9 +116,9 @@ const T * DaryHeap< T , Better , D , BottomUp >::secondTop( void ) const
  return( &f_A[ b ] );
  }
 
-template< class T , class Better , unsigned D , bool BottomUp >
+template< class T , class Better , unsigned D , bool BottomUp , class A >
 std::vector< T >
-DaryHeap< T , Better , D , BottomUp >::smallest( std::size_t k ) const
+DaryHeap< T , Better , D , BottomUp , A >::smallest( std::size_t k ) const
 {
  std::vector< T > S;
  const std::size_t n = f_A.size();
@@ -142,38 +143,38 @@ DaryHeap< T , Better , D , BottomUp >::smallest( std::size_t k ) const
  return( S );
  }
 
-template< class T , class Better , unsigned D , bool BottomUp >
-bool DaryHeap< T , Better , D , BottomUp >::empty( void ) const
+template< class T , class Better , unsigned D , bool BottomUp , class A >
+bool DaryHeap< T , Better , D , BottomUp , A >::empty( void ) const
 {
  return( f_A.empty() );
  }
 
-template< class T , class Better , unsigned D , bool BottomUp >
-std::size_t DaryHeap< T , Better , D , BottomUp >::size( void ) const
+template< class T , class Better , unsigned D , bool BottomUp , class A >
+std::size_t DaryHeap< T , Better , D , BottomUp , A >::size( void ) const
 {
  return( f_A.size() );
  }
 
-template< class T , class Better , unsigned D , bool BottomUp >
-void DaryHeap< T , Better , D , BottomUp >::reserve( std::size_t n )
+template< class T , class Better , unsigned D , bool BottomUp , class A >
+void DaryHeap< T , Better , D , BottomUp , A >::reserve( std::size_t n )
 {
  f_A.reserve( n );
  }
 
-template< class T , class Better , unsigned D , bool BottomUp >
-void DaryHeap< T , Better , D , BottomUp >::clear( void )
+template< class T , class Better , unsigned D , bool BottomUp , class A >
+void DaryHeap< T , Better , D , BottomUp , A >::clear( void )
 {
  f_A.clear();
  }
 
-template< class T , class Better , unsigned D , bool BottomUp >
+template< class T , class Better , unsigned D , bool BottomUp , class A >
 template< std::input_iterator I , std::sentinel_for< I > S >
-void DaryHeap< T , Better , D , BottomUp >::assign( I first , S last )
+void DaryHeap< T , Better , D , BottomUp , A >::assign( I first , S last )
 {
- std::vector< T , HugePageAllocator< T > > A( f_A.get_allocator() );
+ detail::AllocVector< A , T > B( f_A.get_allocator() );
  for( ; first != last ; ++first )
-  A.push_back( *first );
- f_A.swap( A );  // nothing thrown from here on
+  B.push_back( *first );
+ f_A.swap( B );  // nothing thrown from here on
  const std::size_t n = f_A.size();
  if( n > 1 )
   for( std::size_t i = ( n - 2 ) / D + 1 ; i-- > 0 ; ) {
@@ -183,8 +184,9 @@ void DaryHeap< T , Better , D , BottomUp >::assign( I first , S last )
  ADS_INVARIANT( ordered() );
  }
 
-template< class T , class Better , unsigned D , bool BottomUp >
-inline void DaryHeap< T , Better , D , BottomUp >::up( std::size_t i , T x )
+template< class T , class Better , unsigned D , bool BottomUp , class A >
+inline void DaryHeap< T , Better , D , BottomUp , A >::up( std::size_t i ,
+							   T x )
 {
  while( i > 0 ) {
   const std::size_t p = ( i - 1 ) / D;
@@ -196,8 +198,9 @@ inline void DaryHeap< T , Better , D , BottomUp >::up( std::size_t i , T x )
  f_A[ i ] = std::move( x );
  }
 
-template< class T , class Better , unsigned D , bool BottomUp >
-inline void DaryHeap< T , Better , D , BottomUp >::down( std::size_t i , T x )
+template< class T , class Better , unsigned D , bool BottomUp , class A >
+inline void DaryHeap< T , Better , D , BottomUp , A >::down( std::size_t i ,
+							     T x )
 {
  const std::size_t n = f_A.size();
  for( ; ; ) {
@@ -217,8 +220,8 @@ inline void DaryHeap< T , Better , D , BottomUp >::down( std::size_t i , T x )
  f_A[ i ] = std::move( x );
  }
 
-template< class T , class Better , unsigned D , bool BottomUp >
-bool DaryHeap< T , Better , D , BottomUp >::ordered( void ) const
+template< class T , class Better , unsigned D , bool BottomUp , class A >
+bool DaryHeap< T , Better , D , BottomUp , A >::ordered( void ) const
 {
  const std::size_t n = f_A.size();
  if( n > 1024 ) {  // the root and the last item

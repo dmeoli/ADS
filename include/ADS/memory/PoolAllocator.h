@@ -25,8 +25,9 @@
  *
  * `PoolAllocator< T , R >` is the allocator of the standard (the
  * requirements Allocator of [allocator.requirements]): it holds a pointer
- * to its resource `R`, the `PoolResource` above or the
- * `ConcurrentPoolResource` of the threads [see `ConcurrentPool.h`], it is
+ * to its resource `R`, the `PoolResource` above, the
+ * `ConcurrentPoolResource` of the threads [see `ConcurrentPool.h`] or the
+ * `ArenaResource` of an arena of bytes [see `Arena.h`], it is
  * rebound to any type by `std::allocator_traits` (a node of `std::list`,
  * `std::map` or `std::unordered_map`, the control block of
  * `std::allocate_shared`, which then holds the counts and the object in one

@@ -22,16 +22,16 @@ namespace ADS
 /*---------------------------- THE OPERATIONS ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class T , std::totally_ordered P >
-FibonacciHeapPriorityQueue< T , P >::FibonacciHeapPriorityQueue(
+template< class T , std::totally_ordered P , class A >
+FibonacciHeapPriorityQueue< T , P , A >::FibonacciHeapPriorityQueue(
   FibonacciHeapPriorityQueue && other ) noexcept
     : f_min( std::exchange( other.f_min , nullptr ) ) ,
       f_n( std::exchange( other.f_n , 0 ) ) ,
       f_pool( std::move( other.f_pool ) )
 { }
 
-template< class T , std::totally_ordered P >
-FibonacciHeapPriorityQueue< T , P >::~FibonacciHeapPriorityQueue()
+template< class T , std::totally_ordered P , class A >
+FibonacciHeapPriorityQueue< T , P , A >::~FibonacciHeapPriorityQueue()
 {
  if constexpr( ! std::is_trivially_destructible_v< Node > ) {
   std::vector< Node * > S;
@@ -52,35 +52,35 @@ FibonacciHeapPriorityQueue< T , P >::~FibonacciHeapPriorityQueue()
   }
  }
 
-template< class T , std::totally_ordered P >
-bool FibonacciHeapPriorityQueue< T , P >::empty( void ) const
+template< class T , std::totally_ordered P , class A >
+bool FibonacciHeapPriorityQueue< T , P , A >::empty( void ) const
 {
  return( f_min == nullptr );
  }
 
-template< class T , std::totally_ordered P >
-int FibonacciHeapPriorityQueue< T , P >::size( void ) const
+template< class T , std::totally_ordered P , class A >
+int FibonacciHeapPriorityQueue< T , P , A >::size( void ) const
 {
  return( f_n );
  }
 
-template< class T , std::totally_ordered P >
-const T & FibonacciHeapPriorityQueue< T , P >::min( void ) const
+template< class T , std::totally_ordered P , class A >
+const T & FibonacciHeapPriorityQueue< T , P , A >::min( void ) const
 {
  ADS_PRE( ! empty() );
  return( f_min->value );
  }
 
-template< class T , std::totally_ordered P >
-const P & FibonacciHeapPriorityQueue< T , P >::minPriority( void ) const
+template< class T , std::totally_ordered P , class A >
+const P & FibonacciHeapPriorityQueue< T , P , A >::minPriority( void ) const
 {
  ADS_PRE( ! empty() );
  return( f_min->priority );
  }
 
-template< class T , std::totally_ordered P >
-typename FibonacciHeapPriorityQueue< T , P >::Handle
-FibonacciHeapPriorityQueue< T , P >::insert( const T & x , const P & p )
+template< class T , std::totally_ordered P , class A >
+typename FibonacciHeapPriorityQueue< T , P , A >::Handle
+FibonacciHeapPriorityQueue< T , P , A >::insert( const T & x , const P & p )
 {
  Node * z = f_pool.make( p , x );
  add_root( z );
@@ -90,8 +90,8 @@ FibonacciHeapPriorityQueue< T , P >::insert( const T & x , const P & p )
  return( z );
  }
 
-template< class T , std::totally_ordered P >
-T FibonacciHeapPriorityQueue< T , P >::deleteMin( void )
+template< class T , std::totally_ordered P , class A >
+T FibonacciHeapPriorityQueue< T , P , A >::deleteMin( void )
 {
  ADS_PRE( ! empty() );
  Node * z = f_min;
@@ -119,8 +119,9 @@ T FibonacciHeapPriorityQueue< T , P >::deleteMin( void )
  return( v );
  }
 
-template< class T , std::totally_ordered P >
-void FibonacciHeapPriorityQueue< T , P >::decrease( Handle x , const P & p )
+template< class T , std::totally_ordered P , class A >
+void FibonacciHeapPriorityQueue< T , P , A >::decrease( Handle x ,
+							const P & p )
 {
  ADS_PRE( ( x != nullptr ) && ! ( x->priority < p ) );
  ADS_AUDIT( owns( x ) );
@@ -148,16 +149,16 @@ void FibonacciHeapPriorityQueue< T , P >::decrease( Handle x , const P & p )
 /*------------------------------ THE TREES ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class T , std::totally_ordered P >
-void FibonacciHeapPriorityQueue< T , P >::unlink( Node * x )
+template< class T , std::totally_ordered P , class A >
+void FibonacciHeapPriorityQueue< T , P , A >::unlink( Node * x )
 {
  x->left->right = x->right;
  x->right->left = x->left;
  x->left = x->right = x;
  }
 
-template< class T , std::totally_ordered P >
-void FibonacciHeapPriorityQueue< T , P >::splice( Node * x , Node * y )
+template< class T , std::totally_ordered P , class A >
+void FibonacciHeapPriorityQueue< T , P , A >::splice( Node * x , Node * y )
 {
  x->right = y->right;
  x->left = y;
@@ -165,15 +166,15 @@ void FibonacciHeapPriorityQueue< T , P >::splice( Node * x , Node * y )
  y->right = x;
  }
 
-template< class T , std::totally_ordered P >
-void FibonacciHeapPriorityQueue< T , P >::remove( Node * x , Node *& head )
+template< class T , std::totally_ordered P , class A >
+void FibonacciHeapPriorityQueue< T , P , A >::remove( Node * x , Node *& head )
 {
  head = ( x->right == x ) ? nullptr : x->right;
  unlink( x );
  }
 
-template< class T , std::totally_ordered P >
-void FibonacciHeapPriorityQueue< T , P >::add_root( Node * z )
+template< class T , std::totally_ordered P , class A >
+void FibonacciHeapPriorityQueue< T , P , A >::add_root( Node * z )
 {
  if( ! f_min )
   f_min = z;
@@ -184,8 +185,8 @@ void FibonacciHeapPriorityQueue< T , P >::add_root( Node * z )
   }
  }
 
-template< class T , std::totally_ordered P >
-void FibonacciHeapPriorityQueue< T , P >::cut( Node * x , Node * y )
+template< class T , std::totally_ordered P , class A >
+void FibonacciHeapPriorityQueue< T , P , A >::cut( Node * x , Node * y )
 {
  if( y->child == x )
   remove( x , y->child );
@@ -197,11 +198,11 @@ void FibonacciHeapPriorityQueue< T , P >::cut( Node * x , Node * y )
  splice( x , f_min );
  }
 
-template< class T , std::totally_ordered P >
-void FibonacciHeapPriorityQueue< T , P >::consolidate( Node * w )
+template< class T , std::totally_ordered P , class A >
+void FibonacciHeapPriorityQueue< T , P , A >::consolidate( Node * w )
 {
- Node * A[ 64 ] = {};  // the trees by degree
- int top = 0;          // no degree above it in A
+ Node * D[ 64 ] = {};  // the trees by degree
+ int top = 0;          // no degree above it in D
  const Node * const first = w;
  do {            // the next root is read before
   Node * y = w;  // w is linked, and the roots
@@ -209,8 +210,8 @@ void FibonacciHeapPriorityQueue< T , P >::consolidate( Node * w )
   y->parent = nullptr;
   y->mark = false;
   int d = y->degree;
-  for( Node * z ; ( z = A[ d ] ) ; ++d ) {
-   A[ d ] = nullptr;
+  for( Node * z ; ( z = D[ d ] ) ; ++d ) {
+   D[ d ] = nullptr;
    if( z->priority < y->priority )
     std::swap( y , z );
    z->parent = y;  // z under y
@@ -223,7 +224,7 @@ void FibonacciHeapPriorityQueue< T , P >::consolidate( Node * w )
     }
    y->degree = d + 1;
    }
-  A[ d ] = y;
+  D[ d ] = y;
   if( top < d )
    top = d;
   } while( w != first );
@@ -231,7 +232,7 @@ void FibonacciHeapPriorityQueue< T , P >::consolidate( Node * w )
  Node * last = nullptr;
  Node * m = nullptr;
  for( int d = 0 ; d <= top ; ++d )
-  if( Node * y = A[ d ] ) {
+  if( Node * y = D[ d ] ) {
    if( ! head )
     head = m = y;
    else {
@@ -251,8 +252,8 @@ void FibonacciHeapPriorityQueue< T , P >::consolidate( Node * w )
 /*----------------------------- THE INVARIANT ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class T , std::totally_ordered P >
-bool FibonacciHeapPriorityQueue< T , P >::owns( const Node * x ) const
+template< class T , std::totally_ordered P , class A >
+bool FibonacciHeapPriorityQueue< T , P , A >::owns( const Node * x ) const
 {
  std::vector< const Node * > S;
  if( f_min )
@@ -272,10 +273,10 @@ bool FibonacciHeapPriorityQueue< T , P >::owns( const Node * x ) const
  return( false );
  }
 
-template< class T , std::totally_ordered P >
-bool FibonacciHeapPriorityQueue< T , P >::tree( const Node * x ,
-					       const Node * parent ,
-					       int & n ) const
+template< class T , std::totally_ordered P , class A >
+bool FibonacciHeapPriorityQueue< T , P , A >::tree( const Node * x ,
+						  const Node * parent ,
+						  int & n ) const
 {
  const Node * y = x;
  int k = 0;
@@ -305,8 +306,8 @@ bool FibonacciHeapPriorityQueue< T , P >::tree( const Node * x ,
  return( y == x );
  }
 
-template< class T , std::totally_ordered P >
-bool FibonacciHeapPriorityQueue< T , P >::isHeap( void ) const
+template< class T , std::totally_ordered P , class A >
+bool FibonacciHeapPriorityQueue< T , P , A >::isHeap( void ) const
 {
  if( ! f_min )
   return( f_n == 0 );

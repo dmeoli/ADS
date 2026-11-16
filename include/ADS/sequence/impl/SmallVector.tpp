@@ -21,21 +21,21 @@ namespace ADS
 
 #if ! ADS_SMALLVECTOR_BOOST
 
-template< class T , std::size_t N >
-SmallVector< T , N >::SmallVector( std::size_t n , const T & x )
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A >::SmallVector( std::size_t n , const T & x )
     : SmallVector()
 {
  resize( n , x );
  }
 
-template< class T , std::size_t N >
-SmallVector< T , N >::SmallVector( std::initializer_list< T > items )
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A >::SmallVector( std::initializer_list< T > items )
     : SmallVector( items.begin() , items.end() )
 { }
 
-template< class T , std::size_t N >
+template< class T , std::size_t N , class A >
 template< std::input_iterator I , std::sentinel_for< I > S >
-SmallVector< T , N >::SmallVector( I first , S last ) : SmallVector()
+SmallVector< T , N , A >::SmallVector( I first , S last ) : SmallVector()
 {
  // if a push throws, the vector made by the delegation is destroyed
  if constexpr( std::forward_iterator< I > )
@@ -44,13 +44,24 @@ SmallVector< T , N >::SmallVector( I first , S last ) : SmallVector()
   emplace_back( *first );
  }
 
-template< class T , std::size_t N >
-SmallVector< T , N >::SmallVector( const SmallVector & other )
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A >::SmallVector( const SmallVector & other )
+ requires( PLAIN )
     : SmallVector( other.begin() , other.end() )
 { }
 
-template< class T , std::size_t N >
-void SmallVector< T , N >::take( SmallVector & o )
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A >::SmallVector( const SmallVector & other ,
+				     const A & alloc )
+    : SmallVector( alloc )
+{
+ reserve( other.size() );
+ for( const T & x : other )
+  emplace_back( x );
+ }
+
+template< class T , std::size_t N , class A >
+void SmallVector< T , N , A >::take( SmallVector & o )
 {
  if( ! o.small() ) {  // its memory
   f_A = std::exchange( o.f_A , o.inner() );
@@ -65,17 +76,32 @@ void SmallVector< T , N >::take( SmallVector & o )
   }
  }
 
-template< class T , std::size_t N >
-SmallVector< T , N >::SmallVector( SmallVector && other ) noexcept(
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A >::SmallVector( SmallVector && other ) noexcept(
   std::is_nothrow_move_constructible_v< T > )
-    : SmallVector()
+    : Holder( std::move( other.alloc() ) ) , f_A( inner() )
 {
  take( other );
  }
 
-template< class T , std::size_t N >
-SmallVector< T , N > &
-SmallVector< T , N >::operator=( const SmallVector & other )
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A >::SmallVector( SmallVector && other , const A & alloc )
+    : SmallVector( alloc )
+{
+ if( this->alloc() == other.alloc() )
+  take( other );
+ else {  // the items, one by one
+  reserve( other.size() );
+  for( T & x : other )
+   emplace_back( std::move( x ) );
+  other.clear();
+  }
+ }
+
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A > &
+SmallVector< T , N , A >::operator=( const SmallVector & other )
+ requires( PLAIN )
 {
  if( this != &other ) {
   SmallVector t( other );
@@ -84,10 +110,10 @@ SmallVector< T , N >::operator=( const SmallVector & other )
  return( *this );
  }
 
-template< class T , std::size_t N >
-SmallVector< T , N > &
-SmallVector< T , N >::operator=( SmallVector && other ) noexcept(
-  std::is_nothrow_move_constructible_v< T > )
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A > & SmallVector< T , N , A >::operator=(
+  SmallVector && other ) noexcept( std::is_nothrow_move_constructible_v< T > )
+ requires( PLAIN )
 {
  if( this != &other ) {
   this->~SmallVector();
@@ -97,27 +123,27 @@ SmallVector< T , N >::operator=( SmallVector && other ) noexcept(
  return( *this );
  }
 
-template< class T , std::size_t N >
-SmallVector< T , N >::~SmallVector()
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A >::~SmallVector()
 {
  std::destroy( f_A , f_A + f_n );
  if( ! small() )
-  std::allocator< T >().deallocate( f_A , f_cap );
+  Traits::deallocate( this->alloc() , f_A , f_cap );
  }
 
-template< class T , std::size_t N >
-void SmallVector< T , N >::swap( SmallVector & other )
+template< class T , std::size_t N , class A >
+void SmallVector< T , N , A >::swap( SmallVector & other )
 {
  SmallVector t( std::move( other ) );
  other = std::move( *this );
  *this = std::move( t );
  }
 
-template< class T , std::size_t N >
-void SmallVector< T , N >::grow( std::size_t c )
+template< class T , std::size_t N , class A >
+void SmallVector< T , N , A >::grow( std::size_t c )
 {
  ADS_PRE( c > f_cap );
- T * B = std::allocator< T >().allocate( c );
+ T * B = Traits::allocate( this->alloc() , c );
  try {
   if constexpr( std::is_nothrow_move_constructible_v< T > ||
 		! std::is_copy_constructible_v< T > )
@@ -126,19 +152,19 @@ void SmallVector< T , N >::grow( std::size_t c )
    std::uninitialized_copy( f_A , f_A + f_n , B );
   }
  catch( ... ) {
-  std::allocator< T >().deallocate( B , c );
+  Traits::deallocate( this->alloc() , B , c );
   throw;
   }
  std::destroy( f_A , f_A + f_n );
  if( ! small() )
-  std::allocator< T >().deallocate( f_A , f_cap );
+  Traits::deallocate( this->alloc() , f_A , f_cap );
  f_A = B;
  f_cap = c;
  }
 
-template< class T , std::size_t N >
+template< class T , std::size_t N , class A >
 template< class... Args >
-inline T & SmallVector< T , N >::emplace_back( Args &&... args )
+inline T & SmallVector< T , N , A >::emplace_back( Args &&... args )
 {
  if( f_n == f_cap ) {                      // the item first, since the
   T x( std::forward< Args >( args )... );  // arguments may live here
@@ -153,22 +179,22 @@ inline T & SmallVector< T , N >::emplace_back( Args &&... args )
  return( f_A[ f_n - 1 ] );
  }
 
-template< class T , std::size_t N >
-inline void SmallVector< T , N >::pop_back( void )
+template< class T , std::size_t N , class A >
+inline void SmallVector< T , N , A >::pop_back( void )
 {
  ADS_PRE( f_n > 0 );
  std::destroy_at( f_A + --f_n );
  }
 
-template< class T , std::size_t N >
-void SmallVector< T , N >::reserve( std::size_t n )
+template< class T , std::size_t N , class A >
+void SmallVector< T , N , A >::reserve( std::size_t n )
 {
  if( n > f_cap )
   grow( n );
  }
 
-template< class T , std::size_t N >
-void SmallVector< T , N >::resize( std::size_t n , const T & x )
+template< class T , std::size_t N , class A >
+void SmallVector< T , N , A >::resize( std::size_t n , const T & x )
 {
  if( n < f_n ) {
   std::destroy( f_A + n , f_A + f_n );
@@ -185,8 +211,8 @@ void SmallVector< T , N >::resize( std::size_t n , const T & x )
  f_n = n;
  }
 
-template< class T , std::size_t N >
-void SmallVector< T , N >::clear( void )
+template< class T , std::size_t N , class A >
+void SmallVector< T , N , A >::clear( void )
 {
  std::destroy( f_A , f_A + f_n );
  f_n = 0;
@@ -194,19 +220,19 @@ void SmallVector< T , N >::clear( void )
 
 #else
 
-template< class T , std::size_t N >
-SmallVector< T , N >::SmallVector( std::size_t n , const T & x )
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A >::SmallVector( std::size_t n , const T & x )
     : f_v( n , x )
 { }
 
-template< class T , std::size_t N >
-SmallVector< T , N >::SmallVector( std::initializer_list< T > items )
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A >::SmallVector( std::initializer_list< T > items )
     : f_v( items )
 { }
 
-template< class T , std::size_t N >
+template< class T , std::size_t N , class A >
 template< std::input_iterator I , std::sentinel_for< I > S >
-SmallVector< T , N >::SmallVector( I first , S last )
+SmallVector< T , N , A >::SmallVector( I first , S last )
 {
  if constexpr( std::forward_iterator< I > )
   f_v.reserve( std::size_t( std::ranges::distance( first , last ) ) );
@@ -214,31 +240,55 @@ SmallVector< T , N >::SmallVector( I first , S last )
   f_v.emplace_back( *first );
  }
 
-template< class T , std::size_t N >
-SmallVector< T , N >::SmallVector( const SmallVector & other )
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A >::SmallVector( const SmallVector & other )
+ requires( PLAIN )
     : f_v( other.f_v )
 { }
 
-template< class T , std::size_t N >
-SmallVector< T , N >::SmallVector( SmallVector && other ) noexcept(
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A >::SmallVector( const SmallVector & other ,
+				     const A & alloc )
+    : f_v( other.f_v , typename Vector::allocator_type( alloc ) )
+{ }
+
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A >::SmallVector( SmallVector && other , const A & alloc )
+    : f_v( typename Vector::allocator_type( alloc ) )
+{
+ // not the constructor of Boost with an allocator, which frees the memory
+ // of other twice when the allocators differ (Boost 1.90)
+ if( f_v.get_allocator() == other.f_v.get_allocator() )
+  f_v = std::move( other.f_v );
+ else {
+  f_v.reserve( other.f_v.size() );
+  for( T & x : other.f_v )
+   f_v.emplace_back( std::move( x ) );
+  }
+ other.renew();
+ }
+
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A >::SmallVector( SmallVector && other ) noexcept(
   std::is_nothrow_move_constructible_v< T > )
     : f_v( std::move( other.f_v ) )
 {
  other.renew();
  }
 
-template< class T , std::size_t N >
-SmallVector< T , N > &
-SmallVector< T , N >::operator=( const SmallVector & other )
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A > &
+SmallVector< T , N , A >::operator=( const SmallVector & other )
+ requires( PLAIN )
 {
  f_v = other.f_v;
  return( *this );
  }
 
-template< class T , std::size_t N >
-SmallVector< T , N > &
-SmallVector< T , N >::operator=( SmallVector && other ) noexcept(
-  std::is_nothrow_move_constructible_v< T > )
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A > & SmallVector< T , N , A >::operator=(
+  SmallVector && other ) noexcept( std::is_nothrow_move_constructible_v< T > )
+ requires( PLAIN )
 {
  if( this != &other ) {
   f_v = std::move( other.f_v );
@@ -247,26 +297,33 @@ SmallVector< T , N >::operator=( SmallVector && other ) noexcept(
  return( *this );
  }
 
-template< class T , std::size_t N >
-SmallVector< T , N >::~SmallVector()
+template< class T , std::size_t N , class A >
+SmallVector< T , N , A >::~SmallVector()
 { }
 
-template< class T , std::size_t N >
-void SmallVector< T , N >::renew( void ) noexcept
+template< class T , std::size_t N , class A >
+void SmallVector< T , N , A >::renew( void ) noexcept
 {
- std::destroy_at( &f_v );  // Boost may leave it on no room at all
- std::construct_at( &f_v );
+ if constexpr( PLAIN ) {
+  std::destroy_at( &f_v );  // Boost may leave it on no room at all
+  std::construct_at( &f_v );
+  }
+ else {
+  const auto a = f_v.get_allocator();
+  std::destroy_at( &f_v );
+  std::construct_at( &f_v , a );
+  }
  }
 
-template< class T , std::size_t N >
-void SmallVector< T , N >::swap( SmallVector & other )
+template< class T , std::size_t N , class A >
+void SmallVector< T , N , A >::swap( SmallVector & other )
 {
  f_v.swap( other.f_v );
  }
 
-template< class T , std::size_t N >
+template< class T , std::size_t N , class A >
 template< class... Args >
-T & SmallVector< T , N >::emplace_back( Args &&... args )
+T & SmallVector< T , N , A >::emplace_back( Args &&... args )
 {
  if( f_v.size() == f_v.capacity() ) {      // the item first, since the
   T x( std::forward< Args >( args )... );  // arguments may live here
@@ -278,21 +335,21 @@ T & SmallVector< T , N >::emplace_back( Args &&... args )
  return( f_v.back() );
  }
 
-template< class T , std::size_t N >
-void SmallVector< T , N >::pop_back( void )
+template< class T , std::size_t N , class A >
+void SmallVector< T , N , A >::pop_back( void )
 {
  ADS_PRE( ! empty() );
  f_v.pop_back();
  }
 
-template< class T , std::size_t N >
-void SmallVector< T , N >::reserve( std::size_t n )
+template< class T , std::size_t N , class A >
+void SmallVector< T , N , A >::reserve( std::size_t n )
 {
  f_v.reserve( n );
  }
 
-template< class T , std::size_t N >
-void SmallVector< T , N >::resize( std::size_t n , const T & x )
+template< class T , std::size_t N , class A >
+void SmallVector< T , N , A >::resize( std::size_t n , const T & x )
 {
  if( n > f_v.capacity() ) {
   const T y = x;  // x may be an item
@@ -303,8 +360,8 @@ void SmallVector< T , N >::resize( std::size_t n , const T & x )
  ADS_INVARIANT( ( size() <= capacity() ) && ( capacity() >= N ) );
  }
 
-template< class T , std::size_t N >
-void SmallVector< T , N >::clear( void )
+template< class T , std::size_t N , class A >
+void SmallVector< T , N , A >::clear( void )
 {
  f_v.clear();
  }

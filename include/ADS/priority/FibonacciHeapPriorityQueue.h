@@ -29,6 +29,10 @@
  * the trees by degree in an array on the stack (a degree is at most
  * \f$ \log_\phi n < 64 \f$).
  *
+ * The nodes come from an `ObjectPool` [see `ObjectPool.h`] whose blocks
+ * come from the allocator `A`, `HugePageAllocator` by default; the queue
+ * moves with its pool and its allocator, and is never copied.
+ *
  * The contracts [see `Contract.h`]: `min()`, `minPriority()` and
  * `deleteMin()` need a heap that is not empty, `decrease()` a handle of a
  * node of this heap (checked in \f$ O( n ) \f$ with the invariants) and a
@@ -67,6 +71,7 @@
 #include "ADS/Capabilities.h"
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/memory/AllocatorAware.h"
 #include "ADS/memory/ObjectPool.h"
 #include "ADS/priority/PriorityQueue.h"
 
@@ -90,7 +95,8 @@ namespace ADS
 
 /// a priority queue on a Fibonacci heap, a collection of trees heap ordered
 /// whose roots are in a circular list
-template< class T , std::totally_ordered P = int >
+template< class T , std::totally_ordered P = int ,
+	  class A = HugePageAllocator< T > >
 class FibonacciHeapPriorityQueue
 {
 
@@ -115,6 +121,18 @@ class FibonacciHeapPriorityQueue
 
  /// the empty heap
  FibonacciHeapPriorityQueue( void ) = default;
+
+ /// the empty queue, the blocks of its nodes from `alloc`
+ explicit FibonacciHeapPriorityQueue( const A & alloc )
+     : f_pool( std::size_t( 1 ) << 24 ,
+	       typename Pool::allocator_type( alloc ) ) { }
+
+ /// the type of the allocator
+ using allocator_type = A;
+ /// the allocator of the blocks of the nodes
+ [[nodiscard]] allocator_type get_allocator( void ) const {
+  return( allocator_type( f_pool.get_allocator() ) );
+  }
 
  /// no copy: the handles point into the heap
  FibonacciHeapPriorityQueue( const FibonacciHeapPriorityQueue & ) = delete;
@@ -368,17 +386,20 @@ class FibonacciHeapPriorityQueue
  /// list of the roots and the minimum among them only
  [[nodiscard]] bool isHeap( void ) const;
 
- Node * f_min = nullptr;     ///< the root of least priority
- int f_n = 0;                ///< the number of items
- ObjectPool< Node > f_pool;  ///< the nodes
+ Node * f_min = nullptr;  ///< the root of least priority
+ int f_n = 0;             ///< the number of items
+ /// the pool of the nodes
+ using Pool = ObjectPool< Node , detail::RebindAlloc< A , Node > >;
+
+ Pool f_pool;  ///< the nodes
 
  };  // end( class FibonacciHeapPriorityQueue )
 
 /// the items of a Fibonacci heap stay in their nodes, which the handles
 /// point to [see `Capabilities.h`]
-template< class T , std::totally_ordered P >
+template< class T , std::totally_ordered P , class A >
 inline constexpr bool
-  enable_stable_references< FibonacciHeapPriorityQueue< T , P > > = true;
+  enable_stable_references< FibonacciHeapPriorityQueue< T , P , A > > = true;
 
 /*--------------------------------------------------------------------------*/
 

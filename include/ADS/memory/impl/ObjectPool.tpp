@@ -63,6 +63,16 @@ void ObjectPool< T , A >::release( void ) noexcept
 template< class T , class A >
 void ObjectPool< T , A >::swap( ObjectPool & other ) noexcept
 {
+ if constexpr( ! std::is_move_assignable_v< SlotAlloc > ) {
+  // an allocator that is not assigned, as std::pmr::polymorphic_allocator:
+  // the two pools built again, each with the allocator of its blocks
+  ObjectPool t( std::move( other ) );
+  std::destroy_at( &other );
+  std::construct_at( &other , std::move( *this ) );
+  std::destroy_at( this );
+  std::construct_at( this , std::move( t ) );
+  return;
+  }
  std::swap( f_free , other.f_free );
  std::swap( f_next , other.f_next );
  std::swap( f_end , other.f_end );
@@ -70,7 +80,8 @@ void ObjectPool< T , A >::swap( ObjectPool & other ) noexcept
  std::swap( f_reuse , other.f_reuse );
  std::swap( f_n , other.f_n );
  std::swap( f_size , other.f_size );
- std::swap( f_alloc , other.f_alloc );
+ if constexpr( std::is_move_assignable_v< SlotAlloc > )
+  std::swap( f_alloc , other.f_alloc );
  }
 
 template< class T , class A >

@@ -19,8 +19,8 @@
 namespace ADS
 {
 
-template< class T , std::integral K , unsigned B >
-inline void RadixHeap< T , K , B >::push( const T & x , K k )
+template< class T , std::integral K , unsigned B , class A >
+inline void RadixHeap< T , K , B , A >::push( const T & x , K k )
 {
  const U u = encode( k );
  ADS_PRE( ( u >= f_floor ) && ( u >= f_last ) );
@@ -29,16 +29,16 @@ inline void RadixHeap< T , K , B >::push( const T & x , K k )
  ADS_INVARIANT( bucketed() );
  }
 
-template< class T , std::integral K , unsigned B >
-inline void RadixHeap< T , K , B >::pull( void )
+template< class T , std::integral K , unsigned B , class A >
+inline void RadixHeap< T , K , B , A >::pull( void )
 {
  ADS_PRE( f_size > 0 );
  if( ! f_B[ f_cur ].empty() && ( f_cur < R ) )
   return;  // still the top
  unsigned i = first();
- if( i >= R ) {                         // its least key is the new
-  std::vector< Entry > & b = f_B[ i ];  // last, and its items go
-  f_last = f_min[ i ];                  // down to the rows below
+ if( i >= R ) {           // its least key is the new
+  Bucket & b = f_B[ i ];  // last, and its items go
+  f_last = f_min[ i ];    // down to the rows below
   f_min[ i ] = std::numeric_limits< U >::max();
   f_mask[ i >> 6 ] &= ~( std::uint64_t( 1 ) << ( i & 63 ) );
   for( Entry & e : b )
@@ -53,33 +53,33 @@ inline void RadixHeap< T , K , B >::pull( void )
   f_floor = f_last;  // the key read or extracted
  }
 
-template< class T , std::integral K , unsigned B >
-inline const T & RadixHeap< T , K , B >::top( void )
+template< class T , std::integral K , unsigned B , class A >
+inline const T & RadixHeap< T , K , B , A >::top( void )
 {
  pull();
  return( f_B[ f_cur ].back().item );
  }
 
-template< class T , std::integral K , unsigned B >
-inline K RadixHeap< T , K , B >::topKey( void )
+template< class T , std::integral K , unsigned B , class A >
+inline K RadixHeap< T , K , B , A >::topKey( void )
 {
  pull();
  return( decode( f_last ) );
  }
 
-template< class T , std::integral K , unsigned B >
-inline K RadixHeap< T , K , B >::peekKey( void ) const
+template< class T , std::integral K , unsigned B , class A >
+inline K RadixHeap< T , K , B , A >::peekKey( void ) const
 {
  ADS_PRE( f_size > 0 );
  const unsigned i = first();
  return( decode( i < R ? ( f_last & ~U( R - 1 ) ) | U( i ) : f_min[ i ] ) );
  }
 
-template< class T , std::integral K , unsigned B >
-inline T RadixHeap< T , K , B >::pop( void )
+template< class T , std::integral K , unsigned B , class A >
+inline T RadixHeap< T , K , B , A >::pop( void )
 {
  pull();
- std::vector< Entry > & b = f_B[ f_cur ];
+ Bucket & b = f_B[ f_cur ];
  T x = std::move( b.back().item );
  b.pop_back();
  if( b.empty() ) {
@@ -91,14 +91,14 @@ inline T RadixHeap< T , K , B >::pop( void )
  return( x );
  }
 
-template< class T , std::integral K , unsigned B >
+template< class T , std::integral K , unsigned B , class A >
 template< class F >
-void RadixHeap< T , K , B >::extractBelow( K limit , F && f )
+void RadixHeap< T , K , B , A >::extractBelow( K limit , F && f )
 {
  const U u = encode( limit );
  while( f_size > 0 ) {
   const unsigned i = first();
-  std::vector< Entry > & b = f_B[ i ];
+  Bucket & b = f_B[ i ];
   if( f_min[ i ] >= u )  // nothing below the limit
    break;
   if( ceiling( i ) < u ) {  // all of them, as they are
@@ -148,8 +148,8 @@ void RadixHeap< T , K , B >::extractBelow( K limit , F && f )
  ADS_INVARIANT( bucketed() );
  }
 
-template< class T , std::integral K , unsigned B >
-void RadixHeap< T , K , B >::clear( void )
+template< class T , std::integral K , unsigned B , class A >
+void RadixHeap< T , K , B , A >::clear( void )
 {
  for( auto & b : f_B )
   b.clear();
@@ -161,8 +161,8 @@ void RadixHeap< T , K , B >::clear( void )
  f_size = 0;
  }
 
-template< class T , std::integral K , unsigned B >
-bool RadixHeap< T , K , B >::bucketed( void ) const
+template< class T , std::integral K , unsigned B , class A >
+bool RadixHeap< T , K , B , A >::bucketed( void ) const
 {
  if( f_size > 1024 )
   return( true );

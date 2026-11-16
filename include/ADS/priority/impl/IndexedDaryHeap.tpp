@@ -18,17 +18,28 @@
 namespace ADS
 {
 
-template< class K , unsigned D , class P >
+template< class K , unsigned D , class P , class A >
 template< class... O >
-IndexedDaryHeap< K , D , P >::IndexedDaryHeap( int n , O &... o )
+IndexedDaryHeap< K , D , P , A >::IndexedDaryHeap( int n , O &... o )
     : f_sub( o... )
 {
  ADS_PRE( n >= 0 );
  f_pos.assign( std::size_t( n ) , -1 );
  }
 
-template< class K , unsigned D , class P >
-void IndexedDaryHeap< K , D , P >::reset( int n )
+template< class K , unsigned D , class P , class A >
+template< class... O >
+IndexedDaryHeap< K , D , P , A >::IndexedDaryHeap( std::allocator_arg_t ,
+						const A & alloc , int n ,
+						O &... o )
+    : f_A( alloc ) , f_pos( alloc ) , f_sub( o... )
+{
+ ADS_PRE( n >= 0 );
+ f_pos.assign( std::size_t( n ) , -1 );
+ }
+
+template< class K , unsigned D , class P , class A >
+void IndexedDaryHeap< K , D , P , A >::reset( int n )
 {
  ADS_PRE( n >= 0 );
  f_A.clear();
@@ -40,8 +51,8 @@ void IndexedDaryHeap< K , D , P >::reset( int n )
    }
  }
 
-template< class K , unsigned D , class P >
-void IndexedDaryHeap< K , D , P >::grow( int n )
+template< class K , unsigned D , class P , class A >
+void IndexedDaryHeap< K , D , P , A >::grow( int n )
 {
  ADS_PRE( n >= ids() );
  const auto m = std::size_t( n );
@@ -51,22 +62,22 @@ void IndexedDaryHeap< K , D , P >::grow( int n )
  ADS_INVARIANT( ordered() );
  }
 
-template< class K , unsigned D , class P >
-inline bool IndexedDaryHeap< K , D , P >::contains( int id ) const
+template< class K , unsigned D , class P , class A >
+inline bool IndexedDaryHeap< K , D , P , A >::contains( int id ) const
 {
  ADS_PRE( ( id >= 0 ) && ( id < ids() ) );
  return( f_pos[ id ] >= 0 );
  }
 
-template< class K , unsigned D , class P >
-inline const K & IndexedDaryHeap< K , D , P >::key( int id ) const
+template< class K , unsigned D , class P , class A >
+inline const K & IndexedDaryHeap< K , D , P , A >::key( int id ) const
 {
  ADS_PRE( contains( id ) );
  return( f_A[ f_pos[ id ] ].key );
  }
 
-template< class K , unsigned D , class P >
-inline void IndexedDaryHeap< K , D , P >::push( int id , const K & k )
+template< class K , unsigned D , class P , class A >
+inline void IndexedDaryHeap< K , D , P , A >::push( int id , const K & k )
 {
  ADS_PRE( ! contains( id ) );
  if constexpr( heard< Ins , Rel > )
@@ -82,8 +93,8 @@ inline void IndexedDaryHeap< K , D , P >::push( int id , const K & k )
  ADS_INVARIANT( ordered() );
  }
 
-template< class K , unsigned D , class P >
-inline void IndexedDaryHeap< K , D , P >::decrease( int id , const K & k )
+template< class K , unsigned D , class P , class A >
+inline void IndexedDaryHeap< K , D , P , A >::decrease( int id , const K & k )
 {
  ADS_PRE( contains( id ) && ! ( f_A[ f_pos[ id ] ].key < k ) );
  if constexpr( heard< Chg , Rel > )
@@ -98,8 +109,8 @@ inline void IndexedDaryHeap< K , D , P >::decrease( int id , const K & k )
  ADS_INVARIANT( ordered() );
  }
 
-template< class K , unsigned D , class P >
-inline void IndexedDaryHeap< K , D , P >::increase( int id , const K & k )
+template< class K , unsigned D , class P , class A >
+inline void IndexedDaryHeap< K , D , P , A >::increase( int id , const K & k )
 {
  ADS_PRE( contains( id ) && ! ( k < f_A[ f_pos[ id ] ].key ) );
  if constexpr( heard< Chg , Rel > )
@@ -114,8 +125,8 @@ inline void IndexedDaryHeap< K , D , P >::increase( int id , const K & k )
  ADS_INVARIANT( ordered() );
  }
 
-template< class K , unsigned D , class P >
-inline void IndexedDaryHeap< K , D , P >::update( int id , const K & k )
+template< class K , unsigned D , class P , class A >
+inline void IndexedDaryHeap< K , D , P , A >::update( int id , const K & k )
 {
  ADS_PRE( contains( id ) );
  if( k < f_A[ f_pos[ id ] ].key )
@@ -124,8 +135,8 @@ inline void IndexedDaryHeap< K , D , P >::update( int id , const K & k )
   increase( id , k );
  }
 
-template< class K , unsigned D , class P >
-inline void IndexedDaryHeap< K , D , P >::erase( int id )
+template< class K , unsigned D , class P , class A >
+inline void IndexedDaryHeap< K , D , P , A >::erase( int id )
 {
  ADS_PRE( contains( id ) );
  if constexpr( heard< Era , Rel > )
@@ -150,9 +161,9 @@ inline void IndexedDaryHeap< K , D , P >::erase( int id )
  ADS_INVARIANT( ordered() );
  }
 
-template< class K , unsigned D , class P >
-inline bool IndexedDaryHeap< K , D , P >::pushOrDecrease( int id ,
-							  const K & k )
+template< class K , unsigned D , class P , class A >
+inline bool IndexedDaryHeap< K , D , P , A >::pushOrDecrease( int id ,
+							   const K & k )
 {
  ADS_PRE( ( id >= 0 ) && ( id < ids() ) );
  const int i = f_pos[ id ];
@@ -165,17 +176,17 @@ inline bool IndexedDaryHeap< K , D , P >::pushOrDecrease( int id ,
  return( true );
  }
 
-template< class K , unsigned D , class P >
-inline const typename IndexedDaryHeap< K , D , P >::Entry &
-IndexedDaryHeap< K , D , P >::top( void ) const
+template< class K , unsigned D , class P , class A >
+inline const typename IndexedDaryHeap< K , D , P , A >::Entry &
+IndexedDaryHeap< K , D , P , A >::top( void ) const
 {
  ADS_PRE( ! f_A.empty() );
  return( f_A.front() );
  }
 
-template< class K , unsigned D , class P >
-inline typename IndexedDaryHeap< K , D , P >::Entry
-IndexedDaryHeap< K , D , P >::pop( void )
+template< class K , unsigned D , class P , class A >
+inline typename IndexedDaryHeap< K , D , P , A >::Entry
+IndexedDaryHeap< K , D , P , A >::pop( void )
 {
  ADS_PRE( ! f_A.empty() );
  if constexpr( heard< Era , Rel > )
@@ -195,8 +206,8 @@ IndexedDaryHeap< K , D , P >::pop( void )
  return( x );
  }
 
-template< class K , unsigned D , class P >
-void IndexedDaryHeap< K , D , P >::clear( void )
+template< class K , unsigned D , class P , class A >
+void IndexedDaryHeap< K , D , P , A >::clear( void )
 {
  for( const Entry & e : f_A )
   f_pos[ e.id ] = -1;
@@ -208,11 +219,11 @@ void IndexedDaryHeap< K , D , P >::clear( void )
    }
  }
 
-template< class K , unsigned D , class P >
+template< class K , unsigned D , class P , class A >
 template< bool T >
 inline void
-IndexedDaryHeap< K , D , P >::up( std::size_t i , Entry x ,
-				[[maybe_unused]] std::size_t from )
+IndexedDaryHeap< K , D , P , A >::up( std::size_t i , Entry x ,
+				   [[maybe_unused]] std::size_t from )
 {
  if constexpr( T )
   if( from != i )
@@ -231,11 +242,11 @@ IndexedDaryHeap< K , D , P >::up( std::size_t i , Entry x ,
  f_pos[ x.id ] = int( i );
  }
 
-template< class K , unsigned D , class P >
+template< class K , unsigned D , class P , class A >
 template< bool T >
 inline void
-IndexedDaryHeap< K , D , P >::down( std::size_t i , Entry x ,
-				  [[maybe_unused]] std::size_t from )
+IndexedDaryHeap< K , D , P , A >::down( std::size_t i , Entry x ,
+				     [[maybe_unused]] std::size_t from )
 {
  if constexpr( T )
   if( from != i )
@@ -268,8 +279,8 @@ IndexedDaryHeap< K , D , P >::down( std::size_t i , Entry x ,
 /*------------------------- WHEN SOMEONE LISTENS ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class K , unsigned D , class P >
-void IndexedDaryHeap< K , D , P >::pushTold( int id , const K & k )
+template< class K , unsigned D , class P , class A >
+void IndexedDaryHeap< K , D , P , A >::pushTold( int id , const K & k )
 {
  const std::size_t s = f_A.size();  // the place of the new item
  f_A.push_back( Entry{ k , id } );
@@ -284,8 +295,8 @@ void IndexedDaryHeap< K , D , P >::pushTold( int id , const K & k )
  ADS_INVARIANT( ordered() );
  }
 
-template< class K , unsigned D , class P >
-void IndexedDaryHeap< K , D , P >::decreaseTold( int id , const K & k )
+template< class K , unsigned D , class P , class A >
+void IndexedDaryHeap< K , D , P , A >::decreaseTold( int id , const K & k )
 {
  const std::size_t i = std::size_t( f_pos[ id ] );
  if( alive< Chg >() )
@@ -298,8 +309,8 @@ void IndexedDaryHeap< K , D , P >::decreaseTold( int id , const K & k )
  ADS_INVARIANT( ordered() );
  }
 
-template< class K , unsigned D , class P >
-void IndexedDaryHeap< K , D , P >::increaseTold( int id , const K & k )
+template< class K , unsigned D , class P , class A >
+void IndexedDaryHeap< K , D , P , A >::increaseTold( int id , const K & k )
 {
  const std::size_t i = std::size_t( f_pos[ id ] );
  if( alive< Chg >() )
@@ -312,8 +323,8 @@ void IndexedDaryHeap< K , D , P >::increaseTold( int id , const K & k )
  ADS_INVARIANT( ordered() );
  }
 
-template< class K , unsigned D , class P >
-void IndexedDaryHeap< K , D , P >::eraseTold( int id )
+template< class K , unsigned D , class P , class A >
+void IndexedDaryHeap< K , D , P , A >::eraseTold( int id )
 {
  const std::size_t i = std::size_t( f_pos[ id ] );
  if( alive< Era >() )
@@ -340,9 +351,9 @@ void IndexedDaryHeap< K , D , P >::eraseTold( int id )
  ADS_INVARIANT( ordered() );
  }
 
-template< class K , unsigned D , class P >
-typename IndexedDaryHeap< K , D , P >::Entry
-IndexedDaryHeap< K , D , P >::popTold( void )
+template< class K , unsigned D , class P , class A >
+typename IndexedDaryHeap< K , D , P , A >::Entry
+IndexedDaryHeap< K , D , P , A >::popTold( void )
 {
  const Entry x = f_A.front();
  if( alive< Era >() )
@@ -361,8 +372,8 @@ IndexedDaryHeap< K , D , P >::popTold( void )
  return( x );
  }
 
-template< class K , unsigned D , class P >
-bool IndexedDaryHeap< K , D , P >::ordered( void ) const
+template< class K , unsigned D , class P , class A >
+bool IndexedDaryHeap< K , D , P , A >::ordered( void ) const
 {
  const std::size_t n = f_A.size();
  if( n > 1024 ) {  // the root and the last item

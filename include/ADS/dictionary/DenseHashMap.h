@@ -61,6 +61,11 @@
  * that of `std::unordered_map`. The keys and the values must be movable;
  * there are fewer than \f$ 2^{32} \f$ pairs.
  *
+ * The pairs and the groups come from the allocator `A`, with the rules of
+ * the standard [see `AllocatorAware.h`]; with the default one,
+ * `std::allocator`, the groups come from `operator new` aligned to their
+ * line, as they did before the map took an allocator.
+ *
  * The contracts [see `Contract.h`]: after `insert()` the key is in the map
  * and after `remove()` it is not; the invariant is that each position of
  * the vector is held by exactly one full place of the index, reached by the
@@ -105,6 +110,7 @@
 #include "ADS/Contract.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/dictionary/FlatHashTable.h"
+#include "ADS/memory/AllocatorAware.h"
 
 #include <bit>
 #include <cstddef>
@@ -134,7 +140,8 @@ ADS_ABI_BEGIN
 
 /// a hash map with its pairs in a dense vector and an index of positions
 template< class K , class V , class H = DefaultHash< K > ,
-	  class Eq = std::equal_to< K > >
+	  class Eq = std::equal_to< K > ,
+	  class A = std::allocator< std::pair< const K , V > > >
 class DenseHashMap
 {
 
@@ -143,17 +150,43 @@ class DenseHashMap
  using Key = K;    ///< the type of the keys
  using Value = V;  ///< the type of the values
 
- /// the empty map, with room for \f$ n \f$ pairs before it grows
- explicit DenseHashMap( std::size_t n = 0 , H h = H() , Eq eq = Eq() );
+ /// the empty map, with room for \f$ n \f$ pairs before it grows, its
+ /// pairs and groups from `alloc`
+ explicit DenseHashMap( std::size_t n = 0 , H h = H() , Eq eq = Eq() ,
+			const A & alloc = A() );
 
- /// a copy of `other`
+ /// a copy of `other`, on the allocator that
+ /// `select_on_container_copy_construction()` gives
  DenseHashMap( const DenseHashMap & o );
+
+ /// a copy of `other`, on `alloc`
+ DenseHashMap( const DenseHashMap & o , const A & alloc );
 
  /// the pairs of `o`, which is left empty, with no places
  DenseHashMap( DenseHashMap && o ) noexcept;
 
- /// the assignment, by copy and swap
- DenseHashMap & operator=( DenseHashMap o ) noexcept;
+ /// the pairs of `o`, which is left empty, on `alloc`: moved one by one if
+ /// the allocators are not equal
+ DenseHashMap( DenseHashMap && o , const A & alloc );
+
+ /// the assignment, by copy and swap, when the allocators are all equal
+ DenseHashMap & operator=( DenseHashMap o ) noexcept
+  requires detail::alwaysEqualAlloc< A >;
+
+ /// the copy assignment, with the allocator of `o` if it propagates
+ DenseHashMap & operator=( const DenseHashMap & o )
+  requires( ! detail::alwaysEqualAlloc< A > )
+ {
+  return( detail::copyAssign( *this , o ) );
+  }
+
+ /// the move assignment: the memory of `o` if its allocator propagates or
+ /// is equal, else its pairs moved one by one
+ DenseHashMap & operator=( DenseHashMap && o )
+  requires( ! detail::alwaysEqualAlloc< A > )
+ {
+  return( detail::moveAssign( *this , std::move( o ) ) );
+  }
 
  /// frees the pairs and the groups
  ~DenseHashMap() = default;
@@ -222,12 +255,12 @@ class DenseHashMap
  /// value read and then changed costs one inspection; the pointer is
  /// valid until the next insertion of a new key or removal
  /// \post \f$ k \f$ is in the map
- template< class... A >
- std::pair< V * , bool > try_emplace( const K & k , A &&... a );
+ template< class... Args >
+ std::pair< V * , bool > try_emplace( const K & k , Args &&... a );
 
  /// as `try_emplace( k , a )`, moving the key
- template< class... A >
- std::pair< V * , bool > try_emplace( K && k , A &&... a );
+ template< class... Args >
+ std::pair< V * , bool > try_emplace( K && k , Args &&... a );
 
  /// removes the key \f$ k \f$, if it is there, moving the last pair into its
  /// position; true if it was
@@ -285,7 +318,9 @@ class DenseHashMap
  /// the pairs, in the order of the vector
  [[nodiscard]] const std::pair< K , V > * data( void ) const;
 
- /// exchanges the contents with `other` in \f$ O( 1 ) \f$
+ /// exchanges the contents with `other` in \f$ O( 1 ) \f$, and the
+ /// allocators if they propagate on a swap
+ /// \pre the allocators are equal, if they do not propagate
  void swap( DenseHashMap & o ) noexcept;
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
@@ -305,9 +340,16 @@ class DenseHashMap
  using const_reference = const std::pair< K , V > &;
  /// the iterator on the items, constant
  using const_iterator =
-   typename std::vector< std::pair< K , V > >::const_iterator;
+   typename detail::AllocVector< A , std::pair< K , V > >::const_iterator;
  /// the iterator on the items
  using iterator = const_iterator;
+
+ /// the type of the allocator
+ using allocator_type = A;
+ /// the allocator of the pairs and of the groups
+ [[nodiscard]] allocator_type get_allocator( void ) const {
+  return( allocator_type( f_kv.get_allocator() ) );
+  }
 
  /// the iterator on the first item
  [[nodiscard]] const_iterator begin( void ) const { return( f_kv.cbegin() ); }
@@ -397,8 +439,8 @@ class DenseHashMap
  /// the pair of \f$ k \f$ and the value built from `a`; if it is there,
  /// its value assigned from `a` (a single value) when `Assign`; the value
  /// and true if \f$ k \f$ was not there
- template< bool Assign , class KK , class... A >
- std::pair< V * , bool > place( KK && k , A &&... a );
+ template< bool Assign , class KK , class... Args >
+ std::pair< V * , bool > place( KK && k , Args &&... a );
 
  /// the place \f$ j \f$ of the position \f$ p \f$ emptied in the group
  /// \f$ g \f$, the last pair moved into \f$ p \f$
@@ -436,16 +478,58 @@ class DenseHashMap
   void operator()( Group * g ) const noexcept;
   };
 
- std::vector< std::pair< K , V > > f_kv;  ///< the pairs, dense
- std::unique_ptr< Group[] , Free > f_g;   ///< the groups, nil if none
- Group * f_ctrl = s_none;                ///< the groups, or `s_none`
- std::size_t f_mask = 0;                 ///< the groups - 1, 0 with none
- std::size_t f_cap = 0;                  ///< the places
- int f_shift = 63;                       ///< 64 - log2 of the groups
- std::size_t f_max = 0;                  ///< `bound( f_cap )`
- std::size_t f_deleted = 0;              ///< a bound of `deleted()`
- H f_h;                                  ///< the hash of the keys
- Eq f_eq;                                ///< the equality of the keys
+ /// whether the groups come from `operator new`, as with no allocator
+ static constexpr bool STD = detail::isStdAllocator< A >;
+
+ /// the vector of the pairs
+ using Pairs = detail::AllocVector< A , std::pair< K , V > >;
+
+ /// the groups: freed by `Free`, or a vector on the allocator
+ using Groups = std::conditional_t< STD , std::unique_ptr< Group[] , Free > ,
+				    detail::AllocVector< A , Group > >;
+
+ /// no groups, on the allocator of \f$ \mathit{kv} \f$
+ [[nodiscard]] static Groups noGroups( const Pairs & kv ) {
+  if constexpr( STD )
+   return( Groups() );
+  else
+   return( Groups( kv.get_allocator() ) );
+  }
+
+ /// \f$ G \f$ groups, not initialized, on the allocator of
+ /// \f$ \mathit{kv} \f$
+ [[nodiscard]] static Groups newGroups( std::size_t G , const Pairs & kv ) {
+  if constexpr( STD )
+   return( Groups( static_cast< Group * >( ::operator new(
+     G * sizeof( Group ) , std::align_val_t( alignof( Group ) ) ) ) ) );
+  else {
+   Groups g( kv.get_allocator() );
+   g.resize( G );
+   return( g );
+   }
+  }
+
+ /// the first group of \f$ g \f$
+ [[nodiscard]] static Group * first( Groups & g ) {
+  if constexpr( STD )
+   return( g.get() );
+  else
+   return( g.data() );
+  }
+
+ /// the groups of `o` copied, the pairs already copied
+ void copyGroups( const DenseHashMap & o );
+
+ Pairs f_kv;                     ///< the pairs, dense
+ Groups f_g = noGroups( f_kv );  ///< the groups, nil if none
+ Group * f_ctrl = s_none;        ///< the groups, or `s_none`
+ std::size_t f_mask = 0;         ///< the groups - 1, 0 with none
+ std::size_t f_cap = 0;          ///< the places
+ int f_shift = 63;               ///< 64 - log2 of the groups
+ std::size_t f_max = 0;          ///< `bound( f_cap )`
+ std::size_t f_deleted = 0;      ///< a bound of `deleted()`
+ H f_h;                          ///< the hash of the keys
+ Eq f_eq;                        ///< the equality of the keys
 
  };  // end( class DenseHashMap )
 

@@ -2,7 +2,8 @@
 /*----------------------------- File Arena.tpp -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The operations of Arena [see Arena.h], with their contracts.
+ * The operations of Arena and ArenaResource [see Arena.h], with their
+ * contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -115,6 +116,62 @@ template< class T , class A >
 std::size_t Arena< T , A >::bytes( void ) const
 {
  return( f_blocks.size() * f_n * sizeof( T ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- ArenaResource -------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+template< class A >
+ArenaResource< A >::ArenaResource( std::size_t n , const A & alloc )
+    : f_n( n ) , f_alloc( alloc )
+{
+ ADS_PRE( n >= 1 );
+ }
+
+template< class A >
+ArenaResource< A >::~ArenaResource()
+{
+ release();
+ }
+
+template< class A >
+void * ArenaResource< A >::allocate( std::size_t b , std::size_t a )
+{
+ ADS_PRE( std::has_single_bit( a ) );
+ const auto up = [ a ]( unsigned char * p ) {
+  const std::uintptr_t u = reinterpret_cast< std::uintptr_t >( p );
+  return( p + ( ( a - u % a ) % a ) );
+  };
+ unsigned char * p = up( f_next );
+ if( ! f_next || ( p > f_end ) || ( std::size_t( f_end - p ) < b ) ) {
+  const std::size_t want = std::max( f_n , b + a );
+  const std::size_t k = H + ( want + sizeof( Unit ) - 1 ) / sizeof( Unit );
+  Unit * u = std::allocator_traits< UnitAlloc >::allocate( f_alloc , k );
+  Block * blk = ::new( static_cast< void * >( u ) ) Block{ f_last , k };
+  f_last = blk;
+  f_bytes += k * sizeof( Unit );
+  f_next = reinterpret_cast< unsigned char * >( u + H );
+  f_end = reinterpret_cast< unsigned char * >( u + k );
+  p = up( f_next );
+  }
+ f_next = p + b;
+ ++f_size;
+ return( p );
+ }
+
+template< class A >
+void ArenaResource< A >::release( void ) noexcept
+{
+ while( f_last ) {
+  Block * const prev = f_last->prev;
+  const std::size_t k = f_last->k;
+  std::allocator_traits< UnitAlloc >::deallocate(
+    f_alloc , reinterpret_cast< Unit * >( f_last ) , k );
+  f_last = prev;
+  }
+ f_next = f_end = nullptr;
+ f_bytes = f_size = 0;
  }
 
 /*--------------------------------------------------------------------------*/

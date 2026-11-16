@@ -23,9 +23,9 @@ namespace ADS
 {
 
 #define ADS_BTM_T                                                             \
- template< class K, class V, class Less, std::size_t B, bool R >              \
+ template< class K, class V, class Less, std::size_t B, bool R, class A >     \
   requires std::default_initializable< K > && std::default_initializable< V >
-#define ADS_BTM BTreeMap< K, V, Less, B, R >
+#define ADS_BTM BTreeMap< K, V, Less, B, R, A >
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ THE NODES ---------------------------------*/
@@ -186,19 +186,52 @@ ADS_BTM::BTreeMap( Less less ) : f_less( std::move( less ) )
 { }
 
 ADS_BTM_T
-ADS_BTM::BTreeMap( const BTreeMap & o ) : f_less( o.f_less )
+ADS_BTM::BTreeMap( Less less , const A & alloc )
+    : f_less( std::move( less ) ) ,
+      f_leaves( std::size_t( 1 ) << 24 ,
+		typename Leaves::allocator_type( alloc ) ) ,
+      f_inners( std::size_t( 1 ) << 24 ,
+		typename Inners::allocator_type( alloc ) )
+{ }
+
+ADS_BTM_T
+ADS_BTM::BTreeMap( const BTreeMap & o )
+ requires( PLAIN )
+    : f_less( o.f_less )
 {
  build( o.begin() , o.end() );
  }
 
 ADS_BTM_T
-ADS_BTM::BTreeMap( BTreeMap && o ) noexcept : f_less( o.f_less )
+ADS_BTM::BTreeMap( const BTreeMap & o , const A & alloc )
+    : BTreeMap( o.f_less , alloc )
 {
- swap( o );
+ build( o.begin() , o.end() );
+ }
+
+ADS_BTM_T
+ADS_BTM::BTreeMap( BTreeMap && o ) noexcept
+    : f_less( o.f_less ) , f_leaves( emptyPool( o.f_leaves ) ) ,
+      f_inners( emptyPool( o.f_inners ) )
+{
+ exchange( o );
+ }
+
+ADS_BTM_T
+ADS_BTM::BTreeMap( BTreeMap && o , const A & alloc )
+    : BTreeMap( o.f_less , alloc )
+{
+ if( get_allocator() == o.get_allocator() )
+  exchange( o );
+ else {
+  build( o.begin() , o.end() );
+  o.clear();
+  }
  }
 
 ADS_BTM_T
 auto ADS_BTM::operator=( BTreeMap o ) noexcept -> BTreeMap &
+ requires( PLAIN )
 {
  swap( o );
  return( *this );
@@ -212,6 +245,13 @@ ADS_BTM::~BTreeMap()
 
 ADS_BTM_T
 void ADS_BTM::swap( BTreeMap & o ) noexcept
+{
+ detail::swapCheck( get_allocator() , o.get_allocator() );
+ exchange( o );
+ }
+
+ADS_BTM_T
+void ADS_BTM::exchange( BTreeMap & o ) noexcept
 {
  std::swap( f_root , o.f_root );
  std::swap( f_first , o.f_first );
@@ -242,8 +282,14 @@ void ADS_BTM::clear( void )
  if( f_root ) {
   if constexpr( std::is_trivially_destructible_v< K > &&
 		std::is_trivially_destructible_v< V > ) {
-   ObjectPool< Leaf >().swap( f_leaves );  // the blocks, all at once
-   ObjectPool< Inner >().swap( f_inners );
+   if constexpr( PLAIN ) {
+    Leaves().swap( f_leaves );  // the blocks, all at once
+    Inners().swap( f_inners );
+    }
+   else {
+    emptyPool( f_leaves ).swap( f_leaves );
+    emptyPool( f_inners ).swap( f_inners );
+    }
    }
   else
    destroy( f_root , f_height );

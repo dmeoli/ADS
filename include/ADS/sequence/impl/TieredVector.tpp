@@ -18,8 +18,8 @@
 namespace ADS
 {
 
-template< class T >
-void TieredVector< T >::rebuild( std::size_t n )
+template< class T , class A >
+void TieredVector< T , A >::rebuild( std::size_t n )
 {
  std::size_t r = 1;  // the least power of 2 whose
  while( r * r < n )
@@ -27,19 +27,30 @@ void TieredVector< T >::rebuild( std::size_t n )
  const std::size_t b = r < 64 ? 64 : r;
  if( b == f_b )
   return;
- std::vector< Block > B( ( f_n + b - 1 ) / b );
- for( Block & k : B )
-  k.a = std::make_unique< T[] >( b );
- for( std::size_t i = 0 ; i < f_n ; ++i )
-  B[ i / b ].a[ i % b ] = std::move( ( *this )[ i ] );
- f_blocks.swap( B );
- f_g = 0;
- f_b = b;
- f_lg = unsigned( std::countr_zero( b ) );
+ if constexpr( STD ) {  // the code it had with no allocator
+  Blocks B( ( f_n + b - 1 ) / b );
+  for( Block & k : B )
+   k.a = std::make_unique< T[] >( b );
+  for( std::size_t i = 0 ; i < f_n ; ++i )
+   B[ i / b ].a[ i % b ] = std::move( ( *this )[ i ] );
+  f_blocks.swap( B );
+  f_g = 0;
+  f_b = b;
+  f_lg = unsigned( std::countr_zero( b ) );
+  }
+ else {
+  Blocks B = blocksOf( ( f_n + b - 1 ) / b , b );
+  for( std::size_t i = 0 ; i < f_n ; ++i )
+   B[ i / b ].a[ i % b ] = std::move( ( *this )[ i ] );
+  f_blocks.swap( B );
+  f_g = 0;
+  f_b = b;
+  f_lg = unsigned( std::countr_zero( b ) );
+  }
  }
 
-template< class T >
-void TieredVector< T >::insert( std::size_t i , const T & x )
+template< class T , class A >
+void TieredVector< T , A >::insert( std::size_t i , const T & x )
 {
  ADS_PRE( i <= f_n );
  T y = x;  // x may be an item here
@@ -52,8 +63,12 @@ void TieredVector< T >::insert( std::size_t i , const T & x )
   }
  const std::size_t m = f_b - 1;
  if( f_g + f_n == f_blocks.size() * f_b ) {  // a new block at the end
-  f_blocks.emplace_back();
-  f_blocks.back().a = std::make_unique< T[] >( f_b );
+  if constexpr( STD ) {
+   f_blocks.emplace_back();
+   f_blocks.back().a = places( f_b );
+   }
+  else  // an allocator need not be default-constructible
+   f_blocks.push_back( Block{ places( f_b ) } );
   }
  const std::size_t v = f_g + i;  // the virtual place of i
  const std::size_t k = v >> f_lg , L = ( f_g + f_n ) >> f_lg;
@@ -72,13 +87,17 @@ void TieredVector< T >::insert( std::size_t i , const T & x )
  ADS_INVARIANT( full() );
  }
 
-template< class T >
-void TieredVector< T >::insertFront( std::size_t i , T && x )
+template< class T , class A >
+void TieredVector< T , A >::insertFront( std::size_t i , T && x )
 {
  const std::size_t m = f_b - 1;
  if( f_g == 0 ) {  // a new block at the front
-  f_blocks.emplace( f_blocks.begin() );
-  f_blocks.front().a = std::make_unique< T[] >( f_b );
+  if constexpr( STD ) {
+   f_blocks.emplace( f_blocks.begin() );
+   f_blocks.front().a = places( f_b );
+   }
+  else
+   f_blocks.insert( f_blocks.begin() , Block{ places( f_b ) } );
   f_g = f_b;
   }
  const std::size_t w = f_g + i - 1;  // the virtual place of x
@@ -98,8 +117,8 @@ void TieredVector< T >::insertFront( std::size_t i , T && x )
  ++f_n;
  }
 
-template< class T >
-void TieredVector< T >::eraseFront( std::size_t i )
+template< class T , class A >
+void TieredVector< T , A >::eraseFront( std::size_t i )
 {
  const std::size_t m = f_b - 1;
  const std::size_t v = f_g + i , k = v >> f_lg;
@@ -121,8 +140,8 @@ void TieredVector< T >::eraseFront( std::size_t i )
   }
  }
 
-template< class T >
-void TieredVector< T >::erase( std::size_t i )
+template< class T , class A >
+void TieredVector< T , A >::erase( std::size_t i )
 {
  ADS_PRE( i < f_n );
  if( i < f_n / 2 )  // the shorter side, the front
@@ -138,8 +157,8 @@ void TieredVector< T >::erase( std::size_t i )
  ADS_INVARIANT( full() );
  }
 
-template< class T >
-void TieredVector< T >::eraseBack( std::size_t i )
+template< class T , class A >
+void TieredVector< T , A >::eraseBack( std::size_t i )
 {
  const std::size_t m = f_b - 1;
  const std::size_t v = f_g + i;
@@ -159,8 +178,8 @@ void TieredVector< T >::eraseBack( std::size_t i )
   f_blocks.pop_back();
  }
 
-template< class T >
-void TieredVector< T >::clear( void )
+template< class T , class A >
+void TieredVector< T , A >::clear( void )
 {
  f_blocks.clear();
  f_n = 0;
@@ -169,8 +188,8 @@ void TieredVector< T >::clear( void )
  f_lg = 6;
  }
 
-template< class T >
-bool TieredVector< T >::full( void ) const
+template< class T , class A >
+bool TieredVector< T , A >::full( void ) const
 {
  return( ( f_blocks.size() == ( f_g + f_n + f_b - 1 ) / f_b ) &&
 	  ( f_g < f_b ) && ( ( f_n > 0 ) || ( f_g == 0 ) ) &&

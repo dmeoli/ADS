@@ -23,16 +23,16 @@ namespace ADS
 /*---------------------------- THE OPERATIONS ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class T , std::totally_ordered P , bool Aux >
-PairingHeap< T , P , Aux >::PairingHeap( PairingHeap && other ) noexcept
+template< class T , std::totally_ordered P , bool Aux , class A >
+PairingHeap< T , P , Aux , A >::PairingHeap( PairingHeap && other ) noexcept
     : f_root( std::exchange( other.f_root , nullptr ) ) ,
       f_min( std::exchange( other.f_min , nullptr ) ) ,
       f_n( std::exchange( other.f_n , 0 ) ) ,
       f_pool( std::move( other.f_pool ) )
 { }
 
-template< class T , std::totally_ordered P , bool Aux >
-PairingHeap< T , P , Aux >::~PairingHeap()
+template< class T , std::totally_ordered P , bool Aux , class A >
+PairingHeap< T , P , Aux , A >::~PairingHeap()
 {
  if constexpr( ! std::is_trivially_destructible_v< Node > ) {
   std::vector< Node * > S;
@@ -50,23 +50,23 @@ PairingHeap< T , P , Aux >::~PairingHeap()
   }
  }
 
-template< class T , std::totally_ordered P , bool Aux >
-const T & PairingHeap< T , P , Aux >::min( void ) const
+template< class T , std::totally_ordered P , bool Aux , class A >
+const T & PairingHeap< T , P , Aux , A >::min( void ) const
 {
  ADS_PRE( ! empty() );
  return( f_min->value );
  }
 
-template< class T , std::totally_ordered P , bool Aux >
-const P & PairingHeap< T , P , Aux >::minPriority( void ) const
+template< class T , std::totally_ordered P , bool Aux , class A >
+const P & PairingHeap< T , P , Aux , A >::minPriority( void ) const
 {
  ADS_PRE( ! empty() );
  return( f_min->priority );
  }
 
-template< class T , std::totally_ordered P , bool Aux >
-inline typename PairingHeap< T , P , Aux >::Handle
-PairingHeap< T , P , Aux >::insert( const T & x , const P & p )
+template< class T , std::totally_ordered P , bool Aux , class A >
+inline typename PairingHeap< T , P , Aux , A >::Handle
+PairingHeap< T , P , Aux , A >::insert( const T & x , const P & p )
 {
  Node * z = f_pool.make( p , x );
  attach( z );
@@ -76,8 +76,8 @@ PairingHeap< T , P , Aux >::insert( const T & x , const P & p )
  return( z );
  }
 
-template< class T , std::totally_ordered P , bool Aux >
-inline T PairingHeap< T , P , Aux >::deleteMin( void )
+template< class T , std::totally_ordered P , bool Aux , class A >
+inline T PairingHeap< T , P , Aux , A >::deleteMin( void )
 {
  ADS_PRE( ! empty() );
  Node * z = f_min;
@@ -91,8 +91,8 @@ inline T PairingHeap< T , P , Aux >::deleteMin( void )
  return( v );
  }
 
-template< class T , std::totally_ordered P , bool Aux >
-inline void PairingHeap< T , P , Aux >::decrease( Handle x , const P & p )
+template< class T , std::totally_ordered P , bool Aux , class A >
+inline void PairingHeap< T , P , Aux , A >::decrease( Handle x , const P & p )
 {
  ADS_PRE( ( x != nullptr ) && ! ( x->priority < p ) );
  x->priority = p;
@@ -121,8 +121,8 @@ inline void PairingHeap< T , P , Aux >::decrease( Handle x , const P & p )
  ADS_INVARIANT( isHeap() );
  }
 
-template< class T , std::totally_ordered P , bool Aux >
-T PairingHeap< T , P , Aux >::erase( Handle x )
+template< class T , std::totally_ordered P , bool Aux , class A >
+T PairingHeap< T , P , Aux , A >::erase( Handle x )
 {
  ADS_PRE( ( x != nullptr ) && ! empty() );
  detach( x );
@@ -133,8 +133,8 @@ T PairingHeap< T , P , Aux >::erase( Handle x )
  return( v );
  }
 
-template< class T , std::totally_ordered P , bool Aux >
-void PairingHeap< T , P , Aux >::increase( Handle x , const P & p )
+template< class T , std::totally_ordered P , bool Aux , class A >
+void PairingHeap< T , P , Aux , A >::increase( Handle x , const P & p )
 {
  ADS_PRE( ( x != nullptr ) && ! ( p < x->priority ) );
  detach( x );
@@ -144,8 +144,8 @@ void PairingHeap< T , P , Aux >::increase( Handle x , const P & p )
  ADS_INVARIANT( isHeap() );
  }
 
-template< class T , std::totally_ordered P , bool Aux >
-void PairingHeap< T , P , Aux >::update( Handle x , const P & p )
+template< class T , std::totally_ordered P , bool Aux , class A >
+void PairingHeap< T , P , Aux , A >::update( Handle x , const P & p )
 {
  ADS_PRE( x != nullptr );
  if( p < x->priority )
@@ -158,8 +158,8 @@ void PairingHeap< T , P , Aux >::update( Handle x , const P & p )
 /*---------------------------- THE STRUCTURE -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class T , std::totally_ordered P , bool Aux >
-inline void PairingHeap< T , P , Aux >::attach( Node * z )
+template< class T , std::totally_ordered P , bool Aux , class A >
+inline void PairingHeap< T , P , Aux , A >::attach( Node * z )
 {
  if( ! f_root )
   f_root = f_min = z;
@@ -176,8 +176,8 @@ inline void PairingHeap< T , P , Aux >::attach( Node * z )
   f_root = f_min = link( f_root , z );
  }
 
-template< class T , std::totally_ordered P , bool Aux >
-inline void PairingHeap< T , P , Aux >::unlinkMin( void )
+template< class T , std::totally_ordered P , bool Aux , class A >
+inline void PairingHeap< T , P , Aux , A >::unlinkMin( void )
 {
  Node * z = f_min;
  if constexpr( Aux ) {  // the root, the children of z
@@ -202,8 +202,8 @@ inline void PairingHeap< T , P , Aux >::unlinkMin( void )
  z->child = z->next = z->prev = nullptr;
  }
 
-template< class T , std::totally_ordered P , bool Aux >
-void PairingHeap< T , P , Aux >::detach( Node * x )
+template< class T , std::totally_ordered P , bool Aux , class A >
+void PairingHeap< T , P , Aux , A >::detach( Node * x )
 {
  if( x == f_min ) {
   unlinkMin();
@@ -248,9 +248,9 @@ void PairingHeap< T , P , Aux >::detach( Node * x )
 /*------------------------------ THE TREES ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class T , std::totally_ordered P , bool Aux >
-inline typename PairingHeap< T , P , Aux >::Node *
-PairingHeap< T , P , Aux >::link( Node * a , Node * b )
+template< class T , std::totally_ordered P , bool Aux , class A >
+inline typename PairingHeap< T , P , Aux , A >::Node *
+PairingHeap< T , P , Aux , A >::link( Node * a , Node * b )
 {
  if( b->priority < a->priority )
   std::swap( a , b );
@@ -262,9 +262,9 @@ PairingHeap< T , P , Aux >::link( Node * a , Node * b )
  return( a );
  }
 
-template< class T , std::totally_ordered P , bool Aux >
-inline typename PairingHeap< T , P , Aux >::Node *
-PairingHeap< T , P , Aux >::twoPass( Node * x )
+template< class T , std::totally_ordered P , bool Aux , class A >
+inline typename PairingHeap< T , P , Aux , A >::Node *
+PairingHeap< T , P , Aux , A >::twoPass( Node * x )
 {
  if( ! x )
   return( nullptr );
@@ -292,9 +292,9 @@ PairingHeap< T , P , Aux >::twoPass( Node * x )
  return( r );
  }
 
-template< class T , std::totally_ordered P , bool Aux >
-typename PairingHeap< T , P , Aux >::Node *
-PairingHeap< T , P , Aux >::multiPass( Node * x )
+template< class T , std::totally_ordered P , bool Aux , class A >
+typename PairingHeap< T , P , Aux , A >::Node *
+PairingHeap< T , P , Aux , A >::multiPass( Node * x )
 {
  Node * tail = x;
  while( tail->next )
@@ -317,8 +317,8 @@ PairingHeap< T , P , Aux >::multiPass( Node * x )
  return( x );
  }
 
-template< class T , std::totally_ordered P , bool Aux >
-inline void PairingHeap< T , P , Aux >::cut( Node * x )
+template< class T , std::totally_ordered P , bool Aux , class A >
+inline void PairingHeap< T , P , Aux , A >::cut( Node * x )
 {
  if( x->prev->child == x )
   x->prev->child = x->next;
@@ -333,8 +333,8 @@ inline void PairingHeap< T , P , Aux >::cut( Node * x )
 /*----------------------------- THE INVARIANT ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class T , std::totally_ordered P , bool Aux >
-bool PairingHeap< T , P , Aux >::tree( const Node * x , int & n )
+template< class T , std::totally_ordered P , bool Aux , class A >
+bool PairingHeap< T , P , Aux , A >::tree( const Node * x , int & n )
 {
  std::vector< const Node * > S{ x };
  while( ! S.empty() ) {
@@ -351,8 +351,8 @@ bool PairingHeap< T , P , Aux >::tree( const Node * x , int & n )
  return( true );
  }
 
-template< class T , std::totally_ordered P , bool Aux >
-bool PairingHeap< T , P , Aux >::isHeap( void ) const
+template< class T , std::totally_ordered P , bool Aux , class A >
+bool PairingHeap< T , P , Aux , A >::isHeap( void ) const
 {
  if( ! f_root )
   return( ( f_n == 0 ) && ! f_min );

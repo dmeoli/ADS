@@ -223,6 +223,8 @@ interop/parallel/TaskflowExecutor.h   interop
 interop/std/FlatMap.h                 interop
 interop/std/Pmr.h                     interop
 
+memory/AllocatorAware.h               core     the rules of the allocators of
+                                               the containers
 memory/Allocators.h                   base
 memory/Arena.h                        advanced
 memory/CellHeap.h                     base

@@ -45,6 +45,9 @@
  * \rceil \f$ of the analysis of Pagh and Rodler, with the slack
  * \f$ \gamma = 1 / ( 2\, \mathit{maxLoad} ) \f$ of the load.
  *
+ * The places come from the allocator `A`, `std::allocator` by default, with
+ * the rules of the standard [see `AllocatorAware.h`].
+ *
  * The contracts [see `Contract.h`]: \f$ m \ge 2 \f$ and
  * \f$ 0 < \mathit{maxLoad} < 1 / 2 \f$; `insert()` ensures that the key is
  * there and `remove()` that it is not; the invariant is that each key is in
@@ -92,6 +95,7 @@
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/RandomHashing.h"
+#include "ADS/memory/AllocatorAware.h"
 
 #include <algorithm>
 #include <bit>
@@ -115,7 +119,8 @@ namespace ADS
 /*--------------------------------------------------------------------------*/
 
 /// a DICTIONARY on the cuckoo hashing, with a stash
-template< class K , class V , class H = std::hash< K > >
+template< class K , class V , class H = std::hash< K > ,
+	  class A = std::allocator< std::pair< const K , V > > >
 class CuckooHashTable
 {
 
@@ -124,11 +129,12 @@ class CuckooHashTable
  using Key = K;    ///< the type of the keys
  using Value = V;  ///< the type of the values
 
- /// the empty table of \f$ m \f$ places and a stash of \f$ s \f$ places
+ /// the empty table of \f$ m \f$ places and a stash of \f$ s \f$ places,
+ /// from `alloc`
  /// \pre \f$ m \ge 2 \f$ and \f$ 0 < \mathit{maxLoad} < 1 / 2 \f$
  explicit CuckooHashTable( std::size_t m = 16 , double maxLoad = 0.4 ,
 			   std::size_t s = 0 , std::uint64_t seed = 1 ,
-			   H h = H() );
+			   H h = H() , const A & alloc = A() );
 
  /// the value of the key \f$ k \f$, or nothing, from its two places
  /// \f$ h_1( k ) \f$ and \f$ h_2( k ) \f$ and the stash, \f$ O( 1 ) \f$ in the
@@ -243,6 +249,12 @@ class CuckooHashTable
  using const_iterator = SlotIterator< CuckooHashTable , Places >;
  /// the iterator on the items
  using iterator = const_iterator;
+ /// the type of the allocator
+ using allocator_type = A;
+ /// the allocator of the places
+ [[nodiscard]] allocator_type get_allocator( void ) const {
+  return( allocator_type( f_T.get_allocator() ) );
+  }
 
  /// the iterator on the first item
  [[nodiscard]] const_iterator begin( void ) const {
@@ -282,17 +294,17 @@ class CuckooHashTable
  /// up to 1024 places, every key so and counted right
  [[nodiscard]] bool placed( const K & k ) const;
 
- std::vector< Cell > f_T;      ///< the m places, then the stash
- std::size_t f_m;              ///< the places of the table
- std::size_t f_m0;             ///< the least capacity
- std::size_t f_s;              ///< the places of the stash
- double f_maxLoad;             ///< the load past which it doubles
- std::size_t f_n = 0;          ///< the number of keys
- std::size_t f_rehashes = 0;   ///< the rebuilds with new functions
- std::size_t f_evictions = 0;  ///< the evictions
- SplitMix64 f_seeds;           ///< the seeds of the functions
- TabulationHash f_g1 , f_g2;    ///< the two functions
- H f_h;                        ///< the hash of the keys
+ detail::AllocVector< A , Cell > f_T;  ///< the m places, then the stash
+ std::size_t f_m;                     ///< the places of the table
+ std::size_t f_m0;                    ///< the least capacity
+ std::size_t f_s;                     ///< the places of the stash
+ double f_maxLoad;                    ///< the load past which it doubles
+ std::size_t f_n = 0;                 ///< the number of keys
+ std::size_t f_rehashes = 0;          ///< the rebuilds with new functions
+ std::size_t f_evictions = 0;         ///< the evictions
+ SplitMix64 f_seeds;                  ///< the seeds of the functions
+ TabulationHash f_g1 , f_g2;           ///< the two functions
+ H f_h;                               ///< the hash of the keys
 
  };  // end( class CuckooHashTable )
 

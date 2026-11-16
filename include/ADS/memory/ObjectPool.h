@@ -49,6 +49,10 @@
  * frees of any thread instead. With `clear()` never called, `make()` and
  * `free()` are the same as before.
  *
+ * The pool moves and swaps with its allocator, which gives back the blocks
+ * it gave; an allocator that cannot be assigned, as
+ * `std::pmr::polymorphic_allocator`, is moved by building the pools again.
+ *
  * The contracts [see `Contract.h`]: a block holds at least one slot,
  * `free()` and `deallocate()` need an object (a slot) of the pool given in
  * the epoch (audit); the invariant is that `size()` objects are alive. The
@@ -230,6 +234,14 @@ class ObjectPool
 
  /// the memory of the blocks, in bytes
  [[nodiscard]] std::size_t bytes( void ) const;
+
+ /// the type of the allocator
+ using allocator_type = A;
+
+ /// the allocator of the blocks
+ [[nodiscard]] allocator_type get_allocator( void ) const {
+  return( allocator_type( f_alloc ) );
+  }
 
 /*--------------------------------------------------------------------------*/
  private:

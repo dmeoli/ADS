@@ -74,6 +74,14 @@
  * copied nor moved, and has no split; a copy or a move of the others has
  * no observer.
  *
+ * The nodes come from the allocator `A`, `std::allocator` by default (by
+ * `new` and `delete`), which must be stateless, its allocators all equal
+ * and default-constructible (e.g., `HugePageAllocator` or
+ * `mi_stl_allocator` of mimalloc): the algorithms of `JoinAlgorithms.h`
+ * build and free the nodes with no tree at hand, and in parallel by the set
+ * operations, so that a stateful allocator, as one of `std::pmr`, has
+ * nowhere to be kept.
+ *
  * The contracts [see `Contract.h`]: `insert()` ensures that the key is
  * there, `remove()` that it is not and `assign()` that the key has its new
  * value; the predicate of `augSelect()` is monotone on the prefixes, that
@@ -124,6 +132,7 @@
 #include "ADS/Iterators.h"
 #include "ADS/Modification.h"
 #include "ADS/Portable.h"
+#include "ADS/memory/AllocatorAware.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/JoinAlgorithms.h"
@@ -263,23 +272,26 @@ struct MaxAugmentation
 /// augmented by `G`, whose changes go to the observers of the subject
 /// policy `Policy` [see `Modification.h`]
 template< std::totally_ordered K , class V , class B = AVLBalance ,
-	  class G = NoAugmentation , class Policy = NoObservers >
+	  class G = NoAugmentation , class Policy = NoObservers ,
+	  class A = std::allocator< std::pair< const K , V > > >
  requires Augmentation< G , K , V >
 class JoinTree;
 
 /// the adaptor of the nodes of a `JoinTree` [see `JoinAdaptor`]
-template< std::totally_ordered K , class V , class B , class G , class Policy >
+template< std::totally_ordered K , class V , class B , class G , class Policy ,
+	  class A >
 struct JoinTreeNodes;
 
-template< std::totally_ordered K , class V , class B , class G , class Policy >
+template< std::totally_ordered K , class V , class B , class G , class Policy ,
+	  class A >
  requires Augmentation< G , K , V >
-class JoinTree : public Joinable< JoinTree< K , V , B , G , Policy > ,
-				  JoinTreeNodes< K , V , B , G , Policy > , K ,
-				  V >
+class JoinTree
+    : public Joinable< JoinTree< K , V , B , G , Policy , A > ,
+		       JoinTreeNodes< K , V , B , G , Policy , A > , K , V >
 {
 
- friend struct JoinTreeNodes< K , V , B , G , Policy >;
- using Nodes = JoinTreeNodes< K , V , B , G , Policy >;
+ friend struct JoinTreeNodes< K , V , B , G , Policy , A >;
+ using Nodes = JoinTreeNodes< K , V , B , G , Policy , A >;
 
 /*--------------------------------------------------------------------------*/
  public:
@@ -287,6 +299,12 @@ class JoinTree : public Joinable< JoinTree< K , V , B , G , Policy > ,
  using Value = V;                     ///< the type of the values
  using AugValue = typename G::Value;  ///< the type of the augmentation
  using Augmented = G;                 ///< the augmentation
+ using allocator_type = A;            ///< the allocator of the nodes
+
+ /// the allocator of the nodes, stateless
+ [[nodiscard]] allocator_type get_allocator( void ) const {
+  return( allocator_type() );
+  }
 
  /// the insertion of a key, whose handle is the key itself
  using Inserted = mod::Inserted< K , K , V >;
@@ -683,28 +701,33 @@ class JoinTree : public Joinable< JoinTree< K , V , B , G , Policy > ,
 
 /// the AVL tree whose balance is in join alone
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-	  class Policy = NoObservers >
-using JoinAVLTree = JoinTree< K , V , AVLBalance , G , Policy >;
+	  class Policy = NoObservers ,
+	  class A = std::allocator< std::pair< const K , V > > >
+using JoinAVLTree = JoinTree< K , V , AVLBalance , G , Policy , A >;
 
 /// the Red-Black tree whose balance is in join alone
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-	  class Policy = NoObservers >
-using JoinRedBlackTree = JoinTree< K , V , RedBlackBalance , G , Policy >;
+	  class Policy = NoObservers ,
+	  class A = std::allocator< std::pair< const K , V > > >
+using JoinRedBlackTree = JoinTree< K , V , RedBlackBalance , G , Policy , A >;
 
 /// the tree balanced by weight, in join alone
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-	  class Policy = NoObservers >
-using WeightBalancedTree = JoinTree< K , V , WeightBalance , G , Policy >;
+	  class Policy = NoObservers ,
+	  class A = std::allocator< std::pair< const K , V > > >
+using WeightBalancedTree = JoinTree< K , V , WeightBalance , G , Policy , A >;
 
 /// the treap whose balance is in join alone
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-	  class Policy = NoObservers >
-using JoinTreap = JoinTree< K , V , TreapBalance , G , Policy >;
+	  class Policy = NoObservers ,
+	  class A = std::allocator< std::pair< const K , V > > >
+using JoinTreap = JoinTree< K , V , TreapBalance , G , Policy , A >;
 
 /// the map augmented by G, balanced by weight as in PAM
 template< std::totally_ordered K , class V , class G ,
-	  class Policy = NoObservers >
-using AugmentedMap = JoinTree< K , V , WeightBalance , G , Policy >;
+	  class Policy = NoObservers ,
+	  class A = std::allocator< std::pair< const K , V > > >
+using AugmentedMap = JoinTree< K , V , WeightBalance , G , Policy , A >;
 
 /*--------------------------------------------------------------------------*/
 

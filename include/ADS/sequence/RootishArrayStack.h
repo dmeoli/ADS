@@ -36,6 +36,10 @@
  * the shifts move the items instead of copying them; `operator[]` costs the
  * same square root plus two comparisons, predicted, of the correction.
  *
+ * The blocks and the vector of their addresses come from the allocator `A`,
+ * `std::allocator` by default, with the rules of the standard [see
+ * `AllocatorAware.h`].
+ *
  * The contracts [see `Contract.h`]: a rank is below `size()` (at most
  * `size()` for an insertion), and `pop_back()` needs a list that is not
  * empty; the invariant is that the \f$ r \f$ blocks hold the \f$ n \f$
@@ -70,6 +74,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/memory/AllocatorAware.h"
 #include "ADS/Iterators.h"
 
 #include <cmath>
@@ -94,7 +99,7 @@ namespace ADS
 
 /// a LIST by rank on blocks of \f$ 1 , 2 , \ldots , r \f$ places, with
 /// \f$ O( \sqrt{n} ) \f$ places wasted
-template< class T >
+template< class T , class A = std::allocator< T > >
 class RootishArrayStack
 {
 
@@ -109,26 +114,61 @@ class RootishArrayStack
  using iterator = RankIterator< RootishArrayStack , T , false >;
  /// the iterator on the constant items
  using const_iterator = RankIterator< RootishArrayStack , T , true >;
+ /// the type of the allocator
+ using allocator_type = A;
+ /// the allocator of the blocks
+ [[nodiscard]] allocator_type get_allocator( void ) const {
+  return( allocator_type( f_blocks.get_allocator() ) );
+  }
 
  /// the empty list, with no block
  RootishArrayStack( void ) = default;
 
+ /// the empty sequence, its blocks from `alloc`
+ explicit RootishArrayStack( const A & alloc ) : f_blocks( alloc ) { }
+
  /// the items of `l`, in order
  RootishArrayStack( std::initializer_list< T > l );
 
- /// a copy of `o`
+ /// a copy of `o`, on the allocator that
+ /// `select_on_container_copy_construction()` gives
  RootishArrayStack( const RootishArrayStack & o );
+
+ /// a copy of `o`, on `alloc`
+ RootishArrayStack( const RootishArrayStack & o , const A & alloc );
 
  /// the blocks of `o`, which is left empty
  RootishArrayStack( RootishArrayStack && o ) noexcept;
 
- /// the items of `o`, by copy and swap
- RootishArrayStack & operator=( RootishArrayStack o ) noexcept;
+ /// the items of `o`, which is left empty, on `alloc`: its blocks if the
+ /// allocators are equal, else its items moved one by one
+ RootishArrayStack( RootishArrayStack && o , const A & alloc );
+
+ /// the items of `o`, by copy and swap, when the allocators are all equal
+ RootishArrayStack & operator=( RootishArrayStack o ) noexcept
+  requires detail::alwaysEqualAlloc< A >;
+
+ /// the copy assignment, with the allocator of `o` if it propagates
+ RootishArrayStack & operator=( const RootishArrayStack & o )
+  requires( ! detail::alwaysEqualAlloc< A > )
+ {
+  return( detail::copyAssign( *this , o ) );
+  }
+
+ /// the move assignment: the memory of `o` if its allocator propagates or
+ /// is equal, else its items moved one by one
+ RootishArrayStack & operator=( RootishArrayStack && o )
+  requires( ! detail::alwaysEqualAlloc< A > )
+ {
+  return( detail::moveAssign( *this , std::move( o ) ) );
+  }
 
  /// destroys the items and frees the blocks
  ~RootishArrayStack();
 
- /// exchanges the blocks with those of `o`
+ /// exchanges the blocks with those of `o`, and the allocators if they
+ /// propagate on a swap
+ /// \pre the allocators are equal, if they do not propagate
  void swap( RootishArrayStack & o ) noexcept;
 
  /// true if there is no item
@@ -238,9 +278,9 @@ class RootishArrayStack
   }
 
  /// an item built from \f$ a \f$ before the item of \f$ p \f$
- template< class... A >
- iterator emplace( const_iterator p , A &&... a ) {
-  return( insert( p , T( std::forward< A >( a )... ) ) );
+ template< class... Args >
+ iterator emplace( const_iterator p , Args &&... a ) {
+  return( insert( p , T( std::forward< Args >( a )... ) ) );
   }
 
  /// the item of \f$ p \f$ removed, i.e., `erase( i )` with \f$ i \f$ its
@@ -317,8 +357,12 @@ class RootishArrayStack
  /// the blocks hold the items, as the invariant says
  [[nodiscard]] bool fits( void ) const;
 
+ /// the allocator of the items, and its traits
+ using Alloc = detail::RebindAlloc< A , T >;
+ using Traits = std::allocator_traits< Alloc >;
+
  /// the block \f$ b \f$ of \f$ b + 1 \f$ places, for each \f$ b \f$
- std::vector< T * > f_blocks;
+ detail::AllocVector< A , T * > f_blocks;
  std::size_t f_n = 0;  ///< the number of items
 
  };  // end( class RootishArrayStack )

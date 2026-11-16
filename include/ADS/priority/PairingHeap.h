@@ -47,6 +47,10 @@
  * amortized, and `update()` takes `decrease()` or `increase()` as the new
  * priority asks.
  *
+ * The nodes come from an `ObjectPool` [see `ObjectPool.h`] whose blocks
+ * come from the allocator `A`, `HugePageAllocator` by default; the heap
+ * moves with its pool and its allocator, and is never copied.
+ *
  * The contracts [see `Contract.h`]: `min()`, `minPriority()` and `deleteMin()`
  * need a heap that is not empty, `decrease()` a handle of a node of this
  * heap and a priority not larger than its own, `increase()` one not
@@ -96,6 +100,7 @@
 
 #include "ADS/Capabilities.h"
 #include "ADS/Contract.h"
+#include "ADS/memory/AllocatorAware.h"
 #include "ADS/memory/ObjectPool.h"
 #include "ADS/priority/PriorityQueue.h"
 
@@ -118,7 +123,8 @@ namespace ADS
 
 /// a priority queue on a pairing heap, two-pass, or auxiliary two-pass if
 /// `Aux`
-template< class T , std::totally_ordered P = int , bool Aux = false >
+template< class T , std::totally_ordered P = int , bool Aux = false ,
+	  class A = HugePageAllocator< T > >
 class PairingHeap
 {
 
@@ -140,6 +146,18 @@ class PairingHeap
 
  /// the empty heap
  PairingHeap( void ) = default;
+
+ /// the empty heap, the blocks of its nodes from `alloc`
+ explicit PairingHeap( const A & alloc )
+     : f_pool( std::size_t( 1 ) << 24 ,
+	       typename Pool::allocator_type( alloc ) ) { }
+
+ /// the type of the allocator
+ using allocator_type = A;
+ /// the allocator of the blocks of the nodes
+ [[nodiscard]] allocator_type get_allocator( void ) const {
+  return( allocator_type( f_pool.get_allocator() ) );
+  }
 
  /// no copy: the handles point into the heap
  PairingHeap( const PairingHeap & ) = delete;
@@ -357,17 +375,21 @@ class PairingHeap
  /// the invariant, on heaps of at most 1024 nodes
  [[nodiscard]] bool isHeap( void ) const;
 
- Node * f_root = nullptr;    ///< the root, and the list after it if Aux
- Node * f_min = nullptr;     ///< the least among the root and the list
- int f_n = 0;                ///< the number of items
- ObjectPool< Node > f_pool;  ///< the nodes
+ Node * f_root = nullptr;  ///< the root, and the list after it if Aux
+ Node * f_min = nullptr;   ///< the least among the root and the list
+ int f_n = 0;              ///< the number of items
+ /// the pool of the nodes
+ using Pool = ObjectPool< Node , detail::RebindAlloc< A , Node > >;
+
+ Pool f_pool;  ///< the nodes
 
  };  // end( class PairingHeap )
 
 /// the items of a pairing heap stay in their nodes, which the handles point
 /// to [see `Capabilities.h`]
-template< class T , std::totally_ordered P , bool Aux >
-inline constexpr bool enable_stable_references< PairingHeap< T , P , Aux > > =
+template< class T , std::totally_ordered P , bool Aux , class A >
+inline constexpr bool enable_stable_references< PairingHeap< T , P , Aux ,
+							     A > > =
   true;
 
 /*--------------------------------------------------------------------------*/

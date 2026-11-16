@@ -47,6 +47,9 @@
  * `is_avalanching` [see `FastHash.h`] and mixed by `hashWord()` otherwise.
  * The keys and the values must be default constructible and movable.
  *
+ * The tags and the places come from the allocator `A`, `std::allocator` by
+ * default, with the rules of the standard [see `AllocatorAware.h`].
+ *
  * The contracts [see `Contract.h`]: after `insert()` the key is in the
  * table and after `remove()` it is not; the invariant is that each key is in
  * one of its two buckets with its tag, and that the tags count the pairs,
@@ -89,6 +92,7 @@
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/memory/AllocatorAware.h"
 
 #include <bit>
 #include <cstddef>
@@ -112,7 +116,8 @@ namespace ADS
 
 /// a DICTIONARY on the cuckoo hashing with buckets of 4 places
 template< class K , class V , class H = DefaultHash< K > ,
-	  class Eq = std::equal_to< K > >
+	  class Eq = std::equal_to< K > ,
+	  class A = std::allocator< std::pair< const K , V > > >
 class BucketCuckooTable
 {
 
@@ -121,8 +126,10 @@ class BucketCuckooTable
  using Key = K;    ///< the type of the keys
  using Value = V;  ///< the type of the values
 
- /// the empty table, with room for \f$ n \f$ pairs before it grows
- explicit BucketCuckooTable( std::size_t n = 0 , H h = H() , Eq eq = Eq() );
+ /// the empty table, with room for \f$ n \f$ pairs before it grows, its
+ /// places from `alloc`
+ explicit BucketCuckooTable( std::size_t n = 0 , H h = H() , Eq eq = Eq() ,
+			     const A & alloc = A() );
 
  /// the value of the key \f$ k \f$, or nothing, from the 8 places of its two
  /// buckets, compared first by their tags
@@ -240,6 +247,12 @@ class BucketCuckooTable
  using const_iterator = SlotIterator< BucketCuckooTable , Places >;
  /// the iterator on the items
  using iterator = const_iterator;
+ /// the type of the allocator
+ using allocator_type = A;
+ /// the allocator of the places
+ [[nodiscard]] allocator_type get_allocator( void ) const {
+  return( allocator_type( f_S.get_allocator() ) );
+  }
 
  /// the iterator on the first item
  [[nodiscard]] const_iterator begin( void ) const {
@@ -295,14 +308,19 @@ class BucketCuckooTable
  /// 1024 places, every pair so and counted right
  [[nodiscard]] bool placed( const K & k ) const;
 
- std::vector< std::uint32_t > f_T;  ///< the 4 tags of each bucket
- std::vector< Slot > f_S;           ///< the places, 4 per bucket
- int f_lg = 1;                      ///< log2 of the buckets
- std::size_t f_n = 0;               ///< the number of keys
- std::size_t f_rehashes = 0;        ///< the doublings
- std::size_t f_moves = 0;           ///< the keys moved
- H f_h;                             ///< the hash of the keys
- Eq f_eq;                           ///< the equality of the keys
+ /// the vector of the tags
+ using Tags = detail::AllocVector< A , std::uint32_t >;
+ /// the vector of the places
+ using Slots = detail::AllocVector< A , Slot >;
+
+ Tags f_T;                    ///< the 4 tags of each bucket
+ Slots f_S;                   ///< the places, 4 per bucket
+ int f_lg = 1;                ///< log2 of the buckets
+ std::size_t f_n = 0;         ///< the number of keys
+ std::size_t f_rehashes = 0;  ///< the doublings
+ std::size_t f_moves = 0;     ///< the keys moved
+ H f_h;                       ///< the hash of the keys
+ Eq f_eq;                     ///< the equality of the keys
 
  };  // end( class BucketCuckooTable )
 

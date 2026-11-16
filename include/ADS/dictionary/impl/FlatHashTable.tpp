@@ -77,18 +77,33 @@ ADS_ABI_BEGIN
 /*---------------------- CONSTRUCTION AND DESTRUCTION ----------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class K , class V , class H , class Eq >
-FlatHashTable< K , V , H , Eq >::FlatHashTable( std::size_t n , H h , Eq eq )
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A >::FlatHashTable( std::size_t n , H h ,
+						    Eq eq )
     : f_h( std::move( h ) ) , f_eq( std::move( eq ) )
 {
  if( n > 0 )
   rebuild( groups( n ) , []( FlatHashTable & , auto & ) { } );
  }
 
-template< class K , class V , class H , class Eq >
-FlatHashTable< K , V , H , Eq >::FlatHashTable( const FlatHashTable & o )
-    : f_h( o.f_h ) , f_eq( o.f_eq )
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A >::FlatHashTable( std::size_t n , H h ,
+						    Eq eq ,
+						const A & alloc )
+    : Holder( alloc ) , f_h( std::move( h ) ) , f_eq( std::move( eq ) )
 {
+ if( n > 0 )
+  rebuild( groups( n ) , []( FlatHashTable & , auto & ) { } );
+ }
+
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A >::FlatHashTable( const FlatHashTable & o )
+    : Holder( detail::copyAlloc( o.alloc() ) ) , f_h( o.f_h ) , f_eq( o.f_eq )
+{
+ if constexpr( ! STD ) {  // on the allocator
+  copy( o );
+  return;
+  }
  if( o.f_cap == 0 )
   return;
  const std::size_t G = o.f_mask + 1;
@@ -122,13 +137,58 @@ FlatHashTable< K , V , H , Eq >::FlatHashTable( const FlatHashTable & o )
  f_deleted = o.f_deleted;
  }
 
-template< class K , class V , class H , class Eq >
-FlatHashTable< K , V , H , Eq >::FlatHashTable( FlatHashTable && o ) noexcept
-    : f_ctrl( o.f_ctrl ) , f_slot( o.f_slot ) , f_cap( o.f_cap ) ,
-      f_mask( o.f_mask ) , f_shift( o.f_shift ) , f_max( o.f_max ) ,
-      f_size( o.f_size ) , f_deleted( o.f_deleted ) ,
-      f_h( std::move( o.f_h ) ) ,
-      f_eq( std::move( o.f_eq ) )
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A >::FlatHashTable( const FlatHashTable & o ,
+						const A & alloc )
+    : Holder( alloc ) , f_h( o.f_h ) , f_eq( o.f_eq )
+{
+ copy( o );
+ }
+
+template< class K , class V , class H , class Eq , class A >
+void FlatHashTable< K , V , H , Eq , A >::copy( const FlatHashTable & o )
+{
+ if( o.f_cap == 0 )
+  return;
+ const std::size_t G = o.f_mask + 1;
+ Group * ctrl;
+ Slot * const slot = obtain( G , ctrl );
+ std::memcpy( static_cast< void * >( ctrl ) , o.f_ctrl , G * sizeof( Group ) );
+ std::size_t n = 0;  // the pairs copied so far
+ try {               // the same places, copied
+  o.each( [ & ]( std::size_t i ) {
+   std::construct_at( &slot[ i - i / GROUP ].kv , o.slot( i )->kv );
+   ++n;
+   } );
+  }
+ catch( ... ) {
+  o.each( [ & ]( std::size_t i ) {
+   if( n > 0 ) {
+    std::destroy_at( &slot[ i - i / GROUP ].kv );
+    --n;
+    }
+   } );
+  yield( slot , ctrl , G );
+  throw;
+  }
+ f_ctrl = ctrl;
+ f_slot = slot;
+ f_cap = o.f_cap;
+ f_mask = o.f_mask;
+ f_shift = o.f_shift;
+ f_max = o.f_max;
+ f_size = o.f_size;
+ f_deleted = o.f_deleted;
+ }
+
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq ,
+	       A >::FlatHashTable( FlatHashTable && o ) noexcept
+    : Holder( std::move( o.alloc() ) ) , f_ctrl( o.f_ctrl ) ,
+      f_slot( o.f_slot ) ,
+      f_cap( o.f_cap ) , f_mask( o.f_mask ) , f_shift( o.f_shift ) ,
+      f_max( o.f_max ) , f_size( o.f_size ) , f_deleted( o.f_deleted ) ,
+      f_h( std::move( o.f_h ) ) , f_eq( std::move( o.f_eq ) )
 {
  o.f_ctrl = s_none;
  o.f_slot = nullptr;
@@ -136,22 +196,75 @@ FlatHashTable< K , V , H , Eq >::FlatHashTable( FlatHashTable && o ) noexcept
  o.f_shift = 63;
  }
 
-template< class K , class V , class H , class Eq >
-FlatHashTable< K , V , H , Eq > &
-FlatHashTable< K , V , H , Eq >::operator=( FlatHashTable o ) noexcept
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A >::FlatHashTable( FlatHashTable && o ,
+						const A & alloc )
+    : Holder( alloc ) , f_h( o.f_h ) , f_eq( o.f_eq )
+{
+ if( this->alloc() == o.alloc() ) {  // the places of o
+  swap( o );
+  return;
+  }
+ reserve( o.f_size );  // else the pairs, one by one
+ o.each( [ & ]( std::size_t i ) {
+  auto & kv = o.slot( i )->kv;
+  put( std::move( kv.first ) , std::move( kv.second ) );
+  } );
+ o.clear();
+ }
+
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A > &
+FlatHashTable< K , V , H , Eq , A >::operator=( FlatHashTable o ) noexcept
+ requires detail::alwaysEqualAlloc< A >
 {
  swap( o );
  return( *this );
  }
 
-template< class K , class V , class H , class Eq >
-FlatHashTable< K , V , H , Eq >::~FlatHashTable()
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A > &
+FlatHashTable< K , V , H , Eq , A >::operator=( const FlatHashTable & o )
+ requires( ! detail::alwaysEqualAlloc< A > )
+{
+ if( this == &o )
+  return( *this );
+ if constexpr( detail::copyPropagates< A > )
+  if( this->alloc() != o.alloc() )
+   release();  // the places go back to the allocator that gave them
+ detail::copyAssignAlloc( this->alloc() , o.alloc() );
+ FlatHashTable t( o , this->alloc() );
+ swap( t );
+ return( *this );
+ }
+
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A > &
+FlatHashTable< K , V , H , Eq , A >::operator=( FlatHashTable && o )
+ requires( ! detail::alwaysEqualAlloc< A > )
+{
+ if( this == &o )
+  return( *this );
+ if( detail::stealAlloc( this->alloc() , o.alloc() ) ) {
+  release();
+  detail::moveAssignAlloc( this->alloc() , o.alloc() );
+  swap( o );  // the allocators are now equal
+  }
+ else {
+  FlatHashTable t( std::move( o ) , this->alloc() );
+  swap( t );
+  }
+ return( *this );
+ }
+
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A >::~FlatHashTable()
 {
  release();
  }
 
-template< class K , class V , class H , class Eq >
-void FlatHashTable< K , V , H , Eq >::swap( FlatHashTable & o ) noexcept
+template< class K , class V , class H , class Eq , class A >
+void FlatHashTable< K , V , H , Eq , A >::swap( FlatHashTable & o ) noexcept
 {
  using std::swap;
  swap( f_ctrl , o.f_ctrl );
@@ -164,15 +277,23 @@ void FlatHashTable< K , V , H , Eq >::swap( FlatHashTable & o ) noexcept
  swap( f_deleted , o.f_deleted );
  swap( f_h , o.f_h );
  swap( f_eq , o.f_eq );
+ detail::swapAlloc( this->alloc() , o.alloc() );
+ }
+
+template< class K , class V , class H , class Eq , class A >
+auto FlatHashTable< K , V , H , Eq , A >::get_allocator( void ) const
+  -> allocator_type
+{
+ return( this->alloc() );
  }
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- THE DICTIONARY ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 ADS_FLAT_INLINE std::optional< V >
-FlatHashTable< K , V , H , Eq >::lookup( const K & k ) const
+FlatHashTable< K , V , H , Eq , A >::lookup( const K & k ) const
 {
  const V * v = find( k );
  if( v )
@@ -180,35 +301,36 @@ FlatHashTable< K , V , H , Eq >::lookup( const K & k ) const
  return( std::nullopt );
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 ADS_FLAT_INLINE const V *
-FlatHashTable< K , V , H , Eq >::find( const K & k ) const
+FlatHashTable< K , V , H , Eq , A >::find( const K & k ) const
 {
  const Slot * s = locate( mix( k ) , k );
  return( s ? &s->kv.second : nullptr );
  }
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE V * FlatHashTable< K , V , H , Eq >::find( const K & k )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE V * FlatHashTable< K , V , H , Eq , A >::find( const K & k )
 {
  return( const_cast< V * >( std::as_const( *this ).find( k ) ) );
  }
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE bool FlatHashTable< K , V , H , Eq >::insert( const K & k ,
-							   const V & v )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE bool FlatHashTable< K , V , H , Eq , A >::insert( const K & k ,
+							      const V & v )
 {
  return( put( k , v ) );
  }
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE bool FlatHashTable< K , V , H , Eq >::insert( K && k , V && v )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE bool FlatHashTable< K , V , H , Eq , A >::insert( K && k ,
+							      V && v )
 {
  return( put( std::move( k ) , std::move( v ) ) );
  }
 
-template< class K , class V , class H , class Eq >
-bool FlatHashTable< K , V , H , Eq >::remove( const K & k )
+template< class K , class V , class H , class Eq , class A >
+bool FlatHashTable< K , V , H , Eq , A >::remove( const K & k )
 {
  // the first group alone, the common case, as in locate(): the place j
  // found there is emptied by writing the whole group, whose address
@@ -248,39 +370,39 @@ bool FlatHashTable< K , V , H , Eq >::remove( const K & k )
  return( true );
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 ADS_FLAT_INLINE bool
-FlatHashTable< K , V , H , Eq >::contains( const K & k ) const
+FlatHashTable< K , V , H , Eq , A >::contains( const K & k ) const
 {
  return( find( k ) != nullptr );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t FlatHashTable< K , V , H , Eq >::size( void ) const
+template< class K , class V , class H , class Eq , class A >
+std::size_t FlatHashTable< K , V , H , Eq , A >::size( void ) const
 {
  return( f_size );
  }
 
-template< class K , class V , class H , class Eq >
-bool FlatHashTable< K , V , H , Eq >::empty( void ) const
+template< class K , class V , class H , class Eq , class A >
+bool FlatHashTable< K , V , H , Eq , A >::empty( void ) const
 {
  return( f_size == 0 );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t FlatHashTable< K , V , H , Eq >::capacity( void ) const
+template< class K , class V , class H , class Eq , class A >
+std::size_t FlatHashTable< K , V , H , Eq , A >::capacity( void ) const
 {
  return( f_cap );
  }
 
-template< class K , class V , class H , class Eq >
-double FlatHashTable< K , V , H , Eq >::load( void ) const
+template< class K , class V , class H , class Eq , class A >
+double FlatHashTable< K , V , H , Eq , A >::load( void ) const
 {
  return( f_cap ? double( f_size ) / f_cap : 0.0 );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t FlatHashTable< K , V , H , Eq >::deleted( void ) const
+template< class K , class V , class H , class Eq , class A >
+std::size_t FlatHashTable< K , V , H , Eq , A >::deleted( void ) const
 {
  std::size_t d = 0;  // the empty places counted
  for( std::size_t g = 0 ; f_cap && ( g <= f_mask ) ; ++g )
@@ -289,23 +411,23 @@ std::size_t FlatHashTable< K , V , H , Eq >::deleted( void ) const
  return( d );
  }
 
-template< class K , class V , class H , class Eq >
-bool FlatHashTable< K , V , H , Eq >::recount( void )
+template< class K , class V , class H , class Eq , class A >
+bool FlatHashTable< K , V , H , Eq , A >::recount( void )
 {
  f_deleted = deleted();
  return( f_size + f_deleted + f_cap / 16 < f_max );
  }
 
-template< class K , class V , class H , class Eq >
-void FlatHashTable< K , V , H , Eq >::reserve( std::size_t n )
+template< class K , class V , class H , class Eq , class A >
+void FlatHashTable< K , V , H , Eq , A >::reserve( std::size_t n )
 {
  const std::size_t G = groups( n );
  if( G * SLOTS > f_cap )
   rebuild( G , []( FlatHashTable & , auto & ) { } );
  }
 
-template< class K , class V , class H , class Eq >
-void FlatHashTable< K , V , H , Eq >::clear( void )
+template< class K , class V , class H , class Eq , class A >
+void FlatHashTable< K , V , H , Eq , A >::clear( void )
 {
  if constexpr( ! std::is_trivially_destructible_v< std::pair< K , V > > )
   each( [ & ]( std::size_t i ) { std::destroy_at( &slot( i )->kv ); } );
@@ -315,9 +437,9 @@ void FlatHashTable< K , V , H , Eq >::clear( void )
  f_size = f_deleted = 0;
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 template< class F >
-void FlatHashTable< K , V , H , Eq >::forEach( F && f ) const
+void FlatHashTable< K , V , H , Eq , A >::forEach( F && f ) const
 {
  each( [ & ]( std::size_t i ) {
   const auto & kv = slot( i )->kv;
@@ -325,9 +447,9 @@ void FlatHashTable< K , V , H , Eq >::forEach( F && f ) const
   } );
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 template< class F >
-void FlatHashTable< K , V , H , Eq >::forEach( F && f )
+void FlatHashTable< K , V , H , Eq , A >::forEach( F && f )
 {
  each( [ & ]( std::size_t i ) {
   auto & kv = slot( i )->kv;
@@ -335,9 +457,9 @@ void FlatHashTable< K , V , H , Eq >::forEach( F && f )
   } );
  }
 
-template< class K , class V , class H , class Eq >
-typename FlatHashTable< K , V , H , Eq >::const_iterator
-FlatHashTable< K , V , H , Eq >::begin( void ) const
+template< class K , class V , class H , class Eq , class A >
+typename FlatHashTable< K , V , H , Eq , A >::const_iterator
+FlatHashTable< K , V , H , Eq , A >::begin( void ) const
 {
  if( f_size == 0 )
   return( end() );
@@ -347,17 +469,17 @@ FlatHashTable< K , V , H , Eq >::begin( void ) const
  return( it );
  }
 
-template< class K , class V , class H , class Eq >
-typename FlatHashTable< K , V , H , Eq >::const_iterator
-FlatHashTable< K , V , H , Eq >::end( void ) const
+template< class K , class V , class H , class Eq , class A >
+typename FlatHashTable< K , V , H , Eq , A >::const_iterator
+FlatHashTable< K , V , H , Eq , A >::end( void ) const
 {
  return( const_iterator( f_cap ? f_ctrl + f_mask + 1 : s_none + 2 ,
 			  f_slot + f_cap , FIRST ) );
  }
 
-template< class K , class V , class H , class Eq >
-typename FlatHashTable< K , V , H , Eq >::const_iterator
-FlatHashTable< K , V , H , Eq >::erase( const_iterator it )
+template< class K , class V , class H , class Eq , class A >
+typename FlatHashTable< K , V , H , Eq , A >::const_iterator
+FlatHashTable< K , V , H , Eq , A >::erase( const_iterator it )
 {
  const std::size_t i =
    std::size_t( it.f_g - f_ctrl ) * GROUP + lowest( it.f_m );
@@ -371,8 +493,8 @@ FlatHashTable< K , V , H , Eq >::erase( const_iterator it )
  return( ++it );
  }
 
-template< class K , class V , class H , class Eq >
-void FlatHashTable< K , V , H , Eq >::const_iterator::forward( void )
+template< class K , class V , class H , class Eq , class A >
+void FlatHashTable< K , V , H , Eq , A >::const_iterator::forward( void )
 {
  do {  // the sentinel ends it
   ++f_g;
@@ -380,9 +502,9 @@ void FlatHashTable< K , V , H , Eq >::const_iterator::forward( void )
   } while( ! ( f_m = fulls( *f_g ) ) );
  }
 
-template< class K , class V , class H , class Eq >
-typename FlatHashTable< K , V , H , Eq >::const_iterator &
-FlatHashTable< K , V , H , Eq >::const_iterator::operator--( void )
+template< class K , class V , class H , class Eq , class A >
+typename FlatHashTable< K , V , H , Eq , A >::const_iterator &
+FlatHashTable< K , V , H , Eq , A >::const_iterator::operator--( void )
 {
  // the full places before this one in its group, else in a group before
  Mask m = fulls( *f_g ) & ( ( f_m & ( Mask( 0 ) - f_m ) ) - 1 );
@@ -400,9 +522,9 @@ FlatHashTable< K , V , H , Eq >::const_iterator::operator--( void )
 /*------------------------------ THE GROUPS --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 ADS_FLAT_INLINE std::uint64_t
-FlatHashTable< K , V , H , Eq >::mix( const K & k ) const
+FlatHashTable< K , V , H , Eq , A >::mix( const K & k ) const
 {
  if constexpr( AVALANCHING )
   return( std::uint64_t( f_h( k ) ) );
@@ -410,32 +532,32 @@ FlatHashTable< K , V , H , Eq >::mix( const K & k ) const
   return( detail::mulx( std::uint64_t( f_h( k ) ) , 0x9e3779b97f4a7c15ULL ) );
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 ADS_FLAT_INLINE std::uint32_t
-FlatHashTable< K , V , H , Eq >::tag( std::uint64_t x )
+FlatHashTable< K , V , H , Eq , A >::tag( std::uint64_t x )
 {
  return( detail::flatTags[ x & 0xFF ] );
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 ADS_FLAT_INLINE std::uint8_t
-FlatHashTable< K , V , H , Eq >::bit( std::uint64_t x )
+FlatHashTable< K , V , H , Eq , A >::bit( std::uint64_t x )
 {
  return( std::uint8_t( 1 << ( x & 7 ) ) );
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 ADS_FLAT_INLINE std::size_t
-FlatHashTable< K , V , H , Eq >::home( std::uint64_t x ) const
+FlatHashTable< K , V , H , Eq , A >::home( std::uint64_t x ) const
 {
  return( std::size_t( x >> f_shift ) );
  }
 
 #if ADS_FLAT_SIMD == 1
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Mask
-FlatHashTable< K , V , H , Eq >::match( const Group & c , std::uint32_t t )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
+FlatHashTable< K , V , H , Eq , A >::match( const Group & c , std::uint32_t t )
 {
  const __m128i w =
    _mm_load_si128( reinterpret_cast< const __m128i * >( c.c ) );
@@ -444,9 +566,9 @@ FlatHashTable< K , V , H , Eq >::match( const Group & c , std::uint32_t t )
 	  0x7FFF );
  }
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Mask
-FlatHashTable< K , V , H , Eq >::empties( const Group & c )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
+FlatHashTable< K , V , H , Eq , A >::empties( const Group & c )
 {
  const __m128i w =
    _mm_load_si128( reinterpret_cast< const __m128i * >( c.c ) );
@@ -455,18 +577,18 @@ FlatHashTable< K , V , H , Eq >::empties( const Group & c )
    0x7FFF );
  }
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Mask
-FlatHashTable< K , V , H , Eq >::fulls( const Group & c )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
+FlatHashTable< K , V , H , Eq , A >::fulls( const Group & c )
 {
  return( empties( c ) ^ 0x7FFF );
  }
 
 #elif ADS_FLAT_SIMD == 2
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Mask
-FlatHashTable< K , V , H , Eq >::match( const Group & c , std::uint32_t t )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
+FlatHashTable< K , V , H , Eq , A >::match( const Group & c , std::uint32_t t )
 {
  // the 16 bytes of 0 or 0xFF narrowed to 16 nibbles, the byte j in the
  // nibble j
@@ -477,25 +599,25 @@ FlatHashTable< K , V , H , Eq >::match( const Group & c , std::uint32_t t )
 	  0x0888888888888888ULL );
  }
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Mask
-FlatHashTable< K , V , H , Eq >::empties( const Group & c )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
+FlatHashTable< K , V , H , Eq , A >::empties( const Group & c )
 {
  return( match( c , EMPTY ) );
  }
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Mask
-FlatHashTable< K , V , H , Eq >::fulls( const Group & c )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
+FlatHashTable< K , V , H , Eq , A >::fulls( const Group & c )
 {
  return( empties( c ) ^ 0x0888888888888888ULL );
  }
 
 #else
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 ADS_FLAT_INLINE std::uint64_t
-FlatHashTable< K , V , H , Eq >::word( const std::uint8_t * c )
+FlatHashTable< K , V , H , Eq , A >::word( const std::uint8_t * c )
 {
  std::uint64_t w;
  std::memcpy( &w , c , 8 );
@@ -508,9 +630,9 @@ FlatHashTable< K , V , H , Eq >::word( const std::uint8_t * c )
  return( w );
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 ADS_FLAT_INLINE std::uint64_t
-FlatHashTable< K , V , H , Eq >::zeros( std::uint64_t w )
+FlatHashTable< K , V , H , Eq , A >::zeros( std::uint64_t w )
 {
  // the low 7 bits of a byte plus 0x7F carry into its bit 7 unless they
  // are 0, and never into the next byte
@@ -518,18 +640,18 @@ FlatHashTable< K , V , H , Eq >::zeros( std::uint64_t w )
  return( ~( ( ( w & L7 ) + L7 ) | w | L7 ) );
  }
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Mask
-FlatHashTable< K , V , H , Eq >::gather( std::uint64_t z )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
+FlatHashTable< K , V , H , Eq , A >::gather( std::uint64_t z )
 {
  // the bit 8 j of z >> 7 times 2^( 56 - 7 j ) lands on the bit 56 + j, and
  // no two products share a bit
  return( Mask( ( ( z >> 7 ) * 0x0102040810204080ULL ) >> 56 ) );
  }
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Mask
-FlatHashTable< K , V , H , Eq >::match( const Group & c , std::uint32_t t )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
+FlatHashTable< K , V , H , Eq , A >::match( const Group & c , std::uint32_t t )
 {
  const std::uint64_t b = ( std::uint64_t( t ) << 32 ) | t;
  return( ( gather( zeros( word( c.c ) ^ b ) ) |
@@ -537,51 +659,52 @@ FlatHashTable< K , V , H , Eq >::match( const Group & c , std::uint32_t t )
 	  0x7FFF );
  }
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Mask
-FlatHashTable< K , V , H , Eq >::empties( const Group & c )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
+FlatHashTable< K , V , H , Eq , A >::empties( const Group & c )
 {
  return( match( c , EMPTY ) );
  }
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Mask
-FlatHashTable< K , V , H , Eq >::fulls( const Group & c )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Mask
+FlatHashTable< K , V , H , Eq , A >::fulls( const Group & c )
 {
  return( empties( c ) ^ 0x7FFF );
  }
 
 #endif
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE std::size_t FlatHashTable< K , V , H , Eq >::lowest( Mask m )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE std::size_t FlatHashTable< K , V , H , Eq ,
+					   A >::lowest( Mask m )
 {
  return( std::size_t( std::countr_zero( m ) ) >> STRIDE );
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 ADS_FLAT_INLINE std::uint8_t &
-FlatHashTable< K , V , H , Eq >::ctrl( std::size_t i ) const
+FlatHashTable< K , V , H , Eq , A >::ctrl( std::size_t i ) const
 {
  return( f_ctrl[ i / GROUP ].c[ i % GROUP ] );
  }
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Slot *
-FlatHashTable< K , V , H , Eq >::slot( std::size_t i ) const
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Slot *
+FlatHashTable< K , V , H , Eq , A >::slot( std::size_t i ) const
 {
  return( f_slot + ( i - i / GROUP ) );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t FlatHashTable< K , V , H , Eq >::offset( std::size_t G )
+template< class K , class V , class H , class Eq , class A >
+std::size_t FlatHashTable< K , V , H , Eq , A >::offset( std::size_t G )
 {
  return( ( G * SLOTS * sizeof( Slot ) + ALIGN - 1 ) / ALIGN * ALIGN );
  }
 
-template< class K , class V , class H , class Eq >
-typename FlatHashTable< K , V , H , Eq >::Slot *
-FlatHashTable< K , V , H , Eq >::allocate( std::size_t G , Group *& c )
+template< class K , class V , class H , class Eq , class A >
+typename FlatHashTable< K , V , H , Eq , A >::Slot *
+FlatHashTable< K , V , H , Eq , A >::allocate( std::size_t G , Group *& c )
 {
  // no cookie before the array, unlike new Slot[ n ] with a destructor; the
  // groups are implicit-lifetime bytes
@@ -608,23 +731,67 @@ FlatHashTable< K , V , H , Eq >::allocate( std::size_t G , Group *& c )
  return( s );
  }
 
-template< class K , class V , class H , class Eq >
-void FlatHashTable< K , V , H , Eq >::deallocate( Slot * s , Group * c ,
-					       std::size_t G ) noexcept
+template< class K , class V , class H , class Eq , class A >
+void FlatHashTable< K , V , H , Eq , A >::deallocate( Slot * s , Group * c ,
+						  std::size_t G ) noexcept
 {
  if( G > JOIN )
   ::operator delete( static_cast< void * >( c ) , std::align_val_t( ALIGN ) );
  ::operator delete( static_cast< void * >( s ) , std::align_val_t( ALIGN ) );
  }
 
+template< class K , class V , class H , class Eq , class A >
+typename FlatHashTable< K , V , H , Eq , A >::Slot *
+FlatHashTable< K , V , H , Eq , A >::obtain( std::size_t G , Group *& c )
+{
+ using Traits = std::allocator_traits< LineAlloc >;
+ LineAlloc la( this->alloc() );
+ const std::size_t at = offset( G ) , bytes = ( G + 1 ) * sizeof( Group );
+ const bool join = G <= JOIN;
+ Line * const b = Traits::allocate( la , lines( join ? at + bytes : at ) );
+ if( join )
+  c = reinterpret_cast< Group * >( reinterpret_cast< unsigned char * >( b ) +
+				   at );
+ else
+  try {
+   c = reinterpret_cast< Group * >( Traits::allocate( la , lines( bytes ) ) );
+   }
+  catch( ... ) {
+   Traits::deallocate( la , b , lines( at ) );
+   throw;
+   }
+ auto * s = reinterpret_cast< Slot * >( b );
+ for( std::size_t i = 0 ; i < G * SLOTS ; ++i )
+  ::new( static_cast< void * >( s + i ) ) Slot;
+ std::memset( static_cast< void * >( c ) , 0 , bytes );
+ c[ G ].c[ 0 ] = 1;  // the sentinel, full
+ return( s );
+ }
+
+template< class K , class V , class H , class Eq , class A >
+void FlatHashTable< K , V , H , Eq , A >::yield( Slot * s , Group * c ,
+					     std::size_t G ) noexcept
+{
+ using Traits = std::allocator_traits< LineAlloc >;
+ LineAlloc la( this->alloc() );
+ const std::size_t at = offset( G ) , bytes = ( G + 1 ) * sizeof( Group );
+ if( G > JOIN ) {
+  Traits::deallocate( la , reinterpret_cast< Line * >( c ) , lines( bytes ) );
+  Traits::deallocate( la , reinterpret_cast< Line * >( s ) , lines( at ) );
+  }
+ else
+  Traits::deallocate( la , reinterpret_cast< Line * >( s ) ,
+		      lines( at + bytes ) );
+ }
+
 /*--------------------------------------------------------------------------*/
 /*------------------------------ THE PLACES --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Slot *
-FlatHashTable< K , V , H , Eq >::scan( std::size_t g , Mask m ,
-				    const K & k ) const
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Slot *
+FlatHashTable< K , V , H , Eq , A >::scan( std::size_t g , Mask m ,
+				       const K & k ) const
 {
  Slot * p = f_slot + g * SLOTS;
  ADS_FLAT_PREFETCH( p );  // issued while m is predicted
@@ -637,9 +804,10 @@ FlatHashTable< K , V , H , Eq >::scan( std::size_t g , Mask m ,
  return( nullptr );
  }
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Slot *
-FlatHashTable< K , V , H , Eq >::locate( std::uint64_t x , const K & k ) const
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq , A >::Slot *
+FlatHashTable< K , V , H , Eq , A >::locate( std::uint64_t x ,
+					     const K & k ) const
 {
  // the whole inspection in line, with no call: a call would take the
  // registers that the loop of the caller keeps its values in, and the
@@ -660,10 +828,10 @@ FlatHashTable< K , V , H , Eq >::locate( std::uint64_t x , const K & k ) const
   }
  }
 
-template< class K , class V , class H , class Eq >
-typename FlatHashTable< K , V , H , Eq >::Slot *
-FlatHashTable< K , V , H , Eq >::further( std::uint64_t x , std::size_t g ,
-				       KeyArg k ) const
+template< class K , class V , class H , class Eq , class A >
+typename FlatHashTable< K , V , H , Eq , A >::Slot *
+FlatHashTable< K , V , H , Eq , A >::further( std::uint64_t x , std::size_t g ,
+					  KeyArg k ) const
 {
  const std::uint32_t t = tag( x );
  for( std::size_t i = 1 ; i <= f_mask ; ++i ) {
@@ -678,8 +846,8 @@ FlatHashTable< K , V , H , Eq >::further( std::uint64_t x , std::size_t g ,
  return( nullptr );  // all the groups seen
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t FlatHashTable< K , V , H , Eq >::claim( std::uint64_t x )
+template< class K , class V , class H , class Eq , class A >
+std::size_t FlatHashTable< K , V , H , Eq , A >::claim( std::uint64_t x )
 {
  std::size_t g = home( x );
  for( std::size_t i = 1 ; ; ++i ) {
@@ -690,34 +858,35 @@ std::size_t FlatHashTable< K , V , H , Eq >::claim( std::uint64_t x )
   }
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 template< class KK , class VV >
-ADS_FLAT_INLINE bool FlatHashTable< K , V , H , Eq >::put( KK && k , VV && v )
+ADS_FLAT_INLINE bool FlatHashTable< K , V , H , Eq , A >::put( KK && k ,
+							       VV && v )
 {
  return(
    place< true >( std::forward< KK >( k ) , std::forward< VV >( v ) ).second );
  }
 
-template< class K , class V , class H , class Eq >
-template< class... A >
+template< class K , class V , class H , class Eq , class A >
+template< class... Args >
 ADS_FLAT_INLINE std::pair< V * , bool >
-FlatHashTable< K , V , H , Eq >::try_emplace( const K & k , A &&... a )
+FlatHashTable< K , V , H , Eq , A >::try_emplace( const K & k , Args &&... a )
 {
- return( place< false >( k , std::forward< A >( a )... ) );
+ return( place< false >( k , std::forward< Args >( a )... ) );
  }
 
-template< class K , class V , class H , class Eq >
-template< class... A >
+template< class K , class V , class H , class Eq , class A >
+template< class... Args >
 ADS_FLAT_INLINE std::pair< V * , bool >
-FlatHashTable< K , V , H , Eq >::try_emplace( K && k , A &&... a )
+FlatHashTable< K , V , H , Eq , A >::try_emplace( K && k , Args &&... a )
 {
- return( place< false >( std::move( k ) , std::forward< A >( a )... ) );
+ return( place< false >( std::move( k ) , std::forward< Args >( a )... ) );
  }
 
-template< class K , class V , class H , class Eq >
-template< bool Assign , class KK , class... A >
+template< class K , class V , class H , class Eq , class A >
+template< bool Assign , class KK , class... Args >
 ADS_FLAT_INLINE std::pair< V * , bool >
-FlatHashTable< K , V , H , Eq >::place( KK && k , A &&... a )
+FlatHashTable< K , V , H , Eq , A >::place( KK && k , Args &&... a )
 {
  // the search of locate(), whose first group also gives the place of a
  // new key when it has an empty one, the common case
@@ -731,19 +900,19 @@ FlatHashTable< K , V , H , Eq >::place( KK && k , A &&... a )
   s = further( x , g , k );
  if( s ) {
   if constexpr( Assign )  // replaced in place
-   ( ( s->kv.second = std::forward< A >( a ) ) , ... );
+   ( ( s->kv.second = std::forward< Args >( a ) ) , ... );
   ADS_INVARIANT( consistent( x ) );
   return( std::pair< V * , bool >( &s->kv.second , false ) );
   }
  std::size_t i;
  if( ( f_size + f_deleted >= f_max ) && ! recount() ) [[unlikely]]
-  i = grow( x , std::forward< KK >( k ) , std::forward< A >( a )... );
+  i = grow( x , std::forward< KK >( k ) , std::forward< Args >( a )... );
  else {
   const Mask e = empties( c );
   i = e ? g * GROUP + lowest( e ) : claim( x );
   std::construct_at( &slot( i )->kv , std::piecewise_construct ,
 		     std::forward_as_tuple( std::forward< KK >( k ) ) ,
-		     std::forward_as_tuple( std::forward< A >( a )... ) );
+		     std::forward_as_tuple( std::forward< Args >( a )... ) );
   // a place counted, by no branch past the test of the bound, 0 with no
   // removals; an empty place of a group with some overflow was emptied by
   // a removal, so that then the bound is at least 1
@@ -757,10 +926,11 @@ FlatHashTable< K , V , H , Eq >::place( KK && k , A &&... a )
  return( std::pair< V * , bool >( &slot( i )->kv.second , true ) );
  }
 
-template< class K , class V , class H , class Eq >
-template< class KK , class... A >
-std::size_t FlatHashTable< K , V , H , Eq >::grow( std::uint64_t x , KK && k ,
-						A &&... a )
+template< class K , class V , class H , class Eq , class A >
+template< class KK , class... Args >
+std::size_t FlatHashTable< K , V , H , Eq , A >::grow( std::uint64_t x ,
+						       KK && k ,
+						   Args &&... a )
 {
  const std::size_t G = f_cap ? f_mask + 1 : 0;
  std::size_t i = 0;
@@ -770,15 +940,15 @@ std::size_t FlatHashTable< K , V , H , Eq >::grow( std::uint64_t x , KK && k ,
 	   std::construct_at(
 	     &o.slot( i )->kv , std::piecewise_construct ,
 	     std::forward_as_tuple( std::forward< KK >( k ) ) ,
-	     std::forward_as_tuple( std::forward< A >( a )... ) );
+	     std::forward_as_tuple( std::forward< Args >( a )... ) );
 	   o.ctrl( i ) = std::uint8_t( tag( x ) );
 	   ++o.f_size;
 	   } );
  return( i );
  }
 
-template< class K , class V , class H , class Eq >
-void FlatHashTable< K , V , H , Eq >::drop( std::size_t i )
+template< class K , class V , class H , class Eq , class A >
+void FlatHashTable< K , V , H , Eq , A >::drop( std::size_t i )
 {
  std::destroy_at( &slot( i )->kv );
  ctrl( i ) = EMPTY;
@@ -786,9 +956,9 @@ void FlatHashTable< K , V , H , Eq >::drop( std::size_t i )
  --f_size;
  }
 
-template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE void FlatHashTable< K , V , H , Eq >::vacate( Group & c ,
-							   std::size_t j )
+template< class K , class V , class H , class Eq , class A >
+ADS_FLAT_INLINE void FlatHashTable< K , V , H , Eq , A >::vacate( Group & c ,
+							      std::size_t j )
 {
 #if ADS_FLAT_SIMD == 1
  const __m128i w = _mm_load_si128( reinterpret_cast< __m128i * >( c.c ) ) ,
@@ -812,12 +982,15 @@ ADS_FLAT_INLINE void FlatHashTable< K , V , H , Eq >::vacate( Group & c ,
 #endif
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 template< class F >
-void FlatHashTable< K , V , H , Eq >::rebuild( std::size_t G , F && first )
+void FlatHashTable< K , V , H , Eq , A >::rebuild( std::size_t G , F && first )
 {
- FlatHashTable o( 0 , f_h , f_eq );  // the new places, in o
- o.f_slot = allocate( G , o.f_ctrl );
+ FlatHashTable o( 0 , f_h , f_eq , this->alloc() );  // the new places, in o
+ if constexpr( STD )
+  o.f_slot = allocate( G , o.f_ctrl );
+ else
+  o.f_slot = o.obtain( G , o.f_ctrl );
  o.f_cap = G * SLOTS;
  o.f_mask = G - 1;
  o.f_shift = 64 - std::countr_zero( G );
@@ -884,8 +1057,8 @@ void FlatHashTable< K , V , H , Eq >::rebuild( std::size_t G , F && first )
  swap( o );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t FlatHashTable< K , V , H , Eq >::groups( std::size_t n )
+template< class K , class V , class H , class Eq , class A >
+std::size_t FlatHashTable< K , V , H , Eq , A >::groups( std::size_t n )
 {
  if( n == 0 )
   return( 0 );
@@ -895,15 +1068,16 @@ std::size_t FlatHashTable< K , V , H , Eq >::groups( std::size_t n )
  return( G );
  }
 
-template< class K , class V , class H , class Eq >
-constexpr std::size_t FlatHashTable< K , V , H , Eq >::bound( std::size_t m )
+template< class K , class V , class H , class Eq , class A >
+constexpr std::size_t FlatHashTable< K , V , H , Eq ,
+				     A >::bound( std::size_t m )
 {
  return( m - m / 8 );
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 template< class F >
-void FlatHashTable< K , V , H , Eq >::each( F && f ) const
+void FlatHashTable< K , V , H , Eq , A >::each( F && f ) const
 {
  if( f_cap == 0 )
   return;
@@ -912,23 +1086,26 @@ void FlatHashTable< K , V , H , Eq >::each( F && f ) const
    f( g * GROUP + lowest( m ) );
  }
 
-template< class K , class V , class H , class Eq >
-void FlatHashTable< K , V , H , Eq >::release( bool pairs ) noexcept
+template< class K , class V , class H , class Eq , class A >
+void FlatHashTable< K , V , H , Eq , A >::release( bool pairs ) noexcept
 {
  if( f_cap == 0 )
   return;
  if constexpr( ! std::is_trivially_destructible_v< std::pair< K , V > > )
   if( pairs )
    each( [ & ]( std::size_t i ) { std::destroy_at( &slot( i )->kv ); } );
- deallocate( f_slot , f_ctrl , f_mask + 1 );
+ if constexpr( STD )
+  deallocate( f_slot , f_ctrl , f_mask + 1 );
+ else
+  yield( f_slot , f_ctrl , f_mask + 1 );
  f_ctrl = s_none;
  f_slot = nullptr;
  f_cap = f_mask = f_max = f_size = f_deleted = 0;
  f_shift = 63;
  }
 
-template< class K , class V , class H , class Eq >
-bool FlatHashTable< K , V , H , Eq >::consistent( std::uint64_t x ) const
+template< class K , class V , class H , class Eq , class A >
+bool FlatHashTable< K , V , H , Eq , A >::consistent( std::uint64_t x ) const
 {
  if( ( f_size + f_deleted > f_max ) || ( f_max != bound( f_cap ) ) )
   return( false );
@@ -975,49 +1152,112 @@ bool FlatHashTable< K , V , H , Eq >::consistent( std::uint64_t x ) const
 /*------------------------- THE PAIRS OF BOOST -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class K , class V , class H , class Eq >
-FlatHashTable< K , V , H , Eq >::FlatHashTable( std::size_t n , H h , Eq eq )
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A >::FlatHashTable( std::size_t n , H h ,
+						    Eq eq )
     : f_map( 0 , std::move( h ) , std::move( eq ) )
 {
  if( n > 0 )
   f_map.reserve( n );
  }
 
-template< class K , class V , class H , class Eq >
-FlatHashTable< K , V , H , Eq >::FlatHashTable( const FlatHashTable & o )
-    : f_map( o.f_map.bucket_count() , o.f_map.hash_function() ,
-	     o.f_map.key_eq() )
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A >::FlatHashTable( std::size_t n , H h ,
+						    Eq eq ,
+						const A & alloc )
+    : f_map( 0 , std::move( h ) , std::move( eq ) ,
+	     typename Map::allocator_type( alloc ) )
+{
+ if( n > 0 )
+  f_map.reserve( n );
+ }
+
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A >::FlatHashTable( const FlatHashTable & o )
+    : Holder() ,
+      f_map( o.f_map.bucket_count() , o.f_map.hash_function() ,
+	     o.f_map.key_eq() ,
+	     detail::copyAlloc( o.f_map.get_allocator() ) )
 {
  f_map.insert( o.f_map.begin() , o.f_map.end() );  // the same places
  }
 
-template< class K , class V , class H , class Eq >
-FlatHashTable< K , V , H , Eq >::FlatHashTable( FlatHashTable && o ) noexcept
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A >::FlatHashTable( const FlatHashTable & o ,
+						const A & alloc )
+    : f_map( o.f_map.bucket_count() , o.f_map.hash_function() ,
+	     o.f_map.key_eq() ,
+	     typename Map::allocator_type( alloc ) )
+{
+ f_map.insert( o.f_map.begin() , o.f_map.end() );  // the same places
+ }
+
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq ,
+	       A >::FlatHashTable( FlatHashTable && o ) noexcept
     : f_map( std::move( o.f_map ) )
 {
  o.f_map.clear();
  }
 
-template< class K , class V , class H , class Eq >
-FlatHashTable< K , V , H , Eq > &
-FlatHashTable< K , V , H , Eq >::operator=( FlatHashTable o ) noexcept
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A >::FlatHashTable( FlatHashTable && o ,
+						const A & alloc )
+    : f_map( std::move( o.f_map ) , typename Map::allocator_type( alloc ) )
+{
+ o.f_map.clear();
+ }
+
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A > &
+FlatHashTable< K , V , H , Eq , A >::operator=( FlatHashTable o ) noexcept
+ requires detail::alwaysEqualAlloc< A >
 {
  swap( o );
  return( *this );
  }
 
-template< class K , class V , class H , class Eq >
-FlatHashTable< K , V , H , Eq >::~FlatHashTable()
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A > &
+FlatHashTable< K , V , H , Eq , A >::operator=( const FlatHashTable & o )
+ requires( ! detail::alwaysEqualAlloc< A > )
+{
+ f_map = o.f_map;
+ return( *this );
+ }
+
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A > &
+FlatHashTable< K , V , H , Eq , A >::operator=( FlatHashTable && o )
+ requires( ! detail::alwaysEqualAlloc< A > )
+{
+ if( this != &o ) {
+  f_map = std::move( o.f_map );
+  o.f_map.clear();
+  }
+ return( *this );
+ }
+
+template< class K , class V , class H , class Eq , class A >
+FlatHashTable< K , V , H , Eq , A >::~FlatHashTable()
 { }
 
-template< class K , class V , class H , class Eq >
-void FlatHashTable< K , V , H , Eq >::swap( FlatHashTable & o ) noexcept
+template< class K , class V , class H , class Eq , class A >
+void FlatHashTable< K , V , H , Eq , A >::swap( FlatHashTable & o ) noexcept
 {
  f_map.swap( o.f_map );
  }
 
-template< class K , class V , class H , class Eq >
-std::optional< V > FlatHashTable< K , V , H , Eq >::lookup( const K & k ) const
+template< class K , class V , class H , class Eq , class A >
+auto FlatHashTable< K , V , H , Eq , A >::get_allocator( void ) const
+  -> allocator_type
+{
+ return( allocator_type( f_map.get_allocator() ) );
+ }
+
+template< class K , class V , class H , class Eq , class A >
+std::optional< V >
+FlatHashTable< K , V , H , Eq , A >::lookup( const K & k ) const
 {
  const auto it = f_map.find( k );
  if( it == f_map.end() )
@@ -1025,22 +1265,22 @@ std::optional< V > FlatHashTable< K , V , H , Eq >::lookup( const K & k ) const
  return( it->second );
  }
 
-template< class K , class V , class H , class Eq >
-const V * FlatHashTable< K , V , H , Eq >::find( const K & k ) const
+template< class K , class V , class H , class Eq , class A >
+const V * FlatHashTable< K , V , H , Eq , A >::find( const K & k ) const
 {
  const auto it = f_map.find( k );
  return( it == f_map.end() ? nullptr : &it->second );
  }
 
-template< class K , class V , class H , class Eq >
-V * FlatHashTable< K , V , H , Eq >::find( const K & k )
+template< class K , class V , class H , class Eq , class A >
+V * FlatHashTable< K , V , H , Eq , A >::find( const K & k )
 {
  const auto it = f_map.find( k );
  return( it == f_map.end() ? nullptr : &it->second );
  }
 
-template< class K , class V , class H , class Eq >
-bool FlatHashTable< K , V , H , Eq >::insert( const K & k , const V & v )
+template< class K , class V , class H , class Eq , class A >
+bool FlatHashTable< K , V , H , Eq , A >::insert( const K & k , const V & v )
 {
  const bool fresh = f_map.insert_or_assign( k , v ).second;
  ADS_POST( f_map.contains( k ) );
@@ -1048,8 +1288,8 @@ bool FlatHashTable< K , V , H , Eq >::insert( const K & k , const V & v )
  return( fresh );
  }
 
-template< class K , class V , class H , class Eq >
-bool FlatHashTable< K , V , H , Eq >::insert( K && k , V && v )
+template< class K , class V , class H , class Eq , class A >
+bool FlatHashTable< K , V , H , Eq , A >::insert( K && k , V && v )
 {
  const auto [ it , fresh ] =
    f_map.insert_or_assign( std::move( k ) , std::move( v ) );
@@ -1058,127 +1298,128 @@ bool FlatHashTable< K , V , H , Eq >::insert( K && k , V && v )
  return( fresh );
  }
 
-template< class K , class V , class H , class Eq >
-template< class... A >
-auto FlatHashTable< K , V , H , Eq >::try_emplace( const K & k , A &&... a )
+template< class K , class V , class H , class Eq , class A >
+template< class... Args >
+auto FlatHashTable< K , V , H , Eq , A >::try_emplace( const K & k ,
+						       Args &&... a )
   -> std::pair< V * , bool >
 {
- const auto [ it , fresh ] = f_map.try_emplace( k ,
-						std::forward< A >( a )... );
+ const auto [ it , fresh ] =
+   f_map.try_emplace( k , std::forward< Args >( a )... );
  ADS_POST( f_map.contains( k ) );
  return( std::pair( &it->second , fresh ) );
  }
 
-template< class K , class V , class H , class Eq >
-template< class... A >
-auto FlatHashTable< K , V , H , Eq >::try_emplace( K && k , A &&... a )
+template< class K , class V , class H , class Eq , class A >
+template< class... Args >
+auto FlatHashTable< K , V , H , Eq , A >::try_emplace( K && k , Args &&... a )
   -> std::pair< V * , bool >
 {
  const auto [ it , fresh ] =
-   f_map.try_emplace( std::move( k ) , std::forward< A >( a )... );
+   f_map.try_emplace( std::move( k ) , std::forward< Args >( a )... );
  ADS_POST( f_map.contains( it->first ) );
  return( std::pair( &it->second , fresh ) );
  }
 
-template< class K , class V , class H , class Eq >
-bool FlatHashTable< K , V , H , Eq >::remove( const K & k )
+template< class K , class V , class H , class Eq , class A >
+bool FlatHashTable< K , V , H , Eq , A >::remove( const K & k )
 {
  const bool was = f_map.erase( k ) > 0;
  ADS_POST( ! f_map.contains( k ) );
  return( was );
  }
 
-template< class K , class V , class H , class Eq >
-bool FlatHashTable< K , V , H , Eq >::contains( const K & k ) const
+template< class K , class V , class H , class Eq , class A >
+bool FlatHashTable< K , V , H , Eq , A >::contains( const K & k ) const
 {
  return( f_map.contains( k ) );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t FlatHashTable< K , V , H , Eq >::size( void ) const
+template< class K , class V , class H , class Eq , class A >
+std::size_t FlatHashTable< K , V , H , Eq , A >::size( void ) const
 {
  return( f_map.size() );
  }
 
-template< class K , class V , class H , class Eq >
-bool FlatHashTable< K , V , H , Eq >::empty( void ) const
+template< class K , class V , class H , class Eq , class A >
+bool FlatHashTable< K , V , H , Eq , A >::empty( void ) const
 {
  return( f_map.empty() );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t FlatHashTable< K , V , H , Eq >::capacity( void ) const
+template< class K , class V , class H , class Eq , class A >
+std::size_t FlatHashTable< K , V , H , Eq , A >::capacity( void ) const
 {
  return( f_map.bucket_count() );
  }
 
-template< class K , class V , class H , class Eq >
-double FlatHashTable< K , V , H , Eq >::load( void ) const
+template< class K , class V , class H , class Eq , class A >
+double FlatHashTable< K , V , H , Eq , A >::load( void ) const
 {
  const std::size_t c = f_map.bucket_count();
  return( c ? double( f_map.size() ) / c : 0.0 );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t FlatHashTable< K , V , H , Eq >::fullLoad( void ) const
+template< class K , class V , class H , class Eq , class A >
+std::size_t FlatHashTable< K , V , H , Eq , A >::fullLoad( void ) const
 {
  const std::size_t c = f_map.bucket_count();
  return( c <= 29 ? c : std::size_t( 0.875f * float( c ) ) );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t FlatHashTable< K , V , H , Eq >::deleted( void ) const
+template< class K , class V , class H , class Eq , class A >
+std::size_t FlatHashTable< K , V , H , Eq , A >::deleted( void ) const
 {
  const std::size_t f = fullLoad() , m = f_map.max_load();
  return( f > m ? f - m : 0 );
  }
 
-template< class K , class V , class H , class Eq >
-void FlatHashTable< K , V , H , Eq >::reserve( std::size_t n )
+template< class K , class V , class H , class Eq , class A >
+void FlatHashTable< K , V , H , Eq , A >::reserve( std::size_t n )
 {
  if( n > f_map.max_load() )  // never a shrink
   f_map.reserve( n );
  }
 
-template< class K , class V , class H , class Eq >
-void FlatHashTable< K , V , H , Eq >::clear( void )
+template< class K , class V , class H , class Eq , class A >
+void FlatHashTable< K , V , H , Eq , A >::clear( void )
 {
  f_map.clear();
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 template< class F >
-void FlatHashTable< K , V , H , Eq >::forEach( F && f ) const
+void FlatHashTable< K , V , H , Eq , A >::forEach( F && f ) const
 {
  for( const auto & kv : f_map )
   f( kv.first , kv.second );
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class A >
 template< class F >
-void FlatHashTable< K , V , H , Eq >::forEach( F && f )
+void FlatHashTable< K , V , H , Eq , A >::forEach( F && f )
 {
  for( auto & kv : f_map )
   f( std::as_const( kv.first ) , kv.second );
  }
 
-template< class K , class V , class H , class Eq >
-typename FlatHashTable< K , V , H , Eq >::const_iterator
-FlatHashTable< K , V , H , Eq >::begin( void ) const
+template< class K , class V , class H , class Eq , class A >
+typename FlatHashTable< K , V , H , Eq , A >::const_iterator
+FlatHashTable< K , V , H , Eq , A >::begin( void ) const
 {
  return( const_iterator( f_map.cbegin() ) );
  }
 
-template< class K , class V , class H , class Eq >
-typename FlatHashTable< K , V , H , Eq >::const_iterator
-FlatHashTable< K , V , H , Eq >::end( void ) const
+template< class K , class V , class H , class Eq , class A >
+typename FlatHashTable< K , V , H , Eq , A >::const_iterator
+FlatHashTable< K , V , H , Eq , A >::end( void ) const
 {
  return( const_iterator( f_map.cend() ) );
  }
 
-template< class K , class V , class H , class Eq >
-typename FlatHashTable< K , V , H , Eq >::const_iterator
-FlatHashTable< K , V , H , Eq >::erase( const_iterator it )
+template< class K , class V , class H , class Eq , class A >
+typename FlatHashTable< K , V , H , Eq , A >::const_iterator
+FlatHashTable< K , V , H , Eq , A >::erase( const_iterator it )
 {
  ADS_PRE( it.f_i != f_map.cend() );
  const const_iterator next = std::next( it );  // Boost moves no other pair

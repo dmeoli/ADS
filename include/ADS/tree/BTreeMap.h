@@ -87,6 +87,11 @@
  * constructible, the places of a node being built with the node, and a tree
  * that shrinks keeps the memory of its pools until it is cleared.
  *
+ * The nodes come from two pools [see `ObjectPool.h`] whose blocks come from
+ * the allocator `A`, `HugePageAllocator` by default, with the rules of the
+ * standard [see `AllocatorAware.h`]; a swap and a move exchange the pools
+ * with their allocators.
+ *
  * The contracts [see `Contract.h`]: after `insert()` the key is there and
  * after `remove()` it is not; `build()` needs strictly increasing keys, an
  * audit; the invariant is the order of the keys in the tree and their
@@ -130,6 +135,8 @@
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/Portable.h"
+#include "ADS/memory/AllocatorAware.h"
+#include "ADS/memory/HugePageAllocator.h"
 #include "ADS/memory/ObjectPool.h"
 #include "ADS/search/CountLess.h"
 
@@ -164,10 +171,15 @@ namespace ADS
 /// ranks)
 template< class K , class V , class Less = std::less< K > ,
 	  std::size_t B = 512 ,
-	  bool R = false >
+	  bool R = false ,
+	  class A = HugePageAllocator< std::pair< const K , V > > >
  requires std::default_initializable< K > && std::default_initializable< V >
 class BTreeMap
 {
+ /// whether the allocators are all equal and need not be copied, as
+ /// `HugePageAllocator`
+ static constexpr bool PLAIN =
+   detail::alwaysEqualAlloc< A > && std::is_default_constructible_v< A >;
 
 /*--------------------------------------------------------------------------*/
  public:
@@ -186,14 +198,51 @@ class BTreeMap
  /// the empty map, by the order `less`
  explicit BTreeMap( Less less = Less() );
 
+ /// the empty map, by the order `less`, the blocks of its nodes from
+ /// `alloc`
+ BTreeMap( Less less , const A & alloc );
+
+ /// the empty map, the blocks of its nodes from `alloc`
+ explicit BTreeMap( const A & alloc ) : BTreeMap( Less() , alloc ) { }
+
  /// a copy of `o`, node by node
- BTreeMap( const BTreeMap & o );
+ BTreeMap( const BTreeMap & o )
+  requires( PLAIN );
+
+ /// a copy of `o`, node by node, on the allocator that
+ /// `select_on_container_copy_construction()` gives
+ BTreeMap( const BTreeMap & o )
+  requires( ! PLAIN )
+     : BTreeMap( o , detail::copyAlloc( o.get_allocator() ) ) { }
+
+ /// a copy of `o`, node by node, on `alloc`
+ BTreeMap( const BTreeMap & o , const A & alloc );
 
  /// the nodes of `o`, which is left empty
  BTreeMap( BTreeMap && o ) noexcept;
 
+ /// the pairs of `o`, which is left empty, on `alloc`: its nodes if the
+ /// allocators are equal, else a copy of its pairs
+ BTreeMap( BTreeMap && o , const A & alloc );
+
  /// the pairs of `o`, by copy and swap
- BTreeMap & operator=( BTreeMap o ) noexcept;
+ BTreeMap & operator=( BTreeMap o ) noexcept
+  requires( PLAIN );
+
+ /// the copy assignment, with the allocator of `o` if it propagates
+ BTreeMap & operator=( const BTreeMap & o )
+  requires( ! PLAIN )
+ {
+  return( detail::copyAssign( *this , o ) );
+  }
+
+ /// the move assignment: the nodes of `o` if its allocator propagates or is
+ /// equal, else a copy of its pairs
+ BTreeMap & operator=( BTreeMap && o )
+  requires( ! PLAIN )
+ {
+  return( detail::moveAssign( *this , std::move( o ) ) );
+  }
 
  /// frees the nodes
  ~BTreeMap();
@@ -387,7 +436,9 @@ class BTreeMap
  template< class F >
  void forRange( const K & lo , const K & hi , F && f ) const;
 
- /// exchanges the nodes and the pools with `o`
+ /// exchanges the nodes and the pools with `o`, each pool with its
+ /// allocator
+ /// \pre the allocators are equal, if they do not propagate on a swap
  void swap( BTreeMap & o ) noexcept;
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
@@ -408,6 +459,12 @@ class BTreeMap
  using reference = PairRef< const K & , const V & >;  ///< references, by value
  using const_reference = reference;                  ///< the same
  using iterator = const_iterator;                    ///< the constant iterator
+ /// the type of the allocator
+ using allocator_type = A;
+ /// the allocator of the blocks of the nodes
+ [[nodiscard]] allocator_type get_allocator( void ) const {
+  return( allocator_type( f_leaves.get_allocator() ) );
+  }
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const;
@@ -625,8 +682,26 @@ class BTreeMap
  std::size_t f_size = 0;             ///< the pairs
  int f_height = 0;                   ///< the levels
  ADS_NO_UNIQUE_ADDRESS Less f_less;  ///< the order of the keys
- ObjectPool< Leaf > f_leaves;        ///< the slots of the leaves
- ObjectPool< Inner > f_inners;       ///< the slots of the internal nodes
+ /// the pool of the leaves
+ using Leaves = ObjectPool< Leaf , detail::RebindAlloc< A , Leaf > >;
+ /// the pool of the internal nodes
+ using Inners = ObjectPool< Inner , detail::RebindAlloc< A , Inner > >;
+
+ /// an empty pool of type `P` on the allocator of \f$ p \f$ (the default
+ /// pool if the allocators are all equal)
+ template< class P >
+ [[nodiscard]] static P emptyPool( const P & p ) {
+  if constexpr( PLAIN )
+   return( P() );
+  else
+   return( P( std::size_t( 1 ) << 24 , p.get_allocator() ) );
+  }
+
+ /// the nodes and the pools exchanged with `o`, with no precondition
+ void exchange( BTreeMap & o ) noexcept;
+
+ Leaves f_leaves;  ///< the slots of the leaves
+ Inners f_inners;  ///< the slots of the internal nodes
 
 /*--------------------------------------------------------------------------*/
  public:

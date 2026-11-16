@@ -32,8 +32,21 @@
  * `clear()` never called, the arena is the same as before, function by
  * function.
  *
+ * `ArenaResource` is the same arena for the bytes of any type, the resource
+ * of a `PoolAllocator` [see `PoolAllocator.h`]: a request of \f$ b \f$
+ * bytes aligned to \f$ a \f$ moves a pointer in the current block, and a
+ * new block is taken from the allocator `A` when it does not fit, of
+ * \f$ n \f$ bytes (or of \f$ b + a \f$, if more); a deallocation does
+ * nothing, and the blocks go back to `A` only with `release()` or with the
+ * resource, so that a container on `PoolAllocator< T , ArenaResource<> >`
+ * takes its nodes, places and blocks from a few large blocks and frees
+ * them all at once, as `std::pmr::monotonic_buffer_resource` does, with no
+ * virtual call. The resource must outlive the containers and the
+ * allocators made from it, and belongs to one thread.
+ *
  * The contracts [see `Contract.h`]: a block holds at least one object; the
- * invariant is that `size()` objects have been made in the epoch. The
+ * invariant is that `size()` objects have been made in the epoch; the
+ * alignment of a request of `ArenaResource` is a power of 2. The
  * operations are defined in `Arena.tpp`.
  *
  * \see D. R. Hanson, Fast allocation and deallocation of memory based on
@@ -61,9 +74,12 @@
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
 
+#include <algorithm>
+#include <bit>
 #include <compare>
-#include <functional>
 #include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <new>
@@ -323,6 +339,105 @@ class Arena
  A f_alloc;                    ///< the allocator of the blocks
 
  };  // end( class Arena )
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- CLASS ArenaResource ----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// an arena of bytes in blocks of \f$ n \f$, the resource of a
+/// `PoolAllocator`
+template< class A = std::allocator< std::max_align_t > >
+class ArenaResource
+{
+
+/*--------------------------------------------------------------------------*/
+ public:
+ /// the empty resource whose blocks hold \f$ n \f$ bytes, taken from
+ /// `alloc`
+ /// \pre \f$ n \ge 1 \f$
+ explicit ArenaResource( std::size_t n = std::size_t( 1 ) << 16 ,
+			 const A & alloc = A() );
+
+ /// no copy, since its allocators point to it
+ ArenaResource( const ArenaResource & ) = delete;
+ /// no copy, since its allocators point to it
+ ArenaResource & operator=( const ArenaResource & ) = delete;
+
+ /// frees the blocks; the objects still alive are not destroyed
+ ~ArenaResource();
+
+ /// \f$ b \f$ bytes aligned to \f$ a \f$, \f$ b \f$ and \f$ a \f$ known at
+ /// compile time
+ template< std::size_t b , std::size_t a = alignof( std::max_align_t ) >
+ [[nodiscard]] void * allocate( void ) {
+  return( allocate( b , a ) );
+  }
+
+ /// nothing: the bytes go back with the blocks
+ template< std::size_t b , std::size_t a = alignof( std::max_align_t ) >
+ void deallocate( void * ) noexcept { }
+
+ /// \f$ b \f$ bytes aligned to \f$ a \f$, in the current block or in a new
+ /// one
+ ///
+ /// In pseudocode (the arena of Hanson, beyond the book), with
+ /// \f$ [ \mathit{next} , \mathit{end} ) \f$ the free bytes of the
+ /// current block:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{allocate}( b , a ) \cr
+ /// 2 & \quad p \gets \mathit{next} \text{ rounded up to a multiple of }
+ ///     a \cr
+ /// 3 & \quad \textbf{if}\ p + b > \mathit{end}\ \textbf{then}
+ ///     \ \text{take a block of } \max( n , b + a ) \text{ bytes};\ p
+ ///     \gets \text{its first byte aligned to } a \cr
+ /// 4 & \quad \mathit{next} \gets p + b;\ \textbf{return}\ p
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ a \f$ is a power of 2
+ [[nodiscard]] void * allocate( std::size_t b ,
+				std::size_t a = alignof( std::max_align_t ) );
+
+ /// nothing: the bytes go back with the blocks
+ void deallocate( void * , std::size_t ,
+		  std::size_t = alignof( std::max_align_t ) ) noexcept { }
+
+ /// all the blocks given back to the allocator: the memory given so far is
+ /// no longer to be used
+ void release( void ) noexcept;
+
+ /// the memory of the blocks, in bytes
+ [[nodiscard]] std::size_t bytes( void ) const { return( f_bytes ); }
+
+ /// the number of requests served since the construction or `release()`
+ [[nodiscard]] std::size_t size( void ) const { return( f_size ); }
+
+/*--------------------------------------------------------------------------*/
+ private:
+ using Unit = std::max_align_t;  ///< the unit of the blocks
+
+ /// the header of a block, in its first units
+ struct Block
+ {
+  Block * prev;   ///< the block before, nil for the first one
+  std::size_t k;  ///< the units of the block, the header's included
+  };
+
+ static constexpr std::size_t H =
+   ( sizeof( Block ) + sizeof( Unit ) - 1 ) / sizeof( Unit );
+
+ using UnitAlloc =
+   typename std::allocator_traits< A >::template rebind_alloc< Unit >;
+
+ unsigned char * f_next = nullptr;  ///< the first free byte of the block
+ unsigned char * f_end = nullptr;   ///< the end of the current block
+ Block * f_last = nullptr;          ///< the current block, then the others
+ std::size_t f_n;                   ///< the bytes of a block
+ std::size_t f_bytes = 0;           ///< the bytes of all the blocks
+ std::size_t f_size = 0;            ///< the requests served
+ ADS_NO_UNIQUE_ADDRESS UnitAlloc f_alloc;  ///< the allocator of the blocks
+
+ };  // end( class ArenaResource )
 
 /*--------------------------------------------------------------------------*/
 

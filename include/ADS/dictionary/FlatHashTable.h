@@ -113,6 +113,12 @@
  * after a rebuild and its maximum load now, in \f$ O( 1 ) \f$ time; and the
  * iterators are forward, those of Boost.
  *
+ * The places come from the allocator `A`, rebound to lines of `ALIGN`
+ * bytes, with the rules of the standard [see `AllocatorAware.h`]; with the
+ * default one, `std::allocator`, they come from `operator new` aligned to
+ * `ALIGN`, as they did before the table took an allocator, and with Boost
+ * the allocator is that of `boost::unordered_flat_map`.
+ *
  * The contracts [see `Contract.h`]: after `insert()` the key is in the table
  * and after `remove()` it is not; the invariant is that each full place is
  * reached by the inspection of its key, the bit of the key set in the
@@ -167,7 +173,9 @@
 #include "ADS/Abi.h"
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/Portable.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/memory/AllocatorAware.h"
 
 #include <array>
 #include <bit>
@@ -258,9 +266,15 @@ ADS_ABI_BEGIN
 
 /// a hash table with open addressing and control bytes in groups of 15
 template< class K , class V , class H = DefaultHash< K > ,
-	  class Eq = std::equal_to< K > >
+	  class Eq = std::equal_to< K > ,
+	  class A = std::allocator< std::pair< const K , V > > >
 class FlatHashTable
+    : private detail::AllocHolder<
+	std::conditional_t< ADS_FLATHASH_BOOST , std::allocator< char > , A > >
 {
+ /// the allocator, held as a base, of the places of ADS
+ using Holder = detail::AllocHolder<
+   std::conditional_t< ADS_FLATHASH_BOOST , std::allocator< char > , A > >;
 
 /*--------------------------------------------------------------------------*/
  public:
@@ -270,14 +284,40 @@ class FlatHashTable
  /// the empty table, with room for \f$ n \f$ pairs before it grows
  explicit FlatHashTable( std::size_t n = 0 , H h = H() , Eq eq = Eq() );
 
- /// a copy of `other`
+ /// the empty table, with room for \f$ n \f$ pairs before it grows, its
+ /// places from `alloc`
+ FlatHashTable( std::size_t n , H h , Eq eq , const A & alloc );
+
+ /// the empty table, its places from `alloc`
+ explicit FlatHashTable( const A & alloc )
+     : FlatHashTable( 0 , H() , Eq() , alloc ) { }
+
+ /// a copy of `other`, on the allocator that
+ /// `select_on_container_copy_construction()` gives
  FlatHashTable( const FlatHashTable & o );
+
+ /// a copy of `other`, on `alloc`
+ FlatHashTable( const FlatHashTable & o , const A & alloc );
 
  /// the pairs of `o`, which is left empty, with no places
  FlatHashTable( FlatHashTable && o ) noexcept;
 
- /// the assignment, by copy and swap
- FlatHashTable & operator=( FlatHashTable o ) noexcept;
+ /// the pairs of `o`, on `alloc`: its places if the allocators are equal,
+ /// else the pairs moved one by one to places of `alloc`
+ FlatHashTable( FlatHashTable && o , const A & alloc );
+
+ /// the assignment, by copy and swap, when the allocators are all equal
+ FlatHashTable & operator=( FlatHashTable o ) noexcept
+  requires detail::alwaysEqualAlloc< A >;
+
+ /// the copy assignment, with the allocator of `o` if it propagates
+ FlatHashTable & operator=( const FlatHashTable & o )
+  requires( ! detail::alwaysEqualAlloc< A > );
+
+ /// the move assignment: the places of `o` if its allocator propagates or
+ /// is equal, else its pairs moved one by one
+ FlatHashTable & operator=( FlatHashTable && o )
+  requires( ! detail::alwaysEqualAlloc< A > );
 
  /// frees the memory of the structure
  ~FlatHashTable();
@@ -347,12 +387,12 @@ class FlatHashTable
  /// value read and then changed costs one inspection; the pointer is
  /// valid until the next removal of this pair or rebuild of the table
  /// \post \f$ k \f$ is in the table
- template< class... A >
- std::pair< V * , bool > try_emplace( const K & k , A &&... a );
+ template< class... Args >
+ std::pair< V * , bool > try_emplace( const K & k , Args &&... a );
 
  /// as `try_emplace( k , a )`, moving the key
- template< class... A >
- std::pair< V * , bool > try_emplace( K && k , A &&... a );
+ template< class... Args >
+ std::pair< V * , bool > try_emplace( K && k , Args &&... a );
 
  /// removes the key \f$ k \f$, if it is there, emptying its place, with no
  /// deleted mark, and adding 1 to the bound \f$ d \f$ of the places still
@@ -395,7 +435,9 @@ class FlatHashTable
  template< class F >
  void forEach( F && f );
 
- /// exchanges the contents with `other` in \f$ O( 1 ) \f$
+ /// exchanges the contents with `other` in \f$ O( 1 ) \f$, and the
+ /// allocators if they propagate on a swap
+ /// \pre the allocators are equal, if they do not propagate
  void swap( FlatHashTable & o ) noexcept;
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
@@ -425,6 +467,12 @@ class FlatHashTable
 
  /// the iterator on the items
  using iterator = const_iterator;
+
+ /// the type of the allocator
+ using allocator_type = A;
+
+ /// the allocator of the places
+ [[nodiscard]] allocator_type get_allocator( void ) const;
 
  /// the iterator on the first item
  [[nodiscard]] const_iterator begin( void ) const;
@@ -502,6 +550,35 @@ class FlatHashTable
  /// frees the slots \f$ s \f$ and the groups \f$ c \f$ of
  /// `allocate( G , c )`
  static void deallocate( Slot * s , Group * c , std::size_t G ) noexcept;
+
+ /// whether the places come from `operator new`, as with no allocator
+ static constexpr bool STD = detail::isStdAllocator< A >;
+
+ /// a line of the places, the unit of the allocator
+ struct alignas( ALIGN ) Line
+ {
+  unsigned char b[ ALIGN ];  ///< its bytes
+  };
+
+ /// the allocator of the lines
+ using LineAlloc = detail::RebindAlloc< A , Line >;
+
+ /// the lines of \f$ b \f$ bytes
+ [[nodiscard]] static std::size_t lines( std::size_t b ) {
+  return( ( b + ALIGN - 1 ) / ALIGN );
+  }
+
+ /// `allocate( G , c )`, from the allocator of the table, if it is not a
+ /// `std::allocator`
+ Slot * obtain( std::size_t G , Group *& c );
+
+ /// `deallocate( s , c , G )`, to the allocator of the table, if it is not
+ /// a `std::allocator`
+ void yield( Slot * s , Group * c , std::size_t G ) noexcept;
+
+ /// the places and the pairs of `o` copied, on the allocator of the table,
+ /// as by the copy constructor
+ void copy( const FlatHashTable & o );
 
  /// the hash taken as it is, if it declares `is_avalanching` on 64 bits
  static constexpr bool AVALANCHING =
@@ -587,14 +664,15 @@ class FlatHashTable
  /// the pair of \f$ k \f$ and the value built from `a`; if it is there,
  /// its value assigned from `a` (a single value) when `Assign`; the value
  /// and true if \f$ k \f$ was not there
- template< bool Assign , class KK , class... A >
- std::pair< V * , bool > place( KK && k , A &&... a );
+ template< bool Assign , class KK , class... Args >
+ std::pair< V * , bool > place( KK && k , Args &&... a );
 
  /// the table rebuilt for one more pair, the pair of \f$ k \f$ and the
  /// value built from `a`, of mixed hash \f$ x \f$, built in the new
  /// places before the old pairs move; its place
- template< class KK , class... A >
- ADS_FLAT_NOINLINE std::size_t grow( std::uint64_t x , KK && k , A &&... a );
+ template< class KK , class... Args >
+ ADS_FLAT_NOINLINE std::size_t grow( std::uint64_t x , KK && k ,
+				     Args &&... a );
 
  /// empties the place \f$ i \f$, whose pair is destroyed
  void drop( std::size_t i );
@@ -744,7 +822,8 @@ class FlatHashTable
 /*--------------------------------------------------------------------------*/
  private:
  /// the map of Boost
- using Map = boost::unordered_flat_map< K , V , H , Eq >;
+ using Map = boost::unordered_flat_map<
+   K , V , H , Eq , detail::RebindAlloc< A , std::pair< const K , V > > >;
 
  /// the maximum load of Boost on its places with no removal: all of them
  /// up to 29, \f$ 7 / 8 \f$ of them beyond

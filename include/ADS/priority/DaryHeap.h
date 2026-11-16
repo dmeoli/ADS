@@ -28,7 +28,9 @@
  * makes the items plain and the heap fast. The vector of a large heap is
  * on huge pages [see `HugePageAllocator.h`], so that the walk from the root
  * to a leaf does not miss the TLB at each level and the vector, when it
- * grows, is faulted in 2 MB at a time. `HeapPriorityQueue` [see
+ * grows, is faulted in 2 MB at a time; another allocator `A` (e.g., one of
+ * `std::pmr`) may give the vector instead, with the rules of the standard
+ * [see `AllocatorAware.h`]. `HeapPriorityQueue` [see
  * `HeapPriorityQueue.h`] is the realization with handles of the book.
  *
  * With \f$ D = 2 \f$ it is the `BinaryHeap` of section 10.1 of Morin's
@@ -96,6 +98,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/memory/AllocatorAware.h"
 #include "ADS/memory/HugePageAllocator.h"
 
 #include <algorithm>
@@ -120,7 +123,7 @@ namespace ADS
 /// `pop()` by the walk down from the top, or from the bottom up if
 /// `BottomUp`
 template< class T , class Better = std::less< T > , unsigned D = 4 ,
-	  bool BottomUp = false >
+	  bool BottomUp = false , class A = HugePageAllocator< T > >
 class DaryHeap
 {
 
@@ -130,8 +133,8 @@ class DaryHeap
  public:
  using Item = T;  ///< the type of the items
 
- /// the empty heap of the order `better`
- explicit DaryHeap( Better better = Better() );
+ /// the empty heap of the order `better`, its vector from `alloc`
+ explicit DaryHeap( Better better = Better() , const A & alloc = A() );
 
  /// pushes \f$ x \f$, moving it up while better than its parent, in
  /// \f$ O( \log_D n ) \f$ time
@@ -299,6 +302,12 @@ class DaryHeap
  using iterator = const T *;
  /// the iterator of the view, constant
  using const_iterator = const T *;
+ /// the type of the allocator
+ using allocator_type = A;
+ /// the allocator of the vector
+ [[nodiscard]] allocator_type get_allocator( void ) const {
+  return( allocator_type( f_A.get_allocator() ) );
+  }
 
  /// the first item of the view
  [[nodiscard]] const_iterator begin( void ) const { return( f_A.data() ); }
@@ -330,7 +339,7 @@ class DaryHeap
  [[nodiscard]] bool ordered( void ) const;
 
  /// the heap, the root in f_A[ 0 ]
- std::vector< T , HugePageAllocator< T > > f_A;
+ detail::AllocVector< A , T > f_A;
  Better f_better;  ///< the order
 
  };  // end( class DaryHeap )

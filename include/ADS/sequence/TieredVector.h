@@ -40,6 +40,10 @@
  * the gap, the free places of the last block and the directory of the
  * blocks.
  *
+ * The blocks and the vector of the blocks come from the allocator `A`,
+ * `std::allocator` by default (the blocks from `std::make_unique`), with
+ * the rules of the standard [see `AllocatorAware.h`].
+ *
  * The contracts [see `Contract.h`]: an index is below `size()` (at most
  * `size()` for an insertion), and `pop_back()` needs a vector that is not
  * empty, as `pop_front()`; the invariant is that the blocks but the first
@@ -76,6 +80,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/memory/AllocatorAware.h"
 
 #include <bit>
 #include <cstddef>
@@ -97,7 +102,7 @@ namespace ADS
 
 /// a sequence with access in \f$ O( 1 ) \f$ and insertion and removal
 /// anywhere in \f$ O( \sqrt{n} ) \f$, in circular blocks of \f$ b \f$ items
-template< class T >
+template< class T , class A = std::allocator< T > >
 class TieredVector
 {
 
@@ -116,6 +121,16 @@ class TieredVector
 
  /// the empty vector
  TieredVector( void ) = default;
+
+ /// the empty sequence, its blocks from `alloc`
+ explicit TieredVector( const A & alloc ) : f_blocks( alloc ) { }
+
+ /// the type of the allocator
+ using allocator_type = A;
+ /// the allocator of the blocks
+ [[nodiscard]] allocator_type get_allocator( void ) const {
+  return( allocator_type( f_blocks.get_allocator() ) );
+  }
 
  /// true if there is no item
  [[nodiscard]] bool empty( void ) const { return( f_n == 0 ); }
@@ -378,9 +393,9 @@ class TieredVector
   }
 
  /// an item built from \f$ a \f$ before the item of \f$ p \f$
- template< class... A >
- iterator emplace( const_iterator p , A &&... a ) {
-  return( insert( p , T( std::forward< A >( a )... ) ) );
+ template< class... Args >
+ iterator emplace( const_iterator p , Args &&... a ) {
+  return( insert( p , T( std::forward< Args >( a )... ) ) );
   }
 
  /// the item of \f$ p \f$ removed, i.e., `erase( i )` with \f$ i \f$ its
@@ -409,11 +424,40 @@ class TieredVector
   }
 
  /// a block: \f$ b \f$ places, the first item at `off`
+ /// whether the places come from `std::make_unique`, as with no
+ /// allocator
+ static constexpr bool STD = detail::isStdAllocator< A >;
+
+ /// the places of a block
+ using Places = std::conditional_t< STD , std::unique_ptr< T[] > ,
+				    detail::AllocArray< A , T > >;
+
  struct Block
  {
-  std::unique_ptr< T[] > a;  ///< the places
-  std::size_t off = 0;       ///< the place of the first item
+  Places a;             ///< the places
+  std::size_t off = 0;  ///< the place of the first item
   };
+
+ /// the vector of the blocks
+ using Blocks = detail::AllocVector< A , Block >;
+
+ /// \f$ k \f$ blocks of \f$ b \f$ places, value-initialized, on the
+ /// allocator, which need not be default-constructible
+ [[nodiscard]] Blocks blocksOf( std::size_t k , std::size_t b ) const {
+  Blocks B( f_blocks.get_allocator() );
+  B.reserve( k );
+  for( std::size_t i = 0 ; i < k ; ++i )
+   B.push_back( Block{ places( b ) } );
+  return( B );
+  }
+
+ /// \f$ b \f$ places, value-initialized
+ [[nodiscard]] Places places( std::size_t b ) const {
+  if constexpr( STD )
+   return( std::make_unique< T[] >( b ) );
+  else
+   return( Places( f_blocks.get_allocator() , b ) );
+  }
 
  /// the blocks for the size \f$ n \f$, \f$ b \f$ the least power of 2 not
  /// below
@@ -458,11 +502,11 @@ class TieredVector
  /// and size() items in them
  [[nodiscard]] bool full( void ) const;
 
- std::vector< Block > f_blocks;  ///< the blocks
- std::size_t f_n = 0;            ///< the number of items
- std::size_t f_g = 0;            ///< the places free before the first item
- std::size_t f_b = 64;           ///< the places of a block
- unsigned f_lg = 6;              ///< \f$ \log_2 b \f$
+ Blocks f_blocks;       ///< the blocks
+ std::size_t f_n = 0;   ///< the number of items
+ std::size_t f_g = 0;   ///< the places free before the first item
+ std::size_t f_b = 64;  ///< the places of a block
+ unsigned f_lg = 6;     ///< \f$ \log_2 b \f$
 
  };  // end( class TieredVector )
 
