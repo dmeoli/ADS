@@ -121,7 +121,7 @@ void sameAsSequential( E & ex )
  }
 
 /// a message for the tests whose runtime is not compiled in
-void notCompiled( const char * what )
+[[maybe_unused]] void notCompiled( const char * what )
 {
  std::cout << "  (" << what << " not compiled in: nothing to check)"
 	   << std::endl;
