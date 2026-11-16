@@ -2207,6 +2207,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The 15 control bytes of a group of FlatHashTable and DenseHashMap are
+  compared, and a place of a group is emptied by one store of the group,
+  by the vectors of Highway inlined at the instructions of the compiler
+  (ADS/SimdInline.h, the static target of Highway: SSE2 on x86-64 and
+  NEON on AArch64 by default) in place of the code of SSE2 and of NEON
+  under the tests of the processor; `ADS_FLAT_SIMD` is 1 with
+  `ADS_WITH_HIGHWAY` and 0 (the broadword code) without it, the masks of
+  a group are the bit j for the place j on every machine, and the name of
+  the configuration of Abi.h spells the namespace of the set of Highway
+  (e.g., `abi_s1c1b0_N_AVX2`, `none` without Highway) in place of the
+  level of the vector instructions of x86-64. Without Highway the hash
+  tables of an x86-64 or AArch64 machine take the broadword code, which
+  the next campaign on an idle machine is to measure against SSE2.
+
 - `popcount( w , n )` and `popcountAnd( a , b , n )` of FastBitwise.h on
   the kernel of Highway (ADS/impl/simd/Bitwise.tpp: the adders of Harley
   and Seal on the vectors of the processor found at run time, the counts

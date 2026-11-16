@@ -12,10 +12,12 @@
  * byte per place, empty (0) or full, in which case the byte is a
  * fingerprint of 8 bits of the hash of its key, never 0, and a 16th byte
  * of overflow. The 15 control bytes are compared with the fingerprint of a
- * key all at once: by one comparison of SSE2 on x86-64, by one of NEON on
- * ARM64, and elsewhere by broadword operations (SWAR, SIMD within a
- * register) on two words of 64 bits; `ADS_FLAT_SIMD`, defined as 0 before
- * the header, selects the broadword operations on any machine. A key is
+ * key all at once: with `ADS_WITH_HIGHWAY` by one comparison of the
+ * vectors of Google Highway at the instructions of the compiler [see
+ * SimdInline.h] (one of SSE2 on x86-64, of NEON on ARM64), and otherwise
+ * by broadword operations (SWAR, SIMD within a register) on two words of
+ * 64 bits; `ADS_FLAT_SIMD`, defined as 0 before the header, selects the
+ * broadword operations with Highway too. A key is
  * compared only in the places whose fingerprint matches, a false match
  * costing a comparison and nothing else. When some fingerprint matches,
  * the first line of cache of the pairs of the group is prefetched, as in
@@ -173,6 +175,7 @@
 #include "ADS/Abi.h"
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/SimdInline.h"
 #include "ADS/Portable.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/memory/AllocatorAware.h"
@@ -192,11 +195,6 @@
 #include <utility>
 #include <vector>
 
-#if ADS_FLAT_SIMD == 1
- #include <emmintrin.h>
-#elif ADS_FLAT_SIMD == 2
- #include <arm_neon.h>
-#endif
 
 #if defined( _MSC_VER ) && ( defined( _M_X64 ) || defined( _M_ARM64 ) )
  #include <intrin.h>
@@ -493,15 +491,10 @@ class FlatHashTable
   std::uint8_t c[ GROUP ];  ///< the control bytes and the overflow
   };
 
- /// the places of a group whose control bytes satisfy a test: on SSE2 and
- /// by SWAR the bit j for the place j, on NEON the bit 4 j + 3
-#if ADS_FLAT_SIMD == 2
- using Mask = std::uint64_t;
- static constexpr int STRIDE = 2;  ///< log2 of the bits of j
-#else
+ /// the places of a group whose control bytes satisfy a test, the bit j
+ /// for the place j
  using Mask = std::uint32_t;
  static constexpr int STRIDE = 0;  ///< log2 of the bits of j
-#endif
 
  /// the mask of the place 0 alone
  static constexpr Mask FIRST = Mask( 1 ) << ( ( 1 << STRIDE ) - 1 );

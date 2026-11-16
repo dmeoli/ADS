@@ -47,6 +47,8 @@ Modification.h                        advanced
 Portable.h                            core     the primitives of the processor
 Simd.h                                core     the vector kernels of the
                                                structures, on Highway
+SimdInline.h                          core     the vector kernels inlined in
+                                               the searches, on Highway
 
 algorithm/AkraBazzi.h                 base
 algorithm/BinaryCounter.h             base

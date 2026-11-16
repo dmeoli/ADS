@@ -211,11 +211,11 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-431 headers: 245 base, 153 advanced, 15 core and 18 interop.
+432 headers: 245 base, 153 advanced, 16 core and 18 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
-| `ADS/` | `ADT` | `Algebra`, `Modification` | `Abi`, `Capabilities`, `Contract`, `Iterators`, `Portable`, `Simd` |  |
+| `ADS/` | `ADT` | `Algebra`, `Modification` | `Abi`, `Capabilities`, `Contract`, `Iterators`, `Portable`, `Simd`, `SimdInline` |  |
 | `algorithm/` | `AkraBazzi`, `BinaryCounter`, `Hanoi`, `MasterTheorem`, `MaximumSegments`, `MonteCarlo`, `Paradigms`, `SequenceQueries`, `Subsequences` |  |  |  |
 | `backtrack/` | `Anagrams`, `DancingLinks`, `Enumeration`, `KnightTour`, `NQueens`, `SatSolvers`, `Sudoku` | `FastExactCover` |  |  |
 | `combinatorial/` | `Bitwise`, `Generation` | `FastBitwise`, `FastGeneration` |  |  |

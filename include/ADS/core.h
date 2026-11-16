@@ -36,6 +36,7 @@
 #include "ADS/Iterators.h"
 #include "ADS/Portable.h"
 #include "ADS/Simd.h"
+#include "ADS/SimdInline.h"
 #include "ADS/compression/PackedBits.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/external/RecordFile.h"

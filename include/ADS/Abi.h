@@ -7,14 +7,18 @@
  * flags of the compiler declare them in `inline namespace ADS_ABI_NAME`,
  * opened by `ADS_ABI_BEGIN` and closed by `ADS_ABI_END`, whose name spells
  * the options that change them. These are the matching of the control bytes
- * of the hash tables (`ADS_FLAT_SIMD`: 0 broadword, 1 SSE2, 2 NEON), the
- * compare-and-swap of 16 bytes of `ConcurrentFlatTable` (`ADS_FLAT_CAS16`,
- * which `-mcx16` and `-march=x86-64-v2` or later turn on), the pairs of
- * `boost::unordered_flat_map` in `FlatHashTable` (`ADS_FLATHASH_BOOST`) and
- * the level of the vector instructions of x86-64 (1 for SSE2, 3 for AVX2, 4
- * for AVX-512, 0 elsewhere), e.g., `abi_s1c1b0v3` for SSE2, the CAS of 16
- * bytes, no Boost and AVX2. The defaults of the first three are those of
- * the target, and are defined here, so that every header sees the same.
+ * of the hash tables (`ADS_FLAT_SIMD`: 0 broadword, 1 by the vectors of
+ * Highway), the compare-and-swap of 16 bytes of `ConcurrentFlatTable`
+ * (`ADS_FLAT_CAS16`, which `-mcx16` and `-march=x86-64-v2` or later turn
+ * on), the pairs of `boost::unordered_flat_map` in `FlatHashTable`
+ * (`ADS_FLATHASH_BOOST`) and the set of vector instructions at which
+ * Highway compiles the kernels inlined in the searches [see SimdInline.h],
+ * the namespace that Highway gives it (`none` without Highway), e.g.,
+ * `abi_s1c1b0_N_AVX2` for the vectors of Highway, the CAS of 16 bytes, no
+ * Boost and AVX2. The kernels on arrays [see Simd.h] are chosen by Highway
+ * when the program runs, and change nothing here. The defaults of the
+ * first three are those of the target, and are defined here, so that every
+ * header sees the same.
  *
  * The names stay those of `ADS`, since the members of an inline namespace
  * are found as members of the namespace around it, while the names that
@@ -44,19 +48,18 @@
  #define __ADS_Abi
 /* self-identification: #endif constant */
 
-/// the matching of the 15 control bytes of a group of the hash tables: 1 by
-/// SSE2, 2 by NEON, 0 by broadword operations, on any machine; by default
-/// the first that the target has
+/// the matching of the 15 control bytes of a group of the hash tables: 1
+/// by the vectors of Highway [see SimdInline.h], 0 by broadword
+/// operations; by default 1 with ADS_WITH_HIGHWAY, 0 without it
 #ifndef ADS_FLAT_SIMD
- #if defined( __SSE2__ ) || defined( _M_X64 ) ||                              \
-   ( defined( _M_IX86_FP ) && ( _M_IX86_FP >= 2 ) )
+ #ifdef ADS_WITH_HIGHWAY
   #define ADS_FLAT_SIMD 1
- #elif ( defined( __ARM_NEON ) && defined( __AARCH64EL__ ) ) ||               \
-   defined( _M_ARM64 )
-  #define ADS_FLAT_SIMD 2
  #else
   #define ADS_FLAT_SIMD 0
  #endif
+#endif
+#if ADS_FLAT_SIMD && ! defined( ADS_WITH_HIGHWAY )
+ #error "ADS_FLAT_SIMD = 1 needs ADS_WITH_HIGHWAY"
 #endif
 
 // the compare-and-swap of 16 bytes without locks, on little-endian x86-64
@@ -85,22 +88,21 @@
  #define ADS_FLATHASH_BOOST 0
 #endif
 
-// the level of the vector instructions of x86-64 that the inline code may
-// use, 0 on the other targets
-#if defined( __AVX512F__ )
- #define ADS_ABI_VECTOR 4
-#elif defined( __AVX2__ )
- #define ADS_ABI_VECTOR 3
-#elif defined( __SSE2__ ) || defined( _M_X64 )
- #define ADS_ABI_VECTOR 1
+// the set of vector instructions of the kernels inlined by Highway, its
+// namespace (e.g., N_SSE2, N_AVX2), which the flags of the compiler choose
+// [see SimdInline.h], none without Highway
+#ifdef ADS_WITH_HIGHWAY
+ #include <hwy/highway.h>
+
+ #define ADS_ABI_VECTOR HWY_NAMESPACE
 #else
- #define ADS_ABI_VECTOR 0
+ #define ADS_ABI_VECTOR none
 #endif
 
-#define ADS_ABI_PASTE( S, C, B, V ) abi_s##S##c##C##b##B##v##V
+#define ADS_ABI_PASTE( S, C, B, V ) abi_s##S##c##C##b##B##_##V
 #define ADS_ABI_SPELL( S, C, B, V ) ADS_ABI_PASTE( S, C, B, V )
 
-/// the inline namespace of the configuration, e.g., `abi_s1c1b0v3`
+/// the inline namespace of the configuration, e.g., `abi_s1c1b0_N_AVX2`
 #define ADS_ABI_NAME                                                          \
  ADS_ABI_SPELL( ADS_FLAT_SIMD, ADS_FLAT_CAS16, ADS_FLATHASH_BOOST,            \
 		ADS_ABI_VECTOR )
