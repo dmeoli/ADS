@@ -76,9 +76,8 @@
  #include <cereal/archives/binary.hpp>
  #include <cereal/archives/json.hpp>
  #include <cereal/archives/portable_binary.hpp>
- #if __has_include( <sdsl/int_vector.hpp> )
+ #if defined( ADS_WITH_SDSL )
   #include <sdsl/int_vector.hpp>
-  #define ADS_TEST_SDSL 1
  #endif
 #endif
 
@@ -894,7 +893,7 @@ ADS_TEST( "persistence-cereal" )
   BitVector z;
   CHECK_THROWS( a( z ) , PersistError );
   }
- #if defined( ADS_TEST_SDSL )
+ #if defined( ADS_WITH_SDSL )
  // the vectors of bits of sdsl-lite read by ADS, and the other way
  {
   sdsl::bit_vector v( 1000 , 0 );

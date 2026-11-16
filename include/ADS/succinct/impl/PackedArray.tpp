@@ -84,6 +84,19 @@ PackedArray< B , Saturate >::PackedArray( E & ex , std::size_t n , F && f )
  }
 
 template< unsigned B , bool Saturate >
+PackedArray< B , Saturate >::PackedArray( std::span< const Word > w ,
+					 std::size_t n )
+    : f_n( n )
+{
+ const std::size_t m = ( n + PER - 1 ) / PER;
+ ADS_PRE( w.size() >= m );
+ f_w.assign( w.begin() , w.begin() + std::ptrdiff_t( m ) );
+ if( n % PER )  // the bits past the last field
+  f_w.back() &= ~Word( 0 ) >> ( 64 - ( n % PER ) * B );
+ ADS_INVARIANT( clean() );
+ }
+
+template< unsigned B , bool Saturate >
 inline typename PackedArray< B , Saturate >::Word
 PackedArray< B , Saturate >::get( std::size_t i ) const
 {

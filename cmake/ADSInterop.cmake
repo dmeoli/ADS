@@ -5,9 +5,9 @@
 #    include/ADS/interop/parallel and include/ADS/distributed/BoostMPI.h]:    #
 #    for each name in ADS_INTEROP_WANT, among StdPar (the parallel            #
 #    algorithms of the standard library, on oneTBB with libstdc++), stdexec,  #
-#    Taskflow, Kokkos, BoostMPI, cereal, and the libraries of graphs and of   #
-#    matrices Eigen, METIS, KaHIP, GraphBLAS and NetworKit, the target        #
-#    ADS::<name>, with the macro                                              #
+#    Taskflow, Kokkos, BoostMPI, cereal, the libraries of graphs and of       #
+#    matrices Eigen, METIS, KaHIP, GraphBLAS and NetworKit, CRoaring and sdsl #
+#    (sdsl-lite 3), the target ADS::<name>, with the macro                    #
 #    ADS_WITH_<NAME> of its header, the headers and the libraries of the      #
 #    runtime and ADS::ADS, and ADS_<name>_FOUND, true when the runtime is     #
 #    found and, for the headers alone, a program that uses it compiles and    #
@@ -17,7 +17,8 @@
 #    cereal_INCLUDE_DIR, EIGEN3_INCLUDE_DIR, METIS_INCLUDE_DIR and            #
 #    METIS_LIBRARY, KaHIP_INCLUDE_DIR and KaHIP_LIBRARY,                      #
 #    GraphBLAS_INCLUDE_DIR and GraphBLAS_LIBRARY, NetworKit_INCLUDE_DIR,      #
-#    NetworKit_LIBRARY and tlx_INCLUDE_DIR (or CMAKE_PREFIX_PATH).            #
+#    NetworKit_LIBRARY, tlx_INCLUDE_DIR, roaring_DIR (or CRoaring_INCLUDE_DIR #
+#    and CRoaring_LIBRARY) and sdsl_INCLUDE_DIR (or CMAKE_PREFIX_PATH).       #
 #    CMakeLists.txt and ADSConfig.cmake include it.                           #
 # --------------------------------------------------------------------------- #
 
@@ -276,5 +277,47 @@ if ("NetworKit" IN_LIST ADS_INTEROP_WANT)
              return( int( G.numberOfEdges() ) - 1 );
              }" "${NetworKit_INCLUDE_DIR};${tlx_INCLUDE_DIR}"
              "${NetworKit_LIBRARY};OpenMP::OpenMP_CXX")
+    endif ()
+endif ()
+
+# the bitmaps of CRoaring, by its package, or else by its header and its
+# library [see include/ADS/interop/croaring]
+if ("CRoaring" IN_LIST ADS_INTEROP_WANT)
+    set(ADS_CRoaring_FOUND FALSE)
+    find_package(roaring CONFIG QUIET)
+    if (TARGET roaring::roaring)
+        set(ADS_CRoaring_FOUND TRUE)
+        ads_interop_target(CRoaring ADS_WITH_CROARING "" roaring::roaring)
+    else ()
+        find_path(CRoaring_INCLUDE_DIR roaring/roaring.hh
+                  PATH_SUFFIXES include)
+        find_library(CRoaring_LIBRARY roaring)
+        if (CRoaring_INCLUDE_DIR AND CRoaring_LIBRARY)
+            ads_interop_try(CRoaring ADS_WITH_CROARING "
+                #include <roaring/roaring.h>
+                int main( void ) {
+                 roaring_bitmap_t * r = roaring_bitmap_create();
+                 roaring_bitmap_add( r , 7 );
+                 const int c = int( roaring_bitmap_get_cardinality( r ) );
+                 roaring_bitmap_free( r );
+                 return( c - 1 );
+                 }" "${CRoaring_INCLUDE_DIR}" "${CRoaring_LIBRARY}")
+        endif ()
+    endif ()
+endif ()
+
+# the vectors of sdsl-lite 3, by its headers (sdsl/cereal.hpp is of the
+# version 3 alone) [see include/ADS/interop/sdsl]
+if ("sdsl" IN_LIST ADS_INTEROP_WANT)
+    set(ADS_sdsl_FOUND FALSE)
+    find_path(sdsl_INCLUDE_DIR sdsl/cereal.hpp PATH_SUFFIXES include)
+    if (sdsl_INCLUDE_DIR)
+        ads_interop_try(sdsl ADS_WITH_SDSL "
+            #include <sdsl/int_vector.hpp>
+            int main( void ) {
+             sdsl::bit_vector b( 100 , 0 );
+             b[ 3 ] = 1;
+             return( int( b[ 3 ] ) - 1 );
+             }" "${sdsl_INCLUDE_DIR}" "")
     endif ()
 endif ()

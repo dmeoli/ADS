@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <bit>
 #include <cstring>
+#include <string>
 
 #define ADS_ROAR_KERNEL ADS_NOINLINE
 
@@ -677,6 +678,224 @@ inline bool RoaringBitmap::valid( void ) const
   n += b.card;
   }
  return( n == f_size );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*--------------------------- THE PORTABLE FORMAT --------------------------*/
+/*--------------------------------------------------------------------------*/
+
+namespace detail
+{
+
+/// the cookie of the portable format of Roaring with no container of runs
+inline constexpr std::uint32_t kRoarNoRuns = 12346;
+
+/// the low 16 bits of the cookie with containers of runs
+inline constexpr std::uint32_t kRoarRuns = 12347;
+
+/// the containers from which a format with runs has the offsets
+inline constexpr std::size_t kRoarOffsets = 4;
+
+/// the bytes of \f$ x \f$ at \f$ p \f$, the least significant first
+template< class U >
+inline void roarPut( std::byte * p , U x )
+{
+ for( std::size_t k = 0 ; k < sizeof( U ) ; ++k )
+  p[ k ] = std::byte( ( x >> ( 8 * k ) ) & 0xFF );
+ }
+
+/// the number of the bytes at \f$ p \f$, the least significant first
+template< class U >
+[[nodiscard]] inline U roarGet( const std::byte * p )
+{
+ U x = 0;
+ for( std::size_t k = 0 ; k < sizeof( U ) ; ++k )
+  x = U( x | ( U( std::to_integer< unsigned >( p[ k ] ) ) << ( 8 * k ) ) );
+ return( x );
+ }
+
+/// the bits \f$ [ a , b ] \f$ of the 1024 words \f$ w \f$ set
+inline void roarSetRange( std::uint64_t * w , unsigned a , unsigned b )
+{
+ const unsigned i = a >> 6 , j = b >> 6;
+ const std::uint64_t lo = ~std::uint64_t( 0 ) << ( a & 63 );
+ const std::uint64_t hi = ~std::uint64_t( 0 ) >> ( 63 - ( b & 63 ) );
+ if( i == j ) {
+  w[ i ] |= lo & hi;
+  return;
+  }
+ w[ i ] |= lo;
+ for( unsigned k = i + 1 ; k < j ; ++k )
+  w[ k ] = ~std::uint64_t( 0 );
+ w[ j ] |= hi;
+ }
+
+}  // end( namespace detail )
+
+inline std::size_t RoaringBitmap::portableSizeInBytes( void ) const
+{
+ std::size_t n = 8 + 8 * f_B.size();
+ for( const Block & b : f_B )
+  n += b.bits() ? WORDS * 8 : std::size_t( b.card ) * 2;
+ return( n );
+ }
+
+inline std::size_t
+RoaringBitmap::writePortable( std::span< std::byte > out ) const
+{
+ const std::size_t total = portableSizeInBytes();
+ ADS_PRE( out.size() >= total );
+ std::byte * p = out.data();
+ detail::roarPut( p , detail::kRoarNoRuns );
+ detail::roarPut( p + 4 , std::uint32_t( f_B.size() ) );
+ std::byte * h = p + 8;                // the chunks and the counts
+ std::byte * o = h + 4 * f_B.size();   // the offsets
+ std::size_t at = 8 + 8 * f_B.size();  // the first container
+ for( const Block & b : f_B ) {
+  detail::roarPut( h , b.key );
+  detail::roarPut( h + 2 , std::uint16_t( b.card - 1 ) );
+  detail::roarPut( o , std::uint32_t( at ) );
+  h += 4;
+  o += 4;
+  std::byte * c = p + at;
+  if( b.bits() ) {
+   if constexpr( std::endian::native == std::endian::little )
+    std::memcpy( c , b.w.get() , WORDS * 8 );
+   else
+    for( std::size_t k = 0 ; k < WORDS ; ++k )
+     detail::roarPut( c + 8 * k , b.w[ k ] );
+   at += WORDS * 8;
+   }
+  else {
+   if constexpr( std::endian::native == std::endian::little )
+    std::memcpy( c , b.a.data() , std::size_t( b.card ) * 2 );
+   else
+    for( std::size_t k = 0 ; k < b.card ; ++k )
+     detail::roarPut( c + 2 * k , b.a[ k ] );
+   at += std::size_t( b.card ) * 2;
+   }
+  }
+ ADS_POST( at == total );
+ return( total );
+ }
+
+inline std::vector< std::byte > RoaringBitmap::writePortable( void ) const
+{
+ std::vector< std::byte > v( portableSizeInBytes() );
+ writePortable( std::span< std::byte >( v ) );
+ return( v );
+ }
+
+inline RoaringBitmap
+RoaringBitmap::readPortable( std::span< const std::byte > in ,
+			     std::size_t * used )
+{
+ std::size_t at = 0;
+ auto need = [ & ]( std::size_t k , const char * what ) {
+  if( in.size() - at < k )
+   throw( PersistError( std::string( "ADS: a Roaring bitmap: truncated "
+				     "in " ) +
+			what ) );
+  };
+ auto bad = []( const char * what ) {
+  throw( PersistError( std::string( "ADS: a Roaring bitmap: corrupted: " ) +
+		       what ) );
+  };
+ need( 4 , "the cookie" );
+ const std::uint32_t cookie = detail::roarGet< std::uint32_t >( in.data() );
+ at = 4;
+ const bool runs = ( cookie & 0xFFFF ) == detail::kRoarRuns;
+ std::size_t c = 0;  // the containers
+ if( runs )
+  c = std::size_t( cookie >> 16 ) + 1;
+ else if( cookie == detail::kRoarNoRuns ) {
+  need( 4 , "the containers" );
+  c = detail::roarGet< std::uint32_t >( in.data() + at );
+  at += 4;
+  if( c > ( std::size_t( 1 ) << 16 ) )
+   bad( "more than 65536 containers" );
+  }
+ else
+  throw( PersistError( "ADS: not a Roaring bitmap in the portable format" ) );
+ const std::byte * isRun = nullptr;  // the bitmap of the runs
+ if( runs ) {
+  need( ( c + 7 ) / 8 , "the bitmap of the runs" );
+  isRun = in.data() + at;
+  at += ( c + 7 ) / 8;
+  }
+ need( 4 * c , "the chunks" );
+ const std::byte * head = in.data() + at;
+ at += 4 * c;
+ if( ! runs || ( c >= detail::kRoarOffsets ) ) {  // not needed to read
+  need( 4 * c , "the offsets" );
+  at += 4 * c;
+  }
+ RoaringBitmap s;
+ s.f_B.reserve( c );
+ for( std::size_t i = 0 ; i < c ; ++i ) {
+  Block b;
+  b.key = detail::roarGet< std::uint16_t >( head + 4 * i );
+  b.card =
+    std::uint32_t( detail::roarGet< std::uint16_t >( head + 4 * i + 2 ) ) + 1;
+  if( ( i > 0 ) && ( s.f_B.back().key >= b.key ) )
+   bad( "the chunks not increasing" );
+  const unsigned mark =
+    runs ? std::to_integer< unsigned >( isRun[ i / 8 ] ) : 0;
+  if( ( mark >> ( i % 8 ) ) & 1 ) {  // a container of runs
+   need( 2 , "a container of runs" );
+   const std::size_t r = detail::roarGet< std::uint16_t >( in.data() + at );
+   at += 2;
+   need( 4 * r , "a container of runs" );
+   std::unique_ptr< std::uint64_t[] > w( new std::uint64_t[ WORDS ]() );
+   std::uint32_t n = 0;  // the items of the runs
+   long last = -1;       // the last item of the run before
+   for( std::size_t k = 0 ; k < r ; ++k ) {
+    const unsigned a = detail::roarGet< std::uint16_t >( in.data() + at );
+    const unsigned l = detail::roarGet< std::uint16_t >( in.data() + at + 2 );
+    at += 4;
+    if( ( long( a ) <= last ) || ( a + l > 0xFFFF ) )
+     bad( "runs not increasing, overlapping or past the chunk" );
+    detail::roarSetRange( w.get() , a , a + l );
+    n += l + 1;
+    last = long( a + l );
+    }
+   if( n != b.card )
+    bad( "a count unlike the items of its runs" );
+   b = fromWords( b.key , std::move( w ) , n );
+   }
+  else if( b.card <= ARRAY ) {
+   need( 2 * std::size_t( b.card ) , "an array" );
+   b.a.resize( b.card );
+   for( std::size_t k = 0 ; k < b.card ; ++k )
+    b.a[ k ] = detail::roarGet< std::uint16_t >( in.data() + at + 2 * k );
+   at += 2 * std::size_t( b.card );
+   for( std::size_t k = 1 ; k < b.card ; ++k )
+    if( b.a[ k - 1 ] >= b.a[ k ] )
+     bad( "the items of an array not increasing" );
+   }
+  else {
+   need( WORDS * 8 , "a bitmap" );
+   b.w.reset( new std::uint64_t[ WORDS ] );
+   if constexpr( std::endian::native == std::endian::little )
+    std::memcpy( b.w.get() , in.data() + at , WORDS * 8 );
+   else
+    for( std::size_t k = 0 ; k < WORDS ; ++k )
+     b.w[ k ] = detail::roarGet< std::uint64_t >( in.data() + at + 8 * k );
+   at += WORDS * 8;
+   std::uint32_t n = 0;
+   for( std::size_t k = 0 ; k < WORDS ; ++k )
+    n += std::uint32_t( std::popcount( b.w[ k ] ) );
+   if( n != b.card )
+    bad( "a count unlike the bits of its bitmap" );
+   }
+  s.f_size += b.card;
+  s.f_B.push_back( std::move( b ) );
+  }
+ s.rekey();
+ if( used )
+  *used = at;
+ ADS_INVARIANT( ( s.f_size > 4096 ) || s.valid() );
+ return( s );
  }
 
 /*--------------------------------------------------------------------------*/

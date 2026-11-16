@@ -37,6 +37,8 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.cmakeFeature "ADS_WITH_KAHIP" "OFF")
     (lib.cmakeFeature "ADS_WITH_GRAPHBLAS" "OFF")
     (lib.cmakeFeature "ADS_WITH_NETWORKIT" "OFF")
+    (lib.cmakeFeature "ADS_WITH_CROARING" "OFF")
+    (lib.cmakeFeature "ADS_WITH_SDSL" "OFF")
   ];
 
   doCheck = true;

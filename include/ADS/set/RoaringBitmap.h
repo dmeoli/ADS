@@ -70,6 +70,28 @@
  * right, an \f$ O( n ) \f$ check at the level 3 on the sets of up to 4096
  * items. The operations are defined in `RoaringBitmap.tpp`.
  *
+ * The set is written and read in the portable format of Roaring, the one
+ * that CRoaring, the Java, Go and Rust implementations, and the systems
+ * built on them (Lucene, Spark, Druid, ClickHouse) share, so that a file
+ * written by any of them is read here and the converse. In that format,
+ * little-endian whatever the processor, the set is a cookie of 32 bits,
+ * the number \f$ c \f$ of the containers, \f$ c \f$ pairs of 16 bits (the
+ * chunk and the items less 1), \f$ c \f$ offsets of 32 bits from the start,
+ * and the containers in the order of their chunks: an array as its items
+ * of 16 bits, a bitmap as its 1024 words. A third kind of container, the
+ * sorted runs of consecutive items (an interval as its first item and its
+ * length less 1), is marked by a bit in a bitmap of \f$ \lceil c / 8
+ * \rceil \f$ bytes after a cookie that also holds \f$ c - 1 \f$, and then
+ * the offsets are written only for \f$ c \ge 4 \f$; `readPortable()` reads
+ * such a container into an array or a bitmap, by its items, since this
+ * set has no runs, and `writePortable()` writes the first two kinds alone,
+ * with the cookie 12346 and the offsets. A reading checks the bounds of
+ * every field against the size of the bytes and the invariant of the
+ * containers (increasing chunks and items, counts equal to the items),
+ * throwing `PersistError` at the first one that fails, so that a
+ * truncated or corrupted input never reads past its end. The conversions
+ * to the bitmaps of CRoaring are in `ADS/interop/croaring/CRoaring.h`.
+ *
  * \see S. Chambi, D. Lemire, O. Kaser, R. Godin, Better bitmap performance
  *      with Roaring bitmaps, Software: Practice and Experience 46(5),
  *      709-719, 2016, doi:10.1002/spe.2325
@@ -77,6 +99,8 @@
  *      G. Ssi-Yan-Kai, Roaring bitmaps: implementation of an optimized
  *      software library, Software: Practice and Experience 48(4), 867-895,
  *      2018, doi:10.1002/spe.2560
+ * \see The Roaring format specification,
+ *      https://github.com/RoaringBitmap/RoaringFormatSpec
  * \see B. Schlegel, T. Willhalm, W. Lehner, Fast sorted-set intersection
  *      using SIMD instructions, Proceedings of ADMS 2011, 1-8, 2011
  * \see H. Inoue, K. Taura, SIMD- and cache-friendly algorithm for sorting
@@ -107,6 +131,7 @@
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
 #include "ADS/Simd.h"
+#include "ADS/external/MappedFile.h"
 #include "ADS/set/BoolSet.h"
 
 #include <cstddef>
@@ -114,6 +139,7 @@
 #include <cstdint>
 #include <iterator>
 #include <memory>
+#include <span>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -261,6 +287,30 @@ class RoaringBitmap
  /// \end{array}}
  /// \f]
  [[nodiscard]] std::size_t rank( std::uint32_t x ) const;
+
+/*-------------------------- THE PORTABLE FORMAT ---------------------------*/
+
+ /// the bytes of the set in the portable format of Roaring: 8, then 8 per
+ /// container, 2 per item of an array and 8192 per bitmap
+ [[nodiscard]] std::size_t portableSizeInBytes( void ) const;
+
+ /// the set written at the start of \f$ \mathit{out} \f$ in the portable
+ /// format of Roaring, with no container of runs; the bytes written
+ /// \pre \f$ | \mathit{out} | \ge \f$ `portableSizeInBytes()`
+ std::size_t writePortable( std::span< std::byte > out ) const;
+
+ /// the set in the portable format of Roaring, in an array of its own
+ [[nodiscard]] std::vector< std::byte > writePortable( void ) const;
+
+ /// the set written in the portable format of Roaring at the start of
+ /// \f$ \mathit{in} \f$, its containers of runs read as arrays or bitmaps;
+ /// the bytes read in `*used`, if `used` is not null
+ /// \throws PersistError if \f$ \mathit{in} \f$ does not start with a set
+ ///         in that format: a cookie unknown, a field past the end, chunks
+ ///         or items not increasing, a count unlike the items
+ [[nodiscard]] static RoaringBitmap
+ readPortable( std::span< const std::byte > in ,
+	       std::size_t * used = nullptr );
 
  friend RoaringBitmap setUnion( const RoaringBitmap & A ,
 				const RoaringBitmap & B );

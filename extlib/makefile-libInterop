@@ -14,6 +14,12 @@
 #           $(cereal_ROOT)   = the directory of the sources of cereal, whose  #
 #                              include/ has the headers, empty if they are    #
 #                              where the compiler looks                       #
+#           $(CRoaring_ROOT) = the prefix of CRoaring, whose include/ has the #
+#                              headers and lib/ the library, empty if they    #
+#                              are where the compiler and the linker look     #
+#           $(sdsl_ROOT)     = the directory of the sources of sdsl-lite 3,   #
+#                              whose include/ has the headers, empty if they  #
+#                              are where the compiler looks                   #
 #           $(Taskflow_ROOT) = the directory of the sources of Taskflow,      #
 #                              which has taskflow/, empty if it is where the  #
 #                              compiler looks                                 #
@@ -26,6 +32,8 @@
 #           $(libStdexecINC), $(libStdexecLIB), $(libStdexecFOUND)            #
 #           $(libTaskflowINC), $(libTaskflowLIB), $(libTaskflowFOUND)         #
 #           $(libCerealINC), $(libCerealLIB), $(libCerealFOUND)               #
+#           $(libCRoaringINC), $(libCRoaringLIB), $(libCRoaringFOUND)         #
+#           $(libSdslINC), $(libSdslLIB), $(libSdslFOUND)                     #
 #                            = the -I$(include directories) and the macro of  #
 #                              the header, the libraries, and 1 if a program  #
 #                              that uses the runtime compiles and links with  #
@@ -39,6 +47,8 @@
 libStdexecBSCDIR = $(subst $\",,$(STDEXEC_ROOT))
 libTaskflowBSCDIR = $(subst $\",,$(Taskflow_ROOT))
 libCerealBSCDIR = $(subst $\",,$(cereal_ROOT))
+libCRoaringBSCDIR = $(subst $\",,$(CRoaring_ROOT))
+libSdslBSCDIR = $(subst $\",,$(sdsl_ROOT))
 include $(ADSSDR)/extlib/makefile-libTBB
 
 # a program of the parallel algorithms of the standard library
@@ -59,6 +69,15 @@ libTaskflowSRC = $(ADShash)include <taskflow/taskflow.hpp>\n$(ADShash)include \
 libCerealSRC = $(ADShash)include <cereal/archives/binary.hpp>\n$(ADShash)include \
 	<sstream>\nint main(){std::stringstream s;cereal::BinaryOutputArchive \
 	a(s);a(1);}\n
+
+# a program of CRoaring and one of sdsl-lite 3 (sdsl/cereal.hpp is of the
+# version 3 alone) [see include/ADS/interop/croaring and
+# include/ADS/interop/sdsl]
+libCRoaringSRC = $(ADShash)include <roaring/roaring.h>\nint main(){\
+	roaring_bitmap_t*r=roaring_bitmap_create();roaring_bitmap_free(r);}\n
+libSdslSRC = $(ADShash)include <sdsl/cereal.hpp>\n$(ADShash)include \
+	<sdsl/int_vector.hpp>\nint main(){sdsl::bit_vector b(9,0);\
+	return int(b[3]);}\n
 
 # the libraries with which the program $(1) links, given the flags $(2):
 # none, or oneTBB (which the headers of <execution> of libstdc++ may ask
@@ -95,5 +114,22 @@ libCerealINC = -DADS_WITH_CEREAL $(if $(libCerealBSCDIR),\
 libCerealLIB = $(eval libCerealLIB := $$(call libInteropLINK,\
 	$$(libCerealSRC),$$(libCerealINC)))$(libCerealLIB)
 libCerealFOUND = $(if $(filter none,$(libCerealLIB)),,1)
+
+libInteropCOMMA := ,
+libCRoaringLD = $(if $(libCRoaringBSCDIR),-L"$(libCRoaringBSCDIR)/lib" \
+	-Wl$(libInteropCOMMA)-rpath$(libInteropCOMMA)"$(libCRoaringBSCDIR)/lib") \
+	-lroaring
+libCRoaringINC = -DADS_WITH_CROARING $(if $(libCRoaringBSCDIR),\
+	-isystem "$(libCRoaringBSCDIR)/include")
+libCRoaringLIB = $(eval libCRoaringLIB := $$(libCRoaringLD) $$(call \
+	libInteropLINK,$$(libCRoaringSRC),$$(libCRoaringINC) \
+	$$(libCRoaringLD)))$(libCRoaringLIB)
+libCRoaringFOUND = $(if $(filter none,$(libCRoaringLIB)),,1)
+
+libSdslINC = -DADS_WITH_SDSL $(if $(libSdslBSCDIR),\
+	-isystem "$(libSdslBSCDIR)/include")
+libSdslLIB = $(eval libSdslLIB := $$(call libInteropLINK,\
+	$$(libSdslSRC),$$(libSdslINC)))$(libSdslLIB)
+libSdslFOUND = $(if $(filter none,$(libSdslLIB)),,1)
 
 ######################### End of makefile-libInterop ##########################

@@ -211,7 +211,7 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-442 headers: 245 base, 153 advanced, 19 core and 25 interop.
+445 headers: 245 base, 153 advanced, 19 core and 28 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
@@ -228,8 +228,10 @@ file does not allow.
 | `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |
 | `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `Matching`, `MatrixGraph`, `MaxFlow`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths`, `Visit` | `Assignment`, `BlossomMatching`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `PushRelabel`, `Reoptimization`, `StaticGraph`, `StrongComponents` |  |  |
 | `interop/` |  |  |  | `Csr` |
+| `interop/arrow/` |  |  |  | `Arrow` |
 | `interop/boost/` |  |  |  | `Dijkstra`, `FromBGL`, `Graph`, `Heap`, `Iterator` |
 | `interop/cereal/` |  |  |  | `Cereal` |
+| `interop/croaring/` |  |  |  | `CRoaring` |
 | `interop/eigen/` |  |  |  | `Eigen` |
 | `interop/graphblas/` |  |  |  | `GraphBLAS` |
 | `interop/kahip/` |  |  |  | `KaHIP` |
@@ -237,6 +239,7 @@ file does not allow.
 | `interop/metis/` |  |  |  | `Metis` |
 | `interop/networkit/` |  |  |  | `NetworKit` |
 | `interop/parallel/` |  |  |  | `KokkosExecutor`, `SenderExecutor`, `StdParExecutor`, `TaskflowExecutor` |
+| `interop/sdsl/` |  |  |  | `Sdsl` |
 | `interop/std/` |  |  |  | `FlatMap`, `Pmr` |
 | `intractable/` | `Approximation`, `BranchAndBound`, `FifteenPuzzle`, `Heuristics`, `Pseudopolynomial` |  |  |  |
 | `memory/` | `Allocators`, `CellHeap` | `Arena`, `ConcurrentPool`, `PageHeap`, `PoolAllocator`, `SizeClassAllocator` | `AllocatorAware`, `HugePageAllocator`, `ObjectPool`, `Prefetch` |  |
@@ -771,10 +774,18 @@ and KaHIP, with no copy where the layouts agree (a copy where they do
 not), and a graph of NetworKit kept in step with one of ADS, whose changes
 reach the dynamic algorithms of NetworKit (the hints are
 `EIGEN3_INCLUDE_DIR`, `<Lib>_INCLUDE_DIR` and `<Lib>_LIBRARY`, and
-`tlx_INCLUDE_DIR` for NetworKit). The makefile takes the first three as
-`auto` (`STDEXEC_ROOT=<dir>`, `Taskflow_ROOT=<dir>`) into `ADSINTEROPINC`
-and `ADSINTEROPLIB` alone, and Kokkos only by CMake, whose package carries
-its flags.
+`tlx_INCLUDE_DIR` for NetworKit). In the same way, `ADS_WITH_CROARING`
+(hint `roaring_DIR`, or `CRoaring_INCLUDE_DIR` and `CRoaring_LIBRARY`)
+gives `ADS::CRoaring`, under which `ADS/interop/croaring/CRoaring.h`
+converts a `RoaringBitmap` to and from the bitmaps of CRoaring, and
+`ADS_WITH_SDSL` (hint `sdsl_INCLUDE_DIR`) gives `ADS::sdsl`, under which
+`ADS/interop/sdsl/Sdsl.h` converts a `BitVector` and a `PackedArray` to and
+from the `bit_vector` and the `int_vector` of sdsl-lite 3; both are `AUTO`
+and off in the packages, whereas `ADS/interop/arrow/Arrow.h`, which hands
+the sequences of ADS to Arrow by its C Data Interface, needs no library. The
+makefile takes the first three as `auto` (`STDEXEC_ROOT=<dir>`,
+`Taskflow_ROOT=<dir>`) into `ADSINTEROPINC` and `ADSINTEROPLIB` alone, and
+Kokkos only by CMake, whose package carries its flags.
 
 The calls of `bulk()` are tasks, which a thread may run one after the
 other; a computation of workers that live as long as it does and talk to
@@ -1056,7 +1067,9 @@ the runtimes of a program (`ADS_WITH_STDPAR`, `ADS_WITH_STDEXEC`,
 `ADS_WITH_TASKFLOW`) are `auto` and go into `ADSINTEROPINC` and
 `ADSINTEROPLIB` alone, and the archives of cereal for the persistent
 structures (`ADS_WITH_CEREAL`, `auto`, `cereal_ROOT=<dir>`) into
-`ADSCEREALINC`; they are found where
+`ADSCEREALINC`, and CRoaring and sdsl-lite (`ADS_WITH_CROARING` and
+`ADS_WITH_SDSL`, `auto`, `CRoaring_ROOT=<prefix>` and `sdsl_ROOT=<dir>`)
+into `ADSCOLUMNARINC` and `ADSCOLUMNARLIB`; they are found where
 `extlib/makefile-default-paths-<os>` says (GMP, oneTBB and libomp in the
 prefix of Homebrew on macOS and where the compiler looks elsewhere, the
 CBLAS of Accelerate on macOS, FastFlow in `/opt/fastflow`,

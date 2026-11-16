@@ -2,8 +2,9 @@
 
 [Source: `include/ADS/interop/`, `include/ADS/parallel/TBBExecutor.h`,
 `include/ADS/parallel/OpenMPExecutor.h`, `include/ADS/distributed/`,
-`test/interop_examples.cpp`, `test/interop_examples_mpi.cpp`,
-`test/interop_graphs.cpp`]
+`include/ADS/set/RoaringBitmap.h`, `test/interop_examples.cpp`,
+`test/interop_examples_mpi.cpp`, `test/interop_graphs.cpp`,
+`test/interop_columnar.cpp`]
 
 We are concerned in this appendix with a program that already uses another
 library and wants to call ADS from it, or to run that library on the
@@ -911,7 +912,136 @@ NetworKit receives them all. A change costs what NetworKit spends on it,
 plus $O( 1 )$, and the copy made by the constructor costs
 $\Theta( n + m )$ time.
 
-## C.18 Where the examples run {#sec-C-18}
+## C.18 Apache Arrow {#sec-C-18}
+
+Within a process, pyarrow, Polars, DuckDB, pandas and nanoarrow hand the
+columns of Apache Arrow to one another by its C Data Interface, i.e., by two
+structures of C, `ArrowSchema` (the type of a column) and `ArrowArray` (its
+buffers), whose callback `release` frees what the producer keeps alive.
+Since the specification freezes the two structures as an ABI,
+`ADS/interop/arrow/Arrow.h` defines them, under the guard that the
+specification prescribes, and it needs no option and no library. We export a
+structure of ADS by `exportArrow()`, which fills them with a column whose
+values are the memory of the structure, kept alive by a `std::shared_ptr`
+until the consumer releases the array. Conversely, `ArrowColumn< T >` takes
+a column of the consumer without copy and shows it as a
+`std::span< const T >`. Such a span may be the input of a build of ADS
+(e.g., of a `WaveletMatrix` or of an `EliasFano`, cf. [chapter
+22](22-succinct.md#ch-22)).
+
+```cpp
+#include "ADS/interop/arrow/Arrow.h"
+
+ADS::BitVector b( 1000 );
+b.set( 7 );
+ArrowArray a;
+ArrowSchema s;
+ADS::exportArrow( std::move( b ) , &a , &s , "flags" );  // no copy
+a.release( &a );  // as the consumer does when done
+s.release( &s );
+std::vector< std::int64_t > v{ 3 , 1 , 4 };
+ArrowArray c;
+ArrowSchema t;
+ADS::exportArrow( std::move( v ) , &c , &t );
+ADS::ArrowColumn< std::int64_t > col( &c , t );  // taken back, no copy
+t.release( &t );
+```
+
+A `BitVector` becomes a column of booleans with no copy, since Arrow numbers
+the bit $i$ as the bit $i \bmod 8$ of the byte $\lfloor i / 8 \rfloor$, which
+is the layout of its words on a little-endian processor. A `PackedArray` of
+8, 16 or 32 bits becomes a column of unsigned integers of that width, and a
+contiguous sequence of numbers (a `std::vector`, a `std::array`, a
+`std::span`) a column of their type. We copy the values only where
+the layouts differ: for a `PackedArray` of 2 or 4 bits (decoded into
+bytes), for a sequence that is not contiguous (e.g., a `TieredVector`), and
+for the words of a `BitVector` or of a `PackedArray` on a big-endian
+processor. In the other direction, `toBitVector()`, `toPackedArray< B >()`
+and `toVector< T >()` copy a column into a structure of ADS, which then
+holds the words, and they refuse a column with nulls, with children or of
+another type by `std::invalid_argument`. Where nanoarrow is found, the test
+`interop_columnar.arrow-nanoarrow` validates with it the columns that ADS
+exports, and imports into ADS those that nanoarrow builds.
+
+## C.19 CRoaring {#sec-C-19}
+
+`RoaringBitmap` ([chapter 10](10-set.md#ch-10)) writes and reads the
+portable format of Roaring, by `writePortable()`, `readPortable()` and
+`portableSizeInBytes()`. CRoaring, the implementations in Java, Go and Rust
+and the systems built on them share this format, and thus a file written by
+any of them is read by ADS, and the converse. Since ADS has no containers
+of runs, it reads those of a file as arrays or bitmaps; the input is
+checked field by field, and a truncated or corrupted one is refused with
+`PersistError`.
+On this format, `ADS/interop/croaring/CRoaring.h` passes a set to CRoaring
+and back by `toCRoaring()` and `fromCRoaring()` (and by `toRoaring()` for a
+`roaring::Roaring`), under the option `ADS_WITH_CROARING`, `AUTO` with
+CMake (the component `CRoaring`).
+
+```cpp
+// with CRoaring
+#include "ADS/interop/croaring/CRoaring.h"
+
+const std::uint32_t x[] = { 1 , 5 , 70000 };
+const ADS::RoaringBitmap s( x , 3 );
+const std::vector< std::byte > file = s.writePortable();  // any Roaring
+roaring_bitmap_t * r = ADS::toCRoaring( s );
+roaring_bitmap_add_range( r , 100 , 200 );            // in CRoaring
+const ADS::RoaringBitmap t = ADS::fromCRoaring( r );  // and back
+roaring_bitmap_free( r );
+```
+
+A conversion costs a buffer of `portableSizeInBytes()` bytes and two linear
+passes over it, since both sides go through the format instead of the
+internals of the other library. We have not measured it against a direct
+copy of the containers, which would depend on those internals. We remark
+that, for the sample of the specification of the format, ADS writes the
+bytes of the file `bitmapwithoutruns.bin` of CRoaring. Also, the test
+`interop_columnar.roaring-croaring` reads the same sample as CRoaring
+writes it with runs (the file `bitmapwithruns.bin`), and it passes random
+sets in both directions.
+
+## C.20 sdsl-lite {#sec-C-20}
+
+In its version 3, header-only and under the BSD license, sdsl-lite keeps
+its vectors in the words of ADS. Indeed, the bit $i$ of a `bit_vector` and of a
+`BitVector` is the bit $i \bmod 64$ of the word $\lfloor i / 64 \rfloor$, and
+the field $i$ of an `int_vector< B >` and of a `PackedArray< B >` ([chapter
+22](22-succinct.md#ch-22)) takes the bits $i B$ to $( i + 1 ) B - 1$, which
+never cross a word, as $B$ divides 64. Hence `ADS/interop/sdsl/Sdsl.h`
+converts them by a copy of the words, `toSdsl()` in one direction and
+`toBitVector()` and `toPackedArray< B >()` in the other. It is compiled
+under the option `ADS_WITH_SDSL`, `AUTO` with CMake (the component
+`sdsl`). A structure of
+either library may then be built on the data of the other, as in the
+example, where a rank directory of each library is built on the same bits.
+
+```cpp
+// with sdsl-lite
+#include "ADS/interop/sdsl/Sdsl.h"
+#include "ADS/succinct/RankSelect.h"
+#include <sdsl/rank_support_v5.hpp>
+
+ADS::BitVector b( 1000 );
+b.set( 3 );
+b.set( 500 );
+const sdsl::bit_vector v = ADS::toSdsl( b );       // a copy of the words
+const sdsl::rank_support_v5< 1 > r( &v );          // a rank of sdsl
+const ADS::RankSelect q( ADS::toBitVector( v ) );  // and one of ADS
+```
+
+Neither library can take the words of the other without a copy, since each
+one owns them: ADS aligns them to a line of the cache, and sdsl allocates
+them by its manager of the memory. An `int_vector` of a width other
+than $B$ is read field by field. Both libraries also write a vector of
+bits in the same form to the archives of cereal (cf. [chapter
+23](23-external.md#ch-23)), as its words in a binary archive and as
+integers of 64 bits, one per bit, in a JSON one. The test
+`interop_columnar.sdsl-cereal` thus loads in sdsl the `BitVector` that ADS
+saves, and in ADS the `bit_vector` that sdsl saves, in the binary, portable
+binary and JSON archives of cereal.
+
+## C.21 Where the examples run {#sec-C-21}
 
 [Table C.1](C-libraries.md#tab-C-1) gives the option that compiles the
 examples of each library, and the names of their tests. These run on any
@@ -923,7 +1053,8 @@ it finds the library, and it names those that it skips. The directories of
 a library that is not where the compiler looks are given to it as flags in
 the environment, `DECLCHECK_LEMON`, `DECLCHECK_STDEXEC`,
 `DECLCHECK_TASKFLOW`, `DECLCHECK_KOKKOS`, `DECLCHECK_EIGEN`,
-`DECLCHECK_KAHIP`, `DECLCHECK_GRAPHBLAS` and `DECLCHECK_NETWORKIT` (e.g.,
+`DECLCHECK_KAHIP`, `DECLCHECK_GRAPHBLAS`, `DECLCHECK_NETWORKIT`,
+`DECLCHECK_CROARING` and `DECLCHECK_SDSLLITE` (e.g.,
 `DECLCHECK_TASKFLOW="-I<dir>"`).
 
 <span id="tab-C-1"></span>
@@ -933,7 +1064,8 @@ default, the component of `find_package(ADS)` (none where `ADS::ADS`
 carries the library), and the tests. The makefile takes the same variable
 (`auto`, `0` or `1`) for all the libraries but Kokkos, Boost.MPI, Eigen,
 METIS, KaHIP, GraphBLAS and NetworKit, which only CMake builds; the
-adapters of the last five are also tested by `interop_graphs.*`.
+adapters of the last five are also tested by `interop_graphs.*`, and those
+of Arrow, CRoaring and sdsl-lite by `interop_columnar.*`.
 
 | Library | Option | Default | Component | Tests |
 |------------------|---------------------|------|----------|-------------------|
@@ -955,6 +1087,9 @@ adapters of the last five are also tested by `interop_graphs.*`.
 | KaHIP | `ADS_WITH_KAHIP` | `AUTO` | `KaHIP` | `kahip-partition` |
 | SuiteSparse:GraphBLAS | `ADS_WITH_GRAPHBLAS` | `AUTO` | `GraphBLAS` | `graphblas-triangles` |
 | NetworKit | `ADS_WITH_NETWORKIT` | `AUTO` | `NetworKit` | `networkit-dynamic-components` |
+| Arrow | none | | none | `arrow-columns` |
+| CRoaring | `ADS_WITH_CROARING` | `AUTO` | `CRoaring` | `croaring-bitmaps` |
+| sdsl-lite | `ADS_WITH_SDSL` | `AUTO` | `sdsl` | `sdsl-vectors` |
 
 Finally, the test of an example whose library is not compiled in passes
 with no check, and it prints so. A run of

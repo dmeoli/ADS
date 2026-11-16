@@ -96,6 +96,8 @@ LIBRARIES = {
                   'GraphBLAS.h'),
     'NetworKit': (['-DADS_WITH_NETWORKIT', '-fopenmp'],
                   'networkit/graph/Graph.hpp'),
+    'CRoaring': (['-DADS_WITH_CROARING'], 'roaring/roaring.hh'),
+    'sdsl-lite': (['-DADS_WITH_SDSL'], 'sdsl/cereal.hpp'),
 }
 
 # ----------------------------------------------------------------------------

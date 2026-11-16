@@ -15,8 +15,9 @@
 #        layer, the typed modifications and the observers;                    #
 #      - core, the infrastructure that the two include;                       #
 #      - interop, the interoperation with Boost, LEMON, the newest parts of   #
-#        the standard library and the parallel runtimes of a program          #
-#        (interop/, and distributed/BoostMPI.h), in no entry point and no     #
+#        the standard library, the parallel runtimes of a program and the     #
+#        formats of Arrow, cereal, CRoaring and sdsl-lite (interop/, and      #
+#        distributed/BoostMPI.h), in no entry point and no                    #
 #        module, since each includes the headers of another library and a     #
 #        program includes it next to them.                                    #
 #                                                                             #
@@ -215,12 +216,14 @@ intractable/Heuristics.h              base
 intractable/Pseudopolynomial.h        base
 
 interop/Csr.h                         interop  the rows shared by the adapters
+interop/arrow/Arrow.h                 interop
 interop/boost/Dijkstra.h              interop  with ADS_WITH_BOOST
 interop/boost/FromBGL.h               interop  with ADS_WITH_BOOST
 interop/boost/Graph.h                 interop  with ADS_WITH_BOOST
 interop/boost/Heap.h                  interop  with ADS_WITH_BOOST
 interop/boost/Iterator.h              interop  with ADS_WITH_BOOST
 interop/cereal/Cereal.h               interop
+interop/croaring/CRoaring.h           interop  with ADS_WITH_CROARING
 interop/eigen/Eigen.h                 interop  with ADS_WITH_EIGEN
 interop/graphblas/GraphBLAS.h         interop  with ADS_WITH_GRAPHBLAS
 interop/kahip/KaHIP.h                 interop  with ADS_WITH_KAHIP
@@ -236,6 +239,7 @@ interop/parallel/KokkosExecutor.h     interop
 interop/parallel/SenderExecutor.h     interop
 interop/parallel/StdParExecutor.h     interop
 interop/parallel/TaskflowExecutor.h   interop
+interop/sdsl/Sdsl.h                   interop  with ADS_WITH_SDSL
 interop/std/FlatMap.h                 interop
 interop/std/Pmr.h                     interop
 

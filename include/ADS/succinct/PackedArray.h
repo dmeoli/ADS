@@ -74,6 +74,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string_view>
 #include <vector>
 
@@ -139,6 +140,13 @@ class PackedArray
  ///      be called on any thread
  template< Executor E , class F >
  PackedArray( E & ex , std::size_t n , F && f );
+
+ /// the \f$ n \f$ fields of the words \f$ w \f$, the field \f$ i \f$ in the
+ /// bits from \f$ ( i \bmod 64 / B ) B \f$ of the word \f$ \lfloor i B / 64
+ /// \rfloor \f$, as in `words()` (and in the `int_vector` of sdsl-lite);
+ /// the bits past the last field are cleared
+ /// \pre \f$ w \f$ holds \f$ \lceil n B / 64 \rceil \f$ words at least
+ PackedArray( std::span< const Word > w , std::size_t n );
 
  /// the number of fields, \f$ n \f$
  [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
