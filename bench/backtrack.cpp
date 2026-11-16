@@ -66,15 +66,15 @@
 #include <array>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <set>
 #include <functional>
 #include <map>
+#include <random>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#include <unistd.h>
 
 using namespace ADS::bench;
 
@@ -192,7 +192,9 @@ Cover queens( int n )
 std::string knuthFile( const Cover & C )
 {
  const std::string f =
-   "/tmp/ads-bench-xc-" + std::to_string( ::getpid() ) + ".dlx";
+   ( std::filesystem::temp_directory_path() /
+     ( "ads-bench-xc-" + std::to_string( std::random_device{}() ) + ".dlx" ) )
+     .string();
  std::ofstream o( f );
  for( int i = 0 ; i < C.primary + C.secondary ; ++i ) {
   if( i == C.primary )

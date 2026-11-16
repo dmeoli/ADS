@@ -56,13 +56,8 @@ class FirstError
 /// a pause of the processor in a loop that waits for another thread
 inline void spinPause( unsigned & k ) noexcept
 {
- if( ++k < 1024 ) {
-#if defined( __x86_64__ ) || defined( __i386__ )
-  __builtin_ia32_pause();
-#elif defined( __aarch64__ )
-  asm volatile( "yield" );
-#endif
-  }
+ if( ++k < 1024 )
+  detail::spinPause();
  else
   std::this_thread::yield();
  }

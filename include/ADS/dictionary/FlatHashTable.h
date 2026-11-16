@@ -219,22 +219,10 @@
 #endif
 
 /// a function inlined even where the compiler would not
-#if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_FLAT_INLINE inline __attribute__( ( always_inline ) )
-#elif defined( _MSC_VER )
- #define ADS_FLAT_INLINE __forceinline
-#else
- #define ADS_FLAT_INLINE inline
-#endif
+#define ADS_FLAT_INLINE ADS_ALWAYS_INLINE
 
 /// a function never inlined, the rare path out of a loop
-#if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_FLAT_NOINLINE __attribute__( ( noinline ) )
-#elif defined( _MSC_VER )
- #define ADS_FLAT_NOINLINE __declspec( noinline )
-#else
- #define ADS_FLAT_NOINLINE
-#endif
+#define ADS_FLAT_NOINLINE ADS_NOINLINE
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/

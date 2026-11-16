@@ -14,8 +14,8 @@
  *   paper (\f$ \gamma( 9 ) = 0001001 \f$), so that the bits of the stream
  *   read from the first one are the codewords of chapter 11, Integer
  *   Coding, of Ferragina's book; the field is turned around by three
- *   rounds of masks and a swap of the bytes (the five rounds of
- *   `reverseBits()` of `Bitwise.h` in a constant expression);
+ *   rounds of masks and a swap of the bytes, in a constant expression
+ *   as well;
  * - `writeUnary( q )` writes \f$ q \f$ zeros and a 1, the unary code
  *   \f$ U( q + 1 ) \f$ of the same chapter, and `readUnary()` counts the
  *   zeros up to the 1 a word at a time, by the trailing zeros of the word,
@@ -56,6 +56,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/combinatorial/Bitwise.h"
 #include "ADS/succinct/BitVector.h"
 

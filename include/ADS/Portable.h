@@ -56,26 +56,61 @@
 #include <cstdint>
 #include <type_traits>
 
+// the swap of bytes of Boost.Core, which knows the one of each compiler
+// (boost::core::byteswap, taken from Boost 1.83 on)
+#if __has_include( <boost/version.hpp> )
+ #include <boost/version.hpp>
+#endif
+#if defined( BOOST_VERSION ) && ( BOOST_VERSION >= 108300 )
+ #include <boost/core/bit.hpp>
+ #define ADS_BYTESWAP_BOOST 1
+#else
+ #define ADS_BYTESWAP_BOOST 0
+#endif
+
 #if defined( _MSC_VER ) && ! defined( __clang__ )
  #include <cstdlib>
  #include <intrin.h>
 #endif
 
-/// an empty member that takes no storage, with every compiler
-#if defined( _MSC_VER ) && ! defined( __clang__ )
+// The attributes below are chosen by the feature test of the standard
+// (__has_cpp_attribute), not by the name of the compiler: an attribute of a
+// namespace the compiler does not know is ignored, but GCC and Clang warn
+// about it, so that writing both spellings unconditionally would warn in
+// every translation unit that includes ADS.
+
+/// an empty member that takes no storage, by the attribute that does so
+/// (the standard one is accepted but has no effect under the ABI of MSVC)
+#if __has_cpp_attribute( msvc::no_unique_address )
  #define ADS_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
 #else
  #define ADS_NO_UNIQUE_ADDRESS [[no_unique_address]]
 #endif
 
+/// a function inlined even where the compiler would not
+#if __has_cpp_attribute( gnu::always_inline )
+ #define ADS_ALWAYS_INLINE [[gnu::always_inline]] inline
+#elif __has_cpp_attribute( msvc::forceinline )
+ #define ADS_ALWAYS_INLINE [[msvc::forceinline]] inline
+#else
+ #define ADS_ALWAYS_INLINE inline
+#endif
+
+/// a function never inlined
+#if __has_cpp_attribute( gnu::noinline )
+ #define ADS_NOINLINE [[gnu::noinline]]
+#elif __has_cpp_attribute( msvc::noinline )
+ #define ADS_NOINLINE [[msvc::noinline]]
+#else
+ #define ADS_NOINLINE
+#endif
+
 /// a function of a rare path: never inlined, laid out away from the hot
 /// code
-#if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_COLD_PATH [[gnu::cold, gnu::noinline]]
-#elif defined( _MSC_VER )
- #define ADS_COLD_PATH __declspec( noinline )
+#if __has_cpp_attribute( gnu::cold )
+ #define ADS_COLD_PATH [[gnu::cold]] ADS_NOINLINE
 #else
- #define ADS_COLD_PATH
+ #define ADS_COLD_PATH ADS_NOINLINE
 #endif
 
 /// the sanitizer of addresses, by the macro of GCC and MSVC or the feature
@@ -171,18 +206,17 @@ constexpr std::uint64_t wideProduct( std::uint64_t a , std::uint64_t b ,
 
 /*--------------------------------------------------------------------------*/
 
-/// the 8 bytes of `x` in the reverse order
+/// the 8 bytes of `x` in the reverse order, by std::byteswap where the
+/// library has it (C++23), by boost::core::byteswap where Boost is found
+/// (both the one swap of the processor), and otherwise by three rounds of
+/// masks, which GCC does not always turn into that swap once inlined
 constexpr std::uint64_t byteSwap( std::uint64_t x )
 {
-#if defined( __GNUC__ ) || defined( __clang__ )
- return( __builtin_bswap64( x ) );
-#elif defined( __cpp_lib_byteswap )
+#if defined( __cpp_lib_byteswap )
  return( std::byteswap( x ) );
+#elif ADS_BYTESWAP_BOOST
+ return( boost::core::byteswap( x ) );
 #else
- #if defined( _MSC_VER )
- if( ! std::is_constant_evaluated() )
-  return( _byteswap_uint64( x ) );
- #endif
  x = ( ( x >> 8 ) & 0x00FF00FF00FF00FFULL ) |
      ( ( x & 0x00FF00FF00FF00FFULL ) << 8 );
  x = ( ( x >> 16 ) & 0x0000FFFF0000FFFFULL ) |

@@ -22,13 +22,7 @@
 #endif
 
 /// a function never inlined, the rare path of a long string
-#if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_HASH_NOINLINE __attribute__( ( noinline ) )
-#elif defined( _MSC_VER )
- #define ADS_HASH_NOINLINE __declspec( noinline )
-#else
- #define ADS_HASH_NOINLINE
-#endif
+#define ADS_HASH_NOINLINE ADS_NOINLINE
 
 namespace ADS
 {

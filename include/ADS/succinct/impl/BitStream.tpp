@@ -21,25 +21,19 @@ namespace detail
 {
 
 /// the len bits of v in the reverse order: the bits of each byte turned
-/// around in 3 rounds of masks, then the bytes by a swap of the processor
-/// (the 5 rounds and the swap of the halves of reverseBits() [see
-/// Bitwise.h] in a constant expression)
+/// around in 3 rounds of masks, then the bytes by byteSwap() [see
+/// Portable.h]
 constexpr Word reverseField( Word v , int len )
 {
  if( len == 0 )
   return( 0 );
-#if defined( __GNUC__ ) || defined( __clang__ )
- if( ! std::is_constant_evaluated() ) {
-  v = ( ( v >> 1 ) & 0x5555555555555555ULL ) |
-      ( ( v & 0x5555555555555555ULL ) << 1 );
-  v = ( ( v >> 2 ) & 0x3333333333333333ULL ) |
-      ( ( v & 0x3333333333333333ULL ) << 2 );
-  v = ( ( v >> 4 ) & 0x0F0F0F0F0F0F0F0FULL ) |
-      ( ( v & 0x0F0F0F0F0F0F0F0FULL ) << 4 );
-  return( __builtin_bswap64( v ) >> ( 64 - len ) );
-  }
-#endif
- return( reverseBits( v ) >> ( 64 - len ) );
+ v = ( ( v >> 1 ) & 0x5555555555555555ULL ) |
+     ( ( v & 0x5555555555555555ULL ) << 1 );
+ v = ( ( v >> 2 ) & 0x3333333333333333ULL ) |
+     ( ( v & 0x3333333333333333ULL ) << 2 );
+ v = ( ( v >> 4 ) & 0x0F0F0F0F0F0F0F0FULL ) |
+     ( ( v & 0x0F0F0F0F0F0F0F0FULL ) << 4 );
+ return( byteSwap( v ) >> ( 64 - len ) );
  }
 
 }  // end( namespace detail )

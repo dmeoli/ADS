@@ -2185,6 +2185,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- No test on the compiler or the processor in the attributes, the swap of
+  bytes and the pause of a spinning thread: ADS_ALWAYS_INLINE,
+  ADS_NOINLINE and ADS_COLD_PATH of Portable.h, chosen with
+  ADS_NO_UNIQUE_ADDRESS by the feature test `__has_cpp_attribute` (both
+  spellings written unconditionally would warn under GCC and Clang), stand
+  behind the inline macros of the filters, of the hashing, of the tables,
+  of the queues, of the sorts and of RankSelect; byteSwap() is
+  std::byteswap, boost::core::byteswap where Boost is found, or three
+  rounds of masks, and BitStream and SuffixSorting use it; the pause of
+  EventCount, SPSCQueue, MPSCQueue, the executor and the spin locks is
+  detail::spinPause() of Spin.tpp, boost::core::sp_thread_pause() where
+  Boost is found and a barrier of the compiler otherwise; the benchmarks
+  concurrent (pinThread() of Affinity.h, the thread clock of Boost.Chrono),
+  compression (the differences at a distance of 4 in plain code, which the
+  compiler vectorizes), backtrack and stringdicts (their files in
+  std::filesystem::temp_directory_path()) build off Linux and x86
+
 - The customization points of the priority queues, queue_item_t,
   queue_insert(), queue_min(), queue_deleteMin(), queue_handle_t and
   queue_decrease(), moved from PriorityQueue.h to the new advanced header

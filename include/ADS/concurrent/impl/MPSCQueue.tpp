@@ -93,15 +93,8 @@ void MPSCQueue< T , B >::giveBack( Lane * l , Block * b )
 template< class T , std::size_t B >
 void MPSCQueue< T , B >::relax( void )
 {
- for( int i = 0 ; i < pauses ; ++i ) {
-#if defined( __x86_64__ ) || defined( __i386__ )
-  __builtin_ia32_pause();
-#elif defined( __aarch64__ )
-  asm volatile( "yield" );
-#else
-  std::atomic_signal_fence( std::memory_order_seq_cst );
-#endif
-  }
+ for( int i = 0 ; i < pauses ; ++i )
+  detail::spinPause();
  }
 
 template< class T , std::size_t B >

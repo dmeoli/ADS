@@ -53,11 +53,7 @@ namespace detail::vqs
 
 /// a function inlined whatever its size, so that the registers of a
 /// network stay registers
-#if defined( __GNUC__ )
- #define ADS_VQS_INLINE [[gnu::always_inline]] inline
-#else
- #define ADS_VQS_INLINE inline
-#endif
+#define ADS_VQS_INLINE ADS_ALWAYS_INLINE
 
 /// the key at p
 template< class K >

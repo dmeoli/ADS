@@ -105,8 +105,7 @@ std::vector< Op > edgeOps( void )
 
 /// n changes f( op ), the ops in a cycle
 template< class F >
-[[gnu::noinline]] void loop( F && f , const std::vector< Op > & P ,
-			     long long n )
+ADS_NOINLINE void loop( F && f , const std::vector< Op > & P , long long n )
 {
  for( long long i = 0 ; i < n ; ++i )
   f( P[ std::size_t( i ) & ( OPS - 1 ) ] );

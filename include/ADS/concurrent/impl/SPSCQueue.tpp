@@ -52,13 +52,8 @@ bool SPSCQueue< T >::emplace( Args &&... args )
 template< class T >
 void SPSCQueue< T >::relax( void )
 {
- for( int i = 0 ; i < 64 ; ++i ) {
-#if defined( __x86_64__ ) || defined( __i386__ )
-  __builtin_ia32_pause();
-#elif defined( __aarch64__ )
-  asm volatile( "yield" );
-#endif
-  }
+ for( int i = 0 ; i < 64 ; ++i )
+  detail::spinPause();
  }
 
 template< class T >

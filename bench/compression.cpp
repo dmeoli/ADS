@@ -114,7 +114,6 @@
 
 #if __has_include( <fastpfor/codecfactory.h> )
  #include <fastpfor/codecfactory.h>
- #include <emmintrin.h>
  #define ADS_HAS_FASTPFOR 1
 #endif
 
@@ -594,21 +593,22 @@ void integerCodes( std::size_t n , int r , unsigned seed )
 #ifdef ADS_HAS_FASTPFOR
  // the codecs of FastPFor, their last integers by variable bytes; the
  // sorted ones by the differences at a distance of 4 taken and summed 4
- // at a time by SSE2, as the library does
+ // at a time, as the library does (a block of 4 lanes, which the compiler
+ // turns into one operation of a vector of the processor)
  auto d4 = []( std::uint32_t * p , std::size_t m ) {
   for( std::size_t i = m ; ( i-- > 4 ) && ( i >= m / 4 * 4 ) ; )
    p[ i ] -= p[ i - 4 ];
   for( std::size_t q = m / 4 ; q-- > 1 ; ) {
-   auto * a = reinterpret_cast< __m128i * >( p ) + q;
-   _mm_storeu_si128(
-     a , _mm_sub_epi32( _mm_loadu_si128( a ) , _mm_loadu_si128( a - 1 ) ) );
+   std::uint32_t * a = p + 4 * q;
+   for( std::size_t l = 0 ; l < 4 ; ++l )
+    a[ l ] -= a[ l - 4 ];
    }
   };
  auto i4 = []( std::uint32_t * p , std::size_t m ) {
   for( std::size_t q = 1 ; q < m / 4 ; ++q ) {
-   auto * a = reinterpret_cast< __m128i * >( p ) + q;
-   _mm_storeu_si128(
-     a , _mm_add_epi32( _mm_loadu_si128( a ) , _mm_loadu_si128( a - 1 ) ) );
+   std::uint32_t * a = p + 4 * q;
+   for( std::size_t l = 0 ; l < 4 ; ++l )
+    a[ l ] += a[ l - 4 ];
    }
   for( std::size_t i = std::max< std::size_t >( m / 4 * 4 , 4 ) ; i < m ; ++i )
    p[ i ] += p[ i - 4 ];

@@ -470,10 +470,7 @@ inline void BasicRankSelect< Lazy >::shape( bool b , Inventory & I ,
  }
 
 template< bool Lazy >
-#if defined( __GNUC__ )
-__attribute__( ( always_inline ) )
-#endif
-inline const typename BasicRankSelect< Lazy >::Inventory &
+ADS_ALWAYS_INLINE const typename BasicRankSelect< Lazy >::Inventory &
 BasicRankSelect< Lazy >::inventory( bool b ) const
 {
  if constexpr( Lazy )
@@ -483,12 +480,7 @@ BasicRankSelect< Lazy >::inventory( bool b ) const
  }
 
 template< bool Lazy >
-#if defined( __GNUC__ )
-__attribute__( ( noinline , cold ) )
-#elif defined( _MSC_VER )
-__declspec( noinline )
-#endif
-inline void BasicRankSelect< Lazy >::first( bool b ) const
+ADS_COLD_PATH inline void BasicRankSelect< Lazy >::first( bool b ) const
 {
  std::call_once( f_once.flag[ b ] , [ this , b ]() { build( b ); } );
  f_once.ready[ b ].store( true , std::memory_order_release );
@@ -566,10 +558,7 @@ inline void BasicRankSelect< Lazy >::build( bool b ) const
  }
 
 template< bool Lazy >
-#if defined( __GNUC__ )
-__attribute__( ( always_inline ) )
-#endif
-inline std::size_t BasicRankSelect< Lazy >::select( std::size_t k ,
+ADS_ALWAYS_INLINE std::size_t BasicRankSelect< Lazy >::select( std::size_t k ,
 						    bool b ) const
 {
  const Inventory & I = inventory( b );

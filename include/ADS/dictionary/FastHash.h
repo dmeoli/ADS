@@ -90,6 +90,7 @@
 
 #include "ADS/Abi.h"
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 
 #include <array>
 #include <bit>

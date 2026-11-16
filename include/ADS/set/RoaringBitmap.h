@@ -102,6 +102,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/set/BoolSet.h"
 
 #include <cstddef>

@@ -159,6 +159,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/numeric/NumberTheory.h"
 
@@ -196,13 +197,7 @@
 
 /// a function inlined where it is used, so that the state of the
 /// generator stays in the registers of the caller's loop
-#if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_RNG_INLINE inline __attribute__( ( always_inline ) )
-#elif defined( _MSC_VER )
- #define ADS_RNG_INLINE __forceinline
-#else
- #define ADS_RNG_INLINE inline
-#endif
+#define ADS_RNG_INLINE ADS_ALWAYS_INLINE
 
 namespace ADS
 {
