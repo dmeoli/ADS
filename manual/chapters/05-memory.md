@@ -1184,6 +1184,31 @@ class HugePageAllocator
  };
 ```
 
+**The prefetch.** A structure that knows the next address before it needs
+it (the slots of a group of a hash table while its control bytes are
+compared, the next node of a search, the item a few steps ahead of a scan)
+asks the processor to bring that line into its caches, and the load issued
+later finds it there. `ADS::prefetch( p )` and `ADS::prefetch( p , l )` of
+`memory/Prefetch.h` are the forms on a pointer of the customization point
+`prefetch` of `Capabilities.h`, both `noexcept`. Every prefetch of ADS goes
+through `detail::prefetchLine()`, which they call, and this is the only
+place that issues one. A prefetch never faults, whatever $p$ points to, and
+changes nothing that the program can read. With `ADS_WITH_HIGHWAY` it is
+`hwy::Prefetch()` of Google Highway, which keeps the line in every level of
+the cache, and without it, it does nothing. The `Locality` (`None`, `Low`,
+`Moderate`, `High`) tells how soon and how often the line is read again.
+Highway has a single level and no prefetch for writing, hence every
+locality and every prefetch for a write give the same instruction for now;
+we leave to the next campaign on an idle machine whether the hints of the
+processor are worth a backend of their own.
+
+```cpp
+enum class Locality : int { None = 0 , Low = 1 , Moderate = 2 , High = 3 };
+// the forms of the customization point ADS::prefetch on a pointer
+void prefetch( const void * p ) noexcept;
+void prefetch( const void * p , Locality l ) noexcept;
+```
+
 ## 5.10 Garbage collection {#sec-5-10}
 
 In `CellHeap` the program never frees a block. The memory is a vector of $n$

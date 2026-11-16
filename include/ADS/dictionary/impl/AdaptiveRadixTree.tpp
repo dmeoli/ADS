@@ -787,7 +787,7 @@ inline void AdaptiveRadixTree< V >::children( const Node * n )
   return;
  for( unsigned i = 0 ; i < n->count ; ++i )
   ADS::detail::prefetchLine( static_cast< const char * >( c[ i ] ) -
-		 ( isLeaf( c[ i ] ) ? 1 : 0 ) );
+			     ( isLeaf( c[ i ] ) ? 1 : 0 ) );
  }
 
 template< class V >

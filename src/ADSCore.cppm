@@ -123,6 +123,9 @@ using ADS::HugePageAllocator;
 // memory/ObjectPool.h
 using ADS::ObjectPool;
 
+// memory/Prefetch.h
+using ADS::Locality;
+
 // parallel/Executor.h
 using ADS::Executor;
 using ADS::Sequential;

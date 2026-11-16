@@ -29,12 +29,6 @@
  * issues the same prefetch for now, and a structure that knows it reads a
  * line only once still says so, for the backends that tell them apart.
  *
- * \see T. C. Mowry, M. S. Lam, A. Gupta, Design and evaluation of a
- *      compiler algorithm for prefetching, Proceedings of the 5th
- *      International Conference on Architectural Support for Programming
- *      Languages and Operating Systems (ASPLOS V), 62-73, 1992,
- *      doi:10.1145/143365.143488
- *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
  *         Università di Pisa \n

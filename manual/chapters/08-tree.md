@@ -5384,7 +5384,7 @@ the keys smaller than it. On the arithmetic keys under `std::less` the unused
 places of a node hold the largest value of the type (its infinity for the
 floating types). The count then runs on all the places at once, with no branch
 and no dependence on the number of keys of the node, as a few comparisons of
-vectors of `CountLess.h` (four of AVX-512 for 32 keys of 64 bits). On the other
+vectors of Highway in `CountLess.h` (four of AVX-512 for 32 keys of 64 bits). On the other
 keys it is a binary search.
 
 A binary search on a few lines of cache may mispredict half of its branches,

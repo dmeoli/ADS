@@ -362,7 +362,7 @@ $$
 with $o = i \bmod 512$ and $w_j$ the words of the block: one access to the
 entries, one to the line of the block, and the sideways sums of its 8 words
 cut at $i$, with no branch ([Algorithm 22.6](22-succinct.md#alg-22-6)).
-With AVX2, we count the bytes of the line before the one of $i$ 32 at a time, by a table of the 16 nibbles ([Mula, Kurz and Lemire 2018](Z-bibliography.md#ref-mula2018)). We compute the sum on the line by one kernel of `BitVector.h`, `detail::lineRank()`, whose variants (the vector one, and the scalar one with or without BMI2) are chosen by the instruction set, and which `InterleavedRankSelect` below calls on the lines that hold its counts. In all, the entries take $128 / 4096 = 3.125\%$ of $m$ bits.
+With Highway, we cut the 8 words of the line at $i$ and count them a vector at a time, the masks of the words made from the lanes of $\mathrm{clamp}( i - 64 j , 0 , 64 )$, by the count of the lanes of Highway ([Mula, Kurz and Lemire 2018](Z-bibliography.md#ref-mula2018)). We compute the sum on the line by one kernel of `BitVector.h`, `detail::lineRank()`, whose variants (the one on Highway, and the scalar one with or without BMI2) are chosen by `ADS_WITH_HIGHWAY` and by the target, and which `InterleavedRankSelect` below calls on the lines that hold its counts. In all, the entries take $128 / 4096 = 3.125\%$ of $m$ bits.
 
 ![Figure 22.3. (a) A superblock of `CompactRankSelect`, its 8 blocks of 512 bits and its entry of 128 bits: the rank of a place $i$ in the block 5 adds the count $S$ of the superblock, $c_5$ and the 1s of the line before $i$ (violet). (b) A line of `InterleavedRankSelect`, its count $h_\ell$ of 16 bits in front of its 496 bits.](../figures/succinct-compact.svg){#fig-22-3}
 

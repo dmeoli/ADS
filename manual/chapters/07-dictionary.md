@@ -913,7 +913,8 @@ collisions, and hence a table that faces adversarial keys must use a seed
 drawn at random. A word is read in the byte order of the machine, so the
 hashes differ between little and big endian machines. We check each path of
 `hashBytes()` against known hashes in the test `hashing.fast-hash`, the same
-with and without AVX2 and AVX-512.
+with and without Highway, whose kernel of the stripes gives the words of
+the scalar code.
 
 `RowFingerprint.h` gives the fingerprints of 64 bits of the rows of
 doubles, dense or sparse (the indices and the values in their order), for
@@ -1562,11 +1563,13 @@ since they come from a campaign on an idle machine that is still to be run.
 Beside the vector of the pairs, each group has 16 bytes aligned to 16, one
 control byte per place, empty (0) or full, in which case the byte is the
 fingerprint of its key (never 0), and a 16th byte of *overflow*. The 15
-control bytes are compared with the fingerprint of a key all at once, by one
-comparison of SSE2 on x86-64 or of NEON on ARM64, and elsewhere by broadword
-operations on two words of 64 bits ([Knuth 2011,
-§7.1.3](Z-bibliography.md#ref-knuth2011)). A macro, `ADS_FLAT_SIMD`, defined
-as 0 before the header, selects the broadword operations on any machine. A
+control bytes are compared with the fingerprint of a key all at once, with
+`ADS_WITH_HIGHWAY` by one comparison of the vectors of Google Highway
+inlined at the instructions of the compiler (one of SSE2 on x86-64, of
+NEON on ARM64), and otherwise by broadword operations on two words of 64
+bits ([Knuth 2011, §7.1.3](Z-bibliography.md#ref-knuth2011)). A macro,
+`ADS_FLAT_SIMD`, defined as 0 before the header, selects the broadword
+operations with Highway too. A
 false match typically costs a comparison of keys and little else. Here the
 hash $h( k )$ is mixed as in Boost, by the folded product (`mulx()`, or
 `mulxPortable()` by products of 32 bits) of $h( k )$ and
@@ -3572,7 +3575,7 @@ bytes of its keys and branches on their byte $d$, and it adapts its layout
 to the number of its children, and hence a node is never much larger than
 its pointers ([Figure 7.30](07-dictionary.md#fig-7-30)). Layouts `Node4` and `Node16` keep up to 4 and 16 bytes sorted beside the pointers
 to the children of the same places; a `Node16` is searched by one
-comparison of vectors of SSE2 (or NEON), the 16 bytes against the byte of
+comparison of the vectors of Highway (SSE2, NEON), the 16 bytes against the byte of
 the key at once. `Node48` keeps an index of 256 bytes, the place of the
 child of each byte among its 48 pointers (0 for none); `Node256` keeps the
 256 pointers, the byte of the key being the place. A node grows to the next
@@ -4497,7 +4500,7 @@ chapter, and the others by the lemmas and the code cited.
     an array or a span ([§7.3.4](07-dictionary.md#sec-7-3-4)). Tests:
     `engineered.random-hashing` and `engineered_search.zobrist-ranges`.
 12. Hash the strings of every length by the folded products, with the same
-    hashes on the machines with and without AVX2 and AVX-512, and check that
+    hashes with and without the kernels of Highway, and check that
     a flip of one bit of a key flips about half of the bits of its hash
     ([§7.3.6](07-dictionary.md#sec-7-3-6)). Test: `hashing.fast-hash`.
 13. Fingerprint the rows of doubles, $+0$ equal to $-0$ and all the NaNs

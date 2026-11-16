@@ -370,8 +370,9 @@ $P$ hints at a small alphabet (fewer than 8 distinct bytes in 8 or more,
 or a repeated byte in fewer, as on DNA), and the rarest bytes are those of
 a fixed ranking of the bytes by their frequency in text, the later place
 on a tie. This test is made for $W$ consecutive starts at once by $k$
-vector comparisons of $W$ bytes and their AND, with AVX-512 ($W = 64$),
-AVX2 (32) or SSE2 (16) as the target allows; elsewhere `memchr()` finds
+vector comparisons of $W = 32$ bytes and their AND, by the vectors of
+Highway inlined at the instructions of the compiler; without Highway
+`memchr()` finds
 the first probe and the others are checked one by one. On a text of
 independent bytes of probabilities $p_c$, the expected number of
 comparisons with $P$ is $( n - m + 1 ) \prod_i p_{b_i}$, e.g., about
@@ -2468,7 +2469,8 @@ $$
 
 in two stages; it builds $\mathit{SA}$ by `suffixArray()` and
 $\mathit{LCP}$ by `lcpArrayPhi()`. First, the first 64 symbols of the two
-suffixes are compared directly, 32 at a time with AVX2 (8 otherwise):
+suffixes are compared directly, 32 at a time by the vectors of Highway (8
+without it):
 on most texts most extensions are short. We prefer the direct comparison, which
 reads two lines of the text, and may then be faster than any query that reads the
 inverse and the LCP array at random ([Ilie, Navarro and Tinta

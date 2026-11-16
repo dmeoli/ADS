@@ -125,9 +125,11 @@
  sums, \f$ n \f$ instructions of population count on a processor that has
  one; `popcount()` of `FastBitwise.h` keeps four independent sums, so that
  the additions of consecutive words do not wait for one another. On the
- vectors of AVX2 and AVX-512 the method of Harley and Seal does fewer counts
- than words. A carry-save adder takes three vectors of bits \f$ a \f$,
- \f$ b \f$, \f$ c \f$ and gives, place by place,
+ vectors of the processor, through the kernel of Google Highway that runs
+ the best set of instructions found when the program starts, the method of
+ Harley and Seal does fewer counts than words. A carry-save adder takes
+ three vectors of bits \f$ a \f$, \f$ b \f$, \f$ c \f$ and gives, place
+ by place,
  \f[
    \mathrm{sum} = a \oplus b \oplus c , \quad
    \mathrm{carry} = \mathrm{maj}( a , b , c ) , \quad
@@ -141,11 +143,11 @@
  total is \f$ 16 \sum \nu( s ) \f$ over the blocks plus
  \f$ 8 \nu( e ) + 4 \nu( f ) + 2 \nu( t ) + \nu( o ) \f$, at the cost of one
  count and of 15 carry-save adders, i.e., a few dozen logical operations, per
- block of 16 vectors. A vector is counted by the instruction
- of AVX-512 if there is one, and otherwise by looking up the counts of its
- 16 nibbles in a shuffle of bytes and adding the bytes of each word by
- `psadbw`. The rank of a bit, the population count of a prefix, is the base
- of `select()`, which finds the byte of the 1 of rank \f$ r \f$ by comparing
+ block of 16 vectors. A vector is counted by the count of the lanes of
+ Highway, one instruction where the processor has it, and otherwise the
+ counts of its 16 nibbles looked up in a shuffle of bytes and the bytes of
+ each word added. The rank of a bit, the population count of a prefix, is
+ the base of `select()`, which finds the byte of the 1 of rank \f$ r \f$ by comparing
  \f$ r \f$ with the 8 prefix sums of the bytes in parallel, as in the
  zero-byte test, and then the bit inside the byte.
 

@@ -306,7 +306,8 @@
 
  The engineered tables (`FlatHashTable.h`, `DenseHashMap.h`) inspect groups of
  15 or 12 places in the triangular order of the groups, compare the
- fingerprints of 8 bits of a whole group with one instruction of SSE2 or NEON,
+ fingerprints of 8 bits of a whole group with one comparison of the vectors
+ of Highway (SSE2, NEON),
  and stop a search at the first group whose byte of overflow lacks the bit of
  the key. A search for an absent key then reads one group in the common case,
  since a group was passed by an insertion only if it was full, which at a load

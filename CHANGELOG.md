@@ -2207,6 +2207,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Still on the intrinsics under the tests of the target, pending their
+  rewrite on Highway: the strips of the edit distance (EditDistance.tpp),
+  the search of many patterns (MultiSearch.tpp), the vector parts of the
+  suffix sorting (SuffixSorting.tpp), the back substitution of
+  `RibbonFilter`, the deltas of SSE2 of bench/compression.cpp and the
+  comparators of bench/hashing.cpp and bench/sort.cpp; the code of BMI2
+  (`pdep`, `pext`, `bzhi`) is left to the broadword select. The kernels
+  of Highway on vectors of 16 bytes (Stream VByte, the binary packing, the
+  stripes of the hash) do not compile for the target HWY_SCALAR of one
+  lane, which GCC 13 takes for HWY_COMPILE_ONLY_EMU128; the scalar
+  fallback through Highway is tested with Clang and EMU128.
+- bench/simd.cpp and bench/simd.py, the old kernels (on the headers of a
+  revision of git) against the new ones: the instructions of one call by
+  callgrind, and the times with the row A/A, which simd.py takes only on an
+  idle machine. The first counts (16/11) give the new kernels of the sort
+  0.55 to 0.65 times the instructions of the old ones, Stream VByte, the
+  binary packing, the population counts and the hash tables 0.8 to 1.4
+  times, and the inline kernels of the filters, of StringSearcher, of the
+  arrays of Roaring and of the intersections by blocks 2 to 12 times;
+  these are the kernels whose old code the campaign is to weigh, and
+  which stay in the base revision until then.
+
 - The kernels inlined in the searches on Highway (ADS/SimdInline.h): the
   count of the keys below a key in a node (CountLess.h, for the B-trees
   and the static searches), the 16 keys of a `Node16` of

@@ -1526,12 +1526,15 @@ and in a few classes the layout, through four options: the matching of the
 control bytes of the hash tables (`ADS_FLAT_SIMD`), the compare-and-swap of
 16 bytes of `ConcurrentFlatTable` (`ADS_FLAT_CAS16`, turned on by `-mcx16`
 and by `-march=x86-64-v2`), the delegation of `FlatHashTable` to Boost, and
-the level of the vector instructions of x86-64. A program often compiles a
+the set of vector instructions at which Google Highway compiles the kernels
+inlined in the searches. A program often compiles a
 hot file with `-march=x86-64-v3` and the rest with the default, and its two
 translation units then hold two definitions of one class, which the linker
 merges without a word; an object of one unit may then run the code of the
 other. For this reason `ADS/Abi.h` spells the four options in the name
-of an inline namespace, e.g., `abi_s1c1b0v3`, in which `FlatHashTable`,
+of an inline namespace, e.g., `abi_s1c1b0_N_AVX2`, the last part being the
+namespace that Highway gives to the set (`none` without Highway), in which
+`FlatHashTable`,
 `DenseHashMap`, `ConcurrentFlatTable` and `FastHash` are declared. Their
 names in `ADS` stay the same, while the names that the linker sees change
 with the options, and the two units get two distinct classes. We check it
@@ -1540,6 +1543,29 @@ checks that the tables of each hold what it put in them; without the
 namespace the same program fails. It is fair to remark, however, that the
 other macros of the configuration (e.g., the level of the contracts) must
 still be the same in all the units of a program.
+
+The vector kernels of ADS are written once on the portable operations of
+Highway, with `ADS_WITH_HIGHWAY`, and the code of ADS has no branch on the
+processor, the compiler or the system. The kernels that run on whole arrays
+(the population counts, the intersections, the containers of
+`RoaringBitmap`, the hash of the long strings, Stream VByte, the binary
+packing and the sort, which is the quicksort of Highway) are those of
+`ADS/Simd.h`. Highway compiles them for every set of instructions it knows
+and chooses one when the program starts, at the cost of one call through a
+table, and a program built without any flag of the machine thus runs the
+vectors of the processor it finds. The kernels that run on a few bytes in
+the middle of a search (the groups of the hash tables, the nodes of
+`AdaptiveRadixTree` and of the B-trees, the blocks and the bins of the
+filters, the rank in a line of a bit vector, the comparisons of `lce()` and
+of `StringSearcher`) are inlined from `ADS/SimdInline.h` at the set given
+to the compiler, which is why that set enters the name of the namespace
+above. Without Highway every structure runs its scalar code, with the same
+results. We leave the times of the kernels of Highway against those of the
+intrinsics they replace to the campaign of `bench/simd.py` on an idle
+machine, which also counts their instructions; it is fair to remark that
+four kernels (the edit distance, the search of many patterns, the suffix
+sorting and the back substitution of `RibbonFilter`) still run on the
+intrinsics of the target until we rewrite them.
 
 The two levels are also two sets of headers, which a program may take
 apart; we divide them by the origin of the code, whatever its speed. In the
@@ -1791,6 +1817,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `memory/HugePageAllocator.h` | core | `HugePageAllocator` | [5](05-memory.md#ch-5) |
 | `memory/ObjectPool.h` | core | `ObjectPool` | [5](05-memory.md#ch-5) |
 | `memory/PoolAllocator.h` | advanced | `PoolResource`, `PoolAllocator` | [5](05-memory.md#ch-5) |
+| `memory/Prefetch.h` | core | `Locality` | [5](05-memory.md#ch-5) |
 | `memory/SizeClassAllocator.h` | advanced | `SizeClassAllocator` | [5](05-memory.md#ch-5) |
 | `search/CompressedPGMIndex.h` | advanced | `CompressedPGMIndex` | [6](06-search.md#ch-6) |
 | `search/DynamicPGMIndex.h` | advanced | `DynamicPGMIndex` | [6](06-search.md#ch-6) |
@@ -2028,7 +2055,7 @@ only, by chapter.
 
 | Chapter | Headers of functions |
 |-----|-----------------------------------------------|
-| [1](01-introduction.md#ch-1) | `ADT.h`, `Abi.h`, `Portable.h`, `interop/boost/Heap.h`, `interop/boost/Iterator.h` |
+| [1](01-introduction.md#ch-1) | `ADT.h`, `Abi.h`, `Portable.h`, `Simd.h`, `SimdInline.h`, `interop/boost/Heap.h`, `interop/boost/Iterator.h` |
 | [2](02-sequence.md#ch-2) | `sequence/IndexedList.h`, `sequence/ListSort.h`, `sequence/Rearrangements.h`, `sequence/SequenceAlgorithms.h` |
 | [3](03-stack.md#ch-3) | `stack/Expressions.h`, `stack/StackAlgorithms.h` |
 | [4](04-queue.md#ch-4) | `queue/QueueAlgorithms.h` |

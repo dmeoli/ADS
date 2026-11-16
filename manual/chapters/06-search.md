@@ -635,13 +635,14 @@ In a node, the child to take is the count of the keys smaller than $v$.
 On the arithmetic keys under `std::less`, the count runs on the whole line
 with no branch, the places past the last item holding the largest value of
 the type (or $+\infty$). For the integers of 32 and 64 bits and the floating
-types, `countLess()` of `CountLess.h` (in `ADS::detail`) makes it one or
-two comparisons of vectors of AVX-512 or of AVX2, each giving a mask of bits
-that a count of the bits sums; with AVX2, which has no unsigned comparison,
-the unsigned integers are compared as signed ones after flipping their top
-bit (for words of $w$ bits, $x \mapsto x \oplus 2^{w-1}$ maps $[ 0 , 2^w )$
+types, `countLess()` of `CountLess.h` (in `ADS::detail`) makes it, with
+`ADS_WITH_HIGHWAY`, a few comparisons of the vectors of Google Highway
+inlined at the instructions given to the compiler (`SimdInline.h`), each
+giving a mask whose lanes a count of the lanes sums; Highway compares the
+unsigned integers itself where the processor has no unsigned comparison
+(for words of $w$ bits, $x \mapsto x \oplus 2^{w-1}$ maps $[ 0 , 2^w )$
 onto the signed words in the same order, since it subtracts $2^{w-1}$ from
-each value). Elsewhere, and on the other types, it is the loop of the comparisons,
+each value). Without it, and on the other types, it is the loop of the comparisons,
 which the compiler may vectorize or not, and on the other orders a scan of
 the keys in use. Its companion `greaterBits()` gives the items larger than a
 key as the bits of a word, which [§6.9](06-search.md#sec-6-9) uses

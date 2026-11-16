@@ -185,7 +185,7 @@ inline void bpUnpackB( const std::uint8_t * HWY_RESTRICT in ,
       v = hn::ShiftRight< s >( hn::LoadU( d , w + 4 * q ) );
       if constexpr( s + B > 32 )
        v = hn::Or( v , hn::ShiftLeft< ( 32 - s ) & 31 >(
-			 hn::LoadU( d , w + 4 * q + 4 ) ) );
+			hn::LoadU( d , w + 4 * q + 4 ) ) );
       if constexpr( B < 32 )
        v = hn::And( v , mask );
       }
@@ -215,8 +215,8 @@ inline void bpPack( const std::uint32_t * in , std::uint8_t * out , int b )
 inline void bpUnpack( const std::uint8_t * in , std::uint32_t * out , int b ,
 		      bool sorted , std::uint32_t * prev )
 {
- using F = void ( * )( const std::uint8_t * , std::uint32_t * ,
-		       std::uint32_t * );
+ using F =
+   void ( * )( const std::uint8_t * , std::uint32_t * , std::uint32_t * );
  static constexpr auto U =
    []< std::size_t... B >( std::index_sequence< B... > ) {
     return( std::array< F , 33 >{ &bpUnpackB< int( B ) , false >... } );
