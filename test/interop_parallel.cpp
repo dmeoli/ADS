@@ -276,7 +276,7 @@ ADS_TEST( "kokkos-executor" )
 // tbb::parallel_for, the union-find in a taskloop of OpenMP
 ADS_TEST( "structures-in-runtimes" )
 {
- const int n = 1 << 15;
+ [[maybe_unused]] const int n = 1 << 15;  // the items, if a runtime is in
 #if defined( ADS_WITH_TBB )
  {
   ConcurrentUnionFind uf( n );
