@@ -820,6 +820,39 @@ ADS_TEST( "parallel-graph" )
   } );
  }
 
+// the two layouts of a weighted StaticGraph on the parallel algorithms:
+// the visits in breadth (with the transpose, from the bottom up), the
+// connected components, the delta-stepping and the rho-stepping of the
+// interleaved pairs against those of the two arrays, on a random graph of
+// int weights, oriented and not
+ADS_TEST( "parallel-layouts" )
+{
+ std::mt19937_64 g( 23 );
+ const int n = 3000;
+ std::vector< std::tuple< int , int , int > > E;
+ for( int k = 0 ; k < 6 * n ; ++k ) {
+  const int u = int( g() % n ) , v = int( g() % n );
+  if( u != v )
+   E.emplace_back( u , v , int( g() % 100 ) );
+  }
+ using S = StaticGraph< int >;
+ using P = StaticGraph< int , ArcLayout::Interleaved >;
+ for( bool directed : { true , false } ) {
+  const S a( n , E , directed ) , at = a.transpose();
+  const P b( n , E , directed ) , bt = b.transpose();
+  onEach( [ & ]( auto & ex ) {
+   for( int s : { 0 , n / 2 } ) {
+    const auto d = bfsDistances( ex , a , s , directed ? &at : nullptr );
+    CHECK( bfsDistances( ex , b , s , directed ? &bt : nullptr ) == d );
+    const auto r = deltaStepping( ex , a , s , 16 );
+    CHECK( deltaStepping( ex , b , s , 16 ) == r );
+    CHECK( rhoStepping( ex , b , s , std::size_t( 64 ) ) == r );
+    }
+   CHECK( connectedComponents( ex , b ) == connectedComponents( ex , a ) );
+   } );
+  }
+ }
+
 // the parallel LCP arrays against the sequential ones: texts shorter than
 // the threshold, random texts on 2 and 26 letters, a periodic text and a
 // text of one letter (the longest lcp), on bytes and on symbols, and by

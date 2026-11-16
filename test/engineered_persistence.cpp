@@ -730,8 +730,12 @@ ADS_TEST( "persistence-graphs" )
   if( ( a.n() != b.n() ) || ( a.m() != b.m() ) || ( a.arcs() != b.arcs() ) ||
       ( a.directed() != b.directed() ) )
    return( false );
-  return( std::equal( a.offsets() , a.offsets() + a.n() + 1 , b.offsets() ) &&
-	   std::equal( a.heads() , a.heads() + a.arcs() , b.heads() ) );
+  if( ! std::equal( a.offsets() , a.offsets() + a.n() + 1 , b.offsets() ) )
+   return( false );
+  for( int k = 0 ; k < a.arcs() ; ++k )
+   if( a.arcHeads()[ k ] != b.arcHeads()[ k ] )
+    return( false );
+  return( true );
   };
  roundTrip< StaticGraph<> >( StaticGraph<>( 700 , E ) , same );
  roundTrip< StaticGraph<> >( StaticGraph<>( 700 , E , false ) , same );
@@ -751,6 +755,24 @@ ADS_TEST( "persistence-graphs" )
  CHECK( reinterpret_cast< std::uintptr_t >( M.offsets() ) % 64 == 0 &&
 	reinterpret_cast< std::uintptr_t >( M.heads() ) % 64 == 0 &&
 	reinterpret_cast< std::uintptr_t >( M.weightData() ) % 64 == 0 );
+ // the interleaved layout, in the file of the separate one: its round
+ // trips, and the file of each layout read into the other
+ using P = StaticGraph< double , ArcLayout::Interleaved >;
+ const P GI( 700 , W , false );
+ const auto sameW = [ & ]( const auto & a , const auto & b ) {
+  if( ! same( a , b ) )
+   return( false );
+  for( int k = 0 ; k < a.arcs() ; ++k )
+   if( a.arcWeights()[ k ] != b.arcWeights()[ k ] )
+    return( false );
+  return( true );
+  };
+ roundTrip< P >( GI , sameW );
+ roundTrip< P >( P() , sameW );
+ CHECK( sameW( G , restoreMapped< P >( d.path() / "g.ads" ) ) );
+ store( GI , d.path() / "gi.ads" );
+ CHECK( sameW( GI ,
+	       restore< StaticGraph< double > >( d.path() / "gi.ads" ) ) );
  // the matrices, of each type of index
  std::vector< std::tuple< std::size_t , std::size_t , double > > T;
  for( int k = 0 ; k < 4000 ; ++k )

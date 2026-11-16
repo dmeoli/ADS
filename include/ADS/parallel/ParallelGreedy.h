@@ -198,9 +198,9 @@ spanningForest( E & ex , int n ,
 /// \f]
 /// \pre \f$ g \f$ is unoriented, \f$ \pi \f$ is a permutation of its nodes
 /// \post the set of the sequential greedy algorithm (audit)
-template< Executor E , class W >
+template< Executor E , class W , ArcLayout AL >
 [[nodiscard]] std::vector< int >
-maximalIndependentSet( E & ex , const StaticGraph< W > & g ,
+maximalIndependentSet( E & ex , const StaticGraph< W , AL > & g ,
 		       const std::vector< int > & pi );
 
 /// the places in \f$ A \f$ of the edges of the greedy maximal matching in

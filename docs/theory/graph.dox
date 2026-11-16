@@ -127,7 +127,9 @@
  the same places, the offsets of the rows in a third (the arrays of a graph
  in compressed rows that METIS and GraphBLAS take as they are), and sorts the
  arcs of each node by head, so that a visit reads the memory forward and
- reads no weight when it needs only the heads (cf. `StaticGraph.h`);
+ reads no weight when it needs only the heads (cf. `StaticGraph.h`, whose
+ second parameter `ArcLayout::Interleaved` keeps instead the pairs of a
+ head and its weight in one array, for the algorithms that read both);
  both are built from a list of edges by counting sort in
  \f$ \Theta( n + m ) \f$, since the keys are the names of the nodes, i.e.,
  integers in \f$ [ 0 , n ) \f$. The counting sort by tail of `ArrayGraph`

@@ -16,8 +16,10 @@
  *   boost::queue, the mutable heaps of Boost.Heap (d-ary of arity 2 and 4,
  *   Fibonacci, pairing) and disjoint_sets (the union by rank with the
  *   compression of the paths);
- * - ADS: StaticGraph (the compressed rows with each arc next to its
- *   weight), ArrayQueue, the priority queues of the book with handles
+ * - ADS: StaticGraph (the compressed rows, the heads and the weights in
+ *   two arrays, and for Dijkstra on IndexedDaryHeap< 4 > also the pairs of
+ *   the interleaved layout, against the separate one run again as the row
+ *   A/A), ArrayQueue, the priority queues of the book with handles
  *   (HeapPriorityQueue of arity 2 and 4, FibonacciHeapPriorityQueue,
  *   PairingHeap), IndexedDaryHeap, and MFSet, UnionFind and DisjointSets.
  *
@@ -884,6 +886,8 @@ void priorityQueues( Cell & C , const Input & I ,
  if( ! measured( { "ADS StaticGraph HeapPriorityQueue<4>" ,
 		   "ADS StaticGraph HeapPriorityQueue<2>" ,
 		   "ADS StaticGraph IndexedDaryHeap<4>" ,
+		   "ADS StaticGraph IndexedDaryHeap<4> A/A" ,
+		   "ADS StaticGraph interleaved IndexedDaryHeap<4>" ,
 		   "ADS StaticGraph IndexedDaryHeap<2>" ,
 		   "ADS StaticGraph PairingHeap" ,
 		   "ADS StaticGraph FibonacciHeapPriorityQueue" } ) )
@@ -895,6 +899,15 @@ void priorityQueues( Cell & C , const Input & I ,
     withQueue< ADS::HeapPriorityQueue< int , P , 2 > >( S , src , run ) );
  C( "ADS StaticGraph IndexedDaryHeap<4>" ,
     withQueue< ADS::IndexedDaryHeap< P , 4 > >( S , src , run ) );
+ // the two layouts of the arcs, the separate one again as the row A/A
+ C( "ADS StaticGraph IndexedDaryHeap<4> A/A" ,
+    withQueue< ADS::IndexedDaryHeap< P , 4 > >( S , src , run ) );
+ if( measured( { "ADS StaticGraph interleaved IndexedDaryHeap<4>" } ) ) {
+  const ADS::StaticGraph< int , ADS::ArcLayout::Interleaved > SI(
+    n , edgesOf( I , A ) , I.directed );
+  C( "ADS StaticGraph interleaved IndexedDaryHeap<4>" ,
+     withQueue< ADS::IndexedDaryHeap< P , 4 > >( SI , src , run ) );
+  }
  C( "ADS StaticGraph IndexedDaryHeap<2>" ,
     withQueue< ADS::IndexedDaryHeap< P , 2 > >( S , src , run ) );
  C( "ADS StaticGraph PairingHeap" , [ & ]( Counts & k ) {

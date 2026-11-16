@@ -5,13 +5,14 @@
  * The graphs of ADS as digraphs of LEMON and the digraphs of LEMON as
  * graphs of ADS, beyond the book (see \ref theory_graph_lemon):
  *
- * - `StaticDigraphView< W >`, a model of `lemon::concepts::Digraph` over a
- *   `StaticGraph< W >` of ADS [see `StaticGraph.h`], with no copy of its
- *   rows: the base of `lemon::DigraphExtender`, which supplies the
- *   iterators, the maps and the notifiers, on the places of the compressed
- *   rows, the arc \f$ k \f$ being the place \f$ k \f$ of `heads()`, so
- *   that `OutArcIt` walks the row in memory, and `weights()` a `ReadMap` of
- *   the weights in the same places of `weightData()`. `source()` and
+ * - `StaticDigraphView< W , L >`, a model of `lemon::concepts::Digraph`
+ *   over a `StaticGraph< W , L >` of ADS [see `StaticGraph.h`] of either
+ *   layout, with no copy of its rows: the base of
+ *   `lemon::DigraphExtender`, which supplies the iterators, the maps and
+ *   the notifiers, on the places of the compressed rows, the arc \f$ k \f$
+ *   being the place \f$ k \f$ of `arcHeads()`, so that `OutArcIt` walks
+ *   the row in memory, and `weights()` a `ReadMap` of the weights in the
+ *   same places of `arcWeights()`. `source()` and
  *   `InArcIt` need what the rows lack, a tail per arc and the lists of the
  *   arcs into each node, built once in \f$ \Theta( n + a ) \f$ time and
  *   \f$ 8 a + 4 n \f$ bytes (the `StaticDigraph` of LEMON keeps
@@ -91,9 +92,9 @@ namespace ADS::lemon_interop
 /*----------------------- CLASS StaticDigraphBase --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the base of `lemon::DigraphExtender` on a `StaticGraph< W >`: the arcs
-/// are the places of its compressed rows
-template< class W >
+/// the base of `lemon::DigraphExtender` on a `StaticGraph< W , L >`: the
+/// arcs are the places of its compressed rows
+template< class W , ArcLayout L = ArcLayout::Separate >
 class StaticDigraphBase
 {
 
@@ -140,10 +141,10 @@ class StaticDigraphBase
 
  /// the base of \f$ g \f$: the tails and the lists of the arcs into each
  /// node, in \f$ \Theta( n + a ) \f$ time
- void attach( const StaticGraph< W > & g );
+ void attach( const StaticGraph< W , L > & g );
 
  /// the graph of ADS
- [[nodiscard]] const StaticGraph< W > & graph( void ) const {
+ [[nodiscard]] const StaticGraph< W , L > & graph( void ) const {
   return( *f_g );
   }
 
@@ -171,7 +172,7 @@ class StaticDigraphBase
   }
  /// the head of an arc
  [[nodiscard]] Node target( Arc a ) const {
-  return( Node( f_g->heads()[ a.id ] ) );
+  return( Node( f_g->arcHeads()[ a.id ] ) );
   }
 
  /// the first node, the last name
@@ -202,15 +203,15 @@ class StaticDigraphBase
 
 /*--------------------------------------------------------------------------*/
  private:
- const StaticGraph< W > * f_g = nullptr;  ///< the graph of ADS
- std::vector< int > f_tail;               ///< the tail of each arc
- std::vector< int > f_nextIn;             ///< the next arc into its head
- std::vector< int > f_firstIn;            ///< the first arc into each node
+ const StaticGraph< W , L > * f_g = nullptr;  ///< the graph of ADS
+ std::vector< int > f_tail;                  ///< the tail of each arc
+ std::vector< int > f_nextIn;                ///< the next arc into its head
+ std::vector< int > f_firstIn;               ///< the first arc into each node
 
  };  // end( class StaticDigraphBase )
 
-template< class W >
-void StaticDigraphBase< W >::attach( const StaticGraph< W > & g )
+template< class W , ArcLayout L >
+void StaticDigraphBase< W , L >::attach( const StaticGraph< W , L > & g )
 {
  f_g = &g;
  const int n = g.n();
@@ -221,7 +222,7 @@ void StaticDigraphBase< W >::attach( const StaticGraph< W > & g )
  for( int u = n - 1 ; u >= 0 ; --u )
   for( int k = g.offsets()[ u + 1 ] - 1 ; k >= g.offsets()[ u ] ; --k ) {
    f_tail[ std::size_t( k ) ] = u;
-   const int v = g.heads()[ k ];
+   const int v = g.arcHeads()[ k ];
    f_nextIn[ std::size_t( k ) ] = f_firstIn[ std::size_t( v ) ];
    f_firstIn[ std::size_t( v ) ] = k;
    }
@@ -231,19 +232,19 @@ void StaticDigraphBase< W >::attach( const StaticGraph< W > & g )
 /*----------------------- CLASS StaticDigraphView --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a `StaticGraph< W >` of ADS as a digraph of LEMON, with no copy of its
-/// rows
-template< class W >
+/// a `StaticGraph< W , L >` of ADS as a digraph of LEMON, with no copy of
+/// its rows
+template< class W , ArcLayout L = ArcLayout::Separate >
 class StaticDigraphView
-    : public ::lemon::DigraphExtender< StaticDigraphBase< W > >
+    : public ::lemon::DigraphExtender< StaticDigraphBase< W , L > >
 {
 
- using P = ::lemon::DigraphExtender< StaticDigraphBase< W > >;
+ using P = ::lemon::DigraphExtender< StaticDigraphBase< W , L > >;
 
 /*--------------------------------------------------------------------------*/
  public:
  /// the view of \f$ g \f$, which must outlive it
- explicit StaticDigraphView( const StaticGraph< W > & g ) {
+ explicit StaticDigraphView( const StaticGraph< W , L > & g ) {
   P::attach( g );
   P::notifier( typename P::Node() ).build();  // the maps get their room
   P::notifier( typename P::Arc() ).build();
@@ -261,12 +262,12 @@ class StaticDigraphView
   using Value = W;              ///< the weights
   const StaticDigraphView * g;  ///< the view
   /// the weight of the arc \f$ a \f$
-  W operator[]( Key a ) const { return( g->graph().weightData()[ a.id ] ); }
+  W operator[]( Key a ) const { return( g->graph().arcWeights()[ a.id ] ); }
   };
 
  /// the weights of the arcs, read in the rows of the graph of ADS
  [[nodiscard]] WeightMap weights( void ) const
-  requires( StaticGraph< W >::weighted )
+  requires( StaticGraph< W , L >::weighted )
  {
   return( WeightMap{ this } );
   }

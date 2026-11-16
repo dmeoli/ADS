@@ -298,6 +298,8 @@ using ADS::ShortestPathsObserver;
 using ADS::SpanningForestObserver;
 
 // graph/StaticGraph.h
+using ADS::ArcLayout;
+using ADS::CsrArrays;
 using ADS::StaticGraph;
 using ADS::WeightedArc;
 using ADS::bfsOrder;

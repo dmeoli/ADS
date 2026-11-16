@@ -40,10 +40,11 @@
  *   and of a grid of 2^16 and 2^20 nodes (a proxy of a road network), with
  *   integer costs at random in [ 1 , 255 ] (deltaStepping, Delta = 32 and
  *   256 on the grid, and rhoStepping, rho = 2^20 and 2^12 on the grid,
- *   against the Delta-stepping of the GAP benchmark suite, the bucketed
- *   algorithm of Dijkstra of the examples of ParlayLib and, when t = 1,
- *   johnson(), the algorithm of Dijkstra of ShortestPaths.h on a binary
- *   heap), per arc;
+ *   each on the two layouts of the arcs of StaticGraph, with the row A/A
+ *   of the first, against the Delta-stepping of the GAP benchmark suite,
+ *   the bucketed algorithm of Dijkstra of the examples of ParlayLib and,
+ *   when t = 1, johnson(), the algorithm of Dijkstra of ShortestPaths.h on
+ *   a binary heap), per arc;
  * - the builds of the succinct structures: the directories of rank and
  *   select of 64 n random bits (RankSelect and CompactRankSelect against
  *   rank_support_v5 with select_support_mcl of sdsl-lite, sequential), per
@@ -1456,6 +1457,17 @@ void sssp( const std::vector< int > & scales , int r , unsigned seed ,
     } );
    onExecutorsW( S , X , "ADS::rhoStepping" , [ & ]( auto & ex ) {
     dist = ADS::rhoStepping( ex , g , src , rho );
+    } );
+   // the interleaved layout of the arcs, against the separate one above
+   // and its row A/A
+   const ADS::StaticGraph< int , ADS::ArcLayout::Interleaved > gi( n , E ,
+								  false );
+   onExecutorsW( S , X , "ADS::deltaStepping interleaved" ,
+		 [ & ]( auto & ex ) {
+    dist = ADS::deltaStepping( ex , gi , src , delta );
+    } );
+   onExecutorsW( S , X , "ADS::rhoStepping interleaved" , [ & ]( auto & ex ) {
+    dist = ADS::rhoStepping( ex , gi , src , rho );
     } );
 #if defined( ADS_HAS_GAPBS )
    addW( S , "openmp" , "gapbs DeltaStep" , [ & ] {

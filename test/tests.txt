@@ -1753,6 +1753,7 @@ engineered_pearls  book-mergesort-selectors mergesort delle note, selettori
 engineered_graph  static-graph        grafo a righe compresse
 engineered_graph  static-graph-macros nessuna macro di prefetch inutilizzata
 engineered_graph  static-graph-arrays le tre schiere di un grafo pesato come CSR
+engineered_graph  static-graph-layouts le due disposizioni degli archi a confronto
 engineered_graph  indexed-dary-heap   heap d-ario indicizzato con decrease
 engineered_graph  union-find          union-find per dimensione o rango
 engineered_graph  book-on-structures  algoritmi del libro su ogni struttura
@@ -1818,6 +1819,7 @@ engineered_parallel  parallel-merge      fusione a più vie, selezione
 engineered_parallel  parallel-numeric    prodotti sparsi e densi, bit per bit
 engineered_parallel  parallel-numeric-index prodotto CSR con indici int e int64
 engineered_parallel  parallel-graph      visita in ampiezza, componenti
+engineered_parallel  parallel-layouts    le due disposizioni degli archi in parallelo
 engineered_parallel  parallel-lcp        array LCP permutato
 engineered_parallel  parallel-rank-select  rank e select costruiti sugli esecutori
 engineered_parallel  parallel-wavelet-matrix  wavelet matrix, 8 livelli a passata

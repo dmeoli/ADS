@@ -55,16 +55,17 @@ inline int atomicLoad( int & x )
 
 /*--------------------------------------------------------------------------*/
 
-template< Executor E , class W >
-std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
-				 const StaticGraph< W > * gt )
+template< Executor E , class W , ArcLayout AL >
+std::vector< int > bfsDistances( E & ex , const StaticGraph< W , AL > & g ,
+				 int s ,
+				 const StaticGraph< W , AL > * gt )
 {
- using G = StaticGraph< W >;
+ using G = StaticGraph< W , AL >;
  ADS_PRE( g.hasNode( s ) );
  ADS_PRE( ( gt == nullptr ) || ( gt->n() == g.n() ) );
  const int n = g.n();
  const int * off = g.offsets();
- const int * hd = g.heads();
+ const auto hd = g.arcHeads();
  const G * in = g.directed() ? gt : &g;
  std::vector< int > dist( std::size_t( n ) , -1 );
  dist[ std::size_t( s ) ] = 0;
@@ -84,7 +85,7 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
 		 std::memory_order_relaxed );
     } );
    const int * ioff = in->offsets();
-   const int * ihd = in->heads();
+   const auto ihd = in->arcHeads();
    std::size_t awake = F.size() , old;
    do {
     old = awake;
@@ -166,12 +167,13 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
 
 /*--------------------------------------------------------------------------*/
 
-template< Executor E , class W >
-std::vector< int > connectedComponents( E & ex , const StaticGraph< W > & g )
+template< Executor E , class W , ArcLayout AL >
+std::vector< int > connectedComponents( E & ex ,
+					const StaticGraph< W , AL > & g )
 {
  const int n = g.n();
  const int * off = g.offsets();
- const int * hd = g.heads();
+ const auto hd = g.arcHeads();
  ConcurrentUnionFind uf{ std::size_t( n ) };
  auto link = [ & ]( int u , int v ) { uf.unite( u , v ); };
  // each node points to its root

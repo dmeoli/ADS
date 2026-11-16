@@ -285,6 +285,12 @@ ADS_TEST( "parallel-mis-matching" )
     simple.emplace_back( e.u , e.v );
   const StaticGraph<> g(
     n , n ? simple : std::vector< std::pair< int , int > >() , false );
+  // the same graph weighted, in the interleaved layout
+  std::vector< std::tuple< int , int , int > > wsimple;
+  for( const auto & [ u , v ] : simple )
+   wsimple.emplace_back( u , v , u + v );
+  const StaticGraph< int , ArcLayout::Interleaved > gi(
+    n , n ? wsimple : std::vector< std::tuple< int , int , int > >() , false );
   const auto pi = randomOrder( n , seed );
   // the sequential greedy algorithms: v in the set if no neighbour of
   // an earlier place is
@@ -319,6 +325,7 @@ ADS_TEST( "parallel-mis-matching" )
     match.push_back( int( i ) );
   onEach( [ & ]( auto & ex ) {
    CHECK( maximalIndependentSet( ex , g , pi ) == mis );
+   CHECK( maximalIndependentSet( ex , gi , pi ) == mis );
    CHECK( maximalMatching( ex , std::max( n , 1 ) , P , po ) == match );
    } );
   }

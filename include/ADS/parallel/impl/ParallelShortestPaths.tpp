@@ -29,8 +29,8 @@ namespace detail
 template< class G >
 inline constexpr bool isStaticGraph = false;
 
-template< class W >
-inline constexpr bool isStaticGraph< StaticGraph< W > > = true;
+template< class W , ArcLayout L >
+inline constexpr bool isStaticGraph< StaticGraph< W , L > > = true;
 
 /// the arcs of u in g
 template< class G >
@@ -176,12 +176,19 @@ std::vector< typename G::Weight > stepping( E & ex , const G & g , int s ,
     const D dv = dist( v );
     if constexpr( isStaticGraph< G > ) {
      const int o = g.offsets()[ v ];
-     const int * hd = g.heads() + o;
-     const D * wt = g.weightData() + o;
      const std::size_t k0 = std::max( a0 , P[ i ] ) - P[ i ] ,
 		       k1 = std::min( a1 , P[ i + 1 ] ) - P[ i ];
-     for( std::size_t k = k0 ; k < k1 ; ++k )
-      relax( hd[ k ] , D( dv + wt[ k ] ) );
+     if constexpr( G::interleaved ) {
+      const auto * c = g.arcData() + o;
+      for( std::size_t k = k0 ; k < k1 ; ++k )
+       relax( c[ k ].to , D( dv + c[ k ].w ) );
+      }
+     else {
+      const int * hd = g.heads() + o;
+      const D * wt = g.weightData() + o;
+      for( std::size_t k = k0 ; k < k1 ; ++k )
+       relax( hd[ k ] , D( dv + wt[ k ] ) );
+      }
      }
     else if( P[ i ] >= a0 )  // the block of its first arc
      g.forEachEdge( v ,
@@ -405,12 +412,20 @@ std::vector< typename G::Weight > bucketStepping( E & ex , const G & g ,
     }
    ++relaxed;
    if constexpr( isStaticGraph< G > ) {
-    const int o = g.offsets()[ v ];
-    const int * a = g.heads() + o;
-    const int * const e = g.heads() + g.offsets()[ v + 1 ];
-    const D * w = g.weightData() + o;
-    for( ; a != e ; ++a , ++w )
-     arc( *a , D( dv + *w ) );
+    if constexpr( G::interleaved ) {
+     const auto * a = g.arcData() + g.offsets()[ v ];
+     const auto * const e = g.arcData() + g.offsets()[ v + 1 ];
+     for( ; a != e ; ++a )
+      arc( a->to , D( dv + a->w ) );
+     }
+    else {
+     const int o = g.offsets()[ v ];
+     const int * a = g.heads() + o;
+     const int * const e = g.heads() + g.offsets()[ v + 1 ];
+     const D * w = g.weightData() + o;
+     for( ; a != e ; ++a , ++w )
+      arc( *a , D( dv + *w ) );
+     }
     }
    else
     g.forEachEdge( v ,

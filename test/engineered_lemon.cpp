@@ -593,6 +593,19 @@ ADS_TEST( "lemon-static-digraph" )
  CHECK( ns.run() == decltype( ns )::OPTIMAL );
  CHECK( sns.run() == decltype( sns )::OPTIMAL );
  CHECK( ns.totalCost() == sns.totalCost() );
+ // Dijkstra on the view of the interleaved layout
+ using VI = LI::StaticDigraphView< long long , ArcLayout::Interleaved >;
+ lemon::checkConcept< lemon::concepts::Digraph , VI >();
+ const StaticGraph< long long , ArcLayout::Interleaved > gi( n , E , true );
+ VI li( gi );
+ const auto wi = li.weights();  // the map, which Dijkstra holds by reference
+ lemon::Dijkstra< VI , VI::WeightMap > di( li , wi );
+ di.run( li.nodeFromId( 0 ) );
+ for( int v = 0 ; v < n ; ++v )
+  if( di.reached( li.nodeFromId( v ) ) )
+   CHECK( di.dist( li.nodeFromId( v ) ) == T.d[ std::size_t( v ) ] );
+  else
+   CHECK( T.d[ std::size_t( v ) ] == infinity< long long >() );
 #endif
  }
 

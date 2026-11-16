@@ -131,7 +131,8 @@ requires them, `OFF` leaves them out), the component `Boost` of
 `find_package(ADS COMPONENTS Boost)` carries it, and the makefile defines it
 by default (`BOOST=<prefix>` where Boost is not where the compiler looks);
 no library is linked, since Boost is used by its headers. With `Graph.h`, a
-`StaticGraph` is a graph of Boost.Graph with no copy, and a program of
+`StaticGraph` of either layout of its arcs is a graph of Boost.Graph with no
+copy, and a program of
 Boost.Graph changes only the type of its graph (e.g., from
 `compressed_sparse_row_graph` to `ADS::StaticGraph`), as in the first
 example, which runs the algorithm of Dijkstra of Boost.Graph on such a

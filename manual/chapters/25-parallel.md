@@ -1258,11 +1258,13 @@ The two algorithms on graphs are declared as
 
 ```cpp
 // declarations of <ADS/parallel/ParallelGraph.h>
-template< Executor E , class W >
-std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
-                                 const StaticGraph< W > * gt = nullptr );
-template< Executor E , class W >
-std::vector< int > connectedComponents( E & ex , const StaticGraph< W > & g );
+template< Executor E , class W , ArcLayout AL >
+std::vector< int >
+bfsDistances( E & ex , const StaticGraph< W , AL > & g , int s ,
+              const StaticGraph< W , AL > * gt = nullptr );
+template< Executor E , class W , ArcLayout AL >
+std::vector< int >
+connectedComponents( E & ex , const StaticGraph< W , AL > & g );
 ```
 
 <span id="alg-25-17"></span>**Algorithm 25.17.** The visit in breadth that
@@ -1607,9 +1609,10 @@ template< Executor E >
 std::vector< int >
 spanningForest( E & ex , int n ,
                 const std::vector< std::pair< int , int > > & A );
-template< Executor E , class W >
-std::vector< int > maximalIndependentSet( E & ex , const StaticGraph< W > & g ,
-                                          const std::vector< int > & pi );
+template< Executor E , class W , ArcLayout AL >
+std::vector< int >
+maximalIndependentSet( E & ex , const StaticGraph< W , AL > & g ,
+                       const std::vector< int > & pi );
 template< Executor E >
 std::vector< int >
 maximalMatching( E & ex , int n ,

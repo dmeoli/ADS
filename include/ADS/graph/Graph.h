@@ -249,16 +249,35 @@ namespace detail
 
 /// the arcs of a graph in compressed rows, for the algorithms that walk the
 /// adjacencies with a cursor per node: those of a graph that keeps them so
-/// (`offsets()` and `heads()`, as `StaticGraph`) where they are, those of
-/// any other model copied once, in the order of `forEachAdj()`, with none
-/// for a name that is not a node
+/// (`offsets()` and `heads()`, as `ArrayGraph`, or `arcHeads()`, as
+/// `StaticGraph` in either layout) where they are, those of any other model
+/// copied once, in the order of `forEachAdj()`, with none for a name that
+/// is not a node
 template< Graph G >
 class Rows
 {
 
+ /// whether the heads are read by `arcHeads()`
+ static constexpr bool byArcHeads = requires( const G & h ) {
+  { h.offsets() } -> std::convertible_to< const int * >;
+  h.arcHeads()[ 0 ];
+  };
+
+ /// the type of the heads read where they are
+ template< bool A , class = void >
+ struct Heads
+ {
+  using type = const int *;
+  };
+ template< class V >
+ struct Heads< true , V >
+ {
+  using type = decltype( std::declval< const G & >().arcHeads() );
+  };
+
  public:
  /// whether the rows of the graph are read where they are
- static constexpr bool direct = requires( const G & h ) {
+ static constexpr bool direct = byArcHeads || requires( const G & h ) {
   { h.offsets() } -> std::convertible_to< const int * >;
   { h.heads() } -> std::convertible_to< const int * >;
   h.arcData();
@@ -266,7 +285,11 @@ class Rows
 
  /// the rows of \f$ g \f$, which must outlive them if `direct`
  explicit Rows( const G & g ) {
-  if constexpr( direct ) {
+  if constexpr( byArcHeads ) {
+   f_o = g.offsets();
+   f_h = g.arcHeads();
+   }
+  else if constexpr( direct ) {
    f_o = g.offsets();
    f_h = g.heads();
    }
@@ -302,8 +325,9 @@ class Rows
   }
 
  private:
- const int * f_o = nullptr;         ///< the offsets of the graph
- const int * f_h = nullptr;         ///< the heads of its arcs
+ const int * f_o = nullptr;  ///< the offsets of the graph
+ /// the heads of its arcs
+ typename Heads< byArcHeads >::type f_h{};
  std::vector< std::size_t > f_off;  ///< the offsets of the copy
  std::vector< int > f_head;         ///< the heads of the copy
 

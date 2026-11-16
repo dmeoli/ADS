@@ -31,6 +31,21 @@
  * arc, which takes the indexing and the arithmetic of a pointer; on an
  * unweighted graph they are a `std::span` and a pointer of the heads.
  *
+ * The layout of a weighted graph is the parameter \f$ L \f$: the two
+ * arrays above (`ArcLayout::Separate`, the default), or one array of the
+ * pairs `WeightedArc` (`ArcLayout::Interleaved`), in which a head and its
+ * weight share a line of the cache, at the price of the padding of a
+ * weight wider than a head, so that \f$ 4 ( n + 1 ) + s' a \f$ bytes are
+ * taken, \f$ s' \f$ the size of a pair. The algorithms that read each head
+ * with its weight (Dijkstra, the stepping algorithms) miss the cache less
+ * often on the pairs when the weights are integers, those that read only
+ * the heads (the visits) on the two arrays. Both layouts give the same
+ * interface: `out( u )` is a range of random access of `WeightedArc`, a
+ * `std::span` of the pairs if interleaved, `arcData()` its cursor, and
+ * `arcHeads()` and `arcWeights()` read the heads and the weights in place
+ * by the indexing of an array; only the separate layout has `heads()` and
+ * `weightData()`, the plain arrays that the concept `CsrArrays` requires.
+ *
  * `transpose()` gives the graph with the arcs reversed, which the visits
  * from the bottom up and the strongly connected components of a reversed
  * graph need, and `relabel()` gives the same graph with the nodes renamed,
@@ -81,6 +96,7 @@
 
 #include <algorithm>
 #include <compare>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -113,8 +129,40 @@ struct WeightedArc
  W w;     ///< the weight
  };
 
+/// the layout of the arcs of a weighted `StaticGraph`
+enum class ArcLayout {
+ Separate ,    ///< the heads and the weights in two arrays of the same places
+ Interleaved  ///< the pairs `WeightedArc` in one array
+ };
+
 namespace detail
 {
+
+/// a member of the pairs of an interleaved `StaticGraph` read in place as
+/// an array: the indexing and the arithmetic of a pointer to it
+template< class W , class T , T WeightedArc< W >::* M >
+class ArcMember
+{
+ public:
+ ArcMember( void ) = default;
+
+ /// the member of the pairs from \f$ a \f$ on
+ explicit ArcMember( const WeightedArc< W > * a ) : f_a( a ) { }
+
+ /// the member of the pair \f$ k \f$ places further
+ const T & operator[]( std::ptrdiff_t k ) const { return( f_a[ k ].*M ); }
+ /// the member of the pair here
+ const T & operator*( void ) const { return( ( *f_a ).*M ); }
+ /// the member of the pairs \f$ k \f$ places further on
+ friend ArcMember operator+( ArcMember p , std::ptrdiff_t k ) {
+  p.f_a += k;
+  return( p );
+  }
+ friend bool operator==( const ArcMember & , const ArcMember & ) = default;
+
+ private:
+ const WeightedArc< W > * f_a = nullptr;  ///< the pair here
+ };  // end( class ArcMember )
 
 /// the arcs of a weighted `StaticGraph` from a place on, read from the array
 /// of the heads and from that of the weights: a random access iterator whose
@@ -220,8 +268,9 @@ class WeightedArcCursor
 }  // end( namespace detail )
 
 /// a static graph in compressed sparse rows, the arcs of each node sorted
-/// by head, their heads and their weights in two arrays
-template< class W = std::monostate >
+/// by head, their heads and their weights in two arrays or, with
+/// `ArcLayout::Interleaved`, in one array of pairs
+template< class W = std::monostate , ArcLayout L = ArcLayout::Separate >
 class StaticGraph
 {
 
@@ -232,19 +281,40 @@ class StaticGraph
  /// whether the arcs have a weight
  static constexpr bool weighted = ! std::is_same_v< W , std::monostate >;
 
+ /// the layout of the arcs
+ static constexpr ArcLayout layout = L;
+
+ /// whether the arcs are the pairs of one array (never if unweighted)
+ static constexpr bool interleaved =
+   weighted && ( L == ArcLayout::Interleaved );
+
  /// an arc: its head, and its weight if the graph is weighted
  using Arc = std::conditional_t< weighted , WeightedArc< W > , int >;
 
- /// the cursor of the arcs, a pointer to the heads if the graph is
- /// unweighted
- using ArcCursor =
-   std::conditional_t< weighted , detail::WeightedArcCursor< W > ,
-		       const int * >;
+ /// the cursor of the arcs: a pointer to the heads if the graph is
+ /// unweighted, to the pairs if interleaved
+ using ArcCursor = std::conditional_t<
+   ! weighted , const int * ,
+   std::conditional_t< interleaved , const WeightedArc< W > * ,
+		       detail::WeightedArcCursor< W > > >;
 
  /// the arcs of a row, random access
- using ArcRange =
-   std::conditional_t< weighted , std::ranges::subrange< ArcCursor > ,
-		       std::span< const int > >;
+ using ArcRange = std::conditional_t<
+   ! weighted , std::span< const int > ,
+   std::conditional_t< interleaved , std::span< const WeightedArc< W > > ,
+		       std::ranges::subrange< ArcCursor > > >;
+
+ /// the heads of the arcs read in place by their places: a pointer, or
+ /// the heads of the pairs if interleaved
+ using HeadArray =
+   std::conditional_t< interleaved ,
+		       detail::ArcMember< W , int , &WeightedArc< W >::to > ,
+		       const int * >;
+
+ /// the weights of the arcs read in place by their places
+ using WeightArray = std::conditional_t<
+   interleaved , detail::ArcMember< W , W , &WeightedArc< W >::w > ,
+     const W * >;
 
  /// the graph with no node
  StaticGraph( void ) : f_off( 1 , 0 ) { }
@@ -304,7 +374,9 @@ class StaticGraph
  [[nodiscard]] int m( void ) const { return( f_m ); }
 
  /// the number of arcs, 2 `m()` if the graph is unoriented
- [[nodiscard]] int arcs( void ) const { return( int( f_head.size() ) ); }
+ [[nodiscard]] int arcs( void ) const {
+  return( int( interleaved ? f_arc.size() : f_head.size() ) );
+  }
 
  [[nodiscard]] int bound( void ) const { return( n() ); }
 
@@ -345,30 +417,58 @@ class StaticGraph
   requires( weighted );
 
  /// the arcs out of \f$ u \f$, contiguous, random access: on a weighted
- /// graph the `WeightedArc` values made from `heads()` and `weightData()`
+ /// graph the `WeightedArc` values made from `heads()` and `weightData()`,
+ /// or the pairs if interleaved
  /// \pre \f$ u \f$ is a node
  [[nodiscard]] ArcRange out( int u ) const;
 
  /// the offsets of the rows: the arcs of u are those in the places
- /// [ `offsets()`[ u ] , `offsets()`[ u + 1 ] ) of `heads()` and of
- /// `weightData()`, \f$ n + 1 \f$ of them
+ /// [ `offsets()`[ u ] , `offsets()`[ u + 1 ] ) of `arcData()`, of
+ /// `heads()` and of `weightData()`, \f$ n + 1 \f$ of them
  [[nodiscard]] const int * offsets( void ) const { return( f_off.data() ); }
 
- /// the heads of all the arcs, row by row, `arcs()` of them
- [[nodiscard]] const int * heads( void ) const { return( f_head.data() ); }
+ /// the heads of all the arcs, row by row, `arcs()` of them, an array of
+ /// the separate layout
+ [[nodiscard]] const int * heads( void ) const
+  requires( ! interleaved )
+ {
+  return( f_head.data() );
+  }
 
- /// the weights of all the arcs, in the places of `heads()`
+ /// the weights of all the arcs, in the places of `heads()`, an array of
+ /// the separate layout
  [[nodiscard]] const W * weightData( void ) const
-  requires( weighted )
+  requires( weighted && ( ! interleaved ) )
  {
   return( f_w.data() );
   }
 
+ /// the heads of all the arcs read in place, in either layout: `heads()`,
+ /// or the heads of the pairs
+ [[nodiscard]] HeadArray arcHeads( void ) const {
+  if constexpr( interleaved )
+   return( HeadArray( f_arc.data() ) );
+  else
+   return( f_head.data() );
+  }
+
+ /// the weights of all the arcs read in place, in either layout
+ [[nodiscard]] WeightArray arcWeights( void ) const
+  requires( weighted )
+ {
+  if constexpr( interleaved )
+   return( WeightArray( f_arc.data() ) );
+  else
+   return( f_w.data() );
+  }
+
  /// all the arcs, row by row: the cursor at the first, whose place
  /// \f$ k \f$ is the arc \f$ k \f$ (the pointer `heads()` if the graph is
- /// unweighted)
+ /// unweighted, the pointer to the pairs if interleaved)
  [[nodiscard]] ArcCursor arcData( void ) const {
-  if constexpr( weighted )
+  if constexpr( interleaved )
+   return( f_arc.data() );
+  else if constexpr( weighted )
    return( ArcCursor( f_head.data() , f_w.data() ) );
   else
    return( f_head.data() );
@@ -446,20 +546,52 @@ class StaticGraph
  /// none
  [[nodiscard]] int find( int u , int v ) const;
 
+ /// the weight of the arc of the place \f$ k \f$, to be written
+ [[nodiscard]] W & weightAt( int k )
+  requires( weighted )
+ {
+  if constexpr( interleaved )
+   return( f_arc[ std::size_t( k ) ].w );
+  else
+   return( f_w[ std::size_t( k ) ] );
+  }
+
  /// the offsets do not decrease and end at the number of arcs, whose heads
  /// are nodes, increasing in each row, with a weight each if weighted
  [[nodiscard]] bool consistent( void ) const;
 
- bool f_directed = true;     ///< oriented or not
+ bool f_directed = true;  ///< oriented or not
  /// the arcs of u from f_off[ u ]
  std::vector< int , MappableAllocator< int > > f_off;
- /// the heads of the arcs, row by row
+ /// the heads of the arcs, row by row, empty if interleaved
  std::vector< int , MappableAllocator< int > > f_head;
- /// their weights, empty if unweighted
+ /// their weights, empty if unweighted or interleaved
  std::vector< W , MappableAllocator< W > > f_w;
- int f_m = 0;                ///< the number of edges
+ /// the pairs of the arcs, row by row, empty unless interleaved
+ std::vector< WeightedArc< W > > f_arc;
+ int f_m = 0;  ///< the number of edges
 
  };  // end( class StaticGraph )
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------- CONCEPTS ---------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// a graph whose compressed rows are plain arrays, `offsets()`, `heads()`
+/// and, if weighted, `weightData()`, which a library that takes the
+/// compressed rows (METIS, KaHIP, GraphBLAS) reads without a copy: a
+/// `StaticGraph` of the separate layout, or an `ArrayGraph`
+template< class G >
+concept CsrArrays = requires( const G & g )
+{
+ { g.offsets() } -> std::same_as< const int * >;
+ { g.heads() } -> std::same_as< const int * >;
+ } && ( ( ! requires { requires G::weighted; } ) || requires( const G & g )
+{
+		     {
+		      g.weightData()
+		      } -> std::same_as< const typename G::Weight * >;
+		     } );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- FUNCTIONS --------------------------------*/
@@ -487,8 +619,8 @@ class StaticGraph
 /// \end{array}}
 /// \f]
 /// \pre \f$ r \f$ is a node, or the graph has none
-template< class W >
-std::vector< int > bfsOrder( const StaticGraph< W > & g , int r = 0 );
+template< class W , ArcLayout L >
+std::vector< int > bfsOrder( const StaticGraph< W , L > & g , int r = 0 );
 
 /*--------------------------------------------------------------------------*/
 

@@ -308,6 +308,84 @@ ADS_TEST( "static-graph-arrays" )
 	std::vector< int >( { 1 , 2 , 1 } ) );
  }
 
+// the two layouts of a weighted StaticGraph against each other on random
+// graphs of int and double weights, oriented or not: the same offsets, the
+// same heads and weights read in place by arcHeads() and arcWeights(), the
+// same rows by out(), forEachEdge() and adj(), weight() and setWeight(),
+// transpose(), relabel() and bfsOrder(), the copy of another graph and
+// Dijkstra; the plain arrays only in the separate layout (the concept
+// CsrArrays), and the pointer to the pairs as the cursor of the other
+ADS_TEST( "static-graph-layouts" )
+{
+ using I = StaticGraph< int , ArcLayout::Interleaved >;
+ static_assert( CsrArrays< StaticGraph< int > > &&
+		CsrArrays< StaticGraph<> > );
+ static_assert( ( ! CsrArrays< I > ) && CsrArrays< ArrayGraph< int > > );
+ static_assert( Graph< I > && I::interleaved );
+ static_assert(
+   ! StaticGraph< std::monostate , ArcLayout::Interleaved >::interleaved );
+ static_assert( std::is_same_v< I::ArcCursor , const WeightedArc< int > * > );
+ static_assert( std::ranges::random_access_range< I::ArcRange > &&
+		std::ranges::contiguous_range< I::ArcRange > );
+ auto run = [ & ]< class W >( std::mt19937 & g ) {
+  using S = StaticGraph< W >;
+  using P = StaticGraph< W , ArcLayout::Interleaved >;
+  for( bool directed : { true , false } ) {
+   const int n = 60;
+   std::vector< std::tuple< int , int , W > > E;
+   for( int i = 0 ; i < 500 ; ++i ) {
+    const int u = int( g() % n ) , v = int( ( u + 1 + g() % ( n - 1 ) ) % n );
+    E.emplace_back( u , v , W( g() % 1000 ) / W( 4 ) );
+    }
+   S a( n , E , directed );
+   P b( n , E , directed );
+   const auto same = [ & ]( const S & x , const P & y ) {
+    if( ( x.n() != y.n() ) || ( x.m() != y.m() ) || ( x.arcs() != y.arcs() ) ||
+	( x.directed() != y.directed() ) ||
+	! std::equal( x.offsets() , x.offsets() + x.n() + 1 , y.offsets() ) )
+     return( false );
+    for( int k = 0 ; k < x.arcs() ; ++k )
+     if( ( x.heads()[ k ] != y.arcHeads()[ k ] ) ||
+	 ( x.weightData()[ k ] != y.arcWeights()[ k ] ) ||
+	 ( x.arcHeads()[ k ] != x.heads()[ k ] ) ||
+	 ( y.arcData()[ k ].to != y.arcHeads()[ k ] ) )
+      return( false );
+    return( true );
+    };
+   CHECK( same( a , b ) );
+   for( int u = 0 ; u < n ; ++u ) {
+    const auto ra = a.out( u );
+    const auto rb = b.out( u );
+    CHECK( ( ra.size() == rb.size() ) &&
+	   ( rb.data() == b.arcData() + b.offsets()[ u ] ) );
+    for( std::size_t k = 0 ; k < rb.size() ; ++k )
+     CHECK( ( ra[ k ].to == rb[ k ].to ) && ( ra[ k ].w == rb[ k ].w ) );
+    std::vector< std::pair< int , W > > ea , eb;
+    a.forEachEdge( u , [ & ]( int v , W w ) { ea.emplace_back( v , w ); } );
+    b.forEachEdge( u , [ & ]( int v , W w ) { eb.emplace_back( v , w ); } );
+    CHECK( ( ea == eb ) && ( a.adj( u ) == b.adj( u ) ) );
+    }
+   for( int i = 0 ; i < 200 ; ++i ) {
+    const int u = int( g() % n ) , v = int( g() % n );
+    CHECK( a.weight( u , v ) == b.weight( u , v ) );
+    const W w = W( i );
+    CHECK( a.setWeight( u , v , w ) == b.setWeight( u , v , w ) );
+    }
+   CHECK( same( a , b ) );
+   CHECK( same( a.transpose() , b.transpose() ) );
+   CHECK( bfsOrder( a , 3 ) == bfsOrder( b , 3 ) );
+   CHECK(
+     same( a.relabel( bfsOrder( a , 3 ) ) , b.relabel( bfsOrder( b , 3 ) ) ) );
+   CHECK( same( S( ArrayGraph< W >( n , E , directed ) ) ,
+		P( ArrayGraph< W >( n , E , directed ) ) ) );
+   CHECK( dijkstra( a , 0 ).d == dijkstra( b , 0 ).d );
+   }
+  };
+ std::mt19937 g( 9 );
+ run.template operator()< int >( g );
+ run.template operator()< double >( g );
+ }
+
 // the indexed heap for D = 2 , 4 , 8 against a set of ( key , id ): random
 // pushes, decreases and pops, the ties, pushOrDecrease() with a larger
 // key, clear(), and the contracts on an id twice, a key raised and an

@@ -228,6 +228,8 @@ using AL =
 			 boost::property< boost::edge_weight_t , double > >;
 
 BOOST_CONCEPT_ASSERT( ( boost::IncidenceGraphConcept< SG > ));
+BOOST_CONCEPT_ASSERT( ( boost::IncidenceGraphConcept<
+			StaticGraph< double , ArcLayout::Interleaved > > ));
 BOOST_CONCEPT_ASSERT( ( boost::VertexListGraphConcept< SG > ));
 BOOST_CONCEPT_ASSERT( ( boost::EdgeListGraphConcept< SG > ));
 BOOST_CONCEPT_ASSERT( ( boost::AdjacencyGraphConcept< SG > ));
@@ -369,6 +371,9 @@ ADS_TEST( "bgl-row-graphs" )
   const auto ref = bglDijkstra( c , 0 , get( &EW::w , c ) );
   CHECK( bglDijkstra( sg , 0 , get( boost::edge_weight , sg ) ) == ref );
   CHECK( bglDijkstra( ag , 0 , get( boost::edge_weight , ag ) ) == ref );
+  // the interleaved layout through the same adapter
+  const StaticGraph< double , ArcLayout::Interleaved > ig( n , E );
+  CHECK( bglDijkstra( ig , 0 , get( boost::edge_weight , ig ) ) == ref );
   CHECK( bglDistances( shortestPaths( sg , 0 , Frontier::HEAP ).d ) == ref );
   // Bellman-Ford on the list of the edges
   std::vector< double > d( std::size_t( n ) ,
@@ -388,6 +393,8 @@ ADS_TEST( "bgl-row-graphs" )
   const auto c3 = bglComponents( c , k3 );
   CHECK( ( k1 == k3 ) && ( k2 == k3 ) && samePartition( c1 , c3 ) &&
 	 samePartition( c2 , c3 ) && samePartition( scc( sg ) , c3 ) );
+  int k4 = 0;
+  CHECK( samePartition( bglComponents( ig , k4 ) , c3 ) && ( k4 == k3 ) );
   // a DAG: the topological order of Boost.Graph is one
   const SG dag( n , randomArcs( n , 200 , seed , true ) );
   std::vector< int > T;

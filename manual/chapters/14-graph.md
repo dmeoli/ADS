@@ -425,7 +425,7 @@ of `ArrayGraph` by a counting sort on the tails
 
 --8<-- "generated/ArrayGraph-build.pseudo.md"
 
-`StaticGraph< W >` is the same format engineered for the algorithms that scan
+`StaticGraph< W , L >` is the same format engineered for the algorithms that scan
 the arcs many times. First, the graph is three plain arrays (a structure of
 arrays): the offsets of the rows, the heads of the arcs and, when the graph is
 weighted, their weights in the same places. A visit that needs only the heads
@@ -455,19 +455,38 @@ struct WeightedArc
  W w;
  };
 
-template< class W = std::monostate >
+enum class ArcLayout
+{
+ Separate ,
+ Interleaved
+ };
+
+template< class W = std::monostate , ArcLayout L = ArcLayout::Separate >
 class StaticGraph
 {
  public:
  using Weight = W;
  static constexpr bool weighted = ! std::is_same_v< W , std::monostate >;
+ static constexpr ArcLayout layout = L;
+ static constexpr bool interleaved =
+   weighted && ( L == ArcLayout::Interleaved );
  using Arc = std::conditional_t< weighted , WeightedArc< W > , int >;
- using ArcCursor =
-   std::conditional_t< weighted , detail::WeightedArcCursor< W > ,
+ using ArcCursor = std::conditional_t<
+   ! weighted , const int * ,
+   std::conditional_t< interleaved , const WeightedArc< W > * ,
+                       detail::WeightedArcCursor< W > > >;
+ using ArcRange = std::conditional_t<
+   ! weighted , std::span< const int > ,
+   std::conditional_t< interleaved , std::span< const WeightedArc< W > > ,
+                       std::ranges::subrange< ArcCursor > > >;
+ using HeadArray =
+   std::conditional_t< interleaved ,
+                       detail::ArcMember< W , int , &WeightedArc< W >::to > ,
                        const int * >;
- using ArcRange =
-   std::conditional_t< weighted , std::ranges::subrange< ArcCursor > ,
-                       std::span< const int > >;
+ using WeightArray =
+   std::conditional_t< interleaved ,
+                       detail::ArcMember< W , W , &WeightedArc< W >::w > ,
+                       const W * >;
  StaticGraph( int n , const std::vector< std::tuple< int , int , W > > & E ,
               bool directed = true );
  StaticGraph( int n , const std::vector< std::pair< int , int > > & E ,
@@ -487,8 +506,12 @@ class StaticGraph
   requires( weighted );
  [[nodiscard]] ArcRange out( int u ) const;
  [[nodiscard]] const int * offsets( void ) const;
- [[nodiscard]] const int * heads( void ) const;
+ [[nodiscard]] const int * heads( void ) const
+  requires( ! interleaved );
  [[nodiscard]] const W * weightData( void ) const
+  requires( weighted && ( ! interleaved ) );
+ [[nodiscard]] HeadArray arcHeads( void ) const;
+ [[nodiscard]] WeightArray arcWeights( void ) const
   requires( weighted );
  [[nodiscard]] ArcCursor arcData( void ) const;
  static int head( const Arc & a );
@@ -497,8 +520,19 @@ class StaticGraph
  [[nodiscard]] auto nodes( void ) const;
  };
 
-template< class W >
-std::vector< int > bfsOrder( const StaticGraph< W > & g , int r = 0 );
+template< class G >
+concept CsrArrays =
+  requires( const G & g ) {
+   { g.offsets() } -> std::same_as< const int * >;
+   { g.heads() } -> std::same_as< const int * >;
+   } &&
+  ( ( ! requires { requires G::weighted; } ) ||
+    requires( const G & g ) {
+     { g.weightData() } -> std::same_as< const typename G::Weight * >;
+     } );
+
+template< class W , ArcLayout L >
+std::vector< int > bfsOrder( const StaticGraph< W , L > & g , int r = 0 );
 ```
 
 with `arcs()` the number $a$ of the arcs and a default constructor that
@@ -531,6 +565,25 @@ spans two lines instead of one. With degree 32 the misses fall by 12% to 14%
 with `double` weights and still grow by 15% to 17% with `int` weights, while
 a visit in breadth, which reads only the heads, misses 36% to 77% less often
 on all these graphs.
+
+For this reason the layout of a weighted graph is the second parameter $L$
+of `StaticGraph`: the two arrays (`ArcLayout::Separate`, the default), or one
+array of the pairs `WeightedArc` (`ArcLayout::Interleaved`), which takes
+$4 ( n + 1 ) + s' a$ bytes, $s'$ being the size of a pair with its padding.
+The two layouts give the same interface, so that an algorithm written on one
+runs on the other. In both, `out( u )` is a range of random access of
+`WeightedArc` (a `std::span` of the pairs if interleaved, whose cursor
+`arcData()` is then a plain pointer). The members `arcHeads()` and
+`arcWeights()` read the head and the weight of the place $k$ where they lie,
+and the parallel visits, the stepping algorithms and the adapters of
+Boost.Graph and LEMON read the arcs through them. Only the separate layout has
+`heads()` and `weightData()`, the plain arrays that a library in compressed
+rows takes without a copy; the concept `CsrArrays`, which `ArrayGraph` also
+satisfies, is what such a call requires of its graph. Of course, the default
+stays the separate layout until a campaign on an idle machine has compared
+the times of the two. The benchmarks of Dijkstra and of the stepping
+algorithms (`bench/graphs.cpp` and `bench/parallel.cpp`) run both layouts,
+with the separate one run again as the row A/A, which measures the noise.
 `transpose()` builds the graph with the arcs reversed, which the visits from
 the bottom up and the strongly connected components of a reversed graph need,
 and `relabel( p )` the same graph with the node $u$ renamed $p[ u ]$. Both
@@ -4909,7 +4962,10 @@ writes its offsets, its heads and its weights, and `restoreMapped()` makes
 the three arrays views of the file, aligned to the lines of the cache.
 Hence a graph of some billions of arcs, built once, is opened in place and
 still passed without a copy to METIS, KaHIP or GraphBLAS, which take the
-same three arrays.
+same three arrays. The interleaved layout writes the same file, its pairs
+split into the two arrays, so that a file saved in one layout is read in the
+other; its `restoreMapped()` joins the two arrays of the file into its pairs
+in $\Theta( a )$ time, since the pairs are not in the file.
 
 ## 14.16 Exercises {#sec-14-16}
 

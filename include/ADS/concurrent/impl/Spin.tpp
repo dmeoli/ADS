@@ -18,6 +18,8 @@
  #define __ADS_Spin
 /* self-identification: #endif constant */
 
+#include "ADS/memory/Prefetch.h"
+
 #include <atomic>
 
 // the pause of Boost.Core, which knows the instruction of each processor

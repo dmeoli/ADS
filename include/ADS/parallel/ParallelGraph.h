@@ -142,10 +142,10 @@ namespace ADS
 /// \end{array}}
 /// \f]
 /// \pre \f$ s \f$ is a node of \f$ g \f$, `gt` has as many nodes if given
-template< Executor E , class W >
+template< Executor E , class W , ArcLayout AL >
 [[nodiscard]] std::vector< int >
-bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
-	      const StaticGraph< W > * gt = nullptr );
+bfsDistances( E & ex , const StaticGraph< W , AL > & g , int s ,
+	      const StaticGraph< W , AL > * gt = nullptr );
 
 /// the least node of the component of each node, an oriented graph taken
 /// as unoriented
@@ -174,9 +174,9 @@ bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
 ///     \text{ of each node } v
 /// \end{array}}
 /// \f]
-template< Executor E , class W >
+template< Executor E , class W , ArcLayout AL >
 [[nodiscard]] std::vector< int >
-connectedComponents( E & ex , const StaticGraph< W > & g );
+connectedComponents( E & ex , const StaticGraph< W , AL > & g );
 
 /*--------------------------------------------------------------------------*/
 

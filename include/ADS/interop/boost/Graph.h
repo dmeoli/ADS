@@ -97,26 +97,26 @@ namespace ADS::bgl
 template< class G >
 struct Rows;
 
-/// the rows of a `StaticGraph`, its arrays `offsets()`, `heads()` and
-/// `weightData()`
-template< class W >
-struct Rows< StaticGraph< W > >
+/// the rows of a `StaticGraph` of either layout, its offsets and its
+/// heads and weights read in place by `arcHeads()` and `arcWeights()`
+template< class W , ArcLayout L >
+struct Rows< StaticGraph< W , L > >
 {
  using Weight = W;  ///< the type of the weights
- static constexpr bool weighted = StaticGraph< W >::weighted;
+ static constexpr bool weighted = StaticGraph< W , L >::weighted;
  /// the offsets of the rows
- static const int * offsets( const StaticGraph< W > & g ) {
+ static const int * offsets( const StaticGraph< W , L > & g ) {
   return( g.offsets() );
   }
  /// the head of the arc of the place \f$ k \f$
- static int head( const StaticGraph< W > & g , int k ) {
-  return( g.heads()[ k ] );
+ static int head( const StaticGraph< W , L > & g , int k ) {
+  return( g.arcHeads()[ k ] );
   }
  /// the weight of the arc of the place \f$ k \f$
- static const W & weight( const StaticGraph< W > & g , int k )
+ static const W & weight( const StaticGraph< W , L > & g , int k )
   requires weighted
  {
-  return( g.weightData()[ k ] );
+  return( g.arcWeights()[ k ] );
   }
  };
 
@@ -488,9 +488,9 @@ struct ListTraits
 namespace boost
 {
 
-template< class W >
-struct graph_traits< ADS::StaticGraph< W > >
-    : ADS::bgl::RowTraits< ADS::StaticGraph< W > >
+template< class W , ADS::ArcLayout L >
+struct graph_traits< ADS::StaticGraph< W , L > >
+    : ADS::bgl::RowTraits< ADS::StaticGraph< W , L > >
 { };
 
 template< class W >
@@ -618,12 +618,12 @@ adjacent_vertices( int u , const G & g )
 
 // edges() for each graph, more specialized than edges( g ) of
 // MinimumSpanningTree.h, which is ADS::edges< G >( g ) then
-template< class W >
-std::pair< bgl::AllArcIterator< StaticGraph< W > > ,
-	   bgl::AllArcIterator< StaticGraph< W > > >
-edges( const StaticGraph< W > & g )
+template< class W , ArcLayout L >
+std::pair< bgl::AllArcIterator< StaticGraph< W , L > > ,
+	   bgl::AllArcIterator< StaticGraph< W , L > > >
+edges( const StaticGraph< W , L > & g )
 {
- using It = bgl::AllArcIterator< StaticGraph< W > >;
+ using It = bgl::AllArcIterator< StaticGraph< W , L > >;
  return( std::pair( It( g , 0 ) , It( g , num_edges( g ) ) ) );
  }
 

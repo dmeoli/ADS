@@ -315,11 +315,12 @@ spanningForest( E & ex , int n ,
 
 /*--------------------------------------------------------------------------*/
 
-template< Executor E , class W >
-std::vector< int > maximalIndependentSet( E & ex , const StaticGraph< W > & g ,
+template< Executor E , class W , ArcLayout AL >
+std::vector< int > maximalIndependentSet( E & ex ,
+					  const StaticGraph< W , AL > & g ,
 					  const std::vector< int > & pi )
 {
- using G = StaticGraph< W >;
+ using G = StaticGraph< W , AL >;
  const int n = g.n();
  ADS_PRE( ! g.directed() && ( int( pi.size() ) == n ) );
  std::vector< int > rank( n , -1 );
@@ -329,7 +330,8 @@ std::vector< int > maximalIndependentSet( E & ex , const StaticGraph< W > & g ,
   }
  constexpr char UNDECIDED = 0 , IN = 1 , OUT = 2;
  std::vector< char > state( n , UNDECIDED );
- const int *off = g.offsets() , *hd = g.heads();
+ const int * off = g.offsets();
+ const auto hd = g.arcHeads();
  auto sequential = [ & ]( void ) {
   std::vector< char > s( n , UNDECIDED );
   for( int i = 0 ; i < n ; ++i ) {
@@ -356,7 +358,8 @@ std::vector< int > maximalIndependentSet( E & ex , const StaticGraph< W > & g ,
    bool reserve( std::size_t i ) {
     const int v = pi[ i ];
     char s = IN;
-    const int *off = g.offsets() , *hd = g.heads();
+    const int * off = g.offsets();
+    const auto hd = g.arcHeads();
     for( int k = off[ v ] , e = off[ v + 1 ] ; k < e ; ++k ) {
      const int u = hd[ k ];
      if( rank[ u ] < int( i ) ) {
