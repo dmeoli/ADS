@@ -4,28 +4,28 @@
 #                                                                             #
 #   makefile of the OS-specific settings                                      #
 #                                                                             #
-#   Defines some general values, like UNAME_S, which identify the type of OS  #
-#   and UNAME_P which identify the architecture for which ADS is being        #
-#   compiled, so that other makefiles can rely on these to automatically      #
-#   adapt without a need for the user to manually edit them. It also gives    #
-#   the options that clang++ and g++ spell differently, so that the same      #
-#   switches serve either of them, and those that Windows needs.              #
+#   Defines UNAME_S, which identifies the type of OS, so that the default     #
+#   locations of the dependencies on that OS are loaded [see makefile-c], and #
+#   the suffix of the executables and the null file of that OS, without a     #
+#   need for the user to manually edit them. It also gives the options of     #
+#   the errors and of the debugging information in the spelling that both     #
+#   clang++ and g++ take, the options that the objects need where the         #
+#   compiler takes them, and whether the compiler is clang++, which the       #
+#   C++20 modules need [see makefile-mod].                                    #
 #                                                                             #
 #   Input:  $(CXX)      = compiler command, looked at when the options are    #
 #                         first used, i.e., also if it is defined later       #
 #                                                                             #
 #   Output: $(UNAME_S)  = the name of the current operating system (Linux,    #
 #                         Darwin, Windows)                                    #
-#           $(UNAME_P)  = the name of the underlying architecture (x86_64,    #
-#                         arm, ...)                                           #
 #           $(ADSCLANG) = not empty if $(CXX) is clang++                      #
 #           $(ADSSWERR) = the option that stops at the first error            #
 #           $(ADSSWDBG) = the option of the debugging information for the     #
-#                         debugger of the compiler (lldb, gdb)                #
-#           $(ADSSWOS)  = the options that the OS needs to compile ADS: on    #
-#                         Windows the big objects of g++, whose assembler     #
-#                         refuses more than 2^16 sections otherwise (clang++  #
-#                         switches to them by itself)                         #
+#                         debugger, none beyond -g                            #
+#           $(ADSSWOS)  = the options that the objects of ADS need where the  #
+#                         assembler takes them: the big objects of the        #
+#                         format COFF, which refuses more than 2^16 sections  #
+#                         otherwise (clang++ switches to them by itself)      #
 #           $(ADSEXE)   = the suffix of the executables (.exe on Windows)     #
 #           $(ADSNULL)  = the file that discards what is written to it, for   #
 #                         the programs that only try whether a library links  #
@@ -38,27 +38,26 @@
 
 ifeq ($(OS),Windows_NT)
     UNAME_S := Windows
-    UNAME_P := $(PROCESSOR_ARCHITECTURE)
 else
     UNAME_S := $(shell uname -s)
-    UNAME_P := $(shell uname -p)
 endif
 
-# the options that clang++ and g++ spell differently - - - - - - - - - - - -
 # whether $(CXX) is clang++ is asked the first time that it is needed, when
 # $(CXX) has its final value, and then remembered
 
 ADSCLANG = $(eval ADSCLANG := $$(findstring clang,$$(shell $$(CXX) \
 	--version 2>/dev/null)))$(ADSCLANG)
 
-ADSSWERR = $(if $(ADSCLANG),-ferror-limit=1,-fmax-errors=1)
+# the options of the errors and of the debugging information, which clang++
+# and g++ both take
 
-ADSSWDBG = $(if $(ADSCLANG),-glldb,-ggdb)
+ADSSWERR = -Wfatal-errors
 
-# the options and the suffix of Windows- - - - - - - - - - - - - - - - - - -
+ADSSWDBG =
+
+# the suffix and the null file of Windows - - - - - - - - - - - - - - - - - -
 
 ifeq ($(UNAME_S),Windows)
-    ADSSWOS = $(if $(ADSCLANG),,-Wa$(ADScomma)-mbig-obj)
     ADSEXE = .exe
     ADSNULL = nul
 else
@@ -67,5 +66,12 @@ endif
 
 ADScomma := ,
 ADShash := \#
+
+# the big objects, where the assembler has the option for them, asked the
+# first time that it is needed and then remembered
+
+ADSSWOS = $(eval ADSSWOS := $$(shell echo 'int main(){}' | $$(CXX) \
+	-Wa$$(ADScomma)-mbig-obj -x c++ -c - -o $$(ADSNULL) \
+	>$$(ADSNULL) 2>&1 && echo -Wa$$(ADScomma)-mbig-obj))$(ADSSWOS)
 
 ############################# End of makefile-OS ##############################

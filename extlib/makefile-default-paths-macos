@@ -31,8 +31,8 @@
 # the prefix of Homebrew, /opt/homebrew on Apple silicon and /usr/local on
 # Intel, where the compilers do not look by themselves- - - - - - - - - - - -
 
-ADSBREW = $(or $(HOMEBREW_PREFIX),$(if $(filter arm%,$(UNAME_P)),\
-	/opt/homebrew,/usr/local))
+ADSBREW = $(or $(HOMEBREW_PREFIX),$(firstword $(wildcard /opt/homebrew) \
+	/usr/local))
 
 # define the macros to be exported- - - - - - - - - - - - - - - - - - - - - -
 
