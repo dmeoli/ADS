@@ -98,6 +98,10 @@ HWY_EXPORT( intersectBlocks16 );
 HWY_EXPORT( differenceBlocks16 );
 HWY_EXPORT( unionBlocks16 );
 HWY_EXPORT( hashStripes );
+HWY_EXPORT( vbyteEncode );
+HWY_EXPORT( vbyteDecode );
+HWY_EXPORT( bpPack );
+HWY_EXPORT( bpUnpack );
 
 /// the 1 bits of the words \f$ w[ 0 .. n - 1 ] \f$
 inline std::uint64_t popcount( const std::uint64_t * w , std::size_t n )
@@ -216,6 +220,51 @@ inline void hashStripes( const unsigned char * s , std::size_t n ,
 			 std::uint64_t * out )
 {
  HWY_DYNAMIC_DISPATCH( hashStripes )( s , n , seed , k , out );
+ }
+
+/// the integers \f$ x[ 0 .. i ) \f$ of Stream VByte encoded 4 at a time,
+/// \f$ i \f$ the largest multiple of 4 not above \f$ n \f$, their control
+/// bytes in \f$ keys \f$ and their bytes from \f$ *d \f$, by the tables
+/// of StreamVByte.tpp; \f$ i \f$ [see Compression.tpp]
+inline std::size_t vbyteEncode( const std::uint32_t * x , std::size_t n ,
+				std::uint8_t * keys , std::uint8_t ** d ,
+				const std::uint8_t * pack ,
+				const std::uint8_t * len )
+{
+ return( HWY_DYNAMIC_DISPATCH( vbyteEncode )( x , n , keys , d , pack ,
+					      len ) );
+ }
+
+/// the integers \f$ x[ 0 .. i ) \f$ of Stream VByte decoded from their
+/// control bytes \f$ keys \f$ and their bytes from \f$ *d \f$, before
+/// \f$ end \f$, by the tables of StreamVByte.tpp; \f$ i \f$ [see
+/// Compression.tpp]
+inline std::size_t
+vbyteDecode( const std::uint8_t * keys , const std::uint8_t ** d ,
+	     const std::uint8_t * end , std::size_t n , std::uint32_t * x ,
+	     const std::uint8_t * shuffle , const std::uint8_t * len )
+{
+ return(
+   HWY_DYNAMIC_DISPATCH( vbyteDecode )( keys , d , end , n , x , shuffle ,
+					len ) );
+ }
+
+/// the 128 integers of \f$ in \f$, below \f$ 2^b \f$, packed into
+/// \f$ 16 b \f$ bytes at \f$ out \f$ in the layout of 4 lanes of
+/// BinaryPacking.h [see Compression.tpp]
+inline void bpPack( const std::uint32_t * in , std::uint8_t * out , int b )
+{
+ HWY_DYNAMIC_DISPATCH( bpPack )( in , out , b );
+ }
+
+/// the 128 integers of \f$ b \f$ bits at \f$ in \f$ unpacked to
+/// \f$ out \f$, each one plus the one 4 places before it if sorted,
+/// \f$ prev \f$ the last 4 before the block, which become the last 4 of
+/// it [see Compression.tpp]
+inline void bpUnpack( const std::uint8_t * in , std::uint32_t * out , int b ,
+		      bool sorted , std::uint32_t * prev )
+{
+ HWY_DYNAMIC_DISPATCH( bpUnpack )( in , out , b , sorted , prev );
  }
 
 /*--------------------------------------------------------------------------*/

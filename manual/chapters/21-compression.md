@@ -914,8 +914,10 @@ $d_i = x_i - x_{i-4}$, the differential code D4 of
 [Lemire, Boytsov and Kurz 2016](Z-bibliography.md#ref-lemire2016). Its decoder adds the previous register of four integers to each register it
 unpacks, i.e., one addition per four integers instead of the chain of a
 prefix sum, for (typically) a fraction of a bit more per integer
-([Algorithm 21.16](21-compression.md#alg-21-16)). On a processor without
-SSE2 the same layout is packed and unpacked a lane at a time, into the same bytes.
+([Algorithm 21.16](21-compression.md#alg-21-16)). The four lanes are those
+of the vectors of Highway, with `ADS_WITH_HIGHWAY` on a machine of
+little-endian order; without it the same layout is packed and unpacked a
+lane at a time, into the same bytes.
 
 ![Figure 21.4. The vertical layout of SIMD-BP128 for $b = 5$: the integer $4 q + l$ is in the lane $l$ at the bit $5 q$, the words 0 of the four lanes form the register $r_0$ and the words 1 the register $r_1$, and the field of $x_{24}, \ldots , x_{27}$ (violet) crosses from one word of its lane to the next, which (21.13) reads from both.](../figures/compression-binarypacking.svg){#fig-21-4}
 
@@ -965,13 +967,16 @@ $$
 
 bytes, i.e., the variable-byte code with 2 control bits per integer
 instead of 1 per byte. A decoder that reads a control byte knows where the
-four integers start, with no test on the data. On a processor with the
-shuffle of bytes of SSSE3, one shuffle moves the 16 bytes from the place
+four integers start, with no test on the data. With Highway, on the
+vectors of the processor found at run time, one shuffle of bytes moves the
+16 bytes from the place
 of the first integer to their four places of 4 bytes, the missing high
 bytes made 0, with the entry of the control byte in a table of 256 masks
 as its mask; the place then moves by the sum of the four lengths, from a
-table too ([Figure 21.5](21-compression.md#fig-21-5)). With SSE4.1, the encoder finds the lengths of 8 integers at once by saturating arithmetic on
-their bytes and moves their bytes by the shuffle of the inverse table. Its decoder takes 8 control bytes in a word and decodes 32 integers with no
+table too ([Figure 21.5](21-compression.md#fig-21-5)). The encoder finds
+the lengths of 4 integers at once by three comparisons of their lanes and
+moves their bytes by the shuffle of the inverse table. Its decoder takes 8
+control bytes at a time and decodes 32 integers with no
 test while enough bytes follow; elsewhere the integers are moved one at a
 time, still with no test ([Algorithm 21.17](21-compression.md#alg-21-17)).
 

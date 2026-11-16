@@ -2207,6 +2207,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The encoder and the decoder of Stream VByte and the packing and the
+  unpacking of the blocks of the binary packing on the kernels of Highway
+  (ADS/impl/simd/Compression.tpp), with the same bytes, on the machines of
+  little-endian order; the code of SSSE3, SSE4.1 and SSE2 is gone, and the
+  sums at a distance of 4 of the patched packing are the scalar loop,
+  which the compilers vectorize.
+
 - The stripes of the hash of the strings of more than 256 bytes
   (FastHash.tpp) on the kernel of Highway (ADS/impl/simd/Hash.tpp), 2 to 8
   lanes at a time with the words of the scalar code, so that the hashes

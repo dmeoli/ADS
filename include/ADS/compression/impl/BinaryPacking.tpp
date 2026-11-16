@@ -34,102 +34,9 @@ constexpr std::uint64_t littleEndian64( std::uint64_t x )
  return( x );
  }
 
-#ifdef ADS_BP_SSE
-
-/// the 128 integers of in, below 2^B, packed into 16 B bytes at out
-template< int B >
-inline void pack( const std::uint32_t * in , std::uint8_t * out )
-{
- if constexpr( B == 0 )
-  return;
- else {
-  auto * o = reinterpret_cast< __m128i * >( out );
-  __m128i acc = _mm_setzero_si128();
-  [ & ]< std::size_t... I >( std::index_sequence< I... > ) {
-   (
-     [ & ]() {
-      constexpr int s = int( I ) * B % 32;
-      __m128i v =
-	_mm_loadu_si128( reinterpret_cast< const __m128i * >( in + 4 * I ) );
-      if constexpr( s == 0 )
-       acc = v;
-      else
-       acc = _mm_or_si128( acc , _mm_slli_epi32( v , s ) );
-      if constexpr( s + B >= 32 ) {  // the word is full
-       _mm_storeu_si128( o++ , acc );
-       if constexpr( s + B > 32 )
-	acc = _mm_srli_epi32( v , 32 - s );
-       }
-      }() ,
-     ... );
-   }( std::make_index_sequence< 32 >() );
-  }
- }
-
-/// the last 4 integers before a block
-struct Lanes
-{
- __m128i v;
- };
-
-/// the 128 integers of B bits at in unpacked to out, each one plus the
-/// one 4 places before it if Sorted (p the last 4 before the block)
-template< int B , bool Sorted >
-inline void unpack( const std::uint8_t * in , std::uint32_t * out , Lanes & p )
-{
- __m128i prev = p.v;
- const auto * w = reinterpret_cast< const __m128i * >( in );
- const __m128i mask = _mm_set1_epi32( B >= 32 ? -1 : int( ( 1u << B ) - 1 ) );
- [ & ]< std::size_t... I >( std::index_sequence< I... > ) {
-  (
-    [ & ]() {
-     constexpr int q = int( I ) * B / 32 , s = int( I ) * B % 32;
-     __m128i v;
-     if constexpr( B == 0 )
-      v = _mm_setzero_si128();
-     else {
-      v = _mm_srli_epi32( _mm_loadu_si128( w + q ) , s );
-      if constexpr( s + B > 32 )
-       v = _mm_or_si128(
-	 v , _mm_slli_epi32( _mm_loadu_si128( w + q + 1 ) , 32 - s ) );
-      if constexpr( B < 32 )
-       v = _mm_and_si128( v , mask );
-      }
-     if constexpr( Sorted )
-      v = prev = _mm_add_epi32( v , prev );
-     _mm_storeu_si128( reinterpret_cast< __m128i * >( out + 4 * I ) , v );
-     }() ,
-    ... );
-  }( std::make_index_sequence< 32 >() );
- p.v = prev;
- }
-
-using Packer = void ( * )( const std::uint32_t * , std::uint8_t * );
-using Unpacker = void ( * )( const std::uint8_t * , std::uint32_t * ,
-			     Lanes & );
-
-/// the packers and the unpackers of the widths 0 to 32
-inline const std::array< Packer , 33 > & packers( void )
-{
- static const auto T = []< std::size_t... B >( std::index_sequence< B... > ) {
-  return( std::array< Packer , 33 >{ &pack< int( B ) >... } );
-  }( std::make_index_sequence< 33 >() );
- return( T );
- }
-
-template< bool Sorted >
-inline const std::array< Unpacker , 33 > & unpackers( void )
-{
- static const auto T = []< std::size_t... B >( std::index_sequence< B... > ) {
-  return( std::array< Unpacker , 33 >{ &unpack< int( B ) , Sorted >... } );
-  }( std::make_index_sequence< 33 >() );
- return( T );
- }
-
-#else
-
-/// the same layout a lane at a time: the integer 4 q + l at the bit q b of
-/// the lane l, the word k of the lane l at the place 4 k + l
+/// the 128 integers of in, below 2^b, packed into 16 b bytes at out, a lane
+/// at a time: the integer 4 q + l at the bit q b of the lane l, the word k
+/// of the lane l at the place 4 k + l
 inline void pack( const std::uint32_t * in , std::uint8_t * out , int b )
 {
  std::uint32_t w[ 4 * 32 ] = {};
@@ -171,7 +78,27 @@ inline void unpack( const std::uint8_t * in , std::uint32_t * out , int b ,
   }
  }
 
+/// pack() by the kernel of Highway where there is one [see Simd.h]
+inline void packBlock( const std::uint32_t * in , std::uint8_t * out , int b )
+{
+#ifdef ADS_BP_SIMD
+ if constexpr( std::endian::native == std::endian::little )
+  return( simd::bpPack( in , out , b ) );
 #endif
+ pack( in , out , b );
+ }
+
+/// unpack() by the kernel of Highway where there is one [see Simd.h]
+inline void unpackBlock( const std::uint8_t * in , std::uint32_t * out ,
+			 int b ,
+			 bool sorted , std::uint32_t * prev )
+{
+#ifdef ADS_BP_SIMD
+ if constexpr( std::endian::native == std::endian::little )
+  return( simd::bpUnpack( in , out , b , sorted , prev ) );
+#endif
+ unpack( in , out , b , sorted , prev );
+ }
 
 }  // end( namespace detail::bp )
 
@@ -208,11 +135,7 @@ binaryPack( std::span< const std::uint32_t > x , bool sorted )
 	      width.begin() + std::ptrdiff_t( k + g ) , o );
    o += kGroup;
    }
-#ifdef ADS_BP_SSE
-  packers()[ width[ k ] ]( v.data() + k * kBlock , o );
-#else
-  pack( v.data() + k * kBlock , o , width[ k ] );
-#endif
+  packBlock( v.data() + k * kBlock , o , width[ k ] );
   o += 16 * std::size_t( width[ k ] );
   }
  ADS_AUDIT( binaryUnpack( out , n , sorted ) ==
@@ -227,12 +150,7 @@ binaryUnpack( std::span< const std::uint8_t > in , std::size_t n ,
  using namespace detail::bp;
  const std::size_t blocks = ( n + kBlock - 1 ) / kBlock;
  std::vector< std::uint32_t > out( blocks * kBlock );
-#ifdef ADS_BP_SSE
- Lanes prev{ _mm_setzero_si128() };
- const auto & U = sorted ? unpackers< true >() : unpackers< false >();
-#else
  std::uint32_t prev[ 4 ] = { 0 , 0 , 0 , 0 };
-#endif
  std::size_t at = 0;
  const std::uint8_t * width = nullptr;
  for( std::size_t k = 0 ; k < blocks ; ++k ) {
@@ -243,11 +161,7 @@ binaryUnpack( std::span< const std::uint8_t > in , std::size_t n ,
    }
   const int b = width[ k % kGroup ];
   ADS_PRE( ( b <= 32 ) && ( at + 16 * std::size_t( b ) <= in.size() ) );
-#ifdef ADS_BP_SSE
-  U[ std::size_t( b ) ]( in.data() + at , out.data() + k * kBlock , prev );
-#else
-  unpack( in.data() + at , out.data() + k * kBlock , b , sorted , prev );
-#endif
+  unpackBlock( in.data() + at , out.data() + k * kBlock , b , sorted , prev );
   at += 16 * std::size_t( b );
   }
  out.resize( n );
@@ -304,11 +218,7 @@ patchedPack( std::span< const std::uint32_t > x , bool sorted )
   if( cb > 0 )  // the low bits of each
    for( std::size_t i = 0 ; i < kBlock ; ++i )
     low[ i ] = v[ i ] & m;
-#ifdef ADS_BP_SSE
-  packers()[ std::size_t( b ) ]( cb > 0 ? low : v , o );
-#else
-  pack( cb > 0 ? low : v , o , b );
-#endif
+  packBlock( cb > 0 ? low : v , o , b );
   o += 16 * std::size_t( b );
   if( cb == 0 )
    continue;
@@ -343,9 +253,6 @@ patchedUnpack( std::span< const std::uint8_t > in , std::size_t n ,
  std::vector< std::uint32_t > out( blocks * kBlock );
  ADS_PRE( in.size() >= 8 );
  const std::size_t end = in.size() - 8;  // the 8 bytes of 0 after
-#ifdef ADS_BP_SSE
- const auto & U = unpackers< false >();
-#endif
  std::size_t at = 0;
  for( std::size_t k = 0 ; k < blocks ; ++k ) {
   ADS_PRE( at + 2 <= end );
@@ -361,12 +268,7 @@ patchedUnpack( std::span< const std::uint8_t > in , std::size_t n ,
   ADS_PRE( ( b <= beta ) && ( beta <= 32 ) && ( c <= int( kBlock ) ) &&
 	   ( at + 16 * std::size_t( b ) + std::size_t( c ) + hb <= end ) );
   std::uint32_t * o = out.data() + k * kBlock;
-#ifdef ADS_BP_SSE
-  Lanes none{ _mm_setzero_si128() };
-  U[ std::size_t( b ) ]( in.data() + at , o , none );
-#else
-  unpack( in.data() + at , o , b , false , nullptr );
-#endif
+  unpackBlock( in.data() + at , o , b , false , nullptr );
   at += 16 * std::size_t( b );
   // the high bits of each exception from a load of 8 bytes, which the 8
   // bytes of 0 at the end keep within the code
@@ -387,15 +289,6 @@ patchedUnpack( std::span< const std::uint8_t > in , std::size_t n ,
  // exceptions are set: 4 integers an addition
  if( sorted && ( n > 4 ) ) {
   std::size_t i = 4;
-#ifdef ADS_BP_SSE
-  __m128i prev =
-    _mm_loadu_si128( reinterpret_cast< const __m128i * >( out.data() ) );
-  for( ; i + 4 <= out.size() ; i += 4 ) {
-   auto * a = reinterpret_cast< __m128i * >( out.data() + i );
-   prev = _mm_add_epi32( _mm_loadu_si128( a ) , prev );
-   _mm_storeu_si128( a , prev );
-   }
-#endif
   for( ; i < out.size() ; ++i )
    out[ i ] += out[ i - 4 ];
   }

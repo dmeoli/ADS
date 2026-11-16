@@ -9,16 +9,16 @@
  * bit per byte, which the decoder of `decodeVByte()` tests one byte at a
  * time); they are apart, 2 bits per integer, 4 integers to a control byte,
  * before all the bytes of the data. A decoder then reads a control byte and
- * knows where the 4 integers start, with no test on the data: on a processor
- * with the shuffle of bytes of SSSE3, the 16 bytes from the place of the first
- * integer are moved to their 4 places of 4 bytes, the missing high bytes made
- * 0, by one shuffle whose mask is the entry of the control byte in a table of
- * 256 masks, and the place moves by the sum of the 4 lengths, from a table
- * too. The encoder, with SSE4.1, finds the lengths of 8 integers at once by
- * saturating arithmetic on their bytes (a byte not 0 made 1, each half of 16
- * bits made 0, 1 or 255, the pair of halves capped and lifted so that its two
- * high bits are the length less 1), the 2 control bytes being one mask of 16
- * bytes, and moves their bytes together by the shuffle of the inverse table;
+ * knows where the 4 integers start, with no test on the data: with
+ * `ADS_WITH_HIGHWAY`, on the vectors of the processor found at run time
+ * [see `Simd.h`], the 16 bytes from the place of the first integer are
+ * moved to their 4 places of 4 bytes, the missing high bytes made 0, by
+ * one shuffle of bytes whose mask is the entry of the control byte in a
+ * table of 256 masks, and the place moves by the sum of the 4 lengths,
+ * from a table too. The encoder finds the lengths of 4 integers at once by
+ * three comparisons of their lanes, makes their control byte by a sum of
+ * the lengths shifted to their places, and moves their bytes together by
+ * the shuffle of the inverse table;
  * the decoder takes 8 control bytes in a word and decodes 32 integers with no
  * test while 12 more follow; elsewhere the integers are moved one at a time,
  * still with no test. With
@@ -62,6 +62,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Simd.h"
 
 #include <array>
 #include <bit>
@@ -71,7 +72,7 @@
 #include <utility>
 #include <vector>
 
-#if defined( __SSSE3__ ) || defined( __SSE4_1__ ) || defined( __BMI2__ )
+#if defined( __BMI2__ )
  #include <immintrin.h>
 #endif
 
