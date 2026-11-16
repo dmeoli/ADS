@@ -4,11 +4,8 @@
 #                                                                             #
 #   makefile of OpenMP, for its executor [see OpenMPExecutor.h]               #
 #                                                                             #
-#   Input:  $(OpenMP_ROOT) = the prefix of libomp, for the clang++ of macOS,  #
-#                           whose driver does not have it                     #
-#           $(UNAME_S)     = the name of the current OS [see makefile-OS]     #
-#           $(ADSCLANG)    = not empty if $(CXX) is clang++ [see              #
-#                            makefile-OS]                                     #
+#   Input:  $(OpenMP_ROOT) = the prefix of libomp, for a compiler whose       #
+#                           driver does not have it (the clang++ of macOS)    #
 #                                                                             #
 #   Output: accordingly, there is no *H and *OBJ in output, since there is    #
 #           no need to check for changes in the .h and rebuild the .o / .a    #
@@ -24,15 +21,16 @@
 libOpenMPBSCDIR = $(subst $\",,$(OpenMP_ROOT))
 
 # macros to be exported - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# the clang++ of macOS takes -fopenmp only through its preprocessor, and
-# libomp from Homebrew; every other compiler has its own runtime
+# whether $(CXX) builds a program with -fopenmp, asked once; a compiler that
+# does not (the clang++ of macOS) takes it only through its preprocessor,
+# and libomp from Homebrew
 
-ifeq ($(UNAME_S)$(if $(ADSCLANG),clang),Darwinclang)
-    libOpenMPINC = -Xpreprocessor -fopenmp -I"$(libOpenMPBSCDIR)/include"
-    libOpenMPLIB = -L"$(libOpenMPBSCDIR)/lib" -lomp
-else
-    libOpenMPINC = -fopenmp
-    libOpenMPLIB = -fopenmp
-endif
+libOpenMPNATIVE = $(eval libOpenMPNATIVE := $$(shell echo 'int main(){}' \
+	| $$(CXX) -fopenmp -x c++ - -o $$(ADSNULL) >$$(ADSNULL) 2>&1 \
+	&& echo 1))$(libOpenMPNATIVE)
+libOpenMPINC = $(if $(libOpenMPNATIVE),-fopenmp,\
+	-Xpreprocessor -fopenmp -I"$(libOpenMPBSCDIR)/include")
+libOpenMPLIB = $(if $(libOpenMPNATIVE),-fopenmp,\
+	-L"$(libOpenMPBSCDIR)/lib" -lomp)
 
 ########################## End of makefile-libOpenMP ##########################

@@ -10,7 +10,6 @@
 #           $(MPICXX)   = the compiler of MPI that is asked for the options   #
 #                         (mpicxx if not given): --showme of Open MPI,        #
 #                         -compile_info and -link_info of MPICH               #
-#           $(UNAME_S)  = the name of the current OS [see makefile-OS]        #
 #                                                                             #
 #   Output: accordingly, there is no *H and *OBJ in output, since there is    #
 #           no need to check for changes in the .h and rebuild the .o / .a    #
@@ -46,8 +45,7 @@ libMPISHOW = $(eval libMPISHOW := $$(shell \
 libMPIINC = $(if $(libMPIBSCDIR),-I"$(libMPIBSCDIR)/include",\
 	$(sort $(filter -I% -D% -pthread,$(libMPISHOW))))
 libMPILIB = $(if $(libMPIBSCDIR),-L"$(libMPIBSCDIR)/lib" \
-	$(if $(filter Windows,$(UNAME_S)),,\
-		-Wl$(ADScomma)-rpath$(ADScomma)"$(libMPIBSCDIR)/lib") -lmpi,\
+	-Wl$(ADScomma)-rpath$(ADScomma)"$(libMPIBSCDIR)/lib" -lmpi,\
 	$(filter -L% -l% -Wl% -pthread,$(libMPISHOW)))
 
 # a program with MPI_Comm_dup() and MPI_Iallreduce(), compiled and linked

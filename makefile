@@ -78,9 +78,12 @@ include $(ADSSDR)/lib/makefile-c
 # solutions of the exercises on chains of 10^4 nodes (2 MB by default with
 # MinGW)
 
+STACK    = $(eval STACK := $$(shell echo 'int main(){}' | $$(CXX) -x c++ - \
+           -Wl$$(ADScomma)--stack$$(ADScomma)8388608 -o $$(ADSNULL) \
+           >$$(ADSNULL) 2>&1 && \
+           echo -Wl$$(ADScomma)--stack$$(ADScomma)8388608))$(STACK)
 INC      = $(ADSINC) $(ADSLEMONINC) -Itest -DADS_CONTRACTS=3
-LIBS     = $(ADSLIB) $(if $(filter Windows,$(UNAME_S)),\
-           -Wl$(ADScomma)--stack$(ADScomma)8388608)
+LIBS     = $(ADSLIB) $(STACK)
 HEADERS  = $(ADSH) $(ADSLEMONH) test/ADSTest.h
 PROGRAMS = $(shell awk '/^[a-z]/{print $$1}' test/tests.txt | sort -u)
 BINS     = $(addprefix $(BUILD)/,$(addsuffix $(ADSEXE),$(PROGRAMS)))
@@ -559,7 +562,7 @@ PARFLAGS  = -fopenmp -pthread $(TBBFLAGS) \
             $(if $(FASTFLOW),-DADS_WITH_FASTFLOW -isystem $(FASTFLOW)) \
             $(if $(PARLAY),-isystem $(PARLAY)/include -isystem $(PARLAY)) \
             $(if $(SORTING),-isystem $(SORTING)/ips4o/include \
-            -isystem $(SORTING)/ips2ra/include -mcx16 -latomic) \
+            -isystem $(SORTING)/ips2ra/include $(ABIMCX16) -latomic) \
             $(if $(TLX),-isystem $(TLX) \
             $(TLX)/tlx/algorithm/parallel_multiway_merge.cpp) \
             $(if $(GAPBS),-isystem $(GAPBS)/src) \

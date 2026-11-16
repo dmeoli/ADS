@@ -6,7 +6,6 @@
 #                                                                             #
 #   Input:  $(GMP_ROOT) = the prefix where GMP is installed, empty if         #
 #                         it is where the compiler looks                      #
-#           $(UNAME_S)  = the name of the current OS [see makefile-OS]        #
 #                                                                             #
 #   Output: accordingly, there is no *H and *OBJ in output, since there is    #
 #           no need to check for changes in the .h and rebuild the .o / .a    #
@@ -29,8 +28,7 @@ libGMPBSCDIR = $(subst $\",,$(GMP_ROOT))
 
 libGMPINC = $(if $(libGMPBSCDIR),-I"$(libGMPBSCDIR)/include")
 libGMPLIB = $(if $(libGMPBSCDIR),-L"$(libGMPBSCDIR)/lib" \
-	$(if $(filter Windows,$(UNAME_S)),,\
-		-Wl$(ADScomma)-rpath$(ADScomma)"$(libGMPBSCDIR)/lib")) -lgmp
+	-Wl$(ADScomma)-rpath$(ADScomma)"$(libGMPBSCDIR)/lib") -lgmp
 
 # a program with mpz_roinit_n() and mpn_sqrtrem(), compiled and linked once
 libGMPFOUND = $(eval libGMPFOUND := $$(shell printf '$$(ADShash)include \

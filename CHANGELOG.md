@@ -2202,6 +2202,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   compiler vectorizes), backtrack and stringdicts (their files in
   std::filesystem::temp_directory_path()) build off Linux and x86
 
+- The build reads no system, compiler or architecture: CMake gives the
+  options of the tests (the warnings, `/bigobj`, `-Wa,-mbig-obj`, the stack
+  of 8 MB) and the `-mcx16` of the benchmarks where the compiler or the
+  linker takes them, uses Accelerate where it finds it and checks the sets
+  where the compiler takes `-fsyntax-only -H`; the makefiles read only the
+  name of the OS (its default paths, the suffix of the executables, the null
+  file), try the big objects, the stack, OpenMP and Accelerate, give
+  `-Wl,-rpath` everywhere, and give `-Wfatal-errors` and nothing beyond `-g`,
+  which clang++ and g++ both take
+
 - The customization points of the priority queues, queue_item_t,
   queue_insert(), queue_min(), queue_deleteMin(), queue_handle_t and
   queue_decrease(), moved from PriorityQueue.h to the new advanced header

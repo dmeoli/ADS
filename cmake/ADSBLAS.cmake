@@ -15,7 +15,7 @@
 
 set(ADS_BLAS_FOUND FALSE)
 set(_ads_blas_defs "")
-if (APPLE AND NOT CBLAS_LIBRARY)
+if (NOT CBLAS_LIBRARY)
     find_library(ADS_ACCELERATE Accelerate)
     if (ADS_ACCELERATE)
         set(CBLAS_LIBRARY "${ADS_ACCELERATE}")

@@ -8,6 +8,42 @@
 
 find_package(Threads REQUIRED)
 
+# the options of the warnings and of the objects, each set where the compiler
+# takes it (the spelling of GCC and Clang, or the one of MSVC), and the stack
+# of Linux, 8 MB, for the recursive solutions of the exercises on chains of
+# 10^4 nodes (1 MB by default with MSVC, 2 MB with MinGW), where the linker
+# sets it; the objects of more than 2^16 sections, which the format COFF
+# takes only in its big variant, where the assembler has an option for it
+# (Clang switches to it by itself, the assembler of GCC by -mbig-obj)
+include(CheckCXXCompilerFlag)
+include(CheckLinkerFlag)
+set(ADS_TEST_WARNINGS "")
+set(ADS_TEST_LINK "")
+check_cxx_compiler_flag("-Wall -Wextra" ADS_HAS_WALL)
+if (ADS_HAS_WALL)
+    list(APPEND ADS_TEST_WARNINGS -Wall -Wextra)
+endif ()
+check_cxx_compiler_flag("/W3 /permissive- /utf-8" ADS_HAS_W3)
+if (ADS_HAS_W3)
+    list(APPEND ADS_TEST_WARNINGS /W3 /permissive- /utf-8)
+endif ()
+set(ADS_TEST_OPTIONS ${ADS_TEST_WARNINGS})
+check_cxx_compiler_flag(/bigobj ADS_HAS_BIGOBJ)
+if (ADS_HAS_BIGOBJ)
+    list(APPEND ADS_TEST_OPTIONS /bigobj)
+endif ()
+check_cxx_compiler_flag(-Wa,-mbig-obj ADS_HAS_MBIGOBJ)
+if (ADS_HAS_MBIGOBJ)
+    list(APPEND ADS_TEST_OPTIONS -Wa,-mbig-obj)
+endif ()
+check_linker_flag(CXX "LINKER:/STACK:8388608" ADS_HAS_STACK)
+check_linker_flag(CXX "LINKER:--stack,8388608" ADS_HAS_GNU_STACK)
+if (ADS_HAS_STACK)
+    list(APPEND ADS_TEST_LINK "LINKER:/STACK:8388608")
+elseif (ADS_HAS_GNU_STACK)
+    list(APPEND ADS_TEST_LINK "LINKER:--stack,8388608")
+endif ()
+
 file(STRINGS tests.txt lines REGEX "^[a-z]")
 set(programs "")
 foreach (line IN LISTS lines)
@@ -25,23 +61,9 @@ foreach (line IN LISTS lines)
         endif ()
         # the tests check all the contracts, invariants included
         target_compile_definitions(${program} PRIVATE ADS_CONTRACTS=3)
-        target_compile_options(${program} PRIVATE
-                $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra>
-                $<$<CXX_COMPILER_ID:MSVC>:/W3 /bigobj /permissive- /utf-8>)
-        # the stack of Linux, 8 MB, for the recursive solutions of the
-        # exercises on chains of 10^4 nodes (1 MB by default with MSVC, 2 MB
-        # with MinGW)
-        target_link_options(${program} PRIVATE
-                $<$<CXX_COMPILER_ID:MSVC>:/STACK:8388608>)
-        if (MINGW)
-            target_link_options(${program} PRIVATE -Wl,--stack,8388608)
-            # the objects of more than 2^16 sections, which the format COFF
-            # takes only in its big variant (Clang switches to it by itself,
-            # the assembler of GCC by -mbig-obj)
-            if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-                target_compile_options(${program} PRIVATE -Wa,-mbig-obj)
-            endif ()
-        endif ()
+        # the options above
+        target_compile_options(${program} PRIVATE ${ADS_TEST_OPTIONS})
+        target_link_options(${program} PRIVATE ${ADS_TEST_LINK})
         add_test(NAME ${program}.registry
                  COMMAND ${CMAKE_COMMAND}
                          -DPROGRAM=$<TARGET_FILE:${program}>
@@ -85,7 +107,7 @@ foreach (program engineered_parallel engineered_speculative interop_parallel
     endforeach ()
 endforeach ()
 
-if (cxx_std_23 IN_LIST CMAKE_CXX_COMPILE_FEATURES AND NOT MSVC)
+if (cxx_std_23 IN_LIST CMAKE_CXX_COMPILE_FEATURES)
     target_compile_features(interop_examples PRIVATE cxx_std_23)
 endif ()
 
@@ -146,9 +168,7 @@ add_executable(abi_units abi_units.cpp $<TARGET_OBJECTS:abi_unit_a>
                          $<TARGET_OBJECTS:abi_unit_b>)
 foreach (t abi_unit_a abi_unit_b abi_units)
     target_link_libraries(${t} PRIVATE ADS::ADS Threads::Threads)
-    target_compile_options(${t} PRIVATE
-            $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra>
-            $<$<CXX_COMPILER_ID:MSVC>:/W3 /permissive- /utf-8>)
+    target_compile_options(${t} PRIVATE ${ADS_TEST_WARNINGS})
 endforeach ()
 add_test(NAME abi-units COMMAND abi_units)
 
@@ -205,7 +225,12 @@ endif ()
 # each entry point of the sets compiled alone, with the headers of ADS that
 # it pulls checked against cmake/ads_sets.txt, and the files that the sets
 # write up to date [see cmake/ads_sets.py]
-if (Python3_FOUND AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+# where the compiler takes the options of the script, -fsyntax-only and -H
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/sets_probe.cpp "int main() {}\n")
+execute_process(COMMAND ${CMAKE_CXX_COMPILER} -std=c++20 -fsyntax-only -H
+                        ${CMAKE_CURRENT_BINARY_DIR}/sets_probe.cpp
+                RESULT_VARIABLE _ads_sets_probe OUTPUT_QUIET ERROR_QUIET)
+if (Python3_FOUND AND _ads_sets_probe EQUAL 0)
     foreach (s IN ITEMS core base advanced)
         add_test(NAME sets.${s}
                  COMMAND ${Python3_EXECUTABLE}
