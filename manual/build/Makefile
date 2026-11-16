@@ -20,6 +20,9 @@ FIGDIR  := $(MANUAL)/figures
 GENDIR  := $(MANUAL)/generated
 PDF_OUT := $(MANUAL)/ADS-manual.pdf
 INCLUDE := $(MANUAL)/../include
+# the tests that run the examples of appendix C [see declcheck.py]
+CTESTS  := $(MANUAL)/../test/interop_examples.cpp
+CTESTS  := $(CTESTS),$(MANUAL)/../test/interop_examples_mpi.cpp
 # lamalunga (github.com/dmeoli/lamalunga), which computes the palette of the
 # figures; set LAMALUNGA to its folder if it is elsewhere
 LAMALUNGA ?= $(HOME)/GDrive/lamalunga
@@ -62,11 +65,13 @@ snippets:
 # every work the library cites is in the bibliography, every header and
 # class of the library is in the map of the structures of chapter 1, and
 # every declaration block of a chapter is in its header and every example
-# compiles against the headers (declcheck.py)
+# compiles against the headers, those of appendix C also being in the tests
+# that run them (declcheck.py)
 check: snippets
 	python3 bibcheck.py $(MANUAL)/..
 	python3 structmap.py $(INCLUDE) --check $(MANUAL)/chapters/01-introduction.md
-	python3 declcheck.py $(INCLUDE) $(MANUAL)/chapters
+	python3 declcheck.py $(INCLUDE) $(MANUAL)/chapters \
+	 --tests C-libraries.md:$(CTESTS)
 
 clean:
 	rm -rf ../../manual-site $(GENDIR)

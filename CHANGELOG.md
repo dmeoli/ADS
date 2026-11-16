@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Appendix C of the manual, Working with other libraries: one section per
+  library (the standard library, Boost.Graph, Boost.Heap and
+  Boost.Unordered, LEMON, GMP, BLAS, oneTBB, OpenMP, std::execution,
+  stdexec, Taskflow, Kokkos, MPI and Boost.MPI) with examples of the
+  algorithms of each library on the structures of ADS and of those of ADS
+  on its structures, the line that changes, its cost and the option that
+  compiles it in, and the section Using ADS with other libraries of the
+  README; every example is also a test, `interop_examples.*` and
+  `interop_examples_mpi.*` (on one to four processes), built where its
+  library is found and run by the job `interop` of the continuous
+  integration, which now also installs Boost, GMP, OpenBLAS and abLEMON,
+  and `declcheck.py` compiles each example with the flags of its library
+  (`// with <library>`, skipped where the library is not found) and checks
+  with `--tests` that its code is still in the test.
 - The two sets of the headers, by their origin: base, what follows a
   textbook or an academic source (Montresor, TAOCP, Ferragina, Morin), and
   advanced, what is written for speed beyond them, with core, the

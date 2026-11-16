@@ -72,15 +72,43 @@ if (ADS_USE_MPI)
 endif ()
 
 # the executors on the runtimes of a program found [see ADSInterop.cmake]
-# under the parallel algorithms, and their own tests [see
-# InteropExecutors.h and interop_parallel.cpp]
-foreach (program engineered_parallel engineered_speculative interop_parallel)
+# under the parallel algorithms, their own tests [see InteropExecutors.h and
+# interop_parallel.cpp] and the examples of appendix C of the manual [see
+# interop_examples.cpp], the last in C++23 where the compiler takes it (but
+# MSVC, whose library has no std::flat_map), for std::flat_map
+foreach (program engineered_parallel engineered_speculative interop_parallel
+                 interop_examples)
     foreach (r IN LISTS ADS_INTEROP_BUILT)
         if (NOT r STREQUAL "BoostMPI")
             target_link_libraries(${program} PRIVATE ADS::${r})
         endif ()
     endforeach ()
 endforeach ()
+
+if (cxx_std_23 IN_LIST CMAKE_CXX_COMPILE_FEATURES AND NOT MSVC)
+    target_compile_features(interop_examples PRIVATE cxx_std_23)
+endif ()
+
+# the examples of MPI and of Boost.MPI of appendix C of the manual, not in
+# tests.txt: on 1 to 4 processes [see interop_examples_mpi.cpp]
+if (ADS_USE_MPI)
+    add_executable(interop_examples_mpi interop_examples_mpi.cpp)
+    target_link_libraries(interop_examples_mpi PRIVATE ADS::ADS
+                          Threads::Threads)
+    if ("BoostMPI" IN_LIST ADS_INTEROP_BUILT)
+        target_link_libraries(interop_examples_mpi PRIVATE ADS::BoostMPI)
+    endif ()
+    target_compile_definitions(interop_examples_mpi PRIVATE ADS_CONTRACTS=3)
+    foreach (t mpi-sort boost-mpi-sort)
+        foreach (np 1 2 3 4)
+            add_test(NAME interop_examples_mpi.${t}.np${np}
+                     COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG}
+                             ${np} ${MPIEXEC_PREFLAGS}
+                             $<TARGET_FILE:interop_examples_mpi>
+                             ${MPIEXEC_POSTFLAGS} ${t})
+        endforeach ()
+    endforeach ()
+endif ()
 
 # the processes of MPI in a program of Boost.MPI, not in tests.txt: on 1 to
 # 4 processes [see engineered_boost_mpi.cpp]

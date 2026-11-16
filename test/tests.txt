@@ -1818,6 +1818,24 @@ interop_parallel  taskflow-executor       esecutore di Taskflow, chiamate annida
 interop_parallel  kokkos-executor         spazio dell'host di Kokkos
 interop_parallel  structures-in-runtimes  strutture concorrenti nei cicli del programma
 
+# the examples of appendix C of the manual, beyond the book
+interop_examples  std-flat-map            std::flat_map su due TieredVector
+interop_examples  std-ranges-dictionary   std::ranges su un BTreeMap
+interop_examples  std-sorts-pmr-queues    ordinamenti, pmr, std::priority_queue
+interop_examples  bgl-dijkstra-on-ads     Dijkstra di Boost.Graph su StaticGraph
+interop_examples  bgl-ads-on-boost        johnson su adjacency_list, heap di ADS
+interop_examples  boost-heap-unordered    Boost.Heap come frontiera, FastHash
+interop_examples  lemon-dijkstra-ads-heap Dijkstra di LEMON su DaryHeap, GraphView
+interop_examples  lemon-preflow-tap       Preflow su StaticGraph, LemonTap
+interop_examples  gmp-numbers             BigInteger da e verso mpz_class
+interop_examples  blas-dense-matrix       cblas_dgemm su DenseMatrix
+interop_examples  tbb-arena-sort          ordinamento in un'arena di oneTBB
+interop_examples  openmp-region-sort      ordinamento in una regione di OpenMP
+interop_examples  stdpar-sort             ordinamento su std::execution::par
+interop_examples  stdexec-sort            ordinamento e riduzione su stdexec
+interop_examples  taskflow-sort           ordinamento sui lavoratori di Taskflow
+interop_examples  kokkos-sort             ordinamento sullo spazio di Kokkos
+
 # the runtime of the long-lived workers, beyond the book
 engineered_runtime  worker-run           lavoratori insieme, annidati, eccezioni
 engineered_runtime  worker-locks         il lock di ogni esecutore, try_lock

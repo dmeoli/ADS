@@ -116,6 +116,7 @@ nav:
   - Appendices:
       - Appendix A Writing a new structure: chapters/A-writing-structure.md
       - Appendix B The benchmarks: chapters/B-benchmarks.md
+      - Appendix C Working with other libraries: chapters/C-libraries.md
   - Back matter:
       - Glossary: chapters/Y-glossary.md
       - Bibliography: chapters/Z-bibliography.md

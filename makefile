@@ -135,11 +135,17 @@ $(BUILD):
 	mkdir -p $@
 
 # the executors on the runtimes of a program found, under the parallel
-# algorithms and in their own tests [see test/InteropExecutors.h]
+# algorithms, in their own tests [see test/InteropExecutors.h] and in the
+# examples of appendix C of the manual [see test/interop_examples.cpp], the
+# last in C++23 where the compiler takes it, for std::flat_map
 INTEROPBINS = $(addprefix $(BUILD)/,$(addsuffix $(ADSEXE),\
-              engineered_parallel engineered_speculative interop_parallel))
+              engineered_parallel engineered_speculative interop_parallel \
+              interop_examples))
 $(INTEROPBINS): INC += $(ADSINTEROPINC)
 $(INTEROPBINS): LIBS += $(ADSINTEROPLIB)
+CXX23 = $(shell $(CXX) -std=c++23 -x c++ -fsyntax-only /dev/null \
+        2>/dev/null && echo -std=c++23)
+$(BUILD)/interop_examples$(ADSEXE): CXXFLAGS += $(CXX23)
 
 # the configurations of the layouts, not in tests.txt [see ADS/Abi.h and
 # test/abi_units.cpp]: one program from two units of test/abi_unit.cpp, the
@@ -157,10 +163,11 @@ test-abi: | $(BUILD)
 	 $(BUILD)/abi_unit_a.o $(BUILD)/abi_unit_b.o $(LIBS)
 	$(BUILD)/abi_units$(ADSEXE)
 
-# the sort and the runtime over the processes of MPI, not in tests.txt:
-# make test-mpi [MPICXX=mpicxx] [MPIRUN=mpirun], on 1 to 4 processes, with
-# the options of MPI that MPICXX tells (Open MPI is told that the processes
-# may outnumber the cores)
+# the sort and the runtime over the processes of MPI, and the examples of
+# MPI of appendix C of the manual [see test/interop_examples_mpi.cpp], not in
+# tests.txt: make test-mpi [MPICXX=mpicxx] [MPIRUN=mpirun], on 1 to 4
+# processes, with the options of MPI that MPICXX tells (Open MPI is told that
+# the processes may outnumber the cores)
 MPICXX   ?= mpicxx
 MPIRUN   ?= mpirun $(if $(shell $(MPICXX) --showme:version 2>/dev/null),\
             --oversubscribe)
@@ -174,6 +181,13 @@ test-mpi: | $(BUILD)
 	         mpi-stop; do \
 	  for np in 1 2 3 4; do \
 	    $(MPIRUN) -np $$np $(BUILD)/engineered_mpi $$t || exit 1; \
+	  done; \
+	done
+	$(CXX) $(CXXFLAGS) $(INC) -o $(BUILD)/interop_examples_mpi \
+	 test/interop_examples_mpi.cpp $(LIBS)
+	for np in 1 2 3 4; do \
+	  for t in mpi-sort boost-mpi-sort; do \
+	    $(MPIRUN) -np $$np $(BUILD)/interop_examples_mpi $$t || exit 1; \
 	  done; \
 	done
 

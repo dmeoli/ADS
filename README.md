@@ -900,6 +900,57 @@ library do; with these iterators one should use `std::ranges::prev` and
 the algorithms of `std::ranges`, not `std::prev` and those of
 `<algorithm>`.
 
+## Using ADS with other libraries
+
+A program written on another library calls the algorithms of that library
+on the structures of ADS, and those of ADS on its structures, usually by
+changing one type; [appendix
+C](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html) of the
+manual shows each case by examples, which are also the tests
+[`interop_examples`](test/interop_examples.cpp) and
+[`interop_examples_mpi`](test/interop_examples_mpi.cpp).
+
+| Library | What works | Option | Examples |
+|---|---|---|---|
+| standard library | `std::flat_map` on `TieredVector`, `std::ranges` on the dictionaries, the sorts on any range, the pools as `std::pmr` resources, `std::priority_queue` as a frontier | none | [C.1](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-1) |
+| Boost.Graph | its algorithms on `StaticGraph`, `ArrayGraph`, `ListGraph`; the algorithms of ADS on its graphs; the heaps of ADS in its Dijkstra | `ADS_WITH_BOOST` | [C.2](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-2) |
+| Boost.Heap, Boost.Unordered | its heaps as frontiers of ADS; `FastHash` as its hasher | `ADS_WITH_BOOST` | [C.3](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-3) |
+| LEMON | the heaps and maps of ADS in its algorithms, the graphs both ways, its notifier told to the observers of ADS | `ADS_WITH_LEMON`, `ADS::LEMON` | [C.4](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-4) |
+| GMP | `BigInteger` and `Rational` to and from `mpz_class` and `mpq_class` | `ADS_WITH_GMP` | [C.5](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-5) |
+| BLAS | any CBLAS on `DenseMatrix`, `gemm()` on the CBLAS | `ADS_WITH_BLAS` | [C.6](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-6) |
+| oneTBB, OpenMP | the parallel algorithms in an arena or a region of the program | `ADS_WITH_TBB`, `ADS_WITH_OPENMP` | [C.7](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-7), [C.8](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-8) |
+| std::execution, stdexec, Taskflow, Kokkos | the parallel algorithms on their threads | `ADS_WITH_STDPAR`, `ADS_WITH_STDEXEC`, `ADS_WITH_TASKFLOW`, `ADS_WITH_KOKKOS` | [C.9](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-9) to [C.12](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-12) |
+| MPI, Boost.MPI | the distributed sort and mailbox on a communicator of the program | `ADS_WITH_MPI`, `ADS_WITH_BOOST_MPI` | [C.13](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-13) |
+
+For instance, the algorithm of Dijkstra of Boost.Graph runs on a graph of
+ADS with no copy,
+
+```cpp
+#include "ADS/interop/boost/Graph.h"
+
+const ADS::StaticGraph< double > g( n , arcs );    // was a CSR graph of Boost
+boost::dijkstra_shortest_paths( g , s , boost::weight_map(
+  get( boost::edge_weight , g ) ).distance_map( d.data() ) );
+```
+
+that of LEMON on a heap of ADS,
+
+```cpp
+#include "ADS/interop/lemon/Heaps.h"
+
+using H = ADS::lemon_interop::DaryHeap< int , GR::NodeMap< int > >;
+lemon::Dijkstra< GR , LM >::SetStandardHeap< H >::Create d( g , l );
+```
+
+and the parallel sort of ADS inside an arena of oneTBB of the program,
+
+```cpp
+#include "ADS/parallel/TBBExecutor.h"
+
+ADS::TBBExecutor ex( arena );                      // was ADS::ThreadPool
+ADS::sort( ex , A );
+```
+
 ## Manual
 
 A manual of the library lives in [`manual/`](manual/), one chapter for each
