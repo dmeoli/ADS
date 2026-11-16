@@ -23,7 +23,8 @@
  * one to the line of the block, and the sideways sums of its 8 words cut at
  * \f$ i \f$, with no branch (with AVX2, the bytes of the line before the one
  * of \f$ i \f$ counted 32 at a time by a table of the 16 nibbles, the
- * method of Mula, Kurz and Lemire); \f$ 128 / 4096 = 3.125 \% \f$ of
+ * method of Mula, Kurz and Lemire; both variants are the one kernel
+ * `detail::lineRank()` of `BitVector.h`); \f$ 128 / 4096 = 3.125 \% \f$ of
  * \f$ m \f$ bits.
  *
  * The select keeps the superblock of every 4096-th bit \f$ b \f$, 32 bits
@@ -95,10 +96,6 @@
 #include <cstdint>
 #include <span>
 #include <vector>
-
-#if defined( __AVX2__ )
- #include <immintrin.h>
-#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -291,6 +288,18 @@ class CompactRankSelect
   std::uint64_t lo = 0 ,  ///< the low 64 bits of the entry
     hi = 0;              ///< the high 64 bits of the entry
   };
+
+ /// the entry of a superblock with c 1s before it since its top region
+ /// and v[ k ] before its block k since the superblock
+ [[nodiscard]] static Entry entry( const std::uint64_t ( &v )[ 9 ] ,
+				   std::uint64_t c );
+
+ /// the rank in a line by the scalar kernel [see detail::lineRank()]
+#ifndef ADS_COMPACT_SCALAR
+ static constexpr bool kScalar = false;
+#else
+ static constexpr bool kScalar = true;  // a test of the scalar kernel
+#endif
 
  /// the 1s before the block k of the entry e since its superblock
  [[nodiscard]] static std::size_t inSuper( const Entry & e , std::size_t k ) {

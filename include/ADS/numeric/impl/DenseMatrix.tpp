@@ -114,6 +114,29 @@ void gemmBlocked( std::size_t m , std::size_t n , std::size_t k , T alpha ,
   }
  }
 
+/// the part of C <- alpha A B + beta C that needs no loop of ours: true
+/// when C is empty or the CBLAS took the product [see gemmOnCblas()],
+/// false when the blocked loops must run
+template< class T >
+inline bool gemmDone( std::size_t m , std::size_t n , std::size_t k ,
+		      [[maybe_unused]] T alpha , [[maybe_unused]] const T * A ,
+		      std::size_t lda , [[maybe_unused]] const T * B ,
+		      std::size_t ldb , [[maybe_unused]] T beta ,
+		      [[maybe_unused]] T * C , std::size_t ldc )
+{
+ ADS_PRE( ( lda >= k ) && ( ldb >= n ) && ( ldc >= n ) );
+ if( ( m == 0 ) || ( n == 0 ) )
+  return( true );
+#if ADS_GEMM_BLAS
+ // one call of the CBLAS, which runs on its own threads
+ if( gemmOnCblas< T >( m , n , k , lda , ldb , ldc ) ) {
+  gemmCblas( m , n , k , alpha , A , lda , B , ldb , beta , C , ldc );
+  return( true );
+  }
+#endif
+ return( false );
+ }
+
 }  // end( namespace detail )
 
 template< class T >
@@ -122,16 +145,10 @@ void gemm( std::size_t m , std::size_t n , std::size_t k , T alpha ,
 	   std::size_t lda , const T * B , std::size_t ldb , T beta , T * C ,
 	   std::size_t ldc )
 {
- ADS_PRE( ( lda >= k ) && ( ldb >= n ) && ( ldc >= n ) );
- if( ( m == 0 ) || ( n == 0 ) )
-  return;
-#if ADS_GEMM_BLAS
- if( detail::gemmOnCblas< T >( m , n , k , lda , ldb , ldc ) ) {
-  detail::gemmCblas( m , n , k , alpha , A , lda , B , ldb , beta , C , ldc );
-  return;
-  }
-#endif
- detail::gemmBlocked( m , n , k , alpha , A , lda , B , ldb , beta , C , ldc );
+ if( ! detail::gemmDone( m , n , k , alpha , A , lda , B , ldb , beta , C ,
+			 ldc ) )
+  detail::gemmBlocked( m , n , k , alpha , A , lda , B , ldb , beta , C ,
+		       ldc );
  }
 
 template< class T >

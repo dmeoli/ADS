@@ -425,7 +425,8 @@ therefore counts the bytes of its comparisons with $P$, those that find an
 occurrence included, and line 12 hands the rest of the text to the Two-Way
 algorithm once they exceed $16 ( s - s_0 ) + 4096$ at the window $s$ of a
 search begun at $s_0$. In this fallback the Two-Way algorithm compares 8 bytes at a time in
-both directions, and its factorization ($O( m )$) is computed only when a
+both directions, and its factorization ($O( m )$), the same function
+`criticalFactorization()` that `twoWay()` calls, is computed only when a
 search comes to it.
 
 <span id="lem-15-8"></span>**Lemma 15.8.** *`StringSearcher::findAll()`

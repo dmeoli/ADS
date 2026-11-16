@@ -178,15 +178,7 @@ std::size_t searchTwoWay( const unsigned char * T , std::size_t n ,
  if( n < mm )
   return( npos );
  const std::size_t last = n - mm;
- std::size_t p1 , p2;
- const long i1 = maximalSuffix( P , m , false , &p1 );
- const long i2 = maximalSuffix( P , m , true , &p2 );
- const long ell = std::max( i1 , i2 );
- std::size_t period = i1 > i2 ? p1 : p2;
- const bool periodic =
-   std::memcmp( P , P + period , std::size_t( ell + 1 ) ) == 0;
- if( ! periodic )
-  period = std::size_t( std::max( ell + 1 , m - ell - 1 ) + 1 );
+ const auto [ ell , period , periodic ] = criticalFactorization( P , m );
  long memory = -1;  // P[ 0 .. memory ] known to match
  for( std::size_t j = from ; j <= last ; ) {
   const unsigned char * W = T + j;

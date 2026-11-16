@@ -21,7 +21,7 @@ namespace ADS
 template< std::copy_constructible T , class C >
 RealTimeMinDeque< T , C >::RealTimeMinDeque( const RealTimeMinDeque & o )
     : f_A
-{ Array( 16 ) , Array( 16 ) } , f_less( o.f_less )
+{ Array( 16 ) , Array( 16 ) } , f_cells( o.f_cells )
 {
  o.forEach( [ & ]( const T & x ) { push_back( x ); } );
  }
@@ -51,14 +51,14 @@ void RealTimeMinDeque< T , C >::swap( RealTimeMinDeque & o ) noexcept
  std::swap( f_t , o.f_t );
  std::swap( f_n , o.f_n );
  std::swap( f_rb , o.f_rb );
- std::swap( f_less , o.f_less );
+ std::swap( f_cells , o.f_cells );
  }
 
 template< std::copy_constructible T , class C >
 void RealTimeMinDeque< T , C >::push( int s , const T & x )
 {
  [[maybe_unused]] const std::size_t n = f_n;
- f_A[ s ].push( x , f_less );
+ f_cells.push( f_A[ s ] , x );
  ++f_n;
  afterOp();
  ADS_POST( f_n == n + 1 );
@@ -101,11 +101,11 @@ const T & RealTimeMinDeque< T , C >::min( void ) const
 {
  ADS_PRE( ! empty() );
  if( f_A[ 0 ].size() == 0 )
-  return( f_A[ 1 ].min() );
+  return( f_cells.min( f_A[ 1 ] ) );
  if( f_A[ 1 ].size() == 0 )
-  return( f_A[ 0 ].min() );
- const T &a = f_A[ 0 ].min() , &b = f_A[ 1 ].min();
- return( f_less( b , a ) ? b : a );
+  return( f_cells.min( f_A[ 0 ] ) );
+ const T &a = f_cells.min( f_A[ 0 ] ) , &b = f_cells.min( f_A[ 1 ] );
+ return( f_cells.less( b , a ) ? b : a );
  }
 
 template< std::copy_constructible T , class C >
@@ -168,17 +168,17 @@ void RealTimeMinDeque< T , C >::steps( int k )
   if( f_p > 0 ) {  // the bottom of G, downwards
    if( k == 0 )
     return;
-   Sn.push( G.at( --f_p ) , f_less );
+   f_cells.push( Sn , G.at( --f_p ) );
    }
   else if( f_cs < S.hi() ) {  // the prefix of S
    if( k == 0 )
     return;
-   Sn.push( S.at( f_cs++ ) , f_less );
+   f_cells.push( Sn , S.at( f_cs++ ) );
    }
   else if( f_cg < G.hi() ) {  // the prefix of G above t
    if( k == 0 )
     return;
-   Gn.push( G.at( f_cg++ ) , f_less );
+   f_cells.push( Gn , G.at( f_cg++ ) );
    }
   else
    break;  // both prefixes complete
@@ -211,7 +211,7 @@ void RealTimeMinDeque< T , C >::forEach( F && f ) const
 template< std::copy_constructible T , class C >
 void RealTimeMinDeque< T , C >::clear( void )
 {
- RealTimeMinDeque e( f_less );
+ RealTimeMinDeque e( f_cells.less );
  swap( e );
  }
 

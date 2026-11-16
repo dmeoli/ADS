@@ -268,16 +268,13 @@ void PrefixFilter< T , H >::put( Bin & B , std::uint64_t w , unsigned q ,
 template< class T , class H >
 std::uint64_t PrefixFilter< T , H >::hash( const T & x ) const
 {
- if constexpr( requires { typename H::is_avalanching; } )
-  return( std::uint64_t( f_h( x ) ) );
- else
-  return( hashWord( std::uint64_t( f_h( x ) ) ) );
+ return( detail::filterHash( f_h , x ) );  // [see BlockedBloomFilter.h]
  }
 
 template< class T , class H >
 std::size_t PrefixFilter< T , H >::bin( std::uint64_t h ) const
 {
- return( std::size_t( ( ( h >> 32 ) * std::uint64_t( f_B.size() ) ) >> 32 ) );
+ return( detail::highRange( h , f_B.size() ) );
  }
 
 template< class T , class H >
