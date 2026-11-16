@@ -1,0 +1,85 @@
+/*--------------------------------------------------------------------------*/
+/*------------------------------ File Simd.h -------------------------------*/
+/*--------------------------------------------------------------------------*/
+/** @file
+ * The vector kernels of ADS on Google Highway, with `ADS_WITH_HIGHWAY`: the
+ * loops over arrays that a structure of ADS hands over whole (the 1 bits
+ * of an array of words, the intersection of two sorted arrays, the hash of
+ * a long key), written once on the portable operations of Highway and
+ * compiled for every set of vector instructions that Highway knows on the
+ * machine of the compiler (SSE2 to AVX-512 on x86-64, NEON and SVE on
+ * ARM, and the others), of which Highway calls, when the program runs, the
+ * best that the processor has. The code of ADS then tests no processor,
+ * compiler or system, and a program built without any flag of the machine
+ * runs the instructions of the processor it finds. A kernel is reached by
+ * one call through a table of pointers, which costs as much as a call that
+ * is not inlined; the kernels that run on a few bytes in the middle of a
+ * search (a group of control bytes of a hash table, a node of a tree) are
+ * instead inlined at the instructions given to the compiler [see
+ * SimdInline.h], where a call would cost more than the kernel.
+ *
+ * Without `ADS_WITH_HIGHWAY` this header declares nothing, and every
+ * structure runs its scalar code, which gives the same results.
+ *
+ * Highway dispatches by re-including, for every set of instructions, the
+ * file of the kernels ADS/impl/Simd.tpp, once per translation unit
+ * (hwy/foreach_target.h may run once per unit). A unit that includes this
+ * header may therefore not run a dispatch of its own after it, nor include
+ * it after one: a program that has kernels of its own on Highway keeps
+ * them in units that do not include the vector structures of ADS.
+ *
+ * \see J. Wassenberg, J. Alakuijala, Highway: performance-portable, length-
+ *      agnostic SIMD with runtime dispatch,
+ *      https://github.com/google/highway
+ *
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Università di Pisa \n
+ *
+ * \copyright &copy; by Donato Meoli
+ */
+/*--------------------------------------------------------------------------*/
+/*----------------------------- DEFINITIONS --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#ifndef __ADS_Simd
+ #define __ADS_Simd
+/* self-identification: #endif constant */
+
+#ifdef ADS_WITH_HIGHWAY
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+ #include <cstddef>
+ #include <cstdint>
+
+ #undef HWY_TARGET_INCLUDE
+ #define HWY_TARGET_INCLUDE "ADS/impl/Simd.tpp"
+ #include <hwy/foreach_target.h>  // IWYU pragma: keep
+
+ #include <hwy/highway.h>
+
+ #include "ADS/impl/Simd.tpp"
+
+/*--------------------------------------------------------------------------*/
+/*--------------------------- NAMESPACE ------------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+namespace ADS::detail::simd
+{
+
+/*--------------------------------------------------------------------------*/
+
+}  // end( namespace ADS::detail::simd )
+
+#endif
+
+/*--------------------------------------------------------------------------*/
+
+#endif /* Simd.h included */
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- End File Simd.h -----------------------------*/
+/*--------------------------------------------------------------------------*/

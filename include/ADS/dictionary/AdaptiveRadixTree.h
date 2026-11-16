@@ -113,6 +113,7 @@
 #include "ADS/Iterators.h"
 #include "ADS/memory/HugePageAllocator.h"
 #include "ADS/memory/ObjectPool.h"
+#include "ADS/memory/Prefetch.h"
 
 #include <cstddef>
 #include <cstdint>

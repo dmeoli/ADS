@@ -141,6 +141,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/memory/Prefetch.h"
 #include "ADS/string/StringMatching.h"
 
 #include <cstddef>

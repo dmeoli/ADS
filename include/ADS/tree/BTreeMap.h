@@ -138,6 +138,7 @@
 #include "ADS/memory/AllocatorAware.h"
 #include "ADS/memory/HugePageAllocator.h"
 #include "ADS/memory/ObjectPool.h"
+#include "ADS/memory/Prefetch.h"
 #include "ADS/search/CountLess.h"
 
 #include <algorithm>

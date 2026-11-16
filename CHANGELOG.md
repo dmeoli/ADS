@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The option `ADS_WITH_HIGHWAY` (AUTO by default, OFF in the recipes of
+  the packages) for the vector kernels on Google Highway, in CMake (the
+  target `ADS::Highway` of cmake/ADSHighway.cmake, the component
+  `Highway` of `find_package(ADS)`), in the makefile
+  (extlib/makefile-libHighway, `HWY=<prefix>`) and in ads.pc (by
+  libhwy-contrib.pc and libhwy.pc); ADS/Simd.h, which compiles the kernels
+  of ADS/impl/simd/ for every set of vector instructions that Highway
+  knows and calls, when the program runs, the best one of the processor,
+  so that no kernel tests a processor, a compiler or a system and no flag
+  of the machine is needed; without Highway every structure runs its
+  scalar code.
+- `ADS::prefetch( p )` and `ADS::prefetch( p , l )`, the prefetch of the
+  line of the cache of a pointer with a `Locality` (memory/Prefetch.h), as
+  two forms of the customization point `prefetch` of Capabilities.h, on
+  `hwy::Prefetch()` with Highway and doing nothing without it; every
+  prefetch of ADS (the hash tables, the filters, the trees, the searches,
+  the sorts, the suffix sorting, the queues and the spin waits) is now a
+  call of it, the only place, and the test `engineered_memory.prefetch-any-
+  address`. Highway has one level of prefetch and no prefetch for writing:
+  the localities and the prefetches for writing issue the same prefetch,
+  pending the next campaign of measures on an idle machine.
+
 - Appendix C of the manual, Working with other libraries: one section per
   library (the standard library, Boost.Graph, Boost.Heap and
   Boost.Unordered, LEMON, GMP, BLAS, oneTBB, OpenMP, std::execution,

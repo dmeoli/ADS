@@ -22,6 +22,7 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.cmakeFeature "ADS_WITH_GMP" "OFF")
     (lib.cmakeFeature "ADS_WITH_BLAS" "OFF")
     (lib.cmakeFeature "ADS_WITH_BOOST" "OFF")
+    (lib.cmakeFeature "ADS_WITH_HIGHWAY" "OFF")
     (lib.cmakeFeature "ADS_WITH_LEMON" "OFF")
     (lib.cmakeFeature "ADS_WITH_MPI" "OFF")
     (lib.cmakeFeature "ADS_WITH_STDPAR" "OFF")

@@ -69,6 +69,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/concurrent/EventCount.h"
+#include "ADS/memory/Prefetch.h"
 
 #include <algorithm>
 #include <atomic>
@@ -284,13 +285,7 @@ class SPSCQueue
  /// a hint to load the line of p, so that a consumer that finds the queue
  /// empty fetches the place and the tail together, one miss and not two
  /// in a row when the item has come
- static void prefetch( const T * p ) {
-#if defined( __GNUC__ ) || defined( __clang__ )
-  __builtin_prefetch( p );
-#else
-  ( void )p;
-#endif
-  }
+ static void prefetch( const T * p ) { ADS::prefetch( p ); }
 
  // the queue begins on a pair of lines, which the processor may fetch
  // together (the adjacent line prefetcher of x86), so that each pair

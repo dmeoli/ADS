@@ -64,11 +64,7 @@ inline constexpr SearchRanks searchRanks{};
 /// prefetches the line of p for a read
 inline void searchPrefetch( const void * p )
 {
-#if defined( __GNUC__ ) || defined( __clang__ )
- __builtin_prefetch( p , 0 , 3 );
-#else
- ( void )p;
-#endif
+ ADS::prefetch( p );
  }
 
 /// the vector comparisons of W bytes: equal( p , b ) has bit i set if the

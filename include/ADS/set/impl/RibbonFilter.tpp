@@ -159,8 +159,8 @@ bool RibbonFilter< T , F , H >::build( const std::vector< T > & keys )
  auto ahead = [ & ]( std::size_t i ) {
   const std::uint64_t h = mixed( base( keys[ i ] ) );
   const std::size_t s = start( h );
-  ADS_FILTER_PREFETCH( C.data() + s );
-  ADS_FILTER_PREFETCH( R.data() + s );
+  ADS::prefetch( C.data() + s );
+  ADS::prefetch( R.data() + s );
   ring[ i % kAhead ] = h;
   };
  for( std::size_t i = 0 ; i < std::min( n , kAhead ) ; ++i )

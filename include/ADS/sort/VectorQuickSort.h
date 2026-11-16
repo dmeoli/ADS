@@ -161,6 +161,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/memory/Prefetch.h"
 #include "ADS/sort/Sorted.h"
 
 #include <algorithm>

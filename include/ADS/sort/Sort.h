@@ -126,6 +126,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/memory/Prefetch.h"
 #include "ADS/sort/EngineeredQuickSorts.h"
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/RunSorts.h"

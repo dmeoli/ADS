@@ -98,6 +98,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/memory/Prefetch.h"
 #include "ADS/search/PGMIndex.h"
 #include "ADS/set/BlockedBloomFilter.h"
 

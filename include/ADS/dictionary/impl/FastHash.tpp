@@ -314,9 +314,7 @@ struct LongHash
   std::size_t j = 0;
   for( ; j + 16 <= m ; j += 16 ) {  // blocks of 1 KB
    for( int t = 0 ; t < 16 ; ++t ) {
-#if defined( __GNUC__ ) || defined( __clang__ )
-    __builtin_prefetch( s + 64 * ( j + std::size_t( t ) ) + 384 );
-#endif
+    ADS::prefetch( s + 64 * ( j + std::size_t( t ) ) + 384 );
     L.stripe( s + 64 * ( j + std::size_t( t ) ) , t );
     }
    L.scramble();

@@ -144,6 +144,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/dictionary/FastHash.h"
+#include "ADS/memory/Prefetch.h"
 
 #include <algorithm>
 #include <bit>
@@ -166,15 +167,6 @@
   #define ADS_FILTER_INLINE __forceinline
  #else
   #define ADS_FILTER_INLINE inline
- #endif
-#endif
-
-/// a hint to bring the line of p into the cache, or nothing
-#ifndef ADS_FILTER_PREFETCH
- #if defined( __GNUC__ ) || defined( __clang__ )
-  #define ADS_FILTER_PREFETCH( p ) __builtin_prefetch( ( const void * )( p ) )
- #else
-  #define ADS_FILTER_PREFETCH( p ) ( ( void )0 )
  #endif
 #endif
 

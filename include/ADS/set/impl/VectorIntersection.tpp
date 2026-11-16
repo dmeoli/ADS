@@ -169,7 +169,7 @@ std::size_t blockGallop( const T * s , std::size_t m , const T * l ,
   while( ( p + 16 * W <= n ) && ( l[ p + 16 * W - 1 ] < x ) )
    p += 16 * W;
   while( ( p + W <= n ) && ( l[ p + W - 1 ] < x ) ) {
-   __builtin_prefetch( l + p + 8 * W );  // the strides ahead
+   ADS::prefetch( l + p + 8 * W );  // the strides ahead
    p += W;
    }
   if( p + W > n )

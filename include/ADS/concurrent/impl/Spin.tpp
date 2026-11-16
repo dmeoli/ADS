@@ -47,11 +47,7 @@ inline void spinPause( void )
 /// the line of cache of p fetched ahead, for reading
 inline void prefetch( const void * p )
 {
-#if defined( __GNUC__ ) || defined( __clang__ )
- __builtin_prefetch( p );
-#else
- ( void )p;
-#endif
+ ADS::prefetch( p );
  }
 
 }  // end( namespace detail )

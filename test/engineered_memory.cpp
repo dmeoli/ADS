@@ -27,6 +27,7 @@
 #include "ADS/memory/ConcurrentPool.h"
 #include "ADS/memory/ObjectPool.h"
 #include "ADS/memory/PoolAllocator.h"
+#include "ADS/memory/Prefetch.h"
 
 #include <algorithm>
 #include <atomic>
@@ -725,6 +726,28 @@ ADS_TEST( "pool-epochs-threads" )
  for( auto & t : T )
   t.join();
  CHECK( bad == 0 );
+ }
+
+/// the prefetch of any address, with every locality: no fault, nothing
+/// changed [see Prefetch.h]
+ADS_TEST( "prefetch-any-address" )
+{
+ std::vector< std::uint64_t > a( 1000 );
+ for( std::size_t i = 0 ; i < a.size() ; ++i )
+  a[ i ] = i * i;
+ const std::vector< std::uint64_t > before = a;
+ ADS::prefetch( nullptr );
+ for( std::size_t i = 0 ; i <= a.size() ; i += 7 )
+  ADS::prefetch( a.data() + i );
+ for( auto l :
+      { Locality::None , Locality::Low , Locality::Moderate ,
+	Locality::High } ) {
+  ADS::prefetch( a.data() , l );
+  ADS::prefetch( a.data() + a.size() , l );
+  }
+ static_assert( noexcept( ADS::prefetch( nullptr ) ) );
+ static_assert( noexcept( ADS::prefetch( nullptr , Locality::Low ) ) );
+ CHECK( a == before );
  }
 
 /*--------------------------------------------------------------------------*/

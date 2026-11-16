@@ -33,11 +33,7 @@ namespace detail
 /// prefetches the line of p for a read
 inline void lcePrefetch( const void * p )
 {
-#if defined( __GNUC__ ) || defined( __clang__ )
- __builtin_prefetch( p , 0 , 3 );
-#else
- ( void )p;
-#endif
+ ADS::prefetch( p );
  }
 
 /// the bytes that lce() compares at once, and the first of them where

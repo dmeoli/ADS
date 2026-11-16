@@ -111,6 +111,7 @@
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
 #include "ADS/memory/HugePageAllocator.h"
+#include "ADS/memory/Prefetch.h"
 #include "ADS/search/CountLess.h"
 
 #include <algorithm>

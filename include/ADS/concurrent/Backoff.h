@@ -48,6 +48,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/concurrent/impl/Spin.tpp"
+#include "ADS/memory/Prefetch.h"
 
 #include <thread>
 

@@ -176,6 +176,7 @@
 #include "ADS/Portable.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/memory/AllocatorAware.h"
+#include "ADS/memory/Prefetch.h"
 
 #include <array>
 #include <bit>
@@ -208,15 +209,6 @@
  #include <boost/unordered/unordered_flat_map.hpp>
 #endif
 
-/// a hint to bring the line of `p` into the cache, or nothing
-#if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_FLAT_PREFETCH( p ) __builtin_prefetch( ( const void * )( p ) )
-#elif ( ADS_FLAT_SIMD == 1 ) && defined( _MSC_VER )
- #define ADS_FLAT_PREFETCH( p )                                               \
- _mm_prefetch( ( const char * )( p ), _MM_HINT_T0 )
-#else
- #define ADS_FLAT_PREFETCH( p ) ( ( void )0 )
-#endif
 
 /// a function inlined even where the compiler would not
 #if defined( __GNUC__ ) || defined( __clang__ )

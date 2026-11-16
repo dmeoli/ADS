@@ -39,8 +39,9 @@
  * The free customization point objects, in the form of Niebler, exist only
  * for the operations that a type ADS does not own may lack, one per
  * operation and each with a default: `reserve( s , n )` (nothing),
- * `prefetch( s , k )` (nothing) and `insert_bulk( s , r )` (one insertion
- * per item); those of the priority queues are in `PriorityQueue.h`.
+ * `prefetch( s , k )` (nothing, and on a pointer the line of memory of
+ * `Prefetch.h`) and `insert_bulk( s , r )` (one insertion per item); those
+ * of the priority queues are in `PriorityQueue.h`.
  *
  * Every capability says, in its comment, the algorithm that uses it; a
  * capability whose members no structure of ADS has yet is defined all the
@@ -79,6 +80,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/memory/Prefetch.h"
 #include "ADS/priority/PriorityQueue.h"
 
 #include <algorithm>
@@ -369,7 +371,14 @@ struct Reserve
 
 struct Prefetch
 {
+ /// the line of the cache of \f$ p \f$ [see Prefetch.h]
+ void operator()( const void * p ) const noexcept { prefetchLine( p ); }
+ /// the same, with the locality \f$ l \f$ of the line
+ void operator()( const void * p , Locality l ) const noexcept {
+  prefetchLine( p , l );
+  }
  template< class S , class K >
+  requires( ! std::is_same_v< K , Locality > )
  constexpr void operator()( const S & s , const K & k ) const {
   if constexpr( requires { s.prefetch( k ); } )
    s.prefetch( k );
@@ -416,7 +425,9 @@ inline constexpr detail::Reserve reserve{};
 
 /// a hint that \f$ k \f$ is looked up next: `s.prefetch( k )`, else
 /// `prefetch( s , k )` found by ADL, else nothing (a batch of lookups that
-/// prefetches the next ones, by group prefetching)
+/// prefetches the next ones, by group prefetching); on a pointer
+/// \f$ p \f$, `prefetch( p )` and `prefetch( p , l )` bring the line of
+/// \f$ p \f$ into the cache [see Prefetch.h]
 inline constexpr detail::Prefetch prefetch{};
 
 /// the items of the range \f$ r \f$ inserted in \f$ s \f$:

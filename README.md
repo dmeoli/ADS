@@ -211,11 +211,11 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-429 headers: 245 base, 153 advanced, 13 core and 18 interop.
+431 headers: 245 base, 153 advanced, 15 core and 18 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
-| `ADS/` | `ADT` | `Algebra`, `Modification` | `Abi`, `Capabilities`, `Contract`, `Iterators`, `Portable` |  |
+| `ADS/` | `ADT` | `Algebra`, `Modification` | `Abi`, `Capabilities`, `Contract`, `Iterators`, `Portable`, `Simd` |  |
 | `algorithm/` | `AkraBazzi`, `BinaryCounter`, `Hanoi`, `MasterTheorem`, `MaximumSegments`, `MonteCarlo`, `Paradigms`, `SequenceQueries`, `Subsequences` |  |  |  |
 | `backtrack/` | `Anagrams`, `DancingLinks`, `Enumeration`, `KnightTour`, `NQueens`, `SatSolvers`, `Sudoku` | `FastExactCover` |  |  |
 | `combinatorial/` | `Bitwise`, `Generation` | `FastBitwise`, `FastGeneration` |  |  |
@@ -232,7 +232,7 @@ file does not allow.
 | `interop/parallel/` |  |  |  | `KokkosExecutor`, `SenderExecutor`, `StdParExecutor`, `TaskflowExecutor` |
 | `interop/std/` |  |  |  | `FlatMap`, `Pmr` |
 | `intractable/` | `Approximation`, `BranchAndBound`, `FifteenPuzzle`, `Heuristics`, `Pseudopolynomial` |  |  |  |
-| `memory/` | `Allocators`, `CellHeap` | `Arena`, `ConcurrentPool`, `PageHeap`, `PoolAllocator`, `SizeClassAllocator` | `AllocatorAware`, `HugePageAllocator`, `ObjectPool` |  |
+| `memory/` | `Allocators`, `CellHeap` | `Arena`, `ConcurrentPool`, `PageHeap`, `PoolAllocator`, `SizeClassAllocator` | `AllocatorAware`, `HugePageAllocator`, `ObjectPool`, `Prefetch` |  |
 | `mfset/` | `ListMFSet`, `MFSet` | `RemUnionFind`, `RollbackUnionFind`, `UnionFind` |  |  |
 | `numeric/` | `BigInteger`, `BinaryInteger`, `Catalan`, `Combinatorics`, `Matrix`, `MatrixChain`, `NumberTheory`, `Polynomial`, `RSA`, `RandomNumbers`, `RandomSampling`, `Rational`, `SparseMatrix` | `CsrMatrix`, `DenseMatrix`, `DynamicCsr`, `RandomGenerators`, `SellMatrix`, `SparseAssembly` |  |  |
 | `optimization/` | `CoinChange`, `CoinGame`, `FractionalKnapsack`, `GridPaths`, `HouseProblems`, `IntervalCover`, `Intervals`, `Knapsack`, `KnapsackVariants`, `LinearPartition`, `OptimalSearchTree`, `SequenceProblems`, `ShortestJobFirst`, `StockTrading`, `WeightedIntervals` |  |  |  |

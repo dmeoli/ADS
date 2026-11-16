@@ -45,6 +45,8 @@ Contract.h                            core     the contracts of every header
 Iterators.h                           core     the iterators of the containers
 Modification.h                        advanced
 Portable.h                            core     the primitives of the processor
+Simd.h                                core     the vector kernels of the
+                                               structures, on Highway
 
 algorithm/AkraBazzi.h                 base
 algorithm/BinaryCounter.h             base
@@ -235,6 +237,7 @@ memory/ObjectPool.h                   core     the pool of the nodes of the
                                                linked structures
 memory/PageHeap.h                     advanced
 memory/PoolAllocator.h                advanced
+memory/Prefetch.h                     core     the prefetch of the structures
 memory/SizeClassAllocator.h           advanced
 
 mfset/ListMFSet.h                     base

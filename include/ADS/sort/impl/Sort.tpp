@@ -68,13 +68,11 @@ std::size_t ascendingIn( const T * a , std::size_t n , C & less )
  std::size_t t = 1;
  for( ; t + B <= q ; t += B ) {
   unsigned stop = 0;
-#if defined( __GNUC__ ) || defined( __clang__ )
   if constexpr( P )
    for( std::size_t j = 0 ; j < S ; ++j )  // the block kAhead on
     for( std::size_t c = 0 ; c < B * sizeof( T ) ; c += 64 )
-     __builtin_prefetch( reinterpret_cast< const char * >( b[ j ] + t ) +
-			 kAhead * B * sizeof( T ) + c );
-#endif
+     ADS::prefetch( reinterpret_cast< const char * >( b[ j ] + t ) +
+		    kAhead * B * sizeof( T ) + c );
   for( std::size_t j = 0 ; j < S ; ++j )
    for( std::size_t k = t ; k < t + B ; ++k )
     stop |= unsigned( less( b[ j ][ k ] , b[ j ][ k - 1 ] ) );

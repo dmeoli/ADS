@@ -90,6 +90,7 @@
 
 #include "ADS/Abi.h"
 #include "ADS/Contract.h"
+#include "ADS/memory/Prefetch.h"
 
 #include <array>
 #include <bit>
@@ -272,13 +273,10 @@ inline constexpr bool kIndirectKey = requires( const K & k )
 template< class K >
 inline void prefetchKey( const K & k )
 {
- if constexpr( kIndirectKey< K > ) {
-#if defined( __GNUC__ ) || defined( __clang__ )
-  __builtin_prefetch( static_cast< const void * >( k.data() ) );
-#else
+ if constexpr( kIndirectKey< K > )
+  ADS::prefetch( static_cast< const void * >( k.data() ) );
+ else
   ( void )k;
-#endif
-  }
  }
 
 ADS_ABI_END
