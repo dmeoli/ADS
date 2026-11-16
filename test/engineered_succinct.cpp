@@ -45,6 +45,7 @@
 #include "ADS/succinct/WaveletMatrix.h"
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <cstdint>
 #include <random>
@@ -649,6 +650,65 @@ ADS_TEST( "interleaved-rank-select" )
  for( int k = 0 ; k < 8 ; ++k )
   runs.insert( runs.end() , k % 2 ? 70000 : 300 , k % 2 );
  check( runs );
+ }
+
+// the kernels shared by the directories of rank and select: the rank in a
+// line by its scalar and its vector variant (the same kernel) against a
+// scan, at every place of random lines; the copy and the count of the
+// words of a chunk, the word cut at n among them or not; the chunks of a
+// parallel directory, powers of 2 below a top region and its multiples
+// above; and the checks on a concept that every directory passes
+ADS_TEST( "rank-kernels" )
+{
+ std::mt19937_64 g( 23 );
+ alignas( 64 ) Word line[ 8 ];
+ for( int t = 0 ; t < 64 ; ++t ) {
+  for( auto & w : line )
+   w = t % 4 == 0 ? ~Word( 0 ) : t % 4 == 1 ? Word( 0 ) : g() & g();
+  std::size_t c = 0;
+  for( unsigned p = 0 ; p < 512 ; ++p ) {
+   CHECK( detail::lineRank< false >( line , p ) == c );
+   CHECK( detail::lineRank< true >( line , p ) == c );
+   c += ( line[ p / 64 ] >> ( p % 64 ) ) & 1;
+   }
+  }
+ std::vector< Word > w( 40 ) , P( 48 , ~Word( 0 ) );
+ for( auto & x : w )
+  x = g();
+ const std::size_t n = 64 * 37 + 5;  // the word 37 cut at 5 bits
+ std::uint64_t all = 0;
+ for( std::size_t w0 = 0 ; w0 < 48 ; w0 += 8 )
+  all += detail::copyCount( P.data() , w.data() , n , w0 , w0 + 8 );
+ std::uint64_t ones = 0;
+ for( std::size_t i = 0 ; i < 48 ; ++i ) {
+  const Word e = i < 37 ? w[ i ] : i == 37 ? w[ i ] & 31 : 0;
+  CHECK( P[ i ] == e );
+  ones += std::uint64_t( std::popcount( e ) );
+  }
+ CHECK( all == ones );
+ CHECK( detail::copyCount( P.data() , nullptr , n , 0 , 48 ) == ones );
+ for( std::size_t u : { 1 , 1000 , 1 << 20 , 1 << 26 } ) {
+  const std::size_t c1 = detail::chunkUnits( u , 256 , 64 , 1 << 16 );
+  CHECK( c1 >= 256 && c1 >= u / 64 );
+  CHECK( c1 < ( 1 << 16 ) ? std::has_single_bit( c1 )
+			  : c1 % ( 1 << 16 ) == 0 );
+  }
+ BitVector b( 5000 );
+ for( std::size_t i = 0 ; i < b.size() ; ++i )
+  b.set( i , g() % 3 == 0 );
+ auto check = [ & ]( const auto & r ) {
+  CHECK( detail::rankConsistent( r ) );
+  for( std::size_t k = 1 ; k <= r.ones() ; k += 17 )
+   CHECK( r[ detail::selected( r , k , true , r.select1( k ) ) ] );
+  };
+ static_assert( detail::RankSelectBits< RankSelect > &&
+		detail::RankSelectBits< CompactRankSelect > &&
+		detail::RankSelectBits< InterleavedRankSelect > &&
+		detail::RankSelectBits< RRRBitVector > );
+ check( RankSelect( b ) );
+ check( CompactRankSelect( b ) );
+ check( InterleavedRankSelect( b ) );
+ check( RRRBitVector( b ) );
  }
 
 // the compressed vector of bits of RRR against a scan: every bit, rank

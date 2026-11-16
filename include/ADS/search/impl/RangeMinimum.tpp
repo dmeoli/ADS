@@ -54,6 +54,31 @@ inline std::size_t rmqLog2( std::size_t x )
  return( std::size_t( std::bit_width( x ) ) - 1 );
  }
 
+/// the row q of the level L of a sparse table from the row p of the
+/// level L - 1, h = 2^( L - 1 ): q[ i ] the better of p[ i ] and
+/// p[ i + h ] for i < count, the better by better( a , b ) of the minima
+/// a and b of two ranges, a on the left
+template< class X , class B >
+inline void sparseRow( const X * p , X * q , std::size_t count ,
+		       std::size_t h ,
+		       B && better )
+{
+ for( std::size_t i = 0 ; i < count ; ++i )
+  q[ i ] = better( p[ i ] , p[ i + h ] );
+ }
+
+/// the minimum of [ i , e ) in a sparse table whose row L is row( L ):
+/// the better of the two ranges of length 2^L that cover it, L the largest
+/// with 2^L <= e - i
+template< class R , class B >
+inline auto sparseCover( R && row , std::size_t i , std::size_t e ,
+			 B && better )
+{
+ const std::size_t L = rmqLog2( e - i );
+ const auto * p = row( L );
+ return( better( p[ i ] , p[ e - ( std::size_t( 1 ) << L ) ] ) );
+ }
+
 }  // end( namespace detail )
 
 template< class T , class Compare >
@@ -95,8 +120,9 @@ SparseTable< T , Compare >::SparseTable( std::vector< T > A , Compare less )
  for( std::size_t L = 1 ; ( std::size_t( 1 ) << L ) <= n ; ++L ) {
   const std::size_t h = std::size_t( 1 ) << ( L - 1 );
   std::vector< std::size_t > row( n - 2 * h + 1 );
-  for( std::size_t i = 0 ; i < row.size() ; ++i )
-   row[ i ] = better( f_M[ L - 1 ][ i ] , f_M[ L - 1 ][ i + h ] );
+  detail::sparseRow(
+    f_M[ L - 1 ].data() , row.data() , row.size() , h ,
+    [ this ]( std::size_t a , std::size_t b ) { return( better( a , b ) ); } );
   f_M.push_back( std::move( row ) );
   }
  }
@@ -113,9 +139,9 @@ std::size_t SparseTable< T , Compare >::query( std::size_t i ,
 					      std::size_t j ) const
 {
  ADS_PRE( ( i <= j ) && ( j < f_A.size() ) );
- const std::size_t L = detail::rmqLog2( j - i + 1 );
- const std::size_t r =
-   better( f_M[ L ][ i ] , f_M[ L ][ j + 1 - ( std::size_t( 1 ) << L ) ] );
+ const std::size_t r = detail::sparseCover(
+   [ this ]( std::size_t L ) { return( f_M[ L ].data() ); } , i , j + 1 ,
+   [ this ]( std::size_t a , std::size_t b ) { return( better( a , b ) ); } );
  ADS_AUDIT( detail::leftmostMinimum( f_A , i , j , r , f_less ) );
  return( r );
  }

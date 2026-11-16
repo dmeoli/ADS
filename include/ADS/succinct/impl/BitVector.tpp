@@ -50,6 +50,111 @@ constexpr int selectInWord( Word x , int k )
  return( 8 * byte + ruler( v ) );
  }
 
+namespace detail
+{
+
+template< bool Scalar >
+inline std::size_t lineRank( const Word * w , unsigned p )
+{
+ ADS_PRE( p < 512 );
+#if defined( __AVX2__ )
+ if constexpr( ! Scalar ) {
+  const __m256i lut =
+    _mm256_setr_epi8( 0 , 1 , 1 , 2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 ,
+		      3 , 4 , 0 , 1 , 1 ,
+		      2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 , 3 , 4 );
+  const __m256i nib = _mm256_set1_epi8( 0x0F );
+  const __m256i id = _mm256_setr_epi8(
+    0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 , 15 , 16 ,
+    17 , 18 , 19 , 20 ,
+    21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 , 31 );
+  const __m256i nb = _mm256_set1_epi8( char( p / 8 ) );
+  // the counts of the 32 bytes from q, those of place ids or more cut
+  auto bytes = [ & ]( const Word * q , __m256i ids ) {
+   const __m256i v =
+     _mm256_load_si256( reinterpret_cast< const __m256i * >( q ) );
+   const __m256i hi = _mm256_and_si256( _mm256_srli_epi16( v , 4 ) , nib );
+   const __m256i c =
+     _mm256_add_epi8( _mm256_shuffle_epi8( lut ,
+					   _mm256_and_si256( v , nib ) ) ,
+		      _mm256_shuffle_epi8( lut , hi ) );
+   return( _mm256_and_si256( c , _mm256_cmpgt_epi8( nb , ids ) ) );
+   };
+  const __m256i s = _mm256_sad_epu8(
+    _mm256_add_epi8(
+      bytes( w , id ) ,
+      bytes( w + 4 , _mm256_add_epi8( id , _mm256_set1_epi8( 32 ) ) ) ) ,
+    _mm256_setzero_si256() );
+  const __m128i h = _mm_add_epi64( _mm256_castsi256_si128( s ) ,
+				   _mm256_extracti128_si256( s , 1 ) );
+  const unsigned char last =
+    reinterpret_cast< const unsigned char * >( w )[ p / 8 ];
+  return( std::size_t( _mm_cvtsi128_si64( h ) + _mm_extract_epi64( h , 1 ) ) +
+	   std::size_t( std::popcount(
+	     unsigned( last & ( ( 1u << ( p % 8 ) ) - 1 ) ) ) ) );
+  }
+#endif
+ std::size_t r = 0;
+ for( unsigned j = 0 ; j < 8 ; ++j ) {
+  const auto c = unsigned( std::clamp< std::int64_t >(
+    std::int64_t( p ) - 64 * std::int64_t( j ) , 0 , 64 ) );
+#ifdef __BMI2__
+  r += std::size_t( std::popcount( _bzhi_u64( w[ j ] , c ) ) );
+#else
+  r += std::size_t( std::popcount( w[ j ] & lowMask( int( c ) ) ) );
+#endif
+  }
+ return( r );
+ }
+
+inline std::uint64_t copyCount( Word * P , const Word * w , std::size_t n ,
+				std::size_t w0 , std::size_t w1 )
+{
+ if( w ) {
+  const std::size_t sw = ( n + 63 ) / 64;
+  for( std::size_t i = w0 ; i < w1 ; ++i )
+   P[ i ] = i < sw ? w[ i ] : 0;
+  if( ( n % 64 ) && ( n / 64 >= w0 ) && ( n / 64 < w1 ) )
+   P[ n / 64 ] &= lowMask( int( n % 64 ) );
+  }
+ std::uint64_t a = 0;
+ for( std::size_t i = w0 ; i < w1 ; ++i )
+  a += std::uint64_t( std::popcount( P[ i ] ) );
+ return( a );
+ }
+
+inline std::size_t chunkUnits( std::size_t u , std::size_t chunk ,
+			       std::size_t chunks , std::size_t top )
+{
+ const std::size_t cs = std::max( chunk , u / chunks + 1 );
+ return( cs < top ? std::bit_ceil( cs ) : ( cs + top - 1 ) / top * top );
+ }
+
+template< RankSelectBits R >
+inline std::size_t selected( [[maybe_unused]] const R & r ,
+			     [[maybe_unused]] std::size_t k ,
+			     [[maybe_unused]] bool b , std::size_t p )
+{
+ ADS_POST( ( r[ p ] == b ) &&
+	   ( ( b ? r.rank1( p ) : p - r.rank1( p ) ) == k - 1 ) );
+ return( p );
+ }
+
+template< RankSelectBits R >
+inline bool rankConsistent( const R & r )
+{
+ std::size_t c = 0;
+ for( std::size_t i = 0 ; i <= r.size() ; ++i ) {
+  if( r.rank1( i ) != c )
+   return( false );
+  if( ( i < r.size() ) && r[ i ] )
+   ++c;
+  }
+ return( c == r.ones() );
+ }
+
+}  // end( namespace detail )
+
 inline BitVector::BitVector( std::size_t n , bool b )
     : f_w( wordsFor( n ) , 0 ) , f_n( n )
 {

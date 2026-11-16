@@ -362,7 +362,7 @@ $$
 with $o = i \bmod 512$ and $w_j$ the words of the block: one access to the
 entries, one to the line of the block, and the sideways sums of its 8 words
 cut at $i$, with no branch ([Algorithm 22.6](22-succinct.md#alg-22-6)).
-With AVX2, we count the bytes of the line before the one of $i$ 32 at a time, by a table of the 16 nibbles ([Mula, Kurz and Lemire 2018](Z-bibliography.md#ref-mula2018)). In all, the entries take $128 / 4096 = 3.125\%$ of $m$ bits.
+With AVX2, we count the bytes of the line before the one of $i$ 32 at a time, by a table of the 16 nibbles ([Mula, Kurz and Lemire 2018](Z-bibliography.md#ref-mula2018)). We compute the sum on the line by one kernel of `BitVector.h`, `detail::lineRank()`, whose variants (the vector one, and the scalar one with or without BMI2) are chosen by the instruction set, and which `InterleavedRankSelect` below calls on the lines that hold its counts. In all, the entries take $128 / 4096 = 3.125\%$ of $m$ bits.
 
 ![Figure 22.3. (a) A superblock of `CompactRankSelect`, its 8 blocks of 512 bits and its entry of 128 bits: the rank of a place $i$ in the block 5 adds the count $S$ of the superblock, $c_5$ and the 1s of the line before $i$ (violet). (b) A line of `InterleavedRankSelect`, its count $h_\ell$ of 16 bits in front of its 496 bits.](../figures/succinct-compact.svg){#fig-22-3}
 
@@ -1327,7 +1327,7 @@ inventories as the sequential construction; a query thus gives the same
 answer whichever built the structure. In the directories of rank of `RankSelect` and `CompactRankSelect`, we cut the blocks into chunks of
 consecutive blocks. A first pass counts the 1s of each chunk, and the prefix sums of the counts give the 1s before each chunk, $c_k$. A second pass writes the entries of each chunk from $c_k$ on; these are those of the
 sequential scan, since the entry of a block depends only on the 1s before
-it ([Algorithm 22.23](22-succinct.md#alg-22-23)). The counts of the top level are the $c_k$ of the chunks that start a top block. Indeed, the chunks are a power of 2 of blocks below the size of a top block, which then holds whole chunks, or a multiple of it above; a top block that does not start a chunk lies in one, which writes its count. We build the inventories of select in two passes over the chunks: the first finds the places of the first bit of each group, and the second the offsets of the sampled bits from the place of their group, each sample found from the entry of its block by a select in a word.
+it ([Algorithm 22.23](22-succinct.md#alg-22-23)). The counts of the top level are the $c_k$ of the chunks that start a top block. Indeed, the chunks are a power of 2 of blocks below the size of a top block, which then holds whole chunks, or a multiple of it above; a top block that does not start a chunk lies in one, which writes its count. We write the size of the chunks and the copy and the count of their words once for both directories, and the entry of a block (or of a superblock) once for the sequential and the parallel construction of each. We build the inventories of select in two passes over the chunks: the first finds the places of the first bit of each group, and the second the offsets of the sampled bits from the place of their group, each sample found from the entry of its block by a select in a word.
 In all, the work is $O( m / 64 )$ words, as in the sequential scan, plus the
 samples, and the depth is that of a chunk and of the prefix sums.
 

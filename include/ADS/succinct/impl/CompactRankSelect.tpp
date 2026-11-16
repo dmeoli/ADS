@@ -72,10 +72,7 @@ inline void CompactRankSelect::directory( const Word * w )
     }
    v[ k + 1 ] = v[ k ] + in;
    }
-  // the count of block k at the bit 32 + 12 k of ( hi , lo )
-  f_e[ s ] = Entry{ ( c - top ) | ( v[ 1 ] << 44 ) | ( v[ 2 ] << 56 ) ,
-		    ( v[ 2 ] >> 8 ) | ( v[ 3 ] << 4 ) | ( v[ 4 ] << 16 ) |
-		      ( v[ 5 ] << 28 ) | ( v[ 6 ] << 40 ) | ( v[ 7 ] << 52 ) };
+  f_e[ s ] = entry( v , c - top );
   c += v[ 8 ];
   if( s < ns ) {
    const std::size_t end1 = std::size_t( c ) ,
@@ -151,12 +148,9 @@ void CompactRankSelect::directory( E & ex , const Word * w )
  const std::size_t n = f_b.size() , ns = n / kSuper + 1;  // and one more
  constexpr std::size_t kTopSupers = ( std::size_t( 1 ) << kTop ) / kSuper;
  constexpr std::size_t kW = kSuper / 64;  // the words of a superblock
- // the chunks of superblocks: a power of 2 below a top region, else a
- // multiple of it, so that a top region either starts a chunk or lies in
- // one
- std::size_t cs = std::max( kChunk , ( ns + 1 ) / kBlocks + 1 );
- cs = cs < kTopSupers ? std::bit_ceil( cs )
-		      : ( cs + kTopSupers - 1 ) / kTopSupers * kTopSupers;
+ // the chunks of superblocks [see detail::chunkUnits()]
+ const std::size_t cs =
+   detail::chunkUnits( ns + 1 , kChunk , kBlocks , kTopSupers );
  const std::size_t q = ( ns + 1 + cs - 1 ) / cs;  // the chunks
  if( ( ex.concurrency() == 1 ) || ( q == 1 ) ) {
   directory( w );  // the sequential pass
@@ -164,28 +158,16 @@ void CompactRankSelect::directory( E & ex , const Word * w )
   }
  Word * const P = f_b.f_w.data();
  const std::size_t nw = f_b.f_w.size();  // a multiple of 8
- const std::size_t sw = ( n + 63 ) / 64;
  f_e.resize( ns + 1 );
  f_top.assign( ( ( ( ns + 1 ) * kSuper ) >> kTop ) + 1 , 0 );
- // the 1s of the words of each chunk, copied from w first if given (the
- // last word cut at n, 0s past it)
+ // the 1s of the words of each chunk, copied from w first if given
  std::vector< std::uint64_t > c( q + 1 , 0 );
  parallelFor(
    ex , 0 , q ,
    [ & ]( std::size_t k ) {
-    const std::size_t w0 = std::min( nw , kW * k * cs ) ,
-		      w1 =
-			k + 1 == q ? nw : std::min( nw , kW * ( k + 1 ) * cs );
-    if( w ) {
-     for( std::size_t i = w0 ; i < w1 ; ++i )
-      P[ i ] = i < sw ? w[ i ] : 0;
-     if( ( n % 64 ) && ( n / 64 >= w0 ) && ( n / 64 < w1 ) )
-      P[ n / 64 ] &= detail::lowMask( int( n % 64 ) );
-     }
-    std::uint64_t a = 0;
-    for( std::size_t i = w0 ; i < w1 ; ++i )
-     a += std::uint64_t( std::popcount( P[ i ] ) );
-    c[ k + 1 ] = a;
+    c[ k + 1 ] = detail::copyCount(
+      P , w , n , std::min( nw , kW * k * cs ) ,
+      k + 1 == q ? nw : std::min( nw , kW * ( k + 1 ) * cs ) );
     } ,
    1 );
  for( std::size_t k = 0 ; k < q ; ++k )
@@ -222,10 +204,7 @@ void CompactRankSelect::directory( E & ex , const Word * w )
        }
       v[ b + 1 ] = v[ b ] + in;
       }
-     f_e[ s ] =
-       Entry{ ( cc - top ) | ( v[ 1 ] << 44 ) | ( v[ 2 ] << 56 ) ,
-	      ( v[ 2 ] >> 8 ) | ( v[ 3 ] << 4 ) | ( v[ 4 ] << 16 ) |
-		( v[ 5 ] << 28 ) | ( v[ 6 ] << 40 ) | ( v[ 7 ] << 52 ) };
+     f_e[ s ] = entry( v , cc - top );
      cc += v[ 8 ];
      if( s < ns ) {
       const std::size_t end1 = std::size_t( cc ) ,
@@ -243,6 +222,15 @@ void CompactRankSelect::directory( E & ex , const Word * w )
  ADS_AUDIT( consistent() );
  }
 
+inline CompactRankSelect::Entry
+CompactRankSelect::entry( const std::uint64_t ( &v )[ 9 ] , std::uint64_t c )
+{
+ // the count of block k at the bit 32 + 12 k of ( hi , lo )
+ return( Entry{ c | ( v[ 1 ] << 44 ) | ( v[ 2 ] << 56 ) ,
+		 ( v[ 2 ] >> 8 ) | ( v[ 3 ] << 4 ) | ( v[ 4 ] << 16 ) |
+		   ( v[ 5 ] << 28 ) | ( v[ 6 ] << 40 ) | ( v[ 7 ] << 52 ) } );
+ }
+
 inline std::size_t CompactRankSelect::before( std::size_t s , bool b ) const
 {
  const std::size_t o = std::size_t( f_top[ ( s * kSuper ) >> kTop ] +
@@ -256,61 +244,10 @@ inline std::size_t CompactRankSelect::rank1( std::size_t i ) const
  const Entry & e = f_e[ i / kSuper ];
  std::size_t r = std::size_t( f_top[ i >> kTop ] + ( e.lo & 0xFFFFFFFFULL ) ) +
 		 inSuper( e , ( i / kBlock ) % 8 );
- // the 8 words of the line of the block, each cut at i, with no branch
- // (the words exist past the size [see BitVector.h])
- const Word * w = f_b.words().data() + 8 * ( i / kBlock );
-#if defined( __AVX2__ ) && ! defined( ADS_COMPACT_SCALAR )
- // the bytes of the line before the one of i, counted 32 at a time by a
- // table of the 16 nibbles and summed by the absolute differences with 0,
- // and the bits of the byte of i before it
- const unsigned o = unsigned( i % kBlock );
- const __m256i lut =
-   _mm256_setr_epi8( 0 , 1 , 1 , 2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 ,
-		     3 , 4 , 0 , 1 , 1 ,
-		     2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 , 3 , 4 );
- const __m256i nib = _mm256_set1_epi8( 0x0F );
- const __m256i id = _mm256_setr_epi8( 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 ,
-				      10 , 11 , 12 ,
-				      13 , 14 , 15 , 16 , 17 , 18 , 19 , 20 ,
-				      21 , 22 ,
-				      23 , 24 , 25 , 26 , 27 , 28 , 29 , 30 ,
-				      31 );
- const __m256i nb = _mm256_set1_epi8( char( o / 8 ) );
- auto bytes = [ & ]( const Word * p , __m256i ids ) {
-  const __m256i v =
-    _mm256_load_si256( reinterpret_cast< const __m256i * >( p ) );
-  const __m256i hi = _mm256_and_si256( _mm256_srli_epi16( v , 4 ) , nib );
-  const __m256i c =
-    _mm256_add_epi8( _mm256_shuffle_epi8( lut , _mm256_and_si256( v , nib ) ) ,
-		     _mm256_shuffle_epi8( lut , hi ) );
-  return( _mm256_and_si256( c , _mm256_cmpgt_epi8( nb , ids ) ) );
-  };
- const __m256i s = _mm256_sad_epu8(
-   _mm256_add_epi8(
-     bytes( w , id ) ,
-     bytes( w + 4 , _mm256_add_epi8( id , _mm256_set1_epi8( 32 ) ) ) ) ,
-   _mm256_setzero_si256() );
- const __m128i h = _mm_add_epi64( _mm256_castsi256_si128( s ) ,
-				  _mm256_extracti128_si256( s , 1 ) );
- r += std::size_t( _mm_cvtsi128_si64( h ) + _mm_extract_epi64( h , 1 ) );
- const unsigned char last =
-   reinterpret_cast< const unsigned char * >( w )[ o / 8 ];
- return( r + std::size_t( std::popcount(
-		unsigned( last & ( ( 1u << ( o % 8 ) ) - 1 ) ) ) ) );
-#else
- const std::int64_t o = std::int64_t( i % kBlock );
- for( std::size_t j = 0 ; j < 8 ; ++j ) {
-  const auto c = unsigned(
-    std::clamp< std::int64_t >( o - std::int64_t( 64 * j ) , 0 , 64 ) );
-#ifdef __BMI2__
-  r += std::size_t( std::popcount( _bzhi_u64( w[ j ] , c ) ) );
-#else
-  r += std::size_t(
-    std::popcount( c == 64 ? w[ j ] : w[ j ] & detail::lowMask( int( c ) ) ) );
-#endif
-  }
- return( r );
-#endif
+ // the 1s of the line of the block before i [see detail::lineRank()]
+ return( r +
+	  detail::lineRank< kScalar >( f_b.words().data() + 8 * ( i / kBlock ) ,
+				       unsigned( i % kBlock ) ) );
  }
 
 inline std::size_t CompactRankSelect::select( std::size_t k , bool b ) const
@@ -353,17 +290,13 @@ inline std::size_t CompactRankSelect::select( std::size_t k , bool b ) const
 inline std::size_t CompactRankSelect::select1( std::size_t k ) const
 {
  ADS_PRE( ( k >= 1 ) && ( k <= f_ones ) );
- const std::size_t p = select( k , true );
- ADS_POST( f_b[ p ] && ( rank1( p ) == k - 1 ) );
- return( p );
+ return( detail::selected( *this , k , true , select( k , true ) ) );
  }
 
 inline std::size_t CompactRankSelect::select0( std::size_t k ) const
 {
  ADS_PRE( ( k >= 1 ) && ( k <= zeros() ) );
- const std::size_t p = select( k , false );
- ADS_POST( ! f_b[ p ] && ( rank0( p ) == k - 1 ) );
- return( p );
+ return( detail::selected( *this , k , false , select( k , false ) ) );
  }
 
 inline std::size_t CompactRankSelect::directoryBits( void ) const
@@ -374,14 +307,7 @@ inline std::size_t CompactRankSelect::directoryBits( void ) const
 
 inline bool CompactRankSelect::consistent( void ) const
 {
- std::size_t c = 0;
- for( std::size_t i = 0 ; i <= f_b.size() ; ++i ) {
-  if( rank1( i ) != c )
-   return( false );
-  if( i < f_b.size() && f_b[ i ] )
-   ++c;
-  }
- return( c == f_ones );
+ return( detail::rankConsistent( *this ) );
  }
 
 /*--------------------------------------------------------------------------*/

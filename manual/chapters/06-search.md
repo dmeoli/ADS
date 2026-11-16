@@ -1665,7 +1665,10 @@ between, that of the two entries of a sparse table on the minima of the
 blocks that cover them, the leftmost of the smallest of three
 ([Algorithm 6.20](06-search.md#alg-6-20)). For each place, the minima of the suffixes and
 of the prefixes are kept, with their offsets in the block
-side by side, and so are the minima in the table. A query thus makes at
+side by side, and so are the minima in the table, whose rows are built and
+read by the same two functions as those of `SparseTable` (the doubling of
+the rows and the two ranges that cover a query), on entries that keep the
+minimum with its place instead of only the place. A query thus makes at
 most five reads of the memory, independent of one another, and never reads
 the array. Both answers (in one block and across blocks) are computed, and
 one is chosen by a conditional move, which a random range would otherwise

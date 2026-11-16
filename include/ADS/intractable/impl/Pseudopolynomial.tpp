@@ -158,16 +158,11 @@ inline std::optional< Nodes > subsetSumSet( const std::vector< long > & A ,
 
 inline std::optional< Nodes > partitionDP( const std::vector< long > & A )
 {
- ADS_PRE( detail::nonnegative( A ) );
- const auto result = [ & ]( void ) -> std::optional< Nodes > {
-  const long s = std::accumulate( A.begin() , A.end() , 0L );
-  if( s % 2 )
-   return( std::nullopt );
-  return( subsetSumSet( A , s / 2 ) );
-  }();
- ADS_POST( ! result || ( 2 * detail::sumOver( A , *result ) ==
-			 std::accumulate( A.begin() , A.end() , 0L ) ) );
- return( result );
+ // the reduction of Problems.h, on the dynamic programming of SUBSET SUM
+ return( detail::partitionBy( A ,
+			      []( const std::vector< long > & B , long k ) {
+  return( subsetSumSet( B , k ) );
+  } ) );
  }
 
 /*--------------------------------------------------------------------------*/

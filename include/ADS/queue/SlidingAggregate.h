@@ -66,6 +66,7 @@
 
 #include "ADS/Algebra.h"
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 
 #include <algorithm>
 #include <concepts>
@@ -220,130 +221,228 @@ class StacksWindow
  };
 
 /// an array of fixed capacity whose live cells are \f$ [ lo , hi ) \f$,
-/// each with the aggregate of the cells from 0 to it, in the order of the
-/// window: the cell first when `Front` (a front, the first item on top),
-/// last otherwise (a back, the last item on top)
-template< class G , bool Front >
-class AggArray
+/// each with an item and a summary of the cells from 0 to it (the place of
+/// the least item, or their aggregate): the stacks of the real-time queue
+template< class Item , class Summary >
+class CellArray
 {
  public:
- using Value = typename G::Value;
- AggArray( void ) = default;
- explicit AggArray( std::size_t c )
+ /// no cell
+ CellArray( void ) = default;
+
+ /// room for \f$ c \f$ cells, none built
+ explicit CellArray( std::size_t c )
      : f_a( c ? std::allocator< Cell >().allocate( c ) : nullptr ) ,
        f_cap( c ) { }
- AggArray( AggArray && o ) noexcept { swap( o ); }
- AggArray & operator=( AggArray && o ) noexcept {
+
+ /// the cells of `o`, which is left with none
+ CellArray( CellArray && o ) noexcept { swap( o ); }
+
+ /// the cells of `o`, its own given back through it
+ CellArray & operator=( CellArray && o ) noexcept {
   swap( o );
   return( *this );
   }
- ~AggArray() {
+
+ /// the live cells destroyed, the room freed
+ ~CellArray() {
   for( std::size_t i = f_lo ; i < f_hi ; ++i )
    std::destroy_at( f_a + i );
   if( f_a )
    std::allocator< Cell >().deallocate( f_a , f_cap );
   }
- void swap( AggArray & o ) noexcept {
+
+ /// exchanges the cells with `o`
+ void swap( CellArray & o ) noexcept {
   std::swap( f_a , o.f_a );
   std::swap( f_cap , o.f_cap );
   std::swap( f_lo , o.f_lo );
   std::swap( f_hi , o.f_hi );
   }
+
+ /// the live cells
  [[nodiscard]] std::size_t size( void ) const { return( f_hi - f_lo ); }
+
+ /// the room
+ [[nodiscard]] std::size_t capacity( void ) const { return( f_cap ); }
+
+ /// the first live place
  [[nodiscard]] std::size_t lo( void ) const { return( f_lo ); }
+
+ /// the place after the last live one
  [[nodiscard]] std::size_t hi( void ) const { return( f_hi ); }
- [[nodiscard]] Value & at( std::size_t i ) { return( f_a[ i ].item ); }
- [[nodiscard]] const Value & at( std::size_t i ) const {
+
+ /// the item of the place \f$ i \f$
+ [[nodiscard]] Item & at( std::size_t i ) { return( f_a[ i ].item ); }
+
+ /// the item of the place \f$ i \f$
+ [[nodiscard]] const Item & at( std::size_t i ) const {
   return( f_a[ i ].item );
   }
- /// the aggregate of the cells from 0 to \f$ i \f$
- [[nodiscard]] const Value & agg( std::size_t i ) const {
-  return( f_a[ i ].agg );
+
+ /// the summary of the cells from 0 to \f$ i \f$
+ [[nodiscard]] const Summary & summary( std::size_t i ) const {
+  return( f_a[ i ].s );
   }
- /// \f$ x \f$ in a new cell on top, with its aggregate
- void push( Value x ) {
+
+ /// \f$ x \f$ in a new cell on top, with the summary \f$ s \f$
+ template< class U , class S >
+ void push( U && x , S && s ) {
   ADS_PRE( f_hi < f_cap );
-  Value s = x;
-  if( f_hi > f_lo ) {
-   if constexpr( Front )
-    s = G::combine( x , agg( f_hi - 1 ) );
-   else
-    s = G::combine( agg( f_hi - 1 ) , x );
-   }
-  std::construct_at( f_a + f_hi , Cell{ std::move( x ) , std::move( s ) } );
+  std::construct_at( f_a + f_hi , Cell{ Item( std::forward< U >( x ) ) ,
+				       Summary( std::forward< S >( s ) ) } );
   ++f_hi;
   }
+
+ /// the top cell destroyed
  void pop( void ) {
   ADS_PRE( f_hi > f_lo );
   std::destroy_at( f_a + --f_hi );
   }
+
+ /// the bottom cell destroyed
  void popBottom( void ) {
   ADS_PRE( f_hi > f_lo );
   std::destroy_at( f_a + f_lo++ );
   }
 
  private:
+ /// a cell, an item and the summary up to it
  struct Cell
  {
-  Value item;  ///< the item
-  Value agg;   ///< the aggregate of the cells from 0 to here
+  Item item;  ///< the item
+  Summary s;  ///< the summary of the cells from 0 to here
   };
- Cell * f_a = nullptr;
- std::size_t f_cap = 0;
- std::size_t f_lo = 0;
- std::size_t f_hi = 0;
+
+ Cell * f_a = nullptr;   ///< the room
+ std::size_t f_cap = 0;  ///< its cells
+ std::size_t f_lo = 0;   ///< the first live cell
+ std::size_t f_hi = 0;   ///< after the last live cell
+ };
+
+/// the real-time queue of Hood and Melville on the stacks of cells of
+/// `Link`, which gives the type of the items and of the summaries, the
+/// pushes on a front (the first item on top) and on a back (the last item
+/// on top), and the summary of the whole queue from its parts: one
+/// rotation for the aggregates of a window and for the minima of
+/// `RealTimeMinQueue`
+template< class Link >
+class RealTimeRotation
+{
+ public:
+ using Item = typename Link::Item;                         ///< the items
+ using Array = CellArray< Item , typename Link::Summary >;  ///< a stack
+
+ /// the empty queue, its cells pushed by `l`
+ explicit RealTimeRotation( Link l = Link() )
+     : f_R( 1 ) , f_link( std::move( l ) ) { }
+
+ /// a copy, item by item
+ RealTimeRotation( const RealTimeRotation & o )
+     : f_R( 1 ) , f_link( o.f_link ) {
+  o.forEach( [ & ]( const Item & x ) { push( x ); } );
+  }
+
+ /// the items of `o`, which is left empty
+ RealTimeRotation( RealTimeRotation && o ) noexcept
+     : f_R( 1 ) , f_link( o.f_link ) {
+  swap( o );
+  }
+
+ /// the items of `o`, by copy and swap
+ RealTimeRotation & operator=( const RealTimeRotation & o ) {
+  RealTimeRotation c( o );
+  swap( c );
+  return( *this );
+  }
+
+ /// the items of `o`, exchanged with these
+ RealTimeRotation & operator=( RealTimeRotation && o ) noexcept {
+  swap( o );
+  return( *this );
+  }
+
+ /// exchanges the items with `o`
+ void swap( RealTimeRotation & o ) noexcept;
+
+ /// the number of items
+ [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
+
+ /// the first item, the top of the front
+ [[nodiscard]] const Item & front( void ) const {
+  return( f_F.at( f_F.hi() - 1 ) );
+  }
+
+ /// the summary of the items, from those of the parts
+ [[nodiscard]] decltype( auto ) aggregate( void ) const {
+  return( f_link.aggregate( *this ) );
+  }
+
+ /// \f$ x \f$ on the back, and three moves of a rotation
+ void push( const Item & x );
+
+ /// the first item removed from the front, and three moves of a rotation
+ Item pop( void );
+
+ /// no item
+ void clear( void ) {
+  RealTimeRotation e( f_link );
+  swap( e );
+  }
+
+ /// f( x ) for each item x, from the first
+ template< class F >
+ void forEach( F && f ) const;
+
+ Array f_F;                          ///< the front, the first item on top
+ Array f_R;                          ///< the back, the last item on top
+ Array f_Rf;                         ///< the frozen back of a rotation
+ Array f_N;                          ///< the new front of a rotation
+ std::size_t f_r0 = 0;               ///< the items of the frozen back
+ std::size_t f_i = 0;                ///< the places of the front moved
+ std::size_t f_n = 0;                ///< the items
+ bool f_rot = false;                 ///< a rotation is going on
+ ADS_NO_UNIQUE_ADDRESS Link f_link;  ///< the pushes and the summary
+
+ private:
+ /// a rotation started if the back has one item more than the front
+ void startIfDue( void );
+
+ /// \f$ k \f$ moves of the rotation, or its end
+ void steps( int k );
+ };
+
+/// the cells of a window of the monoid `G` with the aggregate of the cells
+/// from 0, in the order of the window
+template< class G >
+struct AggLink
+{
+ using Item = typename G::Value;     ///< the items
+ using Summary = typename G::Value;  ///< their aggregates
+
+ /// \f$ x \f$ on top of the front \f$ a \f$, the first item on top
+ template< class A >
+ static void pushFront( A & a , Item x ) {
+  Item s = a.size() > 0 ? G::combine( x , a.summary( a.hi() - 1 ) ) : x;
+  a.push( std::move( x ) , std::move( s ) );
+  }
+
+ /// \f$ x \f$ on top of the back \f$ a \f$, the last item on top
+ template< class A >
+ static void pushBack( A & a , Item x ) {
+  Item s = a.size() > 0 ? G::combine( a.summary( a.hi() - 1 ) , x ) : x;
+  a.push( std::move( x ) , std::move( s ) );
+  }
+
+ /// the aggregate of the window \f$ q \f$
+ template< class Q >
+ static Item aggregate( const Q & q );
  };
 
 /// the window of the real-time queue of Hood and Melville on stacks with
 /// the aggregates [see `RealTimeMinQueue`]
 template< class G >
-class RealTimeWindow
-{
- public:
- using Value = typename G::Value;
- RealTimeWindow( void ) : f_R( 1 ) { }
- RealTimeWindow( const RealTimeWindow & o ) : f_R( 1 ) {
-  o.forEach( [ & ]( const Value & x ) { push( x ); } );
-  }
- RealTimeWindow( RealTimeWindow && o ) noexcept : f_R( 1 ) { swap( o ); }
- RealTimeWindow & operator=( const RealTimeWindow & o ) {
-  RealTimeWindow c( o );
-  swap( c );
-  return( *this );
-  }
- RealTimeWindow & operator=( RealTimeWindow && o ) noexcept {
-  swap( o );
-  return( *this );
-  }
- void swap( RealTimeWindow & o ) noexcept;
- [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
- [[nodiscard]] const Value & front( void ) const {
-  return( f_F.at( f_F.hi() - 1 ) );
-  }
- [[nodiscard]] Value aggregate( void ) const;
- void push( const Value & x );
- Value pop( void );
- void clear( void ) {
-  RealTimeWindow e;
-  swap( e );
-  }
- template< class F >
- void forEach( F && f ) const;
-
- private:
- using Fr = AggArray< G , true >;   ///< a front
- using Bk = AggArray< G , false >;  ///< a back
- void startIfDue( void );
- void steps( int k );
- Fr f_F;                ///< the front, the first item on top
- Bk f_R;                ///< the back, the last item on top
- Bk f_Rf;               ///< the frozen back of a rotation
- Fr f_N;                ///< the new front of a rotation
- std::size_t f_r0 = 0;  ///< the items of the frozen back
- std::size_t f_i = 0;   ///< the places of the front moved
- std::size_t f_n = 0;   ///< the items
- bool f_rot = false;    ///< a rotation is going on
- };
+using RealTimeWindow = RealTimeRotation< AggLink< G > >;
 
 /// the window of the kind K
 template< class G , window_kind K >

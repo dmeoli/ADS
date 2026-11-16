@@ -901,18 +901,35 @@ inline std::optional< Nodes > subsetSumExists( const std::vector< long > & A ,
  return( result );
  }
 
-inline std::optional< Nodes > partition( const std::vector< long > & A )
+namespace detail
 {
- ADS_PRE( detail::nonnegative( A ) );
+
+/// the reduction of PARTITION to SUBSET SUM: the places of a half of A of
+/// sum s / 2, s the sum of A, by subsetSum( A , s / 2 ), none if s is odd
+template< class S >
+inline std::optional< Nodes > partitionBy( const std::vector< long > & A ,
+					   S && subsetSum )
+{
+ ADS_PRE( nonnegative( A ) );
  const auto result = [ & ]( void ) -> std::optional< Nodes > {
   const long s = std::accumulate( A.begin() , A.end() , 0L );
   if( s % 2 )
    return( std::nullopt );
-  return( subsetSumExists( A , s / 2 ) );
+  return( subsetSum( A , s / 2 ) );
   }();
- ADS_POST( ! result || ( 2 * detail::sumOver( A , *result ) ==
+ ADS_POST( ! result || ( 2 * sumOver( A , *result ) ==
 			 std::accumulate( A.begin() , A.end() , 0L ) ) );
  return( result );
+ }
+
+}  // end( namespace detail )
+
+inline std::optional< Nodes > partition( const std::vector< long > & A )
+{
+ return( detail::partitionBy( A ,
+			      []( const std::vector< long > & B , long k ) {
+  return( subsetSumExists( B , k ) );
+  } ) );
  }
 
 inline std::optional< Nodes > knapsackDecision( const std::vector< long > & p ,

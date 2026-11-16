@@ -210,17 +210,13 @@ inline std::size_t RRRBitVector::select( std::size_t k , bool b ) const
 inline std::size_t RRRBitVector::select1( std::size_t k ) const
 {
  ADS_PRE( ( k >= 1 ) && ( k <= f_ones ) );
- const std::size_t p = select( k , true );
- ADS_POST( ( *this )[ p ] && ( rank1( p ) == k - 1 ) );
- return( p );
+ return( detail::selected( *this , k , true , select( k , true ) ) );
  }
 
 inline std::size_t RRRBitVector::select0( std::size_t k ) const
 {
  ADS_PRE( ( k >= 1 ) && ( k <= zeros() ) );
- const std::size_t p = select( k , false );
- ADS_POST( ! ( *this )[ p ] && ( rank0( p ) == k - 1 ) );
- return( p );
+ return( detail::selected( *this , k , false , select( k , false ) ) );
  }
 
 inline std::size_t RRRBitVector::sizeInBits( void ) const

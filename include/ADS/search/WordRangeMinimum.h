@@ -101,6 +101,7 @@
 #include "ADS/Portable.h"
 #include "ADS/memory/HugePageAllocator.h"
 #include "ADS/search/CountLess.h"
+#include "ADS/search/RangeMinimum.h"
 
 #include <bit>
 #include <cstddef>

@@ -134,15 +134,12 @@ inline std::size_t FMIndex::place( std::size_t r ) const
 inline std::vector< std::size_t > FMIndex::locate( std::string_view P ) const
 {
  const auto [ first , last ] = range( P );
- std::vector< std::size_t > R;
- R.reserve( last - first );
- for( std::size_t r = first ; r < last ; ++r )
-  R.push_back( place( r ) );
- std::sort( R.begin() , R.end() );
- ADS_AUDIT( std::all_of( R.begin() , R.end() , [ & ]( std::size_t p ) {
-  return( ( p + P.size() <= f_n ) && ( extract( p , p + P.size() ) == P ) );
-  } ) );
- return( R );
+ return( detail::sortedPlaces(
+   first , last , P , f_n ,
+   [ this ]( std::size_t r ) { return( place( r ) ); } ,
+   [ this ]( std::size_t i , std::size_t j ) {
+    return( extract( i , j ) );
+    } ) );
  }
 
 inline std::string FMIndex::extract( std::size_t i , std::size_t j ) const
