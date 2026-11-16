@@ -33,7 +33,8 @@
  * tables of the small blocks of the classical analysis (Jacobson, Clark).
  * The kernels that the directories of rank and select share are here too,
  * in `detail`: the 1s of a prefix of a line of 512 bits, one kernel with a
- * variant for AVX2 and a scalar one (with BMI2 or not); the copy and the
+ * variant on the vectors of Highway and a scalar one (with BMI2 or not);
+ * the copy and the
  * count of the words of a chunk and the size of the chunks of a parallel
  * construction; and the checks of a select and of the ranks on the concept
  * `detail::RankSelectBits`.
@@ -78,6 +79,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/SimdInline.h"
 #include "ADS/combinatorial/Bitwise.h"
 #include "ADS/memory/HugePageAllocator.h"
 
@@ -95,7 +97,7 @@
 #include <utility>
 #include <vector>
 
-#if defined( __BMI2__ ) || defined( __AVX2__ )
+#if defined( __BMI2__ )
  #include <immintrin.h>
 #endif
 
@@ -285,10 +287,10 @@ concept RankSelectBits = requires( const R & r , std::size_t i )
 /// \f$ w \f$, aligned to 32 bytes: one kernel, its variant chosen by the
 /// instruction set (`Scalar` asks for the scalar one)
 ///
-/// With AVX2, the bytes of the line before the one of the bit \f$ p \f$
-/// are counted 32 at a time by a table of the 16 nibbles and summed by the
-/// absolute differences with 0, and then the bits of the byte of \f$ p \f$
-/// before it; else each word is cut at \f$ p \f$, with no branch (by
+/// With `ADS_WITH_HIGHWAY`, the 8 words are cut at \f$ p \f$ and counted
+/// a vector at a time, the masks of the words made from the lanes of
+/// \f$ \mathrm{clamp}( p - 64 i , 0 , 64 ) \f$ [see `SimdInline.h`]; else
+/// each word is cut at \f$ p \f$, with no branch (by
 /// `_bzhi_u64` with BMI2). The words may lie past the size of the bits,
 /// which is why they are read whole [see `BitVector`].
 /// \pre \f$ p < 512 \f$

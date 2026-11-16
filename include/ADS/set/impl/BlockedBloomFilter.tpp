@@ -31,33 +31,22 @@ alignas( 32 ) inline constexpr std::uint32_t kBlockSalt[ 8 ] = {
 /// the 8 words of the bits of the low half h of a hash, one bit per word
 struct BlockMask
 {
-#if defined( __AVX2__ )
- __m256i m;
+ std::uint32_t m[ 8 ];
 
- explicit BlockMask( std::uint32_t h )
-     : m( _mm256_sllv_epi32(
-	 _mm256_set1_epi32( 1 ) ,
-	 _mm256_srli_epi32(
-	   _mm256_mullo_epi32(
-	     _mm256_set1_epi32( int( h ) ) ,
-	     _mm256_load_si256(
-	       reinterpret_cast< const __m256i * >( kBlockSalt ) ) ) ,
-	   27 ) ) ) { }
+#ifdef ADS_WITH_HIGHWAY
+ // the 8 words at once [see SimdInline.h]
+ explicit BlockMask( std::uint32_t h ) {
+  simd::here::blockBits8( h , kBlockSalt , m );
+  }
 
  /// true if all the bits are in the 8 words from w
  bool in( const std::uint32_t * w ) const {
-  return( _mm256_testc_si256(
-    _mm256_load_si256( reinterpret_cast< const __m256i * >( w ) ) , m ) );
+  return( simd::here::blockHas8( w , m ) );
   }
 
  /// sets the bits in the 8 words from w
- void set( std::uint32_t * w ) const {
-  auto * p = reinterpret_cast< __m256i * >( w );
-  _mm256_store_si256( p , _mm256_or_si256( _mm256_load_si256( p ) , m ) );
-  }
+ void set( std::uint32_t * w ) const { simd::here::blockSet8( w , m ); }
 #else
- std::uint32_t m[ 8 ];
-
  explicit BlockMask( std::uint32_t h ) {
   for( int i = 0 ; i < 8 ; ++i )
    m[ i ] = std::uint32_t( 1 ) << ( ( h * kBlockSalt[ i ] ) >> 27 );

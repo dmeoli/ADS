@@ -43,7 +43,8 @@
  * the two bits \f$ d_0 = 2^{z_{q-1}+1} \f$ and \f$ d_1 = 2^{z_q+1} \f$, and
  * the slots of the run are the bits of \f$ ( d_1 / 2 - d_0 ) / 2^q \f$, with
  * no count of zeros. A query compares the 32 bytes of the bin with
- * \f$ r \f$ at once (AVX-512 or AVX2, a byte at a time on any machine),
+ * \f$ r \f$ at once (by the vectors of Highway with `ADS_WITH_HIGHWAY`
+ * [see `SimdInline.h`], a byte at a time without it),
  * stops if no byte of the body is equal, as it is for about \f$ 91 \% \f$
  * of the keys out of \f$ S \f$ (\f$ 1 - ( 1 - 2^{-8} )^{23.75} \f$ of them
  * have one), and otherwise tells whether one of the equal bytes is in the
@@ -55,8 +56,8 @@
  * one to the spare, out of line, a mispredicted branch on a load costing
  * the loads of the queries in flight. An insertion finds the place of
  * \f$ r \f$ in its run by counting the bytes of the run below \f$ r \f$ (one
- * comparison of the 32 bytes), and moves the bytes above it by one within a
- * register of 256 bits (AVX2), or within 4 words on any machine, while one
+ * comparison of the 32 bytes), and moves the bytes above it by one within 4
+ * words, while one
  * more one goes into the header at the end of the run. The answers are the
  * same on every machine.
  *
@@ -166,6 +167,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/SimdInline.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/set/BlockedBloomFilter.h"
 
@@ -177,7 +179,7 @@
 #include <cstring>
 #include <vector>
 
-#if defined( __AVX2__ ) || defined( __BMI2__ )
+#if defined( __BMI2__ )
  #include <immintrin.h>
 #endif
 

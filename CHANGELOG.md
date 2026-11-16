@@ -2207,6 +2207,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The kernels inlined in the searches on Highway (ADS/SimdInline.h): the
+  count of the keys below a key in a node (CountLess.h, for the B-trees
+  and the static searches), the 16 keys of a `Node16` of
+  `AdaptiveRadixTree`, the rank in a line of 512 bits (BitVector.h), the 8
+  words of a block of `BlockedBloomFilter`, the 32 bytes of a bin of
+  `PrefixFilter`, the 8 parities of a line of `RibbonFilter`, the first 32
+  bytes of `lce()` and the filter of `StringSearcher` (`ADS_SEARCH_SIMD` is
+  now 1 with Highway, 32 bytes at a time, and 0 without it), in place of
+  the code of SSE2, AVX2 and AVX-512 under the tests of the target; the
+  insertion of `PrefixFilter` moves the bytes within 4 words on every
+  machine.
+
 - The encoder and the decoder of Stream VByte and the packing and the
   unpacking of the blocks of the binary packing on the kernels of Highway
   (ADS/impl/simd/Compression.tpp), with the same bytes, on the machines of

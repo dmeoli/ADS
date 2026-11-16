@@ -24,7 +24,8 @@
  * `SuffixSorting.h`], and answers in two stages:
  *
  * - the first 64 symbols of the two suffixes are compared directly, 32 at
- *   a time with AVX2 (8 else), since on most texts most extensions are
+ *   a time by the vectors of Highway (8 without it), since on most texts
+ *   most extensions are
  *   short, and the direct comparison, which reads two lines of the text,
  *   is then faster than any query that reads the inverse and the LCP
  *   array at random (Ilie, Navarro and Tinta found it the fastest on the
@@ -104,6 +105,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/SimdInline.h"
 #include "ADS/memory/Prefetch.h"
 #include "ADS/string/SuffixSorting.h"
 

@@ -16,8 +16,8 @@
  *
  * - `Node4` and `Node16` keep up to 4 and 16 bytes sorted beside the
  *   pointers to the children of the same places; a `Node16` is searched by
- *   one comparison of vectors of SSE2 (or NEON), the 16 bytes against the
- *   byte of the key at once;
+ *   one comparison of the vectors of Highway (SSE2, NEON) [see
+ *   `SimdInline.h`], the 16 bytes against the byte of the key at once;
  * - `Node48` keeps an index of 256 bytes, the place of the child of each
  *   byte among its 48 pointers (0 for none);
  * - `Node256` keeps the 256 pointers, the byte of the key being the place.
@@ -111,6 +111,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/SimdInline.h"
 #include "ADS/memory/HugePageAllocator.h"
 #include "ADS/memory/ObjectPool.h"
 #include "ADS/memory/Prefetch.h"
