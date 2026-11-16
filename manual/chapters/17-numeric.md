@@ -2727,6 +2727,12 @@ to the benchmarks of the appendix B. By design, the code of ADS is not
 tuned to any processor, and it is not expected to match the backends on
 long operands.
 
+A `BasicCsrMatrix` is persistent ([§23.7](23-external.md#sec-23-7)), with
+the types of its values, of its columns and of its offsets in the file, so
+that a matrix of other types is rejected on the reading; `restoreMapped()`
+makes its three arrays views of the file, which (as in memory) are left
+uninitialized where they grow.
+
 ## 17.12 Exercises {#sec-17-12}
 
 Each exercise names the test of the library that solves it (run it with

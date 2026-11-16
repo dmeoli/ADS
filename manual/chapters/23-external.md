@@ -1061,8 +1061,10 @@ system usually work best.
 We now turn to the static structures of the library, i.e., the succinct
 ones of [chapter 22](22-succinct.md#ch-22), the indexes of texts of
 [chapter 21](21-compression.md#ch-21), the learned indexes of
-[chapter 6](06-search.md#ch-6), the filters of [chapter 10](10-set.md#ch-10)
-and the perfect hash functions of [chapter 7](07-dictionary.md#ch-7). Such a
+[chapter 6](06-search.md#ch-6), the filters of [chapter 10](10-set.md#ch-10),
+the perfect hash functions of [chapter 7](07-dictionary.md#ch-7), and the
+graph and the matrix in compressed rows of [chapter 14](14-graph.md#ch-14)
+and [chapter 17](17-numeric.md#ch-17). Such a
 structure is usually built once and then queried for a long time, often by
 a program that starts many times; building it again at each start may cost
 far more than all of its queries. We therefore write it, by `Persistence.h`,

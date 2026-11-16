@@ -4904,6 +4904,13 @@ those of LEMON ([Dezső, Jüttner and Kovács
 window of [§14.14.1](14-graph.md#sec-14-14-1) is that of [Dial
 1969](Z-bibliography.md#ref-dial1969).
 
+A `StaticGraph` is persistent ([§23.7](23-external.md#sec-23-7)): `store()`
+writes its offsets, its heads and its weights, and `restoreMapped()` makes
+the three arrays views of the file, aligned to the lines of the cache.
+Hence a graph of some billions of arcs, built once, is opened in place and
+still passed without a copy to METIS, KaHIP or GraphBLAS, which take the
+same three arrays.
+
 ## 14.16 Exercises {#sec-14-16}
 
 The exercises of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin-cpp)

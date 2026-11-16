@@ -2249,17 +2249,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   WaveletMatrix, HuffmanWaveletTree, LoudsTree, JacobsonTree,
   BalancedParentheses, BPTree, K2Tree, BVGraph, EliasFanoGraph,
   MoveStructure, FMIndex, HuffmanFMIndex, RIndex, MoveRIndex, PGMIndex,
-  CompressedPGMIndex, the filters (BloomFilter, BlockedBloomFilter,
-  SpectralBloomFilter, PartitionedBloomFilter, CuckooFilter, RibbonFilter,
-  BinaryFuseFilter, PrefixFilter, GrafiteFilter, BucketingFilter) and the
-  perfect hash functions (MinimalPerfectHash, RecSplit,
-  FingerprintPerfectHash, PerfectHashTable, OrderedMinimalPerfectHash),
-  each by one member persist(), with a default constructor where it had
-  none; the archives of cereal on the same members
-  [see include/ADS/interop/cereal/Cereal.h], with ADS_WITH_CEREAL (AUTO,
-  the target ADS::cereal; auto in the makefile, ADSCEREALINC; OFF in the
-  packages), a BitVector in the layout of the bit_vector of sdsl-lite v3;
-  the tests engineered_persistence; section 23.7 of the manual.
+  CompressedPGMIndex, StaticGraph, BasicCsrMatrix, the filters
+  (BloomFilter, BlockedBloomFilter, SpectralBloomFilter,
+  PartitionedBloomFilter, CuckooFilter, RibbonFilter, BinaryFuseFilter,
+  PrefixFilter, GrafiteFilter, BucketingFilter) and the perfect hash
+  functions (MinimalPerfectHash, RecSplit, FingerprintPerfectHash,
+  PerfectHashTable, OrderedMinimalPerfectHash), each by one member
+  persist(), with a default constructor where it had none; the archives of
+  cereal on the same members [see include/ADS/interop/cereal/Cereal.h],
+  with ADS_WITH_CEREAL (AUTO, the target ADS::cereal; auto in the
+  makefile, ADSCEREALINC; OFF in the packages), a BitVector in the layout
+  of the bit_vector of sdsl-lite v3; the tests engineered_persistence;
+  section 23.7 of the manual.
 
 ### Changed
 
