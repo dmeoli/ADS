@@ -1,8 +1,8 @@
 # 1. Introduction {#ch-1}
 
 [Source: `include/ADS/ADT.h`, `Contract.h`, `Iterators.h`, `Portable.h`,
-`Wide.h`, `Modification.h`, `Capabilities.h`, `Algebra.h`,
-`ADS/sequence/IndexedList.h`, `ADS/sequence/ObservableArray.h`,
+`Wide.h`, `Simd.h`, `SimdInline.h`, `Modification.h`, `Capabilities.h`,
+`Algebra.h`, `ADS/sequence/IndexedList.h`, `ADS/sequence/ObservableArray.h`,
 `ADS/sequence/Fenwick.h`, `ADS/queue/SlidingAggregate.h`,
 `ADS/set/SetInterfaces.h`, `ADS/set/Bag.h`]
 

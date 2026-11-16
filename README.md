@@ -1169,6 +1169,16 @@ and the packages are built with it off. A translation unit that includes
 ADS with Highway may neither include `hwy/highway.h` before it nor run a
 dispatch of Highway of its own, since Highway runs one per unit.
 
+With [hwloc](https://www.open-mpi.org/projects/hwloc/) (2.0 or later),
+`affinityCpus()`, `pinThread()` and `currentCpu()` of
+[`Affinity.h`](include/ADS/parallel/Affinity.h) and the count of the
+physical cores of the executor on FastFlow read the topology of the
+machine from hwloc, which places the threads on every system that it
+knows; without it the threads stay where the system puts them, and the
+executors count the threads of the hardware. `ADS_WITH_HWLOC` is `AUTO`
+with CMake (hints `HWLOC_INCLUDE_DIR` and `HWLOC_LIBRARY`) and `auto` with
+the makefile (`HWLOC=<prefix>`), and the packages are built with it off.
+
 With `ADS_WITH_BOOST` the headers of `include/ADS/interop/boost/` join ADS
 to Boost in both directions, each included by the program that wants it:
 [`Graph.h`](include/ADS/interop/boost/Graph.h) makes `StaticGraph`,
