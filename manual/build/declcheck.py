@@ -88,6 +88,8 @@ LIBRARIES = {
     'MPI': (['-DADS_WITH_MPI'], 'mpi.h'),
     'Boost.MPI': (['-DADS_WITH_MPI', '-DADS_WITH_BOOST_MPI'],
                   'boost/mpi/communicator.hpp'),
+    'CRoaring': (['-DADS_WITH_CROARING'], 'roaring/roaring.hh'),
+    'sdsl-lite': (['-DADS_WITH_SDSL'], 'sdsl/cereal.hpp'),
 }
 
 # ----------------------------------------------------------------------------

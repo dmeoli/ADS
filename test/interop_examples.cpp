@@ -7,7 +7,8 @@
  * (`declcheck.py --tests` checks that it does), followed by the checks of
  * its result. The examples use the standard library, Boost.Graph,
  * Boost.Heap, Boost.Unordered, LEMON, GMP, a CBLAS, oneTBB, OpenMP, the
- * parallel algorithms of the standard library, stdexec, Taskflow and Kokkos;
+ * parallel algorithms of the standard library, stdexec, Taskflow, Kokkos,
+ * the C Data Interface of Arrow, CRoaring and sdsl-lite;
  * a test whose library is not compiled in passes with nothing to check, and
  * says so. Those of MPI and of Boost.MPI are in interop_examples_mpi.cpp.
  *
@@ -27,6 +28,7 @@
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
+#include "ADS/interop/arrow/Arrow.h"
 #include "ADS/interop/std/FlatMap.h"
 #include "ADS/interop/std/Pmr.h"
 #include "ADS/numeric/BigInteger.h"
@@ -36,11 +38,15 @@
 #include "ADS/parallel/ParallelSort.h"
 #include "ADS/parallel/TBBExecutor.h"
 #include "ADS/priority/IndexedDaryHeap.h"
+#include "ADS/set/RoaringBitmap.h"
+#include "ADS/succinct/BitVector.h"
+#include "ADS/succinct/RankSelect.h"
 #include "ADS/sort/Sort.h"
 #include "ADS/tree/BTreeMap.h"
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <deque>
 #include <functional>
 #include <map>
@@ -73,6 +79,16 @@
  #include <lemon/dijkstra.h>
  #include <lemon/list_graph.h>
  #include <lemon/preflow.h>
+#endif
+
+#if defined( ADS_WITH_CROARING )
+ #include "ADS/interop/croaring/CRoaring.h"
+#endif
+
+#if defined( ADS_WITH_SDSL )
+ #include "ADS/interop/sdsl/Sdsl.h"
+
+ #include <sdsl/rank_support_v5.hpp>
 #endif
 
 #if defined( ADS_WITH_GMP ) && __has_include( <gmpxx.h> )
@@ -499,6 +515,64 @@ ADS_TEST( "kokkos-sort" )
  CHECK( sortedSample( A ) );
 #else
  notCompiled( "Kokkos" );
+#endif
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE COLUMNAR FORMATS ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+// section C.14: the sequences of ADS as the columns of Arrow, and back
+ADS_TEST( "arrow-columns" )
+{
+ ADS::BitVector b( 1000 );
+ b.set( 7 );
+ ArrowArray a;
+ ArrowSchema s;
+ ADS::exportArrow( std::move( b ) , &a , &s , "flags" );  // no copy
+ CHECK( a.length == 1000 && std::string( s.format ) == "b" );
+ a.release( &a );  // as the consumer does when done
+ s.release( &s );
+ std::vector< std::int64_t > v{ 3 , 1 , 4 };
+ ArrowArray c;
+ ArrowSchema t;
+ ADS::exportArrow( std::move( v ) , &c , &t );
+ ADS::ArrowColumn< std::int64_t > col( &c , t );  // taken back, no copy
+ CHECK( col.size() == 3 && col[ 2 ] == 4 && c.release == nullptr );
+ t.release( &t );
+ }
+
+// section C.15: a set of ADS to CRoaring and back
+ADS_TEST( "croaring-bitmaps" )
+{
+#if defined( ADS_WITH_CROARING )
+ const std::uint32_t x[] = { 1 , 5 , 70000 };
+ const ADS::RoaringBitmap s( x , 3 );
+ const std::vector< std::byte > file = s.writePortable();  // any Roaring
+ CHECK( ADS::RoaringBitmap::readPortable( file ).items() == s.items() );
+ roaring_bitmap_t * r = ADS::toCRoaring( s );
+ roaring_bitmap_add_range( r , 100 , 200 );              // in CRoaring
+ const ADS::RoaringBitmap t = ADS::fromCRoaring( r );  // and back
+ roaring_bitmap_free( r );
+ CHECK( t.size() == 103 && t.contains( 150 ) && t.contains( 70000 ) );
+#else
+ notCompiled( "CRoaring" );
+#endif
+ }
+
+// section C.16: the bits of ADS under a structure of sdsl-lite, and back
+ADS_TEST( "sdsl-vectors" )
+{
+#if defined( ADS_WITH_SDSL )
+ ADS::BitVector b( 1000 );
+ b.set( 3 );
+ b.set( 500 );
+ const sdsl::bit_vector v = ADS::toSdsl( b );       // a copy of the words
+ const sdsl::rank_support_v5< 1 > r( &v );          // a rank of sdsl
+ const ADS::RankSelect q( ADS::toBitVector( v ) );  // and one of ADS
+ CHECK( r.rank( 501 ) == 2 && q.rank1( 501 ) == 2 );
+#else
+ notCompiled( "sdsl-lite" );
 #endif
  }
 

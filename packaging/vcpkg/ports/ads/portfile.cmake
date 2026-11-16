@@ -27,6 +27,8 @@ vcpkg_cmake_configure(
         -DADS_WITH_BOOST_MPI=OFF
         -DADS_WITH_HWLOC=OFF
         -DADS_WITH_CEREAL=OFF
+        -DADS_WITH_CROARING=OFF
+        -DADS_WITH_SDSL=OFF
 )
 vcpkg_cmake_install()
 vcpkg_cmake_config_fixup(PACKAGE_NAME ads CONFIG_PATH share/cmake/ADS)

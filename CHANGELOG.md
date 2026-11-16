@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The columnar formats of other libraries, in the set interop:
+  ADS/interop/arrow/Arrow.h, which hands a BitVector (as booleans), a
+  PackedArray (as unsigned integers) and the sequences of numbers to
+  Apache Arrow by its C Data Interface, the two structures defined as the
+  specification gives them, so that no library is needed, the values
+  shared without copy where the layouts agree (exportArrow(),
+  ArrowColumn) and copied into ADS by toBitVector(), toPackedArray() and
+  toVector(); the portable format of Roaring in RoaringBitmap
+  (writePortable(), readPortable(), portableSizeInBytes()), which reads
+  the containers of runs and checks every field, byte-identical to
+  CRoaring on the sample of the specification, and
+  ADS/interop/croaring/CRoaring.h, the conversions to and from the bitmaps
+  of CRoaring (ADS_WITH_CROARING, AUTO, off in the packages, target
+  ADS::CRoaring); ADS/interop/sdsl/Sdsl.h, the conversions of BitVector
+  and PackedArray to and from the bit_vector and the int_vector of
+  sdsl-lite 3 by a copy of the words (ADS_WITH_SDSL, AUTO, off in the
+  packages, target ADS::sdsl), and the constructor of PackedArray from
+  its words; the tests in interop_columnar, with nanoarrow where found,
+  the examples arrow-columns, croaring-bitmaps and sdsl-vectors, and
+  sections C.14 to C.16 of the manual.
+
 - The layout of the arcs of a weighted StaticGraph as its second
   parameter: ArcLayout::Separate, the two arrays and the default, or
   ArcLayout::Interleaved, one array of the pairs WeightedArc, in which a
@@ -3513,6 +3534,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   multiplies its polynomials by multiplyKaratsuba()
 
 ### Fixed
+
+- A BitVector in a JSON or XML archive of cereal is written as sdsl-lite
+  writes its bit_vector, one integer of 64 bits per bit, instead of one
+  boolean per bit, which sdsl could not load; the persistence test reads
+  sdsl-lite by ADS_WITH_SDSL.
 
 - concurrent/impl/Spin.tpp includes memory/Prefetch.h, whose
   detail::prefetchLine() its prefetch() calls, so that Executor.h and

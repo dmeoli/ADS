@@ -1854,6 +1854,19 @@ interop_examples  stdpar-sort             ordinamento su std::execution::par
 interop_examples  stdexec-sort            ordinamento e riduzione su stdexec
 interop_examples  taskflow-sort           ordinamento sui lavoratori di Taskflow
 interop_examples  kokkos-sort             ordinamento sullo spazio di Kokkos
+interop_examples  arrow-columns           colonne di Arrow da e verso ADS
+interop_examples  croaring-bitmaps        RoaringBitmap da e verso CRoaring
+interop_examples  sdsl-vectors            bit_vector e int_vector di sdsl-lite
+
+# the columnar formats of other libraries, beyond the book
+interop_columnar  arrow-bit-vector        BitVector come colonna di booleani
+interop_columnar  arrow-packed-array      PackedArray come colonna di interi
+interop_columnar  arrow-sequences         sequenze di numeri, ArrowColumn
+interop_columnar  arrow-nanoarrow         colonne lette e scritte da nanoarrow
+interop_columnar  roaring-portable        il formato portabile di Roaring
+interop_columnar  roaring-croaring        RoaringBitmap da e verso CRoaring
+interop_columnar  sdsl-vectors            bit_vector e int_vector di sdsl-lite
+interop_columnar  sdsl-cereal             archivi di cereal fra ADS e sdsl
 
 # the runtime of the long-lived workers, beyond the book
 engineered_runtime  worker-run           lavoratori insieme, annidati, eccezioni

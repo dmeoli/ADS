@@ -152,7 +152,16 @@ CXX23 = $(shell $(CXX) -std=c++23 -x c++ -fsyntax-only /dev/null \
 $(BUILD)/interop_examples$(ADSEXE): CXXFLAGS += $(CXX23)
 
 # the archives of cereal under the persistence, where they are found
-$(BUILD)/engineered_persistence$(ADSEXE): INC += $(ADSCEREALINC)
+$(BUILD)/engineered_persistence$(ADSEXE): INC += $(ADSCEREALINC) \
+	$(if $(ADSCEREALINC),$(ADSSDSLINC))
+
+# the columns of Arrow, the bitmaps of CRoaring and the vectors of sdsl-lite,
+# with the archives of cereal, where they are found [see
+# test/interop_columnar.cpp], also in the examples of appendix C
+COLUMNARBINS = $(addprefix $(BUILD)/,$(addsuffix $(ADSEXE),\
+               interop_columnar interop_examples))
+$(COLUMNARBINS): INC += $(ADSCEREALINC) $(ADSCOLUMNARINC)
+$(COLUMNARBINS): LIBS += $(ADSCOLUMNARLIB)
 
 # the configurations of the layouts, not in tests.txt [see ADS/Abi.h and
 # test/abi_units.cpp]: one program from two units of test/abi_unit.cpp, the
@@ -287,7 +296,9 @@ backends:
 	@echo "ADS: StdPar $(if $(filter 1,$(ADSSTDPARON)),ON,OFF)," \
 	      "stdexec $(if $(filter 1,$(ADSSTDEXECON)),ON,OFF)," \
 	      "Taskflow $(if $(filter 1,$(ADSTASKFLOWON)),ON,OFF)," \
-	      "cereal $(if $(filter 1,$(ADSCEREALON)),ON,OFF)"
+	      "cereal $(if $(filter 1,$(ADSCEREALON)),ON,OFF)," \
+	      "CRoaring $(if $(filter 1,$(ADSCROARINGON)),ON,OFF)," \
+	      "sdsl $(if $(filter 1,$(ADSSDSLON)),ON,OFF)"
 
 # bench target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

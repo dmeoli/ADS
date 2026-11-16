@@ -42,4 +42,6 @@ class Ads(CMakePackage):
             self.define("ADS_WITH_BOOST_MPI", False),
             self.define("ADS_WITH_HWLOC", False),
             self.define("ADS_WITH_CEREAL", False),
+            self.define("ADS_WITH_CROARING", False),
+            self.define("ADS_WITH_SDSL", False),
         ]

@@ -32,6 +32,8 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.cmakeFeature "ADS_WITH_BOOST_MPI" "OFF")
     (lib.cmakeFeature "ADS_WITH_HWLOC" "OFF")
     (lib.cmakeFeature "ADS_WITH_CEREAL" "OFF")
+    (lib.cmakeFeature "ADS_WITH_CROARING" "OFF")
+    (lib.cmakeFeature "ADS_WITH_SDSL" "OFF")
   ];
 
   doCheck = true;

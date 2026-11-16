@@ -101,7 +101,7 @@ endif ()
 foreach (program engineered_parallel engineered_speculative interop_parallel
                  interop_examples)
     foreach (r IN LISTS ADS_INTEROP_BUILT)
-        if (NOT r STREQUAL "BoostMPI" AND NOT r STREQUAL "cereal")
+        if (NOT r MATCHES "^(BoostMPI|cereal|CRoaring|sdsl)$")
             target_link_libraries(${program} PRIVATE ADS::${r})
         endif ()
     endforeach ()
@@ -136,6 +136,28 @@ endif ()
 # engineered_persistence.cpp]
 if ("cereal" IN_LIST ADS_INTEROP_BUILT)
     target_link_libraries(engineered_persistence PRIVATE ADS::cereal)
+    if ("sdsl" IN_LIST ADS_INTEROP_BUILT)
+        target_link_libraries(engineered_persistence PRIVATE ADS::sdsl)
+    endif ()
+endif ()
+
+# the columns of Arrow, the bitmaps of CRoaring, the vectors of sdsl-lite and
+# the archives of cereal that the latter share with ADS, where they are found,
+# in their tests [see interop_columnar.cpp] and in the examples of appendix C
+# of the manual; nanoarrow, where found, reads the columns that ADS exports
+# and writes those that it imports
+foreach (program interop_columnar interop_examples)
+    foreach (r cereal CRoaring sdsl)
+        if (r IN_LIST ADS_INTEROP_BUILT)
+            target_link_libraries(${program} PRIVATE ADS::${r})
+        endif ()
+    endforeach ()
+endforeach ()
+find_package(nanoarrow CONFIG QUIET)
+if (TARGET nanoarrow::nanoarrow_static)
+    target_link_libraries(interop_columnar PRIVATE
+                          nanoarrow::nanoarrow_static)
+    target_compile_definitions(interop_columnar PRIVATE ADS_WITH_NANOARROW)
 endif ()
 
 # the processes of MPI in a program of Boost.MPI, not in tests.txt: on 1 to

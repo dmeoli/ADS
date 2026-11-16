@@ -19,7 +19,8 @@ package("ads")
              "-DADS_WITH_MPI=OFF", "-DADS_WITH_STDPAR=OFF",
              "-DADS_WITH_STDEXEC=OFF", "-DADS_WITH_TASKFLOW=OFF",
              "-DADS_WITH_KOKKOS=OFF", "-DADS_WITH_BOOST_MPI=OFF",
-             "-DADS_WITH_HWLOC=OFF", "-DADS_WITH_CEREAL=OFF"})
+             "-DADS_WITH_HWLOC=OFF", "-DADS_WITH_CEREAL=OFF",
+             "-DADS_WITH_CROARING=OFF", "-DADS_WITH_SDSL=OFF"})
     end)
 
     on_test(function (package)

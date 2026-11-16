@@ -25,7 +25,8 @@
  * of bits as a 64-bit size, and the words that hold them, \f$ \lceil n /
  * 64 \rceil \f$, the bit \f$ i \f$ in the bit \f$ i \bmod 64 \f$ of the
  * word \f$ \lfloor i / 64 \rfloor \f$ in both libraries; in an archive that
- * is not binary, the bits one by one, under the names of sdsl. The two
+ * is not binary, the bits one by one as integers of 64 bits (the
+ * `value_type` of a `bit_vector`), under the names of sdsl. The two
  * libraries thus read the vectors of bits that the other writes, and the
  * structures built on them hold them in the same form; the directories of
  * rank and select, whose layouts differ, are not interchangeable, and
@@ -259,7 +260,7 @@ void save( Ar & a , const BitVector & b )
   a( cereal::make_nvp( "growth_factor" , 1.5f ) );
   a( cereal::make_nvp( "m_size" , n ) );
   for( const bool v : b )
-   a( v );
+   a( std::uint64_t( v ) );  // the value_type of a bit_vector of sdsl
   }
  }
 
@@ -298,9 +299,11 @@ void load( Ar & a , BitVector & b )
   b.clear();
   b.reserve( std::size_t( n ) );
   for( std::uint64_t i = 0 ; i < n ; ++i ) {
-   bool v;
+   std::uint64_t v;
    a( v );
-   b.push_back( v );
+   if( v > 1 )
+    fail( "a bit neither 0 nor 1 in a vector of bits" );
+   b.push_back( v == 1 );
    }
   }
  }

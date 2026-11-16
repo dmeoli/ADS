@@ -2004,6 +2004,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `compression/PPM.h` | base | `PPMModel` | [21](21-compression.md#ch-21) |
 | `compression/PackedBits.h` | core | `PackedBitWriter`, `PackedBitReader` | [21](21-compression.md#ch-21) |
 | `compression/RIndex.h` | advanced | `RIndex` | [21](21-compression.md#ch-21) |
+| `interop/arrow/Arrow.h` | interop | `ArrowColumn` | [22](22-succinct.md#ch-22) |
 | `succinct/BPTree.h` | base | `BPTree` | [22](22-succinct.md#ch-22) |
 | `succinct/BVGraph.h` | base | `BVGraph` | [22](22-succinct.md#ch-22) |
 | `succinct/BalancedParentheses.h` | base | `BalancedParentheses` | [22](22-succinct.md#ch-22) |
@@ -2075,7 +2076,7 @@ only, by chapter.
 | [7](07-dictionary.md#ch-7) | `dictionary/HashFunctions.h`, `dictionary/RowFingerprint.h`, `dictionary/TableSize.h` |
 | [8](08-tree.md#ch-8) | `tree/BinaryTreeAlgorithms.h`, `tree/ExpressionTree.h`, `tree/HeapByInsertion.h` |
 | [9](09-priority.md#ch-9) | `priority/OrderKey.h`, `priority/PriorityQueue.h`, `priority/QueueCustomization.h` |
-| [10](10-set.md#ch-10) | `set/SetOperations.h`, `set/VectorIntersection.h` |
+| [10](10-set.md#ch-10) | `interop/croaring/CRoaring.h`, `set/SetOperations.h`, `set/VectorIntersection.h` |
 | [12](12-sort.md#ch-12) | `sort/CountingSort.h`, `sort/EngineeredQuickSorts.h`, `sort/ExchangeSorts.h`, `sort/ExternalSort.h`, `sort/Heapsort.h`, `sort/InsertionSort.h`, `sort/KnuthSorts.h`, `sort/LearnedSort.h`, `sort/MergeSort.h`, `sort/MultikeyQuickSort.h`, `sort/PdqSort.h`, `sort/PigeonholeSort.h`, `sort/QuickSort.h`, `sort/RadixSort.h`, `sort/RunSorts.h`, `sort/SampleSort.h`, `sort/SelectionSort.h`, `sort/ShellSort.h`, `sort/Sort.h`, `sort/Sorted.h`, `sort/SortingNetworks.h`, `sort/StrandSort.h`, `sort/StringSort.h`, `sort/TreeSort.h`, `sort/VectorQuickSort.h` |
 | [13](13-algorithm.md#ch-13) | `algorithm/AkraBazzi.h`, `algorithm/BinaryCounter.h`, `algorithm/Hanoi.h`, `algorithm/MonteCarlo.h`, `algorithm/Paradigms.h`, `algorithm/SequenceQueries.h`, `algorithm/Subsequences.h`, `optimization/CoinChange.h`, `optimization/CoinGame.h`, `optimization/FractionalKnapsack.h`, `optimization/HouseProblems.h`, `optimization/IntervalCover.h`, `optimization/Intervals.h`, `optimization/Knapsack.h`, `optimization/KnapsackVariants.h`, `optimization/LinearPartition.h`, `optimization/SequenceProblems.h`, `optimization/ShortestJobFirst.h`, `optimization/StockTrading.h` |
 | [14](14-graph.md#ch-14) | `graph/BlossomMatching.h`, `graph/EulerianCycle.h`, `graph/FlowApplications.h`, `graph/Grid.h`, `graph/Matching.h`, `graph/Paths.h`, `graph/Properties.h`, `graph/PushRelabel.h`, `graph/StrongComponents.h`, `interop/lemon/Parallel.h` |
@@ -2086,6 +2087,7 @@ only, by chapter.
 | [19](19-backtrack.md#ch-19) | `backtrack/Anagrams.h`, `backtrack/Enumeration.h`, `backtrack/KnightTour.h`, `backtrack/NQueens.h`, `backtrack/Sudoku.h` |
 | [20](20-complexity.md#ch-20) | `complexity/EasyCases.h`, `complexity/Problems.h`, `complexity/Reductions.h`, `intractable/Approximation.h`, `intractable/BranchAndBound.h`, `intractable/FifteenPuzzle.h` |
 | [21](21-compression.md#ch-21) | `compression/BinaryPacking.h`, `compression/Entropy.h`, `compression/HuffmanCoder.h`, `compression/LZ77Linear.h`, `compression/Rans.h`, `compression/StreamVByte.h`, `compression/Tans.h` |
+| [22](22-succinct.md#ch-22) | `interop/sdsl/Sdsl.h` |
 | [23](23-external.md#ch-23) | `external/ExternalSorting.h`, `external/ListRanking.h`, `interop/cereal/Cereal.h` |
 | [25](25-parallel.md#ch-25) | `parallel/Affinity.h`, `parallel/Farm.h`, `parallel/ParallelGraph.h`, `parallel/ParallelGreedy.h`, `parallel/ParallelMerge.h`, `parallel/ParallelNumeric.h`, `parallel/ParallelShortestPaths.h`, `parallel/ParallelSort.h`, `parallel/ParallelText.h`, `parallel/Scratch.h` |
 | [26](26-distributed.md#ch-26) | `distributed/DistributedSort.h` |

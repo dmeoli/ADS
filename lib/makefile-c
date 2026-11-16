@@ -283,10 +283,17 @@ ADS_WITH_STDPAR ?= auto
 ADS_WITH_STDEXEC ?= auto
 ADS_WITH_TASKFLOW ?= auto
 ADS_WITH_CEREAL ?= auto
+ADS_WITH_CROARING ?= auto
+ADS_WITH_SDSL ?= auto
 ADSINTEROPINC :=
 ADSINTEROPLIB :=
 ADSCEREALINC :=
-ifneq ($(ADS_WITH_STDPAR)$(ADS_WITH_STDEXEC)$(ADS_WITH_TASKFLOW)$(ADS_WITH_CEREAL),0000)
+ADSCOLUMNARINC :=
+ADSCOLUMNARLIB :=
+ADSSDSLINC :=
+ADSINTEROPWANT := $(ADS_WITH_STDPAR)$(ADS_WITH_STDEXEC)$(ADS_WITH_TASKFLOW)
+ADSINTEROPWANT := $(ADSINTEROPWANT)$(ADS_WITH_CEREAL)$(ADS_WITH_CROARING)
+ifneq ($(ADSINTEROPWANT)$(ADS_WITH_SDSL),000000)
     include $(ADSSDR)/extlib/makefile-libInterop
 endif
 ifneq ($(ADS_WITH_STDPAR),0)
@@ -321,6 +328,25 @@ ifneq ($(ADS_WITH_CEREAL),0)
 endif
 ifeq ($(ADSCEREALON),1)
     ADSCEREALINC += $(libCerealINC)
+endif
+# the bitmaps of CRoaring and the vectors of sdsl-lite 3, in ADSCOLUMNARINC
+# and ADSCOLUMNARLIB alone (sdsl-lite also in ADSSDSLINC) [see
+# include/ADS/interop/croaring and include/ADS/interop/sdsl]
+ifneq ($(ADS_WITH_CROARING),0)
+    ADSCROARINGON := $(strip $(if $(filter auto,$(ADS_WITH_CROARING)),\
+	$(libCRoaringFOUND),$(filter 1,$(ADS_WITH_CROARING))))
+endif
+ifeq ($(ADSCROARINGON),1)
+    ADSCOLUMNARINC += $(libCRoaringINC)
+    ADSCOLUMNARLIB += $(filter-out none,$(libCRoaringLIB))
+endif
+ifneq ($(ADS_WITH_SDSL),0)
+    ADSSDSLON := $(strip $(if $(filter auto,$(ADS_WITH_SDSL)),\
+	$(libSdslFOUND),$(filter 1,$(ADS_WITH_SDSL))))
+endif
+ifeq ($(ADSSDSLON),1)
+    ADSCOLUMNARINC += $(libSdslINC)
+    ADSSDSLINC += $(libSdslINC)
 endif
 
 # include the ADS makefile requiring all external modules in input
