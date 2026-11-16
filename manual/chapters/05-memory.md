@@ -1428,7 +1428,7 @@ allocator `A`, what they allocate from it and their default allocator;
 | `PairingHeap`, `FibonacciHeapPriorityQueue` | the nodes, a pool | `HugePageAllocator` |
 | `MeldableHeap` | the nodes | `std::allocator` |
 | `DaryHeap` | the vector | `HugePageAllocator` |
-| `MinMaxHeap`, `IntervalHeap`, `RadixHeap`, `IndexedDaryHeap` | the vectors | `std::allocator` |
+| `RadixHeap`, `IndexedDaryHeap` | the vectors | `std::allocator` |
 | `RootishArrayStack`, `TieredVector` | the blocks and the vector of the blocks | `std::allocator` |
 | `SmallVector` | the items beyond the inner room | `std::allocator` |
 
@@ -1505,7 +1505,11 @@ resource it was built with (cf. the vectors of the other containers, whose
 Third, the scratch arrays of a rebuild or of a bulk load live for one call
 and come from `operator new`, e.g., the counts of the groups of
 `DenseHashMap` and the levels that `BTreeMap` builds from a sorted range.
-Only the memory that a container keeps comes from its allocator.
+Only the memory that a container keeps comes from its allocator. We also left
+`MinMaxHeap` and `IntervalHeap` with no allocator, since the programs that
+pass them as a template template argument of two parameters would no longer
+compile with clang 18, which does not match a template with a third
+parameter to it.
 
 ## 5.13 Discussion and references {#sec-5-13}
 

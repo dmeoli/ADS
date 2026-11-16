@@ -1635,12 +1635,11 @@ The public members of `MinMaxHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/MinMaxHeap.h>
-template< class T , class Better = std::less< T > ,
-          class A = std::allocator< T > >
+template< class T , class Better = std::less< T > >
 class MinMaxHeap
 {
  public:
- explicit MinMaxHeap( Better better = Better() , const A & alloc = A() );
+ explicit MinMaxHeap( Better better = Better() );
  void push( const T & x );
  const T & min( void ) const;
  const T & max( void ) const;
@@ -1679,12 +1678,11 @@ The public members of `IntervalHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/MinMaxHeap.h>
-template< class T , class Better = std::less< T > ,
-          class A = std::allocator< T > >
+template< class T , class Better = std::less< T > >
 class IntervalHeap
 {
  public:
- explicit IntervalHeap( Better better = Better() , const A & alloc = A() );
+ explicit IntervalHeap( Better better = Better() );
  void push( const T & x );
  const T & min( void ) const;
  const T & max( void ) const;

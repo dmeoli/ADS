@@ -22,8 +22,8 @@ namespace ADS
 /*------------------------------ MinMaxHeap --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class T , class Better , class A >
-void MinMaxHeap< T , Better , A >::run( void )
+template< class T , class Better >
+void MinMaxHeap< T , Better >::run( void )
 {
  if( f_sorted || ( ++f_run < std::max< std::size_t >( 64 , f_A.size() / 8 ) ) )
   return;
@@ -37,8 +37,8 @@ void MinMaxHeap< T , Better , A >::run( void )
  f_hi = f_A.size();
  }
 
-template< class T , class Better , class A >
-void MinMaxHeap< T , Better , A >::unsort( void )
+template< class T , class Better >
+void MinMaxHeap< T , Better >::unsort( void )
 {
  f_A.erase( f_A.begin() + std::ptrdiff_t( f_hi ) , f_A.end() );
  f_A.erase( f_A.begin() , f_A.begin() + std::ptrdiff_t( f_lo ) );
@@ -51,9 +51,9 @@ void MinMaxHeap< T , Better , A >::unsort( void )
    down< false >( i );
  }
 
-template< class T , class Better , class A >
+template< class T , class Better >
 template< bool Min >
-inline void MinMaxHeap< T , Better , A >::up( std::size_t i )
+inline void MinMaxHeap< T , Better >::up( std::size_t i )
 {
  while( i >= 3 ) {
   const std::size_t g = ( ( i - 1 ) / 2 - 1 ) / 2;
@@ -64,8 +64,8 @@ inline void MinMaxHeap< T , Better , A >::up( std::size_t i )
   }
  }
 
-template< class T , class Better , class A >
-inline void MinMaxHeap< T , Better , A >::push( const T & x )
+template< class T , class Better >
+inline void MinMaxHeap< T , Better >::push( const T & x )
 {
  if( f_sorted )
   unsort();
@@ -92,8 +92,8 @@ inline void MinMaxHeap< T , Better , A >::push( const T & x )
  ADS_INVARIANT( ordered() );
  }
 
-template< class T , class Better , class A >
-const T & MinMaxHeap< T , Better , A >::min( void ) const
+template< class T , class Better >
+const T & MinMaxHeap< T , Better >::min( void ) const
 {
  ADS_PRE( ! empty() );
  if( f_sorted )
@@ -101,8 +101,8 @@ const T & MinMaxHeap< T , Better , A >::min( void ) const
  return( f_A[ 0 ] );
  }
 
-template< class T , class Better , class A >
-std::size_t MinMaxHeap< T , Better , A >::maxAt( void ) const
+template< class T , class Better >
+std::size_t MinMaxHeap< T , Better >::maxAt( void ) const
 {
  const std::size_t n = f_A.size();
  if( n <= 2 )
@@ -110,8 +110,8 @@ std::size_t MinMaxHeap< T , Better , A >::maxAt( void ) const
  return( f_better( f_A[ 1 ] , f_A[ 2 ] ) ? 2 : 1 );
  }
 
-template< class T , class Better , class A >
-const T & MinMaxHeap< T , Better , A >::max( void ) const
+template< class T , class Better >
+const T & MinMaxHeap< T , Better >::max( void ) const
 {
  ADS_PRE( ! empty() );
  if( f_sorted )
@@ -119,9 +119,9 @@ const T & MinMaxHeap< T , Better , A >::max( void ) const
  return( f_A[ maxAt() ] );
  }
 
-template< class T , class Better , class A >
+template< class T , class Better >
 template< bool Min >
-inline void MinMaxHeap< T , Better , A >::down( std::size_t i )
+inline void MinMaxHeap< T , Better >::down( std::size_t i )
 {
  const std::size_t n = f_A.size();
  for( ; ; ) {
@@ -147,8 +147,8 @@ inline void MinMaxHeap< T , Better , A >::down( std::size_t i )
   }
  }
 
-template< class T , class Better , class A >
-T MinMaxHeap< T , Better , A >::popMin( void )
+template< class T , class Better >
+T MinMaxHeap< T , Better >::popMin( void )
 {
  ADS_PRE( ! empty() );
  run();
@@ -170,8 +170,8 @@ T MinMaxHeap< T , Better , A >::popMin( void )
  return( x );
  }
 
-template< class T , class Better , class A >
-T MinMaxHeap< T , Better , A >::popMax( void )
+template< class T , class Better >
+T MinMaxHeap< T , Better >::popMax( void )
 {
  ADS_PRE( ! empty() );
  run();
@@ -194,8 +194,8 @@ T MinMaxHeap< T , Better , A >::popMax( void )
  return( x );
  }
 
-template< class T , class Better , class A >
-bool MinMaxHeap< T , Better , A >::ordered( void ) const
+template< class T , class Better >
+bool MinMaxHeap< T , Better >::ordered( void ) const
 {
  if( f_sorted && ( f_hi - f_lo > 1024 ) )  // the two ends only
   return( ! f_better( f_A[ f_lo + 1 ] , f_A[ f_lo ] ) &&
@@ -223,8 +223,8 @@ bool MinMaxHeap< T , Better , A >::ordered( void ) const
 /*----------------------------- IntervalHeap -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class T , class Better , class A >
-void IntervalHeap< T , Better , A >::run( void )
+template< class T , class Better >
+void IntervalHeap< T , Better >::run( void )
 {
  if( f_sorted || ( ++f_run < std::max< std::size_t >( 64 , f_A.size() / 8 ) ) )
   return;
@@ -238,12 +238,12 @@ void IntervalHeap< T , Better , A >::run( void )
  f_hi = f_A.size();
  }
 
-template< class T , class Better , class A >
-void IntervalHeap< T , Better , A >::unsort( void )
+template< class T , class Better >
+void IntervalHeap< T , Better >::unsort( void )
 {
  const std::size_t n = f_hi - f_lo;
- auto B = detail::emptyLike( f_A );  // the node j: the j-th best
- B.reserve( n );                     // and the j-th worst
+ std::vector< T > B;  // the node j: the j-th best
+ B.reserve( n );      // and the j-th worst
  for( std::size_t j = 0 ; j < n / 2 ; ++j ) {
   B.push_back( std::move( f_A[ f_lo + j ] ) );
   B.push_back( std::move( f_A[ f_hi - 1 - j ] ) );
@@ -255,8 +255,8 @@ void IntervalHeap< T , Better , A >::unsort( void )
  f_run = 0;
  }
 
-template< class T , class Better , class A >
-inline void IntervalHeap< T , Better , A >::push( const T & x )
+template< class T , class Better >
+inline void IntervalHeap< T , Better >::push( const T & x )
 {
  if( f_sorted )
   unsort();
@@ -304,8 +304,8 @@ inline void IntervalHeap< T , Better , A >::push( const T & x )
  ADS_INVARIANT( ordered() );
  }
 
-template< class T , class Better , class A >
-const T & IntervalHeap< T , Better , A >::min( void ) const
+template< class T , class Better >
+const T & IntervalHeap< T , Better >::min( void ) const
 {
  ADS_PRE( ! empty() );
  if( f_sorted )
@@ -313,8 +313,8 @@ const T & IntervalHeap< T , Better , A >::min( void ) const
  return( f_A[ 0 ] );
  }
 
-template< class T , class Better , class A >
-const T & IntervalHeap< T , Better , A >::max( void ) const
+template< class T , class Better >
+const T & IntervalHeap< T , Better >::max( void ) const
 {
  ADS_PRE( ! empty() );
  if( f_sorted )
@@ -322,8 +322,8 @@ const T & IntervalHeap< T , Better , A >::max( void ) const
  return( f_A[ f_A.size() > 1 ? 1 : 0 ] );
  }
 
-template< class T , class Better , class A >
-T IntervalHeap< T , Better , A >::popMin( void )
+template< class T , class Better >
+T IntervalHeap< T , Better >::popMin( void )
 {
  ADS_PRE( ! empty() );
  run();
@@ -364,8 +364,8 @@ T IntervalHeap< T , Better , A >::popMin( void )
  return( x );
  }
 
-template< class T , class Better , class A >
-T IntervalHeap< T , Better , A >::popMax( void )
+template< class T , class Better >
+T IntervalHeap< T , Better >::popMax( void )
 {
  ADS_PRE( ! empty() );
  run();
@@ -409,8 +409,8 @@ T IntervalHeap< T , Better , A >::popMax( void )
  return( x );
  }
 
-template< class T , class Better , class A >
-bool IntervalHeap< T , Better , A >::ordered( void ) const
+template< class T , class Better >
+bool IntervalHeap< T , Better >::ordered( void ) const
 {
  if( f_sorted && ( f_hi - f_lo > 1024 ) )  // the two ends only
   return( ! f_better( f_A[ f_lo + 1 ] , f_A[ f_lo ] ) &&

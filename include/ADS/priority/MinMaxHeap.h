@@ -39,9 +39,6 @@
  * construction from the bottom up of Atkinson et al.). Both costs are paid
  * by the run, \f$ O( \log n ) \f$ amortized per removal.
  *
- * The vectors of both come from the allocator `A`, `std::allocator` by
- * default, with the rules of the standard [see `AllocatorAware.h`].
- *
  * The contracts [see `Contract.h`]: `min()`, `max()`, `popMin()` and
  * `popMax()` need a queue that is not empty; the invariant, checked on
  * queues of at most 1024 items, is the order of the levels (the intervals).
@@ -72,7 +69,6 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
-#include "ADS/memory/AllocatorAware.h"
 #include "ADS/priority/OrderKey.h"
 #include "ADS/sort/Sort.h"
 
@@ -94,8 +90,7 @@ namespace ADS
 /*--------------------------------------------------------------------------*/
 
 /// a min-max heap of plain items: the best and the worst by `better()`
-template< class T , class Better = std::less< T > ,
-	  class A = std::allocator< T > >
+template< class T , class Better = std::less< T > >
 class MinMaxHeap
 {
 
@@ -103,15 +98,9 @@ class MinMaxHeap
  public:
  using Item = T;  ///< the type of the items
 
- /// the empty queue of the order `better`, its vector from `alloc`
- explicit MinMaxHeap( Better better = Better() , const A & alloc = A() )
-     : f_A( alloc ) , f_better( std::move( better ) ) { }
- /// the type of the allocator
- using allocator_type = A;
- /// the allocator of the vector
- [[nodiscard]] allocator_type get_allocator( void ) const {
-  return( allocator_type( f_A.get_allocator() ) );
-  }
+ /// the empty queue of the order `better`
+ explicit MinMaxHeap( Better better = Better() )
+     : f_better( std::move( better ) ) { }
 
  /// pushes \f$ x \f$, in \f$ O( \log n ) \f$ time
  ///
@@ -259,9 +248,9 @@ class MinMaxHeap
  /// the items made a heap again from their sorted range
  void unsort( void );
 
- detail::AllocVector< A , T > f_A;  ///< the heap, or the items sorted
- Better f_better;                  ///< the order
- bool f_sorted = false;            ///< the items sorted in f_A[ f_lo .. f_hi )
+ std::vector< T > f_A;   ///< the heap, or the items sorted
+ Better f_better;        ///< the order
+ bool f_sorted = false;  ///< the items sorted in f_A[ f_lo .. f_hi )
  std::size_t f_lo = 0 , f_hi = 0;
  std::size_t f_run = 0;  ///< the removals since the last push
 
@@ -272,8 +261,7 @@ class MinMaxHeap
 /*--------------------------------------------------------------------------*/
 
 /// an interval heap of plain items: the best and the worst by `better()`
-template< class T , class Better = std::less< T > ,
-	  class A = std::allocator< T > >
+template< class T , class Better = std::less< T > >
 class IntervalHeap
 {
 
@@ -281,15 +269,9 @@ class IntervalHeap
  public:
  using Item = T;  ///< the type of the items
 
- /// the empty queue of the order `better`, its vector from `alloc`
- explicit IntervalHeap( Better better = Better() , const A & alloc = A() )
-     : f_A( alloc ) , f_better( std::move( better ) ) { }
- /// the type of the allocator
- using allocator_type = A;
- /// the allocator of the vector
- [[nodiscard]] allocator_type get_allocator( void ) const {
-  return( allocator_type( f_A.get_allocator() ) );
-  }
+ /// the empty queue of the order `better`
+ explicit IntervalHeap( Better better = Better() )
+     : f_better( std::move( better ) ) { }
 
  /// pushes \f$ x \f$, in \f$ O( \log n ) \f$ time
  ///
@@ -439,7 +421,7 @@ class IntervalHeap
  void unsort( void );
 
  /// the nodes, the node j in 2 j and 2 j + 1, or the items sorted
- detail::AllocVector< A , T > f_A;
+ std::vector< T > f_A;
  Better f_better;        ///< the order
  bool f_sorted = false;  ///< the items sorted in f_A[ f_lo .. f_hi )
  std::size_t f_lo = 0 , f_hi = 0;

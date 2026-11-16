@@ -36,7 +36,6 @@
 #include "ADS/priority/DaryHeap.h"
 #include "ADS/priority/FibonacciHeapPriorityQueue.h"
 #include "ADS/priority/IndexedDaryHeap.h"
-#include "ADS/priority/MinMaxHeap.h"
 #include "ADS/priority/PairingHeap.h"
 #include "ADS/priority/RadixHeap.h"
 #include "ADS/sequence/RootishArrayStack.h"
@@ -310,30 +309,12 @@ struct HeapSpec
 template< class Al >
 using Dary = DaryHeap< std::string , std::less< std::string > , 4 , false ,
 		       Al >;
-template< class Al >
-using MinMax = MinMaxHeap< std::string , std::less< std::string > , Al >;
-template< class Al >
-using Interval = IntervalHeap< std::string , std::less< std::string > , Al >;
 
 struct Darys : HeapSpec< Dary >
 {
  template< class Al >
  static Dary< Al > make( const Al & a ) {
   return( Dary< Al >( {} , a ) );
-  }
- };
-struct MinMaxes : HeapSpec< MinMax >
-{
- template< class Al >
- static MinMax< Al > make( const Al & a ) {
-  return( MinMax< Al >( {} , a ) );
-  }
- };
-struct Intervals : HeapSpec< Interval >
-{
- template< class Al >
- static Interval< Al > make( const Al & a ) {
-  return( Interval< Al >( {} , a ) );
   }
  };
 
@@ -619,8 +600,6 @@ ADS_TEST( "alloc-btree-map" )
 ADS_TEST( "alloc-heaps" )
 {
  all< Darys >();
- all< MinMaxes >();
- all< Intervals >();
  all< Radixes >();
  all< Indexeds >();
  }

@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   BucketCuckooTable, CuckooHashTable, BTreeMap, PairingHeap and
   FibonacciHeapPriorityQueue through their ObjectPool, which takes the
   allocator under its blocks, the join trees on a stateless allocator,
-  DaryHeap, MinMaxHeap, IntervalHeap, RadixHeap, IndexedDaryHeap,
+  DaryHeap, RadixHeap, IndexedDaryHeap,
   RootishArrayStack, TieredVector and SmallVector, on its own path and on
   Boost, each with allocator_type and get_allocator(); the default
   allocator of each one is the one it used before (std::allocator, or
