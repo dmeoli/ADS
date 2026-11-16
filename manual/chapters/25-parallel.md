@@ -1126,7 +1126,8 @@ bits and the tree beyond the noise of the machine.
 `CsrMatrix` and `SellMatrix`, and the product of dense matrices of `gemm()`,
 with the results of the sequential products bit for bit: each entry of the
 output is computed by the same sequential code, with the same order of the
-sums, by one thread. Consider a `CsrMatrix` of $m$ rows and $\mathit{nnz}$
+sums, by one thread. Consider a `CsrMatrix` (or a `BasicCsrMatrix` of any
+types of values and indices) of $m$ rows and $\mathit{nnz}$
 nonzeros, with $\mathit{start}( i )$ the first nonzero of the row $i$. A row
 costs its nonzeros plus the store of its sum, and therefore the rows before
 $i$ cost $i + \mathit{start}( i )$, which grows with $i$. Hence, the rows
@@ -1140,11 +1141,12 @@ The products are declared as
 
 ```cpp
 // declarations of <ADS/parallel/ParallelNumeric.h>
-template< Executor E >
-void multiply( E & ex , const CsrMatrix & A , const double * x , double * y );
-template< Executor E >
-std::vector< double > multiply( E & ex , const CsrMatrix & A ,
-                                const std::vector< double > & x );
+template< Executor E , class T , std::integral I , std::integral P >
+void multiply( E & ex , const BasicCsrMatrix< T , I , P > & A , const T * x ,
+               T * y );
+template< Executor E , class T , std::integral I , std::integral P >
+std::vector< T > multiply( E & ex , const BasicCsrMatrix< T , I , P > & A ,
+                           const std::vector< T > & x );
 template< Executor E , std::size_t C >
 void multiply( E & ex , const SellMatrix< C > & A , const double * x ,
                double * y );

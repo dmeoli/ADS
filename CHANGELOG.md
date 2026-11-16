@@ -2375,6 +2375,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   them without Highway, are counted by `std::popcount()`. The time against
   the old kernels is pending the next campaign on an idle machine.
 
+- StaticGraph keeps the heads and the weights of its arcs in two arrays
+  of the same places (a structure of arrays) instead of the pairs
+  WeightedArc, so that offsets(), the new heads() and weightData() are the
+  three arrays of a graph in compressed rows, which METIS, KaHIP and
+  GraphBLAS take without a copy, and a weighted graph of doubles takes 12
+  bytes per arc instead of 16; out( u ) of a weighted graph is a range of
+  random access of WeightedArc values and arcData() a cursor with the
+  indexing and the arithmetic of a pointer (unchanged on an unweighted
+  graph), and the parallel visits, the stepping algorithms, the maximal
+  independent set and the adapters of Boost.Graph and LEMON read the arrays.
+
+- CsrMatrix is BasicCsrMatrix<>, the class template BasicCsrMatrix< T , I ,
+  P > of the types of the values, of the columns and of the offsets
+  (double, std::uint32_t and std::size_t by default, P equal to I for any
+  other I), so that a BasicCsrMatrix< double , int > is mapped by Eigen and
+  imported by GraphBLAS without a copy; the parallel products of
+  ParallelNumeric.h take any BasicCsrMatrix.
+
 - The customization points of the priority queues, queue_item_t,
   queue_insert(), queue_min(), queue_deleteMin(), queue_handle_t and
   queue_decrease(), moved from PriorityQueue.h to the new advanced header

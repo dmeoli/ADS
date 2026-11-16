@@ -97,7 +97,8 @@ namespace ADS::bgl
 template< class G >
 struct Rows;
 
-/// the rows of a `StaticGraph`, its arrays `offsets()` and `arcData()`
+/// the rows of a `StaticGraph`, its arrays `offsets()`, `heads()` and
+/// `weightData()`
 template< class W >
 struct Rows< StaticGraph< W > >
 {
@@ -109,13 +110,13 @@ struct Rows< StaticGraph< W > >
   }
  /// the head of the arc of the place \f$ k \f$
  static int head( const StaticGraph< W > & g , int k ) {
-  return( StaticGraph< W >::head( g.arcData()[ k ] ) );
+  return( g.heads()[ k ] );
   }
  /// the weight of the arc of the place \f$ k \f$
  static const W & weight( const StaticGraph< W > & g , int k )
   requires weighted
  {
-  return( g.arcData()[ k ].w );
+  return( g.weightData()[ k ] );
   }
  };
 

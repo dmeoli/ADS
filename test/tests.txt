@@ -565,6 +565,7 @@ engineered_numeric  reservoir-l       campionamento con l'Algoritmo L
 engineered_numeric  reservoir-l-input Algoritmo L su iteratori di input
 engineered_numeric  dense-gemm        prodotto di matrici dense a blocchi
 engineered_numeric  csr-matrix        matrici sparse per righe compresse
+engineered_numeric  csr-matrix-index  CSR con indici int, int64_t e int8_t
 engineered_numeric  sell-matrix       matrici sparse SELL-C-sigma
 engineered_numeric  convex-hull       inviluppo con ottagono e catena monotona
 engineered_numeric  closest-pair-sweep coppia più vicina con la scansione
@@ -1751,6 +1752,7 @@ engineered_pearls  book-mergesort-selectors mergesort delle note, selettori
 # on them
 engineered_graph  static-graph        grafo a righe compresse
 engineered_graph  static-graph-macros nessuna macro di prefetch inutilizzata
+engineered_graph  static-graph-arrays le tre schiere di un grafo pesato come CSR
 engineered_graph  indexed-dary-heap   heap d-ario indicizzato con decrease
 engineered_graph  union-find          union-find per dimensione o rango
 engineered_graph  book-on-structures  algoritmi del libro su ogni struttura
@@ -1814,6 +1816,7 @@ engineered_parallel  parallel-sort       ordinamenti contro quelli di std
 engineered_parallel  learned-parallel-sort  splitter della CDF sul pool
 engineered_parallel  parallel-merge      fusione a più vie, selezione
 engineered_parallel  parallel-numeric    prodotti sparsi e densi, bit per bit
+engineered_parallel  parallel-numeric-index prodotto CSR con indici int e int64
 engineered_parallel  parallel-graph      visita in ampiezza, componenti
 engineered_parallel  parallel-lcp        array LCP permutato
 engineered_parallel  parallel-rank-select  rank e select costruiti sugli esecutori

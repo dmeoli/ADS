@@ -329,13 +329,14 @@ std::vector< int > maximalIndependentSet( E & ex , const StaticGraph< W > & g ,
   }
  constexpr char UNDECIDED = 0 , IN = 1 , OUT = 2;
  std::vector< char > state( n , UNDECIDED );
+ const int *off = g.offsets() , *hd = g.heads();
  auto sequential = [ & ]( void ) {
   std::vector< char > s( n , UNDECIDED );
   for( int i = 0 ; i < n ; ++i ) {
    const int v = pi[ i ];
    s[ v ] = IN;
-   for( const auto & a : g.out( v ) )
-    if( s[ G::head( a ) ] == IN ) {
+   for( int k = off[ v ] , e = off[ v + 1 ] ; k < e ; ++k )
+    if( s[ hd[ k ] ] == IN ) {
      s[ v ] = OUT;
      break;
      }
@@ -355,8 +356,9 @@ std::vector< int > maximalIndependentSet( E & ex , const StaticGraph< W > & g ,
    bool reserve( std::size_t i ) {
     const int v = pi[ i ];
     char s = IN;
-    for( const auto & a : g.out( v ) ) {
-     const int u = G::head( a );
+    const int *off = g.offsets() , *hd = g.heads();
+    for( int k = off[ v ] , e = off[ v + 1 ] ; k < e ; ++k ) {
+     const int u = hd[ k ];
      if( rank[ u ] < int( i ) ) {
       if( state[ u ] == IN ) {
        s = OUT;

@@ -718,6 +718,31 @@ ADS_TEST( "parallel-numeric" )
   } );
  }
 
+// the product of a CSR of int and of std::int64_t indices on each executor
+// against the sequential product of CsrMatrix, bit for bit, on a matrix
+// with a row of half the nonzeros
+ADS_TEST( "parallel-numeric-index" )
+{
+ std::mt19937_64 g( 11 );
+ const std::size_t m = 30000 , n = 5000;
+ std::vector< CsrMatrix::Triplet > T;
+ for( std::size_t e = 0 ; e < 4 * m ; ++e )
+  T.emplace_back( g() % m , g() % n , double( g() % 2001 ) / 7.0 );
+ for( std::size_t e = 0 ; e < 4 * m ; ++e )
+  T.emplace_back( m / 2 , g() % n , 1.0 );
+ const CsrMatrix A( m , n , T );
+ const BasicCsrMatrix< double , int > AI( m , n , T );
+ const BasicCsrMatrix< double , std::int64_t > AL( m , n , T );
+ std::vector< double > x( n );
+ for( auto & v : x )
+  v = double( g() % 101 ) - 50;
+ const auto y = A.multiply( x );
+ onEach( [ & ]( auto & ex ) {
+  CHECK( multiply( ex , AI , x ) == y );
+  CHECK( multiply( ex , AL , x ) == y );
+  } );
+ }
+
 // the visit in breadth and the components against a sequential visit by a
 // queue: a graph with no arc, a path (one level per node: the visit stays
 // from the top down), a star (one level with all the nodes: from the

@@ -64,7 +64,7 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
  ADS_PRE( ( gt == nullptr ) || ( gt->n() == g.n() ) );
  const int n = g.n();
  const int * off = g.offsets();
- const auto * arc = g.arcData();
+ const int * hd = g.heads();
  const G * in = g.directed() ? gt : &g;
  std::vector< int > dist( std::size_t( n ) , -1 );
  dist[ std::size_t( s ) ] = 0;
@@ -84,7 +84,7 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
 		 std::memory_order_relaxed );
     } );
    const int * ioff = in->offsets();
-   const auto * iarc = in->arcData();
+   const int * ihd = in->heads();
    std::size_t awake = F.size() , old;
    do {
     old = awake;
@@ -98,7 +98,7 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
 	if( dist[ std::size_t( v ) ] >= 0 )
 	 continue;
 	for( int k = ioff[ v ] ; k < ioff[ v + 1 ] ; ++k ) {
-	 const int u = G::head( iarc[ k ] );
+	 const int u = ihd[ k ];
 	 if( ( cur[ std::size_t( u ) >> 6 ] >> ( u & 63 ) ) & 1 ) {
 	  dist[ std::size_t( v ) ] = level + 1;
 	  nxt[ std::size_t( v ) >> 6 ] |= std::uint64_t( 1 ) << ( v & 63 );
@@ -142,7 +142,7 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
    for( std::size_t i = b * size ; i < i1 ; ++i ) {
     const int u = F[ i ];
     for( int k = off[ u ] ; k < off[ u + 1 ] ; ++k ) {
-     const int v = G::head( arc[ k ] );
+     const int v = hd[ k ];
      std::atomic_ref< int > d( dist[ std::size_t( v ) ] );
      int e = -1;
      if( ( d.load( std::memory_order_relaxed ) < 0 ) &&
@@ -169,10 +169,9 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
 template< Executor E , class W >
 std::vector< int > connectedComponents( E & ex , const StaticGraph< W > & g )
 {
- using G = StaticGraph< W >;
  const int n = g.n();
  const int * off = g.offsets();
- const auto * arc = g.arcData();
+ const int * hd = g.heads();
  ConcurrentUnionFind uf{ std::size_t( n ) };
  auto link = [ & ]( int u , int v ) { uf.unite( u , v ); };
  // each node points to its root
@@ -188,7 +187,7 @@ std::vector< int > connectedComponents( E & ex , const StaticGraph< W > & g )
     [ & ]( std::size_t i ) {
      const int v = int( i );
      if( off[ v ] + r < off[ v + 1 ] )
-      link( v , G::head( arc[ off[ v ] + r ] ) );
+      link( v , hd[ off[ v ] + r ] );
      } ,
     4096 );
   compress();
@@ -215,7 +214,7 @@ std::vector< int > connectedComponents( E & ex , const StaticGraph< W > & g )
     if( uf.parent( v ) == c )
      return;
     for( int k = off[ v ] + rounds ; k < off[ v + 1 ] ; ++k )
-     link( v , G::head( arc[ k ] ) );
+     link( v , hd[ k ] );
     } ,
    1024 );
  std::vector< int > comp( static_cast< std::size_t >( n ) );

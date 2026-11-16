@@ -62,9 +62,12 @@
 #include <map>
 #include <queue>
 #include <random>
+#include <ranges>
 #include <set>
+#include <span>
 #include <sstream>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -217,6 +220,92 @@ ADS_TEST( "static-graph" )
 	       contract_violation );
  CHECK_THROWS( ( void )One.adj( 1 ) , contract_violation );
  CHECK_THROWS( ( void )One.relabel( { 1 } ) , contract_violation );
+ }
+
+// the three arrays of a weighted StaticGraph as a plain CSR: the offsets,
+// the heads and the weights against those built here from the edges by
+// rows sorted by head, read where they are (no copy) by a scan as a CSR
+// consumer would, the arcs of out() and of arcData() equal to them, the
+// cursor a random access iterator, setWeight() written in the array of the
+// weights, and the unweighted graph with arcData() equal to heads()
+ADS_TEST( "static-graph-arrays" )
+{
+ static_assert(
+   std::random_access_iterator< StaticGraph< double >::ArcCursor > );
+ static_assert(
+   std::ranges::random_access_range< StaticGraph< double >::ArcRange > );
+ static_assert( std::ranges::sized_range< StaticGraph< double >::ArcRange > );
+ static_assert(
+   std::is_same_v< StaticGraph<>::ArcRange , std::span< const int > > );
+ std::mt19937 g( 5 );
+ for( bool directed : { true , false } ) {
+  const int n = 40;
+  std::vector< std::tuple< int , int , double > > E;
+  std::vector< std::vector< std::pair< int , double > > > row( n );
+  for( int i = 0 ; i < 300 ; ++i ) {
+   const int u = int( g() % n ) , v = int( ( u + 1 + g() % ( n - 1 ) ) % n );
+   const double w = double( g() % 1000 ) / 8;
+   E.emplace_back( u , v , w );
+   }
+  for( const auto & [ u , v , w ] : E ) {  // the rows, stable by head
+   row[ u ].emplace_back( v , w );
+   if( ! directed )
+    row[ v ].emplace_back( u , w );
+   }
+  std::vector< int > off{ 0 } , head;
+  std::vector< double > weight;
+  for( auto & r : row ) {
+   std::stable_sort( r.begin() , r.end() , []( auto & a , auto & b ) {
+    return( a.first < b.first );
+    } );
+   for( const auto & [ v , w ] : r ) {
+    head.push_back( v );
+    weight.push_back( w );
+    }
+   off.push_back( int( head.size() ) );
+   }
+  StaticGraph< double > S( n , E , directed );
+  const int a = S.arcs();
+  CHECK( std::vector< int >( S.offsets() , S.offsets() + n + 1 ) == off );
+  CHECK( std::vector< int >( S.heads() , S.heads() + a ) == head );
+  CHECK( std::vector< double >( S.weightData() , S.weightData() + a ) ==
+	 weight );
+  double csr = 0 , ref = 0;  // y = A 1 read from the three arrays
+  for( int u = 0 ; u < n ; ++u )
+   for( int k = S.offsets()[ u ] ; k < S.offsets()[ u + 1 ] ; ++k )
+    csr += S.weightData()[ k ] * ( S.heads()[ k ] + 1 );
+  for( std::size_t k = 0 ; k < head.size() ; ++k )
+   ref += weight[ k ] * ( head[ k ] + 1 );
+  CHECK( csr == ref );
+  for( int u = 0 ; u < n ; ++u ) {
+   const auto r = S.out( u );
+   CHECK( int( r.size() ) == S.degree( u ) );
+   int k = off[ u ];
+   for( const auto & x : r ) {
+    CHECK( ( x.to == head[ k ] ) && ( x.w == weight[ k ] ) );
+    CHECK( StaticGraph< double >::head( x ) == head[ k ] );
+    ++k;
+    }
+   for( int i = 0 ; i < int( r.size() ) ; ++i )
+    CHECK( ( r[ i ].to == S.arcData()[ off[ u ] + i ].to ) &&
+	   ( ( S.arcData() + off[ u ] + i )->w == weight[ off[ u ] + i ] ) );
+   }
+  const auto c = S.arcData();
+  CHECK( ( c + a ) - c == a && ( c + a ).heads() == S.heads() + a );
+  if( a > 0 ) {
+   const auto [ u , v , w ] = E.front();
+   CHECK( S.setWeight( u , v , w + 1 ) );
+   const int k = int( std::lower_bound( head.begin() + off[ u ] ,
+					head.begin() + off[ u + 1 ] , v ) -
+		      head.begin() );
+   CHECK( S.weightData()[ k ] == w + 1 && *S.weight( u , v ) == w + 1 );
+   }
+  }
+ std::vector< std::pair< int , int > > U{ { 0 , 2 } , { 0 , 1 } , { 2 , 1 } };
+ const StaticGraph<> P( 3 , U , true );
+ CHECK( P.arcData() == P.heads() && P.out( 0 ).data() == P.heads() );
+ CHECK( std::vector< int >( P.heads() , P.heads() + 3 ) ==
+	std::vector< int >( { 1 , 2 , 1 } ) );
  }
 
 // the indexed heap for D = 2 , 4 , 8 against a set of ( key , id ): random

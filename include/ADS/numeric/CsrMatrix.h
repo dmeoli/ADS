@@ -8,6 +8,18 @@
  * offsets, \f$ 12 \, \mathit{nnz} + 8 m \f$ bytes for doubles, read in order
  * by the product with a vector instead of the walk of the orthogonal lists
  * of `SparseMatrix` [see `SparseMatrix.h`], whose nodes are scattered.
+ * `BasicCsrMatrix< T , I , P >` takes the type T of the values, the type I
+ * of the columns and the type P of the offsets, and `CsrMatrix` is
+ * `BasicCsrMatrix<>`: doubles, columns of 32 bits without sign and offsets
+ * `std::size_t`, so that the nonzeros may exceed \f$ 2^{32} \f$ while a
+ * column takes 4 bytes. Any other I gives offsets of the same type, e.g.,
+ * `BasicCsrMatrix< double , int >`, whose three arrays are those of a
+ * row-major `Eigen::SparseMatrix< double , Eigen::RowMajor , int >`, of a
+ * compressed matrix of METIS or of the container of GraphBLAS with indices
+ * of 32 bits, which the libraries map without a copy; with
+ * `std::int64_t` they are those of the 64-bit indices of GraphBLAS and of
+ * MKL. The bytes are \f$ ( s + i ) \, \mathit{nnz} + p ( m + 1 ) \f$ for
+ * s , i , p the sizes of T , I , P.
  *
  * - The matrix is built from triplets \f$ ( i , j , v ) \f$ in any order by
  *   a counting sort on the rows, a sort of the columns of each row and the
@@ -34,7 +46,8 @@
  *   \f$ \mathit{nnz} / 256 \f$ items fits the cache.
  *
  * The contracts [see `Contract.h`]: the places of the triplets are in the
- * matrix, and the columns fit 32 bits (the rows too, for `transpose()`);
+ * matrix, the columns fit I and the nonzeros P (the rows fit I too, for
+ * `transpose()`);
  * \f$ x \f$ has \f$ n \f$ entries; the invariant is that the offsets do not
  * decrease and the columns of a row increase, an audit. The functions are
  * defined in `CsrMatrix.tpp`.
@@ -74,10 +87,14 @@
 #include "ADS/numeric/SparseMatrix.h"
 
 #include <algorithm>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <numeric>
 #include <tuple>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -88,18 +105,36 @@ namespace ADS
 {
 
 /*--------------------------------------------------------------------------*/
-/*---------------------------- CLASS CsrMatrix -----------------------------*/
+/*-------------------------- CLASS BasicCsrMatrix --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a sparse \f$ m \times n \f$ matrix of doubles in compressed sparse rows
-class CsrMatrix
+namespace detail
+{
+
+/// the type of the offsets of a CSR of columns of the type I: `std::size_t`
+/// for the columns of 32 bits without sign, I itself otherwise
+template< class I >
+using CsrOffset =
+  std::conditional_t< std::is_same_v< I , std::uint32_t > , std::size_t , I >;
+
+}  // end( namespace detail )
+
+/// a sparse \f$ m \times n \f$ matrix of values T in compressed sparse rows,
+/// the columns of the type I and the offsets of the rows of the type P
+template< class T = double , std::integral I = std::uint32_t ,
+	  std::integral P = detail::CsrOffset< I > >
+class BasicCsrMatrix
 {
  public:
+ using Value = T;   ///< the type of the values
+ using Index = I;   ///< the type of the columns
+ using Offset = P;  ///< the type of the offsets of the rows
+
  /// an entry \f$ ( i , j , v ) \f$
- using Triplet = std::tuple< std::size_t , std::size_t , double >;
+ using Triplet = std::tuple< std::size_t , std::size_t , T >;
 
  /// the \f$ m \times n \f$ zero matrix
- CsrMatrix( std::size_t m = 0 , std::size_t n = 0 );
+ BasicCsrMatrix( std::size_t m = 0 , std::size_t n = 0 );
 
  /// the \f$ m \times n \f$ matrix of the triplets \f$ ( i , j , v ) \f$, the
  /// values of equal places summed
@@ -121,12 +156,13 @@ class CsrMatrix
  /// 8 & \qquad \mathit{row}[ i ] \gets \text{where the row } i \text{ began}
  /// \end{array}}
  /// \f]
- /// \pre \f$ i < m \f$ and \f$ j < n \f$ for each triplet, and
- ///      \f$ n \le 2^{32} \f$
- CsrMatrix( std::size_t m , std::size_t n , std::vector< Triplet > T );
+ /// \pre \f$ i < m \f$ and \f$ j < n \f$ for each triplet, the columns
+ ///      fit I and the number of the triplets fits P
+ BasicCsrMatrix( std::size_t m , std::size_t n , std::vector< Triplet > E );
 
  /// the matrix of the orthogonal lists of the book, row by row
- explicit CsrMatrix( const SparseMatrix & S );
+ /// \pre the columns fit I and the nonzeros P
+ explicit BasicCsrMatrix( const SparseMatrix & S );
 
  /// the number \f$ m \f$ of rows
  [[nodiscard]] std::size_t rows( void ) const { return( f_m ); }
@@ -137,12 +173,11 @@ class CsrMatrix
 
  /// the entry \f$ ( i , j ) \f$, by a binary search in the row
  /// \pre \f$ i < m \f$ and \f$ j < n \f$
- [[nodiscard]] double get( std::size_t i , std::size_t j ) const;
+ [[nodiscard]] T get( std::size_t i , std::size_t j ) const;
 
  /// the product \f$ y = A x \f$, a new vector
  /// \pre \f$ x \f$ has \f$ n \f$ entries
- [[nodiscard]] std::vector< double >
- multiply( const std::vector< double > & x ) const;
+ [[nodiscard]] std::vector< T > multiply( const std::vector< T > & x ) const;
 
  /// the product \f$ y = A x \f$ into \f$ y \f$, which must have \f$ m \f$
  /// entries
@@ -159,7 +194,7 @@ class CsrMatrix
  /// \f]
  /// \pre \f$ x \f$ has \f$ n \f$ entries and \f$ y \f$ \f$ m \f$ entries,
  ///      apart from \f$ x \f$
- void multiply( const double * x , double * y ) const;
+ void multiply( const T * x , T * y ) const;
 
  /// the transpose, \f$ n \times m \f$
  ///
@@ -183,22 +218,18 @@ class CsrMatrix
  ///     \mathit{tval} )
  /// \end{array}}
  /// \f]
- /// \pre \f$ m \le 2^{32} \f$
- [[nodiscard]] CsrMatrix transpose( void ) const;
+ /// \pre the rows fit I
+ [[nodiscard]] BasicCsrMatrix transpose( void ) const;
 
  /// the \f$ m + 1 \f$ offsets of the rows
- [[nodiscard]] const std::size_t * rowStart( void ) const {
-  return( f_row.data() );
-  }
+ [[nodiscard]] const P * rowStart( void ) const { return( f_row.data() ); }
  /// the column of each nonzero, row by row
- [[nodiscard]] const std::uint32_t * columns( void ) const {
-  return( f_col.data() );
-  }
+ [[nodiscard]] const I * columns( void ) const { return( f_col.data() ); }
  /// the value of each nonzero, row by row
- [[nodiscard]] const double * values( void ) const { return( f_val.data() ); }
+ [[nodiscard]] const T * values( void ) const { return( f_val.data() ); }
 
  /// true if the two matrices have the same sizes and the same entries kept
- bool operator==( const CsrMatrix & ) const = default;
+ bool operator==( const BasicCsrMatrix & ) const = default;
 
  private:
  /// the offsets not decreasing, the columns of each row increasing
@@ -207,12 +238,23 @@ class CsrMatrix
  template< class U >  // not zeroed when they grow
  using Vector = std::vector< U , detail::DefaultInitAllocator< U > >;
 
- std::size_t f_m ,                ///< the rows
-   f_n;                          ///< the columns
- Vector< std::size_t > f_row;    ///< the \f$ m + 1 \f$ offsets
- Vector< std::uint32_t > f_col;  ///< the column of each nonzero
- Vector< double > f_val;         ///< its value
- };  // end( class CsrMatrix )
+ /// whether \f$ x \f$ items fit the places \f$ 0 , \ldots , x - 1 \f$ of
+ /// the type U
+ template< class U >
+ static constexpr bool fits( std::size_t x ) {
+  return( ( x == 0 ) ||
+	   ( x - 1 <= std::size_t( std::numeric_limits< U >::max() ) ) );
+  }
+
+ std::size_t f_m ,    ///< the rows
+   f_n;              ///< the columns
+ Vector< P > f_row;  ///< the \f$ m + 1 \f$ offsets
+ Vector< I > f_col;  ///< the column of each nonzero
+ Vector< T > f_val;  ///< its value
+ };  // end( class BasicCsrMatrix )
+
+/// the matrix of doubles of 32-bit columns and `std::size_t` offsets
+using CsrMatrix = BasicCsrMatrix<>;
 
 /*--------------------------------------------------------------------------*/
 

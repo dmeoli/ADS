@@ -426,18 +426,21 @@ of `ArrayGraph` by a counting sort on the tails
 --8<-- "generated/ArrayGraph-build.pseudo.md"
 
 `StaticGraph< W >` is the same format engineered for the algorithms that scan
-the arcs many times. First, each arc of a weighted graph is a `WeightedArc`,
-i.e., its head next to its weight; hence the scan of the arcs of $u$ reads one
-run of pairs instead of two parallel runs. In all, the graph takes
-$4 ( n + 1 ) + b a$ bytes, $b$ the size of an arc: 4 if unweighted, when an
-arc is an `int` (as the alias `Arc` and the flag `weighted` state), and
-otherwise 4 plus the size of a weight rounded up to the alignment of the
-weight, e.g., 8 for an `int` or a `float` and 16 for a `double`. Second, the
-arcs of each node are sorted by head. This makes the reads of a visit that
-follows them go forward in memory, and lets `weight( u , v )` and
-`setWeight()` find an arc by a binary search, in $O( \log d( u ) )$. The rows
-come out sorted from two passes of counting sort, the first by head and the
-second, stable, by tail ([Algorithm 14.4](14-graph.md#alg-14-4)), again in
+the arcs many times. First, the graph is three plain arrays (a structure of
+arrays): the offsets of the rows, the heads of the arcs and, when the graph is
+weighted, their weights in the same places. A visit that needs only the heads
+thus reads no weight, and a library that takes a graph in compressed rows
+(`xadj`, `adjncy` and `adjwgt` of METIS, the arrays `Ap`, `Aj` and `Ax` of
+GraphBLAS) receives the pointers `offsets()`, `heads()` and `weightData()`
+without a copy. In all, the graph takes
+$4 ( n + 1 ) + ( 4 + s ) a$ bytes, $s$ the size of a weight (0 if
+unweighted), with no padding between a head and its weight; an interleaved
+pair would round 12 bytes up to 16 for a `double`. Second, the arcs of each
+node are sorted by head. This makes the reads of a visit that follows them go
+forward in memory, and lets `weight( u , v )` and `setWeight()` find an arc
+by a binary search of the heads, in $O( \log d( u ) )$. The rows come out
+sorted from two passes of counting sort, the first by head and the second,
+stable, by tail ([Algorithm 14.4](14-graph.md#alg-14-4)), again in
 $\Theta( n + a )$ time. An unoriented edge $[ u , v ]$ gives the two arcs
 $( u , v )$ and $( v , u )$, and parallel arcs are kept. [Figure
 14.4](14-graph.md#fig-14-4) compares the two forms on the same edges. The
@@ -459,6 +462,12 @@ class StaticGraph
  using Weight = W;
  static constexpr bool weighted = ! std::is_same_v< W , std::monostate >;
  using Arc = std::conditional_t< weighted , WeightedArc< W > , int >;
+ using ArcCursor =
+   std::conditional_t< weighted , detail::WeightedArcCursor< W > ,
+                       const int * >;
+ using ArcRange =
+   std::conditional_t< weighted , std::ranges::subrange< ArcCursor > ,
+                       std::span< const int > >;
  StaticGraph( int n , const std::vector< std::tuple< int , int , W > > & E ,
               bool directed = true );
  StaticGraph( int n , const std::vector< std::pair< int , int > > & E ,
@@ -476,9 +485,12 @@ class StaticGraph
   requires( weighted );
  bool setWeight( int u , int v , const W & w )
   requires( weighted );
- [[nodiscard]] std::span< const Arc > out( int u ) const;
+ [[nodiscard]] ArcRange out( int u ) const;
  [[nodiscard]] const int * offsets( void ) const;
- [[nodiscard]] const Arc * arcData( void ) const;
+ [[nodiscard]] const int * heads( void ) const;
+ [[nodiscard]] const W * weightData( void ) const
+  requires( weighted );
+ [[nodiscard]] ArcCursor arcData( void ) const;
  static int head( const Arc & a );
  [[nodiscard]] StaticGraph transpose( void ) const;
  [[nodiscard]] StaticGraph relabel( const std::vector< int > & p ) const;
@@ -500,8 +512,25 @@ makes the graph with no node.
 ![Figure 14.4. The vectors of adjacency of `ArrayGraph` and of `StaticGraph` built from the same eight edges $E$: the former keeps the order of $E$ in each row, the latter sorts each row by head; the row of the node 2, between $\mathit{off}[ 2 ] = 3$ and $\mathit{off}[ 3 ] = 5$, is in violet.](../figures/graph-csr.svg){#fig-14-4}
 
 `StaticGraph` also gives what the engineered algorithms read directly: the
-arcs of $u$ as a span (`out( u )`), the raw offsets and arcs (`offsets()` and
-`arcData()`), the head of an arc (`head()`) and the degree (`degree( u )`).
+three arrays (`offsets()`, `heads()` and `weightData()`), the arcs of $u$ as a
+range of random access (`out( u )`), the cursor at the first arc
+(`arcData()`), the head of an arc (`head()`) and the degree (`degree( u )`).
+An arc is still read as a pair: on a weighted graph an element of `out( u )`,
+or the place $k$ of `arcData()`, is the `WeightedArc` made from the place $k$
+of the two arrays as it is read, and the cursor takes the indexing and the
+arithmetic of a pointer. On an unweighted graph `out( u )` is a `std::span`
+of the heads and `arcData()` is `heads()`. We remark that the two arrays cost
+something to the algorithms that read a head with its weight. We counted by
+callgrind, with a simulated last-level cache of 2 MB, Dijkstra on an indexed
+4-ary heap and the stepping algorithms of
+[§25.12](25-parallel.md#sec-25-12) on one thread, on random graphs of 800000
+arcs and degree 8. Against the pairs they execute 0.2% to 6% more
+instructions, and they miss the last level 24% to 36% more often with `int`
+weights and 6% to 12% more often with `double` weights, since a short row
+spans two lines instead of one. With degree 32 the misses fall by 12% to 14%
+with `double` weights and still grow by 15% to 17% with `int` weights, while
+a visit in breadth, which reads only the heads, misses 36% to 77% less often
+on all these graphs.
 `transpose()` builds the graph with the arcs reversed, which the visits from
 the bottom up and the strongly connected components of a reversed graph need,
 and `relabel( p )` the same graph with the node $u$ renamed $p[ u ]$. Both
@@ -565,8 +594,8 @@ const int x = b.addNode() , y = b.addNode() , z = b.addNode();
 b.addEdge( x , z , 2.5 );
 b.addEdge( x , y , 1.0 );
 ADS::StaticGraph< double > g = b.toStaticGraph();
-std::span< const ADS::WeightedArc< double > > A = g.out( x );
-// the arcs to y and to z, sorted
+ADS::StaticGraph< double >::ArcRange A = g.out( x );
+// the arcs to y and to z, sorted: A[ 0 ].to is y, A[ 1 ].w is 2.5
 std::optional< double > w = g.weight( x , z );  // w is 2.5
 ```
 

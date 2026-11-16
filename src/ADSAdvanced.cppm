@@ -335,6 +335,7 @@ using ADS::Union;
 using ADS::UnionFind;
 
 // numeric/CsrMatrix.h
+using ADS::BasicCsrMatrix;
 using ADS::CsrMatrix;
 
 // numeric/DenseMatrix.h

@@ -9,18 +9,19 @@
  *   `StaticGraph< W >` of ADS [see `StaticGraph.h`], with no copy of its
  *   rows: the base of `lemon::DigraphExtender`, which supplies the
  *   iterators, the maps and the notifiers, on the places of the compressed
- *   rows, the arc \f$ k \f$ being the place \f$ k \f$ of `arcData()`, so
+ *   rows, the arc \f$ k \f$ being the place \f$ k \f$ of `heads()`, so
  *   that `OutArcIt` walks the row in memory, and `weights()` a `ReadMap` of
- *   the weights stored next to the heads. `source()` and `InArcIt` need
- *   what the rows lack, a tail per arc and the lists of the arcs into each
- *   node, built once in \f$ \Theta( n + a ) \f$ time and \f$ 8 a + 4 n \f$
- *   bytes (the `StaticDigraph` of LEMON keeps 16 a + 8 n). An unoriented
- *   `StaticGraph` is seen with its two arcs per edge. The algorithms of LEMON
- *   (`Dijkstra`, `Bfs`, `Dfs`, `Preflow`, `NetworkSimplex`, ...) then run on
- *   the graph of ADS by replacing the graph and the length map, and any
- *   other graph of ADS reaches them through the copy `StaticGraph( g )`. A
- *   static graph never changes, so that the notifiers tell only the
- *   `build()` of the construction, as those of the `StaticDigraph` of LEMON;
+ *   the weights in the same places of `weightData()`. `source()` and
+ *   `InArcIt` need what the rows lack, a tail per arc and the lists of the
+ *   arcs into each node, built once in \f$ \Theta( n + a ) \f$ time and
+ *   \f$ 8 a + 4 n \f$ bytes (the `StaticDigraph` of LEMON keeps
+ *   16 a + 8 n). An unoriented `StaticGraph` is seen with its two arcs per
+ *   edge. The algorithms of LEMON (`Dijkstra`, `Bfs`, `Dfs`, `Preflow`,
+ *   `NetworkSimplex`, ...) then run on the graph of ADS by replacing the
+ *   graph and the length map, and any other graph of ADS reaches them
+ *   through the copy `StaticGraph( g )`. A static graph never changes, so
+ *   that the notifiers tell only the `build()` of the construction, as
+ *   those of the `StaticDigraph` of LEMON;
  * - `GraphView< GR , LM >`, a GRAPH of ADS [see `Graph.h`] over a digraph
  *   of LEMON and a length map, with no copy: the names of the nodes are the
  *   ids of LEMON, `bound()` is `maxNodeId() + 1`, `hasNode()` asks `valid()`
@@ -170,7 +171,7 @@ class StaticDigraphBase
   }
  /// the head of an arc
  [[nodiscard]] Node target( Arc a ) const {
-  return( Node( StaticGraph< W >::head( f_g->arcData()[ a.id ] ) ) );
+  return( Node( f_g->heads()[ a.id ] ) );
   }
 
  /// the first node, the last name
@@ -220,7 +221,7 @@ void StaticDigraphBase< W >::attach( const StaticGraph< W > & g )
  for( int u = n - 1 ; u >= 0 ; --u )
   for( int k = g.offsets()[ u + 1 ] - 1 ; k >= g.offsets()[ u ] ; --k ) {
    f_tail[ std::size_t( k ) ] = u;
-   const int v = StaticGraph< W >::head( g.arcData()[ k ] );
+   const int v = g.heads()[ k ];
    f_nextIn[ std::size_t( k ) ] = f_firstIn[ std::size_t( v ) ];
    f_firstIn[ std::size_t( v ) ] = k;
    }
@@ -260,7 +261,7 @@ class StaticDigraphView
   using Value = W;              ///< the weights
   const StaticDigraphView * g;  ///< the view
   /// the weight of the arc \f$ a \f$
-  W operator[]( Key a ) const { return( g->graph().arcData()[ a.id ].w ); }
+  W operator[]( Key a ) const { return( g->graph().weightData()[ a.id ] ); }
   };
 
  /// the weights of the arcs, read in the rows of the graph of ADS

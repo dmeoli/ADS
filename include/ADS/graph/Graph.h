@@ -247,25 +247,9 @@ adjFromIncidence( const std::vector< std::vector< int > > & B , int u ,
 namespace detail
 {
 
-/// the type of the arcs of the rows of a graph read where they are
-template< class G , bool Direct >
-struct RowsArc
-{
- using type = int;  ///< none: the copy has the heads only
- };
-
-/// the type of the arcs of `arcData()`
-template< class G >
-struct RowsArc< G , true >
-{
- /// an arc of the graph, its head or a pair of head and weight
- using type =
-   std::remove_cvref_t< decltype( *std::declval< const G & >().arcData() ) >;
- };
-
 /// the arcs of a graph in compressed rows, for the algorithms that walk the
 /// adjacencies with a cursor per node: those of a graph that keeps them so
-/// (`offsets()` and `arcData()`, as `StaticGraph`) where they are, those of
+/// (`offsets()` and `heads()`, as `StaticGraph`) where they are, those of
 /// any other model copied once, in the order of `forEachAdj()`, with none
 /// for a name that is not a node
 template< Graph G >
@@ -276,6 +260,7 @@ class Rows
  /// whether the rows of the graph are read where they are
  static constexpr bool direct = requires( const G & h ) {
   { h.offsets() } -> std::convertible_to< const int * >;
+  { h.heads() } -> std::convertible_to< const int * >;
   h.arcData();
   };
 
@@ -283,7 +268,7 @@ class Rows
  explicit Rows( const G & g ) {
   if constexpr( direct ) {
    f_o = g.offsets();
-   f_a = g.arcData();
+   f_h = g.heads();
    }
   else {
    const int n = g.bound();
@@ -312,17 +297,13 @@ class Rows
  [[nodiscard]] int head( std::size_t i ) const {
   if constexpr( ! direct )
    return( f_head[ i ] );
-  else if constexpr( std::is_convertible_v< decltype( f_a[ i ] ) , int > )
-   return( int( f_a[ i ] ) );
   else
-   return( f_a[ i ].to );
+   return( f_h[ i ] );
   }
 
  private:
- using Arc = typename RowsArc< G , direct >::type;  ///< an arc of g
-
  const int * f_o = nullptr;         ///< the offsets of the graph
- const Arc * f_a = nullptr;         ///< its arcs
+ const int * f_h = nullptr;         ///< the heads of its arcs
  std::vector< std::size_t > f_off;  ///< the offsets of the copy
  std::vector< int > f_head;         ///< the heads of the copy
 
