@@ -2,12 +2,15 @@
 /*---------------------------- File Bitwise.tpp ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The kernels of the 1 bits of arrays of words [see FastBitwise.h], on
+ * The kernels of the 1 bits of arrays of words [see FastBitwise.h and
+ * BoolSet.h], on
  * Highway: the carry-save adders of Harley and Seal on vectors of words,
  * so that sixteen vectors cost one count of the lanes and fifteen adders
  * of three logical operations each, and the counts of the lanes of
  * Highway (one instruction where the processor has it, as AVX-512
- * VPOPCNTDQ and NEON, a table of nibbles elsewhere).
+ * VPOPCNTDQ and NEON, a table of nibbles elsewhere); and the operations of
+ * two arrays of words that count the bits of their result in the same
+ * pass.
  *
  * \see W. Muła, N. Kurz, D. Lemire, Faster population counts using AVX2
  *      instructions, The Computer Journal 61(1), 111-120, 2018,
@@ -124,6 +127,44 @@ inline std::uint64_t popcountAndWords( const std::uint64_t * HWY_RESTRICT a ,
    m );
  for( std::size_t i = m * L ; i < n ; ++i )
   s += std::uint64_t( std::popcount( a[ i ] & b[ i ] ) );
+ return( s );
+ }
+
+/// c[ i ] = a[ i ] op b[ i ], 0 <= i < n, for op 0 (or), 1 (and), 2 (and
+/// not) or 3 (xor); the 1 bits of c
+inline std::uint64_t combineWords( const std::uint64_t * HWY_RESTRICT a ,
+				   const std::uint64_t * HWY_RESTRICT b ,
+				   std::uint64_t * HWY_RESTRICT c ,
+				   std::size_t n , int op )
+{
+ const hn::ScalableTag< std::uint64_t > d;
+ const std::size_t L = hn::Lanes( d );
+ auto acc = hn::Zero( d );
+ std::size_t i = 0;
+ auto pass = [ & ]( auto f ) HWY_ATTR {
+  for( ; i + L <= n ; i += L ) {
+   const auto v = f( hn::LoadU( d , a + i ) , hn::LoadU( d , b + i ) );
+   hn::StoreU( v , d , c + i );
+   acc = hn::Add( acc , hn::PopulationCount( v ) );
+   }
+  };
+ if( op == 0 )
+  pass( []( auto x , auto y ) HWY_ATTR { return( hn::Or( x , y ) ); } );
+ else if( op == 1 )
+  pass( []( auto x , auto y ) HWY_ATTR { return( hn::And( x , y ) ); } );
+ else if( op == 2 )
+  pass( []( auto x , auto y ) HWY_ATTR { return( hn::AndNot( y , x ) ); } );
+ else
+  pass( []( auto x , auto y ) HWY_ATTR { return( hn::Xor( x , y ) ); } );
+ std::uint64_t s = hn::GetLane( hn::SumOfLanes( d , acc ) );
+ for( ; i < n ; ++i ) {
+  const std::uint64_t x = op == 0   ? a[ i ] | b[ i ]
+			  : op == 1 ? a[ i ] & b[ i ]
+			  : op == 2 ? a[ i ] & ~b[ i ]
+				    : a[ i ] ^ b[ i ];
+  c[ i ] = x;
+  s += std::uint64_t( std::popcount( x ) );
+  }
  return( s );
  }
 

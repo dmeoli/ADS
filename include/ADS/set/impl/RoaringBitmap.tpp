@@ -19,10 +19,6 @@
 #include <bit>
 #include <cstring>
 
-#if defined( __AVX2__ ) || defined( __SSE4_2__ )
- #include <immintrin.h>
-#endif
-
 #if defined( __GNUC__ ) || defined( __clang__ )
  #define ADS_ROAR_KERNEL __attribute__( ( noinline ) )
 #else
@@ -36,8 +32,8 @@ namespace detail
 {
 
 /// the bits of op( a[ k ] , b[ k ] ) for k < n, written to c unless it is
-/// nullptr, and their count: with AVX2 4 words at a time, the bits of the
-/// half bytes looked up by a shuffle of bytes [see BoolSet.h]
+/// nullptr, and their count: with Highway by the kernel of the vectors of
+/// the processor [see Simd.h]
 template< class Op >
 inline std::uint32_t roaringWords( const std::uint64_t * a ,
 				   const std::uint64_t * b ,
@@ -46,29 +42,15 @@ inline std::uint32_t roaringWords( const std::uint64_t * a ,
 {
  std::size_t k = 0;
  std::uint64_t cnt = 0;
-#if defined( __AVX2__ )
- const __m256i table =
-   _mm256_setr_epi8( 0 , 1 , 1 , 2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 ,
-		     3 , 4 , 0 , 1 , 1 ,
-		     2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 , 3 , 4 );
- const __m256i low = _mm256_set1_epi8( 0x0F );
- __m256i acc = _mm256_setzero_si256();
- for( ; k + 4 <= n ; k += 4 ) {
-  const __m256i v =
-    op( _mm256_loadu_si256( reinterpret_cast< const __m256i * >( a + k ) ) ,
-	_mm256_loadu_si256( reinterpret_cast< const __m256i * >( b + k ) ) );
-  if( c )
-   _mm256_storeu_si256( reinterpret_cast< __m256i * >( c + k ) , v );
-  const __m256i t = _mm256_add_epi8(
-    _mm256_shuffle_epi8( table , _mm256_and_si256( v , low ) ) ,
-    _mm256_shuffle_epi8(
-      table , _mm256_and_si256( _mm256_srli_epi16( v , 4 ) , low ) ) );
-  acc = _mm256_add_epi64( acc ,
-			  _mm256_sad_epu8( t , _mm256_setzero_si256() ) );
+#ifdef ADS_WITH_HIGHWAY
+ // by the kernel of Highway [see Simd.h], the operation told by its value
+ // on 0101 and 0011 (or 0111, and 0001, and not 0100, xor 0110)
+ const std::uint64_t t = op( std::uint64_t( 5 ) , std::uint64_t( 3 ) );
+ const int o = t == 7 ? 0 : t == 1 ? 1 : t == 4 ? 2 : t == 6 ? 3 : -1;
+ if( c && ( o >= 0 ) ) {
+  cnt = simd::combine( a , b , c , n , o );
+  k = n;
   }
- alignas( 32 ) std::uint64_t s[ 4 ];
- _mm256_store_si256( reinterpret_cast< __m256i * >( s ) , acc );
- cnt = s[ 0 ] + s[ 1 ] + s[ 2 ] + s[ 3 ];
 #endif
  for( ; k < n ; ++k ) {
   const std::uint64_t v = op( a[ k ] , b[ k ] );
@@ -79,49 +61,11 @@ inline std::uint32_t roaringWords( const std::uint64_t * a ,
  return( std::uint32_t( cnt ) );
  }
 
-#if defined( __SSE4_2__ )
-
-/// the shuffles of bytes that pack to the front the items of 16 bits of a
-/// vector of 8 chosen by a mask
-struct Pack16
-{
- alignas( 16 ) std::uint8_t p[ 256 ][ 16 ];
- constexpr Pack16( void ) : p{} {
-  for( int m = 0 ; m < 256 ; ++m ) {
-   int c = 0;
-   for( int b = 0 ; b < 8 ; ++b )
-    if( m & ( 1 << b ) ) {
-     p[ m ][ 2 * c ] = std::uint8_t( 2 * b );
-     p[ m ][ 2 * c + 1 ] = std::uint8_t( 2 * b + 1 );
-     ++c;
-     }
-   for( int k = 2 * c ; k < 16 ; ++k )
-    p[ m ][ k ] = 0x80;
-   }
-  }
- };
-
-inline constexpr Pack16 pack16{};
-
-/// the bits of the items of va found in vb, 8 items of 16 bits each, none
-/// 0: a comparison of strings of implicit length (0 would end a string),
-/// cheaper than that of explicit length
-inline unsigned found8( __m128i va , __m128i vb )
-{
- return( unsigned( _mm_extract_epi32(
-   _mm_cmpistrm( vb , va ,
-		 _SIDD_UWORD_OPS | _SIDD_CMP_EQUAL_ANY | _SIDD_BIT_MASK ) ,
-   0 ) ) );
- }
-
-#endif
-
 /// the items common to the sorted a and b of 16 bits, written to out (which
-/// has room for 8 more), and their number: with SSE4.2, blocks of 8 items
-/// compared all against all by one comparison of strings (the method of
-/// Schlegel, Willhalm and Lehner), the items of a found packed by a shuffle
-/// and stored, and the block that ends first moving on; the rest by a
-/// merge with no branch
+/// has room for 8 more), and their number: with Highway, blocks of L <= 8
+/// items compared all against all (the method of Schlegel, Willhalm and
+/// Lehner) [see Simd.h], the items of a found compressed and stored, and
+/// the block that ends first moving on; the rest by a merge with no branch
 ADS_ROAR_KERNEL inline std::size_t
 intersect16( const std::uint16_t * a , std::size_t na ,
 	     const std::uint16_t * b ,
@@ -134,32 +78,8 @@ intersect16( const std::uint16_t * a , std::size_t na ,
   i = a[ 0 ] == 0 ? 1 : 0;
   j = b[ 0 ] == 0 ? 1 : 0;
   }
-#if defined( __SSE4_2__ )
- if( ( i + 8 <= na ) && ( j + 8 <= nb ) ) {
-  __m128i va = _mm_loadu_si128( reinterpret_cast< const __m128i * >( a + i ) );
-  __m128i vb = _mm_loadu_si128( reinterpret_cast< const __m128i * >( b + j ) );
-  for( ; ; ) {  // a block moves on, or both
-   const unsigned r = found8( va , vb );
-   const __m128i sh =
-     _mm_load_si128( reinterpret_cast< const __m128i * >( pack16.p[ r ] ) );
-   _mm_storeu_si128( reinterpret_cast< __m128i * >( out + k ) ,
-		     _mm_shuffle_epi8( va , sh ) );
-   k += std::size_t( std::popcount( r ) );
-   const std::uint16_t x = a[ i + 7 ] , y = b[ j + 7 ];
-   if( x <= y ) {
-    i += 8;
-    if( i + 8 > na )
-     break;
-    va = _mm_loadu_si128( reinterpret_cast< const __m128i * >( a + i ) );
-    }
-   if( y <= x ) {
-    j += 8;
-    if( j + 8 > nb )
-     break;
-    vb = _mm_loadu_si128( reinterpret_cast< const __m128i * >( b + j ) );
-    }
-   }
-  }
+#ifdef ADS_WITH_HIGHWAY
+ k += simd::intersectBlocks16( a , na , b , nb , out + k , &i , &j );
 #endif
  while( ( i < na ) && ( j < nb ) ) {
   const std::uint16_t p = a[ i ] , q = b[ j ];
@@ -172,8 +92,8 @@ intersect16( const std::uint16_t * a , std::size_t na ,
  }
 
 /// the items of the sorted a of 16 bits not in the sorted b, written to out
-/// (which has room for 8 more), and their number: with SSE4.2 the blocks of
-/// 8 are compared all against all as in intersect16(), the items of the
+/// (which has room for 8 more), and their number: with Highway the blocks
+/// are compared all against all as in intersect16(), the items of the
 /// block of a found in some block of b gathered in a mask, and the others
 /// packed and stored when the block of a moves on
 ADS_ROAR_KERNEL inline std::size_t
@@ -189,34 +109,8 @@ difference16( const std::uint16_t * a , std::size_t na ,
   j = b[ 0 ] == 0 ? 1 : 0;
   }
  unsigned mask = 0;  // the found of the block of a
-#if defined( __SSE4_2__ )
- if( ( i + 8 <= na ) && ( j + 8 <= nb ) ) {
-  __m128i va = _mm_loadu_si128( reinterpret_cast< const __m128i * >( a + i ) );
-  __m128i vb = _mm_loadu_si128( reinterpret_cast< const __m128i * >( b + j ) );
-  for( ; ; ) {
-   mask |= found8( va , vb );
-   const std::uint16_t x = a[ i + 7 ] , y = b[ j + 7 ];
-   if( x <= y ) {  // the block of a is done
-    const unsigned keep = ~mask & 0xFF;
-    const __m128i sh = _mm_load_si128(
-      reinterpret_cast< const __m128i * >( pack16.p[ keep ] ) );
-    _mm_storeu_si128( reinterpret_cast< __m128i * >( out + k ) ,
-		      _mm_shuffle_epi8( va , sh ) );
-    k += std::size_t( std::popcount( keep ) );
-    mask = 0;
-    i += 8;
-    if( i + 8 > na )
-     break;
-    va = _mm_loadu_si128( reinterpret_cast< const __m128i * >( a + i ) );
-    }
-   if( y <= x ) {
-    j += 8;
-    if( j + 8 > nb )
-     break;
-    vb = _mm_loadu_si128( reinterpret_cast< const __m128i * >( b + j ) );
-    }
-   }
-  }
+#ifdef ADS_WITH_HIGHWAY
+ k += simd::differenceBlocks16( a , na , b , nb , out + k , &i , &j , &mask );
 #endif
  const std::size_t i0 = i;  // the rest, one at a time
  for( std::size_t t = i ; t < na ; ++t ) {
@@ -231,108 +125,20 @@ difference16( const std::uint16_t * a , std::size_t na ,
  return( k );
  }
 
-#if defined( __SSE4_2__ )
-
-/// the two sorted vectors lo and hi of 8 items of 16 bits merged, the 8
-/// smallest in lo and the 8 largest in hi, both sorted: the minima and the
-/// maxima of the two, the minima rotated by one place 7 times (the network
-/// of Inoue and Taura)
-inline void merge8( __m128i & lo , __m128i & hi )
-{
- __m128i mn = _mm_min_epu16( lo , hi ) , mx = _mm_max_epu16( lo , hi );
- for( int t = 0 ; t < 7 ; ++t ) {
-  mn = _mm_alignr_epi8( mn , mn , 2 );
-  const __m128i m = _mm_min_epu16( mn , mx );
-  mx = _mm_max_epu16( mn , mx );
-  mn = m;
-  }
- lo = _mm_alignr_epi8( mn , mn , 2 );
- hi = mx;
- }
-
-#endif
-
 /// the items of the sorted a or b of 16 bits, each once, written to out
-/// (which has room for na + nb + 8), and their number: with SSE4.2 merged
-/// by blocks of 8 [see merge8()], the next block taken from the list with
-/// the smaller head, the items equal to the one before them dropped by a
-/// comparison with the block shifted by one place
+/// (which has room for na + nb + 8), and their number: with Highway merged
+/// by blocks by the network of Inoue and Taura [see Simd.h], the next block
+/// taken from the list with the smaller head, the items equal to the one
+/// before them dropped
 ADS_ROAR_KERNEL inline std::size_t
 union16( const std::uint16_t * a , std::size_t na , const std::uint16_t * b ,
 	 std::size_t nb , std::uint16_t * out )
 {
  std::size_t i = 0 , j = 0 , k = 0;
  int last = -1;  // the last item written
-#if defined( __SSE4_2__ )
- if( ( na >= 8 ) && ( nb >= 8 ) ) {
-  __m128i lo = _mm_loadu_si128( reinterpret_cast< const __m128i * >( a ) );
-  __m128i hi = _mm_loadu_si128( reinterpret_cast< const __m128i * >( b ) );
-  i = j = 8;
-  __m128i prev = _mm_set1_epi16( -1 );  // its last lane, the last item
-  bool first = true;
-  for( ; ; ) {
-   merge8( lo , hi );
-   const __m128i sh = _mm_alignr_epi8( lo , prev , 14 );  // one place
-   unsigned dup = unsigned( _mm_movemask_epi8(
-     _mm_packs_epi16( _mm_cmpeq_epi16( lo , sh ) , _mm_setzero_si128() ) ) );
-   if( first ) {
-    dup &= ~1u;
-    first = false;
-    }
-   const unsigned keep = ~dup & 0xFF;
-   const __m128i pk =
-     _mm_load_si128( reinterpret_cast< const __m128i * >( pack16.p[ keep ] ) );
-   _mm_storeu_si128( reinterpret_cast< __m128i * >( out + k ) ,
-		     _mm_shuffle_epi8( lo , pk ) );
-   k += std::size_t( std::popcount( keep ) );
-   prev = lo;
-   // the next block, from the list with the smaller head, if a whole
-   // block; a smaller head in a tail ends the blocks
-   const bool fa = i + 8 <= na , fb = j + 8 <= nb;
-   const int ha = i < na ? a[ i ] : 1 << 16 , hb = j < nb ? b[ j ] : 1 << 16;
-   if( fa && ( ha <= hb ) ) {
-    lo = _mm_loadu_si128( reinterpret_cast< const __m128i * >( a + i ) );
-    i += 8;
-    }
-   else if( fb && ( hb < ha ) ) {
-    lo = _mm_loadu_si128( reinterpret_cast< const __m128i * >( b + j ) );
-    j += 8;
-    }
-   else
-    break;
-   }
-  last = std::uint16_t( _mm_extract_epi16( prev , 7 ) );
-  alignas( 16 ) std::uint16_t h[ 8 ];  // hi and the two tails
-  _mm_store_si128( reinterpret_cast< __m128i * >( h ) , hi );
-  std::size_t p = 0;
-  while( ( p < 8 ) || ( i < na ) || ( j < nb ) ) {
-   int v = 1 << 17;
-   int src = 0;
-   if( ( p < 8 ) && ( h[ p ] < v ) ) {
-    v = h[ p ];
-    src = 0;
-    }
-   if( ( i < na ) && ( a[ i ] < v ) ) {
-    v = a[ i ];
-    src = 1;
-    }
-   if( ( j < nb ) && ( b[ j ] < v ) ) {
-    v = b[ j ];
-    src = 2;
-    }
-   if( src == 0 )
-    ++p;
-   else if( src == 1 )
-    ++i;
-   else
-    ++j;
-   if( v != last ) {
-    out[ k++ ] = std::uint16_t( v );
-    last = v;
-    }
-   }
-  return( k );
-  }
+#ifdef ADS_WITH_HIGHWAY
+ if( ( na >= 8 ) && ( nb >= 8 ) )
+  return( simd::unionBlocks16( a , na , b , nb , out ) );
 #endif
  while( ( i < na ) || ( j < nb ) ) {  // one at a time
   int v;

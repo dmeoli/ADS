@@ -9,15 +9,17 @@
  * items, both strictly increasing, into `out`, and gives their number.
  *
  * - On lists of similar lengths (the longer at most 32 times the shorter)
- *   the two lists are merged a block of 8 items at a time on each side, in
- *   at most \f$ ( n + m ) / 8 \f$ steps, on the integers of 32 bits with
- *   AVX2: the block of \f$ A \f$ is compared with the 8 rotations of the
- *   block of \f$ B \f$, 8 comparisons of vectors that find all the equal
- *   pairs, the items of \f$ A \f$ found are packed to the front of a vector
- *   by a permutation looked up from the mask of the comparison and stored,
- *   and the block whose last item is not larger moves on (both, on a tie),
- *   with no branch; the items left at the end are merged one by one. On the
- *   other types, and without AVX2, the merge goes one item at a time with no
+ *   the two lists are merged a block of \f$ L \f$ items at a time on each
+ *   side, in at most \f$ ( n + m ) / L \f$ steps, on the integers of 32
+ *   bits with `ADS_WITH_HIGHWAY`, \f$ L \le 8 \f$ the lanes of the vectors
+ *   of the processor found at run time [see `Simd.h`]: the block of
+ *   \f$ A \f$ is compared with the \f$ L \f$ rotations of the block of
+ *   \f$ B \f$, \f$ L \f$ comparisons of vectors that find all the equal
+ *   pairs, the items of \f$ A \f$ found are compressed to the front of a
+ *   vector and stored, and the block whose last item is not larger moves
+ *   on (both, on a tie), with no branch; the items left at the end are
+ *   merged one by one. On the other types, and without Highway, the merge
+ *   goes one item at a time with no
  *   branch: an item is written whatever happens, the count of the output
  *   advances on equality, and each list advances when its item is not
  *   larger, three additions in place of the jumps of the merge, which
@@ -25,11 +27,11 @@
  * - On lists of very different lengths (the longer more than 32 times the
  *   shorter), each item of the shorter one is looked for in the longer one
  *   from the place of the previous one. On the integers of 32 bits with
- *   AVX2, the longer list is read through a window of 64 items, which moves
+ *   Highway, the longer list is read through a window of 64 items, which moves
  *   by strides of 1024 and then of 64 items while its last item is smaller
  *   than the item looked for (the line 8 strides ahead prefetched); the
- *   item is then compared with the 64 of the window at once, 8 comparisons
- *   of vectors and no search inside the window, so that an item at a gap of
+ *   item is then compared with the 64 of the window at once, a comparison
+ *   per vector and no search inside the window, so that an item at a gap of
  *   \f$ g \f$ places from the previous one costs
  *   \f$ \lfloor g / 1024 \rfloor + \min( 16 , \lfloor g / 64 \rfloor ) +
  *   O( 1 ) \f$ steps that the processor predicts (a binary search on the
@@ -83,7 +85,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
-#include "ADS/memory/Prefetch.h"
+#include "ADS/Simd.h"
 
 #include <cstddef>
 #include <vector>
@@ -100,8 +102,8 @@ namespace ADS
 ///
 /// In pseudocode (beyond the book, after Schlegel, Willhalm and Lehner and
 /// Lemire, Boytsov and Kurz), \f$ a \f$ the longer list; the merge with no
-/// branch shown, which the blocks of 8 items replace on the integers of 32
-/// bits with AVX2:
+/// branch shown, which the blocks of \f$ L \f$ items replace on the
+/// integers of 32 bits with Highway:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{intersect}( a , n , b , m ) \cr

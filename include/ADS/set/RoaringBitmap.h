@@ -29,22 +29,25 @@
  * chunks and combine the containers of the same chunk:
  *
  * - two bitmaps word by word, the bits of the result counted in the same
- *   pass (4 words at a time with AVX2 [see `BoolSet.h`]), a result of at
- *   most 4096 items then written as an array;
+ *   pass (by the vectors of the processor with Highway [see `Simd.h`]), a
+ *   result of at most 4096 items then written as an array;
  * - a bitmap and an array by testing, setting, clearing or flipping the
  *   bits of the array in a copy of the bitmap;
- * - two arrays, with SSE4.2, by blocks of 8 items: for the intersection
- *   and the difference, a block of each array compared all against all by
- *   one comparison of strings (the method of Schlegel, Willhalm and
- *   Lehner), the items of the block of the first array found, or those not
- *   found in any block of the second one, packed by a shuffle and stored,
- *   and the block that ends first moving on; for the union, the two blocks
- *   merged by the network of minima and maxima of Inoue and Taura, the 8
- *   smallest written but those equal to the one before them, and the next
- *   block taken from the array with the smaller head; for the symmetric
- *   difference, the union of the two differences (by a merge with no branch
- *   on short arrays); a union or a symmetric difference of more than 4096
- *   items becoming a bitmap.
+ * - two arrays, with `ADS_WITH_HIGHWAY`, by blocks of \f$ L \le 8 \f$
+ *   items, \f$ L \f$ the lanes of 16 bits of the vectors of the processor
+ *   found at run time [see `Simd.h`]: for the intersection and the
+ *   difference, a block of each array compared all against all by the
+ *   comparisons with its \f$ L \f$ rotations (the method of Schlegel,
+ *   Willhalm and Lehner, who use one comparison of strings of SSE4.2), the
+ *   items of the block of the first array found, or those not found in any
+ *   block of the second one, compressed and stored, and the block that ends
+ *   first moving on; for the union, the two blocks merged by the network of
+ *   minima and maxima of Inoue and Taura, the \f$ L \f$ smallest written
+ *   but those equal to the one before them, and the next block taken from
+ *   the array with the smaller head; for the symmetric difference, the
+ *   union of the two differences (by a merge with no branch on short
+ *   arrays); a union or a symmetric difference of more than 4096 items
+ *   becoming a bitmap.
  *
  * Compared with the literature: Roaring adds containers of runs (the
  * intervals of consecutive integers, for sets with long runs) and the lazy
@@ -102,6 +105,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Simd.h"
 #include "ADS/set/BoolSet.h"
 
 #include <cstddef>

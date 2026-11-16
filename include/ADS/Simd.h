@@ -89,6 +89,14 @@ namespace ADS::detail::simd
 
 HWY_EXPORT( popcountWords );
 HWY_EXPORT( popcountAndWords );
+HWY_EXPORT( combineWords );
+HWY_EXPORT( blocksCommonI32 );
+HWY_EXPORT( blocksCommonU32 );
+HWY_EXPORT( windowsCommonI32 );
+HWY_EXPORT( windowsCommonU32 );
+HWY_EXPORT( intersectBlocks16 );
+HWY_EXPORT( differenceBlocks16 );
+HWY_EXPORT( unionBlocks16 );
 
 /// the 1 bits of the words \f$ w[ 0 .. n - 1 ] \f$
 inline std::uint64_t popcount( const std::uint64_t * w , std::size_t n )
@@ -101,6 +109,102 @@ inline std::uint64_t popcountAnd( const std::uint64_t * a ,
 				  const std::uint64_t * b , std::size_t n )
 {
  return( HWY_DYNAMIC_DISPATCH( popcountAndWords )( a , b , n ) );
+ }
+
+/// \f$ c[ i ] = a[ i ] \circ b[ i ] \f$, \f$ 0 \le i < n \f$, for
+/// \f$ \circ \f$ the operation \f$ o \f$: 0 or, 1 and, 2 and not, 3 xor;
+/// the 1 bits of \f$ c \f$
+inline std::uint64_t combine( const std::uint64_t * a ,
+			      const std::uint64_t * b ,
+			      std::uint64_t * c , std::size_t n , int o )
+{
+ return( HWY_DYNAMIC_DISPATCH( combineWords )( a , b , c , n , o ) );
+ }
+
+/// the common items of the sorted arrays \f$ a[ 0 .. n ) \f$ and
+/// \f$ b[ 0 .. m ) \f$ of integers of 32 bits appended to \f$ out \f$ by
+/// blocks while both have one, the places where the blocks stopped in
+/// \f$ *i \f$ and \f$ *j \f$; the items written [see Sets.tpp]
+template< class T >
+inline std::size_t blocksCommon( const T * a , std::size_t n , const T * b ,
+				 std::size_t m , T * out , std::size_t * i ,
+				 std::size_t * j )
+{
+ if constexpr( std::is_signed_v< T > )
+  return( HWY_DYNAMIC_DISPATCH( blocksCommonI32 )(
+    reinterpret_cast< const std::int32_t * >( a ) , n ,
+    reinterpret_cast< const std::int32_t * >( b ) , m ,
+    reinterpret_cast< std::int32_t * >( out ) , i , j ) );
+ else
+  return( HWY_DYNAMIC_DISPATCH( blocksCommonU32 )(
+    reinterpret_cast< const std::uint32_t * >( a ) , n ,
+    reinterpret_cast< const std::uint32_t * >( b ) , m ,
+    reinterpret_cast< std::uint32_t * >( out ) , i , j ) );
+ }
+
+/// the items of the sorted \f$ s[ 0 .. m ) \f$ also in the sorted
+/// \f$ l[ 0 .. n ) \f$, integers of 32 bits, appended to \f$ out \f$ by
+/// windows of 64 items of \f$ l \f$ while one is left, the items of
+/// \f$ s \f$ and of \f$ l \f$ passed in \f$ *q \f$ and \f$ *p \f$; the
+/// items written [see Sets.tpp]
+template< class T >
+inline std::size_t windowsCommon( const T * s , std::size_t m , const T * l ,
+				  std::size_t n , T * out , std::size_t * q ,
+				  std::size_t * p )
+{
+ if constexpr( std::is_signed_v< T > )
+  return( HWY_DYNAMIC_DISPATCH( windowsCommonI32 )(
+    reinterpret_cast< const std::int32_t * >( s ) , m ,
+    reinterpret_cast< const std::int32_t * >( l ) , n ,
+    reinterpret_cast< std::int32_t * >( out ) , q , p ) );
+ else
+  return( HWY_DYNAMIC_DISPATCH( windowsCommonU32 )(
+    reinterpret_cast< const std::uint32_t * >( s ) , m ,
+    reinterpret_cast< const std::uint32_t * >( l ) , n ,
+    reinterpret_cast< std::uint32_t * >( out ) , q , p ) );
+ }
+
+/// the items common to the sorted \f$ a[ 0 .. na ) \f$ and
+/// \f$ b[ 0 .. nb ) \f$ of 16 bits appended to \f$ out \f$ by blocks from
+/// \f$ *i \f$ and \f$ *j \f$, where the blocks stopped left in them; the
+/// items written [see Sets.tpp]
+inline std::size_t intersectBlocks16( const std::uint16_t * a ,
+				      std::size_t na ,
+				      const std::uint16_t * b ,
+				      std::size_t nb ,
+				      std::uint16_t * out , std::size_t * i ,
+				      std::size_t * j )
+{
+ return(
+   HWY_DYNAMIC_DISPATCH( intersectBlocks16 )( a , na , b , nb , out , i ,
+					      j ) );
+ }
+
+/// the items of the sorted \f$ a[ 0 .. na ) \f$ of 16 bits not in the
+/// sorted \f$ b[ 0 .. nb ) \f$ appended to \f$ out \f$ by blocks, as
+/// intersectBlocks16(), the bits of the items of the block at \f$ *i \f$
+/// found so far in \f$ *found \f$; the items written [see Sets.tpp]
+inline std::size_t differenceBlocks16( const std::uint16_t * a ,
+				       std::size_t na ,
+				       const std::uint16_t * b ,
+				       std::size_t nb ,
+				       std::uint16_t * out , std::size_t * i ,
+				       std::size_t * j , unsigned * found )
+{
+ return( HWY_DYNAMIC_DISPATCH( differenceBlocks16 )( a , na , b , nb , out ,
+						     i , j ,
+						      found ) );
+ }
+
+/// the items of the sorted \f$ a[ 0 .. na ) \f$ or \f$ b[ 0 .. nb ) \f$
+/// of 16 bits, each once, written to \f$ out \f$ (room for
+/// \f$ na + nb + 8 \f$), \f$ na , nb \ge 8 \f$; their number [see
+/// Sets.tpp]
+inline std::size_t unionBlocks16( const std::uint16_t * a , std::size_t na ,
+				  const std::uint16_t * b , std::size_t nb ,
+				  std::uint16_t * out )
+{
+ return( HWY_DYNAMIC_DISPATCH( unionBlocks16 )( a , na , b , nb , out ) );
  }
 
 /*--------------------------------------------------------------------------*/

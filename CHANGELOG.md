@@ -2207,6 +2207,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The intersection of sorted arrays of integers of 32 bits
+  (VectorIntersection.h), the operations of two `BoolSet` and of two
+  bitmaps of `RoaringBitmap`, and the intersection, the difference and the
+  union of two arrays of `RoaringBitmap` run on the kernels of Highway
+  (ADS/impl/simd/Sets.tpp and Bitwise.tpp): the blocks of up to 8 items of
+  the vectors of the processor compared with the rotations of the other
+  block and compressed, in place of the shuffles of AVX2 and of the
+  comparisons of strings of SSE4.2. Pending: the times
+  against `pcmpistrm`, which a portable library is the most likely to
+  lose, in the next campaign on an idle machine.
+
 - `vectorQuickSort()` is the vectorized quicksort of Wassenberg et al.,
   `hwy::VQSort()` of the library of Highway, on the vectors of the
   processor found at run time, with `ADS_WITH_HIGHWAY` (the floating point

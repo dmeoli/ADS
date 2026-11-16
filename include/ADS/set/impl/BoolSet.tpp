@@ -82,37 +82,19 @@ inline bool BoolSet::counted( void ) const
 namespace detail
 {
 
-/// the bits set in w[ 0 .. n ): with AVX2, the count of the bits of each
-/// half byte looked up by a shuffle of bytes in a table of 16, and the
-/// counts of the bytes summed by a sum of absolute differences, 4 words
-/// at a time; elsewhere the count of the bits of each word
+/// the bits set in w[ 0 .. n ): with Highway by the kernel of the
+/// vectors of the processor [see Simd.h], elsewhere the count of the bits
+/// of each word
 inline std::size_t countBits( const std::uint64_t * w , std::size_t n )
 {
- std::size_t k = 0 , c = 0;
-#if defined( __AVX2__ )
- const __m256i table =
-   _mm256_setr_epi8( 0 , 1 , 1 , 2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 ,
-		     3 , 4 , 0 , 1 , 1 ,
-		     2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 , 3 , 4 );
- const __m256i low = _mm256_set1_epi8( 0x0F );
- __m256i acc = _mm256_setzero_si256();
- for( ; k + 4 <= n ; k += 4 ) {
-  const __m256i v =
-    _mm256_loadu_si256( reinterpret_cast< const __m256i * >( w + k ) );
-  const __m256i b = _mm256_add_epi8(
-    _mm256_shuffle_epi8( table , _mm256_and_si256( v , low ) ) ,
-    _mm256_shuffle_epi8(
-      table , _mm256_and_si256( _mm256_srli_epi16( v , 4 ) , low ) ) );
-  acc = _mm256_add_epi64( acc ,
-			  _mm256_sad_epu8( b , _mm256_setzero_si256() ) );
-  }
- alignas( 32 ) std::uint64_t s[ 4 ];
- _mm256_store_si256( reinterpret_cast< __m256i * >( s ) , acc );
- c = std::size_t( s[ 0 ] + s[ 1 ] + s[ 2 ] + s[ 3 ] );
-#endif
- for( ; k < n ; ++k )
+#ifdef ADS_WITH_HIGHWAY
+ return( std::size_t( detail::simd::popcount( w , n ) ) );
+#else
+ std::size_t c = 0;
+ for( std::size_t k = 0 ; k < n ; ++k )
   c += std::size_t( std::popcount( w[ k ] ) );
  return( c );
+#endif
  }
 
 /// C is A op B on every integer of the larger dimension, op one of the
@@ -170,30 +152,16 @@ inline void BoolSet::combine( BoolSet & C , const BoolSet & A ,
  const std::uint64_t *a = A.f_W.data() , *b = B.f_W.data();
  std::uint64_t * c = C.f_W.data();
  std::size_t k = 0 , n = 0;
-#if defined( __AVX2__ )
- // the words of both, 4 at a time, their bits counted in the same pass as
- // in countBits()
- const __m256i table =
-   _mm256_setr_epi8( 0 , 1 , 1 , 2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 ,
-		     3 , 4 , 0 , 1 , 1 ,
-		     2 , 1 , 2 , 2 , 3 , 1 , 2 , 2 , 3 , 2 , 3 , 3 , 4 );
- const __m256i low = _mm256_set1_epi8( 0x0F );
- __m256i acc = _mm256_setzero_si256();
- for( ; k + 4 <= both ; k += 4 ) {
-  const __m256i v =
-    op( _mm256_loadu_si256( reinterpret_cast< const __m256i * >( a + k ) ) ,
-	_mm256_loadu_si256( reinterpret_cast< const __m256i * >( b + k ) ) );
-  _mm256_storeu_si256( reinterpret_cast< __m256i * >( c + k ) , v );
-  const __m256i t = _mm256_add_epi8(
-    _mm256_shuffle_epi8( table , _mm256_and_si256( v , low ) ) ,
-    _mm256_shuffle_epi8(
-      table , _mm256_and_si256( _mm256_srli_epi16( v , 4 ) , low ) ) );
-  acc = _mm256_add_epi64( acc ,
-			  _mm256_sad_epu8( t , _mm256_setzero_si256() ) );
+#ifdef ADS_WITH_HIGHWAY
+ // the words of both by the kernel of Highway [see Simd.h], their bits
+ // counted in the same pass; the operation is told by its value on 0101
+ // and 0011 (or 0111, and 0001, and not 0100, xor 0110)
+ const std::uint64_t t = op( std::uint64_t( 5 ) , std::uint64_t( 3 ) );
+ const int o = t == 7 ? 0 : t == 1 ? 1 : t == 4 ? 2 : t == 6 ? 3 : -1;
+ if( o >= 0 ) {
+  n = std::size_t( detail::simd::combine( a , b , c , both , o ) );
+  k = both;
   }
- alignas( 32 ) std::uint64_t s[ 4 ];
- _mm256_store_si256( reinterpret_cast< __m256i * >( s ) , acc );
- n = std::size_t( s[ 0 ] + s[ 1 ] + s[ 2 ] + s[ 3 ] );
 #endif
  for( ; k < w ; ++k ) {  // the rest, one word at a time
   std::uint64_t x = op( k < na ? a[ k ] : 0 , k < nb ? b[ k ] : 0 );
@@ -202,8 +170,8 @@ inline void BoolSet::combine( BoolSet & C , const BoolSet & A ,
   c[ k ] = x;
   n += std::size_t( std::popcount( x ) );
   }
- if( ( both == w ) && ( w > 0 ) && ( k == w ) && ( C.f_N % 64 ) &&
-     ( w % 4 == 0 ) ) {  // the last word was in a vector
+ if( ( both == w ) && ( w > 0 ) && ( C.f_N % 64 ) ) {  // the last word
+						       // in the kernel
   const std::uint64_t x = c[ w - 1 ];
   c[ w - 1 ] = x & ( ( std::uint64_t( 1 ) << ( C.f_N % 64 ) ) - 1 );
   n -= std::size_t( std::popcount( x ) - std::popcount( c[ w - 1 ] ) );
