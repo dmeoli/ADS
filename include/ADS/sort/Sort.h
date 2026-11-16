@@ -7,26 +7,25 @@
  * one that suits it.
  *
  * - With the natural order (`std::less`) on integers or floating point numbers
- *   of 32 or 64 bits, when the vector registers are there (`kVectorSort`,
- *   AVX-512 or AVX2), a short vector goes to `vectorQuickSort()` [see
+ *   of 32 or 64 bits, when the sort of the vectors is there (`kVectorSort`,
+ *   with Highway), a short vector goes to `vectorQuickSort()` [see
  *   `VectorQuickSort.h`]; a long one with at most `kRuns` runs (non-decreasing
  *   or strictly decreasing stretches, counted by a pass that stops at the run
  *   \f$ \mathtt{kRuns} + 1 \f$ and keeps where they end, with no branch inside
  *   blocks of 32 items, which vectorize) has its runs merged with no second
  *   search for them: those of integers of 32 bits two by two in the vector
- *   registers (`mergeVectorRuns()`, on AVX-512), the others, up to 16 of them,
+ *   registers (`mergeVectorRuns()`), the others, up to 16 of them,
  *   by the merges of `powerSort()` [see `RunSorts.h`], \f$ O( n \log r ) \f$
  *   for \f$ r \f$ runs; one of integers of 64 bits whose sample of 64 keys
  *   differs in one byte and spans at least `kCountRange` values goes to the
  *   counting sort of `radixSort()`, and any other to `vectorQuickSort()`,
- *   \f$ O( n \log n ) \f$, \f$ O( n ) \f$ for few keys in a small range or for
- *   at most 16 distinct keys (counted in the registers) and
- *   \f$ O( n \log k ) \f$ for \f$ k \f$ distinct keys otherwise, \f$ W \f$
- *   keys per instruction. `stableSort()` does the same, since two equal
- *   numbers cannot be told apart, but a vector of floating point numbers that
- *   holds a \f$ -0 \f$, which `std::less` finds equal to \f$ +0 \f$, and has
- *   more than 8 or `kRuns` runs goes to `powerSort()` below `kRadix` items and
- *   to `radixSortBy()` with \f$ -0 \f$ and \f$ +0 \f$ as one key from there.
+ *   \f$ O( n \log n ) \f$, and \f$ O( n \log k ) \f$ for \f$ k \f$
+ *   distinct keys, \f$ W \f$ keys per instruction. `stableSort()` does the
+ *   same, since two equal numbers cannot be told apart, but a vector of
+ *   floating point numbers that holds a \f$ -0 \f$, which `std::less` finds
+ *   equal to \f$ +0 \f$, and has more than 8 or `kRuns` runs goes to
+ *   `powerSort()` below `kRadix` items and to `radixSortBy()` with
+ *   \f$ -0 \f$ and \f$ +0 \f$ as one key from there.
  * - A vector of `kOneRun` items or more copied as bytes, of any type and
  *   order, is first checked for one run: strictly decreasing, it is reversed
  *   in the same pass that checks it, 32 pairs of items from the two ends at a

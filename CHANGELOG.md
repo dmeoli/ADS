@@ -2207,6 +2207,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `vectorQuickSort()` is the vectorized quicksort of Wassenberg et al.,
+  `hwy::VQSort()` of the library of Highway, on the vectors of the
+  processor found at run time, with `ADS_WITH_HIGHWAY` (the floating point
+  numbers by the same keys, so that the order is the same); without it,
+  the quicksort of ADS on its portable registers. The policies of AVX-512
+  and AVX2, the counting sorts of AVX-512 for few keys in a small range or
+  at most 16 distinct keys, and the test of the processors of AMD by
+  `__builtin_cpu_is()` (in VectorQuickSort.tpp and Sort.tpp) are gone; the
+  merge of the runs of `sort()` runs on the portable registers. Pending:
+  the times against the old kernels, in the next campaign on an idle
+  machine (`bench/simd.py --times`).
+
 - The 15 control bytes of a group of FlatHashTable and DenseHashMap are
   compared, and a place of a group is emptied by one store of the group,
   by the vectors of Highway inlined at the instructions of the compiler

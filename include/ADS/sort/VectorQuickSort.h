@@ -4,14 +4,18 @@
 /** @file
  * The quicksort in the lanes of the vector registers, beyond the book:
  * `vectorQuickSort()` sorts integers and floating point numbers of 32 or 64
- * bits by their natural order, partitioning \f$ W \f$ of them per instruction,
- * where \f$ W \f$ is the number of lanes of a register (16 or 8 on AVX-512, 8
- * or 4 on AVX2), and sorting the parts of at most \f$ 16 W \f$ items by a
- * sorting network held in 16 registers.
+ * bits by their natural order. With `ADS_WITH_HIGHWAY` it is the vectorized
+ * quicksort of Wassenberg, Blacher, Giesen and Sanders, `hwy::VQSort()` of
+ * the library of Highway, on the vectors of the processor found when the
+ * program runs; without it, the quicksort below, in portable code that
+ * partitions \f$ W \f$ keys per step, \f$ W = 32 / w \f$ for keys of
+ * \f$ w \f$ bytes, and sorts the parts of at most \f$ 16 W \f$ keys by a
+ * sorting network held in 16 registers of \f$ W \f$ lanes, arrays that the
+ * compiler vectorizes as it can.
  *
- * - The keys: an integer is its own key, compared signed or not on AVX-512 and
- *   made signed on AVX2 by flipping its sign bit. A floating point number is
- *   sorted as the signed integer \f$ b \f$ of its bits, with no conversion:
+ * - The keys: an integer is its own key, made signed by flipping its sign
+ *   bit if it is unsigned. A floating point number is sorted as the signed
+ *   integer \f$ b \f$ of its bits, with no conversion:
  *   \f$ b \f$ keeps the order of the numbers with the sign bit clear and
  *   reverses that of those with it set, which come all first, since for them
  *   \f$ b = -2^{w-1} + | x |_{\mathrm{bits}} \f$ grows with the magnitude;
@@ -20,56 +24,31 @@
  *   them before and after the sort. The order is that of IEEE 754 extended to
  *   a total order, \f$ -0 \f$ before \f$ +0 \f$ and the NaN at the ends, so
  *   that a NaN breaks nothing.
- * - Few keys in a small range: on AVX-512, from 4096 integers, if a sample of
- *   64 spans fewer than \f$ A L / 4 \f$ values, for \f$ L \f$ the bits of a
- *   lane and \f$ A \in \{ 1 , 2 , 4 \} \f$ registers (32 values for either
- *   width), the keys are counted in one pass with no comparison: the key
- *   \f$ x = \mathit{lo} + d \f$ sets the bit \f$ 4 ( d - a L / 4 ) \f$ of its
- *   lane in the register \f$ a \f$ by a variable shift (none if out of reach),
- *   so that each lane counts \f$ L / 4 \f$ values in its nibbles; every 15
- *   registers the nibbles are added into bytes, every 17 of those the bytes
- *   into the counts, and the largest offset is checked, a key out of the
- *   window giving up the counting for the quicksort. A second pass writes the
- *   keys, whole registers at a time, in \f$ O( n ) \f$ time.
  * - The partition of a part \f$ a[ 0 .. n - 1 ] \f$ by a pivot \f$ p \f$, as
  *   in the quicksort of Bramas: the first and the last \f$ U W \f$ keys
  *   (\f$ U = 8 \f$) are loaded aside, which leaves \f$ U W \f$ free places at
  *   each end, and then \f$ U \f$ blocks of \f$ W \f$ keys at a time are read
  *   from the end with fewer free places; each block is compared with \f$ p \f$
- *   in one instruction into a mask \f$ m \f$ of \f$ W \f$ bits, and its
+ *   into a mask \f$ m \f$ of \f$ W \f$ bits, and its
  *   \f$ \ell = | m | \f$ keys below \f$ p \f$ are written at the left end and
  *   the \f$ W - \ell \f$ others at the right one. Before a read the two ends
  *   have \f$ f_L + f_R = 2 U W \f$ free places, and the read is from the end
  *   with \f$ \min\{ f_L , f_R \} \leq U W \f$, so that after it both have at
  *   least \f$ U W \f$: no write overtakes a key not yet read, and the
  *   partition is in place with no branch on the keys (the choice of the end is
- *   one branch per \f$ U \f$ blocks). On AVX-512 the two pieces are compressed
- *   into the memory (`vpcompress`), or, on the processors of AMD, where that
- *   instruction is microcoded and about ten times slower, into a register
- *   that a masked store writes (the slower way on those of Intel, which is
- *   why the processor is read when the program starts, as the target Zen 4
- *   of Highway does); on AVX2 a table of \f$ 2^W \f$
- *   permutations puts the lanes of \f$ m \f$ first and the others after them
- *   in one register, which is written whole at the left end and whole at the
- *   right one, as in the quicksort of Gueron and Krasnov; on AVX-512 the keys
- *   of 64 bits take the same way, with a table of 256 permutations of 8 lanes
- *   and one `vpermq`, cheaper than two compressions into the memory. Each read
- *   of \f$ U \f$ blocks prefetches into the first level the \f$ U \f$ blocks
- *   \f$ 8 U W \f$ keys further in the same direction, which nearly halves the
- *   time of a pass over a part larger than the cache of the second level,
- *   where the hardware prefetcher alone falls behind the two ends read in
- *   turn.
+ *   one branch per \f$ U \f$ blocks): the \f$ \ell \f$ keys and the others
+ *   are put apart in an array of \f$ 2 W \f$ keys and copied to the two
+ *   ends. Each read of \f$ U \f$ blocks prefetches the \f$ U \f$ blocks
+ *   \f$ 8 U W \f$ keys further in the same direction, for a pass over a
+ *   part larger than the cache of the second level, where the hardware
+ *   prefetcher alone falls behind the two ends read in turn.
  * - The pivot is the median of a sample of \f$ S = \max\{ 8 , W \} \f$ keys,
  *   one from each of \f$ S \f$ equal stretches of the part at the same random
- *   offset, sorted by the network below. If the sample repeats the pivot, on
- *   AVX-512 the partition goes three ways in one pass: the keys equal to
- *   \f$ p \f$ are not written, and the gap they leave between the two sides is
- *   filled with \f$ p \f$ at the end, while the minimum and the maximum of
- *   each side are kept by masked instructions, so that a side of one key is
- *   done; elsewhere the partition keeps the minimum and the maximum of the
- *   part and a second pass puts the keys equal to \f$ p \f$ apart. A pivot
- *   that is the minimum of the part, so that no key is below it, also gets
- *   that second pass.
+ *   offset, sorted by the network below. If the sample repeats the pivot,
+ *   the partition keeps the minimum and the maximum of the part and a second
+ *   pass puts the keys equal to \f$ p \f$ apart. A pivot that is the
+ *   minimum of the part, so that no key is below it, also gets that second
+ *   pass.
  * - The smaller side recurs and the larger one loops, with a stack of
  *   \f$ O( \log n ) \f$; past \f$ 2 \lfloor \log_2 n \rfloor \f$ levels a part
  *   is sorted by heapsort, as in the introsort of Musser, so that the worst
@@ -91,14 +70,10 @@
  *   \f$ \log_2 W \f$ steps of exchanges of blocks of lanes. The steps within
  *   registers, the dearer ones (a shuffle besides the minimum and the
  *   maximum), are then \f$ \frac{1}{2} \log_2 W ( \log_2 W - 1 ) \f$ in all,
- *   besides a reversal per merge (one permutation of the lanes on AVX-512) and
- *   the transposition, 14 for \f$ M = W = 16 \f$ against the 26 of the bitonic
- *   network on registers held by rows, which the smaller networks use, with
- *   constant masks of the lanes that keep the minimum. On AVX-512 the column
- *   network also serves \f$ W / 2 \leq M < W \f$: each block of \f$ M \f$
- *   lanes is transposed by \f$ \log_2 M \f$ steps, after which the lanes
- *   \f$ [ c M , c M + M ) \f$ of the register \f$ h \f$ hold the \f$ M \f$
- *   keys from \f$ ( c M + h ) M \f$, each block written by a masked store.
+ *   besides a reversal per merge and the transposition, 14 for
+ *   \f$ M = W = 16 \f$ against the 26 of the bitonic network on registers
+ *   held by rows, which the smaller networks use, with
+ *   constant masks of the lanes that keep the minimum.
  * - Two sorted runs are merged in the registers by `mergeRuns()`, as in the
  *   merge sort of Chhugani et al.: the register of the keys carried over is
  *   merged with the next register of the run whose next key is smaller (the
@@ -109,12 +84,10 @@
  *   keys or backward from the largest. `sort()` merges with it the runs of the
  *   integers of 32 bits [see `Sort.h`].
  *
- * The instructions are chosen when compiling: AVX-512 (F) if `__AVX512F__` is
- * defined, AVX2 if `__AVX2__` is, with GCC or Clang; otherwise, or with
- * `ADS_VECTOR_SORT` set to 0, a register is an array of \f$ W = 32 / w \f$
- * lanes for keys of \f$ w \f$ bytes, the same algorithm in portable code,
- * which the compiler vectorizes as it can. `kVectorSort` tells whether the
- * registers are real.
+ * `kVectorSort` tells whether the sort is that of Highway, and
+ * `ADS_VECTOR_SORT` set to 0 takes the portable code with Highway too. The
+ * keys of the floating point numbers are the same on both ways, so that
+ * the order is the same.
  *
  * `vectorQuickSort()` is not stable (equal integers cannot be told apart, but
  * \f$ -0 \f$ and \f$ +0 \f$ can). The contracts [see `Contract.h`]: the vector
@@ -177,19 +150,21 @@
 #include <vector>
 
 #ifndef ADS_VECTOR_SORT
- #if defined( __GNUC__ ) && ( defined( __AVX512F__ ) || defined( __AVX2__ ) )
-  /// 1 if the sort uses the vector registers (AVX-512 or AVX2, with GCC or
-  /// Clang), 0 if the portable code; it may be set to 0 before the include
+ #ifdef ADS_WITH_HIGHWAY
+  /// 1 if the sort is the quicksort of Highway on the vectors of the
+  /// processor (with ADS_WITH_HIGHWAY), 0 if the portable code; it may be
+  /// set to 0 before the include
   #define ADS_VECTOR_SORT 1
  #else
-  /// 1 if the sort uses the vector registers (AVX-512 or AVX2, with GCC or
-  /// Clang), 0 if the portable code; it may be set to 0 before the include
+  /// 1 if the sort is the quicksort of Highway on the vectors of the
+  /// processor (with ADS_WITH_HIGHWAY), 0 if the portable code; it may be
+  /// set to 0 before the include
   #define ADS_VECTOR_SORT 0
  #endif
 #endif
 
 #if ADS_VECTOR_SORT
- #include <immintrin.h>
+ #include <hwy/contrib/sort/vqsort.h>
 #endif
 
 /*--------------------------------------------------------------------------*/
@@ -199,8 +174,8 @@
 namespace ADS
 {
 
-/// true if `vectorQuickSort()` runs in vector registers (AVX-512 or AVX2),
-/// false if in the arrays of the portable code
+/// true if `vectorQuickSort()` runs in the vectors of the processor, by
+/// the quicksort of Highway, false if in the arrays of the portable code
 inline constexpr bool kVectorSort = ADS_VECTOR_SORT != 0;
 
 /// the types that `vectorQuickSort()` sorts: integers and floating point
