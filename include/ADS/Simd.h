@@ -70,6 +70,22 @@
 namespace ADS::detail::simd
 {
 
+HWY_EXPORT( popcountWords );
+HWY_EXPORT( popcountAndWords );
+
+/// the 1 bits of the words \f$ w[ 0 .. n - 1 ] \f$
+inline std::uint64_t popcount( const std::uint64_t * w , std::size_t n )
+{
+ return( HWY_DYNAMIC_DISPATCH( popcountWords )( w , n ) );
+ }
+
+/// the 1 bits of the words \f$ a[ i ] \wedge b[ i ] \f$, \f$ 0 \le i < n \f$
+inline std::uint64_t popcountAnd( const std::uint64_t * a ,
+				  const std::uint64_t * b , std::size_t n )
+{
+ return( HWY_DYNAMIC_DISPATCH( popcountAndWords )( a , b , n ) );
+ }
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS::detail::simd )

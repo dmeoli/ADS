@@ -2207,6 +2207,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `popcount( w , n )` and `popcountAnd( a , b , n )` of FastBitwise.h on
+  the kernel of Highway (ADS/impl/simd/Bitwise.tpp: the adders of Harley
+  and Seal on the vectors of the processor found at run time, the counts
+  of the lanes of Highway) in place of the AVX-512 and AVX2 code under the
+  flags of the compiler; the arrays of fewer than 16 words, and all of
+  them without Highway, are counted by `std::popcount()`. The time against
+  the old kernels is pending the next campaign on an idle machine.
+
 - The customization points of the priority queues, queue_item_t,
   queue_insert(), queue_min(), queue_deleteMin(), queue_handle_t and
   queue_decrease(), moved from PriorityQueue.h to the new advanced header
