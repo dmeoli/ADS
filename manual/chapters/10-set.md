@@ -2025,6 +2025,18 @@ of the filters with the best implementations available (CRoaring, the
 libraries of the filters of their authors) belongs to the campaign of
 Appendix B; we give no number here.
 
+The filters of [§10.7](10-set.md#sec-10-7) to
+[§10.11](10-set.md#sec-10-11) are persistent
+([§23.7](23-external.md#sec-23-7)). Thus a filter built once on the keys of
+a database may be written by `store()` and opened by `restoreMapped()`,
+with its blocks, buckets, lines and fingerprints viewed in the mapping;
+the seed of its hash function is in the file. However, a filter on
+`std::hash` (the default of the filters of Bloom of
+[§10.7](10-set.md#sec-10-7)) is readable only by a program on the same
+standard library, since the values of `std::hash` depend on its
+implementation. Those on `FastHash` are read in the same way on any
+machine.
+
 ## 10.13 Exercises {#sec-10-13}
 
 Each exercise names the test of the library that solves it (run it with

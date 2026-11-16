@@ -1,7 +1,8 @@
 # 23. External memory {#ch-23}
 
 [Source: `include/ADS/external/TwoLevelMemory.h`, `BlockStore.h`,
-`BlockBTree.h`, `ExternalSorting.h`, `ListRanking.h`, `RecordFile.h`]
+`BlockBTree.h`, `ExternalSorting.h`, `ListRanking.h`, `RecordFile.h`,
+`MappedFile.h`, `Persistence.h`, and `interop/cereal/Cereal.h`]
 
 We are concerned in this chapter with data too large for the internal memory
 of a computer, which therefore live on a disk and are moved between the
@@ -18,11 +19,15 @@ chapters 4, List Ranking, and 5, Sorting Atomic Items: the sorts with their
 lower bounds and the permutations ([§23.4](23-external.md#sec-23-4)), and
 the ranking of a list ([§23.5](23-external.md#sec-23-5)). Finally,
 [§23.6](23-external.md#sec-23-6) describes the files of records on the
-disk of the machine, where the model meets the real one. Note that the B-trees and
+disk of the machine, where the model meets the real one, and
+[§23.7](23-external.md#sec-23-7) the files in which the static structures of
+the library are saved and from which they are mapped back. Note that the B-trees and
 the B+-trees kept in the internal memory (`BTree.h` and `BPlusTree.h`) are
 in [chapter 8](08-tree.md#ch-8). In the sets of
 [§1.9](01-introduction.md#sec-1-9), the headers of this chapter are all
-base, while `RecordFile.h` is in the core that the two sets include.
+base, while `RecordFile.h`, `MappedFile.h` and `Persistence.h` are in the
+core that the two sets include, and `interop/cereal/Cereal.h` is in the set
+interop.
 
 ## 23.1 The two-level memory {#sec-23-1}
 
@@ -1051,7 +1056,150 @@ system: the algorithms that use them read and write each file by long
 sequential scans, the pattern on which the cache and the read-ahead of the
 system usually work best.
 
-## 23.7 The interface {#sec-23-7}
+## 23.7 Persistence and mapped files {#sec-23-7}
+
+We now turn to the static structures of the library, i.e., the succinct
+ones of [chapter 22](22-succinct.md#ch-22), the indexes of texts of
+[chapter 21](21-compression.md#ch-21), the learned indexes of
+[chapter 6](06-search.md#ch-6), the filters of [chapter 10](10-set.md#ch-10)
+and the perfect hash functions of [chapter 7](07-dictionary.md#ch-7). Such a
+structure is usually built once and then queried for a long time, often by
+a program that starts many times; building it again at each start may cost
+far more than all of its queries. We therefore write it, by `Persistence.h`,
+to a file, a stream or a buffer by `store()`, and read it back by
+`restore()`. Also, `restoreMapped()` maps the file into the memory of the
+process (`MappedFile.h`) and makes the large arrays of the structure views
+over the bytes of the mapping; hence, a structure of any size is opened in
+$O( 1 )$ time (cf. [Lemma 23.15](23-external.md#lem-23-15)), and its pages
+are read from the disk at their first access.
+
+A structure takes part when it names itself, by `persistName`, with a
+`persistVersion` that is raised when its layout changes and a
+`persistTag()` of its template parameters. It lists its members once, in a
+member template `persist( a )`, which writes them when `a` is the writer
+and reads them when `a` is the reader. On a reading, `a.require( c , what
+)` rejects a file whose members break an invariant of the structure (e.g.,
+the number of the words of a `BitVector` against its number of bits). These
+checks look at sizes and at single numbers, and their time grows with the
+number of the arrays (not with their length). In version 1, the format has
+a header of 128 bytes, with a magic number, the version of the format,
+the byte order of the payload, and the name, the version and the tag of the
+structure. Next come the members, in the order of `persist()`, and a
+trailer of 32 bytes with the size of the payload and a checksum of the
+header and of the payload (the rounds of xxHash64 on four lanes of words).
+
+Most choices of the format follow from the mapping. A number is written in
+8 bytes, while an array of numbers is written with its size and the width
+of its items, which start at the next multiple of 64 bytes of the file.
+Since a mapping starts on a page, the view of an array is then aligned to a
+line of the cache, as the words of a `BitVector` are in memory. Hence the
+kernels of rank and select read it with no change. A view is made by the
+allocator of the array (`MappableAllocator`, or the allocator of the words
+of the succinct structures): the reader offers it the bytes of the array,
+and the allocator returns them at its next allocation of that size,
+constructs no item over them, and never gives back to the system a block
+that lies in the mapping. This mapping is private (`MAP_PRIVATE`), and
+therefore a page that the program writes is copied for the process and
+does not reach the file. Also, a copy of a structure is made on new memory, a
+move keeps the views, and the mapping is released with the last array that
+views it.
+
+In the file, the payload is in the byte order of the machine that wrote
+it (or in the one given to `store()`), and a machine of the other order swaps the bytes
+of each number while it reads. Thus a mapped file of the other order is
+copied, as is an array whose allocator makes no views. This is the case
+of some small arrays of the directories (e.g., the counts of the top
+level), which `std::allocator` keeps; they usually hold a fraction of a
+percent of the bits, and their copy is therefore somewhat cheap.
+
+<span id="lem-23-15"></span>**Lemma 23.15.** *Let a file hold a structure
+whose members are $k$ numbers and $m$ arrays of numbers, let the file be of
+the byte order of the machine, and let each array be on an allocator that
+makes views. Then `restoreMapped()`, without the checksum, opens the file
+in $O( k + m )$ time and reads $O( k + m )$ of its bytes, whatever the
+lengths of the arrays.*
+
+*Proof.* Header and trailer have a fixed size and are read once, and the
+size of the file is compared with the one of the payload in the trailer. A number is read in $O( 1 )$ time, and an array costs the reading
+of its size and of its width and one allocation, which returns a pointer
+into the mapping with no item constructed and no byte of the items read.
+Finally, the invariants that `persist()` requires read sizes and numbers,
+in $O( 1 )$ time each. $\square$
+
+The price of [Lemma 23.15](23-external.md#lem-23-15) is paid in the
+checks. In fact, `restore()` computes the checksum while it reads, and
+rejects a file whose checksum differs from the one of the trailer. Instead,
+`restoreMapped()` checks the magic numbers, the sizes of the header, of the
+payload and of the trailer (which rejects a truncated file) and the
+invariants of the structure, but computes the checksum only if `verify` is
+true, since this reads all of the file. Hence a mapping that is not
+verified trusts the items of its arrays, and one may want to open a file
+that could have been damaged with `verify` at least once. Each failure throws
+`PersistError`, with a message that names the cause: a file that is not of ADS,
+another structure, another version or other parameters (e.g., a
+`PGMIndex< std::uint64_t , 32 >` read as one with $\epsilon = 64$), a
+truncation, a wrong checksum, or a broken invariant. In any case, no member
+is read past the end of the payload. We remark that a filter or a perfect
+hash function built on `std::hash` holds values that depend on the standard
+library which computed them; its file is thus portable only between
+programs on the same library, while one built on the hashes of ADS
+(`FastHash`, the default) holds their seeds and is read in the same way on
+any machine.
+
+The same `persist()` serves the archives of cereal
+(<https://uscilab.github.io/cereal/>), through the header
+`interop/cereal/Cereal.h` of the set interop, which a program includes
+next to those of cereal (CMake finds them when `ADS_WITH_CEREAL` is AUTO or
+ON). A program may then write a `RankSelect`, an `EliasFano` or a
+`BinaryFuseFilter` by `ar( x )` into binary, portable or JSON
+archives, next to its other data, and the invariants are checked on the
+reading as above. In such archives a `BitVector` is written as sdsl-lite
+writes its `bit_vector` (the width 1, the factor of growth, the number of
+bits and the words), and since the bit $i$ is the bit $i \bmod 64$ of the
+word $\lfloor i / 64 \rfloor$ in both libraries, each reads the vectors of
+bits of the other ([Gog et al. 2014](Z-bibliography.md#ref-gog2014b)).
+However, the directories of rank and select of the two libraries have
+different layouts, and `PackedArray`, whose fields never cross a word, differs from the
+`int_vector` of sdsl. Finally, the containers that change (the sequences, the hash
+tables, the trees and the heaps) are not persistent yet. We plan to make
+them take part through the same `persist()` once their allocators are
+parameters; they will write their items and rebuild their links on the
+reading, since a pointer of one process is of no use in another.
+
+```cpp
+// declarations of <ADS/external/Persistence.h>
+template< Persistent T >
+void store( const T & x , std::ostream & s ,
+	    ByteOrder o = ByteOrder::native );
+template< Persistent T >
+void store( const T & x , const std::filesystem::path & p ,
+	    ByteOrder o = ByteOrder::native );
+template< Persistent T >
+[[nodiscard]] std::vector< std::byte > store( const T & x ,
+					      ByteOrder o = ByteOrder::native );
+template< Persistent T >
+[[nodiscard]] T restore( std::istream & s );
+template< Persistent T >
+[[nodiscard]] T restore( std::span< const std::byte > b );
+template< Persistent T >
+[[nodiscard]] T restore( const std::filesystem::path & p );
+template< Persistent T >
+[[nodiscard]] T restoreMapped( const std::filesystem::path & p ,
+			       bool verify = false );
+```
+
+```cpp
+#include "ADS/succinct/RankSelect.h"
+#include <cassert>
+const ADS::BitVector b( "1011001110001111" );
+const ADS::RankSelect r( b );
+const ADS::TempDirectory d;
+ADS::store( r , d.path() / "r.ads" );
+const auto m = ADS::restoreMapped< ADS::RankSelect >( d.path() / "r.ads" );
+assert( m.rank1( 8 ) == r.rank1( 8 ) && m.select1( 3 ) == r.select1( 3 ) );
+```
+
+## 23.8 The interface {#sec-23-8}
 
 We collect here, header by header, the declarations of the namespace `ADS`
 that a user calls in this chapter, without the contracts, the documentation
@@ -1320,7 +1468,7 @@ int main( void )
  }
 ```
 
-## 23.8 Discussion and references {#sec-23-8}
+## 23.9 Discussion and references {#sec-23-9}
 
 The external memory model is due to [Aggarwal and Vitter
 1988](Z-bibliography.md#ref-aggarwal1988), and it is also called the I/O
@@ -1360,7 +1508,7 @@ comparison of the sorts and of the rankings, in I/Os and in time on a real
 disk, belongs here; it waits for a campaign of measures on an idle
 machine.
 
-## 23.9 Exercises {#sec-23-9}
+## 23.10 Exercises {#sec-23-10}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).

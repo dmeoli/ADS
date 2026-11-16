@@ -2051,6 +2051,21 @@ costs or gains, against the libraries of reference (e.g., the SDSL of
 [Gog, Beller, Moffat and Petri 2014](Z-bibliography.md#ref-gog2014b)), is
 measured by the campaign of Appendix B, and no number is given here.
 
+All the structures of this chapter are persistent in the sense of
+[§23.7](23-external.md#sec-23-7). Hence `store()` writes one of them to a
+file, a stream or a buffer, `restore()` reads it back, and `restoreMapped()`
+opens a file in place, with the words of the vectors of bits, the
+directories of rank and select and the levels of the wavelet matrices as
+views over the mapping (in $O( 1 )$ time, by
+[Lemma 23.15](23-external.md#lem-23-15)). Since the words of a `BitVector`
+start on a line of the cache in the file as in memory, a mapped directory
+is read by the same kernels as one built in memory; some small arrays (the
+top counts and the places of the groups of select) are copied instead,
+which usually costs a fraction of a percent of the bits. In the archives of
+cereal a `BitVector` is written as the `bit_vector` of sdsl-lite
+([Gog et al. 2014](Z-bibliography.md#ref-gog2014b)), and each of the two
+libraries may read the vectors of bits of the other.
+
 ## 22.14 Exercises {#sec-22-14}
 
 Each exercise names the test of the library that solves it (run it with

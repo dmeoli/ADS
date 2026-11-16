@@ -4441,6 +4441,16 @@ n}$, gives searches in $O( \sqrt{\log n} )$ time in $O( n )$ space. Lower bounds
 2007](Z-bibliography.md#ref-patrascu2007) show that these results are more
 or less optimal for the structures in $O( n )$ space.
 
+The perfect hash functions of this chapter (`MinimalPerfectHash`,
+`RecSplit`, `FingerprintPerfectHash`, `PerfectHashTable` and
+`OrderedMinimalPerfectHash`) are persistent
+([§23.7](23-external.md#sec-23-7)), as their users typically need, since
+they build a function once on a static set of keys and evaluate it for the
+life of an index; the file holds the seeds, the pilots, the
+codes and the levels, and the template parameters (e.g., the size of the
+leaves of `RecSplit`) are checked on the reading. The dynamic hash tables
+are not persistent yet.
+
 ## 7.13 Exercises {#sec-7-13}
 
 Each exercise names the test of the library that solves it (run it with

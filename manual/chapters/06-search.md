@@ -1828,6 +1828,12 @@ Heun 2011](Z-bibliography.md#ref-fischer2011) and the engineering of
 2023, chapter 10](Z-bibliography.md#ref-ferragina2023) uses them for the
 suffix arrays and the suffix trees.
 
+The PGM-indexes, plain and compressed, are persistent
+([§23.7](23-external.md#sec-23-7)): `store()` writes the keys and the
+levels of the segments, and `restoreMapped()` reads them back, while the
+type of the keys and the errors $\epsilon$ and $\epsilon_r$ are in the
+file, and another instance of the template rejects it.
+
 ## 6.12 Exercises {#sec-6-12}
 
 Each exercise names the test of the library that solves it (run it with

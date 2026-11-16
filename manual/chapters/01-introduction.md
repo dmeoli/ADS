@@ -2026,6 +2026,8 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `succinct/WaveletMatrix.h` | advanced | `WaveletMatrix` | [22](22-succinct.md#ch-22) |
 | `external/BlockBTree.h` | base | `BlockBTree` | [23](23-external.md#ch-23) |
 | `external/BlockStore.h` | base | `BlockStore` | [23](23-external.md#ch-23) |
+| `external/MappedFile.h` | core | `PersistError`, `MappedFile`, `MappableAllocator` | [23](23-external.md#ch-23) |
+| `external/Persistence.h` | core | `PersistWriter`, `PersistReader` | [23](23-external.md#ch-23) |
 | `external/RecordFile.h` | core | `RecordFile`, `RecordWriter`, `TempDirectory` | [23](23-external.md#ch-23) |
 | `external/TwoLevelMemory.h` | base | `TwoLevelMemory`, `MemoryLease`, `DiskFile`, `DiskReader`, `DiskWriter` | [23](23-external.md#ch-23) |
 | `concurrent/Backoff.h` | advanced | `Backoff` | [24](24-concurrent.md#ch-24) |
@@ -2084,7 +2086,7 @@ only, by chapter.
 | [19](19-backtrack.md#ch-19) | `backtrack/Anagrams.h`, `backtrack/Enumeration.h`, `backtrack/KnightTour.h`, `backtrack/NQueens.h`, `backtrack/Sudoku.h` |
 | [20](20-complexity.md#ch-20) | `complexity/EasyCases.h`, `complexity/Problems.h`, `complexity/Reductions.h`, `intractable/Approximation.h`, `intractable/BranchAndBound.h`, `intractable/FifteenPuzzle.h` |
 | [21](21-compression.md#ch-21) | `compression/BinaryPacking.h`, `compression/Entropy.h`, `compression/HuffmanCoder.h`, `compression/LZ77Linear.h`, `compression/Rans.h`, `compression/StreamVByte.h`, `compression/Tans.h` |
-| [23](23-external.md#ch-23) | `external/ExternalSorting.h`, `external/ListRanking.h` |
+| [23](23-external.md#ch-23) | `external/ExternalSorting.h`, `external/ListRanking.h`, `interop/cereal/Cereal.h` |
 | [25](25-parallel.md#ch-25) | `parallel/Affinity.h`, `parallel/Farm.h`, `parallel/ParallelGraph.h`, `parallel/ParallelGreedy.h`, `parallel/ParallelMerge.h`, `parallel/ParallelNumeric.h`, `parallel/ParallelShortestPaths.h`, `parallel/ParallelSort.h`, `parallel/ParallelText.h`, `parallel/Scratch.h` |
 | [26](26-distributed.md#ch-26) | `distributed/DistributedSort.h` |
 

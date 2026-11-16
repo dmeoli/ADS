@@ -2179,6 +2179,15 @@ the decoder overlap. How much each of these choices may gain, against the
 plain forms of the book and against the implementations of reference, is
 measured by the campaign of Appendix B, and no number is given here.
 
+The compressed indexes of [§21.11](21-compression.md#sec-21-11) (`FMIndex`,
+`HuffmanFMIndex`, `RIndex` and `MoveRIndex`) are persistent
+([§23.7](23-external.md#sec-23-7)). An index of a text or of a collection of
+genomes, whose construction costs a suffix array, may thus be written once
+and then opened in place by `restoreMapped()`, with its vectors of bits and
+its wavelet trees as views over the mapping. We remark that an r-index read
+from a file has no copy of its text; under the contracts of level 3, the
+audit of `locate()` against the text is then skipped.
+
 ## 21.14 Exercises {#sec-21-14}
 
 Each exercise names the test of the library that solves it (run it with

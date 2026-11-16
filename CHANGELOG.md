@@ -2230,6 +2230,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sorted, non-increasing and strictly decreasing, and on the floating
   point numbers with -0, +0, the infinities, the denormals and the NaN of
   both signs, bit by bit against std::sort by radixKey()
+- The persistence of the static structures [see
+  include/ADS/external/Persistence.h and MappedFile.h]: store() writes a
+  structure to a file, a stream or a buffer and restore() reads it back,
+  in a binary format of its own (a versioned header with the name, the
+  version and the parameters of the structure and the byte order of the
+  payload, the members in 8-byte numbers and 64-byte aligned arrays, a
+  trailer with the size and an xxHash64 checksum), read on a machine of
+  the other byte order by swapping its numbers; restoreMapped() maps the
+  file privately and makes the large arrays views over it, through
+  MappableAllocator and the allocator of the words of BitVector, so that
+  an index of any size opens in O(1) time; a file that is not of ADS,
+  holds another structure, version or parameters, is truncated, has a
+  wrong checksum or breaks an invariant throws PersistError with a message
+  that says which. Persistent are BitVector, RankSelect, LazyRankSelect,
+  CompactRankSelect, InterleavedRankSelect, RRRBitVector, EliasFano,
+  LazyEliasFano, PartitionedEliasFano, PackedArray, TritArray, LAVector,
+  WaveletMatrix, HuffmanWaveletTree, LoudsTree, JacobsonTree,
+  BalancedParentheses, BPTree, K2Tree, BVGraph, EliasFanoGraph,
+  MoveStructure, FMIndex, HuffmanFMIndex, RIndex, MoveRIndex, PGMIndex,
+  CompressedPGMIndex, the filters (BloomFilter, BlockedBloomFilter,
+  SpectralBloomFilter, PartitionedBloomFilter, CuckooFilter, RibbonFilter,
+  BinaryFuseFilter, PrefixFilter, GrafiteFilter, BucketingFilter) and the
+  perfect hash functions (MinimalPerfectHash, RecSplit,
+  FingerprintPerfectHash, PerfectHashTable, OrderedMinimalPerfectHash),
+  each by one member persist(), with a default constructor where it had
+  none; the archives of cereal on the same members
+  [see include/ADS/interop/cereal/Cereal.h], with ADS_WITH_CEREAL (AUTO,
+  the target ADS::cereal; auto in the makefile, ADSCEREALINC; OFF in the
+  packages), a BitVector in the layout of the bit_vector of sdsl-lite v3;
+  the tests engineered_persistence; section 23.7 of the manual.
 
 ### Changed
 

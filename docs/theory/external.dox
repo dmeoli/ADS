@@ -346,6 +346,24 @@
  scans, the pattern on which the cache and the read-ahead of the system are
  at their best.
 
+ \section theory_external_persistence Persistence and mapped files
+
+ A static structure (a succinct index, a filter, a minimal perfect hash
+ function) is built once and queried many times, and `Persistence.h`
+ writes it to a file by `store()` and reads it back by `restore()`, or
+ maps the file by `restoreMapped()` [see `MappedFile.h`]. In the format,
+ each array of numbers starts on a multiple of 64 bytes of the file, and
+ its allocator (`MappableAllocator`, or the one of the words of a
+ `BitVector`) returns the bytes of the mapping instead of new memory and
+ constructs nothing over them. Hence a structure of \f$ k \f$ numbers and
+ \f$ m \f$ arrays opens in \f$ O( k + m ) \f$ time, whatever the lengths of
+ its arrays, and its pages are read at their first access, as the blocks
+ of the model are read at their first I/O; the checks that need no scan of
+ the arrays (the magic numbers, the sizes of the header, of the payload
+ and of the trailer, and the invariants of the sizes) are made at once,
+ while the checksum of the whole file is computed only by `restore()` or
+ when asked.
+
  \section theory_external_btree The B-tree on the blocks of Morin's book
 
  The `BlockStore` of chapter 14 of Morin's book (`BlockStore.h`) is the disk

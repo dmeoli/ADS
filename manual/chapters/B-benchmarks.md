@@ -74,7 +74,7 @@ program), and the chapter where its comparison belongs.
 | `dictionaries` | insertions, lookups and visits of hash tables and search trees | `std::unordered_map`, `std::map`, `boost::unordered_flat_map`, `boost::container::flat_map` | [§7.6](07-dictionary.md#sec-7-6), [8](08-tree.md#ch-8) |
 | `dynamic` | the observers that keep shortest paths, spanning forests and flows after a change; link-cut trees; union-find with rollback; offline connectivity | the algorithms of the book from scratch, a vector of parents, `UnionFind` | [§14.14](14-graph.md#sec-14-14), [8](08-tree.md#ch-8), [§11.6](11-mfset.md#sec-11-6) |
 | `edit` | edit distance, longest common subsequence, approximate search | the dynamic programming of the textbook, (edlib, rapidfuzz-cpp) | [§15.9](15-string.md#sec-15-9) |
-| `external` | multiway merges, the mergesort of the notes in two-level memory, random sampling | `std::priority_queue`, `__gnu_parallel::multiway_merge`, `std::ranges::sample`, Boost.Heap, (tlx) | [§23.8](23-external.md#sec-23-8) |
+| `external` | multiway merges, the mergesort of the notes in two-level memory, random sampling | `std::priority_queue`, `__gnu_parallel::multiway_merge`, `std::ranges::sample`, Boost.Heap, (tlx) | [§23.9](23-external.md#sec-23-9) |
 | `fingerprints` | hashes of rows of doubles, the comparison of two rows | `std::hash` combined, `std::equal`, `boost::hash_range` | [7](07-dictionary.md#ch-7) |
 | `flows` | maximum flows from scratch and after a change of a capacity | Boost `push_relabel_max_flow`, (LEMON `Preflow`) | [§14.14](14-graph.md#sec-14-14) |
 | `geometry` | convex hull, closest pair | Boost.Geometry, (CGAL) | [§16.5](16-geometry.md#sec-16-5) |

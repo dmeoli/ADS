@@ -211,7 +211,7 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-433 headers: 245 base, 153 advanced, 17 core and 18 interop.
+436 headers: 245 base, 153 advanced, 19 core and 19 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
@@ -224,10 +224,11 @@ file does not allow.
 | `concurrent/` |  | `Backoff`, `ConcurrentCuckooTable`, `ConcurrentFlatTable`, `ConcurrentUnionFind`, `EventCount`, `LockFreePriorityQueue`, `MPMCQueue`, `MPSCInbox`, `MPSCQueue`, `MinBoard`, `MultiQueue`, `SPSCQueue`, `SingleWriterFlatTable`, `StealablePriorityQueue`, `WorkStealingDeque` |  |  |
 | `dictionary/` | `BinaryTrie`, `BitmapTrie`, `ChainedHashTable`, `CuckooHashing`, `DirectTable`, `HashFunctions`, `IndexedSkipList`, `KnuthHashing`, `OpenHashTable`, `PatriciaTrie`, `PerfectHashing`, `SkipList`, `SortedArrayDictionary`, `TableSize`, `Trie`, `TwoLevelDictionary`, `UniversalHashing`, `XFastTrie`, `YFastTrie` | `AdaptiveRadixTree`, `BucketCuckooTable`, `DenseHashMap`, `FastHash`, `FingerprintPerfectHash`, `FlatHashTable`, `MinimalPerfectHash`, `PointerTable`, `PositionIndex`, `RecSplit`, `RowFingerprint`, `SuccinctPatriciaTrie` | `RandomHashing` |  |
 | `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  | `BoostMPI` |
-| `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `RecordFile` |  |
+| `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `MappedFile`, `Persistence`, `RecordFile` |  |
 | `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |
 | `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `Matching`, `MatrixGraph`, `MaxFlow`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths`, `Visit` | `Assignment`, `BlossomMatching`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `PushRelabel`, `Reoptimization`, `StaticGraph`, `StrongComponents` |  |  |
 | `interop/boost/` |  |  |  | `Dijkstra`, `FromBGL`, `Graph`, `Heap`, `Iterator` |
+| `interop/cereal/` |  |  |  | `Cereal` |
 | `interop/lemon/` |  |  |  | `Digraphs`, `Heaps`, `Maps`, `Observers`, `Parallel`, `Warm` |
 | `interop/parallel/` |  |  |  | `KokkosExecutor`, `SenderExecutor`, `StdParExecutor`, `TaskflowExecutor` |
 | `interop/std/` |  |  |  | `FlatMap`, `Pmr` |
@@ -747,7 +748,12 @@ macro of its header, the runtime and `ADS::ADS`, which itself carries none
 of them; an installed ADS gives the same targets as components,
 `find_package(ADS COMPONENTS Taskflow)`, found again where the runtime was.
 The hints are `STDEXEC_INCLUDE_DIR`, `Taskflow_INCLUDE_DIR` and the
-`CMAKE_PREFIX_PATH` of Kokkos. The makefile takes the first three as
+`CMAKE_PREFIX_PATH` of Kokkos. In the same way, `ADS_WITH_CEREAL` (`AUTO`,
+off in the packages, hint `cereal_INCLUDE_DIR`) gives `ADS::cereal`, the
+headers of cereal under `ADS/interop/cereal/Cereal.h`, with which the
+persistent structures of `ADS/external/Persistence.h` (saved and read back
+by `store()` and `restore()`, or opened in place by `restoreMapped()`)
+also go into the archives of cereal. The makefile takes the first three as
 `auto` (`STDEXEC_ROOT=<dir>`, `Taskflow_ROOT=<dir>`) into `ADSINTEROPINC`
 and `ADSINTEROPLIB` alone, and Kokkos only by CMake, whose package carries
 its flags.
@@ -1030,7 +1036,9 @@ are turned on by `ADS_WITH_OPENMP=1`, `ADS_WITH_TBB=1`,
 `mpicxx`, or to `MPICXX`), as the CMake options of the same names do, while
 the runtimes of a program (`ADS_WITH_STDPAR`, `ADS_WITH_STDEXEC`,
 `ADS_WITH_TASKFLOW`) are `auto` and go into `ADSINTEROPINC` and
-`ADSINTEROPLIB` alone; they are found where
+`ADSINTEROPLIB` alone, and the archives of cereal for the persistent
+structures (`ADS_WITH_CEREAL`, `auto`, `cereal_ROOT=<dir>`) into
+`ADSCEREALINC`; they are found where
 `extlib/makefile-default-paths-<os>` says (GMP, oneTBB and libomp in the
 prefix of Homebrew on macOS and where the compiler looks elsewhere, the
 CBLAS of Accelerate on macOS, FastFlow in `/opt/fastflow`,
