@@ -5,7 +5,8 @@
 `MatrixChain.h`, `Matrix.h`, `DenseMatrix.h`, `SparseMatrix.h`,
 `CsrMatrix.h`, `SellMatrix.h`, `DynamicCsr.h`, `SparseAssembly.h`,
 `NumberTheory.h`, `RSA.h`, `RandomNumbers.h`, `RandomGenerators.h`,
-`RandomSampling.h`, and `impl/ZigguratTables.tpp`]
+`RandomSampling.h`, `impl/ZigguratTables.tpp`, and
+`include/ADS/interop/eigen/Eigen.h`]
 
 We are concerned in this chapter with the algorithms whose objects are
 numbers, i.e., the integers of a fixed or of any length, the fractions, the
@@ -1302,7 +1303,11 @@ bits; with `std::int64_t` they are those of the 64-bit indices of GraphBLAS
 and of MKL. The matrix takes $( s + i ) \, \mathit{nnz} + p ( m + 1 )$
 bytes, $s$, $i$ and $p$ the sizes of `T`, `I` and `P`, and the constructors
 require that the columns fit `I` and the nonzeros `P` (and `transpose()`
-that the rows fit `I`); the code is the same for all the types.
+that the rows fit `I`); the code is the same for all the types. The maps of
+Eigen and the views of GraphBLAS over these arrays are those of
+`interop/eigen/Eigen.h` and `interop/graphblas/GraphBLAS.h` (beyond the
+book), shown in [§C.14](C-libraries.md#sec-C-14) and
+[§C.16](C-libraries.md#sec-C-16).
 
 ![Figure 17.5. A $3 \times 4$ matrix in compressed sparse rows, and its transpose (violet), i.e., the same matrix by columns: the row $i$ of the transpose holds the entries of the column $i$, by increasing row.](../figures/numeric-csr.svg){#fig-17-5}
 

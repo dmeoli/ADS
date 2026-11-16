@@ -7,8 +7,9 @@
  * (`declcheck.py --tests` checks that it does), followed by the checks of
  * its result. The examples use the standard library, Boost.Graph,
  * Boost.Heap, Boost.Unordered, LEMON, GMP, a CBLAS, oneTBB, OpenMP, the
- * parallel algorithms of the standard library, stdexec, Taskflow and Kokkos;
- * a test whose library is not compiled in passes with nothing to check, and
+ * parallel algorithms of the standard library, stdexec, Taskflow, Kokkos,
+ * Eigen, METIS, KaHIP, SuiteSparse:GraphBLAS and NetworKit; a test whose
+ * library is not compiled in passes with nothing to check, and
  * says so. Those of MPI and of Boost.MPI are in interop_examples_mpi.cpp.
  *
  * \author Donato Meoli \n
@@ -30,6 +31,7 @@
 #include "ADS/interop/std/FlatMap.h"
 #include "ADS/interop/std/Pmr.h"
 #include "ADS/numeric/BigInteger.h"
+#include "ADS/numeric/CsrMatrix.h"
 #include "ADS/numeric/DenseMatrix.h"
 #include "ADS/parallel/Executor.h"
 #include "ADS/parallel/OpenMPExecutor.h"
@@ -40,7 +42,9 @@
 #include "ADS/tree/BTreeMap.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <deque>
 #include <functional>
 #include <map>
@@ -49,6 +53,7 @@
 #include <random>
 #include <span>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 #include <version>
@@ -107,6 +112,27 @@
 #endif
 #if defined( ADS_WITH_KOKKOS )
  #include "ADS/interop/parallel/KokkosExecutor.h"
+#endif
+#if defined( ADS_WITH_EIGEN )
+ #include "ADS/interop/eigen/Eigen.h"
+
+ #include <Eigen/IterativeLinearSolvers>
+#endif
+#if defined( ADS_WITH_METIS )
+ #include "ADS/interop/metis/Metis.h"
+#endif
+#if defined( ADS_WITH_KAHIP )
+ #include "ADS/interop/kahip/KaHIP.h"
+#endif
+#if defined( ADS_WITH_GRAPHBLAS )
+ #include "ADS/interop/graphblas/GraphBLAS.h"
+#endif
+#if defined( ADS_WITH_NETWORKIT )
+ #include "ADS/graph/ListGraph.h"
+ #include "ADS/graph/Observable.h"
+ #include "ADS/interop/networkit/NetworKit.h"
+
+ #include <networkit/components/DynConnectedComponents.hpp>
 #endif
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
@@ -499,6 +525,129 @@ ADS_TEST( "kokkos-sort" )
  CHECK( sortedSample( A ) );
 #else
  notCompiled( "Kokkos" );
+#endif
+ }
+
+/*--------------------------------------------------------------------------*/
+/*---------------------- THE LIBRARIES OF GRAPHS AND MATRICES --------------*/
+/*--------------------------------------------------------------------------*/
+
+// section C.14: the conjugate gradient of Eigen on a BasicCsrMatrix read in
+// place, and the default CsrMatrix copied
+ADS_TEST( "eigen-conjugate-gradient" )
+{
+#if defined( ADS_WITH_EIGEN )
+ const ADS::BasicCsrMatrix< double , int > A( 3 , 3 ,
+					     { { 0 , 0 , 4. } ,
+					       { 0 , 1 , -1. } ,
+					       { 1 , 0 , -1. } ,
+					       { 1 , 1 , 4. } ,
+					       { 1 , 2 , -1. } ,
+					       { 2 , 1 , -1. } ,
+					       { 2 , 2 , 4. } } );
+ const auto M = ADS::eigen::map( A );  // no copy of the rows
+ CHECK( M.valuePtr() == A.values() );
+ Eigen::ConjugateGradient< ADS::eigen::RowSparse< double > ,
+			   Eigen::Lower | Eigen::Upper >
+   cg( M );
+ const Eigen::VectorXd x = cg.solve( Eigen::VectorXd::Ones( 3 ) );
+ const auto y = A.multiply( { x( 0 ) , x( 1 ) , x( 2 ) } );  // y is 1 1 1
+ CHECK( ( std::abs( y[ 0 ] - 1. ) < 1e-9 ) &&
+	( std::abs( y[ 1 ] - 1. ) < 1e-9 ) &&
+	( std::abs( y[ 2 ] - 1. ) < 1e-9 ) );
+ const auto E = ADS::eigen::toEigen( ADS::CsrMatrix( 2 , 2 ) );  // a copy
+ CHECK( ( E.rows() == 2 ) && ( E.nonZeros() == 0 ) );
+#else
+ notCompiled( "Eigen" );
+#endif
+ }
+
+// section C.15: METIS on the rows of a StaticGraph, and the graph relabelled
+// part by part
+ADS_TEST( "metis-partition" )
+{
+#if defined( ADS_WITH_METIS )
+ std::vector< std::pair< int , int > > E;  // a ring of 8 nodes
+ for( int u = 0 ; u < 8 ; ++u )
+  E.emplace_back( u , ( u + 1 ) % 8 );
+ const ADS::StaticGraph<> g( 8 , E , false );
+ const ADS::Partition P = ADS::metis::partition( g , 2 );  // rows in place
+ const ADS::StaticGraph<> h = g.relabel( P.order() );     // P.cut is 2
+ CHECK( ( P.cut == 2 ) && ( P.sizes()[ 0 ] == 4 ) && ( h.m() == 8 ) );
+#else
+ notCompiled( "METIS" );
+#endif
+ }
+
+// section C.15: kaffpa() of KaHIP on a weighted StaticGraph, its weights
+// read in place
+ADS_TEST( "kahip-partition" )
+{
+#if defined( ADS_WITH_KAHIP )
+ std::vector< std::tuple< int , int , int > > E;  // a ring, two light edges
+ for( int u = 0 ; u < 8 ; ++u )
+  E.emplace_back( u , ( u + 1 ) % 8 , u % 4 == 3 ? 1 : 10 );
+ const ADS::StaticGraph< int > g( 8 , E , false );
+ ADS::kahip::Options o;
+ o.mode = ECO;
+ const ADS::Partition P = ADS::kahip::partition( g , 2 , o );  // P.cut is 2
+ CHECK( ( P.cut == 2 ) && ( P.part[ 0 ] == P.part[ 3 ] ) &&
+	( P.part[ 0 ] != P.part[ 4 ] ) );
+#else
+ notCompiled( "KaHIP" );
+#endif
+ }
+
+// section C.16: the triangles of a StaticGraph counted by GraphBLAS on its
+// rows
+ADS_TEST( "graphblas-triangles" )
+{
+#if defined( ADS_WITH_GRAPHBLAS )
+ GrB_init( GrB_NONBLOCKING );  // once, by the program
+ const ADS::StaticGraph<> g( 4 ,
+			     { { 0 , 1 } , { 0 , 2 } , { 1 , 2 } ,
+			       { 2 , 3 } } ,
+			     false );
+ const ADS::graphblas::Matrix A = ADS::graphblas::view( g );  // no copy
+ GrB_Matrix C = nullptr;
+ GrB_Matrix_new( &C , GrB_INT64 , 4 , 4 );
+ GrB_mxm( C , A , nullptr , GrB_PLUS_TIMES_SEMIRING_INT64 , A , A ,
+	  GrB_DESC_S );  // C = A .* A^2
+ std::int64_t t = 0;
+ GrB_Matrix_reduce_INT64( &t , nullptr , GrB_PLUS_MONOID_INT64 , C , nullptr );
+ GrB_Matrix_free( &C );  // t / 6 is 1 triangle
+ CHECK( t == 6 );
+#else
+ notCompiled( "GraphBLAS" );
+#endif
+ }
+
+// section C.17: the dynamic components of NetworKit kept up to date by the
+// changes of a ListGraph of ADS
+ADS_TEST( "networkit-dynamic-components" )
+{
+#if defined( ADS_WITH_NETWORKIT )
+ using G = ADS::ListGraph<>;
+ using M = ADS::networkit::NetworKitMirror< G >;
+ G g( 4 , false );
+ g.insertEdge( 0 , 1 );
+ M m( g );  // a copy of g
+ NetworKit::DynConnectedComponents cc( m.graph() );
+ cc.run();  // 3 components
+ CHECK( cc.numberOfComponents() == 3 );
+ m.attach( cc );
+ ADS::ObservedGraph< G , ADS::Static< M > > og( g , m );
+ og.insertEdge( 2 , 3 );  // cc.numberOfComponents() is 2
+ CHECK( cc.numberOfComponents() == 2 );
+ {
+  auto b = ADS::batch( og );
+  og.insertEdge( 1 , 2 );
+  og.deleteEdge( 0 , 1 );
+  }  // one updateBatch(), 2 components
+ CHECK( ( cc.numberOfComponents() == 2 ) &&
+	( cc.componentOfNode( 0 ) != cc.componentOfNode( 1 ) ) );
+#else
+ notCompiled( "NetworKit" );
 #endif
  }
 

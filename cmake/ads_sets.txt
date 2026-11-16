@@ -214,18 +214,24 @@ intractable/FifteenPuzzle.h           base
 intractable/Heuristics.h              base
 intractable/Pseudopolynomial.h        base
 
+interop/Csr.h                         interop  the rows shared by the adapters
 interop/boost/Dijkstra.h              interop  with ADS_WITH_BOOST
 interop/boost/FromBGL.h               interop  with ADS_WITH_BOOST
 interop/boost/Graph.h                 interop  with ADS_WITH_BOOST
 interop/boost/Heap.h                  interop  with ADS_WITH_BOOST
 interop/boost/Iterator.h              interop  with ADS_WITH_BOOST
 interop/cereal/Cereal.h               interop
+interop/eigen/Eigen.h                 interop  with ADS_WITH_EIGEN
+interop/graphblas/GraphBLAS.h         interop  with ADS_WITH_GRAPHBLAS
+interop/kahip/KaHIP.h                 interop  with ADS_WITH_KAHIP
 interop/lemon/Digraphs.h              interop  with ADS_WITH_LEMON
 interop/lemon/Heaps.h                 interop  with ADS_WITH_LEMON
 interop/lemon/Maps.h                  interop  with ADS_WITH_LEMON
 interop/lemon/Observers.h             interop  with ADS_WITH_LEMON
 interop/lemon/Parallel.h              interop  with ADS_WITH_LEMON
 interop/lemon/Warm.h                  interop  with ADS_LEMON_SHIM
+interop/metis/Metis.h                 interop  with ADS_WITH_METIS
+interop/networkit/NetworKit.h         interop  with ADS_WITH_NETWORKIT
 interop/parallel/KokkosExecutor.h     interop
 interop/parallel/SenderExecutor.h     interop
 interop/parallel/StdParExecutor.h     interop

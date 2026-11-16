@@ -88,6 +88,14 @@ LIBRARIES = {
     'MPI': (['-DADS_WITH_MPI'], 'mpi.h'),
     'Boost.MPI': (['-DADS_WITH_MPI', '-DADS_WITH_BOOST_MPI'],
                   'boost/mpi/communicator.hpp'),
+    'Eigen': (['-DADS_WITH_EIGEN', '-I/usr/include/eigen3'],
+              'Eigen/SparseCore'),
+    'METIS': (['-DADS_WITH_METIS'], 'metis.h'),
+    'KaHIP': (['-DADS_WITH_KAHIP'], 'kaHIP_interface.h'),
+    'GraphBLAS': (['-DADS_WITH_GRAPHBLAS', '-I/usr/include/suitesparse'],
+                  'GraphBLAS.h'),
+    'NetworKit': (['-DADS_WITH_NETWORKIT', '-fopenmp'],
+                  'networkit/graph/Graph.hpp'),
 }
 
 # ----------------------------------------------------------------------------

@@ -5,16 +5,20 @@
 #    include/ADS/interop/parallel and include/ADS/distributed/BoostMPI.h]:    #
 #    for each name in ADS_INTEROP_WANT, among StdPar (the parallel            #
 #    algorithms of the standard library, on oneTBB with libstdc++), stdexec,  #
-#    Taskflow, Kokkos, BoostMPI and cereal, the target ADS::<name>, with the  #
-#    macro                                                                    #
+#    Taskflow, Kokkos, BoostMPI, cereal, and the libraries of graphs and of   #
+#    matrices Eigen, METIS, KaHIP, GraphBLAS and NetworKit, the target        #
+#    ADS::<name>, with the macro                                              #
 #    ADS_WITH_<NAME> of its header, the headers and the libraries of the      #
 #    runtime and ADS::ADS, and ADS_<name>_FOUND, true when the runtime is     #
 #    found and, for the headers alone, a program that uses it compiles and    #
 #    links. ADS::ADS itself never carries them, so that a program links a     #
 #    runtime only by asking for its target. The hints are                     #
-#    STDEXEC_INCLUDE_DIR, Taskflow_INCLUDE_DIR, Kokkos_DIR, Boost_DIR and     #
-#    cereal_INCLUDE_DIR (or CMAKE_PREFIX_PATH). CMakeLists.txt and            #
-#    ADSConfig.cmake include it.                                              #
+#    STDEXEC_INCLUDE_DIR, Taskflow_INCLUDE_DIR, Kokkos_DIR, Boost_DIR,        #
+#    cereal_INCLUDE_DIR, EIGEN3_INCLUDE_DIR, METIS_INCLUDE_DIR and            #
+#    METIS_LIBRARY, KaHIP_INCLUDE_DIR and KaHIP_LIBRARY,                      #
+#    GraphBLAS_INCLUDE_DIR and GraphBLAS_LIBRARY, NetworKit_INCLUDE_DIR,      #
+#    NetworKit_LIBRARY and tlx_INCLUDE_DIR (or CMAKE_PREFIX_PATH).            #
+#    CMakeLists.txt and ADSConfig.cmake include it.                           #
 # --------------------------------------------------------------------------- #
 
 include(CheckCXXSourceCompiles)
@@ -183,3 +187,94 @@ if ("cereal" IN_LIST ADS_INTEROP_WANT)
 endif ()
 
 # --------------------------------------------------------------------------- #
+
+# Eigen, by its headers [see include/ADS/interop/eigen]
+if ("Eigen" IN_LIST ADS_INTEROP_WANT)
+    set(ADS_Eigen_FOUND FALSE)
+    find_path(EIGEN3_INCLUDE_DIR Eigen/SparseCore PATH_SUFFIXES eigen3)
+    if (EIGEN3_INCLUDE_DIR)
+        ads_interop_try(Eigen ADS_WITH_EIGEN "
+            #include <Eigen/SparseCore>
+            static_assert( EIGEN_VERSION_AT_LEAST( 3 , 4 , 0 ) );
+            int main( void ) {
+             Eigen::SparseMatrix< double , Eigen::RowMajor , int > A( 2 , 2 );
+             A.insert( 1 , 0 ) = 2.;
+             return( int( A.sum() ) - 2 );
+             }" "${EIGEN3_INCLUDE_DIR}" "")
+    endif ()
+endif ()
+
+# METIS 5, by its header and its library [see include/ADS/interop/metis]
+if ("METIS" IN_LIST ADS_INTEROP_WANT)
+    set(ADS_METIS_FOUND FALSE)
+    find_path(METIS_INCLUDE_DIR metis.h PATH_SUFFIXES include)
+    find_library(METIS_LIBRARY metis)
+    if (METIS_INCLUDE_DIR AND METIS_LIBRARY)
+        ads_interop_try(METIS ADS_WITH_METIS "
+            #include <metis.h>
+            int main( void ) {
+             idx_t o[ METIS_NOPTIONS ];
+             return( METIS_SetDefaultOptions( o ) == METIS_OK ? 0 : 1 );
+             }" "${METIS_INCLUDE_DIR}" "${METIS_LIBRARY}")
+    endif ()
+endif ()
+
+# KaHIP, by its header and its library, whose indices must be those of its
+# header [see include/ADS/interop/kahip]
+if ("KaHIP" IN_LIST ADS_INTEROP_WANT)
+    set(ADS_KaHIP_FOUND FALSE)
+    find_path(KaHIP_INCLUDE_DIR kaHIP_interface.h PATH_SUFFIXES include)
+    find_library(KaHIP_LIBRARY kahip)
+    if (KaHIP_INCLUDE_DIR AND KaHIP_LIBRARY)
+        ads_interop_try(KaHIP ADS_WITH_KAHIP "
+            #include <kaHIP_interface.h>
+            int main( void ) {
+             return( kahip_sizeof_idx() == int( sizeof( kahip_idx ) )
+                     ? 0 : 1 );
+             }" "${KaHIP_INCLUDE_DIR}" "${KaHIP_LIBRARY}")
+    endif ()
+endif ()
+
+# SuiteSparse:GraphBLAS 10 or later, by its header and its library [see
+# include/ADS/interop/graphblas]
+if ("GraphBLAS" IN_LIST ADS_INTEROP_WANT)
+    set(ADS_GraphBLAS_FOUND FALSE)
+    find_path(GraphBLAS_INCLUDE_DIR GraphBLAS.h
+              PATH_SUFFIXES include include/suitesparse suitesparse)
+    find_library(GraphBLAS_LIBRARY graphblas)
+    if (GraphBLAS_INCLUDE_DIR AND GraphBLAS_LIBRARY)
+        ads_interop_try(GraphBLAS ADS_WITH_GRAPHBLAS "
+            #include <GraphBLAS.h>
+            static_assert( GxB_IMPLEMENTATION_MAJOR >= 10 );
+            int main( void ) {
+             GrB_Info ( *f )( GxB_Container * ) = &GxB_Container_new;
+             return( f == nullptr ? 1 : 0 );
+             }" "${GraphBLAS_INCLUDE_DIR}" "${GraphBLAS_LIBRARY}")
+    endif ()
+endif ()
+
+# NetworKit 11.2 or later, with fromCSR(), by its headers, those of tlx and
+# its library, with OpenMP, which its headers use [see
+# include/ADS/interop/networkit]
+if ("NetworKit" IN_LIST ADS_INTEROP_WANT)
+    set(ADS_NetworKit_FOUND FALSE)
+    find_path(NetworKit_INCLUDE_DIR networkit/graph/Graph.hpp
+              PATH_SUFFIXES include)
+    find_path(tlx_INCLUDE_DIR tlx/version.hpp PATH_SUFFIXES include)
+    find_library(NetworKit_LIBRARY networkit)
+    find_package(OpenMP QUIET COMPONENTS CXX)
+    if (NetworKit_INCLUDE_DIR AND tlx_INCLUDE_DIR AND NetworKit_LIBRARY AND
+        TARGET OpenMP::OpenMP_CXX)
+        ads_interop_try(NetworKit ADS_WITH_NETWORKIT "
+            #include <networkit/graph/Graph.hpp>
+            #include <vector>
+            int main( void ) {
+             std::vector< NetworKit::index > p{ 0 , 1 , 1 } , i{ 1 };
+             std::vector< double > x;
+             const NetworKit::Graph G =
+               NetworKit::Graph::fromCSR( p , i , x , false , false );
+             return( int( G.numberOfEdges() ) - 1 );
+             }" "${NetworKit_INCLUDE_DIR};${tlx_INCLUDE_DIR}"
+             "${NetworKit_LIBRARY};OpenMP::OpenMP_CXX")
+    endif ()
+endif ()

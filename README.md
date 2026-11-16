@@ -211,7 +211,7 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-436 headers: 245 base, 153 advanced, 19 core and 19 interop.
+442 headers: 245 base, 153 advanced, 19 core and 25 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
@@ -227,9 +227,15 @@ file does not allow.
 | `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `MappedFile`, `Persistence`, `RecordFile` |  |
 | `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |
 | `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `Matching`, `MatrixGraph`, `MaxFlow`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths`, `Visit` | `Assignment`, `BlossomMatching`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `PushRelabel`, `Reoptimization`, `StaticGraph`, `StrongComponents` |  |  |
+| `interop/` |  |  |  | `Csr` |
 | `interop/boost/` |  |  |  | `Dijkstra`, `FromBGL`, `Graph`, `Heap`, `Iterator` |
 | `interop/cereal/` |  |  |  | `Cereal` |
+| `interop/eigen/` |  |  |  | `Eigen` |
+| `interop/graphblas/` |  |  |  | `GraphBLAS` |
+| `interop/kahip/` |  |  |  | `KaHIP` |
 | `interop/lemon/` |  |  |  | `Digraphs`, `Heaps`, `Maps`, `Observers`, `Parallel`, `Warm` |
+| `interop/metis/` |  |  |  | `Metis` |
+| `interop/networkit/` |  |  |  | `NetworKit` |
 | `interop/parallel/` |  |  |  | `KokkosExecutor`, `SenderExecutor`, `StdParExecutor`, `TaskflowExecutor` |
 | `interop/std/` |  |  |  | `FlatMap`, `Pmr` |
 | `intractable/` | `Approximation`, `BranchAndBound`, `FifteenPuzzle`, `Heuristics`, `Pseudopolynomial` |  |  |  |
@@ -753,7 +759,19 @@ off in the packages, hint `cereal_INCLUDE_DIR`) gives `ADS::cereal`, the
 headers of cereal under `ADS/interop/cereal/Cereal.h`, with which the
 persistent structures of `ADS/external/Persistence.h` (saved and read back
 by `store()` and `restore()`, or opened in place by `restoreMapped()`)
-also go into the archives of cereal. The makefile takes the first three as
+also go into the archives of cereal. Likewise, `ADS_WITH_EIGEN`,
+`ADS_WITH_METIS`, `ADS_WITH_KAHIP`, `ADS_WITH_GRAPHBLAS` and
+`ADS_WITH_NETWORKIT` (`AUTO`, off in the packages) give `ADS::Eigen`,
+`ADS::METIS`, `ADS::KaHIP`, `ADS::GraphBLAS` and `ADS::NetworKit`, under
+the headers of `ADS/interop/eigen/`, `metis/`, `kahip/`, `graphblas/` and
+`networkit/`, by which the algorithms of these libraries run on the
+structures of ADS: the matrices of ADS as maps of Eigen and as read-only
+matrices of GraphBLAS, the rows of a `StaticGraph` partitioned by METIS
+and KaHIP, with no copy where the layouts agree (a copy where they do
+not), and a graph of NetworKit kept in step with one of ADS, whose changes
+reach the dynamic algorithms of NetworKit (the hints are
+`EIGEN3_INCLUDE_DIR`, `<Lib>_INCLUDE_DIR` and `<Lib>_LIBRARY`, and
+`tlx_INCLUDE_DIR` for NetworKit). The makefile takes the first three as
 `auto` (`STDEXEC_ROOT=<dir>`, `Taskflow_ROOT=<dir>`) into `ADSINTEROPINC`
 and `ADSINTEROPLIB` alone, and Kokkos only by CMake, whose package carries
 its flags.

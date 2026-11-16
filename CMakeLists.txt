@@ -349,16 +349,21 @@ message(STATUS "ADS: MPI ${ADS_USE_MPI}")
 # parallel and include/ADS/distributed/BoostMPI.h]: the parallel algorithms
 # of the standard library (ADS_WITH_STDPAR), the senders of stdexec
 # (ADS_WITH_STDEXEC), Taskflow (ADS_WITH_TASKFLOW), Kokkos (ADS_WITH_KOKKOS)
-# and Boost.MPI beside MPI (ADS_WITH_BOOST_MPI), and the archives of cereal
+# and Boost.MPI beside MPI (ADS_WITH_BOOST_MPI), the archives of cereal
 # for the persistent structures (ADS_WITH_CEREAL) [see include/ADS/interop/
-# cereal/Cereal.h]. AUTO, the default, makes
+# cereal/Cereal.h], and the libraries that run their algorithms on the
+# graphs and the matrices of ADS, Eigen (ADS_WITH_EIGEN), METIS
+# (ADS_WITH_METIS), KaHIP (ADS_WITH_KAHIP), SuiteSparse:GraphBLAS
+# (ADS_WITH_GRAPHBLAS) and NetworKit (ADS_WITH_NETWORKIT) [see
+# include/ADS/interop/]. AUTO, the default, makes
 # the target ADS::<name> of each runtime found [see ADSInterop.cmake], ON
 # requires it, OFF leaves it out; ADS::ADS never carries them, so that a
 # program takes a runtime only by linking its target, and the tests of the
 # executors run on each one found.
 set(ADS_INTEROP_BUILT "")
 set(ADS_INTEROP_WANT "")
-foreach (r StdPar stdexec Taskflow Kokkos BoostMPI cereal)
+foreach (r StdPar stdexec Taskflow Kokkos BoostMPI cereal Eigen METIS KaHIP
+           GraphBLAS NetworKit)
     string(TOUPPER "${r}" R)
     if (R STREQUAL "BOOSTMPI")
         set(R "BOOST_MPI")

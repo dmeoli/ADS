@@ -40,7 +40,9 @@ CHAPTER = {
     'succinct': 22, 'external': 23, 'concurrent': 24, 'parallel': 25,
     'distributed': 26, 'interop/boost': 1, 'interop/std': 1,
     'interop/lemon': 14, 'interop/parallel': 25,
-    'interop/cereal': 23,
+    'interop/cereal': 23, 'interop': 14, 'interop/eigen': 17,
+    'interop/graphblas': 14, 'interop/kahip': 14, 'interop/metis': 14,
+    'interop/networkit': 14,
 }
 # the file of each chapter
 FILE = {

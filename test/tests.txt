@@ -1837,6 +1837,17 @@ interop_parallel  taskflow-executor       esecutore di Taskflow, chiamate annida
 interop_parallel  kokkos-executor         spazio dell'host di Kokkos
 interop_parallel  structures-in-runtimes  strutture concorrenti nei cicli del programma
 
+# the adapters of the libraries of graphs and of matrices, beyond the book
+interop_graphs  eigen-maps              DenseMatrix e CsrMatrix viste da Eigen
+interop_graphs  eigen-copies            CsrMatrix copiata in Eigen e ritorno
+interop_graphs  csr-input               righe di StaticGraph in loco o copiate
+interop_graphs  metis-partition         partizioni di METIS, tagli, rietichette
+interop_graphs  kahip-partition         partizioni di kaffpa di KaHIP
+interop_graphs  graphblas-graphs        viste di StaticGraph in GraphBLAS
+interop_graphs  graphblas-matrices      viste di CsrMatrix in GraphBLAS
+interop_graphs  networkit-copies        StaticGraph e ListGraph in NetworKit
+interop_graphs  networkit-mirror        NetworKitMirror e componenti dinamiche
+
 # the examples of appendix C of the manual, beyond the book
 interop_examples  std-flat-map            std::flat_map su due TieredVector
 interop_examples  std-ranges-dictionary   std::ranges su un BTreeMap
@@ -1854,6 +1865,11 @@ interop_examples  stdpar-sort             ordinamento su std::execution::par
 interop_examples  stdexec-sort            ordinamento e riduzione su stdexec
 interop_examples  taskflow-sort           ordinamento sui lavoratori di Taskflow
 interop_examples  kokkos-sort             ordinamento sullo spazio di Kokkos
+interop_examples  eigen-conjugate-gradient gradiente coniugato di Eigen su CsrMatrix
+interop_examples  metis-partition         METIS sulle righe di StaticGraph
+interop_examples  kahip-partition         kaffpa di KaHIP su StaticGraph pesato
+interop_examples  graphblas-triangles     triangoli di GraphBLAS su StaticGraph
+interop_examples  networkit-dynamic-components componenti dinamiche di NetworKit
 
 # the runtime of the long-lived workers, beyond the book
 engineered_runtime  worker-run           lavoratori insieme, annidati, eccezioni

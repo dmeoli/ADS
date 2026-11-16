@@ -42,4 +42,9 @@ class Ads(CMakePackage):
             self.define("ADS_WITH_BOOST_MPI", False),
             self.define("ADS_WITH_HWLOC", False),
             self.define("ADS_WITH_CEREAL", False),
+            self.define("ADS_WITH_EIGEN", False),
+            self.define("ADS_WITH_METIS", False),
+            self.define("ADS_WITH_KAHIP", False),
+            self.define("ADS_WITH_GRAPHBLAS", False),
+            self.define("ADS_WITH_NETWORKIT", False),
         ]

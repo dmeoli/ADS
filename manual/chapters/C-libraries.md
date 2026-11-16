@@ -2,7 +2,8 @@
 
 [Source: `include/ADS/interop/`, `include/ADS/parallel/TBBExecutor.h`,
 `include/ADS/parallel/OpenMPExecutor.h`, `include/ADS/distributed/`,
-`test/interop_examples.cpp`, `test/interop_examples_mpi.cpp`]
+`test/interop_examples.cpp`, `test/interop_examples_mpi.cpp`,
+`test/interop_graphs.cpp`]
 
 We are concerned in this appendix with a program that already uses another
 library and wants to call ADS from it, or to run that library on the
@@ -694,7 +695,223 @@ program used to start MPI. We run the two examples on one to four
 processes in their tests, by `mpiexec` with CMake and by `make test-mpi`
 with the makefile.
 
-## C.14 Where the examples run {#sec-C-14}
+## C.14 Eigen {#sec-C-14}
+
+A program that keeps its matrices in the structures of [chapter
+17](17-numeric.md#ch-17) calls the solvers and the decompositions of Eigen
+on them through `interop/eigen/Eigen.h`. We compile it with
+`ADS_WITH_EIGEN` (`AUTO`, hint `EIGEN3_INCLUDE_DIR`), which the target and
+the component `Eigen` define. In this header `map( A )` of a `DenseMatrix`
+is an `Eigen::Map` of a dense matrix by rows over the entries of $A$, with
+no copy. Also, `map( A )` of a `BasicCsrMatrix< T , I , I >`, i.e., one
+whose columns and offsets have the same signed type, is an `Eigen::Map` of
+the row-major `Eigen::SparseMatrix` over its three arrays. However, the
+default `CsrMatrix` has columns of 32 bits without sign and offsets
+`std::size_t`, whereas Eigen takes one signed type for both (its
+`StorageIndex`); hence `toEigen()` copies it, and `fromEigen()` copies a
+sparse matrix of Eigen back into ADS. In the example we solve by the
+conjugate gradient of Eigen a system whose matrix is a `BasicCsrMatrix<
+double , int >`, read in place, and the line that changes is the type of
+the matrix.
+
+```cpp
+// with Eigen
+#include "ADS/interop/eigen/Eigen.h"
+#include "ADS/numeric/CsrMatrix.h"
+#include <Eigen/IterativeLinearSolvers>
+
+const ADS::BasicCsrMatrix< double , int > A(
+  3 , 3 , { { 0 , 0 , 4. } , { 0 , 1 , -1. } , { 1 , 0 , -1. } ,
+            { 1 , 1 , 4. } , { 1 , 2 , -1. } , { 2 , 1 , -1. } ,
+            { 2 , 2 , 4. } } );
+const auto M = ADS::eigen::map( A );  // no copy of the rows
+Eigen::ConjugateGradient< ADS::eigen::RowSparse< double > ,
+                          Eigen::Lower | Eigen::Upper >
+  cg( M );
+const Eigen::VectorXd x = cg.solve( Eigen::VectorXd::Ones( 3 ) );
+const auto y = A.multiply( { x( 0 ) , x( 1 ) , x( 2 ) } );  // y is 1 1 1
+const auto E = ADS::eigen::toEigen( ADS::CsrMatrix( 2 , 2 ) );  // a copy
+```
+
+The solver binds the map by a `Ref` of Eigen (cf. the documentation of
+Eigen on the sparse solvers), which, as far as we can see, copies none of
+the arrays of `A`. A copy by `toEigen()` costs $\Theta( m + \mathit{nnz} )$
+time and the memory of a second matrix. A map holds the pointers of the
+three vectors, and thus it must not outlive its matrix, nor see it change
+its size.
+
+## C.15 METIS and KaHIP {#sec-C-15}
+
+ADS has no partitioner of graphs. METIS ([Karypis and Kumar
+1998](Z-bibliography.md#ref-karypis1998)) and KaHIP ([Sanders and Schulz
+2013](Z-bibliography.md#ref-sanders2013)) take as input the compressed rows
+of a graph, `xadj` the offsets and `adjncy` the heads, with both arcs of an
+edge. These are the rows of a `StaticGraph` of [chapter
+14](14-graph.md#ch-14), and hence `partition( g , k )` of
+`interop/metis/Metis.h` and of `interop/kahip/KaHIP.h` hands `offsets()` and
+`heads()` to the library as they are. This requires that the index type of
+the library be `int` (as the 32-bit `idx_t` of the METIS of the
+distributions, and the `kahip_idx` of a KaHIP built without `KAHIP_64BIT`)
+and that the graph have the separate layout; the weights of `weightData()`
+are read in place too, if they are of that type. Otherwise `CsrInput` of
+`interop/Csr.h` copies only the arrays that differ (e.g., the weights of a
+`StaticGraph< double >`, or the heads and the weights of an interleaved
+graph, which alternate in one array), and `copied()` gives them. The options
+are `ADS_WITH_METIS` and `ADS_WITH_KAHIP` (`AUTO`, hints
+`METIS_INCLUDE_DIR`, `METIS_LIBRARY`, `KaHIP_INCLUDE_DIR` and
+`KaHIP_LIBRARY`). A partition is a `Partition`, i.e., the part of each node
+and the weight of the edges cut; its `order()` numbers the nodes part by
+part, and `relabel()` applies it.
+
+```cpp
+// with METIS
+#include "ADS/graph/StaticGraph.h"
+#include "ADS/interop/metis/Metis.h"
+
+std::vector< std::pair< int , int > > E;  // a ring of 8 nodes
+for( int u = 0 ; u < 8 ; ++u )
+ E.emplace_back( u , ( u + 1 ) % 8 );
+const ADS::StaticGraph<> g( 8 , E , false );
+const ADS::Partition P = ADS::metis::partition( g , 2 );  // rows in place
+const ADS::StaticGraph<> h = g.relabel( P.order() );  // P.cut is 2
+```
+
+In the second example `kaffpa()` of KaHIP, in its mode `ECO`, bisects a
+ring whose two light edges form the best cut. Since the weights are `int`
+and the layout is the separate one, KaHIP reads the three arrays of the
+graph in place.
+
+```cpp
+// with KaHIP
+#include "ADS/graph/StaticGraph.h"
+#include "ADS/interop/kahip/KaHIP.h"
+
+std::vector< std::tuple< int , int , int > > E;  // a ring, two light edges
+for( int u = 0 ; u < 8 ; ++u )
+ E.emplace_back( u , ( u + 1 ) % 8 , u % 4 == 3 ? 1 : 10 );
+const ADS::StaticGraph< int > g( 8 , E , false );
+ADS::kahip::Options o;
+o.mode = ECO;
+const ADS::Partition P = ADS::kahip::partition( g , 2 , o );  // P.cut is 2
+```
+
+Both libraries take their arrays as pointers to non-constant data, but
+they write none of them (KaHIP builds a graph from them, and METIS reads
+them with the numbering of C, which `partition()` sets); hence, the adapters
+pass them by a `const_cast`. As both libraries require, the graph must be
+unoriented and without loops, and its weights positive integers (a weight
+of a floating type is truncated by the copy). A relabelling by `order()`
+may then give the parallel algorithms of [chapter
+25](25-parallel.md#ch-25) rows in which each part is contiguous, and the
+processes of [chapter 26](26-distributed.md#ch-26) one block of
+consecutive nodes each, although we have not measured what this gains.
+
+## C.16 SuiteSparse:GraphBLAS {#sec-C-16}
+
+GraphBLAS ([Davis 2019](Z-bibliography.md#ref-davis2019)) writes the
+algorithms of graphs as products over semirings, which ADS does not have,
+and `interop/graphblas/GraphBLAS.h` lets them run on the graphs and on the
+matrices of ADS (`ADS_WITH_GRAPHBLAS`, `AUTO`, version 10 or later, hints
+`GraphBLAS_INCLUDE_DIR` and `GraphBLAS_LIBRARY`). Since its version 10, a
+`GxB_Container` holds the compressed rows of a matrix as vectors, and
+`GxB_Vector_load()` with `GxB_IS_READONLY` makes a vector of an array that
+its owner keeps (GraphBLAS reads it, and never writes nor frees it).
+Hence, `view( g )` of a `StaticGraph` of the separate layout (or, more
+precisely, of any graph of the concept `CsrArrays`) is a `GrB_Matrix` over
+`offsets()`, `heads()` and `weightData()`. If the graph is unweighted, the
+matrix is iso-valued, i.e., all its entries are one value `true`. In the
+same way `view( A )` of a `BasicCsrMatrix` is the matrix of its three
+arrays, whose integers GraphBLAS reads as `GrB_UINT32` or `GrB_UINT64` by
+their size; therefore, the default `CsrMatrix` (offsets of 64 bits, columns
+of 32) is read in place too. In the example we count the triangles of a
+graph by $\sum ( A \circ A^2 ) / 6$, the product being masked by the
+graph.
+
+```cpp
+// with GraphBLAS
+#include "ADS/graph/StaticGraph.h"
+#include "ADS/interop/graphblas/GraphBLAS.h"
+
+GrB_init( GrB_NONBLOCKING );  // once, by the program
+const ADS::StaticGraph<> g(
+  4 , { { 0 , 1 } , { 0 , 2 } , { 1 , 2 } , { 2 , 3 } } , false );
+const ADS::graphblas::Matrix A = ADS::graphblas::view( g );  // no copy
+GrB_Matrix C = nullptr;
+GrB_Matrix_new( &C , GrB_INT64 , 4 , 4 );
+GrB_mxm( C , A , nullptr , GrB_PLUS_TIMES_SEMIRING_INT64 , A , A ,
+         GrB_DESC_S );  // C = A .* A^2
+std::int64_t t = 0;
+GrB_Matrix_reduce_INT64( &t , nullptr , GrB_PLUS_MONOID_INT64 , C ,
+                         nullptr );
+GrB_Matrix_free( &C );  // t / 6 is 1 triangle
+```
+
+A view is a `graphblas::Matrix`, which frees the handle at its end and
+leaves the arrays to ADS. The graph must outlive its view, and a view may be
+an input of the operations of GraphBLAS but not their output (a call that
+wrote it would have to copy the arrays first). An interleaved graph has no
+view, and `copy( g )` builds its matrix by `GrB_Matrix_build()` in
+$\Theta( n + a )$ time instead; conversely, `toCsr()` copies a matrix of
+GraphBLAS into a `BasicCsrMatrix` by its triplets. We remark that the
+header of GraphBLAS includes `<complex.h>`, whose macro `I` would rename
+the template parameters of that name, and that the adapter undefines it.
+
+## C.17 NetworKit {#sec-C-17}
+
+NetworKit ([Staudt, Sazonovs and Meyerhenke
+2016](Z-bibliography.md#ref-staudt2016)) has many more algorithms of network
+analysis than ADS. Some of them are dynamic, i.e., they keep a result (the
+components, the distances from a source, a centrality) while the graph
+changes, provided that the caller changes the graph and then passes each
+change to them, by `update()` or by `updateBatch()` with one `GraphEvent`
+per change. The header `interop/networkit/NetworKit.h`
+(`ADS_WITH_NETWORKIT`, `AUTO`, version 11.2 or later, hints
+`NetworKit_INCLUDE_DIR`, `NetworKit_LIBRARY` and `tlx_INCLUDE_DIR`) has two
+parts. First, `toNetworKit( g )` copies a graph of ADS, since the rows of
+`Graph::fromCSR()` are of 64-bit indices and doubles. Furthermore,
+`NetworKitMirror` is an observer of the `ObservedGraph` of
+[§14.13](14-graph.md#sec-14-13), which keeps a graph of NetworKit in step
+with that of ADS and makes both steps for each change through the wrapper.
+In the example the dynamic components of NetworKit follow the insertions
+and the deletions of the edges of a `ListGraph`, the last two in one batch
+of ADS.
+
+```cpp
+// with NetworKit
+#include "ADS/graph/ListGraph.h"
+#include "ADS/graph/Observable.h"
+#include "ADS/interop/networkit/NetworKit.h"
+#include <networkit/components/DynConnectedComponents.hpp>
+
+using G = ADS::ListGraph<>;
+using M = ADS::networkit::NetworKitMirror< G >;
+G g( 4 , false );
+g.insertEdge( 0 , 1 );
+M m( g );  // a copy of g
+NetworKit::DynConnectedComponents cc( m.graph() );
+cc.run();  // 3 components
+m.attach( cc );
+ADS::ObservedGraph< G , ADS::Static< M > > og( g , m );
+og.insertEdge( 2 , 3 );  // cc.numberOfComponents() is 2
+{
+ auto b = ADS::batch( og );
+ og.insertEdge( 1 , 2 );
+ og.deleteEdge( 0 , 1 );
+ }  // one updateBatch(), 2 components
+```
+
+The events map one to one (`EdgeInserted` to `EDGE_ADDITION`, `EdgeDeleted`
+to `EDGE_REMOVAL`, `WeightChanged` to `EDGE_WEIGHT_UPDATE`, and those of
+the nodes to `NODE_ADDITION`, `NODE_RESTORATION` and `NODE_REMOVAL`). A
+batch reaches each algorithm as one `updateBatch()`, with the net effect
+per edge that ADS has already coalesced. We attach an algorithm with the
+kinds of the events it takes (by default those of the edges, since most
+dynamic algorithms of NetworKit reject the others), while the graph of
+NetworKit receives them all. A change costs what NetworKit spends on it,
+plus $O( 1 )$, and the copy made by the constructor costs
+$\Theta( n + m )$ time.
+
+## C.18 Where the examples run {#sec-C-18}
 
 [Table C.1](C-libraries.md#tab-C-1) gives the option that compiles the
 examples of each library, and the names of their tests. These run on any
@@ -705,7 +922,8 @@ Boost.MPI. Also, `make check` compiles the examples of a library only where
 it finds the library, and it names those that it skips. The directories of
 a library that is not where the compiler looks are given to it as flags in
 the environment, `DECLCHECK_LEMON`, `DECLCHECK_STDEXEC`,
-`DECLCHECK_TASKFLOW` and `DECLCHECK_KOKKOS` (e.g.,
+`DECLCHECK_TASKFLOW`, `DECLCHECK_KOKKOS`, `DECLCHECK_EIGEN`,
+`DECLCHECK_KAHIP`, `DECLCHECK_GRAPHBLAS` and `DECLCHECK_NETWORKIT` (e.g.,
 `DECLCHECK_TASKFLOW="-I<dir>"`).
 
 <span id="tab-C-1"></span>
@@ -713,8 +931,9 @@ the environment, `DECLCHECK_LEMON`, `DECLCHECK_STDEXEC`,
 **Table C.1.** The libraries of the examples: the option of CMake and its
 default, the component of `find_package(ADS)` (none where `ADS::ADS`
 carries the library), and the tests. The makefile takes the same variable
-(`auto`, `0` or `1`) for all the libraries but Kokkos and Boost.MPI, which
-only CMake builds.
+(`auto`, `0` or `1`) for all the libraries but Kokkos, Boost.MPI, Eigen,
+METIS, KaHIP, GraphBLAS and NetworKit, which only CMake builds; the
+adapters of the last five are also tested by `interop_graphs.*`.
 
 | Library | Option | Default | Component | Tests |
 |------------------|---------------------|------|----------|-------------------|
@@ -731,6 +950,11 @@ only CMake builds.
 | Kokkos | `ADS_WITH_KOKKOS` | `AUTO` | `Kokkos` | `kokkos-sort` |
 | MPI | `ADS_WITH_MPI` | `OFF` | none | `mpi-sort` |
 | Boost.MPI | `ADS_WITH_BOOST_MPI` | `AUTO` | `BoostMPI` | `boost-mpi-sort` |
+| Eigen | `ADS_WITH_EIGEN` | `AUTO` | `Eigen` | `eigen-conjugate-gradient` |
+| METIS | `ADS_WITH_METIS` | `AUTO` | `METIS` | `metis-partition` |
+| KaHIP | `ADS_WITH_KAHIP` | `AUTO` | `KaHIP` | `kahip-partition` |
+| SuiteSparse:GraphBLAS | `ADS_WITH_GRAPHBLAS` | `AUTO` | `GraphBLAS` | `graphblas-triangles` |
+| NetworKit | `ADS_WITH_NETWORKIT` | `AUTO` | `NetworKit` | `networkit-dynamic-components` |
 
 Finally, the test of an example whose library is not compiled in passes
 with no check, and it prints so. A run of

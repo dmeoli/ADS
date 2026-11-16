@@ -2284,6 +2284,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   makefile, ADSCEREALINC; OFF in the packages), a BitVector in the layout
   of the bit_vector of sdsl-lite v3; the tests engineered_persistence;
   section 23.7 of the manual.
+- The adapters of Eigen, METIS, KaHIP, SuiteSparse:GraphBLAS and
+  NetworKit, each an optional header of include/ADS/interop/ behind its
+  option ADS_WITH_EIGEN, ADS_WITH_METIS, ADS_WITH_KAHIP,
+  ADS_WITH_GRAPHBLAS and ADS_WITH_NETWORKIT (AUTO, the targets ADS::Eigen,
+  ADS::METIS, ADS::KaHIP, ADS::GraphBLAS and ADS::NetworKit; OFF in the
+  packages), so that the algorithms of these libraries run on the
+  structures of ADS: eigen::map() of a DenseMatrix and of a
+  BasicCsrMatrix< T , I , I > of a signed I, an Eigen::Map over their
+  arrays with no copy, and toEigen() and fromEigen(), copies for the other
+  layouts; metis::partition() and kahip::partition(), the partitions of
+  METIS and of kaffpa() on the rows of a StaticGraph, read in place when
+  the index type of the library is int and the layout is the separate one
+  (the weights too if of that type) and copied otherwise by CsrInput of
+  interop/Csr.h, with Partition and its order() for relabel();
+  graphblas::view() of a StaticGraph of the separate layout and of a
+  BasicCsrMatrix, a GrB_Matrix over their arrays loaded read-only into a
+  GxB_Container of GraphBLAS 10 (iso-valued if unweighted), and copy() and
+  toCsr(), copies; networkit::toNetworKit(), a copy by fromCSR(), and
+  NetworKitMirror, an observer of ObservedGraph that keeps a graph of
+  NetworKit in step and passes each change, or each coalesced batch, to the
+  dynamic algorithms of NetworKit by update() and updateBatch(); the tests
+  interop_graphs, the examples of sections C.14 to C.17 of the manual in
+  interop_examples, and the rows of Tables 1.5, 1.6 and C.1.
 
 ### Changed
 

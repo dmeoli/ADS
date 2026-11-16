@@ -8,7 +8,8 @@
 `PushRelabel.h`, `FlowApplications.h`, `Matching.h`, `BlossomMatching.h`,
 `Assignment.h`, `EulerianCycle.h`, `Observable.h`, `Reoptimization.h`, and
 `include/ADS/interop/lemon/Heaps.h`, `Maps.h`, `Digraphs.h`, `Observers.h`,
-`Parallel.h`]
+`Parallel.h`, `include/ADS/interop/Csr.h`, `metis/Metis.h`, `kahip/KaHIP.h`,
+`graphblas/GraphBLAS.h`, and `networkit/NetworKit.h`]
 
 We are concerned in this chapter with the *graph*, i.e., a set of nodes
 together with a set of pairs of nodes (the edges). A graph models any binary
@@ -4705,6 +4706,14 @@ a program that does not need it compiles none of it. By LEMON we mean here
 abLEMON, the maintained fork, or any LEMON whose headers compile in C++20;
 LEMON 1.3 does not, since its maps call members of `std::allocator` that
 C++20 removed, and the configuration then leaves the option off.
+The other libraries of graphs that run on the graphs of ADS, the
+partitioners METIS and KaHIP, SuiteSparse:GraphBLAS and the dynamic
+algorithms of NetworKit, have adapters of the same kind (beyond the book),
+each behind its own option, which [§C.15](C-libraries.md#sec-C-15) to
+[§C.17](C-libraries.md#sec-C-17) show at work; they read the rows of a
+`StaticGraph` of the separate layout in place wherever the types of the
+library agree, and a `NetworKitMirror` is an observer of the changes of
+[§14.13](14-graph.md#sec-14-13), as `LemonMirror` is.
 
 ### 14.14.1 The structures of ADS in LEMON {#sec-14-14-1}
 

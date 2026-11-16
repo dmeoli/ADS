@@ -17,6 +17,9 @@ class Ads < Formula
            "-DADS_WITH_STDEXEC=OFF", "-DADS_WITH_TASKFLOW=OFF",
            "-DADS_WITH_KOKKOS=OFF", "-DADS_WITH_BOOST_MPI=OFF",
            "-DADS_WITH_HWLOC=OFF", "-DADS_WITH_CEREAL=OFF",
+           "-DADS_WITH_EIGEN=OFF", "-DADS_WITH_METIS=OFF",
+           "-DADS_WITH_KAHIP=OFF", "-DADS_WITH_GRAPHBLAS=OFF",
+           "-DADS_WITH_NETWORKIT=OFF",
            *std_cmake_args
     system "cmake", "--install", "build"
   end

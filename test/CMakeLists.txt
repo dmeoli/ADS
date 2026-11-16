@@ -98,10 +98,22 @@ endif ()
 # interop_parallel.cpp] and the examples of appendix C of the manual [see
 # interop_examples.cpp], the last in C++23 where the compiler takes it (but
 # MSVC, whose library has no std::flat_map), for std::flat_map
+set(ADS_INTEROP_EXECUTORS StdPar stdexec Taskflow Kokkos)
+set(ADS_INTEROP_GRAPHS Eigen METIS KaHIP GraphBLAS NetworKit)
 foreach (program engineered_parallel engineered_speculative interop_parallel
                  interop_examples)
     foreach (r IN LISTS ADS_INTEROP_BUILT)
-        if (NOT r STREQUAL "BoostMPI" AND NOT r STREQUAL "cereal")
+        if (r IN_LIST ADS_INTEROP_EXECUTORS)
+            target_link_libraries(${program} PRIVATE ADS::${r})
+        endif ()
+    endforeach ()
+endforeach ()
+
+# the libraries of graphs and of matrices found [see ADSInterop.cmake] under
+# their adapters [see interop_graphs.cpp] and the examples of appendix C
+foreach (program interop_graphs interop_examples)
+    foreach (r IN LISTS ADS_INTEROP_BUILT)
+        if (r IN_LIST ADS_INTEROP_GRAPHS)
             target_link_libraries(${program} PRIVATE ADS::${r})
         endif ()
     endforeach ()

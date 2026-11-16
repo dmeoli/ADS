@@ -1952,11 +1952,16 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `graph/ShortestPaths.h` | base | `ShortestPathTree`, `FrontierCounts`, `PriorityFrontier`, `QueueFrontier`, `StackFrontier`, `DequeFrontier` | [14](14-graph.md#ch-14) |
 | `graph/StaticGraph.h` | advanced | `WeightedArc`, `StaticGraph` | [14](14-graph.md#ch-14) |
 | `graph/Visit.h` | base | `VisitCounts`, `DfsSchema` | [14](14-graph.md#ch-14) |
+| `interop/Csr.h` | interop | `CsrInput`, `Partition` | [14](14-graph.md#ch-14) |
+| `interop/graphblas/GraphBLAS.h` | interop | `Matrix` | [14](14-graph.md#ch-14) |
+| `interop/kahip/KaHIP.h` | interop | `Options`, `Input` | [14](14-graph.md#ch-14) |
 | `interop/lemon/Digraphs.h` | interop | `StaticDigraphBase`, `StaticDigraphView`, `GraphView` | [14](14-graph.md#ch-14) |
 | `interop/lemon/Heaps.h` | interop | `CmpKey`, `DaryHeap`, `MonotoneHeap` | [14](14-graph.md#ch-14) |
 | `interop/lemon/Maps.h` | interop | `DenseMap`, `IndexMap`, `ObservedMap` | [14](14-graph.md#ch-14) |
 | `interop/lemon/Observers.h` | interop | `Ends`, `LemonTap`, `LemonMirror` | [14](14-graph.md#ch-14) |
 | `interop/lemon/Warm.h` | interop | `PreflowEngine`, `NetworkSimplexAssignment`, `MinCostFlowObserver` | [14](14-graph.md#ch-14) |
+| `interop/metis/Metis.h` | interop | `Options`, `Input` | [14](14-graph.md#ch-14) |
+| `interop/networkit/NetworKit.h` | interop | `NetworKitMirror` | [14](14-graph.md#ch-14) |
 | `string/AhoCorasick.h` | advanced | `AhoCorasick` | [15](15-string.md#ch-15) |
 | `string/FrontCoding.h` | base | `FrontCodedDictionary` | [15](15-string.md#ch-15) |
 | `string/LongestCommonExtension.h` | advanced | `LceIndex` | [15](15-string.md#ch-15) |
@@ -2081,7 +2086,7 @@ only, by chapter.
 | [14](14-graph.md#ch-14) | `graph/BlossomMatching.h`, `graph/EulerianCycle.h`, `graph/FlowApplications.h`, `graph/Grid.h`, `graph/Matching.h`, `graph/Paths.h`, `graph/Properties.h`, `graph/PushRelabel.h`, `graph/StrongComponents.h`, `interop/lemon/Parallel.h` |
 | [15](15-string.md#ch-15) | `string/Alignment.h`, `string/Anagrams.h`, `string/ApproximateMatching.h`, `string/EditDistance.h`, `string/Huffman.h`, `string/LongestCommonSubsequence.h`, `string/Lyndon.h`, `string/Parentheses.h`, `string/Segmentations.h`, `string/StringBreaking.h`, `string/StringMatching.h`, `string/SubsequenceProblems.h`, `string/SuffixSorting.h`, `string/WordBreak.h` |
 | [16](16-geometry.md#ch-16) | `geometry/ClosestPair.h` |
-| [17](17-numeric.md#ch-17) | `numeric/BinaryInteger.h`, `numeric/Catalan.h`, `numeric/Matrix.h`, `numeric/MatrixChain.h`, `numeric/Polynomial.h`, `numeric/RandomSampling.h` |
+| [17](17-numeric.md#ch-17) | `interop/eigen/Eigen.h`, `numeric/BinaryInteger.h`, `numeric/Catalan.h`, `numeric/Matrix.h`, `numeric/MatrixChain.h`, `numeric/Polynomial.h`, `numeric/RandomSampling.h` |
 | [18](18-combinatorial.md#ch-18) | `combinatorial/Bitwise.h`, `combinatorial/FastBitwise.h`, `combinatorial/FastGeneration.h`, `combinatorial/Generation.h` |
 | [19](19-backtrack.md#ch-19) | `backtrack/Anagrams.h`, `backtrack/Enumeration.h`, `backtrack/KnightTour.h`, `backtrack/NQueens.h`, `backtrack/Sudoku.h` |
 | [20](20-complexity.md#ch-20) | `complexity/EasyCases.h`, `complexity/Problems.h`, `complexity/Reductions.h`, `intractable/Approximation.h`, `intractable/BranchAndBound.h`, `intractable/FifteenPuzzle.h` |
