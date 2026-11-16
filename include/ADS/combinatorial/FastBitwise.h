@@ -20,15 +20,12 @@
  * -  `popcountAnd( a , b , n )` the 1 bits of the intersection of two arrays
  *   in the same way, the size of the intersection of two sets of bits;
  * -  `pdep()` and `pext()` scatter the low bits of \f$ x \f$ to the 1 bits of
- *   a mask and gather them back, by one instruction of BMI2, and otherwise by
- *   a loop over the 1 bits of the mask;
+ *   a mask and gather them back, by a loop over the 1 bits of the mask;
  * -  `select( x , r )`, the place of the 1 of rank \f$ r \f$ of \f$ x \f$, is
- *   the trailing zeros of `pdep( 1 << r , x )` with BMI2, and otherwise the
- *   byte of the 1 by the sums of the bytes of `sidewaysSum()` and a comparison
- *   of the 8 bytes in parallel (Vigna), then the 1 in the byte;
+ *   the byte of the 1 by the sums of the bytes of `sidewaysSum()` and a
+ *   comparison of the 8 bytes in parallel (Vigna), then the 1 in the byte;
  * -  `mortonEncode()` and `mortonDecode()` are `interleave()` and
- *   `deinterleave()` of `Bitwise.h` by `pdep()` and `pext()`, two instructions
- *   each way.
+ *   `deinterleave()` of `Bitwise.h`, by masks and shifts.
  *
  * The contracts [see `Contract.h`]: `select( x , r )` needs \f$ r \f$ smaller
  * than the number of 1 bits of \f$ x \f$. The functions are defined in
@@ -68,7 +65,7 @@
 #include <cstdint>
 #include <utility>
 
-#if defined( __AVX2__ ) || defined( __AVX512F__ ) || defined( __BMI2__ )
+#if defined( __AVX2__ ) || defined( __AVX512F__ )
  #include <immintrin.h>
 #endif
 
@@ -130,8 +127,7 @@ namespace ADS
 
 /// the low bits of \f$ x \f$ to the places of the 1 bits of `mask`, in order
 ///
-/// In pseudocode (beyond the book), the instruction `pdep` of BMI2 if there
-/// is one, and otherwise:
+/// In pseudocode (beyond the book):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{pdep}( x , m ) \cr
@@ -147,8 +143,7 @@ namespace ADS
 
 /// the bits of \f$ x \f$ at the places of the 1 bits of `mask`, packed low
 ///
-/// In pseudocode (beyond the book), the instruction `pext` of BMI2 if there
-/// is one, and otherwise:
+/// In pseudocode (beyond the book):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{pext}( x , m ) \cr
@@ -170,20 +165,18 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{select}( x , r ) \cr
-/// 2 & \quad \textbf{if}\ \text{BMI2}\ \textbf{then return}\ \rho(
-///     \mathrm{pdep}( 2^r , x ) ) \cr
-/// 3 & \quad s \gets \text{the sums of the bytes of } x \text{, as in }
+/// 2 & \quad s \gets \text{the sums of the bytes of } x \text{, as in }
 ///     \mathrm{sidewaysSum}() \text{, times } \mathtt{0x0101 \ldots 01}\quad
 ///     \triangleright\ \text{the bytes } s_j \cr
-/// 4 & \quad \ell \gets ( ( r \cdot \mathtt{0x0101 \ldots 01} \mid
+/// 3 & \quad \ell \gets ( ( r \cdot \mathtt{0x0101 \ldots 01} \mid
 ///     \mathtt{0x8080 \ldots 80} ) - s ) \,\&\, \mathtt{0x8080 \ldots 80}\quad
 ///     \triangleright\ \text{the bytes with } s_j \le r \cr
-/// 5 & \quad k \gets 8 \nu( \ell )\quad \triangleright\ \text{the place of}
+/// 4 & \quad k \gets 8 \nu( \ell )\quad \triangleright\ \text{the place of}
 ///     \text{ the byte of the 1} \cr
-/// 6 & \quad r \gets r - s_{k / 8 - 1}\ ( 0 \text{ if } k = 0 );\ b \gets ( x
+/// 5 & \quad r \gets r - s_{k / 8 - 1}\ ( 0 \text{ if } k = 0 );\ b \gets ( x
 ///     \gg k ) \,\&\, \mathtt{0xFF} \cr
-/// 7 & \quad \textbf{repeat}\ r \text{ times}:\ b \gets b \,\&\, ( b - 1 ) \cr
-/// 8 & \quad \textbf{return}\ k + \rho( b )
+/// 6 & \quad \textbf{repeat}\ r \text{ times}:\ b \gets b \,\&\, ( b - 1 ) \cr
+/// 7 & \quad \textbf{return}\ k + \rho( b )
 /// \end{array}}
 /// \f]
 /// \pre \f$ 0 \le r < \nu( x ) \f$, the number of 1 bits of \f$ x \f$
@@ -192,8 +185,8 @@ namespace ADS
 /// the Morton code of \f$ ( x , y ) \f$, the bits of \f$ x \f$ in the even
 /// places and those of \f$ y \f$ in the odd ones
 ///
-/// In pseudocode (beyond the book), `interleave()` of `Bitwise.h` without
-/// BMI2:
+/// In pseudocode (beyond the book), the deposit that `interleave()` of
+/// `Bitwise.h` computes by masks and shifts:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{mortonEncode}( x , y ) \cr
@@ -205,8 +198,8 @@ namespace ADS
 
 /// the \f$ ( x , y ) \f$ of the Morton code \f$ z \f$
 ///
-/// In pseudocode (beyond the book), `deinterleave()` of `Bitwise.h` without
-/// BMI2:
+/// In pseudocode (beyond the book), the extraction that `deinterleave()`
+/// of `Bitwise.h` computes by masks and shifts:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{mortonDecode}( z ) \cr

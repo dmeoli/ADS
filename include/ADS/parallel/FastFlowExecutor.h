@@ -106,16 +106,10 @@
  #define NO_DEFAULT_MAPPING
 #endif
 
-#include <algorithm>
-#include <fstream>
-#include <set>
-#include <string>
-#include <thread>
+#include "ADS/parallel/Affinity.h"
 
-#if defined( __linux__ ) && __has_include( <sched.h> )
- #include <sched.h>
- #define ADS_FASTFLOW_AFFINITY 1
-#endif
+#include <algorithm>
+#include <thread>
 
 namespace ADS::detail
 {
@@ -130,28 +124,24 @@ inline long fastFlowCores( void )
  }
 
 /// the physical cores among the processors on which the process may run,
-/// one per list of siblings of simultaneous multithreading read from
-/// `/sys`, once, for `ff_realNumCores()` of FastFlow, which otherwise runs
-/// a shell per processor at the construction of each `ParallelFor`
+/// counted by hwloc [see `Affinity.h`], once, for `ff_realNumCores()` of
+/// FastFlow, which otherwise runs a shell per processor at the construction
+/// of each `ParallelFor`; the logical processors without hwloc
 inline long fastFlowRealCores( void )
 {
  static const long n = [] {
   long c = 0;
-#if defined( ADS_FASTFLOW_AFFINITY )
-  cpu_set_t s;
-  CPU_ZERO( &s );
-  if( sched_getaffinity( 0 , sizeof( s ) , &s ) == 0 ) {
-   std::set< std::string > cores;
-   for( int i = 0 ; i < CPU_SETSIZE ; ++i )
-    if( CPU_ISSET( i , &s ) ) {
-     std::ifstream f( "/sys/devices/system/cpu/cpu" + std::to_string( i ) +
-		      "/topology/thread_siblings_list" );
-     std::string l;
-     if( ! ( f >> l ) )
-      l = "#" + std::to_string( i );  // no topology: a core alone
-     cores.insert( l );
-     }
-   c = long( cores.size() );
+#if defined( ADS_WITH_HWLOC )
+  const hwloc_topology_t t = hwlocTopology();
+  HwlocSet S;
+  if( t && S.s ) {
+   for( int i : affinityCpus() )
+    hwloc_bitmap_set( S.s , unsigned( i ) );
+   for( hwloc_obj_t o =
+	  hwloc_get_next_obj_by_type( t , HWLOC_OBJ_CORE , nullptr ) ;
+	o ; o = hwloc_get_next_obj_by_type( t , HWLOC_OBJ_CORE , o ) )
+    if( hwloc_bitmap_intersects( o->cpuset , S.s ) )
+     ++c;
    }
 #endif
   return( c > 0 ? c : fastFlowCores() );

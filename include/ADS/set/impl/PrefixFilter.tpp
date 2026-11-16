@@ -90,10 +90,7 @@ void PrefixFilter< T , H >::setHeader( Bin & B , std::uint64_t w )
 template< class T , class H >
 unsigned PrefixFilter< T , H >::select0( std::uint64_t w , unsigned j )
 {
- std::uint64_t z = ~w;
- for( unsigned i = 0 ; i < j ; ++i )
-  z &= z - 1;
- return( unsigned( std::countr_zero( z ) ) );
+ return( unsigned( selectInWord( ~w , int( j ) ) ) );
  }
 
 template< class T , class H >
@@ -103,14 +100,8 @@ void PrefixFilter< T , H >::run( std::uint64_t w , unsigned q , unsigned & s ,
  // a zero put below the header, so that the zeros of ranks q and q + 1
  // are the places just before the run of q and at its end
  const std::uint64_t u = ( w & kHead ) << 1;
-#if defined( __BMI2__ ) && defined( __x86_64__ )
- const std::uint64_t d = _pdep_u64( std::uint64_t( 3 ) << q , ~u );
- s = unsigned( std::countr_zero( d ) ) - q;
- e = unsigned( std::bit_width( d ) ) - 2 - q;
-#else
  s = select0( u , q ) - q;
  e = select0( u , q + 1 ) - 1 - q;
-#endif
  }
 
 template< class T , class H >
@@ -159,19 +150,9 @@ std::uint32_t PrefixFilter< T , H >::below( const Bin & B , unsigned r )
 template< class T , class H >
 std::uint32_t PrefixFilter< T , H >::runMask( std::uint64_t w , unsigned q )
 {
-#if defined( __BMI2__ ) && defined( __x86_64__ )
- // the zeros of ranks q and q + 1 of the header with a zero put below,
- // the bits d_0 < d_1 of one pdep: the run is the slots between them,
- // ( d_1 / 2 - d_0 ) >> q, with no count of the bits
- const std::uint64_t d =
-   _pdep_u64( std::uint64_t( 3 ) << q , ~( ( w & kHead ) << 1 ) );
- const std::uint64_t d0 = d & ( 0 - d );
- return( std::uint32_t( ( ( ( d ^ d0 ) >> 1 ) - d0 ) >> q ) );
-#else
  unsigned s , e;
  run( w , q , s , e );
  return( ( std::uint32_t( 1 ) << e ) - ( std::uint32_t( 1 ) << s ) );
-#endif
  }
 
 template< class T , class H >

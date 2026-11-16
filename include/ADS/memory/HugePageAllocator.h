@@ -3,22 +3,26 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * An allocator for the large blocks of a structure, beyond the book: a
- * request of at least one huge page (2 MB) is aligned to a huge page,
- * rounded up to whole ones and, on Linux, advised to the kernel for the
- * transparent huge pages (`madvise( MADV_HUGEPAGE )`, which the kernel may
- * ignore); a smaller one goes to `std::allocator`. A structure whose nodes
- * are reached in no useful order, e.g., the trees of a heap, then misses
- * the TLB once per 2 MB instead of once per 4 KB page, and its memory is
- * faulted in a huge page at a time; the price is up to one huge page more
- * of address space per block, which is not touched, so that it costs no
- * memory. Elsewhere than on Linux the large requests are only aligned.
+ * request of at least one huge page (2 MB) is aligned to a huge page and
+ * rounded up to whole ones, so that a system which backs the large blocks
+ * of memory by huge pages (the transparent huge pages of Linux under the
+ * policy `always`, the default of several distributions) can give the
+ * block whole huge pages; a smaller request goes to `std::allocator`. A
+ * structure whose nodes are reached in no useful order, e.g., the trees of
+ * a heap, then misses the TLB once per 2 MB instead of once per 4 KB page,
+ * and its memory is faulted in a huge page at a time; the price is up to
+ * one huge page more of address space per block, which is not touched, so
+ * that it costs no memory. Neither the standard library nor Boost nor
+ * hwloc can ask the system for huge pages, so that the allocator does not
+ * ask: where the policy gives them only on request (`madvise`), the blocks
+ * are only aligned, on pages of 4 KB.
  *
  * A block of 8 MB or more given back is kept by its thread, up to 16
  * blocks and 64 MB in all, and given again to the next request of the
  * same size, as the size-class allocators keep their freed spans (Berger
- * et al.; Leijen et al.): its pages are already faulted in and made huge,
- * so that a structure that is built and destroyed again and again, or that
- * grows through the same sizes (a vector that doubles, a pool whose blocks
+ * et al.; Leijen et al.): its pages are already faulted in, so that a
+ * structure that is built and destroyed again and again, or that grows
+ * through the same sizes (a vector that doubles, a pool whose blocks
  * double), pays the faults once; a smaller block goes back to the
  * allocator of the system, which serves it again from its heap, and the
  * blocks kept go back to the system when the thread ends. A block given
@@ -62,10 +66,6 @@
 #include <limits>
 #include <memory>
 #include <new>
-
-#if defined( __linux__ ) && __has_include( <sys/mman.h> )
- #include <sys/mman.h>
-#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -185,9 +185,8 @@ class HugePageAllocator
  /// 4 & \quad r \gets P \lceil b / P \rceil \cr
  /// 5 & \quad \textbf{if}\ \text{this thread keeps a block of } r \text{ }
  ///     \text{bytes}\ \textbf{then return}\ \text{it, no longer kept} \cr
- /// 6 & \quad p \gets \text{a block of } r \text{ bytes aligned to } P;
- ///     \ \mathrm{madvise}( p , r , \text{MADV\_HUGEPAGE} ) \cr
- /// 7 & \quad \textbf{return}\ p
+ /// 6 & \quad \textbf{return}\ \text{a block of } r \text{ bytes aligned}
+ ///     \text{ to } P
  /// \end{array}}
  /// \f]
  [[nodiscard]] T * allocate( std::size_t n ) {
@@ -200,11 +199,8 @@ class HugePageAllocator
   if( ! detail::hugeCacheGone() )  // a block kept
    if( void * q = detail::hugeCache().take( r ) )
     return( static_cast< T * >( q ) );
-  void * p = ::operator new( r , std::align_val_t( PAGE ) );
-#if defined( MADV_HUGEPAGE )
-  madvise( p , r , MADV_HUGEPAGE );
-#endif
-  return( static_cast< T * >( p ) );
+  return(
+    static_cast< T * >( ::operator new( r , std::align_val_t( PAGE ) ) ) );
   }
 
  /// the room \f$ p \f$ of \f$ n \f$ objects given back: kept by the thread

@@ -386,21 +386,17 @@ size of the intersection of two sets of bits with no array in between.
 **Scatter, gather and select.** The function `pdep( x , m )` puts the low bits of $x$,
 in order, in the places of the 1 bits of the mask $m$, and `pext( x , m )`
 gathers the bits of $x$ in the places of the 1 bits of $m$ into the low
-places. With BMI2 each is one instruction; otherwise it is a loop of
-$\nu( m )$ iterations over the 1 bits of $m$. We remark that the two
-instructions are microcoded on the processors of AMD before Zen 3, with a
-time that grows with $\nu( m )$. Hence the portable branch may well be
-faster there, and the header does not try to detect this case.
+places. Each is a loop of $\nu( m )$ iterations over the 1 bits of $m$:
+the two instructions of BMI2 would need a branch on the processor, and we
+remark that they are microcoded on the processors of AMD before Zen 3, with
+a time that grows with $\nu( m )$ as that of the loop.
 
 --8<-- "generated/FastBitwise-pdep.pseudo.md"
 
 The function `select( x , r )` returns the place of the 1 of rank $r$ of $x$ (from 0),
 i.e., the inverse of the rank $\nu( x \,\&\, ( 2^p - 1 ) )$ of a place
-$p$, which the succinct structures of [Chapter 22](22-succinct.md#ch-22) need at each query. With
-BMI2 it is the trailing zeros of $\mathrm{pdep}( 2^r , x )$, i.e.,
-of the bit $r$ scattered to the place of the $r$-th 1 of $x$ ([Pandey et al.
-2017](Z-bibliography.md#ref-pandey2017)). Without it, the broadword method
-of [Vigna 2008](Z-bibliography.md#ref-vigna2008)
+$p$, which the succinct structures of [Chapter 22](22-succinct.md#ch-22)
+need at each query. The broadword method of [Vigna 2008](Z-bibliography.md#ref-vigna2008)
 ([Algorithm 18.5](18-combinatorial.md#alg-18-5)) computes the prefix sums
 $s_j$ of the 1 bits of the bytes $0 , \ldots , j$ as in
 [Lemma 18.1](18-combinatorial.md#lem-18-1), but keeps all of them (one per
@@ -414,41 +410,36 @@ rank $r - s_{k/8 - 1}$ of the byte $k / 8$. At most 7 steps of
 $b \gets b \,\&\, ( b - 1 )$ and one count of the trailing zeros find it.
 
 <span id="alg-18-5"></span>**Algorithm 18.5.** The 1 of rank $r$ of a word
-([Vigna 2008](Z-bibliography.md#ref-vigna2008); [Pandey et al.
-2017](Z-bibliography.md#ref-pandey2017) with BMI2).
+([Vigna 2008](Z-bibliography.md#ref-vigna2008)).
 
 --8<-- "generated/FastBitwise-select.pseudo.md"
 
 <span id="lem-18-8"></span>**Lemma 18.8.** *For $0 \le r < \nu( x )$
 (the contract of `select()`), [Algorithm 18.5](18-combinatorial.md#alg-18-5)
 returns the place of the 1 of rank $r$ of $x$, with at most 7 iterations
-of line 7.*
+of line 6.*
 
-*Proof.* With BMI2, $\mathrm{pdep}( 2^r , x )$ deposits the bit $r$ of
-$2^r$, its only 1, in the place of the $r$-th 1 of $x$ (from 0), which
-exists since $r < \nu( x )$, and $\rho$ gives that place. Without BMI2,
-line 3 forms the counts $c_j \le 8$ of the bytes $j$ of $x$ as in the
+*Proof.* Line 2 forms the counts $c_j \le 8$ of the bytes $j$ of $x$ as in the
 proof of [Lemma 18.1](18-combinatorial.md#lem-18-1), and the product by
 $\mathtt{0x0101 \ldots 01}$ leaves in the byte $j$ the prefix sum $s_j =
-c_0 + \cdots + c_j \le 64$, with no carry between the bytes. In line 4,
+c_0 + \cdots + c_j \le 64$, with no carry between the bytes. In line 3,
 the byte $j$ of $r \cdot \mathtt{0x0101 \ldots 01} \mid \mathtt{0x8080
 \ldots 80}$ is $r + 128$, since $r < 64$, and $r + 128 - s_j \ge 64$; hence
 the subtraction borrows from no byte, and the top bit of the byte $j$ of
 the difference is set if and only if $r + 128 - s_j \ge 128$, i.e.,
 $s_j \le r$. Since $s_0 \le s_1 \le \cdots \le s_7 = \nu( x ) > r$, the
 bytes with $s_j \le r$ are the bytes $0 , \ldots , c - 1$ for some $c \le
-7$, and $k = 8 c$ in line 5. Then $s_{c-1} \le r < s_c$ (with $s_{-1} =
+7$, and $k = 8 c$ in line 4. Then $s_{c-1} \le r < s_c$ (with $s_{-1} =
 0$), i.e., the 1 of rank $r$ of $x$ is the 1 of rank $r' = r - s_{c-1}$ of
-the byte $c$, which line 6 extracts as $b$. Since $r' < c_c \le 8$, the $r'
-\le 7$ iterations of line 7 clear the $r'$ lowest 1s of $b$, and $\rho( b
-)$ is the place of the next one in the byte, to which line 8 adds the place
+the byte $c$, which line 5 extracts as $b$. Since $r' < c_c \le 8$, the $r'
+\le 7$ iterations of line 6 clear the $r'$ lowest 1s of $b$, and $\rho( b
+)$ is the place of the next one in the byte, to which line 7 adds the place
 $k$ of the byte. $\square$
 
 Finally, `mortonEncode()` and `mortonDecode()` are `interleave()` and
-`deinterleave()` of [§18.2](18-combinatorial.md#sec-18-2) by two
-instructions `pdep` (resp. `pext`), with the masks $\mathtt{0x5555 \ldots
-55}$ and $\mathtt{0xAAAA \ldots AA}$, and fall back on the functions of
-`Bitwise.h` without BMI2.
+`deinterleave()` of [§18.2](18-combinatorial.md#sec-18-2), i.e., the
+deposit (resp. the extraction) with the masks $\mathtt{0x5555 \ldots 55}$
+and $\mathtt{0xAAAA \ldots AA}$ computed by masks and shifts.
 
 ## 18.4 The generation of combinatorial objects {#sec-18-4}
 
@@ -1278,7 +1269,7 @@ carry-save adders is due to Harley and Seal, and [Muła et al.
 2018](Z-bibliography.md#ref-mula2018) brought it to the vectors of AVX2,
 together with the count of a vector by a shuffle of bytes. The broadword
 select is that of [Vigna 2008](Z-bibliography.md#ref-vigna2008), and the
-select by `pdep` that of [Pandey et al.
+select by `pdep`, which ADS does not use, that of [Pandey et al.
 2017](Z-bibliography.md#ref-pandey2017). The generation of the tuples, the
 permutations, the combinations and the partitions follows the algorithms
 of [Knuth 2011, §7.2.1](Z-bibliography.md#ref-knuth2011), which also has
@@ -1308,7 +1299,7 @@ Each exercise names the test of the library that solves it (run it with
 3. Count the 1 bits of an array, and of the intersection of two arrays,
    by the method of Harley and Seal, and check the result against the
    scalar count at every length and offset; implement `pdep`, `pext` and
-   `select` without BMI2. Test: `engineered_combinatorial.fast-bitwise`.
+   `select` with no instruction of BMI2. Test: `engineered_combinatorial.fast-bitwise`.
 4. Generate the tuples in lexicographic and in reflected Gray order, the
    permutations by plain changes and by Heap's method, the combinations in
    lexicographic and in revolving-door order, the partitions of an integer

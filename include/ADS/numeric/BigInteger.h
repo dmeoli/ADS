@@ -142,6 +142,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
+#include "ADS/Wide.h"
 
 #include <algorithm>
 #include <bit>
@@ -154,25 +155,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-// the width of the product of two digits done by the compiler: 128 with
-// unsigned __int128, 64 with the intrinsics of MSVC on x64, 0 for none,
-// the four products of the halves of 32 bits; the product is that of
-// Portable.h in every case
-#ifndef ADS_BIGINT_WIDE
- #if defined( ADS_BIGINT_PORTABLE )
-  #define ADS_BIGINT_WIDE 0
- #elif defined( __SIZEOF_INT128__ )
-  #define ADS_BIGINT_WIDE 128
- #elif defined( _MSC_VER ) && defined( _M_X64 )
-  #define ADS_BIGINT_WIDE 64
- #else
-  #define ADS_BIGINT_WIDE 0
- #endif
-#endif
-#if ADS_BIGINT_WIDE == 64
- #include <intrin.h>
-#endif
 
 // the backend of GMP, with ADS_WITH_GMP: every operation goes to the mpn
 // and mpz layers of GMP, on the digits of BigInteger as they are; only

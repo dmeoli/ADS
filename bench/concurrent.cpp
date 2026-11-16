@@ -7,9 +7,10 @@
  * (ADS_HAS_RIGTORP), moodycamel::ReaderWriterQueue (ADS_HAS_MOODYCAMEL)
  * and folly::ProducerConsumerQueue (ADS_HAS_FOLLY), and MPSCInbox of ADS
  * against boost::lockfree::queue and moodycamel::ConcurrentQueue, each on
- * two threads pinned to the first two processors that the process may use
- * when it starts (e.g., taskset -c 14,15), read once before any thread is
- * pinned:
+ * two threads pinned by `pinThread()` [see Affinity.h] to the first two
+ * processors that the process may use when it starts (e.g., taskset -c
+ * 14,15), read once before any thread is pinned (with hwloc; without it
+ * the threads are not pinned):
  *
  * - "spsc", case throughput: a producer pushes n integers into a queue of
  *   1024 places, retrying when it is full, while a consumer pops them,
@@ -99,9 +100,9 @@
  #include "folly/ProducerConsumerQueue.h"
 #endif
 
+#include "ADS/parallel/Affinity.h"
+
 #include <atomic>
-#include <pthread.h>
-#include <sched.h>
 #include <thread>
 
 using namespace ADS::bench;
@@ -109,33 +110,6 @@ using Item = std::uint64_t;
 
 namespace
 {
-
-/// the k-th processor that the process could use when it started (read
-/// once: a thread pinned to one processor would see only that one, and so
-/// would the threads it creates)
-int cpu( int k )
-{
- static const std::vector< int > C = [] {
-  cpu_set_t s;
-  CPU_ZERO( &s );
-  sched_getaffinity( 0 , sizeof( s ) , &s );
-  std::vector< int > v;
-  for( int c = 0 ; c < CPU_SETSIZE ; ++c )
-   if( CPU_ISSET( c , &s ) )
-    v.push_back( c );
-  return( v );
-  }();
- return( C[ std::size_t( k ) % C.size() ] );
- }
-
-/// the calling thread on the processor c
-void pin( int c )
-{
- cpu_set_t s;
- CPU_ZERO( &s );
- CPU_SET( c , &s );
- pthread_setaffinity_np( pthread_self() , sizeof( s ) , &s );
- }
 
 /// the time in ns per item of a producer thread running produce() while
 /// the calling thread, the consumer, runs consume(); the queue that make()
@@ -149,12 +123,12 @@ double transfer( std::size_t n , int r , M && make , P && produce ,
    [ & ]( auto & q ) {
     std::atomic< bool > go{ false };
     std::thread t( [ & ] {
-     pin( cpu( 1 ) );
+     ADS::pinThread( 1 );
      while( ! go.load( std::memory_order_acquire ) ) {
       }
      produce( *q , n );
      } );
-    pin( cpu( 0 ) );
+    ADS::pinThread( 0 );
     go.store( true , std::memory_order_release );
     sink = sink + consume( *q , n );
     t.join();
@@ -194,7 +168,7 @@ void spsc( const std::string & who , std::size_t n , int r , M && make ,
 		 auto & a = *Q.first;
 		 auto & b = *Q.second;
 		 std::thread t( [ & ] {
-		  pin( cpu( 1 ) );
+		  ADS::pinThread( 1 );
 		  Item x;
 		  for( std::size_t i = 0 ; i < k ; ++i ) {
 		   while( ! pop( a , x ) ) {
@@ -203,7 +177,7 @@ void spsc( const std::string & who , std::size_t n , int r , M && make ,
 		    }
 		   }
 		  } );
-		 pin( cpu( 0 ) );
+		 ADS::pinThread( 0 );
 		 Item x = 0;
 		 for( std::size_t i = 0 ; i < k ; ++i ) {
 		  while( ! push( a , x ) ) {
@@ -249,13 +223,13 @@ void wake( const std::string & who , std::size_t n , int r , M && make ,
   auto q = make();
   std::vector< double > d( k );
   std::thread t( [ & ] {
-   pin( cpu( 1 ) );
+   ADS::pinThread( 1 );
    for( int i = 0 ; i < k ; ++i ) {
     std::this_thread::sleep_for( std::chrono::microseconds( 50 ) );
     send( *q , nowNs() );
     }
    } );
-  pin( cpu( 0 ) );
+  ADS::pinThread( 0 );
   for( int i = 0 ; i < k ; ++i ) {
    const Item x = recv( *q );
    d[ i ] = double( nowNs() - x );
@@ -271,12 +245,12 @@ void wake( const std::string & who , std::size_t n , int r , M && make ,
   auto q = make();
   double used = 0;
   std::thread c( [ & ] {
-   pin( cpu( 0 ) );
+   ADS::pinThread( 0 );
    const Item a = cpuNs();
    sink = sink + recv( *q );
    used = double( cpuNs() - a );
    } );
-  pin( cpu( 1 ) );
+  ADS::pinThread( 1 );
   std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
   send( *q , 1 );
   c.join();

@@ -38,11 +38,8 @@
  * place of the zero of rank \f$ q \f$ of the header (\f$ z_{-1} = -1 \f$):
  * with a zero put below the header, its zeros of ranks \f$ q \f$ and
  * \f$ q + 1 \f$ are \f$ z_{q-1} + 1 \f$ and \f$ z_q + 1 \f$, both found by
- * one `pdep` of \f$ 3 \cdot 2^q \f$ into the complement (BMI2), or by
- * clearing the lowest bit \f$ q \f$ times on any machine; the `pdep` gives
- * the two bits \f$ d_0 = 2^{z_{q-1}+1} \f$ and \f$ d_1 = 2^{z_q+1} \f$, and
- * the slots of the run are the bits of \f$ ( d_1 / 2 - d_0 ) / 2^q \f$, with
- * no count of zeros. A query compares the 32 bytes of the bin with
+ * the broadword select of `selectInWord()` on the complement of the
+ * header. A query compares the 32 bytes of the bin with
  * \f$ r \f$ at once (AVX-512 or AVX2, a byte at a time on any machine),
  * stops if no byte of the body is equal, as it is for about \f$ 91 \% \f$
  * of the keys out of \f$ S \f$ (\f$ 1 - ( 1 - 2^{-8} )^{23.75} \f$ of them
@@ -168,6 +165,7 @@
 #include "ADS/Contract.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/set/BlockedBloomFilter.h"
+#include "ADS/succinct/BitVector.h"
 
 #include <algorithm>
 #include <bit>
@@ -177,7 +175,7 @@
 #include <cstring>
 #include <vector>
 
-#if defined( __AVX2__ ) || defined( __BMI2__ )
+#if defined( __AVX2__ )
  #include <immintrin.h>
 #endif
 

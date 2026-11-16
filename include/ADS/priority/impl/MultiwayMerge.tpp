@@ -68,20 +68,7 @@ T FlatLoserTree< T , C >::supKey( void )
 template< class T , class C >
 bool FlatLoserTree< T , C >::beats( const Node & a , const Node & b ) const
 {
-#if defined( __SIZEOF_INT128__ )
- if constexpr( kInteger ) {             // ( key , source ) on 128 bits
-  __extension__ typedef __int128 S128;  // not ISO C++
-  __extension__ typedef unsigned __int128 U128;
-  using W = std::conditional_t< std::is_signed_v< T > , S128 , U128 >;
-  const W ka = W( a.key ) , kb = W( b.key );
-  if constexpr( kUp )
-   return( ( ( ka << 64 ) | W( a.src ) ) < ( ( kb << 64 ) | W( b.src ) ) );
-  else
-   return( ( ( kb << 64 ) | W( a.src ) ) < ( ( ka << 64 ) | W( b.src ) ) );
-  }
- else
-#endif
-   if constexpr( kNatural ) {  // the exhausted ones lose by key
+ if constexpr( kNatural ) {  // the exhausted ones lose by key
   const bool lt = f_less( a.key , b.key ) , gt = f_less( b.key , a.key );
   return( lt | ( ( ! gt ) & ( a.src < b.src ) ) );
   }

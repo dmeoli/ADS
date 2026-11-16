@@ -753,7 +753,7 @@ time instead.
 
 `PageHeap< C >` (in the namespace `ADS::detail`) keeps $C$ size classes of
 slots of $( c + 1 ) g$ bytes, $c = 0 , \ldots , C - 1$. It takes *segments* of
-$2^{21}$ bytes, aligned to their size and advised for the huge pages
+$2^{21}$ bytes, aligned to their size so that they may lie on huge pages
 ([§5.9](05-memory.md#sec-5-9)), and cuts them into *pages* of $2^{16}$ bytes.
 A page holds the slots of one class after a header of 64 bytes. The header
 keeps the free list of the page, its first slot never given, the end of its
@@ -1112,15 +1112,17 @@ heap or the buckets of a hash table) misses the translation lookaside buffer
 (TLB) at nearly each step, when its memory spans more pages than the TLB has
 entries. A TLB of $E$ entries covers $4 E$ KB of pages of 4 KB, and $2 E$ MB
 of huge pages of 2 MB, i.e., 512 times more. On Linux, the kernel gives the
-huge pages to a region aligned to 2 MB and advised with
-`madvise( MADV_HUGEPAGE )` (the transparent huge pages of [Navarro et
-al. 2002](Z-bibliography.md#ref-navarro2002)), although it may ignore the
-advice. `HugePageAllocator< T >` gives a request of at least one huge page
-($P = 2^{21}$ bytes) a block aligned to $P$, rounded up to whole huge pages
-and advised for the huge pages; a smaller request goes to `std::allocator`
-([Algorithm 5.9](05-memory.md#alg-5-9) and [Figure
-5.8](05-memory.md#fig-5-8)). Elsewhere than on Linux, the large requests are
-only aligned; in any case, the allocators have no state, and are all equal,
+huge pages (the transparent huge pages of [Navarro et
+al. 2002](Z-bibliography.md#ref-navarro2002)) to a region aligned to 2 MB,
+to every large one under the policy `always` and only to those advised with
+`madvise()` under the policy `madvise`. `HugePageAllocator< T >` gives a
+request of at least one huge page ($P = 2^{21}$ bytes) a block aligned to
+$P$ and rounded up to whole huge pages; a smaller request goes to
+`std::allocator` ([Algorithm 5.9](05-memory.md#alg-5-9) and [Figure
+5.8](05-memory.md#fig-5-8)). It does not advise the kernel, since neither
+the standard library nor Boost nor hwloc can ask for huge pages; under the
+policy `madvise`, and on the other systems, the large requests are thus only
+aligned. In any case, the allocators have no state, and are all equal,
 also when they are of different types, the allocator of `T` being built from
 that of any `U`. Its constant `PAGE` is $P$, and a request of $n$ objects
 throws `std::bad_array_new_length` when its rounding to whole huge pages would

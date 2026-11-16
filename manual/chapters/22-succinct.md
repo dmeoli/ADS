@@ -158,10 +158,13 @@ sum is at least 128, i.e., it has its high bit, if and only if
 $s_j \ge k + 1$. Hence the first byte $b$ with $s_b > k$ is the one that holds
 the 1 of rank $k$, which is the $( k - s_{b-1} )$-th 1 of the byte. $\square$
 
-In the implementation, the trailing zeros of the masked word give $b$, and the 1 inside the byte
-is found by clearing its lower 1s, at most 7 times. With the instructions
-BMI2, the implementation deposits the single bit $2^k$ on the 1s of the word instead,
-and the place is then its trailing zeros.
+In the implementation, the trailing zeros of the masked word give $b$, and
+the 1 inside the byte is read in a table of $256 \cdot 8$ bytes, indexed by
+the byte and by the rank in it, as in [Vigna
+2008](Z-bibliography.md#ref-vigna2008). The select has thus neither a loop
+nor an instruction of a particular processor, while the deposit of the bit
+$2^k$ on the 1s of the word (the instruction `pdep` of BMI2) would need a
+branch on the processor.
 
 We write the codes of the integers of [§21.7](21-compression.md#sec-21-7)
 on the streams of bits of `BitStream.h`. A `BitWriter` appends

@@ -664,12 +664,13 @@ on which the process may run, `affinityCpus()`, as the first call found them
 `pinThread( i )` binds the calling thread to the processor $i \bmod c$ of
 them, $c$ their number ([Algorithm 25.7](25-parallel.md#alg-25-7)); the
 workers $0 , 1 , \ldots$ of a pool that call it at their start thus fill
-those processors in order. Placement exists on Linux, where the processors
-are the bits of the mask of the process; elsewhere `affinityCpus()` is
-empty, `availableCpus()` falls back on
-`std::thread::hardware_concurrency()`, and `pinThread()` returns false. Also,
-`currentCpu()` gives the processor on which the calling thread runs now
-(by `sched_getcpu()` on Linux, $-1$ elsewhere). No
+those processors in order. The placement is that of hwloc ([Broquedis et
+al. 2010](Z-bibliography.md#ref-broquedis2010)), with `ADS_WITH_HWLOC`,
+which reads and sets the binding of a thread on each system in its own way;
+without hwloc `affinityCpus()` is empty, `availableCpus()` falls back on
+`std::thread::hardware_concurrency()`, and `pinThread()` returns false.
+Also, `currentCpu()` gives the processor on which the calling thread runs
+now (the last one that hwloc saw, and $-1$ without hwloc). No
 executor pins its threads, since two programs pinned to the same processors
 would slow each other down, and the choice is left to the caller.
 

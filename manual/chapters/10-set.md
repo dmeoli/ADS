@@ -1537,10 +1537,9 @@ quotients, those of one quotient (its *run*) in increasing order
 
 The run of $q$ is the slots $[ z_{q-1} + 1 - q , z_q - q )$ of the body,
 where $z_q$ is the place of the zero of rank $q$ of the header (and
-$z_{-1} = -1$). With BMI2, one `pdep` of $3 \cdot 2^q$ into the complement
-of the header, shifted by one place, gives the two zeros at once (cf. the
-`select()` of [§18.3](18-combinatorial.md#sec-18-3)); on any machine, the
-lowest bit is cleared $q$ times. A query compares the 32 bytes of the bin
+$z_{-1} = -1$). The two zeros are found by the broadword select of
+`selectInWord()` ([§22.2](22-succinct.md#sec-22-2)) on the complement of the
+header, shifted by one place, with no loop over its bits. A query compares the 32 bytes of the bin
 with $r$ at once (AVX-512 or AVX2, a byte at a time otherwise) and stops if
 no byte of the body is equal, as happens for about 91 per cent of the keys
 out of $S$; otherwise it checks whether one of the equal bytes is in the run

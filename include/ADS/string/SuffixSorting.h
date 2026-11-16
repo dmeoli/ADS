@@ -85,10 +85,9 @@
  *   with nothing to do. An entry is marked when it starts a new name: a
  *   moved suffix is marked unless the last one moved into the same part
  *   came from a suffix of the same name, the name being the count
- *   \f$ d \f$ of the marks the scan has met; the scans keep the arrays in
- *   functions that declare them not to overlap, two entries a step, the
- *   text 64 entries ahead prefetched and, beyond 65536 symbols, the parts
- *   and the places they point to;
+ *   \f$ d \f$ of the marks the scan has met; the scans move two entries a
+ *   step, the text 64 entries ahead prefetched and, beyond 65536 symbols,
+ *   the parts and the places they point to;
  * - the names are written only when some are tied, and two LMS-suffixes of
  *   equal names (equal LMS-substrings, of the same length \f$ l \f$)
  *   compare as the text that follows them: on the bytes, when the groups of
@@ -98,7 +97,7 @@
  *   tied (at most 8 rounds and \f$ 2 m \f$ keys, and none if a first round
  *   on a sample of the groups leaves half of them tied, as on long
  *   repeats), small groups by insertion and large ones by a radix sort on
- *   the bits that their keys do not share, gathered by `pext`; the names
+ *   the bits that their keys do not share, gathered run by run; the names
  *   are then those of the groups left (finer than the LMS-substrings: equal
  *   names still mean equal LMS-substrings, and a smaller name a smaller
  *   suffix), and the groups left are sorted by the names that follow,
@@ -144,14 +143,7 @@
  * repeats). \f$ \mathit{LCP}[ r ] \f$ is the lcp of the suffixes
  * \f$ \mathit{SA}[ r ] \f$ and \f$ \mathit{SA}[ r + 1 ] \f$, \f$ n - 1 \f$
  * entries, as in `lcpArray()`; \f$ \Phi \f$ and \f$ \mathit{PLCP} \f$ share
- * one array of \f$ n \f$ integers, and the three passes keep their arrays
- * in functions that declare them not to overlap.
- *
- * The arrays built, \f$ \mathit{SA} \f$, \f$ \mathit{PLCP} \f$ and
- * \f$ \mathit{LCP} \f$, ask for transparent huge pages (`madvise()`, on
- * Linux) before they are first written, so that their page faults are 512
- * times fewer and the random writes of the induction and of \f$ \Phi \f$
- * miss the TLB less.
+ * one array of \f$ n \f$ integers.
  *
  * The contracts [see `Contract.h`]: the symbols of an integer text are less
  * than \f$ K \f$ and \f$ n \f$ fits the integers; the arrays built are a

@@ -174,6 +174,7 @@
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/Portable.h"
+#include "ADS/Wide.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/memory/AllocatorAware.h"
 
@@ -195,10 +196,6 @@
  #include <emmintrin.h>
 #elif ADS_FLAT_SIMD == 2
  #include <arm_neon.h>
-#endif
-
-#if defined( _MSC_VER ) && ( defined( _M_X64 ) || defined( _M_ARM64 ) )
- #include <intrin.h>
 #endif
 
 // the pairs of boost::unordered_flat_map, with ADS_WITH_BOOST [see Abi.h]
@@ -249,7 +246,8 @@ ADS_ABI_BEGIN
 
 /// the high 64 bits of the product \f$ a b \f$ on 128 bits XOR its low 64
 /// bits
-[[nodiscard]] inline std::uint64_t mulx( std::uint64_t a , std::uint64_t b );
+[[nodiscard]] [[gnu::always_inline]] inline std::uint64_t
+mulx( std::uint64_t a , std::uint64_t b );
 
 /// `mulx( a , b )` by products of 32 bits, on any machine
 [[nodiscard]] constexpr std::uint64_t mulxPortable( std::uint64_t a ,

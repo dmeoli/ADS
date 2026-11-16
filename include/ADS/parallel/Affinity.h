@@ -21,12 +21,14 @@
  * thread tells which one it is), and the function knows nothing of the
  * executors (see \ref theory_parallel_exec).
  *
- * The placement exists on Linux (`sched_getaffinity()`,
- * `pthread_setaffinity_np()`), where the processors are the bits of the
- * mask of the process; elsewhere `affinityCpus()` is empty,
- * `availableCpus()` is `std::thread::hardware_concurrency()`, and
- * `pinThread()` does nothing and returns false (on macOS and Windows,
- * among others).
+ * The placement is that of hwloc, with `ADS_WITH_HWLOC` (the topology of
+ * the machine loaded once, at the first use, the processors read by
+ * `hwloc_get_cpubind()`, the thread bound by `hwloc_set_cpubind()` and its
+ * processor by `hwloc_get_last_cpu_location()`), which keeps the calls of
+ * each system; without hwloc, or where it cannot load the topology,
+ * `affinityCpus()` is empty, `availableCpus()` is
+ * `std::thread::hardware_concurrency()`, `pinThread()` does nothing and
+ * returns false, and `currentCpu()` is \f$ -1 \f$.
  *
  * The contracts [see `Contract.h`]: `affinityCpus()` is called first
  * before any thread of the process is pinned, or it finds the mask of a
@@ -35,6 +37,11 @@
  * \see U. Drepper, What every programmer should know about memory, Red
  *      Hat, Inc., 2007, section 6.4 (the placement of the threads and of
  *      the memory)
+ * \see F. Broquedis, J. Clet-Ortega, S. Moreaud, N. Furmento, B. Goglin,
+ *      G. Mercier, S. Thibault, R. Namyst, hwloc: a generic framework for
+ *      managing hardware affinities in HPC applications, 18th Euromicro
+ *      Conference on Parallel, Distributed and Network-based Processing
+ *      (PDP), 180-186, 2010, doi:10.1109/PDP.2010.67
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -57,11 +64,8 @@
 #include <thread>
 #include <vector>
 
-#if defined( __linux__ ) && __has_include( <sched.h> ) && \
-    __has_include( <pthread.h> )
- #include <pthread.h>
- #include <sched.h>
- #define ADS_AFFINITY_LINUX 1
+#if defined( ADS_WITH_HWLOC )
+ #include <hwloc.h>
 #endif
 
 /*--------------------------------------------------------------------------*/
@@ -71,19 +75,65 @@
 namespace ADS
 {
 
+/// \cond
+namespace detail
+{
+
+#if defined( ADS_WITH_HWLOC )
+
+/// the topology of the machine, loaded once by hwloc, nullptr if it cannot
+/// be loaded
+inline hwloc_topology_t hwlocTopology( void )
+{
+ struct Topology
+ {
+  hwloc_topology_t t = nullptr;
+  Topology( void ) {
+   if( hwloc_topology_init( &t ) != 0 )
+    t = nullptr;
+   else if( hwloc_topology_load( t ) != 0 ) {
+    hwloc_topology_destroy( t );
+    t = nullptr;
+    }
+   }
+  ~Topology() {
+   if( t )
+    hwloc_topology_destroy( t );
+   }
+  };
+ static const Topology T;
+ return( T.t );
+ }
+
+/// a set of processors of hwloc, freed at the end of its scope
+struct HwlocSet
+{
+ hwloc_bitmap_t s = hwloc_bitmap_alloc();
+ HwlocSet( void ) = default;
+ HwlocSet( const HwlocSet & ) = delete;
+ HwlocSet & operator=( const HwlocSet & ) = delete;
+ ~HwlocSet() { hwloc_bitmap_free( s ); }
+ };
+
+#endif
+
+}  // end( namespace detail )
+/// \endcond
+
 /// the processors on which the process may run, in increasing order, as
-/// the first call found them; empty where the placement does not exist
+/// the first call found them; empty where hwloc does not give them
 inline const std::vector< int > & affinityCpus( void )
 {
  static const std::vector< int > cpus = [] {
   std::vector< int > c;
-#ifdef ADS_AFFINITY_LINUX
-  cpu_set_t s;
-  CPU_ZERO( &s );
-  if( sched_getaffinity( 0 , sizeof( s ) , &s ) == 0 )
-   for( int i = 0 ; i < CPU_SETSIZE ; ++i )
-    if( CPU_ISSET( i , &s ) )
-     c.push_back( i );
+#if defined( ADS_WITH_HWLOC )
+  const hwloc_topology_t t = detail::hwlocTopology();
+  detail::HwlocSet S;
+  if( t && S.s && ( hwloc_get_cpubind( t , S.s ,
+				       HWLOC_CPUBIND_THREAD ) == 0 ) )
+   for( int i = hwloc_bitmap_first( S.s ) ; i >= 0 ;
+	i = hwloc_bitmap_next( S.s , i ) )
+    c.push_back( i );
 #endif
   return( c );
   }();
@@ -120,11 +170,13 @@ inline bool pinThread( unsigned i )
  const std::vector< int > & c = affinityCpus();
  if( c.empty() )
   return( false );
-#ifdef ADS_AFFINITY_LINUX
- cpu_set_t s;
- CPU_ZERO( &s );
- CPU_SET( c[ i % c.size() ] , &s );
- return( pthread_setaffinity_np( pthread_self() , sizeof( s ) , &s ) == 0 );
+#if defined( ADS_WITH_HWLOC )
+ detail::HwlocSet S;
+ if( ! S.s )
+  return( false );
+ hwloc_bitmap_only( S.s , unsigned( c[ i % c.size() ] ) );
+ return( hwloc_set_cpubind( detail::hwlocTopology() , S.s ,
+			     HWLOC_CPUBIND_THREAD ) == 0 );
 #else
  ( void )i;
  return( false );
@@ -135,11 +187,14 @@ inline bool pinThread( unsigned i )
 /// is not known
 inline int currentCpu( void )
 {
-#ifdef ADS_AFFINITY_LINUX
- return( sched_getcpu() );
-#else
- return( -1 );
+#if defined( ADS_WITH_HWLOC )
+ const hwloc_topology_t t = detail::hwlocTopology();
+ detail::HwlocSet S;
+ if( t && S.s &&
+     ( hwloc_get_last_cpu_location( t , S.s , HWLOC_CPUBIND_THREAD ) == 0 ) )
+  return( hwloc_bitmap_first( S.s ) );
 #endif
+ return( -1 );
  }
 
 /*--------------------------------------------------------------------------*/

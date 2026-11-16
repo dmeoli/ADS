@@ -605,12 +605,11 @@
  true and does not sleep; if that of the waiter comes first, the notifier
  reads its announcement and advances the epoch, and the waiter either has
  not yet compared the epoch, and sees the new one, or sleeps on \f$ e \f$
- and is woken. On Linux the fence of the notifier is only one of the
- compiler, and that of the waiter a system call (`membarrier(2)`) that
- makes every running thread of the process run a full barrier, which orders
- the two as a pair of full fences (Ladan-Mozes, Lee and Vyukov); the
- waiter, about to sleep, pays the system call, and a notification with
- nobody waiting costs the read of a line that stays shared.
+ and is woken. A notification with nobody waiting costs the fence and the
+ read of a line that stays shared; with `ADS_EVENTCOUNT_RMW` the notifier
+ reads the waiters by a read-modify-write instead of the two fences, which
+ reads the last value in the order of the modifications of the word and so
+ either sees the waiter or is seen by it through the release sequence.
 
  Before it sleeps, a waiter may spin for a while, since a condition that
  becomes true within a few microseconds costs no system call then; the

@@ -1,7 +1,7 @@
 # 1. Introduction {#ch-1}
 
 [Source: `include/ADS/ADT.h`, `Contract.h`, `Iterators.h`, `Portable.h`,
-`Modification.h`, `Capabilities.h`, `Algebra.h`,
+`Wide.h`, `Modification.h`, `Capabilities.h`, `Algebra.h`,
 `ADS/sequence/IndexedList.h`, `ADS/sequence/ObservableArray.h`,
 `ADS/sequence/Fenwick.h`, `ADS/queue/SlidingAggregate.h`,
 `ADS/set/SetInterfaces.h`, `ADS/set/Bag.h`]
@@ -896,16 +896,22 @@ On the machines that the library targets $w = 64$, and the model usually fits
 them rather well. There is one exception, which the library meets quite
 often: the product of two words is a number of $2 w$ bits, which the
 processors give in one instruction and C++20 does not (the integers of 128
-bits are an extension of GCC and Clang). In ADS, the header `ADS/Portable.h`
-hides the difference behind three tools in the namespace `ADS::detail`, out
-of the API reference. These are `wideProduct( a , b , hi )`, the product of
-two words of 64 bits, whose low word it returns and whose high word it writes
-in `hi`, `byteSwap( x )`, the 8 bytes of a word in the reverse order, and the
-signed integer `Int128`. The product is that of `unsigned __int128` where the
-compiler has it, the intrinsic of MSVC on x64 and ARM64 otherwise, and a
-computation on halves of 32 bits elsewhere (and in a constant expression of
-MSVC), which is also `wideProductHalves( a , b , hi )`. The swap is the builtin of GCC and Clang, else the `std::byteswap()`
-of C++23, else the intrinsic of MSVC, and else three exchanges by masks (of
+bits are an extension of GCC and Clang). In ADS, the headers `ADS/Portable.h`
+and `ADS/Wide.h` hide the difference behind a few tools in the namespace
+`ADS::detail`, out of the API reference. These are `wideProduct( a , b , hi )`,
+the product of two words of 64 bits, whose low word it returns and whose high
+word it writes in `hi`, `wideDivide( u1 , u0 , v , r )`, the quotient of a
+number of two words by one word (and the remainder in `r`), `byteSwap( x )`,
+the 8 bytes of a word in the reverse order, and the signed integer `Int128`.
+With `ADS_WITH_BOOST` the product is that of Boost.Multiprecision, which
+Boost computes by the instruction of the processor where there is one (on
+x86-64 the code is the same as that of `unsigned __int128`), and otherwise
+(and in a constant expression) a computation on halves of 32 bits, which is
+also `wideProductHalves( a , b , hi )`; the division is the division of two
+digits of 32 bits by one, twice ([Warren 2012, section
+9-4](Z-bibliography.md#ref-warren2012)). The swap is the builtin of GCC and
+Clang, else the `std::byteswap()` of C++23, else the intrinsic of MSVC, and
+else three exchanges by masks (of
 the bytes, of the pairs of bytes and of the halves of the word). With $a =
 a_1 2^{32} + a_0$ and $b = b_1 2^{32} + b_0$, where $0 \le a_0 , a_1 , b_0 ,
 b_1 < 2^{32}$, one has
@@ -946,10 +952,10 @@ b / 2^{64} \rfloor < 2^{64}$, the high word. Since its terms are not
 negative, each partial sum of the high word is below $2^{64}$ as well, and
 no intermediate word overflows. $\square$
 
-Where the compiler has no `__int128`, the signed integer of 128 bits is a
-pair of words in two's complement. It is built from any integer by extending
-its sign, and it has the sums, the differences and the products of `__int128`
-(those modulo $2^{128}$, exact when the result fits), its equality and its
+The signed integer of 128 bits is a pair of words in two's complement. It
+is built from any integer by extending its sign, and it has the sums, the
+differences and the products of the integers modulo $2^{128}$ (exact when
+the result fits), its equality and its
 order (the high words compared as signed and then the low ones as unsigned),
 and an explicit conversion to `long double`.
 
@@ -981,8 +987,8 @@ word read as a signed word, and $0 \le a_l < 2^{64}$. If $\hat{a}_h <
 a_l < \hat{b}_h 2^{64} \le$ the value of $b$; if the high words are equal,
 the order is that of the low words. $\square$
 
-The sums, the differences and the products are thus those of `__int128`,
-i.e., modulo $2^{128}$ and exact when the result fits. The random
+The sums, the differences and the products are thus those of the integers
+modulo $2^{128}$, exact when the result fits. The random
 queue of chapter [4](04-queue.md#ch-4) uses `wideProduct()` (for its draw of
 an index), and the integers of any length of chapter
 [17](17-numeric.md#ch-17) use it, or `wideProductHalves()` under
@@ -1512,8 +1518,10 @@ platform are optional backends, each used only when it is found, i.e., GMP
 for the integers of any length, a CBLAS for the products of matrices, the
 headers of Boost for the four structures that delegate to it where it is
 found (`PointerTable`, `FlatHashTable`, `SmallVector` and the generators
-xoshiro256, [§7.6](07-dictionary.md#sec-7-6)), OpenMP,
-oneTBB and FastFlow for the parallel executors, the runtimes that a program
+xoshiro256, [§7.6](07-dictionary.md#sec-7-6)) and for the product of two
+words and the compare-and-swap of 16 bytes, hwloc for the placement of the
+threads on the processors, OpenMP, oneTBB and FastFlow for the parallel
+executors, the runtimes that a program
 may already have (the parallel algorithms of the standard library, stdexec,
 Taskflow, Kokkos and Boost.MPI) for the executors on them
 ([§25.4](25-parallel.md#sec-25-4)), and MPI for the distributed ones. The
@@ -1524,8 +1532,8 @@ module for each of the sets that we describe next.
 The flags of the compiler change some of the inline code of the library,
 and in a few classes the layout, through four options: the matching of the
 control bytes of the hash tables (`ADS_FLAT_SIMD`), the compare-and-swap of
-16 bytes of `ConcurrentFlatTable` (`ADS_FLAT_CAS16`, turned on by `-mcx16`
-and by `-march=x86-64-v2`), the delegation of `FlatHashTable` to Boost, and
+16 bytes of `ConcurrentFlatTable` (`ADS_FLAT_CAS16`, that of Boost.Atomic,
+free of locks on x86-64 under `-mcx16` and `-march=x86-64-v2`), the delegation of `FlatHashTable` to Boost, and
 the level of the vector instructions of x86-64. A program often compiles a
 hot file with `-march=x86-64-v3` and the rest with the default, and its two
 translation units then hold two definitions of one class, which the linker
@@ -2028,7 +2036,7 @@ only, by chapter.
 
 | Chapter | Headers of functions |
 |-----|-----------------------------------------------|
-| [1](01-introduction.md#ch-1) | `ADT.h`, `Abi.h`, `Portable.h`, `interop/boost/Heap.h`, `interop/boost/Iterator.h` |
+| [1](01-introduction.md#ch-1) | `ADT.h`, `Abi.h`, `Portable.h`, `Wide.h`, `interop/boost/Heap.h`, `interop/boost/Iterator.h` |
 | [2](02-sequence.md#ch-2) | `sequence/IndexedList.h`, `sequence/ListSort.h`, `sequence/Rearrangements.h`, `sequence/SequenceAlgorithms.h` |
 | [3](03-stack.md#ch-3) | `stack/Expressions.h`, `stack/StackAlgorithms.h` |
 | [4](04-queue.md#ch-4) | `queue/QueueAlgorithms.h` |

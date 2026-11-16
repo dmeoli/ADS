@@ -1680,9 +1680,6 @@ std::pair< U64 , U64 > mulRef( U64 a , U64 b )
 
 ADS_TEST( "big-integer-words" )
 {
-#ifdef ADS_BIGINT_PORTABLE
- CHECK( ADS_BIGINT_WIDE == 0 );
-#endif
  const U64 M = ~U64( 0 );
  std::vector< U64 > x = { 0 ,
 			  1 ,
@@ -1723,6 +1720,12 @@ ADS_TEST( "big-integer-words" )
    const auto [ ph , pl ] = mulRef( q , d );  // u1 b + a = q d + r, r < d
    const U64 low = pl + r;
    CHECK( r < d && low == a && ph + ( low < pl ) == u1 );
+   const U64 v = b | 1 , w1 = a % v;  // any divisor: shifted inside
+   U64 rv = 0;
+   const U64 qv = detail::wideDivide( w1 , a , v , rv );
+   const auto [ vh , vl ] = mulRef( qv , v );
+   const U64 lv = vl + rv;
+   CHECK( rv < v && lv == a && vh + ( lv < vl ) == w1 );
    }
  }
 

@@ -21,14 +21,10 @@ namespace ADS
 /*------------------------- THE SEQUENCES OF BUCKETS -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the place of the 1 of rank k in x, by PDEP where the machine has it
+/// the place of the 1 of rank k in x, by the broadword select
 [[nodiscard]] inline int detail::recSplitSelect( std::uint64_t x , int k )
 {
-#if defined( __BMI2__ ) && defined( __x86_64__ )
- return( int( _tzcnt_u64( _pdep_u64( std::uint64_t( 1 ) << k , x ) ) ) );
-#else
  return( selectInWord( x , k ) );
-#endif
  }
 
 inline detail::RecSplitSequence::RecSplitSequence(

@@ -16,15 +16,15 @@
  *   lies in the array of the tree, never in the sequence of the loser. A key
  *   of at most 16 bytes copied as bytes is kept by value, a larger one by
  *   its address, which must stay valid while it is in the tree. On the
- *   integers in their natural order a match compares the pairs
- *   \f$ ( x , s ) \f$ of key and source as one integer of 128 bits, and an
- *   exhausted source has the largest key and its index with the highest bit
- *   set, so that the matches are made of flags and the swaps of the winner
- *   with the loser of a node of masks, with no jump: the matches of a random
- *   merge are won by either side with probability 1/2, which a branch
- *   mispredicts half of the time. Equal keys are won by the lower source,
- *   so that a merge is stable; a replay makes \f$ \lceil \log_2 k \rceil \f$
- *   matches.
+ *   arithmetic types in their natural order a match compares the pairs
+ *   \f$ ( x , s ) \f$ of key and source by two flags of the keys and one of
+ *   the sources, and an exhausted source has the largest key and its index
+ *   with the highest bit set, so that the matches are made of flags and the
+ *   swaps of the winner with the loser of a node of masks, with no jump:
+ *   the matches of a random merge are won by either side with probability
+ *   1/2, which a branch mispredicts half of the time. Equal keys are won by
+ *   the lower source, so that a merge is stable; a replay makes
+ *   \f$ \lceil \log_2 k \rceil \f$ matches.
  * - `multiwayMerge()` on contiguous ranges of items copied as bytes builds a
  *   tree of binary mergers, the halves of the sources below each node, with
  *   a buffer of 4 KiB at each internal node, filled lazily (the lazy funnel
@@ -223,12 +223,6 @@ class FlatLoserTree
  private:
  /// the arithmetic types in their natural order
  static constexpr bool kNatural = detail::kNaturalOrder< T , C >;
-
- /// the integers of at most 64 bits in their natural order, compared with
- /// their sources as one integer of 128 bits where the compiler has it
- static constexpr bool kInteger = kNatural && std::is_integral_v< T > &&
-				  ! std::is_same_v< T , bool > &&
-				  ( sizeof( T ) <= 8 );
 
  /// the natural order is std::less
  static constexpr bool kUp =

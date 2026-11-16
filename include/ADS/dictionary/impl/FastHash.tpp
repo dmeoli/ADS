@@ -14,9 +14,6 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#if defined( _MSC_VER ) && ! defined( __clang__ )
- #include <intrin.h>
-#endif
 #if defined( __AVX2__ ) || defined( __AVX512F__ )
  #include <immintrin.h>
 #endif
@@ -86,28 +83,9 @@ ADS_ABI_BEGIN
 
 constexpr Product128 product128( std::uint64_t a , std::uint64_t b )
 {
-#if defined( __SIZEOF_INT128__ )
- __extension__ typedef unsigned __int128 U128;  // not ISO C++
- const U128 p = static_cast< U128 >( a ) * b;
- return( Product128{ std::uint64_t( p ) , std::uint64_t( p >> 64 ) } );
-#else
- if( ! std::is_constant_evaluated() ) {
- #if defined( _MSC_VER ) && defined( _M_X64 ) && ! defined( __clang__ )
-  std::uint64_t hi;
-  const std::uint64_t lo = _umul128( a , b , &hi );
-  return( Product128{ lo , hi } );
- #elif defined( _MSC_VER ) && defined( _M_ARM64 ) && ! defined( __clang__ )
-  return( Product128{ a * b , __umulh( a , b ) } );
- #endif
-  }
- constexpr std::uint64_t LOW = 0xFFFFFFFFULL;
- const std::uint64_t a0 = a & LOW , a1 = a >> 32 , b0 = b & LOW , b1 = b >> 32;
- const std::uint64_t p00 = a0 * b0 , p01 = a0 * b1 , p10 = a1 * b0 ,
-		     p11 = a1 * b1;
- const std::uint64_t mid = ( p00 >> 32 ) + ( p01 & LOW ) + ( p10 & LOW );
- return( Product128{ ( mid << 32 ) | ( p00 & LOW ) ,
-		      p11 + ( p01 >> 32 ) + ( p10 >> 32 ) + ( mid >> 32 ) } );
-#endif
+ std::uint64_t hi = 0;
+ const std::uint64_t lo = detail::wideProduct( a , b , hi );
+ return( Product128{ lo , hi } );
  }
 
 constexpr std::uint64_t foldedProduct( std::uint64_t a , std::uint64_t b )
