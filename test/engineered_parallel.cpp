@@ -983,7 +983,11 @@ ADS_TEST( "parallel-wavelet-matrix" )
   X.push_back( { x , 0 } );
   }
  onEach( [ & ]( auto & ex ) {
-  for( const auto & [ x , w ] : X ) {
+  // no structured binding, which clang 18 does not capture in the lambda
+  // below when it runs in a region of OpenMP
+  for( const auto & xw : X ) {
+   const auto & x = xw.first;
+   const int w = xw.second;
    const WaveletMatrix ref( x , w ) , par( ex , x , w );
    CHECK( ( par.width() == ref.width() ) && ( par.size() == ref.size() ) &&
 	  ( par.sizeInBits() == ref.sizeInBits() ) );
