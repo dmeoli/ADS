@@ -6,7 +6,9 @@
 #     pip install python/
 #
 # and the libraries that ADS can use beside its headers are left out, so
-# that the wheel depends on nothing but NumPy.
+# that the wheel depends on nothing but NumPy. Its sdist carries in libads/
+# the sources of ADS that the build takes from the directory above, copied
+# there by the job sdist of .github/workflows/wheels.yml.
 
 [build-system]
 requires = ["scikit-build-core>=0.10", "nanobind>=2.0"]
@@ -40,11 +42,21 @@ build-dir = "build/{wheel_tag}"
 wheel.py-api = "cp312"
 wheel.packages = ["ads", "nx_ads"]
 
-# the version of ADS, which packaging/bump.sh writes into MODULE.bazel
+# the version of ADS, which packaging/bump.sh writes into MODULE.bazel,
+# from the copy in libads/ in the sdist
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
 input = "../MODULE.bazel"
 regex = '(?m)^    version = "(?P<value>[^"]+)",'
+
+[tool.scikit-build.sdist]
+include = ["libads"]
+
+[[tool.scikit-build.overrides]]
+if.from-sdist = true
+metadata.version.provider = "scikit_build_core.metadata.regex"
+metadata.version.input = "libads/MODULE.bazel"
+metadata.version.regex = '(?m)^    version = "(?P<value>[^"]+)",'
 
 [tool.scikit-build.cmake.define]
 ADS_WITH_GMP = "OFF"
@@ -53,3 +65,24 @@ ADS_WITH_HWLOC = "OFF"
 ADS_WITH_HIGHWAY = "OFF"
 ADS_WITH_LEMON = "OFF"
 ADS_WITH_MPI = "OFF"
+
+# the wheels of the distribution, built by cibuildwheel [see
+# .github/workflows/wheels.yml]: one per platform, for CPython 3.12, which
+# the stable ABI makes good for the later ones too, on glibc 2.28 and macOS
+# 11; the tests of the package run on each, those whose libraries have no
+# wheel on Windows on ARM64 (SciPy and pyroaring) skipping themselves
+[tool.cibuildwheel]
+build = "cp312-*"
+skip = "*-musllinux_*"
+build-frontend = "build"
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+test-requires = ["pytest", "networkx", "scipy", "pyroaring"]
+test-command = "pytest -q -p no:cacheprovider {package}/tests"
+
+[tool.cibuildwheel.macos]
+environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }
+
+[[tool.cibuildwheel.overrides]]
+select = "*-win_arm64"
+test-requires = ["pytest", "networkx"]

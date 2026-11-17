@@ -996,8 +996,10 @@ tells its changes as the typed events of ADS), each array of a structure a
 read-only view of NumPy, and each static structure opened in place from its
 file by `restore_mapped()`. It also registers `nx-ads`, a backend of
 NetworkX, by which the shortest paths, the visits and the components of
-NetworkX run on ADS. The package is built by `pip install python/` (one
-wheel on the stable ABI of Python 3.12 and later) or by CMake under
+NetworkX run on ADS. Its wheels (one per platform, on the stable ABI of
+Python 3.12 and later) and its sdist are attached to each release, to be
+installed by `pip install <file>`; from a checkout it is built by `pip
+install python/` or by CMake under
 `ADS_WITH_PYTHON` (`AUTO`, on where a Python with its headers and nanobind
 are found, off in the packages), whose ctest `python.pytest` runs its tests;
 [§C.21](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-21)

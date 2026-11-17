@@ -1148,7 +1148,10 @@ off in the packages of the distributions. It is also built by `pip install
 python/`, through scikit-build-core, into one wheel for the stable ABI of
 Python 3.12 and later, with the stubs of the module written by the stubgen
 of nanobind; the wheel leaves out the libraries that ADS may use beside its
-headers, and it depends on NumPy only. Its tests of pytest, i.e., the ctest
+headers, and it depends on NumPy only. The wheels of Linux (x86_64 and
+aarch64), macOS (arm64 and x86_64) and Windows, and the sdist, are attached
+to each release of ADS, and `pip install` of the wheel of the platform
+installs the package with no compiler. Its tests of pytest, i.e., the ctest
 `python.pytest`, compare each algorithm with NetworkX and SciPy, each bitmap
 with pyroaring and each heap with `heapq`. They also run the tests of
 NetworkX of the shortest paths, the components, the visits and the acyclic

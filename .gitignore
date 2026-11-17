@@ -21,6 +21,8 @@ MODULE.bazel.lock
 
 # Python
 __pycache__/
+# the sources of ADS in the sdist [see python/pyproject.toml]
+python/libads/
 
 # local paths of the external libraries [see lib/makefile-c]
 extlib/makefile-paths

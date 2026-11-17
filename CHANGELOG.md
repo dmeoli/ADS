@@ -23,6 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   kept in the cache; and the job `python` builds the wheel of `ads-python`
   and runs its tests, the backend `nx-ads` of NetworkX among them, on
   Linux, macOS and Windows, and on Linux the package built by CMake
+- the wheels of `ads-python` built by cibuildwheel (configured in
+  `python/pyproject.toml`) on Linux (manylinux, x86_64 and aarch64), macOS
+  (arm64 and x86_64) and Windows (AMD64 and ARM64), one per platform on
+  the stable ABI of Python 3.12, each tested by the tests of the package,
+  and its sdist, which carries the sources of ADS in `libads/` and is
+  tested by installing it, in `.github/workflows/wheels.yml`; at each tag
+  they are attached to the release, and published on PyPI by trusted
+  publishing once the repository variable `PYPI_PUBLISH` is true
 
 ## [0.1.0] - 2026-11-17
 

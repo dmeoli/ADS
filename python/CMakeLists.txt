@@ -5,7 +5,8 @@
 #    nanobind, the package ads around it and the backend nx_ads of NetworkX.  #
 #    It is built by the main CMakeLists.txt when ADS_WITH_PYTHON is on, and   #
 #    by scikit-build-core from pyproject.toml (pip install python/), which    #
-#    takes ADS from the directory above, or installed.                        #
+#    takes ADS from the directory above, from libads/ in the sdist, or        #
+#    installed.                                                               #
 # --------------------------------------------------------------------------- #
 cmake_minimum_required(VERSION 3.21)
 if (PROJECT_IS_TOP_LEVEL OR NOT DEFINED PROJECT_NAME)
@@ -13,12 +14,19 @@ if (PROJECT_IS_TOP_LEVEL OR NOT DEFINED PROJECT_NAME)
 endif ()
 
 # ADS: the target of the build that includes this directory, or the one of
-# the directory above, or the installed one
+# the directory above, or of libads/ in the sdist, or the installed one
 if (NOT TARGET ADS::ADS)
-    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../include/ADS/ADS.h)
+    set(ADS_PY_SOURCE "")
+    foreach (d ${CMAKE_CURRENT_SOURCE_DIR}/..
+               ${CMAKE_CURRENT_SOURCE_DIR}/libads)
+        if (NOT ADS_PY_SOURCE AND EXISTS ${d}/include/ADS/ADS.h)
+            set(ADS_PY_SOURCE ${d})
+        endif ()
+    endforeach ()
+    if (ADS_PY_SOURCE)
         set(ADS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
         set(ADS_WITH_PYTHON OFF CACHE STRING "" FORCE)
-        add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/.. ads EXCLUDE_FROM_ALL)
+        add_subdirectory(${ADS_PY_SOURCE} ads EXCLUDE_FROM_ALL)
     else ()
         find_package(ADS REQUIRED)
     endif ()

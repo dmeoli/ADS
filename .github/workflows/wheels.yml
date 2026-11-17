@@ -1,0 +1,129 @@
+###############################################################################
+#                               wheels.yml                                    #
+#                                                                             #
+# Builds the distribution of the package of Python ads-python [see python/]:  #
+# its wheels by cibuildwheel, configured in python/pyproject.toml, on Linux   #
+# (manylinux, x86_64 and aarch64), macOS (arm64 and x86_64) and Windows       #
+# (AMD64 and, not yet required, ARM64), each tested by the tests of the       #
+# package, and its sdist, which carries the sources of ADS in libads/ and is  #
+# tested by installing it in a new environment. At each tag vX.Y.Z, attaches  #
+# them to the GitHub release that release.yml publishes, and publishes them   #
+# on PyPI by trusted publishing, only once the repository variable            #
+# PYPI_PUBLISH is true. On a branch or a pull request, it runs only when      #
+# python/ or this file changes.                                               #
+###############################################################################
+
+name: Wheels
+
+on:
+  push:
+    branches: [ '**' ]
+    tags: [ 'v*' ]
+    paths: [ 'python/**' , '.github/workflows/wheels.yml' ]
+  pull_request:
+    paths: [ 'python/**' , '.github/workflows/wheels.yml' ]
+  workflow_dispatch:
+
+# a new push to a branch cancels the run still going on its previous commit
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  wheels:
+    name: wheels (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest }
+          - { os: ubuntu-24.04-arm }
+          - { os: macos-latest }
+          - { os: macos-15-intel }
+          - { os: windows-latest }
+          - { os: windows-11-arm , experimental: true }
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental == true }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pypa/cibuildwheel@v4.3.5
+        with:
+          package-dir: python
+          output-dir: wheelhouse
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: wheelhouse/*.whl
+
+  # the sdist, with the sources of ADS that the build takes from the
+  # directory above python/ copied into python/libads [see
+  # python/pyproject.toml], installed in a new environment and tested
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: the sdist
+        run: |
+          git archive --prefix=python/libads/ HEAD CMakeLists.txt LICENSE \
+              MODULE.bazel VERSION.txt cmake include src | tar -x
+          python -m pip install build
+          python -m build --sdist python -o dist
+      - name: installed in a new environment, and its tests
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          . "$RUNNER_TEMP/venv/bin/activate"
+          python -m pip install dist/ads_python-*.tar.gz pytest networkx \
+              scipy pyroaring
+          mkdir "$RUNNER_TEMP/sdist"
+          tar -xzf dist/ads_python-*.tar.gz -C "$RUNNER_TEMP/sdist"
+          cd "$RUNNER_TEMP"
+          python -m pytest -q -p no:cacheprovider sdist/*/tests
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  # at a tag, the wheels and the sdist attached to the release of
+  # release.yml, once it exists
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [ wheels , sdist ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: attached to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          for i in $(seq 60); do
+            gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 && break
+            sleep 30
+          done
+          gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+
+  # at a tag, the wheels and the sdist on PyPI by trusted publishing (the
+  # publisher of this workflow and of the environment pypi set on PyPI);
+  # off until the repository variable PYPI_PUBLISH is true
+  pypi:
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') && vars.PYPI_PUBLISH == 'true'
+    needs: [ wheels , sdist ]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: pypa/gh-action-pypi-publish@v1.14.3
