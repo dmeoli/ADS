@@ -103,11 +103,17 @@ class Sets:
         return sorted( h for h , s in self.set.items() if s in sets )
 
 
+def rel( path ):
+    """The path of a file of include/ relative to it, with the separator /
+    on every system, as cmake/ads_sets.txt and the includes write it."""
+    return os.path.relpath( path , INC ).replace( os.sep , "/" )
+
+
 def public_headers():
     """The public headers of include/ADS, but for the entry points."""
     entries = set( ENTRY.values() ) | { ALL }
     return sorted( h for h in
-                   ( os.path.relpath( os.path.join( d , f ) , INC )
+                   ( rel( os.path.join( d , f ) )
                      for d , _ , fs in os.walk( os.path.join( INC , "ADS" ) )
                      for f in fs if f.endswith( ".h" ) and
                      os.path.basename( d ) != "impl" )
@@ -125,7 +131,7 @@ def includes():
         for f in fs:
             p = os.path.join( d , f )
             with open( p , encoding = "utf-8" ) as src:
-                out[ os.path.relpath( p , INC ) ] = \
+                out[ rel( p ) ] = \
                     INCLUDE.findall( src.read() )
     return out
 
@@ -379,7 +385,7 @@ def test( sets , deps , s , cxx , flags ):
         if m:
             p = os.path.realpath( m.group( 1 ) )
             if p.startswith( prefix + "ADS" + os.sep ):
-                h = p[ len( prefix ) + 4: ]
+                h = p[ len( prefix ) + 4: ].replace( os.sep , "/" )
                 if h in sets.set:
                     pulled.add( h )
     ok = allowed( sets , deps , s )
