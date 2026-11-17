@@ -4,7 +4,7 @@
 `include/ADS/parallel/OpenMPExecutor.h`, `include/ADS/distributed/`,
 `include/ADS/set/RoaringBitmap.h`, `test/interop_examples.cpp`,
 `test/interop_examples_mpi.cpp`, `test/interop_graphs.cpp`,
-`test/interop_columnar.cpp`]
+`test/interop_columnar.cpp`, `python/`]
 
 We are concerned in this appendix with a program that already uses another
 library and wants to call ADS from it, or to run that library on the
@@ -1041,7 +1041,126 @@ integers of 64 bits, one per bit, in a JSON one. The test
 saves, and in ADS the `bit_vector` that sdsl saves, in the binary, portable
 binary and JSON archives of cereal.
 
-## C.21 Where the examples run {#sec-C-21}
+## C.21 Python {#sec-C-21}
+
+We now turn to Python, where the package `ads-python`, in the directory
+`python/`, gives the structures of ADS that NumPy, SciPy and NetworkX lack
+through an extension module `ads` written on nanobind. It also registers
+`nx-ads`, a backend of NetworkX that runs the algorithms of ADS behind the
+functions of NetworkX. A library of templates cannot be bound generically,
+and thus the module instantiates a fixed set of them, chosen where ADS has
+something that the libraries of Python have not. These are (i)
+`StaticGraph`, with no weights and with weights of type `double` in both
+layouts of the arcs ([§14.4](14-graph.md#sec-14-4)), with its sequential and
+parallel algorithms, (ii) `CsrMatrix`, (iii) `BitVector`, `RankSelect`,
+`PackedArray` of 1 to 32 bits and `EliasFano` ([chapter
+22](22-succinct.md#ch-22)), (iv) `RoaringBitmap`, (v) the Bloom, blocked
+Bloom, cuckoo, prefix, binary fuse, ribbon and Grafite filters ([chapter
+10](10-set.md#ch-10)), (vi) the indexed heaps of [chapter
+9](09-priority.md#ch-9), and (vii) `DynamicGraph`. As for the graphs, the
+algorithms are the visits, the shortest paths of
+[§14.8](14-graph.md#sec-14-8), the components, the strong components and the
+topological sort, as well as the parallel visit, the components of Afforest,
+the maximal independent set and the stepping algorithms of [chapter
+25](25-parallel.md#ch-25). Also, the heaps decrease the key of an item,
+which `heapq` cannot do, and `DynamicGraph` is a `ListGraph` behind the
+`ObservedGraph` of [§14.13](14-graph.md#sec-14-13), whose typed events are
+read as tuples. We have left out what NumPy, SciPy and NetworkX already do
+as well (e.g., the sorts, the hash tables and the dense matrices).
+
+A graph or a matrix is built from arrays of NumPy by one copy of each, and
+its rows are sorted only where they are not. Its arrays are then exposed as
+read-only views of NumPy over the memory of the structure, which each view
+keeps alive; in the interleaved layout, the heads and the weights are two
+views with a stride of 16 bytes over the array of the pairs. We remark that
+a graph cannot adopt an array of NumPy without the copy, since its arrays
+are vectors that hold their memory. When a structure is opened by
+`restore_mapped()`, i.e., by the `restoreMapped()` of [chapter
+23](23-external.md#ch-23), the views lie instead in the file; hence a
+structure that is stored once is opened by any later run in $O( 1 )$ time,
+with no copy and no parsing. Each static structure has `store()`,
+`restore()`, `restore_mapped()`, `to_bytes()` and `from_bytes()`, and pickle
+writes the same format. A `RoaringBitmap` is written in the portable format
+of [§C.19](C-libraries.md#sec-C-19) instead, which pyroaring reads by
+`BitMap.deserialize()` and writes by `BitMap.serialize()`. Each call that
+takes time releases the GIL, and the parallel ones run on a `ThreadPool`
+given to them or on a pool of the module. Furthermore, the preconditions of
+ADS are checked at the level 1 of the contracts (cf.
+[§1.7.1](01-introduction.md#sec-1-7-1)), and thus a wrong argument raises
+`ContractViolation`, or a `ValueError` or an `IndexError` of the binding,
+before it can break a structure. In the example, a graph is built from its
+rows, stored, opened in place and queried; then a bitmap is written in the
+portable format, and the changes of a batch are read as their net effect.
+
+```python
+import ads
+import numpy as np
+
+offsets = np.array([0, 2, 3, 4, 4], dtype=np.int32)
+heads = np.array([1, 2, 3, 3], dtype=np.int32)
+weights = np.array([1.0, 4.0, 2.0, 1.0])
+g = ads.static_graph(offsets, heads, weights, layout="interleaved")
+g.store(path)                                     # once
+h = ads.InterleavedStaticGraph.restore_mapped(path)  # O(1), no copy
+d, parent = ads.shortest_paths(h, 0)              # [0, 1, 4, 3]
+r = ads.RoaringBitmap(np.arange(0, 1 << 20, 3, dtype=np.uint32))
+data = r.serialize()                              # read by pyroaring
+dg = ads.DynamicGraph(3)
+with dg.batch():
+    dg.add_edge(0, 1, 5.0)
+    dg.set_weight(0, 1, 2.0)
+dg.events()                         # [("edge_inserted", 0, 1, 2.0)]
+```
+
+On the side of NetworkX, the backend follows the dispatch of NetworkX 3,
+under the entry point `networkx.backends`. A call with `backend="ads"`, or
+with a graph already converted by `nx_ads.from_networkx()`, converts the
+graph into a `StaticGraph` whose weights are those of the attribute that the
+function names; it then runs the algorithm of ADS and returns the result of
+NetworkX, with the names of the nodes. It implements the shortest paths from
+a source (by the arcs, by Dijkstra, and by Bellman and Ford, also on
+negative weights), the components, the strong and the weak ones, the
+descendants and the ancestors, the test of acyclicity and the topological
+sort. Its `can_run()` leaves to NetworkX the arguments that ADS does not
+take, e.g., a weight given by a function or the shortest paths between all
+the pairs. Its `should_run()` declines the graphs of fewer than $10^4$ nodes
+and edges, below which we expect the conversion to cost more than the
+algorithm saves, although we have not yet measured this threshold. Note
+that, among several shortest paths of the same length, the one of ADS may
+differ from that of NetworkX, since the rows of a `StaticGraph` are sorted
+by head, whereas NetworkX visits the neighbours in the order of their
+insertion.
+
+```python
+import networkx as nx
+
+G = nx.grid_2d_graph(30, 30)
+for k, (u, v) in enumerate(G.edges):
+    G.edges[u, v]["weight"] = 1 + k % 7
+d = nx.single_source_dijkstra_path_length(G, (0, 0), backend="ads")
+nx.number_connected_components(G, backend="ads")  # 1
+```
+
+With CMake, the package is built under the option `ADS_WITH_PYTHON`, which
+is `AUTO` (on where a Python with its headers and nanobind are found) and
+off in the packages of the distributions. It is also built by `pip install
+python/`, through scikit-build-core, into one wheel for the stable ABI of
+Python 3.12 and later, with the stubs of the module written by the stubgen
+of nanobind; the wheel leaves out the libraries that ADS may use beside its
+headers, and it depends on NumPy only. Its tests of pytest, i.e., the ctest
+`python.pytest`, compare each algorithm with NetworkX and SciPy, each bitmap
+with pyroaring and each heap with `heapq`. They also run the tests of
+NetworkX of the shortest paths, the components, the visits and the acyclic
+graphs on the backend, by the machinery of NetworkX for its backends
+(`NETWORKX_TEST_BACKEND=ads`). Only one of them is marked as an expected
+failure, since it changes the graph of NetworkX while it iterates over the
+topological order, which the backend computes on a copy. Both examples,
+`python/examples/structures.py` and `networkx_backend.py`, are run by the
+ctests `python.example.*`. Finally, we have not measured the times against
+NetworkX and SciPy, which `bench/python/compare.py` takes on an idle
+machine.
+
+## C.22 Where the examples run {#sec-C-22}
 
 [Table C.1](C-libraries.md#tab-C-1) gives the option that compiles the
 examples of each library, and the names of their tests. These run on any
@@ -1063,9 +1182,10 @@ the environment, `DECLCHECK_LEMON`, `DECLCHECK_STDEXEC`,
 default, the component of `find_package(ADS)` (none where `ADS::ADS`
 carries the library), and the tests. The makefile takes the same variable
 (`auto`, `0` or `1`) for all the libraries but Kokkos, Boost.MPI, Eigen,
-METIS, KaHIP, GraphBLAS and NetworKit, which only CMake builds; the
-adapters of the last five are also tested by `interop_graphs.*`, and those
-of Arrow, CRoaring and sdsl-lite by `interop_columnar.*`.
+METIS, KaHIP, GraphBLAS, NetworKit and Python, which only CMake builds;
+the adapters of Eigen, METIS, KaHIP, GraphBLAS and NetworKit are also
+tested by `interop_graphs.*`, and those of Arrow, CRoaring and sdsl-lite by
+`interop_columnar.*`.
 
 | Library | Option | Default | Component | Tests |
 |------------------|---------------------|------|----------|-------------------|
@@ -1090,6 +1210,7 @@ of Arrow, CRoaring and sdsl-lite by `interop_columnar.*`.
 | Arrow | none | | none | `arrow-columns` |
 | CRoaring | `ADS_WITH_CROARING` | `AUTO` | `CRoaring` | `croaring-bitmaps` |
 | sdsl-lite | `ADS_WITH_SDSL` | `AUTO` | `sdsl` | `sdsl-vectors` |
+| Python, NetworkX | `ADS_WITH_PYTHON` | `AUTO` | none | `python.pytest`, `python.example.*` |
 
 Finally, the test of an example whose library is not compiled in passes
 with no check, and it prints so. A run of

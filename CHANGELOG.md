@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The package of Python ads-python, in python/: the extension module ads
+  on nanobind (stable ABI of Python 3.12, stubs by the stubgen of
+  nanobind) with StaticGraph in both layouts of the arcs, CsrMatrix,
+  BitVector, RankSelect, PackedArray of 1 to 32 bits, EliasFano,
+  RoaringBitmap in the portable format of Roaring (read and written by
+  pyroaring), the Bloom, blocked Bloom, cuckoo, prefix, binary fuse,
+  ribbon and Grafite filters, the indexed heaps, the persistence of each
+  static structure (store(), restore(), restore_mapped() in O(1), pickle)
+  and DynamicGraph, whose typed events are read as tuples, with the
+  arrays of a structure exposed as read-only views of NumPy (strided in
+  the interleaved layout, over the file of restore_mapped()), the
+  sequential and parallel algorithms of the graphs with the GIL released,
+  and the preconditions checked; the backend nx-ads of NetworkX (entry
+  point networkx.backends), which runs the shortest paths, the visits,
+  the components and the topological sort of NetworkX on ADS and passes
+  the tests of NetworkX of these areas through its machinery of the
+  backends; built by pip install python/ (scikit-build-core) or under
+  ADS_WITH_PYTHON (AUTO, off in the packages), with the ctest
+  python.pytest, the examples of section C.21 of the manual, and
+  bench/python/compare.py for a campaign against NetworkX and SciPy.
+
 - The columnar formats of other libraries, in the set interop:
   ADS/interop/arrow/Arrow.h, which hands a BitVector (as booleans), a
   PackedArray (as unsigned integers) and the sequences of numbers to

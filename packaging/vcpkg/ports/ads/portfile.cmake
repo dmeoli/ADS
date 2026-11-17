@@ -34,6 +34,7 @@ vcpkg_cmake_configure(
         -DADS_WITH_NETWORKIT=OFF
         -DADS_WITH_CROARING=OFF
         -DADS_WITH_SDSL=OFF
+        -DADS_WITH_PYTHON=OFF
 )
 vcpkg_cmake_install()
 vcpkg_cmake_config_fixup(PACKAGE_NAME ads CONFIG_PATH share/cmake/ADS)

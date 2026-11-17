@@ -1,0 +1,55 @@
+# The package of Python of ADS: the extension module ads, on nanobind, and
+# the backend nx-ads of NetworkX [see CMakeLists.txt]. It is
+# built from this directory of a checkout of ADS, whose headers are in the
+# directory above, by
+#
+#     pip install python/
+#
+# and the libraries that ADS can use beside its headers are left out, so
+# that the wheel depends on nothing but NumPy.
+
+[build-system]
+requires = ["scikit-build-core>=0.10", "nanobind>=2.0"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "ads-python"
+dynamic = ["version"]
+description = "ADS from Python, and a NetworkX backend"
+requires-python = ">=3.9"
+license = { text = "BSL-1.0" }
+authors = [{ name = "Donato Meoli" }]
+dependencies = ["numpy>=1.23"]
+
+[project.optional-dependencies]
+networkx = ["networkx>=3.2"]
+test = ["pytest", "networkx>=3.2", "scipy", "pyroaring"]
+
+[project.urls]
+Homepage = "https://github.com/dmeoli/ADS"
+
+[project.entry-points."networkx.backends"]
+ads = "nx_ads.backend:BackendInterface"
+
+[project.entry-points."networkx.backend_info"]
+ads = "nx_ads:get_info"
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+build-dir = "build/{wheel_tag}"
+wheel.py-api = "cp312"
+wheel.packages = ["ads", "nx_ads"]
+
+# the version of ADS, which packaging/bump.sh writes into MODULE.bazel
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "../MODULE.bazel"
+regex = '(?m)^    version = "(?P<value>[^"]+)",'
+
+[tool.scikit-build.cmake.define]
+ADS_WITH_GMP = "OFF"
+ADS_WITH_BLAS = "OFF"
+ADS_WITH_HWLOC = "OFF"
+ADS_WITH_HIGHWAY = "OFF"
+ADS_WITH_LEMON = "OFF"
+ADS_WITH_MPI = "OFF"

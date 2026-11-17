@@ -39,6 +39,7 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.cmakeFeature "ADS_WITH_NETWORKIT" "OFF")
     (lib.cmakeFeature "ADS_WITH_CROARING" "OFF")
     (lib.cmakeFeature "ADS_WITH_SDSL" "OFF")
+    (lib.cmakeFeature "ADS_WITH_PYTHON" "OFF")
   ];
 
   doCheck = true;

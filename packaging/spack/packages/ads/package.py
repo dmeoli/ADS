@@ -49,4 +49,5 @@ class Ads(CMakePackage):
             self.define("ADS_WITH_NETWORKIT", False),
             self.define("ADS_WITH_CROARING", False),
             self.define("ADS_WITH_SDSL", False),
+            self.define("ADS_WITH_PYTHON", False),
         ]

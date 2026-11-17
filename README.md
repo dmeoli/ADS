@@ -986,6 +986,30 @@ ADS::TBBExecutor ex( arena );                      // was ADS::ThreadPool
 ADS::sort( ex , A );
 ```
 
+From Python, the package `ads-python` of [`python/`](python/) binds on
+nanobind the structures and the algorithms of ADS that NumPy, SciPy and
+NetworkX lack (the graphs in compressed rows with their parallel
+algorithms, the succinct structures, the filters, `RoaringBitmap` in the
+portable format that pyroaring reads, the indexed heaps, and a graph that
+tells its changes as the typed events of ADS), each array of a structure a
+read-only view of NumPy, and each static structure opened in place from its
+file by `restore_mapped()`. It also registers `nx-ads`, a backend of
+NetworkX, by which the shortest paths, the visits and the components of
+NetworkX run on ADS. The package is built by `pip install python/` (one
+wheel on the stable ABI of Python 3.12 and later) or by CMake under
+`ADS_WITH_PYTHON` (`AUTO`, on where a Python with its headers and nanobind
+are found, off in the packages), whose ctest `python.pytest` runs its tests;
+[§C.21](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-21)
+of the manual shows it at work.
+
+```python
+import ads, networkx as nx
+
+g = ads.WeightedStaticGraph.restore_mapped("roads.ads")  # O(1), no copy
+d, parent = ads.shortest_paths(g, 0)
+nx.single_source_dijkstra_path_length(G, 0, backend="ads")
+```
+
 ## Manual
 
 A manual of the library lives in [`manual/`](manual/), one chapter for each

@@ -452,6 +452,42 @@ if (ADS_BUILD_TESTS)
     endif ()
 endif ()
 
+# ----- Python -------------------------------------------------------------- #
+# The package of Python ads-python [see python/]: the extension module ads
+# on nanobind and the backend nx-ads of NetworkX, with its tests of pytest
+# in one ctest. AUTO, the default, builds it when a Python with its headers
+# and nanobind are found, ON requires them, OFF leaves it out.
+set(ADS_WITH_PYTHON AUTO CACHE STRING
+    "the package of Python on nanobind: AUTO (if found), ON or OFF")
+set_property(CACHE ADS_WITH_PYTHON PROPERTY STRINGS AUTO ON OFF)
+string(TOUPPER "${ADS_WITH_PYTHON}" ADS_PYTHON_MODE)
+set(ADS_USE_PYTHON OFF)
+if (ADS_PYTHON_MODE STREQUAL "AUTO" OR ADS_WITH_PYTHON)
+    find_package(Python 3.9 QUIET
+                 COMPONENTS Interpreter Development.Module
+                 OPTIONAL_COMPONENTS Development.SABIModule)
+    if (Python_FOUND)
+        execute_process(COMMAND ${Python_EXECUTABLE} -m nanobind --cmake_dir
+                        OUTPUT_VARIABLE nanobind_ROOT
+                        OUTPUT_STRIP_TRAILING_WHITESPACE
+                        RESULT_VARIABLE _nanobind ERROR_QUIET)
+        if (_nanobind EQUAL 0)
+            find_package(nanobind CONFIG QUIET)
+        endif ()
+    endif ()
+    if (nanobind_FOUND)
+        set(ADS_USE_PYTHON ON)
+    elseif (NOT ADS_PYTHON_MODE STREQUAL "AUTO")
+        message(FATAL_ERROR "ADS_WITH_PYTHON is ON, but no Python with its "
+                "headers and nanobind was found: install them (python3-dev "
+                "and pip install nanobind) or set Python_EXECUTABLE")
+    endif ()
+endif ()
+message(STATUS "ADS: Python ${ADS_USE_PYTHON}")
+if (ADS_USE_PYTHON)
+    add_subdirectory(python)
+endif ()
+
 # ----- Benchmarks ---------------------------------------------------------- #
 # The benchmarks in bench/, against the libraries found, off by default.
 option(ADS_BENCHMARKS "build the benchmarks in bench/" OFF)

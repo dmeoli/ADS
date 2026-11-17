@@ -20,7 +20,7 @@ class Ads < Formula
            "-DADS_WITH_EIGEN=OFF", "-DADS_WITH_METIS=OFF",
            "-DADS_WITH_KAHIP=OFF", "-DADS_WITH_GRAPHBLAS=OFF",
            "-DADS_WITH_NETWORKIT=OFF", "-DADS_WITH_CROARING=OFF",
-           "-DADS_WITH_SDSL=OFF",
+           "-DADS_WITH_SDSL=OFF", "-DADS_WITH_PYTHON=OFF",
            *std_cmake_args
     system "cmake", "--install", "build"
   end
