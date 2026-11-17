@@ -1380,7 +1380,7 @@ ADS_TEST( "bv-graph" )
  CHECK( E.order() == 0 && E.edges() == 0 );
  std::vector< BVGraph::List > Y( 50 );
  for( std::size_t x = 0 ; x < 50 ; ++x )
-  Y[ x ] = { x };
+  Y[ x ].assign( 1 , x );
  Y[ 49 ] = BVGraph::List( 50 );
  std::iota( Y[ 49 ].begin() , Y[ 49 ].end() , std::size_t( 0 ) );
  const BVGraph G( Y , 1 , 1 , 2 );
