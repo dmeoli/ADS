@@ -63,10 +63,12 @@ endif ()
 
 # the package in the build directory, as it is installed: the module, the
 # files of Python, the stubs, and the metadata by which NetworkX finds the
-# backend, so that the tests run on it with no installation
+# backend, so that the tests run on it with no installation (the generator
+# expression keeps a multi-config generator from adding a directory per
+# configuration, where the stubgen would not find the module)
 set(ADS_PY_ROOT ${CMAKE_CURRENT_BINARY_DIR}/site)
 set_target_properties(_core PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${ADS_PY_ROOT}/ads)
+        LIBRARY_OUTPUT_DIRECTORY $<1:${ADS_PY_ROOT}/ads>)
 set(ADS_PY_SOURCES ads/__init__.py ads/py.typed nx_ads/__init__.py
         nx_ads/backend.py)
 set(ADS_PY_COPIES "")
