@@ -73,7 +73,7 @@ ADS_WITH_MPI = "OFF"
 # wheel on Windows on ARM64 (SciPy and pyroaring) skipping themselves
 [tool.cibuildwheel]
 build = "cp312-*"
-skip = "*-musllinux_*"
+skip = "*-musllinux_* *-win32"
 build-frontend = "build"
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"

@@ -90,4 +90,6 @@ for lib in "$@"; do
         exit 1 ;;
     esac
 done
-rm -rf "$src"
+# git may still be writing in the clones (on macOS), and a temporary
+# directory left behind is harmless
+rm -rf "$src" 2> /dev/null || true

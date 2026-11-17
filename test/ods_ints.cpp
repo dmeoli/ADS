@@ -57,6 +57,7 @@
 #include <cmath>
 #include <span>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <map>
 #include <optional>
@@ -850,9 +851,11 @@ std::uint64_t inverse64( std::uint64_t z )
 // multiplicative hashing with probability at most 2 / 2^d (Lemma 5.1), and
 // exactly 2 / 2^d for x = 2^( w - d - 2 ) and y = 3 x (exercise 5.3), over
 // 2^17 random multipliers; for a given z, the n = 2^d keys z^-1 j, j < n,
-// all have the hash 0 when d <= w / 2 (exercise 5.2)
+// all have the hash 0 when d <= w / 2 (exercise 5.2); the hash code is the
+// key itself, as in the book (std::hash need not be the identity)
 ADS_TEST( "ods5.1.multiplicative-hash" )
 {
+ using MH = ADS::MultiplicativeHash< std::uint64_t , std::identity >;
  const int d = 4;
  const std::size_t m = std::size_t( 1 ) << d;
  const int N = 1 << 17;
@@ -860,7 +863,7 @@ ADS_TEST( "ods5.1.multiplicative-hash" )
  int same = 0 , random = 0;
  std::mt19937_64 g( 11 );
  for( int i = 0 ; i < N ; ++i ) {
-  const auto h = ADS::MultiplicativeHash<>::ofMultiplier( g() | 1 );
+  const auto h = MH::ofMultiplier( g() | 1 );
   same += h.place( x , m ) == h.place( y , m );
   const std::uint64_t a = g() , b = g();
   random += h.place( a , m ) == h.place( b , m );
@@ -870,7 +873,7 @@ ADS_TEST( "ods5.1.multiplicative-hash" )
  CHECK( std::abs( same - mean ) < 5 * sigma );
  CHECK( random < mean + 5 * sigma );
  for( std::uint64_t z : { 1ULL , 3ULL , 0x9e3779b97f4a7c15ULL , ~0ULL } ) {
-  const auto h = ADS::MultiplicativeHash<>::ofMultiplier( z );
+  const auto h = MH::ofMultiplier( z );
   const std::uint64_t zi = inverse64( z );
   CHECK( z * zi == 1 );
   const std::size_t n = std::size_t( 1 ) << 20;  // d = 20 <= w / 2

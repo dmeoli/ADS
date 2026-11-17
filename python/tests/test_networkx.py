@@ -118,6 +118,8 @@ SUITES = ["algorithms/shortest_paths", "algorithms/components",
 
 
 def test_networkx_suites_on_the_backend():
+    # the dispatch of NetworkX converts the graphs of its tests by SciPy
+    pytest.importorskip("scipy")
     root = os.path.dirname(nx.__file__)
     here = os.path.dirname(os.path.dirname(os.path.abspath(nx_ads.__file__)))
     path = os.pathsep.join([here] + sys.path)
