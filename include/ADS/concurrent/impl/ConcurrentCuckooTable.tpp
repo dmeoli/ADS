@@ -33,24 +33,29 @@ namespace ADS
 namespace detail
 {
 
-/// the object x read atomically and relaxed if A, plainly otherwise
+/// the object x read atomically with acquire if A, plainly otherwise: the
+/// reads of the seqlock, each ordered before the second read of the
+/// version [see peek()]; on x86-64 the same plain load as a relaxed one
 template< bool A , class T >
-[[nodiscard]] inline T loadRelaxed( const T & x )
+[[nodiscard]] inline T loadAcquire( const T & x )
 {
  if constexpr( A )
   return( std::atomic_ref< T >( const_cast< T & >( x ) )
-	     .load( std::memory_order_relaxed ) );
+	     .load( std::memory_order_acquire ) );
  else
   return( x );
  }
 
-/// the object x set to v, atomically and relaxed if A, plainly otherwise
+/// the object x set to v, atomically with release if A, plainly otherwise:
+/// the stores of a writer of the seqlock, each ordered after its
+/// compare-and-swap of the version [see lock()]; on x86-64 the same plain
+/// store as a relaxed one
 template< bool A , class T , class U >
-inline void storeRelaxed( T & x , U && v )
+inline void storeRelease( T & x , U && v )
 {
  if constexpr( A )
   std::atomic_ref< T >( x ).store( T( std::forward< U >( v ) ) ,
-				   std::memory_order_relaxed );
+				   std::memory_order_release );
  else
   x = std::forward< U >( v );
  }
@@ -64,15 +69,12 @@ void ConcurrentCuckooTable< K , V , H , Eq >::lock( Stripe & s )
 {
  for( int n = 0 ; ; ) {
   std::uint64_t v = s.version.load( std::memory_order_relaxed );
+  // the odd version visible before any store of the holder, to a reader
+  // that sees one of those stores: they are releases [see storeRelease()]
   if( ! ( v & 1 ) &&
       s.version.compare_exchange_weak( v , v + 1 , std::memory_order_acquire ,
-				       std::memory_order_relaxed ) ) {
-   // the odd version visible before any store of the holder, to a reader
-   // that sees one of those stores
-   if constexpr( optimistic )
-    std::atomic_thread_fence( std::memory_order_release );
+				       std::memory_order_relaxed ) )
    return;
-   }
   if( ++n < 64 )
    detail::spinPause();
   else
@@ -221,7 +223,7 @@ template< class K , class V , class H , class Eq >
 std::uint32_t ConcurrentCuckooTable< K , V , H , Eq >::tags( const Table & T ,
 							  std::size_t b )
 {
- return( detail::loadRelaxed< optimistic >( T.T[ b ] ) );
+ return( detail::loadAcquire< optimistic >( T.T[ b ] ) );
  }
 
 template< class K , class V , class H , class Eq >
@@ -229,7 +231,7 @@ void ConcurrentCuckooTable< K , V , H , Eq >::setTags( Table & T ,
 						       std::size_t b ,
 						    std::uint32_t w )
 {
- detail::storeRelaxed< optimistic >( T.T[ b ] , w );
+ detail::storeRelease< optimistic >( T.T[ b ] , w );
  }
 
 template< class K , class V , class H , class Eq >
@@ -266,8 +268,8 @@ void ConcurrentCuckooTable< K , V , H , Eq >::put( Table & T , std::size_t b ,
 						KK && k , VV && v )
 {
  Slot & s = T.S( 4 * b + std::size_t( i ) );
- detail::storeRelaxed< optimistic >( s.key , std::forward< KK >( k ) );
- detail::storeRelaxed< optimistic >( s.value , std::forward< VV >( v ) );
+ detail::storeRelease< optimistic >( s.key , std::forward< KK >( k ) );
+ detail::storeRelease< optimistic >( s.value , std::forward< VV >( v ) );
  setTags( T , b , T.T[ b ] | ( t << ( 8 * i ) ) );
  }
 
@@ -276,7 +278,7 @@ void ConcurrentCuckooTable< K , V , H , Eq >::assign( Table & T ,
 						      std::size_t i ,
 						   const V & v )
 {
- detail::storeRelaxed< optimistic >( T.S( i ).value , v );
+ detail::storeRelease< optimistic >( T.S( i ).value , v );
  }
 
 template< class K , class V , class H , class Eq >
@@ -359,17 +361,18 @@ int ConcurrentCuckooTable< K , V , H , Eq >::peek( const K & k ,
 					       b ) ^ ( t * 0x01010101U ) );
     for( ; m ; m &= m - 1 ) {
      const std::size_t i = 4 * b + std::size_t( std::countr_zero( m ) >> 3 );
-     if( f_eq( detail::loadRelaxed< true >( T->S( i ).key ) , k ) ) {
+     if( f_eq( detail::loadAcquire< true >( T->S( i ).key ) , k ) ) {
       found = 1;
       if( out )
-       x = detail::loadRelaxed< true >( T->S( i ).value );
+       x = detail::loadAcquire< true >( T->S( i ).value );
       break;
       }
      }
     if( found )
      break;
     }
-   std::atomic_thread_fence( std::memory_order_acquire );
+   // the reads above acquire [see loadAcquire()]: one that saw a store of
+   // a writer makes its odd version seen here
    if( s.version.load( std::memory_order_relaxed ) == v ) {
     if( found && out )
      *out = x;

@@ -211,10 +211,11 @@ void ObjectPool< T , A >::clear( void ) noexcept
  f_size = 0;
  if( ! f_last )
   return;
- if constexpr( ADS_ASAN )  // the slots of the epochs
-  for( Block * b = f_last ; b ; b = b->prev )
-   ADS_POISON( reinterpret_cast< Slot * >( b ) + H ,
-	       ( b->k - H ) * sizeof( Slot ) );
+ // the slots of the epochs, under the sanitizer (otherwise a loop of no
+ // code, which the compiler drops)
+ for( Block * b = f_last ; b ; b = b->prev )
+  ADS_POISON( reinterpret_cast< Slot * >( b ) + H ,
+	      ( b->k - H ) * sizeof( Slot ) );
  f_next = reinterpret_cast< Slot * >( f_last ) + H;
  f_end = reinterpret_cast< Slot * >( f_last ) + f_last->k;
  f_reuse = f_last->prev;

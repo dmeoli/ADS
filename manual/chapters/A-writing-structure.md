@@ -453,9 +453,22 @@ with clang++ (the two compilers often diagnose somewhat different errors in the
 templates), and the same with `CXXFLAGS="-std=c++20 -O1 -g
 -fsanitize=address,undefined -fno-omit-frame-pointer -Wall -Wextra
 -DADS_TEST_SMALL"`, as the job does; a concurrent structure adds a run under
-ThreadSanitizer. Also, the files must keep their frame: no line may exceed 79
-columns, and the boxes must be aligned, which a checker of the boxes, where one
-has it, verifies on the files changed (section 3 of `docs/STYLE.md`). Then the documentation must build
+ThreadSanitizer. CMake and the makefile define `ADS_SANITIZE_ADDRESS` and
+`ADS_SANITIZE_THREAD` when the options of the compiler turn a sanitizer on
+(the headers ask the build, never the compiler, whether one runs), and the
+tests of CMake are then built with `ADS_TEST_SMALL`; under ThreadSanitizer,
+ctest passes the suppressions of `test/tsan.supp`, for the reports whose
+stacks pass through OpenMP, oneTBB, Kokkos, FastFlow or Taskflow, which the
+sanitizer does not instrument and whose synchronization it therefore cannot
+see (`OpenMPLock` adds to the lock of OpenMP a release and an acquire that
+the sanitizer sees); under AddressSanitizer, those of `test/lsan.supp`, for
+the memory that Open MPI, hwloc under it and FastFlow keep until the
+process ends, and the programs of MPI run there without the search of
+leaks, since Open MPI unloads its components first and leaves their leaks
+with no frame that a suppression could name. Also, the files must keep their
+frame: no line may exceed 79 columns, and the boxes must be aligned, which a
+checker of the boxes, where one has it, verifies on the files changed
+(section 3 of `docs/STYLE.md`). Then the documentation must build
 with no warning by `bash docs/build.sh`, which also fails on a comment line
 that ends with a backslash. Section 3 of `docs/STYLE.md` adds the screenshots
 of the pseudocode on both sites, in the light and in the dark theme.

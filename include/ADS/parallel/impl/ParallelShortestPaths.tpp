@@ -239,9 +239,7 @@ class JoinBarrier
    ++f_pending;
    g = f_gen.load( std::memory_order_relaxed );
    }
-  unsigned k = 0;
-  while( f_gen.load( std::memory_order_acquire ) == g )
-   spinPause( k );
+  await( g );
   return( ! f_done );
   }
 
@@ -258,11 +256,10 @@ class JoinBarrier
    s();
    f_arrived.store( 0 , std::memory_order_relaxed );
    f_gen.store( g + 1 , std::memory_order_release );
+   f_gen.notify_all();
    return;
    }
-  unsigned k = 0;
-  while( f_gen.load( std::memory_order_acquire ) == g )
-   spinPause( k );
+  await( g );
   }
 
  /// the computation ends at the next release (called in s())
@@ -272,6 +269,21 @@ class JoinBarrier
  [[nodiscard]] bool done( void ) const { return( f_done ); }
 
  private:
+ /// returns once the releases are past g: a spin of kSpin pauses, then a
+ /// sleep on the word of the releases, so that the threads that wait for
+ /// one late thread leave it their cores; spinning alone, more threads
+ /// than free cores (an executor of the whole machine on a loaded one)
+ /// take turns at each of the two barriers of a step, and a run of many
+ /// steps then lasts hours instead of seconds
+ void await( std::uint32_t g ) {
+  constexpr unsigned kSpin = 1024;
+  for( unsigned k = 0 ; f_gen.load( std::memory_order_acquire ) == g ; )
+   if( ++k < kSpin )
+    detail::spinPause();
+   else
+    f_gen.wait( g , std::memory_order_acquire );
+  }
+
  std::mutex f_m;  ///< for the joins
  /// the releases, on a line of their own, where the threads wait
  alignas( 128 ) std::atomic< std::uint32_t > f_gen{ 0 };

@@ -18,11 +18,12 @@
  * lock of the instance for the whole kernel and aborts beyond the levels
  * that it supports, and a dispatch from inside a kernel of the space is not
  * allowed. A call of `bulk()` made inside a call of the executor, or inside
- * a kernel of the program on the space (`in_parallel()`), therefore runs
- * its calls in order on that thread [see `detail::InsideCall`], as for
- * the senders [see `SenderExecutor.h`]: the parallelism of the nested calls
- * is lost, that of the loops, the reductions, the prefix sums and the top
- * level of the sorts is kept. There is no `run()`.
+ * a kernel of the program on the space (on OpenMP, inside a parallel
+ * region), therefore runs its calls in order on that thread [see
+ * `detail::InsideCall`], as for the senders [see `SenderExecutor.h`]: the
+ * parallelism of the nested calls is lost, that of the loops, the
+ * reductions, the prefix sums and the top level of the sorts is kept.
+ * There is no `run()`.
  *
  * The header is compiled where the headers of Kokkos are found
  * (`<Kokkos_Core.hpp>`, or `ADS_WITH_KOKKOS`, which the CMake target
@@ -66,6 +67,7 @@
 #include <Kokkos_Core.hpp>
 
 #include <cstddef>
+#include <type_traits>
 #include <utility>
 
 /*--------------------------------------------------------------------------*/
@@ -149,25 +151,19 @@ class KokkosExecutor
  struct Tag;  ///< the tag of the mark of the calls
  using Inside = detail::InsideCall< Tag >;
 
- /// whether the calling thread runs a kernel of the space \f$ s \f$: its
- /// `in_parallel()`, which takes the instance on OpenMP, none on Serial,
- /// and which the releases 4 of Kokkos deprecate; false on a space that
- /// has none, whose kernels then run the calls of `bulk()` in order only
- /// if it has one thread
+ /// whether the calling thread runs a kernel of the space \f$ s \f$: on
+ /// the backend of OpenMP, whether it is inside a parallel region
+ /// (`omp_get_level()`, the test by which the dispatches of Kokkos itself
+ /// run in order inside one, since its `in_parallel()` is deprecated in
+ /// the releases 4 and gone in 5); false on the other spaces, whose kernels
+ /// then run the calls of `bulk()` in order only if they have one thread
  static bool inKernel( [[maybe_unused]] const Space & s ) {
-#if defined( __GNUC__ )
- #pragma GCC diagnostic push
- #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-  if constexpr( requires { Space::in_parallel( s ); } )
-   return( bool( Space::in_parallel( s ) ) );
-  else if constexpr( requires { Space::in_parallel(); } )
-   return( bool( Space::in_parallel() ) );
+#if defined( KOKKOS_ENABLE_OPENMP )
+  if constexpr( std::is_same_v< Space , Kokkos::OpenMP > )
+   return( omp_get_level() > 0 );
   else
-   return( false );
-#if defined( __GNUC__ )
- #pragma GCC diagnostic pop
 #endif
+   return( false );
   }
 
  Space f_s;  ///< the instance of the space

@@ -261,6 +261,13 @@ class LockFreePriorityQueue
  static constexpr Word kMark = 1;  ///< the delete flag of the successor
  static constexpr Word kCut = 2;   ///< a cut in progress, on the head
 
+ /// the order of the reads of the words by the operations, sequentially
+ /// consistent so that a read of a word older than a cut lies after the
+ /// announce of the epoch of its thread in the total order of the
+ /// sequentially consistent operations [see Handle::enter()]; on x86-64
+ /// the same plain load as an acquire, on ARMv8.0 the same `ldar`
+ static constexpr std::memory_order kWalk = std::memory_order_seq_cst;
+
  /// the links of a node, or of the head and of the tail: its height, its
  /// flag of an insertion in progress, and its \f$ h \f$ pointers
  struct Link
@@ -313,7 +320,7 @@ class LockFreePriorityQueue
 
  /// the delete flag of the node that p.next[ 0 ] reaches
  [[nodiscard]] static bool marked( const Link * p ) {
-  return( p->next[ 0 ].load( std::memory_order_acquire ) & kMark );
+  return( p->next[ 0 ].load( kWalk ) & kMark );
   }
 
  /// the memory of a link of n bytes and of its h pointers, the pointers

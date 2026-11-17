@@ -255,8 +255,9 @@ class PriorityFrontier
   ADS_PRE( n >= 0 );
   if constexpr( native )
    f_h.resize( std::size_t( n ) );
-  else
-   f_l.in.assign( std::size_t( n ) , false );
+  else  // made anew: assign() inserts after the old bits, none here, and
+	// GCC 13 warns of their copy out of bounds
+   f_l.in = std::vector< bool >( std::size_t( n ) , false );
   }
 
  /// \f$ v \f$ into \f$ S \f$ at the distance \f$ d \f$

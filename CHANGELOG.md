@@ -2383,6 +2383,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   whose global fragment includes them could not import another one that
   included them too [see cmake/ads_module_exports.py]
 
+- No test on the compiler or on the sanitizer in the headers of the
+  concurrent structures and of the executors: CMake and the makefile define
+  ADS_SANITIZE_ADDRESS and ADS_SANITIZE_THREAD when the options of the
+  compiler turn a sanitizer on, and EventCount takes its read-modify-write
+  form under ADS_SANITIZE_THREAD instead of reading __SANITIZE_THREAD__ or
+  __has_feature; ADS_POISON and ADS_UNPOISON of Portable.h are the macros
+  of <sanitizer/asan_interface.h>, which are empty when the sanitizer is
+  off, where the header is found (ADS_ASAN is gone); the dead include of
+  <intrin.h> under MSVC is dropped; the loads of the children in
+  StealablePriorityQueue are volatile reads of a scalar instead of an empty
+  asm of GCC, which keeps the compiler from merging them into one of a
+  vector; KokkosExecutor tells a kernel of the program on OpenMP by
+  omp_get_level() instead of the in_parallel() that Kokkos 4 deprecates,
+  with no pragma of the warnings.
+- No fence that the sanitizer of threads does not model in the code of ADS,
+  with the same guarantees: LockFreePriorityQueue announces the epoch of an
+  operation by a sequentially consistent exchange, and reads the words of
+  the list with sequential consistency, in place of a relaxed store and a
+  full fence (Lemma 16 of the theory page and the proof of the reclamation
+  in chapter 24 go through the exchange); the lookups without locks of
+  ConcurrentCuckooTable read with acquire and its writers store with
+  release, in place of the acquire and the release fences of the seqlock
+  (Lemma 24.12); on x86-64 the loads and the stores are the same plain
+  instructions, and the exchange is one where the store and the fence were
+  two.
+- Under a sanitizer the tests of CMake are built with ADS_TEST_SMALL, the
+  sizes of parallel-sort and learned-parallel-sort included, and the jobs
+  of the continuous integration under a sanitizer define the macro of the
+  build. Under the sanitizer of threads ctest passes test/tsan.supp, the
+  suppressions of the reports whose stacks pass through the runtimes that
+  it does not instrument (OpenMP, oneTBB and the parallel algorithms on
+  it, Kokkos, FastFlow, Taskflow), gives the two parallel sorts two hours,
+  and the programs that link Taskflow or Kokkos are built with -Wno-tsan,
+  for the fences of their headers; OpenMPLock adds to the lock of OpenMP a
+  release and an acquire on a counter of its own, which the sanitizer
+  sees. Under the sanitizer of addresses ctest passes test/lsan.supp, for
+  the memory that Open MPI, hwloc under it and FastFlow keep until the
+  process ends, and runs the programs of MPI with detect_leaks=0, since
+  the leaks of the components that Open MPI unloads have no frame to
+  name.
+
 - No test on the compiler or the processor in the attributes, the swap of
   bytes and the pause of a spinning thread: ADS_ALWAYS_INLINE,
   ADS_NOINLINE and ADS_COLD_PATH of Portable.h, chosen with
@@ -3603,6 +3644,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   multiplies its polynomials by multiplyKaratsuba()
 
 ### Fixed
+
+- The barrier of the Delta-stepping on thread-local buckets sleeps on the
+  word of its generation after a spin of 1024 pauses, and the release
+  wakes the sleepers, instead of yielding forever: with more threads than
+  free cores (a runtime of the program that takes every core of a loaded
+  machine) each barrier waited for every thread to be scheduled in turn,
+  and parallel-stepping did not end in an hour.
+
+- The warnings of GCC 13 out of bounds, which are false (the build with all
+  the backends off, and the one under ASan): PriorityFrontier of
+  ShortestPaths.h makes its vector of flags anew instead of by
+  vector<bool>::assign(), whose insertion GCC sees copying bits out of
+  bounds, and ListMFSet, BPlusTree::up() and the search of Hamiltonian
+  paths of Problems.tpp fill their vectors of one key (or two children) by
+  push_back() or assign( 1 , x ) instead of assigning a list of
+  initialization; the replaced operator new and delete of test/memory.cpp
+  are never inlined, so that GCC no longer takes the malloc() or the free()
+  of one side for a pair mismatched with the other.
 
 - A BitVector in a JSON or XML archive of cereal is written as sdsl-lite
   writes its bit_vector, one integer of 64 bits per bit, instead of one

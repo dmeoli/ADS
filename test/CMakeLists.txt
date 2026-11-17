@@ -44,6 +44,14 @@ elseif (ADS_HAS_GNU_STACK)
     list(APPEND ADS_TEST_LINK "LINKER:--stack,8388608")
 endif ()
 
+# under a sanitizer [see ADS_SANITIZE_ADDRESS and ADS_SANITIZE_THREAD in
+# CMakeLists.txt], which runs the tests several times slower, the cases
+# there for their scale alone made smaller [see test::scaled() in
+# ADSTest.h], the same steps, fewer of them
+if (ADS_SANITIZE_ADDRESS OR ADS_SANITIZE_THREAD)
+    add_compile_definitions(ADS_TEST_SMALL)
+endif ()
+
 file(STRINGS tests.txt lines REGEX "^[a-z]")
 set(programs "")
 foreach (line IN LISTS lines)
@@ -118,6 +126,22 @@ foreach (program interop_graphs interop_examples)
         endif ()
     endforeach ()
 endforeach ()
+
+# under the sanitizer of threads, the warnings of GCC on the fences that it
+# does not model (-Wtsan) off in the programs that link Taskflow or Kokkos,
+# whose headers have such fences, inlined into the code of ADS; ADS has
+# none, and the other programs keep the warning
+check_cxx_compiler_flag(-Wno-tsan ADS_HAS_WNO_TSAN)
+if (ADS_SANITIZE_THREAD AND ADS_HAS_WNO_TSAN)
+    foreach (program engineered_parallel engineered_speculative
+                     interop_parallel interop_examples)
+        foreach (r Taskflow Kokkos)
+            if (r IN_LIST ADS_INTEROP_BUILT)
+                target_compile_options(${program} PRIVATE -Wno-tsan)
+            endif ()
+        endforeach ()
+    endforeach ()
+endif ()
 
 if (cxx_std_23 IN_LIST CMAKE_CXX_COMPILE_FEATURES)
     target_compile_features(interop_examples PRIVATE cxx_std_23)
@@ -281,6 +305,53 @@ if (Python3_FOUND AND _ads_sets_probe EQUAL 0)
     add_test(NAME sets.check
              COMMAND ${Python3_EXECUTABLE}
                      ${PROJECT_SOURCE_DIR}/cmake/ads_sets.py --check)
+endif ()
+
+# under the sanitizer of addresses, the suppressions of lsan.supp, appended to
+# the LSAN_OPTIONS of the environment: the leaks of hwloc and of FastFlow,
+# which keep memory until the process ends [see lsan.supp]; the programs of
+# MPI run without the search of leaks, since Open MPI unloads its components
+# before it, which leaves their leaks with no frame that a suppression could
+# name
+if (ADS_SANITIZE_ADDRESS)
+    get_property(_ads_tests DIRECTORY PROPERTY TESTS)
+    set(_ads_supp "suppressions=${CMAKE_CURRENT_SOURCE_DIR}/lsan.supp")
+    foreach (t IN LISTS _ads_tests)
+        set(_ads_env "LSAN_OPTIONS=string_append: ${_ads_supp}")
+        if (t MATCHES "mpi\\.")
+            list(APPEND _ads_env "ASAN_OPTIONS=string_append: detect_leaks=0")
+        endif ()
+        if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
+            set_tests_properties(${t} PROPERTIES ENVIRONMENT_MODIFICATION
+                                 "${_ads_env}")
+        else ()
+            string(REPLACE "string_append: " "" _ads_env "${_ads_env}")
+            set_tests_properties(${t} PROPERTIES ENVIRONMENT "${_ads_env}")
+        endif ()
+    endforeach ()
+endif ()
+
+# under the sanitizer of threads, the suppressions of tsan.supp, appended to
+# the TSAN_OPTIONS of the environment: the reports whose stacks pass through
+# the runtimes that it does not instrument (OpenMP, oneTBB, FastFlow, Kokkos,
+# the parallel algorithms of the library, Taskflow), which synchronize their
+# threads by code it does not see [see tsan.supp]
+if (ADS_SANITIZE_THREAD)
+    get_property(_ads_tests DIRECTORY PROPERTY TESTS)
+    set(_ads_supp "suppressions=${CMAKE_CURRENT_SOURCE_DIR}/tsan.supp")
+    if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
+        set_tests_properties(${_ads_tests} PROPERTIES ENVIRONMENT_MODIFICATION
+                             "TSAN_OPTIONS=string_append: ${_ads_supp}")
+    else ()
+        set_tests_properties(${_ads_tests} PROPERTIES ENVIRONMENT
+                             "TSAN_OPTIONS=${_ads_supp}")
+    endif ()
+    # the sorts checked against the sequential ones on every executor, at
+    # the sizes around the threshold of the parallel sort, which the
+    # sanitizer runs for most of an hour even with ADS_TEST_SMALL
+    set_tests_properties(engineered_parallel.parallel-sort
+                         engineered_parallel.learned-parallel-sort
+                         PROPERTIES TIMEOUT 7200)
 endif ()
 
 # --------------------------------------------------------------------------- #

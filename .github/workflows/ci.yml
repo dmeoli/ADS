@@ -240,6 +240,7 @@ jobs:
           grep -qw avx512f /proc/cpuinfo && march="$march x86-64-v4"
           for m in $march; do
             g++ -std=c++20 -O1 -g -fsanitize=address,undefined -march=$m \
+                -DADS_SANITIZE_ADDRESS \
                 -Iinclude -Itest -DADS_CONTRACTS=3 -o sorts test/sorting.cpp
             for t in vector-quicksort dispatch dispatch-edges fast-paths; do
               ./sorts $t
@@ -283,6 +284,7 @@ jobs:
         run: |
           sudo sysctl vm.mmap_rnd_bits=28
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_SANITIZE_THREAD \
               -DADS_CONTRACTS=3 -DADS_WITH_BLAS -o tsan-blas \
               test/engineered_parallel.cpp -pthread -lopenblas
           ./tsan-blas parallel-numeric
@@ -336,6 +338,7 @@ jobs:
         run: |
           sudo sysctl vm.mmap_rnd_bits=28
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_SANITIZE_THREAD \
               -DADS_CONTRACTS=3 -o tsan test/engineered.cpp -pthread
           ./tsan spsc-queue
           ./tsan mpsc-inbox
@@ -343,6 +346,7 @@ jobs:
         run: |
           sudo sysctl vm.mmap_rnd_bits=28
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_SANITIZE_THREAD \
               -DADS_CONTRACTS=3 -o tsanq test/engineered_queues.cpp -pthread
           ./tsanq event-count
           ./tsanq event-count-notifiers
@@ -350,6 +354,7 @@ jobs:
         run: |
           sudo sysctl vm.mmap_rnd_bits=28
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_SANITIZE_THREAD \
               -DADS_CONTRACTS=3 -o tsanq test/engineered_queues.cpp -pthread
           ./tsanq multi-queue-threads
           ./tsanq stealable-pq
@@ -360,6 +365,7 @@ jobs:
           ./tsanq lockfree-pq-linearizable
           ./tsanq min-board-threads
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_SANITIZE_THREAD \
               -DADS_CONTRACTS=3 -o tsan test/engineered.cpp -pthread
           ./tsan concurrent-flat-table-threads
           ./tsan concurrent-flat-table-find-key
@@ -367,6 +373,7 @@ jobs:
           ./tsan concurrent-cuckoo-threads
           if [ "$(uname -m)" = x86_64 ]; then
             g++ -std=c++20 -O1 -g -fsanitize=thread -mcx16 -Iinclude \
+                -DADS_SANITIZE_THREAD \
                 -Itest -DADS_CONTRACTS=3 -o tsan16 test/engineered.cpp \
                 -pthread
             ./tsan16 concurrent-flat-table-words
@@ -375,6 +382,7 @@ jobs:
         run: |
           sudo sysctl vm.mmap_rnd_bits=28
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_SANITIZE_THREAD \
               -DADS_CONTRACTS=3 -DADS_TEST_SMALL -o tsan-search \
               test/engineered_search.cpp -pthread
           for t in backoff-threads packed-array trit-array affinity; do
@@ -383,6 +391,7 @@ jobs:
       - name: ThreadSanitizer on the bulk operations of the trees by join
         run: |
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_SANITIZE_THREAD \
               -DADS_CONTRACTS=3 -o tsan-joins test/join_trees.cpp -pthread
           ./tsan-joins join-executors
           ./tsan-joins interval-tree
@@ -391,6 +400,7 @@ jobs:
         run: |
           sudo sysctl vm.mmap_rnd_bits=28
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_SANITIZE_THREAD \
               -DADS_CONTRACTS=3 -o tsan-spec test/engineered_speculative.cpp \
               -pthread
           for t in $(./tsan-spec -l); do ./tsan-spec $t; done
@@ -398,6 +408,7 @@ jobs:
         run: |
           sudo sysctl vm.mmap_rnd_bits=28
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_SANITIZE_THREAD \
               -DADS_CONTRACTS=3 -o tsan-par test/engineered_parallel.cpp \
               -pthread
           ./tsan-par parallel-rank-select
@@ -408,6 +419,7 @@ jobs:
         run: |
           sudo sysctl vm.mmap_rnd_bits=28
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_SANITIZE_THREAD \
               -DADS_CONTRACTS=3 -o tsan-rt test/engineered_runtime.cpp \
               -pthread
           for t in $(./tsan-rt -l); do ./tsan-rt $t; done
@@ -532,6 +544,7 @@ jobs:
         run: |
           sudo sysctl vm.mmap_rnd_bits=28
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
+              -DADS_SANITIZE_THREAD \
               -DADS_CONTRACTS=3 -DADS_WITH_STDEXEC -DADS_WITH_TASKFLOW \
               -isystem "$RUNNER_TEMP/NVIDIA/include" \
               -isystem "$RUNNER_TEMP/taskflow" -o tsan-interop \
@@ -577,6 +590,7 @@ jobs:
       - name: FlatHashTable on SWAR instead of SSE2, under ASan and UBSan
         run: |
           g++ -std=c++20 -O1 -g -fsanitize=address,undefined \
+              -DADS_SANITIZE_ADDRESS \
               -Iinclude -Itest -DADS_CONTRACTS=3 -DADS_FLAT_SIMD=0 \
               -o swar test/engineered.cpp -pthread
           ./swar flat-hash-table

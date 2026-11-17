@@ -66,6 +66,7 @@
 #include <omp.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
 #include <stdexcept>
 
@@ -103,14 +104,32 @@ class OpenMPLock
  ~OpenMPLock() { omp_destroy_lock( &f_lock ); }
 
  /// takes the lock, waiting for it
- void lock( void ) { omp_set_lock( &f_lock ); }
+ void lock( void ) {
+  omp_set_lock( &f_lock );
+  ( void )f_turn.load( std::memory_order_acquire );
+  }
  /// gives the lock back
- void unlock( void ) { omp_unset_lock( &f_lock ); }
+ void unlock( void ) {
+  f_turn.store( f_turn.load( std::memory_order_relaxed ) + 1 ,
+		std::memory_order_release );
+  omp_unset_lock( &f_lock );
+  }
  /// takes the lock if it is free, and tells whether it did
- bool try_lock( void ) { return( omp_test_lock( &f_lock ) != 0 ); }
+ bool try_lock( void ) {
+  if( omp_test_lock( &f_lock ) == 0 )
+   return( false );
+  ( void )f_turn.load( std::memory_order_acquire );
+  return( true );
+  }
 
  private:
  omp_lock_t f_lock;  ///< the lock of OpenMP
+ /// the holders in turn: each releases it before giving the lock back and
+ /// the next acquires it after taking the lock, an order that the lock of
+ /// OpenMP already gives but that the sanitizer of threads, which does not
+ /// see inside the runtime of OpenMP, sees only through these accesses
+ /// (on x86-64 a plain store and a plain load)
+ std::atomic< unsigned > f_turn{ 0 };
  };  // end( class OpenMPLock )
 
 /*--------------------------------------------------------------------------*/

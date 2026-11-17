@@ -1015,11 +1015,11 @@ Let the keys and the values be trivially copyable, and let
 pointers; the constant `optimistic` of the class is then true). A lookup is
 then a read under the version of the region, i.e., a *seqlock*. It reads
 the even version $v$, then the table in use, the tags and the places of the
-key with relaxed atomic loads; then it issues an acquire fence and loads
-the version again. If the version is still $v$ it returns what it read;
-otherwise it tries again, and it takes the lock after 4 tries. A writer makes the version odd by its compare-and-swap and
-issues a release fence before its relaxed stores, and makes the version
-even again by a store with release.
+key with atomic loads that acquire, and then the version again. If the
+version is still $v$ it returns what it read; otherwise it tries again,
+and it takes the lock after 4 tries. A writer makes the version odd by its
+compare-and-swap, stores with release, and makes the version even again by
+a store with release.
 
 <span id="lem-24-12"></span>**Lemma 24.12.** *A lookup without locks that
 reads the same even version $v$ before and after its reads returns a state
@@ -1027,13 +1027,17 @@ of the region of its key, i.e., what a lookup under the lock would have
 returned at the moment of its first read of the version.*
 
 *Proof.* We suppose that the lookup read a value stored by a writer $w$ that
-held the lock after the version $v$ was written. This writer stored it
-after its release fence, which followed its compare-and-swap of the version from
-an even value $v' \ge v$ to $v' + 1$; the lookup read the stored value
-before its acquire fence. By the rules of the fences of C++, the fence of
-the writer synchronizes with that of the lookup, and the second load of the
-version, which follows the acquire fence, reads $v' + 1$ or a later value,
-i.e., not $v$ ([Boehm 2012](Z-bibliography.md#ref-boehm2012)). Hence, when
+held the lock after the version $v$ was written. This writer stored it with
+release, after its compare-and-swap of the version from an even value
+$v' \ge v$ to $v' + 1$, and the lookup read it with acquire, before its
+second load of the version. The store synchronizes with the load, so that
+the compare-and-swap happens before the second load of the version, which
+therefore reads $v' + 1$ or a later value, i.e., not $v$. [Boehm
+2012](Z-bibliography.md#ref-boehm2012) writes the same order by a release
+fence after the compare-and-swap and an acquire fence before the second
+load, with relaxed accesses between them; we order the accesses themselves
+(the sanitizer of threads does not model the fences, and on x86-64 the
+accesses remain plain loads and stores). Hence, when
 the second load reads $v$, every value read was stored before the release
 that made the version $v$, by writers that had all released the lock, and
 no writer held it in between; the reads see one state of the region. No
@@ -1774,7 +1778,10 @@ the waiters by a read-modify-write that adds 0 instead, and neither side
 runs a fence: the read-modify-write reads the last value in the order of the
 modifications of the word, so that it either sees the waiter or is seen by
 it through the release sequence; this is also the form that the sanitizer
-of threads checks, since it does not model the fences. Which of the two
+of threads checks, since it does not model the fences, and the one that
+the header takes when the build defines `ADS_SANITIZE_THREAD`, as CMake
+and the makefile do when the options of the compiler turn the sanitizer
+on. Which of the two
 costs less depends on the processor (a full fence against a line taken
 exclusive at each notification), and we leave the choice of the default to
 the campaign of [Appendix B](B-benchmarks.md#app-B). It is worth noting that
@@ -2424,23 +2431,34 @@ area has no other reclamation that fits a structure of nodes (the epochs of
 `ConcurrentFlatTable` clear a table, they do not free memory). The queue
 keeps an epoch $E$, and each handle a record with the epoch announced,
 $2 e + 1$ inside an operation of the epoch $e$ and 0 outside. An operation
-reads $E$, stores the announce, and issues a sequentially consistent fence
-before it reads the list. The thread of a cut stamps the nodes cut off
+reads $E$ and makes the announce by a sequentially consistent exchange
+before it reads the list, whose words it then reads with sequential
+consistency too. The thread of a cut stamps the nodes cut off
 with $E$, read with sequential consistency after the cut and the
 restructure, keeps them in its record, and then raises $E$ by a CAS if all the
 records inside an operation announce $E$; a node stamped $r$ is freed once
 its thread reads $E \ge r + 2$. Let a thread $t$ reach a node stamped $r$
-inside an operation. If the fence of $t$ followed in the total order $S$ of
-[§24.1](24-concurrent.md#sec-24-1) the last CAS of the cut and of its
-restructure, the reads of $t$ would see the words written by them, and $t$
-would reach no node cut, by [Lemma 24.32](24-concurrent.md#lem-24-32) (iv).
-Hence the fence of $t$ precedes that CAS in $S$, which precedes the read of
-$E = r$; the read of $E$ by which $t$ made its announce $a$ precedes its
-fence, and therefore $a \le r$, and the read of $E = r$ precedes the CAS
-from $r$ to $r + 1$. The scan that would raise $E$ from $r + 1$ to $r + 2$
-follows that CAS, and hence the fence of $t$, in $S$; it sees the announce
-$a \ne r + 1$, or a later value of the record, and cannot raise $E$ while
-$t$ stays inside its operation. No node is leaked: the destructor frees those
+inside an operation. If the announce of $t$ followed in the total order $S$
+of [§24.1](24-concurrent.md#sec-24-1) the last CAS of the cut and of its
+restructure, so would the reads of $t$, sequenced after it. A
+sequentially consistent read that precedes a write in the order of the
+modifications of its word precedes that write in $S$ (it is
+coherence-ordered before it), so that these reads would see the words
+written by the CAS, and $t$ would reach no node cut, by [Lemma
+24.32](24-concurrent.md#lem-24-32) (iv). Hence the announce of $t$
+precedes that CAS in $S$, which precedes the read of $E = r$. The read of
+$E$ by which $t$ made its announce $a$ precedes the announce, and therefore
+$a \le r$; the read of $E = r$ precedes the CAS from $r$ to $r + 1$.
+The scan that would raise $E$ from $r + 1$ to $r + 2$ follows that CAS,
+and hence the announce of $t$, in $S$; it sees the announce $a \ne r + 1$,
+or a later value of the record, and cannot raise $E$ while $t$ stays
+inside its operation. Of course, a relaxed store of the announce
+followed by a sequentially consistent fence, with reads that acquire,
+gives the same order through the rules of the fences. We prefer the
+exchange, since the sanitizer of threads does not model the fences, and
+on x86-64 it is one instruction where the store and the fence are two
+(a sequentially consistent load is there the same plain load as one that
+acquires). No node is leaked: the destructor frees those
 that wait for their epoch and those still in the list. The reclamation is
 blocking, as in the paper: a thread stopped inside an operation keeps $E$
 from growing, and the nodes cut off afterwards from being freed, while the

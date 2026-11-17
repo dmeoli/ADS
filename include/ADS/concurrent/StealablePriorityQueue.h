@@ -468,22 +468,21 @@ class SpqHalf
   // be forwarded to a wider load
   const Bd * M = f_M.data();
   for( std::size_t k = c ; k < last ; ++k ) {
-   const Bd x = M[ k ];
+   const Bd x = load( M[ k ] );
    m = f_bl( x , m ) ? x : m;
-   barrier( m );
    }
   f_M[ j ] = m;
   }
 
- /// keeps the compiler from merging the loads of a loop into one of a
- /// vector, by making x look changed
- static void barrier( Bd & x ) {
-#if defined( __GNUC__ ) || defined( __clang__ )
+ /// the bound \f$ x \f$ by a load of its own, which the compiler may not
+ /// merge with those of the other children into one of a vector: a
+ /// volatile access of a scalar is performed as the program writes it, and
+ /// a bound of a class type is copied as it is
+ static Bd load( const Bd & x ) {
   if constexpr( std::is_scalar_v< Bd > )
-   asm( "" : "+r"( x ) );
-#else
-  ( void )x;
-#endif
+   return( static_cast< const volatile Bd & >( x ) );
+  else
+   return( x );
   }
 
  std::vector< E , HugePageAllocator< E > > f_E;  ///< the pairs

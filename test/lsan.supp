@@ -1,0 +1,26 @@
+# --------------------------------------------------------------------------- #
+#    test/lsan.supp                                                           #
+#                                                                             #
+#    The suppressions of LeakSanitizer for the tests, which ctest passes in   #
+#    LSAN_OPTIONS when the build has -fsanitize=address [see                  #
+#    test/CMakeLists.txt]; by hand: LSAN_OPTIONS=suppressions=test/lsan.supp. #
+#    Each pattern drops a leak whose stack passes through a library that      #
+#    keeps memory until the process ends by design, not through ADS.          #
+# --------------------------------------------------------------------------- #
+
+# Open MPI, its components (in the thread of libevent too) and hwloc, which
+# MPI_Init sets up and never frees
+leak:MPI_Init
+leak:ompi_mpi_init
+leak:orte_init
+leak:libmpi.so
+leak:libopen-pal.so
+leak:libopen-rte.so
+leak:libevent_core
+leak:event_base_loop
+
+# FastFlow, whose farms allocate the mutex and the condition of their
+# blocking mode and never free them
+leak:ff::ff_loadbalancer::init_input_blocking
+
+# --------------------------------------------------------------------------- #

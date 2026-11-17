@@ -192,12 +192,12 @@ void LockFreePriorityQueue< K , T , Less >::locate( const K & k ,
  // successor is deleted is passed, at level 0 a deleted node as well
  Link * p = f_head;
  for( int i = kLevels - 1 ; i >= 0 ; --i ) {
-  Word w = p->next[ i ].load( std::memory_order_acquire );
+  Word w = p->next[ i ].load( kWalk );
   Link * c = ptr( w );
   while( ( ( c != f_tail ) && before( c , k , s ) ) || marked( c ) ||
 	 ( ( i == 0 ) && ( w & kMark ) ) ) {
    p = c;
-   w = p->next[ i ].load( std::memory_order_acquire );
+   w = p->next[ i ].load( kWalk );
    c = ptr( w );
    }
   preds[ i ] = p;
@@ -217,7 +217,7 @@ bool LockFreePriorityQueue< K , T , Less >::behind( const Link * c ,
  // is deleted, and then a false answer only stops the tower of n
  if( c == f_tail )
   return( false );
- const Word w = c->next[ 0 ].load( std::memory_order_acquire );
+ const Word w = c->next[ 0 ].load( kWalk );
  if( w & kMark )
   return( true );
  const Link * f = ptr( w );
@@ -234,15 +234,15 @@ void LockFreePriorityQueue< K , T , Less >::restructure( Counts & c )
  // is not, found from the last node passed at the level above
  Link * p = f_head;
  for( int i = kLevels - 1 ; i > 0 ; ) {
-  Word h = f_head->next[ i ].load( std::memory_order_acquire );
-  Link * x = ptr( p->next[ i ].load( std::memory_order_acquire ) );
+  Word h = f_head->next[ i ].load( kWalk );
+  Link * x = ptr( p->next[ i ].load( kWalk ) );
   if( ! marked( ptr( h ) ) ) {
    --i;
    continue;
    }
   while( marked( x ) ) {
    p = x;
-   x = ptr( p->next[ i ].load( std::memory_order_acquire ) );
+   x = ptr( p->next[ i ].load( kWalk ) );
    }
   ++c.rmw;
   if( f_head->next[ i ].compare_exchange_strong( h , word( x ) ) )
@@ -368,11 +368,20 @@ int LockFreePriorityQueue< K , T , Less >::Handle::height( void )
 template< class K , class T , class Less >
 void LockFreePriorityQueue< K , T , Less >::Handle::enter( void )
 {
- // the announce, then a fence of the total order, before any read of the
- // list: a reclaimer that scans the record after the fence sees it
+ // the announce, by a sequentially consistent exchange, before any read
+ // of the list. It takes the place of a relaxed store followed by a full
+ // fence, which the sanitizer of threads does not model, with the same
+ // guarantee for the reclamation [see Lemma 16 of the theory page]: the
+ // reads of the words are sequentially consistent too (kWalk), so that a
+ // read that sees a word older than the last compare-and-swap of a cut is
+ // coherence-ordered before it and thus precedes it in the total order S
+ // of the sequentially consistent operations, and the exchange, sequenced
+ // before the read, precedes it in S as well, as the fence did; a scan
+ // that follows the cut in S then reads the announce or a later value of
+ // the record. On x86-64 the exchange is one instruction where the store
+ // and the fence were two, and the reads cost what they did.
  const std::uint64_t e = f_q->f_epoch.load( std::memory_order_seq_cst );
- f_r->local.store( 2 * e + 1 , std::memory_order_relaxed );
- std::atomic_thread_fence( std::memory_order_seq_cst );
+ f_r->local.exchange( 2 * e + 1 , std::memory_order_seq_cst );
  for( int b = 0 ; b < 3 ; ++b )
   if( f_r->limbo[ b ] && ( f_r->epoch[ b ] + 2 <= e ) ) {
    destroyAll( f_r->limbo[ b ] );
@@ -458,13 +467,13 @@ auto LockFreePriorityQueue< K , T , Less >::Handle::tryDeleteMin( void )
 {
  enter();
  Link * const head = f_q->f_head;
- const Word obs = head->next[ 0 ].load( std::memory_order_acquire );
+ const Word obs = head->next[ 0 ].load( kWalk );
  Link * x = head;
  Link * nh = nullptr;
  unsigned o = 0;
  for( ; ; ) {
   ++o;
-  Word w = x->next[ 0 ].load( std::memory_order_acquire );
+  Word w = x->next[ 0 ].load( kWalk );
   if( ptr( w ) == f_q->f_tail ) {  // empty, linearized at this read
    f_c.walked += o;
    leave();
@@ -522,7 +531,7 @@ auto LockFreePriorityQueue< K , T , Less >::Handle::tryMinKey( void )
  enter();
  std::optional< K > r;
  for( Link * x = f_q->f_head ; ; ) {
-  const Word w = x->next[ 0 ].load( std::memory_order_acquire );
+  const Word w = x->next[ 0 ].load( kWalk );
   if( ptr( w ) == f_q->f_tail )
    break;
   if( ! ( w & kMark ) ) {  // the first node not deleted

@@ -57,9 +57,12 @@ std::atomic< long > news{ 0 };
 /*--------------------------------------------------------------------------*/
 
 // the plain operator new on malloc(), its calls counted on demand, and the
-// two deletes that go with it; the aligned ones are those of the library
+// two deletes that go with it, none of them inlined, so that GCC sees a new
+// and a delete, not a malloc() or a free() on one side alone, which it
+// would take for a mismatched pair; the aligned ones are those of the
+// library
 
-void * operator new( std::size_t n )
+ADS_NOINLINE void * operator new( std::size_t n )
 {
  if( countNews.load( std::memory_order_relaxed ) )
   news.fetch_add( 1 , std::memory_order_relaxed );
@@ -68,12 +71,12 @@ void * operator new( std::size_t n )
  throw( std::bad_alloc() );
  }
 
-void operator delete( void * p ) noexcept
+ADS_NOINLINE void operator delete( void * p ) noexcept
 {
  std::free( p );
  }
 
-void operator delete( void * p , std::size_t ) noexcept
+ADS_NOINLINE void operator delete( void * p , std::size_t ) noexcept
 {
  std::free( p );
  }

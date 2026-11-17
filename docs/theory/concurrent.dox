@@ -345,13 +345,18 @@
 
  Second, the lookups without locks (a seqlock). A reader loads the version
  \f$ v \f$ with acquire, gives up if it is odd (a writer holds the lock),
- reads the tags and the places with relaxed atomic loads, issues an acquire
- fence and loads the version again: if it is still \f$ v \f$, no writer
- held the lock in between, and what it read is a state of the region. A
- writer makes the version odd by a compare-and-swap and issues a release
- fence before its relaxed stores, so that a reader that reads one of those
- stores reads, after its fence, the odd version or a later one, and tries
- again (Boehm). No access is a data race, since all of them are atomic.
+ reads the tags and the places with atomic loads that acquire, and loads
+ the version again: if it is still \f$ v \f$, no writer held the lock in
+ between, and what it read is a state of the region. A writer makes the
+ version odd by a compare-and-swap and then stores with release, so that
+ a reader that reads one of those stores synchronizes with it, the
+ compare-and-swap happens before its second load of the version, which
+ reads the odd version or a later one, and the reader tries again (Boehm,
+ who places instead a release fence after the compare-and-swap and an
+ acquire fence before the second load, with relaxed accesses between; the
+ two forms give the same order, the sanitizer of threads models only the
+ first, and on x86-64 both are plain loads and stores). No access is a
+ data race, since all of them are atomic.
 
  Third, the doubling. A region whose load would pass 0.98, or an insertion
  that finds no cuckoo path of at most 5 moves among 1024 buckets, doubles
@@ -609,7 +614,9 @@
  read of a line that stays shared; with `ADS_EVENTCOUNT_RMW` the notifier
  reads the waiters by a read-modify-write instead of the two fences, which
  reads the last value in the order of the modifications of the word and so
- either sees the waiter or is seen by it through the release sequence.
+ either sees the waiter or is seen by it through the release sequence; it
+ is the form taken under the sanitizer of threads, which does not model
+ the fences, when the build defines `ADS_SANITIZE_THREAD`.
 
  Before it sleeps, a waiter may spin for a while, since a condition that
  becomes true within a few microseconds costs no system call then; the
@@ -883,13 +890,21 @@
  restructure, alone, writes each upper word of the head to a node whose
  successor is not deleted, read after the cut, or leaves it on such a node;
  the insertions write to the head only nodes being inserted. A thread that
- reaches a node cut off issued the fence after its announce before the
- last compare-and-swap of the cut and of its restructure (otherwise its
- reads see their words, and by Lemma 14 lead to no node cut), and hence
+ reaches a node cut off read a word older than the last compare-and-swap
+ of the cut and of its restructure (otherwise its reads see their words,
+ and by Lemma 14 lead to no node cut); the announce of its epoch is a
+ sequentially consistent exchange and its reads of the words are
+ sequentially consistent, so that the stale read precedes that
+ compare-and-swap in the total order \f$ S \f$ of the sequentially
+ consistent operations, being coherence-ordered before it, and the
+ announce, sequenced before the read, precedes it too. Hence the thread
  announced an epoch \f$ a \le r \f$, which the scan that would raise the
- epoch from \f$ r + 1 \f$ to \f$ r + 2 \f$ sees in the total order of the
- sequentially consistent operations; the node waits for the epoch
- \f$ r + 2 \f$.
+ epoch from \f$ r + 1 \f$ to \f$ r + 2 \f$, later in \f$ S \f$, reads
+ (or a later value of the record); the node waits for the epoch
+ \f$ r + 2 \f$. A relaxed announce followed by a full fence, with reads
+ that acquire, gives the same order through the fence, but the sanitizer
+ of threads does not model the fences, and on x86-64 the exchange is one
+ instruction where the store and the fence are two.
 
  <em>Lemma 17 (lock-freedom and the prefix).</em> The operations are
  lock-free but for the allocation of a node, and in a run of one thread a

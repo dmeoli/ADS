@@ -489,7 +489,7 @@ ADS_TEST( "arena-epochs" )
   CHECK( E.size() == 0 && E.begin() == E.end() && E.bytes() == b );
   for( long * p : P )
    CHECK( ! E.fresh( p ) );
-#if ADS_ASAN
+#if defined( ADS_SANITIZE_ADDRESS )
   for( long * p : P )
    CHECK( __asan_address_is_poisoned( p ) );
 #endif
@@ -566,7 +566,7 @@ ADS_TEST( "object-pool-epochs" )
   CHECK( Q.size() == 0 && Q.bytes() == b );
   for( long * p : P )
    CHECK( ! Q.fresh( p ) );
-#if ADS_ASAN
+#if defined( ADS_SANITIZE_ADDRESS )
   for( long * p : P )
    CHECK( __asan_address_is_poisoned( p ) );
 #endif

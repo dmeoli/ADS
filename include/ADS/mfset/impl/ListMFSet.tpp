@@ -24,7 +24,7 @@ inline ListMFSet::ListMFSet( int n )
  f_list.resize( n );
  for( int i = 0 ; i < n ; ++i ) {
   f_head[ i ] = i;
-  f_list[ i ] = { i };
+  f_list[ i ].push_back( i );
   }
  }
 

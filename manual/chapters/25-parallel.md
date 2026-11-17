@@ -1813,7 +1813,13 @@ In the code, the threads of the $\Delta$-stepping are those of the calls of one 
 of the executor, which run the whole computation and meet at a barrier that
 a call may join late: a thread that joins is counted at the next release, so
 that the barrier waits only for threads already in it
-([Algorithm 25.25](25-parallel.md#alg-25-25)).
+([Algorithm 25.25](25-parallel.md#alg-25-25)). A thread that waits spins
+for 1024 pauses and then sleeps on the word of the generation, which the
+release wakes; spinning alone, an executor with more threads than the free
+cores of a loaded machine (e.g., a runtime that takes all the cores of the
+machine) passes each of the two barriers of a step only when every thread
+has had its turn, and the tests of the stepping, on a machine loaded by
+other jobs, did not end within the hour that ctest grants them.
 
 <span id="alg-25-25"></span>**Algorithm 25.25.** The barrier of the
 $\Delta$-stepping, which a thread joins when the executor starts its call;

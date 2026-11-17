@@ -57,6 +57,38 @@ target_include_directories(ADS INTERFACE
         $<INSTALL_INTERFACE:include>)
 target_compile_features(ADS INTERFACE cxx_std_20)
 
+# ----- Sanitizers ---------------------------------------------------------- #
+# The sanitizers of this build, read from the options of the compiler
+# (-fsanitize= of GCC and Clang, /fsanitize= of MSVC): ADS_SANITIZE_ADDRESS
+# and ADS_SANITIZE_THREAD, ON when the options name them, are defined on
+# the targets of this build tree, so that the headers and the tests know
+# it from the build rather than from the macros of each compiler [see
+# EventCount.h and test/CMakeLists.txt]; a program built otherwise defines
+# them itself, as the makefile does.
+string(TOUPPER "${CMAKE_BUILD_TYPE}" _ads_bt)
+string(REGEX MATCHALL "[-/]fsanitize=[^ ]+" _ads_san
+       "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${_ads_bt}}")
+set(ADS_SANITIZE_ADDRESS OFF)
+set(ADS_SANITIZE_THREAD OFF)
+foreach (s IN LISTS _ads_san)
+    string(REGEX REPLACE "^[-/]fsanitize=" "" s "${s}")
+    string(REPLACE "," ";" s "${s}")
+    if ("address" IN_LIST s)
+        set(ADS_SANITIZE_ADDRESS ON)
+    endif ()
+    if ("thread" IN_LIST s)
+        set(ADS_SANITIZE_THREAD ON)
+    endif ()
+endforeach ()
+foreach (s ADDRESS THREAD)
+    if (ADS_SANITIZE_${s})
+        target_compile_definitions(ADS INTERFACE
+                                   $<BUILD_INTERFACE:ADS_SANITIZE_${s}>)
+    endif ()
+endforeach ()
+message(STATUS "ADS: sanitizers: address ${ADS_SANITIZE_ADDRESS}, "
+        "thread ${ADS_SANITIZE_THREAD}")
+
 # This alias is defined so that executables in this same project, and the
 # projects that take ADS as a subproject, can use the library with the same
 # notation as the installed one.

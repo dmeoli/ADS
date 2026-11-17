@@ -39,12 +39,14 @@
  * `std::atomic_ref` reads and writes them without locks (e.g., integers and
  * pointers; `optimistic` is then true), a lookup is a read under the
  * version of the region (a seqlock): it reads the even version \f$ v \f$,
- * the table in use, the tags and the places of the key with relaxed atomic
- * loads, and returns what it read if the version is still \f$ v \f$ after
- * an acquire fence; otherwise it tries again, and takes the lock after 4
- * tries. A writer makes the version odd and issues a release fence before
- * its relaxed atomic stores, so that a reader that sees one of them sees
- * the odd version afterwards (the analysis of Boehm). No access is a data
+ * the table in use, the tags and the places of the key with atomic loads
+ * that acquire, and returns what it read if the version is still \f$ v \f$
+ * after them; otherwise it tries again, and takes the lock after 4 tries.
+ * A writer makes the version odd and then stores with release, so that a
+ * reader that sees one of its stores sees the odd version afterwards (the
+ * analysis of Boehm, with the orders on the accesses in place of the two
+ * fences, which the sanitizer of threads does not model, at the cost of
+ * the plain loads and stores on x86-64). No access is a data
  * race in the sense of C++, and a lookup costs no atomic read-modify-write
  * and no store to a shared line. The tables replaced by a doubling are
  * kept until the table is destroyed, since a reader may still be on one;
@@ -231,11 +233,10 @@ class ConcurrentCuckooTable
  ///     \ \textbf{continue} \cr
  /// 8 & \qquad\quad x \gets \text{the value of the place of } b_1 , b_2
  ///     \text{ with the tag } t \text{ and the key } k \text{, or}
- ///     \textbf{ nil} \cr
- /// 9 & \qquad\quad \text{an acquire fence} \cr
- /// 10 & \qquad\quad \textbf{if}\ v_R = v\ \textbf{then return}\ x \cr
- /// 11 & \quad \text{lock the region of } h \text{ in the table in use} \cr
- /// 12 & \quad \textbf{return}\ \text{the value of } k \text{ in } b_1 , b_2
+ ///     \textbf{ nil}\quad \triangleright\ \text{acquire} \cr
+ /// 9 & \qquad\quad \textbf{if}\ v_R = v\ \textbf{then return}\ x \cr
+ /// 10 & \quad \text{lock the region of } h \text{ in the table in use} \cr
+ /// 11 & \quad \textbf{return}\ \text{the value of } k \text{ in } b_1 , b_2
  ///     \text{, or}\ \textbf{nil}\quad \triangleright\ \text{and unlock}
  /// \end{array}}
  /// \f]

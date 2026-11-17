@@ -1,0 +1,34 @@
+# --------------------------------------------------------------------------- #
+#    test/tsan.supp                                                           #
+#                                                                             #
+#    The suppressions of ThreadSanitizer for the tests, which ctest passes    #
+#    in TSAN_OPTIONS when the build has -fsanitize=thread [see                #
+#    test/CMakeLists.txt]; by hand: TSAN_OPTIONS=suppressions=test/tsan.supp. #
+#    Each pattern drops a report one of whose stacks passes through a         #
+#    runtime that the sanitizer does not instrument, and whose threads it     #
+#    therefore sees synchronized by nothing: the reports are false, and the   #
+#    code of ADS that runs there is checked on the executors of ADS, whose    #
+#    synchronization the sanitizer sees.                                      #
+# --------------------------------------------------------------------------- #
+
+# OpenMP (libgomp, the runtime of Kokkos on its backend of OpenMP too)
+race:libgomp.so
+race:GOMP_
+race:gomp_
+
+# oneTBB, and the parallel algorithms of the library on it
+race:libtbb.so
+race:tbb::detail::
+race:__pstl::
+
+# Kokkos
+race:Kokkos::
+race:desul::
+
+# FastFlow
+race:ff::
+
+# Taskflow
+race:tf::
+
+# --------------------------------------------------------------------------- #

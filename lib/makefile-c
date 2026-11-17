@@ -140,6 +140,14 @@ endif
 ADSINC := $(ADSSWOS)
 ADSLIB := -pthread
 
+# the sanitizers named by the options of the compiler (-fsanitize= of GCC
+# and Clang), told to the headers and to the tests by ADS_SANITIZE_ADDRESS
+# and ADS_SANITIZE_THREAD, as CMake does [see CMakeLists.txt]
+ADSSAN := $(subst $(ADScomma), ,$(patsubst -fsanitize=%,%,\
+	  $(filter -fsanitize=%,$(CXXFLAGS))))
+ADSINC += $(if $(filter address,$(ADSSAN)),-DADS_SANITIZE_ADDRESS)
+ADSINC += $(if $(filter thread,$(ADSSAN)),-DADS_SANITIZE_THREAD)
+
 # GMP, for BigInteger and Rational, and a CBLAS, for gemm(): on where they
 # are found unless turned off, auto by default
 ADS_WITH_GMP ?= auto

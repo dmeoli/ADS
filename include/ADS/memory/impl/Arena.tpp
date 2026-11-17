@@ -84,9 +84,10 @@ void Arena< T , A >::clear( void ) noexcept
   for( std::size_t b = 0 ; b <= f_cur ; ++b )
    std::destroy_n( f_blocks[ b ] , b < f_cur ? f_n : u );
   }
- if constexpr( ADS_ASAN )  // the places of the epoch
-  for( std::size_t b = 0 ; b <= f_cur ; ++b )
-   ADS_POISON( f_blocks[ b ] , f_n * sizeof( T ) );
+ // the places of the epoch, under the sanitizer (otherwise a loop of no
+ // code, which the compiler drops)
+ for( std::size_t b = 0 ; b <= f_cur ; ++b )
+  ADS_POISON( f_blocks[ b ] , f_n * sizeof( T ) );
  f_cur = 0;
  f_place = f_blocks.front();
  f_end = f_place + f_n;

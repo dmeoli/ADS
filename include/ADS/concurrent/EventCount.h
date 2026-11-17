@@ -27,9 +27,10 @@
  * reading the last value in the order of the modifications of the word, it
  * either sees the waiter or is seen by it through the release sequence;
  * this also is the form that the sanitizer of threads, which does not
- * model the fences, checks. Which of the two costs less depends on the
- * processor (a full fence against an exclusive line), and the benchmarks
- * decide the default.
+ * model the fences, checks, and the one that `ADS_SANITIZE_THREAD`, which
+ * the build defines when the sanitizer is on, chooses. Which of the two
+ * costs less depends on the processor (a full fence against an exclusive
+ * line), and the benchmarks decide the default.
  *
  * No wake-up is lost: the fence of the notifier and the read-modify-write
  * and fence of the waiter are in the single total order of the
@@ -79,13 +80,10 @@
 // under the sanitizer of threads, which does not model the fences, the
 // notifier reads the waiters by a read-modify-write instead (reading the
 // last value in the order of the modifications, it either sees the
-// waiter or is seen by it through the release sequence)
-#if defined( __SANITIZE_THREAD__ )
+// waiter or is seen by it through the release sequence); the build tells
+// that the sanitizer is on by ADS_SANITIZE_THREAD [see CMakeLists.txt]
+#if defined( ADS_SANITIZE_THREAD ) && ! defined( ADS_EVENTCOUNT_RMW )
  #define ADS_EVENTCOUNT_RMW
-#elif defined( __has_feature )
- #if __has_feature( thread_sanitizer )
-  #define ADS_EVENTCOUNT_RMW
- #endif
 #endif
 
 /*--------------------------------------------------------------------------*/

@@ -340,9 +340,11 @@ ADS_TEST( "parallel-sort" )
 {
  std::mt19937_64 g( 11 );
  const std::size_t K = kParallelSort;
- const std::vector< std::size_t > sizes = { 0 , 1 ,     2 ,          100 ,
-					    K - 1 ,
-					    K , K + 1 , 3 * K + 17 , 200000 };
+ const std::vector< std::size_t > sizes = {
+  0 ,     1 ,          2 ,
+  100 ,   K - 1 ,      K ,
+  K + 1 , 3 * K + 17 , test::scaled< std::size_t >( 200000 , 2 * K + 5 )
+  };
  auto keys = [ & ]( int pattern , std::size_t n ) {
   std::vector< std::uint64_t > k( n );
   for( std::size_t i = 0 ; i < n ; ++i )
@@ -518,9 +520,10 @@ ADS_TEST( "learned-parallel-sort" )
    }
   };
  onEach( [ & ]( auto & ex ) {
-  for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) ,
-			 std::size_t( 2 ) ,
-			 K - 1 , K , K + 1 , std::size_t( 200000 ) } )
+  for( std::size_t n :
+       { std::size_t( 0 ) , std::size_t( 1 ) , std::size_t( 2 ) , K - 1 , K ,
+	 K + 1 ,
+	 test::scaled< std::size_t >( 200000 , 2 * K + 5 ) } )
    for( int p = 0 ; p < 8 ; ++p ) {
     std::vector< std::uint64_t > k( n );
     for( std::size_t i = 0 ; i < n ; ++i )

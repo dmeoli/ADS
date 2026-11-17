@@ -591,7 +591,7 @@ hamilton( const Adjacency & G , const Nodes & starts , bool cycle , int end )
   return( false );
   };
  for( int s : starts ) {
-  P = { s };
+  P.assign( 1 , s );
   used.assign( n , false );
   used[ s ] = true;
   if( n == 1 )

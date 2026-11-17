@@ -628,11 +628,12 @@ ADS::sort( ex , A );
 
 As on the senders, a dispatch of Kokkos holds the thread that waits, and
 the calls made inside a call, or inside a kernel of the program, run in
-order on their thread. We run the test of this example in the continuous
-integration, on a Kokkos built on its backend of OpenMP. We remark that, at
-the time of writing, the header does not compile with a Kokkos built on
-`Serial` only, since `Kokkos::Serial::in_parallel()` takes no argument
-there.
+order on their thread; a kernel of the program is recognized on the backend
+of OpenMP by its parallel region (`omp_get_level()`, since the
+`in_parallel()` of the spaces is deprecated in Kokkos 4 and removed in
+Kokkos 5), while on the other backends its nested calls run in order only
+when the space has one thread. We run the test of this example in the
+continuous integration, on a Kokkos built on its backend of OpenMP.
 
 ## C.13 MPI {#sec-C-13}
 

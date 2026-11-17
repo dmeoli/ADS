@@ -286,8 +286,9 @@ void BPlusTree< K , V >::up( Node * f , Node * g , const K & s )
  Node * b = f->parent;
  if( ! b ) {  // f was the root
   b = f_root = new Node( false );
-  b->k = { s };
-  b->p = { g , f };
+  b->k.push_back( s );
+  b->p.push_back( g );
+  b->p.push_back( f );
   f->parent = g->parent = b;
   return;
   }

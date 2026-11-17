@@ -6,14 +6,14 @@
  * own way, in one form for all: the product of two words of 64 bits by the
  * products of their halves of 32 bits (`wideProductHalves()`, the portable
  * form of the product of `Wide.h`), and the swap of the bytes of a word,
- * which is the builtin of GCC and Clang, else the `std::byteswap()` of
- * C++23, else the intrinsic of MSVC, else three exchanges by masks, of the
- * bytes, of the pairs of bytes and of the halves. The rest of the
- * arithmetic of two words (the product by the instruction of the
- * processor, the division of two words by one and the signed integers of
- * 128 bits) is in `Wide.h`. They are details of the implementation, out of
- * the API reference, and their arithmetic is on the theory page of the
- * area.
+ * which is the `std::byteswap()` of C++23 where the library has it, else
+ * the `boost::core::byteswap()` of Boost.Core where Boost is found, else
+ * three exchanges by masks, of the bytes, of the pairs of bytes and of the
+ * halves. The rest of the arithmetic of two words (the product by the
+ * instruction of the processor, the division of two words by one and the
+ * signed integers of 128 bits) is in `Wide.h`. They are details of the
+ * implementation, out of the API reference, and their arithmetic is on
+ * the theory page of the area.
  *
  * Two attributes have the same fate: `ADS_NO_UNIQUE_ADDRESS`, the
  * `[[no_unique_address]]` of C++20 under the name that MSVC honours
@@ -27,7 +27,9 @@
  * `ADS_UNPOISON( p , n )` mark the \f$ n \f$ bytes from \f$ p \f$ as
  * forbidden and allowed again, so that a pool which drops its objects at
  * once (the `clear()` of `Arena` and `ObjectPool`) makes the sanitizer stop
- * a stale pointer at its first access; elsewhere they are no code.
+ * a stale pointer at its first access; elsewhere they are no code, which
+ * the interface of the sanitizer decides by itself (its macros are empty
+ * when it is off), so that ADS needs not know whether it is on.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -63,11 +65,6 @@
  #define ADS_BYTESWAP_BOOST 1
 #else
  #define ADS_BYTESWAP_BOOST 0
-#endif
-
-#if defined( _MSC_VER ) && ! defined( __clang__ )
- #include <cstdlib>
- #include <intrin.h>
 #endif
 
 // The attributes below are chosen by the feature test of the standard
@@ -110,28 +107,17 @@
  #define ADS_COLD_PATH ADS_NOINLINE
 #endif
 
-/// the sanitizer of addresses, by the macro of GCC and MSVC or the feature
-/// of Clang
-#if defined( __SANITIZE_ADDRESS__ )
- #define ADS_ASAN 1
-#elif defined( __has_feature )
- #if __has_feature( address_sanitizer )
-  #define ADS_ASAN 1
- #endif
-#endif
-#ifndef ADS_ASAN
- #define ADS_ASAN 0
-#endif
-
 /// the \f$ n \f$ bytes from \f$ p \f$ forbidden, and allowed again, under
-/// the sanitizer of addresses; no code elsewhere
-#if ADS_ASAN
+/// the sanitizer of addresses, by the macros of its interface, which the
+/// interface itself turns into no code when the sanitizer is off; no code
+/// where the toolchain has no such interface
+#if __has_include( <sanitizer/asan_interface.h> )
  #include <sanitizer/asan_interface.h>
  #define ADS_POISON( p, n ) ASAN_POISON_MEMORY_REGION( ( p ), ( n ) )
  #define ADS_UNPOISON( p, n ) ASAN_UNPOISON_MEMORY_REGION( ( p ), ( n ) )
 #else
- #define ADS_POISON( p, n ) ( ( void )0 )
- #define ADS_UNPOISON( p, n ) ( ( void )0 )
+ #define ADS_POISON( p, n ) ( ( void )( p ), ( void )( n ) )
+ #define ADS_UNPOISON( p, n ) ( ( void )( p ), ( void )( n ) )
 #endif
 
 /*--------------------------------------------------------------------------*/
