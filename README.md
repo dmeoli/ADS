@@ -8,6 +8,7 @@
 [![Header-only](https://img.shields.io/badge/header--only-yes-brightgreen)](https://github.com/dmeoli/ADS#use)
 [![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)](https://github.com/dmeoli/ADS/actions/workflows/ci.yml)
 [![License: BSL-1.0](https://img.shields.io/badge/License-BSL_1.0-blue.svg)](https://www.boost.org/LICENSE_1_0.txt)
+[![Release](https://img.shields.io/github/v/release/dmeoli/ADS)](https://github.com/dmeoli/ADS/releases)
 
 ADS: Algorithms and Data Structures, and Advanced ones. ADS is a
 header-only C++20 library of the data structures and the parallelism that
