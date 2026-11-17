@@ -47,7 +47,11 @@
 #           optional: the macros of the backends, ADS_WITH_GMP,               #
 #                     ADS_WITH_BLAS, ADS_WITH_BOOST, ADS_WITH_HIGHWAY,        #
 #                     ADS_WITH_LEMON,                                         #
-#                     ADS_WITH_STDPAR, ADS_WITH_STDEXEC and ADS_WITH_TASKFLOW #
+#                     ADS_WITH_STDPAR, ADS_WITH_STDEXEC, ADS_WITH_TASKFLOW,   #
+#                     ADS_WITH_CEREAL, ADS_WITH_CROARING, ADS_WITH_SDSL,      #
+#                     ADS_WITH_NANOARROW, ADS_WITH_EIGEN, ADS_WITH_METIS,     #
+#                     ADS_WITH_KAHIP, ADS_WITH_GRAPHBLAS and                  #
+#                     ADS_WITH_NETWORKIT                                      #
 #                     (auto by default, 0 or 1), ADS_WITH_MPI (0 by default,  #
 #                     auto or 1), ADS_WITH_OPENMP=1, ADS_WITH_TBB=1,          #
 #                     ADS_WITH_FASTFLOW=1, and their *_ROOT [see              #
@@ -162,6 +166,18 @@ COLUMNARBINS = $(addprefix $(BUILD)/,$(addsuffix $(ADSEXE),\
                interop_columnar interop_examples))
 $(COLUMNARBINS): INC += $(ADSCEREALINC) $(ADSCOLUMNARINC)
 $(COLUMNARBINS): LIBS += $(ADSCOLUMNARLIB)
+# nanoarrow, where found, reads the columns that ADS exports and writes
+# those that it imports
+$(BUILD)/interop_columnar$(ADSEXE): INC += $(ADSNANOARROWINC)
+$(BUILD)/interop_columnar$(ADSEXE): LIBS += $(ADSNANOARROWLIB)
+
+# the libraries of the graphs and of the matrices, Eigen, METIS, KaHIP,
+# GraphBLAS and NetworKit, where they are found, under their adapters [see
+# test/interop_graphs.cpp] and in the examples of appendix C
+GRAPHSBINS = $(addprefix $(BUILD)/,$(addsuffix $(ADSEXE),\
+             interop_graphs interop_examples))
+$(GRAPHSBINS): INC += $(ADSGRAPHSINC)
+$(GRAPHSBINS): LIBS += $(ADSGRAPHSLIB)
 
 # the configurations of the layouts, not in tests.txt [see ADS/Abi.h and
 # test/abi_units.cpp]: one program from two units of test/abi_unit.cpp, the
@@ -298,7 +314,13 @@ backends:
 	      "Taskflow $(if $(filter 1,$(ADSTASKFLOWON)),ON,OFF)," \
 	      "cereal $(if $(filter 1,$(ADSCEREALON)),ON,OFF)," \
 	      "CRoaring $(if $(filter 1,$(ADSCROARINGON)),ON,OFF)," \
-	      "sdsl $(if $(filter 1,$(ADSSDSLON)),ON,OFF)"
+	      "sdsl $(if $(filter 1,$(ADSSDSLON)),ON,OFF)," \
+	      "nanoarrow $(if $(filter 1,$(ADSNANOARROWON)),ON,OFF)"
+	@echo "ADS: Eigen $(if $(filter 1,$(ADSEIGENON)),ON,OFF)," \
+	      "METIS $(if $(filter 1,$(ADSMETISON)),ON,OFF)," \
+	      "KaHIP $(if $(filter 1,$(ADSKAHIPON)),ON,OFF)," \
+	      "GraphBLAS $(if $(filter 1,$(ADSGRAPHBLASON)),ON,OFF)," \
+	      "NetworKit $(if $(filter 1,$(ADSNETWORKITON)),ON,OFF)"
 
 # bench target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

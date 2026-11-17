@@ -6,7 +6,10 @@
 #   include/ADS/interop/parallel]: the parallel algorithms of the standard    #
 #   library (on oneTBB with libstdc++), the senders of stdexec and Taskflow,  #
 #   the last two by their headers; Kokkos is taken by CMake alone, since its  #
-#   flags are those of its build                                              #
+#   flags are those of its build; and of the other libraries of the adapters  #
+#   of include/ADS/interop: cereal, CRoaring, sdsl-lite 3 and nanoarrow, and  #
+#   those of the graphs and of the matrices, Eigen, METIS, KaHIP,             #
+#   SuiteSparse:GraphBLAS and NetworKit                                       #
 #                                                                             #
 #   Input:  $(STDEXEC_ROOT)  = the directory of the sources of stdexec, whose #
 #                              include/ has the headers, empty if they are    #
@@ -23,7 +26,18 @@
 #           $(Taskflow_ROOT) = the directory of the sources of Taskflow,      #
 #                              which has taskflow/, empty if it is where the  #
 #                              compiler looks                                 #
+#           $(nanoarrow_ROOT), $(METIS_ROOT), $(KaHIP_ROOT),                  #
+#           $(GraphBLAS_ROOT), $(NetworKit_ROOT), $(tlx_ROOT)                 #
+#                            = the prefixes of nanoarrow, METIS, KaHIP,       #
+#                              GraphBLAS (whose header may be in              #
+#                              include/suitesparse), NetworKit and tlx, the   #
+#                              same as $(CRoaring_ROOT)                       #
+#           $(Eigen_ROOT)    = the prefix of Eigen, whose include/eigen3 has  #
+#                              the headers, empty if Eigen/ is where the      #
+#                              compiler looks                                 #
 #           $(TBB_ROOT)      = the prefix of oneTBB [see makefile-libTBB]     #
+#           $(OpenMP_ROOT)   = the prefix of libomp, for NetworKit [see       #
+#                              makefile-libOpenMP]                            #
 #                                                                             #
 #   Output: accordingly, there is no *H and *OBJ in output, since there is    #
 #           no need to check for changes in the .h and rebuild the .o / .a    #
@@ -34,6 +48,12 @@
 #           $(libCerealINC), $(libCerealLIB), $(libCerealFOUND)               #
 #           $(libCRoaringINC), $(libCRoaringLIB), $(libCRoaringFOUND)         #
 #           $(libSdslINC), $(libSdslLIB), $(libSdslFOUND)                     #
+#           $(libNanoarrowINC), $(libNanoarrowLIB), $(libNanoarrowFOUND)      #
+#           $(libEigenINC), $(libEigenLIB), $(libEigenFOUND)                  #
+#           $(libMetisINC), $(libMetisLIB), $(libMetisFOUND)                  #
+#           $(libKaHIPINC), $(libKaHIPLIB), $(libKaHIPFOUND)                  #
+#           $(libGraphBLASINC), $(libGraphBLASLIB), $(libGraphBLASFOUND)      #
+#           $(libNetworKitINC), $(libNetworKitLIB), $(libNetworKitFOUND)      #
 #                            = the -I$(include directories) and the macro of  #
 #                              the header, the libraries, and 1 if a program  #
 #                              that uses the runtime compiles and links with  #
@@ -49,7 +69,15 @@ libTaskflowBSCDIR = $(subst $\",,$(Taskflow_ROOT))
 libCerealBSCDIR = $(subst $\",,$(cereal_ROOT))
 libCRoaringBSCDIR = $(subst $\",,$(CRoaring_ROOT))
 libSdslBSCDIR = $(subst $\",,$(sdsl_ROOT))
+libNanoarrowBSCDIR = $(subst $\",,$(nanoarrow_ROOT))
+libEigenBSCDIR = $(subst $\",,$(Eigen_ROOT))
+libMetisBSCDIR = $(subst $\",,$(METIS_ROOT))
+libKaHIPBSCDIR = $(subst $\",,$(KaHIP_ROOT))
+libGraphBLASBSCDIR = $(subst $\",,$(GraphBLAS_ROOT))
+libNetworKitBSCDIR = $(subst $\",,$(NetworKit_ROOT))
+libTlxBSCDIR = $(subst $\",,$(tlx_ROOT))
 include $(ADSSDR)/extlib/makefile-libTBB
+include $(ADSSDR)/extlib/makefile-libOpenMP
 
 # a program of the parallel algorithms of the standard library
 libStdParSRC = $(ADShash)include <algorithm>\n$(ADShash)include \
@@ -66,9 +94,9 @@ libTaskflowSRC = $(ADShash)include <taskflow/taskflow.hpp>\n$(ADShash)include \
 	tf::Taskflow f;f.for_each_index(0,2,1,[](int){});e.run(f).wait();}\n
 
 # a program of cereal [see include/ADS/interop/cereal]
-libCerealSRC = $(ADShash)include <cereal/archives/binary.hpp>\n$(ADShash)include \
-	<sstream>\nint main(){std::stringstream s;cereal::BinaryOutputArchive \
-	a(s);a(1);}\n
+libCerealSRC = $(ADShash)include <cereal/archives/binary.hpp>\n\
+	$(ADShash)include <sstream>\nint main(){std::stringstream s;\
+	cereal::BinaryOutputArchive a(s);a(1);}\n
 
 # a program of CRoaring and one of sdsl-lite 3 (sdsl/cereal.hpp is of the
 # version 3 alone) [see include/ADS/interop/croaring and
@@ -78,6 +106,34 @@ libCRoaringSRC = $(ADShash)include <roaring/roaring.h>\nint main(){\
 libSdslSRC = $(ADShash)include <sdsl/cereal.hpp>\n$(ADShash)include \
 	<sdsl/int_vector.hpp>\nint main(){sdsl::bit_vector b(9,0);\
 	return int(b[3]);}\n
+
+# a program of nanoarrow, which reads a column [see
+# test/interop_columnar.cpp]
+libNanoarrowSRC = $(ADShash)include <nanoarrow/nanoarrow.h>\nint main(){\
+	struct ArrowSchema s;ArrowSchemaInit(&s);int r=ArrowSchemaSetType(&s,\
+	NANOARROW_TYPE_INT64);s.release(&s);return r;}\n
+
+# a program of each library of the graphs and of the matrices, the same as
+# those of cmake/ADSInterop.cmake: Eigen 3.4 or later, METIS 5, KaHIP with
+# the indices of its header, GraphBLAS 10 or later (in include/suitesparse
+# or not) and NetworKit 11.2 or later, with fromCSR()
+libEigenSRC = $(ADShash)include <Eigen/SparseCore>\nstatic_assert(\
+	EIGEN_VERSION_AT_LEAST(3,4,0));\nint main(){Eigen::SparseMatrix<double,\
+	Eigen::RowMajor,int> A(2,2);A.insert(1,0)=2.;return int(A.sum())-2;}\n
+libMetisSRC = $(ADShash)include <metis.h>\nint main(){idx_t \
+	o[METIS_NOPTIONS];return METIS_SetDefaultOptions(o)==METIS_OK?0:1;}\n
+libKaHIPSRC = $(ADShash)include <kaHIP_interface.h>\nint main(){\
+	return kahip_sizeof_idx()==int(sizeof(kahip_idx))?0:1;}\n
+libGraphBLASSRC = $(ADShash)if __has_include(<suitesparse/GraphBLAS.h>)\n\
+	$(ADShash)include <suitesparse/GraphBLAS.h>\n$(ADShash)else\n\
+	$(ADShash)include <GraphBLAS.h>\n$(ADShash)endif\nstatic_assert(\
+	GxB_IMPLEMENTATION_MAJOR>=10);\nint main(){GrB_Info(*f)(GxB_Container*)\
+	=&GxB_Container_new;return f==nullptr?1:0;}\n
+libNetworKitSRC = $(ADShash)include <networkit/graph/Graph.hpp>\n\
+	$(ADShash)include <vector>\nint main(){std::vector<NetworKit::index> \
+	p{0,1,1},i{1};std::vector<double> x;const NetworKit::Graph G=\
+	NetworKit::Graph::fromCSR(p,i,x,false,false);\
+	return int(G.numberOfEdges())-1;}\n
 
 # the libraries with which the program $(1) links, given the flags $(2):
 # none, or oneTBB (which the headers of <execution> of libstdc++ may ask
@@ -131,5 +187,64 @@ libSdslINC = -DADS_WITH_SDSL $(if $(libSdslBSCDIR),\
 libSdslLIB = $(eval libSdslLIB := $$(call libInteropLINK,\
 	$$(libSdslSRC),$$(libSdslINC)))$(libSdslLIB)
 libSdslFOUND = $(if $(filter none,$(libSdslLIB)),,1)
+
+# the flags of a library from its prefix $(1): its headers, and the
+# directory of its library, also where the program looks for it when it runs
+libInteropDIRINC = $(if $(strip $(1)),-isystem "$(strip $(1))/include")
+libInteropDIRLD = $(if $(strip $(1)),-L"$(strip $(1))/lib" \
+	-Wl$(libInteropCOMMA)-rpath$(libInteropCOMMA)"$(strip $(1))/lib")
+
+# nanoarrow, by its static library, or else by its shared one (named
+# nanoarrow before its version 0.7)
+libNanoarrowINC = -DADS_WITH_NANOARROW $(call libInteropDIRINC,\
+	$(libNanoarrowBSCDIR))
+libNanoarrowTRY = $(if $(filter none,$(call libInteropLINK,\
+	$(libNanoarrowSRC),$(libNanoarrowINC) $(call libInteropDIRLD,\
+	$(libNanoarrowBSCDIR)) -l$(1))),none,$(call libInteropDIRLD,\
+	$(libNanoarrowBSCDIR)) -l$(1))
+libNanoarrowLIB = $(eval libNanoarrowLIB := $$(or $$(filter-out none,\
+	$$(call libNanoarrowTRY,nanoarrow_static)),$$(filter-out none,\
+	$$(call libNanoarrowTRY,nanoarrow_shared)),$$(call libNanoarrowTRY,\
+	nanoarrow)))$(libNanoarrowLIB)
+libNanoarrowFOUND = $(if $(filter none,$(libNanoarrowLIB)),,1)
+
+libEigenINC = -DADS_WITH_EIGEN $(if $(libEigenBSCDIR),\
+	-isystem "$(libEigenBSCDIR)/include/eigen3")
+libEigenLIB = $(eval libEigenLIB := $$(call libInteropLINK,\
+	$$(libEigenSRC),$$(libEigenINC)))$(libEigenLIB)
+libEigenFOUND = $(if $(filter none,$(libEigenLIB)),,1)
+
+libMetisINC = -DADS_WITH_METIS $(call libInteropDIRINC,$(libMetisBSCDIR))
+libMetisLD = $(call libInteropDIRLD,$(libMetisBSCDIR)) -lmetis
+libMetisLIB = $(eval libMetisLIB := $$(libMetisLD) $$(call \
+	libInteropLINK,$$(libMetisSRC),$$(libMetisINC) \
+	$$(libMetisLD)))$(libMetisLIB)
+libMetisFOUND = $(if $(filter none,$(libMetisLIB)),,1)
+
+libKaHIPINC = -DADS_WITH_KAHIP $(call libInteropDIRINC,$(libKaHIPBSCDIR))
+libKaHIPLD = $(call libInteropDIRLD,$(libKaHIPBSCDIR)) -lkahip
+libKaHIPLIB = $(eval libKaHIPLIB := $$(libKaHIPLD) $$(call \
+	libInteropLINK,$$(libKaHIPSRC),$$(libKaHIPINC) \
+	$$(libKaHIPLD)))$(libKaHIPLIB)
+libKaHIPFOUND = $(if $(filter none,$(libKaHIPLIB)),,1)
+
+libGraphBLASINC = -DADS_WITH_GRAPHBLAS $(call libInteropDIRINC,\
+	$(libGraphBLASBSCDIR))
+libGraphBLASLD = $(call libInteropDIRLD,$(libGraphBLASBSCDIR)) -lgraphblas
+libGraphBLASLIB = $(eval libGraphBLASLIB := $$(libGraphBLASLD) $$(call \
+	libInteropLINK,$$(libGraphBLASSRC),$$(libGraphBLASINC) \
+	$$(libGraphBLASLD)))$(libGraphBLASLIB)
+libGraphBLASFOUND = $(if $(filter none,$(libGraphBLASLIB)),,1)
+
+# NetworKit with the headers of tlx and OpenMP, which its headers use
+libNetworKitINC = -DADS_WITH_NETWORKIT $(call libInteropDIRINC,\
+	$(libNetworKitBSCDIR)) $(call libInteropDIRINC,$(libTlxBSCDIR)) \
+	$(libOpenMPINC)
+libNetworKitLD = $(call libInteropDIRLD,$(libNetworKitBSCDIR)) -lnetworkit \
+	$(libOpenMPLIB)
+libNetworKitLIB = $(eval libNetworKitLIB := $$(libNetworKitLD) $$(call \
+	libInteropLINK,$$(libNetworKitSRC),$$(libNetworKitINC) \
+	$$(libNetworKitLD)))$(libNetworKitLIB)
+libNetworKitFOUND = $(if $(filter none,$(libNetworKitLIB)),,1)
 
 ######################### End of makefile-libInterop ##########################

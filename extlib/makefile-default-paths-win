@@ -39,5 +39,15 @@ LEMON_ROOT =
 OpenMP_ROOT =
 TBB_ROOT =
 FastFlow_ROOT = C:/fastflow
+cereal_ROOT =
+CRoaring_ROOT =
+sdsl_ROOT =
+nanoarrow_ROOT =
+Eigen_ROOT = $(MINGW_PREFIX)
+METIS_ROOT =
+KaHIP_ROOT =
+GraphBLAS_ROOT =
+NetworKit_ROOT =
+tlx_ROOT =
 
 ###################### End of makefile-default-paths-win ######################

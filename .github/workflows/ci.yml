@@ -36,6 +36,13 @@
 # repository code-style, whose action posts the changes that put them there   #
 # as suggestions on them; on every push, all the C++ sources and the theory   #
 # pages are checked whole, since the whole tree is in the style.              #
+# The adapters of the other libraries of include/ADS/interop (cereal, Eigen,  #
+# METIS, KaHIP, SuiteSparse:GraphBLAS, NetworKit, CRoaring, sdsl-lite 3 and   #
+# nanoarrow) are tested on Linux, macOS and MSYS2 with the libraries that the #
+# package manager of the runner has, or that are small enough to be built     #
+# from their sources, and with all of them in the job interop, by CMake and   #
+# by the makefile; the wheel of the package of Python is built and its tests  #
+# run on Linux, macOS and Windows.                                            #
 ###############################################################################
 
 name: CI
@@ -106,7 +113,17 @@ jobs:
   # compilers of MSYS2, whose bash runs the makefiles; GMP and a CBLAS are
   # installed where the runner lacks them, the default builds must find
   # them (but the CBLAS on MSYS2 and with the g++ of macOS, and both with
-  # MSVC), and the makefiles run the tests again with both off
+  # MSVC), and the makefiles run the tests again with both off; the
+  # libraries of the adapters of include/ADS/interop are installed from the
+  # package manager of the runner, or else built from their sources by
+  # .github/interop-libs.sh (and kept in the cache), and those in ADS_LIBS
+  # are required, with nanoarrow, by CMake and by the makefiles: on Linux,
+  # cereal, Eigen, METIS, CRoaring, sdsl-lite and nanoarrow (KaHIP,
+  # GraphBLAS 10 and NetworKit, which apt lacks or has too old, in the job
+  # interop); on macOS all of them from Homebrew, but sdsl-lite, though not
+  # KaHIP and NetworKit with g++, whose libraries are built on libc++; on
+  # MSYS2 all but KaHIP and NetworKit, which it lacks; none with MSVC, for
+  # which vcpkg would build them all at each run
   test:
     name: test (${{ matrix.os }}, ${{ matrix.compiler }})
     strategy:
@@ -142,20 +159,56 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.msystem }}
-          install: make
+          install: make git
           pacboy: >-
-            ${{ matrix.cc }}:p cmake:p ninja:p pkgconf:p gmp:p
+            ${{ matrix.cc }}:p cmake:p ninja:p pkgconf:p gmp:p eigen3:p
+            metis:p suitesparse:p cereal:p nanoarrow:p
       - name: the g++ of Homebrew
         if: runner.os == 'macOS' && matrix.compiler == 'g++'
         run: command -v "$CXX" || brew install gcc@15
-      - name: GMP and OpenBLAS
+      - name: GMP, OpenBLAS and the libraries of the adapters
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgmp-dev libopenblas-dev
-      - name: GMP of Homebrew
+          sudo apt-get install -y libgmp-dev libopenblas-dev \
+              libeigen3-dev libmetis-dev libcereal-dev
+      - name: GMP and the libraries of the adapters, of Homebrew
         if: runner.os == 'macOS'
-        run: brew list gmp > /dev/null 2>&1 || brew install gmp
+        run: |
+          brew install gmp eigen metis suite-sparse croaring cereal \
+              nanoarrow libnetworkit kahip
+          echo "OpenMP_ROOT=$(brew --prefix libomp)" >> "$GITHUB_ENV"
+      - name: the libraries of the adapters required, and their prefix
+        if: matrix.compiler != 'msvc'
+        run: |
+          opt="$RUNNER_TEMP/interop"
+          if command -v cygpath > /dev/null; then
+            opt=$(cygpath -m "$opt")
+          fi
+          libs="CEREAL EIGEN METIS GRAPHBLAS CROARING SDSL"
+          case "$RUNNER_OS-${{ matrix.compiler }}" in
+            Linux-*) libs="CEREAL EIGEN METIS CROARING SDSL"
+                     src="sdsl croaring nanoarrow" ;;
+            macOS-clang++) libs="$libs KAHIP NETWORKIT" src=sdsl ;;
+            macOS-*) src=sdsl ;;
+            *) src="sdsl croaring" ;;
+          esac
+          { echo "OPT=$opt"; echo "ADS_LIBS=$libs"; echo "ADS_SRC=$src"; } \
+            >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        if: matrix.compiler != 'msvc'
+        with:
+          path: ${{ runner.temp }}/interop
+          key: >-
+            interop-${{ matrix.os }}-${{ matrix.compiler }}-${{
+            hashFiles('.github/interop-libs.sh') }}
+      - name: the libraries of the adapters, from their sources
+        if: matrix.compiler != 'msvc'
+        run: |
+          if [ -n "${{ matrix.msystem }}" ]; then
+            export CMAKE_GENERATOR=Ninja
+          fi
+          .github/interop-libs.sh "$OPT" $ADS_SRC
       - name: CMake
         run: |
           inst="$PWD/inst"
@@ -165,9 +218,12 @@ jobs:
           echo "INST=$inst" >> "$GITHUB_ENV"
           set -o pipefail
           cmake -S . -B build $GEN -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_INSTALL_PREFIX="$inst" | tee cmake.log
+                -DCMAKE_INSTALL_PREFIX="$inst" -DCMAKE_PREFIX_PATH="$OPT" \
+                $(for l in $ADS_LIBS; do echo "-DADS_WITH_$l=ON"; done) |
+            tee cmake.log
           if [ "${{ matrix.compiler }}" != msvc ]; then
             grep -q 'ADS: GMP ON' cmake.log
+            grep -q 'ADS: nanoarrow ON' cmake.log
           fi
           if [ -z "${{ matrix.msystem }}" ] &&
              [ "${{ matrix.compiler }}" != msvc ] &&
@@ -189,8 +245,11 @@ jobs:
         env:
           OPENBLAS_NUM_THREADS: 2
         run: |
-          make backends
-          make -j4 test
+          roots="CRoaring_ROOT=$OPT sdsl_ROOT=$OPT nanoarrow_ROOT=$OPT"
+          [ "$RUNNER_OS" = macOS ] && roots="sdsl_ROOT=$OPT"
+          on=$(for l in $ADS_LIBS NANOARROW; do echo "ADS_WITH_$l=1"; done)
+          make backends $roots $on
+          make -j4 test $roots $on
           make -j4 test ADS_WITH_GMP=0 ADS_WITH_BLAS=0 ADS_WITH_BOOST=0 \
                ADS_WITH_LEMON=0 BUILD=build-off
 
@@ -481,7 +540,11 @@ jobs:
   # found again by an installed package; the senders and Taskflow also under
   # ThreadSanitizer (OpenMP and oneTBB are not instrumented); the examples of
   # appendix C of the manual on all of them, with Boost, GMP, OpenBLAS and
-  # abLEMON besides
+  # abLEMON besides; and the adapters of all the other libraries of
+  # include/ADS/interop, required, by CMake and by the makefile: cereal,
+  # Eigen and METIS of apt, sdsl-lite 3, CRoaring, nanoarrow, GraphBLAS 10,
+  # KaHIP and NetworKit built from their sources by .github/interop-libs.sh
+  # (and kept in the cache)
   interop:
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -495,7 +558,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libtbb-dev ninja-build libboost-dev \
-              libgmp-dev libopenblas-dev
+              libgmp-dev libopenblas-dev libeigen3-dev libmetis-dev \
+              libcereal-dev
           git clone --quiet --depth 1 https://github.com/dmeoli/abLEMON.git \
               "$RUNNER_TEMP/ablemon"
           cmake -S "$RUNNER_TEMP/ablemon" -B "$RUNNER_TEMP/ablemon-build" \
@@ -518,9 +582,22 @@ jobs:
                 -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/kokkos-inst"
           cmake --build "$RUNNER_TEMP/kokkos-build"
           cmake --install "$RUNNER_TEMP/kokkos-build"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/interop
+          key: >-
+            interop-${{ runner.os }}-all-${{
+            hashFiles('.github/interop-libs.sh') }}
+      - name: the libraries of the adapters, from their sources
+        env:
+          CMAKE_GENERATOR: Ninja
+        run: |
+          .github/interop-libs.sh "$RUNNER_TEMP/interop" sdsl croaring \
+              nanoarrow graphblas kahip networkit
       - name: the executors under the parallel tests, by CMake
         run: |
           set -o pipefail
+          prefixes="$RUNNER_TEMP/kokkos-inst;$RUNNER_TEMP/interop"
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
                 -DADS_WITH_TBB=ON -DADS_WITH_OPENMP=ON \
                 -DADS_WITH_STDPAR=ON -DADS_WITH_STDEXEC=ON \
@@ -529,17 +606,44 @@ jobs:
                 -DADS_WITH_LEMON=ON -DLEMON_ROOT="$RUNNER_TEMP/ablemon-inst" \
                 -DSTDEXEC_INCLUDE_DIR="$RUNNER_TEMP/NVIDIA/include" \
                 -DTaskflow_INCLUDE_DIR="$RUNNER_TEMP/taskflow" \
-                -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/kokkos-inst" \
+                -DCMAKE_PREFIX_PATH="$prefixes" \
+                -DADS_WITH_CEREAL=ON -DADS_WITH_EIGEN=ON -DADS_WITH_METIS=ON \
+                -DADS_WITH_KAHIP=ON -DADS_WITH_GRAPHBLAS=ON \
+                -DADS_WITH_NETWORKIT=ON -DADS_WITH_CROARING=ON \
+                -DADS_WITH_SDSL=ON \
                 -DCMAKE_INSTALL_PREFIX="$PWD/inst" | tee cmake.log
           grep -q 'found: StdPar;stdexec;Taskflow;Kokkos' cmake.log
+          grep -q 'ADS: nanoarrow ON' cmake.log
           cmake --build build --target engineered_parallel \
                 engineered_speculative interop_parallel interop_examples \
+                interop_graphs interop_columnar engineered_persistence \
                 abi_units
           tests='^(engineered_parallel|engineered_speculative'
-          tests="$tests|interop_parallel|interop_examples)[.]|^abi-units$"
+          tests="$tests|interop_parallel|interop_examples|interop_graphs"
+          tests="$tests|interop_columnar|engineered_persistence)[.]"
+          tests="$tests|^abi-units$"
           ctest --test-dir build --output-on-failure -R "$tests"
           cmake --install build
           grep -q 'Taskflow;Kokkos' inst/share/cmake/ADS/ADSConfig.cmake
+          grep -q 'GraphBLAS;NetworKit;CRoaring;sdsl' \
+               inst/share/cmake/ADS/ADSConfig.cmake
+      - name: the adapters of the libraries, by the makefile
+        run: |
+          opt="$RUNNER_TEMP/interop"
+          make -j4 BUILD=build-interop CRoaring_ROOT="$opt" \
+               sdsl_ROOT="$opt" nanoarrow_ROOT="$opt" KaHIP_ROOT="$opt" \
+               GraphBLAS_ROOT="$opt" NetworKit_ROOT="$opt" tlx_ROOT="$opt" \
+               ADS_WITH_CEREAL=1 ADS_WITH_CROARING=1 ADS_WITH_SDSL=1 \
+               ADS_WITH_NANOARROW=1 ADS_WITH_EIGEN=1 ADS_WITH_METIS=1 \
+               ADS_WITH_KAHIP=1 ADS_WITH_GRAPHBLAS=1 ADS_WITH_NETWORKIT=1 \
+               test-interop_graphs test-interop_columnar \
+               test-interop_examples test-engineered_persistence
+          failed=$(cat build-interop/interop_graphs.failed \
+                   build-interop/interop_columnar.failed \
+                   build-interop/interop_examples.failed \
+                   build-interop/engineered_persistence.failed |
+                   awk '{ s += $1 } END { print s + 0 }')
+          test "$failed" -eq 0
       - name: the senders and Taskflow under ThreadSanitizer
         run: |
           sudo sysctl vm.mmap_rnd_bits=28
@@ -551,6 +655,51 @@ jobs:
               test/interop_parallel.cpp -pthread -ltbb
           ./tsan-interop sender-executor
           ./tsan-interop taskflow-executor
+
+  # the package of Python: the wheel built by pip from python/ (one wheel on
+  # the stable ABI of Python 3.12, on scikit-build-core and nanobind),
+  # installed with the libraries of its tests, and its tests of pytest, the
+  # backend nx-ads of NetworkX among them, and the examples of the manual run
+  # on it; on Linux also the package built by CMake (ADS_WITH_PYTHON=ON) and
+  # its ctests python.*
+  python:
+    name: python (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest , macos-latest , windows-latest ]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: the wheel, installed, and its tests
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip wheel ./python --no-deps -w dist
+          python -m pip install dist/ads_python-*.whl
+          python -m pip install pytest networkx scipy pyroaring
+          python -m pytest -q -p no:cacheprovider python/tests
+          python python/examples/structures.py
+          python python/examples/networkx_backend.py
+      - name: the package by CMake, and its ctests
+        if: runner.os == 'Linux'
+        run: |
+          python -m pip uninstall -y ads-python
+          python -m pip install nanobind
+          set -o pipefail
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+                -DADS_WITH_PYTHON=ON \
+                -DPython_EXECUTABLE="$(command -v python)" | tee cmake.log
+          grep -q 'ADS: Python ON' cmake.log
+          cmake --build build --parallel 4 --target _core _core_stub \
+                ads_python_files
+          ctest --test-dir build -R '^python[.]' --no-tests=error \
+                --output-on-failure
 
   # a big-endian target, s390x: the programs of the structures with
   # branches for the order of the bytes (the hash tables, the searches of

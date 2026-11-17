@@ -55,11 +55,22 @@
 #                                  Taskflow [see include/ADS/interop/         #
 #                                  parallel], in $(ADSINTEROPINC) and         #
 #                                  $(ADSINTEROPLIB) alone                     #
+#           $(ADS_WITH_CEREAL), $(ADS_WITH_CROARING), $(ADS_WITH_SDSL),       #
+#           $(ADS_WITH_NANOARROW), $(ADS_WITH_EIGEN), $(ADS_WITH_METIS),      #
+#           $(ADS_WITH_KAHIP), $(ADS_WITH_GRAPHBLAS), $(ADS_WITH_NETWORKIT)   #
+#                                = the same for the adapters of               #
+#                                  include/ADS/interop to cereal, CRoaring,   #
+#                                  sdsl-lite 3, Eigen, METIS, KaHIP,          #
+#                                  GraphBLAS and NetworKit, and for nanoarrow #
+#                                  in the test of the columns of Arrow        #
 #           $(GMP_ROOT), $(BLAS_ROOT), $(Boost_ROOT), $(HWY_ROOT),            #
 #           $(LEMON_ROOT),                                                    #
 #           $(OpenMP_ROOT), $(TBB_ROOT), $(FastFlow_ROOT),                    #
-#           $(MPI_ROOT), $(STDEXEC_ROOT),                                     #
-#           $(Taskflow_ROOT)     = where the libraries are, see               #
+#           $(MPI_ROOT), $(STDEXEC_ROOT), $(Taskflow_ROOT),                   #
+#           $(cereal_ROOT), $(CRoaring_ROOT), $(sdsl_ROOT),                   #
+#           $(nanoarrow_ROOT), $(Eigen_ROOT), $(METIS_ROOT), $(KaHIP_ROOT),   #
+#           $(GraphBLAS_ROOT), $(NetworKit_ROOT),                             #
+#           $(tlx_ROOT)          = where the libraries are, see               #
 #                                  extlib/makefile-paths (GMP=<prefix>,       #
 #                                  BLAS=<prefix> and BOOST=<prefix> on the    #
 #                                  command line are the same as               #
@@ -87,6 +98,16 @@
 #                                  the runtimes of a program found, which     #
 #                                  $(ADSINC) and $(ADSLIB) do not carry       #
 #           $(ADSSTDPARON), $(ADSSTDEXECON), $(ADSTASKFLOWON) = 1 if found    #
+#           $(ADSCEREALINC), $(ADSCOLUMNARINC), $(ADSCOLUMNARLIB),            #
+#           $(ADSSDSLINC)        = the same for cereal, CRoaring and          #
+#                                  sdsl-lite                                  #
+#           $(ADSNANOARROWINC), $(ADSNANOARROWLIB) = the same for nanoarrow   #
+#           $(ADSGRAPHSINC), $(ADSGRAPHSLIB) = the same for Eigen, METIS,     #
+#                                  KaHIP, GraphBLAS and NetworKit             #
+#           $(ADSCEREALON), $(ADSCROARINGON), $(ADSSDSLON),                   #
+#           $(ADSNANOARROWON), $(ADSEIGENON), $(ADSMETISON), $(ADSKAHIPON),   #
+#           $(ADSGRAPHBLASON),                                                #
+#           $(ADSNETWORKITON)    = 1 if found                                 #
 #                                                                             #
 ###############################################################################
 
@@ -293,15 +314,29 @@ ADS_WITH_TASKFLOW ?= auto
 ADS_WITH_CEREAL ?= auto
 ADS_WITH_CROARING ?= auto
 ADS_WITH_SDSL ?= auto
+ADS_WITH_NANOARROW ?= auto
+ADS_WITH_EIGEN ?= auto
+ADS_WITH_METIS ?= auto
+ADS_WITH_KAHIP ?= auto
+ADS_WITH_GRAPHBLAS ?= auto
+ADS_WITH_NETWORKIT ?= auto
 ADSINTEROPINC :=
 ADSINTEROPLIB :=
 ADSCEREALINC :=
 ADSCOLUMNARINC :=
 ADSCOLUMNARLIB :=
 ADSSDSLINC :=
+ADSNANOARROWINC :=
+ADSNANOARROWLIB :=
+ADSGRAPHSINC :=
+ADSGRAPHSLIB :=
 ADSINTEROPWANT := $(ADS_WITH_STDPAR)$(ADS_WITH_STDEXEC)$(ADS_WITH_TASKFLOW)
 ADSINTEROPWANT := $(ADSINTEROPWANT)$(ADS_WITH_CEREAL)$(ADS_WITH_CROARING)
-ifneq ($(ADSINTEROPWANT)$(ADS_WITH_SDSL),000000)
+ADSINTEROPWANT := $(ADSINTEROPWANT)$(ADS_WITH_SDSL)$(ADS_WITH_NANOARROW)
+ADSINTEROPWANT := $(ADSINTEROPWANT)$(ADS_WITH_EIGEN)$(ADS_WITH_METIS)
+ADSINTEROPWANT := $(ADSINTEROPWANT)$(ADS_WITH_KAHIP)$(ADS_WITH_GRAPHBLAS)
+ADSINTEROPWANT := $(ADSINTEROPWANT)$(ADS_WITH_NETWORKIT)
+ifneq ($(subst 0,,$(ADSINTEROPWANT)),)
     include $(ADSSDR)/extlib/makefile-libInterop
 endif
 ifneq ($(ADS_WITH_STDPAR),0)
@@ -356,6 +391,35 @@ ifeq ($(ADSSDSLON),1)
     ADSCOLUMNARINC += $(libSdslINC)
     ADSSDSLINC += $(libSdslINC)
 endif
+# nanoarrow, which reads the columns that ADS exports in their test [see
+# test/interop_columnar.cpp], in ADSNANOARROWINC and ADSNANOARROWLIB alone
+ifneq ($(ADS_WITH_NANOARROW),0)
+    ADSNANOARROWON := $(strip $(if $(filter auto,$(ADS_WITH_NANOARROW)),\
+	$(libNanoarrowFOUND),$(filter 1,$(ADS_WITH_NANOARROW))))
+endif
+ifeq ($(ADSNANOARROWON),1)
+    ADSNANOARROWINC += $(libNanoarrowINC)
+    ADSNANOARROWLIB += $(filter-out none,$(libNanoarrowLIB))
+endif
+# the libraries of the graphs and of the matrices, Eigen, METIS, KaHIP,
+# GraphBLAS and NetworKit, in ADSGRAPHSINC and ADSGRAPHSLIB alone [see
+# include/ADS/interop/eigen, metis, kahip, graphblas and networkit]: the
+# same, by ADS_WITH_<NAME> and lib<Name>* of extlib/makefile-libInterop
+define ADSGRAPHrule
+ifneq ($$(ADS_WITH_$(1)),0)
+    ADS$(1)ON := $$(strip $$(if $$(filter auto,$$(ADS_WITH_$(1))),\
+	$$(lib$(2)FOUND),$$(filter 1,$$(ADS_WITH_$(1)))))
+endif
+ifeq ($$(ADS$(1)ON),1)
+    ADSGRAPHSINC += $$(lib$(2)INC)
+    ADSGRAPHSLIB += $$(filter-out none,$$(lib$(2)LIB))
+endif
+endef
+$(eval $(call ADSGRAPHrule,EIGEN,Eigen))
+$(eval $(call ADSGRAPHrule,METIS,Metis))
+$(eval $(call ADSGRAPHrule,KAHIP,KaHIP))
+$(eval $(call ADSGRAPHrule,GRAPHBLAS,GraphBLAS))
+$(eval $(call ADSGRAPHrule,NETWORKIT,NetworKit))
 
 # include the ADS makefile requiring all external modules in input
 include $(ADSSDR)/lib/makefile

@@ -45,5 +45,15 @@ LEMON_ROOT =
 OpenMP_ROOT = $(ADSBREW)/opt/libomp
 TBB_ROOT = $(ADSBREW)
 FastFlow_ROOT = /Library/fastflow
+cereal_ROOT = $(ADSBREW)
+CRoaring_ROOT = $(ADSBREW)
+sdsl_ROOT =
+nanoarrow_ROOT = $(ADSBREW)
+Eigen_ROOT = $(ADSBREW)
+METIS_ROOT = $(ADSBREW)
+KaHIP_ROOT = $(ADSBREW)
+GraphBLAS_ROOT = $(ADSBREW)
+NetworKit_ROOT = $(ADSBREW)
+tlx_ROOT = $(ADSBREW)
 
 ##################### End of makefile-default-paths-macos #####################

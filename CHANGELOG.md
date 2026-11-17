@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- the makefiles take the adapters of Eigen, METIS, KaHIP,
+  SuiteSparse:GraphBLAS and NetworKit as CMake does, each by its variable
+  `ADS_WITH_<NAME>` (`auto`, `0` or `1`) and its prefix `<Name>_ROOT` in
+  `extlib/`, and nanoarrow (`ADS_WITH_NANOARROW`) for the test of the
+  columns of Arrow, which CMake now also finds as a shared library
+- the CI installs the libraries of the adapters of `include/ADS/interop`
+  and requires them: those that the package managers have in the jobs
+  `test` on Linux, macOS and MSYS2, and all of them in the job `interop`,
+  by CMake and by the makefile, the libraries that the runners lack or
+  have too old (sdsl-lite 3, CRoaring, nanoarrow, GraphBLAS 10, KaHIP and
+  NetworKit) built from their sources by `.github/interop-libs.sh` and
+  kept in the cache; and the job `python` builds the wheel of `ads-python`
+  and runs its tests, the backend `nx-ads` of NetworkX among them, on
+  Linux, macOS and Windows, and on Linux the package built by CMake
+
 ## [0.1.0] - 2026-11-17
 
 ### Added

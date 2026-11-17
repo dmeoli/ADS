@@ -180,8 +180,9 @@ endif ()
 # the columns of Arrow, the bitmaps of CRoaring, the vectors of sdsl-lite and
 # the archives of cereal that the latter share with ADS, where they are found,
 # in their tests [see interop_columnar.cpp] and in the examples of appendix C
-# of the manual; nanoarrow, where found, reads the columns that ADS exports
-# and writes those that it imports
+# of the manual; nanoarrow, where found (its static library, or else its
+# shared one), reads the columns that ADS exports and writes those that it
+# imports
 foreach (program interop_columnar interop_examples)
     foreach (r cereal CRoaring sdsl)
         if (r IN_LIST ADS_INTEROP_BUILT)
@@ -190,11 +191,17 @@ foreach (program interop_columnar interop_examples)
     endforeach ()
 endforeach ()
 find_package(nanoarrow CONFIG QUIET)
-if (TARGET nanoarrow::nanoarrow_static)
-    target_link_libraries(interop_columnar PRIVATE
-                          nanoarrow::nanoarrow_static)
-    target_compile_definitions(interop_columnar PRIVATE ADS_WITH_NANOARROW)
-endif ()
+set(ADS_USE_NANOARROW OFF)
+foreach (t nanoarrow_static nanoarrow_shared nanoarrow)
+    if (TARGET nanoarrow::${t})
+        target_link_libraries(interop_columnar PRIVATE nanoarrow::${t})
+        target_compile_definitions(interop_columnar PRIVATE
+                                   ADS_WITH_NANOARROW)
+        set(ADS_USE_NANOARROW ON)
+        break ()
+    endif ()
+endforeach ()
+message(STATUS "ADS: nanoarrow ${ADS_USE_NANOARROW}")
 
 # the processes of MPI in a program of Boost.MPI, not in tests.txt: on 1 to
 # 4 processes [see engineered_boost_mpi.cpp]

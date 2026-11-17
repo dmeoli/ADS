@@ -1167,8 +1167,14 @@ machine.
 examples of each library, and the names of their tests. These run on any
 machine that has the libraries, and in the continuous integration, whose
 job `interop` installs oneTBB, Boost, GMP, OpenBLAS, abLEMON, stdexec,
-Taskflow and Kokkos; the job of MPI runs the examples of MPI and of
-Boost.MPI. Also, `make check` compiles the examples of a library only where
+Taskflow and Kokkos, as well as cereal, Eigen, METIS, KaHIP, GraphBLAS,
+NetworKit, CRoaring, sdsl-lite and nanoarrow, and runs the examples on all
+of them by CMake and by the makefile. The jobs `test` install those of the
+latter that the package managers of Linux, macOS and MSYS2 have, or that
+are quick to build from their sources, the job of MPI runs the examples of
+MPI and of Boost.MPI, and the job `python` builds the wheel of the package
+of [§C.21](C-libraries.md#sec-C-21) and runs its tests on Linux, macOS and
+Windows. Also, `make check` compiles the examples of a library only where
 it finds the library, and it names those that it skips. The directories of
 a library that is not where the compiler looks are given to it as flags in
 the environment, `DECLCHECK_LEMON`, `DECLCHECK_STDEXEC`,
@@ -1182,11 +1188,11 @@ the environment, `DECLCHECK_LEMON`, `DECLCHECK_STDEXEC`,
 **Table C.1.** The libraries of the examples: the option of CMake and its
 default, the component of `find_package(ADS)` (none where `ADS::ADS`
 carries the library), and the tests. The makefile takes the same variable
-(`auto`, `0` or `1`) for all the libraries but Kokkos, Boost.MPI, Eigen,
-METIS, KaHIP, GraphBLAS, NetworKit and Python, which only CMake builds;
-the adapters of Eigen, METIS, KaHIP, GraphBLAS and NetworKit are also
-tested by `interop_graphs.*`, and those of Arrow, CRoaring and sdsl-lite by
-`interop_columnar.*`.
+(`auto`, `0` or `1`) for all the libraries but Kokkos, Boost.MPI and
+Python, which only CMake builds, and `ADS_WITH_NANOARROW` for nanoarrow,
+which CMake uses where it finds it; the adapters of Eigen, METIS, KaHIP,
+GraphBLAS and NetworKit are also tested by `interop_graphs.*`, and those of
+Arrow, CRoaring and sdsl-lite by `interop_columnar.*`.
 
 | Library | Option | Default | Component | Tests |
 |-------------------|--------------------|------|----------|-------------------|
