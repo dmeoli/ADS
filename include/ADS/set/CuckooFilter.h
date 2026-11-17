@@ -316,12 +316,12 @@ class CuckooFilter
  std::uint64_t random( void );
 
  std::vector< W , MappableAllocator< W > > f_T;  ///< the buckets
- std::size_t f_mask = 0;                       ///< buckets - 1
- std::size_t f_n = 0;                          ///< the keys in
- std::size_t f_vb = 0;                         ///< the bucket of the victim
- F f_vt = 0;                                   ///< the victim, 0 if none
- std::uint64_t f_rng = 0x9E3779B97F4A7C15ULL;  ///< the state of xorshift
- H f_h;                                        ///< the hash of the keys
+ std::size_t f_mask = 0;                        ///< buckets - 1
+ std::size_t f_n = 0;                           ///< the keys in
+ std::size_t f_vb = 0;                          ///< the bucket of the victim
+ F f_vt = 0;                                    ///< the victim, 0 if none
+ std::uint64_t f_rng = 0x9E3779B97F4A7C15ULL;   ///< the state of xorshift
+ H f_h;                                         ///< the hash of the keys
 
  };  // end( class CuckooFilter )
 

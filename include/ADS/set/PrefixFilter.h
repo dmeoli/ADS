@@ -406,8 +406,8 @@ class PrefixFilter
 					       std::uint32_t x );
 
  std::vector< Bin , MappableAllocator< Bin > > f_B;  ///< the bins
- std::size_t f_cap;                            ///< n
- std::size_t f_n = 0;                          ///< the keys in
+ std::size_t f_cap;                                 ///< n
+ std::size_t f_n = 0;                               ///< the keys in
  std::size_t f_spareN = 0;                     ///< the fingerprints spared
  BlockedBloomFilter< std::uint64_t > f_spare;  ///< the spare
  H f_h;                                        ///< the hash of the keys

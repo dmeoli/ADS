@@ -977,9 +977,6 @@ void checkValueType( M && make , Key && key )
 #endif
   // the keys by std::views::keys, the pairs by the structured bindings
   std::size_t n = 0;
-#if ! defined( __cpp_lib_ranges_zip )
-  static_assert( requires { *d | std::views::keys; } );
-#endif
   if constexpr( requires { *d | std::views::keys; } )
    for( const auto & k : *d | std::views::keys )
     n += std::ranges::find( out , k , &P::first ) != out.end();

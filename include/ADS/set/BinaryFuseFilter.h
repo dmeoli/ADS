@@ -219,9 +219,9 @@ class BinaryFuseFilter
  bool build( const std::vector< std::uint64_t > & B );
 
  std::vector< F , MappableAllocator< F > > f_F;  ///< the fingerprints
- std::uint64_t f_seed;      ///< the seed of the last trial
- std::uint32_t f_L = 0;     ///< the places of a segment
- std::uint32_t f_CL = 0;    ///< the places of h_0, C L
+ std::uint64_t f_seed;                          ///< the seed of the last trial
+ std::uint32_t f_L = 0;                         ///< the places of a segment
+ std::uint32_t f_CL = 0;                        ///< the places of h_0, C L
  std::size_t f_n = 0;       ///< the keys, the repeated ones once
  std::size_t f_trials = 0;  ///< the seeds drawn
  H f_h;                     ///< the hash of the keys

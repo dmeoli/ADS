@@ -128,7 +128,7 @@ void csrTransposeScatter( std::size_t m , std::size_t n , std::size_t nnz ,
 {
  std::vector< C > at( trow , trow + n );
  if( ! bucketed ) {
-  for( std::size_t i = 0 ; i < m ; ++i )  // the rows in order: each
+  for( std::size_t i = 0 ; i < m ; ++i )            // the rows in order: each
    for( std::size_t p = std::size_t( row[ i ] ) ;  // column of the
 	p < std::size_t( row[ i + 1 ] ) ; ++p ) {  // transpose sorted
     const C q = at[ std::size_t( col[ p ] ) ]++;

@@ -210,8 +210,9 @@ U64 run( const std::string & c , std::size_t n )
  else if( c == "linerank" ) {
   for( std::size_t i = 0 ; i < n ; ++i ) {
    const U64 * w = W.w.data() + 8 * ( i % ( M / 8 ) );
-   s += U64(
-     ADS::detail::lineRank< true >( w , unsigned( W.w[ i % M ] % 512 ) ) );
+   s +=
+     U64( ADS::detail::lineRank< true >( w ,
+					 unsigned( W.w[ i % M ] % 512 ) ) );
    }
   }
  else if( c == "tans" ) {  // a byte decoded, of a code of 1000

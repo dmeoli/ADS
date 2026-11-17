@@ -143,7 +143,8 @@ concept item_pop = requires( Q & q )
 template< class Q >
 concept top_pop = requires( Q & q )
 {
- typename queue_item< Q >::type( q.top() );
+ requires std::constructible_from< typename queue_item< Q >::type ,
+				   decltype( q.top() ) >;
  q.pop();
  };
 

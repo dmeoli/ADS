@@ -401,9 +401,9 @@ class RecSplit
  /// cannot be separated or a bucket is too large
  bool build( const std::vector< std::uint64_t > & B , std::size_t b );
 
- std::uint64_t f_seed;                 ///< the seed of the hashes
- std::size_t f_n = 0;                  ///< the number of keys
- std::size_t f_nb = 0;                 ///< the buckets
+ std::uint64_t f_seed;  ///< the seed of the hashes
+ std::size_t f_n = 0;   ///< the number of keys
+ std::size_t f_nb = 0;  ///< the buckets
  /// the codes, two words more
  std::vector< std::uint64_t , MappableAllocator< std::uint64_t > > f_code;
  /// the keys before the bucket \f$ i \f$, less \f$ i \f$ `f_dk`

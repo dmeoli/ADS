@@ -212,9 +212,11 @@ inline MultiSearcher::MultiSearcher( const std::vector< std::string > & P )
   const std::size_t l = std::min< std::size_t >( P[ j ].size() , 8 );
   std::uint64_t h = 0;
   std::memcpy( &h , P[ j ].data() , l );
+  // the mask laid as the bytes are, which is the order of any system
+  std::uint64_t k = 0;
+  std::memset( &k , 0xff , l );
   f_head[ j ] = h;
-  f_mask[ j ] =
-    l == 8 ? ~std::uint64_t( 0 ) : ( std::uint64_t( 1 ) << ( 8 * l ) ) - 1;
+  f_mask[ j ] = k;
   }
  }
 

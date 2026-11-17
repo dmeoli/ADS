@@ -233,10 +233,10 @@ class MinimalPerfectHash
 
  std::uint64_t f_seed;
  std::size_t f_n = 0;
- std::size_t f_m = 0;                  ///< the places, \f$ n / \alpha \f$
- std::size_t f_dense = 0;              ///< the buckets of 60 % of the keys
- std::size_t f_sparse = 0;             ///< the other buckets
- int f_w = 0;                          ///< the bits of a pilot
+ std::size_t f_m = 0;       ///< the places, \f$ n / \alpha \f$
+ std::size_t f_dense = 0;   ///< the buckets of 60 % of the keys
+ std::size_t f_sparse = 0;  ///< the other buckets
+ int f_w = 0;               ///< the bits of a pilot
  /// the pilots, `f_w` bits each
  std::vector< std::uint64_t , MappableAllocator< std::uint64_t > > f_P;
  std::vector< std::uint32_t > f_free;  ///< the place of \f$ p \ge n \f$

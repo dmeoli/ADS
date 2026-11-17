@@ -305,8 +305,8 @@ class CompactRankSelect
  struct Entry
  {
   using persist_unit = std::uint64_t;  ///< a block of two words in a file
-  std::uint64_t lo = 0 ,  ///< the low 64 bits of the entry
-    hi = 0;              ///< the high 64 bits of the entry
+  std::uint64_t lo = 0 ,                ///< the low 64 bits of the entry
+    hi = 0;                            ///< the high 64 bits of the entry
   };
 
  /// the entry of a superblock with c 1s before it since its top region

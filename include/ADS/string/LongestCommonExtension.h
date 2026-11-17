@@ -211,7 +211,7 @@ class LceIndex
  private:
  /// lce( i , j ) past the first chunk of symbols, which match
  ADS_NOINLINE [[nodiscard]] std::size_t longer( std::size_t i , std::size_t j ,
-				   std::size_t far ) const;
+						std::size_t far ) const;
 
  /// the minimum of LCP[ a .. c ], a <= c
  [[nodiscard]] I minimum( std::size_t a , std::size_t c ) const;

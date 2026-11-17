@@ -207,7 +207,7 @@ class BlockedBloomFilter
  /// a block of 8 words, aligned to its 32 bytes
  struct alignas( 32 ) Block
  {
-  std::uint32_t w[ 8 ];  ///< the words, 32 bits each
+  std::uint32_t w[ 8 ];                ///< the words, 32 bits each
   using persist_unit = std::uint32_t;  ///< eight words in a file
   };
 
@@ -218,8 +218,8 @@ class BlockedBloomFilter
  [[nodiscard]] std::size_t block( std::uint64_t h ) const;
 
  std::vector< Block , MappableAllocator< Block > > f_B;  ///< the blocks
- std::size_t f_n = 0;       ///< the insertions
- H f_h;                     ///< the hash of the items
+ std::size_t f_n = 0;                                   ///< the insertions
+ H f_h;  ///< the hash of the items
 
  };  // end( class BlockedBloomFilter )
 
