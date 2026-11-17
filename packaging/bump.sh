@@ -57,7 +57,7 @@ from pathlib import Path
 
 root, v, sha256, sha512, sri, module = sys.argv[1:]
 root = Path(root)
-author = "Donato Meoli <donato.meoli.95@gmail.com>"
+author = "Donato Meoli <donato.meoli@outlook.com>"
 
 
 def edit(rel, *subs):

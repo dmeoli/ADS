@@ -1,14 +1,14 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: ADS
-Upstream-Contact: Donato Meoli <donato.meoli.95@gmail.com>
+Upstream-Contact: Donato Meoli <donato.meoli@outlook.com>
 Source: https://github.com/dmeoli/ADS
 
 Files: *
-Copyright: 2026 Donato Meoli <donato.meoli.95@gmail.com>
+Copyright: 2026 Donato Meoli <donato.meoli@outlook.com>
 License: BSL-1.0
 
 Files: debian/*
-Copyright: 2026 Donato Meoli <donato.meoli.95@gmail.com>
+Copyright: 2026 Donato Meoli <donato.meoli@outlook.com>
 License: BSL-1.0
 
 License: BSL-1.0
