@@ -7,31 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- the makefiles take the adapters of Eigen, METIS, KaHIP,
-  SuiteSparse:GraphBLAS and NetworKit as CMake does, each by its variable
-  `ADS_WITH_<NAME>` (`auto`, `0` or `1`) and its prefix `<Name>_ROOT` in
-  `extlib/`, and nanoarrow (`ADS_WITH_NANOARROW`) for the test of the
-  columns of Arrow, which CMake now also finds as a shared library
-- the CI installs the libraries of the adapters of `include/ADS/interop`
-  and requires them: those that the package managers have in the jobs
-  `test` on Linux, macOS and MSYS2, and all of them in the job `interop`,
-  by CMake and by the makefile, the libraries that the runners lack or
-  have too old (sdsl-lite 3, CRoaring, nanoarrow, GraphBLAS 10, KaHIP and
-  NetworKit) built from their sources by `.github/interop-libs.sh` and
-  kept in the cache; and the job `python` builds the wheel of `ads-python`
-  and runs its tests, the backend `nx-ads` of NetworkX among them, on
-  Linux, macOS and Windows, and on Linux the package built by CMake
-- the wheels of `ads-python` built by cibuildwheel (configured in
-  `python/pyproject.toml`) on Linux (manylinux, x86_64 and aarch64), macOS
-  (arm64 and x86_64) and Windows (AMD64 and ARM64), one per platform on
-  the stable ABI of Python 3.12, each tested by the tests of the package,
-  and its sdist, which carries the sources of ADS in `libads/` and is
-  tested by installing it, in `.github/workflows/wheels.yml`; at each tag
-  they are attached to the release, and published on PyPI by trusted
-  publishing once the repository variable `PYPI_PUBLISH` is true
-
 ## [0.1.0] - 2026-11-17
 
 ### Added
@@ -219,6 +194,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the recipes of `packaging/` for Debian, Homebrew, vcpkg, conda-forge,
   Conan, Spack, the AUR, MSYS2, xmake, Nix, WrapDB and the Bazel Central
   Registry
+- the makefiles take the adapters of Eigen, METIS, KaHIP,
+  SuiteSparse:GraphBLAS and NetworKit as CMake does, each by its variable
+  `ADS_WITH_<NAME>` (`auto`, `0` or `1`) and its prefix `<Name>_ROOT` in
+  `extlib/`, and nanoarrow (`ADS_WITH_NANOARROW`) for the test of the
+  columns of Arrow, which CMake also finds as a shared library
+- the wheels of `ads-python` built by cibuildwheel (configured in
+  `python/pyproject.toml`) on Linux (manylinux, x86_64 and aarch64), macOS
+  (arm64 and x86_64) and Windows (AMD64 and ARM64), one per platform on
+  the stable ABI of Python 3.12, each tested by the tests of the package,
+  and its sdist, which carries the sources of ADS in `libads/` and is
+  tested by installing it, in `.github/workflows/wheels.yml`; at each tag
+  they are attached to the release, and published on PyPI by trusted
+  publishing once the repository variable `PYPI_PUBLISH` is true
 
 #### Tests, benchmarks and documentation
 
@@ -235,6 +223,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the documentation at https://dmeoli.github.io/ADS/ (the theory of each
   area and the reference of the API) and the manual, whose PDF is attached
   to the release
+- the CI installs the libraries of the adapters of `include/ADS/interop`
+  and requires them: those that the package managers have in the jobs
+  `test` on Linux, macOS and MSYS2, and all of them in the job `interop`,
+  by CMake and by the makefile, the libraries that the runners lack or
+  have too old (sdsl-lite 3, CRoaring, nanoarrow, GraphBLAS 10, KaHIP and
+  NetworKit) built from their sources by `.github/interop-libs.sh` and
+  kept in the cache; and the job `python` builds the wheel of `ads-python`
+  and runs its tests, the backend `nx-ads` of NetworkX among them, on
+  Linux, macOS and Windows, and on Linux the package built by CMake
 
 [Unreleased]: https://github.com/dmeoli/ADS/compare/v0.1.0...main
 [0.1.0]: https://github.com/dmeoli/ADS/releases/tag/v0.1.0
