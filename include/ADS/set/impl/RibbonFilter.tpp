@@ -166,29 +166,12 @@ void RibbonFilter< T , F , H >::solve( const std::vector< std::uint64_t > & C ,
  auto side = [ & ]( std::size_t i ) {
   return( C[ i ] != 0 ? std::uint64_t( R[ i ] ) : hashWord( i , f_seed ) );
   };
-#if defined( __AVX512BW__ )
- // W[ g ] holds, in its lane j, the bits of the column 8 g + j in the 64
- // rows from i; 4 rows a time, the parities of the 4 rows taken from the
- // old W at once and the bits of the new rows among them added after
- constexpr int kG = kR / 8;
- __m512i W[ kG ];
- for( int g = 0 ; g < kG ; ++g )
-  W[ g ] = _mm512_setzero_si512();
- const __m512i nib = _mm512_set1_epi8( 0x0F );
- const __m512i odd = _mm512_broadcast_i32x4(
-   _mm_setr_epi8( 0 , 1 , 1 , 0 , 1 , 0 , 0 , 1 , 1 , 0 , 0 , 1 , 0 , 1 , 1 ,
-		  0 ) );
- auto par = [ & ]( __m512i w , std::uint64_t c ) {
-  const __m512i x =
-    _mm512_and_si512( w , _mm512_set1_epi64( std::int64_t( c ) ) );
-  const __m512i p = _mm512_shuffle_epi8(
-    odd ,
-    _mm512_and_si512( _mm512_xor_si512( x , _mm512_srli_epi64( x , 4 ) ) ,
-			   nib ) );
-  return( std::uint32_t( _mm512_test_epi64_mask(
-    _mm512_sad_epu8( p , _mm512_setzero_si512() ) ,
-    _mm512_set1_epi64( 1 ) ) ) );
-  };
+#ifdef ADS_WITH_HIGHWAY
+ // W[ j ] holds the bits of the column j in the 64 rows from i; 4 rows at
+ // a time, 8 columns a vector [see SimdInline.h]: the parities of the 4
+ // rows taken from the old W at once, and the bits of the new rows among
+ // them added after
+ std::uint64_t W[ kR ] = {};
  auto bit = []( std::uint64_t c , int k ) {
   return( std::uint32_t( 0 ) - std::uint32_t( ( c >> k ) & 1 ) );
   };
@@ -199,28 +182,26 @@ void RibbonFilter< T , F , H >::solve( const std::vector< std::uint64_t > & C ,
   const std::uint64_t r1 = side( i - 1 ) , r2 = side( i - 2 ) ,
 		      r3 = side( i - 3 ) , r4 = side( i - 4 );
   i -= 4;
-  for( int g = 0 ; g < kG ; ++g ) {
-   const int o = 8 * g;
+  for( int o = 0 ; o < kR ; o += 8 ) {
+   const std::uint64_t * w = W + o;
+   auto par = [ & ]( std::uint64_t c ) {
+    return( detail::simd::here::parities8( w , w , c , 0 ) );
+    };
    const std::uint32_t b1 =
-     ( std::uint32_t( r1 >> o ) & 255 ) ^ par( W[ g ] , c1 >> 1 );
+     ( std::uint32_t( r1 >> o ) & 255 ) ^ par( c1 >> 1 );
    const std::uint32_t b2 = ( std::uint32_t( r2 >> o ) & 255 ) ^
-			    par( W[ g ] , c2 >> 2 ) ^ ( b1 & bit( c2 , 1 ) );
+			    par( c2 >> 2 ) ^ ( b1 & bit( c2 , 1 ) );
    const std::uint32_t b3 = ( std::uint32_t( r3 >> o ) & 255 ) ^
-			    par( W[ g ] , c3 >> 3 ) ^ ( b2 & bit( c3 , 1 ) ) ^
+			    par( c3 >> 3 ) ^ ( b2 & bit( c3 , 1 ) ) ^
 			    ( b1 & bit( c3 , 2 ) );
    const std::uint32_t b4 = ( std::uint32_t( r4 >> o ) & 255 ) ^
-			    par( W[ g ] , c4 >> 4 ) ^ ( b3 & bit( c4 , 1 ) ) ^
+			    par( c4 >> 4 ) ^ ( b3 & bit( c4 , 1 ) ) ^
 			    ( b2 & bit( c4 , 2 ) ) ^ ( b1 & bit( c4 , 3 ) );
-   __m512i w = _mm512_slli_epi64( W[ g ] , 4 );
-   w = _mm512_mask_or_epi64( w , __mmask8( b1 ) , w , _mm512_set1_epi64( 8 ) );
-   w = _mm512_mask_or_epi64( w , __mmask8( b2 ) , w , _mm512_set1_epi64( 4 ) );
-   w = _mm512_mask_or_epi64( w , __mmask8( b3 ) , w , _mm512_set1_epi64( 2 ) );
-   W[ g ] =
-     _mm512_mask_or_epi64( w , __mmask8( b4 ) , w , _mm512_set1_epi64( 1 ) );
+   detail::simd::here::shiftIn4( W + o , b1 , b2 , b3 , b4 );
    }
   if( ( i & 63 ) == 0 )
-   for( int g = 0 ; g < kG ; ++g )
-    _mm512_store_si512( Z + i / 64 * kR + 8 * std::size_t( g ) , W[ g ] );
+   for( int j = 0 ; j < kR ; ++j )
+    Z[ i / 64 * kR + std::size_t( j ) ] = W[ j ];
   }
 #else
  // W[ j ] holds the bits of the column j in the 64 rows from i

@@ -143,9 +143,11 @@
  #include <rapidhash.h>
  #define ADS_HAS_RAPIDHASH 1
 #endif
-#if __has_include( <bloom/simd-block.h> ) && defined( __AVX2__ )
+// the blocked Bloom filter of fastfilter_cpp, with ADS_HAS_FASTFILTER,
+// which the build defines where a unit that includes it compiles at the
+// flags of the benchmark (AVX2 at least)
+#ifdef ADS_HAS_FASTFILTER
  #include <bloom/simd-block.h>
- #define ADS_HAS_FASTFILTER 1
 #endif
 #if __has_include( <cuckoo/cuckoofilter.h> )
  #include <cuckoo/cuckoofilter.h>

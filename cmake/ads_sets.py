@@ -45,6 +45,12 @@ MODULE = { "core" : ( "ads.core" , "src/ADSCore.cppm" ) ,
 MEMBERS = { "core" : ( "core" , ) , "base" : ( "base" , ) ,
             "advanced" : ( "advanced" , ) }
 
+# the sets whose names each module exports: ads.base and ads.advanced also
+# those of the core, since they do not import ads.core [see
+# ads_module_exports.py]
+EXPORTS = { "core" : ( "core" , ) , "base" : ( "base" , "core" ) ,
+            "advanced" : ( "advanced" , "core" ) }
+
 ROOT = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
 INC = os.path.join( ROOT , "include" )
 
@@ -347,7 +353,7 @@ def module_errors( sets ):
             continue
         with open( p , encoding = "utf-8" ) as f:
             for h in re.findall( r"^// (\S+\.h)$" , f.read() , re.M ):
-                if sets.set.get( h ) not in MEMBERS[ s ]:
+                if sets.set.get( h ) not in EXPORTS[ s ]:
                     errors.append( f"{path} exports the names of {h}, of "
                                    f"the set {sets.set.get( h )}: run "
                                    "cmake/ads_module_exports.py" )

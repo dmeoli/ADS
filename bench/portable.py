@@ -32,7 +32,8 @@ import sys
 ROOT = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
 CASES = [ "select" , "bselect" , "prefix" , "recsplit" , "hash" , "mulmod" ,
           "montgomery" , "bigmul" , "bigdiv" , "merge" , "cas16" , "notify" ,
-          "wait" , "suffix" ]
+          "wait" , "suffix" , "rank1" , "linerank" , "tans" , "philox" ,
+          "sell" ]
 
 
 def run( cmd , **kw ):

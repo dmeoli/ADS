@@ -201,11 +201,7 @@ tansDecompress( std::span< const std::uint8_t > in )
    left -= k;
    // left = 64 only for k = 0, whose mask is 0
    const std::uint64_t v = w >> ( unsigned( left ) & 63 );
-#ifdef __BMI2__
-   return( std::uint32_t( _bzhi_u64( v , k ) ) );
-#else
    return( std::uint32_t( v & ( ( std::uint64_t( 1 ) << k ) - 1 ) ) );
-#endif
    }
   [[nodiscard]] std::ptrdiff_t place( void ) const {
    return( 8 * base + left );

@@ -438,13 +438,9 @@ inline std::size_t BasicRankSelect< Lazy >::rank1( std::size_t i ) const
   r += std::size_t( f_top[ i >> kTop ] );
  // the 1s of the word up to i (the words exist past the size [see
  // BitVector.h])
-#ifdef __BMI2__
  return( r + std::size_t( std::popcount(
-		_bzhi_u64( f_b.words()[ i / 64 ] , unsigned( i % 64 ) ) ) ) );
-#else
- return( r + std::size_t( std::popcount(
-		f_b.words()[ i / 64 ] & detail::lowMask( int( i % 64 ) ) ) ) );
-#endif
+		f_b.words()[ i / 64 ] &
+		( ( std::uint64_t( 1 ) << ( i % 64 ) ) - 1 ) ) ) );
  }
 
 template< bool Lazy >
@@ -559,7 +555,7 @@ inline void BasicRankSelect< Lazy >::build( bool b ) const
 
 template< bool Lazy >
 ADS_ALWAYS_INLINE std::size_t BasicRankSelect< Lazy >::select( std::size_t k ,
-						    bool b ) const
+							       bool b ) const
 {
  const Inventory & I = inventory( b );
  const std::size_t r = k - 1;  // the bits b before it

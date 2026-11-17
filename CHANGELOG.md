@@ -2352,6 +2352,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The last kernels on the intrinsics of the target on Highway, inlined
+  from SimdInline.h with ADS_WITH_HIGHWAY and with the same results: the
+  strips of 4 columns of the edit distance (all the blocks and the bands)
+  by myersLanes(), the lanes of a step kept in arrays, in place of AVX2;
+  the filter of 32 places of MultiSearcher by TableLookupBytes() on
+  vectors of 16 or 32 bytes, in place of the shuffles of AVX2 and AVX-512,
+  and the shift-or filters by their broadword code, in place of SSE2; the
+  types, the kinds, the compaction and the signs of the names of the
+  suffix sorting by neighbours64(), kinds64(), compactLess() (a
+  CompressStore) and takeSigns64(), in place of AVX2 and AVX-512; the back
+  substitution of RibbonFilter, 4 rows at a time by parities8() and
+  shiftIn4(), in place of AVX-512; without Highway, the scalar code. The
+  cuts of a word by `_bzhi_u64` under BMI2 in Tans, BitVector and
+  RankSelect are masks, the `#pragma GCC unroll` of Philox a fold of the
+  10 rounds and the `#pragma GCC ivdep` of SellMatrix is gone; the
+  comparators of AVX2 of the benchmarks (x86-simd-sort, the blocked Bloom
+  filter of fastfilter_cpp) are taken where the build finds that their
+  headers compile, and fluxsort and crumsort are compiled with
+  -fno-strict-aliasing where they are found, in place of the tests of
+  `__AVX2__` and of the pragmas of GCC; bench/simd.cpp counts the edit
+  distance, the search of many patterns, the suffix sorting and the
+  building of RibbonFilter, bench/simd.py the row A/A, and
+  bench/portable.cpp the rank, the cut of a line, tANS, Philox and the
+  product of SellMatrix
+
+- The modules ads.base and ads.advanced export the names of the core
+  instead of importing ads.core, which Clang 18 did not compile with
+  ADS_WITH_HIGHWAY: the functions of Highway are static, and a module
+  whose global fragment includes them could not import another one that
+  included them too [see cmake/ads_module_exports.py]
+
 - No test on the compiler or the processor in the attributes, the swap of
   bytes and the pause of a spinning thread: ADS_ALWAYS_INLINE,
   ADS_NOINLINE and ADS_COLD_PATH of Portable.h, chosen with
@@ -2403,16 +2434,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the portable code may be slower (the select, the division of two words,
   the fences of EventCount) the timings are left to the campaign
 
-- Still on the intrinsics under the tests of the target, pending their
-  rewrite on Highway: the strips of the edit distance (EditDistance.tpp),
-  the search of many patterns (MultiSearch.tpp), the vector parts of the
-  suffix sorting (SuffixSorting.tpp), the back substitution of
-  `RibbonFilter` and the comparators of bench/hashing.cpp and
-  bench/sort.cpp. The kernels
-  of Highway on vectors of 16 bytes (Stream VByte, the binary packing, the
-  stripes of the hash) do not compile for the target HWY_SCALAR of one
-  lane, which GCC 13 takes for HWY_COMPILE_ONLY_EMU128; the scalar
-  fallback through Highway is tested with Clang and EMU128.
+- The kernels of Highway on vectors of 16 bytes (Stream VByte, the binary
+  packing, the stripes of the hash) do not compile for the target
+  HWY_SCALAR of one lane, which GCC 13 takes for HWY_COMPILE_ONLY_EMU128;
+  the scalar fallback through Highway is tested with Clang and EMU128.
 
 - bench/simd.cpp and bench/simd.py, the old kernels (on the headers of a
   revision of git) against the new ones: the instructions of one call by

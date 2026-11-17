@@ -91,8 +91,8 @@ BINS     = $(addprefix $(BUILD)/,$(addsuffix $(ADSEXE),$(PROGRAMS)))
 
 # with the module, $(BUILD)/module, the test that imports it in place of the
 # headers [see test/module.cpp], and $(BUILD)/module_<set>, those that
-# import the modules of the sets, each linked only with its own and ads.core
-# [see test/module_sets.cpp]
+# import the modules of the sets, each linked only with its own, which
+# exports the names of ads.core too [see test/module_sets.cpp]
 .DEFAULT_GOAL := all
 ifneq ($(ADSOBJ),)
 MODBIN   = $(BUILD)/module$(ADSEXE) $(foreach s,core base advanced,\
@@ -388,7 +388,15 @@ HASHINC   = unordered_dense/include robin-map/include libcuckoo \
             pthash/external/bits/include \
             pthash/external/bits/external/essentials/include \
             pthash/external/mm_file/include BBHash sux
-HASHFLAGS = $(if $(HASHING),$(addprefix -isystem $(HASHING)/,$(HASHINC))) \
+# 1 if a unit that includes the header $(1) compiles at the flags of the
+# benchmarks with the options $(2): the competitors of AVX2 (fastfilter_cpp,
+# x86-simd-sort) are taken where it does [see bench/hashing.cpp and sort.cpp]
+COMPILES  = $(shell printf '\#include <%s>\nint main() { }\n' $(1) | \
+            $(CXX) $(BENCHFLAGS) $(2) -fsyntax-only -x c++ - >/dev/null \
+            2>&1 && echo 1)
+HASHFLAGS = $(if $(HASHING),$(addprefix -isystem $(HASHING)/,$(HASHINC)) \
+            $(if $(call COMPILES,bloom/simd-block.h,\
+            -isystem $(HASHING)/fastfilter_cpp/src),-DADS_HAS_FASTFILTER)) \
             $(if $(ABSL),-DADS_HAS_ABSL -isystem $(ABSL)/include \
             $(shell PKG_CONFIG_PATH=$(ABSL)/lib/pkgconfig pkg-config \
              --libs absl_flat_hash_map absl_hash 2>/dev/null)) -pthread
@@ -423,7 +431,11 @@ OPTLIBS   = $(foreach l,$(1),$(if $(wildcard $(OPT)/lib/lib$(l).a),-l$(l)))
 
 SORTINC   = ips4o/include ips2ra/include x86-simd-sort/src ska_sort \
             fluxsort/src crumsort/src
-SORTFLAGS = $(if $(SORTING),$(addprefix -isystem $(SORTING)/,$(SORTINC))) \
+SORTFLAGS = $(if $(SORTING),$(addprefix -isystem $(SORTING)/,$(SORTINC)) \
+            $(if $(call COMPILES,x86simdsort-static-incl.h,\
+            -isystem $(SORTING)/x86-simd-sort/src),-DADS_HAS_XSS) \
+            $(if $(wildcard $(SORTING)/fluxsort/src/fluxsort.h),\
+            -fno-strict-aliasing)) \
             $(if $(HWY),-DADS_HAS_VQSORT -isystem $(HWY)/include \
             -L$(HWY)/lib -lhwy_contrib -lhwy)
 

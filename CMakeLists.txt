@@ -432,8 +432,10 @@ if (ADS_BUILD_MODULE)
         add_library(ADS::${target} ALIAS ${target})
     endfunction()
     ads_add_module(ADS_module_core ADSCore)
-    ads_add_module(ADS_module_base ADSBase ADS_module_core)
-    ads_add_module(ADS_module_advanced ADSAdvanced ADS_module_core)
+    # ads.base and ads.advanced export the names of the core without
+    # importing ads.core [see cmake/ads_module_exports.py]
+    ads_add_module(ADS_module_base ADSBase)
+    ads_add_module(ADS_module_advanced ADSAdvanced)
     ads_add_module(ADS_module ADS ADS_module_core ADS_module_base
                    ADS_module_advanced)
 endif ()
@@ -623,6 +625,22 @@ if (ADS_BENCHMARKS)
             target_include_directories(bench-hashing SYSTEM
                                        PRIVATE ${ADS_HASHING}/${d})
         endforeach ()
+        # the blocked Bloom filter of fastfilter_cpp, where its header
+        # compiles at the flags of the build (it needs AVX2)
+        include(CheckCXXSourceCompiles)
+        include(CMakePushCheckState)
+        cmake_push_check_state(RESET)
+        set(CMAKE_REQUIRED_INCLUDES ${ADS_HASHING}/fastfilter_cpp/src)
+        set(CMAKE_REQUIRED_QUIET ON)
+        check_cxx_source_compiles("#include <bloom/simd-block.h>
+            int main( void ) { SimdBlockFilter<> f( 10 ); f.Add( 1 );
+                               return( f.Find( 1 ) ? 0 : 1 ); }"
+                                  ADS_HAS_FASTFILTER)
+        cmake_pop_check_state()
+        if (ADS_HAS_FASTFILTER)
+            target_compile_definitions(bench-hashing
+                                       PRIVATE ADS_HAS_FASTFILTER)
+        endif ()
     endif ()
     find_package(absl QUIET)
     if (absl_FOUND)
@@ -717,7 +735,28 @@ if (ADS_BENCHMARKS)
             target_include_directories(bench-parallel SYSTEM
                                        PRIVATE ${ADS_SORTING}/${d})
         endforeach ()
+        # x86-simd-sort, where its header compiles at the flags of the
+        # build (it needs AVX2), and fluxsort and crumsort without the
+        # strict aliasing [see bench/sort.cpp]
+        include(CheckCXXSourceCompiles)
+        include(CMakePushCheckState)
+        cmake_push_check_state(RESET)
+        set(CMAKE_REQUIRED_INCLUDES ${ADS_SORTING}/x86-simd-sort/src)
+        set(CMAKE_REQUIRED_QUIET ON)
+        check_cxx_source_compiles("#include <x86simdsort-static-incl.h>
+            int main( void ) { int a[ 2 ] = { 2 , 1 };
+                               x86simdsortStatic::qsort( a , 2 );
+                               return( a[ 0 ] - 1 ); }" ADS_HAS_XSS)
+        cmake_pop_check_state()
+        if (ADS_HAS_XSS)
+            target_compile_definitions(bench-sort PRIVATE ADS_HAS_XSS)
+        endif ()
         include(CheckCXXCompilerFlag)
+        check_cxx_compiler_flag(-fno-strict-aliasing ADS_HAS_NO_STRICT_ALIAS)
+        if (ADS_HAS_NO_STRICT_ALIAS
+            AND EXISTS ${ADS_SORTING}/fluxsort/src/fluxsort.h)
+            target_compile_options(bench-sort PRIVATE -fno-strict-aliasing)
+        endif ()
         check_cxx_compiler_flag(-mcx16 ADS_HAS_MCX16)
         if (ADS_HAS_MCX16)
             target_compile_options(bench-parallel PRIVATE -mcx16)

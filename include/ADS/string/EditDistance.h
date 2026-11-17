@@ -81,7 +81,9 @@
  *   needs only the block \f$ b - 1 \f$ of the same column and the block
  *   \f$ b \f$ of the column before, so that the blocks \f$ i - q \f$ of the
  *   columns \f$ j + q \f$, \f$ q < 4 \f$, are independent, the four lanes
- *   of an AVX2 vector (the bands of 8 blocks or more go the same way).
+ *   of the vectors of Highway with `ADS_WITH_HIGHWAY` (the bands of 8
+ *   blocks or more go the same way), and four chains of operations that
+ *   overlap in the processor without.
  *   `levenshtein( a , b , k )` does the same with \f$ k \f$ fixed (the
  *   diagonals up to \f$ k \f$, or the band of \f$ k \f$) and gives
  *   \f$ k + 1 \f$ for any larger distance.

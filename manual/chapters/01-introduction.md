@@ -1571,10 +1571,11 @@ to the compiler, which is why that set enters the name of the namespace
 above. Without Highway every structure runs its scalar code, with the same
 results. We leave the times of the kernels of Highway against those of the
 intrinsics they replace to the campaign of `bench/simd.py` on an idle
-machine, which also counts their instructions; it is fair to remark that
-four kernels (the edit distance, the search of many patterns, the suffix
-sorting and the back substitution of `RibbonFilter`) still run on the
-intrinsics of the target until we rewrite them.
+machine, which also counts their instructions. No kernel of ADS runs on
+the intrinsics of the target any longer: the strips of the edit distance,
+the filter of the search of many patterns, the vector parts of the suffix
+sorting and the back substitution of `RibbonFilter` are inlined from
+`ADS/SimdInline.h` too.
 
 The two levels are also two sets of headers, which a program may take
 apart; we divide them by the origin of the code, whatever its speed. In the
@@ -1627,7 +1628,8 @@ the set and the core. Thus `#include "ADS/base.h"` gives the base set,
 the three. Also, each header keeps its path, and one can still include any
 of them as before. The modules follow the same division: `ads.core`,
 `ads.base` and `ads.advanced` export the names of the headers of their sets
-(the last two also export `ads.core`), and `ads` exports the three. A
+(the last two also those of `ads.core`, without importing it), and `ads`
+exports the three. A
 program that writes `import ads;` gets all the names as before, whereas one
 that writes `import ads.base;` compiles neither the concurrent structures
 nor the executors of OpenMP, oneTBB and MPI. The headers of `ADS/interop/`

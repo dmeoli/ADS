@@ -15,6 +15,7 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/SimdInline.h"
 #include "ADS/string/ApproximateMatching.h"
 #include "ADS/string/LongestCommonSubsequence.h"
 
@@ -24,10 +25,6 @@
 #include <limits>
 #include <memory>
 #include <string>
-
-#if defined( __AVX2__ )
- #include <immintrin.h>
-#endif
 
 namespace ADS
 {
@@ -114,6 +111,33 @@ inline void myersBlock( std::uint64_t & Pv , std::uint64_t & Mv ,
  c = out;
  }
 
+/// a step of the K lanes of a strip: the lane q moves its block (Pv in
+/// pv[ q ], Mv in mv[ q ], the matches eq[ q ], the carry in cp[ q ] and
+/// cn[ q ]) by a column as myersBlock(), if Masked only where act[ q ] is
+/// all ones; on the vectors of Highway [see SimdInline.h], else a lane at
+/// a time, their chains of operations overlapping in the processor
+template< std::size_t K , bool Masked >
+inline void myersLanes( std::uint64_t * pv , std::uint64_t * mv ,
+			const std::uint64_t * eq , std::uint64_t * cp ,
+			std::uint64_t * cn , const std::uint64_t * act )
+{
+#ifdef ADS_WITH_HIGHWAY
+ simd::here::myersLanes< K , Masked >( pv , mv , eq , cp , cn , act );
+#else
+ for( std::size_t q = 0 ; q < K ; ++q ) {
+  std::uint64_t p = pv[ q ] , n = mv[ q ];
+  Carry c{ cp[ q ] , cn[ q ] };
+  myersBlock( p , n , eq[ q ] , c );
+  if( ! Masked || act[ q ] ) {
+   pv[ q ] = p;
+   mv[ q ] = n;
+   cp[ q ] = c.p;
+   cn[ q ] = c.n;
+   }
+  }
+#endif
+ }
+
 /// the edit distance of a pattern P of at most 64 bytes and a text T
 inline std::size_t levenshteinWord( std::string_view P , std::string_view T )
 {
@@ -141,9 +165,10 @@ inline std::size_t levenshteinWord( std::string_view P , std::string_view T )
 /// bytes), by all the blocks of every column, K = 4 columns at a time in a
 /// strip: the block b of the column j needs only the block b - 1 of the
 /// column j and the block b of the column j - 1, so that the blocks i - k
-/// of the columns j + k, k < K, are independent; with AVX2 they are the
-/// four lanes of a vector, a step of the strip computing four blocks at
-/// once, otherwise their chains of operations overlap in the processor. A
+/// of the columns j + k, k < K, are independent; they are the lanes of a
+/// step of the strip [see myersLanes()], which computes K blocks at once on
+/// the vectors of Highway, and otherwise overlaps their chains of
+/// operations in the processor. A
 /// block passes from a column of the strip to the next in a register, and
 /// a step loads and stores one block
 inline std::size_t levenshteinFull( std::string_view P , std::string_view T )
@@ -174,78 +199,18 @@ inline std::size_t levenshteinFull( std::string_view P , std::string_view T )
    // the start: the column k over the blocks [ 0 , K - 1 - k )
    for( std::size_t k = 0 ; k + 1 < K ; ++k )
     column( eq[ k ] , 0 , K - 1 - k , c[ k ] );
-  // the steps i: the column k at the block i - k
-#if defined( __AVX2__ )
-   const __m256i ones = _mm256_set1_epi64x( -1 );
-   __m256i pv = _mm256_set_epi64x(
-	     std::int64_t( V[ 0 ] ) , std::int64_t( V[ 2 ] ) ,
-	     std::int64_t( V[ 4 ] ) , std::int64_t( V[ 6 ] ) ) ,
-	   mv = _mm256_set_epi64x(
-	     std::int64_t( V[ 1 ] ) , std::int64_t( V[ 3 ] ) ,
-	     std::int64_t( V[ 5 ] ) , std::int64_t( V[ 7 ] ) ) ,
-	   cp = _mm256_set_epi64x(
-	     std::int64_t( c[ 3 ].p ) , std::int64_t( c[ 2 ].p ) ,
-	     std::int64_t( c[ 1 ].p ) , std::int64_t( c[ 0 ].p ) ) ,
-	   cn = _mm256_set_epi64x(
-	     std::int64_t( c[ 3 ].n ) , std::int64_t( c[ 2 ].n ) ,
-	     std::int64_t( c[ 1 ].n ) , std::int64_t( c[ 0 ].n ) );
-   // the lane k reads eq[ k ][ i - k ], by four loads (a gather is slow
-   // on the processors with the mitigation of Downfall)
-   for( std::size_t i = K - 1 ; ; ) {
-    __m256i Eq = _mm256_set_epi64x(
-      std::int64_t( eq[ 3 ][ i - 3 ] ) , std::int64_t( eq[ 2 ][ i - 2 ] ) ,
-      std::int64_t( eq[ 1 ][ i - 1 ] ) , std::int64_t( eq[ 0 ][ i ] ) );
-    const __m256i Xv = _mm256_or_si256( Eq , mv );
-    Eq = _mm256_or_si256( Eq , cn );
-    const __m256i Xh = _mm256_or_si256(
-      _mm256_xor_si256( _mm256_add_epi64( _mm256_and_si256( Eq , pv ) , pv ) ,
-			pv ) ,
-      Eq );
-    __m256i Ph = _mm256_or_si256(
-	      mv , _mm256_andnot_si256( _mm256_or_si256( Xh , pv ) , ones ) ) ,
-	    Mh = _mm256_and_si256( pv , Xh );
-    const __m256i op = _mm256_srli_epi64( Ph , 63 ) ,
-		  on = _mm256_srli_epi64( Mh , 63 );
-    Ph = _mm256_or_si256( _mm256_slli_epi64( Ph , 1 ) , cp );
-    Mh = _mm256_or_si256( _mm256_slli_epi64( Mh , 1 ) , cn );
-    pv = _mm256_or_si256(
-      Mh , _mm256_andnot_si256( _mm256_or_si256( Xv , Ph ) , ones ) );
-    mv = _mm256_and_si256( Ph , Xv );
-    cp = op;
-    cn = on;
-    if( ++i == B )
-     break;
-    // the lane 3 done by the strip, the lanes moved up, the block i in 0
-    const __m128i hi = _mm256_extracti128_si256( pv , 1 ) ,
-		  hm = _mm256_extracti128_si256( mv , 1 );
-    V[ 2 * ( i - K ) ] = std::uint64_t( _mm_extract_epi64( hi , 1 ) );
-    V[ 2 * ( i - K ) + 1 ] = std::uint64_t( _mm_extract_epi64( hm , 1 ) );
-    pv = _mm256_blend_epi32( _mm256_permute4x64_epi64( pv , 0x90 ) ,
-			     _mm256_set1_epi64x( std::int64_t( V[ 2 * i ] ) ) ,
-			     0x03 );
-    mv = _mm256_blend_epi32(
-      _mm256_permute4x64_epi64( mv , 0x90 ) ,
-      _mm256_set1_epi64x( std::int64_t( V[ 2 * i + 1 ] ) ) , 0x03 );
-    }
-   alignas( 32 ) std::uint64_t P4[ K ] , M4[ K ] , C4[ K ] , N4[ K ];
-   _mm256_store_si256( reinterpret_cast< __m256i * >( P4 ) , pv );
-   _mm256_store_si256( reinterpret_cast< __m256i * >( M4 ) , mv );
-   _mm256_store_si256( reinterpret_cast< __m256i * >( C4 ) , cp );
-   _mm256_store_si256( reinterpret_cast< __m256i * >( N4 ) , cn );
-   for( std::size_t k = 0 ; k < K ; ++k ) {
-    V[ 2 * ( B - 1 - k ) ] = P4[ k ];
-    V[ 2 * ( B - 1 - k ) + 1 ] = M4[ k ];
-    c[ k ] = Carry{ C4[ k ] , N4[ k ] };
-    }
-#else
-   std::uint64_t pv[ K ] , mv[ K ];
+   // the steps i: the column k at the block i - k, the lane k
+   std::uint64_t pv[ K ] , mv[ K ] , cp[ K ] , cn[ K ] , e[ K ];
    for( std::size_t k = 0 ; k < K ; ++k ) {
     pv[ k ] = V[ 2 * ( K - 1 - k ) ];
     mv[ k ] = V[ 2 * ( K - 1 - k ) + 1 ];
+    cp[ k ] = c[ k ].p;
+    cn[ k ] = c[ k ].n;
     }
    for( std::size_t i = K - 1 ; ; ) {
     for( std::size_t k = 0 ; k < K ; ++k )
-     myersBlock( pv[ k ] , mv[ k ] , eq[ k ][ i - k ] , c[ k ] );
+     e[ k ] = eq[ k ][ i - k ];
+    myersLanes< K , false >( pv , mv , e , cp , cn , nullptr );
     if( ++i == B )
      break;
     V[ 2 * ( i - K ) ] = pv[ K - 1 ];  // done by the strip
@@ -260,8 +225,8 @@ inline std::size_t levenshteinFull( std::string_view P , std::string_view T )
    for( std::size_t k = 0 ; k < K ; ++k ) {
     V[ 2 * ( B - 1 - k ) ] = pv[ k ];
     V[ 2 * ( B - 1 - k ) + 1 ] = mv[ k ];
+    c[ k ] = Carry{ cp[ k ] , cn[ k ] };
     }
-#endif
    // the end: the column k over the blocks [ B - k , B )
    for( std::size_t k = 1 ; k < K ; ++k )
     column( eq[ k ] , B - k , B , c[ k ] );
@@ -287,12 +252,12 @@ inline std::size_t levenshteinFull( std::string_view P , std::string_view T )
 /// minus their distance from it, so that the first and the last block go
 /// when the least of these bounds exceeds k; the block below the last one
 /// enters when the bottom of the last is at most k + 1, since the cells at
-/// most k grow by one row per column. With AVX2, a band of 8 blocks or more
-/// goes 4 columns at a time in a strip as levenshteinFull(): the lane of a
-/// column whose band does not hold the block of a step keeps its state, a
-/// block may enter the band at each column of the strip (the cells it
-/// starts with, 64 more than the bottom above and then +1 each, are never
-/// below their values), and the blocks are dropped between two strips
+/// most k grow by one row per column. With Highway, a band of 8 blocks or
+/// more goes 4 columns at a time in a strip as levenshteinFull(): the lane
+/// of a column whose band does not hold the block of a step keeps its
+/// state, a block may enter the band at each column of the strip (the cells
+/// it starts with, 64 more than the bottom above and then +1 each, are
+/// never below their values), and the blocks are dropped between two strips
 /// \pre k >= n - m
 /// \post *work is the number of blocks computed, and the search gives up
 ///       (k + 1) once it exceeds budget
@@ -328,10 +293,10 @@ inline std::size_t levenshteinBand( std::string_view P , std::string_view T ,
   while( ( first < last ) &&
 	 ( ( 64 * ( first + 1 ) < lo ) || ( least( first , j - 1 ) > k ) ) )
    ++first;
-#if defined( __AVX2__ )
+#ifdef ADS_WITH_HIGHWAY
   constexpr std::size_t K = 4;
   if( ( j + K - 1 <= n ) && ( last - first + 1 >= 2 * K ) ) {
-   // the blocks [ first , L[ q ] ] of the column j + q
+   // the blocks [ first , L[ q ] ] of the column j + q, in the lane q
    std::size_t L[ K ];
    const std::uint64_t * eq[ K ];
    for( std::size_t q = 0 ; q < K ; ++q ) {
@@ -339,100 +304,52 @@ inline std::size_t levenshteinBand( std::string_view P , std::string_view T ,
     eq[ q ] = Peq.at( t[ j - 1 + q ] );
     }
    const std::size_t F = first;
-   const __m256i ones = _mm256_set1_epi64x( -1 ) ,
-		 one = _mm256_set1_epi64x( 1 ) ,
-		 zero = _mm256_setzero_si256() ,
-		 lane = _mm256_set_epi64x( 3 , 2 , 1 , 0 ) ,
-		 sixty4 = _mm256_set1_epi64x( 64 ) ,
-		 fv = _mm256_set1_epi64x( std::int64_t( F ) ) ,
-		 lv = _mm256_set_epi64x(
-		   std::int64_t( L[ 3 ] ) , std::int64_t( L[ 2 ] ) ,
-		   std::int64_t( L[ 1 ] ) , std::int64_t( L[ 0 ] ) ) ,
-		 ev = _mm256_set_epi64x(
-		   L[ 3 ] > L[ 2 ] ? -1 : 0 , L[ 2 ] > L[ 1 ] ? -1 : 0 ,
-		   L[ 1 ] > L[ 0 ] ? -1 : 0 , L[ 0 ] > last ? -1 : 0 );
-   __m256i pv = _mm256_set_epi64x( 0 , 0 , 0 , std::int64_t( V[ 2 * F ] ) ) ,
-	   mv = _mm256_set_epi64x( 0 , 0 , 0 ,
-				   std::int64_t( V[ 2 * F + 1 ] ) ) ,
-	   sv = _mm256_set_epi64x( 0 , 0 , 0 , std::int64_t( score[ F ] ) ) ,
-	   cp = one , cn = zero;
+   const std::uint64_t ones = ~std::uint64_t( 0 );
+   std::uint64_t pv[ K ] = { V[ 2 * F ] } , mv[ K ] = { V[ 2 * F + 1 ] } ,
+		       sv[ K ] = { std::uint64_t( score[ F ] ) } ,
+		       cp[ K ] = { 1 , 1 , 1 , 1 } , cn[ K ] = {} , act[ K ] ,
+		       e[ K ];
    for( std::size_t i = F ; ; ++i ) {
-    // the lane q at the block i - q: in its band, at its top, entering
-    const __m256i bv = _mm256_sub_epi64(
-		    _mm256_set1_epi64x( std::int64_t( i ) ) , lane ) ,
-		  active = _mm256_andnot_si256(
-		    _mm256_or_si256( _mm256_cmpgt_epi64( fv , bv ) ,
-				     _mm256_cmpgt_epi64( bv , lv ) ) ,
-		    ones ) ,
-		  top = _mm256_cmpeq_epi64( bv , fv ) ,
-		  enter = _mm256_and_si256( _mm256_cmpeq_epi64( bv , lv ) ,
-					    ev );
-    // an entering block: all +1, its bottom 64 below that of the block
-    // above in the previous column; the lane q left that block one step
-    // ago, now in the lane q + 1 (or stored, for the lane 3), and its
+    // the lane q at the block i - q: in its band, at its top, entering;
+    // an entering block is all +1, its bottom 64 below that of the block
+    // above in the previous column, which the lane q left one step ago
+    // (now in the lane q + 1, or stored, for the lane K - 1) and whose
     // carry gives back its bottom in the previous column
-    pv = _mm256_blendv_epi8( pv , ones , enter );
-    mv = _mm256_blendv_epi8( mv , zero , enter );
-    const __m256i above = _mm256_blend_epi32(
-      _mm256_permute4x64_epi64( sv , 0xF9 ) ,
-      _mm256_set1_epi64x( i >= K ? std::int64_t( score[ i - K ] ) : 0 ) ,
-      0xC0 );
-    sv = _mm256_blendv_epi8(
-      sv ,
-      _mm256_add_epi64( _mm256_sub_epi64( above ,
-					  _mm256_sub_epi64( cp , cn ) ) ,
-			sixty4 ) ,
-      enter );
-    cp = _mm256_blendv_epi8( cp , one , top );
-    cn = _mm256_blendv_epi8( cn , zero , top );
-    std::uint64_t e[ K ];
-    for( std::size_t q = 0 ; q < K ; ++q )
+    for( std::size_t q = 0 ; q < K ; ++q ) {
+     const bool band = ( i >= F + q ) && ( i - q <= L[ q ] );
+     act[ q ] = band ? ones : 0;
+     if( ( i == L[ q ] + q ) && ( L[ q ] > ( q ? L[ q - 1 ] : last ) ) ) {
+      pv[ q ] = ones;
+      mv[ q ] = 0;
+      const std::uint64_t above =
+	q + 1 < K ? sv[ q + 1 ] : ( i >= K ? score[ i - K ] : 0 );
+      sv[ q ] = above - ( cp[ q ] - cn[ q ] ) + 64;
+      }
+     if( i == F + q ) {
+      cp[ q ] = 1;
+      cn[ q ] = 0;
+      }
      e[ q ] = ( i >= q ) && ( i - q < B ) ? eq[ q ][ i - q ] : 0;
-    __m256i Eq =
-      _mm256_set_epi64x( std::int64_t( e[ 3 ] ) , std::int64_t( e[ 2 ] ) ,
-			 std::int64_t( e[ 1 ] ) , std::int64_t( e[ 0 ] ) );
-    const __m256i Xv = _mm256_or_si256( Eq , mv );
-    Eq = _mm256_or_si256( Eq , cn );
-    const __m256i Xh = _mm256_or_si256(
-      _mm256_xor_si256( _mm256_add_epi64( _mm256_and_si256( Eq , pv ) , pv ) ,
-			pv ) ,
-      Eq );
-    __m256i Ph = _mm256_or_si256(
-	      mv , _mm256_andnot_si256( _mm256_or_si256( Xh , pv ) , ones ) ) ,
-	    Mh = _mm256_and_si256( pv , Xh );
-    const __m256i op = _mm256_srli_epi64( Ph , 63 ) ,
-		  on = _mm256_srli_epi64( Mh , 63 );
-    Ph = _mm256_or_si256( _mm256_slli_epi64( Ph , 1 ) , cp );
-    Mh = _mm256_or_si256( _mm256_slli_epi64( Mh , 1 ) , cn );
-    pv = _mm256_blendv_epi8(
-      pv ,
-      _mm256_or_si256(
-	Mh , _mm256_andnot_si256( _mm256_or_si256( Xv , Ph ) , ones ) ) ,
-      active );
-    mv = _mm256_blendv_epi8( mv , _mm256_and_si256( Ph , Xv ) , active );
-    cp = _mm256_blendv_epi8( cp , op , active );
-    cn = _mm256_blendv_epi8( cn , on , active );
-    sv = _mm256_add_epi64(
-      sv , _mm256_and_si256( _mm256_sub_epi64( op , on ) , active ) );
-    if( ( i >= K - 1 ) && ( i - ( K - 1 ) < B ) ) {  // the lane 3, done
-     V[ 2 * ( i - 3 ) ] = std::uint64_t( _mm256_extract_epi64( pv , 3 ) );
-     V[ 2 * ( i - 3 ) + 1 ] = std::uint64_t( _mm256_extract_epi64( mv , 3 ) );
-     score[ i - 3 ] = std::size_t( _mm256_extract_epi64( sv , 3 ) );
+     }
+    myersLanes< K , true >( pv , mv , e , cp , cn , act );
+    for( std::size_t q = 0 ; q < K ; ++q )
+     sv[ q ] += ( cp[ q ] - cn[ q ] ) & act[ q ];
+    if( ( i >= K - 1 ) && ( i - ( K - 1 ) < B ) ) {  // the lane K - 1, done
+     V[ 2 * ( i - ( K - 1 ) ) ] = pv[ K - 1 ];
+     V[ 2 * ( i - ( K - 1 ) ) + 1 ] = mv[ K - 1 ];
+     score[ i - ( K - 1 ) ] = std::size_t( sv[ K - 1 ] );
      }
     if( i == L[ K - 1 ] + K - 1 )
      break;
+    for( std::size_t q = K - 1 ; q > 0 ; --q ) {
+     pv[ q ] = pv[ q - 1 ];
+     mv[ q ] = mv[ q - 1 ];
+     sv[ q ] = sv[ q - 1 ];
+     }
     const bool in = i + 1 < B;
-    pv = _mm256_blend_epi32(
-      _mm256_permute4x64_epi64( pv , 0x90 ) ,
-      _mm256_set1_epi64x( in ? std::int64_t( V[ 2 * ( i + 1 ) ] ) : 0 ) ,
-      0x03 );
-    mv = _mm256_blend_epi32(
-      _mm256_permute4x64_epi64( mv , 0x90 ) ,
-      _mm256_set1_epi64x( in ? std::int64_t( V[ 2 * ( i + 1 ) + 1 ] ) : 0 ) ,
-      0x03 );
-    sv = _mm256_blend_epi32(
-      _mm256_permute4x64_epi64( sv , 0x90 ) ,
-      _mm256_set1_epi64x( in ? std::int64_t( score[ i + 1 ] ) : 0 ) , 0x03 );
+    pv[ 0 ] = in ? V[ 2 * ( i + 1 ) ] : 0;
+    mv[ 0 ] = in ? V[ 2 * ( i + 1 ) + 1 ] : 0;
+    sv[ 0 ] = in ? score[ i + 1 ] : 0;
     }
    *work += ( L[ K - 1 ] + K - F ) * K;
    last = L[ K - 1 ];

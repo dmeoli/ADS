@@ -73,8 +73,6 @@ ADSMODsrc_ads.core = ADSCore
 ADSMODsrc_ads.base = ADSBase
 ADSMODsrc_ads.advanced = ADSAdvanced
 ADSMODsrc_ads = ADS
-ADSMODimp_ads.base = ads.core
-ADSMODimp_ads.advanced = ads.core
 ADSMODimp_ads = $(ADSMODSETS)
 
 ifeq ($(ADSMODkind),clang)
@@ -89,8 +87,8 @@ ifneq ($(ADSMODkind),)
     ADSMODOBJ = $(foreach m,$(ADSMODSETS) ads,$(ADSODR)/$(m).o)
     ADSMODFILE = $(ADSODR)/ads.$(ADSMODext)
     ADSMODOBJ_core = $(ADSODR)/ads.core.o
-    ADSMODOBJ_base = $(ADSODR)/ads.core.o $(ADSODR)/ads.base.o
-    ADSMODOBJ_advanced = $(ADSODR)/ads.core.o $(ADSODR)/ads.advanced.o
+    ADSMODOBJ_base = $(ADSODR)/ads.base.o
+    ADSMODOBJ_advanced = $(ADSODR)/ads.advanced.o
 endif
 
 # the rules of the modules- - - - - - - - - - - - - - - - - - - - - - - - - -

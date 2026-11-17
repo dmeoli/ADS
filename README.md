@@ -1341,7 +1341,9 @@ does so by exporting the modules of the three sets of [Base and
 advanced](#base-and-advanced), `ads.core`, `ads.base` and `ads.advanced`
 (`src/ADSCore.cppm`, `src/ADSBase.cppm`, `src/ADSAdvanced.cppm`), each of
 which exports the names of the headers of its set, and the last two also
-`ads.core`; `import ads.base;` thus compiles only the base headers, the
+those of `ads.core`, which they do not import (Clang 18 does not compile a
+module that imports another one when both include Highway); `import
+ads.base;` thus compiles only the base headers, the
 core and the few advanced headers that the base ones use inside. With CMake
 3.28 or later, the Ninja generator and Clang 16 (with `clang-scan-deps`) or
 GCC 15 or later, `-DADS_BUILD_MODULE=ON` (off by default; turned off with a
