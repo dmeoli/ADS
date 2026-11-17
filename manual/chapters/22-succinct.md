@@ -537,7 +537,7 @@ is less than 2 bits per item more when $n$ is much smaller than $u$
 `RankSelect` on $H$, `access( i )` takes $O( 1 )$ time, a select and a
 field ([Algorithm 22.9](22-succinct.md#alg-22-9)).
 
-![Figure 22.5. The sequence 3, 4, 7, 13, 14, 15, 21, 43 in $[ 0 , 44 )$ by Elias-Fano, with $\ell = \lceil \log_2( 44 / 8 ) \rceil = 3$: the low parts $L$, the buckets, and $H$, a 1 for each item and a 0 at the end of each bucket. The access to $x_6$ (violet) finds the seventh 1 of $H$ at the place 8.](../figures/succinct-eliasfano.svg){#fig-22-5}
+![Figure 22.5. The sequence 3, 4, 7, 13, 14, 15, 21, 43 in $\lbrack 0 , 44 )$ by Elias-Fano, with $\ell = \lceil \log_2( 44 / 8 ) \rceil = 3$: the low parts $L$, the buckets, and $H$, a 1 for each item and a 0 at the end of each bucket. The access to $x_6$ (violet) finds the seventh 1 of $H$ at the place 8.](../figures/succinct-eliasfano.svg){#fig-22-5}
 
 <span id="alg-22-9"></span>**Algorithm 22.9.** The construction, the
 access and the search of Elias-Fano.
@@ -1174,7 +1174,7 @@ which hold the 4 starts 2, 3, 4 and 5; the balance cuts the run at the
 row 8 ([Figure 22.13](22-succinct.md#fig-22-13)). We keep the intervals and the images in two ordered maps during the construction, $O( r \log r )$ time, and each
 interval carries a tag (the symbol of its run), which its parts keep.
 
-![Figure 22.13. The LF-mapping of the transform ard\$rcaaaabb of abracadabra as a move structure: each interval of rows (above, between the bars) is shifted alike onto its image (below). The run of a (violet) is cut at the row 8 by the balance (the orange bar), since its image $[ 2 , 6 )$ held 4 starts.](../figures/succinct-move.svg){#fig-22-13}
+![Figure 22.13. The LF-mapping of the transform ard\$rcaaaabb of abracadabra as a move structure: each interval of rows (above, between the bars) is shifted alike onto its image (below). The run of a (violet) is cut at the row 8 by the balance (the orange bar), since its image $\lbrack 2 , 6 )$ held 4 starts.](../figures/succinct-move.svg){#fig-22-13}
 
 <span id="alg-22-19"></span>**Algorithm 22.19.** The balance and the move
 of [Nishimoto and Tabei 2021](Z-bibliography.md#ref-nishimoto2021).

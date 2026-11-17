@@ -407,7 +407,7 @@ the code in exact rationals (`ADS/numeric/Rational.h`), in a time that may grow 
 ([Algorithm 21.6](21-compression.md#alg-21-6)). We use them as the reference for the integer coder below, and they give the numbers of the example of
 chapter 12 of [Ferragina 2023](Z-bibliography.md#ref-ferragina2023).
 
-![Figure 21.3. The interval of abac narrowed symbol by symbol, with $P[ a ] = 1 / 2$ and $P[ b ] = P[ c ] = 1 / 4$: each row is the interval of the prefix read so far, split into the parts of the three symbols, and the part of the next symbol (violet) becomes the next row. The last interval is $[ 19 / 64 , 20 / 64 )$, of size $s_4 = 1 / 64$, and the code is the first $d = 7$ bits of its midpoint, 0100111.](../figures/compression-arithmetic.svg){#fig-21-3}
+![Figure 21.3. The interval of abac narrowed symbol by symbol, with $P[ a ] = 1 / 2$ and $P[ b ] = P[ c ] = 1 / 4$: each row is the interval of the prefix read so far, split into the parts of the three symbols, and the part of the next symbol (violet) becomes the next row. The last interval is $\lbrack 19 / 64 , 20 / 64 )$, of size $s_4 = 1 / 64$, and the code is the first $d = 7$ bits of its midpoint, 0100111.](../figures/compression-arithmetic.svg){#fig-21-3}
 
 <span id="alg-21-6"></span>**Algorithm 21.6.** The interval of a text, its
 code, and the decoding, in exact arithmetic.

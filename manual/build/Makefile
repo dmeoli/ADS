@@ -30,8 +30,10 @@ FIGTEX  := $(filter-out $(FIGDIR)/tikz-ads.tex,$(wildcard $(FIGDIR)/*.tex))
 
 .PHONY: pdf html serve figures snippets check clean
 
+# each chapter read by itself and the ASTs joined [see joinast.py]
 pdf: figures snippets
-	pandoc --defaults=pandoc.yaml -o $(PDF_OUT)
+	python3 joinast.py pandoc.yaml $(GENDIR)
+	pandoc --defaults=$(GENDIR)/pandoc.yaml -o $(PDF_OUT)
 	@echo "PDF written to $(PDF_OUT)"
 
 html: figures snippets

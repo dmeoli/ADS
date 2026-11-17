@@ -2042,7 +2042,7 @@ the item of key $v$ into $c'[ v ] - 1$ and decrementing $c'[ v ]$, as in
 the book). [Figure 12.8](12-sort.md#fig-12-8) shows it on the data of
 figure 11.7 of the book.
 
-![Figure 12.8. The stable counting sort of 20 keys in $[ 0 , 10 )$, the data of figure 11.7 of [Morin 2013]: the input $a$, the counts $c$, their prefix sums $c'$ and the output $b$. Scanning $a$ backwards, the last key, 9 (in violet), goes to the place $c'[ 9 ] - 1 = 19$ of $b$ (in orange), and $c'[ 9 ]$ becomes 19, the place of the next 9.](../figures/sort-counting.svg){#fig-12-8}
+![Figure 12.8. The stable counting sort of 20 keys in $\lbrack 0 , 10 )$, the data of figure 11.7 of [Morin 2013]: the input $a$, the counts $c$, their prefix sums $c'$ and the output $b$. Scanning $a$ backwards, the last key, 9 (in violet), goes to the place $c'[ 9 ] - 1 = 19$ of $b$ (in orange), and $c'[ 9 ]$ becomes 19, the place of the next 9.](../figures/sort-counting.svg){#fig-12-8}
 
 <span id="thm-12-8"></span>**Theorem 12.8.** *The counting sort sorts $n$
 integers in $[ 0 , k )$ in $O( n + k )$ time. Its version with the prefix

@@ -1535,7 +1535,7 @@ once it has overflowed, and the body holds the remainders in the order of their
 quotients, those of one quotient (its *run*) in increasing order
 ([Figure 10.9](10-set.md#fig-10-9)).
 
-![Figure 10.9. A bin of a `PrefixFilter`, with 4 quotients instead of 25 for brevity: the header writes the counts 2, 0, 3, 1 of the runs in unary from the low bit, and the body holds the remainders; the run of the quotient 2 (in colour) is the slots $[ z_1 + 1 - 2 , z_2 - 2 )$, $z_q$ the place of the zero of rank $q$ of the header.](../figures/set-prefix.svg){#fig-10-9}
+![Figure 10.9. A bin of a `PrefixFilter`, with 4 quotients instead of 25 for brevity: the header writes the counts 2, 0, 3, 1 of the runs in unary from the low bit, and the body holds the remainders; the run of the quotient 2 (in colour) is the slots $\lbrack z_1 + 1 - 2 , z_2 - 2 )$, $z_q$ the place of the zero of rank $q$ of the header.](../figures/set-prefix.svg){#fig-10-9}
 
 The run of $q$ is the slots $[ z_{q-1} + 1 - q , z_q - q )$ of the body,
 where $z_q$ is the place of the zero of rank $q$ of the header (and
@@ -1886,7 +1886,7 @@ blocks, has for image at most two cyclic ranges of $[ 0 , r )$ of $\ell$
 codes in all ([Figure 10.12](10-set.md#fig-10-12)), and a successor query
 of Elias-Fano answers each in $O( 1 )$.
 
-![Figure 10.12. A range $[ a , b ]$ that meets two blocks of $r$ keys, each rotated into $[ 0 , r )$ by the hash $q$ of its block, and its image, two cyclic ranges of the same total length.](../figures/set-grafite.svg){#fig-10-12}
+![Figure 10.12. A range $[ a , b ]$ that meets two blocks of $r$ keys, each rotated into $\lbrack 0 , r )$ by the hash $q$ of its block, and its image, two cyclic ranges of the same total length.](../figures/set-grafite.svg){#fig-10-12}
 
 --8<-- "generated/GrafiteFilter-build.pseudo.md"
 

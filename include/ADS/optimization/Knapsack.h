@@ -109,9 +109,10 @@ knapsack( const std::vector< long > & p , const std::vector< long > & v ,
 ///     \triangleright\ \text{an object that did not fit} \cr
 /// 3 & \quad \textbf{if}\ i = 0\ \textbf{then return}\ 0 \cr
 /// 4 & \quad \textbf{if}\ T_i \text{ has no entry for } c\ \textbf{then}
-///     \ T_i[ c ] \gets \max\{ \mathrm{knapsackMemo}( i - 1 , c - v_{i-1} ) +
-///     p_{i-1} , \mathrm{knapsackMemo}( i - 1 , c ) \} \cr
-/// 5 & \quad \textbf{return}\ T_i[ c ]
+///     \cr
+/// 5 & \quad\quad T_i[ c ] \gets \max\{ \mathrm{knapsackMemo}( i - 1 ,
+///     c - v_{i-1} ) + p_{i-1} , \mathrm{knapsackMemo}( i - 1 , c ) \} \cr
+/// 6 & \quad \textbf{return}\ T_i[ c ]
 /// \end{array}}
 /// \f]
 /// called as \f$ \mathrm{knapsackMemo}( n , C ) \f$.

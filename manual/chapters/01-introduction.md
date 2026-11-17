@@ -250,7 +250,7 @@ chapter 1, their operations and the chapters of their realizations; M is
 library.
 
 | Concept | Interface | Operations | Source | Chapters |
-|----------------|------------|---------------------------|-------|------|
+|----------------|------------|-------------------------|-------|--------|
 | `Sequence` | SEQUENCE | `empty()`, `finished()`, `head()`, `tail()`, `next()`, `prev()`, `insert()`, `remove()`, `read()`, `write()` | M, §3.2.1 | [2](02-sequence.md#ch-2) |
 | `Set` | SET | `size()`, `contains()`, `insert()`, `remove()` | M, §3.2.2 | [10](10-set.md#ch-10) |
 | `Dictionary` | DICTIONARY | `lookup()`, `insert()`, `remove()` | M, §3.2.3 | [7](07-dictionary.md#ch-7), [8](08-tree.md#ch-8) |

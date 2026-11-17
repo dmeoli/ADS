@@ -2541,7 +2541,7 @@ fewest swaps.
 
 --8<-- "generated/Rearrangements-minimumSwapSort.pseudo.md"
 
-![Figure 2.27. The invariant (2.10) of the Dutch national flag on `0 0 1 1 1 0 2 1 2 2`, with $i = 2$, $j = 5$ and $k = 8$ marked below, the places $A[ j .. k )$ not examined yet in the faintest tint; the step on $A[ 5 ] = 0$ swaps it with $A[ 2 ]$ (both in violet), giving `0 0 0 1 1 1 2 1 2 2` with $i = 3$, $j = 6$, $k = 8$.](../figures/sequence-flag.svg){#fig-2-27}
+![Figure 2.27. The invariant (2.10) of the Dutch national flag on `0 0 1 1 1 0 2 1 2 2`, with $i = 2$, $j = 5$ and $k = 8$ marked below, the places $A\lbrack j .. k )$ not examined yet in the faintest tint; the step on $A[ 5 ] = 0$ swaps it with $A[ 2 ]$ (both in violet), giving `0 0 0 1 1 1 2 1 2 2` with $i = 3$, $j = 6$, $k = 8$.](../figures/sequence-flag.svg){#fig-2-27}
 
 <span id="lem-2-33"></span>**Lemma 2.33.** *A step that examines $A[ j ]$
 keeps (2.10); hence `dutchNationalFlag()` partitions the items by color

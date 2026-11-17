@@ -620,7 +620,7 @@ $[ t , b )$, at the places of their indices modulo the size of the vector
 of relaxed order, and their type must therefore be trivially copyable
 (e.g., an index or a pointer to a task).
 
-![Figure 24.6. A `WorkStealingDeque` of 8 places with the items `a`, `b`, `c` in $[ t , b ) = [ 2 , 5 )$, after `take()` of the owner, which takes `c` at the bottom, and after `steal()` of a thief, which takes `a` at the top; the violet cell is the place that the operation empties.](../figures/concurrent-deque.svg){#fig-24-6}
+![Figure 24.6. A `WorkStealingDeque` of 8 places with the items `a`, `b`, `c` in $\lbrack t , b ) = \lbrack 2 , 5 )$, after `take()` of the owner, which takes `c` at the bottom, and after `steal()` of a thief, which takes `a` at the top; the violet cell is the place that the operation empties.](../figures/concurrent-deque.svg){#fig-24-6}
 
 Its public members are
 

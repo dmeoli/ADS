@@ -633,7 +633,7 @@ leaves the node ([Algorithm 11.7](11-mfset.md#alg-11-7)). Of parallel
 edges, the last one inserted dies first, and a loop $[ u , u ]$ is
 allowed and joins no component.
 
-![Figure 11.5. The segment tree over $q = 4$ questions, and the nodes (violet) whose list $L$ holds an edge $e$ alive from the question 1 to the end, i.e., on the range $[ 1 , 4 )$ of the questions 1, 2 and 3.](../figures/mfset-segtree.svg){#fig-11-5}
+![Figure 11.5. The segment tree over $q = 4$ questions, and the nodes (violet) whose list $L$ holds an edge $e$ alive from the question 1 to the end, i.e., on the range $\lbrack 1 , 4 )$ of the questions 1, 2 and 3.](../figures/mfset-segtree.svg){#fig-11-5}
 
 <span id="alg-11-7"></span>**Algorithm 11.7.** The offline connectivity
 by the divide and conquer of [Eppstein

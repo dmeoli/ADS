@@ -1873,7 +1873,7 @@ and the others start after that one ends; hence the greedy is optimal, in
 $O( n \log n )$ time for the sort. It is (13.11) with all the weights
 equal, where the dynamic programming is not needed.
 
-![Figure 13.7. Seven intervals: the violet ones are those that `independentSet()` takes (by increasing right end, those that start at or after the end of the last one taken), and each one carries the color that `intervalColoring()` gives it; three colors are needed, since the point 2.5 lies in three intervals, and since the free colors are kept on a stack, the color freed last is taken first, so that $[ 8 , 11 )$ takes the color 2 that $[ 2 , 8 )$ gives back at 8, and $[ 9 , 12 )$ the color 1 that $[ 6 , 9 )$ gives back at 9.](../figures/optimization-intervals.svg){#fig-13-7}
+![Figure 13.7. Seven intervals: the violet ones are those that `independentSet()` takes (by increasing right end, those that start at or after the end of the last one taken), and each one carries the color that `intervalColoring()` gives it; three colors are needed, since the point 2.5 lies in three intervals, and since the free colors are kept on a stack, the color freed last is taken first, so that $\lbrack 8 , 11 )$ takes the color 2 that $\lbrack 2 , 8 )$ gives back at 8, and $\lbrack 9 , 12 )$ the color 1 that $\lbrack 6 , 9 )$ gives back at 9.](../figures/optimization-intervals.svg){#fig-13-7}
 
 <span id="alg-13-39"></span>**Algorithm 13.39.** The greedy algorithms
 on intervals and on points of a line ([Montresor 2025, §14.2 and

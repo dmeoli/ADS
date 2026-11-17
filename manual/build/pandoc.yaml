@@ -54,6 +54,7 @@ filters:
   - crossref-link.lua
   - source-links.lua
   - break-code.lua
+  - table-width.lua
 
 pdf-engine: pdflatex
 

@@ -19,11 +19,22 @@
 -- targets the label and lands exactly on the heading's page. (Subsection
 -- links are unaffected — no page break — but stay correct under \hyperref.)
 
-function Link(el)
+-- A span with an identifier (e.g., an entry of the bibliography) has only
+-- the `\hypertarget` and no `\label`, so a link to it is a `\hyperlink`.
+
+local spans = {}
+
+local function Span(el)
+  if el.identifier ~= '' then spans[el.identifier] = true end
+end
+
+local function Link(el)
   if FORMAT:match('latex') or FORMAT:match('beamer') then
     local anchor = el.target:match('^[%w%./%-]+%.md#(.+)$')
     if anchor then
-      local out = { pandoc.RawInline('latex', '\\hyperref[' .. anchor .. ']{') }
+      local open = spans[anchor] and '\\protect\\hyperlink{' .. anchor .. '}{'
+                                  or '\\hyperref[' .. anchor .. ']{'
+      local out = { pandoc.RawInline('latex', open) }
       for _, inl in ipairs(el.content) do out[#out + 1] = inl end
       out[#out + 1] = pandoc.RawInline('latex', '}')
       return out
@@ -31,3 +42,5 @@ function Link(el)
   end
   return el
 end
+
+return { { Span = Span }, { Link = Link } }
