@@ -697,13 +697,14 @@ $$
 
 which is computed for $q = 1 , 2 , \ldots$ until it falls below
 $2^{-10}$; a large alphabet thus usually needs one or two bytes, and a
-small one more. A table of 16 bytes is one register, and one shuffle of bytes
-(`vpshufb`) looks it up for 32 places of $T$ at once. With AVX-512 a
-shuffle covers 64 places, two blocks are tested a step, and $q$ is a
-constant of the compilation, so that the tables stay in registers. A block
-of places thus costs $q$ loads, $2 q$ shuffles and a few logical
-operations, with no branch but the one taken when some place of the block
-passes; the places from $n - \ell + 1$ on are masked off. A candidate is
+small one more. A table of 16 bytes is one register, and one lookup of
+bytes in it (`TableLookupBytes()` of Highway, which is `vpshufb` on x86-64
+and `tbl` on ARM) takes 16 places of $T$ at once, or 32 in a vector of 32
+bytes, with the table repeated in each half. A block of 32 places thus
+costs $q$ loads, $2 q$ lookups per vector and a few logical operations,
+with no branch but the one taken when some place of the block passes; the
+places from $n - \ell + 1$ on are masked off, and without Highway the
+places are looked up one at a time in the same tables. A candidate is
 checked against the patterns of its buckets: their first 8 bytes in one
 comparison of words under a mask (for the patterns shorter than 8 bytes),
 then the rest by `memcmp()`.
@@ -1358,7 +1359,9 @@ $n \lceil m / 64 \rceil$ blocks of the table, or span half of the column, all
 the blocks are computed instead, four columns at a time; indeed, the block $b$
 of the column $j + q$ needs only the block $b - 1$ of the same column and the
 block $b$ of the column before, so that the blocks $i - q$ of the columns
-$j + q$, $q < 4$, are independent (the four lanes of an AVX2 vector).
+$j + q$, $q < 4$, are independent (the four lanes of the vectors of
+Highway, two vectors of two lanes on SSE2 and NEON, and without Highway
+four chains of operations that overlap in the processor).
 `levenshtein( a , b , k )` does the same with $k$ fixed, and gives $k + 1$ for
 any larger distance.
 
@@ -1876,8 +1879,8 @@ Between the two scans the marks of the LS parts are moved one place to the
 left; a mark then means that an entry differs from the one after it, as
 the scan from right to left meets them. At the end the marks of
 $\mathit{SA}[ 0 .. m )$ become the bit vector of the ends of the groups of
-equal LMS-substrings (read 8 entries at a time with AVX2), and their
-number is the number of names. In the code, the scans move two entries a
+equal LMS-substrings (read a vector of entries at a time with Highway),
+and their number is the number of names. In the code, the scans move two entries a
 step and prefetch the text of the entries 64 places ahead; beyond 65536 symbols
 they also prefetch the parts and the places these point to.
 

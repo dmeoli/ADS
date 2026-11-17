@@ -247,7 +247,7 @@ foreach (c 1 2 3 4)
 endforeach ()
 
 # the module ads, imported in place of the headers [see module.cpp], and
-# those of the sets, each linked alone with ads.core [see module_sets.cpp]
+# those of the sets, each linked alone [see module_sets.cpp]
 if (ADS_BUILD_MODULE)
     add_executable(module module.cpp)
     target_link_libraries(module PRIVATE ADS::ADS_module)

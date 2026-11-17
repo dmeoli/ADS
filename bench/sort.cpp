@@ -68,9 +68,10 @@
  #define ADS_HAS_IPS2RA 1
 #endif
 
-#if __has_include( <x86simdsort-static-incl.h> ) && defined( __AVX2__ )
+// x86-simd-sort, with ADS_HAS_XSS, which the build defines where a unit
+// that includes it compiles at the flags of the benchmark (AVX2 at least)
+#ifdef ADS_HAS_XSS
  #include <x86simdsort-static-incl.h>
- #define ADS_HAS_XSS 1
 #endif
 
 #if __has_include( <ska_sort.hpp> )
@@ -86,21 +87,15 @@
  #include <cstring>
  #include <stdalign.h>
  #define restrict __restrict
- // their generic entries read the items of 8 bytes as long long and pass
- // them to the comparison as doubles, which the strict aliasing of g++ at
- // -O3 reorders: a vector of doubles left out of order
- #if defined( __GNUC__ ) && ! defined( __clang__ )
-  #pragma GCC push_options
-  #pragma GCC optimize( "no-strict-aliasing" )
- #endif
+// their generic entries read the items of 8 bytes as long long and pass
+// them to the comparison as doubles, which the strict aliasing of g++ at
+// -O3 reorders (a vector of doubles left out of order): the build compiles
+// this unit with -fno-strict-aliasing where it finds them
 namespace scandum
 {
  #include <fluxsort.h>
  #include <crumsort.h>
 }
- #if defined( __GNUC__ ) && ! defined( __clang__ )
-  #pragma GCC pop_options
- #endif
  #undef restrict
  #define ADS_HAS_SCANDUM 1
 #endif

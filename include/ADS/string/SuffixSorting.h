@@ -41,7 +41,8 @@
  *
  * - the types, 64 places a word: with \f$ G \f$ the bits of the places
  *   where \f$ T[ i ] < T[ i + 1 ] \f$ and \f$ E \f$ of those where they
- *   are equal, both from vector comparisons (AVX2) and read from the
+ *   are equal, both from vector comparisons (of Highway, with
+ *   `ADS_WITH_HIGHWAY`) and read from the
  *   higher places to the lower ones, the bits of type S are the carries
  *   of the one addition \f$ G + ( G \vee E ) \f$, since \f$ t_i = S \f$ if
  *   and only if \f$ G_i \vee ( E_i \wedge t_{i+1} = S ) \f$, the carry

@@ -244,10 +244,9 @@ constexpr void PhiloxT< W >::refill( void )
    }  // overlap
   }
  Key k = f_key;
-#if defined( __GNUC__ )
- #pragma GCC unroll 10
-#endif
- for( int r = 0 ; r < 10 ; ++r ) {
+ // the 10 rounds unrolled by a fold of their calls, the round 0 with no
+ // step of the keys
+ auto oneRound = [ & ]( int r ) constexpr {
   if( r ) {
    k[ 0 ] += C::w0;
    k[ 1 ] += C::w1;
@@ -262,7 +261,10 @@ constexpr void PhiloxT< W >::refill( void )
    x[ l ][ 2 ] = y2;
    x[ l ][ 3 ] = lo0;
    }
-  }
+  };
+ [ & ]< int... r >( std::integer_sequence< int , r... > ) constexpr {
+  ( oneRound( r ) , ... );
+  }( std::make_integer_sequence< int , 10 >() );
  for( unsigned l = 0 ; l < lanes ; ++l )
   for( int j = 0 ; j < 4 ; ++j )
    f_buf[ 4 * l + unsigned( j ) ] = x[ l ][ j ];

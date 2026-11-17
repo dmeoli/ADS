@@ -16,6 +16,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Portable.h"
+#include "ADS/SimdInline.h"
 #include "ADS/string/StringMatching.h"
 #include "ADS/string/StringSearch.h"
 
@@ -23,10 +24,6 @@
 #include <bit>
 #include <cstring>
 #include <numeric>
-
-#if defined( __SSE2__ )
- #include <immintrin.h>
-#endif
 #include <utility>
 
 namespace ADS
@@ -340,27 +337,13 @@ std::size_t MultiSearcher::shiftOr( std::string_view Tv , F && report ) const
    w[ 0 ] = detail::byteSwap( w[ 0 ] );
    w[ 1 ] = detail::byteSwap( w[ 1 ] );
    }
-#if defined( __SSE2__ )
-  // the 16 bytes of cur and nxt in one register, each mask moved by d
-  // bytes with no carry to handle
-  __m128i acc = _mm_set_epi64x( std::int64_t( nxt ) , std::int64_t( cur ) );
-  [ & ]< int... d >( std::integer_sequence< int , d... > ) {
-   ( ( acc = _mm_or_si128(
-	 acc , _mm_slli_si128(
-		_mm_loadl_epi64( reinterpret_cast< const __m128i * >(
-		  sh + ( ( w[ d / 4 ] >> ( 8 * ( d % 4 ) ) ) & 0x7ff ) ) ) ,
-		d ) ) ) ,
-     ... );
-   }( std::make_integer_sequence< int , 8 >() );
-  cur = std::uint64_t( _mm_cvtsi128_si64( acc ) );
-  nxt = std::uint64_t( _mm_cvtsi128_si64( _mm_unpackhi_epi64( acc , acc ) ) );
-#else
+  // the masks moved by d bytes into the two words, with the carry from
+  // the first to the second
   for( unsigned d = 0 ; d < 8 ; ++d ) {
    const std::uint64_t v = sh[ ( w[ d / 4 ] >> ( 8 * ( d % 4 ) ) ) & 0x7ff ];
    cur |= v << ( 8 * d );
    nxt |= d ? v >> ( 64 - 8 * d ) : 0;
    }
-#endif
   if( cur != ~std::uint64_t( 0 ) ) [[unlikely]] {
    ends( j );
    if( work > 16 * j + 4096 ) {  // too many bytes: the automaton
@@ -419,25 +402,11 @@ std::size_t MultiSearcher::shiftOr2( std::string_view Tv , F && report ) const
    w[ 0 ] = detail::byteSwap( w[ 0 ] );
    w[ 1 ] = detail::byteSwap( w[ 1 ] );
    }
-#if defined( __SSE2__ )
-  __m128i acc = _mm_set_epi64x( std::int64_t( nxt ) , std::int64_t( cur ) );
-  [ & ]< int... d >( std::integer_sequence< int , d... > ) {
-   ( ( acc = _mm_or_si128(
-	 acc , _mm_slli_si128(
-		_mm_loadl_epi64( reinterpret_cast< const __m128i * >(
-		  sh + ( ( w[ d / 4 ] >> ( 16 * ( d % 4 ) ) ) & 0x7ff ) ) ) ,
-		d ) ) ) ,
-     ... );
-   }( std::make_integer_sequence< int , 8 >() );
-  cur = std::uint64_t( _mm_cvtsi128_si64( acc ) );
-  nxt = std::uint64_t( _mm_cvtsi128_si64( _mm_unpackhi_epi64( acc , acc ) ) );
-#else
   for( unsigned d = 0 ; d < 8 ; ++d ) {
    const std::uint64_t v = sh[ ( w[ d / 4 ] >> ( 16 * ( d % 4 ) ) ) & 0x7ff ];
    cur |= v << ( 8 * d );
    nxt |= d ? v >> ( 64 - 8 * d ) : 0;
    }
-#endif
   if( cur != ~std::uint64_t( 0 ) ) [[unlikely]] {
    ends( j );
    if( work > 16 * j + 4096 )  // too many bytes: the automaton
@@ -463,120 +432,16 @@ std::size_t MultiSearcher::scan( std::string_view Tv , F && report ) const
  // filter lets too much through (a small alphabet, or patterns everywhere,
  // or long patterns whose first bytes are everywhere), and the automaton
  // goes on from s, its occurrences that start before s left out
-#if defined( __AVX512BW__ )
- // 64 places a block while the loads of q - 1 places ahead are in T, two
- // blocks a step, q known at compile time so that the tables stay in
- // registers; npos when the blocks are done, else the place for the
- // automaton
- auto blocks = [ & ]< std::size_t Q >() {
-  __m512i lo[ Q ] , hi[ Q ];
-  for( std::size_t r = 0 ; r < Q ; ++r ) {
-   lo[ r ] = _mm512_broadcast_i32x4( _mm_loadu_si128(
-     reinterpret_cast< const __m128i * >( f_lo[ r ].data() ) ) );
-   hi[ r ] = _mm512_broadcast_i32x4( _mm_loadu_si128(
-     reinterpret_cast< const __m128i * >( f_hi[ r ].data() ) ) );
-   }
-  const __m512i low = _mm512_set1_epi8( 0x0f );
-  auto probe = [ & ]( std::size_t t ) {
-   __m512i acc = _mm512_set1_epi8( char( 0xff ) );
-   for( std::size_t r = 0 ; r < Q ; ++r ) {
-    const __m512i v = _mm512_loadu_si512( T + t + r );
-    acc = _mm512_and_si512(
-      acc ,
-      _mm512_and_si512(
-	_mm512_shuffle_epi8( lo[ r ] , _mm512_and_si512( v , low ) ) ,
-	_mm512_shuffle_epi8(
-	  hi[ r ] , _mm512_and_si512( _mm512_srli_epi16( v , 4 ) , low ) ) ) );
-    }
-   return( acc );
-   };
-  // the candidates of the block at t: false if the automaton must go on
-  auto take = [ & ]( std::size_t t , __m512i acc ) {
-   std::uint64_t m = _mm512_test_epi8_mask( acc , acc );
-   if( m == 0 )
-    return( true );
-   if( last - t < 63 )
-    m &= ( std::uint64_t( 1 ) << ( last - t + 1 ) ) - 1;
-   _mm512_store_si512( C , acc );
-   work += check( T , n , t , m , C , report );
-   return( work <= 16 * t + 4096 );
-   };
-  for( ; ( s + 64 <= last ) && ( s + 128 + Q - 1 <= n ) ; s += 128 ) {
-   const __m512i a = probe( s ) , b = probe( s + 64 );
-   if( _mm512_test_epi8_mask( _mm512_or_si512( a , b ) ,
-			      _mm512_or_si512( a , b ) ) == 0 ) [[likely]]
-    continue;
-   if( ! take( s , a ) )
-    return( s + 64 );
-   if( ! take( s + 64 , b ) )
-    return( s + 128 );
-   }
-  for( ; ( s <= last ) && ( s + 64 + Q - 1 <= n ) ; s += 64 )
-   if( ! take( s , probe( s ) ) )
-    return( s + 64 );
-  return( npos );
-  };
- {
-  std::size_t from = npos;
-  switch( q ) {
-   case 1:
-    from = blocks.template operator()< 1 >();
-    break;
-   case 2:
-    from = blocks.template operator()< 2 >();
-    break;
-   case 3:
-    from = blocks.template operator()< 3 >();
-    break;
-   case 4:
-    from = blocks.template operator()< 4 >();
-    break;
-   case 5:
-    from = blocks.template operator()< 5 >();
-    break;
-   case 6:
-    from = blocks.template operator()< 6 >();
-    break;
-   case 7:
-    from = blocks.template operator()< 7 >();
-    break;
-   default:
-    from = blocks.template operator()< 8 >();
-   }
-  if( from != npos )
-   return( from );
-  }
-#endif
-#if defined( __AVX2__ )
- // 32 places a block while the loads of q - 1 places ahead are in T
- __m256i lo[ 8 ] , hi[ 8 ];
- for( std::size_t r = 0 ; r < q ; ++r ) {
-  lo[ r ] = _mm256_broadcastsi128_si256( _mm_loadu_si128(
-    reinterpret_cast< const __m128i * >( f_lo[ r ].data() ) ) );
-  hi[ r ] = _mm256_broadcastsi128_si256( _mm_loadu_si128(
-    reinterpret_cast< const __m128i * >( f_hi[ r ].data() ) ) );
-  }
- const __m256i low = _mm256_set1_epi8( 0x0f ) , zero = _mm256_setzero_si256();
+#ifdef ADS_WITH_HIGHWAY
+ // 32 places a block while the loads of q - 1 places ahead are in T, the
+ // tables looked up 16 places at a time [see SimdInline.h]
  for( ; ( s <= last ) && ( s + 32 + q - 1 <= n ) ; s += 32 ) {
-  __m256i acc = _mm256_set1_epi8( char( 0xff ) );
-  for( std::size_t r = 0 ; r < q ; ++r ) {
-   const __m256i v =
-     _mm256_loadu_si256( reinterpret_cast< const __m256i * >( T + s + r ) );
-   const __m256i a =
-		   _mm256_shuffle_epi8( lo[ r ] ,
-					_mm256_and_si256( v , low ) ) ,
-		 b = _mm256_shuffle_epi8(
-		   hi[ r ] ,
-		   _mm256_and_si256( _mm256_srli_epi16( v , 4 ) , low ) );
-   acc = _mm256_and_si256( acc , _mm256_and_si256( a , b ) );
-   }
-  std::uint64_t m =
-    ~std::uint32_t( _mm256_movemask_epi8( _mm256_cmpeq_epi8( acc , zero ) ) );
+  std::uint64_t m = detail::simd::here::nibbleFilter32( T + s , f_lo.data() ,
+							f_hi.data() , q , C );
   if( m == 0 ) [[likely]]
    continue;
   if( last - s < 31 )
    m &= ( std::uint64_t( 1 ) << ( last - s + 1 ) ) - 1;
-  _mm256_store_si256( reinterpret_cast< __m256i * >( C ) , acc );
   work += check( T , n , s , m , C , report );
   if( work > 16 * s + 4096 ) {
    return( s + 32 );

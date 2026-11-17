@@ -1771,10 +1771,10 @@ inserted one. $\square$
 
 Then the rows are solved from the last, keeping for each of the $r$
 columns the word of the 64 rows below, so that a row costs $r$ parities of
-a word; with AVX-512 the back substitution takes 4 rows at a time (the
-last kernel of the filters on the intrinsics of the target, until it is
-rewritten on Highway), and a query takes the 8 parities of a line in the
-vectors of Highway.
+a word; with Highway the back substitution takes 4 rows at a time, the 8
+parities of each line of columns taken from the same words at once and the
+bits of the 4 new rows shifted in after, and a query takes the 8 parities
+of a line in the same vectors.
 We store the solution interleaved, $r$ words per block of 64 rows. A
 query reads the consecutive words of the two blocks of its 64 rows and
 makes each bit of its result by a parity. Also, it compares the 8 bits of

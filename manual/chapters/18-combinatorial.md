@@ -310,7 +310,7 @@ selection of the 1 of a given rank, and (iv) the Morton code. The count of
 an array is a kernel of `Simd.h`, compiled for every set of vector
 instructions that Highway knows and chosen by Highway when the program
 starts, on the processor it finds, so that the code of ADS tests no
-processor; the other three still follow the macros of BMI2 of the target.
+processor; the other three are broadword code, with no instruction of BMI2.
 Each function also has a portable
 branch, which gives the same results on a machine without the
 instructions; the test `engineered_combinatorial.fast-bitwise` checks them

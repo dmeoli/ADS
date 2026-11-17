@@ -15,6 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/SimdInline.h"
+
 #include <algorithm>
 #include <array>
 #include <bit>
@@ -22,10 +24,6 @@
 #include <limits>
 #include <memory>
 #include <type_traits>
-
-#if defined( __AVX2__ )
- #include <immintrin.h>
-#endif
 
 namespace ADS
 {
@@ -80,42 +78,12 @@ inline std::uint64_t saisReverse( std::uint64_t x )
 template< typename C >
 inline void saisCompare( const C * T , std::uint64_t * G , std::uint64_t * P )
 {
-#if defined( __AVX2__ )
- if constexpr( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > ) {
-  const __m256i flip = _mm256_set1_epi8( char( 0x80 ) );
-  std::uint64_t g[ 2 ] , p[ 2 ];
-  for( int h = 0 ; h < 2 ; ++h ) {
-   const __m256i a = _mm256_loadu_si256(
-		   reinterpret_cast< const __m256i * >( T + 32 * h ) ) ,
-		 b = _mm256_loadu_si256(
-		   reinterpret_cast< const __m256i * >( T + 32 * h + 1 ) );
-   const __m256i sa = _mm256_xor_si256( a , flip ) ,
-		 sb = _mm256_xor_si256( b , flip );
-   g[ h ] =
-     std::uint32_t( _mm256_movemask_epi8( _mm256_cmpgt_epi8( sb , sa ) ) );
-   p[ h ] = std::uint32_t( _mm256_movemask_epi8( _mm256_cmpeq_epi8( a ,
-								    b ) ) );
-   }
-  *G = g[ 0 ] | ( g[ 1 ] << 32 );
-  *P = p[ 0 ] | ( p[ 1 ] << 32 );
-  return;
-  }
- else if constexpr( ( sizeof( C ) == 4 ) && std::is_signed_v< C > ) {
-  std::uint64_t g = 0 , p = 0;  // the names, never negative
-  for( int h = 0 ; h < 8 ; ++h ) {
-   const __m256i a = _mm256_loadu_si256(
-		   reinterpret_cast< const __m256i * >( T + 8 * h ) ) ,
-		 b = _mm256_loadu_si256(
-		   reinterpret_cast< const __m256i * >( T + 8 * h + 1 ) );
-   g |= std::uint64_t( unsigned( _mm256_movemask_ps(
-	  _mm256_castsi256_ps( _mm256_cmpgt_epi32( b , a ) ) ) ) )
-	<< ( 8 * h );
-   p |= std::uint64_t( unsigned( _mm256_movemask_ps(
-	  _mm256_castsi256_ps( _mm256_cmpeq_epi32( a , b ) ) ) ) )
-	<< ( 8 * h );
-   }
-  *G = g;
-  *P = p;
+#ifdef ADS_WITH_HIGHWAY
+ // the bytes, and the names, never negative, 64 places a vector at a time
+ // [see SimdInline.h]
+ if constexpr( ( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > ) ||
+	       ( ( sizeof( C ) == 4 ) && std::is_signed_v< C > )) {
+  simd::here::neighbours64( T , G , P );
   return;
   }
 #endif
@@ -133,40 +101,8 @@ inline void saisCompare( const C * T , std::uint64_t * G , std::uint64_t * P )
 inline void saisKinds( const unsigned char * x , std::uint64_t t ,
 		       std::uint64_t b , std::uint16_t * idx )
 {
-#if defined( __AVX2__ )
- // each bit of a 32-bit mask to a byte of all ones or zeros
- const __m256i spread = _mm256_setr_epi8( 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 1 ,
-					  1 , 1 , 1 ,
-					  1 , 1 , 1 , 1 , 2 , 2 , 2 , 2 , 2 ,
-					  2 , 2 , 2 ,
-					  3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 ) ,
-	       bit =
-		 _mm256_set1_epi64x( std::int64_t( 0x8040201008040201ull ) );
- auto bytes = [ & ]( std::uint32_t v ) {
-  const __m256i a = _mm256_and_si256(
-    _mm256_shuffle_epi8( _mm256_set1_epi32( int( v ) ) , spread ) , bit );
-  return( _mm256_cmpeq_epi8( a , bit ) );
-  };
- for( int h = 0 ; h < 2 ; ++h ) {
-  const __m256i k =
-    _mm256_or_si256( _mm256_and_si256( bytes( std::uint32_t( t >> 32 * h ) ) ,
-				       _mm256_set1_epi8( 2 ) ) ,
-		     _mm256_and_si256( bytes( std::uint32_t( b >> 32 * h ) ) ,
-				       _mm256_set1_epi8( 1 ) ) );
-  const __m256i v =
-    _mm256_loadu_si256( reinterpret_cast< const __m256i * >( x + 32 * h ) );
-  for( int g = 0 ; g < 2 ; ++g ) {
-   const __m128i vg = g ? _mm256_extracti128_si256( v , 1 )
-			: _mm256_castsi256_si128( v ) ,
-		 kg = g ? _mm256_extracti128_si256( k , 1 )
-			: _mm256_castsi256_si128( k );
-   const __m256i r =
-     _mm256_or_si256( _mm256_slli_epi16( _mm256_cvtepu8_epi16( vg ) , 2 ) ,
-		      _mm256_cvtepu8_epi16( kg ) );
-   _mm256_storeu_si256( reinterpret_cast< __m256i * >( idx + 32 * h + 16 * g ) ,
-			r );
-   }
-  }
+#ifdef ADS_WITH_HIGHWAY
+ simd::here::kinds64( x , t , b , idx );  // [see SimdInline.h]
 #else
  for( unsigned j = 0 ; j < 64 ; ++j )
   idx[ j ] =
@@ -750,16 +686,14 @@ template< class S >
 void saisCompact( S * a , S from , S to )
 {
  S i = from , j = from;
-#if defined( __AVX512F__ )
- if constexpr( sizeof( S ) == 4 ) {  // 16 at a time: the place j + 16 is
-  const __m512i one = _mm512_set1_epi32( 1 );  // past no slot unread
-  for( ; i + 16 <= to ; i += 16 ) {
-   const __m512i v = _mm512_loadu_si512( a + i );
-   const __mmask16 k = _mm512_test_epi32_mask( v , v );
-   _mm512_storeu_si512(
-     a + j , _mm512_maskz_compress_epi32( k , _mm512_sub_epi32( v , one ) ) );
-   j += S( std::popcount( unsigned( k ) ) );
-   }
+#ifdef ADS_WITH_HIGHWAY
+ // a vector at a time, compressed [see SimdInline.h]: the place j + L is
+ // past no slot unread
+ if constexpr( ( sizeof( S ) == 4 ) || ( sizeof( S ) == 8 ) ) {
+  std::size_t ii = std::size_t( i ) , jj = std::size_t( j );
+  simd::here::compactLess( a , ii , std::size_t( to ) , jj );
+  i = S( ii );
+  j = S( jj );
   }
 #endif
  for( ; i < to ; ++i ) {
@@ -1077,22 +1011,13 @@ void saisPartial( const C * T , S * SA , S n , S K ,
  for( std::size_t w = 0 ; 64 * w < std::size_t( m ) ; ++w ) {
   const S from = S( 64 * w ) , to = std::min< S >( from + 64 , m );
   std::uint64_t word = 0;
-#if defined( __AVX2__ )
-  if constexpr( sizeof( S ) == 4 )
-   if( to - from == 64 ) {  // the signs by 8 at a time
-    const __m256i keep = _mm256_set1_epi32( int( low ) );
-    for( int h = 0 ; h < 8 ; ++h ) {
-     auto * a = reinterpret_cast< __m256i * >( SA + from + 8 * h );
-     const __m256i v = _mm256_loadu_si256( a );
-     word |= std::uint64_t(
-	       unsigned( _mm256_movemask_ps( _mm256_castsi256_ps( v ) ) ) )
-	     << ( 8 * h );
-     _mm256_storeu_si256( a , _mm256_and_si256( v , keep ) );
-     }
-    ends[ w ] = word;
-    name += S( std::popcount( word ) );
-    continue;
-    }
+#ifdef ADS_WITH_HIGHWAY
+  if( to - from == 64 ) {  // the signs a vector at a time
+   word = simd::here::takeSigns64( SA + from );  // [see SimdInline.h]
+   ends[ w ] = word;
+   name += S( std::popcount( word ) );
+   continue;
+   }
 #endif
   for( S i = from ; i < to ; ++i ) {
    const S x = SA[ i ];

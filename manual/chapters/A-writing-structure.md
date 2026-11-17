@@ -397,6 +397,12 @@ header a block of using-declarations, e.g.,
     // stack/MinStack.h
     using ADS::MinStack;
 
+The blocks of the core are also written in `ads.base` and `ads.advanced`,
+which do not import `ads.core`, since Clang 18 does not compile a module
+whose global fragment includes the headers of Highway and which imports
+another module that included them too (the functions of Highway are
+static, i.e., local to each translation unit).
+
 A new header is first given its set by a line of `cmake/ads_sets.txt`
 (e.g., `stack/MinStack.h base`), with a line `uses` if it is a base header
 that includes an advanced one. A header that would hold a part of each set

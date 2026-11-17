@@ -39,8 +39,11 @@
 #include "ADS/set/RoaringBitmap.h"
 #include "ADS/set/VectorIntersection.h"
 #include "ADS/sort/VectorQuickSort.h"
+#include "ADS/string/EditDistance.h"
 #include "ADS/string/LongestCommonExtension.h"
+#include "ADS/string/MultiSearch.h"
 #include "ADS/string/StringSearch.h"
+#include "ADS/string/SuffixSorting.h"
 #include "ADS/succinct/BitVector.h"
 
 #include <algorithm>
@@ -238,6 +241,51 @@ std::map< std::string , std::function< void( void ) > > kernels( void )
   K[ "ribbon-maybe" ] = [ R , Q ] {
    for( auto q : *Q )
     sink += R->maybe( q );
+   };
+  auto B = std::make_shared< std::vector< std::uint32_t > >(
+    keys.begin() , keys.begin() + ( 1 << 14 ) );
+  K[ "ribbon-build" ] = [ B ] {
+   sink += ADS::RibbonFilter< std::uint32_t >( *B ).maybe( 1 );
+   };
+  }
+ {
+  // the edit distance: all the blocks (random strings), and the bands
+  // (one string and a copy of it with a substitution every 16 bytes)
+  auto a = std::make_shared< std::string >( text( 1 << 12 , 4 , 19 ) );
+  auto b = std::make_shared< std::string >( text( 1 << 12 , 4 , 20 ) );
+  auto c = std::make_shared< std::string >( text( 1 << 13 , 4 , 21 ) );
+  auto e = std::make_shared< std::string >( *c );
+  for( std::size_t i = 0 ; i < e->size() ; i += 16 )
+   ( *e )[ i ] = char( 'a' + ( ( *e )[ i ] - 'a' + 1 ) % 4 );
+  K[ "edit-full" ] = [ a , b ] { sink += ADS::levenshtein( *a , *b ); };
+  K[ "edit-band" ] = [ c , e ] { sink += ADS::levenshtein( *c , *e ); };
+  }
+ {
+  // the search of many patterns: 32 of 10 bytes (the filter of the
+  // places), 200 of 6 and of 16 bytes (the shift-or of stride 1 and 2)
+  auto t = std::make_shared< std::string >( text( 1 << 18 , 64 , 22 ) );
+  auto patterns = [ & ]( std::size_t k , std::size_t len , unsigned s ) {
+   std::mt19937_64 g( s );
+   std::vector< std::string > P;
+   for( std::size_t i = 0 ; i < k ; ++i )
+    P.push_back( t->substr( g() % ( t->size() - len ) , len ) );
+   return( std::make_shared< ADS::MultiSearcher >( P ) );
+   };
+  auto S = patterns( 32 , 10 , 23 ) , O = patterns( 200 , 6 , 24 ) ,
+       W = patterns( 200 , 16 , 25 );
+  K[ "multi-scan" ] = [ S , t ] { sink += S->count( *t ); };
+  K[ "multi-shiftor" ] = [ O , t ] { sink += O->count( *t ); };
+  K[ "multi-shiftor2" ] = [ W , t ] { sink += W->count( *t ); };
+  }
+ {
+  // the suffix array of a text of 4 letters and of one of 200
+  auto t4 = std::make_shared< std::string >( text( 1 << 16 , 4 , 26 ) );
+  auto t200 = std::make_shared< std::string >( text( 1 << 16 , 200 , 27 ) );
+  K[ "sais-dna" ] = [ t4 ] {
+   sink += ADS::suffixArray< std::uint32_t >( *t4 )[ 7 ];
+   };
+  K[ "sais-bytes" ] = [ t200 ] {
+   sink += ADS::suffixArray< std::uint32_t >( *t200 )[ 7 ];
    };
   }
  {

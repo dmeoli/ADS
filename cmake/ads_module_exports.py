@@ -333,23 +333,24 @@ ABOUT = {
              "that the headers of the core of ADS [see ADS/core.h] declare in "
              "the namespace ADS and in those nested in it, but for the "
              "namespaces detail; the modules ads.base and ads.advanced "
-             "export it in turn.",
-    "base" : "Interface of the C++20 module ads.base, which exports ads.core "
-             "and the names that the headers of the base set of ADS [see "
-             "ADS/base.h] declare in the namespace ADS and in those nested in "
-             "it, but for the namespaces detail; a translation unit that "
-             "writes import ads.base; compiles neither the advanced headers "
-             "but those that the base ones use inside, whose names are not "
-             "exported, nor the executors and the headers of MPI.",
+             "export these names in turn.",
+    "base" : "Interface of the C++20 module ads.base, which exports the "
+             "names of ads.core, without importing it, and those that the "
+             "headers of the base set of ADS [see ADS/base.h] declare in the "
+             "namespace ADS and in those nested in it, but for the "
+             "namespaces detail; a translation unit that writes import "
+             "ads.base; compiles neither the advanced headers but those that "
+             "the base ones use inside, whose names are not exported, nor "
+             "the executors and the headers of MPI.",
     "advanced" : "Interface of the C++20 module ads.advanced, which exports "
-                 "ads.core and the names that the headers of the advanced "
-                 "set of ADS [see ADS/advanced.h] declare in the namespace "
-                 "ADS and in those nested in it, but for the namespaces "
-                 "detail; the names of the base headers that these use are "
-                 "not exported. The names of the executors of OpenMP, oneTBB "
-                 "and FastFlow and of the sort on MPI are exported only if "
-                 "the module is compiled with their library, as their "
-                 "headers are.",
+                 "the names of ads.core, without importing it, and those "
+                 "that the headers of the advanced set of ADS [see "
+                 "ADS/advanced.h] declare in the namespace ADS and in those "
+                 "nested in it, but for the namespaces detail; the names of "
+                 "the base headers that these use are not exported. The "
+                 "names of the executors of OpenMP, oneTBB and FastFlow and "
+                 "of the sort on MPI are exported only if the module is "
+                 "compiled with their library, as their headers are.",
 }
 
 
@@ -368,9 +369,12 @@ def write_module( root , names ):
                  "module;" , "" , f'#include "{ads_sets.ENTRY[ s ]}"' , "" ,
                  BANNER , title( "MODULE PURVIEW" ) , BANNER , "" ,
                  f"export module {module};" , "" ]
-        if s != "core":
-            out += [ "export import ads.core;" , "" ]
-        members = ads_sets.MEMBERS[ s ]
+        # the names of the core again in ads.base and ads.advanced, which
+        # do not import ads.core: a unit that includes the headers of
+        # Highway in its global module fragment and imports a module that
+        # included them too does not compile with Clang 18, the functions
+        # of Highway being static, i.e., local to each unit
+        members = ads_sets.EXPORTS[ s ]
         for ns in sorted( names ):
             by_header = collections.defaultdict( list )
             for n , headers in names[ ns ].items():

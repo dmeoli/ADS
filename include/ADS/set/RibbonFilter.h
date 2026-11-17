@@ -48,15 +48,15 @@
  * row costs \f$ r \f$ parities of a word; a row with no equation takes a
  * pseudorandom value. The banding prefetches the rows of the key 16 places
  * ahead (Chen et al.), whose start is known from its hash, so that the
- * misses of the cache of several keys overlap. With AVX-512 the back
- * substitution takes 4 rows at a time, 8 columns per register: with
+ * misses of the cache of several keys overlap. With Highway the back
+ * substitution takes 4 rows at a time, 8 columns per vector: with
  * \f$ W \f$ the words of the rows from \f$ i \f$, the row \f$ i - d \f$,
  * \f$ d = 1 , \ldots , 4 \f$, is
  * \f[ Z_{i-d} = f_{i-d} \oplus \mathrm{parity}\bigl( ( c_{i-d} \gg d )
  *     \wedge W \bigr) \oplus \bigoplus_{k=1}^{d-1} c_{i-d,k} \,
  *     Z_{i-d+k} \;, \f]
  * the 4 parities taken from the same \f$ W \f$ at once and the bits of the
- * new rows among them added after, by masks, so that the chain of
+ * new rows among them added after, by shifts, so that the chain of
  * dependences is one parity per 4 rows instead of one per row; the solution
  * is the same as row by row. The solution is stored interleaved: for each
  * block of 64 rows, \f$ r \f$ words, the \f$ j \f$-th of which holds the
@@ -157,10 +157,6 @@
 #include <string_view>
 #include <type_traits>
 #include <vector>
-
-#if defined( __AVX512BW__ )
- #include <immintrin.h>
-#endif
 
 /// a function inlined even where the compiler would not
 #ifndef ADS_FILTER_INLINE
@@ -286,7 +282,7 @@ class RibbonFilter
  /// a line of cache: the words of 8 columns of a block of 64 rows
  struct alignas( 64 ) Line
  {
-  std::uint64_t w[ 8 ];  ///< the words of the 8 columns
+  std::uint64_t w[ 8 ];                ///< the words of the 8 columns
   using persist_unit = std::uint64_t;  ///< eight words in a file
   };
 

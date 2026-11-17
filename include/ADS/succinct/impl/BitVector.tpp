@@ -74,11 +74,7 @@ inline std::size_t lineRank( const Word * w , unsigned p )
  for( unsigned j = 0 ; j < 8 ; ++j ) {
   const auto c = unsigned( std::clamp< std::int64_t >(
     std::int64_t( p ) - 64 * std::int64_t( j ) , 0 , 64 ) );
-#ifdef __BMI2__
-  r += std::size_t( std::popcount( _bzhi_u64( w[ j ] , c ) ) );
-#else
   r += std::size_t( std::popcount( w[ j ] & lowMask( int( c ) ) ) );
-#endif
   }
  return( r );
  }

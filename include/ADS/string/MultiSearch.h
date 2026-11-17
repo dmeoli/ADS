@@ -38,12 +38,14 @@
  * \f]
  * so that a large alphabet needs one or two bytes and a small one more.
  * A table of 16 bytes is one
- * register, and one shuffle of bytes (`vpshufb`) looks up 32 places of
- * \f$ T \f$ at once, so that a block of 32 places costs \f$ q \f$ loads,
- * \f$ 2 q \f$ shuffles and a few logical operations, with no branch but the
- * one on a candidate. A candidate is checked against the patterns of its
- * buckets, by their first 8 bytes in one comparison of words and then by
- * the rest. Every occurrence makes its place a candidate for its bucket, so
+ * register, and one lookup of bytes in it (`TableLookupBytes()` of
+ * Highway, with `ADS_WITH_HIGHWAY`) takes 16 places of \f$ T \f$ at once,
+ * or 32 in a vector of 32 bytes, so that a block of 32 places costs
+ * \f$ q \f$ loads, \f$ 2 q \f$ lookups a vector and a few logical
+ * operations, with no branch but the one on a candidate; without Highway
+ * the places are looked up one at a time. A candidate is checked against
+ * the patterns of its buckets, by their first 8 bytes in one comparison of
+ * words and then by the rest. Every occurrence makes its place a candidate for its bucket, so
  * that nothing is missed; when the bytes compared with the patterns exceed
  * 16 a place on average (\f$ 16 s + 4096 \f$ after the block at \f$ s \f$,
  * a word of 8 bytes for each pattern checked and the bytes past it that

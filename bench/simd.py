@@ -9,8 +9,10 @@
 # and -march=native for the times) and on the present ones with Highway (no   #
 # flag of the machine), and prints one row per kernel. --counts gives the     #
 # instructions of one call by callgrind, those of 3 R calls less those of R   #
-# over 2 R, which the load of the machine does not change, with the new       #
-# build also at the flags of the old one; --times gives the                   #
+# over 2 R, which the load of the machine does not change, with the row A/A   #
+# (the new build counted again) and the new build also at the flags of the    #
+# old one (callgrind runs no AVX-512, so the old paths of AVX-512 are not     #
+# counted); --times gives the                                                 #
 # nanoseconds of one call, the median of 11 runs of each build taken in       #
 # turn, with the row A/A (the new build against a second run of itself) for   #
 # the noise, and refuses to run unless the machine is idle (the load of the   #
@@ -86,17 +88,17 @@ def main():
         # kernels then take the same set of instructions
         p3 = os.path.join( a.out , "simd-new-v3" )
         build( os.path.join( ROOT , "include" ) , p3 , [ march ] , a.hwy )
-        print( "| kernel | old | new | new / old | new " + march +
+        print( "| kernel | old | new | new / old | new A/A | new " + march +
                " | / old |" )
-        print( "|---|---:|---:|---:|---:|---:|" )
+        print( "|---|---:|---:|---:|---:|---:|---:|" )
         for k in names:
             c = []
-            for p in ( po , pn , p3 ):  # 3 R calls less R, the first warm
-                c.append( max( 1 , instructions( p , k , 3 * a.r ) -
+            for p in ( po , pn , pn , p3 ):  # 3 R calls less R, the first
+                c.append( max( 1 , instructions( p , k , 3 * a.r ) -  # warm
                                instructions( p , k , a.r ) ) / ( 2 * a.r ) )
             print( f"| {k} | {c[ 0 ]:.0f} | {c[ 1 ]:.0f} |"
                    f" {c[ 1 ] / c[ 0 ]:.2f} | {c[ 2 ]:.0f} |"
-                   f" {c[ 2 ] / c[ 0 ]:.2f} |" )
+                   f" {c[ 3 ]:.0f} | {c[ 3 ] / c[ 0 ]:.2f} |" )
     if a.times:
         print( "| kernel | old ns | new ns | new / old | A/A |" )
         print( "|---|---:|---:|---:|---:|" )
