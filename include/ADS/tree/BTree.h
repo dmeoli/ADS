@@ -285,8 +285,10 @@ class BTree
  class const_iterator
  {
   public:
-  /// a pair of constant references, the key and its value
-  using reference = PairRef< const K & , const V & >;
+  /// a pair of constant references, the key and its value (that of the
+  /// vector of the values, a proxy if V is bool), whose value is ( K , V )
+  using reference =
+    PairRef< const K & , typename std::vector< V >::const_reference , K , V >;
   using value_type = std::pair< K , V >;    ///< the pairs, by value
   using difference_type = std::ptrdiff_t;  ///< the type of the distances
   /// the category of the iterator for the concepts of C++20, forward
@@ -377,9 +379,10 @@ class BTree
  using mapped_type = V;
  using size_type = std::size_t;           ///< the type of the sizes
  using difference_type = std::ptrdiff_t;  ///< the type of the distances
- using reference = PairRef< const K & , const V & >;  ///< references, by value
- using const_reference = reference;                  ///< the same
- using iterator = const_iterator;                    ///< the constant iterator
+ /// references, by value
+ using reference = typename const_iterator::reference;
+ using const_reference = reference;  ///< the same
+ using iterator = const_iterator;    ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {

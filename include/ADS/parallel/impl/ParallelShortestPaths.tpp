@@ -294,6 +294,27 @@ class JoinBarrier
    f_done = false;             ///< whether it is over
  };
 
+/// the buckets of a thread of bucketStepping(): a window of kWindow
+/// buckets from the base, and the nodes past it
+struct SteppingBuckets
+{
+ static constexpr std::size_t kWindow = 1024;  ///< the buckets of the window
+ /// no bucket
+ static constexpr std::size_t kNone =
+   std::numeric_limits< std::size_t >::max();
+ std::vector< std::vector< int > > win =
+   std::vector< std::vector< int > >( kWindow );  ///< the window
+ std::vector< int > over;      ///< the nodes past the window
+ std::size_t overMin = kNone;  ///< a bound below their buckets
+ };
+
+/// a counter that the threads of bucketStepping() update, on a line of its
+/// own, away from the state that they read
+struct alignas( 128 ) SteppingCounter
+{
+ std::atomic< std::size_t > v;  ///< the value
+ };
+
 /// the Delta-stepping on thread-local buckets: each thread of the bulk
 /// keeps the nodes it improves in its own buckets, a window of kWindow
 /// buckets from base and an overflow past it; a step relaxes the shared
@@ -309,8 +330,10 @@ std::vector< typename G::Weight > bucketStepping( E & ex , const G & g ,
 						  typename G::Weight delta )
 {
  using D = typename G::Weight;
- constexpr std::size_t kWindow = 1024 , kFuse = 1000 , kChunk = 64;
- constexpr std::size_t kNone = std::numeric_limits< std::size_t >::max();
+ using Buckets = SteppingBuckets;
+ using Counter = SteppingCounter;
+ constexpr std::size_t kWindow = Buckets::kWindow , kNone = Buckets::kNone;
+ constexpr std::size_t kFuse = 1000 , kChunk = 64;
  const int n = g.bound();  // the names, some unused if nodes were deleted
  std::vector< D > d( std::size_t( n ) , infinity< D >() );
  d[ std::size_t( s ) ] = D( 0 );
@@ -322,25 +345,12 @@ std::vector< typename G::Weight > bucketStepping( E & ex , const G & g ,
    return( b < D( kNone / 4 ) ? std::size_t( b ) : kNone / 4 );
    }
   };
- // the buckets of a thread
- struct Buckets
- {
-  std::vector< std::vector< int > > win =
-    std::vector< std::vector< int > >( kWindow );
-  std::vector< int > over;      ///< the nodes past the window
-  std::size_t overMin = kNone;  ///< a bound below their buckets
-  };
  const std::size_t p = std::max< std::size_t >( ex.concurrency() , 1 );
  std::vector< Buckets * > slot( p , nullptr );
  std::vector< std::size_t > at( p + 1 , 0 );  // the places in the frontier
  std::vector< int > F{ s };                  // the frontier of the bucket cur
  std::size_t tail = 1 , cur = 0 , base = 0;
- // the counters that the threads update, each on a line of its own,
- // away from the state that they read
- struct alignas( 128 ) Counter
- {
-  std::atomic< std::size_t > v;  ///< the value
-  };
+ // the counters that the threads update
  Counter claim{ 0 } , vote{ kNone } , nRelaxed{ 0 } , nAgain{ 0 };
  // whether the distance at which each node was last relaxed is kept, so
  // that an entry of a node met again at the same distance relaxes nothing:

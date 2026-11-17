@@ -32,19 +32,24 @@ inline constexpr std::uint64_t kHashK[ 7 ] = {
  0xC0AC29B7C97C50DDULL
  };
 
-/// the word of 8 bytes from p, in the byte order of the machine
+/// the word of 8 bytes from p, little-endian on every system, so that the
+/// hash of a string is the same on every system
 [[nodiscard]] inline std::uint64_t read64( const unsigned char * p )
 {
  std::uint64_t w;
  std::memcpy( &w , p , 8 );
+ if constexpr( std::endian::native == std::endian::big )
+  w = byteSwap( w );
  return( w );
  }
 
-/// the word of 4 bytes from p, in the byte order of the machine
+/// the word of 4 bytes from p, little-endian on every system
 [[nodiscard]] inline std::uint64_t read32( const unsigned char * p )
 {
  std::uint32_t w;
  std::memcpy( &w , p , 4 );
+ if constexpr( std::endian::native == std::endian::big )
+  w = std::uint32_t( byteSwap( w ) >> 32 );
  return( w );
  }
 
