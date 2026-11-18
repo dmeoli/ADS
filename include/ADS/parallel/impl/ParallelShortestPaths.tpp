@@ -290,11 +290,12 @@ class JoinBarrier
    }
   std::unique_lock< std::mutex > sleep( f_sm );
   f_cv.wait( sleep , [ & ] {
-   return( f_gen.load( std::memory_order_acquire ) != g ); } );
+   return( f_gen.load( std::memory_order_acquire ) != g );
+   } );
   }
 
- std::mutex f_m;  ///< for the joins
- std::mutex f_sm;  ///< for the sleep of the waiting threads
+ std::mutex f_m;                ///< for the joins
+ std::mutex f_sm;               ///< for the sleep of the waiting threads
  std::condition_variable f_cv;  ///< where they sleep
  /// the releases, on a line of their own, where the threads wait
  alignas( 128 ) std::atomic< std::uint32_t > f_gen{ 0 };

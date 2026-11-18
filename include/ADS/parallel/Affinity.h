@@ -121,7 +121,9 @@ struct HwlocSet
 /// \endcond
 
 /// the processors on which the process may run, in increasing order, as
-/// the first call found them; empty where hwloc does not give them
+/// the first call found them: those of its binding, or those that the
+/// topology allows where the system does not tell the binding (macOS);
+/// empty where hwloc does not give them
 inline const std::vector< int > & affinityCpus( void )
 {
  static const std::vector< int > cpus = [] {
@@ -129,8 +131,10 @@ inline const std::vector< int > & affinityCpus( void )
 #if defined( ADS_WITH_HWLOC )
   const hwloc_topology_t t = detail::hwlocTopology();
   detail::HwlocSet S;
-  if( t && S.s && ( hwloc_get_cpubind( t , S.s ,
-				       HWLOC_CPUBIND_THREAD ) == 0 ) )
+  if( t && S.s &&
+      ( ( hwloc_get_cpubind( t , S.s , HWLOC_CPUBIND_THREAD ) == 0 ) ||
+	( hwloc_bitmap_copy( S.s , hwloc_topology_get_allowed_cpuset( t ) ) ==
+	  0 ) ) )
    for( int i = hwloc_bitmap_first( S.s ) ; i >= 0 ;
 	i = hwloc_bitmap_next( S.s , i ) )
     c.push_back( i );

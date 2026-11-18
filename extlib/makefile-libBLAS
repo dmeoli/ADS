@@ -41,7 +41,7 @@ libBLASDIRS = $(if $(libBLASBSCDIR),-L"$(libBLASBSCDIR)/lib" \
 libBLASTRY = $(shell printf '$(ADShash)include <$(1)>\nint main(){double \
 	a=2,c=0;cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,1,1,1,\
 	1.0,&a,1,&a,1,0.0,&c,1);return int(c)-4;}\n' | $(CXX) -x c++ - \
-	-o $(ADSNULL) $(2) 2>/dev/null && echo 1)
+	-o $(ADSTRY) $(2) 2>/dev/null && echo 1)
 
 # the name of the library, the first of openblas, cblas and blas that
 # links, found once

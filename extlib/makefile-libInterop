@@ -139,10 +139,10 @@ libNetworKitSRC = $(ADShash)include <networkit/graph/Graph.hpp>\n\
 # none, or oneTBB (which the headers of <execution> of libstdc++ may ask
 # for), or the word none if it does not link
 libInteropLINK = $(shell \
-	if printf '$(1)' | $(CXX) -std=c++20 -x c++ - $(2) -o /dev/null \
+	if printf '$(1)' | $(CXX) -std=c++20 -x c++ - $(2) -o $(ADSTRY) \
 	   -pthread 2>/dev/null; then echo; \
 	elif printf '$(1)' | $(CXX) -std=c++20 -x c++ - $(2) $(libTBBINC) \
-	   -o /dev/null $(libTBBLIB) -pthread 2>/dev/null; then \
+	   -o $(ADSTRY) $(libTBBLIB) -pthread 2>/dev/null; then \
 	echo '$(libTBBINC) $(libTBBLIB)'; else echo none; fi)
 
 # macros to be exported - - - - - - - - - - - - - - - - - - - - - - - - - - -

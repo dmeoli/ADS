@@ -34,7 +34,7 @@ libHwlocFOUND = $(eval libHwlocFOUND := $$(shell printf '$$(ADShash)include \
 	<hwloc.h>\nstatic_assert(HWLOC_API_VERSION>=0x00020000);\nint main(){\
 	hwloc_topology_t t;if(hwloc_topology_init(&t))return 1;\
 	int r=hwloc_topology_load(t);hwloc_topology_destroy(t);return r;}\n' | \
-	$$(CXX) -std=c++20 -x c++ - -o $$(ADSNULL) $$(libHwlocINC) \
+	$$(CXX) -std=c++20 -x c++ - -o $$(ADSTRY) $$(libHwlocINC) \
 	$$(libHwlocLIB) 2>/dev/null && echo 1))$(libHwlocFOUND)
 
 ########################## End of makefile-libHwloc ###########################

@@ -120,13 +120,14 @@ jobs:
   # are required, with nanoarrow, by CMake and by the makefiles: on Linux,
   # cereal, Eigen, METIS, CRoaring, sdsl-lite and nanoarrow (KaHIP,
   # GraphBLAS 10 and NetworKit, which apt lacks or has too old, in the job
-  # interop); on macOS all of them from Homebrew, but sdsl-lite and
+  # interop); on macOS all of them from Homebrew, but sdsl-lite, GraphBLAS,
+  # whose bottle fails to compile its kernels at run time on the runner, and
   # NetworKit, whose bottle may be older than 11.3 on the runner, though not
-  # KaHIP and NetworKit with g++, whose libraries are built on libc++; on
-  # MSYS2 all but KaHIP and NetworKit, which it lacks, and sdsl-lite, whose
-  # headers need the POSIX of sys/mman.h, with nanoarrow built from its
-  # sources, of which the package of MSYS2 has no target of CMake; none with
-  # MSVC, for which vcpkg would build them all at each run
+  # KaHIP and NetworKit with g++, whose libraries are built on libc++; on MSYS2
+  # all but KaHIP and NetworKit, which it lacks, and sdsl-lite, whose headers
+  # need the POSIX of sys/mman.h, with nanoarrow built from its sources, of
+  # which the package of MSYS2 has no target of CMake; none with MSVC, for
+  # which vcpkg would build them all at each run
   test:
     name: test (${{ matrix.os }}, ${{ matrix.compiler }})
     strategy:
@@ -179,8 +180,8 @@ jobs:
       - name: GMP and the libraries of the adapters, of Homebrew
         if: runner.os == 'macOS'
         run: |
-          brew install gmp eigen metis suite-sparse croaring cereal \
-              nanoarrow kahip libomp
+          brew install gmp eigen metis croaring cereal nanoarrow kahip \
+              libomp
           echo "OpenMP_ROOT=$(brew --prefix libomp)" >> "$GITHUB_ENV"
       - name: the libraries of the adapters required, and their prefix
         if: matrix.compiler != 'msvc'
@@ -194,8 +195,8 @@ jobs:
             Linux-*) libs="CEREAL EIGEN METIS CROARING SDSL"
                      src="sdsl croaring nanoarrow" ;;
             macOS-clang++) libs="$libs KAHIP NETWORKIT"
-                           src="sdsl networkit" ;;
-            macOS-*) src=sdsl ;;
+                           src="sdsl graphblas networkit" ;;
+            macOS-*) src="sdsl graphblas" ;;
             *) libs="CEREAL EIGEN METIS GRAPHBLAS CROARING"
                src="croaring nanoarrow" ;;
           esac
@@ -253,7 +254,8 @@ jobs:
         run: |
           roots="CRoaring_ROOT=$OPT sdsl_ROOT=$OPT nanoarrow_ROOT=$OPT"
           [ "$RUNNER_OS" = macOS ] &&
-            roots="sdsl_ROOT=$OPT NetworKit_ROOT=$OPT tlx_ROOT=$OPT"
+            roots="sdsl_ROOT=$OPT GraphBLAS_ROOT=$OPT NetworKit_ROOT=$OPT
+                   tlx_ROOT=$OPT"
           on=$(for l in $ADS_LIBS NANOARROW; do echo "ADS_WITH_$l=1"; done)
           make backends $roots $on
           make -j4 test $roots $on

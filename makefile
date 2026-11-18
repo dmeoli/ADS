@@ -84,7 +84,7 @@ include $(ADSSDR)/lib/makefile-c
 # MinGW)
 
 STACK    = $(eval STACK := $$(shell echo 'int main(){}' | $$(CXX) -x c++ - \
-           -Wl$$(ADScomma)--stack$$(ADScomma)8388608 -o $$(ADSNULL) \
+           -Wl$$(ADScomma)--stack$$(ADScomma)8388608 -o $$(ADSTRY) \
            >$$(ADSNULL) 2>&1 && \
            echo -Wl$$(ADScomma)--stack$$(ADScomma)8388608))$(STACK)
 INC      = $(ADSINC) $(ADSLEMONINC) -Itest -DADS_CONTRACTS=3

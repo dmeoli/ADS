@@ -44,7 +44,7 @@ libHighwayFOUND = $(eval libHighwayFOUND := $$(shell printf \
 	hn::StoreMaskBits(d,hn::Eq(hn::LoadU(d,c),hn::Set(d,3)),b);\
 	std::int64_t k[2]={2,1};hwy::VQSort(k,2,hwy::SortAscending());\
 	return int(k[0])-1+int(b[0]&0);}\n' | \
-	$$(CXX) -x c++ - -o $$(ADSNULL) $$(libHighwayINC) $$(libHighwayLIB) \
+	$$(CXX) -x c++ - -o $$(ADSTRY) $$(libHighwayINC) $$(libHighwayLIB) \
 	2>/dev/null && echo 1))$(libHighwayFOUND)
 
 ######################### End of makefile-libHighway ##########################

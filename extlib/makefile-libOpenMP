@@ -26,7 +26,7 @@ libOpenMPBSCDIR = $(subst $\",,$(OpenMP_ROOT))
 # and libomp from Homebrew
 
 libOpenMPNATIVE = $(eval libOpenMPNATIVE := $$(shell echo 'int main(){}' \
-	| $$(CXX) -fopenmp -x c++ - -o $$(ADSNULL) >$$(ADSNULL) 2>&1 \
+	| $$(CXX) -fopenmp -x c++ - -o $$(ADSTRY) >$$(ADSNULL) 2>&1 \
 	&& echo 1))$(libOpenMPNATIVE)
 libOpenMPINC = $(if $(libOpenMPNATIVE),-fopenmp,\
 	-Xpreprocessor -fopenmp -I"$(libOpenMPBSCDIR)/include")

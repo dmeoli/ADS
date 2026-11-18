@@ -54,7 +54,7 @@ libMPIFOUND = $(eval libMPIFOUND := $$(shell printf '$$(ADShash)include \
 	<mpi.h>\nint main(){MPI_Comm c;MPI_Request r;int a=0,b=0;\
 	if(0){MPI_Comm_dup(MPI_COMM_WORLD,&c);MPI_Iallreduce(&a,&b,1,MPI_INT,\
 	MPI_SUM,c,&r);}return 0;}\n' | \
-	$$(CXX) -x c++ - -o $$(ADSNULL) $$(libMPIINC) $$(libMPILIB) \
+	$$(CXX) -x c++ - -o $$(ADSTRY) $$(libMPIINC) $$(libMPILIB) \
 	2>/dev/null && echo 1))$(libMPIFOUND)
 
 ########################### End of makefile-libMPI ############################

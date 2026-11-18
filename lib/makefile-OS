@@ -27,8 +27,11 @@
 #                         format COFF, which refuses more than 2^16 sections  #
 #                         otherwise (clang++ switches to them by itself)      #
 #           $(ADSEXE)   = the suffix of the executables (.exe on Windows)     #
-#           $(ADSNULL)  = the file that discards what is written to it, for   #
-#                         the programs that only try whether a library links  #
+#           $(ADSNULL)  = the file that discards what is written to it        #
+#           $(ADSTRY)   = the executable of the programs that only try        #
+#                         whether a library links, a file of the temporary    #
+#                         directory on Windows, where the ld of MinGW-w64     #
+#                         cannot write an executable to nul                   #
 #           $(ADScomma), $(ADShash) = a comma and a hash, for the arguments   #
 #                         of the functions and the text of the shell          #
 #                                                                             #
@@ -55,13 +58,15 @@ ADSSWERR = -Wfatal-errors
 
 ADSSWDBG =
 
-# the suffix and the null file of Windows - - - - - - - - - - - - - - - - - -
+# the suffix and the null files of Windows  - - - - - - - - - - - - - - - - -
 
 ifeq ($(UNAME_S),Windows)
     ADSEXE = .exe
     ADSNULL = nul
+    ADSTRY = "$(or $(TMP),$(TEMP),.)/ads-try.exe"
 else
     ADSNULL = /dev/null
+    ADSTRY = /dev/null
 endif
 
 ADScomma := ,
