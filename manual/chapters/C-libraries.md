@@ -1047,8 +1047,9 @@ binary and JSON archives of cereal.
 We now turn to Python, where the package `ads-python`, in the directory
 `python/`, gives the structures of ADS that NumPy, SciPy and NetworkX lack
 through an extension module `ads` written on nanobind. It also registers
-`nx-ads`, a backend of NetworkX that runs the algorithms of ADS behind the
-functions of NetworkX. A library of templates cannot be bound generically,
+`nx-ads`, a backend of NetworkX ([Hagberg et al.
+2008](Z-bibliography.md#ref-hagberg2008)) that runs the algorithms of ADS
+behind its functions. A library of templates cannot be bound generically,
 and thus the module instantiates a fixed set of them, chosen where ADS has
 something that the libraries of Python have not. These are (i)
 `StaticGraph`, with no weights and with weights of type `double` in both
