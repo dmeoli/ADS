@@ -122,8 +122,9 @@ jobs:
   # GraphBLAS 10 and NetworKit, which apt lacks or has too old, in the job
   # interop); on macOS all of them from Homebrew, but sdsl-lite, though not
   # KaHIP and NetworKit with g++, whose libraries are built on libc++; on
-  # MSYS2 all but KaHIP and NetworKit, which it lacks; none with MSVC, for
-  # which vcpkg would build them all at each run
+  # MSYS2 all but KaHIP and NetworKit, which it lacks, and sdsl-lite, whose
+  # headers need the POSIX of sys/mman.h; none with MSVC, for which vcpkg
+  # would build them all at each run
   test:
     name: test (${{ matrix.os }}, ${{ matrix.compiler }})
     strategy:
@@ -145,7 +146,8 @@ jobs:
           - { os: windows-11-arm , compiler: msvc , experimental: true }
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental == true }}
-    timeout-minutes: 120
+    # MSVC builds the 130 programs of the tests in more than two hours
+    timeout-minutes: ${{ matrix.compiler == 'msvc' && 240 || 120 }}
     defaults:
       run:
         shell: ${{ matrix.msystem && 'msys2 {0}' || 'bash' }}
@@ -191,7 +193,7 @@ jobs:
                      src="sdsl croaring nanoarrow" ;;
             macOS-clang++) libs="$libs KAHIP NETWORKIT" src=sdsl ;;
             macOS-*) src=sdsl ;;
-            *) src="sdsl croaring" ;;
+            *) libs="CEREAL EIGEN METIS GRAPHBLAS CROARING" src=croaring ;;
           esac
           { echo "OPT=$opt"; echo "ADS_LIBS=$libs"; echo "ADS_SRC=$src"; } \
             >> "$GITHUB_ENV"
