@@ -141,8 +141,10 @@ jobs:
           - { os: windows-latest , compiler: msvc }
           - { os: windows-latest , compiler: g++ , cxx: g++ ,
               msystem: UCRT64 , cc: gcc }
+          # without its CBLAS, since the OpenBLAS of CLANG64 overwrites the
+          # stack in its kernels of AVX-512, on the runners that have it
           - { os: windows-latest , compiler: clang++ , cxx: clang++ ,
-              msystem: CLANG64 , cc: clang }
+              msystem: CLANG64 , cc: clang , blas: OFF }
           # ARM64: Linux (the NEON matching of the hash tables) and, not yet
           # required, Windows with MSVC (the branches of _M_ARM64)
           - { os: ubuntu-24.04-arm , compiler: g++ , cxx: g++ }
@@ -225,6 +227,7 @@ jobs:
           set -o pipefail
           cmake -S . -B build $GEN -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_INSTALL_PREFIX="$inst" -DCMAKE_PREFIX_PATH="$OPT" \
+                -DADS_WITH_BLAS=${{ matrix.blas || 'AUTO' }} \
                 $(for l in $ADS_LIBS; do echo "-DADS_WITH_$l=ON"; done) |
             tee cmake.log
           if [ "${{ matrix.compiler }}" != msvc ]; then
@@ -256,6 +259,7 @@ jobs:
             roots="sdsl_ROOT=$OPT GraphBLAS_ROOT=$OPT NetworKit_ROOT=$OPT
                    tlx_ROOT=$OPT"
           on=$(for l in $ADS_LIBS NANOARROW; do echo "ADS_WITH_$l=1"; done)
+          [ "${{ matrix.blas }}" = OFF ] && on="$on ADS_WITH_BLAS=0"
           make backends $roots $on
           make -j4 test $roots $on
           make -j4 test ADS_WITH_GMP=0 ADS_WITH_BLAS=0 ADS_WITH_BOOST=0 \

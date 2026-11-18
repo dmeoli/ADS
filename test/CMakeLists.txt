@@ -245,14 +245,17 @@ add_test(NAME abi-units COMMAND abi_units)
 
 # the order of the includes of FastFlowExecutor.h, a test of the compiler
 # [see fastflow_order.cpp]: the build of a program that includes a header of
-# FastFlow first must fail with the error of the header
+# FastFlow first must fail with the error of the header; this and the tests
+# below build in the build tree, one at a time, since two builds at once
+# collide on the files of the build system (MSBuild)
 add_executable(fastflow_order EXCLUDE_FROM_ALL fastflow_order.cpp)
 target_link_libraries(fastflow_order PRIVATE ADS::ADS)
 add_test(NAME fastflow-order
          COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}
                  --target fastflow_order --config $<CONFIG>)
 set_tests_properties(fastflow-order PROPERTIES
-        PASS_REGULAR_EXPRESSION "included after a header of FastFlow")
+        PASS_REGULAR_EXPRESSION "included after a header of FastFlow"
+        RESOURCE_LOCK ads_build_tree)
 
 # the wrong attachments of an observer, a test of the compiler [see
 # modification_attach.cpp]: each case must fail with the error of the
@@ -274,7 +277,7 @@ foreach (c 1 2 3 4)
              COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}
                      --target modification_attach_${c} --config $<CONFIG>)
     set_tests_properties(modification-attach.${c} PROPERTIES
-            PASS_REGULAR_EXPRESSION "${err}")
+            PASS_REGULAR_EXPRESSION "${err}" RESOURCE_LOCK ads_build_tree)
 endforeach ()
 
 # the module ads, imported in place of the headers [see module.cpp], and
