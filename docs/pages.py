@@ -59,6 +59,23 @@ def links(text):
     return re.sub(r'(\]|\]\s)\(([^)]+)\)', fix, text)
 
 
+def slug(heading):
+    """the anchor of a heading, as GitHub and MyST make it"""
+    return re.sub(r'[^\w\- ]', '', heading.strip().lower()).replace(' ', '-')
+
+
+def anchors(text, page, where):
+    """the links of the README to a section that goes to another page than
+    page, made relative to that page; where gives the page of each anchor"""
+    def fix(m):
+        target = where.get(m.group(1), page)
+        if target == page:
+            return m.group(0)
+        return '](%s#%s)' % (os.path.relpath(target, os.path.dirname(page)),
+                             m.group(1))
+    return re.sub(r'\]\(#([\w-]+)\)', fix, text)
+
+
 def tables(text):
     """the tables in HTML of the README with the classes of the tables of
     the theme, which MyST passes as they are: without them the cells have
@@ -111,9 +128,16 @@ def main():
             pages[page] = pages.get(page, '') + text
         else:
             home.append('## ' + part)
-    write('index.md', ''.join(home))
+    pages['index.md'] = ''.join(home)
+    # the page of each heading, out of the blocks of code, whose comments
+    # start with a hash too
+    where = {}
     for page, text in pages.items():
-        write(page, text)
+        text = re.sub(r'^```.*?^```', '', text, flags=re.M | re.S)
+        for m in re.finditer(r'^#+ (.*)', text, re.M):
+            where.setdefault(slug(m.group(1)), page)
+    for page, text in pages.items():
+        write(page, anchors(text, page, where))
     log = open(os.path.join(ROOT, 'CHANGELOG.md')).read()
     write('project/release_notes.md', log.replace('# Changelog',
                                                   '# Release notes', 1))

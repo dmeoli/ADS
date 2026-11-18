@@ -384,23 +384,38 @@ enum class Role {
  Other
  };
 
-/// the role of the event `E`, `Role::Other` if it declares none
+/// \cond
+namespace detail
+{
+
 template< class E >
-inline constexpr Role role_of = [] {
+constexpr Role declared_role( void )
+{
  if constexpr( requires { E::role; } )
   return( E::role );
  else
   return( Role::Other );
- }();
+ }
 
-/// the effects of the event `E`, all of them if it declares none
 template< class E >
-inline constexpr unsigned effects_of = [] {
+constexpr unsigned declared_effects( void )
+{
  if constexpr( requires { E::effects; } )
   return( unsigned( E::effects ) );
  else
   return( effect::all );
- }();
+ }
+
+}  // end( namespace detail )
+/// \endcond
+
+/// the role of the event `E`, `Role::Other` if it declares none
+template< class E >
+inline constexpr Role role_of = detail::declared_role< E >();
+
+/// the effects of the event `E`, all of them if it declares none
+template< class E >
+inline constexpr unsigned effects_of = detail::declared_effects< E >();
 
 /// whether `on()` of the event `E` must not throw: the erasures, the
 /// clearing, the rebuilding and the replacement, after which an observer

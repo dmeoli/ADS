@@ -1058,6 +1058,7 @@ class WalkIterator
 /*------------------------ PairRef IN THE STANDARD -------------------------*/
 /*--------------------------------------------------------------------------*/
 
+/// \cond
 /// the common reference of a `PairRef` of class type and of its value type,
 /// the `PairRef`, which the standard library does not find by itself
 template< class A , class B , class VA , class VB ,
@@ -1098,6 +1099,7 @@ struct std::formatter< ADS::detail::PairProxy< A , B , VA , VB > , C >
     : std::formatter< std::pair< A , B > , C >
 { };
 #endif
+/// \endcond
 
 /*--------------------------------------------------------------------------*/
 

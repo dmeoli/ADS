@@ -10,6 +10,7 @@
 # that it needs, as the workflow .github/workflows/docs.yml does.             #
 ###############################################################################
 
+import collections
 import glob
 import os
 import re
@@ -114,6 +115,45 @@ def caption_text(xml):
     return re.sub(r'</?(computeroutput|ref)\b[^>]*>', '', xml)
 
 
+def constraints(text):
+    """the requires-clause of each member function that another one of the
+    same compound has the same name, the same parameters and the same
+    template parameters as, appended to its argsstring as a trailing one:
+    Breathe leaves the clause out, and Sphinx would take the two for one
+    declaration (e.g., the copy constructors of a vector for a plain and
+    for any allocator)"""
+    def strip(t):
+        return ' '.join(re.sub(r'<[^>]+>', '', t).split())
+
+    def key(m):
+        body = m.group(0)
+        tparams = re.search(r'<templateparamlist>.*?</templateparamlist>',
+                            body, re.S)
+        if tparams:
+            body = body.replace(tparams.group(0), '')
+        return (re.search(r'<name>(.*?)</name>', body).group(1),
+                tuple(strip(t) for t in re.findall(
+                    r'<param>\s*<type>(.*?)</type>', body, re.S)),
+                strip(tparams.group(0)) if tparams else '')
+    members = list(re.finditer(r'<memberdef kind="function".*?</memberdef>',
+                               text, re.S))
+    counts = collections.Counter(key(m) for m in members)
+
+    def fix(m):
+        clause = re.search(r'<requiresclause>(.*?)</requiresclause>',
+                           m.group(0), re.S)
+        args = re.search(r'<argsstring>(.*?)</argsstring>', m.group(0), re.S)
+        if (counts[key(m)] < 2 or not clause or not args
+                or ' requires ' in args.group(1)):
+            return m.group(0)
+        return re.sub(r'<argsstring>(.*?)</argsstring>',
+                      lambda a: '<argsstring>%s requires %s</argsstring>'
+                      % (a.group(1), strip(clause.group(1))), m.group(0),
+                      count=1, flags=re.S)
+    return re.sub(r'<memberdef kind="function".*?</memberdef>', fix, text,
+                  flags=re.S)
+
+
 def mend_xml():
     """the XML of docs/Doxyfile made fit for Breathe, in place (it is a
     product of the build, which is read and never published): the index
@@ -126,15 +166,18 @@ def mend_xml():
     get the id that Breathe requires, and their formulae and code as text,
     since a caption of Breathe holds text only [see caption_text()]; the
     attribute thread_local of the variables, which Doxygen 1.17 writes and
-    Breathe does not know, is dropped; the space that Doxygen puts before
-    an inline formula is dropped after an opening bracket, where the text
-    of the comment has none, as in "(\\f$ 2 m \\f$ for ...)" """
+    Breathe does not know, is dropped; the overloads told apart by their
+    requires-clauses alone get them [see constraints()]; the space that
+    Doxygen puts before an inline formula is dropped after an opening
+    bracket, where the text of the comment has none, as in
+    "(\\f$ 2 m \\f$ for ...)" """
     xml = breathe_projects['ADS']
     for path in glob.glob(os.path.join(xml, '*.xml')):
         with open(path) as f:
             text = f.read()
         new = re.sub(r'([(\[]) (<formula id="\d+">)', r'\1\2', text)
         new = re.sub(r' thread_local="(yes|no)"', '', new)
+        new = constraints(new)
         if os.path.basename(path).startswith('concept'):
             new = re.sub(r'\s*<conceptparts>.*?</conceptparts>', '', new,
                          flags=re.S)
@@ -215,6 +258,64 @@ def table_captions():
 
 
 table_captions()
+
+
+def overloads():
+    """the overload of a function that a directive names by its parameters
+    found also when its return type has parentheses, e.g., decltype(auto):
+    Breathe takes the parameters of a candidate from the first parenthesis
+    of its signature, and so matches none, while those of its argsstring
+    are the right ones"""
+    from sphinx.domains.cpp import DefinitionError
+    from breathe.directives.function import DoxygenFunctionDirective
+    resolve = DoxygenFunctionDirective._resolve_function
+
+    def same(self, entry, args):
+        try:
+            return self._parse_args(entry[0].value.argsstring or '()') == args
+        except DefinitionError:
+            return False
+
+    def by_parameters(self, matches, args, project_info):
+        if args is not None:
+            found = [entry for entry in matches if same(self, entry, args)]
+            if found:
+                matches, args = found, None
+        return resolve(self, matches, args, project_info)
+    DoxygenFunctionDirective._resolve_function = by_parameters
+
+
+overloads()
+
+
+def group_scopes():
+    """the members of a namespace that Breathe finds in a group, as it does
+    those of a header [see docs/doxygen/autobrief.py], declared in their
+    namespace, as those it finds in the namespace are: Breathe takes no
+    scope from a group, and would declare the functions of two namespaces
+    with the same signature as one (partition() of METIS and of KaHIP)"""
+    from breathe import parser
+    from breathe.renderer.sphinxrenderer import SphinxRenderer
+    qualification = SphinxRenderer.get_qualification
+
+    def with_namespace(self):
+        names = qualification(self)
+        if self.nesting_level > 0:
+            return names
+        # the member, then the compound that holds it, past its section
+        stack = self.qualification_stack
+        member = next((n for n in stack
+                       if isinstance(n, parser.Node_memberdefType)), None)
+        up = next((n for n in stack
+                   if isinstance(n, parser.Node_compounddefType)), None)
+        if (member is not None and member.qualifiedname and up is not None
+                and up.kind == parser.DoxCompoundKind.group):
+            return member.qualifiedname.split('::')[:-1] + names
+        return names
+    SphinxRenderer.get_qualification = with_namespace
+
+
+group_scopes()
 
 html_theme = 'sphinx_rtd_theme'
 html_title = 'ADS: Algorithms and Data Structures'

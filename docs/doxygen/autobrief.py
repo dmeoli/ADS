@@ -16,6 +16,9 @@ import sys
 
 # the regions of a comment where the text is printed as it is
 OPEN = re.compile(r'\\f\$|\\f\[|\\f\{|\\code\b|\\verbatim\b|`')
+# the comments of a \cond or an \endcond, which take no \ingroup: Doxygen
+# would put it in the type of the declaration that follows
+COND = re.compile(r'[\\@](?:end)?cond\b')
 CLOSE = {'\\f$': '\\f$', '\\f[': '\\f]', '\\f{': '\\f}',
          '\\code': '\\endcode', '\\verbatim': '\\endverbatim', '`': '`'}
 
@@ -72,7 +75,8 @@ def ingroup(text, group):
             e = text.find('\n', k)
             e = n if e < 0 else e
             doc = (text.startswith(('///', '//!'), k)
-                   and not text.startswith(('///<', '//!<', '////'), k))
+                   and not text.startswith(('///<', '//!<', '////'), k)
+                   and not COND.search(text, k, e))
             if doc and 'other' not in stack:
                 ends.append(('line', e))
             k = e
@@ -81,7 +85,8 @@ def ingroup(text, group):
             e = text.find('*/', k + 2)
             e = n if e < 0 else e
             doc = (text.startswith(('/**', '/*!'), k)
-                   and not text.startswith(('/**<', '/*!<', '/**/'), k))
+                   and not text.startswith(('/**<', '/*!<', '/**/'), k)
+                   and not COND.search(text, k, e))
             if doc and 'other' not in stack:
                 ends.append(('block', e))
             k = e + 2

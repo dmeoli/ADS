@@ -131,6 +131,12 @@ constexpr auto key_of( void )
  }
 
 template< class S >
+struct key_type_of
+{
+ using type = typename decltype( key_of< S >() )::type;
+ };
+
+template< class S >
 struct modifications_of
 {
  using type = mod::list<>;
@@ -162,7 +168,7 @@ struct priority_of< Q >
 /// the keys of `S`, which its lookups take: `S::Key`, else `S::key_type`,
 /// else `S::value_type`, else `std::size_t` (a position)
 template< class S >
-using key_type_t = typename decltype( detail::key_of< S >() )::type;
+using key_type_t = typename detail::key_type_of< S >::type;
 
 /// the events of `S` [see `Modification.h`], `S::modifications` if it
 /// declares them, the empty list otherwise: what an observer is checked
