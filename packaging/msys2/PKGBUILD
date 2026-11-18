@@ -16,7 +16,7 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              "${MINGW_PACKAGE_PREFIX}-cmake"
              "${MINGW_PACKAGE_PREFIX}-ninja")
 source=("${url}/releases/download/v${pkgver}/ADS-${pkgver}.tar.gz")
-sha256sums=('0000000000000000000000000000000000000000000000000000000000000000')
+sha256sums=('3a95aa39198f4ef81d891cdee34e4310d6d9c0ea7e752e58a12a522c9ac43b87')
 
 build() {
   MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \

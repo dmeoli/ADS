@@ -2,7 +2,7 @@ class Ads < Formula
   desc "Algorithms and data structures of Montresor's textbook, in C++20"
   homepage "https://github.com/dmeoli/ADS"
   url "https://github.com/dmeoli/ADS/releases/download/v0.1.0/ADS-0.1.0.tar.gz"
-  sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+  sha256 "3a95aa39198f4ef81d891cdee34e4310d6d9c0ea7e752e58a12a522c9ac43b87"
   license "BSL-1.0"
   head "https://github.com/dmeoli/ADS.git", branch: "main"
 

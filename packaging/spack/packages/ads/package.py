@@ -20,7 +20,7 @@ class Ads(CMakePackage):
     license("BSL-1.0", checked_by="dmeoli")
 
     version("main", branch="main")
-    version("0.1.0", sha256="0000000000000000000000000000000000000000000000000000000000000000")
+    version("0.1.0", sha256="3a95aa39198f4ef81d891cdee34e4310d6d9c0ea7e752e58a12a522c9ac43b87")
 
     depends_on("cxx", type="build")
     depends_on("cmake@3.21:", type="build")

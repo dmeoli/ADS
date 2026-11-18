@@ -5,7 +5,7 @@ set(VCPKG_BUILD_TYPE release)
 vcpkg_download_distfile(ARCHIVE
     URLS "https://github.com/dmeoli/ADS/releases/download/v${VERSION}/ADS-${VERSION}.tar.gz"
     FILENAME "ADS-${VERSION}.tar.gz"
-    SHA512 0
+    SHA512 7baee511a451a6d259a8b620e00a1769c896d27b6a9cef23add12a203da6fd9ea3693422b9acff2dca1b9cdb2556529302e66de4b7ef5cd7a1180056b3e52c35
 )
 vcpkg_extract_source_archive(SOURCE_PATH ARCHIVE "${ARCHIVE}")
 

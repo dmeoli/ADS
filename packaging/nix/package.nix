@@ -12,7 +12,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   src = fetchurl {
     url = "https://github.com/dmeoli/ADS/releases/download/v${finalAttrs.version}/ADS-${finalAttrs.version}.tar.gz";
-    hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+    hash = "sha256-OpWqORmPTvgdiRze405DENbZwOp+dS5YoSpSLJrEO4c=";
   };
 
   nativeBuildInputs = [ cmake ];

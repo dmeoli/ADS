@@ -6,7 +6,7 @@ package("ads")
 
     add_urls("https://github.com/dmeoli/ADS/releases/download/v$(version)/ADS-$(version).tar.gz",
              "https://github.com/dmeoli/ADS.git")
-    add_versions("0.1.0", "0000000000000000000000000000000000000000000000000000000000000000")
+    add_versions("0.1.0", "3a95aa39198f4ef81d891cdee34e4310d6d9c0ea7e752e58a12a522c9ac43b87")
 
     add_deps("cmake")
 

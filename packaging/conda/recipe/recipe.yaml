@@ -8,7 +8,7 @@ package:
 
 source:
   url: https://github.com/dmeoli/ADS/releases/download/v${{ version }}/ADS-${{ version }}.tar.gz
-  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+  sha256: 3a95aa39198f4ef81d891cdee34e4310d6d9c0ea7e752e58a12a522c9ac43b87
 
 build:
   number: 0
