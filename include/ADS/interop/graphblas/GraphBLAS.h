@@ -310,7 +310,7 @@ template< class T , class I , class P >
 namespace detail
 {
 
-/// the call of the typed function of GraphBLAS `F##_<T>`, for the type
+/// the call of the typed function of GraphBLAS `F##_< T >`, for the type
 /// `T` of the values of the arguments
 #define ADS_GRB_TYPED( F, T, ... )                                            \
  [ & ]( void ) {                                                              \
