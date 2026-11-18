@@ -149,8 +149,7 @@ jobs:
           - { os: windows-11-arm , compiler: msvc , experimental: true }
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental == true }}
-    # MSVC builds the 130 programs of the tests in more than two hours
-    timeout-minutes: ${{ matrix.compiler == 'msvc' && 240 || 120 }}
+    timeout-minutes: 120
     defaults:
       run:
         shell: ${{ matrix.msystem && 'msys2 {0}' || 'bash' }}

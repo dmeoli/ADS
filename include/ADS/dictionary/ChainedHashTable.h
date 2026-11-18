@@ -65,6 +65,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/dictionary/TableSize.h"
 #include "ADS/sequence/List.h"
 
@@ -282,7 +283,9 @@ class ChainedHashTable
    }
 
   private:
-  void settle( void ) {  // past the empty lists
+  // past the empty lists; out of line, since the optimizer of MSVC does
+  // not end on its loop inlined into a copy of the table
+  ADS_NOINLINE void settle( void ) {
    while( ( f_b < f_T->size() ) && ( f_c == ( *f_T )[ f_b ].end() ) )
     if( ++f_b < f_T->size() )
      f_c = ( *f_T )[ f_b ].begin();
