@@ -15,6 +15,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include <cmath>
+#include <condition_variable>
 #include <mutex>
 #include <limits>
 #include <type_traits>
@@ -255,8 +256,13 @@ class JoinBarrier
    f_pending = 0;
    s();
    f_arrived.store( 0 , std::memory_order_relaxed );
-   f_gen.store( g + 1 , std::memory_order_release );
-   f_gen.notify_all();
+   {
+    // under the lock of the sleepers, so that none misses the release
+    // between its test of the word and its sleep
+    std::lock_guard< std::mutex > sleep( f_sm );
+    f_gen.store( g + 1 , std::memory_order_release );
+    }
+   f_cv.notify_all();
    return;
    }
   await( g );
@@ -270,21 +276,26 @@ class JoinBarrier
 
  private:
  /// returns once the releases are past g: a spin of kSpin pauses, then a
- /// sleep on the word of the releases, so that the threads that wait for
+ /// sleep until the next release, so that the threads that wait for
  /// one late thread leave it their cores; spinning alone, more threads
  /// than free cores (an executor of the whole machine on a loaded one)
  /// take turns at each of the two barriers of a step, and a run of many
  /// steps then lasts hours instead of seconds
  void await( std::uint32_t g ) {
   constexpr unsigned kSpin = 1024;
-  for( unsigned k = 0 ; f_gen.load( std::memory_order_acquire ) == g ; )
-   if( ++k < kSpin )
-    detail::spinPause();
-   else
-    f_gen.wait( g , std::memory_order_acquire );
+  for( unsigned k = 0 ; k < kSpin ; ++k ) {
+   if( f_gen.load( std::memory_order_acquire ) != g )
+    return;
+   detail::spinPause();
+   }
+  std::unique_lock< std::mutex > sleep( f_sm );
+  f_cv.wait( sleep , [ & ] {
+   return( f_gen.load( std::memory_order_acquire ) != g ); } );
   }
 
  std::mutex f_m;  ///< for the joins
+ std::mutex f_sm;  ///< for the sleep of the waiting threads
+ std::condition_variable f_cv;  ///< where they sleep
  /// the releases, on a line of their own, where the threads wait
  alignas( 128 ) std::atomic< std::uint32_t > f_gen{ 0 };
  /// the arrivals and the threads in it, on another line
