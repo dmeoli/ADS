@@ -32,8 +32,12 @@
  * time, one per worker, and the caller only waits for them (no call runs on
  * it, `isRunCaller()` is false in each). Its lock is the spin lock of FastFlow
  * (`ff::lock_t`, `FastFlowLock`), the one its runtime takes, whose
- * `try_lock()` is one test-and-set of its flag; the farm with feedback runs on
- * a farm of FastFlow [see `Farm.h`].
+ * `try_lock()` is one test-and-set of its flag; `lock()` retries it after the
+ * exponential backoff of `Backoff` [see `Backoff.h`], i.e., after pauses of
+ * the processor and then after yields of the thread, so that the threads
+ * that wait for a holder that the system has preempted do not spin through
+ * their quanta (the `spin_lock()` of FastFlow retries with no pause). The
+ * farm with feedback runs on a farm of FastFlow [see `Farm.h`].
  *
  * Unless `ADS_FASTFLOW_MAPPING` is defined, the header defines
  * `NO_DEFAULT_MAPPING` before it includes FastFlow: by default FastFlow pins
@@ -159,6 +163,7 @@ inline long fastFlowRealCores( void )
 #endif
 
 #include "ADS/Contract.h"
+#include "ADS/concurrent/Backoff.h"
 #include "ADS/parallel/Executor.h"
 
 #include <ff/ff.hpp>
@@ -195,8 +200,12 @@ class FastFlowLock
  /// no copy, as a mutex
  FastFlowLock & operator=( const FastFlowLock & ) = delete;
 
- /// takes the lock, spinning until it is free
- void lock( void ) { ff::spin_lock( f_lock ); }
+ /// takes the lock: a test-and-set of its flag, retried after the
+ /// exponential backoff of `Backoff` until it succeeds
+ void lock( void ) {
+  for( Backoff b ; ! try_lock() ; )
+   b.pause();
+  }
  /// gives the lock back
  void unlock( void ) { ff::spin_unlock( f_lock ); }
  /// takes the lock if it is free, by one test-and-set of its flag (that of
