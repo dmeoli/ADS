@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `FastFlowLock::lock()` retries its test-and-set after the exponential
+  backoff of `Backoff`, from pauses of the processor to yields of the
+  thread, instead of the busy loop of `ff::spin_lock()`, so that the threads
+  waiting for a holder preempted by the system do not spin through their
+  quanta
+
+### Fixed
+
+- the makefile takes the competitors of AVX2 of the benchmarks again
+  (fastfilter_cpp, x86-simd-sort): the probe that compiles their headers
+  wrote `\#include`, which make 4.3 and later pass on with the backslash,
+  and did not include the standard headers that `simd-block.h` uses
+- `bench/parallel.cpp` builds again with ParlayLib, whose `parlay::map()`
+  does not take the arcs of `g.out()` as a random access range
+
 ## [0.1.0] - 2026-11-18
 
 ### Added

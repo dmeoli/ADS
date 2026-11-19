@@ -412,8 +412,14 @@ HASHINC   = unordered_dense/include robin-map/include libcuckoo \
             pthash/external/mm_file/include BBHash sux
 # 1 if a unit that includes the header $(1) compiles at the flags of the
 # benchmarks with the options $(2): the competitors of AVX2 (fastfilter_cpp,
-# x86-simd-sort) are taken where it does [see bench/hashing.cpp and sort.cpp]
-COMPILES  = $(shell printf '\#include <%s>\nint main() { }\n' $(1) | \
+# x86-simd-sort) are taken where it does [see bench/hashing.cpp and sort.cpp];
+# the # of the #include is the octal escape of printf, since make 4.3 and later
+# keep the backslash of a \# in a function and 4.2 needs it; the standard
+# headers come first, as in the benchmarks, since simd-block.h uses memset()
+# and std::runtime_error without including them
+COMPILES  = $(shell { printf '\043include <%s>\n' cstdint cstdlib cstring \
+            stdexcept $(1) ; \
+            echo 'int main() { }' ; } | \
             $(CXX) $(BENCHFLAGS) $(2) -fsyntax-only -x c++ - >/dev/null \
             2>&1 && echo 1)
 HASHFLAGS = $(if $(HASHING),$(addprefix -isystem $(HASHING)/,$(HASHINC)) \

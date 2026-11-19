@@ -1445,8 +1445,13 @@ void sssp( const std::vector< int > & scales , int r , unsigned seed ,
 #if defined( ADS_HAS_PARLAY_EXAMPLES )
    parlay::sequence< parlay::sequence< std::pair< int , int > > > pg;
    if( runs( "parlay" ) && ! ADS::bench::skip( "parlay bucketed_dijkstra" ) )
+    // by the offsets, since ParlayLib takes a range as random access only
+    // by its legacy category, which that of the cursors of g.out() is not
     pg = parlay::tabulate( std::size_t( n ) , [ & ]( std::size_t v ) {
-     return( parlay::map( g.out( int( v ) ) , []( const auto & a ) {
+     const auto b = std::size_t( g.offsets()[ v ] );
+     const auto d = std::size_t( g.offsets()[ v + 1 ] ) - b;
+     return( parlay::tabulate( d , [ & , b ]( std::size_t k ) {
+      const auto & a = g.arcData()[ b + k ];
       return( std::pair< int , int >( a.to , a.w ) );
       } ) );
      } );
