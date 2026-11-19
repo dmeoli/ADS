@@ -7,7 +7,8 @@ those of Knuth's *The Art of Computer Programming* and of Ferragina's
 *Pearls of Algorithm Engineering*, and engineered structures with the
 interface of the standard library. This site gathers the README and the API
 reference; the same reference is also on the `Doxygen site
-<doxygen/index.html>`_.
+<doxygen/index.html>`_, and the theory of each structure, with its proofs
+and its pseudocode, is in the `user manual <manual/index.html>`_.
 
 .. toctree::
    :maxdepth: 1
@@ -21,6 +22,7 @@ reference; the same reference is also on the `Doxygen site
    :maxdepth: 1
    :caption: User guide
 
+   User manual <https://dmeoli.github.io/ADS/manual/>
    generated/user-guide/layout
    generated/user-guide/book
    generated/user-guide/beyond
