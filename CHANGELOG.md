@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `feedbackFarm()` on FastFlow orders the memory between the master and the
+  workers with fences, since the queues of FastFlow order the stores of the
+  producer only: on arm64 a master that read a task back through a pointer
+  of its own, not through the one taken from the queue, could read its old
+  contents
 - the makefile takes the competitors of AVX2 of the benchmarks again
   (fastfilter_cpp, x86-simd-sort): the probe that compiles their headers
   wrote `\#include`, which make 4.3 and later pass on with the backslash,

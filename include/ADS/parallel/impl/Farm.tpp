@@ -180,8 +180,14 @@ struct FarmEmitter : ff::ff_node_t< std::optional< R > , T >
      : start( s ) , onResult( o ) , stop( stop ) , error( e ) , index( w ) { }
 
  T * svc( std::optional< R > * r ) override {
+  // the queues of FastFlow order the stores of the producer only (a store
+  // barrier on arm64), so the fences give the master and the workers the
+  // happens-before also through a pointer not read from the queue
+  if( r != nullptr )
+   std::atomic_thread_fence( std::memory_order_acquire );
   auto emit = [ this ]( T t ) {
    ++m;
+   std::atomic_thread_fence( std::memory_order_release );
    this->ff_send_out( new T( std::move( t ) ) );
    };
   try {
@@ -223,6 +229,7 @@ struct FarmWorker : ff::ff_node_t< T , std::optional< R > >
      : work( w ) , stop( stop ) , error( e ) , index( i ) { }
 
  std::optional< R > * svc( T * t ) override {
+  std::atomic_thread_fence( std::memory_order_acquire );
   std::unique_ptr< T > own( t );
   auto * r = new std::optional< R >();
   if( ! stop.load( std::memory_order_relaxed ) )
@@ -232,6 +239,7 @@ struct FarmWorker : ff::ff_node_t< T , std::optional< R > >
    catch( ... ) {
     error.keep();
     }
+  std::atomic_thread_fence( std::memory_order_release );
   return( r );
   }
 
