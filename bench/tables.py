@@ -60,14 +60,22 @@ def columns(R):
     return out
 
 def main(path):
-    head, rows = [], []
+    head, rows, other = [], [], 0
     for line in open(path):
         line = line.rstrip('\n')
         if line.startswith('#'):
             head.append(line[2:].split('\t'))
         elif line:
-            b, case, n, who, ns = line.split('\t')
-            rows.append((b, case, int(n), who, float(ns)))
+            # a line that is not a cell is one a library printed by itself
+            # (BBHash the sizes of its levels, from totalBitSize())
+            try:
+                b, case, n, who, ns = line.split('\t')
+                rows.append((b, case, int(n), who, float(ns)))
+            except ValueError:
+                other += 1
+    if other:
+        print('%d lines that are not cells left out' % other,
+              file=sys.stderr)
     for k, v in head:
         print('- %s: %s' % (k, v))
     print()

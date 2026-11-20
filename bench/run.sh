@@ -73,7 +73,10 @@ cells() {
    < /dev/null
  done <<< "$whos"
 }
-run() { cells "$CORE" "$@" >> "$out"; }
+# the cells alone, five fields of which the third an integer: the lines a
+# library prints by itself (BBHash the sizes of its levels) left out
+only() { awk -F'\t' 'NF == 5 && $3 ~ /^[0-9]+$/' ; }
+run() { cells "$CORE" "$@" | only >> "$out"; }
 # the sorts print a header and a table per type: "sort <type>" is the
 # benchmark of each type, the pattern its case
 cells "$CORE" sort 100000 1000000 |
@@ -99,7 +102,8 @@ run matrix 64 256 1024 2048 4096
 run sparse 100000 1000000
 run graphs 100000 1000000
 # the queues between threads on the core and the next one allowed
-cells "$CORE,${CORE2:-$((CORE + 1))}" concurrent 1000000 10000000 >> "$out"
+cells "$CORE,${CORE2:-$((CORE + 1))}" concurrent 1000000 10000000 |
+ only >> "$out"
 run succinct 100000 1000000 10000000 100000000
 run compression 100000 1000000 10000000
 run external merge 1000000 10000000
@@ -114,7 +118,8 @@ run tries 100000 1000000
 run learned 100000 1000000 10000000
 run stringdicts 100000 1000000
 # the allocators, whose case cross-thread frees in a second thread
-cells "$CORE,${CORE2:-$((CORE + 1))}" allocators 100000 1000000 >> "$out"
+cells "$CORE,${CORE2:-$((CORE + 1))}" allocators 100000 1000000 |
+ only >> "$out"
 run positions 100000 1000000
 run assembly 100000 1000000
 run fingerprints 100000 1000000
@@ -131,9 +136,9 @@ for t in 1 2 4 8 16 32 64 128; do
  [ "$t" -le "$np" ] || break
  cells "$PCORES" parallel -t "$t" 1000000 10000000 | grep '^parallel' \
   >> "$out" || true
- cells "$PCORES" joins -t "$t" 1000000 >> "$out"
- cells "$PCORES" greedy -t "$t" 1000000 10000000 >> "$out"
- cells "$PCORES" runtime -t "$t" 1000000 >> "$out"
+ cells "$PCORES" joins -t "$t" 1000000 | only >> "$out"
+ cells "$PCORES" greedy -t "$t" 1000000 10000000 | only >> "$out"
+ cells "$PCORES" runtime -t "$t" 1000000 | only >> "$out"
 done
 echo "# load at the end	$(cut -d' ' -f1-3 /proc/loadavg)" >> "$out"
 echo "$out"

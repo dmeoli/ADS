@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and did not include the standard headers that `simd-block.h` uses
 - `bench/parallel.cpp` builds again with ParlayLib, whose `parlay::map()`
   does not take the arcs of `g.out()` as a random access range
+- `bench/run.sh` writes only the cells of the benchmarks in the results,
+  and `bench/tables.py` leaves out the lines that are not cells, which
+  BBHash prints by itself when asked for its size
 
 ## [0.1.0] - 2026-11-18
 
