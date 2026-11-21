@@ -318,10 +318,10 @@ concept RankSelectBits = requires( const R & r , std::size_t i )
 /// With `ADS_WITH_HIGHWAY`, the 8 words are cut at \f$ p \f$ and counted
 /// a vector at a time, the masks of the words made from the lanes of
 /// \f$ \mathrm{clamp}( p - 64 i , 0 , 64 ) \f$ [see `SimdInline.h`]; else
-/// each word is cut at \f$ p \f$ by a mask, with no branch (which the
-/// compiler may turn into `bzhi` where the flags give BMI2). The words may
-/// lie past the size of the bits, which is why they are read whole [see
-/// `BitVector`].
+/// the words before the one of \f$ p \f$ are counted under a mask of all
+/// 1s or all 0s and that one under the mask of its \f$ p \bmod 64 \f$ low
+/// bits, with no branch. The words may lie past the size of the bits,
+/// which is why they are read whole [see `BitVector`].
 /// \pre \f$ p < 512 \f$
 template< bool Scalar = false >
 [[nodiscard]] std::size_t lineRank( const Word * w , unsigned p );

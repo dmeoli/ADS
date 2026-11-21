@@ -70,12 +70,13 @@ inline std::size_t lineRank( const Word * w , unsigned p )
  if constexpr( ! Scalar )  // the 8 words at once [see SimdInline.h]
   return( simd::here::lineRank512( w , p ) );
 #endif
- std::size_t r = 0;
- for( unsigned j = 0 ; j < 8 ; ++j ) {
-  const auto c = unsigned( std::clamp< std::int64_t >(
-    std::int64_t( p ) - 64 * std::int64_t( j ) , 0 , 64 ) );
-  r += std::size_t( std::popcount( w[ j ] & lowMask( int( c ) ) ) );
-  }
+ // the words before the one of p whole, by a mask of all 1s or all 0s,
+ // and that one cut at p
+ const unsigned q = p / 64;
+ std::size_t r = std::size_t(
+   std::popcount( w[ q ] & ( ( Word( 1 ) << ( p % 64 ) ) - 1 ) ) );
+ for( unsigned j = 0 ; j < 8 ; ++j )
+  r += std::size_t( std::popcount( w[ j ] & -Word( j < q ) ) );
  return( r );
  }
 

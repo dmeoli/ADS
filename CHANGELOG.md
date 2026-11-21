@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of a second select; the bins and the answers are the same
 - `DenseHashMap` counts its empty places before a growth only after a
   removal, since with none the count cannot avoid the growth
+- the scalar kernel `detail::lineRank()` counts the words before the one
+  of the place under masks of all 1s or all 0s, and that one under the mask
+  of its low bits, with no branch, where the clamp of the length of each
+  word compiled into a chain of branches, one of them mispredicted at
+  almost every rank
 
 ### Fixed
 
