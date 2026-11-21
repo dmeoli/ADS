@@ -193,6 +193,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/dictionary/BucketCuckooTable.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/memory/HugePageAllocator.h"
@@ -622,6 +623,10 @@ class ConcurrentCuckooTable
  /// versions allow it: 0 absent, 1 present (in *out if not nil), 2 not
  /// read
  int peek( const K & k , std::uint64_t h , V * out ) const;
+
+ /// whether the key k with the hash h is there, read under the lock of its
+ /// region, and its value in *out if not nil
+ bool lockedFind( const K & k , std::uint64_t h , V * out ) const;
 
  /// a free place of the bucket b of T, or 4
  [[nodiscard]] static int freePlace( const Table & T , std::size_t b );

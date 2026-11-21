@@ -380,9 +380,8 @@ void ConcurrentCuckooTable< K , V , H , Eq >::fetch( const Table & T ,
  }
 
 template< class K , class V , class H , class Eq >
-int ConcurrentCuckooTable< K , V , H , Eq >::peek( const K & k ,
-						   std::uint64_t h ,
-						V * out ) const
+ADS_ALWAYS_INLINE int ConcurrentCuckooTable< K , V , H , Eq >::peek(
+  const K & k , std::uint64_t h , V * out ) const
 {
  // the seqlock: the version of the region even before the reads and the
  // same after them, and the table read after the version, so that it is
@@ -445,28 +444,42 @@ int ConcurrentCuckooTable< K , V , H , Eq >::peek( const K & k ,
  }
 
 template< class K , class V , class H , class Eq >
-std::optional< V >
-ConcurrentCuckooTable< K , V , H , Eq >::find( const K & k ) const
+bool ConcurrentCuckooTable< K , V , H , Eq >::lockedFind( const K & k ,
+						       std::uint64_t h ,
+						       V * out ) const
 {
- const std::uint64_t h = hash( k );
- if constexpr( optimistic ) {
-  V x{};
-  const int r = peek( k , h , &x );
-  if( r < 2 )
-   return( r ? std::optional< V >( x ) : std::nullopt );
-  }
  Table * T = lockRegion( h );
  const std::uint32_t t = tag( h );
  const std::size_t b1 = first( h , T->lg );
  Hold g( f_L[ b1 >> T->rg ] );
  const std::size_t i = locate( *T , k , t , b1 , other( b1 , t , T->rg ) );
  if( i == ~std::size_t( 0 ) )
-  return( std::nullopt );
- return( std::optional< V >( T->S( i ).value ) );
+  return( false );
+ if( out )
+  *out = T->S( i ).value;
+ return( true );
  }
 
 template< class K , class V , class H , class Eq >
-bool ConcurrentCuckooTable< K , V , H , Eq >::contains( const K & k ) const
+ADS_ALWAYS_INLINE std::optional< V >
+ConcurrentCuckooTable< K , V , H , Eq >::find( const K & k ) const
+{
+ // the lookup without locks inlined at the call, the rest called
+ const std::uint64_t h = hash( k );
+ V x{};
+ if constexpr( optimistic ) {
+  const int r = peek( k , h , &x );
+  if( r < 2 )
+   return( r ? std::optional< V >( x ) : std::nullopt );
+  }
+ if( ! lockedFind( k , h , &x ) )
+  return( std::nullopt );
+ return( std::optional< V >( std::move( x ) ) );
+ }
+
+template< class K , class V , class H , class Eq >
+ADS_ALWAYS_INLINE bool
+ConcurrentCuckooTable< K , V , H , Eq >::contains( const K & k ) const
 {
  const std::uint64_t h = hash( k );
  if constexpr( optimistic ) {
@@ -474,12 +487,7 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::contains( const K & k ) const
   if( r < 2 )
    return( r == 1 );
   }
- Table * T = lockRegion( h );
- const std::uint32_t t = tag( h );
- const std::size_t b1 = first( h , T->lg );
- Hold g( f_L[ b1 >> T->rg ] );
- return( locate( *T , k , t , b1 ,
-		 other( b1 , t , T->rg ) ) != ~std::size_t( 0 ) );
+ return( lockedFind( k , h , nullptr ) );
  }
 
 /*------------------------------ THE INSERTION -----------------------------*/

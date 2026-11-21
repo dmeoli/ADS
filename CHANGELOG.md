@@ -124,6 +124,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   key, whose tag is not among those of its first bucket and whose bit is
   clear, returns without reading the version of the region (the remap
   entries of the Horton tables of Breslow et al., as bits)
+- `ConcurrentCuckooTable::find()` and `contains()` inline the lookup
+  without locks at the call and call the lookup under the lock, so that a
+  lookup of keys and values read atomically costs no call, where the
+  compiler had left both out of line in a program with many tables
 
 ### Fixed
 
