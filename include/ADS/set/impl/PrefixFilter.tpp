@@ -100,8 +100,10 @@ void PrefixFilter< T , H >::run( std::uint64_t w , unsigned q , unsigned & s ,
  // a zero put below the header, so that the zeros of ranks q and q + 1
  // are the places just before the run of q and at its end
  const std::uint64_t u = ( w & kHead ) << 1;
- s = select0( u , q ) - q;
- e = select0( u , q + 1 ) - 1 - q;
+ const unsigned z = select0( u , q );  // the zero of rank q
+ s = z - q;
+ // the zero of rank q + 1, past the ones that follow that of rank q
+ e = z + unsigned( std::countr_zero( ~u >> ( z + 1 ) ) ) - q;
  }
 
 template< class T , class H >
@@ -151,6 +153,16 @@ bool PrefixFilter< T , H >::find( const Bin & B , std::uint64_t w ,
  const std::uint32_t v = equal( B , r );
  if( v == 0 )  // most of the misses
   return( false );
+ if( std::has_single_bit( v ) ) {
+  // the remainder i is in the run of q iff the header has its one, the
+  // i-th, at the place i + q, i.e., with q zeros below it (Even, Even and
+  // Morrison)
+  const std::uint64_t h = w & kHead;
+  const unsigned i = unsigned( std::countr_zero( v ) ) , p = i + q;
+  return( ( ( h >> p ) & 1 ) != 0 &&
+	  unsigned( std::popcount( h & ( ( std::uint64_t( 1 ) << p ) - 1 ) ) )
+	    == i );
+  }
  return( ( v & runMask( w , q ) ) != 0 );
  }
 
