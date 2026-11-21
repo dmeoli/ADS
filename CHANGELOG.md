@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the makefile builds the benchmarks on Boost, Highway and hwloc where they
+  are found, as the targets of CMake do, keeping the code of ADS where a
+  structure would delegate to Boost or to LEMON; before, it built them on
+  none, and the structures with a vector kernel or a wide product ran
+  their portable code
 - `feedbackFarm()` on FastFlow orders the memory between the master and the
   workers with fences, since the queues of FastFlow order the stores of the
   producer only: on arm64 a master that read a task back through a pointer

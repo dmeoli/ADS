@@ -386,8 +386,21 @@ BENCHES   = sort dictionaries priority sequences memory bignum hashing \
 JCCFLAGS := $(shell echo 'int main(){}' | $(CXX) -x c++ -c -o /dev/null \
             -Wa,-mbranches-within-32B-boundaries - 2>/dev/null && \
             echo -Wa,-mbranches-within-32B-boundaries)
+# the benchmarks are built as a program that uses ADS is, i.e., on Boost,
+# Highway and hwloc where they are found, but for the code of ADS kept
+# where a structure would delegate to Boost or to LEMON, since the
+# benchmarks compare it with them (the same as the targets of CMake)
+BOOSTON   = $(if $(filter 1,$(ADSBOOSTON)),-DADS_WITH_BOOST $(libBoostINC))
+HWYON     = $(if $(filter 1,$(ADSHWYON)),-DADS_WITH_HIGHWAY $(libHighwayINC))
 BENCHFLAGS = -std=c++20 -O3 -march=native -DNDEBUG -DADS_CONTRACTS=0 \
-             -I$(ADSSDR)/include $(JCCFLAGS)
+             -I$(ADSSDR)/include $(JCCFLAGS) $(BOOSTON) $(HWYON) \
+             $(if $(filter 1,$(ADSHWLOCON)),-DADS_WITH_HWLOC $(libHwlocINC)) \
+             -DADS_POINTERTABLE_BOOST=0 -DADS_FLATHASH_BOOST=0 \
+             -DADS_SMALLVECTOR_BOOST=0 -DADS_RANDOM_BOOST=0 \
+             -DADS_MATCHING_LEMON=0 -DADS_ASSIGNMENT_LEMON=0
+# the libraries of Highway and hwloc, after the source of a benchmark
+BENCHLIBS = $(if $(filter 1,$(ADSHWYON)),$(libHighwayLIB)) \
+            $(if $(filter 1,$(ADSHWLOCON)),$(libHwlocLIB))
 GMPFLAGS  = $(if $(GMP),-DADS_HAS_GMP -I$(GMP)/include -L$(GMP)/lib \
             -Wl$(comma)-rpath$(comma)$(GMP)/lib -lgmpxx -lgmp)
 FLINTFLAGS = $(if $(FLINT),-DADS_HAS_FLINT -I$(FLINT)/include \
@@ -489,107 +502,113 @@ TRIEFLAGS = $(ABSLFLAGS) $(if $(HTRIE),-I$(HTRIE)/include) \
 bench: $(addprefix $(BUILD)/bench-,$(BENCHES))
 
 $(BUILD)/bench-bignum: bench/bignum.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(GMPON) $(GMPFLAGS) $(FLINTFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) \
+	       $(GMPON) $(GMPFLAGS) $(FLINTFLAGS)
 
 $(BUILD)/bench-bignum-own: bench/bignum.cpp bench/Bench.h $(HEADERS) \
                           | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -DADS_BENCH_OWN -o $@ $<
+	$(CXX) $(BENCHFLAGS) -DADS_BENCH_OWN -o $@ $< $(BENCHLIBS)
 
 $(BUILD)/bench-hashing: bench/hashing.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(HASHFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(HASHFLAGS)
 $(BUILD)/bench-search: bench/search.cpp bench/Bench.h bench/Texts.h \
                       $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $<
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS)
 
 $(BUILD)/bench-suffix: bench/suffix.cpp bench/Bench.h bench/Texts.h \
                       $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(SAISFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(SAISFLAGS)
 
 $(BUILD)/bench-multi: bench/multi.cpp bench/Bench.h bench/Texts.h \
                      $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(MULTIFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(MULTIFLAGS)
 
 $(BUILD)/bench-lce: bench/lce.cpp bench/Bench.h bench/Texts.h \
                    $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(LCEFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(LCEFLAGS)
 
 $(BUILD)/bench-edit: bench/edit.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(EDITFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(EDITFLAGS)
 $(BUILD)/bench-numeric: bench/numeric.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(NUMERICFLAGS) $(GMPFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(NUMERICFLAGS) $(GMPFLAGS)
 
 $(BUILD)/bench-concurrent: bench/concurrent.cpp bench/Bench.h $(HEADERS) \
                            | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(CONCURRENTFLAGS) $(HWLOCON) -pthread
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) \
+	       $(CONCURRENTFLAGS) $(HWLOCON) -pthread
 
 $(BUILD)/bench-geometry: bench/geometry.cpp bench/Bench.h $(HEADERS) \
                          | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(CGALFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(CGALFLAGS)
 
 $(BUILD)/bench-matrix: bench/matrix.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(BLASON) $(EIGENFLAGS) $(OPENBLASFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) \
+	       $(BLASON) $(EIGENFLAGS) $(OPENBLASFLAGS)
 
 $(BUILD)/bench-matrix-own: bench/matrix.cpp bench/Bench.h $(HEADERS) \
                           | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -DADS_BENCH_OWN -o $@ $<
+	$(CXX) $(BENCHFLAGS) -DADS_BENCH_OWN -o $@ $< $(BENCHLIBS)
 
 $(BUILD)/bench-sparse: bench/sparse.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(EIGENFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(EIGENFLAGS)
 
 $(BUILD)/bench-priority: bench/priority.cpp bench/Bench.h $(HEADERS) | \
                          $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(PRIOFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(PRIOFLAGS)
 
 $(BUILD)/bench-memory: bench/memory.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(MEMFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(MEMFLAGS)
 
 $(BUILD)/bench-allocators: bench/allocators.cpp bench/Bench.h $(HEADERS) \
                            | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(MEMFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(MEMFLAGS)
 
 $(BUILD)/bench-assembly: bench/assembly.cpp bench/Bench.h $(HEADERS) \
                          | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(EIGENFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(EIGENFLAGS)
 $(BUILD)/bench-succinct: bench/succinct.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(OPTFLAGS) $(call OPTLIBS,succinct)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) \
+	       $(OPTFLAGS) $(call OPTLIBS,succinct)
 
 $(BUILD)/bench-compression: bench/compression.cpp bench/Bench.h $(HEADERS) \
                             | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(OPTFLAGS) \
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(OPTFLAGS) \
 	       $(if $(wildcard $(OPT)/src/r-index/internal),\
 	       -I$(OPT)/src/r-index/internal) \
 	       $(call OPTLIBS,fse streamvbyte lz4 sais FastPFOR divsufsort \
 	       divsufsort64)
 
 $(BUILD)/bench-sort: bench/sort.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(SORTFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(SORTFLAGS)
 
 $(BUILD)/bench-external: bench/external.cpp bench/Bench.h $(HEADERS) | \
                          $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(if $(TLX),-DADS_HAS_TLX -isystem $(TLX))
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) \
+	       $(if $(TLX),-DADS_HAS_TLX -isystem $(TLX))
 
 $(BUILD)/bench-combinatorial: bench/combinatorial.cpp bench/Bench.h \
                              $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(COMBIFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(COMBIFLAGS)
 
 $(BUILD)/bench-backtrack: bench/backtrack.cpp bench/Bench.h $(HEADERS) \
                          | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(BACKFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(BACKFLAGS)
 
 $(BUILD)/bench-ordered: bench/ordered.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(ABSLFLAGS) $(if $(TLX),-I$(TLX))
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) \
+	       $(ABSLFLAGS) $(if $(TLX),-I$(TLX))
 
 $(BUILD)/bench-arrays: bench/arrays.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(ARRSFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(ARRSFLAGS)
 
 $(BUILD)/bench-sets: bench/sets.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(SETSFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(SETSFLAGS)
 
 $(BUILD)/bench-tries: bench/tries.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(TRIEFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(TRIEFLAGS)
 
 $(BUILD)/bench-learned: bench/learned.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< \
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) \
 	       $(if $(LAVECTOR),-isystem $(LAVECTOR)/include \
 	       -isystem $(LAVECTOR)/lib/sdsl-lite/include) \
 	       $(if $(SDSL),-isystem $(SDSL)/include) \
@@ -597,7 +616,8 @@ $(BUILD)/bench-learned: bench/learned.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 
 $(BUILD)/bench-stringdicts: bench/stringdicts.cpp bench/Bench.h $(HEADERS) \
                            | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(if $(HTRIE),-I$(HTRIE)/include) \
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) \
+	       $(if $(HTRIE),-I$(HTRIE)/include) \
 	       $(if $(MARISA),-isystem $(MARISA)/include -L$(MARISA)/lib \
 	       -Wl$(comma)-rpath$(comma)$(MARISA)/lib -lmarisa) \
 	       $(if $(TX),-isystem $(TX)/include $(TX)/lib/libtx.a) \
@@ -643,24 +663,25 @@ PARFLAGS  = -fopenmp -pthread $(TBBFLAGS) \
 
 $(BUILD)/bench-parallel: bench/parallel.cpp bench/Bench.h $(HEADERS) \
                         | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(BLASON) $(PARFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(BLASON) $(PARFLAGS)
 
 # the bulk operations of the trees based on join: PAM=<dir> (its sources)
 # with PARLAY=<dir> (those of ParlayLib) adds pam_map
 JOINFLAGS = $(if $(PAM),-DADS_HAS_PAM -isystem $(PAM)/include \
             -isystem $(PARLAY)/include) -pthread
 $(BUILD)/bench-joins: bench/joins.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(JOINFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(JOINFLAGS)
 
 # the runtime of the workers: OpenMP always, TBB=1 (or TBB=<prefix>)
 # oneTBB, FASTFLOW=<dir> FastFlow and the mesh of its queues
 $(BUILD)/bench-runtime: bench/runtime.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< -fopenmp -pthread $(TBBFLAGS) \
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) \
+	       -fopenmp -pthread $(TBBFLAGS) \
 	       $(if $(FASTFLOW),-DADS_WITH_FASTFLOW -isystem $(FASTFLOW))
 
 # the parallel greedy algorithms: PARLAY=<dir> the examples of ParlayLib
 $(BUILD)/bench-greedy: bench/greedy.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< \
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) \
 	       $(if $(PARLAY),-isystem $(PARLAY)/include -isystem $(PARLAY)) \
 	       -pthread
 
@@ -672,26 +693,27 @@ $(BUILD)/bench-greedy: bench/greedy.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 LEMONFLAGS = $(if $(LEMON),-DADS_HAS_LEMON $(if $(filter-out 1,$(LEMON)),\
              -I$(LEMON)/include -L$(LEMON)/lib) -llemon)
 $(BUILD)/bench-flows: bench/flows.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(LEMONFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(LEMONFLAGS)
 
 $(BUILD)/bench-assignment: bench/assignment.cpp bench/Bench.h $(HEADERS) \
                           | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(LEMONFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(LEMONFLAGS)
 
 $(BUILD)/bench-graphs: bench/graphs.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(LEMONFLAGS)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(LEMONFLAGS)
 
 # the sort and the mailbox over the processes of MPI, by mpicxx (not among
 # BENCHES): make $(BUILD)/bench-mpi, then mpirun -np P $(BUILD)/bench-mpi
 # [-m]
 $(BUILD)/bench-mpi: bench/mpi.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(MPICXX) $(BENCHFLAGS) -DADS_WITH_MPI -o $@ $< -pthread
+	$(MPICXX) $(BENCHFLAGS) -DADS_WITH_MPI -o $@ $< $(BENCHLIBS) -pthread
 
 $(BUILD)/bench-ssets: bench/ssets.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(if $(ODS),-DADS_HAS_ODS -I$(ODS))
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) \
+	       $(if $(ODS),-DADS_HAS_ODS -I$(ODS))
 
 $(BUILD)/bench-%: bench/%.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $<
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS)
 
 # install target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # the headers, and ADS/ADSConfig.h from cmake/ADSConfig.h.in with the version
