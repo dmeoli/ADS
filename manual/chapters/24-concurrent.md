@@ -458,8 +458,13 @@ and reverses it; the messages of each producer thus come out in the order
 in which it sent them ([Figure 24.4](24-concurrent.md#fig-24-4)). Hence
 `take()` costs one atomic operation however many messages there are, plus
 $O( k )$ time for the $k$ messages taken, and the consumer never competes
-with the producers on single items. This inbox suits the messages that
-usually come in bursts, at the price of an allocation per message.
+with the producers on single items. The cells come from blocks of 64 that
+each producing thread owns, which a consumer gives back to their owner
+once it has taken all their messages, so that a producer in a steady state
+allocates nothing; and a push wakes a sleeping consumer only when it finds
+the stack empty, since the pushes onto a stack that is not empty are taken
+with the one that found it empty. This inbox suits the messages that
+usually come in bursts.
 
 ![Figure 24.4. The stack of an `MPSCInbox` before and after `push(d)`, whose compare-and-swap links the new cell above the top it read, and after `take()`, which exchanges the top with nil and returns the messages reversed, in the order of sending.](../figures/concurrent-inbox.svg){#fig-24-4}
 
@@ -473,13 +478,16 @@ class MPSCInbox
  public:
  void push( T v );
  std::vector< T > take( void );
+ std::size_t takeInto( std::vector< T > & out );
  std::vector< T > waitTake( void );
  bool empty( void ) const;
  };
 ```
 
-where `waitTake()` is the `take()` that sleeps until a message comes, on
-the event count of [§24.10](24-concurrent.md#sec-24-10).
+where `takeInto()` appends the messages of `take()` to a vector that keeps
+its room from call to call, and `waitTake()` is the `take()` that sleeps
+until a message comes, on the event count of
+[§24.10](24-concurrent.md#sec-24-10).
 
 <span id="alg-24-3"></span>**Algorithm 24.3.** The push and the take of
 `MPSCInbox` ([Treiber 1986](Z-bibliography.md#ref-treiber1986)).

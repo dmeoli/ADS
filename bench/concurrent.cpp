@@ -23,8 +23,8 @@
  *   takes them (ns per item): MPSCInbox and MPSCQueue of ADS against
  *   boost::lockfree::queue and moodycamel::ConcurrentQueue, with and
  *   without its tokens of producer and consumer; the inbox takes all the
- *   messages at once, the others pop by batches of up to 256 where they
- *   can.
+ *   messages at once into a vector that keeps its room, the others pop by
+ *   batches of up to 256 where they can.
  *
  * - "mpmc", case throughput: a producer pushes n integers into a queue of
  *   1024 places of many producers and many consumers, one by one and
@@ -537,8 +537,14 @@ int main( int argc , char ** argv )
 	    sendAll ,
 	    []( auto & q , std::size_t m ) {
 	     Item s = 0;
+	     std::vector< Item > B;  // its room kept from take to take
 	     for( std::size_t got = 0 ; got < m ; ) {
-	      const auto B = q.take();
+#ifndef ADS_BENCH_OLD
+	      B.clear();
+	      q.takeInto( B );
+#else
+	      B = q.take();
+#endif
 	      for( Item x : B )
 	       s += x;
 	      got += B.size();

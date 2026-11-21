@@ -578,6 +578,7 @@ engineered_queues  spsc-queue-items        coda fra due thread, elementi propri
 engineered_queues  mpsc-queue              coda di molti produttori a corsie
 engineered_queues  event-count             attese con sonno, mai sveglie perse
 engineered_queues  event-count-notifiers   notifiche concorrenti, mai perse
+engineered_queues  mpsc-inbox-blocks       casella a blocchi, sveglie mai perse
 engineered_queues  work-stealing-deque     deque di Chase e Lev, furti
 engineered_queues  mpmc-queue              coda limitata, molti a molti
 engineered_queues  multi-queue             MultiQueue, esatta con una coda

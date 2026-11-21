@@ -113,6 +113,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `parallelReduce()` take a line of the cache each: a sum of 10^6 integers
   of 64 bits claims 64 blocks of 125 KB instead of 256 of 31 KB, and its
   threads no longer write to the same lines
+- `MPSCInbox` takes its cells from blocks of 64 of each producing thread,
+  which the consumers give back once they took all their messages, instead
+  of allocating a cell per message for the consumer to free, and a push
+  wakes the consumer only when it finds the inbox empty; `takeInto()`
+  appends the messages taken to a vector that keeps its room
 
 ### Fixed
 

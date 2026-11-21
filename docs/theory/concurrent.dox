@@ -254,7 +254,9 @@
  before the cell it names was popped and pushed again; here the only
  compare-and-swap is that of a push, whose expected value is the top read by
  the pusher and whose new cell is its own, and a cell is never popped alone,
- so that a success always links the new cell above the true top. The same
+ so that a success always links the new cell above the true top (a cell
+ used again, once its block came back to its producer, is pushed as a new
+ one, and the push reads nothing of the cell it expects). The same
  argument holds for the stacks of the lanes of `MPSCQueue` and of the
  returns of `ConcurrentPoolResource`.
 

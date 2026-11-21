@@ -517,6 +517,125 @@ ADS_TEST( "event-count" )
   }
  }
 
+// MPSCInbox on the blocks of cells of its producers: producers that send to
+// two inboxes and end at once, so that their blocks still in an inbox are
+// freed by its consumer, the messages of each in the order of sending and
+// all of them destroyed once, also those of an inbox never taken; and a
+// consumer asleep in waitTake() while 4 producers send bursts with pauses
+// and yields, woken only by the push that finds the inbox empty (a lost
+// wake-up leaves it asleep, and a watchdog wakes it after 5 s and fails)
+ADS_TEST( "mpsc-inbox-blocks" )
+{
+ static std::atomic< long > live{ 0 };
+ struct Msg
+ {
+  int from = 0 , seq = 0;
+  Msg( int f , int s ) : from( f ) , seq( s ) { live.fetch_add( 1 ); }
+  Msg( const Msg & o ) : from( o.from ) , seq( o.seq ) { live.fetch_add( 1 ); }
+  Msg( Msg && o ) noexcept : from( o.from ) , seq( o.seq ) {
+   live.fetch_add( 1 );
+   }
+  Msg & operator=( const Msg & ) = default;
+  Msg & operator=( Msg && ) noexcept = default;
+  ~Msg() { live.fetch_sub( 1 ); }
+  };
+ {
+  MPSCInbox< Msg > A , B , L;
+  // 150 + 50 + 1 messages a thread, a block left partly used, or 96 + 32,
+  // two blocks all given out
+  const int rounds = 20 , p = 4;
+  std::vector< int > nextA( rounds * p , 0 ) , nextB( rounds * p , 0 );
+  bool ordered = true;
+  std::vector< Msg > got;
+  auto takeAll = [ & ]( MPSCInbox< Msg > & I , std::vector< int > & next ) {
+   got.clear();
+   const std::size_t k = I.takeInto( got );
+   ordered = ordered && ( k == got.size() );
+   for( const Msg & m : got )
+    ordered = ordered && ( m.seq == next[ m.from ]++ );
+   };
+  for( int r = 0 ; r < rounds ; ++r ) {
+   const int n = r % 2 ? 96 : 150;
+   std::vector< std::thread > T;
+   for( int k = 0 ; k < p ; ++k )
+    T.emplace_back( [ & , id = r * p + k ] {
+     for( int i = 0 ; i < n ; ++i ) {
+      A.push( Msg( id , i ) );
+      if( i % 3 == 0 )
+       B.push( Msg( id , i / 3 ) );
+      }
+     if( n == 150 )
+      L.push( Msg( id , 0 ) );
+     } );
+   takeAll( A , nextA );  // some while the producers run
+   for( auto & t : T )
+    t.join();
+   takeAll( A , nextA );  // the rest after they ended
+   if( r % 2 )
+    takeAll( B , nextB );
+   }
+  takeAll( B , nextB );
+  for( int id = 0 ; id < rounds * p ; ++id ) {
+   const int n = ( id / p ) % 2 ? 96 : 150;
+   ordered = ordered && ( nextA[ id ] == n ) &&
+	     ( nextB[ id ] == ( n + 2 ) / 3 );
+   }
+  CHECK( ordered && A.empty() && B.empty() && ! L.empty() );
+  got.clear();
+  }
+ CHECK( live.load() == 0 );
+ {
+  MPSCInbox< int > I;
+  const int p = 4 , n = 20000;
+  std::atomic< bool > done{ false } , stuck{ false };
+  std::vector< std::thread > T;
+  for( int k = 0 ; k < p ; ++k )
+   T.emplace_back( [ & , k ] {
+    std::mt19937 g( k );
+    for( int i = 0 ; i < n ; ++i ) {
+     I.push( k * n + i );
+     const unsigned c = g() % 64;
+     if( c == 0 )
+      std::this_thread::sleep_for( std::chrono::microseconds( 50 ) );
+     else if( c < 8 )
+      std::this_thread::yield();
+     }
+    } );
+  std::atomic< long > got{ 0 };
+  std::thread watch( [ & ] {  // 5 s with no message taken: stuck
+   long seen = -1;
+   auto last = std::chrono::steady_clock::now();
+   while( ! done.load() ) {
+    std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
+    const auto now = std::chrono::steady_clock::now();
+    if( got.load() != seen ) {
+     seen = got.load();
+     last = now;
+     }
+    else if( now - last > std::chrono::seconds( 5 ) ) {
+     stuck.store( true );
+     I.push( -1 );
+     return;
+     }
+    }
+   } );
+  std::vector< int > next( p , 0 );
+  bool ordered = true;
+  while( ( got.load() < long( p ) * n ) && ! stuck.load() )
+   for( const int x : I.waitTake() ) {
+    if( x < 0 )
+     break;
+    ordered = ordered && ( x % n == next[ x / n ]++ );
+    got.fetch_add( 1 );
+    }
+  done.store( true );
+  for( auto & t : T )
+   t.join();
+  watch.join();
+  CHECK( ordered && ! stuck.load() );
+  }
+ }
+
 // EventCount with one waiter and 8 notifiers at once, which yield between
 // the notifications so that the waiter sleeps often: a notifier late on
 // the copy of the epoch on which the waiter sleeps must not put back the
