@@ -83,19 +83,20 @@ F BinaryFuseFilter< T , F , H >::fingerprint( std::uint64_t h )
 
 template< class T , class F , class H >
  requires( std::is_unsigned_v< F > && ( sizeof( F ) <= 4 ) )
-std::uint32_t BinaryFuseFilter< T , F , H >::place( std::uint64_t h ,
-						  int i ) const
+std::uint32_t BinaryFuseFilter< T , F , H >::first( std::uint64_t h ) const
 {
- const auto h0 = std::uint32_t( product128( h , f_CL ).hi );
- const std::uint32_t m = f_L - 1;
- switch( i ) {
-  case( 0 ):
-   return( h0 );
-  case( 1 ):
-   return( ( h0 + f_L ) ^ ( std::uint32_t( h >> 18 ) & m ) );
-  default:
-   return( ( h0 + 2 * f_L ) ^ ( std::uint32_t( h ) & m ) );
-  }
+ return( std::uint32_t( product128( h , f_CL ).hi ) );
+ }
+
+template< class T , class F , class H >
+ requires( std::is_unsigned_v< F > && ( sizeof( F ) <= 4 ) )
+std::array< std::uint32_t , 3 >
+BinaryFuseFilter< T , F , H >::places( std::uint64_t h ) const
+{
+ const std::uint32_t h0 = first( h ) , m = f_L - 1;
+ return( std::array< std::uint32_t , 3 >{
+   h0 , ( h0 + f_L ) ^ ( std::uint32_t( h >> 18 ) & m ) ,
+   ( h0 + 2 * f_L ) ^ ( std::uint32_t( h ) & m ) } );
  }
 
 template< class T , class F , class H >
@@ -134,12 +135,12 @@ bool BinaryFuseFilter< T , F , H >::build(
  std::vector< std::uint32_t > start( segs + 1 , 0 );
  auto S = std::make_unique_for_overwrite< std::uint64_t[] >( n );
  for( std::uint64_t b : B )
-  ++start[ ( place( mixed( b ) , 0 ) >> lg ) + 1 ];
+  ++start[ ( first( mixed( b ) ) >> lg ) + 1 ];
  for( std::size_t s = 0 ; s < segs ; ++s )
   start[ s + 1 ] += start[ s ];
  for( std::uint64_t b : B ) {
   const std::uint64_t h = mixed( b );
-  S[ start[ place( h , 0 ) >> lg ]++ ] = h;
+  S[ start[ first( h ) >> lg ]++ ] = h;
   }
  // each place: 4 times its keys plus the XOR of their indices there, and
  // the XOR of their hashes
@@ -147,8 +148,7 @@ bool BinaryFuseFilter< T , F , H >::build(
  std::vector< std::uint64_t > xh( m , 0 );
  for( std::size_t k = 0 ; k < n ; ++k ) {
   const std::uint64_t h = S[ k ];
-  const std::uint32_t P[ 3 ] = { place( h , 0 ) , place( h , 1 ) ,
-				 place( h , 2 ) };
+  const auto P = places( h );
   for( int i = 0 ; i < 3 ; ++i ) {
    const std::uint32_t p = P[ i ];
    if( count[ p ] >= 252 )  // 63 keys, a degenerate seed
@@ -178,8 +178,7 @@ bool BinaryFuseFilter< T , F , H >::build(
   S[ k ] = h;
   which[ k++ ] = std::uint8_t( i );
   count[ p ] = 0;
-  const std::uint32_t P[ 3 ] = { place( h , 0 ) , place( h , 1 ) ,
-				 place( h , 2 ) };
+  const auto P = places( h );
   for( int j : { kNext[ i ] , kNext[ i + 1 ] } ) {
    const std::uint32_t r = P[ j ];
    Q[ q ] = r;
@@ -194,10 +193,9 @@ bool BinaryFuseFilter< T , F , H >::build(
  std::fill( f_F.begin() , f_F.end() , F( 0 ) );
  for( std::size_t k = n ; k-- > 0 ; ) {
   const std::uint64_t h = S[ k ];
-  const std::uint32_t p0 = place( h , 0 ) , p1 = place( h , 1 ) ,
-		      p2 = place( h , 2 );
-  const std::uint32_t p = which[ k ] == 0 ? p0 : which[ k ] == 1 ? p1 : p2;
-  f_F[ p ] = F( fingerprint( h ) ^ f_F[ p0 ] ^ f_F[ p1 ] ^ f_F[ p2 ] );
+  const auto P = places( h );
+  f_F[ P[ which[ k ] ] ] =
+    F( fingerprint( h ) ^ f_F[ P[ 0 ] ] ^ f_F[ P[ 1 ] ] ^ f_F[ P[ 2 ] ] );
   }
  return( true );
  }
@@ -211,8 +209,9 @@ bool BinaryFuseFilter< T , F , H >::maybe( const T & x ) const
  if( f_F.empty() )
   return( false );
  const std::uint64_t h = mixed( base( x ) );
- return( F( f_F[ place( h , 0 ) ] ^ f_F[ place( h , 1 ) ] ^
-	     f_F[ place( h , 2 ) ] ) == fingerprint( h ) );
+ const auto P = places( h );
+ return( F( f_F[ P[ 0 ] ] ^ f_F[ P[ 1 ] ] ^ f_F[ P[ 2 ] ] ) ==
+	 fingerprint( h ) );
  }
 
 template< class T , class F , class H >

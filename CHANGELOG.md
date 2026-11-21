@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `detail::wideProductHalves()` is always inlined and returns the two
   words of the product in a `detail::WordPair` instead of writing the high
   one through a reference, which GCC kept on the stack of a call
+- `BinaryFuseFilter` computes the first place of a key once for its 3
+  places, in `maybe()` and in the build
 
 ### Fixed
 

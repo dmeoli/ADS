@@ -82,6 +82,7 @@
 #include "ADS/external/MappedFile.h"
 
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <cmath>
 #include <cstddef>
@@ -208,8 +209,12 @@ class BinaryFuseFilter
  /// the fingerprint of the hash \f$ h \f$
  [[nodiscard]] static F fingerprint( std::uint64_t h );
 
- /// the place \f$ h_i \f$, \f$ i \f$ 0, 1 or 2, of the hash \f$ h \f$
- [[nodiscard]] std::uint32_t place( std::uint64_t h , int i ) const;
+ /// the first place \f$ h_0 \f$ of the hash \f$ h \f$
+ [[nodiscard]] std::uint32_t first( std::uint64_t h ) const;
+
+ /// the 3 places \f$ h_0 , h_1 , h_2 \f$ of the hash \f$ h \f$, by one
+ /// product for \f$ h_0 \f$
+ [[nodiscard]] std::array< std::uint32_t , 3 > places( std::uint64_t h ) const;
 
  /// the sizes of the array for \f$ n \f$ keys
  void layout( std::size_t n );
