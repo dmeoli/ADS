@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of its low bits, with no branch, where the clamp of the length of each
   word compiled into a chain of branches, one of them mispredicted at
   almost every rank
+- `DirectAccessCodes` bounds its dynamic program to the widths of at most
+  3 levels by default (`Levels`), a few bits more than the optimum, which
+  takes up to 8 levels of chunks of 1 or 2 bits, a rank and a branch each;
+  `Levels::UNCAPPED` gives the unbounded program
 
 ### Fixed
 

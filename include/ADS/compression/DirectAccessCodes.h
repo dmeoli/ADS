@@ -34,9 +34,21 @@
  *   [ s' < w ] \, n_s ( 1 + 0.25 ) + C( s' ) \big) , \quad C( w ) = 0 ,
  * \f]
  * \f$ w \f$ the bits of the largest integer, in \f$ O( w^2 ) \f$ steps on
- * the counts \f$ n_s \f$; a fixed width \f$ b \f$ for every level trades
- * bits for fewer levels, i.e., fewer ranks per access; a chunk of 8 or 16
- * bits is read as its byte or its pair of bytes, one load that stays in its
+ * the counts \f$ n_s \f$. Each level past the first costs an access a
+ * rank and a branch on its continuation bit, which is hard to predict, and
+ * the optimum often takes many levels of 1 or 2 bits; so the program is
+ * by default bounded to \f$ h = 3 \f$ levels, \f$ C_h( s ) \f$ the least
+ * cost from \f$ s \f$ in at most \f$ h \f$ levels,
+ * \f[
+ *   C_1( s ) = n_s ( w - s ) , \quad
+ *   C_h( s ) = \min\big( C_1( s ) , \min_{s < s' < w} \big( n_s ( s' - s
+ *   + 1.25 ) + C_{h - 1}( s' ) \big) \big) ,
+ * \f]
+ * in \f$ O( h w^2 ) \f$ steps, a few bits more for a bounded worst case
+ * of the access, as the authors propose; `Levels::UNCAPPED` asks for the
+ * unbounded program. A fixed width \f$ b \f$ for every level trades bits
+ * for fewer levels, i.e., fewer ranks per access. A chunk of 8 or 16 bits
+ * is read as its byte or its pair of bytes, one load that stays in its
  * line of the cache. The construction packs the chunks and the continuation
  * bits of a level in order, a field of 64 bits at a time. The chunks of one
  * width are a code with a fixed alphabet, the variable-byte code of chapter
@@ -103,21 +115,33 @@ class DirectAccessCodes
  /// the empty sequence
  DirectAccessCodes( void ) = default;
 
- /// the sequence \f$ x \f$, with the widths of the levels that minimize its
- /// bits
+ /// the most levels of the widths that minimize the bits: a number
+ /// \f$ h \ge 1 \f$, or no bound
+ enum class Levels : int
+ {
+  UNCAPPED = 0 ,  ///< as many levels as minimize the bits
+  DEFAULT = 3     ///< at most 3 levels
+  };
+
+ /// the sequence \f$ x \f$, with the widths of at most \f$ h \f$ levels
+ /// (\f$ h \f$ the value of \f$ L \f$, or \f$ w \f$ if `UNCAPPED`) that
+ /// minimize its bits
  ///
  /// In pseudocode (the dynamic program of Brisaboa, Ladra and Navarro,
  /// beyond the book), \f$ n_s \f$ the integers of more than \f$ s \f$ bits
  /// (\f$ n_0 = n \f$) and \f$ w \f$ the bits of the largest one:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{procedure}\ \mathrm{DirectAccessCodes}( x ) \cr
- /// 2 & \quad C[ w ] \gets 0 \cr
- /// 3 & \quad \textbf{for}\ s \gets w - 1\ \textbf{downto}\ 0\ \textbf{do}
- ///     \cr
- /// 4 & \qquad \mathit{cut}[ s ] \gets \text{the } t \in ( s , w ] \text{ of}
- ///     \text{ least } n_s ( t - s ) + [ t < w ] \, 1.25 \, n_s + C[ t ] \cr
- /// 5 & \qquad C[ s ] \gets \text{that least cost} \cr
+ /// 1 & \textbf{procedure}\ \mathrm{DirectAccessCodes}( x , h ) \cr
+ /// 2 & \quad \textbf{for}\ l \gets 1\ \textbf{to}\ h ,\ s \gets w - 1
+ ///     \ \textbf{downto}\ 0\ \textbf{do} \cr
+ /// 3 & \qquad \mathit{at}[ l , s ] \gets \text{the } t \in ( s , w ]
+ ///     \text{ of least } n_s ( t - s ) + [ t < w ] ( 1.25 \, n_s +
+ ///     C[ l - 1 , t ] ) \text{, } t = w \text{ if } l = 1 \cr
+ /// 4 & \qquad C[ l , s ] \gets \text{that least cost} \cr
+ /// 5 & \quad s \gets 0 ;\ \textbf{for}\ l \gets h\ \textbf{downto}\ 1
+ ///     \ \textbf{while}\ s < w\ \textbf{do}\ \mathit{cut}[ s ] \gets
+ ///     \mathit{at}[ l , s ] ;\ s \gets \mathit{cut}[ s ] \cr
  /// 6 & \quad \mathrm{build}( x , \mathit{cut} ) \cr
  /// 7 & \textbf{procedure}\ \mathrm{build}( x , \mathit{cut} ) \cr
  /// 8 & \quad s \gets 0;\ y \gets x \cr
@@ -130,8 +154,10 @@ class DirectAccessCodes
  /// 12 & \qquad \text{add the level } ( A , B );\ s \gets \mathit{cut}[ s ]
  /// \end{array}}
  /// \f]
+ /// \pre \f$ L \f$ is `UNCAPPED` or \f$ h \ge 1 \f$
  /// \post `access()` gives each item of \f$ x \f$ back (audit)
- explicit DirectAccessCodes( std::span< const std::uint64_t > x );
+ explicit DirectAccessCodes( std::span< const std::uint64_t > x ,
+			     Levels L = Levels::DEFAULT );
 
  /// the sequence \f$ x \f$, with levels of \f$ b \f$ bits each (the last
  /// one up to the bits of the largest item), which trades bits for fewer

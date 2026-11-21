@@ -31,8 +31,9 @@
  *   wavelet tree of Huffman against wm_int, wt_int and wt_huff_int of
  *   sdsl-lite, 10^5 queries a cell, and the building;
  * - dac: access to n integers of variable length (geometric of mean 100,
- *   one in 64 a thousand times larger) by the directly addressable codes,
- *   against the dac_vector of sdsl-lite, and the building;
+ *   one in 64 a thousand times larger) by the directly addressable codes
+ *   (at most 3 levels, with no bound, of 8 bits), against the dac_vector
+ *   of sdsl-lite, and the building;
  * - space: the bits of each structure per bit (per item for Elias-Fano and
  *   the wavelet matrix), in the column of the time, so that the ratios of
  *   bench/summary.py read the same way (above 1 when ADS is smaller).
@@ -1146,6 +1147,13 @@ void dacs( std::size_t n , int r , unsigned seed )
      } ,
     []( const D & s , std::uint64_t i ) { return( s.access( i ) ); } ,
     [ nn ]( const D & s ) { return( double( s.sizeInBits() ) / nn ); } , r );
+ dac(
+   X , I , "ADS::DirectAccessCodes uncapped" ,
+   []( const std::vector< std::uint64_t > & X ) {
+    return( std::make_unique< D >( X , D::Levels::UNCAPPED ) );
+    } ,
+   []( const D & s , std::uint64_t i ) { return( s.access( i ) ); } ,
+   [ nn ]( const D & s ) { return( double( s.sizeInBits() ) / nn ); } , r );
  dac(
    X , I , "ADS::DirectAccessCodes b=8" ,
    []( const std::vector< std::uint64_t > & X ) {

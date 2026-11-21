@@ -1037,7 +1037,7 @@ ADS_TEST( "tans-coder" )
 // integers; the widths cover the bits of the largest item, and the bits
 // stay within those of a plain array of fixed width (and its ranks) and
 // below those of a split in bytes on a skewed sequence; the levels of a
-// fixed width
+// fixed width; the bound on the number of levels
 ADS_TEST( "direct-access-codes" )
 {
  std::mt19937_64 g( 13 );
@@ -1095,6 +1095,27 @@ ADS_TEST( "direct-access-codes" )
  for( std::size_t i = 0 ; i < z.size() ; ++i )
   z[ i ] = i % 1000 == 0 ? ( 1ULL << 40 ) + i : i % 8;
  CHECK( check( z ) < 20000 * 5 );
+ // the bound on the levels: at most h of them, never fewer bits than with
+ // no bound, and more bits for fewer levels
+ std::vector< std::uint64_t > y( 20000 );
+ for( auto & v : y )
+  v = G( g ) * ( g() % 64 == 0 ? 1000 : 1 );
+ using L = DirectAccessCodes::Levels;
+ const DirectAccessCodes U( y , L::UNCAPPED );
+ CHECK( std::equal( y.begin() , y.end() , U.begin() , U.end() ) );
+ CHECK( DirectAccessCodes( y ).widths().size() <= 3 );
+ std::size_t prev = 0;
+ for( const int h : { 1 , 2 , 3 , 4 , 64 } ) {
+  const DirectAccessCodes D( y , L( h ) );
+  CHECK( std::equal( y.begin() , y.end() , D.begin() , D.end() ) );
+  CHECK( D.widths().size() <= std::size_t( h ) );
+  CHECK( D.sizeInBits() + 2048 >= U.sizeInBits() );
+  if( prev )
+   CHECK( D.sizeInBits() <= prev + 2048 );
+  prev = D.sizeInBits();
+  }
+ CHECK( DirectAccessCodes( y , L( 64 ) ).widths() == U.widths() );
+ CHECK_THROWS( DirectAccessCodes( y , L( -1 ) ) , contract_violation );
  }
 
 // the parse of LZ77 in linear time: the same lengths as the parse of the

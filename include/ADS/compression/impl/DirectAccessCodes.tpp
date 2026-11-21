@@ -18,9 +18,10 @@ namespace ADS
 {
 
 inline DirectAccessCodes::DirectAccessCodes(
-  std::span< const std::uint64_t > x )
+  std::span< const std::uint64_t > x , Levels L )
     : f_n( x.size() )
 {
+ ADS_PRE( int( L ) >= 0 );
  if( f_n == 0 )
   return;
  // n_s, the integers of more than s bits ( n_0 = n , each one has a chunk
@@ -33,22 +34,32 @@ inline DirectAccessCodes::DirectAccessCodes(
   --w;
  for( int s = 63 ; s >= 0 ; --s )
   more[ s ] += more[ s + 1 ];
- std::array< double , 65 > C{};
- std::array< int , 65 > cut{};
  auto users = [ & ]( int s ) {
   return( double( s == 0 ? f_n : more[ std::size_t( s ) + 1 ] ) );
   };
- for( int s = w - 1 ; s >= 0 ; --s ) {  // the program of the widths
-  C[ s ] = -1;
-  for( int t = s + 1 ; t <= w ; ++t ) {
-   const double c =
-     users( s ) * ( t - s ) + ( t < w ? users( s ) * 1.25 : 0.0 ) + C[ t ];
-   if( ( C[ s ] < 0 ) || ( c < C[ s ] ) ) {
-    C[ s ] = c;
-    cut[ s ] = t;
+ // the program of the widths: C[ l ][ s ] the least bits of the chunks
+ // from the bit s on in at most l levels, at[ l ][ s ] its first cut (w
+ // levels are as many as the bits, i.e., no cap)
+ const int h = ( L == Levels::UNCAPPED ) || ( int( L ) > w ) ? w : int( L );
+ const std::size_t row = std::size_t( w ) + 1;
+ std::vector< double > C( ( std::size_t( h ) + 1 ) * row , 0.0 );
+ std::vector< int > at( C.size() , w );
+ for( int l = 1 ; l <= h ; ++l )
+  for( int s = w - 1 ; s >= 0 ; --s ) {
+   double & c = C[ std::size_t( l ) * row + std::size_t( s ) ];
+   c = users( s ) * ( w - s );  // the last level
+   for( int t = s + 1 ; ( l > 1 ) && ( t < w ) ; ++t ) {
+    const double d = users( s ) * ( t - s + 1.25 ) +
+		     C[ std::size_t( l - 1 ) * row + std::size_t( t ) ];
+    if( d < c ) {
+     c = d;
+     at[ std::size_t( l ) * row + std::size_t( s ) ] = t;
+     }
     }
    }
-  }
+ std::array< int , 65 > cut{};
+ for( int s = 0 , l = h ; s < w ; --l )
+  s = cut[ s ] = at[ std::size_t( l ) * row + std::size_t( s ) ];
  build( x , cut , w );
  }
 
