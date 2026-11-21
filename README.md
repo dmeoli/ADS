@@ -80,89 +80,89 @@ between 0.97 and 1.03 is usually a tie.
 
 <table>
 <tr><th>benchmark</th><th>ADS</th><th>std: median</th><th>range</th><th>strongest</th><th>median</th><th>range</th></tr>
-<tr><td>sort double</td><td><code>ADS::sort</code></td><td align="right">24</td><td align="right">4.08 to 75</td><td>scandum</td><td align="right">1.47</td><td align="right">0.52 to 4.09</td></tr>
-<tr><td>sort int64</td><td><code>ADS::sort</code></td><td align="right">28</td><td align="right">4.05 to 76</td><td>scandum</td><td align="right">1.80</td><td align="right">1.00 to 3.50</td></tr>
-<tr><td>sort record</td><td><code>ADS::sort</code></td><td align="right">5.85</td><td align="right">1.85 to 30</td><td>IPS4o</td><td align="right">1.48</td><td align="right">0.80 to 13</td></tr>
-<tr><td>sort string</td><td><code>ADS::sort</code></td><td align="right">5.28</td><td align="right">3.66 to 7.04</td><td>ska_sort</td><td align="right">1.50</td><td align="right">1.09 to 1.88</td></tr>
-<tr><td>sort uint32</td><td><code>ADS::sort</code></td><td align="right">37</td><td align="right">8.27 to 122</td><td>scandum</td><td align="right">2.54</td><td align="right">1.19 to 3.81</td></tr>
-<tr><td>dictionaries</td><td><code>ADS::FlatHashTable</code></td><td align="right">2.48</td><td align="right">1.00 to 5.36</td><td>Boost</td><td align="right">0.38</td><td align="right">0.28 to 1.10</td></tr>
-<tr><td>priority</td><td><code>ADS::DaryHeap d=4</code></td><td align="right">1.10</td><td align="right">0.89 to 1.98</td><td>Boost</td><td align="right">1.02</td><td align="right">0.99 to 2.07</td></tr>
-<tr><td>sequences</td><td><code>ADS::ArraySequence</code></td><td align="right">1.03</td><td align="right">1.00 to 1.10</td><td>Boost</td><td align="right">1.00</td><td align="right">0.95 to 1.53</td></tr>
-<tr><td>memory</td><td><code>ADS::ObjectPool</code></td><td align="right">8.76</td><td align="right">3.72 to 14</td><td>Boost</td><td align="right">1.67</td><td align="right">1.15 to 11</td></tr>
-<tr><td>allocators</td><td><code>ADS::PoolAllocator concurrent</code></td><td align="right">1.21</td><td align="right">0.54 to 2.16</td><td>mimalloc</td><td align="right">0.82</td><td align="right">0.35 to 1.76</td></tr>
-<tr><td>positions</td><td><code>ADS::PositionIndex</code></td><td align="right">1.14</td><td align="right">0.38 to 2.14</td><td>Boost</td><td align="right">0.88</td><td align="right">0.39 to 1.11</td></tr>
-<tr><td>assembly</td><td><code>ADS::assembleCsc</code></td><td align="right">27</td><td align="right">20 to 48</td><td>Eigen</td><td align="right">1.32</td><td align="right">0.99 to 1.70</td></tr>
-<tr><td>fingerprints</td><td><code>ADS::rowFingerprint</code></td><td align="right">2.54</td><td align="right">1.43 to 4.13</td><td>Boost</td><td align="right">3.50</td><td align="right">0.75 to 4.09</td></tr>
-<tr><td>bignum</td><td><code>ADS::BigInteger</code></td><td></td><td></td><td>GMP</td><td align="right">1.00</td><td align="right">0.76 to 1.13</td></tr>
-<tr><td>hash functions</td><td><code>ADS::FastHash</code></td><td align="right">0.73</td><td align="right">0.61 to 2.94</td><td>Abseil</td><td align="right">0.35</td><td align="right">0.22 to 0.84</td></tr>
-<tr><td>hash maps</td><td><code>ADS::FlatHashTable</code></td><td align="right">2.25</td><td align="right">0.96 to 13</td><td>unordered_dense</td><td align="right">0.52</td><td align="right">0.05 to 1.38</td></tr>
-<tr><td>filters</td><td><code>ADS::CuckooFilter 8</code></td><td></td><td></td><td>fastfilter</td><td align="right">1.32</td><td align="right">0.82 to 2.32</td></tr>
-<tr><td>perfect hashing</td><td><code>ADS::MinimalPerfectHash</code></td><td></td><td></td><td>PTHash</td><td align="right">0.62</td><td align="right">0.49 to 0.72</td></tr>
-<tr><td>search</td><td><code>ADS::StringSearcher</code></td><td align="right">2.50</td><td align="right">0.38 to 331</td><td>libc</td><td align="right">1.87</td><td align="right">0.18 to 384</td></tr>
-<tr><td>suffix array</td><td><code>ADS::suffixArray</code></td><td></td><td></td><td>libsais</td><td align="right">1.03</td><td align="right">0.75 to 3.54</td></tr>
-<tr><td>lcp</td><td><code>ADS::lcpArrayPhi</code></td><td></td><td></td><td>libsais</td><td align="right">1.02</td><td align="right">0.69 to 1.67</td></tr>
-<tr><td>edit distance</td><td><code>ADS::levenshtein</code></td><td></td><td></td><td>rapidfuzz</td><td align="right">1.62</td><td align="right">0.88 to 143</td></tr>
-<tr><td>lcs</td><td><code>ADS::lcsLength</code></td><td></td><td></td><td>rapidfuzz</td><td align="right">1.30</td><td align="right">1.12 to 1.33</td></tr>
-<tr><td>approximate search</td><td><code>ADS::approximateMatches</code></td><td></td><td></td><td>edlib</td><td align="right">1.41</td><td align="right">1.01 to 1.81</td></tr>
-<tr><td>gcd</td><td><code>ADS::binaryGcd</code></td><td align="right">1.34</td><td align="right">0.59 to 2.09</td><td>Boost</td><td align="right">1.10</td><td align="right">1.05 to 1.15</td></tr>
-<tr><td>powmod</td><td><code>ADS::powMod</code></td><td></td><td></td><td>hurchalla</td><td align="right">0.40</td><td align="right">0.36 to 0.87</td></tr>
-<tr><td>isprime</td><td><code>ADS::isPrime</code></td><td></td><td></td><td>hurchalla</td><td align="right">0.35</td><td align="right">0.27 to 0.94</td></tr>
-<tr><td>factorize</td><td><code>ADS::factorize</code></td><td></td><td></td><td>hurchalla</td><td align="right">0.15</td><td align="right">0.08 to 0.23</td></tr>
-<tr><td>generators</td><td><code>ADS::Xoshiro256</code></td><td align="right">2.05</td><td align="right">1.99 to 2.11</td><td>PCG</td><td align="right">1.18</td><td align="right">1.14 to 1.21</td></tr>
-<tr><td>discrete</td><td><code>ADS::AliasTable</code></td><td align="right">8.22</td><td align="right">4.94 to 12</td><td>Boost</td><td align="right">1.48</td><td align="right">1.40 to 1.56</td></tr>
-<tr><td>bounded</td><td><code>ADS::uniformBelow</code></td><td align="right">0.64</td><td align="right">0.64 to 0.64</td><td>Boost</td><td align="right">1.02</td><td align="right">1.01 to 1.02</td></tr>
-<tr><td>shuffle</td><td><code>ADS::shuffleFast</code></td><td align="right">0.61</td><td align="right">0.60 to 0.61</td><td></td><td></td><td></td></tr>
-<tr><td>sampling</td><td><code>ADS::sampleBySkips</code></td><td align="right">67</td><td align="right">7.61 to 9988</td><td></td><td></td><td></td></tr>
-<tr><td>queue</td><td><code>ADS::RingDeque</code></td><td align="right">1.54</td><td align="right">1.41 to 1.56</td><td>Boost</td><td align="right">1.43</td><td align="right">1.00 to 2.03</td></tr>
-<tr><td>deque</td><td><code>ADS::RingDeque</code></td><td align="right">1.10</td><td align="right">1.10 to 1.10</td><td>Boost</td><td align="right">0.96</td><td align="right">0.96 to 0.97</td></tr>
-<tr><td>stack</td><td><code>ADS::RingDeque</code></td><td align="right">0.97</td><td align="right">0.94 to 0.99</td><td>Boost</td><td align="right">2.20</td><td align="right">2.05 to 2.35</td></tr>
-<tr><td>spsc</td><td><code>ADS::SPSCQueue</code></td><td></td><td></td><td>rigtorp</td><td align="right">0.89</td><td align="right">0.73 to 1.04</td></tr>
-<tr><td>mpsc</td><td><code>ADS::MPSCInbox</code></td><td></td><td></td><td>moodycamel</td><td align="right">0.21</td><td align="right">0.19 to 0.23</td></tr>
-<tr><td>hull</td><td><code>ADS::convexHull</code></td><td></td><td></td><td>CGAL</td><td align="right">4.39</td><td align="right">2.61 to 8.40</td></tr>
-<tr><td>gemm</td><td><code>ADS::gemm</code></td><td></td><td></td><td>OpenBLAS</td><td align="right">1.00</td><td align="right">1.00 to 1.00</td></tr>
-<tr><td>transpose</td><td><code>ADS::transpose</code></td><td></td><td></td><td>Eigen</td><td align="right">1.85</td><td align="right">0.94 to 4.94</td></tr>
-<tr><td>spmv</td><td><code>ADS::CsrMatrix</code></td><td></td><td></td><td>Eigen</td><td align="right">1.01</td><td align="right">0.94 to 1.05</td></tr>
-<tr><td>sptranspose</td><td><code>ADS::CsrMatrix</code></td><td></td><td></td><td>Eigen</td><td align="right">1.02</td><td align="right">0.75 to 1.74</td></tr>
-<tr><td>bitvector</td><td><code>ADS::RankSelect</code></td><td></td><td></td><td>sdsl</td><td align="right">1.11</td><td align="right">0.12 to 26</td></tr>
-<tr><td>rrr</td><td><code>ADS::RRRBitVector</code></td><td></td><td></td><td>sdsl</td><td align="right">1.24</td><td align="right">0.81 to 7.56</td></tr>
-<tr><td>eliasfano</td><td><code>ADS::EliasFano</code></td><td></td><td></td><td>sux</td><td align="right">0.75</td><td align="right">0.60 to 8.01</td></tr>
-<tr><td>parentheses</td><td><code>ADS::BalancedParentheses</code></td><td></td><td></td><td>succinct</td><td align="right">1.33</td><td align="right">1.01 to 15</td></tr>
-<tr><td>wavelet</td><td><code>ADS::WaveletMatrix</code></td><td></td><td></td><td>sdsl</td><td align="right">1.23</td><td align="right">0.87 to 11</td></tr>
-<tr><td>dac</td><td><code>ADS::DirectAccessCodes</code></td><td></td><td></td><td>sdsl</td><td align="right">0.43</td><td align="right">0.38 to 0.46</td></tr>
-<tr><td>entropy</td><td><code>ADS::huffmanCompress</code></td><td></td><td></td><td>huff0</td><td align="right">0.93</td><td align="right">0.85 to 1.36</td></tr>
-<tr><td>integers</td><td><code>ADS::binaryPack</code></td><td></td><td></td><td>FastPFor</td><td align="right">0.17</td><td align="right">0.05 to 1.08</td></tr>
-<tr><td>bwt</td><td><code>ADS::bwt</code></td><td></td><td></td><td>libsais</td><td align="right">0.18</td><td align="right">0.12 to 0.28</td></tr>
-<tr><td>rindex</td><td><code>ADS::RIndex</code></td><td></td><td></td><td>sdsl</td><td align="right">0.95</td><td align="right">0.19 to 16</td></tr>
-<tr><td>fmindex</td><td><code>ADS::FMIndex</code></td><td></td><td></td><td>sdsl</td><td align="right">1.42</td><td align="right">0.47 to 3.22</td></tr>
-<tr><td>lz</td><td><code>ADS::lzssParseHashed</code></td><td></td><td></td><td>LZ4</td><td align="right">0.10</td><td align="right">0.07 to 0.11</td></tr>
-<tr><td>space</td><td><code>ADS::RankSelect</code></td><td></td><td></td><td>pasta</td><td align="right">0.68</td><td align="right">0.66 to 0.70</td></tr>
-<tr><td>multiway merge</td><td><code>ADS::multiwayMerge</code></td><td align="right">2.38</td><td align="right">1.88 to 3.35</td><td>tlx</td><td align="right">1.72</td><td align="right">0.95 to 2.07</td></tr>
-<tr><td>book mergesort</td><td><code>ADS::FlatLoserTree</code></td><td align="right">1.24</td><td align="right">1.15 to 1.28</td><td>Boost</td><td align="right">1.11</td><td align="right">1.06 to 1.15</td></tr>
-<tr><td>bfs</td><td><code>ADS StaticGraph ArrayQueue</code></td><td align="right">1.05</td><td align="right">0.79 to 1.66</td><td>Boost</td><td align="right">0.97</td><td align="right">0.79 to 1.06</td></tr>
-<tr><td>bfm</td><td><code>ADS StaticGraph ArrayQueue</code></td><td align="right">1.03</td><td align="right">0.94 to 1.06</td><td>Boost</td><td align="right">0.95</td><td align="right">0.93 to 1.04</td></tr>
-<tr><td>scc</td><td><code>ADS StaticGraph</code></td><td align="right">1.04</td><td align="right">1.01 to 1.10</td><td>Boost</td><td align="right">1.05</td><td align="right">1.02 to 1.09</td></tr>
-<tr><td>kruskal</td><td><code>ADS UnionFind</code></td><td></td><td></td><td>Boost</td><td align="right">1.01</td><td align="right">1.00 to 1.07</td></tr>
-<tr><td>union-find</td><td><code>ADS UnionFind</code></td><td></td><td></td><td>Boost</td><td align="right">1.09</td><td align="right">1.09 to 1.09</td></tr>
-<tr><td>dijkstra</td><td><code>ADS StaticGraph IndexedDaryHeap<4></code></td><td align="right">2.69</td><td align="right">1.26 to 4.68</td><td>Boost</td><td align="right">1.44</td><td align="right">1.00 to 1.90</td></tr>
-<tr><td>prim</td><td><code>ADS StaticGraph IndexedDaryHeap<4></code></td><td align="right">4.37</td><td align="right">2.21 to 6.25</td><td>Boost</td><td align="right">1.54</td><td align="right">0.94 to 2.17</td></tr>
-<tr><td>concurrent maps</td><td><code>ADS::ConcurrentCuckooTable</code></td><td align="right">1.72</td><td align="right">1.12 to 3.97</td><td>Boost</td><td align="right">0.57</td><td align="right">0.40 to 0.89</td></tr>
-<tr><td>popcount</td><td><code>ADS::popcount</code></td><td align="right">0.98</td><td align="right">0.96 to 1.00</td><td>libpopcnt</td><td align="right">0.95</td><td align="right">0.91 to 0.98</td></tr>
-<tr><td>morton</td><td><code>ADS::mortonEncode</code></td><td></td><td></td><td>libmorton</td><td align="right">1.30</td><td align="right">1.06 to 1.55</td></tr>
-<tr><td>permutations</td><td><code>ADS::forEachPermutation</code></td><td align="right">2.16</td><td align="right">2.15 to 2.16</td><td>Hinnant</td><td align="right">2.17</td><td align="right">2.17 to 2.18</td></tr>
-<tr><td>combinations</td><td><code>ADS::forEachCombination</code></td><td align="right">7.68</td><td align="right">6.13 to 32</td><td>Hinnant</td><td align="right">2.28</td><td align="right">2.25 to 2.32</td></tr>
-<tr><td>exact cover</td><td><code>ADS::FastExactCover</code></td><td></td><td></td><td>Knuth</td><td align="right">0.92</td><td align="right">0.79 to 1.07</td></tr>
-<tr><td>book cdcl</td><td><code>ADS::DaryHeap d=4</code></td><td align="right">1.00</td><td align="right">0.97 to 1.03</td><td>Boost</td><td align="right">0.97</td><td align="right">0.96 to 0.99</td></tr>
-<tr><td>book a-star</td><td><code>ADS::FlatHashTable</code></td><td align="right">1.00</td><td align="right">1.00 to 1.00</td><td>Boost</td><td align="right">0.95</td><td align="right">0.95 to 0.95</td></tr>
-<tr><td>book subset sum</td><td><code>ADS::BitVector</code></td><td align="right">1.61</td><td align="right">1.61 to 1.61</td><td>Boost</td><td align="right">0.95</td><td align="right">0.95 to 0.95</td></tr>
-<tr><td>ordered</td><td><code>ADS::BTreeMap</code></td><td align="right">9.52</td><td align="right">2.62 to 55</td><td>Abseil</td><td align="right">2.03</td><td align="right">1.20 to 6.99</td></tr>
-<tr><td>array search</td><td><code>ADS::SPlusTree</code></td><td align="right">2.67</td><td align="right">1.92 to 3.41</td><td>Khuong-Morin</td><td align="right">1.16</td><td align="right">1.00 to 1.42</td></tr>
-<tr><td>select</td><td><code>ADS::nthElement</code></td><td align="right">6.39</td><td align="right">1.09 to 15</td><td>miniselect</td><td align="right">1.50</td><td align="right">0.70 to 6.92</td></tr>
-<tr><td>rmq</td><td><code>ADS::WordRangeMinimum</code></td><td></td><td></td><td>sdsl</td><td align="right">1.22</td><td align="right">0.59 to 27</td></tr>
-<tr><td>intersection</td><td><code>ADS::intersect</code></td><td align="right">1.94</td><td align="right">0.22 to 11</td><td>Lemire</td><td align="right">0.18</td><td align="right">0.09 to 0.56</td></tr>
-<tr><td>mfset</td><td><code>ADS::RemUnionFind</code></td><td></td><td></td><td>Boost</td><td align="right">1.02</td><td align="right">0.80 to 10</td></tr>
-<tr><td>boolset</td><td><code>ADS::BoolSet</code></td><td></td><td></td><td>Roaring</td><td align="right">0.72</td><td align="right">0.42 to 14</td></tr>
-<tr><td>bitmap</td><td><code>ADS::RoaringBitmap</code></td><td></td><td></td><td>Roaring</td><td align="right">1.05</td><td align="right">0.05 to 12</td></tr>
-<tr><td>tries</td><td><code>ADS::AdaptiveRadixTree</code></td><td align="right">1.31</td><td align="right">0.67 to 5.79</td><td>libart</td><td align="right">1.10</td><td align="right">0.70 to 2.12</td></tr>
+<tr><td>sort double</td><td><code>ADS::sort</code></td><td align="right">24</td><td align="right">4.08&nbsp;to&nbsp;75</td><td>scandum</td><td align="right">1.47</td><td align="right">0.52&nbsp;to&nbsp;4.09</td></tr>
+<tr><td>sort int64</td><td><code>ADS::sort</code></td><td align="right">28</td><td align="right">4.05&nbsp;to&nbsp;76</td><td>scandum</td><td align="right">1.80</td><td align="right">1.00&nbsp;to&nbsp;3.50</td></tr>
+<tr><td>sort record</td><td><code>ADS::sort</code></td><td align="right">5.85</td><td align="right">1.85&nbsp;to&nbsp;30</td><td>IPS4o</td><td align="right">1.48</td><td align="right">0.80&nbsp;to&nbsp;13</td></tr>
+<tr><td>sort string</td><td><code>ADS::sort</code></td><td align="right">5.28</td><td align="right">3.66&nbsp;to&nbsp;7.04</td><td>ska_sort</td><td align="right">1.50</td><td align="right">1.09&nbsp;to&nbsp;1.88</td></tr>
+<tr><td>sort uint32</td><td><code>ADS::sort</code></td><td align="right">37</td><td align="right">8.27&nbsp;to&nbsp;122</td><td>scandum</td><td align="right">2.54</td><td align="right">1.19&nbsp;to&nbsp;3.81</td></tr>
+<tr><td>dictionaries</td><td><code>ADS::FlatHashTable</code></td><td align="right">2.48</td><td align="right">1.00&nbsp;to&nbsp;5.36</td><td>Boost</td><td align="right">0.38</td><td align="right">0.28&nbsp;to&nbsp;1.10</td></tr>
+<tr><td>priority</td><td><code>ADS::DaryHeap d=4</code></td><td align="right">1.10</td><td align="right">0.89&nbsp;to&nbsp;1.98</td><td>Boost</td><td align="right">1.02</td><td align="right">0.99&nbsp;to&nbsp;2.07</td></tr>
+<tr><td>sequences</td><td><code>ADS::ArraySequence</code></td><td align="right">1.03</td><td align="right">1.00&nbsp;to&nbsp;1.10</td><td>Boost</td><td align="right">1.00</td><td align="right">0.95&nbsp;to&nbsp;1.53</td></tr>
+<tr><td>memory</td><td><code>ADS::ObjectPool</code></td><td align="right">8.76</td><td align="right">3.72&nbsp;to&nbsp;14</td><td>Boost</td><td align="right">1.67</td><td align="right">1.15&nbsp;to&nbsp;11</td></tr>
+<tr><td>allocators</td><td><code>ADS::PoolAllocator concurrent</code></td><td align="right">1.21</td><td align="right">0.54&nbsp;to&nbsp;2.16</td><td>mimalloc</td><td align="right">0.82</td><td align="right">0.35&nbsp;to&nbsp;1.76</td></tr>
+<tr><td>positions</td><td><code>ADS::PositionIndex</code></td><td align="right">1.14</td><td align="right">0.38&nbsp;to&nbsp;2.14</td><td>Boost</td><td align="right">0.88</td><td align="right">0.39&nbsp;to&nbsp;1.11</td></tr>
+<tr><td>assembly</td><td><code>ADS::assembleCsc</code></td><td align="right">27</td><td align="right">20&nbsp;to&nbsp;48</td><td>Eigen</td><td align="right">1.32</td><td align="right">0.99&nbsp;to&nbsp;1.70</td></tr>
+<tr><td>fingerprints</td><td><code>ADS::rowFingerprint</code></td><td align="right">2.54</td><td align="right">1.43&nbsp;to&nbsp;4.13</td><td>Boost</td><td align="right">3.50</td><td align="right">0.75&nbsp;to&nbsp;4.09</td></tr>
+<tr><td>bignum</td><td><code>ADS::BigInteger</code></td><td></td><td></td><td>GMP</td><td align="right">1.00</td><td align="right">0.76&nbsp;to&nbsp;1.13</td></tr>
+<tr><td>hash functions</td><td><code>ADS::FastHash</code></td><td align="right">0.73</td><td align="right">0.61&nbsp;to&nbsp;2.94</td><td>Abseil</td><td align="right">0.35</td><td align="right">0.22&nbsp;to&nbsp;0.84</td></tr>
+<tr><td>hash maps</td><td><code>ADS::FlatHashTable</code></td><td align="right">2.25</td><td align="right">0.96&nbsp;to&nbsp;13</td><td>unordered_dense</td><td align="right">0.52</td><td align="right">0.05&nbsp;to&nbsp;1.38</td></tr>
+<tr><td>filters</td><td><code>ADS::CuckooFilter 8</code></td><td></td><td></td><td>fastfilter</td><td align="right">1.32</td><td align="right">0.82&nbsp;to&nbsp;2.32</td></tr>
+<tr><td>perfect hashing</td><td><code>ADS::MinimalPerfectHash</code></td><td></td><td></td><td>PTHash</td><td align="right">0.62</td><td align="right">0.49&nbsp;to&nbsp;0.72</td></tr>
+<tr><td>search</td><td><code>ADS::StringSearcher</code></td><td align="right">2.50</td><td align="right">0.38&nbsp;to&nbsp;331</td><td>libc</td><td align="right">1.87</td><td align="right">0.18&nbsp;to&nbsp;384</td></tr>
+<tr><td>suffix array</td><td><code>ADS::suffixArray</code></td><td></td><td></td><td>libsais</td><td align="right">1.03</td><td align="right">0.75&nbsp;to&nbsp;3.54</td></tr>
+<tr><td>lcp</td><td><code>ADS::lcpArrayPhi</code></td><td></td><td></td><td>libsais</td><td align="right">1.02</td><td align="right">0.69&nbsp;to&nbsp;1.67</td></tr>
+<tr><td>edit distance</td><td><code>ADS::levenshtein</code></td><td></td><td></td><td>rapidfuzz</td><td align="right">1.62</td><td align="right">0.88&nbsp;to&nbsp;143</td></tr>
+<tr><td>lcs</td><td><code>ADS::lcsLength</code></td><td></td><td></td><td>rapidfuzz</td><td align="right">1.30</td><td align="right">1.12&nbsp;to&nbsp;1.33</td></tr>
+<tr><td>approximate search</td><td><code>ADS::approximateMatches</code></td><td></td><td></td><td>edlib</td><td align="right">1.41</td><td align="right">1.01&nbsp;to&nbsp;1.81</td></tr>
+<tr><td>gcd</td><td><code>ADS::binaryGcd</code></td><td align="right">1.34</td><td align="right">0.59&nbsp;to&nbsp;2.09</td><td>Boost</td><td align="right">1.10</td><td align="right">1.05&nbsp;to&nbsp;1.15</td></tr>
+<tr><td>powmod</td><td><code>ADS::powMod</code></td><td></td><td></td><td>hurchalla</td><td align="right">0.40</td><td align="right">0.36&nbsp;to&nbsp;0.87</td></tr>
+<tr><td>isprime</td><td><code>ADS::isPrime</code></td><td></td><td></td><td>hurchalla</td><td align="right">0.35</td><td align="right">0.27&nbsp;to&nbsp;0.94</td></tr>
+<tr><td>factorize</td><td><code>ADS::factorize</code></td><td></td><td></td><td>hurchalla</td><td align="right">0.15</td><td align="right">0.08&nbsp;to&nbsp;0.23</td></tr>
+<tr><td>generators</td><td><code>ADS::Xoshiro256</code></td><td align="right">2.05</td><td align="right">1.99&nbsp;to&nbsp;2.11</td><td>PCG</td><td align="right">1.18</td><td align="right">1.14&nbsp;to&nbsp;1.21</td></tr>
+<tr><td>discrete</td><td><code>ADS::AliasTable</code></td><td align="right">8.22</td><td align="right">4.94&nbsp;to&nbsp;12</td><td>Boost</td><td align="right">1.48</td><td align="right">1.40&nbsp;to&nbsp;1.56</td></tr>
+<tr><td>bounded</td><td><code>ADS::uniformBelow</code></td><td align="right">0.64</td><td align="right">0.64&nbsp;to&nbsp;0.64</td><td>Boost</td><td align="right">1.02</td><td align="right">1.01&nbsp;to&nbsp;1.02</td></tr>
+<tr><td>shuffle</td><td><code>ADS::shuffleFast</code></td><td align="right">0.61</td><td align="right">0.60&nbsp;to&nbsp;0.61</td><td></td><td></td><td></td></tr>
+<tr><td>sampling</td><td><code>ADS::sampleBySkips</code></td><td align="right">67</td><td align="right">7.61&nbsp;to&nbsp;9988</td><td></td><td></td><td></td></tr>
+<tr><td>queue</td><td><code>ADS::RingDeque</code></td><td align="right">1.54</td><td align="right">1.41&nbsp;to&nbsp;1.56</td><td>Boost</td><td align="right">1.43</td><td align="right">1.00&nbsp;to&nbsp;2.03</td></tr>
+<tr><td>deque</td><td><code>ADS::RingDeque</code></td><td align="right">1.10</td><td align="right">1.10&nbsp;to&nbsp;1.10</td><td>Boost</td><td align="right">0.96</td><td align="right">0.96&nbsp;to&nbsp;0.97</td></tr>
+<tr><td>stack</td><td><code>ADS::RingDeque</code></td><td align="right">0.97</td><td align="right">0.94&nbsp;to&nbsp;0.99</td><td>Boost</td><td align="right">2.20</td><td align="right">2.05&nbsp;to&nbsp;2.35</td></tr>
+<tr><td>spsc</td><td><code>ADS::SPSCQueue</code></td><td></td><td></td><td>rigtorp</td><td align="right">0.89</td><td align="right">0.73&nbsp;to&nbsp;1.04</td></tr>
+<tr><td>mpsc</td><td><code>ADS::MPSCInbox</code></td><td></td><td></td><td>moodycamel</td><td align="right">0.21</td><td align="right">0.19&nbsp;to&nbsp;0.23</td></tr>
+<tr><td>hull</td><td><code>ADS::convexHull</code></td><td></td><td></td><td>CGAL</td><td align="right">4.39</td><td align="right">2.61&nbsp;to&nbsp;8.40</td></tr>
+<tr><td>gemm</td><td><code>ADS::gemm</code></td><td></td><td></td><td>OpenBLAS</td><td align="right">1.00</td><td align="right">1.00&nbsp;to&nbsp;1.00</td></tr>
+<tr><td>transpose</td><td><code>ADS::transpose</code></td><td></td><td></td><td>Eigen</td><td align="right">1.85</td><td align="right">0.94&nbsp;to&nbsp;4.94</td></tr>
+<tr><td>spmv</td><td><code>ADS::CsrMatrix</code></td><td></td><td></td><td>Eigen</td><td align="right">1.01</td><td align="right">0.94&nbsp;to&nbsp;1.05</td></tr>
+<tr><td>sptranspose</td><td><code>ADS::CsrMatrix</code></td><td></td><td></td><td>Eigen</td><td align="right">1.02</td><td align="right">0.75&nbsp;to&nbsp;1.74</td></tr>
+<tr><td>bitvector</td><td><code>ADS::RankSelect</code></td><td></td><td></td><td>sdsl</td><td align="right">1.11</td><td align="right">0.12&nbsp;to&nbsp;26</td></tr>
+<tr><td>rrr</td><td><code>ADS::RRRBitVector</code></td><td></td><td></td><td>sdsl</td><td align="right">1.24</td><td align="right">0.81&nbsp;to&nbsp;7.56</td></tr>
+<tr><td>eliasfano</td><td><code>ADS::EliasFano</code></td><td></td><td></td><td>sux</td><td align="right">0.75</td><td align="right">0.60&nbsp;to&nbsp;8.01</td></tr>
+<tr><td>parentheses</td><td><code>ADS::BalancedParentheses</code></td><td></td><td></td><td>succinct</td><td align="right">1.33</td><td align="right">1.01&nbsp;to&nbsp;15</td></tr>
+<tr><td>wavelet</td><td><code>ADS::WaveletMatrix</code></td><td></td><td></td><td>sdsl</td><td align="right">1.23</td><td align="right">0.87&nbsp;to&nbsp;11</td></tr>
+<tr><td>dac</td><td><code>ADS::DirectAccessCodes</code></td><td></td><td></td><td>sdsl</td><td align="right">0.43</td><td align="right">0.38&nbsp;to&nbsp;0.46</td></tr>
+<tr><td>entropy</td><td><code>ADS::huffmanCompress</code></td><td></td><td></td><td>huff0</td><td align="right">0.93</td><td align="right">0.85&nbsp;to&nbsp;1.36</td></tr>
+<tr><td>integers</td><td><code>ADS::binaryPack</code></td><td></td><td></td><td>FastPFor</td><td align="right">0.17</td><td align="right">0.05&nbsp;to&nbsp;1.08</td></tr>
+<tr><td>bwt</td><td><code>ADS::bwt</code></td><td></td><td></td><td>libsais</td><td align="right">0.18</td><td align="right">0.12&nbsp;to&nbsp;0.28</td></tr>
+<tr><td>rindex</td><td><code>ADS::RIndex</code></td><td></td><td></td><td>sdsl</td><td align="right">0.95</td><td align="right">0.19&nbsp;to&nbsp;16</td></tr>
+<tr><td>fmindex</td><td><code>ADS::FMIndex</code></td><td></td><td></td><td>sdsl</td><td align="right">1.42</td><td align="right">0.47&nbsp;to&nbsp;3.22</td></tr>
+<tr><td>lz</td><td><code>ADS::lzssParseHashed</code></td><td></td><td></td><td>LZ4</td><td align="right">0.10</td><td align="right">0.07&nbsp;to&nbsp;0.11</td></tr>
+<tr><td>space</td><td><code>ADS::RankSelect</code></td><td></td><td></td><td>pasta</td><td align="right">0.68</td><td align="right">0.66&nbsp;to&nbsp;0.70</td></tr>
+<tr><td>multiway merge</td><td><code>ADS::multiwayMerge</code></td><td align="right">2.38</td><td align="right">1.88&nbsp;to&nbsp;3.35</td><td>tlx</td><td align="right">1.72</td><td align="right">0.95&nbsp;to&nbsp;2.07</td></tr>
+<tr><td>book mergesort</td><td><code>ADS::FlatLoserTree</code></td><td align="right">1.24</td><td align="right">1.15&nbsp;to&nbsp;1.28</td><td>Boost</td><td align="right">1.11</td><td align="right">1.06&nbsp;to&nbsp;1.15</td></tr>
+<tr><td>bfs</td><td><code>ADS StaticGraph ArrayQueue</code></td><td align="right">1.05</td><td align="right">0.79&nbsp;to&nbsp;1.66</td><td>Boost</td><td align="right">0.97</td><td align="right">0.79&nbsp;to&nbsp;1.06</td></tr>
+<tr><td>bfm</td><td><code>ADS StaticGraph ArrayQueue</code></td><td align="right">1.03</td><td align="right">0.94&nbsp;to&nbsp;1.06</td><td>Boost</td><td align="right">0.95</td><td align="right">0.93&nbsp;to&nbsp;1.04</td></tr>
+<tr><td>scc</td><td><code>ADS StaticGraph</code></td><td align="right">1.04</td><td align="right">1.01&nbsp;to&nbsp;1.10</td><td>Boost</td><td align="right">1.05</td><td align="right">1.02&nbsp;to&nbsp;1.09</td></tr>
+<tr><td>kruskal</td><td><code>ADS UnionFind</code></td><td></td><td></td><td>Boost</td><td align="right">1.01</td><td align="right">1.00&nbsp;to&nbsp;1.07</td></tr>
+<tr><td>union-find</td><td><code>ADS UnionFind</code></td><td></td><td></td><td>Boost</td><td align="right">1.09</td><td align="right">1.09&nbsp;to&nbsp;1.09</td></tr>
+<tr><td>dijkstra</td><td><code>ADS StaticGraph IndexedDaryHeap<4></code></td><td align="right">2.69</td><td align="right">1.26&nbsp;to&nbsp;4.68</td><td>Boost</td><td align="right">1.44</td><td align="right">1.00&nbsp;to&nbsp;1.90</td></tr>
+<tr><td>prim</td><td><code>ADS StaticGraph IndexedDaryHeap<4></code></td><td align="right">4.37</td><td align="right">2.21&nbsp;to&nbsp;6.25</td><td>Boost</td><td align="right">1.54</td><td align="right">0.94&nbsp;to&nbsp;2.17</td></tr>
+<tr><td>concurrent maps</td><td><code>ADS::ConcurrentCuckooTable</code></td><td align="right">1.72</td><td align="right">1.12&nbsp;to&nbsp;3.97</td><td>Boost</td><td align="right">0.57</td><td align="right">0.40&nbsp;to&nbsp;0.89</td></tr>
+<tr><td>popcount</td><td><code>ADS::popcount</code></td><td align="right">0.98</td><td align="right">0.96&nbsp;to&nbsp;1.00</td><td>libpopcnt</td><td align="right">0.95</td><td align="right">0.91&nbsp;to&nbsp;0.98</td></tr>
+<tr><td>morton</td><td><code>ADS::mortonEncode</code></td><td></td><td></td><td>libmorton</td><td align="right">1.30</td><td align="right">1.06&nbsp;to&nbsp;1.55</td></tr>
+<tr><td>permutations</td><td><code>ADS::forEachPermutation</code></td><td align="right">2.16</td><td align="right">2.15&nbsp;to&nbsp;2.16</td><td>Hinnant</td><td align="right">2.17</td><td align="right">2.17&nbsp;to&nbsp;2.18</td></tr>
+<tr><td>combinations</td><td><code>ADS::forEachCombination</code></td><td align="right">7.68</td><td align="right">6.13&nbsp;to&nbsp;32</td><td>Hinnant</td><td align="right">2.28</td><td align="right">2.25&nbsp;to&nbsp;2.32</td></tr>
+<tr><td>exact cover</td><td><code>ADS::FastExactCover</code></td><td></td><td></td><td>Knuth</td><td align="right">0.92</td><td align="right">0.79&nbsp;to&nbsp;1.07</td></tr>
+<tr><td>book cdcl</td><td><code>ADS::DaryHeap d=4</code></td><td align="right">1.00</td><td align="right">0.97&nbsp;to&nbsp;1.03</td><td>Boost</td><td align="right">0.97</td><td align="right">0.96&nbsp;to&nbsp;0.99</td></tr>
+<tr><td>book a-star</td><td><code>ADS::FlatHashTable</code></td><td align="right">1.00</td><td align="right">1.00&nbsp;to&nbsp;1.00</td><td>Boost</td><td align="right">0.95</td><td align="right">0.95&nbsp;to&nbsp;0.95</td></tr>
+<tr><td>book subset sum</td><td><code>ADS::BitVector</code></td><td align="right">1.61</td><td align="right">1.61&nbsp;to&nbsp;1.61</td><td>Boost</td><td align="right">0.95</td><td align="right">0.95&nbsp;to&nbsp;0.95</td></tr>
+<tr><td>ordered</td><td><code>ADS::BTreeMap</code></td><td align="right">9.52</td><td align="right">2.62&nbsp;to&nbsp;55</td><td>Abseil</td><td align="right">2.03</td><td align="right">1.20&nbsp;to&nbsp;6.99</td></tr>
+<tr><td>array search</td><td><code>ADS::SPlusTree</code></td><td align="right">2.67</td><td align="right">1.92&nbsp;to&nbsp;3.41</td><td>Khuong-Morin</td><td align="right">1.16</td><td align="right">1.00&nbsp;to&nbsp;1.42</td></tr>
+<tr><td>select</td><td><code>ADS::nthElement</code></td><td align="right">6.39</td><td align="right">1.09&nbsp;to&nbsp;15</td><td>miniselect</td><td align="right">1.50</td><td align="right">0.70&nbsp;to&nbsp;6.92</td></tr>
+<tr><td>rmq</td><td><code>ADS::WordRangeMinimum</code></td><td></td><td></td><td>sdsl</td><td align="right">1.22</td><td align="right">0.59&nbsp;to&nbsp;27</td></tr>
+<tr><td>intersection</td><td><code>ADS::intersect</code></td><td align="right">1.94</td><td align="right">0.22&nbsp;to&nbsp;11</td><td>Lemire</td><td align="right">0.18</td><td align="right">0.09&nbsp;to&nbsp;0.56</td></tr>
+<tr><td>mfset</td><td><code>ADS::RemUnionFind</code></td><td></td><td></td><td>Boost</td><td align="right">1.02</td><td align="right">0.80&nbsp;to&nbsp;10</td></tr>
+<tr><td>boolset</td><td><code>ADS::BoolSet</code></td><td></td><td></td><td>Roaring</td><td align="right">0.72</td><td align="right">0.42&nbsp;to&nbsp;14</td></tr>
+<tr><td>bitmap</td><td><code>ADS::RoaringBitmap</code></td><td></td><td></td><td>Roaring</td><td align="right">1.05</td><td align="right">0.05&nbsp;to&nbsp;12</td></tr>
+<tr><td>tries</td><td><code>ADS::AdaptiveRadixTree</code></td><td align="right">1.31</td><td align="right">0.67&nbsp;to&nbsp;5.79</td><td>libart</td><td align="right">1.10</td><td align="right">0.70&nbsp;to&nbsp;2.12</td></tr>
 </table>
 
 `ADS::sort()` is faster than `std::sort` in all the cells, by 5 to 37

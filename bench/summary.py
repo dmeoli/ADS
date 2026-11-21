@@ -619,8 +619,9 @@ def ratio(x):
     return '%.2f' % x if x < 9.95 else '%.0f' % x
 
 def cells(r):
-    # the median and the range of the ratios r
-    return ('<td align="right">%s</td><td align="right">%s to %s</td>' %
+    # the median and the range of the ratios r, the range on one line
+    return ('<td align="right">%s</td><td align="right">%s&nbsp;to&nbsp;%s'
+            '</td>' %
             tuple(map(ratio, r)))
 
 def brief(rows):
