@@ -1,0 +1,79 @@
+# name  repository-or-URL  commit-SHA-or-sha256  [tag]: the competitors and libraries of the build, as installed on the machine of the run
+gmp                              https://gmplib.org/download/gmp/gmp-6.3.0.tar.xz sha256:a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898 release 6.3.0
+mpfr                             https://www.mpfr.org/mpfr-4.2.2/mpfr-4.2.2.tar.xz sha256:b67ba0383ef7e8a8563734e2e889ef5ec3c3b898a01d00fa0a6869ad81c6ce01 release 4.2.2
+flint                            https://github.com/flintlib/flint/releases/download/v3.6.0/flint-3.6.0.tar.gz sha256:b95e2c7792f5eea4a1c8d2d42c4098434756832e57a094b295eb5dfdc9b4c36b tag v3.6.0
+openblas                         https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.28/OpenBLAS-0.3.28.tar.gz sha256:f1003466ad074e9b0c8d421a204121100b0751c96fc6fcf3d1456bd12f8a00a1 tag v0.3.28
+jemalloc                         https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2 sha256:2db82d1e7119df3e71b7640219b6dfe84789bc0537983c3b7ac4f7189aecfeaa tag 5.3.0
+cgal                             https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1-library.tar.xz sha256:6640f91dad9956764db27440932ac3a2f6269bf8066690f639dd7e995e3e1925 tag v5.6.1
+abseil                           https://github.com/abseil/abseil-cpp 5650e9cf76d3be4318d5fa3af38ee483ddfd5e4a tag 20260526.0
+libsais                          https://github.com/IlyaGrebnov/libsais b1aa1fde090e00a4e2030b9fb54198698b84e463 tag v2.12.2
+libdivsufsort                    https://github.com/y-256/libdivsufsort 82b01f764e342f1858d4473c17b56844aac9c12d tag 2.0.1
+edlib                            https://github.com/Martinsos/edlib ec2310eda1841ab48c14cd3d866778a4f5eb1491 tag v1.2.7
+rapidfuzz-cpp                    https://github.com/rapidfuzz/rapidfuzz-cpp 82662f3623b3ca3645e543f677fc32fb8bd1fb95 tag v3.3.4
+mimalloc                         https://github.com/microsoft/mimalloc a3070dc57fa03a43cae9079a2a879a66cec8f715 tag v2.1.9
+highway                          https://github.com/google/highway 2607d3b5b0113992fe84d3848859eae13b3b52c1 tag 1.4.0
+CRoaring                         https://github.com/RoaringBitmap/CRoaring d39b6c4be88deefc4c4bfc8171571b30902052e9 tag v5.5.5
+SIMDCompressionAndIntersection   https://github.com/lemire/SIMDCompressionAndIntersection b809f38b57fa65384166c7c1d83056395a1ff3e5 tag v0.2.0
+libart                           https://github.com/armon/libart 301046804af165269e37da6725f5a4aec9ecc881 
+streamvbyte                      https://github.com/lemire/streamvbyte 089549994faf3657c13e62f6a1a7b2f544308922 tag v3.2.1
+lz4                              https://github.com/lz4/lz4 aa4647fad575d01a874aaaadcdbe8e6a40e072f5 tag v1.11.1
+FastPFOR                         https://github.com/fast-pack/FastPFOR ae4e62db4de1ce6904e278f94afb56a87a36b32c tag v0.5.1
+succinct                         https://github.com/ot/succinct 669eebbdcaa0562028a22cb7c877e512e4f1210b 
+FiniteStateEntropy               https://github.com/Cyan4973/FiniteStateEntropy 9f30e0918f87bd835fa040d922a208d7b219e50b 
+ryg_rans                         https://github.com/rygorous/ryg_rans c9d162d996fd600315af9ae8eb89d832576cb32d 
+pasta-bit_vector                 https://github.com/pasta-toolbox/bit_vector 3ffb6e5a2e58c76425de8197bfe554eb1bf9fd94 
+pasta-utils                      https://github.com/pasta-toolbox/utils 32ee848255ee05448220155ab545cc5ef240f78a 
+cweb                             https://github.com/ascherer/cweb 1a93320c38542aac85808309252a4e52c88a3365 tag cweb-4.12.2
+abLEMON                          https://github.com/dmeoli/abLEMON b46264aeedf4453ec2facbb2099bc31811711d85 tag 1.9.0
+folly-pcq                        https://github.com/facebook/folly c8c7adb72c6d73e2fced5ff5cebc96aa3ff65b2c tag v2026.10.26.00 (subset: folly/ProducerConsumerQueue.h and the 23 headers it includes, empty folly-config.h)
+tlx                              https://github.com/tlx/tlx b6af589954fafd334f2f373b057a8886e1c6abc8 tag v0.6.1
+PGM-index                        https://github.com/gvinciguerra/PGM-index c6fcf3d34e55eb0061b01e2f49dfcbdb711f1407 
+radix-heap                       https://github.com/iwiwi/radix-heap f54eba0a19782c67a9779c28263a7ce680995eda 
+combinations                     https://github.com/HowardHinnant/combinations ece66e0a0b97efc4d6739a0133f0916192a15c30 
+libpopcnt                        https://github.com/kimwalisch/libpopcnt 923c43377278edc97de155ea70ac3ab20f397f3e tag v4.2
+libmorton                        https://github.com/Forceflow/libmorton 1ac6131ad153f64c93a8dcb76dc5bbdc515ba7ee tag v0.2.13
+miniselect                       https://github.com/danlark1/miniselect d23093b8fec0aed7ae72b4f0977ecaa6001ddc67 tag 0.4.1
+hat-trie                         https://github.com/Tessil/hat-trie f1380d704eccf753db5f9df175789fff8ff353e0 tag v0.7.1
+fastflow                         https://github.com/fastflow/fastflow ad4dccf58f0b21f4170621b65a27e3224a1bca6c tag 3.0.0
+hurchalla-util                   https://github.com/hurchalla/util 9163344ee69f21a21cb8928dd30fc2ff15e94f0c 
+hurchalla-factoring              https://github.com/hurchalla/factoring a1dfea9e38daab9e25ba7c0f1b38af1959fbdd6a 
+hurchalla-modular_arithmetic     https://github.com/hurchalla/modular_arithmetic cb5e74a154dc665ffd50ab04348677e596dd362a 
+pcg-cpp                          https://github.com/imneme/pcg-cpp 726e919c2dd22a3cdaccb0674c5422ab4fa7a216 tag v0.98.1
+rigtorp-SPSCQueue                https://github.com/rigtorp/SPSCQueue 565a5149d54930463d58cb0f69b978d439555e66 tag v1.1
+concurrentqueue                  https://github.com/cameron314/concurrentqueue 9afb99746f0f5fc94ac8aef737053ae0481ba8d1 tag v1.0.5
+readerwriterqueue                https://github.com/cameron314/readerwriterqueue 8b2176698e9bdaba653cdc20c32b54737a934b47 tag v1.0.7
+growt                            https://github.com/TooBiased/growt 0c1148ebcdfd4c04803be79706533ad09cc81d37 
+klsm                             https://github.com/klsmpq/klsm 1fa9cd0bd0c63a17844fc2954c52b60d8f71f340 
+la_vector                        https://github.com/gvinciguerra/la_vector 5ac46b85823f9073345866c33f45ef02d4dff88f 
+marisa-trie                      https://github.com/s-yata/marisa-trie 38180f6d3653cd2c88dd7047711e75f48f84527c 
+multiqueue                       https://github.com/marvinwilliams/multiqueue 9188f0734931c9bf5207aae10269743478204899 
+PAM                              https://github.com/cmuparlay/PAM 3574543ad84c34acb22edbeecb9d11a97a5eb87d 
+parlaylib                        https://github.com/cmuparlay/parlaylib 51017699dcc421f80479cdb238d3092233ad0d26 
+path_decomposed_tries            https://github.com/ot/path_decomposed_tries 31959b3b7f8a37a5047cdf669a869b444ced8f31 
+SprayList                        https://github.com/jkopinsky/SprayList e6c851d93156646efa4ce0a9dbdb2e1a3e8d3693 
+tx-trie                          https://github.com/hillbig/tx-trie f7a2f1cbb6e184ceb588cae7df15a8a638b6bc73 
+BBHash                           https://github.com/rizkg/BBHash 67454955fc54b49b48de504ebd15f57237470544 tag v1.0.0
+fastfilter_cpp                   https://github.com/FastFilter/fastfilter_cpp 7c5bf187d5096ccbcec6a16e02975d0af3328b01 
+libcuckoo                        https://github.com/efficient/libcuckoo 0dd0b4d68fef76791a17950fde1a24f2328a58fe 
+pthash                           https://github.com/jermp/pthash aea56137938e03b0b35ebd046f917b0d73169ce1 
+rapidhash                        https://github.com/Nicoshev/rapidhash bc4b4baa48a15ff52ff4725e1ccdcda62815221c tag rapidhash_v3
+robin-map                        https://github.com/Tessil/robin-map bd14e6830a1474fed9d2d03f5c3b0683d818d540 tag v1.4.1
+sux                              https://github.com/vigna/sux 568903f1b7957ef03620ebad65d6ef68e031fef9 
+unordered_dense                  https://github.com/martinus/unordered_dense 7c58a8b7a48e790fe72f6508eb3b46317cbba9d5 tag v5.3.3
+wyhash                           https://github.com/wangyi-fudan/wyhash ea3b25e1aef55d90f707c3a292eeb9162e2615d8 tag wyhash_final4
+xor_singleheader                 https://github.com/FastFilter/xor_singleheader 5426b7d84994ecf60e596fde8ae70bc1ae7a9720 tag v2.2.1
+xxHash                           https://github.com/Cyan4973/xxHash e626a72bc2321cd320e953a0ccf1584cad60f363 tag v0.8.3
+crumsort                         https://github.com/scandum/crumsort d21d7c3aa13212c234967a9aaf037690825916be 
+fluxsort                         https://github.com/scandum/fluxsort 93aac374c1bec5265efd3b8a593a0c2246473ea3 
+pthash/external/bits             https://github.com/jermp/bits f5498a856f13e657d62c78afa22448c16d335972 
+pthash/external/cmd_line_parser  https://github.com/jermp/cmd_line_parser 89ab616e01b50dcf492cd5a8e0b4973e65e636bc 
+pthash/external/mm_file          https://github.com/jermp/mm_file 5b5291360488095ce3617c48af0f5145fdf9e710 
+pthash/external/xxHash           https://github.com/Cyan4973/xxHash d4ad85e4afaad5c780f54db1dc967fff5a869ffd 
+knuth-dlx1                       https://www-cs-faculty.stanford.edu/~knuth/programs/dlx1.w sha256:a5ca5db64c2efe759bdb134ff257a883283f29178b98d526a3f36f06b1ffb697 
+knuth-dlx2                       https://www-cs-faculty.stanford.edu/~knuth/programs/dlx2.w sha256:02333262bfc49008cb132ee68efbad72157fec3722ea7b7c004e67dd98b5bcdb 
+knuth-ssxcc                      https://www-cs-faculty.stanford.edu/~knuth/programs/ssxcc.w sha256:39c5c048cdb2ac9b69e28911216411ffef3f6c863e125e6222da20957aebfe3b 
+sgb-gb_flip                      ftp://ftp.cs.stanford.edu/pub/sgb/sgb.tar.gz sha256:f2e2784b083db9d7b2cc705d34e9e8b4fdf9cc6dcd0d2dfe0c88a3875482017a (gb_flip.w and boilerplate.w for dlx1/dlx2/ssxcc)
+# pre-existing in ~/opt/src without git metadata (copied earlier, origin not recorded): gapbs gbbs gsl-2.8 pwm sdsl-lite (SDSL v3.0.5) sorting/ips4o sorting/ips2ra sorting/ska_sort sorting/x86-simd-sort
+# system packages (Ubuntu 24.04): libtbb-dev 2021.11.0, libeigen3-dev 3.4.0, libboost-dev 1.83.0
+pthash/external/bits/external/doctest https://github.com/doctest/doctest ae7a13539fb71f270b87eb2e874fbac80bc8dda2
+pthash/external/bits/external/essentials https://github.com/jermp/essentials 9da682ff4809ed6a45b81a6785313a9b60e50699

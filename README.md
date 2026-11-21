@@ -40,87 +40,160 @@ it.
 ## Performance
 
 The table below compares the engineered structures of ADS with those of
-the standard library (libstdc++), of Boost 1.83 and of GMP 6.3.0, as
-measured by the benchmarks in
-[`bench/`](bench/) (`make bench`). `BigInteger` and `Rational` run on GMP,
-and `gemm()` on a CBLAS, wherever the library is found, at every size (see
-the section Use), and the benchmarks measure them as they are built, i.e.,
-on the backends; the rows marked `own` measure the code of the book that
-runs without them (`bench-bignum-own` and `bench-matrix-own`, built when
-the backends are on). These were run twice
-on an otherwise idle Intel Xeon Gold 5120 at 2.2 GHz, on one core pinned
-by `taskset`, with g++ 13.3 at `-O3 -march=native`; GMP was configured for
-that processor. Each cell
-of a benchmark is the median of 11 runs, and the clock does not include
-the building of the input. A row gives the time of the library divided
-by that of ADS (above 1 when ADS is faster), as the median and the range
-over the cells of the benchmark, i.e., its cases (e.g., random, sorted or
-few distinct keys for the sorts) and its sizes ($10^5$ and $10^6$ items
-for the containers). When a library has more than one candidate, the time
-of a cell is that of the fastest of them (e.g., the faster of
-`boost::pdqsort` and `boost::spreadsort`). The same code measured twice
-differs by 1.1% in the median cell and by 4.3% at the 90th percentile,
-over the 1544 cells of the two runs; the largest differences, up to 50%,
-are in cells of a few hundred nanoseconds, where they are the resolution
-of the clock. Hence, a ratio between 0.95 and 1.05 is usually a tie.
+the standard library (libstdc++), of Boost 1.83, of GMP 6.3.0 and of the
+libraries specialized in each area, as measured by the benchmarks in
+[`bench/`](bench/) (`make bench`). Among the latter are IPS4o and scandum
+for the sorts, sdsl, sux and pasta for the succinct structures, and
+libsais for the suffix arrays. `BigInteger` and `Rational` run on GMP, and `gemm()` on a CBLAS,
+wherever the library is found (see the section Use), and the benchmarks
+measure them as they are built, i.e., on the backends; the rows marked
+`own` in [`results/`](results/README.md) measure the code of the book that
+runs without them. All the benchmarks were run once on a shared AMD EPYC
+9654 (Zen 4) with g++ 13.3 at `-O3 -march=native`. Each structure ran in a
+separate process pinned by `taskset` to core 178, its SMT sibling left
+idle, with the memory bound by `numactl` to the NUMA node of that core,
+while other programs ran on the other node. A structure was measured only
+after no other process had run on its cores for 5 minutes, and measured
+again when one appeared during its run. Until 15:22 UTC of the first day
+these checks covered cores 168 to 191 and their siblings, and afterwards
+only the cores measured, since unbound processes of others kept the former
+busy; hence, the third level of the cache, which core 178 shares with 7
+others, may have been shared with other programs for part of the run. In
+each benchmark, a cell is the median of 11 runs, and the clock does not
+include the building of the input.
+
+A row takes the structure of ADS that is compared with the most libraries
+in its benchmark. It gives the time of the standard library divided by
+that of ADS, and the same ratio for the strongest library, i.e., the one
+of the smallest median (above 1 when ADS is faster). Both are the median
+and the range over the cells of the benchmark, i.e., its cases (e.g.,
+random, sorted or few distinct keys for the sorts) and its sizes ($10^5$
+and $10^6$ items for the containers). When a library has more than one candidate,
+the time of a cell is that of the fastest of them (e.g., the faster of
+IPS4o and IPS2Ra). The first structure of each benchmark was run a second
+time (the rows "A/A" of [`results/`](results/README.md)): the two runs
+differ by 0.3% in the median cell and by 2.2% at the 90th percentile, over
+2116 cells. Larger differences, up to 33%, are in cells of a few
+nanoseconds (the transposes, the FM-indices and the edit distance of short
+strings), where they are the resolution of the clock; hence, a ratio
+between 0.97 and 1.03 is usually a tie.
 
 <table>
-<tr><th>benchmark</th><th>ADS</th><th>against</th><th>cells</th><th>median</th><th>range</th></tr>
-<tr><td rowspan="4">sort double</td><td rowspan="2"><code>ADS::sort</code></td><td>std</td><td align="right">12</td><td align="right">8.83</td><td align="right">1.95 to 32</td></tr>
-<tr><td>Boost</td><td align="right">12</td><td align="right">2.20</td><td align="right">0.93 to 14</td></tr>
-<tr><td rowspan="2"><code>ADS::stableSort</code></td><td>std</td><td align="right">12</td><td align="right">4.35</td><td align="right">1.67 to 25</td></tr>
-<tr><td>Boost</td><td align="right">12</td><td align="right">1.20</td><td align="right">0.88 to 3.01</td></tr>
-<tr><td rowspan="4">sort int64</td><td rowspan="2"><code>ADS::sort</code></td><td>std</td><td align="right">12</td><td align="right">14</td><td align="right">1.95 to 39</td></tr>
-<tr><td>Boost</td><td align="right">12</td><td align="right">3.52</td><td align="right">0.84 to 17</td></tr>
-<tr><td rowspan="2"><code>ADS::stableSort</code></td><td>std</td><td align="right">12</td><td align="right">13</td><td align="right">2.33 to 32</td></tr>
-<tr><td>Boost</td><td align="right">12</td><td align="right">1.40</td><td align="right">0.71 to 26</td></tr>
-<tr><td rowspan="4">sort record</td><td rowspan="2"><code>ADS::sort</code></td><td>std</td><td align="right">12</td><td align="right">2.33</td><td align="right">1.10 to 6.60</td></tr>
-<tr><td>Boost</td><td align="right">12</td><td align="right">1.00</td><td align="right">0.98 to 1.02</td></tr>
-<tr><td rowspan="2"><code>ADS::stableSort</code></td><td>std</td><td align="right">12</td><td align="right">5.53</td><td align="right">0.75 to 32</td></tr>
-<tr><td>Boost</td><td align="right">12</td><td align="right">0.98</td><td align="right">0.57 to 1.16</td></tr>
-<tr><td rowspan="4">sort string</td><td rowspan="2"><code>ADS::sort</code></td><td>std</td><td align="right">12</td><td align="right">3.36</td><td align="right">1.67 to 5.15</td></tr>
-<tr><td>Boost</td><td align="right">12</td><td align="right">1.45</td><td align="right">0.90 to 2.20</td></tr>
-<tr><td rowspan="2"><code>ADS::stableSort</code></td><td>std</td><td align="right">12</td><td align="right">2.37</td><td align="right">1.68 to 6.10</td></tr>
-<tr><td>Boost</td><td align="right">12</td><td align="right">2.76</td><td align="right">1.34 to 5.62</td></tr>
-<tr><td rowspan="4">sort uint32</td><td rowspan="2"><code>ADS::sort</code></td><td>std</td><td align="right">12</td><td align="right">15</td><td align="right">3.90 to 36</td></tr>
-<tr><td>Boost</td><td align="right">12</td><td align="right">3.93</td><td align="right">0.75 to 16</td></tr>
-<tr><td rowspan="2"><code>ADS::stableSort</code></td><td>std</td><td align="right">12</td><td align="right">13</td><td align="right">1.34 to 41</td></tr>
-<tr><td>Boost</td><td align="right">12</td><td align="right">1.03</td><td align="right">0.63 to 36</td></tr>
-<tr><td rowspan="3">dictionaries</td><td rowspan="2"><code>ADS::FlatHashTable</code></td><td>std</td><td align="right">8</td><td align="right">5.47</td><td align="right">4.32 to 16</td></tr>
-<tr><td>Boost</td><td align="right">8</td><td align="right">0.93</td><td align="right">0.75 to 1.16</td></tr>
-<tr><td rowspan="1"><code>ADS::RedBlackTree</code></td><td>std</td><td align="right">8</td><td align="right">1.45</td><td align="right">1.00 to 2.38</td></tr>
-<tr><td rowspan="3">priority</td><td rowspan="2"><code>ADS::DaryHeap d=4</code></td><td>std</td><td align="right">6</td><td align="right">1.62</td><td align="right">1.38 to 2.17</td></tr>
-<tr><td>Boost</td><td align="right">6</td><td align="right">1.04</td><td align="right">0.87 to 1.68</td></tr>
-<tr><td rowspan="1"><code>ADS::FibonacciHeapPriorityQueue</code></td><td>Boost</td><td align="right">6</td><td align="right">0.61</td><td align="right">0.54 to 0.86</td></tr>
-<tr><td rowspan="3">sequences</td><td rowspan="1"><code>ADS::ArraySequence</code></td><td>std</td><td align="right">6</td><td align="right">1.05</td><td align="right">1.00 to 1.12</td></tr>
-<tr><td rowspan="1"><code>ADS::List</code></td><td>std</td><td align="right">6</td><td align="right">1.02</td><td align="right">0.99 to 1.10</td></tr>
-<tr><td rowspan="1"><code>ADS::SinglyList</code></td><td>std</td><td align="right">6</td><td align="right">0.98</td><td align="right">0.86 to 1.03</td></tr>
-<tr><td rowspan="4">bignum</td><td rowspan="2"><code>ADS::BigInteger own</code></td><td>Boost</td><td align="right">12</td><td align="right">4.04</td><td align="right">1.00 to 91</td></tr>
-<tr><td>GMP</td><td align="right">12</td><td align="right">0.33</td><td align="right">0.20 to 1.25</td></tr>
-<tr><td rowspan="2"><code>ADS::Rational own</code></td><td>Boost</td><td align="right">3</td><td align="right">4.74</td><td align="right">1.93 to 6.03</td></tr>
-<tr><td>GMP</td><td align="right">3</td><td align="right">0.42</td><td align="right">0.40 to 0.46</td></tr>
+<tr><th>benchmark</th><th>ADS</th><th>std: median</th><th>range</th><th>strongest</th><th>median</th><th>range</th></tr>
+<tr><td>sort double</td><td><code>ADS::sort</code></td><td align="right">24</td><td align="right">4.08 to 75</td><td>scandum</td><td align="right">1.47</td><td align="right">0.52 to 4.09</td></tr>
+<tr><td>sort int64</td><td><code>ADS::sort</code></td><td align="right">28</td><td align="right">4.05 to 76</td><td>scandum</td><td align="right">1.80</td><td align="right">1.00 to 3.50</td></tr>
+<tr><td>sort record</td><td><code>ADS::sort</code></td><td align="right">5.85</td><td align="right">1.85 to 30</td><td>IPS4o</td><td align="right">1.48</td><td align="right">0.80 to 13</td></tr>
+<tr><td>sort string</td><td><code>ADS::sort</code></td><td align="right">5.28</td><td align="right">3.66 to 7.04</td><td>ska_sort</td><td align="right">1.50</td><td align="right">1.09 to 1.88</td></tr>
+<tr><td>sort uint32</td><td><code>ADS::sort</code></td><td align="right">37</td><td align="right">8.27 to 122</td><td>scandum</td><td align="right">2.54</td><td align="right">1.19 to 3.81</td></tr>
+<tr><td>dictionaries</td><td><code>ADS::FlatHashTable</code></td><td align="right">2.48</td><td align="right">1.00 to 5.36</td><td>Boost</td><td align="right">0.38</td><td align="right">0.28 to 1.10</td></tr>
+<tr><td>priority</td><td><code>ADS::DaryHeap d=4</code></td><td align="right">1.10</td><td align="right">0.89 to 1.98</td><td>Boost</td><td align="right">1.02</td><td align="right">0.99 to 2.07</td></tr>
+<tr><td>sequences</td><td><code>ADS::ArraySequence</code></td><td align="right">1.03</td><td align="right">1.00 to 1.10</td><td>Boost</td><td align="right">1.00</td><td align="right">0.95 to 1.53</td></tr>
+<tr><td>memory</td><td><code>ADS::ObjectPool</code></td><td align="right">8.76</td><td align="right">3.72 to 14</td><td>Boost</td><td align="right">1.67</td><td align="right">1.15 to 11</td></tr>
+<tr><td>allocators</td><td><code>ADS::PoolAllocator concurrent</code></td><td align="right">1.21</td><td align="right">0.54 to 2.16</td><td>mimalloc</td><td align="right">0.82</td><td align="right">0.35 to 1.76</td></tr>
+<tr><td>positions</td><td><code>ADS::PositionIndex</code></td><td align="right">1.14</td><td align="right">0.38 to 2.14</td><td>Boost</td><td align="right">0.88</td><td align="right">0.39 to 1.11</td></tr>
+<tr><td>assembly</td><td><code>ADS::assembleCsc</code></td><td align="right">27</td><td align="right">20 to 48</td><td>Eigen</td><td align="right">1.32</td><td align="right">0.99 to 1.70</td></tr>
+<tr><td>fingerprints</td><td><code>ADS::rowFingerprint</code></td><td align="right">2.54</td><td align="right">1.43 to 4.13</td><td>Boost</td><td align="right">3.50</td><td align="right">0.75 to 4.09</td></tr>
+<tr><td>bignum</td><td><code>ADS::BigInteger</code></td><td></td><td></td><td>GMP</td><td align="right">1.00</td><td align="right">0.76 to 1.13</td></tr>
+<tr><td>hash functions</td><td><code>ADS::FastHash</code></td><td align="right">0.73</td><td align="right">0.61 to 2.94</td><td>Abseil</td><td align="right">0.35</td><td align="right">0.22 to 0.84</td></tr>
+<tr><td>hash maps</td><td><code>ADS::FlatHashTable</code></td><td align="right">2.25</td><td align="right">0.96 to 13</td><td>unordered_dense</td><td align="right">0.52</td><td align="right">0.05 to 1.38</td></tr>
+<tr><td>filters</td><td><code>ADS::CuckooFilter 8</code></td><td></td><td></td><td>fastfilter</td><td align="right">1.32</td><td align="right">0.82 to 2.32</td></tr>
+<tr><td>perfect hashing</td><td><code>ADS::MinimalPerfectHash</code></td><td></td><td></td><td>PTHash</td><td align="right">0.62</td><td align="right">0.49 to 0.72</td></tr>
+<tr><td>search</td><td><code>ADS::StringSearcher</code></td><td align="right">2.50</td><td align="right">0.38 to 331</td><td>libc</td><td align="right">1.87</td><td align="right">0.18 to 384</td></tr>
+<tr><td>suffix array</td><td><code>ADS::suffixArray</code></td><td></td><td></td><td>libsais</td><td align="right">1.03</td><td align="right">0.75 to 3.54</td></tr>
+<tr><td>lcp</td><td><code>ADS::lcpArrayPhi</code></td><td></td><td></td><td>libsais</td><td align="right">1.02</td><td align="right">0.69 to 1.67</td></tr>
+<tr><td>edit distance</td><td><code>ADS::levenshtein</code></td><td></td><td></td><td>rapidfuzz</td><td align="right">1.62</td><td align="right">0.88 to 143</td></tr>
+<tr><td>lcs</td><td><code>ADS::lcsLength</code></td><td></td><td></td><td>rapidfuzz</td><td align="right">1.30</td><td align="right">1.12 to 1.33</td></tr>
+<tr><td>approximate search</td><td><code>ADS::approximateMatches</code></td><td></td><td></td><td>edlib</td><td align="right">1.41</td><td align="right">1.01 to 1.81</td></tr>
+<tr><td>gcd</td><td><code>ADS::binaryGcd</code></td><td align="right">1.34</td><td align="right">0.59 to 2.09</td><td>Boost</td><td align="right">1.10</td><td align="right">1.05 to 1.15</td></tr>
+<tr><td>powmod</td><td><code>ADS::powMod</code></td><td></td><td></td><td>hurchalla</td><td align="right">0.40</td><td align="right">0.36 to 0.87</td></tr>
+<tr><td>isprime</td><td><code>ADS::isPrime</code></td><td></td><td></td><td>hurchalla</td><td align="right">0.35</td><td align="right">0.27 to 0.94</td></tr>
+<tr><td>factorize</td><td><code>ADS::factorize</code></td><td></td><td></td><td>hurchalla</td><td align="right">0.15</td><td align="right">0.08 to 0.23</td></tr>
+<tr><td>generators</td><td><code>ADS::Xoshiro256</code></td><td align="right">2.05</td><td align="right">1.99 to 2.11</td><td>PCG</td><td align="right">1.18</td><td align="right">1.14 to 1.21</td></tr>
+<tr><td>discrete</td><td><code>ADS::AliasTable</code></td><td align="right">8.22</td><td align="right">4.94 to 12</td><td>Boost</td><td align="right">1.48</td><td align="right">1.40 to 1.56</td></tr>
+<tr><td>bounded</td><td><code>ADS::uniformBelow</code></td><td align="right">0.64</td><td align="right">0.64 to 0.64</td><td>Boost</td><td align="right">1.02</td><td align="right">1.01 to 1.02</td></tr>
+<tr><td>shuffle</td><td><code>ADS::shuffleFast</code></td><td align="right">0.61</td><td align="right">0.60 to 0.61</td><td></td><td></td><td></td></tr>
+<tr><td>sampling</td><td><code>ADS::sampleBySkips</code></td><td align="right">67</td><td align="right">7.61 to 9988</td><td></td><td></td><td></td></tr>
+<tr><td>queue</td><td><code>ADS::RingDeque</code></td><td align="right">1.54</td><td align="right">1.41 to 1.56</td><td>Boost</td><td align="right">1.43</td><td align="right">1.00 to 2.03</td></tr>
+<tr><td>deque</td><td><code>ADS::RingDeque</code></td><td align="right">1.10</td><td align="right">1.10 to 1.10</td><td>Boost</td><td align="right">0.96</td><td align="right">0.96 to 0.97</td></tr>
+<tr><td>stack</td><td><code>ADS::RingDeque</code></td><td align="right">0.97</td><td align="right">0.94 to 0.99</td><td>Boost</td><td align="right">2.20</td><td align="right">2.05 to 2.35</td></tr>
+<tr><td>spsc</td><td><code>ADS::SPSCQueue</code></td><td></td><td></td><td>rigtorp</td><td align="right">0.89</td><td align="right">0.73 to 1.04</td></tr>
+<tr><td>mpsc</td><td><code>ADS::MPSCInbox</code></td><td></td><td></td><td>moodycamel</td><td align="right">0.21</td><td align="right">0.19 to 0.23</td></tr>
+<tr><td>hull</td><td><code>ADS::convexHull</code></td><td></td><td></td><td>CGAL</td><td align="right">4.39</td><td align="right">2.61 to 8.40</td></tr>
+<tr><td>gemm</td><td><code>ADS::gemm</code></td><td></td><td></td><td>OpenBLAS</td><td align="right">1.00</td><td align="right">1.00 to 1.00</td></tr>
+<tr><td>transpose</td><td><code>ADS::transpose</code></td><td></td><td></td><td>Eigen</td><td align="right">1.85</td><td align="right">0.94 to 4.94</td></tr>
+<tr><td>spmv</td><td><code>ADS::CsrMatrix</code></td><td></td><td></td><td>Eigen</td><td align="right">1.01</td><td align="right">0.94 to 1.05</td></tr>
+<tr><td>sptranspose</td><td><code>ADS::CsrMatrix</code></td><td></td><td></td><td>Eigen</td><td align="right">1.02</td><td align="right">0.75 to 1.74</td></tr>
+<tr><td>bitvector</td><td><code>ADS::RankSelect</code></td><td></td><td></td><td>sdsl</td><td align="right">1.11</td><td align="right">0.12 to 26</td></tr>
+<tr><td>rrr</td><td><code>ADS::RRRBitVector</code></td><td></td><td></td><td>sdsl</td><td align="right">1.24</td><td align="right">0.81 to 7.56</td></tr>
+<tr><td>eliasfano</td><td><code>ADS::EliasFano</code></td><td></td><td></td><td>sux</td><td align="right">0.75</td><td align="right">0.60 to 8.01</td></tr>
+<tr><td>parentheses</td><td><code>ADS::BalancedParentheses</code></td><td></td><td></td><td>succinct</td><td align="right">1.33</td><td align="right">1.01 to 15</td></tr>
+<tr><td>wavelet</td><td><code>ADS::WaveletMatrix</code></td><td></td><td></td><td>sdsl</td><td align="right">1.23</td><td align="right">0.87 to 11</td></tr>
+<tr><td>dac</td><td><code>ADS::DirectAccessCodes</code></td><td></td><td></td><td>sdsl</td><td align="right">0.43</td><td align="right">0.38 to 0.46</td></tr>
+<tr><td>entropy</td><td><code>ADS::huffmanCompress</code></td><td></td><td></td><td>huff0</td><td align="right">0.93</td><td align="right">0.85 to 1.36</td></tr>
+<tr><td>integers</td><td><code>ADS::binaryPack</code></td><td></td><td></td><td>FastPFor</td><td align="right">0.17</td><td align="right">0.05 to 1.08</td></tr>
+<tr><td>bwt</td><td><code>ADS::bwt</code></td><td></td><td></td><td>libsais</td><td align="right">0.18</td><td align="right">0.12 to 0.28</td></tr>
+<tr><td>rindex</td><td><code>ADS::RIndex</code></td><td></td><td></td><td>sdsl</td><td align="right">0.95</td><td align="right">0.19 to 16</td></tr>
+<tr><td>fmindex</td><td><code>ADS::FMIndex</code></td><td></td><td></td><td>sdsl</td><td align="right">1.42</td><td align="right">0.47 to 3.22</td></tr>
+<tr><td>lz</td><td><code>ADS::lzssParseHashed</code></td><td></td><td></td><td>LZ4</td><td align="right">0.10</td><td align="right">0.07 to 0.11</td></tr>
+<tr><td>space</td><td><code>ADS::RankSelect</code></td><td></td><td></td><td>pasta</td><td align="right">0.68</td><td align="right">0.66 to 0.70</td></tr>
+<tr><td>multiway merge</td><td><code>ADS::multiwayMerge</code></td><td align="right">2.38</td><td align="right">1.88 to 3.35</td><td>tlx</td><td align="right">1.72</td><td align="right">0.95 to 2.07</td></tr>
+<tr><td>book mergesort</td><td><code>ADS::FlatLoserTree</code></td><td align="right">1.24</td><td align="right">1.15 to 1.28</td><td>Boost</td><td align="right">1.11</td><td align="right">1.06 to 1.15</td></tr>
+<tr><td>bfs</td><td><code>ADS StaticGraph ArrayQueue</code></td><td align="right">1.05</td><td align="right">0.79 to 1.66</td><td>Boost</td><td align="right">0.97</td><td align="right">0.79 to 1.06</td></tr>
+<tr><td>bfm</td><td><code>ADS StaticGraph ArrayQueue</code></td><td align="right">1.03</td><td align="right">0.94 to 1.06</td><td>Boost</td><td align="right">0.95</td><td align="right">0.93 to 1.04</td></tr>
+<tr><td>scc</td><td><code>ADS StaticGraph</code></td><td align="right">1.04</td><td align="right">1.01 to 1.10</td><td>Boost</td><td align="right">1.05</td><td align="right">1.02 to 1.09</td></tr>
+<tr><td>kruskal</td><td><code>ADS UnionFind</code></td><td></td><td></td><td>Boost</td><td align="right">1.01</td><td align="right">1.00 to 1.07</td></tr>
+<tr><td>union-find</td><td><code>ADS UnionFind</code></td><td></td><td></td><td>Boost</td><td align="right">1.09</td><td align="right">1.09 to 1.09</td></tr>
+<tr><td>dijkstra</td><td><code>ADS StaticGraph IndexedDaryHeap<4></code></td><td align="right">2.69</td><td align="right">1.26 to 4.68</td><td>Boost</td><td align="right">1.44</td><td align="right">1.00 to 1.90</td></tr>
+<tr><td>prim</td><td><code>ADS StaticGraph IndexedDaryHeap<4></code></td><td align="right">4.37</td><td align="right">2.21 to 6.25</td><td>Boost</td><td align="right">1.54</td><td align="right">0.94 to 2.17</td></tr>
+<tr><td>concurrent maps</td><td><code>ADS::ConcurrentCuckooTable</code></td><td align="right">1.72</td><td align="right">1.12 to 3.97</td><td>Boost</td><td align="right">0.57</td><td align="right">0.40 to 0.89</td></tr>
+<tr><td>popcount</td><td><code>ADS::popcount</code></td><td align="right">0.98</td><td align="right">0.96 to 1.00</td><td>libpopcnt</td><td align="right">0.95</td><td align="right">0.91 to 0.98</td></tr>
+<tr><td>morton</td><td><code>ADS::mortonEncode</code></td><td></td><td></td><td>libmorton</td><td align="right">1.30</td><td align="right">1.06 to 1.55</td></tr>
+<tr><td>permutations</td><td><code>ADS::forEachPermutation</code></td><td align="right">2.16</td><td align="right">2.15 to 2.16</td><td>Hinnant</td><td align="right">2.17</td><td align="right">2.17 to 2.18</td></tr>
+<tr><td>combinations</td><td><code>ADS::forEachCombination</code></td><td align="right">7.68</td><td align="right">6.13 to 32</td><td>Hinnant</td><td align="right">2.28</td><td align="right">2.25 to 2.32</td></tr>
+<tr><td>exact cover</td><td><code>ADS::FastExactCover</code></td><td></td><td></td><td>Knuth</td><td align="right">0.92</td><td align="right">0.79 to 1.07</td></tr>
+<tr><td>book cdcl</td><td><code>ADS::DaryHeap d=4</code></td><td align="right">1.00</td><td align="right">0.97 to 1.03</td><td>Boost</td><td align="right">0.97</td><td align="right">0.96 to 0.99</td></tr>
+<tr><td>book a-star</td><td><code>ADS::FlatHashTable</code></td><td align="right">1.00</td><td align="right">1.00 to 1.00</td><td>Boost</td><td align="right">0.95</td><td align="right">0.95 to 0.95</td></tr>
+<tr><td>book subset sum</td><td><code>ADS::BitVector</code></td><td align="right">1.61</td><td align="right">1.61 to 1.61</td><td>Boost</td><td align="right">0.95</td><td align="right">0.95 to 0.95</td></tr>
+<tr><td>ordered</td><td><code>ADS::BTreeMap</code></td><td align="right">9.52</td><td align="right">2.62 to 55</td><td>Abseil</td><td align="right">2.03</td><td align="right">1.20 to 6.99</td></tr>
+<tr><td>array search</td><td><code>ADS::SPlusTree</code></td><td align="right">2.67</td><td align="right">1.92 to 3.41</td><td>Khuong-Morin</td><td align="right">1.16</td><td align="right">1.00 to 1.42</td></tr>
+<tr><td>select</td><td><code>ADS::nthElement</code></td><td align="right">6.39</td><td align="right">1.09 to 15</td><td>miniselect</td><td align="right">1.50</td><td align="right">0.70 to 6.92</td></tr>
+<tr><td>rmq</td><td><code>ADS::WordRangeMinimum</code></td><td></td><td></td><td>sdsl</td><td align="right">1.22</td><td align="right">0.59 to 27</td></tr>
+<tr><td>intersection</td><td><code>ADS::intersect</code></td><td align="right">1.94</td><td align="right">0.22 to 11</td><td>Lemire</td><td align="right">0.18</td><td align="right">0.09 to 0.56</td></tr>
+<tr><td>mfset</td><td><code>ADS::RemUnionFind</code></td><td></td><td></td><td>Boost</td><td align="right">1.02</td><td align="right">0.80 to 10</td></tr>
+<tr><td>boolset</td><td><code>ADS::BoolSet</code></td><td></td><td></td><td>Roaring</td><td align="right">0.72</td><td align="right">0.42 to 14</td></tr>
+<tr><td>bitmap</td><td><code>ADS::RoaringBitmap</code></td><td></td><td></td><td>Roaring</td><td align="right">1.05</td><td align="right">0.05 to 12</td></tr>
+<tr><td>tries</td><td><code>ADS::AdaptiveRadixTree</code></td><td align="right">1.31</td><td align="right">0.67 to 5.79</td><td>libart</td><td align="right">1.10</td><td align="right">0.70 to 2.12</td></tr>
 </table>
 
-`ADS::sort()` and `ADS::stableSort()` are faster than the standard library
-in almost all the cells, by 2 to 15 times in the median (the radix sorts
-accounting for most of it), and they are often as fast as Boost or faster.
-However, `boost::spinsort` is 1.4 to 1.8 times faster on the stable sort
-of records, of sorted 32-bit keys and of reversed 64-bit keys at $10^5$,
-and `boost::spreadsort` is 1.3 times faster on sorted 32-bit keys.
-`FlatHashTable` is 4 to 16 times faster than `std::unordered_map`, and it
-is on a par with `boost::unordered_flat_map` on the lookups, but for the
-misses among $10^5$ keys (where Boost is 1.15 times faster). Boost is also
-1.3 times faster on the insertions and the visits of $10^5$ keys, and 1.16
-times slower on the insertions of $10^6$. It is fair to remark that the
-libraries built on hand-written kernels stay ahead. On its own code, GMP
-is 2 to 5 times faster than `BigInteger` on products, quotients and
-decimal conversion (twice as fast already at 16 limbs, where both use the
-schoolbook algorithms), and `mpq_class` is 2.2 to 2.5 times faster than
-`Rational`, which is why both run on GMP by default where it is found.
-Also, the Fibonacci heap of Boost is 1.2 to 1.9 times faster than that of
-ADS, which follows the pseudocode of the book. The tables of all the
-structures, those of the book included, are in
-[`results/`](results/README.md) together with the raw files of the two runs.
+`ADS::sort()` is faster than `std::sort` in all the cells, by 5 to 37
+times in the median of each type of key (the radix sorts accounting for
+most of it). It is also faster than the strongest of the other libraries
+in the median of each type, by 1.5 to 2.5 times (scandum on the numbers,
+ska_sort on the strings and IPS4o on the records), although these are up
+to twice as fast on some cells. In several other benchmarks the engineered
+structures are ahead by 1.3 to 2.3 times in the median, e.g., the B-tree
+against that of Abseil, the selection against miniselect, the multiway
+merge against tlx, and the alias table, the stack and the shortest paths
+and spanning trees against Boost. So are the transposes and the assembly
+of sparse matrices against Eigen, and the edit distances against rapidfuzz
+and edlib. On the graphs, the union-find, the sequences, the priority
+queues, the suffix and LCP arrays and the products of sparse matrices,
+ADS is usually within 10% of the other libraries. It is fair to remark,
+however, that ADS loses where the other libraries have kernels engineered
+for one task. FastPFor packs integers 6 times faster than `binaryPack()`
+in the median, and LZ4 is 10 times faster than the LZSS of ADS; libsais
+builds the BWT, and the SIMD intersections of Lemire intersect, 5.6 times
+faster than `bwt()` and `intersect()`. Also, the modular arithmetic of
+hurchalla is 2.5 to 7 times faster on `powMod()`, `isPrime()` and
+`factorize()`. In the hash tables, `FlatHashTable` is 2.6 times slower
+than `boost::unordered_flat_map` in the median, mostly on the lookups
+(e.g., 10.4 against 3.6 ns on hits among $10^5$ keys), and 1.9 times
+slower than unordered_dense. Furthermore, `FastHash` is 2.9 times slower
+than the hash of Abseil, `MinimalPerfectHash` answers 1.6 times slower
+than PTHash, `MPSCInbox` is 4.8 times slower than the queue of moodycamel,
+and `ConcurrentCuckooTable` is 1.8 times slower than the concurrent map of
+Boost. The tables of all the structures, those of the book included, are
+in [`results/`](results/README.md) together with the raw file of the run.
 
 ## Layout
 
@@ -847,40 +920,40 @@ by best first a `std::priority_queue` under a lock per worker, of which a
 thief takes half, and the shared queues of oneTBB and of ADS. Each
 structure runs
 in a process of its own, since the threads that a runtime keeps spinning
-between its calls would slow down the next structure. The benchmark was run
-twice on 8 cores of the Xeon Gold 5120 of the table above, with 5 runs per
-cell, while other programs ran on the remaining cores. Their use of the
-memory and of the third level of the cache was not under control, and the
-same code measured twice differs by 1.7% in the median cell and by 8.3% at
-the 90th percentile. The ratios below are those of 8 threads, the time of
-the library divided by that of the pool of ADS (the median, and the range
-over the cells in parentheses). The sorts of ADS are faster than IPS4o and
-IPS2Ra by 1.5 to 1.8 times in the median (0.8 to 15). They are faster than
-ParlayLib by 2.3 to 2.8 times, and than `tbb::parallel_sort` and
-`std::sort` on `std::execution::par` by 6 to 7 times. They lose on few
-cells: 16 sorted runs of $10^6$ integers, which the integer sort of
-ParlayLib sorts 1.3 times faster, few distinct strings and vectors already
-sorted, on which IPS4o is up to 1.3 times faster. On 2 threads the
-distribution costs more than the second thread saves (0.8 times the speed
-of the sequential sort in the median), and the sorts run the sequential one
-there. The parallel `multiwayMerge()` is 1.7 times faster than those of
-libstdc++ and tlx, and 7.4 times faster than its sequential version;
-`gemm()` is 1.2 times faster than Eigen on OpenMP and 7.3 times faster than
-on one thread. The connected components are 2.3 times faster than Afforest
-of the GAP benchmark suite, and the prefix sums 1.3 to 1.6 times faster
-than those of OpenMP, ParlayLib and oneTBB, since they read the input once.
-It is fair to remark, however, that the visit in breadth of the GAP
-benchmark suite, which follows the same algorithm, is 4% faster than
-`bfsDistances()`, and the product of
-sparse matrices by rows of oneTBB is 7% faster than that of `CsrMatrix`.
-The tables of libcuckoo and ParlayLib (the latter open addressing on keys
-alone) find keys 2 and 5 times faster than `ConcurrentCuckooTable` on 8
-threads, since its lookups do not scale as well; it inserts them 1.4 times
-faster than libcuckoo, in a single run of $10^6$ and $4 \cdot 10^6$ keys.
-The same algorithms on the executors of OpenMP and oneTBB run within a few
-percent of the pool. On the executor of FastFlow they are 4% to 70% slower
-on 8 threads, and up to twice as slow on 2, since its caller waits without
-working while its idle workers spin.
+between its calls would slow down the next structure. This benchmark was run once on cores 184 to 191 of the EPYC 9654 of the
+table above, which share the third level of the cache, with their SMT
+siblings left idle, 11 runs per cell and the same checks on the other
+processes. The ratios below are those of 8 threads, the time of the
+library divided by that of the pool of ADS (the median, and the range over
+the cells in parentheses). In the median, the sorts of ADS are faster than
+oneTBB, `std::execution` and the parallel mode of libstdc++ by 1.8 to 4.6
+times, and than ParlayLib by 1.6 to 3.9 times. Against IPS4o they are on a
+par on 64-bit integers (1.01, 0.23 to 3.98), 1.4 times faster on doubles
+and 1.1 times slower on strings (0.89, 0.38 to 0.94), while the stable
+sorts are 1.7 to 5.9 times faster than those of ParlayLib,
+`std::execution` and the parallel mode. Furthermore, the parallel
+`multiwayMerge()` is 1.5 to 1.6 times faster than those of tlx and
+libstdc++, the LCP array 1.9 times faster than that of ParlayLib, and the
+connected components 1.9 times faster than Afforest of the GAP benchmark
+suite. The prefix sums are 1.2 to 1.4 times faster than those of OpenMP,
+ParlayLib and oneTBB, since they read the input once, and the parallel
+builds of the wavelet matrix and of the Huffman wavelet tree are 40 and 9
+times faster than the sequential ones of sdsl. Also, `gemm()` is on a par
+with OpenBLAS, which it calls, and the delta-stepping with that of the GAP
+benchmark suite (1.02, 0.58 to 1.91). It is fair to remark, however, that
+the visit in breadth of the GAP benchmark suite, which follows the same
+algorithm, is 1.7 times faster than `bfsDistances()` (0.59, 0.50 to 0.65),
+and that the reduction and the map of OpenMP are 1.2 to 1.3 times faster
+than those of the pool (0.78 and 0.84, on 2 cells each). In the hash
+tables, the open addressing of ParlayLib (on keys alone) inserts and finds
+keys about 3 times faster than `ConcurrentCuckooTable` (0.36 and 0.34),
+which is also 1.3 times slower than libcuckoo and oneTBB when the table
+grows, and faster than both on the other operations (1.05 to 4.2). On the
+executor of oneTBB the same algorithms run within a few percent of the
+pool, and on those of OpenMP and FastFlow too in most cells. However, the
+sorts of strings are about 1.8 times faster on these two executors than
+on the pool (0.52 to 0.56), and so are the visit in breadth and the
+connected components, by 1.4 to 1.8 times (0.57 to 0.74).
 
 ## Design by contract
 

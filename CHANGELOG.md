@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the tables of the benchmarks in the README and in `results/` are those
+  of a run on an AMD EPYC 9654, with the rows "A/A" of every benchmark for
+  the noise, and `results/` lists the libraries compared with the commit
+  or the checksum of each
+- `bench/summary.py` takes one run, with the noise from its rows "A/A", or
+  two, and with `--short` gives a row per benchmark against the standard
+  library and against the strongest library
 - `FastFlowLock::lock()` retries its test-and-set after the exponential
   backoff of `Backoff`, from pauses of the processor to yields of the
   thread, instead of the busy loop of `ff::spin_lock()`, so that the threads

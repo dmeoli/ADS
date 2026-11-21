@@ -2,15 +2,20 @@
 ###############################################################################
 #                               summary.py                                    #
 #                                                                             #
-# Turns two files of results/, written by two runs of bench/run.sh on the     #
-# same machine, into the summary table at the top of the README: for each     #
-# structure of ADS and each library it is compared with, the ratio of the     #
-# time of the library to that of ADS (above 1 when ADS is faster), as the     #
-# median and the range over the cases and the sizes of its benchmark, each    #
-# cell the mean of the two runs. The noise is the relative difference of      #
-# every cell between the two runs, the same code measured twice (A/A).        #
+# Turns one file of results/ written by bench/run.sh, or two written by two   #
+# runs on the same machine, into the summary table at the top of the README:  #
+# for each structure of ADS and each library it is compared with, the ratio   #
+# of the time of the library to that of ADS (above 1 when ADS is faster), as  #
+# the median and the range over the cases and the sizes of its benchmark,     #
+# each cell the mean of the runs. The noise is the relative difference of the #
+# same code measured twice (A/A): of every cell between the two runs, or, of  #
+# one run, of its rows "A/A", the first structure of a benchmark run again.   #
 #                                                                             #
-#   python3 bench/summary.py results/<run 1>.tsv results/<run 2>.tsv          #
+#   python3 bench/summary.py results/<run>.tsv [results/<run 2>.tsv]          #
+#                                                                             #
+# With --short, a row per sequential benchmark: its structure of ADS against  #
+# the standard library and against the strongest library, the one of the      #
+# smallest median.                                                            #
 ###############################################################################
 
 import statistics
@@ -602,18 +607,63 @@ def read(path):
             k, v = line[2:].split('\t')
             head[k] = v
         elif line:
-            b, case, n, who, ns = line.split('\t')
-            cell[(b, case, int(n), who)] = float(ns)
+            # a line that is not a cell is one a library printed by itself
+            try:
+                b, case, n, who, ns = line.split('\t')
+                cell[(b, case, int(n), who)] = float(ns)
+            except ValueError:
+                pass
     return head, cell
 
 def ratio(x):
     return '%.2f' % x if x < 9.95 else '%.0f' % x
 
-def main(p1, p2):
+def cells(r):
+    # the median and the range of the ratios r
+    return ('<td align="right">%s</td><td align="right">%s to %s</td>' %
+            tuple(map(ratio, r)))
+
+def brief(rows):
+    # a row per sequential benchmark: its structure of ADS compared with the
+    # most libraries, against the standard library and against the library
+    # of the smallest median, i.e., the strongest one
+    print('<table>')
+    print('<tr><th>benchmark</th><th>ADS</th><th>std: median</th>'
+          '<th>range</th><th>strongest</th><th>median</th><th>range</th>'
+          '</tr>')
+    for b, S in rows.items():
+        if b.split()[0] in ('parallel', 'joins', 'greedy', 'runtime'):
+            continue
+        ads = max(S, key=lambda a: (len(S[a]), sum(r[1] for r in S[a])))
+        std = [r for r in S[ads] if r[0] == 'std']
+        rest = [r for r in S[ads] if r[0] != 'std'
+                and not r[0].startswith('ADS')]
+        line = '<tr><td>%s</td><td><code>%s</code></td>' % (b, ads)
+        line += cells(std[0][2:]) if std else '<td></td><td></td>'
+        if rest:
+            r = min(rest, key=lambda r: r[2])
+            line += '<td>%s</td>' % r[0] + cells(r[2:])
+        else:
+            line += '<td></td><td></td><td></td>'
+        print(line + '</tr>')
+    print('</table>')
+
+def main(p1, p2=None, short=False):
     h1, c1 = read(p1)
-    h2, c2 = read(p2)
+    if p2 is None:
+        # the one run: the noise from its rows "A/A", left out of the cells
+        h2 = h1
+        aa = {k[:3] + (k[3][:-4],): v for k, v in c1.items()
+              if k[3].endswith(' A/A')}
+        c1 = {k: v for k, v in c1.items() if not k[3].endswith(' A/A')}
+        c2 = c1
+        d = sorted(abs(v - c1[k]) / c1[k] for k, v in aa.items()
+                   if k in c1 and c1[k] > 0 and v > 0)
+    else:
+        h2, c2 = read(p2)
     both = [k for k in c1 if k in c2 and c1[k] > 0 and c2[k] > 0]
-    d = sorted(abs(c2[k] - c1[k]) / c1[k] for k in both)
+    if p2 is not None:
+        d = sorted(abs(c2[k] - c1[k]) / c1[k] for k in both)
     print('- machine: %s, one core of %s (core %s), %s' %
           (h1['machine'], h1['cores'], h1['core'], h1['compiler']))
     print('- each cell the median of %s runs; load %s at the start, %s at '
@@ -640,10 +690,10 @@ def main(p1, p2):
                     R.append(min(t) / v)
             if R:
                 rows.setdefault(b, {}).setdefault(ads, []).append(
-                    '<td>%s</td><td align="right">%d</td><td align="right">'
-                    '%s</td><td align="right">%s to %s</td>' %
-                    (lib, len(R), ratio(statistics.median(R)),
-                     ratio(min(R)), ratio(max(R))))
+                    (lib, len(R), statistics.median(R), min(R), max(R)))
+    if short:
+        brief(rows)
+        return
     # an HTML table, which GitHub renders, so that a benchmark and a
     # structure span their rows
     print('<table>')
@@ -655,12 +705,15 @@ def main(p1, p2):
             for k, r in enumerate(R):
                 print('<tr>' + first +
                       ('<td rowspan="%d"><code>%s</code></td>' %
-                       (len(R), ads) if k == 0 else '') + r + '</tr>')
+                       (len(R), ads) if k == 0 else '') +
+                      '<td>%s</td><td align="right">%d</td>' % r[:2] +
+                      cells(r[2:]) + '</tr>')
                 first = ''
     print('</table>')
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2])
+    short = '--short' in sys.argv
+    main(*[a for a in sys.argv[1:] if a != '--short'], short=short)
 
 ###############################################################################
 #                            End of summary.py                                #
