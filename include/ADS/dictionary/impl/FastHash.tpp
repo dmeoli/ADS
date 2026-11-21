@@ -34,7 +34,8 @@ inline constexpr std::uint64_t kHashK[ 7 ] = {
 
 /// the word of 8 bytes from p, little-endian on every system, so that the
 /// hash of a string is the same on every system
-[[nodiscard]] inline std::uint64_t read64( const unsigned char * p )
+[[nodiscard]] ADS_ALWAYS_INLINE std::uint64_t
+read64( const unsigned char * p )
 {
  std::uint64_t w;
  std::memcpy( &w , p , 8 );
@@ -44,7 +45,8 @@ inline constexpr std::uint64_t kHashK[ 7 ] = {
  }
 
 /// the word of 4 bytes from p, little-endian on every system
-[[nodiscard]] inline std::uint64_t read32( const unsigned char * p )
+[[nodiscard]] ADS_ALWAYS_INLINE std::uint64_t
+read32( const unsigned char * p )
 {
  std::uint32_t w;
  std::memcpy( &w , p , 4 );

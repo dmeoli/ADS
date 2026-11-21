@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   thread, instead of the busy loop of `ff::spin_lock()`, so that the threads
   waiting for a holder preempted by the system do not spin through their
   quanta
+- `foldedProduct()`, `hashWord()` and the cases of `hashBytes()` up to 64
+  bytes are always inlined, the strings of more than 64 bytes hashed out
+  of line as before, since GCC kept them as calls in the loops of the
+  tables and of the filters
 - `detail::wideProductHalves()` is always inlined and returns the two
   words of the product in a `detail::WordPair` instead of writing the high
   one through a reference, which GCC kept on the stack of a call

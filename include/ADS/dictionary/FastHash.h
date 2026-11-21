@@ -134,13 +134,13 @@ product128( std::uint64_t a , std::uint64_t b );
 /// the folded product: the low half of \f$ a b \f$ on 128 bits XOR its
 /// high half,
 /// \f$ ( a b \bmod 2^{64} ) \oplus \lfloor a b / 2^{64} \rfloor \f$
-[[nodiscard]] constexpr std::uint64_t foldedProduct( std::uint64_t a ,
-						     std::uint64_t b );
+[[nodiscard]] ADS_ALWAYS_INLINE constexpr std::uint64_t
+foldedProduct( std::uint64_t a , std::uint64_t b );
 
 /// the hash of the word \f$ x \f$ under the seed, the folded product of
 /// \f$ x \f$ and of the seed XOR a constant
-[[nodiscard]] constexpr std::uint64_t hashWord( std::uint64_t x ,
-						std::uint64_t seed = 0 );
+[[nodiscard]] ADS_ALWAYS_INLINE constexpr std::uint64_t
+hashWord( std::uint64_t x , std::uint64_t seed = 0 );
 
 /// the hash of the \f$ n \f$ bytes from \f$ p \f$ under the seed
 ///
@@ -169,9 +169,11 @@ product128( std::uint64_t a , std::uint64_t b );
 /// 10 & \quad \textbf{return}\ g \text{ of the lanes folded by 4 products}
 /// \end{array}}
 /// \f]
+/// The cases up to 64 bytes are always inlined, the longer strings are
+/// hashed out of line.
 /// \pre \f$ p \f$ is not nil if \f$ n > 0 \f$
-[[nodiscard]] std::uint64_t hashBytes( const void * p , std::size_t n ,
-				       std::uint64_t seed = 0 );
+[[nodiscard]] ADS_ALWAYS_INLINE std::uint64_t
+hashBytes( const void * p , std::size_t n , std::uint64_t seed = 0 );
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS FastHash ------------------------------*/
