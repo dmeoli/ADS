@@ -60,7 +60,13 @@ only the cores measured, since unbound processes of others kept the former
 busy; hence, the third level of the cache, which core 178 shares with 7
 others, may have been shared with other programs for part of the run. In
 each benchmark, a cell is the median of 11 runs, and the clock does not
-include the building of the input.
+include the building of the input. It is worth noting that the benchmarks
+of this run were built without Highway (`ADS_WITH_HIGHWAY`), and hence the
+structures with a vector kernel (e.g., the integer codes, the
+intersections, `BoolSet`, the rank and select of `BitVector`, the filters
+and `FastHash`) ran their portable code, while the libraries compared ran
+their own vector code; the parallel benchmarks were also built without
+hwloc, and hence the workers of the pool were not bound to the cores.
 
 A row takes the structure of ADS that is compared with the most libraries
 in its benchmark. It gives the time of the standard library divided by

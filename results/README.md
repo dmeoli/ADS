@@ -26,7 +26,8 @@ node of the machine. The benchmarks keep the code of ADS where a
 structure would otherwise run on Boost or on LEMON (e.g., `PointerTable`
 and `FlatHashTable`, which a build with Boost puts on
 `boost::unordered_flat_set` and `boost::unordered_flat_map`), so that the
-rows of Boost are what such a build gets. The files `frangioni-*.tsv` are two earlier runs on an
+rows of Boost are what such a build gets. The benchmarks were built without
+Highway and, the parallel ones, without hwloc (see the README). The files `frangioni-*.tsv` are two earlier runs on an
 Intel Xeon Gold 5120, with fewer benchmarks.
 
 - machine: AMD EPYC 9654 96-Core Processor
