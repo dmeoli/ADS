@@ -44,57 +44,66 @@ inline void InterleavedRankSelect::build( const Word * w , std::size_t n )
    x |= w[ q + 1 ] << ( 64 - o );
   return( x & detail::lowMask( len ) );
   };
- // the bits of each line from its bit 16, then its count since its
- // superblock in its bits 0 to 15
+ // a superblock at a time, its lines in the L1 cache: first the bits of
+ // each line from its bit 16, a loop with no dependence between the lines,
+ // then the count of each line since its superblock in its bits 0 to 15
+ // and the samples, the 1s carried from a line to the next
  std::size_t c = 0 , next[ 2 ] = { 1 , 1 };
  const std::size_t nw = ( n + 63 ) / 64;
- for( std::size_t l = 0 ; l < lines ; ++l ) {
-  Word * W = f_L.data() + 8 * l;
-  const std::size_t q = l * kData / 64;
-  const unsigned o = unsigned( l * kData % 64 );
-  if( q + 8 < nw ) {
-   // the 8 pieces from the words q to q + 8, the shift the same for all
-   // (the bits past the 496 of the line are cleared below)
-   Word x[ 8 ];
-   for( std::size_t k = 0 ; k < 8 ; ++k )
-    x[ k ] = ( w[ q + k ] >> o ) | ( ( w[ q + k + 1 ] << 1 ) << ( 63 - o ) );
-   W[ 0 ] = x[ 0 ] << 16;
-   for( std::size_t k = 1 ; k < 8 ; ++k )
-    W[ k ] = ( x[ k ] << 16 ) | ( x[ k - 1 ] >> 48 );
-   }
-  else {
-   std::fill( W , W + 8 , Word( 0 ) );
-   for( std::size_t k = 0 ; k < 8 ; ++k ) {
-    const std::size_t off = l * kData + 64 * k;
-    if( off >= n )
-     break;
-    const int len = int( std::min< std::size_t >( k < 7 ? 64 : 48 ,
-						  n - off ) );
-    const Word piece = read( off , len );
-    W[ k ] |= piece << 16;
-    if( k < 7 )
-     W[ k + 1 ] |= piece >> 48;
+ for( std::size_t l0 = 0 ; l0 < lines ; l0 += kLines ) {
+  const std::size_t l1 = std::min( lines , l0 + kLines );
+  for( std::size_t l = l0 ; l < l1 ; ++l ) {
+   Word * W = f_L.data() + 8 * l;
+   // the word k of the line is the 64 bits from t + 64 k of w, t the bit
+   // 16 before the line, the 16 of the count then cleared
+   const std::size_t t = l * kData - 16 , q = t / 64;
+   const unsigned o = unsigned( t % 64 );
+   if( ( l > 0 ) && ( q + 8 < nw ) ) {
+#ifdef ADS_WITH_HIGHWAY  // a vector at a time [see SimdInline.h]
+    detail::simd::here::shiftedWords8( w + q , o , W );
+#else
+    for( std::size_t k = 0 ; k < 8 ; ++k )
+     W[ k ] =
+       ( w[ q + k ] >> o ) | ( ( w[ q + k + 1 ] << 1 ) << ( 63 - o ) );
+#endif
+    W[ 0 ] &= ~Word( 0xFFFF );
+    }
+   else {
+    std::fill( W , W + 8 , Word( 0 ) );
+    for( std::size_t k = 0 ; k < 8 ; ++k ) {
+     const std::size_t off = l * kData + 64 * k;
+     if( off >= n )
+      break;
+     const int len = int( std::min< std::size_t >( k < 7 ? 64 : 48 ,
+						   n - off ) );
+     const Word piece = read( off , len );
+     W[ k ] |= piece << 16;
+     if( k < 7 )
+      W[ k + 1 ] |= piece >> 48;
+     }
     }
    }
-  if( l % kLines == 0 )
-   f_S.push_back( c );
-  W[ 0 ] |= Word( c - std::size_t( f_S.back() ) );
-  std::size_t in = std::size_t( std::popcount( W[ 0 ] >> 16 ) );
-  for( std::size_t k = 1 ; k < 8 ; ++k )
-   in += std::size_t( std::popcount( W[ k ] ) );
-  // the samples: the line of every 8192-th bit b, with the bits b before
-  // the line (the 0s only those before n)
-  const std::size_t b1 = c , e1 = c + in , b0 = l * kData - c ,
-		    e0 = std::min( n , ( l + 1 ) * kData ) - e1;
-  for( ; next[ 1 ] <= e1 ; next[ 1 ] += kSample ) {
-   f_sl[ 1 ].push_back( std::uint32_t( l ) );
-   f_sc[ 1 ].push_back( b1 );
+  f_S.push_back( c );
+  for( std::size_t l = l0 ; l < l1 ; ++l ) {
+   Word * W = f_L.data() + 8 * l;
+   std::size_t in = 0;
+   for( std::size_t k = 0 ; k < 8 ; ++k )
+    in += std::size_t( std::popcount( W[ k ] ) );
+   W[ 0 ] |= Word( c - std::size_t( f_S.back() ) );
+   // the samples: the line of every 8192-th bit b, with the bits b before
+   // the line (the 0s only those before n)
+   const std::size_t b1 = c , e1 = c + in , b0 = l * kData - c ,
+		     e0 = std::min( n , ( l + 1 ) * kData ) - e1;
+   for( ; next[ 1 ] <= e1 ; next[ 1 ] += kSample ) {
+    f_sl[ 1 ].push_back( std::uint32_t( l ) );
+    f_sc[ 1 ].push_back( b1 );
+    }
+   for( ; next[ 0 ] <= e0 ; next[ 0 ] += kSample ) {
+    f_sl[ 0 ].push_back( std::uint32_t( l ) );
+    f_sc[ 0 ].push_back( b0 );
+    }
+   c = e1;
    }
-  for( ; next[ 0 ] <= e0 ; next[ 0 ] += kSample ) {
-   f_sl[ 0 ].push_back( std::uint32_t( l ) );
-   f_sc[ 0 ].push_back( b0 );
-   }
-  c = e1;
   }
  f_ones = c;
  // the last line closes the samples

@@ -324,6 +324,21 @@ HWY_INLINE std::size_t lineRank512( const std::uint64_t * w , unsigned p )
  return( std::size_t( hn::GetLane( hn::SumOfLanes( d , acc ) ) ) );
  }
 
+/// the 8 words of 64 bits from the bit \f$ o < 64 \f$ of the 9 words at
+/// \f$ w \f$, into \f$ x \f$: a shift of the same count on every lane
+HWY_INLINE void shiftedWords8( const std::uint64_t * w , unsigned o ,
+			       std::uint64_t * x )
+{
+ const hn::CappedTag< std::uint64_t , 8 > d;
+ const std::size_t L = hn::Lanes( d );
+ for( std::size_t j = 0 ; j < 8 ; j += L ) {
+  const auto lo = hn::ShiftRightSame( hn::LoadU( d , w + j ) , int( o ) );
+  const auto hi = hn::ShiftLeftSame(
+    hn::ShiftLeft< 1 >( hn::LoadU( d , w + j + 1 ) ) , int( 63 - o ) );
+  hn::StoreU( hn::Or( lo , hi ) , d , x + j );
+  }
+ }
+
 /// a step of the \f$ K \f$ lanes of a strip of the edit distance: the lane
 /// \f$ q \f$ moves its block of 64 cells (the vertical differences +1 in
 /// \f$ pv[ q ] \f$ and -1 in \f$ mv[ q ] \f$, the matches in

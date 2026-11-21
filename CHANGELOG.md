@@ -45,6 +45,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   3 levels by default (`Levels`), a few bits more than the optimum, which
   takes up to 8 levels of chunks of 1 or 2 bits, a rank and a branch each;
   `Levels::UNCAPPED` gives the unbounded program
+- `InterleavedRankSelect` builds its lines a superblock at a time, first
+  the bits of each line, shifted a vector at a time with
+  `ADS_WITH_HIGHWAY`, then the counts and the samples, the line read from
+  the bit 16 before it so that no word is shifted twice
 
 ### Fixed
 
