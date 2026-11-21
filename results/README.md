@@ -22,7 +22,11 @@ process of its own, pinned to core 178 (the parallel ones to cores 184 to
 191) with the memory on the NUMA node of these cores, and only while no
 other process ran on them (see the README for the details of the checks);
 the load of 45 at the start is that of the other programs on the other
-node of the machine. The files `frangioni-*.tsv` are two earlier runs on an
+node of the machine. The benchmarks keep the code of ADS where a
+structure would otherwise run on Boost or on LEMON (e.g., `PointerTable`
+and `FlatHashTable`, which a build with Boost puts on
+`boost::unordered_flat_set` and `boost::unordered_flat_map`), so that the
+rows of Boost are what such a build gets. The files `frangioni-*.tsv` are two earlier runs on an
 Intel Xeon Gold 5120, with fewer benchmarks.
 
 - machine: AMD EPYC 9654 96-Core Processor

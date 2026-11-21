@@ -188,7 +188,9 @@ hurchalla is 2.5 to 7 times faster on `powMod()`, `isPrime()` and
 `factorize()`. In the hash tables, `FlatHashTable` is 2.6 times slower
 than `boost::unordered_flat_map` in the median, mostly on the lookups
 (e.g., 10.4 against 3.6 ns on hits among $10^5$ keys), and 1.9 times
-slower than unordered_dense. Furthermore, `FastHash` is 2.9 times slower
+slower than unordered_dense (with the headers of Boost, `FlatHashTable`
+and `PointerTable` run on the tables of Boost by default, and their rows
+here are those of the code of ADS; see the section Use). Furthermore, `FastHash` is 2.9 times slower
 than the hash of Abseil, `MinimalPerfectHash` answers 1.6 times slower
 than PTHash, `MPSCInbox` is 4.8 times slower than the queue of moodycamel,
 and `ConcurrentCuckooTable` is 1.8 times slower than the concurrent map of
