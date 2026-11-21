@@ -49,6 +49,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the bits of each line, shifted a vector at a time with
   `ADS_WITH_HIGHWAY`, then the counts and the samples, the line read from
   the bit 16 before it so that no word is shifted twice
+- `factorize()` splits a composite cofactor of 34 bits or more by the
+  elliptic curves of Lenstra, on curves of Montgomery with the parameter of
+  Suyama, a stage 1 by the ladder of Montgomery and a stage 2 on the primes
+  paired by the giant steps of 60, with bounds that grow with the size of
+  the cofactor, and a square by its root, the rho of Pollard and Brent
+  remaining below 34 bits and after 64 curves with no factor; the
+  divisions go up to the primes below 4096, each a product by the inverse
+  of the prime and a comparison
 
 ### Fixed
 

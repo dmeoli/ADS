@@ -103,18 +103,60 @@
  *   (\f$ R = 2^{32} \f$, its constants by divisions of 32 bits), the lazy
  *   one below \f$ 2^{62} \f$, and `Montgomery64` above;
  * - `factorize()`, beyond the book, the prime factors of a word: the
- *   divisions by the primes below 256, then, on a composite cofactor
- *   \f$ m \f$ (`isPrime()` decides), the rho of Pollard with the cycle
- *   detection of Brent, in the Montgomery arithmetic of \f$ m \f$: the
- *   sequence \f$ x_{i+1} = x_i^2 + c \bmod m \f$ falls into a cycle modulo
- *   the least prime \f$ p \f$ of \f$ m \f$ after
- *   \f$ O( \sqrt{p} ) = O( m^{1/4} ) \f$ steps in expectation (the birthday
- *   paradox, the map taken as random), which
- *   \f$ \gcd( | x_i - x_j | , m ) \f$ finds; the differences are multiplied
- *   together, 128 at a time, before each gcd, and the last batch is gone
- *   through again one by one if the gcd is \f$ m \f$; with another \f$ c \f$
- *   if the factor is \f$ m \f$ itself. \f$ O( n^{1/4} ) \f$ products expected
- *   for \f$ n \f$ of 64 bits;
+ *   divisions by the primes below 256, each a product by
+ *   \f$ p^{-1} \bmod 2^{64} \f$ and a comparison (as in `isPrime()`), then,
+ *   if the cofactor is composite (`isPrime()` decides), by those below 4096,
+ *   16 at a time; a composite cofactor \f$ m \f$ is then split, until all
+ *   the factors are primes, by
+ *   - its root, if \f$ m = r^2 \f$;
+ *   - from \f$ 2^{34} \f$ on, the elliptic curves of Lenstra: on a curve
+ *     \f$ E \f$ modulo \f$ m \f$, the multiple \f$ k P \f$ of a point is
+ *     the neutral element modulo a prime \f$ p \mid m \f$ when the order of
+ *     \f$ E( \mathbb{F}_p ) \f$, a random integer in
+ *     \f$ [ p + 1 - 2 \sqrt{p} , p + 1 + 2 \sqrt{p} ] \f$, divides \f$ k \f$,
+ *     and then \f$ p \f$ divides its coordinate \f$ Z \f$, which
+ *     \f$ \gcd( Z , m ) \f$ finds. The curves are those of Montgomery,
+ *     \f$ B y^2 = x^3 + A x^2 + x \f$, on the coordinates
+ *     \f$ ( X : Z ) \f$ alone: the double by 2 squares and 3 products,
+ *     the sum \f$ P + Q \f$ from \f$ P - Q \f$ by 2 squares and 4 products
+ *     (3 if \f$ P - Q = ( x : 1 ) \f$), in the Montgomery arithmetic of
+ *     \f$ m \f$, the sums and the differences that only enter a product
+ *     left unreduced in \f$ [ 0 , 4 m ) \f$ below \f$ 2^{60} \f$; the
+ *     parameter \f$ \sigma \f$ of Suyama, \f$ u = \sigma^2 - 5 \f$,
+ *     \f$ v = 4 \sigma \f$, \f$ x_0 = u^3 / v^3 \f$ and
+ *     \f$ ( A + 2 ) / 4 = ( v - u )^3 ( 3 u + v ) / ( 16 u^3 v ) \f$ (by one
+ *     inverse), gives an order multiple of 12. The stage 1 computes
+ *     \f$ Q = k P \f$, \f$ k = \mathrm{lcm}( 1 , \ldots , B_1 ) \f$, by the
+ *     ladder of Montgomery on the words of \f$ k \f$, computed at compile
+ *     time, a sum and a double per bit (10 products), the swaps by masks
+ *     with no branch; the stage 2 finds one more prime
+ *     \f$ q \in ( B_1 , B_2 ] \f$ of the order, with
+ *     \f$ q = i D \pm j \f$, \f$ D = 60 \f$ and \f$ j < D / 2 \f$ prime to
+ *     \f$ D \f$: \f$ q Q \f$ is neutral iff
+ *     \f$ X_{iD} Z_j - X_j Z_{iD} \equiv 0 \f$, computed as
+ *     \f$ ( X_{iD} - X_j ) ( Z_{iD} + Z_j ) - X_{iD} Z_{iD} + X_j Z_j \f$, 2
+ *     products, for the pairs \f$ ( i , j ) \f$ of a prime only (a table of
+ *     bits computed at compile time), one product for both
+ *     \f$ i D - j \f$ and \f$ i D + j \f$, the giant steps by sums, and one
+ *     gcd at the end of the curve. \f$ B_2 = 25 B_1 \f$ and \f$ B_1 \f$ from
+ *     30 to 205 with the bits of \f$ m \f$, for a factor of half of them,
+ *     but for the first curve, whose \f$ B_1 = 40 \f$ is for one of about
+ *     20 bits; after 64 curves with no factor, the rho;
+ *   - below \f$ 2^{34} \f$, the rho of Pollard with the cycle detection of
+ *     Brent, in the Montgomery arithmetic of \f$ m \f$: the sequence
+ *     \f$ x_{i+1} = x_i^2 + c \bmod m \f$ falls into a cycle modulo the least
+ *     prime \f$ p \f$ of \f$ m \f$ after
+ *     \f$ O( \sqrt{p} ) = O( m^{1/4} ) \f$ steps in expectation (the
+ *     birthday paradox, the map taken as random), which
+ *     \f$ \gcd( | x_i - x_j | , m ) \f$ finds; the differences are
+ *     multiplied together, 128 at a time, before each gcd, and the last
+ *     batch is gone through again one by one if the gcd is \f$ m \f$; with
+ *     another \f$ c \f$ if the factor is \f$ m \f$ itself.
+ *
+ *   The curves find a factor \f$ p \f$ in
+ *   \f$ L_p( 1/2 , \sqrt{2} ) \f$ products expected (Lenstra), in practice
+ *   a few curves of a few thousand products for \f$ p \f$ of 32 bits,
+ *   against the \f$ O( \sqrt{p} ) \f$ steps of the rho;
  * - `sieve()`, the sieve of Eratosthenes on a SET of the integers from 2 to
  *   \f$ n \f$ [see `BoolSet.h`], beyond the book: the least item \f$ p \f$
  *   left in the set is a prime, and its multiples are removed; since the
@@ -166,6 +208,14 @@
  *      331-334, 1975, doi:10.1007/BF01933667
  * \see R. P. Brent, An improved Monte Carlo factorization algorithm, BIT
  *      Numerical Mathematics 20(2), 176-184, 1980, doi:10.1007/BF01933190
+ * \see H. W. Lenstra, Factoring integers with elliptic curves, Annals of
+ *      Mathematics 126(3), 649-673, 1987, doi:10.2307/1971363
+ * \see P. L. Montgomery, Speeding the Pollard and elliptic curve methods
+ *      of factorization, Mathematics of Computation 48(177), 243-264, 1987,
+ *      doi:10.1090/S0025-5718-1987-0866113-7
+ * \see J. W. Bos, T. Kleinjung, ECM at work, Advances in Cryptology -
+ *      ASIACRYPT 2012, LNCS 7658, 467-484, 2012,
+ *      doi:10.1007/978-3-642-34961-4_29
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -192,6 +242,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cmath>
 #include <cstdint>
 #include <random>
 #include <stdexcept>
@@ -562,37 +613,50 @@ inline bool isPrime( U64 n );
 inline std::vector< U64 > sieve( U64 n );
 
 /// the prime factors of \f$ n \f$, with their multiplicity, increasing, by
-/// the divisions by the primes below 256 and the rho of Pollard and Brent
+/// the divisions by the primes below 4096, the elliptic curves of Lenstra
+/// and the rho of Pollard and Brent
 ///
-/// In pseudocode (Pollard and Brent, beyond the book):
+/// In pseudocode (Lenstra, Montgomery, Pollard and Brent, beyond the book):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{factorize}( n ) \cr
 /// 2 & \quad F \gets \text{the factors of } n \text{ below } 256 \text{ by }
 ///     \text{division};\ n \gets \text{the cofactor} \cr
-/// 3 & \quad T \gets ( n ) \text{ if } n > 1 \cr
+/// 3 & \quad \textbf{if}\ n \text{ is composite then the same below } 4096
+///     ;\ T \gets ( n ) \text{ if } n > 1 \cr
 /// 4 & \quad \textbf{while}\ T \ne \emptyset\ \textbf{do} \cr
 /// 5 & \qquad m \gets \mathrm{pop}( T ) \cr
-/// 6 & \qquad \textbf{if}\ m < 256^2\ \textbf{or}\ \mathrm{isPrime}( m )
+/// 6 & \qquad \textbf{if}\ m < 4096^2\ \textbf{or}\ \mathrm{isPrime}( m )
 ///     \ \textbf{then}\ \text{append } m \text{ to } F \cr
-/// 7 & \qquad \textbf{else}\ d \gets \mathrm{rho}( m );\ \mathrm{push}( T ,
-///     d );\ \mathrm{push}( T , m / d ) \cr
-/// 8 & \quad \textbf{return}\ F \text{ sorted} \cr
-/// 9 & \textbf{function}\ \mathrm{rho}( m )\quad \triangleright\ c \gets 1 ,
+/// 7 & \qquad \textbf{else}\ d \gets \sqrt{m} \text{ if a square, else }
+///     \mathrm{ecm}( m ) \text{ if } m \ge 2^{34} , \text{ else }
+///     \mathrm{rho}( m ) \cr
+/// 8 & \qquad \quad \mathrm{push}( T , d );\ \mathrm{push}( T , m / d ) \cr
+/// 9 & \quad \textbf{return}\ F \text{ sorted} \cr
+/// 10 & \textbf{function}\ \mathrm{ecm}( m )\quad \triangleright\ \sigma
+///     \gets 6 , 7 , \ldots \text{ until } 1 < g < m \cr
+/// 11 & \quad E , P \gets \text{the curve and the point of Suyama of }
+///     \sigma \text{ modulo } m \cr
+/// 12 & \quad Q \gets \mathrm{lcm}( 1 , \ldots , B_1 ) P \text{ by the
+///     ladder};\ a \gets Z_Q \cr
+/// 13 & \quad \textbf{for}\ i D \pm j \text{ with a prime in } ( B_1 , B_2 ]
+///     \ \textbf{do}\ a \gets a ( X_{iDQ} Z_{jQ} - X_{jQ} Z_{iDQ} ) \cr
+/// 14 & \quad \textbf{return}\ g = \mathrm{gcd}( a , m ) \cr
+/// 15 & \textbf{function}\ \mathrm{rho}( m )\quad \triangleright\ c \gets 1 ,
 ///     2 , \ldots \text{ until } 1 < g < m \cr
-/// 10 & \quad y \gets 2;\ q \gets 1;\ g \gets 1;\ r \gets 1 \cr
-/// 11 & \quad \textbf{while}\ g = 1\ \textbf{do} \cr
-/// 12 & \qquad x \gets y;\ \text{apply } y \gets y^2 + c \bmod m \text{ }
+/// 16 & \quad y \gets 2;\ q \gets 1;\ g \gets 1;\ r \gets 1 \cr
+/// 17 & \quad \textbf{while}\ g = 1\ \textbf{do} \cr
+/// 18 & \qquad x \gets y;\ \text{apply } y \gets y^2 + c \bmod m \text{ }
 ///     r \text{ times} \cr
-/// 13 & \qquad \textbf{for}\ k \gets 0 , 128 , \ldots < r\ \textbf{while}\ g
+/// 19 & \qquad \textbf{for}\ k \gets 0 , 128 , \ldots < r\ \textbf{while}\ g
 ///     = 1\ \textbf{do} \cr
-/// 14 & \qquad\quad \text{at most 128 times: } y \gets y^2 + c;\ q \gets q
+/// 20 & \qquad\quad \text{at most 128 times: } y \gets y^2 + c;\ q \gets q
 ///     | x - y | \bmod m \cr
-/// 15 & \qquad\quad g \gets \mathrm{gcd}( q , m ) \cr
-/// 16 & \qquad r \gets 2 r \cr
-/// 17 & \quad \textbf{if}\ g = m\ \textbf{then}\ g \gets \text{the first }
+/// 21 & \qquad\quad g \gets \mathrm{gcd}( q , m ) \cr
+/// 22 & \qquad r \gets 2 r \cr
+/// 23 & \quad \textbf{if}\ g = m\ \textbf{then}\ g \gets \text{the first }
 ///     \mathrm{gcd}( | x - y | , m ) \ne 1 \text{ of the last batch} \cr
-/// 18 & \quad \textbf{return}\ g
+/// 24 & \quad \textbf{return}\ g
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 1 \f$

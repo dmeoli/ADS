@@ -1909,23 +1909,62 @@ bits.
 
 **Factorization.** By `factorize()`, one gets the prime factors of
 a word ([Algorithm 17.27](17-numeric.md#alg-17-27)). It divides by the
-primes below 256, and then, on a composite cofactor $m$ (`isPrime()`
-decides), it runs the rho of [Pollard 1975](Z-bibliography.md#ref-pollard1975)
-with the cycle detection of [Brent 1980](Z-bibliography.md#ref-brent1980),
-in the arithmetic of Montgomery of $m$. The sequence $x_{i+1} = x_i^2 + c
-\bmod m$, taken modulo the least prime $p$ of $m$, falls into a cycle
-after $O( \sqrt{p} ) = O( m^{1/4} )$ steps in expectation, if one takes
-the map as random (the birthday paradox), and $\gcd( | x_i - x_j | , m
-)$ then finds $p$ (or a multiple of it) when $x_i \equiv x_j \pmod{p}$. In batches, the
+primes below 256, each test a product by $p^{-1} \bmod 2^{64}$ and a
+comparison, and, if the cofactor is composite (`isPrime()` decides), by
+those below 4096, 16 tests at a time; a composite cofactor $m$ is then
+split by its root if it is a square, by the elliptic curves of [Lenstra
+1987](Z-bibliography.md#ref-lenstra1987) from $2^{34}$ on, and below by
+the rho of [Pollard 1975](Z-bibliography.md#ref-pollard1975) with the
+cycle detection of [Brent 1980](Z-bibliography.md#ref-brent1980), both in
+the arithmetic of Montgomery of $m$.
+
+On a curve $E$ modulo $m$, the multiple $k P$ of a point is the neutral
+element modulo a prime $p \mid m$ when the order of $E( \mathbb{F}_p )$,
+which lies in $[ p + 1 - 2 \sqrt{p} , p + 1 + 2 \sqrt{p} ]$ and behaves
+as a random integer there, divides $k$; its coordinate $Z$ is then a
+multiple of $p$, which $\gcd( Z , m )$ finds, while modulo the other
+primes of $m$ the order is in general not a divisor of $k$. The curves
+are those of [Montgomery 1987](Z-bibliography.md#ref-montgomery1987),
+$B y^2 = x^3 + A x^2 + x$, on the coordinates $( X : Z )$ alone (a double
+costs 2 squares and 3 products, a sum $P + Q$ from $P - Q$ 2 squares and
+4 products, or 3 when $P - Q = ( x : 1 )$), with the parameter $\sigma$
+of Suyama ($u = \sigma^2 - 5$, $v = 4 \sigma$, $x_0 = u^3 / v^3$ and
+$( A + 2 ) / 4 = ( v - u )^3 ( 3 u + v ) / ( 16 u^3 v )$, by one inverse
+modulo $m$), whose orders are multiples of 12. The stage 1 computes $Q =
+k P$ for $k = \mathrm{lcm}( 1 , \ldots , B_1 )$ by the ladder of
+Montgomery on the words of $k$, computed at compile time, i.e., a sum and
+a double per bit (10 products), the bit choosing by swaps with no branch
+which point is doubled; the stage 2 catches one more prime $q \in ( B_1 ,
+B_2 ]$ of the order, written as $q = i D \pm j$ with $D = 60$ and $j < D
+/ 2$ prime to $D$, since $q Q$ is neutral if and only if $X_{iD} Z_j -
+X_j Z_{iD} \equiv 0$, computed as $( X_{iD} - X_j ) ( Z_{iD} + Z_j ) -
+X_{iD} Z_{iD} + X_j Z_j$ (2 products, one for both $i D - j$ and $i D +
+j$, and only for the pairs of a prime, read in a table of bits computed at
+compile time). Small bounds suit small moduli ([Bos and Kleinjung
+2012](Z-bibliography.md#ref-bos2012)): $B_2 = 25 B_1$, with $B_1$ from 30
+to 205 as $m$ grows from 34 to 64 bits, tuned for a factor of half the
+bits of $m$, but for the first curve, whose $B_1 = 40$ is for one of
+about 20 bits. Below $2^{60}$ the sums and the differences that only
+enter a product are left unreduced in $[ 0 , 4 m )$, since a product of
+two of them is still below $m 2^{64}$. A gcd at the end of each curve
+gives the factor, and after 64 curves with none the rho takes over. The
+expected cost is $L_p( 1/2 , \sqrt{2} )$ products for the factor $p$
+([Lenstra 1987](Z-bibliography.md#ref-lenstra1987), a heuristic too), in
+practice a few curves of a few thousand products for $p$ of 32 bits,
+against the $O( \sqrt{p} )$ steps of the rho.
+
+The sequence of the rho, $x_{i+1} = x_i^2 + c \bmod m$, taken modulo the
+least prime $p$ of $m$, falls into a cycle after $O( \sqrt{p} ) = O(
+m^{1/4} )$ steps in expectation, if one takes the map as random (the
+birthday paradox), and $\gcd( | x_i - x_j | , m )$ then finds $p$ (or a
+multiple of it) when $x_i \equiv x_j \pmod{p}$. In batches, the
 differences are multiplied together, 128 at a time, before each gcd,
 which spares 127 gcds in 128. If the gcd of a batch is $m$ itself, the
 batch is gone through again one difference at a time, and if even that
-gives $m$, the rho starts again with another $c$. Its expected cost is
-thus $O( n^{1/4} )$ products for $n$ of 64 bits, under the heuristic
-assumption above (which is not a theorem).
+gives $m$, the rho starts again with another $c$.
 
 <span id="alg-17-27"></span>**Algorithm 17.27.** Factorization of a
-word by the rho of Pollard and Brent.
+word by the elliptic curves of Lenstra and the rho of Pollard and Brent.
 
 --8<-- "generated/NumberTheory-factorize.pseudo.md"
 
@@ -2715,8 +2754,11 @@ Jančina 2015](Z-bibliography.md#ref-forisek2015) and the tables of
 [Sinclair and others](Z-bibliography.md#ref-sinclair), the arithmetic
 without divisions in [Montgomery 1985](Z-bibliography.md#ref-montgomery1985)
 and [Granlund and Montgomery 1994](Z-bibliography.md#ref-granlund1994),
-and the rho in [Pollard 1975](Z-bibliography.md#ref-pollard1975) and
-[Brent 1980](Z-bibliography.md#ref-brent1980). Our generators are those of
+the rho in [Pollard 1975](Z-bibliography.md#ref-pollard1975) and
+[Brent 1980](Z-bibliography.md#ref-brent1980), and the elliptic curves in
+[Lenstra 1987](Z-bibliography.md#ref-lenstra1987), [Montgomery
+1987](Z-bibliography.md#ref-montgomery1987) and [Bos and Kleinjung
+2012](Z-bibliography.md#ref-bos2012). Our generators are those of
 [Blackman and Vigna 2021](Z-bibliography.md#ref-blackman2021), [Salmon et
 al. 2011](Z-bibliography.md#ref-salmon2011) and [Wang
 Yi](Z-bibliography.md#ref-wangyi), the integers in a range those of

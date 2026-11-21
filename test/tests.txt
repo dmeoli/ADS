@@ -553,7 +553,7 @@ engineered_strings  string-dictionaries  rear coding a bucket e Patricia succint
 engineered_numeric  binary-gcd        gcd binario senza divisioni
 engineered_numeric  montgomery        forma di Montgomery a 64 bit
 engineered_numeric  is-prime          primalità esatta a 64 bit
-engineered_numeric  factorize         fattori primi, rho di Pollard e Brent
+engineered_numeric  factorize         fattori primi, rho di Pollard e Brent, curve ellittiche
 engineered_numeric  generators        xoshiro256++ e wyrand
 engineered_numeric  generator-concepts generatori standard, LinearCongruentialT
 engineered_numeric  xoshiro-alias     xoshiro256** e metodo degli alias

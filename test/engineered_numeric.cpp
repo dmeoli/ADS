@@ -245,7 +245,12 @@ ADS_TEST( "is-prime" )
 // of large primes, products of two primes of 32 bits and of three of 21,
 // Carmichael numbers, 2^64 - 1, and random words against the divisions
 // for those small enough, the product and the primality of the factors
-// for the others
+// for the others; then, for the elliptic curves above 2^34, the products
+// of two primes of every size from 36 to 64 bits, balanced and not, the
+// squares and the cubes of primes, the products of three primes, the
+// Carmichael numbers ( 6 k + 1 ) ( 12 k + 1 ) ( 18 k + 1 ) of Chernick
+// up to 64 bits, a small prime times a large one, and random words in
+// bulk
 ADS_TEST( "factorize" )
 {
  using V = std::vector< U64 >;
@@ -300,6 +305,60 @@ ADS_TEST( "factorize" )
   CHECK( factorize( p * q ) == ( p < q ? V( { p , q } ) : V( { q , p } ) ) );
   }
  CHECK_THROWS( ( void )factorize( 0 ) , contract_violation );
+ auto prime = [ & ]( int b ) {  // a random prime of b bits
+  for( ; ; ) {
+   const U64 p = ( g() >> ( 64 - b ) ) | ( U64( 1 ) << ( b - 1 ) ) | 1;
+   if( isPrime( p ) )
+    return( p );
+   }
+  };
+ auto expect = [ & ]( V P ) {  // the product of the primes P
+  U64 n = 1;
+  for( const U64 p : P )
+   n *= p;
+  std::sort( P.begin() , P.end() );
+  CHECK( factorize( n ) == P );
+  };
+ for( int b = 18 ; b <= 32 ; ++b )  // balanced, 36 to 64 bits
+  for( int t = 0 ; t < 40 ; ++t )
+   expect( { prime( b ) , prime( b ) } );
+ for( int a = 13 ; a <= 30 ; ++a )  // unbalanced, about 64 bits
+  for( int t = 0 ; t < 20 ; ++t )
+   expect( { prime( a ) , prime( 64 - a ) } );
+ for( int b = 17 ; b <= 32 ; ++b )  // squares, and a prime times them
+  for( int t = 0 ; t < 10 ; ++t ) {
+   const U64 p = prime( b );
+   expect( { p , p } );
+   if( b <= 26 )
+    expect( { p , p , prime( 64 - 2 * b ) } );
+   }
+ for( int b = 12 ; b <= 21 ; ++b )  // cubes, and three primes
+  for( int t = 0 ; t < 10 ; ++t ) {
+   const U64 p = prime( b );
+   expect( { p , p , p } );
+   expect( { prime( b ) , prime( b ) , prime( b ) } );
+   expect( { prime( 13 ) , prime( b ) , prime( 63 - 13 - b ) } );
+   }
+ for( U64 k = 1 , c = 0 ; ( c < 200 ) && ( k < 240000 ) ; k += 1 + g() % 600 )
+  if( isPrime( 6 * k + 1 ) && isPrime( 12 * k + 1 ) &&
+      isPrime( 18 * k + 1 ) ) {  // Chernick
+   expect( { 6 * k + 1 , 12 * k + 1 , 18 * k + 1 } );
+   ++c;
+   }
+ for( int a = 2 ; a <= 16 ; ++a )  // a small prime and a large one
+  for( int t = 0 ; t < 10 ; ++t )
+   expect( { prime( a ) , prime( 64 - a ) } );
+ for( int t = 0 ; t < 20000 ; ++t ) {  // random words in bulk
+  const U64 n = g() | ( U64( 1 ) << 63 );
+  const V F = factorize( n );
+  U64 prod = 1;
+  bool primes = std::is_sorted( F.begin() , F.end() );
+  for( const U64 p : F ) {
+   prod *= p;
+   primes = primes && isPrime( p );
+   }
+  CHECK( prod == n && primes );
+  }
  }
 
 // the generators: the first words of the reference implementations, the

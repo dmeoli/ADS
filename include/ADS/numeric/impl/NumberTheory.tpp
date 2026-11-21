@@ -742,9 +742,348 @@ U64 rhoBrent( const M_ & M , U64 c )
  return( g );
  }
 
-/// a factor of the odd composite m, neither 1 nor m
+/// the inverse of a modulo the odd m > a by the algorithm of Euclid on
+/// the magnitudes of the coefficients, whose signs alternate; 0 if the
+/// gcd g is not 1
+inline U64 inverseOdd( U64 a , U64 m , U64 & g )
+{
+ U64 r0 = m , r1 = a , s0 = 0 , s1 = 1;
+ bool odd = true;  // r1 = s1 a and r0 = -s0 a mod m, or the opposite
+ while( r1 != 0 ) {
+  const U64 q = r0 / r1 , r2 = r0 - q * r1 , s2 = s0 + q * s1;
+  r0 = r1;
+  r1 = r2;
+  s0 = s1;
+  s1 = s2;
+  odd = ! odd;
+  }
+ g = r0;
+ if( g != 1 )
+  return( 0 );
+ return( odd ? m - s0 : s0 );
+ }
+
+/// the words of lcm( 1 , ... , B ), the lowest first, and its bits
+template< int B >
+struct EcmScalar
+{
+ U64 w[ 3 * B / 128 + 2 ];  // lcm( 1 , ... , B ) < e^{1.04 B}
+ int bits;
+ };
+
+template< int B >
+constexpr EcmScalar< B > ecmScalar( void )
+{
+ EcmScalar< B > K{};
+ K.w[ 0 ] = 1;
+ for( U64 p = 2 ; p <= B ; ++p ) {
+  bool prime = true;
+  for( U64 d = 2 ; d * d <= p ; ++d )
+   prime = prime && ( p % d != 0 );
+  if( ! prime )
+   continue;
+  U64 q = p;  // the largest power of p up to B
+  while( q * p <= U64( B ) )
+   q *= p;
+  U64 c = 0;  // K times q < 2^16, by halves of 32 bits
+  for( U64 & x : K.w ) {
+   const U64 lo = ( x & 0xFFFFFFFFULL ) * q + c ,
+	     hi = ( x >> 32 ) * q + ( lo >> 32 );
+   x = ( lo & 0xFFFFFFFFULL ) | ( hi << 32 );
+   c = hi >> 32;
+   }
+  }
+ int t = int( sizeof( K.w ) / sizeof( U64 ) ) - 1;
+ while( K.w[ t ] == 0 )
+  --t;
+ K.bits = 64 * t + int( std::bit_width( K.w[ t ] ) );
+ return( K );
+ }
+
+template< int B >
+inline constexpr EcmScalar< B > kEcmScalar = ecmScalar< B >();
+
+/// the stage 2 of the giant steps of D from B1 to B2: the odd j < D / 2
+/// prime to D (the baby steps), and for each giant step i D the bits of
+/// the j for which i D - j or i D + j is a prime in ( B1 , B2 ]
+template< int B1 , int B2 , int D >
+struct EcmStage2
+{
+ static constexpr int i0 = B1 / D , i1 = ( B2 + D / 2 ) / D;
+ int j[ D / 4 ];
+ int k;
+ U64 mask[ i1 - i0 + 1 ];
+ };
+
+template< int B1 , int B2 , int D >
+constexpr EcmStage2< B1 , B2 , D > ecmStage2( void )
+{
+ EcmStage2< B1 , B2 , D > S{};
+ auto coprime = []( int a , int b ) {
+  while( b != 0 ) {
+   const int r = a % b;
+   a = b;
+   b = r;
+   }
+  return( a == 1 );
+  };
+ auto prime = []( int q ) {
+  if( q < 2 )
+   return( false );
+  for( int d = 2 ; d * d <= q ; ++d )
+   if( q % d == 0 )
+    return( false );
+  return( true );
+  };
+ for( int j = 1 ; j < D / 2 ; j += 2 )
+  if( coprime( j , D ) )
+   S.j[ S.k++ ] = j;
+ for( int i = S.i0 ; i <= S.i1 ; ++i )
+  for( int k = 0 ; k < S.k ; ++k )
+   for( const int q : { i * D - S.j[ k ] , i * D + S.j[ k ] } )
+    if( ( q > B1 ) && ( q <= B2 ) && prime( q ) )
+     S.mask[ i - S.i0 ] |= U64( 1 ) << k;
+ return( S );
+ }
+
+template< int B1 , int B2 , int D >
+inline constexpr EcmStage2< B1 , B2 , D > kEcmStage2 =
+ ecmStage2< B1 , B2 , D >();
+
+/// a point ( X : Z ) of a curve of Montgomery, its coordinate x = X / Z
+struct EcmPoint
+{
+ U64 x , z;
+ };
+
+/// the arithmetic of the coordinates x of the points of the curve of
+/// Montgomery B y^2 = x^3 + A x^2 + x modulo m, in the forms of the
+/// arithmetic M of Montgomery of m, below the bound b (2 m for the lazy
+/// one, m otherwise), with a24 the form of ( A + 2 ) / 4; if W (lazy, m
+/// below 2^60), the sums and the differences that only enter a product are
+/// left below 2 b, since a b < 16 m^2 < m 2^64 still holds
+template< class M_ , bool W >
+struct EcmCurve
+{
+ const M_ & M;
+ U64 b , a24;
+
+ [[nodiscard]] [[gnu::always_inline]] U64 add( U64 x , U64 y ) const {
+  const U64 c = b - y;  // x + y >= b iff x >= b - y, with no overflow
+  return( x >= c ? x - c : x + y );
+  }
+ [[nodiscard]] [[gnu::always_inline]] U64 sub( U64 x , U64 y ) const {
+  const U64 d = x - y;
+  return( x < y ? d + b : d );
+  }
+ /// x + y and x - y, below 2 b if W, as operands of a product
+ [[nodiscard]] [[gnu::always_inline]] U64 addW( U64 x , U64 y ) const {
+  if constexpr( W )
+   return( x + y );
+  else
+   return( add( x , y ) );
+  }
+ [[nodiscard]] [[gnu::always_inline]] U64 subW( U64 x , U64 y ) const {
+  if constexpr( W )
+   return( x - y + b );
+  else
+   return( sub( x , y ) );
+  }
+ /// 2 P: 2 squares and 3 products
+ [[nodiscard]] [[gnu::always_inline]] EcmPoint dbl( EcmPoint P ) const {
+  const U64 s = addW( P.x , P.z ) , d = subW( P.x , P.z ) ,
+	    ss = M.mul( s , s ) , dd = M.mul( d , d ) , t = subW( ss , dd );
+  return( EcmPoint{ M.mul( ss , dd ) ,
+		    M.mul( t , addW( dd , M.mul( a24 , t ) ) ) } );
+  }
+ /// P + Q from P - Q = D: 2 squares and 4 products
+ [[nodiscard]] [[gnu::always_inline]] EcmPoint add( EcmPoint P , EcmPoint Q ,
+						    EcmPoint D ) const {
+  const U64 u = M.mul( subW( P.x , P.z ) , addW( Q.x , Q.z ) ) ,
+	    v = M.mul( addW( P.x , P.z ) , subW( Q.x , Q.z ) ) ,
+	    s = addW( u , v ) , d = subW( u , v );
+  return( EcmPoint{ M.mul( D.z , M.mul( s , s ) ) ,
+		    M.mul( D.x , M.mul( d , d ) ) } );
+  }
+ /// P + Q from P - Q = ( x : 1 ): 2 squares and 3 products
+ [[nodiscard]] [[gnu::always_inline]] EcmPoint add( EcmPoint P , EcmPoint Q ,
+						    U64 x ) const {
+  const U64 u = M.mul( subW( P.x , P.z ) , addW( Q.x , Q.z ) ) ,
+	    v = M.mul( addW( P.x , P.z ) , subW( Q.x , Q.z ) ) ,
+	    s = addW( u , v ) , d = subW( u , v );
+  return( EcmPoint{ M.mul( s , s ) , M.mul( x , M.mul( d , d ) ) } );
+  }
+ /// the swap of P and Q if s is 1, with no branch
+ [[gnu::always_inline]] static void swap( EcmPoint & P , EcmPoint & Q ,
+					  U64 s ) {
+  const U64 mask = 0 - s , tx = mask & ( P.x ^ Q.x ) ,
+	    tz = mask & ( P.z ^ Q.z );
+  P.x ^= tx;
+  Q.x ^= tx;
+  P.z ^= tz;
+  Q.z ^= tz;
+  }
+ /// from R0 = P and R1 = 2 P, R0 = k P and R1 = ( k + 1 ) P for the k of
+ /// t bits in w, by the ladder of Montgomery: R1 - R0 = P at each step,
+ /// the bit choosing by swaps which of the two is doubled
+ template< class P_ >
+ void ladder( const U64 * w , int t , EcmPoint & R0 , EcmPoint & R1 ,
+	      const P_ & P ) const {
+  EcmPoint S0 = R0 , S1 = R1;
+  U64 prev = 0;
+  for( int i = t - 2 ; i >= 0 ; --i ) {
+   const U64 bit = ( w[ i >> 6 ] >> ( i & 63 ) ) & 1;
+   swap( S0 , S1 , bit ^ prev );
+   prev = bit;
+   S1 = add( S0 , S1 , P );
+   S0 = dbl( S0 );
+   }
+  swap( S0 , S1 , prev );
+  R0 = S0;
+  R1 = S1;
+  }
+ };
+
+/// a factor of the odd m found by the curve of Suyama of the parameter s,
+/// its stage 1 to B1 and its stage 2 to B2 on the giant steps of D; 1 or
+/// m if none
+template< int B1 , int B2 , int D , bool W , class M_ >
+U64 ecmCurve( const M_ & M , U64 s )
+{
+ static_assert( ( B1 >= D ) && ( D % 4 == 0 ) );
+ const U64 m = M.modulus();
+ U64 b = m;
+ if constexpr( requires { M.canon( m ); } )
+  b = 2 * m;
+ EcmCurve< M_ , W > E{ M , b , 0 };
+ // u = s^2 - 5, v = 4 s, x0 = u^3 / v^3 and
+ // ( A + 2 ) / 4 = ( v - u )^3 ( 3 u + v ) / ( 16 u^3 v ), by one inverse
+ const U64 u = M.to( s * s - 5 ) , v = M.to( 4 * s ) ,
+	   u3 = M.mul( M.mul( u , u ) , u ) , v3 = M.mul( M.mul( v , v ) , v ) ,
+	   vu = E.sub( v , u ) ,
+	   num = M.mul( M.mul( M.mul( vu , vu ) , vu ) ,
+			E.add( E.add( u , u ) , E.add( u , v ) ) ) ,
+	   den = M.mul( M.to( 16 ) , M.mul( u3 , v ) ) ,
+	   w = canonical( M , M.mul( den , v3 ) );
+ U64 g;
+ const U64 inv = inverseOdd( M.from( w ) , m , g );
+ if( g != 1 )
+  return( g );
+ const U64 I = M.to( inv ) , x0 = M.mul( M.mul( u3 , den ) , I );
+ E.a24 = M.mul( M.mul( num , v3 ) , I );
+ // stage 1: Q = lcm( 1 , ... , B1 ) P
+ constexpr auto & K = kEcmScalar< B1 >;
+ EcmPoint Q{ x0 , M.one() } , R = E.dbl( Q );
+ E.ladder( K.w , K.bits , Q , R , x0 );
+ // stage 2: the j Q, the giant steps i D Q, and for the primes
+ // i D +- j one product X_i Z_j - X_j Z_i for both, as
+ // ( X_i - X_j ) ( Z_i + Z_j ) - X_i Z_i + X_j Z_j, into that of Z
+ constexpr auto & J = kEcmStage2< B1 , B2 , D >;
+ EcmPoint P[ D / 4 ];
+ U64 PP[ D / 4 ];
+ const EcmPoint Q2 = E.dbl( Q );
+ EcmPoint A = Q , B = E.add( Q2 , Q , Q );  // j Q and ( j + 2 ) Q
+ for( int j = 1 , k = 0 ; ; j += 2 ) {
+  if( ( k < J.k ) && ( J.j[ k ] == j ) ) {
+   P[ k ] = A;
+   PP[ k++ ] = M.mul( A.x , A.z );
+   }
+  if( j + 2 > D / 2 )
+   break;
+  const EcmPoint C = E.add( B , Q2 , A );
+  A = B;
+  B = C;
+  }
+ const EcmPoint G = E.add( A , B , Q2 );  // ( D / 2 -+ 1 ) Q, D Q
+ EcmPoint Gi = G , Gn = E.dbl( G );
+ if constexpr( J.i0 > 1 ) {
+  constexpr U64 w0[ 1 ] = { U64( J.i0 ) };
+  E.ladder( w0 , int( std::bit_width( w0[ 0 ] ) ) , Gi , Gn , G );
+  }
+ U64 acc = Q.z;
+ for( int i = 0 ; ; ++i ) {
+  const U64 XZ = M.mul( Gi.x , Gi.z );
+  for( U64 bits = J.mask[ i ] ; bits ; bits &= bits - 1 ) {
+   const int k = std::countr_zero( bits );
+   acc = M.mul( acc , E.add( E.sub( M.mul( E.sub( Gi.x , P[ k ].x ) ,
+					  E.add( Gi.z , P[ k ].z ) ) ,
+				   XZ ) ,
+			    PP[ k ] ) );
+   }
+  if( i == J.i1 - J.i0 )
+   break;
+  const EcmPoint C = E.add( Gn , G , Gi );
+  Gi = Gn;
+  Gn = C;
+  }
+ g = binaryGcd( canonical( M , acc ) , m );
+ if( g == m )  // perhaps a factor from the stage 1 alone
+  g = binaryGcd( canonical( M , Q.z ) , m );
+ return( g );
+ }
+
+/// ecmCurve() with the bound B1 of the stage 1, B2 = 25 B1, the giant
+/// steps of 60, 36 or 24
+template< int B1 , bool W , class M_ >
+U64 ecmCurveOf( const M_ & M , U64 s )
+{
+ return( ecmCurve< B1 , 25 * B1 , B1 >= 60 ? 60 : B1 >= 36 ? 36 : 24 , W >(
+  M , s ) );
+ }
+
+/// a factor of the odd composite m >= 2^34 by the elliptic curves of
+/// Lenstra, neither 1 nor m; 0 if none of 64 curves finds one. The first
+/// curve has B1 = 40, for a factor of about 20 bits, the others the B1
+/// of the size of m, for a factor of half its bits
+template< bool W , class M_ >
+U64 ecmFactor( const M_ & M )
+{
+ const U64 m = M.modulus();
+ const int bits = int( std::bit_width( m ) );
+ for( U64 s = 6 ; s < 70 ; ++s ) {
+  const U64 g = s == 6       ? ecmCurveOf< 40 , W >( M , s )
+		: bits <= 40 ? ecmCurveOf< 30 , W >( M , s )
+		: bits <= 46 ? ecmCurveOf< 50 , W >( M , s )
+		: bits <= 50 ? ecmCurveOf< 70 , W >( M , s )
+		: bits <= 54 ? ecmCurveOf< 95 , W >( M , s )
+		: bits <= 58 ? ecmCurveOf< 135 , W >( M , s )
+		: bits <= 62 ? ecmCurveOf< 165 , W >( M , s )
+			     : ecmCurveOf< 205 , W >( M , s );
+  if( ( g != 1 ) && ( g != m ) )
+   return( g );
+  }
+ return( 0 );
+ }
+
+/// the root r of m if m = r^2, else 0: that of the double, off by at
+/// most one, corrected
+inline U64 squareRoot( U64 m )
+{
+ U64 r = U64( std::sqrt( double( m ) ) );
+ r = r > 0xFFFFFFFFULL ? 0xFFFFFFFFULL : r;
+ if( r * r > m )
+  --r;
+ else if( ( r < 0xFFFFFFFFULL ) && ( ( r + 1 ) * ( r + 1 ) <= m ) )
+  ++r;
+ return( r * r == m ? r : 0 );
+ }
+
+/// a factor of the odd composite m, neither 1 nor m: its root if a
+/// square, by the elliptic curves from 2^34 on, else (or if they fail) by
+/// the rho
 inline U64 factorOf( U64 m )
 {
+ if( m >= ( U64( 1 ) << 34 ) ) {
+  if( const U64 r = squareRoot( m ) ; r != 0 )
+   return( r );
+  const U64 g = m < ( U64( 1 ) << 60 )
+		  ? ecmFactor< true >( MontgomeryLazy( m ) )
+		: m < ( U64( 1 ) << 62 )
+		  ? ecmFactor< false >( MontgomeryLazy( m ) )
+		  : ecmFactor< false >( Montgomery64( m ) );
+  if( g != 0 )
+   return( g );
+  }
  for( U64 c = 1 ; ; ++c ) {
   U64 g;
   if( m < ( U64( 1 ) << 32 ) )
@@ -758,6 +1097,41 @@ inline U64 factorOf( U64 m )
   }
  }
 
+/// the odd primes below 4096, their inverses modulo 2^64 and the
+/// quotients ( 2^64 - 1 ) / p: p divides n iff n p^-1 mod 2^64 is at most
+/// the quotient, and then n p^-1 mod 2^64 is n / p; then 16 that never
+/// divide, so that the tests go 16 at a time
+struct TrialPrimes
+{
+ static constexpr U64 bound = 4096;
+ U64 p[ bound / 2 + 16 ] , inv[ bound / 2 + 16 ] , lim[ bound / 2 + 16 ];
+ int k , k256;  ///< the primes, those below 256
+ };
+
+constexpr TrialPrimes trialPrimes( void )
+{
+ TrialPrimes S{};
+ for( U64 p = 3 ; p < TrialPrimes::bound ; p += 2 ) {
+  bool prime = true;
+  for( U64 d = 3 ; d * d <= p ; d += 2 )
+   prime = prime && ( p % d != 0 );
+  if( ! prime )
+   continue;
+  U64 x = ( 3 * p ) ^ 2;
+  for( int j = 0 ; j < 4 ; ++j )
+   x *= 2 - p * x;
+  S.p[ S.k ] = p;
+  S.inv[ S.k ] = x;
+  S.lim[ S.k++ ] = ~U64( 0 ) / p;
+  S.k256 += p < 256;
+  }
+ for( int i = S.k ; i < S.k + 16 ; ++i )  // n 1 > 0 never holds
+  S.inv[ i ] = 1;
+ return( S );
+ }
+
+inline constexpr TrialPrimes kTrialPrimes = trialPrimes();
+
 }  // end( namespace detail )
 
 inline std::vector< U64 > factorize( U64 n )
@@ -767,16 +1141,35 @@ inline std::vector< U64 > factorize( U64 n )
  std::vector< U64 > F;
  for( ; ( n & 1 ) == 0 ; n >>= 1 )
   F.push_back( 2 );
- for( U64 p = 3 ; ( p < 256 ) && ( p * p <= n ) ; p += 2 )
-  for( ; n % p == 0 ; n /= p )
-   F.push_back( p );
- std::vector< U64 > todo;  // the cofactors to split
- if( n > 1 )
-  todo.push_back( n );
- while( ! todo.empty() ) {
+ constexpr auto & T = detail::kTrialPrimes;
+ auto divide = [ & ]( int i ) {
+  for( ; n * T.inv[ i ] <= T.lim[ i ] ; n *= T.inv[ i ] )
+   F.push_back( T.p[ i ] );
+  };
+ for( int i = 0 ; ( i < T.k256 ) && ( T.p[ i ] * T.p[ i ] <= n ) ; ++i )
+  divide( i );
+ std::vector< U64 > todo;  // the composite cofactors to split
+ if( ( n < 256 * 256 ) || isPrime( n ) ) {  // 1 or a prime
+  if( n > 1 )
+   F.push_back( n );
+  }
+ else {  // the primes from 256 to 4096, 16 tests at a time, then by one
+  for( int i = T.k256 ; ( i < T.k ) && ( T.p[ i ] * T.p[ i ] <= n ) ;
+       i += 16 ) {  // in the blocks in which one divides
+   bool hit = false;
+   for( int j = i ; j < i + 16 ; ++j )
+    hit |= n * T.inv[ j ] <= T.lim[ j ];
+   if( hit )
+    for( int j = i ; j < i + 16 ; ++j )
+     divide( j );
+   }
+  if( n > 1 )
+   todo.push_back( n );
+  }
+ while( ! todo.empty() ) {  // no factor below 4096 left
   const U64 m = todo.back();
   todo.pop_back();
-  if( ( m < 256 * 256 ) || isPrime( m ) )  // no factor below 256 left
+  if( ( m < T.bound * T.bound ) || isPrime( m ) )
    F.push_back( m );
   else {
    const U64 d = detail::factorOf( m );
