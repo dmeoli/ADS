@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `PartitionedEliasFano` keeps a record of one word per block (two if its
+  fields do not fit in one), with the start of the block and the place of
+  its code relative to its superblock of 16 blocks and the place of its 1
+  of rank 64, so that `access()` reads the record in one load and selects
+  in at most 4 words with no branch on the word, and `nextGEQ()` finds the
+  block by a table of buckets of the superblocks and a count of 16 records
+  in place of the layout of Eytzinger and a scan of the records of fixed
+  width; its files are of version 2
 - the tables of the benchmarks in the README and in `results/` are those
   of a run on an AMD EPYC 9654, with the rows "A/A" of every benchmark for
   the noise, and `results/` lists the libraries compared with the commit

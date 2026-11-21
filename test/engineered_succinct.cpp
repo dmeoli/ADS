@@ -338,11 +338,13 @@ ADS_TEST( "huffman-fm-index" )
  }
 
 // the partitioned Elias-Fano against a scan: every access, the nextGEQ
-// of every value from below the first item to above the last and every
-// contains, on sequences of many sizes around the blocks of 128 items,
+// of every value from below the first item to above the last, of random
+// values and every contains, on sequences of many sizes around the blocks
+// of 128 items, the 1 sampled at 64 and the superblocks of 2048 items,
 // uniform (blocks by Elias-Fano), dense (blocks as vectors), of runs (full
-// blocks) and of clusters mixing the three; fewer bits than Elias-Fano on
-// the clusters; the empty sequence and the bounds
+// blocks), of a constant gap, of clusters mixing the three, and of gaps of
+// about 2^40 and items near 2^64 (records of two words); fewer bits than
+// Elias-Fano on the clusters; the empty sequence and the bounds
 ADS_TEST( "partitioned-elias-fano" )
 {
  std::mt19937_64 g( 23 );
@@ -363,6 +365,12 @@ ADS_TEST( "partitioned-elias-fano" )
   for( std::size_t i = 0 ; ok && ( i < x.size() ) ; i += 1 + i / 100 )
    ok = ( P.nextGEQ( x[ i ] ) == i ) && P.contains( x[ i ] ) &&
 	( ( x[ i ] == 0 ) || ( P.nextGEQ( x[ i ] - 1 ) <= i ) );
+  for( int q = 0 ; ok && ( q < 2000 ) ; ++q ) {
+   const std::uint64_t v =
+     x.empty() ? g() % 8 : x.front() + g() % ( x.back() - x.front() + 2 );
+   ok = P.nextGEQ( v ) ==
+	std::size_t( std::lower_bound( x.begin() , x.end() , v ) - x.begin() );
+   }
   CHECK( ok );
   const auto k = P.kinds();
   for( int t = 0 ; t < 3 ; ++t )
@@ -372,9 +380,11 @@ ADS_TEST( "partitioned-elias-fano" )
  check( {} , 0 );
  check( { 0 } , 1 );
  check( { 5 } , 100 );
- for( const std::size_t n : { 1 , 127 , 128 , 129 , 256 , 1000 , 20000 } ) {
-  std::vector< std::uint64_t > uni , dense , run , mix;
-  std::uint64_t a = 0 , b = 0 , c = g() % 1000 , d = 0;
+ for( const std::size_t n :
+      { 1 , 64 , 65 , 128 , 129 , 1000 , 2047 , 2049 , 20000 , 70000 } ) {
+  std::vector< std::uint64_t > uni , dense , run , same , mix , far , top;
+  std::uint64_t a = 0 , b = 0 , c = g() % 1000 , d = 0 , e = 0 ,
+		h = std::uint64_t( 1 ) << 63;
   for( std::size_t i = 0 ; i < n ; ++i ) {
    a += 1 + g() % 300;  // gaps of mean 150
    b += 1 + g() % 3;    // gaps of mean 2
@@ -382,15 +392,23 @@ ADS_TEST( "partitioned-elias-fano" )
    d += ( i / 128 ) % 3 == 0   ? 1
 	: ( i / 128 ) % 3 == 1 ? 1 + g() % 2
 			       : 1 + g() % 5000;
+   e += 1 + ( g() >> 24 );  // gaps of about 2^40
+   h += 1 + g() % ( std::uint64_t( 1 ) << 40 );
    uni.push_back( a );
    dense.push_back( b );
    run.push_back( c );
+   same.push_back( 17 * i );
    mix.push_back( d );
+   far.push_back( e );
+   top.push_back( h );
    }
   check( uni , uni.back() + 1 );
   check( dense , dense.back() + 7 );
   check( run , run.back() + 1 );
+  check( same , same.back() + 1 );
   check( mix , mix.back() + 1000 );
+  check( far , far.back() + 1 );
+  check( top , ~std::uint64_t( 0 ) );
   if( n == 20000 )
    CHECK( PartitionedEliasFano( mix ).sizeInBits() <
 	  EliasFano( mix ).sizeInBits() / 2 );

@@ -169,9 +169,10 @@
  <tr><td><tt>PartitionedEliasFano</tt></td>
      <td>at most that of Elias-Fano on each block of 128 items, plus a
          record per block</td>
-     <td>a scan of the code of a block</td>
-     <td><tt>nextGEQ()</tt> by a search of the records and the scan of a
-         block</td></tr>
+     <td>a record and a select in at most 4 words of the code of a
+         block, from its start or from its 1 of rank 64</td>
+     <td><tt>nextGEQ()</tt> by a bucket of the superblocks, a count of
+         16 records and the scan of a block</td></tr>
  <tr><td><tt>WaveletMatrix</tt></td>
      <td>\f$ n w \f$, plus a directory per level</td>
      <td>\f$ O( w ) \f$</td>

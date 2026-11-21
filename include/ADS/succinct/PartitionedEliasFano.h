@@ -23,24 +23,30 @@
  * - else Elias-Fano with \f$ \ell = \lfloor \log_2( u_j / m ) \rfloor \f$,
  *   in \f$ m \ell + m + \lfloor ( u_j - 1 ) / 2^\ell \rfloor + 1 \f$ bits;
  *
- * the kind is a function of \f$ ( m , u_j ) \f$. For each block a record of
- * fixed width holds the last item, the place of the code of the block and
- * its kind with \f$ \ell \f$ (8 bits, so that a query computes no
- * logarithm), and the last item of every 8-th block is kept apart for the
- * searches; so
+ * the kind is a function of \f$ ( m , u_j ) \f$. For each block a record
+ * of one word (two if the fields do not fit in one) holds \f$ b_j \f$ and
+ * the place of its code, both relative to those of the first block of its
+ * superblock of 16 blocks, the place of the 1 of rank 64 in its code (the
+ * high part or the vector) and its kind with \f$ \ell \f$ (8 bits, so that
+ * a query computes no logarithm); each superblock keeps its \f$ b \f$ and
+ * its place in full, and a table of buckets gives, for each \f$ t \f$, the
+ * last superblock whose \f$ b \f$ is below \f$ t 2^s \f$, one bucket per
+ * superblock or so; so
  *
- * - `access( i )` reads the records of the block of \f$ i \f$ and of the one
- *   before (next to each other) and selects the item in the code of the
- *   block, a scan of its few words (at most \f$ 2 B \f$ bits of high part,
- *   or a vector of \f$ u_j \le B ( \ell + 3 ) \f$ bits, since it is chosen
- *   only when not longer than Elias-Fano);
- * - `nextGEQ( x )` finds the first block whose last item is at least
- *   \f$ x \f$ by a search of the items apart in the layout of Eytzinger (a
- *   complete binary tree by levels, the node \f$ t \f$ with the children
- *   \f$ 2 t \f$ and \f$ 2 t + 1 \f$, whose descent fetches ahead the nodes
- *   three levels down) and then by at most 8 records, and the item in that
- *   block by the high part (the 0 of the bucket of \f$ x \f$) or by the
- *   sideways sums of the vector up to \f$ x \f$.
+ * - `access( i )` reads the record of the block of \f$ i \f$ and the
+ *   words of its superblock and selects the item in the code of the block
+ *   from its start or from the 1 of rank 64, in the 4 words that follow
+ *   with no branch on the word (at most \f$ 3 B \f$ bits of high part, or a
+ *   vector of \f$ u_j \le B ( \ell + 3 ) \f$ bits, since it is chosen only
+ *   when not longer than Elias-Fano, and a scan beyond the 4 words when
+ *   the 1 is not there);
+ * - `nextGEQ( x )` finds the last block with \f$ b_j \le x \f$, whose last
+ *   item is at least \f$ x \f$, by the bucket of \f$ x \f$, which bounds the
+ *   superblocks to search (one or two on uniform items), and by a count
+ *   with no branch of the 15 records after the first of the superblock,
+ *   and the item in that block by the high part (the 0 of the bucket of
+ *   \f$ x \f$) or by the sideways sums of the vector up to \f$ x \f$, both
+ *   from the 1 of rank 64 when \f$ x \f$ is beyond it.
  *
  * Ottaviano and Venturini also choose the ends of the blocks by an
  * approximate dynamic program on the cost of the codes, which gains a
@@ -58,9 +64,6 @@
  *      37th SIGIR, 273-282, 2014, doi:10.1145/2600428.2609615
  * \see S. Vigna, Quasi-succinct indices, Proc. 6th WSDM, 83-92, 2013,
  *      doi:10.1145/2433396.2433409
- * \see P.-V. Khuong, P. Morin, Array layouts for comparison-based
- *      searching, ACM Journal of Experimental Algorithmics 22, 1-39, 2017,
- *      doi:10.1145/3053370
  * \see G. E. Pibiri, R. Venturini, Techniques for inverted index
  *      compression, ACM Computing Surveys 53(6), 125, 2020,
  *      doi:10.1145/3415148
@@ -85,7 +88,6 @@
 
 #include "ADS/Contract.h"
 #include "ADS/external/MappedFile.h"
-#include "ADS/memory/Prefetch.h"
 #include "ADS/succinct/BitVector.h"
 
 #include <algorithm>
@@ -142,14 +144,17 @@ class PartitionedEliasFano
  ///     u_j \text{ bits with a 1 at each } x - b_j \cr
  /// 7 & \qquad \textbf{else}\ \text{the Elias-Fano code of the values } x -
  ///     b_j \text{ with } \ell \text{ low bits} \cr
- /// 8 & \qquad \text{the record of } j \text{: its last item, the place of }
- ///     \text{its code, its kind and } \ell \cr
- /// 9 & \quad \text{the last items of the blocks } 0 , 8 , 16 , \ldots
- ///     \text{ in the layout of Eytzinger}
+ /// 8 & \qquad \text{the record of } j \text{: } b_j \text{ and the place }
+ ///     \text{of its code (relative to its superblock), the place of its}
+ ///     \cr
+ ///   & \qquad \text{1 of rank 64, its kind and } \ell \cr
+ /// 9 & \quad \text{for each } t \text{, the last superblock whose } b
+ ///     \text{ is below } t 2^s
  /// \end{array}}
  /// \f]
  /// \pre \f$ x \f$ is strictly increasing (an audit),
- ///      \f$ x_{n-1} < u \f$
+ ///      \f$ x_{n-1} < u \f$, \f$ n < 2^{43} \f$ (fewer than \f$ 2^{32} \f$
+ ///      superblocks)
  PartitionedEliasFano( std::span< const std::uint64_t > x , std::uint64_t u );
 
  /// the number of items, \f$ n \f$
@@ -170,14 +175,17 @@ class PartitionedEliasFano
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{access}( i ) \cr
  /// 2 & \quad j \gets \lfloor i / 128 \rfloor;\ k \gets i \bmod 128;\ b
- ///     \gets \text{the last item of } j - 1 \text{, plus 1} \cr
+ ///     \gets b_j \text{, from the record of } j \text{ and its}
+ ///     \text{ superblock} \cr
  /// 3 & \quad \textbf{if}\ j \text{ is full }\ \textbf{then return}\ b + k \cr
  /// 4 & \quad \textbf{if}\ j \text{ is a vector }\ \textbf{then return}\ b +
  ///     ( \mathrm{select}_1( p , k ) - p ) \cr
  /// 5 & \quad h \gets p + m \ell\quad \triangleright\ \text{the start of the }
  ///     \text{high part} \cr
  /// 6 & \quad \textbf{return}\ b + ( \mathrm{select}_1( h , k ) - h - k )
- ///     \cdot 2^\ell + \text{the low bits of } k
+ ///     \cdot 2^\ell + \text{the low bits of } k \cr
+ ///   & \quad \triangleright\ \mathrm{select}_1 \text{ from the 1 of rank 64}
+ ///     \text{ of the record if } k \ge 64
  /// \end{array}}
  /// \f]
  /// \pre \f$ i < \f$ `size()`
@@ -191,23 +199,24 @@ class PartitionedEliasFano
 
  /// the place of the first item \f$ \ge x \f$, `size()` if none
  ///
- /// In pseudocode (Ottaviano and Venturini, with the search of Khuong and
- /// Morin, beyond the book), \f$ E \f$ the items apart in the layout of
- /// Eytzinger, from 1, and \f$ \mathrm{last}( j ) \f$ the last item of the
- /// block \f$ j \f$:
+ /// In pseudocode (Ottaviano and Venturini, beyond the book), \f$ H \f$ the
+ /// table of buckets, \f$ H[ t ] \f$ the last superblock whose \f$ b \f$ is
+ /// below \f$ t 2^s \f$ (0 if none), and \f$ c_q \f$ the \f$ b \f$ of the
+ /// superblock \f$ q \f$:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{nextGEQ}( x ) \cr
  /// 2 & \quad \textbf{if}\ n = 0\ \textbf{or}\ x > \text{the last item }
  ///     \ \textbf{then return}\ n \cr
- /// 3 & \quad t \gets 1;\ \textbf{while}\ t \le | E |\ \textbf{do}\ t \gets 2
- ///     t + [ E[ t ] < x ] \cr
- /// 4 & \quad a \gets \text{the rank of the first item apart} \ge x \text{,}
- ///     \text{ from the trailing 1s of } t \cr
- /// 5 & \quad j \gets 8 ( a - 1 ) + 1\ \text{(0 if } a = 0 \text{)};
- ///     \ \textbf{while}\ \mathrm{last}( j ) < x\ \textbf{do}\ j \gets j + 1
+ /// 3 & \quad t \gets \lfloor x / 2^s \rfloor;\ q \gets \text{the last }
+ ///     \text{superblock of } [ H[ t ] , H[ t + 1 ] ] \text{ with } c_q \le x
  ///     \cr
- /// 6 & \quad v \gets \max\{ 0 , x - b_j \} \cr
+ /// 4 & \quad j \gets 16 q + | \{ 16 q < j' < 16 q + 16 : b_{j'} \le x \} |
+ ///     \quad \triangleright\ \text{the last } j \text{ with } b_j \le x
+ ///     \cr
+ /// 5 & \quad \triangleright\ \text{the last item of } j \text{ is}
+ ///     \text{ at least } x \text{, since } b_{j+1} > x \cr
+ /// 6 & \quad v \gets x - b_j \cr
  /// 7 & \quad \textbf{if}\ j \text{ is full }\ \textbf{then}\ k \gets v \cr
  /// 8 & \quad \textbf{else if}\ j \text{ is a vector }\ \textbf{then}\ k
  ///     \gets \text{the 1s of its first } v \text{ bits} \cr
@@ -227,7 +236,8 @@ class PartitionedEliasFano
  /// those coded by Elias-Fano
  [[nodiscard]] std::array< std::size_t , 3 > kinds( void ) const;
 
- /// the bits of the codes, of the records and of the records apart
+ /// the bits of the codes, of the records, of the superblocks and of the
+ /// buckets
  [[nodiscard]] std::size_t sizeInBits( void ) const;
 
 /*----------------------------- THE PERSISTENCE ----------------------------*/
@@ -235,9 +245,13 @@ class PartitionedEliasFano
  /// the name of the structure in a file [see `Persistence.h`]
  static constexpr std::string_view persistName = "PartitionedEliasFano";
 
+ /// the version of the layout in a file: 2, that of the records of whole
+ /// words and of the buckets
+ static constexpr std::uint32_t persistVersion = 2;
+
  /// the items of a block, in a file
  [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
-  return( detail::persistMix( { kB , kApart } ) );
+  return( detail::persistMix( { kB , kS , kSample } ) );
   }
 
  /// the members written to, or read from, the archive \f$ a \f$ [see
@@ -278,8 +292,9 @@ class PartitionedEliasFano
 
 /*--------------------------------------------------------------------------*/
  private:
- static constexpr std::size_t kB = 128;    ///< the items of a block
- static constexpr std::size_t kApart = 8;  ///< blocks between records apart
+ static constexpr std::size_t kB = 128;      ///< the items of a block
+ static constexpr std::size_t kS = 16;       ///< the blocks of a superblock
+ static constexpr std::size_t kSample = 64;  ///< the rank of the 1 sampled
 
  /// the encoding of a block
  enum Kind {
@@ -298,36 +313,47 @@ class PartitionedEliasFano
   };
  [[nodiscard]] static Code code( std::uint64_t m , std::uint64_t u );
 
- /// the last item of the block j, the place of its code, and its kind
- /// with its low bits ( ell << 2 | kind )
- [[nodiscard]] std::uint64_t last( std::size_t j ) const {
-  return( f_rec.get( j * std::size_t( f_wr ) , f_wl ) );
-  }
- [[nodiscard]] std::size_t where( std::size_t j ) const {
-  return( std::size_t(
-    f_rec.get( j * std::size_t( f_wr ) + std::size_t( f_wl ) , f_wo ) ) );
-  }
- [[nodiscard]] unsigned form( std::size_t j ) const {
-  return( unsigned(
-    f_rec.get( j * std::size_t( f_wr ) + std::size_t( f_wl + f_wo ) , 8 ) ) );
+ /// the fields of the record of a block, read by one load (two adjacent
+ /// ones if the record takes two words)
+ struct Record
+ {
+  std::uint64_t b;     ///< \f$ b_j \f$
+  std::size_t p;       ///< the place of its code
+  std::size_t sample;  ///< the place of its 1 of rank 64 in its code
+  unsigned form;       ///< \f$ \ell \f$ and the kind, ( ell << 2 | kind )
+  };
+ [[nodiscard]] Record record( std::size_t j ) const;
+
+ /// \f$ b_j \f$ relative to its superblock, the field of the record of j
+ [[nodiscard]] std::uint64_t relBase( std::size_t j ) const {
+  return( f_rec[ j * f_s ] & f_mb );
   }
 
- /// the place of the k-th 1 (from 0) in the bits [ p , p + len ) of the
- /// codes, and the place of the k-th 0
- [[nodiscard]] std::size_t select1( std::size_t p , std::size_t k ) const;
- [[nodiscard]] std::size_t select0( std::size_t p , std::size_t k ) const;
+ /// the place of the k-th 1 (from 0) of the codes from the place p if One,
+ /// else of the k-th 0: the single point where the select of a word is
+ /// called [see `selectInWord()`]
+ template< bool One >
+ [[nodiscard]] std::size_t select( std::size_t p , std::size_t k ) const;
 
  /// the 1s in the bits [ p , q ) of the codes
  [[nodiscard]] std::size_t ones( std::size_t p , std::size_t q ) const;
 
+ /// an array that can be a view over a mapped file
+ template< class T >
+ using Array = std::vector< T , MappableAllocator< T > >;
+
  std::size_t f_n = 0;
  std::uint64_t f_u = 0;
- BitVector f_codes;                     ///< the codes of the blocks
- BitVector f_rec;                       ///< the records of the blocks
- int f_wl = 1 , f_wo = 1 , f_wr = 10;     ///< a last, a place, a record
- std::vector< std::uint64_t > f_apart;  ///< the last of every 8-th block
- std::vector< std::uint64_t > f_eyt;    ///< them by Eytzinger, from 1
- std::vector< std::uint32_t > f_rank;   ///< the rank of each one there
+ std::uint64_t f_last = 0;                    ///< the last item
+ BitVector f_codes;                           ///< the codes, then 128 0s
+ Array< std::uint64_t > f_rec;                ///< the records of the blocks
+ Array< std::uint64_t > f_sup;                ///< the b, place of superblocks
+ Array< std::uint32_t > f_bkt;                ///< the buckets
+ int f_shift = 0;                             ///< \f$ s \f$, bits of a bucket
+ std::size_t f_s = 1;                         ///< the words of a record
+ int f_wb = 1 , f_wo = 1 , f_ws = 1;            ///< widths of b, place, sample
+ int f_sh = 1;                                ///< the shift of the second word
+ std::uint64_t f_mb = 1 , f_mo = 1 , f_ms = 1;  ///< their masks
 
  };  // end( class PartitionedEliasFano )
 
