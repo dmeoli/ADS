@@ -117,8 +117,11 @@ struct ThreadPool::InvokeTask : Task
 
 /*--------------------------------------------------------------------------*/
 
-inline ThreadPool::ThreadPool( std::size_t p , std::int64_t spin )
-    : f_spin( spin )
+inline ThreadPool::ThreadPool( std::size_t p , std::int64_t spin ,
+			       std::int64_t maxSpin )
+    : f_spin( std::clamp< std::int64_t >( spin , 0 , kLongestSpin ) ) ,
+      f_maxSpin( std::clamp< std::int64_t >( maxSpin , f_spin ,
+					     kLongestSpin ) )
 {
  if( p == 0 )
   p = std::max< std::size_t >( std::thread::hardware_concurrency() , 1 );
@@ -206,21 +209,75 @@ inline bool ThreadPool::claim( void )
  return( true );
  }
 
+template< class P >
+bool ThreadPool::lookFor( P & ready ,
+			  std::chrono::steady_clock::time_point t0 ,
+			  std::int64_t budget )
+{
+ using clock = std::chrono::steady_clock;
+ const auto end = t0 + std::chrono::nanoseconds( budget );
+ const auto polite = t0 + std::chrono::nanoseconds( f_spin );
+ unsigned pauses = 1;
+ bool yield = false;
+ for( unsigned i = 1 ; ; ++i ) {  // the clock every 64 looks
+  if( yield )
+   std::this_thread::yield();
+  else
+   for( unsigned k = 0 ; k < pauses ; ++k )
+    detail::spinPause();
+  if( ready() )
+   return( true );
+  if( ( i & 63 ) == 0 ) {
+   const auto now = clock::now();
+   if( now >= end )
+    return( false );
+   pauses = std::min( 2 * pauses , 64u );
+   yield = now >= polite;
+   }
+  }
+ }
+
 inline void ThreadPool::loop( std::size_t s )
 {
+ using clock = std::chrono::steady_clock;
  tl_self = Self{ this , s };
+ // the longest gaps of the current window and of the one before
+ const auto window = std::chrono::nanoseconds( 5 * f_maxSpin );
+ std::int64_t cur = 0 , prev = 0;
+ auto opened = clock::now();
  for( ; ; ) {
   Task * t = nullptr;
   bool open = false;
-  f_event.await(
-    [ & ] {
-     // a call of a run first: only an idle worker takes one
-     if( ( open = f_runOpen.load( std::memory_order_acquire ) ) )
-      return( true );
-     t = find( s );
-     return( ( t != nullptr ) || f_stop.load( std::memory_order_acquire ) );
-     } ,
-    f_spin );
+  auto ready = [ & ] {
+   // a call of a run first: only an idle worker takes one
+   if( ( open = f_runOpen.load( std::memory_order_acquire ) ) )
+    return( true );
+   t = find( s );
+   return( ( t != nullptr ) || f_stop.load( std::memory_order_acquire ) );
+   };
+  if( ! ready() ) {  // a gap: look for its budget, then sleep
+   const auto t0 = clock::now();
+   const std::int64_t budget =
+     std::clamp( 2 * std::max( cur , prev ) , f_spin , f_maxSpin );
+   if( ! lookFor( ready , t0 , budget ) )
+    f_event.await( ready , 0 );
+   const auto t1 = clock::now();
+   const std::int64_t g =
+     std::chrono::duration_cast< std::chrono::nanoseconds >( t1 - t0 )
+       .count();
+   if( g > f_maxSpin ) {  // idle: back to the least budget
+    cur = prev = 0;
+    opened = t1;
+    }
+   else {
+    if( t1 - opened >= window ) {  // a new window
+     prev = t1 - opened >= 2 * window ? 0 : cur;
+     cur = 0;
+     opened = t1;
+     }
+    cur = std::max( cur , g );
+    }
+   }
   if( open ) {
    claim();
    continue;

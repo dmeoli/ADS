@@ -249,16 +249,26 @@ unlike the work-first principle of Cilk, however, the deques hold the
 tasks of the calls not yet started (`g` of `invoke()`, the tokens of
 `bulk()`) rather than the continuations of the caller. A worker that finds its deque empty
 tries the deques of the others, from a random one and then in turn. If all
-are empty, it looks again for 2 ms (the parameter `spin` of the
-constructor, in nanoseconds; the number of threads $p$ is the other, the
-hardware threads by default) and then sleeps
-on an event count ([§24.10](24-concurrent.md#sec-24-10)); the event count
-wakes it when a task is pushed, and costs the pusher a light fence and the
-read of a line when nobody sleeps. These 2 ms are those of the runtimes of
-OpenMP, whose threads also look for work for a while before they sleep. In
-fact, the parallel algorithms run phases of tens of microseconds separated
-by short sequential steps, and a worker woken from its sleep at each phase
-would typically arrive late at all of them.
+are empty, it looks again for a while, its *budget*, and then sleeps on an
+event count ([§24.10](24-concurrent.md#sec-24-10)); the event count wakes it
+when a task is pushed, and costs the pusher a light fence and the read of a
+line when nobody sleeps. A worker woken from its sleep arrives 10 to 50
+microseconds late, and on a core that the governor of the frequency may
+have slowed down meanwhile, so that the next parallel phase may run up to
+twice as slow; a worker that looks for long, instead, burns its core while
+the program runs sequentially. The budget therefore follows the *gaps*
+that the worker sees, a gap being the time from the moment it found
+nothing to the one it found a task: it is twice the longest gap of the
+current window of $5 S$ and of the one before, kept between the parameters
+$s \le S$ of the constructor (`spin` and `maxSpin`, in nanoseconds, 2 ms
+and 200 ms by default, the second that of the runtimes of OpenMP that look
+for longest), and it goes back to $s$ after a gap longer than $S$. Thus the
+workers of a program that calls the pool at a steady pace stay awake across
+its sequential steps, while those of a program that went sequential sleep
+after at most $S$, and after $s$ from then on. While it looks, a worker
+pauses ever longer between the looks, up to 64 pauses of the processor,
+and beyond $s$ it yields its core to the other threads of the machine
+between them.
 
 **The jobs of `bulk()`.** A call of `bulk( n , f )` puts a *job* on the
 stack of the caller: a counter $\mathit{next}$ of the calls not yet claimed,
@@ -290,7 +300,8 @@ The public members of the pool are
 class ThreadPool
 {
  public:
- explicit ThreadPool( std::size_t p = 0 , std::int64_t spin = 2000000 );
+ explicit ThreadPool( std::size_t p = 0 , std::int64_t spin = 2000000 ,
+                      std::int64_t maxSpin = 200000000 );
  std::size_t concurrency( void ) const;
  template< class F >
  void bulk( std::size_t n , F && f );
@@ -302,9 +313,10 @@ class ThreadPool
  };
 ```
 
-where $p = 0$ stands for the hardware threads of the machine, and `spin` is
-the time, in nanoseconds, during which an idle thread looks for work
-before it sleeps.
+where $p = 0$ stands for the hardware threads of the machine, and `spin`
+and `maxSpin` are the least and the most time, in nanoseconds, during
+which an idle thread looks for work before it sleeps (`ThreadPool( p , 0 ,
+0 )` has workers that sleep at once).
 
 <span id="alg-25-2"></span>**Algorithm 25.2.** The `bulk()` of `ThreadPool`:
 a job of tokens on the deques of Chase and Lev.
@@ -501,7 +513,8 @@ any executor without it.
 
 A program that already runs on another runtime usually wants the algorithms
 of the library on its threads, since the pool would compete with them and
-spin for 2 ms after each call (as libgomp and oneTBB do after theirs). The
+look for work for up to 200 ms after each call (as libgomp and oneTBB do
+after theirs). The
 headers of `ADS/interop/parallel/` give four more executors for this purpose.
 Each is compiled where the headers of its runtime are found.
 `StdParExecutor< Policy >` runs `bulk( n , f )` as `std::for_each( Policy()

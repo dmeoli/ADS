@@ -13,16 +13,27 @@
  * top (the work-first principle of Cilk, which leaves the oldest, and
  * usually largest, tasks to the thieves). A worker that finds no task in its
  * deque tries to steal one from the others, starting at a random one; if all
- * are empty it looks again for 2 ms (a parameter of the pool) and then
- * sleeps on an event count [see `EventCount.h`], which wakes it when a task
- * is pushed and costs the pusher a light fence and the read of a line when
- * nobody sleeps. The 2 ms are those of the runtimes of OpenMP, whose threads
- * also look for work for a while before they sleep: the parallel algorithms
- * run phases of tens of microseconds separated by short sequential steps,
- * and a worker woken from its sleep for each phase arrives 10 to 50
- * microseconds late (on the benchmark, a reduction of \f$ 10^6 \f$ integers
- * on 8 threads takes 115 microseconds with 20 microseconds of looking and 84
- * with 2 ms, as long as with OpenMP).
+ * are empty it looks again for a while, its budget, and then sleeps on an
+ * event count [see `EventCount.h`], which wakes it when a task is pushed and
+ * costs the pusher a light fence and the read of a line when nobody sleeps.
+ * A worker woken from its sleep arrives 10 to 50 microseconds late, and on
+ * a core that the governor of the frequency may have slowed down meanwhile,
+ * so that the next parallel phase runs up to twice as slow; a worker that
+ * looks for long instead burns its core while the program runs
+ * sequentially. The budget therefore follows the gaps between the parallel
+ * phases that each worker sees, a gap being the time from the moment it
+ * found nothing to the one it found a task: it is twice the longest gap of
+ * the current window of \f$ 5 S \f$ and of the one before, kept between the
+ * parameters \f$ s \le S \f$ of the pool (2 ms and 200 ms by default, the
+ * second that of the runtimes of OpenMP that look for longest), and it goes
+ * back to \f$ s \f$ after a gap longer than \f$ S \f$. Thus the workers of
+ * a program that calls the pool at a steady pace stay awake across its
+ * sequential steps, while those of a program that went sequential sleep
+ * after at most \f$ S \f$, and after \f$ s \f$ from then on; all this is
+ * local to the worker, and costs the callers nothing. While it looks, a
+ * worker pauses ever longer between the looks, up to 64 pauses of the
+ * processor, and beyond \f$ s \f$ yields its core between them to the other
+ * threads of the machine.
  *
  * `bulk( n , f )` puts a job on the stack of the caller: a counter of the
  * calls \f$ f( 0 ) , \ldots , f( n - 1 ) \f$ not yet claimed, and
@@ -112,7 +123,9 @@
 #include "ADS/concurrent/WorkStealingDeque.h"
 #include "ADS/parallel/Executor.h"
 
+#include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -140,9 +153,11 @@ class ThreadPool
  public:
  /// a pool of \f$ p \f$ threads, the caller included (the number of the
  /// hardware threads if \f$ p = 0 \f$), whose idle workers look for tasks
- /// for `spin` ns before they sleep
+ /// for between `spin` and `maxSpin` ns, after the gaps they saw, before
+ /// they sleep (`maxSpin` raised to `spin` if below it)
  /// \pre \f$ p \ge 1 \f$ once the hardware threads are counted
- explicit ThreadPool( std::size_t p = 0 , std::int64_t spin = 2000000 );
+ explicit ThreadPool( std::size_t p = 0 , std::int64_t spin = 2000000 ,
+		      std::int64_t maxSpin = 200000000 );
  /// no copy, since the workers hold the address of the pool
  ThreadPool( const ThreadPool & ) = delete;
  /// no copy, since the workers hold the address of the pool
@@ -285,6 +300,12 @@ class ThreadPool
  /// the loop of the worker s
  void loop( std::size_t s );
 
+ /// looks for a task by `ready()` from `t0` on for `budget` ns, pausing
+ /// ever longer between the looks; false if none was found
+ template< class P >
+ bool lookFor( P & ready , std::chrono::steady_clock::time_point t0 ,
+	       std::int64_t budget );
+
  /// a task for the thread s: from its deque, or stolen from another
  Task * find( std::size_t s );
 
@@ -294,6 +315,9 @@ class ThreadPool
  /// claims a call of the open run and makes it; false if none was left
  bool claim( void );
 
+ /// the longest look, in ns, so that the windows fit their clock
+ static constexpr std::int64_t kLongestSpin = std::int64_t( 1 ) << 58;
+
  /// the pool and the slot of the running thread
  static inline thread_local Self tl_self{ nullptr , 0 };
 
@@ -302,7 +326,8 @@ class ThreadPool
  EventCount f_event;                             ///< where the idle ones sleep
  std::atomic< bool > f_stop{ false };            ///< set by the destructor
  std::mutex f_master;                            ///< the slot of the caller
- std::int64_t f_spin;                     ///< ns of looking before sleep
+ std::int64_t f_spin;                     ///< least ns of looking
+ std::int64_t f_maxSpin;                  ///< most ns of looking
  std::mutex f_runOne;                     ///< one run at a time
  std::mutex f_runLock;                    ///< the claims of the calls
  std::atomic< bool > f_runOpen{ false };  ///< calls left to claim

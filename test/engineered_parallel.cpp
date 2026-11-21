@@ -96,8 +96,12 @@ void onEach( F && f )
   f( pool );
   }
  {
-  ThreadPool lazy( 4 , 0 );  // workers that sleep at once
+  ThreadPool lazy( 4 , 0 , 0 );  // workers that sleep at once
   f( lazy );
+  }
+ {
+  ThreadPool brief( 4 , 0 , 1000000 );  // a budget from 0 to 1 ms
+  f( brief );
   }
 #if defined( _OPENMP )
  OpenMPExecutor omp( 4 );

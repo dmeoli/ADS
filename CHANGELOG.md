@@ -98,6 +98,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BoolSet` combines the words that both sets have in a loop with no test,
   which the compiler vectorizes without Highway, and masks the bits past
   the dimension once at the end
+- the idle workers of `ThreadPool` look for work for a budget that follows
+  the gaps between the tasks that each of them sees, twice the longest gap
+  of the last two windows of 5 `maxSpin`, between `spin` (2 ms) and the new
+  parameter `maxSpin` (200 ms), and back to `spin` after a gap longer than
+  `maxSpin`, pausing ever longer between the looks and yielding the core
+  beyond `spin`; before, they slept after 2 ms, so that a parallel phase
+  after a sequential step of more than 2 ms waited for their wake-up and
+  ran on cores that the governor of the frequency had slowed down
 
 ### Fixed
 
