@@ -354,7 +354,9 @@ DenseHashMap< K , V , H , Eq , A >::place( KK && k , Args &&... a )
   return( std::pair< V * , bool >( &f_kv[ p ].second , false ) );
   }
  ADS_PRE( f_kv.size() < 0xFFFFFFFFULL );
- if( ( f_kv.size() + f_deleted >= f_max ) && ! recount() ) [[unlikely]]
+ // the empty places counted only if a removal may have left some
+ if( ( f_kv.size() + f_deleted >= f_max ) &&
+     ( ( f_deleted == 0 ) || ! recount() ) ) [[unlikely]]
   grow();
  // the pair first, so that an exception leaves the index as it was
  f_kv.emplace_back( std::piecewise_construct ,

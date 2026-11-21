@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the bit of the header at its place and the ones below it, with no
   select, and finds the end of a run by the zeros that follow its start
   instead of a second select; the bins and the answers are the same
+- `DenseHashMap` counts its empty places before a growth only after a
+  removal, since with none the count cannot avoid the growth
 
 ### Fixed
 
