@@ -83,7 +83,9 @@ wideProduct( std::uint64_t a , std::uint64_t b , std::uint64_t & hi )
   return( static_cast< std::uint64_t >( p ) );
   }
 #endif
- return( wideProductHalves( a , b , hi ) );
+ const WordPair p = wideProductHalves( a , b );
+ hi = p.hi;
+ return( p.lo );
  }
 
 /// the quotient of \f$ u_1 2^{64} + u_0 \f$ by \f$ v \f$, its remainder in

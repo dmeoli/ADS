@@ -134,8 +134,8 @@ ADS_TEST( "fast-hash" )
        { 0ULL , 3ULL , 0xFFFFFFFFULL , ~0ULL , 0x123456789ABCDEF0ULL } ) {
    const Product128 q = product128( a , b );
    CHECK( q.lo == a * b && foldedProduct( a , b ) == ( q.lo ^ q.hi ) );
-   std::uint64_t h = 0;
-   CHECK( detail::wideProductHalves( a , b , h ) == q.lo && q.hi == h );
+   const auto w = detail::wideProductHalves( a , b );
+   CHECK( w.lo == q.lo && w.hi == q.hi );
    }
  static_assert( product128( ~0ULL , ~0ULL ).hi == ~0ULL - 1 );
  static_assert( product128( 1ULL << 63 , 4 ).hi == 2 );

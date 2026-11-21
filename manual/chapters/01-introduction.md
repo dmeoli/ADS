@@ -907,8 +907,8 @@ With `ADS_WITH_BOOST` the product is that of Boost.Multiprecision, which
 Boost computes by the instruction of the processor where there is one (on
 x86-64 the code is the same as that of `unsigned __int128`), and otherwise
 (and in a constant expression) a computation on halves of 32 bits, which is
-also `wideProductHalves( a , b , hi )`; the division is the division of two
-digits of 32 bits by one, twice ([Warren 2012, section
+also `wideProductHalves( a , b )`, which returns both words; the division
+is the division of two digits of 32 bits by one, twice ([Warren 2012, section
 9-4](Z-bibliography.md#ref-warren2012)). The swap is the builtin of GCC and
 Clang, else the `std::byteswap()` of C++23, else the intrinsic of MSVC, and
 else three exchanges by masks (of

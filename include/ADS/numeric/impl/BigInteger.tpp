@@ -31,7 +31,9 @@ namespace detail
 digitProduct( std::uint64_t a , std::uint64_t b , std::uint64_t & hi )
 {
 #if defined( ADS_BIGINT_PORTABLE )
- return( wideProductHalves( a , b , hi ) );
+ const WordPair p = wideProductHalves( a , b );
+ hi = p.hi;
+ return( p.lo );
 #else
  return( wideProduct( a , b , hi ) );
 #endif

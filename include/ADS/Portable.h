@@ -133,10 +133,17 @@ namespace detail
 
 /*--------------------------------------------------------------------------*/
 
-/// the product of 128 bits of `a` and `b`, its high half in `hi`, by the
-/// four products of their halves of 32 bits (Algorithm 4.3.1M of Knuth),
-/// for the product of two words of `Wide.h` without Boost and in the
-/// constant expressions, and for the tests
+/// a number of two words, \f$ \mathit{hi} \, 2^{64} + \mathit{lo} \f$
+struct WordPair
+{
+ std::uint64_t lo ,  ///< the low word
+   hi;              ///< the high word
+ };
+
+/// the product of 128 bits of `a` and `b` by the four products of their
+/// halves of 32 bits (Algorithm 4.3.1M of Knuth), for the product of two
+/// words of `Wide.h` without Boost and in the constant expressions, and for
+/// the tests; always inlined, its two words returned in registers
 ///
 /// In pseudocode, \f$ x_0 \f$ and \f$ x_1 \f$ the low and the high half of
 /// 32 bits of the word \f$ x \f$:
@@ -150,20 +157,20 @@ namespace detail
 /// 4 & \quad \mathit{hi} \gets p_{1 1} + \lfloor p_{0 1} / 2^{32}
 ///     \rfloor + \lfloor p_{1 0} / 2^{32} \rfloor + \lfloor \mathit{mid}
 ///     / 2^{32} \rfloor \cr
-/// 5 & \quad \textbf{return}\ ( \mathit{mid} \bmod 2^{32} ) \, 2^{32} +
-///     ( p_{0 0} \bmod 2^{32} )
+/// 5 & \quad \textbf{return}\ ( ( \mathit{mid} \bmod 2^{32} ) \, 2^{32} +
+///     ( p_{0 0} \bmod 2^{32} ) , \mathit{hi} )
 /// \end{array}}
 /// \f]
-constexpr std::uint64_t wideProductHalves( std::uint64_t a , std::uint64_t b ,
-					   std::uint64_t & hi )
+[[nodiscard]] ADS_ALWAYS_INLINE constexpr WordPair
+wideProductHalves( std::uint64_t a , std::uint64_t b )
 {
  constexpr std::uint64_t LOW = 0xFFFFFFFFULL;
  const std::uint64_t a0 = a & LOW , a1 = a >> 32 , b0 = b & LOW , b1 = b >> 32;
  const std::uint64_t p00 = a0 * b0 , p01 = a0 * b1 , p10 = a1 * b0 ,
 		     p11 = a1 * b1;
  const std::uint64_t mid = ( p00 >> 32 ) + ( p01 & LOW ) + ( p10 & LOW );
- hi = p11 + ( p01 >> 32 ) + ( p10 >> 32 ) + ( mid >> 32 );
- return( ( mid << 32 ) | ( p00 & LOW ) );
+ return( WordPair{ ( mid << 32 ) | ( p00 & LOW ) ,
+		   p11 + ( p01 >> 32 ) + ( p10 >> 32 ) + ( mid >> 32 ) } );
  }
 
 /*--------------------------------------------------------------------------*/
