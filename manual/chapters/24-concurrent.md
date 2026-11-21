@@ -1108,10 +1108,41 @@ would leave a table of at least 256 places less than 1/16 full throws
 buckets at every size (e.g., by equal hashes), and leaves the table
 unchanged.
 
-A lookup touches two buckets. It fetches ahead, at once, the tags of both
-and the line of the places of the first, and the misses overlap (the 4
-places of a bucket share a line of cache when their size is a power of 2 up
-to 64 bytes). Those of the second bucket, where fewer keys usually are, are read only when a tag matches there. Also, the tags and the places of a table of 2 MB or more lie on transparent huge pages, and the random
+Each bucket has 4 bits of *overflow*, in a vector of their own of $B / 2$
+bytes, i.e., $1 / 8$ of the tags. The bit $j$ of the bucket $b$ is set
+when a key with $b$ as its first bucket, and with $j$ in the top 2 bits of
+its tag, goes into its other bucket, by an insertion or by a move along a
+cuckoo path, and it is cleared only by a doubling or by `clear()` (the
+remap entries of the Horton tables of [Breslow et al.
+2016](Z-bibliography.md#ref-breslow2016), here reduced to bits). Hence a
+key in its other bucket has its bit set in its first one, and a lookup
+reads the second bucket only when that bit is set: an absent key costs the
+tags of one bucket and a bit from a vector that the cache keeps. The bits
+set by keys removed since stay, and make the lookups read the second
+bucket for nothing until the next doubling.
+
+A lookup without locks that reads, with acquire, the tags of the first
+bucket $b_1$ of its key $k$ in the table $T$, finds no tag of $k$ there,
+then finds the bit of $b_1$ for $k$ clear, and then finds $T$ still in use,
+returns that $k$ is absent without reading the version of the region; $k$
+is indeed in neither bucket at the moment of the read of the tags. The
+writers change $T$ only while it is in use, under the lock of the region,
+and $k$ enters its second bucket either by an insertion, which sets the bit
+first, or by a move from $b_1$, which copies it, sets the bit, and then
+clears its tag in $b_1$ by a store with release. Were $k$ in the second
+bucket at the read of the tags, its bit would have been set before (bits
+are cleared only in a table not yet in use, or by `clear()` after the
+tags), and after a move the read of the tags, which saw the tag cleared,
+acquired the release that follows the bit, so that the later read of the
+bit sees it set; were $k$ in $b_1$, its tag would be among those read.
+Only the lookups that read places need the version.
+
+A lookup fetches ahead, at once, the tags and the line of the places of
+the first bucket, and the misses overlap (the 4 places of a bucket share a
+line of cache when their size is a power of 2 up to 64 bytes); an
+insertion fetches the tags of the second bucket too, where the key goes if
+the first is full. The places of the second bucket are read only when its
+bit is set and a tag matches there. Also, the tags and the places of a table of 2 MB or more lie on transparent huge pages, and the random
 accesses then miss the TLB once per 2 MB instead of once per 4 KB ([Navarro et
 al. 2002](Z-bibliography.md#ref-navarro2002)). With uniform keys two
 operations contend for a lock with probability $1 / P$. Each region counts
@@ -1121,8 +1152,9 @@ without locks, exact when no operation runs and otherwise an estimate.
 <span id="lem-24-14"></span>**Lemma 24.14.** *The operations of
 `ConcurrentCuckooTable` on a single key are linearizable, at an instant at
 which they hold the lock of the region of the key in the table in use, or at
-the second read of the version for a lookup without locks; `forEach()`
-visits the pairs of one instant; and if each doubling to $2 B$ buckets
+the second read of the version for a lookup without locks (at its read of
+the tags of the first bucket for one that returns from there an absent
+key); `forEach()` visits the pairs of one instant; and if each doubling to $2 B$ buckets
 follows at least $\epsilon B$ insertions since the previous doubling, for a
 constant $\epsilon > 0$, the doublings cost $O( 1 / \epsilon )$ amortized
 time per insertion.*
@@ -1136,7 +1168,9 @@ the lock, that the table was replaced releases it and starts again on the
 new table, and it has had no effect. A lookup without locks returns, by
 [Lemma 24.12](24-concurrent.md#lem-24-12), the state of the region at its
 first read of the version, which no writer changed before the second read;
-any instant between the two reads is thus a point. `forEach()` holds all
+any instant between the two reads is thus a point, and a lookup that
+returns an absent key from the tags of the first bucket is right at their
+read, as shown above. `forEach()` holds all
 the locks while it visits, so that no operation takes effect meanwhile. A
 doubling to $2 B$ buckets places again the at most $4 B$ pairs present, in
 $O( B )$ time, which we charge to the at least $\epsilon B$ insertions

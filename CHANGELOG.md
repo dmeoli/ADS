@@ -118,6 +118,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of allocating a cell per message for the consumer to free, and a push
   wakes the consumer only when it finds the inbox empty; `takeInto()`
   appends the messages taken to a vector that keeps its room
+- `ConcurrentCuckooTable` keeps 4 bits of overflow per bucket, one of which
+  is set when a key goes into its other bucket, and a lookup reads the
+  other bucket only when the bit of its key is set; a lookup of an absent
+  key, whose tag is not among those of its first bucket and whose bit is
+  clear, returns without reading the version of the region (the remap
+  entries of the Horton tables of Breslow et al., as bits)
 
 ### Fixed
 

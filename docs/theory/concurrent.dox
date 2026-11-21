@@ -358,7 +358,15 @@
  acquire fence before the second load, with relaxed accesses between; the
  two forms give the same order, the sanitizer of threads models only the
  first, and on x86-64 both are plain loads and stores). No access is a
- data race, since all of them are atomic.
+ data race, since all of them are atomic. A lookup of an absent key may
+ return before the version: each bucket has bits of overflow, one of
+ which is set before a key enters its other bucket, by an insertion or by
+ a move that then clears its tag in the first bucket by a release (the
+ remap entries of Breslow et al., as bits). A key whose tag is not among
+ the tags of its first bucket, read with acquire, and whose bit is clear,
+ read after them, is then in neither bucket at the moment of that read,
+ if the table is still in use; the bits are cleared only in a table not
+ yet in use or by `clear()`, after the tags.
 
  Third, the doubling. A region whose load would pass 0.98, or an insertion
  that finds no cuckoo path of at most 5 moves among 1024 buckets, doubles
@@ -1078,6 +1086,10 @@
  \see H.-J. Boehm, Can seqlocks get along with programming language memory
       models?, Proceedings of MSPC 2012, 12-20, 2012,
       doi:10.1145/2247684.2247688
+ \see A. D. Breslow, D. P. Zhang, J. L. Greathouse, N. Jayasena,
+      D. M. Tullsen, Horton tables: fast hash tables for in-memory
+      data-intensive computing, Proceedings of USENIX ATC 2016, 281-294,
+      2016
  \see J. A. Cain, P. Sanders, N. Wormald, The random graph threshold for
       k-orientiability and a fast algorithm for optimal multiple-choice
       allocation, Proceedings of SODA 2007, 469-476, 2007

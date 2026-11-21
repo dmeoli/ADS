@@ -55,15 +55,35 @@
  * and values (e.g., `std::string`) are read under the lock, and the tables
  * replaced are freed at once.
  *
- * A lookup, an insertion or a removal fetches ahead, at once, the tags of
- * both buckets of its key and the line of the places of the first one
- * (the 4 places of a bucket are aligned to share a line of cache when
- * their size is a power of 2 up to 64 bytes), so that the misses overlap;
- * the places of the second bucket, where fewer keys are, are read only
- * when a tag matches there. The tags and the places of a table of 2 MB
- * or more are on transparent huge pages [see `HugePageAllocator.h`], so
- * that the random accesses miss the TLB once per 2 MB instead of once per
- * 4 KB (Navarro et al.).
+ * Each bucket has 4 bits of overflow, in a vector of their own of
+ * \f$ B / 2 \f$ bytes, \f$ 1 / 8 \f$ of the tags: the bit \f$ j \f$ of
+ * the bucket \f$ b \f$ is set when a key with \f$ b \f$ as its first
+ * bucket and with \f$ j \f$ in the top 2 bits of its tag goes into its
+ * other bucket, by an insertion or by a move along a path, and is cleared
+ * only by a doubling or by `clear()` (the remap entries of the Horton
+ * tables of Breslow et al., here reduced to bits). A key in its other
+ * bucket thus has its bit set in its first one, and a lookup reads the
+ * other bucket only when that bit is set: a key that is not there costs
+ * the tags of one bucket, and a bit read from a vector that the cache
+ * keeps. Since a key enters its other bucket after its bit is set, and
+ * leaves its first bucket by a store of the tags that releases after the
+ * bit, an absent key whose tag does not match in its first bucket, whose
+ * bit is clear, is in neither bucket at the moment of the read of those
+ * tags, if the table is still in use then: such a lookup returns without
+ * reading the version of the region, which only the lookups that read
+ * places need. The bits set by keys removed since stay, and make lookups
+ * read the second bucket for nothing until the next doubling.
+ *
+ * A lookup, an insertion or a removal fetches ahead, at once, the tags
+ * and the line of the places of the first bucket of its key (the 4 places
+ * of a bucket are aligned to share a line of cache when their size is a
+ * power of 2 up to 64 bytes), so that the misses overlap, and an
+ * insertion the tags of the second bucket too, where the key goes if the
+ * first is full; a lookup reads the second bucket only after its bit of
+ * overflow, and its places only when a tag matches there. The tags and
+ * the places of a table of 2 MB or more are on transparent huge pages
+ * [see `HugePageAllocator.h`], so that the random accesses miss the TLB
+ * once per 2 MB instead of once per 4 KB (Navarro et al.).
  *
  * An insertion puts the new key in a free place of its two buckets if
  * any; otherwise it searches in breadth, from the two buckets, a path of
@@ -116,8 +136,9 @@
  * The keys and the values must be default constructible and movable.
  *
  * The contracts [see `Contract.h`]: the invariant is that each key is in
- * one of its two buckets with its tag, checked on the buckets of the key
- * of the operation under its lock; `consistent()` checks it on every pair,
+ * one of its two buckets with its tag, and in the second only with its
+ * bit of overflow set in the first, checked on the buckets of the key of
+ * the operation under its lock; `consistent()` checks it on every pair,
  * with the counters of the regions, under all the locks. No postcondition
  * is stated on the key of an operation, since another thread may change
  * it as soon as the lock is released. The operations are defined in
@@ -144,6 +165,11 @@
  * \see M. Dietzfelbinger, M. Mitzenmacher, M. Rink, Cuckoo hashing with
  *      pages, Proceedings of ESA 2011, 615-627, 2011,
  *      https://arxiv.org/abs/1104.5111
+ * \see A. D. Breslow, D. P. Zhang, J. L. Greathouse, N. Jayasena,
+ *      D. M. Tullsen, Horton tables: fast hash tables for in-memory
+ *      data-intensive computing, Proceedings of USENIX ATC 2016, 281-294,
+ *      2016,
+ *      www.usenix.org/conference/atc16/technical-sessions/presentation/breslow
  * \see T. Maier, P. Sanders, R. Dementiev, Concurrent hash tables: fast
  *      and general(?)!, ACM Transactions on Parallel Computing 5(4), 16,
  *      2019, doi:10.1145/3309206
@@ -223,20 +249,24 @@ class ConcurrentCuckooTable
  /// 2 & \quad h \gets \mathrm{hash}( k );\ t \gets \mathrm{tag}( h ) \cr
  /// 3 & \quad \textbf{if}\ \mathit{optimistic}\ \textbf{then} \cr
  /// 4 & \qquad \textbf{for}\ a \gets 1\ \textbf{to}\ 4\ \textbf{do} \cr
- /// 5 & \qquad\quad T \gets \text{the table in use};\ b_1 , b_2 \gets
- ///     \text{the buckets of } h \text{ in } T;\ \text{fetch their lines}
+ /// 5 & \qquad\quad T \gets \text{the table in use};\ b_1 \gets
+ ///     \text{the first bucket of } h \text{ in } T;\ \text{fetch its lines}
  ///     \cr
- /// 6 & \qquad\quad v \gets v_R\quad \triangleright\ \text{acquire, } R
+ /// 6 & \qquad\quad \textbf{if}\ t \text{ is not among the tags of } b_1
+ ///     \text{, its bit of overflow for } t \text{ is clear and } T
+ ///     \text{ is still in use}\ \textbf{then return nil} \cr
+ /// 7 & \qquad\quad v \gets v_R\quad \triangleright\ \text{acquire, } R
  ///     \text{ the region of } b_1 \cr
- /// 7 & \qquad\quad \textbf{if}\ v \text{ is odd}\ \textbf{or}\ T
+ /// 8 & \qquad\quad \textbf{if}\ v \text{ is odd}\ \textbf{or}\ T
  ///     \text{ is no longer in use}\ \textbf{then}\ \text{a pause};
  ///     \ \textbf{continue} \cr
- /// 8 & \qquad\quad x \gets \text{the value of the place of } b_1 , b_2
- ///     \text{ with the tag } t \text{ and the key } k \text{, or}
- ///     \textbf{ nil}\quad \triangleright\ \text{acquire} \cr
- /// 9 & \qquad\quad \textbf{if}\ v_R = v\ \textbf{then return}\ x \cr
- /// 10 & \quad \text{lock the region of } h \text{ in the table in use} \cr
- /// 11 & \quad \textbf{return}\ \text{the value of } k \text{ in } b_1 , b_2
+ /// 9 & \qquad\quad x \gets \text{the value of the place of } b_1
+ ///     \text{, or of } b_2 \text{ if that bit is set, with the tag } t
+ ///     \text{ and the key } k \text{, or}\textbf{ nil}\quad
+ ///     \triangleright\ \text{acquire} \cr
+ /// 10 & \qquad\quad \textbf{if}\ v_R = v\ \textbf{then return}\ x \cr
+ /// 11 & \quad \text{lock the region of } h \text{ in the table in use} \cr
+ /// 12 & \quad \textbf{return}\ \text{the value of } k \text{ in } b_1 , b_2
  ///     \text{, or}\ \textbf{nil}\quad \triangleright\ \text{and unlock}
  /// \end{array}}
  /// \f]
@@ -262,7 +292,8 @@ class ConcurrentCuckooTable
  ///     g( t ) \text{ in } R ) \cr
  /// 6 & \qquad \textbf{if}\ k \text{ is in } b_1 \text{ or } b_2
  ///     \ \textbf{then}\ \text{unlock};\ \textbf{return false} \cr
- /// 7 & \qquad p \gets \text{a free place of } b_1 \text{, else of } b_2 \cr
+ /// 7 & \qquad p \gets \text{a free place of } b_1 \text{, else of } b_2
+ ///     \text{ after the bit of overflow of } b_1 \text{ for } t \cr
  /// 8 & \qquad \textbf{if}\ p = \textbf{nil}\ \textbf{and}\ n_R + 1 \le
  ///     0.98 \cdot 4 |R|\ \textbf{then}\ p \gets \mathrm{makeRoom}( T , h )
  ///     \cr
@@ -280,7 +311,8 @@ class ConcurrentCuckooTable
  /// 17 & \qquad\quad \textbf{foreach}\ \text{bucket } c \ne b_1 , b_2
  ///     \text{ on the path to } b \text{, from } b\ \textbf{do} \cr
  /// 18 & \qquad\qquad \text{move into } c \text{ the key of its parent that}
- ///     \text{ led to it} \cr
+ ///     \text{ led to it, setting the bit of overflow of the parent for}
+ ///     \text{ its tag} \cr
  /// 19 & \qquad\quad \textbf{return}\ \text{the place freed in } b_1
  ///     \text{ or } b_2 \cr
  /// 20 & \qquad \textbf{if}\ \text{the depth of } b < 5\ \textbf{then} \cr
@@ -438,6 +470,8 @@ class ConcurrentCuckooTable
 						///< buckets of a region
  static constexpr int kDepth = 5;               ///< the moves of a path
  static constexpr int kNodes = 1024;            ///< the buckets searched
+ static constexpr int kOverflow = 4;            ///< the bits of overflow
+						///< of a bucket
 
  /// a lock with its version, odd while held, and the pairs of its region
  struct alignas( line ) Stripe
@@ -455,6 +489,8 @@ class ConcurrentCuckooTable
   int lg , rg;
   /// the tags, 4 per bucket
   std::uint32_t * T;
+  /// the bits of overflow, kOverflow per bucket
+  std::uint64_t * O;
   /// the buckets
   Bucket * B;
   /// the empty table of \f$ 2^l \f$ buckets
@@ -463,7 +499,11 @@ class ConcurrentCuckooTable
   Table( const Table & ) = delete;
   /// no copy, since it owns its buckets
   Table & operator=( const Table & ) = delete;
-  /// frees the tags and the buckets
+  /// the words of the bits of overflow
+  [[nodiscard]] std::size_t overflowWords( void ) const {
+   return( ( ( buckets() * kOverflow ) + 63 ) >> 6 );
+   }
+  /// frees the tags, the bits of overflow and the buckets
   ~Table();
   /// the place i, the place i % 4 of the bucket i / 4
   [[nodiscard]] Slot & S( std::size_t i ) const {
@@ -554,16 +594,29 @@ class ConcurrentCuckooTable
  /// the tags of the bucket b of the table T set to w
  static void setTags( Table & T , std::size_t b , std::uint32_t w );
 
+ /// the index of the bit of overflow of the bucket b for the tag t
+ [[nodiscard]] static std::size_t overflowBit( std::size_t b ,
+					       std::uint32_t t );
+
+ /// whether some key with the tag t whose first bucket is b may be in its
+ /// other bucket
+ [[nodiscard]] static bool overflowed( const Table & T , std::size_t b ,
+				       std::uint32_t t );
+
+ /// the bit of overflow of the bucket b of T for the tag t set
+ static void markOverflow( Table & T , std::size_t b , std::uint32_t t );
+
  /// the lock of the region of the hash h, and the table it is of
  [[nodiscard]] Table * lockRegion( std::uint64_t h ) const;
 
- /// the place of k with the tag t in the buckets b1 and b2 of T, or ~0
+ /// the place of k with the tag t in the buckets b1 and b2 of T, or ~0;
+ /// b2 read only if the bit of overflow of b1 for t is set, if bit
  [[nodiscard]] std::size_t locate( const Table & T , const K & k ,
 				   std::uint32_t t , std::size_t b1 ,
-				   std::size_t b2 ) const;
+				   std::size_t b2 , bool bit = true ) const;
 
- /// the lines of the buckets b1 and b2 of T fetched ahead
- static void fetch( const Table & T , std::size_t b1 , std::size_t b2 );
+ /// the tags and the places of the bucket b of T fetched ahead
+ static void fetch( const Table & T , std::size_t b );
 
  /// the value of the key k with the hash h read without locks, if the
  /// versions allow it: 0 absent, 1 present (in *out if not nil), 2 not
