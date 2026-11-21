@@ -192,13 +192,15 @@ void parallelInvoke( E & ex , F && f , G && g )
 /*--------------------------------------------------------------------------*/
 
 inline std::pair< std::size_t , std::size_t >
-blocksOf( std::size_t first , std::size_t last , std::size_t grain )
+blocksOf( std::size_t first , std::size_t last , std::size_t grain ,
+	  std::size_t blocks )
 {
  const std::size_t n = last > first ? last - first : 0;
  if( n == 0 )
   return( std::pair< std::size_t , std::size_t >( 0 , 0 ) );
  grain = std::max< std::size_t >( grain , 1 );
- std::size_t size = std::max( grain , ( n + kBlocks - 1 ) / kBlocks );
+ blocks = std::max< std::size_t >( blocks , 1 );
+ std::size_t size = std::max( grain , ( n + blocks - 1 ) / blocks );
  return(
    std::pair< std::size_t , std::size_t >( ( n + size - 1 ) / size , size ) );
  }
@@ -208,9 +210,9 @@ blocksOf( std::size_t first , std::size_t last , std::size_t grain )
 template< Executor E , class F >
 void parallelForBlocks( E & ex , std::size_t first , std::size_t last ,
 			F && f ,
-			std::size_t grain )
+			std::size_t grain , std::size_t blocks )
 {
- const auto cut = blocksOf( first , last , grain );
+ const auto cut = blocksOf( first , last , grain , blocks );
  const std::size_t b = cut.first , size = cut.second;
  if( b == 0 )
   return;
@@ -237,7 +239,7 @@ void parallelForBlocks( E & ex , std::size_t first , std::size_t last ,
 
 template< Executor E , class F >
 void parallelFor( E & ex , std::size_t first , std::size_t last , F && f ,
-		  std::size_t grain )
+		  std::size_t grain , std::size_t blocks )
 {
  parallelForBlocks(
    ex , first , last ,
@@ -245,7 +247,7 @@ void parallelFor( E & ex , std::size_t first , std::size_t last , F && f ,
     for( std::size_t i = lo ; i < hi ; ++i )
      f( i );
     } ,
-   grain );
+   grain , blocks );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -253,24 +255,29 @@ void parallelFor( E & ex , std::size_t first , std::size_t last , F && f ,
 template< Executor E , class T , class F , class Op >
 T parallelReduce( E & ex , std::size_t first , std::size_t last , T id ,
 		  F && f ,
-		  Op op , std::size_t grain )
+		  Op op , std::size_t grain , std::size_t blocks )
 {
- const auto cut = blocksOf( first , last , grain );
+ const auto cut = blocksOf( first , last , grain , blocks );
  const std::size_t b = cut.first , size = cut.second;
  if( b == 0 )
   return( id );
- std::vector< std::optional< T > > part( b );
+ // the partial results, a line each, so that their writers share none
+ struct alignas( 64 ) Part
+ {
+  std::optional< T > v;
+  };
+ std::vector< Part > part( b );
  parallelForBlocks(
    ex , 0 , b ,
    [ & ]( std::size_t lo , std::size_t hi ) {
     for( std::size_t i = lo ; i < hi ; ++i )
-     part[ i ].emplace(
+     part[ i ].v.emplace(
        f( first + i * size , std::min( last , first + ( i + 1 ) * size ) ) );
     } ,
-   1 );
+   1 , b );
  T r = std::move( id );
  for( auto & x : part )
-  r = op( std::move( r ) , std::move( *x ) );
+  r = op( std::move( r ) , std::move( *x.v ) );
  return( r );
  }
 

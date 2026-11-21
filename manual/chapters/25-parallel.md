@@ -63,7 +63,7 @@ and therefore on one thread they lose only a constant factor. [Table
 | $p$ | the threads of an executor, its `concurrency()`, the calling thread included where it works |
 | $W$, $D$ | the work and the depth of a computation |
 | $T_p$ | the time on $p$ threads, so that $T_1 = W$ and $T_\infty = D$ |
-| $g$, $B$ | the grain, i.e., the least number of indices of a block of a loop (`kGrain` $= 1024$ by default), and the number of blocks, at most `kBlocks` $= 256$ |
+| $g$, $B$, $\bar{B}$ | the grain, i.e., the least number of indices of a block of a loop (`kGrain` $= 1024$ by default), the number of blocks, and the most blocks of a loop (`kBlocks` $= 64$ by default) |
 | $\oplus$ | an associative operation of a reduction or of a prefix sum |
 | $n$, $m$ | the items of the input; the nodes and the arcs of a graph |
 
@@ -120,9 +120,13 @@ $t^*$ no thread is idle, since a thread that ends a block before $t^*$ finds
 one more to claim; hence, $p t^* \le \sum_b w_b$. Each block ends at most
 $\max_b w_b$ after its claim, which comes at $t^*$ at the latest. $\square$
 
-The cut into at most `kBlocks` blocks of at least `kGrain` indices trades
+The cut into at most $\bar{B}$ blocks of at least `kGrain` indices trades
 the loss $p / B$ of [Lemma 25.2](25-parallel.md#lem-25-2) against the cost
-of a claim, a fetch-and-add on a shared line of the cache.
+of a claim, a fetch-and-add on a shared line of the cache. The default of
+64 blocks leaves 8 of them to each of 8 threads, a loss of at most 1/8,
+and keeps the blocks of a sum of $10^6$ integers of 64 bits at 125 KB; a
+loop whose calls cost very different times (e.g., one on the nodes of a
+frontier of a graph) passes a larger $\bar{B}$ and a smaller grain.
 
 ## 25.2 Executors {#sec-25-2}
 
@@ -716,9 +720,9 @@ of the run, which a call reads by one load.
 ## 25.6 Loops, reductions and prefix sums {#sec-25-6}
 
 The blocks of a loop on $[ \mathit{first} , \mathit{last} )$ depend only on
-the number $n$ of its indices and on the grain $g$, never on the threads: $s
-= \max\{ g , \lceil n / \mathit{kBlocks} \rceil \}$ indices per block and
-$\lceil n / s \rceil$ blocks ([Algorithm 25.8](25-parallel.md#alg-25-8)).
+the number $n$ of its indices, on the grain $g$ and on the most blocks
+$\bar{B}$, never on the threads: $s = \max\{ g , \lceil n / \bar{B} \rceil
+\}$ indices per block and $\lceil n / s \rceil$ blocks ([Algorithm 25.8](25-parallel.md#alg-25-8)).
 `parallelForBlocks()` gives each block to one call `f( lo , hi )`, so that
 the compiler sees a loop that it can vectorize, and `parallelFor()` makes of
 it the call `f( i )` per index; the blocks are the calls of one `bulk()`,
@@ -729,21 +733,25 @@ These patterns, and the scans below, are declared as
 
 ```cpp
 // declarations of <ADS/parallel/Executor.h>
+inline constexpr std::size_t kBlocks = 64;
 inline constexpr std::size_t kGrain = 1024;
 
 std::pair< std::size_t , std::size_t >
-blocksOf( std::size_t first , std::size_t last , std::size_t grain = kGrain );
+blocksOf( std::size_t first , std::size_t last , std::size_t grain = kGrain ,
+          std::size_t blocks = kBlocks );
 template< Executor E , class F >
 void parallelForBlocks( E & ex , std::size_t first , std::size_t last ,
                         F && f ,
-                        std::size_t grain = kGrain );
+                        std::size_t grain = kGrain ,
+                        std::size_t blocks = kBlocks );
 template< Executor E , class F >
 void parallelFor( E & ex , std::size_t first , std::size_t last , F && f ,
-                  std::size_t grain = kGrain );
+                  std::size_t grain = kGrain , std::size_t blocks = kBlocks );
 template< Executor E , class T , class F , class Op >
 T parallelReduce( E & ex , std::size_t first , std::size_t last , T id ,
                   F && f ,
-                  Op op , std::size_t grain = kGrain );
+                  Op op , std::size_t grain = kGrain ,
+                  std::size_t blocks = kBlocks );
 template< Executor E , std::random_access_iterator I ,
           std::random_access_iterator O , class T , class Op = std::plus<> >
 T parallelInclusiveScan( E & ex , I in , std::size_t n , O out , T init ,

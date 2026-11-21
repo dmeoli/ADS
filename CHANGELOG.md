@@ -106,6 +106,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   beyond `spin`; before, they slept after 2 ms, so that a parallel phase
   after a sequential step of more than 2 ms waited for their wake-up and
   ran on cores that the governor of the frequency had slowed down
+- the loops and the reductions of `Executor.h` cut their indices into at
+  most 64 blocks (`kBlocks`, 256 before), or into at most the blocks of the
+  new last parameter of `blocksOf()`, `parallelForBlocks()`,
+  `parallelFor()` and `parallelReduce()`, and the partial results of
+  `parallelReduce()` take a line of the cache each: a sum of 10^6 integers
+  of 64 bits claims 64 blocks of 125 KB instead of 256 of 31 KB, and its
+  threads no longer write to the same lines
 
 ### Fixed
 

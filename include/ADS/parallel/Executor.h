@@ -50,9 +50,16 @@
  * - `parallelInclusiveScan()` and `parallelExclusiveScan()`, the prefix
  *   sums by an associative \f$ \oplus \f$, in one pass over the memory.
  *
- * The blocks depend only on the number of indices and on the grain, never on
- * the number of threads: at most `kBlocks` of them, each of at least
- * \f$ g \f$ indices. Hence a reduction gives the same result on every
+ * The blocks depend only on the number of indices, on the grain and on the
+ * most blocks \f$ \bar{B} \f$ of the call, never on the number of threads: at
+ * most \f$ \bar{B} \f$ of them (`kBlocks` = 64 by default), each of at least
+ * \f$ g \f$ indices. A block is a claim, a fetch-and-add on a shared line,
+ * and a partial result of a reduction, on a line of its own: 64 blocks keep
+ * the claims few (a sum of \f$ 10^6 \f$ integers of 64 bits takes blocks of
+ * 125 KB) and still leave 8 blocks to each of 8 threads; a loop whose calls
+ * cost very different times, e.g., one on the nodes of a frontier of a
+ * graph, passes a larger \f$ \bar{B} \f$ (and a smaller grain) for a finer
+ * balance. Hence a reduction gives the same result on every
  * executor, `Sequential` included, also with an operation that is
  * associative only up to rounding, e.g., the sum of doubles; that result is
  * the sum by blocks, not the one of `std::accumulate()`.
@@ -145,8 +152,8 @@ namespace ADS
 {
 
 /// the largest number of blocks into which the loops and the reductions cut
-/// their indices
-inline constexpr std::size_t kBlocks = 256;
+/// their indices, by default
+inline constexpr std::size_t kBlocks = 64;
 
 /// the least number of indices of a block of the loops, by default
 inline constexpr std::size_t kGrain = 1024;
@@ -310,7 +317,7 @@ template< Executor E , class F , class G >
 void parallelInvoke( E & ex , F && f , G && g );
 
 /// the blocks of \f$ [ \mathit{first} , \mathit{last} ) \f$, with at least
-/// \f$ g \f$ indices each and at most `kBlocks` of them: their number
+/// \f$ g \f$ indices each and at most \f$ \bar{B} \f$ of them: their number
 /// \f$ b \f$, and the size \f$ s \f$ of all but the last
 ///
 /// In pseudocode (beyond the book), the block \f$ i \f$ being
@@ -319,15 +326,17 @@ void parallelInvoke( E & ex , F && f , G && g );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{blocksOf}( \mathit{first} , \mathit{last}
-///     , g ) \cr
+///     , g , \bar{B} ) \cr
 /// 2 & \quad n \gets \max\{ \mathit{last} - \mathit{first} , 0 \} \cr
 /// 3 & \quad \textbf{if}\ n = 0\ \textbf{then return}\ ( 0 , 0 ) \cr
-/// 4 & \quad s \gets \max\{ g , 1 , \lceil n / \mathit{kBlocks} \rceil \} \cr
+/// 4 & \quad s \gets \max\{ g , 1 , \lceil n / \max\{ \bar{B} , 1 \} \rceil \}
+///     \cr
 /// 5 & \quad \textbf{return}\ ( \lceil n / s \rceil , s )
 /// \end{array}}
 /// \f]
 [[nodiscard]] inline std::pair< std::size_t , std::size_t >
-blocksOf( std::size_t first , std::size_t last , std::size_t grain = kGrain );
+blocksOf( std::size_t first , std::size_t last , std::size_t grain = kGrain ,
+	  std::size_t blocks = kBlocks );
 
 /// the calls `f( lo , hi )` on the blocks \f$ [ \mathit{lo} , \mathit{hi} )
 /// \f$ of \f$ [ \mathit{first} , \mathit{last} ) \f$, in parallel
@@ -338,9 +347,9 @@ blocksOf( std::size_t first , std::size_t last , std::size_t grain = kGrain );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{parallelForBlocks}( \mathit{ex} ,
-///     \mathit{first} , \mathit{last} , f , g ) \cr
+///     \mathit{first} , \mathit{last} , f , g , \bar{B} ) \cr
 /// 2 & \quad ( b , s ) \gets \mathrm{blocksOf}( \mathit{first} ,
-///     \mathit{last} , g ) \cr
+///     \mathit{last} , g , \bar{B} ) \cr
 /// 3 & \quad \textbf{if}\ b = 1\ \textbf{or}
 ///     \ \mathit{ex}.\mathrm{concurrency}() = 1\ \textbf{then} \cr
 /// 4 & \qquad \textbf{for}\ i \gets 0\ \textbf{to}\ b - 1\ \textbf{do}\ f(
@@ -354,7 +363,8 @@ blocksOf( std::size_t first , std::size_t last , std::size_t grain = kGrain );
 template< Executor E , class F >
 void parallelForBlocks( E & ex , std::size_t first , std::size_t last ,
 			F && f ,
-			std::size_t grain = kGrain );
+			std::size_t grain = kGrain ,
+			std::size_t blocks = kBlocks );
 
 /// the calls `f( i )` for each \f$ i \in [ \mathit{first} , \mathit{last} )
 /// \f$, in parallel
@@ -364,16 +374,16 @@ void parallelForBlocks( E & ex , std::size_t first , std::size_t last ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{parallelFor}( \mathit{ex} , \mathit{first}
-///     , \mathit{last} , f , g ) \cr
+///     , \mathit{last} , f , g , \bar{B} ) \cr
 /// 2 & \quad \mathrm{parallelForBlocks}( \mathit{ex} , \mathit{first} ,
 ///     \mathit{last} , ( \mathit{lo} , \mathit{hi} ) \mapsto \textbf{for}\ i
 ///     \gets \mathit{lo}\ \textbf{to}\ \mathit{hi} - 1\ \textbf{do}\ f( i ) ,
-///     g )
+///     g , \bar{B} )
 /// \end{array}}
 /// \f]
 template< Executor E , class F >
 void parallelFor( E & ex , std::size_t first , std::size_t last , F && f ,
-		  std::size_t grain = kGrain );
+		  std::size_t grain = kGrain , std::size_t blocks = kBlocks );
 
 /// the reduction of \f$ [ \mathit{first} , \mathit{last} ) \f$: the
 /// results of `f( lo , hi )` on the blocks, combined by \f$ \oplus \f$
@@ -383,11 +393,14 @@ void parallelFor( E & ex , std::size_t first , std::size_t last , F && f ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{parallelReduce}( \mathit{ex} ,
-///     \mathit{first} , \mathit{last} , \mathit{id} , f , \oplus , g ) \cr
+///     \mathit{first} , \mathit{last} , \mathit{id} , f , \oplus , g ,
+///     \bar{B} ) \cr
 /// 2 & \quad ( b , s ) \gets \mathrm{blocksOf}( \mathit{first} ,
-///     \mathit{last} , g ) \cr
+///     \mathit{last} , g , \bar{B} ) \cr
 /// 3 & \quad \mathrm{parallelFor}( \mathit{ex} , 0 , b , i \mapsto
-///     \mathit{part}[ i ] \gets f( \mathit{lo}_i , \mathit{hi}_i ) , 1 ) \cr
+///     \mathit{part}[ i ] \gets f( \mathit{lo}_i , \mathit{hi}_i ) , 1 ,
+///     \bar{B} )\quad \triangleright\ \mathit{part}[ i ] \text{ on a line}
+///     \text{ of its own} \cr
 /// 4 & \quad r \gets \mathit{id} \cr
 /// 5 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ b - 1\ \textbf{do}\ r
 ///     \gets r \oplus \mathit{part}[ i ] \cr
@@ -398,7 +411,8 @@ void parallelFor( E & ex , std::size_t first , std::size_t last , F && f ,
 template< Executor E , class T , class F , class Op >
 [[nodiscard]] T parallelReduce( E & ex , std::size_t first , std::size_t last ,
 				T id , F && f , Op op ,
-				std::size_t grain = kGrain );
+				std::size_t grain = kGrain ,
+				std::size_t blocks = kBlocks );
 
 /// the inclusive prefixes
 /// \f$ y[ i ] = \mathit{init} \oplus x[ 0 ] \oplus \cdots \oplus x[ i ] \f$

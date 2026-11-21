@@ -54,10 +54,10 @@
  <tr><td>\f$ T_p \f$</td>
      <td>the time on \f$ p \f$ threads, so that \f$ T_1 = W \f$ and
          \f$ T_\infty = D \f$</td></tr>
- <tr><td>\f$ g \f$, \f$ B \f$</td>
+ <tr><td>\f$ g \f$, \f$ B \f$, \f$ \bar{B} \f$</td>
      <td>the grain, i.e., the least number of indices of a block of a loop
-         (<tt>kGrain</tt> by default), and the number of blocks, at most
-         <tt>kBlocks</tt></td></tr>
+         (<tt>kGrain</tt> by default), the number of blocks, and the most
+         blocks of a loop (<tt>kBlocks</tt> by default)</td></tr>
  <tr><td>\f$ \oplus \f$</td>
      <td>an associative operation of a reduction or of a prefix sum, with
          the identity <tt>id</tt> or the initial value
@@ -164,9 +164,9 @@
  thread is idle only when no block is left, and the time is
  \f$ T_p \le W / p + \max_b w_b \f$ for blocks of work \f$ w_b \f$. With
  blocks of equal work \f$ W / B \f$ this is \f$ ( W / p ) ( 1 + p / B ) \f$,
- and the cut into at most `kBlocks` blocks of at least `kGrain` indices
- trades this loss against the cost of a claim, a fetch-and-add on a shared
- line.
+ and the cut into at most \f$ \bar{B} \f$ blocks (`kBlocks` = 64 by
+ default) of at least `kGrain` indices trades this loss against the cost of
+ a claim, a fetch-and-add on a shared line.
 
  The pool of ADS (`ThreadPool`) schedules by work stealing: each thread keeps
  its tasks on a deque of Chase and Lev, takes them from the bottom, and, when
@@ -198,8 +198,9 @@
  \section theory_parallel_patterns Loops, reductions and prefix sums
 
  The blocks of a loop (`blocksOf()` of `Executor.h`) depend only on the number
- of indices and on the grain: \f$ s = \max\{ g , \lceil n / \mathit{kBlocks}
- \rceil \} \f$ indices per block and \f$ \lceil n / s \rceil \f$ blocks.
+ of indices, on the grain and on the most blocks \f$ \bar{B} \f$:
+ \f$ s = \max\{ g , \lceil n / \bar{B} \rceil \} \f$ indices per block and
+ \f$ \lceil n / s \rceil \f$ blocks.
  `parallelReduce()` reduces each block by a call `f( lo , hi )` into a partial
  result and combines the partial results by \f$ \oplus \f$ in the order of the
  blocks, so that its result is
