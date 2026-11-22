@@ -604,7 +604,7 @@ engineered_queues  stealable-pq-bound-threads bound minimo con i ladri
 engineered_queues  lockfree-pq             coda di priorità esatta senza lock
 engineered_queues  lockfree-pq-threads     più thread, ogni coppia una volta, in ordine
 engineered_queues  lockfree-pq-linearizable storie brevi, un ordine che le spiega
-engineered_queues  lockfree-pq-epochs      offset nullo, epoche che girano, limbo limitato
+engineered_queues  lockfree-pq-epochs      offset nullo, epoche, limbo
 engineered_queues  min-board              lavagna dei minimi, un thread
 engineered_queues  min-board-threads      lavagna dei minimi, più scrittori e lettori
 
@@ -761,7 +761,7 @@ pearls_compression  lz78                     LZ78, tabella 13.1
 pearls_compression  lzw                      LZW, tabelle 13.2 e 13.3
 pearls_compression  bwt-notes                BWT, MTF, RLE, figure 14.1-14.2
 pearls_compression  bwt                      BWT contro le rotazioni ordinate
-pearls_compression  bwt-wide                 BWT a 64 bit contro quello a 32 bit
+pearls_compression  bwt-wide                 BWT a 64 bit contro 32
 pearls_compression  packed-bits              PackedBits ai bordi dei contratti
 pearls_compression  mtf-rle                  move-to-front, RLE e RLE0
 pearls_compression  bzip                     BWT + MTF + RLE0 + Huffman
@@ -1804,8 +1804,8 @@ engineered_external  record-file-large-records  record più grandi del buffer
 engineered_external  temp-directory             cartella tolta con i suoi file
 engineered_external  record-file-errors         percorsi che non si scrivono
 engineered_external  record-file-partial-record un record a metà in coda
-engineered_external  record-file-contracts      buffer nulli, copie, spostamenti
-engineered_external  mapped-file                file vuoti, mancanti, copie, offerte
+engineered_external  record-file-contracts      buffer nulli, copie
+engineered_external  mapped-file                file vuoti, mancanti, copie
 
 # the engineered allocators of the size classes, beyond the book
 engineered_memory  pool-resource              classi di 16 byte su ObjectPool
@@ -1819,8 +1819,8 @@ engineered_memory  object-pool-epochs         clear() di ObjectPool, blocchi
 engineered_memory  pool-epochs-threads        epoche dei pool di più lavoratori
 engineered_memory  pool-epochs-value-init     make() dopo clear(), oggetti a zero
 engineered_memory  prefetch-any-address       prefetch di ogni indirizzo, nessun effetto
-engineered_memory  memory-over-aligned        allineamenti oltre la riga di cache
-engineered_memory  memory-upstream-bad-alloc  bad_alloc a monte, stato invariato
+engineered_memory  memory-over-aligned        oltre la riga di cache
+engineered_memory  memory-upstream-bad-alloc  bad_alloc, stato invariato
 
 # the allocators of the containers, beyond the book: std::pmr, a counting
 # allocator, ArenaResource
@@ -1834,7 +1834,7 @@ engineered_allocators alloc-sequences       sequenze a blocchi, vettore piccolo
 engineered_allocators alloc-join-trees      alberi di join, senza stato
 engineered_allocators alloc-arena-resource  ArenaResource, release()
 engineered_allocators alloc-default-layout  allocatori di default, senza spazio
-engineered_allocators alloc-swap-unequal    scambio di allocatori diversi rifiutato
+engineered_allocators alloc-swap-unequal    swap di allocatori diversi
 
 # the engineered structures of the rows of a model, beyond the book
 engineered_sparse  position-index             indice delle posizioni, Robin Hood
@@ -1853,15 +1853,15 @@ engineered_parallel  parallel-numeric-index prodotto CSR con indici int e int64
 engineered_parallel  parallel-graph      visita in ampiezza, componenti
 engineered_parallel  parallel-layouts    le due disposizioni degli archi in parallelo
 engineered_parallel  parallel-lcp        array LCP permutato
-engineered_parallel  parallel-thresholds  le soglie dei casi sequenziali, grafi di 0 e 1 nodo
-engineered_parallel  thread-pool-scratch  ThreadPool(0), blocchi di Scratch riusati e annidati
+engineered_parallel  parallel-thresholds  soglie sequenziali, grafi minimi
+engineered_parallel  thread-pool-scratch  ThreadPool(0), Scratch annidati
 engineered_parallel  parallel-rank-select  rank e select costruiti sugli esecutori
 engineered_parallel  parallel-wavelet-matrix  wavelet matrix, 8 livelli a passata
 engineered_parallel  parallel-huffman-wavelet-tree  wavelet tree di Huffman parallelo
 engineered_parallel  parallel-stepping   Delta e rho-stepping contro Dijkstra
 engineered_parallel  parallel-stepping-holes  stepping su un grafo con nodi cancellati
 engineered_parallel  concurrent-union-find  union-find concorrente
-engineered_parallel  concurrent-union-find-edges  0 e 1 elementi, contratti, find durante le unioni
+engineered_parallel  concurrent-union-find-edges  n = 0 e 1, find concorrenti
 
 # the executors on the runtimes of a program, beyond the book
 interop_parallel  tbb-arena               arena di oneTBB del programma e corrente
@@ -2138,13 +2138,13 @@ ods_ints  ods13.2.x-fast-trie               Morin 13.2, x-fast trie
 ods_ints  ods.ex13.2.list-x-fast-trie       Morin es. 13.2, x-fast su lista
 ods_ints  ods.ex13.4.find-near              Morin es. 13.4, ricerca vicina
 ods_ints  ods13.3.y-fast-trie               Morin 13.3, y-fast trie
-ods_ints  ods13.extreme-keys                trie, chiave 2^64 - 1 e chiavi oltre w bit
+ods_ints  ods13.extreme-keys                trie, chiave 2^64 - 1, oltre w bit
 ods_ints  ods.ex13.3.bitmap-trie            Morin es. 13.3, trie di stringhe
 ods_ints  ods10.1.binary-heap               Morin 10.1, es. 10.1-10.2, heap
 ods_ints  ods.ex10.3.remove-place           Morin es. 10.3-10.4, rimozione
 ods_ints  ods.ex10.5.dary-heap              Morin es. 10.5, heap d-ario
 ods_ints  ods10.2.meldable-heap             Morin 10.2, es. 10.6-10.9
-ods_ints  ods10.2.meldable-heap-edges       Morin 10.2, heap vuoto, handle altrui, chiavi uguali
+ods_ints  ods10.2.meldable-heap-edges       Morin 10.2, vuoto, handle altrui
 ods_ints  ods.ex10.10.k-smallest            Morin es. 10.10, i k minimi
 ods_ints  ods.ex10.11.k-way-merge           Morin es. 10.11, fusione di k liste
 ods_ints  ods5.1.chained-hash-table         Morin 5.1, liste di trabocco
@@ -2165,9 +2165,9 @@ ods_ints  ods12.3.visits                    Morin 12.3, es. 12.3, 12.8, 12.9
 ods_ints  ods.ex12.4.components             Morin es. 12.4-12.7, componenti
 ods_ints  ods.ex12.10.universal-sink        Morin es. 12.10, pozzo universale
 ods_ints  ods14.1.block-store               Morin 14.1, memoria a blocchi
-ods_ints  ods14.1.block-store-contracts     Morin 14.1, blocchi liberati e copie
+ods_ints  ods14.1.block-store-contracts     Morin 14.1, blocchi liberati
 ods_ints  ods14.2.b-tree                    Morin 14.2, B-albero sui blocchi
-ods_ints  ods14.2.b-tree-keys               Morin 14.2, chiavi stringa e a 64 bit
+ods_ints  ods14.2.b-tree-keys               Morin 14.2, stringhe, 64 bit
 ods_ints  ods.ex14.1.figure                 Morin es. 14.1-14.2, figura
 ods_ints  ods.ex14.3.internal-nodes         Morin es. 14.3, nodi interni
 ods_ints  ods.ex14.4.memory                 Morin es. 14.4, memoria interna
