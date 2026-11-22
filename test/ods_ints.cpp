@@ -1970,6 +1970,161 @@ ADS_TEST( "ods.ex14.8.bplus-tree" )
   }
  }
 
+// ods 10.2 at its edges: the empty heap, a meld with itself, a handle of
+// another heap (refused before the heap is touched, so that both stay
+// whole), the keys of the whole range of 64 bits and the equal keys
+ADS_TEST( "ods10.2.meldable-heap-edges" )
+{
+ ADS::MeldableHeap< std::int64_t > h , o;
+ CHECK_THROWS( h.top() , ADS::contract_violation );
+ CHECK_THROWS( h.pop() , ADS::contract_violation );
+ CHECK_THROWS( h.erase( nullptr ) , ADS::contract_violation );
+ CHECK( h.secondTop() == nullptr );
+ h.meld( h );
+ CHECK( h.empty() );
+ constexpr std::int64_t lo = std::numeric_limits< std::int64_t >::min() ,
+			hi = std::numeric_limits< std::int64_t >::max();
+ std::multiset< std::int64_t > r;
+ std::mt19937_64 g( 41 );
+ for( int i = 0 ; i < 2000 ; ++i ) {
+  const std::int64_t x = i % 3 == 0   ? lo + i
+			 : i % 3 == 1 ? hi - i
+				      : std::int64_t( g() );
+  h.push( x );
+  r.insert( x );
+  }
+ h.meld( h );  // nothing
+ CHECK( h.size() == r.size() && h.top() == *r.begin() );
+ const auto root = o.push( lo );  // the root of o, not of h
+ for( int i = 1 ; i < 100 ; ++i )
+  o.push( hi - i );
+ CHECK_THROWS( h.erase( root ) , ADS::contract_violation );
+ CHECK( ( h.size() == 2000 ) && ( o.size() == 100 ) );
+ CHECK( o.pop() == lo );
+ for( int i = 99 ; i >= 1 ; --i )
+  CHECK( o.pop() == hi - i );
+ for( const std::int64_t x : r )
+  CHECK( h.pop() == x );
+ CHECK( h.empty() );
+ // the equal keys: by their handles in any order, then by pop()
+ ADS::MeldableHeap< int > e;
+ std::vector< ADS::MeldableHeap< int >::Handle > H;
+ for( int i = 0 ; i < 500 ; ++i )
+  H.push_back( e.push( 7 ) );
+ std::shuffle( H.begin() , H.end() , g );
+ for( int i = 0 ; i < 250 ; ++i )
+  CHECK( e.erase( H[ i ] ) == 7 );
+ CHECK( ( e.size() == 250 ) && ( *e.secondTop() == 7 ) );
+ while( ! e.empty() )
+  CHECK( e.pop() == 7 );
+ CHECK_THROWS( e.pop() , ADS::contract_violation );
+ }
+
+/// the largest key of 64 bits in the trie `T` of keys of 64 bits, with its
+/// neighbours, and the keys of 20 bits beyond \f$ 2^{20} - 1 \f$ refused
+/// by the contract
+template< class F >
+void trieExtremes( void )
+{
+ constexpr std::uint64_t M = std::numeric_limits< std::uint64_t >::max();
+ typename F::template type< std::uint64_t , int , 64 > t;
+ CHECK( ! t.lowerBound( M ) && ! t.contains( M ) && ! t.remove( M ) );
+ CHECK( t.insert( M , 1 ) && ! t.insert( M , 2 ) );
+ CHECK( t.contains( M ) && ( t.size() == 1 ) && t.lookup( M ) );
+ CHECK( ( *t.lowerBound( 0 ) == M ) && ( *t.lowerBound( M ) == M ) );
+ CHECK( t.insert( 0 , 3 ) && t.insert( M - 1 , 4 ) );
+ CHECK( ( *t.lowerBound( 1 ) == M - 1 ) && ( *t.lowerBound( M ) == M ) );
+ CHECK( ( *t.find( M ) == M ) && ! t.find( M - 2 ) );
+ CHECK( ( t.lookup( M - 1 ) == 4 ) && ( t.lookup( 0 ) == 3 ) );
+ CHECK( t.remove( M ) && ! t.contains( M ) && ! t.lowerBound( M ) );
+ CHECK( *t.lowerBound( M - 1 ) == M - 1 );
+ CHECK( t.insert( M , 5 ) && ( t.lookup( M ) == 5 ) );
+ for( std::uint64_t x : { M , M - 1 , std::uint64_t( 0 ) } )
+  CHECK( t.remove( x ) );
+ CHECK( t.empty() && ! t.lowerBound( 0 ) );
+ typename F::template type< std::uint64_t , int , 20 > s;
+ constexpr std::uint64_t top = ( std::uint64_t( 1 ) << 20 ) - 1;
+ CHECK( s.insert( top , 1 ) && ( *s.lowerBound( 0 ) == top ) );
+ CHECK_THROWS( s.insert( top + 1 , 2 ) , ADS::contract_violation );
+ CHECK_THROWS( ( void )s.contains( top + 1 ) , ADS::contract_violation );
+ CHECK_THROWS( ( void )s.lowerBound( M ) , ADS::contract_violation );
+ CHECK_THROWS( ( void )s.find( top + 1 ) , ADS::contract_violation );
+ CHECK_THROWS( ( void )s.lookup( top + 1 ) , ADS::contract_violation );
+ CHECK_THROWS( s.remove( top + 1 ) , ADS::contract_violation );
+ CHECK( ( s.size() == 1 ) && s.remove( top ) && s.empty() );
+ }
+
+// ods 13.1-13.3 at the extremes: 2^64 - 1 as a key (in the y-fast trie
+// also the representative of the last group), and the keys of more than
+// w bits refused
+ADS_TEST( "ods13.extreme-keys" )
+{
+ trieExtremes< MakeBinary >();
+ trieExtremes< MakeXFast >();
+ trieExtremes< MakeListXFast >();
+ trieExtremes< MakeYFast >();
+ // the last key along the list of the leaves, both ways
+ ADS::XFastTrie< std::uint64_t , int > x;
+ constexpr std::uint64_t M = std::numeric_limits< std::uint64_t >::max();
+ x.insert( M , 1 );
+ x.insert( 2 , 2 );
+ CHECK( ( ( *x.begin() ).first == 2 ) && ( ( *--x.end() ).first == M ) );
+ CHECK( ( *x.seek( 3 ) ).first == M && ( x.seek( M ) != x.end() ) );
+ }
+
+/// a differential test of the B-tree of keys of type K, made from an
+/// integer by `key`, against a std::set
+template< class K , class Make >
+void btreeKeys( int B , ADS::BTreePolicy pol , Make key , std::uint64_t seed )
+{
+ ADS::BlockBTree< K > t( B , pol );
+ std::set< K > s;
+ std::mt19937_64 g( seed );
+ for( int i = 0 ; i < 3000 ; ++i ) {
+  const K k = key( g() % 1500 );
+  if( g() % 5 < 3 )
+   CHECK( t.insert( k ) == s.insert( k ).second );
+  else
+   CHECK( t.remove( k ) == ( s.erase( k ) == 1 ) );
+  CHECK( t.size() == s.size() );
+  const K y = key( g() % 1600 );
+  const auto it = s.lower_bound( y );
+  const auto lb = t.lowerBound( y );
+  CHECK( lb.has_value() == ( it != s.end() ) );
+  CHECK( ! lb || ( *lb == *it ) );
+  CHECK( t.contains( y ) == s.contains( y ) );
+  }
+ std::vector< K > all;
+ t.forEach( [ & ]( const K & k ) { all.push_back( k ); } );
+ CHECK( all == std::vector< K >( s.begin() , s.end() ) );
+ for( const K & k : all )
+  CHECK( t.remove( k ) );
+ CHECK( t.empty() && ( t.height() == 1 ) );
+ }
+
+// ods 14.2 on keys other than int: strings of different lengths, prefixes
+// of one another, and keys of 64 bits up to 2^64 - 1
+ADS_TEST( "ods14.2.b-tree-keys" )
+{
+ constexpr std::uint64_t M = std::numeric_limits< std::uint64_t >::max();
+ for( int B : { 2 , 3 , 16 } )
+  for( auto pol : { ADS::BTreePolicy::STANDARD , ADS::BTreePolicy::WIDE ,
+		    ADS::BTreePolicy::THREE } ) {
+   btreeKeys< std::string >(
+     B , pol ,
+     []( std::uint64_t k ) {
+      return( std::string( k % 5 , 'a' ) + std::to_string( k / 5 ) );
+      } ,
+     std::uint64_t( B ) );
+   btreeKeys< std::uint64_t >(
+     B , pol , [ = ]( std::uint64_t k ) { return( M - k * k ); } ,
+     std::uint64_t( B ) + 1 );
+   }
+ ADS::BlockBTree< std::uint64_t > t( 2 );
+ CHECK( ! t.lowerBound( 0 ) && t.insert( M ) && ! t.insert( M ) );
+ CHECK( ( *t.lowerBound( 0 ) == M ) && ( *t.lowerBound( M ) == M ) );
+ }
+
 }  // end( namespace )
 
 /*--------------------------------------------------------------------------*/

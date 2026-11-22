@@ -232,6 +232,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `bench/run.sh` writes only the cells of the benchmarks in the results,
   and `bench/tables.py` leaves out the lines that are not cells, which
   BBHash prints by itself when asked for its size
+- `MeldableHeap::erase()` checks that a handle with no parent is the root
+  of its own heap before it merges the children, so that the root of
+  another heap is refused with `contract_violation` and both heaps stay
+  whole; before, the check came after the merge, which had already
+  relinked the nodes of the other heap, and the destructors freed one of
+  them twice
 
 ## [0.1.0] - 2026-11-18
 

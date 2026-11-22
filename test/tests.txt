@@ -469,6 +469,7 @@ taocp  knuth-sorts           inserzioni, radix exchange, torneo, Ford-Johnson
 taocp  ford-johnson-chain    Ford-Johnson, la catena in un albero dei ranghi
 taocp  external-sort         replacement selection e merge polifase
 taocp  threaded-tree         albero infilato
+taocp  threaded-tree-ends    albero infilato agli estremi, chiavi non int
 taocp  allocators            boundary tag e buddy system
 taocp  cell-heap             garbage collector, Deutsch-Schorr-Waite
 taocp  cell-heap-roots       radici solo su celle in uso
@@ -1935,6 +1936,7 @@ join_trees  set-operations        unione, intersezione, differenza ai bordi
 join_trees  batches               inserimenti e rimozioni a lotti, filtro
 join_trees  extract-range         estrazione di un intervallo di chiavi
 join_trees  join-tree-dictionary  JoinTree come dizionario, quattro schemi
+join_trees  join-tree-keys        JoinTree su stringhe e chiavi a 64 bit
 join_trees  augmented-maps        mappe aumentate contro la forza bruta
 join_trees  interval-tree         albero degli intervalli, query di stabbing
 join_trees  range-tree            albero di range 2D, conteggi nei rettangoli
@@ -2124,11 +2126,13 @@ ods_ints  ods13.2.x-fast-trie               Morin 13.2, x-fast trie
 ods_ints  ods.ex13.2.list-x-fast-trie       Morin es. 13.2, x-fast su lista
 ods_ints  ods.ex13.4.find-near              Morin es. 13.4, ricerca vicina
 ods_ints  ods13.3.y-fast-trie               Morin 13.3, y-fast trie
+ods_ints  ods13.extreme-keys                trie, chiave 2^64 - 1 e chiavi oltre w bit
 ods_ints  ods.ex13.3.bitmap-trie            Morin es. 13.3, trie di stringhe
 ods_ints  ods10.1.binary-heap               Morin 10.1, es. 10.1-10.2, heap
 ods_ints  ods.ex10.3.remove-place           Morin es. 10.3-10.4, rimozione
 ods_ints  ods.ex10.5.dary-heap              Morin es. 10.5, heap d-ario
 ods_ints  ods10.2.meldable-heap             Morin 10.2, es. 10.6-10.9
+ods_ints  ods10.2.meldable-heap-edges       Morin 10.2, heap vuoto, handle altrui, chiavi uguali
 ods_ints  ods.ex10.10.k-smallest            Morin es. 10.10, i k minimi
 ods_ints  ods.ex10.11.k-way-merge           Morin es. 10.11, fusione di k liste
 ods_ints  ods5.1.chained-hash-table         Morin 5.1, liste di trabocco
@@ -2150,6 +2154,7 @@ ods_ints  ods.ex12.4.components             Morin es. 12.4-12.7, componenti
 ods_ints  ods.ex12.10.universal-sink        Morin es. 12.10, pozzo universale
 ods_ints  ods14.1.block-store               Morin 14.1, memoria a blocchi
 ods_ints  ods14.2.b-tree                    Morin 14.2, B-albero sui blocchi
+ods_ints  ods14.2.b-tree-keys               Morin 14.2, chiavi stringa e a 64 bit
 ods_ints  ods.ex14.1.figure                 Morin es. 14.1-14.2, figura
 ods_ints  ods.ex14.3.internal-nodes         Morin es. 14.3, nodi interni
 ods_ints  ods.ex14.4.memory                 Morin es. 14.4, memoria interna

@@ -1001,6 +1001,70 @@ ADS_TEST( "join-tree-dictionary" )
  run( ( JoinTreap< int , int > * )nullptr );
  }
 
+ADS_TEST( "join-tree-keys" )
+{
+ // JoinTree on keys other than int, on the four schemes, against
+ // std::map: strings that are prefixes of one another, and keys of 64 bits
+ // up to 2^64 - 1, with a split at each extreme and the joins back
+ constexpr std::uint64_t M = std::numeric_limits< std::uint64_t >::max();
+ auto run = []< class K , class T >( K ( *key )( std::uint64_t ) , T * ) {
+  std::mt19937_64 g( 31 );
+  T t;
+  std::map< K , int > m;
+  for( int i = 0 ; i < 2000 ; ++i ) {
+   const K k = key( g() % 600 );
+   if( g() % 3 ) {
+    t.insert( k , i );
+    m[ k ] = i;
+    }
+   else {
+    t.remove( k );
+    m.erase( k );
+    }
+   CHECK( t.size() == m.size() );
+   }
+  for( std::uint64_t j = 0 ; j < 610 ; ++j ) {
+   const K k = key( j );
+   CHECK(
+     t.lookup( k ) ==
+     ( m.contains( k ) ? std::optional< int >( m.at( k ) ) : std::nullopt ) );
+   }
+  using KPairs = std::vector< std::pair< K , int > >;
+  KPairs P;
+  for( const auto & [ k , v ] : t )
+   P.emplace_back( k , v );
+  CHECK( P == KPairs( m.begin() , m.end() ) );
+  for( const K & s : { m.begin()->first , std::prev( m.end() )->first } ) {
+   T c( t );
+   auto [ l , v , r ] = std::move( c ).split( s );
+   CHECK( v && ( *v == m.at( s ) ) );
+   CHECK( l.size() + r.size() + 1 == m.size() );
+   T u = T::join( std::move( l ) , s , *v , std::move( r ) );
+   CHECK( u.size() == m.size() );
+   }
+  };
+ auto text = []( std::uint64_t k ) {
+  return( std::string( k % 4 , 'z' ) + std::to_string( k / 4 ) );
+  };
+ auto wide = []( std::uint64_t k ) -> std::uint64_t { return( M - k * k ); };
+ using S = std::string;
+ using U = std::uint64_t;
+ S ( *ts )( U ) = text;
+ U ( *tu )( U ) = wide;
+ run( ts , ( JoinAVLTree< S , int > * )nullptr );
+ run( ts , ( JoinRedBlackTree< S , int > * )nullptr );
+ run( ts , ( WeightBalancedTree< S , int > * )nullptr );
+ run( ts , ( JoinTreap< S , int > * )nullptr );
+ run( tu , ( JoinAVLTree< U , int > * )nullptr );
+ run( tu , ( JoinRedBlackTree< U , int > * )nullptr );
+ run( tu , ( WeightBalancedTree< U , int > * )nullptr );
+ run( tu , ( JoinTreap< U , int > * )nullptr );
+ JoinAVLTree< U , int > t;
+ t.insert( M , 1 );
+ t.insert( 0 , 2 );
+ CHECK( ( t.lookup( M ) == 1 ) && ( *t.lowerBoundKey( 1 ) == M ) );
+ }
+
 ADS_TEST( "augmented-maps" )
 {
  augmented< AVLBalance >();

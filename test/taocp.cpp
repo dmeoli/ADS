@@ -856,6 +856,41 @@ ADS_TEST( "threaded-tree" )
  CHECK( C.reversed().front() == 10000 );
  }
 
+// the threaded tree at its ends: the successor of the largest key and the
+// predecessor of the smallest are the head, the end of the iterators, and
+// the predecessor of the end is the largest key; on one key, on none, and
+// on keys that are strings and doubles
+ADS_TEST( "threaded-tree-ends" )
+{
+ ThreadedTree< std::string > E;
+ CHECK( E.begin() == E.end() );
+ ThreadedTree< std::string > O;
+ O.insert( "" );
+ CHECK( ( *O.begin() == "" ) && ( ++O.begin() == O.end() ) );
+ CHECK( ( --O.end() == O.begin() ) && ( --O.begin() == O.end() ) );
+ ThreadedTree< std::string > S;
+ std::set< std::string > R;
+ std::mt19937 g( 13 );
+ for( int i = 0 ; i < 800 ; ++i ) {
+  const std::string k( g() % 9 , char( 'a' + g() % 3 ) );
+  S.insert( k );
+  R.insert( k );
+  }
+ CHECK( std::equal( S.begin() , S.end() , R.begin() , R.end() ) );
+ CHECK( ( *S.begin() == *R.begin() ) && ( *--S.end() == *R.rbegin() ) );
+ CHECK( ( ++--S.end() == S.end() ) && ( --S.begin() == S.end() ) );
+ std::vector< std::string > back;
+ for( auto it = S.end() ; it != S.begin() ; )
+  back.push_back( *--it );
+ CHECK( back == std::vector< std::string >( R.rbegin() , R.rend() ) );
+ ThreadedTree< double > D;
+ for( double x : { 0.5 , -1e300 , 1e300 , -0.0 , 3.25 } )
+  D.insert( x );
+ CHECK( ( D.size() == 5 ) && ( *D.begin() == -1e300 ) &&
+	( *--D.end() == 1e300 ) && D.contains( 0.0 ) );
+ CHECK( D.reversed().front() == 1e300 );
+ }
+
 // the allocators on random requests and releases, their invariants checked
 // at each operation: the boundary tags with the three fits, the memory all
 // free and in one block at the end; the buddy system, its blocks powers of

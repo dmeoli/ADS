@@ -174,14 +174,13 @@ template< class T , class Less , class A >
 T MeldableHeap< T , Less , A >::erase( Handle h )
 {
  ADS_PRE( ( h != nullptr ) && ( f_n > 0 ) );
- Node * m = merge( h->left , h->right );
  Node * p = h->parent;
+ ADS_PRE( p || ( h == f_root ) );  // a root, of this heap
+ Node * m = merge( h->left , h->right );
  if( m )
   m->parent = p;
- if( ! p ) {
-  ADS_PRE( h == f_root );
+ if( ! p )
   f_root = m;
-  }
  else if( p->left == h )
   p->left = m;
  else
