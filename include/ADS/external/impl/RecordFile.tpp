@@ -78,6 +78,16 @@ inline void RecordFile< T >::append( const T * src , std::size_t n )
  ADS_PRE( src || ( n == 0 ) );
  // the size before, read only when the postconditions are checked
  [[maybe_unused]] const std::size_t before = ADS_CONTRACTS >= 2 ? size() : 0;
+ // the bytes of a record left partial (by a write interrupted) dropped,
+ // so that the records appended start where those of the file end
+ std::error_code ec;
+ const auto bytes = std::filesystem::file_size( f_path , ec );
+ if( ( ! ec ) && ( bytes % sizeof( T ) ) ) {
+  std::filesystem::resize_file( f_path , bytes - bytes % sizeof( T ) , ec );
+  if( ec )
+   throw( std::runtime_error( "ADS::RecordFile::append: cannot write " +
+			      f_path.string() ) );
+  }
  std::ofstream out( f_path , std::ios::binary | std::ios::app );
  if( n )
   out.write( reinterpret_cast< const char * >( src ) ,

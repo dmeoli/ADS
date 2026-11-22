@@ -100,14 +100,16 @@ class RecordFile
  /// the path of the file
  [[nodiscard]] const std::filesystem::path & path( void ) const;
 
- /// the number of records of the file, 0 if it does not exist
+ /// the number of whole records of the file, 0 if it does not exist
  [[nodiscard]] std::size_t size( void ) const;
 
  /// whether the file has no record
  [[nodiscard]] bool empty( void ) const;
 
  /// the \f$ n \f$ records of `src` appended at the end of the file, which
- /// is made if it does not exist
+ /// is made if it does not exist, after its last whole record (the bytes
+ /// of a record left partial by a write interrupted, which `size()` and
+ /// the scans do not count, are dropped)
  /// \pre `src` is not null unless \f$ n = 0 \f$
  /// \post `size()` grows by \f$ n \f$
  void append( const T * src , std::size_t n );

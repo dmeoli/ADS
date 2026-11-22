@@ -1682,6 +1682,34 @@ ADS_TEST( "ods14.1.block-store" )
  CHECK_THROWS( ( void )S.readBlock( 5 ) , ADS::contract_violation );
  }
 
+// ods 14.1: the contracts of the store, a block freed twice or used once
+// freed refused, and a copy of the store a disk of its own
+ADS_TEST( "ods14.1.block-store-contracts" )
+{
+ ADS::BlockStore< int > S;
+ CHECK( S.blocks() == 0 );
+ CHECK_THROWS( ( void )S.peek( 0 ) , ADS::contract_violation );
+ CHECK_THROWS( S.freeBlock( 0 ) , ADS::contract_violation );
+ const auto a = S.placeBlock( 1 );
+ const auto b = S.placeBlock( 2 );
+ S.freeBlock( a );
+ CHECK_THROWS( S.freeBlock( a ) , ADS::contract_violation );
+ CHECK_THROWS( ( void )S.readBlock( a ) , ADS::contract_violation );
+ CHECK_THROWS( S.writeBlock( a , 5 ) , ADS::contract_violation );
+ CHECK_THROWS( ( void )S.peek( a ) , ADS::contract_violation );
+ CHECK( S.blocks() == 1 && S.reads() == 0 && S.writes() == 2 );
+ // the refused operations counted no I/O
+ ADS::BlockStore< int > C = S;
+ C.writeBlock( b , 9 );
+ CHECK( S.peek( b ) == 2 && C.peek( b ) == 9 && C.writes() == 3 &&
+	S.writes() == 2 );
+ // each copy gives the freed block again, on its own disk
+ CHECK( C.placeBlock( 4 ) == a && S.placeBlock( 6 ) == a );
+ CHECK( C.peek( a ) == 4 && S.peek( a ) == 6 );
+ S.resetCounters();
+ CHECK( S.reads() == 0 && S.writes() == 0 && C.writes() == 4 );
+ }
+
 /// a differential test of the B-tree of a policy against a std::set, the
 /// invariant checked at each operation while there are at most 1024 keys,
 /// and the I/Os of each operation within a constant times the height

@@ -6,8 +6,10 @@
  * its limits (a file that is not there, an empty one, records appended by
  * pieces, records larger than the buffer of a scan), RecordWriter with a
  * buffer of one record, flushed by its destructor and kept by the thousand
- * at once, TempDirectory removed with its files, and the errors of a path
- * that cannot be written, at the level 3 of the contracts.
+ * at once, TempDirectory removed with its files, the errors of a path
+ * that cannot be written and a record left partial at the end of a file,
+ * and MappedFile on a missing file, on an empty one and through its copies
+ * and its offers, at the level 3 of the contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -21,11 +23,14 @@
 
 #include "ADSTest.h"
 
+#include "ADS/external/MappedFile.h"
 #include "ADS/external/RecordFile.h"
 
 #include <array>
 #include <cstdint>
+#include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <numeric>
 #include <random>
 #include <stdexcept>
@@ -250,6 +255,131 @@ ADS_TEST( "record-file-errors" )
  CHECK_THROWS( f.append( nullptr , 1 ) , contract_violation );
  RecordFile< int > d( dir.path() );  // a directory, not a file
  CHECK_THROWS( d.append( &x , 1 ) , std::runtime_error );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+/// the bytes \f$ b \f$ written as the whole file at \f$ p \f$
+static void writeBytes( const std::filesystem::path & p ,
+			const std::string & b )
+{
+ std::ofstream out( p , std::ios::binary | std::ios::trunc );
+ out.write( b.data() , std::streamsize( b.size() ) );
+ }
+
+ADS_TEST( "record-file-partial-record" )
+{
+ TempDirectory dir;
+ RecordFile< std::uint32_t > f( dir / "partial.dat" );
+ const std::uint32_t a[] = { 11 , 22 };
+ f.append( a , 2 );
+ // 2 bytes of a third record, as an interrupted write leaves them
+ std::ofstream( f.path() , std::ios::binary | std::ios::app ).write( "xy" ,
+								     2 );
+ CHECK( std::filesystem::file_size( f.path() ) == 10 );
+ CHECK( f.size() == 2 );
+ CHECK( f.readAll() == std::vector< std::uint32_t >( { 11 , 22 } ) );
+ std::size_t calls = 0;
+ f.forEach( [ & ]( std::uint32_t ) { ++calls; } , 1 );
+ CHECK( calls == 2 );
+ // an append goes after the whole records, the partial one dropped
+ const std::uint32_t c = 33;
+ f.append( &c , 1 );
+ CHECK( f.size() == 3 );
+ CHECK( f.readAll() == std::vector< std::uint32_t >( { 11 , 22 , 33 } ) );
+ {
+  RecordWriter< std::uint32_t > w( f , 4 );
+  std::ofstream( f.path() , std::ios::binary | std::ios::app ).write( "z" ,
+								      1 );
+  w.push( 44 );
+  }
+ CHECK( f.readAll() == std::vector< std::uint32_t >( { 11 , 22 , 33 , 44 } ) );
+ // a file shorter than one record has none
+ writeBytes( f.path() , "abc" );
+ CHECK( f.size() == 0 && f.empty() && f.readAll().empty() );
+ f.append( &c , 1 );
+ CHECK( f.readAll() == std::vector< std::uint32_t >( { 33 } ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ADS_TEST( "record-file-contracts" )
+{
+ TempDirectory dir;
+ RecordFile< int > f( dir / "c.dat" );
+ const int x[] = { 1 , 2 , 3 };
+ f.append( x , 3 );
+ CHECK_THROWS( f.forEach( []( int ) { } , 0 ) , contract_violation );
+ CHECK_THROWS( RecordWriter< int >( f , 0 ) , contract_violation );
+ // a copy of a RecordFile names the same file
+ RecordFile< int > g = f;
+ g.append( x , 1 );
+ CHECK( f.size() == 4 && g.readAll() == f.readAll() );
+ // a moved writer writes its buffer once, by its new owner
+ {
+  RecordWriter< int > w( f , 8 );
+  w.push( 7 );
+  RecordWriter< int > v( std::move( w ) );
+  CHECK( v.pending() == 1 );
+  }
+ CHECK( f.size() == 5 && f.readAll().back() == 7 );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ADS_TEST( "mapped-file" )
+{
+ TempDirectory dir;
+ // no file: no mapping and nothing held
+ const MappedFile none;
+ CHECK( ! none && none.bytes().empty() && ! none.mapped() );
+ CHECK( ! none.holds( &none ) && none.take( 1 ) == nullptr );
+ CHECK_THROWS( none.offer( nullptr , 1 ) , contract_violation );
+ CHECK_THROWS( MappedFile( dir / "missing.ads" ) , PersistError );
+ // a file of 0 bytes: a file, with no byte, mapped or not
+ writeBytes( dir / "empty.ads" , "" );
+ const MappedFile e( dir / "empty.ads" );
+ CHECK( bool( e ) && e.bytes().empty() && ! e.holds( &e ) );
+ CHECK( e.take( 0 ) == nullptr );
+ CHECK_THROWS( e.offer( &dir , 1 ) , contract_violation );
+ // a file of 5000 bytes, on a page if mapped, on a line of the cache if
+ // read
+ std::string b( 5000 , '\0' );
+ for( std::size_t i = 0 ; i < b.size() ; ++i )
+  b[ i ] = char( i * 7 );
+ writeBytes( dir / "data.ads" , b );
+ MappedFile m( dir / "data.ads" );
+ const auto s = m.bytes();
+ CHECK( s.size() == b.size() &&
+	std::memcmp( s.data() , b.data() , b.size() ) == 0 );
+ const auto at = reinterpret_cast< std::uintptr_t >( s.data() );
+ CHECK( at % ( m.mapped() ? 4096 : 64 ) == 0 );
+ CHECK( m.holds( s.data() ) && m.holds( s.data() + s.size() - 1 ) );
+ CHECK( ! m.holds( s.data() + s.size() ) );
+ // a write stays in the process
+ s[ 0 ] = std::byte( 0x5A );
+ CHECK( MappedFile( dir / "data.ads" ).bytes()[ 0 ] == std::byte( b[ 0 ] ) );
+ // an offer is taken once, and only at its size
+ m.offer( s.data() + 64 , 128 );
+ CHECK( m.take( 64 ) == nullptr );
+ CHECK( m.take( 128 ) == s.data() + 64 && m.take( 128 ) == nullptr );
+ CHECK_THROWS( m.offer( &dir , 8 ) , contract_violation );
+ // the copies share the mapping, which outlives the first of them
+ MappedFile c = m;
+ CHECK( c == m && c.bytes().data() == s.data() );
+ c.offer( s.data() , 8 );  // one offer, seen by every copy
+ CHECK( m.take( 8 ) == s.data() );
+ const MappedFile & self = c;
+ c = self;  // a copy onto itself keeps the mapping
+ CHECK( c == m );
+ MappedFile v = std::move( m );
+ CHECK( ! m && v == c );
+ m = std::move( v );
+ CHECK( m == c && ! v );
+ m = MappedFile();
+ CHECK( ! m && c.bytes()[ 0 ] == std::byte( 0x5A ) );
+ c = e;  // the last copy released, the other mapping shared
+ CHECK( c == e && c.bytes().empty() );
  }
 
 /*--------------------------------------------------------------------------*/

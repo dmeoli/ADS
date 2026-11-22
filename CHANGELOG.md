@@ -213,6 +213,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of 128 bits for a wider one, since in `T` the products overflowed on
   sums of segments well within `T` (e.g., items of 10^9 in an `int`),
   which left the result undefined
+- `RecordFile::append()` drops the bytes of a record left partial at the
+  end of the file (by a write interrupted, say) before it appends, so that
+  the records appended start where the whole ones end; before, they were
+  written after the partial bytes, and the scans read every record after
+  them shifted by those bytes
+
 - the makefile builds the benchmarks on Boost, Highway and hwloc where they
   are found, as the targets of CMake do, keeping the code of ADS where a
   structure would delegate to Boost or to LEMON; before, it built them on

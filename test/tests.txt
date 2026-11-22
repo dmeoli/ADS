@@ -1801,6 +1801,9 @@ engineered_external  record-writer-many-files   3000 scrittori aperti insieme
 engineered_external  record-file-large-records  record più grandi del buffer
 engineered_external  temp-directory             cartella tolta con i suoi file
 engineered_external  record-file-errors         percorsi che non si scrivono
+engineered_external  record-file-partial-record un record a metà in coda
+engineered_external  record-file-contracts      buffer nulli, copie, spostamenti
+engineered_external  mapped-file                file vuoti, mancanti, copie, offerte
 
 # the engineered allocators of the size classes, beyond the book
 engineered_memory  pool-resource              classi di 16 byte su ObjectPool
@@ -2153,6 +2156,7 @@ ods_ints  ods12.3.visits                    Morin 12.3, es. 12.3, 12.8, 12.9
 ods_ints  ods.ex12.4.components             Morin es. 12.4-12.7, componenti
 ods_ints  ods.ex12.10.universal-sink        Morin es. 12.10, pozzo universale
 ods_ints  ods14.1.block-store               Morin 14.1, memoria a blocchi
+ods_ints  ods14.1.block-store-contracts     Morin 14.1, blocchi liberati e copie
 ods_ints  ods14.2.b-tree                    Morin 14.2, B-albero sui blocchi
 ods_ints  ods14.2.b-tree-keys               Morin 14.2, chiavi stringa e a 64 bit
 ods_ints  ods.ex14.1.figure                 Morin es. 14.1-14.2, figura
