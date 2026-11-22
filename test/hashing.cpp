@@ -346,6 +346,45 @@ ADS_TEST( "binary-fuse" )
   }
  }
 
+// the binary fuse filter of keys of 32 bits and of fingerprints of 32
+// bits: every key maybe there for 0, 1, 3, 1000 and 10^5 keys, the keys 0
+// and 2^32 - 1 among them; no false positive (about 2^-32 each) on 10^6
+// absent keys, and about 36 bits per key
+ADS_TEST( "binary-fuse-32" )
+{
+ for( std::size_t n : { 0 , 1 , 3 , 1000 , 100000 } ) {
+  const auto W = randomKeys( 2 * n , unsigned( n + 3 ) );
+  std::vector< std::uint32_t > K;
+  for( std::size_t i = 0 ; i < n ; ++i )
+   K.push_back( std::uint32_t( W[ i ] ) );
+  if( n > 2 ) {
+   K[ 0 ] = 0;
+   K[ 1 ] = ~std::uint32_t( 0 );
+   }
+  BinaryFuseFilter< std::uint32_t > F( K );
+  BinaryFuseFilter< std::uint64_t , std::uint32_t > G(
+    std::vector< std::uint64_t >( W.begin() ,
+				  W.begin() + std::ptrdiff_t( n ) ) );
+  CHECK( F.empty() == ( n == 0 ) && G.size() == n );
+  bool ok = true;
+  for( std::uint32_t k : K )
+   ok = ok && F.maybe( k );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   ok = ok && G.maybe( W[ i ] );
+  CHECK( ok );
+  if( n == 0 )
+   CHECK( ! F.maybe( 0 ) && ! G.maybe( 0 ) && G.bits() == 0 );
+  }
+ const auto K = randomKeys( 2000000 , 15 );
+ const std::vector< std::uint64_t > In( K.begin() , K.begin() + 1000000 );
+ BinaryFuseFilter< std::uint64_t , std::uint32_t > G( In );
+ std::size_t f = 0;
+ for( std::size_t i = 1000000 ; i < K.size() ; ++i )
+  f += G.maybe( K[ i ] );
+ CHECK( f < 4 );  // 10^6 / 2^32
+ CHECK( double( G.bits() ) / 1e6 < 37 );
+ }
+
 // the cuckoo filter of 8 and 16 bits: 0, 1, 2, 3, 10, 100, 1000 and 10^5
 // random keys inserted, every one maybe there, all removed and the filter
 // empty; at 10^6 keys the false positives on 10^6 absent keys near
@@ -1420,6 +1459,70 @@ ADS_TEST( "bucketing-filter" )
  // correlated: a gap shorter than a bucket is always a false positive
  const auto [ cq , cfp ] = correlated( F , K , 1 );
  CHECK( cfp == cq );
+ }
+
+// the range filters on keys of 32 bits, unsigned, signed and floating:
+// every key maybe there, the ends of the universe among them, no false
+// negative on random ranges of 1 to 64 keys and, for the integers, the false
+// positives within the bound of Grafite and within that of the buckets,
+// whose width is of the universe of 2^32 words of the keys
+template< class T >
+void rangeFilters32( void )
+{
+ std::mt19937_64 g( sizeof( T ) + std::is_signed_v< T > );
+ const auto W = randomKeys( 5000 , 29 );
+ std::vector< T > K;
+ for( auto w : W )
+  if constexpr( std::is_floating_point_v< T > )
+   K.push_back( T( std::int32_t( w ) ) / T( 1000 ) );
+  else
+   K.push_back( T( w ) );
+ K.push_back( std::numeric_limits< T >::lowest() );
+ K.push_back( std::numeric_limits< T >::max() );
+ const GrafiteFilter< T > F( K , 12 );
+ const BucketingFilter< T > Bk( K , 12 );
+ bool ok = true;
+ for( T k : K )
+  ok = ok && F.maybe( k ) && Bk.maybe( k ) && F.mayContain( k , k );
+ CHECK( ok );
+ CHECK( F.mayContain( std::numeric_limits< T >::lowest() ,
+		      std::numeric_limits< T >::max() ) &&
+	Bk.mayContain( std::numeric_limits< T >::lowest() ,
+		       std::numeric_limits< T >::max() ) );
+ if constexpr( ! std::is_floating_point_v< T > ) {
+  std::vector< std::uint64_t > S;  // the words of the keys, sorted
+  for( T k : K )
+   S.push_back( std::uint64_t( radixKey( k ) ) );
+  std::sort( S.begin() , S.end() );
+  using U = std::make_unsigned_t< T >;
+  std::size_t q = 0 , fpF = 0 , fpB = 0;
+  for( int t = 0 ; t < 200000 ; ++t ) {
+   const U a = U( g() ) , l = U( 1 + g() % 64 );
+   const U b = a > U( ~U( 0 ) - l ) ? U( ~U( 0 ) ) : U( a + l - 1 );
+   const T x = std::bit_cast< T >( U( a ^ ( U( radixKey( T() ) ) ) ) ) ,
+	   y = std::bit_cast< T >( U( b ^ ( U( radixKey( T() ) ) ) ) );
+   const bool in = holds( S , std::uint64_t( radixKey( x ) ) ,
+			  std::uint64_t( radixKey( y ) ) );
+   const bool f = F.mayContain( x , y ) , c = Bk.mayContain( x , y );
+   ok = ok && ( f || ! in ) && ( c || ! in );
+   if( ! in ) {
+    ++q;
+    fpF += f;
+    fpB += c;
+    }
+   }
+  CHECK( ok );
+  CHECK( withinBound( fpF , q , 64.0 / 1024 ) );
+  CHECK( withinBound( fpB , q , 66.0 / 1024 ) );
+  CHECK( Bk.buckets() > K.size() / 2 );
+  }
+ }
+
+ADS_TEST( "range-filters-32" )
+{
+ rangeFilters32< std::uint32_t >();
+ rangeFilters32< std::int32_t >();
+ rangeFilters32< float >();
  }
 
 }  // end( namespace )

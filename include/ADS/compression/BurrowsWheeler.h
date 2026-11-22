@@ -148,8 +148,18 @@ struct BWT
 /// 7 & \quad \textbf{return}\ ( L , r )
 /// \end{array}}
 /// \f]
+/// the length of the text from which bwt() and the indices built on it
+/// keep the suffix array in entries of 64 bits, \f$ 2^{31} - 1 \f$, below
+/// which those of 32 bits hold every index of \f$ s\$ \f$
+inline constexpr std::size_t bwtWideFrom = ( std::size_t( 1 ) << 31 ) - 1;
+
 /// \post `inverseBwt( result ) == s` (an audit)
-[[nodiscard]] inline BWT bwt( std::string_view s );
+///
+/// The suffix array is of entries of 64 bits for \f$ n \ge \f$ `wideFrom`
+/// [see bwtWideFrom] and of 32 bits below; a smaller `wideFrom` takes the
+/// path of 64 bits on a short text, with the same result.
+[[nodiscard]] inline BWT bwt( std::string_view s ,
+			      std::size_t wideFrom = bwtWideFrom );
 
 /// the LF-mapping of the \f$ n + 1 \f$ rows of the transform \f$ b \f$
 ///

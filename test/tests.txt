@@ -528,6 +528,7 @@ engineered_combinatorial  book-structures  il libro su strutture std, Boost, ADS
 hashing  fast-hash             funzioni hash per prodotti ripiegati
 hashing  blocked-bloom         filtro di Bloom a blocchi
 hashing  binary-fuse           filtro binary fuse
+hashing  binary-fuse-32        filtro binary fuse su 32 bit
 hashing  cuckoo-filter         filtro cuckoo, inserimenti e rimozioni
 hashing  prefix-filter         filtro prefix, dizionari tascabili e spare
 hashing  ribbon-filter         filtro Ribbon, eliminazione a bande
@@ -539,6 +540,7 @@ hashing  bucket-cuckoo         cuckoo a bucket di 4 posti
 hashing  bucket-cuckoo-stash   cuckoo a bucket, hash costante e stash
 hashing  grafite-filter        filtro di intervalli Grafite, query correlate
 hashing  bucketing-filter      filtro di intervalli a bucket
+hashing  range-filters-32      filtri di intervalli su chiavi di 32 bit
 # the engineered algorithms on strings, beyond the book
 engineered_strings  string-search   filtro SIMD, q-grammi e Two-Way
 engineered_strings  suffix-sorting  SA-IS ingegnerizzato e LCP con Phi
@@ -640,6 +642,8 @@ ordered  pgm-dynamic          PGM dinamico, metodo logaritmico e tombstone
 ordered  nth-element          selezione di Floyd e Rivest, Lomuto senza salti
 ordered  nth-element-adversary  selezione lineare contro l'avversario di McIlroy
 ordered  word-range-minimum   minimo di un intervallo, pile in una parola
+ordered  word-range-minimum-types  minimo di un intervallo su 64 bit e double
+ordered  count-less           conteggio dei minori in un nodo, tutti i tipi
 ordered  vector-intersection  intersezione a blocchi di 8 e a galoppo
 ordered  rem-union-find       algoritmo di Rem con lo splicing
 ordered  rem-union-find-contracts  contratti di merge() senza compressione
@@ -749,6 +753,8 @@ pearls_compression  lz78                     LZ78, tabella 13.1
 pearls_compression  lzw                      LZW, tabelle 13.2 e 13.3
 pearls_compression  bwt-notes                BWT, MTF, RLE, figure 14.1-14.2
 pearls_compression  bwt                      BWT contro le rotazioni ordinate
+pearls_compression  bwt-wide                 BWT a 64 bit contro quello a 32 bit
+pearls_compression  packed-bits              PackedBits ai bordi dei contratti
 pearls_compression  mtf-rle                  move-to-front, RLE e RLE0
 pearls_compression  bzip                     BWT + MTF + RLE0 + Huffman
 pearls_compression  fm-index-notes           FM-index, figura 14.7
@@ -800,6 +806,7 @@ pearls_io  ch6.permuted-buckets      capitolo 6, permutazione casuale e bucket
 pearls_io  ch6.intersection-ios      capitolo 6, intersezioni su disco
 
 pearls_succinct bit-vector vettore di bit, campi a cavallo delle parole
+pearls_succinct  copy-bits             copia di bit a offset non allineati
 pearls_succinct  select-in-word        select broadword in una parola
 pearls_succinct  bit-stream            BitWriter e BitReader, campi e unario
 pearls_succinct  elias-codes           unario, gamma e delta, figure 11.1-11.2
@@ -1731,6 +1738,7 @@ engineered_succinct  rank-select-lazy  inventari di select costruiti al primo us
 engineered_succinct  rank-select-words  RankSelect e compatto dalle parole, copiate contandole
 engineered_succinct  huffman-wavelet-tree  wavelet tree di Huffman, access rank select
 engineered_succinct  huffman-fm-index  FM-index sul wavelet tree di Huffman
+engineered_succinct  huffman-fm-index-edges  FM-index di Huffman ai bordi
 engineered_succinct  partitioned-elias-fano  Elias-Fano partizionato in blocchi di 128
 engineered_succinct  binary-packing   SIMD-BP128 e PFor, blocchi di 128 interi
 engineered_succinct  r-index          r-index, count e locate in spazio O( r )

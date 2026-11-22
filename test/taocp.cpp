@@ -67,6 +67,46 @@
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
+// the tricks of the words of section 7.1.3 in constant expressions, at the
+// two extreme bits, the word 0 where it is allowed and the word of all 1s
+static_assert( ADS::sidewaysSum( 0 ) == 0 && ADS::sidewaysSum( ~0ULL ) == 64 &&
+	       ADS::sidewaysSum( 0xF0 ) == 4 &&
+	       ADS::sidewaysSum( 1ULL << 63 ) == 1 );
+static_assert( ADS::ruler( 1 ) == 0 && ADS::ruler( 1ULL << 63 ) == 63 &&
+	       ADS::ruler( 0x50 ) == 4 && ADS::ruler( ~0ULL ) == 0 );
+static_assert( ADS::lambda( 1 ) == 0 && ADS::lambda( ~0ULL ) == 63 &&
+	       ADS::lambda( 0x50 ) == 6 && ADS::lambda( 1ULL << 32 ) == 32 );
+static_assert( ADS::rightmostOne( 0 ) == 0 && ADS::rightmostOne( 0x58 ) == 8 &&
+	       ADS::rightmostOne( 1ULL << 63 ) == 1ULL << 63 );
+static_assert( ADS::smearRight( 0 ) == 0 && ADS::smearRight( 0x58 ) == 0x5F &&
+	       ADS::smearRight( 1ULL << 63 ) == ~0ULL );
+static_assert( ADS::reverseBits( 1 ) == 1ULL << 63 &&
+	       ADS::reverseBits( 0 ) == 0 &&
+	       ADS::reverseBits( ~0ULL ) == ~0ULL &&
+	       ADS::reverseBits( 0x0123456789ABCDEFULL ) ==
+		 0xF7B3D591E6A2C480ULL );
+static_assert( ADS::gray( 5 ) == 7 && ADS::grayInverse( 7 ) == 5 &&
+	       ADS::gray( ~0ULL ) == 1ULL << 63 &&
+	       ADS::grayInverse( ADS::gray( ~0ULL ) ) == ~0ULL &&
+	       ADS::grayInverse( 0 ) == 0 );
+static_assert( ADS::nextSameWeight( 0b0111 ) == 0b1011 &&
+	       ADS::nextSameWeight( 0b1100 ) == 0b10001 &&
+	       ADS::nextSameWeight( 1 ) == 2 &&
+	       ADS::nextSameWeight( 1ULL << 62 ) == 1ULL << 63 );
+static_assert(
+  ADS::interleave( 1 , 0 ) == 1 && ADS::interleave( 0 , 1 ) == 2 &&
+  ADS::interleave( 0xFFFFFFFF , 0 ) == 0x5555555555555555ULL &&
+  ADS::interleave( 0xFFFFFFFF , 0xFFFFFFFF ) == ~0ULL &&
+  ADS::deinterleave( 2 ).first == 0 && ADS::deinterleave( 2 ).second == 1 &&
+  ADS::deinterleave( ~0ULL ).first == 0xFFFFFFFF &&
+  ADS::deinterleave( ADS::interleave( 0x12345678 , 0x9ABCDEF0 ) ).second ==
+    0x9ABCDEF0 );
+static_assert( ! ADS::hasZeroByte( 0x0101010101010101ULL ) &&
+	       ADS::hasZeroByte( 0x0101010100010101ULL ) &&
+	       ADS::hasZeroByte( 0 ) && ! ADS::hasZeroByte( ~0ULL ) &&
+	       ADS::hasZeroByte( 0x00FFFFFFFFFFFFFFULL ) &&
+	       ! ADS::hasZeroByte( 0x8080808080808080ULL ) );
+
 /*--------------------------------------------------------------------------*/
 /*------------------------------- USING ------------------------------------*/
 /*--------------------------------------------------------------------------*/

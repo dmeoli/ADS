@@ -245,8 +245,9 @@ ADS_TEST( "string-search" )
 // LMS-substrings distinct, texts that never rise, never fall, or rise and then
 // fall; the texts sorted directly by the windows of their packed codes
 // (1 to 8 bits, few and many LMS places, ties at the end, short and long
-// repeated blocks); integer texts over large alphabets; the LCP array of
-// the permuted LCP against lcpArray() of Kasai et al., on the same texts,
+// repeated blocks); integer texts over large alphabets, on 32 and 64
+// bits; the LCP array of the permuted LCP, on entries of 32 and 64 bits,
+// against lcpArray() of Kasai et al., on the same texts,
 // and on large texts by the bytes of the permuted LCP, with few and many
 // values beyond a byte
 ADS_TEST( "suffix-sorting" )
@@ -265,6 +266,10 @@ ADS_TEST( "suffix-sorting" )
    CHECK( Q[ A[ r ] ] == L[ r - 1 ] );
   if( ! A.empty() )
    CHECK( Q[ A[ 0 ] ] == 0 );
+  const auto P64 = lcpArrayPhi( T , B );  // on entries of 64 bits
+  CHECK( std::equal( L.begin() , L.end() , P64.begin() , P64.end() ) );
+  const auto Q64 = plcpArray( T , B );
+  CHECK( std::equal( Q.begin() , Q.end() , Q64.begin() , Q64.end() ) );
   };
  check( "" );
  check( "a" );
@@ -363,6 +368,18 @@ ADS_TEST( "suffix-sorting" )
    const auto B = suffixArray( W , K );
    CHECK( std::equal( R.begin() , R.end() , B.begin() , B.end() ) );
    }
+ // an integer text of 64 bits on an alphabet of 2^22 symbols, its symbols
+ // spread to the top of it, against the same text of 32 bits
+ {
+  const std::size_t K = std::size_t( 1 ) << 22;
+  std::vector< std::uint32_t > T( 5000 );
+  for( auto & c : T )
+   c = std::uint32_t( K - 1 - g() % 64 );
+  std::vector< std::uint64_t > W( T.begin() , T.end() );
+  const auto A = suffixArray( T , K );
+  const auto B = suffixArray( W , K );
+  CHECK( std::equal( A.begin() , A.end() , B.begin() , B.end() ) );
+  }
  CHECK_THROWS( ( void )suffixArray( std::vector< std::uint32_t >{ 0 , 5 } ,
 				    5 ) ,
 	       contract_violation );
@@ -683,7 +700,8 @@ ADS_TEST( "suffix-automaton" )
 // one byte, a^n (n distinct palindromes, one piece), a string with no
 // palindrome longer than 1, random strings over 1, 2, 3 and 26 letters;
 // the longest common extensions against the direct comparison (and an
-// audit each): the empty text and one symbol, the ends of the text, i = j,
+// audit each), on 32 and 64 bits: the empty text and one symbol, the ends
+// of the text (the last place included), i = j,
 // extensions shorter than 16 and longer, within a block of the range
 // minimum and across blocks, on random texts, the Fibonacci word, a^n and
 // texts with bytes 0 (which the padding of the text must not extend)
@@ -699,9 +717,11 @@ ADS_TEST( "lce" )
     ++h;
    return( h );
    };
-  for( std::size_t i : { std::size_t( 0 ) , n / 2 , n } )
-   for( std::size_t j : { std::size_t( 0 ) , n / 3 , n ? n - 1 : 0 , n } )
+  for( std::size_t i : { std::size_t( 0 ) , n / 2 , n ? n - 1 : 0 , n } )
+   for( std::size_t j : { std::size_t( 0 ) , n / 3 , n ? n - 1 : 0 , n } ) {
     CHECK( X.lce( i , j ) == naive( i , j ) );
+    CHECK( Y.lce( i , j ) == naive( i , j ) );
+    }
   for( int q = 0 ; q < queries ; ++q ) {
    const std::size_t i = g() % ( n + 1 ) , j = g() % ( n + 1 );
    CHECK( X.lce( i , j ) == naive( i , j ) );
@@ -731,6 +751,9 @@ ADS_TEST( "lce" )
   for( std::size_t r = 0 ; r < T.size() ; ++r )
    rank[ SA[ r ] ] = r;
   const LceIndex<> X( T );
+  const LceIndex< std::uint64_t > Y( T );
+  for( std::size_t i : { std::size_t( 0 ) , T.size() - 1 , T.size() } )
+   CHECK( X.lce( i , i ) == T.size() - i && Y.lce( i , i ) == X.lce( i , i ) );
   for( int q = 0 ; q < 3000 ; ++q ) {
    const std::size_t r = g() % T.size() , d = 1 + g() % ( q % 2 ? 40 : 5000 ) ,
 		     i = SA[ r ] , j = SA[ std::min( r + d , T.size() - 1 ) ];
@@ -738,9 +761,9 @@ ADS_TEST( "lce" )
     continue;
    const std::size_t a = std::min( rank[ i ] , rank[ j ] ) ,
 		     b = std::max( rank[ i ] , rank[ j ] );
-   CHECK( X.lce( i , j ) ==
-	  *std::min_element( LCP.begin() + std::ptrdiff_t( a ) ,
-			     LCP.begin() + std::ptrdiff_t( b ) ) );
+   const auto m = *std::min_element( LCP.begin() + std::ptrdiff_t( a ) ,
+				     LCP.begin() + std::ptrdiff_t( b ) );
+   CHECK( X.lce( i , j ) == m && Y.lce( i , j ) == m );
    }
   }
  }

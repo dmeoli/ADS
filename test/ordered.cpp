@@ -25,6 +25,7 @@
 #include "ADS/mfset/MFSet.h"
 #include "ADS/mfset/RemUnionFind.h"
 #include "ADS/search/CompressedPGMIndex.h"
+#include "ADS/search/CountLess.h"
 #include "ADS/search/DynamicPGMIndex.h"
 #include "ADS/search/NthElement.h"
 #include "ADS/search/PGMIndex.h"
@@ -585,6 +586,122 @@ ADS_TEST( "word-range-minimum" )
  CHECK( E.size() == 0 );
  CHECK_THROWS( ( void )R.query( 5 , 4 ) , contract_violation );
  CHECK_THROWS( ( void )R.query( 0 , A.size() ) , contract_violation );
+ }
+
+// the range minima on the other types against a scan: words of 64 bits near
+// 2^64 (unsigned) and near -2^63 (signed), doubles of both signs with the
+// infinities and the zeros of both signs (equal, the leftmost one), all the
+// ranges of arrays of 64 and of 1, 63, 65 and 130 items, and random ranges
+// of 10^4 items
+template< class T >
+void wordRangeMinimumOf( std::mt19937_64 & g , const std::vector< T > & V )
+{
+ for( std::size_t n : { 1 , 63 , 64 , 65 , 130 } ) {
+  std::vector< T > A( n );
+  for( auto & a : A )
+   a = V[ g() % V.size() ];
+  const WordRangeMinimum< T > R( A );
+  bool ok = true;
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   std::size_t r = i;
+   for( std::size_t j = i ; j < n ; ++j ) {
+    if( A[ j ] < A[ r ] )
+     r = j;
+    ok = ok && ( R.query( i , j ) == r );
+    }
+   }
+  CHECK( ok );
+  }
+ std::vector< T > A( 10000 );
+ for( auto & a : A )
+  a = V[ g() % V.size() ];
+ const WordRangeMinimum< T > R( A );
+ for( int t = 0 ; t < 1000 ; ++t ) {
+  std::size_t i = g() % A.size() , j = g() % A.size();
+  if( i > j )
+   std::swap( i , j );
+  CHECK( R.query( i , j ) ==
+	 std::size_t( std::min_element( A.begin() + std::ptrdiff_t( i ) ,
+					A.begin() + std::ptrdiff_t( j ) + 1 ) -
+		      A.begin() ) );
+  }
+ }
+
+ADS_TEST( "word-range-minimum-types" )
+{
+ std::mt19937_64 g( 36 );
+ const std::uint64_t M = ~std::uint64_t( 0 );
+ wordRangeMinimumOf< std::uint64_t >(
+   g , { 0 , 1 , M , M - 1 , M - 2 , M >> 1 , ( M >> 1 ) + 1 } );
+ const std::int64_t L = std::numeric_limits< std::int64_t >::min();
+ wordRangeMinimumOf< std::int64_t >(
+   g ,
+   { L , L + 1 , -1 , 0 , 1 , std::numeric_limits< std::int64_t >::max() } );
+ const double inf = std::numeric_limits< double >::infinity();
+ wordRangeMinimumOf< double >(
+   g , { -inf , -1e300 , -0.5 , -0.0 , 0.0 , 1e-300 , 2.5 , inf } );
+ }
+
+// detail::countLess() and detail::greaterBits() against a scan, on N of 1,
+// 7, 8, 16, 33, 63 and 64 items of 8, 32 and 64 bits, signed and unsigned,
+// with their extremes, and of floats and doubles with the infinities and a
+// NaN (which counts as in the scan: not smaller and not larger), for every
+// x among the values the items are drawn from
+template< std::size_t N , class T >
+void countLessOf( std::mt19937_64 & g , const std::vector< T > & V )
+{
+ for( int t = 0 ; t < 20 ; ++t ) {
+  T a[ N ];
+  for( auto & x : a )
+   x = V[ g() % V.size() ];
+  for( const T & x : V ) {
+   std::size_t less = 0 , notMore = 0;
+   std::uint64_t more = 0;
+   for( std::size_t i = 0 ; i < N ; ++i ) {
+    less += a[ i ] < x;
+    notMore += ! ( x < a[ i ] );
+    more |= std::uint64_t( x < a[ i ] ) << i;
+    }
+   CHECK( detail::countLess< N >( a , x ) == less );
+   CHECK( ( detail::countLess< N , true >( a , x ) ) == notMore );
+   CHECK( detail::greaterBits< N >( a , x ) == more );
+   }
+  }
+ }
+
+template< class T >
+void countLessAll( std::mt19937_64 & g , const std::vector< T > & V )
+{
+ countLessOf< 1 >( g , V );
+ countLessOf< 7 >( g , V );
+ countLessOf< 8 >( g , V );
+ countLessOf< 16 >( g , V );
+ countLessOf< 33 >( g , V );
+ countLessOf< 63 >( g , V );
+ countLessOf< 64 >( g , V );
+ }
+
+ADS_TEST( "count-less" )
+{
+ std::mt19937_64 g( 37 );
+ countLessAll< std::uint8_t >( g , { 0 , 1 , 127 , 128 , 254 , 255 } );
+ countLessAll< std::int8_t >( g , { -128 , -127 , -1 , 0 , 1 , 127 } );
+ countLessAll< std::uint32_t >(
+   g , { 0 , 1 , 0x7fffffff , 0x80000000 , 0xfffffffe , 0xffffffff } );
+ countLessAll< std::int32_t >(
+   g , { std::numeric_limits< std::int32_t >::min() , -1 , 0 , 1 ,
+	std::numeric_limits< std::int32_t >::max() } );
+ const std::uint64_t M = ~std::uint64_t( 0 );
+ countLessAll< std::uint64_t >( g , { 0 , 1 , M >> 1 , ( M >> 1 ) + 1 , M } );
+ countLessAll< std::int64_t >(
+   g , { std::numeric_limits< std::int64_t >::min() , -1 , 0 , 1 ,
+	std::numeric_limits< std::int64_t >::max() } );
+ const float fi = std::numeric_limits< float >::infinity();
+ countLessAll< float >( g , { -fi , -1.5f , -0.0f , 0.0f , 3.0f , fi ,
+			     std::numeric_limits< float >::quiet_NaN() } );
+ const double di = std::numeric_limits< double >::infinity();
+ countLessAll< double >( g , { -di , -1e300 , 0.0 , 1e-300 , di ,
+			      std::numeric_limits< double >::quiet_NaN() } );
  }
 
 // the intersection against std::set_intersection: empty lists, one item,

@@ -145,6 +145,7 @@ inline std::uint64_t decodeGamma( BitReader & r )
 
 constexpr int gammaLength( std::uint64_t x )
 {
+ ADS_PRE( x >= 1 );
  return( 2 * lambda( x ) + 1 );
  }
 
@@ -191,6 +192,7 @@ inline std::uint64_t decodeRice( BitReader & r , int k )
 
 constexpr std::uint64_t riceLength( std::uint64_t x , int k )
 {
+ ADS_PRE( ( x >= 1 ) && ( k >= 0 ) && ( k < 64 ) );
  return( ( ( x - 1 ) >> k ) + 1 + std::uint64_t( k ) );
  }
 
@@ -228,6 +230,7 @@ inline std::uint64_t decodeGolomb( BitReader & r , std::uint64_t b )
 
 constexpr std::uint64_t golombLength( std::uint64_t x , std::uint64_t b )
 {
+ ADS_PRE( ( x >= 1 ) && ( b >= 1 ) && ( b <= ( Word( 1 ) << 63 ) ) );
  const std::uint64_t q = ( x - 1 ) / b , r = ( x - 1 ) % b;
  if( b == 1 )
   return( q + 1 );
@@ -358,6 +361,7 @@ inline std::uint64_t decodeDense( const std::vector< std::uint32_t > & in ,
 constexpr int denseLength( std::uint64_t x , std::uint32_t s ,
 			   std::uint32_t c )
 {
+ ADS_PRE( ( s >= 1 ) && ( c >= 1 ) );
  int k = 1;
  for( std::uint64_t y = x / s ; y > 0 ; y = ( y - 1 ) / c )
   ++k;

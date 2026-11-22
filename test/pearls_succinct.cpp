@@ -53,6 +53,45 @@
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
+// the lengths of the integer codes in constant expressions, at their
+// smallest arguments and at the edges of the words
+static_assert( ADS::binaryLength( 1 ) == 1 && ADS::binaryLength( 2 ) == 2 &&
+	       ADS::binaryLength( std::uint64_t( 1 ) << 63 ) == 64 &&
+	       ADS::binaryLength( ~std::uint64_t( 0 ) ) == 64 );
+static_assert(
+  ADS::signedToNatural( 0 ) == 0 && ADS::signedToNatural( -1 ) == 3 &&
+  ADS::signedToNatural( 1 ) == 2 && ADS::naturalToSigned( 3 ) == -1 &&
+  ADS::naturalToSigned( 4 ) == 2 &&
+  ADS::naturalToSigned( ADS::signedToNatural( -( std::int64_t( 1 ) << 62 ) +
+					      1 ) ) ==
+    -( std::int64_t( 1 ) << 62 ) + 1 );
+static_assert( ADS::unaryLength( 1 ) == 1 && ADS::unaryLength( 9 ) == 9 );
+static_assert( ADS::gammaLength( 1 ) == 1 && ADS::gammaLength( 2 ) == 3 &&
+	       ADS::gammaLength( 3 ) == 3 && ADS::gammaLength( 4 ) == 5 &&
+	       ADS::gammaLength( ~std::uint64_t( 0 ) ) == 127 );
+static_assert( ADS::deltaLength( 1 ) == 2 && ADS::deltaLength( 2 ) == 5 &&
+	       ADS::deltaLength( 4 ) == 6 &&
+	       ADS::deltaLength( ~std::uint64_t( 0 ) ) == 77 );
+static_assert( ADS::riceLength( 1 , 0 ) == 1 && ADS::riceLength( 5 ,
+								 2 ) == 4 &&
+	       ADS::riceLength( ~std::uint64_t( 0 ) , 63 ) == 65 );
+static_assert( ADS::golombLength( 5 , 1 ) == 5 &&
+	       ADS::golombLength( 5 , 4 ) == ADS::riceLength( 5 , 2 ) &&
+	       ADS::golombLength( 1 , 5 ) == 3 &&
+	       ADS::golombLength( 4 , 5 ) == 4 &&
+	       ADS::golombLength( 6 , 5 ) == 4 &&
+	       ADS::golombLength( ~std::uint64_t( 0 ) , std::uint64_t( 1 )
+							 << 63 ) == 65 );
+static_assert( ADS::vbyteLength( 0 ) == 1 && ADS::vbyteLength( 127 ) == 1 &&
+	       ADS::vbyteLength( 128 ) == 2 &&
+	       ADS::vbyteLength( ~std::uint64_t( 0 ) ) == 10 );
+static_assert( ADS::denseLength( 0 , 128 , 128 ) == 1 &&
+	       ADS::denseLength( 127 , 128 , 128 ) == 1 &&
+	       ADS::denseLength( 128 , 128 , 128 ) == 2 &&
+	       ADS::denseLength( 16511 , 128 , 128 ) == 2 &&
+	       ADS::denseLength( 16512 , 128 , 128 ) == 3 &&
+	       ADS::denseLength( 5 , 1 , 1 ) == 6 );
+
 /*--------------------------------------------------------------------------*/
 /*------------------------------- USING ------------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -261,6 +300,40 @@ ADS_TEST( "bit-vector" )
  CHECK_THROWS( ( void )A[ 129 ] , contract_violation );
  CHECK_THROWS( A.set( 129 , true ) , contract_violation );
  CHECK_THROWS( ( void )BitVector()[ 0 ] , contract_violation );
+ }
+
+// detail::copyBits() against a copy bit by bit: lengths of 0 (nothing
+// written), 1, 63, 64, 65 and random up to 300, at every pair of offsets
+// in the word of the source and of the destination (the aligned ones, those
+// whose bits cross a word of either, the last place of a word), into words
+// of 0s and into words of random bits, which it ors and does not clear
+ADS_TEST( "copy-bits" )
+{
+ std::mt19937 g( 3 );
+ std::vector< Word > S( 8 );
+ for( auto & w : S )
+  w = randomWide( g );
+ auto bit = []( const std::vector< Word > & W , std::size_t i ) {
+  return( ( W[ i >> 6 ] >> ( i & 63 ) ) & 1 );
+  };
+ for( const std::size_t len : { 0 , 1 , 63 , 64 , 65 , -1 } )
+  for( std::size_t s = 0 ; s < 64 ; s += 1 + ( s % 5 ) )
+   for( std::size_t d = 0 ; d < 64 ; d += 1 + ( d % 7 ) )
+    for( const bool dirty : { false , true } ) {
+     const std::size_t l = len == std::size_t( -1 ) ? g() % 301 : len;
+     std::vector< Word > D( 7 ) , E;
+     if( dirty )
+      for( auto & w : D )
+       w = randomWide( g );
+     E = D;
+     detail::copyBits( D.data() , d , S.data() , s , l );
+     for( std::size_t i = 0 ; i < l ; ++i )
+      E[ ( d + i ) >> 6 ] |= Word( bit( S , s + i ) ) << ( ( d + i ) & 63 );
+     CHECK( D == E );
+     }
+ std::vector< Word > D( 2 , 0 );  // from and to the last place of a word
+ detail::copyBits( D.data() , 63 , S.data() , 63 , 2 );
+ CHECK( D[ 0 ] == ( ( S[ 0 ] >> 63 ) << 63 ) && D[ 1 ] == ( S[ 1 ] & 1 ) );
  }
 
 // selectInWord() against a scan of the bits, on random words of every
@@ -524,6 +597,17 @@ ADS_TEST( "rice-golomb" )
  CHECK_THROWS( encodeGolomb( e , 1 , 0 ) , contract_violation );
  CHECK_THROWS( encodeGolomb( e , 1 , b63 + 1 ) , contract_violation );
  CHECK_THROWS( ( void )decodeGolomb( re , 0 ) , contract_violation );
+ // the lengths, out of the constant expressions, under the same contracts
+ CHECK_THROWS( ( void )riceLength( 0 , 3 ) , contract_violation );
+ CHECK_THROWS( ( void )riceLength( 1 , 64 ) , contract_violation );
+ CHECK_THROWS( ( void )riceLength( 1 , -1 ) , contract_violation );
+ CHECK_THROWS( ( void )golombLength( 0 , 3 ) , contract_violation );
+ CHECK_THROWS( ( void )golombLength( 1 , 0 ) , contract_violation );
+ CHECK_THROWS( ( void )golombLength( 1 , b63 + 1 ) , contract_violation );
+ CHECK_THROWS( ( void )gammaLength( 0 ) , contract_violation );
+ CHECK_THROWS( ( void )deltaLength( 0 ) , contract_violation );
+ CHECK_THROWS( ( void )denseLength( 5 , 0 , 1 ) , contract_violation );
+ CHECK_THROWS( ( void )denseLength( 5 , 1 , 0 ) , contract_violation );
  }
 
 // PForDelta: the example of figure 11.4, with b = 3 and the exceptions 10,

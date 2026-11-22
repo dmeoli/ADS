@@ -311,8 +311,9 @@ class GrafiteFilter
 /*--------------------------------------------------------------------------*/
 
 /// a static range filter of the keys of type `T`, \f$ B \f$ bits per key: the
-/// buckets of \f$ 2^{64} / ( n \, 2^{B-2} ) \f$ keys that hold a key of the
-/// set, with no bound on the false positives of the queries near a key
+/// buckets of \f$ 2^w / ( n \, 2^{B-2} ) \f$ keys that hold a key of the
+/// set, \f$ w \f$ the bits of `T`, with no bound on the false positives of
+/// the queries near a key
 template< RadixKey T = std::uint64_t >
 class BucketingFilter
 {
@@ -331,7 +332,7 @@ class BucketingFilter
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{build}( K , B ) \cr
  /// 2 & \quad n \gets \text{the number of distinct keys of } K;\ s \gets
- ///     \lceil 2^{64} / ( n \, 2^{B-2} ) \rceil \cr
+ ///     \lceil 2^w / ( n \, 2^{B-2} ) \rceil \cr
  /// 3 & \quad \text{keep by Elias-Fano the buckets } \lfloor x / s \rfloor
  ///     \text{ of the keys } x \in K \text{, sorted and once each}
  /// \end{array}}

@@ -33,13 +33,16 @@ inline std::vector< std::size_t > sentinelSuffixArray( std::string_view s )
 
 /// the suffix array of s$ as that of sentinelSuffixArray(), on the
 /// engineered SA-IS of SuffixSorting.h: the entries of the suffix array of
-/// s, of 32 bits below 2^31 - 1 bytes and of 64 bits beyond, with the row
-/// 0 of the $ by the arithmetic of the indices, and no shift of the array
+/// s, of 32 bits below wideFrom bytes [see bwtWideFrom] and of 64 bits
+/// beyond, with the row 0 of the $ by the arithmetic of the indices, and no
+/// shift of the array
 class SentinelSuffixArray
 {
  public:
- explicit SentinelSuffixArray( std::string_view s ) : f_n( s.size() ) {
-  if( f_n < ( std::size_t( 1 ) << 31 ) - 1 )
+ explicit SentinelSuffixArray( std::string_view s ,
+			       std::size_t wideFrom = bwtWideFrom )
+     : f_n( s.size() ) {
+  if( f_n < wideFrom )
    f_narrow = suffixArray< std::uint32_t >( s );
   else
    f_wide = suffixArray< std::uint64_t >( s );
@@ -119,7 +122,7 @@ inline bool distinctSymbols( std::string_view alphabet )
 
 }  // end( namespace detail )
 
-inline BWT bwt( std::string_view s )
+inline BWT bwt( std::string_view s , std::size_t wideFrom )
 {
  const std::size_t n = s.size();
  BWT b{ std::string() , 0 };
@@ -138,7 +141,7 @@ inline BWT bwt( std::string_view s )
    else
     L[ k++ ] = s[ j - 1 ];
   };
- if( n < ( std::size_t( 1 ) << 31 ) - 1 )
+ if( n < wideFrom )
   fill( suffixArray< std::uint32_t >( s ) );
  else
   fill( suffixArray< std::uint64_t >( s ) );

@@ -46,6 +46,7 @@
 
 #include "ADS/Contract.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -78,7 +79,8 @@ class PackedBitWriter
  void put( std::uint64_t v , int k );
 
  /// appends the bits of \f$ s \f$, a string of `'0'` and `'1'`
- /// \pre \f$ s \f$ has only `'0'` and `'1'`
+ /// \pre \f$ s \f$ has only `'0'` and `'1'`, checked before any bit is
+ ///      written
  void put( const std::string & s );
 
  /// the number of bits written

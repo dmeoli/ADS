@@ -219,6 +219,7 @@ inline void encodeGamma( BitWriter & w , std::uint64_t x );
 [[nodiscard]] inline std::uint64_t decodeGamma( BitReader & r );
 
 /// the bits of \f$ \gamma( x ) \f$, \f$ 2 \lfloor \log_2 x \rfloor + 1 \f$
+/// \pre \f$ x \ge 1 \f$
 [[nodiscard]] constexpr int gammaLength( std::uint64_t x );
 
 /// \f$ \delta( x ) \f$, \f$ \gamma( | B( x ) | ) \f$ and \f$ B( x ) \f$
@@ -252,6 +253,7 @@ inline void encodeDelta( BitWriter & w , std::uint64_t x );
 
 /// the bits of \f$ \delta( x ) \f$,
 /// \f$ 1 + 2 \lfloor \log_2 | B( x ) | \rfloor + | B( x ) | \f$
+/// \pre \f$ x \ge 1 \f$
 [[nodiscard]] constexpr int deltaLength( std::uint64_t x );
 
 /*------------------------------ RICE, GOLOMB ------------------------------*/
@@ -282,6 +284,7 @@ inline void encodeRice( BitWriter & w , std::uint64_t x , int k );
 
 /// the bits of \f$ R_k( x ) \f$,
 /// \f$ \lfloor ( x - 1 ) / 2^k \rfloor + 1 + k \f$
+/// \pre \f$ x \ge 1 \f$ and \f$ 0 \le k < 64 \f$
 [[nodiscard]] constexpr std::uint64_t riceLength( std::uint64_t x , int k );
 
 /// Golomb's code of modulus \f$ b \f$, \f$ U( q + 1 ) \f$ and the remainder
@@ -325,6 +328,7 @@ inline void encodeGolomb( BitWriter & w , std::uint64_t x , std::uint64_t b );
 						 std::uint64_t b );
 
 /// the bits of Golomb's code of \f$ x \f$ of modulus \f$ b \f$
+/// \pre \f$ x \ge 1 \f$ and \f$ 1 \le b \le 2^{63} \f$
 [[nodiscard]] constexpr std::uint64_t golombLength( std::uint64_t x ,
 						    std::uint64_t b );
 

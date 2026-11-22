@@ -924,6 +924,76 @@ ADS_TEST( "bwt" )
  CHECK( bwt( "z" ) == ( BWT{ "z" , 1 } ) );
  }
 
+// the packed bits on the edges of their contracts: fields of 0 bits (which
+// write nothing), of 64 bits (all of the word, the top bit included), of k
+// bits for each k from 1 to 63 at the extremes 0 and 2^k - 1, read back
+// field by field; a value of k + 1 bits, a field of 65 bits or of -1, and a
+// symbol other than '0' and '1' rejected; the reads past the end give 0
+// and move the place, and a reader of no bytes reads only 0
+ADS_TEST( "packed-bits" )
+{
+ PackedBitWriter w;
+ w.put( 0 , 0 );
+ CHECK( w.size() == 0 && w.bytes().empty() );
+ w.put( ~std::uint64_t( 0 ) , 64 );
+ w.put( std::uint64_t( 1 ) << 63 , 64 );
+ for( int k = 1 ; k < 64 ; ++k ) {
+  w.put( 0 , k );
+  w.put( ( std::uint64_t( 1 ) << k ) - 1 , k );
+  }
+ w.put( 0 , 0 );
+ w.put( std::string( "101" ) );
+ const std::size_t bits = 128 + 63 * 64 + 3;
+ CHECK( w.size() == bits && w.bytes().size() == ( bits + 7 ) / 8 );
+ CHECK_THROWS( w.put( 1 , 0 ) , contract_violation );
+ CHECK_THROWS( w.put( 4 , 2 ) , contract_violation );
+ CHECK_THROWS( w.put( std::uint64_t( 1 ) << 40 , 40 ) , contract_violation );
+ CHECK_THROWS( w.put( 0 , 65 ) , contract_violation );
+ CHECK_THROWS( w.put( 0 , -1 ) , contract_violation );
+ CHECK_THROWS( w.put( std::string( "102" ) ) , contract_violation );
+ PackedBitReader r( w.bytes() );
+ CHECK( r.size() == 8 * w.bytes().size() );
+ CHECK( r.get( 0 ) == 0 && r.position() == 0 );
+ CHECK( r.get( 64 ) == ~std::uint64_t( 0 ) );
+ CHECK( r.get( 64 ) == std::uint64_t( 1 ) << 63 );
+ bool ok = true;
+ for( int k = 1 ; k < 64 ; ++k ) {
+  ok = ok && ( r.get( k ) == 0 );
+  ok = ok && ( r.get( k ) == ( std::uint64_t( 1 ) << k ) - 1 );
+  }
+ CHECK( ok && r.get() && ! r.get() && r.get() );
+ CHECK( r.position() == bits );
+ CHECK( r.get( 64 ) == 0 && r.position() == bits + 64 );  // past the end
+ CHECK( ! r.get() && r.position() == bits + 65 );
+ CHECK_THROWS( ( void )r.get( 65 ) , contract_violation );
+ CHECK_THROWS( ( void )r.get( -1 ) , contract_violation );
+ PackedBitReader z( std::span< const std::uint8_t >{} );
+ CHECK( z.size() == 0 && z.get( 64 ) == 0 && ! z.get() );
+ }
+
+// the path of 64 bits of the suffix array, taken by a threshold of 0 or 1
+// [see bwtWideFrom] on short texts, against the path of 32 bits: the same
+// transform from bwt() and the same rows from detail::SentinelSuffixArray,
+// on random texts, on all the bytes and on the texts of 0 and 1 symbols
+ADS_TEST( "bwt-wide" )
+{
+ std::mt19937 g( 5 );
+ std::vector< std::string > T = texts();
+ for( int t = 0 ; t < 200 ; ++t )
+  T.push_back( t % 3 ? randomText( g , g() % 300 , 1 + g() % 4 )
+		     : randomText( g , g() % 300 , 256 , 0 ) );
+ T.push_back( "" );
+ T.push_back( "q" );
+ for( const auto & s : T )
+  for( std::size_t w : { std::size_t( 0 ) , std::size_t( 1 ) , s.size() } ) {
+   CHECK( bwt( s , w ) == bwt( s ) );
+   const detail::SentinelSuffixArray wide( s , w ) , narrow( s );
+   CHECK( wide.size() == s.size() + 1 && narrow.size() == wide.size() );
+   for( std::size_t i = 0 ; i < wide.size() ; ++i )
+    CHECK( wide[ i ] == narrow[ i ] );
+   }
+ }
+
 // the move-to-front, the runs and RLE0 on every text: the round trips; the
 // move-to-front of the transform of a repetitive text is mostly 0, and the
 // bound 2 H0 + 1 of Theorem 14.5 on the gamma-code of the places

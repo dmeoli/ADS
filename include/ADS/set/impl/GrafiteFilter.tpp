@@ -175,7 +175,11 @@ BucketingFilter< T >::BucketingFilter( const std::vector< T > & keys , int B )
  ADS_PRE( std::bit_width( std::uint64_t( keys.size() ) ) + B - 2 <= 63 );
  if( keys.empty() )
   return;
- // s = ceil( 2^64 / ( n 2^( B - 2 ) ) ), for the n distinct keys
+ // s = ceil( 2^w / ( n 2^( B - 2 ) ) ), for the n distinct keys of w
+ // bits, the width of their words [see radixKey()]
+ constexpr int w = 8 * int( sizeof( radixKey( T() ) ) );
+ constexpr std::uint64_t top =
+   w == 64 ? ~std::uint64_t( 0 ) : ( std::uint64_t( 1 ) << w ) - 1;
  std::vector< std::uint64_t > K;
  K.reserve( keys.size() );
  for( const T & k : keys )
@@ -183,11 +187,11 @@ BucketingFilter< T >::BucketingFilter( const std::vector< T > & keys , int B )
  radixSort( K );
  K.erase( std::unique( K.begin() , K.end() ) , K.end() );
  const std::uint64_t d = std::uint64_t( K.size() ) << ( B - 2 );
- f_s = ~std::uint64_t( 0 ) / d + 1;
+ f_s = top / d + 1;
  for( auto & x : K )
   x /= f_s;
  K.erase( std::unique( K.begin() , K.end() ) , K.end() );
- f_buckets = EliasFano( K , ~std::uint64_t( 0 ) / f_s + 1 );
+ f_buckets = EliasFano( K , top / f_s + 1 );
  ADS_AUDIT( std::all_of( keys.begin() , keys.end() , [ this ]( const T & k ) {
   return( maybe( k ) );
   } ) );

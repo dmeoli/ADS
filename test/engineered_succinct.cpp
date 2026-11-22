@@ -337,6 +337,58 @@ ADS_TEST( "huffman-fm-index" )
  huffmanFMCheck< CompactRankSelect >( g );
  }
 
+// the FM-index of Huffman on the edges of its sizes, on RankSelect and on
+// CompactRankSelect: the text of one symbol, a repetitive text (a period
+// of 3 bytes, whose rows group in long runs), and texts over 2 bytes whose
+// last column has 1 bit less, as many, or 1 more than the blocks of 64, 256,
+// 512 and 2048 bits of the rank directories; each against a scan, for the
+// count and the places of every pattern of 1 to 4 symbols and every extract
+template< class RS >
+void huffmanFMEdges( std::mt19937_64 & g )
+{
+ auto check = [ & ]( const std::string & s , std::size_t mu ) {
+  const HuffmanFMIndex< RS > F( s , mu );
+  CHECK( F.size() == s.size() );
+  bool ok = true;
+  for( std::size_t len = 1 ; len <= 4 ; ++len )
+   for( std::size_t i = 0 ; ok && ( i + len <= s.size() ) ;
+	i += 1 + s.size() / 64 ) {
+    const std::string P = s.substr( i , len );
+    std::vector< std::size_t > at;
+    for( std::size_t j = 0 ; j + len <= s.size() ; ++j )
+     if( s.compare( j , len , P ) == 0 )
+      at.push_back( j );
+    ok = ( F.count( P ) == at.size() ) && ( F.locate( P ) == at );
+    }
+  CHECK( ok );
+  CHECK( F.count( "z" ) == 0 && F.locate( "z" ).empty() );
+  for( std::size_t i = 0 ; ok && ( i <= s.size() ) ; i += 1 + s.size() / 32 )
+   ok = F.extract( i , s.size() ) == s.substr( i );
+  CHECK( ok && F.extract( 0 , s.size() ) == s );
+  };
+ check( "q" , 1 );
+ check( "q" , 32 );
+ std::string rep;
+ while( rep.size() < 3000 )
+  rep += "abc";
+ check( rep , 1 );
+ check( rep , 32 );
+ for( std::size_t B : { 64 , 256 , 512 , 2048 } )
+  for( std::size_t n : { B - 2 , B - 1 , B } ) {  // n + 1 rows
+   std::string s( n , 'a' );
+   for( auto & c : s )
+    c = static_cast< char >( 'a' + g() % 2 );
+   check( s , 3 );
+   }
+ }
+
+ADS_TEST( "huffman-fm-index-edges" )
+{
+ std::mt19937_64 g( 23 );
+ huffmanFMEdges< RankSelect >( g );
+ huffmanFMEdges< CompactRankSelect >( g );
+ }
+
 // the partitioned Elias-Fano against a scan: every access, the nextGEQ
 // of every value from below the first item to above the last, of random
 // values and every contains, on sequences of many sizes around the blocks
@@ -731,13 +783,15 @@ ADS_TEST( "rank-kernels" )
 
 // the compressed vector of bits of RRR against a scan: every bit, rank
 // and select of both bits, on vectors of many sizes around the blocks of 63
-// and the superblocks of 2016 bits and of many densities (all 0s, all 1s
-// in blocks of class 63); and the size within the entropy and 0.18 bits
-// more per bit
+// and the superblocks of 2016 bits (1 bit less, as many, 1 more) and of many
+// densities (all 0s, all 1s in blocks of class 63), the ranks, selects and
+// accesses out of range rejected; and the size within the entropy and 0.18
+// bits more per bit
 ADS_TEST( "rrr-bit-vector" )
 {
  std::mt19937_64 g( 23 );
- for( const std::size_t n : { 0 , 1 , 62 , 63 , 64 , 2016 , 2017 , 30000 } )
+ for( const std::size_t n : { 0 , 1 , 62 , 63 , 64 , 65 , 2015 , 2016 , 2017 ,
+			      30000 } )
   for( const double p : { 0.0 , 0.01 , 0.2 , 0.5 , 0.97 , 1.0 } ) {
    BitVector b;
    std::bernoulli_distribution B( p );
@@ -762,7 +816,12 @@ ADS_TEST( "rrr-bit-vector" )
 		      : -q * std::log2( q ) - ( 1 - q ) * std::log2( 1 - q );
    CHECK( double( R.sizeInBits() ) <= double( n ) * ( h + 0.18 ) + 512 );
    CHECK_THROWS( ( void )R.select1( ones + 1 ) , contract_violation );
+   CHECK_THROWS( ( void )R.select0( zeros + 1 ) , contract_violation );
+   CHECK_THROWS( ( void )R.select1( 0 ) , contract_violation );
+   CHECK_THROWS( ( void )R.select0( 0 ) , contract_violation );
    CHECK_THROWS( ( void )R.rank1( n + 1 ) , contract_violation );
+   CHECK_THROWS( ( void )R.rank0( n + 1 ) , contract_violation );
+   CHECK_THROWS( ( void )R[ n ] , contract_violation );
    }
  }
 

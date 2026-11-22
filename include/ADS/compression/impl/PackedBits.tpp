@@ -37,10 +37,11 @@ inline void PackedBitWriter::put( std::uint64_t v , int k )
 
 inline void PackedBitWriter::put( const std::string & s )
 {
- for( char c : s ) {
-  ADS_PRE( ( c == '0' ) || ( c == '1' ) );
+ ADS_PRE( std::all_of( s.begin() , s.end() , []( char c ) {
+  return( ( c == '0' ) || ( c == '1' ) );
+  } ) );
+ for( char c : s )
   put( c == '1' );
-  }
  }
 
 inline bool PackedBitReader::get( void )

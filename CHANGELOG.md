@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `bwt()` and `detail::SentinelSuffixArray` take the length `wideFrom`
+  from which their suffix array is of entries of 64 bits, by default
+  `bwtWideFrom` = 2^31 - 1, so that the path of 64 bits runs, and is
+  tested against that of 32 bits, on short texts
+
 ### Changed
 
 - the fingerprint of `BinaryFuseFilter` and of `RibbonFilter` is the high
@@ -183,6 +190,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   less than 1/16 full cannot place, instead of throwing
   `std::length_error`, and a doubling puts there the pairs that it cannot
   place instead of doubling again; `stashed()` counts them
+- `BucketingFilter` sizes its buckets on the universe of the words of its
+  keys, 2^w for keys of w bits, where it took 2^64 for every type, so that
+  on keys of 32 bits (or fewer) a single bucket held them all and every
+  query answered true
+- `PackedBitWriter::put()` of a string checks that all of it is of '0' and
+  '1' before it writes a bit, where it wrote the bits before the first
+  other symbol and then failed its precondition
+- `gammaLength()`, `deltaLength()`, `riceLength()`, `golombLength()` and
+  `denseLength()` check the preconditions of their codes (x >= 1,
+  0 <= k < 64, 1 <= b <= 2^63, s >= 1 and c >= 1), where they returned a
+  wrong length, divided by zero or shifted a word by 64 bits
 - the makefile builds the benchmarks on Boost, Highway and hwloc where they
   are found, as the targets of CMake do, keeping the code of ADS where a
   structure would delegate to Boost or to LEMON; before, it built them on
