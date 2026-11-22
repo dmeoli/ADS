@@ -339,6 +339,30 @@ HWY_INLINE void shiftedWords8( const std::uint64_t * w , unsigned o ,
   }
  }
 
+/// whether `selectInWord512()` runs here: a target whose compress of bytes
+/// is one instruction (AVX-512 VBMI2, the targets from AVX3_DL on), with 64
+/// lanes of a byte; where the compress of bytes is emulated, the kernel is
+/// slower than the broadword select [see `selectInWord()`]
+inline constexpr bool kSelectInWord512 =
+  ( HWY_TARGET <= HWY_AVX3_DL ) &&
+  ( hn::MaxLanes( hn::CappedTag< std::uint8_t , 64 >() ) >= 64 );
+
+/// the place of the \f$ k \f$-th 1 of the word \f$ x \f$, from 0, on 64
+/// lanes of a byte: the indices of the lanes, compressed by the mask of
+/// the bits of \f$ x \f$, hold the places of its 1s in order, and the lane
+/// \f$ k \f$ goes to the lane 0 by a permutation of the bytes; it needs
+/// `kSelectInWord512` and \f$ k < \f$ the 1s of \f$ x \f$
+HWY_INLINE int selectInWord512( std::uint64_t x , int k )
+{
+ const hn::CappedTag< std::uint8_t , 64 > d;
+ std::uint8_t b[ 8 ];  // the bit j in the bit j % 8 of the byte j / 8
+ for( int j = 0 ; j < 8 ; ++j )
+  b[ j ] = std::uint8_t( x >> ( 8 * j ) );
+ const auto v = hn::Compress( hn::Iota( d , 0 ) , hn::LoadMaskBits( d , b ) );
+ return( int( hn::GetLane( hn::TableLookupLanes(
+   v , hn::IndicesFromVec( d , hn::Set( d , std::uint8_t( k ) ) ) ) ) ) );
+ }
+
 /// a step of the \f$ K \f$ lanes of a strip of the edit distance: the lane
 /// \f$ q \f$ moves its block of 64 cells (the vertical differences +1 in
 /// \f$ pv[ q ] \f$ and -1 in \f$ mv[ q ] \f$, the matches in

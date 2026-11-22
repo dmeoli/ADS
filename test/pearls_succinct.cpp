@@ -287,6 +287,20 @@ ADS_TEST( "select-in-word" )
   CHECK( selectInWord( ~Word( 0 ) , i ) == i );
   }
  CHECK( selectInWord( ( Word( 1 ) << 63 ) | 1 , 1 ) == 63 );
+ // every pattern of 16 bits in each quarter of a word of random bits
+ // elsewhere, every k; and the broadword code in a constant expression
+ int bad = 0;
+ for( unsigned q = 0 ; q < 4 ; ++q )
+  for( Word p = 0 ; p < ( Word( 1 ) << 16 ) ; ++p ) {
+   const Word m = Word( 0xFFFF ) << ( 16 * q );
+   const Word r = ( Word( g() ) << 32 ) | g();
+   const Word x = ( r & ~m ) | ( p << ( 16 * q ) );
+   for( int k = 0 ; k < sidewaysSum( x ) ; ++k )
+    bad += selectInWord( x , k ) != scan( x , k );
+   }
+ CHECK( bad == 0 );
+ static_assert( selectInWord( 0xF0F0F0F0F0F0F0F0ULL , 31 ) == 63 );
+ static_assert( selectInWord( 0x8000000000010100ULL , 1 ) == 16 );
  CHECK_THROWS( ( void )selectInWord( 6 , 2 ) , contract_violation );
  CHECK_THROWS( ( void )selectInWord( 6 , -1 ) , contract_violation );
  CHECK_THROWS( ( void )selectInWord( 0 , 0 ) , contract_violation );

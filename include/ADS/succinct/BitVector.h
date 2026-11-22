@@ -28,9 +28,12 @@
  * \f$ k \f$-th 1 is found by a comparison of the 8 bytes in parallel and
  * the trailing zeros, and the 1 inside it in a table of 2 KB indexed by
  * the byte and the rank, in \f$ O( 1 ) \f$ time, with no loop and no
- * instruction of a particular processor. It is the last step of every
- * select in ADS, in place of the tables of the small blocks of the
- * classical analysis (Jacobson, Clark).
+ * instruction of a particular processor; with `ADS_WITH_HIGHWAY`, on the
+ * targets whose compress of 64 bytes is one instruction (AVX-512 VBMI2),
+ * the places of the 1s are the indices of the lanes compressed by the mask
+ * of the word, and the \f$ k \f$-th is read by a permutation of the
+ * bytes. It is the last step of every select in ADS, in place of the
+ * tables of the small blocks of the classical analysis (Jacobson, Clark).
  * The kernels that the directories of rank and select share are here too,
  * in `detail`: the 1s of a prefix of a line of 512 bits, one kernel with a
  * variant on the vectors of Highway and a scalar one;

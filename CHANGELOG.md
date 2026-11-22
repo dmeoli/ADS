@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   block by a table of buckets of the superblocks and a count of 16 records
   in place of the layout of Eytzinger and a scan of the records of fixed
   width; its files are of version 2
+- with `ADS_WITH_HIGHWAY`, on the targets whose compress of 64 bytes is
+  one instruction (AVX-512 VBMI2), `selectInWord()` reads the place of the
+  k-th 1 of a word from the indices of the lanes compressed by the
+  mask of the word, by a permutation of the bytes, which shortens the
+  select of `RankSelect` and the access of `EliasFano`; elsewhere, where
+  the compress of bytes is emulated and slower, it keeps the broadword
+  select; `select()` of `FastBitwise.h` is `selectInWord()`
 - the tables of the benchmarks in the README and in `results/` are those
   of a run on an AMD EPYC 9654, with the rows "A/A" of every benchmark for
   the noise, and `results/` lists the libraries compared with the commit

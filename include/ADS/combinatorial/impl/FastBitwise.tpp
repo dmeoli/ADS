@@ -88,18 +88,7 @@ inline Word pext( Word x , Word mask )
 
 inline int select( Word x , int r )
 {
- ADS_PRE( ( r >= 0 ) && ( r < std::popcount( x ) ) );
- constexpr Word L8 = 0x0101010101010101ULL , H8 = 0x8080808080808080ULL;
- Word s = x - ( ( x >> 1 ) & 0x5555555555555555ULL );
- s = ( s & 0x3333333333333333ULL ) + ( ( s >> 2 ) & 0x3333333333333333ULL );
- s = ( ( s + ( s >> 4 ) ) & 0x0F0F0F0F0F0F0F0FULL ) * L8;  // prefix sums
- const Word le = ( ( Word( r ) * L8 | H8 ) - s ) & H8;     // bytes <= r
- const int k = std::popcount( le ) * 8;  // the place of the byte
- int rr = r - int( ( ( s << 8 ) >> k ) & 0xFF );
- Word b = ( x >> k ) & 0xFF;
- while( rr-- > 0 )
-  b &= b - 1;
- return( k + std::countr_zero( b ) );
+ return( selectInWord( x , r ) );
  }
 
 inline Word mortonEncode( std::uint32_t x , std::uint32_t y )

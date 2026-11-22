@@ -23,8 +23,7 @@
  * -  `pdep()` and `pext()` scatter the low bits of \f$ x \f$ to the 1 bits of
  *   a mask and gather them back, by a loop over the 1 bits of the mask;
  * -  `select( x , r )`, the place of the 1 of rank \f$ r \f$ of \f$ x \f$, is
- *   the byte of the 1 by the sums of the bytes of `sidewaysSum()` and a
- *   comparison of the 8 bytes in parallel (Vigna), then the 1 in the byte;
+ *   `selectInWord()` [see `BitVector.h`];
  * -  `mortonEncode()` and `mortonDecode()` are `interleave()` and
  *   `deinterleave()` of `Bitwise.h`, by masks and shifts.
  *
@@ -61,6 +60,7 @@
 #include "ADS/Contract.h"
 #include "ADS/Simd.h"
 #include "ADS/combinatorial/Bitwise.h"
+#include "ADS/succinct/BitVector.h"
 
 #include <bit>
 #include <cstddef>
@@ -155,28 +155,8 @@ namespace ADS
 /// \f]
 [[nodiscard]] inline Word pext( Word x , Word mask );
 
-/// the place of the 1 of rank \f$ r \f$ of \f$ x \f$, from 0
-///
-/// In pseudocode (Vigna's broadword select, beyond the book), \f$ \rho \f$
-/// the trailing zeros and \f$ s_j \f$ the 1 bits of the bytes
-/// \f$ 0 , \ldots , j \f$ of \f$ x \f$:
-/// \f[
-/// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{select}( x , r ) \cr
-/// 2 & \quad s \gets \text{the sums of the bytes of } x \text{, as in }
-///     \mathrm{sidewaysSum}() \text{, times } \mathtt{0x0101 \ldots 01}\quad
-///     \triangleright\ \text{the bytes } s_j \cr
-/// 3 & \quad \ell \gets ( ( r \cdot \mathtt{0x0101 \ldots 01} \mid
-///     \mathtt{0x8080 \ldots 80} ) - s ) \,\&\, \mathtt{0x8080 \ldots 80}\quad
-///     \triangleright\ \text{the bytes with } s_j \le r \cr
-/// 4 & \quad k \gets 8 \nu( \ell )\quad \triangleright\ \text{the place of}
-///     \text{ the byte of the 1} \cr
-/// 5 & \quad r \gets r - s_{k / 8 - 1}\ ( 0 \text{ if } k = 0 );\ b \gets ( x
-///     \gg k ) \,\&\, \mathtt{0xFF} \cr
-/// 6 & \quad \textbf{repeat}\ r \text{ times}:\ b \gets b \,\&\, ( b - 1 ) \cr
-/// 7 & \quad \textbf{return}\ k + \rho( b )
-/// \end{array}}
-/// \f]
+/// the place of the 1 of rank \f$ r \f$ of \f$ x \f$, from 0, by
+/// `selectInWord()`
 /// \pre \f$ 0 \le r < \nu( x ) \f$, the number of 1 bits of \f$ x \f$
 [[nodiscard]] inline int select( Word x , int r );
 
