@@ -76,8 +76,10 @@ std::uint64_t BinaryFuseFilter< T , F , H >::mixed( std::uint64_t b ) const
 
 template< class T , class F , class H >
  requires( std::is_unsigned_v< F > && ( sizeof( F ) <= 4 ) )
-F BinaryFuseFilter< T , F , H >::fingerprint( std::uint64_t h )
+F BinaryFuseFilter< T , F , H >::fingerprint( std::uint64_t h ) const
 {
+ if( f_old ) [[unlikely]]  // a filter of a file of the version 1
+  return( F( h ^ ( h >> 32 ) ) );
  // the high bits of a product by an odd constant, which depend on every
  // bit of h and not only on the bits that give the places
  return( F( ( h * 0xD6E8FEB86659FD93ULL ) >>
@@ -252,7 +254,15 @@ template< class T , class F , class H >
 template< class A >
 inline void BinaryFuseFilter< T , F , H >::persist( A & a )
 {
- a( f_F , f_seed , f_L , f_CL , f_n , f_trials );
+ // the trials with the bit 63 set for the fingerprints of a product,
+ // clear in the files and archives written before them (the version 1),
+ // whose filters keep the fingerprints of h ^ ( h >> 32 )
+ std::uint64_t t = std::uint64_t( f_trials ) | ( f_old ? 0 : kProductBit );
+ a( f_F , f_seed , f_L , f_CL , f_n , t );
+ if constexpr( A::loading ) {
+  f_old = ! ( t & kProductBit );
+  f_trials = std::size_t( t & ~kProductBit );
+  }
  if constexpr( ! std::is_empty_v< H > )  // a hash function with a state
   a( f_h );
  a.require( f_F.empty() ||

@@ -2196,6 +2196,7 @@ engineered_persistence  persistence-text-indexes  FM-index e r-index
 engineered_persistence  persistence-learned  PGM-index, anche compresso
 engineered_persistence  persistence-succinct-graphs  k2-tree, BV e Elias-Fano, move structure
 engineered_persistence  persistence-filters  Bloom, cuckoo, ribbon, binary fuse, prefix, Grafite
+engineered_persistence  persistence-filters-version1  Ribbon e binary fuse dei file della versione 1
 engineered_persistence  persistence-perfect-hash  PTHash, RecSplit, BBHash, FKS, CHM
 engineered_persistence  persistence-graphs  StaticGraph e CsrMatrix, viste allineate
 engineered_persistence  persistence-cereal  gli archivi di cereal e il bit_vector di sdsl

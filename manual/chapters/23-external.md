@@ -1077,7 +1077,21 @@ its pages are read from the disk at their first access.
 
 A structure takes part when it gives its name in `persistName`, with a
 `persistVersion` that is raised when its layout changes and a
-`persistTag()` of its template parameters. It lists its members once, in a
+`persistTag()` of its template parameters. A structure that still reads
+the files of its older layouts also gives the oldest of them in
+`persistOldestVersion`; the reader then accepts the versions from that
+one to `persistVersion`, and `a.version()` tells `persist()` which one it
+reads, while `store()` always writes the last one. Thus `RibbonFilter` and
+`BinaryFuseFilter` take their fingerprints from the high bits of a product
+of the hash (see [§10.10](10-set.md#sec-10-10)), and their files of
+version 2 set the bit 63 of their count of trials to say so; a file of
+version 1, written before (in the release 0.1.0), has that bit clear, and
+the filter read from it keeps the fingerprints $h \oplus ( h \gg 32 )$ of
+that release, and hence its answers, also when it is written again as a
+file of version 2. The query tests that bit once, by a branch that the
+processor predicts, and the test
+`engineered_persistence.persistence-filters-version1` reads two files of
+version 1 written by that release. It lists its members once, in a
 member template `persist( a )`, which writes them when `a` is the writer
 and reads them when `a` is the reader. On a reading, `a.require( c , what
 )` rejects a file whose members break an invariant of the structure (e.g.,

@@ -1712,7 +1712,10 @@ through the carries, and neither on a group of bits that gives a place (as
 the bits $0 , \ldots , b - 1$ and $32 , \ldots , 31 + b$ of
 $h \oplus ( h \gg 32 )$ would, which overlap the bits of $h_1$ and $h_2$ of
 the binary fuse filter once $L \ge 2^{15}$) nor linearly on the
-coefficients, and the mixes are modelled as independent random functions.
+coefficients, and the mixes are modelled as independent random functions
+(a filter read from a file written by the release 0.1.0 keeps the
+fingerprints $h \oplus ( h \gg 32 )$ of that release, see
+[§23.7](23-external.md#sec-23-7)).
 The test `hashing.filters-fingerprint-rate` checks the consequence on
 $10^6$ keys and $10^6$ keys out of $S$ for both filters and both widths:
 the false positives stay within 3 standard deviations of

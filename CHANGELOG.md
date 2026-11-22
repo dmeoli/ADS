@@ -16,7 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   places of the binary fuse filter shared bits with the fingerprint from
   segments of 2^15 places), so that the false positive rate of 2^-b holds
   in the model of Lemma 10.17; the files of both filters are of version 2,
-  and those of the version 1 are rejected
+  whose bit 63 of the count of the trials marks the new fingerprints, and
+  the files of the version 1 (and the archives of cereal written before)
+  are still read, their filters keeping the fingerprints of
+  h ^ ( h >> 32 ), and hence their answers, also when written again
+- a structure of `Persistence.h` may give `persistOldestVersion`, the
+  oldest version of its files that `restore()` accepts, and `persist()`
+  reads the version of the file being read by `a.version()`
 - Lemma 25.5 states what `run()` of `ThreadPool` gives: no thread holds two
   calls of a run at once and every call begins while the others wait, so
   that calls that wait for each other run at the same time on distinct

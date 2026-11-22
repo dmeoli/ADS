@@ -193,9 +193,14 @@ class BinaryFuseFilter
  /// the name of the structure in a file [see `Persistence.h`]
  static constexpr std::string_view persistName = "BinaryFuseFilter";
 
- /// the version of the layout in a file: 2, that of the fingerprints by
- /// a product, which the files of the version 1 do not have
+ /// the version of the layout in a file: 2, whose bit 63 of the trials
+ /// says that the fingerprints are by a product; a filter read from a file
+ /// of the version 1, where it is clear, keeps those of the bits of
+ /// \f$ h \oplus ( h \gg 32 ) \f$
  static constexpr std::uint32_t persistVersion = 2;
+
+ /// the oldest version read: 1, whose filters keep their fingerprints
+ static constexpr std::uint32_t persistOldestVersion = 1;
 
  /// the parameters of the layout, in a file
  [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {
@@ -218,7 +223,7 @@ class BinaryFuseFilter
  [[nodiscard]] std::uint64_t mixed( std::uint64_t b ) const;
 
  /// the fingerprint of the hash \f$ h \f$
- [[nodiscard]] static F fingerprint( std::uint64_t h );
+ [[nodiscard]] F fingerprint( std::uint64_t h ) const;
 
  /// the first place \f$ h_0 \f$ of the hash \f$ h \f$
  [[nodiscard]] std::uint32_t first( std::uint64_t h ) const;
@@ -241,6 +246,9 @@ class BinaryFuseFilter
  std::size_t f_n = 0;       ///< the keys, the repeated ones once
  std::size_t f_trials = 0;  ///< the seeds drawn
  H f_h;                     ///< the hash of the keys
+ bool f_old = false;        ///< the fingerprints of the version 1
+ /// the bit of the trials, in a file, of the fingerprints of a product
+ static constexpr std::uint64_t kProductBit = std::uint64_t( 1 ) << 63;
 
  };  // end( class BinaryFuseFilter )
 

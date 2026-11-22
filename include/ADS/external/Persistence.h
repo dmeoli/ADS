@@ -12,7 +12,9 @@
  * time and its pages are read from the disk at their first access.
  *
  * A structure is `Persistent` when it names itself, `persistName` (with a
- * `persistVersion`, 1 if absent, raised when its layout changes, and a
+ * `persistVersion`, 1 if absent, raised when its layout changes, the
+ * oldest version that it still reads, `persistOldestVersion`, equal to
+ * `persistVersion` if absent, and a
  * `persistTag()` of its parameters, 0 if absent), and lists its members in
  * one member template `persist( A & a )`, called with the archive that
  * writes them and with the one that reads them (`A::loading` tells which):
@@ -160,6 +162,17 @@ template< class T >
   return( std::uint32_t( T::persistVersion ) );
  else
   return( 1 );
+ }
+
+/// the oldest version of a persistent class that a reading accepts, the
+/// version itself if the class does not give one
+template< class T >
+[[nodiscard]] constexpr std::uint32_t persistOldestVersion( void )
+{
+ if constexpr( requires { T::persistOldestVersion; } )
+  return( std::uint32_t( T::persistOldestVersion ) );
+ else
+  return( persistVersion< T >() );
  }
 
 /// the tag of the parameters of a persistent class, 0 if it gives none
@@ -353,6 +366,10 @@ class PersistReader
    fail( std::string( "corrupted: " ) + what );
   }
 
+ /// the version in the file of the structure being read, between its
+ /// `persistOldestVersion` and its `persistVersion`
+ [[nodiscard]] std::uint32_t version( void ) const { return( f_version ); }
+
 /*--------------------------------------------------------------------------*/
  private:
  friend struct detail::PersistIO;  // which reads the header and trailer
@@ -403,6 +420,7 @@ class PersistReader
  detail::PersistChecksum f_sum;
  std::uint64_t f_off = 0;                    ///< the bytes read of the file
  std::uint64_t f_end = ~std::uint64_t( 0 );  ///< the end of the payload
+ std::uint32_t f_version = 0;  ///< the version of the structure being read
 
  };  // end( class PersistReader )
 

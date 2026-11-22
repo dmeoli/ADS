@@ -535,10 +535,13 @@ inline void PersistReader::header( void )
 			 len );
  if( name != T::persistName )
   fail( "it holds a " + name + ", not a " + std::string( T::persistName ) );
- if( v != detail::persistVersion< T >() )
+ if( ( v < detail::persistOldestVersion< T >() ) ||
+     ( v > detail::persistVersion< T >() ) )
   fail( "version " + std::to_string( v ) + " of " + name +
-	", this build reads the version " +
+	", this build reads the versions " +
+	std::to_string( detail::persistOldestVersion< T >() ) + " to " +
 	std::to_string( detail::persistVersion< T >() ) );
+ f_version = v;
  if( detail::loadLittle( h.data() + 16 ) != detail::persistTag< T >() )
   fail( "it holds a " + name + " of other parameters" );
  }
@@ -727,11 +730,16 @@ inline void PersistReader::item( T & x )
   }
  else if constexpr( Persistent< U > ) {
   const std::uint64_t v = word();
-  if( v != detail::persistVersion< U >() )
+  if( ( v < detail::persistOldestVersion< U >() ) ||
+      ( v > detail::persistVersion< U >() ) )
    fail( "version " + std::to_string( v ) + " of the " +
 	 std::string( U::persistName ) + " in it, this build reads the " +
-	 "version " + std::to_string( detail::persistVersion< U >() ) );
+	 "versions " + std::to_string( detail::persistOldestVersion< U >() ) +
+	 " to " + std::to_string( detail::persistVersion< U >() ) );
+  const std::uint32_t outer = f_version;  // that of the enclosing one
+  f_version = std::uint32_t( v );
   x.persist( *this );
+  f_version = outer;
   }
  else if constexpr( detail::HasPersist< U > )
   x.persist( *this );
