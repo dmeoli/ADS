@@ -1433,8 +1433,8 @@ ADS_TEST( "ods.ex12.2.incidence-contracts" )
  CHECK_THROWS( z.insertEdge( 0 , 1 ) , ADS::contract_violation );
  CHECK_THROWS( ( void )z.adj( 0 ) , ADS::contract_violation );
  ADS::IncidenceGraph g( 4 );
- for( const auto [ i , j ] : { std::pair( 2 , 2 ) , std::pair( -1 , 0 ) ,
-			      std::pair( 0 , 4 ) , std::pair( 4 , 0 ) } ) {
+ for( const auto & [ i , j ] : { std::pair( 2 , 2 ) , std::pair( -1 , 0 ) ,
+				std::pair( 0 , 4 ) , std::pair( 4 , 0 ) } ) {
   CHECK_THROWS( g.insertEdge( i , j ) , ADS::contract_violation );
   CHECK_THROWS( g.deleteEdge( i , j ) , ADS::contract_violation );
   }
