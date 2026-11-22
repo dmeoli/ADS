@@ -55,7 +55,7 @@
  * price of three levels whose constants are large for
  * the sizes of practice; the inventories with constant groups are what the
  * practical designs use (Vigna; Gog and Petri; the darray of Okanohara and
- * Sadakane). A group of fewer than 32 bits \f$ b \f$, below about 1% of
+ * Sadakane). A group of at most 32 bits \f$ b \f$, below about 1% of
  * them, keeps the place of each one, and the select reads no bit at all.
  *
  * The directory is built in one pass on the words: the sideways sums

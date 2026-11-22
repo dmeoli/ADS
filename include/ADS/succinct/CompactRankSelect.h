@@ -3,7 +3,8 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * Rank and select on a static vector of bits \f$ B \f$ of \f$ m \f$ bits in
- * about 3.5% of \f$ m \f$ bits more, the compact counterpart of
+ * 3.125% of \f$ m \f$ bits more for the rank and less than 0.8% for the
+ * select of each value, the compact counterpart of
  * `RankSelect` [see `RankSelect.h`], which spends about 50% for the fastest
  * queries: the flat directory of Kurpicz, after the poppy of Zhou, Andersen
  * and Kaminsky.
@@ -110,8 +111,8 @@ namespace ADS
 /*------------------------- CLASS CompactRankSelect ------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a static vector of bits with rank and select in about 3.5% of its bits
-/// more
+/// a static vector of bits with rank and select in 3.125% of its bits more
+/// for the rank and less than 0.8% for each select
 class CompactRankSelect
 {
 

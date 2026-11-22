@@ -572,7 +572,8 @@ of a random function, and it cannot be improved ([Morin 2013, exercise
 = 3 x$, the products $z x \bmod 2^w$ and $3 z x \bmod 2^w$ depend only on
 the $d + 2$ lowest bits $z'$ of $z$. Then the two hashes are $\lfloor z' / 4
 \rfloor$ and $\lfloor ( 3 z' \bmod 2^{d+2} ) / 4 \rfloor$, and since $3 z'
-= z' + 2 z'$ they agree for exactly 2 in $2^d$ of the odd $z'$. In the test `ods_ints.ods5.1.multiplicative-hash` we count the collisions of this pair on
+= z' + 2 z'$ they agree for exactly 4 of the $2^{d+1}$ odd $z'$, i.e., for
+a fraction $2 / 2^d$ of them. In the test `ods_ints.ods5.1.multiplicative-hash` we count the collisions of this pair on
 $2^{17}$ random multipliers. For a fixed $z$ and $n = 2^d$ with $d \le w /
 2$, on the other hand, $n$ keys share a hash already by the pigeonhole
 principle, $2^w$ keys going to $2^d$ places ([Morin 2013, exercise
@@ -2559,27 +2560,36 @@ costs levels, in the build and in the queries. The approximations of
 (7.10) become bounds, with constants slightly worse, as follows.
 
 <span id="lem-7-20"></span>**Lemma 7.20.** *Let the places of the keys at
-each level be independent and uniform, and let $q = 1 - 4^{-1/\gamma}$.
-Then $E[ n_{i+1} \mid n_i ] \le q n_i$, and hence $E[ n_i ] \le q^i n$;
-the build has more than $\ell$ levels with probability at most $n q^\ell$,
-i.e., $O( \log n )$ levels with high probability, and the levels take at
-most $\gamma 4^{1/\gamma} n$ bits in expectation besides the rounding of
+each level be independent and uniform, and let $q = 1 - c^{1/\gamma}$ with
+$c = ( 1 - 2^{-9} )^{512} > 0.3675$. Then $E[ n_{i+1} \mid n_i ] \le q
+n_i$, and hence $E[ n_i ] \le q^i n$; the build needs more than $\ell$
+levels with probability at most $n q^\ell$, i.e., $O( \log n )$ levels with
+high probability, and the levels take at most $\gamma n / c^{1/\gamma} <
+\gamma e^{1.002 / \gamma} n$ bits in expectation besides the rounding of
 each one to blocks of 512 bits.*
 
 *Proof.* A key of the level $i$ is alone in its place with probability
-$( 1 - 1 / m_i )^{n_i - 1}$. Since $m_i \ge \gamma n_i$ and
-$m_i \ge 512$, and $( 1 - 1 / m )^m$ increases with $m$ from the value
-$1 / 4$ at $m = 2$, this probability is at least
-$( 1 - 1 / m_i )^{m_i / \gamma} \ge 4^{-1/\gamma}$, and a key goes on to
+$( 1 - 1 / m_i )^{n_i - 1}$. Since $m_i \ge \gamma n_i$ and $m_i \ge 512$,
+and $( 1 - 1 / m )^m$ increases with $m$, this probability is at least
+$( 1 - 1 / m_i )^{m_i / \gamma} \ge c^{1/\gamma}$, and a key goes on to
 the level $i + 1$ with probability at most $q$. Induction gives
 $E[ n_i ] \le q^i n$, and the inequality of Markov gives
 $\Pr[ n_\ell \ge 1 ] \le q^\ell n$. The level $i$ takes at most
 $\gamma n_i + 512$ bits, and $\sum_i \gamma q^i n = \gamma n / ( 1 - q )
-= \gamma 4^{1/\gamma} n$. $\square$
+= \gamma n / c^{1/\gamma}$, with $\ln( 1 / c ) = - 512 \ln( 1 - 2^{-9} ) <
+1.002$. $\square$
 
-For $\gamma = 2$ the lemma gives $4 n$ bits against the $3.30 n$ of
-(7.10), whose factor $e^{-1/\gamma}$ is the limit of the probability that
-the proof bounds from below by $4^{-1/\gamma}$.
+For $\gamma = 2$ the lemma gives $3.30 n$ bits, the value of (7.10), whose
+factor $e^{-1/\gamma}$ is the limit of the probability that the proof
+bounds from below by $c^{1/\gamma}$ (the bound is close to it because each
+level has at least 512 bits). The build stops at 64 levels: if some keys
+are still without a bit after the level 63, it throws `std::runtime_error`.
+By the lemma this happens with probability at most $n q^{64}$, which for $n
+= 10^8$ is below $2 \cdot 10^{-5}$ with $\gamma = 1$ (where $q < 0.633$),
+below $10^{-12}$ with $\gamma = 1.5$, and below $10^{-17}$ with $\gamma =
+2$. A failure on random hashes is thus less likely than one caused by two
+keys with the same hash, whose probability is about $n^2 / 2^{65}$ by the
+birthday bound, i.e., about $3 \cdot 10^{-4}$ for $n = 10^8$.
 
 ![Figure 7.17. A `FingerprintPerfectHash` of 6 keys with $\gamma = 2$ (the sizes of the levels not rounded, for the example): the keys `b` and `c`, and `e` and `f`, collide on the level 0 of 12 bits and go to the level 1 of 8 bits, where `c` and `e` collide again and go to the level 2 of 4 bits; the bits set (in violet) give the values by their ranks in the concatenation of the levels, `a` 0, `d` 1, `f` 2, `b` 3, `c` 4, `e` 5 (in orange).](../figures/dictionary-fingerprint.svg){#fig-7-17}
 

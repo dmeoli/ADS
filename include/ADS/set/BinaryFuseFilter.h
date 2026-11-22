@@ -126,10 +126,12 @@ class BinaryFuseFilter
  /// 1 & \textbf{procedure}\ \mathrm{build}( K ) \cr
  /// 2 & \quad \textbf{repeat} \cr
  /// 3 & \qquad \text{draw a seed};\ H \gets \text{the hashes of } K
- ///     \text{, sorted by the segment of } h_0 \cr
+ ///     \text{ mixed by it, sorted by the segment of } h_0 \cr
  /// 4 & \qquad \textbf{foreach}\ h \in H ,\ i \in \{ 0 , 1 , 2 \}
  ///     \ \textbf{do}\ c[ h_i ] \gets c[ h_i ] + 1;\ x[ h_i ] \gets x[ h_i ]
  ///     \oplus h;\ s[ h_i ] \gets s[ h_i ] \oplus i \cr
+ ///   & \qquad\quad \triangleright\ \text{the seed fails if a place reaches}
+ ///     \text{ 63 keys} \cr
  /// 5 & \qquad Q \gets \text{the places } p \text{ with } c[ p ] = 1;\ P
  ///     \gets \text{an empty stack} \cr
  /// 6 & \qquad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
@@ -141,7 +143,8 @@ class BinaryFuseFilter
  ///     h \text{ from } h_j \text{, adding } h_j \text{ to } Q \text{ if it }
  ///     \text{has one key left} \cr
  /// 10 & \qquad \textbf{if}\ \text{not all the keys are in } P
- ///     \ \textbf{then}\ \text{remove the equal hashes of } H \cr
+ ///     \ \textbf{then}\ \text{remove from } K \text{ the keys of equal}
+ ///     \text{ hashes, once, and size } F \text{ again} \cr
  /// 11 & \quad \textbf{until}\ \text{all the keys are in } P \cr
  /// 12 & \quad \textbf{while}\ P \ne \emptyset\ \textbf{do} \cr
  /// 13 & \qquad ( h , i ) \gets \mathrm{pop}( P );\ F[ h_i ] \gets f( h )

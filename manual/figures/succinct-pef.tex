@@ -1,7 +1,8 @@
 % Source for the figure of PartitionedEliasFano (sec. 22.6): the sequence
 % 3 4 5 6 7 8 9 10 20 41 70 99 in blocks of 4 items (128 in the library),
 % each coded relative to the end of the block before in the cheapest of the
-% three ways, and the records of the blocks. Build: make figures.
+% three ways, the records of the blocks relative to their superblock, and
+% the superblock. Build: make figures.
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
@@ -33,10 +34,12 @@
   \node[node-touched,minimum width=37mm,anchor=west] at (36.5mm,-22mm) {no bit};
   \node[node,minimum width=37mm,anchor=west] at (77.5mm,-22mm) {$9 , 30 , 59 , 88$, $\ell = 4$};
   \node[var,anchor=east] at (-5mm,-32mm) {records};
-  \node[node,minimum width=37mm,anchor=west] at (-4.5mm,-32mm) {last 6, place 0};
-  \node[node,minimum width=37mm,anchor=west] at (36.5mm,-32mm) {last 10, place 7};
-  \node[node,minimum width=37mm,anchor=west] at (77.5mm,-32mm) {last 99, place 7};
-  \node[var,anchor=west] at (-4.5mm,-42mm)
+  \node[node,minimum width=37mm,anchor=west] at (-4.5mm,-32mm) {$b$ 0, place 0};
+  \node[node,minimum width=37mm,anchor=west] at (36.5mm,-32mm) {$b$ 7, place 7};
+  \node[node,minimum width=37mm,anchor=west] at (77.5mm,-32mm) {$b$ 11, place 7};
+  \node[var,anchor=east] at (-5mm,-42mm) {superblock};
+  \node[node,minimum width=119mm,anchor=west] at (-4.5mm,-42mm) {$b$ 0, place 0: the base of the fields of its records};
+  \node[var,anchor=west] at (-4.5mm,-52mm)
     {the block $j$ holds the values $x - b_j$, $b_j$ the last item of the block before plus 1};
 \end{tikzpicture}
 \end{document}

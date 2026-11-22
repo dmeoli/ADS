@@ -628,35 +628,44 @@ inline std::vector< U64 > sieve( U64 n );
 /// 5 & \qquad m \gets \mathrm{pop}( T ) \cr
 /// 6 & \qquad \textbf{if}\ m < 4096^2\ \textbf{or}\ \mathrm{isPrime}( m )
 ///     \ \textbf{then}\ \text{append } m \text{ to } F \cr
-/// 7 & \qquad \textbf{else}\ d \gets \sqrt{m} \text{ if a square, else }
-///     \mathrm{ecm}( m ) \text{ if } m \ge 2^{34} , \text{ else }
-///     \mathrm{rho}( m ) \cr
-/// 8 & \qquad \quad \mathrm{push}( T , d );\ \mathrm{push}( T , m / d ) \cr
+/// 7 & \qquad \textbf{else}\ d \gets \sqrt{m} \text{ if } m \ge 2^{34}
+///     \text{ is a square, else } \mathrm{ecm}( m ) \text{ if } m \ge
+///     2^{34} \text{, else } \textbf{nil} \cr
+/// 8 & \qquad \quad \textbf{if}\ d = \textbf{nil}\ \textbf{then}\ d \gets
+///     \mathrm{rho}( m );\ \mathrm{push}( T , d );\ \mathrm{push}( T , m / d
+///     ) \cr
 /// 9 & \quad \textbf{return}\ F \text{ sorted} \cr
-/// 10 & \textbf{function}\ \mathrm{ecm}( m )\quad \triangleright\ \sigma
-///     \gets 6 , 7 , \ldots \text{ until } 1 < g < m \cr
-/// 11 & \quad E , P \gets \text{the curve and the point of Suyama of }
+/// 10 & \textbf{function}\ \mathrm{ecm}( m ) \cr
+/// 11 & \quad \textbf{for}\ \sigma \gets 6\ \textbf{to}\ 69\ \textbf{do}
+///     \quad \triangleright\ \text{64 curves} \cr
+/// 12 & \qquad B_1 \gets 40 \text{ if } \sigma = 6 \text{, else by the bits}
+///     \text{ of } m;\ B_2 \gets 25 B_1;\ D \gets 24 , 36 \text{ or } 60
+///     \text{ as } B_1 < 36 , < 60 \text{ or not} \cr
+/// 13 & \qquad E , P \gets \text{the curve and the point of Suyama of }
 ///     \sigma \text{ modulo } m \cr
-/// 12 & \quad Q \gets \mathrm{lcm}( 1 , \ldots , B_1 ) P \text{ by the
+/// 14 & \qquad Q \gets \mathrm{lcm}( 1 , \ldots , B_1 ) P \text{ by the
 ///     ladder};\ a \gets Z_Q \cr
-/// 13 & \quad \textbf{for}\ i D \pm j \text{ with a prime in } ( B_1 , B_2 ]
-///     \ \textbf{do}\ a \gets a ( X_{iDQ} Z_{jQ} - X_{jQ} Z_{iDQ} ) \cr
-/// 14 & \quad \textbf{return}\ g = \mathrm{gcd}( a , m ) \cr
-/// 15 & \textbf{function}\ \mathrm{rho}( m )\quad \triangleright\ c \gets 1 ,
+/// 15 & \qquad \textbf{for}\ i D \pm j \text{ with a prime in } ( B_1 , B_2
+///     ]\ \textbf{do}\ a \gets a ( X_{iDQ} Z_{jQ} - X_{jQ} Z_{iDQ} ) \cr
+/// 16 & \qquad g \gets \mathrm{gcd}( a , m );\ \textbf{if}\ g = m
+///     \ \textbf{then}\ g \gets \mathrm{gcd}( Z_Q , m ) \cr
+/// 17 & \qquad \textbf{if}\ 1 < g < m\ \textbf{then return}\ g \cr
+/// 18 & \quad \textbf{return nil} \cr
+/// 19 & \textbf{function}\ \mathrm{rho}( m )\quad \triangleright\ c \gets 1 ,
 ///     2 , \ldots \text{ until } 1 < g < m \cr
-/// 16 & \quad y \gets 2;\ q \gets 1;\ g \gets 1;\ r \gets 1 \cr
-/// 17 & \quad \textbf{while}\ g = 1\ \textbf{do} \cr
-/// 18 & \qquad x \gets y;\ \text{apply } y \gets y^2 + c \bmod m \text{ }
+/// 20 & \quad y \gets 2;\ q \gets 1;\ g \gets 1;\ r \gets 1 \cr
+/// 21 & \quad \textbf{while}\ g = 1\ \textbf{do} \cr
+/// 22 & \qquad x \gets y;\ \text{apply } y \gets y^2 + c \bmod m \text{ }
 ///     r \text{ times} \cr
-/// 19 & \qquad \textbf{for}\ k \gets 0 , 128 , \ldots < r\ \textbf{while}\ g
+/// 23 & \qquad \textbf{for}\ k \gets 0 , 128 , \ldots < r\ \textbf{while}\ g
 ///     = 1\ \textbf{do} \cr
-/// 20 & \qquad\quad \text{at most 128 times: } y \gets y^2 + c;\ q \gets q
+/// 24 & \qquad\quad \text{at most 128 times: } y \gets y^2 + c;\ q \gets q
 ///     | x - y | \bmod m \cr
-/// 21 & \qquad\quad g \gets \mathrm{gcd}( q , m ) \cr
-/// 22 & \qquad r \gets 2 r \cr
-/// 23 & \quad \textbf{if}\ g = m\ \textbf{then}\ g \gets \text{the first }
+/// 25 & \qquad\quad g \gets \mathrm{gcd}( q , m ) \cr
+/// 26 & \qquad r \gets 2 r \cr
+/// 27 & \quad \textbf{if}\ g = m\ \textbf{then}\ g \gets \text{the first }
 ///     \mathrm{gcd}( | x - y | , m ) \ne 1 \text{ of the last batch} \cr
-/// 24 & \quad \textbf{return}\ g
+/// 28 & \quad \textbf{return}\ g
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 1 \f$

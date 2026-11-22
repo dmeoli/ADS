@@ -1016,25 +1016,43 @@ of the directory and one sideways sum.
 
 We write $n_s$ for the integers of more than $s$ bits ($n_0 = n$) and $w$ for the bits of the largest one; then a level that holds the bits $[ s , t )$ costs
 $n_s ( t - s )$ bits of chunks. Unless it is the last, it also costs $n_s$
-continuation bits, with a quarter more for their rank. Its authors find the widths that minimize the sum by a dynamic program over the places of the cuts,
+continuation bits, with a quarter more for their rank. Its authors find the
+widths that minimize the sum by a dynamic program over the places of the
+cuts. Each level past the first, however, costs an access a rank and a
+branch on its continuation bit, which is hard to predict, and the optimum
+often takes many levels of 1 or 2 bits. As the authors propose, we
+therefore bound the levels to $h$, 3 by default (`Levels::DEFAULT`), and to
+none with `Levels::UNCAPPED`, i.e., $h = w$. With $\mathcal{C}_h( s )$ the
+least cost of the bits $[ s , w )$ in at most $h$ levels, one has
 
 $$
-\mathcal{C}( s ) = \min_{s < t \le w} \Big( n_s ( t - s ) +
-[ t < w ] \, 1.25 \, n_s + \mathcal{C}( t ) \Big) , \qquad
-\mathcal{C}( w ) = 0 . \tag{21.17}
+\mathcal{C}_1( s ) = n_s ( w - s ) , \qquad
+\mathcal{C}_h( s ) = \min \Big( \mathcal{C}_1( s ) , \min_{s < t < w}
+\big( n_s ( t - s + 1.25 ) + \mathcal{C}_{h - 1}( t ) \big) \Big) .
+\tag{21.17}
 $$
 
-<span id="lem-21-7"></span>**Lemma 21.7.** *$\mathcal{C}( 0 )$ is the least
-number of bits, counted as above, of the levels of a cut of the bits
-$[ 0 , w )$, and the dynamic program of `DirectAccessCodes` finds a cut
-that attains it in $O( w^2 )$ time from the counts $n_s$.*
+<span id="lem-21-7"></span>**Lemma 21.7.** *$\mathcal{C}_h( 0 )$ is the
+least number of bits, counted as above, of the levels of a cut of the bits
+$[ 0 , w )$ into at most $h$ levels, and the dynamic program of
+`DirectAccessCodes` finds a cut that attains it in $O( h w^2 )$ time from
+the counts $n_s$. For $h \ge w$, in particular with `Levels::UNCAPPED`, it
+is the least cost over all the cuts.*
 
-*Proof.* A cut is a sequence $0 = s_0 < s_1 < \cdots < s_k = w$, and its
-cost is a sum of terms, each of which depends only on a pair
-$( s_j , s_{j+1} )$ of consecutive cuts and on whether $s_{j+1} = w$. Hence
-the cheapest cut that starts at $s$ is a first level $[ s , t )$ followed
-by the cheapest cut that starts at $t$, which is (21.17). It is solved from $s = w - 1$ down, each $s$ by a minimum over at most $w$
-values of $t$. $\square$
+*Proof.* A cut into $k \le h$ levels is a sequence $0 = s_0 < s_1 < \cdots
+< s_k = w$, and its cost is a sum of terms, each of which depends only on a
+pair $( s_j , s_{j+1} )$ of consecutive cuts and on whether $s_{j+1} = w$.
+A cut of $[ s , w )$ into at most $h$ levels is therefore either the single
+level $[ s , w )$, of cost $\mathcal{C}_1( s )$, or a first level $[ s , t
+)$ with $t < w$, of cost $n_s ( t - s + 1.25 )$, followed by a cut of $[ t ,
+w )$ into at most $h - 1$ levels, and by induction on $h$ the least cost is
+(21.17). The program computes $\mathcal{C}_l( s )$ for $l = 1 , \ldots , h$
+and $s = w - 1$ down to 0, each by a minimum over fewer than $w$ values of
+$t$, and keeps the first cut that attains it; following these cuts from $(
+h , 0 )$, one level less at each step, gives a cut of at most $h$ levels and
+of cost $\mathcal{C}_h( 0 )$. Finally, a level holds at least one bit, so
+that no cut has more than $w$ levels, and $\mathcal{C}_w( 0 )$ is the least
+cost over all the cuts. $\square$
 
 `DirectAccessCodes` reads an item by `access( i )` or `operator[]`, and is
 a random-access range with the aliases of the standard containers
@@ -1045,7 +1063,8 @@ of the levels and `sizeInBits()` the bits of the chunks, of the
 continuation bits and of their ranks.
 
 <span id="alg-21-18"></span>**Algorithm 21.18.** The construction of the
-directly addressable codes by (21.17), and the access (21.16)
+directly addressable codes by (21.17), with at most $h$ levels, and the
+access (21.16)
 ([Brisaboa, Ladra and Navarro 2013](Z-bibliography.md#ref-brisaboa2013)).
 
 --8<-- "generated/DirectAccessCodes-DirectAccessCodes.pseudo.md"
@@ -1265,8 +1284,14 @@ L[ i ] = s[ \mathit{SA}[ i ] - 1 ] , \tag{21.19}
 $$
 
 the symbol before the $i$-th smallest suffix ($\$$ for the suffix 0). Hence the transform costs the $O( n )$ time of the suffix array of SA-IS
-([Nong, Zhang and Chan 2011](Z-bibliography.md#ref-nong2011), in
-`ADS/string/SuffixArray.h`, with the suffix $\$$ put first). Also, the rows that start with a string $w$ are contiguous, and the symbols that precede the
+([Nong, Zhang and Chan 2011](Z-bibliography.md#ref-nong2011)), with the
+suffix $\$$ put first. `bwt()`, `HuffmanFMIndex`, `RIndex` and
+`MoveRIndex` take it from the engineered SA-IS of
+`ADS/string/SuffixSorting.h`, with entries of 32 bits for the texts of
+fewer than $2^{31} - 1$ symbols and of 64 bits beyond, and with the row of
+the $\$$ given by the arithmetic of the places instead of a shift of the
+array; `FMIndex` takes instead the SA-IS of `ADS/string/SuffixArray.h`, with
+entries of the width of `std::size_t`. Also, the rows that start with a string $w$ are contiguous, and the symbols that precede the
 occurrences of $w$ are thus a substring of $L$. On a text whose symbols depend on their context, as those of a language usually do, $L$ is made of long
 runs of few distinct symbols ([Figure 21.8](21-compression.md#fig-21-8)).
 
@@ -1804,7 +1829,12 @@ class DirectAccessCodes
 {
  public:
  DirectAccessCodes( void ) = default;
- explicit DirectAccessCodes( std::span< const std::uint64_t > x );
+ enum class Levels : int {
+  UNCAPPED = 0 ,
+  DEFAULT = 3
+  };
+ explicit DirectAccessCodes( std::span< const std::uint64_t > x ,
+                             Levels L = Levels::DEFAULT );
  DirectAccessCodes( std::span< const std::uint64_t > x , int b );
  std::size_t size( void ) const;
  bool empty( void ) const;
@@ -2249,7 +2279,7 @@ Each exercise names the test of the library that solves it (run it with
     that moves four integers by one shuffle. Test:
     `engineered_succinct.stream-vbyte`.
 13. Realize the directly addressable codes with the widths of
-    (21.17), and access an item in time proportional to its length. Test:
+    (21.17), for any bound $h$ on the levels, and access an item in time proportional to its length. Test:
     `engineered_succinct.direct-access-codes`.
 14. Parse a text by LZ77 (with and without a window), LZSS (by a search of
     the window and by the chains of the hashes of gzip), LZ78 and LZW, and

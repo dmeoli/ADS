@@ -34,7 +34,10 @@
  * \f$ S \f$ goes through is \f$ e^{1 / \gamma} \f$, 1.65 for
  * \f$ \gamma = 2 \f$: a smaller \f$ \gamma \f$ saves bits and costs levels,
  * in the build and in the queries. The number of levels is
- * \f$ O( \log n ) \f$ with high probability.
+ * \f$ O( \log n ) \f$ with high probability, and the build throws
+ * `std::runtime_error` if some keys are left after 64 levels, with
+ * probability below \f$ 2 \cdot 10^{-5} \f$ for \f$ 10^8 \f$ keys and
+ * \f$ \gamma = 1 \f$, and far below it for a larger \f$ \gamma \f$.
  *
  * The build hashes each key once, to a word \f$ x \f$ of 64 bits, and each
  * level hashes \f$ x \f$ again by a folded product with a constant of its
@@ -143,15 +146,17 @@ class FingerprintPerfectHash
  /// 1 & \textbf{procedure}\ \mathrm{build}( S , \gamma ) \cr
  /// 2 & \quad X \gets \{ \mathrm{base}( k ) : k \in S \};\ i \gets 0 \cr
  /// 3 & \quad \textbf{while}\ X \ne \emptyset\ \textbf{do} \cr
- /// 4 & \qquad m_i \gets \lceil \gamma |X| \rceil \text{, rounded up to }
+ /// 4 & \qquad \textbf{if}\ i = 64\ \textbf{then throw}\ \text{(too many}
+ ///     \text{ levels, or two keys of one hash)} \cr
+ /// 5 & \qquad m_i \gets \lceil \gamma |X| \rceil \text{, rounded up to }
  ///     \text{512};\ A_i , C_i \gets m_i \text{ bits } 0 \cr
- /// 5 & \qquad \textbf{foreach}\ x \in X\ \textbf{do} \cr
- /// 6 & \qquad\quad p \gets h_i( x );\ C_i[ p ] \gets C_i[ p ] \lor A_i[ p ];
+ /// 6 & \qquad \textbf{foreach}\ x \in X\ \textbf{do} \cr
+ /// 7 & \qquad\quad p \gets h_i( x );\ C_i[ p ] \gets C_i[ p ] \lor A_i[ p ];
  ///     \ A_i[ p ] \gets 1 \cr
- /// 7 & \qquad A_i \gets A_i \land \lnot C_i\quad \triangleright\ \text{a }
+ /// 8 & \qquad A_i \gets A_i \land \lnot C_i\quad \triangleright\ \text{a }
  ///     \text{word at a time} \cr
- /// 8 & \qquad X \gets \{ x \in X : C_i[ h_i( x ) ] = 1 \};\ i \gets i + 1 \cr
- /// 9 & \quad \text{the count of the 1s before each block of 512 bits}
+ /// 9 & \qquad X \gets \{ x \in X : C_i[ h_i( x ) ] = 1 \};\ i \gets i + 1 \cr
+ /// 10 & \quad \text{the count of the 1s before each block of 512 bits}
  /// \end{array}}
  /// \f]
  /// \pre the keys are distinct (an audit) and fewer than \f$ 2^{32} \f$,

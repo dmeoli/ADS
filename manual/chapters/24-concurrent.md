@@ -141,7 +141,7 @@ MultiQueue, and $k$ that of the messages taken at once.
 |---|---|---|---|
 | `SPSCQueue` | one producer, one consumer | wait-free | $O( 1 )$, no read-modify-write |
 | `MPSCQueue` | many producers, one consumer | wait-free push but for the allocation of a block | $O( 1 )$ amortized, no read-modify-write but per block |
-| `MPSCInbox` | many producers, one consumer | lock-free push, wait-free take | one CAS per push, one exchange per take, plus $O( k )$ |
+| `MPSCInbox` | many producers, one consumer | lock-free push but for the allocation of a block, lock-free take | one CAS per push; per take, one exchange, a fetch-and-add per run of messages of one block, a CAS per block given back, and $O( k )$ |
 | `MPMCQueue` | many producers, many consumers | lock-free but for a thread stopped between claim and publication | one CAS per operation without contention |
 | `WorkStealingDeque` | one owner, many thieves | wait-free calls, a steal may fail (abort); retried steals lock-free | $O( 1 )$ amortized for the owner, a CAS only on the last item; one per steal |
 | `ConcurrentUnionFind` | any | lock-free | $O( \log_{2 + m / n} n )$ amortized on one thread |
@@ -455,16 +455,21 @@ $\mathrm{CAS}( \mathit{top} , \mathit{next} , \mathit{cell} )$ (the stack of
 [Treiber 1986](Z-bibliography.md#ref-treiber1986)). Its consumer takes all
 the stack at once, by $\mathrm{exchange}( \mathit{top} , \mathbf{nil} )$,
 and reverses it; the messages of each producer thus come out in the order
-in which it sent them ([Figure 24.4](24-concurrent.md#fig-24-4)). Hence
-`take()` costs one atomic operation however many messages there are, plus
-$O( k )$ time for the $k$ messages taken, and the consumer never competes
-with the producers on single items. The cells come from blocks of 64 that
-each producing thread owns, which a consumer gives back to their owner
-once it has taken all their messages, so that a producer in a steady state
-allocates nothing; and a push wakes a sleeping consumer only when it finds
-the stack empty, since the pushes onto a stack that is not empty are taken
-with the one that found it empty. This inbox suits the messages that
-usually come in bursts.
+in which it sent them ([Figure 24.4](24-concurrent.md#fig-24-4)), and the
+consumer never competes with the producers on single items. The cells come
+from blocks of 64 that each producing thread owns, and a producer takes the
+cells of its block in order, with no atomic operation. A consumer adds to a
+count of the block the messages it has taken from it, by one fetch-and-add
+per run of messages of the block, and the one that brings the count to 64
+gives the block back to its owner, by a compare-and-swap on a stack that the
+owner empties by an exchange when it needs a block; a producer in a steady
+state thus allocates nothing. Hence `take()` costs one exchange however
+many messages there are, a fetch-and-add per run and a loop of
+compare-and-swap per block given back, and $O( k )$ time for the $k$
+messages taken ([Lemma 24.3](24-concurrent.md#lem-24-3)). Also, a push wakes
+a sleeping consumer only when it finds the stack empty, since the pushes
+onto a stack that is not empty are taken with the one that found it empty.
+This inbox suits the messages that usually come in bursts.
 
 ![Figure 24.4. The stack of an `MPSCInbox` before and after `push(d)`, whose compare-and-swap links the new cell above the top it read, and after `take()`, which exchanges the top with nil and returns the messages reversed, in the order of sending.](../figures/concurrent-inbox.svg){#fig-24-4}
 
@@ -498,33 +503,72 @@ until a message comes, on the event count of
 
 <span id="lem-24-3"></span>**Lemma 24.3.** *Let the cells of a stack of
 Treiber be pushed one at a time, by a compare-and-swap whose new value is a
-cell of the pushing thread, and be taken only all at once, by an exchange.
-Then the ABA problem does not occur: each successful push links its cell
-above the true top, and each take returns all the cells pushed before it
-that are not yet taken. Moreover, the push is lock-free, and the take is
-wait-free and costs one exchange and $O( k )$ time for the $k$ cells it
-returns.*
+cell of the pushing thread, and be taken only all at once, by an exchange;
+and let the cells come from blocks given back to their owner as in
+`MPSCInbox`. Then (i) the ABA problem does not occur: each successful push
+links its cell above the true top, and each take returns all the cells
+pushed before it that are not yet taken; (ii) the owner writes a cell again
+only after the consumer that took it has moved its message out and read its
+link, and a cell is never in two stacks at once; (iii) the push and the take
+are lock-free (the push but for the allocation of a block), and a take of
+$k$ cells costs one exchange, at most one fetch-and-add per run of cells of
+one block in the order of sending (hence at most $k$), one loop of
+compare-and-swap per block that it gives back, and $O( k )$ time besides.*
 
-*Proof.* We recall that the ABA problem needs a compare-and-swap whose expected value was
-read before the cell it names was removed and put back. Here we have only
-one compare-and-swap, that of a push, whose expected value is the top read by
-the pusher. If it succeeds, the top is that value at that instant, whatever
-happened in between (e.g., a take, then pushes that brought the top back to
-the same address after a reuse of the memory); the cell becomes the new top
-above the cell that is really there, since a push never reads the
-successor of the top. No cell is ever popped singly. An exchange is one
-atomic step, and the cells it returns are those of the pushes that
-precede it in the order of the modifications of $\mathit{top}$. Finally, a
-push publishes its cell with release and the take reads the top with acquire,
-and therefore the contents of the cells are seen. The compare-and-swap of a
-push fails only if the top changed after the pusher read it, i.e., only if
-another push or a take succeeded in between, and some thread thus completes
-an operation at each failure; a take runs one exchange and then reverses
-the $k$ cells it got, which no other thread can reach any more. $\square$
+*Proof.* (i) We recall that the ABA problem needs a compare-and-swap whose
+expected value was read before the cell it names was removed and put back.
+Here the only compare-and-swap on $\mathit{top}$ is that of a push, whose
+expected value is the top read by the pusher. If it succeeds, the top is
+that value at that instant, whatever happened in between (e.g., a take,
+then pushes that brought the top back to the same address after a reuse of
+the cell); the cell becomes the new top above the cell that is really
+there, since a push never reads the successor of the top. No cell is ever
+popped singly. An exchange is one atomic step, and the cells it returns are
+those of the pushes that precede it in the order of the modifications of
+$\mathit{top}$. Finally, a push publishes its cell with release and the take
+reads the top with acquire, and therefore the contents of the cells are
+seen.
+
+(ii) The owner gives out each cell of a block once per use of the block,
+in order, and each cell given out is pushed onto one inbox and taken by
+one take (or by the destructor of the inbox); a thread that ends adds to
+the count the cells it never gave out. The consumer reverses the cells it
+took before it moves any message, reads the link of each cell before it
+moves the message of that cell, and adds a run to the count only after the
+last message of the run is moved out and destroyed. Hence the count of a
+block reaches 64 once per use, at the fetch-and-add that adds its last
+cells. These fetch-and-adds are read-modify-writes, with acquire and
+release, of one atomic object, and each of them therefore reads the value
+of the one before it in the order of the modifications; hence all the
+accesses of the consumers to the cells of the block happen before the last
+fetch-and-add. Its thread pushes the block on the stack `given` of the
+owner by a compare-and-swap with release, and the owner takes the stack by
+an exchange with acquire before it writes a cell of the block again; the
+accesses of the consumers thus happen before the next writes of the owner.
+A block that the owner fills is a new one or one that it took back from
+`given`, and a cell taken by an exchange is no
+longer reachable from $\mathit{top}$; hence a cell is in one stack at most,
+and a reused cell is pushed as a new one, as in (i). The stack `given` is a
+stack of Treiber too, pushed by compare-and-swap and emptied whole by an
+exchange, and (i) holds for it; once its owner has ended, its top is a value
+that no block has, and the consumer that brings a count to 64 then frees
+the block instead of pushing it.
+
+(iii) The compare-and-swap of a push fails only if the top changed after
+the pusher read it, i.e., only if another push or a take succeeded in
+between, and that of a block given back fails only if another block was
+given back to the same owner or the owner took its stack in between; hence
+some thread completes an operation at each failure. The exchange and the
+fetch-and-adds never fail, and the reversal and the moves touch only the
+$k$ cells taken, which no other thread can reach any more. The cells are
+gone through in the order of sending, with one fetch-and-add each time the
+block changes and once at the end, and a block can be given back only at
+one of these fetch-and-adds, which gives the cost. $\square$
 
 The same argument holds for the list of the lanes of `MPSCQueue` and for
 its stacks of blocks given back. A push is not wait-free, however, since a
-pusher may lose every round to other pushers.
+pusher may lose every round to other pushers, and for the same reason
+neither is a take that gives a block back.
 
 `MPMCQueue` is the bounded queue of many producers and many consumers of
 [Vyukov 2010](Z-bibliography.md#ref-vyukov2010), on a circular vector of $c$
@@ -1017,16 +1061,23 @@ locks of the new regions in the same order, before the new table is seen.
 Hence a thread that holds the lock $i$ and waits for the lock $j$ has
 $i < j$, and a cycle of waits would give
 $i_1 < i_2 < \cdots < i_k < i_1$, which is impossible. A thread migrates
-parts of a doubling only while it waits for a lock and holds none, and a
-part takes no lock, so that the thread that doubles, which waits for the
-parts claimed, waits for no thread that waits for a lock. $\square$
+parts of a doubling only while it waits for a lock and holds none. A part
+takes no lock of a region, but only, for a pair that finds no place in the
+new table (rarely), the spin lock of the list of such pairs, which is the
+innermost one: a thread takes it holding no other lock, appends one pair
+and releases it, and waits for nothing while it holds it, so that no cycle
+of waits goes through it. Hence the thread that doubles, which waits for
+the parts claimed, waits for no thread that waits for a lock of a region.
+$\square$
 
 Let the keys and the values be trivially copyable, and let
 `std::atomic_ref` read and write them without locks (e.g., integers and
 pointers; the constant `optimistic` of the class is then true). A lookup is
 then a read under the version of the region, i.e., a *seqlock*. It reads
-the even version $v$, then the table in use, the tags and the places of the
-key with atomic loads that acquire, and then the version again. If the
+the table $T$ in use, then the even version $v$ of the region of its key in
+$T$, then the table in use again, which must still be $T$ (a doubling
+changes the table and then the versions), then the tags and the places of
+the key, all with atomic loads that acquire, and then the version again. If the
 version is still $v$ it returns what it read; otherwise it tries again,
 and it takes the lock after 4 tries. A writer makes the version odd by its
 compare-and-swap, stores with release, and makes the version even again by
@@ -1079,10 +1130,14 @@ $$
 in depth; for $M = 2000$ and $b = 4$, $L = 5$.*
 
 *Proof.* We count the places of the two trees of the search, rooted at the
-two buckets of the key: they have $2 b^l$ places at the depth $l$, since each place of a bucket names
-one other bucket. Hence the places within $L$ moves are
-$\sum_{l = 1}^{L} 2 b^l = 2 b ( b^L - 1 ) / ( b - 1 )$, which is at least
-$M$ exactly when $b^L \ge M / 2 - M / ( 2 b ) + 1$, whence (24.4). For
+two buckets of the key, which have the depth 0. Each place of a bucket
+names one other bucket, and the trees therefore have $2 b^l$ buckets, i.e.,
+$2 b^{l+1}$ places, at the depth $l$. A path of at most $L$ moves moves the
+keys of places at the depths 0 to $L - 1$, each to a bucket of the next
+depth, and the places that a search for such a path looks at are therefore
+$\sum_{l = 0}^{L - 1} 2 b^{l+1} = \sum_{l = 1}^{L} 2 b^l = 2 b ( b^L - 1 )
+/ ( b - 1 )$, which is at least $M$ exactly when $b^L \ge M / 2 - M / ( 2
+b ) + 1$, whence (24.4). For
 $M = 2000$ and $b = 4$ the argument of the logarithm is 751, and
 $\log_4 751 \approx 4.78$. A search in depth follows one path, which may be
 as long as half the places it looks at ([Li et al.
@@ -1136,20 +1191,29 @@ set by keys removed since stay, and make the lookups read the second
 bucket for nothing until the next doubling.
 
 A lookup without locks that reads, with acquire, the tags of the first
-bucket $b_1$ of its key $k$ in the table $T$, finds no tag of $k$ there,
-then finds the bit of $b_1$ for $k$ clear, and then finds $T$ still in use,
-returns that $k$ is absent without reading the version of the region; $k$
-is indeed in neither bucket at the moment of the read of the tags. The
-writers change $T$ only while it is in use, under the lock of the region,
-and $k$ enters its second bucket either by an insertion, which sets the bit
-first, or by a move from $b_1$, which copies it, sets the bit, and then
-clears its tag in $b_1$ by a store with release. Were $k$ in the second
-bucket at the read of the tags, its bit would have been set before (bits
-are cleared only in a table not yet in use, or by `clear()` after the
-tags), and after a move the read of the tags, which saw the tag cleared,
-acquired the release that follows the bit, so that the later read of the
-bit sees it set; were $k$ in $b_1$, its tag would be among those read.
-Only the lookups that read places need the version.
+bucket $b_1$ of its key $k$ in the table $T$ (the read $R_1$), finds no
+tag of $k$ there, then finds the bit of $b_1$ for $k$ clear (the read
+$R_2$, with acquire), and then finds $T$ still in use (the read $R_3$),
+returns that $k$ is absent without reading the version of the region. We
+argue that no write that places $k$ in a table and happens before $R_1$
+escapes it. The writers change $T$ only while it is in use, under the lock
+of the region, and $k$ enters its second bucket either by an insertion,
+which sets the bit before it stores the tag, or by a move from $b_1$, which
+copies it, sets the bit, and then clears its tag in $b_1$ by a store with
+release. If the store of a tag of $k$ in $b_1$ happens before $R_1$, then
+$R_1$ reads it or a later store of that word, by the coherence of the
+accesses to one object, and a later store drops the tag only by a removal
+or by a move of $k$. If the bit is set by a write $W$ that happens before
+$R_1$, either directly or through a move whose clearing of the tag $R_1$
+reads (and therefore acquires), then $W$ happens before $R_2$, which is
+sequenced after $R_1$, and $R_2$ reads $W$ or a later store; bits are
+cleared only in a table not yet in use, or by `clear()`, which first
+clears the tags and thus removes $k$. Finally, a write into a table that
+replaces $T$ follows the publication of that table, which it acquires;
+were it to happen before $R_1$, the publication would happen before $R_3$,
+which would read it or a later table, and not $T$. Hence the lookup can
+be ordered at $R_1$, after every write of $k$ that happens before it. Only
+the lookups that read places need the version.
 
 A lookup fetches ahead, at once, the tags and the line of the places of
 the first bucket, and the misses overlap (the 4 places of a bucket share a
@@ -1367,7 +1431,7 @@ of Dekker over 64 counters on separate lines, as in the growth of [Maier et
 al. 2019](Z-bibliography.md#ref-maier2019) that synchronizes the threads. A
 thread adds 1 to its counter and then reads the flag $g$ of the growth,
 while the thread that grows the table raises $g$ and then reads the
-counters (lines 3 and 4, and 16 and 17, of `findOrInsert()` in [Algorithm
+counters (lines 3 and 4, and 19 and 20, of `findOrInsert()` in [Algorithm
 24.8](24-concurrent.md#alg-24-8)).
 
 <span id="lem-24-16"></span>**Lemma 24.16.** *Let a writer raise its
@@ -2328,29 +2392,33 @@ level 0 from the head over the marked words and marks the first word not
 marked by a fetch-and-or (FAO), which deletes the node that the word
 reaches. A DeleteMin that walked more than $b$ nodes (the parameter `offset`
 of the constructor, $b \ge 1$) moves the word of level 0 of the head past the
-deleted nodes by one CAS (a *cut*), the upper words of the head after them
-(the *restructure*), and hands the nodes cut off to the reclamation by
+deleted nodes by one CAS (a *cut*), which also sets in that word the *bit of
+the cut*, then the upper words of the head after them (the *restructure*),
+then clears the bit of the cut by a fetch-and-and, and hands the nodes cut off to the reclamation by
 epochs described below. We write $x \prec y$ when the node $x$ comes before
 $y$ in the list of level 0.
 
 <span id="lem-24-28"></span>**Lemma 24.28.** *The words of level 0 change
 only by the CAS of an insertion, which links a new node between two
-adjacent ones, by the FAO of a DeleteMin, which sets a mark, and by the cut,
-which moves the word of the head forward with its mark set. Hence $\prec$
+adjacent ones, by the FAO of a DeleteMin, which sets a mark, by the cut,
+which moves the word of the head forward with its mark and the bit of the
+cut set, and by the fetch-and-and with which the thread of the cut then
+clears that bit, which changes neither the pointer nor the mark. Hence $\prec$
 is a fixed order of the nodes ever linked, and at each moment (i) the
 marked words form a prefix of the list, i.e., the deleted nodes are a prefix
 of it, (ii) after the first deletion the word of the head is marked, and
 (iii) the nodes not deleted have increasing $\kappa$ along the list.*
 
 *Proof.* No other statement writes a word of level 0 once its node is
-linked, and none of the three moves a node or unlinks one but the cut,
-which unlinks only from the head. As to (i), a FAO marks $x.\mathit{next}[ 0
+linked, and none of the four moves a node or unlinks one but the cut,
+which unlinks only from the head (the fetch-and-and leaves the node that the
+word reaches, and its mark, as they are). As to (i), a FAO marks $x.\mathit{next}[ 0
 ]$ where $x$ is the head or a node reached by a marked word, and hence
 extends the prefix, while the CAS of an insertion succeeds only on an
 unmarked word, and writes an unmarked word to the new node, whose own word,
 $\langle S_0 , 0 \rangle$, is unmarked as well. Property (ii) holds since
-the first FAO marks the word of the head and the cut writes it with its mark
-set. As to (iii), the walk of $\mathrm{locate}( \kappa )$ stops at level 0
+the first FAO marks the word of the head, the cut writes it with its mark
+set, and the fetch-and-and clears only the bit of the cut. As to (iii), the walk of $\mathrm{locate}( \kappa )$ stops at level 0
 at a node $S_0$ that is the tail or has a greater key. Its predecessor
 $P_0$ is the head, a node of key less than $\kappa$, or a deleted node,
 since the walk passes a node only for its key, for a mark on the word
@@ -2682,9 +2750,9 @@ the vector in use with release; the old one is kept for the readers still
 on it. A lookup is that of `ConcurrentFlatTable`: it reads the vector in
 use and the words with acquire, and, when it ends at a free place, reads
 the vector in use again and starts over if the table grew meanwhile. The
-counters of the threads and the protocol of Dekker of Lemma 6 of the
-theory, i.e., two sequentially consistent read-modify-writes per
-insertion, are thus gone, and an insertion is made of plain loads and
+counters of the threads and the protocol of Dekker of [Lemma
+24.16](24-concurrent.md#lem-24-16), i.e., two sequentially consistent
+read-modify-writes per insertion, are thus gone, and an insertion is made of plain loads and
 stores on x86-64. With `EpochClear` the writer renews a group out of use
 when an insertion first reaches it, writing 0 to its words and then its
 stamp with release, so that `clear()` takes $O( 1 )$ as in
@@ -2773,7 +2841,7 @@ $\square$
 The insertions of one writer thus cost the loads of their probe and one or
 two stores, against the two sequentially consistent read-modify-writes on
 the counter of a thread of `ConcurrentFlatTable`, which several writers
-need (Lemma 6 of the theory). The price is that the table has one writer:
+need ([Lemma 24.16](24-concurrent.md#lem-24-16)). The price is that the table has one writer:
 the threads of a search keep one table each, and a thread that looks for
 a state reads the table of the worker that may hold it.
 

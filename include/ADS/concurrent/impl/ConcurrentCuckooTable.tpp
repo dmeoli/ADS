@@ -426,9 +426,9 @@ ConcurrentCuckooTable< K , V , H , Eq >::peek( const K & k , std::uint64_t h ,
 					    V * out ) const
 {
  // the seqlock: the version of the region even before the reads and the
- // same after them, and the table read after the version, so that it is
- // the one of that version; the tables replaced stay, so that a read of
- // one is wasted but never invalid
+ // same after them, and the table read before the version and again after
+ // it, so that it is the one of that version; the tables replaced stay,
+ // so that a read of one is wasted but never invalid
  if constexpr( optimistic ) {
   const std::uint32_t t = tag( h );
   for( int a = 0 ; a < 4 ; ++a ) {

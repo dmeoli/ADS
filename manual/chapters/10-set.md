@@ -1040,7 +1040,7 @@ engineers the two regimes. On lists of similar lengths (the longer at most
 4 times the shorter) it merges with no branch: an item is written whatever
 happens, the count of the output advances on equality, and each list
 advances when its item is not larger, three additions in place of the
-jumps of the merge (lines 3 to 7 of
+jumps of the merge (lines 4 to 8 of
 [Algorithm 10.6](10-set.md#alg-10-6)).
 
 <span id="lem-10-11"></span>**Lemma 10.11.** *The merge with no branch writes in
@@ -1100,7 +1100,8 @@ const auto D = ADS::intersect( A , B );          // { 3 , 9 }
 Comparing blocks all against all is the method of [Schlegel et al.
 2011](Z-bibliography.md#ref-schlegel2011) and of [Lemire et al.
 2016](Z-bibliography.md#ref-lemire2016), whose library switches to
-galloping at a ratio of 50 rather than 32. Asymptotically, the bounds stay those of
+galloping when the longer list is 50 times the shorter, where `intersect()`
+switches at 4 times. Asymptotically, the bounds stay those of
 [Table 10.2](10-set.md#tab-10-2), and the time should fall by a constant
 factor; the comparison belongs to the campaign of Appendix B.
 
@@ -1208,12 +1209,16 @@ nearest integer to $( m / n ) \ln 2$. Here the $k$ places of a key are
 $h_1 + i h_2 \bmod m$, $i = 0 , \ldots , k - 1$, of two hashes only, both
 derived from the hash of the key by `splitmix64()`; [Kirsch and
 Mitzenmacher 2006](Z-bibliography.md#ref-kirsch2006) show that this leaves
-(10.5) unchanged asymptotically. Moreover, the step $h_2$ is made odd, so that it is
-never 0 and, when $m$ is a power of 2, the first $m$ places are distinct,
-and each place follows from the previous one by an addition and a
-conditional subtraction, with no remainder (both $h_1$ and $h_2$ being
-first reduced modulo $m$). Indeed, an odd $h_2$ is invertible modulo a
-power of 2, and $i h_2 \equiv j h_2 \pmod{m}$ then gives $i \equiv j$.
+(10.5) unchanged asymptotically. Moreover, both $h_1$ and $h_2$ are first
+reduced modulo $m$, so that each place follows from the previous one by an
+addition and a conditional subtraction, with no remainder, and the step
+$h_2$ is made odd before its reduction. When $m$ is a power of 2 the step
+thus stays odd, hence not 0, and the first $m$ places are distinct, since an
+odd $h_2$ is invertible modulo a power of 2 and $i h_2 \equiv j h_2
+\pmod{m}$ then gives $i \equiv j$. For other $m$ the reduction may give 0
+(when $m$ divides the odd step), and the step is then 1 instead. The $k$
+places are thus never all the same for $m \ge 2$, but they may repeat
+when $h_2$ and $m$ have a common factor.
 
 We declare the class as follows; `falsePositiveRate()` gives (10.5) at the current number of keys, and `bits()` and `hashes()` give $m$ and $k$. Its example also uses the cuckoo filter of [§10.9](10-set.md#sec-10-9).
 
@@ -1468,10 +1473,12 @@ the exact form $\lnot( ( ( u \,\&\, \mu ) + \mu ) \mid u \mid \mu )$, with
 $\mu$ the word whose lanes have all the bits but the top one set. At the
 load $\alpha$ (the fraction of the places taken) a query of a key out of
 $S$ compares $t$ with $8 \alpha$ fingerprints on the average, each equal to
-$t$ with probability $1 / ( 2^f - 1 )$; hence
+$t$ with probability $1 / ( 2^f - 1 )$; hence, since $1 - ( 1 - p )^X$
+is concave in the number $X$ of the fingerprints compared, whose mean is $8
+\alpha$ (the inequality of Jensen),
 
 $$
-\varepsilon = 1 - \Bigl( 1 - \frac{1}{2^f - 1} \Bigr)^{8 \alpha} \le
+\varepsilon \le 1 - \Bigl( 1 - \frac{1}{2^f - 1} \Bigr)^{8 \alpha} \le
 \frac{8 \alpha}{2^f - 1} , \tag{10.8}
 $$
 
@@ -1485,12 +1492,19 @@ evictions reach about 0.95 in practice ([Fan et al.
 2014](Z-bibliography.md#ref-fan2014)), from 0.97 at $2^{10}$ buckets to
 0.95 at $2^{22}$ in the tests of the library. The constructor for $n$ keys
 takes the fewest buckets, a power of 2, that hold them at the load 0.94. A
-removal clears one place holding $t$ in $b_1$ or $b_2$. (The members
+removal clears one place holding $t$ in $b_1$ or $b_2$, and then, if there
+is a victim, puts it back from its bucket by the evictions of an insertion,
+since a place is now free (at most 500 evictions again, after which the
+last fingerprint evicted is the new victim). If neither bucket holds $t$
+but the victim is $t$ with one of the two buckets, the removal clears the
+victim instead. (The members
 `insertHash()` and `removeHash()` take a hash already computed, as
 `maybeHash()` does, and `capacity()`, `load()` and `bits()` give the
 places, $\alpha$ and the space.) The removal must concern a
 key that was inserted, which no contract can check, since the removal of
 another key may clear the fingerprint of a key of $S$, a false negative.
+
+--8<-- "generated/CuckooFilter-removeHash.pseudo.md"
 
 Its parameter `F` is `std::uint8_t` or `std::uint16_t`, i.e., $f = 8$ or 16.
 
@@ -1539,14 +1553,19 @@ quotients, those of one quotient (its *run*) in increasing order
 
 The run of $q$ is the slots $[ z_{q-1} + 1 - q , z_q - q )$ of the body,
 where $z_q$ is the place of the zero of rank $q$ of the header (and
-$z_{-1} = -1$). The two zeros are found by the broadword select of
-`selectInWord()` ([§22.2](22-succinct.md#sec-22-2)) on the complement of the
-header, shifted by one place, with no loop over its bits. A query compares
-the 32 bytes of the bin with $r$ at once (by the vectors of Highway, a byte
-at a time without it) and stops if
-no byte of the body is equal, as happens for about 91 per cent of the keys
-out of $S$; otherwise it checks whether one of the equal bytes is in the run
-of $q$.
+$z_{-1} = -1$). With a zero put below the header, i.e., in $u = 2 H$ for
+the header $H$, the zero of rank $q$ is at $z_{q-1} + 1$; we find it by
+the broadword select of `selectInWord()`
+([§22.2](22-succinct.md#sec-22-2)) on the complement of $u$, with no loop
+over its bits, and the end of the run by the trailing zeros of that
+complement past it, i.e., the $c_q$ ones that follow. A query compares the
+32 bytes of the bin with $r$ at once (by the vectors of Highway, a byte at
+a time without it) and stops if no byte of the body is equal, as happens
+for about 91 per cent of the keys out of $S$. If a single byte $i$ is
+equal, as for most of the others, the query needs no select, since the slot
+$i$ is in the run of $q$ if and only if the bit $i + q$ of $H$ is 1 and $H$
+has $i$ ones below it ([Lemma 10.15](10-set.md#lem-10-15)). If more bytes
+are equal, it checks whether one of them is in the slots of the run.
 
 --8<-- "generated/PrefixFilter-maybeHash.pseudo.md"
 
@@ -1561,18 +1580,34 @@ bin has overflowed and $x > x_{\max}$. Hence a query of a key of $S$ is
 always answered yes ([Lemma 10.15](10-set.md#lem-10-15)), and a query
 typically reads one line of cache, against the two of the cuckoo filter.
 
-<span id="lem-10-15"></span>**Lemma 10.15.** *At any time, each
-fingerprint of a bin $b$ sent to the spare is at least the largest
-fingerprint $x_{\max}$ that $b$ holds; hence the prefix filter has no
-false negative.*
+<span id="lem-10-15"></span>**Lemma 10.15.** *(i) A slot $i$ of a bin
+is in the run of $q$ if and only if the bit $i + q$ of its header $H$ is 1
+and $H$ has $i$ ones below it. (ii) The run of $q$ is the slots $[ z - q ,
+z + c - q )$, with $z$ the zero of rank $q$ of $u = 2 H$ and $c$ the ones
+of $u$ that follow it. (iii) At any time, each fingerprint of a bin $b$
+sent to the spare is at least the largest fingerprint $x_{\max}$ that $b$
+holds; hence the prefix filter has no false negative.*
 
-*Proof.* A bin sends a fingerprint to the spare only when it is full,
+*Proof.* (i) The body holds the remainders in the order of their quotients,
+and the header writes the run of each quotient as its ones, from the low
+bit, each run closed by a zero. Hence the remainder of the slot $i$ is
+written by the one of rank $i$ of the header, and its quotient is the
+number of the zeros below that one. If this one is at the place $p$, these
+zeros are $p - i$, and the slot $i$ is in the run of $q$ if and only if $p
+= i + q$. A slot past the last remainder of the bin has no one of its
+rank, and it fails the test whatever byte it holds. (ii) In $u = 2 H$ the
+zero of rank $q$ precedes the run of $q$ (it is the zero put below for $q
+= 0$), at the place $z = z_{q-1} + 1$, and the ones of the run follow it up
+to the zero of rank $q + 1$, at $z_q + 1 = z + c + 1$; the run is
+therefore the slots $[ z_{q-1} + 1 - q , z_q - q ) = [ z - q , z + c - q
+)$. (iii) A bin sends a fingerprint to the spare only when it is full,
 either the new $x \ge x_{\max}$ or its old maximum $x_{\max} > x$, which it
 replaces by $x$; in both cases the fingerprint sent is at least the new
 maximum of the bin. Later insertions into $b$ never raise its maximum
 (a full bin only replaces its maximum by a smaller fingerprint), and the
 claim holds by induction. Let now $x$ be the fingerprint of a key of $S$
-in the bin $b$. If $b$ holds $x$, the query finds it in its run. Otherwise
+in the bin $b$. If $b$ holds $x$, the query finds it in its run, by (i)
+and (ii). Otherwise
 $x$ went to the spare, $b$ has overflowed, and $x \ge x_{\max}$ by the
 claim, with $x \ne x_{\max}$ since $b$ does not hold $x$; hence the query
 queries the spare, a blocked filter of Bloom, which has no false negative.
@@ -1680,7 +1715,8 @@ $1.23 n$ of 3 places anywhere ([Dietzfelbinger and Walzer
 2019a](Z-bibliography.md#ref-dietzfelbinger2019a)); we take
 $L = 2^{\lfloor \log_{3.33} n + 2.25 \rfloor}$ (at most $2^{18}$) and
 about $\max( 1.125 , 0.875 + 0.25 \ln 10^6 / \ln n ) \, n$ places, the
-choices of the paper.
+choices of the paper, but we halve $L$ while it exceeds 256 and the array
+would have fewer than 34 segments.
 
 ![Figure 10.10. The array of a `BinaryFuseFilter`, in segments of $L = 4$ places, and the 3 places of a key (in colour) in 3 consecutive segments.](../figures/set-fuse.svg){#fig-10-10}
 
@@ -1694,12 +1730,16 @@ the peeling reads and writes only these arrays. If all the keys are
 peeled, the fingerprints are assigned in the reverse order of the peeling,
 since the place of each key is still free when its key is reached;
 otherwise the build
-draws a new seed (and gives up with an exception after 1000 seeds). Before
+draws a new seed (and gives up with an exception after 1000 seeds). A seed
+also fails as soon as a place reaches 63 keys, the most that its count
+holds, which happens only on degenerate hashes. Before
 the counts, the hashes are sorted by their segment by a counting sort, so
 that the counts and the peeling walk the arrays in order and stay in the
 cache; a key repeated in the input has twice the same hash and cannot be
-peeled, and a failed build removes the equal hashes before drawing a new
-seed.
+peeled. The first failed build therefore removes, once, the keys whose
+hashes before the seed are equal, and sizes the array again for the keys
+left, before it draws a new seed; such keys have the same places and the
+same fingerprint under every seed, and one of them stands for all.
 
 <span id="alg-10-8"></span>**Algorithm 10.8.** The build of the binary
 fuse filter by peeling ([Graf and Lemire

@@ -347,7 +347,9 @@ class FlatHashTable
  ///     7 m / 8 \cr
  /// 5 & \quad j \gets \text{the first empty place of the inspection, with }
  ///     \beta \text{ set in the overflow of the full groups passed} \cr
- /// 6 & \quad \text{the control byte of } j \gets t;\ \text{build } ( k , v )
+ /// 6 & \quad \textbf{if}\ d > 0 \text{ and the overflow of the group of }
+ ///     j \text{ is not } 0\ \textbf{then}\ d \gets d - 1 \cr
+ /// 7 & \quad \text{the control byte of } j \gets t;\ \text{build } ( k , v )
  ///     \text{ in } j;\ n \gets n + 1;\ \textbf{return true}
  /// \end{array}}
  /// \f]

@@ -2100,7 +2100,11 @@ with digits of 2 bits, the data of figure 11.8 of [Morin
 floating point numbers of at most 8 bytes (the concept `RadixKey`), with
 bytes as digits, between the vector and a buffer
 ([Algorithm 12.21](12-sort.md#alg-12-21)): $O( w ( n + 256 ) )$ time for
-keys of $w$ bytes, and no comparison. Its keys come from `radixKey()`,
+keys of $w$ bytes, and no comparison. The buffer of trivial items is the
+block that `ScratchRoom` of `Scratch.h` keeps between the calls
+([Algorithm 25.13](25-parallel.md#alg-25-13)), whose pages a call before
+has already faulted in, so that a sort does not pay the faults of fresh
+pages, which cost about as much as the moves of the items into them. Its keys come from `radixKey()`,
 which makes the bits of a number an unsigned integer whose order is that of
 the numbers: the sign bit flipped for a signed integer (exercise 11.13 of
 [Morin 2013](Z-bibliography.md#ref-morin-cpp), whose radix sort takes the

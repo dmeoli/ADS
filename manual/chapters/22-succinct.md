@@ -161,10 +161,15 @@ the 1 of rank $k$, which is the $( k - s_{b-1} )$-th 1 of the byte. $\square$
 In the implementation, the trailing zeros of the masked word give $b$, and
 the 1 inside the byte is read in a table of $256 \cdot 8$ bytes, indexed by
 the byte and by the rank in it, as in [Vigna
-2008](Z-bibliography.md#ref-vigna2008). The select has thus neither a loop
-nor an instruction of a particular processor, while the deposit of the bit
-$2^k$ on the 1s of the word (the instruction `pdep` of BMI2) would need a
-branch on the processor.
+2008](Z-bibliography.md#ref-vigna2008). This select has thus neither a
+loop nor an instruction of a particular processor, while the deposit of the
+bit $2^k$ on the 1s of the word (the instruction `pdep` of BMI2) would need
+a branch on the processor. `selectInWord()` takes, however, another branch
+with `ADS_WITH_HIGHWAY` on the targets where the compress of the bytes is
+one instruction (AVX-512 with VBMI2): the 1 is then found by [Algorithm
+18.5](18-combinatorial.md#alg-18-5), which [Lemma
+18.8](18-combinatorial.md#lem-18-8) proves, and the broadword code above
+runs on the other targets and in the constant expressions.
 
 We write the codes of the integers of [§21.7](21-compression.md#sec-21-7)
 on the streams of bits of `BitStream.h`. A `BitWriter` appends
@@ -196,9 +201,10 @@ and `push_back()` and `append()` take $O( 1 )$ amortized time. (iii)
 `readUnary()` reads $q$ zeros and the 1 in at most $\lfloor q / 64 \rfloor
 + 1$ steps of one word each.*
 
-*Proof.* (i) The constructor of $m$ bits takes $\lceil ( \lfloor m / 64
-\rfloor + 9 ) / 8 \rceil 8 \le \lfloor m / 64 \rfloor + 9$ words, rounded
-down to a multiple of 8, i.e., at least $\lfloor m / 64 \rfloor + 2$; an
+*Proof.* (i) The constructor of $m$ bits takes $\lfloor ( \lfloor m / 64
+\rfloor + 9 ) / 8 \rfloor 8 \le \lfloor m / 64 \rfloor + 9$ words, i.e.,
+$\lfloor m / 64 \rfloor + 9$ rounded down to a multiple of 8, and hence at
+least $\lfloor m / 64 \rfloor + 2$; an
 append grows the words by 8 only when fewer than $\lfloor m' / 64 \rfloor
 + 2$ are there for the new size $m'$, which keeps the count below
 $\lfloor m' / 64 \rfloor + 10$. The constructor writes 0s past the size,
@@ -333,7 +339,7 @@ time where the 1s are spread evenly, with about $576 / 6144$ to
 $576 / 3072$, i.e., 9.4% to 18.8%, of $m$ bits more for each value. A group that spans $2^{16}$ bits or more (quite a "sparse" one) has offsets that do not fit in 16
 bits; it is *sparse*, and its 1s are found by a binary search on the
 directory of rank between its ends, $O( \log( m / 256 ) )$ time in the worst
-case. A group that spans less is scanned over fewer than $2^{16} / 64 = 1024$ words, and usually over a few, as long as the bits are not "clustered". Also, a group of fewer than 32 bits $b$ (below about 1% of them) keeps the place of each one, and its select reads no bit at all. These are the trade-offs of the practical designs: we find them in the rank9 and the inventories of [Vigna 2008](Z-bibliography.md#ref-vigna2008), in the darray of [Okanohara and Sadakane 2007](Z-bibliography.md#ref-okanohara2007), and in the structures of [Gog and Petri 2014](Z-bibliography.md#ref-gog2014a).
+case. A group that spans less is scanned over fewer than $2^{16} / 64 = 1024$ words, and usually over a few, as long as the bits are not "clustered". Also, a group of at most 32 bits $b$ (below about 1% of them) keeps the place of each one, and its select reads no bit at all. These are the trade-offs of the practical designs: we find them in the rank9 and the inventories of [Vigna 2008](Z-bibliography.md#ref-vigna2008), in the darray of [Okanohara and Sadakane 2007](Z-bibliography.md#ref-okanohara2007), and in the structures of [Gog and Petri 2014](Z-bibliography.md#ref-gog2014a).
 
 We build the inventories of select in the constructor (`RankSelect`, the default), or at the first select of each value (`LazyRankSelect`), in a pass on the directory. A structure that only ranks then never pays for them; also, a `RankSelectOptions::Selects` asks for the selects of the 1s,
 of the 0s, of both or of neither. Note that the first call builds an inventory once,
@@ -347,7 +353,8 @@ built. We remark that the lazy form may cost the select 10 to 15%, since the loa
 fastest queries. `CompactRankSelect` is its compact counterpart, the flat
 directory of [Kurpicz 2022](Z-bibliography.md#ref-kurpicz2022), after the
 poppy of [Zhou, Andersen and Kaminsky 2013](Z-bibliography.md#ref-zhou2013),
-in about 3.5% of $m$ bits. It cuts the bits in superblocks of 4096 bits,
+in 3.125% of $m$ bits for the rank and less than 0.8% more for the select of
+each value. It cuts the bits in superblocks of 4096 bits,
 each one in 8 blocks of 512 bits, a line of the cache. One entry of 128
 bits per superblock holds the 1s before it since its top region of
 $2^{32}$ bits, in 32 bits, and the 1s before each of its blocks since the
@@ -379,8 +386,9 @@ With Highway, we cut the 8 words of the line at $i$ and count them a vector at a
 Its select keeps the superblock of each 4096-th bit $b$, in 32 bits each,
 i.e., at most $32 / 4096 < 0.8\%$ of $m$ bits for each value. It finds the $k$-th bit $b$ by a binary search on the entries between two samples. Then it finds the block by the 7 counts of the superblock, and the word by the sums of the 8 words of its line, both by comparisons with no branch; the bit is found by `selectInWord()`. This is $O( \log( m / 4096 ) )$ steps in the worst case,
 and $O( 1 )$ where the bits $b$ are spread "evenly" (a sample each 2 to 8 superblocks for a density between 1/2 and 1/8). Its trade with `RankSelect` is, roughly, the "classical" one of the literature: a sum of up to 8 words and a
-search of the entries instead of one word and an inventory, in 15 times
-fewer bits.
+search of the entries instead of one word and an inventory, in 8 times
+fewer bits for the rank (3.125% against 25%), and about 10 times fewer with
+the selects of both values (at most 4.7% against about 50%).
 
 `InterleavedRankSelect` takes the layout of SPIDER of
 [Laws et al. 2024](Z-bibliography.md#ref-laws2024), with the counts inside
@@ -432,7 +440,7 @@ count. $\square$
 
 [Table 22.2](22-succinct.md#tab-22-2) summarizes the four vectors of bits
 with rank and select. In our experience `RankSelect` is usually preferable when the queries dominate, since its rank typically reads one entry and one word; `CompactRankSelect`
-and `InterleavedRankSelect` cost about seven times fewer bits and a sum of
+and `InterleavedRankSelect` cost 8 to 10 times fewer bits and a sum of
 up to 8 words per rank, the second with one miss of the cache instead of
 two. `RRRBitVector` ([§22.5](22-succinct.md#sec-22-5)) is perhaps the one to choose when the 1s (or the 0s) are "rare", since its space follows (22.2) instead of
 $m$, at the price of the decoding of a block at each query. Their measured
@@ -596,7 +604,7 @@ $m \ell + m + \lfloor ( u_j - 1 ) / 2^\ell \rfloor + 1$ bits. The function `kind
 counts the blocks of each of the three codes, and `contains( x )` is a
 `nextGEQ()` here too, as in `LAVector`.
 
-![Figure 22.6. The sequence 3, 4, 5, 6, 7, 8, 9, 10, 20, 41, 70, 99 in blocks of 4 items (128 in the library): the first block is a vector of 7 bits, the second (violet) holds all the values of its range and takes no bit, the third is coded by Elias-Fano; each block has a record with its last item and the place of its code.](../figures/succinct-pef.svg){#fig-22-6}
+![Figure 22.6. The sequence 3, 4, 5, 6, 7, 8, 9, 10, 20, 41, 70, 99 in blocks of 4 items (128 in the library): the first block is a vector of 7 bits, the second (violet) holds all the values of its range and takes no bit, the third is coded by Elias-Fano; the record of each block holds $b_j$ and the place of its code relative to those of its superblock (of 16 blocks in the library, which also keeps in each record the place of the 1 of rank 64 of the code and its kind).](../figures/succinct-pef.svg){#fig-22-6}
 
 <span id="lem-22-9"></span>**Lemma 22.9.** *A block of $m$ items with
 $u > m$ costs at most $\min\{ u , \, 2 m + m \lceil \log_2( u / m ) \rceil \}$
@@ -629,15 +637,39 @@ $m_j / n$), $\sum_j m_j \log_2( u_j / m_j ) \le n \log_2( \sum_j u_j / n )
 \le n \log_2( u / n )$. $\square$
 
 We remark that the extra bit per item of (22.10) comes from the rounding
-of the logarithm in each block, and it can be reached: on two blocks with
-$u_1 / m = 1.5$ and $u_2 / m = 2.5$ the ceilings sum to 3 per item, while
-the whole sequence, with $u / n = 2$, has 1.
+of the logarithm in each block, and it is approached: on two blocks of $m$
+items with $u_1 / m = 1.5$ and $u_2 / m = 2.5$ the ceilings give 1 and 2,
+i.e., 1.5 bits per item, while the whole sequence, with $u / n = 2$, has
+$\log_2( u / n ) = 1$, half a bit less; and if every block has $u_j / m =
+2 + \delta$, the ceilings give 2 bits per item against $\log_2( 2 + \delta
+)$, which tends to 1 as $\delta$ tends to 0.
 
-Besides, the records of the blocks cost a field of fixed width per block: the last item, the place of the code, and its kind with $\ell$ in 8 bits (so that a query computes no logarithm). Also, the last item of each eighth block is kept apart for the searches. On the dense runs of an inverted index the cost is usually far smaller than that of Elias-Fano. The function `access( i )` reads the
-records of the block of $i$ and of the one before (next to each other) and
-selects the item in the code of the block, a scan of its few words. Also, `nextGEQ( x )` finds the first block whose last item is at least $x$ by a search of the items apart in the layout of Eytzinger ([Khuong and Morin 2017](Z-bibliography.md#ref-khuong2017)), a complete binary tree by levels whose descent fetches the nodes three levels ahead. At most 8 records follow, and the item is found in its block by the high
-part, or by the sideways sums of the vector up to $x$
-([Algorithm 22.10](22-succinct.md#alg-22-10)). Ottaviano and Venturini also
+Besides, each block has a record of one word (two if its fields do not
+fit in one): $b_j$ and the place of its code, both relative to those of the
+first block of its *superblock* of 16 blocks, the place of the 1 of rank 64
+in its code (in the high part, or in the vector), and its kind with $\ell$
+in 8 bits (so that a query computes no logarithm). Each superblock keeps
+its $b$ and its place in full, and a table of *buckets* $H$ gives, for each
+$t$, the last superblock whose $b$ is below $t 2^s$, with $s$ the least
+shift that leaves at most one bucket per superblock (and one more). The
+records thus take half a bit per item (one bit when they need two words),
+the superblocks $1 / 16$ of a bit and the buckets at most $1 / 64$, and on
+the dense runs of an inverted index the cost is usually far smaller than
+that of Elias-Fano. The function `access( i )` reads the record of the block
+of $i$ and the two words of its superblock, and selects the item in the code
+of the block, from the start of the code or, for the items of rank 64 or
+more in the block, from the 1 of rank 64; the select reads 4 words at once
+and chooses the word of the 1 with no branch, and it goes on word by word
+only when the 1 lies past them. Also, `nextGEQ( x )` finds the last
+superblock whose $b$ is at most $x$ by a binary search between the
+superblocks $H[ t ]$ and $H[ t + 1 ]$, $t = \lfloor x / 2^s \rfloor$ (one
+or two of them on items spread evenly), and then the last block $j$ with
+$b_j \le x$ by a count with no branch over the other 15 records of that
+superblock. The item is then found in the block $j$ by its high part, or by
+the sideways sums of the vector up to $x$, both from the 1 of rank 64 when
+$x$ lies beyond it ([Algorithm 22.10](22-succinct.md#alg-22-10)), and
+[Lemma 22.10](22-succinct.md#lem-22-10) states the costs.
+Ottaviano and Venturini also
 choose the ends of the blocks by an approximate dynamic program on the cost
 of the codes, which gains a further 10% or so on the lists of an index; the
 blocks here have the fixed size of their uniform partition.
@@ -652,6 +684,71 @@ access and the search of the partitioned Elias-Fano
 
 --8<-- "generated/PartitionedEliasFano-nextGEQ.pseudo.md"
 
+<span id="lem-22-10"></span>**Lemma 22.10.** *Let $B = 128$, let the
+block $j$ have $m$ items, and let $s$ be the shift of the buckets. (i)
+`access( i )` returns $x_i$, and it reads the one or two words of the
+record of the block of $i$, the two words of its superblock, at most two
+words of low bits, and the words of the code of the block from the word of
+its start, or of its 1 of rank 64 when $i \bmod B \ge 64$, up to the word
+of the 1 sought: the 4 words read at once when that 1 lies in them, and at
+most 10 words in any case. (ii) `nextGEQ( x )` returns the place of the
+first item not less than $x$ ($n$ if there is none), after $O( 1 + \log(
+H[ t + 1 ] - H[ t ] + 1 ) )$ reads of the superblocks for $t = \lfloor x /
+2^s \rfloor$, at most 15 reads of records besides the one of the block
+found, and $O( 1 )$ words of its code, plus, in a block coded by
+Elias-Fano, the low parts of at most $\min( m , 2^\ell )$ items.*
+
+*Proof.* (i) Let $j = \lfloor i / B \rfloor$ and $k = i \bmod B$. The
+fields of a record have the widths of the largest values that they take,
+fixed by the construction, and the record and the two words of the
+superblock therefore give $b_j$ and the place $p$ of the code exactly. A
+full block holds the values $0 , \ldots , m - 1$, and $x_i = b_j + k$. In
+a vector the $k$-th 1 from $p$ is at $p + v_k$, $v_k = x_i - b_j$. In
+Elias-Fano the item $k$ has its high part $\lfloor v_k / 2^\ell \rfloor$
+written as the 1 at the place $h + \lfloor v_k / 2^\ell \rfloor + k$ of the
+high part, which starts at $h = p + m \ell$, and its low part at $p + k
+\ell$; hence the place $a$ of the $k$-th 1 from $h$ gives $v_k = ( a - h -
+k ) 2^\ell$ plus the low part, which spans at most two words. When $k \ge
+64$, the select starts instead from the 1 of rank 64 of the code, whose
+place the record holds, and looks there for the 1 of rank $k - 64$, which
+is the same 1. The select reads the 4 words from the word of its start (the
+128 bits of 0 after the codes, and the word that a `BitVector` keeps
+past its last bit, keep them in the vector), and chooses among
+them by comparisons of their prefix sums; past them, it reads word by word
+up to the 1, which lies in the code of the block. A high part takes $m +
+\lfloor ( u_j - 1 ) / 2^\ell \rfloor + 1 \le 3 m$ bits, since $u_j < m
+2^{\ell + 1}$. A vector is chosen only if $u_j$ is at most the bits of
+Elias-Fano; with $\ell = \lfloor \log_2( u_j / m ) \rfloor \ge 1$ this gives
+$m ( 2^\ell - 1 ) \le u_j ( 1 - 2^{-\ell} ) \le m ( \ell + 1 ) + 1$, i.e.,
+$\ell \le 2$, and then $u_j \le 4 m + 1$, while $u_j < 2 m$ for $\ell = 0$.
+A code thus takes at most $4 B + 1 = 513$ bits, which meet at most 10
+words.
+
+(ii) If $n = 0$ or $x$ is above the last item, the answer is $n$.
+Otherwise $t \le \lfloor x_{n-1} / 2^s \rfloor$, and $H[ t ]$ and $H[ t + 1
+]$ exist. Let $c_q$ be the $b$ of the superblock $q$, which increases with
+$q$ since the $b_j$ do. $H[ t ]$ is the last superblock with $c_q < t 2^s
+\le x$, or 0, whose $c_0 = 0 \le x$; and every superblock after $H[ t + 1
+]$ has $c_q \ge ( t + 1 ) 2^s > x$. Hence the last superblock with $c_q
+\le x$ lies in $[ H[ t ] , H[ t + 1 ] ]$, where the binary search finds
+it. In it the first block has $b = c_q \le x$, the $b_j$ increase, and the
+next superblock starts above $x$; hence the first block plus the count of
+the others with $b_j \le x$ is the last block $j$ of the sequence with $b_j
+\le x$. The items before the block $j$ are at most $b_j - 1 < x$, and the
+last item of $j$ is at least $x$, since it is $b_{j+1} - 1 \ge x$ if $j$ is
+not the last block, and the last item of the sequence otherwise. The answer
+is therefore $B j$ plus the number of the values of the block below $v = x
+- b_j$: $v$ itself in a full block, and the 1s of the first $v$ bits in a
+vector, counted from the 1 of rank 64 (plus 64) when $v$ is beyond it. In
+Elias-Fano the values with a high part below $\lfloor v / 2^\ell \rfloor$
+are those whose 1 precedes the 0 that closes the bucket $\lfloor v / 2^\ell
+\rfloor - 1$ of the high part, found by a select of the 0s (from the 1 of
+rank 64 when there are fewer 0s before it), and the values of the bucket of
+$v$, whose 1s follow that 0, are then compared with $v$ by their low parts
+in increasing order. A bucket holds at most $\min( m , 2^\ell )$ values,
+and the selects and the counts read $O( 1 )$ words of a code of at most 513
+bits, as in (i). $\square$
+
 Elias-Fano spends on each item the same bits, whatever the regularity of
 the gaps. In the LA-vector of [Boffa, Ferragina and Vinciguerra 2021](Z-bibliography.md#ref-boffa2021) (`LAVector`) one spends them instead on
 the distance of each item from a line. We cover the points $( i , x_i )$ by the fewest segments whose lines are within $\epsilon$ of each of their
@@ -662,7 +759,7 @@ respect to the line of its segment ([Figure 22.7](22-succinct.md#fig-22-7)).
 
 ![Figure 22.7. The points $( i , x_i )$ of a sequence of 16 items covered by two segments, each line with its band of half-width $\epsilon = 2$; the item 5 (violet) is stored as its correction $C[ 5 ]$, its distance from the line of its segment.](../figures/succinct-lavector.svg){#fig-22-7}
 
-<span id="lem-22-10"></span>**Lemma 22.10 (the corrections).** *Let the
+<span id="lem-22-11"></span>**Lemma 22.11 (the corrections).** *Let the
 segment $j$, over the places $[ p_j , p_{j+1} )$, have a line
 $f( i ) = x_{p_j} + \gamma + \alpha ( i - p_j )$ with
 $| f( i ) - x_i | \le \epsilon$ for each of its places, and let
@@ -787,7 +884,7 @@ numbered by the places of their bits; the data of a node go in a vector
 indexed by its number. We give three codes, which differ in the operations
 that they answer in constant time.
 
-<span id="lem-22-11"></span>**Lemma 22.11 (the binary tree of
+<span id="lem-22-12"></span>**Lemma 22.12 (the binary tree of
 Jacobson).** *Complete a binary tree of $n$ nodes with a leaf in place of
 each missing child, and write by levels a 1 for a node and a 0 for a leaf
 added, in $B[ 1 , 2 n + 1 ]$. Then the children of the $x$-th node are at
@@ -808,7 +905,7 @@ $2 n + 1 + o( n )$ bits, within $O( \log n )$ of the lower bound, with
 `left()`, `right()` and `parent()` in $O( 1 )$ time
 ([Figure 22.9](22-succinct.md#fig-22-9)). In the library the nodes are numbered $0 , \ldots , n - 1$ by levels and
 the places from 0, i.e., the node $v$ is the $( v + 1 )$-th node and the
-place $q$ is the place $q + 1$ of Lemma 22.11. Then the node $v$ is at the
+place $q$ is the place $q + 1$ of Lemma 22.12. Then the node $v$ is at the
 place $\mathrm{select}_1( v + 1 )$; its left child is at the place $2 ( v
 + 1 ) - 1 = 2 v + 1$, and it is the node $\mathrm{rank}_1( 2 v + 1 )$ if
 that place holds a 1; and its parent is the $\lfloor ( \mathrm{select}_1(
@@ -836,7 +933,7 @@ writes the degree $d$ of each node, by levels, as $0^d 1$. Hence the code has $n
 one per node and the dummy root, i.e., $2 n + 1$ bits
 ([Figure 22.10](22-succinct.md#fig-22-10)).
 
-<span id="lem-22-12"></span>**Lemma 22.12.** *In the code of LOUDS, the
+<span id="lem-22-13"></span>**Lemma 22.13.** *In the code of LOUDS, the
 $k$-th 0 is the $k$-th node by levels, and the children of the $k$-th node
 are the 0s after the $( k + 1 )$-th 1. Hence, with the nodes numbered from
 0 and the places from 0,*
@@ -890,7 +987,7 @@ $$
 `findOpen()` and `enclose()`, the open parenthesis of the pair that
 encloses the one at $i$.
 
-<span id="lem-22-13"></span>**Lemma 22.13.** *In a balanced sequence of
+<span id="lem-22-14"></span>**Lemma 22.14.** *In a balanced sequence of
 parentheses, (i) (22.15) gives the closed parenthesis that matches the open
 one at $i$; (ii) `findOpen( j )` is $k + 1$ for the last $k < j$ with $E( k
 ) = E( j )$, and `enclose( i )` is $k + 1$ for the last $k < i$ with $E( k
@@ -927,7 +1024,7 @@ a complete binary tree over the groups, the total excess of its range and
 its minimum prefix excess. A search runs on the excess relative to its
 start, and needs no rank. It scans the leaf of $i$ a byte at a time, with the excess, the minimum and the place of each target of each of the 256 bytes in tables. Then it scans the leaves of the group of $i$ by their excess and minimum in 16 bits. At last it climbs the tree, whose leaves are the groups, to the first range on its side whose minimum reaches the target, and goes down to its group, its leaf and its byte
 ([Algorithm 22.15](22-succinct.md#alg-22-15)). A range whose minimum stays above the target holds no answer, by (iii) of
-[Lemma 22.13](22-succinct.md#lem-22-13), and it is skipped whole; the
+[Lemma 22.14](22-succinct.md#lem-22-14), and it is skipped whole; the
 first range on the side of the search whose minimum reaches the target
 holds the answer, again by (iii). The search thus scans at most two leaves
 of $512 / 8$ bytes, two groups of 16 leaves, and climbs and descends the
@@ -949,7 +1046,8 @@ the forward search of `findClose()`
 
 In space, the tree takes $32 / 512$ bits per parenthesis for the leaves (6.25%) and
 at most $4 \cdot 128 / 8192$ for the groups, besides the directory of rank
-of `CompactRankSelect`, 3.5% of the bits, since no search needs a rank.
+of `CompactRankSelect`, 3.125% of the bits besides its samples of select,
+since no search needs a rank.
 The function `forwardSearch( i , d )` gives the first $j > i$ with $E( j ) - E( i ) = d < 0$. This may also be the end of a subtree of the code
 by the degrees in depth (`ADS/dictionary/SuccinctPatriciaTrie.h`).
 [Jacobson 1989](Z-bibliography.md#ref-jacobson1989) gives `findClose()` in
@@ -971,7 +1069,7 @@ an ancestor of $v$ if $u \le v < u + \mathrm{subtreeSize}( u )$, the test
 of `isAncestor( u , v )`. These may cost a search of the range min-max tree, or a select and a rank for
 `leftmostChild()`, `depth()` and `isLeaf()`.
 
-<span id="lem-22-14"></span>**Lemma 22.14.** *With the node $v$ at the
+<span id="lem-22-15"></span>**Lemma 22.15.** *With the node $v$ at the
 open parenthesis $i$ and its match at $j$, the subtree of $v$ has $( j - i +
 1 ) / 2$ nodes, numbered $v , \ldots , v + ( j - i - 1 ) / 2$ in preorder,
 the depth of $v$ is $E( i ) - 1$, and the formulas of `parent()`,
@@ -985,7 +1083,7 @@ ancestors of $v$, and the others before $i$ are matched before it; hence
 $E( i - 1 )$ is the number of the proper ancestors of $v$, which is its
 depth, and $E( i ) - 1 = E( i - 1 )$. The parent of $v$ is the nearest of
 these ancestors, the pair that encloses $i$
-([Lemma 22.13](22-succinct.md#lem-22-13)); the first child of $v$, if
+([Lemma 22.14](22-succinct.md#lem-22-14)); the first child of $v$, if
 any, is entered right after $v$, at $i + 1$, and it is the node $v + 1$;
 the next sibling of $v$, if any, is entered right after leaving $v$, at $j
 + 1$. Finally, $u$ is an ancestor of $v$ (or $v$ itself) if and only if $v$
@@ -1014,7 +1112,7 @@ their costs, for $n$ nodes and $m$ edges.
 |---|---|---|
 | `JacobsonTree` | $2 n + 1 + o( n )$ | the children and the parent of a binary tree in $O( 1 )$ |
 | `LoudsTree` | $2 n + 1 + o( n )$ | the parent, the degree, the $i$-th child and the next sibling in $O( 1 )$ |
-| `BPTree`, on `BalancedParentheses` | $2 n$, and 6.25% of them for the leaves of the range min-max tree, at most as much for its groups and 3.5% for a rank directory | also the size of a subtree, the depth and the ancestors, by a search of the excess |
+| `BPTree`, on `BalancedParentheses` | $2 n$, and 6.25% of them for the leaves of the range min-max tree, at most as much for its groups and 3.125% for a rank directory | also the size of a subtree, the depth and the ancestors, by a search of the excess |
 | `EliasFanoGraph` | $m ( 2 + \lceil \log_2( n^2 / m ) \rceil ) + n ( 2 + \lceil \log_2( m / n ) \rceil )$ | the outdegree and the $i$-th successor in $O( 1 )$, an edge by a `nextGEQ()` |
 | `BVGraph` | about 3 per edge on the Web graphs | a list in $O( R d )$, $R$ the longest chain of references |
 | `K2Tree` | $k^2 m ( \log_{k^2}( n^2 / m ) + O( 1 ) )$ in the worst case | an edge in $O( h )$, the successors and the predecessors of a node |
@@ -1026,7 +1124,7 @@ Our wavelet matrix, that of [Claude, Navarro and Ordóñez 2015](Z-bibliography.
 $w$ bits in $n w$ bits plus the directories of rank and select, with the
 access, the rank and the select of any symbol in $O( w )$ time.
 
-<span id="lem-22-15"></span>**Lemma 22.15 (the wavelet matrix).** *Let the
+<span id="lem-22-16"></span>**Lemma 22.16 (the wavelet matrix).** *Let the
 level $\ell$ of $S$ hold the bit $w - 1 - \ell$ of each item, the items
 passing to the next level stably sorted by that bit, the $Z_\ell$ with a 0
 first. Then the item at the place $i$ of a level is at the place*
@@ -1059,7 +1157,9 @@ and `countLess( i , j , c )` sums the 0s that the range leaves at the levels
 where $c$ has a 1 ([Algorithm 22.17](22-succinct.md#alg-22-17)). Instead, the wavelet tree of [Grossi, Gupta and Vitter 2003](Z-bibliography.md#ref-grossi2003) splits the alphabet in halves at its nodes, which need a pointer or an offset each. Our matrix keeps instead one vector of $n$ bits per level and no tree, at the same costs, and it is arguably the form of choice for the large alphabets, and the base
 of the compressed indices of the integers ([Navarro 2014](Z-bibliography.md#ref-navarro2014b)
 surveys the uses of the wavelet trees). Each level carries the directory of
-`RankSelect`, and the matrix therefore takes about $1.5 \, n w$ bits, a
+`RankSelect` with both inventories of select (25% of the bits for the rank
+and 9.4% to 18.8% for each inventory on bits spread evenly), and the matrix
+therefore takes about $1.5 \, n w$ bits, a
 query of rank being $2 w$ ranks of one load and one sideways sum each.
 
 <span id="alg-22-17"></span>**Algorithm 22.17.** The access, the rank, the
@@ -1076,12 +1176,12 @@ select, the quantile and the count of the wavelet matrix
 
 --8<-- "generated/WaveletMatrix-countLess.pseudo.md"
 
-<span id="lem-22-16"></span>**Lemma 22.16.** *For $0 \le i < j \le n$
+<span id="lem-22-17"></span>**Lemma 22.17.** *For $0 \le i < j \le n$
 and $k < j - i$, `quantile( i , j , k )` returns the $k$-th smallest item
 of $S[ i .. j - 1 ]$, from 0, and `countLess( i , j , c )` the number of
 its items smaller than $c$, each with $2 w$ ranks.*
 
-*Proof.* By [Lemma 22.15](22-succinct.md#lem-22-15), before the level
+*Proof.* By [Lemma 22.16](22-succinct.md#lem-22-16), before the level
 $\ell$ the range $[ i , j )$ holds exactly the items of the original range
 whose first $\ell$ bits are those chosen so far, the prefix $c$ of the result. Line 4 computes the number $z$ of those whose next bit is 0,
 which by (22.16) go to the range $[ i - i_1 , j - j_1 )$ of the next level,
@@ -1119,7 +1219,7 @@ $k' = \mathrm{select}_b( B , \mathrm{rank}_b( B , o_v ) + k ) - o_v + 1$
 
 ![Figure 22.12. The wavelet tree of abracadabra shaped by the canonical code a 0, b 100, c 101, d 110, r 111 of its frequencies: each internal node keeps a bit for each item that reaches it (the items above the bits), and the bits of all the nodes are one vector, the nodes laid by levels.](../figures/succinct-huffmanwt.svg){#fig-22-12}
 
-<span id="lem-22-17"></span>**Lemma 22.17.** *The bits of the nodes of
+<span id="lem-22-18"></span>**Lemma 22.18.** *The bits of the nodes of
 `HuffmanWaveletTree` are $\sum_c f_c \ell_c < n ( H_0 + 1 )$, for the
 frequencies $f_c$ of the symbols.*
 
@@ -1129,7 +1229,9 @@ of the code of Huffman of the frequencies, which is below $H_0 + 1$ by
 (21.4). $\square$
 
 Beside the bits of $B$, the tree takes the directory of rank and select,
-25% of them with `RankSelect` and 3.5% with `CompactRankSelect` (the
+25% of them with `RankSelect` without the inventories of select and about
+50% with them, and 3.125% with `CompactRankSelect` besides less than 0.8%
+for the samples of each select (the
 template parameter `RS`, time against bits), and $O( \sigma )$ words of the
 nodes and of the codes. With `withSelect` false, the directory of `RankSelect` builds no inventory. This suits a tree that only ranks, such as the one of the FM-index of [§21.11](21-compression.md#sec-21-11).
 
@@ -1166,7 +1268,7 @@ whose image holds 4 starts at the third of them, so that the first part
 holds 2; the new start may weigh on another image (the cut may cascade), which is checked in
 turn ([Algorithm 22.19](22-succinct.md#alg-22-19)). Then the intervals become at most $2 r$ (Nishimoto and Tabei, for this
 balance), and the search forward takes at most 3 steps
-([Lemma 22.18](22-succinct.md#lem-22-18) below); hence each step of a walk costs $O( 1 )$ time, in
+([Lemma 22.19](22-succinct.md#lem-22-19) below); hence each step of a walk costs $O( 1 )$ time, in
 $O( r )$ words instead of the $n$ of the permutation written in full. On
 the runs of the transform of abracadabra (cf. [Table 21.7](21-compression.md#tab-21-7))
 the image of the run of a, the rows $[ 6 , 10 )$, is the rows $[ 2 , 6 )$,
@@ -1183,7 +1285,7 @@ of [Nishimoto and Tabei 2021](Z-bibliography.md#ref-nishimoto2021).
 
 --8<-- "generated/MoveStructure-move.pseudo.md"
 
-<span id="lem-22-18"></span>**Lemma 22.18.** *If the structure is
+<span id="lem-22-19"></span>**Lemma 22.19.** *If the structure is
 balanced, `move( x , i )` with $x \in [ p_i , p_{i+1} )$ returns $\pi( x
 )$ and the interval that holds it after at most 3 iterations of line 3.*
 
@@ -1230,7 +1332,7 @@ graph in Elias-Fano.
 
 --8<-- "generated/EliasFanoGraph-build.pseudo.md"
 
-<span id="lem-22-19"></span>**Lemma 22.19.** *Coding each list apart, in the universe of the list, takes*
+<span id="lem-22-20"></span>**Lemma 22.20.** *Coding each list apart, in the universe of the list, takes*
 
 $$
 \sum_u d_u \log_2 \frac{n}{d_u} \le m \log_2 \frac{n^2}{m} \tag{22.19}
@@ -1285,7 +1387,7 @@ The $k^2$-tree of [Brisaboa, Ladra and Navarro 2014](Z-bibliography.md#ref-brisa
 the levels but the last, and $L$ those of the cells
 ([Figure 22.15](22-succinct.md#fig-22-15)).
 
-<span id="lem-22-20"></span>**Lemma 22.20.** *The children of the node
+<span id="lem-22-21"></span>**Lemma 22.21.** *The children of the node
 marked at the place $p$ of $T$ start at the place
 $k^2 \, \mathrm{rank}_1( T , p + 1 )$ of $T$ followed by $L$.*
 
@@ -1341,7 +1443,7 @@ of the directories of `RankSelect` and of `CompactRankSelect`.
 
 --8<-- "generated/CompactRankSelect-directory.pseudo.md"
 
-<span id="lem-22-21"></span>**Lemma 22.21.** *The directories of
+<span id="lem-22-22"></span>**Lemma 22.22.** *The directories of
 [Algorithm 22.23](22-succinct.md#alg-22-23) are those of the sequential
 scan, with $O( m / 64 )$ words of work besides the samples of select.*
 
@@ -1361,8 +1463,8 @@ two passes over the chunks find from the entries by a select in a word
 We build the wavelet matrix faster, also on one thread, by a property of
 its levels that lets one pass over the items write several levels.
 
-<span id="lem-22-22"></span>**Lemma 22.22 (the levels by the reversed
-prefixes).** *In the wavelet matrix of [Lemma 22.15](22-succinct.md#lem-22-15),
+<span id="lem-22-23"></span>**Lemma 22.23 (the levels by the reversed
+prefixes).** *In the wavelet matrix of [Lemma 22.16](22-succinct.md#lem-22-16),
 let $b_j( c )$ be the bit at the level $\ell + j$ of the item $c$, and*
 
 $$
@@ -1374,7 +1476,7 @@ $$
 one. Then the order of the items at the level $\ell + j$ is the stable sort
 of their order at the level $\ell$ by $\kappa_j$.*
 
-*Proof.* By [Lemma 22.15](22-succinct.md#lem-22-15), the order at the
+*Proof.* By [Lemma 22.16](22-succinct.md#lem-22-16), the order at the
 level $\ell + j$ comes from the order at the level $\ell$ by $j$ stable
 partitions, by the bits $b_0 , \ldots , b_{j-1}$ in this order. A sequence
 of stable partitions by the bits of a key, from the least significant to
@@ -1392,7 +1494,7 @@ $$
 with $P_j[ a ]$ the items whose key is below $a$, and $Z_{\ell + j}$ is the
 number of the items with $b_j = 0$; both are sums of the counts of the $2^k$
 values of $\kappa_k$, from which each $\kappa_j = \kappa_k \bmod 2^j$
-follows. One scan of the items in the order of the level $\ell$ therefore writes the bits of the $k$ levels $\ell , \ldots , \ell + k - 1$ at the places (22.21), and moves the items to their order at the level $\ell + k$. By contrast, the construction by the partitions of [Lemma 22.15](22-succinct.md#lem-22-15)
+follows. One scan of the items in the order of the level $\ell$ therefore writes the bits of the $k$ levels $\ell , \ldots , \ell + k - 1$ at the places (22.21), and moves the items to their order at the level $\ell + k$. By contrast, the construction by the partitions of [Lemma 22.16](22-succinct.md#lem-22-16)
 moves them $k$ times, once per level. With $k \le 8$ this is $\lceil w / 8 \rceil$ passes over the items instead of $w$, the bits being written into $2^k - 1$ streams, one per value of $\kappa_j$ for each $j < k$. We recognize here the sort by the prefixes of the bits of
 [Dinklage, Ellert, Fischer, Kurpicz and Löbel 2021](Z-bibliography.md#ref-dinklage2021),
 applied to $k$ levels at a time ([Algorithm 22.24](22-succinct.md#alg-22-24)).
@@ -2103,7 +2205,7 @@ Each exercise names the test of the library that solves it (run it with
    arrays of trits five to a byte, built on several threads. Tests:
    `engineered_search.packed-array`, `engineered_search.trit-array`.
 9. Realize the binary tree of Jacobson, the tree of LOUDS
-   ([Lemma 22.12](22-succinct.md#lem-22-12)), the balanced parentheses with
+   ([Lemma 22.13](22-succinct.md#lem-22-13)), the balanced parentheses with
    the range min-max tree and the tree on them. Tests:
    `pearls_succinct.jacobson-tree`, `pearls_succinct.louds-tree`,
    `pearls_succinct.balanced-parentheses`, `pearls_succinct.bp-tree`.

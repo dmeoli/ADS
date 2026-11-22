@@ -8,13 +8,11 @@
  * producer pushes a cell on a stack with a compare-and-swap on its top (the
  * stack of Treiber); the consumer takes the whole stack at once by
  * exchanging its top with nil, and reverses it, so that the messages of
- * each producer come out in the order in which it sent them. Thus `take()`
- * costs one atomic operation however many messages there are, plus
- * \f$ O( k ) \f$ time for the \f$ k \f$ messages taken, and the consumer
- * never competes with the producers on single items; since the consumer
- * only takes the whole stack, and never pops a single cell, the ABA problem
- * of the stack of Treiber cannot occur (a cell used again is pushed as a new
- * one, above the top that its pusher read).
+ * each producer come out in the order in which it sent them, and the
+ * consumer never competes with the producers on single items; since the
+ * consumer only takes the whole stack, and never pops a single cell, the ABA
+ * problem of the stack of Treiber cannot occur (a cell used again is pushed
+ * as a new one, above the top that its pusher read).
  *
  * The cells come from blocks of 64 that each producing thread owns, one set
  * for each type of message, shared by all the inboxes it sends to: the
@@ -24,7 +22,14 @@
  * that brings it to 64 gives the block back to its owner, on a stack that
  * the owner empties at once (an exchange) when it needs a block, before it
  * allocates one. Thus a producer in a steady state cycles over the same
- * blocks, with no allocation, and the consumer frees nothing; a producer
+ * blocks, with no allocation, and the consumer frees nothing. Hence
+ * `take()` costs one exchange however many messages there are, one
+ * fetch-and-add per run of messages of one block, a loop of compare-and-swap
+ * per block given back, and \f$ O( k ) \f$ time for the \f$ k \f$
+ * messages taken: it is lock-free, and wait-free but for the blocks given
+ * back. A block is given back only after its consumers have moved out the
+ * messages of all its cells, so that a cell is never written again while a
+ * consumer reads it, nor pushed while it is in a stack. A producer
  * keeps for reuse all the blocks it ever held at once, at least
  * \f$ \lceil m / 64 \rceil \f$ for \f$ m \f$ of its messages in the
  * inboxes. A thread that ends frees the blocks it holds and closes its

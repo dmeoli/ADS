@@ -37,21 +37,28 @@
  * \f$ [ z_{q-1} + 1 - q , z_q - q ) \f$ of the body, \f$ z_q \f$ being the
  * place of the zero of rank \f$ q \f$ of the header (\f$ z_{-1} = -1 \f$):
  * with a zero put below the header, its zeros of ranks \f$ q \f$ and
- * \f$ q + 1 \f$ are \f$ z_{q-1} + 1 \f$ and \f$ z_q + 1 \f$, both found by
- * the broadword select of `selectInWord()` on the complement of the
- * header. A query compares the 32 bytes of the bin with
- * \f$ r \f$ at once (by the vectors of Highway with `ADS_WITH_HIGHWAY`
- * [see `SimdInline.h`], a byte at a time without it),
- * stops if no byte of the body is equal, as it is for about \f$ 91 \% \f$
- * of the keys out of \f$ S \f$ (\f$ 1 - ( 1 - 2^{-8} )^{23.75} \f$ of them
- * have one), and otherwise tells whether one of the equal bytes is in the
- * run of \f$ q \f$. A key not found in the bin is compared with the bound
- * of \f$ x \f$ in the bin, its largest fingerprint if it overflowed and
- * above every \f$ x \f$ if not, which is the 6 bits of the quotient and the
- * last byte of the body; the bound is out of the path of a key found, and
- * the only branch on the bin besides those on the equal bytes is the rare
- * one to the spare, out of line, a mispredicted branch on a load costing
- * the loads of the queries in flight. An insertion finds the place of
+ * \f$ q + 1 \f$ are \f$ z_{q-1} + 1 \f$ and \f$ z_q + 1 \f$, the first
+ * found by the broadword select of `selectInWord()` on the complement of
+ * the header, and the second by the trailing zeros of that complement past
+ * the first, i.e., by the \f$ c_q \f$ ones that follow it. A query compares
+ * the 32 bytes of the bin with \f$ r \f$ at once (by the vectors of
+ * Highway with `ADS_WITH_HIGHWAY` [see `SimdInline.h`], a byte at a time
+ * without it), stops if no byte of the body is equal, as it is for about
+ * \f$ 91 \% \f$ of the keys out of \f$ S \f$
+ * (\f$ 1 - ( 1 - 2^{-8} )^{23.75} \f$ of them have one), and otherwise
+ * tells whether one of the equal bytes is in the run of \f$ q \f$: if a
+ * single byte \f$ i \f$ is equal, by the bit \f$ i + q \f$ of the header
+ * and the number of the ones below it, with no select (the slot \f$ i \f$
+ * is in the run of \f$ q \f$ if and only if the one of rank \f$ i \f$ of
+ * the header is at the place \f$ i + q \f$, i.e., has \f$ q \f$ zeros
+ * below it), and if more are equal by the slots of the run. A key not
+ * found in the bin is compared with the bound of \f$ x \f$ in the bin,
+ * its largest fingerprint if it overflowed and above every \f$ x \f$ if
+ * not, which is the 6 bits of the quotient and the last byte of the body;
+ * the bound is out of the path of a key found, and the only branch on the
+ * bin besides those on the equal bytes is the rare one to the spare, out
+ * of line, a mispredicted branch on a load costing the loads of the
+ * queries in flight. An insertion finds the place of
  * \f$ r \f$ in its run by counting the bytes of the run below \f$ r \f$ (one
  * comparison of the 32 bytes), and moves the bytes above it by one within 4
  * words, while one
@@ -262,12 +269,21 @@ class PrefixFilter
  /// 1 & \textbf{function}\ \mathrm{maybeHash}( h ) \cr
  /// 2 & \quad b \gets \lfloor h_1 m / 2^{32} \rfloor;\ x \gets \lfloor h_0
  ///     s / 2^{32} \rfloor \cr
- /// 3 & \quad \textbf{if}\ x \bmod 2^8 \text{ is in the run of }
- ///     \lfloor x / 2^8 \rfloor \text{ of the bin } b\ \textbf{then return
- ///     true} \cr
- /// 4 & \quad \textbf{if}\ x > \text{the bound of the bin } b
+ /// 3 & \quad q \gets \lfloor x / 2^8 \rfloor;\ r \gets x \bmod 2^8;
+ ///     \ H \gets \text{the header of the bin } b;\ E \gets \text{the}
+ ///     \text{ slots of its body that hold } r \cr
+ /// 4 & \quad \textbf{if}\ E = \{ i \}\ \textbf{then}\ f \gets [ \text{the}
+ ///     \text{ bit } i + q \text{ of } H \text{ is 1, with } i \text{ ones}
+ ///     \text{ of } H \text{ below it} ] \cr
+ /// 5 & \quad \textbf{else if}\ E \ne \emptyset\ \textbf{then}\ u \gets 2
+ ///     H;\ z \gets \mathrm{select}_0( u , q );\ e \gets z + \text{the}
+ ///     \text{ ones of } u \text{ above } z \text{, up to its next 0} \cr
+ /// 6 & \qquad f \gets [ E \cap [ z - q , e - q ) \ne \emptyset ] \cr
+ /// 7 & \quad \textbf{else}\ f \gets \textbf{false} \cr
+ /// 8 & \quad \textbf{if}\ f\ \textbf{then return true} \cr
+ /// 9 & \quad \textbf{if}\ x > \text{the bound of the bin } b
  ///     \ \textbf{then return}\ \text{the answer of the spare to } s b + x \cr
- /// 5 & \quad \textbf{return false}
+ /// 10 & \quad \textbf{return false}
  /// \end{array}}
  /// \f]
  [[nodiscard]] bool maybeHash( std::uint64_t h ) const;

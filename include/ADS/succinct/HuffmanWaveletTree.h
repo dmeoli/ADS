@@ -34,8 +34,10 @@
  * \f]
  * The bits of \f$ B \f$ are \f$ \sum_c f_c \ell_c < n ( H_0 + 1 ) \f$ for
  * the frequencies \f$ f_c \f$, by the bound of the code of Huffman, plus the
- * directory of rank and select, 25% of them with `RankSelect`, 3.5% with
- * `CompactRankSelect` (the parameter `RS`: time against bits), and
+ * directory of rank and select, 25% of them with `RankSelect` without the
+ * inventories of select and about 50% with them, 3.125% with
+ * `CompactRankSelect` besides less than 0.8% for the samples of each
+ * select (the parameter `RS`: time against bits), and
  * \f$ O( \sigma ) \f$ words of the tree and of the codes.
  *
  * The contracts [see `Contract.h`]: the places and the counts are in range,

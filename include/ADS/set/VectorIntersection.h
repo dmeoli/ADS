@@ -107,15 +107,17 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{intersect}( a , n , b , m ) \cr
-/// 2 & \quad \textbf{if}\ 4 m < n\ \textbf{then return}\ \text{the items }
+/// 2 & \quad \textbf{if}\ n < m\ \textbf{then}\ \text{swap } ( a , n )
+///     \text{ with } ( b , m ) \cr
+/// 3 & \quad \textbf{if}\ 4 m < n\ \textbf{then return}\ \text{the items }
 ///     \text{of } b \text{ found in } a \text{ by galloping, as in }
 ///     \mathrm{intersectDoubling} \cr
-/// 3 & \quad i \gets 0;\ j \gets 0;\ k \gets 0 \cr
-/// 4 & \quad \textbf{while}\ i < n\ \textbf{and}\ j < m\ \textbf{do} \cr
-/// 5 & \qquad x \gets a[ i ];\ y \gets b[ j ];\ \mathit{out}[ k ] \gets x \cr
-/// 6 & \qquad k \gets k + [ x = y ];\ i \gets i + [ x \le y ];\ j \gets j
+/// 4 & \quad i \gets 0;\ j \gets 0;\ k \gets 0 \cr
+/// 5 & \quad \textbf{while}\ i < n\ \textbf{and}\ j < m\ \textbf{do} \cr
+/// 6 & \qquad x \gets a[ i ];\ y \gets b[ j ];\ \mathit{out}[ k ] \gets x \cr
+/// 7 & \qquad k \gets k + [ x = y ];\ i \gets i + [ x \le y ];\ j \gets j
 ///     + [ y \le x ] \cr
-/// 7 & \quad \textbf{return}\ k
+/// 8 & \quad \textbf{return}\ k
 /// \end{array}}
 /// \f]
 /// \pre \f$ a \f$ and \f$ b \f$ strictly increasing; `out` has room for

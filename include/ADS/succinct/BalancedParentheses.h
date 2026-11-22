@@ -39,8 +39,9 @@
  * most searches of a tree end in the leaf of \f$ i \f$, at the cost of a
  * miss of the cache. The tree takes \f$ 32 / 512 \f$ bits per parenthesis
  * for the leaves and at most \f$ 4 \cdot 128 / 8192 \f$ for the groups,
- * besides the rank directory [see `CompactRankSelect.h`], 3.5% of the
- * bits, since no search needs a rank. The excess of any place is
+ * besides the rank directory [see `CompactRankSelect.h`], 3.125% of the
+ * bits besides its samples of select, since no search needs a rank. The
+ * excess of any place is
  * \f$ E( i ) = 2 \, \mathrm{rank}_1( i + 1 ) - ( i + 1 ) \f$, in
  * \f$ O( 1 ) \f$ time.
  *

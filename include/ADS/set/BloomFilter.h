@@ -92,12 +92,13 @@ class BloomFilter
  /// \f$ x \f$ into the filter, by setting its \f$ k \f$ bits
  ///
  /// In pseudocode (Bloom, with the two hashes of Kirsch and Mitzenmacher),
- /// \f$ B \f$ the bits and \f$ h_2 \f$ odd:
+ /// \f$ B \f$ the bits and \f$ h_2 \f$ never 0:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{insert}( x ) \cr
- /// 2 & \quad h_1 \gets \mathrm{splitmix64}( h( x ) );\ h_2 \gets
- ///     \mathrm{splitmix64}( h_1 ) \vee 1 \cr
+ /// 2 & \quad h_1 \gets \mathrm{splitmix64}( h( x ) );\ h_2 \gets (
+ ///     \mathrm{splitmix64}( h_1 ) \vee 1 ) \bmod m;\ \textbf{if}\ h_2 = 0
+ ///     \ \textbf{then}\ h_2 \gets 1 \cr
  /// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ k - 1\ \textbf{do}
  ///     \ B[ ( h_1 + i h_2 ) \bmod m ] \gets 1
  /// \end{array}}
@@ -112,8 +113,9 @@ class BloomFilter
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{maybe}( x ) \cr
- /// 2 & \quad h_1 \gets \mathrm{splitmix64}( h( x ) );\ h_2 \gets
- ///     \mathrm{splitmix64}( h_1 ) \vee 1 \cr
+ /// 2 & \quad h_1 \gets \mathrm{splitmix64}( h( x ) );\ h_2 \gets (
+ ///     \mathrm{splitmix64}( h_1 ) \vee 1 ) \bmod m;\ \textbf{if}\ h_2 = 0
+ ///     \ \textbf{then}\ h_2 \gets 1 \cr
  /// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ k - 1\ \textbf{do} \cr
  /// 4 & \qquad \textbf{if}\ B[ ( h_1 + i h_2 ) \bmod m ] = 0\ \textbf{then
  ///     return false} \cr

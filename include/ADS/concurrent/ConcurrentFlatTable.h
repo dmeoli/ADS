@@ -360,39 +360,42 @@ class ConcurrentFlatTable
  /// 7 & \qquad \textbf{loop} \cr
  /// 8 & \qquad\quad x \gets W[ i ] \cr
  /// 9 & \qquad\quad \textbf{if}\ x = 0\ \textbf{and}\ \mathrm{CAS}( W[ i ] ,
- ///     0 , w )\ \textbf{then}\ c_t \gets c_t - 1 + 2^{16};
- ///     \ \textbf{return}\ ( w , \textbf{true} ) \cr
- /// 10 & \qquad\quad \textbf{if}\ x = 0\ \textbf{then}\ x \gets W[ i ]
+ ///     0 , w )\ \textbf{then} \cr
+ /// 10 & \qquad\qquad c_t \gets c_t - 1 + 2^{16}\quad \triangleright
+ ///     \ \text{the pairs of the thread from the bit 16} \cr
+ /// 11 & \qquad\qquad \textbf{if}\ \text{they are a multiple of } 2^{\min(
+ ///     \max( l - 10 , 0 ) , 10 )} \text{ and the pairs of all the threads}
+ ///     \text{ pass } 2^{l-1} \ \textbf{then}\ \mathrm{grow}( l + 1 ) \cr
+ /// 12 & \qquad\qquad \textbf{return}\ ( w , \textbf{true} ) \cr
+ /// 13 & \qquad\quad \textbf{if}\ x = 0\ \textbf{then}\ x \gets W[ i ]
  ///     \quad \triangleright\ \text{written by another thread} \cr
- /// 11 & \qquad\quad \textbf{if}\ x \text{ holds } k\ \textbf{then}
+ /// 14 & \qquad\quad \textbf{if}\ x \text{ holds } k\ \textbf{then}
  ///     \ c_t \gets c_t - 1;\ \textbf{return}\ ( x , \textbf{false} ) \cr
- /// 12 & \qquad\quad i \gets ( i + 1 ) \bmod 2^l;\ r \gets r + 1 \cr
- /// 13 & \qquad\quad \textbf{if}\ r > 128\ \textbf{and}\ \text{the table}
+ /// 15 & \qquad\quad i \gets ( i + 1 ) \bmod 2^l;\ r \gets r + 1 \cr
+ /// 16 & \qquad\quad \textbf{if}\ r > 128\ \textbf{and}\ \text{the table}
  ///     \text{ is } 1/8 \text{ full}\ \textbf{then break} \cr
- /// 14 & \qquad c_t \gets c_t - 1;\ \mathrm{grow}( l + 1 ) \cr
- /// 15 & \textbf{procedure}\ \mathrm{grow}( l' ) \cr
- /// 16 & \quad \textbf{if}\ \mathrm{CAS}( g , \textbf{false} , \textbf{true}
+ /// 17 & \qquad c_t \gets c_t - 1;\ \mathrm{grow}( l + 1 ) \cr
+ /// 18 & \textbf{procedure}\ \mathrm{grow}( l' ) \cr
+ /// 19 & \quad \textbf{if}\ \mathrm{CAS}( g , \textbf{false} , \textbf{true}
  ///     )\ \textbf{then} \cr
- /// 17 & \qquad \textbf{while}\ \text{some } c_t > 0\ \textbf{do}
+ /// 20 & \qquad \textbf{while}\ \text{some } c_t > 0\ \textbf{do}
  ///     \ \text{a pause} \cr
- /// 18 & \qquad W' \gets 2^{l'} \text{ words } 0;\ \text{publish } W'
+ /// 21 & \qquad W' \gets 2^{l'} \text{ words } 0;\ \text{publish } W'
  ///     \text{ for the helpers} \cr
- /// 19 & \qquad \mathrm{help}();\ \textbf{wait until}\ \text{all the}
+ /// 22 & \qquad \mathrm{help}();\ \textbf{wait until}\ \text{all the}
  ///     \text{ blocks are copied} \cr
- /// 20 & \qquad W \gets W';\ g \gets \textbf{false}\quad \triangleright
+ /// 23 & \qquad W \gets W';\ g \gets \textbf{false}\quad \triangleright
  ///     \ \text{release} \cr
- /// 21 & \quad \textbf{else}\ \mathrm{help}() \cr
- /// 22 & \textbf{procedure}\ \mathrm{help}() \cr
- /// 23 & \quad \textbf{while}\ g\ \textbf{do} \cr
- /// 24 & \qquad \textbf{foreach}\ \text{block of } 4096 \text{ words of } W
+ /// 24 & \quad \textbf{else}\ \mathrm{help}() \cr
+ /// 25 & \textbf{procedure}\ \mathrm{help}() \cr
+ /// 26 & \quad \textbf{while}\ g\ \textbf{do} \cr
+ /// 27 & \qquad \textbf{foreach}\ \text{block of } 4096 \text{ words of } W
  ///     \text{ claimed by a counter}\ \textbf{do} \cr
- /// 25 & \qquad\quad \textbf{foreach}\ x \ne 0 \text{ in the block}
+ /// 28 & \qquad\quad \textbf{foreach}\ x \ne 0 \text{ in the block}
  ///     \ \textbf{do}\ \text{put } x \text{ at the first free place of its}
  ///     \text{ key in } W' \text{, by a CAS}
  /// \end{array}}
  /// \f]
- /// The insertions of the pairs counted at line 9 make the table grow,
- /// by `grow()`, when the sum of the counters passes half the places.
  /// \pre `hash( k )` is \f$ h \f$ (audit)
  std::pair< Ref , bool > findOrInsert( const K & k , std::uint64_t h ,
 				      const V & v );

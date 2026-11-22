@@ -1935,8 +1935,8 @@ k P$ for $k = \mathrm{lcm}( 1 , \ldots , B_1 )$ by the ladder of
 Montgomery on the words of $k$, computed at compile time, i.e., a sum and
 a double per bit (10 products), the bit choosing by swaps with no branch
 which point is doubled; the stage 2 catches one more prime $q \in ( B_1 ,
-B_2 ]$ of the order, written as $q = i D \pm j$ with $D = 60$ and $j < D
-/ 2$ prime to $D$, since $q Q$ is neutral if and only if $X_{iD} Z_j -
+B_2 ]$ of the order, written as $q = i D \pm j$ with $j < D / 2$ prime to
+$D$, and $D = 24$, 36 or 60 as $B_1$ is below 36, below 60 or not, since $q Q$ is neutral if and only if $X_{iD} Z_j -
 X_j Z_{iD} \equiv 0$, computed as $( X_{iD} - X_j ) ( Z_{iD} + Z_j ) -
 X_{iD} Z_{iD} + X_j Z_j$ (2 products, one for both $i D - j$ and $i D +
 j$, and only for the pairs of a prime, read in a table of bits computed at
@@ -1968,6 +1968,51 @@ word by the elliptic curves of Lenstra and the rho of Pollard and Brent.
 
 --8<-- "generated/NumberTheory-factorize.pseudo.md"
 
+Each split of a composite cofactor $m$ thus ends: the root of a square is
+exact, the elliptic curves stop after 64 curves, and a run of the rho stops
+too, since its sequence is periodic modulo a prime of $m$ from some term on,
+and the doubling of $r$ eventually compares two terms of the cycle. The
+following lemma states what `factorize()` returns.
+
+<span id="lem-17-19"></span>**Lemma 17.19.** *If `factorize( n )`
+returns, it returns the prime factors of $n$ with their multiplicity, in
+increasing order, after fewer than $\log_2 n$ splits of a composite
+cofactor.*
+
+*Proof.* We show that, at each test of the loop of line 4 of [Algorithm
+17.27](17-numeric.md#alg-17-27), (a) the product of the items of $F$ and of
+$T$ is $n$, (b) each item of $F$ is a prime, and (c) each item of $T$ is
+greater than 1 and is a prime or has no prime factor below 4096. The
+divisions of lines 2 and 3 move each prime $p$ that divides the current
+cofactor from it to $F$, once per multiplicity, by the exact test of
+divisibility that precedes [Algorithm 17.26](17-numeric.md#alg-17-26), and
+they keep (a) and (b). They stop either at the first prime $p$ with $p^2$
+above the cofactor, which then has no prime factor below $p$ and is 1 or a
+prime, or after the last prime below 256 (below 4096 in line 3), and the
+cofactor then has no prime factor below that bound. A cofactor below
+$256^2$ with no prime factor below 256 is 1 or a prime, since a composite
+has a prime factor at most its square root, and `isPrime()` is exact on 64
+bits; hence the cofactor that line 3 puts in $T$ satisfies (c). In the loop, an item $m$ below $4096^2$ is a prime by (c)
+and by the same argument, as is one that `isPrime()` accepts, and line 6
+keeps (b). Otherwise $m$ is composite, and the $d$ of lines 7 and 8
+divides $m$ with $1 < d < m$: it is the root of a square, or a gcd with $m$
+that `ecm()` returns only if $1 < g < m$, or the gcd of the rho, whose loop
+over $c$ stops only on $1 < g < m$. Then $d$ and $m / d$ are greater than
+1, their product is $m$, and their prime factors are among those of $m$,
+which keeps (a) and (c). Each split replaces an item by two items of at
+least 2 with the same product, and since the items of $F$ and of $T$ are at
+least 2 and multiply to $n$, they are at most $\log_2 n$, and the splits
+fewer than $\log_2 n$. When $T$ is empty, (a) and (b) say that $F$ is a
+factorization of $n$ into primes, which is unique, and the last line sorts
+it. $\square$
+
+We remark that the lemma assumes that `factorize()` returns, i.e., that for
+each composite $m$ given to the rho some $c$ gives a proper factor. Each
+run ends, as said above, but it may return $m$ itself, and that a further
+$c$ then succeeds is the usual heuristic assumption on the map $x \mapsto
+x^2 + c$ (a random map), which we do not prove; the audit of
+`factorize()` checks its result against `isPrime()`.
+
 **Sieve of Eratosthenes.** `sieve()` is the sieve of Eratosthenes on a SET of the
 integers from 2 to $n$ (`BoolSet` of `ADS/set`): the least item $p$ left in
 the set is a prime, and its multiples are removed from $p^2$ on, since the
@@ -1979,7 +2024,7 @@ Eratosthenes.
 
 --8<-- "generated/NumberTheory-sieve.pseudo.md"
 
-<span id="lem-17-19"></span>**Lemma 17.19.** *`sieve( n )` returns the primes
+<span id="lem-17-20"></span>**Lemma 17.20.** *`sieve( n )` returns the primes
 up to $n$ in increasing order, in $O( n \log \log n )$ time.*
 
 *Proof.* A number $p$ left in the set when the loop reaches it has no
@@ -2244,7 +2289,7 @@ $[ 0 , s )$ of [Lemire 2019](Z-bibliography.md#ref-lemire2019).
 
 --8<-- "generated/RandomGenerators-uniformBelow.pseudo.md"
 
-<span id="lem-17-20"></span>**Lemma 17.20 (Lemire).** *If $x$ is uniform on
+<span id="lem-17-21"></span>**Lemma 17.21 (Lemire).** *If $x$ is uniform on
 the words, the result of `uniformBelow( g , s )` is uniform in $[ 0 , s )$; a
 word is rejected with probability $t / 2^{64} < s / 2^{64}$, and the division
 that computes $t$ is made only when $l < s$, i.e., with probability
@@ -2273,7 +2318,7 @@ Yates in the form of [Durstenfeld 1964](Z-bibliography.md#ref-durstenfeld1964)
 
 --8<-- "generated/RandomNumbers-shuffle.pseudo.md"
 
-<span id="lem-17-21"></span>**Lemma 17.21.** *If each $k$ is uniform in
+<span id="lem-17-22"></span>**Lemma 17.22.** *If each $k$ is uniform in
 $[ 0 , j )$, the shuffle gives each of the $n!$ permutations of $n$ items
 with probability $1 / n!$.*
 
@@ -2290,7 +2335,7 @@ index comes twice as often as the other). Instead, `shuffle()` draws each
 index by `detail::uniformIndex()`, which is exact on any generator $g$ of
 the $r + 1$ numbers from `g.min()` to `g.max()`, by three cases: (i) on a
 full word, $r + 1 = 2^{64}$, it is the method of Lemire of
-[Lemma 17.20](17-numeric.md#lem-17-20); (ii) when $j \le r + 1 < 2^{64}$,
+[Lemma 17.21](17-numeric.md#lem-17-21); (ii) when $j \le r + 1 < 2^{64}$,
 it returns $\lfloor x / q \rfloor$ for $q = \lfloor ( r + 1 ) / j
 \rfloor$ and the offset $x$ of the number from `g.min()`, rejecting the
 $x \ge q j$, so that each result has exactly $q$ values of $x$; (iii) when
@@ -2301,7 +2346,7 @@ the pair of digits in base $r + 1$ of a number uniform below $( r + 1 )
 \lceil j / ( r + 1 ) \rceil$, whose restriction to $[ 0 , j )$ is uniform;
 a sum that wraps around $2^{64}$ is detected as smaller than $( r + 1 ) y$
 and rejected too. Each case thus gives the uniform $k$ that
-[Lemma 17.21](17-numeric.md#lem-17-21) assumes, and `reservoirSampling()`
+[Lemma 17.22](17-numeric.md#lem-17-22) assumes, and `reservoirSampling()`
 draws in the same way. Moreover,
 `shuffleFast()` of `RandomGenerators.h` draws exact indices, and
 fewer words, after [Brackett-Rozinsky and Lemire
@@ -2313,7 +2358,7 @@ H_j 2^{64} + l_j$, where $H_j$ is the number of digits $h_1 , \ldots ,
 h_j$ in the mixed radix $b_1 , \ldots , b_j$ (indeed, $H_j 2^{64} + l_j =
 ( H_{j-1} 2^{64} + l_{j-1} ) b_j = ( H_{j-1} b_j + h_j ) 2^{64} + l_j$).
 Thus the tuple is the draw of Lemire below $p$ on the word $x$, and by
-[Lemma 17.20](17-numeric.md#lem-17-20) it is uniform on the $p$ tuples
+[Lemma 17.21](17-numeric.md#lem-17-21) it is uniform on the $p$ tuples
 once $l_k < 2^{64} \bmod p$ is rejected, which happens with probability
 below $p / 2^{64}$. In the header, 6 steps are taken per word while the bounds are below
 $2^{10}$ ($p < 2^{60}$) and 2 below $2^{32}$; a shuffle of $n$ items thus
@@ -2370,7 +2415,7 @@ Vose and the draw.
 
 --8<-- "generated/RandomGenerators-AliasTable-draw.pseudo.md"
 
-<span id="lem-17-22"></span>**Lemma 17.22.** *The construction ends in
+<span id="lem-17-23"></span>**Lemma 17.23.** *The construction ends in
 $O( n )$ time, and in exact arithmetic the draw returns $i$ with
 probability $w_i / \sum_j w_j$.*
 
@@ -2540,7 +2585,7 @@ return them sorted, and the items can then be read by one pass, with at
 most $\min\{ n , \lceil N / B \rceil \}$ transfers of blocks of $B$ items.
 
 **$N$ known.** By swaps, `sampleBySwaps()` makes the first $n$ steps of
-the shuffle of [Lemma 17.21](17-numeric.md#lem-17-21) on an array of the
+the shuffle of [Lemma 17.22](17-numeric.md#lem-17-22) on an array of the
 $N$ positions: $n$ random numbers, but $\Theta( N )$ space. Alternatively,
 `sampleByDictionary()` keeps the positions drawn in a hash table, and
 draws again those already there. With $n \le N / 2$, a draw repeats with
@@ -2553,7 +2598,7 @@ bucket sort ($k$ buckets of width $\lceil N / k \rceil$, $O( 1 )$
 expected items each, sorted by insertion). It merges them with those
 already drawn, removing the repetitions, and draws again only the
 positions missing, instead of all $n$ as in the chapter of Ferragina. Its
-distribution is the same ([Lemma 17.23](17-numeric.md#lem-17-23)
+distribution is the same ([Lemma 17.24](17-numeric.md#lem-17-24)
 below), but it needs no luck when $n$ exceeds $\sqrt{N}$ and the
 birthday paradox makes a repetition likely, with probability about $1 -
 e^{-n ( n - 1 ) / 2 N}$ ([Algorithm 17.35](17-numeric.md#alg-17-35)).
@@ -2574,7 +2619,7 @@ $t$ with probability $( n - s ) / ( N - t )$, where $s$ is the number of
 the positions selected among the $t$ seen; it draws $N$ random numbers in
 the worst case.
 
-<span id="lem-17-23"></span>**Lemma 17.23.** *`selectionSampling()`,
+<span id="lem-17-24"></span>**Lemma 17.24.** *`selectionSampling()`,
 `sampleBySorting()` and `heapSampling()` give each subset of $n$ of the
 $N$ positions (or items) with probability $1 / \binom{N}{n}$.*
 
@@ -2625,13 +2670,13 @@ of Vitter.
 **$N$ unknown.** For a stream of unknown length, `heapSampling()` gives a
 random key to each item and keeps the $n$ items of the largest keys in a
 heap (`DaryHeap` of `ADS/priority`), in $O( N \log n )$ time, and its keys
-make the sample uniform ([Lemma 17.23](17-numeric.md#lem-17-23)). As for the reservoir, Algorithm 3.4.2R of
+make the sample uniform ([Lemma 17.24](17-numeric.md#lem-17-24)). As for the reservoir, Algorithm 3.4.2R of
 [Knuth 1998](Z-bibliography.md#ref-knuth1998v2), it is `reservoirSampling()` of
 `RandomNumbers.h`, in $O( N )$ time and $n$ items of space, which is
 optimal in this model ([Vitter 1985](Z-bibliography.md#ref-vitter1985);
 [Algorithm 17.37](17-numeric.md#alg-17-37)).
 
-<span id="lem-17-24"></span>**Lemma 17.24 (the reservoir).** *If the item
+<span id="lem-17-25"></span>**Lemma 17.25 (the reservoir).** *If the item
 $t > n$ of a stream (counted from 1) replaces a uniform item of a
 reservoir of $n$ with probability $n / t$, then after $N \ge n$ items each
 of them is in the reservoir with probability $n / N$.*
