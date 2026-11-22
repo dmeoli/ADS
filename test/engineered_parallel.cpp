@@ -45,6 +45,7 @@
 #include "ADS/parallel/ParallelShortestPaths.h"
 #include "ADS/parallel/ParallelSort.h"
 #include "ADS/parallel/ParallelText.h"
+#include "ADS/parallel/Scratch.h"
 #include "ADS/string/SuffixArray.h"
 #include "ADS/succinct/CompactRankSelect.h"
 #include "ADS/succinct/HuffmanWaveletTree.h"
@@ -893,6 +894,163 @@ ADS_TEST( "parallel-lcp" )
   } );
  }
 
+// the parallel algorithms at the sizes where they leave their sequential
+// fallbacks, one below, at and one above each threshold, on a pool of 4
+// threads against the sequential results: the LCP arrays at 2^15 symbols
+// (a random text, a periodic one and one of a single letter), the multiway
+// merge at 2^16 items in all (with equal keys across the ranges, and an
+// unsorted range refused by the audit), the product of a CSR matrix at
+// m + nnz = 2^15, and the visits and the components of graphs of 0 and 1
+// node, with their contracts
+ADS_TEST( "parallel-thresholds" )
+{
+ ThreadPool pool( 4 );
+ std::mt19937_64 g( 29 );
+ for( std::size_t n : { ( std::size_t( 1 ) << 15 ) - 1 ,
+			std::size_t( 1 ) << 15 ,
+			( std::size_t( 1 ) << 15 ) + 1 } ) {
+  std::string r( n , 'a' ) , p( n , 'a' );
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   r[ i ] = char( 'a' + g() % 3 );
+   p[ i ] = "abcab"[ i % 5 ];
+   }
+  for( const std::string & t : { r , p , std::string( n , 'z' ) } ) {
+   const auto SA = suffixArraySais( t );
+   CHECK( lcpArray( pool , t , SA ) == lcpArray( t , SA ) );
+   const auto SA32 = suffixArray< std::uint32_t >( t );
+   CHECK( lcpArrayPhi( pool , t , SA32 ) == lcpArrayPhi( t , SA32 ) );
+   }
+  const auto SA = suffixArraySais( r );
+  CHECK_THROWS( ( void )lcpArray( pool , r.substr( 1 ) , SA ) ,
+		contract_violation );
+  }
+ for( std::size_t N : { ( std::size_t( 1 ) << 16 ) - 1 ,
+			std::size_t( 1 ) << 16 ,
+			( std::size_t( 1 ) << 16 ) + 1 } )
+  for( std::size_t k : { 2 , 3 } ) {
+   std::vector< std::vector< Rec > > S( k );
+   for( std::size_t j = 0 ; j < N ; ++j ) {
+    const std::size_t i = j % k;
+    S[ i ].push_back( Rec{ std::uint32_t( g() % 5 ) , std::uint32_t( i ) } );
+    }
+   for( auto & v : S )
+    std::sort( v.begin() , v.end() , ByKey() );
+   std::vector< std::pair< Rec * , Rec * > > R;
+   for( auto & v : S )
+    R.emplace_back( v.data() , v.data() + v.size() );
+   std::vector< Rec > A( N ) , B( N );
+   multiwayMerge( R , A.begin() , ByKey() );
+   CHECK( multiwayMerge( pool , R , B.begin() , ByKey() ) == B.end() );
+   CHECK( A == B );
+   std::swap( S[ 0 ].front() , S[ 0 ].back() );  // unsorted
+   if( S[ 0 ].front().key != S[ 0 ].back().key )
+    CHECK_THROWS( multiwayMerge( pool , R , B.begin() , ByKey() ) ,
+		  contract_violation );
+   }
+ for( std::size_t total :
+      { ( std::size_t( 1 ) << 15 ) - 1 , std::size_t( 1 ) << 15 ,
+	( std::size_t( 1 ) << 15 ) + 1 } ) {
+  const std::size_t m = 1000 , nnz = total - m;
+  std::vector< CsrMatrix::Triplet > T;
+  for( std::size_t e = 0 ; e < nnz ; ++e )  // distinct places
+   T.emplace_back( e % m , e / m , double( g() % 19 ) - 9 );
+  const CsrMatrix A( m , 64 , T );
+  CHECK( A.rows() + A.nonzeros() == total );
+  std::vector< double > x( 64 );
+  for( auto & v : x )
+   v = double( g() % 7 );
+  Sequential seq;
+  CHECK( multiply( pool , A , x ) == multiply( seq , A , x ) );
+  CHECK_THROWS( ( void )multiply( pool , A , std::vector< double >( 63 ) ) ,
+		contract_violation );
+  }
+ using Graph = StaticGraph<>;
+ const Graph E0( 0 , std::vector< std::pair< int , int > >() , false );
+ CHECK( connectedComponents( pool , E0 ).empty() );
+ CHECK_THROWS( ( void )bfsDistances( pool , E0 , 0 ) , contract_violation );
+ for( bool directed : { false , true } ) {
+  const Graph G( 1 , std::vector< std::pair< int , int > >() , directed ) ,
+    GT = G.transpose();
+  CHECK( bfsDistances( pool , G , 0 ) == std::vector< int >( { 0 } ) );
+  CHECK( bfsDistances( pool , G , 0 , &GT ) == std::vector< int >( { 0 } ) );
+  CHECK( connectedComponents( pool , G ) == std::vector< int >( { 0 } ) );
+  CHECK_THROWS( ( void )bfsDistances( pool , G , 1 ) , contract_violation );
+  CHECK_THROWS( ( void )bfsDistances( pool , G , -1 ) , contract_violation );
+  CHECK_THROWS( ( void )bfsDistances( pool , G , 0 , &E0 ) ,
+		contract_violation );
+  }
+ }
+
+// the pool of the hardware threads, ThreadPool( 0 ), its loops and its
+// reductions; and the room of the parallel algorithms: a block given back
+// taken again by the next buffer that fits in it, a larger one replacing
+// it, a buffer taken while the block is held getting a block of its own,
+// a buffer of no item, and the buffers of an over-aligned type aligned
+ADS_TEST( "thread-pool-scratch" )
+{
+ {
+  ThreadPool pool( 0 );
+  CHECK( pool.concurrency() ==
+	 std::max< std::size_t >( std::thread::hardware_concurrency() , 1 ) );
+  std::vector< int > v( 100000 , 0 );
+  parallelFor( pool , 0 , v.size() ,
+	       [ & ]( std::size_t i ) { v[ i ] = int( i % 7 ); } );
+  const auto sum = parallelReduce(
+    pool , 0 , v.size() , std::size_t( 0 ) ,
+    [ & ]( std::size_t a , std::size_t b ) {
+     std::size_t s = 0;
+     for( std::size_t i = a ; i < b ; ++i )
+      s += std::size_t( v[ i ] );
+     return( s );
+     } ,
+    std::plus<>() );
+  CHECK( sum == std::accumulate( v.begin() , v.end() , std::size_t( 0 ) ) );
+  }
+ using detail::ScratchBuffer;
+ const std::size_t big = std::size_t( 1 ) << 20;  // 4 MB of ints
+ const int * first;
+ {
+  ScratchBuffer< int > a( big );
+  first = a.data();
+  a.data()[ big - 1 ] = 1;
+  }
+ {
+  ScratchBuffer< int > b( 1000 );  // the block kept, reused
+  CHECK( b.data() == first );
+  ScratchBuffer< int > c( 1000 );  // the block held: a block of its own
+  CHECK( c.data() != first );
+  c.data()[ 999 ] = 2;
+  b.data()[ 999 ] = 3;
+  CHECK( c.data()[ 999 ] == 2 );
+  }
+ const int * larger;
+ {
+  ScratchBuffer< int > d( 2 * big );  // larger than the block kept
+  larger = d.data();
+  CHECK( larger != first );
+  d.data()[ 2 * big - 1 ] = 4;
+  }
+ {
+  ScratchBuffer< int > e( 0 );  // no item: still a block, the larger one
+  CHECK( e.data() == larger );
+  }
+ struct alignas( 256 ) Wide
+ {
+  unsigned char b[ 256 ];
+  };
+ {
+  ScratchBuffer< int > hold( 1 );  // the block kept held
+  std::vector< std::unique_ptr< ScratchBuffer< Wide > > > W;
+  for( std::size_t n : { 1 , 2 , 3 , 5 , 8 , 13 , 21 , 34 } ) {
+   W.push_back( std::make_unique< ScratchBuffer< Wide > >( n ) );
+   CHECK( reinterpret_cast< std::uintptr_t >( W.back()->data() ) %
+	    alignof( Wide ) ==
+	  0 );
+   W.back()->data()[ n - 1 ].b[ 255 ] = 1;
+   }
+  }
+ }
+
 // the concurrent union-find: 8 threads unite random pairs of 100000
 // elements, then the roots are the least elements of the sets that a
 // sequential union-find of the same pairs gives, sameSet() agrees, and
@@ -952,6 +1110,75 @@ ADS_TEST( "concurrent-union-find" )
    flat = flat && ( uf.parent( x ) == root( x ) );
   CHECK( flat );
   }
+ }
+
+// the contracts of the concurrent union-find and its smallest cases: no
+// element, one element, an element out of [ 0 , n ) refused by every
+// operation, n = 2^31 refused before the parents are allocated; and the
+// finds of 4 threads while 4 others unite the elements into chains, each
+// root found the least element of its set at a moment of the call, so
+// that it never grows as the unions go on
+ADS_TEST( "concurrent-union-find-edges" )
+{
+ {
+  ConcurrentUnionFind uf( 0 );
+  CHECK( uf.size() == 0 );
+  CHECK_THROWS( ( void )uf.find( 0 ) , contract_violation );
+  CHECK_THROWS( ( void )uf.parent( 0 ) , contract_violation );
+  CHECK_THROWS( uf.compress( 0 ) , contract_violation );
+  CHECK_THROWS( uf.unite( 0 , 0 ) , contract_violation );
+  CHECK_THROWS( ( void )uf.sameSet( 0 , 0 ) , contract_violation );
+  }
+ {
+  ConcurrentUnionFind uf( 1 );
+  CHECK( uf.find( 0 ) == 0 && uf.parent( 0 ) == 0 && uf.sameSet( 0 , 0 ) );
+  CHECK( ! uf.unite( 0 , 0 ) );
+  uf.compress( 0 );
+  CHECK( uf.parent( 0 ) == 0 );
+  for( const std::int32_t x : { -1 , 1 } ) {
+   CHECK_THROWS( ( void )uf.find( x ) , contract_violation );
+   CHECK_THROWS( ( void )uf.parent( x ) , contract_violation );
+   CHECK_THROWS( uf.compress( x ) , contract_violation );
+   CHECK_THROWS( uf.unite( 0 , x ) , contract_violation );
+   CHECK_THROWS( uf.unite( x , 0 ) , contract_violation );
+   CHECK_THROWS( ( void )uf.sameSet( x , 0 ) , contract_violation );
+   }
+  }
+ CHECK_THROWS( ConcurrentUnionFind( std::size_t( 1 ) << 31 ) ,
+	       contract_violation );
+ CHECK_THROWS( ConcurrentUnionFind( std::size_t( -1 ) ) , contract_violation );
+ const int n = 40000;
+ ConcurrentUnionFind uf{ std::size_t( n ) };
+ std::atomic< bool > done{ false } , right{ true };
+ std::vector< std::thread > T;
+ for( int t = 0 ; t < 4 ; ++t )  // the chains i, i + 4, i + 8, ...
+  T.emplace_back( [ & , t ] {
+   for( int i = n - 1 - t ; i >= 4 ; i -= 4 )
+    uf.unite( i , i - 4 );
+   } );
+ for( int t = 0 ; t < 4 ; ++t )
+  T.emplace_back( [ & , t ] {
+   std::mt19937_64 g( std::uint64_t( 31 + t ) );
+   std::vector< std::int32_t > last( static_cast< std::size_t >( n ) );
+   std::iota( last.begin() , last.end() , 0 );
+   while( ! done.load() ) {
+    const auto x = std::int32_t( g() % n );
+    const std::int32_t r = uf.find( x );
+    // the root of x: in its chain, not above x, never above the last one
+    if( ( r % 4 != x % 4 ) || ( r > last[ std::size_t( x ) ] ) )
+     right = false;
+    last[ std::size_t( x ) ] = r;
+    }
+   } );
+ for( int t = 0 ; t < 4 ; ++t )
+  T[ std::size_t( t ) ].join();
+ done = true;
+ for( std::size_t t = 4 ; t < T.size() ; ++t )
+  T[ t ].join();
+ CHECK( right.load() );
+ for( int x = 0 ; x < n ; ++x )
+  right = right && ( uf.find( x ) == x % 4 );
+ CHECK( right.load() && ! uf.sameSet( 0 , 1 ) && uf.sameSet( 3 , n - 1 ) );
  }
 
 // the directories of rank and select built on each executor against the

@@ -604,6 +604,7 @@ engineered_queues  stealable-pq-bound-threads bound minimo con i ladri
 engineered_queues  lockfree-pq             coda di priorità esatta senza lock
 engineered_queues  lockfree-pq-threads     più thread, ogni coppia una volta, in ordine
 engineered_queues  lockfree-pq-linearizable storie brevi, un ordine che le spiega
+engineered_queues  lockfree-pq-epochs      offset nullo, epoche che girano, limbo limitato
 engineered_queues  min-board              lavagna dei minimi, un thread
 engineered_queues  min-board-threads      lavagna dei minimi, più scrittori e lettori
 
@@ -1852,12 +1853,15 @@ engineered_parallel  parallel-numeric-index prodotto CSR con indici int e int64
 engineered_parallel  parallel-graph      visita in ampiezza, componenti
 engineered_parallel  parallel-layouts    le due disposizioni degli archi in parallelo
 engineered_parallel  parallel-lcp        array LCP permutato
+engineered_parallel  parallel-thresholds  le soglie dei casi sequenziali, grafi di 0 e 1 nodo
+engineered_parallel  thread-pool-scratch  ThreadPool(0), blocchi di Scratch riusati e annidati
 engineered_parallel  parallel-rank-select  rank e select costruiti sugli esecutori
 engineered_parallel  parallel-wavelet-matrix  wavelet matrix, 8 livelli a passata
 engineered_parallel  parallel-huffman-wavelet-tree  wavelet tree di Huffman parallelo
 engineered_parallel  parallel-stepping   Delta e rho-stepping contro Dijkstra
 engineered_parallel  parallel-stepping-holes  stepping su un grafo con nodi cancellati
 engineered_parallel  concurrent-union-find  union-find concorrente
+engineered_parallel  concurrent-union-find-edges  0 e 1 elementi, contratti, find durante le unioni
 
 # the executors on the runtimes of a program, beyond the book
 interop_parallel  tbb-arena               arena di oneTBB del programma e corrente
@@ -1922,6 +1926,7 @@ engineered_runtime  run-caller           il lavoratore che gira sul chiamante
 engineered_runtime  fastflow-loops       i due loop di FastFlow, bulk e run
 engineered_runtime  fastflow-bulk-sizes  bulk di FastFlow, meno indici che lavoratori
 engineered_runtime  channels             canali fra lavoratori, ogni famiglia
+engineered_runtime  channels-contracts   le 12 precondizioni delle famiglie
 engineered_runtime  feedback-farm        farm con retroazione, arresto
 engineered_runtime  farm-indices         indici dei lavoratori e del master
 engineered_runtime  mailbox-termination  terminazione su alberi a caso

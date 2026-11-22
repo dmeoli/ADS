@@ -115,6 +115,11 @@ O multiwayMerge( E & ex , const std::vector< std::pair< I , I > > & R , O out ,
   N += std::size_t( r.second - r.first );
  if( ( p == 1 ) || ( k < 2 ) || ( N < ( std::size_t( 1 ) << 16 ) ) )
   return( multiwayMerge( R , out , less ) );
+ // the ranges sorted, which the splits by binary search need: the merges
+ // of the pieces would see only the pieces
+ ADS_AUDIT( std::all_of( R.begin() , R.end() , [ & ]( const auto & r ) {
+  return( std::is_sorted( r.first , r.second , less ) );
+  } ) );
  const std::size_t B =
    std::max< std::size_t >( 2 , std::min( 4 * p , N >> 14 ) );
  std::vector< std::vector< std::size_t > > S( B + 1 );

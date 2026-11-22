@@ -213,6 +213,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of 128 bits for a wider one, since in `T` the products overflowed on
   sums of segments well within `T` (e.g., items of 10^9 in an `int`),
   which left the result undefined
+- `detail::ScratchBuffer` of a type aligned beyond what `operator new`
+  gives takes a block of a huge page at least, which is aligned to a huge
+  page; before, a buffer of such a type smaller than a huge page was on a
+  block aligned to 16 bytes only
+- the parallel `multiwayMerge()` checks that its ranges are sorted (an
+  audit) before it splits them by binary searches, as the sequential one
+  does; before, only the merges of the pieces checked their pieces, after
+  the splits had searched the unsorted ranges
+- `ConcurrentUnionFind` checks n < 2^31 before it allocates the
+  parents, and `parent()` and `compress()` check their element as the
+  other operations do
 - `ArenaResource::allocate()` throws `std::bad_alloc` when a block of the
   bytes asked plus the alignment, with its header, would not fit in a
   `std::size_t`; before, the size of the block wrapped around, and a

@@ -20,7 +20,9 @@
  * messages of bytes with tags (empty, longer than a batch), those of a
  * codec (strings, vectors) and two kinds in a variant; the stop by one
  * process, by all, by the last one and by none, every message handed once
- * by a poll or by leftovers().
+ * by a poll or by leftovers(). The edges: a sort of no item and of one item
+ * in all, the executor, the sort and the minimum on sub-communicators, an
+ * exception thrown by the worker of run().
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -46,6 +48,7 @@
 #include <optional>
 #include <random>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <variant>
 #include <vector>
@@ -64,15 +67,15 @@ namespace
 /// the vectors of all the processes, concatenated in the order of the
 /// ranks, on every process
 template< class T >
-std::vector< T > gatherAll( const std::vector< T > & A )
+std::vector< T > gatherAll( const std::vector< T > & A ,
+			    MPI_Comm comm = MPI_COMM_WORLD )
 {
  int P = 1;
- MPI_Comm_size( MPI_COMM_WORLD , &P );
+ MPI_Comm_size( comm , &P );
  const int bytes = int( A.size() * sizeof( T ) );
  std::vector< int > count( static_cast< std::size_t >( P ) ) ,
    at( static_cast< std::size_t >( P ) , 0 );
- MPI_Allgather( &bytes , 1 , MPI_INT , count.data() , 1 , MPI_INT ,
-		MPI_COMM_WORLD );
+ MPI_Allgather( &bytes , 1 , MPI_INT , count.data() , 1 , MPI_INT , comm );
  int total = 0;
  for( int q = 0 ; q < P ; ++q ) {
   at[ std::size_t( q ) ] = total;
@@ -80,7 +83,7 @@ std::vector< T > gatherAll( const std::vector< T > & A )
   }
  std::vector< T > all( std::size_t( total ) / sizeof( T ) );
  MPI_Allgatherv( A.data() , bytes , MPI_BYTE , all.data() , count.data() ,
-		 at.data() , MPI_BYTE , MPI_COMM_WORLD );
+		 at.data() , MPI_BYTE , comm );
  return( all );
  }
 
@@ -133,10 +136,10 @@ std::uint64_t treeSize( std::uint32_t d , std::uint64_t seed )
  }
 
 /// the sum over the processes
-std::uint64_t sumAll( std::uint64_t x )
+std::uint64_t sumAll( std::uint64_t x , MPI_Comm comm = MPI_COMM_WORLD )
 {
  std::uint64_t s = 0;
- MPI_Allreduce( &x , &s , 1 , MPI_UINT64_T , MPI_SUM , MPI_COMM_WORLD );
+ MPI_Allreduce( &x , &s , 1 , MPI_UINT64_T , MPI_SUM , comm );
  return( s );
  }
 
@@ -614,6 +617,63 @@ ADS_TEST( "mpi-min" )
  while( ! ( r = d.test() ) )
   ;
  CHECK( *r == 0.5 );
+ }
+
+// the edges of the runtime: a sort of no item at all and of one item in
+// all, on one thread and on a pool, which leaves the item on the process
+// that holds it; the executor, the sort and the minimum on the
+// sub-communicators of the even and of the odd ranks, each seeing its own
+// processes only; an exception thrown by the worker of run() passed to
+// its caller on every process, the processes still able to meet at a
+// barrier; and the wait of a minimum with none in flight refused
+ADS_TEST( "mpi-edges" )
+{
+ MPIExecutor ex;
+ const std::size_t P = ex.size() , me = ex.rank();
+ ThreadPool pool( 2 );
+ for( int threads : { 1 , 2 } )
+  for( std::size_t total : { 0 , 1 } ) {
+   std::vector< std::uint64_t > A;
+   if( ( total == 1 ) && ( me == P - 1 ) )
+    A.push_back( 42 );
+   if( threads == 1 )
+    distributed::sort( MPI_COMM_WORLD , A );
+   else
+    distributed::sort( pool , MPI_COMM_WORLD , A );
+   CHECK( gatherAll( A ) == std::vector< std::uint64_t >( total , 42 ) );
+   CHECK( sumAll( A.size() ) == total );
+   }
+ MPI_Comm sub;
+ MPI_Comm_split( MPI_COMM_WORLD , int( me % 2 ) , int( me ) , &sub );
+ {
+  const MPIExecutor half( sub );
+  CHECK( half.size() == ( P + 1 - me % 2 ) / 2 );
+  CHECK( half.rank() == me / 2 );
+  CHECK( sumAll( 1 , sub ) == half.size() );
+  std::mt19937_64 g( 7 + me );
+  std::vector< std::uint64_t > A( 1000 + 100 * me );
+  for( auto & x : A )
+   x = g() % 50;
+  auto ref = gatherAll( A , sub );
+  std::sort( ref.begin() , ref.end() );
+  distributed::sort( sub , A );
+  CHECK( gatherAll( A , sub ) == ref );
+  DistributedMin< long > m( sub );
+  CHECK( m.start( long( 10 + me ) ) );
+  CHECK( m.wait() == long( 10 + me % 2 ) );
+  CHECK_THROWS( ( void )m.wait() , contract_violation );
+  half.barrier();
+  }
+ MPI_Comm_free( &sub );
+ std::size_t calls = 0;
+ CHECK_THROWS( ex.run( [ & ]( std::size_t ) {
+  ++calls;
+  throw( std::runtime_error( "worker" ) );
+  } ) ,
+	       std::runtime_error );
+ CHECK( calls == 1 );
+ ex.barrier();
+ CHECK( sumAll( calls ) == P );
  }
 
 /*--------------------------------------------------------------------------*/

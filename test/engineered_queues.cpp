@@ -1856,6 +1856,45 @@ ADS_TEST( "lockfree-pq" )
   }
  }
 
+/// the contract of the offset, and the epochs of the reclamation turned
+/// over and over: with an offset of 1 each DeleteMin but the first cuts
+/// the prefix, the nodes cut off wait in the limbo of their epoch, and the
+/// epochs keep growing while a second handle is alive and idle, so that the
+/// items not yet freed (each moved out of its node, which keeps the moved
+/// one until it is freed) stay a few, never the nodes of all the epochs
+ADS_TEST( "lockfree-pq-epochs" )
+{
+ CHECK_THROWS( ( LockFreePriorityQueue< int , int >( 0 ) ) ,
+	       contract_violation );
+ const long alive = Counted::alive;
+ {
+  LockFreePriorityQueue< std::uint64_t , Counted > Q( 1 , 5 );
+  auto h = Q.handle();
+  auto idle = Q.handle();  // alive, never inside an operation
+  long most = 0 , size = 0;
+  bool right = true;
+  for( std::uint64_t s = 0 ; s < 100000 ; ++s ) {
+   h.insert( s % 7 , Counted( "x" ) );
+   ++size;
+   if( s % 3 != 2 ) {
+    const auto e = h.tryDeleteMin();
+    right = right && e && ( e->item.s == "x" );
+    --size;
+    }
+   most = std::max( most , Counted::alive - alive - size );
+   }
+  CHECK( std::size_t( size ) == Q.size() );
+  CHECK( right && Q.consistent() && ( h.counts().cuts > 10000 ) );
+  CHECK( most <= 16 );
+  // the idle handle sees the queue as the other one left it
+  CHECK( idle.tryMinKey() && ( idle.tryMinKey() == h.tryMinKey() ) );
+  while( idle.tryDeleteMin() ) {
+   }
+  CHECK( Q.empty() && h.empty() );
+  }
+ CHECK( Counted::alive == alive );
+ }
+
 /// p threads that insert, then delete, then do both: every pair comes out
 /// once, the DeleteMin of a thread come in order when nobody inserts, and
 /// the queue drained at the end comes in order

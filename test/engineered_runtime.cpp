@@ -520,6 +520,21 @@ void channelsFamily( A... args )
    channelsTraffic< C >( p , seed , args... );
  }
 
+/// the 3 preconditions of a family: no worker refused, and a worker out of
+/// [ 0 , p ) refused by a push, as sender or as receiver, and by a drain
+template< class C , class... A >
+void channelsContracts( A... args )
+{
+ CHECK_THROWS( C( 0 , args... ) , contract_violation );
+ C c( 2 , args... );
+ const std::vector< Msg > one( 1 );
+ const std::span< const Msg > m( one );
+ CHECK_THROWS( c.tryPush( 2 , 0 , m ) , contract_violation );
+ CHECK_THROWS( c.tryPush( 0 , 2 , m ) , contract_violation );
+ CHECK_THROWS( c.drain( 2 , []( Msg && ) { } ) , contract_violation );
+ CHECK( c.tryPush( 1 , 0 , m ) == 1 && c.drain( 0 , []( Msg && ) { } ) == 1 );
+ }
+
 }  // end( namespace )
 
 // each family alone and under random traffic of 1 to 5 workers
@@ -550,6 +565,18 @@ ADS_TEST( "channels" )
  CHECK( mesh.tryPush( 1 , 1 , std::span< const Msg >( five ) ) == 2 );
  CHECK( mesh.drain( 1 , []( Msg && ) { } ) == 4 );
  CHECK( mesh.drain( 0 , []( Msg && ) { } ) == 0 );
+ }
+
+// the 12 preconditions of the 4 families, and the capacity of the queues
+// of the mesh, a power of 2 of at least 2
+ADS_TEST( "channels-contracts" )
+{
+ channelsContracts< LockedChannels< Msg > >();
+ channelsContracts< InboxChannels< Msg > >();
+ channelsContracts< LaneChannels< Msg > >();
+ channelsContracts< MeshChannels< Msg > >( std::size_t( 2 ) );
+ for( const std::size_t c : { 0 , 1 , 3 , 1000 } )
+  CHECK_THROWS( MeshChannels< Msg >( 2 , c ) , contract_violation );
  }
 
 // the tree of tasks 1 .. L, each task t with the children 2t and 2t + 1,

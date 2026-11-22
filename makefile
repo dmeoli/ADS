@@ -210,7 +210,7 @@ test-mpi: | $(BUILD)
 	 test/engineered_mpi.cpp $(LIBS)
 	for t in distributed-sort distributed-sort-counts mpi-executor \
 	         mpi-mailbox mpi-termination mpi-min mpi-bytes mpi-codec \
-	         mpi-stop; do \
+	         mpi-stop mpi-edges; do \
 	  for np in 1 2 3 4; do \
 	    $(MPIRUN) -np $$np $(BUILD)/engineered_mpi $$t || exit 1; \
 	  done; \

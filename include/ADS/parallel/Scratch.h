@@ -57,28 +57,36 @@ namespace ADS::detail
 class ScratchRoom
 {
  public:
- /// a block of at least \f$ b \f$ bytes, aligned to a huge page, and its
- /// size in `got`
+ /// a block of at least \f$ b \f$ bytes aligned to \f$ a \f$, and its
+ /// size in `got`: a block of a huge page or more is aligned to a huge
+ /// page, a smaller one as `operator new` aligns it, so that a request
+ /// aligned beyond that takes a huge page at least
  ///
  /// In pseudocode (a cache of one entry, beyond the book), \f$ K \f$ the
- /// block kept and \f$ |K| \f$ its bytes:
+ /// block kept, \f$ |K| \f$ its bytes and \f$ H = 2^{21} \f$ the bytes of
+ /// a huge page:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{take}( b ) \cr
- /// 2 & \quad \text{under the lock: }\ \textbf{if}\ K \ne \textbf{nil}
+ /// 1 & \textbf{function}\ \mathrm{take}( b , a ) \cr
+ /// 2 & \quad \textbf{if}\ a \text{ is above the alignment of}
+ ///     \text{ operator new}\ \textbf{then}\ b \gets \max( b , H ) \cr
+ /// 3 & \quad \text{under the lock: }\ \textbf{if}\ K \ne \textbf{nil}
  ///     \ \textbf{and}\ |K| \ge b\ \textbf{then}\ \textbf{return}
  ///     \ K \text{, and } K \gets \textbf{nil} \cr
- /// 3 & \quad \textbf{return}\ \text{a new block of } b \text{ bytes on }
+ /// 4 & \quad \textbf{return}\ \text{a new block of } b \text{ bytes on }
  ///     \text{huge pages} \cr
- /// 4 & \textbf{procedure}\ \mathrm{give}( P ) \cr
- /// 5 & \quad \text{under the lock: }\ \textbf{if}\ K = \textbf{nil}
+ /// 5 & \textbf{procedure}\ \mathrm{give}( P ) \cr
+ /// 6 & \quad \text{under the lock: }\ \textbf{if}\ K = \textbf{nil}
  ///     \ \textbf{or}\ |K| < |P|\ \textbf{then}\ \text{swap } P
  ///     \text{ and } K \cr
- /// 6 & \quad \textbf{if}\ P \ne \textbf{nil}\ \textbf{then}
+ /// 7 & \quad \textbf{if}\ P \ne \textbf{nil}\ \textbf{then}
  ///     \ \text{free } P
  /// \end{array}}
  /// \f]
- static std::byte * take( std::size_t b , std::size_t & got ) {
+ static std::byte * take( std::size_t b , std::size_t & got ,
+			  std::size_t a = __STDCPP_DEFAULT_NEW_ALIGNMENT__ ) {
+  if( a > __STDCPP_DEFAULT_NEW_ALIGNMENT__ )
+   b = std::max( b , HugePageAllocator< std::byte >::PAGE );
   {
    std::lock_guard< std::mutex > g( slot().lock );
    if( slot().p && ( slot().size >= b ) ) {
@@ -130,8 +138,10 @@ class ScratchBuffer
  public:
  /// the room for \f$ n \f$ items
  explicit ScratchBuffer( std::size_t n )
-     : f_p( reinterpret_cast< T * >( ScratchRoom::take(
-	 std::max< std::size_t >( n , 1 ) * sizeof( T ) , f_b ) ) ) { }
+     : f_p( reinterpret_cast< T * >(
+	 ScratchRoom::take( std::max< std::size_t >( n , 1 ) * sizeof( T ) ,
+			    f_b ,
+			    alignof( T ) ) ) ) { }
  /// gives the room back to `ScratchRoom`
  ~ScratchBuffer() {
   ScratchRoom::give( reinterpret_cast< std::byte * >( f_p ) , f_b );

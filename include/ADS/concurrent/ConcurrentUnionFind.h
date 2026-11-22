@@ -93,8 +93,7 @@ class ConcurrentUnionFind
  /// the \f$ n \f$ singletons \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$
  /// \pre \f$ n < 2^{31} \f$
  explicit ConcurrentUnionFind( std::size_t n )
-     : f_n( n ) , f_p( new std::atomic< std::int32_t >[ n ] ) {
-  ADS_PRE( n < ( std::size_t( 1 ) << 31 ) );
+     : f_n( checked( n ) ) , f_p( new std::atomic< std::int32_t >[ n ] ) {
   for( std::size_t x = 0 ; x < n ; ++x )
    f_p[ x ].store( std::int32_t( x ) , std::memory_order_relaxed );
   }
@@ -141,6 +140,7 @@ class ConcurrentUnionFind
  /// the parent of \f$ x \f$ at a moment of the call (\f$ x \f$ if a root)
  /// \pre \f$ 0 \le x < n \f$
  [[nodiscard]] std::int32_t parent( std::int32_t x ) const {
+  ADS_PRE( ( x >= 0 ) && ( std::size_t( x ) < f_n ) );
   return( f_p[ x ].load( std::memory_order_acquire ) );
   }
 
@@ -159,6 +159,7 @@ class ConcurrentUnionFind
  /// \f]
  /// \pre \f$ 0 \le x < n \f$
  void compress( std::int32_t x ) {
+  ADS_PRE( ( x >= 0 ) && ( std::size_t( x ) < f_n ) );
   std::int32_t p = f_p[ x ].load( std::memory_order_acquire );
   if( p == x )
    return;
@@ -229,6 +230,13 @@ class ConcurrentUnionFind
 
 /*--------------------------------------------------------------------------*/
  private:
+ /// \f$ n \f$, checked before the parents are allocated
+ /// \pre \f$ n < 2^{31} \f$
+ static std::size_t checked( std::size_t n ) {
+  ADS_PRE( n < ( std::size_t( 1 ) << 31 ) );
+  return( n );
+  }
+
  std::size_t f_n;                                       ///< the elements
  std::unique_ptr< std::atomic< std::int32_t >[] > f_p;  ///< the parents
  };  // end( class ConcurrentUnionFind )
