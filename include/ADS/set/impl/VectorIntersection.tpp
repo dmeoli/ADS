@@ -100,7 +100,7 @@ std::size_t intersect( const T * a , std::size_t n , const T * b ,
  if( m * 4 < n ) {
   std::size_t q = 0 , p = 0;
   k = 0;
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
   if constexpr( hwy32 )
    k = detail::simd::windowsCommon( b , m , a , n , out , &q , &p );
 #endif
@@ -109,7 +109,7 @@ std::size_t intersect( const T * a , std::size_t n , const T * b ,
  else {
   std::size_t i = 0 , j = 0;
   k = 0;
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
   if constexpr( hwy32 )
    k = detail::simd::blocksCommon( a , n , b , m , out , &i , &j );
 #endif

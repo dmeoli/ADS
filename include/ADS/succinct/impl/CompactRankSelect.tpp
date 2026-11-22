@@ -44,12 +44,16 @@ inline void CompactRankSelect::directory( const Word * w )
  Word * const P = f_b.f_w.data();
  const std::size_t nw = f_b.f_w.size();  // a multiple of 8
  f_e.resize( ns + 1 );
- f_top.assign( ( ( ( ns + 1 ) * kSuper ) >> kTop ) + 1 , 0 );
+ const std::uint64_t bits = std::uint64_t( ns + 1 ) * kSuper;
+ f_top.assign( std::size_t( bits >> kTop ) + 1 , 0 );
  for( auto & S : f_s ) {  // at most n / kSample + 2 each
   S.clear();
   S.reserve( n / kSample + 2 );
   }
- constexpr std::size_t kTopSupers = ( std::size_t( 1 ) << kTop ) / kSuper;
+ // at most the largest std::size_t, where it has fewer than kTop bits
+ constexpr std::size_t kTopSupers = std::size_t(
+   std::min< std::uint64_t >( ( std::uint64_t( 1 ) << kTop ) / kSuper ,
+			      std::numeric_limits< std::size_t >::max() ) );
  constexpr std::size_t kW = kSuper / 64;  // the words of a superblock
  std::uint64_t c = 0 , top = 0;
  std::size_t next1 = 1 , next0 = 1;  // the next samples
@@ -146,7 +150,10 @@ template< Executor E >
 void CompactRankSelect::directory( E & ex , const Word * w )
 {
  const std::size_t n = f_b.size() , ns = n / kSuper + 1;  // and one more
- constexpr std::size_t kTopSupers = ( std::size_t( 1 ) << kTop ) / kSuper;
+ // at most the largest std::size_t, where it has fewer than kTop bits
+ constexpr std::size_t kTopSupers = std::size_t(
+   std::min< std::uint64_t >( ( std::uint64_t( 1 ) << kTop ) / kSuper ,
+			      std::numeric_limits< std::size_t >::max() ) );
  constexpr std::size_t kW = kSuper / 64;  // the words of a superblock
  // the chunks of superblocks [see detail::chunkUnits()]
  const std::size_t cs =
@@ -159,7 +166,8 @@ void CompactRankSelect::directory( E & ex , const Word * w )
  Word * const P = f_b.f_w.data();
  const std::size_t nw = f_b.f_w.size();  // a multiple of 8
  f_e.resize( ns + 1 );
- f_top.assign( ( ( ( ns + 1 ) * kSuper ) >> kTop ) + 1 , 0 );
+ const std::uint64_t bits = std::uint64_t( ns + 1 ) * kSuper;
+ f_top.assign( std::size_t( bits >> kTop ) + 1 , 0 );
  // the 1s of the words of each chunk, copied from w first if given
  std::vector< std::uint64_t > c( q + 1 , 0 );
  parallelFor(
@@ -233,8 +241,9 @@ CompactRankSelect::entry( const std::uint64_t ( &v )[ 9 ] , std::uint64_t c )
 
 inline std::size_t CompactRankSelect::before( std::size_t s , bool b ) const
 {
- const std::size_t o = std::size_t( f_top[ ( s * kSuper ) >> kTop ] +
-				    ( f_e[ s ].lo & 0xFFFFFFFFULL ) );
+ const std::size_t o = std::size_t(
+   f_top[ std::size_t( ( std::uint64_t( s ) * kSuper ) >> kTop ) ] +
+   ( f_e[ s ].lo & 0xFFFFFFFFULL ) );
  return( b ? o : s * kSuper - o );
  }
 
@@ -242,8 +251,10 @@ inline std::size_t CompactRankSelect::rank1( std::size_t i ) const
 {
  ADS_PRE( i <= f_b.size() );
  const Entry & e = f_e[ i / kSuper ];
- std::size_t r = std::size_t( f_top[ i >> kTop ] + ( e.lo & 0xFFFFFFFFULL ) ) +
-		 inSuper( e , ( i / kBlock ) % 8 );
+ std::size_t r =
+   std::size_t( f_top[ std::size_t( std::uint64_t( i ) >> kTop ) ] +
+		( e.lo & 0xFFFFFFFFULL ) ) +
+   inSuper( e , ( i / kBlock ) % 8 );
  // the 1s of the line of the block before i [see detail::lineRank()]
  return( r +
 	  detail::lineRank< kScalar >( f_b.words().data() + 8 * ( i / kBlock ) ,
@@ -317,11 +328,13 @@ inline void CompactRankSelect::persist( A & a )
 {
  a( f_b , f_e , f_top , f_s , f_ones );
  const std::size_t n = f_b.size() , ns = n / kSuper + 1;
- a.require( ( f_e.size() == ns + 1 ) &&
-	      ( f_top.size() == ( ( ( ns + 1 ) * kSuper ) >> kTop ) + 1 ) &&
-	      ( f_ones <= n ) && ( f_s[ 0 ].size() <= n / kSample + 2 ) &&
-	      ( f_s[ 1 ].size() <= n / kSample + 2 ) ,
-	    "the directory of a CompactRankSelect" );
+ a.require(
+   ( f_e.size() == ns + 1 ) &&
+     ( f_top.size() ==
+       std::size_t( ( std::uint64_t( ns + 1 ) * kSuper ) >> kTop ) + 1 ) &&
+     ( f_ones <= n ) && ( f_s[ 0 ].size() <= n / kSample + 2 ) &&
+     ( f_s[ 1 ].size() <= n / kSample + 2 ) ,
+   "the directory of a CompactRankSelect" );
  }
 
 /*--------------------------------------------------------------------------*/

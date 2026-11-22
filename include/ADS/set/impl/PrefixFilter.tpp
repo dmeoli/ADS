@@ -109,7 +109,7 @@ void PrefixFilter< T , H >::run( std::uint64_t w , unsigned q , unsigned & s ,
 template< class T , class H >
 std::uint32_t PrefixFilter< T , H >::equal( const Bin & B , unsigned r )
 {
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  // the 32 bytes at once [see SimdInline.h]
  return( std::uint32_t(
    detail::simd::here::bytesEqual< 32 >( B.b ,
@@ -125,7 +125,7 @@ std::uint32_t PrefixFilter< T , H >::equal( const Bin & B , unsigned r )
 template< class T , class H >
 std::uint32_t PrefixFilter< T , H >::below( const Bin & B , unsigned r )
 {
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  return( std::uint32_t(
    detail::simd::here::bytesBelow< 32 >( B.b ,
 					 std::uint8_t( r ) ) >> kBody ) );

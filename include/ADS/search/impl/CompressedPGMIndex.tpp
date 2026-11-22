@@ -33,7 +33,7 @@ ADS_CPGM_T
 ADS_CPGM::CompressedPGMIndex( std::vector< K > A )
     : f_A( A.begin() , A.end() )
 {
- ADS_PRE( f_A.size() < ( std::size_t( 1 ) << 32 ) );
+ ADS_PRE( std::uint64_t( f_A.size() ) < ( std::uint64_t( 1 ) << 32 ) );
  ADS_AUDIT( std::is_sorted( f_A.begin() , f_A.end() ) );
  const std::size_t n = f_A.size();
  if( n == 0 )

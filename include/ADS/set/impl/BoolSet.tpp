@@ -87,7 +87,7 @@ namespace detail
 /// of each word
 inline std::size_t countBits( const std::uint64_t * w , std::size_t n )
 {
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  return( std::size_t( detail::simd::popcount( w , n ) ) );
 #else
  std::size_t c = 0;
@@ -152,7 +152,7 @@ inline void BoolSet::combine( BoolSet & C , const BoolSet & A ,
  const std::uint64_t *a = A.f_W.data() , *b = B.f_W.data();
  std::uint64_t * c = C.f_W.data();
  std::size_t k = 0 , n = 0;
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  // the words of both by the kernel of Highway [see Simd.h], their bits
  // counted in the same pass; the operation is told by its value on 0101
  // and 0011 (or 0111, and 0001, and not 0100, xor 0110)

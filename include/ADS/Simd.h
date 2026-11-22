@@ -19,7 +19,19 @@
  * SimdInline.h], where a call would cost more than the kernel.
  *
  * Without `ADS_WITH_HIGHWAY` this header declares nothing, and every
- * structure runs its scalar code, which gives the same results.
+ * structure runs its scalar code, which gives the same results. The same
+ * holds with `ADS_WITH_HIGHWAY` when `ADS_SIMD_SCALAR` is defined as 1
+ * before the first header of ADS (0 by default), so that one build on
+ * Highway can test the scalar code too: every vector branch of ADS (the
+ * kernels here and in SimdInline.h, the matching of the hash tables of
+ * `ADS_FLAT_SIMD`, the searches of `ADS_SEARCH_SIMD`, the sort of
+ * `ADS_VECTOR_SORT`, the packing of `ADS_BP_SCALAR`) is taken on
+ * `ADS_SIMD`, which this header defines as 1 when `ADS_WITH_HIGHWAY` is
+ * defined and `ADS_SIMD_SCALAR` is 0, and as 0 otherwise, while the
+ * prefetch of Prefetch.h, which has no scalar branch, stays that of
+ * Highway. The other macros keep their meaning, and when one of them is
+ * given it prevails over `ADS_SIMD` for its structure (e.g.,
+ * `ADS_FLAT_SIMD=0` takes the broadword matching with the kernels on).
  *
  * Highway dispatches by re-including, for every set of instructions, the
  * file of the kernels ADS/impl/Simd.tpp, once per translation unit
@@ -49,7 +61,21 @@
  #define __ADS_Simd
 /* self-identification: #endif constant */
 
-#ifdef ADS_WITH_HIGHWAY
+/// 1 to run the scalar code of every structure with `ADS_WITH_HIGHWAY`
+/// too, 0 (the default) to run its vector code [see the file]
+#ifndef ADS_SIMD_SCALAR
+ #define ADS_SIMD_SCALAR 0
+#endif
+
+/// 1 if the vector branches of ADS are compiled, i.e., with
+/// `ADS_WITH_HIGHWAY` and `ADS_SIMD_SCALAR` 0, 0 otherwise
+#if defined( ADS_WITH_HIGHWAY ) && ! ADS_SIMD_SCALAR
+ #define ADS_SIMD 1
+#else
+ #define ADS_SIMD 0
+#endif
+
+#if ADS_SIMD
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/

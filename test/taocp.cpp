@@ -65,8 +65,6 @@
 #include <utility>
 #include <vector>
 
-static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
-
 // the tricks of the words of section 7.1.3 in constant expressions, at the
 // two extreme bits, the word 0 where it is allowed and the word of all 1s
 static_assert( ADS::sidewaysSum( 0 ) == 0 && ADS::sidewaysSum( ~0ULL ) == 64 &&

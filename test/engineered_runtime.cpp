@@ -68,8 +68,6 @@
 #include <utility>
 #include <vector>
 
-static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
-
 /*--------------------------------------------------------------------------*/
 /*------------------------------- USING ------------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -1103,6 +1101,8 @@ ADS_TEST( "mailbox-rearm" )
    mailboxPhases< MeshChannels< Node > >( p , b , std::size_t( 2 ) );
    mailboxPhases< MeshChannels< Node > >( p , b , std::size_t( 1024 ) );
    }
+ if constexpr( ! ADS::test::kAllContracts )  // the rest, on the contracts
+  return;
  Mailbox< std::uint64_t > mb( 2 , 4 );
  auto none = []( std::uint64_t && ) { };
  mb.send( 0 , 1 , 7 );  // in the outbox
@@ -1602,6 +1602,8 @@ ADS_TEST( "mailbox-coalesce-paths" )
 // false of no worker caught
 ADS_TEST( "mailbox-audit" )
 {
+ if constexpr( ! ADS::test::kAllContracts )  // the audits, at 3 alone
+  return;
  for( std::size_t p : { 1 , 2 , 4 } )
   for( std::size_t b : { 1 , 16 } ) {
    auditedPhases< LockedChannels< Label > >( p , b );

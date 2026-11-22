@@ -26,6 +26,7 @@ import argparse
 import collections
 import os
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -378,7 +379,8 @@ def test( sets , deps , s , cxx , flags ):
         tu = os.path.join( d , "sets.cpp" )
         with open( tu , "w" ) as f:
             f.write( f'#include "{ENTRY[ s ]}"\nint main() {{ return 0; }}\n' )
-        out = subprocess.run( [ cxx , "-std=c++20" , "-fsyntax-only" , "-H" ,
+        out = subprocess.run( [ *shlex.split( cxx ) , "-std=c++20" ,
+                                "-fsyntax-only" , "-H" ,
                                 "-I" + INC , *flags , tu ] ,
                               capture_output = True , text = True )
     if out.returncode:

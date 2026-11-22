@@ -22,8 +22,6 @@
 
 #include <vector>
 
-static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
-
 // the push-relabel, split off MaxFlow.h, comes with it
 #if ! defined( __ADS_PushRelabel )
  #error "MaxFlow.h does not include PushRelabel.h"

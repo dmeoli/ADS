@@ -434,7 +434,7 @@ std::size_t MultiSearcher::scan( std::string_view Tv , F && report ) const
  // filter lets too much through (a small alphabet, or patterns everywhere,
  // or long patterns whose first bytes are everywhere), and the automaton
  // goes on from s, its occurrences that start before s left out
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  // 32 places a block while the loads of q - 1 places ahead are in T, the
  // tables looked up 16 places at a time [see SimdInline.h]
  for( ; ( s <= last ) && ( s + 32 + q - 1 <= n ) ; s += 32 ) {

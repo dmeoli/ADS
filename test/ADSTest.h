@@ -25,12 +25,15 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Contract.h"  // ADS_CONTRACTS and contract_violation
+
 #include <functional>
 #include <iostream>
 #include <map>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ FRAMEWORK ---------------------------------*/
@@ -74,6 +77,21 @@ constexpr T scaled( [[maybe_unused]] T n , [[maybe_unused]] T small )
  return( n );
 #endif
  }
+
+/// true at the level 3 of the contracts, where every contract is checked
+/// (that of the tests by default), false below it, where the steps of a
+/// test that rest on the contracts themselves (a violation, an audit, the
+/// counts kept for the audits) are left out
+inline constexpr bool kAllContracts = ADS_CONTRACTS >= 3;
+
+/// true if CHECK_THROWS( expr , E ) runs `expr`: always at the level 3,
+/// and below it only when `E` cannot be a `contract_violation`, since the
+/// contract that `expr` violates may then be unchecked, and `expr`, run,
+/// would break it; the tests are thus built and passed at every level, the
+/// checks of the contracts themselves only at the level 3
+template< class E >
+inline constexpr bool kRunsThrow =
+  kAllContracts || ! std::is_base_of_v< E , ::ADS::contract_violation >;
 
 /// runs the test named argv[ 1 ], or all of them; -l lists them
 inline int main( int argc , char ** argv )
@@ -125,21 +143,24 @@ inline int main( int argc , char ** argv )
   }                                                                           \
  } while( 0 )
 
-/// checks that an expression throws an exception of type E
+/// checks that an expression throws an exception of type E, if it runs
+/// [see kRunsThrow]; it is compiled at every level
 #define CHECK_THROWS( expr, E )                                               \
  do {                                                                         \
-  bool thrown = false;                                                        \
-  try {                                                                       \
-   ( void )( expr );                                                          \
-  }                                                                           \
-  catch( const E & ) {                                                        \
-   thrown = true;                                                             \
-  }                                                                           \
-  if( ! thrown ) {                                                            \
-   std::ostringstream os;                                                     \
-   os << __FILE__ << ":" << __LINE__ << ": " << #expr << " does not throw "   \
-      << #E;                                                                  \
-   throw( ADS::test::Failure( os.str() ) );                                   \
+  if constexpr( ADS::test::kRunsThrow< E > ) {                                \
+   bool thrown = false;                                                       \
+   try {                                                                      \
+    ( void )( expr );                                                         \
+   }                                                                          \
+   catch( const E & ) {                                                       \
+    thrown = true;                                                            \
+   }                                                                          \
+   if( ! thrown ) {                                                           \
+    std::ostringstream os;                                                    \
+    os << __FILE__ << ":" << __LINE__ << ": " << #expr << " does not throw "  \
+       << #E;                                                                 \
+    throw( ADS::test::Failure( os.str() ) );                                  \
+   }                                                                          \
   }                                                                           \
  } while( 0 )
 

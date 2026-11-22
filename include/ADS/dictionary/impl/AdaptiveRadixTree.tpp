@@ -158,7 +158,7 @@ inline void * const * AdaptiveRadixTree< V >::child( const Node * n ,
    }
   case( N16 ): {
    const Node16 * m = static_cast< const Node16 * >( n );
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
    // the 16 keys compared at once [see SimdInline.h]
    const unsigned b = unsigned( detail::simd::here::bytesEqual16(
 			m->key , std::uint8_t( c ) ) ) &

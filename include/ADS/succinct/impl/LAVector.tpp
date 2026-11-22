@@ -117,7 +117,7 @@ inline LAVector::LAVector( const std::vector< std::uint64_t > & x , int c )
     : f_n( x.size() ) , f_c( c )
 {
  ADS_PRE( ( c >= 0 ) && ( c <= 63 ) );
- ADS_PRE( x.size() < ( std::size_t( 1 ) << 32 ) );
+ ADS_PRE( std::uint64_t( x.size() ) < ( std::uint64_t( 1 ) << 32 ) );
  ADS_AUDIT( std::is_sorted( x.begin() , x.end() ) );
  if( f_n == 0 )
   return;

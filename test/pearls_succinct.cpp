@@ -51,8 +51,6 @@
 #include <utility>
 #include <vector>
 
-static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
-
 // the lengths of the integer codes in constant expressions, at their
 // smallest arguments and at the edges of the words
 static_assert( ADS::binaryLength( 1 ) == 1 && ADS::binaryLength( 2 ) == 2 &&

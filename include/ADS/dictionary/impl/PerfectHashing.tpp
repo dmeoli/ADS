@@ -126,7 +126,7 @@ OrderedMinimalPerfectHash< K >::OrderedMinimalPerfectHash(
  if( c == 0 )
   c = r == 2 ? 3 : 1.25;
  ADS_PRE( ( ( r == 2 ) && ( c > 2 ) ) || ( ( r == 3 ) && ( c > 1.23 ) ) );
- ADS_PRE( keys.size() < ( std::size_t( 1 ) << 32 ) );
+ ADS_PRE( std::uint64_t( keys.size() ) < ( std::uint64_t( 1 ) << 32 ) );
  ADS_AUDIT( [ & ]( void ) {
   std::vector< K > s( keys );
   std::sort( s.begin() , s.end() );

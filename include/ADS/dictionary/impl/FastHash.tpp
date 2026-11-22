@@ -193,7 +193,7 @@ struct LongHash
  ADS_HASH_NOINLINE static std::uint64_t
  stripes( const unsigned char * s , std::size_t n , std::uint64_t seed ) {
   std::uint64_t a[ 8 ];
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
   // the lanes by the kernel of Highway [see Simd.h]
   simd::hashStripes( s , n , seed , kStripeK.data() , a );
 #else

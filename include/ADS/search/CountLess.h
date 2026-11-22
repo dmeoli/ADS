@@ -72,7 +72,7 @@ namespace ADS::detail
 template< std::size_t N , bool Up = false , class T >
 [[nodiscard]] inline std::size_t countLess( const T * a , const T & x )
 {
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  if constexpr( simd::here::kLanesOf< T > )
   return( simd::here::countLess< N , Up >( a , x ) );
 #endif
@@ -103,7 +103,7 @@ template< std::size_t N , class T >
 [[nodiscard]] inline std::uint64_t greaterBits( const T * a , const T & x )
 {
  static_assert( N <= 64 , "the bits of a word" );
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  if constexpr( simd::here::kLanesOf< T > )
   return( simd::here::greaterBits< N >( a , x ) );
 #endif

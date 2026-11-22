@@ -570,7 +570,7 @@ ADS_TEST( "mod-policies" )
   CHECK_THROWS( d.subject().attach( r ) , contract_violation );
   CHECK_THROWS( d.subject().detach( a ) , contract_violation );
   }
- // an observer that attaches from within on(): refused
+ // an observer that attaches from within on(): refused, by a contract
  struct Attacher
  {
   KD * s = nullptr;
@@ -585,11 +585,13 @@ ADS_TEST( "mod-policies" )
     }
    }
   };
- Attacher at;
- at.s = &d;
- d.subject().attach( at );
- d.assign( 0 , 5 );
- CHECK( at.refused );
+ if constexpr( ADS::test::kAllContracts ) {
+  Attacher at;
+  at.s = &d;
+  d.subject().attach( at );
+  d.assign( 0 , 5 );
+  CHECK( at.refused );
+  }
 
  // both: the static ones first, then the dynamic ones
  std::vector< int > order;
@@ -1080,7 +1082,8 @@ ADS_TEST( "mod-quiet" )
   q.end();
   q.end();  // idempotent
   }
- CHECK( sr.one.size() == 1 && au.audits == audits + 1 );
+ CHECK( sr.one.size() == 1 &&
+	au.audits == audits + int( ADS::test::kAllContracts ) );
  // nested mutes: one Rebuilt at the outermost end, if any asked for it
  {
   auto q1 = ADS::quiet( s , no_rebuild );
@@ -1164,7 +1167,8 @@ ADS_TEST( "mod-revisions" )
 
 ADS_TEST( "mod-audit" )
 {
- static_assert( ADS_CONTRACTS >= 3 );
+ if constexpr( ! ADS::test::kAllContracts )  // the audits, at 3 alone
+  return;
  Auditor au;
  Rec r;
  Keyed< Both< Static< Auditor , Rec > > > s( 4 , au , r );
@@ -1231,7 +1235,7 @@ ADS_TEST( "mod-shadow" )
  s.assign( 0 , 30 );
  CHECK( ! sd.agree( both ) );
  CHECK_THROWS( sd.query( both ) , contract_violation );
- CHECK( sd.counts().mismatches == 2 );
+ CHECK( sd.counts().mismatches == ( ADS::test::kAllContracts ? 2 : 1 ) );
  CHECK( sd.audit( s ) );
  s.clear();
  CHECK( &sd.incremental() == &inc && &sd.scratch() == &scr );

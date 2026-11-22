@@ -1506,10 +1506,10 @@ order. With `ADS_WITH_HIGHWAY` it is the vectorized quicksort of
 [Wassenberg et al. 2022](Z-bibliography.md#ref-wassenberg2022),
 `hwy::VQSort()` of the library of Google Highway, on the vectors of the
 processor found when the program runs, and `kVectorSort` is true; without
-it (or with `ADS_VECTOR_SORT` set to 0) it is the quicksort of [Algorithm
-12.15](12-sort.md#alg-12-15), in portable code whose registers are arrays
-of $W = 32 / w$ lanes for keys of $w$ bytes, which the compiler vectorizes
-as it can, and which we describe in its five parts. Its overloads take a
+it (or with `ADS_VECTOR_SORT` set to 0, or `ADS_SIMD_SCALAR` set to 1) it
+is the quicksort of [Algorithm 12.15](12-sort.md#alg-12-15), in portable
+code whose registers are arrays of $W = 32 / w$ lanes for keys of $w$
+bytes, which the compiler vectorizes as it can, and which we describe in its five parts. Its overloads take a
 `std::vector` or a pointer and a length, and both ways sort the floating
 point numbers by the same keys, so that they give the same order.
 

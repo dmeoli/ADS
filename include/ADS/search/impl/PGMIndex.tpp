@@ -306,7 +306,7 @@ auto ADS_PGM::approximate( const std::vector< std::uint64_t > & x ,
 ADS_PGM_T
 ADS_PGM::PGMIndex( const std::vector< K > & A ) : f_A( A.begin() , A.end() )
 {
- ADS_PRE( f_A.size() < ( std::size_t( 1 ) << 32 ) );
+ ADS_PRE( std::uint64_t( f_A.size() ) < ( std::uint64_t( 1 ) << 32 ) );
  ADS_AUDIT( std::is_sorted( f_A.begin() , f_A.end() ) );
  if( f_A.empty() )
   return;

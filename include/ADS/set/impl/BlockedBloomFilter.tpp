@@ -33,7 +33,7 @@ struct BlockMask
 {
  std::uint32_t m[ 8 ];
 
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  // the 8 words at once [see SimdInline.h]
  explicit BlockMask( std::uint32_t h ) {
   simd::here::blockBits8( h , kBlockSalt , m );

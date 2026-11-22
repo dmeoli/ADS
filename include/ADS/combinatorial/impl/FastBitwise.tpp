@@ -45,7 +45,7 @@ inline constexpr std::size_t kVectorWords = 16;
 
 inline std::uint64_t popcount( const Word * w , std::size_t n )
 {
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  if( n >= detail::kVectorWords )  // the kernel of Highway [see Simd.h]
   return( detail::simd::popcount( w , n ) );
 #endif
@@ -56,7 +56,7 @@ inline std::uint64_t popcount( const Word * w , std::size_t n )
 inline std::uint64_t popcountAnd( const Word * a , const Word * b ,
 				  std::size_t n )
 {
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  if( n >= detail::kVectorWords )
   return( detail::simd::popcountAnd( a , b , n ) );
 #endif

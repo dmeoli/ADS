@@ -184,8 +184,8 @@ RecSplit< T , L , H >::RecSplit( const std::vector< T > & keys ,
 			       std::uint64_t seed , H h )
     : f_seed( seed ) , f_n( keys.size() ) , f_t( &tables() ) , f_h( h )
 {
- ADS_PRE( ( keys.size() < ( std::size_t( 1 ) << 32 ) ) && ( b >= 1 ) &&
-	  ( b <= 2000 ) );
+ ADS_PRE( ( std::uint64_t( keys.size() ) < ( std::uint64_t( 1 ) << 32 ) ) &&
+	  ( b >= 1 ) && ( b <= 2000 ) );
  ADS_AUDIT( [ & ]( void ) {
   std::vector< T > S( keys );
   std::sort( S.begin() , S.end() );

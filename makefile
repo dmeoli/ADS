@@ -44,6 +44,10 @@
 #                                   if not given)                             #
 #           optional: $(PREFIX)   = where make install copies the headers     #
 #                                   (/usr/local if not given)                 #
+#           optional: $(ADS_TEST_CONTRACTS) = the level of the contracts of   #
+#                                   the tests [see Contract.h], 3 (all of     #
+#                                   them) if not given; below 3 the checks of #
+#                                   the contracts are not run [see ADSTest.h] #
 #           optional: the macros of the backends, ADS_WITH_GMP,               #
 #                     ADS_WITH_BLAS, ADS_WITH_BOOST, ADS_WITH_HIGHWAY,        #
 #                     ADS_WITH_LEMON,                                         #
@@ -79,15 +83,17 @@ ADSMODFLAGS = -Itest -DADS_CONTRACTS=3
 include $(ADSSDR)/lib/makefile-c
 
 # the tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# all the contracts checked, and the stack of Linux, 8 MB, for the recursive
-# solutions of the exercises on chains of 10^4 nodes (2 MB by default with
-# MinGW)
+# all the contracts checked (or those of the level ADS_TEST_CONTRACTS), and
+# the stack of Linux, 8 MB, for the recursive solutions of the exercises on
+# chains of 10^4 nodes (2 MB by default with MinGW)
 
 STACK    = $(eval STACK := $$(shell echo 'int main(){}' | $$(CXX) -x c++ - \
            -Wl$$(ADScomma)--stack$$(ADScomma)8388608 -o $$(ADSTRY) \
            >$$(ADSNULL) 2>&1 && \
            echo -Wl$$(ADScomma)--stack$$(ADScomma)8388608))$(STACK)
-INC      = $(ADSINC) $(ADSLEMONINC) -Itest -DADS_CONTRACTS=3
+ADS_TEST_CONTRACTS ?= 3
+INC      = $(ADSINC) $(ADSLEMONINC) -Itest \
+           -DADS_CONTRACTS=$(ADS_TEST_CONTRACTS)
 LIBS     = $(ADSLIB) $(STACK)
 HEADERS  = $(ADSH) $(ADSLEMONH) test/ADSTest.h
 PROGRAMS = $(shell awk '/^[a-z]/{print $$1}' test/tests.txt | sort -u)
@@ -128,7 +134,7 @@ sets:
 test-sets:
 	$(if $(HASPY),,$(error test-sets needs $(PYTHON)))
 	@for s in core base advanced; do \
-	  $(PYTHON) cmake/ads_sets.py --test $$s --cxx $(CXX) || exit 1; \
+	  $(PYTHON) cmake/ads_sets.py --test $$s --cxx "$(CXX)" || exit 1; \
 	done
 	@$(PYTHON) cmake/ads_sets.py --check && echo "PASSED sets.check"
 

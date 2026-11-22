@@ -97,7 +97,7 @@ std::uint32_t RibbonFilter< T , F , H >::parities( const std::uint64_t * u ,
 						 std::uint64_t lo ,
 						 std::uint64_t hi )
 {
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  // the 8 words at once [see SimdInline.h]
  return( detail::simd::here::parities8( u , u + kR , lo , hi ) );
 #else
@@ -171,7 +171,7 @@ void RibbonFilter< T , F , H >::solve( const std::vector< std::uint64_t > & C ,
  auto side = [ & ]( std::size_t i ) {
   return( C[ i ] != 0 ? std::uint64_t( R[ i ] ) : hashWord( i , f_seed ) );
   };
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  // W[ j ] holds the bits of the column j in the 64 rows from i; 4 rows at
  // a time, 8 columns a vector [see SimdInline.h]: the parities of the 4
  // rows taken from the old W at once, and the bits of the new rows among

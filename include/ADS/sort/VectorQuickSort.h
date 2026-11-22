@@ -85,9 +85,9 @@
  *   integers of 32 bits [see `Sort.h`].
  *
  * `kVectorSort` tells whether the sort is that of Highway, and
- * `ADS_VECTOR_SORT` set to 0 takes the portable code with Highway too. The
- * keys of the floating point numbers are the same on both ways, so that
- * the order is the same.
+ * `ADS_VECTOR_SORT` set to 0 (or `ADS_SIMD_SCALAR` set to 1 [see `Simd.h`])
+ * takes the portable code with Highway too. The keys of the floating point
+ * numbers are the same on both ways, so that the order is the same.
  *
  * `vectorQuickSort()` is not stable (equal integers cannot be told apart, but
  * \f$ -0 \f$ and \f$ +0 \f$ can). The contracts [see `Contract.h`]: the vector
@@ -134,6 +134,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Simd.h"  // ADS_SIMD, and the dispatch before hwy/highway.h
 #include "ADS/memory/Prefetch.h"
 #include "ADS/sort/Sorted.h"
 
@@ -149,18 +150,11 @@
 #include <utility>
 #include <vector>
 
+/// 1 if the sort is the quicksort of Highway on the vectors of the
+/// processor, 0 if the portable code; by default ADS_SIMD [see Simd.h],
+/// and it may be set to 0 before the include
 #ifndef ADS_VECTOR_SORT
- #ifdef ADS_WITH_HIGHWAY
-  /// 1 if the sort is the quicksort of Highway on the vectors of the
-  /// processor (with ADS_WITH_HIGHWAY), 0 if the portable code; it may be
-  /// set to 0 before the include
-  #define ADS_VECTOR_SORT 1
- #else
-  /// 1 if the sort is the quicksort of Highway on the vectors of the
-  /// processor (with ADS_WITH_HIGHWAY), 0 if the portable code; it may be
-  /// set to 0 before the include
-  #define ADS_VECTOR_SORT 0
- #endif
+ #define ADS_VECTOR_SORT ADS_SIMD
 #endif
 
 #if ADS_VECTOR_SORT

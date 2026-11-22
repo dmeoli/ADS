@@ -78,7 +78,7 @@ streamVByteEncode( std::span< const std::uint32_t > x )
   return( l );
   };
  std::size_t i = 0;
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  // 4 integers a step by the kernel of Highway [see Simd.h], on the
  // machines of little-endian order
  if constexpr( std::endian::native == std::endian::little )
@@ -109,7 +109,7 @@ streamVByteDecode( std::span< const std::uint8_t > code , std::size_t n )
  const std::uint8_t * d = code.data() + nc;
  const std::uint8_t * const end = code.data() + code.size();
  std::size_t i = 0;
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  // 4 integers a step by the shuffle of their control byte, the kernel of
  // Highway [see Simd.h], on the machines of little-endian order
  if constexpr( std::endian::native == std::endian::little )

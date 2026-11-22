@@ -23,8 +23,6 @@
 #include <utility>
 #include <vector>
 
-static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
-
 // the components by one visit, split off Visit.h, come with it
 #if ! defined( __ADS_StrongComponents )
  #error "Visit.h does not include StrongComponents.h"

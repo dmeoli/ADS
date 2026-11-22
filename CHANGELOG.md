@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from which their suffix array is of entries of 64 bits, by default
   `bwtWideFrom` = 2^31 - 1, so that the path of 64 bits runs, and is
   tested against that of 32 bits, on short texts
+- `ADS_SIMD_SCALAR`, 0 by default, which set to 1 with `ADS_WITH_HIGHWAY`
+  turns off every vector branch of the headers (the kernels of `Simd.h`
+  and of `SimdInline.h`, the matching of the hash tables, the filter of
+  the searches of strings, the sort of Highway, the packing of the
+  integers), so that one build on Highway tests the scalar code too; the
+  branches are taken on `ADS_SIMD`, which `Simd.h` defines, and
+  `ADS_FLAT_SIMD`, `ADS_SEARCH_SIMD` and `ADS_VECTOR_SORT` take it as their
+  default, while `ADS_BP_SCALAR` and the three, when given, keep their
+  meaning
+- `ADS_TEST_CONTRACTS`, the level of the contracts at which CMake and the
+  makefile build the tests, 3 by default; below 3 the tests pass with the
+  checks of the contracts themselves (`CHECK_THROWS` of a
+  `contract_violation`, the audits and the counts kept for them) left out
 
 ### Changed
 
@@ -173,6 +186,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   doubling and migrate them with the thread that doubles, instead of
   spinning while it places every pair alone (the cooperative migration of
   Maier, Sanders and Dementiev)
+- `cmake/ads_sets.py --test` takes a compiler given with its options
+  (e.g., `--cxx "g++ -m32"`), as the makefile passes `$(CXX)`
+- `VectorQuickSort.h` includes `Simd.h` before the sort of Highway, so that
+  the dispatch of the kernels comes before `hwy/highway.h` in every unit
 
 ### Fixed
 
@@ -243,6 +260,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   written after the partial bytes, and the scans read every record after
   them shifted by those bytes
 
+- `RankSelect` and `CompactRankSelect` compile where `std::size_t` has 32
+  bits, their top levels taken by shifts of 64 bits, and the preconditions
+  that bound a size by 2^32 (the perfect hashes, `RecSplit`, the PGM
+  indexes, `SellMatrix`, `LAVector`, `RemUnionFind`, `WordRangeMinimum`) hold
+  there for every size, which a shift of a `std::size_t` by 32 broke
 - the makefile builds the benchmarks on Boost, Highway and hwloc where they
   are found, as the targets of CMake do, keeping the code of ADS where a
   structure would delegate to Boost or to LEMON; before, it built them on

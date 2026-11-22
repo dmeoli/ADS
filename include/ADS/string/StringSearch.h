@@ -157,17 +157,13 @@
 
 /// the vector comparisons of the filter: 1 by the vectors of Highway, 32
 /// bytes at a time, at the instructions of the compiler [see
-/// SimdInline.h], 0 none (`memchr()` and bytes); by default 1 with
-/// ADS_WITH_HIGHWAY, and the same in all the translation units of a program
+/// SimdInline.h], 0 none (`memchr()` and bytes); by default ADS_SIMD [see
+/// Simd.h], and the same in all the translation units of a program
 #ifndef ADS_SEARCH_SIMD
- #ifdef ADS_WITH_HIGHWAY
-  #define ADS_SEARCH_SIMD 1
- #else
-  #define ADS_SEARCH_SIMD 0
- #endif
+ #define ADS_SEARCH_SIMD ADS_SIMD
 #endif
-#if ADS_SEARCH_SIMD && ! defined( ADS_WITH_HIGHWAY )
- #error "ADS_SEARCH_SIMD = 1 needs ADS_WITH_HIGHWAY"
+#if ADS_SEARCH_SIMD && ! ADS_SIMD
+ #error "ADS_SEARCH_SIMD = 1 needs ADS_WITH_HIGHWAY and no ADS_SIMD_SCALAR"
 #endif
 
 /*--------------------------------------------------------------------------*/

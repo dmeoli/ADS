@@ -121,7 +121,7 @@ inline void myersLanes( std::uint64_t * pv , std::uint64_t * mv ,
 			const std::uint64_t * eq , std::uint64_t * cp ,
 			std::uint64_t * cn , const std::uint64_t * act )
 {
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  simd::here::myersLanes< K , Masked >( pv , mv , eq , cp , cn , act );
 #else
  for( std::size_t q = 0 ; q < K ; ++q ) {
@@ -293,7 +293,7 @@ inline std::size_t levenshteinBand( std::string_view P , std::string_view T ,
   while( ( first < last ) &&
 	 ( ( 64 * ( first + 1 ) < lo ) || ( least( first , j - 1 ) > k ) ) )
    ++first;
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
   constexpr std::size_t K = 4;
   if( ( j + K - 1 <= n ) && ( last - first + 1 >= 2 * K ) ) {
    // the blocks [ first , L[ q ] ] of the column j + q, in the lane q

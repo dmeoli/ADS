@@ -48,18 +48,19 @@
  #define __ADS_Abi
 /* self-identification: #endif constant */
 
+// ADS_SIMD, 1 when the vector branches are compiled, and with them the
+// dispatch of the kernels, before hwy/highway.h, which it includes
+#include "ADS/Simd.h"
+
 /// the matching of the 15 control bytes of a group of the hash tables: 1
 /// by the vectors of Highway [see SimdInline.h], 0 by broadword
-/// operations; by default 1 with ADS_WITH_HIGHWAY, 0 without it
+/// operations; by default ADS_SIMD [see Simd.h], i.e., 1 with
+/// ADS_WITH_HIGHWAY and 0 without it or with ADS_SIMD_SCALAR
 #ifndef ADS_FLAT_SIMD
- #ifdef ADS_WITH_HIGHWAY
-  #define ADS_FLAT_SIMD 1
- #else
-  #define ADS_FLAT_SIMD 0
- #endif
+ #define ADS_FLAT_SIMD ADS_SIMD
 #endif
-#if ADS_FLAT_SIMD && ! defined( ADS_WITH_HIGHWAY )
- #error "ADS_FLAT_SIMD = 1 needs ADS_WITH_HIGHWAY"
+#if ADS_FLAT_SIMD && ! ADS_SIMD
+ #error "ADS_FLAT_SIMD = 1 needs ADS_WITH_HIGHWAY and no ADS_SIMD_SCALAR"
 #endif
 
 // the compare-and-swap of 16 bytes of Boost.Atomic, with ADS_WITH_BOOST,
@@ -88,10 +89,8 @@
 
 // the set of vector instructions of the kernels inlined by Highway, its
 // namespace (e.g., N_SSE2, N_AVX2), which the flags of the compiler choose
-// [see SimdInline.h], none without Highway
-#ifdef ADS_WITH_HIGHWAY
- #include "ADS/Simd.h"  // before hwy/highway.h, which it includes
-
+// [see SimdInline.h], none without the vector branches
+#if ADS_SIMD
  #define ADS_ABI_VECTOR HWY_NAMESPACE
 #else
  #define ADS_ABI_VECTOR none

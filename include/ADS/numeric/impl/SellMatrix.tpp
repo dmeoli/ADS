@@ -21,7 +21,8 @@ template< std::size_t C >
 SellMatrix< C >::SellMatrix( const CsrMatrix & A , std::size_t sigma )
     : f_m( A.rows() ) , f_n( A.cols() ) , f_nnz( A.nonzeros() )
 {
- ADS_PRE( ( sigma >= 1 ) && ( f_m < ( std::size_t( 1 ) << 32 ) ) );
+ ADS_PRE( ( sigma >= 1 ) &&
+	  ( std::uint64_t( f_m ) < ( std::uint64_t( 1 ) << 32 ) ) );
  const std::size_t * row = A.rowStart();
  const std::size_t m = f_m , chunks = ( m + C - 1 ) / C;
  auto len = [ & ]( std::size_t i ) { return( row[ i + 1 ] - row[ i ] ); };

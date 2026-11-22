@@ -51,17 +51,21 @@ inline void BasicRankSelect< Lazy >::directory( Selects s , const Word * w )
  f_has[ 1 ] = ( s == Selects::ONES ) || ( s == Selects::BOTH );
  f_has[ 0 ] = ( s == Selects::ZEROS ) || ( s == Selects::BOTH );
  const std::size_t n = f_b.size();
- const std::size_t nb = n / kBlock + 1;    // and one more
- f_big = ( ( nb * kBlock ) >> kTop ) > 0;  // the last block counts too
- f_dir.resize( nb + 1 );                   // each one written below
+ const std::size_t nb = n / kBlock + 1;  // and one more
+ f_big = ( ( std::uint64_t( nb ) * kBlock ) >> kTop ) >
+	 0;               // the last block counts too
+ f_dir.resize( nb + 1 );  // each one written below
  if( f_big )
-  f_top.assign( ( n >> kTop ) + 2 , 0 );
+  f_top.assign( std::size_t( std::uint64_t( n ) >> kTop ) + 2 , 0 );
  else
   f_top.clear();
  Word * const P = f_b.f_w.data();
  const std::size_t nw = f_b.f_w.size();  // a multiple of 8
  std::uint64_t c = 0;
- constexpr std::size_t kTopBlocks = ( std::size_t( 1 ) << kTop ) / kBlock;
+ // at most the largest std::size_t, where it has fewer than kTop bits
+ constexpr std::size_t kTopBlocks = std::size_t(
+   std::min< std::uint64_t >( ( std::uint64_t( 1 ) << kTop ) / kBlock ,
+			      std::numeric_limits< std::size_t >::max() ) );
  // the entries of the blocks [ from , to ) from the words Q (copied to
  // the bits if Copy), a top block at a time: the sideways sums of the 4
  // words of a block in a byte each, their prefix sums by one product, the
@@ -146,7 +150,10 @@ void BasicRankSelect< Lazy >::directory( E & ex , Selects s , const Word * w )
 {
  const std::size_t n = f_b.size();
  const std::size_t nb = n / kBlock + 1;  // and one more
- constexpr std::size_t kTopBlocks = ( std::size_t( 1 ) << kTop ) / kBlock;
+ // at most the largest std::size_t, where it has fewer than kTop bits
+ constexpr std::size_t kTopBlocks = std::size_t(
+   std::min< std::uint64_t >( ( std::uint64_t( 1 ) << kTop ) / kBlock ,
+			      std::numeric_limits< std::size_t >::max() ) );
  // the chunks of blocks [see detail::chunkUnits()]
  const std::size_t cs =
    detail::chunkUnits( nb + 1 , kChunk , kBlocks , kTopBlocks );
@@ -157,10 +164,11 @@ void BasicRankSelect< Lazy >::directory( E & ex , Selects s , const Word * w )
   }
  f_has[ 1 ] = ( s == Selects::ONES ) || ( s == Selects::BOTH );
  f_has[ 0 ] = ( s == Selects::ZEROS ) || ( s == Selects::BOTH );
- f_big = ( ( nb * kBlock ) >> kTop ) > 0;  // the last block counts too
+ f_big = ( ( std::uint64_t( nb ) * kBlock ) >> kTop ) >
+	 0;  // the last block counts too
  f_dir.resize( nb + 1 );
  if( f_big )
-  f_top.assign( ( n >> kTop ) + 2 , 0 );
+  f_top.assign( std::size_t( std::uint64_t( n ) >> kTop ) + 2 , 0 );
  else
   f_top.clear();
  Word * const P = f_b.f_w.data();
@@ -404,7 +412,8 @@ inline std::size_t BasicRankSelect< Lazy >::before( std::size_t t ,
 {
  std::size_t o = std::size_t( f_dir[ t ] >> ( 3 * kRel ) );
  if( f_big )
-  o += std::size_t( f_top[ ( t * kBlock ) >> kTop ] );
+  o += std::size_t(
+    f_top[ std::size_t( ( std::uint64_t( t ) * kBlock ) >> kTop ) ] );
  return( b ? o : t * kBlock - o );
  }
 
@@ -435,7 +444,7 @@ inline std::size_t BasicRankSelect< Lazy >::rank1( std::size_t i ) const
  std::size_t r = std::size_t(
    ( e >> ( 3 * kRel ) ) + ( ( ( e << kRel ) >> ( kRel * q ) ) & kRelMask ) );
  if( f_big )
-  r += std::size_t( f_top[ i >> kTop ] );
+  r += std::size_t( f_top[ std::size_t( std::uint64_t( i ) >> kTop ) ] );
  // the 1s of the word up to i (the words exist past the size [see
  // BitVector.h])
  return( r + std::size_t( std::popcount(
@@ -663,8 +672,9 @@ inline bool BasicRankSelect< Lazy >::fits( void ) const
 {
  const std::size_t n = f_b.size() , nb = n / kBlock + 1;
  return( ( f_dir.size() == nb + 1 ) && ( f_ones <= n ) &&
-	  ( f_big == ( ( ( nb * kBlock ) >> kTop ) > 0 ) ) &&
-	  ( f_top.size() == ( f_big ? ( n >> kTop ) + 2 : 0 ) ) );
+	  ( f_big == ( ( ( std::uint64_t( nb ) * kBlock ) >> kTop ) > 0 ) ) &&
+	  ( f_top.size() ==
+	    ( f_big ? std::size_t( std::uint64_t( n ) >> kTop ) + 2 : 0 ) ) );
  }
 
 /*--------------------------------------------------------------------------*/

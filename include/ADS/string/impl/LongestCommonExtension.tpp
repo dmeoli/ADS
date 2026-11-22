@@ -34,7 +34,7 @@ inline void lcePrefetch( const void * p )
 
 /// the bytes that lce() compares at once, and the first of them where
 /// p and q differ (lceChunk if none)
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
 inline constexpr std::size_t lceChunk = 32;
 
 inline std::size_t lceMismatch( const unsigned char * p ,

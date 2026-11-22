@@ -59,7 +59,7 @@ inline void InterleavedRankSelect::build( const Word * w , std::size_t n )
    const std::size_t t = l * kData - 16 , q = t / 64;
    const unsigned o = unsigned( t % 64 );
    if( ( l > 0 ) && ( q + 8 < nw ) ) {
-#ifdef ADS_WITH_HIGHWAY  // a vector at a time [see SimdInline.h]
+#if ADS_SIMD  // a vector at a time [see SimdInline.h]
     detail::simd::here::shiftedWords8( w + q , o , W );
 #else
     for( std::size_t k = 0 ; k < 8 ; ++k )

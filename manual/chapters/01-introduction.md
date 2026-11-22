@@ -1080,8 +1080,10 @@ n ) = O( 1 )$ and $g( n ) = \Theta( n )$, summed over the $k$ operations.
 $\square$
 
 The level 3 is thus meant for the tests, which are all compiled at it (both
-the CMake files and the makefile define `ADS_CONTRACTS=3` for them), since a
-linear algorithm may become quadratic there. Each macro expands to one check,
+the CMake files and the makefile define `ADS_CONTRACTS=3` for them, unless
+`ADS_TEST_CONTRACTS` gives a lower level, at which the tests still pass but
+leave out the checks of the contracts themselves), since a linear algorithm
+may become quadratic there. Each macro expands to one check,
 `ADS_CONTRACT_CHECK( level , kind , cond )`, which calls `detail::violated()`
 when the condition is false
 ([Algorithm 1.5](01-introduction.md#alg-1-5)).
@@ -1569,7 +1571,9 @@ filters, the rank in a line of a bit vector, the comparisons of `lce()` and
 of `StringSearcher`) are inlined from `ADS/SimdInline.h` at the set given
 to the compiler, which is why that set enters the name of the namespace
 above. Without Highway every structure runs its scalar code, with the same
-results. We leave the times of the kernels of Highway against those of the
+results, and so it does on Highway with `ADS_SIMD_SCALAR` set to 1, which
+turns off every vector branch at once (each is taken on `ADS_SIMD`, which
+`Simd.h` defines), so that one build tests both codes. We leave the times of the kernels of Highway against those of the
 intrinsics they replace to the campaign of `bench/simd.py` on an idle
 machine, which also counts their instructions. No kernel of ADS runs on
 the intrinsics of the target any longer: the strips of the edit distance,

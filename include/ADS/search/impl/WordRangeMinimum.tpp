@@ -56,7 +56,7 @@ WordRangeMinimum< T , Compare >::WordRangeMinimum( std::vector< T > A ,
     : f_A( std::move( A ) ) , f_less( std::move( less ) )
 {
  const std::size_t n = f_A.size();
- ADS_PRE( n < ( std::size_t( 1 ) << 32 ) );
+ ADS_PRE( std::uint64_t( n ) < ( std::uint64_t( 1 ) << 32 ) );
  f_M.resize( n );
  f_P.resize( n );
  f_blocks = ( n + 63 ) / 64;

@@ -39,7 +39,7 @@ inline std::uint32_t roaringWords( const std::uint64_t * a ,
 {
  std::size_t k = 0;
  std::uint64_t cnt = 0;
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  // by the kernel of Highway [see Simd.h], the operation told by its value
  // on 0101 and 0011 (or 0111, and 0001, and not 0100, xor 0110)
  const std::uint64_t t = op( std::uint64_t( 5 ) , std::uint64_t( 3 ) );
@@ -75,7 +75,7 @@ intersect16( const std::uint16_t * a , std::size_t na ,
   i = a[ 0 ] == 0 ? 1 : 0;
   j = b[ 0 ] == 0 ? 1 : 0;
   }
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  k += simd::intersectBlocks16( a , na , b , nb , out + k , &i , &j );
 #endif
  while( ( i < na ) && ( j < nb ) ) {
@@ -106,7 +106,7 @@ difference16( const std::uint16_t * a , std::size_t na ,
   j = b[ 0 ] == 0 ? 1 : 0;
   }
  unsigned mask = 0;  // the found of the block of a
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  k += simd::differenceBlocks16( a , na , b , nb , out + k , &i , &j , &mask );
 #endif
  const std::size_t i0 = i;  // the rest, one at a time
@@ -133,7 +133,7 @@ union16( const std::uint16_t * a , std::size_t na , const std::uint16_t * b ,
 {
  std::size_t i = 0 , j = 0 , k = 0;
  int last = -1;  // the last item written
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  if( ( na >= 8 ) && ( nb >= 8 ) )
   return( simd::unionBlocks16( a , na , b , nb , out ) );
 #endif

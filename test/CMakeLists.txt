@@ -52,6 +52,17 @@ if (ADS_SANITIZE_ADDRESS OR ADS_SANITIZE_THREAD)
     add_compile_definitions(ADS_TEST_SMALL)
 endif ()
 
+# the level of the contracts of the tests [see Contract.h], 3 by default,
+# all of them; below 3 the tests are built and run, but the checks of the
+# contracts themselves are not [see CHECK_THROWS in ADSTest.h]
+set(ADS_TEST_CONTRACTS 3 CACHE STRING
+    "the level of the contracts of the tests: 0, 1, 2 or 3")
+set_property(CACHE ADS_TEST_CONTRACTS PROPERTY STRINGS 0 1 2 3)
+if (NOT ADS_TEST_CONTRACTS MATCHES "^[0-3]$")
+    message(FATAL_ERROR "ADS_TEST_CONTRACTS is 0, 1, 2 or 3, not "
+            "${ADS_TEST_CONTRACTS}")
+endif ()
+
 file(STRINGS tests.txt lines REGEX "^[a-z]")
 set(programs "")
 foreach (line IN LISTS lines)
@@ -67,8 +78,10 @@ foreach (line IN LISTS lines)
         if (ADS_USE_LEMON)
             target_link_libraries(${program} PRIVATE ADS::LEMON)
         endif ()
-        # the tests check all the contracts, invariants included
-        target_compile_definitions(${program} PRIVATE ADS_CONTRACTS=3)
+        # the tests check all the contracts, invariants included, unless
+        # ADS_TEST_CONTRACTS is lower
+        target_compile_definitions(${program} PRIVATE
+                                   ADS_CONTRACTS=${ADS_TEST_CONTRACTS})
         # the options above
         target_compile_options(${program} PRIVATE ${ADS_TEST_OPTIONS})
         target_link_options(${program} PRIVATE ${ADS_TEST_LINK})
@@ -87,7 +100,8 @@ endforeach ()
 if (ADS_USE_MPI)
     add_executable(engineered_mpi engineered_mpi.cpp)
     target_link_libraries(engineered_mpi PRIVATE ADS::ADS Threads::Threads)
-    target_compile_definitions(engineered_mpi PRIVATE ADS_CONTRACTS=3)
+    target_compile_definitions(engineered_mpi PRIVATE
+                               ADS_CONTRACTS=${ADS_TEST_CONTRACTS})
     foreach (t distributed-sort distributed-sort-counts mpi-executor
                mpi-mailbox mpi-termination mpi-min mpi-bytes mpi-codec
                mpi-stop mpi-edges)
@@ -156,7 +170,8 @@ if (ADS_USE_MPI)
     if ("BoostMPI" IN_LIST ADS_INTEROP_BUILT)
         target_link_libraries(interop_examples_mpi PRIVATE ADS::BoostMPI)
     endif ()
-    target_compile_definitions(interop_examples_mpi PRIVATE ADS_CONTRACTS=3)
+    target_compile_definitions(interop_examples_mpi PRIVATE
+                               ADS_CONTRACTS=${ADS_TEST_CONTRACTS})
     foreach (t mpi-sort boost-mpi-sort)
         foreach (np 1 2 3 4)
             add_test(NAME interop_examples_mpi.${t}.np${np}
@@ -209,7 +224,8 @@ if ("BoostMPI" IN_LIST ADS_INTEROP_BUILT)
     add_executable(engineered_boost_mpi engineered_boost_mpi.cpp)
     target_link_libraries(engineered_boost_mpi PRIVATE ADS::BoostMPI
                           Threads::Threads)
-    target_compile_definitions(engineered_boost_mpi PRIVATE ADS_CONTRACTS=3)
+    target_compile_definitions(engineered_boost_mpi PRIVATE
+                               ADS_CONTRACTS=${ADS_TEST_CONTRACTS})
     foreach (t boost-mpi-sort boost-mpi-codec)
         foreach (np 1 2 3 4)
             add_test(NAME engineered_boost_mpi.${t}.np${np}

@@ -44,8 +44,8 @@ MinimalPerfectHash< T ,
 						std::uint64_t seed , H h )
     : f_seed( seed ) , f_n( keys.size() ) , f_h( h )
 {
- ADS_PRE( ( keys.size() < ( std::size_t( 1 ) << 32 ) ) && ( lambda >= 1 ) &&
-	  ( alpha >= 0.5 ) && ( alpha <= 1 ) );
+ ADS_PRE( ( std::uint64_t( keys.size() ) < ( std::uint64_t( 1 ) << 32 ) ) &&
+	  ( lambda >= 1 ) && ( alpha >= 0.5 ) && ( alpha <= 1 ) );
  ADS_AUDIT( [ & ]( void ) {
   std::vector< T > S( keys );
   std::sort( S.begin() , S.end() );

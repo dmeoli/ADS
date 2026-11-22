@@ -25,8 +25,6 @@
 #include <random>
 #include <vector>
 
-static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
-
 // the quicksorts of the book come with the quicksort of Peters
 #if ! defined( __ADS_EngineeredQuickSorts )
  #error "PdqSort.h does not include EngineeredQuickSorts.h"

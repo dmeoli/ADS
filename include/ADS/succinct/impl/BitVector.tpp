@@ -46,7 +46,7 @@ inline constexpr std::array< std::uint8_t , 2048 > kSelectInByte = [] {
 constexpr int selectInWord( Word x , int k )
 {
  ADS_PRE( ( k >= 0 ) && ( k < sidewaysSum( x ) ) );
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  // the compress of the bytes of Highway, where it is one instruction: the
  // emulated one is slower than the broadword code [see SimdInline.h]
  if constexpr( detail::simd::here::kSelectInWord512 )
@@ -73,7 +73,7 @@ template< bool Scalar >
 inline std::size_t lineRank( const Word * w , unsigned p )
 {
  ADS_PRE( p < 512 );
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  if constexpr( ! Scalar )  // the 8 words at once [see SimdInline.h]
   return( simd::here::lineRank512( w , p ) );
 #endif

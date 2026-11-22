@@ -22,8 +22,6 @@
 
 #include <vector>
 
-static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
-
 // the network of MaxFlow.h comes with its push-relabel
 #if ! defined( __ADS_MaxFlow )
  #error "PushRelabel.h does not include MaxFlow.h"

@@ -26,8 +26,6 @@
 #include <tuple>
 #include <vector>
 
-static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
-
 // the matchings of the book come with the blossoms
 #if ! defined( __ADS_Matching )
  #error "BlossomMatching.h does not include Matching.h"

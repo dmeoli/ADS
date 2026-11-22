@@ -21,7 +21,7 @@ namespace ADS
 
 inline RemUnionFind::RemUnionFind( std::size_t n ) : f_p( n ) , f_count( n )
 {
- ADS_PRE( n < ( std::size_t( 1 ) << 32 ) );
+ ADS_PRE( std::uint64_t( n ) < ( std::uint64_t( 1 ) << 32 ) );
  std::iota( f_p.begin() , f_p.end() , std::uint32_t( 0 ) );
  }
 

@@ -150,8 +150,6 @@
  #include <networkit/components/DynConnectedComponents.hpp>
 #endif
 
-static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
-
 /*--------------------------------------------------------------------------*/
 /*------------------------------- HELPERS ----------------------------------*/
 /*--------------------------------------------------------------------------*/

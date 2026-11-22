@@ -26,8 +26,6 @@
 #include <type_traits>
 #include <vector>
 
-static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
-
 // the customization points stand alone, without the concepts of the book
 #if defined( __ADS_PriorityQueue )
  #error "QueueCustomization.h includes PriorityQueue.h"

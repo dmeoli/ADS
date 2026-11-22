@@ -59,8 +59,6 @@
 #include <utility>
 #include <vector>
 
-static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
-
 /*--------------------------------------------------------------------------*/
 /*------------------------------- USING ------------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -410,7 +408,8 @@ ADS_TEST( "checking-contract" )
    return( a < b );
    } );
   CHECK( c == long( n * ( n ? n - 1 : 0 ) / 2 ) );
-  CHECK( all >= c && ( n < 2 || all > c ) );
+  CHECK( ADS::test::kAllContracts ? ( all >= c ) && ( n < 2 || all > c )
+				  : all == c );
   }
  CHECK( ! checkingContract() );
  }

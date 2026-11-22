@@ -45,7 +45,8 @@ FingerprintPerfectHash< T , H >::FingerprintPerfectHash(
   const std::vector< T > & keys , double gamma , std::uint64_t seed , H h )
     : f_seed( seed ) , f_n( keys.size() ) , f_h( h )
 {
- ADS_PRE( ( keys.size() < ( std::size_t( 1 ) << 32 ) ) && ( gamma >= 1 ) );
+ ADS_PRE( ( std::uint64_t( keys.size() ) < ( std::uint64_t( 1 ) << 32 ) ) &&
+	  ( gamma >= 1 ) );
  ADS_AUDIT( [ & ]( void ) {
   std::vector< T > S( keys );
   std::sort( S.begin() , S.end() );

@@ -73,8 +73,6 @@
 #include <utility>
 #include <vector>
 
-static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
-
 /*--------------------------------------------------------------------------*/
 /*------------------------------- USING ------------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -386,14 +384,14 @@ ADS_TEST( "parallel-sort" )
      k[ i ] = g() % 3 ? std::uint64_t( 1 ) << 63 : g();
      break;
     case( 10 ):  // 5 non-decreasing runs, ties
-     k[ i ] = ( ( i % ( n / 5 + 1 ) ) / 7 ) << 40;
+     k[ i ] = std::uint64_t( ( i % ( n / 5 + 1 ) ) / 7 ) << 40;
      break;
     case( 11 ):  // few keys, and a rare one
      k[ i ] = ( i % 50000 == 49999 ) ? 1000 : g() % 16;
      break;     // far off
     default: {  // 6 runs, up and down in turn
      const std::size_t r = i / ( n / 6 + 1 ) , o = i % ( n / 6 + 1 );
-     k[ i ] = ( ( r % 2 ? n - o : o ) + r * 3 ) << 40;
+     k[ i ] = std::uint64_t( ( r % 2 ? n - o : o ) + r * 3 ) << 40;
      }
     }
   return( k );

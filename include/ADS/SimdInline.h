@@ -19,8 +19,8 @@
  * Each kernel works on any number of lanes, one included, so that it
  * compiles for every target of Highway, the scalar ones too.
  *
- * Without `ADS_WITH_HIGHWAY` this header declares nothing, and the
- * structures run their broadword code.
+ * Without `ADS_WITH_HIGHWAY`, or with `ADS_SIMD_SCALAR` [see Simd.h], this
+ * header declares nothing, and the structures run their broadword code.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -36,13 +36,14 @@
  #define __ADS_SimdInline
 /* self-identification: #endif constant */
 
-#ifdef ADS_WITH_HIGHWAY
-
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
- #include "ADS/Simd.h"  // before hwy/highway.h, which it includes
+// ADS_SIMD, and the dispatch before hwy/highway.h, which it includes
+#include "ADS/Simd.h"
+
+#if ADS_SIMD
 
  #include <hwy/highway.h>
 

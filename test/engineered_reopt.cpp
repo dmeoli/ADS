@@ -44,8 +44,6 @@
 #include <utility>
 #include <vector>
 
-static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
-
 /*--------------------------------------------------------------------------*/
 /*------------------------------- USING ------------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -330,8 +328,11 @@ ADS_TEST( "reopt-early" )
  sf.policy().early = true;
  changes( 5 );
  CHECK( ( sp.pending() == 0 ) && ( sf.pending() == 0 ) );
- CHECK( og.subject().staticCounts( 0 ).rebuilds == 1 );
- CHECK( og.subject().slotCounts( id ).rebuilds == 1 );
+ // the counts, kept at the level of the audits alone
+ CHECK( og.subject().staticCounts( 0 ).rebuilds ==
+	std::uint64_t( ADS::test::kAllContracts ) );
+ CHECK( og.subject().slotCounts( id ).rebuilds ==
+	std::uint64_t( ADS::test::kAllContracts ) );
  og.setWeight( 0 , 1 , 3 );  // ignored until the query
  og.insertEdge( 0 , 1 , 2 );
  CHECK( ( sp.pending() == 0 ) && ( sf.pending() == 0 ) );
@@ -346,7 +347,8 @@ ADS_TEST( "reopt-early" )
  sf.policy().rho = 10;
  changes( 3 );
  CHECK( ( sp.pending() == 3 ) && ( sf.pending() == 3 ) );
- CHECK( og.subject().staticCounts( 0 ).rebuilds == 1 );
+ CHECK( og.subject().staticCounts( 0 ).rebuilds ==
+	std::uint64_t( ADS::test::kAllContracts ) );
  CHECK( sp.distance( 2 ) == shortestPaths( g , 0 , Frontier::HEAP ).d[ 2 ] );
  CHECK( sf.weight() == total( kruskal( g ) ) );
  // the assignment: every row again from the graph

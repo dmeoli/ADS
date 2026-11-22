@@ -78,7 +78,7 @@ inline std::uint64_t saisReverse( std::uint64_t x )
 template< typename C >
 inline void saisCompare( const C * T , std::uint64_t * G , std::uint64_t * P )
 {
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  // the bytes, and the names, never negative, 64 places a vector at a time
  // [see SimdInline.h]
  if constexpr( ( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > ) ||
@@ -101,7 +101,7 @@ inline void saisCompare( const C * T , std::uint64_t * G , std::uint64_t * P )
 inline void saisKinds( const unsigned char * x , std::uint64_t t ,
 		       std::uint64_t b , std::uint16_t * idx )
 {
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  simd::here::kinds64( x , t , b , idx );  // [see SimdInline.h]
 #else
  for( unsigned j = 0 ; j < 64 ; ++j )
@@ -686,7 +686,7 @@ template< class S >
 void saisCompact( S * a , S from , S to )
 {
  S i = from , j = from;
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
  // a vector at a time, compressed [see SimdInline.h]: the place j + L is
  // past no slot unread
  if constexpr( ( sizeof( S ) == 4 ) || ( sizeof( S ) == 8 ) ) {
@@ -1011,7 +1011,7 @@ void saisPartial( const C * T , S * SA , S n , S K ,
  for( std::size_t w = 0 ; 64 * w < std::size_t( m ) ; ++w ) {
   const S from = S( 64 * w ) , to = std::min< S >( from + 64 , m );
   std::uint64_t word = 0;
-#ifdef ADS_WITH_HIGHWAY
+#if ADS_SIMD
   if( to - from == 64 ) {  // the signs a vector at a time
    word = simd::here::takeSigns64( SA + from );  // [see SimdInline.h]
    ends[ w ] = word;

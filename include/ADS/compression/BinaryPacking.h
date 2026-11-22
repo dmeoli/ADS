@@ -58,8 +58,9 @@
  * of 0); the number of the integers is not written, and the decoder takes
  * it. The 4 lanes are those of the vectors of Highway with
  * `ADS_WITH_HIGHWAY` [see `Simd.h`], on the machines of little-endian
- * order; without it, on the others, or with `ADS_BP_SCALAR` (for the
- * tests), the same layout is packed and unpacked a lane at a time.
+ * order; without it, on the others, or with `ADS_BP_SCALAR` or
+ * `ADS_SIMD_SCALAR` (for the tests), the same layout is packed and
+ * unpacked a lane at a time.
  *
  * The contracts [see `Contract.h`]: the sorted sequence of the differential
  * code is non-decreasing (an audit); the decoder gets the code of
@@ -112,8 +113,9 @@
 #include <vector>
 
 // the blocks by the kernels of Highway [see Simd.h], on the machines of
-// little-endian order, unless ADS_BP_SCALAR asks for the scalar code
-#if defined( ADS_WITH_HIGHWAY ) && ! defined( ADS_BP_SCALAR )
+// little-endian order, unless ADS_BP_SCALAR (or ADS_SIMD_SCALAR, which
+// turns off all the vector branches [see Simd.h]) asks for the scalar code
+#if ADS_SIMD && ! defined( ADS_BP_SCALAR )
  #define ADS_BP_SIMD 1
 #endif
 
