@@ -30,7 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or the checksum of each
 - `bench/summary.py` takes one run, with the noise from its rows "A/A", or
   two, and with `--short` gives a row per benchmark against the standard
-  library and against the strongest library
+  library and against the strongest library, each comparison closed by its
+  verdict against the 90th percentile of the A/A: + (ADS faster in every
+  cell), − (slower in every cell), ≈ (the median within the noise) or ±
+  (faster in some cells and slower in others)
 - `FastFlowLock::lock()` retries its test-and-set after the exponential
   backoff of `Backoff`, from pauses of the processor to yields of the
   thread, instead of the busy loop of `ff::spin_lock()`, so that the threads

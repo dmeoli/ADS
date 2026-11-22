@@ -16,6 +16,12 @@
 # With --short, a row per sequential benchmark: its structure of ADS against  #
 # the standard library and against the strongest library, the one of the      #
 # smallest median.                                                            #
+#                                                                             #
+# The last column of each comparison is its verdict against the noise band,   #
+# the 90th percentile b of the A/A: + when the whole range is above 1 + b     #
+# (ADS faster in every cell), - when it is below 1 / (1 + b), = when the      #
+# median is within the band, and +- when the range crosses the band, i.e.,    #
+# ADS is faster in some cells and slower in others.                           #
 ###############################################################################
 
 import statistics
@@ -618,11 +624,26 @@ def read(path):
 def ratio(x):
     return '%.2f' % x if x < 9.95 else '%.0f' % x
 
+BAND = 0.0     # the noise band, set by main() from the A/A
+
+def verdict(r):
+    # the symbol of the ratios r = ( median , least , largest ) against the
+    # noise band
+    med, lo, hi = r
+    if lo > 1 + BAND:
+        return '+'
+    if hi < 1 / (1 + BAND):
+        return '\u2212'
+    if 1 / (1 + BAND) <= med <= 1 + BAND:
+        return '\u2248'
+    return '\u00b1'
+
 def cells(r):
-    # the median and the range of the ratios r, the range on one line
+    # the median and the range of the ratios r, the range on one line, and
+    # the verdict
     return ('<td align="right">%s</td><td align="right">%s&nbsp;to&nbsp;%s'
-            '</td>' %
-            tuple(map(ratio, r)))
+            '</td>' % tuple(map(ratio, r)) +
+            '<td align="center">%s</td>' % verdict(r))
 
 def brief(rows):
     # a row per sequential benchmark: its structure of ADS compared with the
@@ -630,8 +651,8 @@ def brief(rows):
     # of the smallest median, i.e., the strongest one
     print('<table>')
     print('<tr><th>benchmark</th><th>ADS</th><th>std: median</th>'
-          '<th>range</th><th>strongest</th><th>median</th><th>range</th>'
-          '</tr>')
+          '<th>range</th><th></th><th>strongest</th><th>median</th>'
+          '<th>range</th><th></th></tr>')
     for b, S in rows.items():
         if b.split()[0] in ('parallel', 'joins', 'greedy', 'runtime'):
             continue
@@ -640,12 +661,12 @@ def brief(rows):
         rest = [r for r in S[ads] if r[0] != 'std'
                 and not r[0].startswith('ADS')]
         line = '<tr><td>%s</td><td><code>%s</code></td>' % (b, ads)
-        line += cells(std[0][2:]) if std else '<td></td><td></td>'
+        line += cells(std[0][2:]) if std else '<td></td>' * 3
         if rest:
             r = min(rest, key=lambda r: r[2])
             line += '<td>%s</td>' % r[0] + cells(r[2:])
         else:
-            line += '<td></td><td></td><td></td>'
+            line += '<td></td>' * 4
         print(line + '</tr>')
     print('</table>')
 
@@ -674,6 +695,12 @@ def main(p1, p2=None, short=False):
           'largest %.0f%%' % (len(d), 100 * statistics.median(d),
                               100 * d[int(0.9 * (len(d) - 1))],
                               100 * d[-1]))
+    global BAND
+    BAND = d[int(0.9 * (len(d) - 1))]
+    print('- last column: + when ADS is faster than the band of the noise '
+          '(the 90th percentile of the A/A) in every cell, \u2212 when it is '
+          'slower in every cell, \u2248 when the median is within the band, '
+          '\u00b1 when ADS is faster in some cells and slower in others')
     print()
     cell = {k: (c1[k] + c2[k]) / 2 for k in both}
     rows = {}                   # benchmark -> structure -> its rows
@@ -699,7 +726,7 @@ def main(p1, p2=None, short=False):
     # structure span their rows
     print('<table>')
     print('<tr><th>benchmark</th><th>ADS</th><th>against</th>'
-          '<th>cells</th><th>median</th><th>range</th></tr>')
+          '<th>cells</th><th>median</th><th>range</th><th></th></tr>')
     for b, S in rows.items():
         first = '<td rowspan="%d">%s</td>' % (sum(map(len, S.values())), b)
         for ads, R in S.items():
