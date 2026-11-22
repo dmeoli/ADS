@@ -1016,7 +1016,10 @@ use in increasing order, from the stripe 0, and the doubling takes the
 locks of the new regions in the same order, before the new table is seen.
 Hence a thread that holds the lock $i$ and waits for the lock $j$ has
 $i < j$, and a cycle of waits would give
-$i_1 < i_2 < \cdots < i_k < i_1$, which is impossible. $\square$
+$i_1 < i_2 < \cdots < i_k < i_1$, which is impossible. A thread migrates
+parts of a doubling only while it waits for a lock and holds none, and a
+part takes no lock, so that the thread that doubles, which waits for the
+parts claimed, waits for no thread that waits for a lock. $\square$
 
 Let the keys and the values be trivially copyable, and let
 `std::atomic_ref` read and write them without locks (e.g., integers and
@@ -1089,8 +1092,19 @@ The search stops at $L = 5$, or at 1024 buckets, all in the region, whose
 tags form a block of $8 R$ bytes. We double the table when a region would pass the load 0.98, or when no path is found. The thread that doubles it
 takes all the locks in use, and those of the new regions too before the new
 table is seen; then it checks that no other thread has doubled the table in
-the meantime, and places each pair again in the new table
-("stop-the-world"). With 2 buckets per key and 4
+the meantime, and places each pair again in the new table, while no other
+thread changes the old one. The first bucket of a key being the top bits of
+its hash, the pairs of the old buckets $[ l , h )$ go to the new buckets
+$[ 2 l , 2 h )$, which hold whole regions and receive no other pair. The
+old table is thus cut in parts of whole regions, of at least 4096 buckets,
+and the threads that wait for a lock claim parts, by a compare-and-swap of
+a counter that carries the number of the doubling (so that a thread late on
+a doubling claims nothing of the next), and migrate them with the thread
+that doubles: each makes its part of the new table empty, places its pairs
+there and counts the pairs of its new regions (the cooperative migration of
+[Maier, Sanders and Dementiev 2019](Z-bibliography.md#ref-maier2019), here
+under the locks). The thread that doubles waits for all the parts, and only
+then is the new table seen. With 2 buckets per key and 4
 places per bucket, the cuckoo hashing of $n$ random keys succeeds with high
 probability while $n / ( 4 B ) < 0.9803$, the threshold of the
 4-orientability of the random graphs ([Cain, Sanders and Wormald
@@ -2928,7 +2942,8 @@ Each exercise names the test of the library that solves it (run it with
 7. Make a cuckoo table concurrent with one lock per region and lookups
    without locks under the versions of the regions, and prove that it
    cannot deadlock. Tests: `engineered.concurrent-cuckoo`,
-   `engineered.concurrent-cuckoo-threads`.
+   `engineered.concurrent-cuckoo-threads`,
+   `engineered.concurrent-cuckoo-growth`.
 8. Realize a table of linear probing shared by threads that grows while
    they insert, with lookups that never wait, and with the pairs in the
    words, in places of two words, or in nodes. Tests:

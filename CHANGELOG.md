@@ -128,6 +128,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without locks at the call and call the lookup under the lock, so that a
   lookup of keys and values read atomically costs no call, where the
   compiler had left both out of line in a program with many tables
+- `ConcurrentCuckooTable` doubles with the threads that wait for a lock:
+  the old table is cut in parts of whole regions, which go to buckets of
+  the new table that receive no other pair, and the waiting threads claim
+  parts by a compare-and-swap of a counter carrying the number of the
+  doubling and migrate them with the thread that doubles, instead of
+  spinning while it places every pair alone (the cooperative migration of
+  Maier, Sanders and Dementiev)
 
 ### Fixed
 

@@ -1909,6 +1909,101 @@ ADS_TEST( "concurrent-cuckoo-threads" )
   }
  }
 
+// the concurrent cuckoo table growing under 8 threads that insert their
+// keys into a table of capacity 0 while 2 others look keys up: a key whose
+// insertion its thread has announced is found with its value, and a key
+// never inserted is never found, through the doublings, whose parts the
+// threads that wait for a lock migrate with the thread that doubles, and
+// through a reserve() of a reader; then the same with values that are
+// strings, read under the locks
+ADS_TEST( "concurrent-cuckoo-growth" )
+{
+ auto key = []( std::uint64_t i ) {
+  return( ( i + 1 ) * 0x9E3779B97F4A7C15ULL );
+  };
+ {
+  const std::uint64_t p = 8 , n = 400000;
+  ConcurrentCuckooTable< std::uint64_t , std::uint64_t > T;
+  std::vector< std::atomic< std::uint64_t > > made( p );  // per thread
+  std::atomic< bool > done{ false };
+  std::atomic< int > bad{ 0 };
+  std::vector< std::thread > W;
+  for( std::uint64_t t = 0 ; t < p ; ++t )
+   W.emplace_back( [ & , t ] {
+    std::uint64_t c = 0;
+    for( std::uint64_t i = t ; i < n ; i += p ) {
+     if( ! T.insert( key( i ) , i ) )
+      ++bad;
+     made[ t ].store( ++c , std::memory_order_release );
+     }
+    } );
+  std::vector< std::thread > R;
+  for( std::uint64_t r = 0 ; r < 2 ; ++r )
+   R.emplace_back( [ & , r ] {
+    std::mt19937_64 g( 51 + r );
+    for( std::uint64_t s = 0 ; ! done.load() ; ++s ) {
+     if( ( r == 0 ) && ( s == 1000 ) )
+      T.reserve( n / 8 );
+     const std::uint64_t t = g() % p;
+     const std::uint64_t c = made[ t ].load( std::memory_order_acquire );
+     if( c > 0 ) {
+      const std::uint64_t i = t + ( g() % c ) * p;
+      const auto o = T.find( key( i ) );
+      if( ! o || ( *o != i ) || ! T.contains( key( i ) ) )
+       ++bad;
+      }
+     if( T.find( key( n + g() % n ) ) )
+      ++bad;
+     }
+    } );
+  for( auto & w : W )
+   w.join();
+  done = true;
+  for( auto & r : R )
+   r.join();
+  CHECK( bad == 0 && T.size() == n && T.consistent() );
+  CHECK( T.rehashes() >= 10 );
+  for( std::uint64_t i = 0 ; i < n ; ++i )
+   CHECK( T.find( key( i ) ) == i );
+  }
+ {
+  const std::uint64_t p = 4 , n = 100000;
+  ConcurrentCuckooTable< std::uint64_t , std::string > T;
+  std::vector< std::atomic< std::uint64_t > > made( p );
+  std::atomic< bool > done{ false };
+  std::atomic< int > bad{ 0 };
+  std::vector< std::thread > W;
+  for( std::uint64_t t = 0 ; t < p ; ++t )
+   W.emplace_back( [ & , t ] {
+    std::uint64_t c = 0;
+    for( std::uint64_t i = t ; i < n ; i += p ) {
+     if( ! T.insert( key( i ) , std::to_string( i ) ) )
+      ++bad;
+     made[ t ].store( ++c , std::memory_order_release );
+     }
+    } );
+  std::thread reader( [ & ] {
+   std::mt19937_64 g( 53 );
+   while( ! done.load() ) {
+    const std::uint64_t t = g() % p;
+    const std::uint64_t c = made[ t ].load( std::memory_order_acquire );
+    if( c > 0 ) {
+     const std::uint64_t i = t + ( g() % c ) * p;
+     if( T.find( key( i ) ) != std::to_string( i ) )
+      ++bad;
+     }
+    }
+   } );
+  for( auto & w : W )
+   w.join();
+  done = true;
+  reader.join();
+  CHECK( bad == 0 && T.size() == n && T.consistent() );
+  for( std::uint64_t i = 0 ; i < n ; ++i )
+   CHECK( T.find( key( i ) ) == std::to_string( i ) );
+  }
+ }
+
 // the concurrent flat table on one thread: pairs in the words (keys and
 // values of 32 bits, keys of 64 bits with no value), against
 // std::unordered_map, on random operations from an empty table that grows

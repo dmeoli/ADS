@@ -90,13 +90,34 @@ void ConcurrentCuckooTable< K , V , H , Eq >::unlock( Stripe & s )
  }
 
 template< class K , class V , class H , class Eq >
+void ConcurrentCuckooTable< K , V , H , Eq >::lockHelping( Stripe & s ) const
+{
+ // as lock(), but a thread that waits, holding no lock, migrates the parts
+ // of a doubling left, instead of spinning while the doubling holds all
+ // the locks
+ for( int n = 0 ; ; ) {
+  std::uint64_t v = s.version.load( std::memory_order_relaxed );
+  if( ! ( v & 1 ) &&
+      s.version.compare_exchange_weak( v , v + 1 , std::memory_order_acquire ,
+				       std::memory_order_relaxed ) )
+   return;
+  if( ( n & 15 ) == 15 )
+   help();
+  if( ++n < 64 )
+   detail::spinPause();
+  else
+   std::this_thread::yield();
+  }
+ }
+
+template< class K , class V , class H , class Eq >
 ConcurrentCuckooTable< K , V , H , Eq >::HoldAll::HoldAll(
   const ConcurrentCuckooTable & t )
     : f_L( t.f_L.get() )
 {
  // the stripe 0 first: the table changes only under all the locks in use,
- // which include it
- lock( f_L[ 0 ] );
+ // which include it; while none is held, a migration can be helped
+ t.lockHelping( f_L[ 0 ] );
  f_n = 1;
  extend( t.f_lg.load( std::memory_order_relaxed ) );
  }
@@ -122,11 +143,32 @@ auto ConcurrentCuckooTable< K , V , H ,
   -> Table *
 {
  // the region of the size seen, and the table checked under its lock: a
- // doubling holds all the locks, so that it is over or not begun
+ // doubling holds all the locks, so that it is over or not begun; a lock
+ // free at once here, the wait by a call in tail position, so that no
+ // value stays live across a call
+ const int lg = f_lg.load( std::memory_order_acquire );
+ Stripe & s = f_L[ first( h , lg ) >> regionLg( lg ) ];
+ std::uint64_t v = s.version.load( std::memory_order_relaxed );
+ if( ! ( v & 1 ) &&
+     s.version.compare_exchange_weak( v , v + 1 , std::memory_order_acquire ,
+				      std::memory_order_relaxed ) ) {
+  Table * T = f_table.load( std::memory_order_relaxed );
+  if( T->lg == lg )
+   return( T );
+  unlock( s );
+  }
+ return( waitRegion( h ) );
+ }
+
+template< class K , class V , class H , class Eq >
+auto ConcurrentCuckooTable< K , V , H ,
+			    Eq >::waitRegion( std::uint64_t h ) const
+  -> Table *
+{
  for( ; ; ) {
   const int lg = f_lg.load( std::memory_order_acquire );
   Stripe & s = f_L[ first( h , lg ) >> regionLg( lg ) ];
-  lock( s );
+  lockHelping( s );
   Table * T = f_table.load( std::memory_order_relaxed );
   if( T->lg == lg )
    return( T );
@@ -143,18 +185,20 @@ int ConcurrentCuckooTable< K , V , H , Eq >::regionLg( int lg )
  }
 
 template< class K , class V , class H , class Eq >
-ConcurrentCuckooTable< K , V , H , Eq >::Table::Table( int l )
+ConcurrentCuckooTable< K , V , H , Eq >::Table::Table( int l , bool init )
     : lg( l ) , rg( regionLg( l ) ) ,
       T( HugePageAllocator< std::uint32_t >().allocate( buckets() ) ) ,
       O( nullptr ) , B( nullptr )
 {
  // on huge pages when large, so that a lookup misses the TLB once per 2 MB
- std::uninitialized_value_construct_n( T , buckets() );
  try {
   O = HugePageAllocator< std::uint64_t >().allocate( overflowWords() );
-  std::uninitialized_value_construct_n( O , overflowWords() );
   B = HugePageAllocator< Bucket >().allocate( buckets() );
-  std::uninitialized_value_construct_n( B , buckets() );
+  if( init ) {
+   std::uninitialized_value_construct_n( T , buckets() );
+   std::uninitialized_value_construct_n( O , overflowWords() );
+   std::uninitialized_value_construct_n( B , buckets() );
+   }
   }
  catch( ... ) {
   if( B )
@@ -607,20 +651,98 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::placeInto( Table & N ,
  }
 
 template< class K , class V , class H , class Eq >
+bool ConcurrentCuckooTable< K , V , H , Eq >::claim( std::size_t & c ) const
+{
+ // the parts of a migration by a compare-and-swap of its own number, so
+ // that a thread late on a migration over claims nothing of the next one
+ std::uint64_t w = f_claim.load( std::memory_order_acquire );
+ for( ; ; ) {
+  const std::size_t next = w & 0xFFFF , parts = ( w >> 16 ) & 0xFFFF;
+  if( next >= parts )
+   return( false );
+  if( f_claim.compare_exchange_weak( w , w + 1 , std::memory_order_acq_rel ,
+				     std::memory_order_acquire ) ) {
+   c = next;
+   return( true );
+   }
+  }
+ }
+
+template< class K , class V , class H , class Eq >
+void ConcurrentCuckooTable< K , V , H , Eq >::help( void ) const
+{
+ for( std::size_t c ; claim( c ) ; )
+  migrate( c );
+ }
+
+template< class K , class V , class H , class Eq >
+void ConcurrentCuckooTable< K , V , H , Eq >::migrate( std::size_t c ) const
+{
+ // what the claim acquired, published before it, and not changed until
+ // this part is counted as migrated
+ Table & O = *f_from.load( std::memory_order_relaxed );
+ Table & N = *f_to.load( std::memory_order_relaxed );
+ std::int64_t * const C = f_count.load( std::memory_order_relaxed );
+ const std::size_t S = f_part.load( std::memory_order_relaxed );
+ const int d = N.lg - O.lg;
+ // the old buckets [ lo , hi ) go to the new ones [ lo , hi ) << d, which
+ // hold their new regions whole and receive no other key, since the first
+ // bucket of a key is the top bits of its hash
+ const std::size_t lo = c * S , hi = lo + S , nlo = lo << d , nhi = hi << d;
+ std::uninitialized_value_construct_n( N.T + nlo , nhi - nlo );
+ const std::size_t olo = ( nlo * kOverflow ) >> 6;
+ const std::size_t ohi = ( hi == O.buckets() ) ? N.overflowWords()
+					       : ( ( nhi * kOverflow ) >> 6 );
+ std::uninitialized_value_construct_n( N.O + olo , ohi - olo );
+ std::uninitialized_value_construct_n( N.B + nlo , nhi - nlo );
+ for( std::size_t i = lo << 2 ; i < ( hi << 2 ) ; ++i )
+  if( ( ( O.T[ i >> 2 ] >> ( 8 * ( i & 3 ) ) ) & 0xFF ) &&
+      ! placeInto( N , hash( O.S( i ).key ) , std::move( O.S( i ) ) ) ) {
+   // rare: kept apart, for the table twice as large
+   while( f_leftLock.exchange( true , std::memory_order_acquire ) )
+    detail::spinPause();
+   f_left.push_back( std::move( O.S( i ) ) );
+   f_leftLock.store( false , std::memory_order_release );
+   }
+ for( std::size_t b = nlo ; b < nhi ; ++b )  // the pairs of each region
+  C[ b >> N.rg ] += 4 - std::popcount( detail::zeroBytes( N.T[ b ] ) );
+ f_done.fetch_add( 1 , std::memory_order_release );
+ }
+
+template< class K , class V , class H , class Eq >
 void ConcurrentCuckooTable< K , V , H , Eq >::rehash( int lg , HoldAll & g )
 {
  // the new table filled before it replaces the old one, which an
  // optimistic reader may still read, and which is therefore only copied;
- // the pairs that find no place (rare), with those placed, go to a table
- // twice as large
+ // the old table is cut in parts of whole regions, at least 4096 buckets,
+ // which the threads that wait for a lock claim and migrate with this one
+ // (the cooperative migration of Maier et al.); the pairs that find no
+ // place (rare), with those placed, go to a table twice as large
  Table & O = *f_cur;
- auto N = std::make_unique< Table >( lg );
+ auto N = std::make_unique< Table >( lg , false );
+ const std::size_t S = std::min(
+   O.buckets() , std::max( std::size_t( 1 ) << O.rg , std::size_t( 4096 ) ) );
+ const std::size_t parts = O.buckets() / S;
+ std::vector< std::int64_t > C( N->buckets() >> N->rg , 0 );
+ f_left.clear();
+ f_from.store( &O , std::memory_order_relaxed );
+ f_to.store( N.get() , std::memory_order_relaxed );
+ f_count.store( C.data() , std::memory_order_relaxed );
+ f_part.store( S , std::memory_order_relaxed );
+ f_done.store( 0 , std::memory_order_relaxed );
+ const std::uint64_t e =
+   ( f_claim.load( std::memory_order_relaxed ) >> 32 ) + 1;
+ f_claim.store( ( e << 32 ) | ( std::uint64_t( parts ) << 16 ) ,
+		std::memory_order_release );
+ help();
+ for( int n = 0 ; f_done.load( std::memory_order_acquire ) < parts ; )
+  if( ++n < 64 )
+   detail::spinPause();
+  else
+   std::this_thread::yield();
  std::vector< Slot > P;
- for( std::size_t i = 0 ; i < ( O.buckets() << 2 ) ; ++i )
-  if( ( ( O.T[ i >> 2 ] >> ( 8 * ( i & 3 ) ) ) & 0xFF ) &&
-      ( ! P.empty() ||
-	! placeInto( *N , hash( O.S( i ).key ) , std::move( O.S( i ) ) ) ) )
-   P.push_back( std::move( O.S( i ) ) );
+ P.swap( f_left );
+ bool counted = P.empty();
  while( ! P.empty() ) {
   for( std::size_t j = 0 ; j < ( N->buckets() << 2 ) ; ++j )
    if( ( N->T[ j >> 2 ] >> ( 8 * ( j & 3 ) ) ) & 0xFF )
@@ -634,14 +756,15 @@ void ConcurrentCuckooTable< K , V , H , Eq >::rehash( int lg , HoldAll & g )
   }
  g.extend( lg );                              // before the table is seen
  for( std::size_t s = 0 ; s < g.held() ; ++s )  // the pairs per region
-  f_L[ s ].count.store( 0 , std::memory_order_relaxed );
- for( std::size_t b = 0 ; b < N->buckets() ; ++b )
-  if( const std::uint32_t w = N->T[ b ] ) {
-   Stripe & s = f_L[ b >> N->rg ];
-   s.count.store( s.count.load( std::memory_order_relaxed ) + 4 -
-		    std::popcount( detail::zeroBytes( w ) ) ,
-		  std::memory_order_relaxed );
-   }
+  f_L[ s ].count.store( counted ? C[ s ] : 0 , std::memory_order_relaxed );
+ if( ! counted )
+  for( std::size_t b = 0 ; b < N->buckets() ; ++b )
+   if( const std::uint32_t w = N->T[ b ] ) {
+    Stripe & s = f_L[ b >> N->rg ];
+    s.count.store( s.count.load( std::memory_order_relaxed ) + 4 -
+		     std::popcount( detail::zeroBytes( w ) ) ,
+		   std::memory_order_relaxed );
+    }
  f_table.store( N.get() , std::memory_order_release );
  f_lg.store( lg , std::memory_order_release );
  if constexpr( optimistic )

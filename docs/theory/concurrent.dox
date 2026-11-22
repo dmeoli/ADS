@@ -370,7 +370,11 @@
 
  Third, the doubling. A region whose load would pass 0.98, or an insertion
  that finds no cuckoo path of at most 5 moves among 1024 buckets, doubles
- the table under all the locks; the tables replaced stay alive while a
+ the table under all the locks, the threads that wait for a lock
+ migrating parts of whole regions with the thread that doubles, since the
+ pairs of the old buckets \f$ [ l , h ) \f$ go to the new buckets
+ \f$ [ 2 l , 2 h ) \f$ and to no others (Maier, Sanders and Dementiev);
+ the tables replaced stay alive while a
  reader may be on one, and with sizes that double they occupy less than the
  table in use. With 2 buckets of 4 places, \f$ n \f$ random keys fit with
  high probability while \f$ n < 0.9803 \cdot 4 B \f$, the threshold of the

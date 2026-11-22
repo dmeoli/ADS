@@ -103,7 +103,18 @@
  * found: the thread takes all the locks in use, those of the new regions
  * too before the new table is seen, checks that no other thread has
  * doubled the table in the meantime, and places every pair again in a new
- * table (stop-the-world). With 2 buckets per key and 4 places per bucket,
+ * table, while no other thread changes the old one. Since the first
+ * bucket of a key is the top bits of its hash, the pairs of the old
+ * buckets \f$ [ l , h ) \f$ go to the new buckets
+ * \f$ [ 2 l , 2 h ) \f$, which hold whole regions and receive no other
+ * pair; the old table is therefore cut in parts of whole regions and of
+ * at least 4096 buckets, which the threads waiting for a lock claim, by a
+ * compare-and-swap of a counter that carries the number of the doubling,
+ * and migrate with the thread that doubles, each making its part of the
+ * new table empty and counting the pairs of its new regions (the
+ * cooperative migration of Maier, Sanders and Dementiev, here under the
+ * locks); the thread that doubles waits for all the parts, and only then
+ * is the new table seen. With 2 buckets per key and 4 places per bucket,
  * the cuckoo hashing of \f$ n \f$ random keys succeeds with high
  * probability while \f$ n / ( 4 B ) < c^*_{2,4} \approx 0.9803 \f$, the
  * threshold of the 4-orientability of the random graphs (Cain, Sanders and
@@ -332,7 +343,9 @@ class ConcurrentCuckooTable
  ///     \ \textbf{then}\ \text{throw}\quad \triangleright\ \text{too many}
  ///     \text{ equal hashes} \cr
  /// 29 & \qquad T' \gets \text{a table of } 2 B \text{ buckets; place each}
- ///     \text{ pair of } T \text{ in } T' \text{, doubling } T' \cr
+ ///     \text{ pair of } T \text{ in } T' \text{, with the threads that}
+ ///     \text{ wait for a lock, each on its parts of } T \text{, doubling }
+ ///     T' \cr
  /// 30 & \qquad \text{again if one finds no place};\ \text{lock the new}
  ///     \text{ stripes too} \cr
  /// 31 & \qquad \text{count the pairs of each region};\ \text{make } T'
@@ -494,8 +507,9 @@ class ConcurrentCuckooTable
   std::uint64_t * O;
   /// the buckets
   Bucket * B;
-  /// the empty table of \f$ 2^l \f$ buckets
-  explicit Table( int l );
+  /// the empty table of \f$ 2^l \f$ buckets, or its memory only, whose
+  /// parts are made empty by the migration [see migrate()], if not init
+  explicit Table( int l , bool init = true );
   /// no copy, since it owns its buckets
   Table( const Table & ) = delete;
   /// no copy, since it owns its buckets
@@ -572,6 +586,21 @@ class ConcurrentCuckooTable
  static void lock( Stripe & s );
  static void unlock( Stripe & s );
 
+ /// the lock of s, helping a migration while it waits
+ void lockHelping( Stripe & s ) const;
+
+ /// a part of the migration in progress claimed in c; false if none is
+ /// left
+ bool claim( std::size_t & c ) const;
+
+ /// the parts of the migration in progress that are left, migrated
+ void help( void ) const;
+
+ /// the part c of the migration in progress: its buckets of the new table
+ /// made empty, its pairs of the old table placed in them (those that find
+ /// no place kept apart), and the pairs of its new regions counted
+ void migrate( std::size_t c ) const;
+
  /// log2 of the buckets of a region of a table of 2^lg buckets
  [[nodiscard]] static int regionLg( int lg );
 
@@ -609,6 +638,9 @@ class ConcurrentCuckooTable
 
  /// the lock of the region of the hash h, and the table it is of
  [[nodiscard]] Table * lockRegion( std::uint64_t h ) const;
+
+ /// lockRegion() after a lock found held, waiting for it
+ [[nodiscard]] Table * waitRegion( std::uint64_t h ) const;
 
  /// the place of k with the tag t in the buckets b1 and b2 of T, or ~0;
  /// b2 read only if the bit of overflow of b1 for t is set, if bit
@@ -688,6 +720,20 @@ class ConcurrentCuckooTable
 						 ///< if optimistic
  std::unique_ptr< Table > f_cur;                 ///< the table in use, owned
  std::atomic< std::size_t > f_rehashes{ 0 };
+
+ /// the migration in progress: its number in the bits 32 and up, its parts
+ /// in the bits 16 to 31, the next part to claim in the bits 0 to 15
+ mutable std::atomic< std::uint64_t > f_claim{ 0 };
+ mutable std::atomic< std::size_t > f_done{ 0 };   ///< its parts migrated
+ mutable std::atomic< Table * > f_from{ nullptr };  ///< its old table
+ mutable std::atomic< Table * > f_to{ nullptr };    ///< its new table
+ mutable std::atomic< std::int64_t * > f_count{ nullptr };  ///< the pairs
+							     ///< of its regions
+ mutable std::atomic< std::size_t > f_part{ 0 };   ///< the old buckets of
+						   ///< a part
+ mutable std::vector< Slot > f_left;              ///< the pairs that found
+						  ///< no place
+ mutable std::atomic< bool > f_leftLock{ false };  ///< the lock of f_left
  H f_h;
  Eq f_eq;
 
