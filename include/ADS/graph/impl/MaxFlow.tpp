@@ -107,6 +107,27 @@ inline void FlowNetwork::assignFlow( const std::vector< long long > & F )
  ADS_INVARIANT( skewSymmetric() );
  }
 
+inline bool FlowNetwork::preflowFits( int s ) const
+{
+ long long room = INF;
+ auto take = [ & ]( long long r ) {
+  if( r > room )
+   return( false );
+  room -= r;
+  return( true );
+  };
+ for( const auto & [ e , v ] : f_adj[ std::size_t( s ) ] )
+  if( ( v != s ) && ( f_res[ std::size_t( e ) ] > 0 ) &&
+      ! take( f_res[ std::size_t( e ) ] ) )
+   return( false );
+ if( f_unbalanced )
+  for( const int x : f_imbNodes )
+   if( ( x != s ) && ( f_imb[ std::size_t( x ) ] > 0 ) &&
+       ! take( f_imb[ std::size_t( x ) ] ) )
+    return( false );
+ return( true );
+ }
+
 inline long long FlowNetwork::maxFlow( int s , int t , Augment how ,
 				       long long * paths )
 {
@@ -115,6 +136,10 @@ inline long long FlowNetwork::maxFlow( int s , int t , Augment how ,
  // the value before the cuts of setCapacity(), whose excess or deficit
  // at t is the flow that they took from it or gave it
  const long long before = inflow( t ) - ( f_unbalanced ? f_imb[ t ] : 0 );
+ // the excesses of a preflow sum to more than the flow: beyond LLONG_MAX,
+ // the blocking flows of DINIC, whose sums stay within the flow
+ if( ( how == Augment::PUSH_RELABEL ) && ! preflowFits( s ) )
+  how = Augment::DINIC;
  if( f_unbalanced )  // the push-relabel takes the
   rebalance( s , t , how != Augment::PUSH_RELABEL );  // excesses itself
  if( how == Augment::PUSH_RELABEL )

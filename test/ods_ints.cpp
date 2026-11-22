@@ -1419,6 +1419,59 @@ ADS_TEST( "ods.ex12.2.incidence-matrix" )
  CHECK( ADS::distance( g , 0 ).first == ADS::distance( L , 0 ).first );
  }
 
+// the matrix of incidence on its edge cases: the graph of 0 nodes (no node,
+// no column, every edge a violation), a loop, a node out of range and a
+// negative one for each operation, an entry out of the columns; two
+// parallel edges, two equal columns, removed one at a time, and the removal
+// of an edge that is not there, which changes nothing
+ADS_TEST( "ods.ex12.2.incidence-contracts" )
+{
+ CHECK_THROWS( ADS::IncidenceGraph( -1 ) , ADS::contract_violation );
+ ADS::IncidenceGraph z;
+ CHECK( z.n() == 0 && z.m() == 0 && z.V().empty() && z.bytes() == 0 &&
+	! z.hasNode( 0 ) );
+ CHECK_THROWS( z.insertEdge( 0 , 1 ) , ADS::contract_violation );
+ CHECK_THROWS( ( void )z.adj( 0 ) , ADS::contract_violation );
+ ADS::IncidenceGraph g( 4 );
+ for( const auto [ i , j ] : { std::pair( 2 , 2 ) , std::pair( -1 , 0 ) ,
+			      std::pair( 0 , 4 ) , std::pair( 4 , 0 ) } ) {
+  CHECK_THROWS( g.insertEdge( i , j ) , ADS::contract_violation );
+  CHECK_THROWS( g.deleteEdge( i , j ) , ADS::contract_violation );
+  }
+ CHECK( ! g.hasEdge( 2 , 2 ) );  // a loop is never an edge
+ CHECK_THROWS( ( void )g.hasEdge( 0 , 4 ) , ADS::contract_violation );
+ CHECK_THROWS( ( void )g.hasEdge( -1 , 0 ) , ADS::contract_violation );
+ CHECK_THROWS( ( void )g.adj( 4 ) , ADS::contract_violation );
+ CHECK_THROWS( ( void )g.inAdj( -1 ) , ADS::contract_violation );
+ CHECK_THROWS( g.forEachAdj( 4 , []( int ) { } ) , ADS::contract_violation );
+ CHECK_THROWS( ( void )g.entry( 0 , 0 ) , ADS::contract_violation );
+ g.insertEdge( 0 , 3 );
+ g.insertEdge( 1 , 3 );
+ g.insertEdge( 0 , 3 );  // parallel
+ CHECK( g.m() == 3 && g.bytes() == 12 && g.hasEdge( 0 , 3 ) &&
+	! g.hasEdge( 3 , 0 ) );
+ CHECK( ( g.adj( 0 ) == std::vector< int >{ 3 , 3 } ) &&
+	( g.inAdj( 3 ) == std::vector< int >{ 0 , 1 , 0 } ) );
+ for( int i = 0 ; i < 4 ; ++i )
+  CHECK( g.entry( i , 0 ) == g.entry( i , 2 ) );
+ CHECK_THROWS( ( void )g.entry( 4 , 0 ) , ADS::contract_violation );
+ CHECK_THROWS( ( void )g.entry( 0 , 3 ) , ADS::contract_violation );
+ CHECK_THROWS( ( void )g.entry( 0 , -1 ) , ADS::contract_violation );
+ g.deleteEdge( 3 , 0 );  // not there
+ CHECK( g.m() == 3 );
+ g.deleteEdge( 0 , 3 );
+ CHECK( g.m() == 2 && g.hasEdge( 0 , 3 ) && g.hasEdge( 1 , 3 ) );
+ g.deleteEdge( 0 , 3 );
+ CHECK( g.m() == 1 && ! g.hasEdge( 0 , 3 ) && g.hasEdge( 1 , 3 ) &&
+	g.adj( 0 ).empty() && g.bytes() == 4 );
+ g.deleteEdge( 1 , 3 );
+ CHECK( g.m() == 0 && g.bytes() == 0 && g.inAdj( 3 ).empty() );
+ ADS::IncidenceGraph one( 1 );  // one node: no edge at all
+ CHECK( one.V() == std::vector< int >{ 0 } && one.adj( 0 ).empty() &&
+	! one.hasEdge( 0 , 0 ) );
+ CHECK_THROWS( one.insertEdge( 0 , 0 ) , ADS::contract_violation );
+ }
+
 /// the order of the recursive visit in depth of Morin's book, dfs( g , r )
 template< class G >
 void recursiveDfs( const G & g , int u , std::vector< bool > & seen ,

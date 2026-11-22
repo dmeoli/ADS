@@ -201,6 +201,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `denseLength()` check the preconditions of their codes (x >= 1,
   0 <= k < 64, 1 <= b <= 2^63, s >= 1 and c >= 1), where they returned a
   wrong length, divided by zero or shifted a word by 64 bits
+- `FlowNetwork::maxFlow()` with `PUSH_RELABEL` leaves the call to `DINIC`
+  when the residual capacities out of the source and the excesses left by
+  `setCapacity()` sum to more than `LLONG_MAX`, since the preflow pushes
+  them all at once and its excesses overflowed a `long long` on networks
+  whose maximum flow fits one (e.g., two edges of `LLONG_MAX` out of the
+  source into a node)
 - `maxDensitySegment()` multiplies the sums of the segments by their
   lengths, in the turns of its hull and in the comparison of the averages,
   on the integers of 64 bits for an integer `T` of at most 32 and on those

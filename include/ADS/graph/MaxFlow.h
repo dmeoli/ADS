@@ -185,7 +185,11 @@ class FlowNetwork
  /// there is, after the excesses and the deficits left by `setCapacity()`
  /// are routed: the change of its value \f$ | f | \f$, the net flow into
  /// \f$ t \f$; the augmenting paths found go to `*paths`, if given (none
- /// for `PUSH_RELABEL`)
+ /// for `PUSH_RELABEL`). `PUSH_RELABEL` leaves the call to `DINIC` when the
+ /// residual capacities out of \f$ s \f$ and the excesses left by
+ /// `setCapacity()` sum to more than `LLONG_MAX`, since the excesses of its
+ /// preflow, which sum to as much, would overflow a `long long`; the flow
+ /// itself must fit one
  ///
  /// In pseudocode (section 15.2), \f$ c_f( u , v ) = c( u , v ) -
  /// f( u , v ) \f$ the residual capacity, each edge with its twin of
@@ -196,8 +200,10 @@ class FlowNetwork
  ///     \triangleright\ c_f \text{ the residual capacity} \cr
  /// 2 & \quad \mathrm{rebalance}( s , t ) \cr
  /// 3 & \quad \textbf{if}\ \mathit{how} = \mathrm{PUSH\_RELABEL}
- ///     \ \textbf{then}\ \mathrm{pushRelabel}( s , t );\ \textbf{return}\ |
- ///     f | \cr
+ ///     \textbf{ and } c_f \text{ out of } s \text{ and the excesses sum}
+ ///     \text{ to at most } 2^{63} - 1 \cr
+ ///   & \qquad \textbf{then}\ \mathrm{pushRelabel}( s , t );
+ ///     \ \textbf{return}\ | f | \cr
  /// 4 & \quad \textbf{loop} \cr
  /// 5 & \qquad \textbf{if}\ \mathit{how} = \mathrm{DINIC}\ \textbf{then} \cr
  /// 6 & \qquad\quad \ell \gets
@@ -298,6 +304,12 @@ class FlowNetwork
  /// Goldberg and Tarjan, from the flow there is and the excesses left by
  /// `setCapacity()` [see `PushRelabel.h`, which defines it]
  void pushRelabel( int s , int t );
+
+ /// whether the excesses of the push-relabel fit a `long long`: their sum
+ /// is at most that of the residual capacities out of \f$ s \f$, which it
+ /// pushes at once, and of the excesses left by `setCapacity()`, and true
+ /// if that sum is at most `LLONG_MAX`
+ [[nodiscard]] bool preflowFits( int s ) const;
 
  /// one augmenting path by a breadth first visit
  long long bfsAugment( int s , int t );

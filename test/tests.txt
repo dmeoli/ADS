@@ -1635,8 +1635,10 @@ contract_graph        array-graph          grafo su vettore, capitolo 9
 contract_graph        eulerian             circuito euleriano, capitolo 9
 contract_graph        graphs               GRAPH, capitolo 9
 contract_graph        max-flow             flusso massimo, capitolo 15
+contract_graph        max-flow-extremes    flusso massimo vicino a LLONG_MAX
 contract_graph        pointer-graph        grafo a puntatori, capitolo 9
 contract_graph        shortest-paths       cammini minimi, capitolo 11
+contract_graph        shortest-paths-extremes cammini vicini a INT_MAX
 contract_graph        spanning-tree        copertura minima, capitolo 14
 contract_graph        visits               visite, capitolo 9
 contract_graph        other-graphs         griglie, flussi, abbinamenti
@@ -2137,6 +2139,7 @@ ods_ints  ods.ex11.9.comparison-tree        Morin es. 11.9-11.12, confronti
 ods_ints  ods.ex11.13.signed-radix-sort     Morin es. 11.13, radix con segno
 ods_ints  ods12.1.adjacency                 Morin 12.1-12.2, adiacenza
 ods_ints  ods.ex12.2.incidence-matrix       Morin es. 12.2, incidenza
+ods_ints  ods.ex12.2.incidence-contracts incidenza, contratti
 ods_ints  ods12.3.visits                    Morin 12.3, es. 12.3, 12.8, 12.9
 ods_ints  ods.ex12.4.components             Morin es. 12.4-12.7, componenti
 ods_ints  ods.ex12.10.universal-sink        Morin es. 12.10, pozzo universale

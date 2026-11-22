@@ -46,6 +46,7 @@
 #include "ADS/graph/Visit.h"
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <numeric>
 #include <random>
@@ -317,6 +318,66 @@ ADS_TEST( "all-pairs" )
  CHECK( T.d[ 1 ][ 0 ] == -3 );
  }
 
+// the shortest paths at the documented limit, every path from r of a cost
+// strictly below infinity< D >(): for int, edges near INT_MAX / 2 whose
+// paths of two edges reach INT_MAX - 1 and a node left unreachable, by
+// every frontier, by the acyclic scan and by Floyd-Warshall (whose sums of
+// two distances are paths too); the same graph on unsigned, long long,
+// float and double weights, with the distances of the 64-bit run
+template< class D >
+void checkPathsExtremes( D big )
+{
+ const Frontier all[] = { Frontier::LIST ,      Frontier::HEAP ,
+			  Frontier::FIBONACCI , Frontier::QUEUE ,
+			  Frontier::STACK ,     Frontier::DEQUE };
+ ListGraph< D > h( 5 );  // 0 -> 1 -> 2, 0 -> 2, 0 -> 3 -> 2; 4 alone
+ h.insertEdge( 0 , 1 , big );
+ h.insertEdge( 1 , 2 , big );
+ h.insertEdge( 0 , 2 , D( big + big ) );
+ h.insertEdge( 0 , 3 , D( 1 ) );
+ h.insertEdge( 3 , 2 , D( big + big - D( 1 ) ) );
+ const D INF = infinity< D >();
+ for( Frontier f : all ) {
+  const auto R = shortestPaths( h , 0 , f );
+  CHECK( isShortestPathTree( h , 0 , R ) && R.d[ 0 ] == D( 0 ) &&
+	 R.d[ 1 ] == big && R.d[ 2 ] == D( big + big ) && R.d[ 3 ] == D( 1 ) &&
+	 R.d[ 4 ] == INF && R.T[ 4 ] < 0 );
+  }
+ const auto A = dagShortestPaths( h , 0 );
+ CHECK( A.d[ 2 ] == D( big + big ) && A.d[ 4 ] == INF &&
+	isShortestPathTree( h , 0 , A ) );
+ const auto F = floydWarshall( h );
+ CHECK( ! F.negativeCycle && F.d[ 0 ][ 2 ] == D( big + big ) &&
+	F.d[ 3 ][ 2 ] == D( big + big - D( 1 ) ) && F.d[ 2 ][ 0 ] == INF &&
+	F.d[ 4 ][ 0 ] == INF && F.d[ 1 ][ 2 ] == big );
+ for( int u = 0 ; u < 5 ; ++u )
+  CHECK( shortestPaths( h , u , Frontier::HEAP ).d == F.d[ u ] );
+ }
+
+static_assert( infinity< int >() == std::numeric_limits< int >::max() &&
+	       infinity< unsigned >() == ~0u &&
+	       infinity< double >() ==
+		 std::numeric_limits< double >::infinity() &&
+	       infinity< float >() > std::numeric_limits< float >::max() );
+
+ADS_TEST( "shortest-paths-extremes" )
+{
+ const int half = std::numeric_limits< int >::max() / 2;  // 2 half < INT_MAX
+ checkPathsExtremes< int >( half );
+ checkPathsExtremes< unsigned >( std::numeric_limits< unsigned >::max() / 2 );
+ checkPathsExtremes< long long >( std::numeric_limits< long long >::max() /
+				  2 );
+ checkPathsExtremes< float >( 1e37f );
+ checkPathsExtremes< double >( 1e307 );
+ // a fractional weight, and a path of float that loses the 1 of its edge
+ ListGraph< double > d( 3 );
+ d.insertEdge( 0 , 1 , 0.1 );
+ d.insertEdge( 1 , 2 , 0.2 );
+ d.insertEdge( 0 , 2 , 0.30000000000000004 );
+ for( Frontier f : { Frontier::HEAP , Frontier::QUEUE , Frontier::DEQUE } )
+  CHECK( isShortestPathTree( d , 0 , shortestPaths( d , 0 , f ) ) );
+ }
+
 // the minimum spanning trees: Kruskal and Prim with each priority queue
 // audited by the property of the cycles; the preconditions violated
 ADS_TEST( "spanning-tree" )
@@ -397,6 +458,55 @@ ADS_TEST( "max-flow" )
   }
  CHECK_THROWS( ( void )feasibleCirculation( 2 , { { 0 , 2 , 0 , 1 } } ) ,
 	       contract_violation );
+ }
+
+// the maximum flow near LLONG_MAX, by each way: two parallel edges of
+// LLONG_MAX / 2 (a flow of LLONG_MAX - 1), an edge of LLONG_MAX alone, three
+// paths of LLONG_MAX / 3 through a middle layer whose entry is unbounded,
+// and a flow that LLONG_MAX - 1 bounds at the sink; the cut of the same
+// capacity, and the flows within the capacities
+ADS_TEST( "max-flow-extremes" )
+{
+ const long long M = std::numeric_limits< long long >::max();
+ using Edges = std::vector< std::tuple< int , int , long long > >;
+ const std::vector< std::tuple< int , Edges , long long > > cases = {
+  { 2 , { { 0 , 1 , M / 2 } , { 0 , 1 , M / 2 } } , 2 * ( M / 2 ) } ,
+  { 2 , { { 0 , 1 , M } } , M } ,
+  { 3 , { { 0 , 1 , M } , { 1 , 2 , M } } , M } ,
+  { 5 ,
+    { { 0 , 1 , M } ,
+      { 0 , 2 , M } ,
+      { 0 , 3 , M } ,
+      { 1 , 4 , M / 3 } ,
+      { 2 , 4 , M / 3 } ,
+      { 3 , 4 , M / 3 } } ,
+    3 * ( M / 3 ) } ,
+  { 4 ,
+    { { 0 , 1 , M } ,
+      { 0 , 2 , M } ,
+      { 1 , 2 , M } ,
+      { 1 , 3 , M / 2 } ,
+      { 2 , 3 , M / 2 } } ,
+    2 * ( M / 2 ) }
+  };
+ for( const auto & [ n , E , value ] : cases )
+  for( Augment a : { Augment::FORD_FULKERSON , Augment::EDMONDS_KARP ,
+		     Augment::DINIC , Augment::PUSH_RELABEL } ) {
+   FlowNetwork F( n );
+   for( const auto & [ u , v , c ] : E )
+    F.addEdge( u , v , c );
+   CHECK( F.maxFlow( 0 , n - 1 , a ) == value );
+   const auto S = F.minCut( 0 );
+   long long cut = 0;
+   for( std::size_t k = 0 ; k < E.size() ; ++k ) {
+    CHECK( F.flow( 2 * int( k ) ) >= 0 &&
+	   F.flow( 2 * int( k ) ) <= std::get< 2 >( E[ k ] ) );
+    if( S[ std::get< 0 >( E[ k ] ) ] && ! S[ std::get< 1 >( E[ k ] ) ] )
+     cut += std::get< 2 >( E[ k ] );
+    }
+   CHECK( cut == value );
+   CHECK( F.maxFlow( 0 , n - 1 , a ) == 0 );  // nothing more
+   }
  }
 
 // the Eulerian cycles of random unions of cycles, audited; an unoriented
