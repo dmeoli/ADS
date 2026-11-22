@@ -122,9 +122,8 @@ binaryPack( std::span< const std::uint32_t > x , bool sorted )
     r |= s[ i ] = p[ j0 + i ] - p[ j0 + i - 4 ];
   else
    for( std::size_t i = 0 ; i < m ; ++i )
-    r |= s[ i ] =
-      sorted ? p[ j0 + i ] - ( j0 + i >= 4 ? p[ j0 + i - 4 ] : 0 )
-	     : p[ j0 + i ];
+    r |= s[ i ] = sorted ? p[ j0 + i ] - ( j0 + i >= 4 ? p[ j0 + i - 4 ] : 0 )
+			 : p[ j0 + i ];
   std::fill( s + m , s + kBlock , 0u );
   return( r );
   };

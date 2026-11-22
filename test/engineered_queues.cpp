@@ -577,8 +577,8 @@ ADS_TEST( "mpsc-inbox-blocks" )
   takeAll( B , nextB );
   for( int id = 0 ; id < rounds * p ; ++id ) {
    const int n = ( id / p ) % 2 ? 96 : 150;
-   ordered = ordered && ( nextA[ id ] == n ) &&
-	     ( nextB[ id ] == ( n + 2 ) / 3 );
+   ordered =
+     ordered && ( nextA[ id ] == n ) && ( nextB[ id ] == ( n + 2 ) / 3 );
    }
   CHECK( ordered && A.empty() && B.empty() && ! L.empty() );
   got.clear();

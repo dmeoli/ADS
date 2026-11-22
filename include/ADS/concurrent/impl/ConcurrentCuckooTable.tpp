@@ -284,12 +284,13 @@ void ConcurrentCuckooTable< K , V , H , Eq >::setTags( Table & T ,
  }
 
 template< class K , class V , class H , class Eq >
-std::size_t ConcurrentCuckooTable< K , V , H , Eq >::overflowBit(
-  std::size_t b , std::uint32_t t )
+std::size_t
+ConcurrentCuckooTable< K , V , H , Eq >::overflowBit( std::size_t b ,
+						   std::uint32_t t )
 {
  // the top bits of the tag choose the bit of the bucket
  return( b * kOverflow +
-	 ( t >> ( 8 - std::countr_zero( unsigned( kOverflow ) ) ) ) );
+	  ( t >> ( 8 - std::countr_zero( unsigned( kOverflow ) ) ) ) );
  }
 
 template< class K , class V , class H , class Eq >
@@ -298,8 +299,8 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::overflowed( const Table & T ,
 						       std::uint32_t t )
 {
  const std::size_t i = overflowBit( b , t );
- return( ( detail::loadAcquire< optimistic >( T.O[ i >> 6 ] ) >> ( i & 63 ) ) &
-	 1 );
+ return(
+   ( detail::loadAcquire< optimistic >( T.O[ i >> 6 ] ) >> ( i & 63 ) ) & 1 );
  }
 
 template< class K , class V , class H , class Eq >
@@ -316,13 +317,9 @@ void ConcurrentCuckooTable< K , V , H , Eq >::markOverflow( Table & T ,
  }
 
 template< class K , class V , class H , class Eq >
-std::size_t
-ConcurrentCuckooTable< K , V , H , Eq >::locate( const Table & T ,
-						 const K & k ,
-					      std::uint32_t t ,
-					      std::size_t b1 ,
-					      std::size_t b2 ,
-					      bool bit ) const
+std::size_t ConcurrentCuckooTable< K , V , H , Eq >::locate(
+  const Table & T , const K & k , std::uint32_t t , std::size_t b1 ,
+  std::size_t b2 , bool bit ) const
 {
  // the second bucket only if the first has overflowed for the tag t, or
  // always, if not bit, for a key that is there (the bit is then set)
@@ -404,9 +401,9 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::inBucket( const Table & T ,
    continue;
   const std::uint64_t h = hash( T.S( 4 * b + std::size_t( i ) ).key );
   const std::size_t b1 = first( h , T.lg );
-  if( ( tag( h ) != t ) ||
-      ( ( b != b1 ) && ( ( b != other( b1 , t , T.rg ) ) ||
-			 ! overflowed( T , b1 , t ) ) ) )
+  if( ( tag( h ) != t ) || ( ( b != b1 ) && ( ( b != other( b1 , t ,
+							    T.rg ) ) ||
+					      ! overflowed( T , b1 , t ) ) ) )
    return( false );
   }
  return( true );
@@ -424,8 +421,9 @@ void ConcurrentCuckooTable< K , V , H , Eq >::fetch( const Table & T ,
  }
 
 template< class K , class V , class H , class Eq >
-ADS_ALWAYS_INLINE int ConcurrentCuckooTable< K , V , H , Eq >::peek(
-  const K & k , std::uint64_t h , V * out ) const
+ADS_ALWAYS_INLINE int
+ConcurrentCuckooTable< K , V , H , Eq >::peek( const K & k , std::uint64_t h ,
+					    V * out ) const
 {
  // the seqlock: the version of the region even before the reads and the
  // same after them, and the table read after the version, so that it is
@@ -691,8 +689,8 @@ void ConcurrentCuckooTable< K , V , H , Eq >::migrate( std::size_t c ) const
  const std::size_t lo = c * S , hi = lo + S , nlo = lo << d , nhi = hi << d;
  std::uninitialized_value_construct_n( N.T + nlo , nhi - nlo );
  const std::size_t olo = ( nlo * kOverflow ) >> 6;
- const std::size_t ohi = ( hi == O.buckets() ) ? N.overflowWords()
-					       : ( ( nhi * kOverflow ) >> 6 );
+ const std::size_t ohi =
+   ( hi == O.buckets() ) ? N.overflowWords() : ( ( nhi * kOverflow ) >> 6 );
  std::uninitialized_value_construct_n( N.O + olo , ohi - olo );
  std::uninitialized_value_construct_n( N.B + nlo , nhi - nlo );
  for( std::size_t i = lo << 2 ; i < ( hi << 2 ) ; ++i )
@@ -955,7 +953,7 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::consistent( void ) const
       ( ( ( i >> 2 ) != b1 ) &&
 	( ( ( i >> 2 ) != b2 ) || ! overflowed( T , b1 , t ) ) ) )
    return( false );  // in its other bucket only with the overflow of b1
-  int c = 0;  // once in its two buckets
+  int c = 0;          // once in its two buckets
   for( std::size_t b : { b1 , b2 } )
    for( std::size_t j = 4 * b ; j < 4 * b + 4 ; ++j )
     if( ( ( ( T.T[ j >> 2 ] >> ( 8 * ( j & 3 ) ) ) & 0xFF ) == t ) &&

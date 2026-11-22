@@ -724,15 +724,15 @@ class ConcurrentCuckooTable
  /// the migration in progress: its number in the bits 32 and up, its parts
  /// in the bits 16 to 31, the next part to claim in the bits 0 to 15
  mutable std::atomic< std::uint64_t > f_claim{ 0 };
- mutable std::atomic< std::size_t > f_done{ 0 };   ///< its parts migrated
+ mutable std::atomic< std::size_t > f_done{ 0 };    ///< its parts migrated
  mutable std::atomic< Table * > f_from{ nullptr };  ///< its old table
  mutable std::atomic< Table * > f_to{ nullptr };    ///< its new table
  mutable std::atomic< std::int64_t * > f_count{ nullptr };  ///< the pairs
-							     ///< of its regions
+							    ///< of its regions
  mutable std::atomic< std::size_t > f_part{ 0 };   ///< the old buckets of
 						   ///< a part
- mutable std::vector< Slot > f_left;              ///< the pairs that found
-						  ///< no place
+ mutable std::vector< Slot > f_left;               ///< the pairs that found
+						   ///< no place
  mutable std::atomic< bool > f_leftLock{ false };  ///< the lock of f_left
  H f_h;
  Eq f_eq;

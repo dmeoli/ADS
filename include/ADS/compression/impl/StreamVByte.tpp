@@ -82,8 +82,7 @@ streamVByteEncode( std::span< const std::uint32_t > x )
  // 4 integers a step by the kernel of Highway [see Simd.h], on the
  // machines of little-endian order
  if constexpr( std::endian::native == std::endian::little )
-  i = simd::vbyteEncode( x.data() , n , base , &d ,
-			 kVByte.pack[ 0 ].data() ,
+  i = simd::vbyteEncode( x.data() , n , base , &d , kVByte.pack[ 0 ].data() ,
 			 kVByte.len.data() );
 #endif
  for( ; i + 4 <= n ; i += 4 ) {

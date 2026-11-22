@@ -117,10 +117,9 @@ class DirectAccessCodes
 
  /// the most levels of the widths that minimize the bits: a number
  /// \f$ h \ge 1 \f$, or no bound
- enum class Levels : int
- {
+ enum class Levels : int {
   UNCAPPED = 0 ,  ///< as many levels as minimize the bits
-  DEFAULT = 3     ///< at most 3 levels
+  DEFAULT = 3    ///< at most 3 levels
   };
 
  /// the sequence \f$ x \f$, with the widths of at most \f$ h \f$ levels

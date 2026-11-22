@@ -847,8 +847,8 @@ constexpr EcmStage2< B1 , B2 , D > ecmStage2( void )
  }
 
 template< int B1 , int B2 , int D >
-inline constexpr EcmStage2< B1 , B2 , D > kEcmStage2 =
- ecmStage2< B1 , B2 , D >();
+inline constexpr EcmStage2< B1 , B2 , D > kEcmStage2 = ecmStage2< B1 , B2 ,
+								  D >();
 
 /// a point ( X : Z ) of a curve of Montgomery, its coordinate x = X / Z
 struct EcmPoint
@@ -892,32 +892,37 @@ struct EcmCurve
  /// 2 P: 2 squares and 3 products
  [[nodiscard]] [[gnu::always_inline]] EcmPoint dbl( EcmPoint P ) const {
   const U64 s = addW( P.x , P.z ) , d = subW( P.x , P.z ) ,
-	    ss = M.mul( s , s ) , dd = M.mul( d , d ) , t = subW( ss , dd );
-  return( EcmPoint{ M.mul( ss , dd ) ,
-		    M.mul( t , addW( dd , M.mul( a24 , t ) ) ) } );
+  ss = M.mul( s , s ) ,
+	    dd = M.mul( d , d ) , t = subW( ss , dd );
+  return(
+    EcmPoint{ M.mul( ss , dd ) ,
+	      M.mul( t , addW( dd , M.mul( a24 , t ) ) ) } );
   }
  /// P + Q from P - Q = D: 2 squares and 4 products
  [[nodiscard]] [[gnu::always_inline]] EcmPoint add( EcmPoint P , EcmPoint Q ,
 						    EcmPoint D ) const {
   const U64 u = M.mul( subW( P.x , P.z ) , addW( Q.x , Q.z ) ) ,
 	    v = M.mul( addW( P.x , P.z ) , subW( Q.x , Q.z ) ) ,
-	    s = addW( u , v ) , d = subW( u , v );
-  return( EcmPoint{ M.mul( D.z , M.mul( s , s ) ) ,
-		    M.mul( D.x , M.mul( d , d ) ) } );
+	    s = addW( u , v ) ,
+	    d = subW( u , v );
+  return(
+    EcmPoint{ M.mul( D.z , M.mul( s , s ) ) ,
+	      M.mul( D.x , M.mul( d , d ) ) } );
   }
  /// P + Q from P - Q = ( x : 1 ): 2 squares and 3 products
  [[nodiscard]] [[gnu::always_inline]] EcmPoint add( EcmPoint P , EcmPoint Q ,
 						    U64 x ) const {
   const U64 u = M.mul( subW( P.x , P.z ) , addW( Q.x , Q.z ) ) ,
 	    v = M.mul( addW( P.x , P.z ) , subW( Q.x , Q.z ) ) ,
-	    s = addW( u , v ) , d = subW( u , v );
+	    s = addW( u , v ) ,
+	    d = subW( u , v );
   return( EcmPoint{ M.mul( s , s ) , M.mul( x , M.mul( d , d ) ) } );
   }
  /// the swap of P and Q if s is 1, with no branch
  [[gnu::always_inline]] static void swap( EcmPoint & P , EcmPoint & Q ,
 					  U64 s ) {
   const U64 mask = 0 - s , tx = mask & ( P.x ^ Q.x ) ,
-	    tz = mask & ( P.z ^ Q.z );
+  tz = mask & ( P.z ^ Q.z );
   P.x ^= tx;
   Q.x ^= tx;
   P.z ^= tz;
@@ -959,7 +964,8 @@ U64 ecmCurve( const M_ & M , U64 s )
  // u = s^2 - 5, v = 4 s, x0 = u^3 / v^3 and
  // ( A + 2 ) / 4 = ( v - u )^3 ( 3 u + v ) / ( 16 u^3 v ), by one inverse
  const U64 u = M.to( s * s - 5 ) , v = M.to( 4 * s ) ,
-	   u3 = M.mul( M.mul( u , u ) , u ) , v3 = M.mul( M.mul( v , v ) , v ) ,
+	   u3 = M.mul( M.mul( u , u ) , u ) ,
+	   v3 = M.mul( M.mul( v , v ) , v ) ,
 	   vu = E.sub( v , u ) ,
 	   num = M.mul( M.mul( M.mul( vu , vu ) , vu ) ,
 			E.add( E.add( u , u ) , E.add( u , v ) ) ) ,
@@ -1027,8 +1033,11 @@ U64 ecmCurve( const M_ & M , U64 s )
 template< int B1 , bool W , class M_ >
 U64 ecmCurveOf( const M_ & M , U64 s )
 {
- return( ecmCurve< B1 , 25 * B1 , B1 >= 60 ? 60 : B1 >= 36 ? 36 : 24 , W >(
-  M , s ) );
+ return( ecmCurve< B1 , 25 * B1 ,
+		    B1 >= 60   ? 60
+		    : B1 >= 36 ? 36
+			       : 24 ,
+		    W >( M , s ) );
  }
 
 /// a factor of the odd composite m >= 2^34 by the elliptic curves of
@@ -1074,13 +1083,12 @@ inline U64 squareRoot( U64 m )
 inline U64 factorOf( U64 m )
 {
  if( m >= ( U64( 1 ) << 34 ) ) {
-  if( const U64 r = squareRoot( m ) ; r != 0 )
+  if( const U64 r = squareRoot( m ); r != 0 )
    return( r );
-  const U64 g = m < ( U64( 1 ) << 60 )
-		  ? ecmFactor< true >( MontgomeryLazy( m ) )
-		: m < ( U64( 1 ) << 62 )
-		  ? ecmFactor< false >( MontgomeryLazy( m ) )
-		  : ecmFactor< false >( Montgomery64( m ) );
+  const U64 g =
+    m < ( U64( 1 ) << 60 )   ? ecmFactor< true >( MontgomeryLazy( m ) )
+    : m < ( U64( 1 ) << 62 ) ? ecmFactor< false >( MontgomeryLazy( m ) )
+			     : ecmFactor< false >( Montgomery64( m ) );
   if( g != 0 )
    return( g );
   }
@@ -1148,7 +1156,7 @@ inline std::vector< U64 > factorize( U64 n )
   };
  for( int i = 0 ; ( i < T.k256 ) && ( T.p[ i ] * T.p[ i ] <= n ) ; ++i )
   divide( i );
- std::vector< U64 > todo;  // the composite cofactors to split
+ std::vector< U64 > todo;                   // the composite cofactors to split
  if( ( n < 256 * 256 ) || isPrime( n ) ) {  // 1 or a prime
   if( n > 1 )
    F.push_back( n );

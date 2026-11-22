@@ -84,15 +84,16 @@ inline std::size_t vbyteEncode( const std::uint32_t * HWY_RESTRICT x ,
  for( ; i + 8 <= n ; i += 8 ) {
   const auto v0 = hn::LoadU( d32 , x + i );
   const auto v1 = hn::LoadU( d32 , x + i + 4 );
-  const auto m0 =
-    hn::BitCast( di16 , hn::Min( hn::BitCast( d8 , v0 ) , ones ) );
-  const auto m1 =
-    hn::BitCast( di16 , hn::Min( hn::BitCast( d8 , v1 ) , ones ) );
+  const auto m0 = hn::BitCast( di16 ,
+			       hn::Min( hn::BitCast( d8 , v0 ) , ones ) );
+  const auto m1 = hn::BitCast( di16 ,
+			       hn::Min( hn::BitCast( d8 , v1 ) , ones ) );
   const auto m =
     hn::Min( hn::BitCast( di16 , hn::OrderedDemote2To( d8 , m0 , m1 ) ) ,
 	     hn::Set( di16 , std::int16_t( 0x0101 ) ) );
-  const auto t = hn::BitCast( di8 , hn::SaturatedAdd(
-    hn::BitCast( du16 , m ) , hn::Set( du16 , std::uint16_t( 0x7F00 ) ) ) );
+  const auto t = hn::BitCast(
+    di8 , hn::SaturatedAdd( hn::BitCast( du16 , m ) ,
+			   hn::Set( du16 , std::uint16_t( 0x7F00 ) ) ) );
   std::uint8_t bits[ 8 ];
   hn::StoreMaskBits( di8 , hn::Lt( t , hn::Zero( di8 ) ) , bits );
   keys[ i / 4 ] = bits[ 0 ];

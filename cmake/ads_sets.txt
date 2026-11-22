@@ -544,6 +544,8 @@ tree/Tree.h                           base
 # the headers of core, base and both that include one of another set
 Capabilities.h                        uses priority/PriorityQueue.h
                                            the concepts of the queues
+compression/BurrowsWheeler.h          uses string/SuffixSorting.h
+                                           the suffix array of SA-IS
 dictionary/BinaryTrie.h               uses dictionary/FlatHashTable.h
                                            the tables of the prefixes
 dictionary/UniversalHashing.h         uses dictionary/FastHash.h

@@ -184,9 +184,9 @@ class MPSCInbox
  {
   /// the cells taken by the consumers, or never to be used
   alignas( 64 ) std::atomic< std::size_t > taken{ 0 };
-  Owner * owner;  ///< the thread that fills it
+  Owner * owner;            ///< the thread that fills it
   Block * spare = nullptr;  ///< in the stacks of the owner
-  Cell cells[ kCells ];  ///< the cells
+  Cell cells[ kCells ];     ///< the cells
 
   /// a block of o
   explicit Block( Owner * o ) : owner( o ) {

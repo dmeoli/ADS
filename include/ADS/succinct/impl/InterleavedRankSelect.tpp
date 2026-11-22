@@ -63,8 +63,7 @@ inline void InterleavedRankSelect::build( const Word * w , std::size_t n )
     detail::simd::here::shiftedWords8( w + q , o , W );
 #else
     for( std::size_t k = 0 ; k < 8 ; ++k )
-     W[ k ] =
-       ( w[ q + k ] >> o ) | ( ( w[ q + k + 1 ] << 1 ) << ( 63 - o ) );
+     W[ k ] = ( w[ q + k ] >> o ) | ( ( w[ q + k + 1 ] << 1 ) << ( 63 - o ) );
 #endif
     W[ 0 ] &= ~Word( 0xFFFF );
     }
@@ -74,8 +73,8 @@ inline void InterleavedRankSelect::build( const Word * w , std::size_t n )
      const std::size_t off = l * kData + 64 * k;
      if( off >= n )
       break;
-     const int len = int( std::min< std::size_t >( k < 7 ? 64 : 48 ,
-						   n - off ) );
+     const int len =
+       int( std::min< std::size_t >( k < 7 ? 64 : 48 , n - off ) );
      const Word piece = read( off , len );
      W[ k ] |= piece << 16;
      if( k < 7 )

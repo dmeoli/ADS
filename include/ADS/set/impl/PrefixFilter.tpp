@@ -160,8 +160,8 @@ bool PrefixFilter< T , H >::find( const Bin & B , std::uint64_t w ,
   const std::uint64_t h = w & kHead;
   const unsigned i = unsigned( std::countr_zero( v ) ) , p = i + q;
   return( ( ( h >> p ) & 1 ) != 0 &&
-	  unsigned( std::popcount( h & ( ( std::uint64_t( 1 ) << p ) - 1 ) ) )
-	    == i );
+	   unsigned(
+	     std::popcount( h & ( ( std::uint64_t( 1 ) << p ) - 1 ) ) ) == i );
   }
  return( ( v & runMask( w , q ) ) != 0 );
  }

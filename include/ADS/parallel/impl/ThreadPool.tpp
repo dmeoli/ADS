@@ -120,8 +120,8 @@ struct ThreadPool::InvokeTask : Task
 inline ThreadPool::ThreadPool( std::size_t p , std::int64_t spin ,
 			       std::int64_t maxSpin )
     : f_spin( std::clamp< std::int64_t >( spin , 0 , kLongestSpin ) ) ,
-      f_maxSpin( std::clamp< std::int64_t >( maxSpin , f_spin ,
-					     kLongestSpin ) )
+      f_maxSpin(
+	std::clamp< std::int64_t >( maxSpin , f_spin , kLongestSpin ) )
 {
  if( p == 0 )
   p = std::max< std::size_t >( std::thread::hardware_concurrency() , 1 );
@@ -263,8 +263,7 @@ inline void ThreadPool::loop( std::size_t s )
     f_event.await( ready , 0 );
    const auto t1 = clock::now();
    const std::int64_t g =
-     std::chrono::duration_cast< std::chrono::nanoseconds >( t1 - t0 )
-       .count();
+     std::chrono::duration_cast< std::chrono::nanoseconds >( t1 - t0 ).count();
    if( g > f_maxSpin ) {  // idle: back to the least budget
     cur = prev = 0;
     opened = t1;

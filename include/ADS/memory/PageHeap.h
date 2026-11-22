@@ -114,14 +114,14 @@ class alignas( 64 ) PageHeap
  /// the header of a page
  struct Page
  {
-  Free * free;      ///< the free slots
-  char * next;      ///< the first slot never given
-  char * end;       ///< the end of the slots
-  Page * link;      ///< the next page with free slots
-  void * owner;     ///< the owner of the heap
+  Free * free;         ///< the free slots
+  char * next;         ///< the first slot never given
+  char * end;          ///< the end of the slots
+  Page * link;         ///< the next page with free slots
+  void * owner;        ///< the owner of the heap
   std::uint32_t c;     ///< the class
   std::uint32_t used;  ///< the slots given and not freed
-  bool listed;      ///< current, or on the list of its class
+  bool listed;         ///< current, or on the list of its class
   };
 
  static_assert( sizeof( Page ) <= HEADER );

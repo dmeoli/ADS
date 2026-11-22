@@ -50,7 +50,7 @@ class SentinelSuffixArray
   if( i == 0 ) [[unlikely]]
    return( f_n );
   return( f_wide.empty() ? std::size_t( f_narrow[ i - 1 ] )
-			 : std::size_t( f_wide[ i - 1 ] ) );
+			  : std::size_t( f_wide[ i - 1 ] ) );
   }
 
  /// the rows, n + 1
@@ -133,7 +133,7 @@ inline BWT bwt( std::string_view s )
   L[ 0 ] = s[ n - 1 ];
   std::size_t k = 1;
   for( std::size_t i = 0 ; i < n ; ++i )
-   if( const std::size_t j = SA[ i ] ; j == 0 )
+   if( const std::size_t j = SA[ i ]; j == 0 )
     b.primary = i + 1;
    else
     L[ k++ ] = s[ j - 1 ];

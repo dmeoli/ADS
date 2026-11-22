@@ -170,7 +170,7 @@ wideProductHalves( std::uint64_t a , std::uint64_t b )
 		     p11 = a1 * b1;
  const std::uint64_t mid = ( p00 >> 32 ) + ( p01 & LOW ) + ( p10 & LOW );
  return( WordPair{ ( mid << 32 ) | ( p00 & LOW ) ,
-		   p11 + ( p01 >> 32 ) + ( p10 >> 32 ) + ( mid >> 32 ) } );
+		    p11 + ( p01 >> 32 ) + ( p10 >> 32 ) + ( mid >> 32 ) } );
  }
 
 /*--------------------------------------------------------------------------*/

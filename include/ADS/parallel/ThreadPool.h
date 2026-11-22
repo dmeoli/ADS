@@ -326,13 +326,13 @@ class ThreadPool
  EventCount f_event;                             ///< where the idle ones sleep
  std::atomic< bool > f_stop{ false };            ///< set by the destructor
  std::mutex f_master;                            ///< the slot of the caller
- std::int64_t f_spin;                     ///< least ns of looking
- std::int64_t f_maxSpin;                  ///< most ns of looking
- std::mutex f_runOne;                     ///< one run at a time
- std::mutex f_runLock;                    ///< the claims of the calls
- std::atomic< bool > f_runOpen{ false };  ///< calls left to claim
- std::size_t f_runNext = 0;               ///< the next call to claim
- std::size_t f_runN = 0;                  ///< the calls of the run
+ std::int64_t f_spin;                            ///< least ns of looking
+ std::int64_t f_maxSpin;                         ///< most ns of looking
+ std::mutex f_runOne;                            ///< one run at a time
+ std::mutex f_runLock;                           ///< the claims of the calls
+ std::atomic< bool > f_runOpen{ false };         ///< calls left to claim
+ std::size_t f_runNext = 0;                      ///< the next call to claim
+ std::size_t f_runN = 0;                         ///< the calls of the run
  void ( *f_runCall )( void * , std::size_t ) = nullptr;  ///< makes one
  void * f_runCtx = nullptr;                             ///< its function
  std::atomic< std::size_t > f_runDone{ 0 };             ///< the calls returned

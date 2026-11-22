@@ -191,9 +191,10 @@ void parallelInvoke( E & ex , F && f , G && g )
 
 /*--------------------------------------------------------------------------*/
 
-inline std::pair< std::size_t , std::size_t >
-blocksOf( std::size_t first , std::size_t last , std::size_t grain ,
-	  std::size_t blocks )
+inline std::pair< std::size_t , std::size_t > blocksOf( std::size_t first ,
+						       std::size_t last ,
+						       std::size_t grain ,
+						       std::size_t blocks )
 {
  const std::size_t n = last > first ? last - first : 0;
  if( n == 0 )

@@ -211,7 +211,7 @@ bool BinaryFuseFilter< T , F , H >::maybe( const T & x ) const
  const std::uint64_t h = mixed( base( x ) );
  const auto P = places( h );
  return( F( f_F[ P[ 0 ] ] ^ f_F[ P[ 1 ] ] ^ f_F[ P[ 2 ] ] ) ==
-	 fingerprint( h ) );
+	  fingerprint( h ) );
  }
 
 template< class T , class F , class H >

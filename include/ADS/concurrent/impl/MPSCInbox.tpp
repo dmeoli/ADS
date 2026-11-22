@@ -31,13 +31,12 @@ class MPSCInbox< T >::Home
   // to its consumers
   if( o->cur && ( o->used < kCells ) ) {
    const std::size_t u = kCells - o->used;
-   if( o->cur->taken.fetch_add( u , std::memory_order_acq_rel ) + u ==
-       kCells )
+   if( o->cur->taken.fetch_add( u , std::memory_order_acq_rel ) + u == kCells )
     destroy( o->cur );
    }
-  for( Block * b : { o->spare ,
-		     o->given.exchange( closed() ,
-					std::memory_order_acquire ) } )
+  for( Block * b :
+       { o->spare ,
+	 o->given.exchange( closed() , std::memory_order_acquire ) } )
    while( b ) {
     Block * n = b->spare;
     destroy( b );
@@ -101,8 +100,8 @@ void MPSCInbox< T >::release( Block * b , std::size_t k )
    }
   b->spare = top;
   } while( ! o->given.compare_exchange_weak( top , b ,
-					      std::memory_order_release ,
-					      std::memory_order_relaxed ) );
+					     std::memory_order_release ,
+					    std::memory_order_relaxed ) );
  }
 
 template< class T >
