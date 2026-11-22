@@ -27,6 +27,7 @@
 #include "ADS/sort/ExchangeSorts.h"
 #include "ADS/sort/LearnedSort.h"
 #include "ADS/sort/MultikeyQuickSort.h"
+#include "ADS/sort/QuickSort.h"
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/RunSorts.h"
 #include "ADS/sort/SampleSort.h"
@@ -397,6 +398,149 @@ ADS_TEST( "engineered-quicksorts" )
    } ) );
   CHECK( cmp < 6L * n * 15 );  // n log n, not n^2 / 4
   }
+ }
+
+// the adversary of McIlroy against each sort that is not pdqSort(): the
+// values given while the sort runs, the comparisons of the audits at the
+// level 3 of the contracts answered by the values given and not counted.
+// sort() and stableSort() with an order of their own (below and above
+// kRadix, so through pdqSort(), sampleSort() and the merges) and
+// sampleSort() keep their O( n log n ), below 8 n log2 n; the quicksorts
+// with no fallback, dualPivotQuickSort(), threeWayQuickSort() and
+// quickSortTuned() (whose stack of parts stays within log2 n), sort right
+// within n^2 comparisons, and the deterministic quickSortTuned() makes the
+// same comparisons again on the input the adversary leaves (its killer)
+ADS_TEST( "sorts-adversary" )
+{
+ for( const int n : { 300 , 2000 , 1 << 15 } ) {
+  std::vector< int > val;
+  int solid = 0 , cand = -1;
+  long cmp = 0;
+  auto adv = [ & ]( int x , int y ) {
+   if( ! checkingContract() ) {
+    ++cmp;
+    if( ( val[ x ] == n ) && ( val[ y ] == n ) )
+     val[ x == cand ? x : y ] = solid++;
+    if( val[ x ] == n )
+     cand = x;
+    else if( val[ y ] == n )
+     cand = y;
+    }
+   return( val[ x ] < val[ y ] );
+   };
+  auto run = [ & ]( auto sorter , long bound ) {
+   val.assign( std::size_t( n ) , n );
+   solid = 0;
+   cand = -1;
+   cmp = 0;
+   Ints A( static_cast< std::size_t >( n ) );
+   std::iota( A.begin() , A.end() , 0 );
+   sorter( A );
+   CHECK( std::is_sorted( A.begin() , A.end() , [ & ]( int x , int y ) {
+    return( val[ x ] < val[ y ] );
+    } ) );
+   Ints P = A;
+   std::sort( P.begin() , P.end() );
+   for( int i = 0 ; i < n ; ++i )
+    CHECK( P[ i ] == i );
+   CHECK( cmp <= bound );
+   return( cmp );
+   };
+  const long nlog = long( 8 * n * std::log2( double( n ) ) ) ,
+	     sq = long( n ) * long( n );
+  run( [ & ]( Ints & A ) { ADS::sort( A , adv ); } , nlog );
+  run( [ & ]( Ints & A ) { ADS::stableSort( A , adv ); } , nlog );
+  run( [ & ]( Ints & A ) { sampleSort( A , adv ); } , nlog );
+  if( n > 2000 )
+   continue;  // the others are quadratic on it
+  run( [ & ]( Ints & A ) { dualPivotQuickSort( A , adv ); } , sq );
+  run( [ & ]( Ints & A ) { threeWayQuickSort( A , adv ); } , sq );
+  for( const std::size_t cut : { std::size_t( 3 ) , std::size_t( 16 ) } ) {
+   std::size_t depth = 0;
+   const long c =
+     run( [ & ]( Ints & A ) { quickSortTuned( A , cut , adv , &depth ); } ,
+	  sq );
+   CHECK( depth <= std::size_t( std::log2( double( n ) ) ) + 1 );
+   std::vector< int > K( static_cast< std::size_t >( n ) );  // the killer
+   for( int i = 0 ; i < n ; ++i )  // the gas frozen in order
+    K[ std::size_t( i ) ] =
+      val[ std::size_t( i ) ] == n ? solid++ : val[ std::size_t( i ) ];
+   long r = 0;
+   quickSortTuned( K , cut , [ & ]( int a , int b ) {
+    r += ! checkingContract();
+    return( a < b );
+    } );
+   CHECK( std::is_sorted( K.begin() , K.end() ) && r == c );
+   }
+  }
+ }
+
+// a NaN breaks the natural order, so that the sorts promise no order on a
+// vector that holds one (see Sort.h); each of them still ends, within its
+// memory (as the sanitizers check), with a permutation of its items, by
+// their bits, or else reports the broken order by its audit: NaNs of both
+// signs among the numbers, alone, at the ends, on sizes around kRadix and
+// on one of 2^16, for doubles and floats
+template< class T >
+void checkSortsNaN( std::uint64_t seed )
+{
+ using U =
+   std::conditional_t< sizeof( T ) == 8 , std::uint64_t , std::uint32_t >;
+ std::mt19937_64 g( seed );
+ const T nan = std::numeric_limits< T >::quiet_NaN();
+ const T odd[] = { nan ,     std::copysign( nan , T( -1 ) ) ,        T( 0 ) ,
+		   -T( 0 ) , std::numeric_limits< T >::infinity() , T( 1 ) ,
+		   T( -1 ) };
+ auto bits = []( const std::vector< T > & A ) {
+  std::vector< U > K( A.size() );
+  for( std::size_t i = 0 ; i < A.size() ; ++i )
+   K[ i ] = std::bit_cast< U >( A[ i ] );
+  std::sort( K.begin() , K.end() );
+  return( K );
+  };
+ using Sorter = std::function< void( std::vector< T > & ) >;
+ const std::vector< Sorter > sorts = {
+  []( std::vector< T > & A ) { ADS::sort( A ); } ,
+  []( std::vector< T > & A ) { ADS::stableSort( A ); } ,
+  []( std::vector< T > & A ) { pdqSort( A ); } ,
+  []( std::vector< T > & A ) { sampleSort( A ); } ,
+  []( std::vector< T > & A ) { dualPivotQuickSort( A ); } ,
+  []( std::vector< T > & A ) { threeWayQuickSort( A ); } ,
+  []( std::vector< T > & A ) { quickSortTuned( A ); } ,
+  []( std::vector< T > & A ) { powerSort( A ); }
+  };
+ for( const std::size_t n :
+      { std::size_t( 1 ) , std::size_t( 2 ) , std::size_t( 17 ) , kRadix - 1 ,
+	kRadix , kRadix + 1 , std::size_t( 1 ) << 16 } )
+  for( int kind = 0 ; kind < 4 ; ++kind ) {
+   std::vector< T > A( n );
+   std::uniform_real_distribution< T > u( -5 , 5 );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    A[ i ] = kind == 0   ? ( g() % 5 ? u( g ) : odd[ g() % 7 ] )
+	     : kind == 1 ? odd[ g() % 2 ]  // NaNs alone
+	     : kind == 2 ? T( i )          // sorted, NaN at the ends
+			 : T( n - i );
+   if( kind >= 2 ) {
+    A.front() = nan;
+    A.back() = odd[ 1 ];
+    }
+   const auto before = bits( A );
+   for( const auto & sorter : sorts ) {
+    std::vector< T > B = A;
+    try {
+     sorter( B );
+     }
+    catch( const contract_violation & ) {  // the audit, on the order
+     }
+    CHECK( bits( B ) == before );
+    }
+   }
+ }
+
+ADS_TEST( "sorts-nan" )
+{
+ checkSortsNaN< double >( 1 );
+ checkSortsNaN< float >( 2 );
  }
 
 // Powersort on the battery, stable; the runs found on vectors

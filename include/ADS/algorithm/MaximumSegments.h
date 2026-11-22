@@ -63,7 +63,11 @@
  * is that of its items, and `maxSumSegment()` agrees with `maxSubarraySum()`
  * when its sum is not negative, audits. The sums of the segments and of the
  * prefixes of \f$ D \f$ must fit in `T`, which is not checked (an item of
- * `T` alone may be its largest or its smallest value). The functions are
+ * `T` alone may be its largest or its smallest value), and so must those of
+ * the items \f$ q D[ k ] - p \f$ in `longestSegmentAverageAtLeast()`; the
+ * products of a sum and of a length in `maxDensitySegment()` are taken on
+ * the integers of 64 bits for an integer `T` of at most 32 and on those of
+ * 128 bits for a wider one, so that they do not overflow. The functions are
  * defined in `MaximumSegments.tpp`.
  *
  * \see P. Ferragina, Pearls of Algorithm Engineering, Cambridge University
@@ -102,12 +106,15 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Wide.h"
 #include "ADS/algorithm/Subsequences.h"
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <deque>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/

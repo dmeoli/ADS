@@ -26,6 +26,7 @@
 
 #include "ADSTest.h"
 
+#include "ADS/Wide.h"
 #include "ADS/algorithm/MaximumSegments.h"
 #include "ADS/algorithm/Subsequences.h"
 #include "ADS/external/ExternalSorting.h"
@@ -302,6 +303,101 @@ ADS_TEST( "ch2.density" )
  CHECK( O.sum == -4 && O.length == 1 );
  CHECK_THROWS( maxDensitySegment( F , 0 ) , contract_violation );
  CHECK_THROWS( maxDensitySegment( F , 4 ) , contract_violation );
+ }
+
+// the items of int at the extremes, INT_MAX, INT_MIN and +-10^9, in arrays
+// of up to 12 whose prefix and segment sums fit an int (the documented
+// limit), each algorithm against the enumeration of the segments in 64
+// bits: the largest sum (the five), the length in [L, U], the longest of sum
+// at least t and the largest density, the last also on 64-bit items of
+// +-2^61, whose products of a sum and a length need 128 bits
+template< class T , class W >
+void checkSegmentsExtremes( const std::vector< T > & pool ,
+			    std::uint64_t seed ,
+			    bool all )
+{
+ std::mt19937_64 g( seed );
+ const W lo = W( std::numeric_limits< T >::min() ) ,
+	 hi = W( std::numeric_limits< T >::max() );
+ for( int t = 0 ; t < 3000 ; ++t ) {
+  const std::size_t n = 1 + g() % 12;
+  std::vector< T > D( n );
+  for( auto & x : D )
+   x = pool[ g() % pool.size() ];
+  bool fits = true;  // every prefix and segment sum in T
+  for( std::size_t b = 0 ; b < n && fits ; ++b ) {
+   W s = 0;
+   for( std::size_t e = b ; e < n && fits ; ++e ) {
+    s = s + W( D[ e ] );
+    fits = ( lo <= s ) && ( s <= hi );
+    }
+   }
+  if( ! fits )
+   continue;
+  auto sum = [ & ]( std::size_t b , std::size_t e ) {
+   W s = 0;
+   for( std::size_t k = b ; k < e ; ++k )
+    s = s + W( D[ k ] );
+   return( s );
+   };
+  W best = W( D[ 0 ] );
+  for( std::size_t b = 0 ; b < n ; ++b )
+   for( std::size_t e = b + 1 ; e <= n ; ++e )
+    best = std::max( best , sum( b , e ) );
+  if( all ) {
+   for( const auto & S :
+	{ maxSumSegmentCubic( D ) , maxSumSegmentQuadratic( D ) ,
+	  maxSumSegment( D ) , maxSumSegmentPrefix( D ) ,
+	  maxSumSegmentLength( D , 1 , n ) } )
+    CHECK( W( S.sum ) == best && sum( S.first , S.first + S.length ) == best );
+   const std::size_t L = 1 + g() % n , U = L + g() % ( n - L + 1 );
+   W bl = lo;
+   for( std::size_t b = 0 ; b < n ; ++b )
+    for( std::size_t e = b + L ; e <= std::min( n , b + U ) ; ++e )
+     bl = std::max( bl , sum( b , e ) );
+   CHECK( W( maxSumSegmentLength( D , L , U ).sum ) == bl );
+   const T th = D[ g() % n ];
+   std::size_t ll = 0;
+   for( std::size_t b = 0 ; b < n ; ++b )
+    for( std::size_t e = b + 1 ; e <= n ; ++e )
+     if( sum( b , e ) >= W( th ) )
+      ll = std::max( ll , e - b );
+   const auto A = longestSegmentAtLeast( D , th );
+   CHECK( A.length == ll &&
+	  ( ll == 0 || sum( A.first , A.first + ll ) == W( A.sum ) ) );
+   }
+  const std::size_t L = 1 + g() % n;
+  W bs = 0;
+  std::size_t bn = 0;
+  for( std::size_t b = 0 ; b < n ; ++b )
+   for( std::size_t e = b + L ; e <= n ; ++e )
+    if( ( bn == 0 ) || ( sum( b , e ) * W( bn ) > bs * W( e - b ) ) ) {
+     bs = sum( b , e );
+     bn = e - b;
+     }
+  const auto S = maxDensitySegment( D , L );
+  CHECK( S.length >= L && W( S.sum ) * W( bn ) == bs * W( S.length ) &&
+	 sum( S.first , S.first + S.length ) == W( S.sum ) );
+  }
+ }
+
+ADS_TEST( "ch2.extremes" )
+{
+ const int MAX = std::numeric_limits< int >::max() ,
+	   MIN = std::numeric_limits< int >::min();
+ checkSegmentsExtremes< int , long long >(
+   { MAX , MIN , 1000000000 , -1000000000 , 1 , -1 , 0 } , 1 , true );
+ const std::int64_t E = std::int64_t( 1 ) << 61;
+ checkSegmentsExtremes< std::int64_t , detail::Int128 >(
+   { E , -E , E - 1 , 1 - E , 3 , -3 } , 2 , false );
+ // the single item at either extreme, and an array of the two
+ const std::vector< int > X{ MAX } , Y{ MIN } , Z{ MIN , MAX };
+ CHECK( maxSumSegment( X ).sum == MAX && maxSumSegment( Y ).sum == MIN &&
+	maxSumSegmentPrefix( Y ).sum == MIN );
+ CHECK( maxSumSegment( Z ).sum == MAX && maxSumSegment( Z ).first == 1 &&
+	maxSumSegmentPrefix( Z ).sum == MAX );
+ CHECK( maxDensitySegment( Z , 2 ).sum == -1 &&
+	maxDensitySegment( Z , 1 ).sum == MAX );
  }
 
 /*--------------------------------------------------------------------------*/

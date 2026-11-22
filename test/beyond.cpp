@@ -3171,6 +3171,53 @@ ADS_TEST( "paradigms" )
 	       contract_violation );
  }
 
+// the schemes on empty and repeated inputs: no element, all equal and two
+// equal best ones for maximal() (equal elements dominate no one, so all
+// are kept, in order); the first of equal measures for
+// enumerateOptimize(), also when the best repeats; a division into no part
+// and into parts all equal; repeated candidates for greedy(); an inner
+// node with no child for backtrack()
+ADS_TEST( "paradigms-empty-duplicates" )
+{
+ auto less = []( int a , int b ) { return( a > b ); };
+ CHECK( maximal( Ints() , less ).empty() );
+ CHECK( maximal( Ints( 5 , 4 ) , less ) == Ints( 5 , 4 ) );
+ CHECK( maximal( Ints{ 9 , 2 , 9 , 1 } , less ) == Ints( { 9 , 9 } ) );
+ const Ints V = { 4 , 7 , 7 , 4 , 7 };
+ auto opt = [ & ]( const Ints & W , auto && better ) {
+  return( enumerateOptimize(
+    0 , []( int i ) { return( i + 1 ); } ,
+    [ & ]( int i ) { return( i + 1 == int( W.size() ) ); } ,
+    []( int ) { return( true ); } , []( int i ) { return( i ); } ,
+    [ & ]( int i ) { return( W[ i ] ); } , better ) );
+  };
+ CHECK( opt( V , std::greater< int >() ) == 1 &&
+	opt( V , std::less< int >() ) == 0 );
+ CHECK( opt( Ints( 6 , 3 ) , std::greater< int >() ) == 0 );
+ CHECK( opt( Ints( 1 , 3 ) , std::less< int >() ) == 0 );
+ // no part: the combination of nothing; equal parts, summed
+ CHECK( divideEtImpera(
+	  10 , []( int x ) { return( x < 0 ); } , []( int ) { return( 1 ); } ,
+	  []( int ) { return( Ints() ); } ,
+	  []( const Ints & p ) { return( int( p.size() ) ); } ) == 0 );
+ CHECK( divideEtImpera(
+	  8 , []( int x ) { return( x <= 1 ); } , []( int ) { return( 1 ); } ,
+	  []( int x ) { return( Ints( 2 , x / 2 ) ); } ,
+	  []( const Ints & p ) {
+	   return( std::accumulate( p.begin() , p.end() , 0 ) );
+	   } ) == 8 );
+ const auto x = greedy< int >(
+   3 , []( int , const Ints & ) { return( Ints( 4 , 2 ) ); } ,
+   []( const Ints & c ) { return( c.front() ); } );
+ CHECK( x == Ints( 3 , 2 ) );
+ int visits = 0;
+ CHECK( ! backtrack(
+   0 , []( int ) { return( Ints() ); } , []( int ) { return( false ); } ,
+   []( int ) { return( false ); } ,
+   [ & ]( int ) { return( ++visits > 0 ); } ) );
+ CHECK( visits == 0 );
+ }
+
 // the factorial by a loop and by the recursion, the same specification
 // realized twice, up to the 20! that fits in 64 bits; the binomial by the
 // factorials against the recursion; the numbers of Fibonacci kept between

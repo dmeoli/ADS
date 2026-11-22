@@ -201,6 +201,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `denseLength()` check the preconditions of their codes (x >= 1,
   0 <= k < 64, 1 <= b <= 2^63, s >= 1 and c >= 1), where they returned a
   wrong length, divided by zero or shifted a word by 64 bits
+- `maxDensitySegment()` multiplies the sums of the segments by their
+  lengths, in the turns of its hull and in the comparison of the averages,
+  on the integers of 64 bits for an integer `T` of at most 32 and on those
+  of 128 bits for a wider one, since in `T` the products overflowed on
+  sums of segments well within `T` (e.g., items of 10^9 in an `int`),
+  which left the result undefined
 - the makefile builds the benchmarks on Boost, Highway and hwloc where they
   are found, as the targets of CMake do, keeping the code of ADS where a
   structure would delegate to Boost or to LEMON; before, it built them on

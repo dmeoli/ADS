@@ -32,6 +32,15 @@ bool segmentSum( const std::vector< T > & D , const Segment< T > & S )
  return( s == S.sum );
  }
 
+/// the type of the products of a length and of a sum of T: T itself for
+/// the floating types, the integers of 64 bits for the integers of at most
+/// 32 and those of 128 bits for the others, so that a product of a sum of
+/// T and of a length does not overflow
+template< class T >
+using SegmentProduct = std::conditional_t<
+  std::is_floating_point_v< T > , T ,
+  std::conditional_t< ( sizeof( T ) <= 4 ) , std::int64_t , Int128 > >;
+
 /// \f$ P[ i ] = D[ 0 ] + \cdots + D[ i - 1 ] \f$, \f$ P[ 0 ] = 0 \f$
 template< class T >
 std::vector< T > prefixSums( const std::vector< T > & D )
@@ -187,25 +196,27 @@ Segment< T > longestSegmentAverageAtLeast( const std::vector< T > & D , T p ,
 template< class T >
 Segment< T > maxDensitySegment( const std::vector< T > & D , std::size_t L )
 {
+ using W = detail::SegmentProduct< T >;
  ADS_PRE( ( L >= 1 ) && ( L <= D.size() ) );
  const auto P = detail::prefixSums( D );
- // the turn of o -> a -> b on the points ( x , P[ x ] ): > 0 to the left
+ // the turn of o -> a -> b on the points ( x , P[ x ] ): > 0 to the left,
+ // the lengths and the sums of the segments multiplied in W
  auto cross = [ & ]( std::size_t o , std::size_t a , std::size_t b ) {
-  return( ( T( a ) - T( o ) ) * ( P[ b ] - P[ o ] ) -
-	   ( P[ a ] - P[ o ] ) * ( T( b ) - T( o ) ) );
+  return( W( a - o ) * W( P[ b ] - P[ o ] ) -
+	   W( P[ a ] - P[ o ] ) * W( b - o ) );
   };
  std::vector< std::size_t > H;  // the lower hull of the starts
  Segment< T > best;
  for( std::size_t i = L ; i <= D.size() ; ++i ) {
   const std::size_t x = i - L;
   while( ( H.size() >= 2 ) &&
-	 ! ( cross( H[ H.size() - 2 ] , H.back() , x ) > T{} ) )
+	 ! ( cross( H[ H.size() - 2 ] , H.back() , x ) > W( 0 ) ) )
    H.pop_back();
   H.push_back( x );
   std::size_t lo = 0 , hi = H.size() - 1;  // the first vertex where the
   while( lo < hi ) {                      // edge turns away from i
    const std::size_t m = ( lo + hi ) / 2;
-   if( cross( H[ m ] , H[ m + 1 ] , i ) >= T{} )
+   if( cross( H[ m ] , H[ m + 1 ] , i ) >= W( 0 ) )
     lo = m + 1;
    else
     hi = m;
@@ -213,7 +224,7 @@ Segment< T > maxDensitySegment( const std::vector< T > & D , std::size_t L )
   const std::size_t b = H[ lo ];
   const T s = P[ i ] - P[ b ];
   if( ( best.length == 0 ) ||  // s / ( i - b ) > best
-      ( s * T( best.length ) > best.sum * T( i - b ) ) )
+      ( W( s ) * W( best.length ) > W( best.sum ) * W( i - b ) ) )
    best = Segment< T >{ s , b , i - b };
   }
  ADS_AUDIT( detail::segmentSum( D , best ) );

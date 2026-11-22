@@ -421,6 +421,7 @@ beyond  slide-sorts         Merge, Shell, Insertion, partizione, minmax
 beyond  classical-instances attività, Kruskal, partizione
 beyond  eight-puzzle        gioco dell'otto, ampiezza e profondità
 beyond  paradigms           schemi generali delle tecniche
+beyond  paradigms-empty-duplicates schemi su ingressi vuoti e ripetuti
 beyond  factorial-fibonacci fattoriale, binomiale, Fibonacci con memoria
 beyond  sequence-range      range-for sulle sequenze
 beyond  algebraic-spec      specifica per assiomi degli interi
@@ -438,6 +439,8 @@ sorting  tree-sort           tree sort su Red-Black e su albero sbilanciato
 sorting  strand-sort         strand sort su liste
 sorting  sorting-networks    reti di Batcher, merge exchange e bitonica
 sorting  engineered-quicksorts pdqsort, dual-pivot, 3-way
+sorting  sorts-adversary     le sort contro McIlroy
+sorting  sorts-nan           i NaN: le sort finiscono con una permutazione
 sorting  run-sorts           Powersort
 sorting  pdq-edges           pdqsort, soglie e casi limite
 sorting  merge-paths         Powersort, i due merge
@@ -787,6 +790,7 @@ pearls_io  ch2.max-sum-random        capitolo 2, scansioni contro enumerazione
 pearls_io  ch2.length-constrained    sezione 2.5, lunghezza in [L, U]
 pearls_io  ch2.longest-at-least      sezione 2.5, più lungo con somma >= t
 pearls_io  ch2.density               sezione 2.5, densità massima, GC
+pearls_io  ch2.extremes              capitolo 2, somme vicine a INT_MAX
 pearls_io  ch3.samplers-uniform      capitolo 3, campionamenti uniformi
 pearls_io  ch3.sampler-costs         capitolo 3, costo dei campionamenti
 pearls_io  ch3.heap-sampling         sezione 3.3, heap e reservoir
