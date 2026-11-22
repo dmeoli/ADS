@@ -14,9 +14,12 @@
  * made of runs of few distinct symbols. The rows of \f$ M' \f$ are the
  * suffixes of \f$ s\$ \f$ in order, so that
  * \f$ L[ i ] = s[ \mathit{SA}[ i ] - 1 ] \f$; the suffix array
- * \f$ \mathit{SA} \f$ is that of the library [see `SuffixArray.h`], built by
- * the induced sorting SA-IS of Nong, Zhang and Chan in \f$ O( n ) \f$ time,
- * with the suffix \f$ \$ \f$ put first. The inverse transform `inverseBwt()`
+ * \f$ \mathit{SA} \f$ of \f$ s \f$ is built by the induced sorting SA-IS of
+ * Nong, Zhang and Chan in \f$ O( n ) \f$ time [see `SuffixSorting.h`], on
+ * entries of 32 bits below \f$ 2^{31} - 1 \f$ bytes, and the suffix
+ * \f$ \$ \f$ is the row 0, before it, by the arithmetic of the indices
+ * (the FM-index of the book [see `FMIndex.h`] keeps the suffix array of
+ * `SuffixArray.h`). The inverse transform `inverseBwt()`
  * uses the LF-mapping: the \f$ k \f$-th occurrence of \f$ c \f$ in \f$ L \f$
  * and the \f$ k \f$-th in the first column \f$ F \f$ are the same symbol of
  * \f$ s \f$, since the rows that end with \f$ c \f$ and those that start with
@@ -97,6 +100,7 @@
 #include "ADS/compression/CanonicalHuffman.h"
 #include "ADS/compression/PackedBits.h"
 #include "ADS/string/SuffixArray.h"
+#include "ADS/string/SuffixSorting.h"
 
 #include <algorithm>
 #include <bit>

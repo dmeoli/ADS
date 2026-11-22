@@ -23,7 +23,7 @@ inline RIndex::RIndex( std::string_view s ) : f_n( s.size() )
 #if ADS_CONTRACTS >= 3
  f_text.assign( s );
 #endif
- const auto sa = detail::sentinelSuffixArray( s );
+ const detail::SentinelSuffixArray sa( s );
  const std::size_t rows = f_n + 1;
  f_w = std::max( 1 , int( std::bit_width( rows ) ) );
  auto sym = [ & ]( std::size_t i ) {  // L[ i ], the $ as 0

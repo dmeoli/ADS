@@ -73,6 +73,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `radixSort()` and `radixSortBy()` take the buffer of trivial items from
   the block that `ScratchRoom` keeps between the calls, so that a sort
   does not pay the faults of fresh pages
+- `bwt()`, `HuffmanFMIndex`, `RIndex` and `MoveRIndex` build the suffix
+  array of the text by the `suffixArray()` of `SuffixSorting.h`, on
+  entries of 32 bits below 2^31 - 1 bytes, with the row of the
+  sentinel by the arithmetic of the indices instead of an insertion at the
+  front; `FMIndex` keeps the suffix array of `SuffixArray.h`
 
 ### Fixed
 

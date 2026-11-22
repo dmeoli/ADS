@@ -31,11 +31,43 @@ inline std::vector< std::size_t > sentinelSuffixArray( std::string_view s )
  return( sa );
  }
 
+/// the suffix array of s$ as that of sentinelSuffixArray(), on the
+/// engineered SA-IS of SuffixSorting.h: the entries of the suffix array of
+/// s, of 32 bits below 2^31 - 1 bytes and of 64 bits beyond, with the row
+/// 0 of the $ by the arithmetic of the indices, and no shift of the array
+class SentinelSuffixArray
+{
+ public:
+ explicit SentinelSuffixArray( std::string_view s ) : f_n( s.size() ) {
+  if( f_n < ( std::size_t( 1 ) << 31 ) - 1 )
+   f_narrow = suffixArray< std::uint32_t >( s );
+  else
+   f_wide = suffixArray< std::uint64_t >( s );
+  }
+
+ /// the entry of the row i, n for the row 0
+ [[nodiscard]] std::size_t operator[]( std::size_t i ) const {
+  if( i == 0 ) [[unlikely]]
+   return( f_n );
+  return( f_wide.empty() ? std::size_t( f_narrow[ i - 1 ] )
+			 : std::size_t( f_wide[ i - 1 ] ) );
+  }
+
+ /// the rows, n + 1
+ [[nodiscard]] std::size_t size( void ) const { return( f_n + 1 ); }
+
+ private:
+ std::size_t f_n;
+ std::vector< std::uint32_t > f_narrow;
+ std::vector< std::uint64_t > f_wide;
+ };
+
 /// the symbol of the row i of the last column of the matrix of s$, from
-/// the suffix array sa of s$ [see sentinelSuffixArray()]: 0 for the $,
-/// the byte + 1 otherwise
-inline std::uint32_t lastSymbol( const std::vector< std::size_t > & sa ,
-				 std::string_view s , std::size_t i )
+/// the suffix array sa of s$ [see sentinelSuffixArray() and
+/// SentinelSuffixArray]: 0 for the $, the byte + 1 otherwise
+template< class SA >
+inline std::uint32_t lastSymbol( const SA & sa , std::string_view s ,
+				 std::size_t i )
 {
  return(
    sa[ i ] == 0
@@ -89,14 +121,27 @@ inline bool distinctSymbols( std::string_view alphabet )
 
 inline BWT bwt( std::string_view s )
 {
- const auto sa = detail::sentinelSuffixArray( s );
+ const std::size_t n = s.size();
  BWT b{ std::string() , 0 };
- b.last.reserve( s.size() );
- for( std::size_t i = 0 ; i < sa.size() ; ++i )
-  if( sa[ i ] == 0 )
-   b.primary = i;
-  else
-   b.last += s[ sa[ i ] - 1 ];
+ if( n == 0 )
+  return( b );
+ // the row 0 is $s, which ends with s[ n - 1 ]; the row i + 1 is the
+ // suffix SA[ i ] of s
+ const auto fill = [ & ]( const auto & SA ) {
+  b.last.resize( n );
+  char * const L = b.last.data();
+  L[ 0 ] = s[ n - 1 ];
+  std::size_t k = 1;
+  for( std::size_t i = 0 ; i < n ; ++i )
+   if( const std::size_t j = SA[ i ] ; j == 0 )
+    b.primary = i + 1;
+   else
+    L[ k++ ] = s[ j - 1 ];
+  };
+ if( n < ( std::size_t( 1 ) << 31 ) - 1 )
+  fill( suffixArray< std::uint32_t >( s ) );
+ else
+  fill( suffixArray< std::uint64_t >( s ) );
  ADS_AUDIT( inverseBwt( b ) == s );
  return( b );
  }

@@ -23,7 +23,7 @@ HuffmanFMIndex< RS >::HuffmanFMIndex( std::string_view s , std::size_t mu )
 {
  ADS_PRE( mu > 0 );
  ADS_PRE( std::uint64_t( s.size() ) < ( std::uint64_t( 1 ) << 32 ) );
- const auto sa = detail::sentinelSuffixArray( s );
+ const detail::SentinelSuffixArray sa( s );
  const std::size_t rows = f_n + 1;
  f_w = std::max( 1 , int( std::bit_width( rows ) ) );
  std::vector< std::uint32_t > L( rows );
