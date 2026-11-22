@@ -139,6 +139,15 @@ ADS_TEST( "fast-bitwise" )
  CHECK( mortonEncode( ~0u , ~0u ) == ~Word( 0 ) );
  }
 
+// the trick of Gosper in a constant expression: the next word of the same
+// weight, from the lowest one, across a carry, to the top bit
+static_assert( nextCombination( 1 ) == 2 &&
+	       nextCombination( 0b0111 ) == 0b1011 &&
+	       nextCombination( 0b1110 ) == 0b10011 &&
+	       nextCombination( Word( 1 ) << 62 ) == Word( 1 ) << 63 &&
+	       nextCombination( ( Word( 1 ) << 62 ) | 1 ) ==
+		 ( ( Word( 1 ) << 62 ) | 2 ) );
+
 // the permutations of Heap's method: n! distinct ones for n = 0 to 8,
 // items with duplicates too, and a stop at each place; the lexicographic
 // ones against std::next_permutation on multisets with 0, 1, 2 and 3

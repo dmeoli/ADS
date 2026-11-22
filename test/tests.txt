@@ -558,6 +558,7 @@ engineered_strings  string-dictionaries  rear coding a bucket e Patricia succint
 # the engineered numerics and geometry, beyond the book
 engineered_numeric  binary-gcd        gcd binario senza divisioni
 engineered_numeric  montgomery        forma di Montgomery a 64 bit
+engineered_numeric  constexpr-numeric aritmetica e generatori constexpr
 engineered_numeric  is-prime          primalità esatta a 64 bit
 engineered_numeric  factorize         fattori primi, rho di Pollard e Brent, curve ellittiche
 engineered_numeric  generators        xoshiro256++ e wyrand
@@ -572,6 +573,7 @@ engineered_numeric  reservoir-l-input Algoritmo L su iteratori di input
 engineered_numeric  dense-gemm        prodotto di matrici dense a blocchi
 engineered_numeric  csr-matrix        matrici sparse per righe compresse
 engineered_numeric  csr-matrix-index  CSR con indici int, int64_t e int8_t
+engineered_numeric  csr-matrix-transpose-top trasposta, indici al massimo
 engineered_numeric  sell-matrix       matrici sparse SELL-C-sigma
 engineered_numeric  convex-hull       inviluppo con ottagono e catena monotona
 engineered_numeric  closest-pair-sweep coppia più vicina con la scansione
@@ -1824,6 +1826,7 @@ engineered_sparse  position-index             indice delle posizioni, Robin Hood
 engineered_sparse  position-index-renumber    rinumerazione dopo le cancellazioni
 engineered_sparse  sparse-assembly            CSC e CSR da triplette, somme
 engineered_sparse  dynamic-csr                righe aggiunte e tolte a blocchi
+engineered_sparse  dynamic-csr-types          indici di 8, 16 e 64 bit
 engineered_sparse  row-fingerprint            impronte delle righe, zeri e NaN
 engineered_parallel  parallel-executors  esecutori: vuoti, annidati, eccezioni
 engineered_parallel  parallel-patterns   cicli, riduzioni, scansioni

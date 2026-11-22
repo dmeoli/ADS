@@ -447,6 +447,110 @@ ADS_TEST( "dynamic-csr" )
  CHECK_THROWS( ( void )D.indices( 1 ) , contract_violation );
  }
 
+// DynamicCsr of other types of indices and values against a vector of
+// rows: 8-bit indices without sign up to their 255 entries, signed 16-bit
+// ones and 64-bit ones with integer values; appends of rows and of
+// batches, removals by sets (of indices of another type) and by ranges;
+// the entry beyond the index a violation of the contract
+template< class I , class V >
+void checkDynamicCsrTypes( std::size_t cap , std::uint64_t seed )
+{
+ using Entries = std::vector< std::pair< I , V > >;
+ std::mt19937_64 g( seed );
+ DynamicCsr< I , V > D;
+ std::vector< Entries > W;
+ std::size_t z = 0;
+ auto same = [ & ]( void ) {
+  if( ( D.rows() != W.size() ) || ( D.nonzeros() != z ) )
+   return( false );
+  for( std::size_t i = 0 ; i < W.size() ; ++i ) {
+   const auto x = D.indices( i );
+   const auto y = D.values( i );
+   if( x.size() != W[ i ].size() )
+    return( false );
+   for( std::size_t k = 0 ; k < x.size() ; ++k )
+    if( ( x[ k ] != W[ i ][ k ].first ) || ( y[ k ] != W[ i ][ k ].second ) )
+     return( false );
+   }
+  return( std::size_t( D.beg()[ W.size() ] ) == z );
+  };
+ for( int t = 0 ; t < 2000 ; ++t ) {
+  const unsigned c = unsigned( g() % 5 );
+  const std::size_t k = g() % 6;
+  if( ( c <= 1 ) && ( z + k <= cap ) ) {  // one row
+   Entries e;
+   std::vector< I > x;
+   std::vector< V > y;
+   for( std::size_t j = 0 ; j < k ; ++j ) {
+    e.emplace_back( I( g() % 100 ) , V( g() % 50 ) );
+    x.push_back( e.back().first );
+    y.push_back( e.back().second );
+    }
+   CHECK( D.append( x , y ) == W.size() );
+   W.push_back( e );
+   z += k;
+   }
+  else if( ( c == 2 ) && ( z + 2 * k <= cap ) ) {  // two rows, offset
+   std::vector< I > beg{ I( 1 ) , I( 1 + k ) , I( 1 + 2 * k ) } ,
+     x( 1 , I( 0 ) );
+   std::vector< V > y( 1 , V( 0 ) );
+   for( int r = 0 ; r < 2 ; ++r ) {
+    Entries e;
+    for( std::size_t j = 0 ; j < k ; ++j ) {
+     e.emplace_back( I( g() % 100 ) , V( g() % 50 ) );
+     x.push_back( e.back().first );
+     y.push_back( e.back().second );
+     }
+    W.push_back( e );
+    }
+   D.append( 2 , beg.data() , x.data() , y.data() );
+   z += 2 * k;
+   }
+  else if( ( c == 3 ) && ! W.empty() ) {  // a random set
+   std::vector< std::int16_t > R;
+   for( std::size_t i = 0 ; i < W.size() ; ++i )
+    if( g() % 3 == 0 )
+     R.push_back( std::int16_t( i ) );
+   D.remove( R );
+   for( auto i = R.rbegin() ; i != R.rend() ; ++i ) {
+    z -= W[ std::size_t( *i ) ].size();
+    W.erase( W.begin() + *i );
+    }
+   }
+  else if( ! W.empty() ) {  // a range
+   const std::size_t a = g() % W.size() , b = a + g() % ( W.size() - a + 1 );
+   D.remove( a , b );
+   for( std::size_t i = a ; i < b ; ++i )
+    z -= W[ i ].size();
+   W.erase( W.begin() + std::ptrdiff_t( a ) ,
+	    W.begin() + std::ptrdiff_t( b ) );
+   }
+  CHECK( same() );
+  }
+ D.clear();
+ std::vector< I > x( cap , I( 7 ) );
+ std::vector< V > y( cap , V( 1 ) );
+ D.append( x , y );  // the entries filling the index
+ CHECK( D.nonzeros() == cap && std::size_t( D.beg()[ 1 ] ) == cap );
+ if( cap < std::size_t( std::numeric_limits< I >::max() ) )
+  return;
+ CHECK_THROWS(
+   D.append( std::vector< I >{ I( 1 ) } , std::vector< V >{ V( 1 ) } ) ,
+   contract_violation );
+ const I beg[ 2 ] = { I( 0 ) , I( 1 ) };
+ CHECK_THROWS( D.append( 1 , beg , x.data() , y.data() ) ,
+	       contract_violation );
+ D.remove( 0 , 1 );
+ CHECK( D.empty() && D.nonzeros() == 0 );
+ }
+
+ADS_TEST( "dynamic-csr-types" )
+{
+ checkDynamicCsrTypes< std::uint8_t , float >( 255 , 1 );
+ checkDynamicCsrTypes< std::int16_t , std::int64_t >( 32767 , 2 );
+ checkDynamicCsrTypes< std::uint64_t , int >( 4000 , 3 );
+ }
+
 // the fingerprints: +0 and -0, the NaNs of any sign and payload, equal;
 // the lengths across the blocks of 64 words; the rows that differ in one
 // value, the seeds, the dense and the sparse rows; no collision among

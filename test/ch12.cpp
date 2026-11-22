@@ -356,6 +356,33 @@ ADS_TEST( "sec12.3.polynomials" )
   CHECK( multiplyKaratsuba( a , b ) == multiplyNaive( a , b ) );
   CHECK( multiplyFour( a , b ) == multiplyNaive( a , b ) );
   }
+ // the halvings at 2^k - 1, 2^k and 2^k + 1 up to 513, each against the
+ // others of the three (one factor a constant, one the zero polynomial), the
+ // count of Karatsuba 3^k on 2^k and below that of 2^(k+1) on 2^k + 1
+ for( int k = 1 ; k <= 9 ; ++k )
+  for( const std::size_t n :
+       { ( std::size_t( 1 ) << k ) - 1 , std::size_t( 1 ) << k ,
+	 ( std::size_t( 1 ) << k ) + 1 } )
+   for( const std::size_t o :
+	{ std::size_t( 1 ) , ( std::size_t( 1 ) << k ) - 1 ,
+	  ( std::size_t( 1 ) << k ) + 1 } ) {
+    Longs a( n ) , b( o );
+    for( auto & x : a )
+     x = long( g() % 2001 ) - 1000;
+    for( auto & x : b )
+     x = long( g() % 2001 ) - 1000;
+    long m3 = 0;
+    const auto r = multiplyNaive( a , b );
+    CHECK( r.size() == n + o - 1 );
+    CHECK( multiplyKaratsuba( a , b , &m3 ) == r && multiplyFour( a ,
+								  b ) == r &&
+	   multiplyKaratsuba( b , a ) == r );
+    if( ( n == o ) && ( n == ( std::size_t( 1 ) << k ) ) )
+     CHECK( m3 == long( std::pow( 3.0 , k ) ) );
+    if( ( n == o ) && ( n == ( std::size_t( 1 ) << k ) + 1 ) )
+     CHECK( m3 <= long( std::pow( 3.0 , k + 1 ) ) );
+    CHECK( multiplyKaratsuba( a , Longs( o , 0 ) ) == Longs( n + o - 1 , 0 ) );
+    }
  }
 
 // Strassen against the naive product, 7^k products on n = 2^k, any n by

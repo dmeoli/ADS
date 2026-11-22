@@ -115,7 +115,7 @@ std::vector< T > multiplySame( std::vector< T > p , std::vector< T > q ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{multiplyFour}( p , q )\quad
-///     \triangleright\ n \text{ coefficients each, } h = \lceil n / 2 \rceil
+///     \triangleright\ n \text{ coefficients each, } h = \lfloor n / 2 \rfloor
 ///     \cr
 /// 2 & \quad \textbf{if}\ n = 1\ \textbf{then return}\ ( p_0 q_0 ) \cr
 /// 3 & \quad p = x^h p_S + p_D \text{, } q = x^h q_S + q_D\quad

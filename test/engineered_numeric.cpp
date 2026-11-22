@@ -547,6 +547,77 @@ ADS_TEST( "xoshiro-alias" )
  CHECK_THROWS( AliasTable( { 1.0 , -1.0 } ) , contract_violation );
  }
 
+// the constant evaluation of the arithmetic and of the generators: mulMod()
+// on the largest moduli (-1 squared is 1), mulMod61(), binaryGcd() with a
+// zero, Montgomery64 on the prime 2^64 - 59 and on the modulus 1 (the form
+// and back, Fermat's little theorem by pow()), the known answer of
+// Random123 for Philox4x32, and Xoshiro256, WyRand and Philox computed
+// at compile time equal to the same at run time
+constexpr std::uint64_t P64 = ~std::uint64_t( 0 ) - 58;  // 2^64 - 59
+static_assert( mulMod( ~0ULL - 1 , ~0ULL - 1 , ~0ULL ) == 1 );
+static_assert( mulMod( P64 - 1 , P64 - 1 , P64 ) == 1 );
+static_assert( mulMod( 12345 , 678 , 1 ) == 0 );
+static_assert( mulMod61( kMersenne61 - 1 , kMersenne61 - 1 ) == 1 );
+static_assert( mulMod61( 0 , kMersenne61 - 1 ) == 0 );
+static_assert( binaryGcd( 0 , 12 ) == 12 && binaryGcd( 12 , 0 ) == 12 &&
+	       binaryGcd( 1ULL << 63 , 3ULL << 40 ) == 1ULL << 40 );
+static_assert( [] {
+ const Montgomery64 M( P64 );
+ const std::uint64_t a = 0x123456789abcdefULL , b = P64 - 2;
+ return( ( M.from( M.mul( M.to( a ) , M.to( b ) ) ) == mulMod( a , b ,
+							       P64 ) ) &&
+	  ( M.from( M.pow( M.to( a ) , P64 - 1 ) ) == 1 ) &&
+	  ( M.from( M.one() ) == 1 ) && ( M.modulus() == P64 ) );
+ }() );
+static_assert( [] {
+ const Montgomery64 M( 3 );
+ return( M.from( M.pow( M.to( 2 ) , 2 ) ) == 1 );
+ }() );
+static_assert( Philox4x32::block( { 0 , 0 , 0 , 0 } , { 0 , 0 } ) ==
+	       Philox4x32::Block
+{ 0x6627e8d5u , 0xe169c58du , 0xbc57ac4cu ,
+				  0x9b00dbd8u } );
+
+template< class G >
+constexpr typename G::result_type tenth( typename G::result_type seed )
+{
+ G g( seed );
+ for( int i = 0 ; i < 9 ; ++i )
+  ( void )g();
+ return( g() );
+ }
+
+ADS_TEST( "constexpr-numeric" )
+{
+ constexpr auto w = tenth< WyRand >( 7 );
+ constexpr auto p = tenth< Philox4x64 >( 7 );
+ constexpr auto q = tenth< Philox4x32 >( 7 );
+ CHECK( w == tenth< WyRand >( 7 ) && p == tenth< Philox4x64 >( 7 ) &&
+	q == tenth< Philox4x32 >( 7 ) );
+ constexpr auto d = [] {
+  Philox4x64 g( 3 );
+  g.discard( 1000 );
+  return( g() );
+  }();
+ Philox4x64 h( 3 );
+ h.discard( 1000 );
+ CHECK( d == h() );
+#ifndef ADS_WITH_BOOST  // Boost's xoshiro is not constexpr
+ constexpr auto x = tenth< Xoshiro256 >( 7 ) ,
+		y = tenth< Xoshiro256StarStar >( 7 );
+ CHECK( x == tenth< Xoshiro256 >( 7 ) &&
+	y == tenth< Xoshiro256StarStar >( 7 ) );
+ constexpr auto j = [] {
+  Xoshiro256 g( 5 );
+  g.jump();
+  return( g() );
+  }();
+ Xoshiro256 k( 5 );
+ k.jump();
+ CHECK( j == k() );
+#endif
+ }
+
 // Philox4x32-10 and Philox4x64-10: the known answers of Random123 for the
 // counters and keys 0, all ones and the digits of pi, the 10000-th output
 // of the default engine of C++26, discard() across the buffer and the
@@ -1218,6 +1289,64 @@ ADS_TEST( "csr-matrix-index" )
  CHECK_THROWS( Small( 3 , 129 , { { 0 , 128 , 1.0f } } ) ,
 	       contract_violation );
  CHECK_THROWS( ( void )Small( 200 , 3 ).transpose() , contract_violation );
+ }
+
+// the transpose with the rows and the columns at the top of the index,
+// through the small types that stand for UINT32_MAX: 8 bits (and so 8-bit
+// offsets) on a 256 x 256 matrix holding the corners and the last row and
+// column, 16-bit columns with 32-bit offsets on 65536 columns, the signed
+// 8-bit index on 128 x 128; each against a dense reference, the transpose
+// twice the matrix itself, and one more triplet or row violating the
+// contracts
+template< class A >
+void checkCsrTop( std::size_t m , std::size_t n , std::size_t z ,
+		  std::uint64_t seed )
+{
+ using T = typename A::Value;
+ std::mt19937_64 g( seed );
+ std::vector< typename A::Triplet > E{ { 0 , 0 , T( 1 ) } ,
+				       { 0 , n - 1 , T( 2 ) } ,
+				       { m - 1 , 0 , T( 3 ) } ,
+				       { m - 1 , n - 1 , T( 4 ) } };
+ while( E.size() < z )
+  E.emplace_back(
+    g() % 2 ? m - 1 - g() % std::min< std::size_t >( m , 3 ) : g() % m ,
+    g() % 2 ? n - 1 - g() % std::min< std::size_t >( n , 3 ) : g() % n ,
+    T( 1 + g() % 5 ) );
+ std::map< std::pair< std::size_t , std::size_t > , T > D;
+ for( const auto & [ i , j , v ] : E )
+  D[ { i , j } ] += v;
+ const A M( m , n , E );
+ const A R = M.transpose();
+ CHECK( R.rows() == n && R.cols() == m && R.nonzeros() == D.size() &&
+	M.nonzeros() == D.size() && R.transpose() == M );
+ for( const auto & [ ij , v ] : D )
+  CHECK( M.get( ij.first , ij.second ) == v &&
+	 R.get( ij.second , ij.first ) == v );
+ for( std::size_t j = 0 ; j < n ;
+      ++j )              // the rows of the transpose
+  for( auto p = std::size_t( R.rowStart()[ j ] ) ;  // increasing
+       p + 1 < std::size_t( R.rowStart()[ j + 1 ] ) ; ++p )
+   CHECK( R.columns()[ p ] < R.columns()[ p + 1 ] );
+ }
+
+ADS_TEST( "csr-matrix-transpose-top" )
+{
+ using U8 = BasicCsrMatrix< int , std::uint8_t >;
+ static_assert( std::is_same_v< U8::Offset , std::uint8_t > );
+ checkCsrTop< U8 >( 256 , 256 , 255 , 3 );
+ checkCsrTop< U8 >( 1 , 256 , 200 , 4 );
+ checkCsrTop< U8 >( 256 , 1 , 200 , 5 );
+ checkCsrTop< BasicCsrMatrix< float , std::int8_t > >( 128 , 128 , 127 , 6 );
+ checkCsrTop< BasicCsrMatrix< double , std::uint16_t , std::uint32_t > >(
+   65536 , 65536 , 5000 , 7 );
+ checkCsrTop< BasicCsrMatrix< double , std::uint16_t , std::uint32_t > >(
+   3 , 65536 , 70000 , 8 );
+ // 256 triplets do not fit 8-bit offsets, 257 rows an 8-bit transpose
+ std::vector< U8::Triplet > E( 256 , U8::Triplet{ 0 , 0 , 1 } );
+ CHECK_THROWS( U8( 2 , 2 , E ) , contract_violation );
+ CHECK_THROWS( ( void )U8( 257 , 3 ).transpose() , contract_violation );
+ CHECK( U8( 256 , 3 ).transpose().rows() == 3 );
  }
 
 // SellMatrix: the product against that of CSR on 300 random matrices of
