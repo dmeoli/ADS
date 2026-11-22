@@ -974,8 +974,11 @@ of the first integer to their four places of 4 bytes, the missing high
 bytes made 0, with the entry of the control byte in a table of 256 masks
 as its mask; the place then moves by the sum of the four lengths, from a
 table too ([Figure 21.5](21-compression.md#fig-21-5)). The encoder finds
-the lengths of 4 integers at once by three comparisons of their lanes and
-moves their bytes by the shuffle of the inverse table. Its decoder takes 8
+the control bytes of 8 integers at once, each of their bytes made 0 or 1,
+each pair of bytes saturated to one byte and a saturated addition leaving
+the 2 bits of each integer in the top bits of its 2 bytes, which the mask
+of the top bits gathers, and moves the bytes of 4 integers by the shuffle
+of the inverse table. Its decoder takes 8
 control bytes at a time and decodes 32 integers with no
 test while enough bytes follow; elsewhere the integers are moved one at a
 time, still with no test ([Algorithm 21.17](21-compression.md#alg-21-17)).

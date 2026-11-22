@@ -2,19 +2,19 @@
 /*-------------------------- File Compression.tpp --------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The kernels of the compression on Highway: the encoder and the decoder
- * of Stream VByte [see StreamVByte.h], 4 integers of 32 bits a step in a
- * vector of 16 bytes. The encoder finds the lengths of the 4 integers by
- * three comparisons of their lanes, makes their control byte by a sum of
- * the lengths shifted to their places, and moves their bytes together by
- * the shuffle of bytes of the control byte; the decoder moves the bytes of
- * 4 integers to their places by the shuffle of their control byte, the
- * bytes 0x80 of the tables giving 0 [see `TableLookupBytesOr0()` of
- * Highway]; and the binary packing of blocks of 128 integers of
- * \f$ B \f$ bits in 4 lanes [see BinaryPacking.h], each lane shifted and
- * or-ed into a word of 32 bits until it is full, as in SIMD-BP128 of Lemire
- * and Boytsov. The bytes of an integer are those of the little-endian
- * order, which the callers require of the machine.
+ * The kernels of the compression on Highway: the encoder and the decoder of
+ * Stream VByte [see StreamVByte.h], 4 integers of 32 bits a step in a vector
+ * of 16 bytes. The encoder makes the control bytes of 8 integers at once by
+ * a minimum, a saturated narrowing and a saturated addition whose top bits
+ * are the lengths less 1, and moves the bytes of 4 integers together by the
+ * shuffle of bytes of their control byte; the decoder moves the bytes of 4
+ * integers to their places by the shuffle of their control byte, the bytes
+ * 0x80 of the tables giving 0 [see `TableLookupBytesOr0()` of Highway]; and
+ * the binary packing of blocks of 128 integers of \f$ B \f$ bits in 4 lanes
+ * [see BinaryPacking.h], each lane shifted and or-ed into a word of 32 bits
+ * until it is full, as in SIMD-BP128 of Lemire and Boytsov. The bytes of an
+ * integer are those of the little-endian order, which the callers require of
+ * the machine.
  *
  * \see D. Lemire, L. Boytsov, Decoding billions of integers per second
  *      through vectorization, Software: Practice and Experience 45(1),
@@ -54,10 +54,11 @@ namespace ADS::detail::simd::HWY_NAMESPACE
 
 namespace hn = hwy::HWY_NAMESPACE;
 
-/// the integers x[ 0 .. i ) of Stream VByte encoded 4 at a time, i the
-/// largest multiple of 4 not above n: their control bytes in keys, their
-/// bytes from *d, which moves past them (16 bytes of room after them), by
-/// the shuffles pack and the lengths len of the 256 control bytes; i
+/// the integers x[ 0 .. i ) of Stream VByte encoded 8 at a time and then
+/// 4, i the largest multiple of 4 not above n: their control bytes in
+/// keys, their bytes from *d, which moves past them (16 bytes of room after
+/// them), by the shuffles pack and the lengths len of the 256 control
+/// bytes; i
 inline std::size_t vbyteEncode( const std::uint32_t * HWY_RESTRICT x ,
 				std::size_t n ,
 				std::uint8_t * HWY_RESTRICT keys ,
@@ -69,8 +70,43 @@ inline std::size_t vbyteEncode( const std::uint32_t * HWY_RESTRICT x ,
  const hn::FixedTag< std::uint8_t , 16 > d8;
  const auto one = hn::Set( d32 , 1u );
  const auto at = hn::ShiftLeft< 1 >( hn::Iota( d32 , 0 ) );  // 0 2 4 6
+ const hn::FixedTag< std::int8_t , 16 > di8;
+ const hn::FixedTag< std::int16_t , 8 > di16;
+ const hn::FixedTag< std::uint16_t , 8 > du16;
+ const auto ones = hn::Set( d8 , std::uint8_t( 1 ) );
  std::uint8_t * p = *d;
  std::size_t i = 0;
+ // 8 a step: each byte made 0 or 1, the pairs of bytes saturated to one
+ // (255 if the upper one is set), the pairs of these as 0x0101 at most,
+ // and 0x7F00 added with saturation leave the length less 1 of each
+ // integer in the upper bits of its two bytes, which give its 2 bits of
+ // the control bytes
+ for( ; i + 8 <= n ; i += 8 ) {
+  const auto v0 = hn::LoadU( d32 , x + i );
+  const auto v1 = hn::LoadU( d32 , x + i + 4 );
+  const auto m0 =
+    hn::BitCast( di16 , hn::Min( hn::BitCast( d8 , v0 ) , ones ) );
+  const auto m1 =
+    hn::BitCast( di16 , hn::Min( hn::BitCast( d8 , v1 ) , ones ) );
+  const auto m =
+    hn::Min( hn::BitCast( di16 , hn::OrderedDemote2To( d8 , m0 , m1 ) ) ,
+	     hn::Set( di16 , std::int16_t( 0x0101 ) ) );
+  const auto t = hn::BitCast( di8 , hn::SaturatedAdd(
+    hn::BitCast( du16 , m ) , hn::Set( du16 , std::uint16_t( 0x7F00 ) ) ) );
+  std::uint8_t bits[ 8 ];
+  hn::StoreMaskBits( di8 , hn::Lt( t , hn::Zero( di8 ) ) , bits );
+  keys[ i / 4 ] = bits[ 0 ];
+  keys[ i / 4 + 1 ] = bits[ 1 ];
+  const unsigned c0 = bits[ 0 ] , c1 = bits[ 1 ];
+  hn::StoreU( hn::TableLookupBytesOr0( hn::BitCast( d8 , v0 ) ,
+				       hn::LoadU( d8 , pack + 16 * c0 ) ) ,
+	      d8 , p );
+  p += len[ c0 ];
+  hn::StoreU( hn::TableLookupBytesOr0( hn::BitCast( d8 , v1 ) ,
+				       hn::LoadU( d8 , pack + 16 * c1 ) ) ,
+	      d8 , p );
+  p += len[ c1 ];
+  }
  for( ; i + 4 <= n ; i += 4 ) {
   const auto v = hn::LoadU( d32 , x + i );
   // the length less 1 of each, its bytes past the first that are used

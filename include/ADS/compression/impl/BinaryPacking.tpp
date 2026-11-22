@@ -108,35 +108,80 @@ binaryPack( std::span< const std::uint32_t > x , bool sorted )
  using namespace detail::bp;
  ADS_AUDIT( ! sorted || std::is_sorted( x.begin() , x.end() ) );
  const std::size_t n = x.size() , blocks = ( n + kBlock - 1 ) / kBlock;
- // the blocks, the differences taken and the last one filled; their
- // widths first, then the bytes
- std::vector< std::uint32_t > v( blocks * kBlock , 0 );
- if( ! sorted )
-  std::copy( x.begin() , x.end() , v.begin() );
- else
-  for( std::size_t i = 0 ; i < n ; ++i )
-   v[ i ] = x[ i ] - ( i >= 4 ? x[ i - 4 ] : 0 );
- std::vector< std::uint8_t > width( blocks );
- std::size_t bytes = 0;
- for( std::size_t k = 0 ; k < blocks ; ++k ) {
-  std::uint32_t o = 0;
-  for( std::size_t i = 0 ; i < kBlock ; ++i )
-   o |= v[ k * kBlock + i ];
-  width[ k ] = std::uint8_t( std::bit_width( o ) );
-  bytes += 16 * std::size_t( width[ k ] );
-  }
- std::vector< std::uint8_t > out(
-   bytes + kGroup * ( ( blocks + kGroup - 1 ) / kGroup ) , 0 );
- std::uint8_t * o = out.data();
- for( std::size_t k = 0 ; k < blocks ; ++k ) {
-  if( k % kGroup == 0 ) {
-   const std::size_t g = std::min( kGroup , blocks - k );
-   std::copy( width.begin() + std::ptrdiff_t( k ) ,
-	      width.begin() + std::ptrdiff_t( k + g ) , o );
-   o += kGroup;
+ const std::size_t full = n / kBlock;
+ const std::size_t groups = ( blocks + kGroup - 1 ) / kGroup;
+ const std::uint32_t * const p = x.data();
+ // the block k into s, the differences taken and the last one filled
+ // with 0, and the OR of its integers
+ alignas( 16 ) std::uint32_t s[ kBlock ];
+ auto fill = [ & ]( std::size_t k ) {
+  const std::size_t j0 = k * kBlock , m = std::min( kBlock , n - j0 );
+  std::uint32_t r = 0;
+  if( sorted && ( j0 >= 4 ) )
+   for( std::size_t i = 0 ; i < m ; ++i )
+    r |= s[ i ] = p[ j0 + i ] - p[ j0 + i - 4 ];
+  else
+   for( std::size_t i = 0 ; i < m ; ++i )
+    r |= s[ i ] =
+      sorted ? p[ j0 + i ] - ( j0 + i >= 4 ? p[ j0 + i - 4 ] : 0 )
+	     : p[ j0 + i ];
+  std::fill( s + m , s + kBlock , 0u );
+  return( r );
+  };
+ // the head of the group of the block k at o, with the widths w
+ auto head = [ & ]( std::size_t k , std::uint8_t * o ,
+		    const std::uint8_t * w ) {
+  const std::size_t g = std::min( kGroup , blocks - k );
+  std::copy( w , w + g , o );
+  std::fill( o + g , o + kGroup , std::uint8_t( 0 ) );
+  };
+ std::vector< std::uint8_t > out;
+ if( ! sorted ) {
+  // the widths first, the full blocks read from x, and then the output
+  // of its exact size, the full blocks packed from x
+  std::vector< std::uint8_t > width( blocks );
+  std::size_t bytes = 0;
+  for( std::size_t k = 0 ; k < blocks ; ++k ) {
+   std::uint32_t r = 0;
+   if( k < full )
+    for( std::size_t i = 0 ; i < kBlock ; ++i )
+     r |= p[ k * kBlock + i ];
+   else
+    r = fill( k );
+   width[ k ] = std::uint8_t( std::bit_width( r ) );
+   bytes += 16 * std::size_t( width[ k ] );
    }
-  packBlock( v.data() + k * kBlock , o , width[ k ] );
-  o += 16 * std::size_t( width[ k ] );
+  out.resize( bytes + kGroup * groups );
+  std::uint8_t * o = out.data();
+  for( std::size_t k = 0 ; k < blocks ; ++k ) {
+   if( k % kGroup == 0 ) {
+    head( k , o , width.data() + k );
+    o += kGroup;
+    }
+   packBlock( k < full ? p + k * kBlock : s , o , width[ k ] );
+   o += 16 * std::size_t( width[ k ] );
+   }
+  }
+ else {
+  // the differences of a block once, packed at once into the room of the
+  // widest blocks, not cleared, of which the output keeps the bytes
+  // written
+  const auto room = std::make_unique_for_overwrite< std::uint8_t[] >(
+    16 * 32 * blocks + kGroup * groups );
+  std::uint8_t * o = room.get();
+  std::uint8_t * w = o;
+  for( std::size_t k = 0 ; k < blocks ; ++k ) {
+   if( k % kGroup == 0 ) {
+    w = o;
+    std::fill( o , o + kGroup , std::uint8_t( 0 ) );
+    o += kGroup;
+    }
+   const int b = int( std::bit_width( fill( k ) ) );
+   w[ k % kGroup ] = std::uint8_t( b );
+   packBlock( s , o , b );
+   o += 16 * std::size_t( b );
+   }
+  out.assign( room.get() , o );
   }
  ADS_AUDIT( binaryUnpack( out , n , sorted ) ==
 	    std::vector< std::uint32_t >( x.begin() , x.end() ) );

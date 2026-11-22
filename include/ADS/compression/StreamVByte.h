@@ -15,10 +15,12 @@
  * moved to their 4 places of 4 bytes, the missing high bytes made 0, by
  * one shuffle of bytes whose mask is the entry of the control byte in a
  * table of 256 masks, and the place moves by the sum of the 4 lengths,
- * from a table too. The encoder finds the lengths of 4 integers at once by
- * three comparisons of their lanes, makes their control byte by a sum of
- * the lengths shifted to their places, and moves their bytes together by
- * the shuffle of the inverse table;
+ * from a table too. The encoder finds the control bytes of 8 integers at
+ * once: each of their bytes made 0 or 1, each pair of bytes saturated to
+ * one byte, and a saturated addition that leaves the 2 bits of each
+ * integer in the top bits of its 2 bytes, which the mask of the top bits
+ * gathers; it moves the bytes of 4 integers together by the shuffle of the
+ * inverse table;
  * the decoder takes 8 control bytes in a word and decodes 32 integers with no
  * test while 12 more follow; elsewhere the integers are moved one at a time,
  * still with no test. With

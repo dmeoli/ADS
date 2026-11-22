@@ -63,8 +63,12 @@ streamVByteEncode( std::span< const std::uint32_t > x )
 {
  using namespace detail;
  const std::size_t n = x.size() , nc = ( n + 3 ) / 4;
- std::vector< std::uint8_t > out( nc + 4 * n + 32 );  // room for stores
- std::uint8_t * d = out.data() + nc;
+ // room for the stores, not cleared, of which the output keeps the
+ // bytes written
+ const std::size_t room = nc + 4 * n + 32;
+ const auto buf = std::make_unique_for_overwrite< std::uint8_t[] >( room );
+ std::uint8_t * const base = buf.get();
+ std::uint8_t * d = base + nc;
  // each integer stored in 4 bytes, the place moved by its length: the
  // bytes less 1, 0 for v < 2^8, ..., 3 for v >= 2^24
  auto put = [ & ]( std::uint32_t v ) {
@@ -78,23 +82,22 @@ streamVByteEncode( std::span< const std::uint32_t > x )
  // 4 integers a step by the kernel of Highway [see Simd.h], on the
  // machines of little-endian order
  if constexpr( std::endian::native == std::endian::little )
-  i = simd::vbyteEncode( x.data() , n , out.data() , &d ,
+  i = simd::vbyteEncode( x.data() , n , base , &d ,
 			 kVByte.pack[ 0 ].data() ,
 			 kVByte.len.data() );
 #endif
  for( ; i + 4 <= n ; i += 4 ) {
   const std::uint32_t l0 = put( x[ i ] ) , l1 = put( x[ i + 1 ] ) ,
 		      l2 = put( x[ i + 2 ] ) , l3 = put( x[ i + 3 ] );
-  out[ i / 4 ] = std::uint8_t( l0 | ( l1 << 2 ) | ( l2 << 4 ) | ( l3 << 6 ) );
+  base[ i / 4 ] = std::uint8_t( l0 | ( l1 << 2 ) | ( l2 << 4 ) | ( l3 << 6 ) );
   }
  if( i < n ) {
   std::uint32_t c = 0;
   for( std::size_t j = 0 ; i + j < n ; ++j )
    c |= put( x[ i + j ] ) << ( 2 * j );
-  out[ i / 4 ] = std::uint8_t( c );
+  base[ i / 4 ] = std::uint8_t( c );
   }
- out.resize( std::size_t( d - out.data() ) );
- return( out );
+ return( std::vector< std::uint8_t >( base , d ) );
  }
 
 inline std::vector< std::uint32_t >

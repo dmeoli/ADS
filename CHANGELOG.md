@@ -81,6 +81,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `intersect()` searches the items of the shorter list in the longer one
   when the longer has more than 4 times the items of the shorter, instead
   of 32, where the search beats the merge with Highway and without
+- `binaryPack()` packs the full blocks of unsorted integers from the input,
+  with no copy of it, into an output of its exact size, and the
+  differences of sorted integers once a block, in a single pass into room
+  that is not cleared; `streamVByteEncode()` writes into room that is not
+  cleared, and its kernel of Highway makes the control bytes of 8 integers
+  at once by a saturated narrowing and the mask of the top bits instead of
+  a sum of the lanes per 4
 
 ### Fixed
 
