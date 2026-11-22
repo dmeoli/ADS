@@ -8,7 +8,7 @@
  * items common to \f$ A \f$ of \f$ n \f$ items and \f$ B \f$ of \f$ m \f$
  * items, both strictly increasing, into `out`, and gives their number.
  *
- * - On lists of similar lengths (the longer at most 32 times the shorter)
+ * - On lists of similar lengths (the longer at most 4 times the shorter)
  *   the two lists are merged a block of \f$ L \f$ items at a time on each
  *   side, in at most \f$ ( n + m ) / L \f$ steps, on the integers of 32
  *   bits with `ADS_WITH_HIGHWAY`, \f$ L \le 8 \f$ the lanes of the vectors
@@ -24,7 +24,7 @@
  *   advances on equality, and each list advances when its item is not
  *   larger, three additions in place of the jumps of the merge, which
  *   mispredict on lists that interleave at random.
- * - On lists of very different lengths (the longer more than 32 times the
+ * - On lists of very different lengths (the longer more than 4 times the
  *   shorter), each item of the shorter one is looked for in the longer one
  *   from the place of the previous one. On the integers of 32 bits with
  *   Highway, the longer list is read through a window of 64 items, which moves
@@ -107,7 +107,7 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{intersect}( a , n , b , m ) \cr
-/// 2 & \quad \textbf{if}\ 32 m < n\ \textbf{then return}\ \text{the items }
+/// 2 & \quad \textbf{if}\ 4 m < n\ \textbf{then return}\ \text{the items }
 ///     \text{of } b \text{ found in } a \text{ by galloping, as in }
 ///     \mathrm{intersectDoubling} \cr
 /// 3 & \quad i \gets 0;\ j \gets 0;\ k \gets 0 \cr

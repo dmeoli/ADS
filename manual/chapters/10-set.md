@@ -1037,7 +1037,7 @@ the branches that the comparisons decide may cost more than the
 comparisons, since those of a merge of two lists that interleave at random
 are mispredicted half of the time. `VectorIntersection.h` therefore
 engineers the two regimes. On lists of similar lengths (the longer at most
-32 times the shorter) it merges with no branch: an item is written whatever
+4 times the shorter) it merges with no branch: an item is written whatever
 happens, the count of the output advances on equality, and each list
 advances when its item is not larger, three additions in place of the
 jumps of the merge (lines 3 to 7 of

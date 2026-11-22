@@ -97,7 +97,7 @@ std::size_t intersect( const T * a , std::size_t n , const T * b ,
  // ends are merged as any others
  [[maybe_unused]] constexpr bool hwy32 =
    std::is_integral_v< T > && ( sizeof( T ) == 4 );
- if( m * 32 < n ) {
+ if( m * 4 < n ) {
   std::size_t q = 0 , p = 0;
   k = 0;
 #ifdef ADS_WITH_HIGHWAY

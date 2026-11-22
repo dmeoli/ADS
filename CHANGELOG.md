@@ -78,6 +78,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entries of 32 bits below 2^31 - 1 bytes, with the row of the
   sentinel by the arithmetic of the indices instead of an insertion at the
   front; `FMIndex` keeps the suffix array of `SuffixArray.h`
+- `intersect()` searches the items of the shorter list in the longer one
+  when the longer has more than 4 times the items of the shorter, instead
+  of 32, where the search beats the merge with Highway and without
 
 ### Fixed
 
