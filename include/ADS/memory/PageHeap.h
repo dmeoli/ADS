@@ -19,10 +19,13 @@
  * moves to the next page of its list of the pages with free slots, or to a
  * new page, and the exhausted page leaves the list until a slot of it is
  * freed, which puts it back. A free is the push on the list of the page of
- * the slot, plus the test of a flag; both operations cost \f$ O( 1 ) \f$
- * time, amortized over the slots of a page for the change of page, and a
- * page of the class \f$ c \f$ wastes less than \f$ ( c + 1 ) g \f$ bytes at
- * its end besides its header.
+ * the slot, plus the test of a flag; a page counts its slots given and not
+ * freed, and the free of its last one empties its list and puts its
+ * pointer back at its first slot, so that a page emptied is cut again in
+ * the order of its addresses, by the bump. Both operations cost
+ * \f$ O( 1 ) \f$ time, amortized over the slots of a page for the change of
+ * page, and a page of the class \f$ c \f$ wastes less than
+ * \f$ ( c + 1 ) g \f$ bytes at its end besides its header.
  *
  * So the objects made one after another come from one page, even after
  * frees in a scrambled order: a single free list, as that of `ObjectPool`
@@ -39,7 +42,7 @@
  *      action, Programming Languages and Systems (APLAS 2019), Lecture
  *      Notes in Computer Science 11893, 244-265, 2019,
  *      doi:10.1007/978-3-030-34175-6_13 (the free lists by page, the page
- *      of a pointer by masking)
+ *      of a pointer by masking, the page emptied cut again)
  * \see J. Bonwick, The slab allocator: an object-caching kernel memory
  *      allocator, Proceedings of the USENIX Summer 1994 Technical
  *      Conference, 1994,
@@ -116,7 +119,8 @@ class alignas( 64 ) PageHeap
   char * end;       ///< the end of the slots
   Page * link;      ///< the next page with free slots
   void * owner;     ///< the owner of the heap
-  std::uint32_t c;  ///< the class
+  std::uint32_t c;     ///< the class
+  std::uint32_t used;  ///< the slots given and not freed
   bool listed;      ///< current, or on the list of its class
   };
 
@@ -160,12 +164,14 @@ class alignas( 64 ) PageHeap
   Page * const p = f_class[ c ].current;
   if( Free * const f = p->free ) [[likely]] {
    p->free = f->next;
+   ++p->used;
    ++f_live;
    return( f );
    }
   if( p->next != p->end ) {  // a slot never given
    void * const s = p->next;
    p->next += ( c + 1 ) * GRAIN;
+   ++p->used;
    ++f_live;
    return( s );
    }
@@ -198,17 +204,27 @@ class alignas( 64 ) PageHeap
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{give}( g , p ) \cr
- /// 2 & \quad \text{push } p \text{ on } g.\mathit{free} \cr
- /// 3 & \quad \textbf{if}\ g \text{ is not listed}\ \textbf{then}
+ /// 2 & \quad \textbf{if}\ g \text{ has no other slot given}
+ ///     \ \textbf{then}\ g.\mathit{free} \gets \textbf{nil};
+ ///     \ g.\mathit{next} \gets \text{its first slot} \cr
+ /// 3 & \quad \textbf{else}\ \text{push } p \text{ on } g.\mathit{free}
+ ///     \cr
+ /// 4 & \quad \textbf{if}\ g \text{ is not listed}\ \textbf{then}
  ///     \ \text{mark it listed and push it on } A_{g.c}
  /// \end{array}}
  /// \f]
  /// \pre \f$ g \f$ is `pageOf( p )`, a page of the heap
  void give( Page * g , void * p ) {
-  Free * const f = static_cast< Free * >( p );
-  f->next = g->free;
-  g->free = f;
   --f_live;
+  if( --g->used == 0 ) {  // empty: cut again from its first slot
+   g->free = nullptr;
+   g->next = reinterpret_cast< char * >( g ) + HEADER;
+   }
+  else {
+   Free * const f = static_cast< Free * >( p );
+   f->next = g->free;
+   g->free = f;
+   }
   if( ! g->listed ) [[unlikely]] {  // back among the pages to use
    g->listed = true;
    g->link = f_class[ g->c ].avail;
@@ -235,7 +251,7 @@ class alignas( 64 ) PageHeap
 
  /// the page of no slot, current of every class at the start
  inline static Page s_none{ nullptr , nullptr , nullptr , nullptr ,
-			    nullptr , 0 ,       true };
+			    nullptr , 0 ,       0 ,       true };
 
  /// a new page of the class c
  Page * fresh( std::size_t c );
@@ -284,7 +300,7 @@ typename PageHeap< C >::Page * PageHeap< C >::fresh( std::size_t c )
  return( ::new( static_cast< void * >( p ) ) Page{
    nullptr , p + HEADER , p + HEADER + ( ( PAGE - HEADER ) / b ) * b ,
    nullptr ,
-   f_owner , std::uint32_t( c ) , true } );
+   f_owner , std::uint32_t( c ) , 0 , true } );
  }
 
 template< std::size_t C >
@@ -295,12 +311,14 @@ void * PageHeap< C >::more( std::size_t c )
   Page * const p = k.current;
   if( Free * f = p->free ) {
    p->free = f->next;
+   ++p->used;
    ++f_live;
    return( f );
    }
   if( p->next != p->end ) {  // a slot never given
    void * s = p->next;
    p->next += ( c + 1 ) * GRAIN;
+   ++p->used;
    ++f_live;
    return( s );
    }

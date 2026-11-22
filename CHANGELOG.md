@@ -65,6 +65,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   remaining below 34 bits and after 64 curves with no factor; the
   divisions go up to the primes below 4096, each a product by the inverse
   of the prime and a comparison
+- the pages of `PoolResource` and `ConcurrentPoolResource` count their
+  slots given and not freed, and a page whose last slot is freed is cut
+  again from its first slot by the bump of its pointer, so that a
+  container emptied and filled again takes its nodes in the order of
+  their addresses instead of the order of the frees
 
 ### Fixed
 

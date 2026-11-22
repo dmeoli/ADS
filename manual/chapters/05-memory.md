@@ -757,7 +757,8 @@ $2^{21}$ bytes, aligned to their size so that they may lie on huge pages
 ([§5.9](05-memory.md#sec-5-9)), and cuts them into *pages* of $2^{16}$ bytes.
 A page holds the slots of one class after a header of 64 bytes. The header
 keeps the free list of the page, its first slot never given, the end of its
-slots, its class and its owner; it also keeps the link of the page on the list
+slots, the number of its slots given and not freed, its class and its owner;
+it also keeps the link of the page on the list
 of the pages of its class with free slots, and whether the page is *listed*
 (current, or on that list). Since the pages are aligned to their size, the
 page of a slot $p$ is found by masking the low 16 bits of its address,
@@ -781,7 +782,11 @@ the page or by the bump of its pointer. When the page is exhausted, it is
 marked as not listed, and the class moves to the next page of its list
 $A_c$, or to a new page cut from the segment (a new segment when it is
 used up). A free pushes the slot on the list of its page, and puts the
-page back on $A_c$ if it was not listed
+page back on $A_c$ if it was not listed; the free of the last slot given of
+a page empties its list instead and puts its pointer back at its first
+slot, so that a page emptied is cut again in the order of its addresses,
+as the pages of [Leijen et al. 2019](Z-bibliography.md#ref-leijen2019)
+that go back to the bump when they are free
 ([Algorithm 5.6](05-memory.md#alg-5-6) and
 [Figure 5.6](05-memory.md#fig-5-6)). These are the slabs of [Bonwick
 1994](Z-bibliography.md#ref-bonwick1994), whose slabs of one size keep a
@@ -810,7 +815,8 @@ than $( c + 1 ) g$ bytes at its end.*
 its free list while the page is not listed. A page is not listed only
 after `more()` has found it exhausted, when it was current; from then on,
 no slot of it is given until it is popped from $A_c$ and becomes current
-again, while the frees only add to its list. A new page has at least 8
+again, while a free adds a slot to its list or, at the last slot given,
+makes all of its slots free again by its pointer. A new page has at least 8
 slots, since the classes are at most $( 2^{16} - 64 ) / 8$ bytes (a static
 assertion checks it). Therefore, the round of `more()` after a page was
 popped from $A_c$, or cut new, finds a slot. (At the start, every class
