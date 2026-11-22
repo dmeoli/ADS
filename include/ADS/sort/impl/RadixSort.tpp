@@ -160,7 +160,8 @@ T * lsdSort( T * s , T * r , std::size_t n , K & key , const std::size_t * D ,
 /// counted and make a pass; if Exact, i.e., the key tells the item, and
 /// the keys differ in one byte alone, a counting sort writes the items
 /// back from one of each value, with no buffer and no pass that moves
-/// them; the rest goes to lsdSort()
+/// them; the rest goes to lsdSort(), the buffer of trivial items from
+/// `ScratchRoom`, whose pages a call before has already faulted in
 template< bool Exact , SortStore Store ,
 	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
 	  class K >
@@ -205,7 +206,12 @@ void lsd( Store && A , K & key )
   if( e != a )
    std::move( e , e + n , a );
   };
- if constexpr( std::is_trivially_default_constructible_v< T > )
+ if constexpr( std::is_trivially_default_constructible_v< T > &&
+	       std::is_trivially_copyable_v< T > ) {
+  ScratchBuffer< T > B( n );  // kept between the calls, already faulted in
+  sortWith( B.data() );
+  }
+ else if constexpr( std::is_trivially_default_constructible_v< T > )
   sortWith( std::make_unique_for_overwrite< T[] >( n ).get() );
  else {
   std::vector< T > B( n );

@@ -9,21 +9,23 @@
  * - `radixSort()` sorts integers and floating point numbers by their bytes,
  *   from the least significant (LSD), each pass a stable Counting Sort on one
  *   byte between the vector and a buffer: \f$ O( w ( n + 256 ) ) \f$ for keys
- *   of \f$ w \f$ bytes, no comparison. The key of a number is its bits made
- *   unsigned so that their order is the order of the numbers: the sign bit
- *   flipped for a signed integer, and for a floating point number all the bits
- *   flipped if it is negative and the sign bit otherwise (the order of IEEE
- *   754, \f$ -0 \f$ before \f$ +0 \f$, the NaN at the ends). A first sweep
- *   finds the bytes in which some keys differ, and only those are counted (all
- *   the histograms in a second sweep) and make a pass, so that small keys in
- *   wide types cost only the bytes they use; when they differ in one byte
- *   alone, the key tells the number, and a counting sort writes the numbers
- *   back from one of each value, with no buffer. A vector larger than the
- *   cache (1 MiB), whose keys differ in 3 bytes or more, first goes by its top
- *   byte into the buffer, the one pass that scatters over the whole memory,
- *   and each part is sorted in the same way and then by the other bytes while
- *   it fits, so that their passes stay in the cache (an MSD pass before the
- *   LSD ones);
+ *   of \f$ w \f$ bytes, no comparison. The buffer of trivial items is the
+ *   block that `ScratchRoom` [see `Scratch.h`] keeps between the calls, so
+ *   that a sort does not pay the faults of fresh pages. The key of a number is
+ *   its bits made unsigned so that their order is the order of the numbers:
+ *   the sign bit flipped for a signed integer, and for a floating point number
+ *   all the bits flipped if it is negative and the sign bit otherwise (the
+ *   order of IEEE 754, \f$ -0 \f$ before \f$ +0 \f$, the NaN at the ends). A
+ *   first sweep finds the bytes in which some keys differ, and only those are
+ *   counted (all the histograms in a second sweep) and make a pass, so that
+ *   small keys in wide types cost only the bytes they use; when they differ in
+ *   one byte alone, the key tells the number, and a counting sort writes the
+ *   numbers back from one of each value, with no buffer. A vector larger than
+ *   the cache (1 MiB), whose keys differ in 3 bytes or more, first goes by its
+ *   top byte into the buffer, the one pass that scatters over the whole
+ *   memory, and each part is sorted in the same way and then by the other
+ *   bytes while it fits, so that their passes stay in the cache (an MSD pass
+ *   before the LSD ones);
  * - `radixSortBy()` is the same on any items, by an unsigned key that a
  *   function gives, stable, e.g., the records by one field;
  * - `americanFlagSort()` is the radix sort from the most significant byte
@@ -93,6 +95,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/parallel/Scratch.h"
 #include "ADS/sort/EngineeredQuickSorts.h"
 #include "ADS/sort/InsertionSort.h"
 #include "ADS/sort/Sorted.h"

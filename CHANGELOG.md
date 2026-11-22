@@ -70,6 +70,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   again from its first slot by the bump of its pointer, so that a
   container emptied and filled again takes its nodes in the order of
   their addresses instead of the order of the frees
+- `radixSort()` and `radixSortBy()` take the buffer of trivial items from
+  the block that `ScratchRoom` keeps between the calls, so that a sort
+  does not pay the faults of fresh pages
 
 ### Fixed
 
