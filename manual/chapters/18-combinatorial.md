@@ -396,48 +396,44 @@ a time that grows with $\nu( m )$ as that of the loop.
 
 --8<-- "generated/FastBitwise-pdep.pseudo.md"
 
-The function `select( x , r )` returns the place of the 1 of rank $r$ of $x$ (from 0),
-i.e., the inverse of the rank $\nu( x \,\&\, ( 2^p - 1 ) )$ of a place
-$p$, which the succinct structures of [Chapter 22](22-succinct.md#ch-22)
-need at each query. The broadword method of [Vigna 2008](Z-bibliography.md#ref-vigna2008)
-([Algorithm 18.5](18-combinatorial.md#alg-18-5)) computes the prefix sums
-$s_j$ of the 1 bits of the bytes $0 , \ldots , j$ as in
+The function `select( x , r )` returns the place of the 1 of rank $r$ of
+$x$ (from 0), i.e., the inverse of the rank $\nu( x \,\&\, ( 2^p - 1 ) )$
+of a place $p$, which the succinct structures of
+[Chapter 22](22-succinct.md#ch-22) need at each query. It is `selectInWord()`
+of [§22.2](22-succinct.md#sec-22-2), which takes one of two ways
+([Algorithm 18.5](18-combinatorial.md#alg-18-5)). With Highway, on a target
+whose compress of 64 bytes is one instruction (AVX-512 VBMI2), the bytes
+$0 , \ldots , 63$ are compressed by the mask of the bits of $x$, and the
+byte $r$ of the result, moved to the first lane by a permutation of the
+bytes, is the answer. Elsewhere (and in a constant expression) the
+broadword method of [Vigna 2008](Z-bibliography.md#ref-vigna2008) computes
+the prefix sums $s_j$ of the 1 bits of the bytes $0 , \ldots , j$ as in
 [Lemma 18.1](18-combinatorial.md#lem-18-1), but keeps all of them (one per
-byte) in the product by $\mathtt{0x0101 \ldots 01}$. It then compares $r$
-with the 8 sums at once, as in [Lemma 18.6](18-combinatorial.md#lem-18-6):
-the byte $j$ of $( ( r \cdot \mathtt{0x0101 \ldots 01} ) \mid
-\mathtt{0x8080 \ldots 80} ) - s$ keeps its top bit if and only if
-$s_j \le r$. Since the sums are nondecreasing, the bytes with
-$s_j \le r$ are the lowest $k / 8$ ones, and the 1 of rank $r$ is the 1 of
-rank $r - s_{k/8 - 1}$ of the byte $k / 8$. At most 7 steps of
-$b \gets b \,\&\, ( b - 1 )$ and one count of the trailing zeros find it.
+byte) in the product by $\mathtt{0x0101 \ldots 01}$, and compares $r$ with
+the 8 sums at once, as in [Lemma 18.6](18-combinatorial.md#lem-18-6); the
+first byte whose sum exceeds $r$ holds the 1 of rank $r$, and a table of
+the places of the 1s of each byte by rank ends the search
+([Algorithm 22.2](22-succinct.md#alg-22-2) and
+[Lemma 22.2](22-succinct.md#lem-22-2)). The emulated compress of the other
+targets is slower than this method; hence, the test is on the target, besides
+the presence of Highway.
 
-<span id="alg-18-5"></span>**Algorithm 18.5.** The 1 of rank $r$ of a word
+<span id="alg-18-5"></span>**Algorithm 18.5.** The 1 of rank $r$ of a word,
+by the compress of the bytes or by the broadword select
 ([Vigna 2008](Z-bibliography.md#ref-vigna2008)).
 
 --8<-- "generated/FastBitwise-select.pseudo.md"
 
 <span id="lem-18-8"></span>**Lemma 18.8.** *For $0 \le r < \nu( x )$
 (the contract of `select()`), [Algorithm 18.5](18-combinatorial.md#alg-18-5)
-returns the place of the 1 of rank $r$ of $x$, with at most 7 iterations
-of line 6.*
+returns the place of the 1 of rank $r$ of $x$.*
 
-*Proof.* Line 2 forms the counts $c_j \le 8$ of the bytes $j$ of $x$ as in the
-proof of [Lemma 18.1](18-combinatorial.md#lem-18-1), and the product by
-$\mathtt{0x0101 \ldots 01}$ leaves in the byte $j$ the prefix sum $s_j =
-c_0 + \cdots + c_j \le 64$, with no carry between the bytes. In line 3,
-the byte $j$ of $r \cdot \mathtt{0x0101 \ldots 01} \mid \mathtt{0x8080
-\ldots 80}$ is $r + 128$, since $r < 64$, and $r + 128 - s_j \ge 64$; hence
-the subtraction borrows from no byte, and the top bit of the byte $j$ of
-the difference is set if and only if $r + 128 - s_j \ge 128$, i.e.,
-$s_j \le r$. Since $s_0 \le s_1 \le \cdots \le s_7 = \nu( x ) > r$, the
-bytes with $s_j \le r$ are the bytes $0 , \ldots , c - 1$ for some $c \le
-7$, and $k = 8 c$ in line 4. Then $s_{c-1} \le r < s_c$ (with $s_{-1} =
-0$), i.e., the 1 of rank $r$ of $x$ is the 1 of rank $r' = r - s_{c-1}$ of
-the byte $c$, which line 5 extracts as $b$. Since $r' < c_c \le 8$, the $r'
-\le 7$ iterations of line 6 clear the $r'$ lowest 1s of $b$, and $\rho( b
-)$ is the place of the next one in the byte, to which line 7 adds the place
-$k$ of the byte. $\square$
+*Proof.* The compress of line 3 keeps, in their order, the bytes $j$ whose
+bit $\beta_j$ of the mask is 1, and packs them in the lowest lanes; since
+the byte $j$ holds $j$, the lanes $0 , \ldots , \nu( x ) - 1$ of $v$ hold the
+places of the 1s of $x$ in increasing order. Hence, for $r < \nu( x )$, the
+byte $r$ of $v$ is the place of the 1 of rank $r$, which line 4 returns.
+Line 5 is correct by [Lemma 22.2](22-succinct.md#lem-22-2). $\square$
 
 Finally, `mortonEncode()` and `mortonDecode()` are `interleave()` and
 `deinterleave()` of [§18.2](18-combinatorial.md#sec-18-2), i.e., the

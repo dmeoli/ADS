@@ -297,6 +297,10 @@ using Words = std::vector< Word , detail::LineAllocator< Word > >;
 ///     \ T \text{ the places of the 1s of each byte by rank}
 /// \end{array}}
 /// \f]
+/// With `ADS_WITH_HIGHWAY`, on a target whose compress of 64 bytes is one
+/// instruction (AVX-512 VBMI2), and out of a constant expression, the place
+/// is instead the byte \f$ k \f$ of the bytes \f$ 0 , \ldots , 63 \f$
+/// compressed by the bits of \f$ x \f$ [see `select()` of `FastBitwise.h`]
 /// \pre \f$ k < \f$ `sidewaysSum( x )`
 [[nodiscard]] constexpr int selectInWord( Word x , int k );
 

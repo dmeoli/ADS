@@ -155,8 +155,27 @@ namespace ADS
 /// \f]
 [[nodiscard]] inline Word pext( Word x , Word mask );
 
-/// the place of the 1 of rank \f$ r \f$ of \f$ x \f$, from 0, by
-/// `selectInWord()`
+/// the place of the 1 of rank \f$ r \f$ of \f$ x \f$, from 0
+///
+/// In pseudocode (the compress of the bytes of Highway and the broadword
+/// select of Vigna of `selectInWord()`, beyond the book), \f$ \beta_j \f$
+/// the bit \f$ j \f$ of \f$ x \f$:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{select}( x , r ) \cr
+/// 2 & \quad \textbf{if}\ \text{the compress of 64 bytes is one}
+///     \text{ instruction}\ \textbf{then} \cr
+/// 3 & \qquad v \gets \text{the bytes } 0 , \ldots , 63 \text{ compressed}
+///     \text{ by the mask } ( \beta_0 , \ldots , \beta_{63} )\quad
+///     \triangleright\ \text{the places of the 1s in order} \cr
+/// 4 & \qquad \textbf{return}\ \text{the byte } r \text{ of } v \cr
+/// 5 & \quad \textbf{return}\ \mathrm{selectInWord}( x , r )\quad
+///     \triangleright\ \text{the broadword select}
+/// \end{array}}
+/// \f]
+/// The test of line 2 is on the target of Highway at compile time (AVX-512
+/// VBMI2), and it fails without `ADS_WITH_HIGHWAY` and in a constant
+/// expression; both branches are those of `selectInWord()`
 /// \pre \f$ 0 \le r < \nu( x ) \f$, the number of 1 bits of \f$ x \f$
 [[nodiscard]] inline int select( Word x , int r );
 
