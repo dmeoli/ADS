@@ -1073,7 +1073,7 @@ ADS_TEST( "bucket-cuckoo-stash" )
  {  // 8 keys on each of 64 hashes, groups that may share a bucket
   struct Few
   {
-   using is_avalanching = void;
+   using is_avalanching [[maybe_unused]] = void;
    std::size_t operator()( std::uint64_t k ) const {
     return( std::size_t( hashWord( k % 64 ) ) );
     }
