@@ -440,7 +440,7 @@ class BTreeMap
  /// exchanges the nodes and the pools with `o`, each pool with its
  /// allocator
  /// \pre the allocators are equal, if they do not propagate on a swap
- void swap( BTreeMap & o ) noexcept;
+ void swap( BTreeMap & o ) noexcept( detail::swapNoexcept< A > );
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 

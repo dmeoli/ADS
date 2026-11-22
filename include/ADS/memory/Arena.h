@@ -81,6 +81,7 @@
 #include <cstdint>
 #include <functional>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <new>
 #include <type_traits>
@@ -395,6 +396,9 @@ class ArenaResource
  /// \end{array}}
  /// \f]
  /// \pre \f$ a \f$ is a power of 2
+ /// \throws std::bad_alloc if a block of \f$ b + a \f$ bytes does not fit
+ ///        in a `std::size_t`, or if the allocator throws it; the resource
+ ///        is then as it was
  [[nodiscard]] void * allocate( std::size_t b ,
 				std::size_t a = alignof( std::max_align_t ) );
 

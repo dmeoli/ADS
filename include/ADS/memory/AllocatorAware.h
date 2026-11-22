@@ -168,10 +168,18 @@ void moveAssignAlloc( A & a , A & b ) noexcept
   a = std::move( b );
  }
 
+/// whether a swap of two containers on `A` cannot violate its contract,
+/// the allocators exchanged or all equal: the `noexcept` of their `swap()`,
+/// as of those of the standard, so that a swap of unequal allocators that
+/// do not propagate throws `contract_violation` instead of terminating
+template< class A >
+inline constexpr bool swapNoexcept =
+  swapPropagates< A > || alwaysEqualAlloc< A >;
+
 /// \f$ a \f$ and \f$ b \f$ exchanged in a swap, if `A` propagates on it
 /// \pre \f$ a = b \f$ otherwise
 template< class A >
-void swapAlloc( A & a , A & b ) noexcept
+void swapAlloc( A & a , A & b ) noexcept( swapNoexcept< A > )
 {
  if constexpr( swapPropagates< A > ) {
   using std::swap;
@@ -293,7 +301,7 @@ class AllocArray : private AllocHolder< RebindAlloc< A , T > >
 /// \pre \f$ a = b \f$ if `A` does not propagate on a swap
 template< class A >
 void swapCheck( [[maybe_unused]] const A & a ,
-		[[maybe_unused]] const A & b ) noexcept
+		[[maybe_unused]] const A & b ) noexcept( swapNoexcept< A > )
 {
  if constexpr( ! swapPropagates< A > && ! alwaysEqualAlloc< A > )
   ADS_PRE( a == b );

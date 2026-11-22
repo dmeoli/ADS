@@ -213,6 +213,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of 128 bits for a wider one, since in `T` the products overflowed on
   sums of segments well within `T` (e.g., items of 10^9 in an `int`),
   which left the result undefined
+- `ArenaResource::allocate()` throws `std::bad_alloc` when a block of the
+  bytes asked plus the alignment, with its header, would not fit in a
+  `std::size_t`; before, the size of the block wrapped around, and a
+  request of nearly 2^64 bytes was given a pointer into a block of a few
+  bytes
+- the `swap()` of `FlatHashTable`, `DenseHashMap`, `RootishArrayStack` and
+  `BTreeMap` is `noexcept` only when its allocators propagate on a swap or
+  are all equal, as the `swap()` of the containers of the standard, so
+  that a swap of two containers on unequal allocators that do not
+  propagate throws `contract_violation` instead of calling
+  `std::terminate()`; `FlatHashTable` checks its allocators before it
+  exchanges anything, so that the refused swap leaves both tables as they
+  were
 - `RecordFile::append()` drops the bytes of a record left partial at the
   end of the file (by a write interrupted, say) before it appends, so that
   the records appended start where the whole ones end; before, they were

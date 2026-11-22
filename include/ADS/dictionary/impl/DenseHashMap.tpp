@@ -102,7 +102,8 @@ DenseHashMap< K , V , H , Eq , A >::operator=( DenseHashMap o ) noexcept
  }
 
 template< class K , class V , class H , class Eq , class A >
-void DenseHashMap< K , V , H , Eq , A >::swap( DenseHashMap & o ) noexcept
+void DenseHashMap< K , V , H , Eq , A >::swap( DenseHashMap & o ) noexcept(
+  detail::swapNoexcept< A > )
 {
  detail::swapCheck( f_kv.get_allocator() , o.f_kv.get_allocator() );
  using std::swap;

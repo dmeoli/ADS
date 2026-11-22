@@ -80,7 +80,8 @@ RootishArrayStack< T , A >::~RootishArrayStack()
  }
 
 template< class T , class A >
-void RootishArrayStack< T , A >::swap( RootishArrayStack & o ) noexcept
+void RootishArrayStack< T , A >::swap( RootishArrayStack & o ) noexcept(
+  detail::swapNoexcept< A > )
 {
  detail::swapCheck( f_blocks.get_allocator() , o.f_blocks.get_allocator() );
  f_blocks.swap( o.f_blocks );

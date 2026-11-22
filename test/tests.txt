@@ -609,6 +609,7 @@ engineered_queues  min-board-threads      lavagna dei minimi, più scrittori e l
 
 # the engineered memory beyond the arena and the pool
 memory  huge-page-cache       blocchi grandi tenuti per la stessa misura
+memory  huge-page-small-path  richieste piccole, sovra-allineate, troppo grandi
 memory  size-class-allocator  allocatore per classi di misura
 memory  pool-raw-slots        posti del pool senza costruzione
 memory  page-heap-segments    segmenti dello heap di pagine, per raddoppio
@@ -1817,6 +1818,8 @@ engineered_memory  object-pool-epochs         clear() di ObjectPool, blocchi
 engineered_memory  pool-epochs-threads        epoche dei pool di più lavoratori
 engineered_memory  pool-epochs-value-init     make() dopo clear(), oggetti a zero
 engineered_memory  prefetch-any-address       prefetch di ogni indirizzo, nessun effetto
+engineered_memory  memory-over-aligned        allineamenti oltre la riga di cache
+engineered_memory  memory-upstream-bad-alloc  bad_alloc a monte, stato invariato
 
 # the allocators of the containers, beyond the book: std::pmr, a counting
 # allocator, ArenaResource
@@ -1830,6 +1833,7 @@ engineered_allocators alloc-sequences       sequenze a blocchi, vettore piccolo
 engineered_allocators alloc-join-trees      alberi di join, senza stato
 engineered_allocators alloc-arena-resource  ArenaResource, release()
 engineered_allocators alloc-default-layout  allocatori di default, senza spazio
+engineered_allocators alloc-swap-unequal    scambio di allocatori diversi rifiutato
 
 # the engineered structures of the rows of a model, beyond the book
 engineered_sparse  position-index             indice delle posizioni, Robin Hood

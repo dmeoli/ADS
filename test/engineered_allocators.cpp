@@ -668,6 +668,43 @@ ADS_TEST( "alloc-arena-resource" )
  CHECK( up.live == 0 );
  }
 
+ADS_TEST( "alloc-swap-unequal" )
+{
+ // a swap of two containers whose allocators are unequal and do not
+ // propagate violates its contract: it throws, both containers as they
+ // were, and it is noexcept only where it cannot violate it, as for the
+ // containers of the standard
+ using No = Counting< std::byte , false >;
+ using Yes = Counting< std::byte , true >;
+ const auto check = []< class S >( S ) {
+  using C = typename S::template type< No >;
+  static_assert(
+    ! noexcept( std::declval< C & >().swap( std::declval< C & >() ) ) );
+  static_assert(
+    noexcept( std::declval< typename S::template type< Yes > & >().swap(
+      std::declval< typename S::template type< Yes > & >() ) ) );
+  Ledger L , M;
+  {
+   C a = S::make( No( L ) );
+   S::fill( a );
+   C b = S::make( No( M ) );
+   CHECK_THROWS( a.swap( b ) , contract_violation );
+   CHECK( S::same( a ) && ( a.get_allocator() == No( L ) ) );
+   CHECK( ( b.size() == 0 ) && ( b.get_allocator() == No( M ) ) );
+   C c = S::make( No( L ) );
+   c.swap( a );  // equal: no check fails
+   CHECK( S::same( c ) && ( a.size() == 0 ) );
+   }
+  CHECK( ( L.live == 0 ) && ( M.live == 0 ) );
+  };
+ check( Flats() );
+ check( Denses() );
+ check( Rootishes() );
+ check( BTrees() );
+ static_assert( noexcept( std::declval< FlatHashTable< int , int > & >().swap(
+   std::declval< FlatHashTable< int , int > & >() ) ) );
+ }
+
 ADS_TEST( "alloc-default-layout" )
 {
  // the default allocators take no room: the layouts are those of the

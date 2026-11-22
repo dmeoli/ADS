@@ -7,8 +7,10 @@
  * in the node containers of the standard library and in
  * std::allocate_shared against the same containers on std::allocator, the
  * propagation of the allocators by copies, moves and swaps, the frees
- * from other threads, and the epochs of Arena and ObjectPool, by one
- * thread and by the workers of a search, at the level 3 of the contracts.
+ * from other threads, the epochs of Arena and ObjectPool, by one thread
+ * and by the workers of a search, the alignments beyond a line of the
+ * cache and an upstream that throws std::bad_alloc, at the level 3 of the
+ * contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -37,6 +39,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <new>
 #include <random>
 #include <set>
 #include <stdexcept>
@@ -69,6 +72,50 @@ struct Counted
  Counted & operator=( Counted && ) = default;
  ~Counted() { --alive; }
  bool operator==( const Counted & o ) const { return( s == o.s ); }
+ };
+
+/// an object over-aligned beyond a line of the cache
+struct alignas( 256 ) Wider
+{
+ std::uint64_t v;
+ explicit Wider( std::uint64_t x = 0 ) : v( x ) { }
+ };
+
+/// the allocations that the allocators of a budget still give
+std::atomic< long > & budget( void )
+{
+ static std::atomic< long > b{ 1L << 40 };
+ return( b );
+ }
+
+/// a stateless allocator that throws std::bad_alloc once its budget of
+/// allocations is spent, as an upstream out of memory
+template< class T >
+struct Budgeted
+{
+ using value_type = T;
+
+ Budgeted( void ) = default;
+
+ template< class U >
+ Budgeted( const Budgeted< U > & ) noexcept { }
+
+ T * allocate( std::size_t n ) {
+  if( budget().fetch_sub( 1 ) <= 0 ) {
+   ++budget();
+   throw( std::bad_alloc() );
+   }
+  return( std::allocator< T >().allocate( n ) );
+  }
+
+ void deallocate( T * p , std::size_t n ) noexcept {
+  std::allocator< T >().deallocate( p , n );
+  }
+
+ template< class U >
+ bool operator==( const Budgeted< U > & ) const noexcept {
+  return( true );
+  }
  };
 
 /// a message of a few words, as a change of a model
@@ -748,6 +795,100 @@ ADS_TEST( "prefetch-any-address" )
  static_assert( noexcept( ADS::prefetch( nullptr ) ) );
  static_assert( noexcept( ADS::prefetch( nullptr , Locality::Low ) ) );
  CHECK( a == before );
+ }
+
+// the alignments beyond a line of the cache: the objects of an Arena and
+// of an ObjectPool of a type aligned to 256 bytes, the requests of an
+// ArenaResource, of a PoolResource and of a ConcurrentPoolResource aligned
+// to 128 to 4096 bytes, which the last two give to operator new
+ADS_TEST( "memory-over-aligned" )
+{
+ Arena< Wider > E( 3 );
+ ObjectPool< Wider > P( 8 );
+ std::vector< Wider * > W;
+ for( std::uint64_t i = 0 ; i < 20 ; ++i ) {
+  Wider * a = E.make( i );
+  Wider * b = P.make( i );
+  CHECK( aligned( a , 256 ) && aligned( b , 256 ) && a->v == i && b->v == i );
+  W.push_back( b );
+  }
+ for( Wider * b : W )
+  P.free( b );
+ CHECK( P.size() == 0 && aligned( P.make( 7 ) , 256 ) );
+ ArenaResource<> R( 1000 );
+ PoolResource<> Q;
+ ConcurrentPoolResource<> C;
+ for( std::size_t a = 128 ; a <= 4096 ; a *= 2 ) {
+  void * r = R.allocate( 3 , a );
+  void * q = Q.allocate( 24 , a );
+  void * c = C.allocate( 24 , a );
+  CHECK( aligned( r , a ) && aligned( q , a ) && aligned( c , a ) );
+  std::memset( q , 1 , 24 );
+  std::memset( c , 2 , 24 );
+  Q.deallocate( q , 24 , a );
+  C.deallocate( c , 24 , a );
+  }
+ using PA = PoolAllocator< Wider , ConcurrentPoolResource<> >;
+ std::vector< Wider , PA > V{ PA( C ) };
+ for( std::uint64_t i = 0 ; i < 100 ; ++i )
+  V.emplace_back( i );
+ CHECK( aligned( V.data() , 256 ) && V[ 99 ].v == 99 );
+ }
+
+// an upstream out of memory: the allocation that throws std::bad_alloc
+// leaves the Arena, the ArenaResource and the ObjectPool as they were
+// (their objects, their sizes, their bytes), and the next allocation, once
+// the memory is back, goes on from there; a request of ArenaResource so
+// large that its block would overflow the size throws std::bad_alloc
+// before any block is taken
+ADS_TEST( "memory-upstream-bad-alloc" )
+{
+ const long b0 = budget();
+ {
+  Arena< long , Budgeted< long > > E( 2 );
+  budget() = 2;  // two blocks
+  for( long i = 0 ; i < 4 ; ++i )
+   E.make( i );
+  CHECK_THROWS( E.make( 4L ) , std::bad_alloc );
+  CHECK( E.size() == 4 && E.bytes() == 4 * sizeof( long ) );
+  long s = 0;
+  for( long x : E )
+   s += x;
+  CHECK( s == 6 );
+  budget() = 1;
+  CHECK( *E.make( 5L ) == 5 && E.size() == 5 );
+  CHECK( *( E.begin() + 4 ) == 5 );
+  }
+ {
+  ArenaResource< Budgeted< std::max_align_t > > R( 256 );
+  budget() = 1;
+  void * p = R.allocate( 200 , 8 );
+  const std::size_t b = R.bytes();
+  CHECK_THROWS( ( void )R.allocate( 200 , 8 ) , std::bad_alloc );
+  CHECK( R.size() == 1 && R.bytes() == b );
+  void * q = R.allocate( 40 , 8 );  // in the block there
+  CHECK( q != p && R.size() == 2 );
+  budget() = 1L << 40;
+  for( const std::size_t a : { std::size_t( 8 ) , std::size_t( 4096 ) } ) {
+   CHECK_THROWS( ( void )R.allocate( std::size_t( -1 ) - 8 , a ) ,
+		 std::bad_alloc );
+   CHECK_THROWS( ( void )R.allocate( std::size_t( -1 ) - a / 2 , a ) ,
+		 std::bad_alloc );
+   }
+  CHECK( R.size() == 2 && R.bytes() == b );
+  }
+ {
+  ObjectPool< long , Budgeted< long > > P( 4 );
+  budget() = 1;  // the first block, of one slot
+  long * x = P.make( 1L );
+  CHECK_THROWS( P.make( 2L ) , std::bad_alloc );
+  CHECK( P.size() == 1 && *x == 1 );
+  P.free( x );
+  CHECK( P.make( 3L ) == x && P.size() == 1 );  // the slot freed, no block
+  budget() = 1;
+  CHECK( *P.make( 4L ) == 4 && P.size() == 2 );
+  }
+ budget() = b0;
  }
 
 /*--------------------------------------------------------------------------*/

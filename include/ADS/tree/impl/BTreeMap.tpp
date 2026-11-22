@@ -239,7 +239,7 @@ ADS_BTM::~BTreeMap()
  }
 
 ADS_BTM_T
-void ADS_BTM::swap( BTreeMap & o ) noexcept
+void ADS_BTM::swap( BTreeMap & o ) noexcept( detail::swapNoexcept< A > )
 {
  detail::swapCheck( get_allocator() , o.get_allocator() );
  exchange( o );

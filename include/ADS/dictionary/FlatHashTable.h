@@ -416,7 +416,7 @@ class FlatHashTable
  /// exchanges the contents with `other` in \f$ O( 1 ) \f$, and the
  /// allocators if they propagate on a swap
  /// \pre the allocators are equal, if they do not propagate
- void swap( FlatHashTable & o ) noexcept;
+ void swap( FlatHashTable & o ) noexcept( detail::swapNoexcept< A > );
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 

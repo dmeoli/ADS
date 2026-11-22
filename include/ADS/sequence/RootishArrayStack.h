@@ -169,7 +169,7 @@ class RootishArrayStack
  /// exchanges the blocks with those of `o`, and the allocators if they
  /// propagate on a swap
  /// \pre the allocators are equal, if they do not propagate
- void swap( RootishArrayStack & o ) noexcept;
+ void swap( RootishArrayStack & o ) noexcept( detail::swapNoexcept< A > );
 
  /// true if there is no item
  [[nodiscard]] bool empty( void ) const { return( f_n == 0 ); }

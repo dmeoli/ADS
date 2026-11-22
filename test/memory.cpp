@@ -137,6 +137,43 @@ ADS_TEST( "huge-page-cache" )
   }
  }
 
+// the path without huge pages: a request below a huge page goes to
+// std::allocator, aligned as its type asks (256 bytes for an over-aligned
+// one), and never to the cache of the blocks; one of a huge page or more,
+// of the over-aligned type too, is aligned to a huge page; a request whose
+// bytes overflow the size throws std::bad_array_new_length
+ADS_TEST( "huge-page-small-path" )
+{
+ struct alignas( 256 ) Wide
+ {
+  unsigned char b[ 256 ];
+  };
+ using A = HugePageAllocator< Wide >;
+ A a;
+ std::vector< Wide * > V;
+ for( std::size_t n :
+      { std::size_t( 1 ) , std::size_t( 3 ) ,
+	A::PAGE / sizeof( Wide ) - 1 } ) {
+  Wide * p = a.allocate( n );
+  CHECK( reinterpret_cast< std::uintptr_t >( p ) % alignof( Wide ) == 0 );
+  std::memset( p , 3 , n * sizeof( Wide ) );
+  a.deallocate( p , n );
+  }
+ const std::size_t page = A::PAGE / sizeof( Wide );
+ Wide * h = a.allocate( page );
+ CHECK( reinterpret_cast< std::uintptr_t >( h ) % A::PAGE == 0 );
+ a.deallocate( h , page );
+ CHECK_THROWS( ( void )a.allocate( std::size_t( -1 ) / sizeof( Wide ) ) ,
+	       std::bad_array_new_length );
+ HugePageAllocator< char > c;
+ char * x = c.allocate( 1 );  // one byte, from std::allocator
+ *x = 'x';
+ c.deallocate( x , 1 );
+ CHECK( a == HugePageAllocator< char >() );
+ std::vector< Wide , A > W( 10 );
+ CHECK( reinterpret_cast< std::uintptr_t >( W.data() ) % 256 == 0 );
+ }
+
 // the allocator by size classes: each class the least not below its
 // requests, its size the class of itself, the waste below 25% past 128
 // bytes; random requests of 1 to 40000 bytes (beyond the classes too)

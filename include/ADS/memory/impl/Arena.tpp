@@ -146,6 +146,10 @@ void * ArenaResource< A >::allocate( std::size_t b , std::size_t a )
   };
  unsigned char * p = up( f_next );
  if( ! f_next || ( p > f_end ) || ( std::size_t( f_end - p ) < b ) ) {
+  // a block of b + a bytes and its header must not overflow the size
+  if( b > std::numeric_limits< std::size_t >::max() - a -
+	    ( H + 1 ) * sizeof( Unit ) )
+   throw( std::bad_alloc() );
   const std::size_t want = std::max( f_n , b + a );
   const std::size_t k = H + ( want + sizeof( Unit ) - 1 ) / sizeof( Unit );
   Unit * u = std::allocator_traits< UnitAlloc >::allocate( f_alloc , k );

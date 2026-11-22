@@ -254,8 +254,10 @@ FlatHashTable< K , V , H , Eq , A >::~FlatHashTable()
  }
 
 template< class K , class V , class H , class Eq , class A >
-void FlatHashTable< K , V , H , Eq , A >::swap( FlatHashTable & o ) noexcept
+void FlatHashTable< K , V , H , Eq , A >::swap( FlatHashTable & o ) noexcept(
+  detail::swapNoexcept< A > )
 {
+ detail::swapCheck( this->alloc() , o.alloc() );
  using std::swap;
  swap( f_ctrl , o.f_ctrl );
  swap( f_slot , o.f_slot );
@@ -1182,7 +1184,8 @@ FlatHashTable< K , V , H , Eq , A >::~FlatHashTable()
 { }
 
 template< class K , class V , class H , class Eq , class A >
-void FlatHashTable< K , V , H , Eq , A >::swap( FlatHashTable & o ) noexcept
+void FlatHashTable< K , V , H , Eq , A >::swap( FlatHashTable & o ) noexcept(
+  detail::swapNoexcept< A > )
 {
  f_map.swap( o.f_map );
  }
