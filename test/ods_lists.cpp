@@ -51,6 +51,7 @@
 #include "ADS/stack/StackAlgorithms.h"
 
 #include <algorithm>
+#include <climits>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -1358,6 +1359,299 @@ ADS_TEST( "ods-ex3.19.xor-swap" )
  unsigned c = 7 , d = 7;
  xorSwap( c , d );
  CHECK( c == 7 && d == 7 );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- CONTRACTS AND EDGES ----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the preconditions of a sequence `L` of int: on the empty one, on one
+/// item and on \f$ n \f$ items, the operations at the ends and at rank
+/// \f$ n \f$ (\f$ n + 1 \f$ for an insertion) throw `contract_violation`
+/// and leave the items as they were; the extremes of int kept
+template< class L >
+void sequenceContracts( L l )
+{
+ constexpr bool ranked = requires( L & s ) { s.erase( std::size_t( 0 ) ); };
+ constexpr bool front = requires( L & s ) { s.pop_front(); };
+ constexpr bool ends = requires( L & s ) { s.back(); };
+ const auto last = [ & ]( void ) -> const int & {
+  if constexpr( ends )
+   return( l.back() );
+  else
+   return( l[ l.size() - 1 ] );
+  };
+ const auto dead = [ & ]( std::size_t n ) {  // the calls that must throw
+  if( n == 0 ) {
+   CHECK_THROWS( l.pop_back() , contract_violation );
+   CHECK_THROWS( last() , contract_violation );
+   if constexpr( ends )
+    CHECK_THROWS( l.front() , contract_violation );
+   if constexpr( front )
+    CHECK_THROWS( l.pop_front() , contract_violation );
+   }
+  if constexpr( ranked ) {
+   CHECK_THROWS( l[ n ] , contract_violation );
+   CHECK_THROWS( l.erase( n ) , contract_violation );
+   CHECK_THROWS( l.insert( n + 1 , 0 ) , contract_violation );
+   }
+  CHECK( l.size() == n );
+  };
+ CHECK( l.empty() );
+ dead( 0 );
+ l.push_back( INT_MAX );
+ dead( 1 );
+ CHECK( ( *l.begin() == INT_MAX ) && ( last() == INT_MAX ) );
+ l.pop_back();
+ CHECK( l.empty() );
+ dead( 0 );
+ std::deque< int > r;
+ for( int k = 0 ; k < 300 ; ++k ) {
+  const int x = k % 2 ? INT_MIN + k : INT_MAX - k;
+  l.push_back( x );
+  r.push_back( x );
+  }
+ dead( 300 );
+ CHECK( std::equal( l.begin() , l.end() , r.begin() , r.end() ) );
+ while( ! r.empty() ) {
+  CHECK( last() == r.back() );
+  l.pop_back();
+  r.pop_back();
+  }
+ dead( 0 );
+ }
+
+ADS_TEST( "ods-2.contracts" )
+{
+ sequenceContracts( DualArrayDeque< int >() );
+ sequenceContracts( DualArrayDeque< int , RootishArrayStack< int > >() );
+ sequenceContracts( Treque< int >() );
+ sequenceContracts( RootishArrayStack< int >() );
+ sequenceContracts( CubishArrayStack< int >() );
+ sequenceContracts( ContiguousDeque< int >() );
+ sequenceContracts( SEList< int >( 3 ) );
+ sequenceContracts( SEList< int >() );
+ sequenceContracts( XorList< int >() );
+ CHECK_THROWS( SEList< int >( 2 ) , contract_violation );
+ }
+
+ADS_TEST( "ods-ex2.3.treque-balance" )
+{
+ // the threshold of balance(): one item moves when the two deques differ
+ // by two, so that the invariant of level 3 (checked after each operation)
+ // holds at every size from 0, by insertions all at the front, all at the
+ // back, at the border of the two deques and just beside it, and by the
+ // removals in the same places
+ for( int where = 0 ; where < 4 ; ++where ) {
+  Treque< int > t;
+  std::deque< int > r;
+  for( int k = 0 ; k < 64 ; ++k ) {
+   const std::size_t n = r.size() , h = n / 2;
+   const std::size_t i = where == 0   ? 0
+			 : where == 1 ? n
+			 : where == 2 ? h
+				      : std::min( n , h + 1 );
+   t.insert( i , k );
+   r.insert( r.begin() + std::ptrdiff_t( i ) , k );
+   CHECK( same( t , r ) );
+   }
+  while( ! r.empty() ) {
+   const std::size_t n = r.size() , h = n / 2;
+   const std::size_t i = where == 0   ? 0
+			 : where == 1 ? n - 1
+			 : where == 2 ? h
+				      : ( h ? h - 1 : 0 );
+   t.erase( i );
+   r.erase( r.begin() + std::ptrdiff_t( i ) );
+   CHECK( same( t , r ) );
+   }
+  }
+ }
+
+ADS_TEST( "ods-3.differential" )
+{
+ // the SEList at random ranks and the XorList at its ends against
+ // std::deque, with int at the extremes, for small blocks and big ones
+ for( std::size_t b : { 3 , 7 , 64 } ) {
+  SEList< int > s( b );
+  std::deque< int > r;
+  std::mt19937_64 g( 70 + b );
+  for( int t = 0 ; t < 30000 ; ++t ) {
+   const std::size_t n = r.size();
+   const int x = int( g() ) | ( t % 3 ? 0 : INT_MIN );
+   const unsigned op = unsigned( g() % 6 );
+   if( ( n == 0 ) || ( op < 2 ) ) {
+    const std::size_t i = g() % ( n + 1 );
+    s.insert( i , x );
+    r.insert( r.begin() + std::ptrdiff_t( i ) , x );
+    }
+   else if( op == 2 ) {
+    s.push_front( x );
+    r.push_front( x );
+    }
+   else if( op == 3 ) {
+    s.pop_front();
+    r.pop_front();
+    }
+   else if( op == 4 ) {
+    const std::size_t i = g() % n;
+    s.erase( i );
+    r.erase( r.begin() + std::ptrdiff_t( i ) );
+    }
+   else {
+    CHECK( s.back() == r.back() );
+    s.pop_back();
+    r.pop_back();
+    }
+   if( ! r.empty() )
+    CHECK( ( s.front() == r.front() ) && ( s.back() == r.back() ) );
+   if( t % 1001 == 0 )
+    CHECK( same( s , r ) );
+   }
+  CHECK( same( s , r ) );
+  }
+ XorList< int > x;
+ std::deque< int > r;
+ std::mt19937_64 g( 75 );
+ for( int t = 0 ; t < 30000 ; ++t ) {
+  const unsigned op = unsigned( g() % 9 );
+  const int v = int( g() );
+  if( r.empty() || ( op < 2 ) ) {
+   x.push_front( v );
+   r.push_front( v );
+   }
+  else if( op < 4 ) {
+   x.push_back( v );
+   r.push_back( v );
+   }
+  else if( op == 4 ) {
+   x.pop_front();
+   r.pop_front();
+   }
+  else if( op == 5 ) {
+   x.pop_back();
+   r.pop_back();
+   }
+  else if( op == 6 ) {
+   x.reverse();
+   std::reverse( r.begin() , r.end() );
+   }
+  else if( op == 7 ) {
+   XorList< int > y( x );
+   x = std::move( y );
+   }
+  CHECK( x.size() == r.size() );
+  if( ! r.empty() )
+   CHECK( ( x.front() == r.front() ) && ( x.back() == r.back() ) );
+  if( t % 1001 == 0 )
+   CHECK( std::equal( x.begin() , x.end() , r.begin() , r.end() ) );
+  }
+ CHECK( std::equal( x.begin() , x.end() , r.begin() , r.end() ) );
+ }
+
+ADS_TEST( "ods-ex3.14-3.16.min-edges" )
+{
+ // the stack, the queue and the deque with the minimum: empty pops throw,
+ // one item is its own minimum, equal minima come out one by one, and the
+ // extremes of int
+ MinStack< int > s;
+ CHECK_THROWS( s.pop() , contract_violation );
+ CHECK_THROWS( s.top() , contract_violation );
+ CHECK_THROWS( s.min() , contract_violation );
+ s.push( INT_MAX );
+ CHECK( ( s.min() == INT_MAX ) && ( s.top() == INT_MAX ) );
+ CHECK( s.pop() == INT_MAX && s.empty() );
+ for( int k = 0 ; k < 50 ; ++k )
+  s.push( INT_MIN );
+ s.push( INT_MAX );
+ for( int k = 50 ; k > 0 ; --k ) {
+  CHECK( s.min() == INT_MIN );
+  s.pop();
+  }
+ CHECK( ( s.size() == 1 ) && ( s.min() == INT_MIN ) );
+ s.pop();
+ CHECK_THROWS( s.pop() , contract_violation );
+
+ MinQueue< int > q;
+ CHECK_THROWS( q.dequeue() , contract_violation );
+ CHECK_THROWS( q.top() , contract_violation );
+ CHECK_THROWS( q.min() , contract_violation );
+ q.enqueue( INT_MIN );
+ CHECK( ( q.min() == INT_MIN ) && ( q.top() == INT_MIN ) );
+ CHECK( q.dequeue() == INT_MIN && q.empty() );
+ for( int k = 0 ; k < 40 ; ++k )
+  q.enqueue( k % 2 ? INT_MAX : 7 );
+ for( int k = 0 ; k < 40 ; ++k ) {
+  CHECK( q.min() == ( k < 39 ? 7 : INT_MAX ) );
+  CHECK( q.dequeue() == ( k % 2 ? INT_MAX : 7 ) );
+  }
+ CHECK_THROWS( q.dequeue() , contract_violation );
+
+ MinDeque< int > d;
+ CHECK_THROWS( d.pop_front() , contract_violation );
+ CHECK_THROWS( d.pop_back() , contract_violation );
+ CHECK_THROWS( d.front() , contract_violation );
+ CHECK_THROWS( d.back() , contract_violation );
+ CHECK_THROWS( d.min() , contract_violation );
+ d.push_front( INT_MAX );
+ CHECK( ( d.min() == INT_MAX ) && ( d.front() == d.back() ) );
+ CHECK( d.pop_back() == INT_MAX && d.empty() );
+ for( int k = 0 ; k < 30 ; ++k ) {
+  d.push_front( 5 );
+  d.push_back( 5 );
+  }
+ for( int k = 0 ; k < 60 ; ++k ) {
+  CHECK( d.min() == 5 );
+  CHECK( ( k % 2 ? d.pop_back() : d.pop_front() ) == 5 );
+  }
+ CHECK_THROWS( d.pop_back() , contract_violation );
+ d.push_back( INT_MIN );
+ d.push_back( INT_MAX );
+ CHECK( d.pop_front() == INT_MIN && d.min() == INT_MAX );
+
+ RandomQueue< int > u( 3 );
+ CHECK_THROWS( u.pop() , contract_violation );
+ CHECK_THROWS( u.sample() , contract_violation );
+ CHECK_THROWS( u.uniform( 0 ) , contract_violation );
+ u.push( INT_MIN );
+ CHECK( ( u.sample() == INT_MIN ) && ( u.pop() == INT_MIN ) && u.empty() );
+ for( int k = 0 ; k < 20 ; ++k )
+  u.push( INT_MAX );
+ for( int k = 0 ; k < 20 ; ++k )
+  CHECK( u.pop() == INT_MAX );
+ CHECK_THROWS( u.pop() , contract_violation );
+ CHECK( u.uniform( 1 ) == 0 );
+ }
+
+ADS_TEST( "ods-ex1.5.bag-edges" )
+{
+ // the empty bag, a removal of an absent item, copies and moves
+ Bag< int > b;
+ CHECK( b.empty() && ( b.size() == 0 ) && ( b.distinct() == 0 ) );
+ CHECK( ! b.remove( 3 ) && ( b.find( 3 ) == nullptr ) );
+ CHECK( b.findAll( 3 ).empty() && ( b.count( 3 ) == 0 ) );
+ for( int k = 0 ; k < 100 ; ++k )
+  b.insert( k % 2 ? INT_MIN : INT_MAX );
+ CHECK( ( b.size() == 100 ) && ( b.distinct() == 2 ) );
+ Bag< int > c( b );
+ CHECK( ( c.count( INT_MIN ) == 50 ) && ( c.count( INT_MAX ) == 50 ) );
+ Bag< int > m( std::move( c ) );
+ CHECK( ( m.size() == 100 ) && ( m.count( INT_MIN ) == 50 ) );
+ c = m;
+ CHECK( ( c.size() == 100 ) && ( c.distinct() == 2 ) );
+ for( int k = 0 ; k < 50 ; ++k )
+  CHECK( m.remove( INT_MIN ) );
+ CHECK( ! m.remove( INT_MIN ) && ( m.size() == 50 ) && ( m.distinct() == 1 ) );
+ CHECK( ( b.size() == 100 ) && ( c.count( INT_MIN ) == 50 ) );  // apart
+ Bag< int > e;
+ e = std::move( m );
+ CHECK( ( e.size() == 50 ) && ( e.count( INT_MAX ) == 50 ) );
+ Bag< Record , RecordHash > r;  // equal by key, kept in order
+ r.insert( { 1 , 10 } );
+ r.insert( { 1 , 20 } );
+ CHECK( ( r.find( { 1 , 0 } )->payload == 10 ) && r.remove( { 1 , 0 } ) );
+ CHECK( ( r.findAll( { 1 , 0 } ).size() == 1 ) &&
+	( r.find( { 1 , 0 } )->payload == 10 ) );
  }
 
 }  // end( namespace )

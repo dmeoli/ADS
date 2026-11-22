@@ -2110,6 +2110,11 @@ ods_lists  ods-3.3.selist-space         SEList, b + 1 posti per blocco
 ods_lists  ods-ex3.17-3.18.selist-ends  SEList agli estremi
 ods_lists  ods-3.4.xor-list             lista XOR
 ods_lists  ods-ex3.19.xor-swap          scambio con XOR
+ods_lists  ods-2.contracts              precondizioni delle sequenze ai bordi
+ods_lists  ods-ex2.3.treque-balance     Treque, soglia del ribilanciamento
+ods_lists  ods-3.differential           SEList e XorList contro std::deque
+ods_lists  ods-ex3.14-3.16.min-edges    pila, coda e deque col minimo ai bordi
+ods_lists  ods-ex1.5.bag-edges          Bag vuoto, copie e spostamenti
 
 # P. Morin, Open Data Structures (in C++), chapters 5, 10, 11, 12, 13 and
 # 14, beyond the book
