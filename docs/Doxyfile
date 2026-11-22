@@ -82,6 +82,7 @@ PREDEFINED             = ADS_WITH_FASTFLOW \
                          _OPENMP \
                          ADS_ABI_BEGIN= \
                          ADS_ABI_END= \
+                         ADS_ALWAYS_INLINE= \
                          ADS_FLAT_INLINE= \
                          ADS_FLAT_NOINLINE= \
                          ADS_RING_INLINE= \
