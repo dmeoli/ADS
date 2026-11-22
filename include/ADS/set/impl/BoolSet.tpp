@@ -163,15 +163,17 @@ inline void BoolSet::combine( BoolSet & C , const BoolSet & A ,
   k = both;
   }
 #endif
- for( ; k < w ; ++k ) {  // the rest, one word at a time
-  std::uint64_t x = op( k < na ? a[ k ] : 0 , k < nb ? b[ k ] : 0 );
-  if( ( k + 1 == w ) && ( C.f_N % 64 ) )  // the bits past the dimension
-   x &= ( std::uint64_t( 1 ) << ( C.f_N % 64 ) ) - 1;
+ for( ; k < both ; ++k ) {  // the words of both, with no test to vectorize
+  const std::uint64_t x = op( a[ k ] , b[ k ] );
   c[ k ] = x;
   n += std::size_t( std::popcount( x ) );
   }
- if( ( both == w ) && ( w > 0 ) && ( C.f_N % 64 ) ) {  // the last word
-						       // in the kernel
+ for( ; k < w ; ++k ) {  // the words of one alone
+  const std::uint64_t x = op( k < na ? a[ k ] : 0 , k < nb ? b[ k ] : 0 );
+  c[ k ] = x;
+  n += std::size_t( std::popcount( x ) );
+  }
+ if( ( w > 0 ) && ( C.f_N % 64 ) ) {  // the bits past the dimension
   const std::uint64_t x = c[ w - 1 ];
   c[ w - 1 ] = x & ( ( std::uint64_t( 1 ) << ( C.f_N % 64 ) ) - 1 );
   n -= std::size_t( std::popcount( x ) - std::popcount( c[ w - 1 ] ) );

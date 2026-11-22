@@ -88,6 +88,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cleared, and its kernel of Highway makes the control bytes of 8 integers
   at once by a saturated narrowing and the mask of the top bits instead of
   a sum of the lanes per 4
+- `BoolSet` combines the words that both sets have in a loop with no test,
+  which the compiler vectorizes without Highway, and masks the bits past
+  the dimension once at the end
 
 ### Fixed
 
