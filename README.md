@@ -10,14 +10,14 @@
 [![License: BSL-1.0](https://img.shields.io/badge/License-BSL_1.0-blue.svg)](https://www.boost.org/LICENSE_1_0.txt)
 [![Release](https://img.shields.io/github/v/release/dmeoli/ADS)](https://github.com/dmeoli/ADS/releases)
 
-ADS: Algorithms and Data Structures, and Advanced ones. ADS is a
-header-only C++20 library of the data structures and the parallelism that
-the other libraries lack, with typed modifications that observers follow
-incrementally, contracts checked at a level chosen at compile time, and
-capabilities that the algorithms query through concepts. It is made to
-work together with the standard library, Boost, LEMON and GMP rather than
-in place of them, leaving to them what they already do as well, and to run
-its parallelism on TBB, OpenMP or MPI.
+ADS: Algorithms and Data Structures, and Advanced ones. ADS is a header-only
+C++20 library of the data structures and of the parallelism that the other
+libraries lack. Its structures report their changes as typed modifications,
+which observers follow incrementally, check their contracts at a level
+chosen at compile time, and expose capabilities that the algorithms query
+through concepts. It is meant to complement the standard library, Boost,
+LEMON and GMP, leaving to them what they already do as well, and it runs its
+parallelism on TBB, OpenMP or MPI.
 
 ADS also realizes the algorithms and the data structures of the (Italian)
 textbook
@@ -26,16 +26,15 @@ textbook
 > <https://algoritmicamente.it> (CC BY-NC 4.0)
 
 (a revision of A. A. Bertossi and A. Montresor, *Algoritmi e Strutture di
-Dati*, 3rd edition, Città Studi, 2014), in which each exercise of the book
-is a test. It also has the structures and the algorithms that a course on
-the subject usually adds, and a few engineered ones meant for speed. An
-abstract data type is a C++20 concept whose realizations follow the
-pseudocode and the names of the book (`empty()`, `head()`, `next()`,
-`read()`, `push()`, `enqueue()`, and so on), and hence the code can be read
-side by side with the text. Where the book leaves a choice open, or
-its pseudocode has a defect (a few figures, too, disagree with the formulae
-they illustrate), the header states the choice made and the reason for
-it.
+Dati*, 3rd edition, Città Studi, 2014), each exercise of which is a test,
+together with the structures and the algorithms that a course on the subject
+usually adds and a few engineered ones meant for speed. Each abstract data
+type is a C++20 concept, whose realizations follow the pseudocode and the
+names of the book (`empty()`, `head()`, `next()`, `read()`, `push()`,
+`enqueue()`, and so on), and hence the code can be read side by side with
+the text. Where the book leaves a choice open, or its pseudocode has a
+defect (a few figures, too, disagree with the formulae they illustrate), the
+header states the choice made and its reason.
 
 ## Performance
 
@@ -205,14 +204,14 @@ in [`results/`](results/README.md) together with the raw file of the run.
 
 ## Layout
 
-Headers are grouped by abstract data type, one header per realization,
-and `include/ADS/ADT.h` has the concepts of the book, next to the
-contracts (`Contract.h`), the iterators (`Iterators.h`), the portable
-intrinsics (`Portable.h`) and the typed modifications by which a structure
-tells its observers what changed (`Modification.h`), and the capabilities
-that an algorithm may ask of a structure (`Capabilities.h`). The folders of
-the types also hold the
-algorithms on them, e.g., the operations on sets or the visits of a graph:
+The headers are grouped by abstract data type, one header per realization.
+In `include/ADS/ADT.h` are the concepts of the book, next to the contracts
+(`Contract.h`), the iterators (`Iterators.h`), the portable intrinsics
+(`Portable.h`), the typed modifications by which a structure notifies its
+observers of a change (`Modification.h`) and the capabilities that an
+algorithm may require of a structure (`Capabilities.h`). The folders of the
+types also hold the algorithms on them (e.g., the operations on sets or the
+visits of a graph):
 
 - `sequence/`, the SEQUENCE and the LIST (arrays, linked lists, cursors);
 - `stack/`, the STACK and the algorithms that use it;
@@ -250,46 +249,48 @@ The other folders group the algorithms by technique or by problem:
 - `algorithm/`, the rest.
 
 A header is included by its path (e.g., `#include "ADS/graph/ListGraph.h"`)
-and includes what it needs. It declares its classes and functions, with
-their contracts, and the definitions of its templates are in the folder
-`impl/` next to it (e.g., `ADS/graph/impl/ListGraph.tpp`), included at the
-end of the header, as in Boost; hence, `include/` is the whole library.
+and includes what it needs. It declares its classes and functions with their
+contracts, while the definitions of its templates are in the folder `impl/`
+next to it (e.g., `ADS/graph/impl/ListGraph.tpp`) and are included at the
+end of the header, as in Boost. Thus, `include/` is the whole library.
 
 ## Base and advanced
 
-The headers are divided into two sets by their origin, and the division
+By their origin, the headers are divided into two sets, a division that
 changes no path. The base set holds what follows a textbook or an academic
 source (Montresor, The Art of Computer Programming, Ferragina's book and
-notes, Morin's Open Data Structures), written to be read side by side with
-the text even when it is fast, e.g., the red-black tree of the book,
-`BigInteger` on GMP and the PGM-index; the advanced set holds what is
-written for speed beyond those sources (e.g., `UnionFind`, `DaryHeap`,
-`StaticGraph`, `CompactRankSelect`), the concurrent and parallel
-structures, the executors, the distributed layer, the typed modifications
-and the observers. An advanced structure extends a base one by the same
-concepts and by composition, not by inheritance, and a few base headers use
-an advanced one inside (e.g., `SuffixArray.h` sorts by `RadixSort.h`). The
-infrastructure that both sets include (the contracts, the iterators, the
-portable primitives, the capabilities, the concept of the executors, the
-pool of the nodes, the random hashing) is a third set, core, and a header
-that held a part of each set is split into a base header, which keeps its
-path, and an advanced one that it includes (e.g., `MaxFlow.h` and
-`PushRelabel.h`), so that its includes give the same. The headers of
-`ADS/interop/`, which join ADS to Boost, to LEMON, to the newest parts of
-the standard library and to the parallel runtimes of a program, are with
-`distributed/BoostMPI.h` a set of their own, interop, which no entry
-point includes and no module exports, since each is included by the
+notes, Morin's Open Data Structures). It is written to be read beside the
+text even when it is fast, as are, e.g., the red-black tree of the book,
+`BigInteger` on GMP and the PGM-index. Instead, the advanced set holds what
+is written for speed beyond those sources (e.g., `UnionFind`, `DaryHeap`,
+`StaticGraph`, `CompactRankSelect`), the concurrent and parallel structures,
+the executors, the distributed layer, the typed modifications and the
+observers. An advanced structure extends a base one through the same
+concepts and by composition, with no inheritance, and a few base headers use
+an advanced one inside (e.g., `SuffixArray.h` sorts by `RadixSort.h`).
+
+A third set, core, holds the infrastructure that both sets include (the
+contracts, the iterators, the portable primitives, the capabilities, the
+concept of the executors, the pool of the nodes, the random hashing). A
+header that held a part of each set is split into a base header, which keeps
+its path, and an advanced one that it includes (e.g., `MaxFlow.h` and
+`PushRelabel.h`), and therefore its includes give the same as before. The
+headers of `ADS/interop/`, which join ADS to Boost, to LEMON, to the newest
+parts of the standard library and to the parallel runtimes of a program,
+form with `distributed/BoostMPI.h` a fourth set, interop. No entry point
+includes them and no module exports them, since each is included by the
 program that wants it, next to the headers of the other library.
+
 `#include "ADS/base.h"` (or `import ads.base;`) gives the base set with
 core, `ADS/advanced.h` (`import ads.advanced;`) the advanced one with core,
-`ADS/core.h` (`import ads.core;`) the core alone, and `ADS/ADS.h` (`import
-ads;`) everything, so that a program that wants only the book compiles
-neither the concurrent structures nor the backends of MPI and oneTBB. The
-set of each header is given in one place, [`cmake/ads_sets.txt`](cmake/ads_sets.txt),
-from which `cmake/ads_sets.py` writes the entry points and the table below;
-CMake runs it at configure time and the makefile at each `make`, and it
-stops on a header with no set, or on an include across the sets that the
-file does not allow.
+`ADS/core.h` (`import ads.core;`) core only, and `ADS/ADS.h` (`import ads;`)
+everything. Hence, a program that wants only the book compiles neither the
+concurrent structures nor the backends of MPI and oneTBB. The set of each
+header is given in one place, [`cmake/ads_sets.txt`](cmake/ads_sets.txt),
+from which `cmake/ads_sets.py` writes the entry points and the table below.
+CMake runs it at configure time and the makefile at each `make`; it stops on
+a header with no set or on an include across the sets that the file does not
+allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
@@ -344,17 +345,17 @@ file does not allow.
 
 ## Where each thing comes from
 
-Each header and each test cites the section, the example or the exercise
-of the book that it implements, and the tests are listed with their source
-in [`test/tests.txt`](test/tests.txt); the solutions of the exercises are
-in the tests, one function per exercise. Each one is checked on the
+Each header and each test cites the section, the example or the exercise of
+the book that it implements, and [`test/tests.txt`](test/tests.txt) lists
+the tests with their source. The solutions of the exercises are in the
+tests, one function per exercise. Each implementation is checked on the
 example of the book, on its edge cases and (where an enumeration is
-possible) on random instances against the enumeration. Since the license
-of the book (CC BY-NC 4.0) does not allow its text in a repository under a
-license that permits commercial use, ADS cites it instead of reproducing
-it: the pseudocode of the comments and of the manual, as their prose, is
-written anew from the code of ADS, and the book is cited as the source of
-the abstract data types and of each algorithm.
+possible) on random instances against the enumeration. The license of the
+book (CC BY-NC 4.0) does not allow its text in a repository under a license
+that permits commercial use. Hence, ADS cites the book as the source of the
+abstract data types and of each algorithm, without reproducing it. The
+pseudocode of the comments and of the manual, like their prose, is written
+anew from the code of ADS, and is therefore no translation of the book.
 
 | Chapter | Section | What | Header | Tests |
 |---|---|---|---|---|
@@ -487,13 +488,13 @@ techniques), are written on the same classes and tested in
 
 ## From The Art of Computer Programming
 
-The structures and the algorithms of Knuth's *The Art of Computer
-Programming* that the book leaves out are in ADS too, from volumes 1, 2, 3,
-4A and 4B, with a few relatives from the later literature; they are tested
-in [`test/taocp.cpp`](test/taocp.cpp) against the standard library, against
-a slower method that is obviously correct (the definition of the
-transform, the enumeration of the subsets, the backtrack of chapter 16)
-and against the counts and the bounds of their analysis.
+ADS also has the structures and the algorithms of Knuth's *The Art of
+Computer Programming* that the book leaves out, from volumes 1, 2, 3, 4A and
+4B, with a few relatives from the later literature. They are tested in
+[`test/taocp.cpp`](test/taocp.cpp) against the standard library, against a
+slower method that is obviously correct (the definition of the transform,
+the enumeration of the subsets, the backtrack of chapter 16) and against the
+counts and the bounds of their analysis.
 
 | What | Header | Test |
 |---|---|---|
@@ -518,15 +519,15 @@ and against the counts and the bounds of their analysis.
 
 ## From Ferragina's algorithm engineering
 
-The algorithms of P. Ferragina's *Pearls of Algorithm Engineering*, from
-the maximum sub-array sum to the compressed data structures, are in ADS as
-well. Each header compares the algorithms of its chapter with the variants
-of the later literature (e.g., SA-IS beside the skew algorithm, or the
-sampled select of the practical libraries beside Clark's scheme). The tests
-in `test/pearls_*.cpp` check them against brute force, against the standard
+The algorithms of P. Ferragina's *Pearls of Algorithm Engineering*, from the
+maximum sub-array sum to the compressed data structures, are in ADS as well.
+Beside the algorithms of its chapter, each header gives the variants of the
+later literature (e.g., SA-IS beside the skew algorithm, or the sampled
+select of the practical libraries beside Clark's scheme). Their tests, in
+`test/pearls_*.cpp`, check them against brute force, against the standard
 library and against the examples of the notes, with their numbers. A class
 simulates the two-level memory of chapters 3 to 6 and counts the reads and
-the writes of blocks; hence, the tests can also check the bounds on the
+the writes of blocks, and therefore the tests can check the bounds on the
 I/Os that those chapters prove.
 
 | What | Headers | Tests |
@@ -546,66 +547,67 @@ I/Os that those chapters prove.
 
 ## The exercises and the exams of the course
 
-Beyond the exercises of the book, the tests cover the material of the
-course on which the book is based: the chapter collections, the thematic
+Beyond the exercises of the book, the tests cover the material of the course
+on which the book is based: the chapter collections, the thematic
 collections, more than 80 exams from 2011 to 2026 with their official
 solutions, the exercise sessions and the laboratory projects. Each problem
 is implemented after its official solution and checked on the examples of
-its statement. It is also checked against an independent oracle (brute
-force, a simpler algorithm, the standard library) on random instances,
-which usually exposes the slips of the official solutions; there, the test
-implements the correct version and shows the counterexample. The tests are
-in `test/exam_*.cpp`, one program per theme (e.g., backtracking, dynamic
-programming, flows) or per source, and the name of a test gives the problem
-and the date of its exam.
+its statement. In addition, it is checked on random instances against an
+independent oracle (brute force, a simpler algorithm, the standard library),
+which usually exposes the slips of the official solutions. In such a case,
+the test implements the correct version and shows the counterexample. All
+these tests are in `test/exam_*.cpp`, one program per theme (e.g.,
+backtracking, dynamic programming, flows) or per source, and the name of a
+test gives the problem and the date of its exam.
 
 ## Engineered structures
 
 Beside the classes of the book, which follow its pseudocode, a few
-structures are written for speed, for the programs that need it, and tested
-in [`test/engineered.cpp`](test/engineered.cpp), the heaps in
+structures are written for speed, for the programs that need it. They are
+tested in [`test/engineered.cpp`](test/engineered.cpp), the heaps in
 [`test/heaps.cpp`](test/heaps.cpp), the vectors in
-[`test/sequences.cpp`](test/sequences.cpp) and, the hashing, in
-[`test/hashing.cpp`](test/hashing.cpp), the concurrent ones also on real
-threads under ThreadSanitizer. `FlatHashTable` is the hash tested in
-[`test/engineered.cpp`](test/engineered.cpp) and, the hashing, in
-[`test/hashing.cpp`](test/hashing.cpp) and, those of the notes of
-Ferragina, in [`test/engineered_pearls.cpp`](test/engineered_pearls.cpp),
-the concurrent ones also on real threads under ThreadSanitizer.
+[`test/sequences.cpp`](test/sequences.cpp) and the hashing in
+[`test/hashing.cpp`](test/hashing.cpp), while those of the notes of
+Ferragina are tested in
+[`test/engineered_pearls.cpp`](test/engineered_pearls.cpp) and the
+combinatorial ones in
+[`test/engineered_combinatorial.cpp`](test/engineered_combinatorial.cpp).
+Those of the allocators and of the structures of the rows of a model are in
+[`test/engineered_memory.cpp`](test/engineered_memory.cpp) and
+[`test/engineered_sparse.cpp`](test/engineered_sparse.cpp), and the
+concurrent structures are also tested on real threads under ThreadSanitizer.
+
 `FlatHashTable` is the hash table that
 [`bench/dictionaries.cpp`](bench/dictionaries.cpp) compares with
 `boost::unordered_flat_map`, while `OpenHashTable` stays the table of
-section 7.2 of the book; [`bench/hashing.cpp`](bench/hashing.cpp) compares
-the hashing with Abseil, unordered_dense, robin-map, libcuckoo, XXH3,
-wyhash, rapidhash, fastfilter_cpp, xor_singleheader, PTHash, BBHash and
-RecSplit; [`bench/priority.cpp`](bench/priority.cpp) compares the heaps
-with Boost.Heap, tlx and radix-heap, also in Dijkstra's algorithm and in
-best-first searches on a grid and on the 15-puzzle, and
-[`bench/memory.cpp`](bench/memory.cpp) the arena and the pool with
-`std::pmr`, Boost.Pool, mimalloc and jemalloc;
-[`bench/graphs.cpp`](bench/graphs.cpp) runs the algorithms of the book on
-graphs, templates on their structures, on those of the standard library, of
-Boost and of ADS, with the same counts of work on the three, and the visit
-in breadth and Dijkstra's algorithm on the implicit grid of `GridGraph`
-against its explicit graph and the `grid_graph` of Boost. RecSplit, and the
+section 7.2 of the book. Furthermore,
+[`bench/hashing.cpp`](bench/hashing.cpp) compares the hashing with Abseil,
+unordered_dense, robin-map, libcuckoo, XXH3, wyhash, rapidhash,
+fastfilter_cpp, xor_singleheader, PTHash, BBHash and RecSplit, and the
 concurrent cuckoo table with libcuckoo, `boost::concurrent_flat_map` and a
-`std::unordered_map` under a `std::shared_mutex`. RecSplit. The
-combinatorial ones are tested in
-[`test/engineered_combinatorial.cpp`](test/engineered_combinatorial.cpp)
-and compared by [`bench/combinatorial.cpp`](bench/combinatorial.cpp) and
+`std::unordered_map` under a `std::shared_mutex`.
+[`bench/priority.cpp`](bench/priority.cpp) compares the heaps with
+Boost.Heap, tlx and radix-heap, also in Dijkstra's algorithm and in
+best-first searches on a grid and on the 15-puzzle. Similarly,
+[`bench/memory.cpp`](bench/memory.cpp) compares the arena and the pool with
+`std::pmr`, Boost.Pool, mimalloc and jemalloc, and
+[`bench/allocators.cpp`](bench/allocators.cpp) measures the standard
+allocators in the node containers, in `std::allocate_shared` and across two
+threads. [`bench/graphs.cpp`](bench/graphs.cpp) runs the algorithms of the
+book, which are templates on the structure of the graph, on the graphs of
+the standard library, of Boost and of ADS, with the same counts of work on
+the three. It also runs the visit in breadth and Dijkstra's algorithm on the
+implicit grid of `GridGraph`, against its explicit graph and the
+`grid_graph` of Boost. The combinatorial structures are compared by
+[`bench/combinatorial.cpp`](bench/combinatorial.cpp) and
 [`bench/backtrack.cpp`](bench/backtrack.cpp) with libpopcnt, libmorton,
 Hinnant's combinations and the programs DLX1, DLX2 and SSXCC of Knuth.
-`std::pmr`, Boost.Pool, mimalloc and jemalloc, and
-[`bench/allocators.cpp`](bench/allocators.cpp) the standard allocators in
-the node containers, in `std::allocate_shared` and across two threads;
-[`bench/positions.cpp`](bench/positions.cpp),
+Finally, [`bench/positions.cpp`](bench/positions.cpp),
 [`bench/assembly.cpp`](bench/assembly.cpp) and
-[`bench/fingerprints.cpp`](bench/fingerprints.cpp) measure the structures
-of the rows of a model (the index of their positions, their assembly for
-the solvers of linear programs and their fingerprints) against the standard
-library, Boost and Eigen; their tests are in
-[`test/engineered_memory.cpp`](test/engineered_memory.cpp) and
-[`test/engineered_sparse.cpp`](test/engineered_sparse.cpp).
+[`bench/fingerprints.cpp`](bench/fingerprints.cpp) measure the structures of
+the rows of a model (the index of their positions, their assembly for the
+solvers of linear programs and their fingerprints) against the standard
+library, Boost and Eigen.
 
 | What | Header | Test |
 |---|---|---|
@@ -708,17 +710,17 @@ library, Boost and Eigen; their tests are in
 ## Sorting
 
 Beside the sorts of the book, ADS has the classical ones that the book
-leaves out and the engineered ones of the current libraries. They are
-tested in [`test/sorting.cpp`](test/sorting.cpp) on all the permutations of
-up to 7 items and on the patterns that usually defeat a sort (sorted,
-reversed, sawtooth, organ pipe, few distinct keys), and measured by
+leaves out and the engineered ones of the current libraries. They are tested
+in [`test/sorting.cpp`](test/sorting.cpp) on all the permutations of up to 7
+items and on the patterns that usually defeat a sort (sorted, reversed,
+sawtooth, organ pipe, few distinct keys), and measured by
 [`bench/sort.cpp`](bench/sort.cpp) against `std::sort`, `std::stable_sort`
 and Boost.Sort (`make bench`, or CMake with `-DADS_BENCHMARKS=ON`).
 `ADS::sort()` and `ADS::stableSort()`
-([`sort/Sort.h`](include/ADS/sort/Sort.h)) choose among them by the type of
-the items and by the order, i.e., the radix sort for numbers, the MSD
-radix sort for strings, and pdqsort and Powersort for the rest, with
-thresholds chosen on the measures of [`results/`](results/README.md).
+([`sort/Sort.h`](include/ADS/sort/Sort.h)) select among them by the type of
+the items and by the order (the radix sort for numbers, the MSD radix sort
+for strings, and pdqsort and Powersort for the rest), with thresholds chosen
+on the measures of [`results/`](results/README.md).
 
 | What | Header |
 |---|---|
@@ -736,24 +738,22 @@ thresholds chosen on the measures of [`results/`](results/README.md).
 
 The parallel algorithms of ADS take an *executor* as their first argument,
 i.e., any object that runs the calls `f( 0 )`, ..., `f( n - 1 )` of a
-function on its threads and returns when they have returned (`bulk()`),
-and that tells how many threads it has (`concurrency()`); the sequential
-algorithms, which take none, are unchanged, and an algorithm called with
-one thread, or on a small input, is the sequential one. The executors are
-`Sequential`, `ThreadPool`, the pool of ADS on `std::thread` (a deque of
+function on its threads and returns when they have returned (`bulk()`), and
+that returns the number of its threads (`concurrency()`). The sequential
+algorithms, which take none, are unchanged; an algorithm called with one
+thread, or on a "small" input, is the sequential one. The executors are
+`Sequential` and `ThreadPool`, the pool of ADS on `std::thread` (a deque of
 work stealing of Chase and Lev per thread, the idle threads asleep on an
-event count after 2 ms), and, as options, `OpenMPExecutor`, `TBBExecutor`
-and `FastFlowExecutor`, which run the same calls on the threads of OpenMP,
-oneTBB and FastFlow, so that a program that already has one of these
-runtimes does not start a second
-one. On them [`parallel/Executor.h`](include/ADS/parallel/Executor.h) builds
-the loops, the reductions (whose blocks do not depend on the threads, so
-that a sum of doubles is the same on every executor) and the prefix sums
-in one pass over the memory (the decoupled look-back of Merrill and
-Garland), and the other headers of
-[`parallel/`](include/ADS/parallel) the algorithms below, each with the
-results of its sequential version (bit for bit for the products of
-matrices, up to the rounding for the transform).
+event count after 2 ms). As options, `OpenMPExecutor`, `TBBExecutor` and
+`FastFlowExecutor` run the same calls on the threads of OpenMP, oneTBB and
+FastFlow. On them, [`parallel/Executor.h`](include/ADS/parallel/Executor.h)
+builds the loops, the reductions and the prefix sums in one pass over the
+memory (the decoupled look-back of Merrill and Garland). Since the blocks of
+a reduction do not depend on the threads, a sum of doubles is the same on
+any executor. In turn, the other headers of
+[`parallel/`](include/ADS/parallel) give the algorithms below, each with the
+results of its sequential version (bit for bit for the products of matrices,
+up to the rounding for the transform).
 
 | What | Header |
 |---|---|
@@ -784,33 +784,34 @@ ADS::ThreadPool pool( 8 );               // 8 threads, the caller included
 ADS::sort( pool , A );                   // the result of ADS::sort( A )
 ```
 
-The pool needs nothing but the threads of the standard library (with
-CMake, `ADS::ADS` links them). The other executors are compiled only when
-asked for: with CMake, `-DADS_WITH_OPENMP=ON`, `-DADS_WITH_TBB=ON` and
+While the pool needs only the threads of the standard library (with CMake,
+`ADS::ADS` links them), the other executors are compiled only on request.
+With CMake, `-DADS_WITH_OPENMP=ON`, `-DADS_WITH_TBB=ON` and
 `-DADS_WITH_FASTFLOW=ON` (all off by default) link OpenMP and oneTBB and
 take the headers of FastFlow from `FASTFLOW_DIR` or, if it is not given,
-from its repository; without CMake, `-fopenmp`,
-`-DADS_WITH_TBB -ltbb` and `-DADS_WITH_FASTFLOW -I<fastflow>`. The header
-of FastFlow defines `NO_DEFAULT_MAPPING` (unless `ADS_FASTFLOW_MAPPING` is
-defined), since FastFlow otherwise pins its threads to the first cores of
-the machine whatever the affinity of the process.
+from its repository. Without CMake, the flags are `-fopenmp`,
+`-DADS_WITH_TBB -ltbb` and `-DADS_WITH_FASTFLOW -I<fastflow>`. Note that the
+header of FastFlow defines `NO_DEFAULT_MAPPING` (unless
+`ADS_FASTFLOW_MAPPING` is defined), since FastFlow otherwise pins its
+threads to the first cores of the machine whatever the affinity of the
+process.
 
-A program that already runs on a runtime gives the algorithms its threads,
-so that the pool of ADS does not run beside them. `TBBExecutor` runs on an
-arena of its own of `p` threads, on an arena of the program
-(`TBBExecutor ex( arena )`, whose constraints of NUMA node, type of core and
-threads then hold for ADS too) or on the arena of each caller
-(`TBBExecutor ex( TBBExecutor::current )`); `OpenMPExecutor`, called inside
+A program that already runs on one of these runtimes may give its threads to
+the algorithms, and hence need not start the pool of ADS beside them.
+`TBBExecutor` runs on a separate arena of `p` threads, on an arena of the
+program (`TBBExecutor ex( arena )`, whose constraints of NUMA node, type of
+core and threads then hold for ADS too) or on the arena of each caller
+(`TBBExecutor ex( TBBExecutor::current )`). `OpenMPExecutor`, called inside
 a region `omp parallel` of the program, makes its calls the tasks of a
 `taskloop` of the team that is there, where a nested region would get one
-thread. The headers of
-[`interop/parallel/`](include/ADS/interop/parallel), each compiled where
-the headers of its runtime are found, add `StdParExecutor< Policy >` on the
-parallel algorithms of the standard library (`std::for_each` of
-`std::execution::par` on the indices), `SenderExecutor< Sch >` on a
-scheduler of the senders of stdexec (the `std::execution` of C++26),
-`TaskflowExecutor` on a `tf::Executor` and `KokkosExecutor< Space >` on a
-space of the host of Kokkos:
+thread. The headers of [`interop/parallel/`](include/ADS/interop/parallel),
+each compiled where the headers of its runtime are found, add four more
+executors. `StdParExecutor< Policy >` runs on the parallel algorithms of the
+standard library (`std::for_each` of `std::execution::par` on the indices)
+and `SenderExecutor< Sch >` on a scheduler of the senders of stdexec (the
+`std::execution` of C++26). Finally, `TaskflowExecutor` runs on a
+`tf::Executor` and `KokkosExecutor< Space >` on a space of the host of
+Kokkos:
 
 ```cpp
 #include "ADS/interop/parallel/TaskflowExecutor.h"
@@ -822,182 +823,155 @@ ADS::sort( ex , A );                     // on the workers of Taskflow
 
 The executors on oneTBB, on OpenMP and on the standard library add nothing
 to the calls of their runtime, and their calls nest as its tasks do. Those
-on the senders and on Kokkos run a call of `bulk()` made inside one of
-their calls in order on its thread, since a `sync_wait()` and a dispatch of
-Kokkos hold the thread that waits; the fork and join of ADS (the recursion
+on the senders and on Kokkos run a call of `bulk()` made inside one of their
+calls in order on its thread, since a `sync_wait()` and a dispatch of Kokkos
+hold the thread that waits. Hence, the fork and join of ADS (the recursion
 of `parallelInvoke()`, the trees by join, the lower levels of the sorts)
 then lose their nested parallelism, while the loops, the reductions, the
 prefix sums and the top level of the sorts keep theirs. The executor on
 Taskflow nests, by co-running the nested graph on the worker that waits, but
-builds a graph at each call. None of the four has `run()`, since their
+it builds a graph at each call. None of the four has `run()`, since their
 runtimes do not promise that the calls of a loop run at the same time. With
 CMake, `ADS_WITH_STDPAR`, `ADS_WITH_STDEXEC`, `ADS_WITH_TASKFLOW` and
-`ADS_WITH_KOKKOS` are `AUTO` (`ON` to require the runtime, `OFF` to leave it
-out, off in the packages), and each runtime found gives a target,
+`ADS_WITH_KOKKOS` are `AUTO` (cf. section Build and test, which also gives
+the variables of the makefile). Each runtime found gives a target,
 `ADS::StdPar`, `ADS::stdexec`, `ADS::Taskflow` or `ADS::Kokkos`, with the
-macro of its header, the runtime and `ADS::ADS`, which itself carries none
-of them; an installed ADS gives the same targets as components,
-`find_package(ADS COMPONENTS Taskflow)`, found again where the runtime was.
-The hints are `STDEXEC_INCLUDE_DIR`, `Taskflow_INCLUDE_DIR` and the
-`CMAKE_PREFIX_PATH` of Kokkos. In the same way, `ADS_WITH_CEREAL` (`AUTO`,
-off in the packages, hint `cereal_INCLUDE_DIR`) gives `ADS::cereal`, the
-headers of cereal under `ADS/interop/cereal/Cereal.h`, with which the
-persistent structures of `ADS/external/Persistence.h` (saved and read back
-by `store()` and `restore()`, or opened in place by `restoreMapped()`)
-also go into the archives of cereal. Likewise, `ADS_WITH_EIGEN`,
-`ADS_WITH_METIS`, `ADS_WITH_KAHIP`, `ADS_WITH_GRAPHBLAS` and
-`ADS_WITH_NETWORKIT` (`AUTO`, off in the packages) give `ADS::Eigen`,
-`ADS::METIS`, `ADS::KaHIP`, `ADS::GraphBLAS` and `ADS::NetworKit`, under
-the headers of `ADS/interop/eigen/`, `metis/`, `kahip/`, `graphblas/` and
-`networkit/`, by which the algorithms of these libraries run on the
-structures of ADS: the matrices of ADS as maps of Eigen and as read-only
-matrices of GraphBLAS, the rows of a `StaticGraph` partitioned by METIS
-and KaHIP, with no copy where the layouts agree (a copy where they do
-not), and a graph of NetworKit kept in step with one of ADS, whose changes
-reach the dynamic algorithms of NetworKit (the hints are
-`EIGEN3_INCLUDE_DIR`, `<Lib>_INCLUDE_DIR` and `<Lib>_LIBRARY`, and
-`tlx_INCLUDE_DIR` for NetworKit). In the same way, `ADS_WITH_CROARING`
-(hint `roaring_DIR`, or `CRoaring_INCLUDE_DIR` and `CRoaring_LIBRARY`)
-gives `ADS::CRoaring`, under which `ADS/interop/croaring/CRoaring.h`
-converts a `RoaringBitmap` to and from the bitmaps of CRoaring, and
-`ADS_WITH_SDSL` (hint `sdsl_INCLUDE_DIR`) gives `ADS::sdsl`, under which
-`ADS/interop/sdsl/Sdsl.h` converts a `BitVector` and a `PackedArray` to and
-from the `bit_vector` and the `int_vector` of sdsl-lite 3; both are `AUTO`
-and off in the packages, whereas `ADS/interop/arrow/Arrow.h`, which hands
-the sequences of ADS to Arrow by its C Data Interface, needs no library. The
-makefile takes the first three as `auto` (`STDEXEC_ROOT=<dir>`,
-`Taskflow_ROOT=<dir>`) into `ADSINTEROPINC` and `ADSINTEROPLIB` alone, and
-Kokkos only by CMake, whose package carries its flags.
+macro of its header, the runtime and `ADS::ADS`, which carries none of them.
+An installed ADS gives the same targets as components,
+`find_package(ADS COMPONENTS Taskflow)`, found again where the runtime was;
+the hints are `STDEXEC_INCLUDE_DIR`, `Taskflow_INCLUDE_DIR` and the
+`CMAKE_PREFIX_PATH` of Kokkos.
 
-The calls of `bulk()` are tasks, which a thread may run one after the
-other; a computation of workers that live as long as it does and talk to
-each other (a parallel search, a master and its workers) runs instead on
-`run( p , f )`, whose `p` calls run at the same time on `p` threads
-of any executor, each executor with its own lock (`lock_type`:
-`std::mutex`, `omp_lock_t`, `tbb::spin_mutex`, the spin lock of FastFlow).
-On it, the channels of [`parallel/Channels.h`](include/ADS/parallel/Channels.h)
-give each worker an inbox for batches of messages, in four families with
-one interface; `feedbackFarm()` is the farm with feedback of FastFlow, a
-farm of FastFlow on its executor and emulated on the others; and the
-`Mailbox` adds outboxes of batches and tells each worker when the whole
-computation has ended, by a counter of the activities and of the messages
-touched once per batch. No send waits: what a full queue refuses stays in
-its outbox for a later push. `stop()` ends the computation at once, and
-`leftovers()` then hands back every message that no poll has handed, each
-exactly once, e.g., the nodes that a search stopped by a limit puts back
-into its frontier. The locks are Lockable (`try_lock()` included), the
-farm gives each worker and the master an index for a state of its own, and
-`isRunCaller()` tells a worker whether it runs on the thread that called
-`run()`. The processes of MPI are workers too, by `MPIExecutor` and
-`MPIMailbox`, whose batches are sent without blocking and whose termination
-is found by the four counters of Mattern on reductions that do not block,
-with the same stop and the same `leftovers()`; messages that are not
-trivially copyable go through `MPICodec`, and messages of bytes with a tag
-through `MPIByteMailbox`. MPI is a runtime like OpenMP and oneTBB, and its
-option is off by default, since `ADS::ADS` built with it carries MPI to
-every program that links it: with CMake `ADS_WITH_MPI` is `OFF` by default,
-`AUTO` to turn it on when FindMPI finds Open MPI or MPICH and `ON` to
-require it, and the makefile, with `ADS_WITH_MPI=auto` or `1`, asks `mpicxx`
-for its options. A program of Boost.MPI passes its
+The calls of `bulk()` are tasks, which a thread may run one after the other.
+A computation of workers that live as long as it does and exchange messages
+(e.g., a parallel search, or a master and its workers) runs instead on
+`run( p , f )`, whose `p` calls run at the same time on `p` threads of any
+executor. Each executor has its lock (`lock_type`: `std::mutex`,
+`omp_lock_t`, `tbb::spin_mutex`, the spin lock of FastFlow). On `run()`, the
+channels of [`parallel/Channels.h`](include/ADS/parallel/Channels.h) give
+each worker an inbox for batches of messages, in four families with one
+interface, and `feedbackFarm()` is the farm with feedback of FastFlow, a
+farm of FastFlow on its executor and emulated on the others. The `Mailbox`
+adds outboxes of batches and detects, for each worker, the end of the whole
+computation, by a counter of the activities and of the messages touched once
+per batch. No send waits, since what a full queue refuses stays in its
+outbox for a later push. `stop()` ends the computation at once, and
+`leftovers()` then hands back each message that no poll has handed, exactly
+once (e.g., the nodes that a search stopped by a limit puts back into its
+frontier). The locks are Lockable (`try_lock()` included), the farm gives
+each worker and the master an index for a private state, and `isRunCaller()`
+returns whether a worker runs on the thread that called `run()`.
+
+By `MPIExecutor` and `MPIMailbox`, the processes of MPI are workers too,
+with the same stop and the same `leftovers()`. Their batches are sent
+without blocking, and their termination is detected by the four counters of
+Mattern on reductions that do not block. Messages that are not trivially
+copyable go through `MPICodec`, and messages of bytes with a tag through
+`MPIByteMailbox`. MPI is a runtime like OpenMP and oneTBB, and its option is
+off by default, since `ADS::ADS` built with it carries MPI to any program
+that links it. With CMake, `ADS_WITH_MPI` is `OFF` by default, `AUTO` to
+turn it on when FindMPI finds Open MPI or MPICH and `ON` to require it (for
+the makefile, cf. section Build and test). A program of Boost.MPI passes its
 `boost::mpi::communicator`, which converts to `MPI_Comm`, and
 [`distributed/BoostMPI.h`](include/ADS/distributed/BoostMPI.h) gives
-`BoostMPICodec< Msg >`, the bytes of a message by Boost.Serialization for
-the mailbox (with CMake the target `ADS::BoostMPI`, `ADS_WITH_BOOST_MPI`
-`AUTO`, and `make test-boost-mpi`). The sort over the processes,
-`ADS::distributed::sort()`, and the runtime are tested on 1 to 4 processes
-by `ctest` or by `make test-mpi`.
+`BoostMPICodec< Msg >`, which turns a message into bytes by
+Boost.Serialization for the mailbox (with CMake the target `ADS::BoostMPI`,
+`ADS_WITH_BOOST_MPI` `AUTO`, and `make test-boost-mpi`). Both the sort over
+the processes, `ADS::distributed::sort()`, and the runtime are tested on 1
+to 4 processes by `ctest` or by `make test-mpi`.
 
-The operations of the trees based on join are also methods of `AVLTree`,
-`Treap` and `RedBlackTree`, and are tested, with their edge cases, against
-`std::set` and `std::map` in [`test/join_trees.cpp`](test/join_trees.cpp);
-[`bench/joins.cpp`](bench/joins.cpp) compares them with the operations of
-`std::map` one key at a time and, when compiled with `PAM=<dir>`, with
-`pam_map`.
+Being also methods of `AVLTree`, `Treap` and `RedBlackTree`, the operations
+of the trees based on join are tested, with their edge cases, against
+`std::set` and `std::map` in [`test/join_trees.cpp`](test/join_trees.cpp).
+In turn, [`bench/joins.cpp`](bench/joins.cpp) compares them with the
+operations of `std::map` one key at a time and, when compiled with
+`PAM=<dir>`, with `pam_map`.
 
 The benchmark of the parallel algorithms,
-[`bench/parallel.cpp`](bench/parallel.cpp), runs each of them on 1, 2, 4
-and 8 threads. The competitors are the parallel versions of oneTBB, of
+[`bench/parallel.cpp`](bench/parallel.cpp), runs each of them on 1, 2, 4 and
+8 threads. Its competitors are the parallel versions of oneTBB, of
 `std::execution` (libstdc++ on oneTBB), of the parallel mode of libstdc++,
 of OpenMP, of ParlayLib, of IPS4o and IPS2Ra, of FastFlow (its
 `ParallelFor`, `ParallelForReduce` and `ff_DC`), of tlx, of Eigen and
-OpenBLAS and of the GAP benchmark suite; for the hash tables, the
+OpenBLAS and of the GAP benchmark suite. For the hash tables, they are the
 concurrent tables of oneTBB, libcuckoo, ParlayLib and growt, and for the
 priority queues the concurrent one of oneTBB, the reference MultiQueue of
-Williams, Sanders and Dementiev and the k-LSM, and for the branch-and-bound
-by best first a `std::priority_queue` under a lock per worker, of which a
-thief takes half, and the shared queues of oneTBB and of ADS. Each
-structure runs
-in a process of its own, since the threads that a runtime keeps spinning
-between its calls would slow down the next structure. This benchmark was run once on cores 184 to 191 of the EPYC 9654 of the
-table above, which share the third level of the cache, with their SMT
-siblings left idle, 11 runs per cell and the same checks on the other
-processes. The ratios below are those of 8 threads, the time of the
-library divided by that of the pool of ADS (the median, and the range over
-the cells in parentheses). In the median, the sorts of ADS are faster than
-oneTBB, `std::execution` and the parallel mode of libstdc++ by 1.8 to 4.6
-times, and than ParlayLib by 1.6 to 3.9 times. Against IPS4o they are on a
-par on 64-bit integers (1.01, 0.23 to 3.98), 1.4 times faster on doubles
-and 1.1 times slower on strings (0.89, 0.38 to 0.94), while the stable
-sorts are 1.7 to 5.9 times faster than those of ParlayLib,
-`std::execution` and the parallel mode. Furthermore, the parallel
-`multiwayMerge()` is 1.5 to 1.6 times faster than those of tlx and
-libstdc++, the LCP array 1.9 times faster than that of ParlayLib, and the
-connected components 1.9 times faster than Afforest of the GAP benchmark
-suite. The prefix sums are 1.2 to 1.4 times faster than those of OpenMP,
-ParlayLib and oneTBB, since they read the input once, and the parallel
-builds of the wavelet matrix and of the Huffman wavelet tree are 40 and 9
-times faster than the sequential ones of sdsl. Also, `gemm()` is on a par
-with OpenBLAS, which it calls, and the delta-stepping with that of the GAP
-benchmark suite (1.02, 0.58 to 1.91). It is fair to remark, however, that
-the visit in breadth of the GAP benchmark suite, which follows the same
-algorithm, is 1.7 times faster than `bfsDistances()` (0.59, 0.50 to 0.65),
-and that the reduction and the map of OpenMP are 1.2 to 1.3 times faster
-than those of the pool (0.78 and 0.84, on 2 cells each). In the hash
-tables, the open addressing of ParlayLib (on keys alone) inserts and finds
-keys about 3 times faster than `ConcurrentCuckooTable` (0.36 and 0.34),
-which is also 1.3 times slower than libcuckoo and oneTBB when the table
-grows, and faster than both on the other operations (1.05 to 4.2). On the
-executor of oneTBB the same algorithms run within a few percent of the
-pool, and on those of OpenMP and FastFlow too in most cells. However, the
-sorts of strings are about 1.8 times faster on these two executors than
-on the pool (0.52 to 0.56), and so are the visit in breadth and the
-connected components, by 1.4 to 1.8 times (0.57 to 0.74).
+Williams, Sanders and Dementiev and the k-LSM. For the branch-and-bound by
+best first, they are a `std::priority_queue` under a lock per worker, of
+which a thief takes half, and the shared queues of oneTBB and of ADS. Each
+structure runs in a separate process, since the threads that a runtime keeps
+spinning between its calls may slow down the next structure. This benchmark
+was run once on cores 184 to 191 of the EPYC 9654 of section Performance,
+which share the third level of the cache, with their SMT siblings left idle,
+11 runs per cell and the same checks on the other processes.
+
+All the ratios below are those of 8 threads, i.e., the time of the library
+divided by that of the pool of ADS (the median, and the range over the cells
+in parentheses). In the median, the sorts of ADS are faster than oneTBB,
+`std::execution` and the parallel mode of libstdc++ by 1.8 to 4.6 times, and
+than ParlayLib by 1.6 to 3.9 times. Against IPS4o they are on a par on
+64-bit integers (1.01, 0.23 to 3.98), 1.4 times faster on doubles and 1.1
+times slower on strings (0.89, 0.38 to 0.94). The stable sorts are 1.7 to
+5.9 times faster than those of ParlayLib, `std::execution` and the parallel
+mode. Furthermore, the parallel `multiwayMerge()` is 1.5 to 1.6 times faster
+than those of tlx and libstdc++, the LCP array 1.9 times faster than that of
+ParlayLib, and the connected components 1.9 times faster than Afforest of
+the GAP benchmark suite. In addition, the prefix sums are 1.2 to 1.4 times
+faster than those of OpenMP, ParlayLib and oneTBB, since they read the input
+once. The parallel builds of the wavelet matrix and of the Huffman wavelet
+tree are 40 and 9 times faster than the sequential ones of sdsl. Also,
+`gemm()` is on a par with OpenBLAS, which it calls, and the delta-stepping
+with that of the GAP benchmark suite (1.02, 0.58 to 1.91). It is fair to
+remark, however, that the visit in breadth of the GAP benchmark suite, which
+follows the same algorithm, is 1.7 times faster than `bfsDistances()` (0.59,
+0.50 to 0.65). Similarly, the reduction and the map of OpenMP are 1.2 to 1.3
+times faster than those of the pool (0.78 and 0.84, on 2 cells each). In the
+hash tables, the open addressing of ParlayLib (on keys only) inserts and
+finds keys about 3 times faster than `ConcurrentCuckooTable` (0.36 and
+0.34). The cuckoo table of ADS is also 1.3 times slower than libcuckoo and
+oneTBB when the table grows, but faster than both on the other operations
+(1.05 to 4.2). On the executor of oneTBB the same algorithms run within a
+few percent of the pool, and on those of OpenMP and FastFlow too in most
+cells. However, the sorts of strings are about 1.8 times faster on these two
+executors than on the pool (0.52 to 0.56), and so are the visit in breadth
+and the connected components, by 1.4 to 1.8 times (0.57 to 0.74).
 
 ## Design by contract
 
-ADS follows the design by contract of B. Meyer: each operation checks its
-specification as a contract ([`Contract.h`](include/ADS/Contract.h)) of one
-of four kinds, i.e., `ADS_PRE` for the preconditions of the book,
-`ADS_POST` for the postconditions, `ADS_INVARIANT` for the invariant of a
-structure, and `ADS_AUDIT` for a condition that costs more than the
-operation (e.g., that a vector is sorted before a binary search, or that a
-write left the other items as they were). The macro `ADS_CONTRACTS` chooses
-which of them are evaluated (0 none, 1 the preconditions, which is the
-default, 2 also the postconditions, 3 also the invariants and the audits);
-with `NDEBUG` defined, as in a release build, the default is 0, as for
-`assert`. A violated contract throws `ADS::contract_violation`, a
-`std::logic_error` naming the condition, the function and the place. Tests
-are built at the level 3; furthermore, the axioms of each abstract data
-type are checked on all its realizations (`contract_*.*-axioms`), e.g.,
+ADS follows the design by contract of B. Meyer, in which each operation
+checks its specification as a contract
+([`Contract.h`](include/ADS/Contract.h)). A contract is of one of four
+kinds: `ADS_PRE` for the preconditions of the book, `ADS_POST` for the
+postconditions, `ADS_INVARIANT` for the invariant of a structure, and
+`ADS_AUDIT` for a condition that typically costs more than the operation
+(e.g., that a vector is sorted before a binary search, or that a write left
+the other items as they were). Which of them are evaluated is set by the
+macro `ADS_CONTRACTS` (0 none, 1 the preconditions, which is the default, 2
+also the postconditions, 3 also the invariants and the audits). With
+`NDEBUG` defined, as in a release build, the default is 0, as for `assert`.
+A violated contract throws `ADS::contract_violation`, a `std::logic_error`
+whose message gives the condition, the function and the place. Tests are
+built at the level 3, and the axioms of each abstract data type are checked
+on all its realizations (`contract_*.*-axioms`), e.g.,
 `top( push( S , v ) ) = v` and `pop( push( S , v ) ) = S` for a stack.
 
 ## The standard interface
 
-Beside the operations of the book, the containers have the interface of
-the standard library: `begin()` and `end()`, the usual member types, and
-iterators of the strongest category that the structure allows. Both ends
-have the same type, as the algorithms of C++17 and of Boost require.
-Hence, a range-for, the algorithms of `<algorithm>` and of `std::ranges`,
-and those of Boost.Range and Boost.Sort run on the containers of ADS as on
-those of the standard library. Where the items can change in place (the
-sequences, the deque, the arena) the iterators are mutable. A heap, an
-ordered set or a dictionary keeps an invariant on its items, and its
-iterators are constant, since the operations of the book are then the
-only safe way to change it. Several containers share the iterators of
-[`Iterators.h`](include/ADS/Iterators.h), and the tests in
-[`test/interop.cpp`](test/interop.cpp) check the category of each iterator
-at compile time and run the algorithms of std (and of Boost, when it is
-installed) on each container against its operations.
+Beside the operations of the book, the containers have the interface of the
+standard library, i.e., `begin()` and `end()`, the usual member types, and
+iterators of the strongest category that the structure allows, both ends
+having the same type, as the algorithms of C++17 and of Boost require. Thus,
+one can run a range-for, the algorithms of `<algorithm>` and of
+`std::ranges`, and those of Boost.Range and Boost.Sort on the containers of
+ADS as on those of the standard library. Where the items can change in place
+(the sequences, the deque, the arena) the iterators are mutable. A heap, an
+ordered set or a dictionary keeps an invariant on its items, and therefore
+its iterators are constant, the operations of the book being the only safe
+way to change it. Several containers share the iterators of
+[`Iterators.h`](include/ADS/Iterators.h). In
+[`test/interop.cpp`](test/interop.cpp), the tests check the category of each
+iterator at compile time and run the algorithms of std (and of Boost, when
+it is installed) on each container against its operations.
 
 | Category | Containers |
 |---|---|
@@ -1009,21 +983,21 @@ installed) on each container against its operations.
 A dictionary gives the pairs `( key , value )` and a priority queue the
 pairs `( priority , item )`, in the order of the structure (i.e., the order
 of the keys in a search tree or a trie, of the places in a hash table, of
-the heap in a heap). In some containers the item is built on the fly (a
-pair of references, a key rebuilt along a trie, the number of a node). The
-iterator then models the concept of C++20, but it declares the category
-of an input iterator to the older algorithms, as the views of the standard
-library do; with these iterators one should use `std::ranges::prev` and
-the algorithms of `std::ranges`, not `std::prev` and those of
+the heap in a heap). In some containers the item is built on the fly (a pair
+of references, a key rebuilt along a trie, the number of a node). The
+iterator then models the concept of C++20, but it declares the category of
+an input iterator to the older algorithms, as the views of the standard
+library do. Hence, with these iterators one should use `std::ranges::prev`
+and the algorithms of `std::ranges` in place of `std::prev` and of those of
 `<algorithm>`.
 
 ## Using ADS with other libraries
 
-A program written on another library calls the algorithms of that library
+A program written on another library can call the algorithms of that library
 on the structures of ADS, and those of ADS on its structures, usually by
-changing one type; [appendix
+changing one type. [Appendix
 C](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html) of the
-manual shows each case by examples, which are also the tests
+manual gives an example of each case, and the examples are also the tests
 [`interop_examples`](test/interop_examples.cpp) and
 [`interop_examples_mpi`](test/interop_examples_mpi.cpp).
 
@@ -1040,7 +1014,7 @@ manual shows each case by examples, which are also the tests
 | MPI, Boost.MPI | the distributed sort and mailbox on a communicator of the program | `ADS_WITH_MPI`, `ADS_WITH_BOOST_MPI` | [C.13](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-13) |
 
 For instance, the algorithm of Dijkstra of Boost.Graph runs on a graph of
-ADS with no copy,
+ADS with no copy.
 
 ```cpp
 #include "ADS/interop/boost/Graph.h"
@@ -1050,7 +1024,7 @@ boost::dijkstra_shortest_paths( g , s , boost::weight_map(
   get( boost::edge_weight , g ) ).distance_map( d.data() ) );
 ```
 
-that of LEMON on a heap of ADS,
+Similarly, that of LEMON runs on a heap of ADS.
 
 ```cpp
 #include "ADS/interop/lemon/Heaps.h"
@@ -1059,7 +1033,8 @@ using H = ADS::lemon_interop::DaryHeap< int , GR::NodeMap< int > >;
 lemon::Dijkstra< GR , LM >::SetStandardHeap< H >::Create d( g , l );
 ```
 
-and the parallel sort of ADS inside an arena of oneTBB of the program,
+Finally, the parallel sort of ADS runs inside an arena of oneTBB of the
+program.
 
 ```cpp
 #include "ADS/parallel/TBBExecutor.h"
@@ -1068,23 +1043,50 @@ ADS::TBBExecutor ex( arena );                      // was ADS::ThreadPool
 ADS::sort( ex , A );
 ```
 
+Each of the other libraries has an option, `AUTO` by default (cf. section
+Build and test). `ADS_WITH_CEREAL` (hint `cereal_INCLUDE_DIR`) gives
+`ADS::cereal`, the headers of cereal under `ADS/interop/cereal/Cereal.h`, by
+which the persistent structures of `ADS/external/Persistence.h` (saved and
+read back by `store()` and `restore()`, or opened in place by
+`restoreMapped()`) also go into the archives of cereal. Likewise,
+`ADS_WITH_EIGEN`, `ADS_WITH_METIS`, `ADS_WITH_KAHIP`, `ADS_WITH_GRAPHBLAS`
+and `ADS_WITH_NETWORKIT` give `ADS::Eigen`, `ADS::METIS`, `ADS::KaHIP`,
+`ADS::GraphBLAS` and `ADS::NetworKit`, under the headers of
+`ADS/interop/eigen/`, `metis/`, `kahip/`, `graphblas/` and `networkit/`, by
+which the algorithms of these libraries run on the structures of ADS. The
+matrices of ADS become maps of Eigen and read-only matrices of GraphBLAS,
+and METIS and KaHIP partition the rows of a `StaticGraph`, with no copy
+where the layouts agree (and a copy where they do not). Also, a graph of
+NetworKit is kept in step with one of ADS, whose changes reach the dynamic
+algorithms of NetworKit. Their hints are `EIGEN3_INCLUDE_DIR`,
+`<Lib>_INCLUDE_DIR` and `<Lib>_LIBRARY`, and `tlx_INCLUDE_DIR` for
+NetworKit. In the same way, `ADS_WITH_CROARING` (hint `roaring_DIR`, or
+`CRoaring_INCLUDE_DIR` and `CRoaring_LIBRARY`) gives `ADS::CRoaring`, under
+which `ADS/interop/croaring/CRoaring.h` converts a `RoaringBitmap` to and
+from the bitmaps of CRoaring. Similarly, `ADS_WITH_SDSL` (hint
+`sdsl_INCLUDE_DIR`) gives `ADS::sdsl`, under which `ADS/interop/sdsl/Sdsl.h`
+converts a `BitVector` and a `PackedArray` to and from the `bit_vector` and
+the `int_vector` of sdsl-lite 3. Finally, `ADS/interop/arrow/Arrow.h`, which
+hands the sequences of ADS to Arrow by its C Data Interface, needs no
+library.
+
 From Python, the package `ads-python` of [`python/`](python/) binds on
 nanobind the structures and the algorithms of ADS that NumPy, SciPy and
-NetworkX lack (the graphs in compressed rows with their parallel
+NetworkX lack. These are the graphs in compressed rows with their parallel
 algorithms, the succinct structures, the filters, `RoaringBitmap` in the
 portable format that pyroaring reads, the indexed heaps, and a graph that
-tells its changes as the typed events of ADS), each array of a structure a
-read-only view of NumPy, and each static structure opened in place from its
-file by `restore_mapped()`. It also registers `nx-ads`, a backend of
-NetworkX, by which the shortest paths, the visits and the components of
-NetworkX run on ADS. Its wheels (one per platform, on the stable ABI of
-Python 3.12 and later) and its sdist are attached to each release, to be
-installed by `pip install <file>`; from a checkout it is built by `pip
-install python/` or by CMake under
-`ADS_WITH_PYTHON` (`AUTO`, on where a Python with its headers and nanobind
-are found, off in the packages), whose ctest `python.pytest` runs its tests;
+reports its changes as the typed events of ADS. Each array of a structure is
+a read-only view of NumPy, and each static structure may be opened in place
+from its file by `restore_mapped()`. The package also registers `nx-ads`, a
+backend of NetworkX by which the shortest paths, the visits and the
+components of NetworkX run on ADS. Its wheels (one per platform, on the
+stable ABI of Python 3.12 and later) and its sdist are attached to each
+release, to be installed by `pip install <file>`. From a checkout, it is
+built by `pip install python/` or by CMake under `ADS_WITH_PYTHON` (`AUTO`,
+i.e., on where a Python with its headers and nanobind are found), whose
+ctest `python.pytest` runs its tests. An example of its use is in
 [§C.21](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-21)
-of the manual shows it at work.
+of the manual.
 
 ```python
 import ads, networkx as nx
@@ -1096,22 +1098,22 @@ nx.single_source_dijkstra_path_length(G, 0, backend="ads")
 
 ## Manual
 
-A manual of the library lives in [`manual/`](manual/), one chapter for each
-area of `include/ADS`, with the definitions and the invariants of each
+The manual is in [`manual/`](manual/), with one chapter for each area of
+`include/ADS`. Each chapter gives the definitions and the invariants of each
 structure, figures of its state in memory, the pseudocode and the code of
-its operations, the analysis of their costs and exercises tied to the
-tests, in two forms generated from the same Markdown sources in
+its operations, the analysis of their costs and exercises tied to the tests.
+It comes in two forms, generated from the same Markdown sources in
 `manual/chapters`:
 
-- **PDF**, a single file: **[ADS - A User Manual (PDF)](manual/ADS-manual.pdf)**,
+- PDF, a single file, [ADS - A User Manual (PDF)](manual/ADS-manual.pdf),
   also attached to each release;
-- **Web**: <https://dmeoli.github.io/ADS/manual/>.
+- Web, <https://dmeoli.github.io/ADS/manual/>.
 
 ## Further reading
 
 Besides the book, the headers cite the textbooks and the papers from which
-the structures and the algorithms beyond the book come; textbooks that
-cover much of the same ground are
+the structures and the algorithms beyond it come. Textbooks that cover much
+of the same ground are
 
 - T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, *Introduction to
   Algorithms*, 3rd ed., MIT Press, 2009;
@@ -1143,53 +1145,66 @@ cmake --build build
 ctest --test-dir build
 ```
 
-or with the makefile, which builds and runs the same tests (with `-j4`,
-four programs at a time),
+Alternatively, the makefile builds and runs the same tests (with `-j4`, four
+programs at a time):
 
 ```sh
 make -j4 test
 ```
 
-A single exercise runs with `ctest -R ch04.ex4.4`, and a test program also
-runs one test by name (`build/test/ch04 ex4.4`) and lists its tests
-(`-l`). CMake builds in `Release` when no build type is given, and the
-makefile with `CXXFLAGS` (`-std=c++20 -O2 -Wall -Wextra` by default) and
-`CXX` (`g++`), in `BUILD` (`build-make`); both are tested by the CI with g++
-and clang++ on Linux, macOS (the clang++ of Xcode and the g++ of Homebrew)
-and Windows (those of MinGW-w64 in MSYS2), CMake also with MSVC.
+One can run a single exercise with `ctest -R ch04.ex4.4`, and a test program
+also runs one test by name (`build/test/ch04 ex4.4`) and lists its tests
+(`-l`). CMake builds in `Release` when no build type is given, while the
+makefile builds in `BUILD` (`build-make`) with `CXX` (`g++`) and `CXXFLAGS`
+(`-std=c++20 -O2 -Wall -Wextra` by default). In the CI, both are tested with
+g++ and clang++ on Linux, macOS (the clang++ of Xcode and the g++ of
+Homebrew) and Windows (those of MinGW-w64 in MSYS2), and CMake also with
+MSVC.
+
+The optional libraries follow one convention. Each is turned on by an option
+`ADS_WITH_<X>`, of the same name for CMake and for the makefile. It is
+`AUTO` (`auto` for the makefile) to turn the library on where it is found,
+`ON` (`1`) to require it, with an error at configure time if it is missing,
+and `OFF` (`0`) to leave it out. All of these options are `AUTO` by default,
+except those of OpenMP, oneTBB, FastFlow and MPI, which are off (cf. section
+Parallelism), and the packages are built with all of them off (cf. section
+Use).
 
 The makefile takes ADS from `lib/makefile-c`, which defines `ADSH` (the
 headers), `ADSINC` (the `-I`, the `-D` and the options of the backends
-turned on) and `ADSLIB` (their libraries, and `-pthread`), and `ADSOBJ`,
-the object of the C++20 module when it is built; `lib/makefile` gives only
-the headers, `lib/makefile-OS` the settings of the operating system and of
-the compiler, `lib/makefile-mod` the module. GMP, a CBLAS, the headers
-of Boost and Highway are used wherever a program that calls them compiles
-and links (`ADS_WITH_GMP`, `ADS_WITH_BLAS`, `ADS_WITH_BOOST` and
-`ADS_WITH_HIGHWAY` are `auto`, `0` turns them off, `1` requires them, and
-`make backends` tells what was found), and the other optional backends
-are turned on by `ADS_WITH_OPENMP=1`, `ADS_WITH_TBB=1`,
-`ADS_WITH_FASTFLOW=1` and `ADS_WITH_MPI=auto` or `1` (its options asked to
-`mpicxx`, or to `MPICXX`), as the CMake options of the same names do, while
-the runtimes of a program (`ADS_WITH_STDPAR`, `ADS_WITH_STDEXEC`,
-`ADS_WITH_TASKFLOW`) are `auto` and go into `ADSINTEROPINC` and
-`ADSINTEROPLIB` alone, and the archives of cereal for the persistent
-structures (`ADS_WITH_CEREAL`, `auto`, `cereal_ROOT=<dir>`) into
-`ADSCEREALINC`, and CRoaring and sdsl-lite (`ADS_WITH_CROARING` and
-`ADS_WITH_SDSL`, `auto`, `CRoaring_ROOT=<prefix>` and `sdsl_ROOT=<dir>`)
-into `ADSCOLUMNARINC` and `ADSCOLUMNARLIB`; they are found where
-`extlib/makefile-default-paths-<os>` says (GMP, oneTBB and libomp in the
-prefix of Homebrew on macOS and where the compiler looks elsewhere, the
-CBLAS of Accelerate on macOS, FastFlow in `/opt/fastflow`,
-`/Library/fastflow` or `C:/fastflow`); a copy of that file as
+turned on), `ADSLIB` (their libraries, and `-pthread`) and `ADSOBJ`, the
+object of the C++20 module when it is built. Of the other files,
+`lib/makefile` gives only the headers, `lib/makefile-OS` the settings of the
+operating system and of the compiler, and `lib/makefile-mod` the module.
+GMP, a CBLAS, the headers of Boost and Highway are used wherever a program
+that calls them compiles and links (`ADS_WITH_GMP`, `ADS_WITH_BLAS`,
+`ADS_WITH_BOOST` and `ADS_WITH_HIGHWAY` are `auto`), and `make backends`
+reports what was found. Instead, the other optional backends are turned on
+by `ADS_WITH_OPENMP=1`, `ADS_WITH_TBB=1`, `ADS_WITH_FASTFLOW=1` and
+`ADS_WITH_MPI=auto` or `1` (whose flags come from `mpicxx`, or from
+`MPICXX`), as the CMake options of the same names are. As for the runtimes
+of a program (`ADS_WITH_STDPAR`, `ADS_WITH_STDEXEC`, `ADS_WITH_TASKFLOW`,
+with `STDEXEC_ROOT=<dir>` and `Taskflow_ROOT=<dir>`), they are `auto` and go
+into `ADSINTEROPINC` and `ADSINTEROPLIB` only, whereas Kokkos is available
+only with CMake, whose package carries its flags. In the same way, the
+archives of cereal for the persistent structures (`ADS_WITH_CEREAL`,
+`cereal_ROOT=<dir>`) go into `ADSCEREALINC`, and CRoaring and sdsl-lite
+(`ADS_WITH_CROARING` and `ADS_WITH_SDSL`, `CRoaring_ROOT=<prefix>` and
+`sdsl_ROOT=<dir>`) into `ADSCOLUMNARINC` and `ADSCOLUMNARLIB`, all of them
+`auto`. The libraries are looked for where
+`extlib/makefile-default-paths-<os>` puts them, i.e., GMP, oneTBB and libomp
+in the prefix of Homebrew on macOS and where the compiler looks elsewhere,
+the CBLAS of Accelerate on macOS, and FastFlow in `/opt/fastflow`,
+`/Library/fastflow` or `C:/fastflow`. A copy of that file as
 `extlib/makefile-paths`, which git ignores, points them elsewhere.
 
-The documentation is at [dmeoli.github.io/ADS](https://dmeoli.github.io/ADS/):
-a site of Sphinx with the theme of Read the Docs, whose pages come from this
-README and whose API reference Breathe builds from the comments of the
-headers, extracted by Doxygen, with the Doxygen site in its folder `doxygen`.
-Locally, with Doxygen 1.17, `pip install -r docs/requirements.txt && bash
-docs/build.sh` writes both to `build-docs/html`.
+The documentation, at [dmeoli.github.io/ADS](https://dmeoli.github.io/ADS/),
+is a site of Sphinx with the theme of Read the Docs, whose pages come from
+this README and whose API reference Breathe builds from the comments of the
+headers, extracted by Doxygen, with the Doxygen site in its folder
+`doxygen`. Locally, with Doxygen 1.17,
+`pip install -r docs/requirements.txt && bash docs/build.sh` writes both to
+`build-docs/html`.
 
 ## Use
 
@@ -1197,19 +1212,19 @@ docs/build.sh` writes both to `build-docs/html`.
 cmake --install build --prefix <dir>     # or: make install PREFIX=<dir>
 ```
 
-which also writes `ADS/ADSConfig.h`, whose `ADS_VERSION` (and
+This also writes `ADS/ADSConfig.h`, whose `ADS_VERSION` (and
 `ADS_VERSION_MAJOR`, `ADS_VERSION_MINOR`, `ADS_VERSION_PATCH`) is the
 version of git, i.e., the last tag `vX.Y.Z` (that of `MODULE.bazel` in a
-clone without the tags); then, in another CMake project,
+clone without the tags). Then, another CMake project uses it by
 
 ```cmake
 find_package(ADS REQUIRED)
 target_link_libraries(<target> PRIVATE ADS::ADS)
 ```
 
-or, with pkg-config, `pkg-config --cflags ads`. The makefile of a program
-takes ADS from its sources, with the backends asked for on its command
-line,
+or, with pkg-config, `pkg-config --cflags ads`. Without CMake, the makefile
+of a program takes ADS from its sources, with the backends requested on its
+command line:
 
 ```make
 ADSSDR = <the directory of ADS>
@@ -1219,12 +1234,12 @@ include $(ADSSDR)/lib/makefile-c
 prog: prog.cpp $(ADSH) $(ADSOBJ)
 	$(CXX) $(CXXFLAGS) $(ADSINC) -o $@ prog.cpp $(ADSOBJ) $(ADSLIB)
 ```
- The packages of vcpkg
-(`ads`), conda-forge (`cpp-ads`), Homebrew, Debian and Ubuntu
-(`libads-dev`), Conan, Spack, Nix, the AUR, MSYS2 and xmake install the same
-files, from the recipes of [packaging](packaging/README.md). Without
-installing anything, a CMake project can also take ADS at configure time,
-with FetchContent (CMake 3.24 or later),
+
+The packages of vcpkg (`ads`), conda-forge (`cpp-ads`), Homebrew, Debian and
+Ubuntu (`libads-dev`), Conan, Spack, Nix, the AUR, MSYS2 and xmake install
+the same files, from the recipes of [packaging](packaging/README.md).
+Without installing anything, a CMake project can also take ADS at configure
+time, with FetchContent (CMake 3.24 or later):
 
 ```cmake
 include(FetchContent)
@@ -1235,175 +1250,172 @@ FetchContent_MakeAvailable(ADS)
 target_link_libraries(<target> PRIVATE ADS::ADS)
 ```
 
-or with [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake),
+The same holds with [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake):
 
 ```cmake
 CPMAddPackage("gh:dmeoli/ADS@0.1.0")
 target_link_libraries(<target> PRIVATE ADS::ADS)
 ```
 
-and as a subproject ADS builds neither its tests nor its benchmarks. With
+As a subproject, ADS builds neither its tests nor its benchmarks. With
 Bazel, `bazel_dep(name = "ads", version = "0.1.0")` in `MODULE.bazel` and
-`deps = ["@ads"]`, from the Bazel Central Registry; with Meson, `meson wrap
-install ads` and `dependency('ads')`, from WrapDB; in both, the targets
-compile in C++20.
+`deps = ["@ads"]`, from the Bazel Central Registry; with Meson,
+`meson wrap install ads` and `dependency('ads')`, from WrapDB; in both, the
+targets compile in C++20.
 
-`BigInteger` and `Rational` run on the backend of
-[GMP](https://gmplib.org), and `gemm()` of `double` and `float` on that of a
-CBLAS (OpenBLAS, the reference CBLAS, or Accelerate on macOS), whenever the
-library is found: GMP takes every operation of both at every length, and
-the CBLAS every product of `double` and `float`, with the algorithms and
-the kernels it chooses for the processor; where neither is found (e.g.,
-with MSVC), the headers run the algorithms of the book, written to be
-portable and readable rather than tuned.
-With CMake, `ADS_WITH_GMP` and `ADS_WITH_BLAS` are `AUTO` by default (on
-when a program that calls the library compiles and links), `ON` to require
-the library (an error at configure time if it is not found) and `OFF` to
-leave it out; when on, they define the macro of the same name on
-`ADS::ADS` and link the library, also for the projects that find the
-installed ADS (`ads.pc` carries them too). The makefile does the same,
-with `make test ADS_WITH_GMP=0 ADS_WITH_BLAS=0` for the code of the book
-and `GMP=<prefix>` and `BLAS=<prefix>` where the libraries are not where
-the compiler looks; by hand, `-DADS_WITH_GMP` with `-lgmp`, and
-`-DADS_WITH_BLAS` with the CBLAS (e.g., `-lopenblas`, or
-`-DADS_BLAS_ACCELERATE -framework Accelerate`). The packages are built with
-both off, so that they depend on nothing, and a project that has the
-libraries defines the macros itself. A CBLAS that runs threads of its own
-(e.g., OpenBLAS, unless `OPENBLAS_NUM_THREADS=1`) runs them in `gemm()`,
-and the parallel `gemm()` hands it the whole product in one call, leaving
-the threads to it. GMP is under
-the LGPL v3 (or the GPL v2), whose terms apply to a program that enables
-it; without the macros nothing of either library is included.
+`BigInteger` and `Rational` run on the backend of [GMP](https://gmplib.org),
+and `gemm()` of `double` and `float` on that of a CBLAS (OpenBLAS, the
+reference CBLAS, or Accelerate on macOS), whenever the library is found. GMP
+then performs any operation of both at any length, and the CBLAS any product
+of `double` and `float`, with the algorithms and the kernels that it chooses
+for the processor. Where neither is found (e.g., with MSVC), the headers run
+the algorithms of the book, written to be portable and readable rather than
+tuned. With CMake, `ADS_WITH_GMP` and `ADS_WITH_BLAS` are `AUTO` (on when a
+program that calls the library compiles and links), and when on they define
+the macro of the same name on `ADS::ADS` and link the library, also for the
+projects that find the installed ADS (`ads.pc` carries them too). The
+makefile does the same: `make test ADS_WITH_GMP=0 ADS_WITH_BLAS=0` tests the
+code of the book, and `GMP=<prefix>` and `BLAS=<prefix>` point to the
+libraries where they are not where the compiler looks. By hand, one adds
+`-DADS_WITH_GMP` with `-lgmp`, and `-DADS_WITH_BLAS` with the CBLAS (e.g.,
+`-lopenblas`, or `-DADS_BLAS_ACCELERATE -framework Accelerate`). As with the
+other backends, the packages are built with both off, so that they depend on
+no library, and a project that has the libraries may define the macros. Note
+that a multithreaded CBLAS (e.g., OpenBLAS, unless `OPENBLAS_NUM_THREADS=1`)
+runs its threads in `gemm()`, and the parallel `gemm()` hands it the whole
+product in one call, leaving the threads to it. GMP is under the LGPL v3 (or
+the GPL v2), whose terms apply to a program that enables it; without the
+macros, no part of either library is included.
 
 With the headers of [Boost](https://www.boost.org) 1.83 or later,
 `PointerTable` and `FlatHashTable` run on `boost::unordered_flat_set` and
-`boost::unordered_flat_map`, `SmallVector` on `boost::container::small_vector`,
-and, from Boost 1.86, `Xoshiro256` and `Xoshiro256StarStar` on Boost.Random,
-with the same names and members (the differences, e.g., the forward
-iterators of the tables, are in the comments of the headers); without Boost
-each runs its own code. `ADS_WITH_BOOST` is `AUTO` with CMake and `auto`
-with the makefile (`BOOST=<prefix>` where Boost is not where the compiler
-looks), as for GMP, and nothing is linked; the packages are built with it
-off, as with the other backends, and `ADS_POINTERTABLE_BOOST`,
-`ADS_FLATHASH_BOOST`, `ADS_SMALLVECTOR_BOOST` or `ADS_RANDOM_BOOST` defined to
-0 keeps the code of ADS for one structure (the benchmarks do so for all four,
-since they compare it with Boost).
+`boost::unordered_flat_map`, and `SmallVector` on
+`boost::container::small_vector`; from Boost 1.86, `Xoshiro256` and
+`Xoshiro256StarStar` also run on Boost.Random. They keep the same names and
+members (the differences, e.g., the forward iterators of the tables, are in
+the comments of the headers), and without Boost each runs the code of ADS.
+`ADS_WITH_BOOST` (with `BOOST=<prefix>` for the makefile, where Boost is not
+where the compiler looks) links no library, and `ADS_POINTERTABLE_BOOST`,
+`ADS_FLATHASH_BOOST`, `ADS_SMALLVECTOR_BOOST` or `ADS_RANDOM_BOOST` defined
+to 0 keeps the code of ADS for one structure (the benchmarks do so for all
+four, since they compare it with Boost).
 
 With [Google Highway](https://github.com/google/highway) (1.0.7 or later,
-its libraries `hwy` and `hwy_contrib`), the vector kernels of ADS (the
-population counts, the intersections of sorted arrays, the containers of
-`RoaringBitmap`, the hash of the long strings, Stream VByte and the binary
-packing, and `vectorQuickSort()` on the quicksort of Highway) are compiled
-for every set of vector instructions that Highway knows. Highway chooses
-the best one of the processor when the program starts, and ADS therefore
-needs no flag of the machine and tests no processor, compiler or system.
-The kernels that run in the middle of a search (the groups of the hash
-tables, the nodes of `AdaptiveRadixTree`, the bins of the filters, the
-searches in the nodes of the B-trees) are inlined at the instructions
-given to the compiler. Without Highway every structure runs its scalar
-code, with the same results, and `ADS::prefetch( p )` does nothing.
-`ADS_WITH_HIGHWAY` is `AUTO` with CMake and `auto` with the makefile
-(`HWY=<prefix>` where Highway is not where the compiler looks), as for GMP,
-and the packages are built with it off. A translation unit that includes
-ADS with Highway may neither include `hwy/highway.h` before it nor run a
-dispatch of Highway of its own, since Highway runs one per unit.
+its libraries `hwy` and `hwy_contrib`), the vector kernels of ADS are
+compiled for each set of vector instructions that Highway knows. These
+kernels are the population counts, the intersections of sorted arrays, the
+containers of `RoaringBitmap`, the hash of the long strings, Stream VByte
+and the binary packing, and `vectorQuickSort()` on the quicksort of Highway.
+Highway chooses the best one of the processor when the program starts, and
+ADS therefore needs no flag of the machine and tests no processor, compiler
+or system. Without Highway, each structure runs its scalar code, with the
+same results, and `ADS::prefetch( p )` does nothing. `ADS_WITH_HIGHWAY`
+takes `HWY=<prefix>` with the makefile, where Highway is not where the
+compiler looks. A translation unit that includes ADS with Highway may
+neither include `hwy/highway.h` before it nor run a separate dispatch of
+Highway, since Highway runs one per unit.
+
+However, the kernels that run in the middle of a search (the groups of the
+hash tables, the nodes of `AdaptiveRadixTree`, the bins of the filters, the
+searches in the nodes of the B-trees) are inlined. These vector paths follow
+the flags of the compilation of the program, with no dispatch at run time: a
+program built for the baseline of x86-64 gets SSE2, and `-march=x86-64-v3`
+turns the paths of AVX2 on. Those classes whose layout or inline code
+changes with these flags (`FlatHashTable`, `DenseHashMap`,
+`ConcurrentFlatTable`, `FastHash`) are declared in an inline namespace named
+after them (cf. [`Abi.h`](include/ADS/Abi.h)), e.g., `ADS::abi_s1c1b0v3`.
+Hence, two translation units built with different flags (e.g., a "hot" file
+with `-march=x86-64-v3` and the rest with the default) get two classes with
+the same name in `ADS`, in place of two definitions of one class that the
+linker would merge. In fact, the test `abi-units` links two such units into
+one program.
 
 With [hwloc](https://www.open-mpi.org/projects/hwloc/) (2.0 or later),
 `affinityCpus()`, `pinThread()` and `currentCpu()` of
 [`Affinity.h`](include/ADS/parallel/Affinity.h) and the count of the
-physical cores of the executor on FastFlow read the topology of the
-machine from hwloc, which places the threads on every system that it
-knows; without it the threads stay where the system puts them, and the
-executors count the threads of the hardware. `ADS_WITH_HWLOC` is `AUTO`
-with CMake (hints `HWLOC_INCLUDE_DIR` and `HWLOC_LIBRARY`) and `auto` with
-the makefile (`HWLOC=<prefix>`), and the packages are built with it off.
+physical cores of the executor on FastFlow read the topology of the machine
+from hwloc, which places the threads on any system that it knows. Without
+it, the threads stay where the system puts them, and the executors count the
+threads of the hardware. For `ADS_WITH_HWLOC`, the hints are
+`HWLOC_INCLUDE_DIR` and `HWLOC_LIBRARY` with CMake and `HWLOC=<prefix>` with
+the makefile.
 
-With `ADS_WITH_BOOST` the headers of `include/ADS/interop/boost/` join ADS
-to Boost in both directions, each included by the program that wants it:
-[`Graph.h`](include/ADS/interop/boost/Graph.h) makes `StaticGraph`,
-`ArrayGraph`, `ListGraph` and `ObservedGraph` graphs of Boost.Graph, so that
-its algorithms (the visits, Dijkstra, Bellman-Ford, the strong components,
-the topological order, the maximum flows) run on them with no copy, and its
-`add_edge()` and `remove_edge()` on an `ObservedGraph` reach the observers
-of ADS; [`FromBGL.h`](include/ADS/interop/boost/FromBGL.h) is the other way,
-any graph of Boost.Graph as a graph of ADS;
+With `ADS_WITH_BOOST`, the headers of `include/ADS/interop/boost/` join ADS
+to Boost in both directions. [`Graph.h`](include/ADS/interop/boost/Graph.h)
+makes `StaticGraph`, `ArrayGraph`, `ListGraph` and `ObservedGraph` graphs of
+Boost.Graph, and therefore its algorithms (the visits, Dijkstra,
+Bellman-Ford, the strong components, the topological order, the maximum
+flows) run on them with no copy, while its `add_edge()` and `remove_edge()`
+on an `ObservedGraph` reach the observers of ADS.
+[`FromBGL.h`](include/ADS/interop/boost/FromBGL.h) goes the other way, any
+graph of Boost.Graph as a graph of ADS,
 [`Dijkstra.h`](include/ADS/interop/boost/Dijkstra.h) puts any priority queue
-of ADS in the visit of Boost.Graph;
+of ADS in the visit of Boost.Graph, and
 [`Heap.h`](include/ADS/interop/boost/Heap.h) lets the shortest paths and
-Prim's algorithm of ADS lower a key on the handles of Boost.Heap; and
-[`Iterator.h`](include/ADS/interop/boost/Iterator.h) tells Boost the
-traversal of the iterators of ADS that build their item, so that
-Boost.Range takes the dictionaries and the trees. A project that needs
-them asks for `find_package(ADS REQUIRED COMPONENTS Boost)` (`GMP` and
-`BLAS` are components in the same way). With the standard library alone,
+Prim's algorithm of ADS lower a key on the handles of Boost.Heap. Also,
+[`Iterator.h`](include/ADS/interop/boost/Iterator.h) declares to Boost the
+traversal of the iterators of ADS that build their item, so that Boost.Range
+takes the dictionaries and the trees. A project that needs these headers
+finds ADS by `find_package(ADS REQUIRED COMPONENTS Boost)` (`GMP` and `BLAS`
+are components in the same way). With the standard library only,
 [`interop/std/FlatMap.h`](include/ADS/interop/std/FlatMap.h) gives
 `std::flat_set` and `std::flat_map` of C++23 on `TieredVector`
 (`TieredFlatMap`, insertions in $O( \sqrt{n} )$), and
 [`interop/std/Pmr.h`](include/ADS/interop/std/Pmr.h) the pools of ADS as a
-`std::pmr::memory_resource`; the sorts take any random-access range
+`std::pmr::memory_resource`. The sorts take any random-access range
 (`std::span`, `std::deque`, the sequences of ADS) beside `std::vector`, in
-place on a contiguous one (and, those of the book, on any), and
-with `ADS_WITH_GMP` `BigInteger::fromGmp()`, `toGmp()` and the constructors
-from `mpz_class` and `mpq_class` pass the numbers to and from GMP. The
-tests are in [`test/engineered_interop.cpp`](test/engineered_interop.cpp).
+place on a contiguous one (and, those of the book, on any). With
+`ADS_WITH_GMP`, `BigInteger::fromGmp()`, `toGmp()` and the constructors from
+`mpz_class` and `mpq_class` pass the numbers to and from GMP. The tests are
+in [`test/engineered_interop.cpp`](test/engineered_interop.cpp).
 
-With [LEMON](https://lemon.cs.elte.hu) (the maintained fork abLEMON, or
-any LEMON whose headers compile in C++20, which LEMON 1.3 does not), the
-headers of `include/ADS/interop/lemon` let a program written on LEMON take
-a structure of ADS where it does better, by the named template parameters
-of the algorithms of LEMON, and the algorithms of ADS run on the graphs of
-LEMON: the heaps of ADS as heaps of LEMON (e.g.,
+With [LEMON](https://lemon.cs.elte.hu) (the maintained fork abLEMON, or any
+LEMON whose headers compile in C++20, which LEMON 1.3 does not), the headers
+of `include/ADS/interop/lemon` let a program written on LEMON take a
+structure of ADS where it may do better, by the named template parameters of
+the algorithms of LEMON. Conversely, they let the algorithms of ADS run on
+the graphs of LEMON. They give the heaps of ADS as heaps of LEMON (e.g.,
 `Dijkstra< GR , LM >::SetStandardHeap< ADS::lemon_interop::DaryHeap< int ,
 GR::NodeMap< int > > >`), the arrays of ADS as maps of LEMON, a
 `StaticGraph` as a digraph of LEMON and a digraph of LEMON as a GRAPH of
-ADS, the notifier of LEMON told to the observers of ADS and a
-`ListDigraph` kept in step with a graph of ADS, and the runs of LEMON on
-the threads of ADS (see the chapter of the graphs of the manual). With
-them, `maxCardinalityMatching()` and `maxWeightMatching()` solve on the
-matchings of LEMON, and the solve from scratch of `Assignment` on the
+ADS. Also, the notifications of LEMON are forwarded to the observers of ADS,
+a `ListDigraph` is kept in step with a graph of ADS, and the runs of LEMON
+may use the threads of ADS (see the chapter of the graphs of the manual).
+With them, `maxCardinalityMatching()` and `maxWeightMatching()` solve on the
+matchings of LEMON, and `Assignment` solves from scratch on the
 `MinCostAssignment` of abLEMON, the warm repairs staying those of ADS
-(`ADS_MATCHING_LEMON` or `ADS_ASSIGNMENT_LEMON` defined to 0 keeps the
-code of ADS, as the benchmarks do). `ADS_WITH_LEMON` is `AUTO` with CMake,
-which then builds the target `ADS::LEMON` (the component `LEMON` of
-`find_package(ADS COMPONENTS LEMON)`, and `ads-lemon.pc`), and `auto` with
-the makefile, whose flags go in `$(ADSLEMONINC)` (`LEMON=<prefix>` where
-LEMON is not where the compiler looks); unlike the other backends,
-`ADS::ADS` and `$(ADSINC)` never include LEMON, so that a program that does
-not ask for it compiles none of it, the headers are left out of the module
-`ads`, and the packages are built with it off.
+(`ADS_MATCHING_LEMON` or `ADS_ASSIGNMENT_LEMON` defined to 0 keeps the code
+of ADS, as the benchmarks do). With CMake, `ADS_WITH_LEMON` builds the
+target `ADS::LEMON` (the component `LEMON` of
+`find_package(ADS COMPONENTS LEMON)`, and `ads-lemon.pc`), and with the
+makefile its flags go in `$(ADSLEMONINC)` (`LEMON=<prefix>` where LEMON is
+not where the compiler looks). Unlike the other backends, LEMON is never
+included by `ADS::ADS` and `$(ADSINC)`, so that a program that does not
+request it compiles none of it, and its headers are left out of the module
+`ads`.
 
 With LEMON, ADS also writes the warm starts that LEMON lacks into private
 copies of six of its headers (`network_simplex.h`, `cost_scaling.h`,
 `cycle_canceling.h`, `capacity_scaling.h`, `bits/mcf_feasible_flow.h` and
-`preflow.h`): `runWarm()` of the four minimum cost flows from the last basis
-or flow, the setters of one arc or node in constant time (`warmCost()`,
-`warmUpper()`, `warmSupply()`), and `Preflow::initWarm()` from a flow with
-deficits, with its `runWarm()`. The copies are rewritten at configure time
-by the rules of `include/ADS/interop/lemon/shim/rewrites.txt` (each a line
-`header|anchor|what`, the anchor a line of LEMON that must be there exactly
-once, or the rewrite stops), in the build directory by CMake and in
-`$(ADSODR)/lemon-shim` by the makefile (`ADS_LEMON_WARM=0` leaves them out),
-and they come before LEMON on the include path of `ADS::LEMON` and of
-`$(ADSLEMONINC)`, which define `ADS_LEMON_SHIM`; an installed ADS writes them
-again from the LEMON that its user finds. `ADS/interop/lemon/Warm.h` builds
-on them an engine of `MaxFlowObserver` on `Preflow`, one of `Assignment` on
-`NetworkSimplex` and an observer of a minimum cost flow. A program must
-compile every translation unit on the same rewritten copies: two different
-copies of a header of LEMON in one binary give two layouts of one class, a
-violation of the one definition rule that compilers do not diagnose, and a
-module of LEMON must be built from them too.
-
-The vector paths of ADS follow the flags of the compilation of the program,
-with no dispatch at run time: a program built for the baseline of x86-64
-gets SSE2, and `-march=x86-64-v3` turns the paths of AVX2 on. The classes
-whose layout or inline code changes with these flags (`FlatHashTable`,
-`DenseHashMap`, `ConcurrentFlatTable`, `FastHash`) are declared in an
-inline namespace named after them [see
-[`Abi.h`](include/ADS/Abi.h)], e.g., `ADS::abi_s1c1b0v3`, so that two
-translation units built with different flags, such as a hot file with
-`-march=x86-64-v3` and the rest with the default, get two classes with the
-same name in `ADS` instead of two definitions of one class that the linker
-would merge; the test `abi-units` links two such units into one program.
+`preflow.h`). The warm starts are `runWarm()` of the four minimum cost flows
+from the last basis or flow, the setters of one arc or node in constant time
+(`warmCost()`, `warmUpper()`, `warmSupply()`), and `Preflow::initWarm()`
+from a flow with deficits, with its `runWarm()`. These copies are rewritten
+at configure time by the rules of
+`include/ADS/interop/lemon/shim/rewrites.txt`, each a line
+`header|anchor|what` whose anchor is a line of LEMON that must occur exactly
+once (otherwise the rewrite stops). CMake writes them in the build directory
+and the makefile in `$(ADSODR)/lemon-shim` (`ADS_LEMON_WARM=0` leaves them
+out), and they come before LEMON on the include path of `ADS::LEMON` and of
+`$(ADSLEMONINC)`, which define `ADS_LEMON_SHIM`; an installed ADS writes
+them again from the LEMON that its user finds. On them,
+`ADS/interop/lemon/Warm.h` builds an engine of `MaxFlowObserver` on
+`Preflow`, one of `Assignment` on `NetworkSimplex` and an observer of a
+minimum cost flow. A program must compile all its translation units on the
+same rewritten copies, and a module of LEMON must be built from them too. In
+fact, two different copies of a header of LEMON in one binary give two
+layouts of one class, a violation of the one definition rule that compilers
+do not diagnose.
 
 ```cpp
 #include "ADS/sequence/List.h"
@@ -1417,66 +1429,68 @@ for( int x : L ) std::cout << x;
 
 ## C++20 module
 
-The module `ads` (`src/ADS.cppm`) exports every name that the headers
-declare in the namespace `ADS` and in those nested in it (but for the
-namespaces `detail`), so that a translation unit can write `import ads;` in
-place of the `#include` of the headers, which keep working as before. It
-does so by exporting the modules of the three sets of [Base and
+The module `ads` (`src/ADS.cppm`) exports each name that the headers declare
+in the namespace `ADS` and in those nested in it (but for the namespaces
+`detail`). Hence, a translation unit can write `import ads;` in place of the
+`#include` of the headers, which keep working as before. It does so by
+exporting the modules of the three sets of [Base and
 advanced](#base-and-advanced), `ads.core`, `ads.base` and `ads.advanced`
 (`src/ADSCore.cppm`, `src/ADSBase.cppm`, `src/ADSAdvanced.cppm`), each of
-which exports the names of the headers of its set, and the last two also
-those of `ads.core`, which they do not import (Clang 18 does not compile a
-module that imports another one when both include Highway); `import
-ads.base;` thus compiles only the base headers, the
-core and the few advanced headers that the base ones use inside. With CMake
-3.28 or later, the Ninja generator and Clang 16 (with `clang-scan-deps`) or
-GCC 15 or later, `-DADS_BUILD_MODULE=ON` (off by default; turned off with a
+which exports the names of the headers of its set. The last two also export
+those of `ads.core`, which they do not import, since Clang 18 does not
+compile a module that imports another one when both include Highway. Thus,
+`import ads.base;` compiles only the base headers, the core and the few
+advanced headers that the base ones use inside. With CMake 3.28 or later,
+the Ninja generator and Clang 16 (with `clang-scan-deps`) or GCC 15 or
+later, `-DADS_BUILD_MODULE=ON` (off by default, and turned off with a
 warning where one of these is missing) builds the target `ADS::ADS_module`,
 and `ADS::ADS_module_core`, `ADS::ADS_module_base` and
-`ADS::ADS_module_advanced` for the sets, installed with the package,
+`ADS::ADS_module_advanced` for the sets, installed with the package.
 
 ```cmake
 find_package(ADS REQUIRED)
 target_link_libraries(<target> PRIVATE ADS::ADS_module)
 ```
 
-and, without CMake, `make test ADSMOD=1 CXX=clang++` (or `CXX=g++`) builds
-the module in `build-make` and the test that imports it (the makefile of a
+Without CMake, `make test ADSMOD=1 CXX=clang++` (or `CXX=g++`) builds the
+module in `build-make` and the test that imports it (the makefile of a
 program that imports the module compiles it with `$(ADSMODSW)` and links
-`$(ADSOBJ)` [see `lib/makefile-mod`]). AppleClang does not build it, while
-the Clang of LLVM on macOS does; GCC 14 stops on it with an internal error,
+`$(ADSOBJ)`; cf. `lib/makefile-mod`). AppleClang does not build it, while
+the Clang of LLVM on macOS does. GCC 14 stops on it with an internal error,
 and MSVC discards the operators of the standard library (e.g., those of
 `std::complex`) that the templates of the module use only in their
-instantiations, so that an importer does not compile. The macros are not
-exported by a module, so a file that uses those of the contracts (e.g.,
-`ADS_PRE`) still includes `ADS/Contract.h`, and those that configure the
-headers (e.g., `ADS_CONTRACTS`, `ADS_WITH_GMP`) take the value they have
-where the module is compiled; the executors of OpenMP, oneTBB and FastFlow
-and the sort on MPI are in the module only when it is compiled with their
-library. The files of the modules are written by
-`cmake/ads_module_exports.py` from the AST of the headers and from
+instantiations, and therefore an importer does not compile. Note that a
+module exports no macro, and therefore a file that uses those of the
+contracts (e.g., `ADS_PRE`) still includes `ADS/Contract.h`, and those that
+configure the headers (e.g., `ADS_CONTRACTS`, `ADS_WITH_GMP`) take the value
+they have where the module is compiled. Also, the executors of OpenMP,
+oneTBB and FastFlow and the sort on MPI are in the module only when it is
+compiled with their library. Finally, the files of the modules are written
+by `cmake/ads_module_exports.py` from the AST of the headers and from
 `cmake/ads_sets.txt`, and they are written again when a header gains or
 loses a name or changes its set.
 
-The gain is small, since the library is made of templates, which an importer
-still instantiates and compiles: on a server with 384 cores and a load of 55
-to 73 (hence the times are indicative), Clang 18 at `-O2` compiles a program
-with Dijkstra's algorithm on a `ListGraph` in 1.0 to 1.2 s with `import`
-against 1.3 to 1.5 s with the headers; the peak memory grows instead, from
-160 to 265 MB, since the importer loads the module of the whole library.
+The gain in compile time is quite small, since the library is made of
+templates, which an importer still instantiates and compiles. On a server
+with 384 cores and a load of 55 to 73 (hence, the times are only
+indicative), Clang 18 at `-O2` compiles a program with Dijkstra's algorithm
+on a `ListGraph` in 1.0 to 1.2 s with `import`, against 1.3 to 1.5 s with
+the headers. Yet, the peak memory grows, from 160 to 265 MB, since the
+importer loads the module of the whole library.
 
 ## Code style
 
-The code follows the style of the repository
-[code-style](https://github.com/dmeoli/code-style), i.e., its `.clang-format`
-(of which the one at the root of ADS is a copy, so that clang-format and the
-IDEs find it) with what its `format.py` adds to it (e.g., `return( x );` and
-a space before each comma), which clang-format has no option for, the C++ of
-the blocks `\code` of the comments and of the theory pages included. On a
-pull request, the continuous integration checks the lines that the request
-changes, and posts the changes that put them in the style as suggestions on
-them; on every push, it checks all the files whole. With that repository
-cloned in `~/code-style`,
+The code is written in the style of the repository
+[code-style](https://github.com/dmeoli/code-style), and so is the C++ of the
+blocks `\code` of the comments and of the theory pages. This style is the
+`.clang-format` of that repository (of which the one at the root of ADS is a
+copy, so that clang-format and the IDEs find it) together with what its
+`format.py` adds, for lack of an option of clang-format (e.g.,
+`return( x );` and a space before each comma). On a pull request, the
+continuous integration checks the lines that the request changes and posts
+as suggestions the changes that put them in the style; on each push, it
+checks all the files in full. With that repository cloned in `~/code-style`,
+the command
 
 ```sh
 ~/code-style/code-format --since origin/main FILE...
@@ -1489,6 +1503,7 @@ install clang-format==22.1.5`).
 
 This software is released under the [Boost Software License, version
 1.0](https://www.boost.org/LICENSE_1_0.txt) (see the file
-[LICENSE](LICENSE)), the license of Boost and of LEMON. The book of
-Alberto Montresor, under CC BY-NC 4.0, is cited and not reproduced: the
-pseudocode and the prose of ADS are written anew, not translated from it.
+[LICENSE](LICENSE)), the license of Boost and of LEMON. As for the book of
+Alberto Montresor, under CC BY-NC 4.0, it is cited without being reproduced,
+since the pseudocode and the prose of ADS are written anew (cf. section
+Where each thing comes from).
