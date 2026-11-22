@@ -84,7 +84,10 @@ std::uint64_t RibbonFilter< T , F , H >::coefficients( std::uint64_t h )
 template< class T , class F , class H >
 F RibbonFilter< T , F , H >::fingerprint( std::uint64_t h )
 {
- return( F( h ^ ( h >> 32 ) ) );
+ // the high bits of a product by another odd constant, which depend on
+ // every bit of h and not linearly on those of the coefficients
+ return( F( ( h * 0xD6E8FEB86659FD93ULL ) >>
+	     ( 64 - std::numeric_limits< F >::digits ) ) );
  }
 
 template< class T , class F , class H >

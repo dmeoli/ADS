@@ -30,8 +30,14 @@
  *
  * The coefficients are \f$ c( h ) = ( h a \bmod 2^{64} ) \vee 1 \f$,
  * \f$ a \f$ an odd constant, the start depending on the high bits of
- * \f$ h \f$ and the fingerprint \f$ f( h ) \f$ on its bits 0 to
- * \f$ r - 1 \f$ and 32 to \f$ 31 + r \f$.
+ * \f$ h \f$, and the fingerprint is
+ * \f$ f( h ) = \lfloor ( h a' \bmod 2^{64} ) / 2^{64 - r} \rfloor \f$, the
+ * high bits of a product by another odd constant \f$ a' \f$: since
+ * \f$ c( h ) \f$ fixes \f$ h \f$ but for one bit, no function of
+ * \f$ h \f$ is independent of it, and the product makes \f$ f \f$ depend
+ * on every bit of \f$ h \f$, through the carries, and not linearly on the
+ * bits of \f$ c \f$, which the false positive rate of
+ * \f$ 2^{-r} \f$ models as independent.
  *
  * The build solves the system by Gauss elimination on the fly (Rapid
  * Incremental Boolean Banding ON the fly, Dillinger and Walzer): the
@@ -153,6 +159,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
 #include <string_view>
 #include <type_traits>
@@ -262,6 +269,10 @@ class RibbonFilter
 
  /// the name of the structure in a file [see `Persistence.h`]
  static constexpr std::string_view persistName = "RibbonFilter";
+
+ /// the version of the layout in a file: 2, that of the fingerprints by
+ /// a second product, which the files of the version 1 do not have
+ static constexpr std::uint32_t persistVersion = 2;
 
  /// the parameters of the layout, in a file
  [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {

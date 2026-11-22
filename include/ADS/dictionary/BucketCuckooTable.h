@@ -37,7 +37,23 @@
  * first bucket of the key 8 places ahead, so that the misses of the keys
  * overlap. A removal clears the tag of the place.
  *
- * The iterators visit the pairs in the order of the places, as constant
+ * No doubling separates keys whose hashes are equal, and more than 8 of
+ * them find no place at any size of the table. A key that
+ * still finds no place after 2 doublings of its insertion, or in a table at
+ * most half full, therefore goes to a stash, a vector of pairs searched in
+ * order after the two buckets (the cuckoo hashing with a stash of Kirsch,
+ * Mitzenmacher and Wieder, whose stash has a constant size, here any); a
+ * doubling places the pairs of the stash again with the others, and those
+ * that find no place go to the new stash. A table that has held at most
+ * \f$ n \f$ keys thus has at most \f$ \max( P_0 , 4 n ) \f$ places,
+ * \f$ P_0 \f$ those of the empty table, an insertion makes at most 2
+ * doublings, and a search of a key that is not in its buckets costs one
+ * test while the stash is empty (as it is with any but a degenerate hash)
+ * and a scan of the stash otherwise. A removal from the stash leaves a hole
+ * there, which the next key of the stash fills.
+ *
+ * The iterators visit the pairs in the order of the places, the stash
+ * last, as constant
  * pairs of references \f$ ( \mathit{key} , \mathit{value} ) \f$; `find()`
  * gives a value to change in place. An insertion of a new key may move
  * other keys and invalidates the iterators; a removal keeps them valid but
@@ -51,8 +67,9 @@
  * default, with the rules of the standard [see `AllocatorAware.h`].
  *
  * The contracts [see `Contract.h`]: after `insert()` the key is in the
- * table and after `remove()` it is not; the invariant is that each key is in
- * one of its two buckets with its tag, and that the tags count the pairs,
+ * table and after `remove()` it is not; the invariant is that each key is
+ * once in one of its two buckets with its tag or in the stash, and that the
+ * tags and the stash count the pairs,
  * checked on the buckets of the key of the operation only past 1024 places.
  * The operations are defined in `BucketCuckooTable.tpp`.
  *
@@ -66,6 +83,9 @@
  *      with tightly packed constant size bins, Theoretical Computer Science
  *      380(1-2), 47-68, 2007, doi:10.1016/j.tcs.2007.02.054 (the buckets
  *      of several places)
+ * \see A. Kirsch, M. Mitzenmacher, U. Wieder, More robust hashing: cuckoo
+ *      hashing with a stash, SIAM Journal on Computing 39(4), 1543-1561,
+ *      2009, doi:10.1137/080728743 (the stash)
  * \see S. Chen, A. Ailamaki, P. B. Gibbons, T. C. Mowry, Improving hash
  *      join performance through prefetching, Proceedings of ICDE 2004,
  *      116-127, 2004, doi:10.1109/ICDE.2004.1319989 (the prefetch of the
@@ -146,26 +166,32 @@ class BucketCuckooTable
  /// associates the value \f$ v \f$ to the key \f$ k \f$; true if \f$ k \f$
  /// was not there
  ///
- /// In pseudocode (Li, Andersen, Kaminsky and Freedman, beyond the book),
- /// \f$ b_1 \f$ and \f$ b_2 \f$ the two buckets of \f$ k \f$; the search in
- /// breadth goes from a bucket to the other buckets of its keys, at most 5
- /// moves deep and 1024 buckets in all:
+ /// In pseudocode (Li, Andersen, Kaminsky and Freedman, with the stash of
+ /// Kirsch, Mitzenmacher and Wieder, beyond the book), \f$ b_1 \f$ and
+ /// \f$ b_2 \f$ the two buckets of \f$ k \f$, \f$ n \f$ the keys and
+ /// \f$ P \f$ the places; the search in breadth goes from a bucket to the
+ /// other buckets of its keys, at most 5 moves deep and 1024 buckets in all:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{insert}( k , v ) \cr
- /// 2 & \quad \textbf{if}\ k \text{ is in } b_1 \text{ or } b_2
- ///     \ \textbf{then}\ \text{give it the value } v;\ \textbf{return false}
- ///     \cr
- /// 3 & \quad \textbf{loop} \cr
+ /// 2 & \quad \textbf{if}\ k \text{ is in } b_1 \text{, in } b_2
+ ///     \text{ or in the stash}\ \textbf{then}\ \text{give it the value } v;
+ ///     \ \textbf{return false} \cr
+ /// 3 & \quad \textbf{for}\ g \gets 0 , 1 , 2\ \textbf{do} \cr
  /// 4 & \qquad \textbf{if}\ b_1 \text{ or } b_2 \text{ has a free place }
  ///     \ \textbf{then}\ \text{put } ( k , v ) \text{ there};\ \textbf{return
  ///     true} \cr
  /// 5 & \qquad \pi \gets \text{a path in breadth from } \{ b_1 , b_2 \}
  ///     \text{ to a bucket with a free place} \cr
  /// 6 & \qquad \textbf{if}\ \pi \ne \textbf{nil}\ \textbf{then}\ \text{move }
- ///     \text{the keys along } \pi \text{ from its end} \cr
- /// 7 & \qquad \textbf{else}\ \text{double the table and place every pair }
- ///     \text{again}
+ ///     \text{the keys along } \pi \text{ from its end, put } ( k , v )
+ ///     \text{ at its start};\ \textbf{return true} \cr
+ /// 7 & \qquad \textbf{if}\ g = 2\ \textbf{or}\ 2 ( n + 1 ) \le P
+ ///     \ \textbf{then}\ \textbf{break} \cr
+ /// 8 & \qquad \text{double the table and place every pair again, those }
+ ///     \text{that find no place in the stash} \cr
+ /// 9 & \quad \text{put } ( k , v ) \text{ in the stash};\ \textbf{return
+ ///     true}
  /// \end{array}}
  /// \f]
  /// \post \f$ k \f$ is in the table
@@ -197,6 +223,9 @@ class BucketCuckooTable
  /// the keys moved by the insertions
  [[nodiscard]] std::size_t moves( void ) const;
 
+ /// the keys in the stash, 0 but for degenerate hashes
+ [[nodiscard]] std::size_t stashed( void ) const;
+
 /*--------------------------------------------------------------------------*/
  private:
  struct Slot
@@ -207,6 +236,7 @@ class BucketCuckooTable
 
  static constexpr int kDepth = 5;             ///< the moves of a path
  static constexpr std::size_t kNodes = 1024;  ///< the buckets searched
+ static constexpr int kGrowths = 2;  ///< the doublings of an insertion
 
  public:
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
@@ -217,16 +247,21 @@ class BucketCuckooTable
  /// the places, for `SlotIterator`
  struct Places
  {
-  /// the number of places
-  static std::size_t size( const auto & o ) { return( o.f_S.size() ); }
-  /// whether the place \f$ i \f$ holds a key, i.e., its tag is not 0
+  /// the number of places, the stash included
+  static std::size_t size( const auto & o ) {
+   return( o.f_S.size() + o.f_X.size() );
+   }
+  /// whether the place \f$ i \f$ holds a key, i.e., its tag is not 0, or
+  /// its place of the stash is not a hole
   static bool occupied( const auto & o , std::size_t i ) {
+   if( i >= o.f_S.size() )
+    return( o.f_XT[ i - o.f_S.size() ] != 0 );
    return( ( o.f_T[ i >> 2 ] >> ( 8 * ( i & 3 ) ) ) & 0xFF );
    }
   /// the pair of the place \f$ i \f$
   static auto read( const auto & o , std::size_t i ) {
-   return(
-     PairRef< const K & , const V & >( o.f_S[ i ].key , o.f_S[ i ].value ) );
+   const Slot & s = o.at( i );
+   return( PairRef< const K & , const V & >( s.key , s.value ) );
    }
   };
 
@@ -261,7 +296,7 @@ class BucketCuckooTable
   }
  /// the iterator past the last item
  [[nodiscard]] const_iterator end( void ) const {
-  return( const_iterator( this , f_S.size() ) );
+  return( const_iterator( this , f_S.size() + f_X.size() ) );
   }
  /// the constant iterator on the first item
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
@@ -283,8 +318,19 @@ class BucketCuckooTable
  /// \f$ b \f$, \f$ b \oplus ( g( t ) \wedge ( B - 1 ) \vee 1 ) \f$
  [[nodiscard]] std::size_t other( std::size_t b , std::uint32_t t ) const;
 
- /// the place of \f$ k \f$ with the hash \f$ h \f$, or `~0`
+ /// the place of \f$ k \f$ with the hash \f$ h \f$, past the buckets if in
+ /// the stash, or `~0`
  [[nodiscard]] std::size_t locate( const K & k , std::uint64_t h ) const;
+
+ /// the pair of the place \f$ i \f$, of the stash past the buckets
+ [[nodiscard]] const Slot & at( std::size_t i ) const;
+
+ /// the pair of the place \f$ i \f$, to change
+ [[nodiscard]] Slot & at( std::size_t i );
+
+ /// the pair put in the stash, in its first hole if any
+ template< class KK , class VV >
+ void stash( KK && k , VV && v );
 
  /// a free place of the bucket \f$ b \f$, or 4
  [[nodiscard]] int freePlace( std::size_t b ) const;
@@ -298,15 +344,15 @@ class BucketCuckooTable
  /// a path found in breadth; `~0` if none within `kDepth` moves
  std::size_t makeRoom( std::uint64_t h );
 
- /// the table doubled, every pair placed again
+ /// the table doubled, every pair placed again or put in the stash
  void grow( void );
 
  /// the pair placed in a table with room for it, false if it found none
  template< class KK , class VV >
  bool place( std::uint64_t h , KK && k , VV && v );
 
- /// \f$ k \f$ in one of its buckets with its tag and at most once, and, up to
- /// 1024 places, every pair so and counted right
+ /// \f$ k \f$ in one of its buckets with its tag or in the stash, at most
+ /// once, and, up to 1024 places, every pair so and counted right
  [[nodiscard]] bool placed( const K & k ) const;
 
  /// the vector of the tags
@@ -316,6 +362,9 @@ class BucketCuckooTable
 
  Tags f_T;                    ///< the 4 tags of each bucket
  Slots f_S;                   ///< the places, 4 per bucket
+ Slots f_X;                   ///< the stash
+ Tags f_XT;                   ///< 1 where the stash holds a pair, 0 a hole
+ std::size_t f_xn = 0;        ///< the pairs in the stash
  int f_lg = 1;                ///< log2 of the buckets
  std::size_t f_n = 0;         ///< the number of keys
  std::size_t f_rehashes = 0;  ///< the doublings

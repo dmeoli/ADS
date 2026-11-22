@@ -634,19 +634,41 @@ that have returned.
 --8<-- "generated/ThreadPool-run.pseudo.md"
 
 <span id="lem-25-5"></span>**Lemma 25.5.** *Let a `ThreadPool` have $p - 1$
-workers idle in their loop besides the thread that calls `run( p , f )`.
-Then the $p$ calls run at the same time on distinct threads, whatever the
+workers idle in their loop besides the thread that calls `run( p , f )`,
+and let the tasks of the jobs nested in the calls not wait for a call that
+has not begun. Then (i) no thread holds two calls of the run at once, (ii)
+every call begins, even while the others wait, and (iii) if no call returns
+before all the $p$ calls have begun (e.g., if the calls meet at a barrier
+of $p$ threads, or wait for each other until the end of the computation),
+the $p$ calls run at the same time on $p$ distinct threads, whatever the
 calls do, nested jobs included.*
 
-*Proof.* The caller makes $f( 0 )$. All the other calls are claimed one at a time from a counter under a mutex, only by a worker that is in its loop,
-i.e., that holds no call of any job. A worker that has claimed a call goes
-back to its loop only after the call has returned, and therefore no thread
-holds two calls of the run. A thread that waits inside a call, for a job
-nested in it or for the end of the run, steals and runs only tasks, never a
-call of the run (were it to run one, it would hold it below the call it is
-in, which might wait for it forever). Hence, the $p - 1$ idle workers claim
-the $p - 1$ calls, one each, as soon as the event count of the pool wakes
-them, and all the calls run together. $\square$
+*Proof.* The caller makes $f( 0 )$, and all the other calls are claimed
+one at a time from a counter under a mutex, only by a worker that is in
+its loop, i.e., that holds no call of any job. A worker that has claimed a
+call goes back to its loop only after the call has returned. A thread that
+waits inside a call, for a job nested in it or for the end of the run,
+steals and runs only tasks, never a call of the run (were it to run one, it
+would hold it below the call it is in, which might wait for it forever);
+hence (i). For (ii), while a call has not begun, the calls held by the
+$p - 1$ workers are fewer than $p - 1$, by (i), and some worker holds none;
+that worker is in its loop, or in a task that ends by the hypothesis on
+the tasks, and the loop claims a call before it looks for a task as long
+as the run is open, so that it claims one as soon as the event count of
+the pool wakes it. For (iii), a thread that holds a call holds it until
+the call returns, after all the calls have begun; at that moment the $p$
+calls are held at once, by (i) on $p$ distinct threads. $\square$
+
+The calls of a run therefore wait for each other safely: a call that waits
+for another one never waits for a call that no thread begins. The lemma
+does not say that the $p$ calls always run on $p$ distinct threads. A call
+that returns while another one has not begun (a worker that finds no work
+before the others start) leaves its worker free to claim that other call
+after it, so that the two run one after the other on one thread; the
+workers of `Farm.h`, of `Mailbox.h` and of `StealingFrontier`, which wait
+for each other only through messages, a barrier or the detection of the
+termination, are correct in both cases, and lose only the parallelism of
+a worker that ended early.
 
 On the other executors the same property rests on the runtime. Thus, the team of a region of OpenMP has its $p$ threads from the start; a runtime that gives
 the region fewer threads (a run nested in a region, or a limit on the

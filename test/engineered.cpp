@@ -1624,8 +1624,8 @@ struct SameTag
 // the concurrent cuckoo table on one thread, against std::unordered_map:
 // random operations from an empty table, which grows many times; the empty
 // table and one key, a duplicate that keeps its value, insertOrAssign,
-// update, reserve and clear; keys whose hashes are all equal, which fit up
-// to 8 and then throw, leaving the table as it was; keys with the same
+// update, reserve and clear; keys whose hashes are all equal, 8 of which
+// fit in their buckets and the others in the stash; keys with the same
 // tag; a hash that is not avalanching; strings
 ADS_TEST( "concurrent-cuckoo" )
 {
@@ -1703,12 +1703,13 @@ ADS_TEST( "concurrent-cuckoo" )
   ConcurrentCuckooTable< std::uint64_t , int , SameHash > T;
   for( std::uint64_t k = 0 ; k < 8 ; ++k )
    CHECK( T.insert( k , int( k ) ) );
-  CHECK( T.size() == 8 && T.consistent() );
-  CHECK_THROWS( T.insert( 8 , 8 ) , std::length_error );
-  CHECK( T.size() == 8 && T.consistent() && ! T.contains( 8 ) );
-  for( std::uint64_t k = 0 ; k < 8 ; ++k )
+  CHECK( T.size() == 8 && T.consistent() && T.stashed() == 0 );
+  CHECK( T.insert( 8 , 8 ) && T.stashed() == 1 && T.capacity() <= 512 );
+  CHECK( T.size() == 9 && T.consistent() && T.contains( 8 ) );
+  for( std::uint64_t k = 0 ; k < 9 ; ++k )
    CHECK( T.find( k ) == int( k ) );
-  CHECK( T.erase( 3 ) && T.insert( 8 , 8 ) && T.consistent() );
+  CHECK( T.erase( 3 ) && T.erase( 8 ) && T.insert( 8 , 8 ) && T.consistent() );
+  CHECK( T.size() == 8 && ! T.contains( 3 ) );
   }
  {  // all tags equal
   ConcurrentCuckooTable< std::uint64_t , int , SameTag > T;
@@ -1906,6 +1907,128 @@ ADS_TEST( "concurrent-cuckoo-threads" )
   CHECK( bad == 0 && T.consistent() && T.size() == n - ( n + 2 ) / 3 );
   for( std::uint64_t i = 0 ; i < n ; ++i )
    CHECK( T.contains( key( i ) ) == ( i % 3 != 0 ) );
+  }
+ }
+
+// the concurrent cuckoo table on a hash of one value for every key: 8 keys
+// in their buckets and the others in the stash, at most 512 places, with
+// lookups, updates, removals and visits against std::unordered_map, the
+// keys 0 and 2^64 - 1 among them; then 4 threads that insert, look up and
+// remove keys of their own while a reader looks up keys that stay and a
+// visitor checks the pairs, each thread against its own map
+ADS_TEST( "concurrent-cuckoo-stash" )
+{
+ constexpr std::uint64_t top = std::numeric_limits< std::uint64_t >::max();
+ {
+  ConcurrentCuckooTable< std::uint64_t , std::uint64_t , SameHash > T;
+  std::unordered_map< std::uint64_t , std::uint64_t > R;
+  for( std::uint64_t k = 0 ; k < 1000 ; ++k ) {
+   const std::uint64_t key = k == 999 ? top : k;
+   CHECK( T.insert( key , 3 * k ) && R.emplace( key , 3 * k ).second );
+   }
+  CHECK( T.size() == 1000 && T.stashed() == 992 && T.consistent() );
+  CHECK( T.capacity() <= 512 && ! T.insert( 0 , 1 ) && T.find( 0 ) == 0 );
+  CHECK( T.insertOrAssign( top , 5 ) == false && T.find( top ) == 5 );
+  R[ top ] = 5;
+  CHECK( T.update( 500 , []( std::uint64_t & v ) { v += 1; } ) );
+  ++R[ 500 ];
+  std::mt19937_64 g( 47 );
+  for( int s = 0 ; s < 20000 ; ++s ) {
+   const std::uint64_t r = g() % 1200;
+   const std::uint64_t k = r == 1100 ? top : r , v = g();
+   switch( g() % 3 ) {
+    case( 0 ):
+     CHECK( T.insertOrAssign( k , v ) == R.insert_or_assign( k , v ).second );
+     break;
+    case( 1 ):
+     CHECK( T.erase( k ) == ( R.erase( k ) == 1 ) );
+     break;
+    default: {
+     const auto o = T.find( k );
+     const auto it = R.find( k );
+     CHECK( o.has_value() == ( it != R.end() ) &&
+	    T.contains( k ) == o.has_value() );
+     if( o )
+      CHECK( *o == it->second );
+     }
+    }
+   }
+  CHECK( T.size() == R.size() && T.consistent() && T.capacity() <= 512 );
+  std::size_t n = 0;
+  T.forEach( [ & ]( const std::uint64_t & k , std::uint64_t & v ) {
+   n += ( R.at( k ) == v );
+   } );
+  CHECK( n == R.size() );
+  T.reserve( 4096 );  // a doubling that places the stash again
+  CHECK( T.size() == R.size() && T.consistent() &&
+	 T.stashed() + std::min< std::size_t >( 8 , n ) == n );
+  for( const auto & [ k , v ] : R )
+   CHECK( T.find( k ) == v );
+  T.clear();
+  CHECK( T.empty() && T.stashed() == 0 && ! T.contains( 0 ) );
+  }
+ {
+  const std::uint64_t p = 4 , K = 300;
+  ConcurrentCuckooTable< std::uint64_t , std::uint64_t , SameHash > T;
+  for( std::uint64_t k = 0 ; k < 64 ; ++k )  // those that stay
+   T.insert( top - k , k );
+  std::atomic< bool > done{ false };
+  std::atomic< int > bad{ 0 };
+  std::vector< std::unordered_map< std::uint64_t , std::uint64_t > > E( p );
+  std::vector< std::thread > W;
+  for( std::uint64_t t = 0 ; t < p ; ++t )
+   W.emplace_back( [ & , t ] {
+    std::mt19937_64 g( 48 + t );
+    auto & M = E[ t ];
+    for( int s = 0 ; s < 6000 ; ++s ) {
+     const std::uint64_t k = ( g() % K ) * p + t , v = g();
+     switch( g() % 3 ) {
+      case( 0 ):
+       if( T.insertOrAssign( k , v ) != M.insert_or_assign( k , v ).second )
+	++bad;
+       break;
+      case( 1 ):
+       if( T.erase( k ) != ( M.erase( k ) == 1 ) )
+	++bad;
+       break;
+      default: {
+       const auto o = T.find( k );
+       const auto it = M.find( k );
+       if( o.has_value() != ( it != M.end() ) || ( o && *o != it->second ) )
+	++bad;
+       }
+      }
+     }
+    } );
+  std::thread reader( [ & ] {
+   for( std::uint64_t i = 0 ; ! done.load() ; i = ( i + 1 ) % 64 )
+    if( T.find( top - i ) != i )
+     ++bad;
+   } );
+  std::thread visitor( [ & ] {
+   while( ! done.load() ) {
+    std::uint64_t m = 0;
+    T.forEach( [ & ]( const std::uint64_t & k , const std::uint64_t & v ) {
+     m += ( k > top - 64 ) && ( top - k != v );
+     } );
+    if( m || ! T.consistent() )
+     ++bad;
+    std::this_thread::yield();
+    }
+   } );
+  for( auto & w : W )
+   w.join();
+  done = true;
+  reader.join();
+  visitor.join();
+  std::size_t n = 64;
+  for( const auto & M : E ) {
+   n += M.size();
+   for( const auto & [ k , v ] : M )
+    CHECK( T.find( k ) == v );
+   }
+  CHECK( bad == 0 && T.size() == n && T.consistent() );
+  CHECK( T.capacity() <= 512 );
   }
  }
 

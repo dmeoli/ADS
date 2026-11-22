@@ -117,14 +117,21 @@ void CuckooHashTable< K , V , H , A >::rebuild( std::size_t m ,
    items.push_back( std::move( c ) );
  if( extra )
   items.push_back( std::move( *extra ) );
- for( ; ; ) {
+ // at most kReseeds pairs of functions: no function separates the keys
+ // of equal hashes, which then go to new places at the end of the stash
+ for( int r = 1 ; ; ++r ) {
   f_m = m;
   f_T.assign( m + f_s , Cell() );
   draw();
   bool ok = true;
   for( std::size_t i = 0 ; ok && ( i < items.size() ) ; ++i ) {
    Cell c = items[ i ];
-   ok = settle( c );
+   if( settle( c ) )
+    continue;
+   if( r < kReseeds )
+    ok = false;
+   else
+    f_T.push_back( std::move( c ) );
    }
   if( ok )
    break;
@@ -149,9 +156,13 @@ void CuckooHashTable< K , V , H , A >::insert( const K & k , const V & v )
   if( double( f_n + 1 ) > f_maxLoad * double( f_m ) )
    rebuild( 2 * f_m , std::nullopt );  // the global rebuilding
   Cell c{ true , k , v };
-  if( ! settle( c ) ) {  // c holds the homeless key
-   ++f_rehashes;
-   rebuild( f_m , std::move( c ) );
+  if( ! settle( c ) ) {          // c holds the homeless key
+   if( f_T.size() > f_m + f_s )  // the functions have already failed
+    f_T.push_back( std::move( c ) );
+   else {
+    ++f_rehashes;
+    rebuild( f_m , std::move( c ) );
+    }
    }
   ++f_n;
   }

@@ -22,8 +22,10 @@
  * it start. A program of long-lived workers that talk to each other (the
  * workers of a parallel search, each with its own queue and its inbox)
  * needs instead `run( p , f )`, whose \f$ p \f$ calls
- * \f$ f( 0 ) , \ldots , f( p - 1 ) \f$ run at the same time on
- * \f$ p \f$ distinct threads of the executor, and a lock for the data that
+ * \f$ f( 0 ) , \ldots , f( p - 1 ) \f$ all begin, each on a thread of the
+ * executor that holds no other one, and run at the same time on
+ * \f$ p \f$ distinct threads unless one returns before the others have
+ * begun, and a lock for the data that
  * they share, `lock_type` (the concept `WorkerExecutor`), which is Lockable
  * (`try_lock()` as well, for a worker that skips a busy section):
  * `Sequential` runs one worker, the others as many as they have threads,
@@ -171,8 +173,9 @@ concept Executor =
    };
 
 /// the executors that also run long-lived workers: `run( p , f )` runs
-/// \f$ f( 0 ) , \ldots , f( p - 1 ) \f$ at the same time on \f$ p \f$
-/// distinct threads and returns when they have returned, and `lock_type`
+/// \f$ f( 0 ) , \ldots , f( p - 1 ) \f$, at the same time on \f$ p \f$
+/// distinct threads unless one returns before the others have begun, and
+/// returns when they have returned, and `lock_type`
 /// is a mutex of the executor with the semantics of the named requirement
 /// Lockable of the standard (`lock()`, `unlock()`, and `try_lock()`, which
 /// takes the lock only if it is free and never waits)

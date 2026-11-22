@@ -536,6 +536,60 @@ ADS_TEST( "cuckoo" )
 	       contract_violation );
  }
 
+// the cuckoo hashing on a hash of one value for every key, which no pair
+// of functions separates: 2 keys in their places, the others in the
+// stash, lengthened by the rebuilds, which stop after 8 pairs of functions;
+// lookups, removals and the visit against std::map, the keys 0 and the
+// largest among them, and the table no larger than its loads ask
+ADS_TEST( "cuckoo-equal-hashes" )
+{
+ struct One
+ {
+  std::size_t operator()( std::uint64_t ) const { return( 77 ); }
+  };
+ constexpr std::uint64_t top = std::numeric_limits< std::uint64_t >::max();
+ for( std::size_t s : { 0u , 4u } ) {
+  CuckooHashTable< std::uint64_t , std::uint64_t , One > T( 16 , 0.4 , s );
+  std::map< std::uint64_t , std::uint64_t > R;
+  for( std::uint64_t k = 0 ; k < 1000 ; ++k ) {
+   const std::uint64_t key = k == 999 ? top : k;
+   T.insert( key , 2 * k );
+   R[ key ] = 2 * k;
+   }
+  CHECK( T.size() == 1000 && T.stashed() >= 998 );
+  CHECK( double( T.capacity() ) <= 2 * 1000 / 0.4 );
+  CHECK( T.rehashes() <= 8 * 10 );  // at most 8 for each of 10 rebuilds
+  std::mt19937_64 g( 11 );
+  for( int op = 0 ; op < 5000 ; ++op ) {
+   const std::uint64_t r = g() % 1200;
+   const std::uint64_t k = r == 1100 ? top : r;
+   if( g() % 2 ) {
+    T.insert( k , std::uint64_t( op ) );
+    R[ k ] = std::uint64_t( op );
+    }
+   else {
+    T.remove( k );
+    R.erase( k );
+    }
+   const std::uint64_t q = g() % 1200;
+   CHECK( T.lookup( q ) == ( R.count( q )
+			       ? std::optional< std::uint64_t >( R[ q ] )
+			       : std::nullopt ) );
+   }
+  CHECK( T.size() == R.size() &&
+	 T.lookup( top ) == ( R.count( top )
+				? std::optional< std::uint64_t >( R[ top ] )
+				: std::nullopt ) );
+  std::map< std::uint64_t , std::uint64_t > I;
+  for( const auto [ k , v ] : T )
+   I[ k ] = v;
+  CHECK( I == R );
+  for( const auto & [ k , v ] : R )
+   T.remove( k );
+  CHECK( T.size() == 0 && ! T.lookup( 0 ) );
+  }
+ }
+
 // Corollary 8.3: a table of m >= 6 n ( 1 + epsilon ) places, epsilon = 0.1,
 // needs no rehash in at least half of the builds (here in almost all of
 // them); near the load 1 / 2 a stash of 4 places saves rehashes

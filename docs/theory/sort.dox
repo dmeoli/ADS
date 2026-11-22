@@ -300,10 +300,16 @@
    \le 2 e^{-2 s \varepsilon^2} . \tag{6}
  \f]
 
- The proof is in the paper of Massart. With \f$ s = 16 k \f$ and
- \f$ \varepsilon \f$ a small multiple of \f$ 1 / \sqrt{s} \f$, (6) gives every
- bucket \f$ n / k \pm 2 \varepsilon n \f$ keys with high probability, as the
- sample of samplesort does. The model evaluates the number of splitters less
+ The proof is in the paper of Massart. With \f$ s = 16 k \f$ places of
+ the sample independent and uniform (an assumption of the model, since the
+ places come from a xorshift seeded by \f$ n \f$) and
+ \f$ \varepsilon = c / \sqrt{s} \f$, (6) gives every bucket between two
+ consecutive distinct splitters at most \f$ n / k + 2 \varepsilon n \f$
+ keys with probability at least \f$ 1 - 2 e^{-2 c^2} \f$, a constant rather
+ than a high probability; the keys equal to a splitter have a bucket of
+ their own when the sample repeats a splitter, and otherwise join the
+ bucket below it, which may then hold up to \f$ 2 n / k + 2 \varepsilon n
+ \f$ keys. The model evaluates the number of splitters less
  than \f$ x \f$ by a grid of cells of equal width \f$ w \f$, a power of 2, on
  the range of the sample: the cell of \f$ x \f$ is a shift of
  \f$ x - S_{\min} \f$, each cell keeps the number of splitters before it (a

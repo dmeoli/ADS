@@ -442,6 +442,7 @@ jobs:
           ./tsan concurrent-flat-table-find-key
           ./tsan single-writer-flat-table-threads
           ./tsan concurrent-cuckoo-threads
+          ./tsan concurrent-cuckoo-stash
           if [ "$(uname -m)" = x86_64 ]; then
             g++ -std=c++20 -O1 -g -fsanitize=thread -mcx16 -Iinclude \
                 -DADS_SANITIZE_THREAD \

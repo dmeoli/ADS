@@ -509,6 +509,7 @@ engineered  mpsc-inbox           casella di molti produttori
 engineered  concurrent-cuckoo    cuckoo concorrente, su un thread
 engineered  concurrent-cuckoo-threads cuckoo concorrente, su più thread
 engineered  concurrent-cuckoo-growth cuckoo concorrente che raddoppia
+engineered  concurrent-cuckoo-stash  cuckoo concorrente, hash costante e stash
 engineered  concurrent-flat-table cammino lineare concorrente, un thread
 engineered  concurrent-flat-table-threads cammino lineare, su più thread
 engineered  concurrent-flat-table-words parole di 64 bit, CAS di 16 byte
@@ -530,10 +531,12 @@ hashing  binary-fuse           filtro binary fuse
 hashing  cuckoo-filter         filtro cuckoo, inserimenti e rimozioni
 hashing  prefix-filter         filtro prefix, dizionari tascabili e spare
 hashing  ribbon-filter         filtro Ribbon, eliminazione a bande
+hashing  filters-fingerprint-rate falsi positivi dei filtri statici, 3 sigma
 hashing  minimal-perfect-hash  hash perfetto minimo a piloti
 hashing  recsplit              hash perfetto minimo per divisione ricorsiva
 hashing  fingerprint-perfect-hash  hash perfetto minimo a impronte per livelli
 hashing  bucket-cuckoo         cuckoo a bucket di 4 posti
+hashing  bucket-cuckoo-stash   cuckoo a bucket, hash costante e stash
 hashing  grafite-filter        filtro di intervalli Grafite, query correlate
 hashing  bucketing-filter      filtro di intervalli a bucket
 # the engineered algorithms on strings, beyond the book
@@ -759,6 +762,7 @@ pearls_hashing  fks-table           sezione 8.5, tabella perfetta, due livelli
 pearls_hashing  opmphf-example      sezione 8.4, Tabella 8.1, etichettatura
 pearls_hashing  opmphf              sezione 8.4, hash perfetto minimo
 pearls_hashing  cuckoo              sezione 8.6, cuckoo hashing con stash
+pearls_hashing  cuckoo-equal-hashes sezione 8.6, hash uguali nello stash
 pearls_hashing  cuckoo-analysis     sezione 8.6, Corollario 8.3, rehash
 pearls_hashing  bloom-analysis      sezione 8.7, Tabella 8.3, falsi positivi
 pearls_hashing  spectral-bloom      sezione 8.7.3, filtri spettrali

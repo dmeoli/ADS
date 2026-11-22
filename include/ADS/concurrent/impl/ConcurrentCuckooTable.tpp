@@ -17,7 +17,7 @@
 
 #include <algorithm>
 #include <bit>
-#include <stdexcept>
+#include <mutex>
 #include <thread>
 #include <utility>
 
@@ -470,6 +470,10 @@ ConcurrentCuckooTable< K , V , H , Eq >::peek( const K & k , std::uint64_t h ,
      break;
     b = other( b1 , t , T->rg );
     }
+   // a key of the stash has the bit of overflow of b1 set [see stashPut()]
+   if( ! found && overflowed( *T , b1 , t ) &&
+       ( f_xn.load( std::memory_order_acquire ) != 0 ) )
+    found = fromStash( k , out ? &x : nullptr );
    // the reads above acquire [see loadAcquire()]: one that saw a store of
    // a writer makes its odd version seen here
    if( s.version.load( std::memory_order_relaxed ) == v ) {
@@ -496,10 +500,58 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::lockedFind( const K & k ,
  Hold g( f_L[ b1 >> T->rg ] );
  const std::size_t i = locate( *T , k , t , b1 , other( b1 , t , T->rg ) );
  if( i == ~std::size_t( 0 ) )
-  return( false );
+  return( fromStash( k , out ) );
  if( out )
   *out = T->S( i ).value;
  return( true );
+ }
+
+/*------------------------------- THE STASH --------------------------------*/
+
+template< class K , class V , class H , class Eq >
+bool ConcurrentCuckooTable< K , V , H , Eq >::fromStash( const K & k ,
+						      V * out ) const
+{
+ // empty but for degenerate hashes; a pair enters it under all the locks,
+ // that of the region of k among them
+ if( f_xn.load( std::memory_order_acquire ) == 0 ) [[likely]]
+  return( false );
+ std::lock_guard< std::mutex > g( f_xm );
+ for( const Slot & x : f_X )
+  if( f_eq( x.key , k ) ) {
+   if( out )
+    *out = x.value;
+   return( true );
+   }
+ return( false );
+ }
+
+template< class K , class V , class H , class Eq >
+template< class F >
+bool ConcurrentCuckooTable< K , V , H , Eq >::inStash( const K & k , F && f )
+{
+ if( f_xn.load( std::memory_order_acquire ) == 0 ) [[likely]]
+  return( false );
+ std::lock_guard< std::mutex > g( f_xm );
+ for( std::size_t j = 0 ; j < f_X.size() ; ++j )
+  if( f_eq( f_X[ j ].key , k ) ) {
+   f( j );
+   return( true );
+   }
+ return( false );
+ }
+
+template< class K , class V , class H , class Eq >
+void ConcurrentCuckooTable< K , V , H , Eq >::stashPut( Table & T ,
+						     std::uint64_t h ,
+						     Slot && x )
+{
+ // the bit of overflow of the first bucket set before the pair enters the
+ // stash, so that a lookup without locks reads it [see peek()]
+ markOverflow( T , first( h , T.lg ) , tag( h ) );
+ std::lock_guard< std::mutex > g( f_xm );
+ f_X.push_back( std::move( x ) );
+ f_xn.store( f_X.size() , std::memory_order_release );
  }
 
 template< class K , class V , class H , class Eq >
@@ -622,6 +674,11 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::add( const K & k , const V & v ,
      this->assign( *T , i , v );
     return( false );
     }
+   if( inStash( k , [ & ]( std::size_t j ) {
+	if( assign )
+	 f_X[ j ].value = v;
+        } ) )
+    return( false );
    const std::int64_t n = s.count.load( std::memory_order_relaxed );
    const std::size_t r = room( *T , h , n );
    if( r != ~std::size_t( 0 ) ) {
@@ -631,7 +688,8 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::add( const K & k , const V & v ,
     return( true );
     }
    }
-  grow( lg );
+  if( const int r = grow( lg , h , k , v , assign ); r >= 0 )
+   return( r == 1 );
   }
  }
 
@@ -715,7 +773,7 @@ void ConcurrentCuckooTable< K , V , H , Eq >::rehash( int lg , HoldAll & g )
  // the old table is cut in parts of whole regions, at least 4096 buckets,
  // which the threads that wait for a lock claim and migrate with this one
  // (the cooperative migration of Maier et al.); the pairs that find no
- // place (rare), with those placed, go to a table twice as large
+ // place (rare) go to the stash
  Table & O = *f_cur;
  auto N = std::make_unique< Table >( lg , false );
  const std::size_t S = std::min(
@@ -738,19 +796,29 @@ void ConcurrentCuckooTable< K , V , H , Eq >::rehash( int lg , HoldAll & g )
    detail::spinPause();
   else
    std::this_thread::yield();
- std::vector< Slot > P;
+ // the pairs left by the parts and those of the stash placed again; those
+ // that find no place go to the new stash, with the bit of overflow of
+ // their first bucket set
+ std::vector< Slot > P , R;
  P.swap( f_left );
- bool counted = P.empty();
- while( ! P.empty() ) {
-  for( std::size_t j = 0 ; j < ( N->buckets() << 2 ) ; ++j )
-   if( ( N->T[ j >> 2 ] >> ( 8 * ( j & 3 ) ) ) & 0xFF )
-    P.push_back( std::move( N->S( j ) ) );
-  N = std::make_unique< Table >( ++lg );
-  std::vector< Slot > R;
-  for( Slot & x : P )
-   if( ! R.empty() || ! placeInto( *N , hash( x.key ) , std::move( x ) ) )
-    R.push_back( std::move( x ) );
-  P.swap( R );
+ {
+  std::lock_guard< std::mutex > l( f_xm );
+  for( Slot & x : f_X )
+   P.push_back( std::move( x ) );
+  f_X.clear();
+  }
+ const bool counted = P.empty();
+ for( Slot & x : P ) {
+  const std::uint64_t hx = hash( x.key );
+  if( ! placeInto( *N , hx , std::move( x ) ) ) {
+   markOverflow( *N , first( hx , N->lg ) , tag( hx ) );
+   R.push_back( std::move( x ) );
+   }
+  }
+ {
+  std::lock_guard< std::mutex > l( f_xm );
+  f_X.swap( R );
+  f_xn.store( f_X.size() , std::memory_order_release );
   }
  g.extend( lg );                              // before the table is seen
  for( std::size_t s = 0 ; s < g.held() ; ++s )  // the pairs per region
@@ -772,19 +840,46 @@ void ConcurrentCuckooTable< K , V , H , Eq >::rehash( int lg , HoldAll & g )
  }
 
 template< class K , class V , class H , class Eq >
-void ConcurrentCuckooTable< K , V , H , Eq >::grow( int lg )
+int ConcurrentCuckooTable< K , V , H , Eq >::grow( int lg , std::uint64_t h ,
+						const K & k , const V & v ,
+						bool assign )
 {
  HoldAll g( *this );
  if( f_cur->lg != lg )
-  return;  // another thread doubled it
+  return( -1 );  // another thread doubled it
  std::int64_t n = 0;
  for( std::size_t s = 0 ; s < g.held() ; ++s )
   n += f_L[ s ].count.load( std::memory_order_relaxed );
  const std::size_t places = f_cur->buckets() << 2;
- if( ( places >= 256 ) && ( 16 * std::size_t( n ) < places ) )
-  throw( std::length_error( "ConcurrentCuckooTable::grow: more than 8 "
-			    "keys share both their buckets" ) );
- rehash( lg + 1 , g );
+ if( ( places < 256 ) || ( 16 * std::size_t( n ) >= places ) ) {
+  rehash( lg + 1 , g );
+  return( -1 );
+  }
+ // more than 8 keys share both buckets: k in the stash, unless another
+ // thread put it in or made room for it since its lock was released
+ Table & T = *f_cur;
+ const std::uint32_t t = tag( h );
+ const std::size_t b1 = first( h , T.lg ) , b2 = other( b1 , t , T.rg );
+ if( const std::size_t i = locate( T , k , t , b1 , b2 , false );
+     i != ~std::size_t( 0 ) ) {
+  if( assign )
+   this->assign( T , i , v );
+  return( 0 );
+  }
+ if( inStash( k , [ & ]( std::size_t j ) {
+      if( assign )
+       f_X[ j ].value = v;
+      } ) )
+  return( 0 );
+ Stripe & s = f_L[ b1 >> T.rg ];
+ const std::int64_t m = s.count.load( std::memory_order_relaxed );
+ if( const std::size_t r = room( T , h , m ); r != ~std::size_t( 0 ) ) {
+  put( T , r >> 2 , int( r & 3 ) , t , k , v );
+  s.count.store( m + 1 , std::memory_order_relaxed );
+  return( 1 );
+  }
+ stashPut( T , h , Slot{ k , v } );
+ return( 1 );
  }
 
 /*------------------------------ THE INTERFACE -----------------------------*/
@@ -814,7 +909,9 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::update( const K & k , F && f )
  Hold g( f_L[ b1 >> T->rg ] );
  const std::size_t i = locate( *T , k , t , b1 , other( b1 , t , T->rg ) );
  if( i == ~std::size_t( 0 ) )
-  return( false );
+  return( inStash( k , [ & ]( std::size_t j ) {
+   std::invoke( std::forward< F >( f ) , f_X[ j ].value );
+   } ) );
  if constexpr( optimistic ) {  // a copy, stored atomically
   V x = T->S( i ).value;
   std::invoke( std::forward< F >( f ) , x );
@@ -837,8 +934,12 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::erase( const K & k )
  Stripe & s = f_L[ b1 >> T->rg ];
  Hold g( s );
  const std::size_t i = locate( *T , k , t , b1 , b2 , false );
- if( i == ~std::size_t( 0 ) )
-  return( false );
+ if( i == ~std::size_t( 0 ) )  // the bit of overflow of b1 stays
+  return( inStash( k , [ & ]( std::size_t j ) {
+   f_X[ j ] = std::move( f_X.back() );
+   f_X.pop_back();
+   f_xn.store( f_X.size() , std::memory_order_release );
+   } ) );
  clearPlace( *T , i );
  s.count.store( s.count.load( std::memory_order_relaxed ) - 1 ,
 		std::memory_order_relaxed );
@@ -852,7 +953,7 @@ std::size_t ConcurrentCuckooTable< K , V , H , Eq >::size( void ) const
  // the counters of the regions in use, the only ones not 0
  const int lg = f_lg.load( std::memory_order_relaxed );
  const std::size_t m = std::size_t( 1 ) << ( lg - regionLg( lg ) );
- std::int64_t n = 0;
+ std::int64_t n = std::int64_t( f_xn.load( std::memory_order_relaxed ) );
  for( std::size_t s = 0 ; s < m ; ++s )
   n += f_L[ s ].count.load( std::memory_order_relaxed );
  return( n > 0 ? std::size_t( n ) : 0 );
@@ -874,6 +975,12 @@ template< class K , class V , class H , class Eq >
 std::size_t ConcurrentCuckooTable< K , V , H , Eq >::rehashes( void ) const
 {
  return( f_rehashes.load( std::memory_order_relaxed ) );
+ }
+
+template< class K , class V , class H , class Eq >
+std::size_t ConcurrentCuckooTable< K , V , H , Eq >::stashed( void ) const
+{
+ return( f_xn.load( std::memory_order_relaxed ) );
  }
 
 template< class K , class V , class H , class Eq >
@@ -900,6 +1007,9 @@ void ConcurrentCuckooTable< K , V , H , Eq >::clear( void )
    T.S( i ) = Slot{};
  for( std::size_t s = 0 ; s < g.held() ; ++s )
   f_L[ s ].count.store( 0 , std::memory_order_relaxed );
+ std::lock_guard< std::mutex > l( f_xm );
+ f_X.clear();
+ f_xn.store( 0 , std::memory_order_release );
  }
 
 template< class K , class V , class H , class Eq >
@@ -918,6 +1028,9 @@ void ConcurrentCuckooTable< K , V , H , Eq >::forEach( F && f )
    else
     f( std::as_const( T.S( i ).key ) , T.S( i ).value );
    }
+ std::lock_guard< std::mutex > l( f_xm );  // a lookup may read the stash
+ for( Slot & x : f_X )
+  f( std::as_const( x.key ) , x.value );
  }
 
 template< class K , class V , class H , class Eq >
@@ -929,6 +1042,9 @@ void ConcurrentCuckooTable< K , V , H , Eq >::forEach( F && f ) const
  for( std::size_t i = 0 ; i < ( T.buckets() << 2 ) ; ++i )
   if( ( T.T[ i >> 2 ] >> ( 8 * ( i & 3 ) ) ) & 0xFF )
    f( T.S( i ).key , T.S( i ).value );
+ std::lock_guard< std::mutex > l( f_xm );
+ for( const Slot & x : f_X )
+  f( x.key , x.value );
  }
 
 template< class K , class V , class H , class Eq >
@@ -965,6 +1081,24 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::consistent( void ) const
  for( std::size_t s = 0 ; s < g.held() ; ++s )  // each region counted
   if( n[ s ] != f_L[ s ].count.load( std::memory_order_relaxed ) )
    return( false );
+ // the stash: counted, each key once, in neither of its buckets, and with
+ // the bit of overflow of the first set
+ std::lock_guard< std::mutex > l( f_xm );
+ if( f_xn.load( std::memory_order_relaxed ) != f_X.size() )
+  return( false );
+ for( std::size_t j = 0 ; j < f_X.size() ; ++j ) {
+  const K & k = f_X[ j ].key;
+  const std::uint64_t h = hash( k );
+  const std::uint32_t t = tag( h );
+  const std::size_t b1 = first( h , T.lg );
+  if( ( locate( T , k , t , b1 , other( b1 , t , T.rg ) , false ) !=
+	~std::size_t( 0 ) ) ||
+      ! overflowed( T , b1 , t ) )
+   return( false );
+  for( std::size_t i = j + 1 ; i < f_X.size() ; ++i )
+   if( f_eq( f_X[ i ].key , k ) )
+    return( false );
+  }
  return( true );
  }
 

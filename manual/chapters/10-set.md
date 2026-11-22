@@ -1692,14 +1692,31 @@ a fixed value equals its fingerprint.
 <span id="lem-10-17"></span>**Lemma 10.17.** *Let a filter answer
 $\mathrm{maybe}( x )$ by testing whether a value $v( x )$, computed from
 the cells of the filter at places given by the hash of $x$, equals a
-fingerprint $f( x )$ of $b$ bits of the hash, independent of the places.
-If the filter satisfies the equations of the keys of $S$, it has no false
-negative, and its false positive rate is $2^{-b}$.*
+fingerprint $f( x )$ of $b$ bits, and let $f( x )$, for a key $x$ out of
+$S$, be uniform on the $2^b$ values and independent of the places of $x$
+and of the cells. If the filter satisfies the equations of the keys of
+$S$, it has no false negative, and its false positive rate is $2^{-b}$.*
 
 *Proof.* A key of $S$ meets its equation by construction. For a key out of
 $S$, the value $v( x )$ is determined by the cells and the places, and the
 fingerprint is uniform on the $2^b$ values and independent of them; hence
 the two are equal with probability $2^{-b}$. $\square$
+
+The hypothesis is one of the model, since the places and the fingerprint
+are functions of the same hash of 64 bits: in `RibbonFilter` the
+coefficients $( h a \bmod 2^{64} ) \vee 1$, for an odd $a$, fix $h$ but
+for one bit, and no function of $h$ is then independent of them. Both
+filters therefore take the fingerprint from the high $b$ bits of the
+product of $h$ by another odd constant, which depend on every bit of $h$
+through the carries, and neither on a group of bits that gives a place (as
+the bits $0 , \ldots , b - 1$ and $32 , \ldots , 31 + b$ of
+$h \oplus ( h \gg 32 )$ would, which overlap the bits of $h_1$ and $h_2$ of
+the binary fuse filter once $L \ge 2^{15}$) nor linearly on the
+coefficients, and the mixes are modelled as independent random functions.
+The test `hashing.filters-fingerprint-rate` checks the consequence on
+$10^6$ keys and $10^6$ keys out of $S$ for both filters and both widths:
+the false positives stay within 3 standard deviations of
+$10^6 \cdot 2^{-b}$.
 
 **The binary fuse filter.** `BinaryFuseFilter` is the filter of [Graf and
 Lemire 2022](Z-bibliography.md#ref-graf2022), the successor of their xor

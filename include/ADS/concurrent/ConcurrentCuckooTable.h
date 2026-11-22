@@ -126,11 +126,24 @@
  * that the fullest region of a large table reaches 0.98 at a mean load of
  * about 0.88 to 0.92 (the restriction of the choices to a part of the
  * table, there a page, is also in Dietzfelbinger, Mitzenmacher and Rink).
- * The doublings cost \f$ O( 1 ) \f$ amortized per insertion. A doubling
- * that would leave the table of at least 256 places less than 1/16 full
- * throws `std::length_error`, which happens only when more than 8 keys
- * share both buckets at every size, e.g., by equal hashes; the table is
- * unchanged.
+ * The doublings cost \f$ O( 1 ) \f$ amortized per insertion.
+ *
+ * A doubling that would leave a table of at least 256 places less than
+ * 1/16 full is not made, since the key that finds no place then shares
+ * both buckets with 8 others at every size (e.g., by equal hashes): the key
+ * goes instead to a stash (Kirsch, Mitzenmacher and Wieder), a vector of
+ * pairs under a mutex of its own, after the bit of overflow of its first
+ * bucket is set, so that the lookups without locks treat it as a key in its
+ * other bucket and then read the stash, under its mutex, inside the read of
+ * the version. A pair enters the stash only under all the locks, and
+ * leaves it or changes there under the lock of its region and the mutex;
+ * a doubling places the pairs of the stash again with the others, and
+ * those that find no place, as those that a doubling cannot place, go to
+ * the new stash. The table thus has at most
+ * \f$ \max( P_0 , 512 , 32 n ) \f$ places, \f$ P_0 \f$ those of the empty
+ * table and \f$ n \f$ the most pairs it has held in its buckets, and a
+ * lookup reads the stash only while it is not empty, which it is with any
+ * but a degenerate hash.
  *
  * Each region counts its pairs, under its lock, so that `size()` is the sum
  * of \f$ P \f$ counters read without locks: exact when no operation runs,
@@ -148,9 +161,10 @@
  *
  * The contracts [see `Contract.h`]: the invariant is that each key is in
  * one of its two buckets with its tag, and in the second only with its
- * bit of overflow set in the first, checked on the buckets of the key of
- * the operation under its lock; `consistent()` checks it on every pair,
- * with the counters of the regions, under all the locks. No postcondition
+ * bit of overflow set in the first, or in the stash with that bit set,
+ * checked on the buckets of the key of the operation under its lock;
+ * `consistent()` checks it on every pair, with the counters of the regions
+ * and of the stash, under all the locks. No postcondition
  * is stated on the key of an operation, since another thread may change
  * it as soon as the lock is released. The operations are defined in
  * `ConcurrentCuckooTable.tpp`.
@@ -181,6 +195,9 @@
  *      data-intensive computing, Proceedings of USENIX ATC 2016, 281-294,
  *      2016,
  *      www.usenix.org/conference/atc16/technical-sessions/presentation/breslow
+ * \see A. Kirsch, M. Mitzenmacher, U. Wieder, More robust hashing: cuckoo
+ *      hashing with a stash, SIAM Journal on Computing 39(4), 1543-1561,
+ *      2009, doi:10.1137/080728743 (the stash)
  * \see T. Maier, P. Sanders, R. Dementiev, Concurrent hash tables: fast
  *      and general(?)!, ACM Transactions on Parallel Computing 5(4), 16,
  *      2019, doi:10.1145/3309206
@@ -215,6 +232,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <type_traits>
 #include <vector>
@@ -273,13 +291,14 @@ class ConcurrentCuckooTable
  ///     \text{ is no longer in use}\ \textbf{then}\ \text{a pause};
  ///     \ \textbf{continue} \cr
  /// 9 & \qquad\quad x \gets \text{the value of the place of } b_1
- ///     \text{, or of } b_2 \text{ if that bit is set, with the tag } t
- ///     \text{ and the key } k \text{, or}\textbf{ nil}\quad
- ///     \triangleright\ \text{acquire} \cr
+ ///     \text{, or of } b_2 \text{ or of the stash if that bit is set, with}
+ ///     \text{ the tag } t \text{ and the key } k \text{, or}\textbf{ nil}
+ ///     \quad \triangleright\ \text{acquire} \cr
  /// 10 & \qquad\quad \textbf{if}\ v_R = v\ \textbf{then return}\ x \cr
  /// 11 & \quad \text{lock the region of } h \text{ in the table in use} \cr
  /// 12 & \quad \textbf{return}\ \text{the value of } k \text{ in } b_1 , b_2
- ///     \text{, or}\ \textbf{nil}\quad \triangleright\ \text{and unlock}
+ ///     \text{ or the stash, or}\ \textbf{nil}\quad \triangleright
+ ///     \ \text{and unlock}
  /// \end{array}}
  /// \f]
  [[nodiscard]] std::optional< V > find( const K & k ) const;
@@ -302,8 +321,9 @@ class ConcurrentCuckooTable
  ///     \text{ } R \text{ of } h \cr
  /// 5 & \qquad b_1 \gets \text{the top bits of } h;\ b_2 \gets b_1 \oplus (
  ///     g( t ) \text{ in } R ) \cr
- /// 6 & \qquad \textbf{if}\ k \text{ is in } b_1 \text{ or } b_2
- ///     \ \textbf{then}\ \text{unlock};\ \textbf{return false} \cr
+ /// 6 & \qquad \textbf{if}\ k \text{ is in } b_1 \text{, in } b_2 \text{ or}
+ ///     \text{ in the stash}\ \textbf{then}\ \text{unlock};\ \textbf{return
+ ///     false} \cr
  /// 7 & \qquad p \gets \text{a free place of } b_1 \text{, else of } b_2
  ///     \text{ after the bit of overflow of } b_1 \text{ for } t \cr
  /// 8 & \qquad \textbf{if}\ p = \textbf{nil}\ \textbf{and}\ n_R + 1 \le
@@ -313,7 +333,8 @@ class ConcurrentCuckooTable
  /// 10 & \qquad\quad \text{put } ( k , v ) \text{ in } p \text{ with the}
  ///     \text{ tag } t;\ n_R \gets n_R + 1;\ \text{unlock};
  ///     \textbf{return true} \cr
- /// 11 & \qquad \text{unlock};\ \mathrm{grow}( T ) \cr
+ /// 11 & \qquad \text{unlock};\ \textbf{if}\ \mathrm{grow}( T , k , v )
+ ///     \ \textbf{then return true} \cr
  /// 12 & \textbf{function}\ \mathrm{makeRoom}( T , h ) \cr
  /// 13 & \quad Q \gets \text{a queue of the buckets } b_1 , b_2 \text{ of }
  ///     h \text{ at the depth } 0 \cr
@@ -336,21 +357,31 @@ class ConcurrentCuckooTable
  ///     \ \textbf{and}\ |Q| \text{ in all} < 1024\ \textbf{then}
  ///     \ \mathrm{enqueue}( Q , c ) \cr
  /// 24 & \quad \textbf{return nil} \cr
- /// 25 & \textbf{procedure}\ \mathrm{grow}( T ) \cr
+ /// 25 & \textbf{function}\ \mathrm{grow}( T , k , v ) \cr
  /// 26 & \quad \text{lock all the stripes in use, in increasing order} \cr
- /// 27 & \quad \textbf{if}\ T \text{ is still in use}\ \textbf{then} \cr
- /// 28 & \qquad \textbf{if}\ 4 B \ge 256\ \textbf{and}\ 16 n < 4 B
- ///     \ \textbf{then}\ \text{throw}\quad \triangleright\ \text{too many}
- ///     \text{ equal hashes} \cr
- /// 29 & \qquad T' \gets \text{a table of } 2 B \text{ buckets; place each}
+ /// 27 & \quad \textbf{if}\ T \text{ is not in use}\ \textbf{then}
+ ///     \ \text{unlock all};\ \textbf{return false} \cr
+ /// 28 & \quad \textbf{if}\ 4 B \ge 256\ \textbf{and}\ 16 n < 4 B
+ ///     \ \textbf{then}\quad \triangleright\ \text{too many equal hashes}
+ ///     \cr
+ /// 29 & \qquad \textbf{if}\ k \text{ is not in } T \text{ nor in the}
+ ///     \text{ stash, and finds no place in } T \textbf{ then} \text{ set}
+ ///     \text{ its bit of overflow in } b_1 \cr
+ /// 30 & \qquad\quad \text{put } ( k , v ) \text{ in the stash, under its}
+ ///     \text{ mutex} \cr
+ /// 31 & \qquad \textbf{else if}\ k \text{ is not there}\ \textbf{then}
+ ///     \ \text{put } ( k , v ) \text{ in its place} \cr
+ /// 32 & \qquad \text{unlock all};\ \textbf{return true} \cr
+ /// 33 & \quad T' \gets \text{a table of } 2 B \text{ buckets; place each}
  ///     \text{ pair of } T \text{ in } T' \text{, with the threads that}
- ///     \text{ wait for a lock, each on its parts of } T \text{, doubling }
- ///     T' \cr
- /// 30 & \qquad \text{again if one finds no place};\ \text{lock the new}
- ///     \text{ stripes too} \cr
- /// 31 & \qquad \text{count the pairs of each region};\ \text{make } T'
- ///     \text{ the table in use}\quad \triangleright\ \text{release} \cr
- /// 32 & \quad \text{unlock all}
+ ///     \text{ wait for a lock, each on its parts of } T \cr
+ /// 34 & \quad \text{place the pairs of the stash in } T' \text{; those}
+ ///     \text{ that find no place, there and in the parts, go to the new}
+ ///     \text{ stash} \cr
+ /// 35 & \quad \text{lock the new stripes too};\ \text{count the pairs of}
+ ///     \text{ each region};\ \text{make } T' \text{ the table in use}\quad
+ ///     \triangleright\ \text{release} \cr
+ /// 36 & \quad \text{unlock all};\ \textbf{return false}
  /// \end{array}}
  /// \f]
  bool insert( const K & k , const V & v );
@@ -371,8 +402,9 @@ class ConcurrentCuckooTable
  /// 1 & \textbf{function}\ \mathrm{update}( k , f ) \cr
  /// 2 & \quad \text{lock the region of } h = \mathrm{hash}( k ) \text{ in }
  ///     \text{the table in use} \cr
- /// 3 & \quad \textbf{if}\ k \text{ is not in its buckets}\ \textbf{then}
- ///     \ \text{unlock};\ \textbf{return false} \cr
+ /// 3 & \quad \textbf{if}\ k \text{ is not in its buckets nor in the}
+ ///     \text{ stash}\ \textbf{then}\ \text{unlock};\ \textbf{return false}
+ ///     \cr
  /// 4 & \quad x \gets \text{the value of } k;\ f( x );\ \text{store } x
  ///     \text{ as the value of } k\quad \triangleright\ \text{atomically if}
  ///     \text{ optimistic} \cr
@@ -390,16 +422,19 @@ class ConcurrentCuckooTable
  /// 1 & \textbf{function}\ \mathrm{erase}( k ) \cr
  /// 2 & \quad \text{lock the region } R \text{ of } h = \mathrm{hash}( k )
  ///     \text{ in the table in use} \cr
- /// 3 & \quad \textbf{if}\ k \text{ is not in its buckets}\ \textbf{then}
+ /// 3 & \quad \textbf{if}\ k \text{ is in the stash}\ \textbf{then}
+ ///     \ \text{take it out, under its mutex};\ \text{unlock};
+ ///     \ \textbf{return true} \cr
+ /// 4 & \quad \textbf{if}\ k \text{ is not in its buckets}\ \textbf{then}
  ///     \ \text{unlock};\ \textbf{return false} \cr
- /// 4 & \quad \text{set the tag of its place to } 0;\ n_R \gets n_R - 1 \cr
- /// 5 & \quad \text{unlock};\ \textbf{return true}
+ /// 5 & \quad \text{set the tag of its place to } 0;\ n_R \gets n_R - 1 \cr
+ /// 6 & \quad \text{unlock};\ \textbf{return true}
  /// \end{array}}
  /// \f]
  bool erase( const K & k );
 
- /// the number of the pairs, the sum of the counters of the regions, exact
- /// when no operation runs
+ /// the number of the pairs, the sum of the counters of the regions and of
+ /// the stash, exact when no operation runs
  [[nodiscard]] std::size_t size( void ) const;
 
  /// whether `size()` is 0
@@ -410,6 +445,9 @@ class ConcurrentCuckooTable
 
  /// the number of the doublings of the table so far
  [[nodiscard]] std::size_t rehashes( void ) const;
+
+ /// the pairs in the stash, 0 but for degenerate hashes
+ [[nodiscard]] std::size_t stashed( void ) const;
 
  /// room for \f$ n \f$ pairs before the table grows: the buckets doubled,
  /// under all the locks, up to the power of 2 at least \f$ n / 3.6 \f$
@@ -426,8 +464,8 @@ class ConcurrentCuckooTable
  template< class F >
  void forEach( F && f ) const;
 
- /// each key in one of its two buckets with its tag and once, and the
- /// counters summing to the pairs; under all the locks
+ /// each key once in one of its two buckets with its tag or in the stash,
+ /// and the counters summing to the pairs; under all the locks
  [[nodiscard]] bool consistent( void ) const;
 
 /*--------------------------------------------------------------------------*/
@@ -707,8 +745,24 @@ class ConcurrentCuckooTable
  /// under the locks g, extended to the new regions
  void rehash( int lg , HoldAll & g );
 
- /// the table doubled, unless it is no more of 2^lg buckets
- void grow( int lg );
+ /// the table doubled, unless it is no more of 2^lg buckets (then -1), or,
+ /// if that would leave it less than 1/16 full, k with the hash h put in
+ /// the stash (then 1) unless it is there (then 0, and its value v if
+ /// assign) or finds a place
+ int grow( int lg , std::uint64_t h , const K & k , const V & v ,
+	   bool assign );
+
+ /// whether k is in the stash, with its value in out if not nil
+ bool fromStash( const K & k , V * out ) const;
+
+ /// f( j ) applied, under the mutex of the stash, to the place j of k in
+ /// the stash, if k is there; true if it is
+ template< class F >
+ bool inStash( const K & k , F && f );
+
+ /// the pair x with the hash h in the stash, the bit of overflow of its
+ /// first bucket in T set first; under all the locks
+ void stashPut( Table & T , std::uint64_t h , Slot && x );
 
  /// the keys of the bucket b of T in it with their tags
  [[nodiscard]] bool inBucket( const Table & T , std::size_t b ) const;
@@ -734,6 +788,9 @@ class ConcurrentCuckooTable
  mutable std::vector< Slot > f_left;               ///< the pairs that found
 						   ///< no place
  mutable std::atomic< bool > f_leftLock{ false };  ///< the lock of f_left
+ mutable std::mutex f_xm;                          ///< the lock of the stash
+ std::vector< Slot > f_X;                          ///< the stash
+ std::atomic< std::size_t > f_xn{ 0 };             ///< the pairs in f_X
  H f_h;
  Eq f_eq;
 

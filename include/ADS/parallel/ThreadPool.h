@@ -55,17 +55,19 @@
  * a thread outside the pool takes the place of the \f$ p \f$-th, one at a
  * time (the others wait for it on a mutex).
  *
- * `run( p , f )` runs the \f$ p \f$ calls of long-lived workers at the
- * same time on \f$ p \f$ distinct threads (see
- * \ref theory_parallel_workers): the caller runs \f$ f( 0 ) \f$ (the call
- * in which `isRunCaller()` holds), and the other calls are claimed one
- * each, under a mutex, by the workers that are idle in their loop, never
- * by a thread that waits inside a call and steals
- * (a worker that waited for a nested job and took a call of a worker would
- * hold it under its own, which may wait for it forever). A run is the only
- * one of the pool for its time; while it lasts the workers that are not
- * among its \f$ p - 1 \f$ keep running the tasks, the nested jobs of the
- * calls among them.
+ * `run( p , f )` runs the \f$ p \f$ calls of long-lived workers (see
+ * \ref theory_parallel_workers): the caller runs \f$ f( 0 ) \f$ (the call in
+ * which `isRunCaller()` holds), and the other calls are claimed one at a time,
+ * under a mutex, by the workers that are idle in their loop, never by a thread
+ * that waits inside a call and steals (a worker that waited for a nested job
+ * and took a call of a worker would hold it under its own, which may wait for
+ * it forever). No thread holds two calls at once and every call begins while
+ * the others wait, so that calls that do not return before all have begun
+ * (e.g., that meet at a barrier) run at the same time on \f$ p \f$ distinct
+ * threads; a call that returns earlier may leave its worker to claim another
+ * call after it. A run is the only one of the pool for its time; while it
+ * lasts the workers that are not among its \f$ p - 1 \f$ keep running the
+ * tasks, the nested jobs of the calls among them.
  *
  * With work \f$ W \f$ and depth \f$ D \f$, the work stealing runs in
  * expected time \f$ W / p + O( D ) \f$ (Blumofe and Leiserson), and a job of
@@ -237,8 +239,9 @@ class ThreadPool
  using lock_type = std::mutex;
 
  /// the calls \f$ f( 0 ) , \ldots , f( p - 1 ) \f$ of long-lived workers,
- /// at the same time on \f$ p \f$ distinct threads of the pool, returning
- /// when all have returned
+ /// each begun by a thread of the pool that holds no other one, and all at
+ /// the same time on \f$ p \f$ distinct threads if none returns before all
+ /// have begun; returns when all have returned
  ///
  /// In pseudocode (beyond the book), \f$ c \f$ the next call to claim and
  /// \f$ d \f$ the calls of the workers returned:

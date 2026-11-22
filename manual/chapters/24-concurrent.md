@@ -1005,6 +1005,7 @@ class ConcurrentCuckooTable
  bool empty( void ) const;
  std::size_t capacity( void ) const;
  std::size_t rehashes( void ) const;
+ std::size_t stashed( void ) const;
  void reserve( std::size_t n );
  void clear( void );
  template< class F >
@@ -1055,7 +1056,10 @@ without locks and one on the doubling.
 `ConcurrentCuckooTable` cannot deadlock.*
 
 *Proof.* An operation on a key holds one lock and waits for no other while
-it holds it. The operations that take more than one lock take all those in
+it holds it but the mutex of the stash, which is innermost: a thread takes
+it holding no lock, the lock of one region or all the locks, and while it
+holds it waits for no other lock, so that no cycle of waits goes through
+it. The operations that take more than one lock take all those in
 use in increasing order, from the stripe 0, and the doubling takes the
 locks of the new regions in the same order, before the new table is seen.
 Hence a thread that holds the lock $i$ and waits for the lock $j$ has
@@ -1172,10 +1176,24 @@ of the choices to a part of the table (there, a page) is also
 studied by [Dietzfelbinger, Mitzenmacher and Rink
 2011](Z-bibliography.md#ref-dietzfelbinger2011). The cost of the doublings is in [Lemma 24.14](24-concurrent.md#lem-24-14)
 below. A doubling that
-would leave a table of at least 256 places less than 1/16 full throws
-`std::length_error`, which happens only when more than 8 keys share both
-buckets at every size (e.g., by equal hashes), and leaves the table
-unchanged.
+would leave a table of at least 256 places less than 1/16 full is not
+made, since the key that finds no place then shares both buckets with 8
+others at every size (e.g., by equal hashes). The key goes instead to a
+*stash* ([Kirsch et al. 2009](Z-bibliography.md#ref-kirsch2009)), a
+vector of pairs under a mutex of its own, after the bit of overflow of its
+first bucket for its tag is set (see below), as for the stash of
+`BucketCuckooTable` in [§7.7](07-dictionary.md#sec-7-7). A pair enters the
+stash only under all the locks, and leaves it or changes there under the
+lock of its region and the mutex; a lookup reads the stash, under the
+mutex, only after its two buckets and only while the stash is not empty,
+which it is with any but a degenerate hash (a lookup without locks also
+only when that bit is set, and within its two reads of the version). A doubling places
+the pairs of the stash again with the others, and those that find no
+place, as those that the parts of a doubling cannot place, go to the new
+stash. The table thus has at most $\max( P_0 , 512 , 32 n )$ places, $P_0$
+those of the empty table and $n$ the most pairs that its buckets have
+held, since it doubles only when it is fuller than $1 / 16$ or smaller
+than 256 places.
 
 Each bucket has 4 bits of *overflow*, in a vector of their own of $B / 2$
 bytes, i.e., $1 / 8$ of the tags. The bit $j$ of the bucket $b$ is set
@@ -1260,7 +1278,8 @@ keys: a doubling halves the load, to at most $0.49$, and with random hashes
 the fullest region of a large table reaches $0.98$ only at a mean load of
 about $0.88$ (see above), i.e., after about $0.39 \cdot 4 B$ insertions,
 while keys that share both buckets make the doublings come with no
-insertion, until the table throws `std::length_error`.
+insertion, until the table is less than $1 / 16$ full and the keys go to
+the stash.
 
 Also, besides these operations, `contains( k )` is the
 lookup that returns only whether $k$ is there, `insertOrAssign( k , v )`

@@ -1718,23 +1718,57 @@ $$
 *Proof.* The proof is in [Massart 1990](Z-bibliography.md#ref-massart1990).
 $\square$
 
-<span id="lem-12-30"></span>**Lemma 12.30.** *Let the $s$ keys of the
-sample be drawn independently and uniformly from the $n$ keys of the input,
-and let the splitters be the quantiles $i / k$ of the sample. Then, with
-probability at least $1 - 2 e^{-2 s \varepsilon^2}$, each bucket holds at
-most $( 1 / k + 2 \varepsilon ) n$ keys.*
+<span id="lem-12-30"></span>**Lemma 12.30.** *Let the $s$ places of the
+sample be drawn independently and uniformly from the $n$ places of the
+input, $F$ being the empirical CDF of the input keys. Let the splitters be
+the distinct values among the keys $S[ \lfloor i s / k \rfloor ]$,
+$1 \le i < k$, of the sorted sample $S$, and let
+$\varepsilon = \sqrt{ \ln( 2 / \delta ) / ( 2 s ) }$ for some
+$0 < \delta < 1$. Then, with probability at least $1 - \delta$, (i) each
+bucket of the keys strictly between two consecutive splitters, below the
+first one or above the last one holds at most
+$( 1 / k + 2 \varepsilon ) n$ keys, and (ii) if no splitter is repeated
+in the sample, each bucket of the keys above a splitter $a$ and not
+larger than the next one $b$ holds at most $( 2 / k + 2 \varepsilon ) n$
+keys.*
 
-*Proof.* In effect, the sample is drawn from the empirical distribution $F$ of the
-input, and (12.6) bounds by $\varepsilon$ the distance of $F_s$ from $F$
-everywhere, with the stated probability. Two consecutive splitters $a < b$
-have $F_s( b^- ) - F_s( a ) \le 1 / k$, and hence $F( b^- ) - F( a ) \le 1
-/ k + 2 \varepsilon$, which is the fraction of the keys in the bucket.
-$\square$
+*Proof.* The keys of the sample are drawn independently from $F$, and
+(12.6), which holds for any $F$, continuous or not, gives
+$\sup_x | F_s( x ) - F( x ) | \le \varepsilon$ with probability at least
+$1 - 2 e^{-2 s \varepsilon^2} = 1 - \delta$; the same bound then holds for
+the left limits $F_s( x^- )$ and $F( x^- )$. Let $j_i = \lfloor i s / k
+\rfloor$, so that $j_{i+1} - j_i \le \lceil s / k \rceil$. For (i), let
+$a < b$ be consecutive splitters, $b$ being the key of the place $j_i$ of
+$S$ for the least such $i$; then the place $j_{i-1}$ holds $a$, and the
+keys of the sample strictly between $a$ and $b$ are at places strictly
+between $j_{i-1}$ and $j_i$, at most $\lceil s / k \rceil - 1 < s / k$ of
+them. Hence $F_s( b^- ) - F_s( a ) < 1 / k$, and
+$F( b^- ) - F( a ) \le F_s( b^- ) - F_s( a ) + 2 \varepsilon$, i.e., the
+bucket holds fewer than $( 1 / k + 2 \varepsilon ) n$ keys; the first
+bucket and the last one are the same with $j_0 = -1$ and $j_k = s$. For
+(ii), $a$ and $b$ are at $j_{i-1}$ and $j_i$, the key at $j_{i+1}$ (if
+$i + 1 < k$) is larger than $b$, and therefore the keys of the sample in
+$( a , b ]$ are at places strictly between $j_{i-1}$ and $j_{i+1}$, fewer
+than $2 s / k$ of them; as above, $F( b ) - F( a ) < 2 / k + 2
+\varepsilon$. $\square$
 
-With $s = 16 k$ and $\varepsilon$ a small multiple of $1 / \sqrt{s}$, each
-bucket thus holds $n / k + O( n / \sqrt{k} )$ keys with high probability, as
-the sample of samplesort does. The model evaluates the number of
-splitters less than $x$ by a grid of cells of equal width $w$, a power of 2,
+The independence is an assumption of the model rather than a property of
+the code: `learnedSample()` draws the places from one sequence of xorshift
+seeded by $n$ (and takes them modulo $n$, a bias below $n / 2^{64}$), and
+the bound is what a random sample would give. The ties are
+what the buckets of equality are for: when the sample repeats a splitter,
+the keys equal to each splitter have a bucket of their own, which is not
+sorted, and every other bucket is an open interval of (i); otherwise the
+keys equal to a splitter join the bucket below it, and (ii) applies. With
+$s = 16 k$ and $\varepsilon = c / \sqrt{s}$, i.e.,
+$\delta = 2 e^{-2 c^2}$, a bucket of (i) holds at most
+$n / k + c n / ( 2 \sqrt{k} )$ keys with probability at least
+$1 - 2 e^{-2 c^2}$, about $0.98$ for $c = 1.5$: a constant, not a high
+probability, which would ask $c = \sqrt{ \ln( 2 n ) / 2 }$ for $\delta =
+1 / n$ and an excess of $O( n \sqrt{ \log n / k } )$. A bucket larger than
+the bound costs only the time of its sort, since the result does not
+depend on the splitters, as for the sample of samplesort. The model
+evaluates the number of splitters less than $x$ by a grid of cells of equal width $w$, a power of 2,
 on the range $[ S_{\min} , S_{\max} ]$ of the sample. Here the cell of $x$
 is $\lfloor ( x - S_{\min} ) / w \rfloor$, a shift, and each cell keeps the
 number of splitters before it (a histogram of the sample and its prefix
@@ -1775,7 +1809,7 @@ fitted, returning false (and leaving the vector untouched) instead of
 falling back. In [§25.7](25-parallel.md#sec-25-7), the parallel sorts use
 it as the classifier of their distribution. When the model fits, the sample
 and the model cost $O( k \log k )$, the classification and the moves $O( n
-)$, and the sorts of the buckets by `vectorQuickSort()` $O( n \log ( ( 1 / k + 2
+)$, and the sorts of the buckets by `vectorQuickSort()` $O( n \log ( ( 2 / k + 2
 \varepsilon ) n ) )$ on the event of [Lemma 12.30](12-sort.md#lem-12-30), by
 [Lemma 12.27](12-sort.md#lem-12-27) on each bucket. Its extra room is a buffer of $n$
 items and $n$ bucket numbers of 16 bits. `sort()` does not choose it, since

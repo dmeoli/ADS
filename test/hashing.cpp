@@ -109,7 +109,7 @@ constexpr std::uint64_t kPrefixAnswers = 6080367913530849277ULL;
 
 /// the answers of the Ribbon filters of 8, 16 and 32 bits of 10^5 random
 /// keys to 10^5 absent ones, folded, the same on every machine
-constexpr std::uint64_t kRibbonAnswers = 914496213114749030ULL;
+constexpr std::uint64_t kRibbonAnswers = 15295418154177606124ULL;
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
@@ -653,6 +653,49 @@ ADS_TEST( "ribbon-filter" )
   }
  }
 
+// the false positive rate of the static filters, whose fingerprint must be
+// independent of the places (Lemma 10.17): 10^6 random keys and 10^6
+// random keys out of them, for the fingerprints of 8 and 16 bits of the
+// binary fuse and the Ribbon filters, the false positives within 3
+// standard deviations of 10^6 2^-b; then 5 10^6 consecutive keys, whose
+// binary fuse filter has segments of 2^15 places, and 10^6 keys after them
+ADS_TEST( "filters-fingerprint-rate" )
+{
+ const std::size_t n = 1000000;
+ const auto R = randomKeys( 2 * n , 61 );
+ const std::vector< std::uint64_t > S( R.begin() , R.begin() + long( n ) ) ,
+   Q( R.begin() + long( n ) , R.end() );
+ auto within = []( std::size_t fp , std::size_t q , int b ) {
+  const double p = std::ldexp( 1.0 , -b ) , mu = double( q ) * p;
+  const double sd = std::sqrt( mu * ( 1 - p ) );
+  return( std::abs( double( fp ) - mu ) <= 3 * sd );
+  };
+ auto rate = [ & ]( const auto & f , const std::vector< std::uint64_t > & K ,
+		    const std::vector< std::uint64_t > & A , int b ) {
+  bool all = true;
+  for( std::uint64_t k : K )
+   all = all && f.maybe( k );
+  std::size_t fp = 0;
+  for( std::uint64_t x : A )
+   fp += f.maybe( x );
+  return( all && within( fp , A.size() , b ) );
+  };
+ CHECK( rate( BinaryFuseFilter< std::uint64_t >( S ) , S , Q , 8 ) );
+ CHECK(
+   rate( BinaryFuseFilter< std::uint64_t , std::uint16_t >( S ) , S , Q ,
+	 16 ) );
+ CHECK( rate( RibbonFilter< std::uint64_t >( S ) , S , Q , 8 ) );
+ CHECK( rate( RibbonFilter< std::uint64_t , std::uint16_t >( S ) , S , Q ,
+	      16 ) );
+ std::vector< std::uint64_t > C( 5 * n ) , D( n );
+ for( std::size_t i = 0 ; i < C.size() ; ++i )
+  C[ i ] = i;
+ for( std::size_t i = 0 ; i < D.size() ; ++i )
+  D[ i ] = C.size() + i;
+ CHECK( rate( BinaryFuseFilter< std::uint64_t >( C ) , C , D , 8 ) );
+ CHECK( rate( RibbonFilter< std::uint64_t >( C ) , C , D , 8 ) );
+ }
+
 // the minimal perfect hash function: a bijection onto { 0 , ... , n - 1 }
 // for 1, 2, 3, 10, 1000 and 10^5 random keys, 10^5 consecutive keys and
 // strings, with the parameters ( lambda , alpha ) ( 1 , 0.5 ), ( 1 , 1 ),
@@ -909,6 +952,100 @@ ADS_TEST( "bucket-cuckoo" )
  E.insert( 1 , 10 );
  *E.find( 1 ) = 11;
  CHECK( E.lookup( 1 ) == 11 && ! E.insert( 1 , 12 ) && E.lookup( 1 ) == 12 );
+ }
+
+// the cuckoo table with buckets on a hash of one value for every key: 8
+// keys fill the two buckets and the others go to the stash, with at most
+// 2 doublings per insertion and at most 4 places per key; insertions,
+// lookups, removals and visits against std::unordered_map, the keys 0 and
+// 2^64 - 1 among them; then 8 keys on each of 64 hashes, whose groups
+// that share a bucket leave keys in the stash through the doublings
+ADS_TEST( "bucket-cuckoo-stash" )
+{
+ constexpr std::uint64_t top = std::numeric_limits< std::uint64_t >::max();
+ BucketCuckooTable< std::uint64_t , std::uint64_t , OneGroup > T;
+ std::unordered_map< std::uint64_t , std::uint64_t > R;
+ const std::size_t P0 = T.capacity();
+ std::size_t most = 0 , growths = T.rehashes();
+ auto bounded = [ & ]( void ) {  // the doublings of one insertion
+  const bool ok = ( T.rehashes() - growths <= 2 ) &&
+		  ( T.capacity() <= std::max( P0 , 4 * most ) );
+  growths = T.rehashes();
+  return( ok );
+  };
+ for( std::uint64_t k = 0 ; k < 1000 ; ++k ) {
+  const std::uint64_t key = k == 999 ? top : k;
+  CHECK( T.insert( key , 3 * k ) && R.emplace( key , 3 * k ).second );
+  most = std::max( most , T.size() );
+  CHECK( bounded() );
+  }
+ CHECK( T.size() == 1000 && T.stashed() == 1000 - 8 );
+ CHECK( T.rehashes() <= 10 && T.capacity() <= 4000 );
+ CHECK( ! T.insert( 0 , 7 ) && *T.find( 0 ) == 7 && ! T.insert( top , 8 ) );
+ R[ 0 ] = 7;
+ R[ top ] = 8;
+ *T.find( 500 ) = 1;
+ R[ 500 ] = 1;
+ auto same = [ & ]( void ) {
+  std::size_t n = 0;
+  bool ok = T.size() == R.size();
+  for( const auto & [ k , v ] : T ) {
+   const auto it = R.find( k );
+   ok = ok && ( it != R.end() ) && ( it->second == v );
+   ++n;
+   }
+  for( const auto & [ k , v ] : R )
+   ok = ok && ( T.lookup( k ) == v ) && T.contains( k );
+  return( ok && ( n == R.size() ) );
+  };
+ CHECK( same() );
+ CHECK( ! T.contains( 1000 ) && ! T.find( 1000 ) && ! T.remove( 1000 ) );
+ std::mt19937_64 g( 35 );
+ for( int s = 0 ; s < 20000 ; ++s ) {
+  const std::uint64_t r = g() % 1200;
+  const std::uint64_t k = r == 1100 ? top : r , v = g();
+  switch( g() % 3 ) {
+   case( 0 ):
+    CHECK( T.insert( k , v ) == R.insert_or_assign( k , v ).second );
+    most = std::max( most , T.size() );
+    CHECK( bounded() );
+    break;
+   case( 1 ):
+    CHECK( T.remove( k ) == ( R.erase( k ) == 1 ) );
+    break;
+   default: {
+    const std::uint64_t * p = T.find( k );
+    const auto it = R.find( k );
+    CHECK( ( p == nullptr ) == ( it == R.end() ) );
+    if( p )
+     CHECK( *p == it->second );
+    }
+   }
+  CHECK( T.size() == R.size() );
+  }
+ CHECK( same() );
+ for( auto it = R.begin() ; it != R.end() ; )  // all removed
+  if( T.remove( it->first ) )
+   it = R.erase( it );
+  else
+   ++it;
+ CHECK( R.empty() && T.empty() && T.stashed() == 0 && T.begin() == T.end() );
+ CHECK( ! T.contains( 0 ) && ! T.contains( top ) );
+ {  // 8 keys on each of 64 hashes, groups that may share a bucket
+  struct Few
+  {
+   using is_avalanching = void;
+   std::size_t operator()( std::uint64_t k ) const {
+    return( std::size_t( hashWord( k % 64 ) ) );
+    }
+   };
+  BucketCuckooTable< std::uint64_t , int , Few > F;
+  for( std::uint64_t k = 0 ; k < 512 ; ++k )
+   CHECK( F.insert( k , int( k ) ) );
+  for( std::uint64_t k = 0 ; k < 512 ; ++k )
+   CHECK( F.lookup( k ) == int( k ) );
+  CHECK( F.size() == 512 && F.capacity() <= 4 * 512 );
+  }
  }
 
 /*--------------------------------------------------------------------------*/

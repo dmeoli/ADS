@@ -17,9 +17,11 @@
  * A distribution into \f$ k \f$ buckets is balanced when the bucket of
  * \f$ x \f$ is \f$ \lfloor k F( x ) \rfloor \f$, \f$ F \f$ the CDF of the
  * keys; the model replaces \f$ F \f$ by the empirical CDF \f$ F_s \f$ of a
- * random sample of \f$ s = 16 k \f$ keys, which the inequality of Dvoretzky,
- * Kiefer and Wolfowitz keeps within a small multiple of \f$ 1 / \sqrt{s} \f$
- * of \f$ F \f$ with high probability, whatever \f$ F \f$. The splitters
+ * sample of \f$ s = 16 k \f$ keys at places drawn by a xorshift seeded by
+ * \f$ n \f$, which, were the places independent and uniform, the
+ * inequality of Dvoretzky, Kiefer and Wolfowitz would keep within
+ * \f$ c / \sqrt{s} \f$ of \f$ F \f$ with probability at least
+ * \f$ 1 - 2 e^{-2 c^2} \f$, whatever \f$ F \f$. The splitters
  * \f$ t_1 \le \cdots \le t_{k-1} \f$ are the quantiles \f$ i / k \f$ of the
  * sorted sample, and the bucket of \f$ x \f$ is the number of splitters less
  * than \f$ x \f$, which samplesort finds by a search of \f$ \log_2 k \f$

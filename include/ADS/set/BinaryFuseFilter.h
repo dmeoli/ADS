@@ -13,14 +13,17 @@
  *
  * A key with the hash \f$ h \f$ has 3 places \f$ h_0 , h_1 , h_2 \f$ of an
  * array \f$ F \f$ of fingerprints, and is maybe in \f$ S \f$ if
- * \f$ F[ h_0 ] \oplus F[ h_1 ] \oplus F[ h_2 ] = f( h ) \f$, its
- * fingerprint. The array is cut into segments of \f$ L \f$ places (a power
- * of 2): \f$ h_0 \f$ is a place of the first \f$ C L \f$ ones, by a product
- * of \f$ h \f$, and \f$ h_1 \f$ and \f$ h_2 \f$ are in the two segments that
- * follow, at places given by other bits of \f$ h \f$, so that the 3 places
- * of a key are within 3 consecutive segments (the spatial coupling that
- * lets the array have only about \f$ 1.125 n \f$ places for large \f$ n \f$,
- * against \f$ 1.23 n \f$ for 3 places anywhere).
+ * \f$ F[ h_0 ] \oplus F[ h_1 ] \oplus F[ h_2 ] = f( h ) \f$, its fingerprint,
+ * the high \f$ b \f$ bits of the product of \f$ h \f$ by an odd constant,
+ * which depend on every bit of \f$ h \f$ rather than on the bits that give the
+ * places (the false positive rate of \f$ 2^{-b} \f$ models them as
+ * independent). The array is cut into segments of \f$ L \f$ places (a power of
+ * 2): \f$ h_0 \f$ is a place of the first \f$ C L \f$ ones, by a product of
+ * \f$ h \f$, and \f$ h_1 \f$ and \f$ h_2 \f$ are in the two segments that
+ * follow, at places given by other bits of \f$ h \f$, so that the 3 places of
+ * a key are within 3 consecutive segments (the spatial coupling that lets the
+ * array have only about \f$ 1.125 n \f$ places for large \f$ n \f$, against
+ * \f$ 1.23 n \f$ for 3 places anywhere).
  *
  * The build solves the system of the \f$ n \f$ equations by peeling: a place
  * reached by exactly one key is solved last for that key, which is then
@@ -87,6 +90,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string_view>
@@ -188,6 +192,10 @@ class BinaryFuseFilter
 
  /// the name of the structure in a file [see `Persistence.h`]
  static constexpr std::string_view persistName = "BinaryFuseFilter";
+
+ /// the version of the layout in a file: 2, that of the fingerprints by
+ /// a product, which the files of the version 1 do not have
+ static constexpr std::uint32_t persistVersion = 2;
 
  /// the parameters of the layout, in a file
  [[nodiscard]] static constexpr std::uint64_t persistTag( void ) {

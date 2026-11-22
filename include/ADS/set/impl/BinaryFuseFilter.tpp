@@ -78,7 +78,10 @@ template< class T , class F , class H >
  requires( std::is_unsigned_v< F > && ( sizeof( F ) <= 4 ) )
 F BinaryFuseFilter< T , F , H >::fingerprint( std::uint64_t h )
 {
- return( F( h ^ ( h >> 32 ) ) );
+ // the high bits of a product by an odd constant, which depend on every
+ // bit of h and not only on the bits that give the places
+ return( F( ( h * 0xD6E8FEB86659FD93ULL ) >>
+	     ( 64 - std::numeric_limits< F >::digits ) ) );
  }
 
 template< class T , class F , class H >

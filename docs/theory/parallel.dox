@@ -610,9 +610,12 @@
  lives as long as the computation and talks to the others (the workers of a
  parallel search, each with its own queue of nodes and its inbox, or the
  master and the workers of a farm), needs instead that its \f$ p \f$ calls
- run at the same time on \f$ p \f$ distinct threads; `run( p , f )` of the
- executors with workers (the concept `WorkerExecutor` of `Executor.h`) gives
- this, together with `lock_type`, the mutex that the executor prefers for the
+ all begin, each on a thread that holds no other one, so that calls that
+ wait for each other run at the same time on \f$ p \f$ distinct threads;
+ `run( p , f )` of the executors with workers (the concept
+ `WorkerExecutor` of `Executor.h`) gives this (a call that returns before
+ the others have begun may leave its thread to one of them), together with
+ `lock_type`, the mutex that the executor prefers for the
  short sections that the workers share. Every `lock_type` is Lockable in the
  sense of the standard, i.e., it has `try_lock()` besides `lock()` and
  `unlock()`, which takes the lock only if it is free and never waits: a

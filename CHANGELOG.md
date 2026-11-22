@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the fingerprint of `BinaryFuseFilter` and of `RibbonFilter` is the high
+  bits of the product of the hash by an odd constant, which depend on
+  every bit of the hash and not only on the bits that give the places (the
+  coefficients of the Ribbon filter fix the hash but for one bit, and the
+  places of the binary fuse filter shared bits with the fingerprint from
+  segments of 2^15 places), so that the false positive rate of 2^-b holds
+  in the model of Lemma 10.17; the files of both filters are of version 2,
+  and those of the version 1 are rejected
+- Lemma 25.5 states what `run()` of `ThreadPool` gives: no thread holds two
+  calls of a run at once and every call begins while the others wait, so
+  that calls that wait for each other run at the same time on distinct
+  threads, while a call that returns before the others have begun may
+  leave its worker to claim another one; `Executor.h` and the theory of
+  the workers say the same
+- Lemma 12.30 states the sample of the learned sort as an assumption of
+  the model (its places come from a xorshift seeded by the size), bounds
+  the buckets with probability at least 1 - delta for
+  eps = sqrt( ln( 2 / delta ) / ( 2 s ) ), a constant probability for
+  eps = c / sqrt( s ) and not a high one, and treats the ties: a bucket
+  between two splitters holds at most ( 1 / k + 2 eps ) n keys, and one
+  that also takes the keys equal to its splitter, when the sample repeats
+  no splitter, at most ( 2 / k + 2 eps ) n
 - `PartitionedEliasFano` keeps a record of one word per block (two if its
   fields do not fit in one), with the start of the block and the place of
   its code relative to its superblock of 16 blocks and the place of its 1
@@ -141,6 +163,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `BucketCuckooTable` puts in a stash, searched after the two buckets, a
+  key that finds no place after 2 doublings of its insertion or in a table
+  at most half full, and a doubling puts there the pairs that it cannot
+  place: more than 8 keys of equal hashes made the table double until the
+  memory ran out, and now it has at most max( P0 , 4 n ) places (Lemma
+  7.17), a search costing one more test while the stash is empty
+- `CuckooHashTable` draws at most 8 pairs of functions per rebuild, and
+  puts the keys still homeless in new places at the end of the stash:
+  more than s + 2 keys of equal hashes made it rebuild forever
+- `ConcurrentCuckooTable` puts in a stash, under a mutex of its own and
+  with the bit of overflow of the first bucket set, a key that the table
+  less than 1/16 full cannot place, instead of throwing
+  `std::length_error`, and a doubling puts there the pairs that it cannot
+  place instead of doubling again; `stashed()` counts them
 - the makefile builds the benchmarks on Boost, Highway and hwloc where they
   are found, as the targets of CMake do, keeping the code of ADS where a
   structure would delegate to Boost or to LEMON; before, it built them on

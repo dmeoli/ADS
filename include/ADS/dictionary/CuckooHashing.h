@@ -29,7 +29,14 @@
  * A stash of \f$ s \f$ places (Kirsch, Mitzenmacher and Wieder) keeps the
  * keys whose insertion fails, lowering the probability of a rehash from
  * \f$ \Theta( 1 / n ) \f$ to \f$ \Theta( 1 / n^{s+1} ) \f$; a search also
- * looks at the stash. The two functions are simple tabulation [see
+ * looks at the stash. No pair of functions separates keys whose hashes are
+ * equal, and more than \f$ s + 2 \f$ of them would make the rehashes go
+ * on forever: a rebuild draws at most 8 pairs of functions, and with the
+ * last one puts the keys still homeless in new places at the end of the
+ * stash, where the next homeless keys go too, with no rebuild, until a
+ * rebuild finds them a place. A search then scans the longer stash, but the
+ * table keeps its size, at most \f$ \max( m_0 , 2 n / \mathit{maxLoad} )
+ * \f$ places for \f$ n \f$ keys. The two functions are simple tabulation [see
  * `TabulationHash` in `RandomHashing.h`] of the hash of the key, which, as
  * Pătrașcu and Thorup proved, keeps the failure probability of cuckoo
  * hashing at \f$ O( 1 / n^{1/3} ) \f$, while the analysis of Pagh and
@@ -170,7 +177,13 @@ class CuckooHashTable
  ///     \gets c;\ \textbf{return} \cr
  /// 11 & \quad \textbf{if}\ \text{the stash has an empty place }
  ///     \ \textbf{then}\ \text{put } c \text{ there} \cr
- /// 12 & \quad \textbf{else}\ \text{rebuild with new functions and } c
+ /// 12 & \quad \textbf{else if}\ \text{a rebuild has lengthened the stash}
+ ///     \ \textbf{then}\ \text{put } c \text{ in a new place at its end}
+ ///     \cr
+ /// 13 & \quad \textbf{else}\ \text{rebuild with new functions and } c
+ ///     \text{, at most 8 times, the keys still homeless after the}
+ ///     \text{ 8th} \cr
+ /// 14 & \qquad \text{in new places at the end of the stash}
  /// \end{array}}
  /// \f]
  /// \post \f$ k \f$ has the value \f$ v \f$
@@ -294,10 +307,11 @@ class CuckooHashTable
  /// up to 1024 places, every key so and counted right
  [[nodiscard]] bool placed( const K & k ) const;
 
+ static constexpr int kReseeds = 8;   ///< the functions of a rebuild
  detail::AllocVector< A , Cell > f_T;  ///< the m places, then the stash
  std::size_t f_m;                     ///< the places of the table
  std::size_t f_m0;                    ///< the least capacity
- std::size_t f_s;                     ///< the places of the stash
+ std::size_t f_s;                     ///< the least places of the stash
  double f_maxLoad;                    ///< the load past which it doubles
  std::size_t f_n = 0;                 ///< the number of keys
  std::size_t f_rehashes = 0;          ///< the rebuilds with new functions
