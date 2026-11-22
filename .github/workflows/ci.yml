@@ -721,7 +721,10 @@ jobs:
   # by CMake at the default flags (the kernels of Simd.h chosen when the
   # program runs, those of SimdInline.h inlined at SSE2), with g++ and with
   # clang++, at -march=x86-64-v4 where the runner has AVX-512 (x86-64-v3
-  # otherwise), and with ADS_SIMD_SCALAR=1, the scalar code of every
+  # otherwise; with no contraction of the products and sums into the FMA,
+  # which g++ makes by default in some loops and not in others, so that the
+  # parallel products of the sparse matrices would differ from the
+  # sequential ones in the last bits), and with ADS_SIMD_SCALAR=1, the scalar code of every
   # structure on the same Highway; and the select in a word by the compress
   # of the bytes of AVX-512 VBMI2 [see FastBitwise.h], at
   # -march=icelake-server, compiled always and run where the processor has
@@ -753,7 +756,8 @@ jobs:
             native) f="-march=x86-64-v4"
                     for x in avx512f avx512bw avx512cd avx512dq avx512vl; do
                       grep -qw $x /proc/cpuinfo || f="-march=x86-64-v3"
-                    done ;;
+                    done
+                    f="$f -ffp-contract=off" ;;
             *) f="" ;;
           esac
           echo "the flags: ${f:-none}"
@@ -814,8 +818,9 @@ jobs:
 
   # a target of 32 bits, i386 by the -m32 of g++-multilib, whose std::size_t
   # and long have 32 bits: the tests by the makefile on the code of ADS
-  # alone (the libraries of the backends on the runner have 64 bits, and
-  # are not found), on the arithmetic of SSE2 in place of the excess
+  # alone and of cereal, whose archives write a std::size_t in 4 bytes there
+  # (the libraries of the backends on the runner have 64 bits, and are not
+  # found), on the arithmetic of SSE2 in place of the excess
   # precision of the x87, the cases there for their scale alone made
   # smaller by ADS_TEST_SMALL [see ADSTest.h], in an address space of 4 GB;
   # not yet required, since the hash tables and filters, the shortest paths
@@ -826,10 +831,10 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
-      - name: g++-multilib
+      - name: g++-multilib, and cereal, whose headers serve 32 bits too
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++-multilib
+          sudo apt-get install -y g++-multilib libcereal-dev
       - name: the tests on 32 bits
         run: |
           cxx="g++ -m32 -msse2 -mfpmath=sse"
