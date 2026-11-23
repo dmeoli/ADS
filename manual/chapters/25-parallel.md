@@ -261,8 +261,8 @@ microseconds late, and on a core that the governor of the frequency may
 have slowed down meanwhile, so that the next parallel phase may run up to
 twice as slow; a worker that looks for long, instead, burns its core while
 the program runs sequentially. The budget therefore follows the *gaps*
-that the worker sees, a gap being the time from the moment it found
-nothing to the one it found a task: it is twice the longest gap of the
+that the worker sees, a gap being the time from the moment it found no
+task to the one it found a task. It is twice the longest gap of the
 current window of $5 S$ and of the one before, kept between the parameters
 $s \le S$ of the constructor (`spin` and `maxSpin`, in nanoseconds, 2 ms
 and 200 ms by default, the second that of the runtimes of OpenMP that look
@@ -1449,7 +1449,7 @@ Inequality (25.8) is then not used across the borders of the parts, which
 leaves the result the same; by [Lemma 25.15](25-parallel.md#lem-25-15),
 summed over the $4 p$ parts, the work is $O( n + p \max_i \mathit{PLCP}[ i
 ] )$, and on a text of one repeated symbol, whose lcp are as long as the text,
-the parts gain nothing. Furthermore, the scan in the order of the text reads
+the parts save no work. Furthermore, the scan in the order of the text reads
 $\Phi[ i ]$ and $T[ \Phi[ i ] + h ]$ at random once per suffix, where the
 algorithm of Kasai reads the rank and the suffix array at random.
 `lcpArrayPhi()` does the same on a text of bytes and a suffix array of a
@@ -2617,9 +2617,10 @@ queues and the farm with feedback, and the counter of the mailbox is the
 deficit counting of [Dijkstra and Scholten
 1980](Z-bibliography.md#ref-dijkstra1980) summed in one word, which the
 waves of [Mattern 1987](Z-bibliography.md#ref-mattern1987) replace across
-processes (see the next chapter). Finally, we leave the comparisons between the executors, the
-families of channels and the sorts, which this chapter describes without
-figures, to the benchmark campaign of the appendix on the benchmarks.
+processes (cf. the next chapter). Finally, we leave the comparisons between
+the executors, the families of channels and the sorts, which this chapter
+describes without figures, to the benchmark campaign of the appendix on the
+benchmarks.
 
 ## 25.17 Exercises {#sec-25-17}
 
