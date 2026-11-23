@@ -29,6 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   makefile build the tests, 3 by default; below 3 the tests pass with the
   checks of the contracts themselves (`CHECK_THROWS` of a
   `contract_violation`, the audits and the counts kept for them) left out
+- the pseudocode of the operations of `SequenceStack`, of the updates of
+  `HashedTreap`, `ParentTree` and `MaterializedAggregate` and of the
+  dispatch of `queue_deleteMin`, and, in chapters 1 to 13 and appendix A
+  of the manual, the lemmas of the headers that had none (among them
+  `CursorTree`, the dictionaries of chapter 7, `LinkedHashSet`,
+  `BlockedBloomFilter`, `CuckooFilter`, `IndexedHeapPair`,
+  `SequenceRange`, the prefetch, `ArenaResource` and `PmrResource`) and
+  the pseudocodes of the headers that no chapter included
 
 ### Changed
 
