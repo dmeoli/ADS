@@ -215,12 +215,12 @@ struct Picky
   }
  };
 
-/// the refusals and the strong guarantee on a map with `Picky` attached,
-/// for the insertions too if `strong`
+/// the refusals and the strong guarantee on a map with `p` attached, for
+/// the insertions too if `strong`; `p` stays attached, and must outlive
+/// the map or be detached before it dies
 template< class S >
-void mapPicky( S & s , bool strong )
+void mapPicky( S & s , Picky & p , bool strong )
 {
- Picky p;
  s.attach( p );
  s.insert( 1 , 1 );
  CHECK_THROWS( s.insert( -1 , 1 ) , Refused );
@@ -347,8 +347,9 @@ ADS_TEST( "emit-btree" )
 
 ADS_TEST( "emit-btree-guarantee" )
 {
+ Picky p;  // before the map, which outlives it
  BTree< int , int , Dynamic<> > d( 2 );
- mapPicky( d , false );  // a removal may allocate
+ mapPicky( d , p , false );  // a removal may allocate
  // the erasure told before the removal
  struct Before
  {
@@ -421,8 +422,9 @@ ADS_TEST( "emit-densemap" )
  g.insert( 2 , 2 );
  CHECK( m5.m.empty() && ( g.size() == 2 ) );
  // the refusals and the strong guarantee
+ Picky picky;  // before the map, which outlives it
  DM h;
- mapPicky( h , true );
+ mapPicky( h , picky , true );
  h.try_emplace( 7 , 7 );
  CHECK_THROWS( h.try_emplace( -3 , 1 ) , Refused );
  CHECK( ! h.contains( -3 ) && h.contains( 7 ) );
