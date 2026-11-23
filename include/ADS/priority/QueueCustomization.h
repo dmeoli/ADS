@@ -257,6 +257,24 @@ inline constexpr detail::QueueMin queue_min{};
 /// the item of smallest priority of \f$ q \f$, removed: `q.deleteMin()`,
 /// else `queue_deleteMin( q )` found by ADL, else `q.pop()` if it returns
 /// the item, else `q.top()` and then `q.pop()`
+///
+/// In pseudocode (the customization point of Niebler, beyond the book),
+/// each test made on the type of \f$ q \f$ when the call is compiled:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{deleteMin}( q ) \cr
+/// 2 & \quad \textbf{if}\ q.\mathrm{deleteMin}()\ \text{is well formed}
+///     \ \textbf{then}\ \textbf{return}\ q.\mathrm{deleteMin}() \cr
+/// 3 & \quad \textbf{else if}\ \mathrm{queue\_deleteMin}( q )\ \text{is}
+///     \text{ found by ADL}\ \textbf{then} \cr
+/// 4 & \qquad \textbf{return}\ \mathrm{queue\_deleteMin}( q ) \cr
+/// 5 & \quad \textbf{else if}\ q.\mathrm{pop}()\ \text{returns an item}
+///     \ \textbf{then}\ \textbf{return}\ q.\mathrm{pop}() \cr
+/// 6 & \quad \textbf{else} \cr
+/// 7 & \qquad x \gets q.\mathrm{top}();\ q.\mathrm{pop}();
+///     \ \textbf{return}\ x
+/// \end{array}}
+/// \f]
 /// \pre \f$ q \f$ is not empty
 inline constexpr detail::QueueDeleteMin queue_deleteMin{};
 
