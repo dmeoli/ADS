@@ -17,8 +17,8 @@
 namespace ADS
 {
 
-template< class T , class Op >
-LinkCutTree< T , Op >::LinkCutTree( int n , const T & id , Op op )
+template< class T , class Op , class P >
+LinkCutTree< T , Op , P >::LinkCutTree( int n , const T & id , Op op )
     : f_id( id ) , f_op( std::move( op ) )
 {
  // the sizes after the check, with no clamp of n: g++ 16 at -O2 with LTO
@@ -31,8 +31,40 @@ LinkCutTree< T , Op >::LinkCutTree( int n , const T & id , Op op )
  f_pv.assign( m , id );
  }
 
-template< class T , class Op >
-int LinkCutTree< T , Op >::addNode( const T & x )
+template< class T , class Op , class P >
+template< class... O >
+ requires( sizeof...( O ) > 0 )
+LinkCutTree< T , Op , P >::LinkCutTree( int n , const T & id , Op op ,
+					O &... o )
+    : f_id( id ) , f_op( std::move( op ) ) , f_sub( o... )
+{
+ ADS_PRE( n >= 0 );
+ const std::size_t m = std::size_t( n );
+ f_t.assign( m , Node{ { NONE , NONE } , NONE , 0 , id , id } );
+ f_p.assign( m , NONE );
+ f_pv.assign( m , id );
+ }
+
+template< class T , class Op , class P >
+int LinkCutTree< T , Op , P >::addNode( const T & x )
+{
+ if constexpr( Subject::template listened< NodeInserted > )
+  if( f_sub.template live< NodeInserted >() ) [[unlikely]] {
+   if constexpr( Subject::dynamic )
+    return( addNodeCold( x ) );
+   else
+    return( addNodeTold( x ) );
+   }
+ f_t.push_back( Node{ { NONE , NONE } , NONE , 0 , x , x } );
+ if( ! f_splay ) {
+  f_p.push_back( NONE );
+  f_pv.push_back( x );
+  }
+ return( n() - 1 );
+ }
+
+template< class T , class Op , class P >
+int LinkCutTree< T , Op , P >::addNodePlain( const T & x )
 {
  f_t.push_back( Node{ { NONE , NONE } , NONE , 0 , x , x } );
  if( ! f_splay ) {
@@ -42,17 +74,37 @@ int LinkCutTree< T , Op >::addNode( const T & x )
  return( n() - 1 );
  }
 
-template< class T , class Op >
-const T & LinkCutTree< T , Op >::value( int v ) const
+template< class T , class Op , class P >
+const T & LinkCutTree< T , Op , P >::value( int v ) const
 {
  ADS_PRE( ( v >= 0 ) && ( v < n() ) );
  return( f_splay ? f_t[ v ].val : f_pv[ v ] );
  }
 
-template< class T , class Op >
-void LinkCutTree< T , Op >::setValue( int v , const T & x )
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::setValue( int v , const T & x )
 {
  ADS_PRE( ( v >= 0 ) && ( v < n() ) );
+ if constexpr( Subject::template listened< ValueChanged > )
+  if( f_sub.template live< ValueChanged >() ) [[unlikely]] {
+   if constexpr( Subject::dynamic )
+    setValueCold( v , x );
+   else
+    setValueTold( v , x );
+   return;
+   }
+ if( ! f_splay ) {
+  f_pv[ v ] = x;
+  return;
+  }
+ access( v );       // v the root of its splay tree:
+ f_t[ v ].val = x;  // no aggregate above it
+ pull( v );
+ }
+
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::setValuePlain( int v , const T & x )
+{
  if( ! f_splay ) {
   f_pv[ v ] = x;
   return;
@@ -66,16 +118,16 @@ void LinkCutTree< T , Op >::setValue( int v , const T & x )
 /*---------------------------- SPLAY TREES ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class T , class Op >
-bool LinkCutTree< T , Op >::isRoot( int x ) const
+template< class T , class Op , class P >
+bool LinkCutTree< T , Op , P >::isRoot( int x ) const
 {
  const int p = f_t[ x ].par;
  return( ( p == NONE ) ||
 	  ( ( f_t[ p ].ch[ 0 ] != x ) && ( f_t[ p ].ch[ 1 ] != x ) ) );
  }
 
-template< class T , class Op >
-void LinkCutTree< T , Op >::pull( int x )
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::pull( int x )
 {
  Node & a = f_t[ x ];
  T g = a.val;
@@ -86,8 +138,8 @@ void LinkCutTree< T , Op >::pull( int x )
  a.agg = std::move( g );
  }
 
-template< class T , class Op >
-void LinkCutTree< T , Op >::push( int x )
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::push( int x )
 {
  Node & a = f_t[ x ];
  if( ! a.rev )
@@ -100,8 +152,8 @@ void LinkCutTree< T , Op >::push( int x )
  a.rev = 0;
  }
 
-template< class T , class Op >
-void LinkCutTree< T , Op >::rotate( int x )
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::rotate( int x )
 {
  Node * const t = f_t.data();
  const int p = t[ x ].par , g = t[ p ].par;
@@ -119,8 +171,8 @@ void LinkCutTree< T , Op >::rotate( int x )
  pull( x );
  }
 
-template< class T , class Op >
-void LinkCutTree< T , Op >::splay( int x )
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::splay( int x )
 {
  // the reversals pushed from the root of the splay tree down to x
  f_stack.clear();
@@ -144,8 +196,8 @@ void LinkCutTree< T , Op >::splay( int x )
   }
  }
 
-template< class T , class Op >
-int LinkCutTree< T , Op >::access( int v )
+template< class T , class Op , class P >
+int LinkCutTree< T , Op , P >::access( int v )
 {
  int last = NONE;
  for( int x = v ; x != NONE ; x = f_t[ x ].par ) {
@@ -158,8 +210,8 @@ int LinkCutTree< T , Op >::access( int v )
  return( last );
  }
 
-template< class T , class Op >
-bool LinkCutTree< T , Op >::wellFormed( void ) const
+template< class T , class Op , class P >
+bool LinkCutTree< T , Op , P >::wellFormed( void ) const
 {
  for( int x = 0 ; x < n() ; ++x ) {
   const Node & a = f_t[ x ];
@@ -183,8 +235,8 @@ bool LinkCutTree< T , Op >::wellFormed( void ) const
 /*------------------------- THE VECTOR OF PARENTS --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class T , class Op >
-int LinkCutTree< T , Op >::rootOf( int v , bool keep )
+template< class T , class Op , class P >
+int LinkCutTree< T , Op , P >::rootOf( int v , bool keep )
 {
  const int * const p = f_p.data();  // the walk in registers
  long long k = 0;
@@ -205,8 +257,8 @@ int LinkCutTree< T , Op >::rootOf( int v , bool keep )
  return( v );
  }
 
-template< class T , class Op >
-void LinkCutTree< T , Op >::reverseUp( int v )
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::reverseUp( int v )
 {
  int * const p = f_p.data();
  if( ( v == f_pathOf ) && ( f_pathAt == f_version ) ) {
@@ -232,8 +284,8 @@ void LinkCutTree< T , Op >::reverseUp( int v )
  ++f_version;
  }
 
-template< class T , class Op >
-bool LinkCutTree< T , Op >::joined( int u , int v )
+template< class T , class Op , class P >
+bool LinkCutTree< T , Op , P >::joined( int u , int v )
 {
  if( f_splay )  // no count on the splay trees
   return( connected( u , v ) );
@@ -245,8 +297,8 @@ bool LinkCutTree< T , Op >::joined( int u , int v )
  return( u == v );
  }
 
-template< class T , class Op >
-void LinkCutTree< T , Op >::recount( void )
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::recount( void )
 {
  // the mean of the recent operations, by groups of 16, which follows the
  // growth of the trees; the splay trees once the paths are long, each
@@ -258,8 +310,8 @@ void LinkCutTree< T , Op >::recount( void )
   useSplay();
  }
 
-template< class T , class Op >
-void LinkCutTree< T , Op >::useSplay( void )
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::useSplay( void )
 {
  if( f_splay )
   return;
@@ -281,8 +333,8 @@ void LinkCutTree< T , Op >::useSplay( void )
 /*---------------------------- DYNAMIC TREES -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class T , class Op >
-void LinkCutTree< T , Op >::evert( int v )
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::evert( int v )
 {
  ADS_PRE( ( v >= 0 ) && ( v < n() ) );
  if( ! f_splay ) {
@@ -294,8 +346,8 @@ void LinkCutTree< T , Op >::evert( int v )
  f_t[ v ].rev ^= 1;
  }
 
-template< class T , class Op >
-int LinkCutTree< T , Op >::findRoot( int v )
+template< class T , class Op , class P >
+int LinkCutTree< T , Op , P >::findRoot( int v )
 {
  ADS_PRE( ( v >= 0 ) && ( v < n() ) );
  if( ! f_splay ) {
@@ -311,8 +363,8 @@ int LinkCutTree< T , Op >::findRoot( int v )
  return( r );
  }
 
-template< class T , class Op >
-bool LinkCutTree< T , Op >::connected( int u , int v )
+template< class T , class Op , class P >
+bool LinkCutTree< T , Op , P >::connected( int u , int v )
 {
  ADS_PRE( ( u >= 0 ) && ( u < n() ) && ( v >= 0 ) && ( v < n() ) );
  if( u == v )
@@ -330,11 +382,19 @@ bool LinkCutTree< T , Op >::connected( int u , int v )
  return( f_t[ u ].par != NONE );
  }
 
-template< class T , class Op >
-void LinkCutTree< T , Op >::link( int u , int v )
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::link( int u , int v )
 {
  ADS_PRE( ( u >= 0 ) && ( u < n() ) && ( v >= 0 ) && ( v < n() ) &&
 	  ! joined( u , v ) );
+ if constexpr( Subject::template listened< EdgeInserted > )
+  if( f_sub.template live< EdgeInserted >() ) [[unlikely]] {
+   if constexpr( Subject::dynamic )
+    linkCold( u , v );
+   else
+    linkTold( u , v );
+   return;
+   }
  if( ! f_splay ) {
   reverseUp( u );
   f_p[ u ] = v;
@@ -347,11 +407,34 @@ void LinkCutTree< T , Op >::link( int u , int v )
  ADS_AUDIT( wellFormed() );
  }
 
-template< class T , class Op >
-void LinkCutTree< T , Op >::cut( int u , int v )
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::linkPlain( int u , int v )
+{
+ if( ! f_splay ) {
+  reverseUp( u );
+  f_p[ u ] = v;
+  ++f_version;
+  count();
+  return;
+  }
+ evert( u );
+ f_t[ u ].par = v;
+ ADS_AUDIT( wellFormed() );
+ }
+
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::cut( int u , int v )
 {
  ADS_PRE( ( u >= 0 ) && ( u < n() ) && ( v >= 0 ) && ( v < n() ) &&
 	  ( u != v ) );
+ if constexpr( Subject::template listened< EdgeErased > )
+  if( f_sub.template live< EdgeErased >() ) [[unlikely]] {
+   if constexpr( Subject::dynamic )
+    cutCold( u , v );
+   else
+    cutTold( u , v );
+   return;
+   }
  if( ! f_splay ) {  // v a child of u, the root
   reverseUp( u );
   ADS_PRE( f_p[ v ] == u );
@@ -377,10 +460,45 @@ void LinkCutTree< T , Op >::cut( int u , int v )
  ADS_AUDIT( wellFormed() );
  }
 
-template< class T , class Op >
-bool LinkCutTree< T , Op >::cutParent( int v )
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::cutPlain( int u , int v )
+{
+ if( ! f_splay ) {  // v a child of u, the root
+  reverseUp( u );
+  ADS_PRE( f_p[ v ] == u );
+  if( f_p[ v ] == u )
+   f_p[ v ] = NONE;
+  ++f_version;
+  count();
+  return;
+  }
+ evert( u );
+ access( v );
+ // the path from u to v is u , v alone if the edge is there: u the left
+ // child of v, with no child of its own
+ push( v );
+ const bool edge = ( f_t[ v ].ch[ 0 ] == u ) && ( f_t[ u ].ch[ 0 ] == NONE ) &&
+		   ( f_t[ u ].ch[ 1 ] == NONE );
+ ADS_PRE( edge );
+ if( ! edge )
+  return;
+ f_t[ v ].ch[ 0 ] = NONE;
+ f_t[ u ].par = NONE;
+ pull( v );
+ ADS_AUDIT( wellFormed() );
+ }
+
+template< class T , class Op , class P >
+bool LinkCutTree< T , Op , P >::cutParent( int v )
 {
  ADS_PRE( ( v >= 0 ) && ( v < n() ) );
+ if constexpr( Subject::template listened< EdgeErased > )
+  if( f_sub.template live< EdgeErased >() ) [[unlikely]] {
+   if constexpr( Subject::dynamic )
+    return( cutParentCold( v ) );
+   else
+    return( cutParentTold( v ) );
+   }
  if( ! f_splay ) {
   const bool had = f_p[ v ] != NONE;
   f_p[ v ] = NONE;
@@ -399,8 +517,29 @@ bool LinkCutTree< T , Op >::cutParent( int v )
  return( true );
  }
 
-template< class T , class Op >
-int LinkCutTree< T , Op >::lca( int u , int v )
+template< class T , class Op , class P >
+bool LinkCutTree< T , Op , P >::cutParentPlain( int v )
+{
+ if( ! f_splay ) {
+  const bool had = f_p[ v ] != NONE;
+  f_p[ v ] = NONE;
+  ++f_version;
+  return( had );
+  }
+ access( v );
+ push( v );
+ const int l = f_t[ v ].ch[ 0 ];
+ if( l == NONE )
+  return( false );
+ f_t[ v ].ch[ 0 ] = NONE;
+ f_t[ l ].par = NONE;
+ pull( v );
+ ADS_AUDIT( wellFormed() );
+ return( true );
+ }
+
+template< class T , class Op , class P >
+int LinkCutTree< T , Op , P >::lca( int u , int v )
 {
  ADS_PRE( ( u >= 0 ) && ( u < n() ) && ( v >= 0 ) && ( v < n() ) &&
 	  joined( u , v ) );
@@ -426,8 +565,8 @@ int LinkCutTree< T , Op >::lca( int u , int v )
  return( access( v ) );
  }
 
-template< class T , class Op >
-T LinkCutTree< T , Op >::aggregate( int u , int v )
+template< class T , class Op , class P >
+T LinkCutTree< T , Op , P >::aggregate( int u , int v )
 {
  ADS_PRE( ( u >= 0 ) && ( u < n() ) && ( v >= 0 ) && ( v < n() ) &&
 	  joined( u , v ) );
@@ -448,6 +587,87 @@ T LinkCutTree< T , Op >::aggregate( int u , int v )
  evert( u );
  access( v );
  return( f_t[ v ].agg );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- WHEN SOMEONE LISTENS ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+template< class T , class Op , class P >
+int LinkCutTree< T , Op , P >::parentOf( int v )
+{
+ if( ! f_splay )
+  return( f_p[ v ] );
+ access( v );  // the parent: the deepest node of the path above v
+ push( v );
+ int x = f_t[ v ].ch[ 0 ];
+ if( x == NONE )
+  return( NONE );
+ for( push( x ) ; f_t[ x ].ch[ 1 ] != NONE ; push( x ) )
+  x = f_t[ x ].ch[ 1 ];
+ splay( x );  // the walk paid for by a splay, as by a lookup
+ return( x );
+ }
+
+template< class T , class Op , class P >
+int LinkCutTree< T , Op , P >::addNodeTold( const T & x )
+{
+ const NodeInserted e{ n() , n() , x };
+ f_sub.prepare( e );
+ addNodePlain( x );
+ f_sub.emit( e , [ & ]() noexcept {
+  f_t.pop_back();
+  if( ! f_splay ) {
+   f_p.pop_back();
+   f_pv.pop_back();
+   }
+  } );
+ f_sub.audit( *this );
+ return( e.h );
+ }
+
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::setValueTold( int v , const T & x )
+{
+ const ValueChanged e{ v , value( v ) , x };
+ f_sub.prepare( e );
+ setValuePlain( v , x );
+ f_sub.emit( e , [ & ]() noexcept { setValuePlain( v , e.from ); } );
+ f_sub.audit( *this );
+ }
+
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::linkTold( int u , int v )
+{
+ const EdgeInserted e{ edgeOf( u , v ) , ends( u , v ) };
+ f_sub.prepare( e );
+ linkPlain( u , v );
+ f_sub.emit( e , [ & ]() noexcept { cutPlain( u , v ); } );
+ f_sub.audit( *this );
+ }
+
+template< class T , class Op , class P >
+void LinkCutTree< T , Op , P >::cutTold( int u , int v )
+{
+ const EdgeErased e{ edgeOf( u , v ) , ends( u , v ) };
+ f_sub.prepare( e );
+ f_sub.emit( e );  // before the removal
+ cutPlain( u , v );
+ f_sub.audit( *this );
+ }
+
+template< class T , class Op , class P >
+bool LinkCutTree< T , Op , P >::cutParentTold( int v )
+{
+ const int p = parentOf( v );
+ if( p == NONE )
+  return( false );
+ const EdgeErased e{ edgeOf( v , p ) , ends( v , p ) };
+ f_sub.prepare( e );
+ f_sub.emit( e );  // before the removal
+ cutParentPlain( v );
+ f_sub.audit( *this );
+ return( true );
  }
 
 }  // end( namespace ADS )

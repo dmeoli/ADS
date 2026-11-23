@@ -568,6 +568,8 @@ graph/MaxFlow.h                       uses graph/PushRelabel.h
                                            the way PUSH_RELABEL
 graph/Visit.h                         uses graph/StrongComponents.h
                                            the components by one visit
+intractable/BranchAndBound.h          uses Modification.h
+                                           the events of the incumbent
 numeric/RandomSampling.h              uses priority/DaryHeap.h
                                            the weighted sample of the keys
 priority/PriorityQueue.h              uses priority/QueueCustomization.h

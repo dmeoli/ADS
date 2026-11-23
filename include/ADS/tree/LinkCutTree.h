@@ -36,6 +36,24 @@
  * `Reoptimization.h`]. The nodes are kept in vectors indexed by their
  * numbers, with no allocation per operation.
  *
+ * The forest tells its changes through the subject policy `Policy` [see
+ * `Modification.h`], `NoObservers` by default, with which every operation
+ * compiles to the code of the plain forest. What is told is the forest
+ * without its roots and the values of its nodes, since `evert()`,
+ * `aggregate()` and `lca()` move the root of a tree and leave its edges as
+ * they were: `addNode()` sends `Inserted< int , int , T >` of the node,
+ * its number as handle and key, with its value, `setValue()` sends
+ * `Assigned< int , T >` of the node, `link( u , v )` sends
+ * `Inserted< std::uint64_t , std::pair< int , int > >` of the edge, whose
+ * handle is `edgeOf( u , v )` (the same for \f$ [ u , v ] \f$ and
+ * \f$ [ v , u ] \f$) and whose key is the pair of its ends, the least
+ * first, and `cut( u , v )` and `cutParent( v )` send the `Erased` of the
+ * edge, that of \f$ v \f$ and of its parent before the cut for
+ * `cutParent()`; the insertions and the changes are told after
+ * the change and undone if an observer throws, the erasures before it. An
+ * observer that applies these events to a graph keeps the edges and the
+ * values of the forest, and thus its trees.
+ *
  * The libraries of graphs do not have the dynamic trees (neither the Boost
  * Graph Library nor LEMON), and those of competitive programming have them
  * for fixed numbers of nodes; the batch-parallel ones cited by
@@ -77,9 +95,12 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Modification.h"
+#include "ADS/Portable.h"
 
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <utility>
 #include <vector>
@@ -96,8 +117,10 @@ namespace ADS
 /*--------------------------------------------------------------------------*/
 
 /// a forest of dynamic trees whose nodes have values of the type `T`,
-/// aggregated on the paths by the commutative monoid `Op`
-template< class T = long long , class Op = std::plus< T > >
+/// aggregated on the paths by the commutative monoid `Op`, its changes told
+/// through `Policy`
+template< class T = long long , class Op = std::plus< T > ,
+	  class Policy = NoObservers >
 class LinkCutTree
 {
 
@@ -105,10 +128,47 @@ class LinkCutTree
  public:
  using Value = T;  ///< the type of the values
 
+ /// a node added, its number as handle and key, with its value
+ using NodeInserted = mod::Inserted< int , int , T >;
+ /// the value of a node changed
+ using ValueChanged = mod::Assigned< int , T >;
+ /// an edge added, by `edgeOf()` and the pair of its ends
+ using EdgeInserted = mod::Inserted< std::uint64_t , std::pair< int , int > >;
+ /// an edge removed, by `edgeOf()` and the pair of its ends
+ using EdgeErased = mod::Erased< std::uint64_t , std::pair< int , int > >;
+ /// the events: a node added, a value changed, an edge added or removed,
+ /// anything changed at the end of a mute
+ using modifications = mod::list< NodeInserted , ValueChanged , EdgeInserted ,
+				  EdgeErased , mod::Rebuilt >;
+ /// the subject
+ using Subject = typename Policy::template bind< modifications , LinkCutTree >;
+
+ /// the handle of the edge \f$ [ u , v ] \f$, the same for
+ /// \f$ [ v , u ] \f$: the least end in the high 32 bits, the other in the
+ /// low ones
+ [[nodiscard]] static constexpr std::uint64_t edgeOf( int u , int v ) {
+  const int a = u < v ? u : v , b = u < v ? v : u;
+  return( ( std::uint64_t( std::uint32_t( a ) ) << 32 ) |
+	   std::uint32_t( b ) );
+  }
+
+ /// the ends of the edge \f$ [ u , v ] \f$, the least first
+ [[nodiscard]] static constexpr std::pair< int , int > ends( int u , int v ) {
+  return( u < v ? std::pair( u , v ) : std::pair( v , u ) );
+  }
+
  /// the forest of \f$ n \f$ nodes with no edge, each of value
  /// \f$ \mathit{id} \f$, the identity of `op`
  /// \pre \f$ n \ge 0 \f$
  explicit LinkCutTree( int n = 0 , const T & id = T() , Op op = Op() );
+
+ /// the forest of \f$ n \f$ nodes with no edge, each of value
+ /// \f$ \mathit{id} \f$, the identity of `op`, the static observers
+ /// `o...`
+ /// \pre \f$ n \ge 0 \f$
+ template< class... O >
+  requires( sizeof...( O ) > 0 )
+ LinkCutTree( int n , const T & id , Op op , O &... o );
 
  /// the number of nodes
  [[nodiscard]] int n( void ) const { return( int( f_t.size() ) ); }
@@ -261,9 +321,59 @@ class LinkCutTree
  /// \pre \f$ u \f$ and \f$ v \f$ are nodes of the same tree
  [[nodiscard]] T aggregate( int u , int v );
 
+/*--------------------------- THE OBSERVERS --------------------------------*/
+
+ /// the subject, for `ADS::batch()` and `ADS::quiet()`
+ [[nodiscard]] Subject & subject( void ) { return( f_sub ); }
+ /// the subject
+ [[nodiscard]] const Subject & subject( void ) const { return( f_sub ); }
+
+ /// attaches the observer \f$ o \f$ and gives its number
+ /// \pre no batch is open
+ template< class O >
+ int attach( O & o )
+  requires( Subject::dynamic )
+ {
+  return( f_sub.attach( o ) );
+  }
+
+ /// detaches the observer number \f$ \mathit{id} \f$
+ /// \pre it is attached, no batch is open
+ void detach( int id )
+  requires( Subject::dynamic )
+ {
+  f_sub.detach( id );
+  }
+
 /*--------------------------------------------------------------------------*/
  private:
  static constexpr int NONE = -1;  ///< no node
+
+ /// the operations of the plain forest, for those that tell them
+ int addNodePlain( const T & x );
+ void setValuePlain( int v , const T & x );  ///< as addNodePlain()
+ void linkPlain( int u , int v );            ///< as addNodePlain()
+ void cutPlain( int u , int v );             ///< as addNodePlain()
+ bool cutParentPlain( int v );              ///< as addNodePlain()
+
+ /// the parent of \f$ v \f$ in the trees as rooted now, `NONE` at a root
+ [[nodiscard]] int parentOf( int v );
+
+ /// the changes of an operation when someone listens
+ int addNodeTold( const T & x );
+ void setValueTold( int v , const T & x );  ///< as addNodeTold()
+ void linkTold( int u , int v );            ///< as addNodeTold()
+ void cutTold( int u , int v );             ///< as addNodeTold()
+ bool cutParentTold( int v );              ///< as addNodeTold()
+
+ /// the changes when someone listens, out of the hot code
+ ADS_COLD_PATH int addNodeCold( const T & x ) { return( addNodeTold( x ) ); }
+ ADS_COLD_PATH void setValueCold( int v , const T & x ) {
+  setValueTold( v , x );
+  }
+ ADS_COLD_PATH void linkCold( int u , int v ) { linkTold( u , v ); }
+ ADS_COLD_PATH void cutCold( int u , int v ) { cutTold( u , v ); }
+ ADS_COLD_PATH bool cutParentCold( int v ) { return( cutParentTold( v ) ); }
 
  /// whether \f$ x \f$ is the root of its splay tree
  [[nodiscard]] bool isRoot( int x ) const;
@@ -378,9 +488,10 @@ class LinkCutTree
  /// costs as much as the walks on the vector (a few nanoseconds a step,
  /// while the vector stays in the caches of the core), as measured
  static constexpr double f_limit = 512;
- std::vector< int > f_stack;  ///< the path of a splay
- T f_id;                      ///< the identity of `Op`
- Op f_op;                     ///< the operation
+ std::vector< int > f_stack;           ///< the path of a splay
+ T f_id;                               ///< the identity of `Op`
+ Op f_op;                              ///< the operation
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  };  // end( class LinkCutTree )
 

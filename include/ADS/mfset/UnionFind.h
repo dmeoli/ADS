@@ -23,6 +23,18 @@
  * the union-find of the observer of the spanning forests [see
  * `Reoptimization.h`], while `kruskal()` takes any MFSET with `merge()`.
  *
+ * The forest tells its changes through the subject policy `Policy` [see
+ * `Modification.h`], `NoObservers` by default, with which every operation
+ * compiles to the code of the plain forest: `merge()` of two components
+ * sends `Changed< Parent , int , int >` with the handle \f$ x \f$ of the
+ * root made a child, from \f$ -1 \f$ to the root \f$ y \f$ of the other
+ * tree (after the link, undone if an observer throws), and `reset()`
+ * sends `Rebuilt`. Only the links of two roots are told: the shortening of
+ * the paths by `find()` is internal maintenance, which leaves every
+ * component as it was, so that an observer that keeps a parent for each
+ * element from these events alone holds a forest with the components of
+ * the structure, although not its shape.
+ *
  * The contracts [see `Contract.h`]: \f$ n \ge 0 \f$, the elements are in
  * \f$ [ 0 , n ) \f$; the invariant is that the parents make a forest of
  * `count()` trees whose roots hold minus their sizes. The operations are
@@ -56,6 +68,8 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Modification.h"
+#include "ADS/Portable.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -89,16 +103,33 @@ enum class Compression {
  };
 
 /// the union of disjoint sets of \f$ [ 0 , n ) \f$, the roots joined by `L`,
-/// the paths shortened by `C`
-template< Union L = Union::SIZE , Compression C = Compression::HALVING >
+/// the paths shortened by `C`, the links of the roots told through `Policy`
+template< Union L = Union::SIZE , Compression C = Compression::HALVING ,
+	  class Policy = NoObservers >
 class DisjointSets
 {
 
 /*--------------------------------------------------------------------------*/
  public:
+ /// the link of a root under another root: the parent of the handle from
+ /// \f$ -1 \f$ to the other root
+ using Linked = mod::Changed< mod::Parent , int , int >;
+ /// the events: a root linked under another, the forest made anew
+ using modifications = mod::list< Linked , mod::Rebuilt >;
+ /// the subject
+ using Subject = typename Policy::template bind< modifications ,
+						 DisjointSets >;
+
  /// the \f$ n \f$ components \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$
  /// \pre \f$ n \ge 0 \f$
  explicit DisjointSets( int n = 0 );
+
+ /// the \f$ n \f$ components \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$, the
+ /// static observers `o...`
+ /// \pre \f$ n \ge 0 \f$
+ template< class... O >
+  requires( sizeof...( O ) > 0 )
+ DisjointSets( int n , O &... o );
 
  /// back to the \f$ n \f$ components
  /// \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$
@@ -161,14 +192,49 @@ class DisjointSets
  int size( int x )
   requires( L == Union::SIZE );
 
+/*--------------------------- THE OBSERVERS --------------------------------*/
+
+ /// the subject, for `ADS::batch()` and `ADS::quiet()`
+ [[nodiscard]] Subject & subject( void ) { return( f_sub ); }
+ /// the subject
+ [[nodiscard]] const Subject & subject( void ) const { return( f_sub ); }
+
+ /// attaches the observer \f$ o \f$ and gives its number
+ /// \pre no batch is open
+ template< class O >
+ int attach( O & o )
+  requires( Subject::dynamic )
+ {
+  return( f_sub.attach( o ) );
+  }
+
+ /// detaches the observer number \f$ \mathit{id} \f$
+ /// \pre it is attached, no batch is open
+ void detach( int id )
+  requires( Subject::dynamic )
+ {
+  f_sub.detach( id );
+  }
+
 /*--------------------------------------------------------------------------*/
  private:
+ /// the root \f$ x \f$ under the root \f$ y \f$, \f$ y \f$ the larger, as
+ /// `merge()` does with nobody listening
+ void link( int x , int y );
+
+ /// the link of \f$ x \f$ under \f$ y \f$ when someone listens
+ void linkTold( int x , int y );
+
+ /// the link when someone listens, out of the hot code
+ ADS_COLD_PATH void linkCold( int x , int y ) { linkTold( x , y ); }
+
  /// a forest of `count()` trees, the roots holding minus their sizes (or
  /// minus one less their ranks)
  [[nodiscard]] bool forest( void ) const;
 
  std::vector< int > f_p;  ///< the parents, the size or rank at a root
  int f_count = 0;         ///< the number of components
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  };  // end( class DisjointSets )
 

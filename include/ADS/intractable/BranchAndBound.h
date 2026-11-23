@@ -39,6 +39,18 @@
  * weight of the candidates, `knapsackBB()` (exercise 19.12) by the
  * fractional knapsack of chapter 14.
  *
+ * `bbTsp()`, `maxWeightClique()` and `knapsackBB()` take an observer
+ * \f$ o \f$ as a last argument too [see `Modification.h`], which receives
+ * `IncumbentChanged< T >` of the handle 0, from the old best cost (or
+ * profit) to the new one, at each improvement of the best solution found
+ * so far, before the search goes on: the costs it receives decrease
+ * strictly (the profits increase strictly), and the last one is the
+ * optimum returned, unless the circuit `start` given to `bbTsp()` is
+ * already optimal, when it receives nothing. The form with no observer
+ * runs the same search with no subject, whose events compile to nothing.
+ * `littleTsp()` has no such events, since it visits by least bound and the
+ * first circuit it completes is its only solution.
+ *
  * The contracts [see `Contract.h`]: the distances are square, symmetric for
  * the bound of the 1-tree, the weights and the profits not negative and the
  * volumes positive; each optimum returned is checked as feasible, with its
@@ -73,6 +85,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Modification.h"
 #include "ADS/Portable.h"
 #include "ADS/Wide.h"
 #include "ADS/complexity/Problems.h"
@@ -85,6 +98,7 @@
 #include <cstddef>
 #include <limits>
 #include <numeric>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -94,6 +108,14 @@
 
 namespace ADS
 {
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- THE INCUMBENT -------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the best value found so far by a search changed, the handle 0
+template< class T >
+using IncumbentChanged = mod::Assigned< int , T >;
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ BOUNDS ------------------------------------*/
@@ -212,6 +234,14 @@ std::pair< T , Nodes >
 bbTsp( const std::vector< std::vector< T > > & D , const Nodes & start = {} ,
        TspBound how = TspBound::BOOK , long * generated = nullptr );
 
+/// `bbTsp( D , start , how , generated )`, each improvement of the best
+/// cost told to \f$ o \f$ as `IncumbentChanged< T >`
+/// \pre as `bbTsp()`
+template< class T , class O >
+std::pair< T , Nodes > bbTsp( const std::vector< std::vector< T > > & D ,
+			     const Nodes & start , TspBound how ,
+			     long * generated , O & o );
+
 /*--------------------------------------------------------------------------*/
 /*------------------------------ LITTLE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -296,6 +326,14 @@ inline std::pair< long , Nodes > maxWeightClique( const Adjacency & G ,
 						 const std::vector< long > & w ,
 						 long * generated = nullptr );
 
+/// `maxWeightClique( G , w , generated )`, each improvement of the best
+/// weight told to \f$ o \f$ as `IncumbentChanged< long >`
+/// \pre as `maxWeightClique()`
+template< class O >
+std::pair< long , Nodes > maxWeightClique( const Adjacency & G ,
+					  const std::vector< long > & w ,
+					  long * generated , O & o );
+
 /// the best profit and the objects of KNAPSACK by branch-&-bound, by places;
 /// the objects by decreasing profit per volume, each in and then out, pruned
 /// when the fractional knapsack of the rest does not beat the best; the
@@ -328,6 +366,14 @@ inline std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
 					    const std::vector< long > & v ,
 					    long C ,
 					    long * generated = nullptr );
+
+/// `knapsackBB( p , v , C , generated )`, each improvement of the best
+/// profit told to \f$ o \f$ as `IncumbentChanged< long >`
+/// \pre as `knapsackBB()`
+template< class O >
+std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
+				     const std::vector< long > & v , long C ,
+				     long * generated , O & o );
 
 /// KNAPSACK by backtracking with the simple bound: the objects in their
 /// order, each in and then out, an object that does not fit skipped, and a

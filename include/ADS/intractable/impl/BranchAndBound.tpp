@@ -102,10 +102,29 @@ T tspLowerBound( const std::vector< std::vector< T > > & D , const Nodes & S ,
 /*------------------------------- BBTSP ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class T >
-std::pair< T , Nodes > bbTsp( const std::vector< std::vector< T > > & D ,
-			     const Nodes & start , TspBound how ,
-			     long * generated )
+namespace detail
+{
+
+/// the incumbent of a search changed from `from` to `to`, told to the
+/// observers `o...`, if any, by a subject of `Static< O... >`; with no
+/// observer it names nothing, so that the lambdas of the search capture
+/// nothing more than with no event
+template< class T , class... O >
+inline void improved( const T & from , const T & to , O &... o )
+{
+ if constexpr( sizeof...( O ) > 0 ) {
+  using E = IncumbentChanged< T >;
+  typename Static< O... >::template bind< mod::list< E > > s( o... );
+  if( s.template live< E >() )
+   s.emit( E{ 0 , from , to } );
+  }
+ }
+
+/// bbTsp() with the observers `obs...` of the incumbents
+template< class T , class... O >
+std::pair< T , Nodes > bbTspRun( const std::vector< std::vector< T > > & D ,
+				const Nodes & start , TspBound how ,
+				long * generated , O &... obs )
 {
  ADS_PRE( detail::square( D ) );
  ADS_PRE( start.empty() || detail::permutation( start , D.size() ) );
@@ -136,6 +155,7 @@ std::pair< T , Nodes > bbTsp( const std::vector< std::vector< T > > & D ,
       self( self , i + 1 );
      else {
       minSol = S;
+      improved( minCost , lb , obs... );
       minCost = lb;
       }
      }
@@ -151,6 +171,24 @@ std::pair< T , Nodes > bbTsp( const std::vector< std::vector< T > > & D ,
  ADS_POST( ( D.size() < 2 ) ||
 	   ( tourCost( D , result.second ) == result.first ) );
  return( result );
+ }
+
+}  // end( namespace detail )
+
+template< class T >
+std::pair< T , Nodes > bbTsp( const std::vector< std::vector< T > > & D ,
+			     const Nodes & start , TspBound how ,
+			     long * generated )
+{
+ return( detail::bbTspRun( D , start , how , generated ) );
+ }
+
+template< class T , class O >
+std::pair< T , Nodes > bbTsp( const std::vector< std::vector< T > > & D ,
+			     const Nodes & start , TspBound how ,
+			     long * generated , O & o )
+{
+ return( detail::bbTspRun( D , start , how , generated , o ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -297,9 +335,14 @@ std::pair< T , Nodes > littleTsp( const std::vector< std::vector< T > > & D ,
 /*----------------------- CLIQUE AND KNAPSACK ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-inline std::pair< long , Nodes > maxWeightClique( const Adjacency & G ,
-						 const std::vector< long > & w ,
-						 long * generated )
+namespace detail
+{
+
+/// maxWeightClique() with the observers `obs...` of the incumbents
+template< class... O >
+std::pair< long , Nodes > maxWeightCliqueRun( const Adjacency & G ,
+					     const std::vector< long > & w ,
+					     long * generated , O &... obs )
 {
  ADS_PRE( detail::symmetric( G ) && ( w.size() == G.size() ) );
  ADS_PRE( detail::nonnegative( w ) );
@@ -311,6 +354,7 @@ inline std::pair< long , Nodes > maxWeightClique( const Adjacency & G ,
    *generated = 1;
   auto rec = [ & ]( auto & self , const Nodes & cand , long weight ) -> void {
    if( weight > best ) {
+    improved( best , weight , obs... );
     best = weight;
     bestSet = S;
     }
@@ -345,6 +389,23 @@ inline std::pair< long , Nodes > maxWeightClique( const Adjacency & G ,
  return( result );
  }
 
+}  // end( namespace detail )
+
+inline std::pair< long , Nodes > maxWeightClique( const Adjacency & G ,
+						 const std::vector< long > & w ,
+						 long * generated )
+{
+ return( detail::maxWeightCliqueRun( G , w , generated ) );
+ }
+
+template< class O >
+std::pair< long , Nodes > maxWeightClique( const Adjacency & G ,
+					  const std::vector< long > & w ,
+					  long * generated , O & o )
+{
+ return( detail::maxWeightCliqueRun( G , w , generated , o ) );
+ }
+
 namespace detail
 {
 
@@ -358,11 +419,12 @@ inline bool denser( const std::vector< long > & p ,
 	  Int128( p[ b ] ) * Int128( v[ a ] ) );
  }
 
-}  // end( namespace detail )
-
-inline std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
-					    const std::vector< long > & v ,
-					    long C , long * generated )
+/// knapsackBB() with the observers `obs...` of the incumbents
+template< class... O >
+std::pair< long , Nodes > knapsackBBRun( const std::vector< long > & p ,
+					const std::vector< long > & v ,
+					long C ,
+					long * generated , O &... obs )
 {
  ADS_PRE( ( p.size() == v.size() ) && ( C >= 0 ) );
  ADS_PRE(
@@ -395,6 +457,7 @@ inline std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
    };
   auto rec = [ & ]( auto & self , int i , long c , long profit ) -> void {
    if( profit > best ) {
+    improved( best , profit , obs... );
     best = profit;
     bestSet = S;
     }
@@ -419,6 +482,23 @@ inline std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
  ADS_POST( detail::sumOver( p , result.second ) == result.first );
  ADS_POST( detail::sumOver( v , result.second ) <= C );
  return( result );
+ }
+
+}  // end( namespace detail )
+
+inline std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
+					    const std::vector< long > & v ,
+					    long C , long * generated )
+{
+ return( detail::knapsackBBRun( p , v , C , generated ) );
+ }
+
+template< class O >
+std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
+				     const std::vector< long > & v , long C ,
+				     long * generated , O & o )
+{
+ return( detail::knapsackBBRun( p , v , C , generated , o ) );
  }
 
 inline std::pair< long , Nodes >

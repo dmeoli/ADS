@@ -2007,6 +2007,11 @@ engineered_emitters  fenwick              Fenwick su gruppi e monoidi
 engineered_emitters  fenwick-observer     somme prefisse, Shadow e ricalcolo
 engineered_emitters  sliding-aggregate    finestre scorrevoli, ogni algoritmo
 engineered_emitters  sliding-minqueue     finestre contro MinQueue
+engineered_emitters_forest  emit-unionfind       unioni delle radici, partizione ricostruita
+engineered_emitters_forest  emit-unionfind-batch lotti, silenzi e annullamento dell'union-find
+engineered_emitters_forest  emit-linkcut         archi e valori della foresta link-cut
+engineered_emitters_forest  emit-linkcut-batch   lotti e annullamento della foresta link-cut
+engineered_emitters_forest  emit-bnb             incumbent del branch-and-bound
 
 # the capabilities of the structures, their queries and opt-ins, beyond
 # the book
