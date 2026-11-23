@@ -401,7 +401,7 @@ therefore no code is a prefix of another one. Finally, the sum in (21.7) is
 $\sum_c n_c \log_2( n / n_c ) = n H_0$, and
 $d < \log_2( 2 / s_n ) + 1 = 2 + \log_2( 1 / s_n )$. $\square$
 
-We see that the arithmetic code is within 2 bits of $n H_0$ for the whole text,
+Hence the arithmetic code is within 2 bits of $n H_0$ for the entire text,
 against the up to $n$ bits more of (21.4). Furthermore, one can code equally well probabilities that change at each symbol, as long as the decoder
 changes them in the same way. The functions `arithmeticInterval()`,
 `arithmeticCodeExact()` and `arithmeticDecodeExact()` compute (21.6) and
@@ -709,7 +709,7 @@ the context of order $-1$ gives $1 / ( \sigma - | X | )$ to each symbol
 outside the set $X$ of the excluded ones, and a context whose symbols are
 all excluded emits nothing. After each symbol the counts of all its
 contexts grow by one, and those of a context are halved, rounding up, when
-their total passes $2^{16}$. As usual, the decoder repeats the walk of the encoder,
+their total passes $2^{16}$. The decoder repeats the walk of the encoder,
 reading in the code whether each context escapes
 ([Algorithm 21.11](21-compression.md#alg-21-11)), and
 [Table 21.5](21-compression.md#tab-21-5) follows the walk on a symbol.
@@ -763,7 +763,7 @@ after the exclusions, the item coded and its probability.
 | (empty) | a 2, b 1, r 1 ($q = 3$) | b | escape | $3 / ( 2 + 1 + 3 ) = 1 / 2$ |
 | order $-1$ | each byte 1 | a, b, r | c | $1 / 253$ |
 
-We see that the symbol c of [Table 21.5](21-compression.md#tab-21-5) costs
+The symbol c of [Table 21.5](21-compression.md#tab-21-5) costs
 $1 + 1 + \log_2 253 \approx 10$ bits, more than the 8 of a byte, since the
 model has seen only four symbols, a "small" history. Contexts typically pay off on long texts, where
 most symbols are coded at the first or the second context. In general, the compression approaches the entropy of order $K$, and on the texts of a language it
@@ -848,7 +848,7 @@ $\delta$ of [Elias 1975](Z-bibliography.md#ref-elias1975).
 We write a codeword of up to 63 bits in one field of the stream,
 turned around so that its most significant bit is read first, and a longer
 one by its unary part and its binary part apart. Its decoder is `readUnary()` followed by `readBinary()` of the stream
-([§22.2](22-succinct.md#sec-22-2)).
+(cf. [§22.2](22-succinct.md#sec-22-2)).
 
 The code of [Golomb 1966](Z-bibliography.md#ref-golomb1966) of modulus $b$
 writes $x - 1 = q b + r$ as $U( q + 1 )$ followed by the remainder $r$ in
@@ -1097,7 +1097,7 @@ i_{\ell + 1} = \mathrm{rank}_1( B_\ell , i_\ell ) , \tag{21.16}
 $$
 
 over the levels that $x_i$ reaches. Each level costs $O( 1 )$ time with
-the rank of `RankSelect` ([§22.3](22-succinct.md#sec-22-3)), i.e., one load
+the rank of `RankSelect` (cf. [§22.3](22-succinct.md#sec-22-3)), i.e., one load
 of the directory and one sideways sum.
 
 ![Figure 21.6. The sequence 5, 1, 18, 3, 260, 7, 40 in directly addressable codes with chunks of 3 bits: the level 0 holds the low chunk of each integer and the bits that mark which continue; the three that continue are, in their order, the items of the level 1, and so on. The access to $x_4$ (violet) reads a chunk per level and moves by the rank of its bit.](../figures/compression-dac.svg){#fig-21-6}
@@ -1546,7 +1546,8 @@ consecutive rows that (21.21) gives. $\square$
 Hence `count( P )` of `FMIndex.h` applies (21.21) from the last symbol of
 $P$ to the first, $p$ steps of two ranks each, starting from all the rows;
 the occurrences are $\mathit{last} - \mathit{first}$, found with no access
-to the text ([Algorithm 21.26](21-compression.md#alg-21-26)). On the example of [Figure 21.8](21-compression.md#fig-21-8), we see that the pattern abra goes
+to the text ([Algorithm 21.26](21-compression.md#alg-21-26)). On the example of
+[Figure 21.8](21-compression.md#fig-21-8), the pattern abra goes
 through the ranges $[ 1 , 6 )$ of a, $[ 10 , 12 )$ of ra, $[ 6 , 8 )$ of
 bra and $[ 2 , 4 )$ of abra. The last step, from bra, is
 $C[ a ] + \mathrm{rank}_a( L , 6 ) = 1 + 1 = 2$ and $C[ a ] +
