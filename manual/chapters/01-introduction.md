@@ -1955,6 +1955,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `priority/RadixHeap.h` | advanced | `RadixHeap` | [9](09-priority.md#ch-9) |
 | `priority/SequenceHeap.h` | advanced | `SequenceHeap` | [9](09-priority.md#ch-9) |
 | `priority/TreePriorityQueue.h` | base | `TreePriorityQueue` | [9](09-priority.md#ch-9) |
+| `priority/WorkingSetHeap.h` | advanced | `WorkingSetHeap` | [9](09-priority.md#ch-9) |
 | `set/BinaryFuseFilter.h` | advanced | `BinaryFuseFilter` | [10](10-set.md#ch-10) |
 | `set/BlockedBloomFilter.h` | advanced | `BlockedBloomFilter` | [10](10-set.md#ch-10) |
 | `set/BloomFilter.h` | base | `BloomFilter` | [10](10-set.md#ch-10) |

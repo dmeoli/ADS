@@ -669,6 +669,10 @@ using ADS::RadixHeap;
 // priority/SequenceHeap.h
 using ADS::SequenceHeap;
 
+// priority/WorkingSetHeap.h
+using ADS::WorkingSetHeap;
+using ADS::universalDijkstra;
+
 // queue/RingDeque.h
 using ADS::RingDeque;
 

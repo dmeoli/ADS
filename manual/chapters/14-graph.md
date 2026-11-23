@@ -2686,6 +2686,7 @@ prototype and its cost ([Montresor 2025, §11.3 to
 | priority queue on an unsorted list | `LIST` | [Dijkstra 1959](Z-bibliography.md#ref-dijkstra1959) | $O( n^2 )$ | correct, a node possibly extracted more than once |
 | binary heap | `HEAP` | [Johnson 1977](Z-bibliography.md#ref-johnson1977) | $O( m \log n )$ | as above |
 | Fibonacci heap | `FIBONACCI` | [Fredman and Tarjan 1987](Z-bibliography.md#ref-fredman1987) | $O( m + n \log n )$ | as above |
+| heap with the working-set bound | `universalDijkstra()` | [Haeupler et al. 2024](Z-bibliography.md#ref-haeupler2024) | $O( m + \log D )$, universally optimal | as above |
 | queue | `QUEUE` | Bellman, [Ford 1956](Z-bibliography.md#ref-ford1956b) and [Moore 1959](Z-bibliography.md#ref-moore1959) | $O( n m )$ | a negative cycle detected |
 | stack | `STACK` | | exponential in the worst case | no negative cycle allowed |
 | deque | `DEQUE` | Pape and D'Esopo ([Pape 1974](Z-bibliography.md#ref-pape1974)) | exponential in the worst case | no negative cycle allowed |
@@ -2765,6 +2766,34 @@ differ from `dijkstra()` only in the frontier they name:
 --8<-- "generated/ShortestPaths-fredmanTarjan.pseudo.md"
 
 --8<-- "generated/ShortestPaths-papeDEsopo.pseudo.md"
+
+The bounds of Table 14.3 are those of the worst case over all the graphs of
+$n$ nodes and $m$ arcs, and they say little about a given graph, on which an
+algorithm may well be faster than the bound for every choice of the costs.
+An algorithm is *universally optimal* if, on every graph, its time for the
+worst costs on that graph is within a constant factor of the least such time
+of any correct algorithm ([Haeupler, Hladík, Rozhoň, Tarjan and Tětek
+2024](Z-bibliography.md#ref-haeupler2024)). For the order of the nodes by
+their distances from $r$, they show that $\Omega( m + \log D )$ time is
+needed, $D$ being the number of such orders that some nonnegative costs give
+on the graph, and that the prototype on a heap with the working-set bound
+attains it, since the sum over the nodes of the logarithms of their working
+sets in the heap is $O( \log D )$. `universalDijkstra( g , r )`, in
+`ADS/priority/WorkingSetHeap.h`, is the prototype on the `WorkingSetHeap` of
+[§9.Zws5](09-priority.md#sec-9-Zws5), whose `decrease()` costs $O( 1 )$ amortized
+and whose extraction of a node $v$ costs $O( 1 + \log \mathit{ws}( v ) )$
+amortized, $\mathit{ws}( v )$ the number of the nodes inserted from the
+insertion of $v$ to its extraction ([Theorem 9.Zws4](09-priority.md#thm-9-Zws4)).
+On the graph in which $r$ has an arc to the first node of a path of $r'$
+"short" arcs and $t$ arcs of larger costs to other nodes, for instance, the
+binary heap pays $\Theta( \log t )$ for each node of the path and the heap
+with the working-set bound $O( 1 )$, i.e., $O( r' + t \log t )$ in all; on
+grids and road networks the working sets are typically large, and the gain,
+if any, is smaller than the constants that the heap adds (test
+`engineered_graph.working-set-dijkstra`, and the cases `fan` and `comb` of
+the benchmark `graphs` of appendix B).
+
+--8<-- "generated/WorkingSetHeap-universalDijkstra.pseudo.md"
 
 On an acyclic graph we can do better, whatever the signs of the costs. Indeed,
 `dagShortestPaths( g , r )` scans the nodes in topological order and relaxes

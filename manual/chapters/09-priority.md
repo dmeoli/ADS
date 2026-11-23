@@ -6,7 +6,7 @@
 `LinkedHeapPriorityQueue.h`, `MeldableHeap.h`,
 `FibonacciHeapPriorityQueue.h`, `PairingHeap.h`, `RadixHeap.h`,
 `DialQueue.h`, `BucketQueue.h`, `MinMaxHeap.h`, `LoserTree.h`,
-`MultiwayMerge.h`, `SequenceHeap.h`, `OrderKey.h`]
+`MultiwayMerge.h`, `SequenceHeap.h`, `WorkingSetHeap.h`, `OrderKey.h`]
 
 We are concerned in this chapter with the *priority queue*, i.e., a multiset of
 items, each with a priority taken from a totally ordered set, from which the
@@ -31,7 +31,10 @@ integers that never go below the last one extracted
 greatest item ([§9.10](09-priority.md#sec-9-10)), the merge of $k$ sorted
 sequences by a tournament ([§9.11](09-priority.md#sec-9-11)), and a priority
 queue built for the caches of a real machine
-([§9.12](09-priority.md#sec-9-12)), and [§9.13](09-priority.md#sec-9-13)
+([§9.12](09-priority.md#sec-9-12)) and a heap whose deletions cost the
+logarithm of the number of the insertions made since that of the item deleted,
+on which the algorithm of Dijkstra is universally optimal
+([§9.Zws5](09-priority.md#sec-9-Zws5)), and [§9.13](09-priority.md#sec-9-13)
 compares the realizations on what each one is meant for. Our first two heaps,
 the binary heap and the meldable heap, follow [Morin 2013, chapter
 10](Z-bibliography.md#ref-morin-cpp) section by section, with all the exercises
@@ -243,7 +246,9 @@ $^\dagger$ expected, $^\ddagger$ amortized when each layer is filled and then
 emptied and the first keys are monotone, by Lemmas
 [9.17](09-priority.md#lem-9-17) and [9.18](09-priority.md#lem-9-18)); $n$ is
 the number of items, $d$ the arity of a heap, $W$ the bits of an integer key,
-$B$ those of a digit and $N$ the buckets of the window of `DialQueue`.
+$B$ those of a digit, $N$ the buckets of the window of `DialQueue` and
+$\mathit{ws}$ the working set of the item deleted
+([§9.Zws5](09-priority.md#sec-9-Zws5)).
 
 | Realization | `min()` | `insert()` | `deleteMin()` | `decrease()` |
 |------------------------|----------|---------|--------------|--------------|
@@ -257,6 +262,7 @@ $B$ those of a digit and $N$ the buckets of the window of `DialQueue`.
 | `MeldableHeap` | $O( 1 )$ | $O( \log n )^\dagger$ | $O( \log n )^\dagger$ | none (`erase()` $O( \log n )^\dagger$) |
 | `FibonacciHeapPriorityQueue` | $O( 1 )$ | $O( 1 )$ | $O( \log n )^*$ | $O( 1 )^*$ |
 | `PairingHeap` | $O( 1 )$ | $O( 1 )^*$ | $O( \log n )^*$ | $O( 2^{2 \sqrt{\log \log n}} )^*$ |
+| `WorkingSetHeap` | $O( 1 )$ | $O( 1 )^*$ | $O( 1 + \log \mathit{ws} )^*$ | $O( 1 )^*$ |
 | `RadixHeap` (monotone) | as `pop()` | $O( 1 )$ | $O( W / B + 2^B W / ( 64 B ) )^*$ | none |
 | `DialQueue` (monotone, band $C < N$) | as `pop()` | $O( 1 )$ | $O( 1 + N / 64 )$ | none |
 | `BucketQueue` (two small keys) | $O( 1 )^\ddagger$ | $O( 1 )$ | $O( 1 )^\ddagger$ | none |
@@ -2084,33 +2090,299 @@ has no better one are split off with it, and many equal keys thus cost no
 quadratic time. A small bulk goes to the insertion heap, made a heap only
 when a `top()` or a `pop()` needs it (test `heaps.sequence-heap`).
 
+## 9.Zws5 Heaps with the working-set bound {#sec-9-Zws5}
+
+The bounds of the heaps of [§9.3](09-priority.md#sec-9-3) to
+[§9.8](09-priority.md#sec-9-8) depend on the number $n$ of the items in the
+heap. Yet, in many computations the item extracted was inserted only "shortly"
+before, and most of the items in the heap are older than it and need not be
+compared with it. Consider the algorithm of Dijkstra on the graph of [Haeupler
+et al. 2024, Figure 1](Z-bibliography.md#ref-haeupler2024), whose source $s$
+has an arc to the first node of a path $v_1 , \ldots , v_r$ of "short" arcs and
+$t$ arcs of larger costs to the nodes $u_1 , \ldots , u_t$. Each $v_j$ is
+inserted and extracted while the $t$ nodes $u_i$ wait in the heap; hence, a
+heap of [§9.4](09-priority.md#sec-9-4) pays $\Theta( \log t )$ for each of the
+$r$ extractions of the path, whereas the distances can be ordered in
+$O( r + t \log t )$ time. Following [Haeupler, Hladík, Rozhoň, Tarjan and Tětek
+2024](Z-bibliography.md#ref-haeupler2024), we call *working set* of an item $x$
+the set of the items inserted from the insertion of $x$ to its deletion, $x$
+included, and we denote by $\mathit{ws}( x )$ its size (an item that is deleted
+and inserted again counts as a new item). A heap has the *working-set bound* if
+each of its operations but `deleteMin()` takes $O( 1 )$ amortized time, and a
+`deleteMin()` that returns $x$ takes $O( 1 + \log \mathit{ws}( x ) )$ amortized
+time. This is never more than the $O( \log n )$ of a Fibonacci heap, and it is
+$O( 1 )$ for each $v_j$ in the example above.
+
+[Iacono 2000](Z-bibliography.md#ref-iacono2000) proved that the pairing heap of
+[§9.8](09-priority.md#sec-9-8) has (a form of) this bound when there is no
+`decrease()`. The heap of Haeupler et al., which
+`WorkingSetHeap< K , Policy , A >` realizes, is to our knowledge the first one
+that also has a `decrease()` in $O( 1 )$ amortized time (the lemmas and the
+sections of their paper that we cite are numbered as in its extended version).
+Its items are the ids $[ 0 , n )$ with their keys, as in `IndexedDaryHeap`
+([§9.5](09-priority.md#sec-9-5)), whose interface it has, the subject policy of
+the events included. The items are split among the *inner heaps*
+$H_1 , \ldots , H_k$ by the order of their insertions, the latest in $H_1$,
+with $| H_i | \le 2^{2^i}$. An insertion makes a heap $H_0$ of one item, melds
+$H_j$ into $H_{j + 1}$ for the least $j$ with
+$| H_j | + | H_{j + 1} | \le 2^{2^{j + 1}}$ (an $H_{k + 1}$ that does not exist
+counts as empty), and moves the heaps before $H_j$ one place up.
+
+Each inner heap has its least key at hand, and a bit $b_i$ records whether the
+least key of $H_i$ is below those of all the heaps after it (a *suffix
+minimum*). The minimum of the heap is then in the heap of the lowest bit set,
+from which `pop()` takes it, setting again the bits up to that heap. When the
+key of a `decrease()` becomes the least one of its heap $H_i$, in turn, $b_i$
+is set if the key is below the least key of the next suffix minimum, and the
+bits of the suffix minima before $H_i$ whose keys it beats are cleared.
+Haeupler et al. find the inner heap of an item, which `decrease()` needs, by a
+union-find on the items (§10.3 of [Haeupler et al.
+2024](Z-bibliography.md#ref-haeupler2024)). Since the inner heaps hold
+intervals of insertions, we number the insertions instead and keep the first
+number of each heap, so that the heap of an item is found by comparing its
+number with those of the at most 5 heaps ([Lemma
+9.22](09-priority.md#lem-9-Zws1)). This takes 7 comparisons of integers and no
+branch, i.e., constant time on a word of 64 bits, the same assumption under
+which the bits $b_i$ fit in a word and the next and the previous bit set are
+found in $O( 1 )$ time (§10.4 of the paper).
+
+The inner heaps are type-1 rank-pairing heaps ([Haeupler, Sen and Tarjan
+2011](Z-bibliography.md#ref-haeupler2011)) on one vector of nodes indexed by
+the ids, whose operations other than the deletion of the minimum take $O( 1 )$
+amortized time. In particular, a meld concatenates two circular lists of roots.
+Each inner heap is a list of *half-trees*, i.e., binary trees whose roots have
+no right child and in which each node is not greater than the nodes of its left
+subtree. A link of two roots of equal rank makes the greater one the left child
+of the other, with the old left subtree of the winner as its right subtree, and
+raises the rank of the winner by one. A deletion makes a root of each node on
+the right spine of the left child of the deleted root, and then links in one
+pass the roots of equal rank. Finally, a decrease cuts the node with its left
+subtree, puts its right child in its place and lowers the ranks above it until
+the rule of type 1 holds again (each child has the rank differences 1 and 1, or
+0 and a positive one).
+
+The public members of `WorkingSetHeap` are the following:
+
+```cpp
+// declarations of <ADS/priority/WorkingSetHeap.h>
+template< class K , class Policy = NoObservers ,
+          class A = std::allocator< K > >
+class WorkingSetHeap
+{
+ public:
+ struct Entry
+ {
+  K key;
+  int id;
+  };
+ using Handle = int;
+ template< class... O >
+ explicit WorkingSetHeap( int n = 0 , O &... o );
+ void reset( int n );
+ void grow( int n );
+ int ids( void ) const;
+ bool empty( void ) const;
+ std::size_t size( void ) const;
+ int heaps( void ) const;
+ bool contains( int id ) const;
+ const K & key( int id ) const;
+ void push( int id , const K & k );
+ void decrease( int id , const K & k );
+ void increase( int id , const K & k );
+ void update( int id , const K & k );
+ void erase( int id );
+ bool pushOrDecrease( int id , const K & k );
+ Entry top( void ) const;
+ Entry pop( void );
+ void clear( void );
+ void extract( const K & theta , std::vector< int > & out );
+ Handle insert( int id , const K & k );
+ int min( void ) const;
+ int deleteMin( void );
+ };
+template< Graph G >
+auto universalDijkstra( const G & g , int r );
+```
+
+<span id="alg-9-Zws3"></span>**Algorithm 9.Zws3.** The insertion, the decrease and
+the deletion of the minimum of `WorkingSetHeap` ([Haeupler et al.
+2024](Z-bibliography.md#ref-haeupler2024), §10; [Haeupler, Sen and Tarjan
+2011](Z-bibliography.md#ref-haeupler2011), §3 and §4 for the inner heaps).
+
+--8<-- "generated/WorkingSetHeap-push.pseudo.md"
+
+--8<-- "generated/WorkingSetHeap-decrease.pseudo.md"
+
+--8<-- "generated/WorkingSetHeap-pop.pseudo.md"
+
+The first lemma collects the invariants of the partition. Only an insertion
+changes the partition, since the other operations remove items from an inner
+heap or reorder it, but never move an item to another inner heap.
+
+<span id="lem-9-Zws1"></span>**Lemma 9.Zws1.** *In a `WorkingSetHeap`, at the end
+of each operation: (i) if $i < j$, every item of $H_i$ was inserted after every
+item of $H_j$; (ii) $| H_i | \le 2^{2^i}$ for each $i$; (iii) if the heap holds
+the inner heaps $H_1 , \ldots , H_k$, then more than $2^{2^{k - 1}}$ items were
+in the heap at once at some time (for $k > 1$), and hence $k \le 5$ when the
+ids are those of an `int`.*
+
+*Proof.* (i) and (ii) are Lemmas 10.1 and 10.2 of [Haeupler et al.
+2024](Z-bibliography.md#ref-haeupler2024), by induction on the operations: a
+meld joins two heaps adjacent in the order of the insertions, the moves keep
+that order, and the meld chosen by line 3 of `push()` leaves $H_{j + 1}$ with
+at most $2^{2^{j + 1}}$ items, while each moved heap $H_i$ goes to the place
+$i + 1$, whose bound is larger. For (iii), the insertion that created the place
+$k > 1$ did not meld $H_{k - 2}$ and $H_{k - 1}$ (in the numbering before the
+moves), which therefore held together more than $2^{2^{k - 1}}$ items at that
+time (Lemma 10.3 of the paper). An `int` has fewer than $2^{31}$ nonnegative
+values, and $2^{2^{k - 1}} < 2^{31}$ gives $k \le 5$; in the code, the places
+of the heaps are 8, and `push()` checks $k < 7$ among its postconditions.
+$\square$
+
+The second lemma is the reason why a deletion from an "old" inner heap is paid
+by the working set of the item deleted.
+
+<span id="lem-9-Zws2"></span>**Lemma 9.Zws2.** *If $i > 1$, each item $x$ of $H_i$
+has $\mathit{ws}( x ) > 2^{2^{i - 2}} - 2^{2^{i - 3}}$, and hence
+$\log_2 \mathit{ws}( x ) \ge 2^{i - 3}$ if $i \ge 3$.*
+
+*Proof.* An item enters $H_i$, $i > 1$, only during an insertion that changes
+$H_i$, by a meld or a move, and such an insertion changes $H_{i - 1}$ as well.
+By Lemma 10.4 of [Haeupler et al. 2024](Z-bibliography.md#ref-haeupler2024),
+applied to $H_{i - 1}$, at the beginning of the insertion (after $H_0$ is made)
+$| H_{i - 2} | > 2^{2^{i - 2}} - 2^{2^{i - 3}}$: indeed, the insertion does not
+meld $H_{i - 3}$ with $H_{i - 2}$, which hold together more than
+$2^{2^{i - 2}}$ items, and $| H_{i - 3} | \le 2^{2^{i - 3}}$ by (ii) of [Lemma
+9.22](09-priority.md#lem-9-Zws1) (for $i = 2$, $H_0$ holds one item, more than
+$2 - \sqrt{2}$). The insertion moves $H_{i - 2}$ to the place $i - 1$, and by
+(i) of [Lemma 9.Zws1](09-priority.md#lem-9-Zws1) its items were inserted after
+every item of $H_i$, $x$ included, while $x$ was in the heap; they are thus in
+the working set of $x$ (Corollary 10.5 of the paper), and $x$ stays in $H_i$ or
+moves up until its deletion. Finally, if $i \ge 3$, then $2^{2^{i - 3}} \ge 2$,
+and $2^{2^{i - 2}} = ( 2^{2^{i - 3}} )^2 \ge 2 \cdot 2^{2^{i - 3}}$ gives
+$\mathit{ws}( x ) > 2^{2^{i - 3}}$. $\square$
+
+<span id="thm-9-Zws4"></span>**Theorem 9.Zws4.** *Starting from an empty
+`WorkingSetHeap`, `min()` and `top()` cost $O( 1 )$, `push()` and `decrease()`
+cost $O( 1 )$ amortized, a `pop()` that returns $x$ costs
+$O( 1 + \log \mathit{ws}( x ) )$ amortized, and `erase()` and `increase()` cost
+$O( 1 + \log s )$ amortized on a heap of $s$ items; the same bounds hold for
+the comparisons of keys. Hence the algorithm of Dijkstra on this heap,
+`universalDijkstra( g , r )`, runs in $O( m + \log D )$ time and makes
+$O( m + \log D )$ comparisons, $D$ being the number of the orders of the nodes
+reachable from $r$ by their distance that some nonnegative costs of the arcs
+give; since every algorithm that computes such an order needs
+$\Omega( m + \log D )$ time on some costs, the algorithm is universally optimal
+in time ([Haeupler et al. 2024](Z-bibliography.md#ref-haeupler2024), Theorems
+6.5 and 7.4).*
+
+*Proof.* The bounds of the inner heaps are those of the type-1 rank-pairing
+heaps, $O( 1 )$ amortized for an insertion, a meld and a decrease and
+$O( \log | H_i | )$ amortized for a deletion from $H_i$ ([Haeupler, Sen and
+Tarjan 2011](Z-bibliography.md#ref-haeupler2011), Theorem 5.2). The operations
+of the outer heap are those of §10.1 and §10.4 of [Haeupler et al.
+2024](Z-bibliography.md#ref-haeupler2024), with two changes that cost $O( 1 )$:
+the inner heap of an item is found by its number in constant time (and not by a
+union-find), and an insertion that melds $H_0$ into $H_1$ sets the bits as a
+`decrease()` on $H_1$ would, which leaves them as the recomputation of the
+paper does, since only the least key of $H_1$ may have changed. Theorem 10.6
+and Lemma 10.8 of the paper then give the amortized bounds of `push()`,
+`decrease()` and `pop()`: the cost $O( j )$ of an insertion that changes $j$
+inner heaps is charged to their items, each of which moves to a higher place,
+and the deletion of $x$ from $H_i$ costs $O( \log | H_i | + i ) = O( 2^i )$ by
+(ii) of [Lemma 9.Zws1](09-priority.md#lem-9-Zws1), i.e.,
+$O( 1 + \log \mathit{ws}( x ) )$ by [Lemma 9.Zws2](09-priority.md#lem-9-Zws2) when
+$i \ge 3$, and $O( 1 )$ when $i \le 2$. `erase()` is a cut and a deletion from
+$H_i$, which cost $O( \log | H_i | + i ) = O( \log s + k )$ amortized, with
+$k \le 5$ by [Lemma 9.Zws1](09-priority.md#lem-9-Zws1), and `increase()` is
+`erase()` followed by `push()`. The comparisons of the numbers of the
+insertions are not comparisons of keys, and the analyses above count each step
+that compares keys. Finally, the run of Dijkstra makes $n$ insertions, at most
+$m$ decreases and $n$ deletions, and
+$\sum_v \log \mathit{ws}( v ) = O( \log D )$ (Lemma 7.3 of the paper), which
+gives the time and, by Theorem 6.5 of the paper, its optimality. $\square$
+
+We remark that [Theorem 9.Zws4](09-priority.md#thm-9-Zws4) bounds the comparisons of
+the algorithm of Dijkstra by $O( m + \log D )$, whereas the paper shows that
+$\Omega( F - n + 1 + \log D )$ are needed, $F$ being the number of the arcs
+that may lie forward in an order of the distances. The two algorithms that
+close this gap of $O( n )$, Dijkstra with lookahead and the recursive Dijkstra
+of sections 8 and 9 of the paper, are not realized in ADS.
+
+As for the pairing heap of [§9.8](09-priority.md#sec-9-8), [Iacono
+2000](Z-bibliography.md#ref-iacono2000) proved that, if only `insert()` and
+`deleteMin()` are used, the two-pass pairing heap has the working-set bound, in
+a form that is no weaker than ours (§2.3 of [Haeupler et al.
+2024](Z-bibliography.md#ref-haeupler2024)). His analysis takes the insertion
+that links the new node with the root, i.e., that of `PairingHeap` with `Aux`
+false; the auxiliary variant defers the links to `deleteMin()`, and it is not
+covered by his result. The run of Dijkstra with the lazy deletion of
+[§9.1](09-priority.md#sec-9-1) makes only these two operations, but its items
+are the copies of the nodes, one for each decrease of a distance. The working
+set of a copy then counts all the copies inserted meanwhile, and a stale copy,
+which may be extracted long after a newer copy of its node, may have a large
+one; thus, the bound gives $O( m + \sum \log \mathit{ws} )$ over up to $m$
+copies, which (as far as we know) is not known to be $O( m + \log D )$. With
+the native `decrease()` of `PairingHeap`, which the shortest paths of [chapter
+14](14-graph.md#ch-14) use, no working-set bound is known at all. Furthermore,
+the lower bound of [Fredman 1999](Z-bibliography.md#ref-fredman1999),
+$\Omega( \log \log n )$ amortized for `decrease()` in this family of heaps,
+already excludes the $O( m + \log D )$ of [Theorem 9.Zws4](09-priority.md#thm-9-Zws4)
+on the graphs where the decreases dominate. On the sequences that the bound is
+about, however, the two heaps typically behave alike. In the rounds of the test
+`heaps.working-set-bound`, each an insertion and a deletion of a key below the
+$t$ items already in the heap, one comparison of keys per round is made by both
+the pairing heap and `WorkingSetHeap` for $t$ from $2^{11}$ to $2^{18}$ (with
+the contracts off, whose checks compare keys too). On `IndexedDaryHeap` with
+$D = 4$, instead, a round costs from 29 to 44 comparisons, about 4 more for
+each level that the heap gains.
+
+`WorkingSetHeap` thus trades constants for the bound, since a node holds the
+key, three links, the rank and the number of its insertion, the inner heaps are
+trees of pointers, and the bits of the suffix minima cost a few comparisons
+more per operation. On graphs whose working sets are "large" (e.g., grids and
+road networks, in which the nodes leave the frontier in little relation to
+their age) we therefore expect the 4-ary heap of [§9.5](09-priority.md#sec-9-5)
+to remain faster, and the heap of this section to pay off only on graphs such
+as the one of Figure 1 of the paper, where most extractions have small working
+sets. Also, beyond the paper, the heap is addressable in full, as
+`IndexedDaryHeap` is. `erase()` cuts the id from its half-tree as a
+`decrease()` does, and removes it from the roots of its inner heap as a
+deletion does; `increase()` takes the id out and inserts it again (as a new
+item, for the working sets), and `extract( theta , out )` removes the ids of
+key at most $\theta$ (tests `heaps.working-set-heap`,
+`engineered_graph.working-set-dijkstra` and
+`engineered_emitters.emit-working-set-heap`).
+
 ## 9.13 The realizations compared {#sec-9-13}
 
-We choose among the realizations first by the operations that a
-computation needs, and only then by their constants. A queue that is only
-pushed and popped, with "small" items that carry their keys, is typically
-best served by `DaryHeap` with $D = 4$ ([Lemma 9.6](09-priority.md#lem-9-6)),
-or, when it holds many more items than the cache, by `SequenceHeap`
-([Theorem 9.4](09-priority.md#thm-9-4)); the lazy deletion makes either one
-serve the algorithms that would decrease a key. When the items are the
-nodes of a graph and the decreases are real, `IndexedDaryHeap` keeps the
-keys in the heap and the places in a vector, and is usually preferable to
-the heaps with pointers, whose `decrease()` is "cheaper" in the amortized
-sense but whose nodes are scattered in memory: among those, the pairing
-heap is typically faster than the Fibonacci heap in practice ([Stasko and
-Vitter 1987](Z-bibliography.md#ref-stasko1987); [Larkin, Sen and Tarjan
+We choose among the realizations first by the operations that a computation
+needs, and only then by their constants. A queue that is only pushed and
+popped, with "small" items that carry their keys, is typically best served by
+`DaryHeap` with $D = 4$ ([Lemma 9.6](09-priority.md#lem-9-6)), or, when it
+holds many more items than the cache, by `SequenceHeap` ([Theorem
+9.4](09-priority.md#thm-9-4)); the lazy deletion makes either one serve the
+algorithms that would decrease a key. When the items are the nodes of a graph
+and the decreases are real, `IndexedDaryHeap` keeps the keys in the heap and
+the places in a vector, and is usually preferable to the heaps with pointers,
+whose `decrease()` is "cheaper" in the amortized sense but whose nodes are
+scattered in memory: among those, the pairing heap is typically faster than the
+Fibonacci heap in practice ([Stasko and Vitter
+1987](Z-bibliography.md#ref-stasko1987); [Larkin, Sen and Tarjan
 2014](Z-bibliography.md#ref-larkin2014)), although only the latter has the
-bound of [Theorem 9.3](09-priority.md#thm-9-3). A merge of two queues calls
-for `MeldableHeap`, the only realization whose merge is logarithmic, and
-the extraction of both ends for `IntervalHeap`, usually faster than
-`MinMaxHeap` in practice, since its tree is half as deep and the two
-items of a node share a line of the cache. When the keys are small
-integers and the queue is monotone, `DialQueue` and `RadixHeap` find the
-least key by the position of the keys, without comparisons, and
-`BucketQueue` does it on the two keys of a search A*. Finally, we keep the
-lists and the tree of [§9.2](09-priority.md#sec-9-2) for teaching and for
-the few cases (a handful of items, or the need for the items in order) where
-their costs do not matter.
+bound of [Theorem 9.3](09-priority.md#thm-9-3). When most of the items
+extracted were inserted shortly before, `WorkingSetHeap` bounds each extraction
+by the logarithm of its working set ([Theorem 9.Zws4](09-priority.md#thm-9-Zws4)), at
+the price of larger constants. A merge of two queues calls for `MeldableHeap`,
+the only realization whose merge is logarithmic, and the extraction of both
+ends for `IntervalHeap`, usually faster than `MinMaxHeap` in practice, since
+its tree is half as deep and the two items of a node share a line of the cache.
+When the keys are small integers and the queue is monotone, `DialQueue` and
+`RadixHeap` find the least key by the position of the keys, without
+comparisons, and `BucketQueue` does it on the two keys of a search A*. Finally,
+we keep the lists and the tree of [§9.2](09-priority.md#sec-9-2) for teaching
+and for the few cases (a handful of items, or the need for the items in order)
+where their costs do not matter.
 
 A comparison of the times of these realizations belongs to the campaign of
 measurements on an idle machine of appendix B, and we give none here. We
@@ -2153,7 +2425,12 @@ the variants and the experiments of [Stasko and Vitter
 1999](Z-bibliography.md#ref-fredman1999) and the upper bounds of [Iacono
 2000](Z-bibliography.md#ref-iacono2000), [Pettie
 2005](Z-bibliography.md#ref-pettie2005) and [Elmasry
-2009](Z-bibliography.md#ref-elmasry2009). In turn, the monotone queues are due
+2009](Z-bibliography.md#ref-elmasry2009). The working-set bound of a heap
+with decrease-key, and the universal optimality of the algorithm of Dijkstra
+that it gives, are due to [Haeupler, Hladík, Rozhoň, Tarjan and Tětek
+2024](Z-bibliography.md#ref-haeupler2024), whose inner heaps may be the
+rank-pairing heaps of [Haeupler, Sen and Tarjan
+2011](Z-bibliography.md#ref-haeupler2011). In turn, the monotone queues are due
 to [Dial 1969](Z-bibliography.md#ref-dial1969) and to [Ahuja, Mehlhorn, Orlin
 and Tarjan 1990](Z-bibliography.md#ref-ahuja1990), and were compared for the
 shortest paths by [Cherkassky, Goldberg and Radzik
@@ -2301,3 +2578,10 @@ Each exercise names the test of the library that solves it (run it with
 30. Draw a sample of $n$ items from a stream of unknown length by a heap of
     random keys, and compare it with the reservoir. Test:
     `pearls_io.ch3.heap-sampling`.
+31. Realize the heap with the working-set bound on type-1 rank-pairing
+    heaps, check that the comparisons of a round of an insertion and a
+    deletion of a recent item do not grow with the size of the heap, and
+    run on it the algorithms of Dijkstra and Prim ([Theorem
+    9.5](09-priority.md#thm-9-Zws4)). Tests: `heaps.working-set-heap`,
+    `heaps.working-set-bound`, `engineered_graph.working-set-dijkstra`,
+    `engineered_emitters.emit-working-set-heap`.

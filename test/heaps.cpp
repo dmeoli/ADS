@@ -3,9 +3,9 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * Tests of the engineered priority queues beyond the d-ary heap: the radix
- * heap and the pairing heap, each against a reference of the standard
- * library on random operations and on the edge cases, at the level 3 of
- * the contracts.
+ * heap, the pairing heap and the heap with the working-set bound, each
+ * against a reference of the standard library on random operations and on
+ * the edge cases, at the level 3 of the contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -29,6 +29,7 @@
 #include "ADS/priority/PairingHeap.h"
 #include "ADS/priority/RadixHeap.h"
 #include "ADS/priority/SequenceHeap.h"
+#include "ADS/priority/WorkingSetHeap.h"
 
 #include <algorithm>
 #include <climits>
@@ -472,6 +473,234 @@ ADS_TEST( "pairing-heap" )
  handled< PA >( 4 , 3000 , 3 );
  handled< P2 >( 5 , 6000 , 1000000 );  // past 1024 nodes
  handled< PA >( 6 , 6000 , 1000000 );
+ }
+
+/// the heap with the working-set bound H, of n ids, against a set of the
+/// pairs ( key , id ) on steps random pushes, pops, decreases (to a new
+/// minimum, to the same key, to a random lower one), increases, updates,
+/// erasures and pushOrDecrease()s, the keys in [ lo , lo + range ), so
+/// that equal keys abound when range is small
+template< class K >
+void workingSet( unsigned seed , int n , int steps , K lo , K range )
+{
+ WorkingSetHeap< K > H( n );
+ std::set< std::pair< K , int > > R;
+ std::vector< K > key( std::size_t( n ) , K{} );
+ std::mt19937_64 g( seed );
+ auto draw = [ & ]() {
+  return( K( lo + K( g() % std::uint64_t( range ) ) ) );
+  };
+ for( int t = 0 ; t < steps ; ++t ) {
+  const int id = int( g() % unsigned( n ) );
+  const unsigned c = unsigned( g() % 16 );
+  const auto I = std::size_t( id );
+  if( ! H.contains( id ) ) {
+   if( c < 10 ) {
+    const K k = draw();
+    H.push( id , k );
+    key[ I ] = k;
+    R.emplace( k , id );
+    }
+   }
+  else if( c < 4 ) {
+   const K k = ( c == 0 )   ? R.begin()->first  // to the minimum
+	       : ( c == 1 ) ? key[ I ]          // to the same
+			    : std::min( key[ I ] , draw() );
+   R.erase( { key[ I ] , id } );
+   H.decrease( id , k );
+   key[ I ] = k;
+   R.emplace( k , id );
+   }
+  else if( c < 5 ) {
+   const K k = std::max( key[ I ] , draw() );
+   R.erase( { key[ I ] , id } );
+   H.increase( id , k );
+   key[ I ] = k;
+   R.emplace( k , id );
+   }
+  else if( c < 6 ) {
+   const K k = draw();
+   R.erase( { key[ I ] , id } );
+   H.update( id , k );
+   key[ I ] = k;
+   R.emplace( k , id );
+   }
+  else if( c < 7 ) {
+   R.erase( { key[ I ] , id } );
+   H.erase( id );
+   }
+  else if( c < 8 ) {
+   const K k = draw();
+   const bool down = k < key[ I ];
+   CHECK( H.pushOrDecrease( id , k ) == down );
+   if( down ) {
+    R.erase( { key[ I ] , id } );
+    key[ I ] = k;
+    R.emplace( k , id );
+    }
+   }
+  if( ! R.empty() && ( g() % 3 == 0 ) ) {
+   CHECK( H.top().key == R.begin()->first );
+   const auto e = H.pop();  // a least key, ties any id
+   CHECK( e.key == R.begin()->first );
+   CHECK( R.erase( { e.key , e.id } ) == 1 );
+   }
+  CHECK( H.size() == R.size() );
+  CHECK( H.heaps() <= 5 );
+  }
+ while( ! R.empty() ) {
+  const auto e = H.pop();
+  CHECK( e.key == R.begin()->first );
+  CHECK( R.erase( { e.key , e.id } ) == 1 );
+  }
+ CHECK( H.empty() );
+ }
+
+// the heap with the working-set bound against a set, on int, 64-bit and
+// floating keys, with many ties and past 1024 items; the edge cases: no
+// ids, the empty heap and the contracts, one item, the extremes of 32 and
+// 64 bits, fills and drains of sizes around the powers of 2 and the bounds
+// 2^(2^i) of the inner heaps, sorted, reversed and equal keys, a clear(),
+// a reset() and a grow(), extract(), and the concepts of PriorityQueue.h
+ADS_TEST( "working-set-heap" )
+{
+ static_assert( AddressablePriorityQueue< WorkingSetHeap< int > > );
+ static_assert( FrontierQueue< WorkingSetHeap< int > > );
+ static_assert( decrease_key_of< WorkingSetHeap< int > >() ==
+		decrease_key_kind::native );
+ workingSet< int >( 1 , 300 , 20000 , 0 , 1000 );
+ workingSet< int >( 2 , 300 , 20000 , -5 , 4 );  // many ties
+ workingSet< std::int64_t >( 3 , 3000 , 40000 , INT64_C( -1 ) << 40 ,
+			     INT64_C( 1 ) << 41 );  // past 1024 items
+ workingSet< double >( 4 , 100 , 5000 , -50.0 , 100.0 );
+ WorkingSetHeap< int > Z( 0 );
+ CHECK( Z.empty() && ( Z.ids() == 0 ) && ( Z.size() == 0 ) );
+ CHECK_THROWS( ( void )Z.top() , contract_violation );
+ CHECK_THROWS( Z.pop() , contract_violation );
+ CHECK_THROWS( ( void )Z.contains( 0 ) , contract_violation );
+ WorkingSetHeap< int > E( 4 );
+ E.push( 2 , 5 );  // one item
+ CHECK( ( E.min() == 2 ) && ( E.key( 2 ) == 5 ) && ( E.size() == 1 ) );
+ CHECK_THROWS( E.push( 2 , 1 ) , contract_violation );
+ CHECK_THROWS( E.decrease( 2 , 6 ) , contract_violation );
+ CHECK_THROWS( E.increase( 2 , 4 ) , contract_violation );
+ CHECK_THROWS( E.decrease( 1 , 1 ) , contract_violation );
+ CHECK_THROWS( E.erase( 0 ) , contract_violation );
+ E.decrease( 2 , 5 );  // the same key
+ E.decrease( 2 , INT_MIN );
+ CHECK( E.deleteMin() == 2 && E.empty() && ! E.contains( 2 ) );
+ E.push( 0 , INT_MAX );  // the extremes of 32 bits
+ E.push( 1 , INT_MIN );
+ E.push( 3 , INT_MAX );
+ CHECK( E.pop().key == INT_MIN );
+ E.increase( 0 , INT_MAX );
+ CHECK( ( E.pop().key == INT_MAX ) && ( E.pop().key == INT_MAX ) );
+ WorkingSetHeap< std::uint64_t > U( 3 );  // and of 64 bits unsigned
+ U.push( 0 , std::numeric_limits< std::uint64_t >::max() );
+ U.push( 1 , 0 );
+ U.push( 2 , std::uint64_t( 1 ) << 63 );
+ CHECK( ( U.pop().id == 1 ) && ( U.pop().id == 2 ) && ( U.pop().id == 0 ) );
+ for( int n : { 1 , 2 , 3 , 4 , 5 , 15 , 16 , 17 , 255 , 256 , 257 , 1023 ,
+		1024 , 1025 ,
+		65535 , 65536 , 65537 } )
+  for( int dir = 0 ; dir < 3 ; ++dir ) {  // sorted, reversed, equal
+   WorkingSetHeap< int > H( n );
+   for( int i = 0 ; i < n ; ++i )
+    H.push( i , dir == 0 ? i : dir == 1 ? n - i : 7 );
+   CHECK( ( H.size() == std::size_t( n ) ) && ( H.heaps() <= 5 ) );
+   int last = INT_MIN;
+   bool sorted = true;
+   for( int i = 0 ; i < n ; ++i ) {
+    const auto e = H.pop();
+    sorted = sorted && ( e.key >= last );
+    last = e.key;
+    }
+   CHECK( sorted && H.empty() );
+   }
+ WorkingSetHeap< int > C( 40 );
+ for( int i = 0 ; i < 40 ; ++i )
+  C.push( i , ( i * 7 ) % 13 );
+ C.decrease( 39 , -1 );
+ std::vector< int > out;
+ C.extract( 2 , out );  // the keys -1, 0, 1, 2
+ CHECK( ( out.size() == 10 ) && ( out.front() == 39 ) );
+ C.clear();
+ CHECK( C.empty() && ! C.contains( 5 ) );
+ C.push( 5 , 3 );
+ C.grow( 100 );
+ C.push( 99 , 1 );
+ CHECK( ( C.ids() == 100 ) && ( C.min() == 99 ) && C.contains( 5 ) );
+ C.reset( 10 );
+ CHECK( C.empty() && ( C.ids() == 10 ) );
+ }
+
+/// the comparisons of the keys of a run, counted
+struct CountedKey
+{
+ long long v = 0;
+ static inline long long count = 0;
+ friend bool operator<( const CountedKey & a , const CountedKey & b ) {
+  ++count;
+  return( a.v < b.v );
+  }
+ friend bool operator==( const CountedKey & a , const CountedKey & b ) {
+  return( a.v == b.v );
+  }
+ friend auto operator<=>( const CountedKey & a , const CountedKey & b ) {
+  ++count;
+  return( a.v <=> b.v );
+  }
+ };
+
+/// the comparisons per round of t items of large keys pushed first, then
+/// r rounds of a push of a key below them all and of a pop, which returns
+/// it: the working set of each item of the rounds is 1, and that of the
+/// first ones at most t + r
+template< class Make >
+double roundsCost( int t , int r , Make && make )
+{
+ auto H = make( t + 1 );
+ for( int i = 0 ; i < t ; ++i )
+  H.insert( i , CountedKey{ 1000000 + ( i * 7919LL ) % t } );
+ CountedKey::count = 0;
+ for( int j = 0 ; j < r ; ++j ) {
+  H.insert( t , CountedKey{ j } );
+  CHECK( H.deleteMin() == t );
+  }
+ return( double( CountedKey::count ) / r );
+ }
+
+// the working-set bound on the comparisons: in rounds of a push and a pop of
+// an item below the t items already in the heap, the comparisons per round
+// of the heap with the working-set bound do not grow with t, those of the
+// 4-ary heap grow with log t, and those of the two-pass pairing heap, which
+// has the bound without decrease-key (Iacono), do not grow either; the
+// heaps hold more than 1024 items, so that the invariants, which compare
+// keys too, are not checked
+ADS_TEST( "working-set-bound" )
+{
+ auto ws = []( int n ) { return( WorkingSetHeap< CountedKey >( n ) ); };
+ auto dary = []( int n ) { return( IndexedDaryHeap< CountedKey , 4 >( n ) ); };
+ const int t1 = 1 << 11 , t2 = 1 << 18 , r = 4000;
+ const double w1 = roundsCost( t1 , r , ws ) , w2 = roundsCost( t2 , r , ws ) ,
+	      d1 = roundsCost( t1 , r , dary ) ,
+	      d2 = roundsCost( t2 , r , dary );
+ CHECK( ( w2 <= w1 + 1 ) && ( w2 <= 10 ) );
+ CHECK( d2 >= d1 + 8 );
+ double p[ 2 ];
+ for( int i = 0 ; i < 2 ; ++i ) {
+  const int t = i ? t2 : t1;
+  PairingHeap< int , CountedKey > P;
+  for( int j = 0 ; j < t ; ++j )
+   P.insert( j , CountedKey{ 1000000 + ( j * 7919LL ) % t } );
+  CountedKey::count = 0;
+  for( int j = 0 ; j < r ; ++j ) {
+   P.insert( t , CountedKey{ j } );
+   CHECK( P.deleteMin() == t );
+   }
+  p[ i ] = double( CountedKey::count ) / r;
+  }
+ CHECK( p[ 1 ] <= p[ 0 ] + 1 );
  }
 
 /// the sequence heap against std::priority_queue on steps random pushes
