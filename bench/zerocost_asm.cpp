@@ -20,8 +20,12 @@
  * that the object file holds, with that of the tree with no observer, the
  * names of the policies left out of those of the relocations. With
  * `ZC_BEFORE` (the headers of an older revision) only the functions of the
- * heap and of the tree with no observer are compiled, and zerocost.py
- * compares every function of the file with that of the present revision.
+ * heap and of the tree with no observer are compiled, together with those
+ * of the other structures that emit (the queues with no handles, the
+ * union-find, the link-cut trees, the B-tree, the dense map, the table of
+ * pointers and two branch-and-bounds), each on its default type, and
+ * zerocost.py compares every function of the file with that of the present
+ * revision.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -195,6 +199,114 @@ void zc_heap_erase( Heap & h , int id ) {
 
 int zc_heap_pop( Heap & h ) {
  return( h.pop().id );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*--------------------- THE OTHER STRUCTURES THAT EMIT ---------------------*/
+/*--------------------------------------------------------------------------*/
+
+void zc_radix_push( Radix & q , int x , unsigned k ) {
+ q.push( x , k );
+ }
+
+int zc_radix_pop( Radix & q ) {
+ return( q.pop() );
+ }
+
+void zc_radix_clear( Radix & q ) {
+ q.clear();
+ }
+
+void zc_dial_push( Dial & q , int x , unsigned k ) {
+ q.push( x , k );
+ }
+
+int zc_dial_pop( Dial & q ) {
+ return( q.pop() );
+ }
+
+void zc_bucket_push( Bucket & q , int x , int f , int g ) {
+ q.push( x , f , g );
+ }
+
+int zc_bucket_pop( Bucket & q ) {
+ return( q.pop() );
+ }
+
+bool zc_unionfind_merge( ADS::UnionFind & u , int x , int y ) {
+ return( u.merge( x , y ) );
+ }
+
+int zc_unionfind_find( ADS::UnionFind & u , int x ) {
+ return( u.find( x ) );
+ }
+
+void zc_unionfind_reset( ADS::UnionFind & u , int n ) {
+ u.reset( n );
+ }
+
+bool zc_rank_full_merge(
+  ADS::DisjointSets< ADS::Union::RANK , ADS::Compression::FULL > & u , int x ,
+  int y ) {
+ return( u.merge( x , y ) );
+ }
+
+void zc_linkcut_link( LCT & t , int u , int v ) {
+ t.link( u , v );
+ }
+
+void zc_linkcut_cut( LCT & t , int u , int v ) {
+ t.cut( u , v );
+ }
+
+bool zc_linkcut_cut_parent( LCT & t , int v ) {
+ return( t.cutParent( v ) );
+ }
+
+void zc_linkcut_set_value( LCT & t , int v , long long x ) {
+ t.setValue( v , x );
+ }
+
+int zc_linkcut_add_node( LCT & t , long long x ) {
+ return( t.addNode( x ) );
+ }
+
+void zc_btree_insert( BT & t , int k , long long v ) {
+ t.insert( k , v );
+ }
+
+void zc_btree_remove( BT & t , int k ) {
+ t.remove( k );
+ }
+
+bool zc_densemap_insert( DMap & m , int k , long long v ) {
+ return( m.insert( k , v ) );
+ }
+
+bool zc_densemap_remove( DMap & m , int k ) {
+ return( m.remove( k ) );
+ }
+
+void zc_densemap_clear( DMap & m ) {
+ m.clear();
+ }
+
+ZNode * zc_pointertable_insert( PTable & t , ZNode * n ) {
+ return(
+   t.find_or_insert( n->state , n->state , [ n ] { return( n ); } ).first );
+ }
+
+void zc_pointertable_clear( PTable & t ) {
+ t.clear();
+ }
+
+long zc_knapsack_bb( const std::vector< long > & p ,
+		     const std::vector< long > & v , long C ) {
+ return( ADS::knapsackBB( p , v , C ).first );
+ }
+
+long zc_bb_tsp( const std::vector< std::vector< long > > & D ) {
+ return( ADS::bbTsp( D ).first );
  }
 
 #ifdef ZC_EMITTERS

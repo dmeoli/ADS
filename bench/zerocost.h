@@ -58,7 +58,16 @@
  #define ZC_POLICIES 1
 #endif
 
+#include "ADS/dictionary/DenseHashMap.h"
+#include "ADS/dictionary/PointerTable.h"
+#include "ADS/intractable/BranchAndBound.h"
+#include "ADS/mfset/UnionFind.h"
+#include "ADS/priority/BucketQueue.h"
+#include "ADS/priority/DialQueue.h"
 #include "ADS/priority/IndexedDaryHeap.h"
+#include "ADS/priority/RadixHeap.h"
+#include "ADS/tree/BTree.h"
+#include "ADS/tree/LinkCutTree.h"
 
 #if defined( ZC_POLICIES ) && ! defined( ZC_BEFORE ) &&                       \
   __has_include( "ADS/sequence/ObservableArray.h" )
@@ -77,6 +86,22 @@ namespace zc
 
 /// the heap of the check: with `NoObservers`, or the heap of the tree before
 using Heap = ADS::IndexedDaryHeap< int >;
+
+/// the structures whose events came later, by their default types, the
+/// same on the headers before them [see zerocost_asm.cpp]
+using Radix = ADS::RadixHeap< int >;
+using Dial = ADS::DialQueue< int >;
+using Bucket = ADS::BucketQueue< int >;
+using BT = ADS::BTree< int , long long >;
+using DMap = ADS::DenseHashMap< int , long long >;
+using LCT = ADS::LinkCutTree<>;
+
+/// a node of a search, for PointerTable
+struct ZNode
+{
+ std::uint64_t state;  ///< its state, the key
+ };
+using PTable = ADS::PointerTable< ZNode >;
 
 using AG = ADS::ArrayGraph< long long >;
 using LG = ADS::ListGraph< long long >;
