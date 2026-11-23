@@ -460,7 +460,6 @@ using ADS::PackedGraph;
 // graph/PerfectMatching.h
 using ADS::BlossomVOptions;
 using ADS::PerfectMatchingResult;
-using ADS::maxWeightMatching;
 using ADS::minCostPerfectMatching;
 
 // graph/PointerGraph.h
@@ -618,10 +617,6 @@ using ADS::ownerOf;
 using ADS::OpenMPExecutor;
 using ADS::OpenMPLock;
 #endif
-
-// parallel/ParallelBiconnectivity.h
-using ADS::biconnectedComponents;
-using ADS::twoEdgeConnectedComponents;
 
 // parallel/ParallelGraph.h
 using ADS::bfsDistances;

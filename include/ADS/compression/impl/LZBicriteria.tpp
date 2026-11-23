@@ -258,7 +258,10 @@ LZBPath lzbShortest( const LZBGraph & G , F w , W inf )
    break;
   std::size_t prev = 0;
   for( std::uint64_t k = G.first[ j ] ; k < G.first[ j + 1 ] ; ++k ) {
-   const auto [ l , d ] = G.sources[ k ];
+   // the fields named, not bound: a lambda that captures a structured
+   // binding is rejected by clang under -fopenmp
+   const std::uint32_t l = G.sources[ k ].length;
+   const std::uint32_t d = G.sources[ k ].distance;
    auto relax = [ & ]( std::size_t len ) {
     const LZBicriteriaPhrase f{ d , len };
     const W v = dist[ j ] + w( lzbSpace( f ) , lzbTime( f , m ) );

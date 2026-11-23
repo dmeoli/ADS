@@ -55,7 +55,8 @@ its DOI when it has one.
 
 11. <span id="ref-agarwal2013"></span>P. K. Agarwal, G. Cormode, Z. Huang, J. M.
     Phillips, Z. Wei, K. Yi. *Mergeable summaries.* ACM Transactions on
-    Database Systems **38**(4) (2013), 26:1–26:28, <https://doi.org/10.1145/2500128>.
+    Database Systems **38**(4) (2013), 26:1–26:28,
+    <https://doi.org/10.1145/2500128>.
 
 12. <span id="ref-aggarwal1988"></span>A. Aggarwal, J. Vitter. *The
     input/output complexity of sorting and related problems.* Communications
