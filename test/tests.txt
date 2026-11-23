@@ -606,6 +606,15 @@ engineered_queues  lockfree-pq             coda di priorità esatta senza lock
 engineered_queues  lockfree-pq-threads     più thread, ogni coppia una volta, in ordine
 engineered_queues  lockfree-pq-linearizable storie brevi, un ordine che le spiega
 engineered_queues  lockfree-pq-epochs      offset nullo, epoche, limbo
+engineered_queues  lockfree-pq-policies    coda esatta con le epoche di DEBRA e di Fraser
+engineered_queues  hazard-pointers         puntatori di pericolo di C++26
+engineered_queues  hazard-pointers-stalled thread fermo, nodi in attesa limitati
+engineered_queues  epoch-reclaim           epoche di Fraser e di DEBRA, limbo
+engineered_queues  lockfree-stack          pila di Treiber, ogni politica
+engineered_queues  lockfree-stack-threads  pila di Treiber su più thread
+engineered_queues  lockfree-queue          coda di Michael e Scott, ogni politica
+engineered_queues  lockfree-queue-threads  coda di Michael e Scott su più thread
+engineered_queues  reclaim-races           corse costruite per i sanitizer
 engineered_queues  min-board              lavagna dei minimi, un thread
 engineered_queues  min-board-threads      lavagna dei minimi, più scrittori e lettori
 

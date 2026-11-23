@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the reclamation of the memory of the lock-free structures as policies of
+  their templates [see `concurrent/Reclaim.h`]: the epochs of Fraser
+  (`FraserEpochs< R >`, an attempt to raise the epoch per `R`
+  retirements) and of DEBRA (`DebraEpochs`, one record checked per
+  operation) in `concurrent/EpochReclaim.h`, and the hazard pointers of
+  Michael in `concurrent/HazardPointer.h`, with the interface of
+  `std::hazard_pointer` of C++26 (`hazard_pointer_obj_base`,
+  `make_hazard_pointer()`, `protect()`, `try_protect()`,
+  `reset_protection()`, `retire()`) on a domain of the program and, as the
+  policy `HazardPointers`, on a domain owned by a structure, under which
+  fewer than `2 H + 64` nodes wait in the bin of each thread, `H` the
+  slots, whatever the threads do; `LockFreeStack`, the stack of Treiber,
+  and `LockFreeQueue`, the queue of Michael and Scott, which take any of
+  the three, `DebraEpochs` by default; `LockFreePriorityQueue` takes the
+  epochs of either kind as its last parameter, `FraserEpochs<>` by default,
+  with which its reclamation is the one it had; the tests
+  `engineered_queues.hazard-pointers`, `hazard-pointers-stalled`,
+  `epoch-reclaim`, `lockfree-stack`, `lockfree-stack-threads`,
+  `lockfree-queue`, `lockfree-queue-threads`, `reclaim-races` and
+  `lockfree-pq-policies`, the case `reclaim` of `bench-concurrent` against
+  the queue of Michael and Scott of xenium under its reclamations
+  (`XENIUM=<include dir>` of the makefile) and `boost::lockfree::queue`,
+  and section 24.14 of the manual (Lemmas 24.37 to 24.42)
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits
