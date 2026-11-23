@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the tables of the benchmarks in the README and in `results/` are those
+  of a new run on the AMD EPYC 9654, built with Highway and, the parallel
+  benchmarks, with hwloc, and each comparison of the README carries its
+  verdict against the noise of the rows A/A
 - the spelling of the comments, the documentation and the manual is the
   American one, and `kOptNeighbours` is now `kOptNeighbors`, the former
   name staying as a deprecated alias (the titles of the cited works keep
