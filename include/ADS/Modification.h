@@ -442,6 +442,8 @@ struct Lower
 { };  ///< the lower bound of an arc
 struct Supply
 { };  ///< the supply of a node
+struct Parent
+{ };  ///< the parent of a node in a forest, -1 at a root
 
 /// how two changes of one attribute of one item compose in a batch: the
 /// last value (`last`), the least or the largest of the two (`min`,

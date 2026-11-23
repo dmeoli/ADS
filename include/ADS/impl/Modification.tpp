@@ -533,6 +533,16 @@ bool same( const X & a , const Y & b )
   return( false );
  }
 
+/// a == b, always if they cannot be compared
+template< class X , class Y >
+bool alike( const X & a , const Y & b )
+{
+ if constexpr( std::equality_comparable_with< X , Y > )
+  return( bool( a == b ) );
+ else
+  return( true );
+ }
+
 /// the value after two changes of one attribute, the first leading to
 /// `to` and the second being \f$ x \f$, by the reduction R
 template< class R , class V , class E >
@@ -637,12 +647,22 @@ void pushNet( std::vector< variant_t< L > > & N , E e )
     break;
    N.pop_back();
    }
-  // an insertion and an erasure cancel
+  // an insertion and an erasure cancel: among the insertions at the end,
+  // the last one of the key and the value of the erasure, which is the
+  // last one when the handle names one item, and the copy that the
+  // erasure takes when it names several (a queue with no handles)
   if constexpr( contains_v< Inserted< H , K , V > , L > )
-   if( ! N.empty() &&
-       std::holds_alternative< Inserted< H , K , V > >( N.back() ) ) {
-    N.pop_back();
-    return;
+   for( std::size_t k = N.size() ; k-- > 0 ; ) {
+    const auto * y = std::get_if< Inserted< H , K , V > >( &N[ k ] );
+    if( y == nullptr )
+     break;
+    bool sv = true;
+    if constexpr( ! std::is_void_v< V > )
+     sv = alike( y->value , e.value );
+    if( alike( y->key , e.key ) && sv ) {
+     N.erase( N.begin() + std::ptrdiff_t( k ) );
+     return;
+     }
     }
   N.emplace_back( std::move( e ) );
   }
