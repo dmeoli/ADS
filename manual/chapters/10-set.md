@@ -1965,9 +1965,11 @@ at the same load. It inserts each fingerprint with its count, in order, into a
 new table. Also, `merge()` adds to a filter the counts of another with the same
 hash and the same $p$. It merges their two sequences of fingerprints and
 inserts them, in order, into a new table, which is doubled while the slots of
-both pass $0.95$ of it. A fingerprint inserted in order goes after all the
-others, at the end of its run or in a free slot; hence both operations take a
-time linear in the slots in the expected case.
+both pass $0.95$ of it and more than 2 bits of remainder are left (i.e., while
+$p - \log_2 m' > 2$, $m'$ the slots of the new table); past that, the merge
+returns false and changes nothing. A fingerprint inserted in order goes after
+all the others, at the end of its run or in a free slot; hence both operations
+take a time linear in the slots in the expected case.
 
 --8<-- "generated/CountingQuotientFilter-merge.pseudo.md"
 
@@ -2084,12 +2086,12 @@ any write (line 5 of `insertHash()`). A removal removes a slot of $b_1$ or of
 $b_2$ that holds $t$, i.e., one copy of the pair of the key removed, which by
 the hypothesis is there. Hence a key in the filter has $t$ in a slot of $b_1$
 or $b_2$, which `maybeHash()` finds, since the comparison of the whole block
-contains that of the bucket (line 4). This proves (i), and (ii) holds since a
-select on a word and the comparison of a line are $O( 1 )$ operations. For
-(iii), $b_1$ is uniform on $[ 0 , R )$, and so is $b_2$ given $t$; hence each
-bucket holds $n / R$ fingerprints on the average, each equal to $t$ with
-probability $2^{-f}$, and the union bound over the fingerprints of the two
-buckets yields the claim. $\square$
+contains that of the bucket (lines 3 and 6 of `maybeHash()`). This proves (i),
+and (ii) holds since a select on a word and the comparison of a line are $O( 1
+)$ operations. For (iii), $b_1$ is uniform on $[ 0 , R )$, and so is $b_2$
+given $t$; hence each bucket holds $n / R$ fingerprints on the average, each
+equal to $t$ with probability $2^{-f}$, and the union bound over the
+fingerprints of the two buckets yields the claim. $\square$
 
 At the load $\alpha$ of the slots, $n = \alpha s B$, and the bound of Lemma
 10.21 is $2 \alpha ( s / c ) 2^{-f}$, i.e., $1.2 \alpha / 256$ for $f = 8$ and
