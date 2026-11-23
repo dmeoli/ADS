@@ -481,7 +481,8 @@ set of Morin. Finally, a BAG is a USet that keeps all the items equal to one
 another ([Morin 2013, exercise 1.5](Z-bibliography.md#ref-morin-cpp)). Its
 `insert( x )` always adds $x$, `find( x )` gives one of the items equal to
 $x$, and `findAll( x )` gives them all. Its realization `Bag` models `USet`,
-with an `insert()` that is always true (cf. [§1.4](01-introduction.md#sec-1-4)).
+with an `insert()` that is always true (cf.
+[§1.4](01-introduction.md#sec-1-4)).
 
 ## 1.4 Reference realizations {#sec-1-4}
 
@@ -993,7 +994,8 @@ modulo $2^{128}$, exact when the result fits. The random
 queue of chapter [4](04-queue.md#ch-4) uses `wideProduct()` (for its draw of
 an index), and the integers of any length of chapter
 [17](17-numeric.md#ch-17) use it, or `wideProductHalves()` under
-`ADS_BIGINT_PORTABLE`, for their products of digits; the learned index of chapter [6](06-search.md#ch-6) and the branch
+`ADS_BIGINT_PORTABLE`, for their products of digits; the learned index of
+chapter [6](06-search.md#ch-6) and the branch
 and bound of chapter [20](20-complexity.md#ch-20) use `Int128`, and the sorts
 of strings of chapter [12](12-sort.md#ch-12) and the search of several
 patterns of chapter [15](15-string.md#ch-15) use `byteSwap()`.
@@ -1077,7 +1079,8 @@ $\Theta( n )$ takes $\Theta( k n )$ time.*
 g( n ) \le 2 \max\{ t( n ) , g( n ) \}$. The second rests on the rule of
 [Table 1.2](01-introduction.md#tab-1-2), which the library follows and its
 tests cannot prove, i.e., a condition checked by `ADS_PRE` or `ADS_POST`
-costs at most as much as its operation. The third follows from the first, with $t(
+costs at most as much as its operation. The third follows from the first, with
+$t(
 n ) = O( 1 )$ and $g( n ) = \Theta( n )$, summed over the $k$ operations.
 $\square$
 
@@ -1467,7 +1470,8 @@ inserts in $O( \sqrt{n} )$ time instead of the $O( n )$ of a
 `std::pmr::memory_resource`, at the price of one virtual call per
 allocation, and the sorts of [chapter 12](12-sort.md#ch-12) take any sized
 random-access range beside `std::vector`, in place when the range is
-contiguous (and, for the sorts of the book, also when it is not). With `ADS_WITH_GMP`,
+contiguous (and, for the sorts of the book, also when it is not). With
+`ADS_WITH_GMP`,
 `BigInteger::fromGmp()`, `toGmp()` and the constructors from `mpz_class`
 and `mpq_class` (and the same members of `Rational`) pass the numbers to
 and from GMP without a string. The tests are `engineered_interop.*`; with
@@ -1506,7 +1510,8 @@ B](B-benchmarks.md#app-B)). Each chapter describes both levels, and states
 what the second changes and why it is (usually) faster.
 
 Also, the code follows a few conventions. We write each realization as one
-header, included by its path (e.g., `#include "ADS/stack/ArrayStack.h"`), which declares its classes and
+header, included by its path (e.g., `#include "ADS/stack/ArrayStack.h"`), which
+declares its classes and
 functions with their contracts. At its end the header includes the
 definitions of its templates, in the folder `impl/` next to it (e.g.,
 `ADS/stack/impl/ArrayStack.tpp`). All the names are in the namespace `ADS`,
@@ -1545,7 +1550,8 @@ delegation of `FlatHashTable` to Boost, and the set of vector instructions
 at which Google Highway compiles the kernels inlined in the searches. A
 program often compiles a hot file with `-march=x86-64-v3` and the rest with
 the default, and its two translation units then hold two definitions of one
-class, which the linker merges silently; an object of one unit may then run the code of the
+class, which the linker merges silently; an object of one unit may then run the
+code of the
 other. For this reason `ADS/Abi.h` spells the four options in the name
 of an inline namespace, e.g., `abi_s1c1b0_N_AVX2`, the last part being the
 namespace that Highway gives to the set (`none` without Highway), in which
@@ -1633,7 +1639,8 @@ customization points of the queues of `PriorityQueue.h` in
 Each set has an *entry point*, a header that includes all the headers of
 the set and the core. Thus `#include "ADS/base.h"` gives the base set,
 `ADS/advanced.h` the advanced one, `ADS/core.h` the core and `ADS/ADS.h`
-the three. Also, one can include any header by itself. The modules follow the same division: `ads.core`,
+the three. Also, one can include any header by itself. The modules follow the
+same division: `ads.core`,
 `ads.base` and `ads.advanced` export the names of the headers of their sets
 (the last two also those of `ads.core`, without importing it), and `ads`
 exports the three. A
@@ -1736,7 +1743,8 @@ maps each class of the library to the chapter that describes it, one row
 per header, and [Table 1.6](01-introduction.md#tab-1-6) lists by chapter
 the headers that declare functions only. A script,
 `manual/build/structmap.py`, writes the two tables from the headers. It
-lists a class when the class is defined at the scope of the namespace `ADS`, or of a namespace nested in it other than `ADS::detail`,
+lists a class when the class is defined at the scope of the namespace `ADS`, or
+of a namespace nested in it other than `ADS::detail`,
 outside the sections hidden from the API reference, and lists an alias of
 such a class with it (e.g., `UnionFind`, the `DisjointSets` of the default
 parameters). It also checks that each header and class of the tables
@@ -3049,7 +3057,8 @@ Each exercise names the test of the library that solves it (run it with
    1.7](Z-bibliography.md#ref-morin-cpp)). Test:
    `ods_lists.ods-ex1.6.reference-sets`, which checks `ArraySSet` against
    `std::set`. Furthermore, the faster LISTs of chapter
-   [2](02-sequence.md#ch-2), whose insertions and removals take $O( 1 + \min\{ i , n - i \} )$ amortized
+   [2](02-sequence.md#ch-2), whose insertions and removals take $O( 1 + \min\{
+   i , n - i \} )$ amortized
    time, are checked by `ods_lists.ods-2.4.array-deque` and
    `ods_lists.ods-2.5.dual-array-deque`.
 8. Check that the realizations of the LIST and of the DEQUE model the
