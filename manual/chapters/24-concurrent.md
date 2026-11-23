@@ -2869,7 +2869,18 @@ each in an atomic word on a line of cache of its own. `publish( i , k )`,
 called by the owner of the slot $i$ only, reads the slot and stores $k$
 only if it differs, both relaxed; a worker whose key stays thus leaves
 its line shared in the caches of the readers. `min()` reads the $p$
-slots, relaxed, and returns the least key read. Its public members are
+slots, relaxed, and returns the least key read ([Algorithm
+24.15](24-concurrent.md#alg-24-15)).
+
+<span id="alg-24-15"></span>**Algorithm 24.15.** The publish of the
+owner of the slot $i$ and the least key of a `MinBoard` of $p$ slots
+$S$.
+
+--8<-- "generated/MinBoard-publish.pseudo.md"
+
+--8<-- "generated/MinBoard-min.pseudo.md"
+
+Its public members are
 
 ```cpp
 // declarations of <ADS/concurrent/MinBoard.h>
