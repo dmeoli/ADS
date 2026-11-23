@@ -1803,6 +1803,9 @@ engineered_succinct  lz-bicriteria    LZ77 bicriterio, tempo con limite di spazi
 engineered_succinct  stream-vbyte     Stream VByte, controllo a parte
 engineered_succinct  tans-coder       tANS di ordine 0, quattro stati
 engineered_succinct  la-vector        LA-vector, rank e select con le rette appresi
+engineered_succinct  fastlanes        FastLanes, FOR, DELTA e RLE sul layout trasposto
+engineered_succinct  alp              ALP e ALP-RD, double e float bit per bit
+engineered_succinct  fsst             FSST, tabella di 255 simboli e accesso alle stringhe
 # the engineered structures of the notes of Ferragina, beyond the book
 engineered_pearls  flat-loser-tree      albero dei perdenti con le chiavi
 engineered_pearls  multiway-merge       fusione a k vie, stabile

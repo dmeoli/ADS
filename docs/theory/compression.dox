@@ -321,6 +321,16 @@
  data, 2 bits per integer in control bytes, so that one shuffle of bytes
  decodes 4 integers (`StreamVByte.h`).
 
+ The light-weight codes of the columns of a database choose a code for each
+ vector of 1024 values. FastLanes packs a vector in the lanes of a virtual
+ register of 1024 bits, with the differences on a layout in which each lane
+ holds consecutive values (`FastLanes.h`); ALP turns the decimals among the
+ floating-point numbers into integers by a power of 10 per vector, and
+ splits the other values into a high part, coded by a small dictionary, and
+ a low part (`ALP.h`); FSST replaces up to 8 bytes of a string by the code of
+ one byte of a static table, so that each string of a column is decoded alone
+ (`FSST.h`).
+
  None of these codes reads the \f$ i \f$-th item without decoding the ones
  before it. The directly addressable codes of Brisaboa, Ladra and Navarro
  (`DirectAccessCodes.h`) cut each integer into chunks, the level
