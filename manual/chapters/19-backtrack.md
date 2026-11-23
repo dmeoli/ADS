@@ -4,13 +4,13 @@
 `KnightTour.h`, `Sudoku.h`, `Anagrams.h`, `DancingLinks.h`,
 `FastExactCover.h`, `SatSolvers.h`]
 
-We are concerned in this chapter with the problems of *enumeration*, which
-ask for all the feasible solutions of an instance, for one of them, or for
-their number. In [Montresor 2025,
-chapter 16](Z-bibliography.md#ref-montresor2025) the *backtrack* solves them by a visit in
-depth of the tree of the partial choices. Its scheme is general, and its
-cost is the number of the nodes visited, which is usually exponential;
-the art is therefore in the tests that prune the tree, and in the data
+We are concerned in this chapter with the problems of *enumeration*, in
+which one looks for all the feasible solutions of an instance, for one of them,
+or for their number. In [Montresor 2025,
+chapter 16](Z-bibliography.md#ref-montresor2025) the *backtrack* solves them by
+a visit in depth of the tree of the partial choices. Its scheme is general, and
+its cost is the number of the nodes visited, which is usually exponential, and
+hence the art is in the tests that prune the tree, and in the data
 structures that make a node "cheap". [§19.1](19-backtrack.md#sec-19-1) states
 the scheme and its correctness, and [§19.2](19-backtrack.md#sec-19-2)
 applies it to the subsets and the permutations of the book. Then the puzzles of
@@ -38,9 +38,9 @@ has a child $S[ 0 .. i ]$ for each choice of $C( S , i )$. Some of its
 nodes (usually leaves) are the feasible solutions, and to *prune* is to
 leave a subtree unvisited because a test on its root proves that it holds
 no feasible solution. Thus the backtrack is the recursive visit of this
-tree: at the node $S[ 0 .. i - 1 ]$ it tries each choice $c \in C( S , i )$ in turn,
-sets $S[ i ] \gets c$, processes $S$ if it is a feasible solution, and goes
-on from $S[ 0 .. i ]$ unless a test prunes it; when the choices of the
+tree: at the node $S[ 0 .. i - 1 ]$ it tries each choice $c \in C( S , i )$ in
+turn, sets $S[ i ] \gets c$, processes $S$ if it is a feasible solution, and
+goes on from $S[ 0 .. i ]$ unless a test prunes it; when the choices of the
 place $i$ are over, it goes back to the place $i - 1$, whence the name of
 the method. Its only state is $S$, updated in place and restored on the way
 back. Hence the space is that of the deepest path, $O( n )$ items, while
@@ -54,15 +54,15 @@ choices.*
 
 *Proof.* Two nodes of the tree are distinct vectors, a visit in depth meets
 once each node of the subtrees that it enters, and the subtrees that it
-skips hold no solution by hypothesis. As for the order, it follows since the visit in
-depth of an ordered tree meets its nodes in the lexicographic order of
+skips hold no solution by hypothesis. As for the order, it follows since the
+visit in depth of an ordered tree meets its nodes in the lexicographic order of
 their paths from the root. $\square$
 
-Hence the cost of the backtrack is the number of the nodes visited times the cost
-of a node, i.e., of building $C( S , i )$ and of the tests. All the functions
-of this chapter take the processing as a callable `f( S )` (or `visit`),
-which returns true to stop the enumeration at the solution at hand. They
-return the number of the solutions processed, the last one included. Note
+Hence the cost of the backtrack is the number of the nodes visited times the
+cost of a node, i.e., of building $C( S , i )$ and of the tests. All the
+functions of this chapter take the processing as a callable `f( S )` (or
+`visit`), which returns true to stop the enumeration at the solution at hand.
+They return the number of the solutions processed, the last one included. Note
 that the recursion is a convenience rather than a need: `nQueensIterative()`
 of [§19.3](19-backtrack.md#sec-19-3) keeps the place $k$ and the choice
 $V[ k ]$ of each place, advances $V[ k ]$ to its next feasible value, and
@@ -90,13 +90,14 @@ items by backtrack ([Montresor 2025,
 ![Figure 19.1. The tree of the calls of `subsets( 4 , 2 , f )`: each edge sets a place in (1) or out (0), the violet nodes are the solutions, with their vectors, and the palest ones are pruned by line 3, since the items left cannot reach $k = 2$.](../figures/backtrack-subsets.svg){#fig-19-1}
 
 [Figure 19.1](19-backtrack.md#fig-19-1) shows the tree of the calls for
-$n = 4$ and $k = 2$; the solutions come in the decreasing order of their
+$n = 4$ and $k = 2$. The solutions come in the decreasing order of their
 vectors read as binary numbers, since the place in is tried first. Note
 that the text of the book counts the subsets as $n! / ( n - k )!$, which is
-the number of their orderings; the subsets of $k$ items are
-$\binom{n}{k} = n! / ( k! ( n - k )! )$, as the header states.
+the number of their orderings, while the subsets of $k$ items are
+$\binom{n}{k} = n! / ( k! ( n - k )! )$, as in the comment of the header.
 
-<span id="lem-19-2"></span>**Lemma 19.2.** *For $k \le n$, `subsets( n , k , f )` visits
+<span id="lem-19-2"></span>**Lemma 19.2.** *For $k \le n$, `subsets( n , k , f )`
+visits
 at most $( n + 1 ) \binom{n}{k}$ nodes that are not pruned, and at most as
 many pruned ones; hence it costs $O( n \binom{n}{k} )$ time, i.e., $O( n )$
 per subset, and $O( n )$ space.*
@@ -111,11 +112,13 @@ $c + ( n - i ) = k$. Each pruned node is thus the child of a distinct node
 that is not pruned. $\square$
 
 `permutations( A , f )` visits the $n!$ permutations of the items of $A$,
-each place taking in turn every item not used yet; the items are told
-apart by their places, and equal items give each permutation of the values
+each place taking in turn each item not used yet. The items are distinguished
+by their places, and equal items give each permutation of the values
 more than once. `derangements( A , f )` prunes the item of the place $i$ at
-the place $i$, and visits the permutations in which no item is in its own
-place (again by places, not by values).
+the place $i$, and visits the permutations in which no item stays in its place
+of $A$ (again by places, not by values).
+
+--8<-- "generated/Enumeration-derangements.pseudo.md"
 
 --8<-- "generated/Enumeration-permutations.pseudo.md"
 
@@ -170,23 +173,25 @@ long c = ADS::subsets( 4 , 2 , []( const std::vector< bool > & S ) {
 
 ## 19.3 The $n$ queens {#sec-19-3}
 
-In the problem of the $n$ queens one looks for the placements of $n$ queens on an
-$n \times n$ board, no two on a row, a column or a diagonal (exercise 16.5
+In the problem of the $n$ queens one looks for the placements of $n$ queens on
+an $n \times n$ board, no two on a row, a column or a diagonal (exercise 16.5
 of [Montresor 2025](Z-bibliography.md#ref-montresor2025)). Since two queens
 on a row attack each other, each row holds one queen, and a solution is
 the vector $Q$ of their columns, $Q[ r ]$ the column of the queen of the
-row $r$. Such a vector is a permutation; hence the candidates are $n!$
-instead of the $\binom{n^2}{n}$ placements of $n$ queens on the board. Two queens
-$( r , Q[ r ] )$ and $( r' , Q[ r' ] )$ share a diagonal if and only if
+row $r$. Such a vector is a permutation, and hence the candidates are $n!$
+instead of the $\binom{n^2}{n}$ placements of $n$ queens on the board. Two
+queens $( r , Q[ r ] )$ and $( r' , Q[ r' ] )$ share a diagonal if and only if
 $| Q[ r ] - Q[ r' ] | = | r - r' |$, which is the test of `admissible()`,
 $O( n^2 )$ on a whole placement, and of the iterative version
 `nQueensIterative()`, $O( r )$ for the queen of the row $r$.
 
+--8<-- "generated/NQueens-admissible.pseudo.md"
+
 --8<-- "generated/NQueens-nQueensIterative.pseudo.md"
 
 In `nQueens()`, instead, the test of a choice costs $O( 1 )$, since the
-function keeps three sets of the columns attacked on the current row $r$: $C$, the
-columns taken; $D_1$, the columns attacked along the diagonals that go down
+function keeps three sets of the columns attacked on the current row $r$: $C$,
+the columns taken; $D_1$, the columns attacked along the diagonals that go down
 to the right; and $D_2$, those attacked along the diagonals that go down to
 the left
 ([Algorithm 19.2](19-backtrack.md#alg-19-2)). Moving to the next row shifts
@@ -207,10 +212,10 @@ and only if the queen $( r , c )$ attacks none of the queens above it.*
 
 *Proof.* By induction on $r$; both sets are empty at the row 0. Line 5
 adds the column $c = Q[ r ]$, at the distance 0 from its row, and adds 1 to
-(resp. subtracts 1 from) each column of the set, dropping those that leave
-the board; this keeps the invariant at the row $r + 1$. Finally, the queen
-$( r , c )$ attacks the queen $( r' , Q[ r' ] )$ along a diagonal if and
-only if $c = Q[ r' ] \pm ( r - r' )$. $\square$
+(resp. subtracts 1 from) each column of the set, dropping those that leave the
+board, which keeps the invariant at the row $r + 1$. Finally, the queen
+$( r , c )$ attacks the queen $( r' , Q[ r' ] )$ along a diagonal if and only
+if $c = Q[ r' ] \pm ( r - r' )$. $\square$
 
 As masks of $n \le 32$ bits, the three sets cost a few operations on a
 word: the shift of $D_1$ is a shift left by one place with the mask of the
@@ -235,7 +240,7 @@ leads to a solution; at the row 0 the column 0 is tried first and fails).
 
 For $n = 1 , \ldots , 10$ the solutions are $1 , 0 , 0 , 2 ,
 10 , 4 , 40 , 92 , 352 , 724$, and the tests check them. Note that the
-masks need $n \le 32$, which the contract checks; at the contract level 3
+masks need $n \le 32$, which the contract checks. At the contract level 3
 each solution is also checked by `admissible()`. Finally, `board( Q )`
 draws a placement as a string of $n$ lines, one per row, with the letter Q
 for a queen and a dot for an empty square. Many more results
@@ -286,22 +291,53 @@ square, in the order of the book (left) and by the rule of Warnsdorff
 | 18 | 11 | 4 | 7 | 16 | | 20 | 15 | 4 | 11 | 22 |
 | 3 | 6 | 17 | 12 | 25 | | 3 | 10 | 21 | 16 | 5 |
 
+<span id="lem-19-5"></span>**Lemma 19.5 (tour of the knight).** *For $n \ge 1$
+and $( x , y )$ on the board, `knightTour( n , x , y , warnsdorff )`
+returns, for either value of `warnsdorff`, a board whose entries are
+$1 , \ldots , n^2$, with the entry 1 at $( x , y )$ and the entries $k$
+and $k + 1$ a move of the knight apart for $1 \le k < n^2$, if such a
+tour from $( x , y )$ exists, and no board otherwise. Each node of its tree
+costs $O( 1 )$ time, and the space is $O( n^2 )$.*
+
+*Proof.* The node $\mathrm{tour}( k , a , b )$ is the path of the knight
+from $( x , y )$ written on $A$ with the steps $1 , \ldots , k + 1$ (line
+5), and its children are the moves to the squares with the entry 0 (line 6).
+Since line 9 writes 0 back on the way back, $A$ holds exactly that path at each
+node. Hence the nodes of the tree are the paths of the knight from $( x , y )$
+that visit no square twice, the paths of $n^2$ squares are its feasible
+solutions (line 5), and no subtree is pruned. The reorder of line 7 permutes
+the children of a node without changing their set, and therefore, by [Lemma
+19.1](19-backtrack.md#lem-19-1), the visit meets a tour if there is one, in
+either order, and stops at the first one found with $A$ filled by it; otherwise
+it exhausts the tree and returns no board. A node tries at most 8 moves, and
+with the rule of Warnsdorff it counts the free moves of each target (8 tests
+each) and sorts at most 8 pairs, i.e., $O( 1 )$ work. The board takes $n^2$
+entries, and the depth of the recursion is at most $n^2$. $\square$
+
+The lemma bounds the work per node, not the number of the nodes, which
+may grow exponentially with $n^2$ in the order of the book. The rule of
+Warnsdorff changes only the order of the children, and its effect on the number
+of the nodes is the empirical one described above.
+
 A tour need not exist: there is none on the boards of side 2, 3 and 4.
 On the $5 \times 5$ board there is none from a square of the color other
 than that of the corners, since the knight changes color at each move and
 that color has 12 squares against 13. In these cases the backtrack proves
-the absence by exhausting the tree, and the test `ch16.ex16.6` checks these
-cases with both orders of the moves.
+the absence by exhausting the tree (cf. [Lemma
+19.5](19-backtrack.md#lem-19-5)), and the test `ch16.ex16.6` checks these cases
+with both orders of the moves.
 
 **The Sudoku.** `sudoku( S )` fills the empty squares (the zeros) of a
-`Grid`, i.e., a vector of rows of `int`, of side $N = n^2$ in the order of the rows, each with a number of
-$1 , \ldots , N$ that is not on its row, its column or its block of
-$n \times n$ squares (`check()`, $O( N )$), and skips the squares given
-(section 16.3 and exercise 16.7 of [Montresor
+`Grid`, i.e., a vector of rows of `int`, of side $N = n^2$ in the order of the
+rows, each with a number of $1 , \ldots , N$ that is not on its row, its column
+or its block of $n \times n$ squares (`check()`, $O( N )$), and skips the
+squares given (section 16.3 and exercise 16.7 of [Montresor
 2025](Z-bibliography.md#ref-montresor2025)); it returns true, with the grid
 filled, if it can.
 
 --8<-- "generated/Sudoku-sudoku.pseudo.md"
+
+--8<-- "generated/Sudoku-check.pseudo.md"
 
 Its tree has depth $n^4$ and at most $N$ children per node. For the classic
 $n = 3$ the cost is therefore bounded by a constant (a "huge" one), and it
@@ -323,7 +359,7 @@ of the characters left. Hence each permutation of the multiset is built
 once, and no anagram comes twice. After each character, the word being
 built either goes on or, if it is a word, ends there. Also, the test
 `prefix( w )`, true when $w$ begins some word, prunes a branch as soon as
-its current word cannot be completed; on a real dictionary it typically
+its current word cannot be completed, and on a real dictionary it typically
 removes most of the $n! / \prod_c m_c!$ permutations ($m_c$ the
 multiplicity of the character $c$).
 
@@ -336,30 +372,30 @@ We now leave the exercises of the book. Let a set of *items* be given, some
 a set of items. An *exact cover* is a set of options that contains each
 primary item once and each secondary item at most once ([Knuth 2022,
 §7.2.2.1](Z-bibliography.md#ref-knuth2022)). Many puzzles are exact covers.
-For instance, the $n$ queens have the rows and the columns as primary items and the
-$2 ( 2 n - 1 )$ diagonals as secondary ones, with an option per square
+For instance, the $n$ queens have the rows and the columns as primary items and
+the $2 ( 2 n - 1 )$ diagonals as secondary ones, with an option per square
 (its row, its column and its two diagonals); the Sudoku has 324 primary
 items (a square, a row with a number, a column with a number, a block with
 a number) and an option for each number that a square may take. Knuth's
 search, his Algorithm X, is a backtrack whose place is a primary item
 not covered yet, and whose choices are the options that contain it and
-none of the items already covered; choosing an option covers its items and
+none of the items already covered. Choosing an option covers its items and
 removes from the problem each option that meets one of them.
 
 `ExactCover` of `DancingLinks.h` realizes Algorithm X on the *dancing
 links* of [Knuth 2000](Z-bibliography.md#ref-knuth2000). There the primary
-items are a circular doubly linked list (the links $L$ and $R$, with the head 0),
-and each secondary item is a list with no other item. An option is a set
+items are a circular doubly linked list (the links $L$ and $R$, with the head
+0), and each secondary item is a list with no other item. An option is a set
 of nodes, one per item, each in the vertical circular list of the nodes of
 its item (the links $U$ and $D$, with the head of the item, whose
-$\mathit{len}$ counts the nodes). Furthermore, the nodes of an option are consecutive
-in the arrays, which lets the code walk an option by the index, and
+$\mathit{len}$ counts the nodes). Furthermore, the nodes of an option are
+consecutive in the arrays, which lets the code walk an option by the index, and
 `addOption( items )` appends one at the bottom of the list of each of its
 items and returns its index. All the method
 rests on the following property of the doubly
 linked lists ([Figure 19.2](19-backtrack.md#fig-19-2)).
 
-<span id="lem-19-5"></span>**Lemma 19.5.** *On a circular doubly linked
+<span id="lem-19-6"></span>**Lemma 19.6.** *On a circular doubly linked
 list, the removal of a node $x$ by*
 
 $$
@@ -378,7 +414,7 @@ the one right after the removal of $x$ (by induction on their number), in
 which the node after $L[ x ]$ is $R[ x ]$; hence the two assignments make
 $x$ again the neighbor of both. $\square$
 
-![Figure 19.2. The dance of [Lemma 19.5](19-backtrack.md#lem-19-5): the node `x` before its removal, after it (its links, dashed, still point to its old neighbors), and after its reinsertion.](../figures/backtrack-dance.svg){#fig-19-2}
+![Figure 19.2. The dance of [Lemma 19.6](19-backtrack.md#lem-19-6): the node `x` before its removal, after it (its links, dashed, still point to its old neighbors), and after its reinsertion.](../figures/backtrack-dance.svg){#fig-19-2}
 
 Covering an item $i$ takes it off the list of the items and *hides* each
 option that contains it, i.e., takes the other nodes of the option off
@@ -408,8 +444,8 @@ long updates( void ) const;  // the links updated
 ```
 
 For instance, on the three primary items $0 , 1 , 2$ and the options
-$\{ 0 , 1 \}$, $\{ 2 \}$, $\{ 1 , 2 \}$ and $\{ 0 \}$ (with the indices 0 to 3),
-the search branches on the item 0, which has two options, and visits the
+$\{ 0 , 1 \}$, $\{ 2 \}$, $\{ 1 , 2 \}$ and $\{ 0 \}$ (with the indices 0 to
+3), the search branches on the item 0, which has two options, and visits the
 two exact covers $( 0 , 1 )$ and $( 3 , 2 )$:
 
 ```cpp
@@ -423,26 +459,26 @@ long s = X.solve( []( const std::vector< int > & o ) {
  } );                // s == 2
 ```
 
-<span id="lem-19-6"></span>**Lemma 19.6.** *`ExactCover::solve()` visits
+<span id="lem-19-7"></span>**Lemma 19.7.** *`ExactCover::solve()` visits
 each exact cover once, and the links after the search are those before
 it.*
 
 *Proof.* At a node of the search, the items on the list are the primary
 items not covered yet, and the options on the vertical lists are those that
-meet no covered item; this holds at the root and is kept by `cover()`.
-Hence the choices at the item $i$ are the options that may still cover it, and a solution is reached when the list of the primary items is
-empty. Furthermore, an exact cover contains one option with the item $i$
-chosen at a node, and hence it lies below one child only of each node on
-its path; by [Lemma 19.1](19-backtrack.md#lem-19-1) it is
-visited once. Finally, the calls of `uncover()` mirror those of
-`cover()` in the reverse order, and by
-[Lemma 19.5](19-backtrack.md#lem-19-5) they restore the links; the class
-checks this as an audit. $\square$
+meet no covered item. This holds at the root and is kept by `cover()`. Hence
+the choices at the item $i$ are the options that may still cover it, and a
+solution is reached when the list of the primary items is empty. Furthermore,
+an exact cover contains one option with the item $i$ chosen at a node, and
+hence it lies below one child only of each node on its path; by [Lemma
+19.1](19-backtrack.md#lem-19-1) it is visited once. Finally, the calls of
+`uncover()` mirror those of `cover()` in the reverse order, and by [Lemma
+19.6](19-backtrack.md#lem-19-6) they restore the links, which the class checks
+as an audit. $\square$
 
 Each removal and each reinsertion costs $O( 1 )$, and the work of a node
 of the tree is the number of links updated, the measure of Knuth that
-`updates()` returns. At each level the search branches on the primary item with the
-fewest options left (the "minimum remaining values" heuristic, MRV): an
+`updates()` returns. At each level the search branches on the primary item with
+the fewest options left (the "minimum remaining values" heuristic, MRV): an
 item with none ends the branch at once, and an item with one forces its
 option without branching, which usually keeps the tree small. Note that an
 option made of secondary items only is refused by the contract, since it
@@ -458,26 +494,26 @@ in which an option may give a color to a secondary item, and several
 options may share the item if they give it the same color (an uncolored
 secondary item is still taken at most once). Without colors it is the
 exact cover of [§19.5](19-backtrack.md#sec-19-5), with the same solutions
-visited in another order (possibly); its `addOption( items , colors )`
+visited in another order (possibly). Its `addOption( items , colors )`
 takes the color of each item, 0 (or no `colors`) for none. Its engineering
 replaces the linked lists by
 *sparse sets* ([Briggs and Torczon 1993](Z-bibliography.md#ref-briggs1993)),
 the "dancing cells" of Knuth's program SSXCC ([Knuth
 2023](Z-bibliography.md#ref-knuth2023ssxcc)). All the nodes of the options
 are one array of records $\{ \mathit{item} , \mathit{loc} , \mathit{color} \}$
-of 16 bytes (with one int of padding); those of an option are consecutive and followed by a
-spacer whose item is minus the size of the option, and hence the other
-nodes of an option are walked by the index. Each item $x$ has a segment of
-an array $\mathit{set}$, whose first $\mathrm{size}( x )$ entries are its
+of 16 bytes (with one int of padding). Those of an option are consecutive and
+followed by a spacer whose item is minus the size of the option, and hence the
+other nodes of an option are walked by the index. Each item $x$ has a segment
+of an array $\mathit{set}$, whose first $\mathrm{size}( x )$ entries are its
 active options, and each node knows its place $\mathit{loc}$ in the
-segment of its item. An option leaves the set of $x$ by a swap with the last active
-entry and a decrement of $\mathrm{size}( x )$, in $O( 1 )$
+segment of its item. An option leaves the set of $x$ by a swap with the last
+active entry and a decrement of $\mathrm{size}( x )$, in $O( 1 )$
 ([Figure 19.3](19-backtrack.md#fig-19-3)), and the active items form a
 sparse set too, with the place $\mathrm{pos}( x )$ of each.
 
 ![Figure 19.3. The segment of $\mathit{set}( x )$ before and after the option `o2` leaves it: a swap with the last active entry, `o4`, and the decrement of $\mathrm{size}( x )$; the entries after the bar are inactive, and the order of the active ones has changed.](../figures/backtrack-sparse.svg){#fig-19-3}
 
-<span id="lem-19-7"></span>**Lemma 19.7.** *Let the sizes of the active
+<span id="lem-19-8"></span>**Lemma 19.8.** *Let the sizes of the active
 items be saved at a level of the search. After any sequence of removals by
 swaps from the sets of those items, writing the saved sizes back makes the
 active entries of each set the same as at the save, possibly in another
@@ -493,7 +529,7 @@ $\square$
 
 Restoring a level therefore needs no inverse swap, only the sizes written
 back. This costs $O( a )$ per level for $a$ active items, against an update
-per link of the dancing links; also, the memory is read by consecutive
+per link of the dancing links. Also, the memory is read by consecutive
 indices rather than by pointers. At each level the search
 ([Algorithm 19.5](19-backtrack.md#alg-19-5)) takes the active primary item
 $x$ of least $\mathrm{size}( x )$ (ties to the least index), takes it out
@@ -521,7 +557,7 @@ purposes. Note that the hiding of line 6 is made without it: an item $u$
 whose options all contain $x$ drops to the size 0 there, and yet it is no
 dead end, since the option of $x$ chosen at line 8 covers it too.
 
-<span id="lem-19-8"></span>**Lemma 19.8.** *`FastExactCover::solve()`
+<span id="lem-19-9"></span>**Lemma 19.9.** *`FastExactCover::solve()`
 visits each exact cover with colors once, as the list of its options.*
 
 *Proof.* We show that, at the entry of a level, (i) the active items are
@@ -537,7 +573,7 @@ items left active exactly the options that $o$ makes incompatible: those
 with $x$ or with a primary or uncolored item of $o$ (all of the options of
 such an item), and those that give a colored item of $o$ another color.
 Hence (i) and (ii) hold one level deeper, and by
-[Lemma 19.7](19-backtrack.md#lem-19-7) they hold again at each option
+[Lemma 19.8](19-backtrack.md#lem-19-8) they hold again at each option
 tried after the sizes are written back at line 12. By (i) a solution is
 visited when no primary item is active, and by (ii) the options chosen are
 then compatible, i.e., an exact cover with colors. The branches cut are
@@ -566,7 +602,7 @@ long nodes( void ) const;    // the nodes visited
 
 The time is $O( 1 )$ per update of a set, and `updates()` and `nodes()`
 count the updates and the nodes of the tree. In both classes the worst
-case stays exponential, the exact cover being NP-complete; the comparison
+case stays exponential, the exact cover being NP-complete. The comparison
 of the two on the same instances, and with the program of Knuth, belongs to
 the campaign of Appendix B. Finally, the test
 `engineered_combinatorial.fast-exact-cover` checks that `FastExactCover`
@@ -586,7 +622,7 @@ of its literals is true, *conflicting* if all are false, and *unit* if all
 are false but one, which is free and then must be true in each model that
 extends the assignment.
 
-<span id="lem-19-9"></span>**Lemma 19.9.** *Making true the free literal
+<span id="lem-19-10"></span>**Lemma 19.10.** *Making true the free literal
 of a unit clause, until no clause is unit or one is conflicting, loses no
 model of the formula that extends the assignment; a conflicting clause
 proves that there is none.*
@@ -612,10 +648,10 @@ propagation of the branch likely to produce more units. It returns a model
 --8<-- "generated/SatSolvers-dpll.pseudo.md"
 
 By [Lemma 19.1](19-backtrack.md#lem-19-1) and
-[Lemma 19.9](19-backtrack.md#lem-19-9) the procedure is complete, and its
+[Lemma 19.10](19-backtrack.md#lem-19-10) the procedure is complete, and its
 tree has at most $2^n$ leaves for $n$ variables. It is fair to remark,
 however, that the propagation of `dpll()` scans all the clauses at each
-pass, and possibly $n$ passes per node; the procedure is thus simple and
+pass, and possibly $n$ passes per node. The procedure is thus simple and
 slow, and it serves as a reference.
 
 **Conflict-driven clause learning.** `BasicCdcl` is the method of the
@@ -643,11 +679,11 @@ for another literal that is not false and watches it instead, and if there
 is none the clause is unit (the other watch is forced) or conflicting.
 This is $\mathrm{propagate}()$, lines 15 to 22 of
 [Algorithm 19.7](19-backtrack.md#alg-19-7), where a watch moved is swapped
-into the second place of the vector. Its invariant, and the reason why going back needs
-no update of the watches, are as follows; we call *pending* a literal of
-the trail that $\mathrm{propagate}()$ has not visited yet.
+into the second place of the vector. Its invariant, and the reason why going
+back needs no update of the watches, are as follows. We call *pending* a
+literal of the trail that $\mathrm{propagate}()$ has not visited yet.
 
-<span id="lem-19-10"></span>**Lemma 19.10.** *At each call of
+<span id="lem-19-11"></span>**Lemma 19.11.** *At each call of
 $\mathrm{propagate}()$, for each clause $c$ of at least two literals and
 each watched literal $w$ of $c$ that is false, either $\lnot w$ is pending,
 or the other watched literal $w'$ of $c$ is true and its level is at most
@@ -681,12 +717,12 @@ $\square$
 reasons of its literals of the current level, from the last one assigned
 backwards, until a single literal of that level is left, the *first unique
 implication point* $p$ (lines 23 to 31 of
-[Algorithm 19.7](19-backtrack.md#alg-19-7)). What is learned is the clause
-of $\lnot p$ together with the literals of the lower levels met on the way;
-the search then jumps back to the largest of their levels, where the clause
+[Algorithm 19.7](19-backtrack.md#alg-19-7)). The clause learned is made
+of $\lnot p$ and of the literals of the lower levels met on the way,
+and the search then jumps back to the largest of their levels, where the clause
 forces $\lnot p$.
 
-<span id="lem-19-11"></span>**Lemma 19.11.** *The learned clause $C$ is
+<span id="lem-19-12"></span>**Lemma 19.12.** *The learned clause $C$ is
 implied by the formula, it is false under the trail at the conflict, and
 after the levels above the second largest level of its literals are
 canceled it is unit, with $\lnot p$ free; hence it forces $\lnot p$ there,
@@ -705,9 +741,9 @@ while $p$ is free, and the clause is unit. Moreover, $C$ was not among the
 clauses of the solver before the conflict: it would have been unit at the
 level $b$, and since a decision is taken only when the propagation has no
 literal left to force
-([Lemma 19.10](19-backtrack.md#lem-19-10)), $\lnot p$ would have been assigned at that level,
-before the decision of the current one. Hence each conflict adds a new
-clause (a learned unit clause is kept as an assignment of the level 0,
+([Lemma 19.11](19-backtrack.md#lem-19-11)), $\lnot p$ would have been assigned
+at that level, before the decision of the current one. Hence each conflict adds
+a new clause (a learned unit clause is kept as an assignment of the level 0,
 which neither a jump back nor a restart cancels), the clauses on $n$
 variables are at most $3^n$, and the number of conflicts is finite; the
 restarts do not change this, since they keep the learned clauses. Between
@@ -715,7 +751,7 @@ two conflicts at most $n$ decisions are taken, and hence the search ends.
 It answers SAT only when every variable is assigned with no conflict, i.e.,
 on a model; and it answers UNSAT only on a conflict at the level 0, where
 every literal of the trail is forced by the formula and by clauses implied
-by it, so that by [Lemma 19.9](19-backtrack.md#lem-19-9) no model exists.
+by it, so that by [Lemma 19.10](19-backtrack.md#lem-19-10) no model exists.
 $\square$
 
 *Decisions and restarts.* Each decision takes the free variable of largest
@@ -729,16 +765,16 @@ a lazy heap: a raised activity pushes a new pair $( \mathit{activity} , v )$,
 the stale ones are dropped when they reach the top, and the activities are
 rescaled by $10^{-100}$ when one of them exceeds $10^{100}$. A restart
 cancels all the levels after $100 \, \mathrm{luby}( k )$ conflicts for the
-$k$-th restart, and keep the learned clauses and the activities. Here
+$k$-th restart, and keeps the learned clauses and the activities. Here
 $\mathrm{luby}$ is the sequence $1 , 1 , 2 , 1 , 1 , 2 , 4 , \ldots$ of
 [Luby et al. 1993](Z-bibliography.md#ref-luby1993), which for a search of
 unknown length is within a logarithmic factor of the best strategy of
 restarts (in their model of Las Vegas algorithms, at least). Learned
 clauses are never deleted, which suits formulae of moderate size; also, an
 unsatisfiable formula comes with no certificate (a proof of the learned
-clauses, as in the format DRAT, would be one). Note that the heap is a parameter of the class:
-`Cdcl` is `BasicCdcl` on `std::priority_queue`, and the heaps of Boost and
-the `DaryHeap` of Chapter 9 give the same decisions
+clauses, as in the format DRAT, would be one). The heap is a parameter of the
+class (`Cdcl` is `BasicCdcl` on `std::priority_queue`), and the heaps of Boost
+and the `DaryHeap` of Chapter 9 give the same decisions
 and conflicts, since the pairs are ordered totally.
 
 ## 19.8 Discussion and references {#sec-19-8}
@@ -765,7 +801,7 @@ and the activities of Chaff ([Moskewicz et al.
 solvers are meant to be read, and to be compared on the
 same decisions; the industrial solvers add the deletion of the learned
 clauses, the preprocessing and many other refinements, and we make no
-claim of competing with them. Comparing the two exact covers, and
+claim of competing with them. The comparison of the two exact covers, and
 of the heaps under `BasicCdcl`, is left to the campaign of Appendix B.
 
 ## 19.9 Exercises {#sec-19-9}
