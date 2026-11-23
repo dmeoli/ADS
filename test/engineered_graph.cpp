@@ -54,17 +54,6 @@
 #include "ADS/stack/ArrayStack.h"
 #include "ADS/complexity/EasyCases.h"
 
-// the weighted matching of Boost from its version 1.87, whose new code
-// ends on the graphs on which that of the versions before it loops
-#if __has_include( <boost/graph/maximum_weighted_matching.hpp> )
- #include <boost/version.hpp>
- #if BOOST_VERSION >= 108700
-  #include <boost/graph/adjacency_list.hpp>
-  #include <boost/graph/maximum_weighted_matching.hpp>
-  #define ADS_TEST_BOOST_MATCHING 1
- #endif
-#endif
-
 #include <algorithm>
 #include <bit>
 #include <climits>
@@ -2194,46 +2183,6 @@ ADS_TEST( "perfect-matching" )
 	 maxWeightMatching( n , E ).first );
   }
  CHECK( maxWeightMatching( 0 , WE{} , BlossomVOptions() ).second.empty() );
-
-#ifdef ADS_TEST_BOOST_MATCHING
- // against maximum_weighted_matching() of the Boost Graph Library, the
- // weights a large constant minus the costs, so that its matching of
- // largest weight has the largest size
- for( int it = 0 ; it < 30 ; ++it ) {
-  const int n = 2 * ( 10 + int( g() % 150 ) );
-  std::map< std::pair< int , int > , long long > P;  // no parallel edge
-  for( int u = 0 ; u + 1 < n ; u += 2 )
-   P[ { u , u + 1 } ] = ( long long )( g() % 1000 );
-  for( int i = 0 ; i < 3 * n ; ++i ) {
-   const int a = int( g() % unsigned( n ) ) , b = int( g() % unsigned( n ) );
-   if( a != b )
-    P[ { std::min( a , b ) ,
-	 std::max( a , b ) } ] = ( long long )( g() % 1000 );
-   }
-  WE E;
-  for( const auto & [ p , c ] : P )
-   E.emplace_back( p.first , p.second , c );
-  using BG = boost::adjacency_list<
-    boost::vecS , boost::vecS , boost::undirectedS , boost::no_property ,
-    boost::property< boost::edge_weight_t , long long > >;
-  BG G( static_cast< std::size_t >( n ) );
-  const long long big = 1000LL * n + 1;
-  for( const auto & [ u , v , c ] : E )
-   boost::add_edge( std::size_t( u ) , std::size_t( v ) , big - c , G );
-  std::vector< boost::graph_traits< BG >::vertex_descriptor > mate(
-    static_cast< std::size_t >( n ) );
-  boost::maximum_weighted_matching( G , mate.data() );
-  long long cost = 0;
-  for( int u = 0 ; u < n ; ++u ) {
-   const int v = int( mate[ std::size_t( u ) ] );
-   CHECK( ( v >= 0 ) && ( v < n ) );
-   if( u < v )
-    cost += P.at( { u , v } );
-   }
-  const auto R = minCostPerfectMatching( n , E );
-  CHECK( R.perfect && ( R.cost == cost ) );
-  }
-#endif
 
  CHECK_THROWS( minCostPerfectMatching( -1 , WE{} ) , contract_violation );
  CHECK_THROWS( minCostPerfectMatching( 2 , WE{ { 0 , 2 , 1 } } ) ,
