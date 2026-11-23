@@ -3095,20 +3095,21 @@ pilot that sends its keys to free slots, distinct among them ([Algorithm
 pilots from a random one. It takes the one whose slots meet the buckets of the
 least sum of the squares of their sizes, since a large bucket is the hardest to
 place again. It skips the pilots that send two of its keys to one slot, and
-those whose slots meet one of the 16 buckets placed last (which would possibly
-close a cycle of evictions). Evicted buckets are placed again in the same way,
-the largest first, before the next bucket of the order. A chain of more than
-$10 S$ evictions, or a part with more keys than slots, makes the build draw a
-new seed. Finally, the $P S - n$ slots beyond $n$ are remapped onto the slots
-below $n$ left free, by an array of 32 bits or by an Elias-Fano sequence
-([§22.6](22-succinct.md#sec-22-6)), as the remap is non-decreasing. Note that a
-part reads only its keys, its pilots, its words of the slots and a generator
-seeded by its index. Hence the constructor that takes an executor
-([§25.2](25-parallel.md#sec-25-2)) builds the parts in parallel, with the same
-result as the sequential one. Furthermore, `stream()` evaluates a range of keys
-with the pilot of the key 32 places ahead prefetched (the streaming queries of
-PtrHash; cf. [§5.9](05-memory.md#sec-5-9), whose hint does nothing without
-`ADS_WITH_HIGHWAY`), and `prefetch()` prefetches the pilot of one key.
+those whose slots meet one of the $\min\{ 16 , \lfloor B / 4 \rfloor \}$
+buckets placed last (which would possibly close a cycle of evictions). Evicted
+buckets are placed again in the same way, the largest first, before the next
+bucket of the order. A chain of more than $10 S$ evictions, or a part with more
+keys than slots, makes the build draw a new seed. Finally, the $P S - n$ slots
+beyond $n$ are remapped onto the slots below $n$ left free, by an array of 32
+bits or by an Elias-Fano sequence ([§22.6](22-succinct.md#sec-22-6)), as the
+remap is non-decreasing. Note that a part reads only its keys, its pilots, its
+words of the slots and a generator seeded by its index. Hence the constructor
+that takes an executor ([§25.2](25-parallel.md#sec-25-2)) builds the parts in
+parallel, with the same result as the sequential one. Furthermore, `stream()`
+evaluates a range of keys with the pilot of the key 32 places ahead prefetched
+(the streaming queries of PtrHash; cf. [§5.9](05-memory.md#sec-5-9), whose hint
+does nothing without `ADS_WITH_HIGHWAY`), and `prefetch()` prefetches the pilot
+of one key.
 
 <span id="alg-7-20"></span>**Algorithm 7.20.** The construction of a part,
 the evaluation and the streaming evaluation of `PtrHash` ([Groot Koerkamp
