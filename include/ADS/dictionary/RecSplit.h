@@ -104,10 +104,10 @@
  * keys with the same hash of 64 bits cannot be separated.
  *
  * Consensus-RecSplit of Lehmann, Sanders, Walzer and Ziegler is the space
- * frontier of this family: it searches the seeds of consecutive nodes
- * together, each one a continuation of the bits of the previous ones, and
- * takes \f$ ( 1 + \varepsilon ) \, n \log_2 e \f$ bits in
- * \f$ O( n / \varepsilon ) \f$ expected time.
+ * frontier of this family [see `ConsensusRecSplit.h`]: it searches the
+ * seeds of consecutive nodes together, each one a continuation of the bits
+ * of the previous ones, and takes \f$ ( 1 + \varepsilon ) \, n \log_2 e
+ * \f$ bits in \f$ O( n / \varepsilon ) \f$ expected time.
  *
  * The contracts [see `Contract.h`]: the keys distinct (an audit), fewer
  * than \f$ 2^{32} \f$, \f$ 1 \le b \le 2000 \f$; after the build the keys

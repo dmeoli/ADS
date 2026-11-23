@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `PtrHash`, the minimal perfect hash function of Groot Koerkamp by pilots of 8
+  bits stored as bytes, placed in parts of the same slots and buckets by
+  decreasing size and, when no pilot below 256 sends a bucket to free slots, by
+  the pilot of the least weighted collisions with the eviction of the buckets
+  it meets, with the linear or the cubic bucket function, the slots beyond n
+  remapped by an array or by an Elias-Fano sequence, `stream()` of a range of
+  keys with the pilot 32 keys ahead prefetched, `prefetch()`, and a constructor
+  that builds the parts on an executor with the same pilots;
+  `ConsensusRecSplit`, the Consensus-RecSplit of Lehmann, Sanders, Walzer and
+  Ziegler, buckets of `K` keys by a minimal `K`-perfect function by thresholds
+  with a `FingerprintPerfectHash` for the keys bumped twice, split by balanced
+  binary trees whose seeds are searched and encoded together by Consensus,
+  about 1.47 bits per key on a million keys at `K` = 4096 and the overhead
+  0.01, with a constructor that searches the chunks of 4194304 keys on an
+  executor with the same seeds; both persistent, in the advanced set and in the
+  module `ads.advanced`; the tests `hashing.ptrhash` and
+  `hashing.consensus-recsplit`, their round trips in
+  `engineered_persistence.persistence-perfect-hash`, the cells of
+  `bench/hashing.cpp` against PTHash, PHOBIC and the code of Consensus-RecSplit
+  of its authors (with the batch queries), and section 7.8.4 of the manual
+  (Algorithms 7.20 and 7.21, Lemmas 7.30 to 7.32)
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits

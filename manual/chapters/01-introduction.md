@@ -1882,6 +1882,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `dictionary/BitmapTrie.h` | base | `BitmapTrie` | [7](07-dictionary.md#ch-7) |
 | `dictionary/BucketCuckooTable.h` | advanced | `BucketCuckooTable` | [7](07-dictionary.md#ch-7) |
 | `dictionary/ChainedHashTable.h` | base | `ChainedHashTable` | [7](07-dictionary.md#ch-7) |
+| `dictionary/ConsensusRecSplit.h` | advanced | `ConsensusRecSplit` | [7](07-dictionary.md#ch-7) |
 | `dictionary/CuckooHashing.h` | base | `CuckooHashTable` | [7](07-dictionary.md#ch-7) |
 | `dictionary/DenseHashMap.h` | advanced | `DenseHashMap` | [7](07-dictionary.md#ch-7) |
 | `dictionary/DirectTable.h` | base | `DirectTable` | [7](07-dictionary.md#ch-7) |
@@ -1896,6 +1897,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `dictionary/PerfectHashing.h` | base | `PerfectHashTable`, `OrderedMinimalPerfectHash` | [7](07-dictionary.md#ch-7) |
 | `dictionary/PointerTable.h` | advanced | `StateEqual`, `PointerTable` | [7](07-dictionary.md#ch-7) |
 | `dictionary/PositionIndex.h` | advanced | `PositionIndex` | [7](07-dictionary.md#ch-7) |
+| `dictionary/PtrHash.h` | advanced | `PtrHash` | [7](07-dictionary.md#ch-7) |
 | `dictionary/RandomHashing.h` | core | `SplitMix64`, `ZobristTable`, `TabulationHash` | [7](07-dictionary.md#ch-7) |
 | `dictionary/RecSplit.h` | advanced | `RecSplit` | [7](07-dictionary.md#ch-7) |
 | `dictionary/SkipList.h` | base | `SkipList` | [7](07-dictionary.md#ch-7) |
