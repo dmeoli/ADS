@@ -2568,8 +2568,15 @@ $O( n + m )$ on lists.
 --8<-- "generated/ShortestPaths-isShortestPathTree.pseudo.md"
 
 The other three wrappers (`johnson()`, `fredmanTarjan()` and `papeDEsopo()`)
-differ from `dijkstra()` only in the frontier they name. On an acyclic graph
-we can do better, whatever the signs of the costs. Indeed,
+differ from `dijkstra()` only in the frontier they name:
+
+--8<-- "generated/ShortestPaths-johnson.pseudo.md"
+
+--8<-- "generated/ShortestPaths-fredmanTarjan.pseudo.md"
+
+--8<-- "generated/ShortestPaths-papeDEsopo.pseudo.md"
+
+On an acyclic graph we can do better, whatever the signs of the costs. Indeed,
 `dagShortestPaths( g , r )` scans the nodes in topological order and relaxes
 the edges of each node once, after all the edges that enter it ([Montresor
 2025, §11.2](Z-bibliography.md#ref-montresor2025)).
@@ -4894,7 +4901,11 @@ construction, under the lock of the notifier, and $k$ runs started at once
 on one graph would serialize on that lock. With `DenseMap` the runs share no
 mutable state, and `dijkstraFrom( ex , g , l , S )` of `Parallel.h` runs one
 `Dijkstra` of LEMON per source of $S$ on the threads of an executor of
-[chapter 25](25-parallel.md#ch-25). `IndexMap< GR , S , Item >` is a
+[chapter 25](25-parallel.md#ch-25):
+
+--8<-- "generated/Parallel-dijkstraFrom.pseudo.md"
+
+`IndexMap< GR , S , Item >` is a
 `ReadWriteMap` over a structure of ADS indexed by the ids; on an
 `ObservableArray` of [§1.13](01-introduction.md#sec-1-13) each write reaches
 the observers of the array, and on a `Fenwick` of [Fenwick
