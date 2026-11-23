@@ -944,8 +944,8 @@ comparisons with $b ( b + 1 ) / 2$ and $( b + 1 ) ( b + 2 ) / 2$
 ([Algorithm 2.10](02-sequence.md#alg-2-10)).
 
 <span id="lem-2-14"></span>**Lemma 2.14.** *For any rank $i < 2^{52}$,
-`block( i )` returns the block $b$ with $b ( b + 1 ) / 2 \le i < ( b + 1 ) ( b
-+ 2 ) / 2$, i.e., (2.6), after at most one step of each correction.*
+`block( i )` returns the block $b$ with $b ( b + 1 ) / 2 \le i < ( b + 1 ) (
+b + 2 ) / 2$, i.e., (2.6), after at most one step of each correction.*
 
 *Proof.* The two loops stop only when both inequalities hold, and the blocks
 are a partition of the ranks; hence, the result is (2.6) whatever the first
@@ -2588,12 +2588,12 @@ of $n \ge 1$ items in alternating order with $n - 1$ comparisons and at most
 $n - 1$ swaps; with distinct items the order is strict.*
 
 *Proof.* Before the step $i$ the places $A[ 0 .. i ]$ alternate. If the step
-swaps $A[ i ]$ and $A[ i + 1 ]$, it keeps the order of $A[ i - 1 ]$ and $A[
-i ]$ by transitivity: e.g., for an odd $i$ with $A[ i - 1 ] \le A[ i ] < A[ i
-+ 1 ]$, the swap puts at the place $i$ the larger $A[ i + 1 ]$, which is still
-at least $A[ i - 1 ]$, and the case of an even $i$ is the mirror. After the
-step, $A[ i ]$ and $A[ i + 1 ]$ are in the order of the parity of $i$, which
-is strict when they are distinct. $\square$
+swaps $A[ i ]$ and $A[ i + 1 ]$, it keeps the order of $A[ i - 1 ]$ and $A[ i
+]$ by transitivity: e.g., for an odd $i$ with $A[ i - 1 ] \le A[ i ] < A[ i + 1
+]$, the swap puts at the place $i$ the larger $A[ i + 1 ]$, which is still at
+least $A[ i - 1 ]$, and the case of an even $i$ is the mirror. After the step,
+$A[ i ]$ and $A[ i + 1 ]$ are in the order of the parity of $i$, which is
+strict when they are distinct. $\square$
 
 With repeated items the order may be weak where a strict one exists: `1 2 2
 3` is already alternating, and `wiggleSort()` leaves it, while `2 3 1 2` is
@@ -2678,8 +2678,8 @@ participations, is therefore at least $s$ for the first participation of
 each item, plus $m$ for each of the other $2 ( k - 1 ) - k = k - 2$.
 
 For the last claim, write the cost (2.11) of a cycle $Z$ of $k \ge 1$ items
-as $f( Z ) = s - m + \varphi( k , m )$, with $\varphi( k , m ) = \min\{ ( k
-- 1 ) m , 2 m + ( k + 1 ) M \}$; for $k = 1$ this is 0, since $m , M \ge 0$.
+as $f( Z ) = s - m + \varphi( k , m )$, with $\varphi( k , m ) = \min\{ (
+k - 1 ) m , 2 m + ( k + 1 ) M \}$; for $k = 1$ this is 0, since $m , M \ge 0$.
 Let $\Phi$ be the sum of $f$ over the cycles of the permutation that sorts
 the vector, which is 0 on the sorted vector. We show that a swap of the
 items $x$ and $y$ lowers $\Phi$ by at most $x + y$, so that any sort costs
@@ -2691,8 +2691,8 @@ m_1 ) + \varphi( k_2 , m_2 ) \le \varphi( k_1 + k_2 , m_1 ) + m_1 + 2 m_2$.
 If $\varphi( k_1 + k_2 , m_1 ) = ( k_1 + k_2 - 1 ) m_1$, this follows from
 $\varphi( k_1 , m_1 ) \le ( k_1 - 1 ) m_1$ and $\varphi( k_2 , m_2 ) \le 2
 m_2 + ( k_2 + 1 ) m_1$, as $M \le m_1$; otherwise from the second terms of
-the two minima, whose sum is $2 m_1 + 2 m_2 + ( k_1 + k_2 + 2 ) M \le 3 m_1
-+ 2 m_2 + ( k_1 + k_2 + 1 ) M$. If $x$ and $y$ are in one cycle $Z$ of $k$
+the two minima, whose sum is $2 m_1 + 2 m_2 + ( k_1 + k_2 + 2 ) M \le 3
+m_1 + 2 m_2 + ( k_1 + k_2 + 1 ) M$. If $x$ and $y$ are in one cycle $Z$ of $k$
 items and least item $m$, the swap splits it into $Z_1 \ni x$ and $Z_2 \ni
 y$, say with $m$ in $Z_1$. It is then enough that $\varphi( k_1 + k_2 , m )
 \le \varphi( k_1 , m ) + \varphi( k_2 , m_2 ) + m$. The right side takes
@@ -2882,8 +2882,8 @@ numbering of the C++ edition, as the text does.
     4.6](Z-bibliography.md#ref-montresor2025)). Tests: `ch04.ex4.6`,
     `ch04.ex4.6.pool`.
 20. Realize the `SLList` of Morin as a stack and a queue, and draw the
-    operations of his Figure 3.1 on it ([Figure 2.12](02-sequence.md#fig-2-12)).
-    Test: `ods_lists.ods-3.1.sllist`.
+    operations of his Figure 3.1 on it ([Figure
+    2.12](02-sequence.md#fig-2-12)). Test: `ods_lists.ods-3.1.sllist`.
 21. Explain why a dummy cell cannot remove the special cases of an
     `SLList`; find its second last item without its size; realize its
     operations by rank in $O( 1 + i )$ time; reverse it in place; check its

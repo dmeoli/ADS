@@ -583,8 +583,8 @@ grow the vector, and its cost is amortized by
 [Lemma 4.5](04-queue.md#lem-4-5). As for the runs, consider `shiftDown()`
 (the argument for its mirror is the same). The places $d$ of its
 destinations are the residues modulo $m$ of the $\mathit{hi} -
-\mathit{lo} < n \le m$ consecutive integers $h + \mathit{lo} , \ldots , h
-+ \mathit{hi} - 1$; at most $m$ consecutive integers contain at most one
+\mathit{lo} < n \le m$ consecutive integers $h + \mathit{lo} , \ldots ,
+h + \mathit{hi} - 1$; at most $m$ consecutive integers contain at most one
 multiple of $m$, and $d$ passes from $m - 1$ to 0 only at a multiple of $m$
 that is not the first of them, hence at most once. The same holds for
 the places $s = ( d + 1 ) \bmod m$ of the sources, which are the residues

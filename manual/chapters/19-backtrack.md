@@ -96,11 +96,10 @@ that the text of the book counts the subsets as $n! / ( n - k )!$, which is
 the number of their orderings, while the subsets of $k$ items are
 $\binom{n}{k} = n! / ( k! ( n - k )! )$, as in the comment of the header.
 
-<span id="lem-19-2"></span>**Lemma 19.2.** *For $k \le n$, `subsets( n , k , f )`
-visits
-at most $( n + 1 ) \binom{n}{k}$ nodes that are not pruned, and at most as
-many pruned ones; hence it costs $O( n \binom{n}{k} )$ time, i.e., $O( n )$
-per subset, and $O( n )$ space.*
+<span id="lem-19-2"></span>**Lemma 19.2.** *For $k \le n$, `subsets( n , k , f
+)` visits at most $( n + 1 ) \binom{n}{k}$ nodes that are not pruned, and at
+most as many pruned ones; hence it costs $O( n \binom{n}{k} )$ time, i.e., $O(
+n )$ per subset, and $O( n )$ space.*
 
 *Proof.* A node $( i , c )$ (the place $i$, with $c$ items in) that is not
 pruned has $c < k$ and $c + ( n - i ) \ge k$, and hence at least one

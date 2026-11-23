@@ -663,9 +663,10 @@ its DOI when it has one.
      Letters **81**(2) (2002), 93–96,
      <https://doi.org/10.1016/S0020-0190(01)00198-3>.
 
-137. <span id="ref-burns2010"></span>E. Burns, S. Lemons, W. Ruml, R. Zhou. *Best-first heuristic search
-     for multicore machines.* Journal of Artificial Intelligence Research
-     **39** (2010), 689–743, <https://doi.org/10.1613/jair.3094>.
+137. <span id="ref-burns2010"></span>E. Burns, S. Lemons, W. Ruml, R. Zhou.
+     *Best-first heuristic search for multicore machines.* Journal of
+     Artificial Intelligence Research **39** (2010), 689–743,
+     <https://doi.org/10.1613/jair.3094>.
 
 138. <span id="ref-burns2012"></span>E. Burns, M. Hatem, M. J. Leighton, W.
      Ruml. *Implementing fast heuristic search code.* Proceedings of the
@@ -733,8 +734,8 @@ its DOI when it has one.
      (ICDE 2004), 2004, 116–127,
      <https://doi.org/10.1109/ICDE.2004.1319989>.
 
-152. <span id="ref-chen2007"></span>M. Chen, R. A. Chowdhury, V.
-     Ramachandran, D. Lan Roche, L. Tong. *Priority queues and Dijkstra's algorithm.*
+152. <span id="ref-chen2007"></span>M. Chen, R. A. Chowdhury, V. Ramachandran,
+     D. Lan Roche, L. Tong. *Priority queues and Dijkstra's algorithm.*
      Technical Report TR-07-54, The University of Texas at Austin, 2007,
      <https://www3.cs.stonybrook.edu/~rezaul/papers/TR-07-54.pdf>.
 
@@ -1428,8 +1429,8 @@ its DOI when it has one.
      INFORMS Journal on Computing **18**(1) (2006), 61–70,
      <https://doi.org/10.1287/ijoc.1040.0081>.
 
-299. <span id="ref-fraser2004"></span>K. Fraser. *Practical lock-freedom.* PhD thesis, Technical
-     Report UCAM-CL-TR-579, University of Cambridge, 2004,
+299. <span id="ref-fraser2004"></span>K. Fraser. *Practical lock-freedom.* PhD
+     thesis, Technical Report UCAM-CL-TR-579, University of Cambridge, 2004,
      <https://doi.org/10.48456/tr-579>.
 
 300. <span id="ref-frazer1970"></span>W. D. Frazer, A. C. McKellar.
@@ -1802,17 +1803,17 @@ its DOI when it has one.
      Computing **13**(2) (1984), 338–355,
      <https://doi.org/10.1137/0213024>.
 
-379. <span id="ref-harris2001"></span>T. L. Harris. *A pragmatic implementation of non-blocking
-     linked-lists.* Distributed Computing (DISC 2001), LNCS 2180, Springer,
-     2001, 300–314, <https://doi.org/10.1007/3-540-45414-4_21>.
+379. <span id="ref-harris2001"></span>T. L. Harris. *A pragmatic implementation
+     of non-blocking linked-lists.* Distributed Computing (DISC 2001), LNCS
+     2180, Springer, 2001, 300–314, <https://doi.org/10.1007/3-540-45414-4_21>.
 
 380. <span id="ref-hart1968"></span>P. E. Hart, N. J. Nilsson, B. Raphael.
      *A formal basis for the heuristic determination of minimum cost
      paths.* IEEE Transactions on Systems Science and Cybernetics **4**(2)
      (1968), 100–107, <https://doi.org/10.1109/TSSC.1968.300136>.
 
-381. <span id="ref-hart2007"></span>T. E. Hart, P. E. McKenney, A. D. Brown, J. Walpole.
-     *Performance of memory reclamation for lockless synchronization.*
+381. <span id="ref-hart2007"></span>T. E. Hart, P. E. McKenney, A. D. Brown, J.
+     Walpole. *Performance of memory reclamation for lockless synchronization.*
      Journal of Parallel and Distributed Computing **67**(12) (2007),
      1270–1285, <https://doi.org/10.1016/j.jpdc.2007.04.010>.
 
@@ -2555,9 +2556,9 @@ its DOI when it has one.
      of Computer and System Sciences **65**(3) (2002), 570–586,
      <https://doi.org/10.1016/S0022-0000(02)00010-7>.
 
-540. <span id="ref-linden2013"></span>J. Lindén, B. Jonsson. *A skiplist-based concurrent priority
-     queue with minimal memory contention.* Principles of Distributed
-     Systems (OPODIS 2013), LNCS 8304, Springer, 2013, 206–220,
+540. <span id="ref-linden2013"></span>J. Lindén, B. Jonsson. *A skiplist-based
+     concurrent priority queue with minimal memory contention.* Principles of
+     Distributed Systems (OPODIS 2013), LNCS 8304, Springer, 2013, 206–220,
      <https://doi.org/10.1007/978-3-319-03850-6_15>.
 
 541. <span id="ref-liskov1974"></span>B. Liskov, S. Zilles. *Programming
@@ -2573,9 +2574,9 @@ its DOI when it has one.
      boost::unordered_flat_map.* 2022,
      <https://bannalia.blogspot.com/2022/11/inside-boostunorderedflatmap.html>.
 
-544. <span id="ref-lotan2000"></span>I. Lotan, N. Shavit. *Skiplist-based concurrent priority
-     queues.* Proceedings of the 14th International Parallel and
-     Distributed Processing Symposium (IPDPS 2000), 263–268,
+544. <span id="ref-lotan2000"></span>I. Lotan, N. Shavit. *Skiplist-based
+     concurrent priority queues.* Proceedings of the 14th International
+     Parallel and Distributed Processing Symposium (IPDPS 2000), 263–268,
      <https://doi.org/10.1109/IPDPS.2000.845994>.
 
 545. <span id="ref-luby1993"></span>M. Luby, A. Sinclair, D. Zuckerman.
@@ -3616,9 +3617,9 @@ its DOI when it has one.
      21st Workshop on Algorithm Engineering and Experiments (ALENEX), 2019,
      159–173, <https://doi.org/10.1137/1.9781611975499.13>.
 
-773. <span id="ref-sundell2005"></span>H. Sundell, P. Tsigas. *Fast and lock-free concurrent priority
-     queues for multi-thread systems.* Journal of Parallel and Distributed
-     Computing **65**(5) (2005), 609–627,
+773. <span id="ref-sundell2005"></span>H. Sundell, P. Tsigas. *Fast and
+     lock-free concurrent priority queues for multi-thread systems.* Journal of
+     Parallel and Distributed Computing **65**(5) (2005), 609–627,
      <https://doi.org/10.1016/j.jpdc.2004.12.005>; first in the
      Proceedings of the 17th International Parallel and Distributed
      Processing Symposium (IPDPS 2003), 11,

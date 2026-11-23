@@ -1428,8 +1428,8 @@ m_j / 5 \rfloor \le n / 1.5 + 4 J / 3 < 0.67 n + 4 J / 3$ items in all.
 Besides the recursive calls, a call spends $O( 1 )$ per round and $O( m )$
 per partition (at most two), per sort of the groups and per test of an
 order in a round on $m$ items; by the two sums above, this is at most $a n$
-for a constant $a$. The recursive calls are on fewer than $0.31 n + 0.67 n
-+ 4 J / 3 < 0.98 n$ items in all for $n \ge n_0$, since $J = O( \log n )$.
+for a constant $a$. The recursive calls are on fewer than $0.31 n + 0.67
+n + 4 J / 3 < 0.98 n$ items in all for $n \ge n_0$, since $J = O( \log n )$.
 By induction, therefore, $S( n ) \le a n + 0.98 c n \le c n$ for $n \ge
 n_0$ and $c \ge 50 a$, with $c$ large enough for $n < n_0$ as well. The
 scan of `nthElement()` for a range in order adds $O( n )$. $\square$

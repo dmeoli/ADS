@@ -161,15 +161,15 @@ equal items cannot be told apart, as integers or strings).
 ## 12.2 The lower bound of the sorts by comparisons {#sec-12-2}
 
 Any sort by comparisons, run on $n$ distinct items with $n$ fixed, can be
-regarded as a binary tree, the *comparison tree* (or decision tree) of [Morin 2013,
-§11.1.4](Z-bibliography.md#ref-morin-cpp). For a deterministic sort the first
-comparison is always between the same two places, while its second comparison
-may depend on the outcome of the first, the third on the outcomes of the first
-two, and so on. Hence each internal node of the tree is a comparison $a[ i ] :
-a[ j ]$, its left subtree the continuation when $a[ i ] < a[ j ]$ and its right
-one the continuation otherwise, and each leaf is the permutation $\pi$ that the
-sort applies when it gets there, i.e., the order $a[ \pi_0 ] < a[ \pi_1 ] <
-\cdots < a[ \pi_{n-1} ]$ that it has established. [Figure
+regarded as a binary tree, the *comparison tree* (or decision tree) of [Morin
+2013, §11.1.4](Z-bibliography.md#ref-morin-cpp). For a deterministic sort the
+first comparison is always between the same two places, while its second
+comparison may depend on the outcome of the first, the third on the outcomes of
+the first two, and so on. Hence each internal node of the tree is a comparison
+$a[ i ] : a[ j ]$, its left subtree the continuation when $a[ i ] < a[ j ]$ and
+its right one the continuation otherwise, and each leaf is the permutation
+$\pi$ that the sort applies when it gets there, i.e., the order $a[ \pi_0 ] <
+a[ \pi_1 ] < \cdots < a[ \pi_{n-1} ]$ that it has established. [Figure
 12.1](12-sort.md#fig-12-1) shows the tree of `insertionSort()` on three items.
 Since the $n!$ orders of $n$ distinct items need $n!$ different permutations to
 be undone, a correct sort has a tree with at least $n!$ leaves. With fewer, two
@@ -404,8 +404,8 @@ void insertionSortSentinel( std::vector< T > & A , C less = C() );
 
 --8<-- "generated/InsertionSort-insertionSortSentinel.pseudo.md"
 
-<span id="lem-12-5"></span>**Lemma 12.5.** *Selection Sort makes $n ( n
-- 1 ) / 2$ comparisons and $n - 1$ swaps on any input of $n \ge 1$ items,
+<span id="lem-12-5"></span>**Lemma 12.5.** *Selection Sort makes $n (
+n - 1 ) / 2$ comparisons and $n - 1$ swaps on any input of $n \ge 1$ items,
 and it is not stable.*
 
 *Proof.* At the step $i$, for $i = 0 , \ldots , n - 2$, Selection Sort finds
@@ -455,8 +455,8 @@ comparisons and $\Theta( n^2 )$ moves on average; `listInsertionSort()`
 makes at most $n ( n - 1 ) / 2$ comparisons and $n$ moves. Both are
 stable.*
 
-*Proof.* A binary search in a prefix of $i$ items halves an interval of $i
-+ 1$ places, and hence it makes at most $\lceil \log_2 ( i + 1 ) \rceil$
+*Proof.* A binary search in a prefix of $i$ items halves an interval of
+$i + 1$ places, and hence it makes at most $\lceil \log_2 ( i + 1 ) \rceil$
 comparisons; summing over $i = 1 , \ldots , n - 1$ gives the bound, and
 $\lceil \log_2 k \rceil < \log_2 k + 1$. The insertion then moves the items
 of the prefix larger than $A[ i ]$, i.e., $I( A )$ in all, whose average is
@@ -775,10 +775,10 @@ is a power of 2, and by less than $0.529 \, n + 1$ for any $n \ge 1$.*
 
 *Proof.* We let $2^{\lceil \log_2 n \rceil} = n 2^\theta$, $0 \le \theta < 1$.
 Then (12.3) is $n \log_2 n - n ( 2^\theta - \theta ) + 1$, and by [Lemma
-12.3](12-sort.md#lem-12-3) the excess is less than $n ( \log_2 e - 2^\theta
-+ \theta ) + 1$. For $n$ a power of 2, $\theta = 0$; in general, the convex
-function $2^\theta - \theta$ is least at $\theta = \log_2 \log_2 e$, where
-it is $\log_2 e - \log_2 \log_2 e > 1 - 0.0861$, and $\log_2 e - 1 + 0.0861 <
+12.3](12-sort.md#lem-12-3) the excess is less than $n ( \log_2 e - 2^\theta +
+\theta ) + 1$. For $n$ a power of 2, $\theta = 0$; in general, the convex
+function $2^\theta - \theta$ is least at $\theta = \log_2 \log_2 e$, where it
+is $\log_2 e - \log_2 \log_2 e > 1 - 0.0861$, and $\log_2 e - 1 + 0.0861 <
 0.529$. $\square$
 
 Three more functions of the header reuse the merge ([Algorithm
@@ -870,8 +870,8 @@ $\Theta( n^2 )$ on a strictly decreasing one); it is stable.*
 
 *Proof.* A strand, being non-decreasing, takes at most one item of a
 strictly decreasing subsequence, and hence $s$ strands at least are made.
-Conversely, an item of the $i$-th strand, $i > 1$, was left out of the $( i
-- 1 )$-th by a larger item before it, which belongs to that strand; going
+Conversely, an item of the $i$-th strand, $i > 1$, was left out of the $(
+i - 1 )$-th by a larger item before it, which belongs to that strand; going
 back strand by strand gives a strictly decreasing subsequence of $i$ items,
 and hence $s$ strands at most. One can pull a strand and merge it into the
 result in $O( n )$ time each. On a tie the result goes first, and its items
@@ -1935,8 +1935,8 @@ Sedgewick 1993](Z-bibliography.md#ref-schaffer1993), who analyze the heapsort
 of Williams with Floyd's construction (i.e., our `heapsort()`), show that it
 moves about $n \log_2 n$ keys on average and about $\frac{1}{2} n \log_2 n$ in
 the best case, hence (two comparisons per level of a sift) about $2 n \log_2 n$
-comparisons on average. The variant of Floyd that sinks the item to the
-bottom and then lifts it (the bottom-up heapsort below) makes, by the same results, an
+comparisons on average. The variant of Floyd that sinks the item to the bottom
+and then lifts it (the bottom-up heapsort below) makes, by the same results, an
 asymptotically optimal number of comparisons on average, about $n \log_2 n$,
 and $\frac{3}{2}$ times as many in the worst case. The inputs in order,
 increasing for the sort of Morin and decreasing for `heapsort()`, are heaps
@@ -2221,8 +2221,10 @@ keys differ.
 --8<-- "generated/RadixSort-flag.pseudo.md"
 
 ![Figure 12.10. The permutation of `americanFlagSort()` by the first digit
-of twelve keys: the counts give the areas of the four buckets (below); in
-each round each item not yet in its area (in violet) is swapped into the next free place of its bucket. Two rounds suffice here; the last bucket left is in place by elimination.](../figures/sort-flag.svg){#fig-12-10}
+of twelve keys: the counts give the areas of the four buckets (below); in each
+round each item not yet in its area (in violet) is swapped into the next free
+place of its bucket. Two rounds suffice here; the last bucket left is in place
+by elimination.](../figures/sort-flag.svg){#fig-12-10}
 
 Two older sorts by digits of [Knuth 1998](Z-bibliography.md#ref-knuth1998v3)
 are in `KnuthSorts.h` ([Algorithm 12.23](12-sort.md#alg-12-23)). The address
@@ -2837,8 +2839,8 @@ Each exercise names the test of the library that solves it (run it with
    ([Montresor 2025, §2.7.3 and exercises 12.1 and
    12.5](Z-bibliography.md#ref-montresor2025)). Tests:
    `ch02.sec2.7.3.merge-sort`, `ch12.ex12.5`, `ch12.ex12.1`.
-10. Check the lower bound of the sorts by comparisons on the comparison
-    tree of the book ([Montresor 2025, §2.7.4](Z-bibliography.md#ref-montresor2025)).
+10. Check the lower bound of the sorts by comparisons on the comparison tree of
+    the book ([Montresor 2025, §2.7.4](Z-bibliography.md#ref-montresor2025)).
     Tests: `ch02.sec2.7.4.lower-bound`, `pearls_io.ch5.lower-bounds`.
 11. Sort integers in $[ 0 , k )$ by Counting Sort, and pairs by Pigeonhole
     Sort, stably ([Montresor 2025, §2.7.5 and exercise

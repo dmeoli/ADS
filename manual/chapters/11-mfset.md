@@ -3,23 +3,23 @@
 [Source: `include/ADS/mfset/ListMFSet.h`, `MFSet.h`, `UnionFind.h`,
 `RemUnionFind.h`, `RollbackUnionFind.h`]
 
-We are concerned in this chapter with the MFSET (merge-find set), i.e.,
-with a partition of a set of elements into disjoint components that only
-merge, and with the question of whether two elements are in the same
-component. It is the structure that follows the connected components of a
-graph whose edges arrive one at a time (the cycles that the algorithm of
-Kruskal must refuse, cf. [Chapter 14](14-graph.md#ch-14)), and the classes of an equivalence
-relation given by its pairs. In `ADS/mfset` it is realized on lists
-([§11.2](11-mfset.md#sec-11-2)) and on a forest of parents with the
-heuristics of [Montresor 2025, §10.2](Z-bibliography.md#ref-montresor2025)
+We are concerned in this chapter with the MFSET (merge-find set), i.e., with a
+partition of a set of elements into disjoint components that only merge, and
+with the question of whether two elements are in the same component. It is the
+structure that follows the connected components of a graph whose edges arrive
+one at a time (the cycles that the algorithm of Kruskal must refuse, cf.
+[Chapter 14](14-graph.md#ch-14)), and the classes of an equivalence relation
+given by its pairs. In `ADS/mfset` it is realized on lists
+([§11.2](11-mfset.md#sec-11-2)) and on a forest of parents with the heuristics
+of [Montresor 2025, §10.2](Z-bibliography.md#ref-montresor2025)
 ([§11.3](11-mfset.md#sec-11-3)). We then give two engineered forests
-([§11.4](11-mfset.md#sec-11-4)) and a forest whose merges can be undone,
-on which we answer offline the connectivity of a graph whose edges come and
-go ([§11.5](11-mfset.md#sec-11-5)). [Table 11.1](11-mfset.md#tab-11-1)
-summarizes the costs, and [§11.6](11-mfset.md#sec-11-6) compares the
-realizations on what each one is meant for. In the sets of
-[§1.9](01-introduction.md#sec-1-9), `ListMFSet.h` and `MFSet.h` are base
-and the other headers of this chapter are advanced.
+([§11.4](11-mfset.md#sec-11-4)) and a forest whose merges can be undone, on
+which we answer offline the connectivity of a graph whose edges come and go
+([§11.5](11-mfset.md#sec-11-5)). [Table 11.1](11-mfset.md#tab-11-1) summarizes
+the costs, and [§11.6](11-mfset.md#sec-11-6) compares the realizations on what
+each one is meant for. In the sets of [§1.9](01-introduction.md#sec-1-9),
+`ListMFSet.h` and `MFSet.h` are base and the other headers of this chapter are
+advanced.
 
 ## 11.1 The interface {#sec-11-1}
 
@@ -37,15 +37,14 @@ $$
 
 The second, $\mathrm{merge}( x , y )$, replaces the components of $x$ and of
 $y$ with their union; components are never split. Some specifications require
-$x$ and $y$ to be in distinct components; we relax this precondition in all
-the realizations of the chapter, since a `merge()` of two elements already
-together returns false and leaves the partition as it was. Each
-realization also has `n()`, the number of the elements, and all of them but
-`ListMFSet` have `same( x , y )` (cf. (11.1)), and `count()`, the number of
-the components.
-Throughout the chapter we write $m$ for the number of the operations of a
-sequence of finds and merges and $p[ x ]$ for the parent of $x$ in a
-forest. Also, $\mathit{rank}[ r ]$ and $\mathit{size}[ r ]$ are the rank and the number of
+$x$ and $y$ to be in distinct components; we relax this precondition in all the
+realizations of the chapter, since a `merge()` of two elements already together
+returns false and leaves the partition as it was. Each realization also has
+`n()`, the number of the elements, and all of them but `ListMFSet` have `same(
+x , y )` (cf. (11.1)), and `count()`, the number of the components. Throughout
+the chapter we write $m$ for the number of the operations of a sequence of
+finds and merges and $p[ x ]$ for the parent of $x$ in a forest. Also,
+$\mathit{rank}[ r ]$ and $\mathit{size}[ r ]$ are the rank and the number of
 nodes of the tree of the root $r$, and $\alpha( m , n )$ is the inverse of the
 function of Ackermann, which is at most 4 for any $m$ and $n$ that fit in a
 computer ([Tarjan 1975](Z-bibliography.md#ref-tarjan1975)).
@@ -101,7 +100,8 @@ there are $\log_2 n$ rounds. With the counter `relabels()` one can check
 the elements of the component of $x$, which a forest cannot give without a
 visit of all the elements.
 
-The class is declared as follows, in the namespace `ADS` as all those of the chapter.
+The class is declared as follows, in the namespace `ADS` as all those of the
+chapter.
 
 ```cpp
 // declarations of <ADS/mfset/ListMFSet.h>
@@ -266,15 +266,15 @@ $n$. Summing over the at most $\log^* n + 1$ groups, the charges to the
 nodes are $O( n \log^* n )$, and those to the finds $O( m \log^* n )$.
 $\square$
 
-The same proof holds with the union by size, once the rank of a node is
-taken as $\lfloor \log_2 s \rfloor$, $s$ the size of its tree when it was
-hung (the current size for a root): a node is hung only under a root
-whose tree, after the link, has at least twice its size, which gives (ii),
-and a node of rank $r$ has at least $2^r$ descendants, which gives (iii). Since $\log^* n \le 5$
-for $n \le 2^{65536}$, [Lemma 11.3](11-mfset.md#lem-11-3) already makes
-the amortized cost constant for any practical purpose, and (11.2) improves
-it only in theory. We remark that both bounds are amortized: a single find
-may still cost $\Theta( \log n )$ time.
+The same proof holds with the union by size, once the rank of a node is taken
+as $\lfloor \log_2 s \rfloor$, $s$ the size of its tree when it was hung (the
+current size for a root): a node is hung only under a root whose tree, after
+the link, has at least twice its size, which gives (ii), and a node of rank $r$
+has at least $2^r$ descendants, which gives (iii). Since $\log^* n \le 5$ for
+$n \le 2^{65536}$, [Lemma 11.3](11-mfset.md#lem-11-3) already makes the
+amortized cost constant for any practical purpose, and (11.2) improves it only
+in theory. We remark that both bounds are amortized: a single find may still
+cost $\Theta( \log n )$ time.
 
 Finally, `components( G )` builds the MFSET of the connected components of an
 unoriented graph by merging the ends of each edge ([Montresor 2025,
@@ -301,7 +301,8 @@ of $m \ge n$ operations costs $\Theta( m \log_{1 + m / n} n )$ time in the
 worst case ([Tarjan and van Leeuwen 1984](Z-bibliography.md#ref-tarjan1984)),
 between the two bounds of [Table 11.1](11-mfset.md#tab-11-1).
 
-We declare `MFSet` and `components()` as follows; the example also uses the `UnionFind` of [§11.4](11-mfset.md#sec-11-4).
+We declare `MFSet` and `components()` as follows; the example also uses the
+`UnionFind` of [§11.4](11-mfset.md#sec-11-4).
 
 ```cpp
 // declarations of <ADS/mfset/MFSet.h>
@@ -523,7 +524,8 @@ component of $x$), `n()`, `count()` and `reset( n )`, which returns to the $n$
 singletons and empties the stack; `undo( k )` undoes the last $k$ merges, one
 by default.
 
-The class, the operations of the offline connectivity and their function are declared as follows.
+The class, the operations of the offline connectivity and their function are
+declared as follows.
 
 ```cpp
 // declarations of <ADS/mfset/RollbackUnionFind.h>
@@ -659,39 +661,37 @@ $$
 O( k \log q \log n ) = O( k \log k \log n ) . \tag{11.4}
 $$
 
-*Proof.* Since the middle $c$ of a range $[ a , b )$ halves it rounding
-up, the segment tree has depth at most $\lceil \log_2 q \rceil$, and the
-ranges of the nodes of one depth are disjoint. Let $[ s , e )$ be the
-interval; a node that `add()` reaches and that neither holds its range in
-$[ s , e )$ nor is disjoint from it (a *partial* node) has $s$ or $e$
-strictly inside its range, and hence there are at most two partial nodes
-per depth, one for $s$ and one for $e$. A node that takes the interval is
-a child of a partial node, and a partial node has at most one such child:
-if both its children were inside $[ s , e )$, so would be its range. If the
-root takes the interval, that is the only node; otherwise the nodes taken
-lie at the depths 1 to $\lceil \log_2 q \rceil$, at most two per depth,
-since each is the child of one of the at most two partial nodes of the
-depth above. As for the leaves, the ranges of the
-nodes taken partition $[ s , e )$. Hence exactly one of the ancestors
-of the leaf $a$ (the leaf included) holds the edge if $a \in [ s , e )$,
-and none otherwise. An edge is alive at the question $a$ exactly when
-$s \le a < e$. Indeed, let the question $a$ come at the time $t_a$, so
-that $q( t_a ) = a$. Since $q$ does not decrease and grows by 1 just
-after $t_a$, an insertion at the time $t \ne t_a$ comes before $t_a$ if and
-only if $s = q( t ) \le a$, and a deletion comes after $t_a$ if and only if
-$e = q( t ) \ge a + 1$ (and $e = q$ for an edge never deleted). The visit merges at a node the edges
-of its list and rolls back to its checkpoint when it leaves it, which by
-[Lemma 11.5](11-mfset.md#lem-11-5) restores the forest of the parent;
-hence at the leaf $a$ the forest holds the edges of the lists of its
-ancestors, i.e., those alive at $a$, each merged once. Each edge is thus
-merged and undone at most $\max( 1 , 2 \lceil \log_2 q \rceil )$
-times, in $O( \log n )$ and $O( 1 )$ time respectively (by
-[Lemma 11.5](11-mfset.md#lem-11-5) for the merge). The calls of `add()`
-for one edge reach at most four nodes per depth (the two partial nodes and
-their children), i.e., $O( \log q )$ in all. The visit enters $2 q - 1$
-nodes, and the $q$ answers cost $O( \log n )$ each, which gives (11.4) with
-$q \le k$. Finally, the pairing of each deletion with its insertion,
-through a hash table on the unordered pairs of nodes, adds $O( k )$
+*Proof.* Since the middle $c$ of a range $[ a , b )$ halves it rounding up, the
+segment tree has depth at most $\lceil \log_2 q \rceil$, and the ranges of the
+nodes of one depth are disjoint. Let $[ s , e )$ be the interval; a node that
+`add()` reaches and that neither holds its range in $[ s , e )$ nor is disjoint
+from it (a *partial* node) has $s$ or $e$ strictly inside its range, and hence
+there are at most two partial nodes per depth, one for $s$ and one for $e$. A
+node that takes the interval is a child of a partial node, and a partial node
+has at most one such child: if both its children were inside $[ s , e )$, so
+would be its range. If the root takes the interval, that is the only node;
+otherwise the nodes taken lie at the depths 1 to $\lceil \log_2 q \rceil$, at
+most two per depth, since each is the child of one of the at most two partial
+nodes of the depth above. As for the leaves, the ranges of the nodes taken
+partition $[ s , e )$. Hence exactly one of the ancestors of the leaf $a$ (the
+leaf included) holds the edge if $a \in [ s , e )$, and none otherwise. An edge
+is alive at the question $a$ exactly when $s \le a < e$. Indeed, let the
+question $a$ come at the time $t_a$, so that $q( t_a ) = a$. Since $q$ does not
+decrease and grows by 1 just after $t_a$, an insertion at the time $t \ne t_a$
+comes before $t_a$ if and only if $s = q( t ) \le a$, and a deletion comes
+after $t_a$ if and only if $e = q( t ) \ge a + 1$ (and $e = q$ for an edge
+never deleted). The visit merges at a node the edges of its list and rolls back
+to its checkpoint when it leaves it, which by [Lemma
+11.5](11-mfset.md#lem-11-5) restores the forest of the parent; hence at the
+leaf $a$ the forest holds the edges of the lists of its ancestors, i.e., those
+alive at $a$, each merged once. Each edge is thus merged and undone at most
+$\max( 1 , 2 \lceil \log_2 q \rceil )$ times, in $O( \log n )$ and $O( 1 )$
+time respectively (by [Lemma 11.5](11-mfset.md#lem-11-5) for the merge). The
+calls of `add()` for one edge reach at most four nodes per depth (the two
+partial nodes and their children), i.e., $O( \log q )$ in all. The visit enters
+$2 q - 1$ nodes, and the $q$ answers cost $O( \log n )$ each, which gives
+(11.4) with $q \le k$. Finally, the pairing of each deletion with its
+insertion, through a hash table on the unordered pairs of nodes, adds $O( k )$
 expected time, and the lists take $O( k \log k )$ space. $\square$
 
 With the contraction of the graph at each level of the divide and conquer

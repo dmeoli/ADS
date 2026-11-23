@@ -4,44 +4,45 @@
 `BlockBTree.h`, `ExternalSorting.h`, `ListRanking.h`, `RecordFile.h`,
 `MappedFile.h`, `Persistence.h`, and `interop/cereal/Cereal.h`]
 
-We are concerned in this chapter with data too large for the internal memory
-of a computer, which therefore live on a disk and are moved between the
-disk and the memory in blocks. A random access to a disk is thousands of
-times slower than one to the memory, and it brings a whole block, not a
-single item. Hence the cost of an algorithm on such data is the number of
-blocks that it moves, and an algorithm of the internal memory that follows
-links may pay one block per link. The headers of `ADS/external` simulate the model of [Aggarwal and Vitter 1988](Z-bibliography.md#ref-aggarwal1988). Thus the blocks moved by a run are counted and compared with the bounds
-(cf. [§23.1](23-external.md#sec-23-1)). On it they build the store of blocks
-and the B-tree of [Morin 2013, chapter 14](Z-bibliography.md#ref-morin-cpp)
-([§23.2](23-external.md#sec-23-2) and [§23.3](23-external.md#sec-23-3)),
-and the algorithms of [Ferragina 2023](Z-bibliography.md#ref-ferragina2023),
+We are concerned in this chapter with data too large for the internal memory of
+a computer, which therefore live on a disk and are moved between the disk and
+the memory in blocks. A random access to a disk is thousands of times slower
+than one to the memory, and it brings a whole block, not a single item. Hence
+the cost of an algorithm on such data is the number of blocks that it moves,
+and an algorithm of the internal memory that follows links may pay one block
+per link. The headers of `ADS/external` simulate the model of [Aggarwal and
+Vitter 1988](Z-bibliography.md#ref-aggarwal1988). Thus the blocks moved by a
+run are counted and compared with the bounds (cf.
+[§23.1](23-external.md#sec-23-1)). On it they build the store of blocks and the
+B-tree of [Morin 2013, chapter 14](Z-bibliography.md#ref-morin-cpp)
+([§23.2](23-external.md#sec-23-2) and [§23.3](23-external.md#sec-23-3)), and
+the algorithms of [Ferragina 2023](Z-bibliography.md#ref-ferragina2023),
 chapters 4, List Ranking, and 5, Sorting Atomic Items: the sorts with their
 lower bounds and the permutations (cf. [§23.4](23-external.md#sec-23-4)), and
 the ranking of a list (cf. [§23.5](23-external.md#sec-23-5)). Finally,
-[§23.6](23-external.md#sec-23-6) describes the files of records on the
-disk of the machine, where the model meets the real one, and
+[§23.6](23-external.md#sec-23-6) describes the files of records on the disk of
+the machine, where the model meets the real one, and
 [§23.7](23-external.md#sec-23-7) the files in which the static structures of
-the library are saved and from which they are mapped back. Note that the B-trees and
-the B+-trees kept in the internal memory (`BTree.h` and `BPlusTree.h`) are
-in [chapter 8](08-tree.md#ch-8). In the sets of
-[§1.9](01-introduction.md#sec-1-9), the headers of this chapter are all
-base, while `RecordFile.h`, `MappedFile.h` and `Persistence.h` are in the
-core that the two sets include, and `interop/cereal/Cereal.h` is in the set
-interop.
+the library are saved and from which they are mapped back. Note that the
+B-trees and the B+-trees kept in the internal memory (`BTree.h` and
+`BPlusTree.h`) are in [chapter 8](08-tree.md#ch-8). In the sets of
+[§1.9](01-introduction.md#sec-1-9), the headers of this chapter are all base,
+while `RecordFile.h`, `MappedFile.h` and `Persistence.h` are in the core that
+the two sets include, and `interop/cereal/Cereal.h` is in the set interop.
 
 ## 23.1 The two-level memory {#sec-23-1}
 
 The *two-level memory* has an internal memory of $M$ items and a disk of
-unbounded size, divided into blocks of $B$ consecutive items. An *I/O*
-moves one block between the disk and the memory, and the cost of an
-algorithm is the number of its I/Os, the computation in memory being free
-(chapter 1, Introduction, of [Ferragina 2023](Z-bibliography.md#ref-ferragina2023);
-[Vitter 2001](Z-bibliography.md#ref-vitter2001)). An item is *atomic*: it
-is moved and compared whole, and a pair or a triple of the algorithms
-below counts as one item. In the model $M \ge 2 B$, so that a block can
-be read while another is kept; the algorithms of the area need
-$M \ge 3 B$ (two inputs and an output) or more.
-[Table 23.1](23-external.md#tab-23-1) collects the symbols of the chapter.
+unbounded size, divided into blocks of $B$ consecutive items. An *I/O* moves
+one block between the disk and the memory, and the cost of an algorithm is the
+number of its I/Os, the computation in memory being free (chapter 1,
+Introduction, of [Ferragina 2023](Z-bibliography.md#ref-ferragina2023); [Vitter
+2001](Z-bibliography.md#ref-vitter2001)). An item is *atomic*: it is moved and
+compared whole, and a pair or a triple of the algorithms below counts as one
+item. In the model $M \ge 2 B$, so that a block can be read while another is
+kept; the algorithms of the area need $M \ge 3 B$ (two inputs and an output) or
+more. [Table 23.1](23-external.md#tab-23-1) collects the symbols of the
+chapter.
 
 <span id="tab-23-1"></span>**Table 23.1.** The symbols of the chapter and
 of the headers of `ADS/external`.
@@ -130,12 +131,12 @@ and at most the blocks of the file. Finally, the requests are read by a scan,
 and
 the answers by such calls. $\square$
 
-<span id="tab-23-2"></span>**Table 23.2.** The patterns of access of the
-area and their I/Os (the scans and the reads by
-[Lemma 23.1](23-external.md#lem-23-1), the sorts by
-[Lemma 23.8](23-external.md#lem-23-8) and [Lemma 23.9](23-external.md#lem-23-9),
-the permutations by [Theorem 23.4](23-external.md#thm-23-4), the ranking
-by [§23.5](23-external.md#sec-23-5)).
+<span id="tab-23-2"></span>**Table 23.2.** The patterns of access of the area
+and their I/Os (the scans and the reads by [Lemma
+23.1](23-external.md#lem-23-1), the sorts by [Lemma
+23.8](23-external.md#lem-23-8) and [Lemma 23.9](23-external.md#lem-23-9), the
+permutations by [Theorem 23.4](23-external.md#thm-23-4), the ranking by
+[§23.5](23-external.md#sec-23-5)).
 
 | Pattern | I/Os | Realization |
 |---|---|---|
@@ -145,11 +146,11 @@ by [§23.5](23-external.md#sec-23-5)).
 | permutation of $n$ items | $\Theta( \min\{ n , \mathrm{sort}( n ) \} )$ | `permuteDirect()` or `permuteBySorting()` |
 | ranking of a list of $n$ items | $\Theta( \mathrm{sort}( n ) )$ | `externalListRank()` |
 
-The data structures of [Morin 2013, chapter 14](Z-bibliography.md#ref-morin-cpp)
-need less memory than the algorithms: a constant number of blocks and a
-stack of height $O( \log_B n )$, i.e., $O( B + \log_B n )$ items. In most
-cases the term $B$ dominates; for instance, $B \ge \log_B n$ holds with
-$B = 32$ for all $n \le 2^{160}$.
+The data structures of [Morin 2013, chapter
+14](Z-bibliography.md#ref-morin-cpp) need less memory than the algorithms: a
+constant number of blocks and a stack of height $O( \log_B n )$, i.e., $O( B +
+\log_B n )$ items. In most cases the term $B$ dominates; for instance, $B \ge
+\log_B n$ holds with $B = 32$ for all $n \le 2^{160}$.
 
 ## 23.2 The block store {#sec-23-2}
 
@@ -215,12 +216,12 @@ which has $\ell$ leaves satisfies $2 B^{h-1} \le \ell \le ( 2 B )^h$, and hence
 $h \le \log_B \ell + 1$; since each leaf holds at least one key (when the
 root is not a leaf), a B-tree of $n$ keys has height $O( \log_B n )$.*
 
-*Proof.* The root has at least 2 children and each other internal node at least $B$. Hence the level at depth $d \ge 1$ has at least
-$2 B^{d - 1}$ nodes, which gives the lower bound on $\ell$ for $d = h$;
-each node has at most $2 B$ children, and the level at depth $d$ at most
-$( 2 B )^d$ nodes, which gives the upper one. Taking the logarithm of the
-first inequality, $h - 1 \le \log_B ( \ell / 2 ) \le \log_B \ell$.
-$\square$
+*Proof.* The root has at least 2 children and each other internal node at least
+$B$. Hence the level at depth $d \ge 1$ has at least $2 B^{d - 1}$ nodes, which
+gives the lower bound on $\ell$ for $d = h$; each node has at most $2 B$
+children, and the level at depth $d$ at most $( 2 B )^d$ nodes, which gives the
+upper one. Taking the logarithm of the first inequality, $h - 1 \le \log_B (
+\ell / 2 ) \le \log_B \ell$. $\square$
 
 A node holds $O( B )$ data, and we choose $B$ so that a node fills a block;
 the cost of an operation in the external memory is then the number of nodes
@@ -260,19 +261,20 @@ not pointed to.
 the smallest key $\ge x$ of the tree, if any; it reads $O( \log_B n )$
 blocks, and takes $O( \log n )$ time in the word-RAM model.*
 
-*Proof.* Let $u$ be the node of the current step, $i$ the first place of a
-key $\ge x$ in $u$, and $K$ the keys of the subtree of $u$. Those of
-$K$ that are $\ge x$ are the keys of $u$ from the place $i$ on and the keys of the subtrees of the children after $i$, which are larger than the key $i$ of $u$, besides those of the subtree of the child $i$, which are smaller than
-the key $i$ (if any) and larger than the key $i - 1$. Hence the smallest
-key $\ge x$ of $K$ is $x$ itself if the key $i$ is $x$, and otherwise the
-smallest key $\ge x$ of the child $i$, if any, or else the key $i$. The
-search keeps as its candidate the last key $i$ met, and by induction on the
-levels the candidate at the leaf is the smallest key $\ge x$ of the
-tree. As for the cost, it reads one node per level, and there are $O( \log_B n
-)$ levels by [Lemma 23.2](23-external.md#lem-23-2). In a node of at most $2 B$
-keys the
-binary search costs $O( \log B )$, and
-$O( \log_B n ) \cdot O( \log B ) = O( \log n )$. $\square$
+*Proof.* Let $u$ be the node of the current step, $i$ the first place of a key
+$\ge x$ in $u$, and $K$ the keys of the subtree of $u$. Those of $K$ that are
+$\ge x$ are the keys of $u$ from the place $i$ on and the keys of the subtrees
+of the children after $i$, which are larger than the key $i$ of $u$, besides
+those of the subtree of the child $i$, which are smaller than the key $i$ (if
+any) and larger than the key $i - 1$. Hence the smallest key $\ge x$ of $K$ is
+$x$ itself if the key $i$ is $x$, and otherwise the smallest key $\ge x$ of the
+child $i$, if any, or else the key $i$. The search keeps as its candidate the
+last key $i$ met, and by induction on the levels the candidate at the leaf is
+the smallest key $\ge x$ of the tree. As for the cost, it reads one node per
+level, and there are $O( \log_B n )$ levels by [Lemma
+23.2](23-external.md#lem-23-2). In a node of at most $2 B$ keys the binary
+search costs $O( \log B )$, and $O( \log_B n ) \cdot O( \log B ) = O( \log n
+)$. $\square$
 
 We remark that the time bound counts a read as the access to a node in
 place, as in the model. `BlockStore` instead returns a copy of each block
@@ -289,17 +291,16 @@ node, with `std::lower_bound`.
 
 ### 23.3.2 Insertion {#sec-23-3-2}
 
-The insertion of $x$ goes down to the leaf $u$ where $x$ belongs, adds $x$
-to it, and then goes back up. A node left with $2 B$ keys (an *overflow*)
-is *split*: its $B$ smallest keys stay in it, its $B - 1$ largest keys go
-to a new node, and the key between them goes up to the parent, which also
-adopts the new node. In turn, the split may leave the parent with $2 B$ keys, and so
-on up to the root, which may split and give a new root of one key
-([Morin 2013, §14.2.2](Z-bibliography.md#ref-morin-cpp)). A split writes
-three nodes: the node, the new one and the parent. This is why the nodes of
-a B-tree keep no pointer to their parent: with one, the $B$ children
-adopted by the new node would have to be rewritten too, i.e., $B + 3$ more
-I/Os per split instead of 3.
+The insertion of $x$ goes down to the leaf $u$ where $x$ belongs, adds $x$ to
+it, and then goes back up. A node left with $2 B$ keys (an *overflow*) is
+*split*: its $B$ smallest keys stay in it, its $B - 1$ largest keys go to a new
+node, and the key between them goes up to the parent, which also adopts the new
+node. In turn, the split may leave the parent with $2 B$ keys, and so on up to
+the root, which may split and give a new root of one key ([Morin 2013,
+§14.2.2](Z-bibliography.md#ref-morin-cpp)). A split writes three nodes: the
+node, the new one and the parent. This is why the nodes of a B-tree keep no
+pointer to their parent: with one, the $B$ children adopted by the new node
+would have to be rewritten too, i.e., $B + 3$ more I/Os per split instead of 3.
 
 The code of [Morin 2013, §14.2.2](Z-bibliography.md#ref-morin-cpp) is
 recursive, and its recursion holds a node per level while it goes back up. The
@@ -352,21 +353,19 @@ kept instead of the nodes.
 
 ### 23.3.4 One routine for the restructurings {#sec-23-3-4}
 
-A split, a borrow and a merge all move keys between some consecutive
-children of a node and the separators between them. The function `deal()` is the one
-routine that does all of them: it gathers the keys of $k$ consecutive
-children of $p$ with the separators of $p$ between them, and deals them out
-again to $k'$ children, the first ones one key more when they do not
-divide evenly ([Algorithm 23.6](23-external.md#alg-23-6)). A split is
-$1 \to 2$, a borrow $2 \to 2$ and a merge $2 \to 1$
-([Figure 23.7](23-external.md#fig-23-7)), and the three-node moves of
-[§23.3.6](23-external.md#sec-23-3-6) are $2 \to 3$, $3 \to 3$ and
-$3 \to 2$. The number $k'$ is a function of the number of keys gathered,
-which `fixOverflow()` and `fixUnderflow()` choose by the policy. For the
-rules of the book, a node of $2 B$ keys goes to two children, which then
-have $B$ and $B - 1$ keys, and an underflow goes to two children when the
-$2 B - 1$ keys or more gathered leave $B - 1$ to each, and to one
-otherwise.
+A split, a borrow and a merge all move keys between some consecutive children
+of a node and the separators between them. The function `deal()` is the one
+routine that does all of them: it gathers the keys of $k$ consecutive children
+of $p$ with the separators of $p$ between them, and deals them out again to
+$k'$ children, the first ones one key more when they do not divide evenly
+([Algorithm 23.6](23-external.md#alg-23-6)). A split is $1 \to 2$, a borrow $2
+\to 2$ and a merge $2 \to 1$ ([Figure 23.7](23-external.md#fig-23-7)), and the
+three-node moves of [§23.3.6](23-external.md#sec-23-3-6) are $2 \to 3$, $3 \to
+3$ and $3 \to 2$. The number $k'$ is a function of the number of keys gathered,
+which `fixOverflow()` and `fixUnderflow()` choose by the policy. For the rules
+of the book, a node of $2 B$ keys goes to two children, which then have $B$ and
+$B - 1$ keys, and an underflow goes to two children when the $2 B - 1$ keys or
+more gathered leave $B - 1$ to each, and to one otherwise.
 
 <span id="alg-23-6"></span>**Algorithm 23.6.** The restructuring of
 $k$ consecutive children into $k'$ (beyond the book).
@@ -375,14 +374,14 @@ $k$ consecutive children into $k'$ (beyond the book).
 
 ![Figure 23.7. The three restructurings of the rules of the book with $B = 3$, each one call of `deal()`: a leaf of $2 B = 6$ keys split into nodes of $B$ and $B - 1$ keys, the middle key going up; a leaf of $B - 2 = 1$ key that borrows from a sibling of 4 keys; and a leaf of 1 key merged with a sibling of $B - 1 = 2$ keys, the separator coming down. The nodes gathered are in violet and the nodes written in orange.](../figures/external-btree-deal.svg){#fig-23-7}
 
-We remark that the borrow of `BlockBTree` takes place when the sibling has
-$B$ keys or more, as the text of [Morin 2013,
+We remark that the borrow of `BlockBTree` takes place when the sibling has $B$
+keys or more, as the text of [Morin 2013,
 §14.2.3](Z-bibliography.md#ref-morin-cpp) states, whereas his code merges
-unless the sibling has more than $B$. A restructuring writes the $k'$
-children and the parent, and reads the $k - 1$ children not yet in memory;
-it frees the blocks of the children it drops, or places the new ones.
-The functions `splits()`, `merges()`, `borrows()` and their sum `restructures()` count
-the restructurings so far.
+unless the sibling has more than $B$. A restructuring writes the $k'$ children
+and the parent, and reads the $k - 1$ children not yet in memory; it frees the
+blocks of the children it drops, or places the new ones. The functions
+`splits()`, `merges()`, `borrows()` and their sum `restructures()` count the
+restructurings so far.
 
 <span id="lem-23-3"></span>**Lemma 23.3.** *With the rules of the
 book, `insert()` and `remove()` keep the tree a B-tree of the keys after
@@ -473,29 +472,27 @@ it leaves.
 
 ### 23.3.6 Nodes far from their bounds {#sec-23-3-6}
 
-The cycle of [Lemma 23.4](23-external.md#lem-23-4) costs a restructuring
-per operation because each restructuring leaves its nodes at one key from a
-bound. The enumeration `BTreePolicy` names the rules of the book (`STANDARD`,
-the default) and two variants that leave each
-node they touch at $\Omega( B )$ keys from both of its bounds
-([Morin 2013, exercises 14.6 and 14.7](Z-bibliography.md#ref-morin-cpp)).
-With `WIDE` a node holds from $B - 1$ to $3 B - 1$ keys: a node of $3 B$
-keys is split into two of about $1.5 B$. A node in underflow is merged
-with its sibling whenever the two have at most $2.5 B$ keys, before it is
-needed, so that the merged node is at least $B / 2$ keys below the $3 B$ of
-an overflow;
-otherwise the two share their keys, about $1.25 B$ or more each. With `THREE` the bounds are those of the book. A node in overflow shares its
-keys with a sibling, into two nodes if the two have at most about
-$3.5 B$ keys (so that each keeps $B / 4$ keys of room) and into three
-otherwise; a node in underflow shares them with two siblings, into two
-nodes or three in the same way. Thus each node that these moves write has
-between about $7 B / 6$ and $7 B / 4$ keys, as in the B*-trees of [Knuth
-1998, §6.2.4](Z-bibliography.md#ref-knuth1998v3), whose overflow is shared
-with a sibling. We give next the procedures that choose the restructuring of an
-overflow and of an underflow by the policy, as calls of
-`deal()` ([Algorithm 23.6](23-external.md#alg-23-6)); with `THREE`, the
-two leaves of a root are merged into one only while it keeps $\lfloor B /
-4 \rfloor$ keys of room.
+The cycle of [Lemma 23.4](23-external.md#lem-23-4) costs a restructuring per
+operation because each restructuring leaves its nodes at one key from a bound.
+The enumeration `BTreePolicy` names the rules of the book (`STANDARD`, the
+default) and two variants that leave each node they touch at $\Omega( B )$ keys
+from both of its bounds ([Morin 2013, exercises 14.6 and
+14.7](Z-bibliography.md#ref-morin-cpp)). With `WIDE` a node holds from $B - 1$
+to $3 B - 1$ keys: a node of $3 B$ keys is split into two of about $1.5 B$. A
+node in underflow is merged with its sibling whenever the two have at most $2.5
+B$ keys, before it is needed, so that the merged node is at least $B / 2$ keys
+below the $3 B$ of an overflow; otherwise the two share their keys, about $1.25
+B$ or more each. With `THREE` the bounds are those of the book. A node in
+overflow shares its keys with a sibling, into two nodes if the two have at most
+about $3.5 B$ keys (so that each keeps $B / 4$ keys of room) and into three
+otherwise; a node in underflow shares them with two siblings, into two nodes or
+three in the same way. Thus each node that these moves write has between about
+$7 B / 6$ and $7 B / 4$ keys, as in the B*-trees of [Knuth 1998,
+§6.2.4](Z-bibliography.md#ref-knuth1998v3), whose overflow is shared with a
+sibling. We give next the procedures that choose the restructuring of an
+overflow and of an underflow by the policy, as calls of `deal()` ([Algorithm
+23.6](23-external.md#alg-23-6)); with `THREE`, the two leaves of a root are
+merged into one only while it keeps $\lfloor B / 4 \rfloor$ keys of room.
 
 --8<-- "generated/BlockBTree-fixOverflow.pseudo.md"
 
@@ -517,28 +514,28 @@ restructurings in $m$ operations, $R ( \alpha B - 1 ) \le m$, i.e.,
 $R \le m / ( \alpha B - 1 ) = O( m / B )$ for $B > 2 / \alpha$, say.
 $\square$
 
-<span id="lem-23-6"></span>**Lemma 23.6.** *There is a constant
-$c$ such that each node that a restructuring of `WIDE` writes is at least $B / 4 - c$ keys from both of its bounds. Each node that a restructuring of `THREE` writes, but in a tree of two leaves, at least $B /
-6 - c$ keys from its lower bound and $B / 4 - c$ from its upper one; hence
-both policies meet the hypothesis of
-[Lemma 23.5](23-external.md#lem-23-5) with $\alpha = 1 / 8$ for $B$ large
-enough.*
+<span id="lem-23-6"></span>**Lemma 23.6.** *There is a constant $c$ such that
+each node that a restructuring of `WIDE` writes is at least $B / 4 - c$ keys
+from both of its bounds. Each node that a restructuring of `THREE` writes, but
+in a tree of two leaves, at least $B / 6 - c$ keys from its lower bound and $B
+/ 4 - c$ from its upper one; hence both policies meet the hypothesis of [Lemma
+23.5](23-external.md#lem-23-5) with $\alpha = 1 / 8$ for $B$ large enough.*
 
-*Proof.* We count the keys up to additive constants, which go into $c$.
-With `WIDE` the bounds are $B$ and $3 B$. A split deals $3 B$ keys into two nodes of $1.5 B$. A merge happens when the two nodes gather at most $2.5
-B$ keys, and gives a node of at least $( B - 2 ) + ( B - 1 ) \approx 2 B$
-and at most $2.5 B$ keys. A share happens when they gather more than $2.5
-B$, and gives two nodes of more than $1.25 B$ and at most $( ( B - 2 ) + 3
-B ) / 2 \approx 2 B$ keys. With `THREE` the bounds are $B$ and $2 B$, and
-$t$ is the number of keys gathered (line 3, 7 and 9 of the pseudocode
-above). An overflow gathers $t \in [ 3 B , 4 B ]$ keys of a node and a
-sibling: into two nodes when $t / 2 \le 2 B - B / 4$, each of $t / 2 \ge
-1.5 B$ keys, and otherwise into three, each of $t / 3 \in ( 7 B / 6 , 4 B
-/ 3 ]$ keys. An underflow gathers $t \in [ 3 B , 5 B ]$ keys of a node and
-two siblings: into two nodes of $t / 2 \in [ 1.5 B , 1.75 B ]$ keys, or
-into three of $t / 3 \in ( 7 B / 6 , 5 B / 3 ]$. Thus the least distance
-from a lower bound is $7 B / 6 - B = B / 6$, and from an upper bound $B /
-4$ (the room that the test of $t$ keeps). $\square$
+*Proof.* We count the keys up to additive constants, which go into $c$. With
+`WIDE` the bounds are $B$ and $3 B$. A split deals $3 B$ keys into two nodes of
+$1.5 B$. A merge happens when the two nodes gather at most $2.5 B$ keys, and
+gives a node of at least $( B - 2 ) + ( B - 1 ) \approx 2 B$ and at most $2.5
+B$ keys. A share happens when they gather more than $2.5 B$, and gives two
+nodes of more than $1.25 B$ and at most $( ( B - 2 ) + 3 B ) / 2 \approx 2 B$
+keys. With `THREE` the bounds are $B$ and $2 B$, and $t$ is the number of keys
+gathered (line 3, 7 and 9 of the pseudocode above). An overflow gathers $t \in
+[ 3 B , 4 B ]$ keys of a node and a sibling: into two nodes when $t / 2 \le 2
+B - B / 4$, each of $t / 2 \ge 1.5 B$ keys, and otherwise into three, each of $t
+/ 3 \in ( 7 B / 6 , 4 B / 3 ]$ keys. An underflow gathers $t \in [ 3 B , 5 B ]$
+keys of a node and two siblings: into two nodes of $t / 2 \in [ 1.5 B , 1.75 B
+]$ keys, or into three of $t / 3 \in ( 7 B / 6 , 5 B / 3 ]$. Thus the least
+distance from a lower bound is $7 B / 6 - B = B / 6$, and from an upper bound
+$B / 4$ (the room that the test of $t$ keeps). $\square$
 
 Hence the cycle of [Lemma 23.4](23-external.md#lem-23-4) costs them
 nothing after its first round. However, the moves of `THREE` need a sibling
@@ -577,13 +574,12 @@ of them, and hence
 $I + L - 1 \ge 2 + B ( I - 1 )$, i.e., $I \le ( L + B - 3 ) / ( B - 1 )$;
 replacing $L \le ( n + 1 ) / B$ gives the bound. $\square$
 
-Since $B$ is usually in the hundreds or the thousands, all but a fraction
-of about $1 / B$ of the data are in the leaves, and a system with a large
-memory may keep all the internal nodes there; a search then costs a fast
-descent in memory and a single I/O for the leaf, which is one reason why
-B-trees often perform better than their bound suggests. The function `internalNodes()`
-counts them, and `height()` gives the number of levels (1 for a root that
-is a leaf).
+Since $B$ is usually in the hundreds or the thousands, all but a fraction of
+about $1 / B$ of the data are in the leaves, and a system with a large memory
+may keep all the internal nodes there; a search then costs a fast descent in
+memory and a single I/O for the leaf, which is one reason why B-trees often
+perform better than their bound suggests. The function `internalNodes()` counts
+them, and `height()` gives the number of levels (1 for a root that is a leaf).
 
 The introduction of [Morin 2013, chapter 14](Z-bibliography.md#ref-morin-cpp)
 claims an internal memory of $O( B + \log_B n )$, but the recursion of his
@@ -650,15 +646,16 @@ $$
 *whence $t = \Omega( \min\{ n , \mathrm{sort}( n ) \} )$ ([Aggarwal and
 Vitter 1988](Z-bibliography.md#ref-aggarwal1988)).*
 
-*Proof.* As in the proof of [Theorem 23.3](23-external.md#thm-23-3), the executions of an algorithm that realizes each permutation form a tree whose leaves give the $n!$ outputs. A read has at most $\binom{M}{B}$
-outcomes (and $B!$ more the first time each block is read), and a write
-at most $n + 1$, the place of its block among the blocks of the output.
-This gives (23.2). Taking the logarithms, $t ( \log( n + 1 ) + B \log( e
-M / B ) ) \ge n \log( n / B ) - O( n )$, from which Aggarwal and Vitter
-derive $t = \Omega( \min\{ n , \mathrm{sort}( n ) \} )$ by comparing the
-two terms of the denominator: the first dominates when $B \log( M / B ) <
-\log n$ and gives $\Omega( n )$, the second gives $\Omega(
-\mathrm{sort}( n ) )$ otherwise. $\square$
+*Proof.* As in the proof of [Theorem 23.3](23-external.md#thm-23-3), the
+executions of an algorithm that realizes each permutation form a tree whose
+leaves give the $n!$ outputs. A read has at most $\binom{M}{B}$ outcomes (and
+$B!$ more the first time each block is read), and a write at most $n + 1$, the
+place of its block among the blocks of the output. This gives (23.2). Taking
+the logarithms, $t ( \log( n + 1 ) + B \log( e M / B ) ) \ge n \log( n / B ) -
+O( n )$, from which Aggarwal and Vitter derive $t = \Omega( \min\{ n ,
+\mathrm{sort}( n ) \} )$ by comparing the two terms of the denominator: the
+first dominates when $B \log( M / B ) < \log n$ and gives $\Omega( n )$, the
+second gives $\Omega( \mathrm{sort}( n ) )$ otherwise. $\square$
 
 The minimum is $n$, one I/O per item, only when $B$ is smaller than the
 logarithm of the sort. Hence on the disk the cost of a sort lies in moving the
@@ -747,33 +744,32 @@ $( a + 1 ) k - 1$ items, with $a + 1 = \lceil 12 \ln k \rceil$. Then with
 probability at least $1 / 2$ each bucket between two consecutive pivots
 has fewer than $4 n / k$ items.*
 
-*Proof.* We cut the sorted input into $k / 2$ segments of $2 n / k$ items
-each. A bucket with $4 n / k$ items or more contains a whole segment, and
-then no more than $a$ items of the sample fall in that segment, since two
-consecutive pivots have $a$ items of the sample between them. The number
-$X$ of items of the sample in a segment has mean
-$\mu = 2 ( ( a + 1 ) k - 1 ) / k = 2 ( a + 1 ) - 2 / k$, and $a \le \mu / 2$.
-The bound of Chernoff $\Pr[ X \le ( 1 - \delta ) \mu ] \le e^{- \delta^2 \mu / 2}$,
-which holds also for a sample drawn without replacement (Hoeffding), gives
-with $\delta = 1 / 2$ a probability at most
-$e^{- \mu / 8} \le e^{- ( a + 1 ) / 6} \le k^{-2}$, since $\mu \ge 4 ( a + 1 ) / 3$
-for $k \ge 2$. Over the $k / 2$ segments, the union bound gives at most
-$1 / ( 2 k ) \le 1 / 2$. $\square$
+*Proof.* We cut the sorted input into $k / 2$ segments of $2 n / k$ items each.
+A bucket with $4 n / k$ items or more contains a whole segment, and then no
+more than $a$ items of the sample fall in that segment, since two consecutive
+pivots have $a$ items of the sample between them. The number $X$ of items of
+the sample in a segment has mean $\mu = 2 ( ( a + 1 ) k - 1 ) / k = 2 ( a + 1
+) - 2 / k$, and $a \le \mu / 2$. The bound of Chernoff $\Pr[ X \le ( 1 - \delta )
+\mu ] \le e^{- \delta^2 \mu / 2}$, which holds also for a sample drawn without
+replacement (Hoeffding), gives with $\delta = 1 / 2$ a probability at most
+$e^{- \mu / 8} \le e^{- ( a + 1 ) / 6} \le k^{-2}$, since $\mu \ge 4 ( a + 1 )
+/ 3$ for $k \ge 2$. Over the $k / 2$ segments, the union bound gives at most $1
+/ ( 2 k ) \le 1 / 2$. $\square$
 
-Hence `distributionSort()` draws the sample again when a bucket is too
-large (at most twice), and with buckets of fewer than $4 n / k$ items the
-recursion has $O( \log_{k / 4} ( n / M ) )$ levels, each of which reads
-and writes each item once. In memory there are a block of the input, a block
-for each of the $k$ buckets between the pivots and of the $k - 1$ buckets
-of the items equal to a pivot, a block of the output and the pivots. Hence
-$k = \lfloor ( M - B ) / ( 2 B + 1 ) \rfloor$, half the fan-in of the
-merge, and the sort needs $M \ge 5 B + 2$. By
-[Lemma 23.9](23-external.md#lem-23-9) each of the up to three samples of
-a distribution succeeds with probability at least $1 / 2$, independently. Hence a distribution ends with buckets of fewer than $4 n / k$ items
-with probability at least $7 / 8$; when all the distributions do so, the
-I/Os are $O( ( n / B ) \log_{k / 4} ( n / M ) ) = O( \mathrm{sort}( n ) )$,
-since each level reads and writes each item once. Its sample has
-$s = \min\{ \lceil 12 \ln k \rceil k - 1 , ( M - 2 B ) / 2 , n \}$ items.
+Hence `distributionSort()` draws the sample again when a bucket is too large
+(at most twice), and with buckets of fewer than $4 n / k$ items the recursion
+has $O( \log_{k / 4} ( n / M ) )$ levels, each of which reads and writes each
+item once. In memory there are a block of the input, a block for each of the
+$k$ buckets between the pivots and of the $k - 1$ buckets of the items equal to
+a pivot, a block of the output and the pivots. Hence $k = \lfloor ( M - B ) / (
+2 B + 1 ) \rfloor$, half the fan-in of the merge, and the sort needs $M \ge 5
+B + 2$. By [Lemma 23.9](23-external.md#lem-23-9) each of the up to three samples
+of a distribution succeeds with probability at least $1 / 2$, independently.
+Hence a distribution ends with buckets of fewer than $4 n / k$ items with
+probability at least $7 / 8$; when all the distributions do so, the I/Os are
+$O( ( n / B ) \log_{k / 4} ( n / M ) ) = O( \mathrm{sort}( n ) )$, since each
+level reads and writes each item once. Its sample has $s = \min\{ \lceil 12 \ln
+k \rceil k - 1 , ( M - 2 B ) / 2 , n \}$ items.
 
 <span id="alg-23-8"></span>**Algorithm 23.8.** The distribution sort
 (chapter 5, Sorting Atomic Items, of
@@ -960,12 +956,12 @@ compares the two kinds.
 --8<-- "generated/ListRanking-independentSetOfColors.pseudo.md"
 
 <span id="lem-23-14"></span>**Lemma 23.14.** *(i) The set of
-`randomIndependentSet()` is independent, has $( n - 1 ) / 4$ items on
-average, and has at least $n / 8$ items with probability at least $( n - 2 ) / ( 4 (
-n + 1 ) )$; hence, for $n \ge 4$, at most 10 attempts are needed on
-average. (ii) The local minima of a proper coloring of the list with the
-colors $\{ 0 , 1 , 2 \}$ are independent, and at most 3 items lie between
-two consecutive ones, and hence they are at least $( n - 7 ) / 4$.*
+`randomIndependentSet()` is independent, has $( n - 1 ) / 4$ items on average,
+and has at least $n / 8$ items with probability at least $( n - 2 ) / ( 4 ( n +
+1 ) )$; hence, for $n \ge 4$, at most 10 attempts are needed on average. (ii)
+The local minima of a proper coloring of the list with the colors $\{ 0 , 1 , 2
+\}$ are independent, and at most 3 items lie between two consecutive ones, and
+hence they are at least $( n - 7 ) / 4$.*
 
 *Proof.* (i) Two items of the set are not consecutive, since the successor
 of one shows tails, and the tail, excluded, is no item of the set. Each of
@@ -973,15 +969,15 @@ the $n - 1$ items other than the tail enters with probability $1 / 4$ (its
 coin heads, that of its successor tails), which gives the mean. Since no
 two items of the set are consecutive, it has at most $\lceil n / 2 \rceil$
 items, and with $p = \Pr[ X \ge n / 8 ]$ one has $( n - 1 ) / 4 \le n / 8
-+ p \lceil n / 2 \rceil$ and $\lceil n / 2 \rceil \le ( n + 1 ) / 2$,
-whence the bound on $p$, at least $1 / 10$ for $n \ge 4$. (ii) A local minimum is smaller than both its neighbors, and therefore
-two local minima are not adjacent. Between two consecutive local minima
-the colors first increase and then decrease (a stretch that went down and
-then up would hold a local minimum), and with three colors each of the two
-monotone parts has at most two items besides the ends; since the two parts
-share their top, at most 3 items lie between. The stretches before the
-first local minimum and after the last one have at most 3 items each in
-the same way. $\square$
++ p \lceil n / 2 \rceil$ and $\lceil n / 2 \rceil \le ( n + 1 ) / 2$, whence
+  the bound on $p$, at least $1 / 10$ for $n \ge 4$. (ii) A local minimum is
+  smaller than both its neighbors, and therefore two local minima are not
+  adjacent. Between two consecutive local minima the colors first increase and
+  then decrease (a stretch that went down and then up would hold a local
+  minimum), and with three colors each of the two monotone parts has at most
+  two items besides the ends; since the two parts share their top, at most 3
+  items lie between. The stretches before the first local minimum and after the
+  last one have at most 3 items each in the same way. $\square$
 
 <span id="tab-23-4"></span>**Table 23.4.** The independent sets of
 `ListRanking.h`.
@@ -1066,26 +1062,26 @@ order. The scan reads $\min( b , \text{the records left} )$ records per
 read, from the start of the file, and calls $f$ on each before the next
 read. $\square$
 
-Hence $b$ plays the part of $B$ in the model. A disk (and, to a lesser extent, an SSD)
-moves a large contiguous piece of a file much faster than as many small
-ones, and the default buffer (`defaultBuffer`) is therefore of 1 MB, i.e.,
-some hundreds of the blocks of the file system. A writer opens its file
-only to write a full buffer, and closes it after. Hence a program may keep
-one writer for each of thousands of files, e.g., for the buckets of a search
-with delayed duplicate detection, in which the successors of a bucket are
-distributed among the files of the buckets they belong to, as in the
-hash-based search of [Korf 2008](Z-bibliography.md#ref-korf2008). The price
-is an opening of the file per buffer, which is small against the transfer
-of 1 MB, although each writer holds a buffer of its own, and so many
-writers take a smaller one. An error of the file system (a file that cannot be opened, a disk
-that is full) throws `std::runtime_error` with the name of the file; the
-destructor of a writer drops such an error, and a program that must see it
-calls `flush()` before. Unlike STXXL ([Dementiev, Kettner and Sanders
-2008](Z-bibliography.md#ref-dementiev2008)) the files have neither their
-own blocks nor asynchronous I/O, which leaves the caching to the operating
-system: the algorithms that use them read and write each file by long
-sequential scans, the pattern on which the cache and the read-ahead of the
-system usually work best.
+Hence $b$ plays the part of $B$ in the model. A disk (and, to a lesser extent,
+an SSD) moves a large contiguous piece of a file much faster than as many small
+ones, and the default buffer (`defaultBuffer`) is therefore of 1 MB, i.e., some
+hundreds of the blocks of the file system. A writer opens its file only to
+write a full buffer, and closes it after. Hence a program may keep one writer
+for each of thousands of files, e.g., for the buckets of a search with delayed
+duplicate detection, in which the successors of a bucket are distributed among
+the files of the buckets they belong to, as in the hash-based search of [Korf
+2008](Z-bibliography.md#ref-korf2008). The price is an opening of the file per
+buffer, which is small against the transfer of 1 MB, although each writer holds
+a buffer of its own, and so many writers take a smaller one. An error of the
+file system (a file that cannot be opened, a disk that is full) throws
+`std::runtime_error` with the name of the file; the destructor of a writer
+drops such an error, and a program that must see it calls `flush()` before.
+Unlike STXXL ([Dementiev, Kettner and Sanders
+2008](Z-bibliography.md#ref-dementiev2008)) the files have neither their own
+blocks nor asynchronous I/O, which leaves the caching to the operating system:
+the algorithms that use them read and write each file by long sequential scans,
+the pattern on which the cache and the read-ahead of the system usually work
+best.
 
 ## 23.7 Persistence and mapped files {#sec-23-7}
 
@@ -1523,28 +1519,27 @@ int main( void )
 ## 23.9 Discussion and references {#sec-23-9}
 
 The external memory model is due to [Aggarwal and Vitter
-1988](Z-bibliography.md#ref-aggarwal1988), and it is also called the I/O
-model or the disk access model. [Vitter 2001](Z-bibliography.md#ref-vitter2001)
+1988](Z-bibliography.md#ref-aggarwal1988), and it is also called the I/O model
+or the disk access model. [Vitter 2001](Z-bibliography.md#ref-vitter2001)
 surveys its algorithms and data structures, and chapters 1, 4 and 5 of
 [Ferragina 2023](Z-bibliography.md#ref-ferragina2023) are the source of
 [§23.1](23-external.md#sec-23-1), [§23.4](23-external.md#sec-23-4) and
-[§23.5](23-external.md#sec-23-5). B-trees were introduced by [Bayer and McCreight
-1972](Z-bibliography.md#ref-bayer1972), and less than ten years later
-[Comer 1979](Z-bibliography.md#ref-comer1979) could call them ubiquitous;
-they are the main structure of many file systems and of most database
-systems, and [Graefe 2011](Z-bibliography.md#ref-graefe2011) surveys their
-modern variants and optimizations. As for the amortized bound on the
-restructurings, it is that of the $( a , b )$-trees of [Huddleston and
-Mehlhorn 1982](Z-bibliography.md#ref-huddleston1982), whose nodes far from
-their bounds are those of the policies of
-[§23.3.6](23-external.md#sec-23-3-6). The B+-trees, whose keys are all in
-the leaves and whose leaves form a list, are realized in the internal
-memory by `BPlusTree.h` ([chapter 8](08-tree.md#ch-8)), which also solves
-[Morin 2013, exercise 14.8](Z-bibliography.md#ref-morin-cpp) with its
-removal and its `findRange()`. When only the operations of an unsorted set
-are needed, the external hashing of [Jensen and Pagh
-2008](Z-bibliography.md#ref-jensen2008) gives them in $O( 1 )$ expected
-I/Os, although many applications use B-trees all the same.
+[§23.5](23-external.md#sec-23-5). B-trees were introduced by [Bayer and
+McCreight 1972](Z-bibliography.md#ref-bayer1972), and less than ten years later
+[Comer 1979](Z-bibliography.md#ref-comer1979) could call them ubiquitous; they
+are the main structure of many file systems and of most database systems, and
+[Graefe 2011](Z-bibliography.md#ref-graefe2011) surveys their modern variants
+and optimizations. As for the amortized bound on the restructurings, it is that
+of the $( a , b )$-trees of [Huddleston and Mehlhorn
+1982](Z-bibliography.md#ref-huddleston1982), whose nodes far from their bounds
+are those of the policies of [§23.3.6](23-external.md#sec-23-3-6). The
+B+-trees, whose keys are all in the leaves and whose leaves form a list, are
+realized in the internal memory by `BPlusTree.h` ([chapter
+8](08-tree.md#ch-8)), which also solves [Morin 2013, exercise
+14.8](Z-bibliography.md#ref-morin-cpp) with its removal and its `findRange()`.
+When only the operations of an unsorted set are needed, the external hashing of
+[Jensen and Pagh 2008](Z-bibliography.md#ref-jensen2008) gives them in $O( 1 )$
+expected I/Os, although many applications use B-trees all the same.
 
 The merge with a tree of losers is the standard of the external sorters
 ([Knuth 1998, §5.4.1](Z-bibliography.md#ref-knuth1998v3); the STXXL of
@@ -1565,8 +1560,8 @@ machine.
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
 
-1. Realize a store of blocks whose reads and writes are counted, which
-   reuses the freed blocks ([Morin 2013, §14.1](Z-bibliography.md#ref-morin-cpp);
+1. Realize a store of blocks whose reads and writes are counted, which reuses
+   the freed blocks ([Morin 2013, §14.1](Z-bibliography.md#ref-morin-cpp);
    [§23.2](23-external.md#sec-23-2)). Test: `ods_ints.ods14.1.block-store`.
 2. Realize a B-tree on the store of blocks, with the search of the
    smallest key $\ge x$, the insertion and the removal in
@@ -1583,24 +1578,22 @@ Each exercise names the test of the library that solves it (run it with
    ([Morin 2013, exercise 14.3](Z-bibliography.md#ref-morin-cpp);
    [Lemma 23.7](23-external.md#lem-23-7)). Test:
    `ods_ints.ods.ex14.3.internal-nodes`.
-5. Show that the recursive insertion and removal hold
-   $\Theta( B \log_B n )$ words of internal memory, and reduce it to
-   $O( B + \log_B n )$ ([Morin 2013, exercise
-   14.4](Z-bibliography.md#ref-morin-cpp); [§23.3.7](23-external.md#sec-23-3-7)).
-   Test: `ods_ints.ods.ex14.4.memory`.
+5. Show that the recursive insertion and removal hold $\Theta( B \log_B n )$
+   words of internal memory, and reduce it to $O( B + \log_B n )$ ([Morin 2013,
+   exercise 14.4](Z-bibliography.md#ref-morin-cpp);
+   [§23.3.7](23-external.md#sec-23-3-7)). Test: `ods_ints.ods.ex14.4.memory`.
 6. Draw the credits of the proof of [Lemma 23.4](23-external.md#lem-23-4)
    on the trees of an insertion and of a removal, and check that three new
    credits per operation pay the splits, the merges and the borrows
    ([Morin 2013, exercise 14.5](Z-bibliography.md#ref-morin-cpp));
    [Figure 23.8](23-external.md#fig-23-8) is the solution. Test:
    `ods_ints.ods.ex14.6.restructures`.
-7. Design B-trees whose nodes have from $B$ to $3 B$ children, merging
-   before it is needed, and B-trees that fix an overflow or an underflow
-   with up to three nodes, and show that they make $O( m / B )$
-   restructurings in $m$ operations, while the rules of the book make
-   $\Theta( m )$ ([Morin 2013, exercises 14.6 and
-   14.7](Z-bibliography.md#ref-morin-cpp); [Lemma 23.5](23-external.md#lem-23-5)).
-   Test: `ods_ints.ods.ex14.6.restructures`.
+7. Design B-trees whose nodes have from $B$ to $3 B$ children, merging before
+   it is needed, and B-trees that fix an overflow or an underflow with up to
+   three nodes, and show that they make $O( m / B )$ restructurings in $m$
+   operations, while the rules of the book make $\Theta( m )$ ([Morin 2013,
+   exercises 14.6 and 14.7](Z-bibliography.md#ref-morin-cpp); [Lemma
+   23.5](23-external.md#lem-23-5)). Test: `ods_ints.ods.ex14.6.restructures`.
 8. Realize a B+-tree, with its removal, the search of the smallest key
    $\ge x$ and the report of the keys in $( x , y ]$, and explain why its
    duplicated keys cost little for a large $B$ ([Morin 2013, exercise

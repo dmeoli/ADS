@@ -357,8 +357,8 @@ vector.
 --8<-- "generated/FastBitwise-popcount.pseudo.md"
 
 <span id="lem-18-7"></span>**Lemma 18.7.** *After each block, the 1 bits
-of the vectors read so far are $16 T + 8 \nu( e ) + 4 \nu( f ) + 2 \nu( t )
-+ \nu( o )$, where $T$ is the sum of the counts $\nu( s )$ of the blocks;
+of the vectors read so far are $16 T + 8 \nu( e ) + 4 \nu( f ) + 2 \nu( t
+) + \nu( o )$, where $T$ is the sum of the counts $\nu( s )$ of the blocks;
 hence [Algorithm 18.4](18-combinatorial.md#alg-18-4) returns the 1 bits of
 the array, with one count of a vector and 15 carry-save adders per block of
 16 vectors.*
@@ -612,8 +612,8 @@ costs a constant number of assignments, and line 6 stops when all the
 places are passive. That the steps visit each tuple once follows by
 induction on $n$: between two moves of the place $n - 1$, the places
 $0 , \ldots , n - 2$ go through all their tuples in the reflected order of
-$n - 1$ places, forwards or backwards, and the place $n - 1$ moves $m_{n-1}
-- 1$ times. $\square$
+$n - 1$ places, forwards or backwards, and the place $n - 1$ moves
+$m_{n-1} - 1$ times. $\square$
 
 The argument needs the precondition $m_j \ge 2$: a place of one value
 would be at both ends of its range at once, and with $m_j = 1$, line 7

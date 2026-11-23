@@ -253,11 +253,11 @@ GRAPH in $\Theta( N^2 )$ space, with `insertEdge()`, `deleteEdge()`,
 `deleteNode()` in $\Theta( N )$ time, and `insertNode()` in $\Theta( N )$
 amortized time.*
 
-*Proof.* The matrix has $N^2$ places, one optional weight each, and we
-obtain the costs from the number of entries that each operation reads or
-writes, as described above. A new node appends a row of $N + 1$ places and one place
-to each of the $N$ rows, each append amortized $O( 1 )$ since the rows
-are vectors that double. $\square$
+*Proof.* The matrix has $N^2$ places, one optional weight each, and we obtain
+the costs from the number of entries that each operation reads or writes, as
+described above. A new node appends a row of $N + 1$ places and one place to
+each of the $N$ rows, each append amortized $O( 1 )$ since the rows are vectors
+that double. $\square$
 
 Its main defect is the space: $n^2$ places for any number of edges, i.e.,
 $n^2$ optional weights (at least $n^2$ bytes even without weights), where
@@ -323,9 +323,9 @@ make the same search, while `adj( u )` copies the list.
 --8<-- "generated/ListGraph-inAdj.pseudo.md"
 
 `ListGraph< W , T >` has the same public members as `MatrixGraph< W , T >`,
-with the same meaning, and can replace it in the example above. When the
-search of line 2 finds $v$ in $L_u$, line 3 writes the weight, and otherwise
-the new pair goes after the tail of the list (line 4). In this representation, the
+with the same meaning, and can replace it in the example above. When the search
+of line 2 finds $v$ in $L_u$, line 3 writes the weight, and otherwise the new
+pair goes after the tail of the list (line 4). In this representation, the
 edges that enter a node are its defect, since no link leads from them to their
 head. Thus `inAdj( u )` of an oriented graph scans all the lists ([Algorithm
 14.2](14-graph.md#alg-14-2)); in an unoriented one they are the edges that
@@ -344,13 +344,13 @@ in $O( 1 )$ amortized time, `insertEdge( u , v )`, `deleteEdge( u , v )`,
 ($O( d( u ) \log d( u ) )$ if unoriented, since the result is sorted), and
 `deleteNode()` in $O( N + m )$ time.*
 
-*Proof.* We count first the space: each list has a node per adjacent node, i.e., $m$ list nodes (or
-$2 m$) besides the vector of the $\mathrm{bound}()$ heads. The insertion,
-the deletion and the search of an edge scan the list of $u$ once (and that
-of $v$ if unoriented), and an insertion at the tail of a `List` costs
-$O( 1 )$. Also, `inAdj()` of an oriented graph scans each list once, and
-that of an unoriented graph copies and sorts the list of $u$. A new node
-appends an empty list to the vector, $O( 1 )$ amortized. $\square$
+*Proof.* We count first the space: each list has a node per adjacent node,
+i.e., $m$ list nodes (or $2 m$) besides the vector of the $\mathrm{bound}()$
+heads. The insertion, the deletion and the search of an edge scan the list of
+$u$ once (and that of $v$ if unoriented), and an insertion at the tail of a
+`List` costs $O( 1 )$. Also, `inAdj()` of an oriented graph scans each list
+once, and that of an unoriented graph copies and sorts the list of $u$. A new
+node appends an empty list to the vector, $O( 1 )$ amortized. $\square$
 
 [Morin 2013, §12.2](Z-bibliography.md#ref-morin-cpp) ends with four design
 choices of a representation by lists, and we take each of them somewhere
@@ -451,24 +451,23 @@ On two parallel edges, `setWeight( u , v , w )` changes the first of them in
 the row of $u$ (and, if the graph is unoriented, the first twin in the row of
 $v$).
 
-`StaticGraph< W , L >` is the same format engineered for the algorithms that scan
-the arcs many times. First, the graph is three plain arrays (a structure of
-arrays): the offsets of the rows, the heads of the arcs and, when the graph is
-weighted, their weights in the same places. A visit that needs only the heads
-thus reads no weight, and a library that takes a graph in compressed rows
+`StaticGraph< W , L >` is the same format engineered for the algorithms that
+scan the arcs many times. First, the graph is three plain arrays (a structure
+of arrays): the offsets of the rows, the heads of the arcs and, when the graph
+is weighted, their weights in the same places. A visit that needs only the
+heads thus reads no weight, and a library that takes a graph in compressed rows
 (`xadj`, `adjncy` and `adjwgt` of METIS, the arrays `Ap`, `Aj` and `Ax` of
 GraphBLAS) receives the pointers `offsets()`, `heads()` and `weightData()`
-without a copy. In all, the graph takes
-$4 ( n + 1 ) + ( 4 + s ) a$ bytes, $s$ the size of a weight (0 if
-unweighted), with no padding between a head and its weight; an interleaved
-pair would round 12 bytes up to 16 for a `double`. Second, the arcs of each
-node are sorted by head. This makes the reads of a visit that follows them go
-forward in memory, and lets `weight( u , v )` and `setWeight()` find an arc
-by a binary search of the heads, in $O( \log d( u ) )$. The rows come out
-sorted from two passes of counting sort, the first by head and the second,
-stable, by tail ([Algorithm 14.4](14-graph.md#alg-14-4)), again in
-$\Theta( n + a )$ time. An unoriented edge $[ u , v ]$ gives the two arcs
-$( u , v )$ and $( v , u )$, and parallel arcs are kept. [Figure
+without a copy. In all, the graph takes $4 ( n + 1 ) + ( 4 + s ) a$ bytes, $s$
+the size of a weight (0 if unweighted), with no padding between a head and its
+weight; an interleaved pair would round 12 bytes up to 16 for a `double`.
+Second, the arcs of each node are sorted by head. This makes the reads of a
+visit that follows them go forward in memory, and lets `weight( u , v )` and
+`setWeight()` find an arc by a binary search of the heads, in $O( \log d( u )
+)$. The rows come out sorted from two passes of counting sort, the first by
+head and the second, stable, by tail ([Algorithm 14.4](14-graph.md#alg-14-4)),
+again in $\Theta( n + a )$ time. An unoriented edge $[ u , v ]$ gives the two
+arcs $( u , v )$ and $( v , u )$, and parallel arcs are kept. [Figure
 14.4](14-graph.md#fig-14-4) compares the two forms on the same edges. The
 members that `StaticGraph` adds to those of the concept `Graph` are
 
@@ -709,14 +708,13 @@ class GraphBuilder
  };
 ```
 
-When
-the graph is complete, `toStaticGraph()` and `toArrayGraph()` freeze it into
-either form in $\Theta( n + a )$ time, by the constructors above. We remark that
-the two keep a different order of the arcs of a node (the order of insertion
-and the order of the heads). One may give a graph whose edges are already in
-a vector to the constructors directly: the builder adds only the growth of
-the nodes and the checks at each insertion, where the error is made. For
-instance, with the header `ADS/graph/GraphBuilder.h`,
+When the graph is complete, `toStaticGraph()` and `toArrayGraph()` freeze it
+into either form in $\Theta( n + a )$ time, by the constructors above. We
+remark that the two keep a different order of the arcs of a node (the order of
+insertion and the order of the heads). One may give a graph whose edges are
+already in a vector to the constructors directly: the builder adds only the
+growth of the nodes and the checks at each insertion, where the error is made.
+For instance, with the header `ADS/graph/GraphBuilder.h`,
 
 ```cpp
 ADS::GraphBuilder< double > b;  // oriented, no node yet
@@ -931,10 +929,10 @@ with the last one (lines 2 and 4 of `deleteEdge()`):
 ![Figure 14.6. The matrix of incidence of `IncidenceGraph` on four nodes and four edges, kept by columns (each headed by its edge): `deleteEdge(1, 2)` finds the column of the edge (in violet) and copies the last column, that of $( 2 , 3 )$, over it (in orange).](../figures/graph-incidence.svg){#fig-14-6}
 
 In all, the matrix takes $n m$ bytes, i.e., $\Theta( n m )$ space, which
-exceeds the $\Theta( n^2 )$ of the adjacency matrix as soon as $m > n$.
-Also, no operation is faster than on the adjacency matrix or on the lists.
-Hence we see the matrix of incidence as a tool of the algebra of the graph (its rank, its
-cycles and cuts, and the flows as the solutions of $A x = b$), rather than
+exceeds the $\Theta( n^2 )$ of the adjacency matrix as soon as $m > n$. Also,
+no operation is faster than on the adjacency matrix or on the lists. Hence we
+see the matrix of incidence as a tool of the algebra of the graph (its rank,
+its cycles and cuts, and the flows as the solutions of $A x = b$), rather than
 of its visits. We summarize the costs of all the representations in [Table
 14.2](14-graph.md#tab-14-2).
 
@@ -1057,25 +1055,24 @@ $$
 with a set of sources, all of them at distance 0 in the queue at the
 start.*
 
-*Proof.* First, a node $v \ne r$ gets $d[ v ] = d[ p[ v ] ] + 1$ when
-it enters the queue, and neither value changes afterwards; hence the
-parents lead from $v$ back to $r$ along $d[ v ]$ edges, and
-$d[ v ] \ge \delta( r , v )$. Second, the values of $d$ in the queue never
-decrease from its head to its tail and differ by at most 1. This holds at
-the start, and a step removes the head, of value $k$, and appends nodes of
-value $k + 1$, which is at least the value of the tail and exceeds by 1 that
-of the new head. Hence the nodes leave the queue in the order of their
-values. We now show by induction on $k$ that $d[ v ] = k$ for each node
-with $\delta( r , v ) = k$, the case $k = 0$ being $r$ itself. Let
-$\delta( r , v ) = k + 1$, and let $u$ precede $v$ on a shortest path, so
-that $\delta( r , u ) = k$ and, by the induction, $d[ u ] = k$. When $u$
-leaves the queue, either $v$ is not marked yet, and gets
-$d[ v ] = k + 1$, or it was marked from a node $x$ that left the queue
-before $u$, and hence $d[ v ] = d[ x ] + 1 \le d[ u ] + 1 = k + 1$. With
-the first point, we obtain $d[ v ] = k + 1$. Thus the path of the parents from $r$
-to $v$ has $\delta( r , v )$ edges, and it is a shortest path. The nodes not
-reachable keep $\infty$ by [Lemma 14.6](14-graph.md#lem-14-6), and a set
-of sources at distance 0 changes only the base of the induction. $\square$
+*Proof.* First, a node $v \ne r$ gets $d[ v ] = d[ p[ v ] ] + 1$ when it enters
+the queue, and neither value changes afterwards; hence the parents lead from
+$v$ back to $r$ along $d[ v ]$ edges, and $d[ v ] \ge \delta( r , v )$. Second,
+the values of $d$ in the queue never decrease from its head to its tail and
+differ by at most 1. This holds at the start, and a step removes the head, of
+value $k$, and appends nodes of value $k + 1$, which is at least the value of
+the tail and exceeds by 1 that of the new head. Hence the nodes leave the queue
+in the order of their values. We now show by induction on $k$ that $d[ v ] = k$
+for each node with $\delta( r , v ) = k$, the case $k = 0$ being $r$ itself.
+Let $\delta( r , v ) = k + 1$, and let $u$ precede $v$ on a shortest path, so
+that $\delta( r , u ) = k$ and, by the induction, $d[ u ] = k$. When $u$ leaves
+the queue, either $v$ is not marked yet, and gets $d[ v ] = k + 1$, or it was
+marked from a node $x$ that left the queue before $u$, and hence $d[ v ] = d[ x
+] + 1 \le d[ u ] + 1 = k + 1$. With the first point, we obtain $d[ v ] = k +
+1$. Thus the path of the parents from $r$ to $v$ has $\delta( r , v )$ edges,
+and it is a shortest path. The nodes not reachable keep $\infty$ by [Lemma
+14.6](14-graph.md#lem-14-6), and a set of sources at distance 0 changes only
+the base of the induction. $\square$
 
 In `distance()` the queue is an `ArrayQueue` of [chapter 4](04-queue.md#ch-4)
 by default, and one can give any queue with `enqueue()` and `dequeue()` in its
@@ -1177,18 +1174,17 @@ which pushes $( v , G.\mathrm{adj}( v ) , 0 )$. The loop stops when $S$
 is empty, i.e., when the call on $u$ has returned. $\square$
 
 Hence the previsits, the edges and the postvisits come in the order of the
-recursion, while the depth of the recursion becomes the size of a vector
-on the heap. This is not the case for the
-second visit of [Morin 2013, §12.3.2](Z-bibliography.md#ref-morin-cpp),
-which keeps only nodes on its stack and replaces a node popped by all its
-neighbors. There the last neighbor pushed is visited first: on the edges
-$( 0 , 1 )$, $( 0 , 2 )$, $( 1 , 2 )$ it visits $0 , 2 , 1$ where the
-recursion visits $0 , 1 , 2$ ([Morin 2013, exercise
+recursion, while the depth of the recursion becomes the size of a vector on the
+heap. This is not the case for the second visit of [Morin 2013,
+§12.3.2](Z-bibliography.md#ref-morin-cpp), which keeps only nodes on its stack
+and replaces a node popped by all its neighbors. There the last neighbor pushed
+is visited first: on the edges $( 0 , 1 )$, $( 0 , 2 )$, $( 1 , 2 )$ it visits
+$0 , 2 , 1$ where the recursion visits $0 , 1 , 2$ ([Morin 2013, exercise
 12.9](Z-bibliography.md#ref-morin-cpp)). A stack of pairs (the node, the
-position in its list) makes the two orders the same. Since the frames copy
-the list of their node, the stack holds $O( n + m )$ words in the worst
-case, against the $O( n )$ of the stack of nodes (which, however, may hold a
-node many times). In [Figure 14.8](14-graph.md#fig-14-8) we show the visit on the
+position in its list) makes the two orders the same. Since the frames copy the
+list of their node, the stack holds $O( n + m )$ words in the worst case,
+against the $O( n )$ of the stack of nodes (which, however, may hold a node
+many times). In [Figure 14.8](14-graph.md#fig-14-8) we show the visit on the
 graph of [Figure 14.1](14-graph.md#fig-14-1).
 
 ![Figure 14.8. The visit in depth from 0 of the graph of Figure 14.1, with the lists of Figure 14.3: the edges of the tree of the visit in violet and, by each node, its rank in the order of the previsits.](../figures/graph-dfs.svg){#fig-14-8}
@@ -1456,14 +1452,13 @@ $H$. $\square$
 
 One visit in depth suffices, if the components are recognized as the visit
 finishes them ([Tarjan 1972](Z-bibliography.md#ref-tarjan1972); beyond the
-book, in `StrongComponents.h`). We call *root* of a component $C$ its node $r_C$ discovered first. By
-[Lemma 14.10](14-graph.md#lem-14-10) each node of $C$ descends from $r_C$,
-since all of them are undiscovered when $r_C$ is discovered and reachable
-from it.
-The visit of `sccTarjan( g )` pushes each node it discovers on a stack $S$,
-and keeps $\mathit{low}[ u ]$, the least $\mathit{dt}$ of a node of $S$ that
-the subtree of $u$ reaches by its tree edges and one more edge
-($\mathit{dt}[ u ]$ itself included).
+book, in `StrongComponents.h`). We call *root* of a component $C$ its node
+$r_C$ discovered first. By [Lemma 14.10](14-graph.md#lem-14-10) each node of
+$C$ descends from $r_C$, since all of them are undiscovered when $r_C$ is
+discovered and reachable from it. The visit of `sccTarjan( g )` pushes each
+node it discovers on a stack $S$, and keeps $\mathit{low}[ u ]$, the least
+$\mathit{dt}$ of a node of $S$ that the subtree of $u$ reaches by its tree
+edges and one more edge ($\mathit{dt}[ u ]$ itself included).
 
 <span id="lem-14-14"></span>**Lemma 14.14.** *When $u$ finishes, $u$ is a
 root if and only if $\mathit{low}[ u ] = \mathit{dt}[ u ]$; the nodes above
@@ -1485,20 +1480,19 @@ its descendants not yet closed, and a descendant in another component would
 have a root between $u$ and itself, which would have closed it before.
 $\square$
 
-The test of $y \in S$ is that $y$ has no component yet, and so the visit
-costs $\Theta( n + m )$: each node is pushed and popped once, and each edge
-is examined once. When a component closes, each component that it reaches
-is closed already; hence the components close in the reverse of a
-topological order of their graph, and `sccTarjan()` numbers them backwards,
-as `scc()` numbers them (an edge from $C$ to $C' \ne C$ gives $C < C'$, a
-post-condition that both check at the level of the audits).
-We show a run in [Figure 14.10](14-graph.md#fig-14-10). The recursion is kept
-on a stack of the pairs (node, next edge), and the adjacencies are read
-once into compressed rows (the internal class `Rows` of `Graph.h`, which
-reads the rows of a `StaticGraph` where they are and copies those of any
-other model); thus the cost holds on each model of `Graph`, and a path of
-$10^6$ nodes does not overflow the stack of the calls. We list the declarations of
-the section:
+The test of $y \in S$ is that $y$ has no component yet, and so the visit costs
+$\Theta( n + m )$: each node is pushed and popped once, and each edge is
+examined once. When a component closes, each component that it reaches is
+closed already; hence the components close in the reverse of a topological
+order of their graph, and `sccTarjan()` numbers them backwards, as `scc()`
+numbers them (an edge from $C$ to $C' \ne C$ gives $C < C'$, a post-condition
+that both check at the level of the audits). We show a run in [Figure
+14.10](14-graph.md#fig-14-10). The recursion is kept on a stack of the pairs
+(node, next edge), and the adjacencies are read once into compressed rows (the
+internal class `Rows` of `Graph.h`, which reads the rows of a `StaticGraph`
+where they are and copies those of any other model); thus the cost holds on
+each model of `Graph`, and a path of $10^6$ nodes does not overflow the stack
+of the calls. We list the declarations of the section:
 
 ```cpp
 // declarations of <ADS/graph/Visit.h>
@@ -1712,30 +1706,30 @@ $4 ( n + 1 ) + b a$ bytes of a `StaticGraph` of the same grid
 ([§14.4.1](14-graph.md#sec-14-4-1)) with $a \le 8 n$ arcs.
 
 A move from $u$ into $v$ costs, with $\gamma( x )$ the cost of the cell $x$,
-either $\gamma( v )$ (the cell entered pays, `MoveCost::ENTERED`, the
-default) or $\gamma( u )$ (the cell left pays, `MoveCost::LEFT`, which `moveCost()` returns) times the
-cost of the move on a map of unit costs. This unit cost is $a$ =
-`straight()` for a side and $b$ = `diagonal()` for a corner, by default 1
-and $\sqrt{2}$ (the octile costs of the benchmarks). A move to a corner
-passes by two sides of the cell. The enumeration `Corners` states whether it
-may always cut the corner (`CUT`, as in the first jump point search),
-whether one of the two sides must be free (`NO_SQUEEZE`), or whether both
-must (`NO_CUT`, the rule of the benchmarks since 2012). In [Figure
+either $\gamma( v )$ (the cell entered pays, `MoveCost::ENTERED`, the default)
+or $\gamma( u )$ (the cell left pays, `MoveCost::LEFT`, which `moveCost()`
+returns) times the cost of the move on a map of unit costs. This unit cost is
+$a$ = `straight()` for a side and $b$ = `diagonal()` for a corner, by default 1
+and $\sqrt{2}$ (the octile costs of the benchmarks). A move to a corner passes
+by two sides of the cell. The enumeration `Corners` states whether it may
+always cut the corner (`CUT`, as in the first jump point search), whether one
+of the two sides must be free (`NO_SQUEEZE`), or whether both must (`NO_CUT`,
+the rule of the benchmarks since 2012). In [Figure
 14.11](14-graph.md#fig-14-11) we show the moves of a cell under the last rule.
 All three rules are symmetric in the two ends of a move. Hence the graph is
 unoriented when the free cells cost the same and oriented otherwise
-(`directed()`), since under either model one of $( u , v )$ and $( v , u )$
-is weighed by the cost of $u$ and the other by that of $v$. A path $x_0 ,
-\ldots , x_k$ costs $\sum_i \gamma( x_i ) \, w_1( x_{i-1} , x_i )$ when the
-cell entered pays and $\sum_i \gamma( x_{i-1} ) \, w_1( x_{i-1} , x_i )$
-when the cell left pays, $w_1 \in \{ a , b \}$ the unit cost of a move. Note
-that the second is the cost of the reversed path in the first model, and so
-the distances from $s$ in the second model are the distances to $s$ in the
-first. With four moves each $w_1$ is $a$, and the two costs of a path from
-$s$ to $t$ differ by $a ( \gamma( s ) - \gamma( t ) )$, the same for all
-such paths; thus the two models have the same shortest paths. With eight
-moves, instead, the weight $b$ of a corner falls on a different cell in the
-two models, and their shortest paths may differ.
+(`directed()`), since under either model one of $( u , v )$ and $( v , u )$ is
+weighed by the cost of $u$ and the other by that of $v$. A path $x_0 , \ldots ,
+x_k$ costs $\sum_i \gamma( x_i ) \, w_1( x_{i-1} , x_i )$ when the cell entered
+pays and $\sum_i \gamma( x_{i-1} ) \, w_1( x_{i-1} , x_i )$ when the cell left
+pays, $w_1 \in \{ a , b \}$ the unit cost of a move. Note that the second is
+the cost of the reversed path in the first model, and so the distances from $s$
+in the second model are the distances to $s$ in the first. With four moves each
+$w_1$ is $a$, and the two costs of a path from $s$ to $t$ differ by $a (
+\gamma( s ) - \gamma( t ) )$, the same for all such paths; thus the two models
+have the same shortest paths. With eight moves, instead, the weight $b$ of a
+corner falls on a different cell in the two models, and their shortest paths
+may differ.
 
 ![Figure 14.11. A map of $5 \times 5$ cells of `GridGraph`, the blocked ones in the faintest tint, each free cell named $r \cdot 5 + c$: the neighbors of $u = 12$ with eight moves under the rule `NO_CUT` in violet, and the two corners (marked $\times$) that the rule forbids, since each passes by the blocked cell above $u$.](../figures/graph-grid.svg){#fig-14-11}
 
@@ -1967,15 +1961,15 @@ of reachability, the fewest antichains that cover the nodes; the time is
 $O( n + m )$.*
 
 *Proof.* When $v$ leaves the queue all its predecessors have left it, each
-having raised the layer of $v$ to at least its own plus 1; hence $\mathit{layer}[
-v ] = \max_{( u , v )} ( \mathit{layer}[ u ] + 1 )$, or 0 with no entering
-edge, the recurrence of $\lambda$, since a longest path that ends at $v$ is
-one that ends at a predecessor $u$ followed by $( u , v )$. Thus the layer
-grows by at least 1 along each edge, and so along each path; two nodes of a
-layer are therefore not reachable from one another, i.e., each layer is an
+having raised the layer of $v$ to at least its own plus 1; hence
+$\mathit{layer}[ v ] = \max_{( u , v )} ( \mathit{layer}[ u ] + 1 )$, or 0 with
+no entering edge, the recurrence of $\lambda$, since a longest path that ends
+at $v$ is one that ends at a predecessor $u$ followed by $( u , v )$. Thus the
+layer grows by at least 1 along each edge, and so along each path; two nodes of
+a layer are therefore not reachable from one another, i.e., each layer is an
 antichain. Conversely, a longest path has $1 + \max_v \lambda( v )$ nodes,
-which are pairwise comparable and so lie in distinct antichains of any
-cover. The algorithm of Kahn costs $O( n + m )$ by [Lemma
+which are pairwise comparable and so lie in distinct antichains of any cover.
+The algorithm of Kahn costs $O( n + m )$ by [Lemma
 14.11](14-graph.md#lem-14-11). $\square$
 
 The number of layers is thus the least number of antichains that cover the
@@ -2149,11 +2143,11 @@ visit, which would have taken $u$. Thus $M$ is a matching, and any cover,
 which has an end of each of its edges, has at least $\lvert M \rvert$
 nodes. The visit and the scan cost $O( n )$. $\square$
 
-The complement of a vertex cover is an independent set and conversely,
-and hence the complement of $C$ is a maximum independent set. A vertex cover is NP-hard on general graphs
-([Karp 1972](Z-bibliography.md#ref-karp1972)); however, on a tree with
-weights on the nodes a dynamic programming on the subtrees, with the root
-taken or not, solves it in $O( n )$.
+The complement of a vertex cover is an independent set and conversely, and
+hence the complement of $C$ is a maximum independent set. A vertex cover is
+NP-hard on general graphs ([Karp 1972](Z-bibliography.md#ref-karp1972));
+however, on a tree with weights on the nodes a dynamic programming on the
+subtrees, with the root taken or not, solves it in $O( n )$.
 
 --8<-- "generated/Properties-treeDiameter.pseudo.md"
 
@@ -2875,13 +2869,13 @@ $\lvert f \rvert = c( S , V \setminus S )$ for some cut with $s \in S$ and
 $t \notin S$ ([Ford and Fulkerson 1956](Z-bibliography.md#ref-ford1956);
 [Montresor 2025, Theorem 15.1](Z-bibliography.md#ref-montresor2025)).*
 
-*Proof.* We recall that the value of a flow is at most the capacity of any cut, since all
-of it crosses the cut; hence (iii) gives (i). (i) gives (ii), since an
-augmenting path would increase the flow by its least residual capacity.
-For (ii) to (iii), let $S$ be the nodes reached from $s$ in the residual
-network. Then $t \notin S$, each edge from $S$ out of it is saturated, and
-each edge into $S$ carries no flow; hence the net flow across the cut,
-which is $\lvert f \rvert$, equals its capacity. $\square$
+*Proof.* We recall that the value of a flow is at most the capacity of any cut,
+since all of it crosses the cut; hence (iii) gives (i). (i) gives (ii), since
+an augmenting path would increase the flow by its least residual capacity. For
+(ii) to (iii), let $S$ be the nodes reached from $s$ in the residual network.
+Then $t \notin S$, each edge from $S$ out of it is saturated, and each edge
+into $S$ carries no flow; hence the net flow across the cut, which is $\lvert f
+\rvert$, equals its capacity. $\square$
 
 `minCut( s )` returns that side $S$ after `maxFlow()`, by a visit of the
 residual network. `maxFlow( s , t , how )` augments the flow along augmenting
@@ -2920,20 +2914,21 @@ since each path costs $O( n )$ and each dead end is passed once by the
 cursor of its tail; also, there are at most $n$ phases ([Dinic
 1970](Z-bibliography.md#ref-dinic1970)). $\square$
 
-On the unit networks, whose capacities are 1 and whose nodes other than
-$s$ and $t$ have either one entering edge or one leaving edge (e.g., those
-of the bipartite matching), the phases of `DINIC` are $O( \sqrt{n} )$ and
-the bound falls to $O( m \sqrt{n} )$ ([Even and Tarjan 1975](Z-bibliography.md#ref-even1975)). This
-is the bound that [Montresor 2025,
+On the unit networks, whose capacities are 1 and whose nodes other than $s$ and
+$t$ have either one entering edge or one leaving edge (e.g., those of the
+bipartite matching), the phases of `DINIC` are $O( \sqrt{n} )$ and the bound
+falls to $O( m \sqrt{n} )$ ([Even and Tarjan
+1975](Z-bibliography.md#ref-even1975)). This is the bound that [Montresor 2025,
 §15.2](Z-bibliography.md#ref-montresor2025) gives for the algorithm of
-[Karzanov 1974](Z-bibliography.md#ref-karzanov1974) and of [Malhotra, Kumar
-and Maheshwari 1978](Z-bibliography.md#ref-malhotra1978), of which this is
-the forerunner; in practice the phases are often far fewer than $n$.
-The blocking flow of a phase follows the levels iteratively, since they may
-be as deep as $n$, with the edges of the current path on a stack $P$ and a
-cursor $\mathit{next}[ x ]$ per node ($\deg( x )$ its edges in the residual network) that passes each edge into a dead end
-once, and `maxFlow()` repeats it from $s$ until it returns 0 (line 8 of
-`maxFlow()`, the cursors set to 0 at the start of the phase):
+[Karzanov 1974](Z-bibliography.md#ref-karzanov1974) and of [Malhotra, Kumar and
+Maheshwari 1978](Z-bibliography.md#ref-malhotra1978), of which this is the
+forerunner; in practice the phases are often far fewer than $n$. The blocking
+flow of a phase follows the levels iteratively, since they may be as deep as
+$n$, with the edges of the current path on a stack $P$ and a cursor
+$\mathit{next}[ x ]$ per node ($\deg( x )$ its edges in the residual network)
+that passes each edge into a dead end once, and `maxFlow()` repeats it from $s$
+until it returns 0 (line 8 of `maxFlow()`, the cursors set to 0 at the start of
+the phase):
 
 --8<-- "generated/MaxFlow-FlowNetwork-blocking.pseudo.md"
 
@@ -2959,31 +2954,31 @@ pushes that saturate their edge, and taking the node of the highest label
 bounds the other pushes by $O( n^2 \sqrt{m} )$. When no node with an excess
 has a label below $n$, the preflow is maximum.*
 
-*Proof.* We first bound the labels. A node with an excess has a residual path back to $s$ (the flow
-that reached it can be sent back), of fewer than $n$ edges, along which the
-labels fall by at most 1 per edge from $d( s ) = n$; hence its label is
-below $2 n$. Between two saturating pushes on the same edge both its ends
-are relabeled, which gives the second bound. Also, the bound of the
-non-saturating pushes with the highest label first is that of [Cheriyan and
-Maheshwari 1989](Z-bibliography.md#ref-cheriyan1989). A residual path from
-$s$ to $t$ would descend from $d( s ) = n$ to $d( t ) = 0$ by at most 1 per
-edge in fewer than $n$ edges, which is impossible. Hence no augmenting path
-exists. Finally, the excesses left at the nodes of label $n$ or more are
-sent back to $s$ by the same pushes, with the labels of the distances from
-$s$, which leaves a flow of the same value. $\square$
+*Proof.* We first bound the labels. A node with an excess has a residual path
+back to $s$ (the flow that reached it can be sent back), of fewer than $n$
+edges, along which the labels fall by at most 1 per edge from $d( s ) = n$;
+hence its label is below $2 n$. Between two saturating pushes on the same edge
+both its ends are relabeled, which gives the second bound. Also, the bound of
+the non-saturating pushes with the highest label first is that of [Cheriyan and
+Maheshwari 1989](Z-bibliography.md#ref-cheriyan1989). A residual path from $s$
+to $t$ would descend from $d( s ) = n$ to $d( t ) = 0$ by at most 1 per edge in
+fewer than $n$ edges, which is impossible. Hence no augmenting path exists.
+Finally, the excesses left at the nodes of label $n$ or more are sent back to
+$s$ by the same pushes, with the labels of the distances from $s$, which leaves
+a flow of the same value. $\square$
 
 This bound gives little indication of the speed, which comes from two
 heuristics of [Cherkassky and Goldberg
 1997](Z-bibliography.md#ref-cherkassky1997). The first is the *global
-relabeling*, a visit in breadth backwards from $t$ that sets each label to
-its distance, made again in the first phase whenever the relabelings since the last one,
-each of which counts 12 plus the degree of its node, cost more than half
-of $6 n + m$. The second is the *gap*: when no node is left with some
-label $k$, it puts out of the game all the nodes of label above $k$, since
-none of them reaches $t$ any more. We stop each global relabeling at the
-last node with an excess, we run the algorithm in two phases (the first
-finds the minimum cut, the second returns the excesses left to $s$), and a
-node that pushes finds its new label in the same scan of its edges.
+relabeling*, a visit in breadth backwards from $t$ that sets each label to its
+distance, made again in the first phase whenever the relabelings since the last
+one, each of which counts 12 plus the degree of its node, cost more than half
+of $6 n + m$. The second is the *gap*: when no node is left with some label
+$k$, it puts out of the game all the nodes of label above $k$, since none of
+them reaches $t$ any more. We stop each global relabeling at the last node with
+an excess, we run the algorithm in two phases (the first finds the minimum cut,
+the second returns the excesses left to $s$), and a node that pushes finds its
+new label in the same scan of its edges.
 
 <span id="alg-14-15"></span>**Algorithm 14.15.** The push-relabel, the
 highest label first, with the global relabelings and the gaps (beyond the
@@ -3396,15 +3391,14 @@ on each edge of $M$, (ii) $y_v = 0$ at each free node, and (iii) each odd
 set with $z_B > 0$ holds $( \lvert B \rvert - 1 ) / 2$ edges of $M$
 ([Edmonds 1965](Z-bibliography.md#ref-edmonds1965)).*
 
-*Proof.* We remark that the conditions are the complementary slackness of
-the two programs. For any matching $M'$, summing $\pi( e ) \ge 0$ over its edges
-gives
-$2 w( M' ) \le \sum_{[ u , v ] \in M'} ( y_u + y_v ) + 2 \sum_B z_B \lvert
-M' \cap E( B ) \rvert \le \sum_v y_v + \sum_B z_B ( \lvert B \rvert - 1 )$,
-since $y \ge 0$, $z \ge 0$, each node touches at most one edge of $M'$ and
-$\lvert M' \cap E( B ) \rvert \le ( \lvert B \rvert - 1 ) / 2$. For $M$
-the first inequality is an equality by (i), and the second by (ii) and
-(iii); hence $w( M' ) \le w( M )$. $\square$
+*Proof.* We remark that the conditions are the complementary slackness of the
+two programs. For any matching $M'$, summing $\pi( e ) \ge 0$ over its edges
+gives $2 w( M' ) \le \sum_{[ u , v ] \in M'} ( y_u + y_v ) + 2 \sum_B z_B
+\lvert M' \cap E( B ) \rvert \le \sum_v y_v + \sum_B z_B ( \lvert B \rvert - 1
+)$, since $y \ge 0$, $z \ge 0$, each node touches at most one edge of $M'$ and
+$\lvert M' \cap E( B ) \rvert \le ( \lvert B \rvert - 1 ) / 2$. For $M$ the
+first inequality is an equality by (i), and the second by (ii) and (iii); hence
+$w( M' ) \le w( M )$. $\square$
 
 Among the matchings of largest size, condition (ii) is dropped and the $y_v$
 may be shifted by a constant, the free nodes having the least dual.
@@ -3446,29 +3440,26 @@ at most $n / 2$ augmentations. $\square$
 the slack of an edge between two outer nodes is even, and so every
 $\delta$ and every dual stays an integer.*
 
-*Proof.* We assume that the duals are integers so far. An edge of slack 0 joins two
-nodes whose duals have the same parity, since
-$y_u + y_v = 2 w( e ) - 2 \sum_B z_B$. Each outer node is joined to the free
-root of its tree by a path of tight edges (those of the tree and of the
-cycles of its blossoms), and the free nodes have equal duals; hence all
-the outer nodes have duals of the same parity, and the slack
-$y_u + y_v - 2 w( e ) + 2 \sum_B z_B$ of an edge between two of them is
-even. The four terms of $\delta$ are then integers, and so are the duals
-after the change. $\square$
+*Proof.* We assume that the duals are integers so far. An edge of slack 0 joins
+two nodes whose duals have the same parity, since $y_u + y_v = 2 w( e ) - 2
+\sum_B z_B$. Each outer node is joined to the free root of its tree by a path
+of tight edges (those of the tree and of the cycles of its blossoms), and the
+free nodes have equal duals; hence all the outer nodes have duals of the same
+parity, and the slack $y_u + y_v - 2 w( e ) + 2 \sum_B z_B$ of an edge between
+two of them is even. The four terms of $\delta$ are then integers, and so are
+the duals after the change. $\square$
 
-Thus all the arithmetic is on integers; at the end
-the duals certify the optimum by [Theorem 14.5](14-graph.md#thm-14-5),
-which the audits check. With `maxCardinality` the first term of $\delta$
-is left out, and a stage that finds no augmenting path ends the search,
-which gives the largest weight among the matchings of largest size (e.g.,
-a perfect matching of least cost, with the costs negated); otherwise the
-edges of weight at most 0 are left out, since they cannot make a matching
-heavier. The result is the weight and the places in $E$ of the edges of
-the matching, in increasing order. [Gabow
-1990](Z-bibliography.md#ref-gabow1990) reaches
-$O( n m + n^2 \log n )$ with mergeable heaps of the slacks and the nearest
-common ancestors of the blossoms, a structure whose constants perhaps pay off only
-on large sparse graphs.
+Thus all the arithmetic is on integers; at the end the duals certify the
+optimum by [Theorem 14.5](14-graph.md#thm-14-5), which the audits check. With
+`maxCardinality` the first term of $\delta$ is left out, and a stage that finds
+no augmenting path ends the search, which gives the largest weight among the
+matchings of largest size (e.g., a perfect matching of least cost, with the
+costs negated); otherwise the edges of weight at most 0 are left out, since
+they cannot make a matching heavier. The result is the weight and the places in
+$E$ of the edges of the matching, in increasing order. [Gabow
+1990](Z-bibliography.md#ref-gabow1990) reaches $O( n m + n^2 \log n )$ with
+mergeable heaps of the slacks and the nearest common ancestors of the blossoms,
+a structure whose constants perhaps pay off only on large sparse graphs.
 
 We also solve the same problem on a graph of a few nodes by
 `branchAndBoundMatching( n , E )`, a branch and bound sharing no code with the
@@ -3526,12 +3517,12 @@ auto [ v , L ] = ADS::maxWeightMatching( 4 , E , true );  // the same
 
 ### 14.11.3 The assignment {#sec-14-11-3}
 
-We now turn to the *assignment problem* (beyond the book), which has $n$ rows and $n$ columns
-(the workers and the tasks, the two sides of a complete bipartite graph)
-and a cost $c( i , j )$ for each pair, $\infty$ (`infinity()`) forbidding
-it. It requires a perfect matching of the rows to the columns of least
-total cost. Its dual gives a potential $u_i$ to each row and $v_j$ to each
-column, and maximizes $\sum_i u_i + \sum_j v_j$ subject to
+We now turn to the *assignment problem* (beyond the book), which has $n$ rows
+and $n$ columns (the workers and the tasks, the two sides of a complete
+bipartite graph) and a cost $c( i , j )$ for each pair, $\infty$ (`infinity()`)
+forbidding it. It requires a perfect matching of the rows to the columns of
+least total cost. Its dual gives a potential $u_i$ to each row and $v_j$ to
+each column, and maximizes $\sum_i u_i + \sum_j v_j$ subject to
 
 $$
 \bar{c}( i , j ) = c( i , j ) - u_i - v_j \ge 0
@@ -4045,13 +4036,13 @@ gives. Replaying $C$ on $G$ gives the graph that replaying $B$ gives, and
 $\lvert C \rvert \le \lvert B \rvert$; `coalesce()` builds $C$ in
 $O( \lvert B \rvert )$ expected time.*
 
-*Proof.* We observe that the state of an edge after $B$ depends on its last event only,
-and (14.11) gives an event that leads from $s_0$ to $s_1$, or none if the
-two are equal. The nodes inserted come first, and thus each edge of $C$
+*Proof.* We observe that the state of an edge after $B$ depends on its last
+event only, and (14.11) gives an event that leads from $s_0$ to $s_1$, or none
+if the two are equal. The nodes inserted come first, and thus each edge of $C$
 finds its ends; the nodes deleted come last, after the deletions of their
-edges, which the wrapper sends before the deletion of a node. Each
-event of $C$ stands for at least one of $B$, and a hash table on the edges
-gives the pair $( s_0 , s_1 )$ of each edge in one scan of $B$. $\square$
+edges, which the wrapper sends before the deletion of a node. Each event of $C$
+stands for at least one of $B$, and a hash table on the edges gives the pair $(
+s_0 , s_1 )$ of each edge in one scan of $B$. $\square$
 
 --8<-- "generated/Observable-coalesce.pseudo.md"
 
@@ -4256,40 +4247,40 @@ the trees after a batch of cuts (beyond the book).
 --8<-- "generated/Reoptimization-SpanningForestObserver-join.pseudo.md"
 
 The replacement is sought by two searches run in turn, a few steps each, and
-the first one that ends gives it. The first search is made of two visits of
-$F$ from the ends of $e$, one node of each in turn; they stop when one of
-them ends, and then scan the edges at the nodes of the smaller part, in time
-proportional to that part and to its edges. The second is a scan of the
-edges out of $F$ by increasing weight, kept in a balanced tree, and the
-first one whose ends have two distinct roots in the link-cut tree is the
-answer. With $s$ the nodes of the smaller part and $\bar{d}$ their mean
-degree, the first costs about $s \bar{d}$. The second, when the ends of the
-edges out of $F$ are spread at random, costs about $n / s$ edges of $O( \log
-n )$ each. Together they cost at most twice the cheaper of the two, i.e.,
-about $\sqrt{ n \bar{d} \log n }$ in that model, which is perhaps optimistic on real graphs, though $\Theta( m )$ in the
-worst case (two large parts with no edge between them). A batch with many
-cuts is joined again at once, instead. First, the edges raised or deleted
+the first one that ends gives it. The first search is made of two visits of $F$
+from the ends of $e$, one node of each in turn; they stop when one of them
+ends, and then scan the edges at the nodes of the smaller part, in time
+proportional to that part and to its edges. The second is a scan of the edges
+out of $F$ by increasing weight, kept in a balanced tree, and the first one
+whose ends have two distinct roots in the link-cut tree is the answer. With $s$
+the nodes of the smaller part and $\bar{d}$ their mean degree, the first costs
+about $s \bar{d}$. The second, when the ends of the edges out of $F$ are spread
+at random, costs about $n / s$ edges of $O( \log n )$ each. Together they cost
+at most twice the cheaper of the two, i.e., about $\sqrt{ n \bar{d} \log n }$
+in that model, which is perhaps optimistic on real graphs, though $\Theta( m )$
+in the worst case (two large parts with no edge between them). A batch with
+many cuts is joined again at once, instead. First, the edges raised or deleted
 leave $F$, and the edges lowered or inserted off $F$ are set aside. Then the
 trees left are joined by the algorithm of Kruskal on the trees contracted,
 whose edges are those between two trees. These are found in the lists of the
-edges at the nodes out of the largest tree, and taken by blocks of the
-lightest ones (the filter-Kruskal of [Osipov, Sanders and Singler
+edges at the nodes out of the largest tree, and taken by blocks of the lightest
+ones (the filter-Kruskal of [Osipov, Sanders and Singler
 2009](Z-bibliography.md#ref-osipov2009)). Finally, the edges set aside are
-taken one at a time, by the cycles. This is correct since the forest so
-joined is minimum for the graph without the edges set aside (the remaining
-edges of $F$ are lightest across the cuts that their removal leaves, as they
-were), and each edge taken by its cycle afterwards keeps it minimum. Such a
-batch costs $O( n )$ plus the edges between two trees, against $O( m \log m
-)$ for Kruskal from scratch. The observer takes it when the cuts times the
-mean work of its replacements so far exceed $n$ plus the edges off $F$. The
-structures that answer the replacement in polylogarithmic time ([Holm, de
-Lichtenberg and Thorup 2001](Z-bibliography.md#ref-holm2001)) keep $O( \log
-n )$ copies of the forest. They typically lose in practice to the simpler scans on
-graphs that are not adversarial (the experiments surveyed by [Hanauer,
-Henzinger and Schulz 2022](Z-bibliography.md#ref-hanauer2022)). Each event
-costs $O( \log n )$ amortized but the raises and the deletions of the edges
-of $F$, with no structure built again; the binary lifting that a static
-forest would use costs $O( n \log n )$ at each change of its shape.
+taken one at a time, by the cycles. This is correct since the forest so joined
+is minimum for the graph without the edges set aside (the remaining edges of
+$F$ are lightest across the cuts that their removal leaves, as they were), and
+each edge taken by its cycle afterwards keeps it minimum. Such a batch costs
+$O( n )$ plus the edges between two trees, against $O( m \log m )$ for Kruskal
+from scratch. The observer takes it when the cuts times the mean work of its
+replacements so far exceed $n$ plus the edges off $F$. The structures that
+answer the replacement in polylogarithmic time ([Holm, de Lichtenberg and
+Thorup 2001](Z-bibliography.md#ref-holm2001)) keep $O( \log n )$ copies of the
+forest. They typically lose in practice to the simpler scans on graphs that are
+not adversarial (the experiments surveyed by [Hanauer, Henzinger and Schulz
+2022](Z-bibliography.md#ref-hanauer2022)). Each event costs $O( \log n )$
+amortized but the raises and the deletions of the edges of $F$, with no
+structure built again; the binary lifting that a static forest would use costs
+$O( n \log n )$ at each change of its shape.
 
 For the maximum flow from $s$ to $t$ (`MaxFlowObserver( g , s , t , how )`,
 with `value()` and `minCut()`, on a graph whose integral weights are the
@@ -4658,8 +4649,8 @@ point as before. For the others, $w > \ell / 2$ with $w$ and $\ell$ integers
 below $2^{53}$ is the same as $2 w > \ell$, since $\ell / 2$ is exact in
 floating point, and $w > 1 \cdot \ell$ is the same as $w > \ell$. This
 gives $2 \lvert A \rvert > n$, the batch of the forest when its cuts times
-the mean work exceed $n$ plus the edges off $F$, and $2 ( \lvert D_r \rvert
-+ \lvert D_c \rvert ) > n$. Also, the shortest paths skip the test when
+the mean work exceed $n$ plus the edges off $F$, and $2 ( \lvert D_r
+\rvert + \lvert D_c \rvert ) > n$. Also, the shortest paths skip the test when
 $A = \emptyset$, where $2 \lvert A \rvert > n$ is false anyway. At an
 extraction beyond the first the answer is no, since $\beta = 0$ switches
 off the second part of the test and its first part is
@@ -5041,34 +5032,33 @@ built from the rewritten headers, the shim first on its include path.
 ## 14.15 Discussion and references {#sec-14-15}
 
 The representations of [§14.2](14-graph.md#sec-14-2) to
-[§14.4](14-graph.md#sec-14-4) and the visits of
-[§14.5](14-graph.md#sec-14-5) are those of [Montresor 2025, chapter
-9](Z-bibliography.md#ref-montresor2025) and of [Morin 2013, chapter
-12](Z-bibliography.md#ref-morin-cpp). The lists of adjacency were presented
-by [Hopcroft and Tarjan 1973](Z-bibliography.md#ref-hopcroft1973graph) as an
-alternative to the adjacency matrix, more common at the time. Together with
-the visit in depth they are at the core of the planarity test of [Hopcroft
-and Tarjan 1974](Z-bibliography.md#ref-hopcroft1974), which decides in $O( n
-)$ time whether a graph can be drawn in the plane with no two edges
-crossing. The visit in breadth was found independently by [Moore
+[§14.4](14-graph.md#sec-14-4) and the visits of [§14.5](14-graph.md#sec-14-5)
+are those of [Montresor 2025, chapter 9](Z-bibliography.md#ref-montresor2025)
+and of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin-cpp). The lists of
+adjacency were presented by [Hopcroft and Tarjan
+1973](Z-bibliography.md#ref-hopcroft1973graph) as an alternative to the
+adjacency matrix, more common at the time. Together with the visit in depth
+they are at the core of the planarity test of [Hopcroft and Tarjan
+1974](Z-bibliography.md#ref-hopcroft1974), which decides in $O( n )$ time
+whether a graph can be drawn in the plane with no two edges crossing. The visit
+in breadth was found independently by [Moore
 1959](Z-bibliography.md#ref-moore1959), for the mazes, and by [Lee
 1961](Z-bibliography.md#ref-lee1961), for the routing of circuits. The
 classification of the edges, the white path and the linear algorithms on the
 visit in depth are those of [Tarjan 1972](Z-bibliography.md#ref-tarjan1972),
 and the topological order by the sources is that of [Kahn
-1962](Z-bibliography.md#ref-kahn1962). The two visits of the strongly
-connected components are the algorithm of Kosaraju, published by [Sharir
+1962](Z-bibliography.md#ref-kahn1962). The two visits of the strongly connected
+components are the algorithm of Kosaraju, published by [Sharir
 1981](Z-bibliography.md#ref-sharir1981), while the single visit is that of
 [Tarjan 1972](Z-bibliography.md#ref-tarjan1972) in the space of [Pearce
-2016](Z-bibliography.md#ref-pearce2016). The compressed rows of `StaticGraph` are
-those of the sparse matrices ([Saad 2003](Z-bibliography.md#ref-saad2003)),
+2016](Z-bibliography.md#ref-pearce2016). The compressed rows of `StaticGraph`
+are those of the sparse matrices ([Saad 2003](Z-bibliography.md#ref-saad2003)),
 and the renaming by the visit in breadth comes from the reduction of the
 bandwidth of [Cuthill and McKee 1969](Z-bibliography.md#ref-cuthill1969).
 Finally, the representation of the grid maps is that of the benchmarks of
-[Sturtevant 2012](Z-bibliography.md#ref-sturtevant2012) and of the jump
-point search ([Harabor and Grastien
-2011](Z-bibliography.md#ref-harabor2011); [Harabor and Grastien
-2014](Z-bibliography.md#ref-harabor2014)).
+[Sturtevant 2012](Z-bibliography.md#ref-sturtevant2012) and of the jump point
+search ([Harabor and Grastien 2011](Z-bibliography.md#ref-harabor2011);
+[Harabor and Grastien 2014](Z-bibliography.md#ref-harabor2014)).
 
 The shortest paths follow the prototype of [Montresor 2025, chapter
 11](Z-bibliography.md#ref-montresor2025), whose frontiers give the
@@ -5206,24 +5196,25 @@ Each exercise names the test of the library that solves it (run it with
    exercise 12.9](Z-bibliography.md#ref-morin-cpp);
    [§14.5.3](14-graph.md#sec-14-5-3)). Test: `ods_ints.ods12.3.visits`.
 7. Decide in $O( n )$ time whether a graph on an adjacency matrix has a
-   universal sink ([Morin 2013, exercise 12.10](Z-bibliography.md#ref-morin-cpp);
-   [Lemma 14.25](14-graph.md#lem-14-25)). Tests:
+   universal sink ([Morin 2013, exercise
+   12.10](Z-bibliography.md#ref-morin-cpp); [Lemma
+   14.25](14-graph.md#lem-14-25)). Tests:
    `ods_ints.ods.ex12.10.universal-sink`, `lib_graphs.universal-sink`.
 8. Compare the memory of the adjacency matrix and of the lists with $d$
    bits per pointer and per integer, and find the number of edges below
    which the lists take less ([Montresor 2025, exercise
    9.1](Z-bibliography.md#ref-montresor2025)). Test: `ch09.ex9.1`.
-9. Write the visit in depth with no recursion, in the order of the
-   recursive one ([Montresor 2025, exercise 9.2](Z-bibliography.md#ref-montresor2025)).
+9. Write the visit in depth with no recursion, in the order of the recursive
+   one ([Montresor 2025, exercise 9.2](Z-bibliography.md#ref-montresor2025)).
    Test: `ch09.ex9.2`.
-10. Decide whether a graph is bipartite, and show that it is if and only
-    if it has no odd cycle; then do it with a visit in breadth
-    ([Montresor 2025, exercises 9.3 and 9.4](Z-bibliography.md#ref-montresor2025)).
-    Tests: `ch09.ex9.3`, `ch09.ex9.4`, `lib_graphs.two-coloring`.
-11. Compute the width of a rooted tree, the largest number of nodes on a
-    level, and decide whether an unoriented graph is a free tree
-    ([Montresor 2025, exercises 9.5 and 9.6](Z-bibliography.md#ref-montresor2025)).
-    Tests: `ch09.ex9.5`, `ch09.ex9.6`, `lib_graphs.trees-and-diameters`.
+10. Decide whether a graph is bipartite, and show that it is if and only if it
+    has no odd cycle; then do it with a visit in breadth ([Montresor 2025,
+    exercises 9.3 and 9.4](Z-bibliography.md#ref-montresor2025)). Tests:
+    `ch09.ex9.3`, `ch09.ex9.4`, `lib_graphs.two-coloring`.
+11. Compute the width of a rooted tree, the largest number of nodes on a level,
+    and decide whether an unoriented graph is a free tree ([Montresor 2025,
+    exercises 9.5 and 9.6](Z-bibliography.md#ref-montresor2025)). Tests:
+    `ch09.ex9.5`, `ch09.ex9.6`, `lib_graphs.trees-and-diameters`.
 12. Compute the earliest start of each job of a project with durations
     and precedences, by the topological order ([Montresor 2025, exercise
     9.7](Z-bibliography.md#ref-montresor2025)). Test: `ch09.ex9.7`.
@@ -5235,12 +5226,11 @@ Each exercise names the test of the library that solves it (run it with
     compute the diameter of a graph ([Montresor 2025, exercises 9.9 to
     9.11](Z-bibliography.md#ref-montresor2025)). Tests: `ch09.ex9.9`,
     `ch09.ex9.10`, `ch09.ex9.11`.
-15. Show that the algorithm of Dijkstra that never extracts a node again
-    is wrong with negative costs, while the prototype stays correct, and
-    detect a negative cycle reachable from $r$ in $O( n m )$
-    ([Montresor 2025, exercises 11.1 and 11.2](Z-bibliography.md#ref-montresor2025);
-    [Lemma 14.29](14-graph.md#lem-14-29)). Tests: `ch11.ex11.1`,
-    `ch11.ex11.2`.
+15. Show that the algorithm of Dijkstra that never extracts a node again is
+    wrong with negative costs, while the prototype stays correct, and detect a
+    negative cycle reachable from $r$ in $O( n m )$ ([Montresor 2025, exercises
+    11.1 and 11.2](Z-bibliography.md#ref-montresor2025); [Lemma
+    14.29](14-graph.md#lem-14-29)). Tests: `ch11.ex11.1`, `ch11.ex11.2`.
 16. Find the most reliable path, i.e., the largest product of the
     reliabilities of its edges, as a shortest path with the costs
     $- \log r( u , v )$ ([Montresor 2025, exercise
@@ -5254,25 +5244,26 @@ Each exercise names the test of the library that solves it (run it with
     ([Montresor 2025, exercise 11.7](Z-bibliography.md#ref-montresor2025);
     [§14.7.1](14-graph.md#sec-14-7-1)). Tests: `ch11.ex11.7`,
     `lib_graphs.count-shortest-paths`.
-19. Find for each node the path from $r$ whose shortest edge is the
-    shortest, solve the shortest paths with costs on the nodes, and show
-    that squaring the costs does not keep the shortest paths
-    ([Montresor 2025, exercises 11.8 to 11.10](Z-bibliography.md#ref-montresor2025)).
-    Tests: `ch11.ex11.8`, `ch11.ex11.9`, `ch11.ex11.10`.
+19. Find for each node the path from $r$ whose shortest edge is the shortest,
+    solve the shortest paths with costs on the nodes, and show that squaring
+    the costs does not keep the shortest paths ([Montresor 2025, exercises 11.8
+    to 11.10](Z-bibliography.md#ref-montresor2025)). Tests: `ch11.ex11.8`,
+    `ch11.ex11.9`, `ch11.ex11.10`.
 20. Write the algorithm of Bellman, Ford and Moore as a dynamic
     programming on the number of edges, and the shortest paths of a graph
     with edges $( u , v )$ only for $u < v$ in $O( n + m )$ ([Montresor
     2025, exercises 13.3 and 13.4](Z-bibliography.md#ref-montresor2025)).
     Tests: `ch13.ex13.3`, `ch13.ex13.4`.
-21. Update all the distances of `floydWarshall()` after the insertion of
-    an edge in $O( n^2 )$ ([Montresor 2025, exercise
-    13.5](Z-bibliography.md#ref-montresor2025); [§14.8.2](14-graph.md#sec-14-8-2)).
-    Tests: `ch13.ex13.5`, `ch13.sec13.5.floyd-warshall`.
-22. Run the algorithm of Kruskal with integer weights in $[ 0 , n )$ in
-    $O( m + n )$, find the spanning tree with the fewest red edges, and run
-    the algorithm of Prim with a Fibonacci heap in $O( m + n \log n )$
-    ([Montresor 2025, exercises 14.2 to 14.4](Z-bibliography.md#ref-montresor2025)).
-    Tests: `ch14.ex14.2`, `ch14.ex14.3`, `ch14.ex14.4`.
+21. Update all the distances of `floydWarshall()` after the insertion of an
+    edge in $O( n^2 )$ ([Montresor 2025, exercise
+    13.5](Z-bibliography.md#ref-montresor2025);
+    [§14.8.2](14-graph.md#sec-14-8-2)). Tests: `ch13.ex13.5`,
+    `ch13.sec13.5.floyd-warshall`.
+22. Run the algorithm of Kruskal with integer weights in $[ 0 , n )$ in $O( m +
+    n )$, find the spanning tree with the fewest red edges, and run the
+    algorithm of Prim with a Fibonacci heap in $O( m + n \log n )$ ([Montresor
+    2025, exercises 14.2 to 14.4](Z-bibliography.md#ref-montresor2025)). Tests:
+    `ch14.ex14.2`, `ch14.ex14.3`, `ch14.ex14.4`.
 23. Show that with distinct weights the two lightest edges are in every
     minimum spanning tree, and that the maximum spanning tree is the
     minimum one with the weights negated while the longest path is not the
@@ -5283,9 +5274,10 @@ Each exercise names the test of the library that solves it (run it with
     minimum spanning trees of the algorithms of Kruskal and Prim against
     all the sets of $n - 1$ edges ([Lemma 14.33](14-graph.md#lem-14-33)).
     Tests: `ch14.sec14.3.3.cut`, `ch14.sec14.3.mst`.
-25. Find all the minimum cuts of a network, and its maximum flow by every
-    way of augmenting ([Montresor 2025, exercise 15.1](Z-bibliography.md#ref-montresor2025);
-    [Theorem 14.4](14-graph.md#thm-14-4)). Tests: `ch15.ex15.1`,
+25. Find all the minimum cuts of a network, and its maximum flow by every way
+    of augmenting ([Montresor 2025, exercise
+    15.1](Z-bibliography.md#ref-montresor2025); [Theorem
+    14.4](14-graph.md#thm-14-4)). Tests: `ch15.ex15.1`,
     `ch15.sec15.2.max-flow`.
 26. Find an Eulerian cycle of an oriented graph, or show that there is
     none ([Montresor 2025, exercise 15.3](Z-bibliography.md#ref-montresor2025);

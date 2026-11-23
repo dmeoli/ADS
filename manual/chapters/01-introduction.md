@@ -491,8 +491,8 @@ the items in a vector, as [Morin 2013, exercise
 1.6](Z-bibliography.md#ref-morin-cpp) suggests. They are
 rather "slow", but short enough to be evidently correct, and
 the tests use them as oracles for the faster ones.
-`ArrayUSet` keeps the $n$ items in the places $0 , \ldots , n
-- 1$ of a vector $A$, in no order, with no two of them equal
+`ArrayUSet` keeps the $n$ items in the places $0 , \ldots ,
+n - 1$ of a vector $A$, in no order, with no two of them equal
 by its equality `Eq` (`std::equal_to<>` by default). Its
 `find( x )` scans $A$, `insert( x )` appends $x$ after a
 `find()` has ruled it out, and `remove( x )` moves the last
@@ -3024,17 +3024,17 @@ static_assert( ADS::SlidingAggregate< ADS::SumOf< int > >::kind ==
 
 ### 1.15.5 The other structures that tell their changes {#sec-1-15-5}
 
-We now list the structures that emit beyond the heap and the array
-([Table 1.8](01-introduction.md#tab-1-8)). Each follows the pattern of
+We now list the structures that emit beyond the heap and the array ([Table
+1.8](01-introduction.md#tab-1-8)). Each follows the pattern of
 [§1.13](01-introduction.md#sec-1-13), i.e., it takes a subject policy as the
-last parameter of its type, `NoObservers` by default (hence, a spelling of
-the type written before keeps its meaning), and it builds an event only after
-the tests `listened` and `live`. An erasure is sent before the removal, the
-other changes after them, and `Rebuilt` at the end of a mute. The handles are the keys in the
-B-tree and in the dense map, the pointers in the table of pointers, the
-elements in the union-find and the nodes (and the codes of the edges) in the
-link-cut trees; the queues of Dial, the radix heap and the bucket queue have
-no handles, and the item serves as one.
+last parameter of its type, `NoObservers` by default (hence, a spelling of the
+type written before keeps its meaning), and it builds an event only after the
+tests `listened` and `live`. An erasure is sent before the removal, the other
+changes after them, and `Rebuilt` at the end of a mute. The handles are the
+keys in the B-tree and in the dense map, the pointers in the table of pointers,
+the elements in the union-find and the nodes (and the codes of the edges) in
+the link-cut trees; the queues of Dial, the radix heap and the bucket queue
+have no handles, and the item serves as one.
 
 <span id="tab-1-8"></span>**Table 1.8.** The structures that emit, besides
 `IndexedDaryHeap`, `ObservableArray`, `JoinTree`, `GridGraph` and the graph
@@ -3095,15 +3095,15 @@ $k$). $\square$
 The union-find sends only the links of the roots, since the halving and the
 compression of the paths are internal maintenance that does not change the
 partition, as the places of the heap are; hence, an observer that keeps a
-parent per element, set at each `Changed< Parent >`, keeps a forest whose
-trees are the components (with other roots and other shapes). The link-cut
-trees, in turn, send the changes of the forest without its roots, since
-`evert()`, and `aggregate()` through it, choose a root at each call. An edge
-has the handle `edgeOf( u , w )`, the same for both orders of its ends, and
-the key `ends( u , w )`, the ends with the least first; hence, a link and a
-cut of the same edge cancel in a batch. In both structures an observer that throws
-from the `on()` of an insertion, a link or a change of value gets the change
-undone (the strong guarantee of [§1.13](01-introduction.md#sec-1-13)).
+parent per element, set at each `Changed< Parent >`, keeps a forest whose trees
+are the components (with other roots and other shapes). The link-cut trees, in
+turn, send the changes of the forest without its roots, since `evert()`, and
+`aggregate()` through it, choose a root at each call. An edge has the handle
+`edgeOf( u , w )`, the same for both orders of its ends, and the key `ends( u ,
+w )`, the ends with the least first; hence, a link and a cut of the same edge
+cancel in a batch. In both structures an observer that throws from the `on()`
+of an insertion, a link or a change of value gets the change undone (the strong
+guarantee of [§1.13](01-introduction.md#sec-1-13)).
 
 <span id="lem-1-25"></span>**Lemma 1.25.** *(i) Let an observer of
 `DisjointSets` keep a vector $q$ of parents, $q( x ) = -1$ for each element

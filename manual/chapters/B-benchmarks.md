@@ -22,25 +22,25 @@ enters a benchmark.
 ## B.1 The programs {#sec-B-1}
 
 There are 45 programs of timing in `bench/`, one per family of structures or of
-algorithms, each a file `bench/<name>.cpp` built as `bench-<name>` (by
-`make bench`, or with the CMake option `-DADS_BENCHMARKS=ON`, which builds
-all of them but `compression`, `succinct` and `mpi`). Each
-program states in its `@file` comment the cases, the sizes, the unit of a
-cell and what the clock excludes. It also lists the competitors,
-each with the macro or the variable of the makefile that compiles it in
-when its library is found. [Table B.1](B-benchmarks.md#tab-B-1)
-summarizes them, with the chapter whose comparison each program measures.
-The two further sources `bench/zerocost.cpp` and `bench/zerocost_asm.cpp`
-measure no time; the script `bench/zerocost.py` compiles them at `-O2` with
-each compiler found, counts by callgrind the instructions of one change of
-a structure that publishes its changes, and compares the machine code of each
-change with that of the plain structure byte by byte, so that the claim of
-[§1.13](01-introduction.md#sec-1-13) that a change nobody listens to costs no instruction is checked by counts and by code, which do not depend on the load
-of the machine. With `--before REV` the script also compiles them on the
-headers of an earlier revision, and compares there and here the count of
-each workload with no observer and the code of every function, e.g., of
-`IndexedDaryHeap` ([§1.15.1](01-introduction.md#sec-1-15-1)) and of
-`JoinTree` ([§8.12.7](08-tree.md#sec-8-12-7)).
+algorithms, each a file `bench/<name>.cpp` built as `bench-<name>` (by `make
+bench`, or with the CMake option `-DADS_BENCHMARKS=ON`, which builds all of
+them but `compression`, `succinct` and `mpi`). Each program states in its
+`@file` comment the cases, the sizes, the unit of a cell and what the clock
+excludes. It also lists the competitors, each with the macro or the variable of
+the makefile that compiles it in when its library is found. [Table
+B.1](B-benchmarks.md#tab-B-1) summarizes them, with the chapter whose
+comparison each program measures. The two further sources `bench/zerocost.cpp`
+and `bench/zerocost_asm.cpp` measure no time; the script `bench/zerocost.py`
+compiles them at `-O2` with each compiler found, counts by callgrind the
+instructions of one change of a structure that publishes its changes, and
+compares the machine code of each change with that of the plain structure byte
+by byte, so that the claim of [§1.13](01-introduction.md#sec-1-13) that a
+change nobody listens to costs no instruction is checked by counts and by code,
+which do not depend on the load of the machine. With `--before REV` the script
+also compiles them on the headers of an earlier revision, and compares there
+and here the count of each workload with no observer and the code of every
+function, e.g., of `IndexedDaryHeap` ([§1.15.1](01-introduction.md#sec-1-15-1))
+and of `JoinTree` ([§8.12.7](08-tree.md#sec-8-12-7)).
 
 Two auxiliary headers serve the programs. One is `bench/Bench.h`, with the
 timing, the options and the output that all of them share
@@ -365,24 +365,23 @@ which the chapter of the dictionaries reports.
 
 ## B.7 Where the numbers go {#sec-B-7}
 
-The numbers of the campaign enter the manual in two forms. One is the
-summary that `bench/summary.py` writes from the two files of a
-campaign, with the structure of [Table B.3](B-benchmarks.md#tab-B-3) and
-one row per pair of a structure of ADS and a library in the list `PAIRS`
-of the script, as an HTML table. To `PAIRS` the script adds, for each
-algorithm of `parallel` and each number of threads, the pool of ADS
-against the parallel libraries, against the same algorithm of ADS on the
-executors of FastFlow, OpenMP and oneTBB, and against the sequential
-algorithm. A cell enters the summary only if both runs measured it with a
-positive time; hence a result marked $-1$ as wrong
-([§B.2](B-benchmarks.md#sec-B-2)) is left out of the summary. Its rows go in this appendix, and those of the structures
-of a chapter also go in the section of that chapter that Table B.1
-names. The other is the table of a single benchmark, which
-`bench/tables.py` writes from one file, with one row per structure and
-one column per case and size. In it each cell is the time in nanoseconds
-per operation (or per item, per byte or per arc, as the program states),
-followed by its ratio to the first structure, and the caption gives the
-A/A noise of the table and the file of results it comes from.
+The numbers of the campaign enter the manual in two forms. One is the summary
+that `bench/summary.py` writes from the two files of a campaign, with the
+structure of [Table B.3](B-benchmarks.md#tab-B-3) and one row per pair of a
+structure of ADS and a library in the list `PAIRS` of the script, as an HTML
+table. To `PAIRS` the script adds, for each algorithm of `parallel` and each
+number of threads, the pool of ADS against the parallel libraries, against the
+same algorithm of ADS on the executors of FastFlow, OpenMP and oneTBB, and
+against the sequential algorithm. A cell enters the summary only if both runs
+measured it with a positive time; hence a result marked $-1$ as wrong
+([§B.2](B-benchmarks.md#sec-B-2)) is left out of the summary. Its rows go in
+this appendix, and those of the structures of a chapter also go in the section
+of that chapter that Table B.1 names. The other is the table of a single
+benchmark, which `bench/tables.py` writes from one file, with one row per
+structure and one column per case and size. In it each cell is the time in
+nanoseconds per operation (or per item, per byte or per arc, as the program
+states), followed by its ratio to the first structure, and the caption gives
+the A/A noise of the table and the file of results it comes from.
 
 In both, the measured values are filled in from the files of the campaign,
 `results/<host>-<date>.tsv`, as the README does for its table, whose

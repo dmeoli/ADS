@@ -9,52 +9,50 @@
 `Lyndon.h`, `Parentheses.h`, `Anagrams.h`, `WordBreak.h`,
 `Segmentations.h`, `StringBreaking.h`, `Huffman.h`]
 
-We are concerned in this chapter with the algorithms and the data
-structures on strings: the search of one pattern and of many in a text,
-the comparison of two strings by dynamic programming (the edit distance,
-the longest common subsequence and the alignments), the indexes of a text
-built on its suffixes, the dictionaries of strings searched by prefix, a
-few combinatorial problems (palindromes, Lyndon words, parentheses,
-anagrams), and the problems of segmentation and of coding that chapters 13
-and 14 of [Montresor 2025](Z-bibliography.md#ref-montresor2025) solve by
-dynamic programming or by a greedy choice. Most of the headers beyond that
-book follow chapters 9 and 10 of [Ferragina
-2023](Z-bibliography.md#ref-ferragina2023), on searching strings by prefix
-and by substring. For several problems the area has two layers: the
+We are concerned in this chapter with the algorithms and the data structures on
+strings: the search of one pattern and of many in a text, the comparison of two
+strings by dynamic programming (the edit distance, the longest common
+subsequence and the alignments), the indexes of a text built on its suffixes,
+the dictionaries of strings searched by prefix, a few combinatorial problems
+(palindromes, Lyndon words, parentheses, anagrams), and the problems of
+segmentation and of coding that chapters 13 and 14 of [Montresor
+2025](Z-bibliography.md#ref-montresor2025) solve by dynamic programming or by a
+greedy choice. Most of the headers beyond that book follow chapters 9 and 10 of
+[Ferragina 2023](Z-bibliography.md#ref-ferragina2023), on searching strings by
+prefix and by substring. For several problems the area has two layers: the
 algorithm of the textbooks, which the tests use as a reference, and an
-engineered realization of the same specification. [§15.1](15-string.md#sec-15-1)
-fixes the notation. [§15.2](15-string.md#sec-15-2) and
-[§15.3](15-string.md#sec-15-3) treat the exact search of one pattern and
-of many, and [§15.4](15-string.md#sec-15-4) the edit distance and its
-relatives. We treat the suffix arrays, trees and automata, with their applications,
-in [§15.5](15-string.md#sec-15-5), and the dictionaries searched by
-prefix in [§15.6](15-string.md#sec-15-6). Finally,
-[§15.7](15-string.md#sec-15-7) and [§15.8](15-string.md#sec-15-8)
-collect the combinatorial problems, the segmentations, the cuts of a
-string and the code of Huffman. In the sets of
-[§1.9](01-introduction.md#sec-1-9), `AhoCorasick.h`, `EditDistance.h`,
-`LongestCommonExtension.h`, `MultiSearch.h`, `StringSearch.h`,
-`SuffixAutomaton.h` and `SuffixSorting.h` are advanced and the other
-headers of this chapter are base.
+engineered realization of the same specification.
+[§15.1](15-string.md#sec-15-1) fixes the notation.
+[§15.2](15-string.md#sec-15-2) and [§15.3](15-string.md#sec-15-3) treat the
+exact search of one pattern and of many, and [§15.4](15-string.md#sec-15-4) the
+edit distance and its relatives. We treat the suffix arrays, trees and
+automata, with their applications, in [§15.5](15-string.md#sec-15-5), and the
+dictionaries searched by prefix in [§15.6](15-string.md#sec-15-6). Finally,
+[§15.7](15-string.md#sec-15-7) and [§15.8](15-string.md#sec-15-8) collect the
+combinatorial problems, the segmentations, the cuts of a string and the code of
+Huffman. In the sets of [§1.9](01-introduction.md#sec-1-9), `AhoCorasick.h`,
+`EditDistance.h`, `LongestCommonExtension.h`, `MultiSearch.h`,
+`StringSearch.h`, `SuffixAutomaton.h` and `SuffixSorting.h` are advanced and
+the other headers of this chapter are base.
 
 ## 15.1 Definitions and notation {#sec-15-1}
 
-An *alphabet* $\Sigma$ is a finite set of $\sigma$ symbols with a total
-order: the bytes of a `std::string_view` ($\sigma \le 256$, compared as
-unsigned values), or the integers in $[ 0 , K )$ of a vector of `Symbols`.
-A *string* $T = T[ 0 .. n - 1 ]$ of length $n = | T |$ is a sequence of $n$
-symbols, the places counting from 0 as in the code (both books count from
-1, and the headers say where they translate). For $0 \le i \le j < n$ the
-string $T[ i .. j ]$ is a *substring* of $T$, a *prefix* if $i = 0$ and a
-*suffix* if $j = n - 1$. We call the suffix that starts at $i$ the
-suffix $i$, or $T[ i .. ]$, and $T( i ) = T[ 0 .. i - 1 ]$ is the prefix
-of $i$ symbols of [Montresor 2025](Z-bibliography.md#ref-montresor2025).
-A *subsequence* keeps some of the symbols in their order, not necessarily
-contiguous. Two strings are compared in the lexicographic order, a string
-that is a prefix of another being the smaller. We call *terminator* the symbol $\$$ that
-some structures append, a symbol smaller than all the others, so that no
-suffix of $T \$$ is a prefix of another; [Table 15.1](15-string.md#tab-15-1)
-lists the other symbols that recur in the chapter.
+An *alphabet* $\Sigma$ is a finite set of $\sigma$ symbols with a total order:
+the bytes of a `std::string_view` ($\sigma \le 256$, compared as unsigned
+values), or the integers in $[ 0 , K )$ of a vector of `Symbols`. A *string* $T
+= T[ 0 .. n - 1 ]$ of length $n = | T |$ is a sequence of $n$ symbols, the
+places counting from 0 as in the code (both books count from 1, and the headers
+say where they translate). For $0 \le i \le j < n$ the string $T[ i .. j ]$ is
+a *substring* of $T$, a *prefix* if $i = 0$ and a *suffix* if $j = n - 1$. We
+call the suffix that starts at $i$ the suffix $i$, or $T[ i .. ]$, and $T( i )
+= T[ 0 .. i - 1 ]$ is the prefix of $i$ symbols of [Montresor
+2025](Z-bibliography.md#ref-montresor2025). A *subsequence* keeps some of the
+symbols in their order, not necessarily contiguous. Two strings are compared in
+the lexicographic order, a string that is a prefix of another being the
+smaller. We call *terminator* the symbol $\$$ that some structures append, a
+symbol smaller than all the others, so that no suffix of $T \$$ is a prefix of
+another; [Table 15.1](15-string.md#tab-15-1) lists the other symbols that recur
+in the chapter.
 
 <span id="tab-15-1"></span>**Table 15.1.** The symbols of the headers of
 `ADS/string`.
@@ -165,18 +163,17 @@ $\mathrm{Occ}( P , T )$ with at most $2 n$ comparisons of symbols, after
 the computation of $F$ with at most $2 m$; hence in $\Theta( n + m )$
 time.*
 
-*Proof.* Correctness follows from [Lemma 15.2](15-string.md#lem-15-2),
-and from the same lemma applied after an occurrence (with $q = m$). Each
-comparison of line 4 either succeeds, and then $i$ advances, or fails, and
-then the start $i - q$ of the pattern moves forward by $q - F[ q ] > 0$;
-both $i$ and $i - q$ are at most $n$ and never decrease and hence there are
-at most $2 n$ comparisons. By the same argument on $P$ against itself one bounds
-the computation of $F$. $\square$
+*Proof.* Correctness follows from [Lemma 15.2](15-string.md#lem-15-2), and from
+the same lemma applied after an occurrence (with $q = m$). Each comparison of
+line 4 either succeeds, and then $i$ advances, or fails, and then the start
+$i - q$ of the pattern moves forward by $q - F[ q ] > 0$; both $i$ and $i - q$ are
+at most $n$ and never decrease and hence there are at most $2 n$ comparisons.
+By the same argument on $P$ against itself one bounds the computation of $F$.
+$\square$
 
-We keep apart the function that line 4 of `kmp()` follows at a mismatch and the value
-$F[ m ]$ that line 6 follows after an occurrence, so that
-the same loop serves the strong variant below, which changes only the
-former.
+We keep apart the function that line 4 of `kmp()` follows at a mismatch and the
+value $F[ m ]$ that line 6 follows after an occurrence, so that the same loop
+serves the strong variant below, which changes only the former.
 
 Note that when $P[ F[ q ] ] = P[ q ]$, the comparison that (15.1) makes
 after a mismatch on $P[ q ]$ fails again. The strong failure function of Knuth
@@ -191,23 +188,22 @@ does not change.
 --8<-- "generated/StringMatching-kmpStrong.pseudo.md"
 
 **Boyer and Moore, Horspool.** The algorithm of [Boyer and Moore
-1977](Z-bibliography.md#ref-boyer1977) (`boyerMoore()`) compares the
-window from right to left and, at a mismatch, moves it by the larger of
-two shifts that pass no occurrence. By the bad character rule we align the
-symbol of $T$ that failed with its last place in $P$ (or move the pattern
-past it); by the strong good suffix rule we align the suffix already matched
-with its previous occurrence in $P$ preceded by another symbol (or with
-the longest prefix of $P$ that is a suffix of it). Both are prepared in
-$O( m + \sigma )$ time. A shift is safe since any smaller one would put a
-different symbol under a symbol of $T$ already read. When the symbols of
-$T$ seldom occur in $P$, the window moves by about $m$ after a few
-comparisons, i.e., $O( n / m )$ comparisons at best. Yet, the worst case
-for all the occurrences is $O( n m )$, e.g., each of the $n - m + 1$
-windows of $a^m$ in $a^n$ is read whole (for the first occurrence alone
-the strong good suffix rule gives $O( n )$, as [Knuth, Morris and Pratt
-1977](Z-bibliography.md#ref-knuth1977) prove). [Horspool 1980](Z-bibliography.md#ref-horspool1980)
-(`horspool()`) keeps only the bad character of the last symbol of the
-window,
+1977](Z-bibliography.md#ref-boyer1977) (`boyerMoore()`) compares the window
+from right to left and, at a mismatch, moves it by the larger of two shifts
+that pass no occurrence. By the bad character rule we align the symbol of $T$
+that failed with its last place in $P$ (or move the pattern past it); by the
+strong good suffix rule we align the suffix already matched with its previous
+occurrence in $P$ preceded by another symbol (or with the longest prefix of $P$
+that is a suffix of it). Both are prepared in $O( m + \sigma )$ time. A shift
+is safe since any smaller one would put a different symbol under a symbol of
+$T$ already read. When the symbols of $T$ seldom occur in $P$, the window moves
+by about $m$ after a few comparisons, i.e., $O( n / m )$ comparisons at best.
+Yet, the worst case for all the occurrences is $O( n m )$, e.g., each of the
+$n - m + 1$ windows of $a^m$ in $a^n$ is read whole (for the first occurrence
+alone the strong good suffix rule gives $O( n )$, as [Knuth, Morris and Pratt
+1977](Z-bibliography.md#ref-knuth1977) prove). [Horspool
+1980](Z-bibliography.md#ref-horspool1980) (`horspool()`) keeps only the bad
+character of the last symbol of the window,
 
 $$
 \mathit{shift}[ c ] = m - 1 - \max\{ i < m - 1 : P[ i ] = c \}
@@ -352,12 +348,12 @@ one pattern.
 
 ### 15.2.2 The engineered search {#sec-15-2-2}
 
-We now turn to the engineered search. `StringSearcher` of `StringSearch.h` prepares the pattern once, as the
-searchers of `std::search()` do, and then finds its occurrences in any
-text; `find()` gives the first one at or after a place, `findAll()` all of
-them in increasing order (overlapping ones included), and `count()` their
-number. It chooses among three methods by the length of the pattern
-([Algorithm 15.3](15-string.md#alg-15-3)).
+We now turn to the engineered search. `StringSearcher` of `StringSearch.h`
+prepares the pattern once, as the searchers of `std::search()` do, and then
+finds its occurrences in any text; `find()` gives the first one at or after a
+place, `findAll()` all of them in increasing order (overlapping ones included),
+and `count()` their number. It chooses among three methods by the length of the
+pattern ([Algorithm 15.3](15-string.md#alg-15-3)).
 
 First, a pattern of one byte is found by `memchr()`. Second, a pattern of
 fewer than `kSkip` $= 64$ bytes goes through a filter of probes (the packed
@@ -378,14 +374,13 @@ independent bytes of probabilities $p_c$, the expected number of
 comparisons with $P$ is $( n - m + 1 ) \prod_i p_{b_i}$, e.g., about
 $n / 256$ on DNA with four probes.
 
-Third, a pattern of 64 bytes or more is searched by the shifts of its
-q-grams, in the spirit of [Horspool 1980](Z-bibliography.md#ref-horspool1980)
-and of [Wu and Manber 1994](Z-bibliography.md#ref-wu1994), as the hashed
-q-grams of [Lecroq 2007](Z-bibliography.md#ref-lecroq2007). We take as the length $q$
-the least one with $d^q \ge 16 m$ for the $d$ distinct bytes of $P$,
-$2 \le q \le 8$; a q-gram $g$ is hashed to $h( g ) \in [ 0 , 4096 )$ (the
-12 top bits of its product by $\lfloor 2^{64} / \phi \rfloor$, $\phi$ the
-golden ratio), and
+Third, a pattern of 64 bytes or more is searched by the shifts of its q-grams,
+in the spirit of [Horspool 1980](Z-bibliography.md#ref-horspool1980) and of [Wu
+and Manber 1994](Z-bibliography.md#ref-wu1994), as the hashed q-grams of
+[Lecroq 2007](Z-bibliography.md#ref-lecroq2007). We take as the length $q$ the
+least one with $d^q \ge 16 m$ for the $d$ distinct bytes of $P$, $2 \le q \le
+8$; a q-gram $g$ is hashed to $h( g ) \in [ 0 , 4096 )$ (the 12 top bits of its
+product by $\lfloor 2^{64} / \phi \rfloor$, $\phi$ the golden ratio), and
 
 $$
 \mathit{shift}[ x ] = \min\bigl\{ 255 , m - q + 1 , \min\{ m - q - i :
@@ -401,18 +396,18 @@ q-gram of $P$ has among the others. No shift passes an occurrence.
 with the q-gram $g$, and $\delta$ be its shift by (15.4). No occurrence of
 $P$ starts at a place $s'$ with $s < s' < s + \delta$.*
 
-*Proof.* Such an occurrence holds $g$ at the place
-$i = m - q - ( s' - s )$ of $P$, with $0 \le i < m - q$ since
-$1 \le s' - s < \delta \le m - q + 1$. Then $h( P[ i .. i + q - 1 ] ) = h( g )$,
-and (15.4) gives $\delta \le m - q - i = s' - s$, a contradiction; the
-bound 255 and the collisions of $h$ only make $\delta$ smaller. The shift
-after a comparison is that of the same $g$ among the q-grams of $P$ other
-than its last, and the same argument applies. $\square$ On random texts a window moves by about $m - q + 1$, i.e.,
-$O( n / m )$ windows of one load of 8 bytes each; the text is prefetched
-1024 bytes ahead, and the four quarters of a text of 16 KB or more are
-searched at once, whence the chains of loads of the four overlap. When 64
-steps have moved the first window by less than $16 m$ (a text of few
-distinct q-grams), the filter of the probes takes over.
+*Proof.* Such an occurrence holds $g$ at the place $i = m - q - ( s' - s )$ of
+$P$, with $0 \le i < m - q$ since $1 \le s' - s < \delta \le m - q + 1$. Then
+$h( P[ i .. i + q - 1 ] ) = h( g )$, and (15.4) gives $\delta \le m - q - i =
+s' - s$, a contradiction; the bound 255 and the collisions of $h$ only make
+$\delta$ smaller. The shift after a comparison is that of the same $g$ among
+the q-grams of $P$ other than its last, and the same argument applies.
+$\square$ On random texts a window moves by about $m - q + 1$, i.e., $O( n / m
+)$ windows of one load of 8 bytes each; the text is prefetched 1024 bytes
+ahead, and the four quarters of a text of 16 KB or more are searched at once,
+whence the chains of loads of the four overlap. When 64 steps have moved the
+first window by less than $16 m$ (a text of few distinct q-grams), the filter
+of the probes takes over.
 
 <span id="alg-15-3"></span>**Algorithm 15.3.** The search of
 `StringSearcher`, with the preparation of the shifts (15.4) and of the
@@ -422,17 +417,16 @@ probes.
 
 --8<-- "generated/StringSearch-StringSearcher-find.pseudo.md"
 
-Both filters may let through many windows that are not occurrences (say,
-a pattern that agrees with a periodic text on its probes and nowhere
-else), and the comparisons with $P$ would then cost $\Theta( n m )$, as
-they would for $a^m$ in $a^n$, which occurs at every place. Each search
-therefore counts the bytes of its comparisons with $P$, those that find an
-occurrence included, and line 12 hands the rest of the text to the Two-Way
-algorithm once they exceed $16 ( s - s_0 ) + 4096$ at the window $s$ of a
-search begun at $s_0$. In this fallback the Two-Way algorithm compares 8 bytes at a time in
-both directions, and its factorization ($O( m )$), the same function
-`criticalFactorization()` that `twoWay()` calls, is computed only when a
-search comes to it.
+Both filters may let through many windows that are not occurrences (say, a
+pattern that agrees with a periodic text on its probes and nowhere else), and
+the comparisons with $P$ would then cost $\Theta( n m )$, as they would for
+$a^m$ in $a^n$, which occurs at every place. Each search therefore counts the
+bytes of its comparisons with $P$, those that find an occurrence included, and
+line 12 hands the rest of the text to the Two-Way algorithm once they exceed
+$16 ( s - s_0 ) + 4096$ at the window $s$ of a search begun at $s_0$. In this
+fallback the Two-Way algorithm compares 8 bytes at a time in both directions,
+and its factorization ($O( m )$), the same function `criticalFactorization()`
+that `twoWay()` calls, is computed only when a search comes to it.
 
 <span id="lem-15-8"></span>**Lemma 15.8.** *`StringSearcher::findAll()`
 takes $O( n + m )$ time on any text, after a preparation of
@@ -529,13 +523,12 @@ fail.
 
 ### 15.3.1 The automaton of Aho and Corasick {#sec-15-3-1}
 
-The automaton of [Aho and Corasick
-1975](Z-bibliography.md#ref-aho1975) (`AhoCorasick.h`) generalizes
-[Lemma 15.2](15-string.md#lem-15-2) to many patterns. Its states are the
-nodes of the trie of the patterns, a state being the string $u$ spelt
-from the root to it, and the *failure* of $u$ is the state of the longest
-proper suffix of $u$ that is in the trie ([Figure 15.2](15-string.md#fig-15-2)).
-With it the automaton is made deterministic,
+The automaton of [Aho and Corasick 1975](Z-bibliography.md#ref-aho1975)
+(`AhoCorasick.h`) generalizes [Lemma 15.2](15-string.md#lem-15-2) to many
+patterns. Its states are the nodes of the trie of the patterns, a state being
+the string $u$ spelt from the root to it, and the *failure* of $u$ is the state
+of the longest proper suffix of $u$ that is in the trie ([Figure
+15.2](15-string.md#fig-15-2)). With it the automaton is made deterministic,
 
 $$
 \delta( u , c ) = \begin{cases}
@@ -663,12 +656,12 @@ bucket by bucket, and the automaton by end, the pairs are sorted at the
 end. We forbid the empty pattern, and we call $\ell$ the length of
 the shortest pattern and $\ell_{\max}$ that of the longest.
 
-**Buckets.** The patterns, sorted in the lexicographic order, are cut into
-8 buckets of $\lceil k / 8 \rceil$ consecutive ones (the last buckets may
-be shorter or empty). The patterns of a bucket thus tend to share their
-first bytes, and the tables of a bucket may then admit few bytes that
-none of its patterns has. We tell the buckets apart by the 8 bits of a byte, which
-is the reason for their number.
+**Buckets.** The patterns, sorted in the lexicographic order, are cut into 8
+buckets of $\lceil k / 8 \rceil$ consecutive ones (the last buckets may be
+shorter or empty). The patterns of a bucket thus tend to share their first
+bytes, and the tables of a bucket may then admit few bytes that none of its
+patterns has. We tell the buckets apart by the 8 bits of a byte, which is the
+reason for their number.
 
 **The filter of shuffles.** The place $i$ of $T$ is a candidate for the
 bucket $b$ if the bit $b$ of
@@ -812,13 +805,13 @@ nearly every place, on patterns that occur everywhere or on a text whose bytes
 the filter cannot tell apart (a small alphabet, against patterns that use all
 of it), or on long patterns whose first bytes occur everywhere. Each search
 therefore counts the *bytes* that it compares with the patterns, as
-`StringSearcher` does (cf. [§15.2.2](15-string.md#sec-15-2-2)): a word of 8 bytes
-for each pattern compared at a candidate (in the filter of shuffles) or for
-each entry of the chains visited (in the filters of shift-or), and the bytes
-past the word that `memcmp()` compares when the word agrees. When they exceed
-$16 s + 4096$ after the block that starts at $s$ (except on the last block of
-the filter of shuffles without vector instructions), the search stops and
-returns the first place that it has not tested, which `automatonFrom( T )`
+`StringSearcher` does (cf. [§15.2.2](15-string.md#sec-15-2-2)): a word of 8
+bytes for each pattern compared at a candidate (in the filter of shuffles) or
+for each entry of the chains visited (in the filters of shift-or), and the
+bytes past the word that `memcmp()` compares when the word agrees. When they
+exceed $16 s + 4096$ after the block that starts at $s$ (except on the last
+block of the filter of shuffles without vector instructions), the search stops
+and returns the first place that it has not tested, which `automatonFrom( T )`
 also gives (`std::string_view::npos` if the filter searches all of $T$). This
 is the end of the block of shuffles ($s + 32$ or $s + 64$), or the first start
 whose end lies in the next block of shift-or, $j + 9 - L$ for the stride 1 and
@@ -836,18 +829,17 @@ for the final sort, after a construction of $O( 256 M + k \log k \,
 \ell_{\max} )$ time.*
 
 *Proof.* By [Lemma 15.10](15-string.md#lem-15-10) the filter reports every
-occurrence that starts before $f$, and none that starts later, since it
-stops after testing all the starts before $f$. The automaton reports, by
-[Lemma 15.9](15-string.md#lem-15-9), all the occurrences that lie in
-$T[ \max( f - \ell_{\max} , 0 ) .. ]$, which include those that
-start at $f$ or later, and of these it keeps exactly the latter. As for
-the time, the filter costs $O( 1 )$ per place, a check costs $O( 1 )$ per
-byte counted, the bytes are bounded as stated (a block tests 64 places at
-most, each against at most the $k$ patterns), and the automaton costs $O( n + \mathit{occ} )$ by
-[Theorem 15.2](15-string.md#thm-15-2). In the construction we sort the
-patterns, with $O( k \log k )$ comparisons of at most $\ell_{\max}$ bytes,
-fills the tables in $O( M )$ time and builds the automaton in
-$O( 256 M )$. $\square$
+occurrence that starts before $f$, and none that starts later, since it stops
+after testing all the starts before $f$. The automaton reports, by [Lemma
+15.9](15-string.md#lem-15-9), all the occurrences that lie in $T[ \max( f -
+\ell_{\max} , 0 ) .. ]$, which include those that start at $f$ or later, and of
+these it keeps exactly the latter. As for the time, the filter costs $O( 1 )$
+per place, a check costs $O( 1 )$ per byte counted, the bytes are bounded as
+stated (a block tests 64 places at most, each against at most the $k$
+patterns), and the automaton costs $O( n + \mathit{occ} )$ by [Theorem
+15.2](15-string.md#thm-15-2). In the construction we sort the patterns, with
+$O( k \log k )$ comparisons of at most $\ell_{\max}$ bytes, fills the tables in
+$O( M )$ time and builds the automaton in $O( 256 M )$. $\square$
 
 We remark that counting the checks instead of the bytes would not make the
 search linear, since a check may compare up to $\ell_{\max}$ bytes. For
@@ -1140,11 +1132,11 @@ subsequence once and the others in their order.
 supersequence of $X$ and $Y$ has length
 $n + m - | \mathrm{LCS}( X , Y ) |$.*
 
-*Proof.* In a common supersequence $W$, the items to which both an item of
-$X$ and an item of $Y$ are mapped form a common subsequence of $X$ and
-$Y$, and each other item of $W$ serves one of the two; hence
-$| W | \ge n + m - | \mathrm{LCS}( X , Y ) |$. Conversely, the supersequence read back
-from the table of the LCS attains the bound. $\square$
+*Proof.* In a common supersequence $W$, the items to which both an item of $X$
+and an item of $Y$ are mapped form a common subsequence of $X$ and $Y$, and
+each other item of $W$ serves one of the two; hence $| W | \ge n + m - |
+\mathrm{LCS}( X , Y ) |$. Conversely, the supersequence read back from the
+table of the LCS attains the bound. $\square$
 
 `scsLength()` gives only this length, from one row of the table of the
 LCS, i.e., in $\Theta( n m )$ time and $O( m )$ space.
@@ -1164,20 +1156,19 @@ $T[ i - 1 ] = P[ j - 1 ]$, and are then the occurrences of $P( j - 1 )$ in
 $T( i - 1 )$ extended by it; the two kinds are disjoint. $\square$
 
 The number of occurrences of $P$ as a subsequence of $T$
-(`subsequenceOccurrences()`), i.e., of the tuples of places
-$j_1 < \cdots < j_m$ with $T[ j_k ] = P[ k ]$, satisfies
-$C[ i ][ j ] = C[ i - 1 ][ j ] + [ T[ i - 1 ] = P[ j - 1 ] ] \,
-C[ i - 1 ][ j - 1 ]$; it is kept in one row updated from the right, and
-given modulo $2^{64}$, since it grows as the binomial coefficient
-$\binom{n}{m}$. Finally, `lcs3()` computes a longest common subsequence of
-three sequences on the table of (15.11) in three dimensions,
+(`subsequenceOccurrences()`), i.e., of the tuples of places $j_1 < \cdots <
+j_m$ with $T[ j_k ] = P[ k ]$, satisfies $C[ i ][ j ] = C[ i - 1 ][ j ] + [ T[
+i - 1 ] = P[ j - 1 ] ] \, C[ i - 1 ][ j - 1 ]$; it is kept in one row updated
+from the right, and given modulo $2^{64}$, since it grows as the binomial
+coefficient $\binom{n}{m}$. Finally, `lcs3()` computes a longest common
+subsequence of three sequences on the table of (15.11) in three dimensions,
 $\Theta( n m l )$ time and space. Taking the LCS of two of them and then of the
-third is not a solution, since the longest pairwise one may leave out the
-items that the third shares. For an unbounded number of strings the LCS
-and the shortest common supersequence are NP-hard ([Maier
-1978](Z-bibliography.md#ref-maier1978)). So is the shuffle of an
-unbounded number of strings ([Mansfield 1983](Z-bibliography.md#ref-mansfield1983))
-and the iterated shuffle of one ([Warmuth and Haussler
+third is not a solution, since the longest pairwise one may leave out the items
+that the third shares. For an unbounded number of strings the LCS and the
+shortest common supersequence are NP-hard ([Maier
+1978](Z-bibliography.md#ref-maier1978)). So is the shuffle of an unbounded
+number of strings ([Mansfield 1983](Z-bibliography.md#ref-mansfield1983)) and
+the iterated shuffle of one ([Warmuth and Haussler
 1984](Z-bibliography.md#ref-warmuth1984)).
 
 --8<-- "generated/SubsequenceProblems-isInterleaving.pseudo.md"
@@ -1246,14 +1237,14 @@ each term of the minimum in (15.10) is at least $D[ i - 1 ][ j - 1 ]$, e.g.,
 $D[ i - 1 ][ j ] + 1 \ge D[ i - 1 ][ j - 1 ]$ by the first part.
 $\square$
 
-**Bit vectors of Myers.** By the first part of (15.12), a column of
-the table is determined by its top entry and by its vertical differences,
-kept in two bit vectors: $P_v$ has the bit $i$ set where the difference is
-$+1$, and $M_v$ where it is $-1$. With
-$\mathit{Eq} = \mathit{Peq}[ T[ j - 1 ] ]$ the places of $P$ that hold the
-symbol, and $h_{\mathit{in}}$ the horizontal difference at the top of a
-block of 64 rows, the block moves to the next column by the following
-operations, in the formulation of [Hyyrö 2003](Z-bibliography.md#ref-hyyro2003):
+**Bit vectors of Myers.** By the first part of (15.12), a column of the table
+is determined by its top entry and by its vertical differences, kept in two bit
+vectors: $P_v$ has the bit $i$ set where the difference is $+1$, and $M_v$
+where it is $-1$. With $\mathit{Eq} = \mathit{Peq}[ T[ j - 1 ] ]$ the places of
+$P$ that hold the symbol, and $h_{\mathit{in}}$ the horizontal difference at
+the top of a block of 64 rows, the block moves to the next column by the
+following operations, in the formulation of [Hyyrö
+2003](Z-bibliography.md#ref-hyyro2003):
 
 $$
 \begin{array}{l}
@@ -1509,19 +1500,18 @@ $\mathit{Llcp}$ and $\mathit{Rlcp}$.
 
 --8<-- "generated/SuffixArray-boundLcp.pseudo.md"
 
-We build the class `SuffixArray` on the bytes of a `std::string_view`,
-which `toSymbols()` turns into the vector of integers `Symbols`, or on
-such a vector with its alphabet $[ 0 , K )$; in both cases $\mathit{SA}$
-comes from `suffixArraySais()` and $\mathit{LCP}$ from `lcpArray()`. It
-keeps the text (`text()`), $\mathit{SA}$ (`operator[]`, and the iterators
-of a constant random-access range of its entries, with the member types
-of a container), its inverse (`rank()`, built by `inversePermutation()`),
-$\mathit{LCP}$ (`lcp()`), the arrays $\mathit{Llcp}$ and $\mathit{Rlcp}$,
-and the range minima of $\mathit{LCP}$; `count()` and `locate()` take the
-range of `rangeLcp()`, and the second gives the places in the order of
-$\mathit{SA}$. The functions of the namespace that build $\mathit{SA}$
-and $\mathit{LCP}$ by themselves, which we describe below, take either the bytes or
-`Symbols`.
+We build the class `SuffixArray` on the bytes of a `std::string_view`, which
+`toSymbols()` turns into the vector of integers `Symbols`, or on such a vector
+with its alphabet $[ 0 , K )$; in both cases $\mathit{SA}$ comes from
+`suffixArraySais()` and $\mathit{LCP}$ from `lcpArray()`. It keeps the text
+(`text()`), $\mathit{SA}$ (`operator[]`, and the iterators of a constant
+random-access range of its entries, with the member types of a container), its
+inverse (`rank()`, built by `inversePermutation()`), $\mathit{LCP}$ (`lcp()`),
+the arrays $\mathit{Llcp}$ and $\mathit{Rlcp}$, and the range minima of
+$\mathit{LCP}$; `count()` and `locate()` take the range of `rangeLcp()`, and
+the second gives the places in the order of $\mathit{SA}$. The functions of the
+namespace that build $\mathit{SA}$ and $\mathit{LCP}$ by themselves, which we
+describe below, take either the bytes or `Symbols`.
 
 **LCP array.** The array $\mathit{LCP}$ is computed in linear time by
 the algorithm of [Kasai et al. 2001](Z-bibliography.md#ref-kasai2001)
@@ -1547,10 +1537,9 @@ times. Since $h \le n$, there are at most $2 n$ comparisons of symbols:
 
 --8<-- "generated/SuffixArray-lcpArray.pseudo.md"
 
-We compute the longest common extension of two suffixes, $\mathrm{lce}( i , j )$,
-as the minimum of $\mathit{LCP}$ between their ranks, a query of range
-minimum (chapter 6) in $O( 1 )$ time after $O( n )$ preprocessing
-(`lce()`):
+We compute the longest common extension of two suffixes, $\mathrm{lce}( i , j
+)$, as the minimum of $\mathit{LCP}$ between their ranks, a query of range
+minimum (chapter 6) in $O( 1 )$ time after $O( n )$ preprocessing (`lce()`):
 
 --8<-- "generated/SuffixArray-lce.pseudo.md"
 
@@ -1563,26 +1552,26 @@ text of one repeated symbol, and near $O( n \log^2 n )$ on random texts.
 
 --8<-- "generated/SuffixArray-suffixArraySorting.pseudo.md"
 
-By the prefix doubling of [Manber and Myers 1993](Z-bibliography.md#ref-manber1993)
-(`suffixArrayDoubling()`) we give each suffix, after round $k$, the rank of
-its prefix of $2^k$ symbols. We note that the pair of the ranks of the suffixes at $i$
-and at $i + 2^k$ is the rank of the prefix of $2^{k+1}$ symbols, and the
-pairs, made one key of 64 bits, are sorted by the LSD radix sort of
-chapter 12 (which requires $n < 2^{32}$); hence $O( n )$ per round, and
-$O( n \log n )$ in all, or $O( n \log L )$ for $L$ the length of the
-longest repeated substring, since the ranks are all distinct after
-$\lceil \log_2 ( L + 1 ) \rceil$ rounds:
+By the prefix doubling of [Manber and Myers
+1993](Z-bibliography.md#ref-manber1993) (`suffixArrayDoubling()`) we give each
+suffix, after round $k$, the rank of its prefix of $2^k$ symbols. We note that
+the pair of the ranks of the suffixes at $i$ and at $i + 2^k$ is the rank of
+the prefix of $2^{k+1}$ symbols, and the pairs, made one key of 64 bits, are
+sorted by the LSD radix sort of chapter 12 (which requires $n < 2^{32}$); hence
+$O( n )$ per round, and $O( n \log n )$ in all, or $O( n \log L )$ for $L$ the
+length of the longest repeated substring, since the ranks are all distinct
+after $\lceil \log_2 ( L + 1 ) \rceil$ rounds:
 
 --8<-- "generated/SuffixArray-suffixArrayDoubling.pseudo.md"
 
-Furthermore, the doubling of [Larsson and Sadakane 2007](Z-bibliography.md#ref-larsson2007)
-(`suffixArrayLarssonSadakane()`, qsufsort) sorts in a round only the
-groups of suffixes that are still tied, each by the rank of the suffix $h$
-places ahead, and refines the ranks at once, and the groups already
-sorted are skipped by a length stored in their first place. Its bound is
-$O( n \log n )$ with a ternary-split quicksort; with the sort of the
-library inside the groups it is $O( n \log^2 n )$ in the worst case, and
-often close to linear on the usual texts.
+Furthermore, the doubling of [Larsson and Sadakane
+2007](Z-bibliography.md#ref-larsson2007) (`suffixArrayLarssonSadakane()`,
+qsufsort) sorts in a round only the groups of suffixes that are still tied,
+each by the rank of the suffix $h$ places ahead, and refines the ranks at once,
+and the groups already sorted are skipped by a length stored in their first
+place. Its bound is $O( n \log n )$ with a ternary-split quicksort; with the
+sort of the library inside the groups it is $O( n \log^2 n )$ in the worst
+case, and often close to linear on the usual texts.
 
 --8<-- "generated/SuffixArray-suffixArrayLarssonSadakane.pseudo.md"
 
@@ -1606,18 +1595,17 @@ sorting on disk (cf. chapter 23).
 
 --8<-- "generated/SuffixArray-skew.pseudo.md"
 
-The induced sorting of [Nong, Zhang and Chan 2011](Z-bibliography.md#ref-nong2011)
-(SA-IS, `suffixArraySais()`) classifies the suffixes as smaller or larger
-than the next one: the suffix $i$ is of type S if
-$T[ i .. ] < T[ i + 1 .. ]$, i.e., if $T[ i ] < T[ i + 1 ]$, or
-$T[ i ] = T[ i + 1 ]$ and the suffix $i + 1$ is of type S, and of type L
-otherwise. It is an LMS place (leftmost S) if it is of type S and the
-suffix $i - 1$ of type L; [Table 15.5](15-string.md#tab-15-5) shows the
-types of a classical example.
+The induced sorting of [Nong, Zhang and Chan
+2011](Z-bibliography.md#ref-nong2011) (SA-IS, `suffixArraySais()`) classifies
+the suffixes as smaller or larger than the next one: the suffix $i$ is of type
+S if $T[ i .. ] < T[ i + 1 .. ]$, i.e., if $T[ i ] < T[ i + 1 ]$, or $T[ i ] =
+T[ i + 1 ]$ and the suffix $i + 1$ is of type S, and of type L otherwise. It is
+an LMS place (leftmost S) if it is of type S and the suffix $i - 1$ of type L;
+[Table 15.5](15-string.md#tab-15-5) shows the types of a classical example.
 
 <span id="tab-15-5"></span>**Table 15.5.** The types of the suffixes of
-$\texttt{mississippi\$}$; the LMS places (marked $\ast$) are 1, 4, 7 and 11, and the
-suffix array is $11 , 10 , 7 , 4 , 1 , 0 , 9 , 8 , 6 , 3 , 5 , 2$.
+$\texttt{mississippi\$}$; the LMS places (marked $\ast$) are 1, 4, 7 and 11,
+and the suffix array is $11 , 10 , 7 , 4 , 1 , 0 , 9 , 8 , 6 , 3 , 5 , 2$.
 
 | $i$ | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -1632,15 +1620,15 @@ suffix $i - 1$ of type L at the head of its bucket, after it meets the
 suffix $i$, followed by a scan from right to left that puts each suffix
 $i - 1$ of type S at the tail of its bucket, sorts all the suffixes.*
 
-*Proof.* Within the bucket of a symbol $c$ the suffixes of type L come
-before those of type S, since the first are followed by a run of $c$ and
-then by a smaller symbol, the second by a larger one. Two suffixes $i - 1$
-and $j - 1$ of type L in the same bucket compare as the suffixes $i$ and
-$j$, each of which is smaller than the suffix before it; by induction on
-the scan, the first scan meets $i$ and $j$ in their order before it places
-$i - 1$ and $j - 1$. Similarly, the second scan does the same for the type S, from the
-largest suffixes down, and it overwrites the LMS-suffixes placed at the
-start with their correct places. $\square$
+*Proof.* Within the bucket of a symbol $c$ the suffixes of type L come before
+those of type S, since the first are followed by a run of $c$ and then by a
+smaller symbol, the second by a larger one. Two suffixes $i - 1$ and $j - 1$ of
+type L in the same bucket compare as the suffixes $i$ and $j$, each of which is
+smaller than the suffix before it; by induction on the scan, the first scan
+meets $i$ and $j$ in their order before it places $i - 1$ and $j - 1$.
+Similarly, the second scan does the same for the type S, from the largest
+suffixes down, and it overwrites the LMS-suffixes placed at the start with
+their correct places. $\square$
 
 The LMS-substrings (from an LMS place to the next one) are sorted by the
 same two scans, started from the LMS places in any order, as [Nong, Zhang
@@ -1654,8 +1642,8 @@ $$
 T( n ) \le T( n / 2 ) + O( n ) = O( n ) , \tag{15.18}
 $$
 
-with the smallest working space of the linear algorithms. We perform the induction by
-the procedure induce of [Algorithm 15.9](15-string.md#alg-15-9).
+with the smallest working space of the linear algorithms. We perform the
+induction by the procedure induce of [Algorithm 15.9](15-string.md#alg-15-9).
 
 <span id="alg-15-9"></span>**Algorithm 15.9.** The induced sorting
 (SA-IS) of [Nong, Zhang and Chan 2011](Z-bibliography.md#ref-nong2011), on
@@ -1852,37 +1840,36 @@ partial induction, and it needs no names and no recursion. It is given up
 for the partial induction once the ties have read more than $m$ windows
 in all.
 
-**Partial induction and names.** Otherwise the LMS-substrings (from an
-LMS place to the next one) are sorted by the two scans of
-[Lemma 15.22](15-string.md#lem-15-22), started from the LMS places in the
-order of the text. To this end, the array is split by the type of the suffix
-before each entry. An *area A* holds, for each symbol $c$, an LL part (the
-L-suffixes after an L-suffix) and an LMS part (the seeds), i.e., the
-entries whose predecessor is of type L and is moved by the scan from left
-to right. An *area C* holds, for each $c$, an LS part and an SS part, i.e.,
-the entries whose predecessor is of type S and is moved by the scan from
-right to left. Each scan thus visits only one area, and no entry with
-nothing to do. First, the seeds are written by their first symbol, the first of
-each symbol marked. Then the scan of A moves each suffix $p - 1$ of type L
-to the LL part of its symbol if $p - 2$ is of type L, and to its LS part
-otherwise. Last, the scan of C, from right to left, moves each suffix $p - 1$ of
-type S to the SS part of its symbol if $p - 2$ is of type S, and otherwise
-among the sorted LMS places, which fill $\mathit{SA}[ 0 .. m )$ per symbol
-from the end (A has been scanned by then, so that its place can be
-reused).
+**Partial induction and names.** Otherwise the LMS-substrings (from an LMS
+place to the next one) are sorted by the two scans of [Lemma
+15.22](15-string.md#lem-15-22), started from the LMS places in the order of the
+text. To this end, the array is split by the type of the suffix before each
+entry. An *area A* holds, for each symbol $c$, an LL part (the L-suffixes after
+an L-suffix) and an LMS part (the seeds), i.e., the entries whose predecessor
+is of type L and is moved by the scan from left to right. An *area C* holds,
+for each $c$, an LS part and an SS part, i.e., the entries whose predecessor is
+of type S and is moved by the scan from right to left. Each scan thus visits
+only one area, and no entry with nothing to do. First, the seeds are written by
+their first symbol, the first of each symbol marked. Then the scan of A moves
+each suffix $p - 1$ of type L to the LL part of its symbol if $p - 2$ is of
+type L, and to its LS part otherwise. Last, the scan of C, from right to left,
+moves each suffix $p - 1$ of type S to the SS part of its symbol if $p - 2$ is
+of type S, and otherwise among the sorted LMS places, which fill $\mathit{SA}[
+0 .. m )$ per symbol from the end (A has been scanned by then, so that its
+place can be reused).
 
-Both scans name the substrings as they go. A scan counts in $d$ the marks
-of the entries it meets, so that $d$ is the name of the current entry, and
-a moved suffix is marked, by the top bit of its entry, unless the last
-suffix moved into the same part came from an entry of the same name.
-Between the two scans the marks of the LS parts are moved one place to the
-left; a mark then means that an entry differs from the one after it, as
-the scan from right to left meets them. At the end the marks of
-$\mathit{SA}[ 0 .. m )$ become the bit vector of the ends of the groups of
-equal LMS-substrings (read a vector of entries at a time with Highway),
-and their number is the number of names. In the code, the scans move two entries a
-step and prefetch the text of the entries 64 places ahead; beyond 65536 symbols
-they also prefetch the parts and the places these point to.
+Both scans name the substrings as they go. A scan counts in $d$ the marks of
+the entries it meets, so that $d$ is the name of the current entry, and a moved
+suffix is marked, by the top bit of its entry, unless the last suffix moved
+into the same part came from an entry of the same name. Between the two scans
+the marks of the LS parts are moved one place to the left; a mark then means
+that an entry differs from the one after it, as the scan from right to left
+meets them. At the end the marks of $\mathit{SA}[ 0 .. m )$ become the bit
+vector of the ends of the groups of equal LMS-substrings (read a vector of
+entries at a time with Highway), and their number is the number of names. In
+the code, the scans move two entries a step and prefetch the text of the
+entries 64 places ahead; beyond 65536 symbols they also prefetch the parts and
+the places these point to.
 
 **Ties.** If two LMS-substrings are equal, the order of their suffixes
 depends on the text that follows them, and three methods are tried in
@@ -1906,27 +1893,26 @@ skipped. We then write the names, in the slot $m + \lfloor p / 2
 finer than the names of the LMS-substrings, since equal names still mean
 equal LMS-substrings and a smaller name a smaller suffix.
 
-Second, if at most $m / 4$ suffixes are still tied, each group is sorted by
-the names of the LMS places that follow its suffixes, compared one after
-the other until they differ (a suffix that runs out of LMS places comes
-first). The names compared are at most $m$ in all, the suffixes of the
-other names are already in place, and no recursion is needed. Third, the
-names are gathered in $R = \mathit{SA}[ m .. 2 m )$ in the order of the
-text, and the LMS-suffixes are sorted as the suffixes of $R$. When at most
-$m / 4$ suffixes are tied, or the tied groups have at most 16 suffixes on
-average, this is done by the doubling of [Larsson and Sadakane
-2007](Z-bibliography.md#ref-larsson2007) restricted to the groups of
-equal names, and otherwise by the recursion $\mathrm{suffixArray}( R )$ on the
-alphabet of the names. In turn, the doubling first sorts the suffixes by a counting
-sort on their names, so that a name that occurs once is in place at once.
-In the round $h = 1 , 2 , 4 , \ldots$ a group of suffixes equal on their
-first $h$ names is sorted by $V[ i + h ]$, the rank of the suffix $h$
-places ahead (the last place of its group), by insertion up to 16 suffixes
-and by a sort of comparisons beyond, in $O( g \log g )$ time for a group of
-$g$. We give up the doubling for the recursion if more suffixes than its
-limit are still tied after a round, or once $h$ exceeds $2^{16}$, i.e.,
-after 17 rounds. Finally, the ranks found are mapped back to the LMS places, listed
-in the order of the text by their bit vector.
+Second, if at most $m / 4$ suffixes are still tied, each group is sorted by the
+names of the LMS places that follow its suffixes, compared one after the other
+until they differ (a suffix that runs out of LMS places comes first). The names
+compared are at most $m$ in all, the suffixes of the other names are already in
+place, and no recursion is needed. Third, the names are gathered in $R =
+\mathit{SA}[ m .. 2 m )$ in the order of the text, and the LMS-suffixes are
+sorted as the suffixes of $R$. When at most $m / 4$ suffixes are tied, or the
+tied groups have at most 16 suffixes on average, this is done by the doubling
+of [Larsson and Sadakane 2007](Z-bibliography.md#ref-larsson2007) restricted to
+the groups of equal names, and otherwise by the recursion
+$\mathrm{suffixArray}( R )$ on the alphabet of the names. In turn, the doubling
+first sorts the suffixes by a counting sort on their names, so that a name that
+occurs once is in place at once. In the round $h = 1 , 2 , 4 , \ldots$ a group
+of suffixes equal on their first $h$ names is sorted by $V[ i + h ]$, the rank
+of the suffix $h$ places ahead (the last place of its group), by insertion up
+to 16 suffixes and by a sort of comparisons beyond, in $O( g \log g )$ time for
+a group of $g$. We give up the doubling for the recursion if more suffixes than
+its limit are still tied after a round, or once $h$ exceeds $2^{16}$, i.e.,
+after 17 rounds. Finally, the ranks found are mapped back to the LMS places,
+listed in the order of the text by their bit vector.
 
 <span id="lem-15-24"></span>**Lemma 15.24.** *Each of the three methods
 gives the LMS-suffixes in their order. The names written after the first
@@ -2034,14 +2020,13 @@ and, e.g., `ADS::suffixArray( T )` gives the array of
 
 ### 15.5.3 The suffix tree {#sec-15-5-3}
 
-We call suffix tree of $T$ (`SuffixTree.h`) the compact trie (cf. chapter 7)
-of the $n + 1$ suffixes of $T \$$, where the terminator makes each suffix
-end in a separate leaf ([Figure 15.4](15-string.md#fig-15-4)). Each edge has as label
-a substring of $T$, kept as the place of one occurrence and
-the string depths of its two ends, and the children of a node are kept by
-their first symbol in a balanced search tree (`std::map`), whence
-branching costs $O( \log \sigma )$ and the children are visited in the
-lexicographic order.
+We call suffix tree of $T$ (`SuffixTree.h`) the compact trie (cf. chapter 7) of
+the $n + 1$ suffixes of $T \$$, where the terminator makes each suffix end in a
+separate leaf ([Figure 15.4](15-string.md#fig-15-4)). Each edge has as label a
+substring of $T$, kept as the place of one occurrence and the string depths of
+its two ends, and the children of a node are kept by their first symbol in a
+balanced search tree (`std::map`), whence branching costs $O( \log \sigma )$
+and the children are visited in the lexicographic order.
 
 ![Figure 15.4. The suffix tree of $\texttt{banana\$}$: the internal nodes (discs) with their string depth, the leaves (boxes) with the start of their suffix, and the suffix links of the internal nodes (dashed), from $\texttt{ana}$ to $\texttt{na}$, from $\texttt{na}$ to $\texttt{a}$ and from $\texttt{a}$ to the root; the lowest common ancestor of the leaves 1 and 3 spells $\texttt{ana}$, their longest common prefix.](../figures/string-stree.svg){#fig-15-4}
 
@@ -2052,12 +2037,12 @@ spells occurs at least twice in $T \$$ followed by distinct symbols, and
 the lowest common ancestor of the leaves $i$ and $j$ spells the longest
 common prefix of the suffixes $i$ and $j$.*
 
-*Proof.* Every internal node but the root has at least two children, and
-a tree with $n + 1$ leaves and this property has at most $n$ internal
-nodes; each edge takes $O( 1 )$ space. A node branches exactly where two
-suffixes that share $s[ u ]$ continue differently. Finally, the path from the root
-to the lowest common ancestor is the longest path shared by the two
-leaves, i.e., their longest common prefix. $\square$
+*Proof.* Every internal node but the root has at least two children, and a tree
+with $n + 1$ leaves and this property has at most $n$ internal nodes; each edge
+takes $O( 1 )$ space. A node branches exactly where two suffixes that share $s[
+u ]$ continue differently. Finally, the path from the root to the lowest common
+ancestor is the longest path shared by the two leaves, i.e., their longest
+common prefix. $\square$
 
 The engineered suffix trees of the literature take some 10 to 20 $n$ bytes
 ([Abouelhoda, Kurtz and Ohlebusch
@@ -2113,21 +2098,22 @@ same pseudocode).
 $\mathit{SA}$ and $\mathit{LCP}$ takes $O( n )$ time besides the two
 arrays.*
 
-*Proof.* By construction, the tree is built in the lexicographic order of the leaves, so
-that the new leaf hangs from the rightmost path. Each edge climbed leaves
-the rightmost path for good, since the new leaf hangs to its right; each
-step thus climbs over an edge that is never climbed again, and the edges
-are $O( n )$. $\square$
+*Proof.* By construction, the tree is built in the lexicographic order of the
+leaves, so that the new leaf hangs from the rightmost path. Each edge climbed
+leaves the rightmost path for good, since the new leaf hangs to its right; each
+step thus climbs over an edge that is never climbed again, and the edges are
+$O( n )$. $\square$
 
 [Weiner 1973](Z-bibliography.md#ref-weiner1973) gave the first linear
 construction, inserting the suffixes from the shortest one; the online
 algorithm of [Ukkonen 1995](Z-bibliography.md#ref-ukkonen1995) is a
-left-to-right form of McCreight's; and [Farach 1997](Z-bibliography.md#ref-farach1997)
-reached $O( n )$ on integer alphabets by merging the trees of the odd and
-of the even suffixes, the idea that the Skew algorithm turned into the
-split $2 / 3 : 1 / 3$. Since the linear suffix arrays are smaller and
-(usually) faster, the construction through $\mathit{SA}$ and $\mathit{LCP}$ is the
-usual one, whereas McCreight's may pay where the average lcp is small.
+left-to-right form of McCreight's; and [Farach
+1997](Z-bibliography.md#ref-farach1997) reached $O( n )$ on integer alphabets
+by merging the trees of the odd and of the even suffixes, the idea that the
+Skew algorithm turned into the split $2 / 3 : 1 / 3$. Since the linear suffix
+arrays are smaller and (usually) faster, the construction through $\mathit{SA}$
+and $\mathit{LCP}$ is the usual one, whereas McCreight's may pay where the
+average lcp is small.
 
 **Queries.** `locus()` finds the extended locus of $P$ by a walk down
 from the root in $O( m \log \sigma )$, and `locate()` the $\mathit{occ}$
@@ -2243,19 +2229,18 @@ where it occurs, and exactly there while it is long enough; shortening it
 can only enlarge the set, and the lengths at which it is still the same
 set form an interval, closed above at $\mathit{len}( v )$. $\square$
 
-Hence the classes form a tree, the suffix links, and the automaton has at
-most $2 n - 1$ states ($n \ge 2$) and $3 n - 4$ transitions ($n \ge 3$)
-([Blumer et al. 1985](Z-bibliography.md#ref-blumer1985)). We build the automaton online,
-adding the bytes one at a time
-([Algorithm 15.11](15-string.md#alg-15-11), [Figure 15.5](15-string.md#fig-15-5)).
-Indeed, the new state of $S c$ gets the transitions on $c$ from the states on the
-suffix path of the last state, up to the first state $p$ that already has
-one. If that transition leads to a state $q$ with
-$\mathit{len}( q ) = \mathit{len}( p ) + 1$, then $q$ is the new link;
+Hence the classes form a tree, the suffix links, and the automaton has at most
+$2 n - 1$ states ($n \ge 2$) and $3 n - 4$ transitions ($n \ge 3$) ([Blumer et
+al. 1985](Z-bibliography.md#ref-blumer1985)). We build the automaton online,
+adding the bytes one at a time ([Algorithm 15.11](15-string.md#alg-15-11),
+[Figure 15.5](15-string.md#fig-15-5)). Indeed, the new state of $S c$ gets the
+transitions on $c$ from the states on the suffix path of the last state, up to
+the first state $p$ that already has one. If that transition leads to a state
+$q$ with $\mathit{len}( q ) = \mathit{len}( p ) + 1$, then $q$ is the new link;
 otherwise $q$ holds strings that now end at more places than its longer
 members, and it is *cloned* at the length $\mathit{len}( p ) + 1$, the
-transitions on $c$ that led to $q$ along the suffix path being redirected
-to the clone.
+transitions on $c$ that led to $q$ along the suffix path being redirected to
+the clone.
 
 <span id="alg-15-11"></span>**Algorithm 15.11.** The online construction of
 the suffix automaton ([Blumer et al. 1985](Z-bibliography.md#ref-blumer1985);
@@ -2334,30 +2319,28 @@ $$
 \frac{n ( n + 1 )}{2} - \sum_{r} \mathit{LCP}[ r ] . \tag{15.20}
 $$
 
-*Proof.* By definition, the substrings are the prefixes of the suffixes. The suffix
-$\mathit{SA}[ r ]$ has $n - \mathit{SA}[ r ]$ prefixes, of which the
-$\mathit{LCP}[ r - 1 ]$ shortest are prefixes of the suffix before it, and
-all the others are prefixes of no smaller suffix (by
-[Lemma 15.19](15-string.md#lem-15-19)). Summing over $r$ gives (15.20).
-$\square$
+*Proof.* By definition, the substrings are the prefixes of the suffixes. The
+suffix $\mathit{SA}[ r ]$ has $n - \mathit{SA}[ r ]$ prefixes, of which the
+$\mathit{LCP}[ r - 1 ]$ shortest are prefixes of the suffix before it, and all
+the others are prefixes of no smaller suffix (by [Lemma
+15.19](15-string.md#lem-15-19)). Summing over $r$ gives (15.20). $\square$
 
 `longestRepeatedSubstring()` is the largest entry of $\mathit{LCP}$.
-`repeatedSubstring()`, a query of text mining, finds a substring of length
-$L$ that occurs at least $C$ times as a run of at least $C - 1$ entries of
+`repeatedSubstring()`, a query of text mining, finds a substring of length $L$
+that occurs at least $C$ times as a run of at least $C - 1$ entries of
 $\mathit{LCP}$ that are at least $L$, in one scan. `longestCommonSubstring()`
-finds the longest substring common to at least $k$ of $m$ strings on the
-suffix array of their join with $m$ distinct separators (an integer
-alphabet): a window of ranks that covers suffixes of $k$ distinct strings,
-slid by two pointers, has as common prefix the `lce()` of its two ends,
-which gives $O( N )$ time for $N$ symbols in all (the generalized suffix
-tree with the colors of [Hui 1992](Z-bibliography.md#ref-hui1992) solves
-it for all the values of $k$ at once). `maximalRepeats()` gives the substrings that
-occur twice and can be extended neither to the right (an internal node)
-nor to the left (the symbols before their occurrences are not all equal,
-or one occurrence starts the text), by one visit of the tree from the
-leaves up. `proximity()` decides whether an occurrence of $P$ and one of
-$Q$ lie within $k$ places, which happens exactly when two adjacent ones of
-different patterns do in their merged sorted list, in
+finds the longest substring common to at least $k$ of $m$ strings on the suffix
+array of their join with $m$ distinct separators (an integer alphabet): a
+window of ranks that covers suffixes of $k$ distinct strings, slid by two
+pointers, has as common prefix the `lce()` of its two ends, which gives $O( N
+)$ time for $N$ symbols in all (the generalized suffix tree with the colors of
+[Hui 1992](Z-bibliography.md#ref-hui1992) solves it for all the values of $k$
+at once). `maximalRepeats()` gives the substrings that occur twice and can be
+extended neither to the right (an internal node) nor to the left (the symbols
+before their occurrences are not all equal, or one occurrence starts the text),
+by one visit of the tree from the leaves up. `proximity()` decides whether an
+occurrence of $P$ and one of $Q$ lie within $k$ places, which happens exactly
+when two adjacent ones of different patterns do in their merged sorted list, in
 $O( | P | + | Q | + \mathit{occ} \log \mathit{occ} )$.
 
 <span id="lem-15-30"></span>**Lemma 15.30.** *Some occurrence of $P$
@@ -2386,22 +2369,21 @@ $P$. $\square$
 --8<-- "generated/SuffixApplications-proximity.pseudo.md"
 
 `kMismatches()` finds the places where $P$ occurs with at most $k$
-substitutions ([Landau and Vishkin 1986](Z-bibliography.md#ref-landau1986)):
-at each place, at most $k + 1$ longest common extensions of a suffix of $T$
-and a suffix of $P$, both suffixes of $T \# P$, jump over the matches,
-each in $O( 1 )$ by the range minima of its $\mathit{LCP}$; hence
-$O( n k )$ time after $O( n + m )$ preprocessing, against the $O( n m )$
-of trying each place. `lz77ByTree()` computes the parsing of [Ziv and
-Lempel 1977](Z-bibliography.md#ref-ziv1977): the phrase at $i$ copies the
-longest prefix of the suffix $i$ that starts earlier, found by walking down
-along the suffix $i$ while the least leaf below the next node is smaller
-than $i$ (the least leaves are computed by one visit). Indeed, a suffix
-that starts earlier and shares more than the depth of the node reached
-would be a leaf below the next node. In the code the copy is taken from the least
-leaf, the farthest occurrence, in $O( n \log \sigma )$ time in all; the
-phrase is the triple (distance, length, next symbol), a `CopyPhrase`
-whose next symbol is empty at the end of the text, and
-`decodeCopyPhrases()` inverts it.
+substitutions ([Landau and Vishkin 1986](Z-bibliography.md#ref-landau1986)): at
+each place, at most $k + 1$ longest common extensions of a suffix of $T$ and a
+suffix of $P$, both suffixes of $T \# P$, jump over the matches, each in $O( 1
+)$ by the range minima of its $\mathit{LCP}$; hence $O( n k )$ time after $O(
+n + m )$ preprocessing, against the $O( n m )$ of trying each place.
+`lz77ByTree()` computes the parsing of [Ziv and Lempel
+1977](Z-bibliography.md#ref-ziv1977): the phrase at $i$ copies the longest
+prefix of the suffix $i$ that starts earlier, found by walking down along the
+suffix $i$ while the least leaf below the next node is smaller than $i$ (the
+least leaves are computed by one visit). Indeed, a suffix that starts earlier
+and shares more than the depth of the node reached would be a leaf below the
+next node. In the code the copy is taken from the least leaf, the farthest
+occurrence, in $O( n \log \sigma )$ time in all; the phrase is the triple
+(distance, length, next symbol), a `CopyPhrase` whose next symbol is empty at
+the end of the text, and `decodeCopyPhrases()` inverts it.
 
 --8<-- "generated/SuffixApplications-kMismatches.pseudo.md"
 
@@ -2465,17 +2447,15 @@ a = \min( \mathit{SA}^{-1}[ i ] , \mathit{SA}^{-1}[ j ] ) , \
 b = \max( \mathit{SA}^{-1}[ i ] , \mathit{SA}^{-1}[ j ] ) , \tag{15.21}
 $$
 
-in two stages; it builds $\mathit{SA}$ by `suffixArray()` and
-$\mathit{LCP}$ by `lcpArrayPhi()`. First, the first 64 symbols of the two
-suffixes are compared directly, 32 at a time by the vectors of Highway (8
-without it):
-on most texts most extensions are short. We prefer the direct comparison, which
-reads two lines of the text, and may then be faster than any query that reads the
-inverse and the LCP array at random ([Ilie, Navarro and Tinta
-2010](Z-bibliography.md#ref-ilie2010) found it the fastest on the texts
-with few long repeats). Second, the longer extensions go to a range
-minimum on $\mathit{LCP}$, cut into blocks of 16 entries, each one line of
-the cache.
+in two stages; it builds $\mathit{SA}$ by `suffixArray()` and $\mathit{LCP}$ by
+`lcpArrayPhi()`. First, the first 64 symbols of the two suffixes are compared
+directly, 32 at a time by the vectors of Highway (8 without it): on most texts
+most extensions are short. We prefer the direct comparison, which reads two
+lines of the text, and may then be faster than any query that reads the inverse
+and the LCP array at random ([Ilie, Navarro and Tinta
+2010](Z-bibliography.md#ref-ilie2010) found it the fastest on the texts with
+few long repeats). Second, the longer extensions go to a range minimum on
+$\mathit{LCP}$, cut into blocks of 16 entries, each one line of the cache.
 
 <span id="lem-15-31"></span>**Lemma 15.31.** *For the entry $r$ of a
 block that starts at $s$, let the word $M_r$ of 16 bits have the bit $k$
@@ -2490,13 +2470,13 @@ than everything after it up to $r$, and not larger than anything between
 $s + a$ and itself (an unmarked entry there has a smaller or equal entry
 after it, and so on up to a marked one); hence it is the minimum. $\square$
 
-These are the words of [Alstrup et al. 2002](Z-bibliography.md#ref-alstrup2002):
-one shift and one count of trailing zeros per block. In turn, the blocks form
-groups of 64, each with the sparse table of the minima of its blocks, and
-the minima of the groups are in a further sparse table. The blocks
-strictly between those of $a$ and $b - 1$ are covered by two overlapping
-ranges of one group, or by those of two partial groups and of the groups
-between them.
+These are the words of [Alstrup et al.
+2002](Z-bibliography.md#ref-alstrup2002): one shift and one count of trailing
+zeros per block. In turn, the blocks form groups of 64, each with the sparse
+table of the minima of its blocks, and the minima of the groups are in a
+further sparse table. The blocks strictly between those of $a$ and $b - 1$ are
+covered by two overlapping ranges of one group, or by those of two partial
+groups and of the groups between them.
 
 Every place that a query reads is known once the two ranks are, and the
 lines of the two blocks are requested with their words, and a query thus
@@ -2606,14 +2586,13 @@ strings, compared from their start, which the codings below use.
 
 ### 15.6.2 The front coding {#sec-15-6-2}
 
-Adjacent strings of a sorted dictionary share a prefix, and the front
-coding of `FrontCoding.h` ([Witten, Moffat and Bell
-1999](Z-bibliography.md#ref-witten1999)) writes the string $s_i$ as the
-pair $( \ell_i , \hat s_i )$ (a `FrontPair`), where $\ell_i$ is the length of the longest
-common prefix of $s_i$ and $s_{i-1}$ (0 for the first one) and
-$\hat s_i$ the rest of $s_i$ ([Figure 15.6](15-string.md#fig-15-6)).
-`frontDecode()` copies $\ell_i$ symbols of the string before and appends
-$\hat s_i$:
+Adjacent strings of a sorted dictionary share a prefix, and the front coding of
+`FrontCoding.h` ([Witten, Moffat and Bell
+1999](Z-bibliography.md#ref-witten1999)) writes the string $s_i$ as the pair $(
+\ell_i , \hat s_i )$ (a `FrontPair`), where $\ell_i$ is the length of the
+longest common prefix of $s_i$ and $s_{i-1}$ (0 for the first one) and $\hat
+s_i$ the rest of $s_i$ ([Figure 15.6](15-string.md#fig-15-6)). `frontDecode()`
+copies $\ell_i$ symbols of the string before and appends $\hat s_i$:
 
 --8<-- "generated/FrontCoding-frontCode.pseudo.md"
 
@@ -2631,28 +2610,26 @@ the most significant first:
 
 ![Figure 15.6. A sorted dictionary of eight strings, its front coding ($\ell_i$ and the rest $\hat s_i$), the lengths $r_i = | s_{i-1} | - \ell_i$ of the rear coding (with the same rests), and the front coding with buckets of $b = 4$ strings, whose anchors (violet) are stored whole.](../figures/string-frontcoding.svg){#fig-15-6}
 
-A string is decoded from the last string stored whole before it, and with
-no other such string the decoding of $s_i$ may scan all the dictionary
-before it. `FrontCodedDictionary` therefore stores some strings whole (the
-*anchors*) and decodes a string from the anchor before it, copying only
-the $\ell$ symbols that each pair takes from the previous string. Two
-policies choose the anchors. `bucketed()` is the front coding with buckets
-$\mathit{FC}_B$ of [Ferragina 2023](Z-bibliography.md#ref-ferragina2023):
-an anchor every $b$ strings, i.e., buckets of $b$ strings coded
-separately. A larger $b$ compresses better and scans more, up to $\Theta( b^2 )$
-symbols for a bucket like $a , aa , aaa , \ldots$.
-`localityPreserving()` is the locality-preserving front coding of [Bender,
-Farach-Colton and Kuszmaul 2006](Z-bibliography.md#ref-bender2006), which
-bounds the scan of each string by the length of that string: $s_i$ is an anchor if it
-is the first string, if $\ell_i = 0$ (it then costs nothing more as an
-anchor), or if more than $c \, | s_i |$ symbols of the coding lie between
+A string is decoded from the last string stored whole before it, and with no
+other such string the decoding of $s_i$ may scan all the dictionary before it.
+`FrontCodedDictionary` therefore stores some strings whole (the *anchors*) and
+decodes a string from the anchor before it, copying only the $\ell$ symbols
+that each pair takes from the previous string. Two policies choose the anchors.
+`bucketed()` is the front coding with buckets $\mathit{FC}_B$ of [Ferragina
+2023](Z-bibliography.md#ref-ferragina2023): an anchor every $b$ strings, i.e.,
+buckets of $b$ strings coded separately. A larger $b$ compresses better and
+scans more, up to $\Theta( b^2 )$ symbols for a bucket like $a , aa , aaa ,
+\ldots$. `localityPreserving()` is the locality-preserving front coding of
+[Bender, Farach-Colton and Kuszmaul 2006](Z-bibliography.md#ref-bender2006),
+which bounds the scan of each string by the length of that string: $s_i$ is an
+anchor if it is the first string, if $\ell_i = 0$ (it then costs nothing more
+as an anchor), or if more than $c \, | s_i |$ symbols of the coding lie between
 the previous anchor and $s_i$. Our dictionary gives `access()` (a string,
-decoded from the anchor before it), `decodeCost()` (the symbols of the
-coding that `access()` reads), `size()`, `anchors()`, `anchor()` (the
-place of an anchor), `anchorString()`, `characters()` (those of the rests
-and of the anchors), `bytes()` (with the codes of the lengths), and a
-forward iterator that decodes the strings one after the other, each from
-the one before.
+decoded from the anchor before it), `decodeCost()` (the symbols of the coding
+that `access()` reads), `size()`, `anchors()`, `anchor()` (the place of an
+anchor), `anchorString()`, `characters()` (those of the rests and of the
+anchors), `bytes()` (with the codes of the lengths), and a forward iterator
+that decodes the strings one after the other, each from the one before.
 
 --8<-- "generated/FrontCoding-FrontCodedDictionary-localityPreserving.pseudo.md"
 
@@ -2680,19 +2657,18 @@ We remark that the proof gives the tighter factor $c / ( c - 1 )$ for any
 $c > 1$; the contracts check the bound of the statement, that of [Bender,
 Farach-Colton and Kuszmaul 2006](Z-bibliography.md#ref-bender2006).
 
-Thus the time of a decoding controls the space, and reading
-$( c + 1 ) | s_i |$ consecutive symbols costs the optimal
-$O( | s_i | / B )$ transfers of blocks. Both policies search by prefix as
-the two-level scheme of [Ferragina 2023, chapter
-9](Z-bibliography.md#ref-ferragina2023): a binary search on the anchors,
-which are stored in full, and the scan of the one bucket where the pattern falls,
-decoded on the fly (the first level may be replaced by a Patricia trie on
-the anchors, `TwoLevelDictionary.h` of chapter 7). The string B-tree of
-[Ferragina and Grossi 1999](Z-bibliography.md#ref-ferragina1999) and its
-cache-oblivious version by [Bender, Farach-Colton and Kuszmaul
+Thus the time of a decoding controls the space, and reading $( c + 1 ) | s_i |$
+consecutive symbols costs the optimal $O( | s_i | / B )$ transfers of blocks.
+Both policies search by prefix as the two-level scheme of [Ferragina 2023,
+chapter 9](Z-bibliography.md#ref-ferragina2023): a binary search on the
+anchors, which are stored in full, and the scan of the one bucket where the
+pattern falls, decoded on the fly (the first level may be replaced by a
+Patricia trie on the anchors, `TwoLevelDictionary.h` of chapter 7). The string
+B-tree of [Ferragina and Grossi 1999](Z-bibliography.md#ref-ferragina1999) and
+its cache-oblivious version by [Bender, Farach-Colton and Kuszmaul
 2006](Z-bibliography.md#ref-bender2006), which also works on the
-locality-preserving coding, bring the search in external memory to
-$O( ( p + \mathit{occ} ) / B + \log_B n )$ transfers.
+locality-preserving coding, bring the search in external memory to $O( ( p +
+\mathit{occ} ) / B + \log_B n )$ transfers.
 
 --8<-- "generated/FrontCoding-FrontCodedDictionary-bucketed.pseudo.md"
 
@@ -2721,23 +2697,23 @@ compressed dictionaries of strings for the external memory.
 
 --8<-- "generated/RearCoding-rearDecode.pseudo.md"
 
-`RearCodedDictionary` is the front coding with buckets of the compressed
-string dictionaries of [Martínez-Prieto et al.
-2016](Z-bibliography.md#ref-martinezprieto2016), in the rear coding and
-with its symbols entropy-coded as in their HTFC, by a code of Huffman
-instead of their code of Hu and Tucker (whose order the search does not
-need, since it decodes the strings that it compares). It is one string of
-bits in which each bucket of $b$ strings begins with its first string and
-goes on with a triple $( r_i , | \hat s_i | , \hat s_i )$ per string. The
-symbols, the rears and the lengths are each in a canonical code of Huffman
-of their frequencies (cf. chapter 21). Their codewords have at most 11 bits,
-whence a table of $2^{11}$ entries decodes a symbol by one read of 11 bits
-(and one of $2^{12}$ entries up to 3 symbols by one read of 12); the places
-of the buckets are kept by Elias-Fano (cf. chapter 22). Moreover, the 16 bytes of each
-first string that follow the prefix common to all the strings are kept
-apart in two words, so that the binary search on the buckets decodes a
-first string only when those bytes do not decide. With
-$\mathit{RC}_H( D )$ the bits of the coding, the dictionary takes
+`RearCodedDictionary` is the front coding with buckets of the compressed string
+dictionaries of [Martínez-Prieto et al.
+2016](Z-bibliography.md#ref-martinezprieto2016), in the rear coding and with
+its symbols entropy-coded as in their HTFC, by a code of Huffman instead of
+their code of Hu and Tucker (whose order the search does not need, since it
+decodes the strings that it compares). It is one string of bits in which each
+bucket of $b$ strings begins with its first string and goes on with a triple $(
+r_i , | \hat s_i | , \hat s_i )$ per string. The symbols, the rears and the
+lengths are each in a canonical code of Huffman of their frequencies (cf.
+chapter 21). Their codewords have at most 11 bits, whence a table of $2^{11}$
+entries decodes a symbol by one read of 11 bits (and one of $2^{12}$ entries up
+to 3 symbols by one read of 12); the places of the buckets are kept by
+Elias-Fano (cf. chapter 22). Moreover, the 16 bytes of each first string that
+follow the prefix common to all the strings are kept apart in two words, so
+that the binary search on the buckets decodes a first string only when those
+bytes do not decide. With $\mathit{RC}_H( D )$ the bits of the coding, the
+dictionary takes
 
 $$
 \mathit{RC}_H( D ) + \frac{n}{b} \Big( 130 + \Big\lceil \log_2
@@ -2934,28 +2910,27 @@ answer in linear time with a much larger constant.
 --8<-- "generated/Palindromes-longestPalindromicSubstring.pseudo.md"
 
 For the longest palindromic subsequence (`longestPalindromicSubsequence()`) we
-have $\mathit{DP}[ i ][ j ]$, its length for $s[ i .. j ]$, equal to 1 if
-$i = j$, to $\mathit{DP}[ i + 1 ][ j - 1 ] + 2$ if $s_i = s_j$, and to the
-larger of $\mathit{DP}[ i + 1 ][ j ]$ and $\mathit{DP}[ i ][ j - 1 ]$
-otherwise, $\Theta( n^2 )$ time and space; it is the longest common
-subsequence of $s$ and of its reverse; the algorithms of
-[§15.4.5](15-string.md#sec-15-4-5) apply to it too. The fewest
-palindromes into which $s$ can be cut (`palindromicPartition()`) satisfy
-$D[ j ] = \min \{ D[ i ] + 1 : s[ i .. j ) \text{ a palindrome} \}$,
-$D[ 0 ] = 0$. While the textbook builds the table of the palindromes first, here
-each palindrome relaxes $D[ j ]$ while the expansion about its center finds
-it, the centers taken from left to right, so that $D[ i ]$ is final when it
-is used: $O( n^2 )$ time and $O( n )$ space.
+have $\mathit{DP}[ i ][ j ]$, its length for $s[ i .. j ]$, equal to 1 if $i =
+j$, to $\mathit{DP}[ i + 1 ][ j - 1 ] + 2$ if $s_i = s_j$, and to the larger of
+$\mathit{DP}[ i + 1 ][ j ]$ and $\mathit{DP}[ i ][ j - 1 ]$ otherwise, $\Theta(
+n^2 )$ time and space; it is the longest common subsequence of $s$ and of its
+reverse; the algorithms of [§15.4.5](15-string.md#sec-15-4-5) apply to it too.
+The fewest palindromes into which $s$ can be cut (`palindromicPartition()`)
+satisfy $D[ j ] = \min \{ D[ i ] + 1 : s[ i .. j ) \text{ a palindrome} \}$,
+$D[ 0 ] = 0$. While the textbook builds the table of the palindromes first,
+here each palindrome relaxes $D[ j ]$ while the expansion about its center
+finds it, the centers taken from left to right, so that $D[ i ]$ is final when
+it is used: $O( n^2 )$ time and $O( n )$ space.
 
 --8<-- "generated/Palindromes-longestPalindromicSubsequence.pseudo.md"
 
 --8<-- "generated/Palindromes-palindromicPartition.pseudo.md"
 
 We also give the eertree (palindromic tree) of [Rubinchik and Shur
-2018](Z-bibliography.md#ref-rubinchik2018) (`Eertree`), which has a node for each
-distinct nonempty palindrome of the string, two roots of lengths $-1$ and
-0, the edge $c$ from $v$ to $c v c$, and the suffix link of $v$ to its
-longest proper palindromic suffix.
+2018](Z-bibliography.md#ref-rubinchik2018) (`Eertree`), which has a node for
+each distinct nonempty palindrome of the string, two roots of lengths $-1$ and
+0, the edge $c$ from $v$ to $c v c$, and the suffix link of $v$ to its longest
+proper palindromic suffix.
 
 <span id="lem-15-35"></span>**Lemma 15.35.** *A symbol appended to a
 string creates at most one new palindrome, its longest palindromic suffix;
@@ -2966,12 +2941,12 @@ palindromes.*
 suffix of its longest one $y$, and hence (by the symmetry of $y$) also a
 prefix of $y$, which occurred before $c$ was appended. $\square$
 
-`add()` finds the longest palindromic suffix of the new string on the
-suffix links of the previous one (and returns whether it is a new
-palindrome), `distinct()` gives the number of distinct nonempty
-palindromes, `suffixLength()` the length of the longest palindromic
-suffix and `size()` that of the string; `add()` takes $O( 1 )$ amortized steps on a constant
-alphabet (the edges of a node are a short vector, $O( \sigma )$ each).
+`add()` finds the longest palindromic suffix of the new string on the suffix
+links of the previous one (and returns whether it is a new palindrome),
+`distinct()` gives the number of distinct nonempty palindromes,
+`suffixLength()` the length of the longest palindromic suffix and `size()` that
+of the string; `add()` takes $O( 1 )$ amortized steps on a constant alphabet
+(the edges of a node are a short vector, $O( \sigma )$ each).
 
 --8<-- "generated/Palindromes-Eertree-add.pseudo.md"
 
@@ -2988,8 +2963,8 @@ palindrome,
 
 $$
 D[ i ] = 1 + \min_{v} \mathit{best}_i( v ) , \qquad
-\mathit{best}_i( v ) = \min\{ D[ i - \mathit{len}( \mathit{series}( v ) )
-- \mathit{diff}( v ) ] , \mathit{best}_{i - \mathit{diff}( v )}(
+\mathit{best}_i( v ) = \min\{ D[ i - \mathit{len}( \mathit{series}( v )
+) - \mathit{diff}( v ) ] , \mathit{best}_{i - \mathit{diff}( v )}(
 \mathit{link}( v ) ) \} , \tag{15.23}
 $$
 
@@ -3127,13 +3102,13 @@ and $j - i < ( h + 1 ) | w | \le 2 h | w |$; the next run starts at $i + h
 it moves past, and at most $2 n$ in all. The space is that of $i$, $j$ and
 $k$. $\square$
 
-`leastRotation()` gives the start of the lexicographically least rotation
-of $S$ (the first one, if several) by the same scan on $S S$: the least
-rotation starts at the start of the factor of $S S$ that covers the place
-$n$, in $O( n )$ time ([Duval 1983](Z-bibliography.md#ref-duval1983)). Finally, `isLyndon()` decides whether a string is a
-Lyndon word by the definition, comparing it with each of its proper
-suffixes in $O( n^2 )$ time; the contracts check by it the factors of
-`lyndonFactorization()`. We declare them as
+`leastRotation()` gives the start of the lexicographically least rotation of
+$S$ (the first one, if several) by the same scan on $S S$: the least rotation
+starts at the start of the factor of $S S$ that covers the place $n$, in $O( n
+)$ time ([Duval 1983](Z-bibliography.md#ref-duval1983)). Finally, `isLyndon()`
+decides whether a string is a Lyndon word by the definition, comparing it with
+each of its proper suffixes in $O( n^2 )$ time; the contracts check by it the
+factors of `lyndonFactorization()`. We declare them as
 
 ```cpp
 // declarations of <ADS/string/Lyndon.h>
@@ -3148,21 +3123,20 @@ $( 0 , 1 , 3 , 5 )$ for $\texttt{banana}$.
 
 ### 15.7.3 Parentheses and anagrams {#sec-15-7-3}
 
-`Parentheses.h` finds the longest balanced strings of parentheses in a
-text of $n$ symbols, where `open` and `close` are the two parentheses and
-any other symbol is neither. For the longest balanced *subsequence*
-(`longestBalancedSubsequence()`), a scan matches each close with the
-nearest open still unmatched before it, and the length is twice the
-number of pairs matched, in $\Theta( n )$ time and $O( 1 )$ space (the interval recursion of the
-textbook, the pair of the two ends or the best split, takes
-$\Theta( n^3 )$). For the longest balanced *substring*
-(`longestBalancedSubstring()`), a stack keeps the places of the opens not
-matched yet: when a close matches the top, the substring from just after
-the open still unmatched below it (or from the last place where the
-balance broke) to the close is balanced, and it is the longest one ending
-there; $\Theta( n )$ time and $O( n )$ space, while two scans of the counts
-of opens and closes, from left to right and from right to left, need only
-$O( 1 )$ space.
+`Parentheses.h` finds the longest balanced strings of parentheses in a text of
+$n$ symbols, where `open` and `close` are the two parentheses and any other
+symbol is neither. For the longest balanced *subsequence*
+(`longestBalancedSubsequence()`), a scan matches each close with the nearest
+open still unmatched before it, and the length is twice the number of pairs
+matched, in $\Theta( n )$ time and $O( 1 )$ space (the interval recursion of
+the textbook, the pair of the two ends or the best split, takes $\Theta( n^3
+)$). For the longest balanced *substring* (`longestBalancedSubstring()`), a
+stack keeps the places of the opens not matched yet: when a close matches the
+top, the substring from just after the open still unmatched below it (or from
+the last place where the balance broke) to the close is balanced, and it is the
+longest one ending there; $\Theta( n )$ time and $O( n )$ space, while two
+scans of the counts of opens and closes, from left to right and from right to
+left, need only $O( 1 )$ space.
 
 --8<-- "generated/Parentheses-longestBalancedSubsequence.pseudo.md"
 
@@ -3172,14 +3146,13 @@ $O( 1 )$ space.
 `longestBalancedSubsequence()` matches as many pairs as a balanced
 subsequence can have.*
 
-*Proof.* The scan matches a pair at each close but the $u$ closes that
-find no open pending. Let $x$ be the last of these closes. When the scan
-meets $x$, each open before it has been matched to a close before it, and
-so the prefix up to $x$ holds at least $u$ closes more than opens. In a
-balanced subsequence each close follows the open matched to it, and
-therefore at least $u$ closes of that prefix are left out; hence it has at most as many pairs as
-the closes less $u$, which is the number that the scan matches.
-$\square$
+*Proof.* The scan matches a pair at each close but the $u$ closes that find no
+open pending. Let $x$ be the last of these closes. When the scan meets $x$,
+each open before it has been matched to a close before it, and so the prefix up
+to $x$ holds at least $u$ closes more than opens. In a balanced subsequence
+each close follows the open matched to it, and therefore at least $u$ closes of
+that prefix are left out; hence it has at most as many pairs as the closes less
+$u$, which is the number that the scan matches. $\square$
 
 We declare the two functions as
 
@@ -3221,13 +3194,13 @@ anagramGroups( const std::vector< S > & words );
 
 ### 15.8.1 Segmentations {#sec-15-8-1}
 
-A string $s$ with no spaces is a sequence of words of a dictionary if and
-only if some prefix $s[ 0 .. j )$ is and $s[ j .. i )$ is a word for
-$i = n$ ([Montresor 2025, exercise 13.13](Z-bibliography.md#ref-montresor2025)).
-`wordBreak()` of `WordBreak.h` fills $\mathit{DP}[ i ]$, true when
-$s[ 0 .. i )$ is a sequence of words, for each $i$, with
-$\mathit{DP}[ 0 ]$ true: $O( n^2 )$ lookups, or $O( n w )$ if no word is
-longer than $w$, and the words are read back from the table.
+A string $s$ with no spaces is a sequence of words of a dictionary if and only
+if some prefix $s[ 0 .. j )$ is and $s[ j .. i )$ is a word for $i = n$
+([Montresor 2025, exercise 13.13](Z-bibliography.md#ref-montresor2025)).
+`wordBreak()` of `WordBreak.h` fills $\mathit{DP}[ i ]$, true when $s[ 0 .. i
+)$ is a sequence of words, for each $i$, with $\mathit{DP}[ 0 ]$ true: $O( n^2
+)$ lookups, or $O( n w )$ if no word is longer than $w$, and the words are read
+back from the table.
 
 --8<-- "generated/WordBreak-wordBreak.pseudo.md"
 
@@ -3357,14 +3330,13 @@ and 1 to the right (a single character gets the code `0`):
 least expected length among the prefix codes of the given frequencies, and
 `huffman()` computes it in $O( n \log n )$ time for $n$ characters.*
 
-*Proof.* Some optimal tree has the two least frequent characters as
-sibling leaves at the largest depth, since exchanging them with the leaves
-there does not increase the cost. Moreover, the cost of a tree in which they are
-siblings differs from the cost of the tree with the two merged into one
-leaf of frequency $f_1 + f_2$ by $f_1 + f_2$, a constant; hence, by
-induction on the number of characters, the greedy choice is optimal. Each
-of the $n - 1$ steps makes $O( 1 )$ operations on a heap of $O( n )$
-items. $\square$
+*Proof.* Some optimal tree has the two least frequent characters as sibling
+leaves at the largest depth, since exchanging them with the leaves there does
+not increase the cost. Moreover, the cost of a tree in which they are siblings
+differs from the cost of the tree with the two merged into one leaf of
+frequency $f_1 + f_2$ by $f_1 + f_2$, a constant; hence, by induction on the
+number of characters, the greedy choice is optimal. Each of the $n - 1$ steps
+makes $O( 1 )$ operations on a heap of $O( n )$ items. $\square$
 
 `encode()` concatenates the codes of the characters of a text, and
 `decode()` follows the bits on the tree of the code, a character at each
@@ -3405,48 +3377,49 @@ The exact search of one pattern is treated at length by [Gusfield
 2004](Z-bibliography.md#ref-charras2004), and [Faro and Lecroq
 2013](Z-bibliography.md#ref-faro2013b) survey the algorithms of the last
 decades, among which the packed filters and the hashed q-grams that
-`StringSearcher` combines; the fallback on the Two-Way algorithm, which
-makes the worst case linear without the memory of the automata, is the
-choice of several C libraries for `memmem()`. The automaton of [Aho and
-Corasick 1975](Z-bibliography.md#ref-aho1975) remains the reference for
-many patterns, and the filters of `MultiSearcher` are those of the FDR
-matcher of Hyperscan ([Wang et al. 2019](Z-bibliography.md#ref-wang2019)).
-The dynamic programming of [§15.4](15-string.md#sec-15-4) follows chapter
-13 of [Montresor 2025](Z-bibliography.md#ref-montresor2025); its
-engineered form rests on [Myers 1999](Z-bibliography.md#ref-myers1999),
-[Hyyrö 2003](Z-bibliography.md#ref-hyyro2003) and [Ukkonen
+`StringSearcher` combines; the fallback on the Two-Way algorithm, which makes
+the worst case linear without the memory of the automata, is the choice of
+several C libraries for `memmem()`. The automaton of [Aho and Corasick
+1975](Z-bibliography.md#ref-aho1975) remains the reference for many patterns,
+and the filters of `MultiSearcher` are those of the FDR matcher of Hyperscan
+([Wang et al. 2019](Z-bibliography.md#ref-wang2019)). The dynamic programming
+of [§15.4](15-string.md#sec-15-4) follows chapter 13 of [Montresor
+2025](Z-bibliography.md#ref-montresor2025); its engineered form rests on [Myers
+1999](Z-bibliography.md#ref-myers1999), [Hyyrö
+2003](Z-bibliography.md#ref-hyyro2003) and [Ukkonen
 1985a](Z-bibliography.md#ref-ukkonen1985a), as in edlib ([Šošić and Šikić
-2017](Z-bibliography.md#ref-sosic2017)), and on the diagonal transitions
-of [Landau and Vishkin 1989](Z-bibliography.md#ref-landau1989) and [Myers
+2017](Z-bibliography.md#ref-sosic2017)), and on the diagonal transitions of
+[Landau and Vishkin 1989](Z-bibliography.md#ref-landau1989) and [Myers
 1986](Z-bibliography.md#ref-myers1986), as in the wavefront alignment
-([Marco-Sola et al. 2021](Z-bibliography.md#ref-marcosola2021)). In the
-library there are no affine gap costs and no alignment of more than two strings.
+([Marco-Sola et al. 2021](Z-bibliography.md#ref-marcosola2021)). In the library
+there are no affine gap costs and no alignment of more than two strings.
 
-The suffix array is from [Manber and Myers 1993](Z-bibliography.md#ref-manber1993)
-and [Gonnet, Baeza-Yates and Snider 1992](Z-bibliography.md#ref-gonnet1992);
-[Puglisi, Smyth and Turpin 2007](Z-bibliography.md#ref-puglisi2007)
-classify its constructions, of which SA-IS ([Nong, Zhang and Chan
-2011](Z-bibliography.md#ref-nong2011)) and DivSufSort ([Fischer and Kurpicz
-2017](Z-bibliography.md#ref-fischer2017)) are the methods of the libraries
-in use, the engineered `suffixArray()` combining the two. As for the indexes, the suffix tree
-goes back to [Weiner 1973](Z-bibliography.md#ref-weiner1973) and
-[McCreight 1976](Z-bibliography.md#ref-mccreight1976), the suffix
-automaton to [Blumer et al. 1985](Z-bibliography.md#ref-blumer1985) and
-[Crochemore 1986](Z-bibliography.md#ref-crochemore1986), and the
-replacement of the suffix tree by a suffix array with its LCP array to
-[Abouelhoda, Kurtz and Ohlebusch 2004](Z-bibliography.md#ref-abouelhoda2004).
-Instead, the compressed indexes (the FM-index and the Burrows-Wheeler transform) are
-in chapter 21, and the succinct trees and the rank and select on which
-they rest in chapter 22. The dictionaries of [§15.6](15-string.md#sec-15-6)
-follow chapter 9 of [Ferragina 2023](Z-bibliography.md#ref-ferragina2023),
-[Bender, Farach-Colton and Kuszmaul 2006](Z-bibliography.md#ref-bender2006)
-and [Martínez-Prieto et al. 2016](Z-bibliography.md#ref-martinezprieto2016);
-the tries and the Patricia trie of a dictionary are in chapter 7. The
-comparison of the engineered searches, distances, suffix arrays,
-extensions and dictionaries with the libraries they are meant to compete
-with (the C library and Boost.Algorithm, Vectorscan, edlib and
-rapidfuzz-cpp, libsais and libdivsufsort, sdsl-lite) belongs to the
-campaign of benchmarks of appendix B, and it is not reported here.
+The suffix array is from [Manber and Myers
+1993](Z-bibliography.md#ref-manber1993) and [Gonnet, Baeza-Yates and Snider
+1992](Z-bibliography.md#ref-gonnet1992); [Puglisi, Smyth and Turpin
+2007](Z-bibliography.md#ref-puglisi2007) classify its constructions, of which
+SA-IS ([Nong, Zhang and Chan 2011](Z-bibliography.md#ref-nong2011)) and
+DivSufSort ([Fischer and Kurpicz 2017](Z-bibliography.md#ref-fischer2017)) are
+the methods of the libraries in use, the engineered `suffixArray()` combining
+the two. As for the indexes, the suffix tree goes back to [Weiner
+1973](Z-bibliography.md#ref-weiner1973) and [McCreight
+1976](Z-bibliography.md#ref-mccreight1976), the suffix automaton to [Blumer et
+al. 1985](Z-bibliography.md#ref-blumer1985) and [Crochemore
+1986](Z-bibliography.md#ref-crochemore1986), and the replacement of the suffix
+tree by a suffix array with its LCP array to [Abouelhoda, Kurtz and Ohlebusch
+2004](Z-bibliography.md#ref-abouelhoda2004). Instead, the compressed indexes
+(the FM-index and the Burrows-Wheeler transform) are in chapter 21, and the
+succinct trees and the rank and select on which they rest in chapter 22. The
+dictionaries of [§15.6](15-string.md#sec-15-6) follow chapter 9 of [Ferragina
+2023](Z-bibliography.md#ref-ferragina2023), [Bender, Farach-Colton and Kuszmaul
+2006](Z-bibliography.md#ref-bender2006) and [Martínez-Prieto et al.
+2016](Z-bibliography.md#ref-martinezprieto2016); the tries and the Patricia
+trie of a dictionary are in chapter 7. The comparison of the engineered
+searches, distances, suffix arrays, extensions and dictionaries with the
+libraries they are meant to compete with (the C library and Boost.Algorithm,
+Vectorscan, edlib and rapidfuzz-cpp, libsais and libdivsufsort, sdsl-lite)
+belongs to the campaign of benchmarks of appendix B, and it is not reported
+here.
 
 ## 15.10 Exercises {#sec-15-10}
 
@@ -3479,16 +3452,17 @@ Each exercise names the test of the library that solves it (run it with
    and 13.10](Z-bibliography.md#ref-montresor2025)). Tests:
    `ch13.sec13.7.lcs`, `ch13.ex13.2`, `ch13.ex13.10`.
 9. Compute the global, semiglobal and local alignments of two strings
-   ([Montresor 2025, exercises 13.7 to 13.9](Z-bibliography.md#ref-montresor2025)).
-   Tests: `ch13.ex13.7`, `ch13.ex13.8`, `ch13.ex13.9`.
+   ([Montresor 2025, exercises 13.7 to
+   13.9](Z-bibliography.md#ref-montresor2025)). Tests: `ch13.ex13.7`,
+   `ch13.ex13.8`, `ch13.ex13.9`.
 10. Decide whether a string is a shuffle of two others, and compute a
     shortest common supersequence, the occurrences of a subsequence and the
     LCS of three strings. Tests: `lib_strings.interleaving`,
     `lib_strings.supersequence`, `lib_strings.subsequence-occurrences`,
     `lib_strings.lcs3`.
 11. Compute the edit distance, the length of the LCS and the approximate
-    occurrences by the bit vectors of Myers and the diagonal transitions,
-    and check them against the tables. Test: `engineered_strings.edit-distance`.
+    occurrences by the bit vectors of Myers and the diagonal transitions, and
+    check them against the tables. Test: `engineered_strings.edit-distance`.
 12. Build a suffix array by the six constructions, its LCP array by the
     algorithm of Kasai et al., and search a pattern by the binary search
     and by that of Manber and Myers. Tests:

@@ -212,12 +212,12 @@ boost::dijkstra_shortest_paths(
 
 A scan of the out-arcs is the scan of a row of the graph, and a weight is read
 where it lies, in the array of the weights at the place of its arc. Thus the
-algorithm reads the same memory as on `compressed_sparse_row_graph`, which
-also keeps the properties of the edges apart from the heads, and the edge descriptor (the pair of its
-tail and of its place in the rows) is also its `edge_index`. `ArrayGraph` is
-adapted in the same way, whereas `ListGraph` and an `ObservedGraph` on it are
-mutable graphs of Boost.Graph, whose weight is looked up in $O( \deg u )$ time
-([§1.8.1](01-introduction.md#sec-1-8-1)).
+algorithm reads the same memory as on `compressed_sparse_row_graph`, which also
+keeps the properties of the edges apart from the heads, and the edge descriptor
+(the pair of its tail and of its place in the rows) is also its `edge_index`.
+`ArrayGraph` is adapted in the same way, whereas `ListGraph` and an
+`ObservedGraph` on it are mutable graphs of Boost.Graph, whose weight is looked
+up in $O( \deg u )$ time ([§1.8.1](01-introduction.md#sec-1-8-1)).
 
 In the other direction, `FromBGL` of `FromBGL.h` is a view of a graph of
 Boost.Graph as a graph of ADS, its weights read from a property map, by

@@ -132,15 +132,15 @@ standard library, the algorithms of the standard library run on this view
 unchanged, while the operations of the STACK remain the only way to modify
 it.
 
-<span id="rem-3-1"></span>**Remark 3.1.** We keep the capacity of
-`ArrayStack` fixed, since this is the realization of [Montresor 2025,
-§4.3.2](Z-bibliography.md#ref-montresor2025). In [Morin
-2013, §2.1](Z-bibliography.md#ref-morin-cpp), instead, the realization resizes the vector to
-$2 n$ places when it is full and when $3 n$ does not exceed its capacity,
-which costs $O( 1 )$ amortized time per operation by an argument like that
-of [Lemma 3.3](03-stack.md#lem-3-3), and `std::vector` with `push_back` and
-`pop_back` behaves in the same way, but it never shrinks. Both the stacks of
-[§3.4](03-stack.md#sec-3-4) and [§3.5](03-stack.md#sec-3-5) rest on
+<span id="rem-3-1"></span>**Remark 3.1.** We keep the capacity of `ArrayStack`
+fixed, since this is the realization of [Montresor 2025,
+§4.3.2](Z-bibliography.md#ref-montresor2025). In [Morin 2013,
+§2.1](Z-bibliography.md#ref-morin-cpp), instead, the realization resizes the
+vector to $2 n$ places when it is full and when $3 n$ does not exceed its
+capacity, which costs $O( 1 )$ amortized time per operation by an argument like
+that of [Lemma 3.3](03-stack.md#lem-3-3), and `std::vector` with `push_back`
+and `pop_back` behaves in the same way, but it never shrinks. Both the stacks
+of [§3.4](03-stack.md#sec-3-4) and [§3.5](03-stack.md#sec-3-5) rest on
 `std::vector`, and have no capacity for this reason.
 
 In `ADS/stack/ArrayStack.h`, the declarations of `ArrayStack` that a user
@@ -179,8 +179,8 @@ which is the definition of `SequenceStack` ([Montresor 2025,
 [Algorithm 3.2](03-stack.md#alg-3-2) on the sequence $S$ that the class
 holds.
 
-<span id="alg-3-2"></span>**Algorithm 3.2.** The operations of
-`SequenceStack` ([Montresor 2025, §4.3.1](Z-bibliography.md#ref-montresor2025)).
+<span id="alg-3-2"></span>**Algorithm 3.2.** The operations of `SequenceStack`
+([Montresor 2025, §4.3.1](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/SequenceStack-top.pseudo.md"
 
@@ -205,8 +205,8 @@ position take $O( 1 )$ time ([Table 2.1](02-sequence.md#tab-2-1)), and
 each operation of (3.2) calls a constant number of them. $\square$
 
 The price of the list is one node (an item and at least one pointer) per item.
-On a vector, however, an insertion at the head moves all the items, and there the
-top had better be the last item, as in `ArrayStack`. Since the class is
+On a vector, however, an insertion at the head moves all the items, and there
+the top had better be the last item, as in `ArrayStack`. Since the class is
 parametrized on the sequence, the same code gives a stack on `List`, on
 `SinglyList` and on any other model of the concept `Sequence` of `ADS/ADT.h`
 (cf. [§1.3.2](01-introduction.md#sec-1-3-2)). Its `pop()` reads the head and
@@ -214,8 +214,8 @@ then removes it, and thus copies the item instead of moving it, since a
 SEQUENCE has no operation that hands out the item it removes. Two stacks are
 equal when their sequences are, and the contracts check that `top()` and
 `pop()` find the stack not empty and that `push( v )` leaves $v$ on top. When
-the sequence is a range of the standard library, `begin()` and `end()` give
-its constant iterators, i.e., a view of the items from the top to the bottom.
+the sequence is a range of the standard library, `begin()` and `end()` give its
+constant iterators, i.e., a view of the items from the top to the bottom.
 
 In `ADS/stack/SequenceStack.h`, the declarations of `SequenceStack` that a
 user calls are
@@ -291,39 +291,38 @@ $\gamma' N$; the space is thus $\Theta( N + k )$ words.*
 *Proof.* The first claim holds for the empty `MultiStack`, whose lists are all
 empty. A `push( i , v )` takes the cell $c$ at the head of the free list (line
 3), which it removes from that list, or a new cell (line 2), which is in no
-list. Then line 4 makes $c$ the head of the list of the stack $i$, with the
-old top below it, and the list then holds $v$ and then the old items from the top
+list. Then line 4 makes $c$ the head of the list of the stack $i$, with the old
+top below it, and the list then holds $v$ and then the old items from the top
 down. A `pop( i )` removes the head $c$ of the list of the stack $i$, whose
-item is the top, and makes it the head of the free list (line 3). No other
-cell changes list in either operation. As for the cost, an enlargement happens
-only when all the cells of $C$ are in use, and it moves them all. Only a
-`push()` adds a cell to $C$, and therefore the last enlargement of the
-sequence moves $s \le m$ cells. The sizes at which $C$ is enlarged grow at
-least by the factor $\gamma$ from one enlargement to the next, and hence the
-cells moved in all are at most
-$s ( 1 + \gamma^{-1} + \gamma^{-2} + \cdots ) < \gamma s / ( \gamma - 1 ) \le \gamma m / ( \gamma - 1 )$.
-As for the space, a `push()` appends a cell to $C$ only when the free list is
-empty, i.e., when all the cells of $C$ hold items, and the number of cells
-thus grows by one exactly when the number of items exceeds its largest value
-so far; hence $C$ has $N$ cells. The last enlargement found $s \le N - 1$
-cells in use, all of them, and made the capacity at most
-$\gamma' s < \gamma' N$ (or 1, for the first cell). Besides $C$, the stacks
-take the $k$ tops and the $k$ counters. $\square$
+item is the top, and makes it the head of the free list (line 3). No other cell
+changes list in either operation. As for the cost, an enlargement happens only
+when all the cells of $C$ are in use, and it moves them all. Only a `push()`
+adds a cell to $C$, and therefore the last enlargement of the sequence moves $s
+\le m$ cells. The sizes at which $C$ is enlarged grow at least by the factor
+$\gamma$ from one enlargement to the next, and hence the cells moved in all are
+at most $s ( 1 + \gamma^{-1} + \gamma^{-2} + \cdots ) < \gamma s / ( \gamma - 1
+) \le \gamma m / ( \gamma - 1 )$. As for the space, a `push()` appends a cell
+to $C$ only when the free list is empty, i.e., when all the cells of $C$ hold
+items, and the number of cells thus grows by one exactly when the number of
+items exceeds its largest value so far; hence $C$ has $N$ cells. The last
+enlargement found $s \le N - 1$ cells in use, all of them, and made the
+capacity at most $\gamma' s < \gamma' N$ (or 1, for the first cell). Besides
+$C$, the stacks take the $k$ tops and the $k$ counters. $\square$
 
 Since $C$ may move during a `push()`, an item of the stacks passed to it by
-reference (e.g., in `push( i , top( j ) )`) would be read, after the move,
-from a place that is no longer valid, and the code therefore builds the new cell,
+reference (e.g., in `push( i , top( j ) )`) would be read, after the move, from
+a place that is no longer valid, and the code therefore builds the new cell,
 copying $v$, before $C$ grows. Also, `stacks()` gives $k$, `size( i )` the
-number of items of the stack $i$ (kept in a counter per stack, and hence in
-$O( 1 )$ time), and `stack( i )` a view of the stack $i$ from the top to the
-bottom, whose forward iterator `const_iterator` (an `IndexIterator`,
-cf. [§1.8](01-introduction.md#sec-1-8)) follows the links. Its contracts check
-that $k > 0$, that the index of a stack is in $[ 0 , k )$ and that `top()` and
+number of items of the stack $i$ (kept in a counter per stack, and hence in $O(
+1 )$ time), and `stack( i )` a view of the stack $i$ from the top to the
+bottom, whose forward iterator `const_iterator` (an `IndexIterator`, cf.
+[§1.8](01-introduction.md#sec-1-8)) follows the links. Its contracts check that
+$k > 0$, that the index of a stack is in $[ 0 , k )$ and that `top()` and
 `pop()` find the stack not empty. The invariant is that each cell is in one
-stack or in the free list, and that the counters are the lengths of the
-stacks. It is checked after each `push()` and `pop()`, at the corresponding
-level of the contracts, in $O( | C | + k )$ time, where $| C |$ is the largest
-number of items reached so far (since $C$ grows only when no cell is free).
+stack or in the free list, and that the counters are the lengths of the stacks.
+It is checked after each `push()` and `pop()`, at the corresponding level of
+the contracts, in $O( | C | + k )$ time, where $| C |$ is the largest number of
+items reached so far (since $C$ grows only when no cell is free).
 
 In the libraries of GCC, LLVM and Microsoft one has $\gamma' = 2$ in
 [Lemma 3.3](03-stack.md#lem-3-3) (the last one enlarges a vector of $s$
@@ -441,16 +440,16 @@ S.pop();          // removes 2 from A and M
 int m = S.min();  // m is 3
 ```
 
-is the run of [Figure 3.3](03-stack.md#fig-3-3). Besides these, the class has `size()`,
-`clear()`, `items()` (the vector $A$, from the bottom to the top) and
-`minima()` (the size $m$ of $M$). Its contracts check that `top()`,
-`pop()` and `min()` find the stack not empty, and the invariant of
-[Lemma 3.4](03-stack.md#lem-3-4) in the form that $M$ does not increase
-and that its top is equivalent to the least item of $A$ (an $O( n )$
-check). Two `MinStack`s back to back give the queue and the deque with the
-minimum of [§4.8](04-queue.md#sec-4-8). Also, [Appendix
-A](A-writing-structure.md#fig-A-1) follows this class through the files
-of the library that a new structure typically touches.
+is the run of [Figure 3.3](03-stack.md#fig-3-3). Besides these, the class has
+`size()`, `clear()`, `items()` (the vector $A$, from the bottom to the top) and
+`minima()` (the size $m$ of $M$). Its contracts check that `top()`, `pop()` and
+`min()` find the stack not empty, and the invariant of [Lemma
+3.4](03-stack.md#lem-3-4) in the form that $M$ does not increase and that its
+top is equivalent to the least item of $A$ (an $O( n )$ check). Two `MinStack`s
+back to back give the queue and the deque with the minimum of
+[§4.8](04-queue.md#sec-4-8). Also, [Appendix A](A-writing-structure.md#fig-A-1)
+follows this class through the files of the library that a new structure
+typically touches.
 
 In `ADS/stack/MinStack.h`, the declarations of `MinStack` that a user calls
 are
@@ -572,14 +571,14 @@ right) and the output so far.
 | `7` | `-` | `35 17 40 9 - * + 7` |
 | end | | `35 17 40 9 - * + 7 -` |
 
-In line 10 of
-`toPostfix()` in [Algorithm 3.6](03-stack.md#alg-3-6), the test
-$\pi( x ) \le \pi( \mathrm{top}( S ) )$, with $\le$ in place of $<$, makes
-the operators of equal precedence associate to the left (e.g.,
-`8 - 3 - 2` becomes `8 3 - 2 -`, whose value is 3). To state what the two functions compute, we let the postfix form $P$ of an expression be
-defined by $P( a ) = a$ for an operand $a$, $P( ( E ) ) = P( E )$ and
-$P( E_1 \mathbin{\mathrm{op}} E_2 ) = P( E_1 ) \, P( E_2 ) \,
-\mathrm{op}$. The infix expressions with the usual precedences are those of the grammar
+In line 10 of `toPostfix()` in [Algorithm 3.6](03-stack.md#alg-3-6), the test
+$\pi( x ) \le \pi( \mathrm{top}( S ) )$, with $\le$ in place of $<$, makes the
+operators of equal precedence associate to the left (e.g., `8 - 3 - 2` becomes
+`8 3 - 2 -`, whose value is 3). To state what the two functions compute, we let
+the postfix form $P$ of an expression be defined by $P( a ) = a$ for an operand
+$a$, $P( ( E ) ) = P( E )$ and $P( E_1 \mathbin{\mathrm{op}} E_2 ) = P( E_1 )
+\, P( E_2 ) \, \mathrm{op}$. The infix expressions with the usual precedences
+are those of the grammar
 
 $$
 E \to T \mid E + T \mid E - T , \qquad
@@ -613,45 +612,44 @@ pushed (line 5), the scan of $B$ appends $P( B )$ and leaves
 $\mathrm{op}$ on top, and the closed parenthesis pops it to the output
 (line 6); hence $P( A ) \, P( B ) \, \mathrm{op} = P( X )$ is appended.
 
-For `toPostfix()`, let a stack $S$ *admit* the level $\ell$ if its top is
-not an operator of precedence at least $\ell$ (an empty stack and an open
-parenthesis on top admit every level). We show, by induction on the
-derivation of a phrase $X$ of level $\ell$, that the scan of $X$ from a
-stack $S$ that admits $\ell$ appends to the output a string $Q$ and pushes
-on $S$, which it leaves untouched below, a sequence $R$ of operators of
-precedence at least $\ell$, such that $Q$ followed by the items of $R$
-from the top down is $P( X )$. For an operand, $Q = a$ and $R$ is empty.
-For $X = ( E )$, the open parenthesis is pushed (line 5), the stack then
-admits the level 1 of $E$, and by induction the scan of $E$ appends $Q_E$
-and pushes $R_E$; the closed parenthesis pops $R_E$ to the output down to
-the open parenthesis, which $R_E$ does not contain, and pops it (lines 7
-and 8). Thus $Q$ is $Q_E$ followed by $R_E$ from the top down, i.e.,
-$P( E ) = P( X )$, and $R$ is empty. For $X = E_1 + T$ (and in the same
-way for $-$), $S$ admits the level 1 of $E_1$, whose scan appends $Q_1$
-and pushes $R_1$; in line 10 the operator then pops every item of $R_1$,
-since their precedences are at least 1, and stops at the top of $S$, which
-is not an operator since $S$ admits the level 1. After the push of line
-12, the stack has $+$ on top, of precedence $1 < 2$, and admits the level
-2 of $T$, whose scan appends $Q_2$ and pushes $R_2$. Hence $Q$ is $Q_1$,
-$R_1$ from the top down and $Q_2$, while $R$ is $+$ under $R_2$, and
-$Q$ followed by $R$ from the top down is $P( E_1 ) \, P( T ) \, + =
-P( X )$, with precedences at least 1 in $R$. For $X = T_1 \cdot F$ (and
-for $/$) the argument is the same with the level 2: the operator pops
-$R_1$, whose precedences are at least 2, stops at the top of $S$, which is not an operator of precedence 2. After its push the stack admits the
-level 3 of $F$, whose scan pushes no operator; hence $R$ is the operator
-only, of precedence 2. Finally, a phrase $E$ derived as $T$, or $T$
-derived as $F$, is scanned from a stack that admits the lower level and
-hence the higher one, and pushes operators of precedence at least the
-higher level, hence at least the lower one. The whole $e$ is scanned from
-the empty stack, and line 13 appends $R$ from the top down, which gives
-$P( e )$; the associativity to the left is that of the derivation of
-$E_1 + T$ in (3.3). As for the cost, each token is pushed at most once and
-popped at most once, each iteration of the loops of lines 7, 10 and 13
-pops an item, and the stack and the output hold at most $n$ tokens. The last claim holds on the empty stack. Line 5 pushes an open parenthesis,
-above which no operator lies, and line 12 pushes an operator $x$ when the
-loop of line 10 has stopped, i.e., on the empty stack, on an open
-parenthesis or on an operator of precedence lower than $\pi( x )$, while a
-pop keeps the claim on what remains. $\square$
+For `toPostfix()`, let a stack $S$ *admit* the level $\ell$ if its top is not
+an operator of precedence at least $\ell$ (an empty stack and an open
+parenthesis on top admit every level). We show, by induction on the derivation
+of a phrase $X$ of level $\ell$, that the scan of $X$ from a stack $S$ that
+admits $\ell$ appends to the output a string $Q$ and pushes on $S$, which it
+leaves untouched below, a sequence $R$ of operators of precedence at least
+$\ell$, such that $Q$ followed by the items of $R$ from the top down is $P( X
+)$. For an operand, $Q = a$ and $R$ is empty. For $X = ( E )$, the open
+parenthesis is pushed (line 5), the stack then admits the level 1 of $E$, and
+by induction the scan of $E$ appends $Q_E$ and pushes $R_E$; the closed
+parenthesis pops $R_E$ to the output down to the open parenthesis, which $R_E$
+does not contain, and pops it (lines 7 and 8). Thus $Q$ is $Q_E$ followed by
+$R_E$ from the top down, i.e., $P( E ) = P( X )$, and $R$ is empty. For $X =
+E_1 + T$ (and in the same way for $-$), $S$ admits the level 1 of $E_1$, whose
+scan appends $Q_1$ and pushes $R_1$; in line 10 the operator then pops every
+item of $R_1$, since their precedences are at least 1, and stops at the top of
+$S$, which is not an operator since $S$ admits the level 1. After the push of
+line 12, the stack has $+$ on top, of precedence $1 < 2$, and admits the level
+2 of $T$, whose scan appends $Q_2$ and pushes $R_2$. Hence $Q$ is $Q_1$, $R_1$
+from the top down and $Q_2$, while $R$ is $+$ under $R_2$, and $Q$ followed by
+$R$ from the top down is $P( E_1 ) \, P( T ) \, + = P( X )$, with precedences
+at least 1 in $R$. For $X = T_1 \cdot F$ (and for $/$) the argument is the same
+with the level 2: the operator pops $R_1$, whose precedences are at least 2,
+stops at the top of $S$, which is not an operator of precedence 2. After its
+push the stack admits the level 3 of $F$, whose scan pushes no operator; hence
+$R$ is the operator only, of precedence 2. Finally, a phrase $E$ derived as
+$T$, or $T$ derived as $F$, is scanned from a stack that admits the lower level
+and hence the higher one, and pushes operators of precedence at least the
+higher level, hence at least the lower one. The whole $e$ is scanned from the
+empty stack, and line 13 appends $R$ from the top down, which gives $P( e )$;
+the associativity to the left is that of the derivation of $E_1 + T$ in (3.3).
+As for the cost, each token is pushed at most once and popped at most once,
+each iteration of the loops of lines 7, 10 and 13 pops an item, and the stack
+and the output hold at most $n$ tokens. The last claim holds on the empty
+stack. Line 5 pushes an open parenthesis, above which no operator lies, and
+line 12 pushes an operator $x$ when the loop of line 10 has stopped, i.e., on
+the empty stack, on an open parenthesis or on an operator of precedence lower
+than $\pi( x )$, while a pop keeps the claim on what remains. $\square$
 
 The induction shows why line 10 tests $\le$: the operator $+$ that
 follows $E_1$ must pop the $+$ and the $-$ of $E_1$ still on the stack, so
@@ -742,20 +740,19 @@ for `isPalindrome()`), and takes $O( n )$ space besides the stack.*
 *Proof.* A sequence pushed on an empty stack and then popped comes out
 reversed, by $n$ applications of (3.1); the same holds for a queue, by the
 axiom FIFO of [§4.1](04-queue.md#sec-4-1), with the order kept instead of
-reversed. In `isPalindrome()`, the pops of line 4 thus give $s$ from its
-last character to its first, and they all match the characters of $s$ from
-its first if and only if $s$ reads the same in the two directions. In
-`removeGreater()`, line 4 pushes on $A$ the items $x_i \le k$ in the order
-of $i$, and line 5 pops them from $A$ in the reverse order and pushes them
-back on $s$, where the last one pushed, the $x_i \le k$ of least $i$, is
-the top. In `reverseWithQueue()`, line 3 enqueues $x_1 , \ldots , x_n$,
-and line 4 pushes them in the same order; $x_n$, pushed last, is
-the top. For `forEachBottomUp()`, by induction on $n$: the empty stack is
-left alone by the test of line 2, and otherwise $x_1$ is popped, the
-recursive call visits $x_n , \ldots , x_2$ and leaves $x_2 , \ldots , x_n$
-as they were, and line 4 visits $x_1$ and pushes it back on top. Each item is pushed and
-popped (or enqueued and dequeued) a constant number of times in each
-function, and the auxiliary structure, or the stack of the calls in
+reversed. In `isPalindrome()`, the pops of line 4 thus give $s$ from its last
+character to its first, and they all match the characters of $s$ from its first
+if and only if $s$ reads the same in the two directions. In `removeGreater()`,
+line 4 pushes on $A$ the items $x_i \le k$ in the order of $i$, and line 5 pops
+them from $A$ in the reverse order and pushes them back on $s$, where the last
+one pushed, the $x_i \le k$ of least $i$, is the top. In `reverseWithQueue()`,
+line 3 enqueues $x_1 , \ldots , x_n$, and line 4 pushes them in the same order;
+$x_n$, pushed last, is the top. For `forEachBottomUp()`, by induction on $n$:
+the empty stack is left alone by the test of line 2, and otherwise $x_1$ is
+popped, the recursive call visits $x_n , \ldots , x_2$ and leaves $x_2 , \ldots
+, x_n$ as they were, and line 4 visits $x_1$ and pushes it back on top. Each
+item is pushed and popped (or enqueued and dequeued) a constant number of times
+in each function, and the auxiliary structure, or the stack of the calls in
 `forEachBottomUp()`, holds at most $n$ items. $\square$
 
 <span id="alg-3-10"></span>**Algorithm 3.10.** The sort of a stack by
@@ -838,19 +835,19 @@ stack), and its precondition is that each item of $w$ is $+1$ or $-1$. We
 remark that it returns true also when $s_n > 0$, since it decides the
 condition on the prefix sums only.
 
-Brackets, instead, need the items themselves. Let the *matched* strings
-of the brackets `()`, `[]` and `{}` be defined by a grammar: the empty string is
-matched, and if $u$ and $v$ are matched, then so are `(`$u$`)`,
-`[`$u$`]`, `{`$u$`}` and $u v$ ([Morin 2013, exercise
-1.3](Z-bibliography.md#ref-morin-cpp)). For instance, `{{()[]}}` is
-matched, while `{{()]}` is not, since its second `{` faces a `]`. In its
-scan, `isMatched()` pushes each open bracket, and at each closed bracket pops the
-top, which must be the open bracket of the same kind, and the string is
-matched if no `pop()` fails or mismatches and the stack is empty at the end
-([Algorithm 1.1](01-introduction.md#alg-1-1) and [Table
-3.3](03-stack.md#tab-3-3)). Its stack is an `ArrayStack` of capacity $n$,
-which cannot overflow since there are at most $n$ open brackets; a
-character other than the six brackets violates its precondition.
+Brackets, instead, need the items themselves. Let the *matched* strings of the
+brackets `()`, `[]` and `{}` be defined by a grammar: the empty string is
+matched, and if $u$ and $v$ are matched, then so are `(`$u$`)`, `[`$u$`]`,
+`{`$u$`}` and $u v$ ([Morin 2013, exercise
+1.3](Z-bibliography.md#ref-morin-cpp)). For instance, `{{()[]}}` is matched,
+while `{{()]}` is not, since its second `{` faces a `]`. In its scan,
+`isMatched()` pushes each open bracket, and at each closed bracket pops the
+top, which must be the open bracket of the same kind, and the string is matched
+if no `pop()` fails or mismatches and the stack is empty at the end ([Algorithm
+1.1](01-introduction.md#alg-1-1) and [Table 3.3](03-stack.md#tab-3-3)). Its
+stack is an `ArrayStack` of capacity $n$, which cannot overflow since there are
+at most $n$ open brackets; a character other than the six brackets violates its
+precondition.
 
 <span id="tab-3-3"></span>**Table 3.3.** `isMatched()` on `{{()[]}}` and
 on `{{()]}` (the columns 2 and 3, and 4 and 5): the stack after each

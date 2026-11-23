@@ -147,22 +147,22 @@ $$
 recursively, costs $T( n ) = 3 T( n / 2 ) + \Theta( n ) =
 \Theta( n^{\log_2 3} )$, where $\log_2 3 < 1.59$.*
 
-*Proof.* In (17.2), the middle term is $p_S q_D + p_D q_S = r_M - r_S -
-r_D$, an identity of the polynomials, and hence (17.3) follows. At the
-level $k$, the recursion tree has $3^k$ calls of size $n / 2^k$, whose total work $( 3 / 2 )^k n$ grows geometrically with $k$; thus
-the $3^{\log_2 n} = n^{\log_2 3}$ leaves dominate the sum. $\square$
+*Proof.* In (17.2), the middle term is $p_S q_D + p_D q_S = r_M - r_S - r_D$,
+an identity of the polynomials, and hence (17.3) follows. At the level $k$, the
+recursion tree has $3^k$ calls of size $n / 2^k$, whose total work $( 3 / 2 )^k
+n$ grows geometrically with $k$; thus the $3^{\log_2 n} = n^{\log_2 3}$ leaves
+dominate the sum. $\square$
 
-We obtain by the same argument the cost of any split of this kind: a product cut
-in $k$ pieces and rebuilt from $r$ products of the pieces costs
-$\Theta( n^{\log_k r} )$ when $r > k$. Hence Toom-3, which rebuilds the
-product from five products of a third (the values of the polynomials at
-$0 , \pm 1 , 2 , \infty$ and an interpolation), costs
-$\Theta( n^{\log_3 5} ) = O( n^{1.47} )$, with constants that grow with
-$k$ ([Knuth 1998, §4.3.3](Z-bibliography.md#ref-knuth1998v2)). ADS does
-not realize the methods of Toom, which GMP has (cf.
-[§17.3](17-numeric.md#sec-17-3)). [Figure 17.1](17-numeric.md#fig-17-1)
-shows where the three products of (17.3) land in the result, and
-[Algorithm 17.2](17-numeric.md#alg-17-2) gives the recursion.
+We obtain by the same argument the cost of any split of this kind: a product
+cut in $k$ pieces and rebuilt from $r$ products of the pieces costs $\Theta(
+n^{\log_k r} )$ when $r > k$. Hence Toom-3, which rebuilds the product from
+five products of a third (the values of the polynomials at $0 , \pm 1 , 2 ,
+\infty$ and an interpolation), costs $\Theta( n^{\log_3 5} ) = O( n^{1.47} )$,
+with constants that grow with $k$ ([Knuth 1998,
+§4.3.3](Z-bibliography.md#ref-knuth1998v2)). ADS does not realize the methods
+of Toom, which GMP has (cf. [§17.3](17-numeric.md#sec-17-3)). [Figure
+17.1](17-numeric.md#fig-17-1) shows where the three products of (17.3) land in
+the result, and [Algorithm 17.2](17-numeric.md#alg-17-2) gives the recursion.
 
 ![Figure 17.1. Three products of (17.3) added into the $2 n - 1$ coefficients of $r = p q$ for $n = 6$ and $h = 3$: $r_D$ at the shift 0, $r_M - r_S - r_D$ at the shift $h$, $r_S$ at the shift $2 h$; each product has $2 \cdot 3 - 1 = 5$ coefficients.](../figures/numeric-karatsuba.svg){#fig-17-1}
 
@@ -176,11 +176,11 @@ method of Karatsuba ([Montresor 2025,
 --8<-- "generated/Polynomial-multiplyKaratsuba.pseudo.md"
 
 In the recursion of `Polynomial.tpp` we split at $h = \lfloor n / 2 \rfloor$,
-and $n$ need not be a power of two. Here we let the higher halves have $m = n - h
-\ge h$ coefficients, and the lower halves are padded with zeros to $m$ before
-they are multiplied, which gives the two factors of each call the same
-length (the precondition of the recursion). We remark that the same function
-makes the four products of (17.2) when `three` is false.
+and $n$ need not be a power of two. Here we let the higher halves have $m = n -
+h \ge h$ coefficients, and the lower halves are padded with zeros to $m$ before
+they are multiplied, which gives the two factors of each call the same length
+(the precondition of the recursion). We remark that the same function makes the
+four products of (17.2) when `three` is false.
 
 In `*mults`, if it is given, the functions count the products of two
 coefficients: $n^2$ for the school and for the four halves when $n$ is a
@@ -268,28 +268,28 @@ std::uint64_t x = ADS::fromBits( b );  // x is 143
 ## 17.3 Integers of any length {#sec-17-3}
 
 `BigInteger` is the integer of any length of [Knuth 1998,
-§4.3.1](Z-bibliography.md#ref-knuth1998v2): a sign and the magnitude, as
-the vector of its digits in base $\beta = 2^{64}$, the least significant
-first, i.e., (17.1). Its invariant is the normal form: no leading zero
-digit, and 0 not negative. Each integer then has one representation, and
-two magnitudes compare by their lengths first and by their digits from
-the most significant one next. We keep the digits in `detail::Limbs`, a
-vector of words whose first two places are in the object. A number of one
-or two digits, and the result of an operation that fits there, are made
-with no allocation, while a longer one takes a block of the heap whose
-capacity at least doubles when it grows ([Figure 17.2](17-numeric.md#fig-17-2)).
-In many uses the small numbers are perhaps the majority (e.g., the counters, the
-terms of a small fraction, the quotients of a gcd), and for them an
-operation costs a few instructions instead of a call to the allocator.
+§4.3.1](Z-bibliography.md#ref-knuth1998v2): a sign and the magnitude, as the
+vector of its digits in base $\beta = 2^{64}$, the least significant first,
+i.e., (17.1). Its invariant is the normal form: no leading zero digit, and 0
+not negative. Each integer then has one representation, and two magnitudes
+compare by their lengths first and by their digits from the most significant
+one next. We keep the digits in `detail::Limbs`, a vector of words whose first
+two places are in the object. A number of one or two digits, and the result of
+an operation that fits there, are made with no allocation, while a longer one
+takes a block of the heap whose capacity at least doubles when it grows
+([Figure 17.2](17-numeric.md#fig-17-2)). In many uses the small numbers are
+perhaps the majority (e.g., the counters, the terms of a small fraction, the
+quotients of a gcd), and for them an operation costs a few instructions instead
+of a call to the allocator.
 
 ![Figure 17.2. Fields of `detail::Limbs` in a `BigInteger` of two digits, whose pointer $p$ addresses the places in the object, and of one of three digits, whose digits are in a block of the heap of capacity 4; the places in the object are then unused (faintest tint).](../figures/numeric-limbs.svg){#fig-17-2}
 
 **Sum and difference.** On the magnitudes, the sum and the difference are
-Algorithms 4.3.1A and 4.3.1S of [Knuth 1998](Z-bibliography.md#ref-knuth1998v2),
-one carry or one borrow per digit, in $\Theta( n )$ time. In the code, we let
-`addN()` add a shorter span $b$ to a span $a$, the carry running through
-the digits of $a$ beyond $b$ only while it is 1, and it works in place
-when $r = a$.
+Algorithms 4.3.1A and 4.3.1S of [Knuth
+1998](Z-bibliography.md#ref-knuth1998v2), one carry or one borrow per digit, in
+$\Theta( n )$ time. In the code, we let `addN()` add a shorter span $b$ to a
+span $a$, the carry running through the digits of $a$ beyond $b$ only while it
+is 1, and it works in place when $r = a$.
 
 We compute a sum of two numbers of opposite signs as the difference of the
 magnitudes, the larger minus the smaller (`compareMag()` decides), with
@@ -447,17 +447,16 @@ exercise 4.3.1-16](Z-bibliography.md#ref-knuth1998v2) (`divSmall()`), one
 division of 128 by 64 bits per digit. Finally, `divExact()`, for a
 division known to be exact, is the quotient of Algorithm D.
 
-**Conversions, powers, roots and gcd.** We convert to and from the bases
-2 to 36 as in [Knuth 1998, §4.4](Z-bibliography.md#ref-knuth1998v2).
-In a base that is a power of 2 each figure is a slice of bits, in
-$O( n )$. In the others, `toString()` divides by the largest power $P$ of
-the base that fits a digit ($P = 10^{19}$ for the base 10), each short
-division giving a chunk of figures; the constructor from a string reads
-chunks of figures and accumulates $x \gets x P + c$. Both conversions cost
-$O( n^2 )$ ([Algorithm 17.6](17-numeric.md#alg-17-6)). Finally, `pow()`
-is the binary method of [Knuth 1998, §4.6.3](Z-bibliography.md#ref-knuth1998v2),
-from left to right, with $\lfloor \log_2 n \rfloor$ squarings and at most
-as many products by $x$.
+**Conversions, powers, roots and gcd.** We convert to and from the bases 2 to
+36 as in [Knuth 1998, §4.4](Z-bibliography.md#ref-knuth1998v2). In a base that
+is a power of 2 each figure is a slice of bits, in $O( n )$. In the others,
+`toString()` divides by the largest power $P$ of the base that fits a digit ($P
+= 10^{19}$ for the base 10), each short division giving a chunk of figures; the
+constructor from a string reads chunks of figures and accumulates $x \gets x
+P + c$. Both conversions cost $O( n^2 )$ ([Algorithm
+17.6](17-numeric.md#alg-17-6)). Finally, `pow()` is the binary method of [Knuth
+1998, §4.6.3](Z-bibliography.md#ref-knuth1998v2), from left to right, with
+$\lfloor \log_2 n \rfloor$ squarings and at most as many products by $x$.
 
 <span id="alg-17-6"></span>**Algorithm 17.6.** Conversions of
 [Knuth 1998, §4.4](Z-bibliography.md#ref-knuth1998v2), where a chunk has
@@ -492,21 +491,20 @@ $s$, since $a < 2^\ell$. If $x > s$, then $x^2 > a$, i.e., $a / x < x$,
 and hence $y < x$; if $x = s$, then $a / s \ge s$, and hence $y \ge x$,
 which stops the loop with $x = s$. $\square$
 
-For the greatest common divisor `gcd()` we take the algorithm of Lehmer ([Lehmer
-1938](Z-bibliography.md#ref-lehmer1938); [Knuth 1998, Algorithm
+For the greatest common divisor `gcd()` we take the algorithm of Lehmer
+([Lehmer 1938](Z-bibliography.md#ref-lehmer1938); [Knuth 1998, Algorithm
 4.5.2L](Z-bibliography.md#ref-knuth1998v2)), [Algorithm
-17.8](17-numeric.md#alg-17-8). Most quotients of the algorithm of Euclid
-on long numbers are usually small, and they depend only on the leading digits of
+17.8](17-numeric.md#alg-17-8). Most quotients of the algorithm of Euclid on
+long numbers are usually small, and they depend only on the leading digits of
 the two numbers. Hence we run on the leading 60 bits $\hat u$ and $\hat v$ the
-algorithm of Euclid on two pairs, $( \hat u + A , \hat v + C )$ and
-$( \hat u + B , \hat v + D )$, which bracket the true ratio, for as long
-as the two quotients agree. Then the matrix $\begin{pmatrix} A & B \cr C &
-D \end{pmatrix}$ of the steps made is applied to the long numbers at
-once, $( u , v ) \gets ( A u + B v , C u + D v )$, which typically takes
-about 30 bits off both. A pass in which the leading bits cannot decide
-even one step ($B = 0$) is a long division (Algorithm 4.5.2A), and the
-last digit goes by the binary algorithm on words
-(cf. [§17.8](17-numeric.md#sec-17-8)).
+algorithm of Euclid on two pairs, $( \hat u + A , \hat v + C )$ and $( \hat u +
+B , \hat v + D )$, which bracket the true ratio, for as long as the two
+quotients agree. Then the matrix $\begin{pmatrix} A & B \cr C & D
+\end{pmatrix}$ of the steps made is applied to the long numbers at once, $( u ,
+v ) \gets ( A u + B v , C u + D v )$, which typically takes about 30 bits off
+both. A pass in which the leading bits cannot decide even one step ($B = 0$) is
+a long division (Algorithm 4.5.2A), and the last digit goes by the binary
+algorithm on words (cf. [§17.8](17-numeric.md#sec-17-8)).
 
 <span id="alg-17-8"></span>**Algorithm 17.8.** Gcd of Lehmer, and
 that of Euclid, `gcdEuclid()`, which the audits compare with it.
@@ -536,35 +534,33 @@ last digit costs $O( 64 )$ steps of the binary algorithm. $\square$
 The gcd thus costs $O( n^2 )$ in all, with a constant smaller than that of
 Euclid by a factor of the order of the steps per pass.
 
-**Backend of GMP.** With `ADS_WITH_GMP` defined (by the option of
-CMake of the same name, which defines it whenever GMP is found, by the
-makefile, which does the same, or by hand), the operations of
-`BigInteger` go to GMP ([Granlund 2023](Z-bibliography.md#ref-granlund2023)),
-at all lengths. Since the digits of `BigInteger` are those of the layer
-`mpn` of GMP (words of 64 bits, the least significant first), the sum, the
-difference, the comparison, the product, the quotient with the remainder,
-the square root and the conversion from a string go to `mpn_add()`,
-`mpn_sub()`, `mpn_cmp()`, `mpn_mul()` (or `mpn_sqr()`), `mpn_tdiv_qr()`,
-`mpn_sqrtrem()` and `mpn_set_str()`, which read the digits in place and
-write the result in place too. Instead, the quotient alone, the exact
-quotient, the gcd, the power and the conversion to a string go to the
-layer `mpz`
-(`mpz_tdiv_q()`, `mpz_divexact()`, `mpz_gcd()`, `mpz_pow_ui()`,
-`mpz_get_str()`) on read-only views of the digits (`mpz_roinit_n()`).
-Their result is copied from the number of GMP, in $O( n )$ time against
-the superlinear cost of the operation, except where it fits the digits in
-place (`mpn_tdiv_qr()` for a divisor of one or two digits, `mpn_gcd_1()`
-for a gcd with a number of one digit). GMP chooses its own algorithms and
-thresholds for the processor it was built for, among which the methods of
-Toom, a product by the FFT for the longest operands, and quotients, roots
-and conversions by divide et impera and Newton's method (see [Brent and
-Zimmermann 2010](Z-bibliography.md#ref-brent2010)), subquadratic where the
-code of ADS is quadratic. All this holds where a word of GMP is a word of 64 bits
-(`GMP_LIMB_BITS` equal to 64 and no nail bits); elsewhere, and with `ADS_BIGINT_GMP` defined to 0,
-`BigInteger` keeps the code above. We remark that GMP aborts the program
-where it cannot allocate, while the code of ADS throws `std::bad_alloc`.
-[Lemma 17.11](17-numeric.md#lem-17-11) states that the route does not
-change the results.
+**Backend of GMP.** With `ADS_WITH_GMP` defined (by the option of CMake of the
+same name, which defines it whenever GMP is found, by the makefile, which does
+the same, or by hand), the operations of `BigInteger` go to GMP ([Granlund
+2023](Z-bibliography.md#ref-granlund2023)), at all lengths. Since the digits of
+`BigInteger` are those of the layer `mpn` of GMP (words of 64 bits, the least
+significant first), the sum, the difference, the comparison, the product, the
+quotient with the remainder, the square root and the conversion from a string
+go to `mpn_add()`, `mpn_sub()`, `mpn_cmp()`, `mpn_mul()` (or `mpn_sqr()`),
+`mpn_tdiv_qr()`, `mpn_sqrtrem()` and `mpn_set_str()`, which read the digits in
+place and write the result in place too. Instead, the quotient alone, the exact
+quotient, the gcd, the power and the conversion to a string go to the layer
+`mpz` (`mpz_tdiv_q()`, `mpz_divexact()`, `mpz_gcd()`, `mpz_pow_ui()`,
+`mpz_get_str()`) on read-only views of the digits (`mpz_roinit_n()`). Their
+result is copied from the number of GMP, in $O( n )$ time against the
+superlinear cost of the operation, except where it fits the digits in place
+(`mpn_tdiv_qr()` for a divisor of one or two digits, `mpn_gcd_1()` for a gcd
+with a number of one digit). GMP chooses its own algorithms and thresholds for
+the processor it was built for, among which the methods of Toom, a product by
+the FFT for the longest operands, and quotients, roots and conversions by
+divide et impera and Newton's method (see [Brent and Zimmermann
+2010](Z-bibliography.md#ref-brent2010)), subquadratic where the code of ADS is
+quadratic. All this holds where a word of GMP is a word of 64 bits
+(`GMP_LIMB_BITS` equal to 64 and no nail bits); elsewhere, and with
+`ADS_BIGINT_GMP` defined to 0, `BigInteger` keeps the code above. We remark
+that GMP aborts the program where it cannot allocate, while the code of ADS
+throws `std::bad_alloc`. [Lemma 17.11](17-numeric.md#lem-17-11) states that the
+route does not change the results.
 
 **Interface.** A `BigInteger` is built from a `long long` (0 by default) or
 from a string in a base from 2 to 36, with an optional sign; `sign()` returns
@@ -673,18 +669,17 @@ $u / u'$ and $v / v'$ in lowest terms ([Knuth 1998,
 $v / v'$ are in lowest terms, the sum and the product of
 [Algorithm 17.9](17-numeric.md#alg-17-9) are in lowest terms.*
 
-*Proof.* For the product, $u / d_1$ and $v' / d_1$ are coprime, and so are
-$v / d_2$ and $u' / d_2$. Furthermore, $u$ is coprime with $u'$ and $v$
-with $v'$; hence no prime divides both the numerator $( u / d_1 ) ( v /
-d_2 )$ and the denominator $( u' / d_2 ) ( v' / d_1 )$. For the sum, let
-$u' = d_1 a$ and $v' = d_1 b$, with $\gcd( a , b ) = 1$, so that
-$t = u b + v a$. One has $\gcd( u , a ) = 1$ (as $a$ divides $u'$) and
-$\gcd( b , a ) = 1$, and hence $\gcd( t , a ) = \gcd( u b , a ) = 1$; in
-the same way $\gcd( t , b ) = 1$, and thus $t / d_2$ is coprime with
-$a b$. Now the denominator is $( u' / d_1 ) ( v' / d_2 ) = a b ( d_1 /
-d_2 )$, and a prime $\rho$ that divided both $t / d_2$ and $d_1 / d_2$ would make
-$\rho d_2$ a common divisor of $t$ and $d_1$ larger than their gcd $d_2$.
-$\square$
+*Proof.* For the product, $u / d_1$ and $v' / d_1$ are coprime, and so are $v /
+d_2$ and $u' / d_2$. Furthermore, $u$ is coprime with $u'$ and $v$ with $v'$;
+hence no prime divides both the numerator $( u / d_1 ) ( v / d_2 )$ and the
+denominator $( u' / d_2 ) ( v' / d_1 )$. For the sum, let $u' = d_1 a$ and $v'
+= d_1 b$, with $\gcd( a , b ) = 1$, so that $t = u b + v a$. One has $\gcd( u ,
+a ) = 1$ (as $a$ divides $u'$) and $\gcd( b , a ) = 1$, and hence $\gcd( t , a
+) = \gcd( u b , a ) = 1$; in the same way $\gcd( t , b ) = 1$, and thus $t /
+d_2$ is coprime with $a b$. Now the denominator is $( u' / d_1 ) ( v' / d_2 ) =
+a b ( d_1 / d_2 )$, and a prime $\rho$ that divided both $t / d_2$ and $d_1 /
+d_2$ would make $\rho d_2$ a common divisor of $t$ and $d_1$ larger than their
+gcd $d_2$. $\square$
 
 We gain by the method in the size of the numbers whose gcd is
 computed: $d_1$ is the gcd of the two denominators and $d_2$ that of $t$
@@ -754,12 +749,13 @@ bool lt = x * y < ADS::Rational( 1 , 6 );  // 35/216 < 1/6: lt is true
 
 ## 17.5 Recurrences that count {#sec-17-5}
 
-In the headers `Combinatorics.h`, `Catalan.h` and `MatrixChain.h` we collect the
-recurrences of [Montresor 2025, chapter 13](Z-bibliography.md#ref-montresor2025),
-the examples with which the book introduces dynamic programming, on
-integers of 64 bits whose ranges the contracts check (for instance,
-$0 \le k \le n \le 67$ for the binomial coefficients and $n \le 92$ for the
-numbers of Fibonacci, which are the largest that fit).
+In the headers `Combinatorics.h`, `Catalan.h` and `MatrixChain.h` we collect
+the recurrences of [Montresor 2025, chapter
+13](Z-bibliography.md#ref-montresor2025), the examples with which the book
+introduces dynamic programming, on integers of 64 bits whose ranges the
+contracts check (for instance, $0 \le k \le n \le 67$ for the binomial
+coefficients and $n \le 92$ for the numbers of Fibonacci, which are the largest
+that fit).
 
 **Binomial coefficients.** `binomial()` computes $\binom{n}{k}$ by its
 recursive definition
@@ -769,9 +765,9 @@ $$
 \binom{n}{n} = 1 , \tag{17.6}
 $$
 
-and `tartaglia()` fills the triangle of Tartaglia, all the $\binom{m}{j}$
-with $j \le m \le n$, by rows, in $\Theta( n^2 )$ time, after which one
-can read each coefficient in $O( 1 )$ ([Algorithm 17.10](17-numeric.md#alg-17-10)).
+and `tartaglia()` fills the triangle of Tartaglia, all the $\binom{m}{j}$ with
+$j \le m \le n$, by rows, in $\Theta( n^2 )$ time, after which one can read
+each coefficient in $O( 1 )$ ([Algorithm 17.10](17-numeric.md#alg-17-10)).
 
 <span id="alg-17-10"></span>**Algorithm 17.10.** Binomial
 coefficients by the recursion (17.6), by the triangle and by the
@@ -1073,18 +1069,18 @@ in `DenseMatrix.h`, by blocks of $L$ columns and rows of $B$.
 
 --8<-- "generated/DenseMatrix-gemm.pseudo.md"
 
-The innermost loop is an update $c \gets c + a \, b$ of a row of $C$ by a
-row of $B$, with no dependence between its iterations, which the compiler
-may vectorize. Each entry of $C$ is the sum of its terms in the order of
-$p$, whatever the split of the rows; hence the parallel `gemm()` of
-`ParallelNumeric.h`, which splits the rows among the threads, returns the
-same bits. We remark that $C$ is not read when $\beta = 0$, as in the
-BLAS, and a $C$ of garbage (even of NaNs) is thus overwritten. As for
-`transpose()`, it moves blocks of $32 \times 32$ entries, which stay in the cache of the first level both read by columns
-and written by rows. Its cost is $\Theta( m n )$ time and $O( m n / L )$
-misses for lines of $L$ entries when a block of $32 L$ entries fits the
-cache, the bound of the cache-oblivious transposition ([Frigo et al.
-2012](Z-bibliography.md#ref-frigo2012)).
+The innermost loop is an update $c \gets c + a \, b$ of a row of $C$ by a row
+of $B$, with no dependence between its iterations, which the compiler may
+vectorize. Each entry of $C$ is the sum of its terms in the order of $p$,
+whatever the split of the rows; hence the parallel `gemm()` of
+`ParallelNumeric.h`, which splits the rows among the threads, returns the same
+bits. We remark that $C$ is not read when $\beta = 0$, as in the BLAS, and a
+$C$ of garbage (even of NaNs) is thus overwritten. As for `transpose()`, it
+moves blocks of $32 \times 32$ entries, which stay in the cache of the first
+level both read by columns and written by rows. Its cost is $\Theta( m n )$
+time and $O( m n / L )$ misses for lines of $L$ entries when a block of $32 L$
+entries fits the cache, the bound of the cache-oblivious transposition ([Frigo
+et al. 2012](Z-bibliography.md#ref-frigo2012)).
 
 --8<-- "generated/DenseMatrix-transpose.pseudo.md"
 
@@ -1259,20 +1255,19 @@ under which a result is taken as 0.
 
 --8<-- "generated/SparseMatrix-pivot.pseudo.md"
 
-We regard a pivot step as the core of the elimination by exchange of [Knuth 1997,
-§2.2.6](Z-bibliography.md#ref-knuth1997). Let the pivot $a$ be in the row
-$r$ and the column $c$. An entry $d$ with a nonzero $b$ in its column of
-the pivot row and $c'$ in its row of the pivot column becomes $d - b c' /
-a$; the rest of the pivot row is divided by $a$, the rest of the pivot
-column by $- a$, and the pivot becomes $1 / a$. Only the entries at the
-crossings of the rows of $C$ and the columns of $R$ change, and the
-entries that become zero leave the lists while those that appear enter
-them. A pivot on each diagonal place in turn inverts a matrix whose pivots
-are not zero, which is how the test of the library uses it. As in Knuth's
-step, `pivot()` walks each row $i$ of $C$ side by side with the pivot row,
-and keeps for each column $j$ of $R$ the node above the current row, which
-only moves down the column; the reads and the writes of lines 5 and 7 thus
-resume where those of the previous entry stopped.
+We regard a pivot step as the core of the elimination by exchange of [Knuth
+1997, §2.2.6](Z-bibliography.md#ref-knuth1997). Let the pivot $a$ be in the row
+$r$ and the column $c$. An entry $d$ with a nonzero $b$ in its column of the
+pivot row and $c'$ in its row of the pivot column becomes $d - b c' / a$; the
+rest of the pivot row is divided by $a$, the rest of the pivot column by $- a$,
+and the pivot becomes $1 / a$. Only the entries at the crossings of the rows of
+$C$ and the columns of $R$ change, and the entries that become zero leave the
+lists while those that appear enter them. A pivot on each diagonal place in
+turn inverts a matrix whose pivots are not zero, which is how the test of the
+library uses it. As in Knuth's step, `pivot()` walks each row $i$ of $C$ side
+by side with the pivot row, and keeps for each column $j$ of $R$ the node above
+the current row, which only moves down the column; the reads and the writes of
+lines 5 and 7 thus resume where those of the previous entry stopped.
 
 <span id="lem-17-12"></span>**Lemma 17.12 (the pivot step).** *Let $a \ne
 0$ be the entry $( r , c )$, and $R$ and $C$ the nonzeros of the row $r$
@@ -1412,19 +1407,19 @@ scanned in order (the counting sort is stable). Finally, the counts, the
 prefix sums and the scan cost $\Theta( \mathit{nnz} )$, $\Theta( n )$ and
 $\Theta( m + \mathit{nnz} )$. $\square$
 
-We remark that the writes of the scan go to $n$ cursors at once, scattered over the
-transpose, and on a large matrix whose rows span columns far apart
-most writes may miss the cache. Therefore `transpose()` samples
-blocks of 64 rows to decide whether the matrix is of that kind. If so, it
-first distributes the entries, in the order of the rows, into 256 buckets
-of consecutive columns, and then each bucket into its slice of the
-transpose (the partitioned radix sort of the databases, cf. [Polychroniou
-and Ross 2014](Z-bibliography.md#ref-polychroniou2014)). This makes
-$2 \, \mathit{nnz}$ moves instead of $\mathit{nnz}$, but, since the writes
-of each pass stay in few streams, $O( \mathit{nnz} / L )$ misses instead
-of up to $\mathit{nnz}$ for lines of $L$ items, when a slice of
-$\mathit{nnz} / 256$ items fits the cache. Both passes are stable, and the
-result is that of [Lemma 17.13](17-numeric.md#lem-17-13). The class is
+We remark that the writes of the scan go to $n$ cursors at once, scattered over
+the transpose, and on a large matrix whose rows span columns far apart most
+writes may miss the cache. Therefore `transpose()` samples blocks of 64 rows to
+decide whether the matrix is of that kind. If so, it first distributes the
+entries, in the order of the rows, into 256 buckets of consecutive columns, and
+then each bucket into its slice of the transpose (the partitioned radix sort of
+the databases, cf. [Polychroniou and Ross
+2014](Z-bibliography.md#ref-polychroniou2014)). This makes $2 \, \mathit{nnz}$
+moves instead of $\mathit{nnz}$, but, since the writes of each pass stay in few
+streams, $O( \mathit{nnz} / L )$ misses instead of up to $\mathit{nnz}$ for
+lines of $L$ items, when a slice of $\mathit{nnz} / 256$ items fits the cache.
+Both passes are stable, and the result is that of [Lemma
+17.13](17-numeric.md#lem-17-13). The class is
 
 ```cpp
 // declarations of <ADS/numeric/CsrMatrix.h>
@@ -1669,21 +1664,20 @@ the input, in $O( z + m + n + \sum_i \min( k_i^2 , k_i \log k_i ) )$ time,
 for $z$ triplets of an $m \times n$ matrix whose major index $i$ has $k_i$
 distinct entries.*
 
-*Proof.* Together, the first two loops are the counting sort of the
-triplets on the
-major index ([Knuth 1998, vol. 3, §5.2](Z-bibliography.md#ref-knuth1998v3)),
-which leaves the triplets of each major index in its range, in the order
-of the input. In the third loop, $f$ is the first place of the major index
-$i$ and $o$ the next free place. Since the places of the earlier major
-indices come before $f$, $\mathit{mark}[ j ] > f$ holds exactly when $j$
-already has a place in $i$, namely $\mathit{mark}[ j ] - 1$, to which the
-value is added; otherwise $j$ takes the place $o$. At the end of the
-major index, the places $f , \ldots , o - 1$ hold the distinct entries of $i$, each summed in the
-order of the input. These are sorted by insertion when they are at most
-32 (at most $k_i ( k_i - 1 ) / 2$ moves, none if they come in order), and
-by the sort of the library otherwise. Note that $o$ never exceeds the
-place of the next triplet of $i$ to be read, and the compaction thus never
-overwrites a triplet not yet read. $\square$
+*Proof.* Together, the first two loops are the counting sort of the triplets on
+the major index ([Knuth 1998, vol. 3,
+§5.2](Z-bibliography.md#ref-knuth1998v3)), which leaves the triplets of each
+major index in its range, in the order of the input. In the third loop, $f$ is
+the first place of the major index $i$ and $o$ the next free place. Since the
+places of the earlier major indices come before $f$, $\mathit{mark}[ j ] > f$
+holds exactly when $j$ already has a place in $i$, namely $\mathit{mark}[ j ] -
+1$, to which the value is added; otherwise $j$ takes the place $o$. At the end
+of the major index, the places $f , \ldots , o - 1$ hold the distinct entries
+of $i$, each summed in the order of the input. These are sorted by insertion
+when they are at most 32 (at most $k_i ( k_i - 1 ) / 2$ moves, none if they
+come in order), and by the sort of the library otherwise. Note that $o$ never
+exceeds the place of the next triplet of $i$ to be read, and the compaction
+thus never overwrites a triplet not yet read. $\square$
 
 We thus scatter the entries over memory in one pass only. By contrast, the
 sort by the least significant index first, or the transposition of a matrix
@@ -1746,14 +1740,15 @@ $$
 \gcd( s , m ) = \gcd( m , s \bmod m ) , \tag{17.12}
 $$
 
-until $m = 0$. Indeed, $s \bmod m = s - \lfloor s / m \rfloor m$, and the
-two pairs have the same common divisors. In [Algorithm
-17.22](17-numeric.md#alg-17-22), `extendedEuclid()` also gives the coefficients of Bézout, $p$ and $q$ with $s p + m q = \gcd( s ,
-m )$: if $m p' + ( s \bmod m ) q' = d$, then $s q' + m ( p' - \lfloor s /
-m \rfloor q' ) = d$. When $d = 1$, the coefficient $p$ of $s$ is its
-inverse modulo $m$, which `modInverse()` returns in $[ 0 , m )$ (exercise
-17.3 of the book). We remark that the solution of exercise 17.2 printed in
-the book swaps the two coefficients, which the header corrects.
+until $m = 0$. Indeed, $s \bmod m = s - \lfloor s / m \rfloor m$, and the two
+pairs have the same common divisors. In [Algorithm
+17.22](17-numeric.md#alg-17-22), `extendedEuclid()` also gives the coefficients
+of Bézout, $p$ and $q$ with $s p + m q = \gcd( s , m )$: if $m p' + ( s \bmod m
+) q' = d$, then $s q' + m ( p' - \lfloor s / m \rfloor q' ) = d$. When $d = 1$,
+the coefficient $p$ of $s$ is its inverse modulo $m$, which `modInverse()`
+returns in $[ 0 , m )$ (exercise 17.3 of the book). We remark that the solution
+of exercise 17.2 printed in the book swaps the two coefficients, which the
+header corrects.
 
 <span id="alg-17-22"></span>**Algorithm 17.22.** Algorithm of Euclid,
 its extension and the inverse modulo $m$ ([Montresor 2025, exercises 17.2
@@ -1822,19 +1817,18 @@ $\square$
 In the code we compute the minimum and the difference by conditional
 moves, with no branch to mispredict.
 
-**Products and powers modulo $m$.** In `mulMod()`, the product $a b \bmod
-m$ is exact for any modulus of 64 bits, and it is the modular
-product of all of ADS. It uses the product of 64 bits for $m \le 2^{32}$,
-`mulMod61()` for the Mersenne prime $p = 2^{61} - 1$ (`kMersenne61`) of the universal
-hashing (four products of 32 bits folded by $2^{61} \equiv 1 \pmod{p}$,
-typically faster than a division of 128 bits), and otherwise the product
-of two words and the division of two words by one of `Wide.h`
-(cf. [§1.6](01-introduction.md#sec-1-6)). As for $x^v \bmod m$, `powMod()`
-computes it by repeated
-squaring (exercise 17.1 of the book). With $v = \sum_i v_i 2^i$, one has
-$x^v = \prod_{i : v_i = 1} x^{2^i}$, whose factors are squares of one
-another; the time is thus $\lfloor \log_2 v \rfloor + 1$ squarings and at
-most as many products modulo $m$ ([Algorithm 17.24](17-numeric.md#alg-17-24)).
+**Products and powers modulo $m$.** In `mulMod()`, the product $a b \bmod m$ is
+exact for any modulus of 64 bits, and it is the modular product of all of ADS.
+It uses the product of 64 bits for $m \le 2^{32}$, `mulMod61()` for the
+Mersenne prime $p = 2^{61} - 1$ (`kMersenne61`) of the universal hashing (four
+products of 32 bits folded by $2^{61} \equiv 1 \pmod{p}$, typically faster than
+a division of 128 bits), and otherwise the product of two words and the
+division of two words by one of `Wide.h` (cf.
+[§1.6](01-introduction.md#sec-1-6)). As for $x^v \bmod m$, `powMod()` computes
+it by repeated squaring (exercise 17.1 of the book). With $v = \sum_i v_i 2^i$,
+one has $x^v = \prod_{i : v_i = 1} x^{2^i}$, whose factors are squares of one
+another; the time is thus $\lfloor \log_2 v \rfloor + 1$ squarings and at most
+as many products modulo $m$ ([Algorithm 17.24](17-numeric.md#alg-17-24)).
 
 <span id="alg-17-24"></span>**Algorithm 17.24.** Product modulo $m$,
 the product modulo $p = 2^{61} - 1$ of the halves $a = a_1 2^{32} + a_0$
@@ -1887,9 +1881,9 @@ change the residue modulo $2^{2 k}$ while $2 k \le 64$, and the last step
 only needs it modulo $2^{64}$. Thus the bits that are right grow as $5 \to
 10 \to 20 \to 40 \to 64$. $\square$
 
-The members of `Montgomery64` are those of the arithmetic in the forms: `to()` gives the form of a number,
-`from()` the number of a form (one REDC), `one()` the form of 1,
-`mul()` the form of a product and `pow()` that of a power, while
+The members of `Montgomery64` are those of the arithmetic in the forms: `to()`
+gives the form of a number, `from()` the number of a form (one REDC), `one()`
+the form of 1, `mul()` the form of a product and `pow()` that of a power, while
 `modulus()` returns $m$; an odd $m$ is required. Throughout the header the
 words are the alias `U64` of `std::uint64_t`.
 
@@ -1939,14 +1933,14 @@ composite $n$ is the theorem of [Rabin 1980](Z-bibliography.md#ref-rabin1980),
 whose proof counts the bases in the group of the units modulo $n$.
 $\square$
 
-We call *witness* that $n$ is composite a base that violates (17.14), or
-shares a factor with $n$ (`witness()`), and `millerRabin()` tries $K$ bases
-drawn at random in $[ 2 , n - 2 ]$; by [Theorem 17.1](17-numeric.md#thm-17-1),
-a composite $n$ escapes all of them with probability at most $4^{-K}$, and
-the test errs only by saying prime ([Algorithm 17.26](17-numeric.md#alg-17-26)).
+We call *witness* that $n$ is composite a base that violates (17.14), or shares
+a factor with $n$ (`witness()`), and `millerRabin()` tries $K$ bases drawn at
+random in $[ 2 , n - 2 ]$; by [Theorem 17.1](17-numeric.md#thm-17-1), a
+composite $n$ escapes all of them with probability at most $4^{-K}$, and the
+test errs only by saying prime ([Algorithm 17.26](17-numeric.md#alg-17-26)).
 
-<span id="alg-17-26"></span>**Algorithm 17.26.** Witness and the test
-of Miller and Rabin ([Montresor 2025, §17.2](Z-bibliography.md#ref-montresor2025)).
+<span id="alg-17-26"></span>**Algorithm 17.26.** Witness and the test of Miller
+and Rabin ([Montresor 2025, §17.2](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/NumberTheory-witness.pseudo.md"
 
@@ -1986,16 +1980,15 @@ with.
 
 We run the bases of one $n$ in lockstep, as $k$ chains of products that the
 processor overlaps, and 2 bases may cost about as much as 1. With 3 or more,
-the exponent goes by windows of 4 bits with a table of $b^0 , \ldots ,
-b^{15}$ (14 products), and then 4 squarings and one product for each
-window but the first. For the odd part $d$ of $n - 1$, of $\ell_d$ bits,
-this makes at most $\ell_d + \lceil \ell_d / 4 \rceil + 12$ products per
-base, against the $2 \ell_d$ of the method from the lowest bit, which
-runs when there are only 1 or 2 bases. The arithmetic is that of Montgomery of 32 bits below
-$2^{32}$, the lazy one below $2^{62}$, and `Montgomery64` above. Finally,
-`isPrimeTrial()`, the divisions up to $\sqrt{n}$, is the reference that
-the audits compare with; it costs $O( 2^{\ell / 2} )$ for $n$ of $\ell$
-bits.
+the exponent goes by windows of 4 bits with a table of $b^0 , \ldots , b^{15}$
+(14 products), and then 4 squarings and one product for each window but the
+first. For the odd part $d$ of $n - 1$, of $\ell_d$ bits, this makes at most
+$\ell_d + \lceil \ell_d / 4 \rceil + 12$ products per base, against the $2
+\ell_d$ of the method from the lowest bit, which runs when there are only 1 or
+2 bases. The arithmetic is that of Montgomery of 32 bits below $2^{32}$, the
+lazy one below $2^{62}$, and `Montgomery64` above. Finally, `isPrimeTrial()`,
+the divisions up to $\sqrt{n}$, is the reference that the audits compare with;
+it costs $O( 2^{\ell / 2} )$ for $n$ of $\ell$ bits.
 
 **Factorization.** By `factorize()`, one gets the prime factors of
 a word ([Algorithm 17.28](17-numeric.md#alg-17-28)). It divides by the
@@ -2008,40 +2001,38 @@ the rho of [Pollard 1975](Z-bibliography.md#ref-pollard1975) with the
 cycle detection of [Brent 1980](Z-bibliography.md#ref-brent1980), both in
 the arithmetic of Montgomery of $m$.
 
-On a curve $E$ modulo $m$, the multiple $k P$ of a point is the neutral
-element modulo a prime $p \mid m$ when the order of $E( \mathbb{F}_p )$,
-which lies in $[ p + 1 - 2 \sqrt{p} , p + 1 + 2 \sqrt{p} ]$ and behaves
-as a random integer there, divides $k$; its coordinate $Z$ is then a
-multiple of $p$, which $\gcd( Z , m )$ finds, while modulo the other
-primes of $m$ the order is in general not a divisor of $k$. The curves
-are those of [Montgomery 1987](Z-bibliography.md#ref-montgomery1987),
-$B y^2 = x^3 + A x^2 + x$, on the coordinates $( X : Z )$ alone (a double
-costs 2 squares and 3 products, a sum $P + Q$ from $P - Q$ 2 squares and
-4 products, or 3 when $P - Q = ( x : 1 )$), with the parameter $\sigma$
-of Suyama ($u = \sigma^2 - 5$, $v = 4 \sigma$, $x_0 = u^3 / v^3$ and
-$( A + 2 ) / 4 = ( v - u )^3 ( 3 u + v ) / ( 16 u^3 v )$, by one inverse
-modulo $m$), whose orders are multiples of 12. The stage 1 computes $Q =
-k P$ for $k = \mathrm{lcm}( 1 , \ldots , B_1 )$ by the ladder of
-Montgomery on the words of $k$, computed at compile time, i.e., a sum and
-a double per bit (10 products), the bit choosing by swaps with no branch
-which point is doubled; the stage 2 catches one more prime $q \in ( B_1 ,
-B_2 ]$ of the order, written as $q = i D \pm j$ with $j < D / 2$ prime to
-$D$, and $D = 24$, 36 or 60 as $B_1$ is below 36, below 60 or not, since $q Q$ is neutral if and only if $X_{iD} Z_j -
-X_j Z_{iD} \equiv 0$, computed as $( X_{iD} - X_j ) ( Z_{iD} + Z_j ) -
-X_{iD} Z_{iD} + X_j Z_j$ (2 products, one for both $i D - j$ and $i D +
-j$, and only for the pairs of a prime, read in a table of bits computed at
-compile time). Small bounds suit small moduli ([Bos and Kleinjung
-2012](Z-bibliography.md#ref-bos2012)): $B_2 = 25 B_1$, with $B_1$ from 30
-to 205 as $m$ grows from 34 to 64 bits, tuned for a factor of half the
-bits of $m$, but for the first curve, whose $B_1 = 40$ is for one of
-about 20 bits. Below $2^{60}$ the sums and the differences that only
-enter a product are left unreduced in $[ 0 , 4 m )$, since a product of
-two of them is still below $m 2^{64}$. A gcd at the end of each curve
-gives the factor, and after 64 curves with none the rho takes over. The
-expected cost is $L_p( 1/2 , \sqrt{2} )$ products for the factor $p$
-([Lenstra 1987](Z-bibliography.md#ref-lenstra1987), a heuristic too), in
-practice a few curves of a few thousand products for $p$ of 32 bits,
-against the $O( \sqrt{p} )$ steps of the rho.
+On a curve $E$ modulo $m$, the multiple $k P$ of a point is the neutral element
+modulo a prime $p \mid m$ when the order of $E( \mathbb{F}_p )$, which lies in
+$[ p + 1 - 2 \sqrt{p} , p + 1 + 2 \sqrt{p} ]$ and behaves as a random integer
+there, divides $k$; its coordinate $Z$ is then a multiple of $p$, which $\gcd(
+Z , m )$ finds, while modulo the other primes of $m$ the order is in general
+not a divisor of $k$. The curves are those of [Montgomery
+1987](Z-bibliography.md#ref-montgomery1987), $B y^2 = x^3 + A x^2 + x$, on the
+coordinates $( X : Z )$ alone (a double costs 2 squares and 3 products, a sum
+$P + Q$ from $P - Q$ 2 squares and 4 products, or 3 when $P - Q = ( x : 1 )$),
+with the parameter $\sigma$ of Suyama ($u = \sigma^2 - 5$, $v = 4 \sigma$, $x_0
+= u^3 / v^3$ and $( A + 2 ) / 4 = ( v - u )^3 ( 3 u + v ) / ( 16 u^3 v )$, by
+one inverse modulo $m$), whose orders are multiples of 12. The stage 1 computes
+$Q = k P$ for $k = \mathrm{lcm}( 1 , \ldots , B_1 )$ by the ladder of
+Montgomery on the words of $k$, computed at compile time, i.e., a sum and a
+double per bit (10 products), the bit choosing by swaps with no branch which
+point is doubled; the stage 2 catches one more prime $q \in ( B_1 , B_2 ]$ of
+the order, written as $q = i D \pm j$ with $j < D / 2$ prime to $D$, and $D =
+24$, 36 or 60 as $B_1$ is below 36, below 60 or not, since $q Q$ is neutral if
+and only if $X_{iD} Z_j - X_j Z_{iD} \equiv 0$, computed as $( X_{iD} - X_j ) (
+Z_{iD} + Z_j ) - X_{iD} Z_{iD} + X_j Z_j$ (2 products, one for both $i D - j$
+and $i D + j$, and only for the pairs of a prime, read in a table of bits
+computed at compile time). Small bounds suit small moduli ([Bos and Kleinjung
+2012](Z-bibliography.md#ref-bos2012)): $B_2 = 25 B_1$, with $B_1$ from 30 to
+205 as $m$ grows from 34 to 64 bits, tuned for a factor of half the bits of
+$m$, but for the first curve, whose $B_1 = 40$ is for one of about 20 bits.
+Below $2^{60}$ the sums and the differences that only enter a product are left
+unreduced in $[ 0 , 4 m )$, since a product of two of them is still below $m
+2^{64}$. A gcd at the end of each curve gives the factor, and after 64 curves
+with none the rho takes over. The expected cost is $L_p( 1/2 , \sqrt{2} )$
+products for the factor $p$ ([Lenstra 1987](Z-bibliography.md#ref-lenstra1987),
+a heuristic too), in practice a few curves of a few thousand products for $p$
+of 32 bits, against the $O( \sqrt{p} )$ steps of the rho.
 
 The sequence of the rho, $x_{i+1} = x_i^2 + c \bmod m$, taken modulo the
 least prime $p$ of $m$, falls into a cycle after $O( \sqrt{p} ) = O(
@@ -2070,31 +2061,30 @@ increasing order, after fewer than $\log_2 n$ splits of a composite
 cofactor.*
 
 *Proof.* We show that, at each test of the loop of line 4 of [Algorithm
-17.27](17-numeric.md#alg-17-28), (a) the product of the items of $F$ and of
-$T$ is $n$, (b) each item of $F$ is a prime, and (c) each item of $T$ is
-greater than 1 and is a prime or has no prime factor below 4096. The
-divisions of lines 2 and 3 move each prime $p$ that divides the current
-cofactor from it to $F$, once per multiplicity, by the exact test of
-divisibility that precedes [Algorithm 17.27](17-numeric.md#alg-17-27), and
-they keep (a) and (b). They stop either at the first prime $p$ with $p^2$
-above the cofactor, which then has no prime factor below $p$ and is 1 or a
-prime, or after the last prime below 256 (below 4096 in line 3), and the
-cofactor then has no prime factor below that bound. A cofactor below
-$256^2$ with no prime factor below 256 is 1 or a prime, since a composite
-has a prime factor at most its square root, and `isPrime()` is exact on 64
-bits; hence the cofactor that line 3 puts in $T$ satisfies (c). In the loop, an item $m$ below $4096^2$ is a prime by (c)
-and by the same argument, as is one that `isPrime()` accepts, and line 6
-keeps (b). Otherwise $m$ is composite, and the $d$ of lines 7 and 8
-divides $m$ with $1 < d < m$: it is the root of a square, or a gcd with $m$
-that `ecm()` returns only if $1 < g < m$, or the gcd of the rho, whose loop
-over $c$ stops only on $1 < g < m$. Then $d$ and $m / d$ are greater than
-1, their product is $m$, and their prime factors are among those of $m$,
-which keeps (a) and (c). Each split replaces an item by two items of at
-least 2 with the same product, and since the items of $F$ and of $T$ are at
-least 2 and multiply to $n$, they are at most $\log_2 n$, and the splits
-fewer than $\log_2 n$. When $T$ is empty, (a) and (b) say that $F$ is a
-factorization of $n$ into primes, which is unique, and the last line sorts
-it. $\square$
+17.27](17-numeric.md#alg-17-28), (a) the product of the items of $F$ and of $T$
+is $n$, (b) each item of $F$ is a prime, and (c) each item of $T$ is greater
+than 1 and is a prime or has no prime factor below 4096. The divisions of lines
+2 and 3 move each prime $p$ that divides the current cofactor from it to $F$,
+once per multiplicity, by the exact test of divisibility that precedes
+[Algorithm 17.27](17-numeric.md#alg-17-27), and they keep (a) and (b). They
+stop either at the first prime $p$ with $p^2$ above the cofactor, which then
+has no prime factor below $p$ and is 1 or a prime, or after the last prime
+below 256 (below 4096 in line 3), and the cofactor then has no prime factor
+below that bound. A cofactor below $256^2$ with no prime factor below 256 is 1
+or a prime, since a composite has a prime factor at most its square root, and
+`isPrime()` is exact on 64 bits; hence the cofactor that line 3 puts in $T$
+satisfies (c). In the loop, an item $m$ below $4096^2$ is a prime by (c) and by
+the same argument, as is one that `isPrime()` accepts, and line 6 keeps (b).
+Otherwise $m$ is composite, and the $d$ of lines 7 and 8 divides $m$ with $1 <
+d < m$: it is the root of a square, or a gcd with $m$ that `ecm()` returns only
+if $1 < g < m$, or the gcd of the rho, whose loop over $c$ stops only on $1 < g
+< m$. Then $d$ and $m / d$ are greater than 1, their product is $m$, and their
+prime factors are among those of $m$, which keeps (a) and (c). Each split
+replaces an item by two items of at least 2 with the same product, and since
+the items of $F$ and of $T$ are at least 2 and multiply to $n$, they are at
+most $\log_2 n$, and the splits fewer than $\log_2 n$. When $T$ is empty, (a)
+and (b) say that $F$ is a factorization of $n$ into primes, which is unique,
+and the last line sorts it. $\square$
 
 We remark that the lemma assumes that `factorize()` returns, i.e., that for
 each composite $m$ given to the rho some $c$ gives a proper factor. Each
@@ -2103,11 +2093,11 @@ $c$ then succeeds is the usual heuristic assumption on the map $x \mapsto
 x^2 + c$ (a random map), which we do not prove; the audit of
 `factorize()` checks its result against `isPrime()`.
 
-**Sieve of Eratosthenes.** `sieve()` is the sieve of Eratosthenes on a SET of the
-integers from 2 to $n$ (`BoolSet` of `ADS/set`): the least item $p$ left in
+**Sieve of Eratosthenes.** `sieve()` is the sieve of Eratosthenes on a SET of
+the integers from 2 to $n$ (`BoolSet` of `ADS/set`): the least item $p$ left in
 the set is a prime, and its multiples are removed from $p^2$ on, since the
-smaller ones are multiples of smaller primes already removed
-([Algorithm 17.29](17-numeric.md#alg-17-29)).
+smaller ones are multiples of smaller primes already removed ([Algorithm
+17.29](17-numeric.md#alg-17-29)).
 
 <span id="alg-17-29"></span>**Algorithm 17.29.** Sieve of
 Eratosthenes.
@@ -2340,21 +2330,21 @@ generator also compares equal to another in the same state.
   $2^{64}$, hashed by the folding of a product of 128 bits, $h \oplus l$
   for $h 2^{64} + l = s ( s \oplus c' )$.
 - `Philox4x32` and `Philox4x64` are the counter-based generators Philox4xW-10
-  of [Salmon et al. 2011](Z-bibliography.md#ref-salmon2011): the output for
-  the counter $c$ (4 words of $W$ bits) and the key $k$ (2 words) is 10 rounds
-  of the bijection
-  $( c_0 , c_1 , c_2 , c_3 ) \mapsto ( h( M_1 c_2 ) \oplus c_1 \oplus k_0 , l( M_1 c_2 ) , h( M_0 c_0 ) \oplus c_3 \oplus k_1 , l( M_0 c_0 ) )$,
-  $h$ and $l$ the high and the low word of a product of $2 W$ bits, the key
+  of [Salmon et al. 2011](Z-bibliography.md#ref-salmon2011): the output for the
+  counter $c$ (4 words of $W$ bits) and the key $k$ (2 words) is 10 rounds of
+  the bijection $( c_0 , c_1 , c_2 , c_3 ) \mapsto ( h( M_1 c_2 ) \oplus c_1
+  \oplus k_0 , l( M_1 c_2 ) , h( M_0 c_0 ) \oplus c_3 \oplus k_1 , l( M_0 c_0 )
+  )$, $h$ and $l$ the high and the low word of a product of $2 W$ bits, the key
   bumped by the Weyl constants $w_0$ and $w_1$ between the rounds. Since the
   counter only increases, `discard( z )` costs $O( 1 )$, and any block of the
-  stream is computed on its own, as a parallel computation needs; this
-  sequence is that of `std::philox4x32` and `std::philox4x64` of C++26. Two
-  blocks are computed at once, their rounds interleaved, and the products of
-  one may thus fill the latency of those of the other. The seed $\sigma$ gives
-  the key $( \sigma , 0 )$ and the counter 0 (the default seed is 20111115,
-  that of C++26), `setCounter()` moves to the counter of a given `Block`,
-  whose block then gives the next outputs, and the static `block( c , k )`
-  computes the bijection for a counter and a `Key`.
+  stream is computed on its own, as a parallel computation needs; this sequence
+  is that of `std::philox4x32` and `std::philox4x64` of C++26. Two blocks are
+  computed at once, their rounds interleaved, and the products of one may thus
+  fill the latency of those of the other. The seed $\sigma$ gives the key $(
+  \sigma , 0 )$ and the counter 0 (the default seed is 20111115, that of
+  C++26), `setCounter()` moves to the counter of a given `Block`, whose block
+  then gives the next outputs, and the static `block( c , k )` computes the
+  bijection for a counter and a `Key`.
 
 <span id="alg-17-32"></span>**Algorithm 17.32.** Steps of xoshiro256++,
 of the jump, of WyRand and of Philox.
@@ -2421,67 +2411,64 @@ the item put in the place $j - 1$ is never moved again and it differs
 between the two sequences at the first draw in which they differ.
 $\square$
 
-The draw $g() \bmod j$ of the book is off the uniform by at most
-$j / 2^{64}$ for a generator of 64 bits, and by much more on a narrow
-range (with a generator of the three numbers 1, 2, 3 and $j = 2$, one
-index comes twice as often as the other). Instead, `shuffle()` draws each
-index by `detail::uniformIndex()`, which is exact on any generator $g$ of
-the $r + 1$ numbers from `g.min()` to `g.max()`, by three cases: (i) on a
-full word, $r + 1 = 2^{64}$, it is the method of Lemire of
-[Lemma 17.22](17-numeric.md#lem-17-22); (ii) when $j \le r + 1 < 2^{64}$,
-it returns $\lfloor x / q \rfloor$ for $q = \lfloor ( r + 1 ) / j
-\rfloor$ and the offset $x$ of the number from `g.min()`, rejecting the
-$x \ge q j$, so that each result has exactly $q$ values of $x$; (iii) when
-$j > r + 1$, it returns $( r + 1 ) y + x$, with $y$ drawn recursively below
-$\lceil j / ( r + 1 ) \rceil$ and $x$ a fresh offset, rejecting the
-results from $j$ on. In (iii) the pair $( y , x )$ is uniform, and it is
-the pair of digits in base $r + 1$ of a number uniform below $( r + 1 )
-\lceil j / ( r + 1 ) \rceil$, whose restriction to $[ 0 , j )$ is uniform;
-a sum that wraps around $2^{64}$ is detected as smaller than $( r + 1 ) y$
-and rejected too. Each case thus gives the uniform $k$ that
-[Lemma 17.23](17-numeric.md#lem-17-23) assumes, and `reservoirSampling()`
-draws in the same way. Moreover,
-`shuffleFast()` of `RandomGenerators.h` draws exact indices, and
-fewer words, after [Brackett-Rozinsky and Lemire
+The draw $g() \bmod j$ of the book is off the uniform by at most $j / 2^{64}$
+for a generator of 64 bits, and by much more on a narrow range (with a
+generator of the three numbers 1, 2, 3 and $j = 2$, one index comes twice as
+often as the other). Instead, `shuffle()` draws each index by
+`detail::uniformIndex()`, which is exact on any generator $g$ of the $r + 1$
+numbers from `g.min()` to `g.max()`, by three cases: (i) on a full word, $r + 1
+= 2^{64}$, it is the method of Lemire of [Lemma
+17.22](17-numeric.md#lem-17-22); (ii) when $j \le r + 1 < 2^{64}$, it returns
+$\lfloor x / q \rfloor$ for $q = \lfloor ( r + 1 ) / j \rfloor$ and the offset
+$x$ of the number from `g.min()`, rejecting the $x \ge q j$, so that each
+result has exactly $q$ values of $x$; (iii) when $j > r + 1$, it returns $( r +
+1 ) y + x$, with $y$ drawn recursively below $\lceil j / ( r + 1 ) \rceil$ and
+$x$ a fresh offset, rejecting the results from $j$ on. In (iii) the pair $( y ,
+x )$ is uniform, and it is the pair of digits in base $r + 1$ of a number
+uniform below $( r + 1 ) \lceil j / ( r + 1 ) \rceil$, whose restriction to $[
+0 , j )$ is uniform; a sum that wraps around $2^{64}$ is detected as smaller
+than $( r + 1 ) y$ and rejected too. Each case thus gives the uniform $k$ that
+[Lemma 17.23](17-numeric.md#lem-17-23) assumes, and `reservoirSampling()` draws
+in the same way. Moreover, `shuffleFast()` of `RandomGenerators.h` draws exact
+indices, and fewer words, after [Brackett-Rozinsky and Lemire
 2025](Z-bibliography.md#ref-brackettrozinsky2025). One word $x$ gives the
-indices of $k$ consecutive steps of bounds $b_1 , \ldots , b_k$ of product
-$p \le 2^{64}$, the $j$-th being the high word of $l_{j-1} b_j$, with
-$l_0 = x$ and $l_j$ its low word. By induction on $j$, $x b_1 \cdots b_j =
-H_j 2^{64} + l_j$, where $H_j$ is the number of digits $h_1 , \ldots ,
-h_j$ in the mixed radix $b_1 , \ldots , b_j$ (indeed, $H_j 2^{64} + l_j =
-( H_{j-1} 2^{64} + l_{j-1} ) b_j = ( H_{j-1} b_j + h_j ) 2^{64} + l_j$).
-Thus the tuple is the draw of Lemire below $p$ on the word $x$, and by
-[Lemma 17.22](17-numeric.md#lem-17-22) it is uniform on the $p$ tuples
-once $l_k < 2^{64} \bmod p$ is rejected, which happens with probability
-below $p / 2^{64}$. In the header, 6 steps are taken per word while the bounds are below
-$2^{10}$ ($p < 2^{60}$) and 2 below $2^{32}$; a shuffle of $n$ items thus
-draws about $n / 2$ words instead of $n$.
+indices of $k$ consecutive steps of bounds $b_1 , \ldots , b_k$ of product $p
+\le 2^{64}$, the $j$-th being the high word of $l_{j-1} b_j$, with $l_0 = x$
+and $l_j$ its low word. By induction on $j$, $x b_1 \cdots b_j = H_j 2^{64} +
+l_j$, where $H_j$ is the number of digits $h_1 , \ldots , h_j$ in the mixed
+radix $b_1 , \ldots , b_j$ (indeed, $H_j 2^{64} + l_j = ( H_{j-1} 2^{64} +
+l_{j-1} ) b_j = ( H_{j-1} b_j + h_j ) 2^{64} + l_j$). Thus the tuple is the
+draw of Lemire below $p$ on the word $x$, and by [Lemma
+17.22](17-numeric.md#lem-17-22) it is uniform on the $p$ tuples once $l_k <
+2^{64} \bmod p$ is rejected, which happens with probability below $p / 2^{64}$.
+In the header, 6 steps are taken per word while the bounds are below $2^{10}$
+($p < 2^{60}$) and 2 below $2^{32}$; a shuffle of $n$ items thus draws about $n
+/ 2$ words instead of $n$.
 
 --8<-- "generated/RandomGenerators-shuffleFast.pseudo.md"
 
-**Ziggurat.** Both `normalZiggurat()` and `exponentialZiggurat()` draw a normal and an exponential variate by the
-ziggurat of [Marsaglia and Tsang 2000](Z-bibliography.md#ref-marsaglia2000).
-Under the decreasing density $f$, the area is covered by 256 layers of
-equal area $v$: a base strip (a rectangle with the tail beyond $r$) and
-255 rectangles stacked on it. Their right ends $x_i$ are fixed by $x_1 =
-r$, $x_{i+1} = f^{-1}( f( x_i ) + v / x_i )$ and $x_{256} = 0$, with $x_0
-= v / f( r )$ the width of a rectangle of the area of the base strip. One
-word gives the layer $i$ (its low 8 bits) and a uniform $u$ of $[ -1 , 1
-)$ or $[ 0 , 1 )$ (its top 53 bits, apart from the layer, as [Leong et al.
-2005](Z-bibliography.md#ref-leong2005) recommend). We return $u x_i$
-when $| u | < x_{i+1} / x_i$, i.e., when the point falls under the next
-layer, which happens in about 98.8% (normal) and 98.9% (exponential) of
-the draws, at the cost of a word, a product and a comparison. Otherwise, a
-uniform height decides the wedge against the density, and in the base
-strip the tail beyond $r$ is drawn by the exponentials of Marsaglia
-(normal) or from $r$ again (exponential, which has no memory)
-([Algorithm 17.34](17-numeric.md#alg-17-34)). Finally,
-`impl/ZigguratTables.tpp` holds the tables $x_i$, $y_i = f( x_i )$ and
-$k_i = x_{i+1} / x_i$ of both ziggurats. They were computed in decimal
-arithmetic of 60 digits and rounded once to the nearest double, and the
-recurrence thus does not pile up the roundings of the doubles. Since the
-tables are constants and the functions are inlined, the state of the generator
-may stay in the registers of the caller.
+**Ziggurat.** Both `normalZiggurat()` and `exponentialZiggurat()` draw a normal
+and an exponential variate by the ziggurat of [Marsaglia and Tsang
+2000](Z-bibliography.md#ref-marsaglia2000). Under the decreasing density $f$,
+the area is covered by 256 layers of equal area $v$: a base strip (a rectangle
+with the tail beyond $r$) and 255 rectangles stacked on it. Their right ends
+$x_i$ are fixed by $x_1 = r$, $x_{i+1} = f^{-1}( f( x_i ) + v / x_i )$ and
+$x_{256} = 0$, with $x_0 = v / f( r )$ the width of a rectangle of the area of
+the base strip. One word gives the layer $i$ (its low 8 bits) and a uniform $u$
+of $[ -1 , 1 )$ or $[ 0 , 1 )$ (its top 53 bits, apart from the layer, as
+[Leong et al. 2005](Z-bibliography.md#ref-leong2005) recommend). We return $u
+x_i$ when $| u | < x_{i+1} / x_i$, i.e., when the point falls under the next
+layer, which happens in about 98.8% (normal) and 98.9% (exponential) of the
+draws, at the cost of a word, a product and a comparison. Otherwise, a uniform
+height decides the wedge against the density, and in the base strip the tail
+beyond $r$ is drawn by the exponentials of Marsaglia (normal) or from $r$ again
+(exponential, which has no memory) ([Algorithm
+17.34](17-numeric.md#alg-17-34)). Finally, `impl/ZigguratTables.tpp` holds the
+tables $x_i$, $y_i = f( x_i )$ and $k_i = x_{i+1} / x_i$ of both ziggurats.
+They were computed in decimal arithmetic of 60 digits and rounded once to the
+nearest double, and the recurrence thus does not pile up the roundings of the
+doubles. Since the tables are constants and the functions are inlined, the
+state of the generator may stay in the registers of the caller.
 
 <span id="alg-17-34"></span>**Algorithm 17.34.** Normal and
 exponential ziggurats; $U$, $U_1$ and $U_2$ are further uniforms.
@@ -2514,17 +2501,16 @@ Vose and the draw.
 $O( n )$ time, and in exact arithmetic the draw returns $i$ with
 probability $w_i / \sum_j w_j$.*
 
-*Proof.* Each step finalizes one small item, and an item becomes small at
-most once (it moves from $L$ to $S$ once); hence there are at most $n$
-steps. As an invariant, the shares $p_i$ of the items not yet finalized
-sum to their number, which holds at the start ($\sum_i p_i = n$)
-and after a step, which removes $s$ with its share $p_s$ and $1 - p_s$ of
-the share of $l$. Hence, when $S$ or $L$ is empty, the remaining items all
-have $p_i = 1$ (they cannot all be above, or all below, 1), and they keep
-their cell. In the end, the item $i$ has the mass $\mathit{keep}[ i ]$ of its own
-cell plus the $1 - \mathit{keep}[ s ]$ of each cell whose alias it is,
-i.e., its initial share $p_i = n w_i / \sum_j w_j$. Since each cell has
-probability $1 / n$, the claim follows. $\square$
+*Proof.* Each step finalizes one small item, and an item becomes small at most
+once (it moves from $L$ to $S$ once); hence there are at most $n$ steps. As an
+invariant, the shares $p_i$ of the items not yet finalized sum to their number,
+which holds at the start ($\sum_i p_i = n$) and after a step, which removes $s$
+with its share $p_s$ and $1 - p_s$ of the share of $l$. Hence, when $S$ or $L$
+is empty, the remaining items all have $p_i = 1$ (they cannot all be above, or
+all below, 1), and they keep their cell. In the end, the item $i$ has the mass
+$\mathit{keep}[ i ]$ of its own cell plus the $1 - \mathit{keep}[ s ]$ of each
+cell whose alias it is, i.e., its initial share $p_i = n w_i / \sum_j w_j$.
+Since each cell has probability $1 / n$, the claim follows. $\square$
 
 In floating point the remaining shares are 1 up to the rounding, and we set
 them to 1; the cells and the coins drawn from a word are off the exact ones by
@@ -2744,15 +2730,14 @@ $$
 P( G = g ) = \binom{V - g - 1}{v - 1} \Big/ \binom{V}{v} \tag{17.16}
 $$
 
-for $v$ positions still to select among $V$. Its Algorithm D draws by
-rejection with a continuous envelope, with about $n$ random numbers and
-$O( n )$ expected time. It falls back to Algorithm A (the gap by the
-sequential search of its distribution, $O( N )$ time but $n$ random
-numbers) when $13 n \ge N$ at the start, or as soon as $13 v \ge V$ during
-the draws, where A is usually faster ([Algorithm 17.37](17-numeric.md#alg-17-37)).
-Its optional argument `randoms` receives the count of the random numbers
-drawn, as `rounds` of `sampleBySorting()` receives the count of its
-rounds; the tests bound both.
+for $v$ positions still to select among $V$. Its Algorithm D draws by rejection
+with a continuous envelope, with about $n$ random numbers and $O( n )$ expected
+time. It falls back to Algorithm A (the gap by the sequential search of its
+distribution, $O( N )$ time but $n$ random numbers) when $13 n \ge N$ at the
+start, or as soon as $13 v \ge V$ during the draws, where A is usually faster
+([Algorithm 17.37](17-numeric.md#alg-17-37)). Its optional argument `randoms`
+receives the count of the random numbers drawn, as `rounds` of
+`sampleBySorting()` receives the count of its rounds; the tests bound both.
 
 <span id="alg-17-37"></span>**Algorithm 17.37.** Selection of [Knuth
 1998, Algorithm 3.4.2S](Z-bibliography.md#ref-knuth1998v2), and the skips
@@ -2812,13 +2797,13 @@ stream of unknown length: by a heap, by Algorithm R, and by Algorithm L.
 
 --8<-- "generated/RandomSampling-reservoirSampleL.pseudo.md"
 
-Compared with the literature, Algorithm D of Vitter is the method of
-choice when $N$ is known; Algorithm Z of [Vitter
-1985](Z-bibliography.md#ref-vitter1985) does for the reservoir what
-Algorithm L does, with a rejection that is more complex and (arguably) no faster; and the random keys of
-`heapSampling()` are the start of the weighted sampling of [Efraimidis and
-Spirakis 2006](Z-bibliography.md#ref-efraimidis2006), where the key of an
-item of weight $w$ is $U^{1 / w}$. We declare the functions of
+Compared with the literature, Algorithm D of Vitter is the method of choice
+when $N$ is known; Algorithm Z of [Vitter
+1985](Z-bibliography.md#ref-vitter1985) does for the reservoir what Algorithm L
+does, with a rejection that is more complex and (arguably) no faster; and the
+random keys of `heapSampling()` are the start of the weighted sampling of
+[Efraimidis and Spirakis 2006](Z-bibliography.md#ref-efraimidis2006), where the
+key of an item of weight $w$ is $U^{1 / w}$. We declare the functions of
 `RandomSampling.h` as
 
 ```cpp
@@ -2861,59 +2846,58 @@ std::vector< std::string > R = ADS::reservoirSampleL(
 
 ## 17.11 Discussion and references {#sec-17-11}
 
-The arithmetic of the integers of $n$ bits, the products of polynomials and
-of matrices by divide et impera, the recurrences and the number theory are
-those of [Montresor 2025, §2.6, §12.3, §12.4, chapter 13 and chapter
+The arithmetic of the integers of $n$ bits, the products of polynomials and of
+matrices by divide et impera, the recurrences and the number theory are those
+of [Montresor 2025, §2.6, §12.3, §12.4, chapter 13 and chapter
 17](Z-bibliography.md#ref-montresor2025); [Knuth 1998, chapters 3 and
-4](Z-bibliography.md#ref-knuth1998v2) is the reference for everything that
-the area adds on the integers of any length, the fractions and the random
-numbers, and [Brent and Zimmermann 2010](Z-bibliography.md#ref-brent2010)
-for the subquadratic methods of GMP that the code of ADS leaves to its
-backend. Karatsuba's product appeared in [Karatsuba and Ofman
-1963](Z-bibliography.md#ref-karatsuba1963), the product of matrices in
-seven multiplications in [Strassen 1969](Z-bibliography.md#ref-strassen1969)
-and its variant with 15 additions in [Winograd
-1971](Z-bibliography.md#ref-winograd1971); the use of the latter inside
-the level 3 BLAS, with its analysis of the errors, is in [Higham
-1990](Z-bibliography.md#ref-higham1990), and its engineering on the
-blocks of the BLAS (where the products of Strassen pay off from sizes of
-some thousands) in [Huang et al. 2016](Z-bibliography.md#ref-huang2016).
-The transform of [Cooley and Tukey 1965](Z-bibliography.md#ref-cooley1965)
-over a finite field is that of [Pollard 1971](Z-bibliography.md#ref-pollard1971),
-and the gcd of long numbers that of [Lehmer
-1938](Z-bibliography.md#ref-lehmer1938). On the sparse matrices, the
-orthogonal lists are those of [Knuth 1997, §2.2.6](Z-bibliography.md#ref-knuth1997),
-the compressed rows and their transposition by counting those of
-[Gustavson 1978](Z-bibliography.md#ref-gustavson1978) (see also [Saad 2003,
+4](Z-bibliography.md#ref-knuth1998v2) is the reference for everything that the
+area adds on the integers of any length, the fractions and the random numbers,
+and [Brent and Zimmermann 2010](Z-bibliography.md#ref-brent2010) for the
+subquadratic methods of GMP that the code of ADS leaves to its backend.
+Karatsuba's product appeared in [Karatsuba and Ofman
+1963](Z-bibliography.md#ref-karatsuba1963), the product of matrices in seven
+multiplications in [Strassen 1969](Z-bibliography.md#ref-strassen1969) and its
+variant with 15 additions in [Winograd
+1971](Z-bibliography.md#ref-winograd1971); the use of the latter inside the
+level 3 BLAS, with its analysis of the errors, is in [Higham
+1990](Z-bibliography.md#ref-higham1990), and its engineering on the blocks of
+the BLAS (where the products of Strassen pay off from sizes of some thousands)
+in [Huang et al. 2016](Z-bibliography.md#ref-huang2016). The transform of
+[Cooley and Tukey 1965](Z-bibliography.md#ref-cooley1965) over a finite field
+is that of [Pollard 1971](Z-bibliography.md#ref-pollard1971), and the gcd of
+long numbers that of [Lehmer 1938](Z-bibliography.md#ref-lehmer1938). On the
+sparse matrices, the orthogonal lists are those of [Knuth 1997,
+§2.2.6](Z-bibliography.md#ref-knuth1997), the compressed rows and their
+transposition by counting those of [Gustavson
+1978](Z-bibliography.md#ref-gustavson1978) (see also [Saad 2003,
 §3.4](Z-bibliography.md#ref-saad2003) and, for the assembly, [Davis 2006,
-chapter 2](Z-bibliography.md#ref-davis2006)), and SELL-$C$-$\sigma$ that
-of [Kreutzer et al. 2014](Z-bibliography.md#ref-kreutzer2014). The test of
-Miller and Rabin is in [Miller 1976](Z-bibliography.md#ref-miller1976) and
-[Rabin 1980](Z-bibliography.md#ref-rabin1980), its deterministic sets of
-bases in [Jaeschke 1993](Z-bibliography.md#ref-jaeschke1993), [Forišek and
-Jančina 2015](Z-bibliography.md#ref-forisek2015) and the tables of
-[Sinclair and others](Z-bibliography.md#ref-sinclair), the arithmetic
-without divisions in [Montgomery 1985](Z-bibliography.md#ref-montgomery1985)
-and [Granlund and Montgomery 1994](Z-bibliography.md#ref-granlund1994),
-the rho in [Pollard 1975](Z-bibliography.md#ref-pollard1975) and
-[Brent 1980](Z-bibliography.md#ref-brent1980), and the elliptic curves in
-[Lenstra 1987](Z-bibliography.md#ref-lenstra1987), [Montgomery
+chapter 2](Z-bibliography.md#ref-davis2006)), and SELL-$C$-$\sigma$ that of
+[Kreutzer et al. 2014](Z-bibliography.md#ref-kreutzer2014). The test of Miller
+and Rabin is in [Miller 1976](Z-bibliography.md#ref-miller1976) and [Rabin
+1980](Z-bibliography.md#ref-rabin1980), its deterministic sets of bases in
+[Jaeschke 1993](Z-bibliography.md#ref-jaeschke1993), [Forišek and Jančina
+2015](Z-bibliography.md#ref-forisek2015) and the tables of [Sinclair and
+others](Z-bibliography.md#ref-sinclair), the arithmetic without divisions in
+[Montgomery 1985](Z-bibliography.md#ref-montgomery1985) and [Granlund and
+Montgomery 1994](Z-bibliography.md#ref-granlund1994), the rho in [Pollard
+1975](Z-bibliography.md#ref-pollard1975) and [Brent
+1980](Z-bibliography.md#ref-brent1980), and the elliptic curves in [Lenstra
+1987](Z-bibliography.md#ref-lenstra1987), [Montgomery
 1987](Z-bibliography.md#ref-montgomery1987) and [Bos and Kleinjung
-2012](Z-bibliography.md#ref-bos2012). Our generators are those of
-[Blackman and Vigna 2021](Z-bibliography.md#ref-blackman2021), [Salmon et
-al. 2011](Z-bibliography.md#ref-salmon2011) and [Wang
-Yi](Z-bibliography.md#ref-wangyi), the integers in a range those of
-[Lemire 2019](Z-bibliography.md#ref-lemire2019) and [Brackett-Rozinsky
-and Lemire 2025](Z-bibliography.md#ref-brackettrozinsky2025), the
-ziggurat that of [Marsaglia and Tsang 2000](Z-bibliography.md#ref-marsaglia2000),
-and the samplings those of [Vitter 1984](Z-bibliography.md#ref-vitter1984),
-[Vitter 1985](Z-bibliography.md#ref-vitter1985), [Li
+2012](Z-bibliography.md#ref-bos2012). Our generators are those of [Blackman and
+Vigna 2021](Z-bibliography.md#ref-blackman2021), [Salmon et al.
+2011](Z-bibliography.md#ref-salmon2011) and [Wang
+Yi](Z-bibliography.md#ref-wangyi), the integers in a range those of [Lemire
+2019](Z-bibliography.md#ref-lemire2019) and [Brackett-Rozinsky and Lemire
+2025](Z-bibliography.md#ref-brackettrozinsky2025), the ziggurat that of
+[Marsaglia and Tsang 2000](Z-bibliography.md#ref-marsaglia2000), and the
+samplings those of [Vitter 1984](Z-bibliography.md#ref-vitter1984), [Vitter
+1985](Z-bibliography.md#ref-vitter1985), [Li
 1994](Z-bibliography.md#ref-li1994) and [Ferragina 2023, chapter
-3](Z-bibliography.md#ref-ferragina2023). We leave the comparison of the
-code of ADS with its backends (GMP, a CBLAS) and with the other libraries
-to the benchmarks of the appendix B. By design, the code of ADS is not
-tuned to any processor, and it is not expected to match the backends on
-long operands.
+3](Z-bibliography.md#ref-ferragina2023). We leave the comparison of the code of
+ADS with its backends (GMP, a CBLAS) and with the other libraries to the
+benchmarks of the appendix B. By design, the code of ADS is not tuned to any
+processor, and it is not expected to match the backends on long operands.
 
 A `BasicCsrMatrix` is persistent (cf. [§23.7](23-external.md#sec-23-7)), with
 the types of its values, of its columns and of its offsets in the file, so
@@ -2969,10 +2953,10 @@ Each exercise names the test of the library that solves it (run it with
     a vector and transpose it in $\Theta( m + n + \mathit{nnz} )$ time;
     store it as SELL-$C$-$\sigma$ and check that the product is the same.
     Tests: `engineered_numeric.csr-matrix`, `engineered_numeric.sell-matrix`.
-14. Assemble the compressed form of a matrix from triplets with
-    repetitions, in one pass that scatters the entries, and keep a
-    compressed matrix whose rows are appended and removed in batches.
-    Tests: `engineered_sparse.sparse-assembly`, `engineered_sparse.dynamic-csr`.
+14. Assemble the compressed form of a matrix from triplets with repetitions, in
+    one pass that scatters the entries, and keep a compressed matrix whose rows
+    are appended and removed in batches. Tests:
+    `engineered_sparse.sparse-assembly`, `engineered_sparse.dynamic-csr`.
 15. Compute $x^v \bmod m$ by repeated squaring, the extended algorithm of
     Euclid and the inverse modulo $m$ ([Montresor 2025, exercises 17.1 to
     17.3](Z-bibliography.md#ref-montresor2025)). Tests: `ch17.ex17.1`,
