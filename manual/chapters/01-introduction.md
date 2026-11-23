@@ -1550,20 +1550,47 @@ delegation of `FlatHashTable` to Boost, and the set of vector instructions
 at which Google Highway compiles the kernels inlined in the searches. A
 program often compiles a hot file with `-march=x86-64-v3` and the rest with
 the default, and its two translation units then hold two definitions of one
-class, which the linker merges silently; an object of one unit may then run the
-code of the
-other. For this reason `ADS/Abi.h` spells the four options in the name
-of an inline namespace, e.g., `abi_s1c1b0_N_AVX2`, the last part being the
-namespace that Highway gives to the set (`none` without Highway), in which
-`FlatHashTable`,
-`DenseHashMap`, `ConcurrentFlatTable` and `FastHash` are declared. Their
-names in `ADS` stay the same, while the names that the linker sees change
-with the options, and the two units get two distinct classes. We check it
-by the test `abi-units`, which links two such units into one program and
-checks that the tables of each hold what it put in them; without the
-namespace the same program fails. It is fair to remark, however, that the
-other macros of the configuration (e.g., the level of the contracts) must
-still be the same in all the units of a program.
+class, which the linker merges silently; an object of one unit may then run
+the code of the other. For this reason `ADS/Abi.h` spells the four options
+in the name of an inline namespace, e.g., `abi_s1c1b0_N_AVX2`, the last
+part being the namespace that Highway gives to the set (`none` without
+Highway), in which `FlatHashTable`, `DenseHashMap`, `ConcurrentFlatTable`
+and `FastHash` are declared; their names in `ADS` stay the same, while the
+names that the linker sees change with the options, as the following lemma
+states.
+
+<span id="lem-1-14"></span>**Lemma 1.14.** *Let two translation units of a
+program include the headers of ADS with values of `ADS_FLAT_SIMD`,
+`ADS_FLAT_CAS16`, `ADS_FLATHASH_BOOST` and of the set of vector
+instructions of `ADS/SimdInline.h` that differ in at least one. Then
+`FlatHashTable`, `DenseHashMap`, `ConcurrentFlatTable` and `FastHash`
+(with their members and the functions declared with them) are, in the two
+units, classes of two distinct namespaces, and therefore distinct types
+with distinct names for the linker, while in each unit they are found by
+their names in `ADS`. Hence the two definitions do not violate the
+one-definition rule, and a function defined in one unit on one of these
+classes, called from the other unit on the class of its own configuration,
+fails to link.*
+
+*Proof.* These classes are declared between `ADS_ABI_BEGIN` and
+`ADS_ABI_END`, i.e., in the inline namespace `ADS_ABI_NAME` of `ADS/Abi.h`,
+whose name `abi_s`$S$`c`$C$`b`$B$`_`$V$ pastes the three options, each a
+digit, and the namespace $V$ that Highway gives to the set
+of instructions (`none` without the vector branches); the letters and the
+first underscore after $B$ separate the four parts, and the name thus
+determines them. Two units that differ in one option therefore declare the
+classes in namespaces of different names, and the names of the linker,
+which include the namespaces, differ too. The members of an inline
+namespace are found by the lookup of the namespace around it (C++20,
+[namespace.def]), and the classes keep their names in `ADS`. $\square$
+
+The lemma covers only the four options of `Abi.h`; it is fair to remark,
+however, that the other macros of the configuration (e.g., the level of
+the contracts) must still be the same in all the units of a program. We
+check the lemma by the test `abi-units`, which links two units that differ
+in `ADS_FLAT_SIMD` and `ADS_FLAT_CAS16` into one program and checks that
+the tables of each hold what it put in them (without the namespace, the
+same program fails).
 
 The vector kernels of ADS are written once on the portable operations of
 Highway, with `ADS_WITH_HIGHWAY`, and the code of ADS has no branch on the
@@ -2241,7 +2268,7 @@ the parallel Boost Graph Library ([Gregor and Lumsdaine
 GraphBLAS ([Davis 2019](Z-bibliography.md#ref-davis2019)). A structure with a
 rule of its own specializes `coalesce_traits`, as the graphs do.
 
-<span id="lem-1-14"></span>**Lemma 1.14.** *Let $B$ be a history of a
+<span id="lem-1-15"></span>**Lemma 1.15.** *Let $B$ be a history of a
 structure (a sequence of events each of which starts from the state that
 the previous ones leave) whose attributes have the reduction `last`, and $C$
 its net effect by (1.15). Then $C$ is a history that leads from the state
@@ -2429,7 +2456,7 @@ shortest paths ([§14.8](14-graph.md#sec-14-8)) and Prim's algorithm take
 either form; in the lazy one they keep, for each node, whether it is in
 the frontier, and they skip a copy of a node that is not.
 
-<span id="lem-1-15"></span>**Lemma 1.15.** *Let the priorities of the
+<span id="lem-1-16"></span>**Lemma 1.16.** *Let the priorities of the
 copies be the pairs $( d , v )$ of a distance and a node, where a copy of
 $v$ is inserted at each fall of its distance. Then the lazy frontier extracts
 the same nodes, in the same order and with the same counts, as a native
@@ -2517,7 +2544,7 @@ $q$, an empty place included. Also, the event of the item comes before those
 of its walk: the new item is at the place $s$ after the last one, the key
 changes where the item is, and an erased item leaves its place empty.
 
-<span id="lem-1-16"></span>**Lemma 1.16.** *Let an observer keep a copy $M$ of
+<span id="lem-1-17"></span>**Lemma 1.17.** *Let an observer keep a copy $M$ of
 the vector of the ids of the heap, place an inserted id at the place $s$,
 empty the place of an erased id and exchange $M[p]$ and $M[q]$ at each
 `Relocated( p , q )`, dropping the empty places at the end. Then, after each
@@ -2559,7 +2586,7 @@ of the vector, and `apply( e )` makes the change of an event, by which an
 `UndoLog` of the array brings it back to a checkpoint. The array inserts and
 erases at its end only; hence, an index never changes meaning between two
 events of a batch, and the coalescing of (1.15) applies as it does to a
-structure with stable handles (cf. [Lemma 1.14](01-introduction.md#lem-1-14)).
+structure with stable handles (cf. [Lemma 1.15](01-introduction.md#lem-1-15)).
 For instance, two writes of one index become one `Assigned`, while an append
 and a removal cancel.
 
@@ -2672,7 +2699,7 @@ struct MaxOf
  };
 ```
 
-<span id="lem-1-17"></span>**Lemma 1.17.** *Let $c = x \oplus a \oplus y$
+<span id="lem-1-18"></span>**Lemma 1.18.** *Let $c = x \oplus a \oplus y$
 be an aggregate whose operand $a$ becomes $b$, and
 $c' = x \oplus b \oplus y$. Then (i) in an abelian group,
 $c' = c \oplus a^{-1} \oplus b$; (ii) in a commutative monoid, if
@@ -2689,7 +2716,7 @@ $c \oplus a^{-1} \oplus b = x \oplus y \oplus b = x \oplus b \oplus y$.
 symmetrically with $y = e$. (iv) By induction on the number of operands,
 since each combination is one of its two operands. $\square$
 
-Lemma 1.17 is the dispatch of the structures that follow. Its first part is
+Lemma 1.18 is the dispatch of the structures that follow. Its first part is
 the update of a prefix sum by its difference, and the second the `add()` of a
 commutative monoid (e.g., a maximum that is raised). The third is the removal
 of the first value of a window and the insertion of the last one
@@ -2753,7 +2780,7 @@ the nodes of the binary digits of $r$.
 
 --8<-- "generated/Fenwick-prefix.pseudo.md"
 
-<span id="lem-1-18"></span>**Lemma 1.18.** *(i) For $0 \le r \le n$, the
+<span id="lem-1-19"></span>**Lemma 1.19.** *(i) For $0 \le r \le n$, the
 sequence $j_1 = r$, $j_{k+1} = j_k - \lambda( j_k )$ reaches 0 after at most
 $\lfloor \log_2 r \rfloor + 1$ steps, and
 $\pi_r = t_{j_m} \oplus \cdots \oplus t_{j_1}$. (ii) For $j \ge 1$, $t_j$ is
@@ -2793,17 +2820,17 @@ other monoid.
 
 --8<-- "generated/Fenwick-set.pseudo.md"
 
-<span id="lem-1-19"></span>**Lemma 1.19.** *Let $a_i$ become $v$. (i) In an
-abelian group, combining each node of [Lemma 1.18](01-introduction.md#lem-1-18)
+<span id="lem-1-20"></span>**Lemma 1.20.** *Let $a_i$ become $v$. (i) In an
+abelian group, combining each node of [Lemma 1.19](01-introduction.md#lem-1-19)
 (iii) with $\delta = a_i^{-1} \oplus v$ gives the nodes of the new values,
 in $O( \log n )$ combinations. (ii) In a commutative monoid, if
 $v = a_i \oplus d$, the same holds with $\delta = d$. (iii) In any monoid,
-recomputing those nodes by [Lemma 1.18](01-introduction.md#lem-1-18) (ii) in
+recomputing those nodes by [Lemma 1.19](01-introduction.md#lem-1-19) (ii) in
 increasing order gives the new nodes, in $O( \log^2 n )$ combinations.*
 
 *Proof.* A node that does not contain $a_i$ does not change, and one that
 does is of the form $x \oplus a_i \oplus y$, which (i) and (ii) update by
-[Lemma 1.17](01-introduction.md#lem-1-17) (i) and (ii). For (iii), the nodes
+[Lemma 1.18](01-introduction.md#lem-1-18) (i) and (ii). For (iii), the nodes
 that $t_j$ combines have indices less than $j$; hence those among them that
 contain $a_i$ are recomputed before $t_j$ when the nodes are taken in
 increasing order, while the others are unchanged. Each recomputation takes
@@ -2819,21 +2846,21 @@ ignores the events until its next query, at which it builds the tree again
 from the vector of the array, in $O( n )$. For a static policy one builds the
 observer before its array, and gives it the array by `rebuild( a )`.
 
-<span id="lem-1-20"></span>**Lemma 1.20.** *After each event sent outside a
+<span id="lem-1-21"></span>**Lemma 1.21.** *After each event sent outside a
 batch, and after each batch, the tree of `FenwickObserver` is, at its next
 query, the tree of the values of the array.*
 
 *Proof.* By induction on the events received. Outside a batch each event
-starts from the state of the array that the observer knows, and Lemmas 1.18
+starts from the state of the array that the observer knows, and Lemmas 1.19
 and 1.19 keep the tree equal to that of the array. A batch delivers its net
-effect, which by [Lemma 1.14](01-introduction.md#lem-1-14) leads from the
+effect, which by [Lemma 1.15](01-introduction.md#lem-1-15) leads from the
 state before the batch to the state after it, with `Cleared` or `Rebuilt`
 first if the batch had one. After `Rebuilt` the events are ignored, and at
 the next query the tree is built from the array as it is then. This is the
 state after the events delivered so far, i.e., the state that the ignored
 events would have reached. $\square$
 
-We check Lemma 1.20 by the test `engineered_emitters.fenwick-observer`, i.e.,
+We check Lemma 1.21 by the test `engineered_emitters.fenwick-observer`, i.e.,
 by the audit of [§1.13](01-introduction.md#sec-1-13). A `Shadow` sends each
 event of an array to the observer and to one that recomputes each prefix by a
 scan of its own copy of the values, and compares their answers at each query,
@@ -2907,7 +2934,7 @@ Lite, whose first part carries the aggregates of its suffixes.
 
 --8<-- "generated/SlidingAggregate-dequeue.pseudo.md"
 
-<span id="lem-1-21"></span>**Lemma 1.21.** *(i) In a group, the aggregate
+<span id="lem-1-22"></span>**Lemma 1.22.** *(i) In a group, the aggregate
 kept as $s \gets s \oplus x$ at each insertion and $s \gets x_1^{-1} \oplus
 s$ at each removal of $x_1$ is $\alpha$. (ii) In a selective monoid, let the
 deque $C$ of the candidates lose from its back each $c$ with $c \oplus x =
@@ -2923,7 +2950,7 @@ $\alpha = S_1 \oplus b$. Each operation of (i) costs $O( 1 )$, and those of
 *Proof.* (i) By induction on the operations from $s = e$: an insertion of
 $x$ makes $s = x_1 \oplus \cdots \oplus x_n \oplus x$, and a removal makes
 $x_1^{-1} \oplus x_1 \oplus ( x_2 \oplus \cdots \oplus x_n )$, i.e., [Lemma
-1.17](01-introduction.md#lem-1-17) (iii). (ii) Let $\Gamma_l$ be the
+1.18](01-introduction.md#lem-1-18) (iii). (ii) Let $\Gamma_l$ be the
 combination of the candidates from the $l$-th item on. At an insertion of
 $x$ each candidate $c$ removed is the last one, so that
 $\Gamma_l = \Gamma' \oplus c$ with $\Gamma'$ the candidates before it, and
@@ -2940,7 +2967,7 @@ and $S_2$ is the aggregate of the first part that remains, while an
 insertion extends $b$ on the right. Each item enters the first part once, at
 the cost of one combination, which the potential $n - m$ pays. $\square$
 
-<span id="lem-1-22"></span>**Lemma 1.22.** *Let the queue be kept as
+<span id="lem-1-23"></span>**Lemma 1.23.** *Let the queue be kept as
 `RealTimeMinQueue` keeps it ([§4.9](04-queue.md#sec-4-9)), with the fronts
 $F$ and $N$ and the backs $R$ and $R'$, where each cell of a front holds
 $x \oplus \sigma$ and each cell of a back holds $\sigma \oplus x$, $x$ its
@@ -2966,7 +2993,7 @@ $N$ above $r_0$ hold items of $F$, already counted in $\hat F$, and the new
 back $R$ follows. When the rotation ends, $N$ becomes the front, and its top
 cell covers all its items. $\square$
 
-The minimum of `RealTimeMinQueue` is Lemma 1.22 for the minima, where the
+The minimum of `RealTimeMinQueue` is Lemma 1.23 for the minima, where the
 parts may overlap since $\min$ is idempotent; this is why it may read the
 least place of $F$ in $N$. `MinQueue` and `RealTimeMinQueue` stay as they
 are, since they also take an order that is an object, not a type, and give
@@ -3042,7 +3069,7 @@ Dial moved to $k$, between two episodes of a search.
 
 --8<-- "generated/DialQueue-rebase.pseudo.md"
 
-<span id="lem-1-23"></span>**Lemma 1.23.** *Let an observer of `RadixHeap`,
+<span id="lem-1-24"></span>**Lemma 1.24.** *Let an observer of `RadixHeap`,
 `DialQueue` or `BucketQueue` keep a multiset $M$ of pairs, adding the pair
 of each `Inserted`, removing one copy of the pair of each `Erased` and
 emptying $M$ at `Cleared`. Then, after each operation outside a batch and
@@ -3057,7 +3084,7 @@ reads before the removal, while `extract()` removes by `pop()` and
 `extractBelow()` sends each item with its key as it extracts it. No other
 operation adds or removes a pair, and `clear()` empties both. A batch sends
 the net effect of these events, which by [Lemma
-1.14](01-introduction.md#lem-1-14), for handles that name several items,
+1.15](01-introduction.md#lem-1-15), for handles that name several items,
 leads $M$ to the same multiset. As for `rebase()`, the window of the queue
 holds the keys in $[ \ell , \ell + W )$, one key per bucket, and therefore
 the bucket $b$ holds the key $\ell + ( ( b - \ell ) \bmod W )$. The
@@ -3078,7 +3105,7 @@ cut of the same edge cancel in a batch. In both structures an observer that thro
 from the `on()` of an insertion, a link or a change of value gets the change
 undone (the strong guarantee of [§1.13](01-introduction.md#sec-1-13)).
 
-<span id="lem-1-24"></span>**Lemma 1.24.** *(i) Let an observer of
+<span id="lem-1-25"></span>**Lemma 1.25.** *(i) Let an observer of
 `DisjointSets` keep a vector $q$ of parents, $q( x ) = -1$ for each element
 at the start and after `Rebuilt`, and $q( r ) = r'$ at each
 `Changed< Parent >( r , -1 , r' )`. Then two elements are in the same
@@ -3123,7 +3150,7 @@ has leave). It differs from the tournament tree of the paper, whose update
 only marks the leaf of the id for the next extraction, since each update
 moves the id at once, in $O( D \log_D s )$ time.
 
-<span id="lem-1-25"></span>**Lemma 1.25.** *Let a `TableHeap` $q$ be attached
+<span id="lem-1-26"></span>**Lemma 1.26.** *Let a `TableHeap` $q$ be attached
 to an `ObservableArray` $t$, with no event of $t$ in a batch. Then, after each
 event of $t$, an id is in $q$ if and only if its value was written (by
 `set()`, `add()` or `push_back()`) since it last left $q$ (by `deleteMin()`,
@@ -3279,7 +3306,7 @@ Each exercise names the test of the library that solves it (run it with
     changes through a subject policy, and check that a batch delivers the
     net effect of (1.15), that an observer that throws leaves the structure
     and the observers already told as they were, and that `UndoLog` brings
-    it back to a checkpoint ([Lemma 1.14](01-introduction.md#lem-1-14)).
+    it back to a checkpoint ([Lemma 1.15](01-introduction.md#lem-1-15)).
     Tests: `engineered_modification.mod-coalesce`,
     `engineered_modification.mod-rollback` and
     `engineered_modification.mod-batch`.
@@ -3287,7 +3314,7 @@ Each exercise names the test of the library that solves it (run it with
     handles, which lowers a key by a new insertion, and check that they
     give the distances, the trees, the order of extraction and the counts
     of a queue with handles, also with negative weights ([Lemma
-    1.15](01-introduction.md#lem-1-15)); then check the capability concepts,
+    1.16](01-introduction.md#lem-1-16)); then check the capability concepts,
     the opt-ins and the queries on the structures of the library, and the
     forwarding of the queries by `ObservedGraph` and by `Shadow`. Tests:
     `engineered_capabilities.cap-lazy-frontier`,
@@ -3295,13 +3322,13 @@ Each exercise names the test of the library that solves it (run it with
     `engineered_capabilities.cap-queue-points`.
 13. Attach to an `IndexedDaryHeap` an observer that keeps a copy of its
     vector from the exchanges alone, and check it after every operation
-    ([Lemma 1.16](01-introduction.md#lem-1-16)); then keep the prefix sums
+    ([Lemma 1.17](01-introduction.md#lem-1-17)); then keep the prefix sums
     of an `ObservableArray` by `FenwickObserver` under a `Shadow` that
-    recomputes them from scratch ([Lemma 1.20](01-introduction.md#lem-1-20)),
+    recomputes them from scratch ([Lemma 1.21](01-introduction.md#lem-1-21)),
     and the aggregate of a sliding window of a monoid that does not commute
     by each algorithm of `SlidingAggregate` against a scan of the window
-    (Lemmas [1.21](01-introduction.md#lem-1-21) and
-    [1.22](01-introduction.md#lem-1-22)). Tests:
+    (Lemmas [1.21](01-introduction.md#lem-1-22) and
+    [1.22](01-introduction.md#lem-1-23)). Tests:
     `engineered_emitters.emit-heap-relocated`,
     `engineered_emitters.fenwick-observer` and
     `engineered_emitters.sliding-aggregate`.

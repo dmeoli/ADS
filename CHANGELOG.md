@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `engineered_emitters.emit-queues*`, `engineered_emitters_forest` and
   `engineered_emitters_dict`, the functions of these structures in the check
   of zero cost of `bench/zerocost_asm.cpp`, and section 1.15.5 of the manual
-  (Table 1.8, Lemmas 1.23 to 1.25)
+  (Table 1.8, Lemmas 1.24 to 1.26)
 - the capabilities of the incremental searches on structures of the
   library: `extract( theta , out )` of `IndexedDaryHeap`, `RadixHeap`,
   `DialQueue` and `BucketQueue` (`batch_extract`), `rebase( k )` of
