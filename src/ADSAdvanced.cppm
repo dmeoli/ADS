@@ -225,11 +225,30 @@ using ADS::ZeroingClear;
 // concurrent/ConcurrentUnionFind.h
 using ADS::ConcurrentUnionFind;
 
+// concurrent/EpochReclaim.h
+using ADS::DebraEpochs;
+using ADS::EpochDomain;
+using ADS::FraserEpochs;
+
 // concurrent/EventCount.h
 using ADS::EventCount;
 
+// concurrent/HazardPointer.h
+using ADS::HazardDomain;
+using ADS::HazardPointers;
+using ADS::hazard_pointer;
+using ADS::hazard_pointer_obj_base;
+using ADS::make_hazard_pointer;
+using ADS::swap;
+
 // concurrent/LockFreePriorityQueue.h
 using ADS::LockFreePriorityQueue;
+
+// concurrent/LockFreeQueue.h
+using ADS::LockFreeQueue;
+
+// concurrent/LockFreeStack.h
+using ADS::LockFreeStack;
 
 // concurrent/MPMCQueue.h
 using ADS::MPMCQueue;
@@ -246,6 +265,10 @@ using ADS::MinBoard;
 // concurrent/MultiQueue.h
 using ADS::MultiQueue;
 using ADS::MultiQueueHeap;
+
+// concurrent/Reclaim.h
+using ADS::Retirable;
+using ADS::reclamation_policy;
 
 // concurrent/SPSCQueue.h
 using ADS::SPSCQueue;

@@ -487,7 +487,7 @@ QFFLAGS   = $(if $(filter %/qf_cqf.o,$(QFOBJS)),-DADS_HAS_CQF) \
 # directory if given: OPENBLAS=<prefix> for matrix, EIGEN=<include dir>
 # for matrix and sparse, CGAL=<include dir> (with GMP) for geometry,
 # HURCHALLA="<its include dirs>" and PCG=<include dir> for numeric,
-# RIGTORP=, MOODYCAMEL= and FOLLY=<include dirs> for concurrent
+# RIGTORP=, MOODYCAMEL=, FOLLY= and XENIUM=<include dirs> for concurrent
 OPENBLASFLAGS = $(if $(OPENBLAS),-DADS_HAS_OPENBLAS \
                 -I$(OPENBLAS)/include -L$(OPENBLAS)/lib \
                 -Wl$(comma)-rpath$(comma)$(OPENBLAS)/lib -lopenblas)
@@ -497,7 +497,8 @@ NUMERICFLAGS = $(if $(HURCHALLA),-DADS_HAS_HURCHALLA \
                $(if $(PCG),-DADS_HAS_PCG -I$(PCG))
 CONCURRENTFLAGS = $(if $(RIGTORP),-DADS_HAS_RIGTORP -I$(RIGTORP)) \
                   $(if $(MOODYCAMEL),-DADS_HAS_MOODYCAMEL -I$(MOODYCAMEL)) \
-                  $(if $(FOLLY),-DADS_HAS_FOLLY -I$(FOLLY))
+                  $(if $(FOLLY),-DADS_HAS_FOLLY -I$(FOLLY)) \
+                  $(if $(XENIUM),-DADS_HAS_XENIUM -I$(XENIUM))
 CGALFLAGS = $(if $(CGAL),-DADS_HAS_CGAL -I$(CGAL) $(if $(GMP),\
             -I$(GMP)/include -L$(GMP)/lib) -lgmp)
 

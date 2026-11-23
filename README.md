@@ -313,7 +313,7 @@ allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-460 headers: 245 base, 168 advanced, 19 core and 28 interop.
+465 headers: 245 base, 173 advanced, 19 core and 28 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
@@ -323,7 +323,7 @@ allow.
 | `combinatorial/` | `Bitwise`, `Generation` | `FastBitwise`, `FastGeneration` |  |  |
 | `complexity/` | `Domino`, `EasyCases`, `Nondeterminism`, `Problems`, `Reductions` |  |  |  |
 | `compression/` | `ArithmeticCoding`, `BurrowsWheeler`, `CanonicalHuffman`, `Entropy`, `FMIndex`, `IntegerCodes`, `LempelZiv`, `PPM` | `BinaryPacking`, `DirectAccessCodes`, `HuffmanCoder`, `HuffmanFMIndex`, `LZ77Linear`, `LZBicriteria`, `MoveRIndex`, `RIndex`, `Rans`, `StreamVByte`, `Tans` | `PackedBits` |  |
-| `concurrent/` |  | `Backoff`, `ConcurrentCuckooTable`, `ConcurrentFlatTable`, `ConcurrentUnionFind`, `EventCount`, `LockFreePriorityQueue`, `MPMCQueue`, `MPSCInbox`, `MPSCQueue`, `MinBoard`, `MultiQueue`, `SPSCQueue`, `SingleWriterFlatTable`, `StealablePriorityQueue`, `WorkStealingDeque` |  |  |
+| `concurrent/` |  | `Backoff`, `ConcurrentCuckooTable`, `ConcurrentFlatTable`, `ConcurrentUnionFind`, `EpochReclaim`, `EventCount`, `HazardPointer`, `LockFreePriorityQueue`, `LockFreeQueue`, `LockFreeStack`, `MPMCQueue`, `MPSCInbox`, `MPSCQueue`, `MinBoard`, `MultiQueue`, `Reclaim`, `SPSCQueue`, `SingleWriterFlatTable`, `StealablePriorityQueue`, `WorkStealingDeque` |  |  |
 | `dictionary/` | `BinaryTrie`, `BitmapTrie`, `ChainedHashTable`, `CuckooHashing`, `DirectTable`, `HashFunctions`, `IndexedSkipList`, `KnuthHashing`, `OpenHashTable`, `PatriciaTrie`, `PerfectHashing`, `SkipList`, `SortedArrayDictionary`, `TableSize`, `Trie`, `TwoLevelDictionary`, `UniversalHashing`, `XFastTrie`, `YFastTrie` | `AdaptiveRadixTree`, `BucketCuckooTable`, `ConsensusRecSplit`, `DenseHashMap`, `FastHash`, `FingerprintPerfectHash`, `FlatHashTable`, `MinimalPerfectHash`, `PointerTable`, `PositionIndex`, `PtrHash`, `RecSplit`, `RowFingerprint`, `SuccinctPatriciaTrie` | `RandomHashing` |  |
 | `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  | `BoostMPI` |
 | `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `MappedFile`, `Persistence`, `RecordFile` |  |
