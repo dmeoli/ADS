@@ -1765,6 +1765,7 @@ engineered_succinct  rans-coder       rANS di ordine 0, quattro stati
 engineered_succinct  rans-corrupted   rANS su flussi troncati e corrotti
 engineered_succinct  direct-access-codes  DACs, larghezze ottime per programma dinamico
 engineered_succinct  lz77-linear      LZ77 senza finestra in tempo lineare
+engineered_succinct  lz-bicriteria    LZ77 bicriterio, tempo con limite di spazio
 engineered_succinct  stream-vbyte     Stream VByte, controllo a parte
 engineered_succinct  tans-coder       tANS di ordine 0, quattro stati
 engineered_succinct  la-vector        LA-vector, rank e select con le rette appresi

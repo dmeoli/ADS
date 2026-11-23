@@ -44,6 +44,7 @@
 #include "ADS/compression/HuffmanCoder.h"
 #include "ADS/compression/HuffmanFMIndex.h"
 #include "ADS/compression/LZ77Linear.h"
+#include "ADS/compression/LZBicriteria.h"
 #include "ADS/compression/MoveRIndex.h"
 #include "ADS/compression/RIndex.h"
 #include "ADS/compression/Rans.h"

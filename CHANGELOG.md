@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `LZBicriteria.h`, the bicriteria parse of LZ77 of Farruggia, Ferragina,
+  Frangioni and Venturini, which finds among the parses into copies and runs
+  of literals the one of least decompression time within a bound on the size
+  of a byte-oriented code (or the one of least size within a bound on the
+  time), in a model of the costs of a phrase that charges its bytes and the
+  class of its distance, by the cutting planes on the Lagrangian relaxation
+  of the bound and the path swap of the two paths that they end with, the
+  parse reported with a lower bound and the additive gap that the swap
+  proves; the copies come from the longest previous factors of the suffix
+  array and from the sources nearest in its order, `lzBicriteriaEncode()`
+  writes the code with the variable-byte code of `IntegerCodes.h`, and
+  `lzBicriteriaDecode()` decodes it by blocks of 16 bytes into a buffer of
+  the caller, so that the benchmark `compression` times it against
+  `LZ4_decompress_safe` and `ZSTD_decompressDCtx` at the size of their
+  code, Zstandard being linked when `OPT` holds its library
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits

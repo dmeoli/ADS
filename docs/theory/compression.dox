@@ -384,6 +384,30 @@
  since the phrases cover the text, these sum to \f$ O( n ) \f$, and the parse
  costs \f$ O( n ) \f$ with the suffix array of SA-IS.
 
+ The bicriteria parse of Farruggia, Ferragina, Frangioni and Venturini
+ (`lzBicriteriaParse()` of `LZBicriteria.h`) chooses among the parses into
+ copies and runs of literals the one of least decompression time within a
+ bound on the size of the code, or vice versa, a shortest path with a
+ constraint on a second weight in the graph whose nodes are the places of the
+ text and whose arcs are the phrases. Since the suffix of an arc is an arc of
+ no greater weights, and the weights of a copy do not decrease with its
+ length, the Lagrangian relaxation of the bound is a shortest path on the
+ maximal arcs alone, at most nine for each place, and the cutting planes of
+ Handler and Zang end with two paths that are both optimal for the
+ multiplier \f$ \lambda^* \f$, one above the bound and one within it. The
+ best path swap of the two, the prefix of the first up to a place and the
+ suffix of the second from it, is within the bound \f$ R \f$ plus a slack
+ \f$ \sigma \f$ and costs at most
+ \f[
+   \varphi( \lambda^* ) + c_{\max} + \lambda^* \max\{ 0 , 2 r_{\max} -
+   \sigma \} ,
+ \f]
+ with \f$ \varphi( \lambda^* ) \f$ a lower bound on the optimum and
+ \f$ c_{\max} \f$ and \f$ r_{\max} \f$ the largest weights of an arc,
+ since consecutive swaps differ by at most the largest weights, and each swap
+ is within \f$ c_{\max} + \lambda^* r_{\max} \f$ of the Lagrangian
+ function.
+
  \section theory_compression_bwt The transform of Burrows and Wheeler
 
  The rows of the matrix \f$ M' \f$ are the \f$ n + 1 \f$ rotations of

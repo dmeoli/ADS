@@ -30,6 +30,7 @@
 #include "ADS/compression/MoveRIndex.h"
 #include "ADS/compression/RIndex.h"
 #include "ADS/compression/LZ77Linear.h"
+#include "ADS/compression/LZBicriteria.h"
 #include "ADS/compression/Rans.h"
 #include "ADS/compression/StreamVByte.h"
 #include "ADS/compression/Tans.h"
@@ -48,7 +49,9 @@
 #include <bit>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <random>
+#include <span>
 #include <string>
 #include <thread>
 #include <vector>
@@ -1221,6 +1224,209 @@ ADS_TEST( "lz77-linear" )
  const auto P = lz77ParseLinear( "aaaa" );
  CHECK( P.size() == 2 && P[ 1 ].distance == 1 && P[ 1 ].length == 3 &&
 	! P[ 1 ].next );
+ }
+
+// the bicriteria parse of LZ77: on small texts, with a search of the
+// sources that is never cut, the lower bound against the optimum of every
+// parse found by a dynamic program on the bounded quantity, and the parse
+// against the optimum plus the proven gap, for both goals and many bounds;
+// on larger texts (empty, one byte, one symbol repeated, random bytes, DNA
+// with repeats, words) of sizes around 64, 128, 8192 and 16384, the round
+// trip, the bound, the weights reported and the gap; the bounds out of
+// reach, and the decoder on copies that overlap their source
+ADS_TEST( "lz-bicriteria" )
+{
+ std::mt19937_64 g( 23 );
+ const LZBicriteriaModel M{ 3 , 1 , { 0 , 5 , 20 , 100 , 200 } , 100000 ,
+			    128 };
+ // the least minimized quantity over the parses within the bound, by a
+ // dynamic program on the place and the bounded quantity, the copies from
+ // their closest source
+ auto exact = [ & ]( const std::string & s , LZBicriteriaGoal goal ,
+		     std::uint64_t bound ) {
+  const std::size_t n = s.size();
+  const std::uint64_t head = std::uint64_t( vbyteLength( n ) );
+  const bool onTime = goal == LZBicriteriaGoal::time;
+  if( onTime && ( bound < head ) )
+   return( std::numeric_limits< std::uint64_t >::max() );
+  const std::uint64_t R = onTime ? bound - head : bound ,
+		      inf = std::numeric_limits< std::uint64_t >::max();
+  std::vector< std::vector< std::uint64_t > > best(
+    n + 1 , std::vector< std::uint64_t >( R + 1 , inf ) );
+  best[ 0 ][ 0 ] = 0;
+  for( std::size_t i = 0 ; i < n ; ++i ) {
+   std::vector< LZBicriteriaPhrase > out;
+   for( std::size_t k = 1 ; ( k <= 64 ) && ( i + k <= n ) ; ++k )
+    out.push_back( { 0 , k } );
+   for( std::size_t l = 1 ; i + l <= n ; ++l )
+    for( std::size_t d = 1 ; d <= i ; ++d ) {
+     std::size_t k = 0;
+     while( ( k < l ) && ( s[ i - d + k ] == s[ i + k ] ) )
+      ++k;
+     if( k == l ) {
+      out.push_back( { d , l } );
+      break;
+      }
+     }
+   for( const auto & f : out ) {
+    const std::uint64_t fs = std::uint64_t(
+			  f.distance == 0
+			    ? vbyteLength( 2 * ( f.length - 1 ) ) + f.length
+			    : vbyteLength( 2 * ( f.length - 1 ) + 1 ) +
+				vbyteLength( f.distance - 1 ) ) ,
+			ft = lzBicriteriaTime( { f } , M ) ,
+			c = onTime ? ft : fs , w = onTime ? fs : ft;
+    for( std::uint64_t r = 0 ; r + w <= R ; ++r )
+     if( best[ i ][ r ] != inf )
+      best[ i + f.length ][ r + w ] =
+	std::min( best[ i + f.length ][ r + w ] , best[ i ][ r ] + c );
+    }
+   }
+  const std::uint64_t z =
+    *std::min_element( best[ n ].begin() , best[ n ].end() );
+  return( ( ( z == inf ) || onTime ) ? z : z + head );
+  };
+ // the parse checked against its contracts, and its minimized quantity
+ auto check = [ & ]( const std::string & s , LZBicriteriaGoal goal ,
+		     std::uint64_t bound , std::uint64_t slack ,
+		     const LZBicriteriaModel & m ) {
+  const auto P = lzBicriteriaParse( s , goal , bound , m , slack );
+  const auto C = lzBicriteriaEncode( s , P.phrases );
+  CHECK( lzBicriteriaDecode( C ) == s );
+  CHECK( C.size() == P.space );
+  CHECK( lzBicriteriaTime( P.phrases , m ) == P.time );
+  for( const auto & f : P.phrases )
+   CHECK( ( f.distance > 0 ) ||
+	  ( ( f.length >= 1 ) && ( f.length <= lzBicriteriaMaxLiterals ) ) );
+  const bool onTime = goal == LZBicriteriaGoal::time;
+  const double c = double( onTime ? P.time : P.space );
+  const std::uint64_t r = onTime ? P.space : P.time;
+  if( P.feasible ) {
+   CHECK( r <= bound + slack );
+   // a parse past the bound may well be below the lower bound
+   CHECK( ( r > bound ) || ( P.lowerBound <= c + 1e-6 ) );
+   CHECK( c <= P.lowerBound + P.gapBound + 1e-6 );
+   }
+  return( P );
+  };
+ auto random = [ & ]( std::size_t n , int sigma ) {
+  std::string s;
+  for( std::size_t i = 0 ; i < n ; ++i )
+   s += char( 'a' + g() % unsigned( sigma ) );
+  return( s );
+  };
+ // the small texts against the dynamic program
+ for( const int sigma : { 1 , 2 , 4 } )
+  for( const std::size_t n : { 1 , 2 , 5 , 17 , 40 , 150 } ) {
+   // past 128 the copies of distance 129 to 16384 weigh 5 more in time
+   const std::string s = random( n , sigma );
+   for( const auto goal :
+	{ LZBicriteriaGoal::time , LZBicriteriaGoal::space } ) {
+    const bool onTime = goal == LZBicriteriaGoal::time;
+    // the range of the bounded quantity, from its least to the one of the
+    // parse of least minimized quantity
+    const auto lo = lzBicriteriaParse( s , goal , 0 , M );
+    const auto hi = lzBicriteriaParse(
+      s , goal , std::numeric_limits< std::uint32_t >::max() , M );
+    CHECK( ! lo.feasible || ( onTime ? lo.space : lo.time ) == 0 );
+    const std::uint64_t a = onTime ? lo.space : lo.time ,
+			b = onTime ? hi.space : hi.time;
+    CHECK( hi.feasible && ( hi.gapBound == 0 ) );
+    CHECK( double( onTime ? hi.time : hi.space ) ==
+	   double( exact( s , goal , b ) ) );
+    const std::uint64_t step = n > 100 ? ( b - a ) / 5 + 1 : 1;
+    for( std::uint64_t R = a ; R <= b + 1 ; R += step ) {
+     const std::uint64_t z = exact( s , goal , R );
+     for( const std::uint64_t slack :
+	  { std::uint64_t( 0 ) , std::uint64_t( 200 ) } ) {
+      const auto P = check( s , goal , R , slack , M );
+      CHECK( P.feasible ==
+	     ( z != std::numeric_limits< std::uint64_t >::max() ) );
+      if( P.feasible ) {
+       CHECK( P.lowerBound <= double( z ) + 1e-6 );
+       if( slack == 0 )
+	CHECK( ( onTime ? P.time : P.space ) >= z );
+       }
+      }
+     }
+    }
+   }
+ // the larger texts, with the default model
+ const LZBicriteriaModel D;
+ std::vector< std::string > texts = { "" , "x" , std::string( 1 , '\0' ) ,
+				      "abracadabra abracadabra abracadabra" };
+ for( const std::size_t n : { 63 , 64 , 65 , 127 , 128 , 129 , 8191 , 8192 ,
+			      8193 ,
+			      16383 , 16384 , 16385 , 40000 } ) {
+  texts.push_back( std::string( n , 'a' ) );
+  texts.push_back( random( n , 256 ) );
+  // DNA: random bases, then copies of earlier stretches with mutations
+  std::string dna;
+  while( dna.size() < n ) {
+   if( ( dna.size() > 200 ) && ( g() % 3 != 0 ) ) {
+    const std::size_t at = g() % ( dna.size() - 100 ) , len = 20 + g() % 80;
+    std::string piece = dna.substr( at , len );
+    piece[ g() % piece.size() ] = "ACGT"[ g() % 4 ];
+    dna += piece;
+    }
+   else
+    for( int k = 0 ; k < 50 ; ++k )
+     dna += "ACGT"[ g() % 4 ];
+   }
+  dna.resize( n );
+  texts.push_back( dna );
+  // words of a Zipf law
+  std::string words;
+  while( words.size() < n ) {
+   const std::size_t w =
+     std::size_t( 1.0 / ( 1e-3 + double( g() % 1000 ) / 1000.0 ) );
+   words += "w" + std::to_string( w % 300 ) + ( g() % 9 == 0 ? "\n" : " " );
+   }
+  words.resize( n );
+  texts.push_back( words );
+  }
+ for( const auto & s : texts )
+  for( const auto goal :
+       { LZBicriteriaGoal::time , LZBicriteriaGoal::space } ) {
+   const bool onTime = goal == LZBicriteriaGoal::time;
+   const auto lo = check( s , goal , 0 , 0 , D );
+   const auto hi =
+     check( s , goal , std::numeric_limits< std::uint64_t >::max() / 2 , 0 ,
+	    D );
+   const std::uint64_t a = onTime ? lo.space : lo.time ,
+		       b = onTime ? hi.space : hi.time;
+   CHECK( a <= b );
+   for( const double f : { 0.0 , 0.1 , 0.5 , 0.9 } ) {
+    const std::uint64_t R = a + std::uint64_t( f * double( b - a ) );
+    const auto P = check( s , goal , R , 0 , D );
+    CHECK( P.feasible );
+    const auto Q = check( s , goal , R , 2 * 200 + 2 * 65 , D );
+    CHECK( Q.feasible );
+    }
+   // a bound below the least space or time: the parse of least of it
+   if( a > 0 ) {
+    const auto P = check( s , goal , a - 1 , 0 , D );
+    CHECK( ! P.feasible && ( ( onTime ? P.space : P.time ) == a ) );
+    }
+   }
+ // the decoder on copies that overlap their source, of every distance below
+ // 16 and past it, and into a buffer of the exact size
+ for( std::size_t d = 1 ; d <= 20 ; ++d ) {
+  std::string s;
+  for( std::size_t i = 0 ; i < d ; ++i )
+   s += char( 'a' + i );
+  const std::vector< LZBicriteriaPhrase > P = { { 0 , d } , { d , 100 } };
+  for( std::size_t i = 0 ; i < 100 ; ++i )
+   s += s[ i ];
+  const auto C = lzBicriteriaEncode( s , P );
+  CHECK( lzBicriteriaDecode( C ) == s );
+  std::string out( s.size() , '?' );
+  CHECK( lzBicriteriaDecode( C , std::span< char >( out ) ) == s.size() );
+  CHECK( out == s );
+  CHECK( lzBicriteriaSize( C ) == s.size() );
+  }
+ CHECK_THROWS( lzBicriteriaEncode( "ab" , { { 1 , 2 } } ) ,
+	       contract_violation );
  }
 
 // Stream VByte: the round trip and the size of every count of integers

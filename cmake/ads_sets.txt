@@ -93,6 +93,7 @@ compression/HuffmanCoder.h            advanced
 compression/HuffmanFMIndex.h          advanced
 compression/IntegerCodes.h            base     Ferragina's book, even if fast
 compression/LZ77Linear.h              advanced
+compression/LZBicriteria.h            advanced
 compression/LempelZiv.h               base
 compression/MoveRIndex.h              advanced
 compression/PPM.h                     base

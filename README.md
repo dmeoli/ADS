@@ -313,7 +313,7 @@ allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-445 headers: 245 base, 153 advanced, 19 core and 28 interop.
+446 headers: 245 base, 154 advanced, 19 core and 28 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
@@ -322,7 +322,7 @@ allow.
 | `backtrack/` | `Anagrams`, `DancingLinks`, `Enumeration`, `KnightTour`, `NQueens`, `SatSolvers`, `Sudoku` | `FastExactCover` |  |  |
 | `combinatorial/` | `Bitwise`, `Generation` | `FastBitwise`, `FastGeneration` |  |  |
 | `complexity/` | `Domino`, `EasyCases`, `Nondeterminism`, `Problems`, `Reductions` |  |  |  |
-| `compression/` | `ArithmeticCoding`, `BurrowsWheeler`, `CanonicalHuffman`, `Entropy`, `FMIndex`, `IntegerCodes`, `LempelZiv`, `PPM` | `BinaryPacking`, `DirectAccessCodes`, `HuffmanCoder`, `HuffmanFMIndex`, `LZ77Linear`, `MoveRIndex`, `RIndex`, `Rans`, `StreamVByte`, `Tans` | `PackedBits` |  |
+| `compression/` | `ArithmeticCoding`, `BurrowsWheeler`, `CanonicalHuffman`, `Entropy`, `FMIndex`, `IntegerCodes`, `LempelZiv`, `PPM` | `BinaryPacking`, `DirectAccessCodes`, `HuffmanCoder`, `HuffmanFMIndex`, `LZ77Linear`, `LZBicriteria`, `MoveRIndex`, `RIndex`, `Rans`, `StreamVByte`, `Tans` | `PackedBits` |  |
 | `concurrent/` |  | `Backoff`, `ConcurrentCuckooTable`, `ConcurrentFlatTable`, `ConcurrentUnionFind`, `EventCount`, `LockFreePriorityQueue`, `MPMCQueue`, `MPSCInbox`, `MPSCQueue`, `MinBoard`, `MultiQueue`, `SPSCQueue`, `SingleWriterFlatTable`, `StealablePriorityQueue`, `WorkStealingDeque` |  |  |
 | `dictionary/` | `BinaryTrie`, `BitmapTrie`, `ChainedHashTable`, `CuckooHashing`, `DirectTable`, `HashFunctions`, `IndexedSkipList`, `KnuthHashing`, `OpenHashTable`, `PatriciaTrie`, `PerfectHashing`, `SkipList`, `SortedArrayDictionary`, `TableSize`, `Trie`, `TwoLevelDictionary`, `UniversalHashing`, `XFastTrie`, `YFastTrie` | `AdaptiveRadixTree`, `BucketCuckooTable`, `DenseHashMap`, `FastHash`, `FingerprintPerfectHash`, `FlatHashTable`, `MinimalPerfectHash`, `PointerTable`, `PositionIndex`, `RecSplit`, `RowFingerprint`, `SuccinctPatriciaTrie` | `RandomHashing` |  |
 | `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  | `BoostMPI` |
@@ -698,6 +698,7 @@ library, Boost and Eigen.
 | tANS of order 0 with 2^11 states, two halves of four states each (Duda) | [`compression/Tans.h`](include/ADS/compression/Tans.h) | `engineered_succinct.tans-coder` |
 | directly addressable codes with the optimal widths (Brisaboa, Ladra and Navarro) | [`compression/DirectAccessCodes.h`](include/ADS/compression/DirectAccessCodes.h) | `engineered_succinct.direct-access-codes` |
 | parse of LZ77 with no window in O(n) time (Karkkainen, Kempa and Puglisi) | [`compression/LZ77Linear.h`](include/ADS/compression/LZ77Linear.h) | `engineered_succinct.lz77-linear` |
+| bicriteria parse of LZ77, least decompression time within a bound on the size of a byte-oriented code or vice versa, by the Lagrangian relaxation and the path swap within an additive gap (Farruggia, Ferragina, Frangioni and Venturini) | [`compression/LZBicriteria.h`](include/ADS/compression/LZBicriteria.h) | `engineered_succinct.lz-bicriteria` |
 | tree of losers with the keys in its nodes, matches with no jump on the integers (Knuth; MCSTL, tlx) | [`priority/MultiwayMerge.h`](include/ADS/priority/MultiwayMerge.h) | `engineered_pearls.flat-loser-tree` |
 | merge of k sorted ranges by a lazy funnel of binary mergers (Frigo et al.; Brodal et al.) | [`priority/MultiwayMerge.h`](include/ADS/priority/MultiwayMerge.h) | `engineered_pearls.multiway-merge` |
 | cuckoo table shared by threads, buckets of 4 places, locks on 2048 stripes, paths searched in breadth without locks (Li et al.; libcuckoo) | [`concurrent/ConcurrentCuckooTable.h`](include/ADS/concurrent/ConcurrentCuckooTable.h) | `engineered.concurrent-cuckoo`, `engineered.concurrent-cuckoo-threads` |
