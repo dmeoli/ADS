@@ -13,11 +13,11 @@
  * and every other entry \f$ d \f$ with a nonzero \f$ b \f$ in its column of
  * the pivot row and \f$ c \f$ in its row of the pivot column becomes
  * \f$ d - b c / a \f$, the entries that become zero leaving the lists and
- * those that appear (the fill-in) entering them. Knuth's step walks the
- * rows of the pivot column side by side with the pivot row, in time
- * proportional to the nonzeros it touches; this one reads and writes each
- * of the \f$ |R| \cdot |C| \f$ entries it touches by `get()` and `set()`,
- * each a walk of a row and of a column. A pivot step on each diagonal
+ * those that appear (the fill-in) entering them. As in Knuth's step, each
+ * row of the pivot column is walked side by side with the pivot row, and
+ * for each column of the pivot row the node above the current row only
+ * moves down, in time proportional to the nonzeros of these rows and
+ * columns plus \f$ |R| \cdot |C| \f$. A pivot step on each diagonal
  * place, in turn, inverts a matrix whose pivots are not zero.
  *
  * The contracts [see `Contract.h`]: the places are in the matrix, and the
@@ -176,7 +176,10 @@ class SparseMatrix
  /// value at most \f$ \varepsilon \f$ vanish
  ///
  /// In pseudocode (Algorithm 2.2.6S of Knuth, beyond the book), \f$ R \f$ and
- /// \f$ C \f$ the nonzeros of the pivot row and column before the step:
+ /// \f$ C \f$ the nonzeros of the pivot row and column before the step, by
+ /// increasing index; lines 5 and 7 read and write the entry by walks of
+ /// its row and of its column that resume where the previous entry left
+ /// them:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{pivot}( r , c , \varepsilon ) \cr

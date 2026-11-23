@@ -145,17 +145,18 @@ class BasicCsrMatrix
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{CsrMatrix}( m , n , T ) \cr
- /// 2 & \quad \mathit{row}[ i + 1 ] \gets \text{the triplets of the row } i
- ///     \text{, for each } i \cr
+ /// 2 & \quad \mathit{row}[ i + 1 ] \gets \text{the number of the triplets}
+ ///     \text{ of the row } i \text{, for each } i \cr
  /// 3 & \quad \mathit{row} \gets \text{its prefix sums}\quad \triangleright
  ///     \ \text{the counting sort} \cr
  /// 4 & \quad E \gets \text{the pairs } ( j , v ) \text{ of } T \text{ put }
  ///     \text{by row at the offsets} \cr
  /// 5 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ m - 1\ \textbf{do} \cr
- /// 6 & \qquad \text{sort the pairs of the row } i \text{ by column} \cr
+ /// 6 & \qquad \text{sort the pairs of the row } i \text{ by column};
+ ///     \ \mathit{row}[ i ] \gets | \mathit{col} | \cr
  /// 7 & \qquad \text{append them to } \mathit{col} \text{ and }
  ///     \mathit{val} \text{, a repeated column added to the last} \cr
- /// 8 & \qquad \mathit{row}[ i ] \gets \text{where the row } i \text{ began}
+ /// 8 & \quad \mathit{row}[ m ] \gets | \mathit{col} |
  /// \end{array}}
  /// \f]
  /// \pre \f$ i < m \f$ and \f$ j < n \f$ for each triplet, the columns

@@ -111,12 +111,15 @@ time.
 
 <span id="alg-17-1"></span>**Algorithm 17.1.** Sum of two integers of
 $n$ bits ([Montresor 2025, §2.6](Z-bibliography.md#ref-montresor2025)),
-and the carries that turn coefficients of any sign into bits; $X_i = Y_i
-= 0$ beyond the bits of $X$ and $Y$.
+the carries that turn coefficients of any sign into bits, and the product
+of the school of two polynomials, which `carry()` turns into that of two
+integers; $X_i = Y_i = 0$ beyond the bits of $X$ and $Y$.
 
 --8<-- "generated/BinaryInteger-binaryAdd.pseudo.md"
 
 --8<-- "generated/BinaryInteger-carry.pseudo.md"
+
+--8<-- "generated/Polynomial-multiplyNaive.pseudo.md"
 
 By divide et impera we split both factors at $h = \lfloor n / 2 \rfloor$. Let
 $p = x^h p_S + p_D$ and $q = x^h q_S + q_D$, where $p_D$ and $q_D$ are the
@@ -164,8 +167,11 @@ shows where the three products of (17.3) land in the result, and
 ![Figure 17.1. Three products of (17.3) added into the $2 n - 1$ coefficients of $r = p q$ for $n = 6$ and $h = 3$: $r_D$ at the shift 0, $r_M - r_S - r_D$ at the shift $h$, $r_S$ at the shift $2 h$; each product has $2 \cdot 3 - 1 = 5$ coefficients.](../figures/numeric-karatsuba.svg){#fig-17-1}
 
 <span id="alg-17-2"></span>**Algorithm 17.2.** Product of two
-polynomials of $n$ coefficients by the method of Karatsuba
-([Montresor 2025, §12.3](Z-bibliography.md#ref-montresor2025)).
+polynomials of $n$ coefficients by the four products of (17.2) and by the
+method of Karatsuba ([Montresor 2025,
+§12.3](Z-bibliography.md#ref-montresor2025)).
+
+--8<-- "generated/Polynomial-multiplyFour.pseudo.md"
 
 --8<-- "generated/Polynomial-multiplyKaratsuba.pseudo.md"
 
@@ -205,7 +211,13 @@ when $a = 0$, and each step removes one bit of $a$. $\square$
 
 Finally, `toBits()` and `fromBits()` convert between a word and its bits
 (by the remainders of the halvings, and by the rule of Horner from the
-most significant bit). Also, `widen()` reads the bits as the coefficients
+most significant bit):
+
+--8<-- "generated/BinaryInteger-toBits.pseudo.md"
+
+--8<-- "generated/BinaryInteger-fromBits.pseudo.md"
+
+Also, `widen()` reads the bits as the coefficients
 of a polynomial in $x = 2$. We declare the functions of the two headers as
 
 ```cpp
@@ -761,12 +773,19 @@ with $j \le m \le n$, by rows, in $\Theta( n^2 )$ time, after which one
 can read each coefficient in $O( 1 )$ ([Algorithm 17.10](17-numeric.md#alg-17-10)).
 
 <span id="alg-17-10"></span>**Algorithm 17.10.** Binomial
-coefficients by the recursion (17.6) and by the triangle ([Montresor 2025,
+coefficients by the recursion (17.6), by the triangle and by the
+factorials, the last ones by a loop and by a recursion ([Montresor 2025,
 chapter 13](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/Combinatorics-binomial.pseudo.md"
 
 --8<-- "generated/Combinatorics-tartaglia.pseudo.md"
+
+--8<-- "generated/Combinatorics-binomialByFactorials.pseudo.md"
+
+--8<-- "generated/Combinatorics-factorial.pseudo.md"
+
+--8<-- "generated/Combinatorics-factorialRec.pseudo.md"
 
 <span id="lem-17-8"></span>**Lemma 17.8.** *`binomial( n , k )` makes
 $2 \binom{n}{k} - 1$ calls.*
@@ -976,8 +995,14 @@ from which $C_{11} = X_1 + X_4 - X_5 + X_7$, $C_{12} = X_3 + X_5$,
 $C_{21} = X_2 + X_4$ and $C_{22} = X_1 + X_3 - X_2 + X_6$, as one checks
 by expanding the products ([Algorithm 17.14](17-numeric.md#alg-17-14)).
 
-<span id="alg-17-14"></span>**Algorithm 17.14.** Product of Strassen
-of `Matrix.h` ([Montresor 2025, §12.4](Z-bibliography.md#ref-montresor2025)).
+<span id="alg-17-14"></span>**Algorithm 17.14.** Products by the
+definition, of two square matrices and of a $p \times q$ by a $q \times
+r$ one, and product of Strassen of `Matrix.h` ([Montresor 2025,
+§12.4](Z-bibliography.md#ref-montresor2025)).
+
+--8<-- "generated/Matrix-multiplyNaive.pseudo.md"
+
+--8<-- "generated/Matrix-multiply.pseudo.md"
 
 --8<-- "generated/Matrix-strassenRec.pseudo.md"
 
@@ -1242,13 +1267,49 @@ column by $- a$, and the pivot becomes $1 / a$. Only the entries at the
 crossings of the rows of $C$ and the columns of $R$ change, and the
 entries that become zero leave the lists while those that appear enter
 them. A pivot on each diagonal place in turn inverts a matrix whose pivots
-are not zero, which is how the test of the library uses it. We remark that
-Knuth's step walks the rows of the pivot column side by side with the
-pivot row, in time proportional to the nonzeros that it touches. Instead,
-`pivot()` reads and writes each of the $| R | \cdot | C |$ entries by
-`get()` and `set()`, each a walk of a row and of a column; the result is
-the same, and the cost is higher by the length of those walks. Besides the
-ranges `rowEntries()` and `colEntries()`, the class is
+are not zero, which is how the test of the library uses it. As in Knuth's
+step, `pivot()` walks each row $i$ of $C$ side by side with the pivot row,
+and keeps for each column $j$ of $R$ the node above the current row, which
+only moves down the column; the reads and the writes of lines 5 and 7 thus
+resume where those of the previous entry stopped.
+
+<span id="lem-17-12"></span>**Lemma 17.12 (the pivot step).** *Let $a \ne
+0$ be the entry $( r , c )$, and $R$ and $C$ the nonzeros of the row $r$
+and of the column $c$ before the call. Then `pivot( r , c , eps )` leaves
+the entry $( r , c )$ equal to $1 / a$, $( r , j )$ equal to $b_j / a$ and
+$( i , c )$ equal to $- c_i / a$ for $( j , b_j ) \in R$ and $( i , c_i )
+\in C$, and each entry $( i , j )$ with $i \ne r$ and $j \ne c$ of these
+rows and columns equal to $d - b_j c_i / a$, or to 0 when this is at most
+$\varepsilon$ in absolute value; all the other entries are unchanged, a
+node is on the lists exactly when its value is not zero, and the lists stay
+sorted. Without the entries of the pivot row or column whose quotient
+underflows to 0, the call takes*
+
+$$
+O\Bigl( | R | \, | C | + \sum_{( i , c_i ) \in C} \ell_i + \sum_{( j ,
+b_j ) \in R} \kappa_j \Bigr)
+$$
+
+*time, $\ell_i$ and $\kappa_j$ being the nonzeros of the row $i$ and of the
+column $j$; each entry that underflows adds a walk of its row and of its
+column.*
+
+*Proof.* The rows of $C$ come by increasing index and the columns of $R$ by
+increasing index within each row, so that the walk of the row $i$ and the
+node kept for each column $j$ only move forward; each node of these rows
+and columns is therefore passed at most once, and each place of $C \times
+R$ costs $O( 1 )$ more. At the place $( i , j )$ the node after the walk of
+the row is the one of $( i , j )$, if it is stored, and the node kept for
+the column precedes the row $i$; an update keeps the node, a cancellation
+unlinks it from both lists and a fill-in links a new node after both
+predecessors, which keeps the two lists sorted. Finally, the pivot row and
+column are scaled by one walk each, an entry that becomes 0 being removed
+by `set()` (Algorithm 17.17), and the pivot is set last. $\square$
+
+The space is that of the $m + n$ heads and of the largest number of
+nonzeros held at once, since a node removed goes to the free list and the
+next fill-in takes it. Besides the ranges `rowEntries()` and
+`colEntries()`, the class is
 
 ```cpp
 // declarations of <ADS/numeric/SparseMatrix.h>
@@ -1315,8 +1376,11 @@ In [Algorithm 17.18](17-numeric.md#alg-17-18), the product $y = A x$
 runs through the rows, the index $p$ of the nonzeros running through all of
 them once, in $\Theta( m + \mathit{nnz} )$ time:
 
-<span id="alg-17-18"></span>**Algorithm 17.18.** Product of a matrix
-in compressed sparse rows by a vector, and its transpose.
+<span id="alg-17-18"></span>**Algorithm 17.18.** Construction of a
+matrix in compressed sparse rows from triplets $T$, its product by a
+vector, and its transpose.
+
+--8<-- "generated/CsrMatrix-BasicCsrMatrix-CsrMatrix.pseudo.md"
 
 --8<-- "generated/CsrMatrix-BasicCsrMatrix-multiply.pseudo.md"
 
@@ -1335,7 +1399,7 @@ columns: the counts of the columns, summed, give the offsets of the rows
 of the transpose, and each entry, scanned by row, is written at the cursor
 of its column, which then advances.
 
-<span id="lem-17-12"></span>**Lemma 17.12.** *`transpose()` returns the
+<span id="lem-17-13"></span>**Lemma 17.13.** *`transpose()` returns the
 transpose in compressed sparse rows, each of its rows sorted by
 increasing column, in $\Theta( m + n + \mathit{nnz} )$ time.*
 
@@ -1359,7 +1423,7 @@ $2 \, \mathit{nnz}$ moves instead of $\mathit{nnz}$, but, since the writes
 of each pass stay in few streams, $O( \mathit{nnz} / L )$ misses instead
 of up to $\mathit{nnz}$ for lines of $L$ items, when a slice of
 $\mathit{nnz} / 256$ items fits the cache. Both passes are stable, and the
-result is that of [Lemma 17.12](17-numeric.md#lem-17-12). The class is
+result is that of [Lemma 17.13](17-numeric.md#lem-17-13). The class is
 
 ```cpp
 // declarations of <ADS/numeric/CsrMatrix.h>
@@ -1561,7 +1625,7 @@ the removal of a set of rows, of `DynamicCsr`.
 
 ![Figure 17.7. A `DynamicCsr` of four rows, $( a , b )$, $( c )$, $( d , e , f )$ and $( g , h )$, before and after `remove({1,3})`: the entries of the rows removed (faintest tint) are overwritten by those of the rows kept after them, each moved once (violet).](../figures/numeric-dynamiccsr.svg){#fig-17-7}
 
-<span id="lem-17-13"></span>**Lemma 17.13.** *`remove( E )` leaves the rows
+<span id="lem-17-14"></span>**Lemma 17.14.** *`remove( E )` leaves the rows
 not in $E$ in their order, with their entries, in $O( r + z' )$ time and no
 memory beyond the arrays, where $r$ is the number of the rows from the first
 one of $E$ on and $z'$ the number of the entries after the start of that row.*
@@ -1596,7 +1660,7 @@ indices, starting at $\mathit{beg}$.
 
 --8<-- "generated/SparseAssembly-assembleCsc.pseudo.md"
 
-<span id="lem-17-14"></span>**Lemma 17.14.** *`compressTriplets()`
+<span id="lem-17-15"></span>**Lemma 17.15.** *`compressTriplets()`
 returns in $\mathit{beg}$, $\mathit{ind}$ and $\mathit{val}$ the
 compressed form in which each major index has one entry per distinct minor
 index, sorted, with the sum of the values of its triplets in the order of
@@ -1690,12 +1754,17 @@ inverse modulo $m$, which `modInverse()` returns in $[ 0 , m )$ (exercise
 17.3 of the book). We remark that the solution of exercise 17.2 printed in
 the book swaps the two coefficients, which the header corrects.
 
-<span id="alg-17-22"></span>**Algorithm 17.22.** Extended algorithm
-of Euclid ([Montresor 2025, exercise 17.2](Z-bibliography.md#ref-montresor2025)).
+<span id="alg-17-22"></span>**Algorithm 17.22.** Algorithm of Euclid,
+its extension and the inverse modulo $m$ ([Montresor 2025, exercises 17.2
+and 17.3](Z-bibliography.md#ref-montresor2025)).
+
+--8<-- "generated/NumberTheory-gcd.pseudo.md"
 
 --8<-- "generated/NumberTheory-extendedEuclid.pseudo.md"
 
-<span id="lem-17-15"></span>**Lemma 17.15 (Lamé).** *The algorithm of
+--8<-- "generated/NumberTheory-modInverse.pseudo.md"
+
+<span id="lem-17-16"></span>**Lemma 17.16 (Lamé).** *The algorithm of
 Euclid on $s \ge m > 0$ makes at most $2 \log_2 m + 2$ steps, i.e.,
 $O( \log m )$. Moreover, if $s > m$ and the algorithm makes $k$ steps,
 then $s \ge F_{k+1}$ and $m \ge F_k$ (with the indexing of
@@ -1734,7 +1803,7 @@ counts the trailing zeros of a word.
 
 --8<-- "generated/NumberTheory-binaryGcd.pseudo.md"
 
-<span id="lem-17-16"></span>**Lemma 17.16.** *For $a , b > 0$,
+<span id="lem-17-17"></span>**Lemma 17.17.** *For $a , b > 0$,
 `binaryGcd( a , b )` returns $\gcd( a , b )$ after at most
 $\log_2 a + \log_2 b + 2$ iterations of its loop.*
 
@@ -1765,11 +1834,14 @@ $x^v = \prod_{i : v_i = 1} x^{2^i}$, whose factors are squares of one
 another; the time is thus $\lfloor \log_2 v \rfloor + 1$ squarings and at
 most as many products modulo $m$ ([Algorithm 17.24](17-numeric.md#alg-17-24)).
 
-<span id="alg-17-24"></span>**Algorithm 17.24.** Product modulo $m$
-and the power by repeated squaring ([Montresor 2025, exercise
-17.1](Z-bibliography.md#ref-montresor2025)).
+<span id="alg-17-24"></span>**Algorithm 17.24.** Product modulo $m$,
+the product modulo $p = 2^{61} - 1$ of the halves $a = a_1 2^{32} + a_0$
+and $b = b_1 2^{32} + b_0$, and the power by repeated squaring ([Montresor
+2025, exercise 17.1](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/NumberTheory-mulMod.pseudo.md"
+
+--8<-- "generated/NumberTheory-mulMod61.pseudo.md"
 
 --8<-- "generated/NumberTheory-powMod.pseudo.md"
 
@@ -1784,7 +1856,7 @@ $$
 q = T m^{-1} \bmod R . \tag{17.13}
 $$
 
-<span id="lem-17-17"></span>**Lemma 17.17 (Montgomery).** *For $T = h R
+<span id="lem-17-18"></span>**Lemma 17.18 (Montgomery).** *For $T = h R
 + l < m R$, (17.13) is an integer in $( - m , m )$, equal to $h - \lfloor q
 m / R \rfloor$; hence one addition of $m$ when it is negative gives $T
 R^{-1} \bmod m$, with two products and no division.*
@@ -1800,7 +1872,7 @@ from $x_0 = 3 m \oplus 2$ ($\oplus$ the exclusive or of the bits) by 4
 steps of Newton $x_{i+1} = x_i ( 2 - m x_i ) \bmod 2^{64}$, while each of
 the two residues takes one division of 128 by 64 bits.
 
-<span id="lem-17-18"></span>**Lemma 17.18.** *For an odd $m$,
+<span id="lem-17-19"></span>**Lemma 17.19.** *For an odd $m$,
 $m x_0 \equiv 1 \pmod{2^5}$, and $m x_i \equiv 1 \pmod{2^k}$ implies
 $m x_{i+1} \equiv 1 \pmod{2^{2 k}}$; hence $x_4 = m^{-1} \bmod 2^{64}$.*
 
@@ -1818,6 +1890,19 @@ The members of `Montgomery64` are those of the arithmetic in the forms: `to()` g
 `mul()` the form of a product and `pow()` that of a power, while
 `modulus()` returns $m$; an odd $m$ is required. Throughout the header the
 words are the alias `U64` of `std::uint64_t`.
+
+<span id="alg-17-25"></span>**Algorithm 17.25.** The class
+`Montgomery64`: its construction for the modulus $n$, the reduction
+(17.13) of $T = \mathit{hi} \, R + \mathit{lo}$, and the product and the
+power in the forms.
+
+--8<-- "generated/NumberTheory-Montgomery64-Montgomery64.pseudo.md"
+
+--8<-- "generated/NumberTheory-Montgomery64-reduce.pseudo.md"
+
+--8<-- "generated/NumberTheory-Montgomery64-mul.pseudo.md"
+
+--8<-- "generated/NumberTheory-Montgomery64-pow.pseudo.md"
 
 The function `powMod()` refines this further. First, the products and the
 squarings are two chains that do not depend on each other (from the
@@ -1856,9 +1941,9 @@ We call *witness* that $n$ is composite a base that violates (17.14), or
 shares a factor with $n$ (`witness()`), and `millerRabin()` tries $K$ bases
 drawn at random in $[ 2 , n - 2 ]$; by [Theorem 17.1](17-numeric.md#thm-17-1),
 a composite $n$ escapes all of them with probability at most $4^{-K}$, and
-the test errs only by saying prime ([Algorithm 17.25](17-numeric.md#alg-17-25)).
+the test errs only by saying prime ([Algorithm 17.26](17-numeric.md#alg-17-26)).
 
-<span id="alg-17-25"></span>**Algorithm 17.25.** Witness and the test
+<span id="alg-17-26"></span>**Algorithm 17.26.** Witness and the test
 of Miller and Rabin ([Montresor 2025, §17.2](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/NumberTheory-witness.pseudo.md"
@@ -1866,7 +1951,7 @@ of Miller and Rabin ([Montresor 2025, §17.2](Z-bibliography.md#ref-montresor202
 --8<-- "generated/NumberTheory-millerRabin.pseudo.md"
 
 Beyond the book, `isPrime()` is exact on 64 bits ([Algorithm
-17.26](17-numeric.md#alg-17-26)). It first divides by the 46 odd primes up
+17.26](17-numeric.md#alg-17-27)). It first divides by the 46 odd primes up
 to 211, by one product each with no branch, all at once on vectors. For
 an odd $p$, in fact, $p \mid n$ if and only if $n p^{-1} \bmod 2^{64} \le
 \lfloor ( 2^{64} - 1 ) / p \rfloor$, since $x \mapsto x p^{-1}$ is a
@@ -1889,10 +1974,13 @@ others](Z-bibliography.md#ref-sinclair), in the line of the bounds of
 [Jaeschke 1993](Z-bibliography.md#ref-jaeschke1993) for the first prime
 bases.
 
-<span id="alg-17-26"></span>**Algorithm 17.26.** Exact test of
-primality on 64 bits.
+<span id="alg-17-27"></span>**Algorithm 17.27.** Exact test of
+primality on 64 bits, and the trial divisions that the audits compare
+with.
 
 --8<-- "generated/NumberTheory-isPrime.pseudo.md"
+
+--8<-- "generated/NumberTheory-isPrimeTrial.pseudo.md"
 
 We run the bases of one $n$ in lockstep, as $k$ chains of products that the
 processor overlaps, and 2 bases may cost about as much as 1. With 3 or more,
@@ -1908,7 +1996,7 @@ the audits compare with; it costs $O( 2^{\ell / 2} )$ for $n$ of $\ell$
 bits.
 
 **Factorization.** By `factorize()`, one gets the prime factors of
-a word ([Algorithm 17.27](17-numeric.md#alg-17-27)). It divides by the
+a word ([Algorithm 17.28](17-numeric.md#alg-17-28)). It divides by the
 primes below 256, each test a product by $p^{-1} \bmod 2^{64}$ and a
 comparison, and, if the cofactor is composite (`isPrime()` decides), by
 those below 4096, 16 tests at a time; a composite cofactor $m$ is then
@@ -1963,7 +2051,7 @@ which spares 127 gcds in 128. If the gcd of a batch is $m$ itself, the
 batch is gone through again one difference at a time, and if even that
 gives $m$, the rho starts again with another $c$.
 
-<span id="alg-17-27"></span>**Algorithm 17.27.** Factorization of a
+<span id="alg-17-28"></span>**Algorithm 17.28.** Factorization of a
 word by the elliptic curves of Lenstra and the rho of Pollard and Brent.
 
 --8<-- "generated/NumberTheory-factorize.pseudo.md"
@@ -1974,18 +2062,18 @@ too, since its sequence is periodic modulo a prime of $m$ from some term on,
 and the doubling of $r$ eventually compares two terms of the cycle. The
 following lemma states what `factorize()` returns.
 
-<span id="lem-17-19"></span>**Lemma 17.19.** *If `factorize( n )`
+<span id="lem-17-20"></span>**Lemma 17.20.** *If `factorize( n )`
 returns, it returns the prime factors of $n$ with their multiplicity, in
 increasing order, after fewer than $\log_2 n$ splits of a composite
 cofactor.*
 
 *Proof.* We show that, at each test of the loop of line 4 of [Algorithm
-17.27](17-numeric.md#alg-17-27), (a) the product of the items of $F$ and of
+17.27](17-numeric.md#alg-17-28), (a) the product of the items of $F$ and of
 $T$ is $n$, (b) each item of $F$ is a prime, and (c) each item of $T$ is
 greater than 1 and is a prime or has no prime factor below 4096. The
 divisions of lines 2 and 3 move each prime $p$ that divides the current
 cofactor from it to $F$, once per multiplicity, by the exact test of
-divisibility that precedes [Algorithm 17.26](17-numeric.md#alg-17-26), and
+divisibility that precedes [Algorithm 17.27](17-numeric.md#alg-17-27), and
 they keep (a) and (b). They stop either at the first prime $p$ with $p^2$
 above the cofactor, which then has no prime factor below $p$ and is 1 or a
 prime, or after the last prime below 256 (below 4096 in line 3), and the
@@ -2017,14 +2105,14 @@ x^2 + c$ (a random map), which we do not prove; the audit of
 integers from 2 to $n$ (`BoolSet` of `ADS/set`): the least item $p$ left in
 the set is a prime, and its multiples are removed from $p^2$ on, since the
 smaller ones are multiples of smaller primes already removed
-([Algorithm 17.28](17-numeric.md#alg-17-28)).
+([Algorithm 17.29](17-numeric.md#alg-17-29)).
 
-<span id="alg-17-28"></span>**Algorithm 17.28.** Sieve of
+<span id="alg-17-29"></span>**Algorithm 17.29.** Sieve of
 Eratosthenes.
 
 --8<-- "generated/NumberTheory-sieve.pseudo.md"
 
-<span id="lem-17-20"></span>**Lemma 17.20.** *`sieve( n )` returns the primes
+<span id="lem-17-21"></span>**Lemma 17.21.** *`sieve( n )` returns the primes
 up to $n$ in increasing order, in $O( n \log \log n )$ time.*
 
 *Proof.* A number $p$ left in the set when the loop reaches it has no
@@ -2041,7 +2129,7 @@ scan $O( n )$. $\square$
 integers of 64 bits. We give it as a toy that shows the method and is not
 secure, since real keys need some thousand bits. In it, `rsaKeys()`
 draws three primes by `randomPrime()`, $x$ and $y$ of 31 bits and $s$ of
-24 ([Algorithm 17.29](17-numeric.md#alg-17-29)); `randomPrime()` draws odd
+24 ([Algorithm 17.30](17-numeric.md#alg-17-30)); `randomPrime()` draws odd
 numbers of the given number of bits (from 2 to 63, the top bit set) until
 `millerRabin()` with 40 bases accepts one. The draw is repeated when
 $x = y$, or when $s$ divides $( x - 1 ) ( y - 1 )$ and has no inverse
@@ -2052,12 +2140,15 @@ this order. One encrypts by $C = M^p
 \bmod N$ and decrypts by $M = C^s \bmod N$; signing is decrypting with
 the private key, and checking is encrypting with the public one.
 
-<span id="alg-17-29"></span>**Algorithm 17.29.** Keys of RSA
-([Montresor 2025, §17.3](Z-bibliography.md#ref-montresor2025)).
+<span id="alg-17-30"></span>**Algorithm 17.30.** Keys of RSA, and the
+encryption by a key $( N , e )$ ([Montresor 2025,
+§17.3](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/RSA-randomPrime.pseudo.md"
 
 --8<-- "generated/RSA-rsaKeys.pseudo.md"
+
+--8<-- "generated/RSA-rsa.pseudo.md"
 
 <span id="thm-17-2"></span>**Theorem 17.2.** *With $N = x y$, $x \ne y$
 primes, and $p s \equiv 1 \pmod{( x - 1 ) ( y - 1 )}$, one has $M^{p s}
@@ -2200,10 +2291,10 @@ linear congruential generator rather than at its output: its pairs $( X_k
 $\nu_2$ is the length of the shortest nonzero vector $( u , v )$ with
 $u + a v \equiv 0 \pmod{m}$, i.e., of the lattice of basis $( m , 0 )$,
 $( - a , 1 )$, which the reduction of Gauss and Lagrange finds
-([Algorithm 17.30](17-numeric.md#alg-17-30)). A good generator has
+([Algorithm 17.31](17-numeric.md#alg-17-31)). A good generator has
 $\nu_2$ near $\sqrt{m}$ (the lines then cover the square evenly).
 
-<span id="alg-17-30"></span>**Algorithm 17.30.** Tests of [Knuth
+<span id="alg-17-31"></span>**Algorithm 17.31.** Tests of [Knuth
 1998, §3.3](Z-bibliography.md#ref-knuth1998v2), and the spectral test in
 two dimensions; $\lfloor \cdot \rceil$ rounds to the nearest integer.
 
@@ -2220,7 +2311,7 @@ two dimensions; $\lfloor \cdot \rceil$ rounds to the nearest integer.
 tests (BigCrush of TestU01, PractRand) on which the linear congruential
 ones usually fail. They meet `std::uniform_random_bit_generator`, with
 $\min() = 0$ and $\max() = 2^{64} - 1$, and hence serve the distributions
-of the standard library ([Algorithm 17.31](17-numeric.md#alg-17-31)). The
+of the standard library ([Algorithm 17.32](17-numeric.md#alg-17-32)). The
 concept `FullWordGenerator` names exactly these generators, whose words are
 uniform on all the $2^{64}$ values, and it is the requirement of the
 functions below that use a word without a reduction (`uniformBelow()`,
@@ -2263,7 +2354,7 @@ generator also compares equal to another in the same state.
   whose block then gives the next outputs, and the static `block( c , k )`
   computes the bijection for a counter and a `Key`.
 
-<span id="alg-17-31"></span>**Algorithm 17.31.** Steps of xoshiro256++,
+<span id="alg-17-32"></span>**Algorithm 17.32.** Steps of xoshiro256++,
 of the jump, of WyRand and of Philox.
 
 --8<-- "generated/RandomGenerators-Xoshiro256T-next.pseudo.md"
@@ -2282,14 +2373,14 @@ division. `uniformBelow( g , s )` is the method of [Lemire
 2019](Z-bibliography.md#ref-lemire2019): for the word $x$,
 $x s = h 2^{64} + l$, and the result is $h$, once the $l$ below
 $t = 2^{64} \bmod s$ are rejected ([Algorithm
-17.32](17-numeric.md#alg-17-32)).
+17.32](17-numeric.md#alg-17-33)).
 
-<span id="alg-17-32"></span>**Algorithm 17.32.** Integer uniform in
+<span id="alg-17-33"></span>**Algorithm 17.33.** Integer uniform in
 $[ 0 , s )$ of [Lemire 2019](Z-bibliography.md#ref-lemire2019).
 
 --8<-- "generated/RandomGenerators-uniformBelow.pseudo.md"
 
-<span id="lem-17-21"></span>**Lemma 17.21 (Lemire).** *If $x$ is uniform on
+<span id="lem-17-22"></span>**Lemma 17.22 (Lemire).** *If $x$ is uniform on
 the words, the result of `uniformBelow( g , s )` is uniform in $[ 0 , s )$; a
 word is rejected with probability $t / 2^{64} < s / 2^{64}$, and the division
 that computes $t$ is made only when $l < s$, i.e., with probability
@@ -2318,7 +2409,7 @@ Yates in the form of [Durstenfeld 1964](Z-bibliography.md#ref-durstenfeld1964)
 
 --8<-- "generated/RandomNumbers-shuffle.pseudo.md"
 
-<span id="lem-17-22"></span>**Lemma 17.22.** *If each $k$ is uniform in
+<span id="lem-17-23"></span>**Lemma 17.23.** *If each $k$ is uniform in
 $[ 0 , j )$, the shuffle gives each of the $n!$ permutations of $n$ items
 with probability $1 / n!$.*
 
@@ -2335,7 +2426,7 @@ index comes twice as often as the other). Instead, `shuffle()` draws each
 index by `detail::uniformIndex()`, which is exact on any generator $g$ of
 the $r + 1$ numbers from `g.min()` to `g.max()`, by three cases: (i) on a
 full word, $r + 1 = 2^{64}$, it is the method of Lemire of
-[Lemma 17.21](17-numeric.md#lem-17-21); (ii) when $j \le r + 1 < 2^{64}$,
+[Lemma 17.22](17-numeric.md#lem-17-22); (ii) when $j \le r + 1 < 2^{64}$,
 it returns $\lfloor x / q \rfloor$ for $q = \lfloor ( r + 1 ) / j
 \rfloor$ and the offset $x$ of the number from `g.min()`, rejecting the
 $x \ge q j$, so that each result has exactly $q$ values of $x$; (iii) when
@@ -2346,7 +2437,7 @@ the pair of digits in base $r + 1$ of a number uniform below $( r + 1 )
 \lceil j / ( r + 1 ) \rceil$, whose restriction to $[ 0 , j )$ is uniform;
 a sum that wraps around $2^{64}$ is detected as smaller than $( r + 1 ) y$
 and rejected too. Each case thus gives the uniform $k$ that
-[Lemma 17.22](17-numeric.md#lem-17-22) assumes, and `reservoirSampling()`
+[Lemma 17.23](17-numeric.md#lem-17-23) assumes, and `reservoirSampling()`
 draws in the same way. Moreover,
 `shuffleFast()` of `RandomGenerators.h` draws exact indices, and
 fewer words, after [Brackett-Rozinsky and Lemire
@@ -2358,7 +2449,7 @@ H_j 2^{64} + l_j$, where $H_j$ is the number of digits $h_1 , \ldots ,
 h_j$ in the mixed radix $b_1 , \ldots , b_j$ (indeed, $H_j 2^{64} + l_j =
 ( H_{j-1} 2^{64} + l_{j-1} ) b_j = ( H_{j-1} b_j + h_j ) 2^{64} + l_j$).
 Thus the tuple is the draw of Lemire below $p$ on the word $x$, and by
-[Lemma 17.21](17-numeric.md#lem-17-21) it is uniform on the $p$ tuples
+[Lemma 17.22](17-numeric.md#lem-17-22) it is uniform on the $p$ tuples
 once $l_k < 2^{64} \bmod p$ is rejected, which happens with probability
 below $p / 2^{64}$. In the header, 6 steps are taken per word while the bounds are below
 $2^{10}$ ($p < 2^{60}$) and 2 below $2^{32}$; a shuffle of $n$ items thus
@@ -2382,7 +2473,7 @@ the draws, at the cost of a word, a product and a comparison. Otherwise, a
 uniform height decides the wedge against the density, and in the base
 strip the tail beyond $r$ is drawn by the exponentials of Marsaglia
 (normal) or from $r$ again (exponential, which has no memory)
-([Algorithm 17.33](17-numeric.md#alg-17-33)). Finally,
+([Algorithm 17.34](17-numeric.md#alg-17-34)). Finally,
 `impl/ZigguratTables.tpp` holds the tables $x_i$, $y_i = f( x_i )$ and
 $k_i = x_{i+1} / x_i$ of both ziggurats. They were computed in decimal
 arithmetic of 60 digits and rounded once to the nearest double, and the
@@ -2390,10 +2481,12 @@ recurrence thus does not pile up the roundings of the doubles. Since the
 tables are constants and the functions are inlined, the state of the generator
 may stay in the registers of the caller.
 
-<span id="alg-17-33"></span>**Algorithm 17.33.** Normal ziggurat;
-$U$, $U_1$ and $U_2$ are further uniforms.
+<span id="alg-17-34"></span>**Algorithm 17.34.** Normal and
+exponential ziggurats; $U$, $U_1$ and $U_2$ are further uniforms.
 
 --8<-- "generated/RandomGenerators-normalZiggurat.pseudo.md"
+
+--8<-- "generated/RandomGenerators-exponentialZiggurat.pseudo.md"
 
 **Alias method.** An `AliasTable` draws from a discrete distribution
 of weights $w_0 , \ldots , w_{n-1}$ in $O( 1 )$ time, by the alias method
@@ -2404,18 +2497,18 @@ probability $1 / n$ holds an item $i$ with a share $\mathit{keep}[ i ] \le
 draw is one word $x$, with $x n = h 2^{64} + l$: the cell $h$ and the coin
 $l < \lfloor \mathit{keep}[ h ] 2^{64} \rfloor$ come from the same
 product, at the cost of two loads, against the $O( \log n )$ of a binary
-search in the cumulative sums ([Algorithm 17.34](17-numeric.md#alg-17-34)).
+search in the cumulative sums ([Algorithm 17.35](17-numeric.md#alg-17-35)).
 
 ![Figure 17.8. Alias table of the weights $( 1 , 2 , 4 , 1 )$, i.e., $p = ( 1/2 , 1 , 2 , 1/2 )$: the cells 0 and 3 keep their item with probability 1/2 and give the alias 2 otherwise (violet), so that the item 2 has probability $( 1 + 1/2 + 1/2 ) / 4 = 1 / 2$.](../figures/numeric-alias.svg){#fig-17-8}
 
-<span id="alg-17-34"></span>**Algorithm 17.34.** Construction of
+<span id="alg-17-35"></span>**Algorithm 17.35.** Construction of
 Vose and the draw.
 
 --8<-- "generated/RandomGenerators-AliasTable-AliasTable.pseudo.md"
 
 --8<-- "generated/RandomGenerators-AliasTable-draw.pseudo.md"
 
-<span id="lem-17-23"></span>**Lemma 17.23.** *The construction ends in
+<span id="lem-17-24"></span>**Lemma 17.24.** *The construction ends in
 $O( n )$ time, and in exact arithmetic the draw returns $i$ with
 probability $w_i / \sum_j w_j$.*
 
@@ -2585,7 +2678,7 @@ return them sorted, and the items can then be read by one pass, with at
 most $\min\{ n , \lceil N / B \rceil \}$ transfers of blocks of $B$ items.
 
 **$N$ known.** By swaps, `sampleBySwaps()` makes the first $n$ steps of
-the shuffle of [Lemma 17.22](17-numeric.md#lem-17-22) on an array of the
+the shuffle of [Lemma 17.23](17-numeric.md#lem-17-23) on an array of the
 $N$ positions: $n$ random numbers, but $\Theta( N )$ space. Alternatively,
 `sampleByDictionary()` keeps the positions drawn in a hash table, and
 draws again those already there. With $n \le N / 2$, a draw repeats with
@@ -2598,12 +2691,12 @@ bucket sort ($k$ buckets of width $\lceil N / k \rceil$, $O( 1 )$
 expected items each, sorted by insertion). It merges them with those
 already drawn, removing the repetitions, and draws again only the
 positions missing, instead of all $n$ as in the chapter of Ferragina. Its
-distribution is the same ([Lemma 17.24](17-numeric.md#lem-17-24)
+distribution is the same ([Lemma 17.25](17-numeric.md#lem-17-25)
 below), but it needs no luck when $n$ exceeds $\sqrt{N}$ and the
 birthday paradox makes a repetition likely, with probability about $1 -
-e^{-n ( n - 1 ) / 2 N}$ ([Algorithm 17.35](17-numeric.md#alg-17-35)).
+e^{-n ( n - 1 ) / 2 N}$ ([Algorithm 17.36](17-numeric.md#alg-17-36)).
 
-<span id="alg-17-35"></span>**Algorithm 17.35.** Samplings of $n$ of
+<span id="alg-17-36"></span>**Algorithm 17.36.** Samplings of $n$ of
 $N$ positions by swaps, by a dictionary and by sorting ([Ferragina 2023,
 chapter 3](Z-bibliography.md#ref-ferragina2023)).
 
@@ -2619,7 +2712,7 @@ $t$ with probability $( n - s ) / ( N - t )$, where $s$ is the number of
 the positions selected among the $t$ seen; it draws $N$ random numbers in
 the worst case.
 
-<span id="lem-17-24"></span>**Lemma 17.24.** *`selectionSampling()`,
+<span id="lem-17-25"></span>**Lemma 17.25.** *`selectionSampling()`,
 `sampleBySorting()` and `heapSampling()` give each subset of $n$ of the
 $N$ positions (or items) with probability $1 / \binom{N}{n}$.*
 
@@ -2654,12 +2747,12 @@ rejection with a continuous envelope, with about $n$ random numbers and
 $O( n )$ expected time. It falls back to Algorithm A (the gap by the
 sequential search of its distribution, $O( N )$ time but $n$ random
 numbers) when $13 n \ge N$ at the start, or as soon as $13 v \ge V$ during
-the draws, where A is usually faster ([Algorithm 17.36](17-numeric.md#alg-17-36)).
+the draws, where A is usually faster ([Algorithm 17.37](17-numeric.md#alg-17-37)).
 Its optional argument `randoms` receives the count of the random numbers
 drawn, as `rounds` of `sampleBySorting()` receives the count of its
 rounds; the tests bound both.
 
-<span id="alg-17-36"></span>**Algorithm 17.36.** Selection of [Knuth
+<span id="alg-17-37"></span>**Algorithm 17.37.** Selection of [Knuth
 1998, Algorithm 3.4.2S](Z-bibliography.md#ref-knuth1998v2), and the skips
 of Vitter.
 
@@ -2670,13 +2763,13 @@ of Vitter.
 **$N$ unknown.** For a stream of unknown length, `heapSampling()` gives a
 random key to each item and keeps the $n$ items of the largest keys in a
 heap (`DaryHeap` of `ADS/priority`), in $O( N \log n )$ time, and its keys
-make the sample uniform ([Lemma 17.24](17-numeric.md#lem-17-24)). As for the reservoir, Algorithm 3.4.2R of
+make the sample uniform ([Lemma 17.25](17-numeric.md#lem-17-25)). As for the reservoir, Algorithm 3.4.2R of
 [Knuth 1998](Z-bibliography.md#ref-knuth1998v2), it is `reservoirSampling()` of
 `RandomNumbers.h`, in $O( N )$ time and $n$ items of space, which is
 optimal in this model ([Vitter 1985](Z-bibliography.md#ref-vitter1985);
-[Algorithm 17.37](17-numeric.md#alg-17-37)).
+[Algorithm 17.38](17-numeric.md#alg-17-38)).
 
-<span id="lem-17-25"></span>**Lemma 17.25 (the reservoir).** *If the item
+<span id="lem-17-26"></span>**Lemma 17.26 (the reservoir).** *If the item
 $t > n$ of a stream (counted from 1) replaces a uniform item of a
 reservoir of $n$ with probability $n / t$, then after $N \ge n$ items each
 of them is in the reservoir with probability $n / N$.*
@@ -2707,7 +2800,7 @@ stream read once, for instance); a stream of at most $n$ items is returned
 whole, in its order, while a longer one gives the sample in no particular
 order.
 
-<span id="alg-17-37"></span>**Algorithm 17.37.** Samplings of a
+<span id="alg-17-38"></span>**Algorithm 17.38.** Samplings of a
 stream of unknown length: by a heap, by Algorithm R, and by Algorithm L.
 
 --8<-- "generated/RandomSampling-heapSampling.pseudo.md"
