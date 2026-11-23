@@ -1033,9 +1033,28 @@ by `RecordWriter`.
 
 ![Figure 23.11. A `RecordWriter` with a buffer of $b = 4$ records: `push(j)` fills the buffer, which is then appended to the file by one write of the system (in orange) and emptied.](../figures/external-recordwriter.svg){#fig-23-11}
 
-With buffers of $b$ records, a scan of $n$ records makes $\lceil n / b
-\rceil$ reads of the system, and a writer as many writes; thus $b$ plays
-the part of $B$ in the model. A disk (and, to a lesser extent, an SSD)
+<span id="lem-23-15"></span>**Lemma 23.15.** *Let a `RecordFile` hold
+$n_0$ whole records, and let a `RecordWriter` with a buffer of $b$ records
+receive $k$ calls of `push()` followed by `flush()`, with no error of the
+file system. Then the file holds its $n_0$ records followed by the $k$
+records in the order of the calls, and the writer has made $\lceil k / b
+\rceil$ appends, each one opening the file, writing the records of the
+buffer by one write of the stream and closing it, and has held at most $b$
+records in memory. A `forEach( f , b )` on a file of $n$ whole records
+calls $f$ on them in their order, after $\lceil n / b \rceil$ reads of
+the stream, and holds $b$ records in memory.*
+
+*Proof.* A push fills the buffer, and line 3 of [Algorithm
+23.10](23-external.md#alg-23-10) appends it when it holds $b$ records,
+which happens $\lfloor k / b \rfloor$ times; the final `flush()` appends
+the remaining $k \bmod b$ records, if any. Each append first truncates the
+bytes of a record left partial, if any, so that the new records follow the
+last whole one, and then writes the buffer at the end of the file in
+order. The scan reads $\min( b , \text{the records left} )$ records per
+read, from the start of the file, and calls $f$ on each before the next
+read. $\square$
+
+Hence $b$ plays the part of $B$ in the model. A disk (and, to a lesser extent, an SSD)
 moves a large contiguous piece of a file much faster than as many small
 ones, and the default buffer (`defaultBuffer`) is therefore of 1 MB, i.e.,
 some hundreds of the blocks of the file system. A writer opens its file
@@ -1072,7 +1091,7 @@ cost far more than all of its queries. We therefore write it, by
 back by `restore()`. Also, `restoreMapped()` maps the file into the memory
 of the process (`MappedFile.h`) and makes the large arrays of the structure
 views over the bytes of the mapping. Hence a structure of any size is
-opened in $O( 1 )$ time (cf. [Lemma 23.15](23-external.md#lem-23-15)), and
+opened in $O( 1 )$ time (cf. [Lemma 23.16](23-external.md#lem-23-16)), and
 its pages are read from the disk at their first access.
 
 A structure takes part when it gives its name in `persistName`, with a
@@ -1131,7 +1150,7 @@ counts of the top level), which `std::allocator` keeps. They usually hold
 a fraction of a percent of the bits, and their copy is therefore somewhat
 cheap.
 
-<span id="lem-23-15"></span>**Lemma 23.15.** *Let a file hold a structure
+<span id="lem-23-16"></span>**Lemma 23.16.** *Let a file hold a structure
 whose members are $k$ numbers and $m$ arrays of numbers, let the file be of
 the byte order of the machine, and let each array be on an allocator that
 makes views. Then `restoreMapped()`, without the checksum, opens the file
@@ -1146,7 +1165,7 @@ with no item constructed and no byte of the items read. Finally, the
 invariants that `persist()` requires read sizes and numbers, in $O( 1 )$
 time each. $\square$
 
-The price of [Lemma 23.15](23-external.md#lem-23-15) is paid in the
+The price of [Lemma 23.16](23-external.md#lem-23-16) is paid in the
 checks. In fact, `restore()` computes the checksum while it reads, and
 rejects a file whose checksum differs from the one of the trailer. Instead,
 `restoreMapped()` checks the magic numbers, the invariants of the structure
