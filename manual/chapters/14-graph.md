@@ -41,11 +41,11 @@ are all here, with each of his exercises solved on the code of the library
 [§1.9](01-introduction.md#sec-1-9), `Assignment.h`, `BlossomMatching.h`
 (the blossoms of `Matching.h`, which includes it), `GraphBuilder.h`,
 `GridGraph.h`, `Observable.h`, `PointerGraph.h`, `PushRelabel.h` (the
-push-relabel of `MaxFlow.h`, which includes it), `Reoptimization.h` and
-`StaticGraph.h` and `StrongComponents.h` (the components of `Visit.h` by
-one visit, which `Visit.h` includes) are advanced and the other headers of
-this chapter are base; the headers of `interop/lemon/`
-([§14.14](14-graph.md#sec-14-14)) are of the set interop.
+push-relabel of `MaxFlow.h`, which includes it), `Reoptimization.h`,
+`StaticGraph.h`, `StrongComponents.h` (the components of `Visit.h` by one
+visit, which `Visit.h` includes) and `Biconnectivity.h` are advanced and
+the other headers of this chapter are base; the headers of
+`interop/lemon/` ([§14.14](14-graph.md#sec-14-14)) are of the set interop.
 
 ## 14.1 Definitions and the interface {#sec-14-1}
 
@@ -97,6 +97,8 @@ of the headers of `ADS/graph`.
 | $\delta( r , v )$, $d[ v ]$ | the distance from $r$ to $v$ (the fewest edges, or the least cost, of a path), and the value an algorithm keeps for it; $\infty$ (`INF`, `infinity()`) if $v$ is not reachable |
 | $p[ v ]$, $T[ v ]$ | the parent of $v$ in a tree rooted at the source, `NIL` ($-1$) for the root and for the nodes not reached |
 | $\mathit{dt}[ u ]$, $\mathit{ft}[ u ]$ | the discovery and the finish times of $u$ in a visit in depth, on one clock that each event advances by 1 |
+| $\mathit{low}[ u ]$, $B[ u ]$ | the least $\mathit{dt}$ that the subtree of $u$ reaches by one edge out of the tree of a visit in depth, and the block of the edge from $u$ to its parent |
+| $\mathit{low}[ u ]$, $B[ u ]$ | the least $\mathit{dt}$ that the subtree of $u$ reaches by one edge out of the tree of a visit in depth, and the block of the edge from $u$ to its parent |
 | $c( u , v )$, $f( u , v )$, $c_f( u , v )$ | the capacity of an edge of a network, its flow, and its residual capacity $c( u , v ) - f( u , v )$ |
 | $( S , V \setminus S )$ | a cut, i.e., the edges with one end in $S$ and the other out of it |
 
@@ -1434,9 +1436,9 @@ is correct, and it takes $O( n + m \log n )$ time.*
 *Proof.* Two nodes of one component reach each other, and a node of $C$
 reaches a node of $C'$ if and only if $C$ reaches $C'$ in $H$. If $H$ has a
 unique topological order $C_1 , \ldots , C_k$, then by [Lemma
-14.26](14-graph.md#lem-14-26) each $( C_i , C_{i+1} )$ is an edge of $H$,
+14.29](14-graph.md#lem-14-26) each $( C_i , C_{i+1} )$ is an edge of $H$,
 and so $C_i$ reaches $C_j$ for $i < j$. Otherwise, again by [Lemma
-14.26](14-graph.md#lem-14-26), the algorithm of Kahn on $H$ finds two
+14.29](14-graph.md#lem-14-26), the algorithm of Kahn on $H$ finds two
 sources $a \ne b$ of the graph left at some step. The components taken
 before that step are closed under predecessors, since a component is taken
 only after all those with an edge into it. If $a$ reached $b$, the last
@@ -1557,6 +1559,201 @@ time, with $N$ words and $N$ bits besides the two stacks, and the
 components, numbered $\mathit{rindex}[ u ] - c$ at the end, come out in
 the order of `sccTarjan()`.
 
+### 14.5.Zbc5 Biconnected components {#sec-14-5-Zbc5}
+
+We now turn to the 2-connectivity of an unoriented graph $G$, in which we allow
+parallel edges and loops. Two edges are *equivalent* if they are equal or lie
+on a common simple cycle (two parallel edges form a cycle of length 2), and the
+classes of this relation are the *blocks*, or biconnected components, of $G$. A
+*cut node* (an articulation point) is a node whose removal leaves more
+connected components than $G$ has (not counting the node itself when it is
+isolated), and a *bridge* is an edge whose removal does the same. Also, the
+classes of the nodes joined by two paths with no edge in common are the
+2-edge-connected components. Since a loop is on no cycle with another edge, we
+leave it out of every block. With that proviso, the blocks partition the edges;
+furthermore, a node is a cut node if and only if it lies in two blocks or more,
+and an edge is a bridge if and only if its block has no other edge ([Tarjan
+1972](Z-bibliography.md#ref-tarjan1972); beyond the book, in
+`Biconnectivity.h`). Each block has a *head*: this is the node of the block
+nearest to the least node $r$ of its connected component, through which every
+path from the other nodes of the block to $r$ goes ($r$ itself for the blocks
+that hold it).
+
+The algorithm of [Hopcroft and Tarjan
+1973](Z-bibliography.md#ref-hopcroft1973graph) finds the blocks by one visit in
+depth, which keeps the order of discovery $\mathit{dt}$, the parent $p$ and the
+*lowpoint* $\mathit{low}[ u ]$, i.e., the least $\mathit{dt}$ that the subtree
+of $u$ reaches by one edge out of the tree ($\mathit{dt}[ u ]$ itself
+included). The edge to the parent is skipped only once; hence, a parallel copy
+of it counts as any other edge. In the original algorithm each edge is pushed
+on a stack, and the edges of a block are popped when the visit returns to its
+head, as `biconnected_components()` of Boost.Graph does. We need no stack of
+edges, since each edge of a block that is not in the tree lies in the block of
+an edge of the tree. Hence, a pass over the nodes in the order of discovery
+gives the edge from each node to its parent a block, and the block of every
+other edge is read from its ends ([Algorithm 14.Zbc4](14-graph.md#alg-14-Zbc4)). We
+justify the pass by the following lemma.
+
+<span id="lem-14-Zbc1"></span>**Lemma 14.Zbc1.** *Let a visit in depth of an
+unoriented graph $G$ give $\mathit{dt}$, $p$ and $\mathit{low}$ as above. Then
+(i) each edge $[ v , w ]$ of $G$ that is not a loop nor in the forest of the
+visit joins a node to a proper ancestor of it; (ii) for a node $u$ whose parent
+$p( u )$ is not a root, the edges $[ p( u ) , u ]$ and $[ p( p( u ) ) , p( u )
+]$ are in the same block if and only if $\mathit{low}[ u ] < \mathit{dt}[ p( u
+) ]$; (iii) an edge $[ v , w ]$ of (i), with $v$ the ancestor, is in the block
+of $[ p( w ) , w ]$.*
+
+*Proof.* For (i), let $\mathit{dt}[ v ] < \mathit{dt}[ w ]$. When $v$ is
+discovered $w$ is not, and the edge is a path of nodes not discovered; hence
+$w$ is discovered and finished before $v$ is finished ([Lemma
+14.10](14-graph.md#lem-14-10)), i.e., $w$ descends from $v$ ([Lemma
+14.9](14-graph.md#lem-14-9)). For (iii), the path of the tree from $v$ down to
+$w$ and the edge $[ v , w ]$ form a simple cycle through $[ p( w ) , w ]$ (the
+two parallel edges, if $v = p( w )$). For (ii), let $q = p( u )$. If
+$\mathit{low}[ u ] < \mathit{dt}[ q ]$, an edge $[ x , y ]$ other than the edge
+of the tree from $u$ to $q$ has $x$ in the subtree of $u$ and $\mathit{dt}[ y ]
+< \mathit{dt}[ q ]$, and $y$ is an ancestor of $x$ by (i), hence a proper
+ancestor of $q$. The path of the tree from $y$ down to $x$ and $[ x , y ]$ form
+a simple cycle through $[ p( q ) , q ]$ and $[ q , u ]$. Conversely, if
+$\mathit{low}[ u ] \ge \mathit{dt}[ q ]$, by (i) every edge that leaves the
+subtree of $u$, but for the edge of the tree, ends in $q$; a simple cycle
+through $[ q , u ]$ then stays in the subtree of $u$ and $q$, and it cannot
+hold $[ p( q ) , q ]$ without passing twice through $q$. $\square$
+
+By (ii), the edge above $u$ opens a new block exactly when $\mathit{low}[ u ]
+\ge \mathit{dt}[ p( u ) ]$, and otherwise it is in the block of the edge above
+$p( u )$. Thus, a pass in the order of discovery (in which each parent comes
+before its children) gives each node $u$ that is not a root the block $B[ u ]$
+of $[ p( u ) , u ]$. By (i) and (iii), the block of any other edge $[ v , w ]$
+that is not a loop is $B$ of its end of larger $\mathit{dt}$, which `block( u ,
+v )` reads in $O( 1 )$ time. Therefore, the result takes two integers and one
+byte per node (the block and the rank, and whether the node is a cut node), two
+integers and one byte per block (its head, its least node, and whether it is a
+bridge), and nothing per edge; when a vector of the blocks of the arcs is
+needed, `arcBlocks( g )` writes it out. We number the blocks by the least of
+their nodes other than the head, and hence the numbers do not depend on the
+order of the visit.
+
+<span id="alg-14-Zbc4"></span>**Algorithm 14.Zbc4.** The blocks by one visit in
+depth with no stack of edges (Hopcroft and Tarjan), the 2-edge-connected
+components and the block-cut tree (beyond the book).
+
+--8<-- "generated/Biconnectivity-biconnectedComponents.pseudo.md"
+
+--8<-- "generated/Biconnectivity-twoEdgeConnectedComponents.pseudo.md"
+
+--8<-- "generated/Biconnectivity-blockCutTree.pseudo.md"
+
+<span id="lem-14-Zbc2"></span>**Lemma 14.Zbc2.** *`biconnectedComponents( g )`
+gives each edge that is not a loop its block in $\Theta( n + m )$ time. The
+block opened at $u$ has the head $p( u )$, it is a bridge if and only if
+$\mathit{low}[ u ] > \mathit{dt}[ p( u ) ]$, and a node is a cut node if and
+only if it is the head of a block and is not a root, or it is the head of two
+blocks.*
+
+*Proof.* The blocks follow from [Lemma 14.Zbc1](14-graph.md#lem-14-Zbc1) as above.
+Other than $p( u )$, the nodes of the block opened at $u$ lie in the subtree of
+$u$, and every edge out of that subtree ends in $p( u )$ (cf. the converse part
+of the proof of (ii)). Hence every path from the block to the root goes through
+$p( u )$, which is the head. If $\mathit{low}[ u ] > \mathit{dt}[ p( u ) ]$,
+the edge of the tree from $u$ is the only edge out of the subtree of $u$, and
+its removal then disconnects $u$ from $p( u )$. If $\mathit{low}[ u ] =
+\mathit{dt}[ p( u ) ]$, another edge joins the subtree of $u$ to $p( u )$ and
+closes a cycle with the edge of the tree, which is in the block. Furthermore,
+the nodes of the block opened at $u$ are $p( u )$ and the nodes $w$ with $B[ w
+]$ equal to it, since each of its edges is in it through the lower end of an
+edge of the tree (by (iii)), and those edges form a subtree under $p( u )$ (by
+(ii)). Hence, a node is in the block of the edge above it (if it is not a root)
+and in the blocks that it heads, and in no other one; the count of these blocks
+gives the cut nodes. Each edge is examined twice by the visit, each node once
+by the pass, and the numbering by the least nodes reads $B$ once, whence
+$\Theta( n + m )$. $\square$
+
+A node $u$ starts a new 2-edge-connected component exactly when the edge above
+it is a bridge, since removing the bridges cuts the forest of the visit into
+subtrees and each other edge joins two nodes of one of them (by (iii)). Thus,
+after the same visit, `twoEdgeConnectedComponents( g )` labels each node with
+the least node of its component. The *block-cut tree* has a node for each
+block, one for each cut node, and an edge between a block and each cut node in
+it. `blockCutTree( b )` builds it from the heads and the blocks of a
+decomposition, as a `StaticGraph` whose first nodes are the blocks.
+
+<span id="lem-14-Zbc3"></span>**Lemma 14.Zbc3.** *`twoEdgeConnectedComponents( g )`
+labels two nodes alike if and only if they are joined by two paths with no edge
+in common, in $\Theta( n + m )$ time; the block-cut tree is a forest with one
+tree for each connected component of $G$ that has an edge.*
+
+*Proof.* Two nodes are joined by two paths with no common edge if and only if
+no bridge separates them (Menger's theorem for the edges), i.e., if and only if
+they are in one connected component of $G$ less its bridges, which is the
+subtree of the forest of the visit above. In the block-cut tree, give the block
+opened at $u$ the rank $\mathit{dt}[ u ] - 1 / 2$ and a cut node $x$ the rank
+$\mathit{dt}[ x ]$. A block has one neighbor of smaller rank, its head (if it
+is a cut node), since its other cut nodes lie below its first node. A cut node
+$x$ that is not a root has one, the block of the edge above it, since the
+blocks that it heads are opened below it. Hence each node of the tree has at
+most one neighbor of smaller rank, and there is no cycle. In each connected
+component of $G$ with an edge, only the root (if it is a cut node), or else the
+block that it heads, has none, whence one tree for each. $\square$
+
+The visit takes four integers per node besides the result ($\mathit{dt}$,
+$\mathit{low}$, the parent and the order of discovery), and its stack holds at
+most one frame (two integers and a size) per node of the current path (in the
+worst case, that of a path, $n$ of them). As the visits of
+[§14.5.5](14-graph.md#sec-14-5-5), it keeps its recursion on that explicit
+stack of the frames (node, the parent whose edge is still to skip, next arc),
+and therefore a path of $10^8$ nodes does not overflow the stack of the calls.
+On a `StaticGraph` and an `ArrayGraph` it reads the rows where they are, and
+for any other model of `Graph` it copies them once. In turn,
+`biconnected_components()` of Boost.Graph pushes and pops each edge, and it
+writes a property per edge through a map, on its `adjacency_list`. Against it,
+we expect the visit to save the $m$ moves of the stack of edges and the
+indirections of the lists. This gain should be the largest on the sparse graphs
+of large diameter (e.g., the roads and the grids), and the smallest on those
+whose arcs are read from the memory at random, where the reads of the visit
+itself typically dominate (the benchmark `graphs` of
+[§B.1](B-benchmarks.md#sec-B-1) measures them). From the same visit, the chain
+decomposition of [Schmidt 2013](Z-bibliography.md#ref-schmidt2013) gives the
+same tests of 2-connectivity by a second pass over the edges out of the tree;
+here, it would therefore only add a pass. A parallel algorithm with the same
+results, which needs no visit in depth, is in [§25.9](25-parallel.md#sec-25-9).
+We list the declarations:
+
+```cpp
+// declarations of <ADS/graph/Biconnectivity.h>
+class BiconnectedComponents
+{
+ public:
+ int blocks( void ) const;
+ int bound( void ) const;
+ int block( int u , int v ) const;
+ int blockOf( int u ) const;
+ int head( int k ) const;
+ int least( int k ) const;
+ bool isBridge( int k ) const;
+ bool isCut( int u ) const;
+ std::vector< int > cutNodes( void ) const;
+ std::vector< std::pair< int , int > > bridges( void ) const;
+ template< Graph G >
+ std::vector< int > arcBlocks( const G & g ) const;
+ };
+struct BlockCutTree
+{
+ StaticGraph<> tree;
+ std::vector< int > cuts;
+ };
+template< Graph G >
+BiconnectedComponents biconnectedComponents( const G & g );
+template< Graph G >
+std::vector< int > twoEdgeConnectedComponents( const G & g );
+BlockCutTree blockCutTree( const BiconnectedComponents & b );
+```
+
+where `blockOf( u )` is the block in which $u$ is not the head ($-1$ for the
+least node of a connected component and for an isolated node), `head( k )` and
+`least( k )` the head and the least other node of the block $k$, and the cut
+node `cuts[ i ]` is the node `blocks() + i` of the tree.
+
 ## 14.6 Graphs on grid maps {#sec-14-6}
 
 ### 14.6.1 The visits of a grid {#sec-14-6-1}
@@ -1577,7 +1774,7 @@ the lists of adjacency. `gridDistances()` is the visit in breadth of
 [§14.5.2](14-graph.md#sec-14-5-2) from several sources at once, all of them at
 distance 0 in the queue. It gives each cell its distance in moves from the
 nearest source, `INF` if none reaches it ([Algorithm
-14.12](14-graph.md#alg-14-12)). This is the algorithm of [Lee
+14.13](14-graph.md#alg-14-12)). This is the algorithm of [Lee
 1961](Z-bibliography.md#ref-lee1961) for the routing of the wires on a board,
 after the maze of [Moore 1959](Z-bibliography.md#ref-moore1959). With the
 sources a whole set of pixels it is the distance transform of an image; with
@@ -2329,7 +2526,7 @@ The *prototype* of [Montresor 2025,
 While some edge violates (14.6), it sets $d[ v ] = d[ u ] + w( u , v )$ and
 makes $u$ the parent of $v$; a structure $S$, the *frontier*, holds the nodes
 whose edges have to be checked again ([Algorithm
-14.13](14-graph.md#alg-14-13)). The kind of $S$ decides how many times a node
+14.14](14-graph.md#alg-14-13)). The kind of $S$ decides how many times a node
 is extracted, and therefore the cost ([Table 14.3](14-graph.md#tab-14-3)), but
 not the result.
 
@@ -2736,7 +2933,7 @@ lighter than $e$, or as light and before it in the stable order, have been
 examined already, and each was kept or had its ends in one tree of $F$;
 hence none crosses the cut $( C , V \setminus C )$, and $e$ is a lightest
 edge across it, which no edge of $F$ crosses. [Lemma
-14.33](14-graph.md#lem-14-33), applied in the component of $u$, gives the
+14.36](14-graph.md#lem-14-33), applied in the component of $u$, gives the
 induction. The edges dropped have their ends in one tree, and so the final
 forest has a tree per component, i.e., it is spanning (the stop after
 $n - 1$ edges only ends a scan that would keep nothing more). The sort and
@@ -2946,7 +3143,7 @@ by saturating the edges that leave $s$. Then a node $u$ with an excess
 either pushes it on an edge with $c_f( u , v ) > 0$ and $d( v ) = d( u ) -
 1$, or, if there is none, raises $d( u )$ to the least $d( v ) + 1$ over its
 residual edges, which keeps the labels valid ([Algorithm
-14.15](14-graph.md#alg-14-15)).
+14.16](14-graph.md#alg-14-15)).
 
 <span id="lem-14-37"></span>**Lemma 14.37.** *A label never decreases and
 stays below $2 n$; hence there are $O( n^2 )$ relabelings and $O( n m )$
@@ -3308,7 +3505,7 @@ labels of [Gabow 1976](Z-bibliography.md#ref-gabow1976) do. The path from such
 a node to the root goes back along the path of $a$ down to $a$ and then
 follows that of $b$, and the augmentation rematches the two parts in turn,
 each stopping at the node whose mate it has changed already ([Algorithm
-14.17](14-graph.md#alg-14-17)). The result gives the mate of each node, `NIL`
+14.18](14-graph.md#alg-14-17)). The result gives the mate of each node, `NIL`
 for a node left unmatched.
 
 <span id="alg-14-17"></span>**Algorithm 14.17.** The matching of largest
@@ -3348,11 +3545,11 @@ returns a matching of largest size in $O( n m \, \alpha( m , n ) )$ time.*
 
 *Proof.* A search that succeeds augments the matching by an augmenting
 path of $G$, lifted from the graph with the blossoms shrunk by [Lemma
-14.43](14-graph.md#lem-14-43) applied once per blossom. A search that fails
+14.46](14-graph.md#lem-14-43) applied once per blossom. A search that fails
 leaves out its tree, which by [Lemma 14.44](14-graph.md#lem-14-44) loses
 no matching edge that a largest matching needs; at the end no free node
 is left whose search can succeed, and so, by [Lemma
-14.43](14-graph.md#lem-14-43) and [Lemma 14.42](14-graph.md#lem-14-42),
+14.46](14-graph.md#lem-14-43) and [Lemma 14.42](14-graph.md#lem-14-42),
 no augmenting path exists in the graph left, and the matching is largest
 there and, with the trees left out, in $G$. A search examines each edge of
 its tree at most twice and merges each node once, i.e., it costs
@@ -3406,7 +3603,7 @@ may be shifted by a constant, the free nodes having the least dual.
 primal-dual algorithm of Edmonds in the $O( n^3 )$ of Gabow and of [Lawler
 1976](Z-bibliography.md#ref-lawler1976), as [Galil
 1986](Z-bibliography.md#ref-galil1986) surveys it ([Algorithm
-14.18](14-graph.md#alg-14-18)). It keeps the conditions (i) and (iii), and
+14.19](14-graph.md#alg-14-18)). It keeps the conditions (i) and (iii), and
 approaches (ii): each $y_v$ starts at the largest weight (0 if no weight is
 positive) and the matching empty, and the free nodes, whose duals are always
 equal and the least, are the roots of the trees grown on the edges of slack 0
@@ -3545,7 +3742,7 @@ column reached and the row matched to it). It then raises $u$ and lowers $v$
 along the tree of the search by $\mu - \delta_j$, $\delta_j$ the distance of
 each column $j$ scanned, which keeps (14.9) and makes the edges of the path
 tight; finally, it flips the pairs along the path ([Algorithm
-14.19](14-graph.md#alg-14-19)). On the dense matrix a search costs $O( n^2 )$,
+14.20](14-graph.md#alg-14-19)). On the dense matrix a search costs $O( n^2 )$,
 with an array in place of the heap, and $n$ of them give $O( n^3 )$. Its
 potentials start from $u_i = \min_j c( i , j )$ and $v = 0$, which satisfy
 (14.9) whatever the signs of the costs.
@@ -4714,7 +4911,7 @@ subject send `Rebuilt` to that observer instead of the events (the early
 stop of [Hammer et al. 2014](Z-bibliography.md#ref-hammer2014)). The
 observer then forgets its queue, ignores the events until its next query,
 and computes from scratch there, correctly by [Lemma
-14.61](14-graph.md#lem-14-61). This saves the copy and the coalescing of a
+14.64](14-graph.md#lem-14-61). This saves the copy and the coalescing of a
 batch that would be thrown away anyway. However, it may change the counts,
 since the events after the batch might cancel enough of it to fall below the
 threshold at the query, and for this reason it is not the default. We also
@@ -5198,7 +5395,7 @@ Each exercise names the test of the library that solves it (run it with
 7. Decide in $O( n )$ time whether a graph on an adjacency matrix has a
    universal sink ([Morin 2013, exercise
    12.10](Z-bibliography.md#ref-morin-cpp); [Lemma
-   14.25](14-graph.md#lem-14-25)). Tests:
+   14.28](14-graph.md#lem-14-25)). Tests:
    `ods_ints.ods.ex12.10.universal-sink`, `lib_graphs.universal-sink`.
 8. Compare the memory of the adjacency matrix and of the lists with $d$
    bits per pointer and per integer, and find the number of edges below
@@ -5230,7 +5427,7 @@ Each exercise names the test of the library that solves it (run it with
     wrong with negative costs, while the prototype stays correct, and detect a
     negative cycle reachable from $r$ in $O( n m )$ ([Montresor 2025, exercises
     11.1 and 11.2](Z-bibliography.md#ref-montresor2025); [Lemma
-    14.29](14-graph.md#lem-14-29)). Tests: `ch11.ex11.1`, `ch11.ex11.2`.
+    14.32](14-graph.md#lem-14-29)). Tests: `ch11.ex11.1`, `ch11.ex11.2`.
 16. Find the most reliable path, i.e., the largest product of the
     reliabilities of its edges, as a shortest path with the costs
     $- \log r( u , v )$ ([Montresor 2025, exercise

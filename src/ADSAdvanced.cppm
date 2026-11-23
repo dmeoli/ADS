@@ -346,6 +346,13 @@ using ADS::RangeTree;
 using ADS::Assignment;
 using ADS::AssignmentEngine;
 
+// graph/Biconnectivity.h
+using ADS::BiconnectedComponents;
+using ADS::BlockCutTree;
+using ADS::biconnectedComponents;
+using ADS::blockCutTree;
+using ADS::twoEdgeConnectedComponents;
+
 // graph/BlossomMatching.h
 using ADS::maxCardinalityMatching;
 using ADS::maxWeightMatching;
@@ -537,6 +544,10 @@ using ADS::ownerOf;
 using ADS::OpenMPExecutor;
 using ADS::OpenMPLock;
 #endif
+
+// parallel/ParallelBiconnectivity.h
+using ADS::biconnectedComponents;
+using ADS::twoEdgeConnectedComponents;
 
 // parallel/ParallelGraph.h
 using ADS::bfsDistances;

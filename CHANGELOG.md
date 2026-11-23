@@ -92,6 +92,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `BlockedBloomFilter`, `CuckooFilter`, `IndexedHeapPair`,
   `SequenceRange`, the prefetch, `ArenaResource` and `PmrResource`) and
   the pseudocodes of the headers that no chapter included
+- `Biconnectivity.h`, the blocks, the cut nodes, the bridges, the
+  2-edge-connected components and the block-cut tree of an unoriented graph
+  (`biconnectedComponents()`, `twoEdgeConnectedComponents()`,
+  `blockCutTree()` and the result `BiconnectedComponents`), by one visit in
+  depth of Hopcroft and Tarjan on an explicit stack and with no stack of
+  edges, the block of each edge read from the block of its deeper end; and
+  `ParallelBiconnectivity.h`, the same results on an executor by FAST-BCC of
+  Dong, Wang, Gu and Sun, on the spanning forest of the links of Afforest,
+  rooted by the tour of Euler ranked by a sparse ruling set; the tests
+  `engineered_biconnectivity`, against the definitions by brute force, the
+  sequential visit and Boost.Graph, the benchmark `bcc` of `graphs` against
+  `biconnected_components()` of Boost.Graph and of `parallel` (with the
+  graphs written for the Tarjan-Vishkin of GBBS under `ADS_BCC_DUMP`), and
+  section 14.5.Zbc5 of the manual (Algorithm 14.Zbc4, Lemmas 14.Zbc1 to 14.Zbc3) and
+  part of section 25.9 (Algorithm 25.Zbc3, Lemmas 25.Zbc1 and 25.Zbc2)
 
 ### Changed
 
@@ -100,6 +115,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   oneTBB already were, so that no library path is needed to run the
   programs
 
+- the connected components of `ParallelGraph.h` run on a function of the
+  links of Afforest that also takes a filter of the arcs and gives the
+  links that join two sets, a spanning forest, on which FAST-BCC rests; the
+  results and the order of the links are those of before
 - `FlatHashTable` keeps the code of ADS also where `ADS_WITH_BOOST` is
   defined, since on the benchmarks it is on a par with
   `boost::unordered_flat_map` (a median ratio of the times of 0.93 on the

@@ -181,6 +181,8 @@ graph/AllPairsShortestPaths.h         base
 graph/ArrayGraph.h                    base     the vectors of adjacency of
                                                section 9.4
 graph/Assignment.h                    advanced
+graph/Biconnectivity.h                advanced the blocks by one visit, with
+                                               no stack of edges
 graph/BlossomMatching.h               advanced the blossoms of
                                                Matching.h, split off it
 graph/EulerianCycle.h                 base
@@ -311,6 +313,7 @@ parallel/Farm.h                       advanced
 parallel/FastFlowExecutor.h           advanced ?ADS_WITH_FASTFLOW
 parallel/Mailbox.h                    advanced
 parallel/OpenMPExecutor.h             advanced ?_OPENMP
+parallel/ParallelBiconnectivity.h     advanced
 parallel/ParallelGraph.h              advanced
 parallel/ParallelGreedy.h             advanced
 parallel/ParallelMerge.h              advanced

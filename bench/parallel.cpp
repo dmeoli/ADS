@@ -36,6 +36,12 @@
  *   the direction-optimizing visit, Afforest and Shiloach-Vishkin of the
  *   GAP benchmark suite, and the visit of the examples of ParlayLib), per
  *   arc;
+ * - the blocks and the cut nodes of the same graphs, of a sparse graph at
+ *   random of 2 edges per node and of a grid of 2^16 and 2^20 nodes with
+ *   30% of its edges removed (biconnectedComponents, FAST-BCC, and when
+ *   t = 1 the visit of Hopcroft and Tarjan of Biconnectivity.h; ParlayLib
+ *   has no biconnectivity, and the Tarjan-Vishkin of GBBS runs as a
+ *   program of its own on the graphs that ADS_BCC_DUMP writes), per arc;
  * - the shortest paths from the node of largest degree of the same graphs
  *   and of a grid of 2^16 and 2^20 nodes (a proxy of a road network), with
  *   integer costs at random in [ 1 , 255 ] (deltaStepping, Delta = 32 and
@@ -103,7 +109,7 @@
  *
  *   parallel [ -r runs ] [ -s seed ] [ -t threads ] [ -w family ]
  *            [ -b sort|patterns|merge|spmv|gemm|graphs|sssp|succinct|lcp|
- *                 hash|closed|pq|rank|bnb ]
+ *                 hash|closed|pq|rank|bnb|bcc ]
  *            n1 n2 ...
  *
  * \author Donato Meoli \n
@@ -134,6 +140,7 @@
 #include "ADS/numeric/DenseMatrix.h"
 #include "ADS/numeric/SellMatrix.h"
 #include "ADS/parallel/OpenMPExecutor.h"
+#include "ADS/parallel/ParallelBiconnectivity.h"
 #include "ADS/parallel/ParallelGraph.h"
 #include "ADS/parallel/ParallelMerge.h"
 #include "ADS/parallel/ParallelNumeric.h"
@@ -1339,6 +1346,81 @@ void graphs( const std::vector< int > & scales , int r , unsigned seed ,
        } ,
       [ & ] { return( comp.empty() ? count == comps : comp == lab ); } );
     }
+   }
+ }
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- BICONNECTIVITY ------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the blocks and the cut nodes of graphs of 2^scale nodes: those of
+/// graphs(), a sparse graph at random of 2 edges per node (many blocks and
+/// bridges) and a grid of side 2^( scale / 2 ) with 30% of its edges
+/// removed at random (a proxy of a road network, of large diameter), in
+/// nanoseconds per arc; ADS_BCC_DUMP, if it names a directory, receives
+/// each graph in the format of the adjacency graphs of GBBS, for its
+/// programs
+std::vector< std::pair< int , int > > grid( int side , unsigned seed );
+
+void bcc( const std::vector< int > & scales , int r , unsigned seed ,
+	  Executors & X )
+{
+ using G = ADS::StaticGraph<>;
+ for( int scale : scales )
+  for( int kind : { 0 , 1 , 2 , 3 } ) {
+   std::vector< std::pair< int , int > > E;
+   int n = 1 << scale;
+   if( kind < 2 )
+    E = edges( scale , kind == 1 , seed );
+   else if( kind == 2 ) {
+    std::mt19937_64 g( seed );
+    for( std::size_t e = 0 ; e < 2 * std::size_t( n ) ; ++e ) {
+     const int a = int( g() % unsigned( n ) ) , b = int( g() % unsigned( n ) );
+     if( a != b )
+      E.emplace_back( a , b );
+     }
+    }
+   else {
+    const int side = 1 << ( scale / 2 );
+    n = side * side;
+    std::mt19937_64 g( seed );
+    for( const auto & e : grid( side , seed ) )
+     if( g() % 10 >= 3 )
+      E.push_back( e );
+    }
+   const G g( n , E , false );
+   const std::size_t arcs = std::size_t( g.arcs() );
+   const char * c = kind == 0   ? "uniform"
+		    : kind == 1 ? "kronecker"
+		    : kind == 2 ? "sparse"
+				: "grid";
+   if( const char * dump = std::getenv( "ADS_BCC_DUMP" ) ) {
+    const std::string f =
+      std::string( dump ) + "/" + c + std::to_string( scale ) + ".adj";
+    if( std::FILE * o = std::fopen( f.c_str() , "w" ) ) {
+     std::fprintf( o , "AdjacencyGraph\n%d\n%zu\n" , n , arcs );
+     for( int v = 0 ; v < n ; ++v )
+      std::fprintf( o , "%d\n" , g.offsets()[ v ] );
+     for( std::size_t k = 0 ; k < arcs ; ++k )
+      std::fprintf( o , "%d\n" , g.arcData()[ k ] );
+     std::fclose( o );
+     std::printf( "# dump\t%s\n" , f.c_str() );
+     }
+    }
+   ADS::Sequential seq;
+   const ADS::BiconnectedComponents ref = ADS::biconnectedComponents( g );
+   ADS::BiconnectedComponents out;
+   Works S;
+   onExecutorsW( S , X , "ADS::biconnectedComponents" , [ & ]( auto & ex ) {
+    out = ADS::biconnectedComponents( ex , g );
+    } );
+   if( threads == 1 )
+    addW( S , "seq" , "ADS::biconnectedComponents (Hopcroft-Tarjan)" ,
+	  [ & ] { out = ADS::biconnectedComponents( g ); } );
+   runWorks(
+     bench( "bcc" ) , c , arcs , S , r ,
+     [ & ] { out = ADS::BiconnectedComponents(); } ,
+     [ & ] { return( out.sameBlocks( ref ) ); } );
    }
  }
 
@@ -3213,6 +3295,8 @@ int main( int argc , char ** argv )
   dense( o.runs , o.seed , X );
  if( only.empty() || ( only == "graphs" ) )
   graphs( { 16 , 19 } , o.runs , o.seed , X );
+ if( only.empty() || ( only == "bcc" ) )
+  bcc( { 16 , 20 } , o.runs , o.seed , X );
  if( only.empty() || ( only == "sssp" ) )
   sssp( { 16 , 20 } , o.runs , o.seed , X );
  if( only.empty() || ( only == "succinct" ) )
