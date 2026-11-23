@@ -210,7 +210,7 @@ randomIndependentSet( const std::vector< std::size_t > & succ , R & g );
 /// 7 & \quad \textbf{foreach}\ v \in ( 5 , 4 , 3 )\ \textbf{do} \cr
 /// 8 & \qquad \textbf{foreach}\ i\ \textbf{with}\ c[ i ] = v\ \textbf{do} \cr
 /// 9 & \qquad\quad c[ i ] \gets \text{the least color in } \{ 0 , 1 , 2 \}
-///     \text{ of neither neighbour of } i \cr
+///     \text{ of neither neighbor of } i \cr
 /// 10 & \quad \textbf{return}\ c
 /// \end{array}}
 /// \f]
@@ -220,8 +220,8 @@ randomIndependentSet( const std::vector< std::size_t > & succ , R & g );
 deterministicCoinTossing( const std::vector< std::size_t > & succ ,
 			  std::size_t * rounds = nullptr );
 
-/// the items whose color is smaller than those of their neighbours, the
-/// tail excluded and not counted as a neighbour, so that a list of two
+/// the items whose color is smaller than those of their neighbors, the
+/// tail excluded and not counted as a neighbor, so that a list of two
 /// items or more gives at least one
 ///
 /// In pseudocode (chapter 4, List Ranking, of Ferragina's book, beyond the

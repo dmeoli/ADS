@@ -6,7 +6,7 @@
  * and \f$ p[ i ] \f$ is the parent of \f$ i \f$, or -1 if \f$ i \f$ is a
  * root. It answers `parent()` alone, in \f$ O( 1 ) \f$ time and with the
  * least memory, which is all that is needed when a tree is built and walked
- * towards the root, as the trees of the visits of a graph; the order among
+ * toward the root, as the trees of the visits of a graph; the order among
  * siblings is lost, unless it is the one of their numbers. Since
  * `setParent()` may hang any node anywhere, the structure is a forest of
  * \f$ n \f$ isolated nodes at the start.

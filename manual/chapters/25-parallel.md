@@ -960,7 +960,7 @@ the left, otherwise to the right.
 
 ![Figure 25.3. Three sorted ranges and the
 splits at the ranks 4 (dashed) and 9 (solid) of their stable merge, which
-bound three parts of the output (coloured alike); the two items 4 come from
+bound three parts of the output (colored alike); the two items 4 come from
 $R_1$ first.](../figures/parallel-merge.svg){#fig-25-3}
 
 The two functions are declared as
@@ -2386,7 +2386,7 @@ that has work from the start is among them. $\square$
 
 **Coalescing.** Between two pushes a worker of a search often sends several
 messages for the same key (e.g., the relaxations of one state by its
-neighbours, each with a distance), of which the receiver usually keeps only
+neighbors, each with a distance), of which the receiver usually keeps only
 the least. A mailbox of the policy `CoalesceBy< K , M >`, the third parameter
 of the template, merges them in the outbox, before they take a place in the
 channel and a call at the receiver; the default policy, `NoCoalescing`, adds

@@ -54,7 +54,7 @@ namespace
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the flag of the colours C by the path with no branch (integers) and by
+/// the flag of the colors C by the path with no branch (integers) and by
 /// the one with swaps (strings): the same order and the same swaps
 void flag( const std::vector< int > & C )
 {
@@ -77,8 +77,8 @@ void flag( const std::vector< int > & C )
 
 // the Dutch national flag, with no branch on the integers and by swaps on
 // the strings, the same order and the same number of swaps, on: no items,
-// one item of each colour, all of one colour, sorted, reversed, the
-// colours alternating, and random vectors; a colour out of 0..2 violates
+// one item of each color, all of one color, sorted, reversed, the
+// colors alternating, and random vectors; a color out of 0..2 violates
 // the contract
 ADS_TEST( "dutch-flag-branchless" )
 {

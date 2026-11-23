@@ -19,7 +19,7 @@
  *   \qquad s = \frac{1}{2} n^{2/3} , \quad
  *   \delta = \pm \frac{1}{2} \sqrt{ \frac{ s ( n - s ) \ln n }{ n } }
  * \f]
- * (the sign of \f$ \delta \f$ towards the median) is selected recursively
+ * (the sign of \f$ \delta \f$ toward the median) is selected recursively
  * for the rank \f$ k \f$, so that the item that lands in the place \f$ k \f$
  * falls just on the side of \f$ k \f$ that leaves the smaller part to recur
  * on; the expected number of comparisons is

@@ -24,7 +24,7 @@
  *   slack and the matched ones tight, and each stage grows alternating
  *   trees on the tight edges from every free node, shrinking the blossoms
  *   and changing the duals by the least slack until an augmenting path or
- *   the optimum appears; the least slack towards each blossom is kept per
+ *   the optimum appears; the least slack toward each blossom is kept per
  *   blossom, so that a change of the duals costs \f$ O( n ) \f$. With
  *   integer weights all the arithmetic is on integers, the duals being
  *   kept doubled. Among those of largest size it gives, e.g., a perfect

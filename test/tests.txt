@@ -272,7 +272,7 @@ ch14  ex14.10            Esercizio 14.10, massimizzazione e minimizzazione
 
 # chapter 15, Ricerca locale
 ch15  sec15.local-search Figure 15.1 e 15.3, ricerca locale sull'albero
-ch15  sec15.1.neighbourhood sezione 15.1, intorno di una sequenza
+ch15  sec15.1.neighborhood sezione 15.1, intorno di una sequenza
 ch15  sec15.1.shell-sort sezione 15.1, Figura 15.4, Shell Sort
 ch15  sec15.2.max-flow   sezione 15.2, Figura 15.5, flusso massimo
 ch15  ex15.1             Esercizio 15.1, tagli minimi

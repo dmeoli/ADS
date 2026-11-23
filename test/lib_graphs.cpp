@@ -260,9 +260,9 @@ ADS_TEST( "grid-distances" )
 	       contract_violation );
  }
 
-// the fill of random matrices of three colours against a recursive fill
+// the fill of random matrices of three colors against a recursive fill
 // of a copy, for the four and the eight moves, with the cells painted
-// counted; the same colour paints nothing; a cell outside
+// counted; the same color paints nothing; a cell outside
 ADS_TEST( "flood-fill" )
 {
  std::mt19937 g( 2 );
@@ -759,7 +759,7 @@ ADS_TEST( "count-triangles" )
 	       contract_violation );
  }
 
-// the colourings of random graphs against all the 2^n colourings; odd and
+// the colorings of random graphs against all the 2^n colorings; odd and
 // even cycles; no edge
 ADS_TEST( "two-coloring" )
 {
@@ -1008,7 +1008,7 @@ ADS_TEST( "edge-disjoint-paths" )
 
 // the decrease of a capacity on random networks, with cycles of flow
 // added, against a fresh maximum flow: each of the three cases met; a
-// cycle of flow cancelled by hand
+// cycle of flow canceled by hand
 ADS_TEST( "decrease-capacity" )
 {
  using LMatrix = std::vector< std::vector< long > >;

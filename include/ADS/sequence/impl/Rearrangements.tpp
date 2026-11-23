@@ -77,11 +77,11 @@ bool isKSorted( const std::vector< T > & A , std::size_t k , C & less )
 
 template< class T , class F >
 std::pair< std::size_t , std::size_t >
-dutchNationalFlag( std::vector< T > & A , F && colour , std::size_t * swaps )
+dutchNationalFlag( std::vector< T > & A , F && color , std::size_t * swaps )
 {
  std::size_t moved = 0 , i = 0 , j = 0 , k = A.size();
  while( j < k ) {  // A[ j .. k ) not examined
-  const int c = int( colour( A[ j ] ) );
+  const int c = int( color( A[ j ] ) );
   ADS_PRE( ( c >= 0 ) && ( c <= 2 ) );
   if constexpr( std::is_trivially_copyable_v< T > ) {
    // the same swap with no branch: A[ j ] goes to the place t of its
@@ -114,7 +114,7 @@ dutchNationalFlag( std::vector< T > & A , F && colour , std::size_t * swaps )
   *swaps = moved;
  ADS_AUDIT( [ & ]( void ) {
   for( std::size_t h = 0 ; h < A.size() ; ++h )
-   if( int( colour( A[ h ] ) ) != ( h < i ? 0 : ( h < j ? 1 : 2 ) ) )
+   if( int( color( A[ h ] ) ) != ( h < i ? 0 : ( h < j ? 1 : 2 ) ) )
     return( false );
   return( true );
   }() );

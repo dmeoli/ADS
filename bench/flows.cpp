@@ -11,7 +11,7 @@
  * - flow, the maximum flow from scratch, in nanoseconds per arc, on two
  *   cases: "random", G( n , 4 n ) oriented, capacities in [ 1 , 1000 ],
  *   from the node 0 to the node n - 1; "grid", the square grid of n
- *   nodes, each joined to its 4 neighbours by arcs of capacity in
+ *   nodes, each joined to its 4 neighbors by arcs of capacity in
  *   [ 1 , 100 ], and from the source and to the sink by arcs of capacity
  *   in [ 0 , 50 ] (the networks of the cuts of the images); FlowNetwork
  *   by PUSH_RELABEL ("ADS push-relabel") and by DINIC ("ADS Dinic"),

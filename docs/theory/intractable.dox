@@ -261,7 +261,7 @@
  \f]
  the pairs of edges less the \f$ n \f$ that touch; the change of cost of a
  move depends on the four edges alone, and a step costs \f$ O( n^2 ) \f$.
- `kOptNeighbours()` counts \f$ | I_k( \pi ) | \f$ by brute force, which
+ `kOptNeighbors()` counts \f$ | I_k( \pi ) | \f$ by brute force, which
  checks (6) for \f$ k = 2 \f$. `partitionLocalSearch()` does the same for
  PARTITION, with the moves of one element and the swaps of two, each
  changing the difference of the sums by twice the elements moved.

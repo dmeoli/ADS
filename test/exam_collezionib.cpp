@@ -3168,7 +3168,7 @@ long nodeCapacityFlow( int n , const Arcs & E , const Longs & cap , int s ,
 
 /// the maximum flow of an unoriented network: each edge [ u , v ] of
 /// capacity c becomes ( u , v ) and ( v , u ) of capacity c, the flows in
-/// opposite directions cancelling
+/// opposite directions canceling
 long unorientedFlow( int n , const Arcs & E , int s , int t )
 {
  Arcs D;

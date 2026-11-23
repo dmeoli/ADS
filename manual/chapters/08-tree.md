@@ -64,7 +64,7 @@ which are told apart as the *left* and the *right* child even when only one
 of them is there. Equivalently ([Morin 2013,
 §6](Z-bibliography.md#ref-morin-cpp)), it is a connected acyclic graph with
 no vertex of degree larger than three, in which a root of degree at most
-two is chosen and the two neighbours of each node other than its parent are
+two is chosen and the two neighbors of each node other than its parent are
 ordered. A node with no child is a *leaf*, the others are *internal*. The
 nodes on the path from a node $u$ to the root are the *ancestors* of $u$
 (each node being an ancestor of itself), $u$ is a *descendant* of each of
@@ -687,7 +687,7 @@ $T$ ([Knuth 1997, §2.3.2](Z-bibliography.md#ref-knuth1997); [Montresor 2025,
 and it is the reason why the links of `Tree` are three per node whatever the
 degrees.
 
-![Figure 8.8. An ordered tree $T$ and the binary tree $B$ of its first children (the grey edges, to the left) and of its next siblings (the violet edges, to the right).](../figures/tree-binrep.svg){#fig-8-8}
+![Figure 8.8. An ordered tree $T$ and the binary tree $B$ of its first children (the gray edges, to the left) and of its next siblings (the violet edges, to the right).](../figures/tree-binrep.svg){#fig-8-8}
 
 <span id="alg-8-10"></span>**Algorithm 8.10.** The binary tree
 of the first children and of the next siblings.
@@ -4230,7 +4230,7 @@ of invariant by partial rebuilding, as in [Overmars and van Leeuwen
 In [Morin 2013, exercise 8.11](Z-bibliography.md#ref-morin-cpp) one wants a
 list with `addAfter( e )`, `remove( e )` and `testBefore( e_1 , e_2 )`, the
 first two in $O( \log n )$ amortized time and the third in $O( 1 )$, by a
-scapegoat tree whose nodes are labelled with the paths from the root,
+scapegoat tree whose nodes are labeled with the paths from the root,
 compared as integers. A rotation would change the labels of all the nodes
 of a subtree, while a rebuild rewrites them anyway, at no extra cost. This
 is the case where [Morin 2013, §8.2](Z-bibliography.md#ref-morin-cpp)
@@ -4353,11 +4353,11 @@ the two properties ([Morin 2013, §9.2](Z-bibliography.md#ref-morin-cpp)):
 
 - the *black-height property*: all the paths from the root to a nil have the
   same number of black nodes (its black height), i.e., with red as 0 and black
-  as 1, the colours sum to the same value along all such paths;
+  as 1, the colors sum to the same value along all such paths;
 - the *no-red-edge property*: no red node has a red parent, i.e., the
-  colours of a node and of its parent sum to 1 at least.
+  colors of a node and of its parent sum to 1 at least.
 
-We can always colour the root black, and the algorithms keep it so. Then
+We can always color the root black, and the algorithms keep it so. Then
 removing each red node and hanging its two children on its black parent
 turns the tree into a 2-4 tree ([Figure 8.50](08-tree.md#fig-8-50), (a)
 and (b), the trees of [Morin 2013, figures 9.4 and
@@ -4431,50 +4431,50 @@ exists and is unique. $\square$
 
 `LeftLeaningRedBlackTree< K , V >`, the `RedBlackTree` of Morin, keeps the
 three properties. Its nodes hold a pair, the three links to the children
-and to the parent, and the colour in a byte (0 red, 1 black, and 2 for the
+and to the parent, and the color in a byte (0 red, 1 black, and 2 for the
 *double black* of the removal). The links to the nil are null pointers,
-read as black by `colour()`. `blackHeight()` counts the black nodes on the
+read as black by `color()`. `blackHeight()` counts the black nodes on the
 path to the leftmost nil, and `twoFourDegrees()` counts the nodes of degree
 2, 3 and 4 of the 2-4 tree (the black nodes by the number of their red
 children), in $O( n )$.
 
-Four operations of constant time change the colours of a node and of its
+Four operations of constant time change the colors of a node and of its
 children ([Figure 8.51](08-tree.md#fig-8-51)). `pushBlack( u )` takes a black
 node with two red children and makes it red and them black, and
-`pullBlack( u )` does the converse. `flipLeft( u )` exchanges the colours of
+`pullBlack( u )` does the converse. `flipLeft( u )` exchanges the colors of
 $u$ and of its right child and rotates $u$ to the left, and `flipRight( u )`
 is its mirror image. In terms of the 2-4 tree, `pushBlack()` splits a node and
 sends its middle key up, and `pullBlack()` merges two nodes with the key
 between them. Instead, the flips change only the representation of a node, or
 move a key between two nodes when they follow a `pullBlack()` ([Morin 2013,
 exercise 9.5](Z-bibliography.md#ref-morin-cpp)). In the proofs we write
-$c( x )$ for the colour of a node as a number, 0 for red and 1 for black (2
+$c( x )$ for the color of a node as a number, 0 for red and 1 for black (2
 for the double black of the removal), a nil counting as 1.
 
 <span id="lem-8-66"></span>**Lemma 8.66.** *A `pushBlack()`, a
 `pullBlack()`, a flip whose child rotated up is red, and a rotation of two
-red nodes keep the sum of the colours along each path from the root to a
+red nodes keep the sum of the colors along each path from the root to a
 nil. Furthermore, `flipLeft( u )` on a node $u$ with a black left child
 and a red right child $r$ whose children are black, in a tree with the
-no-red-edge property, leaves $r$ in the place of $u$ with the colour of $u$
+no-red-edge property, leaves $r$ in the place of $u$ with the color of $u$
 and the red left child $u$, whose two children are black; no other node
-changes its children or its colour.*
+changes its children or its color.*
 
 *Proof.* A path through a node $u$ of `pushBlack( u )` or of `pullBlack( u )`
 goes through exactly one of its children, both of which exist, and the
-operation adds $-1$ and $+1$, or $+1$ and $-1$, to the colours of the two. In
+operation adds $-1$ and $+1$, or $+1$ and $-1$, to the colors of the two. In
 `flipLeft( u )`, let $x = c( u )$ and $c( r ) = 0$, and let $A$ be the left
 subtree of $u$ and $B$ and $C$ those of $r$. Before it, the paths into $A$
 cross $u$ only, and those into $B$ and $C$ cross $u$ and $r$; both add $x$ to
-the sum. After it, $r$ of colour $x$ is above $u$ of colour 0, the paths into
+the sum. After it, $r$ of color $x$ is above $u$ of color 0, the paths into
 $A$ and $B$ cross both and those into $C$ cross $r$ only, which again adds
 $x$. The flip on the right is its mirror image, and a rotation of two red
 nodes adds 0 on each path. For the second claim, $u$ was black by the
-no-red-edge property, $r$ takes its colour and $u$ takes the red of $r$. The
+no-red-edge property, $r$ takes its color and $u$ takes the red of $r$. The
 children of $u$ are now its old left child and the old left child of $r$, both
 black. $\square$
 
-![Figure 8.51. The operations of `LeftLeaningRedBlackTree` on the colours, the red nodes in orange and the subtrees as squares: `pushBlack(u)` and its inverse `pullBlack(u)`, which split a 2-4 node and merge two of them, and `flipLeft(u)` and its inverse `flipRight(w)`, a rotation with the exchange of the colours of the two nodes.](../figures/tree-llrb-ops.svg){#fig-8-51}
+![Figure 8.51. The operations of `LeftLeaningRedBlackTree` on the colors, the red nodes in orange and the subtrees as squares: `pushBlack(u)` and its inverse `pullBlack(u)`, which split a 2-4 node and merge two of them, and `flipLeft(u)` and its inverse `flipRight(w)`, a rotation with the exchange of the colors of the two nodes.](../figures/tree-llrb-ops.svg){#fig-8-51}
 
 ### 8.10.3 Insertion {#sec-8-10-3}
 
@@ -4524,7 +4524,7 @@ invariant holds at the first round. In a round, if $u$ is the root,
 blackening it adds 1 to each path, and the procedure ends with no property
 broken. Otherwise let $w$ be the parent of $u$. If the left child of $w$ is
 black, then $u$ is the right child and `flipLeft( w )` puts $u$, with the
-colour of $w$, in the place of $w$ and $w$, red, as its left child; after the
+color of $w$, in the place of $w$ and $w$, red, as its left child; after the
 exchange of the names $u$ is a red left child, and the left-leaning
 property holds at its parent, whose left child is red. If now $w$ is black,
 no property is broken, and the procedure ends. If $w$ is red, then $w$ is
@@ -4552,7 +4552,7 @@ smallest node $w$ of its right subtree, whose pair it takes (the code moves
 the pair rather than the node). Thus the node $w$ to splice has at most one
 child $u$, its left child when $w$ is the node of the key and its right
 child otherwise. If $w$ is black, splicing it out would remove a black node
-from the paths through it. Hence the removal adds the colour of $w$ to
+from the paths through it. Hence the removal adds the color of $w$ to
 that of $u$, which keeps all the black heights. This may leave $u$ double
 black (a black node spliced over a black child), or a black node where a
 red one was, which may break the left-leaning property at its parent.
@@ -4613,21 +4613,21 @@ Here $w$ and $v$ are the parent and the sibling of $u$ at the start of each
 round.
 
 <span id="lem-8-68"></span>**Lemma 8.68.** *At the start of each round
-of `removeFixup( u )`, $c( u ) = 2$, the sums of the colours along the paths
+of `removeFixup( u )`, $c( u ) = 2$, the sums of the colors along the paths
 from the root to the nils are all equal, the no-red-edge property holds, and
 the left-leaning property holds at each node, $u$ counting as black. When
 the procedure returns, the tree is a left-leaning red-black tree with a
 black root, and the procedure costs $O( \log n )$ time.*
 
-*Proof.* The splice of a node $w_0$ of colour $c( w_0 )$ adds $c( w_0 )$ to
-the colour of its child $u$, which keeps the sums. If $w_0$ is black and $u$
+*Proof.* The splice of a node $w_0$ of color $c( w_0 )$ adds $c( w_0 )$ to
+the color of its child $u$, which keeps the sums. If $w_0$ is black and $u$
 black, then $c( u ) = 2$, and the left-leaning property holds with $u$ counted
 as black, since $u$ is black where the black $w_0$ was; if $w_0$ was the left
 child of $w$, the sibling $v$ is black. Otherwise $c( u ) \le 1$, no round is
 made, and the only property that may fail is the left-leaning one at $w$,
 when a black $u$ replaces a red left child $w_0$ whose sibling is red, which
 the line 7 repairs: `flipLeft( w )` puts the red right child $r$ of $w$,
-with the colour of $w$, in its place, and $w$, red, as its left child, both
+with the color of $w$, in its place, and $w$, red, as its left child, both
 children of $w$ being then black. Each operation of a round keeps the sums by [Lemma
 8.66](08-tree.md#lem-8-66), its flips rotating up a red child,
 and we check the other properties case by case, $a = c( w )$ before the
@@ -4637,7 +4637,7 @@ and the left-leaning property holds at $w$), $w$ is black and the children
 of $v$ are black; `flipRight( w )` puts $v$, black, in the place of $w$,
 with $w$, red, as its right child, whose children are the black right child
 $v'$ of $v$ and $u$. The next round is therefore a case 3 with $a = 0$,
-which (as shown below) ends with a node of colour $a + 1 = 1$ or with a red
+which (as shown below) ends with a node of color $a + 1 = 1$ or with a red
 node in the place of $w$; the left-leaning property, which fails at $v$
 meanwhile, then holds, or is repaired by the line 7 as above.
 
@@ -4658,7 +4658,7 @@ the black children $u$ and the left child of $q$, and $v$ has the black
 right child of $q$ on its left and its old right child on its right, which
 may be red, in which case `flipLeft( v )` (the line 12) puts it, black, in
 the place of $v$, with $v$, red with two black children, as its left child. All the
-properties hold, $q$ having the colour that $w$ had, and the loop ends.
+properties hold, $q$ having the color that $w$ had, and the loop ends.
 
 In case 3, $u = w.\mathit{right}$ and $v$ is black; let $q$ be the right
 child of $v$, red only if the left child of $v$ is red. `pullBlack( w )`
@@ -4676,7 +4676,7 @@ both children of $v$ are black, `flipLeft( v )` puts $w$ with $c( w ) = a +
 $u$ on its right; for $a = 1$ the round goes on with $u = w$, one level
 above the old $u$, and for $a = 0$ the loop ends, with the possible failure
 at the parent of $w$ that the line 7 repairs. In each case that ends,
-the node in the place of $w$ has colour $a$ or $a + 1 \le 1$, the root is
+the node in the place of $w$ has color $a$ or $a + 1 \le 1$, the root is
 black, and the sums no longer count a 2; hence the tree is a left-leaning
 red-black tree. Each round costs $O( 1 )$, case 1 is followed by a round
 that ends, and the rounds that go on move $u$ up by one level, whence $O( h
@@ -4708,7 +4708,7 @@ time in all the calls of `addFixup()` and `removeFixup()`.*
 *Proof.* We follow the 2-4 tree that the red-black tree simulates
 ([§8.10.2](08-tree.md#sec-8-10-2)): a black node with its red children is a
 2-4 node. A round of `addFixup()` either ends, after `flipLeft()`,
-`flipRight()` or the colouring of the root, or goes on after `pushBlack( g )`.
+`flipRight()` or the coloring of the root, or goes on after `pushBlack( g )`.
 It does so only when $u$ is red, its parent $w$ red and $g$ black with two red
 children, i.e., when the 2-4 node of $g$, of three keys, has received the key
 of $u$, and `pushBlack()` splits it into two nodes, the key of $g$ going up,
@@ -4721,15 +4721,15 @@ row), and the cases 2 and 3. These begin by `pullBlack( w )`, the merge of the
 sibling $v$. Case 2 returns the red $q$ (and ends) when $v$ had a red left
 child, i.e., when the merged node had too many keys and is split back, a
 borrowing; otherwise it returns $v$, which after `flipLeft( w )` has the
-colour of $w$ plus one, and the loop goes on exactly when $w$ was black. Case
+color of $w$ plus one, and the loop goes on exactly when $w$ was black. Case
 3 likewise ends when $q$ or the left child of $v$ is red (a borrowing) and
-returns $w$, with the colour of $w$ plus one, otherwise. In a case 2 or 3 that
+returns $w$, with the color of $w$ plus one, otherwise. In a case 2 or 3 that
 goes on, $w$ is black with a black left child and hence, by the left-leaning
 property, a black right child, and the sibling has no red child: both 2-4
 nodes had one key, and the round is the merge of the bottom-up rule that
 leaves the node above with one child too few. A removal thus runs at most
 $2 ( M_o + 1 ) + 1$ rounds, $M_o$ its merges, plus the final `flipLeft()`, and
-every other round makes $O( 1 )$ rotations and changes of colour. The 2-4 tree
+every other round makes $O( 1 )$ rotations and changes of color. The 2-4 tree
 follows the bottom-up rules of [§8.10.1](08-tree.md#sec-8-10-1), and by
 [Theorem 8.9](08-tree.md#thm-8-9) its splits and merges are at most $3 m / 2$
 in all. Hence the rounds are at most
@@ -4896,16 +4896,16 @@ insertions and removals, and that the height is less than twice the black
 height (`ods_trees.ods-ex9.1.two-four-tree`).
 
 The next lemma solves exercise 9.9: a binary search tree of height at most
-$2 \log_2 n - 2$ cannot always be coloured, and when it can, the colouring
+$2 \log_2 n - 2$ cannot always be colored, and when it can, the coloring
 need not be left-leaning.
 
 <span id="lem-8-72"></span>**Lemma 8.72.** *([Morin 2013, exercise
 9.9](Z-bibliography.md#ref-morin-cpp).) For every $H \ge 4$, the binary
 search tree of $n = 2^{H+1} + 1$ nodes whose root has a leaf as its left
 child and a perfect tree of height $H$ as its right subtree has height $H +
-1 \le 2 \log_2 n - 2$ and no red-black colouring. The perfect tree of 7
+1 \le 2 \log_2 n - 2$ and no red-black coloring. The perfect tree of 7
 nodes with one more node as the right child of its largest leaf has height
-$3 \le 2 \log_2 8 - 2$ and a red-black colouring, but no left-leaning
+$3 \le 2 \log_2 8 - 2$ and a red-black coloring, but no left-leaning
 one.*
 
 *Proof.* In the first tree, $\log_2 n > H + 1$, and hence $2 \log_2 n - 2 >
@@ -4913,10 +4913,10 @@ one.*
 most 2 black nodes besides the nil. A path from the root to a nil through
 the right subtree has $H + 2$ nodes besides the nil, no two consecutive ones
 red, and hence at least $\lfloor ( H + 2 ) / 2 \rfloor \ge 3$ black ones;
-thus no colouring gives both the same number of black nodes. In the second
-tree, colour all the nodes black but the new one, which is red. Each path
+thus no coloring gives both the same number of black nodes. In the second
+tree, color all the nodes black but the new one, which is red. Each path
 from the root to a nil then has 3 black nodes besides the nil. In any
-colouring, the parent $p$ of the new node $x$ has a nil on its left, whose
+coloring, the parent $p$ of the new node $x$ has a nil on its left, whose
 path has as many black nodes as the path to $p$, and the paths through $x$
 have one more if $x$ is black, and therefore $x$ is red, and $p$ has a black
 left nil and a red right child, which breaks the left-leaning property.
@@ -4935,9 +4935,9 @@ turn, [§8.5](08-tree.md#sec-8-5)), `absorb()`, `forEach()` and the
 constant iterators along the path from the root. Like the others, it can be moved but
 not copied, and the destructor frees the nodes by rotations, with no stack.
 Our class differs from the code of Morin where it is meant to be faster,
-for the benchmarks to check. Its colour is a byte, not an integer, and the
+for the benchmarks to check. Its color is a byte, not an integer, and the
 nil is a null pointer, read by no load, where his sentinel is a node read
-at each test of a colour. Its operations are his, with the same rotations.
+at each test of a color. Its operations are his, with the same rotations.
 At the contract level 3 the class checks, after each operation, the order
 of the keys, the parents, the root black and the three properties, in
 $O( n )$, and `absorb()` requires the keys of $t$ to be larger than those of
@@ -5370,7 +5370,7 @@ by the lines that its search reads ([Rao and Ross
 2011](Z-bibliography.md#ref-graefe2011)). A leaf holds up to
 $L = B / ( \mathrm{sizeof}( K ) + \mathrm{sizeof}( V ) )$ pairs, the keys in
 one array and the values in another, so that a search reads only the keys, and
-it is linked to its neighbours in both directions. An internal node holds up to
+it is linked to its neighbors in both directions. An internal node holds up to
 $I = B / ( \mathrm{sizeof}( K ) + \mathrm{sizeof}( \mathit{void}\,* ) )$ keys
 and $I + 1$ children, each between 4 and 255, the child $c[ i ]$ having the
 keys in $( k[ i - 1 ] , k[ i ] ]$ as in [§8.11.2](08-tree.md#sec-8-11-2). Its
@@ -5675,7 +5675,7 @@ keys plus 1, and for the treaps it is the height again, in expectation.
 schemes as `JoinTree` keeps them. Its bounds on the heights are those of
 [Lemma 8.45](08-tree.md#lem-8-45) for the AVL trees, of [Lemma
 8.64](08-tree.md#lem-8-64) for the Red-Black trees (which have the two
-properties of colour of [§8.10.2](08-tree.md#sec-8-10-2)), of
+properties of color of [§8.10.2](08-tree.md#sec-8-10-2)), of
 [§8.6](08-tree.md#sec-8-6) for the treaps, and of the next lemma for the
 trees balanced by weight.
 
@@ -9124,7 +9124,7 @@ a proof by the lemmas cited.
     8.71](08-tree.md#lem-8-71)). Test:
     `ods_trees.ods-ex9.1.two-four-tree`.
 85. Show that a binary search tree of height at most $2 \log_2 n - 2$
-    cannot always be coloured red and black, and that a colourable one need
+    cannot always be colored red and black, and that a colorable one need
     not be left-leaning ([Morin 2013, exercise
     9.9](Z-bibliography.md#ref-morin-cpp), [Lemma
     8.72](08-tree.md#lem-8-72)). Solved by the lemma; no test.

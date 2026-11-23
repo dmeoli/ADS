@@ -710,7 +710,7 @@ std::vector< unsigned char > randomCosts( int rows , int cols ,
  return( cost );
  }
 
-/// the sorted neighbours of u in g, by forEachAdj()
+/// the sorted neighbors of u in g, by forEachAdj()
 template< class G >
 std::vector< int > around( const G & g , int u )
 {
@@ -876,7 +876,7 @@ ADS_TEST( "grid-graph-paths" )
      const auto jg = johnson( G , s );
      CHECK( jg.d == johnson( A , s ).d && jg.d == johnson( S , s ).d );
      CHECK( isShortestPathTree( G , s , jg ) );
-     // the heuristic towards s: no more than the distance, consistent
+     // the heuristic toward s: no more than the distance, consistent
      for( int u : G.V() ) {
       const int h = gridHeuristic( G , u , s );
       CHECK( ( jg.d[ u ] == infinity< int >() ) || ( h <= jg.d[ u ] ) );
@@ -1046,7 +1046,7 @@ ADS_TEST( "grid-graph-cost-models" )
 	CHECK( h <= w + gridHeuristic( G , v , s ) );
         } );
        }
-      // the costs to s, on the transposed graph: the heuristic towards s
+      // the costs to s, on the transposed graph: the heuristic toward s
       // is a lower bound on them
       const auto T = johnson( StaticGraph< int >( A ).transpose() , s ).d;
       for( int u : G.V() )
@@ -1488,7 +1488,7 @@ ADS_TEST( "euler-trails" )
 
 /// the size of a largest matching of the graph of n <= 20 nodes and the
 /// adjacency masks N, by the dynamic programming on the subsets: the least
-/// node of a set is left out or matched to a neighbour in the set
+/// node of a set is left out or matched to a neighbor in the set
 int matchingSize( int n , const std::vector< unsigned > & N )
 {
  std::vector< int > f( std::size_t( 1 ) << n , 0 );

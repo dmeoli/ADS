@@ -22,7 +22,7 @@
  *   them;
  * - `branchAndBoundMatching()`, the matching of largest weight of a graph
  *   of a few nodes by a branch and bound: the first node not yet decided is
- *   left unmatched or matched to each free neighbour, and a branch whose
+ *   left unmatched or matched to each free neighbor, and a branch whose
  *   weight plus half the best weight at each node left cannot beat the best
  *   matching found is cut. It takes time proportional to the number of
  *   matchings of the graph in the worst case, the telephone numbers

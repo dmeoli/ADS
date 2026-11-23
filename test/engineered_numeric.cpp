@@ -153,7 +153,7 @@ ADS_TEST( "montgomery" )
   CHECK( M.to( ~U64( 0 ) ) == M.to( ~U64( 0 ) % n ) );
   }
  // the moduli below 2^32: the bases above the modulus, the exponents 0,
- // the powers of 2 and their neighbours
+ // the powers of 2 and their neighbors
  for( const U64 n : { U64( 3 ) , U64( 4294967291ULL ) ,
 		      ( U64( 1 ) << 32 ) - 1 ,
 		      U64( 65537 ) } )

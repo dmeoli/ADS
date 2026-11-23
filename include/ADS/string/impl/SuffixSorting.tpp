@@ -83,7 +83,7 @@ inline void saisCompare( const C * T , std::uint64_t * G , std::uint64_t * P )
  // [see SimdInline.h]
  if constexpr( ( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > ) ||
 	       ( ( sizeof( C ) == 4 ) && std::is_signed_v< C > )) {
-  simd::here::neighbours64( T , G , P );
+  simd::here::neighbors64( T , G , P );
   return;
   }
 #endif

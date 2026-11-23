@@ -1363,7 +1363,7 @@ namespace dp
 
 /// are there two distinct values that occur in A the same number of
 /// times? Sort A, count the occurrences of each value into B, sort B and
-/// look for two equal neighbours; O( n log n ) time
+/// look for two equal neighbors; O( n log n ) time
 bool doubleLength( std::vector< long long > A )
 {
  std::sort( A.begin() , A.end() );
@@ -1853,7 +1853,7 @@ using Matrix = std::vector< std::vector< int > >;
 /// the number of 1 of the largest cross of 1 of the n x n binary matrix
 /// M (a central 1 and four arms of equal length), 0 if there is no 1: the
 /// matrices L, R, U, D of the lengths of the runs of 1 from each cell
-/// (included) to the left, right, up and down, and the cross centred in
+/// (included) to the left, right, up and down, and the cross centered in
 /// ( i , j ) has 4 min( L , R , U , D ) - 3 cells; Theta( n^2 ) time. The
 /// code of the text sets only L[ i ][ 1 ], U[ 1 ][ j ], R[ i ][ n ],
 /// D[ n ][ j ] and then fills the cells with i , j >= 2 (L and U) and
@@ -1891,7 +1891,7 @@ int cross( const Matrix & M )
  return( maxsofar );
  }
 
-/// the arm of the largest cross centred in ( i , j ), a 1
+/// the arm of the largest cross centered in ( i , j ), a 1
 int largestCross( const Matrix & M , int i , int j )
 {
  const int n = int( M.size() );
@@ -1921,7 +1921,7 @@ int crossCubic( const Matrix & M )
 
 // a cross of 17 as in the figure, among other 1; the lone 1 at the border
 // where the code of the text gives 0; both versions against a check of
-// every centre and every arm on random matrices
+// every center and every arm on random matrices
 ADS_TEST( "dp-58" )
 {
  dp::Matrix F( 9 , std::vector< int >( 9 , 0 ) );
@@ -2672,7 +2672,7 @@ ADS_TEST( "dp-66" )
 namespace dp
 {
 
-/// the largest sum of a subsequence of A whose neighbours differ by at
+/// the largest sum of a subsequence of A whose neighbors differ by at
 /// most k: DP[ i ] = A_i + max{ DP[ j ] : j < i , | A_i - A_j | <= k } (A_i
 /// if none), the answer the largest DP[ i ]; O( n^2 ) time
 /// \pre A > 0, k >= 0
@@ -2933,8 +2933,8 @@ ADS_TEST( "dp-71" )
 namespace dp
 {
 
-/// the binary trees of n nodes labelled 1 ... n whose symmetric visit is
-/// 1 , 2 , ... , n: each shape has one such labelling, so they are the
+/// the binary trees of n nodes labeled 1 ... n whose symmetric visit is
+/// 1 , 2 , ... , n: each shape has one such labeling, so they are the
 /// shapes, the Catalan number: DP[ 0 ] = DP[ 1 ] = 1, DP[ i ] = sum_{k=0}^{
 /// i-1} DP[ k ] DP[ i - 1 - k ]; Theta( n^2 ) operations, on numbers of
 /// Theta( n ) bits (T a BigInteger for large n), catalan() of the library.

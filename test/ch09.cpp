@@ -395,7 +395,7 @@ bool chordal( const MatrixGraph<> & g )
     ++weight[ v ];
    } );
   }
- // the earlier neighbours of each node must be a clique: enough to check
+ // the earlier neighbors of each node must be a clique: enough to check
  // that they are adjacent to the latest of them
  for( int u : order ) {
   Ints before;

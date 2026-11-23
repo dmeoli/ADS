@@ -7,7 +7,7 @@
  * first key \f$ f \f$ and whose inner one, for each \f$ f \f$, a set of LIFO
  * lists, one per second key \f$ g \f$. `top()` is an item of least \f$ f \f$
  * and, among those, of largest \f$ g \f$, the last one pushed (the order that
- * A* wants: least \f$ f \f$, ties broken towards the deeper nodes). The least
+ * A* wants: least \f$ f \f$, ties broken toward the deeper nodes). The least
  * \f$ f \f$ is found by a scan that only moves forward between two pushes of
  * a smaller \f$ f \f$, so that the outer level costs \f$ O( 1 ) \f$ amortized
  * per operation when the keys are bounded, against the \f$ O( \log n ) \f$ of
@@ -122,7 +122,7 @@ namespace ADS
 /*--------------------------------------------------------------------------*/
 
 /// the order of `BucketQueue` among the items of one \f$ f \f$: the largest
-/// \f$ g \f$ first (A*, towards the deeper nodes), the default
+/// \f$ g \f$ first (A*, toward the deeper nodes), the default
 struct LargestSecondKey
 {
  static constexpr bool least = false;  ///< not the least g first

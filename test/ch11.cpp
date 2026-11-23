@@ -995,7 +995,7 @@ ADS_TEST( "ex11.7" )
 // d[ v ] = min( w( u , v ) , d[ u ] ), labels each node with the shortest
 // edge of a path that reaches it; against the edges ( a , b ) with a
 // reachable from r and v reachable from b; r alone and no edge (all at
-// infinity), and a cycle through r (r labelled too)
+// infinity), and a cycle through r (r labeled too)
 ADS_TEST( "ex11.8" )
 {
  std::vector< WG > G;

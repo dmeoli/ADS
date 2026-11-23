@@ -407,7 +407,7 @@ typename S::Item rango( S & L , typename S::Pos p )
 }  // end( namespace )
 
 // Exercise 3.6: L = 5, 2, 3, 1, 2 prints 2, 1; the edges: 0, 1 and 2 items
-// (nothing, the first and the last item have no two neighbours; with one
+// (nothing, the first and the last item have no two neighbors; with one
 // item the list of the book read its sentinel), exactly 3 items, every
 // inner item printed, negative and zero items, against the definition
 ADS_TEST( "ex3.6" )

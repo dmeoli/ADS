@@ -286,7 +286,7 @@ an unoriented graph $G$ by an MFSET ([Montresor 2025,
 --8<-- "generated/MFSet-components.pseudo.md"
 
 The contracts of `MFSet` check that the parents form a forest of `count()`
-trees, that the ranks grow strictly towards the roots with the union by rank,
+trees, that the ranks grow strictly toward the roots with the union by rank,
 and that the sizes count the nodes of their trees with the union by size. Its
 accessors `parent( x )`, `rank( x )` and `size( x )` read the three vectors (a
 size is meaningful only at a root, and with the union by size), and its

@@ -447,8 +447,8 @@ HWY_INLINE std::uint64_t maskWord64( D d , F && m )
 /// \f$ a[ j ] = a[ j + 1 ] \f$ in \f$ e \f$, \f$ T \f$ an integer of 1 or
 /// 4 bytes
 template< class T >
-HWY_INLINE void neighbours64( const T * x , std::uint64_t * g ,
-			      std::uint64_t * e )
+HWY_INLINE void neighbors64( const T * x , std::uint64_t * g ,
+			     std::uint64_t * e )
 {
  static_assert( std::is_integral_v< T > &&
 		  ( ( sizeof( T ) == 1 ) || ( sizeof( T ) == 4 ) ) ,

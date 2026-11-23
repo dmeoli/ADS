@@ -247,7 +247,7 @@ ADS_TEST( "heuristics" )
 	       contract_violation );
  CHECK_THROWS( twoOptMove( { 0 , 1 , 2 } , 1 , 1 ) , contract_violation );
  CHECK_THROWS( twoOpt( D3 , { 0 , 0 , 1 } ) , contract_violation );
- CHECK_THROWS( kOptNeighbours( 2 , 1 ) , contract_violation );
+ CHECK_THROWS( kOptNeighbors( 2 , 1 ) , contract_violation );
  CHECK_THROWS( partitionLocalSearch( { 1 , 2 } , { 0 , 2 } ) ,
 	       contract_violation );
  CHECK_THROWS( minMaxGreedy( Adjacency( 3 , std::vector< bool >( 3 ) ) , 0 ,
@@ -362,7 +362,7 @@ ADS_TEST( "buckets" )
 // of a place out, the lower bound of a tour with a node out or a skew
 // matrix and the 1-tree, the knapsacks with a volume 0 or a capacity -1,
 // the puzzles of a side 0 or a board not a permutation, a bound nmax of -1
-// and 0, the 2-opt move at its ends, k = 0 and k = n of the neighbours, the
+// and 0, the 2-opt move at its ends, k = 0 and k = n of the neighbors, the
 // schedules of no processor
 ADS_TEST( "other-intractable" )
 {
@@ -455,9 +455,9 @@ ADS_TEST( "other-intractable" )
  CHECK_THROWS( twoOptMove( pi , -1 , 2 ) , contract_violation );
  CHECK_THROWS( twoOptMove( pi , 1 , 4 ) , contract_violation );
  CHECK_THROWS( twoOptMove( pi , 2 , 1 ) , contract_violation );
- CHECK( kOptNeighbours( 3 , 0 ) >= 0 && kOptNeighbours( 3 , 3 ) >= 0 );
- CHECK_THROWS( kOptNeighbours( 3 , -1 ) , contract_violation );
- CHECK_THROWS( kOptNeighbours( 3 , 4 ) , contract_violation );
+ CHECK( kOptNeighbors( 3 , 0 ) >= 0 && kOptNeighbors( 3 , 3 ) >= 0 );
+ CHECK_THROWS( kOptNeighbors( 3 , -1 ) , contract_violation );
+ CHECK_THROWS( kOptNeighbors( 3 , 4 ) , contract_violation );
  CHECK_THROWS( greedyTsp( skew ) , contract_violation );
  CHECK_THROWS( twoOpt( skew , { 0 , 1 } ) , contract_violation );
  CHECK_THROWS( partitionLocalSearch( { 1 } , { 0 , 1 } ) ,

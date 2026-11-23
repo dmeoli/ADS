@@ -23,16 +23,16 @@
  * - `countTriangles()`, the triangles of an unoriented graph by the ordering
  *   of Chiba and Nishizeki: each edge goes from the end of smaller degree
  *   (ties by name) to the other, and each triangle is counted once, at its
- *   first node, as an edge between two of its out-neighbours. Each node
- *   has \f$ O( \sqrt{m} ) \f$ out-neighbours, so the time is
+ *   first node, as an edge between two of its out-neighbors. Each node
+ *   has \f$ O( \sqrt{m} ) \f$ out-neighbors, so the time is
  *   \f$ O( m \sqrt{m} ) \f$, against \f$ O( m n ) \f$ for the merge of the
  *   lists of the ends of each edge and \f$ \Theta( n^3 ) \f$ on the matrix;
  *   the product of matrices of Itai and Rodeh takes
  *   \f$ O( n^{\omega} ) \f$;
- * - `twoColoring()`, a colouring 0 / 1 of the nodes of an unoriented graph
+ * - `twoColoring()`, a coloring 0 / 1 of the nodes of an unoriented graph
  *   with the ends of each edge apart, or nothing if there is none: by the
  *   theorem of Koenig, if and only if there is no odd cycle, which the visit
- *   in breadth from each node not coloured finds as an edge between two nodes
+ *   in breadth from each node not colored finds as an edge between two nodes
  *   of the same level parity, \f$ O( n + m ) \f$ (the `twoColoring()` of
  *   `EasyCases.h` takes a matrix of adjacency, in \f$ \Theta( n^2 ) \f$);
  * - `universalSink()`, on a matrix or on a graph with `hasEdge()` (exercise
@@ -64,7 +64,7 @@
  * reaching all the others, `treeDiameter()` a free tree;
  * `uniqueTopologicalOrder()` an oriented graph; `universalSink()` a square
  * matrix. At the level of the audits, `twoColoring()` ensures that its
- * colouring is proper, `uniqueTopologicalOrder()` that its order is
+ * coloring is proper, `uniqueTopologicalOrder()` that its order is
  * topological, and `treeVertexCover()` that its nodes cover the edges. The
  * functions are defined in `Properties.tpp`.
  *
@@ -253,7 +253,7 @@ std::vector< int > treeVertexCover( const G & g );
 template< Graph G >
 std::int64_t countTriangles( const G & g );
 
-/// a colour 0 or 1 for each node, the ends of each edge
+/// a color 0 or 1 for each node, the ends of each edge
 /// apart, -1 on the names that are not nodes; nothing if there is an odd
 /// cycle
 ///
@@ -277,7 +277,7 @@ std::int64_t countTriangles( const G & g );
 /// \end{array}}
 /// \f]
 /// \pre the graph is unoriented
-/// \post the ends of each edge have different colours (audit)
+/// \post the ends of each edge have different colors (audit)
 template< Graph G >
 std::optional< std::vector< int > > twoColoring( const G & g );
 

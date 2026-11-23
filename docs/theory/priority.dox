@@ -417,8 +417,8 @@
 
  The two levels of `BucketQueue.h` apply the scan of Dial to two keys, the
  first \f$ f \f$ of the order and the second \f$ g \f$ that breaks its ties
- towards the largest, which is the order of the search A* (least \f$ f \f$,
- ties towards the deeper nodes). The outer level is a vector of
+ toward the largest, which is the order of the search A* (least \f$ f \f$,
+ ties toward the deeper nodes). The outer level is a vector of
  <em>layers</em> indexed by \f$ f \f$, scanned forward from the least
  \f$ f \f$ in use; the scan only moves forward between two pushes of a smaller
  \f$ f \f$, and with keys bounded by \f$ C \f$ it costs \f$ O( 1 ) \f$

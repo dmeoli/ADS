@@ -99,21 +99,21 @@ void LeftLeaningRedBlackTree< K , V >::rotateRight( Link * u )
 template< std::totally_ordered K , class V >
 void LeftLeaningRedBlackTree< K , V >::addFixup( Link * u )
 {
- while( u->colour == kRed ) {
+ while( u->color == kRed ) {
   if( u == f_root ) {
-   u->colour = kBlack;
+   u->color = kBlack;
    return;
    }
   Link * w = u->parent;
-  if( colour( w->left ) == kBlack ) {  // left-leaning restored
+  if( color( w->left ) == kBlack ) {  // left-leaning restored
    flipLeft( w );
    u = w;
    w = u->parent;
    }
-  if( w->colour == kBlack )
+  if( w->color == kBlack )
    return;
   Link * g = w->parent;  // w red: g black
-  if( colour( g->right ) == kBlack ) {
+  if( color( g->right ) == kBlack ) {
    flipRight( g );
    return;
    }
@@ -150,11 +150,11 @@ auto LeftLeaningRedBlackTree< K , V >::removeCase2( Link * u ) -> Link *
  pullBlack( w );
  flipLeft( w );
  Link * q = w->right;
- if( colour( q ) == kRed ) {
+ if( color( q ) == kRed ) {
   rotateLeft( w );
   flipRight( v );
   pushBlack( q );
-  if( colour( v->right ) == kRed )
+  if( color( v->right ) == kRed )
    flipLeft( v );
   return( q );
   }
@@ -169,13 +169,13 @@ auto LeftLeaningRedBlackTree< K , V >::removeCase3( Link * u ) -> Link *
  pullBlack( w );
  flipRight( w );
  Link * q = w->left;
- if( colour( q ) == kRed ) {
+ if( color( q ) == kRed ) {
   rotateRight( w );
   flipLeft( v );
   pushBlack( q );
   return( q );
   }
- if( colour( v->left ) == kRed ) {
+ if( color( v->left ) == kRed ) {
   pushBlack( v );
   return( v );
   }
@@ -186,10 +186,10 @@ auto LeftLeaningRedBlackTree< K , V >::removeCase3( Link * u ) -> Link *
 template< std::totally_ordered K , class V >
 void LeftLeaningRedBlackTree< K , V >::removeFixup( Link * u )
 {
- while( u->colour > kBlack ) {
+ while( u->color > kBlack ) {
   if( u == f_root )
-   u->colour = kBlack;
-  else if( colour( u->parent->left ) == kRed )
+   u->color = kBlack;
+  else if( color( u->parent->left ) == kRed )
    flipRight( u->parent );  // case 1, then case 3
   else if( u == u->parent->left )
    u = removeCase2( u );
@@ -198,7 +198,7 @@ void LeftLeaningRedBlackTree< K , V >::removeFixup( Link * u )
   }
  if( u != f_root ) {  // the left-leaning property
   Link * w = u->parent;
-  if( ( colour( w->right ) == kRed ) && ( colour( w->left ) == kBlack ) )
+  if( ( color( w->right ) == kRed ) && ( color( w->left ) == kBlack ) )
    flipLeft( w );
   }
  }
@@ -224,12 +224,12 @@ void LeftLeaningRedBlackTree< K , V >::remove( const K & k )
    }
   Link phantom;  // in place of a nil child
   if( ! u ) {
-   phantom.colour = kBlack;
+   phantom.color = kBlack;
    u = &phantom;
    }
   place( w ) = u;
   u->parent = w->parent;  // also for the phantom
-  u->colour += w->colour;
+  u->color += w->color;
   delete static_cast< Node * >( w );
   --f_n;
   removeFixup( u );
@@ -284,8 +284,8 @@ void LeftLeaningRedBlackTree< K , V >::absorb( LeftLeaningRedBlackTree & t )
  Link * c;
  if( h1 >= h2 ) {  // down the right spine of r1 to
   c = r1;          // the black height of r2
-  for( long h = h1 ; ( c->colour == kRed ) || ( h > h2 ) ; c = c->right )
-   if( c->colour == kBlack )
+  for( long h = h1 ; ( c->color == kRed ) || ( h > h2 ) ; c = c->right )
+   if( c->color == kBlack )
     --h;
   x->parent = c->parent;
   place( c ) = x;
@@ -294,8 +294,8 @@ void LeftLeaningRedBlackTree< K , V >::absorb( LeftLeaningRedBlackTree & t )
   }
  else {  // down the left spine of r2
   c = r2;
-  for( long h = h2 ; ( c->colour == kRed ) || ( h > h1 ) ; c = c->left )
-   if( c->colour == kBlack )
+  for( long h = h2 ; ( c->color == kRed ) || ( h > h1 ) ; c = c->left )
+   if( c->color == kBlack )
     --h;
   x->parent = c->parent;
   if( c == r2 )
@@ -309,7 +309,7 @@ void LeftLeaningRedBlackTree< K , V >::absorb( LeftLeaningRedBlackTree & t )
   }
  x->left->parent = x;
  x->right->parent = x;
- x->colour = kRed;
+ x->color = kRed;
  addFixup( x );
  ADS_INVARIANT( valid() );
  }
@@ -346,7 +346,7 @@ long LeftLeaningRedBlackTree< K , V >::blackHeight( void ) const
 {
  long h = 0;
  for( const Link * u = f_root ; u ; u = u->left )
-  h += ( u->colour == kBlack );
+  h += ( u->color == kBlack );
  return( h );
  }
 
@@ -361,9 +361,9 @@ auto LeftLeaningRedBlackTree< K , V >::twoFourDegrees( void ) const
  while( ! S.empty() ) {
   const Link * u = S.back();
   S.pop_back();
-  if( u->colour == kBlack )              // a 2-4 node: u and its red
-   ++D[ ( colour( u->left ) == kRed ) +  // children
-	( colour( u->right ) == kRed ) ];
+  if( u->color == kBlack )              // a 2-4 node: u and its red
+   ++D[ ( color( u->left ) == kRed ) +  // children
+	( color( u->right ) == kRed ) ];
   if( u->left )
    S.push_back( u->left );
   if( u->right )
@@ -383,7 +383,7 @@ void LeftLeaningRedBlackTree< K , V >::forEach( F && f ) const
 template< std::totally_ordered K , class V >
 bool LeftLeaningRedBlackTree< K , V >::valid( void ) const
 {
- if( f_root && ( f_root->parent || ( f_root->colour != kBlack ) ) )
+ if( f_root && ( f_root->parent || ( f_root->color != kBlack ) ) )
   return( false );
  const long bh = blackHeight();
  std::size_t n = 0;
@@ -401,16 +401,16 @@ bool LeftLeaningRedBlackTree< K , V >::valid( void ) const
   S.pop_back();
   const Link * u = x.u;
   ++n;
-  if( ( u->colour != kRed ) && ( u->colour != kBlack ) )
+  if( ( u->color != kRed ) && ( u->color != kBlack ) )
    return( false );
   if( ( x.lo && ! ( *x.lo < key( u ) ) ) ||
       ( x.hi && ! ( key( u ) < *x.hi ) ) )
    return( false );
-  const long b = x.b + ( u->colour == kBlack );
-  if( ( u->colour == kRed ) &&  // no red edge
-      ( ( colour( u->left ) == kRed ) || ( colour( u->right ) == kRed ) ) )
+  const long b = x.b + ( u->color == kBlack );
+  if( ( u->color == kRed ) &&  // no red edge
+      ( ( color( u->left ) == kRed ) || ( color( u->right ) == kRed ) ) )
    return( false );
-  if( ( colour( u->left ) == kBlack ) && ( colour( u->right ) == kRed ) )
+  if( ( color( u->left ) == kBlack ) && ( color( u->right ) == kRed ) )
    return( false );  // left-leaning
   for( const Link * c : { u->left , u->right } )
    if( c && ( c->parent != u ) )

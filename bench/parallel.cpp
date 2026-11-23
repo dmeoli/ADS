@@ -3023,7 +3023,7 @@ struct BnbLocked
 /// a queue shared by all the workers, A of the priority queues above: a
 /// worker that finds it empty stops when all the N nodes are done, which it
 /// knows from the counts of the others (the end known in advance, which
-/// favours the shared queues)
+/// favors the shared queues)
 template< class A >
 struct BnbShared
 {

@@ -131,7 +131,7 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W , AL > & g ,
    scout = 1;
    continue;
    }
-  // from the top down: each node of the frontier claims its neighbours
+  // from the top down: each node of the frontier claims its neighbors
   toCheck -= scout;
   const auto cut = blocksOf( 0 , F.size() , 64 );
   const std::size_t B = cut.first , size = cut.second;

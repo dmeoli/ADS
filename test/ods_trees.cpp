@@ -1493,30 +1493,30 @@ std::string bstShape( const T & t , typename T::Link * u )
  }
 
 /// a tree read through its `Shape`, as `bstShape()` writes it, each red
-/// node of a red-black tree followed by r if `colours`
+/// node of a red-black tree followed by r if `colors`
 template< class T , class N >
-std::string shapeOf( const N * n , bool colours )
+std::string shapeOf( const N * n , bool colors )
 {
  using S = typename T::Shape;
  if( ! n )
   return( "-" );
  std::ostringstream o;
  o << "(" << S::read( n ).first;
- if constexpr( requires { n->colour; } )
-  if( colours && ( n->colour == 0 ) )
+ if constexpr( requires { n->color; } )
+  if( colors && ( n->color == 0 ) )
    o << "r";
  if( S::left( n ) || S::right( n ) )
-  o << " " << shapeOf< T >( S::left( n ) , colours ) << " "
-    << shapeOf< T >( S::right( n ) , colours );
+  o << " " << shapeOf< T >( S::left( n ) , colors ) << " "
+    << shapeOf< T >( S::right( n ) , colors );
  o << ")";
  return( o.str() );
  }
 
 /// the whole tree `t` as `shapeOf()` writes it
 template< class T >
-std::string shapeOf( const T & t , bool colours = false )
+std::string shapeOf( const T & t , bool colors = false )
 {
- return( shapeOf< T >( T::Shape::root( t ) , colours ) );
+ return( shapeOf< T >( T::Shape::root( t ) , colors ) );
  }
 
 /// the binary search tree of figure 6.5 of Morin's book
@@ -1612,7 +1612,7 @@ ADS_TEST( "ods-ex8.2.scapegoat-credits" )
  }
 
 // ods ex 9.2: 13, 3.5 and 3.3 inserted into the tree of the exercises,
-// with their colours (figure 8.54 of the manual)
+// with their colors (figure 8.54 of the manual)
 ADS_TEST( "ods-ex9.2.red-black-insert-figure" )
 {
  auto t = figureRedBlackTree();

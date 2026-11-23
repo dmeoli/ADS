@@ -2907,9 +2907,9 @@ algorithms of the textbooks for three problems on a sequence $s$ of $n$
 items, and the eertree. The longest palindromic substring
 (`longestPalindromicSubstring()`) is found by the algorithm of [Manacher
 1975](Z-bibliography.md#ref-manacher1975), which computes the radius of the
-longest palindrome about each of the $2 n - 1$ centres. It keeps the
+longest palindrome about each of the $2 n - 1$ centers. It keeps the
 palindrome $[ l , r )$ found so far whose right end is the largest: a
-centre $i < r$ starts from the radius of its mirror $l + r - 1 - i$,
+center $i < r$ starts from the radius of its mirror $l + r - 1 - i$,
 capped at $r - i$, since the palindrome is symmetric, and compares only the
 items past $r$.
 
@@ -2920,12 +2920,12 @@ takes $\Theta( n )$ time and space.*
 the palindrome about $i$ is the mirror of the one about
 $l + r - 1 - i$, as far as $r$; each successful comparison past $r$ moves
 $r$ forward, at most $n$ times for each of the two loops (the odd and the
-even centres), and each centre has at most one failed comparison.
+even centers), and each center has at most one failed comparison.
 $\square$
 
 By contrast, the dynamic programming of the textbook fills the table of the
 palindromes $s[ i .. j ]$ by increasing length in $\Theta( n^2 )$ time and
-space, and the expansion about each centre takes $O( n^2 )$ time and
+space, and the expansion about each center takes $O( n^2 )$ time and
 $O( 1 )$ space; the suffix tree of $s$ and of its reverse gives the same
 answer in linear time with a much larger constant.
 
@@ -2941,8 +2941,8 @@ subsequence of $s$ and of its reverse; the algorithms of
 palindromes into which $s$ can be cut (`palindromicPartition()`) satisfy
 $D[ j ] = \min \{ D[ i ] + 1 : s[ i .. j ) \text{ a palindrome} \}$,
 $D[ 0 ] = 0$. While the textbook builds the table of the palindromes first, here
-each palindrome relaxes $D[ j ]$ while the expansion about its centre finds
-it, the centres taken from left to right, so that $D[ i ]$ is final when it
+each palindrome relaxes $D[ j ]$ while the expansion about its center finds
+it, the centers taken from left to right, so that $D[ i ]$ is final when it
 is used: $O( n^2 )$ time and $O( n )$ space.
 
 --8<-- "generated/Palindromes-longestPalindromicSubsequence.pseudo.md"
@@ -3349,7 +3349,7 @@ and 1 to the right (a single character gets the code `0`):
 
 --8<-- "generated/Huffman-huffman.pseudo.md"
 
-![Figure 15.7. The code of Huffman of the frequencies `a`:5, `b`:9, `c`:12, `d`:13, `e`:16, `f`:45: the forest before and after the first merge (the two least frequent characters in violet, the new node in orange), and the final tree, the left edges labelled 0 and the right ones 1, each leaf with its code.](../figures/string-huffman.svg){#fig-15-7}
+![Figure 15.7. The code of Huffman of the frequencies `a`:5, `b`:9, `c`:12, `d`:13, `e`:16, `f`:45: the forest before and after the first merge (the two least frequent characters in violet, the new node in orange), and the final tree, the left edges labeled 0 and the right ones 1, each leaf with its code.](../figures/string-huffman.svg){#fig-15-7}
 
 <span id="thm-15-5"></span>**Theorem 15.5.** *The code of Huffman has the
 least expected length among the prefix codes of the given frequencies, and

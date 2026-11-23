@@ -2299,7 +2299,7 @@ ADS_TEST( "big-integer-sqrt" )
 
 // the greatest common divisor of Lehmer, or of GMP, against Euclid (and
 // the audit): a zero argument, equal and opposite arguments, the coprime
-// neighbours of Fibonacci, where every quotient is 1, gcd( F_m , F_n ) =
+// neighbors of Fibonacci, where every quotient is 1, gcd( F_m , F_n ) =
 // F_gcd(m,n), the multiples of a common factor, the numbers whose leading
 // digits agree, where Algorithm L runs many steps, those of digits all
 // ones, one huge quotient, where the leading bits allow no step and a

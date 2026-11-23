@@ -404,10 +404,10 @@ ADS_TEST( "fks-table" )
  CHECK_THROWS( PerfectHashTable( { 1 , 1 } ) , contract_violation );
  }
 
-// Table 8.1 and Figure 8.5: the labelling of the graph of h1 and h2 gives
+// Table 8.1 and Figure 8.5: the labeling of the graph of h1 and h2 gives
 // the g of the table, so that ( g( h1( t ) ) + g( h2( t ) ) ) mod 9 is the
-// rank of t; the labelling by peeling of the same forest also satisfies
-// every edge; a cycle whose values add up is labelled, a double edge with
+// rank of t; the labeling by peeling of the same forest also satisfies
+// every edge; a cycle whose values add up is labeled, a double edge with
 // two values and a triangle (no vertex of degree 1) are not
 ADS_TEST( "opmphf-example" )
 {

@@ -912,14 +912,14 @@ We first take the oldest node of $Q$, i.e., we make $Q$ a QUEUE, which gives
 the visit in breadth. Thus `bfs( g , r , node , edge )` calls `node( u )` when
 $u$ leaves the queue and `edge( u , v )` on each edge it examines, and marks a
 node when it enters the queue; hence no node enters it twice ([Algorithm
-14.7](14-graph.md#alg-14-7)). It visits first the neighbours of $r$, then the
-neighbours of the neighbours, and so on, i.e., in the order of the distances
+14.7](14-graph.md#alg-14-7)). It visits first the neighbors of $r$, then the
+neighbors of the neighbors, and so on, i.e., in the order of the distances
 from $r$. For each node $v$ reached from $u$, `distance( g , r )` records the
 distance $d[ v ] = d[ u ] + 1$ and the parent $p[ v ] = u$; the tree of the
 parents is then a tree of shortest paths ([Lemma 14.2](14-graph.md#lem-14-2)).
 [Figure 14.7](14-graph.md#fig-14-7) shows it on the graph of [Figure
 14.1](14-graph.md#fig-14-1), with the lists of [Figure
-14.3](14-graph.md#fig-14-3), which fix the order in which the neighbours of a
+14.3](14-graph.md#fig-14-3), which fix the order in which the neighbors of a
 node enter the queue.
 
 <span id="alg-14-7"></span>**Algorithm 14.7.** The visit in breadth, and
@@ -1067,7 +1067,7 @@ recursion, while the depth of the recursion becomes the size of a vector
 on the heap. This is not the case for the
 second visit of [Morin 2013, §12.3.2](Z-bibliography.md#ref-morin-cpp),
 which keeps only nodes on its stack and replaces a node popped by all its
-neighbours. There the last neighbour pushed is visited first: on the edges
+neighbors. There the last neighbor pushed is visited first: on the edges
 $( 0 , 1 )$, $( 0 , 2 )$, $( 1 , 2 )$ it visits $0 , 2 , 1$ where the
 recursion visits $0 , 1 , 2$ ([Morin 2013, exercise
 12.9](Z-bibliography.md#ref-morin-cpp)). A stack of pairs (the node, the
@@ -1489,17 +1489,17 @@ the queue. The A* of [Hart, Nilsson and Raphael
 heuristic, usually examines fewer cells when the target is far from the
 obstacles, with the same bound in the worst case.
 `floodFill( M , r , c , color )` is the paint bucket: the cell $( r , c )$ of
-the matrix $M$ and each cell joined to it by moves through cells of its colour
-get the new colour. It returns the number of cells painted (0 if the colour is
+the matrix $M$ and each cell joined to it by moves through cells of its color
+get the new color. It returns the number of cells painted (0 if the color is
 already that of the cell). This visit paints a cell when it enters the queue;
-hence the colour itself marks the cells reached, and no other matrix is
+hence the color itself marks the cells reached, and no other matrix is
 needed. The fill by spans of [Smith 1979](Z-bibliography.md#ref-smith1979)
 pushes a run of a row at a time instead of a cell, with fewer operations on
 the queue for the same bound. Finally, `knightDistance( n , s , t )` gives the
 fewest moves of a knight between two squares of an $n \times n$ board by a
 visit of the graph of the knight moves, in $\Theta( n^2 )$. It returns `INF`
 when there is no way, e.g., between two distinct squares of the board of 2
-squares a side, where no move stays on the board, and from the centre of the
+squares a side, where no move stays on the board, and from the center of the
 board of 3, which no move reaches. On the infinite board the distance has a
 closed form computable in $O( 1 )$, which differs from that of a finite board
 near its corners.
@@ -1547,14 +1547,14 @@ In particular, the maps of the benchmarks of [Sturtevant
 height and the width, followed by one character per cell. The fast searchers
 keep them as one flat array of the cells in the order of the rows (a byte or a
 bit per cell), name the cell $( r , c )$ by its index $r C + c$, and compute
-the neighbours by the offsets $\pm 1$, $\pm C$ and $\pm C \pm 1$. Jump point
+the neighbors by the offsets $\pm 1$, $\pm C$ and $\pm C \pm 1$. Jump point
 search ([Harabor and Grastien 2011](Z-bibliography.md#ref-harabor2011)) prunes
-the neighbours of a cell by the direction of the move that reached it, reading
+the neighbors of a cell by the direction of the move that reached it, reading
 only whether a cell is free. Its improved version reads a word of cells of a
 row at once from a bitmap of the map ([Harabor and Grastien
 2014](Z-bibliography.md#ref-harabor2014)). Lists of adjacency would hold up to
 $8 n$ arcs that the offsets give for free, and would typically add a read of
-memory to each neighbour. `GridGraph< W , C >` is this representation as a
+memory to each neighbor. `GridGraph< W , C >` is this representation as a
 GRAPH of the library, with eight moves or four as the enumeration `GridMoves`
 names (`EIGHT`, `FOUR`). Here the map is one vector of the costs of the cells,
 of type `C` (the alias `Cost`; one byte per cell for the maps of the
@@ -1562,7 +1562,7 @@ benchmarks, and no vector at all for a map of free cells of unit cost), and a
 cell is blocked when its cost is not positive. The cell $( r , c )$ is the
 node $u = r C + c$, with no border, and hence the names are those of the map
 (`node( r , c )` and `cell( u )` convert, `cost( u )` and `minCost()` read the
-costs). The neighbours of $u$ come from its row and its column, one division,
+costs). The neighbors of $u$ come from its row and its column, one division,
 and from at most 8 reads of the vector. Thus the graph takes $s \, R \, C$
 bytes ($s$ the size of a cost, 0 without the vector), against the
 $4 ( n + 1 ) + b a$ bytes of a `StaticGraph` of the same grid
@@ -1594,19 +1594,19 @@ such paths; thus the two models have the same shortest paths. With eight
 moves, instead, the weight $b$ of a corner falls on a different cell in the
 two models, and their shortest paths may differ.
 
-![Figure 14.11. A map of $5 \times 5$ cells of `GridGraph`, the blocked ones in the faintest tint, each free cell named $r \cdot 5 + c$: the neighbours of $u = 12$ with eight moves under the rule `NO_CUT` in violet, and the two corners (marked $\times$) that the rule forbids, since each passes by the blocked cell above $u$.](../figures/graph-grid.svg){#fig-14-11}
+![Figure 14.11. A map of $5 \times 5$ cells of `GridGraph`, the blocked ones in the faintest tint, each free cell named $r \cdot 5 + c$: the neighbors of $u = 12$ with eight moves under the rule `NO_CUT` in violet, and the two corners (marked $\times$) that the rule forbids, since each passes by the blocked cell above $u$.](../figures/graph-grid.svg){#fig-14-11}
 
 The nodes are the free cells: `hasNode( u )` is true if $u$ is a cell and
 free, `n()` counts the free cells (the invariant), and `bound()` is $R C$.
 Hence the visits of [§14.5](14-graph.md#sec-14-5) and the shortest paths of
 [§14.8](14-graph.md#sec-14-8) run on the grid unchanged, with vectors of $R C$
 places. `forEachAdj()`, `forEachEdge()` and `forEachMove()` (which also states
-whether a move is to a corner) call their function on the neighbours in
+whether a move is to a corner) call their function on the neighbors in
 increasing order of name, as the rows of a `StaticGraph` are sorted, and
 allocate no memory. Also, `adj()` and `V()` build the vectors of the concept,
 and `nodes()` is a view of the names that skips the blocked cells. Since a
 node is an `int`, the grid has at most $2^{31} - 1$ cells. Also, the
-neighbours of $u$ are computed from its row and its column before any offset
+neighbors of $u$ are computed from its row and its column before any offset
 is added, and hence no sum leaves $[ 0 , R C )$. `gridDistances( g , S )` is
 the visit in breadth from the set $S$ on such a grid, with its distances in a
 vector indexed by the names. Finally, `readGridMap( in )` reads a map in the
@@ -1970,7 +1970,7 @@ the last node that the paths from $x$ to $a$ and from $x$ to $y$ share.
 If $z = y$, then $d( x , a ) \ge d( x , p )$ gives
 $d( y , a ) \ge d( y , p )$, and likewise $d( y , a ) \ge d( y , q )$.
 The path from $y$ to $a$ shares with $P$ at most a part of one of its two
-halves, say that towards $p$; then the path from $a$ to $q$ passes through
+halves, say that toward $p$; then the path from $a$ to $q$ passes through
 $y$ and has length $d( a , y ) + d( y , q ) \ge d( y , p ) + d( y , q ) = D$,
 i.e., it is a longest path that ends at $a$. If $z \ne y$, the path from
 $x$ to $a$ leaves that to $y$ at $z$, before $P$, and
@@ -2022,17 +2022,17 @@ We count the triangles of an unoriented graph by `countTriangles( g )`, with
 the ordering of [Chiba and Nishizeki 1985](Z-bibliography.md#ref-chiba1985):
 each edge goes from the end of smaller degree (the ties by name) to the other,
 and each triangle is counted once, at its first node, as an edge between two
-of its out-neighbours. Each node then has $O( \sqrt{m} )$ out-neighbours.
+of its out-neighbors. Each node then has $O( \sqrt{m} )$ out-neighbors.
 
 <span id="lem-14-17"></span>**Lemma 14.17.** *`countTriangles( g )` counts
 each triangle of an unoriented graph once, in $O( m \sqrt{m} )$ time.*
 
 *Proof.* We order the nodes by degree, the ties by name, and orient each
 edge from its smaller end. A triangle $a < b < c$ in this order is counted when
-$u = a$, $v = b$ and $w = c$, since $b$ and $c$ are out-neighbours of $a$,
-which are marked, and $c$ is an out-neighbour of $b$; any other choice of
+$u = a$, $v = b$ and $w = c$, since $b$ and $c$ are out-neighbors of $a$,
+which are marked, and $c$ is an out-neighbor of $b$; any other choice of
 $u$, $v$, $w$ among its nodes breaks one of these edges. A node $v$ with
-$k$ out-neighbours has $\deg( v ) \ge k$, and each of them has degree at
+$k$ out-neighbors has $\deg( v ) \ge k$, and each of them has degree at
 least $\deg( v )$; hence we have $k^2 \le \sum_x \deg( x ) = 2 m$, i.e.,
 $k \le \sqrt{2 m}$. The loops make $\sum_u \sum_{v \in \mathrm{out}( u )}
 ( 1 + \lvert \mathrm{out}( v ) \rvert ) \le m ( 1 + \sqrt{2 m} )$ steps,
@@ -2041,28 +2041,28 @@ besides the $O( n + m )$ of the degrees and of the lists. $\square$
 The time is thus $O( m \sqrt{m} )$, against the $O( m n )$ of the merge of the
 lists of the two ends of each edge and the $\Theta( n^3 )$ on the matrix; the
 product of matrices of [Itai and Rodeh 1978](Z-bibliography.md#ref-itai1978)
-takes $O( n^{\omega} )$. By `twoColoring( g )` we give a colour 0 or 1 to each
+takes $O( n^{\omega} )$. By `twoColoring( g )` we give a color 0 or 1 to each
 node of an unoriented graph with the ends of each edge apart, or no value if
 there is none. By the theorem of [König 1931](Z-bibliography.md#ref-konig1931)
 this is possible if and only if the graph has no odd cycle. A visit in breadth
-from each node not coloured gives each node the parity of its level, and finds
-such a cycle as an edge between two nodes of the same colour (the
+from each node not colored gives each node the parity of its level, and finds
+such a cycle as an edge between two nodes of the same color (the
 `twoColoring()` of `EasyCases.h`, in [chapter 20](20-complexity.md#ch-20),
 takes an adjacency matrix, in $\Theta( n^2 )$).
 
 <span id="lem-14-18"></span>**Lemma 14.18.** *`twoColoring( g )` returns a
-colouring of the nodes with the two ends of each edge apart if one exists, and
+coloring of the nodes with the two ends of each edge apart if one exists, and
 no value otherwise, in $O( n + m )$ time.*
 
-*Proof.* Each node gets, when it enters the queue, the colour opposite to
+*Proof.* Each node gets, when it enters the queue, the color opposite to
 that of the node that reaches it, i.e., the parity of its level in the tree
-of the visit. If the function returns a colouring, each edge $[ u , v ]$
-was examined from $u$ after both ends were coloured, and found them apart.
+of the visit. If the function returns a coloring, each edge $[ u , v ]$
+was examined from $u$ after both ends were colored, and found them apart.
 Otherwise an edge $[ u , v ]$ joins two nodes of levels of the same
 parity, in the same tree; with $z$ their last common ancestor, the paths of
 the tree from $z$ to $u$ and to $v$ and the edge close a cycle of
 $\ell( u ) - \ell( z ) + \ell( v ) - \ell( z ) + 1$ edges, an odd number,
-and the nodes of an odd cycle cannot alternate two colours. Each node
+and the nodes of an odd cycle cannot alternate two colors. Each node
 enters the queue once and each edge is examined twice. $\square$
 
 --8<-- "generated/Properties-countTriangles.pseudo.md"
@@ -2997,7 +2997,7 @@ such paths.*
 of value their number, and conversely; hence $\lambda$ is the maximum flow
 of the network of unit capacities, and the edge of capacity $k$ into $s$
 makes it $\min\{ k , \lambda \}$. The flow is integral, i.e., of 0 or 1 on
-each edge, and the cancelling of two opposite units on an unoriented edge
+each edge, and the canceling of two opposite units on an unoriented edge
 keeps it conserved. A walk from $s$ along unused edges of flow 1 can
 always go on at a node $x \ne t$, since the units that enter $x$ and those
 that leave it are as many, and the walk has used one more entering edge
@@ -3157,7 +3157,7 @@ again). A greedy matching starts the searches. The blossoms are the sets of a
 union-find with the union by rank and the halving of the paths ([Tarjan and
 van Leeuwen 1984](Z-bibliography.md#ref-tarjan1984)), whose representative
 stores the base; the base common to two even nodes is found by walking from
-both towards the root one step at a time, which costs no more than twice the
+both toward the root one step at a time, which costs no more than twice the
 cycle shrunk. For each odd node that a blossom makes even, the search records
 the edge $( a , b )$ that closed the blossom, its own side first, as the
 labels of [Gabow 1976](Z-bibliography.md#ref-gabow1976) do. The path from such
@@ -3289,7 +3289,7 @@ $O( n^2 + m )$; hence `maxWeightMatching()` takes $O( n^3 )$ time.*
 *Proof.* Each change makes an edge tight or a blossom expandable, and each
 event of the four kinds either grows the trees, or shrinks or expands a
 blossom, all of which happen $O( n )$ times before an augmentation. The
-least slack towards each outer blossom is kept per blossom and merged when
+least slack toward each outer blossom is kept per blossom and merged when
 blossoms are shrunk, so that a change of the duals costs $O( n )$. There are
 at most $n / 2$ augmentations. $\square$
 
@@ -3325,7 +3325,7 @@ We also solve the same problem on a graph of a few nodes by
 `branchAndBoundMatching( n , E )`, a branch and bound sharing no code with the
 blossoms, and the tests use it as an independent oracle. In this search the
 first node not yet decided is left unmatched or matched to each later
-neighbour still free, and a branch is cut when twice its weight plus the best
+neighbor still free, and a branch is cut when twice its weight plus the best
 weight at each node left cannot beat twice the best matching found (each edge
 touches two nodes). In the worst case it takes time proportional to the number
 of matchings of the graph, which on the complete graph are the telephone
@@ -4389,10 +4389,10 @@ most nine times, on the heads of the moves that the change of the cell $u$
 from the cost `from` to the cost `to` may have touched. They depend on the
 model of the costs and on whether the cell changes between free and blocked.
 There is none if the cell is blocked before and after, and there is the cell
-itself when it stays free and the cell entered pays, or its neighbours when it
+itself when it stays free and the cell entered pays, or its neighbors when it
 stays free and the cell left pays. When the cell is blocked or freed, they are
-the cell and its free neighbours at a move, since a cell is also a side of the
-corners that the diagonal moves between two of its neighbours cut (which the
+the cell and its free neighbors at a move, since a cell is also a side of the
+corners that the diagonal moves between two of its neighbors cut (which the
 rules `NO_SQUEEZE` and `NO_CUT` allow or forbid by the side). The function
 reads the grid after the change; on the events of a batch, read after the
 batch, the union of its calls is still a superset of the heads of the arcs
@@ -4418,7 +4418,7 @@ one of them changed its cost, i.e., has an event in $E$. Suppose first that
 the arc exists both before and after, with another weight. Then $x$ and
 $v$ are free in both, and the cell that pays has an event. Under `ENTERED`
 this is $v$, which stays free, and its call gives $v$; under `LEFT` it is
-$x$, which stays free, and its call gives the neighbours of $x$ in the grid
+$x$, which stays free, and its call gives the neighbors of $x$ in the grid
 after the changes, among which is $v$, since the arc exists then. Suppose
 now that the arc exists only on one side. Then one of its cells changed
 between free and blocked, and if $v$ did, its call gives $v$ itself.
@@ -4426,11 +4426,11 @@ Otherwise $v$ is free both before and after, since it is free on the side
 where the arc exists and did not change. The cell that changed is then $x$
 or a side of the corner, both at a move of $v$ (a side of a corner is at a
 side of both
-ends); its call gives the free neighbours at a move, among which is $v$.
+ends); its call gives the free neighbors at a move, among which is $v$.
 $\square$
 
 Of course, a head given need not have changed; for instance, a cell
-blocked or freed under the rule `NO_CUT` gives a free diagonal neighbour
+blocked or freed under the rule `NO_CUT` gives a free diagonal neighbor
 also when a blocked side forbids the move between the two before and
 after. An observer that patches the keys of a search on the grid
 (e.g., the right-hand sides of LPA*) thus recomputes at most nine of them per
@@ -4452,9 +4452,9 @@ struct Heads
 G g( 3 , 3 , std::vector< int >( 9 , 1 ) );
 Heads o{ &g };
 g.attach( o );
-g.setCost( 4 , 0 );  // the centre blocked: o.h is
+g.setCost( 4 , 0 );  // the center blocked: o.h is
                     // 1 3 4 5 7, the cell and its
-                    // free neighbours
+                    // free neighbors
 g.setCost( 0 , 5 );  // a cost raised: o.h adds 0
 ```
 

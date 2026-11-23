@@ -348,7 +348,7 @@ namespace flow
 /// number, the most significant first. The figure is partly lost: the
 /// edges B -> C ( 8 + x[ 1 ] ), B -> E ( 11 + x[ 0 ] ), C -> D ( 7 + x[ 3 ] )
 /// and D -> E ( 5 + x[ 5 ] ) are read from where their labels stand,
-/// directed from the source towards the sink.
+/// directed from the source toward the sink.
 /// \pre the digits in [ 0 , 9 ]
 std::vector< Arc > matricolaNet( const std::array< int , 6 > & x )
 {
@@ -1062,9 +1062,9 @@ bool residualPath( const Matrix & c , Matrix & f , int s , int p , bool add )
 /// makes it so, since the maximum flow decreases by one at most: three
 /// visits, O( n^2 ) on the matrices. The text misses the case of a unit of
 /// ( u , v ) on a cycle of flow, where no path of flow from s to u may
-/// exist: a path of flow from v to u closes the cycle, which is cancelled,
+/// exist: a path of flow from v to u closes the cycle, which is canceled,
 /// and the value stays. The result is 0 if ( u , v ) was not saturated, 1
-/// if a cycle was cancelled, 2 if the paths were.
+/// if a cycle was canceled, 2 if the paths were.
 /// \pre c square with c >= 0, s and p distinct nodes, c[ u ][ v ] > 0, f a
 ///      maximum flow within c (audit)
 /// \post f a maximum flow within the new c (audit)
@@ -1103,7 +1103,7 @@ Matrix flowMatrix( const Matrix & c , int s , int p )
 ADS_TEST( "flow-9" )
 {
  // a path 0 -> 1 -> 2 of capacity 1 and a cycle 1 -> 3 -> 4 -> 1 of flow
- // 1: the edge ( 1 , 3 ) is reduced, the cycle cancelled, the flow stays 1
+ // 1: the edge ( 1 , 3 ) is reduced, the cycle canceled, the flow stays 1
  {
   Matrix c( 5 , Longs( 5 , 0 ) ) , f( 5 , Longs( 5 , 0 ) );
   for( auto [ x , y ] :
@@ -2968,9 +2968,9 @@ namespace flow
 {
 
 /// Vie di fuga: N students at distinct cells S of an R x C classroom, each
-/// border cell an exit, moves to the four neighbours; whether N escape
+/// border cell an exit, moves to the four neighbors; whether N escape
 /// routes with no common cell exist. A maximum flow with unit capacities on
-/// the cells, each cell in -> out, out -> in of its neighbours, s -> in of
+/// the cells, each cell in -> out, out -> in of its neighbors, s -> in of
 /// each student, out of each border cell -> t: they do if it is N, O( R C N
 /// ).
 /// \pre R , C >= 0, the students at distinct cells of the room

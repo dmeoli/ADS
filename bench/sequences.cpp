@@ -20,7 +20,7 @@
  * (ArrayStack, and SequenceStack on a SinglyList) against std::stack on a
  * std::vector and on a std::deque: n pushes and then n pops. The
  * rearrangements and the sorts of the sequences against the standard
- * library: the Dutch national flag of n random colours against two passes
+ * library: the Dutch national flag of n random colors against two passes
  * of std::partition, the sort of a vector k-sorted (each item at most
  * k = 16 places from its place) against std::sort, and the natural merge
  * sort of the book and the sort by relinking the cells of a List against
@@ -376,10 +376,10 @@ int main( int argc , char ** argv )
 
   // the rearrangements and the sorts
 
-  std::vector< int > C( n );  // the colours
+  std::vector< int > C( n );  // the colors
   for( auto & c : C )
    c = int( g() % 3 );
-  auto colour = []( int c ) { return( c ); };
+  auto color = []( int c ) { return( c ); };
   onCopy( "dutch flag" , "std::partition x2" , C , n , r ,
 	  [ & ]( std::vector< int > & B ) {
 	   auto m = std::partition( B.begin() , B.end() ,
@@ -388,8 +388,7 @@ int main( int argc , char ** argv )
 	   } );
   onCopy(
     "dutch flag" , "ADS::dutchNationalFlag" , C , n , r ,
-    [ & ]( std::vector< int > & B ) { ADS::dutchNationalFlag( B ,
-							      colour ); } );
+    [ & ]( std::vector< int > & B ) { ADS::dutchNationalFlag( B , color ); } );
   std::vector< int > K( X );  // 16-sorted
   std::sort( K.begin() , K.end() );
   for( std::size_t i = 0 ; i + 16 < n ; i += 16 )

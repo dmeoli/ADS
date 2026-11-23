@@ -283,7 +283,7 @@ the text of the compressors is the file of `ADS_BENCH_TEXT`, repeated up to
 each size (otherwise, words drawn from a Zipf law). Also, the road networks of
 `graphs` are those of the 9th DIMACS Implementation Challenge when the folder
 `ADS_DIMACS` holds them (otherwise, points of the unit square joined to their
-nearest neighbours). Then `bench/tables.py` turns a file into one Markdown
+nearest neighbors). Then `bench/tables.py` turns a file into one Markdown
 table per benchmark, with a row per structure and a column per case and size,
 each cell the time followed, in parentheses, by its ratio to the first
 structure (the one run again as A/A), both to 3 and 2 significant digits.
@@ -340,7 +340,7 @@ the campaign.
 | `SkipList` | `SkiplistSSet` | levels from `SplitMix64` instead of `rand()`; $\ell$ links per node instead of $\ell + 1$; no comparison repeated across the levels |
 | `ScapegoatTree` | `ScapegoatTree1` | two links per node, the climb on the path kept in a vector; the depth tested against a table of the powers instead of a logarithm; each size counted once (`REUSE`) |
 | `Treap` | `Treap1` | priorities from `SplitMix64`; the insertion rotates on the way back up, with no link to the parent; the sizes cost one addition per level |
-| `LeftLeaningRedBlackTree` | `RedBlackTree1` | the colour in a byte; nil a null pointer instead of a sentinel node read at each test of a colour |
+| `LeftLeaningRedBlackTree` | `RedBlackTree1` | the color in a byte; nil a null pointer instead of a sentinel node read at each test of a color |
 
 Other headers make claims of the same kind, which `ssets` does not test
 since it runs no code of Morin for them: `SkipListSequence` against his

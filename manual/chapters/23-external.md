@@ -933,10 +933,10 @@ $2 ( b - 1 ) + 1$, which has $\lceil \log_2 b \rceil + 1$ bits. $\square$
 
 Hence after $O( \log^* n )$ rounds the colors are in $\{ 0 , \ldots , 5 \}$
 (the rounds go to `*rounds`), and the items of the colors 5, 4 and 3 in turn
-take the least color of $\{ 0 , 1 , 2 \}$ that neither neighbour has. This
+take the least color of $\{ 0 , 1 , 2 \}$ that neither neighbor has. This
 keeps the colors proper, since the items of one color are not adjacent. The
 function `independentSetOfColors( succ , color )` takes the local minima of
-the three colors, the tail excluded and not counted as a neighbour; they are
+the three colors, the tail excluded and not counted as a neighbor; they are
 independent and at least about $n / 4$ ([Lemma
 23.14](23-external.md#lem-23-14) below). [Table 23.4](23-external.md#tab-23-4)
 compares the two kinds.
@@ -962,7 +962,7 @@ coin heads, that of its successor tails), which gives the mean. Since no
 two items of the set are consecutive, it has at most $\lceil n / 2 \rceil$
 items, and with $p = \Pr[ X \ge n / 8 ]$ one has $( n - 1 ) / 4 \le n / 8
 + p \lceil n / 2 \rceil$ and $\lceil n / 2 \rceil \le ( n + 1 ) / 2$,
-whence the bound on $p$, at least $1 / 10$ for $n \ge 4$. (ii) A local minimum is smaller than both its neighbours, and therefore
+whence the bound on $p$, at least $1 / 10$ for $n \ge 4$. (ii) A local minimum is smaller than both its neighbors, and therefore
 two local minima are not adjacent. Between two consecutive local minima
 the colors first increase and then decrease (a stretch that went down and
 then up would hold a local minimum), and with three colors each of the two

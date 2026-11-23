@@ -1130,7 +1130,7 @@ and edges, below which we expect the conversion to cost more than the
 algorithm saves, although we have not yet measured this threshold. Note
 that, among several shortest paths of the same length, the one of ADS may
 differ from that of NetworkX, since the rows of a `StaticGraph` are sorted
-by head, whereas NetworkX visits the neighbours in the order of their
+by head, whereas NetworkX visits the neighbors in the order of their
 insertion.
 
 ```python

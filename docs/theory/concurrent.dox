@@ -782,7 +782,7 @@
  their parent, and get (6) again from their children, the leaf up; the
  subtree of \f$ i \f$ and of each node above it gained the new bound
  \f$ b \f$ alone, and \f$ \mu \f$ is lowered to \f$ b \f$ from \f$ i \f$ up
- as long as \f$ b \f$ is less, since \f$ \mu \f$ does not increase towards
+ as long as \f$ b \f$ is less, since \f$ \mu \f$ does not increase toward
  the root. A pop moves the last pair \f$ z \f$ down from the root along a
  path \f$ P \f$; a node off \f$ P \f$ on the path of the old last leaf lost
  \f$ z \f$ alone, and keeps its \f$ \mu \f$, as all those above it off

@@ -1308,7 +1308,7 @@ occurrences of roots.*
 ends when $p$ is nil, i.e., with an empty path, and hence with all the
 fields restored. A cell is marked when the visit enters it, and a marked
 cell is never entered again; hence, only reachable cells are marked, since
-the visit only follows fields. A cell entered is left towards its `cdr`
+the visit only follows fields. A cell entered is left toward its `cdr`
 once and left upwards once (the side bit distinguishes the second time from the first), and each move costs $O( 1 )$ time; the marking thus takes time
 linear in the cells marked, besides one step for each root. Conversely,
 the visit leaves a cell upwards only after it has followed both its

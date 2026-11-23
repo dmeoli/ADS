@@ -271,7 +271,7 @@
  \f$ T( n ) = 2 T( n / 2 ) + 2 \f$, \f$ T( 2 ) = 1 \f$.
 
  A local optimum is cheaper than the minimum. A <em>peak</em> of \f$ A \f$ is
- an item not smaller than its neighbours, the places out of \f$ A \f$ counting
+ an item not smaller than its neighbors, the places out of \f$ A \f$ counting
  as \f$ -\infty \f$, and one always exists, e.g., the maximum. `findPeak()` of
  `LocalOptima.h` keeps the invariant that
  \f$ A[ \mathit{lo} .. \mathit{hi} ] \f$ rises into \f$ \mathit{lo} \f$ and

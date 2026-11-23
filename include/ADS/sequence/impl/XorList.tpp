@@ -106,7 +106,7 @@ void XorList< T >::pop_front( void )
 {
  ADS_PRE( f_n > 0 );
  Cell * c = f_head;
- f_head = other( c , nullptr );  // its only neighbour
+ f_head = other( c , nullptr );  // its only neighbor
  if( f_head )
   f_head->link ^= word( c );
  else

@@ -159,7 +159,7 @@ Nodes twoOpt( const std::vector< std::vector< T > > & D , Nodes pi ,
  return( result );
  }
 
-inline long kOptNeighbours( int n , int k )
+inline long kOptNeighbors( int n , int k )
 {
  ADS_PRE( ( n >= 3 ) && ( k >= 0 ) && ( k <= n ) );
  Nodes pi( n );

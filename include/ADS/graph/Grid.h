@@ -27,8 +27,8 @@
  *   examines fewer cells when the target is far from the obstacles, with
  *   the same bound in the worst case;
  * - `floodFill()`, the paint bucket: the cell ( r , c ) and every cell joined
- *   to it by moves through cells of its colour get the new colour; the
- *   visit paints a cell when it enters the queue, so that the colour itself
+ *   to it by moves through cells of its color get the new color; the
+ *   visit paints a cell when it enters the queue, so that the color itself
  *   marks the cells reached and no other matrix is needed. The fill by
  *   spans of Smith pushes a run of a row at a time instead of a cell, with
  *   fewer operations on the queue for the same bound;
@@ -45,17 +45,17 @@
  * map stored as one vector of costs and the moves those of four or eight
  * directions, on which the visits of `Visit.h` and the shortest paths of
  * `ShortestPaths.h` run, and `gridDistances()` has an overload on it. There
- * is none of `floodFill()`: the paint bucket reads and writes the colours
+ * is none of `floodFill()`: the paint bucket reads and writes the colors
  * of the matrix itself, and the region that it paints is the set of the
  * cells reached by a visit of the grid whose free cells are those of the
- * colour of the start, which `distance()` of `Visit.h` gives on a
+ * color of the start, which `distance()` of `Visit.h` gives on a
  * `GridGraph` of that map.
  *
  * The contracts [see `Contract.h`]: the grid has rows, cols >= 0, the
  * matrices are rectangular, each source or start is a cell of the grid (and
  * free, for the visits); at the level of the audits `gridDistances()` ensures
  * that its distances are those of a breadth first visit (0 on the sources,
- * and each reached cell but a source one move farther than a neighbour).
+ * and each reached cell but a source one move farther than a neighbor).
  * The functions are defined in `Grid.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 9.5,
@@ -174,7 +174,7 @@ inline bool insideGrid( int rows , int cols , GridCell x );
 /// \pre \f$ \mathit{rows} , \mathit{cols} \ge 0 \f$, the sources are free
 ///      cells of the grid
 /// \post 0 on the sources, and each other reached cell one move farther
-///       than a neighbour from which it can be reached (audit)
+///       than a neighbor from which it can be reached (audit)
 template< class Free , class Moves = FourMoves >
 std::vector< std::vector< int > >
 gridDistances( int rows , int cols , const std::vector< GridCell > & sources ,
@@ -213,11 +213,11 @@ int gridDistance( int rows , int cols , GridCell s , GridCell t ,
 		  const Moves & moves = FOUR_MOVES );
 
 /// the cell \f$ ( r , c ) \f$ of \f$ M \f$ and all the cells
-/// joined to it by moves through cells of its colour get the colour
+/// joined to it by moves through cells of its color get the color
 /// \f$ \mathit{color} \f$; the number of cells painted, 0 if
-/// \f$ \mathit{color} \f$ is already the colour of \f$ ( r , c ) \f$
+/// \f$ \mathit{color} \f$ is already the color of \f$ ( r , c ) \f$
 ///
-/// In pseudocode, the colour itself marking the cells reached:
+/// In pseudocode, the color itself marking the cells reached:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{floodFill}( M , r , c , \mathit{color} ) \cr

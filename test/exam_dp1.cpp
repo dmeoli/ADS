@@ -568,7 +568,7 @@ inline std::optional< Int > maxCoins( const std::vector< Int > & V , Int T )
 /*---------------------- 20, 2013-06-17, Fundraising -----------------------*/
 
 /// the largest sum of the donations D of houses no two of which are
-/// neighbours: DP[ 1 ] = D[ 1 ], DP[ 2 ] = max( D[ 1 ] , D[ 2 ] ),
+/// neighbors: DP[ 1 ] = D[ 1 ], DP[ 2 ] = max( D[ 1 ] , D[ 2 ] ),
 /// DP[ i ] = max( DP[ i - 1 ] , DP[ i - 2 ] + D[ i ] ); Theta( n ) time,
 /// maxNonAdjacentSum() of the library. The text writes D for DP in the
 /// last formula
@@ -797,7 +797,7 @@ inline double tapeCost( const std::vector< double > & L ,
  }
 
 /// an optimal order of the files on the tape, by increasing L[ f ] / P[ f ]
-/// (compared as L[ a ] P[ b ] < L[ b ] P[ a ]): swapping two neighbours out
+/// (compared as L[ a ] P[ b ] < L[ b ] P[ a ]): swapping two neighbors out
 /// of this order never lowers the cost; O( n log n ) time, Smith's rule,
 /// smithOrder() of the library
 /// \pre L not negative and P positive
@@ -1958,7 +1958,7 @@ ADS_TEST( "dp-19" )
 namespace
 {
 
-/// the largest sum of D with no two neighbours, over all the subsets
+/// the largest sum of D with no two neighbors, over all the subsets
 Int fundraisingBrute( const std::vector< Int > & D )
 {
  Int best = 0;
@@ -1976,7 +1976,7 @@ Int fundraisingBrute( const std::vector< Int > & D )
 }  // end( namespace )
 
 // 2013-06-17, Fundraising: random donations of up to 16 houses against all
-// the subsets with no two neighbours
+// the subsets with no two neighbors
 ADS_TEST( "dp-20-1" )
 {
  CHECK( dp::fundraising( {} ) == 0 );
@@ -1991,7 +1991,7 @@ ADS_TEST( "dp-20-1" )
  CHECK_THROWS( dp::fundraising( { -1 } ) , contract_violation );
  }
 
-// 2013-06-17, Fundraising: the houses read back have no two neighbours and
+// 2013-06-17, Fundraising: the houses read back have no two neighbors and
 // give the largest sum
 ADS_TEST( "dp-20-2" )
 {

@@ -36,7 +36,7 @@
  * checked at the level 3 since it costs \f$ O( n ) \f$ against the
  * \f$ O( \log n ) \f$ of the search; `lowerBound()` also needs
  * \f$ \mathit{lo} \le \mathit{hi} \le n \f$, and the place it returns is
- * checked against its two neighbours. The functions are defined in
+ * checked against its two neighbors. The functions are defined in
  * `BinarySearch.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 1.2,

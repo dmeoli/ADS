@@ -952,7 +952,7 @@ ADS_TEST( "ex12.13" )
    CHECK( long( upperBound( A , k ) - lowerBound( A , k ) ) ==
 	  std::count( A.begin() , A.end() , k ) );
   }
- // empty, all equal (all of them, none of a neighbour), and the audit on
+ // empty, all equal (all of them, none of a neighbor), and the audit on
  // an unsorted vector
  const Ints E , Q( 50 , 7 );
  CHECK( upperBound( E , 3 ) == 0 && lowerBound( E , 3 ) == 0 );

@@ -25,7 +25,7 @@ the two read as one family.
 - **Section numbering** is written by hand in the headings (`# 3. Stacks
   {#ch-3}`, `## 3.2 ... {#sec-3-2}`); LaTeX numbering is suppressed in
   `build/preamble.tex`. Number new sections by hand, without gaps.
-- **Labelled items** carry an anchor, `<span id="..."></span>`, before
+- **Labeled items** carry an anchor, `<span id="..."></span>`, before
   their bold label, and are numbered by chapter: `lem-3-1` (Lemma 3.1),
   `alg-3-1`, `tab-3-1`, `rem-3-1`. Lemmas and theorems have separate
   counters, as in Morin's book (Lemma 3.1 and Theorem 3.1 can both exist),
@@ -141,15 +141,15 @@ number; and code blocks are framed by a breakable `tcolorbox`, since the
 
 1. Write `figures/<chapter>-<name>.tex` as a `standalone` TikZ file that
    loads `lmodern`, `tikz` and `lamalunga` and then `\input`s `tikz-ads`
-   (see `stack-array.tex`). The style is flat, one colour per role, with
+   (see `stack-array.tex`). The style is flat, one color per role, with
    the palette that lamalunga computes from the primary (`7030A0`): what
    the operation reads or follows is in the primary (`touched`,
    `node-touched`, `vertex-touched`, `edge-touched`), what it adds in the
-   first colour of its triad (`added`, `node-added`, `vertex-added`), the
+   first color of its triad (`added`, `node-added`, `vertex-added`), the
    rest in golden tints of the primary (`cell`, `node`, `vertex`, `edge`,
    and `free` for a free place, the only shape with a hairline of ink, so
    that an empty place shows on the white page); no outlines, gradients or shadows, and no
-   colour outside the palette. The Makefile finds lamalunga in
+   color outside the palette. The Makefile finds lamalunga in
    `~/GDrive/lamalunga` (variable `LAMALUNGA`).
 2. `make figures` writes the `.pdf` and the `.svg`.
 3. Reference it as `![Figure N.M. caption](../figures/<name>.svg){#fig-N-M}`,

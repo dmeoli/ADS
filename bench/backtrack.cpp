@@ -96,7 +96,7 @@ struct Cover
  std::vector< std::vector< int > > options;
  };
 
-/// the pentominoes on h x w squares, h w = 60; on 6 x 10 the centre of X
+/// the pentominoes on h x w squares, h w = 60; on 6 x 10 the center of X
 /// in the upper left quarter, one solution of each class of 4
 Cover pentominoes( int h , int w )
 {

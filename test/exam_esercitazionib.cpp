@@ -994,7 +994,7 @@ ADS_TEST( "esercitazioni-41-2" )
 
 
 /// numberToConnect(): the fewest edges that make the unoriented graph
-/// connected, its components less one, by the labelling of the
+/// connected, its components less one, by the labeling of the
 /// components of the library; O( n + m )
 /// \pre g unoriented, not empty
 template< Graph G >
@@ -1054,7 +1054,7 @@ ADS_TEST( "esercitazioni-42-1" )
 
 /// connectGraph(): makes the unoriented graph connected with the fewest
 /// edges, joining one node of each component (the first one met by the
-/// labelling) to that of the next component; O( n + m ); the edges added
+/// labeling) to that of the next component; O( n + m ); the edges added
 /// \pre g unoriented, not empty
 /// \post g connected
 template< DynamicGraph G >
@@ -1171,7 +1171,7 @@ ADS_TEST( "esercitazioni-43" )
 /*--------------------------------------------------------------------------*/
 
 
-/// grid(): the fewest steps between neighbours by side from a cell of
+/// grid(): the fewest steps between neighbors by side from a cell of
 /// color 1 to one of color 3, by a visit in breadth from all the 1 cells
 /// at once; O( n^2 )
 /// \pre M square with colors in { 1 , 2 , 3 }, a 1 and a 3 in it
@@ -1405,7 +1405,7 @@ bool isRoma( const G & g , int v )
  }
 
 // against a visit in breadth from each node, which must reach v, on 500
-// random oriented graphs; one node; a path towards its last node; a cycle
+// random oriented graphs; one node; a path toward its last node; a cycle
 // (every node), two nodes with no edge, v not a node
 ADS_TEST( "esercitazioni-49-1" )
 {
@@ -1454,7 +1454,7 @@ bool hasRoma( const G & g )
 
 // against isRoma() of every node and against one sink component in the
 // condensation by scc() of the library, on 500 random graphs; one node,
-// two nodes apart, a cycle, a star towards its center, two sinks
+// two nodes apart, a cycle, a star toward its center, two sinks
 ADS_TEST( "esercitazioni-49-2" )
 {
  std::mt19937 g( 492 );
@@ -2722,7 +2722,7 @@ ADS_TEST( "esercitazioni-67" )
 
 /// maxSquare(): the side of the largest square of ones in the 0 / 1 matrix
 /// A: DP[ i ][ j ], the side of the largest one with its lower right corner
-/// in ( i , j ), is 1 + the least of its three neighbours above and to the
+/// in ( i , j ), is 1 + the least of its three neighbors above and to the
 /// left; Theta( n^2 ), largestSquare() of the library
 /// \pre A square
 int maxSquare( const std::vector< std::vector< int > > & A )

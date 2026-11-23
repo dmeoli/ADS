@@ -508,7 +508,7 @@ A figure is a standalone TikZ file, `manual/figures/<area>-<name>.tex`
 styles of that file only: `touched` (with its variants for nodes,
 vertices and edges) for what the operation reads or follows, `added` for
 what it adds, and `cell`, `node`, `vertex`, `edge` and `free` for the
-rest, with no outline and no colour outside the palette that lamalunga
+rest, with no outline and no color outside the palette that lamalunga
 computes from the primary. Then `make figures` writes its `.pdf` and its
 `.svg`, and the chapter shows it in a separate paragraph,
 `![Figure N.M. caption](../figures/<name>.svg){#fig-N-M}`.

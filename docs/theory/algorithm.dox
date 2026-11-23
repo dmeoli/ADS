@@ -96,7 +96,7 @@
    \log^k ( n / b^j ) \Bigr) . \tag{3}
  \f]
  If \f$ \beta < \alpha \f$, then \f$ a / b^\beta > 1 \f$ and the terms (3)
- grow geometrically towards the leaves, whose \f$ a^{\log_b n} = n^\alpha \f$
+ grow geometrically toward the leaves, whose \f$ a^{\log_b n} = n^\alpha \f$
  nodes dominate; if \f$ \beta > \alpha \f$ they decrease geometrically and the
  root dominates. If \f$ \beta = \alpha \f$ every level costs
  \f$ n^\alpha \log^k( n / b^j ) \f$, and the sum over the levels is that of

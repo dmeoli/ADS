@@ -88,7 +88,7 @@ a^j \, g( n / b^j ) = \Theta\bigl( n^\beta ( a / b^\beta )^j
 $$
 
 If $\beta < \alpha$, then $a / b^\beta > 1$ and the terms (13.3) grow
-geometrically towards the leaves, whose $a^{\log_b n} = n^\alpha$ nodes
+geometrically toward the leaves, whose $a^{\log_b n} = n^\alpha$ nodes
 dominate the sum; if $\beta > \alpha$, they decrease geometrically and the
 root dominates. If $\beta = \alpha$, the level $j$ costs $\Theta( n^\alpha
 \log^k ( n / b^j ) )$, and the sum over the levels is, up to a constant,
@@ -98,7 +98,7 @@ convergent series for $k < -1$. That the floors and the ceilings of the sizes
 change no order is the result of [Leighton 1996](Z-bibliography.md#ref-leighton1996)
 quoted below for (13.4), of which (13.2) is the case of one term, $a_1 = a$ and $b_1 = 1 / b$. $\square$
 
-![Figure 13.1. The tree of the recursion of (13.2), drawn for $a = 2$ in its first levels: each node is labelled with the cost of dividing and combining its instance, and the cost of a level is written on its right.](../figures/algorithm-recursion.svg){#fig-13-1}
+![Figure 13.1. The tree of the recursion of (13.2), drawn for $a = 2$ in its first levels: each node is labeled with the cost of dividing and combining its instance, and the cost of a level is written on its right.](../figures/algorithm-recursion.svg){#fig-13-1}
 
 For $k = 0$ this is Theorem 2.2 of [Montresor
 2025](Z-bibliography.md#ref-montresor2025), and the general case is its
@@ -150,7 +150,7 @@ larger than, equal to or smaller than $-1$. $\square$
 `akraBazziExponent()` finds the root by bisection
 ([Algorithm 13.2](13-algorithm.md#alg-13-2)). It first brackets it by
 doubling: starting from $\mathit{lo} = -1$ and $\mathit{hi} = 1$, it
-doubles $\mathit{lo}$ (towards $-\infty$) while $f( \mathit{lo} ) < 1$, and
+doubles $\mathit{lo}$ (toward $-\infty$) while $f( \mathit{lo} ) < 1$, and
 $\mathit{hi}$ while $f( \mathit{hi} ) > 1$, which ends since $f$ goes from
 $+\infty$ to 0. Then it halves the bracket 200 times, which leaves an
 interval far below the resolution of a `double` around the root; its
@@ -706,10 +706,10 @@ hull of the points $( x , P[ x ] )$, the one where the tangent from $( i ,
 P[ i ] )$ touches it; hence `maxDensitySegment()` is correct, and it takes
 $O( n \log n )$ time.*
 
-*Proof.* The point $( x , P[ x ] )$ that maximizes the slope towards $( i ,
+*Proof.* The point $( x , P[ x ] )$ that maximizes the slope toward $( i ,
 P[ i ] )$, a point to its right, is one such that no other point lies
 below the line through the two; such a point is on the lower hull. Along
-the hull, from left to right, the slopes towards $( i , P[ i ] )$ first
+the hull, from left to right, the slopes toward $( i , P[ i ] )$ first
 grow and then decrease, the largest being at the point of tangency, which
 is the first vertex whose edge to the next one turns away from $( i , P[ i
 ] )$, and the binary search on the turns relies on this. Since the hull of the starts only grows on the right, the
@@ -1283,7 +1283,7 @@ weighted intervals ([Montresor 2025, §13.2](Z-bibliography.md#ref-montresor2025
 
 **Rows of houses.** `maxNonAdjacentSum()` finds the largest sum of items
 of $A$ no two of them adjacent (the donations of houses no two of which
-are neighbours, exercise B3 of 17/06/2013 in the book), i.e., the maximum
+are neighbors, exercise B3 of 17/06/2013 in the book), i.e., the maximum
 weight independent set of a path: $D[ i ] = \max( D[ i - 1 ] , D[ i - 2 ] +
 A_{i-1} )$, $D[ 0 ] = D[ -1 ] = 0$, which is (13.11) on the unit intervals
 $[ i , i + 2 )$. It keeps the last two entries, in $\Theta( n )$ time and
@@ -1721,7 +1721,7 @@ monotone cuts of [Theorem 13.4](13-algorithm.md#thm-13-4) would bring it
 to $O( k n )$, a speedup that we did not implement, since $k$ is typically "small".
 
 **Grids.** The two problems of `GridPaths.h` are solved on a matrix of $m$
-rows and $n$ columns, each cell from its neighbours above and to the
+rows and $n$ columns, each cell from its neighbors above and to the
 left, and keep one row of the table ([Algorithm 13.37](13-algorithm.md#alg-13-37);
 [Skiena and Revilla 2003](Z-bibliography.md#ref-skiena2003)).
 `largestSquare()` (exercise B3 of 10/09/2012) finds the largest square of

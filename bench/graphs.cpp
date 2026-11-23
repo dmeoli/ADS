@@ -73,7 +73,7 @@
  * The road networks are those of the 9th DIMACS Implementation Challenge
  * (USA-road-d.NY.gr for n up to 300000, USA-road-d.FLA.gr above) when the
  * directory ADS_DIMACS holds them, with their own n; otherwise points in
- * the unit square joined to their 3 nearest neighbours, costs their
+ * the unit square joined to their 3 nearest neighbors, costs their
  * distances. Each cell is the median of r runs (of one run, if it takes
  * more than 5 s), in nanoseconds per arc (per operation for union-find),
  * the building of the graphs excluded and that of the structures of the
@@ -276,7 +276,7 @@ Input dimacs( const std::string & path , bool directed )
  return( I );
  }
 
-/// points in the unit square, each joined to its 3 nearest neighbours by
+/// points in the unit square, each joined to its 3 nearest neighbors by
 /// a bucket grid, costs the distances times 10^5
 Input geometric( int n , bool directed , std::mt19937_64 & g )
 {
@@ -1356,7 +1356,7 @@ void gridSearch( const char * bench , int n0 , bool eight , int r ,
  const Grid G( s , s , cost ,
 	       eight ? ADS::GridMoves::EIGHT : ADS::GridMoves::FOUR ,
 	       ADS::Corners::NO_CUT , 5 , 7 );
- // the source: the free cell nearest to the centre
+ // the source: the free cell nearest to the center
  int src = G.V().front();
  for( int d = 0 , c = s / 2 ; d < s ; ++d )
   if( G.hasNode( c * s + c + d ) ) {

@@ -20,12 +20,12 @@
  * a black grandparent whose right child is black (a 2-4 node of degree 3
  * becoming one of degree 4) and `pushBlack()` at a grandparent with two red
  * children (the split of a 2-4 node of degree 5), the last one moving up; a
- * removal splices a node with one child at most, adds its colour to the child
+ * removal splices a node with one child at most, adds its color to the child
  * (possibly making it double black) and `removeFixup()` moves the double
  * black up by the four cases of section 9.2.4 of Morin, `pullBlack()`
  * merging two 2-4 nodes and the flips borrowing from a sibling. Both take
  * \f$ O( \log n ) \f$ time, and Theorem 9.2 of Morin bounds the restructuring,
- * rotations and changes of colour, by \f$ O( 1 ) \f$ amortized per operation.
+ * rotations and changes of color, by \f$ O( 1 ) \f$ amortized per operation.
  * `absorb()` joins a tree whose keys are larger (exercises 9.10 and 9.11):
  * the smallest of them becomes a red node over the two trees, linked on the
  * spine of the higher tree where the black heights match, and `addFixup()`
@@ -43,9 +43,9 @@
  * Cormen et al.
  *
  * Where it is meant to be faster than the `RedBlackTree` of Morin, for the
- * benchmarks to check: the colour is a byte, not an `int`; nil is a null
+ * benchmarks to check: the color is a byte, not an `int`; nil is a null
  * pointer read by no load, where his sentinel is a node read at every
- * test of a colour; the operations are his, with the same number of
+ * test of a color; the operations are his, with the same number of
  * rotations, so that the rest of the difference is the allocation and the
  * layout of the nodes.
  *
@@ -167,12 +167,12 @@ class LeftLeaningRedBlackTree
  /// removes \f$ k \f$, if it is there, in \f$ O( \log n ) \f$ time
  ///
  /// In pseudocode (section 9.2.4 of Morin), \f$ u \f$ the child of the
- /// spliced node with the colour of the two summed (2 is double black),
+ /// spliced node with the color of the two summed (2 is double black),
  /// \f$ v \f$ its sibling and \f$ w \f$ its parent:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{removeFixup}( u ) \cr
- /// 2 & \quad \textbf{while}\ u.\mathit{colour} > 1\ \textbf{do} \cr
+ /// 2 & \quad \textbf{while}\ u.\mathit{color} > 1\ \textbf{do} \cr
  /// 3 & \qquad \textbf{if}\ u \text{ is the root}\ \textbf{then}\ u
  ///     \text{ black} \cr
  /// 4 & \qquad \textbf{else if}\ v \text{ is red}\ \textbf{then}
@@ -265,16 +265,16 @@ class LeftLeaningRedBlackTree
 
 /*--------------------------------------------------------------------------*/
  private:
- static constexpr signed char kRed = 0;    ///< the red colour
- static constexpr signed char kBlack = 1;  ///< the black colour
+ static constexpr signed char kRed = 0;    ///< the red color
+ static constexpr signed char kBlack = 1;  ///< the black color
 
- /// the links and the colour of a node: 0 red, 1 black, 2 double black
+ /// the links and the color of a node: 0 red, 1 black, 2 double black
  struct Link
  {
-  Link * left = nullptr;      ///< the left child
-  Link * right = nullptr;     ///< the right child
-  Link * parent = nullptr;    ///< the parent
-  signed char colour = kRed;  ///< the colour
+  Link * left = nullptr;     ///< the left child
+  Link * right = nullptr;    ///< the right child
+  Link * parent = nullptr;   ///< the parent
+  signed char color = kRed;  ///< the color
   };
 
  /// a node, a link with a pair
@@ -338,8 +338,8 @@ class LeftLeaningRedBlackTree
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
- static signed char colour( const Link * u ) {
-  return( u ? u->colour : kBlack );
+ static signed char color( const Link * u ) {
+  return( u ? u->color : kBlack );
   }
  static const K & key( const Link * u ) {
   return( static_cast< const Node * >( u )->key );
@@ -354,21 +354,21 @@ class LeftLeaningRedBlackTree
  void rotateLeft( Link * u );
  void rotateRight( Link * u );
  static void pushBlack( Link * u ) {
-  --u->colour;
-  ++u->left->colour;
-  ++u->right->colour;
+  --u->color;
+  ++u->left->color;
+  ++u->right->color;
   }
  static void pullBlack( Link * u ) {
-  ++u->colour;
-  --u->left->colour;
-  --u->right->colour;
+  ++u->color;
+  --u->left->color;
+  --u->right->color;
   }
  void flipLeft( Link * u ) {
-  std::swap( u->colour , u->right->colour );
+  std::swap( u->color , u->right->color );
   rotateLeft( u );
   }
  void flipRight( Link * u ) {
-  std::swap( u->colour , u->left->colour );
+  std::swap( u->color , u->left->color );
   rotateRight( u );
   }
  void addFixup( Link * u );

@@ -96,7 +96,7 @@ recursion of the book as a loop, and its decision tree.
 
 --8<-- "generated/BinarySearch-decision.pseudo.md"
 
-![Figure 6.1. A sorted vector of 7 items and the decision tree of the binary search on it, each node labelled by the item it compares (and the place of the inner nodes); a search is a path from the root, and the height of the tree is $\lfloor \log_2 7 \rfloor = 2$.](../figures/search-decision.svg){#fig-6-1}
+![Figure 6.1. A sorted vector of 7 items and the decision tree of the binary search on it, each node labeled by the item it compares (and the place of the inner nodes); a search is a path from the root, and the height of the tree is $\lfloor \log_2 7 \rfloor = 2$.](../figures/search-decision.svg){#fig-6-1}
 
 <span id="lem-6-1"></span>**Lemma 6.1.** *On a sorted vector of $n$
 items, `binarySearch()` returns a place of $v$ if $v$ occurs and $-1$
@@ -1152,14 +1152,14 @@ $T( 2 ) = 1$ is the case $k = 1$. $\square$
 On other lengths it may make a few more (8 instead of 7 for $n = 6$).
 
 A local optimum is cheaper than the minimum. A *peak* of $A$ is an item
-not smaller than its neighbours, the places out of $A$ counting as
+not smaller than its neighbors, the places out of $A$ counting as
 $-\infty$; one always exists (e.g., the maximum). `findPeak()` of
 `LocalOptima.h` keeps the invariant that $A[ \mathit{lo} .. \mathit{hi} ]$
 holds a peak of $A$, which is true when $A[ \mathit{lo} - 1 ] < A[ \mathit{lo} ]$
 (or $\mathit{lo} = 0$) and $A[ \mathit{hi} ] \ge A[ \mathit{hi} + 1 ]$ (or
 $\mathit{hi} = n - 1$). Indeed, under these conditions the maximum of the
-part is a peak of $A$: inside the part its neighbours are not larger, and
-at an end the neighbour out of the part is smaller or not larger by the
+part is a peak of $A$: inside the part its neighbors are not larger, and
+at an end the neighbor out of the part is smaller or not larger by the
 conditions ([Algorithm 6.14](06-search.md#alg-6-14)).
 
 <span id="lem-6-16"></span>**Lemma 6.16.** *`findPeak()` returns a peak of
@@ -1562,7 +1562,7 @@ first visits the tour does not leave the subtree of $a$, and it visits $a$
 (at the start, if $a$ is $i$, or between the two subtrees of $a$
 otherwise), the only node of least depth there. $\square$
 
-![Figure 6.8. An array of 7 items and its Cartesian tree (each node labelled by its item, its place beside it), and the nodes $E$ and the depths $D$ of the Euler tour of the tree; the query of the range from 2 to 4 is the node of least depth, 3, between the first visits of 2 and 4 (the violet part of the tour).](../figures/search-cartesian.svg){#fig-6-8}
+![Figure 6.8. An array of 7 items and its Cartesian tree (each node labeled by its item, its place beside it), and the nodes $E$ and the depths $D$ of the Euler tour of the tree; the query of the range from 2 to 4 is the node of least depth, 3, between the first visits of 2 and 4 (the violet part of the tour).](../figures/search-cartesian.svg){#fig-6-8}
 
 The depths along a tour differ by exactly 1 at each step, and the queries
 on such an array (`PlusMinusOneRangeMinimum`) are answered in $O( 1 )$

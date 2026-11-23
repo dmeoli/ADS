@@ -946,7 +946,7 @@ ADS_TEST( "mod-rollback" )
   CHECK( a.one.size() == 2 && ( a.one[ 1 ] == Ev( Era{ 0 , 1 , 1 } ) ) );
   CHECK( ! d.item( 0 ).live );
   }
- // a Keep::Detach returned by the inverse is honoured after the rollback
+ // a Keep::Detach returned by the inverse is honored after the rollback
  {
   struct LeaveOnUndo
   {

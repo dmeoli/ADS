@@ -96,7 +96,7 @@
 namespace ADS
 {
 
-/// the items of \f$ A \f$ by `colour( x )`, 0 then 1 then 2, with \f$ n \f$
+/// the items of \f$ A \f$ by `color( x )`, 0 then 1 then 2, with \f$ n \f$
 /// reads of the colors and at most \f$ n \f$ swaps, counted in `*swaps` if
 /// it is given; \f$ ( i , j ) \f$ with \f$ A[ 0 .. i ) \f$ of color 0,
 /// \f$ A[ i .. j ) \f$ of color 1 and \f$ A[ j .. n ) \f$ of color 2
@@ -108,21 +108,21 @@ namespace ADS
 /// 1 & \textbf{function}\ \mathrm{dutchNationalFlag}( A ) \cr
 /// 2 & \quad i \gets 0;\ j \gets 0;\ k \gets n \cr
 /// 3 & \quad \textbf{while}\ j < k\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ \mathrm{colour}( A[ j ] ) = 0\ \textbf{then}
+/// 4 & \qquad \textbf{if}\ \mathrm{color}( A[ j ] ) = 0\ \textbf{then}
 ///     \ \text{swap } A[ i ] \text{ and } A[ j ];\ i \gets i + 1;\ j \gets j
 ///     + 1 \cr
-/// 5 & \qquad \textbf{else if}\ \mathrm{colour}( A[ j ] ) = 1
+/// 5 & \qquad \textbf{else if}\ \mathrm{color}( A[ j ] ) = 1
 ///     \ \textbf{then}\ j \gets j + 1 \cr
 /// 6 & \qquad \textbf{else}\ k \gets k - 1;\ \text{swap } A[ j ]
 ///     \text{ and } A[ k ] \cr
 /// 7 & \quad \textbf{return}\ ( i , j )
 /// \end{array}}
 /// \f]
-/// \pre `colour( x )` is 0, 1 or 2
+/// \pre `color( x )` is 0, 1 or 2
 /// \post the colors in order (an audit)
 template< class T , class F >
 std::pair< std::size_t , std::size_t >
-dutchNationalFlag( std::vector< T > & A , F && colour ,
+dutchNationalFlag( std::vector< T > & A , F && color ,
 		   std::size_t * swaps = nullptr );
 
 /// \f$ A[ 0 ] \le A[ 1 ] \ge A[ 2 ] \le \cdots \f$, by swaps of

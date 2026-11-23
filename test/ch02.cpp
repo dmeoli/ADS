@@ -303,7 +303,7 @@ ADS_TEST( "sec2.7.2.insertion" )
 
 // Figure 2.10 and 2.11; against std::stable_sort, with every cutoff, the
 // bottom-up version and the version on lists; the edges: n = 0, 1, 2, 3,
-// powers of 2 and their neighbours, all equal (stable), sorted (n - 1
+// powers of 2 and their neighbors, all equal (stable), sorted (n - 1
 // comparisons with a cutoff > 1) and reverse sorted, a cutoff of 0 (taken
 // as 1) and larger than n, the extremes of int, mergeParts() on parts of
 // one item and its preconditions; countInversions() on empty, sorted,

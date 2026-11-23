@@ -290,7 +290,7 @@ ADS_TEST( "parallel-mis-matching" )
   const StaticGraph< int , ArcLayout::Interleaved > gi(
     n , n ? wsimple : std::vector< std::tuple< int , int , int > >() , false );
   const auto pi = randomOrder( n , seed );
-  // the sequential greedy algorithms: v in the set if no neighbour of
+  // the sequential greedy algorithms: v in the set if no neighbor of
   // an earlier place is
   std::vector< int > rank( n );
   for( int i = 0 ; i < n ; ++i )

@@ -551,7 +551,7 @@ ADS_TEST( "graph-3-1" )
  const auto s = make( 4 , { { 1 , 0 } , { 2 , 0 } , { 3 , 0 } } , true );
  CHECK( graph::isRoma( s , 0 ) && ! graph::isRoma( s , 1 ) );
  // an edge out of v does not help; a deleted node is not asked to reach
- // v; a chain of 10^5 nodes towards v, deeper than a recursion could go
+ // v; a chain of 10^5 nodes toward v, deeper than a recursion could go
  CHECK( ! graph::isRoma( make( 2 , { { 0 , 1 } } , true ) , 0 ) );
  auto h = make( 3 , { { 2 , 0 } , { 1 , 2 } } , true );
  h.deleteNode( 1 );
@@ -995,7 +995,7 @@ ADS_TEST( "graph-8" )
  CHECK( graph::countWithin( p , 0 , 10 ) == 11 );
  CHECK( graph::countWithin( p , 50 , 10 ) == 21 );
  CHECK( graph::countWithin( p , 0 , 1000 ) == 100 );
- // d = 1, the neighbours; the nodes of another component never count;
+ // d = 1, the neighbors; the nodes of another component never count;
  // an oriented edge counts one way
  CHECK( graph::countWithin( p , 0 , 1 ) == 2 );
  CHECK( graph::countWithin( p , 50 , 1 ) == 3 );
@@ -2047,7 +2047,7 @@ namespace graph
 
 /// longestDescendingPath(): the largest total length of a path along which
 /// the altitudes z strictly decrease, in an unoriented graph whose weights
-/// are the lengths of the edges; D[ u ] = 0 if no neighbour v has z[ v ] <
+/// are the lengths of the edges; D[ u ] = 0 if no neighbor v has z[ v ] <
 /// z[ u ], else the largest d( u , v ) + D[ v ] over them: dagLongestPaths()
 /// of the library on the acyclic graph of the downhill edges, a memoized
 /// depth first visit, O( n + m )

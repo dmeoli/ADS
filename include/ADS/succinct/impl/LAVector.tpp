@@ -133,7 +133,7 @@ inline LAVector::LAVector( const std::vector< std::uint64_t > & x , int c )
 
 inline LAVector LAVector::tuned( const std::vector< std::uint64_t > & x )
 {
- // the odd widths up to the widest useful one, then the neighbours of
+ // the odd widths up to the widest useful one, then the neighbors of
  // the best
  const int top = widest( x );
  LAVector b( x , 1 );

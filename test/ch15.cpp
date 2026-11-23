@@ -3,7 +3,7 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * Tests of chapter 15, Ricerca locale: the local search of the minimum
- * spanning tree on Figure 15.1 and 15.3, the neighbourhood of a sequence,
+ * spanning tree on Figure 15.1 and 15.3, the neighborhood of a sequence,
  * Shell Sort on figure 15.4 with four sequences of gaps, the maximum flow
  * on figure 15.5 with three ways of augmenting and against the minimum
  * cuts enumerated, and the exercises 15.1 to 15.10, each a test named
@@ -108,7 +108,7 @@ std::vector< Arc > random_arcs( int n , int m , int maxc , std::mt19937 & g )
 /*--------------------------------------------------------------------------*/
 
 // Figure 15.1 and 15.3: the local search of the minimum spanning tree from
-// the tree of weight 68, whose neighbourhood has 13 trees (a missing edge
+// the tree of weight 68, whose neighborhood has 13 trees (a missing edge
 // added, an edge of the circuit removed); with the best improvement it
 // goes 68, 56, 46, 43, the global optimum
 ADS_TEST( "sec15.local-search" )
@@ -150,11 +150,11 @@ ADS_TEST( "sec15.local-search" )
   return( path );
   };
  Longs weights = { weight( T ) };
- int neighbours = 0;
+ int neighbors = 0;
  for( int e = 0 ; e < int( E.size() ) ; ++e )
   if( ! T.count( e ) )
-   neighbours += int( circuit( T , e ).size() );
- CHECK( neighbours == 13 );
+   neighbors += int( circuit( T , e ).size() );
+ CHECK( neighbors == 13 );
  for( ; ; ) {
   long best = 0;
   int add = -1 , drop = -1;
@@ -181,10 +181,10 @@ ADS_TEST( "sec15.local-search" )
   }() );
  }
 
-// the neighbourhood of 1 , 7 , 3 , 4, an item moved: 9 sequences, two of
+// the neighborhood of 1 , 7 , 3 , 4, an item moved: 9 sequences, two of
 // which lower the inversions; countInversions() on empty, sorted, equal
 // and reversed sequences and against the pairs counted
-ADS_TEST( "sec15.1.neighbourhood" )
+ADS_TEST( "sec15.1.neighborhood" )
 {
  const Ints A = { 1 , 7 , 3 , 4 };
  std::set< Ints > I;
@@ -722,7 +722,7 @@ ADS_TEST( "ex15.7" )
  CHECK( maxflow( 8 , Q , 0 , 7 ) == 3 );
  }
 
-// the neighbourhood of a matching: an augmenting chain between two free
+// the neighborhood of a matching: an augmenting chain between two free
 // nodes; the local search of Kuhn on bipartite graphs against the flow
 // and against the enumeration of the matchings
 ADS_TEST( "ex15.8" )

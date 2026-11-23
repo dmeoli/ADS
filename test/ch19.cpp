@@ -519,7 +519,7 @@ ADS_TEST( "sec19.4.local-search" )
   const Nodes L = twoOpt( D , s , &trace );
   CHECK( std::is_sorted( trace.rbegin() , trace.rend() ) );
   CHECK( trace.back() == tourCost( D , L ) && trace.back() >= bruteTsp( D ) );
-  for( int i = 0 ; i < n ; ++i )  // no neighbour is better
+  for( int i = 0 ; i < n ; ++i )  // no neighbor is better
    for( int j = i + 2 ; j < n ; ++j )
     if( ( i > 0 ) || ( j < n - 1 ) )
      CHECK( tourCost( D , twoOptMove( L , i , j ) ) >= trace.back() );
@@ -1115,21 +1115,21 @@ ADS_TEST( "ex19.14" )
 // preconditions
 ADS_TEST( "ex19.15" )
 {
- CHECK( kOptNeighbours( 3 , 0 ) == 1 && kOptNeighbours( 3 , 3 ) == 0 );
+ CHECK( kOptNeighbors( 3 , 0 ) == 1 && kOptNeighbors( 3 , 3 ) == 0 );
  for( int n : { 3 , 4 , 6 } ) {
   long all = 0 , f = 1;
   for( int k = 0 ; k <= n ; ++k )
-   all += kOptNeighbours( n , k );
+   all += kOptNeighbors( n , k );
   for( int i = 2 ; i < n ; ++i )
    f *= i;
-  CHECK( kOptNeighbours( n , 1 ) == 0 && all == std::max( f / 2 , 1L ) );
+  CHECK( kOptNeighbors( n , 1 ) == 0 && all == std::max( f / 2 , 1L ) );
   }
- CHECK_THROWS( kOptNeighbours( 2 , 0 ) , contract_violation );
- CHECK_THROWS( kOptNeighbours( 5 , 6 ) , contract_violation );
- CHECK_THROWS( kOptNeighbours( 5 , -1 ) , contract_violation );
+ CHECK_THROWS( kOptNeighbors( 2 , 0 ) , contract_violation );
+ CHECK_THROWS( kOptNeighbors( 5 , 6 ) , contract_violation );
+ CHECK_THROWS( kOptNeighbors( 5 , -1 ) , contract_violation );
  for( long n = 3 ; n <= 8 ; ++n ) {
-  CHECK( kOptNeighbours( int( n ) , 2 ) == n * ( n - 1 ) / 2 - n );
-  const long i3 = kOptNeighbours( int( n ) , 3 );
+  CHECK( kOptNeighbors( int( n ) , 2 ) == n * ( n - 1 ) / 2 - n );
+  const long i3 = kOptNeighbors( int( n ) , 3 );
   CHECK( i3 <= n * n * n );
   if( n >= 6 )
    CHECK( i3 > n * ( n - 4 ) * ( n - 5 ) / 6 );

@@ -39,15 +39,15 @@ html[data-theme="dark"] .rst-content dl .sig-name * {
 }
 
 /* the scopes before the names (the ADS:: of ADS::quickSort), which the
-   dark theme leaves dark grey on the dark grey of the signature */
+   dark theme leaves dark gray on the dark gray of the signature */
 html[data-theme="dark"] .rst-content dl .sig-prename,
 html[data-theme="dark"] .rst-content dl .sig-prename * {
     color: #b0b0b0 !important;
 }
 
 /* the signatures of the members, which the dark theme leaves on the light
-   grey of the light one (whose selector, made of many :not(), outweighs
-   its own), under the names coloured above */
+   gray of the light one (whose selector, made of many :not(), outweighs
+   its own), under the names colored above */
 html[data-theme="dark"] .rst-content dl.cpp dt {
     background: #2b2b2b !important;
     color: #d0d0d0 !important;
@@ -177,7 +177,7 @@ html[data-theme="dark"] .rst-content a code {
     border-bottom: 0.5px solid currentColor !important;
 }
 
-/* the signatures of the members on a grey rule, not on the blue of the
+/* the signatures of the members on a gray rule, not on the blue of the
    theme (whose selector, made of many :not(), outweighs a plain one), in
    the light theme (the dark one is set above) */
 html:not([data-theme="dark"]) .rst-content dl.cpp > dt,
@@ -223,8 +223,8 @@ html:not([data-theme="dark"]) .wy-menu-vertical li.on a {
     color: #7030A0;
 }
 
-/* the branch of the current page in the menu on a light grey, not on the
-   darker greys of the theme */
+/* the branch of the current page in the menu on a light gray, not on the
+   darker grays of the theme */
 html:not([data-theme="dark"]) .wy-menu-vertical li.current,
 html:not([data-theme="dark"]) .wy-menu-vertical li.current > a,
 html:not([data-theme="dark"]) .wy-menu-vertical li.current li > a {
@@ -232,8 +232,8 @@ html:not([data-theme="dark"]) .wy-menu-vertical li.current li > a {
     border-color: #e1e4e5 !important;
 }
 
-/* the admonitions (notes, see also, warnings) in grey, as the frames of
-   the PDF, the colours of the theme being kept off the page */
+/* the admonitions (notes, see also, warnings) in gray, as the frames of
+   the PDF, the colors of the theme being kept off the page */
 html:not([data-theme="dark"]) .rst-content .admonition {
     background: #f5f5f5 !important;
 }

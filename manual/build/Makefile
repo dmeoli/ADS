@@ -8,7 +8,7 @@
 #   make snippets  # extract the code and the pseudocode of the headers
 #   make check     # the bibliography and the map of chapter 1 are complete,
 #                  # and the C++ blocks of the chapters match the headers
-#   make clean     # remove build artefacts
+#   make clean     # remove build artifacts
 #
 # Prerequisites:
 #   pandoc, a LaTeX distribution (pdflatex + the usual packages),

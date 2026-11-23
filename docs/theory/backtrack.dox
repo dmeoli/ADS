@@ -236,14 +236,14 @@
  <em>first unique implication point</em>. The clause \f$ C \f$ so obtained
  is implied by the formula, since resolution preserves the models; it is
  false under the trail, and after the levels above the second largest level
- of its literals are cancelled it is unit, so that it forces the negation of
+ of its literals are canceled it is unit, so that it forces the negation of
  the implication point there (the jump back, possibly over several levels).
  The same assignment that led to the conflict can then never occur again,
  and the search is complete, since the number of clauses that can be
  learned is finite. Each clause <em>watches</em> two of its literals, with
  the invariant that a clause whose watched literals are both false is
  conflicting or satisfied; a literal that becomes false thus visits only
- the clauses that watch it, and the cancelling of levels needs no update
+ the clauses that watch it, and the canceling of levels needs no update
  of the watches. The decisions take the free variable of largest activity,
  increased at each conflict for the variables met in the analysis and
  decayed by raising the increment (VSIDS), with the value it had last (the

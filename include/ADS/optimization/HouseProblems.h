@@ -3,10 +3,10 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * Two problems of dynamic programming on a row of \f$ n \f$ houses, where the
- * choice of each house depends only on the one of its neighbour:
+ * choice of each house depends only on the one of its neighbor:
  *
  * - the largest sum of the items of \f$ A \f$, no two of them adjacent (the
- *   donations of houses no two of which are neighbours, the maximum weight
+ *   donations of houses no two of which are neighbors, the maximum weight
  *   independent set of a path):
  *   \f$ D[ i ] = \max( D[ i - 1 ] , D[ i - 2 ] + A_{i-1} ) \f$,
  *   \f$ D[ 0 ] = D[ -1 ] = 0 \f$; `maxNonAdjacentSum()` in

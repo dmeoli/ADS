@@ -488,7 +488,7 @@ elements in $O( \log_2 N )$ bits, i.e., within a constant factor of the
 information-theoretic lower bound ([§22.1](22-succinct.md#sec-22-1)).
 
 **Compact trie.** A trie whose chains of nodes with a single child are
-contracted into single edges labelled by strings; a Patricia trie keeps
+contracted into single edges labeled by strings; a Patricia trie keeps
 only the first character of each edge
 ([§7.10.1](07-dictionary.md#sec-7-10-1)).
 
@@ -709,7 +709,7 @@ digits of a number and takes the remainder at each step of the rule of
 Horner, with $m$ best a prime far from a power of 2
 ([§7.3.1](07-dictionary.md#sec-7-3-1)).
 
-**Double black.** The temporary colour of the removal from a left-leaning
+**Double black.** The temporary color of the removal from a left-leaning
 red-black tree, for a node that counts as two black ones until the repair
 ([§8.10.2](08-tree.md#sec-8-10-2)).
 
@@ -1419,7 +1419,7 @@ which the workers or the processes send batches of messages to the owners
 of the data, with a detection of the termination
 ([§25.15](25-parallel.md#sec-25-15)).
 
-**Manacher algorithm.** The computation of the longest palindrome centred
+**Manacher algorithm.** The computation of the longest palindrome centered
 at each place of a string in linear time
 ([§15.7.1](15-string.md#sec-15-7-1)).
 

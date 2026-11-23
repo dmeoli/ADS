@@ -1439,9 +1439,9 @@ compare these queues for the shortest paths).
 --8<-- "generated/RadixHeap-extractBelow.pseudo.md"
 
 `BucketQueue< T , K >` applies the scan of Dial to two keys: the first, $f$,
-orders the items, and the second, $g$, breaks the ties towards the largest,
+orders the items, and the second, $g$, breaks the ties toward the largest,
 the last item pushed first among equal pairs, which is the order of the search
-A* (least $f$, ties towards the deeper nodes). It is the two-level queue of
+A* (least $f$, ties toward the deeper nodes). It is the two-level queue of
 the search code of [Burns, Hatem, Leighton and Ruml
 2012](Z-bibliography.md#ref-burns2012), with no monotonicity required. Its
 outer level is a vector of *layers* indexed by $f$, scanned forward from a

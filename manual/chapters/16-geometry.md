@@ -112,7 +112,7 @@ $\theta$ in the first and in the third quadrant and decreases in the
 second and in the fourth. Thus $t$ grows from 0 to 1 in the first
 quadrant, $2 - t$ grows from 1 to 2 in the second (where $t$ goes from 1 to
 0) and from 2 to 3 in the third (where $t$ goes from 0 to $-1$), and
-$4 + t$ grows from 3 towards 4 in the fourth, without reaching it. At the
+$4 + t$ grows from 3 toward 4 in the fourth, without reaching it. At the
 semi-axes the values agree with the limits from both sides, and therefore
 the function increases on the whole circle. $\square$
 
@@ -206,7 +206,7 @@ the vertices that make a turn not to the left
 choices made so far. [Figure 16.1](16-geometry.md#fig-16-1) shows the scan
 of a point that pops two vertices.
 
-![Figure 16.1. The scan of Graham on seven points sorted by angle around $o$: before the scan of $p_4$, the stack holds $o$, $p_1$, $p_2$, $p_3$ (violet, joined by the chain), and the other points are grey; $p_4$ makes a right turn with $p_2$ and $p_3$, and then with $p_1$ and $p_2$, so that $p_3$ and $p_2$ are popped before $p_4$ is pushed (orange).](../figures/geometry-graham.svg){#fig-16-1}
+![Figure 16.1. The scan of Graham on seven points sorted by angle around $o$: before the scan of $p_4$, the stack holds $o$, $p_1$, $p_2$, $p_3$ (violet, joined by the chain), and the other points are gray; $p_4$ makes a right turn with $p_2$ and $p_3$, and then with $p_1$ and $p_2$, so that $p_3$ and $p_2$ are popped before $p_4$ is pushed (orange).](../figures/geometry-graham.svg){#fig-16-1}
 
 <span id="alg-16-2"></span>**Algorithm 16.2.** The scan of Graham
 ([Graham 1972](Z-bibliography.md#ref-graham1972); [Montresor 2025,
@@ -303,7 +303,7 @@ fraction near $1 - 2 \sqrt{2} / \pi \approx 0.1$ of the points survives,
 and $k = \Theta( n )$. On points near a circle almost all of them survive,
 and the filter costs one pass over $P$ with little or no benefit.
 
-![Figure 16.2. The filter of `convexHull()` on 58 random points: the extreme points in the eight directions (squares, here 7 distinct ones) span the octagon (faintest tint), whose inner points (grey) are dropped; of the 11 points left (violet), the monotone chain keeps the 9 vertices of the hull (dashed).](../figures/geometry-octagon.svg){#fig-16-2}
+![Figure 16.2. The filter of `convexHull()` on 58 random points: the extreme points in the eight directions (squares, here 7 distinct ones) span the octagon (faintest tint), whose inner points (gray) are dropped; of the 11 points left (violet), the monotone chain keeps the 9 vertices of the hull (dashed).](../figures/geometry-octagon.svg){#fig-16-2}
 
 Second, sorting the points left by $x$ and then $y$,
 instead of by angle, allows a sort of integer keys. With

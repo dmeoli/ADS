@@ -18,7 +18,7 @@
  * - `twoOpt()`: the local search on the neighborhood \f$ I_2( \pi ) \f$,
  *   the circuits made of \f$ \pi \f$ by replacing two edges that do not
  *   touch with the two that close it again, \f$ n ( n - 1 ) / 2 - n \f$ of
- *   them; `kOptNeighbours()` counts \f$ I_k( \pi ) \f$ (exercise 19.15);
+ *   them; `kOptNeighbors()` counts \f$ I_k( \pi ) \f$ (exercise 19.15);
  * - `partitionLocalSearch()`: the PARTITION that minimizes the difference
  *   of the sums, moving an element or swapping two (exercise 19.16);
  * - `greedySuperstring()`: the greedy of `greedyTsp()` on the graph of the
@@ -177,7 +177,7 @@ Nodes twoOpt( const std::vector< std::vector< T > > & D , Nodes pi ,
 /// direction:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{kOptNeighbours}( n , k )\quad
+/// 1 & \textbf{function}\ \mathrm{kOptNeighbors}( n , k )\quad
 ///     \triangleright\ \text{by enumeration, for the small } n \cr
 /// 2 & \quad E \gets \text{the edges of the circuit } ( 0 , 1 , \ldots , n -
 ///     1 ) \cr
@@ -189,7 +189,14 @@ Nodes twoOpt( const std::vector< std::vector< T > > & D , Nodes pi ,
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 3 \f$ and \f$ 0 \le k \le n \f$
-inline long kOptNeighbours( int n , int k );
+inline long kOptNeighbors( int n , int k );
+
+/// the former name of kOptNeighbors(), kept for the code that uses it
+[[deprecated( "use kOptNeighbors" )]] inline long kOptNeighbours( int n ,
+								  int k )
+{
+ return( kOptNeighbors( n , k ) );
+ }
 
 /// the side, 0 or 1, of each element of \f$ A \f$, by the local search from
 /// `side` that moves an element or swaps two while the difference of the
@@ -410,7 +417,7 @@ inline std::string greedySuperstring( const std::vector< std::string > & P );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{starAlignment}( P )\quad \triangleright
-///     \ \text{the centre aligned with every other string} \cr
+///     \ \text{the center aligned with every other string} \cr
 /// 2 & \quad h \gets \text{the first } i \text{ that maximizes }
 ///     \textstyle\sum_{j \ne i} \mathrm{score}( P[ i ] , P[ j ] ) \cr
 /// 3 & \quad \textbf{return}\ ( h , ( \mathrm{globalAlignment}( P[ h ] , P[

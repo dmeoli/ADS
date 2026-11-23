@@ -32,7 +32,7 @@ bool rectangular( const std::vector< std::vector< T > > & M )
 
 /// D holds the distances of a breadth first visit from the sources through
 /// the free cells: 0 on the sources, INF on the cells not free, and each
-/// other cell at INF or one move farther than a neighbour from which a
+/// other cell at INF or one move farther than a neighbor from which a
 /// move reaches it, with no move from a reached cell to a free cell more
 /// than one move farther
 template< class Free , class Moves >

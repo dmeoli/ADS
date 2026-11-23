@@ -338,7 +338,7 @@ namespace detail
 
 /// D holds the distances of a breadth first visit of g from S: 0 on the
 /// sources, INF on the blocked cells, each other cell at INF or one move
-/// farther than a neighbour, and no move from a reached cell to a cell
+/// farther than a neighbor, and no move from a reached cell to a cell
 /// more than one move farther
 template< class W , class C , class P >
 bool gridGraphBfs( const GridGraph< W , C , P > & g ,
@@ -348,7 +348,7 @@ bool gridGraphBfs( const GridGraph< W , C , P > & g ,
  for( int s : S )
   if( D[ s ] != 0 )
    return( false );
- std::vector< int > best( D.size() , INF );  // the least D of a neighbour
+ std::vector< int > best( D.size() , INF );  // the least D of a neighbor
  for( int u = 0 ; u < g.bound() ; ++u ) {
   if( ! g.hasNode( u ) ) {
    if( D[ u ] != INF )

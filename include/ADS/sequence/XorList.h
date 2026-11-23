@@ -5,7 +5,7 @@
  * The XOR list of the discussion of chapter 3 of Morin's book, beyond the
  * book: a doubly linked list whose cells keep one word of links instead of
  * two, the exclusive or \f$ \mathit{prev} \oplus \mathit{next} \f$ of the
- * addresses of their two neighbours (nil at the ends being 0), so that a
+ * addresses of their two neighbors (nil at the ends being 0), so that a
  * walk that knows the cell it comes from finds the next one by an
  * exclusive or, \f$ \mathit{next} = \mathit{link} \oplus \mathit{prev} \f$,
  * in either direction. A cell takes one pointer less than in a `List` [see
@@ -79,7 +79,7 @@ namespace ADS
 /*--------------------------------------------------------------------------*/
 
 /// a doubly linked list with one word of links per cell, the exclusive or
-/// of the two neighbours
+/// of the two neighbors
 template< class T >
 class XorList
 {
@@ -156,7 +156,7 @@ class XorList
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{popFront}() \cr
  /// 2 & \quad c \gets h;\ h \gets c.\mathit{link}\quad \triangleright
- ///     \ \text{its only neighbour} \cr
+ ///     \ \text{its only neighbor} \cr
  /// 3 & \quad \textbf{if}\ h \ne \textbf{nil}\ \textbf{then}
  ///     \ h.\mathit{link} \gets h.\mathit{link} \oplus c\ \textbf{else}\ t
  ///     \gets \textbf{nil} \cr
@@ -270,7 +270,7 @@ class XorList
 
 /*--------------------------------------------------------------------------*/
  private:
- /// a cell: the exclusive or of the addresses of its neighbours, and the
+ /// a cell: the exclusive or of the addresses of its neighbors, and the
  /// item
  struct Cell
  {
@@ -283,7 +283,7 @@ class XorList
   return( reinterpret_cast< std::uintptr_t >( a ) );
   }
 
- /// the neighbour of \f$ c \f$ that is not \f$ p \f$
+ /// the neighbor of \f$ c \f$ that is not \f$ p \f$
  static Cell * other( const Cell * c , const Cell * p ) {
   return( reinterpret_cast< Cell * >( c->link ^ word( p ) ) );
   }

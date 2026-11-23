@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the spelling of the comments, the documentation and the manual is the
+  American one, and `kOptNeighbours` is now `kOptNeighbors`, the former
+  name staying as a deprecated alias (the titles of the cited works keep
+  the spelling with which they were published)
 - the fingerprint of `BinaryFuseFilter` and of `RibbonFilter` is the high
   bits of the product of the hash by an odd constant, which depend on
   every bit of the hash and not only on the bits that give the places (the

@@ -225,11 +225,11 @@ size_t thickness( const Ints & V , int C , bool asPrinted = false )
 
 /*------------------------- 2015-09-01, Find peak --------------------------*/
 
-/// a peak of A, an item larger than its neighbours: findPeak() of the
-/// library, a binary search on the side of the larger neighbour, which
+/// a peak of A, an item larger than its neighbors: findPeak() of the
+/// library, a binary search on the side of the larger neighbor, which
 /// holds a peak; O( log n )
 /// \pre n >= 1 , the items are distinct
-/// \post A[ r ] is larger than its neighbours
+/// \post A[ r ] is larger than its neighbors
 size_t findPeak( const Ints & A )
 {
  const size_t n = A.size();
@@ -655,7 +655,7 @@ size_t hIndex( const Ints & A )
 
 /*----------------------- 2023-02-09, Minimo locale ------------------------*/
 
-/// a local minimum of A, an inner item smaller than its neighbours:
+/// a local minimum of A, an inner item smaller than its neighbors:
 /// localMinimum() of the library, which with A[ 0 ] > A[ 1 ] and
 /// A[ n - 2 ] < A[ n - 1 ] cannot stop at an end; O( log n )
 /// \pre n >= 3 , distinct items , A[ 0 ] > A[ 1 ] , A[ n - 2 ] < A[ n - 1 ]
@@ -1658,7 +1658,7 @@ ADS_TEST( "divide-19" )
 /*---------------------- 2021-08-31, Radice quadrata -----------------------*/
 
 // the squares up to 10^6 against a running root, and the squares of random
-// and of the largest roots of 64 bits and their neighbours
+// and of the largest roots of 64 bits and their neighbors
 ADS_TEST( "divide-20" )
 {
  std::mt19937_64 g( 1 );
@@ -1754,7 +1754,7 @@ ADS_TEST( "divide-22" )
 /*----------------------- 2023-02-09, Minimo locale ------------------------*/
 
 // the local minimum of the example and of random vectors with the two ends
-// rising, checked by its neighbours
+// rising, checked by its neighbors
 ADS_TEST( "divide-23" )
 {
  std::mt19937 g( 1 );

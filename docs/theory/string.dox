@@ -594,9 +594,9 @@
 
  A palindrome reads the same in both directions. The algorithm of Manacher
  (`longestPalindromicSubstring()` of `Palindromes.h`) computes the radius
- of the longest palindrome about each of the \f$ 2 n - 1 \f$ centres, and
+ of the longest palindrome about each of the \f$ 2 n - 1 \f$ centers, and
  keeps the palindrome found so far whose right end \f$ r \f$ is the
- largest: a centre inside it starts from the radius of its mirror, capped
+ largest: a center inside it starts from the radius of its mirror, capped
  at \f$ r \f$, since the palindrome is symmetric, and compares only the
  symbols past \f$ r \f$; each successful comparison moves \f$ r \f$
  forward, so that the time is \f$ \Theta( n ) \f$. The longest palindromic

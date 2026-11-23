@@ -191,7 +191,7 @@ void Slots< L , Obs >::undo( const Inv & inv , const Trail & t ) noexcept
     continue;
    try {
     if( s.one[ j ]( s.o , &inv ) == Keep::Detach ) {
-     s.o = nullptr;  // honoured after the rollback
+     s.o = nullptr;  // honored after the rollback
      gone = true;
      }
     }

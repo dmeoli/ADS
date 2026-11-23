@@ -252,8 +252,8 @@ ADS_TEST( "sequence-algorithms" )
 // the other realizations and the rearrangements: SinglyList and
 // CursorList at pos_-1 and pos_n, the space of the cursors (dim >= 1, a
 // cell in [ 1 , capacity ], a cell given back twice caught by the
-// invariant), the indices of ArraySequence; the Dutch flag with a colour
-// -1 and 3, the empty vector, one colour only; wiggleSort() and
+// invariant), the indices of ArraySequence; the Dutch flag with a color
+// -1 and 3, the empty vector, one color only; wiggleSort() and
 // sortKSorted() on empty, one item, equal items, k = 0 and k >= n, a
 // vector not k-sorted refused; minimumSwapSort() refusing repeated items
 ADS_TEST( "other-sequences" )

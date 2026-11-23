@@ -705,7 +705,7 @@ using ADS::cutSize;
 using ADS::dsatur;
 using ADS::greedySuperstring;
 using ADS::greedyTsp;
-using ADS::kOptNeighbours;
+using ADS::kOptNeighbors;
 using ADS::minMaxGreedy;
 using ADS::overlap;
 using ADS::partitionLocalSearch;

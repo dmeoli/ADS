@@ -42,7 +42,7 @@ table.memberdecls td.mdescLeft {
     white-space: normal;
 }
 
-/* the title of a group of members in the colours of the theme, light or
+/* the title of a group of members in the colors of the theme, light or
    dark, in place of the white shadow and the fixed blue of doxygen.css */
 div.groupHeader {
     box-shadow: none;
@@ -170,7 +170,7 @@ table.markdownTable th, table.doxtable th, table.fieldtable th {
     border-bottom: 0.5px solid currentColor;
 }
 
-/* the labels of the members (inline, explicit, ...) in grey, the purple
+/* the labels of the members (inline, explicit, ...) in gray, the purple
    being only for the links */
 span.mlabel {
     background: var(--page-secondary-foreground-color);

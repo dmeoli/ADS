@@ -953,7 +953,7 @@
  from the start is among them.
 
  A worker of a search sends many messages for the same key between two
- pushes (the relaxations of one state by its neighbours, each with its own
+ pushes (the relaxations of one state by its neighbors, each with its own
  distance), of which the receiver keeps only one, the least; the mailbox
  of the policy `CoalesceBy` merges them in the outbox, before they cost a
  place in the channel and a call at the receiver. `send( me , to , x ,

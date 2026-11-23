@@ -3,7 +3,7 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * Two problems of dynamic programming on a matrix of \f$ m \f$ rows and
- * \f$ n \f$ columns, each cell solved from its neighbours above and to the
+ * \f$ n \f$ columns, each cell solved from its neighbors above and to the
  * left:
  *
  * - `largestSquare()`: the largest square of nonzero cells of a 0/1 matrix.

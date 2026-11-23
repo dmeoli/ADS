@@ -306,7 +306,7 @@
  which has \f$ \lceil \log_2 b \rceil + 1 \f$ bits. Hence after
  \f$ O( \log^* n ) \f$ rounds the colors are in \f$ \{ 0 , \ldots , 5 \} \f$,
  and the items of colors 5, 4 and 3 in turn take the least color of
- \f$ \{ 0 , 1 , 2 \} \f$ that neither neighbour has, which keeps the colors
+ \f$ \{ 0 , 1 , 2 \} \f$ that neither neighbor has, which keeps the colors
  proper since the items of one color are not adjacent. The local minima of
  three colors are independent, and between two consecutive local minima
  there are at most 3 other items. `listRankIndependentSet()` runs the

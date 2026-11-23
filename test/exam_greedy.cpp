@@ -239,7 +239,7 @@ struct Edge
 /// the largest weight of a set of edges no two with an end in common (a
 /// matching) of a graph of n nodes: branchAndBoundMatching() of the
 /// library, a backtracking that leaves the first free node alone or
-/// matches it to each free neighbour, cutting the branches that cannot
+/// matches it to each free neighbor, cutting the branches that cannot
 /// beat the best matching found; the text recurs only on the edges of the
 /// last node reached and repeats the recursive call outside the test of
 /// the free ends, which takes edges on used nodes
@@ -329,7 +329,7 @@ T tapeCost( const std::vector< T > & l , const std::vector< T > & p ,
  }
 
 /// the order of least expected cost: by increasing l_i / p_i, compared as
-/// l_a p_b < l_b p_a (swapping two neighbours a, b changes the cost by p_a
+/// l_a p_b < l_b p_a (swapping two neighbors a, b changes the cost by p_a
 /// l_b - p_b l_a), O( n log n ); neither the increasing lengths nor the
 /// decreasing probabilities are optimal
 /// \pre l > 0 and p >= 0
@@ -399,7 +399,7 @@ bool isDoable( std::vector< long long > T , const std::vector< int > & P )
 /*-------------------- greedy 12, 2020-01-14, Min steps --------------------*/
 
 /// the fewest steps from the first to the last place of A, a step going to
-/// a neighbour or to any place of the same value: a BFS on the graph of
+/// a neighbor or to any place of the same value: a BFS on the graph of
 /// those moves, O( n^2 ) edges
 /// \pre A is not empty
 int minStepsQuadratic( const std::vector< int > & A )
@@ -469,7 +469,7 @@ void lpp( std::vector< int > & A )
 /*----------------- greedy 14, 2021-02-08, Trova l'ordine ------------------*/
 
 /// a permutation of the distinct items of A obeying the n - 1 signs of D
-/// ('<' or '>') between neighbours: sorted, each '<' takes the least item
+/// ('<' or '>') between neighbors: sorted, each '<' takes the least item
 /// left and each '>' the largest (induction), O( n log n ); the text tests
 /// D[ i ] instead of D[ k ] and writes [ n ] for S[ n ]
 /// \pre D has n - 1 signs, each '<' or '>' (n = 0 allows an empty D)
@@ -687,7 +687,7 @@ closePoints( const std::vector< double > & A )
 
 /// DP[ i ][ j ], the side of the largest square of 1s with its bottom right
 /// corner at ( i , j ) of the r x c matrix A: 0 on a 0, else one more than
-/// the least of the three neighbours above and to the left, Theta( r c );
+/// the least of the three neighbors above and to the left, Theta( r c );
 /// the text returns the largest item of A instead of DP
 Matrix maxSquareTable( const Matrix & A )
 {
@@ -947,7 +947,7 @@ long long hateville( const Vec & D )
 
 /// the largest gain of cells of the 2 x n board A no two adjacent, also
 /// diagonally: at most one cell per column, the larger, and no two
-/// neighbouring columns, so Hateville on the largest of each column, O( n )
+/// neighboring columns, so Hateville on the largest of each column, O( n )
 /// \pre A has two rows of n positive gains
 long long maxGain( const std::vector< Vec > & A )
 {
@@ -2441,7 +2441,7 @@ ADS_TEST( "varie-15" )
  CHECK( varie::maxGain( { Vec() , Vec() } ) == 0 );
  CHECK( varie::maxGain( { { 3 } , { 4 } } ) == 4 );
  CHECK( varie::maxGain( { Vec( 7 , 2 ) , Vec( 7 , 2 ) } ) == 8 );
- CHECK( varie::maxGain( { { 1 , 9 } , { 9 , 1 } } ) == 9 );  // neighbours
+ CHECK( varie::maxGain( { { 1 , 9 } , { 9 , 1 } } ) == 9 );  // neighbors
  CHECK( varie::maxGain( { { 5 , 1 , 5 } , { 1 , 1 , 1 } } ) == 10 );
  CHECK( varie::hateville( {} ) == 0 );
  CHECK( varie::hateville( { 3 } ) == 3 );

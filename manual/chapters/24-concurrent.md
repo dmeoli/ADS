@@ -2301,7 +2301,7 @@ nodes passed by the hole took the pair of their parent, and get (24.9)
 again from their children, from the leaf up. The subtree of $i$, and of
 each node above it, gained the new bound $b$ only, and $\mu$ is lowered to
 $b$ from $i$ up as long as $b$ is less, since $\mu$ does not increase
-towards the root. A pop moves the last pair $z$ down from the root along a
+toward the root. A pop moves the last pair $z$ down from the root along a
 path $P$. A node off $P$ on the path of the old last leaf lost $z$ only; it
 keeps its $\mu$ if $\mu$ is less than the bound of $z$, and so do all those
 above it off $P$. The rest of that path, and then $P$ from its end up, get
@@ -2323,7 +2323,7 @@ the new pair: the nodes below $i$ on that path hold the pairs of their
 parents, and recomputing (24.9) from the leaf up restores it there, since
 their children are already right; above $i$, each subtree gained the bound
 $b$ only, and $\mu$ becomes $\min\{ \mu , b \}$, which stops changing at
-the first node where $\mu \le b$, since $\mu$ does not increase towards the
+the first node where $\mu \le b$, since $\mu$ does not increase toward the
 root. A pop removes the last leaf, whose pair $z$ moves down from the root
 along a path $P$; off $P$, only the nodes on the path of the old last leaf
 lost a pair, $z$, and their $\mu$ changes only if it was the bound of $z$,

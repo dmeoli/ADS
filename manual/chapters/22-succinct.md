@@ -1397,7 +1397,7 @@ places $0 , \ldots , k^2 - 1$, and those of the $j$-th mark 1 of $T$ come
 after the children of the root and of the $j - 1$ marks 1 before it, i.e.,
 they start at $k^2 j$, with $j = \mathrm{rank}_1( T , p + 1 )$. $\square$
 
-![Figure 22.15. The adjacency matrix of a graph of 8 nodes and 7 edges split by $k = 2$ (the grey lines), and its marks by levels $T$ and $L$, in groups of $k^2 = 4$; `hasEdge( 5 , 5 )` follows the places 3, 8 and 23 (violet).](../figures/succinct-k2tree.svg){#fig-22-15}
+![Figure 22.15. The adjacency matrix of a graph of 8 nodes and 7 edges split by $k = 2$ (the gray lines), and its marks by levels $T$ and $L$, in groups of $k^2 = 4$; `hasEdge( 5 , 5 )` follows the places 3, 8 and 23 (violet).](../figures/succinct-k2tree.svg){#fig-22-15}
 
 Hence no pointer is stored, as in LOUDS, and one can walk the tree by ranks only. The function `hasEdge( u , v )` follows one path, in $O( h )$ time. The function `neighbors( u )` walks down the children that cross
 the row $u$, $k$ of the $k^2$ at each level. Similarly, `reverseNeighbors( v )` walks down those that cross the column $v$, and the same bits therefore give the

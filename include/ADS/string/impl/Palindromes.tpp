@@ -62,8 +62,8 @@ std::pair< std::size_t , std::size_t > longestPalindrome( const S & s )
    bestLength = length;
    }
   };
- // d1[ i ]: the radius of the longest odd palindrome centred at i, the
- // centre included; [ l , r ) the rightmost palindrome found so far
+ // d1[ i ]: the radius of the longest odd palindrome centered at i, the
+ // center included; [ l , r ) the rightmost palindrome found so far
  std::vector< std::size_t > d1( n ) , d2( n );
  for( std::size_t i = 0 , l = 0 , r = 0 ; i < n ; ++i ) {
   std::size_t k = i < r ? std::min( d1[ l + r - 1 - i ] , r - i ) : 1;
@@ -181,11 +181,11 @@ std::vector< S > palindromicPartition( const S & s )
  const std::size_t n = s.size();
  std::vector< std::size_t > D( n + 1 , n + 1 ) , from( n + 1 , 0 );
  D[ 0 ] = 0;
- // the centres by increasing h = a + b - 1 for the palindrome s[ a .. b ):
+ // the centers by increasing h = a + b - 1 for the palindrome s[ a .. b ):
  // every palindrome ending before a has a smaller h, so D[ a ] is final
  for( std::size_t h = 0 ; h + 1 < 2 * n ; ++h ) {
   std::size_t a = ( h + 1 ) / 2 , b = h / 2 + 1;  // s[ a .. b )
-  if( a == b ) {                                 // an even centre
+  if( a == b ) {                                 // an even center
    if( ! ( s[ a - 1 ] == s[ a ] ) )
     continue;
    --a;

@@ -9,7 +9,7 @@
  * four corners. The map is one flat vector of the costs of the cells, or
  * none at all when every cell is free and costs 1; a cell is blocked when
  * its cost is not positive. The adjacency is computed, never stored: the
- * neighbours of \f$ u \f$ come from the row and the column of \f$ u \f$, one
+ * neighbors of \f$ u \f$ come from the row and the column of \f$ u \f$, one
  * division, and from at most 8 reads of the vector, so that the graph takes
  * \f$ s \, \mathit{rows} \, \mathit{cols} \f$ bytes (\f$ s \f$ the size of
  * a cost, and 0 bytes without the vector) against the
@@ -43,7 +43,7 @@
  * and the shortest paths of `ShortestPaths.h` run on the grid unchanged, with
  * vectors of `bound()` places. `forEachAdj()`, `forEachEdge()` and
  * `forEachMove()` (which also tells whether a move is to a corner) call
- * their function on the neighbours in increasing order of name, as the rows
+ * their function on the neighbors in increasing order of name, as the rows
  * of a `StaticGraph` are sorted, and allocate nothing; `adj()` and `V()` build
  * the vectors of the concept `Graph`. `gridDistances()` is the visit in
  * breadth of `Grid.h` from several sources on such a grid, the distances in a
@@ -65,10 +65,10 @@
  * \f$ f \f$ on the heads of the moves that such a change may create,
  * remove or weigh differently, which depend on the model of the costs and
  * on whether the cell changes between free and blocked: the cell itself
- * with `ENTERED` and its free neighbours with `LEFT`, when it stays free,
- * and the cell with all its free neighbours (those of the four or the eight
+ * with `ENTERED` and its free neighbors with `LEFT`, when it stays free,
+ * and the cell with all its free neighbors (those of the four or the eight
  * moves, since the cell is a side of the corners that the moves between two
- * of its neighbours cut), when it is blocked or freed; nothing when it
+ * of its neighbors cut), when it is blocked or freed; nothing when it
  * stays blocked. An incremental search on the grid (LPA*, D* Lite) thus
  * recomputes the right-hand sides of at most nine cells per change, with no
  * rebuilding of the grid, and the union of the heads of the events of a
@@ -317,8 +317,8 @@ class GridGraph
  /// \f$ \mathit{from} \f$ to \f$ \mathit{to} \f$, i.e., on a superset of
  /// the heads of the arcs that the change touched: none if the cell is
  /// blocked before and after, \f$ u \f$ (under `ENTERED`) or its free
- /// neighbours (under `LEFT`) if it is free before and after, \f$ u \f$
- /// and its free neighbours of the four or the eight moves if it changes
+ /// neighbors (under `LEFT`) if it is free before and after, \f$ u \f$
+ /// and its free neighbors of the four or the eight moves if it changes
  /// between free and blocked; at most nine calls, read on the grid after
  /// the change
  ///
@@ -345,23 +345,23 @@ class GridGraph
  /// the set of the nodes, in increasing order
  [[nodiscard]] std::vector< int > V( void ) const;
 
- /// the neighbours of \f$ u \f$, in increasing order
+ /// the neighbors of \f$ u \f$, in increasing order
  /// \pre \f$ u \f$ is a node
  [[nodiscard]] std::vector< int > adj( int u ) const;
 
- /// \f$ f( v ) \f$ on each neighbour \f$ v \f$ of \f$ u \f$, in increasing
+ /// \f$ f( v ) \f$ on each neighbor \f$ v \f$ of \f$ u \f$, in increasing
  /// order, with no allocation
  /// \pre \f$ u \f$ is a node
  template< class F >
  void forEachAdj( int u , F && f ) const;
 
- /// \f$ f( v , w ) \f$ on each neighbour \f$ v \f$ of \f$ u \f$, \f$ w \f$ the
+ /// \f$ f( v , w ) \f$ on each neighbor \f$ v \f$ of \f$ u \f$, \f$ w \f$ the
  /// cost of the move, in increasing order of \f$ v \f$
  /// \pre \f$ u \f$ is a node
  template< class F >
  void forEachEdge( int u , F && f ) const;
 
- /// \f$ f( v , d ) \f$ on each neighbour \f$ v \f$ of \f$ u \f$, in
+ /// \f$ f( v , d ) \f$ on each neighbor \f$ v \f$ of \f$ u \f$, in
  /// increasing order, \f$ d \f$ whether the move is to a corner, with no
  /// allocation: the weight of the move is \f$ \mathit{cost}( x ) \f$ times
  /// `diagonal()` if \f$ d \f$ and `straight()` if not, \f$ x \f$ the cell
@@ -485,7 +485,7 @@ class GridGraph
 /// \f]
 /// \pre each node of \f$ S \f$ is a free cell
 /// \post 0 on the sources, and each other reached cell one move farther
-///       than a neighbour from which it is reached (audit)
+///       than a neighbor from which it is reached (audit)
 template< class W , class C , class P >
 std::vector< int > gridDistances( const GridGraph< W , C , P > & g ,
 				  const std::vector< int > & S );

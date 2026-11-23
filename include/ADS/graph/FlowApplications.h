@@ -88,8 +88,8 @@ namespace ADS
 /// what `decreaseCapacity()` did
 enum class CapacityDecrease {
  SLACK ,  ///< the edge was not saturated, nothing changed
- CYCLE ,  ///< one unit of a cycle of flow cancelled, the value kept
- PATH    ///< one unit of a path cancelled, then one augmenting path
+ CYCLE ,  ///< one unit of a cycle of flow canceled, the value kept
+ PATH    ///< one unit of a path canceled, then one augmenting path
  };
 
 /*--------------------------------------------------------------------------*/

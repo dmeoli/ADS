@@ -230,7 +230,7 @@ void bfs( const G & g , int r , FN && node , FE && edge );
 ```
 
 It renders the same on both sites (MathJax 3 on both, on Sphinx through
-Breathe), in the colours of the light and of the dark theme.
+Breathe), in the colors of the light and of the dark theme.
 The rules:
 
 - the whole pseudocode is one display `\f[ \class{pseudocode}{
@@ -360,7 +360,7 @@ backquotes.
 3. Screenshots, light and dark, with headless Chrome, of the theory page and
    of one header with pseudocode on both sites (`--window-size=1600,9000`
    and a crop around the pseudocode):
-   - Doxygen follows the colour scheme of the system:
+   - Doxygen follows the color scheme of the system:
      `--blink-settings=preferredColorScheme=0` gives the dark theme, `=1`
      the light one;
    - Sphinx loads its dark style only from the switch, which stores

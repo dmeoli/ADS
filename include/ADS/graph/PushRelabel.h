@@ -284,7 +284,7 @@ inline void FlowNetwork::pushRelabel( int s , int t )
  const long long nm = 6LL * N + static_cast< long long >( f_to.size() ) / 2;
  long long work = 0;
  // the discharges of the highest active nodes: each scans its edges once,
- // pushing to the lower neighbours and taking the least label of the
+ // pushing to the lower neighbors and taking the least label of the
  // others, which is its new label if an excess is left; the gaps and the
  // global relabelings as in Cherkassky and Goldberg
  auto run = [ & ]( bool global ) {

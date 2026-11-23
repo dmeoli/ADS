@@ -72,7 +72,7 @@ one ([Figure 18.1](18-combinatorial.md#fig-18-1)).
 
 --8<-- "generated/Bitwise-sidewaysSum.pseudo.md"
 
-![Figure 18.1. The sums formed in place by `sidewaysSum()`, on a word of 16 bits for brevity (the places above the row of the word): the fields of 2, 4 and 8 bits, and the product by $\mathtt{0x0101}$, whose top byte (in colour) is the sum of the two bytes.](../figures/combinatorial-sideways.svg){#fig-18-1}
+![Figure 18.1. The sums formed in place by `sidewaysSum()`, on a word of 16 bits for brevity (the places above the row of the word): the fields of 2, 4 and 8 bits, and the product by $\mathtt{0x0101}$, whose top byte (in color) is the sum of the two bytes.](../figures/combinatorial-sideways.svg){#fig-18-1}
 
 <span id="lem-18-1"></span>**Lemma 18.1.** *For any word $x$,
 `sidewaysSum( x )` returns $\nu( x )$, with 12 operations on words and no
@@ -199,7 +199,7 @@ operations
 
 --8<-- "generated/Bitwise-nextSameWeight.pseudo.md"
 
-![Figure 18.2. The words of [Algorithm 18.2](18-combinatorial.md#alg-18-2) on $x = 01011100$: the lowest run of 1s of $x$, the bit that the carry sets, and the $r - 1 = 2$ bits that go back to the bottom (in colour).](../figures/combinatorial-gosper.svg){#fig-18-2}
+![Figure 18.2. The words of [Algorithm 18.2](18-combinatorial.md#alg-18-2) on $x = 01011100$: the lowest run of 1s of $x$, the bit that the carry sets, and the $r - 1 = 2$ bits that go back to the bottom (in color).](../figures/combinatorial-gosper.svg){#fig-18-2}
 
 <span id="lem-18-4"></span>**Lemma 18.4.** *For $x \ne 0$, with
 $u = x \,\&\, -x$ and $v = x + u$, the next larger word with as many 1 bits
@@ -672,7 +672,7 @@ than $j$ then lie at the two ends of the vector, $s$ of them at the left
 end (those with $c_k = k - 1$, counted by line 12); hence the items
 $1 , \ldots , j$ fill the places from $s + 1$ to $s + j$, in the numbering
 from 1. The item $j$, with $c_j$ smaller items to its right among them, is
-in the place $j - c_j + s$. Line 14 swaps it with its neighbour in the
+in the place $j - c_j + s$. Line 14 swaps it with its neighbor in the
 place $j - q + s$, a smaller item, which brings its count to $q$ and
 leaves the counts of the other items as they were.
 

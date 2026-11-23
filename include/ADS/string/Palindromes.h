@@ -10,9 +10,9 @@
  *   dynamic programming of the textbook fills the table
  *   \f$ P[ i ][ j ] \f$, whether \f$ s[ i .. j ] \f$ is a palindrome, by
  *   increasing length, in \f$ \Theta( n^2 ) \f$ time and space, and the
- *   expansion about each of the \f$ 2 n - 1 \f$ centres takes
+ *   expansion about each of the \f$ 2 n - 1 \f$ centers takes
  *   \f$ O( n^2 ) \f$ time and \f$ O( 1 ) \f$ space; Manacher keeps the
- *   rightmost palindrome found so far and starts each new centre from the
+ *   rightmost palindrome found so far and starts each new center from the
  *   radius of its mirror inside it, so that the right end only moves
  *   forward. The suffix tree of \f$ s \f$ and of its reverse gives the same
  *   answer in linear time with a much larger constant [see
@@ -33,7 +33,7 @@
  *   \f$ D[ 0 ] = 0 \f$. The textbook builds the table of the palindromes
  *   first, in \f$ \Theta( n^2 ) \f$ space; here each palindrome
  *   \f$ s[ i .. j ) \f$ relaxes \f$ D[ j ] \f$ while it is found by the
- *   expansion about its centre, the centres taken left to right, so that
+ *   expansion about its center, the centers taken left to right, so that
  *   \f$ D[ i ] \f$ is final when it is used: \f$ O( n^2 ) \f$ time and
  *   \f$ O( n ) \f$ space.
  * - `Eertree`, beyond the book, is the eertree (palindromic tree) of
@@ -130,13 +130,13 @@ namespace ADS
 ///
 /// In pseudocode (Manacher's algorithm, beyond the book),
 /// \f$ [ l , r ) \f$ the rightmost palindrome found so far, from which a
-/// centre inside it starts with the radius of its mirror; \f$ r \f$ only
+/// center inside it starts with the radius of its mirror; \f$ r \f$ only
 /// moves forward, hence \f$ \Theta( n ) \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{longestPalindrome}( s ) \cr
 /// 2 & \quad l \gets 0;\ r \gets 0\quad \triangleright\ \text{the odd }
-///     \text{palindromes, centred at } i \cr
+///     \text{palindromes, centered at } i \cr
 /// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
 /// 4 & \qquad \textbf{if}\ i < r\ \textbf{then}\ k \gets \min\{ d_1[ l + r
 ///     - 1 - i ] , r - i \}\ \textbf{else}\ k \gets 1 \cr
@@ -232,7 +232,7 @@ longestPalindromicSubsequence( const std::string & s );
 /// none for the empty \f$ s \f$
 ///
 /// In pseudocode (chapter 13, with the table of the palindromes replaced by
-/// the expansion about the centres), the centres by increasing
+/// the expansion about the centers), the centers by increasing
 /// \f$ h = a + b - 1 \f$ for the palindrome \f$ s[ a .. b ) \f$, so that
 /// \f$ D[ a ] \f$ is final when it is used:
 /// \f[
@@ -241,7 +241,7 @@ longestPalindromicSubsequence( const std::string & s );
 ///     \triangleright\ D[ b ] \text{ the fewest pieces of } s_0 \cdots
 ///     s_{b-1} \cr
 /// 2 & \quad D[ 0 ] \gets 0;\ D[ b ] \gets \infty \text{ for } b > 0 \cr
-/// 3 & \quad \textbf{foreach}\ \text{centre } h = 0 , \ldots , 2 n - 2
+/// 3 & \quad \textbf{foreach}\ \text{center } h = 0 , \ldots , 2 n - 2
 ///     \text{, between letters when } h \text{ is odd}\ \textbf{do} \cr
 /// 4 & \qquad [ a , b ) \gets \text{the shortest palindrome about } h
 ///     \text{ (none if } h \text{ is odd and its two letters differ)} \cr

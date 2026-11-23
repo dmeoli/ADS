@@ -4,9 +4,9 @@
 /** @file
  * The local optima of a vector and of a binary tree, found without looking
  * at all the items. A <em>peak</em> of \f$ A[ 0 .. n - 1 ] \f$ is an item not
- * smaller than its neighbours, the items out of \f$ A \f$ counting as smaller
+ * smaller than its neighbors, the items out of \f$ A \f$ counting as smaller
  * than any item, and a <em>local minimum</em> is an item not larger than its
- * neighbours; the maximum is a peak, so that a peak always exists, but
+ * neighbors; the maximum is a peak, so that a peak always exists, but
  * finding the maximum needs \f$ n - 1 \f$ comparisons while a peak needs only
  * a logarithmic number of them.
  *
@@ -37,7 +37,7 @@
  *
  * The contracts [see `Contract.h`]: `findPeak()` and `localMinimum()` of a
  * vector need a vector that is not empty and `localMinimum()` of a tree a
- * tree; the result is checked against its neighbours, a postcondition. The
+ * tree; the result is checked against its neighbors, a postcondition. The
  * functions are defined in `LocalOptima.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, Esercizi
@@ -81,7 +81,7 @@ namespace ADS
 {
 
 /// the place \f$ r \f$ of an item of \f$ A \f$ not smaller than its
-/// neighbours, by a binary search; \f$ \lceil \log_2 n \rceil \f$
+/// neighbors, by a binary search; \f$ \lceil \log_2 n \rceil \f$
 /// comparisons
 ///
 /// In pseudocode (Esercizi Divide-et-impera of the book), the invariant
@@ -108,7 +108,7 @@ template< class T , class C = std::less<> >
 std::size_t findPeak( const std::vector< T > & A , C less = C() );
 
 /// the place \f$ r \f$ of an item of \f$ A \f$ not larger than its
-/// neighbours, by a binary search; \f$ \lceil \log_2 n \rceil \f$
+/// neighbors, by a binary search; \f$ \lceil \log_2 n \rceil \f$
 /// comparisons
 ///
 /// In pseudocode (Esercizi Divide-et-impera of the book), the peak of the

@@ -102,7 +102,7 @@ void nodes( BT * t , std::vector< BT * > & N )
 /*--------------------------------------------------------------------------*/
 
 // findPeak() and localMinimum() on every permutation of up to 7 items and
-// on random vectors with repeated items, against their neighbours, with at
+// on random vectors with repeated items, against their neighbors, with at
 // most ceil( log2 n ) comparisons; the strict peak of distinct items; the
 // local minimum of random trees against their nodes, the first smaller
 // child taken; the empty vector and the nil tree
@@ -418,8 +418,8 @@ std::pair< std::size_t , std::int64_t > swapSortBrute( const Ints & A )
  return( std::pair( hops[ S ] , cost[ S ] ) );
  }
 
-// dutchNationalFlag() against the counts of the colours, at most n swaps,
-// the colour out of range; wiggleSort() on random vectors with repeated
+// dutchNationalFlag() against the counts of the colors, at most n swaps,
+// the color out of range; wiggleSort() on random vectors with repeated
 // items, strict on distinct ones; sortKSorted() against std::sort on random
 // k-sorted vectors, the vector not k-sorted; minimumSwapSort() against
 // Dijkstra and a visit on the permutations of up to 6 items
@@ -439,10 +439,10 @@ ADS_TEST( "rearrangements" )
   CHECK( j == i + std::size_t( std::count( C.begin() , C.end() , 1 ) ) );
   }
  std::vector< std::string > W{ "red" , "white" , "green" , "red" , "green" };
- const auto colour = []( const std::string & s ) {
+ const auto color = []( const std::string & s ) {
   return( s == "green" ? 0 : ( s == "white" ? 1 : 2 ) );
   };
- CHECK( dutchNationalFlag( W , colour ) ==
+ CHECK( dutchNationalFlag( W , color ) ==
 	std::pair( std::size_t( 2 ) , std::size_t( 3 ) ) );
  CHECK( W[ 0 ] == "green" && W[ 2 ] == "white" && W[ 4 ] == "red" );
  Ints E;

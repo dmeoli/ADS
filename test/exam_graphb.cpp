@@ -552,7 +552,7 @@ ADS_TEST( "graph-27" )
 		    { 4 , 4 , 4 , -1 , 2 , -2 , -3 } ,
 		    { 4 , 4 , 4 , 4 , 3 , 2 , 2 } };
  CHECK( graph::coastLen( M , 1 , 3 ) == 18 );
- // the sea flooded, then its land neighbours counted
+ // the sea flooded, then its land neighbors counted
  std::mt19937 r( 30 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const int n = uniform( r , 1 , 7 );
@@ -923,7 +923,7 @@ int meetingPoint( const G & g , int u , int v , int w )
 
 ADS_TEST( "graph-31" )
 {
- // the figure: the 3 x 3 grid, with z in the centre joined to the corners
+ // the figure: the 3 x 3 grid, with z in the center joined to the corners
  Edges E;
  for( int i = 0 ; i < 3 ; ++i )
   for( int j = 0 ; j < 2 ; ++j ) {
@@ -1339,7 +1339,7 @@ int minHeight( const G & g )
 ADS_TEST( "graph-36" )
 {
  // the figures: A - B - C , A - D , B - E , C - F - G gives 3; a star
- // with centre B of degree 3 gives 2, not the 1 of B as a root
+ // with center B of degree 3 gives 2, not the 1 of B as a root
  const auto f = make(
    7 ,
    { { 0 , 1 } , { 1 , 2 } , { 0 , 3 } , { 1 , 4 } , { 2 , 5 } , { 5 , 6 } } ,
@@ -1624,10 +1624,10 @@ namespace graph
 {
 
 /// bigfire(): the number of cells that burn when the fire starts at
-/// ( i , j ), a burning forest cell (1) igniting its four neighbours and
+/// ( i , j ), a burning forest cell (1) igniting its four neighbors and
 /// any other burning cell only the forest ones; a depth first visit that
-/// goes from ( x , y ) to a neighbour if ( x , y ) is forest or the
-/// neighbour is, O( n^2 )
+/// goes from ( x , y ) to a neighbor if ( x , y ) is forest or the
+/// neighbor is, O( n^2 )
 /// \pre A is square, ( i , j ) is a cell
 inline int bigFire( const Matrix & A , int i , int j )
 {
@@ -1693,7 +1693,7 @@ ADS_TEST( "graph-41" )
  CHECK( graph::bigFire( { { 0 } } , 0 , 0 ) == 1 );
  CHECK( graph::bigFire( Matrix( 5 , Ints( 5 , 0 ) ) , 2 , 2 ) == 1 );
  CHECK( graph::bigFire( Matrix( 5 , Ints( 5 , 1 ) ) , 2 , 2 ) == 25 );
- // a fire on bare ground lights its four neighbours only, and those of a
+ // a fire on bare ground lights its four neighbors only, and those of a
  // corner are two
  CHECK( graph::bigFire( Matrix( 5 , Ints( 5 , 0 ) ) , 0 , 0 ) == 1 );
  Matrix A( 5 , Ints( 5 , 0 ) );
@@ -1717,7 +1717,7 @@ namespace graph
 
 /// hasCircuit(): whether the free cells (false) of M hold a cycle of the
 /// unoriented grid graph; a depth first visit from each free cell not
-/// visited yet, which finds a cycle when a neighbour other than the cell it
+/// visited yet, which finds a cycle when a neighbor other than the cell it
 /// comes from is already visited, O( n^2 )
 /// \pre M is square
 inline bool hasCircuit( const BoolMatrix & M )

@@ -219,7 +219,7 @@ ADS_TEST( "sjf-weighted-intervals" )
 
 // the inputs not allowed of the other headers, just inside and just
 // outside each bound: ragged grids (also with an empty first row, a
-// regression), houses with k = 1 and 0 colours, a cover of an empty or
+// regression), houses with k = 1 and 0 colors, a cover of an empty or
 // reversed range, a rod with no price, volumes and coins 0, a weight or an
 // amount -1, k = 0 and k = n + 1 parts, a key probability negative, a
 // divisible subset with 0 and with a repeated item, jobs of time and

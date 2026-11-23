@@ -16,7 +16,7 @@
  * the theory page of the area.
  *
  * Two attributes have the same fate: `ADS_NO_UNIQUE_ADDRESS`, the
- * `[[no_unique_address]]` of C++20 under the name that MSVC honours
+ * `[[no_unique_address]]` of C++20 under the name that MSVC honors
  * (`[[msvc::no_unique_address]]`, since MSVC accepts the standard spelling
  * and ignores it), so that an empty member takes no storage with every
  * compiler; and `ADS_COLD_PATH`, a function that is never inlined and is

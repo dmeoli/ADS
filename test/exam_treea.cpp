@@ -593,7 +593,7 @@ ADS_TEST( "tree-9" )
  G.insertEdge( 0 , 1 , -7 );  // a negative light edge
  CHECK( tree::lightEdgeTree( G ) == std::vector< int >( { NIL , 0 } ) );
  ListGraph< int > S( 5 , false );  // a star, the light edge far
- for( int i = 1 ; i < 5 ; ++i )     // from the centre's first one
+ for( int i = 1 ; i < 5 ; ++i )     // from the center's first one
   S.insertEdge( 0 , i , 3 );
  S.insertEdge( 0 , 4 , 2 );
  const auto ps = tree::lightEdgeTree( S );
@@ -2003,7 +2003,7 @@ ADS_TEST( "tree-24.b" )
 namespace tree
 {
 
-/// the cost of the colouring of t with color at its root
+/// the cost of the coloring of t with color at its root
 int countRec( const BT * t , int color )
 {
  if( ! t )
@@ -2012,9 +2012,9 @@ int countRec( const BT * t , int color )
 	  countRec( t->right() , 3 - color ) );
  }
 
-/// minColoring(): the least sum of the colours 1 and 2 of the nodes, a
-/// child coloured differently from its parent; the colours alternate by
-/// level, so there are only two colourings, O( n ) time
+/// minColoring(): the least sum of the colors 1 and 2 of the nodes, a
+/// child colored differently from its parent; the colors alternate by
+/// level, so there are only two colorings, O( n ) time
 /// \post at least the nodes
 int minColoring( const BT * t )
 {
@@ -2023,7 +2023,7 @@ int minColoring( const BT * t )
 
 }  // end( namespace tree )
 
-// against all the 2^n colourings that are valid
+// against all the 2^n colorings that are valid
 ADS_TEST( "tree-25" )
 {
  CHECK( tree::minColoring( cat( "1( 2, 3 )" ).get() ) == 4 );

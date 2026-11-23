@@ -27,7 +27,7 @@
  *   g, least f first, then largest g, then last pushed, recorded once and
  *   replayed on the bucket queue and on two heaps, which must pop the same
  *   items: on a grid of side 2 sqrt( n ) with 20% of its cells blocked, 4
- *   neighbours, unit costs, h the Manhattan distance to a corner walled
+ *   neighbors, unit costs, h the Manhattan distance to a corner walled
  *   off, so that the search visits the whole component and g reaches a few
  *   thousands, with one queue (grid 1 queue) and with 64 queues served in
  *   turn, each node pushed to the queue of a hash of it, as a parallel
@@ -414,7 +414,7 @@ unsigned owner( std::uint64_t v , unsigned P )
 /// the steps of a best-first search on P queues served in turn, a pop from
 /// each that has items, until the queues empty, the goal comes out or
 /// cap pops: start() gives the first node with its h, expand( v , g ,
-/// out ) calls out( u , h ) for each neighbour u of v, goal( v ) tells
+/// out ) calls out( u , h ) for each neighbor u of v, goal( v ) tells
 /// the goal; a node is pushed again when its g improves, and its stale
 /// copies skipped
 template< class Start , class Expand , class Goal >

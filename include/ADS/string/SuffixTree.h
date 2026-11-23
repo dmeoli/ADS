@@ -160,7 +160,7 @@ class SuffixTree
   suffixArray  ///< the leaves in the order of SA, climbing by LCP
   };
 
- /// a node \f$ u \f$; the edge into it is labelled by the symbols of
+ /// a node \f$ u \f$; the edge into it is labeled by the symbols of
  /// \f$ T \f$ from `pos` plus the depth of the parent to `pos + depth` (the
  /// terminator at \f$ n \f$)
  struct Node

@@ -634,7 +634,7 @@ using WeightedEdge = std::tuple< int , int , long >;
 /// univoco(): a set of edges of the graph of n nodes, no two with a
 /// common end, of the largest weight, and the weight:
 /// branchAndBoundMatching() of the library, a backtracking that leaves the
-/// first free node alone or matches it to each free neighbour, cutting the
+/// first free node alone or matches it to each free neighbor, cutting the
 /// branches that cannot beat the best set found. The text branches on the
 /// edges of a node u and recurses on the other end, which misses the sets
 /// whose edges do not form a path from u
@@ -887,7 +887,7 @@ inline long funr( const std::vector< long > & A , std::size_t i ,
 /*----------------- 2021-02-08 A3, doubling and decrement ------------------*/
 
 /// minOps() by a breadth-first search on the integers in [ 1 , 2 m ],
-/// the neighbours of u being 2 u and u - 1; Theta( m )
+/// the neighbors of u being 2 u and u - 1; Theta( m )
 /// \pre 1 <= n and 1 <= m
 inline int minOpsBfs( long n , long m )
 {

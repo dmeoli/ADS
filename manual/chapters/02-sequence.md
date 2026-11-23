@@ -1359,7 +1359,7 @@ removal of `List` ([Montresor 2025, §4.1](Z-bibliography.md#ref-montresor2025))
 
 --8<-- "generated/List-remove.pseudo.md"
 
-![Figure 2.14. The insertion of a cell before $w$ (Morin's `addBefore()`, §3.2.1): the cells $u.\mathit{prev}$ and $w$ before `insert(w, v)`, and the new cell $u$ between them after it; $u$ and the four links that change ($u.\mathit{prev}.\mathit{next} = u$, $u.\mathit{next} = w$, $u.\mathit{prev}$ and $w.\mathit{prev} = u$) are in orange, the other links in grey.](../figures/sequence-addbefore.svg){#fig-2-14}
+![Figure 2.14. The insertion of a cell before $w$ (Morin's `addBefore()`, §3.2.1): the cells $u.\mathit{prev}$ and $w$ before `insert(w, v)`, and the new cell $u$ between them after it; $u$ and the four links that change ($u.\mathit{prev}.\mathit{next} = u$, $u.\mathit{next} = w$, $u.\mathit{prev}$ and $w.\mathit{prev} = u$) are in orange, the other links in gray.](../figures/sequence-addbefore.svg){#fig-2-14}
 
 In ADS the sentinel is a member of the list rather than a cell of the heap.
 Moving a list thus relinks its first and last cells to the new sentinel in
@@ -1955,7 +1955,7 @@ has the width $k - j$, a link to nil reaching the index $n$ ([Figure
 the links to nil keep their widths, and hence no level needs a special case,
 and each level is a sublist of the level below.
 
-![Figure 2.19. The skip list of the items 0 to 6 ($n = 7$) of Morin's figure of the widths (§4.3), with the head in the levels $L_0$ to $L_5$ and each link labelled with its width, the links to nil included, so that the widths of every level sum to $n + 1 = 8$; the number under each node is its index.](../figures/sequence-skip-widths.svg){#fig-2-19}
+![Figure 2.19. The skip list of the items 0 to 6 ($n = 7$) of Morin's figure of the widths (§4.3), with the head in the levels $L_0$ to $L_5$ and each link labeled with its width, the links to nil included, so that the widths of every level sum to $n + 1 = 8$; the number under each node is its index.](../figures/sequence-skip-widths.svg){#fig-2-19}
 
 <span id="lem-2-26"></span>**Lemma 2.26.** *If the link of each node $x$ on
 the level $l$ has the width $\mathrm{index}( x.\mathit{next}[ l ] ) -
@@ -2701,7 +2701,7 @@ In `ADS/sequence/Rearrangements.h`, the functions are declared as
 // declarations of <ADS/sequence/Rearrangements.h>
 template< class T , class F >
 std::pair< std::size_t , std::size_t >
-dutchNationalFlag( std::vector< T > & A , F && colour ,
+dutchNationalFlag( std::vector< T > & A , F && color ,
                    std::size_t * swaps = nullptr );
 template< class T , class C = std::less<> >
 void wiggleSort( std::vector< T > & A , C less = C() );

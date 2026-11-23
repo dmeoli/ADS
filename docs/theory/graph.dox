@@ -392,16 +392,16 @@
  width followed by one character per cell, and the fast searchers keep them
  as one flat array of the cells in the order of the rows, one byte or one bit
  per cell and often with a border of blocked cells, name the cell
- \f$ ( r , c ) \f$ by its index \f$ r C + c \f$, and compute the neighbours by
+ \f$ ( r , c ) \f$ by its index \f$ r C + c \f$, and compute the neighbors by
  the offsets \f$ \pm 1 \f$, \f$ \pm C \f$ and \f$ \pm C \pm 1 \f$. Jump point
  search (Harabor and Grastien) is built on this access: it prunes the
- neighbours of a cell by the direction of the move that reached it and jumps
+ neighbors of a cell by the direction of the move that reached it and jumps
  along the rows and the columns, reading only whether a cell is free, and its
  improved version reads a word of cells of a row at once from a bitmap of the
  map (with a transposed copy for the columns), or looks the lengths of the
  jumps up in tables computed in advance. Lists of adjacency would hold up to
  \f$ 8 n \f$ arcs that the offsets give for free, and would add a read of
- memory to each neighbour.
+ memory to each neighbor.
 
  `GridGraph` of `GridGraph.h` keeps the map as a vector of costs, a cell
  blocked if its cost is not positive (with one byte per cell for the maps of
@@ -477,7 +477,7 @@
  (Lemma 1), which are the costs of the shortest paths when the free cells
  cost the same and the moves are four, and Dijkstra's algorithm the
  distances of (4) otherwise. The node \f$ r C + c \f$ is an int, and hence
- the grid has at most \f$ 2^{31} - 1 \f$ cells; the neighbours of
+ the grid has at most \f$ 2^{31} - 1 \f$ cells; the neighbors of
  \f$ u \f$ are computed from its row and its column before any offset is
  added, so that no sum leaves \f$ [ 0 , R C ) \f$.
 
@@ -496,7 +496,7 @@
  (the cell left pays) when \f$ u \f$ stays free, and only arcs whose head is
  \f$ u \f$ or a free cell at a move of \f$ u \f$ when it is blocked or
  freed, since \f$ u \f$ is a side of the corners between two of its
- neighbours. `forEachAffected()` gives these heads, at most nine, and for a
+ neighbors. `forEachAffected()` gives these heads, at most nine, and for a
  batch the union of its calls on the coalesced events, read after the
  batch, holds every head of a changed arc: an arc that changed has one of
  its at most four cells changed, and a case analysis on which one (the
@@ -616,7 +616,7 @@
  Cherkassky and Goldberg, in its version 4); the second phase labels only
  the nodes left at the top, the side of \f$ s \f$ of the cut, as the
  Preflow of LEMON does; and a node scans its edges once, pushing to the
- lower neighbours and taking the least label of the others, which is its
+ lower neighbors and taking the least label of the others, which is its
  new label if an excess is left. The first labeling takes a node by a
  conditional write instead of a branch, its tests on the labels and on
  the residual capacities being hard to predict.
@@ -707,7 +707,7 @@
  `maxCardinalityMatching()` of `BlossomMatching.h` keeps the blossoms as
  the sets of a union-find with the union by rank and the halving of the
  paths, the representative of a set storing its base; the base common to
- two even nodes is found by walking from both towards the root one step at
+ two even nodes is found by walking from both toward the root one step at
  a time, which costs no more than twice the cycle shrunk. For each odd node
  that a blossom makes even it records the edge \f$ ( a , b ) \f$ that closed
  the blossom, its own side first, as the labels of Gabow do: the path from
@@ -770,7 +770,7 @@
  expandable, and a stage, which ends at the first augmentation, has
  \f$ O( n ) \f$ of them, since every event of the four kinds either grows
  the trees, or shrinks or expands a blossom, all of which happen
- \f$ O( n ) \f$ times before an augmentation. The least slack towards
+ \f$ O( n ) \f$ times before an augmentation. The least slack toward
  each outer blossom is kept per blossom and merged when blossoms are
  shrunk, so that a change of the duals costs \f$ O( n ) \f$, and a stage
  \f$ O( n^2 + m ) \f$; with at most \f$ n / 2 \f$ augmentations, the whole
@@ -827,8 +827,8 @@
  (`twoColoring()`). In a free tree the node farthest from any node ends a
  longest path, and the node farthest from it ends the other (the double sweep
  of `treeDiameter()`). The triangles are counted in \f$ O( m \sqrt{m} ) \f$ by
- orienting each edge towards the end of larger degree, which leaves each node
- with \f$ O( \sqrt{m} ) \f$ out-neighbours (`countTriangles()`). Finally, the
+ orienting each edge toward the end of larger degree, which leaves each node
+ with \f$ O( \sqrt{m} ) \f$ out-neighbors (`countTriangles()`). Finally, the
  algorithm of Johnson lists the simple cycles through a node in
  \f$ O( ( n + m ) ( c + 1 ) ) \f$ for \f$ c \f$ cycles (`simpleCycles()` of
  `Paths.h`), since it keeps the search from entering a branch with no cycle at
@@ -1289,11 +1289,11 @@
  reached from a node \f$ r \f$ in \f$ G \f$ and in its transpose (exercise
  12.7); and the distances of `distance()` are the lengths of the shortest
  paths from \f$ r \f$, by Lemma 1 (exercise 12.8). The `dfs2()` of the book
- pushes all the neighbours of a node when it pops it, so that the last
- neighbour pushed is visited first: on \f$ 0 \to 1 \f$, \f$ 0 \to 2 \f$,
+ pushes all the neighbors of a node when it pops it, so that the last
+ neighbor pushed is visited first: on \f$ 0 \to 1 \f$, \f$ 0 \to 2 \f$,
  \f$ 1 \to 2 \f$ it visits \f$ 0 , 2 , 1 \f$ where the recursion visits
  \f$ 0 , 1 , 2 \f$; `dfs()` keeps instead on its stack the node and the
- position in its list of neighbours, which visits them in the order of the
+ position in its list of neighbors, which visits them in the order of the
  recursion (exercise 12.9). Exercises 12.1 and 12.3 are the drawings of the
  representations and of the visits of figure 12.7.
 

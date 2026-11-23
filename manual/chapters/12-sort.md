@@ -1950,7 +1950,7 @@ with the order of the items reversed. $\square$
 On this input the sort phase walks almost to the bottom of the heap at
 each extraction. The average over the inputs is of the same order:
 [Schaffer and Sedgewick 1993](Z-bibliography.md#ref-schaffer1993), who
-analyse the heapsort of Williams with Floyd's construction, i.e., our
+analyze the heapsort of Williams with Floyd's construction, i.e., our
 `heapsort()`, show that it moves about $n \log_2 n$ keys on average and
 about $\frac{1}{2} n \log_2 n$ in the best case, hence (two comparisons
 per level of a sift) about $2 n \log_2 n$ comparisons on average; the

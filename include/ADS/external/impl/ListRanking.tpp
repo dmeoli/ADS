@@ -193,7 +193,7 @@ independentSetOfColors( const std::vector< std::size_t > & succ ,
  std::vector< bool > I( n );
  for( std::size_t i = 0 ; i < n ; ++i ) {
   const std::size_t s = succ[ i ];
-  I[ i ] = ( s != i ) &&  // the tail is not a neighbour
+  I[ i ] = ( s != i ) &&  // the tail is not a neighbor
 	   ( ( pred[ i ] == n ) || ( color[ i ] < color[ pred[ i ] ] ) ) &&
 	   ( ( succ[ s ] == s ) || ( color[ i ] < color[ s ] ) );
   }

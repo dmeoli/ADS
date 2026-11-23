@@ -158,7 +158,7 @@ bool selectSorted( It first , It last , C & less )
 
 /// reverses [ first , last ) and tells whether it was in decreasing
 /// order, in one pass that swaps the pairs of places from the two ends
-/// while it checks the order of their neighbours; a range that was not in
+/// while it checks the order of their neighbors; a range that was not in
 /// order is left partly reversed, which a selection does not mind
 template< class It , class C >
 bool selectReversed( It first , It last , C & less )
@@ -167,7 +167,7 @@ bool selectReversed( It first , It last , C & less )
  int bad = 0;
  for( std::ptrdiff_t i = 0 ; i < h ; i += 64 ) {
   const std::ptrdiff_t e = std::min( h , i + 64 );
-  for( std::ptrdiff_t j = i ; j < e ; ++j )  // neighbours not yet swapped
+  for( std::ptrdiff_t j = i ; j < e ; ++j )  // neighbors not yet swapped
    bad |= int( less( first[ j ] , first[ j + 1 ] ) ) |
 	  int( less( first[ n - 2 - j ] , first[ n - 1 - j ] ) );
   if( bad )

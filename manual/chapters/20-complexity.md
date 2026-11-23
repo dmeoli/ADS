@@ -309,7 +309,7 @@ the column $i$ and the row $j$ from the bottom left; a covering is a
 `Tiling`, a matrix whose entry $( i , j )$ is the index in $D$ of the tile
 of that square. The function `legalTiling()` is the certificate, in $O( n^2 )$. The enumeration `squareTiling()` fills the squares by rows from
 the bottom, and places a tile only if it fits its left and lower
-neighbours, which prunes the enumeration of the $m^{n^2 - 1}$ coverings at
+neighbors, which prunes the enumeration of the $m^{n^2 - 1}$ coverings at
 the first wrong side ([Algorithm 20.6](20-complexity.md#alg-20-6)).
 
 ![Figure 20.2. Four tiles, each with the colors of its upper, right, lower and left sides, and a legal covering of the $2 \times 2$ board with $d = D[ 0 ]$ in the corner $( 0 , 0 )$; the touching sides have the same color.](../figures/complexity-tiling.svg){#fig-20-2}
@@ -420,7 +420,7 @@ for each pair of adjacent squares and each pair of tiles that do not fit
 there side by side, the clause that forbids both. The function `dominoToLp01()` writes
 them as linear constraints: $x_{000} = 1$, one tile per square (each
 equation as two inequalities), and $x_{hij}$ plus the tiles that do not fit
-next to it in a neighbouring square at most 1; the example of the text
+next to it in a neighboring square at most 1; the example of the text
 writes one inequality per pair, which is the same, since a square holds one
 tile ([Algorithm 20.7](20-complexity.md#alg-20-7)).
 
@@ -1177,8 +1177,8 @@ edges weighed by the overlaps of the strings (`overlap( a , b )`, the
 longest suffix of $a$ that is a prefix of $b$), which leaves oriented
 paths, after dropping the strings contained in another. The function `dsatur()`
 (exercise 19.19, [Brélaz 1979](Z-bibliography.md#ref-brelaz1979)) colors
-first the node that sees the most colors among its neighbours, i.e., the
-most constrained, with the least color not on its neighbours, in $O( n^3 )$.
+first the node that sees the most colors among its neighbors, i.e., the
+most constrained, with the least color not on its neighbors, in $O( n^3 )$.
 The function `starAlignment()` (exercise 19.18, after [Gusfield
 1993](Z-bibliography.md#ref-gusfield1993)) aligns $k$ strings against the
 center, i.e., the string with the largest sum of the global scores against
@@ -1232,7 +1232,7 @@ only when a bucket empties. In
 its scans move it forward at most $n + 1$ places in all, while
 $\mathit{max}( k )$ grows by one at most per `inc()`, and its scans move
 it down at most as many places as it grew, plus $n + 1$. Each node placed updates the counts of its
-neighbours, $O( n )$ on the matrix, and each choice scans one bucket.
+neighbors, $O( n )$ on the matrix, and each choice scans one bucket.
 $\square$
 
 <span id="alg-20-22"></span>**Algorithm 20.22.** The min-max-greedy for
@@ -1244,10 +1244,10 @@ the BISECTION, and the removal of a node from a `Buckets` ([Montresor 2025,
 --8<-- "generated/Heuristics-Buckets-remove.pseudo.md"
 
 **Local search.** A *local search* starts from a solution $\pi$ and moves
-to a better solution of its neighbourhood $I( \pi )$ while there is one. It ends at a *local optimum*, since the cost decreases strictly at each step
+to a better solution of its neighborhood $I( \pi )$ while there is one. It ends at a *local optimum*, since the cost decreases strictly at each step
 and the solutions are finitely many ([Montresor 2025,
 §19.4.2](Z-bibliography.md#ref-montresor2025)). For the salesman, the
-neighbourhood $I_2( \pi )$ of `twoOpt()` holds the circuits obtained by
+neighborhood $I_2( \pi )$ of `twoOpt()` holds the circuits obtained by
 removing two edges of $\pi$ that do not touch, and reconnecting the two
 paths in the only other way, i.e., by reversing the stretch between them
 ([Figure 20.4](20-complexity.md#fig-20-4); [Lin
@@ -1259,7 +1259,7 @@ $$
 
 the pairs of edges less the $n$ that touch. Since the change of cost of a move
 depends only on the four edges that change, a step of the search, which takes the
-best circuit of the neighbourhood, costs $O( n^2 )$
+best circuit of the neighborhood, costs $O( n^2 )$
 ([Algorithm 20.23](20-complexity.md#alg-20-23)). The function `twoOptMove( pi , i , j )`
 applies one move, reversing $\pi[ i + 1 .. j ]$, and the costs of the
 circuits visited go to `*trace`, if given.
@@ -1273,11 +1273,11 @@ $I_2$, the size of $I_k$, and the local search for PARTITION
 
 --8<-- "generated/Heuristics-twoOpt.pseudo.md"
 
---8<-- "generated/Heuristics-kOptNeighbours.pseudo.md"
+--8<-- "generated/Heuristics-kOptNeighbors.pseudo.md"
 
 --8<-- "generated/Heuristics-partitionLocalSearch.pseudo.md"
 
-The function `kOptNeighbours()` (exercise 19.15) counts $\lvert I_k( \pi ) \rvert$, the
+The function `kOptNeighbors()` (exercise 19.15) counts $\lvert I_k( \pi ) \rvert$, the
 circuits that share $n - k$ edges with $\pi$, by enumerating all the
 circuits in $O( n! )$, which checks (20.11) for $k = 2$.
 The function `partitionLocalSearch()` (exercise 19.16) does the same for PARTITION, with
@@ -1593,7 +1593,7 @@ Nodes twoOptMove( Nodes pi , int i , int j );
 template< class T >
 Nodes twoOpt( const std::vector< std::vector< T > > & D , Nodes pi ,
               std::vector< T > * trace = nullptr );
-long kOptNeighbours( int n , int k );
+long kOptNeighbors( int n , int k );
 std::vector< int > partitionLocalSearch( const std::vector< long > & A ,
                                          std::vector< int > side );
 class Buckets
@@ -1693,7 +1693,7 @@ of the knapsack that of [Ibarra and Kim 1975](Z-bibliography.md#ref-ibarra1975).
 Also, the branch-and-bound by the reduction of the matrix is that of [Little et
 al. 1963](Z-bibliography.md#ref-little1963), and the bound of the 1-tree
 that of [Held and Karp 1971](Z-bibliography.md#ref-held1971); the
-neighbourhoods $I_k$ go back to [Lin 1965](Z-bibliography.md#ref-lin1965),
+neighborhoods $I_k$ go back to [Lin 1965](Z-bibliography.md#ref-lin1965),
 and the local search for the bisection to [Kernighan and Lin
 1970](Z-bibliography.md#ref-kernighan1970). The coloring by saturation
 degree is due to [Brélaz 1979](Z-bibliography.md#ref-brelaz1979), the star
@@ -1777,7 +1777,7 @@ Each exercise names the test of the library that solves it (run it with
 27. Build a circuit by the greedy on the edges and improve it by the local
     search on $I_2$. Tests: `ch19.sec19.4.greedy-tsp`,
     `ch19.sec19.4.local-search`.
-28. Count the neighbourhood $I_k$ of a circuit. Test: `ch19.ex19.15`.
+28. Count the neighborhood $I_k$ of a circuit. Test: `ch19.ex19.15`.
 29. Realize the structure with buckets of the min-max-greedy, and use it
     for the bisection. Tests: `ch19.ex19.17`, `ch19.sec19.4.bisection`.
 30. Find a common superstring by the greedy on the overlaps, and color a

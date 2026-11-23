@@ -551,7 +551,7 @@ alpiniRound( const std::vector< std::vector< int > > & A , Pick && pick ,
  }
 
 /// the removed nodes R made minimal: each one, in turn, is kept again when
-/// its kept neighbours lie in distinct trees of the forest (a MFSET)
+/// its kept neighbors lie in distinct trees of the forest (a MFSET)
 inline std::vector< int > alpiniTrim( int n , const Arcs & E ,
 				      std::vector< int > R )
 {
@@ -644,7 +644,7 @@ using Castle = std::array< int , 3 >;
 
 /// a round of region growing of got: the castles in the order O, each one
 /// not in a region yet growing a region of its value from its cell, one
-/// admissible neighbour at a time, the best first (an unused castle of the
+/// admissible neighbor at a time, the best first (an unused castle of the
 /// same value, then a cell next to one, then a cell next to no castle of
 /// another value; among these, the one touching most cells of the region,
 /// which keeps it compact, then the least rank), and kept only when
@@ -733,7 +733,7 @@ inline int gotRound( const Grid & A , const std::vector< Castle > & O ,
 /// set of k cells of value k with at least one castle k and none of another
 /// value, the other cells 0, with many castles in the regions (a
 /// Fillomino-like problem, NP-hard). The official heuristic: region growing
-/// from each castle towards the unused castles of its value and away from
+/// from each castle toward the unused castles of its value and away from
 /// the others, repeated on shuffled orders of the castles, keeping the best;
 /// here the first round takes the castles by increasing value, the second
 /// by decreasing value, the others in random orders, and the ties are
@@ -2767,7 +2767,7 @@ redBlackCheck( const RedBlackTree< int , int > & T )
  }
 
 // random, sorted and reversed insertions: the constraints of the tree of
-// the library, and its shape and colours against the insertion of CLRS;
+// the library, and its shape and colors against the insertion of CLRS;
 // no key, one, two, three, 3000 in order, repeated keys, the extremes of
 // int
 ADS_TEST( "asdlab-2026-lab04-red-black" )

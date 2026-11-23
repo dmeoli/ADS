@@ -482,7 +482,7 @@ ADS_TEST( "is-search-tree" )
  }
 
 // isRedBlackTree() against the constraints checked path by path, on every
-// colouring of random shapes of up to 9 nodes, on BinaryTree and on plain
+// coloring of random shapes of up to 9 nodes, on BinaryTree and on plain
 // nodes; the empty tree is a Red-Black tree
 ADS_TEST( "is-red-black-tree" )
 {

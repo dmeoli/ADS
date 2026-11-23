@@ -43,7 +43,7 @@
  * The contracts [see `Contract.h`]: the elements are in \f$ [ 0 , n ) \f$,
  * `find()` gives a root and after `merge()` \f$ x \f$ and \f$ y \f$ have the
  * same root; the invariant is that the parents form a forest of `count()`
- * trees, the rank growing towards the roots with the union by rank, and
+ * trees, the rank growing toward the roots with the union by rank, and
  * \f$ \mathit{size}[ r ] \f$ the number of nodes of the tree of each root
  * \f$ r \f$ with the union by size. `merge()` of two elements already in the
  * same component returns false and changes nothing, a relaxation of the

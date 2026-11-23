@@ -135,7 +135,7 @@ const ADS::BoolSet C = setIntersection( A , B );  // { 7 , 64 }
 const auto lo = C.min();                         // 7
 ```
 
-![Figure 10.1. A `BoolSet` of dimension $N = 16$ holding $\{ 1 , 3 , 4 , 9 , 14 \}$, before and after `insert(6)`, which sets one bit (in colour) and increments the size.](../figures/set-bool.svg){#fig-10-1}
+![Figure 10.1. A `BoolSet` of dimension $N = 16$ holding $\{ 1 , 3 , 4 , 9 , 14 \}$, before and after `insert(6)`, which sets one bit (in color) and increments the size.](../figures/set-bool.svg){#fig-10-1}
 
 Scans go one word at a time: `min()` returns $64 k$ plus the trailing
 zeros of the first word $W[ k ] \ne 0$, `max()` does the same from the last
@@ -255,7 +255,7 @@ $x$ before that item ([Figure 10.2](10-set.md#fig-10-2)); the three
 operations still cost $O( n )$, but `min()` and `max()` read the ends of
 the list in $O( 1 )$.
 
-![Figure 10.2. An insertion into a `ListSet`, at the head after a scan that does not find the item, and into a `SortedListSet`, before the first item not smaller than it (in colour).](../figures/set-lists.svg){#fig-10-2}
+![Figure 10.2. An insertion into a `ListSet`, at the head after a scan that does not find the item, and into a `SortedListSet`, before the first item not smaller than it (in color).](../figures/set-lists.svg){#fig-10-2}
 
 --8<-- "generated/SortedListSet-insert.pseudo.md"
 
@@ -489,7 +489,7 @@ list and indexes its position, and a removal looks the position up and
 unlinks it, both in $O( 1 )$ expected time, while `forEach()` scans the
 list in $O( n )$ instead of the $O( n + m )$ of the table.
 
-![Figure 10.3. A `LinkedHashSet` after the insertions of `c`, `a`, `b` and `d` (in colour, the last): the list of the order, whose positions are $p_1 , \ldots , p_4$, and the table of lists that maps each item to its position, drawn with 5 lists for brevity (the class starts with 7).](../figures/set-linked.svg){#fig-10-3}
+![Figure 10.3. A `LinkedHashSet` after the insertions of `c`, `a`, `b` and `d` (in color, the last): the list of the order, whose positions are $p_1 , \ldots , p_4$, and the table of lists that maps each item to its position, drawn with 5 lists for brevity (the class starts with 7).](../figures/set-linked.svg){#fig-10-3}
 
 --8<-- "generated/LinkedHashSet-insert.pseudo.md"
 
@@ -567,7 +567,7 @@ holds from $b - 1$ to $b + 1$ items. A `SkipList` ([Chapter
 7](07-dictionary.md#ch-7)) indexes the blocks, the key of a block being its
 largest item, read in the block at each comparison. The blocks partition the
 sorted items into intervals; hence their order never changes when items move
-between neighbours, and the skip list sees only the creation and the removal
+between neighbors, and the skip list sees only the creation and the removal
 of a block (and of a largest item of the last one, which is indexed again).
 Its `lowerBound( x )` finds the first block whose largest item is not smaller
 than $x$ and then $x$ in it by a binary search, and `find( x )` and
@@ -687,7 +687,7 @@ chunks ([Figure 10.5](10-set.md#fig-10-5)). A container is
 Note that the two forms take the same space at 4096 items ($4096 \cdot 16 = 2^{16}$
 bits), and the threshold chooses the smaller one in either case.
 
-![Figure 10.5. A `RoaringBitmap` with three containers: the chunks $K$, kept apart for the searches, an array container of 3 items, a bitmap container of 5000 items, and the array into which `insert`$( 5 \cdot 2^{16} + 7 )$ puts the low bits 7 (in colour).](../figures/set-roaring.svg){#fig-10-5}
+![Figure 10.5. A `RoaringBitmap` with three containers: the chunks $K$, kept apart for the searches, an array container of 3 items, a bitmap container of 5000 items, and the array into which `insert`$( 5 \cdot 2^{16} + 7 )$ puts the low bits 7 (in color).](../figures/set-roaring.svg){#fig-10-5}
 
 <span id="lem-10-6"></span>**Lemma 10.6.** *No container of a
 `RoaringBitmap` takes more than 8 KB, and a set of $n$ items in $c$
@@ -1361,7 +1361,7 @@ bit of the word $i$ is the top 5 bits of $h_0 s_i \bmod 2^{32}$ for 8 odd
 constants $s_i$, where $h_1$ and $h_0$ are the high and the low halves of
 the hash of the key.
 
-![Figure 10.7. A block of a `BlockedBloomFilter`, 8 words of 32 bits, and the 8 bits (in colour) that a key sets, one per word.](../figures/set-blocked.svg){#fig-10-7}
+![Figure 10.7. A block of a `BlockedBloomFilter`, 8 words of 32 bits, and the 8 bits (in color) that a key sets, one per word.](../figures/set-blocked.svg){#fig-10-7}
 
 --8<-- "generated/BlockedBloomFilter-maybeHash.pseudo.md"
 
@@ -1549,7 +1549,7 @@ once it has overflowed, and the body holds the remainders in the order of their
 quotients, those of one quotient (its *run*) in increasing order
 ([Figure 10.9](10-set.md#fig-10-9)).
 
-![Figure 10.9. A bin of a `PrefixFilter`, with 4 quotients instead of 25 for brevity: the header writes the counts 2, 0, 3, 1 of the runs in unary from the low bit, and the body holds the remainders; the run of the quotient 2 (in colour) is the slots $\lbrack z_1 + 1 - 2 , z_2 - 2 )$, $z_q$ the place of the zero of rank $q$ of the header.](../figures/set-prefix.svg){#fig-10-9}
+![Figure 10.9. A bin of a `PrefixFilter`, with 4 quotients instead of 25 for brevity: the header writes the counts 2, 0, 3, 1 of the runs in unary from the low bit, and the body holds the remainders; the run of the quotient 2 (in color) is the slots $\lbrack z_1 + 1 - 2 , z_2 - 2 )$, $z_q$ the place of the zero of rank $q$ of the header.](../figures/set-prefix.svg){#fig-10-9}
 
 The run of $q$ is the slots $[ z_{q-1} + 1 - q , z_q - q )$ of the body,
 where $z_q$ is the place of the zero of rank $q$ of the header (and
@@ -1712,7 +1712,7 @@ through the carries, and neither on a group of bits that gives a place (as
 the bits $0 , \ldots , b - 1$ and $32 , \ldots , 31 + b$ of
 $h \oplus ( h \gg 32 )$ would, which overlap the bits of $h_1$ and $h_2$ of
 the binary fuse filter once $L \ge 2^{15}$) nor linearly on the
-coefficients, and the mixes are modelled as independent random functions
+coefficients, and the mixes are modeled as independent random functions
 (a filter read from a file written by the release 0.1.0 keeps the
 fingerprints $h \oplus ( h \gg 32 )$ of that release, see
 [§23.7](23-external.md#sec-23-7)).
@@ -1738,7 +1738,7 @@ about $\max( 1.125 , 0.875 + 0.25 \ln 10^6 / \ln n ) \, n$ places, the
 choices of the paper, but we halve $L$ while it exceeds 256 and the array
 would have fewer than 34 segments.
 
-![Figure 10.10. The array of a `BinaryFuseFilter`, in segments of $L = 4$ places, and the 3 places of a key (in colour) in 3 consecutive segments.](../figures/set-fuse.svg){#fig-10-10}
+![Figure 10.10. The array of a `BinaryFuseFilter`, in segments of $L = 4$ places, and the 3 places of a key (in color) in 3 consecutive segments.](../figures/set-fuse.svg){#fig-10-10}
 
 The build solves the system by *peeling* ([Algorithm 10.8](10-set.md#alg-10-8)):
 a place reached by one key only is solved last for that key, which is then

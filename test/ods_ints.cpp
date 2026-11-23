@@ -1485,7 +1485,7 @@ void recursiveDfs( const G & g , int u , std::vector< bool > & seen ,
  }
 
 /// the order of the dfs2( g , r ) of Morin's book: a stack of nodes, each
-/// node marked when it is popped and all its neighbours pushed
+/// node marked when it is popped and all its neighbors pushed
 template< class G >
 std::vector< int > stackDfs( const G & g , int r )
 {
@@ -2049,7 +2049,7 @@ ADS_TEST( "ods10.2.meldable-heap-edges" )
  }
 
 /// the largest key of 64 bits in the trie `T` of keys of 64 bits, with its
-/// neighbours, and the keys of 20 bits beyond \f$ 2^{20} - 1 \f$ refused
+/// neighbors, and the keys of 20 bits beyond \f$ 2^{20} - 1 \f$ refused
 /// by the contract
 template< class F >
 void trieExtremes( void )

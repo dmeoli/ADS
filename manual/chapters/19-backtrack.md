@@ -666,7 +666,7 @@ false watch only if $w'$ is false, in which case $\lnot w'$ is pending
 (otherwise, by the invariant when it was visited, $w$ would have been
 true). Otherwise $w'$ is either false, a conflict, or free, and then it is
 assigned at the current level with the reason $c$, which satisfies the
-condition with equal levels. Cancelling the levels above $b$ removes $w'$
+condition with equal levels. Canceling the levels above $b$ removes $w'$
 only if its level exceeds $b$, and then also the false $w$, of a level at
 least as large; the pending literals skipped at a conflict are all of the
 current level, which the jump back cancels. A learned clause watches
@@ -689,7 +689,7 @@ forces $\lnot p$.
 <span id="lem-19-11"></span>**Lemma 19.11.** *The learned clause $C$ is
 implied by the formula, it is false under the trail at the conflict, and
 after the levels above the second largest level of its literals are
-cancelled it is unit, with $\lnot p$ free; hence it forces $\lnot p$ there,
+canceled it is unit, with $\lnot p$ free; hence it forces $\lnot p$ there,
 and the assignment of the conflict cannot occur again. The search is
 complete, and `solve()` ends with SAT or UNSAT when no bound of conflicts is
 given.* (With a bound `maxConflicts`, the third value of the enumeration
@@ -700,7 +700,7 @@ clause at hand with a clause of the formula or a learned one, which are
 implied by induction. At each step the clause is false, since its literals
 are false under the trail. At the end it has one literal of the current
 level, $\lnot p$, while the others have smaller levels, the largest of
-which is $b$; after the levels above $b$ are cancelled they are still false
+which is $b$; after the levels above $b$ are canceled they are still false
 while $p$ is free, and the clause is unit. Moreover, $C$ was not among the
 clauses of the solver before the conflict: it would have been unit at the
 level $b$, and since a decision is taken only when the propagation has no

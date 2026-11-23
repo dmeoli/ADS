@@ -303,7 +303,7 @@ ADS_TEST( "collezioni-02-analisi-1-1-3" )
 /*--------------------------------------------------------------------------*/
 
 /// whether A has a value twice: A sorted by merge sort, then two equal
-/// neighbours sought, O( n log n ) time (the upper bound; the lower bound
+/// neighbors sought, O( n log n ) time (the upper bound; the lower bound
 /// Omega( n ) holds since each place must be read)
 bool hasDuplicate( std::vector< int > A )
 {
@@ -1670,7 +1670,7 @@ BT * fromSearchTree( const Tr & t , typename Tr::Link * u )
  }
 
 /// the keys K, distinct and sorted, written on the nodes of t in invisit,
-/// the only labelling that makes t a search tree; Theta( n ) time
+/// the only labeling that makes t a search tree; Theta( n ) time
 /// \pre K is strictly increasing and has as many keys as t has nodes
 void labelSearchTree( BT * t , const std::vector< int > & K )
 {
@@ -1681,7 +1681,7 @@ void labelSearchTree( BT * t , const std::vector< int > & K )
  in_visit( t , [ & ]( BT * u ) { u->write( K[ i++ ] ); } );
  }
 
-// the shape of the text labelled as in its solution; random shapes become
+// the shape of the text labeled as in its solution; random shapes become
 // search trees, and on small ones no other order of the keys does; the
 // empty tree, the extremes of int; too few, repeated or decreasing keys
 // refused
@@ -1706,7 +1706,7 @@ ADS_TEST( "collezioni-06-abr-1-1" )
   labelSearchTree( u.get() , K );
   CHECK( isSearchTree( u.get() ) && ( visit( u.get() , 1 ) == K ) );
   }
- for( int n = 1 ; n <= 6 ; ++n ) {  // the labelling is unique
+ for( int n = 1 ; n <= 6 ; ++n ) {  // the labeling is unique
   BTPtr u( randomTree( g , n ) );
   Ints K( n );
   std::iota( K.begin() , K.end() , 1 );
@@ -3628,7 +3628,7 @@ ADS_TEST( "collezioni-09-grafi-1-17" )
 /*--------------------------------------------------------------------------*/
 
 /// facebook3(): the largest number of nodes at distance 1 or 2 from a
-/// node, count( v ) marking the neighbours and then their neighbours;
+/// node, count( v ) marking the neighbors and then their neighbors;
 /// O( n ( n + m ) ) time, O( n ) space
 template< Graph G >
 int facebook3( const G & g )
