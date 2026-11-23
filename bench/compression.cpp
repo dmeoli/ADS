@@ -6,7 +6,7 @@
  * against, when they are found, huff0 and FSE of Collet (the entropy
  * coders of Zstandard, from FiniteStateEntropy), Stream VByte of Lemire,
  * the codes of Elias of sdsl-lite, libsais of Grebnov, the csa_wt of
- * sdsl-lite and LZ4:
+ * sdsl-lite, LZ4 and Zstandard:
  *
  * - entropy: the encoding and the decoding of n bytes of a text and of a
  *   skewed source (bytes of probability about 2^-k), by the code of
@@ -32,7 +32,12 @@
  *   both sampling one suffix in 32;
  * - lz: the parse of LZSS by the chains of gzip against the compression
  *   and the decompression of LZ4, a point of reference rather than a match,
- *   and the parse of LZ77 with no window in linear time;
+ *   the parse of LZ77 with no window in linear time, and the bicriteria
+ *   parse of the least time within the size of the code of LZ4 and of
+ *   Zstandard at the levels 1, 3, 9 and 19 (when its byte-oriented code
+ *   can be as small), whose decoder, into a buffer allocated once as those
+ *   of LZ4_decompress_safe and ZSTD_decompressDCtx, is the match of theirs
+ *   at the same ratio;
  * - space: the bits per byte (per integer, per byte of the text for the
  *   index), in the column of the time, so that the ratios of
  *   bench/summary.py read the same way (above 1 when ADS is smaller).
@@ -90,6 +95,10 @@
  #include "ADS/compression/LZ77Linear.h"
  #define ADS_HAS_LZLIN 1
 #endif
+#if __has_include( "ADS/compression/LZBicriteria.h" )
+ #include "ADS/compression/LZBicriteria.h"
+ #define ADS_HAS_LZBC 1
+#endif
 
 #if __has_include( "ADS/compression/HuffmanCoder.h" )
  #include "ADS/compression/HuffmanCoder.h"
@@ -143,6 +152,13 @@
 #if __has_include( <lz4.h> )
  #include <lz4.h>
  #define ADS_HAS_LZ4 1
+#endif
+
+// Zstandard only when the makefile links it, since its header is often
+// installed with the system and its library not in OPT
+#if defined( ADS_BENCH_ZSTD ) && __has_include( <zstd.h> )
+ #include <zstd.h>
+ #define ADS_HAS_ZSTD 1
 #endif
 
 #include <fstream>
@@ -999,10 +1015,80 @@ void lempelZiv( std::size_t n , int r , unsigned seed )
 		 [ & ]( int ) { sink = sink + ADS::lzssDecode( Z ).size(); } ,
 		 r , n ) );
   }
+#ifdef ADS_HAS_LZBC
+ // the bicriteria parse of the least time within the size of the code of
+ // a competitor, its decoder into a buffer allocated once, and the bits per
+ // byte of its code; nothing when no parse is as small
+ auto bicriteria = [ & ]( const std::string & what , std::size_t size ,
+			  bool parse ) {
+  const char *bp = "ADS::lzBicriteriaParse" , *bd = "ADS::lzBicriteriaDecode";
+  if( skip( bp ) && skip( bd ) )
+   return;
+  const auto P =
+    ADS::lzBicriteriaParse( s , ADS::LZBicriteriaGoal::time , size );
+  if( ! P.feasible )
+   return;
+  if( parse && ( n <= 1000000 ) )  // the parse is offline, and long
+   print( "lz" , what == "decode" ? "parse" : "parse " + what , n , bp ,
+	  median( []() { return( 0 ); } ,
+		  [ & ]( int ) {
+		   sink = sink + ADS::lzBicriteriaParse(
+				   s , ADS::LZBicriteriaGoal::time , size )
+				   .phrases.size();
+		   } ,
+		  r , n ) );
+  const auto C = ADS::lzBicriteriaEncode( s , P.phrases );
+  std::string d( n + 32 , '\0' );
+  print( "lz" , what , n , bd ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  sink = sink +
+			 ADS::lzBicriteriaDecode( C , std::span< char >( d ) );
+		  } ,
+		 r , n ) );
+  print( "space" , what == "decode" ? "lz" : "lz " + what , n , bd ,
+	 8.0 * double( C.size() ) / double( n ) );
+  };
+#endif
+#ifdef ADS_HAS_ZSTD
+ for( const int level : { 1 , 3 , 9 , 19 } ) {
+  const std::string what = "decode zstd -" + std::to_string( level ) ,
+		    who = "ZSTD_decompressDCtx";
+  std::string c( ZSTD_compressBound( n ) , '\0' );
+  c.resize( ZSTD_compress( c.data() , c.size() , s.data() , n , level ) );
+  if( ! skip( who ) ) {
+   std::string d( n , '\0' );
+   ZSTD_DCtx * const x = ZSTD_createDCtx();
+   print( "lz" , what , n , who ,
+	  median( []() { return( 0 ); } ,
+		  [ & ]( int ) {
+		   sink = sink + std::uint64_t( ZSTD_decompressDCtx(
+				   x , d.data() , n , c.data() , c.size() ) );
+		   } ,
+		  r , n ) );
+   ZSTD_freeDCtx( x );
+   print( "space" , "lz zstd -" + std::to_string( level ) , n , who ,
+	  8.0 * double( c.size() ) / double( n ) );
+   }
+ #ifdef ADS_HAS_LZBC
+  bicriteria( what , c.size() , false );
+ #endif
+  }
+#endif
 #ifdef ADS_HAS_LZ4
  // the decoding needs the code of the encoding
  const bool lz4c = ! skip( "LZ4_compress_default" ) ,
 	    lz4d = ! skip( "LZ4_decompress_safe" );
+ #ifdef ADS_HAS_LZBC
+ {
+  std::string c( std::size_t( LZ4_compressBound( int( n ) ) ) , '\0' );
+  bicriteria( "decode" ,
+	      std::size_t( LZ4_compress_default( s.data() , c.data() ,
+						 int( n ) ,
+						 int( c.size() ) ) ) ,
+	      true );
+  }
+ #endif
  if( ! lz4c && ! lz4d )
   return;
  std::string c( std::size_t( LZ4_compressBound( int( n ) ) ) , '\0' );
@@ -1031,6 +1117,8 @@ void lempelZiv( std::size_t n , int r , unsigned seed )
 			    int( n ) ) );
 		 } ,
 		r , n ) );
+ print( "space" , "lz" , n , "LZ4_decompress_safe" ,
+	8.0 * double( c.size() ) / double( n ) );
 #endif
  }
 

@@ -3,8 +3,9 @@
 [Source: `include/ADS/compression/Entropy.h`, `CanonicalHuffman.h`,
 `HuffmanCoder.h`, `PackedBits.h`, `ArithmeticCoding.h`, `Rans.h`,
 `Tans.h`, `PPM.h`, `IntegerCodes.h`, `BinaryPacking.h`, `StreamVByte.h`,
-`DirectAccessCodes.h`, `LempelZiv.h`, `LZ77Linear.h`, `BurrowsWheeler.h`,
-`FMIndex.h`, `HuffmanFMIndex.h`, `RIndex.h`, `MoveRIndex.h`]
+`DirectAccessCodes.h`, `LempelZiv.h`, `LZ77Linear.h`, `LZBicriteria.h`,
+`BurrowsWheeler.h`, `FMIndex.h`, `HuffmanFMIndex.h`, `RIndex.h`,
+`MoveRIndex.h`]
 
 We are concerned in this chapter with the lossless compression of a text, i.e.,
 with an encoder that turns a string of symbols into a shorter string of bits
@@ -1430,6 +1431,241 @@ bits of the code rather than the number of the phrases is studied by
 LZMA, Zstandard and Brotli, in turn, add models of context and codes of the
 arithmetic family to the fields of the phrases.
 
+The parse of least bits optimizes one criterion, while the time of the
+decompression may well conflict with the space. A copy from far away, for
+instance, saves bytes at the price of an access outside the caches, and a long
+run of literals is read fast but stored as it is. `lzBicriteriaParse()` of
+`LZBicriteria.h` finds, among the parses into copies and runs of literals, one
+of least time within a bound on the size of the code (or, vice versa, one of
+least size within a bound on the time). It follows the algorithm of [Farruggia,
+Ferragina, Frangioni and Venturini 2014](Z-bibliography.md#ref-farruggia2014)
+(cf. [Farruggia et al. 2019](Z-bibliography.md#ref-farruggia2019) for the
+journal version, and [Farruggia, Ferragina and Venturini
+2014](Z-bibliography.md#ref-farruggia2014b) for its engineering in BC-ZIP).
+Here a parse is a path from 0 to $n$ in the *graph of the parses*, whose nodes
+are the places of the text and whose arcs are the phrases, each with a space
+$s( e )$ and a time $t( e )$. This makes the problem a shortest path with a
+constraint on a second weight, which is NP-hard on a general graph; the
+structure of this graph makes it approximable within an additive term.
+
+We model the costs on the code that ADS writes (`lzBicriteriaEncode()`, decoded
+by `lzBicriteriaDecode()`), which is byte-oriented and writes all the fields in
+the variable-byte code of [§21.7](21-compression.md#sec-21-7). It holds the
+length $n$ of the text, then for each phrase a token: $2 ( \ell - 1 ) + 1$ for
+a copy of $\ell$ symbols followed by $d - 1$ for its distance $d$, or $2 ( k -
+1 )$ for a run of $k$ literals followed by the $k$ bytes themselves. With $v( x
+)$ the bytes of the code of $x$, a phrase thus takes
+
+$$
+s( \langle d , \ell \rangle ) = v( 2 \ell - 1 ) + v( d - 1 ) , \qquad
+s( \langle k \text{ literals} \rangle ) = v( 2 k - 2 ) + k
+$$
+
+bytes, and the decoder is charged with
+
+$$
+t( e ) = \tau_p + \tau_b \, s( e ) + \tau_{q( d )}
+$$
+
+units of time, where $\tau_p$ is the cost of a phrase, $\tau_b$ that of a byte
+of the code, and $\tau_q$ that of the access to a copy whose distance takes
+$q + 1$ bytes, i.e., $d \le 2^{7 ( q + 1 )}$ (0 for a run). This is the model
+$t( d , \ell ) = t( d ) + s( d , \ell )$ of the paper, with a cost per phrase
+added and with the classes of the distances aligned to those of the code. In
+`LZBicriteriaModel`, the defaults ($\tau_p = 8$, $\tau_b = 1$, and 0, 0, 20,
+100 and 200 for a copy within 128 bytes, 16 KiB, 2 MiB, 256 MiB and beyond) are
+rough cycles of a current processor, and they should be calibrated on the
+machine that decompresses (BC-ZIP takes three classes, with boundaries near
+$2^{14}$ and $2^{21}$, as ours). We leave out the time of copying the $n$
+symbols, which all the parses pay. We remark, however, that a decoder that
+copies by blocks of 16 bytes, as ours, pays somewhat less for a few long copies
+than for many short ones, which the model ignores. Both weights do not decrease
+with $d$ and $\ell$, and a run stops at 64 literals
+(`lzBicriteriaMaxLiterals`); its token then takes one byte, and no arc weighs
+more than $s_{\max}$ in space and $t_{\max}$ in time.
+
+For each place $i$ and each class $q$ of the distances, the graph keeps the
+longest copy $L_q( i )$ that the parse knows within $2^{7 ( q + 1 )}$ places,
+from the distance $D_q( i )$. The copy of $\ell$ symbols from $i$ then weighs
+as the one of the least class $q$ with $L_q( i ) \ge \ell$, a step function of
+$\ell$ whose steps end at the lengths $L_q( i )$ and at the lengths where the
+token grows (64, 8192, $2^{20}$ and $2^{27}$); these ends are the *maximal*
+arcs of the paper, at most nine for each place. For the source with no window
+it takes the longest previous factor of [Crochemore and Ilie
+2008](Z-bibliography.md#ref-crochemore2008), which one scan of the suffix array
+with a stack finds for all the places (as in [Theorem
+21.3](21-compression.md#thm-21-3), but with the LCP array giving the two
+longest common prefixes). Closer sources come from a walk of the suffix array
+away from the rank of $i$, by decreasing lcp, for at most
+`LZBicriteriaModel::candidates` suffixes. Also, each class inherits from $i -
+1$ the copy one symbol shorter from the same distance (line 15 of [Algorithm
+21.23](21-compression.md#alg-21-Zlz3)). Hence, the lengths of the bounded windows
+are exact when the walk ends before its bound, and possibly too short
+otherwise, and what follows holds w.r.t. the best parse of this graph, which
+need not be the best parse of the text.
+
+<span id="alg-21-Zlz3"></span>**Algorithm 21.Zlz3.** The bicriteria parse
+([Farruggia, Ferragina, Frangioni and Venturini
+2014](Z-bibliography.md#ref-farruggia2014)), its code and its decoder.
+
+--8<-- "generated/LZBicriteria-lzBicriteriaParse.pseudo.md"
+
+--8<-- "generated/LZBicriteria-lzBicriteriaEncode.pseudo.md"
+
+--8<-- "generated/LZBicriteria-lzBicriteriaDecode.pseudo.md"
+
+We first collect the properties of the graph on which the rest depends; (iii)
+is Theorem 4 of the paper, which allows each shortest path to relax only the
+maximal arcs.
+
+<span id="lem-21-Zlz1"></span>**Lemma 21.Zlz1.** *Let $i$ be a place of the text.
+(i) The space and the time of the arc $( i , i + \ell )$, a copy or a run, do
+not decrease with $\ell$. (ii) If $( i , j )$ is an arc, then for each $i <
+i' < j$ the graph has an arc $( i' , j )$ of the same kind, whose space and
+time are at most those of $( i , j )$. (iii) For each path from 0 to $n$ there
+is a path whose copies are all maximal arcs and whose space and time are at
+most those of the first.*
+
+*Proof.* (i) A run takes $v( 2 k - 2 ) + k$ bytes, which grow with $k$. A copy
+takes the token $v( 2 \ell - 1 )$, which does not decrease with $\ell$, and the
+distance of the shortest source kept at $i$ whose length reaches $\ell$; by
+line 19 the classes of the sources kept increase with their lengths, and
+therefore neither the class nor the two weights decrease with $\ell$. (ii) The
+suffix of a run is a run. Let $( i , j )$ be a copy from a source of class $q$,
+so that $L_q( i ) \ge j - i$. Since line 15 sets $L_q( i + 1 ) \ge L_q( i ) -
+1$ and the later lines only raise $L_q$, by induction $L_q( i' ) \ge j - i'$;
+the least class whose length reaches $j - i'$ at $i'$ is then at most $q$, the
+source kept for it (line 19) is of no greater class, and the token of $j - i'$
+is not longer than that of $j - i$. (iii) Let $( v , w )$ be the first copy of
+the path that is not maximal, and $( v , z )$, with $z > w$, the end of its
+step, of the same weights. Let $( h , k )$ be the arc of the path with $h <
+z \le k$. Replacing the arcs from $v$ to $k$ with $( v , z )$ and, if $z < k$,
+with the arc $( z , k )$ of (ii) gives a path of no greater weights; its first
+copy that is not maximal, if any, lies to the right of $v$, and hence the
+replacements end. $\square$
+
+Let $c$ be the minimized weight and $r$ the bounded one. By (iii), a shortest
+path for the weight $c + \lambda r$, with $\lambda \ge 0$, may relax only the
+maximal copies. Runs, whose weight $A + B k$ is affine in their length $k$, are
+relaxed all together: the best run into $j$ comes from the least $W( i ) - B i$
+over the last 64 places $i$ (with $W$ the distances found so far), which a
+deque keeps in $O( 1 )$ amortized time. Each shortest path costs therefore $O(
+n )$. With $R$ the bound for the phrases (the header of $v( n )$ bytes is the
+same for all the parses) and $\Lambda( \pi , \lambda ) = c( \pi ) + \lambda (
+r( \pi ) - R )$, the Lagrangian function $\varphi( \lambda ) = \min_\pi
+\Lambda( \pi , \lambda )$ is a lower bound on the optimum for each $\lambda \ge
+0$, since a parse within the bound has $r( \pi ) \le R$. Its maximum is found
+by the cutting planes of [Handler and Zang
+1980](Z-bibliography.md#ref-handler1980), i.e., the hull approach of [Mehlhorn
+and Ziegelmann 2000](Z-bibliography.md#ref-mehlhorn2000), who bound its
+iterations by a logarithm of $n$ and of the largest weights when these are
+integers. It keeps a path $\pi_L$ above the bound and a path $\pi_R$ within it,
+and moves $\lambda$ to the crossing of their lines (lines 5 to 10). When the
+loop stops at line 8, both $\pi_L$ and $\pi_R$ attain $\varphi( \lambda )$,
+i.e., they are $\lambda$-optimal. Yet, neither of them needs to be near the
+optimum of the constrained problem, and the second phase of the paper joins
+them. The *path swap* $\mathrm{ps}( \pi_1 , \pi_2 , v )$ at a place $v$ of
+either path joins a prefix of $\pi_1$ and a suffix of $\pi_2$. It takes the
+prefix of $\pi_1$ up to its last place $v' \le v$ and the arc $( v' , v )$ cut
+from the arc of $\pi_1$ across $v$, then the arc $( v , v'' )$ cut from the arc
+of $\pi_2$ across $v$, with $v''$ the first place of $\pi_2$ not before $v$,
+and the suffix of $\pi_2$ from $v''$; both cut arcs are in the graph, by (ii)
+of [Lemma 21.Zlz1](21-compression.md#lem-21-Zlz1) and by the prefix of a copy being
+a copy from the same source.
+
+<span id="lem-21-Zlz2"></span>**Lemma 21.Zlz2.** *Let $c_{\max}$ and $r_{\max}$ be
+the largest weights of an arc. (i) If $\pi_1$ and $\pi_2$ are
+$\lambda$-optimal, then $\Lambda( \mathrm{ps}( \pi_1 , \pi_2 , v ) , \lambda
+) \le \varphi( \lambda ) + c_{\max} + \lambda r_{\max}$ for each place $v$ of
+either path. (ii) For any two paths and two consecutive places $v < w$ of
+either of them, the swaps at $v$ and at $w$ differ by at most $c_{\max}$ in $c$
+and by at most $r_{\max}$ in $r$.*
+
+*Proof.* We follow Lemmas 10 and 11 of [Farruggia et al.
+2014](Z-bibliography.md#ref-farruggia2014), with $w_\lambda = c + \lambda r$
+and $\Lambda = w_\lambda - \lambda R$. (i) Let $\pi_A = \mathrm{ps}( \pi_1 ,
+\pi_2 , v )$ and $\pi_B = \mathrm{ps}( \pi_2 , \pi_1 , v )$. If $v$ is on both
+paths, $\pi_A$ and $\pi_B$ share out the arcs of $\pi_1$ and $\pi_2$, and
+$w_\lambda( \pi_A ) + w_\lambda( \pi_B ) = w_\lambda( \pi_1 ) + w_\lambda(
+\pi_2 )$. If $v$ is inside the arc $( v' , v'' )$ of $\pi_1$, this arc is
+replaced by $( v' , v )$ in $\pi_A$ and by $( v , v'' )$ in $\pi_B$, and since
+$w_\lambda( v' , v ) \le w_\lambda( v' , v'' )$ by (i) of [Lemma
+21.13](21-compression.md#lem-21-Zlz1) one has $w_\lambda( \pi_A ) + w_\lambda(
+\pi_B ) \le w_\lambda( \pi_1 ) + w_\lambda( \pi_2 ) + c_{\max} + \lambda
+r_{\max}$; the case of $v$ inside an arc of $\pi_2$ is symmetric. Hence
+$\Lambda( \pi_A , \lambda ) + \Lambda( \pi_B , \lambda ) \le 2 \varphi( \lambda
+) + c_{\max} + \lambda r_{\max}$, and $\Lambda( \pi_B , \lambda ) \ge \varphi(
+\lambda )$ gives the claim. (ii) If $v$ is on $\pi_1$, the prefix up to $w$ is
+the prefix up to $v$ followed by the arc $( v , w )$; otherwise, it is the same
+prefix with its last arc $( u , v )$ replaced by $( u , w )$, which weighs no
+less by (i) of [Lemma 21.Zlz1](21-compression.md#lem-21-Zlz1) and at most the
+largest weights. Either way it grows by between 0 and $c_{\max}$ in $c$ and
+between 0 and $r_{\max}$ in $r$. Symmetrically, by (ii) of the same lemma the
+suffix from $w$ weighs less than that from $v$ by between 0 and the largest
+weights. The difference of the two swaps, i.e., the growth of the prefix less
+the decrease of the suffix, lies therefore between $-c_{\max}$ and $c_{\max}$
+in $c$ and between $-r_{\max}$ and $r_{\max}$ in $r$. $\square$
+
+In line 11, the scan evaluates each swap in $O( 1 )$, from the weights of the
+prefixes of $\pi_L$ and of the suffixes of $\pi_R$, and returns the one of
+least $c$ within $R + \sigma$, for a slack $\sigma \ge 0$ (0 by default). The
+paper takes $\sigma = 2 t_{\max}$ when the time is bounded; the following bound
+covers any slack, $\sigma = 0$ (a parse within the bound) included.
+
+<span id="thm-21-Zlz4"></span>**Theorem 21.Zlz4.** *If the loop of [Algorithm
+21.23](21-compression.md#alg-21-Zlz3) stops at line 8 with the multiplier
+$\lambda^*$, then the parse $\pi$ returned with the slack $\sigma$ has $r( \pi
+) \le R + \sigma$ and*
+
+$$
+c( \pi ) \le \varphi( \lambda^* ) + c_{\max} +
+\lambda^* \max \{ 0 , 2 r_{\max} - \sigma \} ,
+$$
+
+*where $\varphi( \lambda^* )$ is at most the least $c$ of a parse of the graph
+within $R$. In particular, $\sigma = 0$ gives a parse within the bound with an
+additive gap of $c_{\max} + 2 \lambda^* r_{\max}$, and $\sigma = 2 r_{\max}$
+gives the gap $c_{\max}$ of Theorem 5 of the paper.*
+
+*Proof.* Note that the scan considers $\pi_R$, the swap at 0, which is within
+$R$, and $\pi_L$, the swap at $n$. If $r( \pi_L ) \le R + \sigma$, then $c(
+\pi_L ) = \varphi( \lambda^* ) - \lambda^* ( r( \pi_L ) - R ) \le \varphi(
+\lambda^* )$, since $r( \pi_L ) > R$. Otherwise, as $v$ runs over the places of
+the two paths from 0 to $n$, the weight $r$ of the swap goes from at most $R$
+to more than $R + \sigma$ by steps of at most $r_{\max}$ ([Lemma
+21.14](21-compression.md#lem-21-Zlz2), (ii)); hence some swap $\pi'$ has $R +
+\sigma - r_{\max} < r( \pi' ) \le R + \sigma$, and by (i) of the same lemma $c(
+\pi' ) \le \varphi( \lambda^* ) + c_{\max} + \lambda^* ( R + r_{\max} - r( \pi'
+) ) < \varphi( \lambda^* ) + c_{\max} + \lambda^* ( 2 r_{\max} - \sigma )$. The
+swap returned is no costlier than $\pi_L$ or $\pi'$. Finally, $c( \pi ) \ge
+\Lambda( \pi , \lambda ) \ge \varphi( \lambda )$ for each parse $\pi$ within
+$R$ and each $\lambda \ge 0$. $\square$
+
+The result of `lzBicriteriaParse()` carries the phrases, their space (the
+header included) and time, the lower bound $\varphi( \lambda^* )$, the
+multiplier and the gap of [Theorem 21.Zlz4](21-compression.md#thm-21-Zlz4); the gap
+is infinite if the loop reaches `LZBicriteriaModel::iterations` shortest paths
+before line 8, and a bound out of reach gives the parse of least bounded
+weight, marked as not feasible. Since $c_{\max}$ and $r_{\max}$ are the weights
+of the "heaviest" arc (a run of 64 literals, or a copy of $n$ symbols from $n$
+places back), the gap of the theorem is, on the texts of the tests, far larger
+than the difference between $c( \pi )$ and $\varphi( \lambda^* )$, which the
+result also allows one to compute a posteriori. In all, the parse costs $O( n
+)$ time for the suffix array and the LCP array, $O( n K )$ for the walk with
+$K$ candidates, and $O( n )$ for each of the shortest paths (two for the
+extremes, and at most the limit of the iterations for the cutting planes). Its
+memory is about four arrays of $n$ words while the graph is built, and the
+sources of the graph afterwards. The decoder moves a copy of distance at least
+16 by blocks of 16 bytes, each of which ends at least 16 bytes before the place
+it is written to, and a copy of shorter distance one byte at a time, which is
+right on an overlap too (cf. (i) of [Lemma
+21.11](21-compression.md#lem-21-11)). In the benchmark of Appendix B, LZ4 and
+Zstandard are compared with this decoder on the parse whose space is bounded by
+the size of their code, i.e., at the same ratio. It is fair to remark, however,
+that Zstandard makes its code smaller by its entropy coders, and that a
+byte-oriented code may not reach its sizes at all, in which case the benchmark
+has no cell for it.
+
 ## 21.10 The transform of Burrows and Wheeler {#sec-21-10}
 
 The rows of the matrix $M'$ are the $n + 1$ rotations of $s \$$ in sorted
@@ -1529,7 +1765,7 @@ replaces each symbol with its place in a list of the alphabet, and then moves
 it to the front. Hence the runs of few symbols of $L$ become runs of small
 integers (on the alphabet abcno, bananacocco becomes 1 1 3 1 1 1 3 4 1 0 1), in
 $O( \sigma )$ time per symbol here ([Algorithm
-21.24](21-compression.md#alg-21-24)).
+21.25](21-compression.md#alg-21-24)).
 
 <span id="lem-21-15"></span>**Lemma 21.15.** *Writing the place $p$ of each
 symbol in the move-to-front of $s$ as $\gamma( p + 1 )$ takes at most
@@ -1808,7 +2044,7 @@ $\mathit{SA}[ 3 ] = 0$. By (21.23) with $y = 0 = \mathit{SA}[ p_3 ]$, $\phi( 0
 and 7. All of it takes $O( r )$ words: 5 sequences of $r$ integers of at most
 $\lceil \log_2 n \rceil$ bits, and the heads, whose rank is that of
 `CompactRankSelect`, the smallest ([Algorithm
-21.28](21-compression.md#alg-21-28)). We build the transform from the suffix
+21.29](21-compression.md#alg-21-28)). We build the transform from the suffix
 array, in $O( n )$ time and words, while in the literature the r-index is built
 in $O( r )$ words from the run-length transform, which `RIndex` does not
 attempt.
@@ -2241,6 +2477,54 @@ std::string lzwDecode( const std::vector< std::uint32_t > & I );
 std::vector< LZ77Phrase > lz77ParseLinear( std::string_view s );
 ```
 
+`LZBicriteria.h` ([§21.9](21-compression.md#sec-21-9)).
+
+```cpp
+// declarations of <ADS/compression/LZBicriteria.h>
+enum class LZBicriteriaGoal
+{
+ time ,
+ space
+ };
+constexpr std::size_t lzBicriteriaMaxLiterals = 64;
+struct LZBicriteriaModel
+{
+ std::uint64_t phrase = 8;
+ std::uint64_t byte = 1;
+ std::array< std::uint64_t , 5 > distance = { 0 , 0 , 20 , 100 , 200 };
+ std::size_t candidates = 64;
+ std::size_t iterations = 128;
+ };
+struct LZBicriteriaPhrase
+{
+ std::size_t distance , length;
+ };
+struct LZBicriteriaParse
+{
+ std::vector< LZBicriteriaPhrase > phrases;
+ std::uint64_t space = 0;
+ std::uint64_t time = 0;
+ double lowerBound = 0;
+ double multiplier = 0;
+ double gapBound = 0;
+ bool feasible = true;
+ };
+LZBicriteriaParse
+lzBicriteriaParse( std::string_view s , LZBicriteriaGoal goal ,
+                   std::uint64_t bound , const LZBicriteriaModel & m = {} ,
+                   std::uint64_t slack = 0 );
+std::uint64_t
+lzBicriteriaTime( const std::vector< LZBicriteriaPhrase > & P ,
+                  const LZBicriteriaModel & m = {} );
+std::vector< std::uint8_t >
+lzBicriteriaEncode( std::string_view s ,
+                    const std::vector< LZBicriteriaPhrase > & P );
+std::size_t lzBicriteriaSize( const std::vector< std::uint8_t > & C );
+std::size_t lzBicriteriaDecode( const std::vector< std::uint8_t > & C ,
+                                std::span< char > out );
+std::string lzBicriteriaDecode( const std::vector< std::uint8_t > & C );
+```
+
 `MoveRIndex.h` ([§21.11](21-compression.md#sec-21-11)).
 
 ```cpp
@@ -2513,18 +2797,24 @@ Each exercise names the test of the library that solves it (run it with
     previous and the next smaller values of the suffix array
     ([Theorem 21.3](21-compression.md#thm-21-3)). Test:
     `engineered_succinct.lz77-linear`.
-16. Compute the transform of Burrows and Wheeler and invert it by the
+16. Find the parse of LZ77 of least decompression time within a bound on the
+    size of its byte-oriented code, and vice versa, by the cutting planes on
+    the Lagrangian relaxation and the path swap, and check it against the
+    gap of [Theorem 21.Zlz4](21-compression.md#thm-21-Zlz4) and, on small texts,
+    against the optimum of a dynamic program. Test:
+    `engineered_succinct.lz-bicriteria`.
+17. Compute the transform of Burrows and Wheeler and invert it by the
     LF-mapping; chain the move-to-front, RLE0 and a canonical code of
     Huffman into a bzip. Tests: `pearls_compression.bwt-notes`,
     `pearls_compression.bwt`, `pearls_compression.mtf-rle`,
     `pearls_compression.bzip`.
-17. Count, locate and extract by the FM-index, and follow the backward
+18. Count, locate and extract by the FM-index, and follow the backward
     search of [Figure 21.8](21-compression.md#fig-21-8). Tests:
     `pearls_compression.fm-index-notes`, `pearls_compression.fm-index`.
-18. Realize the FM-index on the wavelet tree of Huffman of $L$, with the
+19. Realize the FM-index on the wavelet tree of Huffman of $L$, with the
     LF-mapping of a step of `locate()` in one descent. Test:
     `engineered_succinct.huffman-fm-index`.
-19. Realize the r-index, with the rank on the runs (21.22), the toehold
+20. Realize the r-index, with the rank on the runs (21.22), the toehold
     and the function $\phi$ ([Lemma 21.18](21-compression.md#lem-21-18)
     and [Lemma 21.19](21-compression.md#lem-21-19)), and then replace its
     predecessor searches with move structures. Tests:

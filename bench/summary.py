@@ -325,7 +325,11 @@ PAIRS = [
      ['sdsl::csa_wt<wt_huff>']),
     ('lz', 'ADS::lzssParseHashed', 'LZ4', ['LZ4_compress_default']),
     ('lz', 'ADS::lzssDecode', 'LZ4', ['LZ4_decompress_safe']),
+    ('lz', 'ADS::lzBicriteriaDecode', 'LZ4', ['LZ4_decompress_safe']),
+    ('lz', 'ADS::lzBicriteriaDecode', 'zstd', ['ZSTD_decompressDCtx']),
     # the bits, against the structures of the same queries
+    ('space', 'ADS::lzBicriteriaDecode', 'LZ4', ['LZ4_decompress_safe']),
+    ('space', 'ADS::lzBicriteriaDecode', 'zstd', ['ZSTD_decompressDCtx']),
     ('space', 'ADS::binaryPack', 'FastPFor',
      ['FastPFor::simdbinarypacking']),
     ('space', 'ADS::patchedPack', 'FastPFor',

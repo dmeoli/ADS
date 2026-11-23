@@ -175,6 +175,18 @@ using ADS::HuffmanFMIndex;
 // compression/LZ77Linear.h
 using ADS::lz77ParseLinear;
 
+// compression/LZBicriteria.h
+using ADS::LZBicriteriaGoal;
+using ADS::LZBicriteriaModel;
+using ADS::LZBicriteriaParse;
+using ADS::LZBicriteriaPhrase;
+using ADS::lzBicriteriaDecode;
+using ADS::lzBicriteriaEncode;
+using ADS::lzBicriteriaMaxLiterals;
+using ADS::lzBicriteriaParse;
+using ADS::lzBicriteriaSize;
+using ADS::lzBicriteriaTime;
+
 // compression/MoveRIndex.h
 using ADS::MoveRIndex;
 

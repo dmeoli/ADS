@@ -2057,6 +2057,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `compression/FMIndex.h` | base | `FMIndex` | [21](21-compression.md#ch-21) |
 | `compression/HuffmanFMIndex.h` | advanced | `HuffmanFMIndex` | [21](21-compression.md#ch-21) |
 | `compression/IntegerCodes.h` | base | `PForDeltaBlock` | [21](21-compression.md#ch-21) |
+| `compression/LZBicriteria.h` | advanced | `LZBicriteriaModel`, `LZBicriteriaPhrase`, `LZBicriteriaParse` | [21](21-compression.md#ch-21) |
 | `compression/LempelZiv.h` | base | `LZ77Phrase`, `LZSSPhrase`, `LZ78Phrase` | [21](21-compression.md#ch-21) |
 | `compression/MoveRIndex.h` | advanced | `MoveRIndex` | [21](21-compression.md#ch-21) |
 | `compression/PPM.h` | base | `PPMModel` | [21](21-compression.md#ch-21) |
