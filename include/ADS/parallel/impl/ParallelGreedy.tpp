@@ -165,15 +165,7 @@ template< class X , class P >
 std::vector< int > parallelFilter( X & ex , const std::vector< int > & ids ,
 				   P && keep )
 {
- const std::size_t k = ids.size();
- std::vector< char > flag( k );
- parallelFor( ex , 0 , k , [ & ]( std::size_t i ) {
-  flag[ i ] = keep( ids[ i ] ) ? 1 : 0;
-  } );
- std::vector< std::size_t > I( ids.begin() , ids.end() ) , out( k );
- const std::size_t c = packKept( ex , I , flag , k , out );
- return(
-   std::vector< int >( out.begin() , out.begin() + std::ptrdiff_t( c ) ) );
+ return( filter( ex , ids , keep ) );
  }
 
 /// whether `taken` holds the edges of the sequential greedy algorithm on

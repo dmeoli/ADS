@@ -67,6 +67,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/parallel/Executor.h"
+#include "ADS/parallel/ParallelPrimitives.h"
 
 #include <atomic>
 #include <concepts>

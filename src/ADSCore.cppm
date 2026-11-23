@@ -5,7 +5,7 @@
  * Interface of the C++20 module ads.core, which exports the names that the
  * headers of the core of ADS [see ADS/core.h] declare in the namespace ADS
  * and in those nested in it, but for the namespaces detail; the modules
- * ads.base and ads.advanced export it in turn.
+ * ads.base and ads.advanced export these names in turn.
  *
  * This file is written by cmake/ads_module_exports.py, which reads the names
  * from the AST of the headers and their sets from cmake/ads_sets.txt: it is

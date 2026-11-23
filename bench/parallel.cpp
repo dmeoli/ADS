@@ -58,6 +58,14 @@
  * - the LCP array of texts of 10^6 and 4 10^6 symbols, of 4 letters or of
  *   words of a Zipf law, from a suffix array of 32 bits (lcpArrayPhi
  *   against the one of the examples of ParlayLib), per symbol;
+ * - the suffix array of 32 bits of the same texts (-b sa: the prefix
+ *   doubling of ADS against the suffix_array of the examples of ParlayLib,
+ *   libsais_omp() when LIBSAIS_OMP is given and, when t = 1, the
+ *   sequential SA-IS of ADS), per symbol;
+ * - the primitives on sequences (-b primitives: filter, histogram,
+ *   integerSort, groupByKey, randomPermutation and tokens against
+ *   parlay::filter, histogram_by_index, stable_integer_sort, group_by_key,
+ *   random_permutation and tokens), per item;
  * - the concurrent hash tables, all driven by the same threads of the pool
  *   (ConcurrentFlatTable, as a map and as a set, and ConcurrentCuckooTable
  *   against tbb::concurrent_hash_map, tbb::concurrent_unordered_map, the
@@ -103,7 +111,7 @@
  *
  *   parallel [ -r runs ] [ -s seed ] [ -t threads ] [ -w family ]
  *            [ -b sort|patterns|merge|spmv|gemm|graphs|sssp|succinct|lcp|
- *                 hash|closed|pq|rank|bnb ]
+ *                 sa|primitives|hash|closed|pq|rank|bnb ]
  *            n1 n2 ...
  *
  * \author Donato Meoli \n
@@ -137,6 +145,7 @@
 #include "ADS/parallel/ParallelGraph.h"
 #include "ADS/parallel/ParallelMerge.h"
 #include "ADS/parallel/ParallelNumeric.h"
+#include "ADS/parallel/ParallelPrimitives.h"
 #include "ADS/parallel/ParallelShortestPaths.h"
 #include "ADS/parallel/ParallelSort.h"
 #include "ADS/parallel/ParallelText.h"
@@ -191,8 +200,15 @@
   #include <examples/BFS_ligra.h>
   #include <examples/bucketed_dijkstra.h>
   #include <examples/longest_common_prefix.h>
+  #include <examples/suffix_array.h>
   #define ADS_HAS_PARLAY_EXAMPLES 1
  #endif
+#endif
+
+// libsais built with OpenMP (LIBSAIS_OMP=<prefix> of the makefile)
+#if defined( ADS_HAS_LIBSAIS_OMP )
+ #define LIBSAIS_OPENMP 1
+ #include <libsais.h>
 #endif
 
 #if __has_include( <tlx/algorithm/parallel_multiway_merge.hpp> ) && \
@@ -306,6 +322,7 @@ namespace gapbsSssp
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <numeric>
@@ -1691,6 +1708,34 @@ void succinct( const std::vector< std::size_t > & sizes , int r ,
 /*--------------------------------- TEXTS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+/// n random symbols of 4 letters (kind 0, "dna") or a text of words of a
+/// Zipf law (kind 1, "words")
+std::string benchText( std::size_t n , int kind , unsigned seed )
+{
+ std::mt19937_64 g( seed );
+ std::string T;
+ if( kind == 0 )
+  for( std::size_t i = 0 ; i < n ; ++i )
+   T += "acgt"[ g() % 4 ];
+ else {
+  std::vector< std::string > W;
+  for( int w = 0 ; w < 5000 ; ++w ) {
+   std::string s;
+   for( int l = 0 ; l < 2 + int( g() % 8 ) ; ++l )
+    s += char( 'a' + g() % 26 );
+   W.push_back( s );
+   }
+  while( T.size() < n ) {
+   const double x = std::uniform_real_distribution<>( 0 , 1 )( g );
+   T += W[ std::min< std::size_t >(
+     4999 , std::size_t( std::pow( 5000.0 , x ) ) - 1 ) ];
+   T += ' ';
+   }
+  T.resize( n );
+  }
+ return( T );
+ }
+
 /// the LCP array from the suffix array of n random symbols of 4 letters
 /// ("dna") and of a text of words of a Zipf law ("words"), in nanoseconds
 /// per symbol
@@ -1699,27 +1744,7 @@ void texts( const std::vector< std::size_t > & sizes , int r , unsigned seed ,
 {
  for( std::size_t n : sizes )
   for( int kind = 0 ; kind < 2 ; ++kind ) {
-   std::mt19937_64 g( seed );
-   std::string T;
-   if( kind == 0 )
-    for( std::size_t i = 0 ; i < n ; ++i )
-     T += "acgt"[ g() % 4 ];
-   else {
-    std::vector< std::string > W;
-    for( int w = 0 ; w < 5000 ; ++w ) {
-     std::string s;
-     for( int l = 0 ; l < 2 + int( g() % 8 ) ; ++l )
-      s += char( 'a' + g() % 26 );
-     W.push_back( s );
-     }
-    while( T.size() < n ) {
-     const double x = std::uniform_real_distribution<>( 0 , 1 )( g );
-     T += W[ std::min< std::size_t >(
-       4999 , std::size_t( std::pow( 5000.0 , x ) ) - 1 ) ];
-     T += ' ';
-     }
-    T.resize( n );
-    }
+   const std::string T = benchText( n , kind , seed );
    const auto SA = ADS::suffixArray< std::uint32_t >( T );
    const auto ref = ADS::lcpArrayPhi( T , SA );
    std::vector< std::uint32_t > L;
@@ -1740,6 +1765,218 @@ void texts( const std::vector< std::size_t > & sizes , int r , unsigned seed ,
      [ & ] { L.clear(); } ,
      [ & ] { return( L == ref ); } );
    }
+ }
+
+/// the suffix array of the same texts, of 32 bits, in nanoseconds per
+/// symbol: the prefix doubling of ADS against the suffix_array of the
+/// examples of ParlayLib and libsais_omp(), and the sequential SA-IS of ADS
+/// and libsais() when t = 1
+void suffixes( const std::vector< std::size_t > & sizes , int r ,
+	       unsigned seed ,
+	       Executors & X )
+{
+ for( std::size_t n : sizes )
+  for( int kind = 0 ; kind < 2 ; ++kind ) {
+   const std::string T = benchText( n , kind , seed );
+   const auto ref = ADS::suffixArray< std::uint32_t >( T );
+   std::vector< std::uint32_t > A;
+   Works S;
+   onExecutorsW( S , X , "ADS::suffixArray" ,
+		 [ & ]( auto & ex ) { A = ADS::suffixArray( ex , T ); } );
+   if( threads == 1 )
+    addW( S , "seq" , "ADS::suffixArray (sequential)" ,
+	  [ & ] { A = ADS::suffixArray< std::uint32_t >( T ); } );
+#if defined( ADS_HAS_PARLAY_EXAMPLES )
+   addW( S , "parlay" , "parlay suffix_array" , [ & ] {
+    const auto P = suffix_array( T );
+    A.assign( P.begin() , P.end() );
+    } );
+#endif
+#if defined( ADS_HAS_LIBSAIS_OMP )
+   addW( S , "openmp" , "libsais_omp" , [ & ] {
+    A.resize( n );
+    libsais_omp( reinterpret_cast< const std::uint8_t * >( T.data() ) ,
+		 reinterpret_cast< std::int32_t * >( A.data() ) ,
+		 std::int32_t( n ) , 0 , nullptr , std::int32_t( threads ) );
+    } );
+#endif
+   runWorks(
+     bench( "suffix array" ) , kind ? "words" : "dna" , n , S , r ,
+     [ & ] { A.clear(); } , [ & ] { return( A == ref ); } );
+   }
+ }
+
+/// the primitives of ParallelPrimitives.h on n items, in nanoseconds per
+/// item, against those of ParlayLib: the filter of the multiples of 3 among
+/// integers at random (filter against parlay::filter), the histogram of
+/// keys in [ 0 , 256 ) and in [ 0 , n ) (histogram against
+/// parlay::histogram_by_index), the stable sort of pairs of 64 bits by keys
+/// of 32 bits (integerSort against parlay::stable_integer_sort), the
+/// groups of the keys of a Zipf law (groupByKey against
+/// parlay::group_by_key, whose results are compared as maps of the sizes),
+/// the random permutation (randomPermutation against
+/// parlay::random_permutation, checked as a permutation) and the tokens of
+/// the text of words (tokens against parlay::tokens, checked by their count)
+void primitives( const std::vector< std::size_t > & sizes , int r ,
+		 unsigned seed , Executors & X )
+{
+ for( std::size_t n : sizes ) {
+  std::mt19937_64 g( seed );
+  std::vector< std::uint64_t > A( n );
+  for( auto & x : A )
+   x = g();
+  std::size_t c = 0;
+  {  // filter
+   std::size_t e = 0;
+   for( auto x : A )
+    e += x % 3 == 0;
+   Works S;
+   onExecutorsW( S , X , "ADS::filter" , [ & ]( auto & ex ) {
+    c = ADS::filter( ex , A , []( std::uint64_t x ) { return( x % 3 == 0 ); } )
+	  .size();
+    } );
+#if defined( ADS_HAS_PARLAY )
+   addW( S , "parlay" , "parlay::filter" , [ & ] {
+    c = parlay::filter( A , []( std::uint64_t x ) { return( x % 3 == 0 ); } )
+	  .size();
+    } );
+#endif
+   runWorks(
+     bench( "filter" ) , "uint64" , n , S , r , [ & ] { c = 0; } ,
+     [ & ] { return( c == e ); } );
+   }
+  for( std::size_t m : { std::size_t( 256 ) , n } ) {  // histograms
+   std::vector< std::uint32_t > K( n );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    K[ i ] = std::uint32_t( A[ i ] % m );
+   std::vector< std::size_t > e( m , 0 ) , H;
+   for( auto k : K )
+    ++e[ k ];
+   Works S;
+   onExecutorsW( S , X , "ADS::histogram" ,
+		 [ & ]( auto & ex ) { H = ADS::histogram( ex , K , m ); } );
+#if defined( ADS_HAS_PARLAY )
+   addW( S , "parlay" , "parlay::histogram_by_index" , [ & ] {
+    const auto P = parlay::histogram_by_index( K , m );
+    H.assign( P.begin() , P.end() );
+    } );
+#endif
+   runWorks(
+     bench( "histogram" ) , m == 256 ? "256" : "n" , n , S , r ,
+     [ & ] { H.clear(); } , [ & ] { return( H == e ); } );
+   }
+  {  // the integer sort
+   using P = std::pair< std::uint64_t , std::uint64_t >;
+   std::vector< P > B( n ) , ref , out;
+   for( std::size_t i = 0 ; i < n ; ++i )
+    B[ i ] = P( A[ i ] >> 32 , i );
+   ref = B;
+   std::stable_sort( ref.begin() , ref.end() ,
+		     []( const P & a , const P & b ) {
+    return( a.first < b.first );
+    } );
+   auto key = []( const P & x ) { return( x.first ); };
+   Works S;
+   onExecutorsW( S , X , "ADS::integerSort" , [ & ]( auto & ex ) {
+    ADS::integerSort( ex , out , key , 32 );
+    } );
+#if defined( ADS_HAS_PARLAY )
+   addW( S , "parlay" , "parlay::stable_integer_sort" , [ & ] {
+    const auto Q = parlay::stable_integer_sort( out , key );
+    out.assign( Q.begin() , Q.end() );
+    } );
+#endif
+   runWorks(
+     bench( "integerSort" ) , "pair" , n , S , r , [ & ] { out = B; } ,
+     [ & ] { return( out == ref ); } );
+   }
+  {  // the groups of the keys of a Zipf law
+   using P = std::pair< std::uint64_t , std::uint64_t >;
+   std::vector< P > B( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    const double x = double( A[ i ] >> 11 ) / double( 1ULL << 53 );
+    B[ i ] = P( std::uint64_t( std::pow( double( n ) , x ) ) , i );
+    }
+   std::map< std::uint64_t , std::size_t > e;
+   for( const auto & b : B )
+    ++e[ b.first ];
+   // the groups kept as they are, and compared after the timed run
+   std::vector< std::pair< std::uint64_t , std::vector< std::uint64_t > > > ga;
+#if defined( ADS_HAS_PARLAY )
+   decltype( parlay::group_by_key( B ) ) pa;
+#endif
+   auto same = [ & ]( void ) {
+    std::map< std::uint64_t , std::size_t > got;
+    for( const auto & [ k , v ] : ga )
+     got[ k ] = v.size();
+#if defined( ADS_HAS_PARLAY )
+    for( const auto & [ k , v ] : pa )
+     got[ k ] = v.size();
+#endif
+    return( got == e );
+    };
+   Works S;
+   onExecutorsW( S , X , "ADS::groupByKey" ,
+		 [ & ]( auto & ex ) { ga = ADS::groupByKey( ex , B ); } );
+#if defined( ADS_HAS_PARLAY )
+   addW( S , "parlay" , "parlay::group_by_key" ,
+	 [ & ] { pa = parlay::group_by_key( B ); } );
+#endif
+   runWorks(
+     bench( "groupByKey" ) , "zipf" , n , S , r ,
+     [ & ] {
+      ga.clear();
+#if defined( ADS_HAS_PARLAY )
+      pa.clear();
+#endif
+      } ,
+     same );
+   }
+  {  // the random permutation
+   std::vector< std::size_t > Q;
+   auto isPerm = [ & ]( void ) {
+    if( Q.size() != n )
+     return( false );
+    std::vector< char > seen( n , 0 );
+    for( auto q : Q )
+     if( ( q >= n ) || seen[ q ]++ )
+      return( false );
+    return( true );
+    };
+   Works S;
+   onExecutorsW( S , X , "ADS::randomPermutation" , [ & ]( auto & ex ) {
+    Q = ADS::randomPermutation( ex , n , seed );
+    } );
+#if defined( ADS_HAS_PARLAY )
+   addW( S , "parlay" , "parlay::random_permutation" , [ & ] {
+    const auto R = parlay::random_permutation( n , parlay::random( seed ) );
+    Q.assign( R.begin() , R.end() );
+    } );
+#endif
+   runWorks(
+     bench( "randomPermutation" ) , "size_t" , n , S , r ,
+     [ & ] { Q.clear(); } ,
+     isPerm );
+   }
+  {  // the tokens of the text of words
+   const std::string T = benchText( n , 1 , seed );
+   auto sp = []( char x ) { return( x == ' ' ); };
+   std::size_t e = 0;
+   for( std::size_t i = 0 ; i < n ; ++i )
+    e += ( T[ i ] != ' ' ) && ( ( i == 0 ) || ( T[ i - 1 ] == ' ' ) );
+   Works S;
+   onExecutorsW( S , X , "ADS::tokens" ,
+		 [ & ]( auto & ex ) { c = ADS::tokens( ex , T ,
+						       sp ).size(); } );
+#if defined( ADS_HAS_PARLAY )
+   addW( S , "parlay" , "parlay::tokens" ,
+	 [ & ] { c = parlay::tokens( T , sp ).size(); } );
+#endif
+   runWorks(
+     bench( "tokens" ) , "words" , n , S , r , [ & ] { c = 0; } ,
+     [ & ] { return( c == e ); } );
+   }
+  }
  }
 
 /*--------------------------------------------------------------------------*/
@@ -3219,6 +3456,10 @@ int main( int argc , char ** argv )
   succinct( o.sizes , o.runs , o.seed , X );
  if( only.empty() || ( only == "lcp" ) )
   texts( { 1000000 , 4000000 } , o.runs , o.seed , X );
+ if( only.empty() || ( only == "sa" ) )
+  suffixes( { 1000000 , 4000000 } , o.runs , o.seed , X );
+ if( only.empty() || ( only == "primitives" ) )
+  primitives( o.sizes , o.runs , o.seed , X );
  if( only.empty() || ( only == "hash" ) )
   hashing( { 1000000 , 4000000 } , o.runs , o.seed , X );
  if( only.empty() || ( only == "closed" ) )

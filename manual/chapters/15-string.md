@@ -166,8 +166,9 @@ time.*
 *Proof.* Correctness follows from [Lemma 15.2](15-string.md#lem-15-2), and from
 the same lemma applied after an occurrence (with $q = m$). Each comparison of
 line 4 either succeeds, and then $i$ advances, or fails, and then the start
-$i - q$ of the pattern moves forward by $q - F[ q ] > 0$; both $i$ and $i - q$ are
-at most $n$ and never decrease and hence there are at most $2 n$ comparisons.
+$i - q$ of the pattern moves forward by $q - F[ q ] > 0$; both $i$ and
+$i - q$ are at most $n$ and never decrease and hence there are at most $2 n$
+comparisons.
 By the same argument on $P$ against itself one bounds the computation of $F$.
 $\square$
 
@@ -2018,6 +2019,20 @@ template< class I >
 and, e.g., `ADS::suffixArray( T )` gives the array of
 `ADS::suffixArraySais( T )` in 32-bit integers.
 
+**Parallel construction.** `suffixArray( ex , T )` of `ParallelText.h` builds
+the same array on the threads of an executor, by the prefix doubling of
+Manber and Myers with the discarding of the suffixes already sorted (the
+segments of suffixes tied on their first $h$ symbols are the only ones sorted
+again in the next round), its first round sorting words of $\lfloor 64 / b
+\rfloor$ codes of $b = \lceil \log_2 ( \sigma + 1 ) \rceil$ bits, and its
+LCP array is the one of `lcpArrayPhi( ex , T , SA )`; both are in
+[§25.9](25-parallel.md#sec-25-9), where [Lemma 25.19](25-parallel.md#lem-25-19)
+shows that the rounds keep the suffixes sorted by their prefixes of $2 h$
+symbols. The doubling does $O( n \log n )$ work on a text of one repeated
+symbol, against the $O( n )$ of SA-IS, and takes more memory (up to $36 n$
+bytes with indices of 32 bits); its sorts and scans, however, have no
+sequential order, unlike the inductions of SA-IS.
+
 ### 15.5.3 The suffix tree {#sec-15-5-3}
 
 We call suffix tree of $T$ (`SuffixTree.h`) the compact trie (cf. chapter 7) of
@@ -3401,7 +3416,10 @@ The suffix array is from [Manber and Myers
 SA-IS ([Nong, Zhang and Chan 2011](Z-bibliography.md#ref-nong2011)) and
 DivSufSort ([Fischer and Kurpicz 2017](Z-bibliography.md#ref-fischer2017)) are
 the methods of the libraries in use, the engineered `suffixArray()` combining
-the two. As for the indexes, the suffix tree goes back to [Weiner
+the two; the parallel construction follows the prefix doubling of ParlayLib and
+PBBS ([Shun et al. 2012](Z-bibliography.md#ref-shun2012)) with the discarding
+of [Dementiev et al. 2008](Z-bibliography.md#ref-dementiev2008sa). As for the
+indexes, the suffix tree goes back to [Weiner
 1973](Z-bibliography.md#ref-weiner1973) and [McCreight
 1976](Z-bibliography.md#ref-mccreight1976), the suffix automaton to [Blumer et
 al. 1985](Z-bibliography.md#ref-blumer1985) and [Crochemore
@@ -3472,8 +3490,10 @@ Each exercise names the test of the library that solves it (run it with
     10](Z-bibliography.md#ref-ferragina2023) are checked by
     `pearls_suffix.sec10.2.notes-examples`.
 13. Build the suffix array by the engineered SA-IS and its LCP array by
-    $\Phi$. Tests: `engineered_strings.suffix-sorting`,
-    `engineered_parallel.parallel-lcp`.
+    $\Phi$, and both in parallel. Tests:
+    `engineered_strings.suffix-sorting`,
+    `engineered_parallel.parallel-lcp`,
+    `engineered_parallel.parallel-suffix-array`.
 14. Build the suffix tree by McCreight's algorithm and from the suffix
     array, search a pattern on it, and answer the lowest common ancestors.
     Tests: `pearls_suffix.sec10.3.constructions`,

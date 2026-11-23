@@ -2137,7 +2137,7 @@ only, by chapter.
 | [21](21-compression.md#ch-21) | `compression/BinaryPacking.h`, `compression/Entropy.h`, `compression/HuffmanCoder.h`, `compression/LZ77Linear.h`, `compression/Rans.h`, `compression/StreamVByte.h`, `compression/Tans.h` |
 | [22](22-succinct.md#ch-22) | `interop/sdsl/Sdsl.h` |
 | [23](23-external.md#ch-23) | `external/ExternalSorting.h`, `external/ListRanking.h`, `interop/cereal/Cereal.h` |
-| [25](25-parallel.md#ch-25) | `parallel/Affinity.h`, `parallel/Farm.h`, `parallel/ParallelGraph.h`, `parallel/ParallelGreedy.h`, `parallel/ParallelMerge.h`, `parallel/ParallelNumeric.h`, `parallel/ParallelShortestPaths.h`, `parallel/ParallelSort.h`, `parallel/ParallelText.h`, `parallel/Scratch.h` |
+| [25](25-parallel.md#ch-25) | `parallel/Affinity.h`, `parallel/Farm.h`, `parallel/ParallelGraph.h`, `parallel/ParallelGreedy.h`, `parallel/ParallelMerge.h`, `parallel/ParallelNumeric.h`, `parallel/ParallelPrimitives.h`, `parallel/ParallelShortestPaths.h`, `parallel/ParallelSort.h`, `parallel/ParallelText.h`, `parallel/Scratch.h` |
 | [26](26-distributed.md#ch-26) | `distributed/DistributedSort.h` |
 
 ## 1.13 Typed modifications {#sec-1-13}

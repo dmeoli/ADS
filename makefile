@@ -641,7 +641,7 @@ $(BUILD)/bench-stringdicts: bench/stringdicts.cpp bench/Bench.h $(HEADERS) \
 # (its source of the threads compiled in), GROWT=<dir> the tables of growt,
 # SDSL=<dir> (its sources) the builds of sdsl-lite, SPRAYLIST=<lib> the
 # SprayList built with the wrapper of the k-LSM (with KLSM=<dir>, and
-# GSL=<prefix> of its GSL)
+# GSL=<prefix> of its GSL), LIBSAIS_OMP=<prefix> libsais built with OpenMP
 TBBFLAGS  = $(if $(TBB),-DADS_HAS_TBB -DADS_WITH_TBB \
             $(if $(filter-out 1,$(TBB)),-I$(TBB)/include -L$(TBB)/lib \
             -Wl$(comma)-rpath$(comma)$(TBB)/lib) -ltbb)
@@ -666,7 +666,9 @@ PARFLAGS  = -fopenmp -pthread $(TBBFLAGS) \
             $(if $(SDSL),-DADS_HAS_SDSL -isystem $(SDSL)/include) \
             $(if $(SPRAYLIST),-DADS_HAS_SPRAYLIST \
             -isystem $(KLSM)/src/bench/pqs $(SPRAYLIST) \
-            $(if $(GSL),-L$(GSL)/lib) -lgsl -lgslcblas)
+            $(if $(GSL),-L$(GSL)/lib) -lgsl -lgslcblas) \
+            $(if $(LIBSAIS_OMP),-DADS_HAS_LIBSAIS_OMP \
+            -I$(LIBSAIS_OMP)/include $(LIBSAIS_OMP)/lib/libsais.a)
 
 $(BUILD)/bench-parallel: bench/parallel.cpp bench/Bench.h $(HEADERS) \
                         | $(BUILD)

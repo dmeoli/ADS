@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `suffixArray( ex , T )` of `ParallelText.h`, the suffix array of the
+  bytes of a text on the threads of an executor, on integers of 32 or 64
+  bits, by the prefix doubling of Manber and Myers with the discarding of
+  the suffixes already sorted, as in the suffix array of ParlayLib and PBBS:
+  a first round that sorts words of as many codes of the alphabet of the
+  text as fit in 64 bits, then rounds that sort again only the segments of
+  suffixes still tied, by the rank of the suffix h places on, the small
+  segments each on one thread and the large ones on all the threads by the
+  parallel radix sort, with the result of the sequential `suffixArray()`
+  on every executor and 32 bits up to 2^32 - 2 symbols; the battery `sa` of
+  `bench/parallel.cpp` against the suffix array of the examples of
+  ParlayLib and `libsais_omp()` (`LIBSAIS_OMP=<prefix>` of the makefile,
+  `ADS_LIBSAIS_OMP` of CMake), the test
+  `engineered_parallel.parallel-suffix-array`, and the suffix array in
+  section 25.9 of the manual (Algorithm 25.25, Lemma 25.19) and in section
+  15.5.2
+- `ParallelPrimitives.h`, the primitives on sequences of ParlayLib that the
+  patterns of `Executor.h` and the parallel sorts did not give, each with
+  the same result on every executor: `tabulate()`, the packs `pack()`,
+  `packIndex()` and `filter()`, `flatten()`, `histogram()` (by the counts
+  of the blocks, or by atomic increments when the keys are many),
+  `countingSort()`, the stable parallel radix sort from the most
+  significant digit `integerSort()`, the semisort `semisort()` by the radix
+  sort of the hashes of the keys, with `groupByKey()`, `histogramByKey()`
+  and `removeDuplicates()` on it, `randomShuffle()` and
+  `randomPermutation()` by random buckets shuffled by Fisher and Yates, the
+  tokens and the fields of a string `tokens()` and `split()`, and the
+  reduction and the scan by a monoid of `Algebra.h`, `reduceOf()` and
+  `scanOf()`; the packs of the deterministic reservations, of the parallel
+  greedy algorithms, of the visits of graphs and of the stepping are now
+  these; the battery `primitives` of `bench/parallel.cpp` against
+  `parlay::filter`, `histogram_by_index`, `stable_integer_sort`,
+  `group_by_key`, `random_permutation` and `tokens`, the tests
+  `engineered_parallel.parallel-pack-flatten`, `parallel-integer-sort` and
+  `parallel-semisort-shuffle`, and section 25.6 of the manual (Algorithms
+  25.11 to 25.15, Lemmas 25.9 to 25.11)
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits

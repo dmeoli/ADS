@@ -110,6 +110,7 @@
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
 #include "ADS/parallel/Executor.h"
+#include "ADS/parallel/ParallelPrimitives.h"
 
 #include <algorithm>
 #include <atomic>
