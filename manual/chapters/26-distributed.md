@@ -3,25 +3,25 @@
 [Source: `include/ADS/distributed/DistributedSort.h`, `MPIExecutor.h`,
 `MPIMailbox.h`, `BoostMPI.h`]
 
-We are concerned in this chapter with the computations whose data are
-spread over the processes of MPI ([Message Passing Interface Forum
-2023](Z-bibliography.md#ref-mpi2023)), each with a separate memory, which exchange them only by messages. In `ADS/distributed`, the headers
-are compiled only with `ADS_WITH_MPI`, the option of CMake of the same name
-and the macro of the makefiles. It is off by default, as for the other
-runtimes, since the target `ADS::ADS` built with it carries MPI to every
-program that links it, and AUTO turns it on whenever an implementation of
-MPI such as Open MPI or MPICH is found. They give a
-sort of the items of all the processes ([§26.2](26-distributed.md#sec-26-2)),
-and the runtime that lets the processes act as the workers of one
-computation: an executor and a distributed minimum
+We are concerned in this chapter with the computations whose data are spread
+over the processes of MPI ([Message Passing Interface Forum
+2023](Z-bibliography.md#ref-mpi2023)), each with a separate memory, which
+exchange them only by messages. In `ADS/distributed`, the headers are compiled
+only with `ADS_WITH_MPI`, the option of CMake of the same name and the macro of
+the makefiles. It is off by default, as for the other runtimes, since the
+target `ADS::ADS` built with it carries MPI to each program that links it, and
+AUTO turns it on whenever an implementation of MPI such as Open MPI or MPICH is
+found. The headers give a sort of the items of all the processes
+([§26.2](26-distributed.md#sec-26-2)), and the runtime that lets the processes
+act as the workers of one computation: an executor and a distributed minimum
 ([§26.3](26-distributed.md#sec-26-3)), and a mailbox
-([§26.4](26-distributed.md#sec-26-4)) that also detects the termination of
-the computation ([§26.5](26-distributed.md#sec-26-5)). The threads inside a process, and the mailbox of the threads of which the
-one of the processes is the counterpart, are those of
-[chapter 25](25-parallel.md#ch-25). In the sets of
-[§1.9](01-introduction.md#sec-1-9), the headers of this chapter are
-advanced, but for `BoostMPI.h`, which includes the headers of Boost.MPI
-and is of the set interop.
+([§26.4](26-distributed.md#sec-26-4)) that also detects the termination of the
+computation ([§26.5](26-distributed.md#sec-26-5)). The threads inside a
+process, and the mailbox of the threads (of which the one of the processes is
+the counterpart), are those of [chapter 25](25-parallel.md#ch-25). In the sets
+of [§1.9](01-introduction.md#sec-1-9), the headers of this chapter are
+advanced, but for `BoostMPI.h`, which includes the headers of Boost.MPI and is
+of the set interop.
 
 ## 26.1 The model {#sec-26-1}
 
@@ -185,11 +185,11 @@ the merge then run on its threads, with MPI between the nodes and threads
 within each, the hybrid scheme of the clusters of today.
 
 Beyond some thousands of processes, the latency $\alpha P$ and the $P^2$
-samples dominate (26.1). In this regime, the multi-level sorts of [Axtmann et al.
-2015](Z-bibliography.md#ref-axtmann2015) group the processes and
-exchange the items in $O( \log P )$ levels, each item sent once per level,
-which trades the $P$ messages of each process for $O( P^{1 / \ell} )$
-messages per level over $\ell$ levels; ADS does not realize them.
+samples typically dominate (26.1). In this regime, the multi-level sorts of
+[Axtmann et al. 2015](Z-bibliography.md#ref-axtmann2015) group the processes
+and exchange the items in $O( \log P )$ levels, each item sent once per level,
+which trades the $P$ messages of each process for $O( P^{1 / \ell} )$ messages
+per level over $\ell$ levels; ADS does not realize them.
 
 ## 26.3 Processes as workers {#sec-26-3}
 
@@ -207,7 +207,7 @@ the call `f( rank )`, i.e., the worker of the process. A program written for
 the workers of `run()` of the executors of threads thus runs with one worker
 per process, all the processes calling `run()`; we remark that `run()` returns
 when the worker of the calling process returns, and `barrier()` is the
-synchronization of all of them.
+synchronization of all of them (cf. the exercise 3).
 
 A search in which each process improves a bound (e.g., the value of the best
 solution found so far) needs the minimum over the processes of a value of
@@ -217,7 +217,8 @@ and tests it while the process works ([Algorithm
 26.2](26-distributed.md#alg-26-2)); `test()` gives the minimum when the
 reduction has completed, and `wait()` waits for it. Hence a process learns the
 bounds of the others at most one reduction late, with no message for each
-improvement. While a reduction is in flight (i.e., while `inFlight()` is
+improvement (cf. [Lemma 26.3](26-distributed.md#lem-26-3)). While a
+reduction is in flight (i.e., while `inFlight()` is
 true), `start( v )` starts none and returns false. Also, `test()` gives no
 value when no reduction was started, `wait()` requires one in flight, and the
 destructor waits for it. The values are of an arithmetic type, mapped to the
@@ -267,6 +268,35 @@ class DistributedMin
 `DistributedMin`.
 
 --8<-- "generated/MPIExecutor-DistributedMin-start.pseudo.md"
+
+The minimum is correct because the reductions of the processes are matched
+in the order in which they are started, and the value of a process stays
+unchanged while its reduction is in flight.
+
+<span id="lem-26-3"></span>**Lemma 26.3 (the minimum).** *Let all the
+processes of the communicator start the same number of reductions of their
+`DistributedMin`, and let $v_i^k$ be the value given to the $k$-th call of
+`start()` that returned true on the process $i$. Then at most one reduction
+is in flight on each process at any time, and the call of `test()` that
+gives a value, or of `wait()`, after that $k$-th start gives
+$\min_i v_i^k$ on each process.*
+
+*Proof.* `start()` returns false while a reduction is in flight (line 2 of
+[Algorithm 26.2](26-distributed.md#alg-26-2)), and the flag of the flight
+is cleared only by the `test()` that finds the reduction completed and by
+`wait()`; hence the reductions of a process are not overlapped, and its
+input $v_i^k$, which only `start()` writes (line 3), is unchanged until the
+reduction has completed, as `MPI_Iallreduce` requires. The collective
+operations of a communicator are matched in the order in which each process
+starts them ([Message Passing Interface Forum
+2023](Z-bibliography.md#ref-mpi2023)), and hence the $k$-th reduction of
+each process is the same collective operation, whose output is the minimum
+`MPI_MIN` of the inputs $v_i^k$. $\square$
+
+The lemma gives no bound on the delay between the start and the completion,
+which depends on the implementation of MPI and on how often the processes
+call `test()`: a reduction that does not block may progress only within the
+calls of MPI of each process.
 
 ## 26.4 The mailbox {#sec-26-4}
 
@@ -398,7 +428,7 @@ allocated (hence aligned for the types of up to 8 bytes). `MPIMailbox< Msg >`
 of a type that is not trivially copyable sends its records with the tag 0, and
 passes to $f$ the message rebuilt by `decode()`, a temporary. Whatever their
 form, the messages are counted one by one, and the waves of
-[§26.5](26-distributed.md#sec-26-5) see all of them. Every form also gives
+[§26.5](26-distributed.md#sec-26-5) see all of them. Each form also gives
 `rank()`, `size()`, the communicator of the mailbox (`comm()`, the duplicate),
 the alias `Message` of `Msg`, and the counters `sent()`, `received()`,
 `batches()` (those posted to other processes by MPI) and `waves()` (those
@@ -472,7 +502,7 @@ previous wave and $\sigma$ the number of the processes stopped.
 
 --8<-- "generated/MPIMailbox-quiescent.pseudo.md"
 
-<span id="lem-26-3"></span>**Lemma 26.3 (four counters).** *Let the wave
+<span id="lem-26-4"></span>**Lemma 26.4 (four counters).** *Let the wave
 $k - 1$ read the receipts $R_{k - 1}$ and the next wave $k$ the sends
 $S_k$. If*
 
@@ -533,7 +563,7 @@ arrives; the test (26.2) fails at the second wave and holds at the third.
 The test is the private function `wave()`, i.e., the lines 3 to 9 of
 [Algorithm 26.5](26-distributed.md#alg-26-5), which `quiescent()` calls
 after it has flushed the outboxes (line 2); once it has answered true it
-answers true at every later call, without a new wave.
+answers true at each later call, without a new wave.
 
 **The stop.** A process may also end the whole computation before its
 termination (e.g., by a limit on the work, or by a bound that closes the
@@ -546,7 +576,7 @@ $\sigma$ of a wave counts the processes stopped when they contributed to
 it. A call of `stop()` after the end, or a second one, has no effect, and
 a process should leave its work once `stopped()` is true.
 
-<span id="lem-26-4"></span>**Lemma 26.4 (the stop).** *If a process calls
+<span id="lem-26-5"></span>**Lemma 26.5 (the stop).** *If a process calls
 `stop()`, all the processes see the end at the same wave, at most two waves
 after the last one has received the note; if $\sigma = P$ for a wave, all
 the processes had stopped when they contributed to it.*
@@ -580,7 +610,7 @@ the end.
 
 --8<-- "generated/MPIMailbox-leftovers.pseudo.md"
 
-<span id="lem-26-5"></span>**Lemma 26.5 (each message once).** *After
+<span id="lem-26-6"></span>**Lemma 26.6 (each message once).** *After
 `leftovers()` on all the processes, each message given to `send()` on any
 process has been handed to a function exactly once, by a `poll()` or by
 `leftovers()`.*
