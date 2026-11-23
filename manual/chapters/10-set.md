@@ -2496,11 +2496,12 @@ is the estimate. The Count sketch of [Charikar et al.
 2004](Z-bibliography.md#ref-charikar2004) adds instead $\pm c$, by a random
 sign of the row, and the other items cancel in expectation. It estimates $f_x$
 by the median of the $d$ signed counters, with an error relative to the norm
-$\| f \|_2$ instead of $N = \| f \|_1$ (much smaller on flat streams, and
-close to it on skewed ones, at the price of the counters of any sign). The conservative update of [Estan
-and Varghese 2002](Z-bibliography.md#ref-estan2002) raises each counter of an
-item only up to the new estimate. Furthermore, the $d$ counters of an item come
-from one hash $h$ by the double hashing of [Kirsch and Mitzenmacher
+$\| f \|_2$ instead of $N = \| f \|_1$ (much smaller on flat streams, and close
+to it on skewed ones, at the price of the counters of any sign). The
+conservative update of [Estan and Varghese
+2002](Z-bibliography.md#ref-estan2002) raises each counter of an item only up
+to the new estimate. Furthermore, the $d$ counters of an item come from one
+hash $h$ by the double hashing of [Kirsch and Mitzenmacher
 2006](Z-bibliography.md#ref-kirsch2006). In particular, the row $i$ takes $g_i
 = h + i h'$ modulo $2^{64}$, with $h'$ an odd hash of $h$, and its counter is
 the high half of $g_i w$ on 128 bits (the reduction of [Lemire
