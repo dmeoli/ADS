@@ -6,8 +6,8 @@
  * the compact rank and select and the wavelet matrix, against a scan, and
  * the coders of
  * Huffman and rANS, by their round trip and their size against the
- * entropy, and Stream VByte, by its round trip and its size, at the level 3
- * of the contracts.
+ * entropy, and Stream VByte, FastLanes, ALP and FSST, by their round trips
+ * and their sizes, at the level 3 of the contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -21,9 +21,12 @@
 
 #include "ADSTest.h"
 
+#include "ADS/compression/ALP.h"
 #include "ADS/compression/BinaryPacking.h"
 #include "ADS/compression/DirectAccessCodes.h"
 #include "ADS/compression/Entropy.h"
+#include "ADS/compression/FSST.h"
+#include "ADS/compression/FastLanes.h"
 #include "ADS/compression/HuffmanCoder.h"
 #include "ADS/compression/FMIndex.h"
 #include "ADS/compression/HuffmanFMIndex.h"
@@ -48,6 +51,7 @@
 #include <bit>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <random>
 #include <string>
 #include <thread>
@@ -1351,6 +1355,229 @@ ADS_TEST( "la-vector" )
  CHECK_THROWS( LAVector( cases[ 5 ] , 64 ) , contract_violation );
  CHECK_THROWS( ( void )LAVector( cases[ 5 ] ).access( 3000 ) ,
 	       contract_violation );
+ }
+
+// FastLanes: the kernels of every width of 8, 16, 32 and 64 bits on random
+// values and bases, the transposed layout (a permutation whose chains of
+// differences are runs of W consecutive values in one lane), and the round
+// trip of FOR, DELTA and RLE on 0, 1 and the counts around the vectors of
+// 1024, on equal, random, narrow, sorted, run and extreme values, with the
+// size of FOR; truncated codes and bad widths break the contracts
+template< class T >
+static void fastLanesCase( std::mt19937_64 & g )
+{
+ constexpr unsigned W = 8 * sizeof( T );
+ constexpr std::size_t L = 1024 / W;
+ std::vector< T > in( 1024 ) , out( 1024 );
+ std::vector< std::uint8_t > buf( 128 * W + 8 );
+ for( unsigned b = 0 ; b <= W ; ++b ) {
+  const T base = T( g() );
+  for( auto & v : in )
+   v = T( base + ( b == W ? T( g() ) : T( g() & ( ( 1ULL << b ) - 1 ) ) ) );
+  fastLanesPack< T >( in.data() , buf.data() , b , base );
+  fastLanesUnpack< T >( buf.data() , out.data() , b , base );
+  CHECK( out == in );
+  }
+ // the chains of the differences: the row 8 o + s of the lane l
+ for( std::size_t l = 0 ; l < L ; ++l )
+  for( std::size_t r = 0 ; r < W ; ++r ) {
+   const std::size_t o = r / 8 ,
+		     rho = ( ( o & 1 ) << 2 ) | ( o & 2 ) | ( o >> 2 );
+   const std::size_t p = 16 * rho + 128 * ( r % 8 ) + l;
+   CHECK( p % L == l );
+   CHECK( fastLanesTransposed( p ) == fastLanesTransposed( l ) + r );
+   CHECK( fastLanesTransposed( l ) % W == 0 );
+   }
+ for( const std::size_t n :
+      { 0 , 1 , 2 , 31 , 1023 , 1024 , 1025 , 2047 , 2048 , 2049 , 5000 } )
+  for( int kind = 0 ; kind < 6 ; ++kind ) {
+   std::vector< T > x( n );
+   T acc = T( g() );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    x[ i ] = kind == 0   ? T( 7 )
+	     : kind == 1 ? T( g() )
+	     : kind == 2 ? T( 1000 + g() % 13 )
+	     : kind == 3 ? T( acc += T( g() % 5 ) )
+	     : kind == 4 ? T( ( i / ( 1 + g() % 40 ) ) % 3 == 0 ? 0 : ~T( 0 ) )
+			 : ( i % 2 ? T( 0 ) : T( ~T( 0 ) ) );
+   for( const auto s : { FastLanesScheme::FOR , FastLanesScheme::DELTA ,
+			 FastLanesScheme::RLE } ) {
+    const auto c = fastLanesEncode( x , s );
+    CHECK( fastLanesDecode< T >( c , n , s ) == x );
+    if( ( s == FastLanesScheme::FOR ) && ( kind == 0 ) )
+     CHECK( c.size() == ( n + 1023 ) / 1024 * ( 1 + sizeof( T ) ) );
+    if( n > 0 )
+     CHECK_THROWS( ( void )fastLanesDecode< T >(
+		     std::span( c ).first( c.size() - 1 ) , n , s ) ,
+		   contract_violation );
+    }
+   }
+ CHECK_THROWS( fastLanesPack< T >( in.data() , buf.data() , W + 1 ) ,
+	       contract_violation );
+ }
+
+ADS_TEST( "fastlanes" )
+{
+ std::mt19937_64 g( 71 );
+ fastLanesCase< std::uint8_t >( g );
+ fastLanesCase< std::uint16_t >( g );
+ fastLanesCase< std::uint32_t >( g );
+ fastLanesCase< std::uint64_t >( g );
+ }
+
+// ALP: the round trip bit for bit of double and float on 0 and 1 value,
+// the counts around the vectors and the row groups, equal values,
+// decimals, sorted decimals, full-precision values (by ALP-RD) and the
+// special values (NaNs with payloads, infinities, -0, denormals, the
+// extremes) alone and mixed with decimals; decimals take fewer bits than
+// random values, which take ALP-RD; truncated codes break the contracts
+template< class F >
+static void alpCase( std::mt19937_64 & g )
+{
+ using U =
+   std::conditional_t< sizeof( F ) == 8 , std::uint64_t , std::uint32_t >;
+ using N = std::numeric_limits< F >;
+ auto bits = []( F x ) { return( std::bit_cast< U >( x ) ); };
+ auto same = [ & ]( const std::vector< F > & x , const std::vector< F > & y ) {
+  if( x.size() != y.size() )
+   return( false );
+  for( std::size_t i = 0 ; i < x.size() ; ++i )
+   if( bits( x[ i ] ) != bits( y[ i ] ) )
+    return( false );
+  return( true );
+  };
+ const std::vector< F > special = {
+  N::quiet_NaN() ,     -N::quiet_NaN() ,
+  N::signaling_NaN() , std::bit_cast< F >( U( bits( N::quiet_NaN() ) | 5 ) ) ,
+  N::infinity() ,      -N::infinity() ,
+  F( -0.0 ) ,          F( 0.0 ) ,
+  N::denorm_min() ,    -N::denorm_min() ,
+  N::min() / 4 ,       N::max() ,
+  N::lowest() ,        N::min() ,
+  N::epsilon()
+  };
+ std::uniform_int_distribution< int > D( -99999 , 99999 );
+ std::uniform_real_distribution< F > R( -1 , 1 );
+ auto check = [ & ]( const std::vector< F > & x ) {
+  const auto c = alpCompress( x );
+  CHECK( same( alpDecompress< F >( c , x.size() ) , x ) );
+  if( ! x.empty() )
+   CHECK_THROWS( ( void )alpDecompress< F >(
+		   std::span( c ).first( c.size() - 1 ) , x.size() ) ,
+		 contract_violation );
+  return( c );
+  };
+ for( const std::size_t n :
+      { 0 , 1 , 2 , 1023 , 1024 , 1025 , 2049 , 102399 , 102400 , 102401 } )
+  for( int kind = 0 ; kind < 5 ; ++kind ) {
+   std::vector< F > x( n );
+   F acc = 0;
+   for( std::size_t i = 0 ; i < n ; ++i )
+    x[ i ] = kind == 0   ? F( 3.25 )
+	     : kind == 1 ? F( D( g ) ) / F( 100 )
+	     : kind == 2 ? ( acc += F( g() % 100 ) / F( 10 ) )
+	     : kind == 3 ? R( g )
+			 : ( i % 7 == 0 ? special[ g() % special.size() ]
+					: F( D( g ) ) / F( 1000 ) );
+   const auto c = check( x );
+   if( ( n == 102400 ) && ( kind == 1 ) )
+    CHECK( 8 * c.size() < ( sizeof( F ) == 8 ? 24 : 30 ) * n );
+   if( ( n == 102400 ) && ( kind == 3 ) ) {
+    CHECK( c[ 0 ] == 1 );  // ALP-RD
+    CHECK( c.size() < sizeof( F ) * n );
+    }
+   }
+ check( special );
+ std::vector< F > all( 3000 );
+ for( std::size_t i = 0 ; i < all.size() ; ++i )
+  all[ i ] = special[ i % special.size() ];
+ check( all );
+ }
+
+ADS_TEST( "alp" )
+{
+ std::mt19937_64 g( 73 );
+ alpCase< double >( g );
+ alpCase< float >( g );
+ }
+
+// FSST: the table built from repetitive strings (urls) codes them in less
+// than half of their bytes, each string decoded alone by its place, the
+// table serialized and read back; the strings with every byte from 0 to
+// 255 (each one escaped or a symbol), the empty strings, a column of only
+// empty strings, one string, the empty column, long strings over the
+// sample of 16 KB; a code with an escape at its end or a code past the
+// symbols breaks the contracts
+ADS_TEST( "fsst" )
+{
+ std::mt19937_64 g( 79 );
+ auto roundTrip = [ & ]( const std::vector< std::string > & S ) {
+  const FSSTColumn C( S );
+  CHECK( C.size() == S.size() );
+  CHECK( C.empty() == S.empty() );
+  std::string buf;
+  for( std::size_t i = 0 ; i < S.size() ; ++i ) {
+   CHECK( C[ i ] == S[ i ] );
+   buf.assign( C.bound( i ) , '\0' );
+   CHECK( C.decode( i , buf.data() ) == S[ i ].size() );
+   CHECK( buf.compare( 0 , S[ i ].size() , S[ i ] ) == 0 );
+   }
+  const FSSTTable T = FSSTTable::deserialize( C.table().serialize() );
+  CHECK( T.symbols() == C.table().symbols() );
+  CHECK( T.symbols() <= 255 );
+  for( std::size_t c = 0 ; c < T.symbols() ; ++c ) {
+   CHECK( T.symbol( c ) == C.table().symbol( c ) );
+   CHECK( ( T.symbol( c ).size() >= 1 ) && ( T.symbol( c ).size() <= 8 ) );
+   }
+  for( std::size_t i = 0 ; i < S.size() ; ++i )
+   CHECK( T.decode( C.code( i ) ) == S[ i ] );
+  return( C );
+  };
+ std::vector< std::string > urls;
+ std::size_t bytes = 0;
+ const char * host[] = { "www.example.com" , "en.wikipedia.org" ,
+			 "github.com" ,
+			 "di.unipi.it" };
+ for( int i = 0 ; i < 3000 ; ++i ) {
+  urls.push_back( std::string( "https://" ) + host[ g() % 4 ] + "/page/" +
+		  std::to_string( g() % 5000 ) + ( g() % 3 ? ".html" : "" ) );
+  bytes += urls.back().size();
+  }
+ const FSSTColumn C = roundTrip( urls );
+ CHECK( 2 * C.codeBytes() < bytes );
+ CHECK( C.table().symbols() > 0 );
+ std::vector< std::string > every;
+ for( int k = 0 ; k < 50 ; ++k ) {
+  std::string s;
+  for( int b = 0 ; b < 256 ; ++b )
+   s += char( std::uint8_t( ( b + k ) % 256 ) );
+  every.push_back( s );
+  every.push_back( "" );
+  every.push_back( std::string( 1 , char( 255 ) ) );
+  every.push_back( std::string( 9 , char( 0 ) ) );
+  }
+ roundTrip( every );
+ roundTrip( std::vector< std::string >( 10 , "" ) );
+ roundTrip( { "a" } );
+ roundTrip( {} );
+ std::vector< std::string > longs;
+ for( int k = 0 ; k < 40 ; ++k ) {
+  std::string s;
+  for( int i = 0 ; i < 2000 ; ++i )
+   s += char( 'a' + ( g() % 4 == 0 ? g() % 26 : i % 7 ) );
+  longs.push_back( s );
+  }
+ roundTrip( longs );
+ // a table applied to strings it was not built from
+ const FSSTTable T( urls );
+ for( const auto & s : every )
+  CHECK( T.decode( T.encode( s ) ) == s );
+ const std::vector< std::uint8_t > open = { FSSTTable::ESCAPE } ,
+				   past = { std::uint8_t( 254 ) };
+ CHECK_THROWS( ( void )T.decode( open ) , contract_violation );
+ if( T.symbols() < 255 )
+  CHECK_THROWS( ( void )T.decode( past ) , contract_violation );
+ CHECK_THROWS( ( void )FSSTTable().symbol( 0 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/

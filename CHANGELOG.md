@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the light-weight codes of the columns of a database in
+  `compression/`: `FastLanes.h`, the bit-packing of vectors of 1024
+  unsigned integers of 8, 16, 32 or 64 bits in the lanes of a virtual
+  register of 1024 bits, in plain C++ that the compiler vectorizes, with
+  the frame of reference, the differences on the unified transposed layout
+  and the runs (Afroozeh and Boncz); `ALP.h`, the lossless compression of
+  `double` and `float` by a decimal exponent and factor per vector, searched
+  on two levels of samples, with its fall back ALP-RD for the values of
+  many digits, bit for bit on NaNs, infinities, -0 and denormals (Afroozeh,
+  Kuffó and Boncz); and `FSST.h`, the static table of up to 255 symbols of
+  1 to 8 bytes built in 5 generations on a sample, and `FSSTColumn`, the
+  strings coded one by one and decoded one by one (Boncz, Neumann and
+  Leis); the tests `engineered_succinct.fastlanes`, `.alp` and `.fsst`, the
+  cells of `bench/compression.cpp` against the fsst, the ALP and the
+  kernels of FastLanes of their authors, Chimp128, LZ4, Zstandard and the
+  binary packing, and section 21.12 of the manual (Lemmas 21.21 to 21.23,
+  Algorithms 21.30 to 21.32)
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits

@@ -313,7 +313,7 @@ allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-445 headers: 245 base, 153 advanced, 19 core and 28 interop.
+448 headers: 245 base, 156 advanced, 19 core and 28 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
@@ -322,7 +322,7 @@ allow.
 | `backtrack/` | `Anagrams`, `DancingLinks`, `Enumeration`, `KnightTour`, `NQueens`, `SatSolvers`, `Sudoku` | `FastExactCover` |  |  |
 | `combinatorial/` | `Bitwise`, `Generation` | `FastBitwise`, `FastGeneration` |  |  |
 | `complexity/` | `Domino`, `EasyCases`, `Nondeterminism`, `Problems`, `Reductions` |  |  |  |
-| `compression/` | `ArithmeticCoding`, `BurrowsWheeler`, `CanonicalHuffman`, `Entropy`, `FMIndex`, `IntegerCodes`, `LempelZiv`, `PPM` | `BinaryPacking`, `DirectAccessCodes`, `HuffmanCoder`, `HuffmanFMIndex`, `LZ77Linear`, `MoveRIndex`, `RIndex`, `Rans`, `StreamVByte`, `Tans` | `PackedBits` |  |
+| `compression/` | `ArithmeticCoding`, `BurrowsWheeler`, `CanonicalHuffman`, `Entropy`, `FMIndex`, `IntegerCodes`, `LempelZiv`, `PPM` | `ALP`, `BinaryPacking`, `DirectAccessCodes`, `FSST`, `FastLanes`, `HuffmanCoder`, `HuffmanFMIndex`, `LZ77Linear`, `MoveRIndex`, `RIndex`, `Rans`, `StreamVByte`, `Tans` | `PackedBits` |  |
 | `concurrent/` |  | `Backoff`, `ConcurrentCuckooTable`, `ConcurrentFlatTable`, `ConcurrentUnionFind`, `EventCount`, `LockFreePriorityQueue`, `MPMCQueue`, `MPSCInbox`, `MPSCQueue`, `MinBoard`, `MultiQueue`, `SPSCQueue`, `SingleWriterFlatTable`, `StealablePriorityQueue`, `WorkStealingDeque` |  |  |
 | `dictionary/` | `BinaryTrie`, `BitmapTrie`, `ChainedHashTable`, `CuckooHashing`, `DirectTable`, `HashFunctions`, `IndexedSkipList`, `KnuthHashing`, `OpenHashTable`, `PatriciaTrie`, `PerfectHashing`, `SkipList`, `SortedArrayDictionary`, `TableSize`, `Trie`, `TwoLevelDictionary`, `UniversalHashing`, `XFastTrie`, `YFastTrie` | `AdaptiveRadixTree`, `BucketCuckooTable`, `DenseHashMap`, `FastHash`, `FingerprintPerfectHash`, `FlatHashTable`, `MinimalPerfectHash`, `PointerTable`, `PositionIndex`, `RecSplit`, `RowFingerprint`, `SuccinctPatriciaTrie` | `RandomHashing` |  |
 | `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  | `BoostMPI` |
@@ -719,6 +719,9 @@ library, Boost and Eigen.
 | FM-index on the wavelet tree of Huffman, the succinct suffix array (Makinen and Navarro) | [`compression/HuffmanFMIndex.h`](include/ADS/compression/HuffmanFMIndex.h) | `engineered_succinct.huffman-fm-index` |
 | partitioned Elias-Fano, blocks full, as vectors or by Elias-Fano (Ottaviano and Venturini) | [`succinct/PartitionedEliasFano.h`](include/ADS/succinct/PartitionedEliasFano.h) | `engineered_succinct.partitioned-elias-fano` |
 | binary packing SIMD-BP128 and its patched form PFor (Lemire and Boytsov; Zukowski et al.) | [`compression/BinaryPacking.h`](include/ADS/compression/BinaryPacking.h) | `engineered_succinct.binary-packing` |
+| FastLanes, bit-packing of vectors of 1024 integers in the lanes of a register of 1024 bits, FOR, deltas on the unified transposed layout and runs, in plain C++ that vectorizes (Afroozeh and Boncz) | [`compression/FastLanes.h`](include/ADS/compression/FastLanes.h) | `engineered_succinct.fastlanes` |
+| ALP, lossless compression of doubles and floats by a decimal exponent per vector, and ALP-RD for the values of many digits (Afroozeh, Kuffó and Boncz) | [`compression/ALP.h`](include/ADS/compression/ALP.h) | `engineered_succinct.alp` |
+| FSST, a static table of 255 symbols of up to 8 bytes, each string coded and decoded alone (Boncz, Neumann and Leis) | [`compression/FSST.h`](include/ADS/compression/FSST.h) | `engineered_succinct.fsst` |
 | r-index: count and locate in space proportional to the runs of the transform (Gagie, Navarro and Prezza) | [`compression/RIndex.h`](include/ADS/compression/RIndex.h) | `engineered_succinct.r-index` |
 | move structure, a permutation of shifted intervals in O(1) a step (Nishimoto and Tabei) | [`succinct/MoveStructure.h`](include/ADS/succinct/MoveStructure.h) | `engineered_succinct.move-structure` |
 | r-index on move structures (Bertram, Fischer and Nalbach) | [`compression/MoveRIndex.h`](include/ADS/compression/MoveRIndex.h) | `engineered_succinct.move-r-index` |

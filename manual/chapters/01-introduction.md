@@ -2045,6 +2045,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `compression/CanonicalHuffman.h` | base | `CanonicalHuffman` | [21](21-compression.md#ch-21) |
 | `compression/DirectAccessCodes.h` | advanced | `DirectAccessCodes` | [21](21-compression.md#ch-21) |
 | `compression/FMIndex.h` | base | `FMIndex` | [21](21-compression.md#ch-21) |
+| `compression/FSST.h` | advanced | `FSSTTable`, `FSSTColumn` | [21](21-compression.md#ch-21) |
 | `compression/HuffmanFMIndex.h` | advanced | `HuffmanFMIndex` | [21](21-compression.md#ch-21) |
 | `compression/IntegerCodes.h` | base | `PForDeltaBlock` | [21](21-compression.md#ch-21) |
 | `compression/LempelZiv.h` | base | `LZ77Phrase`, `LZSSPhrase`, `LZ78Phrase` | [21](21-compression.md#ch-21) |
@@ -2134,7 +2135,7 @@ only, by chapter.
 | [18](18-combinatorial.md#ch-18) | `combinatorial/Bitwise.h`, `combinatorial/FastBitwise.h`, `combinatorial/FastGeneration.h`, `combinatorial/Generation.h` |
 | [19](19-backtrack.md#ch-19) | `backtrack/Anagrams.h`, `backtrack/Enumeration.h`, `backtrack/KnightTour.h`, `backtrack/NQueens.h`, `backtrack/Sudoku.h` |
 | [20](20-complexity.md#ch-20) | `complexity/EasyCases.h`, `complexity/Problems.h`, `complexity/Reductions.h`, `intractable/Approximation.h`, `intractable/BranchAndBound.h`, `intractable/FifteenPuzzle.h` |
-| [21](21-compression.md#ch-21) | `compression/BinaryPacking.h`, `compression/Entropy.h`, `compression/HuffmanCoder.h`, `compression/LZ77Linear.h`, `compression/Rans.h`, `compression/StreamVByte.h`, `compression/Tans.h` |
+| [21](21-compression.md#ch-21) | `compression/ALP.h`, `compression/BinaryPacking.h`, `compression/Entropy.h`, `compression/FastLanes.h`, `compression/HuffmanCoder.h`, `compression/LZ77Linear.h`, `compression/Rans.h`, `compression/StreamVByte.h`, `compression/Tans.h` |
 | [22](22-succinct.md#ch-22) | `interop/sdsl/Sdsl.h` |
 | [23](23-external.md#ch-23) | `external/ExternalSorting.h`, `external/ListRanking.h`, `interop/cereal/Cereal.h` |
 | [25](25-parallel.md#ch-25) | `parallel/Affinity.h`, `parallel/Farm.h`, `parallel/ParallelGraph.h`, `parallel/ParallelGreedy.h`, `parallel/ParallelMerge.h`, `parallel/ParallelNumeric.h`, `parallel/ParallelShortestPaths.h`, `parallel/ParallelSort.h`, `parallel/ParallelText.h`, `parallel/Scratch.h` |

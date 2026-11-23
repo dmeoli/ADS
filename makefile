@@ -356,7 +356,10 @@ HWLOCON   = $(if $(filter 1,$(ADSHWLOCON)),-DADS_WITH_HWLOC $(libHwlocINC) \
 # allocators too; OPT=<prefix> adds to
 # succinct and compression the libraries installed there: the headers of
 # sdsl-lite, sux, pasta (with tlx) and succinct with libsuccinct, those of
-# FiniteStateEntropy in fse/ with libfse, and streamvbyte, lz4 and libsais;
+# FiniteStateEntropy in fse/ with libfse, and streamvbyte, lz4, libsais,
+# fsst (in fsst/), zstd, the ALP of its authors (in alp-cwida/, with the
+# Chimp128 of competitors/) and the kernels of FastLanes (in
+# fastlanes-cwida/);
 # SORTING=<dir> adds to sort the sorts whose sources are in <dir> (ips4o,
 # ips2ra, x86-simd-sort, ska_sort, fluxsort, crumsort), HWY=<prefix> vqsort
 # of Highway; TLX=<dir> adds tlx::multiway_merge to external from the
@@ -582,8 +585,13 @@ $(BUILD)/bench-compression: bench/compression.cpp bench/Bench.h $(HEADERS) \
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(OPTFLAGS) \
 	       $(if $(wildcard $(OPT)/src/r-index/internal),\
 	       -I$(OPT)/src/r-index/internal) \
+	       $(if $(wildcard $(OPT)/include/alp-cwida/alp.hpp),\
+	       -I$(OPT)/include/alp-cwida \
+	       -I$(OPT)/include/alp-cwida/competitors) \
+	       $(if $(wildcard $(OPT)/include/fastlanes-cwida),\
+	       -I$(OPT)/include/fastlanes-cwida) \
 	       $(call OPTLIBS,fse streamvbyte lz4 sais FastPFOR divsufsort \
-	       divsufsort64)
+	       divsufsort64 fsst fastlanes-cwida alp-cwida zstd)
 
 $(BUILD)/bench-sort: bench/sort.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(SORTFLAGS)

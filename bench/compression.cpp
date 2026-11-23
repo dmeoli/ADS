@@ -6,7 +6,7 @@
  * against, when they are found, huff0 and FSE of Collet (the entropy
  * coders of Zstandard, from FiniteStateEntropy), Stream VByte of Lemire,
  * the codes of Elias of sdsl-lite, libsais of Grebnov, the csa_wt of
- * sdsl-lite and LZ4:
+ * sdsl-lite, LZ4, Zstandard, fsst, ALP, Chimp128 and FastLanes:
  *
  * - entropy: the encoding and the decoding of n bytes of a text and of a
  *   skewed source (bytes of probability about 2^-k), by the code of
@@ -33,6 +33,17 @@
  * - lz: the parse of LZSS by the chains of gzip against the compression
  *   and the decompression of LZ4, a point of reference rather than a match,
  *   and the parse of LZ77 with no window in linear time;
+ * - columnar: the light-weight codes of the columns, i.e., the encoding,
+ *   the decoding and (for the strings) the access to 100000 strings drawn
+ *   at random, of the strings of 1 to 4 words of n bytes of the text by
+ *   FSST, against the fsst of its authors and, with no access, LZ4 and
+ *   Zstandard (levels 1 and 3) on all the strings at once; of n doubles, a
+ *   walk of prices of 2 decimals and uniform values of all their digits,
+ *   by ALP, against the ALP of its authors, Chimp128 (in the code of the
+ *   authors of ALP) and Zstandard; and, in the group integers, of n
+ *   integers of 32 bits in a range of 2^12, sorted with geometric gaps and
+ *   in runs of 32 on average, by FOR, DELTA and RLE of FastLanes, against
+ *   the binary packing and the kernels of FastLanes of its authors;
  * - space: the bits per byte (per integer, per byte of the text for the
  *   index), in the column of the time, so that the ratios of
  *   bench/summary.py read the same way (above 1 when ADS is smaller).
@@ -106,6 +117,13 @@
  #define ADS_HAS_TANS 1
 #endif
 
+#if __has_include( "ADS/compression/FastLanes.h" )
+ #include "ADS/compression/ALP.h"
+ #include "ADS/compression/FSST.h"
+ #include "ADS/compression/FastLanes.h"
+ #define ADS_HAS_LIGHT 1
+#endif
+
 #if __has_include( <fse/fse.h> )
  #include <fse/fse.h>
  #include <fse/huf.h>
@@ -128,6 +146,42 @@
  #include <sdsl/csa_wt.hpp>
  #include <sdsl/suffix_arrays.hpp>
  #define ADS_HAS_SDSL 1
+#endif
+
+#if __has_include( <fsst/fsst.h> )
+ #include <fsst/fsst.h>
+ #define ADS_HAS_CWFSST 1
+#endif
+
+// the code of the authors of ALP writes its branch of AVX-512 for Clang
+// alone, which GCC does not compile: it is given its scalar branch
+#if __has_include( <alp.hpp> )
+ #pragma push_macro( "__AVX512F__" )
+ #undef __AVX512F__
+ #include <alp.hpp>
+ #pragma pop_macro( "__AVX512F__" )
+ #define ADS_HAS_CWALP 1
+#endif
+
+#if __has_include( <chimp/chimp128.hpp> )
+ #include <chimp/chimp128.hpp>
+ #define ADS_HAS_CHIMP 1
+#endif
+
+#if __has_include( <fls_gen/pack/pack.hpp> ) && defined( ADS_HAS_CWALP )
+ #include <fls_gen/rsum/rsum.hpp>
+ #include <fls_gen/transpose/transpose.hpp>
+ #include <fls_gen/unffor/unffor.hpp>
+ #include <fls_gen/pack/pack.hpp>
+ #include <fls_gen/unpack/unpack.hpp>
+ #include <fls_gen/unrsum/unrsum.hpp>
+ #include <fls_gen/untranspose/untranspose.hpp>
+ #define ADS_HAS_CWFL 1
+#endif
+
+#if __has_include( <zstd.h> )
+ #include <zstd.h>
+ #define ADS_HAS_ZSTD 1
 #endif
 
 #if __has_include( <libsais.h> )
@@ -486,13 +540,12 @@ std::size_t bitsOf( const sdsl::int_vector<> & z )
  }
 #endif
 
-/// the cells of a code of integers: encode( x ) gives the code, decode(
-/// code , n ) the integers back, bits( code ) its bits
-template< class E , class D >
-void integers( const std::string & what ,
-	       const std::vector< std::uint32_t > & x ,
-	       const std::string & who ,
-	       E encode , D decode , int r )
+/// the cells of a code of a column of the group g (its values per value):
+/// encode( x ) gives the code, decode( code , n ) the values back, bits(
+/// code ) its bits
+template< class V , class E , class D >
+void column( const char * g , const std::string & what , const V & x ,
+	     const std::string & who , E encode , D decode , int r )
 {
  if( skip( who ) )
   return;
@@ -503,16 +556,26 @@ void integers( const std::string & what ,
   return;
   }
  print(
-   "integers" , "encode " + what , n , who ,
+   g , "encode " + what , n , who ,
    median( []() { return( 0 ); } ,
 	   [ & ]( int ) { sink = sink + std::uint64_t( encode( x ).size() ); } ,
 	   r , n ) );
- print( "integers" , "decode " + what , n , who ,
+ print( g , "decode " + what , n , who ,
 	median( []() { return( 0 ); } ,
 		[ & ]( int ) { sink = sink + decode( code , n ).size(); } , r ,
 		n ) );
- print( "space" , "integers " + what , n , who ,
+ print( "space" , std::string( g ) + " " + what , n , who ,
 	double( bitsOf( code ) ) / double( n ) );
+ }
+
+/// the cells of a code of integers, by column()
+template< class E , class D >
+void integers( const std::string & what ,
+	       const std::vector< std::uint32_t > & x ,
+	       const std::string & who ,
+	       E encode , D decode , int r )
+{
+ column( "integers" , what , x , who , encode , decode , r );
  }
 
 void integerCodes( std::size_t n , int r , unsigned seed )
@@ -697,6 +760,586 @@ void integerCodes( std::size_t n , int r , unsigned seed )
 #endif
   }
  }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- LIGHT-WEIGHT COLUMNS ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#ifdef ADS_HAS_LIGHT
+/// the strings of n bytes of the text, of 1 to 4 words each
+std::vector< std::string > strings( std::size_t n , unsigned seed )
+{
+ const Bytes t = text( n , seed );
+ std::mt19937_64 g( seed + 1 );
+ std::vector< std::string > S;
+ std::string cur;
+ std::size_t words = 1 + g() % 4;
+ for( const std::uint8_t c : t ) {
+  cur += char( c );
+  if( ( ( c == ' ' ) || ( c == '\n' ) ) && ( --words == 0 ) ) {
+   S.push_back( cur );
+   cur.clear();
+   words = 1 + g() % 4;
+   }
+  }
+ if( ! cur.empty() )
+  S.push_back( cur );
+ return( S );
+ }
+
+/// the cells of a code of strings: encode() codes S, decode( out ) writes
+/// all the strings one after the other at out (with 8 bytes of room past
+/// them) and gives their bytes, access( i , out ) the string i alone at out
+/// (none if null), bytes() the bytes of the code
+template< class E , class D , class A , class B >
+void stringCells( const std::vector< std::string > & S , std::size_t n ,
+		  const std::string & who , E encode , D decode , A access ,
+		  B bytes , int r )
+{
+ if( skip( who ) )
+  return;
+ std::string F;
+ for( const auto & s : S )
+  F += s;
+ const std::size_t m = F.size();
+ encode();
+ std::string out( m + 8 , '\0' );
+ if( ( decode( out.data() ) != m ) || ( out.compare( 0 , m , F ) != 0 ) ) {
+  std::fprintf( stderr , "%s: the round trip fails\n" , who.c_str() );
+  return;
+  }
+ print( "columnar" , "encode strings" , n , who ,
+	median( []() { return( 0 ); } , [ & ]( int ) { encode(); } , r , m ) );
+ print( "columnar" , "decode strings" , n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) { sink = sink + decode( out.data() ); } , r ,
+		m ) );
+ if constexpr( ! std::is_same_v< A , std::nullptr_t > ) {
+  std::mt19937_64 g( 5 );
+  std::vector< std::size_t > Q( 100000 );
+  for( auto & q : Q )
+   q = std::size_t( g() % S.size() );
+  print( "columnar" , "access strings" , n , who ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  std::size_t t = 0;
+		  for( const auto q : Q )
+		   t += access( q , out.data() );
+		  sink = sink + t;
+		  } ,
+		 r , Q.size() ) );
+  }
+ print( "space" , "columnar strings" , n , who ,
+	8 * double( bytes() ) / double( m ) );
+ }
+
+void stringColumns( std::size_t n , int r , unsigned seed )
+{
+ const auto S = strings( n , seed );
+ std::size_t m = 0;
+ for( const auto & s : S )
+  m += s.size();
+ {
+  ADS::FSSTColumn C;
+  stringCells(
+    S , n , "ADS::FSSTColumn" , [ & ]() { C = ADS::FSSTColumn( S ); } ,
+    [ & ]( char * out ) {
+     std::size_t j = 0;
+     for( std::size_t i = 0 ; i < C.size() ; ++i )
+      j += C.decode( i , out + j );
+     return( j );
+     } ,
+    [ & ]( std::size_t i , char * out ) { return( C.decode( i , out ) ); } ,
+    [ & ]() { return( C.codeBytes() + C.table().serialize().size() ); } , r );
+  }
+#ifdef ADS_HAS_CWFSST
+ {
+  const std::size_t k = S.size();
+  std::vector< std::size_t > len( k ) , clen( k );
+  std::vector< const unsigned char * > ptr( k );
+  std::vector< unsigned char * > cptr( k );
+  for( std::size_t i = 0 ; i < k ; ++i ) {
+   len[ i ] = S[ i ].size();
+   ptr[ i ] = reinterpret_cast< const unsigned char * >( S[ i ].data() );
+   }
+  std::vector< unsigned char > code( 7 + 2 * m );
+  fsst_decoder_t dec{};
+  unsigned head = 0;
+  stringCells(
+    S , n , "fsst" ,
+    [ & ]() {
+     fsst_encoder_t * e = fsst_create( k , len.data() , ptr.data() , 0 );
+     fsst_compress( e , k , len.data() , ptr.data() , code.size() ,
+		    code.data() ,
+		    clen.data() , cptr.data() );
+     unsigned char h[ FSST_MAXHEADER ];
+     head = fsst_export( e , h );
+     dec = fsst_decoder( e );
+     fsst_destroy( e );
+     } ,
+    [ & ]( char * out ) {
+     std::size_t j = 0;
+     unsigned char * o = reinterpret_cast< unsigned char * >( out );
+     for( std::size_t i = 0 ; i < k ; ++i )
+      j += fsst_decompress( &dec , clen[ i ] , cptr[ i ] , m + 8 - j , o + j );
+     return( j );
+     } ,
+    [ & ]( std::size_t i , char * out ) {
+     return( fsst_decompress( &dec , clen[ i ] , cptr[ i ] , m + 8 ,
+			       reinterpret_cast< unsigned char * >( out ) ) );
+     } ,
+    [ & ]() {
+     std::size_t b = head;
+     for( const auto c : clen )
+      b += c;
+     return( b );
+     } ,
+    r );
+  }
+#endif
+ // the general compressors on all the strings at once, with no access to
+ // one of them
+ std::string F;
+ for( const auto & s : S )
+  F += s;
+#ifdef ADS_HAS_LZ4
+ {
+  std::string c( std::size_t( LZ4_compressBound( int( m ) ) ) , '\0' );
+  int cs = 0;
+  stringCells(
+    S , n , "LZ4_compress_default" ,
+    [ & ]() {
+     cs =
+       LZ4_compress_default( F.data() , c.data() , int( m ) ,
+			     int( c.size() ) );
+     } ,
+    [ & ]( char * out ) {
+     return(
+       std::size_t( LZ4_decompress_safe( c.data() , out , cs ,
+					 int( m ) + 8 ) ) );
+     } ,
+    nullptr , [ & ]() { return( std::size_t( cs ) ); } , r );
+  }
+#endif
+#ifdef ADS_HAS_ZSTD
+ for( const int level : { 1 , 3 } ) {
+  std::string c( ZSTD_compressBound( m ) , '\0' );
+  std::size_t cs = 0;
+  stringCells(
+    S , n , "ZSTD_compress " + std::to_string( level ) ,
+    [ & ]() { cs = ZSTD_compress( c.data() , c.size() , F.data() , m ,
+				  level ); } ,
+    [ & ]( char * out ) {
+     return( ZSTD_decompress( out , m + 8 , c.data() , cs ) );
+     } ,
+    nullptr , [ & ]() { return( cs ); } , r );
+  }
+#endif
+ }
+
+#ifdef ADS_HAS_CWALP
+/// the vectors of the ALP of its authors: their primitives, with the
+/// states of the row groups and the parts of each vector
+struct CwAlp
+{
+ struct Vec
+ {
+  std::uint8_t e = 0 , f = 0 , bw = 0;
+  std::int64_t base = 0;
+  std::uint16_t count = 0;
+  std::vector< std::int64_t > packed;
+  std::vector< std::uint64_t > right;
+  std::vector< std::uint16_t > left , pos , rdExc;
+  std::vector< double > exc;
+  };
+ std::vector< alp::state< double > > groups;
+ std::vector< Vec > vecs;
+ std::size_t bytes = 0;
+ [[nodiscard]] std::size_t size( void ) const { return( bytes ); }
+ };
+
+std::size_t bitsOf( const CwAlp & c )
+{
+ return( 8 * c.bytes );
+ }
+
+CwAlp cwAlpEncode( const std::vector< double > & x )
+{
+ constexpr std::size_t V = alp::config::VECTOR_SIZE;
+ const std::size_t n = x.size();
+ CwAlp c;
+ std::vector< double > sample( alp::config::ROWGROUP_SIZE ) , buf( V );
+ std::vector< std::int64_t > enc( V );
+ alp::state< double > stt;
+ for( std::size_t off = 0 ; off < n ; off += V ) {
+  if( off % alp::config::ROWGROUP_SIZE == 0 ) {
+   stt = alp::state< double >();
+   alp::encoder< double >::init( x.data() , off , n , sample.data() , stt );
+   if( stt.scheme == alp::Scheme::ALP_RD ) {
+    alp::rd_encoder< double >::init( x.data() , off , n , sample.data() ,
+				     stt );
+    c.bytes += stt.actual_dictionary_size_bytes;
+    }
+   c.groups.push_back( stt );
+   }
+  const std::size_t m = std::min( V , n - off );
+  std::copy( x.begin() + std::ptrdiff_t( off ) ,
+	     x.begin() + std::ptrdiff_t( off + m ) , buf.begin() );
+  std::fill( buf.begin() + std::ptrdiff_t( m ) , buf.end() ,
+	     x[ off + m - 1 ] );
+  CwAlp::Vec v;
+  v.pos.resize( V );
+  if( stt.scheme == alp::Scheme::ALP ) {
+   v.exc.resize( V );
+   v.packed.resize( V );
+   alp::bw_t bw;
+   alp::encoder< double >::encode( buf.data() , v.exc.data() , v.pos.data() ,
+				   &v.count , enc.data() , stt );
+   alp::encoder< double >::analyze_ffor( enc.data() , bw , &v.base );
+   ffor::ffor( enc.data() , v.packed.data() , bw , &v.base );
+   v.bw = bw;
+   v.e = stt.exp;
+   v.f = stt.fac;
+   v.packed.resize( std::size_t( bw ) * V / 64 );
+   c.bytes += bw * V / 8 + v.count * ( sizeof( double ) + 2 ) + 8 + 5;
+   }
+  else {
+   std::vector< std::uint64_t > right( V );
+   std::vector< std::uint16_t > left( V );
+   v.rdExc.resize( V );
+   v.right.resize( V );
+   v.left.resize( V );
+   alp::rd_encoder< double >::encode( buf.data() , v.rdExc.data() ,
+				      v.pos.data() ,
+				      &v.count , right.data() , left.data() ,
+				      stt );
+   ffor::ffor( right.data() , v.right.data() , stt.right_bit_width ,
+	       &stt.right_for_base );
+   ffor::ffor( left.data() , v.left.data() , stt.left_bit_width ,
+	       &stt.left_for_base );
+   c.bytes +=
+     ( stt.right_bit_width + stt.left_bit_width ) * V / 8 + v.count * 4 + 2;
+   }
+  c.vecs.push_back( std::move( v ) );
+  }
+ return( c );
+ }
+
+std::vector< double > cwAlpDecode( const CwAlp & c , std::size_t n )
+{
+ constexpr std::size_t V = alp::config::VECTOR_SIZE;
+ std::vector< double > out( c.vecs.size() * V );
+ std::vector< std::uint64_t > unr( V );
+ std::vector< std::uint16_t > unl( V );
+ for( std::size_t k = 0 ; k < c.vecs.size() ; ++k ) {
+  const CwAlp::Vec & v = c.vecs[ k ];
+  const alp::state< double > & stt =
+    c.groups[ k * V / alp::config::ROWGROUP_SIZE ];
+  double * o = out.data() + k * V;
+  std::uint16_t count = v.count;
+  if( stt.scheme == alp::Scheme::ALP ) {
+   std::int64_t base = v.base;
+   generated::falp::fallback::scalar::falp( v.packed.data() , o , v.bw ,
+					    &base ,
+					    v.f , v.e );
+   alp::decoder< double >::patch_exceptions(
+     o , const_cast< double * >( v.exc.data() ) ,
+     const_cast< std::uint16_t * >( v.pos.data() ) , &count );
+   }
+  else {
+   std::uint64_t rb = stt.right_for_base;
+   std::uint16_t lb = stt.left_for_base;
+   unffor::unffor( v.right.data() , unr.data() , stt.right_bit_width , &rb );
+   unffor::unffor( v.left.data() , unl.data() , stt.left_bit_width , &lb );
+   alp::rd_encoder< double >::decode(
+     o , unr.data() , unl.data() ,
+     const_cast< std::uint16_t * >( v.rdExc.data() ) ,
+     const_cast< std::uint16_t * >( v.pos.data() ) , &count ,
+     const_cast< alp::state< double > & >( stt ) );
+   }
+  }
+ out.resize( n );
+ return( out );
+ }
+#endif
+
+#ifdef ADS_HAS_CHIMP
+/// the blocks of 1024 values of Chimp128 of Liakos et al., in the code of
+/// the authors of ALP, each with its stream, its flags, its leading zeros
+/// and its packed data
+struct Chimp
+{
+ struct Block
+ {
+  std::vector< std::uint8_t > data , flags , lz;
+  std::vector< std::uint16_t > packed;
+  };
+ std::vector< Block > blocks;
+ std::size_t bytes = 0;
+ [[nodiscard]] std::size_t size( void ) const { return( bytes ); }
+ };
+
+std::size_t bitsOf( const Chimp & c )
+{
+ return( 8 * c.bytes );
+ }
+
+Chimp chimpEncode( const std::vector< double > & x )
+{
+ using namespace alp_bench;
+ Chimp c;
+ std::vector< std::uint8_t > data( 8192 + 1024 ) , flags( 1025 ) , lz( 1024 );
+ std::vector< std::uint16_t > packed( 1024 );
+ for( std::size_t a = 0 ; a < x.size() ; a += 1024 ) {
+  const std::size_t m = std::min< std::size_t >( 1024 , x.size() - a );
+  Chimp128CompressionState< std::uint64_t , false > st;
+  st.Reset();
+  st.output.SetStream( data.data() );
+  st.leading_zero_buffer.SetBuffer( lz.data() );
+  st.flag_buffer.SetBuffer( flags.data() );
+  st.packed_data_buffer.SetBuffer( packed.data() );
+  for( std::size_t i = 0 ; i < 1024 ; ++i )
+   Chimp128Compression< std::uint64_t , false >::Store(
+     std::bit_cast< std::uint64_t >( x[ a + std::min( i , m - 1 ) ] ) , st );
+  st.Flush();
+  st.output.Flush();
+  const std::size_t lzb = st.leading_zero_buffer.BlockCount() ,
+		    db = AlignValue( st.output.BytesWritten() ) ,
+		    fb = st.flag_buffer.BytesUsed() ,
+		    pb = st.packed_data_buffer.index;
+  Chimp::Block b;
+  b.data.assign( data.begin() , data.begin() + std::ptrdiff_t( db + 8 ) );
+  b.flags.assign( flags.begin() , flags.begin() + std::ptrdiff_t( fb + 8 ) );
+  b.lz.assign( lz.begin() , lz.begin() + std::ptrdiff_t( 3 * lzb + 8 ) );
+  b.packed.assign( packed.begin() , packed.begin() + std::ptrdiff_t( pb ) );
+  c.bytes += db + fb + 3 * lzb + 2 * pb;
+  c.blocks.push_back( std::move( b ) );
+  }
+ return( c );
+ }
+
+std::vector< double > chimpDecode( const Chimp & c , std::size_t n )
+{
+ using namespace alp_bench;
+ std::vector< double > out( c.blocks.size() * 1024 );
+ std::vector< std::uint8_t > lzu( 1024 );
+ std::vector< ChimpConstants::Flags > flags( 1024 );
+ std::vector< UnpackedData > unp( 1024 );
+ for( std::size_t k = 0 ; k < c.blocks.size() ; ++k ) {
+  Chimp::Block & b = const_cast< Chimp::Block & >( c.blocks[ k ] );
+  Chimp128DecompressionState< std::uint64_t > ds;
+  ds.input.SetStream( b.data.data() );
+  FlagBuffer< false > fb;
+  fb.SetBuffer( b.flags.data() );
+  LeadingZeroBuffer< false > lb;
+  lb.SetBuffer( b.lz.data() );
+  flags[ 0 ] = ChimpConstants::Flags::VALUE_IDENTICAL;
+  for( std::size_t i = 0 ; i < 1023 ; ++i )
+   flags[ 1 + i ] = ChimpConstants::Flags( fb.Extract() );
+  for( std::size_t i = 0 ; i < ( b.lz.size() - 8 ) / 3 * 8 ; ++i )
+   lzu[ i ] =
+     ChimpConstants::Decompression::LEADING_REPRESENTATION[ lb.Extract() ];
+  for( std::size_t i = 0 ; i < b.packed.size() ; ++i ) {
+   PackedDataUtils< std::uint64_t >::Unpack( b.packed[ i ] , unp[ i ] );
+   if( unp[ i ].significant_bits == 0 )
+    unp[ i ].significant_bits = 64;
+   unp[ i ].leading_zero =
+     ChimpConstants::Decompression::LEADING_REPRESENTATION[ unp[ i ]
+							      .leading_zero ];
+   }
+  ds.Reset();
+  std::uint32_t lzi = 0 , ui = 0;
+  for( std::size_t i = 0 ; i < 1024 ; ++i )
+   out[ k * 1024 + i ] =
+     std::bit_cast< double >( Chimp128Decompression< std::uint64_t >::Load(
+       flags[ i ] , lzu.data() , lzi , unp.data() , ui , ds ) );
+  }
+ out.resize( n );
+ return( out );
+ }
+#endif
+
+void floatColumns( std::size_t n , int r , unsigned seed )
+{
+ using D = std::vector< double >;
+ std::mt19937_64 g( seed );
+ // a walk of prices of 2 decimals, and values of all their digits
+ D dec( n ) , real( n );
+ std::int64_t cents = 10000;
+ for( auto & v : dec ) {
+  cents += std::int64_t( g() % 201 ) - 100;
+  v = double( cents ) / 100;
+  }
+ std::uniform_real_distribution< double > U( 0 , 1 );
+ for( auto & v : real )
+  v = U( g );
+ for( const bool decimals : { true , false } ) {
+  const D & x = decimals ? dec : real;
+  const std::string what = decimals ? "floats decimals" : "floats reals";
+  column(
+    "columnar" , what , x , "ADS::alpCompress" ,
+    []( const D & x ) { return( ADS::alpCompress( x ) ); } ,
+    []( const Bytes & c , std::size_t n ) {
+     return( ADS::alpDecompress< double >( c , n ) );
+     } ,
+    r );
+#ifdef ADS_HAS_CWALP
+  column(
+    "columnar" , what , x , "alp" ,
+    []( const D & x ) { return( cwAlpEncode( x ) ); } ,
+    []( const CwAlp & c , std::size_t n ) { return( cwAlpDecode( c , n ) ); } ,
+    r );
+#endif
+#ifdef ADS_HAS_CHIMP
+  column(
+    "columnar" , what , x , "Chimp128" ,
+    []( const D & x ) { return( chimpEncode( x ) ); } ,
+    []( const Chimp & c , std::size_t n ) { return( chimpDecode( c , n ) ); } ,
+    r );
+#endif
+#ifdef ADS_HAS_ZSTD
+  column(
+    "columnar" , what , x , "ZSTD_compress 3" ,
+    []( const D & x ) {
+     Bytes c( ZSTD_compressBound( 8 * x.size() ) );
+     c.resize(
+       ZSTD_compress( c.data() , c.size() , x.data() , 8 * x.size() , 3 ) );
+     return( c );
+     } ,
+    []( const Bytes & c , std::size_t n ) {
+     D y( n );
+     ZSTD_decompress( y.data() , 8 * n , c.data() , c.size() );
+     return( y );
+     } ,
+    r );
+#endif
+  }
+ }
+
+#ifdef ADS_HAS_CWFL
+/// the FastLanes of its authors on vectors of 1024 integers of 32 bits: for
+/// each vector its width and its base (the L = 32 bases with delta) before
+/// its packed words, the last vector filled with its last value
+std::vector< std::uint32_t >
+cwFastLanes( const std::vector< std::uint32_t > & x , bool delta )
+{
+ std::vector< std::uint32_t > out , buf( 1024 ) , t( 1024 ) , d( 1024 ) ,
+   p( 1024 );
+ for( std::size_t a = 0 ; a < x.size() ; a += 1024 ) {
+  const std::size_t m = std::min< std::size_t >( 1024 , x.size() - a );
+  std::copy( x.begin() + std::ptrdiff_t( a ) ,
+	     x.begin() + std::ptrdiff_t( a + m ) , buf.begin() );
+  std::fill( buf.begin() + std::ptrdiff_t( m ) , buf.end() , x[ a + m - 1 ] );
+  if( delta ) {
+   generated::transpose::fallback::scalar::transpose_i( buf.data() ,
+							t.data() );
+   generated::unrsum::fallback::scalar::unrsum( t.data() , d.data() );
+   std::uint32_t o = 0;
+   for( const auto v : d )
+    o |= v;
+   const auto bw = std::uint8_t( std::bit_width( o ) );
+   generated::pack::fallback::scalar::pack( d.data() , p.data() , bw );
+   out.push_back( bw );
+   out.insert( out.end() , t.begin() , t.begin() + 32 );
+   out.insert( out.end() , p.begin() , p.begin() + 32 * bw );
+   }
+  else {
+   const auto [ lo , hi ] = std::minmax_element( buf.begin() , buf.end() );
+   std::uint32_t base = *lo;
+   const auto bw = std::uint8_t( std::bit_width( *hi - base ) );
+   fastlanes::generated::ffor::fallback::scalar::ffor( buf.data() , p.data() ,
+						       bw , &base );
+   out.push_back( bw );
+   out.push_back( base );
+   out.insert( out.end() , p.begin() , p.begin() + 32 * bw );
+   }
+  }
+ return( out );
+ }
+
+std::vector< std::uint32_t >
+cwFastLanesDecode( const std::vector< std::uint32_t > & c , std::size_t n ,
+		   bool delta )
+{
+ std::vector< std::uint32_t > out( ( n + 1023 ) / 1024 * 1024 ) , d( 1024 ) ,
+   t( 1024 );
+ std::size_t at = 0;
+ for( std::size_t a = 0 ; a < n ; a += 1024 ) {
+  const auto bw = std::uint8_t( c[ at ] );
+  if( delta ) {
+   generated::unpack::fallback::scalar::unpack( c.data() + at + 33 , d.data() ,
+						bw );
+   generated::rsum::fallback::scalar::rsum( d.data() , t.data() ,
+					    c.data() + at + 1 );
+   generated::untranspose::fallback::scalar::untranspose_o( t.data() ,
+							    out.data() + a );
+   at += 33 + 32 * std::size_t( bw );
+   }
+  else {
+   generated::unffor::fallback::scalar::unffor(
+     c.data() + at + 2 , out.data() + a , bw , c.data() + at + 1 );
+   at += 2 + 32 * std::size_t( bw );
+   }
+  }
+ out.resize( n );
+ return( out );
+ }
+#endif
+
+void fastLanesColumns( std::size_t n , int r , unsigned seed )
+{
+ using V = std::vector< std::uint32_t >;
+ std::mt19937_64 g( seed );
+ std::geometric_distribution< std::uint32_t > G( 1.0 / 64 );
+ // values in a range of 2^12, sorted values of geometric gaps, and runs
+ V narrow( n ) , sorted( n ) , runs( n );
+ std::uint32_t acc = 0 , run = 0;
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  narrow[ i ] = 100000 + std::uint32_t( g() % 4096 );
+  sorted[ i ] = acc += 1 + G( g );
+  if( ( i == 0 ) || ( g() % 32 == 0 ) )
+   run = std::uint32_t( g() );
+  runs[ i ] = run;
+  }
+ using S = ADS::FastLanesScheme;
+ const std::pair< const char * , S > cases[] = { { "fastlanes for" , S::FOR } ,
+						{ "fastlanes delta" ,
+						  S::DELTA } ,
+						{ "fastlanes rle" , S::RLE } };
+ for( const auto & [ what , s ] : cases ) {
+  const V & x = s == S::FOR ? narrow : s == S::DELTA ? sorted : runs;
+  integers(
+    what , x , "ADS::fastLanesEncode" ,
+    [ s ]( const V & x ) { return( ADS::fastLanesEncode( x , s ) ); } ,
+    [ s ]( const Bytes & c , std::size_t n ) {
+     return( ADS::fastLanesDecode< std::uint32_t >( c , n , s ) );
+     } ,
+    r );
+#ifdef ADS_HAS_BP
+  const bool sort = s == S::DELTA;
+  integers(
+    what , x , "ADS::binaryPack" ,
+    [ sort ]( const V & x ) { return( ADS::binaryPack( x , sort ) ); } ,
+    [ sort ]( const Bytes & c , std::size_t n ) {
+     return( ADS::binaryUnpack( c , n , sort ) );
+     } ,
+    r );
+#endif
+#ifdef ADS_HAS_CWFL
+  if( s != S::RLE ) {
+   const bool delta = s == S::DELTA;
+   integers(
+     what , x , "FastLanes" ,
+     [ delta ]( const V & x ) { return( cwFastLanes( x , delta ) ); } ,
+     [ delta ]( const V & c , std::size_t n ) {
+      return( cwFastLanesDecode( c , n , delta ) );
+      } ,
+     r );
+   }
+#endif
+  }
+ }
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ BWT AND INDEX -----------------------------*/
@@ -1043,6 +1686,13 @@ int main( int argc , char ** argv )
   entropyCoders( n , o.runs , o.seed );
  for( std::size_t n : o.sizes )
   integerCodes( n , o.runs , o.seed );
+#ifdef ADS_HAS_LIGHT
+ for( std::size_t n : o.sizes ) {
+  stringColumns( n , o.runs , o.seed );
+  floatColumns( n , o.runs , o.seed );
+  fastLanesColumns( n , o.runs , o.seed );
+  }
+#endif
  for( std::size_t n : o.sizes )
   if( n <= 10000000 )
    transforms( n , o.runs , o.seed );

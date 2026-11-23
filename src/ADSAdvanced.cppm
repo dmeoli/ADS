@@ -155,6 +155,11 @@ using ADS::forEachPermutation;
 using ADS::forEachPermutationLex;
 using ADS::nextCombination;
 
+// compression/ALP.h
+using ADS::ALPFloat;
+using ADS::alpCompress;
+using ADS::alpDecompress;
+
 // compression/BinaryPacking.h
 using ADS::binaryPack;
 using ADS::binaryUnpack;
@@ -163,6 +168,20 @@ using ADS::patchedUnpack;
 
 // compression/DirectAccessCodes.h
 using ADS::DirectAccessCodes;
+
+// compression/FSST.h
+using ADS::FSSTColumn;
+using ADS::FSSTTable;
+
+// compression/FastLanes.h
+using ADS::FastLanesScheme;
+using ADS::FastLanesWord;
+using ADS::fastLanesDecode;
+using ADS::fastLanesEncode;
+using ADS::fastLanesPack;
+using ADS::fastLanesTransposed;
+using ADS::fastLanesUnpack;
+using ADS::fastLanesVector;
 
 // compression/HuffmanCoder.h
 using ADS::huffmanCompress;

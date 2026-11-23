@@ -4,7 +4,8 @@
 `HuffmanCoder.h`, `PackedBits.h`, `ArithmeticCoding.h`, `Rans.h`,
 `Tans.h`, `PPM.h`, `IntegerCodes.h`, `BinaryPacking.h`, `StreamVByte.h`,
 `DirectAccessCodes.h`, `LempelZiv.h`, `LZ77Linear.h`, `BurrowsWheeler.h`,
-`FMIndex.h`, `HuffmanFMIndex.h`, `RIndex.h`, `MoveRIndex.h`]
+`FMIndex.h`, `HuffmanFMIndex.h`, `RIndex.h`, `MoveRIndex.h`, `FastLanes.h`,
+`ALP.h`, `FSST.h`]
 
 We are concerned in this chapter with the lossless compression of a text, i.e.,
 with an encoder that turns a string of symbols into a shorter string of bits
@@ -31,7 +32,9 @@ occurrence of it ([§21.9](21-compression.md#sec-21-9)), and the transform of
 Burrows and Wheeler sorts the contexts of the symbols, after which the symbols
 are easy to code ([§21.10](21-compression.md#sec-21-10)). The transform is also
 an index of the text, which [§21.11](21-compression.md#sec-21-11) builds in
-four forms of decreasing space. In the sets of
+four forms of decreasing space. Finally, the light-weight codes of the columns
+of a database, for integers, floating-point numbers and strings, are in
+[§21.12](21-compression.md#sec-21-12). In the sets of
 [§1.9](01-introduction.md#sec-1-9), `ArithmeticCoding.h`, `BurrowsWheeler.h`,
 `CanonicalHuffman.h`, `Entropy.h`, `FMIndex.h`, `IntegerCodes.h`, `LempelZiv.h`
 and `PPM.h` are base and the other headers of this chapter are advanced, while
@@ -1902,14 +1905,297 @@ occurrences.
 | `RIndex` | $O( r )$ words | $O( p )$ ranks on the runs, each with a predecessor search | $O( \mathit{occ} )$ predecessor searches |
 | `MoveRIndex` | $O( r )$ words, a few more per run | $O( p )$ steps of $O( 1 )$, plus the ranks for the intervals of another symbol | $O( \mathit{occ} )$, each in $O( 1 )$ |
 
-## 21.12 The interface {#sec-21-12}
+## 21.12 Light-weight compression of columns {#sec-21-12}
+
+The coders of the previous sections are made for a text, or a list of integers,
+that is decoded whole (or nearly so), and their decoders do a work per symbol
+that depends on the data. Instead, the engines of the analytical databases are
+in a different position. They keep each column of a table apart and scan it a
+vector of about a thousand values at a time; hence, they want a code chosen
+anew for each vector (as the patched code of [Zukowski et al.
+2006](Z-bibliography.md#ref-zukowski2006) already was), a decoder that runs the
+same operations on every vector, and a vector, or even a value, that can be
+read without the others. We now see three such codes, usually called
+"light-weight", one for each type of column: FastLanes for the integers, ALP
+for the floating-point numbers and FSST for the strings. The first is also the
+last step of the second, which packs its integers by it.
+
+*FastLanes.* The layout of [Afroozeh and Boncz
+2023](Z-bibliography.md#ref-afroozeh2023) (`FastLanes.h`) extends the vertical
+layout of SIMD-BP128 (cf. [§21.8](21-compression.md#sec-21-8)) from the four
+lanes of a register of 128 bits to the lanes of a virtual register of 1024
+bits. A vector of 1024 unsigned integers of $W = 8$, 16, 32 or 64 bits is seen
+as $L = 1024 / W$ lanes of $W$ rows, the place $p$ being in the lane $p \bmod
+L$ and in the row $\lfloor p / L \rfloor$. A packing of width $b$ writes the
+row $r$ of the lane $l$ at the bit $r b$ of the $b$ words of that lane, and the
+word $k$ of the lane $l$ at the place $k L + l$, i.e., in $128 b$ bytes
+whatever $W$ is. Each lane runs the same shifts and masks, which are constants
+for a given $b$ (we write a template for each width, chosen by a table of $W +
+1$ functions), and the loop over the $L$ lanes has no dependence between its
+iterations. Thus, the compiler turns it into the instructions of the vectors of
+the processor, of 128, 256 or 512 bits, or leaves it scalar where there are
+none. Note that the code is plain C++, with neither Highway nor intrinsics, as
+the paper argues it can be. The frame of reference (FOR) of a vector subtracts
+its smallest value $m$ in the same loop as the packing, with the width of the
+largest difference from $m$, and the decoder adds $m$ back as it unpacks.
+
+The differences, instead, cannot run along the vector, where each one would
+wait for the one before it. FastLanes reorders the vector so that each lane
+holds a run of consecutive values, and then the prefix sums of the $L$ lanes
+run side by side, one row after the other. Furthermore, the reorder (the
+unified transposed layout) is the same for every $W$, which allows a query to
+scan columns of different widths in the same order. In the layout, the place
+$p$ holds the value
+
+$$
+\tau( p ) = 64 \, ( p \bmod 16 ) + 8 \, \rho( \lfloor p / 16 \rfloor \bmod 8 )
+\; + \; \lfloor p / 128 \rfloor \tag{21.24}
+$$
+
+of the vector, where $\rho$ reverses 3 bits (i.e., the tiles of 8 rows come in
+the order 0, 4, 2, 6, 1, 5, 3, 7), and the row $r = 8 o + s$ of the chain of
+the lane $l$ is the place $16 \rho( o ) + 128 s + l$. A vector of differences
+(DELTA) keeps the first value of each lane, its $L$ bases, in $L W / 8 = 128$
+bytes, i.e., a bit per value. Its decoder unpacks a row and adds it to the sums
+of the lanes in the same loop, and then moves each value to its place $\tau( p
+)$; the decoders of the authors leave the vector in the transposed order, which
+the operators of a query that do not depend on the order may take as it is,
+while `fastLanesDecode()` gives it back in the order of the column. Finally, a
+vector of runs (RLE) is the values of its $k$ runs and, for each of its values,
+the number of its run. These numbers are nondecreasing and are coded by DELTA
+on 16 bits, with differences of 0 or 1 bit; hence, the decoder of the runs is
+that of the differences followed by a gather.
+
+<span id="lem-21-21"></span>**Lemma 21.21.** *Let $W = 8 \cdot 2^k \in \{ 8 ,
+16 , 32 , 64 \}$ and $L = 1024 / W$. (i) $\tau$ is a permutation of $\{ 0 ,
+\ldots , 1023 \}$. (ii) For each lane $l < L$ and each row $r = 8 o + s < W$,
+the place $p = 16 \rho( o ) + 128 s + l$ has $p \bmod L = l$ and $\tau( p ) =
+\tau( l ) + r$, and $\tau( l )$ is a multiple of $W$; hence the chains of the
+$L$ lanes are the $L$ runs of $W$ consecutive values of the vector, each inside
+one lane of the packing. (iii) `fastLanesUnpack()` with the width $b$ and the
+base $m$ of `fastLanesPack()` gives back the 1024 values whenever each $v - m
+\bmod 2^W$ is below $2^b$; `fastLanesDecode()` of the code of
+`fastLanesEncode()`, with the same $n$ and scheme, gives back $x$, and the code
+of FOR takes $\sum_j ( 1 + W / 8 + 128 b_j )$ bytes, $b_j$ the width of the
+vector $j$.*
+
+*Proof.* (i) $\tau$ maps the three digits $( p \bmod 16 , \lfloor p / 16
+\rfloor \bmod 8 , \lfloor p / 128 \rfloor )$ of $p$ to those of $\tau( p )$ in
+the base $( 64 , 8 , 1 )$ by the identity, by $\rho$ and by the identity,
+three bijections. (ii) Write $l = 16 q + t$, with $t < 16$ and $q < 2^{3 -
+k}$. Since $o < 2^k$, the low $3 - k$ bits of $\rho( o )$ are 0, and those of
+$q$ are its only bits; hence $\lfloor p / 16 \rfloor \bmod 8 = \rho( o ) + q$,
+with no carry, $p \bmod 16 = t$ and $\lfloor p / 128 \rfloor = s$. Then $\tau(
+p ) = 64 t + 8 \rho( \rho( o ) + q ) + s = 64 t + 8 \rho( q ) + 8 o + s$,
+since $\rho$ reverses the disjoint bits of $\rho( o )$ and of $q$ apart, and
+$\rho$ is an involution; at $r = 0$ one has $p = l$ and $\tau( l ) = 64 t + 8
+\rho( q )$. The bits of $\rho( q )$ are at the places $k$ and above, so that
+$8 \rho( q )$ is a multiple of $8 \cdot 2^k = W$, and so is $64 t$.
+Furthermore, $128 s$ and $16 \rho( o )$ are multiples of $L = 16 \cdot 2^{3 -
+k}$ (the latter since $\rho( o )$ is a multiple of $2^{3 - k}$), and $l < L$,
+which gives $p \bmod L = l$. (iii) The kernel writes the $b$ bits of the row
+$r$ of a lane from the bit $r b \bmod W$ of its word $\lfloor r b / W
+\rfloor$, and carries the bits that do not fit to the next word of the lane,
+where the unpacking reads them back; the base is subtracted and added modulo
+$2^W$. For FOR, one has $0 \le v - m \le \max v - m < 2^b$. For DELTA, each
+difference is below $2^b$, $b$ the width of their "or", and by (ii) the
+decoder adds, lane by lane in the order of the rows of the chain, the
+differences $v_{\tau( l ) + r} - v_{\tau( l ) + r - 1}$ to the base $v_{\tau(
+l )}$, which gives $v_{\tau( l ) + r}$ by induction on $r$ (modulo $2^W$,
+i.e., exactly). For RLE, the numbers of the runs come back by DELTA, and the
+value of each place is that of its run. The last vector is filled with its
+last value, which the decoder cuts. $\square$
+
+<span id="alg-21-30"></span>**Algorithm 21.30.** The packing and the codes of
+FastLanes ([Afroozeh and Boncz 2023](Z-bibliography.md#ref-afroozeh2023)).
+
+--8<-- "generated/FastLanes-fastLanesPack.pseudo.md"
+
+--8<-- "generated/FastLanes-fastLanesUnpack.pseudo.md"
+
+--8<-- "generated/FastLanes-fastLanesEncode.pseudo.md"
+
+--8<-- "generated/FastLanes-fastLanesDecode.pseudo.md"
+
+*Floating-point numbers.* Many columns of floating-point numbers hold decimals
+of a few digits (prices, measures), which the binary format cannot write
+exactly, but which an integer and a power of 10 give back. The Adaptive
+Lossless floating-Point compression (ALP) of [Afroozeh, Kuffó and Boncz
+2023](Z-bibliography.md#ref-afroozeh2023alp) (`ALP.h`) encodes a value $x$ of
+the type `double` or `float` by an exponent $e$ and a factor $f \le e$ of its
+vector as
+
+$$
+d = \mathrm{round}( x \cdot 10^e \cdot 10^{-f} ) , \qquad \tilde x = d \cdot
+10^f \cdot 10^{-e} , \tag{21.25}
+$$
+
+both in the arithmetic of the type, with $10^e$ exact and $10^{-f}$ the nearest
+value of the type, $e \le 18$ for `double` and $e \le 10$ for `float`. The
+factor takes away from $d$ the decimal zeros at its end that the exponent would
+add. The rounding is the addition and the subtraction of $2^{52} + 2^{51}$
+($2^{23} + 2^{22}$ for `float`), which rounds to the nearest integer, with no
+branch, each value below $2^{51}$ ($2^{22}$) in magnitude. A value whose
+$\tilde x$ differs from $x$ in any bit (one with more digits, $-0$, an
+infinity, a NaN, a denormal or a value too large) is an exception. Its place,
+in 2 bytes, and its bits are written apart, and its $d$ becomes that of the
+first value of the vector that is not an exception, which keeps the frame as
+narrow as the other values allow. Finally, the integers $d$ of a vector are
+written by the FOR of FastLanes on $W$ bits, $W$ the bits of the type.
+
+We search the pair $( e , f )$ in two levels of samples, by the cost
+$$
+\mathrm{cost}_S( e , f ) = | S | \, b + c \, ( W + 16 ) \tag{21.26}
+$$
+of the values $S$, where $b$ is the width of the frame of their $d$ and $c$ is
+the number of their exceptions. For each row group of 100 vectors, 32 values of
+each of 8 of its vectors try all the pairs (190 for `double`, 66 for `float`),
+and we keep the 5 pairs that are the best for most of these vectors. Each
+vector then tries these pairs on 32 of its values, in their order, and stops at
+two in a row that do not improve on the best one. Values with many significant
+digits (the "real" doubles of scientific data) leave too many exceptions for
+any pair. For them ALP falls back to ALP-RD, which cuts the bits of each value
+into the $\lambda \le 16$ high ones and the $W - \lambda$ low ones; a column
+typically has few distinct high parts (the sign, the exponent and the top of
+the mantissa), while the low parts are packed as they are. A high part takes an
+index of at most 3 bits into a dictionary of up to 8 entries, and one outside
+the dictionary is an exception, with its place and its $\lambda$ bits in 2
+bytes each. The cut and the dictionary minimize the cost on the sample of the
+row group, and the row group takes ALP-RD instead of ALP when the cost per
+value of the former is lower.
+
+<span id="lem-21-22"></span>**Lemma 21.22.** *Assume that the products of the
+type are those of IEEE 754, evaluated as they are written (i.e., with no
+reassociation, which options such as `-ffast-math` allow). Then `alpDecompress<
+F >()` of the code of `alpCompress()` of $n$ values gives back the bits of each
+of them, the payloads of the NaNs, $-0$, the infinities and the denormals
+included. A vector of ALP with $c$ exceptions and the width $b$ takes $5 + W /
+8 + 128 b + c ( 2 + W / 8 )$ bytes, and one of ALP-RD with $q$ entries and the
+cut $\lambda$ takes $2 + 128 ( \mathrm{bitwidth}( q - 1 ) + W - \lambda ) + 4
+c$ bytes.*
+
+*Proof.* A value that is not an exception passed the test of the encoder, which
+compares the bits of $x$ with those of the product $d \cdot 10^f \cdot 10^{-e}$
+of (21.25); the decoder computes the same product, of the same operands in the
+same order, on the same $d$, which the FOR of FastLanes gives back modulo $2^W$
+by (iii) of [Lemma 21.21](21-compression.md#lem-21-21) with no loss. Its
+conversion to the type is exact too, since $| d | < 2^{51}$ ($2^{22}$ for
+`float`) is below $2^{53}$ ($2^{24}$), the integers that the type holds
+exactly. An exception is written as its bits and set by the decoder after the
+vector. In ALP-RD, a value is the high part $h$ shifted by $W - \lambda$ bits
+plus its low part, which the packing gives back; $h$ is the entry of the
+dictionary that the encoder found equal to it, or, for an exception, the
+$\lambda$ bits written apart. The rounding by $2^{52} + 2^{51}$ only chooses
+the $d$ that is tried, and the sizes follow from the format. $\square$
+
+Thus, the exactness rests on the test of the encoder, while the rounding may
+(in principle) choose a $d$ off by one, at the price of an exception.
+
+<span id="alg-21-31"></span>**Algorithm 21.31.** ALP and ALP-RD ([Afroozeh,
+Kuffó and Boncz 2023](Z-bibliography.md#ref-afroozeh2023alp)).
+
+--8<-- "generated/ALP-alpCompress.pseudo.md"
+
+--8<-- "generated/ALP-alpDecompress.pseudo.md"
+
+*Strings.* The Fast Static Symbol Table (FSST) of [Boncz, Neumann and Leis
+2020](Z-bibliography.md#ref-boncz2020) (`FSST.h`) codes a column of short
+strings by a table of up to 255 symbols of 1 to 8 bytes, built once from a
+sample of them. Each symbol becomes its code of one byte, and the code 255, the
+escape, is followed by a byte that no symbol covers. A string is coded by
+itself, and any one of them is therefore decoded alone, which the general
+compressors (e.g., LZ4 and Zstandard), whose unit is a block of many strings,
+do not allow. Its decoder copies 8 bytes of the symbol of each code and moves
+by its length, from two tables of 255 entries, with no test but that of the
+escape (made on 4 codes at a time). The encoder takes at each place the longest
+symbol that it finds by two lookups: the symbols of 3 bytes or more are in a
+hash table of 1024 slots by their first 3 bytes, one symbol per slot, and a
+table of $2^{16}$ entries gives, for the next 2 bytes, the code of the symbol
+of 2 bytes, or else of the symbol of 1 byte, or else the escape. The greedy
+choice is not necessarily the longest match, since two symbols of 3 bytes or
+more with the same slot do not both enter the table; however, the construction
+takes this into account.
+
+We build the table in 5 generations on a sample of about 16 KB of the strings
+(pieces of 512 bytes of strings drawn at random, or all the strings if they are
+fewer). Each generation codes a fraction of the sample ($8 / 128$, $38 / 128$,
+$68 / 128$, $98 / 128$ and all of it) by the table of the generation before
+(empty at the first), and counts each code $c_1$ and each pair $c_1 c_2$ of
+consecutive codes, a byte escaped counting as a code. The candidates are the
+symbols of the codes, of gain $\mathrm{count}( c_1 ) \, | c_1 |$ (8 times as
+much for a single byte, which saves an escape), and their concatenations, cut
+at 8 bytes, of gain $\mathrm{count}( c_1 c_2 ) \, | c_1 c_2 |$. The gains of
+the same symbol add up, and the next table takes the 255 of largest gain that
+fit in its lookups. Hence, a symbol that the greedy encoder uses often grows by
+the symbol that tends to follow it, while one that it no longer uses leaves the
+table. `FSSTColumn` keeps the codes of all the strings one after the other,
+with the place where each one begins, and `serialize()` writes the table as the
+number of its symbols, their lengths and their bytes.
+
+<span id="lem-21-23"></span>**Lemma 21.23.** *(i) For every table and every
+string $s$, `encode()` writes at most $2 | s |$ bytes, as many only if every
+byte is escaped, and `decode()` of them gives back $s$, writing at most 8 bytes
+per code. (ii) Every table, built or deserialized, holds at most 255 distinct
+symbols of 1 to 8 bytes, at most one of 3 bytes or more per slot of the hash
+table, and the construction takes 5 generations, each in time linear in the
+sample plus the sorting of its candidates.*
+
+*Proof.* (i) At each place, with $r$ bytes left, the encoder takes either the
+symbol of the slot of the next 3 bytes, if it has at most $r$ bytes, equal to
+the next ones (the comparison of the word masked to its length), or the entry
+of the next 2 bytes, which is a symbol of 2 bytes only if it is equal to them,
+or else the entry of the next byte, a symbol of that byte or the escape of
+length 1. Each step thus consumes $\ell \ge 1$ bytes and writes the code of a
+symbol equal to them, or consumes 1 byte and writes 2 (the escape and the
+byte). The decoder copies the 8 bytes of the symbol, padded with 0, and moves
+by $\ell$, the bytes past $\ell$ being overwritten by the next code, so that by
+induction on the steps the bytes written up to the place of the decoder are the
+prefix of $s$ consumed so far; a code writes from its place at most 8 bytes and
+moves by at most 8. (ii) `add()` refuses a 256th symbol, a slot already taken,
+and a symbol of 1 or 2 bytes already present; the candidates are the symbols of
+the table and their concatenations cut at 8 bytes, and the bytes, each of 1 to
+8 bytes. Each generation codes at most the sample, counts the pairs that occur
+(and only those, which it lists), and sorts its candidates. $\square$
+
+<span id="alg-21-32"></span>**Algorithm 21.32.** The construction of the table
+of FSST, its encoder and its decoder ([Boncz, Neumann and Leis
+2020](Z-bibliography.md#ref-boncz2020)).
+
+--8<-- "generated/FSST-FSSTTable-FSSTTable.pseudo.md"
+
+--8<-- "generated/FSST-FSSTTable-encode.pseudo.md"
+
+--8<-- "generated/FSST-FSSTTable-decode.pseudo.md"
+
+The three codes share the design of the engineered coders of the chapter: the
+lengths are moved out of the data, and the decoder runs fixed sequences of
+operations on whole words. They differ from them in the unit of the access (a
+vector, or a single string) and in the choice of the code of each unit by a
+sample. How they compare with the codes of their authors and with the general
+compressors is measured by the campaign of Appendix B.
+
+## 21.13 The interface {#sec-21-13}
 
 We collect here, header by header, the declarations of the namespace `ADS`
 that a user calls in this chapter, without the contracts, the documentation
 and the members that only the implementation uses; each block points to the
-section that describes its functions, and the example at the end shows the
-main structures at work. The program of the example compiles against the
-headers as it stands, and its assertions hold.
+section that describes its functions, and the two examples at the end show the
+main structures at work. The examples compile against the headers as they
+stand, and their assertions hold.
+
+`ALP.h` ([§21.12](21-compression.md#sec-21-12)).
+
+```cpp
+// declarations of <ADS/compression/ALP.h>
+template< class F >
+concept ALPFloat = std::same_as< F , double > || std::same_as< F , float >;
+template< std::ranges::contiguous_range R >
+ requires ALPFloat< std::ranges::range_value_t< R > >
+std::vector< std::uint8_t > alpCompress( const R & x );
+template< ALPFloat F >
+std::vector< F >
+alpDecompress( std::span< const std::uint8_t > code , std::size_t n );
+```
 
 `ArithmeticCoding.h` ([§21.4](21-compression.md#sec-21-4)).
 
@@ -2076,6 +2362,39 @@ double entropy( std::string_view s );
 double entropy( std::string_view s , std::size_t k );
 ```
 
+`FastLanes.h` ([§21.12](21-compression.md#sec-21-12)).
+
+```cpp
+// declarations of <ADS/compression/FastLanes.h>
+inline constexpr std::size_t fastLanesVector = 1024;
+template< class T >
+concept FastLanesWord =
+  std::unsigned_integral< T > && ! std::same_as< T , bool > &&
+  ( sizeof( T ) == 1 || sizeof( T ) == 2 || sizeof( T ) == 4 ||
+    sizeof( T ) == 8 );
+enum class FastLanesScheme : std::uint8_t
+{
+ FOR = 0 ,
+ DELTA = 1 ,
+ RLE = 2
+ };
+constexpr std::size_t fastLanesTransposed( std::size_t p ) noexcept;
+template< FastLanesWord T >
+void fastLanesPack( const T * in , std::uint8_t * out , unsigned b ,
+                    T base = 0 );
+template< FastLanesWord T >
+void fastLanesUnpack( const std::uint8_t * in , T * out , unsigned b ,
+                      T base = 0 );
+template< std::ranges::contiguous_range R >
+ requires FastLanesWord< std::ranges::range_value_t< R > >
+std::vector< std::uint8_t >
+fastLanesEncode( const R & x , FastLanesScheme s = FastLanesScheme::FOR );
+template< FastLanesWord T >
+std::vector< T >
+fastLanesDecode( std::span< const std::uint8_t > code , std::size_t n ,
+                 FastLanesScheme s = FastLanesScheme::FOR );
+```
+
 `FMIndex.h` ([§21.11](21-compression.md#sec-21-11)).
 
 ```cpp
@@ -2093,6 +2412,48 @@ class FMIndex
  std::vector< std::size_t > locate( std::string_view P ) const;
  std::string extract( std::size_t i , std::size_t j ) const;
  std::size_t sizeInBits( void ) const;
+ };
+```
+
+`FSST.h` ([§21.12](21-compression.md#sec-21-12)).
+
+```cpp
+// declarations of <ADS/compression/FSST.h>
+class FSSTTable
+{
+ public:
+ static constexpr std::uint8_t ESCAPE = 255;
+ FSSTTable( void );
+ template< std::ranges::forward_range R >
+  requires std::convertible_to< std::ranges::range_reference_t< R > ,
+                                std::string_view >
+ explicit FSSTTable( const R & S );
+ std::size_t symbols( void ) const { ... }
+ std::string symbol( std::size_t c ) const;
+ void encode( std::string_view s , std::vector< std::uint8_t > & out ) const;
+ std::vector< std::uint8_t > encode( std::string_view s ) const;
+ std::size_t decode( std::span< const std::uint8_t > code , char * out ) const;
+ std::string decode( std::span< const std::uint8_t > code ) const;
+ std::vector< std::uint8_t > serialize( void ) const;
+ static FSSTTable deserialize( std::span< const std::uint8_t > bytes );
+ };
+class FSSTColumn
+{
+ public:
+ FSSTColumn( void ) = default;
+ template< std::ranges::forward_range R >
+  requires std::convertible_to< std::ranges::range_reference_t< R > ,
+                                std::string_view >
+ explicit FSSTColumn( const R & S );
+ std::size_t size( void ) const { ... }
+ bool empty( void ) const { ... }
+ std::span< const std::uint8_t > code( std::size_t i ) const;
+ std::size_t decode( std::size_t i , char * out ) const { ... }
+ std::size_t bound( std::size_t i ) const { ... }
+ std::string operator[]( std::size_t i ) const { ... }
+ const FSSTTable & table( void ) const { ... }
+ std::size_t codeBytes( void ) const { ... }
+ std::size_t sizeInBytes( void ) const;
  };
 ```
 
@@ -2384,7 +2745,25 @@ int main( void )
  }
 ```
 
-## 21.13 Discussion and references {#sec-21-13}
+```cpp
+#include <cassert>
+#include <string>
+#include <vector>
+
+const std::vector< double > prices = { 1.25 , 1.5 , 1.75 , -0.0 };
+const auto z = ADS::alpCompress( prices );
+assert( ADS::alpDecompress< double >( z , prices.size() )[ 1 ] == 1.5 );
+const std::vector< std::uint32_t > ids = { 7 , 8 , 9 , 10 };
+const auto c = ADS::fastLanesEncode( ids , ADS::FastLanesScheme::DELTA );
+assert( ADS::fastLanesDecode< std::uint32_t >(
+          c , ids.size() , ADS::FastLanesScheme::DELTA ) == ids );
+const std::vector< std::string > urls = { "https://di.unipi.it" ,
+                                          "https://www.unipi.it" };
+const ADS::FSSTColumn col( urls );
+assert( col[ 1 ] == "https://www.unipi.it" );
+```
+
+## 21.14 Discussion and references {#sec-21-14}
 
 The entropy and the bound of [Lemma 21.1](21-compression.md#lem-21-1) are those
 of [Shannon 1948](Z-bibliography.md#ref-shannon1948), the optimal code of the
@@ -2435,6 +2814,18 @@ decoder overlap. How much each of these choices may gain, against the plain
 forms of the book and against the implementations of reference, is measured by
 the campaign of Appendix B, and no number is given here.
 
+The light-weight codes of [§21.12](21-compression.md#sec-21-12) come from the
+engines of the analytical databases, starting from the patched code of
+[Zukowski et al. 2006](Z-bibliography.md#ref-zukowski2006), and their layout
+is that of FastLanes of [Afroozeh and Boncz
+2023](Z-bibliography.md#ref-afroozeh2023); ALP is that of [Afroozeh, Kuffó and
+Boncz 2023](Z-bibliography.md#ref-afroozeh2023alp), and FSST that of [Boncz,
+Neumann and Leis 2020](Z-bibliography.md#ref-boncz2020). We depart from them
+in two places: the decoder of the differences gives the vector back in its own
+order rather than in the transposed one, and the format of a column of ALP
+(the bytes of the row groups and of the vectors) is ours, since the authors
+give the kernels and leave the format to the engine that uses them.
+
 The compressed indexes of [§21.11](21-compression.md#sec-21-11) (`FMIndex`,
 `HuffmanFMIndex`, `RIndex` and `MoveRIndex`) are persistent
 ([§23.7](23-external.md#sec-23-7)). An index of a text or of a collection of
@@ -2444,7 +2835,7 @@ its wavelet trees as views over the mapping. We remark that an r-index read
 from a file has no copy of its text; under the contracts of level 3, the
 audit of `locate()` against the text is then skipped.
 
-## 21.14 Exercises {#sec-21-14}
+## 21.15 Exercises {#sec-21-15}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
@@ -2529,3 +2920,16 @@ Each exercise names the test of the library that solves it (run it with
     and [Lemma 21.19](21-compression.md#lem-21-19)), and then replace its
     predecessor searches with move structures. Tests:
     `engineered_succinct.r-index`, `engineered_succinct.move-r-index`.
+20. Pack vectors of 1024 integers of 8, 16, 32 and 64 bits in the lanes of
+    a register of 1024 bits, prove that the transposed layout (21.24) puts
+    the chain of each lane on consecutive values
+    ([Lemma 21.21](21-compression.md#lem-21-21)), and code a column by
+    FOR, DELTA and RLE. Test: `engineered_succinct.fastlanes`.
+21. Realize ALP, with the two levels of samples of the cost (21.26) and
+    the fall back to ALP-RD, and check that NaNs, infinities, $-0$ and
+    denormals come back bit for bit
+    ([Lemma 21.22](21-compression.md#lem-21-22)). Test:
+    `engineered_succinct.alp`.
+22. Build the table of FSST in 5 generations, code each string of a column
+    alone, and decode a string by its place, also with strings that hold
+    every byte from 0 to 255. Test: `engineered_succinct.fsst`.

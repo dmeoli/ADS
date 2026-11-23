@@ -82,6 +82,7 @@ complexity/Nondeterminism.h           base
 complexity/Problems.h                 base
 complexity/Reductions.h               base
 
+compression/ALP.h                     advanced
 compression/ArithmeticCoding.h        base
 compression/BinaryPacking.h           advanced
 compression/BurrowsWheeler.h          base
@@ -89,6 +90,8 @@ compression/CanonicalHuffman.h        base
 compression/DirectAccessCodes.h       advanced
 compression/Entropy.h                 base
 compression/FMIndex.h                 base
+compression/FSST.h                    advanced
+compression/FastLanes.h               advanced
 compression/HuffmanCoder.h            advanced
 compression/HuffmanFMIndex.h          advanced
 compression/IntegerCodes.h            base     Ferragina's book, even if fast
