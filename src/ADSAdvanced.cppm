@@ -254,6 +254,9 @@ using ADS::AdaptiveRadixTree;
 // dictionary/BucketCuckooTable.h
 using ADS::BucketCuckooTable;
 
+// dictionary/ConsensusRecSplit.h
+using ADS::ConsensusRecSplit;
+
 // dictionary/DenseHashMap.h
 using ADS::DenseHashMap;
 
@@ -284,6 +287,11 @@ using ADS::WithPlaces;
 
 // dictionary/PositionIndex.h
 using ADS::PositionIndex;
+
+// dictionary/PtrHash.h
+using ADS::PtrHash;
+using ADS::PtrHashBucket;
+using ADS::PtrHashRemap;
 
 // dictionary/RandomHashing.h
 using ADS::SplitMix64;

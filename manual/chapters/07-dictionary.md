@@ -1,15 +1,15 @@
 # 7. Hashing and dictionaries {#ch-7}
 
-[Source: `include/ADS/dictionary/DirectTable.h`,
-`SortedArrayDictionary.h`, `HashFunctions.h`, `UniversalHashing.h`,
-`RandomHashing.h`, `FastHash.h`, `RowFingerprint.h`, `TableSize.h`,
-`ChainedHashTable.h`, `OpenHashTable.h`, `KnuthHashing.h`,
-`FlatHashTable.h`, `DenseHashMap.h`, `PointerTable.h`, `PositionIndex.h`,
-`CuckooHashing.h`, `BucketCuckooTable.h`, `PerfectHashing.h`,
-`FingerprintPerfectHash.h`, `MinimalPerfectHash.h`, `RecSplit.h`,
-`SkipList.h`, `IndexedSkipList.h`, `Trie.h`, `PatriciaTrie.h`,
-`TwoLevelDictionary.h`, `AdaptiveRadixTree.h`, `SuccinctPatriciaTrie.h`,
-`BinaryTrie.h`, `XFastTrie.h`, `YFastTrie.h`, `BitmapTrie.h`]
+[Source: `include/ADS/dictionary/DirectTable.h`, `SortedArrayDictionary.h`,
+`HashFunctions.h`, `UniversalHashing.h`, `RandomHashing.h`, `FastHash.h`,
+`RowFingerprint.h`, `TableSize.h`, `ChainedHashTable.h`, `OpenHashTable.h`,
+`KnuthHashing.h`, `FlatHashTable.h`, `DenseHashMap.h`, `PointerTable.h`,
+`PositionIndex.h`, `CuckooHashing.h`, `BucketCuckooTable.h`,
+`PerfectHashing.h`, `FingerprintPerfectHash.h`, `MinimalPerfectHash.h`,
+`RecSplit.h`, `PtrHash.h`, `ConsensusRecSplit.h`, `SkipList.h`,
+`IndexedSkipList.h`, `Trie.h`, `PatriciaTrie.h`, `TwoLevelDictionary.h`,
+`AdaptiveRadixTree.h`, `SuccinctPatriciaTrie.h`, `BinaryTrie.h`, `XFastTrie.h`,
+`YFastTrie.h`, `BitmapTrie.h`]
 
 We are concerned in this chapter with the DICTIONARY, i.e., a finite map from a
 set of keys to a set of values that is searched by key, and with its ordered
@@ -39,11 +39,12 @@ the code of the library. The exercises that ask to illustrate an operation are
 solved by the figures of this chapter, and the others by the tests named in
 [§7.13](07-dictionary.md#sec-7-13). In the sets of
 [§1.9](01-introduction.md#sec-1-9), `AdaptiveRadixTree.h`,
-`BucketCuckooTable.h`, `DenseHashMap.h`, `FastHash.h`,
+`BucketCuckooTable.h`, `ConsensusRecSplit.h`, `DenseHashMap.h`, `FastHash.h`,
 `FingerprintPerfectHash.h`, `FlatHashTable.h`, `MinimalPerfectHash.h`,
-`PointerTable.h`, `PositionIndex.h`, `RecSplit.h`, `RowFingerprint.h` and
-`SuccinctPatriciaTrie.h` are advanced and the other headers of this chapter are
-base, while `RandomHashing.h` is in the core that the two sets include.
+`PointerTable.h`, `PositionIndex.h`, `PtrHash.h`, `RecSplit.h`,
+`RowFingerprint.h` and `SuccinctPatriciaTrie.h` are advanced and the other
+headers of this chapter are base, while `RandomHashing.h` is in the core that
+the two sets include.
 
 ## 7.1 The interface {#sec-7-1}
 
@@ -2485,7 +2486,7 @@ instead of $| U |$. Its price is that $S$ is static, or changes at a cost
 1994](Z-bibliography.md#ref-dietzfelbinger1994) inserts and removes in
 $O( 1 )$ amortized expected time). `PerfectHashing.h` has the two schemes
 of [Ferragina 2023, chapter 8](Z-bibliography.md#ref-ferragina2023), and
-three more headers the compressed minimal perfect functions of today.
+five more headers the compressed minimal perfect functions of today.
 
 ### 7.8.1 Two levels of universal hashing {#sec-7-8-1}
 
@@ -2598,7 +2599,9 @@ by the benchmarks.
 
 <span id="tab-7-3"></span>**Table 7.3.** The minimal perfect hash
 functions of the area; $\gamma$, $\lambda$, $b$ and $\ell$ are the
-parameters of the schemes described below.
+parameters of the schemes described below, $\alpha$ the load of the
+slots of the schemes by pilots, $K$ and $\varepsilon$ the size of the
+buckets and the overhead of Consensus-RecSplit.
 
 | Scheme | Header | Bits per key | Build | Evaluation |
 |---|---|---|---|---|
@@ -2606,6 +2609,8 @@ parameters of the schemes described below.
 | fingerprints (BBHash, FMPH) | `FingerprintPerfectHash.h` | $\gamma e^{1 / \gamma}$, 3.3 for $\gamma = 2$ | a few passes | $e^{1 / \gamma}$ levels expected |
 | pilots (PTHash) | `MinimalPerfectHash.h` | about 3 | slower | 2 accesses |
 | recursive splitting (RecSplit) | `RecSplit.h` | about 1.8 | slowest, $e^\ell$ per leaf | $O( \log ( b / \ell ) )$ levels |
+| pilots of 8 bits (PtrHash) | `PtrHash.h` | $8 / \lambda$ and the remap, 2.4 to 3 | as PTHash, by parts | 1 access, 2 for $1 - \alpha$ |
+| splitting with Consensus (Consensus-RecSplit) | `ConsensusRecSplit.h` | $\log_2 e + O( \varepsilon )$ | $O( 1 / \varepsilon )$ per key expected | $\log_2 K$ reads, no select |
 
 ### 7.8.2 Order preserving functions on random graphs {#sec-7-8-2}
 
@@ -2861,7 +2866,8 @@ draw a new seed, and 100 seeds with no success throw `std::runtime_error`;
 the space. Both the parallel and external construction of [Pibiri and Trani
 2024](Z-bibliography.md#ref-pibiri2024) and the optimized bucket sizes of
 PHOBIC ([Hermann et al. 2024](Z-bibliography.md#ref-hermann2024)) are not done
-here.
+here; `PtrHash` ([§7.8.Zmp6](07-dictionary.md#sec-7-8-Zmp6)) builds its parts in
+parallel and approximates the optimal bucket function by a cubic.
 
 ![Figure 7.18. A `MinimalPerfectHash` of 6 keys in 3 buckets on $m = 8$ places ($\alpha = 0.75$): the bucket of 3 keys takes the pilot 0 and the places 2, 5, 7; the bucket of 2 keys fails with the pilot 0 on the place 5 (in violet) and takes the places 0 and 3 with the pilot 1; the bucket of one key takes 4 with the pilot 0; each row shows the places taken in its step (in orange), and the place 7, beyond $n = 6$ (in violet), is sent by $F$ to the free place 1.](../figures/dictionary-pthash.svg){#fig-7-18}
 
@@ -3016,7 +3022,7 @@ report the space, the buckets and the seeds drawn. Consensus-RecSplit of
 [Lehmann et al. 2025](Z-bibliography.md#ref-lehmann2025), which searches
 the seeds of consecutive nodes together, takes $( 1 + \varepsilon ) n
 \log_2 e$ bits in $O( n / \varepsilon )$ expected time, the space frontier
-of this family.
+of this family ([§7.8.Zmp6](07-dictionary.md#sec-7-8-Zmp6)).
 
 <span id="alg-7-19"></span>**Algorithm 7.19.** The construction and the
 evaluation of `RecSplit` ([Esposito et al.
@@ -3046,6 +3052,287 @@ class RecSplit
  std::size_t bits( void ) const;
  std::size_t buckets( void ) const;
  std::size_t trials( void ) const;
+ };
+```
+
+### 7.8.Zmp6 Pilots of 8 bits and the combined search of the seeds {#sec-7-8-Zmp6}
+
+`PtrHash` is the method of [Groot Koerkamp
+2025](Z-bibliography.md#ref-grootkoerkamp2025). It keeps the pilots of PTHash
+but bounds them to $[ 0 , 256 )$, and therefore stores them as an array of
+bytes; a query reads one of them with no decoding. The price is paid in the
+build, since a bucket placed late (when few slots are free) may find no pilot
+below 256. Such a bucket takes the pilot of the least collisions and evicts the
+buckets it meets, much as cuckoo hashing evicts its keys
+([§7.7](07-dictionary.md#sec-7-7)). A key of hash $h$ goes to the part $\pi( h
+) = \lfloor P h / 2^{64} \rfloor$ of $P$ parts, all of the same $S$ slots and
+$B$ buckets. (This is the $\varepsilon$-cost sharding of [Vigna
+2025](Z-bibliography.md#ref-vigna2025), which needs no prefix sums of the sizes
+of the parts.) In its part, the key goes to the bucket $\lfloor B \gamma( r ) /
+2^{64} \rfloor$, where $r = P h \bmod 2^{64}$ are the bits of $h$ that the part
+leaves, and to the slot
+
+$$
+s( h , p ) = \pi( h ) S + \bigl( ( h \oplus c ( p \oplus x ) ) \bmod_{\!*}
+S \bigr) ,
+$$
+
+where $p$ is the pilot of the bucket, $c$ an odd constant and $x$ the seed.
+Here $\bmod_{\!*}$ is the fast modulo of [Lemire et al.
+2019](Z-bibliography.md#ref-lemire2019fastmod), i.e., the remainder for an
+operand below $2^{32}$ and a mixing of all its bits otherwise. As bucket
+function, $\gamma$ is either the identity or the cubic $\gamma_3( r ) =
+\frac{255}{256} r^2 ( 1 + r ) / 2 + r / 256$ of a fraction $r$. The latter is a
+Taylor approximation, with a slope of at least $1 / 256$, of the optimal
+function $r + ( 1 - r ) \ln ( 1 - r )$ of [Hermann et al.
+2024](Z-bibliography.md#ref-hermann2024). With the cubic one the first buckets
+are large, but usually not so large that two of their keys fall in one slot. A
+part has about $\kappa = ( 4 / \epsilon^2 ) \max\{ 1 , \ln ( n \epsilon^2 / 2 )
+\}$ keys, with $\epsilon = ( 1 - \alpha ) / 2$ (at least 160000 for $\alpha =
+0.99$, and the whole set for $\alpha = 1$). Also, $S = \lceil ( n / P ) /
+\alpha \rceil$ is rounded up to a number neither even nor a multiple of 3,
+since the modulo would otherwise ignore some bits of its operand.
+
+We take the buckets of a part by decreasing size, and give each one the first
+pilot that sends its keys to free slots, distinct among them ([Algorithm
+7.20](07-dictionary.md#alg-7-Zmp4)). When no pilot does, the bucket scans the
+pilots from a random one. It takes the one whose slots meet the buckets of the
+least sum of the squares of their sizes, since a large bucket is the hardest to
+place again. It skips the pilots that send two of its keys to one slot, and
+those whose slots meet one of the $\min\{ 16 , \lfloor B / 4 \rfloor \}$
+buckets placed last (which would possibly close a cycle of evictions). Evicted
+buckets are placed again in the same way, the largest first, before the next
+bucket of the order. A chain of more than $10 S$ evictions, or a part with more
+keys than slots, makes the build draw a new seed. Finally, the $P S - n$ slots
+beyond $n$ are remapped onto the slots below $n$ left free, by an array of 32
+bits or by an Elias-Fano sequence ([§22.6](22-succinct.md#sec-22-6)), as the
+remap is non-decreasing. Note that a part reads only its keys, its pilots, its
+words of the slots and a generator seeded by its index. Hence the constructor
+that takes an executor ([§25.2](25-parallel.md#sec-25-2)) builds the parts in
+parallel, with the same result as the sequential one. Furthermore, `stream()`
+evaluates a range of keys with the pilot of the key 32 places ahead prefetched
+(the streaming queries of PtrHash; cf. [§5.9](05-memory.md#sec-5-9), whose hint
+does nothing without `ADS_WITH_HIGHWAY`), and `prefetch()` prefetches the pilot
+of one key.
+
+<span id="alg-7-Zmp4"></span>**Algorithm 7.Zmp4.** The construction of a part,
+the evaluation and the streaming evaluation of `PtrHash` ([Groot Koerkamp
+2025](Z-bibliography.md#ref-grootkoerkamp2025)); $s( h , p )$ is the slot of
+$h$ with the pilot $p$, $o( t )$ the bucket that holds the slot $t$, $R$
+the buckets placed last and $F$ the remap.
+
+--8<-- "generated/PtrHash-build.pseudo.md"
+
+--8<-- "generated/PtrHash-value.pseudo.md"
+
+--8<-- "generated/PtrHash-stream.pseudo.md"
+
+Whatever the hash, a build that returns gives a minimal perfect hash.
+
+<span id="lem-7-Zmp1"></span>**Lemma 7.Zmp1.** *If the build of `PtrHash` on
+$n \ge 1$ distinct keys returns, then the evaluation maps the keys one to
+one onto $\{ 0 , \ldots , n - 1 \}$, and any key, of the set or not, into
+$\{ 0 , \ldots , n - 1 \}$, after one read of a pilot and, only for a slot
+$t \ge n$, one item of the remap. The pilots and the remap do not depend on
+the executor of the build.*
+
+*Proof.* In a part, $o( t ) = c$ holds after line 12 of [Algorithm
+7.20](07-dictionary.md#alg-7-Zmp4) exactly for the slots $t$ of the keys of a
+bucket $c$ with its pilot, and line 9 frees all the slots of a bucket before
+line 12 takes them for another. The slots of a bucket are distinct and, after
+line 9, free (lines 6 and 8); hence no two placed buckets share a slot. The
+loop of line 4 ends with $Q$ empty, i.e., with every bucket of the part placed.
+Thus the $n$ keys hold $n$ distinct slots of $[ 0 , P S )$, and the evaluation
+computes the same slot from $h$ and the pilot of its bucket. Below $n$, $n - j$
+slots are taken if $j$ are free, and therefore $j$ slots $\ge n$ are taken: the
+$i$-th of these goes to the $i$-th free slot below $n$, a bijection. Every slot
+$\ge n$ that is not taken gets a value below $n$ (the free slot before it, or
+$n - 1$). The part $q$ reads only its keys, its pilots, its words of the slots
+and a generator seeded by $x \oplus q$, which the threads do not change.
+$\square$
+
+The pilots take $8 P B \approx 8 n / \lambda$ bits, and the remap has
+$P S - n \approx n ( 1 / \alpha - 1 )$ items, of 32 bits each in the array or
+of about $2 + \log_2 ( n / ( P S - n ) )$ bits in the sequence of Elias and
+Fano. At $\alpha = 0.99$ one has thus about 3 bits per key for the linear
+function at $\lambda = 3$, and about 2.4 for the cubic one with Elias-Fano at
+$\lambda = 3.5$ (the two configurations of the paper). Compared with
+`MinimalPerfectHash`, the bound on the pilots makes a query read a byte of an
+array instead of a field of $\lceil \log_2 ( \max_b k_b + 1 ) \rceil$ bits.
+Also, the evictions should spare the build the long searches of the last
+buckets, at the cost of a table of the owners of the slots (of 32 bits per slot
+of a part) during the build. `parts()`, `buckets()`, `slots()`, `trials()` and
+`evictions()` report the layout and the work of the build.
+
+```cpp
+// declarations of <ADS/dictionary/PtrHash.h>
+enum class PtrHashBucket { Linear , Cubic };
+enum class PtrHashRemap { Array , EliasFano };
+template< class T , PtrHashBucket F = PtrHashBucket::Linear ,
+          PtrHashRemap R = PtrHashRemap::Array , class H = DefaultHash< T > >
+class PtrHash
+{
+ public:
+ using Key = T;
+ explicit PtrHash( const std::vector< T > & keys , double lambda = 3 ,
+                   double alpha = 0.99 , std::uint64_t seed = 1 , H h = H() );
+ template< Executor E >
+ PtrHash( E & ex , const std::vector< T > & keys , double lambda = 3 ,
+          double alpha = 0.99 , std::uint64_t seed = 1 , H h = H() );
+ std::size_t operator()( const T & k ) const;
+ void stream( std::span< const T > K , std::span< std::size_t > V ) const;
+ void prefetch( const T & k ) const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t bits( void ) const;
+ std::size_t parts( void ) const;
+ std::size_t buckets( void ) const;
+ std::size_t slots( void ) const;
+ std::size_t trials( void ) const;
+ std::size_t evictions( void ) const;
+ };
+```
+
+`ConsensusRecSplit` is the Consensus-RecSplit of [Lehmann et al.
+2025](Z-bibliography.md#ref-lehmann2025). Its seeds are searched and encoded
+together; in `RecSplit`, instead, each seed is the first successful one of its
+node, written by a code of Golomb and Rice. A seed of success probability $p$,
+stored alone, needs about $\log_2 ( 1 / p ) + 1.5$ bits ([Lemma
+7.29](07-dictionary.md#lem-7-29)). Consensus gives the task $i$ of a sequence a
+fragment of $\ell_i \approx \log_2 ( 1 / p_i ) + \varepsilon_i$ bits at a fixed
+place of a string $M$. It takes as the seed of the task the word of 64 bits of
+$M$ that ends with the fragment (i.e., the fragment after those of the tasks
+before it, and after 64 bits of root). A fragment of $\ell_i$ bits has about
+$2^{\varepsilon_i}$ successful values in expectation. When it has none, the
+search goes back to the task before, whose next fragment changes the seeds of
+all the tasks after it; the first task, when all its fragments fail, increments
+the root. [Lehmann et al. 2025](Z-bibliography.md#ref-lehmann2025) prove (in
+their Theorem 7) that, with $\sum_{j \le i} \ell_j = \lceil \varepsilon i +
+\sum_{j \le i} \log_2 ( 1 / p_j ) \rceil$, the search inspects $O( 1 / ( p_i
+\varepsilon ) )$ seeds per task in expectation and stores $\sum_i \log_2 ( 1 /
+p_i ) + \varepsilon n + 64$ bits. Any code of the first successful seeds, on
+the contrary, needs $\Omega( n )$ bits more.
+
+The keys first go to $\lfloor n / K \rfloor$ buckets of exactly $K$ keys, by a
+minimal $K$-perfect function by thresholds ([Hermann et al.
+2025](Z-bibliography.md#ref-hermann2025)). In a first layer of $\lceil \omega
+\lfloor n / K \rfloor \rceil$ buckets, overloaded ($\omega$ = 0.9, 0.95 or 0.97
+as $K \le 256$, $\le 16384$ or larger), a bucket keeps the $K$ keys of the
+least thresholds (the high 32 bits of the hash). It stores the largest of them
+in $\log_2 K - 1$ bits, on a scale spent around the expected threshold. Its
+bumped keys go, rehashed, to the other buckets, in a second layer. Those bumped
+again go to a `FingerprintPerfectHash` ([§7.8.3](07-dictionary.md#sec-7-8-3)).
+From it, an Elias-Fano sequence of the bucket of each free place sends them to
+the places that the two layers left free, or to the last $n \bmod K$ values.
+Each bucket ($K$ a power of 2) is then split by a balanced binary tree of $d =
+\log_2 K$ levels. Its node of $s$ keys needs a seed $\sigma$ that sends exactly
+$s / 2$ of them to the left (those whose `splitmix64()` of $h + \sigma$ has the
+top bit set), with probability $p( s ) = \binom{s}{s/2} 2^{-s}$.
+
+The nodes of a level, in their order across the buckets, are the tasks of one
+instance of Consensus, with $\varepsilon_s = \varepsilon s^{3/4} / 3.4$. (As in
+the code of the authors, the slack is larger for the larger nodes, whose trials
+cost most.) A level is cut into chunks of $2^{22}$ keys, each one an instance
+with a root of 64 bits and, if there are two chunks or more, on words of its
+own. Hence the constructor that takes an executor searches the chunks in
+parallel, with the same result as the sequential one. A query computes the hash
+and the bucket, and then reads one word per level, at a place computed from the
+index $t$ of its node: $\lfloor ( t + 1 ) \mu_l / 2^{20} \rfloor$ in its chunk,
+where $\mu_l$ is the number of bits of a split of the level in units of
+$2^{-20}$. There is no select and no code to skip, and the node $t$ is followed
+by $2 t$ or $2 t + 1$ ([Algorithm 7.Zmp5](07-dictionary.md#alg-7-Zmp5)).
+
+<span id="alg-7-Zmp5"></span>**Algorithm 7.Zmp5.** The search of the seeds of
+a chunk of a level and the evaluation of `ConsensusRecSplit` ([Lehmann et
+al. 2025](Z-bibliography.md#ref-lehmann2025)); $\sigma_i$ is the seed of the
+task $i$, $f_i$ its fragment and $E^l$ the ends of the fragments of the
+level $l$.
+
+--8<-- "generated/ConsensusRecSplit-consensus.pseudo.md"
+
+--8<-- "generated/ConsensusRecSplit-value.pseudo.md"
+
+The function is minimal perfect whenever the hashes are distinct, which the
+build checks first.
+
+<span id="lem-7-Zmp2"></span>**Lemma 7.Zmp2.** *If the $n \ge 1$ keys have
+distinct hashes and the build of `ConsensusRecSplit` returns, then the
+evaluation maps them one to one onto $\{ 0 , \ldots , n - 1 \}$, and any
+key into $\{ 0 , \ldots , n - 1 \}$, after the thresholds of at most two
+layers (and, for a key bumped twice, the fallback and an item of the
+sequence of the free places) and $\log_2 K$ reads of 64 bits. The seeds do
+not depend on the executor of the build.*
+
+*Proof.* A bucket $b$ keeps at most $K$ keys of its layers, and it has $K$
+minus as many entries $b$ in the sequence of the free places, which is followed
+by the $n \bmod K$ last values. The fallback maps the keys bumped twice one to
+one onto the entries of the sequence ([Lemma 7.27](07-dictionary.md#lem-7-27)),
+whose number is that of the keys bumped twice, since the $n$ keys fill $K
+\lfloor n / K \rfloor + n \bmod K$ places. Hence each bucket gets exactly $K$
+keys, and each last value one. At the level $l$ the $s = K / 2^l$ keys of the
+node $t$ are those of the task $t$, grouped by the levels above, and line 4 of
+[Algorithm 7.Zmp5](07-dictionary.md#alg-7-Zmp5) accepts a seed only if it sends
+exactly half of them to the left. The left half of the node $t$ is the node $2
+t$ of the next level, and the right one $2 t + 1$; thus after $d$ levels the
+$K$ keys of the bucket $b$ reach the $K$ distinct leaves $K b , \ldots , K b +
+K - 1$. A key out of the set gets a bucket below $\lfloor n / K \rfloor$ and a
+leaf of it, or a last value. A chunk reads and writes only its keys and its
+bits, on words of its own when there are two chunks or more. $\square$
+
+The space of the seeds is close to the bound of [Lemma
+7.24](07-dictionary.md#lem-7-24), which is the point of the method.
+
+<span id="lem-7-Zmp3"></span>**Lemma 7.Zmp3.** *The seeds of the $n' = K
+\lfloor n / K \rfloor$ keys of the buckets take at most $n' ( \log_2 e +
+1.555 \, \varepsilon + 2^{-20} ) + 128 \, d \, C$ bits, where $C$ is the
+number of chunks.*
+
+*Proof.* A chunk of $N$ tasks of $s$ keys at the level $l$ takes $\lfloor N
+\mu_l / 2^{20} \rfloor + 64$ bits, rounded up to a multiple of 64 if $C > 1$.
+Since $\mu_l = \lceil 2^{20} ( \log_2 ( 1 / p( s ) ) + \varepsilon_s )
+\rceil$, these are at most $N ( \log_2 ( 1 / p( s ) ) + \varepsilon_s + 2^{-20}
+) + 127$ bits. The node of $s$ keys split in two halves has the probability
+(7.11) with $k_0 = k_1 = s / 2$, which is $p( s )$. Therefore, by [Lemma
+7.28](07-dictionary.md#lem-7-28), the terms $\log_2 ( 1 / p( s ) )$ of the
+$K - 1$ nodes of a bucket add up to $\log_2 ( K^K / K! ) < K \log_2 e$, since
+$K! > ( K / e )^K$. The slack of a bucket is $( \varepsilon / 3.4 ) \sum_{l
+< d} 2^l ( K / 2^l )^{3/4} = ( \varepsilon / 3.4 ) K^{3/4} \sum_{l < d}
+2^{l/4} < ( \varepsilon / 3.4 ) K / ( 2^{1/4} - 1 ) < 1.555 \, \varepsilon
+K$, and its $K - 1$ nodes add less than $K 2^{-20}$ by the rounding of
+$\mu_l$. The $d$ levels of the $C$ chunks add at most 127 bits each.
+$\square$
+
+Besides, the thresholds add $( \log_2 K - 1 ) / K$ bits per key, while the
+fallback and the sequence of the free places add a few bits per key bumped
+twice, and such keys are typically few for a large $K$. This bound is that of
+the authors (cf. their Theorem 4), whose implementation reaches 1.444 bits per
+key on $10^8$ keys with $K = 32768$ and $\varepsilon = 0.0005$. Their analysis
+gives a build of $O( n / \varepsilon )$ expected time for $K = \Theta(
+\varepsilon^{-4/3} )$ (their Theorem 5). Note that a query reads $\log_2 K$
+words at unrelated places, and the authors report queries somewhat slower than
+those of `RecSplit`.
+`buckets()` and `bumped()` report the buckets and the keys of the fallback.
+
+```cpp
+// declarations of <ADS/dictionary/ConsensusRecSplit.h>
+template< class T , std::size_t K = 4096 , class H = DefaultHash< T > >
+class ConsensusRecSplit
+{
+ public:
+ using Key = T;
+ explicit ConsensusRecSplit( const std::vector< T > & keys ,
+                             double epsilon = 0.01 , std::uint64_t seed = 1 ,
+                             H h = H() );
+ template< Executor E >
+ ConsensusRecSplit( E & ex , const std::vector< T > & keys ,
+                    double epsilon = 0.01 , std::uint64_t seed = 1 ,
+                    H h = H() );
+ std::size_t operator()( const T & k ) const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t bits( void ) const;
+ std::size_t buckets( void ) const;
+ std::size_t bumped( void ) const;
  };
 ```
 
@@ -3101,7 +3388,7 @@ by `lowerBound( x )`, the smallest key not smaller than $x$ ([Morin 2013,
 §4.2](Z-bibliography.md#ref-morin-cpp)). Its search, `before( k )`, follows
 the search path of $k$, dropping a level just before passing $k$, and returns
 the node after the last one met on the level 0 together with $U$ ([Algorithm
-7.20](07-dictionary.md#alg-7-20)). `lookup()` and `contains()` compare that
+7.22](07-dictionary.md#alg-7-20)). `lookup()` and `contains()` compare that
 node with $k$, and `lowerBound()` returns it. In contrast, the search of Morin
 compares $k$ again with the node that stopped it on the level above whenever
 the link it drops to on the next level leads to that same node, i.e., when
@@ -3248,14 +3535,14 @@ up if the node has a further level, and left otherwise, and this *reverse
 search path* is the search path reversed. On a level $r$, the steps to the left
 before going up are those of a coin tossed until it comes up heads (the node
 has a further level), at most $E[ T ] - 1 = 1$ in expectation by [Lemma
-7.32](07-dictionary.md#lem-7-32). This bound also holds when the head stops the
+7.35](07-dictionary.md#lem-7-32). This bound also holds when the head stops the
 path earlier. Let $S_r$ be the number of the steps to the right of the search
 on the level $r$, with $E[ S_r ] \le \min\{ 1 , E[ | L_r | ] \} = \min\{ 1 , n
 / 2^r \}$, since the path cannot take more steps than $L_r$ has keys. The
 length of the path is $h + \sum_{r \ge 0} S_r$, whose expectation is at most
 $E[ h ] + \lfloor \log_2 n \rfloor + 1 + \sum_{r > \lfloor \log_2 n \rfloor} n
 / 2^r \le E[ h ] + \log_2 n + 3 \le 2 \log_2 n + 5$ by [Lemma
-7.33](07-dictionary.md#lem-7-33). $\square$
+7.36](07-dictionary.md#lem-7-33). $\square$
 
 <span id="thm-7-7"></span>**Theorem 7.7.** *([Morin 2013, Theorem
 4.3](Z-bibliography.md#ref-morin-cpp).) A skip list of $n$ keys takes
@@ -3287,7 +3574,7 @@ Yet, the gain of $p = 1 / e$ is quite small, and the cost of drawing a level
 with probability $1 / e$, instead of counting the trailing 1s of a word, does
 not repay it in our view; the code keeps $p = 1 / 2$. In the same model one can
 count the saving of the comparisons of [Algorithm
-7.20](07-dictionary.md#alg-7-20) ([Morin 2013, exercise
+7.22](07-dictionary.md#alg-7-20) ([Morin 2013, exercise
 4.8](Z-bibliography.md#ref-morin-cpp)).
 
 <span id="lem-7-35"></span>**Lemma 7.35.** *With the promotion probability
@@ -3298,7 +3585,7 @@ $\frac{1}{p} \log_{1/p} n + O( 1 )$ for the search of Morin.*
 
 *Proof.* Morin's search compares the key once per step to the right and once
 per level to stop, about $\frac{1}{p}$ times per level by the proof of [Lemma
-7.34](07-dictionary.md#lem-7-34). Ours skips the comparison that stops the
+7.37](07-dictionary.md#lem-7-34). Ours skips the comparison that stops the
 level $l$ when the successor on the level $l$ of the node where the search
 stands is the node $s$ that stopped the level $l + 1$, i.e., when that
 successor has a further level. This happens with probability $p$, independently
@@ -3371,7 +3658,7 @@ $O( \log n )$ expected time; `forEach( f )` visits the pairs by increasing
 keys. Here the ranks are shifted by one, the head at 0 and the nil at $n + 1$;
 hence, the widths of each level sum to $n + 1$, the invariant that its
 contracts check ([Figure 7.24](07-dictionary.md#fig-7-24), [Algorithm
-7.23](07-dictionary.md#alg-7-23)). Morin gives no code for it, and
+7.25](07-dictionary.md#alg-7-23)). Morin gives no code for it, and
 `SkipListSequence` of [Chapter 2](02-sequence.md#ch-2) is his `SkiplistList`,
 which uses the same widths for a sequence searched by index.
 
@@ -3458,7 +3745,7 @@ the widths of the links it follows, and `select( i )` goes right on a level
 exactly over the nodes of rank at most $i$, i.e., of key at most the key $x_i$
 of rank $i$; it thus follows the search path of a value between $x_i$ and the
 key after it. Both paths have $O( \log n )$ expected length by [Lemma
-7.30](07-dictionary.md#lem-7-30), which holds for any value searched, and each
+7.33](07-dictionary.md#lem-7-30), which holds for any value searched, and each
 step costs $O( 1 )$. $\square$
 
 [Figure 7.25](07-dictionary.md#fig-7-25) applies the two operations to the
@@ -3504,7 +3791,7 @@ search tree ([Morin 2013, exercise 4.15](Z-bibliography.md#ref-morin-cpp),
 8](08-tree.md#ch-8)). It uses its links better, however: a binary search
 tree of $n$ nodes has $2 n$ links of which $n + 1$ are nil, while a skip
 list has $2 n$ links in expectation ([Lemma
-7.33](07-dictionary.md#lem-7-33)) of which only those at the end of each
+7.36](07-dictionary.md#lem-7-33)) of which only those at the end of each
 level, $O( \log n )$, are nil.
 
 ![Figure 7.26. A skip list of the keys 1 to 4 with 1, 3, 1, 2 levels, the links that enter a node below its top level drawn faint, and the binary tree of the pairs (node, level) that the other links make ([Morin 2013, exercise 4.15](Z-bibliography.md#ref-morin-cpp)): the down link is the left child, the kept right link the right child.](../figures/dictionary-skiplist-tree.svg){#fig-7-26}
@@ -3528,7 +3815,7 @@ coding are in [§15.6](15-string.md#sec-15-6).
 `Trie` keeps the children of a node in a sorted map (`std::map` by character),
 and hence a search, an insertion and a removal take $O( | k | \log \sigma )$
 time for a key of $| k |$ characters on an alphabet of $\sigma$ ([Algorithm
-7.24](07-dictionary.md#alg-7-24)). An insertion makes the nodes missing on the
+7.26](07-dictionary.md#alg-7-24)). An insertion makes the nodes missing on the
 path of $k$, and a removal removes, bottom up, the nodes of its path left with
 no value and no child. `keysWithPrefix( p )` gives the keys below the node of
 $p$ in increasing order, and `nodes()` the number of nodes, the root included.
@@ -3813,7 +4100,7 @@ node that branches (the *path compression*). The prefix is the length of the
 chain and its first 8 bytes, and a search skips the bytes past 8 (the
 optimistic compression of the paper, the hybrid of its section III.E) and
 compares the full key at the leaf, where each search ends ([Algorithm
-7.27](07-dictionary.md#alg-7-27)). A leaf holds the whole key, in one
+7.29](07-dictionary.md#alg-7-27)). A leaf holds the whole key, in one
 allocation with its value, and a pointer to a child is a leaf if its lowest bit
 is set (`isLeaf()`, `asLeaf()`, `tag()`). A key that ends at a node, a prefix
 of all the keys below it, hangs from the node apart from the children, so that
@@ -3919,7 +4206,7 @@ dictionary of $n$ strings by the degrees of its nodes in depth (DFUDS) of
 character of each edge in a byte and the rest of its label in a string
 apart. It maps a string to its rank in the lexicographic order. The $N$
 nodes of the compact trie, at most $2 n$ by [Lemma
-7.38](07-dictionary.md#lem-7-38), are visited in depth, the children of a
+7.41](07-dictionary.md#lem-7-38), are visited in depth, the children of a
 node by their first characters. The node of $d$ children is written as $d$
 open parentheses and a closed one, after an open parenthesis that balances
 the whole. This takes $2 N$ bits, in which the node of rank $v$ in the
@@ -3957,7 +4244,7 @@ node comes before its subtree, which holds the strings it prefixes, and the
 subtrees follow the order of their first characters). Also, the strings with a
 prefix $P$ are the marks of the subtree where the walk of $P$ ends, a range of
 ranks found by one forward search ([Algorithm
-7.28](07-dictionary.md#alg-7-28)). A lookup of $Q$ walks down $O( | Q | )$
+7.30](07-dictionary.md#alg-7-28)). A lookup of $Q$ walks down $O( | Q | )$
 nodes, each in $O( \log \sigma )$ time besides a rank, a select of Elias and
 Fano for the rest of its label and, but for the first child, a `findClose()`,
 and `contains( Q )` is a lookup that found $Q$. In turn,
@@ -4128,7 +4415,7 @@ key and a value. A search that falls off the trie keeps, on its walk down,
 the child 1 of the deepest node where the path of $x$ goes to the child 0
 while the child 1 is there, the root $a$ of the nearest larger keys. It then
 returns the leftmost leaf below $a$, $O( w )$ more steps ([Algorithm
-7.30](07-dictionary.md#alg-7-30), [Figure
+7.32](07-dictionary.md#alg-7-30), [Figure
 7.36](07-dictionary.md#fig-7-36)). An insertion adds the missing nodes of
 its path, a removal removes the nodes of its path left with no child, both
 in $O( w )$ time, and `forEach()` visits the pairs by increasing keys. It
@@ -4257,7 +4544,7 @@ directly. An insertion links the new key before its successor and widens the
 entries of its $w$ prefixes. A removal replaces the smallest key of a prefix
 by the next one in the list and the largest by the previous one; this is
 correct since the keys of a prefix are consecutive in the list ([Algorithm
-7.31](07-dictionary.md#alg-7-31)). `find()`, `lookup()` and `contains()` look
+7.33](07-dictionary.md#alg-7-31)). `find()`, `lookup()` and `contains()` look
 at $t[ w ]$ alone, in $O( 1 )$ expected time, `seek( x )` gives the iterator
 on the successor, as in `XFastTrie`, and `entries()` counts the entries of the
 tables.
@@ -4520,7 +4807,7 @@ missing, returns the smallest string below the next child of $u$, if there
 is one. Otherwise it returns the string after the largest one below $u$, by
 the argument of [Lemma 7.43](07-dictionary.md#lem-7-43) on the bytes, in
 $O( 1 )$ time after the walk of $O( | s | )$ nodes ([Algorithm
-7.34](07-dictionary.md#alg-7-34)). An insertion adds the missing nodes of
+7.36](07-dictionary.md#alg-7-34)). An insertion adds the missing nodes of
 the path of $s$, and links the new string before its successor. Going back
 to the root, it makes it the smallest string of each node in which nothing
 precedes it (no string ends there and no child has a smaller byte) and the
@@ -4694,8 +4981,8 @@ in $O( n )$ space. Lower bounds of [Pătrașcu and Thorup
 less optimal for the structures in $O( n )$ space.
 
 The perfect hash functions of this chapter (`MinimalPerfectHash`,
-`RecSplit`, `FingerprintPerfectHash`, `PerfectHashTable` and
-`OrderedMinimalPerfectHash`) are persistent
+`PtrHash`, `RecSplit`, `ConsensusRecSplit`, `FingerprintPerfectHash`,
+`PerfectHashTable` and `OrderedMinimalPerfectHash`) are persistent
 ([§23.7](23-external.md#sec-23-7)), as their users typically need, since
 they build a function once on a static set of keys and evaluate it for the
 life of an index; the file holds the seeds, the pilots, the
@@ -4883,7 +5170,7 @@ chapter, and the others by the lemmas and the code cited.
     4.6](Z-bibliography.md#ref-morin-cpp)). Solved by [Figure
     7.21](07-dictionary.md#fig-7-21), [Figure 7.22](07-dictionary.md#fig-7-22),
     [Figure 7.23](07-dictionary.md#fig-7-23) and [Lemma
-    7.31](07-dictionary.md#lem-7-31); test: `ods_trees.ods4.2.skiplist-sset`.
+    7.34](07-dictionary.md#lem-7-31); test: `ods_trees.ods4.2.skiplist-sset`.
 39. Illustrate `remove( 2 )` and `add( 3 , x )` with a height of 4 on the skip
     list with the lengths of [Morin 2013, Figure
     4.5](Z-bibliography.md#ref-morin-cpp) ([Morin 2013, exercises 4.4 and
@@ -4891,16 +5178,16 @@ chapter, and the others by the lemmas and the code cited.
     access by rank ([Morin 2013, exercise
     4.9](Z-bibliography.md#ref-morin-cpp)). Solved by [Figure
     7.25](07-dictionary.md#fig-7-25) and [Lemma
-    7.37](07-dictionary.md#lem-7-37); tests:
+    7.40](07-dictionary.md#lem-7-37); tests:
     `ods_trees.ods-ex4.9.rank-skiplist` and `ods_trees.ods4.3.skiplist-list`.
 40. Promote the keys with a probability $p$ instead of $1 / 2$: bound the
     search path, the height and the nodes, and find the best $p$ ([Morin 2013,
     exercise 4.7](Z-bibliography.md#ref-morin-cpp)). Solved by [Lemma
-    7.34](07-dictionary.md#lem-7-34); test: `ods_trees.ods4.2.skiplist-sset`.
+    7.37](07-dictionary.md#lem-7-34); test: `ods_trees.ods4.2.skiplist-sset`.
 41. Remove the redundant comparisons of the search of a skip list, and count
     the comparisons of the new search ([Morin 2013, exercise
     4.8](Z-bibliography.md#ref-morin-cpp)). Solved by [Lemma
-    7.35](07-dictionary.md#lem-7-35); test:
+    7.38](07-dictionary.md#lem-7-35); test:
     `ods_trees.ods-ex4.8.no-redundant-comparisons`.
 42. Realize the finger search of a skip list, in $O( 1 + \log r )$ expected
     time ([Morin 2013, exercise 4.10](Z-bibliography.md#ref-morin-cpp)). Solved
@@ -4933,7 +5220,7 @@ chapter, and the others by the lemmas and the code cited.
     memory. Test: `ordered.adaptive-radix-tree`.
 50. Code a static dictionary of strings as a Patricia trie in DFUDS, with
     `access()` and `lookup()` inverse of each other ([Lemma
-    7.42](07-dictionary.md#lem-7-42)). Test:
+    7.45](07-dictionary.md#lem-7-42)). Test:
     `engineered_strings.string-dictionaries`.
 51. Realize the binary trie of the integers of $w$ bits ([Theorem
     7.8](07-dictionary.md#thm-7-8)). Test: `ods_ints.ods13.1.binary-trie`.
@@ -4954,7 +5241,7 @@ chapter, and the others by the lemmas and the code cited.
     )$ and in $O( 1 + \log \log d( x ) )$ expected time, $d( x )$ the distance
     of $x$ from its successor ([Morin 2013, exercise
     13.4](Z-bibliography.md#ref-morin-cpp)). Solved by [Lemma
-    7.44](07-dictionary.md#lem-7-44); test: `ods_ints.ods.ex13.4.find-near`.
+    7.47](07-dictionary.md#lem-7-44); test: `ods_ints.ods.ex13.4.find-near`.
 56. Realize the y-fast trie ([Theorem 7.10](07-dictionary.md#thm-7-10) and
     [Lemma 7.45](07-dictionary.md#lem-7-45)). Test:
     `ods_ints.ods13.3.y-fast-trie`.
