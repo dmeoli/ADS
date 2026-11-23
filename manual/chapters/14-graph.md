@@ -1626,11 +1626,13 @@ $p( u )$. Thus, a pass in the order of discovery (in which each parent comes
 before its children) gives each node $u$ that is not a root the block $B[ u ]$
 of $[ p( u ) , u ]$. By (i) and (iii), the block of any other edge $[ v , w ]$
 that is not a loop is $B$ of its end of larger $\mathit{dt}$, which `block( u ,
-v )` reads in $O( 1 )$ time. Therefore, the result takes three integers per
-node and nothing per edge; when a vector of the blocks of the arcs is needed,
-`arcBlocks( g )` writes it out. We number the blocks by the least of their
-nodes other than the head, and hence the numbers do not depend on the order of
-the visit.
+v )` reads in $O( 1 )$ time. Therefore, the result takes two integers and one
+byte per node (the block and the rank, and whether the node is a cut node), two
+integers and one byte per block (its head, its least node, and whether it is a
+bridge), and nothing per edge; when a vector of the blocks of the arcs is
+needed, `arcBlocks( g )` writes it out. We number the blocks by the least of
+their nodes other than the head, and hence the numbers do not depend on the
+order of the visit.
 
 <span id="alg-14-12"></span>**Algorithm 14.12.** The blocks by one visit in
 depth with no stack of edges (Hopcroft and Tarjan), the 2-edge-connected
@@ -1694,18 +1696,22 @@ most one neighbor of smaller rank, and there is no cycle. In each connected
 component of $G$ with an edge, only the root (if it is a cut node), or else the
 block that it heads, has none, whence one tree for each. $\square$
 
-The visit takes $5 n$ integers besides the result. As the visits of
-[§14.5.5](14-graph.md#sec-14-5-5), it keeps its recursion on an explicit stack
-of the pairs (node, next arc), and therefore a path of $10^8$ nodes does not
-overflow the stack of the calls. On a `StaticGraph` and an `ArrayGraph` it
-reads the rows where they are, and for any other model of `Graph` it copies
-them once. In turn, `biconnected_components()` of Boost.Graph pushes and pops
-each edge, and it writes a property per edge through a map, on its
-`adjacency_list`. Against it, we expect the visit to save the $m$ moves of the
-stack of edges and the indirections of the lists. This gain should be the
-largest on the sparse graphs of large diameter (e.g., the roads and the grids),
-and the smallest on those whose arcs are read from the memory at random, where
-the reads of the visit itself typically dominate (the benchmark `graphs` of
+The visit takes four integers per node besides the result ($\mathit{dt}$,
+$\mathit{low}$, the parent and the order of discovery), and its stack holds at
+most one frame (two integers and a size) per node of the current path (in the
+worst case, that of a path, $n$ of them). As the visits of
+[§14.5.5](14-graph.md#sec-14-5-5), it keeps its recursion on that explicit
+stack of the frames (node, the parent whose edge is still to skip, next arc),
+and therefore a path of $10^8$ nodes does not overflow the stack of the calls.
+On a `StaticGraph` and an `ArrayGraph` it reads the rows where they are, and
+for any other model of `Graph` it copies them once. In turn,
+`biconnected_components()` of Boost.Graph pushes and pops each edge, and it
+writes a property per edge through a map, on its `adjacency_list`. Against it,
+we expect the visit to save the $m$ moves of the stack of edges and the
+indirections of the lists. This gain should be the largest on the sparse graphs
+of large diameter (e.g., the roads and the grids), and the smallest on those
+whose arcs are read from the memory at random, where the reads of the visit
+itself typically dominate (the benchmark `graphs` of
 [§B.1](B-benchmarks.md#sec-B-1) measures them). From the same visit, the chain
 decomposition of [Schmidt 2013](Z-bibliography.md#ref-schmidt2013) gives the
 same tests of 2-connectivity by a second pass over the edges out of the tree;
