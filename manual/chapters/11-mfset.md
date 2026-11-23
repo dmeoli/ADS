@@ -12,7 +12,7 @@ Kruskal must refuse, cf. [Chapter 14](14-graph.md#ch-14)), and the classes of an
 relation given by its pairs. In `ADS/mfset` it is realized on lists
 ([§11.2](11-mfset.md#sec-11-2)) and on a forest of parents with the
 heuristics of [Montresor 2025, §10.2](Z-bibliography.md#ref-montresor2025)
-([§11.3](11-mfset.md#sec-11-3)). Then come two engineered forests
+([§11.3](11-mfset.md#sec-11-3)). We then give two engineered forests
 ([§11.4](11-mfset.md#sec-11-4)) and a forest whose merges can be undone,
 on which we answer offline the connectivity of a graph whose edges come and
 go ([§11.5](11-mfset.md#sec-11-5)). [Table 11.1](11-mfset.md#tab-11-1)
@@ -37,14 +37,15 @@ $$
 
 The second, $\mathrm{merge}( x , y )$, replaces the components of $x$ and of
 $y$ with their union; components are never split. Some specifications require
-$x$ and $y$ to be in distinct components; all the realizations of the chapter
-relax this precondition, since a `merge()` of two elements already together
-returns false and leaves the partition as it was. Each realization also has
-`n()`, the number of the elements, and all of them but `ListMFSet` have
-`same( x , y )` (cf. (11.1)), and `count()`, the number of the components.
-Throughout the chapter $m$ is the number of the operations of a sequence of
-finds and merges and $p[ x ]$ the parent of $x$ in a forest. Also,
-$\mathit{rank}[ r ]$ and $\mathit{size}[ r ]$ are the rank and the number of
+$x$ and $y$ to be in distinct components; we relax this precondition in all
+the realizations of the chapter, since a `merge()` of two elements already
+together returns false and leaves the partition as it was. Each
+realization also has `n()`, the number of the elements, and all of them but
+`ListMFSet` have `same( x , y )` (cf. (11.1)), and `count()`, the number of
+the components.
+Throughout the chapter we write $m$ for the number of the operations of a
+sequence of finds and merges and $p[ x ]$ for the parent of $x$ in a
+forest. Also, $\mathit{rank}[ r ]$ and $\mathit{size}[ r ]$ are the rank and the number of
 nodes of the tree of the root $r$, and $\alpha( m , n )$ is the inverse of the
 function of Ackermann, which is at most 4 for any $m$ and $n$ that fit in a
 computer ([Tarjan 1975](Z-bibliography.md#ref-tarjan1975)).
@@ -127,8 +128,9 @@ of the other, after the two finds ([Algorithm 11.2](11-mfset.md#alg-11-2) and
 [Figure 11.2](11-mfset.md#fig-11-2)). Lists and forests thus trade one cost
 for the other: on lists the finds are cheap and the merges expensive, on a
 forest the converse. With no heuristic, the root of $y$ goes under that of
-$x$, and $n - 1$ merges may build a path of $n$ nodes, whose deepest node
-costs $n - 1$ steps to each find. Two heuristics bound the height of the
+$x$, and $n - 1$ merges may build a path of $n$ nodes (e.g., the merges
+`merge( i , i - 1 )` for $i = 1 , \ldots , n - 1$), whose deepest node costs
+$n - 1$ steps to each find. Two heuristics bound the height of the
 trees, and may be switched off to study them (the argument `Union` of the
 constructor, `Union::NONE`, `RANK` or `SIZE`, and its argument `compress`).
 
@@ -179,8 +181,9 @@ A find that has climbed from $x$ to its root $r$ may also make each node
 of the path a child of $r$ (the *compression* of [Montresor 2025,
 §10.2.4](Z-bibliography.md#ref-montresor2025)); the next finds from
 those nodes cost one step ([Figure 11.3](11-mfset.md#fig-11-3)). In
-`MFSet` the compression is a second pass over the path, with no recursion
-and no stack (lines 3 and 4 of [Algorithm 11.2](11-mfset.md#alg-11-2)).
+`MFSet` we write the compression as a second pass over the path, with no
+recursion and no stack (cf. lines 3 and 4 of [Algorithm
+11.2](11-mfset.md#alg-11-2)).
 
 ![Figure 11.3. A path from 0 to its root 5, and the same nodes after `find(0)` with the compression (each node of the path a child of the root) and with the halving of [§11.4](11-mfset.md#sec-11-4) (every other node of the way a child of its grandparent); the violet nodes are those whose parent changed.](../figures/mfset-paths.svg){#fig-11-3}
 
@@ -188,7 +191,9 @@ With the compression a rank is no longer the height of its tree, but only
 an upper bound to it (exercise 10.7 of [Montresor
 2025](Z-bibliography.md#ref-montresor2025)), since the compression lowers
 the trees and never changes a rank. Together, the two heuristics give an
-amortized cost per operation that is constant for any practical purpose.
+amortized cost per operation that is constant for any practical purpose
+(cf. [Theorem 11.1](11-mfset.md#thm-11-1) and
+[Lemma 11.3](11-mfset.md#lem-11-3) below).
 
 <span id="thm-11-1"></span>**Theorem 11.1.** *With the union by rank or by
 size, and the compression or the halving of the paths, a sequence of
@@ -485,8 +490,8 @@ $\square$
 
 The climb stops as soon as the sets are joined, often well below the
 roots, and each step both compresses and moves on; the two finds and the
-link of the union by rank thus become the single interleaved walk of the
-lines 3 to 6 of [Algorithm 11.5](11-mfset.md#alg-11-5).
+link of the union by rank thus become a single interleaved walk (cf. lines
+3 to 6 of [Algorithm 11.5](11-mfset.md#alg-11-5)).
 
 Yet, the link by index does not give the bound (11.2) in the worst case:
 with the splicing or the halving it gives $O( m \log_{1 + m / n} n )$
@@ -560,9 +565,9 @@ $R$ of the merges).
 
 --8<-- "generated/RollbackUnionFind-undo.pseudo.md"
 
-This forest keeps the union by rank and gives up any change of the paths.
-A compression would change $\Theta( \log n )$ parents per find, all to be
-recorded, and its amortized bound (11.2) does not survive the undo: a
+In this forest we keep the union by rank and give up any change of the
+paths: a compression may change $\Theta( \log n )$ parents per find, all to
+be recorded, and its amortized bound (11.2) does not survive the undo: a
 sequence that rolls back the merges and does them again can make the same
 long find pay each time.
 
@@ -621,7 +626,7 @@ const auto a = ADS::offlineConnectivity( 3 , ops );  // a = { 1 , 0 , 3 }
 ```
 
 Each edge lives on an interval of times $[ s , e )$, from its insertion to
-its deletion (or to the end), and the times are counted in questions; an
+its deletion (or to the end), and we count the times in questions; an
 edge inserted and deleted with no question in between thus lives on an
 empty interval, and is dropped. The $q$ questions are the leaves of a
 segment tree, and its node of the range $[ a , b )$ holds the list $L$ of the
@@ -692,25 +697,25 @@ expected time, and the lists take $O( k \log k )$ space. $\square$
 With the contraction of the graph at each level of the divide and conquer
 ([Eppstein 1994](Z-bibliography.md#ref-eppstein1994); [Peng et al.
 2019](Z-bibliography.md#ref-peng2019)) the bound falls to $O( k \log n )$,
-at the price of a far longer code; the rollback avoids it.
+at the price of a (much) longer code, which we avoid by the rollback.
 
 ## 11.6 The realizations compared {#sec-11-6}
 
 `ListMFSet` and `MFSet` are the realizations of the textbook, with the
-heuristics that can be switched off, and they are meant to study the
+heuristics that can be switched off, and we meant them for the study of the
 bounds of [Lemma 11.1](11-mfset.md#lem-11-1),
 [Lemma 11.2](11-mfset.md#lem-11-2) and
 [Theorem 11.1](11-mfset.md#thm-11-1) on the counters `relabels()` and
 `steps()`; `ListMFSet` is also the one that lists the members of a
 component. Among the engineered forests, `UnionFind` keeps the bound
-(11.2) on every sequence in the least memory ($4 n$ bytes); it is the
+(11.2) on every sequence in the least memory ($4 n$ bytes); it is, e.g., the
 union-find of the observer of the spanning forests of
 [§14.13](14-graph.md#sec-14-13), while `kruskal()` takes any MFSET with
 `merge()` (the concept `Mergeable`) and an `MFSet` by default.
 `RemUnionFind` has no worst-case guarantee of the same strength; however,
 it stops its merges early and takes no sizes. [Patwary et al.
-2010](Z-bibliography.md#ref-patwary2010) found the two close to each
-other, and the ranking may well depend on the order of the merges and on
+2010](Z-bibliography.md#ref-patwary2010) found the two rather close to
+each other, and the ranking may well depend on the order of the merges and on
 the size of the sets; the comparison on the workloads of the library
 belongs to the benchmarks `sets` and `graphs` of
 [Appendix B](B-benchmarks.md#app-B), which also run `boost::disjoint_sets`.
