@@ -1566,32 +1566,33 @@ parallel edges and loops. Two edges are *equivalent* if they are equal or lie
 on a common simple cycle (two parallel edges form a cycle of length 2), and the
 classes of this relation are the *blocks*, or biconnected components, of $G$. A
 *cut node* (an articulation point) is a node whose removal leaves more
-connected components than $G$ has, not counting itself when it is isolated, and
-a *bridge* is an edge whose removal does the same; the classes of the nodes
-joined by two paths with no edge in common are the 2-edge-connected components.
-A loop is on no cycle with another edge, and so we leave it out of every block.
-With that proviso, the blocks partition the edges, a node is a cut node if and
-only if it lies in two blocks or more, and an edge is a bridge if and only if
-its block has no other edge ([Tarjan 1972](Z-bibliography.md#ref-tarjan1972);
-beyond the book, in `Biconnectivity.h`). Each block has a *head*, the node of
-the block nearest to the least node $r$ of its connected component, through
-which every path from the other nodes of the block to $r$ goes ($r$ itself for
-the blocks that hold it).
+connected components than $G$ has (not counting the node itself when it is
+isolated), and a *bridge* is an edge whose removal does the same. Also, the
+classes of the nodes joined by two paths with no edge in common are the
+2-edge-connected components. Since a loop is on no cycle with another edge, we
+leave it out of every block. With that proviso, the blocks partition the edges;
+furthermore, a node is a cut node if and only if it lies in two blocks or more,
+and an edge is a bridge if and only if its block has no other edge ([Tarjan
+1972](Z-bibliography.md#ref-tarjan1972); beyond the book, in
+`Biconnectivity.h`). Each block has a *head*: this is the node of the block
+nearest to the least node $r$ of its connected component, through which every
+path from the other nodes of the block to $r$ goes ($r$ itself for the blocks
+that hold it).
 
 The algorithm of [Hopcroft and Tarjan
 1973](Z-bibliography.md#ref-hopcroft1973graph) finds the blocks by one visit in
 depth, which keeps the order of discovery $\mathit{dt}$, the parent $p$ and the
-*lowpoint* $\mathit{low}[ u ]$, the least $\mathit{dt}$ that the subtree of $u$
-reaches by one edge out of the tree ($\mathit{dt}[ u ]$ itself included). The
-edge to the parent is skipped once, so that a parallel copy of it counts as any
-other edge. The original algorithm pushes each edge on a stack and pops the
-edges of a block when the visit returns to its head, as
-`biconnected_components()` of Boost.Graph does. We need no stack of edges. In
-fact, each edge of a block other than those of the tree lies in the block of an
-edge of the tree. Hence a pass over the nodes in the order of discovery gives
-the edge from each node to its parent a block, and the block of every other
-edge is read from its ends ([Algorithm 14.12](14-graph.md#alg-14-12)). The
-following lemma justifies the pass.
+*lowpoint* $\mathit{low}[ u ]$, i.e., the least $\mathit{dt}$ that the subtree
+of $u$ reaches by one edge out of the tree ($\mathit{dt}[ u ]$ itself
+included). The edge to the parent is skipped only once; hence, a parallel copy
+of it counts as any other edge. In the original algorithm each edge is pushed
+on a stack, and the edges of a block are popped when the visit returns to its
+head, as `biconnected_components()` of Boost.Graph does. We need no stack of
+edges, since each edge of a block that is not in the tree lies in the block of
+an edge of the tree. Hence, a pass over the nodes in the order of discovery
+gives the edge from each node to its parent a block, and the block of every
+other edge is read from its ends ([Algorithm 14.12](14-graph.md#alg-14-12)). We
+justify the pass by the following lemma.
 
 <span id="lem-14-16"></span>**Lemma 14.16.** *Let a visit in depth of an
 unoriented graph $G$ give $\mathit{dt}$, $p$ and $\mathit{low}$ as above. Then
@@ -1621,15 +1622,15 @@ hold $[ p( q ) , q ]$ without passing twice through $q$. $\square$
 
 By (ii), the edge above $u$ opens a new block exactly when $\mathit{low}[ u ]
 \ge \mathit{dt}[ p( u ) ]$, and otherwise it is in the block of the edge above
-$p( u )$. A pass in the order of discovery, in which each parent comes before
-its children, thus gives each node $u$ that is not a root the block $B[ u ]$ of
-$[ p( u ) , u ]$. By (i) and (iii), the block of any other edge $[ v , w ]$
+$p( u )$. Thus, a pass in the order of discovery (in which each parent comes
+before its children) gives each node $u$ that is not a root the block $B[ u ]$
+of $[ p( u ) , u ]$. By (i) and (iii), the block of any other edge $[ v , w ]$
 that is not a loop is $B$ of its end of larger $\mathit{dt}$, which `block( u ,
-v )` reads in $O( 1 )$ time. The result is thus three integers per node and
-nothing per edge, and `arcBlocks( g )` writes out the block of each arc when a
-vector of them is needed. The blocks are numbered by the least of their nodes
-other than the head, so that the numbers do not depend on the order of the
-visit.
+v )` reads in $O( 1 )$ time. Therefore, the result takes three integers per
+node and nothing per edge; when a vector of the blocks of the arcs is needed,
+`arcBlocks( g )` writes it out. We number the blocks by the least of their
+nodes other than the head, and hence the numbers do not depend on the order of
+the visit.
 
 <span id="alg-14-12"></span>**Algorithm 14.12.** The blocks by one visit in
 depth with no stack of edges (Hopcroft and Tarjan), the 2-edge-connected
@@ -1649,31 +1650,31 @@ only if it is the head of a block and is not a root, or it is the head of two
 blocks.*
 
 *Proof.* The blocks follow from [Lemma 14.16](14-graph.md#lem-14-16) as above.
-The nodes of the block opened at $u$ other than $p( u )$ lie in the subtree of
-$u$, and every edge out of that subtree ends in $p( u )$ (the converse part of
-the proof of (ii)). Hence every path from the block to the root goes through
+Other than $p( u )$, the nodes of the block opened at $u$ lie in the subtree of
+$u$, and every edge out of that subtree ends in $p( u )$ (cf. the converse part
+of the proof of (ii)). Hence every path from the block to the root goes through
 $p( u )$, which is the head. If $\mathit{low}[ u ] > \mathit{dt}[ p( u ) ]$,
-the edge of the tree from $u$ is the only edge out of the subtree of $u$, whose
-removal then disconnects $u$ from $p( u )$. If $\mathit{low}[ u ] =
+the edge of the tree from $u$ is the only edge out of the subtree of $u$, and
+its removal then disconnects $u$ from $p( u )$. If $\mathit{low}[ u ] =
 \mathit{dt}[ p( u ) ]$, another edge joins the subtree of $u$ to $p( u )$ and
-closes a cycle with the edge of the tree, which is in the block. The nodes of
-the block opened at $u$ are $p( u )$ and the nodes $w$ with $B[ w ]$ equal to
-it, since each of its edges is in it through the lower end of an edge of the
-tree (by (iii)), and those edges form a subtree under $p( u )$ (by (ii)). Hence
-a node is in the block of the edge above it, if it is not a root, and in the
-blocks that it heads, and in no other one, and the count of these blocks gives
-the cut nodes. Each edge is examined twice by the visit, each node once by the
-pass, and the numbering by the least nodes reads $B$ once, whence $\Theta( n +
-m )$. $\square$
+closes a cycle with the edge of the tree, which is in the block. Furthermore,
+the nodes of the block opened at $u$ are $p( u )$ and the nodes $w$ with $B[ w
+]$ equal to it, since each of its edges is in it through the lower end of an
+edge of the tree (by (iii)), and those edges form a subtree under $p( u )$ (by
+(ii)). Hence, a node is in the block of the edge above it (if it is not a root)
+and in the blocks that it heads, and in no other one; the count of these blocks
+gives the cut nodes. Each edge is examined twice by the visit, each node once
+by the pass, and the numbering by the least nodes reads $B$ once, whence
+$\Theta( n + m )$. $\square$
 
 A node $u$ starts a new 2-edge-connected component exactly when the edge above
 it is a bridge, since removing the bridges cuts the forest of the visit into
-subtrees and each other edge joins two nodes of one of them by (iii). Thus
-`twoEdgeConnectedComponents( g )` labels each node with the least node of its
-component, after the same visit. The *block-cut tree* has a node for each block
-and one for each cut node, and an edge between a block and each cut node in it;
-`blockCutTree( b )` builds it from the heads and the blocks of a decomposition,
-as a `StaticGraph` whose first nodes are the blocks.
+subtrees and each other edge joins two nodes of one of them (by (iii)). Thus,
+after the same visit, `twoEdgeConnectedComponents( g )` labels each node with
+the least node of its component. The *block-cut tree* has a node for each
+block, one for each cut node, and an edge between a block and each cut node in
+it. `blockCutTree( b )` builds it from the heads and the blocks of a
+decomposition, as a `StaticGraph` whose first nodes are the blocks.
 
 <span id="lem-14-18"></span>**Lemma 14.18.** *`twoEdgeConnectedComponents( g )`
 labels two nodes alike if and only if they are joined by two paths with no edge
@@ -1690,26 +1691,27 @@ is a cut node), since its other cut nodes lie below its first node. A cut node
 $x$ that is not a root has one, the block of the edge above it, since the
 blocks that it heads are opened below it. Hence each node of the tree has at
 most one neighbor of smaller rank, and there is no cycle. In each connected
-component of $G$ with an edge, only the root, if it is a cut node, or else the
+component of $G$ with an edge, only the root (if it is a cut node), or else the
 block that it heads, has none, whence one tree for each. $\square$
 
-The visit takes $5 n$ integers besides the result and keeps its recursion on an
-explicit stack of the pairs (node, next arc), as the visits of
-[§14.5.5](14-graph.md#sec-14-5-5), so that a path of $10^8$ nodes does not
-overflow the stack of the calls. It reads the rows where they are on a
-`StaticGraph` and an `ArrayGraph`, and copies them once for any other model of
-`Graph`. `biconnected_components()` of Boost.Graph pushes and pops each edge
-and writes a property per edge through a map, on its `adjacency_list`. Against
-it, we expect the visit to save the $m$ moves of the stack of edges and the
-indirections of the lists, i.e., the most on the sparse graphs of large
-diameter (the roads, the grids), and the least on those whose arcs are read
-from the memory at random, where the reads of the visit itself dominate (the
-benchmark `graphs` of [§B.1](B-benchmarks.md#sec-B-1) measures them). The chain
+The visit takes $5 n$ integers besides the result. As the visits of
+[§14.5.5](14-graph.md#sec-14-5-5), it keeps its recursion on an explicit stack
+of the pairs (node, next arc), and therefore a path of $10^8$ nodes does not
+overflow the stack of the calls. On a `StaticGraph` and an `ArrayGraph` it
+reads the rows where they are, and for any other model of `Graph` it copies
+them once. In turn, `biconnected_components()` of Boost.Graph pushes and pops
+each edge, and it writes a property per edge through a map, on its
+`adjacency_list`. Against it, we expect the visit to save the $m$ moves of the
+stack of edges and the indirections of the lists. This gain should be the
+largest on the sparse graphs of large diameter (e.g., the roads and the grids),
+and the smallest on those whose arcs are read from the memory at random, where
+the reads of the visit itself typically dominate (the benchmark `graphs` of
+[§B.1](B-benchmarks.md#sec-B-1) measures them). From the same visit, the chain
 decomposition of [Schmidt 2013](Z-bibliography.md#ref-schmidt2013) gives the
-same tests of 2-connectivity from the same visit, by a second pass over the
-edges out of the tree, and so it would only add a pass here. A parallel
-algorithm with the same results, which needs no visit in depth, is in
-[§25.9](25-parallel.md#sec-25-9). We list the declarations:
+same tests of 2-connectivity by a second pass over the edges out of the tree;
+here, it would therefore only add a pass. A parallel algorithm with the same
+results, which needs no visit in depth, is in [§25.9](25-parallel.md#sec-25-9).
+We list the declarations:
 
 ```cpp
 // declarations of <ADS/graph/Biconnectivity.h>

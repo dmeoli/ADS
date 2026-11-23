@@ -1412,58 +1412,60 @@ and then no node is skipped, since the argument of [Lemma
 25.14](25-parallel.md#lem-25-14) needs each arc to be seen from both ends.
 
 **The biconnected components.** The visit of Hopcroft and Tarjan
-([§14.5.6](14-graph.md#sec-14-5-6)) is inherently sequential, and the parallel
-algorithms that follow a tree of a visit in breadth have a depth that grows
-with the diameter, which is large on the road networks and on the grids.
-`biconnectedComponents( ex , g )` of `ParallelBiconnectivity.h` is FAST-BCC
-([Dong, Wang, Gu and Sun 2023](Z-bibliography.md#ref-dong2023)), which takes
-any spanning forest $F$ and keeps $O( n )$ words besides the graph, with no
+([§14.5.6](14-graph.md#sec-14-5-6)) is inherently sequential. Also, the
+parallel algorithms that follow a tree of a visit in breadth have a depth that
+grows with the diameter, which is large on the road networks and on the grids.
+In `ParallelBiconnectivity.h`, `biconnectedComponents( ex , g )` is FAST-BCC
+([Dong, Wang, Gu and Sun 2023](Z-bibliography.md#ref-dong2023)): it takes any
+spanning forest $F$ and keeps $O( n )$ words besides the graph, with no
 auxiliary graph of $O( m )$ edges as in the algorithm of [Tarjan and Vishkin
 1985](Z-bibliography.md#ref-tarjan1985vishkin). Its forest is that of the links
 of Afforest above that join two sets, rooted at the least node of each tree. We
 number the nodes of $F$ in a preorder, with $\mathit{pre}( v )$ the number of
 $v$, $\mathit{last}( v )$ the largest number in its subtree $T_v$ and $p( v )$
-its parent. The preorder comes from the tour of Euler of the arcs of $F$, in
-which the arc after $( u , v )$ is the arc after $( v , u )$ in the row of $v$,
-taken cyclically. The tour of each tree, cut at the arc into its root that
-precedes the first arc out of it, is a list, which a sparse ruling set ranks
-([Helman and JaJa 2001](Z-bibliography.md#ref-helman2001)). The first arc of
-each list and about one arc in 64, picked by a hash, are the rulers; each ruler
-walks the list up to the next one, ranking the arcs that it meets, and the
-walks of each list are then added up in their order ([Algorithm
+its parent. This preorder comes from the tour of Euler of the arcs of $F$, in
+which the arc after $( u , v )$ is the arc after $( v , u )$ in the row of $v$
+(taken cyclically). Cut at the arc into its root that precedes the first arc
+out of it, the tour of each tree is a list, which a sparse ruling set ranks
+([Helman and JaJa 2001](Z-bibliography.md#ref-helman2001)). As rulers we take
+the first arc of each list and about one arc in 64, picked by a hash. Each
+ruler walks the list up to the next one, ranking the arcs that it meets, and
+then the walks of each list are added up in their order ([Algorithm
 25.19](25-parallel.md#alg-25-19)).
 
 <span id="lem-25-15"></span>**Lemma 25.15.** *In the list of a tree of $s$
 nodes rooted at $r$, the $2 ( s - 1 )$ arcs of the tree come once each,
 starting from the first arc out of $r$, and for each edge $[ u , v ]$ with $u =
-p( v )$ the arc $( u , v )$ precedes $( v , u )$, the arcs between them being
+p( v )$ the arc $( u , v )$ precedes $( v , u )$, and the arcs between them are
 those of the edges of $T_v$. Hence numbering $r$ and then each node $v$ by the
 place of $( p( v ) , v )$ among the arcs going down (those that precede their
 reverse) gives a preorder, and $\mathit{last}( v ) = \mathit{pre}( v ) + (
 \mathit{rank}( v , p( v ) ) - \mathit{rank}( p( v ) , v ) - 1 ) / 2$.*
 
-*Proof.* The successor of an arc is a bijection on the arcs of the tree, whose
+*Proof.* The successor of an arc is a bijection on the arcs of the tree. Its
 cycle from the first arc out of $r$ is the tour of Euler of the tree, which
 goes down each edge and comes back up it after the whole subtree below ([Tarjan
-and Vishkin 1985](Z-bibliography.md#ref-tarjan1985vishkin)); the cycle is cut
-where it comes back to $r$ for the last time. The arcs of $T_v$ and the two
-arcs of $[ p( v ) , v ]$ thus fill an interval of the list, of $2 \lvert T_v
-\rvert$ arcs, and the nodes of $T_v$ are numbered after $v$ and before the
-other nodes. The number of the nodes of $T_v$ other than $v$ is half the arcs
-between $( p( v ) , v )$ and $( v , p( v ) )$. $\square$
+and Vishkin 1985](Z-bibliography.md#ref-tarjan1985vishkin)). In the list, this
+cycle is cut where it comes back to $r$ for the last time. Thus, the arcs of
+$T_v$ and the two arcs of $[ p( v ) , v ]$ thus fill an interval of the list,
+of $2 \lvert T_v \rvert$ arcs, and the nodes of $T_v$ are numbered after $v$
+and before the other nodes. Finally, the number of the nodes of $T_v$ other
+than $v$ is half the arcs between $( p( v ) , v )$ and $( v , p( v ) )$.
+$\square$
 
-The tags of FAST-BCC are $\mathit{low}( v )$ and $\mathit{high}( v )$, the
-least and the largest $\mathit{pre}$ of a node of $T_v$ or of a neighbor of
-one, i.e., the minimum and the maximum of the tags of the single nodes over the
-interval $[ \mathit{pre}( v ) , \mathit{last}( v ) ]$ of the preorder. The
-sparse tables of `RangeMinimum.h` on the minima and the maxima of blocks of 64
-places answer them, with the prefixes and the suffixes of the blocks for the
-two ends ([§6.9](06-search.md#sec-6-9)). An edge $[ p( v ) , v ]$ of $F$ is a
-*fence* if $\mathit{low}( v ) \ge \mathit{pre}( p( v ) )$ and $\mathit{high}( v
-) \le \mathit{last}( p( v ) )$, i.e., if no edge leaves $T_v$ but into $T_{p( v
-)}$. The *skeleton* $S$ holds the edges of $F$ that are not fences and the
-edges of $G$ whose ends are not one an ancestor of the other. The other edges
-between an ancestor and a descendant, and the loops, are left out.
+FAST-BCC tags each node $v$ with $\mathit{low}( v )$ and $\mathit{high}( v )$,
+the least and the largest $\mathit{pre}$ of a node of $T_v$ or of a neighbor of
+one; these are the minimum and the maximum of the tags of the single nodes over
+the interval $[ \mathit{pre}( v ) , \mathit{last}( v ) ]$ of the preorder. They
+are answered by the sparse tables of `RangeMinimum.h` on the minima and the
+maxima of blocks of 64 places, with the prefixes and the suffixes of the blocks
+for the two ends ([§6.9](06-search.md#sec-6-9)). An edge $[ p( v ) , v ]$ of
+$F$ is a *fence* if $\mathit{low}( v ) \ge \mathit{pre}( p( v ) )$ and
+$\mathit{high}( v ) \le \mathit{last}( p( v ) )$, i.e., if no edge leaves $T_v$
+but into $T_{p( v )}$. In turn, the *skeleton* $S$ holds the edges of $F$ that
+are not fences and the edges of $G$ whose ends are not one an ancestor of the
+other; the other edges between an ancestor and a descendant, and the loops, are
+left out.
 
 <span id="lem-25-16"></span>**Lemma 25.16.** *Every connected component of $S$
 but the roots of $F$, which are alone, is a block of $G$ less its head; the
@@ -1472,38 +1474,40 @@ and the block of an edge $[ u , w ]$ that is not a loop is the component of its
 end of larger $\mathit{pre}$. Hence the result of `biconnectedComponents( ex ,
 g )` is that of `biconnectedComponents( g )`, whatever the forest.*
 
-*Proof.* An edge of $F$ above $v$ that is not a fence has an edge $[ x , y ]$
-with $x \in T_v$ and $y \notin T_{p( v )}$; the path of $F$ from $x$ to $y$ and
-$[ x , y ]$ form a simple cycle through $[ p( v ) , v ]$ and $[ p( p( v ) ) ,
-p( v ) ]$, so that $v$ and $p( v )$ are in one block, of which neither is the
-head (the block holds $p( p( v ) )$, nearer to the root). An edge $[ u , w ]$
-between two subtrees closes a simple cycle with the path of $F$ through the
-least common ancestor of $u$ and $w$, which holds $[ p( u ) , u ]$ and $[ p( w
-) , w ]$; again neither $u$ nor $w$ is the head. Since a node $v$ that is not a
-root is the head of every block that holds it but one, the block of the first
-edges of the paths from $v$ to the root, each component of $S$ lies in one
-block less its head. The converse, that the nodes of a block other than its
-head are joined in $S$, is the main theorem of [Dong, Wang, Gu and Sun
-2023](Z-bibliography.md#ref-dong2023), proved by induction from the leaves of
-$F$: the edges of $F$ restricted to a block span it, and a path in the block
-that avoids $p( v )$ and leaves $T_v$ into the subtree of a sibling crosses an
-edge of $S$ between two subtrees. A root has only fences below it and edges to
-its descendants, hence no edge in $S$. Finally, a node $v$ of a component with
-$p( v )$ outside it has $p( v )$ in the block, since the restriction of $F$ to
-the block spans it, and $p( v )$ is then the head. The block of an edge is that
-of the edge of $F$ above its lower end, by the cycles above and, for an edge
-between an ancestor and a descendant, by the cycle that it closes with the path
-of $F$ between them. $\square$
+*Proof.* Let an edge of $F$ above $v$ not be a fence. Then there is an edge $[
+x , y ]$ with $x \in T_v$ and $y \notin T_{p( v )}$, and the path of $F$ from
+$x$ to $y$ and $[ x , y ]$ form a simple cycle through $[ p( v ) , v ]$ and $[
+p( p( v ) ) , p( v ) ]$. Hence $v$ and $p( v )$ are in one block, of which
+neither is the head (the block holds $p( p( v ) )$, nearer to the root).
+Similarly, an edge $[ u , w ]$ between two subtrees closes a simple cycle with
+the path of $F$ through the least common ancestor of $u$ and $w$, which holds
+$[ p( u ) , u ]$ and $[ p( w ) , w ]$; again neither $u$ nor $w$ is the head. A
+node $v$ that is not a root is the head of every block that holds it but one
+(the block of the first edges of the paths from $v$ to the root), and therefore
+each component of $S$ lies in one block less its head. The converse, i.e., that
+the nodes of a block other than its head are joined in $S$, is the main theorem
+of [Dong, Wang, Gu and Sun 2023](Z-bibliography.md#ref-dong2023), proved by
+induction from the leaves of $F$. Its proof rests on two facts: the edges of
+$F$ restricted to a block span it, and a path in the block that avoids $p( v )$
+and leaves $T_v$ into the subtree of a sibling crosses an edge of $S$ between
+two subtrees. A root has only fences below it and edges to its descendants, and
+hence no edge in $S$. Finally, a node $v$ of a component with $p( v )$ outside
+it has $p( v )$ in the block, since the restriction of $F$ to the block spans
+it; then $p( v )$ is the head. As for the edges, the block of an edge is that
+of the edge of $F$ above its lower end. This follows from the cycles above and,
+for an edge between an ancestor and a descendant, from the cycle that it closes
+with the path of $F$ between them. $\square$
 
-The components of $S$ are those of Afforest, on the arcs that a test of the
-tags of their two ends keeps, which is the same from both ends, as [Lemma
-25.14](25-parallel.md#lem-25-14) needs. A node $v$ of a component with $p( v )$
-outside it then gives the head of its block. The block is a bridge if $v$ has
-no arc in $S$ and one arc to $p( v )$, and $p( v )$ is a cut node unless it is
-a root that heads only one block (a root compares the block of each child with
-the first one written, by a compare-and-swap). `twoEdgeConnectedComponents( ex
-, g )` runs Afforest once more on the arcs that are neither loops nor bridges,
-and its least nodes are those of the sequential function.
+We compute the components of $S$ by Afforest, on the arcs kept by a test of the
+tags of their two ends; this test gives the same answer from both ends, as
+required by [Lemma 25.14](25-parallel.md#lem-25-14). Then a node $v$ of a
+component with $p( v )$ outside it gives the head of its block. This block is a
+bridge if $v$ has no arc in $S$ and one arc to $p( v )$. Also, $p( v )$ is a
+cut node unless it is a root that heads only one block (a root compares the
+block of each child with the first one written, by a compare-and-swap).
+Finally, `twoEdgeConnectedComponents( ex , g )` runs Afforest once more on the
+arcs that are neither loops nor bridges, and its least nodes are those of the
+sequential function.
 
 <span id="alg-25-19"></span>**Algorithm 25.19.** The blocks by FAST-BCC ([Dong,
 Wang, Gu and Sun 2023](Z-bibliography.md#ref-dong2023)) on the forest of
@@ -1517,17 +1521,17 @@ Afforest, rooted by the tour of Euler, and the 2-edge-connected components.
 
 The work is $O( n + m )$ expected, with the sparse table of the $n / 64$ blocks
 built on one thread in $O( ( n / 64 ) \log n )$. The depth is that of the hooks
-of Afforest and of the walks of the ruling set, whose longest walk has $O( \log
-n )$ arcs with high probability, but for the loops over the arcs of a node of
+of Afforest and of the walks of the ruling set (whose longest walk has $O( \log
+n )$ arcs with high probability), but for the loops over the arcs of a node of
 large degree, which run on one thread. Each arc of $G$ is read up to four times
 (by the two runs of Afforest, by the tags and by the test of the heads), and
 each arc of $F$ about six times, against the two reads of the visit in depth.
 On one thread we therefore expect FAST-BCC to be slower than the sequential
-visit by a small factor, and faster on a few threads, the more so on the graphs
-of large diameter, where the visits in breadth of the other parallel algorithms
-take many rounds. Neither ParlayLib nor the GAP benchmark suite has a
-biconnectivity; the competitor of the benchmark is the algorithm of Tarjan and
-Vishkin of GBBS ([Dhulipala, Blelloch and Shun
+visit by a small factor. On a few threads it should be faster, the more so on
+the graphs of large diameter, where the visits in breadth of the other parallel
+algorithms take many rounds. Since neither ParlayLib nor the GAP benchmark
+suite has a biconnectivity, the competitor of the benchmark is the algorithm of
+Tarjan and Vishkin of GBBS ([Dhulipala, Blelloch and Shun
 2021](Z-bibliography.md#ref-dhulipala2021)), run as a program of its own on the
 graphs that the benchmark writes. The two functions are declared as
 
