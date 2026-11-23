@@ -121,10 +121,10 @@ std::uint64_t FingerprintPerfectHash< T , H >::base( const T & k ) const
  std::uint64_t x;
  if constexpr( std::is_integral_v< T > && std::is_same_v< H , FastHash< T > > )
   x = std::uint64_t( k );  // mixed by the levels
- else if constexpr( requires { typename H::is_avalanching; } )
-  x = std::uint64_t( f_h( k ) );
+ else if constexpr( detail::kAvalanching64< H , T > )
+  x = detail::hash64( f_h , k );
  else
-  x = hashWord( std::uint64_t( f_h( k ) ) );
+  x = hashWord( detail::hash64( f_h , k ) );
  return( x ^ f_seed );
  }
 

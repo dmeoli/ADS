@@ -250,6 +250,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- on a target of 32 bits the hash tables, the filters and the perfect hash
+  functions take the 64 bits of the hash of `FastHash`, which its new
+  member `hash64()` gives whatever the width of a `std::size_t`
+  (`detail::hash64()`, with `detail::kAvalanching64` for a hash that
+  declares `is_avalanching` and gives 64 bits), where they took its
+  `std::size_t` of 32 bits as a hash of 64 with the high half 0, which put
+  the keys of `BlockedBloomFilter`, `CuckooFilter`, `BucketCuckooTable`,
+  `ConcurrentCuckooTable`, `PrefixFilter` and the others into a few
+  buckets and left `RecSplit` and `FingerprintPerfectHash` with no seed
+  that separates the keys; `BucketQueue` takes its keys in 64 bits, where
+  a `std::size_t` of 32 bits cut a key past 2^32; the tests that assumed a
+  `long` or a `std::size_t` of 64 bits take their widths, and the m32 job
+  of the CI, all of whose tests pass, is now required
 - `BucketCuckooTable` puts in a stash, searched after the two buckets, a
   key that finds no place after 2 doublings of its insertion or in a table
   at most half full, and a doubling puts there the pairs that it cannot

@@ -36,6 +36,7 @@
 #include <barrier>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <list>
 #include <map>
 #include <memory>
@@ -82,7 +83,7 @@ struct alignas( 256 ) Wider
 /// the allocations that the allocators of a budget still give
 std::atomic< long > & budget( void )
 {
- static std::atomic< long > b{ 1L << 40 };
+ static std::atomic< long > b{ std::numeric_limits< long >::max() };
  return( b );
  }
 
@@ -866,7 +867,7 @@ ADS_TEST( "memory-upstream-bad-alloc" )
   CHECK( R.size() == 1 && R.bytes() == b );
   void * q = R.allocate( 40 , 8 );  // in the block there
   CHECK( q != p && R.size() == 2 );
-  budget() = 1L << 40;
+  budget() = std::numeric_limits< long >::max();
   for( const std::size_t a : { std::size_t( 8 ) , std::size_t( 4096 ) } ) {
    CHECK_THROWS( ( void )R.allocate( std::size_t( -1 ) - 8 , a ) ,
 		 std::bad_alloc );

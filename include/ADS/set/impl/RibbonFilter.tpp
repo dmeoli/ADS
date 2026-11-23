@@ -57,10 +57,10 @@ std::uint64_t RibbonFilter< T , F , H >::base( const T & x ) const
 {
  if constexpr( std::is_integral_v< T > && std::is_same_v< H , FastHash< T > > )
   return( std::uint64_t( x ) );  // mixed once, with the seed
- else if constexpr( requires { typename H::is_avalanching; } )
-  return( std::uint64_t( f_h( x ) ) );
+ else if constexpr( detail::kAvalanching64< H , T > )
+  return( detail::hash64( f_h , x ) );
  else
-  return( hashWord( std::uint64_t( f_h( x ) ) ) );
+  return( hashWord( detail::hash64( f_h , x ) ) );
  }
 
 template< class T , class F , class H >

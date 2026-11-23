@@ -190,16 +190,19 @@ ADS_TEST( "branch-and-bound" )
   ( void )knapsackBB( p , v , long( g() % 30 ) );
   }
  // the order by density on values above 2^32, whose products overflow 64
- // bits and whose ratios a double does not tell apart: a, of K + 1 for
+ // bits and whose ratios a double does not tell apart (on a long of 32
+ // bits, values above 2^24, whose products overflow it): a, of K + 1 for
  // K, is denser than b, of K + 2 for K + 1, by (K + 1)^2 > K (K + 2); one of
  // them fits, the greedy takes a, the exact two b
- const long K = 1L << 40;
+ constexpr int W = std::numeric_limits< long >::digits;
+ const long K = 1L << ( ( W + 17 ) / 2 );
  const Longs p2{ K + 2 , K + 1 } , v2{ K + 1 , K };
  CHECK( knapsackGreedy( p2 , v2 , K + 1 ) == std::pair( K + 1 , Nodes{ 1 } ) );
  CHECK( knapsackBB( p2 , v2 , K + 1 ) == std::pair( K + 2 , Nodes{ 0 } ) );
  CHECK( knapsackBacktrack( p2 , v2 , K + 1 ).first == K + 2 );
  // the same with the profits and the volumes swapped in size, and random
- // knapsacks of profits and volumes up to 2^56 against the backtracking
+ // knapsacks of profits and volumes up to 2^56 (2^24 on a long of 32 bits)
+ // against the backtracking
  const Longs p3{ 3 , 2 } , v3{ 3 * K + 1 , 2 * K };
  CHECK( knapsackGreedy( p3 , v3 , 3 * K + 1 ).second == Nodes{ 1 } );
  std::mt19937_64 h( 9 );
@@ -207,10 +210,10 @@ ADS_TEST( "branch-and-bound" )
   const int n = 1 + int( h() % 8 );
   Longs p( n ) , v( n );
   for( int i = 0 ; i < n ; ++i ) {
-   p[ i ] = long( h() >> 8 );
-   v[ i ] = 1 + long( h() >> 8 );
+   p[ i ] = long( h() >> ( 71 - W ) );
+   v[ i ] = 1 + long( h() >> ( 71 - W ) );
    }
-  const long C = long( h() >> 6 );
+  const long C = long( h() >> ( 69 - W ) );
   const auto a = knapsackBB( p , v , C ) , b = knapsackBacktrack( p , v , C );
   CHECK( a.first == b.first );
   CHECK( knapsackGreedy( p , v , C ).first <= a.first );

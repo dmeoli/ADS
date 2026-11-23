@@ -252,10 +252,10 @@ std::uint64_t RecSplit< T , L , H >::base( const T & k ) const
 {
  if constexpr( std::is_integral_v< T > && std::is_same_v< H , FastHash< T > > )
   return( std::uint64_t( k ) );  // mixed by the two hashes
- else if constexpr( requires { typename H::is_avalanching; } )
-  return( std::uint64_t( f_h( k ) ) );
+ else if constexpr( detail::kAvalanching64< H , T > )
+  return( detail::hash64( f_h , k ) );
  else
-  return( hashWord( std::uint64_t( f_h( k ) ) ) );
+  return( hashWord( detail::hash64( f_h , k ) ) );
  }
 
 template< class T , unsigned L , class H >

@@ -39,7 +39,10 @@
  *   the same) and the strings (`std::string`, `std::string_view` and the C
  *   strings), by `hashWord()` and `hashBytes()`; it declares
  *   `is_avalanching` (the convention of Boost), so that `FlatHashTable`
- *   [see `FlatHashTable.h`] and the tables of Boost take its hash as it is;
+ *   [see `FlatHashTable.h`] and the tables of Boost take its hash as it is,
+ *   and its `hash64()` gives the 64 bits of the hash also where a
+ *   `std::size_t` has 32, which the tables, filters and perfect hash
+ *   functions of ADS take by `detail::hash64()`;
  *   `DefaultHash< K >` is `FastHash< K >` when it is defined and
  *   `std::hash< K >` otherwise, the default hash of the engineered tables
  *   and filters.
@@ -106,6 +109,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <utility>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -206,22 +210,30 @@ struct FastHash< T >
   a( seed );
   }
 
- [[nodiscard]] std::size_t operator()( T x ) const noexcept {
+ /// the 64 bits of the hash of \f$ x \f$, whatever the bits of a
+ /// `std::size_t`
+ [[nodiscard]] std::uint64_t hash64( T x ) const noexcept {
   if constexpr( std::is_pointer_v< T > )
-   return( std::size_t( hashWord(
-     std::uint64_t( reinterpret_cast< std::uintptr_t >( x ) ) , seed ) ) );
+   return( hashWord( std::uint64_t( reinterpret_cast< std::uintptr_t >( x ) ) ,
+		      seed ) );
   else if constexpr( std::is_enum_v< T > )
-   return( std::size_t(
-     hashWord( std::uint64_t( std::underlying_type_t< T >( x ) ) , seed ) ) );
+   return(
+     hashWord( std::uint64_t( std::underlying_type_t< T >( x ) ) , seed ) );
   else if constexpr( std::is_floating_point_v< T > ) {
    if( x == T( 0 ) )
     x = T( 0 );  // -0 == +0
    std::uint64_t w = 0;
    std::memcpy( &w , &x , sizeof( T ) );
-   return( std::size_t( hashWord( w , seed ) ) );
+   return( hashWord( w , seed ) );
    }
   else
-   return( std::size_t( hashWord( std::uint64_t( x ) , seed ) ) );
+   return( hashWord( std::uint64_t( x ) , seed ) );
+  }
+
+ /// the hash of \f$ x \f$, the low bits of `hash64()` that a
+ /// `std::size_t` holds
+ [[nodiscard]] std::size_t operator()( T x ) const noexcept {
+  return( std::size_t( hash64( x ) ) );
   }
  };
 
@@ -243,9 +255,14 @@ struct FastHash< std::string_view >
   a( seed );
   }
 
- /// `hashBytes()` of the characters of \f$ s \f$
+ /// `hashBytes()` of the characters of \f$ s \f$, on 64 bits
+ [[nodiscard]] std::uint64_t hash64( std::string_view s ) const noexcept {
+  return( hashBytes( s.data() , s.size() , seed ) );
+  }
+
+ /// the low bits of `hash64()` that a `std::size_t` holds
  [[nodiscard]] std::size_t operator()( std::string_view s ) const noexcept {
-  return( std::size_t( hashBytes( s.data() , s.size() , seed ) ) );
+  return( std::size_t( hash64( s ) ) );
   }
  };
 
@@ -278,6 +295,37 @@ struct DefaultHashOf< K >
 {
  using type = FastHash< K >;
  };
+
+/// true if the hash `H` gives the 64 bits of its hash of a `K` by a member
+/// `hash64()`, as `FastHash` does, which a `std::size_t` of 32 bits would
+/// cut to their low half
+template< class H , class K >
+inline constexpr bool kHash64 = requires( const H & h , const K & k )
+{
+ { h.hash64( k ) } -> std::same_as< std::uint64_t >;
+ };
+
+/// the hash of 64 bits of \f$ k \f$ by \f$ h \f$: its `hash64()` if it has
+/// one [see `kHash64`], what it returns otherwise
+template< class H , class K >
+[[nodiscard]] ADS_ALWAYS_INLINE constexpr std::uint64_t hash64( const H & h ,
+								const K & k )
+{
+ if constexpr( kHash64< H , K > )
+  return( h.hash64( k ) );
+ else
+  return( std::uint64_t( h( k ) ) );
+ }
+
+/// true if `hash64( h , k )` [see above] needs no further mixing: the hash
+/// declares `is_avalanching` (the convention of Boost) and gives 64 bits,
+/// by `hash64()` or by a result of 64 bits; a hash that declares it on a
+/// `std::size_t` of 32 bits is mixed as any other
+template< class H , class K >
+inline constexpr bool kAvalanching64 =
+  requires { typename H::is_avalanching; } &&
+  ( kHash64< H , K > || ( sizeof( decltype( std::declval< const H & >()(
+			   std::declval< const K & >() ) ) ) >= 8 ) );
 
 /// true if the hash of a `K` reads memory that the `K` points to, as for the
 /// strings: a rebuild of a table then prefetches it some keys ahead

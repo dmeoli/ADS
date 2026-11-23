@@ -132,7 +132,7 @@ ADS_TEST( "boost-pointer-table" )
   CHECK( ADS_POINTERTABLE_BOOST
 	   ? boostPlaces( c ) && T.size() * 8 <= c * 7
 	   : std::has_single_bit( c ) && T.size() * 10 <= c * 7 );
-  CHECK( T.bytes() >= c * 16 );
+  CHECK( T.bytes() >= c * ( 8 + sizeof( void * ) ) );  // hash and pointer
   std::set< Node * > seen;  // the views, each object once
   for( Node * p : T )
    CHECK( seen.insert( p ).second && R.at( p->state ) == p );

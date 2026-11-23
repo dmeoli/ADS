@@ -45,6 +45,7 @@
 #include "ADS/tree/JoinTree.h"
 
 #include <cstddef>
+#include <functional>
 #include <memory_resource>
 #include <new>
 #include <string>
@@ -707,7 +708,17 @@ ADS_TEST( "alloc-default-layout" )
 {
  // the default allocators take no room: the layouts are those of the
  // containers before they took an allocator
- CHECK( sizeof( FlatHashTable< int , int > ) == 10 * sizeof( void * ) );
+ struct Members  // those of FlatHashTable of ADS, in their order
+ {
+  void *ctrl , *slot;
+  std::size_t cap , mask;
+  int shift;
+  std::size_t max , size , deleted;
+  DefaultHash< int > h;
+  std::equal_to< int > eq;
+  };
+ CHECK( sizeof( FlatHashTable< int , int > ) ==
+	( ADS_FLATHASH_BOOST ? 10 * sizeof( void * ) : sizeof( Members ) ) );
  CHECK( sizeof( SmallVector< int , 8 > ) ==
 	3 * sizeof( void * ) + 8 * sizeof( int ) );
  CHECK( sizeof( DaryHeap< int > ) == 4 * sizeof( void * ) );

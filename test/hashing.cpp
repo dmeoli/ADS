@@ -68,7 +68,7 @@ namespace
 struct OneGroup
 {
  using is_avalanching = void;
- std::size_t operator()( std::uint64_t ) const { return( 0x105 ); }
+ std::uint64_t operator()( std::uint64_t ) const { return( 0x105 ); }
  };
 
 /// n distinct random words from the seed
@@ -213,11 +213,13 @@ ADS_TEST( "fast-hash" )
   }
  CHECK( FastHash< double >()( 0.0 ) == FastHash< double >()( -0.0 ) );
  CHECK( FastHash< float >()( 1.5f ) != FastHash< float >()( -1.5f ) );
- CHECK( FastHash< int >()( -1 ) == hashWord( std::uint64_t( -1 ) ) );
+ CHECK( FastHash< int >().hash64( -1 ) == hashWord( std::uint64_t( -1 ) ) );
+ CHECK( FastHash< int >()( -1 ) ==
+	std::size_t( hashWord( std::uint64_t( -1 ) ) ) );
  const char * c = "hashing";
  CHECK( FastHash< std::string >()( std::string( c ) ) ==
 	FastHash< std::string_view >()( c ) );
- CHECK( FastHash< const char * >()( c ) == hashBytes( c , 7 ) );
+ CHECK( FastHash< const char * >().hash64( c ) == hashBytes( c , 7 ) );
  CHECK( FastHash< std::string >{ 5 }( "x" ) !=
 	FastHash< std::string >()( "x" ) );
  CHECK( hashBytes( nullptr , 0 ) == hashBytes( c , 0 ) );
@@ -496,8 +498,8 @@ struct OneBin
 {
  using is_avalanching = void;
 
- std::size_t operator()( std::uint64_t k ) const {
-  return( std::size_t( hashWord( k ) & 0xFFFFFFFFU ) );
+ std::uint64_t operator()( std::uint64_t k ) const {
+  return( hashWord( k ) & 0xFFFFFFFFU );
   }
  };
 
@@ -1072,8 +1074,8 @@ ADS_TEST( "bucket-cuckoo-stash" )
   struct Few
   {
    using is_avalanching [[maybe_unused]] = void;
-   std::size_t operator()( std::uint64_t k ) const {
-    return( std::size_t( hashWord( k % 64 ) ) );
+   std::uint64_t operator()( std::uint64_t k ) const {
+    return( hashWord( k % 64 ) );
     }
    };
   BucketCuckooTable< std::uint64_t , int , Few > F;

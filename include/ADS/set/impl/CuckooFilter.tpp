@@ -35,10 +35,10 @@ CuckooFilter< T , F , H >::CuckooFilter( std::size_t n , H h ) : f_h( h )
 template< class T , class F , class H >
 std::uint64_t CuckooFilter< T , F , H >::hash( const T & x ) const
 {
- if constexpr( requires { typename H::is_avalanching; } )
-  return( std::uint64_t( f_h( x ) ) );
+ if constexpr( detail::kAvalanching64< H , T > )
+  return( detail::hash64( f_h , x ) );
  else
-  return( hashWord( std::uint64_t( f_h( x ) ) ) );
+  return( hashWord( detail::hash64( f_h , x ) ) );
  }
 
 template< class T , class F , class H >

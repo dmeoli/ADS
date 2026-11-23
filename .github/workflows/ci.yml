@@ -40,8 +40,8 @@
 # at the default flags, at x86-64-v4 (x86-64-v3 where the runner lacks        #
 # AVX-512) and with ADS_SIMD_SCALAR, which takes the scalar code on the same  #
 # Highway, and the select of AVX-512 VBMI2 at icelake-server; every test at   #
-# the levels 0 and 1 of the contracts, every warning an error; and, not yet   #
-# required, every test on a target of 32 bits, i386 by -m32.                  #
+# the levels 0 and 1 of the contracts, every warning an error; and every      #
+# test on a target of 32 bits, i386 by -m32.                                  #
 # The adapters of the other libraries of include/ADS/interop (cereal, Eigen,  #
 # METIS, KaHIP, SuiteSparse:GraphBLAS, NetworKit, CRoaring, sdsl-lite 3 and   #
 # nanoarrow) are tested on Linux, macOS and MSYS2 with the libraries that the #
@@ -822,12 +822,9 @@ jobs:
   # (the libraries of the backends on the runner have 64 bits, and are not
   # found), on the arithmetic of SSE2 in place of the excess
   # precision of the x87, the cases there for their scale alone made
-  # smaller by ADS_TEST_SMALL [see ADSTest.h], in an address space of 4 GB;
-  # not yet required, since the hash tables and filters, the shortest paths
-  # and a few tests still fail on 32 bits
+  # smaller by ADS_TEST_SMALL [see ADSTest.h], in an address space of 4 GB
   m32:
     runs-on: ubuntu-latest
-    continue-on-error: true
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4

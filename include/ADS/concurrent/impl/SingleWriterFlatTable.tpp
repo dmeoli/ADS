@@ -77,10 +77,10 @@ template< class K , class V , class H , class Eq , class C >
 std::uint64_t
 SingleWriterFlatTable< K , V , H , Eq , C >::hash( const K & k ) const
 {
- if constexpr( requires { typename H::is_avalanching; } )
-  return( std::uint64_t( f_h( k ) ) );
+ if constexpr( detail::kAvalanching64< H , K > )
+  return( detail::hash64( f_h , k ) );
  else
-  return( hashWord( std::uint64_t( f_h( k ) ) ) );
+  return( hashWord( detail::hash64( f_h , k ) ) );
  }
 
 /*------------------------------- THE VECTORS ------------------------------*/

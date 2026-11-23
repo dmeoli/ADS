@@ -71,10 +71,10 @@ struct BlockMask
 template< class H , class T >
 inline std::uint64_t filterHash( const H & h , const T & x )
 {
- if constexpr( requires { typename H::is_avalanching; } )
-  return( std::uint64_t( h( x ) ) );
+ if constexpr( detail::kAvalanching64< H , T > )
+  return( detail::hash64( h , x ) );
  else
-  return( hashWord( std::uint64_t( h( x ) ) ) );
+  return( hashWord( detail::hash64( h , x ) ) );
  }
 
 /// the block of the hash h among n, by its high 32 bits, a product and a

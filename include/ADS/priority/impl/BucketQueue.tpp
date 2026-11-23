@@ -39,18 +39,23 @@ inline void BucketQueue< T , K , Tie , P >::pushPlain( const T & x , K f ,
 						       K g )
 {
  ADS_PRE( ( f >= 0 ) && ( g >= 0 ) );
- const auto F = std::size_t( f ) , G = std::size_t( g );
- if( F >= f_layers.size() )
-  f_layers.resize( F + 1 );
- Layer & l = f_layers[ F ];
+ // the keys in 64 bits, which hold every K, and not in a std::size_t,
+ // which has 32 bits on some targets
+ const auto F = std::uint64_t( f ) , G = std::uint64_t( g );
+ if( F >= f_layers.size() ) {
+  if( F >= f_layers.max_size() )
+   throw( std::length_error( "BucketQueue::push: too many layers" ) );
+  f_layers.resize( std::size_t( F ) + 1 );
+  }
+ Layer & l = f_layers[ std::size_t( F ) ];
  if( ( G < D ) || l.dense() || ! pushRun( l , x , g ) ) {  // a dense list
   if( ( G >= S ) && ( G - S >= l.big.size() ) ) {
    if( G >= NIL )  // topG would not hold it
     throw( std::length_error( "BucketQueue::push: a second key of a dense "
 			      "layer past 2^32 - 2" ) );
-   l.big.resize( G - S + 1 , NIL );
+   l.big.resize( std::size_t( G - S + 1 ) , NIL );
    }
-  Index & h = l.head( G );
+  Index & h = l.head( std::size_t( G ) );  // G < 2^32 - 1
   const Index c = cell( x );
   f_cells[ c ].next = h;
   h = c;
@@ -63,7 +68,7 @@ inline void BucketQueue< T , K , Tie , P >::pushPlain( const T & x , K f ,
   }
  ++l.count;
  if( ( f_size++ == 0 ) || ( F < f_minF ) )
-  f_minF = F;
+  f_minF = std::size_t( F );
  ADS_INVARIANT( counted() && ordered( l ) );
  }
 
@@ -142,11 +147,11 @@ template< class T , std::integral K , BucketTie Tie , class P >
 void BucketQueue< T , K , Tie , P >::densify( Layer & l )
 {
  const Runs & v = f_runs[ l.runs ];
- const std::size_t G = std::size_t( Tie::least ? v.front().g : v.back().g );
+ const auto G = std::uint64_t( Tie::least ? v.front().g : v.back().g );
  if( G >= NIL )  // topG would not hold it
   throw( std::length_error( "BucketQueue::push: a second key of a dense "
 			    "layer past 2^32 - 2" ) );
- l.big.resize( G - S + 1 , NIL );  // more than D - S: dense
+ l.big.resize( std::size_t( G - S + 1 ) , NIL );  // more than D - S: dense
  for( const Run & r : v )
   l.big[ std::size_t( r.g ) - S ] = r.head;
  if constexpr( ! Tie::least )  // below them if least first
@@ -374,7 +379,7 @@ bool BucketQueue< T , K , Tie , P >::ordered( const Layer & l ) const
  if( v.empty() || l.dense() || ( v.size() > R ) )
   return( false );
  for( std::size_t i = 0 ; i < v.size() ; ++i )
-  if( ( std::size_t( v[ i ].g ) < D ) || ( v[ i ].head == NIL ) ||
+  if( ( std::uint64_t( v[ i ].g ) < D ) || ( v[ i ].head == NIL ) ||
       ( i && ( Tie::least ? v[ i - 1 ].g <= v[ i ].g
 			  : v[ i - 1 ].g >= v[ i ].g ) ) )
    return( false );

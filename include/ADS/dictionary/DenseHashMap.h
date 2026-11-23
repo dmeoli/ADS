@@ -444,8 +444,8 @@ class DenseHashMap
  using Mask = std::uint32_t;
 
  /// the hash taken as it is, if it declares `is_avalanching` on 64 bits
- static constexpr bool AVALANCHING =
-   ( sizeof( std::size_t ) >= 8 ) && requires { typename H::is_avalanching; };
+ /// [see `detail::kAvalanching64`]
+ static constexpr bool AVALANCHING = detail::kAvalanching64< H , K >;
 
  /// the groups of an index with no places, all empty, their overflow 0;
  /// never written

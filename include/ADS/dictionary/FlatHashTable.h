@@ -30,7 +30,9 @@
  * two halves XORed, so that every bit of the result depends on every bit of
  * \f$ h( k ) \f$ and even the identity hash of the integers of `std::hash`
  * spreads over the table; a hash that declares the member type
- * `is_avalanching` (the convention of Boost) is taken as it is, on 64 bits,
+ * `is_avalanching` (the convention of Boost) is taken as it is, on 64 bits
+ * (by its `hash64()` where it has one, which keeps them where a
+ * `std::size_t` has 32 [see `detail::hash64()`]),
  * as the default one, `DefaultHash< K >` [see `FastHash.h`], is for the
  * integers and the strings, whose hash by `FastHash` costs one product per
  * 16 bytes. The top bits of the mixed hash give the first group of the key,
@@ -554,8 +556,8 @@ class FlatHashTable
  void copy( const FlatHashTable & o );
 
  /// the hash taken as it is, if it declares `is_avalanching` on 64 bits
- static constexpr bool AVALANCHING =
-   ( sizeof( std::size_t ) >= 8 ) && requires { typename H::is_avalanching; };
+ /// [see `detail::kAvalanching64`]
+ static constexpr bool AVALANCHING = detail::kAvalanching64< H , K >;
 
  /// the 2 groups of a place-less table, all empty, their overflow 0, and
  /// its sentinel; never written

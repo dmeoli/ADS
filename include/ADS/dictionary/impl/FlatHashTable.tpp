@@ -519,9 +519,9 @@ ADS_FLAT_INLINE std::uint64_t
 FlatHashTable< K , V , H , Eq , A >::mix( const K & k ) const
 {
  if constexpr( AVALANCHING )
-  return( std::uint64_t( f_h( k ) ) );
+  return( detail::hash64( f_h , k ) );
  else
-  return( detail::mulx( std::uint64_t( f_h( k ) ) , 0x9e3779b97f4a7c15ULL ) );
+  return( detail::mulx( detail::hash64( f_h , k ) , 0x9e3779b97f4a7c15ULL ) );
  }
 
 template< class K , class V , class H , class Eq , class A >

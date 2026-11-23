@@ -717,6 +717,7 @@ ADS_TEST( "pointer-table" )
  P.reserve( 0 );
  CHECK( P.capacity() == 16 && P.size() == 0 );
  }
+
 // the lookups of a const OpenHashTable from 4 threads at once, each against
 // the keys inserted: the lookups write probes(), which must not race (a
 // test for ThreadSanitizer), and the answers are those of one thread
@@ -748,10 +749,12 @@ ADS_TEST( "open-hash-readers" )
 // the hash of FlatHashTable that declares itself avalanching, so that the
 // table takes the key as its mixed hash and a test chooses the first group
 // (the top bits), the fingerprint (the low 8 bits) and the bit of overflow
-// (the bits 8 to 10) of each key; on 32 bits the table mixes it anyway
+// (the bits 8 to 10) of each key, all its 64 bits by hash64() also where
+// a std::size_t has 32 [see FastHash.h]
 struct Raw
 {
  using is_avalanching = void;
+ std::uint64_t hash64( std::uint64_t x ) const { return( x ); }
  std::size_t operator()( std::uint64_t x ) const {
   return( std::size_t( x ) );
   }
@@ -1605,8 +1608,8 @@ ADS_TEST( "mpsc-inbox" )
 struct SameHash
 {
  using is_avalanching = void;
- std::size_t operator()( std::uint64_t ) const {
-  return( std::size_t( 0x9E3779B97F4A7C15ULL ) );
+ std::uint64_t operator()( std::uint64_t ) const {
+  return( 0x9E3779B97F4A7C15ULL );
   }
  };
 
@@ -1614,9 +1617,7 @@ struct SameHash
 struct SameTag
 {
  using is_avalanching = void;
- std::size_t operator()( std::uint64_t k ) const {
-  return( std::size_t( k << 56 ) );
-  }
+ std::uint64_t operator()( std::uint64_t k ) const { return( k << 56 ); }
  };
 
 // the concurrent cuckoo table on one thread, against std::unordered_map:
@@ -1721,8 +1722,9 @@ ADS_TEST( "concurrent-cuckoo" )
   ConcurrentCuckooTable< std::uint64_t , int , std::hash< std::uint64_t > > T(
     100 );
   const std::size_t cap = T.capacity();
+  // the low half of the bits of a std::size_t 0, all that std::hash gives
   for( std::uint64_t k = 0 ; k < 100 ; ++k )
-   CHECK( T.insert( k << 32 , int( k ) ) );
+   CHECK( T.insert( k << ( 4 * sizeof( std::size_t ) ) , int( k ) ) );
   CHECK( T.capacity() == cap && T.rehashes() == 0 && T.consistent() );
   }
  {  // strings

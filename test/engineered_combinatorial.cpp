@@ -363,8 +363,8 @@ ADS_TEST( "fast-exact-cover" )
 struct BoardHash
 {
  using is_avalanching = void;
- std::size_t operator()( const Board & b ) const {
-  return( std::size_t( hashBytes( b.data() , b.size() * sizeof( int ) ) ) );
+ std::uint64_t operator()( const Board & b ) const {
+  return( hashBytes( b.data() , b.size() * sizeof( int ) ) );
   }
  };
 

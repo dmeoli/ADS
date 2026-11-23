@@ -56,6 +56,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <limits>
 #include <map>
 #include <random>
 #include <set>
@@ -612,6 +613,8 @@ ADS_TEST( "ods-2.6.rootish-array-stack" )
   }
  for( std::size_t b : { std::size_t( 1 ) << 20 , std::size_t( 3000000 ) ,
 			std::size_t( 1 ) << 26 } ) {
+  if( b + 2 > std::numeric_limits< std::size_t >::max() / ( b + 1 ) / 2 )
+   continue;  // ( b + 1 ) ( b + 2 ) / 2 past a std::size_t of 32 bits
   const std::size_t s = b * ( b + 1 ) / 2;
   CHECK( RootishArrayStack< int >::block( s ) == b );
   CHECK( RootishArrayStack< int >::block( s - 1 ) == b - 1 );
