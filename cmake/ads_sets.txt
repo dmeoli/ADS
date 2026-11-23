@@ -210,6 +210,7 @@ graph/MatrixGraph.h                   base
 graph/MaxFlow.h                       base
 graph/MinimumSpanningTree.h           base
 graph/Observable.h                    advanced
+graph/PackedGraph.h                   advanced
 graph/Paths.h                         base
 graph/PerfectMatching.h               advanced
 graph/PointerGraph.h                  advanced
@@ -388,6 +389,7 @@ search/LocalOptima.h                  base
 search/Minimum.h                      base
 search/MonotoneSearch.h               base
 search/NthElement.h                   advanced
+search/PackedMemoryArray.h            advanced
 search/PGMIndex.h                     base     Ferragina's notes, even if fast
 search/RangeMinimum.h                 advanced
 search/Selection.h                    base

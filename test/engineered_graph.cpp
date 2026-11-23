@@ -2,19 +2,20 @@
 /*------------------------ File engineered_graph.cpp -----------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Tests of the engineered structures of the graphs, beyond the book, and
- * of the algorithms of the book on them: the graph in compressed rows, the
- * indexed d-ary heap and the union-find by size or rank with the paths
- * halved or compressed, each against the structure of the book or a set of
- * the standard library; the shortest paths, the spanning trees and the
- * visit in breadth of the book on every priority queue, queue, stack,
- * deque and union-find, which must give the same results and the same
- * counts; the implicit graph of a grid map against the explicit graphs of
- * the same grid, and the builder of the graphs in compressed rows against
- * their constructors. On random graphs with fixed seeds and on the edge
- * cases (no node, one node, no edge, parallel edges, unreachable nodes,
- * ties, a negative cycle, grids of one row, of no free cell and of
- * 2^31 - 1 cells), at the level 3 of the contracts.
+ * Tests of the engineered structures of the graphs, beyond the book, and of
+ * the algorithms of the book on them: the graph in compressed rows, the
+ * graph in a compressed packed memory array, the indexed d-ary heap and the
+ * union-find by size or rank with the paths halved or compressed, each
+ * against the structure of the book or a set of the standard library; the
+ * shortest paths, the spanning trees and the visit in breadth of the book
+ * on every priority queue, queue, stack, deque and union-find, which must
+ * give the same results and the same counts; the implicit graph of a grid
+ * map against the explicit graphs of the same grid, and the builder of the
+ * graphs in compressed rows against their constructors. On random graphs
+ * with fixed seeds and on the edge cases (no node, one node, no edge,
+ * parallel edges, unreachable nodes, ties, a negative cycle, grids of one
+ * row, of no free cell and of 2^31 - 1 cells), at the level 3 of the
+ * contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -38,11 +39,14 @@
 #include "ADS/graph/Matching.h"
 #include "ADS/graph/PerfectMatching.h"
 #include "ADS/graph/MinimumSpanningTree.h"
+#include "ADS/graph/PackedGraph.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
+#include "ADS/graph/StrongComponents.h"
 #include "ADS/graph/Visit.h"
 #include "ADS/mfset/MFSet.h"
 #include "ADS/mfset/UnionFind.h"
+#include "ADS/parallel/ThreadPool.h"
 #include "ADS/priority/FibonacciHeapPriorityQueue.h"
 #include "ADS/priority/HeapPriorityQueue.h"
 #include "ADS/priority/IndexedDaryHeap.h"
@@ -387,6 +391,106 @@ ADS_TEST( "static-graph-layouts" )
  std::mt19937 g( 9 );
  run.template operator()< int >( g );
  run.template operator()< double >( g );
+ }
+
+// the graph in one compressed packed memory array against ListGraph with
+// the same edges: the graph of no node and of one node, random oriented and
+// unoriented graphs built by single edges and by batches (on the calling
+// thread and on a pool), the edges twice and in both directions, the
+// adjacent nodes, the edges, the visit in breadth, the connected and the
+// strongly connected components of the book on it, the removal of edges and
+// of nodes (one with no edge, one of the largest degree), and the contracts
+// on loops and on names that are not nodes
+ADS_TEST( "packed-graph" )
+{
+ static_assert( DynamicGraph< PackedGraph<> > );
+ std::mt19937 g( 59 );
+ {  // no node, one node
+  PackedGraph<> E;
+  CHECK( ( E.n() == 0 ) && ( E.m() == 0 ) && E.V().empty() );
+  PackedGraph<> O( 1 , false );
+  CHECK( O.adj( 0 ).empty() && ! O.hasEdge( 0 , 0 ) );
+  CHECK_THROWS( O.insertEdge( 0 , 0 ) , contract_violation );
+  CHECK_THROWS( O.adj( 1 ) , contract_violation );
+  CHECK_THROWS( O.insertEdges( { { 0 , 1 } } ) , contract_violation );
+  O.deleteNode( 0 );
+  CHECK( ( O.n() == 0 ) && ( O.insertNode() == 1 ) );
+  }
+ ThreadPool pool( 4 );
+ for( const bool directed : { true , false } )
+  for( const int n : { 50 , 3000 } ) {
+   const int m = 6 * n;
+   std::vector< std::pair< int , int > > A;
+   for( int i = 0 ; i < m ; ++i ) {
+    const int u = int( g() % unsigned( n ) ) , v = int( g() % unsigned( n ) );
+    if( u != v )
+     A.emplace_back( u , v );
+    }
+   A.push_back( A.front() );  // an edge twice
+   ListGraph<> L( n , directed );
+   PackedGraph<> P( n , directed ) , Q( n , directed ) , R( n , directed );
+   for( const auto & [ u , v ] : A ) {
+    L.insertEdge( u , v );
+    P.insertEdge( u , v );
+    }
+   CHECK( Q.insertEdges( A ) == std::size_t( L.m() ) );
+   CHECK( R.insertEdges( pool , A ) == std::size_t( L.m() ) );
+   auto parts = []( std::vector< int > c ) {  // the labels by first use
+    std::map< int , int > first;
+    for( int & x : c )
+     x = first.emplace( x , int( first.size() ) ).first->second;
+    return( c );
+    };
+   auto same = [ & ]( const auto & X ) {
+    CHECK( ( X.n() == L.n() ) && ( X.m() == L.m() ) && ( X.V() == L.V() ) );
+    for( const int u : L.V() ) {
+     auto a = L.adj( u );
+     std::sort( a.begin() , a.end() );
+     CHECK( X.adj( u ) == a );
+     }
+    CHECK( distance( X , L.V().front() ).first ==
+	   distance( L , L.V().front() ).first );
+    if( directed )
+     CHECK( parts( sccTarjan( X ) ) == parts( sccTarjan( L ) ) );
+    else
+     CHECK( parts( cc( X ) ) == parts( cc( L ) ) );
+    };
+   same( P );
+   same( Q );
+   same( R );
+   CHECK( P.hasEdge( A[ 0 ].first , A[ 0 ].second ) &&
+	  ( directed || P.hasEdge( A[ 0 ].second , A[ 0 ].first ) ) );
+   // the removals: a third of the edges, by single edges and by batches
+   std::vector< std::pair< int , int > > D( A.begin() ,
+					   A.begin() + long( A.size() / 3 ) );
+   D.emplace_back( 0 , n - 1 );  // perhaps not an edge
+   for( const auto & [ u , v ] : D ) {
+    L.deleteEdge( u , v );
+    P.deleteEdge( u , v );
+    }
+   const std::size_t gone = std::size_t( Q.m() - L.m() );
+   CHECK( Q.deleteEdges( D ) == gone );
+   CHECK( R.deleteEdges( pool , D ) == gone );
+   same( P );
+   same( Q );
+   same( R );
+   int big = 0;  // a node of the largest degree, and one with no edge
+   for( const int u : L.V() )
+    if( L.adj( u ).size() > L.adj( big ).size() )
+     big = u;
+   const int fresh = L.insertNode();
+   for( auto * X : { &P , &Q , &R } )
+    CHECK( X->insertNode() == fresh );
+   for( const int u : { big , fresh } ) {
+    L.deleteNode( u );
+    for( auto * X : { &P , &Q , &R } )
+     X->deleteNode( u );
+    }
+   same( P );
+   same( R );
+   CHECK( ! P.hasEdge( big , 0 ) && ! P.hasNode( big ) );
+   CHECK( P.bytes() > 0 );
+   }
  }
 
 // the indexed heap for D = 2 , 4 , 8 against a set of ( key , id ): random

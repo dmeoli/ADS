@@ -23,6 +23,13 @@
  * built once, the removals on a structure built before each run, and the
  * contracts are off (ADS_CONTRACTS=0).
  *
+ * The sets run the same cases with the value of a key equal to the key,
+ * so that the sums are those of the maps: std::set, absl::btree_set where
+ * it is found, PackedMemoryArray and CompressedPackedMemoryArray of ADS
+ * and, if the CPMA of its authors is compiled in (-DADS_HAS_CPMA and the
+ * unit pma_authors.cpp [see PmaCompetitors.h]), its two forms with the
+ * heads in the order of Eytzinger, uncompressed and compressed.
+ *
  *   ordered [ -r runs ] [ -s seed ] n1 n2 ...
  *
  * \author Donato Meoli \n
@@ -43,6 +50,7 @@
 
 #include "ADS/dictionary/SkipList.h"
 #include "ADS/dictionary/SortedArrayDictionary.h"
+#include "ADS/search/PackedMemoryArray.h"
 #include "ADS/tree/AVLTree.h"
 #include "ADS/tree/BTree.h"
 #include "ADS/tree/BTreeMap.h"
@@ -62,6 +70,7 @@
 
 #if __has_include( <absl/container/btree_map.h> )
  #include <absl/container/btree_map.h>
+ #include <absl/container/btree_set.h>
  #define ADS_HAS_ABSL 1
 #endif
 
@@ -73,7 +82,12 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <type_traits>
+
+#if defined( ADS_HAS_CPMA )
+ #include "PmaCompetitors.h"
+#endif
 
 using namespace ADS::bench;
 using Key = std::uint64_t;
@@ -357,6 +371,39 @@ using Opts = bi::key_of_value< KeyOf< Node< H > > >;
 
 #endif
 
+/// the sum of the c keys of a standard set from it
+template< class D , class It >
+Key walkKeys( const D & d , It it , std::size_t c )
+{
+ Key s = 0;
+ for( ; ( c > 0 ) && ( it != d.end() ) ; --c , ++it )
+  s += *it;
+ return( s );
+ }
+
+#if defined( ADS_HAS_CPMA )
+
+/// a packed memory array of its authors [see PmaCompetitors.h], movable
+struct AuthorsPma
+{
+ void * p = nullptr;  ///< the set
+ bool z = false;      ///< whether compressed
+ explicit AuthorsPma( bool c ) : p( pma_authors::make( c ) ) , z( c ) { }
+ AuthorsPma( AuthorsPma && o ) noexcept : p( o.p ) ,
+   z( o.z ) { o.p = nullptr; }
+ AuthorsPma & operator=( AuthorsPma && o ) noexcept {
+  std::swap( p , o.p );
+  std::swap( z , o.z );
+  return( *this );
+  }
+ ~AuthorsPma() {
+  if( p )
+   pma_authors::destroy( p , z );
+  }
+ };
+
+#endif
+
 }  // end( namespace )
 
 int main( int argc , char ** argv )
@@ -442,6 +489,79 @@ int main( int argc , char ** argv )
    intrusive< Node< H > , bi::treap_set< Node< H > , Opts< H > > >(
      "boost::intrusive::treap_set" , X , r );
    }
+#endif
+  // the sets, whose value is their key, so that the sums are the same
+  auto setIns = []( auto & d , Key k ) { d.insert( k ); };
+  auto setFind = []( const auto & d , Key k ) {
+   return( d.contains( k ) ? k : Key( 0 ) );
+   };
+  auto setLow = []( const auto & d , Key k ) {
+   const auto it = d.lower_bound( k );
+   return( it == d.end() ? Key( 0 ) : *it );
+   };
+  auto setSum = []( const auto & d ) {
+   Key s = 0;
+   for( const Key k : d )
+    s += k;
+   return( s );
+   };
+  auto setScan = []( const auto & d , Key k , std::size_t c ) {
+   return( walkKeys( d , d.lower_bound( k ) , c ) );
+   };
+  run(
+    "std::set" , X , r , []() { return( std::set< Key >() ); } , setIns ,
+    setFind ,
+    setLow , stdDel , setSum , setScan );
+#ifdef ADS_HAS_ABSL
+  run(
+    "absl::btree_set" , X , r , []() { return( absl::btree_set< Key >() ); } ,
+    setIns , setFind , setLow , stdDel , setSum , setScan );
+#endif
+  auto pmaRun = [ & ]< class P >( const char * who ) {
+   run(
+     who , X , r , []() { return( P() ); } ,
+     []( auto & d , Key k ) { d.insert( k ); } , setFind ,
+     []( const auto & d , Key k ) {
+      return( d.lowerBound( k ).value_or( 0 ) );
+      } ,
+     []( auto & d , Key k ) { d.erase( k ); } ,
+     []( const auto & d ) {
+      Key s = 0;
+      d.forEach( [ & ]( Key k ) { s += k; } );
+      return( s );
+      } ,
+     []( const auto & d , Key k , std::size_t c ) {
+      Key s = 0;
+      d.scan( k , [ & ]( Key x ) {
+       s += x;
+       return( --c > 0 );
+       } );
+      return( s );
+      } );
+   };
+  pmaRun.template operator()< ADS::PackedMemoryArray< Key > >(
+    "ADS::PackedMemoryArray" );
+  pmaRun.template operator()< ADS::CompressedPackedMemoryArray< Key > >(
+    "ADS::CompressedPackedMemoryArray" );
+#if defined( ADS_HAS_CPMA )
+  for( const bool z : { false , true } )
+   run(
+     z ? "CPMA authors scpmae" : "CPMA authors spmae" , X , r ,
+     [ z ]() { return( AuthorsPma( z ) ); } ,
+     []( auto & d , Key k ) { pma_authors::insert( d.p , d.z , k ); } ,
+     []( const auto & d , Key k ) {
+      return( pma_authors::has( d.p , d.z , k ) ? k : Key( 0 ) );
+      } ,
+     []( const auto & d , Key k ) {
+      return( pma_authors::scan( d.p , d.z , k , 1 ) );
+      } ,
+     []( auto & d , Key k ) { pma_authors::remove( d.p , d.z , k ); } ,
+     [ & ]( const auto & d ) {  // the keys and their number, less n
+      return( pma_authors::sum( d.p , d.z ) - Key( X.K.size() ) );
+      } ,
+     []( const auto & d , Key k , std::size_t c ) {
+      return( pma_authors::scan( d.p , d.z , k , c ) );
+      } );
 #endif
   run(
     "ADS::BTreeMap" , X , r ,

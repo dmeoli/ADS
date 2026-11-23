@@ -2,8 +2,8 @@
 
 [Source: `include/ADS/graph/Graph.h`, `MatrixGraph.h`, `ListGraph.h`,
 `ArrayGraph.h`, `StaticGraph.h`, `GraphBuilder.h`, `PointerGraph.h`,
-`IncidenceGraph.h`, `Visit.h`, `StrongComponents.h`, `Grid.h`,
-`GridGraph.h`, `Paths.h`, `Properties.h`, `ShortestPaths.h`,
+`IncidenceGraph.h`, `PackedGraph.h`, `Visit.h`, `StrongComponents.h`,
+`Grid.h`, `GridGraph.h`, `Paths.h`, `Properties.h`, `ShortestPaths.h`,
 `AllPairsShortestPaths.h`, `MinimumSpanningTree.h`, `MaxFlow.h`,
 `PushRelabel.h`, `FlowApplications.h`, `Matching.h`, `BlossomMatching.h`,
 `PerfectMatching.h`, `Assignment.h`, `EulerianCycle.h`, `Observable.h`,
@@ -18,7 +18,7 @@ relation on a finite set: the links of a network, the streets between the
 crossings of a town, the precedences among the jobs of a project, or the
 pairs of courses that some student attends (whose exams must therefore
 fall on different days). The headers of `ADS/graph` realize the GRAPH of
-[Montresor 2025, chapter 9](Z-bibliography.md#ref-montresor2025) in seven
+[Montresor 2025, chapter 9](Z-bibliography.md#ref-montresor2025) in eight
 representations, which differ in the space they take and in the cost of
 their operations ([§14.1](14-graph.md#sec-14-1) to
 [§14.4](14-graph.md#sec-14-4)). They also give the algorithms that work on
@@ -41,12 +41,13 @@ are all here, with each of his exercises solved on the code of the library
 ([§14.16](14-graph.md#sec-14-16)). In the sets of
 [§1.9](01-introduction.md#sec-1-9), `Assignment.h`, `BlossomMatching.h`
 (the blossoms of `Matching.h`, which includes it), `GraphBuilder.h`,
-`GridGraph.h`, `Observable.h`, `PerfectMatching.h`, `PointerGraph.h`,
-`PushRelabel.h` (the push-relabel of `MaxFlow.h`, which includes it),
-`Reoptimization.h`, `StaticGraph.h`, `StrongComponents.h` (the components
-of `Visit.h` by one visit, which `Visit.h` includes) and `Biconnectivity.h`
-are advanced and the other headers of this chapter are base; the headers of
-`interop/lemon/` ([§14.14](14-graph.md#sec-14-14)) are of the set interop.
+`GridGraph.h`, `Observable.h`, `PackedGraph.h`, `PerfectMatching.h`,
+`PointerGraph.h`, `PushRelabel.h` (the push-relabel of `MaxFlow.h`, which
+includes it), `Reoptimization.h`, `StaticGraph.h`, `StrongComponents.h`
+(the components of `Visit.h` by one visit, which `Visit.h` includes) and
+`Biconnectivity.h` are advanced and the other headers of this chapter are
+base; the headers of `interop/lemon/` ([§14.14](14-graph.md#sec-14-14)) are
+of the set interop.
 
 ## 14.1 Definitions and the interface {#sec-14-1}
 
@@ -952,6 +953,93 @@ and the cost of their operations; $d( u )$ is the degree of $u$, and
 | `PointerGraph` | $\Theta( n + m )$ | $O( d( u ) )$ | $\Theta( d( u ) + 1 )$ | $O( d( u ) )$ |
 | `IncidenceGraph` | $\Theta( n m )$ | $O( m )$ | $O( m + n \, d( u ) )$ | $O( n )$ amortized, $O( m + n )$ |
 | `GridGraph` | one cost per cell, or none | $O( 1 )$ | $O( 1 )$, at most 8 cells | none |
+
+### 14.4.Zcp1 A graph in a packed memory array {#sec-14-4-Zcp1}
+
+The vectors of adjacency of [§14.4.1](14-graph.md#sec-14-4-1) are read at the
+speed of the memory, but a new edge shifts all the arcs after it, and the
+lists of [§14.3](14-graph.md#sec-14-3) change in constant time, but their
+cells are scattered in the memory. `PackedGraph< T >` of
+`ADS/graph/PackedGraph.h` is the F-Graph of [Wheatman et al.
+2024](Z-bibliography.md#ref-wheatman2024), which keeps both properties within
+a logarithmic factor: its arcs are the keys of one compressed packed memory
+array of 64 bits ([§6.Zcp9](06-search.md#sec-6-Zcp9)), the arc $( u , v )$ being
+the key $2^{32} u + v$, and an unoriented edge the two arcs $( u , v )$ and
+$( v , u )$. Sorted, the keys are the arcs by tail and then by head, as the
+vector $\mathit{to}$ of the compressed rows holds them; the offsets are
+implicit, since the adjacent nodes of $u$ are the keys in
+$[ 2^{32} u , 2^{32} ( u + 1 ) )$, found by one search of the array and then
+read in order (by `forEachAdj()`, whose pseudocode follows), and the delta
+encoding of the
+leaves stores the tail of an arc only at the first arc of a node in a leaf,
+the next ones taking the bytes of the difference of their heads (usually 1
+or 2 bytes for a node of large degree).
+
+--8<-- "generated/PackedGraph-forEachAdj.pseudo.md"
+
+Hence `hasEdge()` and the start of `forEachAdj()` cost a search of the packed
+memory array, $O( \log m )$ time, after which `forEachAdj( u )` reads
+$O( 1 + \deg( u ) / B )$ lines of cache, and `adj( u )` gives the adjacent
+nodes in increasing order; `insertEdge()` and `deleteEdge()` are an insertion
+and a removal of the array, $O( \log^2 m / B + \log m )$ amortized transfers,
+while `insertEdges()` and `deleteEdges()` insert and remove a vector of edges
+by one batch of the array on an executor (cf.
+[§25.2](25-parallel.md#sec-25-2)), with the arcs of both directions of an
+unoriented edge in the same batch.
+`deleteNode( u )` removes the arcs of $u$ by a batch, after a visit of all
+the arcs when the graph is oriented (since the arcs that enter $u$ are spread
+over the array), $O( m )$ time as for `ListGraph`; the nodes are those of
+`GraphNodes`, as in the other representations, and fewer than $2^{31}$. The
+class models `DynamicGraph`, and the visits and the other algorithms of this
+chapter run on it unchanged (a test runs those of
+[§14.5](14-graph.md#sec-14-5) on it against `ListGraph`).
+
+--8<-- "generated/PackedGraph-insertEdges.pseudo.md"
+
+The arcs carry no weight, since the keys of the packed memory array carry no
+value, as in F-Graph. Two other containers of dynamic graphs differ from it in
+the layout: Terrace of [Pandey et al. 2021](Z-bibliography.md#ref-pandey2021terrace)
+keeps the adjacent nodes of a node of small degree in the node, those of medium
+degree in a packed memory array that these nodes share, and those of large
+degree in a B-tree of their own, while Aspen of [Dhulipala et al.
+2019](Z-bibliography.md#ref-dhulipala2019) keeps a functional tree of the
+nodes, each with a compressed tree of its arcs. The flat layout favors the
+visits that read the arcs in order (e.g., an iteration of PageRank, or the
+first rounds of the connected components), and costs a search for each node
+visited in an arbitrary order; [Wheatman et al.
+2024](Z-bibliography.md#ref-wheatman2024) report the balance of the two on
+their graphs, and our comparison belongs to [Appendix
+B](B-benchmarks.md#app-B). The declarations are
+
+```cpp
+// declarations of <ADS/graph/PackedGraph.h>
+template< class T = std::monostate >
+class PackedGraph : public GraphNodes< T >
+{
+ public:
+ using Label = T;
+ explicit PackedGraph( int n = 0 , bool directed = true );
+ int insertNode( const T & t = T() );
+ void insertEdge( int u , int v );
+ void deleteEdge( int u , int v );
+ void deleteNode( int u );
+ [[nodiscard]] bool hasEdge( int u , int v ) const;
+ [[nodiscard]] std::vector< int > adj( int u ) const;
+ template< class F >
+ void forEachAdj( int u , F && f ) const;
+ template< Executor E >
+ std::size_t insertEdges( E & ex ,
+                          const std::vector< std::pair< int , int > > & A );
+ std::size_t insertEdges( const std::vector< std::pair< int , int > > & A );
+ template< Executor E >
+ std::size_t deleteEdges( E & ex ,
+                          const std::vector< std::pair< int , int > > & A );
+ std::size_t deleteEdges( const std::vector< std::pair< int , int > > & A );
+ [[nodiscard]] const CompressedPackedMemoryArray< std::uint64_t > &
+ arcs( void ) const;
+ [[nodiscard]] std::size_t bytes( void ) const;
+ };
+```
 
 ## 14.5 Visits {#sec-14-5}
 
@@ -5526,7 +5614,13 @@ built from the rewritten headers, the shim first on its include path.
 The representations of [§14.2](14-graph.md#sec-14-2) to
 [§14.4](14-graph.md#sec-14-4) and the visits of [§14.5](14-graph.md#sec-14-5)
 are those of [Montresor 2025, chapter 9](Z-bibliography.md#ref-montresor2025)
-and of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin-cpp). The lists of
+and of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin-cpp), but for the
+graph in a packed memory array of [§14.4.Zcp1](14-graph.md#sec-14-4-Zcp1), which is
+the F-Graph of [Wheatman et al. 2024](Z-bibliography.md#ref-wheatman2024),
+after the packed compressed sparse rows of [Wheatman and Xu
+2018](Z-bibliography.md#ref-wheatman2018) and next to Terrace ([Pandey et al.
+2021](Z-bibliography.md#ref-pandey2021terrace)) and Aspen ([Dhulipala et al.
+2019](Z-bibliography.md#ref-dhulipala2019)). The lists of
 adjacency were presented by [Hopcroft and Tarjan
 1973](Z-bibliography.md#ref-hopcroft1973graph) as an alternative to the
 adjacency matrix, more common at the time. Together with the visit in depth
@@ -5862,3 +5956,7 @@ Each exercise names the test of the library that solves it (run it with
     of Pearce, numbered in a topological order of the graph of the
     components ([§14.5.5](14-graph.md#sec-14-5-5)). Test:
     `engineered_graph.scc-one-pass`.
+42. Keep the arcs of a graph as the keys of one compressed packed memory
+    array, insert and remove them one at a time and by batches on a pool,
+    and run the visits of the book on it ([§14.4.Zcp1](14-graph.md#sec-14-4-Zcp1)).
+    Test: `engineered_graph.packed-graph`.

@@ -680,6 +680,7 @@ ordered  static-search        S+-albero di Slotin, ricerca senza salti
 ordered  pgm-index            indice PGM di Ferragina e Vinciguerra
 ordered  pgm-compressed       PGM compresso, pendenze condivise ed Elias-Fano
 ordered  pgm-dynamic          PGM dinamico, metodo logaritmico e tombstone
+ordered  packed-memory-array  PMA e CPMA contro std::set, lotti e bordi
 ordered  nth-element          selezione di Floyd e Rivest, Lomuto senza salti
 ordered  nth-element-adversary  selezione lineare contro l'avversario di McIlroy
 ordered  word-range-minimum   minimo di un intervallo, pile in una parola
@@ -1818,6 +1819,7 @@ engineered_graph  static-graph        grafo a righe compresse
 engineered_graph  static-graph-macros nessuna macro di prefetch inutilizzata
 engineered_graph  static-graph-arrays le tre schiere di un grafo pesato come CSR
 engineered_graph  static-graph-layouts le due disposizioni degli archi a confronto
+engineered_graph  packed-graph        grafo in un CPMA (F-Graph) contro ListGraph
 engineered_graph  indexed-dary-heap   heap d-ario indicizzato con decrease
 engineered_graph  working-set-dijkstra Dijkstra universale, distanze e Prim uguali
 engineered_graph  union-find          union-find per dimensione o rango
@@ -1896,6 +1898,7 @@ engineered_parallel  parallel-patterns   cicli, riduzioni, scansioni
 engineered_parallel  parallel-sort       ordinamenti contro quelli di std
 engineered_parallel  learned-parallel-sort  splitter della CDF sul pool
 engineered_parallel  parallel-merge      fusione a più vie, selezione
+engineered_parallel  parallel-packed-memory-array  lotti del PMA e del CPMA su ogni esecutore
 engineered_parallel  parallel-numeric    prodotti sparsi e densi, bit per bit
 engineered_parallel  parallel-numeric-index prodotto CSR con indici int e int64
 engineered_parallel  parallel-graph      visita in ampiezza, componenti

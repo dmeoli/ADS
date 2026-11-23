@@ -313,7 +313,7 @@ allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-471 headers: 245 base, 179 advanced, 19 core and 28 interop.
+473 headers: 245 base, 181 advanced, 19 core and 28 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
@@ -328,7 +328,7 @@ allow.
 | `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  | `BoostMPI` |
 | `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `MappedFile`, `Persistence`, `RecordFile` |  |
 | `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |
-| `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `Matching`, `MatrixGraph`, `MaxFlow`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths`, `Visit` | `Assignment`, `Biconnectivity`, `BlossomMatching`, `GraphBuilder`, `GridGraph`, `Observable`, `PerfectMatching`, `PointerGraph`, `PushRelabel`, `Reoptimization`, `StaticGraph`, `StrongComponents` |  |  |
+| `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `Matching`, `MatrixGraph`, `MaxFlow`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths`, `Visit` | `Assignment`, `Biconnectivity`, `BlossomMatching`, `GraphBuilder`, `GridGraph`, `Observable`, `PackedGraph`, `PerfectMatching`, `PointerGraph`, `PushRelabel`, `Reoptimization`, `StaticGraph`, `StrongComponents` |  |  |
 | `interop/` |  |  |  | `Csr` |
 | `interop/arrow/` |  |  |  | `Arrow` |
 | `interop/boost/` |  |  |  | `Dijkstra`, `FromBGL`, `Graph`, `Heap`, `Iterator` |
@@ -351,7 +351,7 @@ allow.
 | `parallel/` |  | `Affinity`, `Channels`, `Farm`, `FastFlowExecutor`, `Mailbox`, `OpenMPExecutor`, `ParallelBiconnectivity`, `ParallelGraph`, `ParallelGreedy`, `ParallelMerge`, `ParallelNumeric`, `ParallelPrimitives`, `ParallelShortestPaths`, `ParallelSketch`, `ParallelSort`, `ParallelText`, `Scratch`, `SpeculativeFor`, `TBBExecutor`, `ThreadPool` | `Executor` |  |
 | `priority/` | `FibonacciHeapPriorityQueue`, `HeapPriorityQueue`, `ListPriorityQueue`, `LoserTree`, `MeldableHeap`, `PriorityQueue`, `TreePriorityQueue` | `BucketQueue`, `DaryHeap`, `DialQueue`, `IndexedDaryHeap`, `IndexedHeapPair`, `LinkedHeapPriorityQueue`, `MinMaxHeap`, `MultiwayMerge`, `OrderKey`, `PairingHeap`, `QueueCustomization`, `RadixHeap`, `SequenceHeap`, `WorkingSetHeap` |  |  |
 | `queue/` | `ArrayQueue`, `Dequeue`, `LinkedQueue`, `MinDeque`, `MinQueue`, `QueueAlgorithms`, `RandomQueue`, `RealTimeMinDeque`, `RealTimeMinQueue`, `UniqueQueue` | `RingDeque`, `SlidingAggregate` |  |  |
-| `search/` | `BinarySearch`, `InterpolationSearch`, `KnuthSearches`, `LocalOptima`, `Minimum`, `MonotoneSearch`, `PGMIndex`, `Selection`, `SortedSearches` | `CompressedPGMIndex`, `CountLess`, `DynamicPGMIndex`, `NthElement`, `RangeMinimum`, `StaticSearch`, `WordRangeMinimum` |  |  |
+| `search/` | `BinarySearch`, `InterpolationSearch`, `KnuthSearches`, `LocalOptima`, `Minimum`, `MonotoneSearch`, `PGMIndex`, `Selection`, `SortedSearches` | `CompressedPGMIndex`, `CountLess`, `DynamicPGMIndex`, `NthElement`, `PackedMemoryArray`, `RangeMinimum`, `StaticSearch`, `WordRangeMinimum` |  |  |
 | `sequence/` | `ArraySequence`, `ContiguousDeque`, `CubishArrayStack`, `CursorList`, `DualArrayDeque`, `IndexedList`, `List`, `OrderMaintenanceList`, `Rearrangements`, `RootishArrayStack`, `SEList`, `SequenceAlgorithms`, `SequenceRange`, `SinglyList`, `SkipListSequence`, `TreapList`, `Treque`, `XorList` | `Fenwick`, `ListSort`, `ObservableArray`, `SmallVector`, `TieredVector` |  |  |
 | `set/` | `Bag`, `BloomFilter`, `BloomVariants`, `BoolSet`, `DictionarySet`, `HashMultiset`, `LinkedHashSet`, `ListSet`, `SetInterfaces`, `SetOperations`, `SortedIntersection`, `SortedListSet`, `SpaceEfficientSortedSet` | `BinaryFuseFilter`, `BlockedBloomFilter`, `CountMinSketch`, `CountingQuotientFilter`, `CuckooFilter`, `GrafiteFilter`, `KllSketch`, `MementoFilter`, `MinHashSketch`, `PrefixFilter`, `RibbonFilter`, `RoaringBitmap`, `UltraLogLog`, `VectorIntersection`, `VectorQuotientFilter` |  |  |
 | `sort/` | `CountingSort`, `EngineeredQuickSorts`, `ExchangeSorts`, `ExternalSort`, `Heapsort`, `InsertionSort`, `KnuthSorts`, `MergeSort`, `MultikeyQuickSort`, `PigeonholeSort`, `QuickSort`, `SelectionSort`, `ShellSort`, `SortingNetworks`, `StrandSort`, `TreeSort` | `LearnedSort`, `PdqSort`, `QuicksortAdversary`, `RadixSort`, `RunSorts`, `SampleSort`, `Sort`, `StringSort`, `VectorQuickSort` | `Sorted` |  |
@@ -486,6 +486,7 @@ techniques), are written on the same classes and tested in
 | ordered tree in a vector in preorder | [`tree/PreorderArrayTree.h`](include/ADS/tree/PreorderArrayTree.h) | `beyond.preorder-array-tree` |
 | heap on a binary tree with pointers | [`priority/LinkedHeapPriorityQueue.h`](include/ADS/priority/LinkedHeapPriorityQueue.h) | `beyond.linked-heap` |
 | graph of node objects with pointers | [`graph/PointerGraph.h`](include/ADS/graph/PointerGraph.h) | `beyond.pointer-graph` |
+| graph whose arcs are the keys of one compressed packed memory array (F-Graph) | [`graph/PackedGraph.h`](include/ADS/graph/PackedGraph.h) | `engineered_graph.packed-graph` |
 | k stacks in one vector | [`stack/MultiStack.h`](include/ADS/stack/MultiStack.h) | `beyond.multistack` |
 | search, order, bubble and natural merge sort on sequences | [`sequence/SequenceAlgorithms.h`](include/ADS/sequence/SequenceAlgorithms.h) | `beyond.sequence-*` |
 | palindromes and sorting with a stack | [`stack/StackAlgorithms.h`](include/ADS/stack/StackAlgorithms.h) | `beyond.stack-algorithms` |
@@ -739,6 +740,7 @@ library, Boost and Eigen.
 | r-index on move structures (Bertram, Fischer and Nalbach) | [`compression/MoveRIndex.h`](include/ADS/compression/MoveRIndex.h) | `engineered_succinct.move-r-index` |
 | LA-vector, a sorted sequence as the segments of an optimal piecewise linear approximation and the corrections of the items, with access, rank and select (Boffa, Ferragina and Vinciguerra) | [`succinct/LAVector.h`](include/ADS/succinct/LAVector.h) | `engineered_succinct.la-vector` |
 | compressed PGM-index, the slopes shared by the stabbing of their intervals and the keys and the places by Elias-Fano, and dynamic PGM-index by the logarithmic method (Ferragina and Vinciguerra) | [`search/CompressedPGMIndex.h`](include/ADS/search/CompressedPGMIndex.h), [`search/DynamicPGMIndex.h`](include/ADS/search/DynamicPGMIndex.h) | `ordered.pgm-compressed`, `ordered.pgm-dynamic` |
+| packed memory array with the thresholds of Bender, Demaine and Farach-Colton and the heads in the order of Eytzinger, its compressed form (CPMA) and their batches in parallel (Wheatman, Burns, Buluç and Xu) | [`search/PackedMemoryArray.h`](include/ADS/search/PackedMemoryArray.h) | `ordered.packed-memory-array`, `engineered_parallel.parallel-packed-memory-array` |
 | static dictionaries of strings: the rear coding with buckets in one string of bytes (Martínez-Prieto et al.) and the Patricia trie in DFUDS, the strings numbered in lexicographic order (Benoit et al.) | [`string/RearCoding.h`](include/ADS/string/RearCoding.h), [`dictionary/SuccinctPatriciaTrie.h`](include/ADS/dictionary/SuccinctPatriciaTrie.h) | `engineered_strings.string-dictionaries` |
 
 ## Sorting
@@ -919,7 +921,10 @@ of the trees based on join are tested, with their edge cases, against
 `std::set` and `std::map` in [`test/join_trees.cpp`](test/join_trees.cpp).
 In turn, [`bench/joins.cpp`](bench/joins.cpp) compares them with the
 operations of `std::map` one key at a time and, when compiled with
-`PAM=<dir>`, with `pam_map`.
+`PAM=<dir>`, with `pam_map`; it also runs the batches of
+`PackedMemoryArray` and `CompressedPackedMemoryArray`, against the CPMA of
+their authors when compiled with `CPMA=<dir>`, which `bench/ordered.cpp`
+compares too on the operations of a key at a time.
 
 The benchmark of the parallel algorithms,
 [`bench/parallel.cpp`](bench/parallel.cpp), runs each of them on 1, 2, 4 and

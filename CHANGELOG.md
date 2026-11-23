@@ -230,6 +230,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   kernels of FastLanes of their authors, Chimp128, LZ4, Zstandard and the
   binary packing, and section 21.Zlc7 of the manual (Lemmas 21.Zlc1 to 21.Zlc3,
   Algorithms 21.Zlc4 to 21.Zlc6)
+- `PackedMemoryArray< K >` and `CompressedPackedMemoryArray< K >`
+  (`search/PackedMemoryArray.h`), the sorted set of the packed memory array
+  of Itai, Konheim and Rodeh with the thresholds of the density of Bender,
+  Demaine and Farach-Colton, the keys of a leaf packed to its left and its
+  head in an array of the heads in the order of Eytzinger, searched with no
+  branch (the SPMA of Wheatman, Burns, Buluç and Xu), and its compressed
+  form, the CPMA of the same authors, whose leaves keep the differences of
+  the keys in the variable-byte code, with `insertBatch()` and
+  `eraseBatch()` on any executor by the merge of the batch into the leaves,
+  the counting of the regions by levels and their redistribution in
+  parallel; the overloads of `encodeVByte()` and `decodeVByte()` on a
+  pointer, for the codes in an array of a fixed size; the tests
+  `ordered.packed-memory-array` and
+  `engineered_parallel.parallel-packed-memory-array`, the cells of the sets
+  in `bench/ordered.cpp` (`std::set`, `absl::btree_set`) and of the batches
+  in `bench/joins.cpp`, against the CPMA of its authors with `CPMA=<dir>`
+  (the unit `bench/pma_authors.cpp`), and section 6.Zcp9 of the manual
+  (Algorithms 6.Zcp6 to 6.Zcp8, Lemmas 6.Zcp1 to 6.Zcp5)
+- `PackedGraph` (`graph/PackedGraph.h`), the F-Graph of Wheatman, Burns,
+  Buluç and Xu, a `DynamicGraph` whose arcs are the keys of one
+  `CompressedPackedMemoryArray` of 64 bits, the adjacent nodes of a node
+  found by one search and read in order, with `insertEdges()` and
+  `deleteEdges()` by batches on any executor; the test
+  `engineered_graph.packed-graph`, its visit in breadth in `bench/graphs.cpp`
+  and section 14.4.Zcp1 of the manual
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits
