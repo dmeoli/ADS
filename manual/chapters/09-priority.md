@@ -34,7 +34,7 @@ queue built for the caches of a real machine
 ([§9.12](09-priority.md#sec-9-12)) and a heap whose deletions cost the
 logarithm of the number of the insertions made since that of the item deleted,
 on which the algorithm of Dijkstra is universally optimal
-([§9.Zws5](09-priority.md#sec-9-Zws5)), and [§9.13](09-priority.md#sec-9-13)
+([§9.13](09-priority.md#sec-9-13)), and [§9.14](09-priority.md#sec-9-14)
 compares the realizations on what each one is meant for. Our first two heaps,
 the binary heap and the meldable heap, follow [Morin 2013, chapter
 10](Z-bibliography.md#ref-morin-cpp) section by section, with all the exercises
@@ -248,7 +248,7 @@ emptied and the first keys are monotone, by Lemmas
 the number of items, $d$ the arity of a heap, $W$ the bits of an integer key,
 $B$ those of a digit, $N$ the buckets of the window of `DialQueue` and
 $\mathit{ws}$ the working set of the item deleted
-([§9.Zws5](09-priority.md#sec-9-Zws5)).
+([§9.13](09-priority.md#sec-9-13)).
 
 | Realization | `min()` | `insert()` | `deleteMin()` | `decrease()` |
 |------------------------|----------|---------|--------------|--------------|
@@ -1331,7 +1331,7 @@ takes `decrease()` or `increase()` as the new priority requires (test
 The same trees serve a program that keeps many small heaps of the nodes of
 one array and moves the nodes among them, e.g., the edges of a graph, each in
 the heap of its class, in the perfect matchings of
-[§14.11.Zbl6](14-graph.md#sec-14-11-Zbl6): `IntrusivePairingHeap< N >` (beyond the
+[§14.11.4](14-graph.md#sec-14-11-4): `IntrusivePairingHeap< N >` (beyond the
 book) is the two-pass heap of a node type $N$ of the caller, with the members
 `priority`, `child`, `next` and `prev` of the nodes above, and is only its
 root, with no pool and no item. A node is in at most one heap at a time, and
@@ -2119,7 +2119,7 @@ has no better one are split off with it, and many equal keys thus cost no
 quadratic time. A small bulk goes to the insertion heap, made a heap only
 when a `top()` or a `pop()` needs it (test `heaps.sequence-heap`).
 
-## 9.Zws5 Heaps with the working-set bound {#sec-9-Zws5}
+## 9.13 Heaps with the working-set bound {#sec-9-13}
 
 The bounds of the heaps of [§9.3](09-priority.md#sec-9-3) to
 [§9.8](09-priority.md#sec-9-8) depend on the number $n$ of the items in the
@@ -2170,7 +2170,7 @@ union-find on the items (§10.3 of [Haeupler et al.
 intervals of insertions, we number the insertions instead and keep the first
 number of each heap, so that the heap of an item is found by comparing its
 number with those of the at most 5 heaps ([Lemma
-9.Zws1](09-priority.md#lem-9-Zws1)). This takes 7 comparisons of integers and no
+9.22](09-priority.md#lem-9-22)). This takes 7 comparisons of integers and no
 branch, i.e., constant time on a word of 64 bits, the same assumption under
 which the bits $b_i$ fit in a word and the next and the previous bit set are
 found in $O( 1 )$ time (§10.4 of the paper).
@@ -2233,7 +2233,7 @@ template< Graph G >
 auto universalDijkstra( const G & g , int r );
 ```
 
-<span id="alg-9-Zws3"></span>**Algorithm 9.Zws3.** The insertion, the decrease and
+<span id="alg-9-6"></span>**Algorithm 9.6.** The insertion, the decrease and
 the deletion of the minimum of `WorkingSetHeap` ([Haeupler et al.
 2024](Z-bibliography.md#ref-haeupler2024), §10; [Haeupler, Sen and Tarjan
 2011](Z-bibliography.md#ref-haeupler2011), §3 and §4 for the inner heaps).
@@ -2248,7 +2248,7 @@ The first lemma collects the invariants of the partition. Only an insertion
 changes the partition, since the other operations remove items from an inner
 heap or reorder it, but never move an item to another inner heap.
 
-<span id="lem-9-Zws1"></span>**Lemma 9.Zws1.** *In a `WorkingSetHeap`, at the end
+<span id="lem-9-22"></span>**Lemma 9.22.** *In a `WorkingSetHeap`, at the end
 of each operation: (i) if $i < j$, every item of $H_i$ was inserted after every
 item of $H_j$; (ii) $| H_i | \le 2^{2^i}$ for each $i$; (iii) if the heap holds
 the inner heaps $H_1 , \ldots , H_k$, then more than $2^{2^{k - 1}}$ items were
@@ -2271,7 +2271,7 @@ $\square$
 The second lemma is the reason why a deletion from an "old" inner heap is paid
 by the working set of the item deleted.
 
-<span id="lem-9-Zws2"></span>**Lemma 9.Zws2.** *If $i > 1$, each item $x$ of $H_i$
+<span id="lem-9-23"></span>**Lemma 9.23.** *If $i > 1$, each item $x$ of $H_i$
 has $\mathit{ws}( x ) > 2^{2^{i - 2}} - 2^{2^{i - 3}}$, and hence
 $\log_2 \mathit{ws}( x ) \ge 2^{i - 3}$ if $i \ge 3$.*
 
@@ -2282,16 +2282,16 @@ applied to $H_{i - 1}$, at the beginning of the insertion (after $H_0$ is made)
 $| H_{i - 2} | > 2^{2^{i - 2}} - 2^{2^{i - 3}}$: indeed, the insertion does not
 meld $H_{i - 3}$ with $H_{i - 2}$, which hold together more than
 $2^{2^{i - 2}}$ items, and $| H_{i - 3} | \le 2^{2^{i - 3}}$ by (ii) of [Lemma
-9.Zws1](09-priority.md#lem-9-Zws1) (for $i = 2$, $H_0$ holds one item, more than
+9.22](09-priority.md#lem-9-22) (for $i = 2$, $H_0$ holds one item, more than
 $2 - \sqrt{2}$). The insertion moves $H_{i - 2}$ to the place $i - 1$, and by
-(i) of [Lemma 9.Zws1](09-priority.md#lem-9-Zws1) its items were inserted after
+(i) of [Lemma 9.22](09-priority.md#lem-9-22) its items were inserted after
 every item of $H_i$, $x$ included, while $x$ was in the heap; they are thus in
 the working set of $x$ (Corollary 10.5 of the paper), and $x$ stays in $H_i$ or
 moves up until its deletion. Finally, if $i \ge 3$, then $2^{2^{i - 3}} \ge 2$,
 and $2^{2^{i - 2}} = ( 2^{2^{i - 3}} )^2 \ge 2 \cdot 2^{2^{i - 3}}$ gives
 $\mathit{ws}( x ) > 2^{2^{i - 3}}$. $\square$
 
-<span id="thm-9-Zws4"></span>**Theorem 9.Zws4.** *Starting from an empty
+<span id="thm-9-5"></span>**Theorem 9.5.** *Starting from an empty
 `WorkingSetHeap`, `min()` and `top()` cost $O( 1 )$, `push()` and `decrease()`
 cost $O( 1 )$ amortized, a `pop()` that returns $x$ costs
 $O( 1 + \log \mathit{ws}( x ) )$ amortized, and `erase()` and `increase()` cost
@@ -2319,11 +2319,11 @@ and Lemma 10.8 of the paper then give the amortized bounds of `push()`,
 `decrease()` and `pop()`: the cost $O( j )$ of an insertion that changes $j$
 inner heaps is charged to their items, each of which moves to a higher place,
 and the deletion of $x$ from $H_i$ costs $O( \log | H_i | + i ) = O( 2^i )$ by
-(ii) of [Lemma 9.Zws1](09-priority.md#lem-9-Zws1), i.e.,
-$O( 1 + \log \mathit{ws}( x ) )$ by [Lemma 9.Zws2](09-priority.md#lem-9-Zws2) when
+(ii) of [Lemma 9.22](09-priority.md#lem-9-22), i.e.,
+$O( 1 + \log \mathit{ws}( x ) )$ by [Lemma 9.23](09-priority.md#lem-9-23) when
 $i \ge 3$, and $O( 1 )$ when $i \le 2$. `erase()` is a cut and a deletion from
 $H_i$, which cost $O( \log | H_i | + i ) = O( \log s + k )$ amortized, with
-$k \le 5$ by [Lemma 9.Zws1](09-priority.md#lem-9-Zws1), and `increase()` is
+$k \le 5$ by [Lemma 9.22](09-priority.md#lem-9-22), and `increase()` is
 `erase()` followed by `push()`. The comparisons of the numbers of the
 insertions are not comparisons of keys, and the analyses above count each step
 that compares keys. Finally, the run of Dijkstra makes $n$ insertions, at most
@@ -2331,7 +2331,7 @@ $m$ decreases and $n$ deletions, and
 $\sum_v \log \mathit{ws}( v ) = O( \log D )$ (Lemma 7.3 of the paper), which
 gives the time and, by Theorem 6.5 of the paper, its optimality. $\square$
 
-We remark that [Theorem 9.Zws4](09-priority.md#thm-9-Zws4) bounds the comparisons of
+We remark that [Theorem 9.5](09-priority.md#thm-9-5) bounds the comparisons of
 the algorithm of Dijkstra by $O( m + \log D )$, whereas the paper shows that
 $\Omega( F - n + 1 + \log D )$ are needed, $F$ being the number of the arcs
 that may lie forward in an order of the distances. The two algorithms that
@@ -2356,7 +2356,7 @@ the native `decrease()` of `PairingHeap`, which the shortest paths of [chapter
 14](14-graph.md#ch-14) use, no working-set bound is known at all. Furthermore,
 the lower bound of [Fredman 1999](Z-bibliography.md#ref-fredman1999),
 $\Omega( \log \log n )$ amortized for `decrease()` in this family of heaps,
-already excludes the $O( m + \log D )$ of [Theorem 9.Zws4](09-priority.md#thm-9-Zws4)
+already excludes the $O( m + \log D )$ of [Theorem 9.5](09-priority.md#thm-9-5)
 on the graphs where the decreases dominate. On the sequences that the bound is
 about, however, the two heaps typically behave alike. In the rounds of the test
 `heaps.working-set-bound`, each an insertion and a deletion of a key below the
@@ -2383,7 +2383,7 @@ key at most $\theta$ (tests `heaps.working-set-heap`,
 `engineered_graph.working-set-dijkstra` and
 `engineered_emitters.emit-working-set-heap`).
 
-## 9.13 The realizations compared {#sec-9-13}
+## 9.14 The realizations compared {#sec-9-14}
 
 We choose among the realizations first by the operations that a computation
 needs, and only then by their constants. A queue that is only pushed and
@@ -2401,7 +2401,7 @@ Fibonacci heap in practice ([Stasko and Vitter
 2014](Z-bibliography.md#ref-larkin2014)), although only the latter has the
 bound of [Theorem 9.3](09-priority.md#thm-9-3). When most of the items
 extracted were inserted shortly before, `WorkingSetHeap` bounds each extraction
-by the logarithm of its working set ([Theorem 9.Zws4](09-priority.md#thm-9-Zws4)), at
+by the logarithm of its working set ([Theorem 9.5](09-priority.md#thm-9-5)), at
 the price of larger constants. A merge of two queues calls for `MeldableHeap`,
 the only realization whose merge is logarithmic, and the extraction of both
 ends for `IntervalHeap`, usually faster than `MinMaxHeap` in practice, since
@@ -2423,7 +2423,7 @@ chapter address one by one: the plain items and the hole of `DaryHeap`, the
 pools of the heaps with handles, the keys without jumps of `OrderKey.h`
 and of `FlatLoserTree`, and the sequences in order of `SequenceHeap`.
 
-## 9.14 Discussion and references {#sec-9-14}
+## 9.15 Discussion and references {#sec-9-15}
 
 The binary heap is due to [Williams 1964](Z-bibliography.md#ref-williams1964),
 as the structure of heapsort, and its construction in linear time to [Floyd
@@ -2478,7 +2478,7 @@ of them. The algorithms on graphs of [chapter 14](14-graph.md#ch-14) take the
 heaps of this chapter that support `decrease()`, and heapsort and the multiway
 merges reappear in [chapter 12](12-sort.md#ch-12).
 
-## 9.15 Exercises {#sec-9-15}
+## 9.16 Exercises {#sec-9-16}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`). The first eleven are those of [Morin 2013,
@@ -2611,6 +2611,6 @@ Each exercise names the test of the library that solves it (run it with
     heaps, check that the comparisons of a round of an insertion and a
     deletion of a recent item do not grow with the size of the heap, and
     run on it the algorithms of Dijkstra and Prim ([Theorem
-    9.Zws4](09-priority.md#thm-9-Zws4)). Tests: `heaps.working-set-heap`,
+    9.5](09-priority.md#thm-9-5)). Tests: `heaps.working-set-heap`,
     `heaps.working-set-bound`, `engineered_graph.working-set-dijkstra`,
     `engineered_emitters.emit-working-set-heap`.

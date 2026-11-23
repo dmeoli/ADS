@@ -42,8 +42,8 @@ stolen in [§24.11](24-concurrent.md#sec-24-11), the exact priority
 queue without locks in [§24.12](24-concurrent.md#sec-24-12), the
 structures of one writer in [§24.13](24-concurrent.md#sec-24-13), the
 reclamation of the memory of the nodes, with the stack and the queue
-without locks, in [§24.Zrc11](24-concurrent.md#sec-24-Zrc11), and the
-ordered map in [§24.Zcm7](24-concurrent.md#sec-24-Zcm7). The file
+without locks, in [§24.14](24-concurrent.md#sec-24-14), and the
+ordered map in [§24.15](24-concurrent.md#sec-24-15). The file
 `impl/Spin.tpp`
 holds only two helpers that the other headers share (the pause of the
 processor in a loop that spins, and the prefetch of a line of cache), and
@@ -2573,7 +2573,7 @@ after $\nu$ by (ii). (iv) Follows from (iii) and from [Lemma
 $\square$
 
 The memory of the nodes cut off is reclaimed by a policy of
-[§24.Zrc11](24-concurrent.md#sec-24-Zrc11), owned by the queue: by default the
+[§24.14](24-concurrent.md#sec-24-14), owned by the queue: by default the
 epochs of [Fraser 2004](Z-bibliography.md#ref-fraser2004) (see also [Hart
 et al. 2007](Z-bibliography.md#ref-hart2007)), `FraserEpochs<>`, or those
 of DEBRA, `DebraEpochs`, while the hazard pointers do not fit, since the
@@ -2588,10 +2588,10 @@ default, stamps them with $E$ read then, and tries to raise $E$ at the end
 of its DeleteMin; a node stamped $r$ is freed once its thread reads
 $E \ge r + 2$. By [Lemma 24.32](24-concurrent.md#lem-24-32) (iv) the last
 CAS of the cut and of its restructure *unlinks* the nodes cut off, in the
-sense of [§24.Zrc11](24-concurrent.md#sec-24-Zrc11): a thread whose reads follow
+sense of [§24.14](24-concurrent.md#sec-24-14): a thread whose reads follow
 it in the total order $S$ of [§24.1](24-concurrent.md#sec-24-1) reaches
-no node cut off. Hence, by [Lemma 24.Zrc1](24-concurrent.md#lem-24-Zrc1) (and
-[Lemma 24.Zrc2](24-concurrent.md#lem-24-Zrc2) under DEBRA), no node cut off is
+no node cut off. Hence, by [Lemma 24.37](24-concurrent.md#lem-24-37) (and
+[Lemma 24.38](24-concurrent.md#lem-24-38) under DEBRA), no node cut off is
 freed while an operation that reached it runs. Of course, a relaxed store
 of the announce followed by a sequentially consistent fence, with reads
 that acquire, gives the same order through the rules of the fences. We
@@ -2931,7 +2931,7 @@ publish costs a load of a line that the owner holds, and a store only
 when the key changes; `min()` costs $p$ loads of lines that only their
 owners write.
 
-## 24.Zrc11 The reclamation of the memory of the nodes {#sec-24-Zrc11}
+## 24.14 The reclamation of the memory of the nodes {#sec-24-14}
 
 We now turn to the structures of nodes that any thread may unlink: the
 stack of [Treiber 1986](Z-bibliography.md#ref-treiber1986), the queue of
@@ -2951,7 +2951,7 @@ once no thread may still hold it. Note that the reclamation also removes
 the ABA problem of [§24.1](24-concurrent.md#sec-24-1) from these
 structures: a node that is protected is not freed, and therefore it is not
 allocated again and linked anew while a compare-and-swap may still expect
-it (cf. [Lemma 24.Zrc5](24-concurrent.md#lem-24-Zrc5)).
+it (cf. [Lemma 24.41](24-concurrent.md#lem-24-41)).
 
 The reclamations of `Reclaim.h` are *policies*, i.e., parameters of the
 template of a structure. They are `FraserEpochs< R >` and `DebraEpochs`, the
@@ -3025,7 +3025,7 @@ where the attempt of Fraser reads all the $N$ records. The price is that
 $E$ grows only after about $N$ guards, and that a node waits one epoch
 more.
 
-<span id="alg-24-Zrc7"></span>**Algorithm 24.Zrc7.** The retirement of a node
+<span id="alg-24-16"></span>**Algorithm 24.16.** The retirement of a node
 and the guard of an operation under the epochs of `EpochDomain`
 (`Local::retire()`, and the constructor and the destructor of
 `Local::Guard`); $\lambda$ is 2 for Fraser and 3 for DEBRA.
@@ -3034,7 +3034,7 @@ and the guard of an operation under the epochs of `EpochDomain`
 
 --8<-- "generated/EpochReclaim-EpochDomain-enter.pseudo.md"
 
-<span id="lem-24-Zrc1"></span>**Lemma 24.Zrc1.** *Under `FraserEpochs< R >`,
+<span id="lem-24-37"></span>**Lemma 24.37.** *Under `FraserEpochs< R >`,
 let a node $x$ be unlinked by $u$ and retired with the label $\ell$, and
 let a guard $g$ reach $x$. Then $x$ is not freed before $g$ ends.*
 
@@ -3059,7 +3059,7 @@ early in a pass may announce afterwards. The second read of $E$ in the
 announce keeps such a record within one epoch of $E$, and the argument then
 needs one step more.
 
-<span id="lem-24-Zrc2"></span>**Lemma 24.Zrc2.** *Under `DebraEpochs`, (i) while
+<span id="lem-24-38"></span>**Lemma 24.38.** *Under `DebraEpochs`, (i) while
 a guard that announced $e$ is open, $E \in \{ e , e + 1 \}$; (ii) let a
 node $x$ be unlinked by $u$ inside a guard that announced $\ell$, and
 retired by it, and let a guard $g$ reach $x$; then $x$ is not freed before
@@ -3073,7 +3073,7 @@ after the announce of the guard and after the push of its record. The
 cursor thus meets the record, and reads its announce $2 e + 1$ or a later
 value; since $2 e + 1 \notin \{ 0 , 2 ( e + 1 ) + 1 \}$, the cursor stays
 there until the guard ends. (ii) As in the proof of [Lemma
-24.Zrc1](24-concurrent.md#lem-24-Zrc1), the announce $2 a + 1$ of $g$ precedes
+24.37](24-concurrent.md#lem-24-37), the announce $2 a + 1$ of $g$ precedes
 $u$ in $S$. By (i), applied to the guard of the retirement, $E$ is at most
 $\ell + 1$ at $u$, and hence $a \le \ell + 1$; by (i), applied to $g$, $E$
 stays at most $a + 1 \le \ell + 2$ while $g$ is open. A node of the label
@@ -3107,7 +3107,7 @@ of the program (`HazardDomain::global()`), serves the interface of
 bin of its thread, which the thread keeps in its thread-local storage and
 gives back, after a scan, when it ends.
 
-<span id="alg-24-Zrc8"></span>**Algorithm 24.Zrc8.** The protection of a
+<span id="alg-24-17"></span>**Algorithm 24.17.** The protection of a
 node and the retirement with the scan under the hazard pointers
 (`hazard_pointer::protect()`, which is also the `protect()` of a guard,
 and `Local::retire()` of `HazardDomain`).
@@ -3116,7 +3116,7 @@ and `Local::retire()` of `HazardDomain`).
 
 --8<-- "generated/HazardPointer-HazardDomain-retire.pseudo.md"
 
-<span id="lem-24-Zrc3"></span>**Lemma 24.Zrc3.** *Let a thread write $x$ in
+<span id="lem-24-39"></span>**Lemma 24.39.** *Let a thread write $x$ in
 its slot $h$ by the store $s$, and then make a read $r$ that precedes in
 $S$ the write $u$ that unlinks $x$, after which $x$ is retired. Then no scan
 frees $x$ before $h$ is written again.*
@@ -3141,7 +3141,7 @@ which may still hold $n$ after $n$ has been retired. There $r$ is the read
 of the head that returns $h$ again: it precedes the compare-and-swap from
 $h$ to $n$, and hence the one that unlinks $n$.
 
-<span id="lem-24-Zrc4"></span>**Lemma 24.Zrc4.** *Let no deleter retire, and
+<span id="lem-24-40"></span>**Lemma 24.40.** *Let no deleter retire, and
 let the vector of each scan fit in memory. Then, between two operations of
 its thread, each bin holds fewer than $2 H + 64$ nodes, where $H$ is the
 number of the slots made so far. Hence fewer than $B ( 2 H + 64 )$ nodes of
@@ -3181,7 +3181,7 @@ successor $n$ in its slot 1, and reads the head again. It then swings the
 tail first if the tail is $h$; otherwise it swings the head from $h$ to $n$,
 moves the item out of $n$ (now the dummy) and retires $h$.
 
-<span id="alg-24-Zrc9"></span>**Algorithm 24.Zrc9.** The push and the pop of
+<span id="alg-24-18"></span>**Algorithm 24.18.** The push and the pop of
 `LockFreeStack::Handle`, where $\mathrm{protect}$ and $\mathrm{retire}$
 are those of the policy.
 
@@ -3189,14 +3189,14 @@ are those of the policy.
 
 --8<-- "generated/LockFreeStack-tryPop.pseudo.md"
 
-<span id="alg-24-Zrc10"></span>**Algorithm 24.Zrc10.** The enqueue and the
+<span id="alg-24-19"></span>**Algorithm 24.19.** The enqueue and the
 dequeue of `LockFreeQueue::Handle`, with the slots 0 and 1 of the policy.
 
 --8<-- "generated/LockFreeQueue-enqueue.pseudo.md"
 
 --8<-- "generated/LockFreeQueue-tryDequeue.pseudo.md"
 
-<span id="lem-24-Zrc5"></span>**Lemma 24.Zrc5.** *Under any of the three
+<span id="lem-24-41"></span>**Lemma 24.41.** *Under any of the three
 policies, a pop of `LockFreeStack` whose compare-and-swap succeeds from
 $t$ writes the successor that $t$ had when it was pushed, and $t$ is the
 top at that moment. Hence the stack is linearizable: a push at its
@@ -3205,9 +3205,9 @@ stack empty, at its read of the top.*
 
 *Proof.* The pop protected $t$ by a read of the top that returned $t$
 after the write of its slot, or inside its guard. By [Lemma
-24.Zrc3](24-concurrent.md#lem-24-Zrc3) (the top never holds $t$ again once a
-pop has swung it), or by [Lemmas 24.Zrc1](24-concurrent.md#lem-24-Zrc1) and
-[24.Zrc2](24-concurrent.md#lem-24-Zrc2), $t$ is not freed before the pop ends.
+24.39](24-concurrent.md#lem-24-39) (the top never holds $t$ again once a
+pop has swung it), or by [Lemmas 24.37](24-concurrent.md#lem-24-37) and
+[24.38](24-concurrent.md#lem-24-38), $t$ is not freed before the pop ends.
 A node not freed is not allocated again, and a push always links a new
 node; hence the top equals $t$ at the CAS only if no pop has swung it from
 $t$ since $t$ was pushed. Also, $t.\mathit{next}$ is written once, before
@@ -3215,7 +3215,7 @@ the push, and it is still the node below $t$. The operations then act on
 the sequence of the nodes from the top as the push and the pop of a
 stack. $\square$
 
-<span id="lem-24-Zrc6"></span>**Lemma 24.Zrc6.** *In `LockFreeQueue`, under
+<span id="lem-24-42"></span>**Lemma 24.42.** *In `LockFreeQueue`, under
 any of the three policies, (i) the head never passes the tail, and the
 node of the tail is therefore never retired while it is the tail; (ii) the
 node whose item a dequeue moves out is touched by no other dequeue until
@@ -3232,9 +3232,9 @@ retired only after the head has passed it, hence after the tail has. (ii)
 After the CAS from $h$ to $n$, $n$ is the dummy, whose item no dequeue
 reads. It is retired only by the dequeue that swings the head past it, and
 then the guard of the first dequeue still protects it, by [Lemma
-24.Zrc3](24-concurrent.md#lem-24-Zrc3) (with the reads of the head discussed
-above) or by [Lemmas 24.Zrc1](24-concurrent.md#lem-24-Zrc1) and
-[24.Zrc2](24-concurrent.md#lem-24-Zrc2). As in the stack, a protected node is
+24.39](24-concurrent.md#lem-24-39) (with the reads of the head discussed
+above) or by [Lemmas 24.37](24-concurrent.md#lem-24-37) and
+[24.38](24-concurrent.md#lem-24-38). As in the stack, a protected node is
 not allocated again, and the CAS of the head, of the tail and of the
 successors find the nodes that they read; the linearizability is then
 that of [Michael and Scott 1996](Z-bibliography.md#ref-michael1996).
@@ -3299,7 +3299,7 @@ for( int k = 0 ; k < 4 ; ++k )
   } );
 for( auto & t : T )
  t.join();
-// fewer than B ( 2 H + 64 ) nodes wait, by Lemma 24.Zrc4
+// fewer than B ( 2 H + 64 ) nodes wait, by Lemma 24.40
 std::size_t waiting = Q.domain().pending();
 ```
 
@@ -3356,7 +3356,7 @@ Under `FraserEpochs< 1 >` the stack and the queue read all the records at
 each pop, and a larger $R$ (e.g., 64) amortizes that read at the price of
 more nodes waiting.
 
-## 24.Zcm7 An ordered map under optimistic locks {#sec-24-Zcm7}
+## 24.15 An ordered map under optimistic locks {#sec-24-15}
 
 The hash tables of [§24.7](24-concurrent.md#sec-24-7) and
 [§24.8](24-concurrent.md#sec-24-8) answer the lookups of one key; an index
@@ -3416,7 +3416,7 @@ addition. This is the seqlock of [Boehm 2012](Z-bibliography.md#ref-boehm2012),
 in which the stores with release and the loads with acquire take the place of
 the fences, which the sanitizer of threads does not model.
 
-<span id="lem-24-Zcm1"></span>**Lemma 24.Zcm1.** *Let a thread read the
+<span id="lem-24-43"></span>**Lemma 24.43.** *Let a thread read the
 version $v$ of a node $n$ with the lock clear, then some fields of $n$, and
 then the version of $n$ again, and let the second read give $v$. Then each
 field read has the value that it had when the version of $n$ became $v$,
@@ -3462,7 +3462,7 @@ are unlocked as obsolete and *retired*, i.e., handed to the reclamation
 below. No thread waits for a lock while it holds one: a thread waits only in
 the first read of a version, before it takes any lock, and every lock is
 taken by an upgrade, which fails at once if the node changed. [Algorithm
-24.Zcm6](24-concurrent.md#alg-24-Zcm6) gives the insertion, the erasure and the
+24.20](24-concurrent.md#alg-24-20) gives the insertion, the erasure and the
 least key not smaller than a given one.
 
 We write the *range* of a node for the keys that the path from the root
@@ -3470,7 +3470,7 @@ gives it: the root has all the keys, and the child $c[ i ]$ of a node of
 range $R$ has $R \cap ( k[ i - 1 ] , k[ i ] ]$, with $k[ - 1 ] = - \infty$
 and $k[ |n| ] = + \infty$, where $|n|$ is the number of the keys of $n$.
 
-<span id="lem-24-Zcm2"></span>**Lemma 24.Zcm2.** *In every state in which no
+<span id="lem-24-44"></span>**Lemma 24.44.** *In every state in which no
 node is locked, (i) the keys of each node of the tree increase, an
 internal node of $j$ keys has $j + 1$ children, and all the leaves are at
 one depth; (ii) each key of a node lies in its range, and the ranges of the
@@ -3483,7 +3483,7 @@ define the range.*
 and an operation that changes several nodes locks them all first. (i) and
 (ii) hold for the leaf alone of the empty map, and each change keeps them.
 An insertion or an erasure in a leaf puts or takes a key at its place, found
-in the state locked (cf. [Lemma 24.Zcm1](24-concurrent.md#lem-24-Zcm1) and its
+in the state locked (cf. [Lemma 24.43](24-concurrent.md#lem-24-43) and its
 descent below), and within the range of the leaf. A split of a node of $j$
 keys keeps the first $\lceil j / 2 \rceil$ in a leaf (the first $\lfloor j /
 2 \rfloor$ in an internal node, whose next key goes up), moves the rest to
@@ -3504,7 +3504,7 @@ share of it and of a sibling) or of the node and of its parent; a split of
 the parent of a node moves the node to a new parent with the keys around it,
 and leaves its range as it was. $\square$
 
-<span id="lem-24-Zcm3"></span>**Lemma 24.Zcm3.** *Let a descent for the key $x$
+<span id="lem-24-45"></span>**Lemma 24.45.** *Let a descent for the key $x$
 reach the leaf $l$, whose version it read as $w$, and let a later check of
 $l$ give $w$. Then at that check $l$ is in the tree, its range holds $x$
 (the least key above $x$, in a strict descent), and the bound $f$ that the
@@ -3519,43 +3519,43 @@ the root, both under its lock. Let the descent be at the node $n$ of version
 $v$, with $n$ in the tree and of a range holding $x$ while its version is
 $v$. It reads the place $i$ of $x$ and the child $c = n.c[ i ]$, checks
 $n$, reads the version $u$ of $c$, and checks $n$ again: by [Lemma
-24.Zcm1](24-concurrent.md#lem-24-Zcm1) the place and the child are those of the
+24.43](24-concurrent.md#lem-24-43) the place and the child are those of the
 state $v$ of $n$, in which $c$ is a child of $n$ of range $R \cap ( n.k[ i -
 1 ] , n.k[ i ] ]$, which holds $x$, and that state still held at the
 second check, after the read of $u$. Hence $c$ was in the tree with that
 range when its version was $u$, and by [Lemma
-24.Zcm2](24-concurrent.md#lem-24-Zcm2) (iii) it keeps the range while its version
+24.44](24-concurrent.md#lem-24-44) (iii) it keeps the range while its version
 is $u$, since a change of the range, or the unlink of $c$ by a merge, locks
 $c$. At the leaf, the check that gives $w$ extends this to the moment of the
 check. The bound $f$ is the right end of the range by the same induction,
 the last node with $i < |n|$ being the deepest one whose key bounds the
 path on the right. $\square$
 
-<span id="lem-24-Zcm4"></span>**Lemma 24.Zcm4.** *The operations of a handle
+<span id="lem-24-46"></span>**Lemma 24.46.** *The operations of a handle
 are linearizable as those of a map: `insert()`, `assign()` and `erase()` at
 the upgrade of their leaf after which they return (or, when `insert()`
 finds the key and `erase()` does not, at the check of their leaf),
 `find()` and `contains()` at the check of their leaf, and `lowerBound()`
 and `upperBound()` at the first of the checks of the leaves they read,
 which they repeat at their end (line 10 of the third procedure of
-[Algorithm 24.Zcm6](24-concurrent.md#alg-24-Zcm6)). A scan reads each leaf in
+[Algorithm 24.20](24-concurrent.md#alg-24-20)). A scan reads each leaf in
 one state, and is therefore linearizable leaf by leaf.*
 
 *Proof.* Each point lies between the invocation and the response of its
 operation. Let the abstract map be the union of the pairs of the leaves of
 the tree, in a state with no lock held, as in [Lemma
-24.Zcm2](24-concurrent.md#lem-24-Zcm2). By [Lemma
-24.Zcm3](24-concurrent.md#lem-24-Zcm3) an operation of the key $k$ reaches the
+24.44](24-concurrent.md#lem-24-44). By [Lemma
+24.45](24-concurrent.md#lem-24-45) an operation of the key $k$ reaches the
 leaf whose range holds $k$, the only one where $k$ may lie, by (ii). An
 upgrade from the version $w$ of the descent succeeds only if the leaf is still
 in the state read, and the operation then reads and writes it under the lock,
 so that its answer and its change are those of the sequential map at the
 upgrade; no other thread sees the state in between, by [Lemma
-24.Zcm1](24-concurrent.md#lem-24-Zcm1), and a split, a merge or a share moves
+24.43](24-concurrent.md#lem-24-43), and a split, a merge or a share moves
 pairs between leaves without changing the abstract map. A lookup returns
 what the leaf held in the state that its check confirms. A bound reads the
 leaves $l_1 , \ldots , l_s$ of consecutive ranges, by [Lemma
-24.Zcm3](24-concurrent.md#lem-24-Zcm3) and since the bound $f$ of one is the
+24.45](24-concurrent.md#lem-24-45) and since the bound $f$ of one is the
 start of the next, until it finds a pair above $x$ or the range of the last
 leaf is unbounded; each leaf $l_j$ was in the state read, of version $w_j$,
 from its first read on, and the checks at the end give $w_j$ again. At the
@@ -3582,7 +3582,7 @@ stamped with the epoch read after its unlink, and it is freed once the epoch
 has grown by 2; a record raises the epoch once per 64 retirements, if every
 record inside an operation announces it.
 
-<span id="lem-24-Zcm5"></span>**Lemma 24.Zcm5.** *(i) No node is freed while a
+<span id="lem-24-47"></span>**Lemma 24.47.** *(i) No node is freed while a
 thread inside an operation may still read it. (ii) The operations do not
 deadlock, and a lookup writes no shared word; if no modification runs, a
 lookup completes after one read of each node of its path and two checks of
@@ -3707,7 +3707,7 @@ h.scan( 100 , [ &n ]( std::uint64_t , std::uint64_t ) {
  } );  // the keys 100, ..., 109
 ```
 
-<span id="alg-24-Zcm6"></span>**Algorithm 24.Zcm6.** The insertion, the erasure
+<span id="alg-24-20"></span>**Algorithm 24.20.** The insertion, the erasure
 and the least key not smaller than a given one of
 `ConcurrentBTreeMap::Handle` ([Leis et al.
 2016](Z-bibliography.md#ref-leis2016), with our merges on the way down and our
@@ -3722,7 +3722,7 @@ or starts over after letting the locks held go.
 
 --8<-- "generated/ConcurrentBTreeMap-lowerBound.pseudo.md"
 
-## 24.14 Discussion and references {#sec-24-14}
+## 24.16 Discussion and references {#sec-24-16}
 
 We follow the model of [Herlihy and Shavit
 2008](Z-bibliography.md#ref-herlihy2008), whose book covers
@@ -3824,7 +3824,7 @@ queues of FastFlow, the B+-tree of Leis et al.) belongs
 to the benchmarks of appendix B, made on an idle machine, and it is not
 reported here.
 
-## 24.15 Exercises {#sec-24-15}
+## 24.17 Exercises {#sec-24-17}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).

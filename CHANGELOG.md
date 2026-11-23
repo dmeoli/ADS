@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ADS::TinyRankSelect` and `ADS::TinyRankSelect<1024>` of the benchmark
   `bitvector` against pasta, sdsl-lite (with the new cell
   `sdsl::rank_support_v5+mcl`) and sux, and the part of section 22.4 of the
-  manual on it (Algorithm 22.Zrs3, Lemmas 22.Zrs1 and 22.Zrs2)
+  manual on it (Algorithm 22.8, Lemmas 22.7 and 22.8)
 - the sketches of streams, mergeable, persistent (by `store()` and the
   bridge of cereal) and hashed by `FastHash::hash64()` finished by
   `splitmix64()`, which consecutive integers need: `UltraLogLog` of Ertl in
@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sketches in `persistence-cereal`, the part `sketches` of `bench-hashing`
   against DataSketches 5.3.1 (its HyperLogLog, KLL, theta and Count-Min
   sketches, from the directory `datasketches-cpp` of `HASHING`) and a plain
-  HyperLogLog, and section 10.Zsk8 of the manual (Lemmas 10.Zsk1 to 10.Zsk7)
+  HyperLogLog, and section 10.12 of the manual (Lemmas 10.27 to 10.33)
 - `PtrHash`, the minimal perfect hash function of Groot Koerkamp by pilots of 8
   bits stored as bytes, placed in parts of the same slots and buckets by
   decreasing size and, when no pilot below 256 sends a bucket to free slots, by
@@ -67,8 +67,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `hashing.consensus-recsplit`, their round trips in
   `engineered_persistence.persistence-perfect-hash`, the cells of
   `bench/hashing.cpp` against PTHash, PHOBIC and the code of Consensus-RecSplit
-  of its authors (with the batch queries), and section 7.8.Zmp6 of the manual
-  (Algorithms 7.Zmp4 and 7.Zmp5, Lemmas 7.Zmp1 to 7.Zmp3)
+  of its authors (with the batch queries), and section 7.8.4 of the manual
+  (Algorithms 7.20 and 7.21, Lemmas 7.30 to 7.32)
 - the quotient filters of Pandey et al.: `CountingQuotientFilter`, a
   dynamic filter that counts the copies of its keys in the slots of their
   runs, on the table of the rank-and-select quotient filter (`QuotientTable`,
@@ -89,7 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `bench/hashing.cpp` against the filters of their authors (cqf, vqf and
   Memento_Filter, each built in a unit of its own from the sources given by
   HASHING), and the parts of sections 10.9 and 10.11 of the manual on them
-  (Lemmas 10.Zqf1, 10.Zqf2 and 10.Zqf3)
+  (Lemmas 10.20, 10.21 and 10.26)
 - `LZBicriteria.h`, the bicriteria parse of LZ77 of Farruggia, Ferragina,
   Frangioni and Venturini, which finds among the parses into copies and runs
   of literals the one of least decompression time within a bound on the size
@@ -119,8 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `engineered_emitters.emit-working-set-heap`, the row of the heap and the
   graphs `fan` and `comb` of small working sets in the benchmark `dijkstra`
   of `bench/graphs.cpp`, the benchmark `wsbound` of the comparisons of the
-  heaps against the bound, and section 9.Zws5 of the manual (Algorithm 9.Zws3,
-  Lemmas 9.Zws1 and 9.Zws2, Theorem 9.Zws4), which moves the later sections of
+  heaps against the bound, and section 9.13 of the manual (Algorithm 9.6,
+  Lemmas 9.22 and 9.23, Theorem 9.5), which moves the later sections of
   chapter 9, with its part of section 14.8.1
 - the reclamation of the memory of the lock-free structures as policies of
   their templates [see `concurrent/Reclaim.h`]: the epochs of Fraser
@@ -144,7 +144,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `lockfree-pq-policies`, the case `reclaim` of `bench-concurrent` against
   the queue of Michael and Scott of xenium under its reclamations
   (`XENIUM=<include dir>` of the makefile) and `boost::lockfree::queue`,
-  and section 24.Zrc11 of the manual (Lemmas 24.Zrc1 to 24.Zrc6)
+  and section 24.14 of the manual (Lemmas 24.37 to 24.42)
 - `minCostPerfectMatching()` of `PerfectMatching.h`, the perfect matching
   of least cost of a general graph with integer costs of any sign, on a list
   of edges or on an unoriented `StaticGraph`, by the primal-dual algorithm
@@ -163,7 +163,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `engineered_search.intrusive-pairing-heap`, the cells `pmatching` of
   `bench/graphs.cpp` against LEMON, Boost and, with `BLOSSOM5=<dir>` (or
   `BLOSSOM5_DIR`), the code of Kolmogorov built for the comparison, and
-  section 14.11.Zbl6 of the manual (Algorithm 14.Zbl5, Lemmas 14.Zbl1 to 14.Zbl4)
+  section 14.11.4 of the manual (Algorithm 14.21, Lemmas 14.53 to 14.56)
 - `suffixArray( ex , T )` of `ParallelText.h`, the suffix array of the
   bytes of a text on the threads of an executor, on integers of 32 or 64
   bits, by the prefix doubling of Manber and Myers with the discarding of
@@ -178,7 +178,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ParlayLib and `libsais_omp()` (`LIBSAIS_OMP=<prefix>` of the makefile,
   `ADS_LIBSAIS_OMP` of CMake), the test
   `engineered_parallel.parallel-suffix-array`, and the suffix array in
-  section 25.9 of the manual (Algorithm 25.Zps10, Lemma 25.Zps4) and in section
+  section 25.9 of the manual (Algorithm 25.26, Lemma 25.21) and in section
   15.5.2
 - `ParallelPrimitives.h`, the primitives on sequences of ParlayLib that the
   patterns of `Executor.h` and the parallel sorts did not give, each with
@@ -199,7 +199,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `group_by_key`, `random_permutation` and `tokens`, the tests
   `engineered_parallel.parallel-pack-flatten`, `parallel-integer-sort` and
   `parallel-semisort-shuffle`, and section 25.6 of the manual (Algorithms
-  25.Zps5 to 25.Zps9, Lemmas 25.Zps1 to 25.Zps3)
+  25.11 to 25.15, Lemmas 25.9 to 25.11)
 - `ConcurrentBTreeMap`, an ordered map shared by threads on the B+-tree
   with optimistic lock coupling of Leis et al., whose lookups write no
   shared word and whose modifications lock only the nodes they change, with
@@ -211,8 +211,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `engineered.concurrent-btree-map`, `-threads` and `-linearizable`, the
   case omap of `bench-parallel` (the load and the mixes of YCSB against
   `tbb::concurrent_map` and the BTreeOLC of Leis et al., `BTREEOLC=<dir>`
-  of the makefile), and section 24.Zcm7 of the manual (Lemmas 24.Zcm1 to
-  24.Zcm5, Algorithm 24.Zcm6)
+  of the makefile), and section 24.15 of the manual (Lemmas 24.43 to
+  24.47, Algorithm 24.20)
 - the light-weight codes of the columns of a database in
   `compression/`: `FastLanes.h`, the bit-packing of vectors of 1024
   unsigned integers of 8, 16, 32 or 64 bits in the lanes of a virtual
@@ -228,8 +228,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Leis); the tests `engineered_succinct.fastlanes`, `.alp` and `.fsst`, the
   cells of `bench/compression.cpp` against the fsst, the ALP and the
   kernels of FastLanes of their authors, Chimp128, LZ4, Zstandard and the
-  binary packing, and section 21.Zlc7 of the manual (Lemmas 21.Zlc1 to 21.Zlc3,
-  Algorithms 21.Zlc4 to 21.Zlc6)
+  binary packing, and section 21.12 of the manual (Lemmas 21.23 to 21.25,
+  Algorithms 21.31 to 21.33)
 - `PackedMemoryArray< K >` and `CompressedPackedMemoryArray< K >`
   (`search/PackedMemoryArray.h`), the sorted set of the packed memory array
   of Itai, Konheim and Rodeh with the thresholds of the density of Bender,
@@ -246,15 +246,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `engineered_parallel.parallel-packed-memory-array`, the cells of the sets
   in `bench/ordered.cpp` (`std::set`, `absl::btree_set`) and of the batches
   in `bench/joins.cpp`, against the CPMA of its authors with `CPMA=<dir>`
-  (the unit `bench/pma_authors.cpp`), and section 6.Zcp9 of the manual
-  (Algorithms 6.Zcp6 to 6.Zcp8, Lemmas 6.Zcp1 to 6.Zcp5)
+  (the unit `bench/pma_authors.cpp`), and section 6.11 of the manual
+  (Algorithms 6.21 to 6.23, Lemmas 6.26 to 6.30)
 - `PackedGraph` (`graph/PackedGraph.h`), the F-Graph of Wheatman, Burns,
   Buluç and Xu, a `DynamicGraph` whose arcs are the keys of one
   `CompressedPackedMemoryArray` of 64 bits, the adjacent nodes of a node
   found by one search and read in order, with `insertEdges()` and
   `deleteEdges()` by batches on any executor; the test
   `engineered_graph.packed-graph`, its visit in breadth in `bench/graphs.cpp`
-  and section 14.4.Zcp1 of the manual
+  and section 14.4.4 of the manual
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits
@@ -333,8 +333,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sequential visit and Boost.Graph, the benchmark `bcc` of `graphs` against
   `biconnected_components()` of Boost.Graph and of `parallel` (with the
   graphs written for the Tarjan-Vishkin of GBBS under `ADS_BCC_DUMP`), and
-  section 14.5.Zbc5 of the manual (Algorithm 14.Zbc4, Lemmas 14.Zbc1 to 14.Zbc3) and
-  part of section 25.9 (Algorithm 25.Zbc3, Lemmas 25.Zbc1 and 25.Zbc2)
+  section 14.5.6 of the manual (Algorithm 14.12, Lemmas 14.16 to 14.18) and
+  part of section 25.9 (Algorithm 25.24, Lemmas 25.18 and 25.19)
 
 ### Changed
 

@@ -2026,7 +2026,7 @@ segments of suffixes tied on their first $h$ symbols are the only ones sorted
 again in the next round), its first round sorting words of $\lfloor 64 / b
 \rfloor$ codes of $b = \lceil \log_2 ( \sigma + 1 ) \rceil$ bits, and its
 LCP array is the one of `lcpArrayPhi( ex , T , SA )`; both are in
-[§25.9](25-parallel.md#sec-25-9), where [Lemma 25.Zps4](25-parallel.md#lem-25-Zps4)
+[§25.9](25-parallel.md#sec-25-9), where [Lemma 25.21](25-parallel.md#lem-25-21)
 shows that the rounds keep the suffixes sorted by their prefixes of $2 h$
 symbols. The doubling does $O( n \log n )$ work on a text of one repeated
 symbol, against the $O( n )$ of SA-IS, and takes more memory (up to $36 n$

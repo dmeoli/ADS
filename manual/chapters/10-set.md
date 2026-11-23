@@ -29,7 +29,7 @@ that may answer yes for an item that they do not hold, in exchange for a
 space that does not depend on the items ([§10.7](10-set.md#sec-10-7) to
 [§10.10](10-set.md#sec-10-10)), together with the filters of ranges of
 [§10.11](10-set.md#sec-10-11) and the sketches of streams of
-[§10.Zsk8](10-set.md#sec-10-Zsk8), which estimate the distinct items, the
+[§10.12](10-set.md#sec-10-12), which estimate the distinct items, the
 frequencies, the quantiles and the similarity of a stream in a space that
 grows at most with the logarithm of its length. In the sets of
 [§1.9](01-introduction.md#sec-1-9), `BinaryFuseFilter.h`,
@@ -1909,7 +1909,7 @@ no slot, and it is refused if fewer copies are counted.
 
 --8<-- "generated/CountingQuotientFilter-removeHash.pseudo.md"
 
-<span id="lem-10-Zqf1"></span>**Lemma 10.Zqf1.** *Let the table of a
+<span id="lem-10-20"></span>**Lemma 10.20.** *Let the table of a
 `CountingQuotientFilter` be changed only by its operations. (i) For each hash
 $h$, `countHash( h )` is the number of copies inserted, by the insertions that
 returned true, of the hashes with the fingerprint of $h$, less those removed by
@@ -1955,7 +1955,7 @@ hash with no copy in the filter is counted more than 0 only if its fingerprint
 is one of the $D$ in the filter, each equal to it with probability $2^{-p}$,
 and the claim follows by the union bound. $\square$
 
-By Lemma 10.Zqf1, the false positive rate is $D / 2^p \le \alpha \, 2^{-r}$ at
+By Lemma 10.20, the false positive rate is $D / 2^p \le \alpha \, 2^{-r}$ at
 the load $\alpha$ of the slots, in $( r + 2.125 ) / \alpha$ bits per key for
 distinct keys, as for the filter of [Pandey et al.
 2017](Z-bibliography.md#ref-pandey2017b). For $n$ keys, the constructor takes
@@ -2067,7 +2067,7 @@ $b_1$ or in $b_2$ in the same way, and removes its slot and its 0.
 
 --8<-- "generated/VectorQuotientFilter-removeHash.pseudo.md"
 
-<span id="lem-10-Zqf2"></span>**Lemma 10.Zqf2.** *Let each removal of a
+<span id="lem-10-21"></span>**Lemma 10.21.** *Let each removal of a
 `VectorQuotientFilter` concern a key whose insertion returned true and that is
 still in the filter. (i) An insertion that returns false changes nothing, and
 `maybe( x )` is true for each key $x$ still in the filter. (ii) An operation
@@ -2100,7 +2100,7 @@ equal to $t$ with probability $2^{-f}$, and the union bound over the
 fingerprints of the two buckets yields the claim. $\square$
 
 At the load $\alpha$ of the slots, $n = \alpha s B$, and the bound of Lemma
-10.Zqf2 is $2 \alpha ( s / c ) 2^{-f}$, i.e., $1.2 \alpha / 256$ for $f = 8$ and
+10.21 is $2 \alpha ( s / c ) 2^{-f}$, i.e., $1.2 \alpha / 256$ for $f = 8$ and
 $1.56 \alpha / 65536$ for $f = 16$, in $512 / ( s \alpha )$ bits per key (11.9
 and 20.3 at $\alpha = 0.9$). By the two choices the most loaded block typically
 stays close to the mean. In the tests of the library the blocks fill to a load
@@ -2144,7 +2144,7 @@ cells: each key gives an
 equation, and a key out of $S$ meets its equation with the probability that
 a fixed value equals its fingerprint.
 
-<span id="lem-10-20"></span>**Lemma 10.20.** *Let a filter answer
+<span id="lem-10-22"></span>**Lemma 10.22.** *Let a filter answer
 $\mathrm{maybe}( x )$ by testing whether a value $v( x )$, computed from
 the cells of the filter at places given by the hash of $x$, equals a
 fingerprint $f( x )$ of $b$ bits, and let $f( x )$, for a key $x$ out of
@@ -2220,7 +2220,7 @@ fuse filter by peeling ([Graf and Lemire
 
 --8<-- "generated/BinaryFuseFilter-build.pseudo.md"
 
-<span id="lem-10-21"></span>**Lemma 10.21.** *If the peeling puts all
+<span id="lem-10-23"></span>**Lemma 10.23.** *If the peeling puts all
 the keys on the stack $P$, the fingerprints assigned in the reverse order
 satisfy $F[ h_0 ] \oplus F[ h_1 ] \oplus F[ h_2 ] = f( h )$ for each key,
 and the filter has no false negative.*
@@ -2235,7 +2235,7 @@ $k_{t+1} , \ldots , k_n$. Then the assignment pops $k_n$ first and sets
 $F[ p_t ]$ so that the equation of $k_t$ holds; the later assignments
 write only $p_{t-1} , \ldots , p_1$, and $p_s$, $s < t$, is not a place of
 $k_t$, which was unpeeled when $k_s$ was peeled. Hence the equation of $k_t$
-still holds at the end, and [Lemma 10.20](10-set.md#lem-10-20) gives no
+still holds at the end, and [Lemma 10.22](10-set.md#lem-10-22) gives no
 false negative. $\square$
 
 **The Ribbon filter.** `RibbonFilter` is the standard Ribbon filter of
@@ -2263,7 +2263,7 @@ which case the build draws a new seed.
 
 --8<-- "generated/RibbonFilter-build.pseudo.md"
 
-<span id="lem-10-22"></span>**Lemma 10.22.** *If no equation is
+<span id="lem-10-24"></span>**Lemma 10.24.** *If no equation is
 unsolvable, the back substitution of lines 11 and 12 gives a solution $Z$
 of (10.10) for each key, and each insertion of an equation ends after at
 most 64 reductions.*
@@ -2412,7 +2412,7 @@ and $\mathrm{nextGEQ}( x )$ the place of the first code not smaller than
 $x$) maps the two ends of the range and checks whether a code lies in each
 cyclic range of the image.
 
-<span id="lem-10-23"></span>**Lemma 10.23.** *For every set $S$ and every
+<span id="lem-10-25"></span>**Lemma 10.25.** *For every set $S$ and every
 range of $\ell$ keys,*
 
 $$
@@ -2551,7 +2551,7 @@ is refused if there is none.
 
 --8<-- "generated/MementoFilter-insert.pseudo.md"
 
-<span id="lem-10-Zqf3"></span>**Lemma 10.Zqf3.** *Let each removal of a
+<span id="lem-10-26"></span>**Lemma 10.26.** *Let each removal of a
 `MementoFilter` concern a key whose insertion returned true and that is still
 in the filter. (i) `mayContain( a , b )` is true for each range that holds a
 key in, whatever its length. (ii) Let the high $\ell + f$ bits of the hash of
@@ -2561,7 +2561,7 @@ be the number of partitions that hold a key in. Then an empty range with $b - a
 absent point with probability at most $P \rho / m$, $\rho = ( 2^f + 2 ) / 4^f$,
 whatever the keys and the range.*
 
-*Proof.* By the proof of Lemma 10.Zqf1 the table keeps its invariant, and by
+*Proof.* By the proof of Lemma 10.20 the table keeps its invariant, and by
 construction a run holds boxes of distinct fingerprints in increasing order,
 each in one of the three forms. Since no fingerprint is 0, the form of a box is
 known from the slot after its first: a larger fingerprint starts another box,
@@ -2591,7 +2591,7 @@ turn, lie out of an empty range. A range of fewer than $2^r$ keys consults at
 most two boxes, and a point one; the union bound over the $P$ partitions then
 yields the claim. $\square$
 
-Since $P \le n$, the bound of Lemma 10.Zqf3 is at most $2 n \rho / m \approx ( n
+Since $P \le n$, the bound of Lemma 10.26 is at most $2 n \rho / m \approx ( n
 / m ) \, 2^{1-f}$, which `falsePositiveBound()` returns. The mementos lower the
 rate further on most keys, and the bound also holds for the correlated queries,
 since its only randomness is that of the hash. The table takes $8 s + 2.125$
@@ -2642,7 +2642,7 @@ class MementoFilter
  };
 ```
 
-## 10.Zsk8 Sketches of streams {#sec-10-Zsk8}
+## 10.12 Sketches of streams {#sec-10-12}
 
 A filter answers a question about one item; a *sketch* answers instead a
 question about the stream that went into it (e.g., how many distinct items it
@@ -2656,7 +2656,7 @@ it. The library uses this property in two ways. First, the sketches of the
 parts of a dataset kept on different machines, or written to files
 ([§23.7](23-external.md#sec-23-7)), may be merged later; also, a large stream
 may be cut into blocks, whose sketches are built in parallel and then merged
-(cf. [§10.Zsk8.Zsk13](10-set.md#sec-10-Zsk8-Zsk13)). We follow the survey of [Cormode and
+(cf. [§10.12.5](10-set.md#sec-10-12-5)). We follow the survey of [Cormode and
 Yi 2020](Z-bibliography.md#ref-cormode2020) for the common setting, in which
 the items are hashed to independent uniform words of 64 bits. A hash of the
 library meets this assumption on random keys, but not necessarily on structured
@@ -2668,7 +2668,7 @@ by tens of per cent. Hence, all the sketches of this section finish the hash of
 `FastHash` by the mixer of SplitMix64 ([§7.3.4](07-dictionary.md#sec-7-3-4)),
 which costs a few cycles and makes those sequences look random.
 
-### 10.Zsk8.Zsk9 Distinct items: UltraLogLog {#sec-10-Zsk8-Zsk9}
+### 10.12.1 Distinct items: UltraLogLog {#sec-10-12-1}
 
 The HyperLogLog of [Flajolet et al. 2007](Z-bibliography.md#ref-flajolet2007)
 cuts the range of the hash into $m = 2^p$ registers by its top $p$ bits, and
@@ -2703,7 +2703,7 @@ A register holds the top three bits of the set of its levels, and the top three
 bits of the union of two sets are among the top three bits of the two. Hence,
 two sketches of the same precision merge register by register by the union of
 their unpacked words, which gives the sketch of the union of their streams (cf.
-Lemma 10.Zsk1 below). From a sketch of precision $p$ one can also obtain the one
+Lemma 10.27 below). From a sketch of precision $p$ one can also obtain the one
 of any precision $q < p$. With $d = p - q$, the register $j$ of precision $q$
 gathers the $2^d$ registers $2^d j + k$, whose hashes carry $k$ in the $d$ bits
 that follow their top $q$ bits. Their levels at the precision $q$ are those at
@@ -2714,7 +2714,7 @@ bits for $k > 0$, whatever the other bits; one has
 
 --8<-- "generated/UltraLogLog-merge.pseudo.md"
 
-<span id="lem-10-Zsk1"></span>**Lemma 10.Zsk1.** *(i) The registers of an
+<span id="lem-10-27"></span>**Lemma 10.27.** *(i) The registers of an
 `UltraLogLog` depend only on the set of the distinct hashes inserted into it,
 not on their order nor on their repetitions. (ii) If $A$ and $B$ have the same
 precision, `A.merge( B )` gives the registers of the sketch of the union of the
@@ -2794,7 +2794,7 @@ branch; hence, the estimate costs $O( 1 )$ time:
 
 --8<-- "generated/UltraLogLog-estimate.pseudo.md"
 
-<span id="lem-10-Zsk2"></span>**Lemma 10.Zsk2.** *In the model of Poisson with the
+<span id="lem-10-28"></span>**Lemma 10.28.** *In the model of Poisson with the
 levels of every integer, let $S_\infty = \sum_i g( u_i , b_i )$ over the $m$
 registers. (i) $\mathrm{E}[ S_\infty ] = m \lambda^{-\tau} ( \xi + \omega(
 \log_2 \lambda ) )$, where $\xi$ is (10.13) and $\omega$ is a periodic function
@@ -2864,7 +2864,7 @@ bits are 0).
 
 --8<-- "generated/UltraLogLog-estimateML.pseudo.md"
 
-<span id="lem-10-Zsk3"></span>**Lemma 10.Zsk3.** *Let $B = \sum_\ell \beta_\ell >
+<span id="lem-10-29"></span>**Lemma 10.29.** *Let $B = \sum_\ell \beta_\ell >
 0$, $W = \sum_\ell \beta_\ell w_\ell$ and $\alpha > 0$. Then (10.14) is
 strictly concave, its derivative $f( \lambda ) = \sum_\ell \beta_\ell w_\ell /
 ( e^{\lambda w_\ell} - 1 ) - \alpha$ is decreasing and convex, its maximum
@@ -2872,8 +2872,8 @@ $\lambda^*$ lies in $[ B / ( \alpha + W / 2 ) , B / \alpha ]$, and the steps of
 Newton on $f$ from $\lambda_0 = B / ( \alpha + W / 2 )$ increase monotonically
 to $\lambda^*$. For $B = 0$ the maximum is at $\lambda = 0$.*
 
-*Proof.* Each term $\log( 1 - e^{-\lambda w} )$ is strictly concave in $\lambda
-> 0$, and $w / ( e^{\lambda w} - 1 )$ is decreasing and convex. The
+*Proof.* Each term $\log( 1 - e^{-\lambda w} )$ is strictly concave in
+$\lambda > 0$, and $w / ( e^{\lambda w} - 1 )$ is decreasing and convex. The
 inequalities $1 / y - 1 / 2 \le 1 / ( e^y - 1 ) \le 1 / y$ for $y > 0$ give $B
 / \lambda - W / 2 - \alpha \le f( \lambda ) \le B / \lambda - \alpha$, hence
 $f( \lambda_0 ) \ge 0$ and $f( B / \alpha ) \le 0$. From a point $\lambda_k \le
@@ -2914,7 +2914,7 @@ class UltraLogLog
  };
 ```
 
-### 10.Zsk8.Zsk10 Frequencies: the Count-Min and the Count sketch {#sec-10-Zsk8-Zsk10}
+### 10.12.2 Frequencies: the Count-Min and the Count sketch {#sec-10-12-2}
 
 The Count-Min sketch of [Cormode and Muthukrishnan
 2005](Z-bibliography.md#ref-cormode2005) keeps $d$ rows of $w$ counters, and an
@@ -2941,7 +2941,7 @@ top bit of the low half.
 
 --8<-- "generated/CountMinSketch-CountSketch-insertHash.pseudo.md"
 
-<span id="lem-10-Zsk4"></span>**Lemma 10.Zsk4.** *Let $f$ be the frequencies of the
+<span id="lem-10-30"></span>**Lemma 10.30.** *Let $f$ be the frequencies of the
 stream and $N = \sum_x f_x$. (i) The plain and the conservative estimates of
 `CountMinSketch` are at least $f_x$, and each counter of the conservative
 update is at most the same counter of the plain one. (ii) If the counters of an
@@ -3036,7 +3036,7 @@ class CountSketch
  };
 ```
 
-### 10.Zsk8.Zsk11 Quantiles: the KLL sketch {#sec-10-Zsk8-Zsk11}
+### 10.12.3 Quantiles: the KLL sketch {#sec-10-12-3}
 
 The sketch of [Karnin et al. 2016](Z-bibliography.md#ref-karnin2016) answers
 the ranks and the quantiles of a stream of $n$ items of any total order within
@@ -3069,7 +3069,7 @@ holds at least its own:
 
 --8<-- "generated/KllSketch-merge.pseudo.md"
 
-<span id="lem-10-Zsk5"></span>**Lemma 10.Zsk5.** *(i) At any time $\sum_h |
+<span id="lem-10-31"></span>**Lemma 10.31.** *(i) At any time $\sum_h |
 \mathit{level}_h | \, 2^h = n$, and the items retained are at most the capacity
 of the levels, $\sum_h \max( 8 , \lfloor k ( 2 / 3 )^{H - h - 1} \rceil ) \le 3
 k + 8.5 H$. (ii) For any $x$, let $R( x )$ be the weight of the retained items
@@ -3099,7 +3099,7 @@ $2^{h_c}$ is a martingale, and the inequality of Azuma gives the bound. (iv)
 The merge joins the levels, which preserves the weights, and its compactions
 are of the same kind as those of the insertions. $\square$
 
-Lemma 10.Zsk5 bounds the error by the compactions made. In turn, [Karnin et al.
+Lemma 10.31 bounds the error by the compactions made. In turn, [Karnin et al.
 2016](Z-bibliography.md#ref-karnin2016) show that with capacities of this kind
 the sum is $O( ( n / k )^2 )$, and hence that the error is $O( n / k )$ with
 high probability. We do not repeat that analysis, and give instead the
@@ -3140,7 +3140,7 @@ class KllSketch
  };
 ```
 
-### 10.Zsk8.Zsk12 Similarity: minwise hashing by one permutation {#sec-10-Zsk8-Zsk12}
+### 10.12.4 Similarity: minwise hashing by one permutation {#sec-10-12-4}
 
 The minwise hashing of [Broder 1997](Z-bibliography.md#ref-broder1997)
 estimates the similarity of Jaccard $J = | A \cap B | / | A \cup B |$ of two
@@ -3163,7 +3163,7 @@ least values, and densifies them only in `signature()`.
 
 --8<-- "generated/MinHashSketch-signature.pseudo.md"
 
-<span id="lem-10-Zsk6"></span>**Lemma 10.Zsk6.** *(i) The bins of a `MinHashSketch`
+<span id="lem-10-32"></span>**Lemma 10.32.** *(i) The bins of a `MinHashSketch`
 depend only on the set of the distinct hashes inserted, and `A.merge( B )`
 gives the bins of the sketch of $A \cup B$. (ii) Let the bins and the values of
 the distinct items be independent and uniform, let the sequences $\pi$ be
@@ -3223,7 +3223,7 @@ class MinHashSketch
  };
 ```
 
-### 10.Zsk8.Zsk13 Parallel construction {#sec-10-Zsk8-Zsk13}
+### 10.12.5 Parallel construction {#sec-10-12-5}
 
 A sketch whose merge gives the sketch of the concatenation of two streams may
 be built in parallel by cutting the stream into blocks, filling one copy of the
@@ -3233,22 +3233,22 @@ depend only on the number of the items and on the grain:
 
 --8<-- "generated/ParallelSketch-parallelSketch.pseudo.md"
 
-<span id="lem-10-Zsk7"></span>**Lemma 10.Zsk7.** *(i) For `UltraLogLog`, for
+<span id="lem-10-33"></span>**Lemma 10.33.** *(i) For `UltraLogLog`, for
 `CountMinSketch` with the plain update, for `CountSketch` and for
 `MinHashSketch`, `parallelSketch()` returns the sketch that the insertions of
 the items in their order make, register by register, on every executor. (ii)
 For a `KllSketch` it returns, on every executor, the same sketch, whose ranks
-have the guarantee of Lemma 10.Zsk5 on the whole stream.*
+have the guarantee of Lemma 10.31 on the whole stream.*
 
 *Proof.* (i) The merge of these sketches is the union, the sum or the least
-value, counter by counter (cf. Lemmas 10.Zsk1, 10.Zsk4 and 10.Zsk6), and these
+value, counter by counter (cf. Lemmas 10.27, 10.30 and 10.32), and these
 operations are associative and commutative. (ii) The blocks, the seed of the
 copy of each block (its first index, by `reseed()`) and the order of the merges
-do not depend on the executor, and Lemma 10.Zsk5 (iv) applies to the merges.
+do not depend on the executor, and Lemma 10.31 (iv) applies to the merges.
 $\square$
 
 A conservative Count-Min sketch built in parallel gets counters between the
-frequencies and those of the plain update (cf. Lemma 10.Zsk4 (iv)). Hence, it
+frequencies and those of the plain update (cf. Lemma 10.30 (iv)). Hence, it
 keeps the bound of the plain update, although its counters may differ from
 those of the sequential sketch. The copies of a `KllSketch` are reseeded, since
 copies of one generator would flip the same coins on all the blocks. In fact,
@@ -3275,7 +3275,7 @@ const double distinct = U.estimate() , median = Q.quantile( 0.5 );
 ( void )median;
 ```
 
-## 10.12 Discussion and references {#sec-10-12}
+## 10.13 Discussion and references {#sec-10-13}
 
 The realizations of [§10.2](10-set.md#sec-10-2) to [§10.4](10-set.md#sec-10-4),
 with their exercises, are those of chapter 8 of [Montresor
@@ -3306,7 +3306,7 @@ intersections and of the filters with the best implementations available
 and Memento) belongs to the
 campaign of Appendix B; we give no number here.
 
-The sketches of [§10.Zsk8](10-set.md#sec-10-Zsk8) and their analyses are surveyed
+The sketches of [§10.12](10-set.md#sec-10-12) and their analyses are surveyed
 by [Cormode and Yi 2020](Z-bibliography.md#ref-cormode2020). The HyperLogLog of
 [Flajolet et al. 2007](Z-bibliography.md#ref-flajolet2007) has many engineered
 descendants, among which the sketch of DataSketches ([Apache
@@ -3328,7 +3328,7 @@ same process.
 
 The filters of [§10.7](10-set.md#sec-10-7) to
 [§10.11](10-set.md#sec-10-11) and the sketches of
-[§10.Zsk8](10-set.md#sec-10-Zsk8) are persistent
+[§10.12](10-set.md#sec-10-12) are persistent
 ([§23.7](23-external.md#sec-23-7)). Thus a filter built once on the keys of
 a database may be written by `store()` and opened by `restoreMapped()`,
 with its blocks, buckets, lines and fingerprints viewed in the mapping;
@@ -3339,7 +3339,7 @@ standard library, since the values of `std::hash` depend on its
 implementation. Those on `FastHash` are read in the same way on any
 machine.
 
-## 10.13 Exercises {#sec-10-13}
+## 10.14 Exercises {#sec-10-14}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
@@ -3413,7 +3413,7 @@ Each exercise names the test of the library that solves it (run it with
     `sketches.ultraloglog-estimates`.
 24. Estimate the frequencies of a stream of a Zipf law by the Count-Min
     sketch, with the plain and the conservative update, and by the Count
-    sketch, and check the bounds of Lemma 10.Zsk4. Tests: `sketches.count-min`,
+    sketch, and check the bounds of Lemma 10.30. Tests: `sketches.count-min`,
     `sketches.count-sketch`.
 25. Build the KLL sketch with the lazy compaction, merge sketches of the
     parts of a stream, and check the errors of the ranks. Tests:

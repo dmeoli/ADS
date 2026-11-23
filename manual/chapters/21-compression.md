@@ -34,7 +34,7 @@ are easy to code ([§21.10](21-compression.md#sec-21-10)). The transform is also
 an index of the text, which [§21.11](21-compression.md#sec-21-11) builds in
 four forms of decreasing space. Finally, the light-weight codes of the columns
 of a database, for integers, floating-point numbers and strings, are in
-[§21.Zlc7](21-compression.md#sec-21-Zlc7). In the sets of
+[§21.12](21-compression.md#sec-21-12). In the sets of
 [§1.9](01-introduction.md#sec-1-9), `ArithmeticCoding.h`, `BurrowsWheeler.h`,
 `CanonicalHuffman.h`, `Entropy.h`, `FMIndex.h`, `IntegerCodes.h`, `LempelZiv.h`
 and `PPM.h` are base and the other headers of this chapter are advanced, while
@@ -1501,12 +1501,12 @@ longest common prefixes). Closer sources come from a walk of the suffix array
 away from the rank of $i$, by decreasing lcp, for at most
 `LZBicriteriaModel::candidates` suffixes. Also, each class inherits from $i -
 1$ the copy one symbol shorter from the same distance (line 15 of [Algorithm
-21.Zlz3](21-compression.md#alg-21-Zlz3)). Hence, the lengths of the bounded windows
+21.23](21-compression.md#alg-21-23)). Hence, the lengths of the bounded windows
 are exact when the walk ends before its bound, and possibly too short
 otherwise, and what follows holds w.r.t. the best parse of this graph, which
 need not be the best parse of the text.
 
-<span id="alg-21-Zlz3"></span>**Algorithm 21.Zlz3.** The bicriteria parse
+<span id="alg-21-23"></span>**Algorithm 21.23.** The bicriteria parse
 ([Farruggia, Ferragina, Frangioni and Venturini
 2014](Z-bibliography.md#ref-farruggia2014)), its code and its decoder.
 
@@ -1520,7 +1520,7 @@ We first collect the properties of the graph on which the rest depends; (iii)
 is Theorem 4 of the paper, which allows each shortest path to relax only the
 maximal arcs.
 
-<span id="lem-21-Zlz1"></span>**Lemma 21.Zlz1.** *Let $i$ be a place of the text.
+<span id="lem-21-13"></span>**Lemma 21.13.** *Let $i$ be a place of the text.
 (i) The space and the time of the arc $( i , i + \ell )$, a copy or a run, do
 not decrease with $\ell$. (ii) If $( i , j )$ is an arc, then for each $i <
 i' < j$ the graph has an arc $( i' , j )$ of the same kind, whose space and
@@ -1572,10 +1572,10 @@ prefix of $\pi_1$ up to its last place $v' \le v$ and the arc $( v' , v )$ cut
 from the arc of $\pi_1$ across $v$, then the arc $( v , v'' )$ cut from the arc
 of $\pi_2$ across $v$, with $v''$ the first place of $\pi_2$ not before $v$,
 and the suffix of $\pi_2$ from $v''$; both cut arcs are in the graph, by (ii)
-of [Lemma 21.Zlz1](21-compression.md#lem-21-Zlz1) and by the prefix of a copy being
+of [Lemma 21.13](21-compression.md#lem-21-13) and by the prefix of a copy being
 a copy from the same source.
 
-<span id="lem-21-Zlz2"></span>**Lemma 21.Zlz2.** *Let $c_{\max}$ and $r_{\max}$ be
+<span id="lem-21-14"></span>**Lemma 21.14.** *Let $c_{\max}$ and $r_{\max}$ be
 the largest weights of an arc. (i) If $\pi_1$ and $\pi_2$ are
 $\lambda$-optimal, then $\Lambda( \mathrm{ps}( \pi_1 , \pi_2 , v ) , \lambda
 ) \le \varphi( \lambda ) + c_{\max} + \lambda r_{\max}$ for each place $v$ of
@@ -1592,7 +1592,7 @@ $w_\lambda( \pi_A ) + w_\lambda( \pi_B ) = w_\lambda( \pi_1 ) + w_\lambda(
 \pi_2 )$. If $v$ is inside the arc $( v' , v'' )$ of $\pi_1$, this arc is
 replaced by $( v' , v )$ in $\pi_A$ and by $( v , v'' )$ in $\pi_B$, and since
 $w_\lambda( v' , v ) \le w_\lambda( v' , v'' )$ by (i) of [Lemma
-21.Zlz1](21-compression.md#lem-21-Zlz1) one has $w_\lambda( \pi_A ) + w_\lambda(
+21.13](21-compression.md#lem-21-13) one has $w_\lambda( \pi_A ) + w_\lambda(
 \pi_B ) \le w_\lambda( \pi_1 ) + w_\lambda( \pi_2 ) + c_{\max} + \lambda
 r_{\max}$; the case of $v$ inside an arc of $\pi_2$ is symmetric. Hence
 $\Lambda( \pi_A , \lambda ) + \Lambda( \pi_B , \lambda ) \le 2 \varphi( \lambda
@@ -1600,7 +1600,7 @@ $\Lambda( \pi_A , \lambda ) + \Lambda( \pi_B , \lambda ) \le 2 \varphi( \lambda
 \lambda )$ gives the claim. (ii) If $v$ is on $\pi_1$, the prefix up to $w$ is
 the prefix up to $v$ followed by the arc $( v , w )$; otherwise, it is the same
 prefix with its last arc $( u , v )$ replaced by $( u , w )$, which weighs no
-less by (i) of [Lemma 21.Zlz1](21-compression.md#lem-21-Zlz1) and at most the
+less by (i) of [Lemma 21.13](21-compression.md#lem-21-13) and at most the
 largest weights. Either way it grows by between 0 and $c_{\max}$ in $c$ and
 between 0 and $r_{\max}$ in $r$. Symmetrically, by (ii) of the same lemma the
 suffix from $w$ weighs less than that from $v$ by between 0 and the largest
@@ -1614,8 +1614,8 @@ least $c$ within $R + \sigma$, for a slack $\sigma \ge 0$ (0 by default). The
 paper takes $\sigma = 2 t_{\max}$ when the time is bounded; the following bound
 covers any slack, $\sigma = 0$ (a parse within the bound) included.
 
-<span id="thm-21-Zlz4"></span>**Theorem 21.Zlz4.** *If the loop of [Algorithm
-21.Zlz3](21-compression.md#alg-21-Zlz3) stops at line 8 with the multiplier
+<span id="thm-21-4"></span>**Theorem 21.4.** *If the loop of [Algorithm
+21.23](21-compression.md#alg-21-23) stops at line 8 with the multiplier
 $\lambda^*$, then the parse $\pi$ returned with the slack $\sigma$ has $r( \pi
 ) \le R + \sigma$ and*
 
@@ -1635,7 +1635,7 @@ $R$, and $\pi_L$, the swap at $n$. If $r( \pi_L ) \le R + \sigma$, then $c(
 \lambda^* )$, since $r( \pi_L ) > R$. Otherwise, as $v$ runs over the places of
 the two paths from 0 to $n$, the weight $r$ of the swap goes from at most $R$
 to more than $R + \sigma$ by steps of at most $r_{\max}$ ([Lemma
-21.Zlz2](21-compression.md#lem-21-Zlz2), (ii)); hence some swap $\pi'$ has $R +
+21.14](21-compression.md#lem-21-14), (ii)); hence some swap $\pi'$ has $R +
 \sigma - r_{\max} < r( \pi' ) \le R + \sigma$, and by (i) of the same lemma $c(
 \pi' ) \le \varphi( \lambda^* ) + c_{\max} + \lambda^* ( R + r_{\max} - r( \pi'
 ) ) < \varphi( \lambda^* ) + c_{\max} + \lambda^* ( 2 r_{\max} - \sigma )$. The
@@ -1645,7 +1645,7 @@ $R$ and each $\lambda \ge 0$. $\square$
 
 The result of `lzBicriteriaParse()` carries the phrases, their space (the
 header included) and time, the lower bound $\varphi( \lambda^* )$, the
-multiplier and the gap of [Theorem 21.Zlz4](21-compression.md#thm-21-Zlz4); the gap
+multiplier and the gap of [Theorem 21.4](21-compression.md#thm-21-4); the gap
 is infinite if the loop reaches `LZBicriteriaModel::iterations` shortest paths
 before line 8, and a bound out of reach gives the parse of least bounded
 weight, marked as not feasible. Since $c_{\max}$ and $r_{\max}$ are the weights
@@ -1700,7 +1700,7 @@ symbols ([Figure 21.8](21-compression.md#fig-21-8)).
 
 ![Figure 21.8. The sorted rotations of abracadabra\$, with the suffix array, the first column $F$ and the last column $L$ = ard\$rcaaaabb; on the right, the ranges of the rows prefixed by a, ra, bra and abra, which the backward search of abra finds in this order ([§21.11](21-compression.md#sec-21-11)).](../figures/compression-bwt.svg){#fig-21-8}
 
-<span id="alg-21-23"></span>**Algorithm 21.23.** The transform, the
+<span id="alg-21-24"></span>**Algorithm 21.24.** The transform, the
 LF-mapping and the inverse transform
 ([Burrows and Wheeler 1994](Z-bibliography.md#ref-burrows1994)).
 
@@ -1712,7 +1712,7 @@ LF-mapping and the inverse transform
 
 The transform can be inverted, by a property that links its two columns.
 
-<span id="lem-21-13"></span>**Lemma 21.13 (the LF-mapping).** *The $k$-th
+<span id="lem-21-15"></span>**Lemma 21.15 (the LF-mapping).** *The $k$-th
 occurrence of a symbol $c$ in $L$ and the $k$-th occurrence of $c$ in $F$
 are the same symbol of $s$; hence the row*
 
@@ -1730,15 +1730,15 @@ row $j$ (without its last symbol), which compare as the rows $i$ and $j$
 did. Hence the rows that start with $c$ are in the order of the occurrences
 of $c$ in $L$, and they begin at the row $C[ c ]$ of $F$. $\square$
 
-<span id="lem-21-14"></span>**Lemma 21.14.** *Starting from the row 0,
+<span id="lem-21-16"></span>**Lemma 21.16.** *Starting from the row 0,
 the $n$ symbols $L[ i_0 ] , L[ i_1 ] , \ldots , L[ i_{n-1} ]$ with $i_0 = 0$
 and $i_{j+1} = \mathit{LF}( i_j )$ are $s[ n - 1 ] , s[ n - 2 ] , \ldots ,
 s[ 0 ]$; hence the inverse transform of
-[Algorithm 21.23](21-compression.md#alg-21-23) gives back $s$ in $O( n +
+[Algorithm 21.24](21-compression.md#alg-21-24) gives back $s$ in $O( n +
 \sigma )$ time.*
 
 *Proof.* The row 0 is the rotation $\$ s$, whose last symbol is $s[ n -
-1 ]$. By [Lemma 21.13](21-compression.md#lem-21-13) the row $\mathit{LF}( i
+1 ]$. By [Lemma 21.15](21-compression.md#lem-21-15) the row $\mathit{LF}( i
 )$ is the row $i$ rotated by one place to the right, and its last symbol is
 therefore the symbol that precedes, in the cyclic string $s \$$, the last
 symbol of the row $i$. By induction the row $i_j$ is $s \$$ rotated right
@@ -1767,9 +1767,9 @@ replaces each symbol with its place in a list of the alphabet, and then moves
 it to the front. Hence the runs of few symbols of $L$ become runs of small
 integers (on the alphabet abcno, bananacocco becomes 1 1 3 1 1 1 3 4 1 0 1), in
 $O( \sigma )$ time per symbol here ([Algorithm
-21.24](21-compression.md#alg-21-24)).
+21.25](21-compression.md#alg-21-25)).
 
-<span id="lem-21-15"></span>**Lemma 21.15.** *Writing the place $p$ of each
+<span id="lem-21-17"></span>**Lemma 21.17.** *Writing the place $p$ of each
 symbol in the move-to-front of $s$ as $\gamma( p + 1 )$ takes at most
 $n ( 2 H_0 + 1 ) + O( \sigma \log \sigma )$ bits.*
 
@@ -1783,13 +1783,13 @@ by the concavity of the logarithm their logarithms sum to at most $m \log_2( n
 \sigma )$. $\square$
 
 Each of the three codes of
-[Algorithm 21.24](21-compression.md#alg-21-24) has its inverse,
+[Algorithm 21.25](21-compression.md#alg-21-25) has its inverse,
 `inverseMoveToFront()` (on a string or on the bytes), `runLengthDecode()`
 and `zeroRunDecode()`, which the audits of the encoders apply to their
 output; the forms of `moveToFront()` and `inverseMoveToFront()` without an
 alphabet take the bytes $0 , \ldots , 255$ in their order.
 
-<span id="alg-21-24"></span>**Algorithm 21.24.** The move-to-front and the
+<span id="alg-21-25"></span>**Algorithm 21.25.** The move-to-front and the
 run-length codes, as bzip2 chains them, with their inverses.
 
 --8<-- "generated/BurrowsWheeler-moveToFront.pseudo.md"
@@ -1814,7 +1814,7 @@ symbol), with the other integers grown by 1 and a run of $m$ zeros written in
 the code of Wheeler (the binary digits of $m + 1$ after its leading 1, as the
 symbols 0 and 1; e.g., the integers 0 0 0 0 0 3 become 1 0 4). Last comes the
 canonical code of Huffman of the block, with lengths up to 20, written in a
-preamble of 5 bits each ([Algorithm 21.25](21-compression.md#alg-21-25)). bzip2
+preamble of 5 bits each ([Algorithm 21.26](21-compression.md#alg-21-26)). bzip2
 writes the digits of the runs from the least significant one, and it splits a
 block in groups of 50 symbols coded by up to 6 tables, which we do not
 reproduce. Coding $L$ in this way takes at most $( 5 + \epsilon ) n H_k^*( s )$
@@ -1824,7 +1824,7 @@ of $k$ symbols by a code of order 0 reaches $n H_k$ plus lower terms for each
 $k$ at once, which is the compression boosting of [Ferragina, Giancarlo,
 Manzini and Sciortino 2005](Z-bibliography.md#ref-ferragina2005b).
 
-<span id="alg-21-25"></span>**Algorithm 21.25.** The decompression of
+<span id="alg-21-26"></span>**Algorithm 21.26.** The decompression of
 bzip, each block undone in the opposite order.
 
 --8<-- "generated/BurrowsWheeler-bzipDecompress.pseudo.md"
@@ -1838,7 +1838,7 @@ the text and its suffix array (each index of this section gives its space by
 pattern $P$ are the rows of $M'$ prefixed by $P$, a range of rows, and the
 range can be found from $L$ with no access to the text.
 
-<span id="lem-21-16"></span>**Lemma 21.16 (the backward search).** *If the
+<span id="lem-21-18"></span>**Lemma 21.18 (the backward search).** *If the
 rows prefixed by a string $Q$ are $[ \mathit{first} , \mathit{last} )$,
 those prefixed by $c Q$ are*
 
@@ -1852,20 +1852,20 @@ $$
 of $c$ in $L[ \mathit{first} .. \mathit{last} - 1 ]$ are those of ranks
 $\mathrm{rank}_c( L , \mathit{first} )$ to
 $\mathrm{rank}_c( L , \mathit{last} ) - 1$ among the occurrences of $c$ in
-$L$, and by [Lemma 21.13](21-compression.md#lem-21-13) their images are the
+$L$, and by [Lemma 21.15](21-compression.md#lem-21-15) their images are the
 consecutive rows that (21.21) gives. $\square$
 
 Hence `count( P )` of `FMIndex.h` applies (21.21) from the last symbol of
 $P$ to the first, $p$ steps of two ranks each, starting from all the rows;
 the occurrences are $\mathit{last} - \mathit{first}$, found with no access
-to the text ([Algorithm 21.26](21-compression.md#alg-21-26)). On the example of
+to the text ([Algorithm 21.27](21-compression.md#alg-21-27)). On the example of
 [Figure 21.8](21-compression.md#fig-21-8), the pattern abra goes
 through the ranges $[ 1 , 6 )$ of a, $[ 10 , 12 )$ of ra, $[ 6 , 8 )$ of
 bra and $[ 2 , 4 )$ of abra. The last step, from bra, is
 $C[ a ] + \mathrm{rank}_a( L , 6 ) = 1 + 1 = 2$ and $C[ a ] +
 \mathrm{rank}_a( L , 8 ) = 1 + 3 = 4$.
 
-<span id="alg-21-26"></span>**Algorithm 21.26.** The construction, the rank
+<span id="alg-21-27"></span>**Algorithm 21.27.** The construction, the rank
 in $L$, the backward search, the location of the occurrences and the
 extraction of a substring in the FM-index
 ([Ferragina and Manzini 2005](Z-bibliography.md#ref-ferragina2005a)).
@@ -1894,12 +1894,12 @@ the row of the first sampled suffix at or after $j$, by $j - i + O( \mu )$
 steps of the LF-mapping, each of which reads the symbol before the current
 suffix.
 
-<span id="lem-21-17"></span>**Lemma 21.17.** *From any row, at most
+<span id="lem-21-19"></span>**Lemma 21.19.** *From any row, at most
 $\mu - 1$ steps of the LF-mapping reach a marked row, and the suffix of the
 starting row is the sample of the marked row plus the number of steps;
 `extract( i , j )` makes at most $j - i + \mu$ steps.*
 
-*Proof.* By [Lemma 21.13](21-compression.md#lem-21-13), a step from the row
+*Proof.* By [Lemma 21.15](21-compression.md#lem-21-15), a step from the row
 of the suffix $x \ge 1$ leads to the row of the suffix $x - 1$. Among $x ,
 x - 1 , \ldots , x - \mu + 1$ one is a multiple of $\mu$ (or the suffix 0
 is reached first, which is a multiple of $\mu$), and the row of a multiple
@@ -1936,9 +1936,9 @@ Its samples are $\lceil n / \mu \rceil$ places and as many rows of $\lceil
 rank of `CompactRankSelect`, since a step of `locate()` tests only the bit and
 the rank is needed once per occurrence. Finally, the template parameter `RS`
 chooses the rank and select of the tree, `RankSelect` for time or
-`CompactRankSelect` for space ([Algorithm 21.27](21-compression.md#alg-21-27)).
+`CompactRankSelect` for space ([Algorithm 21.28](21-compression.md#alg-21-28)).
 
-<span id="alg-21-27"></span>**Algorithm 21.27.** The construction, the
+<span id="alg-21-28"></span>**Algorithm 21.28.** The construction, the
 backward search, the location and the extraction in the FM-index on the
 wavelet tree of Huffman
 ([Mäkinen and Navarro 2005](Z-bibliography.md#ref-makinen2005)).
@@ -1994,7 +1994,7 @@ LF-mapping of their first rows, onto which each run is shifted alike.
 To locate the occurrences, two properties of the suffix array on the runs
 replace the samples each $\mu$ places.
 
-<span id="lem-21-18"></span>**Lemma 21.18 (the toehold).** *Let
+<span id="lem-21-20"></span>**Lemma 21.20 (the toehold).** *Let
 $[ \mathit{first} , \mathit{last} )$ be the rows prefixed by $Q$, and
 $v = \mathit{SA}[ \mathit{last} - 1 ]$. If $L[ \mathit{last} - 1 ] = c$,
 the last row prefixed by $c Q$ is $\mathit{LF}( \mathit{last} - 1 )$, of
@@ -2003,7 +2003,7 @@ last occurrence of $c$ in $L[ \mathit{first} .. \mathit{last} - 2 ]$,
 which ends a run, and its suffix is the sample at the end of that run less
 1.*
 
-*Proof.* By [Lemma 21.16](21-compression.md#lem-21-16), the last row
+*Proof.* By [Lemma 21.18](21-compression.md#lem-21-18), the last row
 prefixed by $c Q$ is the image of the last row $k$ of the range with
 $L[ k ] = c$. Since the LF-mapping moves one place to the left in $s$, the
 suffix of the image is $\mathit{SA}[ k ] - 1$. If
@@ -2018,7 +2018,7 @@ the ranks. All the other occurrences follow from the function
 $\phi( \mathit{SA}[ i ] ) = \mathit{SA}[ i - 1 ]$, which lists the suffixes
 of the range from the last row up.
 
-<span id="lem-21-19"></span>**Lemma 21.19 (the function $\phi$).** *With
+<span id="lem-21-21"></span>**Lemma 21.21 (the function $\phi$).** *With
 $p_j$ the first row of the run $j$,*
 
 $$
@@ -2030,7 +2030,7 @@ $$
 the end of the run $j - 1$.*
 
 *Proof.* If the row $i$ of $x = \mathit{SA}[ i ]$ starts no run, then $L[ i - 1
-] = L[ i ]$, and [Lemma 21.13](21-compression.md#lem-21-13) maps the rows $i -
+] = L[ i ]$, and [Lemma 21.15](21-compression.md#lem-21-15) maps the rows $i -
 1$ and $i$ to adjacent rows, those of the suffixes $\phi( x ) - 1$ and $x - 1$.
 Hence $\phi( x - 1 ) = \phi( x ) - 1$, i.e., $\phi$ shifts $x - 1$ and $x$
 alike. Now, the places $x$ whose row starts a run are the $\mathit{SA}[ p_j ]$,
@@ -2046,12 +2046,12 @@ $\mathit{SA}[ 3 ] = 0$. By (21.23) with $y = 0 = \mathit{SA}[ p_3 ]$, $\phi( 0
 and 7. All of it takes $O( r )$ words: 5 sequences of $r$ integers of at most
 $\lceil \log_2 n \rceil$ bits, and the heads, whose rank is that of
 `CompactRankSelect`, the smallest ([Algorithm
-21.28](21-compression.md#alg-21-28)). We build the transform from the suffix
+21.29](21-compression.md#alg-21-29)). We build the transform from the suffix
 array, in $O( n )$ time and words, while in the literature the r-index is built
 in $O( r )$ words from the run-length transform, which `RIndex` does not
 attempt.
 
-<span id="alg-21-28"></span>**Algorithm 21.28.** The construction of the
+<span id="alg-21-29"></span>**Algorithm 21.29.** The construction of the
 r-index, the backward search on the runs, and the location by the toehold
 and $\phi$ ([Gagie, Navarro and Prezza 2020](Z-bibliography.md#ref-gagie2020)).
 
@@ -2085,9 +2085,9 @@ on `RankSelect`; the search then maps both rows by the LF-mapping, in $O( 1 )$
 time each. The function `locate( P )` keeps $\mathit{SA}[ e ]$ along the
 search, from the samples of $\mathit{SA}$ at the end of each interval with the
 interval of $\phi$ of each. It then lists the occurrences by $e - s$ steps of
-$\phi$, each in $O( 1 )$ time ([Algorithm 21.29](21-compression.md#alg-21-29)).
+$\phi$, each in $O( 1 )$ time ([Algorithm 21.30](21-compression.md#alg-21-30)).
 
-<span id="alg-21-29"></span>**Algorithm 21.29.** The construction of the
+<span id="alg-21-30"></span>**Algorithm 21.30.** The construction of the
 r-index on move structures, its count and its location
 ([Bertram, Fischer and Nalbach 2024](Z-bibliography.md#ref-bertram2024)).
 
@@ -2100,7 +2100,7 @@ r-index on move structures, its count and its location
 The backward search of `MoveRIndex` gives the same ranges as that of
 `RIndex`, with a constant number of moves per symbol.
 
-<span id="lem-21-20"></span>**Lemma 21.20.** *For a pattern $P$ of
+<span id="lem-21-22"></span>**Lemma 21.22.** *For a pattern $P$ of
 $p \ge 1$ symbols, `count( P )` returns the number of the occurrences of
 $P$ in $s$, after at most $2 p$ moves of the LF-mapping and, for each
 symbol $c$ of $P$ whose tag differs from that of $i_s$ (or $i_e$), one
@@ -2115,15 +2115,15 @@ hence the first row at or after $s$ with $L = c$ is $s$ if the tag of
 $i_s$ is $c$, and otherwise the start of the next interval of tag $c$,
 found by a rank and a select on the tags, and symmetrically for $e$. If
 these two rows cross, $c Q$ does not occur; otherwise, by
-[Lemma 21.16](21-compression.md#lem-21-16), their images are the first and
+[Lemma 21.18](21-compression.md#lem-21-18), their images are the first and
 the last row prefixed by $c Q$. For `locate()`, the sample of $e$ follows
-[Lemma 21.18](21-compression.md#lem-21-18), each interval keeping the
+[Lemma 21.20](21-compression.md#lem-21-20), each interval keeping the
 sample $\mathit{SA}$ of its last row with the interval of $\phi$ of the
 place before, and the other occurrences follow by
-[Lemma 21.19](21-compression.md#lem-21-19), $\phi$ shifting alike the
+[Lemma 21.21](21-compression.md#lem-21-21), $\phi$ shifting alike the
 places between two samples of the starts of the runs. Both move
 structures are balanced, and each move takes at most 3 steps by
-[Lemma 22.19](22-succinct.md#lem-22-19). $\square$
+[Lemma 22.21](22-succinct.md#lem-22-21). $\square$
 
 We compare the four indexes in [Table 21.8](21-compression.md#tab-21-8). Their
 space and speed, measured on a common set of texts, belong to the campaign
@@ -2140,7 +2140,7 @@ occurrences.
 | `RIndex` | $O( r )$ words | $O( p )$ ranks on the runs, each with a predecessor search | $O( \mathit{occ} )$ predecessor searches |
 | `MoveRIndex` | $O( r )$ words, a few more per run | $O( p )$ steps of $O( 1 )$, plus the ranks for the intervals of another symbol | $O( \mathit{occ} )$, each in $O( 1 )$ |
 
-## 21.Zlc7 Light-weight compression of columns {#sec-21-Zlc7}
+## 21.12 Light-weight compression of columns {#sec-21-12}
 
 The coders of the previous sections are made for a text, or a list of integers,
 that is decoded whole (or nearly so), and their decoders do a work per symbol
@@ -2201,7 +2201,7 @@ the number of its run. These numbers are nondecreasing and are coded by DELTA
 on 16 bits, with differences of 0 or 1 bit; hence, the decoder of the runs is
 that of the differences followed by a gather.
 
-<span id="lem-21-Zlc1"></span>**Lemma 21.Zlc1.** *Let $W = 8 \cdot 2^k \in \{ 8 ,
+<span id="lem-21-23"></span>**Lemma 21.23.** *Let $W = 8 \cdot 2^k \in \{ 8 ,
 16 , 32 , 64 \}$ and $L = 1024 / W$. (i) $\tau$ is a permutation of $\{ 0 ,
 \ldots , 1023 \}$. (ii) For each lane $l < L$ and each row $r = 8 o + s < W$,
 the place $p = 16 \rho( o ) + 128 s + l$ has $p \bmod L = l$ and $\tau( p ) =
@@ -2241,7 +2241,7 @@ i.e., exactly). For RLE, the numbers of the runs come back by DELTA, and the
 value of each place is that of its run. The last vector is filled with its
 last value, which the decoder cuts. $\square$
 
-<span id="alg-21-Zlc4"></span>**Algorithm 21.Zlc4.** The packing and the codes of
+<span id="alg-21-31"></span>**Algorithm 21.31.** The packing and the codes of
 FastLanes ([Afroozeh and Boncz 2023](Z-bibliography.md#ref-afroozeh2023)).
 
 --8<-- "generated/FastLanes-fastLanesPack.pseudo.md"
@@ -2299,7 +2299,7 @@ bytes each. The cut and the dictionary minimize the cost on the sample of the
 row group, and the row group takes ALP-RD instead of ALP when the cost per
 value of the former is lower.
 
-<span id="lem-21-Zlc2"></span>**Lemma 21.Zlc2.** *Assume that the products of the
+<span id="lem-21-24"></span>**Lemma 21.24.** *Assume that the products of the
 type are those of IEEE 754, evaluated as they are written (i.e., with no
 reassociation, which options such as `-ffast-math` allow). Then `alpDecompress<
 F >()` of the code of `alpCompress()` of $n$ values gives back the bits of each
@@ -2313,7 +2313,7 @@ c$ bytes.*
 compares the bits of $x$ with those of the product $d \cdot 10^f \cdot 10^{-e}$
 of (21.25); the decoder computes the same product, of the same operands in the
 same order, on the same $d$, which the FOR of FastLanes gives back modulo $2^W$
-by (iii) of [Lemma 21.Zlc1](21-compression.md#lem-21-Zlc1) with no loss. Its
+by (iii) of [Lemma 21.23](21-compression.md#lem-21-23) with no loss. Its
 conversion to the type is exact too, since $| d | < 2^{51}$ ($2^{22}$ for
 `float`) is below $2^{53}$ ($2^{24}$), the integers that the type holds
 exactly. An exception is written as its bits and set by the decoder after the
@@ -2326,7 +2326,7 @@ the $d$ that is tried, and the sizes follow from the format. $\square$
 Thus, the exactness rests on the test of the encoder, while the rounding may
 (in principle) choose a $d$ off by one, at the price of an exception.
 
-<span id="alg-21-Zlc5"></span>**Algorithm 21.Zlc5.** ALP and ALP-RD ([Afroozeh,
+<span id="alg-21-32"></span>**Algorithm 21.32.** ALP and ALP-RD ([Afroozeh,
 Kuffó and Boncz 2023](Z-bibliography.md#ref-afroozeh2023alp)).
 
 --8<-- "generated/ALP-alpCompress.pseudo.md"
@@ -2367,7 +2367,7 @@ table. `FSSTColumn` keeps the codes of all the strings one after the other,
 with the place where each one begins, and `serialize()` writes the table as the
 number of its symbols, their lengths and their bytes.
 
-<span id="lem-21-Zlc3"></span>**Lemma 21.Zlc3.** *(i) For every table and every
+<span id="lem-21-25"></span>**Lemma 21.25.** *(i) For every table and every
 string $s$, `encode()` writes at most $2 | s |$ bytes, as many only if every
 byte is escaped, and `decode()` of them gives back $s$, writing at most 8 bytes
 per code. (ii) Every table, built or deserialized, holds at most 255 distinct
@@ -2392,7 +2392,7 @@ the table and their concatenations cut at 8 bytes, and the bytes, each of 1 to
 8 bytes. Each generation codes at most the sample, counts the pairs that occur
 (and only those, which it lists), and sorts its candidates. $\square$
 
-<span id="alg-21-Zlc6"></span>**Algorithm 21.Zlc6.** The construction of the table
+<span id="alg-21-33"></span>**Algorithm 21.33.** The construction of the table
 of FSST, its encoder and its decoder ([Boncz, Neumann and Leis
 2020](Z-bibliography.md#ref-boncz2020)).
 
@@ -2409,7 +2409,7 @@ vector, or a single string) and in the choice of the code of each unit by a
 sample. How they compare with the codes of their authors and with the general
 compressors is measured by the campaign of Appendix B.
 
-## 21.12 The interface {#sec-21-12}
+## 21.13 The interface {#sec-21-13}
 
 We collect here, header by header, the declarations of the namespace `ADS`
 that a user calls in this chapter, without the contracts, the documentation
@@ -2418,7 +2418,7 @@ section that describes its functions, and the two examples at the end show the
 main structures at work. The examples compile against the headers as they
 stand, and their assertions hold.
 
-`ALP.h` ([§21.Zlc7](21-compression.md#sec-21-Zlc7)).
+`ALP.h` ([§21.12](21-compression.md#sec-21-12)).
 
 ```cpp
 // declarations of <ADS/compression/ALP.h>
@@ -2597,7 +2597,7 @@ double entropy( std::string_view s );
 double entropy( std::string_view s , std::size_t k );
 ```
 
-`FastLanes.h` ([§21.Zlc7](21-compression.md#sec-21-Zlc7)).
+`FastLanes.h` ([§21.12](21-compression.md#sec-21-12)).
 
 ```cpp
 // declarations of <ADS/compression/FastLanes.h>
@@ -2650,7 +2650,7 @@ class FMIndex
  };
 ```
 
-`FSST.h` ([§21.Zlc7](21-compression.md#sec-21-Zlc7)).
+`FSST.h` ([§21.12](21-compression.md#sec-21-12)).
 
 ```cpp
 // declarations of <ADS/compression/FSST.h>
@@ -3046,7 +3046,7 @@ const ADS::FSSTColumn col( urls );
 assert( col[ 1 ] == "https://www.unipi.it" );
 ```
 
-## 21.13 Discussion and references {#sec-21-13}
+## 21.14 Discussion and references {#sec-21-14}
 
 The entropy and the bound of [Lemma 21.1](21-compression.md#lem-21-1) are those
 of [Shannon 1948](Z-bibliography.md#ref-shannon1948), the optimal code of the
@@ -3097,7 +3097,7 @@ decoder overlap. How much each of these choices may gain, against the plain
 forms of the book and against the implementations of reference, is measured by
 the campaign of Appendix B, and no number is given here.
 
-The light-weight codes of [§21.Zlc7](21-compression.md#sec-21-Zlc7) come from the
+The light-weight codes of [§21.12](21-compression.md#sec-21-12) come from the
 engines of the analytical databases, starting from the patched code of
 [Zukowski et al. 2006](Z-bibliography.md#ref-zukowski2006), and their layout
 is that of FastLanes of [Afroozeh and Boncz
@@ -3118,7 +3118,7 @@ its wavelet trees as views over the mapping. We remark that an r-index read
 from a file has no copy of its text; under the contracts of level 3, the
 audit of `locate()` against the text is then skipped.
 
-## 21.14 Exercises {#sec-21-14}
+## 21.15 Exercises {#sec-21-15}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
@@ -3190,7 +3190,7 @@ Each exercise names the test of the library that solves it (run it with
 16. Find the parse of LZ77 of least decompression time within a bound on the
     size of its byte-oriented code, and vice versa, by the cutting planes on
     the Lagrangian relaxation and the path swap, and check it against the
-    gap of [Theorem 21.Zlz4](21-compression.md#thm-21-Zlz4) and, on small texts,
+    gap of [Theorem 21.4](21-compression.md#thm-21-4) and, on small texts,
     against the optimum of a dynamic program. Test:
     `engineered_succinct.lz-bicriteria`.
 17. Compute the transform of Burrows and Wheeler and invert it by the
@@ -3205,20 +3205,20 @@ Each exercise names the test of the library that solves it (run it with
     LF-mapping of a step of `locate()` in one descent. Test:
     `engineered_succinct.huffman-fm-index`.
 20. Realize the r-index, with the rank on the runs (21.22), the toehold
-    and the function $\phi$ ([Lemma 21.18](21-compression.md#lem-21-18)
-    and [Lemma 21.19](21-compression.md#lem-21-19)), and then replace its
+    and the function $\phi$ ([Lemma 21.20](21-compression.md#lem-21-20)
+    and [Lemma 21.21](21-compression.md#lem-21-21)), and then replace its
     predecessor searches with move structures. Tests:
     `engineered_succinct.r-index`, `engineered_succinct.move-r-index`.
-20. Pack vectors of 1024 integers of 8, 16, 32 and 64 bits in the lanes of
+21. Pack vectors of 1024 integers of 8, 16, 32 and 64 bits in the lanes of
     a register of 1024 bits, prove that the transposed layout (21.24) puts
     the chain of each lane on consecutive values
-    ([Lemma 21.Zlc1](21-compression.md#lem-21-Zlc1)), and code a column by
+    ([Lemma 21.23](21-compression.md#lem-21-23)), and code a column by
     FOR, DELTA and RLE. Test: `engineered_succinct.fastlanes`.
-21. Realize ALP, with the two levels of samples of the cost (21.26) and
+22. Realize ALP, with the two levels of samples of the cost (21.26) and
     the fall back to ALP-RD, and check that NaNs, infinities, $-0$ and
     denormals come back bit for bit
-    ([Lemma 21.Zlc2](21-compression.md#lem-21-Zlc2)). Test:
+    ([Lemma 21.24](21-compression.md#lem-21-24)). Test:
     `engineered_succinct.alp`.
-22. Build the table of FSST in 5 generations, code each string of a column
+23. Build the table of FSST in 5 generations, code each string of a column
     alone, and decode a string by its place, also with strings that hold
     every byte from 0 to 255. Test: `engineered_succinct.fsst`.

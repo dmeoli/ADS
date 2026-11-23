@@ -2118,7 +2118,7 @@ as digits, between the vector and a buffer ([Algorithm
 12.21](12-sort.md#alg-12-21)): $O( w ( n + 256 ) )$ time for keys of $w$ bytes,
 and no comparison. The buffer of trivial items is the block that `ScratchRoom`
 of `Scratch.h` keeps between the calls (cf. [Algorithm
-25.13](25-parallel.md#alg-25-13)), whose pages a call before has already
+25.18](25-parallel.md#alg-25-18)), whose pages a call before has already
 faulted in, so that a sort does not pay the faults of fresh pages (which may
 cost about as much as the moves of the items into them). Its keys come from
 `radixKey()`, which makes the bits of a number an unsigned integer whose order
