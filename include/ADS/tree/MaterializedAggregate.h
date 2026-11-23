@@ -145,12 +145,49 @@ class MaterializedAggregate
 
  /// the pair \f$ ( k , v ) \f$ inserted: \f$ a \gets a \otimes
  /// \mathrm{from}( k , v ) \f$, or the value added to the multiset
+ ///
+ /// In pseudocode (beyond the book), \f$ a \f$ the aggregate, \f$ M \f$
+ /// the multiset of a selective `G` in the order \f$ \prec \f$ of
+ /// `Before`, \f$ s \f$ whether \f$ a \f$ is stale and \f$ d \f$ the
+ /// changes since the last recomputation:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{inserted}( k , v ) \cr
+ /// 2 & \quad \textbf{if}\ G \text{ is selective}\ \textbf{then}
+ ///     \ M \gets M \cup \{ \mathrm{from}( k , v ) \};\ a \gets
+ ///     \min_\prec M \cr
+ /// 3 & \quad \textbf{else if}\ \textbf{not}\ s\ \textbf{then}\ a \gets
+ ///     a \otimes \mathrm{from}( k , v );\ \mathrm{changed}() \cr
+ /// 4 & \textbf{procedure}\ \mathrm{changed}()\quad \triangleright
+ ///     \ \text{a group of inexact values, } \mathit{Period} > 0 \cr
+ /// 5 & \quad d \gets d + 1 \cr
+ /// 6 & \quad \textbf{if}\ d \ge \mathit{Period}\ \textbf{and}
+ ///     \ \text{a structure is bound}\ \textbf{then}\ s \gets \textbf{true}
+ /// \end{array}}
+ /// \f]
  template< class H , class K , class V >
  void on( const mod::Inserted< H , K , V > & e );
 
  /// the pair \f$ ( k , v ) \f$ erased: \f$ a \gets a \otimes
  /// \mathrm{from}( k , v )^{-1} \f$, or the value taken out of the
  /// multiset, or the aggregate stale
+ ///
+ /// In pseudocode (beyond the book), with the names of `on()` of
+ /// `Inserted`:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{erased}( k , v ) \cr
+ /// 2 & \quad \textbf{if}\ G \text{ is an abelian group}\ \textbf{then}
+ ///     \cr
+ /// 3 & \qquad \textbf{if}\ \textbf{not}\ s\ \textbf{then}\ a \gets a
+ ///     \otimes \mathrm{from}( k , v )^{-1};\ \mathrm{changed}() \cr
+ /// 4 & \quad \textbf{else if}\ G \text{ is selective}\ \textbf{then} \cr
+ /// 5 & \qquad \text{take one copy of } \mathrm{from}( k , v ) \text{ out }
+ ///     \text{of } M \text{, if any};\ a \gets \min_\prec M
+ ///     \text{, or the identity if } M = \emptyset \cr
+ /// 6 & \quad \textbf{else}\ s \gets \textbf{true}
+ /// \end{array}}
+ /// \f]
  template< class H , class K , class V >
  void on( const mod::Erased< H , K , V > & e ) noexcept;
 
@@ -158,6 +195,24 @@ class MaterializedAggregate
  /// \f$ a \gets a \otimes \mathrm{from}( h , w ) \otimes \mathrm{from}( h ,
  /// v )^{-1} \f$, or the two values exchanged in the multiset, or the
  /// aggregate stale
+ ///
+ /// In pseudocode (beyond the book), with the names of `on()` of
+ /// `Inserted`:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{assigned}( h , v , w ) \cr
+ /// 2 & \quad \textbf{if}\ G \text{ is an abelian group}\ \textbf{then}
+ ///     \cr
+ /// 3 & \qquad \textbf{if}\ \textbf{not}\ s\ \textbf{then}\ a \gets a
+ ///     \otimes \mathrm{from}( h , w ) \otimes \mathrm{from}( h , v
+ ///     )^{-1};\ \mathrm{changed}() \cr
+ /// 4 & \quad \textbf{else if}\ G \text{ is selective}\ \textbf{then} \cr
+ /// 5 & \qquad M \gets M \cup \{ \mathrm{from}( h , w ) \};
+ ///     \ \text{take one copy of } \mathrm{from}( h , v ) \text{ out of } M
+ ///     \text{, if any};\ a \gets \min_\prec M \cr
+ /// 6 & \quad \textbf{else}\ s \gets \textbf{true}
+ /// \end{array}}
+ /// \f]
  template< class H , class V >
  void on( const mod::Assigned< H , V > & e );
 
@@ -172,6 +227,23 @@ class MaterializedAggregate
 /*--------------------------------------------------------------------------*/
 
  /// the aggregate, recomputed from the structure bound if stale
+ ///
+ /// In pseudocode (beyond the book), with the names of `on()` of
+ /// `Inserted` and \f$ S \f$ the structure bound:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{value}() \cr
+ /// 2 & \quad \textbf{if}\ s\ \textbf{then} \cr
+ /// 3 & \qquad \textbf{if}\ G \text{ is selective}\ \textbf{then}\ M
+ ///     \gets \{ \mathrm{from}( k , v ) : ( k , v ) \in S \};\ a \gets
+ ///     \min_\prec M \text{, or the identity} \cr
+ /// 4 & \qquad \textbf{else}\ a \gets \text{the identity};
+ ///     \ \textbf{foreach}\ ( k , v ) \in S\ \textbf{do}\ a \gets a
+ ///     \otimes \mathrm{from}( k , v ) \cr
+ /// 5 & \qquad s \gets \textbf{false};\ d \gets 0 \cr
+ /// 6 & \quad \textbf{return}\ a
+ /// \end{array}}
+ /// \f]
  /// \pre a structure is bound, if stale
  [[nodiscard]] Value value( void ) const;
 

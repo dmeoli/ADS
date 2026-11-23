@@ -1967,7 +1967,7 @@ time.*
 *Proof.* On each level the widths telescope from the index $-1$ of the head to
 the index $n$ of nil. Along the search the sum of the widths followed is the
 index of the node reached. Hence the search is that of a skip list whose
-keys are the indices, and [Lemma 7.24](07-dictionary.md#lem-7-24) bounds its
+keys are the indices, and [Lemma 7.30](07-dictionary.md#lem-7-30) bounds its
 expected length by $2 \log_2 n + O( 1 )$. $\square$
 
 An insertion at the index $i$ draws the levels $\ell$ of the new node, and it
@@ -2034,7 +2034,7 @@ in $O( \log n )$ expected time.*
 *Proof.* Each operation follows one search path, of $O( \log n )$ expected
 length by [Lemma 2.26](02-sequence.md#lem-2-26), and changes $O( 1 )$
 links and widths per level, on $O( \log n )$ expected levels
-([Lemma 7.27](07-dictionary.md#lem-7-27)). An insertion and a removal keep
+([Lemma 7.33](07-dictionary.md#lem-7-33)). An insertion and a removal keep
 the sums of [Lemma 2.26](02-sequence.md#lem-2-26), since the width added or
 removed on a level is the one item added or removed below it. $\square$
 
@@ -2127,13 +2127,13 @@ binary search tree on the indices, and `get()`, `set()`, `add()`,
 
 *Proof.* With each item replaced by its index, the treap is one on the keys
 $0 , \ldots , n - 1$, and it is a random binary search tree by [Lemma
-8.33](08-tree.md#lem-8-33); by [Lemma 8.34](08-tree.md#lem-8-34), the path
+8.34](08-tree.md#lem-8-34); by [Lemma 8.35](08-tree.md#lem-8-35), the path
 to a node, and the path of a search that ends between two nodes, have
 expected length at most $2 \ln n + O( 1 )$. Both `get()` and `set()` follow
 the path to the node, `add()` follows the path to the leaf of the new node and
 rotates it back up along it, and `remove()` follows the path to the node and
 makes fewer than 2 rotations in expectation ([Lemma
-8.36](08-tree.md#lem-8-36)). Last, `truncate( i )` splits along the path of a
+8.37](08-tree.md#lem-8-37)). Last, `truncate( i )` splits along the path of a
 search between the indices $i - 1$ and $i$, and `absorb()` joins along the
 right spine of the first treap and the left spine of the second, the paths
 of a search beyond all the indices of each. $\square$
@@ -2199,10 +2199,10 @@ label $2^{63}$, and the children of a node of label $\ell$, whose lowest
 bit set is $2^j$, the labels $\ell \pm 2^{j-1}$, which keeps the labels in
 symmetric order for a tree of height up to 63. A rebuild of a subtree of
 $s$ nodes relabels it within the $O( s )$ time of the rebuild ([Lemma
-8.52](08-tree.md#lem-8-52)), while a rotation would change the labels of a
+8.53](08-tree.md#lem-8-53)), while a rotation would change the labels of a
 whole subtree (which is why the exercise sits in the chapter of the partial
 rebuilding); an insertion thus costs the $O( \log n )$ amortized time of
-the scapegoat tree ([Lemma 8.57](08-tree.md#lem-8-57)).
+the scapegoat tree ([Lemma 8.58](08-tree.md#lem-8-58)).
 
 `OrderMaintenanceList` does better, i.e., $O( 1 )$ amortized time per
 insertion and $O( 1 )$ in the worst case for the other two operations, by

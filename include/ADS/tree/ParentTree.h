@@ -68,6 +68,23 @@ class ParentTree
 
  /// makes the node \f$ i \f$ a child of the node \f$ j \f$, or a root if
  /// \f$ j = -1 \f$, in \f$ O( 1 ) \f$ (section 5.4, \f$ p[ i ] \gets j \f$)
+ ///
+ /// In pseudocode (section 5.4), with the walk from \f$ j \f$ to its root
+ /// that the audit of the contracts makes, in \f$ O( d( j ) ) \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{setParent}( i , j ) \cr
+ /// 2 & \quad p[ i ] \gets j\quad \triangleright\ \text{audit: }
+ ///     \textbf{not}\ \mathrm{below}( j , i ) \cr
+ /// 3 & \textbf{function}\ \mathrm{below}( j , i )\quad \triangleright
+ ///     \ \text{whether } j \text{ is in the subtree of } i \cr
+ /// 4 & \quad \textbf{while}\ j \ne -1\ \textbf{do} \cr
+ /// 5 & \qquad \textbf{if}\ j = i\ \textbf{then return}\ \textbf{true}
+ ///     \cr
+ /// 6 & \qquad j \gets p[ j ] \cr
+ /// 7 & \quad \textbf{return}\ \textbf{false}
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ i \f$ and \f$ j \f$ are nodes, or \f$ j = -1 \f$, and
  ///      \f$ i \ne j \f$; \f$ j \f$ is not in the subtree of \f$ i \f$
  ///      (which would make a cycle)

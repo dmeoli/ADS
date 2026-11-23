@@ -334,7 +334,7 @@ ADS_TEST( "b-plus-tree" )
 
 // B+-tree: the shape after each insertion and removal, against std::map,
 // with every leaf but the root holding ceil( m / 2 ) to m pairs, read by
-// levels(), as Lemma 8.52 of the manual proves and shaped() checks
+// levels(), as Lemma 8.78 of the manual proves and shaped() checks
 ADS_TEST( "b-plus-tree-occupancy" )
 {
  std::mt19937 g( 7 );

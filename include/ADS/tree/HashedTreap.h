@@ -110,12 +110,58 @@ class HashedTreap
  /// associates \f$ v \f$ to \f$ k \f$, in \f$ O( \log n ) \f$ expected time,
  /// by the insertion of `Treap::insert()` with \f$ p( u ) =
  /// h( \mathrm{address}( u ) ) \f$
+ ///
+ /// In pseudocode (Seidel and Aragon, beyond the book), the recursion
+ /// returning 0 if \f$ k \f$ was there, 1 if the new node may still go up
+ /// and 2 once it has stopped, so that no hash is computed above the first
+ /// parent of larger priority:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{insert}( t , k , v ) \cr
+ /// 2 & \quad \textbf{if}\ t = \textbf{nil}\ \textbf{then}\ t \gets
+ ///     \text{a new node of } ( k , v );\ \textbf{return}\ 1 \cr
+ /// 3 & \quad \textbf{if}\ k = t.\mathit{key}\ \textbf{then}
+ ///     \ t.\mathit{value} \gets v;\ \textbf{return}\ 0 \cr
+ /// 4 & \quad c \gets t.\mathit{left}\ \textbf{if}\ k < t.\mathit{key}
+ ///     \text{, else } t.\mathit{right};\ r \gets \mathrm{insert}( c , k ,
+ ///     v ) \cr
+ /// 5 & \quad \textbf{if}\ r \ne 1\ \textbf{then return}\ r \cr
+ /// 6 & \quad \textbf{if}\ h( \mathrm{address}( c ) ) \le
+ ///     h( \mathrm{address}( t ) )\ \textbf{then return}\ 2 \cr
+ /// 7 & \quad \mathrm{rotateRight}( t )\ \textbf{if}\ c = t.\mathit{left}
+ ///     \text{, else } \mathrm{rotateLeft}( t );\ \textbf{return}\ 1
+ /// \end{array}}
+ /// \f]
  /// \post \f$ k \f$ has the value \f$ v \f$
  void insert( const K & k , const V & v );
 
  /// removes \f$ k \f$, if it is there, in \f$ O( \log n ) \f$ expected
  /// time, by the removal of `Treap::remove()` with \f$ p( u ) =
  /// h( \mathrm{address}( u ) ) \f$
+ ///
+ /// In pseudocode (Seidel and Aragon, beyond the book), the key rotated
+ /// down, the child of larger hash going up, until it has one child at
+ /// most, which takes its place:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{remove}( t , k ) \cr
+ /// 2 & \quad \textbf{if}\ t = \textbf{nil}\ \textbf{then return}
+ ///     \ \textbf{false} \cr
+ /// 3 & \quad \textbf{if}\ k < t.\mathit{key}\ \textbf{then return}
+ ///     \ \mathrm{remove}( t.\mathit{left} , k ) \cr
+ /// 4 & \quad \textbf{if}\ t.\mathit{key} < k\ \textbf{then return}
+ ///     \ \mathrm{remove}( t.\mathit{right} , k ) \cr
+ /// 5 & \quad \textbf{if}\ t \text{ has one child at most}
+ ///     \ \textbf{then}\ t \gets \text{that child, or }
+ ///     \textbf{nil};\ \textbf{return}\ \textbf{true} \cr
+ /// 6 & \quad \textbf{if}\ h( \mathrm{address}( t.\mathit{left} ) ) >
+ ///     h( \mathrm{address}( t.\mathit{right} ) )\ \textbf{then}
+ ///     \ \mathrm{rotateRight}( t );\ \textbf{return}\ \mathrm{remove}(
+ ///     t.\mathit{right} , k ) \cr
+ /// 7 & \quad \mathrm{rotateLeft}( t );\ \textbf{return}
+ ///     \ \mathrm{remove}( t.\mathit{left} , k )
+ /// \end{array}}
+ /// \f]
  /// \post \f$ k \f$ is not there
  void remove( const K & k );
 
