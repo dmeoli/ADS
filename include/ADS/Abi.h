@@ -17,8 +17,9 @@
  * gives it (`none` without Highway), e.g., `abi_s1c1b0_N_AVX2` for the
  * vectors of Highway, the CAS of 16 bytes, no Boost and AVX2. The kernels
  * on arrays [see Simd.h] are chosen by Highway when the program runs, and
- * change nothing here. The defaults of the first three are those of the
- * target, and are defined here, so that every header sees the same.
+ * change nothing here. The defaults of the first two are those of the
+ * target, that of `ADS_FLATHASH_BOOST` is 0, and all are defined here, so
+ * that every header sees the same.
  *
  * The names stay those of `ADS`, since the members of an inline namespace
  * are found as members of the namespace around it, while the names that
@@ -78,11 +79,8 @@
  #endif
 #endif
 
-// the pairs of boost::unordered_flat_map in FlatHashTable, with
-// ADS_WITH_BOOST
-#if defined( ADS_WITH_BOOST ) && ! defined( ADS_FLATHASH_BOOST )
- #define ADS_FLATHASH_BOOST 1
-#endif
+// the pairs of boost::unordered_flat_map in FlatHashTable, only when asked
+// (the code of ADS is on a par with them), and then with ADS_WITH_BOOST
 #ifndef ADS_FLATHASH_BOOST
  #define ADS_FLATHASH_BOOST 0
 #endif

@@ -254,13 +254,14 @@ in [§C.1](C-libraries.md#sec-C-1).
 
 The other way round requires no change of the program: with
 `ADS_WITH_BOOST`,
-`FlatHashTable` keeps its items in a `boost::unordered_flat_map`,
-`PointerTable` in a `boost::unordered_flat_set` and `SmallVector` in a
-`boost::container::small_vector`, and the generators xoshiro256 run on
-Boost.Random ([§7.6](07-dictionary.md#sec-7-6)), while their interface is
-that of ADS. Defining `ADS_FLATHASH_BOOST` (or one of the other three
-macros of [§7.6](07-dictionary.md#sec-7-6)) to 0 keeps the code of ADS for
-one structure.
+`PointerTable` keeps its items in a `boost::unordered_flat_set` and
+`SmallVector` in a `boost::container::small_vector`, and the generators
+xoshiro256 run on Boost.Random ([§7.6](07-dictionary.md#sec-7-6)), while
+their interface is that of ADS. Defining `ADS_POINTERTABLE_BOOST` (or one
+of the other two macros of [§7.6](07-dictionary.md#sec-7-6)) to 0 keeps
+the code of ADS for one structure; `FlatHashTable` keeps its items in a
+`boost::unordered_flat_map` only when `ADS_FLATHASH_BOOST` is defined to
+1, since its own code is on a par with it.
 
 ## C.4 LEMON {#sec-C-4}
 

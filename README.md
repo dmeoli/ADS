@@ -48,8 +48,7 @@ libsais for the suffix arrays. `BigInteger` and `Rational` run on GMP, and
 and the benchmarks measure them on these backends; the rows marked `own`
 in [`results/`](results/README.md) measure the code of the book that runs
 without them. Conversely, where a build with Boost puts a structure on
-Boost (e.g., `FlatHashTable` and `PointerTable` on
-`boost::unordered_flat_map` and `boost::unordered_flat_set`), the
+Boost (e.g., `PointerTable` on `boost::unordered_flat_set`), the
 benchmarks keep the code of ADS, and the rows of Boost give the time of
 such a build.
 
@@ -1308,17 +1307,18 @@ the GPL v2), whose terms apply to a program that enables it; without the
 macros, no part of either library is included.
 
 With the headers of [Boost](https://www.boost.org) 1.83 or later,
-`PointerTable` and `FlatHashTable` run on `boost::unordered_flat_set` and
-`boost::unordered_flat_map`, and `SmallVector` on
-`boost::container::small_vector`; from Boost 1.86, `Xoshiro256` and
-`Xoshiro256StarStar` also run on Boost.Random. They keep the same names and
-members (the differences, e.g., the forward iterators of the tables, are in
-the comments of the headers), and without Boost each runs the code of ADS.
-`ADS_WITH_BOOST` (with `BOOST=<prefix>` for the makefile, where Boost is not
-where the compiler looks) links no library, and `ADS_POINTERTABLE_BOOST`,
-`ADS_FLATHASH_BOOST`, `ADS_SMALLVECTOR_BOOST` or `ADS_RANDOM_BOOST` defined
-to 0 keeps the code of ADS for one structure (the benchmarks do so for all
-four, since they compare it with Boost).
+`PointerTable` runs on `boost::unordered_flat_set` and `SmallVector` on
+`boost::container::small_vector`, and from Boost 1.86 `Xoshiro256` and
+`Xoshiro256StarStar` run on Boost.Random; `FlatHashTable` runs on
+`boost::unordered_flat_map` only with `ADS_FLATHASH_BOOST` defined to 1,
+since its own code is on a par with it (see the table below). They keep
+the same names and members (the differences, e.g., the forward iterators
+of the tables, are in the comments of the headers), and without Boost each
+runs the code of ADS. `ADS_WITH_BOOST` (with `BOOST=<prefix>` for the
+makefile, where Boost is not where the compiler looks) links no library,
+and `ADS_POINTERTABLE_BOOST`, `ADS_SMALLVECTOR_BOOST` or `ADS_RANDOM_BOOST`
+defined to 0 keeps the code of ADS for one structure (the benchmarks do so
+for all of them, since they compare it with Boost).
 
 With [Google Highway](https://github.com/google/highway) (1.0.7 or later,
 its libraries `hwy` and `hwy_contrib`), the vector kernels of ADS are

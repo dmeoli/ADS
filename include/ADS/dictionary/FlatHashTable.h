@@ -101,25 +101,25 @@
  * not rebuild it keeps them, the new pair visited or not), and an insertion
  * of a key already there replaces its value in place.
  *
- * With `ADS_WITH_BOOST` defined (by the option of CMake of the same name,
- * which defines it whenever the headers of Boost 1.83 or later are found, by
- * the makefile, which does the same, or by hand), the pairs are those of
- * `boost::unordered_flat_map`, the table that the one above follows, which
- * on the benchmark of the dictionaries is on a par with it (the ratio of
- * the times a median of 0.93); `ADS_FLATHASH_BOOST` defined to 0 keeps the
- * code of ADS. The interface and the contracts stay those above, with three
- * differences: `capacity()` is the number of places of Boost, \f$ 15 \f$
- * times a power of 2, less 1 (one place is its sentinel), and Boost fills
- * all of them up to 29 places; `deleted()` counts the places that Boost no
- * longer offers to the insertions, the difference between its maximum load
+ * With `ADS_FLATHASH_BOOST` defined to 1 (and `ADS_WITH_BOOST`, which the
+ * option of CMake of the same name defines whenever the headers of Boost 1.83
+ * or later are found, and the makefile as well), the pairs are those of
+ * `boost::unordered_flat_map`, the table that the one above follows; by
+ * default the code of ADS is kept, since on the benchmarks it is on a par with
+ * Boost (the ratio of the times a median of 0.93 on the dictionaries and of
+ * 1.03 on the hash maps). The interface and the contracts stay those above,
+ * with three differences: `capacity()` is the number of places of Boost,
+ * \f$ 15 \f$ times a power of 2, less 1 (one place is its sentinel), and Boost
+ * fills all of them up to 29 places; `deleted()` counts the places that Boost
+ * no longer offers to the insertions, the difference between its maximum load
  * after a rebuild and its maximum load now, in \f$ O( 1 ) \f$ time; and the
  * iterators are forward, those of Boost.
  *
  * The places come from the allocator `A`, rebound to lines of `ALIGN`
  * bytes, with the rules of the standard [see `AllocatorAware.h`]; with the
  * default one, `std::allocator`, they come from `operator new` aligned to
- * `ALIGN`, as they did before the table took an allocator, and with Boost
- * the allocator is that of `boost::unordered_flat_map`.
+ * `ALIGN`, and with Boost the allocator is that of
+ * `boost::unordered_flat_map`.
  *
  * The contracts [see `Contract.h`]: after `insert()` the key is in the table
  * and after `remove()` it is not; the invariant is that each full place is
@@ -197,7 +197,7 @@
 #include <vector>
 
 
-// the pairs of boost::unordered_flat_map, with ADS_WITH_BOOST [see Abi.h]
+// the pairs of boost::unordered_flat_map, with ADS_FLATHASH_BOOST [see Abi.h]
 #if ADS_FLATHASH_BOOST
  #include <iterator>
 

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the row `h=2` of the benchmark of the directly addressable codes, at most
+  2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
+  of the default of 3 levels and 10.1 of the levels of 8 bits
 - `bwt()` and `detail::SentinelSuffixArray` take the length `wideFrom`
   from which their suffix array is of entries of 64 bits, by default
   `bwtWideFrom` = 2^31 - 1, so that the path of 64 bits runs, and is
@@ -28,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `contract_violation`, the audits and the counts kept for them) left out
 
 ### Changed
+
+- `FlatHashTable` keeps the code of ADS also where `ADS_WITH_BOOST` is
+  defined, since on the benchmarks it is on a par with
+  `boost::unordered_flat_map` (a median ratio of the times of 0.93 on the
+  dictionaries and of 1.03 on the hash maps); `ADS_FLATHASH_BOOST` defined
+  to 1 puts it on Boost as before, and the name of the inline namespace of
+  the layouts [see `Abi.h`] follows it
 
 - the tables of the benchmarks in the README and in `results/` are those
   of a new run on the AMD EPYC 9654, built with Highway and, the parallel

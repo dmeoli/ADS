@@ -21,6 +21,11 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+// the table with control bytes on Boost too, which it is only when asked
+#if defined( ADS_WITH_BOOST ) && ! defined( ADS_FLATHASH_BOOST )
+ #define ADS_FLATHASH_BOOST 1
+#endif
+
 #include "ADSTest.h"
 
 #include "ADS/dictionary/FlatHashTable.h"

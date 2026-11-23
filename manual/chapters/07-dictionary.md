@@ -1791,12 +1791,13 @@ if( double * p = F.find( 7 ) )
 const bool there = F.contains( 8 );  // false
 ```
 
-**Backend of Boost.** With `ADS_WITH_BOOST` defined (by the option of CMake
-of the same name, which defines it whenever the headers of Boost 1.83 or
-later are found, by the makefile, which does the same, or by hand), the pairs of `FlatHashTable` are those of `boost::unordered_flat_map`,
-the table whose layout it follows and with which it is on a par on our
-benchmark (`ADS_FLATHASH_BOOST` defined to 0 keeps the code of ADS, the one
-that [Lemma 7.11](07-dictionary.md#lem-7-11) describes). The interface and
+**Backend of Boost.** With `ADS_FLATHASH_BOOST` defined to 1 (and
+`ADS_WITH_BOOST`, which the option of CMake of the same name defines
+whenever the headers of Boost 1.83 or later are found, and the makefile as
+well), the pairs of `FlatHashTable` are those of
+`boost::unordered_flat_map`, the table whose layout it follows; by default
+the code of ADS is kept (the one that [Lemma 7.11](07-dictionary.md#lem-7-11)
+describes), since on our benchmarks it is on a par with Boost. The interface and
 the contracts are kept, but for three points. First, `capacity()` is the
 number of places of Boost, which fills all of them up to 29 places. Also,
 `deleted()` counts the places that Boost no longer offers to the insertions
@@ -1956,8 +1957,8 @@ class PointerTable
  };
 ```
 
-**Backend of Boost.** With `ADS_WITH_BOOST` defined, as for `FlatHashTable`
-above, the places of `PointerTable` are those of `boost::unordered_flat_set`, which on
+**Backend of Boost.** With `ADS_WITH_BOOST` defined (cf. `FlatHashTable`
+above, which takes Boost only when asked), the places of `PointerTable` are those of `boost::unordered_flat_set`, which on
 our benchmark of the dictionaries inserts and finds faster than the linear
 inspection above (`ADS_POINTERTABLE_BOOST` defined to 0 keeps the code of
 ADS). The class, its members and their signatures stay the same, and the

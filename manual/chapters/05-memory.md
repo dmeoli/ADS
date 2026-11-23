@@ -1452,7 +1452,7 @@ allocator `A`, what they allocate from it and their default allocator;
 
 | Container | From `A` | Default `A` |
 |---------------------------|----------------------------|-------------------------|
-| `FlatHashTable` | the places and the control bytes, in lines of 64 bytes (with Boost, the memory of `boost::unordered_flat_map`) | `std::allocator` |
+| `FlatHashTable` | the places and the control bytes, in lines of 64 bytes (with `ADS_FLATHASH_BOOST`, the memory of `boost::unordered_flat_map`) | `std::allocator` |
 | `DenseHashMap` | the pairs and the groups | `std::allocator` |
 | `BucketCuckooTable`, `CuckooHashTable` | the tags and the places | `std::allocator` |
 | `PointerTable` | the places | `std::allocator` |
