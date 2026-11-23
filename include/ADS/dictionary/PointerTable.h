@@ -51,6 +51,20 @@
  * Finally, `prefetch()` does nothing, since Boost has no way to ask for the
  * group of a hash, and the iterator is forward, the one of Boost.
  *
+ * The table tells its changes through the subject policy `Policy` [see
+ * `Modification.h`], `NoObservers` by default, with which every operation
+ * compiles to the code of the plain table, the same with the places of ADS
+ * and with those of Boost: `Inserted` by `find_or_insert()` when it
+ * inserts, after the insertion, its handle the pointer of the object and
+ * its key the hash, `Cleared` by `clear()` and by a move from the table,
+ * and `Rebuilt` by a move into the table and at the end of a mute. There
+ * is no removal, hence no `Erased`; a growth moves the places and not the
+ * objects, and is not told, nor are the changes of the objects, which the
+ * table does not see. The object is made before anybody is told, so that
+ * an observer cannot refuse an insertion and one that throws leaves it in
+ * the table, which has no removal to undo it. A table with observers is
+ * not copied, and a move of a table has no observer.
+ *
  * The contracts [see `Contract.h`]: `make()` returns a pointer that is not
  * nil; the invariant is that the load factor stays below \f$ 7 / 10 \f$ and
  * that each object is reached from the first place of its hash with no
@@ -89,6 +103,8 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/Modification.h"
+#include "ADS/Portable.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/memory/Prefetch.h"
 
@@ -134,17 +150,30 @@ struct StateEqual
 /*-------------------------- CLASS PointerTable ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a hash table of pointers to objects found by their keys
+/// a hash table of pointers to objects found by their keys, its insertions
+/// told through `Policy`
 template< class T , class Eq = StateEqual ,
-	  class A = std::allocator< std::byte > >
+	  class A = std::allocator< std::byte > , class Policy = NoObservers >
 class PointerTable
 {
 
 /*--------------------------------------------------------------------------*/
  public:
- /// a table of at least `capacity` places, a power of 2, at least 16
+ /// an insertion of an object, its pointer the handle and its hash the
+ /// key
+ using Inserted = mod::Inserted< T * , std::uint64_t >;
+
+ /// the events: an object inserted, the table emptied or rebuilt
+ using modifications = mod::list< Inserted , mod::Cleared , mod::Rebuilt >;
+ /// the subject
+ using Subject = typename Policy::template bind< modifications ,
+						 PointerTable >;
+
+ /// a table of at least `capacity` places, a power of 2, at least 16, the
+ /// static observers `o...`
+ template< class... O >
  explicit PointerTable( std::size_t capacity = 16 , Eq eq = Eq() ,
-			const A & alloc = A() );
+			const A & alloc = A() , O &... o );
 
  /// a copy of the places, the objects shared
  PointerTable( const PointerTable & ) = default;
@@ -224,6 +253,30 @@ class PointerTable
  template< class F >
  void forEach( F && f ) const;
 
+/*--------------------------- THE OBSERVERS --------------------------------*/
+
+ /// the subject, for `ADS::batch()` and `ADS::quiet()`
+ [[nodiscard]] Subject & subject( void ) { return( f_sub ); }
+ /// the subject
+ [[nodiscard]] const Subject & subject( void ) const { return( f_sub ); }
+
+ /// attaches the observer \f$ o \f$ and gives its number
+ /// \pre no batch is open
+ template< class O >
+ int attach( O & o )
+  requires( Subject::dynamic )
+ {
+  return( f_sub.attach( o ) );
+  }
+
+ /// detaches the observer number \f$ \mathit{id} \f$
+ /// \pre it is attached, no batch is open
+ void detach( int id )
+  requires( Subject::dynamic )
+ {
+  f_sub.detach( id );
+  }
+
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a view of the pointers to the objects, in the order of the places,
@@ -278,6 +331,31 @@ class PointerTable
 
 /*--------------------------------------------------------------------------*/
  private:
+ /// `find_or_insert()` when nobody listens, by the places in use
+ template< class K , class Make >
+ std::pair< T * , bool > findOrInsertPlain( const K & key ,
+					    std::uint64_t hash ,
+					   Make && make );
+
+ /// `find_or_insert()` when someone listens
+ template< class K , class Make >
+ std::pair< T * , bool > insertTold( const K & key , std::uint64_t hash ,
+				    Make & make );
+
+ /// the same, out of the hot code
+ template< class K , class Make >
+ ADS_COLD_PATH std::pair< T * , bool >
+ insertCold( const K & key , std::uint64_t hash , Make & make ) {
+  return( insertTold( key , hash , make ) );
+  }
+
+ /// `Cleared` to whoever wants it, with the audit
+ void tellClearedAudited( void );
+
+ /// `Cleared` and `Rebuilt` to whoever wants them, with no audit
+ void tellCleared( void ) noexcept;
+ void tellRebuilt( void ) noexcept;  ///< as tellCleared()
+
  /// a place: the hash and the object, nil if the place is empty
  struct Slot
  {
@@ -373,6 +451,7 @@ class PointerTable
 
  Set f_set;  ///< the places
 #endif
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  };  // end( class PointerTable )
 
@@ -382,8 +461,8 @@ class PointerTable
 
 #if ADS_POINTERTABLE_BOOST
 /// the iterator of the set of Boost, on the pointers of its places: forward
-template< class T , class Eq , class A >
-class PointerTable< T , Eq , A >::const_iterator
+template< class T , class Eq , class A , class P >
+class PointerTable< T , Eq , A , P >::const_iterator
 {
  public:
  using value_type = T *;                  ///< the items

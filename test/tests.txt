@@ -2012,6 +2012,10 @@ engineered_emitters_forest  emit-unionfind-batch lotti, silenzi e annullamento d
 engineered_emitters_forest  emit-linkcut         archi e valori della foresta link-cut
 engineered_emitters_forest  emit-linkcut-batch   lotti e annullamento della foresta link-cut
 engineered_emitters_forest  emit-bnb             incumbent del branch-and-bound
+engineered_emitters_dict  emit-btree            eventi del B-albero, lotti, silenzi
+engineered_emitters_dict  emit-btree-guarantee  rifiuti e garanzia forte del B-albero
+engineered_emitters_dict  emit-densemap         eventi della mappa densa, swap, mosse
+engineered_emitters_dict  emit-pointertable     eventi della tabella di puntatori
 
 # the capabilities of the structures, their queries and opt-ins, beyond
 # the book

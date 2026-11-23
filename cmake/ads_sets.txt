@@ -600,6 +600,8 @@ succinct/HuffmanWaveletTree.h         uses succinct/CompactRankSelect.h
                                            the bit vectors of the nodes
 tree/AVLTree.h                        uses tree/JoinAlgorithms.h
                                            the operations based on join
+tree/BTree.h                          uses Modification.h
+                                           the events of its changes
 tree/BinaryTreeAlgorithms.h           uses search/RangeMinimum.h
                                            the cartesian tree
 tree/PartialRebuildingTree.h          uses numeric/RandomGenerators.h

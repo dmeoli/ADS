@@ -17,6 +17,22 @@
  * both in one pass, \f$ O( t \log_t n ) \f$ time. It is a DICTIONARY [see
  * `ADT.h`], and `forEach()` visits the pairs by increasing keys.
  *
+ * The tree tells its changes through the subject policy `Policy` [see
+ * `Modification.h`], `NoObservers` by default, with which every operation
+ * compiles to the code of the plain tree: `Inserted` by `insert()` of a key
+ * that is not there, `Assigned` by `insert()` of a key that is there (the
+ * old and the new value), `Erased` by `remove()` of a key that is there,
+ * told before the removal with its value, `Cleared` by `clear()` and
+ * `Rebuilt` at the end of a mute; the handle of an event is its key. With
+ * someone listening, an insertion and a removal make one more descent, to
+ * read the old value; an observer that refuses an insertion by `prepare()`
+ * leaves the tree as it was, and one that throws from `on()` of `Assigned`
+ * gets the old value back (the strong guarantee), while one that throws
+ * from `on()` of `Inserted` leaves the key in the tree, since a removal may
+ * allocate. The splits, the borrowings and the merges of the nodes are
+ * internal maintenance, and are not told. A tree with observers is neither
+ * copied nor moved.
+ *
  * The contracts [see `Contract.h`]: \f$ t \ge 2 \f$; `insert()` ensures that
  * the key is there and `remove()` that it is not; the invariant is the order
  * of the keys, their number in each node and the depth of the leaves, an
@@ -51,6 +67,8 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/Modification.h"
+#include "ADS/Portable.h"
 
 #include <algorithm>
 #include <concepts>
@@ -72,8 +90,9 @@ namespace ADS
 /*----------------------------- CLASS BTree --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a DICTIONARY on a B-tree of minimum degree \f$ t \f$
-template< std::totally_ordered K , class V >
+/// a DICTIONARY on a B-tree of minimum degree \f$ t \f$, its changes told
+/// through `Policy`
+template< std::totally_ordered K , class V , class Policy = NoObservers >
 class BTree
 {
 
@@ -82,9 +101,25 @@ class BTree
  using Key = K;    ///< the type of the keys
  using Value = V;  ///< the type of the values
 
- /// the empty B-tree of minimum degree \f$ t \f$
+ /// an insertion of a key, the key its handle
+ using Inserted = mod::Inserted< K , K , V >;
+ /// an erasure of a key, told before the removal
+ using Erased = mod::Erased< K , K , V >;
+ /// a change of the value of a key
+ using Assigned = mod::Assigned< K , V >;
+
+ /// the events: a key inserted or erased with its value, its value
+ /// changed, the tree emptied or rebuilt
+ using modifications =
+   mod::list< Inserted , Erased , Assigned , mod::Cleared , mod::Rebuilt >;
+ /// the subject
+ using Subject = typename Policy::template bind< modifications , BTree >;
+
+ /// the empty B-tree of minimum degree \f$ t \f$, the static observers
+ /// `o...`
  /// \pre \f$ t \ge 2 \f$
- explicit BTree( int t = 3 );
+ template< class... O >
+ explicit BTree( int t = 3 , O &... o );
 
  /// the value of the key \f$ k \f$, or nothing
  ///
@@ -207,6 +242,9 @@ class BTree
  /// \post \f$ k \f$ is not there
  void remove( const K & k );
 
+ /// removes all the keys, in \f$ O( n ) \f$ time
+ void clear( void );
+
  /// whether the key \f$ k \f$ is there, `lookup()` above
  [[nodiscard]] bool contains( const K & k ) const;
 
@@ -273,6 +311,30 @@ class BTree
   };
 
  public:
+/*--------------------------- THE OBSERVERS --------------------------------*/
+
+ /// the subject, for `ADS::batch()` and `ADS::quiet()`
+ [[nodiscard]] Subject & subject( void ) { return( f_sub ); }
+ /// the subject
+ [[nodiscard]] const Subject & subject( void ) const { return( f_sub ); }
+
+ /// attaches the observer \f$ o \f$ and gives its number
+ /// \pre no batch is open
+ template< class O >
+ int attach( O & o )
+  requires( Subject::dynamic )
+ {
+  return( f_sub.attach( o ) );
+  }
+
+ /// detaches the observer number \f$ \mathit{id} \f$
+ /// \pre it is attached, no batch is open
+ void detach( int id )
+  requires( Subject::dynamic )
+ {
+  f_sub.detach( id );
+  }
+
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ) by increasing key,
@@ -401,6 +463,27 @@ class BTree
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
+ /// `insert()` when nobody listens
+ void insertPlain( const K & key , const V & val );
+
+ /// the node and the place of `key`, the node nil if it is not there
+ [[nodiscard]] std::pair< Node * , std::size_t > slot( const K & key ) const;
+
+ /// the change of `insert()` when someone listens
+ void insertTold( const K & key , const V & val );
+
+ /// the erasure of `key` told when someone listens, before `remove()`
+ /// takes it out; false if `key` is not there
+ bool removeTold( const K & key );
+
+ /// the changes when someone listens, out of the hot code
+ ADS_COLD_PATH void insertCold( const K & key , const V & val ) {
+  insertTold( key , val );
+  }
+ ADS_COLD_PATH bool removeCold( const K & key ) {
+  return( removeTold( key ) );
+  }
+
  /// the first place in \f$ x \f$ of a key not smaller than `key`
  static std::size_t place( const Node * x , const K & key );
 
@@ -432,9 +515,10 @@ class BTree
  [[nodiscard]] std::pair< const Node * , std::size_t >
  lowerBoundPlace( const K & key ) const;
 
- int f_t;                         ///< the minimum degree
- std::unique_ptr< Node > f_root;  ///< the root
- std::size_t f_size = 0;          ///< the number of keys
+ int f_t;                              ///< the minimum degree
+ std::unique_ptr< Node > f_root;       ///< the root
+ std::size_t f_size = 0;               ///< the number of keys
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  };  // end( class BTree )
 

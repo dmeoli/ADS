@@ -17,21 +17,22 @@
 namespace ADS
 {
 
-template< std::totally_ordered K , class V >
-BTree< K , V >::BTree( int t ) : f_t( t )
+template< std::totally_ordered K , class V , class P >
+template< class... O >
+BTree< K , V , P >::BTree( int t , O &... o ) : f_t( t ) , f_sub( o... )
 {
  ADS_PRE( t >= 2 );
  }
 
-template< std::totally_ordered K , class V >
-std::size_t BTree< K , V >::place( const Node * x , const K & key )
+template< std::totally_ordered K , class V , class P >
+std::size_t BTree< K , V , P >::place( const Node * x , const K & key )
 {
  return( std::size_t( std::lower_bound( x->k.begin() , x->k.end() , key ) -
 		       x->k.begin() ) );
  }
 
-template< std::totally_ordered K , class V >
-std::optional< V > BTree< K , V >::lookup( const K & key ) const
+template< std::totally_ordered K , class V , class P >
+std::optional< V > BTree< K , V , P >::lookup( const K & key ) const
 {
  for( const Node * x = f_root.get() ; x ; ) {
   const std::size_t i = place( x , key );
@@ -44,8 +45,8 @@ std::optional< V > BTree< K , V >::lookup( const K & key ) const
  return( std::nullopt );
  }
 
-template< std::totally_ordered K , class V >
-void BTree< K , V >::split( Node * x , std::size_t i )
+template< std::totally_ordered K , class V , class P >
+void BTree< K , V , P >::split( Node * x , std::size_t i )
 {
  Node * y = x->c[ i ].get();  // 2 t - 1 keys
  auto z = std::make_unique< Node >();
@@ -64,8 +65,60 @@ void BTree< K , V >::split( Node * x , std::size_t i )
   y->c.resize( t );
  }
 
-template< std::totally_ordered K , class V >
-void BTree< K , V >::insert( const K & key , const V & val )
+template< std::totally_ordered K , class V , class P >
+void BTree< K , V , P >::insert( const K & key , const V & val )
+{
+ if constexpr( Subject::template listened< Inserted > ||
+	       Subject::template listened< Assigned > )
+  if( f_sub.template live< Inserted >() || f_sub.template live< Assigned >() )
+    [[unlikely]] {
+   if constexpr( Subject::dynamic )
+    insertCold( key , val );
+   else
+    insertTold( key , val );
+   return;
+   }
+ const std::size_t full = std::size_t( 2 * f_t - 1 );
+ if( ! f_root )
+  f_root = std::make_unique< Node >();
+ if( f_root->k.size() == full ) {  // the root splits: one level up
+  auto s = std::make_unique< Node >();
+  s->c.push_back( std::move( f_root ) );
+  f_root = std::move( s );
+  split( f_root.get() , 0 );
+  }
+ Node * x = f_root.get();
+ for( ; ; ) {
+  std::size_t i = place( x , key );
+  if( ( i < x->k.size() ) && ! ( key < x->k[ i ] ) ) {
+   x->v[ i ] = val;  // the new value replaces it
+   break;
+   }
+  if( x->leaf() ) {
+   x->k.insert( x->k.begin() + i , key );
+   x->v.insert( x->v.begin() + i , val );
+   ++f_size;
+   break;
+   }
+  if( x->c[ i ]->k.size() == full ) {
+   split( x , i );
+   if( x->k[ i ] < key )
+    ++i;
+   else if( ! ( key < x->k[ i ] ) ) {
+    x->v[ i ] = val;
+    break;
+    }
+   }
+  x = x->c[ i ].get();
+  }
+ ADS_POST( contains( key ) );
+ ADS_INVARIANT( [ & ]( void ) {
+  int d = -1;
+  return( valid( f_root.get() , nullptr , nullptr , 0 , d , true ) );
+  }() );
+ }
+template< std::totally_ordered K , class V , class P >
+void BTree< K , V , P >::insertPlain( const K & key , const V & val )
 {
  const std::size_t full = std::size_t( 2 * f_t - 1 );
  if( ! f_root )
@@ -107,8 +160,8 @@ void BTree< K , V >::insert( const K & key , const V & val )
   }() );
  }
 
-template< std::totally_ordered K , class V >
-std::size_t BTree< K , V >::fill( Node * x , std::size_t i )
+template< std::totally_ordered K , class V , class P >
+std::size_t BTree< K , V , P >::fill( Node * x , std::size_t i )
 {
  const std::size_t t = std::size_t( f_t );
  Node * y = x->c[ i ].get();
@@ -147,8 +200,8 @@ std::size_t BTree< K , V >::fill( Node * x , std::size_t i )
  return( j );
  }
 
-template< std::totally_ordered K , class V >
-void BTree< K , V >::merge( Node * x , std::size_t j )
+template< std::totally_ordered K , class V , class P >
+void BTree< K , V , P >::merge( Node * x , std::size_t j )
 {
  Node *a = x->c[ j ].get() , *b = x->c[ j + 1 ].get();
  a->k.push_back( x->k[ j ] );  // the key between them down
@@ -162,8 +215,8 @@ void BTree< K , V >::merge( Node * x , std::size_t j )
  x->c.erase( x->c.begin() + j + 1 );
  }
 
-template< std::totally_ordered K , class V >
-bool BTree< K , V >::remove( Node * x , const K & key )
+template< std::totally_ordered K , class V , class P >
+bool BTree< K , V , P >::remove( Node * x , const K & key )
 {
  const std::size_t t = std::size_t( f_t );
  for( ; ; ) {
@@ -205,9 +258,19 @@ bool BTree< K , V >::remove( Node * x , const K & key )
   }
  }
 
-template< std::totally_ordered K , class V >
-void BTree< K , V >::remove( const K & key )
+template< std::totally_ordered K , class V , class P >
+void BTree< K , V , P >::remove( const K & key )
 {
+ if constexpr( Subject::template listened< Erased > )
+  if( f_sub.template live< Erased >() ) [[unlikely]] {
+   bool there;  // the erasure told, before the removal below
+   if constexpr( Subject::dynamic )
+    there = removeCold( key );
+   else
+    there = removeTold( key );
+   if( ! there )
+    return;
+   }
  if( f_root && remove( f_root.get() , key ) )
   --f_size;
  if( f_root && f_root->k.empty() ) {  // the root empties: a level less
@@ -221,28 +284,91 @@ void BTree< K , V >::remove( const K & key )
   int d = -1;
   return( valid( f_root.get() , nullptr , nullptr , 0 , d , true ) );
   }() );
+ if constexpr( Subject::template listened< Erased > )
+  f_sub.audit( *this );
  }
 
-template< std::totally_ordered K , class V >
-bool BTree< K , V >::contains( const K & key ) const
+template< std::totally_ordered K , class V , class P >
+void BTree< K , V , P >::clear( void )
+{
+ f_root.reset();
+ f_size = 0;
+ if constexpr( Subject::template listened< mod::Cleared > )
+  if( f_sub.template live< mod::Cleared >() ) {
+   f_sub.emit( mod::Cleared{} );
+   f_sub.audit( *this );
+   }
+ }
+
+template< std::totally_ordered K , class V , class P >
+auto BTree< K , V , P >::slot( const K & key ) const
+  -> std::pair< Node * , std::size_t >
+{
+ for( Node * x = f_root.get() ; x ; ) {
+  const std::size_t i = place( x , key );
+  if( ( i < x->k.size() ) && ! ( key < x->k[ i ] ) )
+   return( std::pair< Node * , std::size_t >( x , i ) );
+  if( x->leaf() )
+   break;
+  x = x->c[ i ].get();
+  }
+ return( std::pair< Node * , std::size_t >( nullptr , 0 ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- WHEN SOMEONE LISTENS ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+template< std::totally_ordered K , class V , class P >
+void BTree< K , V , P >::insertTold( const K & key , const V & val )
+{
+ if( const auto [ x , i ] = slot( key ); x ) {  // an assignment, in
+  const Assigned e{ key , x->v[ i ] , val };     // place
+  f_sub.prepare( e );
+  x->v[ i ] = val;
+  f_sub.emit( e , [ & , x = x , i = i ]() noexcept { x->v[ i ] = e.from; } );
+  }
+ else {
+  const Inserted e{ key , key , val };
+  f_sub.prepare( e );
+  insertPlain( key , val );
+  f_sub.emit( e );
+  }
+ f_sub.audit( *this );
+ }
+
+template< std::totally_ordered K , class V , class P >
+bool BTree< K , V , P >::removeTold( const K & key )
+{
+ const auto [ x , i ] = slot( key );
+ if( x == nullptr )
+  return( false );
+ const Erased e{ key , key , x->v[ i ] };
+ f_sub.prepare( e );
+ f_sub.emit( e );  // before the removal
+ return( true );
+ }
+
+template< std::totally_ordered K , class V , class P >
+bool BTree< K , V , P >::contains( const K & key ) const
 {
  return( lookup( key ).has_value() );
  }
 
-template< std::totally_ordered K , class V >
-std::size_t BTree< K , V >::size( void ) const
+template< std::totally_ordered K , class V , class P >
+std::size_t BTree< K , V , P >::size( void ) const
 {
  return( f_size );
  }
 
-template< std::totally_ordered K , class V >
-bool BTree< K , V >::empty( void ) const
+template< std::totally_ordered K , class V , class P >
+bool BTree< K , V , P >::empty( void ) const
 {
  return( f_size == 0 );
  }
 
-template< std::totally_ordered K , class V >
-int BTree< K , V >::height( void ) const
+template< std::totally_ordered K , class V , class P >
+int BTree< K , V , P >::height( void ) const
 {
  int d = -1;
  for( const Node * x = f_root.get() ; x ;
@@ -251,9 +377,9 @@ int BTree< K , V >::height( void ) const
  return( d );
  }
 
-template< std::totally_ordered K , class V >
+template< std::totally_ordered K , class V , class P >
 std::vector< std::vector< std::vector< K > > >
-BTree< K , V >::levels( void ) const
+BTree< K , V , P >::levels( void ) const
 {
  std::vector< std::vector< std::vector< K > > > out;
  std::vector< const Node * > L;
@@ -272,16 +398,16 @@ BTree< K , V >::levels( void ) const
  return( out );
  }
 
-template< std::totally_ordered K , class V >
+template< std::totally_ordered K , class V , class P >
 template< class F >
-void BTree< K , V >::forEach( F && f ) const
+void BTree< K , V , P >::forEach( F && f ) const
 {
  visit( f_root.get() , f );
  }
 
-template< std::totally_ordered K , class V >
+template< std::totally_ordered K , class V , class P >
 template< class F >
-void BTree< K , V >::visit( const Node * x , F & f )
+void BTree< K , V , P >::visit( const Node * x , F & f )
 {
  if( ! x )
   return;
@@ -294,10 +420,9 @@ void BTree< K , V >::visit( const Node * x , F & f )
   visit( x->c.back().get() , f );
  }
 
-template< std::totally_ordered K , class V >
-bool BTree< K , V >::valid( const Node * x , const K * lo , const K * hi ,
-			    int d ,
-			   int & leafDepth , bool root ) const
+template< std::totally_ordered K , class V , class P >
+bool BTree< K , V , P >::valid( const Node * x , const K * lo , const K * hi ,
+			      int d , int & leafDepth , bool root ) const
 {
  if( ! x )
   return( f_size == 0 );
@@ -322,8 +447,8 @@ bool BTree< K , V >::valid( const Node * x , const K * lo , const K * hi ,
  return( true );
  }
 
-template< std::totally_ordered K , class V >
-auto BTree< K , V >::lowerBoundPlace( const K & key ) const
+template< std::totally_ordered K , class V , class P >
+auto BTree< K , V , P >::lowerBoundPlace( const K & key ) const
   -> std::pair< const Node * , std::size_t >
 {
  // a node of many keys, not binary: not searchTreeLowerBound()
@@ -342,8 +467,8 @@ auto BTree< K , V >::lowerBoundPlace( const K & key ) const
  return( best );
  }
 
-template< std::totally_ordered K , class V >
-auto BTree< K , V >::lowerBound( const K & k ) const
+template< std::totally_ordered K , class V , class P >
+auto BTree< K , V , P >::lowerBound( const K & k ) const
   -> std::optional< std::pair< K , V > >
 {
  const auto [ x , i ] = lowerBoundPlace( k );
@@ -352,15 +477,15 @@ auto BTree< K , V >::lowerBound( const K & k ) const
 	    : std::nullopt );
  }
 
-template< std::totally_ordered K , class V >
-const K * BTree< K , V >::findKey( const K & k ) const
+template< std::totally_ordered K , class V , class P >
+const K * BTree< K , V , P >::findKey( const K & k ) const
 {
  const auto [ x , i ] = lowerBoundPlace( k );
  return( ( x && ! ( k < x->k[ i ] ) ) ? &x->k[ i ] : nullptr );
  }
 
-template< std::totally_ordered K , class V >
-const K * BTree< K , V >::lowerBoundKey( const K & k ) const
+template< std::totally_ordered K , class V , class P >
+const K * BTree< K , V , P >::lowerBoundKey( const K & k ) const
 {
  const auto [ x , i ] = lowerBoundPlace( k );
  return( x ? &x->k[ i ] : nullptr );

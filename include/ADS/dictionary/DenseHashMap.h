@@ -62,6 +62,26 @@
  * that of `std::unordered_map`. The keys and the values must be movable;
  * there are fewer than \f$ 2^{32} \f$ pairs.
  *
+ * The map tells its changes through the subject policy `Policy` [see
+ * `Modification.h`], `NoObservers` by default, with which every operation
+ * compiles to the code of the plain map: `Inserted` by `insert()` and by
+ * `try_emplace()` of a key that is not there (with the value built),
+ * `Assigned` by `insert()` of a key that is there (the old and the new
+ * value), `Erased` by `remove()` of a key that is there, told before the
+ * removal with its value, `Cleared` by `clear()` and by a move from the
+ * map, and `Rebuilt` by `swap()`, hence by an assignment, to the observers
+ * of both maps, and at the end of a mute; the handle of an event is its
+ * key. The writes through the pointers that `find()` and `try_emplace()`
+ * give are not told, and an observer that needs them reads the value
+ * again; a removal moves the last pair into the place of the removed one,
+ * which is internal maintenance and is not told either, nor is a rebuild
+ * of the index. An observer that refuses a change by `prepare()` leaves the
+ * map as it was, and one that throws from `on()` of `Inserted` or
+ * `Assigned` gets the change undone (the strong guarantee). A copy or a
+ * move of a map has no observer, a map of static observers is not copied,
+ * and a map with observers is assigned only when its allocators are all
+ * equal (by the swap above).
+ *
  * The pairs and the groups come from the allocator `A`, with the rules of
  * the standard [see `AllocatorAware.h`]; with the default one,
  * `std::allocator`, the groups come from `operator new` aligned to their
@@ -109,6 +129,7 @@
 
 #include "ADS/Abi.h"
 #include "ADS/Contract.h"
+#include "ADS/Modification.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/memory/AllocatorAware.h"
@@ -139,10 +160,12 @@ ADS_ABI_BEGIN
 /*--------------------------- CLASS DenseHashMap ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a hash map with its pairs in a dense vector and an index of positions
+/// a hash map with its pairs in a dense vector and an index of positions,
+/// its changes told through `Policy`
 template< class K , class V , class H = DefaultHash< K > ,
 	  class Eq = std::equal_to< K > ,
-	  class A = std::allocator< std::pair< const K , V > > >
+	  class A = std::allocator< std::pair< const K , V > > ,
+	  class Policy = NoObservers >
 class DenseHashMap
 {
 
@@ -151,10 +174,26 @@ class DenseHashMap
  using Key = K;    ///< the type of the keys
  using Value = V;  ///< the type of the values
 
+ /// an insertion of a key, the key its handle
+ using Inserted = mod::Inserted< K , K , V >;
+ /// an erasure of a key, told before the removal
+ using Erased = mod::Erased< K , K , V >;
+ /// a change of the value of a key
+ using Assigned = mod::Assigned< K , V >;
+
+ /// the events: a key inserted or erased with its value, its value
+ /// changed, the map emptied or rebuilt
+ using modifications =
+   mod::list< Inserted , Erased , Assigned , mod::Cleared , mod::Rebuilt >;
+ /// the subject
+ using Subject = typename Policy::template bind< modifications ,
+						 DenseHashMap >;
+
  /// the empty map, with room for \f$ n \f$ pairs before it grows, its
- /// pairs and groups from `alloc`
+ /// pairs and groups from `alloc`, the static observers `o...`
+ template< class... O >
  explicit DenseHashMap( std::size_t n = 0 , H h = H() , Eq eq = Eq() ,
-			const A & alloc = A() );
+			const A & alloc = A() , O &... o );
 
  /// a copy of `other`, on the allocator that
  /// `select_on_container_copy_construction()` gives
@@ -176,7 +215,7 @@ class DenseHashMap
 
  /// the copy assignment, with the allocator of `o` if it propagates
  DenseHashMap & operator=( const DenseHashMap & o )
-  requires( ! detail::alwaysEqualAlloc< A > )
+  requires( ! detail::alwaysEqualAlloc< A > && Subject::none )
  {
   return( detail::copyAssign( *this , o ) );
   }
@@ -184,7 +223,7 @@ class DenseHashMap
  /// the move assignment: the memory of `o` if its allocator propagates or
  /// is equal, else its pairs moved one by one
  DenseHashMap & operator=( DenseHashMap && o )
-  requires( ! detail::alwaysEqualAlloc< A > )
+  requires( ! detail::alwaysEqualAlloc< A > && Subject::none )
  {
   return( detail::moveAssign( *this , std::move( o ) ) );
   }
@@ -324,6 +363,30 @@ class DenseHashMap
  /// \pre the allocators are equal, if they do not propagate
  void swap( DenseHashMap & o ) noexcept( detail::swapNoexcept< A > );
 
+/*--------------------------- THE OBSERVERS --------------------------------*/
+
+ /// the subject, for `ADS::batch()` and `ADS::quiet()`
+ [[nodiscard]] Subject & subject( void ) { return( f_sub ); }
+ /// the subject
+ [[nodiscard]] const Subject & subject( void ) const { return( f_sub ); }
+
+ /// attaches the observer \f$ o \f$ and gives its number
+ /// \pre no batch is open
+ template< class O >
+ int attach( O & o )
+  requires( Subject::dynamic )
+ {
+  return( f_sub.attach( o ) );
+  }
+
+ /// detaches the observer number \f$ \mathit{id} \f$
+ /// \pre it is attached, no batch is open
+ void detach( int id )
+  requires( Subject::dynamic )
+ {
+  f_sub.detach( id );
+  }
+
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs, in the order of the vector, random
@@ -443,6 +506,34 @@ class DenseHashMap
  template< bool Assign , class KK , class... Args >
  std::pair< V * , bool > place( KK && k , Args &&... a );
 
+ /// `remove()` when nobody listens
+ bool removePlain( const K & k );
+
+ /// the changes of `insert()`, `try_emplace()` and `remove()` when
+ /// someone listens
+ template< class KK , class VV >
+ bool putTold( KK && k , VV && v );
+ template< class KK , class... Args >
+ std::pair< V * , bool > emplaceTold( KK && k ,
+				     Args &&... a );  ///< as putTold()
+ bool removeTold( const K & k );                      ///< as putTold()
+
+ /// the changes when someone listens, out of the hot code
+ template< class KK , class VV >
+ ADS_COLD_PATH bool putCold( KK && k , VV && v ) {
+  return( putTold( std::forward< KK >( k ) , std::forward< VV >( v ) ) );
+  }
+ template< class KK , class... Args >
+ ADS_COLD_PATH std::pair< V * , bool > emplaceCold( KK && k , Args &&... a ) {
+  return(
+    emplaceTold( std::forward< KK >( k ) , std::forward< Args >( a )... ) );
+  }
+ ADS_COLD_PATH bool removeCold( const K & k ) { return( removeTold( k ) ); }
+
+ /// `Cleared` and `Rebuilt` to whoever wants them, with no audit
+ void tellCleared( void ) noexcept;
+ void tellRebuilt( void ) noexcept;  ///< as tellCleared()
+
  /// the place \f$ j \f$ of the position \f$ p \f$ emptied in the group
  /// \f$ g \f$, the last pair moved into \f$ p \f$
  void unlink( Group & g , std::size_t j , std::size_t p );
@@ -521,16 +612,17 @@ class DenseHashMap
  /// the groups of `o` copied, the pairs already copied
  void copyGroups( const DenseHashMap & o );
 
- Pairs f_kv;                     ///< the pairs, dense
- Groups f_g = noGroups( f_kv );  ///< the groups, nil if none
- Group * f_ctrl = s_none;        ///< the groups, or `s_none`
- std::size_t f_mask = 0;         ///< the groups - 1, 0 with none
- std::size_t f_cap = 0;          ///< the places
- int f_shift = 63;               ///< 64 - log2 of the groups
- std::size_t f_max = 0;          ///< `bound( f_cap )`
- std::size_t f_deleted = 0;      ///< a bound of `deleted()`
- H f_h;                          ///< the hash of the keys
- Eq f_eq;                        ///< the equality of the keys
+ Pairs f_kv;                           ///< the pairs, dense
+ Groups f_g = noGroups( f_kv );        ///< the groups, nil if none
+ Group * f_ctrl = s_none;              ///< the groups, or `s_none`
+ std::size_t f_mask = 0;               ///< the groups - 1, 0 with none
+ std::size_t f_cap = 0;                ///< the places
+ int f_shift = 63;                     ///< 64 - log2 of the groups
+ std::size_t f_max = 0;                ///< `bound( f_cap )`
+ std::size_t f_deleted = 0;            ///< a bound of `deleted()`
+ H f_h;                                ///< the hash of the keys
+ Eq f_eq;                              ///< the equality of the keys
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  };  // end( class DenseHashMap )
 
