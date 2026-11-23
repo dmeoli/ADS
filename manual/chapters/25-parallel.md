@@ -2554,6 +2554,22 @@ The predicate of a worker may thus read the state of the others, as the
 minimum over the predecessors of a state does, which a worker cannot do
 while the computation runs (at least, not without a lock).
 
+Between two episodes, and within one of LPA* or of D* Lite, the value of a
+state may rise as well as fall, whereas the relaxations of
+[§25.12](25-parallel.md#sec-25-12) assume that a distance only falls: a
+worker that reads the distance of a state owned by another, and its parent
+with it, may then see a distance from one write and a parent from another.
+A table of the states that declares `nonmonotone_values< T >`
+([§1.14](01-introduction.md#sec-1-14)) reads each value whole, and
+`ConcurrentCuckooTable` does, by the version of its region, so that a value
+which holds the distance and the parent together needs no further
+discipline; a table without it is read only at the barriers, where
+[Lemma 25.27](25-parallel.md#lem-25-27) applies. The frontier of a worker,
+over the states that it owns, may in turn be a `TableHeap`
+([§1.15.5](01-introduction.md#sec-1-15-5)), which reads the keys from the
+owned part of the table and gives a band of them by `extract()`, as the
+stepping algorithms take theirs.
+
 ## 25.16 Discussion and references {#sec-25-16}
 
 The model of work and depth and the greedy bound go back to [Graham

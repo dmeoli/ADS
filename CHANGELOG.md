@@ -12,6 +12,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits
+- the events of `Modification.h` from the mutators of `RadixHeap`,
+  `DialQueue` and `BucketQueue` (an item inserted or erased with its keys,
+  the queue emptied), of `DisjointSets` (the link of a root under another,
+  as a change of the new attribute `mod::Parent`), of `LinkCutTree` (the
+  nodes, their values and the edges of the forest without its roots), of
+  `BTree`, `DenseHashMap` and `PointerTable` (by key, as `JoinTree`), and,
+  in overloads that take an observer, the improvements of the incumbent of
+  `bbTsp()`, `maxWeightClique()` and `knapsackBB()`, each structure taking
+  its subject policy as the last parameter of its type, `NoObservers` by
+  default, with which its code is that of the structure before the events;
+  `BTree::clear()`, which the tree lacked; the tests
+  `engineered_emitters.emit-queues*`, `engineered_emitters_forest` and
+  `engineered_emitters_dict`, the functions of these structures in the check
+  of zero cost of `bench/zerocost_asm.cpp`, and section 1.15.5 of the manual
+  (Table 1.8, Lemmas 1.23 to 1.25)
+- the capabilities of the incremental searches on structures of the
+  library: `extract( theta , out )` of `IndexedDaryHeap`, `RadixHeap`,
+  `DialQueue` and `BucketQueue` (`batch_extract`), `rebase( k )` of
+  `RadixHeap` and `DialQueue` (`monotone_extract`), with `peekKey()` of
+  `DialQueue`, `rekey( f )` of `IndexedDaryHeap` (`rekeyable`), which sends
+  `Rebuilt`, `TableHeap`, the queue of the LaB-PQ that reads its keys from a
+  table and observes an `ObservableArray` (`observes_values`), and the
+  opt-in `nonmonotone_values` of `ConcurrentCuckooTable`, whose lookups read
+  each value whole under the version of its region; the tests
+  `engineered_capabilities.cap-extract`, `cap-rebase`, `cap-rekey`,
+  `cap-tableheap` and `cap-nonmonotone`
 - `bwt()` and `detail::SentinelSuffixArray` take the length `wideFrom`
   from which their suffix array is of entries of 64 bits, by default
   `bwtWideFrom` = 2^31 - 1, so that the path of 64 bits runs, and is
@@ -47,6 +73,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to 1 puts it on Boost as before, and the name of the inline namespace of
   the layouts [see `Abi.h`] follows it
 
+- a batch cancels an erasure against the last insertion of the same handle
+  with the same key and value among the insertions at the end of its net
+  events, so that the events of an item that is several times in a queue
+  with no handles coalesce into those of a multiset of pairs, and
+  `priority_t< Q >` is `Q::Key` when the queue has no `Priority`
 - the tables of the benchmarks in the README and in `results/` are those
   of a new run on the AMD EPYC 9654, built with Highway and, the parallel
   benchmarks, with hwloc, and each comparison of the README carries its

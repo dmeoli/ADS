@@ -2130,7 +2130,8 @@ structure later. The events of the item of handle $h$ are
 (none when `V` is `void`), and `Changed< A , H , V >`, a change of its
 attribute `A` from `from` to `to`. The aliases `Assigned` and `KeyChanged`
 stand for the attributes `Value` and `Key`, while `Cost`, `Upper`, `Lower`,
-`Supply` or any other tag name the others. We call *global* the events of the
+`Supply`, `Parent` (the parent of a node in a forest, $-1$ at a root) or any
+other tag name the others. We call *global* the events of the
 structure as a whole, i.e., `Relocated`, `Permuted`, `BulkInserted`,
 `BulkErased`, `Shifted< A , D >` (each value of `A` moved by `delta`),
 `Replaced< A >`, `Cleared` and `Rebuilt`, the last of which means that
@@ -2222,7 +2223,14 @@ where the state $s$ of an item is its key and its value, the second rule
 holds for the key and the value, the product of the fifth runs over these
 two attributes (and has thus at most two factors), the third vanishes
 when $a = c$, and a change with $a = b$ (a touch) is dropped. The changes of
-different attributes of one handle commute. Note that the last rule applies
+different attributes of one handle commute. In a structure with no handles
+(e.g., the monotone queues of [§1.15.5](01-introduction.md#sec-1-15-5)) the
+item serves as the handle, and the same item may be there several times with
+different keys (the copies of a lazy decrease). The first rule then cancels
+an erasure against the last insertion of the same state among those at the
+end of $N$, i.e., against the last insertion of $N$ when the handle names one
+item; when there is none, the erasure stays (its copy was there before the
+batch). Note that the last rule applies
 only when the structure emits the changes that it needs; otherwise, the
 erasure and the insertion stay. In the third rule $c$ is the value of the
 *reduction* of the attribute, which is the last value by default, and the
@@ -2239,7 +2247,9 @@ the previous ones leave) whose attributes have the reduction `last`, and $C$
 its net effect by (1.15). Then $C$ is a history that leads from the state
 before $B$ to the state after it, $\lvert C \rvert \le \lvert B \rvert$,
 and $C$ is built in $O( \lvert B \rvert )$ expected time when the number of
-kinds of event is a constant.*
+kinds of event is a constant and each handle names one item, and in
+$O( m \lvert B \rvert )$ expected time when a handle names up to $m$ items
+at once.*
 
 *Proof.* The events after the last `Cleared` or `Rebuilt` start from any
 state; hence, the part before it does not change the state after $B$.
@@ -2251,11 +2261,16 @@ goes from $\bot$ to $s$ and back, the second inserts the state after the
 change, and the third composes two changes of one attribute; the fourth
 erases from the state before the change, with the attribute restored, and
 the fifth goes from $s$ to $t$ by one change per attribute that differs. No
-rule leaves more events than it takes. A list $N$ holds at most one
-insertion or erasure and one change per attribute, plus an erasure and an
-insertion when the changes are missing (i.e., a constant number of events),
-and a hash table on the handles finds the list of each event in $O( 1 )$
-expected time. $\square$
+rule leaves more events than it takes. When a handle names several items,
+its state is the multiset of the states of its items, and the first rule
+removes from it the state that it added, whichever copy the erasure took
+(equal states cannot be told apart). If its handle names one item, a list
+$N$ holds at most one insertion or erasure and one change per attribute,
+plus an erasure and an insertion when the changes are missing, i.e., a
+constant number of events. If it names $m$ items, $N$ holds at most $m$
+insertions after its last erasure, which bounds the scan of an erasure.
+Finally, a hash table on the handles finds the list of each event in
+$O( 1 )$ expected time. $\square$
 
 The global events stay in place, instead of going last, since an item
 inserted with an absolute key after a shift would otherwise be shifted
@@ -2328,9 +2343,35 @@ be a pointer and the structure never emits `Relocated`) and
 `S::monotone`, the only direction in which its values move, by which an
 observer compiles out the path of the other direction. A structure that
 declares none of them gets the conservative answer. We remark that a concept
-whose members no structure of ADS has yet (e.g., `shiftable_keys< Q >` or
-`batch_extract< Q >`) is defined all the same, since it is the name under
-which the next structure will be found.
+whose members no structure of ADS has yet (at present `shiftable_keys< Q >`,
+the bulk insertions and erasures, `range_actionable< S , A >`,
+`snapshotable< S >`, `in_arcs< G >` and `stable_edge_ids< G >`) is defined
+all the same, since it is the name under which the
+next structure will be found.
+
+The capabilities of the incremental searches have models of their own,
+which [§1.15.5](01-introduction.md#sec-1-15-5) describes with their events.
+`batch_extract< Q >` is modeled by `IndexedDaryHeap`, `RadixHeap`,
+`DialQueue` and `BucketQueue` (by its first key): `extract( theta , out )`
+removes the items of priority at most $\theta$ by increasing priorities.
+The two monotone queues read the least key without taking it for
+extracted, and therefore the keys pushed after a band need only be not
+smaller than its last one. `monotone_extract< Q >` is modeled by `RadixHeap`
+and `DialQueue`, whose `rebase( k )` places the items again for the base
+$k$ (a key below the last one extracted, but not below any key in the
+queue). In turn, `rekeyable< Q >` is modeled by `IndexedDaryHeap`, whose
+`rekey( f )` recomputes every key and makes the heap again from the bottom
+in $O( s )$ time. The queue of the LaB-PQ of [Dong et al.
+2021](Z-bibliography.md#ref-dong2021), which reads the keys from the table of
+the search instead of holding them, is `TableHeap< T , D >`, a model of
+`observes_values< Q >` and an observer of an observable table. As for the
+opt-in `nonmonotone_values< T >`, `ConcurrentCuckooTable` declares it: its
+lookups read each pair under the version of its region (a seqlock) or under
+its lock, and a value that holds a distance and a parent together is thus
+read whole even when the distance rises. The shift of all the keys in
+$O( 1 )$, on the contrary, needs an offset that every insertion and every
+read of a key would pay for, and we leave it to a wrapper that adds the
+offset outside the queue.
 
 A third kind is a property that a wrapper must pass on without knowing it,
 because a wrapper written today cannot list the properties of the structures
@@ -2421,7 +2462,7 @@ structure, $Q$ a queue, $T$ a table of nodes and $G$ a graph.
 | `mod::list<E...>` | T | a list of event types (cf. [§1.13](01-introduction.md#sec-1-13)) |
 | `key_type_t<S>` | T | `S::Key`, else `S::key_type`, else `S::value_type`, else `std::size_t` |
 | `modifications_of<S>` | T | `S::modifications`, else the empty list |
-| `priority_t<Q>` | T | `Q::Priority`, else the items of $Q$ |
+| `priority_t<Q>` | T | `Q::Priority`, else `Q::Key`, else the items of $Q$ |
 | `enable_stable_references<S>` | O | the items keep their addresses (false by default) |
 | `nonmonotone_values<T>` | O | the values of the nodes may also rise (false by default) |
 | `monotone_of<S>()`, `declares_monotone<S>` | O | the bits `up` and `down` of `S::monotone`, all bits by default |
@@ -2953,6 +2994,165 @@ static_assert( ADS::SlidingAggregate< Concat >::kind ==
 static_assert( ADS::SlidingAggregate< ADS::SumOf< int > >::kind ==
                ADS::window_kind::subtract_on_evict );
 ```
+
+### 1.15.5 The other structures that tell their changes {#sec-1-15-5}
+
+We now list the structures that emit beyond the heap and the array
+([Table 1.8](01-introduction.md#tab-1-8)). Each follows the pattern of
+[§1.13](01-introduction.md#sec-1-13), i.e., it takes a subject policy as the
+last parameter of its type, `NoObservers` by default (hence, a spelling of
+the type written before keeps its meaning), and it builds an event only after
+the tests `listened` and `live`. An erasure is sent before the removal, the
+other changes after them, and `Rebuilt` at the end of a mute. The handles are the keys in the
+B-tree and in the dense map, the pointers in the table of pointers, the
+elements in the union-find and the nodes (and the codes of the edges) in the
+link-cut trees; the queues of Dial, the radix heap and the bucket queue have
+no handles, and the item serves as one.
+
+<span id="tab-1-8"></span>**Table 1.8.** The structures that emit, besides
+`IndexedDaryHeap`, `ObservableArray`, `JoinTree`, `GridGraph` and the graph
+wrapper: the events and the operations that send them ($k$ a key, $v$ a
+value, $x$ an item, $h$ a hash, $f$ and $g$ the two keys of the bucket
+queue).
+
+| Structure | Events | Sent by |
+|---|---|---|
+| `RadixHeap`, `DialQueue` | `Inserted( x , k )`, `Erased( x , k )`, `Cleared` | `push()`; `pop()`, `extract()` (and `extractBelow()` of the radix heap); `clear()` |
+| `BucketQueue` | `Inserted( x , f , g )`, `Erased( x , f , g )`, `Cleared` | `push()`; `pop()`, `popEntry()`, `extract()`; `clear()` |
+| `DisjointSets` (`UnionFind`) | `Changed< Parent >( r , -1 , r' )`, `Rebuilt` | `merge()` that links the root $r$ under the root $r'$; `reset()` |
+| `LinkCutTree` | `Inserted( v , v , x )`, `Assigned( v , a , b )`, `Inserted( e , ( u , w ) )`, `Erased( e , ( u , w ) )` | `addNode()`; `setValue()`; `link()`; `cut()`, `cutParent()` |
+| `BTree`, `DenseHashMap` | `Inserted( k , k , v )`, `Assigned( k , a , b )`, `Erased( k , k , v )`, `Cleared`, `Rebuilt` | `insert()` of a new key (and `try_emplace()` of the map); `insert()` of a key that is there; `remove()`; `clear()`; `swap()` of the map |
+| `PointerTable` | `Inserted( p , h )`, `Cleared`, `Rebuilt` | `find_or_insert()` that inserts; `clear()`; the table moved into |
+| `bbTsp()`, `maxWeightClique()`, `knapsackBB()` | `Assigned( 0 , c , c' )` (`IncumbentChanged`) | each improvement of the best solution, in the overloads that take an observer |
+
+A queue with no handles sends the changes of the multiset of its pairs,
+since the same item may be in it several times (the stale copies of a lazy
+decrease). Neither the moves of an item between the overflow and the
+buckets of the queue of Dial nor `rebase()` change an item or its key, and
+they send nothing. The radix heap and the queue of Dial give the least key
+without taking it for extracted (`peekKey()`), and `extract( theta , out )`
+reads it before each removal; hence, a key above $\theta$ does not raise
+the bound below which no key may be pushed. In turn, `rebase( k )` places
+the items again for the base $k$ ([Algorithm
+1.14](01-introduction.md#alg-1-14)). As the next lemma shows, an
+observer may thus keep the pairs of the queue without reading it.
+
+<span id="alg-1-14"></span>**Algorithm 1.14.** The base of the queue of
+Dial moved to $k$, between two episodes of a search.
+
+--8<-- "generated/DialQueue-rebase.pseudo.md"
+
+<span id="lem-1-23"></span>**Lemma 1.23.** *Let an observer of `RadixHeap`,
+`DialQueue` or `BucketQueue` keep a multiset $M$ of pairs, adding the pair
+of each `Inserted`, removing one copy of the pair of each `Erased` and
+emptying $M$ at `Cleared`. Then, after each operation outside a batch and
+after each batch, $M$ is the multiset of the pairs of the queue. Also, after
+`rebase( k )` of the queue of Dial with no key below $k$, each item lies in
+the bucket of its key for the base $k$, or in the overflow, with the key it
+had before.*
+
+*Proof.* `push()` sends the pair it inserts, after it, and `pop()` sends the
+pair of the top, which `topKey()` (`topEntry()` for the bucket queue)
+reads before the removal, while `extract()` removes by `pop()` and
+`extractBelow()` sends each item with its key as it extracts it. No other
+operation adds or removes a pair, and `clear()` empties both. A batch sends
+the net effect of these events, which by [Lemma
+1.14](01-introduction.md#lem-1-14), for handles that name several items,
+leads $M$ to the same multiset. As for `rebase()`, the window of the queue
+holds the keys in $[ \ell , \ell + W )$, one key per bucket, and therefore
+the bucket $b$ holds the key $\ell + ( ( b - \ell ) \bmod W )$. The
+procedure reads each pair with that key, or from the overflow with its own,
+and pushes it again for the base $k$ (a legal push, since no key is below
+$k$). $\square$
+
+The union-find sends only the links of the roots, since the halving and the
+compression of the paths are internal maintenance that does not change the
+partition, as the places of the heap are; hence, an observer that keeps a
+parent per element, set at each `Changed< Parent >`, keeps a forest whose
+trees are the components (with other roots and other shapes). The link-cut
+trees, in turn, send the changes of the forest without its roots, since
+`evert()`, and `aggregate()` through it, choose a root at each call. An edge
+has the handle `edgeOf( u , w )`, the same for both orders of its ends, and
+the key `ends( u , w )`, the ends with the least first; hence, a link and a
+cut of the same edge cancel in a batch. In both structures an observer that throws
+from the `on()` of an insertion, a link or a change of value gets the change
+undone (the strong guarantee of [§1.13](01-introduction.md#sec-1-13)).
+
+<span id="lem-1-24"></span>**Lemma 1.24.** *(i) Let an observer of
+`DisjointSets` keep a vector $q$ of parents, $q( x ) = -1$ for each element
+at the start and after `Rebuilt`, and $q( r ) = r'$ at each
+`Changed< Parent >( r , -1 , r' )`. Then two elements are in the same
+component of the union-find if and only if their roots in $q$ are equal.
+(ii) Let an observer of `LinkCutTree` keep a set $F$ of edges and the values
+of the nodes, adding and removing the edge of each `Inserted` and `Erased`
+of an edge and setting the value of each node inserted or assigned. Then
+$F$ is the forest of the link-cut trees, without its roots, and the values
+are theirs.*
+
+*Proof.* (i) `merge( x , y )` sends its event only when the roots $r$ and
+$r'$ of $x$ and $y$ differ, after it has made $r$ a child of $r'$, and the
+union-find changes its partition only there; $r$ is a root of $q$ too,
+since it was a root of the union-find, whose roots are those of $q$ by
+induction, and therefore the trees of $q$ are joined as the components are.
+(ii) `link()` and `cut()` send the edge they add or remove, `cutParent()`
+the edge to the parent that it finds before the cut, and `addNode()` and
+`setValue()` the node and the value. Also, `evert()` and the queries change
+only the root, which $F$ does not hold. $\square$
+
+The B-tree, the dense map and the table of pointers follow `JoinTree`
+([§8.12.7](08-tree.md#sec-8-12-7)): an insertion of a key that is there is
+an assignment, a removal of a key that is not there sends nothing, and the
+writes through the pointer that `find()` or `try_emplace()` of the map
+return are not told (as the writes of the vector of `ObservableArray` are not
+possible). The table of pointers has no removal, and therefore no `Erased`.
+The branch-and-bounds of [§20.8](20-complexity.md#sec-20-8) send, in the
+overloads that take an observer as their last argument, each improvement
+of the best solution found so far, from the old cost to the new one. The
+costs that an observer receives thus decrease strictly, and the last one is
+the optimum returned. We send no event per node, since the count of the
+nodes is already returned and an event per node would usually cost more than
+the bound.
+
+Finally, the queue of the LaB-PQ of [Dong et al.
+2021](Z-bibliography.md#ref-dong2021), `TableHeap< T , D >`, is an observer
+of an observable table rather than a structure that emits. An `Assigned` or
+an `Inserted` of the table makes the id enter the queue with its new key, or
+move to it, and an `Erased` takes it out; `Cleared` empties the queue, and
+`Rebuilt` reads the keys of its ids again (the ids that the table no longer
+has leave). It differs from the tournament tree of the paper, whose update
+only marks the leaf of the id for the next extraction, since each update
+moves the id at once, in $O( D \log_D s )$ time.
+
+<span id="lem-1-25"></span>**Lemma 1.25.** *Let a `TableHeap` $q$ be attached
+to an `ObservableArray` $t$, with no event of $t$ in a batch. Then, after each
+event of $t$, an id is in $q$ if and only if its value was written (by
+`set()`, `add()` or `push_back()`) since it last left $q$ (by `deleteMin()`,
+`extract()`, `erase()`, `pop_back()` of its value, `clear()` or `assign()`
+to a shorter table), and the key of each id in $q$ is its value in $t$.*
+
+*Proof.* A write sends `Assigned` or `Inserted` after it, and `update()` then
+reads the value that the write left and inserts the id or moves it to that
+key. In turn, `pop_back()` sends `Erased` before the removal, which takes the
+id out, and `clear()` and `assign()` send `Cleared` and `Rebuilt`, which
+empty the queue or read again the keys of the ids still in the table. No other
+operation of $t$ changes a value, and the operations of $q$ that remove an
+id are those listed. $\square$
+
+Within a batch of $t$ the queue receives the net events at its close, and
+the composition of the writes of an index into one `Assigned` of its last
+value gives it the same ids and keys at that point.
+
+With `NoObservers`, the code of the operations of these structures is the
+code of the structures as they were before their events, which we compare
+byte for byte by the option `--before` of the script `bench/zerocost.py`
+on the headers of the two trees. With Clang 18 every function of the check
+is the same. With GCC 13 the same holds, up to the names of the labels, when
+each structure is compiled in a unit of its own, but for the caller of
+`knapsackBB()`, which now runs the search of a template shared with the
+overload that takes an observer and orders the setup of its arguments with
+one instruction less; in the single unit of the check, instead, GCC inlines
+some functions differently (among them the joins of `JoinTree`, whose source
+did not change), and the comparison there is not conclusive.
 
 ## 1.16 Discussion and references {#sec-1-16}
 

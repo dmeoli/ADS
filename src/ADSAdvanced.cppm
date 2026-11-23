@@ -598,6 +598,7 @@ using ADS::DialQueue;
 
 // priority/IndexedDaryHeap.h
 using ADS::IndexedDaryHeap;
+using ADS::TableHeap;
 
 // priority/IndexedHeapPair.h
 using ADS::IndexedHeapPair;
@@ -871,6 +872,7 @@ using ADS::mod::Inserted;
 using ADS::mod::Key;
 using ADS::mod::KeyChanged;
 using ADS::mod::Lower;
+using ADS::mod::Parent;
 using ADS::mod::Permuted;
 using ADS::mod::Rebuilt;
 using ADS::mod::Relocated;

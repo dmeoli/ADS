@@ -677,6 +677,7 @@ using ADS::tspGap;
 using ADS::vertexCoverApprox;
 
 // intractable/BranchAndBound.h
+using ADS::IncumbentChanged;
 using ADS::TspBound;
 using ADS::bbTsp;
 using ADS::knapsackBB;
