@@ -378,7 +378,7 @@ are in the places $\mathit{off}[ u ] \le k < \mathit{off}[ u + 1 ]$ of a
 vector of $n + 1$ offsets, with $\mathit{off}[ 0 ] = 0$ and
 $\mathit{off}[ n ] = a$ ([Montresor 2025,
 §9.4](Z-bibliography.md#ref-montresor2025)). This is the format of the
-compressed sparse rows of the sparse matrices (see [chapter
+compressed sparse rows of the sparse matrices (cf. [chapter
 17](17-numeric.md#ch-17) and [Saad 2003,
 §3.4](Z-bibliography.md#ref-saad2003)): no pointer, $\Theta( n + a )$ space,
 and the adjacent nodes of $u$ in one contiguous run, which a visit reads with
@@ -1064,7 +1064,7 @@ $d[ v ] \ge \delta( r , v )$. Second, the values of $d$ in the queue never
 decrease from its head to its tail and differ by at most 1. This holds at
 the start, and a step removes the head, of value $k$, and appends nodes of
 value $k + 1$, which is at least the value of the tail and exceeds by 1 that
-of the new head. Hence we see that the nodes leave the queue in the order of their
+of the new head. Hence the nodes leave the queue in the order of their
 values. We now show by induction on $k$ that $d[ v ] = k$ for each node
 with $\delta( r , v ) = k$, the case $k = 0$ being $r$ itself. Let
 $\delta( r , v ) = k + 1$, and let $u$ precede $v$ on a shortest path, so
@@ -1416,7 +1416,7 @@ numbered, in the component $D$, so that $\mathit{ft}( D ) = \mathit{ft}[ x ]
 reaches all of $D$, which is strongly connected in $G^T$ too. An edge of
 $G^T$ from $D$ to another component $E$ is an edge of $G$ from $E$ to $D$,
 and hence $\mathit{ft}( E ) > \mathit{ft}( D )$ by the first part; thus $E$
-is numbered already, and its nodes are not reached again. Hence we see that the visit
+is numbered already, and its nodes are not reached again. Hence the visit
 numbers $D$ alone. Each of the two passes is a sequence of visits that share
 their marks, $\Theta( n + m )$ in all by [Lemma 14.6](14-graph.md#lem-14-6).
 $\square$
@@ -1884,12 +1884,12 @@ gaps down by at most 2 and one to a side by at most 1. The least of
 $a x + b y$ on these constraints is at one of the vertices
 $( M - \mu , \mu )$, $( M + \mu , 0 )$ and $( 0 , M )$, and
 $a \le b \le 2 a$ makes the first one the least; a path of $\mu$ diagonal
-moves and $M - \mu$ straight ones attains it. Hence we find that (14.5) is the distance
+moves and $M - \mu$ straight ones attains it. Hence (14.5) is the distance
 of a graph, which satisfies the triangle inequality
 $h( u ) \le w_1( u , v ) + h( v )$ for each move of unit cost $w_1$. A move
 of the weighted grid costs $\gamma( x ) \, w_1( u , v ) \ge
 \gamma_{\mathrm{min}} \, w_1( u , v )$, $x$ the cell that pays, and the
-blocked cells only remove moves. Thus we conclude that $\gamma_{\mathrm{min}} h$ is
+blocked cells only remove moves. Thus $\gamma_{\mathrm{min}} h$ is
 consistent, and so admissible. $\square$
 
 With $b = a$ (the king) (14.5) is the distance of Chebyshev $a M$, and with
@@ -1924,7 +1924,7 @@ from $s$ to $v$ modulo $2^{64}$, for each node $v$, in $O( n + m )$ time.*
 *Proof.* The distances are those of [Lemma 14.7](14-graph.md#lem-14-7),
 and the nodes leave the queue by nondecreasing distance. A shortest path to
 $v \ne s$ is a shortest path to its last node but one, $u$, followed by
-$( u , v )$, where $\delta( s , u ) = \delta( s , v ) - 1$; hence we see that the
+$( u , v )$, where $\delta( s , u ) = \delta( s , v ) - 1$; hence the
 number $\sigma( v )$ of these paths is the sum of $\sigma( u )$ over such
 edges, and $\sigma( s ) = 1$. We show by induction on $\delta( s , u )$
 that $c[ u ] = \sigma( u )$ when $u$ leaves the queue. Each $u$ with an
@@ -2038,7 +2038,7 @@ reach $\rho'_j$ of $o$ after $j$ stops. This holds for $j = 0$. If
 $\rho_j < L$, the station $o_{j+1}$ is at most $\rho'_j \le \rho_j$, and
 hence in reach of the greedy, which stops at the last station in reach;
 thus its position is at least $D[ o_{j+1} ]$, and
-$\rho_{j+1} \ge \rho'_{j+1}$. Hence we conclude that the greedy reaches $L$ after at most
+$\rho_{j+1} \ge \rho'_{j+1}$. Hence the greedy reaches $L$ after at most
 $k$ stops, and it never finds no station in reach while a trip exists. If it
 finds none, i.e., the stations in reach are all behind it, the same
 induction shows that no sequence can go further with as many stops, and
@@ -2075,7 +2075,7 @@ std::optional< std::vector< std::size_t > >
 refuelingStops( const std::vector< T > & D , T L , T R );
 ```
 
-where `keep( u , v )` tells whether the edge $( u , v )$ is kept,
+where `keep( u , v )` is true if the edge $( u , v )$ is kept,
 `simpleCycles()` passes each cycle to $f$ as the vector of its nodes from $s$
 back to $s$, and `refuelingStops()` returns the places in $D$ of the stops.
 
@@ -2145,7 +2145,7 @@ $( u , p[ u ] )$ at which $p[ u ]$ is taken, so that $\lvert M \rvert =
 $( u , p[ u ] )$ joins $M$, any later edge that touches $p[ u ]$ finds it
 taken, and one that touches $u$ is $( u' , u )$ with $p[ u' ] = u$ (the
 parent of $u$ is $p[ u ]$), examined before $u$ in the reverse order of the
-visit, which would have taken $u$. Thus we have that $M$ is a matching, and any cover,
+visit, which would have taken $u$. Thus $M$ is a matching, and any cover,
 which has an end of each of its edges, has at least $\lvert M \rvert$
 nodes. The visit and the scan cost $O( n )$. $\square$
 
@@ -2252,7 +2252,7 @@ $L$ is a topological order, as in the algorithm of Kahn. Let $L'$ be any
 topological order, and suppose that $L$ and $L'$ agree on their first $h$
 nodes. In the graph without them, the first node of the rest of $L'$ has no
 entering edge, and therefore it is in $S$ at step $h + 1$, which holds only
-the node $L[ h ]$ (indices from 0); thus we see that the two agree on $h + 1$ nodes,
+the node $L[ h ]$ (indices from 0); thus the two agree on $h + 1$ nodes,
 and $L' = L$. Moreover, the node $L[ h + 1 ]$ enters $S$ when the edges of
 $L[ h ]$ are deleted, since otherwise it would have been in $S$ together
 with $L[ h ]$; hence $( L[ h ] , L[ h + 1 ] )$ is an edge. Conversely, if
@@ -2400,8 +2400,7 @@ queue only through the customization points of `QueueCustomization.h`
 (`queue_insert()`, `queue_deleteMin()` and `queue_decrease()`), so that a
 queue of another library needs no wrapper, and the queues it takes are
 those of the concept `FrontierQueue`, which Prim's algorithm takes as well.
-Thus we
-have that all the priority queues extract the same nodes in the same order,
+Thus all the priority queues extract the same nodes in the same order,
 and a `FrontierCounts` (the additions, the extractions, the decreases and the
 edges examined) measures the same work on any of them. `QueueFrontier`,
 `StackFrontier` and `DequeFrontier` adapt a queue, a stack and a deque, whose
@@ -2543,7 +2542,7 @@ whose $d$ never falls, only in round 0. Each round costs $O( n + m )$,
 which gives the time. If a negative cycle is reachable, the prototype never
 stops: at its end the second condition of (14.6) would hold on the cycle,
 whose nodes all have finite $d$, and summed along it would give a
-nonnegative cost; hence we conclude that some node is extracted more than $n$ times.
+nonnegative cost; hence some node is extracted more than $n$ times.
 $\square$
 
 `bellmanFordMoore()` therefore returns with the flag `negativeCycle` set when
@@ -3382,8 +3381,8 @@ a linear program over the matchings, whose polytope [Edmonds
 with $x( \delta( v ) ) \le 1$ at each node and
 $x( E( B ) ) \le ( \lvert B \rvert - 1 ) / 2$ on each set $B$ of an odd
 number of nodes. Its dual has a variable $y_v \ge 0$ per node and
-$z_B \ge 0$ per odd set, and asks that the *slack* of each edge
-$e = [ u , v ]$ be nonnegative,
+$z_B \ge 0$ per odd set, and requires the *slack* of each edge
+$e = [ u , v ]$ to be nonnegative,
 
 $$
 \pi( e ) = y_u + y_v - 2 w( e ) + 2 \sum_{B \ni u , v} z_B \ge 0 ,
@@ -4856,11 +4855,11 @@ a program that does not need it compiles none of it. By LEMON we mean here
 abLEMON, the maintained fork, or any LEMON whose headers compile in C++20;
 LEMON 1.3 does not, since its maps call members of `std::allocator` that
 C++20 removed, and the configuration then leaves the option off.
-The other libraries of graphs that run on the graphs of ADS, the
+The other libraries of graphs that run on the graphs of ADS (the
 partitioners METIS and KaHIP, SuiteSparse:GraphBLAS and the dynamic
-algorithms of NetworKit, have adapters of the same kind (beyond the book),
-each behind its own option, which [§C.15](C-libraries.md#sec-C-15) to
-[§C.17](C-libraries.md#sec-C-17) show at work; they read the rows of a
+algorithms of NetworKit) have adapters of the same kind, beyond the book,
+each behind its own option ([§C.15](C-libraries.md#sec-C-15) to
+[§C.17](C-libraries.md#sec-C-17)). These read the rows of a
 `StaticGraph` of the separate layout in place wherever the types of the
 library agree, and a `NetworKitMirror` is an observer of the changes of
 [§14.13](14-graph.md#sec-14-13), as `LemonMirror` is.
@@ -4927,7 +4926,7 @@ In `Digraphs.h` the graphs cross in both directions. `StaticDigraphView< W
 the place $k$ of the rows, `OutArcIt` walks a row in memory, and `weights()`
 reads the weights stored next to the heads; the tails and the lists of the
 arcs into each node, which the rows lack, take $8 a + 4 n$ bytes, built
-once. Then `Dijkstra`, `Bfs`, `Preflow` and `NetworkSimplex` of LEMON then
+once. `Dijkstra`, `Bfs`, `Preflow` and `NetworkSimplex` of LEMON then
 run on the graph of ADS, replacing the graph and the length map. Conversely,
 `GraphView< GR , LM >` is a GRAPH of ADS over a digraph of LEMON and a
 length map, with no copy. Its nodes are named by the ids of LEMON, and
