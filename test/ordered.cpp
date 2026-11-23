@@ -3,11 +3,11 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * Tests of the engineered ordered structures, beyond the book: the B+-tree
- * in main memory, the static searches of sorted arrays, the selection, the
- * range minimum queries, the intersections of sorted sets and the union of
- * disjoint sets. Each one is checked against a reference of the standard
- * library on random operations and on the edge cases, at the level 3 of
- * the contracts.
+ * in main memory, the static searches of sorted arrays, the packed memory
+ * arrays, the selection, the range minimum queries, the intersections of
+ * sorted sets and the union of disjoint sets. Each one is checked against
+ * a reference of the standard library on random operations and on the edge
+ * cases, at the level 3 of the contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -28,6 +28,7 @@
 #include "ADS/search/CountLess.h"
 #include "ADS/search/DynamicPGMIndex.h"
 #include "ADS/search/NthElement.h"
+#include "ADS/search/PackedMemoryArray.h"
 #include "ADS/search/PGMIndex.h"
 #include "ADS/search/StaticSearch.h"
 #include "ADS/search/WordRangeMinimum.h"
@@ -38,6 +39,7 @@
 #include "ADS/tree/BTreeMap.h"
 
 #include <algorithm>
+#include <bit>
 #include <cstdint>
 #include <iterator>
 #include <limits>
@@ -1319,6 +1321,190 @@ ADS_TEST( "pgm-dynamic" )
   CHECK( ( *P.find( -inf ) == -1 ) && ( *P.find( inf ) == -2 ) );
   CHECK( P.lowerBound( 1e300 )->second == -2 );
   CHECK( P.lowerBound( -1e300 )->first == 0.0 );
+  }
+ }
+
+// the packed memory array and its compressed version against std::set: the
+// empty set and the set of one key, random insertions, removals and
+// searches with the least and the largest key of the type, the visits of
+// ranges and the scans, on keys of 16, 32 and 64 bits, signed and floating
+// keys for the array not compressed, sets built at and around the sizes
+// where a leaf and the number of the leaves change, and the batches in
+// order, in reverse order, at random and clustered, with keys twice and
+// removals of absent keys, of fewer than 64 keys (a key at a time), of at
+// least n / 8 (a new building) and in between (the three phases), each
+// result against std::set and the order of the array checked
+ADS_TEST( "packed-memory-array" )
+{
+ std::mt19937_64 g( 47 );
+ auto same = [ & ]< class P , class K >( const P & p ,
+					const std::set< K > & s ) {
+  CHECK( p.wellFormed() && ( p.size() == s.size() ) &&
+	 ( p.empty() == s.empty() ) );
+  std::vector< K > v;
+  p.forEach( [ & ]( const K & k ) { v.push_back( k ); } );
+  CHECK( std::equal( v.begin() , v.end() , s.begin() , s.end() ) );
+  };
+ auto random = [ & ]< class P , class K >( P & p , std::set< K > & s , K mod ,
+					  int ops ) {
+  const K top = std::numeric_limits< K >::max();
+  auto key = [ & ]( void ) {
+   const std::uint64_t r = g();
+   if( r % 61 == 0 )
+    return( r % 122 == 0 ? std::numeric_limits< K >::lowest() : top );
+   return( K( r % std::uint64_t( mod ) ) );
+   };
+  for( int it = 0 ; it < ops ; ++it ) {
+   const K x = key();
+   const int op = int( g() % 10 );
+   if( op < 5 )
+    CHECK( p.insert( x ) == s.insert( x ).second );
+   else if( op < 8 )
+    CHECK( p.erase( x ) == ( s.erase( x ) > 0 ) );
+   else {
+    CHECK( p.contains( x ) == ( s.count( x ) > 0 ) );
+    const auto lb = p.lowerBound( x );
+    const auto it2 = s.lower_bound( x );
+    CHECK( lb.has_value() == ( it2 != s.end() ) );
+    CHECK( ! lb || ( *lb == *it2 ) );
+    }
+   if( it % 1009 == 0 ) {  // a range and a scan of 5 keys
+    K a = key() , b = key();
+    if( b < a )
+     std::swap( a , b );
+    std::vector< K > R , E;
+    p.forEach( a , b , [ & ]( const K & k ) { R.push_back( k ); } );
+    for( auto i = s.lower_bound( a ) ; ( i != s.end() ) && ( *i < b ) ; ++i )
+     E.push_back( *i );
+    CHECK( R == E );
+    R.clear();
+    E.clear();
+    p.scan( a , [ & ]( const K & k ) {
+     R.push_back( k );
+     return( R.size() < 5 );
+     } );
+    for( auto i = s.lower_bound( a ) ; ( i != s.end() ) && ( E.size() < 5 ) ;
+	 ++i )
+     E.push_back( *i );
+    CHECK( R == E );
+    }
+   if( it % 9973 == 0 )
+    same( p , s );
+   }
+  same( p , s );
+  };
+ auto batches = [ & ]< class P ,
+   class K >( P & p , std::set< K > & s , K mod ) {
+  for( std::size_t k :
+       { std::size_t( 1 ) , std::size_t( 63 ) , std::size_t( 64 ) ,
+	 std::size_t( 200 ) , std::size_t( 3000 ) , s.size() / 8 + 1 ,
+	 std::size_t( 20000 ) } )
+   for( int kind = 0 ; kind < 4 ; ++kind )
+    for( const bool in : { true , false } ) {
+     std::vector< K > B;
+     const K c = K( g() % std::uint64_t( mod ) );  // the centre of a cluster
+     for( std::size_t i = 0 ; i < k ; ++i )
+      B.push_back( kind == 3 ? K( c + K( g() % 64 ) )
+			     : K( g() % std::uint64_t( mod ) ) );
+     if( kind == 1 )
+      std::sort( B.begin() , B.end() );
+     if( kind == 2 )
+      std::sort( B.rbegin() , B.rend() );
+     if( k > 1 )
+      B.push_back( B[ k / 2 ] );  // a key twice
+     std::size_t want = 0;
+     for( const K & x : B )
+      want += in ? ( s.insert( x ).second ? 1 : 0 ) : s.erase( x );
+     CHECK( ( in ? p.insertBatch( B ) : p.eraseBatch( B ) ) == want );
+     same( p , s );
+     }
+  };
+ auto all = [ & ]< class P , class K >( K mod ) {
+  {  // empty and one key
+   P p;
+   CHECK( p.wellFormed() && p.empty() && ( p.leaves() == 0 ) );
+   CHECK( ! p.contains( K( 3 ) ) && ! p.lowerBound( K( 0 ) ) &&
+	  ! p.erase( K( 3 ) ) );
+   CHECK( p.eraseBatch( std::vector< K >( 100 , K( 1 ) ) ) == 0 );
+   CHECK( p.insert( K( 5 ) ) && ! p.insert( K( 5 ) ) && ( p.size() == 1 ) );
+   CHECK( p.contains( K( 5 ) ) && ! p.contains( K( 4 ) ) );
+   CHECK( ( *p.lowerBound( K( 0 ) ) == K( 5 ) ) && ! p.lowerBound( K( 6 ) ) );
+   CHECK( p.erase( K( 5 ) ) && p.empty() && p.wellFormed() );
+   CHECK( p.insertBatch( std::vector< K >( 70 , K( 2 ) ) ) == 1 );
+   p.clear();
+   CHECK( p.empty() && p.wellFormed() && ( p.bytes() == sizeof( P ) ) );
+   }
+  {  // random operations, and batches
+   P p;
+   std::set< K > s;
+   random( p , s , mod , test::scaled( 60000 , 6000 ) );
+   batches( p , s , mod );
+   random( p , s , mod , test::scaled( 20000 , 2000 ) );
+   }
+  {  // few keys, removed and inserted again many times
+   P p;
+   std::set< K > s;
+   random( p , s , K( 40 ) , 4000 );
+   }
+  // around the sizes where a leaf, and the number of leaves, change
+  for( std::size_t n : { 15 , 16 , 17 , 63 , 64 , 65 , 255 , 256 , 257 , 1023 ,
+			 1024 ,
+			 1025 , 4095 , 4096 , 4097 } ) {
+   if( n > std::size_t( mod ) )
+    continue;
+   std::vector< K > S;
+   std::set< K > s;
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    S.push_back( K( i * ( std::uint64_t( mod ) / n ) ) );
+    s.insert( S.back() );
+    }
+   P p( S );
+   same( p , s );
+   CHECK( std::has_single_bit( p.leaves() ) &&
+	  ( p.leaves() * p.leafUnits() >= 2 * n ) );
+   for( std::size_t i = 0 ; i < n ; i += 2 )  // half out, in order
+    CHECK( p.erase( S[ i ] ) && ( s.erase( S[ i ] ) == 1 ) );
+   same( p , s );
+   for( std::size_t i = n ; i-- > 0 ; )  // back, in reverse order
+    CHECK( p.insert( S[ i ] ) == s.insert( S[ i ] ).second );
+   same( p , s );
+   CHECK( p.eraseBatch( S ) == n );
+   CHECK( p.empty() && p.wellFormed() );
+   }
+  };
+ all.template operator()< PackedMemoryArray< std::uint64_t > >(
+   std::uint64_t( 1 ) << 40 );
+ all.template operator()< PackedMemoryArray< std::uint32_t > >(
+   std::uint32_t( 100000 ) );
+ all.template operator()< PackedMemoryArray< std::int64_t > >(
+   std::int64_t( 1 ) << 50 );
+ all.template operator()< CompressedPackedMemoryArray< std::uint64_t > >(
+   std::uint64_t( 1 ) << 40 );
+ all.template operator()< CompressedPackedMemoryArray< std::uint64_t > >(
+   std::numeric_limits< std::uint64_t >::max() );
+ all.template operator()< CompressedPackedMemoryArray< std::uint32_t > >(
+   std::uint32_t( 4000000000u ) );
+ all.template operator()< CompressedPackedMemoryArray< std::uint16_t > >(
+   std::uint16_t( 60000 ) );
+ {  // floating keys, the two zeros one key
+  PackedMemoryArray< double > p;
+  for( int i = 0 ; i < 3000 ; ++i )
+   CHECK( p.insert( i / 7.0 ) );
+  CHECK( ! p.insert( -0.0 ) && p.contains( -0.0 ) );
+  const double inf = std::numeric_limits< double >::infinity();
+  CHECK( p.insert( inf ) && p.insert( -inf ) );
+  CHECK( ( *p.lowerBound( 1e300 ) == inf ) &&
+	 ( *p.lowerBound( -1e300 ) == 0.0 ) && p.wellFormed() );
+  }
+ {  // the compression of close keys
+  CompressedPackedMemoryArray< std::uint64_t > c;
+  PackedMemoryArray< std::uint64_t > u;
+  std::vector< std::uint64_t > B;
+  for( std::uint64_t i = 0 ; i < 100000 ; ++i )
+   B.push_back( ( std::uint64_t( 1 ) << 50 ) + 3 * i );
+  c.insertBatch( B );
+  u.insertBatch( B );
+  CHECK( ( c.size() == u.size() ) && ( 3 * c.bytes() < u.bytes() ) );
   }
  }
 

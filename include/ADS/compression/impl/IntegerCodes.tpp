@@ -306,9 +306,29 @@ decodePForDelta( const PForDeltaBlock & p )
 
 inline void encodeVByte( std::vector< std::uint8_t > & out , std::uint64_t x )
 {
- for( int i = vbyteLength( x ) - 1 ; i >= 0 ; --i )
-  out.push_back(
-    std::uint8_t( ( ( x >> ( 7 * i ) ) & 0x7F ) | ( i > 0 ? 0x80 : 0 ) ) );
+ const std::size_t at = out.size();
+ out.resize( at + std::size_t( vbyteLength( x ) ) );
+ encodeVByte( out.data() + at , x );
+ }
+
+inline int encodeVByte( std::uint8_t * out , std::uint64_t x )
+{
+ const int k = vbyteLength( x );
+ for( int i = k - 1 ; i >= 0 ; --i )
+  *out++ =
+    std::uint8_t( ( ( x >> ( 7 * i ) ) & 0x7F ) | ( i > 0 ? 0x80 : 0 ) );
+ return( k );
+ }
+
+inline std::uint64_t decodeVByte( const std::uint8_t * in , std::size_t & p )
+{
+ std::uint64_t x = 0;
+ for( ; ; ) {
+  const std::uint8_t b = in[ p++ ];
+  x = ( x << 7 ) | ( b & 0x7F );
+  if( b < 0x80 )
+   return( x );  // a stopper
+  }
  }
 
 inline std::uint64_t decodeVByte( const std::vector< std::uint8_t > & in ,

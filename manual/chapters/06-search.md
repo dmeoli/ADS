@@ -4,7 +4,8 @@
 `InterpolationSearch.h`, `KnuthSearches.h`, `SortedSearches.h`,
 `StaticSearch.h`, `CountLess.h`, `PGMIndex.h`, `CompressedPGMIndex.h`,
 `DynamicPGMIndex.h`, `Minimum.h`, `LocalOptima.h`, `Selection.h`,
-`NthElement.h`, `RangeMinimum.h`, `WordRangeMinimum.h`]
+`NthElement.h`, `RangeMinimum.h`, `WordRangeMinimum.h`,
+`PackedMemoryArray.h`]
 
 We are concerned in this chapter with the questions that can be answered
 on a vector by looking at few of its items: the place of a key in a
@@ -20,11 +21,13 @@ keys, in the static, compressed and dynamic forms of the PGM-index
 minimum and the local optima ([§6.7](06-search.md#sec-6-7)), the
 selection ([§6.8](06-search.md#sec-6-8)) and the range minima
 ([§6.9](06-search.md#sec-6-9)) precede a comparison of the searches on
-what each one is meant for ([§6.10](06-search.md#sec-6-10)). In the sets of
+what each one is meant for ([§6.10](06-search.md#sec-6-10)), and the packed
+memory array, a sorted set kept in one array with empty cells, compressed
+or not, closes the chapter ([§6.11](06-search.md#sec-6-11)). In the sets of
 [§1.9](01-introduction.md#sec-1-9), `CompressedPGMIndex.h`, `CountLess.h`,
-`DynamicPGMIndex.h`, `NthElement.h`, `RangeMinimum.h`, `StaticSearch.h` and
-`WordRangeMinimum.h` are advanced and the other headers of this chapter are
-base.
+`DynamicPGMIndex.h`, `NthElement.h`, `PackedMemoryArray.h`,
+`RangeMinimum.h`, `StaticSearch.h` and `WordRangeMinimum.h` are advanced and
+the other headers of this chapter are base.
 
 ## 6.1 Definitions and notation {#sec-6-1}
 
@@ -1799,9 +1802,329 @@ array the branch-free binary search usually wins (since it has no structure to
 read), while on a large one the S+ tree and the PGM-index read fewer lines, the
 latter in far less space on regular keys. Their comparison on an idle machine,
 with the sizes of the arrays and the distributions of the keys at which the
-ranking changes, belongs to [Appendix B](B-benchmarks.md#app-B).
+ranking changes, belongs to [Appendix B](B-benchmarks.md#app-B), as does
+that of the packed memory arrays of [§6.11](06-search.md#sec-6-11) with
+`std::set`, the B-tree of ADS, `absl::btree_set` and the CPMA of its
+authors.
 
-## 6.11 Discussion and references {#sec-6-11}
+## 6.11 The packed memory array {#sec-6-11}
+
+A sorted vector is searched in $O( \log n )$ time and visited at the speed of
+the memory, but an insertion may move $\Theta( n )$ keys. The trees of
+[Chapter 8](08-tree.md#ch-8) and the dynamic PGM-index of
+[§6.6](06-search.md#sec-6-6) pay for their insertions with pointers or with
+several sorted levels, and hence a visit in order jumps at each node or
+merges the levels. The packed memory array of [Itai et al.
+1981](Z-bibliography.md#ref-itai1981), in the form of [Bender et al.
+2005](Z-bibliography.md#ref-bender2005), keeps instead the keys in order in
+one array with a constant fraction of empty cells among them. Thus, an
+insertion moves the keys of a (usually small) region, while the visit of a
+range reads the array from its first key on. We denote by
+`PackedMemoryArray< K >` this set, on keys that are trivially copyable and
+ordered by `<`, and by `CompressedPackedMemoryArray< K >` (i.e.,
+`PackedMemoryArray< K , true >`) the compressed packed memory array (CPMA)
+of [Wheatman et al. 2024](Z-bibliography.md#ref-wheatman2024), on unsigned
+integers, whose leaves store the differences of the keys. Both are in
+`ADS/search/PackedMemoryArray.h`, and both insert and remove batches of
+keys in parallel on an executor (cf. [§25.2](25-parallel.md#sec-25-2)), by
+the algorithm of the same paper.
+
+The array is cut into $L = 2^H$ *leaves* of $C$ *units* each, a unit being
+a key in `PackedMemoryArray` and a byte in `CompressedPackedMemoryArray`.
+These are the leaves of an implicit complete binary tree, whose node of
+height $h$ is a run of $2^h$ consecutive leaves (its *region*); the
+*density* of a region is the ratio of the units that its keys take to its
+$2^h C$ units. Following [Bender et al.
+2005](Z-bibliography.md#ref-bender2005), we keep the density of a region of
+height $h$ between two thresholds that narrow linearly from the leaves to
+the root,
+$$
+\rho_h = \frac{1}{8} + \frac{1}{8} \frac{h}{H} \quad \text{and} \quad
+\tau_h = 1 - \frac{1}{4} \frac{h}{H} , \tag{6.16}
+$$
+i.e., from $[ 1/8 , 1 ]$ at a leaf to $[ 1/4 , 3/4 ]$ at the root (with no
+lower threshold when $L = 1$). A region is therefore more strictly bounded
+than the regions it contains. As in [Wheatman and Xu
+2021](Z-bibliography.md#ref-wheatman2021), the keys of a leaf are packed to
+its left: a leaf is its first key (its *head*), the count of its units and
+the cells of its other keys, with no empty cell between two keys and no mark
+of an empty cell. An insertion that would bring a leaf past its $C$ units
+climbs the tree to the first region whose density, with the new key, is at
+most $\tau_h$, and spreads the keys of that region evenly over its leaves
+(the *redistribution*). Symmetrically, a removal that leaves fewer than
+$\rho_0 C$ units in a leaf climbs to the first region at least $\rho_h$
+dense. When the root itself is out of its thresholds, the array is built
+again with the fewest leaves that make it at most half full ([Algorithm
+6.21](06-search.md#alg-6-21)). A leaf has $C = \max\{ 16 , 2^{\lceil \log_2
+( 2 b ) \rceil} \}$ keys, or $C = \max\{ 256 , 2^{\lceil \log_2 ( 16 b )
+\rceil} \}$ bytes when compressed, where $b$ is the number of the bits of
+$n$; hence $C = \Theta( \log n )$, as the analysis asks, and $C$ (fixed at
+each building) is at most 128 keys or 1024 bytes.
+
+<span id="alg-6-21"></span>**Algorithm 6.21.** The insertion of a key and
+the redistribution of a region in `PackedMemoryArray` ([Bender et al.
+2005](Z-bibliography.md#ref-bender2005)); $u( \cdot )$ is the number of the
+units of a leaf or of a region, and $R_h$ the region of height $h$ above the
+leaf $\ell$. The removal is the same with $\rho_h$ in place of $\tau_h$, and
+the building spreads all the keys over the least power of 2 of leaves that
+makes the array at most half full.
+
+--8<-- "generated/PackedMemoryArray-insert.pseudo.md"
+
+--8<-- "generated/PackedMemoryArray-spread.pseudo.md"
+
+In the compressed array a key takes from 1 to $w$ bytes, and therefore the
+redistribution gives each leaf a share of the units of the keys rather than
+of their number. Its leaves are fixed by the prefix sums of the units, and
+it refuses (writing nothing) a share that does not fit a leaf, in which case
+the insertion climbs further. The two results below give the conditions
+under which this does not happen, and show that each leaf keeps a key,
+which the searches need. In the following, $s$ denotes the units of a head
+(1, or the bytes of `K` when compressed) and $w$ the most units of a key
+(1, or the bytes of the longest code of a difference, e.g., 10 for 64 bits).
+
+<span id="lem-6-26"></span>**Lemma 6.26.** *Let `spread()` put the keys
+$x_0 < \cdots < x_{m-1}$, $m \ge r$, on $r$ leaves, and let $U$ be their
+units as one run, $c_0 = s$ and $c_i$ the units of $x_i$ after $x_{i-1}$. If
+$r = 1$ or $\lfloor U / r \rfloor \ge w$, every leaf gets at least one key,
+and each leaf but the last gets at most $s + w + \lceil U / r \rceil - 2$
+units, the last one at most $s + \lceil U / r \rceil - 1$; hence the
+redistribution succeeds when moreover $\lceil U / r \rceil \le C + 2 - s -
+w$.*
+
+*Proof.* For $r = 1$ the only leaf gets all the keys and $U$ units. Let
+$r \ge 2$, $P_j = c_0 + \cdots + c_{j-1}$ and $t_i = \lfloor i U / r
+\rfloor$, so that the leaf $i$ starts at the least $b_i$ with
+$P_{b_i} \ge t_i$ (line 4 of `spread()`). Since $c_j \le w \le t_{i+1} -
+t_i$, the prefix sums cross each threshold at a distinct place, i.e.,
+$P_{b_i} \le P_{b_i - 1} + w < t_i + w \le t_{i+1}$, and therefore
+$b_{i+1} > b_i$; also $b_{r-1} < m$, since $t_{r-1} < U = P_m$. The bounds of
+line 4 are then never active, and each leaf gets a key. The leaf $i$ holds
+$x_{b_i} , \ldots , x_{e - 1}$, $e = b_{i+1}$, in $s + P_e - P_{b_i + 1}$
+units. Now $P_{b_i + 1} = P_{b_i} + c_{b_i} \ge t_i + 1$, and $P_{e-1} \le
+t_{i+1} - 1$ gives $P_e \le t_{i+1} + w - 1$ (for the last leaf $P_e = U =
+t_r$), while $t_{i+1} - t_i \le \lceil U / r \rceil$. $\square$
+
+<span id="lem-6-27"></span>**Lemma 6.27.** *A building of $n \ge 1$ keys
+succeeds: with $L$ the least power of 2 such that $U \le L C / 2$, every
+leaf gets at least one key and at most $C$ units, and the root, if $L \ge
+2$, respects $\rho_H$ and $\tau_H$ as soon as $s = w = 1$.*
+
+*Proof.* If $L \ge 2$, the minimality of $L$ gives $U > L C / 4$, and hence
+$\lfloor U / L \rfloor \ge C / 4 \ge w$, since $C \ge 4 w$ (16 against 1,
+and 256 against at most 10); also $\lceil U / L \rceil \le C / 2 \le C + 2 -
+s - w$, since $C \ge 2 ( s + w )$. Lemma 6.26 then applies. For $s = w = 1$
+the density of the root is $U / ( L C )$, in $( 1 / 4 , 1 / 2 ]$. $\square$
+
+In the compressed array the density of the root after a building may differ
+slightly from $U / ( L C )$, since a head takes $s$ bytes instead of the code
+of its difference.
+
+<span id="lem-6-28"></span>**Lemma 6.28.** *If the set has $n \ge 1$ keys,
+every leaf holds at least one key, after any sequence of insertions,
+removals and batches.*
+
+*Proof.* A building gives each leaf a key (Lemma 6.27), and `spread()` writes
+nothing when it has fewer keys than leaves (line 2). An insertion, or the
+merge of a batch (see below), writes a leaf in place only with a nonempty
+run of keys; a removal does so only if the leaf keeps a key (or if $L = 1$,
+the leaf being the whole set), and otherwise climbs. Finally, the removal of
+the last key empties the array, and a climb that finds no region to spread
+ends with a building. $\square$
+
+The refusal of line 2 of `spread()` is (hopefully) rare. In fact, a region
+that respects $\rho_h$ has at least $2^h C / 8$ units, i.e., at least
+$2^h C / ( 8 w ) \ge 2^h$ keys, since $C \ge 8 w$; the refusal may thus
+happen only when the climb of a compressed array goes past such a region
+because a share did not fit. The costs are those of [Bender et al.
+2005](Z-bibliography.md#ref-bender2005). The thresholds of two nested
+regions differ by $1 / ( 4 H )$, and therefore a region of $2^h$ leaves
+spread by a climb takes $\Omega( 2^h C / H )$ updates before a child of it
+is out of its threshold again. This charges $O( H )$ moves of units per
+level to each update, i.e., an update costs $O( \log^2 n )$ amortized moves
+of units (or $O( \log^2 n / B )$ transfers of lines of $B$ units) besides its
+search, and a building is paid for by the $\Omega( n )$ updates since the
+previous one.
+
+*The search.* By Lemma 6.28, a search of the key $x$ finds the last leaf
+whose head is at most $x$ (the first leaf if none), and then reads that leaf
+only. The heads lie in an array of their own, in the order of Eytzinger
+(the heap order of the implicit tree of the $L$ leaves): this is the
+search-optimized layout (SPMA) of [Wheatman et al.
+2023](Z-bibliography.md#ref-wheatman2023). We search it as [Khuong and Morin
+2017](Z-bibliography.md#ref-khuong2017) do, with a conditional move per
+level and the line 4 levels down prefetched ([Algorithm
+6.22](06-search.md#alg-6-22)), which reads again, at each search, the first
+lines of a small array. Indeed, this array has $L + 1$ keys, about $n / C$,
+and it typically stays in the cache when the leaves do not. A building
+fills it, together with the place of each head and the leaf of each place,
+by a visit in order of the implicit tree.
+
+<span id="alg-6-22"></span>**Algorithm 6.22.** The leaf of a key in
+`PackedMemoryArray`, by the heads in the order of Eytzinger ([Khuong and
+Morin 2017](Z-bibliography.md#ref-khuong2017); [Wheatman et al.
+2023](Z-bibliography.md#ref-wheatman2023)); $[ \cdot ]$ is 1 when its
+condition holds and 0 otherwise.
+
+--8<-- "generated/PackedMemoryArray-leafOf.pseudo.md"
+
+<span id="lem-6-29"></span>**Lemma 6.29.** *For $L \ge 1$ heads in the order
+of Eytzinger, `leafOf( x )` returns the last leaf whose head is at most $x$,
+or the leaf 0 if every head is larger than $x$, after $\lfloor \log_2 L
+\rfloor + 1$ comparisons.*
+
+*Proof.* The places $1 , \ldots , L$ are the nodes of a complete binary tree
+(the children of $j$ being $2 j$ and $2 j + 1$), which the building labels by
+the leaves in a visit in order; hence the heads, increasing with the leaves,
+form a binary search tree. The loop of line 3 descends it from the root,
+to the right exactly when the head is at most $x$, and stops below a leaf
+of the tree after one comparison per level, i.e., $\lfloor \log_2 L
+\rfloor + 1$ of them. The bits of $j$ after its leading 1 are the turns of
+the descent (1 to the right). Removing the trailing ones and the 0 before
+them gives the last node where the descent turned left, which holds the
+least head larger than $x$ (the in-order successor of the path), or 0 if
+the descent never turned left; line 5 takes the leaf before it. $\square$
+
+*The compression.* In `CompressedPackedMemoryArray` a leaf keeps its head
+whole and each other key as the difference from the previous one, in the
+variable-byte code of [§21.7](21-compression.md#sec-21-7) (by the form of
+`encodeVByte()` on a pointer, meant for an array of a fixed size). This is
+the delta encoding of the sorted keys of [Wheatman et al.
+2024](Z-bibliography.md#ref-wheatman2024): a key of 64 bits close to the
+previous one takes 1 byte instead of 8, and a leaf of $C$ bytes holds up to
+$C - s + 1$ keys. A search decodes the leaf from its head. An insertion
+decodes the leaf, inserts the key and codes the leaf again, which moves
+$O( C )$ bytes, as the shift of the uncompressed array moves $O( C )$ keys.
+
+*The batches.* `insertBatch( ex , B )` sorts the batch on the executor (cf.
+[§25.7](25-parallel.md#sec-25-7)), drops the keys that appear twice and
+merges it by the three phases of [Wheatman et al.
+2024](Z-bibliography.md#ref-wheatman2024) ([Algorithm
+6.23](06-search.md#alg-6-23)), each of them parallel: (i) the merge of the
+batch into the leaves, (ii) the counting of the regions to spread, by levels
+from the leaves touched, and (iii) the redistribution of the largest of
+those regions. As the paper does at the two ends of the sizes, a batch of
+fewer than 64 keys goes a key at a time, while one of at least $n / 8$ keys
+is merged with the whole set, by blocks in parallel, before a new building.
+`eraseBatch()` is the same, with the differences of the sets and the lower
+thresholds.
+
+<span id="alg-6-23"></span>**Algorithm 6.23.** The insertion of a batch in
+`PackedMemoryArray` ([Wheatman et al.
+2024](Z-bibliography.md#ref-wheatman2024)); $T$ is the set of the leaves
+touched and $\mathit{Out}$ the leaves that overflow, whose keys are kept
+apart until the redistribution.
+
+--8<-- "generated/PackedMemoryArray-insertBatch.pseudo.md"
+
+The merge of the paper recurses on the median of the batch, which gives a
+span of $O( \log k \log n )$. Ours cuts the batch into at most 256 blocks of
+at least 64 keys, and moves the border of each block back to the first key
+of the leaf of its first key (line 6), so that each block owns the leaves of
+its keys; the blocks are then merged in parallel, for the same work and a
+span of $O( ( k / p ) \log n )$ on $p$ blocks, with fewer and larger tasks.
+The counting climbs one level at a time from the leaves touched, and keeps
+the units of the nodes of the level just counted. A node is counted from
+its children when they were counted, else from the counts of the units of
+the leaves (a word per leaf, rather than the cells of the leaves as in the
+paper); hence each region is counted once. The nodes out of their
+thresholds pass their parents to the next level, and those within are the
+regions to spread.
+
+<span id="lem-6-30"></span>**Lemma 6.30.** *In the merge of a batch, the
+blocks own disjoint sets of leaves, and no block writes a head, a leaf or a
+count of units that another block reads; the counting gives a set $S$ of
+pairwise disjoint regions, each within its threshold, such that every leaf
+touched lies in a region of $S$ unless the root is out of its thresholds, in
+which case the array is built again.*
+
+*Proof.* The leaf of a key does not decrease with the key, and the border of
+a block is moved back to the first key not below the head of the leaf of
+its first key (or to 0); hence the keys of a leaf fall in one block. A block
+merges the keys of a leaf into it, and writes the leaf in place only if the
+result fits and keeps the head; otherwise the leaf is kept apart, and its
+count of units is written after the merge. The blocks thus read only the
+heads, which no block writes, and their own leaves. In the counting, a node
+touched is either within its threshold, and its region enters $S$ (a leaf
+only if it was kept apart), or out of it, and its parent goes to the next
+level; each leaf touched therefore climbs until a region of $S$ contains it,
+or until the root. Two regions of the tree are either nested or disjoint,
+and keeping the largest of each nested family leaves disjoint regions, each
+within its threshold. $\square$
+
+The regions of $S$ are spread in parallel (each on the calling thread of its
+task, or the only one on the executor), from their leaves and from their
+leaves kept apart. A compressed region whose share does not fit a leaf
+(which Lemma 6.26 rules out unless the region is close to its threshold) is
+spread again from the regions above it, and at the root by a building. A
+batch therefore ends with the array in order, which `wellFormed()` checks
+after each batch at the level 3 of the contracts. The work and the span of
+the three phases are those of [Wheatman et al.
+2024](Z-bibliography.md#ref-wheatman2024), i.e., $O( k ( \log n + \log^2 n
+/ B ) )$ amortized work, but for the span of our merge given above. Also,
+the results of a batch are the same on every executor, the calling thread
+included, since the blocks, the regions and the shares depend only on the
+keys.
+
+Finally, a few choices of ours differ from the implementation of the paper.
+Each leaf has a count of its units (4 bytes per leaf, i.e., at most 1/32 of
+a leaf of 16 keys of 64 bits and 1/64 of a compressed leaf), so that the
+count of a region reads one word per leaf. The compressed leaves use the code
+of [§21.7](21-compression.md#sec-21-7), which puts the most significant
+group of 7 bits first, and keep the head out of the leaf, in the array of
+the heads. Furthermore, our array doubles or halves at a building, while the
+CPMA under F-Graph grows by a factor of 1.2. The graph of
+[§14.4.4](14-graph.md#sec-14-4-4) keeps all its arcs in one
+`CompressedPackedMemoryArray`.
+
+In `ADS/search/PackedMemoryArray.h`, the declarations of
+`PackedMemoryArray` that a user calls are
+
+```cpp
+// declarations of <ADS/search/PackedMemoryArray.h>
+template< class K , bool Z = false >
+ requires detail::PMAKey< K , Z >
+class PackedMemoryArray
+{
+ public:
+ using key_type = K;
+ static constexpr bool kCompressed = Z;
+ static constexpr std::size_t kHead = Z ? sizeof( K ) : 1;
+ static constexpr std::size_t kWide = Z ? detail::pmaWide< K >() : 1;
+ static constexpr std::size_t kMaxUnits = Z ? 1024 : 128;
+ static constexpr std::size_t kPointBatch = 64;
+ PackedMemoryArray( void );
+ explicit PackedMemoryArray( std::vector< K > S );
+ bool insert( const K & x );
+ bool erase( const K & x );
+ bool contains( const K & x ) const;
+ std::optional< K > lowerBound( const K & x ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ template< class F >
+ void forEach( const K & lo , const K & hi , F && f ) const;
+ template< class F >
+ void scan( const K & lo , F && f ) const;
+ template< Executor E >
+ std::size_t insertBatch( E & ex , std::vector< K > B );
+ std::size_t insertBatch( std::vector< K > B );
+ template< Executor E >
+ std::size_t eraseBatch( E & ex , std::vector< K > B );
+ std::size_t eraseBatch( std::vector< K > B );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ void clear( void );
+ std::size_t leaves( void ) const;
+ std::size_t leafUnits( void ) const;
+ std::size_t bytes( void ) const;
+ bool wellFormed( void ) const;
+ };
+
+template< std::unsigned_integral K >
+using CompressedPackedMemoryArray = PackedMemoryArray< K , true >;
+```
+
+## 6.12 Discussion and references {#sec-6-12}
 
 The binary search, the search by interpolation and the selection of
 Hoare are in [Montresor 2025, §1.2, §12.1 and
@@ -1819,7 +2142,14 @@ and dynamic, is that of [Ferragina and Vinciguerra
 linear approximation of [O'Rourke 1981](Z-bibliography.md#ref-orourke1981)
 and [Xie et al. 2014](Z-bibliography.md#ref-xie2014) and on the
 logarithmic method of [Bentley and Saxe
-1980](Z-bibliography.md#ref-bentley1980). The bound of the minimum and the
+1980](Z-bibliography.md#ref-bentley1980). The packed memory array is that
+of [Itai et al. 1981](Z-bibliography.md#ref-itai1981) with the thresholds
+of [Bender et al. 2005](Z-bibliography.md#ref-bender2005), its keys packed
+to the left as in [Wheatman and Xu
+2021](Z-bibliography.md#ref-wheatman2021), its heads in the order of
+Eytzinger as in [Wheatman et al. 2023](Z-bibliography.md#ref-wheatman2023),
+and its compression and its batches those of the CPMA of [Wheatman et al.
+2024](Z-bibliography.md#ref-wheatman2024). The bound of the minimum and the
 maximum together is that of [Pohl 1972](Z-bibliography.md#ref-pohl1972),
 the selection in linear time that of [Blum et al.
 1973](Z-bibliography.md#ref-blum1973); the sampling of [Floyd and Rivest
@@ -1839,7 +2169,7 @@ levels of the segments, and `restoreMapped()` reads them back, while the
 type of the keys and the errors $\epsilon$ and $\epsilon_r$ are in the
 file, and another instance of the template rejects it.
 
-## 6.12 Exercises {#sec-6-12}
+## 6.13 Exercises {#sec-6-13}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
@@ -1890,3 +2220,9 @@ Each exercise names the test of the library that solves it (run it with
 15. Answer the range minimum queries by the stacks in a word, with at most
     five reads of the memory per query. Test:
     `ordered.word-range-minimum`.
+16. Realize the packed memory array with the thresholds of Bender, Demaine
+    and Farach-Colton and the heads in the order of Eytzinger, its form
+    compressed by the differences of the keys, and the insertions and the
+    removals of batches in three phases on any executor. Tests:
+    `ordered.packed-memory-array`,
+    `engineered_parallel.parallel-packed-memory-array`.

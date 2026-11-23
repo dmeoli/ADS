@@ -33,7 +33,8 @@
  *
  * - bfs, distance(), the visit in breadth of the book, on random graphs
  *   G( n , 4 n ), square grids, road networks and power-law graphs
- *   (R-MAT, m = 8 n), unoriented;
+ *   (R-MAT, m = 8 n), unoriented, also on PackedGraph (the arcs as the
+ *   keys of one compressed packed memory array, F-Graph) with ArrayQueue;
  * - dijkstra, shortestPaths() on a priority queue (Johnson's algorithm in
  *   the book), on the same graphs oriented and on G( n , 16 n ), costs in
  *   [ 1 , 10^5 ];
@@ -111,6 +112,7 @@
 #include "ADS/graph/GridGraph.h"
 #include "ADS/graph/Matching.h"
 #include "ADS/graph/MinimumSpanningTree.h"
+#include "ADS/graph/PackedGraph.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
 #include "ADS/graph/Visit.h"
@@ -821,6 +823,18 @@ void bfs( const std::string & c , int n0 , int r , unsigned seed )
      [ & ]( Counts & k ) { return( bfsRun( G , src , BoostQueue() , k ) ); } );
   }
 #endif
+ if( measured( { "ADS PackedGraph ArrayQueue" } ) ) {
+  ADS::PackedGraph<> P( n , true );  // the arcs as the others hold them
+  std::vector< std::pair< int , int > > E;
+  E.reserve( A.size() );
+  for( const auto & [ u , v , w ] : A )
+   E.emplace_back( u , v );
+  P.insertEdges( E );
+  C( "ADS PackedGraph ArrayQueue" , [ & ]( Counts & k ) {
+   return( bfsRun( P , src , ADS::ArrayQueue< int >( std::max( n , 1 ) ) ,
+		   k ) );
+   } );
+  }
  if( ! measured( { "ADS StaticGraph ArrayQueue" } ) )
   return;
  const ADS::StaticGraph<> S(

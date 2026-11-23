@@ -8,7 +8,8 @@
  * nested jobs and exceptions; the loops, the reductions and the prefix
  * sums against their sequential results, with operations that do not
  * commute; the parallel sorts against std::sort and std::stable_sort on
- * the inputs that stress their classifiers, at the level 3 of the
+ * the inputs that stress their classifiers; the batches of the packed
+ * memory arrays against those on the calling thread; at the level 3 of the
  * contracts.
  *
  * \author Donato Meoli \n
@@ -46,6 +47,7 @@
 #include "ADS/parallel/ParallelSort.h"
 #include "ADS/parallel/ParallelText.h"
 #include "ADS/parallel/Scratch.h"
+#include "ADS/search/PackedMemoryArray.h"
 #include "ADS/string/SuffixArray.h"
 #include "ADS/succinct/CompactRankSelect.h"
 #include "ADS/succinct/HuffmanWaveletTree.h"
@@ -67,6 +69,7 @@
 #include <numeric>
 #include <queue>
 #include <random>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -634,6 +637,74 @@ ADS_TEST( "parallel-merge" )
     }
    }
   } );
+ }
+
+// the batches of the packed memory arrays on every executor against the
+// same batches on the calling thread and against std::set: a set of 2^16
+// keys and one of 2^20 (where the batches between 64 keys and n / 8 run the
+// three phases over many blocks), batches at random, sorted, clustered
+// (most of them in one leaf, which overflows by much) and of removals that
+// empty whole runs of leaves, with the same counts, the same keys and an
+// array in order after each one
+ADS_TEST( "parallel-packed-memory-array" )
+{
+ auto run = [ & ]< class P >( void ) {
+  for( const std::size_t n :
+       { std::size_t( 1 ) << 16 ,
+	 std::size_t( test::scaled( 1 << 20 , 1 << 17 ) ) } ) {
+   std::mt19937_64 g( 51 );
+   std::vector< std::uint64_t > S( n );
+   for( auto & x : S )
+    x = g() % ( std::uint64_t( 1 ) << 44 );
+   // the batches, the same on every executor
+   std::vector< std::pair< bool , std::vector< std::uint64_t > > > Bs;
+   for( int r = 0 ; r < 24 ; ++r ) {
+    const std::size_t k = std::size_t( 100 ) << ( r % 7 );
+    std::vector< std::uint64_t > B( k );
+    const std::uint64_t c = g() % ( std::uint64_t( 1 ) << 44 );
+    for( auto & x : B )
+     x = r % 4 == 1 ? c + g() % 4096
+		    : ( r % 4 == 3 ? S[ g() % n ]
+				   : g() % ( std::uint64_t( 1 ) << 44 ) );
+    if( r % 4 == 2 )
+     std::sort( B.begin() , B.end() );
+    if( r % 8 == 7 )  // the keys of a run of leaves, out
+     B.assign( S.begin() + n / 3 , S.begin() + n / 3 + n / 9 );
+    Bs.emplace_back( r % 3 != 2 , std::move( B ) );
+    }
+   P ref( S );
+   std::set< std::uint64_t > s( S.begin() , S.end() );
+   std::vector< std::size_t > want;
+   std::vector< std::vector< std::uint64_t > > keys;
+   for( const auto & [ in , B ] : Bs ) {
+    std::size_t w = 0;
+    for( const auto x : B )
+     w += in ? ( s.insert( x ).second ? 1 : 0 ) : s.erase( x );
+    CHECK( ( in ? ref.insertBatch( B ) : ref.eraseBatch( B ) ) == w );
+    want.push_back( w );
+    std::vector< std::uint64_t > v;
+    ref.forEach( [ & ]( std::uint64_t x ) { v.push_back( x ); } );
+    CHECK( std::equal( v.begin() , v.end() , s.begin() , s.end() ) );
+    keys.push_back( std::move( v ) );
+    }
+   onEach( [ & ]( auto & ex ) {
+    P p( S );
+    for( std::size_t i = 0 ; i < Bs.size() ; ++i ) {
+     const auto & [ in , B ] = Bs[ i ];
+     CHECK( ( in ? p.insertBatch( ex , B ) : p.eraseBatch( ex , B ) ) ==
+	    want[ i ] );
+     CHECK( p.wellFormed() && ( p.size() == keys[ i ].size() ) );
+     std::size_t j = 0;
+     bool eq = true;
+     p.forEach(
+       [ & ]( std::uint64_t x ) { eq = eq && ( x == keys[ i ][ j++ ] ); } );
+     CHECK( eq );
+     }
+    } );
+   }
+  };
+ run.template operator()< PackedMemoryArray< std::uint64_t > >();
+ run.template operator()< CompressedPackedMemoryArray< std::uint64_t > >();
  }
 
 // the products of sparse and dense matrices against the sequential ones,

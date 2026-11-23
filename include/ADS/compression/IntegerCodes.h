@@ -412,6 +412,18 @@ inline void encodeVByte( std::vector< std::uint8_t > & out , std::uint64_t x );
 [[nodiscard]] inline std::uint64_t
 decodeVByte( const std::vector< std::uint8_t > & in , std::size_t & p );
 
+/// the variable-byte code of \f$ x \f$ written from `out`, for the codes
+/// kept in an array of bytes of a fixed size (the leaves of
+/// `PackedMemoryArray`): the bytes of `encodeVByte()`, and their number
+/// \pre room for `vbyteLength( x )` bytes from `out`
+inline int encodeVByte( std::uint8_t * out , std::uint64_t x );
+
+/// the integer coded from \f$ \mathit{in}[ p ] \f$, \f$ p \f$ moved past it,
+/// as `decodeVByte()` on a vector, with no test of the end of the array
+/// \pre a whole codeword from \f$ \mathit{in}[ p ] \f$
+[[nodiscard]] inline std::uint64_t decodeVByte( const std::uint8_t * in ,
+						std::size_t & p );
+
 /// the bytes of the variable-byte code of \f$ x \f$,
 /// \f$ \lceil | B( x ) | / 7 \rceil \f$, and 1 for \f$ x = 0 \f$
 [[nodiscard]] constexpr int vbyteLength( std::uint64_t x );

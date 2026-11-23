@@ -376,7 +376,9 @@ HWLOCON   = $(if $(filter 1,$(ADSHWLOCON)),-DADS_WITH_HWLOC $(libHwlocINC) \
 # tsl::htrie_map to stringdicts, MARISA=<prefix> marisa-trie, TX=<prefix>
 # the tx-trie (tx/tx.hpp and libtx.a) and PDT=<dir> (its source, with its
 # succinct) the path-decomposed tries of Grossi and Ottaviano; ODS=<dir>
-# (the C++ sources of Open Data Structures) adds the sets of Morin to ssets
+# (the C++ sources of Open Data Structures) adds the sets of Morin to ssets;
+# CPMA=<dir> (the sources of the CPMA of its authors, with its submodules)
+# adds it to ordered and joins
 BENCHES   = sort dictionaries priority sequences memory bignum hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression external graphs combinatorial \
@@ -601,8 +603,20 @@ $(BUILD)/bench-backtrack: bench/backtrack.cpp bench/Bench.h $(HEADERS) \
                          | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(BACKFLAGS)
 
-$(BUILD)/bench-ordered: bench/ordered.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) \
+# the CPMA of its authors, in a unit of its own with its own ParlayLib [see
+# bench/PmaCompetitors.h], for ordered and joins
+CPMAINC   = $(addprefix -isystem $(CPMA)/,include ParallelTools tlx \
+            parlaylib/include StructOfArrays/include)
+CPMAOBJ   = $(if $(CPMA),$(BUILD)/pma_authors.o)
+CPMAFLAGS = $(if $(CPMA),-DADS_HAS_CPMA -pthread)
+$(BUILD)/pma_authors.o: bench/pma_authors.cpp bench/PmaCompetitors.h \
+                        | $(BUILD)
+	$(CXX) -std=c++20 -O3 -march=native -DNDEBUG -DPARLAY=1 -DVQSORT=0 -w \
+	       -Ibench $(CPMAINC) -c -o $@ $<
+
+$(BUILD)/bench-ordered: bench/ordered.cpp bench/Bench.h \
+                       bench/PmaCompetitors.h $(HEADERS) $(CPMAOBJ) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) $(CPMAFLAGS) -o $@ $< $(CPMAOBJ) $(BENCHLIBS) \
 	       $(ABSLFLAGS) $(if $(TLX),-I$(TLX))
 
 $(BUILD)/bench-arrays: bench/arrays.cpp bench/Bench.h $(HEADERS) | $(BUILD)
@@ -676,8 +690,10 @@ $(BUILD)/bench-parallel: bench/parallel.cpp bench/Bench.h $(HEADERS) \
 # with PARLAY=<dir> (those of ParlayLib) adds pam_map
 JOINFLAGS = $(if $(PAM),-DADS_HAS_PAM -isystem $(PAM)/include \
             -isystem $(PARLAY)/include) -pthread
-$(BUILD)/bench-joins: bench/joins.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(JOINFLAGS)
+$(BUILD)/bench-joins: bench/joins.cpp bench/Bench.h bench/PmaCompetitors.h \
+                     $(HEADERS) $(CPMAOBJ) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) $(CPMAFLAGS) -o $@ $< $(CPMAOBJ) $(BENCHLIBS) \
+	       $(JOINFLAGS)
 
 # the runtime of the workers: OpenMP always, TBB=1 (or TBB=<prefix>)
 # oneTBB, FASTFLOW=<dir> FastFlow and the mesh of its queues

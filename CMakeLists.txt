@@ -634,6 +634,29 @@ if (ADS_BENCHMARKS)
                                    PRIVATE ${ADS_PAM}/include
                                            ${ADS_PARLAY}/include)
     endif ()
+    # the competitor of the packed memory arrays in bench-ordered and
+    # bench-joins: the CPMA of its authors from the directory of its sources
+    # ADS_CPMA (with its submodules), in a unit of its own with its own
+    # ParlayLib [see bench/PmaCompetitors.h]
+    set(ADS_CPMA "" CACHE PATH "the sources of the CPMA of its authors")
+    if (ADS_CPMA)
+        add_library(ads-pma-authors OBJECT bench/pma_authors.cpp)
+        target_include_directories(ads-pma-authors SYSTEM PRIVATE
+                ${ADS_CPMA}/include ${ADS_CPMA}/ParallelTools ${ADS_CPMA}/tlx
+                ${ADS_CPMA}/parlaylib/include
+                ${ADS_CPMA}/StructOfArrays/include)
+        target_include_directories(ads-pma-authors PRIVATE
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/bench)
+        target_compile_definitions(ads-pma-authors PRIVATE PARLAY=1
+                                                           VQSORT=0)
+        target_compile_features(ads-pma-authors PRIVATE cxx_std_20)
+        foreach (b ordered joins)
+            target_sources(bench-${b}
+                           PRIVATE $<TARGET_OBJECTS:ads-pma-authors>)
+            target_compile_definitions(bench-${b} PRIVATE ADS_HAS_CPMA)
+            target_link_libraries(bench-${b} PRIVATE Threads::Threads)
+        endforeach ()
+    endif ()
     if (TARGET Eigen3::Eigen)
         target_link_libraries(bench-matrix PRIVATE Eigen3::Eigen)
         target_link_libraries(bench-sparse PRIVATE Eigen3::Eigen)

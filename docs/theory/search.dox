@@ -18,8 +18,9 @@
  theory_search_sorted), the searches laid out for the memory (see \ref
  theory_search_memory), the minimum and the local optima (see \ref
  theory_search_minimum), the selection (see \ref theory_search_select), the
- range minima (see \ref theory_search_rmq), and the PGM-index compressed and
- made dynamic (see \ref theory_search_learned). The pseudocode of each
+ range minima (see \ref theory_search_rmq), the PGM-index compressed and
+ made dynamic (see \ref theory_search_learned), and the packed memory array
+ (see \ref theory_search_pma). The pseudocode of each
  algorithm is instead on the page of its header, in the comment of its
  function, together with the section of the book, or the paper, that it
  follows.
@@ -506,6 +507,63 @@
  have doubled, so that the filters add a constant number of insertions
  into a filter per key and level to the cost of Lemma 6.
 
+ \section theory_search_pma The packed memory array
+
+ The packed memory array (`PackedMemoryArray`) keeps a sorted set in one
+ array of \f$ L = 2^H \f$ leaves of \f$ C \f$ units, a unit being a key, or
+ a byte in the compressed array (`CompressedPackedMemoryArray`), whose
+ leaves keep the differences of the keys in the variable-byte code. The
+ leaves are those of an implicit complete binary tree, the region of a node
+ of height \f$ h \f$ being its \f$ 2^h \f$ leaves, and the density of a
+ region, the ratio of the units of its keys to its \f$ 2^h C \f$ units, is
+ kept within the thresholds of Bender, Demaine and Farach-Colton,
+ \f[
+   \rho_h = \frac{1}{8} + \frac{1}{8} \frac{h}{H} \quad \text{and} \quad
+   \tau_h = 1 - \frac{1}{4} \frac{h}{H} ,
+   \tag{12}
+ \f]
+ an update climbing from its leaf to the first region within its threshold
+ and spreading its keys over its leaves, and the root out of its thresholds
+ calling for a new building. Let \f$ s \f$ be the units of a head (the
+ first key of a leaf, kept whole) and \f$ w \f$ the most units of a key.
+
+ <em>Lemma 7 (the redistribution).</em> Let the keys
+ \f$ x_0 < \cdots < x_{m-1} \f$, \f$ m \ge r \f$, of \f$ U \f$ units as one
+ run be spread over \f$ r \f$ leaves, the leaf \f$ i \f$ starting at the
+ first key whose prefix of units reaches
+ \f$ \lfloor i U / r \rfloor \f$. If \f$ r = 1 \f$ or
+ \f$ \lfloor U / r \rfloor \ge w \f$, every leaf gets a key and at most
+ \f$ s + w + \lceil U / r \rceil - 2 \f$ units.
+
+ Indeed, the units of a key are at most \f$ w \f$, no more than the gap of
+ two consecutive thresholds, so that the prefix sums cross each threshold
+ at a distinct key, and a leaf holds the keys between two crossings, its
+ head counted \f$ s \f$ units instead of those of its difference.
+
+ <em>Lemma 8 (the building).</em> With \f$ L \f$ the least power of 2 such
+ that \f$ U \le L C / 2 \f$, a building of \f$ n \ge 1 \f$ keys succeeds and
+ gives each leaf a key, as soon as \f$ C \ge \max( 4 w , 2 ( s + w ) ) \f$;
+ and every leaf keeps a key until the set is empty.
+
+ Indeed, for \f$ L \ge 2 \f$ the minimality of \f$ L \f$ gives
+ \f$ U > L C / 4 \f$, and Lemma 7 applies; a redistribution refuses a region
+ with fewer keys than leaves, writing nothing, and a leaf is written in place
+ only with a key. The thresholds of two nested regions differ by
+ \f$ 1 / ( 4 H ) \f$, which charges \f$ O( H ) \f$ moves of units per level
+ to each update, i.e., \f$ O( \log^2 n ) \f$ amortized moves of units with
+ \f$ C = \Theta( \log n ) \f$ (Bender, Demaine and Farach-Colton).
+
+ The heads of the leaves lie in an array of their own in the order of
+ Eytzinger, as in the SPMA of Wheatman, Burns, Buluç and Xu, and a search
+ descends them as a binary search tree with no branch (Khuong and Morin),
+ then reads one leaf. The batches follow the CPMA of the same authors: the
+ merge of the sorted batch into the leaves, in blocks whose borders are
+ moved to those of the leaves, so that each leaf belongs to one block and no
+ block writes what another reads; the counting of the regions by levels from
+ the leaves touched, each region counted once from its children; and the
+ redistribution of the largest regions within their thresholds, which are
+ disjoint, in parallel.
+
  \section theory_search_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 1.2, 2.6,
@@ -533,6 +591,21 @@
       compressed learned index with provable worst-case bounds, Proceedings
       of the VLDB Endowment 13(8), 1162-1175, 2020,
       doi:10.14778/3389133.3389135
+ \see A. Itai, A. G. Konheim, M. Rodeh, A sparse table implementation of
+      priority queues, Proceedings of ICALP 1981, LNCS 115, 417-431,
+      1981, doi:10.1007/3-540-10843-2_34
+ \see M. A. Bender, E. D. Demaine, M. Farach-Colton, Cache-oblivious
+      B-trees, SIAM Journal on Computing 35(2), 341-358, 2005,
+      doi:10.1137/S0097539701389956
+ \see B. Wheatman, H. Xu, A parallel packed memory array to store dynamic
+      graphs, Proceedings of ALENEX 2021, 31-45, 2021,
+      doi:10.1137/1.9781611976472.3
+ \see B. Wheatman, R. Burns, A. Buluç, H. Xu, Optimizing search layouts in
+      packed memory arrays, Proceedings of ALENEX 2023, 148-161, 2023,
+      doi:10.1137/1.9781611977561.ch13
+ \see B. Wheatman, R. Burns, A. Buluç, H. Xu, CPMA: an efficient
+      batch-parallel compressed set without pointers, Proceedings of PPoPP
+      2024, 348-363, 2024, doi:10.1145/3627535.3638492
  \see J. O'Rourke, An on-line algorithm for fitting straight lines between
       data ranges, Communications of the ACM 24(9), 574-578, 1981,
       doi:10.1145/358746.358758

@@ -22,7 +22,14 @@
  * ParlayLib (PARLAY_NUM_THREADS, set to t if not given), their operations
  * taking their arguments by move, as those of ADS do, and the sorted
  * batches inserted by the sorted insertion of PAM, as multi_insert() would
- * sort them first.
+ * sort them first. The packed memory arrays of ADS, PackedMemoryArray and
+ * CompressedPackedMemoryArray, run the union, the difference, the
+ * insertion and the construction as batches of the keys (insertBatch() and
+ * eraseBatch(), the batch copied in the clock since they take it by value),
+ * sequential and on the pool; if the CPMA of its authors is compiled in
+ * (-DADS_HAS_CPMA and the unit pma_authors.cpp [see PmaCompetitors.h]),
+ * its two forms with the heads in the order of Eytzinger run the same
+ * cells on t threads of ParlayLib.
  *
  * Each cell is the median of r runs, in nanoseconds per key of the two
  * trees (per pair of the batch for the insertion and the construction),
@@ -53,6 +60,7 @@
 #include "Bench.h"
 
 #include "ADS/parallel/ThreadPool.h"
+#include "ADS/search/PackedMemoryArray.h"
 #include "ADS/tree/AVLTree.h"
 #include "ADS/tree/JoinTree.h"
 #include "ADS/tree/SearchTree.h"
@@ -60,6 +68,9 @@
 
 #if defined( ADS_HAS_PAM )
  #include <pam/pam.h>
+#endif
+#if defined( ADS_HAS_CPMA )
+ #include "PmaCompetitors.h"
 #endif
 
 #include <algorithm>
@@ -125,6 +136,39 @@ std::uint64_t sum( const std::map< Key , Key > & m )
   s += kv.first;
  return( s + m.size() );
  }
+
+/// the checksum of the keys of a packed memory array of ADS
+template< class K , bool Z >
+std::uint64_t sum( const PackedMemoryArray< K , Z > & t )
+{
+ std::uint64_t s = 0;
+ t.forEach( [ & ]( const Key & k ) { s += k; } );
+ return( s + t.size() );
+ }
+
+#if defined( ADS_HAS_CPMA )
+
+/// a packed memory array of its authors [see PmaCompetitors.h]
+struct AuthorsPma
+{
+ void * p;  ///< the set
+ bool z;    ///< whether compressed
+ AuthorsPma( bool c , std::vector< Key > a )
+     : p( a.empty() ? pma_authors::make( c )
+		    : pma_authors::build( c , a.data() , a.size() ) ) ,
+       z( c ) { }
+ AuthorsPma( const AuthorsPma & ) = delete;
+ AuthorsPma & operator=( const AuthorsPma & ) = delete;
+ ~AuthorsPma() { pma_authors::destroy( p , z ); }
+ };
+
+/// the checksum of the keys of a packed memory array of its authors
+std::uint64_t sum( const AuthorsPma & t )
+{
+ return( pma_authors::sum( t.p , t.z ) );
+ }
+
+#endif
 
 /// the two trees of a run, whose checksum goes to *got when the run is
 /// over: the destructor runs after the clock of median() has stopped, so
@@ -374,6 +418,97 @@ void pamCells( const std::string & who , int t , const Input & in ,
 
 #endif
 
+/// the keys of a sorted batch of pairs
+std::vector< Key > keysOf( const Batch & B )
+{
+ std::vector< Key > K( B.size() );
+ for( std::size_t i = 0 ; i < B.size() ; ++i )
+  K[ i ] = B[ i ].first;
+ return( K );
+ }
+
+/// the cells of a packed memory array P of ADS, sequential and on the pool:
+/// the union and the insertion of b are the insertion of its keys by a
+/// batch, the difference their removal by a batch, and the building the
+/// insertion of the keys of a into an empty set; each batch is copied in
+/// the clock, as the functions take it by value
+template< class P >
+void pmaCells( const std::string & who , ThreadPool & pool , int t ,
+	       const Input & in , std::size_t n , std::size_t m ,
+	       const std::vector< std::uint64_t > & want , int runs )
+{
+ const std::vector< Key > a = keysOf( in.a ) , b = keysOf( in.b );
+ for( int par = 0 ; par < 2 ; ++par ) {
+  const std::string name = who + ( par ? " pool" : "" );
+  if( skip( name ) )
+   continue;
+  for( const int op : { 0 , 2 , 3 , 4 } ) {
+   std::uint64_t got = 0;
+   auto prep = [ & ]() {
+    auto x = op == 4 ? std::make_unique< P >() : std::make_unique< P >( a );
+    return( Run< P >{ std::move( x ) , nullptr , &got } );
+    };
+   auto work = [ & ]( auto & s ) {
+    P & x = *s.first;
+    auto go = [ & ]( auto & ex ) {
+     if( op == 2 )
+      x.eraseBatch( ex , b );
+     else
+      x.insertBatch( ex , op == 4 ? a : b );
+     };
+    if( par )
+     go( pool );
+    else {
+     Sequential seq;
+     go( seq );
+     }
+    };
+   const std::size_t ops = op == 3 ? m : ( op == 4 ? n : n + m );
+   const double ns = median( prep , work , runs , ops );
+   print( ( std::string( "joins " ) + kOps[ op ] + " t" + std::to_string( t ) )
+	    .c_str() ,
+	  "m=" + std::to_string( m ) , n , name ,
+	  got == want[ op ] ? ns : -1 );
+   }
+  }
+ }
+
+#if defined( ADS_HAS_CPMA )
+
+/// the cells of the packed memory array of its authors, compressed or not,
+/// on the threads of ParlayLib (PARLAY_NUM_THREADS), as those of pmaCells()
+void authorsCells( const std::string & who , bool z , int t ,
+		   const Input & in ,
+		   std::size_t n , std::size_t m ,
+		   const std::vector< std::uint64_t > & want , int runs )
+{
+ if( skip( who ) )
+  return;
+ const std::vector< Key > a = keysOf( in.a ) , b = keysOf( in.b );
+ for( const int op : { 0 , 2 , 3 , 4 } ) {
+  std::uint64_t got = 0;
+  auto prep = [ & ]() {
+   auto x =
+     std::make_unique< AuthorsPma >( z , op == 4 ? std::vector< Key >() : a );
+   return( Run< AuthorsPma >{ std::move( x ) , nullptr , &got } );
+   };
+  auto work = [ & ]( auto & s ) {
+   std::vector< Key > B = op == 4 ? a : b;
+   if( op == 2 )
+    pma_authors::removeBatch( s.first->p , z , B.data() , B.size() , true );
+   else
+    pma_authors::insertBatch( s.first->p , z , B.data() , B.size() , true );
+   };
+  const std::size_t ops = op == 3 ? m : ( op == 4 ? n : n + m );
+  const double ns = median( prep , work , runs , ops );
+  print( ( std::string( "joins " ) + kOps[ op ] + " t" + std::to_string( t ) )
+	   .c_str() ,
+	 "m=" + std::to_string( m ) , n , who , got == want[ op ] ? ns : -1 );
+  }
+ }
+
+#endif
+
 /// the cells of a tree T of ADS, sequential and on the pool
 template< class T >
 void adsCells( const std::string & who , ThreadPool & pool , int t ,
@@ -453,7 +588,7 @@ int main( int argc , char ** argv )
    rest.push_back( argv[ i ] );
  const Options o( int( rest.size() ) , rest.data() , { 1000000 } );
  ThreadPool pool( std::size_t( std::max( t , 1 ) ) );
-#if defined( ADS_HAS_PAM )
+#if defined( ADS_HAS_PAM ) || defined( ADS_HAS_CPMA )
  // the workers of ParlayLib, read when its scheduler starts (at the first
  // cell of PAM): t, as many as those of the pool, unless already given;
  // left to itself ParlayLib starts one per hardware thread of the machine
@@ -550,6 +685,17 @@ int main( int argc , char ** argv )
    adsCells< JoinTreap< Key , Key > >( "JoinTreap" , pool , t , in , n , m ,
 				       want ,
 				      o.runs );
+   pmaCells< PackedMemoryArray< Key > >( "PackedMemoryArray" , pool , t , in ,
+					 n ,
+					 m , want , o.runs );
+   pmaCells< CompressedPackedMemoryArray< Key > >(
+     "CompressedPackedMemoryArray" , pool , t , in , n , m , want , o.runs );
+#if defined( ADS_HAS_CPMA )
+   authorsCells( "CPMA authors spmae" , false , t , in , n , m , want ,
+		 o.runs );
+   authorsCells( "CPMA authors scpmae" , true , t , in , n , m , want ,
+		 o.runs );
+#endif
    const auto Q = queries( in );
    const auto augw = augWant( in , Q );
    adsAugCells< AVLBalance >( "JoinAVLTree aug" , pool , t , in , n , m , Q ,

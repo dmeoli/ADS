@@ -382,6 +382,9 @@ using ADS::endsOf;
 using ADS::inverse;
 using ADS::kindOf;
 
+// graph/PackedGraph.h
+using ADS::PackedGraph;
+
 // graph/PointerGraph.h
 using ADS::PointerGraph;
 
@@ -651,6 +654,10 @@ using ADS::DynamicPGMIndex;
 
 // search/NthElement.h
 using ADS::nthElement;
+
+// search/PackedMemoryArray.h
+using ADS::CompressedPackedMemoryArray;
+using ADS::PackedMemoryArray;
 
 // search/RangeMinimum.h
 using ADS::PlusMinusOneRangeMinimum;
