@@ -31,6 +31,16 @@
  *
  * The allocators are all equal, and stateless.
  *
+ * `ZeroPageAllocator` gives blocks of 0s by `std::calloc()`, a large block
+ * aligned to a huge page within one huge page more: the C libraries take a
+ * large block from the system as new pages, which the system gives as 0s
+ * at their first access and does not write before, so that a structure
+ * whose empty state is all 0 bits (the places of `PointerTable`, which
+ * then builds nothing over them [see `PointerTable.h`]) writes no 0 over
+ * its blocks and faults in only the pages it touches. Its blocks are not
+ * kept, and a request smaller than a huge page is a plain `std::calloc()`
+ * (for the types whose alignment that of `std::max_align_t` covers).
+ *
  * \see J. Navarro, S. Iyer, P. Druschel, A. Cox, Practical, transparent
  *      operating system support for superpages, ACM SIGOPS Operating
  *      Systems Review 36(SI), 89-104, 2002 (OSDI 2002),
@@ -63,6 +73,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include <cstddef>
+#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <new>
@@ -223,6 +234,79 @@ class HugePageAllocator
   }
 
  };  // end( class HugePageAllocator )
+
+/*--------------------------------------------------------------------------*/
+/*----------------------- CLASS ZeroPageAllocator --------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// an allocator of objects of type `T` on blocks of 0s, aligned to a huge
+/// page if they fill one at least [see the file]
+template< class T >
+class ZeroPageAllocator
+{
+
+/*--------------------------------------------------------------------------*/
+ public:
+ static_assert( alignof( T ) <= alignof( std::max_align_t ) );
+
+ /// the objects
+ using value_type = T;
+
+ /// the blocks are all 0 bits [see `PointerTable.h`]
+ using is_zeroed = void;
+
+ /// the size of a huge page, in bytes
+ static constexpr std::size_t PAGE = std::size_t( 1 ) << 21;
+
+ /// the allocator, which has no state
+ ZeroPageAllocator( void ) = default;
+
+ /// the allocator of objects of type `T`, from that of type `U`
+ template< class U >
+ ZeroPageAllocator( const ZeroPageAllocator< U > & ) noexcept { }
+
+ /// room for \f$ n \f$ objects, all 0 bits: a block of \f$ b \f$ bytes
+ /// of `std::calloc()` if \f$ b \f$ is less than a huge page, the place
+ /// aligned to a huge page in one of \f$ b \f$ bytes, a huge page and a
+ /// pointer, which holds the block, otherwise
+ [[nodiscard]] T * allocate( std::size_t n ) {
+  if( n >
+      ( std::numeric_limits< std::size_t >::max() - 2 * PAGE ) / sizeof( T ) )
+   throw( std::bad_array_new_length() );
+  const std::size_t b = n * sizeof( T );
+  if( b < PAGE ) {
+   void * q = std::calloc( n ? n : 1 , sizeof( T ) );
+   if( q == nullptr )
+    throw( std::bad_alloc() );
+   return( static_cast< T * >( q ) );
+   }
+  std::size_t r = b + PAGE + sizeof( void * );
+  void * const q = std::calloc( r , 1 );
+  if( q == nullptr )
+   throw( std::bad_alloc() );
+  void * a = static_cast< char * >( q ) + sizeof( void * );
+  r -= sizeof( void * );
+  std::align( PAGE , b , a , r );            // within the PAGE bytes more
+  static_cast< void ** >( a )[ -1 ] = q;  // the block, before the place
+  return( static_cast< T * >( a ) );
+  }
+
+ /// the room \f$ p \f$ of \f$ n \f$ objects given back to the system
+ /// \pre \f$ p \f$ was given by `allocate( n )`
+ void deallocate( T * p , std::size_t n ) noexcept {
+  if( n * sizeof( T ) < PAGE )
+   std::free( p );
+  else
+   std::free( reinterpret_cast< void ** >( p )[ -1 ] );
+  }
+
+ /// true: the allocators are all equal
+ template< class U >
+ bool operator==( const ZeroPageAllocator< U > & ) const noexcept {
+  return( true );
+  }
+
+ };  // end( class ZeroPageAllocator )
 
 /*--------------------------------------------------------------------------*/
 

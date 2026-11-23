@@ -49,6 +49,7 @@
 #include <atomic>
 #include <climits>
 #include <cstdint>
+#include <deque>
 #include <functional>
 #include <limits>
 #include <queue>
@@ -718,6 +719,113 @@ ADS_TEST( "pointer-table" )
  CHECK( P.capacity() == 16 && P.size() == 0 );
  }
 
+/// a store of the nodes for the places of 8 bytes of PointerTable: the
+/// nodes in a deque, which does not move them, each with its index in g
+struct NodeStore
+{
+ std::deque< Node > d;
+ Node * at( std::size_t i ) const {
+  return( const_cast< Node * >( &d[ i ] ) );
+  }
+ std::size_t index( const Node * p ) const { return( std::size_t( p->g ) ); }
+ Node * make( std::uint64_t s ) {
+  d.push_back( Node{ s , int( d.size() ) } );
+  return( &d.back() );
+  }
+ };
+
+// the options of PointerTable against std::unordered_map: the places of 8
+// bytes on a store, with the hashes of a mix and with hashes whose low 40
+// bits are all 0, the growth as for the places of 16 bytes, the moves, the
+// views, reserve() and clear(); the places on the blocks of 0s of
+// ZeroPageAllocator, of a huge page and more, alone and with the places of
+// 8 bytes; the blocks of ZeroPageAllocator all 0s, aligned when large
+ADS_TEST( "pointer-table-options" )
+{
+ using Index = PointerTable< Node , StateEqual , std::allocator< std::byte > ,
+			     WithPlaces< IndexPlaces< NodeStore > > >;
+ for( int kind = 0 ; kind < 2 ; ++kind ) {
+  NodeStore S;
+  Index T( 16 , StateEqual() , std::allocator< std::byte >() ,
+	   IndexPlaces< NodeStore >{ &S } );
+  std::unordered_map< std::uint64_t , Node * > R;
+  std::mt19937 gen( 9 + kind );
+  for( int op = 0 ; op < 20000 ; ++op ) {
+   const std::uint64_t s = gen() % 6000;
+   const std::uint64_t h = kind ? s << 40 : splitmix64( s );
+   T.prefetch( h );
+   const auto [ p , fresh ] =
+     T.find_or_insert( s , h , [ & ]( void ) { return( S.make( s ) ); } );
+   const auto it = R.find( s );
+   CHECK( fresh == ( it == R.end() ) );
+   if( fresh )
+    R[ s ] = p;
+   else
+    CHECK( it->second == p );
+   CHECK( T.find( s , h ) == p && p->state == s );
+   }
+  CHECK( T.size() == R.size() && S.d.size() == R.size() );
+  CHECK( T.size() * 10 <= T.capacity() * 7 &&
+	 T.capacity() == Index::slotsFor( T.size() ) &&
+	 T.bytes() == 8 * T.capacity() );
+  std::set< Node * > seen( T.begin() , T.end() );
+  CHECK( seen.size() == R.size() );
+  Index M( std::move( T ) );
+  CHECK( M.size() == R.size() && T.size() == 0 &&
+	 T.find( std::uint64_t( 1 ) , splitmix64( 1 ) ) == nullptr );
+  for( const auto & [ s , p ] : R )
+   CHECK( M.find( s , kind ? s << 40 : splitmix64( s ) ) == p );
+  M.reserve( 4 * R.size() );
+  CHECK( M.capacity() == Index::slotsFor( 4 * R.size() ) );
+  for( const auto & [ s , p ] : R )
+   CHECK( M.find( s , kind ? s << 40 : splitmix64( s ) ) == p );
+  M.clear();
+  CHECK( M.size() == 0 && M.begin() == M.end() &&
+	 M.find( std::uint64_t( 1 ) , splitmix64( 1 ) ) == nullptr );
+  }
+ {  // a block of 0s of a huge page and more, aligned to it
+  ZeroPageAllocator< std::uint64_t > Z;
+  const std::size_t n = ( std::size_t( 1 ) << 19 ) + 3;
+  std::uint64_t * p = Z.allocate( n );
+  CHECK( reinterpret_cast< std::uintptr_t >( p ) %
+	   ( std::size_t( 1 ) << 21 ) ==
+	 0 );
+  CHECK(
+    std::all_of( p , p + n , []( std::uint64_t w ) { return( w == 0 ); } ) );
+  p[ n - 1 ] = 1;
+  Z.deallocate( p , n );
+  std::uint64_t * q = Z.allocate( 5 );
+  CHECK(
+    std::all_of( q , q + 5 , []( std::uint64_t w ) { return( w == 0 ); } ) );
+  Z.deallocate( q , 5 );
+  }
+ // the places of 16 and of 8 bytes on the blocks of 0s, grown past a huge
+ // page from 16 places and reserved, against the default table
+ using Zero = ZeroPageAllocator< std::byte >;
+ Arena< Node > N( 64 );
+ NodeStore S;
+ PointerTable< Node , StateEqual , Zero > W;
+ PointerTable< Node , StateEqual , Zero ,
+	       WithPlaces< IndexPlaces< NodeStore > > >
+   X( 16 , StateEqual() , Zero() , IndexPlaces< NodeStore >{ &S } );
+ for( std::uint64_t s = 0 ; s < 200000 ; ++s ) {
+  const std::uint64_t h = splitmix64( s );
+  CHECK( W.find_or_insert(
+	    s , h , [ & ]( void ) { return( N.make( Node{ s , 0 } ) ); } )
+	   .second );
+  CHECK( X.find_or_insert( s , h , [ & ]( void ) { return( S.make( s ) ); } )
+	   .second );
+  }
+ CHECK( W.size() == 200000 && X.size() == 200000 &&
+	W.capacity() == X.capacity() &&
+	W.bytes() >= ( std::size_t( 1 ) << 21 ) );
+ for( std::uint64_t s = 0 ; s < 200000 ; s += 7 )
+  CHECK( W.find( s , splitmix64( s ) )->state == s &&
+	 X.find( s , splitmix64( s ) )->state == s );
+ W.reserve( 1000000 );
+ CHECK( W.size() == 200000 && W.find( std::uint64_t( 5 ) , splitmix64( 5 ) ) );
+ CHECK( W.find( std::uint64_t( 200000 ) , splitmix64( 200000 ) ) == nullptr );
+ }
 // the lookups of a const OpenHashTable from 4 threads at once, each against
 // the keys inserted: the lookups write probes(), which must not race (a
 // test for ThreadSanitizer), and the answers are those of one thread

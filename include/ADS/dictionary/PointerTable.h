@@ -65,6 +65,29 @@
  * the table, which has no removal to undo it. A table with observers is
  * not copied, and a move of a table has no observer.
  *
+ * Two options change the places of ADS, the default staying as above.
+ * With the policy `WithPlaces< IndexPlaces< S > , P >` (the places, then
+ * the subject policy `P`, `NoObservers` by default), a place is a word of 8
+ * bytes instead of 16: the high 32 bits of the hash and the index plus 1
+ * of the object in a store `S` given to the constructor, which must
+ * outlive the table and give `S::at( i )`, the object of the index
+ * \f$ i \f$, and `S::index( p )`, the index of the object \f$ p \f$ (e.g.,
+ * a pool of nodes in blocks of a power of 2); the places take half the
+ * memory, but a probe that finds the high 32 bits of its hash reads the
+ * object through the store, and two keys whose hashes differ only in the
+ * low bits are told apart by `eq` alone. The first place is then that of
+ * those 32 bits, so that a growth moves the places without touching the
+ * objects, as above; there are fewer than \f$ 2^{32} - 1 \f$ objects, and
+ * past \f$ 2^{32} \f$ places the first places no longer cover the table.
+ * With an allocator `A` that declares the member type `is_zeroed` (its
+ * blocks are all 0 bits, e.g., `ZeroPageAllocator` [see
+ * `HugePageAllocator.h`], whose large blocks are pages of the system not
+ * yet written, aligned to huge pages), the table and its growths write no
+ * 0 over the empty places, which the system gives as 0s at the first
+ * access; an empty place is then all 0 bits, the null pointer included,
+ * as on every target of ADS. Either option takes the places of ADS also
+ * with `ADS_WITH_BOOST`, and the events are the same on every place.
+ *
  * The contracts [see `Contract.h`]: `make()` returns a pointer that is not
  * nil; the invariant is that the load factor stays below \f$ 7 / 10 \f$ and
  * that each object is reached from the first place of its hash with no
@@ -113,6 +136,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -146,16 +171,102 @@ struct StateEqual
   }
  };
 
+/// the places of 16 bytes of `PointerTable`, the default: the whole hash
+/// and the pointer to the object
+struct WidePlaces
+{ };
+
+/// the places of 8 bytes of `PointerTable`: the high 32 bits of the hash
+/// and the index plus 1 of the object in the store \f$ S \f$, which gives
+/// `at( i )` and `index( p )` [see the file]
+template< class S >
+struct IndexPlaces
+{
+ const S * store = nullptr;  ///< the store of the objects
+ };
+
+/// the subject policy `P` [see `Modification.h`] of a `PointerTable` on
+/// the places `L`, `WidePlaces` or `IndexPlaces< S >`
+template< class L , class P = NoObservers >
+struct WithPlaces : P
+{
+ using places = L;  ///< the places
+ };
+
+namespace detail
+{
+
+/// the places of the policy `P`: those of a `WithPlaces`, `WidePlaces`
+/// otherwise
+template< class P >
+struct PlacesOf
+{
+ using type = WidePlaces;
+ };
+
+template< class P >
+ requires requires { typename P::places; }
+struct PlacesOf< P >
+{
+ using type = typename P::places;
+ };
+
+/// true if the blocks of the allocator `A` are all 0 bits, i.e., if it
+/// declares the member type `is_zeroed` [see `PointerTable.h`]
+template< class A >
+inline constexpr bool kZeroedAllocator = requires { typename A::is_zeroed; };
+
+/// the allocator `B` whose construction of an object with no argument
+/// leaves its memory as `B` gives it, all 0 bits [see `kZeroedAllocator`]
+template< class B >
+struct NoInitAllocator : B
+{
+ using B::B;
+ /// the allocator over `b`
+ NoInitAllocator( const B & b ) noexcept : B( b ) { }
+ /// the same over the objects of type `U`
+ template< class U >
+ struct rebind
+ {
+  using other = NoInitAllocator<
+    typename std::allocator_traits< B >::template rebind_alloc< U > >;
+  };
+ /// nothing: the object of all 0 bits is there
+ template< class U >
+ void construct( U * ) noexcept { }
+ /// the object built from `a` at \f$ p \f$
+ template< class U , class... Args >
+ void construct( U * p , Args &&... a ) {
+  std::allocator_traits< B >::construct( static_cast< B & >( *this ) , p ,
+					 std::forward< Args >( a )... );
+  }
+ };
+
+/// true if a `PointerTable` on the allocator `A` and the policy `P` takes
+/// the places of Boost: the default places, on an allocator that does not
+/// give 0s
+template< class A , class P >
+concept BoostPointerPlaces =
+  ( ADS_POINTERTABLE_BOOST != 0 ) && ( ! kZeroedAllocator< A > ) &&
+  std::is_same_v< typename PlacesOf< P >::type , WidePlaces >;
+
+}  // end( namespace detail )
+
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS PointerTable ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a hash table of pointers to objects found by their keys, its insertions
-/// told through `Policy`
+/// a hash table of pointers to objects found by their keys, on the places
+/// of ADS (the inspection above), its insertions told through `Policy`
 template< class T , class Eq = StateEqual ,
 	  class A = std::allocator< std::byte > , class Policy = NoObservers >
 class PointerTable
 {
+ /// the places, `WidePlaces` or `IndexPlaces< S >` [see `WithPlaces`]
+ using L = typename detail::PlacesOf< Policy >::type;
+
+ /// whether a place is a word of 8 bytes [see `IndexPlaces`]
+ static constexpr bool kIndex = ! std::is_same_v< L , WidePlaces >;
 
 /*--------------------------------------------------------------------------*/
  public:
@@ -172,8 +283,28 @@ class PointerTable
  /// a table of at least `capacity` places, a power of 2, at least 16, the
  /// static observers `o...`
  template< class... O >
+  requires( ! kIndex )
  explicit PointerTable( std::size_t capacity = 16 , Eq eq = Eq() ,
-			const A & alloc = A() , O &... o );
+			const A & alloc = A() , O &... o )
+     : f_S( std::bit_ceil( capacity < 16 ? std::size_t( 16 ) : capacity ) ,
+	    SA( alloc ) ) ,
+       f_eq( std::move( eq ) ) , f_sub( o... ) {
+  f_mask = f_S.size() - 1;
+  f_bits = std::countr_zero( f_S.size() );
+  }
+
+ /// the same on the store of `places`, with `IndexPlaces`
+ template< class... O >
+  requires( kIndex )
+ PointerTable( std::size_t capacity , Eq eq , const A & alloc , L places ,
+	       O &... o )
+     : f_S( std::bit_ceil( capacity < 16 ? std::size_t( 16 ) : capacity ) ,
+	    SA( alloc ) ) ,
+       f_eq( std::move( eq ) ) , f_L( places ) , f_sub( o... ) {
+  ADS_PRE( f_L.store != nullptr );
+  f_mask = f_S.size() - 1;
+  f_bits = std::countr_zero( f_S.size() );
+  }
 
  /// a copy of the places, the objects shared
  PointerTable( const PointerTable & ) = default;
@@ -280,10 +411,9 @@ class PointerTable
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a view of the pointers to the objects, in the order of the places,
- // bidirectional (forward with Boost); the key of an object must not change
- // through it, and an insertion that grows the table invalidates it
+ // bidirectional; the key of an object must not change through it, and an
+ // insertion that grows the table invalidates it
 
-#if ! ADS_POINTERTABLE_BOOST
  /// the places of the table, for `SlotIterator`
  struct Places
  {
@@ -291,14 +421,13 @@ class PointerTable
   static std::size_t size( const auto & o ) { return( o.f_S.size() ); }
   /// whether the place \f$ i \f$ holds an object
   static bool occupied( const auto & o , std::size_t i ) {
-   return( o.f_S[ i ].p != nullptr );
+   return( o.full( o.f_S[ i ] ) );
    }
   /// the pointer of the place \f$ i \f$
   static auto read( const auto & o , std::size_t i ) {
-   return( o.f_S[ i ].p );
+   return( o.object( o.f_S[ i ] ) );
    }
   };
-#endif
 
  /// the type of the items, for the standard library
  using value_type = T *;
@@ -310,13 +439,8 @@ class PointerTable
  using reference = T *;
  /// a constant reference to an item
  using const_reference = T *;
-#if ! ADS_POINTERTABLE_BOOST
  /// the iterator on the items, constant
  using const_iterator = SlotIterator< PointerTable , Places >;
-#else
- /// the iterator on the items, constant: the one of Boost on the places
- class const_iterator;
-#endif
  /// the iterator on the items
  using iterator = const_iterator;
 
@@ -356,21 +480,70 @@ class PointerTable
  void tellCleared( void ) noexcept;
  void tellRebuilt( void ) noexcept;  ///< as tellCleared()
 
- /// a place: the hash and the object, nil if the place is empty
- struct Slot
+ /// a place of 16 bytes: the hash and the object, nil if the place is
+ /// empty
+ struct WideSlot
  {
   std::uint64_t hash = 0;  ///< the hash of the key of the object
   T * p = nullptr;         ///< the object, nil if empty
   };
 
-#if ! ADS_POINTERTABLE_BOOST
- using SA = typename std::allocator_traits< A >::template rebind_alloc< Slot >;
+ /// a place: a `WideSlot`, or the high 32 bits of the hash and the index
+ /// plus 1 of the object, 0 if the place is empty
+ using Slot = std::conditional_t< kIndex , std::uint64_t , WideSlot >;
 
- /// the first place of a hash
- [[nodiscard]] std::size_t place( std::uint64_t hash ) const;
+ /// the allocator of the places, which builds nothing over the 0s of an
+ /// allocator that declares them
+ using SA = std::conditional_t<
+   detail::kZeroedAllocator< A > ,
+   detail::NoInitAllocator<
+     typename std::allocator_traits< A >::template rebind_alloc< Slot > > ,
+   typename std::allocator_traits< A >::template rebind_alloc< Slot > >;
+
+ /// the bits of `hash` that a place keeps and that give its first place:
+ /// all of them, or the high 32 with `IndexPlaces`
+ [[nodiscard]] static std::uint64_t bits( std::uint64_t hash ) {
+  if constexpr( kIndex )
+   return( hash >> 32 );
+  else
+   return( hash );
+  }
+
+ /// the bits of the hash kept by the place \f$ s \f$ [see `bits()`]
+ [[nodiscard]] static std::uint64_t bitsOf( const Slot & s ) {
+  if constexpr( kIndex )
+   return( s >> 32 );
+  else
+   return( s.hash );
+  }
+
+ /// whether the place \f$ s \f$ holds an object
+ [[nodiscard]] static bool full( const Slot & s ) {
+  if constexpr( kIndex )
+   return( s != 0 );
+  else
+   return( s.p != nullptr );
+  }
+
+ /// the object of the full place \f$ s \f$
+ [[nodiscard]] T * object( const Slot & s ) const {
+  if constexpr( kIndex )
+   return( f_L.store->at( std::size_t( std::uint32_t( s ) ) - 1 ) );
+  else
+   return( s.p );
+  }
+
+ /// the place of the object \f$ p \f$, whose key has the hash `hash`
+ [[nodiscard]] Slot slot( std::uint64_t hash , T * p ) const;
+
+ /// the first place of the bits \f$ b \f$ of a hash [see `bits()`]
+ [[nodiscard]] std::size_t place( std::uint64_t b ) const;
 
  /// \f$ m \f$ empty places, a power of 2
  void reset( std::size_t m );
+
+ /// the places of `old` moved into the places, which are empty
+ void move( const std::vector< Slot , SA > & old );
 
  /// twice the places
  void grow( void );
@@ -380,12 +553,185 @@ class PointerTable
  template< class K >
  [[nodiscard]] bool reached( const K & key , std::uint64_t hash ) const;
 
- std::vector< Slot , SA > f_S;  ///< the places
- std::size_t f_mask = 0;       ///< places - 1
- int f_bits = 0;               ///< log2 of the places
- std::size_t f_size = 0;       ///< the number of objects
- Eq f_eq;                      ///< the equality of a key and an object
-#else
+ std::vector< Slot , SA > f_S;          ///< the places
+ std::size_t f_mask = 0;               ///< places - 1
+ int f_bits = 0;                       ///< log2 of the places
+ std::size_t f_size = 0;               ///< the number of objects
+ Eq f_eq;                              ///< the equality of a key and an object
+ ADS_NO_UNIQUE_ADDRESS L f_L;          ///< the store, with `IndexPlaces`
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
+
+ };  // end( class PointerTable )
+
+/*--------------------------------------------------------------------------*/
+/*---------------------- CLASS PointerTable OF BOOST -----------------------*/
+/*--------------------------------------------------------------------------*/
+
+#if ADS_POINTERTABLE_BOOST
+/// a hash table of pointers to objects found by their keys, on the places
+/// of `boost::unordered_flat_set`: the default places of 16 bytes, on an
+/// allocator that does not give 0s [see the file]
+template< class T , class Eq , class A , class Policy >
+ requires detail::BoostPointerPlaces< A , Policy >
+class PointerTable< T , Eq , A , Policy >
+{
+
+/*--------------------------------------------------------------------------*/
+ public:
+ /// an insertion of an object, its pointer the handle and its hash the
+ /// key
+ using Inserted = mod::Inserted< T * , std::uint64_t >;
+
+ /// the events: an object inserted, the table emptied or rebuilt
+ using modifications = mod::list< Inserted , mod::Cleared , mod::Rebuilt >;
+ /// the subject
+ using Subject = typename Policy::template bind< modifications ,
+						 PointerTable >;
+
+ /// a table of at least `capacity` places, as those of ADS [see the file],
+ /// the static observers `o...`
+ template< class... O >
+ explicit PointerTable( std::size_t capacity = 16 , Eq eq = Eq() ,
+			const A & alloc = A() , O &... o );
+
+ /// a copy of the places, the objects shared
+ PointerTable( const PointerTable & ) = default;
+
+ /// a copy of the places, the objects shared
+ PointerTable & operator=( const PointerTable & ) = default;
+
+ /// the table of `o`, which is left empty
+ PointerTable( PointerTable && o ) noexcept;
+
+ /// the table of `o`, which is left empty
+ PointerTable & operator=( PointerTable && o ) noexcept;
+
+ /// no object, the places kept; the objects are not touched
+ void clear( void );
+
+ /// room for \f$ n \f$ objects with no growth, as Boost computes it
+ void reserve( std::size_t n );
+
+ /// the places that \f$ n \f$ objects need with no growth on the places
+ /// of ADS, which those of Boost take too [see the file]
+ [[nodiscard]] static constexpr std::size_t slotsFor( std::size_t n ) {
+  std::size_t m = 16;
+  while( n * 10 > m * 7 )
+   m *= 2;
+  return( m );
+  }
+
+ /// the object of the key, whose hash is `hash`, and false; if there is
+ /// none, the object that `make()` returns, now in the table, and true
+ /// \post the result is not nil
+ template< class K , class Make >
+ std::pair< T * , bool > find_or_insert( const K & key , std::uint64_t hash ,
+					Make && make );
+
+ /// the object of the key, nil if there is none
+ template< class K >
+ [[nodiscard]] T * find( const K & key , std::uint64_t hash ) const;
+
+ /// nothing, since Boost has no way to ask for the group of a hash
+ void prefetch( std::uint64_t hash ) const;
+
+ /// the number of objects
+ [[nodiscard]] std::size_t size( void ) const;
+
+ /// the number of places
+ [[nodiscard]] std::size_t capacity( void ) const;
+
+ /// the memory of the places, in bytes
+ [[nodiscard]] std::size_t bytes( void ) const;
+
+ /// `f( p )` on each object, in the order of the places
+ template< class F >
+ void forEach( F && f ) const;
+
+/*--------------------------- THE OBSERVERS --------------------------------*/
+
+ /// the subject, for `ADS::batch()` and `ADS::quiet()`
+ [[nodiscard]] Subject & subject( void ) { return( f_sub ); }
+ /// the subject
+ [[nodiscard]] const Subject & subject( void ) const { return( f_sub ); }
+
+ /// attaches the observer \f$ o \f$ and gives its number
+ /// \pre no batch is open
+ template< class O >
+ int attach( O & o )
+  requires( Subject::dynamic )
+ {
+  return( f_sub.attach( o ) );
+  }
+
+ /// detaches the observer number \f$ \mathit{id} \f$
+ /// \pre it is attached, no batch is open
+ void detach( int id )
+  requires( Subject::dynamic )
+ {
+  f_sub.detach( id );
+  }
+
+/*------------------------- THE STANDARD INTERFACE -------------------------*/
+
+ /// the type of the items, for the standard library
+ using value_type = T *;
+ /// the type of the sizes
+ using size_type = std::size_t;
+ /// the type of the distances between two iterators
+ using difference_type = std::ptrdiff_t;
+ /// a reference to an item
+ using reference = T *;
+ /// a constant reference to an item
+ using const_reference = T *;
+ /// the iterator on the items, constant: the one of Boost on the places
+ class const_iterator;
+ /// the iterator on the items
+ using iterator = const_iterator;
+
+ /// the iterator on the first item
+ [[nodiscard]] const_iterator begin( void ) const;
+ /// the iterator past the last item
+ [[nodiscard]] const_iterator end( void ) const;
+ /// the constant iterator on the first item
+ [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
+ /// the constant iterator past the last item
+ [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
+
+/*--------------------------------------------------------------------------*/
+ private:
+ /// `find_or_insert()` when nobody listens, by the places in use
+ template< class K , class Make >
+ std::pair< T * , bool > findOrInsertPlain( const K & key ,
+					    std::uint64_t hash ,
+					   Make && make );
+
+ /// `find_or_insert()` when someone listens
+ template< class K , class Make >
+ std::pair< T * , bool > insertTold( const K & key , std::uint64_t hash ,
+				    Make & make );
+
+ /// the same, out of the hot code
+ template< class K , class Make >
+ ADS_COLD_PATH std::pair< T * , bool >
+ insertCold( const K & key , std::uint64_t hash , Make & make ) {
+  return( insertTold( key , hash , make ) );
+  }
+
+ /// `Cleared` to whoever wants it, with the audit
+ void tellClearedAudited( void );
+
+ /// `Cleared` and `Rebuilt` to whoever wants them, with no audit
+ void tellCleared( void ) noexcept;
+ void tellRebuilt( void ) noexcept;  ///< as tellCleared()
+
+ /// a place: the hash and the object
+ struct Slot
+ {
+  std::uint64_t hash = 0;  ///< the hash of the key of the object
+  T * p = nullptr;         ///< the object
+  };
+
  /// a key, its hash and the maker of its object, the argument of the
  /// searches and of the insertions in the set of Boost
  template< class K , class Make >
@@ -449,8 +795,7 @@ class PointerTable
  /// the set of Boost
  using Set = boost::unordered_flat_set< Entry , Hash , Equal , SA >;
 
- Set f_set;  ///< the places
-#endif
+ Set f_set;                            ///< the places
  ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  };  // end( class PointerTable )
@@ -459,10 +804,10 @@ class PointerTable
 /*-------------------- CLASS PointerTable::const_iterator ------------------*/
 /*--------------------------------------------------------------------------*/
 
-#if ADS_POINTERTABLE_BOOST
 /// the iterator of the set of Boost, on the pointers of its places: forward
-template< class T , class Eq , class A , class P >
-class PointerTable< T , Eq , A , P >::const_iterator
+template< class T , class Eq , class A , class Policy >
+ requires detail::BoostPointerPlaces< A , Policy >
+class PointerTable< T , Eq , A , Policy >::const_iterator
 {
  public:
  using value_type = T *;                  ///< the items

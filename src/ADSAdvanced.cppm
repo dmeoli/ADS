@@ -276,8 +276,11 @@ using ADS::FlatHashTable;
 using ADS::MinimalPerfectHash;
 
 // dictionary/PointerTable.h
+using ADS::IndexPlaces;
 using ADS::PointerTable;
 using ADS::StateEqual;
+using ADS::WidePlaces;
+using ADS::WithPlaces;
 
 // dictionary/PositionIndex.h
 using ADS::PositionIndex;
@@ -412,6 +415,7 @@ using ADS::ConcurrentPoolResource;
 
 // memory/HugePageAllocator.h
 using ADS::HugePageAllocator;
+using ADS::ZeroPageAllocator;
 
 // memory/ObjectPool.h
 using ADS::ObjectPool;

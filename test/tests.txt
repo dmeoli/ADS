@@ -501,6 +501,7 @@ engineered  bucket-queue-lexicographic coda a bucket, f e poi g minimi (LPA*)
 engineered  dary-heap            heap d-ario di elementi semplici
 engineered  flat-hash-table      tabella con byte di controllo a gruppi
 engineered  pointer-table        tabella di puntatori, ispezione lineare
+engineered  pointer-table-options posti di 8 byte e pagine di zeri
 engineered  open-hash-readers    letture concorrenti di OpenHashTable
 engineered  arena                arena a blocchi
 engineered  arena-iterators      iteratori dell'arena dopo nuovi blocchi

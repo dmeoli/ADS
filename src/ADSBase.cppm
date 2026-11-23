@@ -733,6 +733,7 @@ using ADS::CellHeap;
 
 // memory/HugePageAllocator.h
 using ADS::HugePageAllocator;
+using ADS::ZeroPageAllocator;
 
 // memory/ObjectPool.h
 using ADS::ObjectPool;

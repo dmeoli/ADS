@@ -38,6 +38,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   each value whole under the version of its region; the tests
   `engineered_capabilities.cap-extract`, `cap-rebase`, `cap-rekey`,
   `cap-tableheap` and `cap-nonmonotone`
+- `PointerTable` takes its places through its policy, `WithPlaces< L , P
+  >` for the places `L` and the subject policy `P`: `WidePlaces`, the
+  default, the places of 16 bytes of before, or `IndexPlaces< S >`, places
+  of 8 bytes that keep the high 32 bits of the hash and the index of the
+  object in a store `S` given to the constructor (`S::at()` and
+  `S::index()`), half the memory for at most 2^32 - 1 objects; and on an
+  allocator that declares `is_zeroed`, as the new `ZeroPageAllocator` of
+  `HugePageAllocator.h` (blocks of `std::calloc()`, the large ones aligned
+  to a huge page), the table and its growths write no 0 over the places;
+  either option takes the places of ADS also with `ADS_WITH_BOOST`, whose
+  places stay those of the default
 - `bwt()` and `detail::SentinelSuffixArray` take the length `wideFrom`
   from which their suffix array is of entries of 64 bits, by default
   `bwtWideFrom` = 2^31 - 1, so that the path of 64 bits runs, and is
