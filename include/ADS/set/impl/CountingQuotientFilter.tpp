@@ -300,10 +300,11 @@ template< class A >
 inline void QuotientTable< S >::persist( A & a )
 {
  a( f_T , f_nb , f_used , f_l );
- a.require( ( f_l >= 6 ) && ( f_l < 40 ) &&
-	      ( f_nb >= ( std::size_t( 1 ) << f_l ) / 64 ) &&
-	      ( f_T.size() == f_nb * kBlock ) ,
-	    "the blocks of a QuotientTable" );
+ a.require(
+   ( f_l >= 6 ) && ( f_l < 40 ) &&
+     ( std::uint64_t( f_nb ) >= ( std::uint64_t( 1 ) << f_l ) / 64 ) &&
+     ( f_T.size() == f_nb * kBlock ) ,
+   "the blocks of a QuotientTable" );
  }
 
 }  // end( namespace detail )
@@ -319,7 +320,7 @@ CountingQuotientFilter< T , F , H >::CountingQuotientFilter( std::size_t n ,
 {
  const std::size_t m = std::max< std::size_t >(
    64 , std::bit_ceil( std::size_t( std::ceil( double( n ) / 0.95 ) ) ) );
- ADS_PRE( m < ( std::size_t( 1 ) << 40 ) );
+ ADS_PRE( std::uint64_t( m ) < ( std::uint64_t( 1 ) << 40 ) );
  f_Q = detail::QuotientTable< F >( std::countr_zero( m ) );
  }
 

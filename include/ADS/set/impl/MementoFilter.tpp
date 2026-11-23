@@ -32,7 +32,7 @@ MementoFilter< T , S >::MementoFilter( std::size_t n , int r , int f ,
 	  ( f_f + r <= int( 8 * sizeof( S ) ) ) );
  const std::size_t m = std::max< std::size_t >(
    64 , std::bit_ceil( std::size_t( std::ceil( double( n ) / 0.95 ) ) ) );
- ADS_PRE( m < ( std::size_t( 1 ) << 40 ) );
+ ADS_PRE( std::uint64_t( m ) < ( std::uint64_t( 1 ) << 40 ) );
  f_w = f_f + r;
  f_Q = detail::QuotientTable< S >( std::countr_zero( m ) );
  }
