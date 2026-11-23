@@ -45,8 +45,9 @@
  * compressed rows of `Graph.h`, where they are for a `StaticGraph` and an
  * `ArrayGraph`, copied once for any other model of `Graph`.
  *
- * The visit takes \f$ \Theta( n + m ) \f$ time and \f$ 5 n \f$ integers
- * besides the result. The chain decomposition of Schmidt gives the same
+ * The visit takes \f$ \Theta( n + m ) \f$ time, and besides the result
+ * \f$ 4 n \f$ integers and a stack of at most one frame per node of the
+ * current path. The chain decomposition of Schmidt gives the same
  * tests of 2-connectivity from the same visit, by a second pass over the
  * edges out of the tree, and so it would only add a pass here.
  *
@@ -106,9 +107,10 @@ namespace ADS
 /*--------------------------------------------------------------------------*/
 
 /// the blocks of an unoriented graph, its cut nodes and its bridges, by
-/// three integers per node: the block in which the node is not the head,
-/// the rank that tells which end of an edge names its block, and whether the
-/// node is a cut node
+/// two integers and a byte per node: the block in which the node is not the
+/// head, the rank that tells which end of an edge names its block, and
+/// whether the node is a cut node (and, per block, its head, its least node
+/// and whether it is a bridge)
 class BiconnectedComponents
 {
 
