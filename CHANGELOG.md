@@ -78,6 +78,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   events, so that the events of an item that is several times in a queue
   with no handles coalesce into those of a multiset of pairs, and
   `priority_t< Q >` is `Q::Key` when the queue has no `Priority`
+- the products of `BasicCsrMatrix` and `SellMatrix` by a vector and the
+  loops of `gemm()` add each term by `detail::mulAdd()` of
+  `DenseMatrix.h`, i.e., by `std::fma()` where `<cmath>` declares the
+  fused multiply-add as fast as a product and a sum (`FP_FAST_FMA`) and by
+  a product and a sum where it does not, so that the parallel products of
+  `ParallelNumeric.h` keep the results of the sequential ones bit for bit
+  whatever the contraction of the compiler, which g++ at
+  `-march=x86-64-v4` made in some loops and not in others; the job of
+  Highway of the CI at x86-64-v4 no longer turns the contraction off
 - the tables of the benchmarks in the README and in `results/` are those
   of a new run on the AMD EPYC 9654, built with Highway and, the parallel
   benchmarks, with hwloc, and each comparison of the README carries its

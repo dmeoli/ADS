@@ -60,7 +60,7 @@ void multiply( E & ex , const BasicCsrMatrix< T , I , P > & A , const T * x ,
   for( std::size_t i = r0 , k = std::size_t( start[ r0 ] ) ; i < r1 ; ++i ) {
    T s = T( 0 );  // the loop of the sequential product
    for( const auto e = std::size_t( start[ i + 1 ] ) ; k < e ; ++k )
-    s += val[ k ] * x[ col[ k ] ];
+    s = detail::mulAdd( val[ k ] , x[ col[ k ] ] , s );
    y[ i ] = s;
    }
   } );

@@ -8,7 +8,12 @@
  * `gemm()` [see `DenseMatrix.h`], on the threads of an executor [see
  * `Executor.h`], with the same results as the sequential ones, bit for bit:
  * each entry of the output is computed by the same sequential code, with the
- * same order of the sums, by one thread.
+ * same order of the sums, by one thread, and each of its terms is added by
+ * `detail::mulAdd()` [see `DenseMatrix.h`], i.e., by `std::fma()` where the
+ * processor has the fused multiply-add and by a product and a sum where it
+ * has not, so that the contraction into the FMA that a compiler makes in
+ * some loops and not in others (e.g., g++ at `-march=x86-64-v4`) cannot
+ * tell the parallel loop from the sequential one.
  *
  * - `multiply( ex , A , x , y )` for a `CsrMatrix` (or any `BasicCsrMatrix`,
  *   whatever its types of values and indices) of \f$ m \f$ rows and

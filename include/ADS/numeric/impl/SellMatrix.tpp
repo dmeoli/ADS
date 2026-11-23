@@ -89,7 +89,7 @@ void SellMatrix< C >::multiply( const double * x , double * y ,
   double s[ C ] = {};
   for( std::size_t p = f_start[ c ] , e = f_start[ c + 1 ] ; p < e ; p += C )
    for( std::size_t l = 0 ; l < C ; ++l )
-    s[ l ] += val[ p + l ] * x[ col[ p + l ] ];
+    s[ l ] = detail::mulAdd( val[ p + l ] , x[ col[ p + l ] ] , s[ l ] );
   for( std::size_t l = 0 ; l < C ; ++l )
    if( perm[ c * C + l ] < m )
     y[ perm[ c * C + l ] ] = s[ l ];

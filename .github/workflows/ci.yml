@@ -721,12 +721,11 @@ jobs:
   # by CMake at the default flags (the kernels of Simd.h chosen when the
   # program runs, those of SimdInline.h inlined at SSE2), with g++ and with
   # clang++, at -march=x86-64-v4 where the runner has AVX-512 (x86-64-v3
-  # otherwise; with no contraction of the products and sums into the FMA,
-  # which g++ makes by default in some loops and not in others, so that the
-  # parallel products of the sparse matrices would differ from the
-  # sequential ones in the last bits), and with ADS_SIMD_SCALAR=1, the scalar code of every
-  # structure on the same Highway; and the select in a word by the compress
-  # of the bytes of AVX-512 VBMI2 [see FastBitwise.h], at
+  # otherwise), with the contraction into the FMA that g++ makes in some
+  # loops and not in others, which the products of matrices do not see
+  # [see ParallelNumeric.h], and with ADS_SIMD_SCALAR=1, the scalar code of
+  # every structure on the same Highway; and the select in a word by the
+  # compress of the bytes of AVX-512 VBMI2 [see FastBitwise.h], at
   # -march=icelake-server, compiled always and run where the processor has
   # VBMI2
   highway:
@@ -756,8 +755,7 @@ jobs:
             native) f="-march=x86-64-v4"
                     for x in avx512f avx512bw avx512cd avx512dq avx512vl; do
                       grep -qw $x /proc/cpuinfo || f="-march=x86-64-v3"
-                    done
-                    f="$f -ffp-contract=off" ;;
+                    done ;;
             *) f="" ;;
           esac
           echo "the flags: ${f:-none}"

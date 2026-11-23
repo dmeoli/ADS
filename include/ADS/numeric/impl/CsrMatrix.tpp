@@ -99,7 +99,7 @@ void BasicCsrMatrix< T , I , P >::multiply( const T * x , T * y ) const
  for( std::size_t i = 0 , p = 0 ; i < f_m ; ++i ) {  // one pass on the
   T s = T( 0 );  // nonzeros, p running through
   for( const auto e = std::size_t( end[ i ] ) ; p < e ; ++p )  // the rows
-   s += val[ p ] * x[ col[ p ] ];
+   s = detail::mulAdd( val[ p ] , x[ col[ p ] ] , s );
   y[ i ] = s;
   }
  }

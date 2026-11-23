@@ -112,6 +112,7 @@
 #include "ADS/numeric/Matrix.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstring>
 #include <memory>
@@ -174,6 +175,37 @@ struct DefaultInitAllocator : std::allocator< U >
   ::new( static_cast< void * >( p ) ) V( std::forward< Args >( args )... );
   }
  };
+
+// true where <cmath> says that std::fma() of double (FP_FAST_FMA) and of
+// float (FP_FAST_FMAF) is as fast as a product and a sum, i.e., where the
+// processor has the fused multiply-add and the compiler may contract into it
+#ifdef FP_FAST_FMA
+inline constexpr bool kFastFma = true;
+#else
+inline constexpr bool kFastFma = false;
+#endif
+#ifdef FP_FAST_FMAF
+inline constexpr bool kFastFmaF = true;
+#else
+inline constexpr bool kFastFmaF = false;
+#endif
+
+/// \f$ a b + c \f$ of the products of matrices: by std::fma(), with one
+/// rounding, for a double or a float where the processor has the fused
+/// multiply-add [see kFastFma], and by a product and a sum elsewhere, where
+/// the compiler has no instruction to contract them into; each loop that
+/// calls it therefore rounds in the same way, whatever the contraction of
+/// the compiler (which g++ makes in some loops and not in others)
+template< class T >
+constexpr T mulAdd( const T & a , const T & b , const T & c )
+{
+ if constexpr( std::is_same_v< T , double > && kFastFma )
+  return( std::fma( a , b , c ) );
+ else if constexpr( std::is_same_v< T , float > && kFastFmaF )
+  return( std::fma( a , b , c ) );
+ else
+  return( a * b + c );
+ }
 
 }  // end( namespace detail )
 

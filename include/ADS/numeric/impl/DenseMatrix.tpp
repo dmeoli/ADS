@@ -107,7 +107,7 @@ void gemmBlocked( std::size_t m , std::size_t n , std::size_t k , T alpha ,
      const T a = alpha * A[ i * lda + p ];
      const T * b = B + p * ldb;
      for( std::size_t j = jc ; j < je ; ++j )
-      c[ j ] += a * b[ j ];
+      c[ j ] = mulAdd( a , b[ j ] , c[ j ] );
      }
     }
    }
