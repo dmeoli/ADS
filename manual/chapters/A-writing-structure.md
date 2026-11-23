@@ -30,7 +30,7 @@ STACK and lives in `include/ADS/stack`, next to `ArrayStack` and
 exercises 3.15 and 3.16 live in `include/ADS/queue`. A structure that
 realizes no abstract data type of the book goes in the folder of the
 problem it solves (e.g., `succinct` or `external`). A new folder needs a
-new theory page ([§A.5](A-writing-structure.md#sec-A-5)) and a row
+new theory page (cf. [§A.5](A-writing-structure.md#sec-A-5)) and a row
 in the map of the areas of `manual/build/structmap.py`.
 
 Each structure is one header, here `MinStack.h`, which declares the class
@@ -67,7 +67,7 @@ a parameter `C` with `std::less<>` as its default, stored as
 `[[no_unique_address]]`, whereby an empty comparator takes no room. We format
 the code by the rules of the repository `code-style`, which the continuous
 integration applies to each pull request
-([§A.10](A-writing-structure.md#sec-A-10)).
+(cf. [§A.10](A-writing-structure.md#sec-A-10)).
 
 In the `@file` comment a reader learns what the structure is before
 reading any code, and it follows a fixed order: (i) what the header
@@ -128,7 +128,7 @@ This line of `test/ods_lists.cpp` stands next to those of `MinQueue` and
 the operations: the axioms in the comment of each concept (for the STACK,
 $\mathrm{top}( \mathrm{push}( S , v ) ) = v$ and $\mathrm{pop}( \mathrm{push}(
 S , v ) ) = S$) are checked by the tests
-([§A.6](A-writing-structure.md#sec-A-6)), and the constructive part of the
+(cf. [§A.6](A-writing-structure.md#sec-A-6)), and the constructive part of the
 specification by the contracts.
 
 ## A.3 The contracts {#sec-A-3}
@@ -143,8 +143,18 @@ macro `ADS_CONTRACT_CHECK( level , kind , cond )`, each with its level and
 its kind, which tests the condition under `if constexpr( ADS_CONTRACTS >=
 level )` and, when the condition is false, calls a function of
 `ADS::detail` with the kind, the text of the condition, the function, the
-file and the line. `ADS_PRE` is checked from the level
-1 and `ADS_POST` from the level 2, while `ADS_INVARIANT` and `ADS_AUDIT`
+file and the line. In `Contract.h` the macro lies between two markers
+`//! [check]`, and it reads (cf. [Algorithm 1.5](01-introduction.md#alg-1-5)
+for its pseudocode)
+
+```cpp
+--8<-- "generated/Contract-check.cpp"
+```
+
+where the loop `do ... while( false )` makes the expansion one statement,
+which the semicolon after the macro ends, also in an `if` with no braces.
+`ADS_PRE` is checked from the level 1 and `ADS_POST` from the level 2,
+while `ADS_INVARIANT` and `ADS_AUDIT`
 (a precondition or a postcondition that costs more than the operation,
 e.g., that a vector is sorted before a binary search) are checked from the
 level 3. This level is the macro `ADS_CONTRACTS`, which is 1 by default and
@@ -237,7 +247,7 @@ The code of the two operations is the pseudocode with the names of the
 class. We show it here, as the example of how a structure is written,
 without the contracts, which the text states (the chapters of the areas,
 instead, give only the pseudocode, the signatures and short examples of
-use, see [§A.11](A-writing-structure.md#sec-A-11)):
+use, cf. [§A.11](A-writing-structure.md#sec-A-11)):
 
 ```cpp
 --8<-- "generated/MinStack-push.cpp"
@@ -328,7 +338,7 @@ with its program, its name and its source, e.g.,
 Both builds read it. On one side, `test/CMakeLists.txt` makes a program
 for each name of the first column and a ctest `<program>.<name>` for each
 line; on the other, the makefile builds the same programs (`make`) and
-runs the same tests (`make test`). Hence a new test, or a new program,
+runs the same tests (`make test`), and hence a new test, or a new program,
 takes one line of the registry and no change of either build. Note that the two
 build files are kept specular by hand only for what the registry cannot
 express, i.e., the programs of MPI (`engineered_mpi`, run on 1 to 4
@@ -338,7 +348,7 @@ the makefile, the target `test-<program>`) checks that the tests of a
 program, as `<program> -l` lists them, are those of the registry; thus,
 no test can be written and never run.
 
-One runs the test of `MinStack` by itself with `ctest --test-dir build -R
+One can run the test of `MinStack` by itself with `ctest --test-dir build -R
 ods_lists.ods-ex3.14.min-stack`, or by `build-make/ods_lists
 ods-ex3.14.min-stack` after `make`. An exercise of a chapter of this
 manual names a ctest of this form, which must exist.
@@ -410,8 +420,8 @@ is written as two, the base one including the advanced one at its end
 (e.g., `graph/MaxFlow.h` and `graph/PushRelabel.h`); a header of
 `ADS/interop/`, which includes the headers of another library, is given
 the set `interop`, which no entry point includes and no module exports,
-so that the script reads none of its names. Otherwise `cmake/ads_sets.py` stops the
-configuration and the make, and the job `sets` of the continuous
+so that the script reads none of its names. Otherwise `cmake/ads_sets.py`
+stops the configuration and the make, and the job `sets` of the continuous
 integration fails. Then a new header, or one that gains or
 loses a public name, needs the module script to be run again (`python3
 cmake/ads_module_exports.py`, with the flags of the optional executors
@@ -455,7 +465,8 @@ templates), and the same with `CXXFLAGS="-std=c++20 -O1 -g
 -DADS_TEST_SMALL"`, as the job does; a concurrent structure adds a run under
 ThreadSanitizer. CMake and the makefile define `ADS_SANITIZE_ADDRESS` and
 `ADS_SANITIZE_THREAD` when the options of the compiler turn a sanitizer on
-(the headers ask the build, never the compiler, whether one runs), and the
+(the headers test the macros of the build, never those of the compiler, to
+know whether a sanitizer runs), and the
 tests of CMake are then built with `ADS_TEST_SMALL`; under ThreadSanitizer,
 ctest passes the suppressions of `test/tsan.supp`, for the reports whose
 stacks pass through OpenMP, oneTBB, Kokkos, FastFlow or Taskflow, which the
@@ -477,13 +488,14 @@ of the pseudocode on both sites, in the light and in the dark theme.
 
 A structure enters the chapter of its area (for `MinStack`, [Chapter
 3](03-stack.md#ch-3)) with the parts that `manual/MAINTENANCE.md` and the
-model chapter fix. These are the abstract data type and its axioms, the
+model chapter fix. These are the abstract data type and its axioms,
 the representation and its invariant, a figure of the state before and after
 the operation that matters, the pseudocode, the lemmas and the theorems with
 their proofs, the signatures of the operations that a user calls with short
 examples of use, the engineered variants, and the exercises, each naming
 its ctest. A chapter shows no extract of an implementation, which the
-pseudocode replaces, and it copies neither pseudocode nor code: instead, the script `manual/build/snarf.py` (run by `make snippets` in
+pseudocode replaces, and it copies neither pseudocode nor code: instead,
+the script `manual/build/snarf.py` (run by `make snippets` in
 `manual/build`) writes into `manual/generated` two kinds of files: (i) a
 file `<File>-<name>.cpp` for each pair of markers `//! [name]` of a `.h`
 or a `.tpp`, dedented and without the contracts and the copies that only
@@ -497,8 +509,9 @@ in a separate paragraph for the pseudocode and as the only line of a
 fenced `cpp` block for the code. On the site the line is expanded by
 `pymdownx.snippets`, and in the PDF by `build/snippets.lua`. For instance,
 [§A.4](A-writing-structure.md#sec-A-4) includes in this way
-`MinStack-push.pseudo.md` and `MinStack-pop.pseudo.md`, and, as the example
-of this appendix only, `MinStack-push.cpp` and `MinStack-pop.cpp`. A
+`MinStack-push.pseudo.md` and `MinStack-pop.pseudo.md`, and, as the examples
+of this appendix only, `MinStack-push.cpp` and `MinStack-pop.cpp` (and
+[§A.3](A-writing-structure.md#sec-A-3) `Contract-check.cpp`). A
 function whose comment has no pseudocode gets one in its header (a change
 of the comments only) before a chapter describes it.
 
