@@ -50,6 +50,7 @@
 #include "ADS/succinct/CompactRankSelect.h"
 #include "ADS/succinct/HuffmanWaveletTree.h"
 #include "ADS/succinct/RankSelect.h"
+#include "ADS/succinct/TinyRankSelect.h"
 #include "ADS/succinct/WaveletMatrix.h"
 #include "ADS/parallel/TBBExecutor.h"
 #include "ADS/parallel/ThreadPool.h"
@@ -1180,7 +1181,8 @@ ADS_TEST( "concurrent-union-find-edges" )
  }
 
 // the directories of rank and select built on each executor against the
-// sequential ones, with chunks of 2 blocks (ADS_RANKSELECT_CHUNK): every
+// sequential ones, with chunks of 2 blocks (ADS_RANKSELECT_CHUNK) and the
+// tiny one by superblocks: every
 // rank and every select of both bits, from a vector and from words, on
 // vectors empty, of one bit, of all 0s and all 1s, around the sizes of a
 // word, of a block and of a line, dense and sparse, and with groups of
@@ -1239,6 +1241,11 @@ ADS_TEST( "parallel-rank-select" )
    const CompactRankSelect cref( b );
    CHECK( same( CompactRankSelect( ex , b ) , cref ) );
    CHECK( same( CompactRankSelect( ex , w , R.size() ) , cref ) );
+   const TinyRankSelect tref( b );
+   CHECK( same( TinyRankSelect( ex , b ) , tref ) );
+   CHECK( same( TinyRankSelect( ex , w , R.size() ) , tref ) );
+   CHECK( same( BasicTinyRankSelect< 512 >( ex , b ) ,
+		BasicTinyRankSelect< 512 >( b ) ) );
    }
   } );
  }
@@ -1396,6 +1403,7 @@ ADS_TEST( "parallel-huffman-wavelet-tree" )
 {
  checkParallelHuffman< RankSelect >();
  checkParallelHuffman< CompactRankSelect >();
+ checkParallelHuffman< TinyRankSelect >();
  }
 
 namespace

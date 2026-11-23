@@ -335,7 +335,7 @@ class HuffmanWaveletTree
    return( RS( ex , std::move( b ) ,
 		withSelect ? RankSelect::Selects::BOTH
 			   : RankSelect::Selects::NONE ) );
-  else if constexpr( std::is_same_v< RS , CompactRankSelect > )
+  else if constexpr( std::is_constructible_v< RS , E & , BitVector > )
    return( RS( ex , std::move( b ) ) );
   else
    return( directory( std::move( b ) , withSelect ) );
