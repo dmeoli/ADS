@@ -136,6 +136,7 @@
 #include "ADS/parallel/ParallelGreedy.h"
 #include "ADS/parallel/ParallelMerge.h"
 #include "ADS/parallel/ParallelNumeric.h"
+#include "ADS/parallel/ParallelPrimitives.h"
 #include "ADS/parallel/ParallelShortestPaths.h"
 #include "ADS/parallel/ParallelSketch.h"
 #include "ADS/parallel/ParallelSort.h"

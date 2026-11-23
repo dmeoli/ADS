@@ -35,18 +35,7 @@ auto gatherBlocks( E & ex , std::size_t B , F && f )
  using V = std::invoke_result_t< F & , std::size_t >;
  std::vector< V > L( B );
  parallelFor( ex , 0 , B , [ & ]( std::size_t b ) { L[ b ] = f( b ); } , 1 );
- std::vector< std::size_t > at( B + 1 , 0 );
- for( std::size_t b = 0 ; b < B ; ++b )
-  at[ b + 1 ] = at[ b ] + L[ b ].size();
- V out( at[ B ] );
- parallelFor(
-   ex , 0 , B ,
-   [ & ]( std::size_t b ) {
-    std::copy( L[ b ].begin() , L[ b ].end() ,
-	       out.begin() + std::ptrdiff_t( at[ b ] ) );
-    } ,
-   1 );
- return( out );
+ return( flatten( ex , L ) );
  }
 
 inline int atomicLoad( int & x )

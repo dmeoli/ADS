@@ -637,6 +637,15 @@ if (ADS_BENCHMARKS)
                                    PRIVATE ${ADS_PARLAY}/include
                                            ${ADS_PARLAY})
     endif ()
+    # libsais built with OpenMP, from the prefix ADS_LIBSAIS_OMP
+    set(ADS_LIBSAIS_OMP "" CACHE PATH "libsais built with OpenMP")
+    if (ADS_LIBSAIS_OMP AND OpenMP_CXX_FOUND)
+        target_compile_definitions(bench-parallel PRIVATE ADS_HAS_LIBSAIS_OMP)
+        target_include_directories(bench-parallel
+                                   PRIVATE ${ADS_LIBSAIS_OMP}/include)
+        target_link_libraries(bench-parallel
+                              PRIVATE ${ADS_LIBSAIS_OMP}/lib/libsais.a)
+    endif ()
     target_link_libraries(bench-parallel PRIVATE Threads::Threads)
     target_link_libraries(bench-runtime PRIVATE Threads::Threads)
     if (OpenMP_CXX_FOUND)

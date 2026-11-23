@@ -1904,6 +1904,10 @@ engineered_parallel  parallel-stepping   Delta e rho-stepping contro Dijkstra
 engineered_parallel  parallel-stepping-holes  stepping su un grafo con nodi cancellati
 engineered_parallel  concurrent-union-find  union-find concorrente
 engineered_parallel  concurrent-union-find-edges  n = 0 e 1, find concorrenti
+engineered_parallel  parallel-suffix-array  array dei suffissi per raddoppio dei prefissi
+engineered_parallel  parallel-pack-flatten  pack, filter, flatten, tokens e split
+engineered_parallel  parallel-integer-sort  istogrammi, counting sort e radix sort parallelo
+engineered_parallel  parallel-semisort-shuffle  semisort, group by, permutazioni, monoidi
 
 # the executors on the runtimes of a program, beyond the book
 interop_parallel  tbb-arena               arena di oneTBB del programma e corrente

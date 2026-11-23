@@ -614,6 +614,26 @@ using ADS::spanningForest;
 using ADS::multisequenceSplit;
 using ADS::multiwayMerge;
 
+// parallel/ParallelPrimitives.h
+using ADS::countingSort;
+using ADS::filter;
+using ADS::flatten;
+using ADS::groupByKey;
+using ADS::histogram;
+using ADS::histogramByKey;
+using ADS::integerSort;
+using ADS::pack;
+using ADS::packIndex;
+using ADS::randomPermutation;
+using ADS::randomShuffle;
+using ADS::reduceOf;
+using ADS::removeDuplicates;
+using ADS::scanOf;
+using ADS::semisort;
+using ADS::split;
+using ADS::tabulate;
+using ADS::tokens;
+
 // parallel/ParallelShortestPaths.h
 using ADS::deltaStepping;
 using ADS::rhoStepping;
@@ -633,6 +653,7 @@ using ADS::stableSort;
 // parallel/ParallelText.h
 using ADS::lcpArray;
 using ADS::lcpArrayPhi;
+using ADS::suffixArray;
 
 // parallel/SpeculativeFor.h
 using ADS::Reservation;
@@ -867,7 +888,6 @@ using ADS::SuffixAutomaton;
 
 // string/SuffixSorting.h
 using ADS::plcpArray;
-using ADS::suffixArray;
 
 // succinct/CompactRankSelect.h
 using ADS::CompactRankSelect;

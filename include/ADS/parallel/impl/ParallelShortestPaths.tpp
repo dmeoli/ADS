@@ -73,22 +73,7 @@ std::vector< int > concatBlocks( E & ex , std::size_t B ,
 {
  std::vector< std::vector< int > > L( B );
  parallelFor( ex , 0 , B , [ & ]( std::size_t b ) { L[ b ] = f( b ); } , 1 );
- std::vector< std::size_t > at( B + 1 , head.size() );
- for( std::size_t b = 0 ; b < B ; ++b )
-  at[ b + 1 ] = at[ b ] + L[ b ].size();
- head.resize( at[ B ] );
- // the copies in parallel only when they are many, as the small steps of
- // a graph of large diameter are
- auto copy = [ & ]( std::size_t b ) {
-  std::copy( L[ b ].begin() , L[ b ].end() ,
-	     head.begin() + std::ptrdiff_t( at[ b ] ) );
-  };
- if( at[ B ] - at[ 0 ] < ( std::size_t( 1 ) << 16 ) )
-  for( std::size_t b = 0 ; b < B ; ++b )
-   copy( b );
- else
-  parallelFor( ex , 0 , B , copy , 1 );
- return( head );
+ return( flatten( ex , L , std::move( head ) ) );
  }
 
 /// the steps from s, each extracting the active nodes v with d[ v ] at

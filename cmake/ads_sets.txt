@@ -327,6 +327,7 @@ parallel/ParallelGraph.h              advanced
 parallel/ParallelGreedy.h             advanced
 parallel/ParallelMerge.h              advanced
 parallel/ParallelNumeric.h            advanced
+parallel/ParallelPrimitives.h         advanced
 parallel/ParallelShortestPaths.h      advanced
 parallel/ParallelSketch.h             advanced
 parallel/ParallelSort.h               advanced

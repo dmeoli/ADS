@@ -2,44 +2,44 @@
 
 [Source: `include/ADS/parallel/Executor.h`, `ThreadPool.h`,
 `FastFlowExecutor.h`, `OpenMPExecutor.h`, `TBBExecutor.h`, `Affinity.h`,
-`Scratch.h`, `ParallelMerge.h`, `ParallelSort.h`, `ParallelNumeric.h`,
+`Scratch.h`, `ParallelPrimitives.h`, `ParallelMerge.h`, `ParallelSort.h`,
+`ParallelNumeric.h`,
 `ParallelGraph.h`, `ParallelText.h`, `SpeculativeFor.h`,
 `ParallelGreedy.h`, `ParallelShortestPaths.h`, `Channels.h`, `Farm.h`,
 `Mailbox.h`, and their `impl/*.tpp`; `include/ADS/interop/parallel/`
 `StdParExecutor.h`, `SenderExecutor.h`, `TaskflowExecutor.h`,
 `KokkosExecutor.h`]
 
-We are concerned in this chapter with the algorithms of the library that run
-on the threads of one machine with shared memory, and with the layer that
-gives them those threads. Each parallel algorithm of `ADS/parallel` takes an
-*executor* as its first argument, i.e., an object that runs a batch of calls
-on its threads and returns when all have returned. It gives the result of
-its sequential version, in most cases bit for bit (cf. [Lemma
+We are concerned in this chapter with the algorithms of the library that run on
+the threads of one machine with shared memory, and with the layer that gives
+them those threads. Each parallel algorithm of `ADS/parallel` takes an
+*executor* as its first argument, i.e., an object that runs a batch of calls on
+its threads and returns when all have returned. It gives the result of its
+sequential version, in most cases bit for bit (cf. [Lemma
 25.7](25-parallel.md#lem-25-7)), since the order of the operations that may
 round does not depend on the threads. Only the executor knows the threads;
-hence, one algorithm runs on the pool of the library, on FastFlow, on
-OpenMP, on oneTBB and on the calling thread alone. We first fix the model of
-the costs ([§25.1](25-parallel.md#sec-25-1)), then describe the executors
-([§25.2](25-parallel.md#sec-25-2) to [§25.5](25-parallel.md#sec-25-5)) and
-the patterns that the algorithms share ([§25.6](25-parallel.md#sec-25-6)).
-Next come the algorithms: the merge and the sorts
-([§25.7](25-parallel.md#sec-25-7)), the products of matrices
-([§25.8](25-parallel.md#sec-25-8)), the visits of graphs and the LCP array
-([§25.9](25-parallel.md#sec-25-9)), the deterministic reservations and the
-greedy algorithms built on them ([§25.10](25-parallel.md#sec-25-10) and
-[§25.11](25-parallel.md#sec-25-11)), and the shortest paths by steps
-([§25.12](25-parallel.md#sec-25-12)). Last, we describe the runtime of the
-long-lived workers that talk by messages: their channels
-([§25.13](25-parallel.md#sec-25-13)), the farm with feedback
-([§25.14](25-parallel.md#sec-25-14)) and the mailbox with the detection of
-the termination ([§25.15](25-parallel.md#sec-25-15)). We use the concurrent
-structures on which the executors rest (the deque of work stealing, the
-queues, the event count) through their operations only; they are described
-in [Chapter 24](24-concurrent.md#ch-24). In the sets of
-[§1.9](01-introduction.md#sec-1-9), the headers of this chapter are all
-advanced, while `Executor.h` is in the core that the two sets include and
-the executors on the runtimes of a program (`interop/parallel/`,
-[§25.4](25-parallel.md#sec-25-4)) are of the set interop.
+hence, one algorithm runs on the pool of the library, on FastFlow, on OpenMP,
+on oneTBB and on the calling thread alone. We first fix the model of the costs
+([§25.1](25-parallel.md#sec-25-1)), then describe the executors
+([§25.2](25-parallel.md#sec-25-2) to [§25.5](25-parallel.md#sec-25-5)) and the
+patterns and the primitives on sequences that the algorithms share
+([§25.6](25-parallel.md#sec-25-6)). Next come the algorithms: the merge and the
+sorts ([§25.7](25-parallel.md#sec-25-7)), the products of matrices
+([§25.8](25-parallel.md#sec-25-8)), the visits of graphs, the suffix array and
+the LCP array ([§25.9](25-parallel.md#sec-25-9)), the deterministic
+reservations and the greedy algorithms built on them
+([§25.10](25-parallel.md#sec-25-10) and [§25.11](25-parallel.md#sec-25-11)),
+and the shortest paths by steps ([§25.12](25-parallel.md#sec-25-12)). Last, we
+describe the runtime of the long-lived workers that talk by messages: their
+channels ([§25.13](25-parallel.md#sec-25-13)), the farm with feedback
+([§25.14](25-parallel.md#sec-25-14)) and the mailbox with the detection of the
+termination ([§25.15](25-parallel.md#sec-25-15)). We use the concurrent
+structures on which the executors rest (the deque of work stealing, the queues,
+the event count) through their operations only; they are described in [Chapter
+24](24-concurrent.md#ch-24). In the sets of [§1.9](01-introduction.md#sec-1-9),
+the headers of this chapter are all advanced, while `Executor.h` is in the core
+that the two sets include and the executors on the runtimes of a program
+(`interop/parallel/`, [§25.4](25-parallel.md#sec-25-4)) are of the set interop.
 
 ## 25.1 Work, depth and schedules {#sec-25-1}
 
@@ -942,6 +942,254 @@ threads. Hence, the prefixes are those of the scan from left to right
 only for an associative $\oplus$; on floating point numbers they may differ
 from run to run in the last bits.
 
+**Primitives on sequences.** Among the operations of the toolkit ParlayLib of
+[Blelloch, Anderson and Dhulipala 2020](Z-bibliography.md#ref-blelloch2020),
+the patterns above give those that the other algorithms of the chapter need
+most, i.e., the loops, the reductions and the scans by any associative
+operation (by a monoid of [§1.15.2](01-introduction.md#sec-1-15-2) in
+`reduceOf()` and `scanOf()`). In `ParallelPrimitives.h` we add the others on
+which the algorithms of the benchmark suite PBBS ([Shun et al.
+2012](Z-bibliography.md#ref-shun2012)) are built: the vector of $f( 0 ) ,
+\ldots , f( n - 1 )$ (`tabulate()`), the pack of the items or of the indices
+that a flag or a predicate keeps, in their order (`pack()`, `packIndex()`,
+`filter()`), the concatenation of a vector of vectors (`flatten()`), and the
+counts of keys in $[ 0 , m )$ (`histogram()`). Then come the stable
+distribution of the items into the buckets of their keys (`countingSort()`),
+the stable sort by keys of $b$ bits (`integerSort()`), and the *semisort*,
+which makes the items of equal keys adjacent in some order of the keys ([Gu,
+Shun, Sun and Blelloch 2015](Z-bibliography.md#ref-gu2015)), with the grouping,
+the counts and the distinct keys built on it (`groupByKey()`,
+`histogramByKey()`, `removeDuplicates()`). Last, there are a random
+permutation (`randomShuffle()`, `randomPermutation()`) and the tokens and the
+fields of a string (`tokens()`, `split()`). They are declared as
+
+```cpp
+// declarations of <ADS/parallel/ParallelPrimitives.h>
+template< Executor E , class T , class F >
+std::vector< T > pack( E & ex , const std::vector< T > & A ,
+                       const std::vector< F > & flags );
+template< Executor E , class P >
+std::vector< std::size_t > packIndex( E & ex , std::size_t n ,
+                                      P && pred );
+template< Executor E , class T , class P >
+std::vector< T > filter( E & ex , const std::vector< T > & A ,
+                         P && pred );
+template< Executor E , class T >
+std::vector< T > flatten( E & ex ,
+                          const std::vector< std::vector< T > > & L ,
+                          std::vector< T > head = {} );
+template< Executor E , class K >
+std::vector< std::size_t > histogram( E & ex , std::size_t n ,
+                                      K && key ,
+                                      std::size_t m );
+template< Executor E , class T , class K >
+std::vector< std::size_t > countingSort( E & ex , std::vector< T > & A ,
+                                         K && key , std::size_t m );
+template< Executor E , class T , class K >
+void integerSort( E & ex , std::vector< T > & A , K && key , int b );
+template< Executor E , class T , class K ,
+          class H = DefaultHash< std::decay_t<
+            std::invoke_result_t< K & , const T & > > > >
+void semisort( E & ex , std::vector< T > & A , K && key , H hash = H() );
+template< Executor E , class K , class V , class H = DefaultHash< K > >
+std::vector< std::pair< K , std::vector< V > > >
+groupByKey( E & ex , const std::vector< std::pair< K , V > > & A ,
+            H hash = H() );
+template< Executor E , class T >
+void randomShuffle( E & ex , std::vector< T > & A , std::uint64_t seed );
+template< Executor E , class P >
+std::vector< std::string_view >
+tokens( E & ex , std::string_view s , P && isSpace );
+template< Monoid G , Executor E >
+std::pair< std::vector< typename G::Value > ,
+           typename G::Value >
+scanOf( E & ex , const std::vector< typename G::Value > & A );
+```
+
+and, e.g., the words of a text may be counted and permuted at random by
+
+```cpp
+ADS::ThreadPool pool( 4 );
+std::string text = "to be or not to be";
+auto words = ADS::tokens( pool , text , []( char c ) { return( c == ' ' ); } );
+auto counts = ADS::histogramByKey( pool , words );  // ( "to" , 2 ) among them
+ADS::randomShuffle( pool , words , 42 );            // the same on any pool
+```
+
+Most of them rest on the pack ([Algorithm 25.Zps5](25-parallel.md#alg-25-Zps5)).
+Each block of `blocksOf()` counts the items it keeps, the counts are summed in
+the order of the blocks, and each block then copies its kept items from its
+offset; thus a predicate of the index is evaluated twice and never stored in a
+sequence (the evaluation by blocks that ParlayLib calls *block-delayed*).
+Instead, `filter()` and `packIndex()` store their predicate once in $n$ bytes,
+since it may be costly. Similarly, `flatten()` offsets the vectors by a scan of
+their sizes, and copies them in parallel only when they hold $2^{16}$ items or
+more (a long vector split into blocks). Furthermore, the histogram counts the
+keys of each block apart and sums the counts bucket by bucket when $4 m \le n$,
+and uses atomic increments otherwise. In the counting sort, each block gets the
+place of its first item of each bucket from the scan of the counts in the order
+(bucket, block) ([Algorithm 25.Zps6](25-parallel.md#alg-25-Zps6)).
+
+<span id="alg-25-Zps5"></span>**Algorithm 25.Zps5.** The pack by blocks and the
+flattening.
+
+--8<-- "generated/ParallelPrimitives-pack.pseudo.md"
+
+--8<-- "generated/ParallelPrimitives-flatten.pseudo.md"
+
+<span id="alg-25-Zps6"></span>**Algorithm 25.Zps6.** The histogram and the
+counting sort by blocks.
+
+--8<-- "generated/ParallelPrimitives-histogram.pseudo.md"
+
+--8<-- "generated/ParallelPrimitives-countingSort.pseudo.md"
+
+**The sort of integers.** `integerSort()` is a radix sort from the most
+significant digit ([Algorithm 25.Zps7](25-parallel.md#alg-25-Zps7)). Each level
+distributes the items into a buffer by the counting sort on the top 8 of the
+$b$ bits left, and then sorts each bucket on the bits below: the buckets of
+fewer than $\max\{ 2^{14} , n / p \}$ items each on one thread (by the LSD
+radix sort of `radixSortBy()`, [chapter 12](12-sort.md#ch-12), or by insertion
+below 33 items), the others on all the threads. Since the levels swap the
+roles of the vector and of the buffer, an item moves once per level and at most
+once more at the end, against the two moves per level of a distribution
+followed by a copy back. ParlayLib sorts the integers by a radix sort of the
+same kind, top-down, whose "small" buckets are sorted on one thread each.
+
+<span id="alg-25-Zps7"></span>**Algorithm 25.Zps7.** The parallel radix sort
+from the most significant digit.
+
+--8<-- "generated/ParallelPrimitives-integerSort.pseudo.md"
+
+We now state what the primitives give, independently of the executor.
+
+<span id="lem-25-Zps1"></span>**Lemma 25.Zps1.** *`tabulate()`, the packs,
+`flatten()`, `histogram()`, `countingSort()`, `integerSort()`, `tokens()` and
+`split()` give the results of their sequential definitions on every
+executor and for any number of threads. In particular, `integerSort()`
+sorts by the keys of $b$ bits stably, in at most $\lceil b / 8 \rceil$
+levels of distribution, each moving every item once.*
+
+*Proof.* The blocks depend only on $n$ and on the grain ([Algorithm
+25.8](25-parallel.md#alg-25-8)), and the offsets are sums of the counts of the
+blocks in their order. Hence a block of the pack writes its kept items, in
+their order, right after those of the blocks before it; in the same way, a
+block of the counting sort writes its items of the bucket $k$ right after
+those of the same bucket in the blocks before it, which is the stable
+distribution. For `integerSort()` we argue by induction on $b$. The case $b =
+0$ moves nothing (or moves the items in their order), while a level leaves the
+items with the top $r$ bits $d$ in one bucket, in their former order, before
+those with larger top bits; then sorting each bucket stably by the $b - r$
+bits below gives the order by the $b$ bits, with ties in the former order.
+Since a stable sort is unique, it does not matter which buckets are sorted on
+one thread. Each level lowers $b$ by $\min\{ b , 8 \}$, whence at most $\lceil
+b / 8 \rceil$ levels, and the line 3 moves the items once more only when the
+result must end in the other array. Finally, the tokens and the fields are
+the packs of the places where a token (or a field) begins and ends. $\square$
+
+**The semisort.** A semisort needs no order of the keys, and therefore one can
+semisort by a sort of their hashes. `semisort()` sorts the pairs $( h( k ) , i
+)$ of the hash of the key of each item and of its place by `integerSort()`, on
+the top $t = \min\{ 64 , \lceil \log_2 ( n + 1 ) \rceil + 8 \}$ bits of the
+hashes. A pack then finds the places where a key differs from the one before it
+in the same run of equal top bits, each run that holds such a place is
+regrouped on one thread, and the items are moved once, into the order of the
+pairs ([Algorithm 25.Zps8](25-parallel.md#alg-25-Zps8)). In [Gu, Shun, Sun and
+Blelloch 2015](Z-bibliography.md#ref-gu2015) the *heavy* keys, i.e., those of
+many items, are found by sampling and each gets a bucket of its own, whose
+items are never compared. Here a heavy key makes one run of equal hashes, which
+the radix sort moves once per level and never compares; hence the samples are
+not needed, at the price of a sort on $t \approx \log_2 n + 8$ bits (typically
+one level more than the $\log_2 n$ bits that a bucket per item would need).
+
+<span id="alg-25-Zps8"></span>**Algorithm 25.Zps8.** The semisort by the sort of
+the hashes.
+
+--8<-- "generated/ParallelPrimitives-semisort.pseudo.md"
+
+<span id="lem-25-Zps2"></span>**Lemma 25.Zps2.** *If equal keys have equal hashes,
+`semisort()` leaves the items of equal keys adjacent, and its result does not
+depend on the executor. If the hash maps distinct keys to independent
+uniform values, the expected number of pairs of distinct keys that share
+their top $t$ bits is less than $n / 512$, and so is the expected number of
+the distinct keys of the runs that the line 7 regroups, minus the number of
+these runs.*
+
+*Proof.* Equal keys have equal top bits, and after the sort the pairs of equal
+top bits form one run of consecutive places. Within a run that holds no place
+of $D$ each key equals the one before it, and therefore all of its keys are
+equal; a run that holds one is regrouped by keys. The runs are disjoint, and
+the sort and the regrouping are deterministic (cf. [Lemma
+25.Zps1](25-parallel.md#lem-25-Zps1)). For the expectation, two distinct keys
+share their top $t$ bits with probability $2^{-t}$, and $2^t \ge 2^8 ( n + 1 )$
+when $t < 64$ (the case $t = 64$ is that of $n \ge 2^{56}$); hence the
+expected number of such pairs is at most $\binom{n}{2} 2^{-t} < n / 512$. A run
+that holds $g \ge 2$ distinct keys holds at least $g - 1$ such pairs.
+$\square$
+
+It is fair to remark that the bound of [Lemma 25.Zps2](25-parallel.md#lem-25-Zps2)
+is on the pairs of distinct keys. A run that holds a heavy key and one more key
+is regrouped whole, at the cost of a scan of the run per key in it; this
+happens with the small probability above (or always, with a hash chosen against
+the keys).
+
+**The random permutation.** `randomShuffle()` sends each item $i$ to the
+bucket $\lfloor m \rho( i , s ) / 2^{64} \rfloor$ of $m = \max\{ 1 , \lfloor n
+/ 4096 \rfloor \}$ buckets by the counting sort, $\rho( i , s )$ being the hash
+of $i$ under the seed $s$. Then it shuffles each bucket by the algorithm of
+[Fisher and Yates 1938](Z-bibliography.md#ref-fisher1938), in the version of
+[Durstenfeld 1964](Z-bibliography.md#ref-durstenfeld1964), on a generator
+seeded by the bucket ([Algorithm 25.Zps9](25-parallel.md#alg-25-Zps9)); thus the
+permutation depends on $n$ and on the seed only. In [Shun et al.
+2015](Z-bibliography.md#ref-shun2015) the parallel algorithm gives instead the
+very permutation of the sequential algorithm of Durstenfeld for the same random
+numbers, by deterministic reservations ([§25.10](25-parallel.md#sec-25-10)),
+which costs some rounds of reservations. Our shuffle, as that of ParlayLib,
+keeps only the law.
+
+<span id="alg-25-Zps9"></span>**Algorithm 25.Zps9.** The random permutation by
+buckets, and the tokens by two packs.
+
+--8<-- "generated/ParallelPrimitives-randomShuffle.pseudo.md"
+
+--8<-- "generated/ParallelPrimitives-tokens.pseudo.md"
+
+<span id="lem-25-Zps3"></span>**Lemma 25.Zps3.** *If the buckets and the steps of
+the shuffles are drawn uniformly and independently, `randomShuffle()` gives
+each of the $n!$ permutations with probability $1 / n!$.*
+
+*Proof.* Fix a permutation $\pi$, i.e., the item at each place of the result.
+For each vector of sizes $( s_0 , \ldots , s_{m - 1} )$ with $s_0 + \cdots +
+s_{m - 1} = n$, the result is $\pi$ when each item lands in the bucket whose
+range of places holds its place in $\pi$, which has probability $m^{-n}$, and
+each bucket is shuffled into the order of $\pi$ on its range, which has
+probability $\prod_c 1 / s_c !$, since the distribution is stable and the
+shuffle of Fisher and Yates gives each order of a bucket with the same
+probability. Summing over the vectors of sizes, by the multinomial theorem,
+
+$$
+\Pr[ \pi ] = m^{-n} \sum_{s_0 + \cdots + s_{m - 1} = n} \prod_c
+\frac{1}{s_c !} = \frac{m^{-n} m^n}{n !} = \frac{1}{n !} . \qquad \square
+$$
+
+Of course, the buckets and the steps come from the hash of `hashWord()`
+([§7.3.6](07-dictionary.md#sec-7-3-6)) and from a SplitMix64 ([Steele, Lea and
+Flood 2014](Z-bibliography.md#ref-steele2014)), which are not independent and
+uniform. Hence [Lemma 25.Zps3](25-parallel.md#lem-25-Zps3) shows only that the
+scheme adds no bias to that of its random numbers.
+
+As for the costs, the work and the depth of the primitives are those of the
+patterns they are made of. In fact, $W = O( n )$ and $D = O( n / B + B )$ for
+the packs, the flattening, the tokens and the fields, $W = O( n + m )$ for the
+histogram and $W = O( n + m B )$ for the counting sort. `integerSort()` has $W
+= O( n \lceil b / 8 \rceil )$, and its depth is that of $\lceil b / 8 \rceil$
+counting sorts plus $O( \max\{ 2^{14} , n / p \} )$ for the buckets sorted on
+one thread; the semisort and the shuffle have $W = O( n )$ expected. These
+depths are larger than the $O( \log n )$ of the bounds of ParlayLib, which
+assume $B = n / \log n$ blocks. Note that, with at most $B = 64$ blocks
+(`kBlocks`), the depth $n / B$ is about what one thread does when the threads
+are few, as they usually are on one machine.
+
 ## 25.7 Merging and sorting {#sec-25-7}
 
 **The parallel merge.** `multiwayMerge( ex , R , out , less )` of
@@ -1294,7 +1542,7 @@ matrices.
 
 --8<-- "generated/ParallelNumeric-multiply-5.pseudo.md"
 
-## 25.9 Visits of graphs and the LCP array {#sec-25-9}
+## 25.9 Visits of graphs, the suffix array and the LCP array {#sec-25-9}
 
 **The visit in breadth.** The levels of a visit in breadth from $s$ are
 
@@ -1621,6 +1869,110 @@ the permuted LCP ([Kärkkäinen, Manzini and Puglisi
 --8<-- "generated/ParallelText-lcpArray.pseudo.md"
 
 --8<-- "generated/ParallelText-lcp.pseudo.md"
+
+**The suffix array.** The sequential constructions of the suffix array that run
+in linear time ([§15.5](15-string.md#sec-15-5)), SA-IS and the Skew algorithm,
+are hard to run in parallel for different reasons. In SA-IS, the induction
+scans the buckets in one order, each step placing a suffix that a later step
+reads (libsais has a version on OpenMP, whose threads share the work of each
+scan by blocks while the order of the scan is kept). Instead, the Skew
+algorithm (DC3) is parallel by its sorts and merges ([Kärkkäinen, Sanders and
+Burkhardt 2006](Z-bibliography.md#ref-karkkainen2006)), but it sorts all the
+suffixes of the sample at each level of a recursion. In `ParallelText.h` we
+build the array by the *prefix doubling* of [Manber and Myers
+1993](Z-bibliography.md#ref-manber1993) with the discarding of the suffixes
+already sorted ([Dementiev et al.
+2008](Z-bibliography.md#ref-dementiev2008sa)), as engineered in the suffix
+array of ParlayLib and PBBS ([Shun et al.
+2012](Z-bibliography.md#ref-shun2012)). After the round $h$ the suffixes are
+sorted by their first $2 h$ symbols, and the *segments* of suffixes still tied
+are the only ones sorted again, by the rank of the suffix $h$ places on, while
+a segment of one suffix is dropped. On most texts few suffixes survive more
+than a few rounds; on a text of one repeated symbol, however, the rounds are
+$\lceil \log_2 ( n / w ) \rceil$ and the work is $O( n \log n )$.
+
+Our version differs from that of ParlayLib in three points. First, the first
+round packs as many symbols as fit in a word of 64 bits, i.e., $w = \lfloor 64
+/ b \rfloor$ codes of $b = \lceil \log_2 ( \sigma + 1 ) \rceil$ bits for the
+$\sigma$ bytes of $T$ and the code 0 past its end (21 symbols of a text of 4
+letters, 7 of a text of all the 256 bytes), where ParlayLib takes 12 bytes in
+two words. This packing of the alphabet is also that of the distributed prefix
+doubling and DCX of [Kurpicz, Mehnert, Sanders and Schimek
+2024](Z-bibliography.md#ref-kurpicz2024) and [Haag, Kurpicz, Sanders and
+Schimek 2025](Z-bibliography.md#ref-haag2025). Second, all the sorts are the
+stable `integerSort()` of [§25.6](25-parallel.md#sec-25-6), on the $w b$ bits
+of the first round and on the $\lceil \log_2 ( n + 1 ) \rceil$ bits of a rank
+afterwards, where ParlayLib sorts the pairs by comparisons. Third, the segments
+of fewer than $\max\{ 2^{14} , n / ( 4 p ) \}$ suffixes are sorted each on one
+thread (by insertion up to 16 suffixes), all of them in one parallel loop, and
+only the larger ones on all the threads. A scan on one thread finds the ranks
+and the new segments of a small segment, and a scan by $\max$ and two packs
+those of a large one ([Algorithm 25.Zps10](25-parallel.md#alg-25-Zps10)). We take
+as ranks the first places of the segments in $\mathit{SA}$, which order the
+suffixes as their prefixes do, and none of them is written before the sorts
+of the round have read them.
+
+```cpp
+// declarations of <ADS/parallel/ParallelText.h>
+template< class I = std::uint32_t , Executor E >
+ requires( std::same_as< I , std::uint32_t > ||
+           std::same_as< I , std::uint64_t > )
+std::vector< I > suffixArray( E & ex , std::string_view T );
+```
+
+On one thread, or below $2^{15}$ symbols, the function is the sequential
+`suffixArray< I >( T )` of [§15.5.2](15-string.md#sec-15-5-2). Also, it takes
+indices of 32 bits up to $2^{32} - 2$ symbols, where SA-IS on signed integers
+stops at $2^{31} - 2$.
+
+<span id="alg-25-Zps10"></span>**Algorithm 25.Zps10.** The parallel suffix array by
+the prefix doubling with discarding.
+
+--8<-- "generated/ParallelText-suffixArray.pseudo.md"
+
+<span id="lem-25-Zps4"></span>**Lemma 25.Zps4.** *Let the prefix $T_h( k )$ of
+the suffix $k$ be its first $h$ symbols followed by the code 0 up to $h$
+symbols. At the start of the round $h$ of [Algorithm
+25.Zps10](25-parallel.md#alg-25-Zps10) (with $h = w$ at the first), (i)
+$\mathit{SA}$ is sorted by $T_h$, (ii) $R[ k ]$ is the first place in
+$\mathit{SA}$ of the suffixes $k'$ with $T_h( k' ) = T_h( k )$, and (iii) $S$
+holds exactly the runs of at least two places of equal $T_h$. Hence the
+algorithm returns the suffix array of $T$ after at most $\lceil \log_2 ( n / w
+) \rceil + 1$ rounds, on every executor.*
+
+*Proof.* After the line 3, (i) holds for $h = w$, since the key of $k$ is $T_w(
+k )$ with the first symbol in the top bits and the codes keep the order of the
+bytes; the line 4 gives (ii) and (iii). Let the claim hold at the round $h$.
+Two suffixes $k , k'$ of a segment have $T_h( k ) = T_h( k' )$, and $T_{2 h}( k
+) = T_h( k ) \, T_h( k + h )$ when $k + h < n$. If both $k + h$ and $k' + h$
+are less than $n$, by (i) and (ii) $R[ k + h ] < R[ k' + h ]$ if and only if
+$T_h( k + h ) < T_h( k' + h )$, and the ranks are equal if and only if these
+prefixes are; if $k + h \ge n$, the suffix $k$ has at most $h$ symbols, and
+since $T_h( k ) = T_h( k' )$ with no code 0 in $T_h( k' )$ (otherwise the two
+would end at the same place and be equal), it is $k + h = n$ and $k$ is a
+proper prefix of $k'$, hence smaller, as its key 0 makes it. Thus the sort of
+the line 8 orders each segment by $T_{2 h}$, and the places outside the
+segments, whose $T_h$ are distinct, are already in that order; the line 13 sets
+the ranks of (ii) for $2 h$, after all the sorts of the round, and the line 14
+the segments of (iii). Finally, the prefixes $T_h$ of all the suffixes differ
+once $h \ge n$, which $h = 2^j w$ reaches for $j = \lceil \log_2 ( n / w )
+\rceil$; then $S$ is empty and $\mathit{SA}$ is the suffix array, which is
+unique and therefore the same on all the executors. $\square$
+
+Each round costs $O( n )$ work on the live segments plus their sorts, i.e., $O(
+n \log n )$ in the worst case, and usually much less, since on most texts the
+suffixes drop out early; the depth is that of $O( \log n )$ rounds of sorts and
+scans. We expect (and the benchmark `parallel`, with `-b sa`, is there to check
+it) the doubling to beat the suffix array of ParlayLib by the packing of the
+alphabet and by the radix sorts. On texts with few repeats and on a few
+threads, libsais on OpenMP, linear and engineered for that case, may well stay
+ahead; the prefix doubling should then gain on it as the threads grow, since
+its sorts have no sequential scan. Its price is, rather, the memory, which
+peaks during the sort of the first round, with the pairs of the keys and of the
+suffixes and the buffer of their sort: $36 n$ bytes with indices of 32 bits and
+$40 n$ with 64. In the later rounds $\mathit{SA}$, $R$, $K$ and the buffer take
+$24 n$ and $48 n$ bytes, against the $4 n$ or $8 n$ bytes of SA-IS besides the
+text.
 
 ## 25.10 Deterministic reservations {#sec-25-10}
 
@@ -2757,7 +3109,19 @@ rows. The direction-optimizing visit is that of [Beamer, Asanović and Patterson
 hooks of [Shiloach and Vishkin 1982](Z-bibliography.md#ref-shiloach1982), and
 the LCP array combines the permuted array of [Kärkkäinen, Manzini and Puglisi
 2009](Z-bibliography.md#ref-karkkainen2009) with the scan of [Kasai et al.
-2001](Z-bibliography.md#ref-kasai2001).
+2001](Z-bibliography.md#ref-kasai2001). The primitives on sequences are those
+of ParlayLib ([Blelloch, Anderson and Dhulipala
+2020](Z-bibliography.md#ref-blelloch2020)), with the semisort of [Gu, Shun, Sun
+and Blelloch 2015](Z-bibliography.md#ref-gu2015) replaced by a radix sort of
+the hashes; the suffix array is the prefix doubling of [Manber and Myers
+1993](Z-bibliography.md#ref-manber1993) with the discarding of [Dementiev et
+al. 2008](Z-bibliography.md#ref-dementiev2008sa), as in PBBS ([Shun et al.
+2012](Z-bibliography.md#ref-shun2012)), and its packing of the alphabet is that
+of the distributed constructions of [Kurpicz, Mehnert, Sanders and Schimek
+2024](Z-bibliography.md#ref-kurpicz2024) and [Haag, Kurpicz, Sanders and
+Schimek 2025](Z-bibliography.md#ref-haag2025), which sort the suffixes by words
+of packed characters (by prefix doubling and by DCX) on machines with
+distributed memory.
 
 The deterministic reservations are those of [Blelloch, Fineman, Gibbons and
 Shun 2012](Z-bibliography.md#ref-blelloch2012a), and the analysis of the greedy
@@ -2805,55 +3169,65 @@ Each exercise names the test of the library that solves it (run it with
    the executors; then write the inclusive and exclusive scans by decoupled
    look-back and prove that they end on an executor that runs its calls in
    order. Test: `engineered_parallel.parallel-patterns`.
-3. Run $p$ long-lived workers at the same time on $p$ distinct threads,
+3. Pack, filter and flatten vectors, count keys, distribute and sort by
+   integer keys stably, semisort by the hashes of the keys, and permute at
+   random, with results that do not depend on the executor. Tests:
+   `engineered_parallel.parallel-pack-flatten`,
+   `engineered_parallel.parallel-integer-sort`,
+   `engineered_parallel.parallel-semisort-shuffle`.
+4. Run $p$ long-lived workers at the same time on $p$ distinct threads,
    also when they start nested jobs, and tell each worker whether it runs
    on the caller. Tests: `engineered_runtime.worker-run`,
    `engineered_runtime.run-caller`.
-4. Give each executor a lock with `try_lock()` that never waits. Test:
+5. Give each executor a lock with `try_lock()` that never waits. Test:
    `engineered_runtime.worker-locks`.
-5. Run `bulk()` on FastFlow with fewer indices than workers, and with a
+6. Run `bulk()` on FastFlow with fewer indices than workers, and with a
    number of indices that changes from one call to the next, without the
    barrier of FastFlow hanging. Tests:
    `engineered_runtime.fastflow-bulk-sizes`,
    `engineered_runtime.fastflow-loops`.
-6. Bind the workers of a pool to the processors given to the process, in
+7. Bind the workers of a pool to the processors given to the process, in
    their order, and leave the thread of the caller as it was. Test:
    `engineered_search.affinity`.
-7. Find the split of $k$ sorted ranges at the rank $r$ of their stable
+8. Find the split of $k$ sorted ranges at the rank $r$ of their stable
    merge in $O( k ( \log N + \log k ) \log N )$ comparisons, and merge the
    ranges in parallel. Test: `engineered_parallel.parallel-merge`.
-8. Sort a vector in parallel by a stable distribution into buckets, with
+9. Sort a vector in parallel by a stable distribution into buckets, with
    the same result as the sequential sorts, on inputs already sorted, in
    few runs, with few distinct keys and with many; then distribute the
    numbers by a model of their distribution function. Tests:
    `engineered_parallel.parallel-sort`,
    `engineered_parallel.learned-parallel-sort`.
-9. Multiply a sparse matrix by a vector and two dense matrices in parallel,
-   with the results of the sequential products bit for bit. Test:
-   `engineered_parallel.parallel-numeric`.
-10. Visit a graph in breadth in both directions, and label the connected
+10. Multiply a sparse matrix by a vector and two dense matrices in parallel,
+    with the results of the sequential products bit for bit. Test:
+    `engineered_parallel.parallel-numeric`.
+11. Visit a graph in breadth in both directions, and label the connected
     components with their least nodes by the sampling of Afforest. Test:
     `engineered_parallel.parallel-graph`.
-11. Compute the LCP array of a text in parallel from its permuted array.
+12. Compute the LCP array of a text in parallel from its permuted array.
     Test: `engineered_parallel.parallel-lcp`.
-12. Run a loop of dependent iterations by deterministic reservations, with
+13. Build the suffix array of a text in parallel by the prefix doubling,
+    with the array of SA-IS on every executor, on texts of one symbol, of
+    Fibonacci and with long repeats. Test:
+    `engineered_parallel.parallel-suffix-array`.
+14. Run a loop of dependent iterations by deterministic reservations, with
     the result of the sequential loop on all the executors. Test:
     `engineered_speculative.speculative-for`.
-13. Compute in parallel the forest of Kruskal, of filter-Kruskal and of the
+15. Compute in parallel the forest of Kruskal, of filter-Kruskal and of the
     greedy algorithm in the order of the edges, and the greedy maximal
     independent set and maximal matching in a given order. Tests:
     `engineered_speculative.parallel-kruskal`,
     `engineered_speculative.parallel-mis-matching`.
-14. Compute the distances of the algorithm of Dijkstra by the
+16. Compute the distances of the algorithm of Dijkstra by the
     $\Delta$-stepping and by the $\rho$-stepping. Test:
     `engineered_parallel.parallel-stepping`.
-15. Realize the four families of channels between workers with one
+17. Realize the four families of channels between workers with one
     interface. Test: `engineered_runtime.channels`.
-16. Write the farm with feedback on the workers of any executor, with the
+18. Write the farm with feedback on the workers of any executor, with the
     indices of the master and of the workers on fixed threads, and stop it
     from the master. Tests: `engineered_runtime.feedback-farm`,
     `engineered_runtime.farm-indices`.
-17. Detect the termination of a computation by messages with one shared
+19. Detect the termination of a computation by messages with one shared
     counter, with sends that never wait on bounded queues, and stop it with
     each message handed exactly once. Tests:
     `engineered_runtime.mailbox-termination`,

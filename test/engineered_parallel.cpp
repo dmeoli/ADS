@@ -42,6 +42,7 @@
 #include "ADS/parallel/ParallelGraph.h"
 #include "ADS/parallel/ParallelMerge.h"
 #include "ADS/parallel/ParallelNumeric.h"
+#include "ADS/parallel/ParallelPrimitives.h"
 #include "ADS/parallel/ParallelShortestPaths.h"
 #include "ADS/parallel/ParallelSort.h"
 #include "ADS/parallel/ParallelText.h"
@@ -65,6 +66,7 @@
 #include <span>
 #include <tuple>
 #include <limits>
+#include <map>
 #include <numeric>
 #include <queue>
 #include <random>
@@ -1614,6 +1616,375 @@ ADS_TEST( "parallel-stepping-holes" )
    CHECK( rhoStepping( ex , g , 0 , rho ) == ref );
    }
   } );
+ }
+
+/// f( ex ) on Sequential and on the pools of 1 to 8 threads
+template< class F >
+void onPools( F && f )
+{
+ Sequential s;
+ f( s );
+ for( std::size_t p = 1 ; p <= 8 ; ++p ) {
+  ThreadPool pool( p );
+  f( pool );
+  }
+ }
+
+/// the string monoid of the concatenation, which does not commute
+struct Concat
+{
+ using Value = std::string;
+ static Value identity( void ) { return( std::string() ); }
+ static Value combine( const Value & a , const Value & b ) { return( a + b ); }
+ };
+
+/// a hash of 64 bits that sends every key of the semisort to one of 3
+/// values, so that the runs of equal hashes hold distinct keys
+struct Hash3
+{
+ std::uint64_t hash64( std::uint64_t x ) const { return( x % 3 ); }
+ std::size_t operator()( std::uint64_t x ) const { return( x % 3 ); }
+ };
+
+// the prefix doubling of the suffix array, on Sequential and on the pools
+// of 1 to 8 threads, against the SA-IS of SuffixSorting.h on 32 and 64
+// bits: the empty text, one symbol, all equal, random texts of 2, 4 and 256
+// symbols (the byte 0 included, 9 bits a code), DNA, Fibonacci strings,
+// periodic texts, and sizes around the blocks of the loops and of the packs
+// and around 2^14 and 2^15, where the parallel refinement and the
+// sequential fallback begin; the LCP arrays of the results too
+ADS_TEST( "parallel-suffix-array" )
+{
+ std::mt19937_64 g( 23 );
+ std::vector< std::string > texts = {
+  "" , "a" , "aa" , "ab" , "ba" , "banana" , "mississippi" ,
+  std::string( 1 , '\0' )
+  };
+ auto random = [ & ]( std::size_t n , unsigned sigma ) {
+  std::string t( n , 'a' );
+  for( auto & c : t )
+   c = char( sigma == 256 ? g() % 256 : 'a' + g() % sigma );
+  return( t );
+  };
+ for( std::size_t n :
+      { std::size_t( 2047 ) , std::size_t( 2048 ) , std::size_t( 4097 ) ,
+	( std::size_t( 1 ) << 14 ) - 1 , std::size_t( 1 ) << 14 ,
+	( std::size_t( 1 ) << 14 ) + 1 , ( std::size_t( 1 ) << 15 ) + 1 ,
+	std::size_t( 70000 ) } )
+  for( unsigned sigma : { 2u , 4u , 256u } )
+   texts.push_back( random( n , sigma ) );
+ {
+  std::string a = "b" , b = "a";  // the Fibonacci strings
+  while( b.size() < 50000 ) {
+   std::string c = b + a;
+   a = std::move( b );
+   b = std::move( c );
+   }
+  texts.push_back( b );
+  texts.push_back( b.substr( 0 , std::size_t( 1 ) << 14 ) );
+  }
+ for( std::size_t n : { std::size_t( 1000 ) , std::size_t( 40000 ) } ) {
+  texts.push_back( std::string( n , 'z' ) );
+  std::string t;
+  while( t.size() < n )
+   t += "abracadabra";
+  texts.push_back( t );
+  // DNA with long repeats: a random block copied with a few mutations
+  std::string d = random( n / 4 , 4 );
+  for( auto & c : d )
+   c = "acgt"[ c - 'a' ];
+  std::string e = d + d + d + d;
+  for( int k = 0 ; k < 8 ; ++k )
+   e[ g() % e.size() ] = 'n';
+  texts.push_back( e );
+  }
+ std::vector< std::vector< std::uint32_t > > ref32;
+ std::vector< std::vector< std::uint64_t > > ref64;
+ for( const auto & t : texts ) {
+  ref32.push_back( suffixArray< std::uint32_t >( t ) );
+  ref64.push_back( suffixArray< std::uint64_t >( t ) );
+  }
+ onPools( [ & ]( auto & ex ) {
+  for( std::size_t k = 0 ; k < texts.size() ; ++k ) {
+   const auto & t = texts[ k ];
+   const auto SA = detail::suffixDoubling< std::uint32_t >( ex , t );
+   CHECK( SA == ref32[ k ] );
+   CHECK( detail::suffixDoubling< std::uint64_t >( ex , t ) == ref64[ k ] );
+   CHECK( suffixArray( ex , t ) == ref32[ k ] );
+   CHECK( suffixArray< std::uint64_t >( ex , t ) == ref64[ k ] );
+   CHECK( lcpArrayPhi( ex , t , SA ) == lcpArrayPhi( t , ref32[ k ] ) );
+   }
+  } );
+ }
+
+// the packs, the filter and the flattening against copy_if and the
+// concatenation of the standard library, at the sizes around the blocks of
+// 2048 indices, with lists of no item, more lists than 2^14 and a list of
+// more than 2^16 items; tabulate, tokens and split against sequential
+// loops, with spaces at the ends and runs of separators
+ADS_TEST( "parallel-pack-flatten" )
+{
+ std::mt19937_64 g( 31 );
+ onPools( [ & ]( auto & ex ) {
+  for( std::size_t n :
+       { std::size_t( 0 ) , std::size_t( 1 ) , std::size_t( 2047 ) ,
+	 std::size_t( 2048 ) , std::size_t( 2049 ) ,
+	 std::size_t( 100000 ) } ) {
+   std::vector< std::uint64_t > A( n );
+   for( auto & x : A )
+    x = g() % 1000;
+   const auto T =
+     tabulate( ex , n , [ & ]( std::size_t i ) { return( A[ i ] * 2 ); } );
+   CHECK( T.size() == n );
+   CHECK( std::equal( T.begin() , T.end() , A.begin() ,
+		      []( auto a , auto b ) { return( a == 2 * b ); } ) );
+   std::vector< char > f( n );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    f[ i ] = A[ i ] % 3 == 0;
+   std::vector< std::uint64_t > e;
+   std::vector< std::size_t > ei;
+   for( std::size_t i = 0 ; i < n ; ++i )
+    if( f[ i ] ) {
+     e.push_back( A[ i ] );
+     ei.push_back( i );
+     }
+   CHECK( pack( ex , A , f ) == e );
+   CHECK( filter( ex , A , []( std::uint64_t x ) { return( x % 3 == 0 ); } ) ==
+	  e );
+   CHECK( packIndex( ex , n , [ & ]( std::size_t i ) {
+	   return( f[ i ] != 0 );
+	   } ) == ei );
+   }
+  for( std::size_t m : { std::size_t( 0 ) , std::size_t( 1 ) ,
+			 std::size_t( 100 ) , std::size_t( 20000 ) } ) {
+   std::vector< std::vector< int > > L( m );
+   for( auto & l : L )
+    l.resize( g() % 4 == 0 ? 0 : g() % 10 );
+   if( m == 100 )
+    L[ 50 ].resize( 70000 );
+   int c = 0;
+   for( auto & l : L )
+    for( auto & x : l )
+     x = c++;
+   std::vector< int > head = { -3 , -2 , -1 } , e = head;
+   for( const auto & l : L )
+    e.insert( e.end() , l.begin() , l.end() );
+   CHECK( flatten( ex , L , head ) == e );
+   CHECK( flatten( ex , L ) == std::vector< int >( e.begin() + 3 , e.end() ) );
+   }
+  auto sp = []( char c ) { return( c == ' ' ); };
+  for( std::string s :
+       { std::string() , std::string( "   " ) , std::string( "a" ) ,
+	 std::string( "  ab c   def " ) , std::string( "x,,y," ) } ) {
+   std::string big;
+   for( int k = 0 ; k < 5000 ; ++k )
+    big += s + ( k % 7 == 0 ? "  " : " " );
+   for( const std::string & u : { s , big } ) {
+    std::vector< std::string_view > tk , fl;
+    std::size_t i = 0;
+    while( i < u.size() ) {
+     while( ( i < u.size() ) && sp( u[ i ] ) )
+      ++i;
+     std::size_t j = i;
+     while( ( j < u.size() ) && ! sp( u[ j ] ) )
+      ++j;
+     if( j > i )
+      tk.push_back( std::string_view( u ).substr( i , j - i ) );
+     i = j;
+     }
+    std::size_t l = 0;
+    for( std::size_t k = 0 ; k <= u.size() ; ++k )
+     if( ( k == u.size() ) || ( u[ k ] == ',' ) ) {
+      fl.push_back( std::string_view( u ).substr( l , k - l ) );
+      l = k + 1;
+      }
+    CHECK( tokens( ex , u , sp ) == tk );
+    CHECK( split( ex , u , []( char c ) { return( c == ',' ); } ) == fl );
+    }
+   }
+  } );
+ }
+
+// the histograms (by blocks and by atomic increments), the counting sort
+// and the integer sort against counts and std::stable_sort, the sort with
+// records that keep their places so that the stability is seen: keys of 0,
+// 1, 8, 13, 32 and 64 bits, all equal, the largest key of 64 bits, sizes
+// around 2^14, where the sort leaves its sequential case
+ADS_TEST( "parallel-integer-sort" )
+{
+ std::mt19937_64 g( 37 );
+ onPools( [ & ]( auto & ex ) {
+  for( std::size_t n :
+       { std::size_t( 0 ) , std::size_t( 1 ) , ( std::size_t( 1 ) << 14 ) - 1 ,
+	 std::size_t( 1 ) << 14 , ( std::size_t( 1 ) << 14 ) + 1 ,
+	 std::size_t( 200000 ) } ) {
+   for( std::size_t m : { std::size_t( 1 ) , std::size_t( 7 ) ,
+			  std::size_t( 256 ) , std::size_t( 100000 ) } ) {
+    std::vector< std::uint32_t > K( n );
+    for( auto & k : K )
+     k = std::uint32_t( g() % m );
+    std::vector< std::size_t > e( m , 0 );
+    for( auto k : K )
+     ++e[ k ];
+    CHECK( histogram( ex , K , m ) == e );
+    if( m > 1000 )
+     continue;
+    std::vector< std::pair< std::uint32_t , std::size_t > > A( n );
+    for( std::size_t i = 0 ; i < n ; ++i )
+     A[ i ] = { K[ i ] , i };
+    auto B = A;
+    std::stable_sort(
+      B.begin() , B.end() ,
+      []( const auto & a , const auto & b ) { return( a.first < b.first ); } );
+    const auto at = countingSort(
+      ex , A , []( const auto & x ) { return( std::size_t( x.first ) ); } ,
+      m );
+    CHECK( A == B );
+    CHECK( at.size() == m + 1 );
+    std::size_t s = 0;
+    for( std::size_t k = 0 ; k < m ; ++k ) {
+     CHECK( at[ k ] == s );
+     s += e[ k ];
+     }
+    CHECK( at[ m ] == n );
+    }
+   for( int b : { 0 , 1 , 8 , 13 , 32 , 64 } )
+    for( int kind = 0 ; kind < 3 ; ++kind ) {
+     const std::uint64_t mask =
+       b == 64 ? ~std::uint64_t( 0 ) : ( std::uint64_t( 1 ) << b ) - 1;
+     std::vector< std::pair< std::uint64_t , std::size_t > > A( n );
+     for( std::size_t i = 0 ; i < n ; ++i )
+      A[ i ] = { kind == 0   ? g() & mask
+		 : kind == 1 ? mask
+			     : ( g() % 5 ) & mask ,
+		 i };
+     auto B = A;
+     std::stable_sort( B.begin() , B.end() ,
+		       []( const auto & x , const auto & y ) {
+			return( x.first < y.first );
+		        } );
+     integerSort( ex , A , []( const auto & x ) { return( x.first ); } , b );
+     CHECK( A == B );
+     }
+   }
+  } );
+ }
+
+// the semisort and the primitives on it against std::map: keys at random
+// among few or many values, all distinct, all equal, strings, and a hash of
+// 3 values, whose runs hold distinct keys to regroup; the random shuffle,
+// a permutation equal on every executor for a seed and different for
+// another; the reduction and the scan by monoids, one of which (the
+// concatenation of strings) does not commute
+ADS_TEST( "parallel-semisort-shuffle" )
+{
+ std::mt19937_64 g( 41 );
+ std::vector< std::vector< std::size_t > > perms;
+ onPools( [ & ]( auto & ex ) {
+  for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) ,
+			 std::size_t( 5000 ) , std::size_t( 100000 ) } )
+   for( std::uint64_t range :
+	{ std::uint64_t( 1 ) , std::uint64_t( 10 ) , std::uint64_t( 1000 ) ,
+	  ~std::uint64_t( 0 ) } ) {
+    std::vector< std::pair< std::uint64_t , std::size_t > > A( n );
+    for( std::size_t i = 0 ; i < n ; ++i )
+     A[ i ] = { range == ~std::uint64_t( 0 ) ? i * 7919 : g() % range , i };
+    std::map< std::uint64_t , std::vector< std::size_t > > e;
+    for( const auto & a : A )
+     e[ a.first ].push_back( a.second );
+    auto G = groupByKey( ex , A );
+    CHECK( G.size() == e.size() );
+    std::map< std::uint64_t , std::vector< std::size_t > > got( G.begin() ,
+							       G.end() );
+    CHECK( got == e );
+    std::vector< std::uint64_t > K( n );
+    for( std::size_t i = 0 ; i < n ; ++i )
+     K[ i ] = A[ i ].first;
+    auto H = histogramByKey( ex , K );
+    std::map< std::uint64_t , std::size_t > hc( H.begin() , H.end() );
+    CHECK( hc.size() == e.size() );
+    bool same = true;
+    for( const auto & [ k , v ] : e )
+     same = same && ( hc[ k ] == v.size() );
+    CHECK( same );
+    auto D = removeDuplicates( ex , K );
+    std::sort( D.begin() , D.end() );
+    std::vector< std::uint64_t > ek;
+    for( const auto & kv : e )
+     ek.push_back( kv.first );
+    CHECK( D == ek );
+    if( n <= 5000 ) {  // the hash of 3 values: quadratic regroupings
+     auto S = K;
+     semisort( ex , S , []( std::uint64_t x ) { return( x ); } , Hash3() );
+     auto R = histogramByKey( ex , S , Hash3() );
+     std::map< std::uint64_t , std::size_t > rc( R.begin() , R.end() );
+     CHECK( rc.size() == e.size() );
+     auto T = S;
+     std::sort( T.begin() , T.end() );
+     auto U = K;
+     std::sort( U.begin() , U.end() );
+     CHECK( T == U );
+     }
+    }
+  std::vector< std::string > W;
+  for( int k = 0 ; k < 30000 ; ++k )
+   W.push_back( "w" + std::to_string( g() % 500 ) );
+  std::map< std::string , std::size_t > wc;
+  for( const auto & w : W )
+   ++wc[ w ];
+  auto HW = histogramByKey( ex , W );
+  const std::map< std::string , std::size_t > hw( HW.begin() , HW.end() );
+  CHECK( hw == wc );
+  // the shuffles
+  for( std::size_t n :
+       { std::size_t( 0 ) , std::size_t( 1 ) , std::size_t( 4095 ) ,
+	 std::size_t( 3 * 4096 + 1 ) , std::size_t( 100000 ) } ) {
+   const auto P = randomPermutation( ex , n , 7 );
+   auto Q = P;
+   std::sort( Q.begin() , Q.end() );
+   bool id = true;
+   for( std::size_t i = 0 ; i < n ; ++i )
+    id = id && ( Q[ i ] == i );
+   CHECK( id );
+   if( n == 100000 ) {
+    perms.push_back( P );
+    CHECK( randomPermutation( ex , n , 8 ) != P );
+    }
+   }
+  // the monoids
+  for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) ,
+			 std::size_t( 3000 ) , std::size_t( 200000 ) } ) {
+   std::vector< std::uint64_t > A( n );
+   for( auto & x : A )
+    x = g() % 1000;
+   std::uint64_t s = 0 , mx = 0;
+   std::vector< std::uint64_t > pre( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    pre[ i ] = s;
+    s += A[ i ];
+    mx = std::max( mx , A[ i ] );
+    }
+   CHECK( reduceOf< SumOf< std::uint64_t > >( ex , A ) == s );
+   CHECK( reduceOf< MaxOf< std::uint64_t > >( ex , A ) == mx );
+   const auto sc = scanOf< SumOf< std::uint64_t > >( ex , A );
+   CHECK( ( sc.first == pre ) && ( sc.second == s ) );
+   if( n > 3000 )
+    continue;
+   std::vector< std::string > C( n );
+   std::string all;
+   std::vector< std::string > cp( n );
+   for( std::size_t i = 0 ; i < n ; ++i ) {
+    C[ i ] = std::string( 1 , char( 'a' + A[ i ] % 26 ) );
+    cp[ i ] = all;
+    all += C[ i ];
+    }
+   CHECK( reduceOf< Concat >( ex , C ) == all );
+   const auto cs = scanOf< Concat >( ex , C );
+   CHECK( ( cs.first == cp ) && ( cs.second == all ) );
+   }
+  } );
+ for( const auto & P : perms )
+  CHECK( P == perms[ 0 ] );
  }
 
 /*--------------------------------------------------------------------------*/

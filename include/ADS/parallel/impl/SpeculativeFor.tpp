@@ -23,40 +23,17 @@ namespace detail
 {
 
 /// the iterations of \f$ I[ 0 .. k - 1 ] \f$ whose flag in `keep` is set,
-/// in their order, copied into `out`, and their number: the counts of the
-/// blocks and the copies of the blocks in parallel, the prefix sums of the
-/// counts in between
+/// in their order, copied into `out`, and their number, by the pack of
+/// `ParallelPrimitives.h`
 template< class E >
 std::size_t packKept( E & ex , const std::vector< std::size_t > & I ,
 		      const std::vector< char > & keep , std::size_t k ,
 		      std::vector< std::size_t > & out )
 {
- const auto blocks = blocksOf( 0 , k , 2048 );
- const std::size_t B = blocks.first , size = blocks.second;
- std::vector< std::size_t > at( B + 1 , 0 );
- parallelFor(
-   ex , 0 , B ,
-   [ & ]( std::size_t b ) {
-    std::size_t c = 0;
-    for( std::size_t i = b * size ; i < std::min( k , ( b + 1 ) * size ) ;
-	 ++i )
-     c += keep[ i ] != 0;
-    at[ b + 1 ] = c;
-    } ,
-   1 );
- for( std::size_t b = 0 ; b < B ; ++b )
-  at[ b + 1 ] += at[ b ];
- parallelFor(
-   ex , 0 , B ,
-   [ & ]( std::size_t b ) {
-    std::size_t o = at[ b ];
-    for( std::size_t i = b * size ; i < std::min( k , ( b + 1 ) * size ) ;
-	 ++i )
-     if( keep[ i ] )
-      out[ o++ ] = I[ i ];
-    } ,
-   1 );
- return( at[ B ] );
+ return( packInto(
+   ex , k , [ & ]( std::size_t i ) { return( keep[ i ] != 0 ); } ,
+   [ & ]( std::size_t i ) { return( I[ i ] ); } ,
+   [ & ]( std::size_t ) { return( out.begin() ); } ) );
  }
 
 }  // end( namespace detail )
