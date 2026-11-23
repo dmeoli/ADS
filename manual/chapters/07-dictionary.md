@@ -3054,19 +3054,19 @@ class RecSplit
 ### 7.8.4 Pilots of 8 bits and the combined search of the seeds {#sec-7-8-4}
 
 `PtrHash` is the method of [Groot Koerkamp
-2025](Z-bibliography.md#ref-grootkoerkamp2025). It keeps the pilots of
-PTHash but bounds them to $[ 0 , 256 )$, and therefore stores them as an
-array of bytes, of which a query reads one with no decoding. Its price is
-paid in the build, since a bucket placed late (when few slots are free) may
-find no pilot below 256. Such a bucket takes the pilot of the least
-collisions and evicts the buckets it meets, much as cuckoo hashing evicts
-its keys ([§7.7](07-dictionary.md#sec-7-7)). A key of hash $h$ goes to the
-part $\pi( h ) = \lfloor P h / 2^{64} \rfloor$ of $P$ parts, all of the same
-$S$ slots and $B$ buckets (the $\varepsilon$-cost sharding of [Vigna
-2025](Z-bibliography.md#ref-vigna2025), which needs no prefix sums of the
-sizes of the parts). In its part, the key goes to the bucket $\lfloor B
-\gamma( r ) / 2^{64} \rfloor$, with $r = P h \bmod 2^{64}$ the bits of $h$
-that the part leaves, and to the slot
+2025](Z-bibliography.md#ref-grootkoerkamp2025). It keeps the pilots of PTHash
+but bounds them to $[ 0 , 256 )$, and therefore stores them as an array of
+bytes; a query reads one of them with no decoding. The price is paid in the
+build, since a bucket placed late (when few slots are free) may find no pilot
+below 256. Such a bucket takes the pilot of the least collisions and evicts the
+buckets it meets, much as cuckoo hashing evicts its keys
+([§7.7](07-dictionary.md#sec-7-7)). A key of hash $h$ goes to the part $\pi( h
+) = \lfloor P h / 2^{64} \rfloor$ of $P$ parts, all of the same $S$ slots and
+$B$ buckets. (This is the $\varepsilon$-cost sharding of [Vigna
+2025](Z-bibliography.md#ref-vigna2025), which needs no prefix sums of the sizes
+of the parts.) In its part, the key goes to the bucket $\lfloor B \gamma( r ) /
+2^{64} \rfloor$, where $r = P h \bmod 2^{64}$ are the bits of $h$ that the part
+leaves, and to the slot
 
 $$
 s( h , p ) = \pi( h ) S + \bigl( ( h \oplus c ( p \oplus x ) ) \bmod_{\!*}
@@ -3078,39 +3078,36 @@ Here $\bmod_{\!*}$ is the fast modulo of [Lemire et al.
 2019](Z-bibliography.md#ref-lemire2019fastmod), i.e., the remainder for an
 operand below $2^{32}$ and a mixing of all its bits otherwise. As bucket
 function, $\gamma$ is either the identity or the cubic $\gamma_3( r ) =
-\frac{255}{256} r^2 ( 1 + r ) / 2 + r / 256$ of a fraction $r$ (cf. the
-optimal function $r + ( 1 - r ) \ln ( 1 - r )$ of [Hermann et al.
-2024](Z-bibliography.md#ref-hermann2024), of which it is a Taylor
-approximation with a slope of at least $1 / 256$). With the cubic one, the
-first buckets are large but usually not so large that two of their keys
-fall in one slot. A part has about $\kappa = ( 4 / \epsilon^2 ) \max\{ 1 ,
-\ln ( n \epsilon^2 / 2 ) \}$ keys, with $\epsilon = ( 1 - \alpha ) / 2$ (at
-least 160000 for $\alpha = 0.99$, and the whole set for $\alpha = 1$). Also,
-$S = \lceil ( n / P ) / \alpha \rceil$ is rounded up to a number neither
-even nor a multiple of 3, since the modulo would otherwise ignore some bits
-of its operand.
+\frac{255}{256} r^2 ( 1 + r ) / 2 + r / 256$ of a fraction $r$. The latter is a
+Taylor approximation, with a slope of at least $1 / 256$, of the optimal
+function $r + ( 1 - r ) \ln ( 1 - r )$ of [Hermann et al.
+2024](Z-bibliography.md#ref-hermann2024). With the cubic one the first buckets
+are large, but usually not so large that two of their keys fall in one slot. A
+part has about $\kappa = ( 4 / \epsilon^2 ) \max\{ 1 , \ln ( n \epsilon^2 / 2 )
+\}$ keys, with $\epsilon = ( 1 - \alpha ) / 2$ (at least 160000 for $\alpha =
+0.99$, and the whole set for $\alpha = 1$). Also, $S = \lceil ( n / P ) /
+\alpha \rceil$ is rounded up to a number neither even nor a multiple of 3,
+since the modulo would otherwise ignore some bits of its operand.
 
-The buckets of a part are taken by decreasing size, and each one gets the
-first pilot that sends its keys to free slots, distinct among them
-([Algorithm 7.20](07-dictionary.md#alg-7-20)). When no pilot does, the
-bucket scans the pilots from a random one, and takes the one whose slots
-meet the buckets of the least sum of the squares of their sizes (a large
-bucket being the hardest to place again). It skips the pilots that send
-two of its keys to one slot, and those whose slots meet one of the 16
-buckets placed last, which would possibly close a cycle of evictions.
-Evicted buckets are placed again in the same way, the largest first, before
-the next bucket of the order; a chain of more than $10 S$ evictions, or a
-part with more keys than slots, makes the build draw a new seed. Finally,
-the $P S - n$ slots beyond $n$ are remapped onto the slots below $n$ left free,
-by an array of 32 bits or by an Elias-Fano sequence
-([§22.6](22-succinct.md#sec-22-6)), as the remap is non-decreasing. Note
-that a part reads only its keys, its pilots, its words of the slots and a
-generator seeded by its index. Hence the constructor that takes an
-executor ([§25.2](25-parallel.md#sec-25-2)) builds the parts in parallel,
-with the same result as the sequential one. Furthermore, `stream()`
-evaluates a range of keys with the pilot of the key 32 places ahead
-prefetched (the streaming queries of PtrHash; cf.
-[§5.9](05-memory.md#sec-5-9), whose hint does nothing without
+We take the buckets of a part by decreasing size, and give each one the first
+pilot that sends its keys to free slots, distinct among them ([Algorithm
+7.20](07-dictionary.md#alg-7-20)). When no pilot does, the bucket scans the
+pilots from a random one. It takes the one whose slots meet the buckets of the
+least sum of the squares of their sizes, since a large bucket is the hardest to
+place again. It skips the pilots that send two of its keys to one slot, and
+those whose slots meet one of the 16 buckets placed last (which would possibly
+close a cycle of evictions). Evicted buckets are placed again in the same way,
+the largest first, before the next bucket of the order. A chain of more than
+$10 S$ evictions, or a part with more keys than slots, makes the build draw a
+new seed. Finally, the $P S - n$ slots beyond $n$ are remapped onto the slots
+below $n$ left free, by an array of 32 bits or by an Elias-Fano sequence
+([§22.6](22-succinct.md#sec-22-6)), as the remap is non-decreasing. Note that a
+part reads only its keys, its pilots, its words of the slots and a generator
+seeded by its index. Hence the constructor that takes an executor
+([§25.2](25-parallel.md#sec-25-2)) builds the parts in parallel, with the same
+result as the sequential one. Furthermore, `stream()` evaluates a range of keys
+with the pilot of the key 32 places ahead prefetched (the streaming queries of
+PtrHash; cf. [§5.9](05-memory.md#sec-5-9), whose hint does nothing without
 `ADS_WITH_HIGHWAY`), and `prefetch()` prefetches the pilot of one key.
 
 <span id="alg-7-20"></span>**Algorithm 7.20.** The construction of a part,
@@ -3136,32 +3133,31 @@ the executor of the build.*
 
 *Proof.* In a part, $o( t ) = c$ holds after line 12 of [Algorithm
 7.20](07-dictionary.md#alg-7-20) exactly for the slots $t$ of the keys of a
-bucket $c$ with its pilot, and line 9 frees all the slots of a bucket
-before line 12 takes them for another. The slots of a bucket are distinct
-and, after line 9, free (lines 6 and 8), and hence no two placed buckets
-share a slot; the loop of line 4 ends with $Q$ empty, i.e., with every
-bucket of the part placed, so that the $n$ keys hold $n$ distinct slots of
-$[ 0 , P S )$, and the evaluation computes the same slot from $h$ and the
-pilot of its bucket. Below $n$, $n - j$ slots are taken if $j$ are free,
-and therefore $j$ slots $\ge n$ are taken: the $i$-th of these goes to the
-$i$-th free slot below $n$, a bijection, and every slot $\ge n$ that is not
-taken gets a value below $n$ (the free slot before it, or $n - 1$). The
-part $q$ reads only its keys, its pilots, its words of the slots and a
-generator seeded by $x \oplus q$, which the threads do not change. $\square$
+bucket $c$ with its pilot, and line 9 frees all the slots of a bucket before
+line 12 takes them for another. The slots of a bucket are distinct and, after
+line 9, free (lines 6 and 8); hence no two placed buckets share a slot. The
+loop of line 4 ends with $Q$ empty, i.e., with every bucket of the part placed.
+Thus the $n$ keys hold $n$ distinct slots of $[ 0 , P S )$, and the evaluation
+computes the same slot from $h$ and the pilot of its bucket. Below $n$, $n - j$
+slots are taken if $j$ are free, and therefore $j$ slots $\ge n$ are taken: the
+$i$-th of these goes to the $i$-th free slot below $n$, a bijection. Every slot
+$\ge n$ that is not taken gets a value below $n$ (the free slot before it, or
+$n - 1$). The part $q$ reads only its keys, its pilots, its words of the slots
+and a generator seeded by $x \oplus q$, which the threads do not change.
+$\square$
 
-The space is $8 P B \approx 8 n / \lambda$ bits for the pilots, and the
-remap has $P S - n \approx n ( 1 / \alpha - 1 )$ items, of 32 bits each in
-the array or of about $2 + \log_2 ( n / ( P S - n ) )$ bits in the
-sequence of Elias and Fano. At $\alpha = 0.99$ one has thus about 3 bits
-per key for the linear function at $\lambda = 3$, and about 2.4 for the
-cubic one with Elias-Fano at $\lambda = 3.5$ (the two configurations of the
-paper). Compared with `MinimalPerfectHash`, the bound on the pilots makes a
-query read a byte of an array instead of a field of $\lceil \log_2 ( \max_b
-k_b + 1 ) \rceil$ bits. Also, the evictions should spare the build the long
-searches of the last buckets, at the cost of a table of the owners of the
-slots, of 32 bits per slot of a part, during the build. `parts()`,
-`buckets()`, `slots()`, `trials()` and `evictions()` report the layout and
-the work of the build.
+The pilots take $8 P B \approx 8 n / \lambda$ bits, and the remap has
+$P S - n \approx n ( 1 / \alpha - 1 )$ items, of 32 bits each in the array or
+of about $2 + \log_2 ( n / ( P S - n ) )$ bits in the sequence of Elias and
+Fano. At $\alpha = 0.99$ one has thus about 3 bits per key for the linear
+function at $\lambda = 3$, and about 2.4 for the cubic one with Elias-Fano at
+$\lambda = 3.5$ (the two configurations of the paper). Compared with
+`MinimalPerfectHash`, the bound on the pilots makes a query read a byte of an
+array instead of a field of $\lceil \log_2 ( \max_b k_b + 1 ) \rceil$ bits.
+Also, the evictions should spare the build the long searches of the last
+buckets, at the cost of a table of the owners of the slots (of 32 bits per slot
+of a part) during the build. `parts()`, `buckets()`, `slots()`, `trials()` and
+`evictions()` report the layout and the work of the build.
 
 ```cpp
 // declarations of <ADS/dictionary/PtrHash.h>
@@ -3193,55 +3189,53 @@ class PtrHash
 ```
 
 `ConsensusRecSplit` is the Consensus-RecSplit of [Lehmann et al.
-2025](Z-bibliography.md#ref-lehmann2025), whose seeds are searched and encoded
-together, instead of being the first successful ones of their nodes written by
-a code of Golomb and Rice (as in `RecSplit`). A seed of success probability
-$p$, stored alone, needs about $\log_2 ( 1 / p ) + 1.5$ bits ([Lemma
-7.29](07-dictionary.md#lem-7-29)). Instead, Consensus gives the task $i$ of a
-sequence a fragment of $\ell_i \approx \log_2 ( 1 / p_i ) + \varepsilon_i$ bits
-at a fixed place of a string $M$, and takes as its seed the word of 64 bits of
+2025](Z-bibliography.md#ref-lehmann2025). Its seeds are searched and encoded
+together; in `RecSplit`, instead, each seed is the first successful one of its
+node, written by a code of Golomb and Rice. A seed of success probability $p$,
+stored alone, needs about $\log_2 ( 1 / p ) + 1.5$ bits ([Lemma
+7.29](07-dictionary.md#lem-7-29)). Consensus gives the task $i$ of a sequence a
+fragment of $\ell_i \approx \log_2 ( 1 / p_i ) + \varepsilon_i$ bits at a fixed
+place of a string $M$. It takes as the seed of the task the word of 64 bits of
 $M$ that ends with the fragment (i.e., the fragment after those of the tasks
 before it, and after 64 bits of root). A fragment of $\ell_i$ bits has about
 $2^{\varepsilon_i}$ successful values in expectation. When it has none, the
 search goes back to the task before, whose next fragment changes the seeds of
-all the tasks after it, and the first task, when all its fragments fail,
-increments the root. [Lehmann et al. 2025](Z-bibliography.md#ref-lehmann2025)
-prove (in their Theorem 7) that, with $\sum_{j \le i} \ell_j = \lceil
-\varepsilon i + \sum_{j \le i} \log_2 ( 1 / p_j ) \rceil$, the search inspects
-$O( 1 / ( p_i \varepsilon ) )$ seeds per task in expectation and stores $\sum_i
-\log_2 ( 1 / p_i ) + \varepsilon n + 64$ bits; any code of the first successful
-seeds, on the contrary, needs $\Omega( n )$ bits more.
+all the tasks after it; the first task, when all its fragments fail, increments
+the root. [Lehmann et al. 2025](Z-bibliography.md#ref-lehmann2025) prove (in
+their Theorem 7) that, with $\sum_{j \le i} \ell_j = \lceil \varepsilon i +
+\sum_{j \le i} \log_2 ( 1 / p_j ) \rceil$, the search inspects $O( 1 / ( p_i
+\varepsilon ) )$ seeds per task in expectation and stores $\sum_i \log_2 ( 1 /
+p_i ) + \varepsilon n + 64$ bits. Any code of the first successful seeds, on
+the contrary, needs $\Omega( n )$ bits more.
 
-The keys first go to $\lfloor n / K \rfloor$ buckets of exactly $K$ keys,
-by a minimal $K$-perfect function by thresholds ([Hermann et al.
-2025](Z-bibliography.md#ref-hermann2025)). In a first layer of $\lceil
-\omega \lfloor n / K \rfloor \rceil$ buckets, overloaded ($\omega$ = 0.9,
-0.95 or 0.97 as $K \le 256$, $\le 16384$ or larger), a bucket keeps the $K$
-keys of the least thresholds (the high 32 bits of the hash), and it stores
-the largest one in $\log_2 K - 1$ bits, on a scale spent around the
-expected threshold. Its bumped keys go to the other buckets, rehashed, in a
-second layer. Those bumped again go to a `FingerprintPerfectHash`
-([§7.8.3](07-dictionary.md#sec-7-8-3)), and from it, by an Elias-Fano
-sequence of the bucket of each free place, to the places that the two
-layers left free or to the last $n \bmod K$ values. Each bucket ($K$ a
-power of 2) is then split by a balanced binary tree of $d = \log_2 K$
-levels. Its node of $s$ keys needs a seed $\sigma$ that sends exactly $s /
-2$ of them to the left (those whose `splitmix64()` of $h + \sigma$ has the
+The keys first go to $\lfloor n / K \rfloor$ buckets of exactly $K$ keys, by a
+minimal $K$-perfect function by thresholds ([Hermann et al.
+2025](Z-bibliography.md#ref-hermann2025)). In a first layer of $\lceil \omega
+\lfloor n / K \rfloor \rceil$ buckets, overloaded ($\omega$ = 0.9, 0.95 or 0.97
+as $K \le 256$, $\le 16384$ or larger), a bucket keeps the $K$ keys of the
+least thresholds (the high 32 bits of the hash). It stores the largest of them
+in $\log_2 K - 1$ bits, on a scale spent around the expected threshold. Its
+bumped keys go, rehashed, to the other buckets, in a second layer. Those bumped
+again go to a `FingerprintPerfectHash` ([§7.8.3](07-dictionary.md#sec-7-8-3)).
+From it, an Elias-Fano sequence of the bucket of each free place sends them to
+the places that the two layers left free, or to the last $n \bmod K$ values.
+Each bucket ($K$ a power of 2) is then split by a balanced binary tree of $d =
+\log_2 K$ levels. Its node of $s$ keys needs a seed $\sigma$ that sends exactly
+$s / 2$ of them to the left (those whose `splitmix64()` of $h + \sigma$ has the
 top bit set), with probability $p( s ) = \binom{s}{s/2} 2^{-s}$.
 
-The nodes of a level, in their order across the buckets, are the tasks of
-one instance of Consensus, with $\varepsilon_s = \varepsilon s^{3/4} / 3.4$
-(as in the code of the authors, a slack larger for the larger nodes, whose
-trials cost most). A level is cut into chunks of $2^{22}$ keys, each one an
-instance with a root of 64 bits and, if there are two chunks or more, on
-words of its own; hence the constructor that takes an executor
-searches the chunks in parallel, with the same result as the sequential
-one. A query computes the hash and the bucket, and then reads one word per
-level, at a place computed from the index $t$ of its node ($\lfloor ( t + 1
-) \mu_l / 2^{20} \rfloor$ in its chunk, $\mu_l$ being the bits of a split
-of the level in units of $2^{-20}$). There is no select and no code to
-skip, and the node $t$ is followed by $2 t$ or $2 t + 1$ ([Algorithm
-7.21](07-dictionary.md#alg-7-21)).
+The nodes of a level, in their order across the buckets, are the tasks of one
+instance of Consensus, with $\varepsilon_s = \varepsilon s^{3/4} / 3.4$. (As in
+the code of the authors, the slack is larger for the larger nodes, whose trials
+cost most.) A level is cut into chunks of $2^{22}$ keys, each one an instance
+with a root of 64 bits and, if there are two chunks or more, on words of its
+own. Hence the constructor that takes an executor searches the chunks in
+parallel, with the same result as the sequential one. A query computes the hash
+and the bucket, and then reads one word per level, at a place computed from the
+index $t$ of its node: $\lfloor ( t + 1 ) \mu_l / 2^{20} \rfloor$ in its chunk,
+where $\mu_l$ is the number of bits of a split of the level in units of
+$2^{-20}$. There is no select and no code to skip, and the node $t$ is followed
+by $2 t$ or $2 t + 1$ ([Algorithm 7.21](07-dictionary.md#alg-7-21)).
 
 <span id="alg-7-21"></span>**Algorithm 7.21.** The search of the seeds of
 a chunk of a level and the evaluation of `ConsensusRecSplit` ([Lehmann et
@@ -3264,21 +3258,21 @@ layers (and, for a key bumped twice, the fallback and an item of the
 sequence of the free places) and $\log_2 K$ reads of 64 bits. The seeds do
 not depend on the executor of the build.*
 
-*Proof.* A bucket $b$ keeps at most $K$ keys of its layers and has $K$ minus as
-many entries $b$ in the sequence of the free places, followed by the $n \bmod
-K$ last values; the fallback maps the keys bumped twice one to one onto the
-entries of the sequence ([Lemma 7.27](07-dictionary.md#lem-7-27)), whose number
-is that of the keys bumped twice since the $n$ keys fill $K \lfloor n / K
-\rfloor + n \bmod K$ places. Hence each bucket gets exactly $K$ keys, and each
-last value one. At the level $l$ the $s = K / 2^l$ keys of the node $t$ are
-those of the task $t$, grouped by the levels above, and line 4 of [Algorithm
-7.21](07-dictionary.md#alg-7-21) accepts a seed only if it sends exactly half
-of them to the left; the left half of the node $t$ is the node $2 t$ of the
-next level and the right one $2 t + 1$, so that after $d$ levels the $K$ keys
-of the bucket $b$ reach the $K$ distinct leaves $K b , \ldots , K b + K - 1$. A
-key out of the set gets a bucket below $\lfloor n / K \rfloor$ and a leaf of
-it, or a last value. A chunk reads and writes only its keys and its bits, on
-words of its own when there are two chunks or more. $\square$
+*Proof.* A bucket $b$ keeps at most $K$ keys of its layers, and it has $K$
+minus as many entries $b$ in the sequence of the free places, which is followed
+by the $n \bmod K$ last values. The fallback maps the keys bumped twice one to
+one onto the entries of the sequence ([Lemma 7.27](07-dictionary.md#lem-7-27)),
+whose number is that of the keys bumped twice, since the $n$ keys fill $K
+\lfloor n / K \rfloor + n \bmod K$ places. Hence each bucket gets exactly $K$
+keys, and each last value one. At the level $l$ the $s = K / 2^l$ keys of the
+node $t$ are those of the task $t$, grouped by the levels above, and line 4 of
+[Algorithm 7.21](07-dictionary.md#alg-7-21) accepts a seed only if it sends
+exactly half of them to the left. The left half of the node $t$ is the node $2
+t$ of the next level, and the right one $2 t + 1$; thus after $d$ levels the
+$K$ keys of the bucket $b$ reach the $K$ distinct leaves $K b , \ldots , K b +
+K - 1$. A key out of the set gets a bucket below $\lfloor n / K \rfloor$ and a
+leaf of it, or a last value. A chunk reads and writes only its keys and its
+bits, on words of its own when there are two chunks or more. $\square$
 
 The space of the seeds is close to the bound of [Lemma
 7.24](07-dictionary.md#lem-7-24), which is the point of the method.
@@ -3288,29 +3282,30 @@ The space of the seeds is close to the bound of [Lemma
 1.555 \, \varepsilon + 2^{-20} ) + 128 \, d \, C$ bits, where $C$ is the
 number of chunks.*
 
-*Proof.* A chunk of $N$ tasks of $s$ keys at the level $l$ takes
-$\lfloor N \mu_l / 2^{20} \rfloor + 64$ bits, rounded up to a multiple of 64
-if $C > 1$, with $\mu_l = \lceil 2^{20} ( \log_2 ( 1 / p( s ) ) +
-\varepsilon_s ) \rceil$, i.e., at most $N ( \log_2 ( 1 / p( s ) ) +
-\varepsilon_s + 2^{-20} ) + 127$ bits. The node of $s$ keys split in two
-halves has the probability (7.11) with $k_0 = k_1 = s / 2$, which is
-$p( s )$, and therefore, by [Lemma 7.28](07-dictionary.md#lem-7-28), the
-terms $\log_2 ( 1 / p( s ) )$ of the $K - 1$ nodes of a bucket add up to
-$\log_2 ( K^K / K! ) < K \log_2 e$, since $K! > ( K / e )^K$. The slack of
-a bucket is $( \varepsilon / 3.4 ) \sum_{l < d} 2^l ( K / 2^l )^{3/4} = (
-\varepsilon / 3.4 ) K^{3/4} \sum_{l < d} 2^{l/4} < ( \varepsilon / 3.4 ) K
-/ ( 2^{1/4} - 1 ) < 1.555 \, \varepsilon K$, and its $K - 1$ nodes add less
-than $K 2^{-20}$ by the rounding of $\mu_l$. The $d$ levels of the $C$
-chunks add at most 127 bits each. $\square$
+*Proof.* A chunk of $N$ tasks of $s$ keys at the level $l$ takes $\lfloor N
+\mu_l / 2^{20} \rfloor + 64$ bits, rounded up to a multiple of 64 if $C > 1$.
+Since $\mu_l = \lceil 2^{20} ( \log_2 ( 1 / p( s ) ) + \varepsilon_s )
+\rceil$, these are at most $N ( \log_2 ( 1 / p( s ) ) + \varepsilon_s + 2^{-20}
+) + 127$ bits. The node of $s$ keys split in two halves has the probability
+(7.11) with $k_0 = k_1 = s / 2$, which is $p( s )$. Therefore, by [Lemma
+7.28](07-dictionary.md#lem-7-28), the terms $\log_2 ( 1 / p( s ) )$ of the
+$K - 1$ nodes of a bucket add up to $\log_2 ( K^K / K! ) < K \log_2 e$, since
+$K! > ( K / e )^K$. The slack of a bucket is $( \varepsilon / 3.4 ) \sum_{l
+< d} 2^l ( K / 2^l )^{3/4} = ( \varepsilon / 3.4 ) K^{3/4} \sum_{l < d}
+2^{l/4} < ( \varepsilon / 3.4 ) K / ( 2^{1/4} - 1 ) < 1.555 \, \varepsilon
+K$, and its $K - 1$ nodes add less than $K 2^{-20}$ by the rounding of
+$\mu_l$. The $d$ levels of the $C$ chunks add at most 127 bits each.
+$\square$
 
-The thresholds add $( \log_2 K - 1 ) / K$ bits per key, and the fallback and
-the sequence of the free places a few bits per key bumped twice, which are
-typically few for a large $K$. This bound is that of the authors (cf. their
-Theorem 4), whose implementation reaches 1.444 bits per key on $10^8$ keys with
-$K = 32768$ and $\varepsilon = 0.0005$; their analysis gives a build of $O( n /
-\varepsilon )$ expected time for $K = \Theta( \varepsilon^{-4/3} )$ (their
-Theorem 5). Note that a query reads $\log_2 K$ words at unrelated places, and
-the authors report queries somewhat slower than those of `RecSplit`.
+Besides, the thresholds add $( \log_2 K - 1 ) / K$ bits per key, while the
+fallback and the sequence of the free places add a few bits per key bumped
+twice, and such keys are typically few for a large $K$. This bound is that of
+the authors (cf. their Theorem 4), whose implementation reaches 1.444 bits per
+key on $10^8$ keys with $K = 32768$ and $\varepsilon = 0.0005$. Their analysis
+gives a build of $O( n / \varepsilon )$ expected time for $K = \Theta(
+\varepsilon^{-4/3} )$ (their Theorem 5). Note that a query reads $\log_2 K$
+words at unrelated places, and the authors report queries somewhat slower than
+those of `RecSplit`.
 `buckets()` and `bumped()` report the buckets and the keys of the fallback.
 
 ```cpp
