@@ -29,7 +29,8 @@ libHighwayBSCDIR = $(subst $\",,$(HWY_ROOT))
 # macros to be exported - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 libHighwayINC = $(if $(libHighwayBSCDIR),-I"$(libHighwayBSCDIR)/include")
-libHighwayLIB = $(if $(libHighwayBSCDIR),-L"$(libHighwayBSCDIR)/lib") \
+libHighwayLIB = $(if $(libHighwayBSCDIR),-L"$(libHighwayBSCDIR)/lib" \
+	-Wl$(ADScomma)-rpath$(ADScomma)"$(libHighwayBSCDIR)/lib") \
 	-lhwy_contrib -lhwy
 
 # a program with a prefetch, a comparison of lanes and the sort of Highway,

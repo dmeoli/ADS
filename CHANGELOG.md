@@ -77,6 +77,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the makefiles link the shared libraries of Highway and of libomp with
+  the run-time path of their directory, as those of GMP, BLAS, hwloc and
+  oneTBB already were, so that no library path is needed to run the
+  programs
+
 - `FlatHashTable` keeps the code of ADS also where `ADS_WITH_BOOST` is
   defined, since on the benchmarks it is on a par with
   `boost::unordered_flat_map` (a median ratio of the times of 0.93 on the

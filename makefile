@@ -484,7 +484,8 @@ SORTFLAGS = $(if $(SORTING),$(addprefix -isystem $(SORTING)/,$(SORTINC)) \
             $(if $(wildcard $(SORTING)/fluxsort/src/fluxsort.h),\
             -fno-strict-aliasing)) \
             $(if $(HWY),-DADS_HAS_VQSORT -isystem $(HWY)/include \
-            -L$(HWY)/lib -lhwy_contrib -lhwy)
+            -L$(HWY)/lib -Wl$(comma)-rpath$(comma)$(HWY)/lib \
+            -lhwy_contrib -lhwy)
 
 COMBIFLAGS = $(if $(COMBI),-isystem $(COMBI)/combinations \
              -isystem $(COMBI)/libpopcnt -isystem $(COMBI)/libmorton/include)
