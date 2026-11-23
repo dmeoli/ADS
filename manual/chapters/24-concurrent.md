@@ -3572,15 +3572,22 @@ the map during the whole scan, within the keys it visits, is reported (the
 weak consistency of the iterators of `tbb::concurrent_map` and of
 `folly::ConcurrentSkipList`, which are not linearizable either).
 
-The memory of the nodes retired is reclaimed by the epochs of [Fraser
-2004](Z-bibliography.md#ref-fraser2004), which the map owns as the queue of
-[§24.12](24-concurrent.md#sec-24-12) does (`impl/OwnedEpochs.tpp`): each
-handle has a record that announces the epoch in which its thread runs an
-operation, by a sequentially consistent exchange made before any read of the
-tree, a node retired waits in the record of the thread that retired it,
-stamped with the epoch read after its unlink, and it is freed once the epoch
-has grown by 2; a record raises the epoch once per 64 retirements, if every
-record inside an operation announces it.
+The memory of the nodes retired is reclaimed by a policy $R$ of
+[§24.14](24-concurrent.md#sec-24-14) whose guards protect all that an
+operation reaches (`R::kRegions`): the epochs of [Fraser
+2004](Z-bibliography.md#ref-fraser2004) with an attempt to raise the epoch
+per 64 retirements of a record (`FraserEpochs< 64 >`, the default), or those
+of DEBRA (`DebraEpochs`); the hazard pointers do not fit, since a descent
+reads nodes that it has not protected one by one. Each handle holds a record
+of the domain of the map, whose guard announces the epoch in which its thread
+runs an operation, by a sequentially consistent exchange made before any read
+of the tree; a node retired waits in the limbo of that record, with its
+label, and it is freed once the epoch is 2 (Fraser) or 3 (DEBRA) past the
+label. The epochs of Fraser are the default because a tree retires a node
+only at a merge or at the replacement of its root, so that their cost, paid
+once per 64 retirements, almost never falls on a lookup, whereas DEBRA reads
+the epoch again and checks one more record at every operation, lookups
+included.
 
 <span id="lem-24-47"></span>**Lemma 24.47.** *(i) No node is freed while a
 thread inside an operation may still read it. (ii) The operations do not
@@ -3591,16 +3598,17 @@ each internal one.*
 *Proof.* (i) A thread reaches a node only from the root, or as a child read
 in its parent and confirmed by a check of the parent, a sequentially
 consistent load that gives the version $v$ of the descent. The node is
-retired only after the upgrade, a sequentially consistent compare-and-swap,
-of the node that linked it (its parent, or the root, for the root replaced),
-which in the order of the modifications of that version follows $v$; the
-check is therefore coherence-ordered before the upgrade, and precedes it in
-the total order $S$ of the sequentially consistent operations, which ends
-with the read of the epoch $r$ by the retirement. The argument of
-[§24.12](24-concurrent.md#sec-24-12) then applies word for word: the
-announce of the thread precedes the check in $S$, its epoch is at most $r$,
-and the epoch cannot grow from $r + 1$ to $r + 2$ while the thread stays
-inside its operation. A thread that reads the root or a child it does not
+retired, by the thread that unlinks it and inside its guard, only after the
+upgrade $u$, a sequentially consistent compare-and-swap, of the node that
+linked it (its parent, or the root, for the root replaced), which in the
+order of the modifications of that version follows $v$; the check is
+therefore coherence-ordered before $u$, and precedes it in the total order
+$S$ of the sequentially consistent operations. Hence $u$ unlinks the node in
+the sense of [§24.14](24-concurrent.md#sec-24-14), the reads that reach it
+being the checks, and [Lemma 24.37](24-concurrent.md#lem-24-37) (under
+`FraserEpochs< 64 >`) or [Lemma 24.38](24-concurrent.md#lem-24-38) (ii)
+(under `DebraEpochs`) shows that the node is not freed before the guard of
+the thread ends. A thread that reads the root or a child it does not
 then confirm only reads its version, which the epoch protects in the same
 way, since the read precedes the check that would fail. (ii) A thread waits
 only in $\mathrm{stable}$, holding no lock (an insertion and an erasure read
@@ -3615,7 +3623,7 @@ holds the lock of a node holds up the modifications of that node and the
 lookups that read it, and the restarts may in principle repeat without end,
 as in the paper (each restart follows the change of a node by another
 operation, which completed or holds a lock). The reclamation is blocking, as
-in [§24.12](24-concurrent.md#sec-24-12): a thread stopped inside an operation
+in [§24.14](24-concurrent.md#sec-24-14): a thread stopped inside an operation
 keeps the nodes retired afterwards from being freed. As to the cost, a
 descent reads one node per level and searches its keys by a binary search
 without branches, $O( \log C )$ reads per node; a modification also shifts
@@ -3644,7 +3652,7 @@ are
 ```cpp
 // declarations of <ADS/concurrent/ConcurrentBTreeMap.h>
 template< class K , class V , class Less = std::less< K > ,
-          std::size_t B = 1024 >
+          std::size_t B = 1024 , reclamation_policy R = FraserEpochs< 64 > >
 class ConcurrentBTreeMap
 {
  public:

@@ -3241,12 +3241,13 @@ ADS_TEST( "concurrent-btree-map" )
 // the threads alternate, so that their difference is 0 or 1 and gives
 // whether the key is in the map at the end, and the value of a key there
 // is one that a thread wrote; then disjoint keys per thread, inserted and
-// all erased but one in 16, the final map being exactly those
-template< std::size_t B >
+// all erased but one in 16, the final map being exactly those; under the
+// policy of reclamation R
+template< std::size_t B , class R = FraserEpochs< 64 > >
 void btreeMapThreads( int p )
 {
  using M = ConcurrentBTreeMap< std::uint64_t , std::uint64_t ,
-			       std::less< std::uint64_t > , B >;
+			       std::less< std::uint64_t > , B , R >;
  const std::uint64_t u = 512;
  const int steps = int( ADS::test::scaled( 40000 , 4000 ) );
  M T;
@@ -3343,11 +3344,13 @@ void btreeMapThreads( int p )
  CHECK( bad == 0 && keys == want && T.consistent() );
  }
 
+// on nodes of 4 places also under the epochs of DEBRA
 ADS_TEST( "concurrent-btree-map-threads" )
 {
  for( int p : { 2 , 4 , 8 } ) {
   btreeMapThreads< 64 >( p );
   btreeMapThreads< 1024 >( p );
+  btreeMapThreads< 64 , DebraEpochs >( p );
   }
  }
 

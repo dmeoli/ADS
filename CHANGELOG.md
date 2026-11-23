@@ -206,8 +206,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `insert()`, `assign()`, `erase()`, `find()`, the linearizable
   `lowerBound()` and `upperBound()` and the ordered `scan()` of a handle per
   thread, the erasures merging or evening the nodes left short on their
-  way down, and the nodes unlinked reclaimed by the epochs of Fraser that
-  the map owns (`impl/OwnedEpochs.tpp`); the tests
+  way down, and the nodes unlinked reclaimed by a policy of `Reclaim.h`
+  whose guards protect all that an operation reaches, the epochs of
+  Fraser with an attempt per 64 retirements (`FraserEpochs< 64 >`, the
+  default) or those of DEBRA (`DebraEpochs`); the tests
   `engineered.concurrent-btree-map`, `-threads` and `-linearizable`, the
   case omap of `bench-parallel` (the load and the mixes of YCSB against
   `tbb::concurrent_map` and the BTreeOLC of Leis et al., `BTREEOLC=<dir>`

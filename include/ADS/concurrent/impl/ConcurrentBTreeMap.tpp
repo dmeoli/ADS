@@ -26,46 +26,57 @@ namespace ADS
 
 /*-------------------------------- THE NODES -------------------------------*/
 
-template< class K , class V , class Less , std::size_t B >
-ConcurrentBTreeMap< K , V , Less , B >::Node::Node( bool l ) : leaf( l )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+ConcurrentBTreeMap< K , V , Less , B , R >::Node::Node( bool l ) : leaf( l )
 {
  this->reclaim = &ConcurrentBTreeMap::destroy;
  }
 
-template< class K , class V , class Less , std::size_t B >
-void ConcurrentBTreeMap< K , V , Less , B >::destroy(
-  detail::EpochLink * p ) noexcept
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+void *
+ConcurrentBTreeMap< K , V , Less , B , R >::destroy( Retirable * p ,
+						 Retirable::Op op ) noexcept
 {
  Node * n = static_cast< Node * >( p );
+ if( op == Retirable::Op::address )
+  return( n );
  if( n->leaf )
   delete static_cast< Leaf * >( n );
  else
   delete static_cast< Inner * >( n );
+ return( nullptr );
  }
 
-template< class K , class V , class Less , std::size_t B >
-void ConcurrentBTreeMap< K , V , Less , B >::destroyTree( Node * n ) noexcept
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+void ConcurrentBTreeMap< K , V , Less , B ,
+			 R >::destroyTree( Node * n ) noexcept
 {
  if( ! n->leaf ) {
   Inner * in = static_cast< Inner * >( n );
   for( int i = 0 , c = count( in ) ; i <= c ; ++i )
    destroyTree( in->child[ i ].load( std::memory_order_relaxed ) );
   }
- destroy( n );
+ destroy( n , Retirable::Op::free );
  }
 
-template< class K , class V , class Less , std::size_t B >
-int ConcurrentBTreeMap< K , V , Less , B >::count( const Node * n )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+int ConcurrentBTreeMap< K , V , Less , B , R >::count( const Node * n )
 {
  // a count read in a state being changed is still one of the node, and
  // within its capacity; the clamp keeps the reads in the arrays anyway
  return( std::clamp( ld( n->count ) , 0 , n->leaf ? kLeaf : kInner ) );
  }
 
-template< class K , class V , class Less , std::size_t B >
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
 template< bool Strict >
-int ConcurrentBTreeMap< K , V , Less , B >::place( const std::atomic< K > * a ,
-						int n , const K & k ) const
+int ConcurrentBTreeMap< K , V , Less , B ,
+			R >::place( const std::atomic< K > * a ,
+						   int n , const K & k ) const
 {
  int first = 0;
  while( n > 0 ) {
@@ -80,9 +91,10 @@ int ConcurrentBTreeMap< K , V , Less , B >::place( const std::atomic< K > * a ,
 
 /*------------------------------ THE VERSIONS ------------------------------*/
 
-template< class K , class V , class Less , std::size_t B >
-bool ConcurrentBTreeMap< K , V , Less , B >::stable( const Node * n ,
-						  std::uint64_t & v )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+bool ConcurrentBTreeMap< K , V , Less , B , R >::stable( const Node * n ,
+						     std::uint64_t & v )
 {
  Backoff b;
  for( ; ; b.pause() ) {
@@ -92,60 +104,69 @@ bool ConcurrentBTreeMap< K , V , Less , B >::stable( const Node * n ,
   }
  }
 
-template< class K , class V , class Less , std::size_t B >
-bool ConcurrentBTreeMap< K , V , Less , B >::check( const Node * n ,
-						 std::uint64_t v )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+bool ConcurrentBTreeMap< K , V , Less , B , R >::check( const Node * n ,
+						    std::uint64_t v )
 {
  // sequentially consistent, so that a check that passes precedes, in the
  // total order of the sequentially consistent operations, the lock of a
- // writer that unlinks a child read before it [see OwnedEpochs::enter()];
+ // writer that unlinks a child read before it [see `EpochReclaim.h`];
  // the fields were read with acquire before it, so that a field written
  // under a lock taken after v makes the check fail
  return( n->version.load( std::memory_order_seq_cst ) == v );
  }
 
-template< class K , class V , class Less , std::size_t B >
-bool ConcurrentBTreeMap< K , V , Less , B >::lock( Node * n , std::uint64_t v )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+bool ConcurrentBTreeMap< K , V , Less , B , R >::lock( Node * n ,
+						   std::uint64_t v )
 {
  return( n->version.compare_exchange_strong(
    v , v + kLocked , std::memory_order_seq_cst , std::memory_order_relaxed ) );
  }
 
-template< class K , class V , class Less , std::size_t B >
-void ConcurrentBTreeMap< K , V , Less , B >::unlock( Node * n )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+void ConcurrentBTreeMap< K , V , Less , B , R >::unlock( Node * n )
 {
  // the lock cleared and the count raised by one, in one addition
  n->version.fetch_add( kLocked , std::memory_order_release );
  }
 
-template< class K , class V , class Less , std::size_t B >
-void ConcurrentBTreeMap< K , V , Less , B >::unlockObsolete( Node * n )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+void ConcurrentBTreeMap< K , V , Less , B , R >::unlockObsolete( Node * n )
 {
  n->version.fetch_add( kLocked + kObsolete , std::memory_order_release );
  }
 
 /*--------------------------------- THE MAP --------------------------------*/
 
-template< class K , class V , class Less , std::size_t B >
-ConcurrentBTreeMap< K , V , Less , B >::ConcurrentBTreeMap( Less less )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+ConcurrentBTreeMap< K , V , Less , B , R >::ConcurrentBTreeMap( Less less )
     : f_less( std::move( less ) ) , f_root( new Leaf )
 { }
 
-template< class K , class V , class Less , std::size_t B >
-ConcurrentBTreeMap< K , V , Less , B >::~ConcurrentBTreeMap()
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+ConcurrentBTreeMap< K , V , Less , B , R >::~ConcurrentBTreeMap()
 {
  destroyTree( f_root.load( std::memory_order_acquire ) );
  }
 
-template< class K , class V , class Less , std::size_t B >
-auto ConcurrentBTreeMap< K , V , Less , B >::handle( void ) -> Handle
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+auto ConcurrentBTreeMap< K , V , Less , B , R >::handle( void ) -> Handle
 {
- return( Handle( *this , f_epochs.acquire() ) );
+ return( Handle( *this ) );
  }
 
-template< class K , class V , class Less , std::size_t B >
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
 template< class F >
-void ConcurrentBTreeMap< K , V , Less , B >::forEach( F && f ) const
+void ConcurrentBTreeMap< K , V , Less , B , R >::forEach( F && f ) const
 {
  // a walk in depth by a stack, the children pushed from the last one, so
  // that the leaves come out from the left
@@ -165,22 +186,25 @@ void ConcurrentBTreeMap< K , V , Less , B >::forEach( F && f ) const
   }
  }
 
-template< class K , class V , class Less , std::size_t B >
-std::size_t ConcurrentBTreeMap< K , V , Less , B >::size( void ) const
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+std::size_t ConcurrentBTreeMap< K , V , Less , B , R >::size( void ) const
 {
  std::size_t n = 0;
  forEach( [ &n ]( const K & , const V & ) { ++n; } );
  return( n );
  }
 
-template< class K , class V , class Less , std::size_t B >
-bool ConcurrentBTreeMap< K , V , Less , B >::empty( void ) const
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+bool ConcurrentBTreeMap< K , V , Less , B , R >::empty( void ) const
 {
  return( size() == 0 );
  }
 
-template< class K , class V , class Less , std::size_t B >
-int ConcurrentBTreeMap< K , V , Less , B >::height( void ) const
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+int ConcurrentBTreeMap< K , V , Less , B , R >::height( void ) const
 {
  int h = 1;
  for( const Node * n = f_root.load( std::memory_order_acquire ) ; ! n->leaf ;
@@ -189,19 +213,21 @@ int ConcurrentBTreeMap< K , V , Less , B >::height( void ) const
  return( h );
  }
 
-template< class K , class V , class Less , std::size_t B >
-bool ConcurrentBTreeMap< K , V , Less , B >::consistent( void ) const
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+bool ConcurrentBTreeMap< K , V , Less , B , R >::consistent( void ) const
 {
  int depth = -1;
  return( consistent( f_root.load( std::memory_order_acquire ) , nullptr ,
 		      nullptr , 1 , depth ) );
  }
 
-template< class K , class V , class Less , std::size_t B >
-bool ConcurrentBTreeMap< K , V , Less , B >::consistent( const Node * n ,
-						      const K * lo ,
-						      const K * hi , int d ,
-						      int & depth ) const
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+bool ConcurrentBTreeMap< K , V , Less , B , R >::consistent( const Node * n ,
+							 const K * lo ,
+							 const K * hi , int d ,
+							 int & depth ) const
 {
  if( n->version.load( std::memory_order_acquire ) & ( kLocked | kObsolete ) )
   return( false );
@@ -239,44 +265,47 @@ bool ConcurrentBTreeMap< K , V , Less , B >::consistent( const Node * n ,
 
 /*-------------------------------- THE HANDLE ------------------------------*/
 
-template< class K , class V , class Less , std::size_t B >
-ConcurrentBTreeMap< K , V , Less , B >::Handle::Handle( Handle && o ) noexcept
-    : f_m( o.f_m ) , f_r( o.f_r ) , f_leaf( o.f_leaf ) , f_inner( o.f_inner ) ,
-      f_read( std::move( o.f_read ) ) , f_c( o.f_c )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+ConcurrentBTreeMap< K , V , Less , B ,
+		    R >::Handle::Handle( Handle && o ) noexcept
+    : f_m( o.f_m ) , f_l( std::move( o.f_l ) ) , f_leaf( o.f_leaf ) ,
+      f_inner( o.f_inner ) , f_read( std::move( o.f_read ) ) , f_c( o.f_c )
 {
- o.f_r = nullptr;
  o.f_leaf = nullptr;
  o.f_inner = nullptr;
  }
 
-template< class K , class V , class Less , std::size_t B >
-ConcurrentBTreeMap< K , V , Less , B >::Handle::~Handle()
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+ConcurrentBTreeMap< K , V , Less , B , R >::Handle::~Handle()
 {
  delete f_leaf;
  delete f_inner;
- if( f_r )
-  detail::OwnedEpochs::release( f_r );
  }
 
-template< class K , class V , class Less , std::size_t B >
-bool ConcurrentBTreeMap< K , V , Less , B >::Handle::insert( K k , V x )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+bool ConcurrentBTreeMap< K , V , Less , B , R >::Handle::insert( K k , V x )
 {
  return( put< false >( k , x ) );
  }
 
-template< class K , class V , class Less , std::size_t B >
-bool ConcurrentBTreeMap< K , V , Less , B >::Handle::assign( K k , V x )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+bool ConcurrentBTreeMap< K , V , Less , B , R >::Handle::assign( K k , V x )
 {
  return( put< true >( k , x ) );
  }
 
-template< class K , class V , class Less , std::size_t B >
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
 template< bool Assign >
-bool ConcurrentBTreeMap< K , V , Less , B >::Handle::put( const K & k ,
-						       const V & x )
+bool ConcurrentBTreeMap< K , V , Less , B , R >::Handle::put( const K & k ,
+							  const V & x )
 {
  ConcurrentBTreeMap & m = *f_m;
- Guard g( *this );
+ typename Local::Guard g( f_l );
  for( ; ; ++f_c.restarts ) {
   Node * n = m.f_root.load( std::memory_order_seq_cst );
   std::uint64_t v = 0;
@@ -345,11 +374,12 @@ bool ConcurrentBTreeMap< K , V , Less , B >::Handle::put( const K & k ,
   }
  }
 
-template< class K , class V , class Less , std::size_t B >
-bool ConcurrentBTreeMap< K , V , Less , B >::Handle::split( Inner * p ,
-							 std::uint64_t vp ,
-							 int i , Node * n ,
-							 std::uint64_t v )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+bool ConcurrentBTreeMap< K , V , Less , B , R >::Handle::split( Inner * p ,
+							    std::uint64_t vp ,
+							    int i , Node * n ,
+							    std::uint64_t v )
 {
  ConcurrentBTreeMap & m = *f_m;
  // the new nodes allocated before any lock is taken, so that an
@@ -434,11 +464,12 @@ bool ConcurrentBTreeMap< K , V , Less , B >::Handle::split( Inner * p ,
  return( true );
  }
 
-template< class K , class V , class Less , std::size_t B >
-bool ConcurrentBTreeMap< K , V , Less , B >::Handle::erase( K k )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+bool ConcurrentBTreeMap< K , V , Less , B , R >::Handle::erase( K k )
 {
  ConcurrentBTreeMap & m = *f_m;
- Guard g( *this );
+ typename Local::Guard g( f_l );
  for( ; ; ++f_c.restarts ) {
   Node * n = m.f_root.load( std::memory_order_seq_cst );
   std::uint64_t v = 0;
@@ -452,7 +483,7 @@ bool ConcurrentBTreeMap< K , V , Less , B >::Handle::erase( K k )
     if( n == m.f_root.load( std::memory_order_seq_cst ) ) {
      m.f_root.store( ld( in->child[ 0 ] ) , std::memory_order_seq_cst );
      unlockObsolete( in );
-     m.f_epochs.retire( *f_r , in );
+     f_l.retire( in );
      }
     else
      unlock( in );
@@ -523,11 +554,12 @@ bool ConcurrentBTreeMap< K , V , Less , B >::Handle::erase( K k )
   }
  }
 
-template< class K , class V , class Less , std::size_t B >
-void ConcurrentBTreeMap< K , V , Less , B >::Handle::rebalance( Inner * n ,
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+void ConcurrentBTreeMap< K , V , Less , B , R >::Handle::rebalance( Inner * n ,
 								int j ,
-							     Node * a ,
-							     Node * b )
+								Node * a ,
+								Node * b )
 {
  ConcurrentBTreeMap & m = *f_m;
  const int cn = count( n ) , ca = count( a ) , cb = count( b );
@@ -563,7 +595,7 @@ void ConcurrentBTreeMap< K , V , Less , B >::Handle::rebalance( Inner * n ,
   unlock( a );
   unlockObsolete( b );
   unlock( n );
-  m.f_epochs.retire( *f_r , b );
+  f_l.retire( b );
   ++f_c.merges;
   return;
   }
@@ -627,9 +659,10 @@ void ConcurrentBTreeMap< K , V , Less , B >::Handle::rebalance( Inner * n ,
  ++f_c.shares;
  }
 
-template< class K , class V , class Less , std::size_t B >
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
 template< bool Strict >
-bool ConcurrentBTreeMap< K , V , Less , B >::Handle::leafOf(
+bool ConcurrentBTreeMap< K , V , Less , B , R >::Handle::leafOf(
   const K & x , Leaf *& l , std::uint64_t & w , K & f , bool & bounded )
 {
  ConcurrentBTreeMap & m = *f_m;
@@ -661,12 +694,13 @@ bool ConcurrentBTreeMap< K , V , Less , B >::Handle::leafOf(
  return( true );
  }
 
-template< class K , class V , class Less , std::size_t B >
-auto ConcurrentBTreeMap< K , V , Less , B >::Handle::find( K k )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+auto ConcurrentBTreeMap< K , V , Less , B , R >::Handle::find( K k )
   -> std::optional< V >
 {
  ConcurrentBTreeMap & m = *f_m;
- Guard g( *this );
+ typename Local::Guard g( f_l );
  for( ; ; ++f_c.restarts ) {
   Leaf * l = nullptr;
   std::uint64_t w = 0;
@@ -686,13 +720,14 @@ auto ConcurrentBTreeMap< K , V , Less , B >::Handle::find( K k )
   }
  }
 
-template< class K , class V , class Less , std::size_t B >
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
 template< bool Strict >
-auto ConcurrentBTreeMap< K , V , Less , B >::Handle::bound( const K & k )
+auto ConcurrentBTreeMap< K , V , Less , B , R >::Handle::bound( const K & k )
   -> std::optional< std::pair< K , V > >
 {
  ConcurrentBTreeMap & m = *f_m;
- Guard g( *this );
+ typename Local::Guard g( f_l );
  for( ; ; ++f_c.restarts ) {
   f_read.clear();
   K x = k;
@@ -734,24 +769,27 @@ auto ConcurrentBTreeMap< K , V , Less , B >::Handle::bound( const K & k )
   }
  }
 
-template< class K , class V , class Less , std::size_t B >
-auto ConcurrentBTreeMap< K , V , Less , B >::Handle::lowerBound( K k )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+auto ConcurrentBTreeMap< K , V , Less , B , R >::Handle::lowerBound( K k )
   -> std::optional< std::pair< K , V > >
 {
  return( bound< false >( k ) );
  }
 
-template< class K , class V , class Less , std::size_t B >
-auto ConcurrentBTreeMap< K , V , Less , B >::Handle::upperBound( K k )
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+auto ConcurrentBTreeMap< K , V , Less , B , R >::Handle::upperBound( K k )
   -> std::optional< std::pair< K , V > >
 {
  return( bound< true >( k ) );
  }
 
-template< class K , class V , class Less , std::size_t B >
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
 template< class F >
-std::size_t ConcurrentBTreeMap< K , V , Less , B >::Handle::scan( K from ,
-							       F && f )
+std::size_t ConcurrentBTreeMap< K , V , Less , B , R >::Handle::scan( K from ,
+								  F && f )
 {
  ConcurrentBTreeMap & m = *f_m;
  std::pair< K , V > buf[ kLeaf ];
@@ -765,7 +803,7 @@ std::size_t ConcurrentBTreeMap< K , V , Less , B >::Handle::scan( K from ,
   {
    // one leaf read as one state, inside an operation; f is called out
    // of it, so that it may use the handle
-   Guard g( *this );
+   typename Local::Guard g( f_l );
    for( ; ; ++f_c.restarts ) {
     Leaf * l = nullptr;
     std::uint64_t w = 0;

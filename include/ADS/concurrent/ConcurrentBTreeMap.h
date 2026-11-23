@@ -65,14 +65,19 @@
  *   it), but deadlock-free; a lookup writes no shared word. An operation
  *   starts over only because another one changed a node it read; the
  *   restarts may in principle repeat, as in the paper.
- * - The memory of a node unlinked is reclaimed by the epochs of Fraser
- *   [see `impl/OwnedEpochs.tpp`], owned by the map: each thread uses the map
- *   through a `Handle`, whose record announces the epoch in which it runs
- *   an operation, and a node retired is freed once the epoch has grown by
- *   2, i.e., once every thread that might still read it has left its
- *   operation. The reclamation is blocking: a thread stopped inside an
- *   operation keeps the nodes retired afterwards from being freed. No node
- *   is leaked: the destructor frees the tree and the nodes still retired.
+ * - The memory of a node unlinked is reclaimed by the policy \f$ R \f$
+ *   [see `Reclaim.h`], which must protect every node that an operation
+ *   reaches (`R::kRegions`, the epochs of `EpochReclaim.h`), since a
+ *   descent reads nodes that a writer may unlink meanwhile: by default the
+ *   epochs of Fraser with an attempt to raise the epoch per 64 retirements
+ *   of a record, `FraserEpochs< 64 >`, or those of DEBRA, `DebraEpochs`.
+ *   Each thread uses the map through a `Handle`, whose record of the
+ *   domain of the map announces the epoch in which it runs an operation,
+ *   and a node retired is freed once every thread that might still read it
+ *   has left its operation. The reclamation is blocking: a thread stopped
+ *   inside an operation keeps the nodes retired afterwards from being
+ *   freed. No node is leaked: the destructor frees the tree, and that of
+ *   the domain the nodes still retired.
  *
  * The keys and the values are trivially copyable and default
  * constructible, and their atomic words are free of locks (8 bytes at
@@ -138,7 +143,8 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
-#include "ADS/concurrent/impl/OwnedEpochs.tpp"
+#include "ADS/concurrent/EpochReclaim.h"
+#include "ADS/concurrent/Reclaim.h"
 
 #include <algorithm>
 #include <atomic>
@@ -163,11 +169,16 @@ namespace ADS
 
 /// an ordered MAP shared by threads: the B+-tree with optimistic lock
 /// coupling of Leis et al., its nodes merged on erasure and reclaimed by
-/// epochs
+/// the epochs of the policy R
 template< class K , class V , class Less = std::less< K > ,
-	  std::size_t B = 1024 >
+	  std::size_t B = 1024 ,
+	  reclamation_policy R = FraserEpochs< 64 > >
 class ConcurrentBTreeMap
 {
+
+ static_assert(
+   R::kRegions ,
+   "a policy whose guards protect all that an operation reaches" );
 
  static_assert( std::is_trivially_copyable_v< K > &&
 		  std::is_default_constructible_v< K > ,
@@ -227,7 +238,7 @@ class ConcurrentBTreeMap
  /// \pre no handle is alive
  ~ConcurrentBTreeMap();
 
- /// a handle for one thread, on a record of the epochs of its own
+ /// a handle for one thread, on a record of the domain of its own
  [[nodiscard]] Handle handle( void );
 
  /// the number of the pairs; with no operation running
@@ -241,7 +252,7 @@ class ConcurrentBTreeMap
 
  /// the nodes retired and not yet freed; with no operation running
  [[nodiscard]] std::size_t retired( void ) const {
-  return( f_epochs.pending() );
+  return( f_domain.pending() );
   }
 
  /// f( k , v ) called on each pair in the order of the keys; with no
@@ -260,9 +271,12 @@ class ConcurrentBTreeMap
  static constexpr std::uint64_t kObsolete = 1;  ///< unlinked
  static constexpr std::uint64_t kLocked = 2;    ///< the lock
 
- /// the header of a node: its link of the epochs, its version, the number
- /// of its keys and its kind
- struct Node : detail::EpochLink
+ /// the record of a thread on the domain, and its guards
+ using Local = typename R::template Local< 0 >;
+
+ /// the header of a node: its link of the reclamation, its version, the
+ /// number of its keys and its kind
+ struct Node : Retirable
  {
   std::atomic< std::uint64_t > version{ 0 };  ///< lock, obsolete, count
   std::atomic< int > count{ 0 };              ///< the keys held
@@ -290,8 +304,8 @@ class ConcurrentBTreeMap
   Inner( void ) : Node( false ) { }
   };
 
- /// the free of the node p, by its kind
- static void destroy( detail::EpochLink * p ) noexcept;
+ /// the address of the node p, or its free by its kind and nil
+ static void * destroy( Retirable * p , Retirable::Op op ) noexcept;
 
  /// the free of the subtree of n
  static void destroyTree( Node * n ) noexcept;
@@ -341,7 +355,7 @@ class ConcurrentBTreeMap
  Less f_less;  ///< the order of the keys
  alignas( 64 ) std::atomic< Node * > f_root;
  ///< the root
- mutable detail::OwnedEpochs f_epochs;  ///< the epochs and their records
+ mutable typename R::Domain f_domain;  ///< the epochs and their records
 
  };  // end( class ConcurrentBTreeMap )
 
@@ -350,9 +364,10 @@ class ConcurrentBTreeMap
 /*--------------------------------------------------------------------------*/
 
 /// the access of one thread to a `ConcurrentBTreeMap`: its record of the
-/// epochs, a spare node of each kind for its splits, and its counts
-template< class K , class V , class Less , std::size_t B >
-class ConcurrentBTreeMap< K , V , Less , B >::Handle
+/// domain, a spare node of each kind for its splits, and its counts
+template< class K , class V , class Less , std::size_t B ,
+	  reclamation_policy R >
+class ConcurrentBTreeMap< K , V , Less , B , R >::Handle
 {
 
 /*--------------------------------------------------------------------------*/
@@ -367,7 +382,7 @@ class ConcurrentBTreeMap< K , V , Less , B >::Handle
  /// no assignment, since a record has one owner
  Handle & operator=( Handle && ) = delete;
 
- /// the record given back to the map, the spare nodes freed
+ /// the record given back to the domain, the spare nodes freed
  ~Handle();
 
  /// inserts the pair \f$ ( k , x ) \f$ if \f$ k \f$ is not in the map, and
@@ -533,20 +548,8 @@ class ConcurrentBTreeMap< K , V , Less , B >::Handle
  private:
  friend class ConcurrentBTreeMap;
 
- /// the handle of m on the record r
- Handle( ConcurrentBTreeMap & m , detail::OwnedEpochs::Record * r )
-     : f_m( &m ) , f_r( r ) { }
-
- /// the span of an operation: the epoch announced, then left
- struct Guard
- {
-  Handle & h;  ///< the handle
-
-  explicit Guard( Handle & x ) : h( x ) { h.f_m->f_epochs.enter( *h.f_r ); }
-  ~Guard() { detail::OwnedEpochs::leave( *h.f_r ); }
-  Guard( const Guard & ) = delete;
-  Guard & operator=( const Guard & ) = delete;
-  };
+ /// the handle of m on a record of its domain
+ explicit Handle( ConcurrentBTreeMap & m ) : f_m( &m ) , f_l( m.f_domain ) { }
 
  /// the insertion or, if Assign, the assignment of ( k , x )
  template< bool Assign >
@@ -574,10 +577,10 @@ class ConcurrentBTreeMap< K , V , Less , B >::Handle
  template< bool Strict >
  std::optional< std::pair< K , V > > bound( const K & k );
 
- ConcurrentBTreeMap * f_m;           ///< the map
- detail::OwnedEpochs::Record * f_r;  ///< the record, nil once moved
- Leaf * f_leaf = nullptr;            ///< a spare leaf
- Inner * f_inner = nullptr;          ///< a spare internal node
+ ConcurrentBTreeMap * f_m;   ///< the map
+ Local f_l;                  ///< the record
+ Leaf * f_leaf = nullptr;    ///< a spare leaf
+ Inner * f_inner = nullptr;  ///< a spare internal node
  std::vector< std::pair< const Node * , std::uint64_t > > f_read;
  ///< the leaves read by a bound, with their versions
  Counts f_c;  ///< the counts
