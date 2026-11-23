@@ -1866,7 +1866,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `memory/Arena.h` | advanced | `Arena`, `ArenaResource` | [5](05-memory.md#ch-5) |
 | `memory/CellHeap.h` | base | `CellHeap` | [5](05-memory.md#ch-5) |
 | `memory/ConcurrentPool.h` | advanced | `ConcurrentPoolResource` | [5](05-memory.md#ch-5) |
-| `memory/HugePageAllocator.h` | core | `HugePageAllocator` | [5](05-memory.md#ch-5) |
+| `memory/HugePageAllocator.h` | core | `HugePageAllocator`, `ZeroPageAllocator` | [5](05-memory.md#ch-5) |
 | `memory/ObjectPool.h` | core | `ObjectPool` | [5](05-memory.md#ch-5) |
 | `memory/PoolAllocator.h` | advanced | `PoolResource`, `PoolAllocator` | [5](05-memory.md#ch-5) |
 | `memory/Prefetch.h` | core | `Locality` | [5](05-memory.md#ch-5) |
@@ -1894,7 +1894,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `dictionary/OpenHashTable.h` | base | `Probing`, `OpenHashTable` | [7](07-dictionary.md#ch-7) |
 | `dictionary/PatriciaTrie.h` | base | `PatriciaTrie` | [7](07-dictionary.md#ch-7) |
 | `dictionary/PerfectHashing.h` | base | `PerfectHashTable`, `OrderedMinimalPerfectHash` | [7](07-dictionary.md#ch-7) |
-| `dictionary/PointerTable.h` | advanced | `StateEqual`, `PointerTable` | [7](07-dictionary.md#ch-7) |
+| `dictionary/PointerTable.h` | advanced | `StateEqual`, `WidePlaces`, `IndexPlaces`, `WithPlaces`, `PointerTable` | [7](07-dictionary.md#ch-7) |
 | `dictionary/PositionIndex.h` | advanced | `PositionIndex` | [7](07-dictionary.md#ch-7) |
 | `dictionary/RandomHashing.h` | core | `SplitMix64`, `ZobristTable`, `TabulationHash` | [7](07-dictionary.md#ch-7) |
 | `dictionary/RecSplit.h` | advanced | `RecSplit` | [7](07-dictionary.md#ch-7) |
