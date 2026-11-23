@@ -298,6 +298,7 @@ using ADS::arithmeticInterval;
 // compression/BurrowsWheeler.h
 using ADS::BWT;
 using ADS::bwt;
+using ADS::bwtWideFrom;
 using ADS::bzipCompress;
 using ADS::bzipDecompress;
 using ADS::inverseBwt;
@@ -707,6 +708,7 @@ using ADS::dsatur;
 using ADS::greedySuperstring;
 using ADS::greedyTsp;
 using ADS::kOptNeighbors;
+using ADS::kOptNeighbours;
 using ADS::minMaxGreedy;
 using ADS::overlap;
 using ADS::partitionLocalSearch;
