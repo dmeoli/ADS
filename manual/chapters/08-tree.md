@@ -653,12 +653,21 @@ its size. Beside the operations of the book, `detachLeft()` and
 `detachRight()` cut a subtree off its parent without destroying it, in
 $O( 1 )$: the subtree becomes a root owned by the caller, ready to be inserted
 elsewhere, which moves subtrees (a mirror, a rotation) with no copy ([Figure
-8.7](08-tree.md#fig-8-7)). Its contracts require that the tree inserted be a
-root other than the node itself and than the root of its tree, and that it go
-where no child is; at the level 3 each update also checks that the two
-children of the node it changes have that node as their parent.
+8.7](08-tree.md#fig-8-7) and [Algorithm 8.9](08-tree.md#alg-8-9)). Its
+contracts require that the tree inserted be a root other than the node itself
+and than the root of its tree, and that it go where no child is; at the level
+3 each update also checks that the two children of the node it changes have
+that node as their parent.
 
 ![Figure 8.7. A `BinaryTree` before and after `c.insertLeft(a.detachLeft())`: the subtree of `b` (in violet) is cut off `a` and hung under `c` with no copy, the edge added in orange.](../figures/tree-binarytree.svg){#fig-8-7}
+
+<span id="alg-8-9"></span>**Algorithm 8.9.** The insertion and the
+detachment of a left subtree of a `BinaryTree` (those of a right subtree are
+the same on the other side).
+
+--8<-- "generated/BinaryTree-insertLeft.pseudo.md"
+
+--8<-- "generated/BinaryTree-detachLeft.pseudo.md"
 
 Here the visit `dfs( t , pre , in , post )` examines a node before its
 subtrees (`pre`), between them (`in`) and after them (`post`), and
@@ -669,17 +678,22 @@ its subtrees. A parenthesized list of a binary tree has `()` for the empty
 tree and $( v \, L \, R )$ for the root $v$ with the subtrees $L$ and $R$
 (e.g., `( 8 () ( 5 ( 27 () () ) ( 16 () () ) ) )`). We write it by
 `to_list( t )` and read it back by `from_list( s )` ([Algorithm
-8.9](08-tree.md#alg-8-9)). None of these functions recurses in the code, which
+8.10](08-tree.md#alg-8-10)). None of these functions recurses in the code, which
 keeps an explicit stack for the reason given after [Lemma
 8.2](08-tree.md#lem-8-2), and their costs are those of [Lemma
 8.8](08-tree.md#lem-8-8).
 
-<span id="alg-8-9"></span>**Algorithm 8.9.** The visit in depth,
-the join and the reading of a parenthesized list of a `BinaryTree`.
+<span id="alg-8-10"></span>**Algorithm 8.10.** The visit in depth,
+the copy, the join, and the writing and the reading of a parenthesized list
+of a `BinaryTree`.
 
 --8<-- "generated/BinaryTree-dfs.pseudo.md"
 
+--8<-- "generated/BinaryTree-copy.pseudo.md"
+
 --8<-- "generated/BinaryTree-join.pseudo.md"
+
+--8<-- "generated/BinaryTree-to_list.pseudo.md"
 
 --8<-- "generated/BinaryTree-readTree.pseudo.md"
 
@@ -700,7 +714,7 @@ reading consumes each token of $s$ once, as in [Lemma
 
 Three ranges, `preorder( t )`, `inorder( t )` and `postorder( t )`, walk the
 nodes of the subtree of $t$ by the links to the parents, with no stack and no
-recursion, by the three steps of [Algorithm 8.10](08-tree.md#alg-8-10). The
+recursion, by the three steps of [Algorithm 8.11](08-tree.md#alg-8-11). The
 previsit goes down to the left child, or else to the right one, and otherwise
 climbs until it leaves a left child whose parent has a right child. Instead,
 the invisit goes to the leftmost node of the right subtree, or else climbs
@@ -711,7 +725,7 @@ otherwise to the parent itself. [Lemma 8.15](08-tree.md#lem-8-15) of
 [§8.4](08-tree.md#sec-8-4) shows that a complete walk costs $O( n )$ time and
 $O( 1 )$ space, although a single step may cost $\Theta( h )$.
 
-<span id="alg-8-10"></span>**Algorithm 8.10.** The next node
+<span id="alg-8-11"></span>**Algorithm 8.11.** The next node
 in the previsit, in the invisit and in the postvisit of the subtree of
 $t$, by the links to the parents.
 
@@ -725,13 +739,13 @@ An ordered tree $T$ is represented by a binary tree $B$ whose left child of a
 node is its first child in $T$ and whose right child is its next sibling in
 $T$ ([Knuth 1997, §2.3.2](Z-bibliography.md#ref-knuth1997); [Montresor 2025,
 §5.5](Z-bibliography.md#ref-montresor2025)). This is `to_binary( t )`
-([Algorithm 8.11](08-tree.md#alg-8-11) and [Figure 8.8](08-tree.md#fig-8-8)),
+([Algorithm 8.12](08-tree.md#alg-8-12) and [Figure 8.8](08-tree.md#fig-8-8)),
 and it is the reason why the links of `Tree` are three per node whatever the
 degrees.
 
 ![Figure 8.8. An ordered tree $T$ and the binary tree $B$ of its first children (the gray edges, to the left) and of its next siblings (the violet edges, to the right).](../figures/tree-binrep.svg){#fig-8-8}
 
-<span id="alg-8-11"></span>**Algorithm 8.11.** The binary tree
+<span id="alg-8-12"></span>**Algorithm 8.12.** The binary tree
 of the first children and of the next siblings.
 
 --8<-- "generated/BinaryTree-to_binary.pseudo.md"
@@ -815,7 +829,7 @@ use.
 
 ![Figure 8.9. The tree `( a ( b ( d () () ) () ) ( c () () ) )` as a `CursorBinaryTree`, before and after `remove(1)`: the left child of `a` becomes `NIL` (in violet), and the places of `d` and of `b` go to the free list 1, 3, linked by their field `left`.](../figures/tree-cursorbinary.svg){#fig-8-9}
 
-<span id="alg-8-12"></span>**Algorithm 8.12.** The insertion of
+<span id="alg-8-13"></span>**Algorithm 8.13.** The insertion of
 a left child and the copy of a subtree in `CursorBinaryTree`.
 
 --8<-- "generated/CursorBinaryTree-insertLeft.pseudo.md"
@@ -838,7 +852,7 @@ is usually the case of the heaps. As in `CursorBinaryTree`, `setRoot( v )`
 makes the root of an empty tree, and the constructor with $( v , l , r )$
 joins two trees under a new root. Then `insertLeft( i , t )` and
 `insertRight( i , t )` copy a tree $t$ under the node $i$, where no child is,
-in time linear in the places of $t$ ([Algorithm 8.13](08-tree.md#alg-8-13) and
+in time linear in the places of $t$ ([Algorithm 8.14](08-tree.md#alg-8-14) and
 [Figure 8.10](08-tree.md#fig-8-10)), since each node of $t$ moves to the place
 that its position below $i$ gives it. Conversely, `remove( i )` empties the
 places of the subtree of $i$, and `preorder()` returns the places in previsit
@@ -847,7 +861,7 @@ node but the root has its parent.
 
 ![Figure 8.10. An `ArrayBinaryTree` and its vector before and after `insertLeft(1,t)` for $t$ = `( x ( y () () ) () )`: the root of $t$ goes to the place $2 \cdot 1 + 1 = 3$ and its left child to $2 \cdot 3 + 1 = 7$ (in orange), the vector growing to 8 places, with the place 6 empty.](../figures/tree-arraybinary.svg){#fig-8-10}
 
-<span id="alg-8-13"></span>**Algorithm 8.13.** The copy of the
+<span id="alg-8-14"></span>**Algorithm 8.14.** The copy of the
 subtree of the place $j$ of $t$ into the place $k$, which `insertLeft()`
 and `insertRight()` call with $k$ the place of the new child.
 
@@ -879,7 +893,7 @@ the predecessors. This class also gives bidirectional iterators (`begin()` and
 
 ![Figure 8.11. A `ThreadedTree` after the insertions of 4, 2, 6, 1, 3, with the threads dashed, and after `insert(5)`: the left thread of 6 becomes the new leaf 5, whose two threads, to its predecessor 4 and to its successor 6, are in orange.](../figures/tree-threaded.svg){#fig-8-11}
 
-<span id="alg-8-14"></span>**Algorithm 8.14.** The insertion into
+<span id="alg-8-15"></span>**Algorithm 8.15.** The insertion into
 a threaded search tree and the successor
 ([Knuth 1997, §2.3.1](Z-bibliography.md#ref-knuth1997)).
 
@@ -926,7 +940,7 @@ left subtree being the left operand ([Montresor 2025, §5.5 and
 postfix form of the expression (cf. [§3.6](03-stack.md#sec-3-6)), with a stack
 of trees. An operand is pushed as a leaf, and an operator pops its right and
 then its left subtree and pushes the tree they make under it ([Algorithm
-8.15](08-tree.md#alg-8-15) and [Figure 8.12](08-tree.md#fig-8-12)). Then
+8.16](08-tree.md#alg-8-16) and [Figure 8.12](08-tree.md#fig-8-12)). Then
 `evaluate( t , env )` computes the value by a postvisit, the values of the
 variables being given by the dictionary `env`. We write the expression in
 prefix form by `prefixForm( t )`, each subtree in parentheses (e.g.,
@@ -938,7 +952,7 @@ for each variable, and no division by 0.
 
 ![Figure 8.12. A run of `expressionTree()` on `5 9 8 + 4 6 * * 7 + *`: the stack of trees (its top on the right) after `5 9 8 + 4 6 *`, the two trees that the next `*` pops in violet, and after it, the tree it pushes in orange.](../figures/tree-expression.svg){#fig-8-12}
 
-<span id="alg-8-15"></span>**Algorithm 8.15.** The expression tree
+<span id="alg-8-16"></span>**Algorithm 8.16.** The expression tree
 of a postfix expression, its value and its infix form.
 
 --8<-- "generated/ExpressionTree-expressionTree.pseudo.md"
@@ -976,13 +990,13 @@ inserting the items one at a time, the construction of [Williams
 1964](Z-bibliography.md#ref-williams1964): `maxHeapSiftUp( A , i )` moves the
 item of $A[ i ]$ up, swapping it with its parent while it is larger, when
 $A[ 0 .. i - 1 ]$ is a max-heap, and `heapBuildByInsertion( A )` calls it on
-the places 1 to $n - 1$ ([Algorithm 8.16](08-tree.md#alg-8-16) and [Figure
+the places 1 to $n - 1$ ([Algorithm 8.17](08-tree.md#alg-8-17) and [Figure
 8.13](08-tree.md#fig-8-13)). A comparison other than `std::less` changes the
 order, `std::greater` giving a min-heap.
 
 ![Figure 8.13. The step `maxHeapSiftUp(A,3)` on $A = [ 9 , 4 , 7 , 10 ]$, whose first three places are a max-heap: the item 10 (in orange) climbs the violet path to the root, which gives the heap $[ 10 , 9 , 7 , 4 ]$ that the insertions build from $[ 4 , 7 , 9 , 10 ]$.](../figures/tree-heapins.svg){#fig-8-13}
 
-<span id="alg-8-16"></span>**Algorithm 8.16.** The construction
+<span id="alg-8-17"></span>**Algorithm 8.17.** The construction
 of a max-heap by insertions ([Montresor 2025,
 §10.1](Z-bibliography.md#ref-montresor2025)).
 
@@ -1058,11 +1072,11 @@ of exercise 6.4 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)) counts the
 nodes entered from their parent, and `subtreeHeight( u )` (the `height2( u )`
 of his exercise 6.5) keeps the depth below $u$ and its maximum; both stop when
 the walk climbs above $u$, so that they never leave the subtree ([Algorithm
-8.17](08-tree.md#alg-8-17)).
+8.18](08-tree.md#alg-8-18)).
 
 ![Figure 8.14. The three cases of the walk with no stack at the node $u$ ([Morin 2013, Figure 6.3](Z-bibliography.md#ref-morin-cpp)): the step that arrives at $u$ in violet and the next one in orange.](../figures/tree-traverse.svg){#fig-8-14}
 
-<span id="alg-8-17"></span>**Algorithm 8.17.** The size of a
+<span id="alg-8-18"></span>**Algorithm 8.18.** The size of a
 subtree by the walk with no stack ([Morin 2013, §6.1.2 and exercise
 6.4](Z-bibliography.md#ref-morin-cpp)); $p$ is the node the walk comes
 from, and "or" takes the first that is not nil.
@@ -1075,7 +1089,7 @@ the walk keeps by adding 1 at each step down and subtracting 1 at each step
 up.
 
 <span id="lem-8-14"></span>**Lemma 8.14.** *The walk of
-[Algorithm 8.17](08-tree.md#alg-8-17) on the subtree of $u$
+[Algorithm 8.18](08-tree.md#alg-8-18) on the subtree of $u$
 enters each node of the subtree once from its parent and costs
 $O( n_u )$ time and $O( 1 )$ space.*
 
@@ -1102,12 +1116,12 @@ return the node after $u$ in the previsit, in the invisit and in the postvisit
 of its tree, nil after the last one, by the links to the parents (exercise 6.8
 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)). They are the steps of the
 ranges of [§8.3.1](08-tree.md#sec-8-3-1) without the bound $t$, which here is
-the root of the tree ([Algorithm 8.18](08-tree.md#alg-8-18)). The previsit
+the root of the tree ([Algorithm 8.19](08-tree.md#alg-8-19)). The previsit
 starts at the root, the invisit at the leftmost node, `firstInorder( u )`, and
 the postvisit at the first leaf reached by going left when possible and right
 otherwise, `firstPostorder( u )`.
 
-<span id="alg-8-18"></span>**Algorithm 8.18.** The next node in
+<span id="alg-8-19"></span>**Algorithm 8.19.** The next node in
 the three visits of a binary tree, by the links to the parents ([Morin
 2013, exercise 6.8](Z-bibliography.md#ref-morin-cpp)).
 
@@ -1118,7 +1132,7 @@ the three visits of a binary tree, by the links to the parents ([Morin
 --8<-- "generated/BinaryTreeAlgorithms-nextPostorder.pseudo.md"
 
 <span id="lem-8-15"></span>**Lemma 8.15.** *Let $t$ be a node of a binary
-tree, the root for the functions of [Algorithm 8.18](08-tree.md#alg-8-18),
+tree, the root for the functions of [Algorithm 8.19](08-tree.md#alg-8-19),
 with $n_t$ nodes and height $h_t$ in its subtree. Then `firstInorder()` and
 `firstPostorder()` cost $O( h_t )$, and starting from the first node of a
 visit of the subtree and calling the function of the next node until it
@@ -1143,14 +1157,14 @@ Each of the previsit, the invisit and the postvisit numbers the nodes of a
 tree with $0 , \ldots , n - 1$ in the order in which it examines them ([Figure
 8.16](08-tree.md#fig-8-16)). Our `orderNumbers( t , f )` calls
 `f( u , pre , in , post )` on each node with its three numbers, computed in
-one visit by three counters ([Algorithm 8.19](08-tree.md#alg-8-19); exercise
+one visit by three counters ([Algorithm 8.20](08-tree.md#alg-8-20); exercise
 6.7 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)). Once they are known,
 some questions on the tree are answered in constant time ([Lemma
 8.16](08-tree.md#lem-8-16), his exercise 6.9).
 
 ![Figure 8.16. The numbers of the previsit, of the postvisit and of the invisit of the binary tree of twelve nodes of [Morin 2013, Figure 6.10](Z-bibliography.md#ref-morin-cpp).](../figures/tree-numbering.svg){#fig-8-16}
 
-<span id="alg-8-19"></span>**Algorithm 8.19.** The three numbers
+<span id="alg-8-20"></span>**Algorithm 8.20.** The three numbers
 of each node in one visit, $a$, $b$ and $c$ being three counters from 0
 ([Morin 2013, exercise 6.7](Z-bibliography.md#ref-morin-cpp)).
 
@@ -1171,7 +1185,7 @@ $$
 *the three numbers of a node, however, determine neither $n_u$ nor
 $d( u )$.*
 
-*Proof.* We note that the visit of [Algorithm 8.19](08-tree.md#alg-8-19) keeps on its
+*Proof.* We note that the visit of [Algorithm 8.20](08-tree.md#alg-8-20) keeps on its
 stack the nodes of the current path, each with the number of its subtrees
 done. It takes the first counter when it enters a node, the second when
 the left subtree of the node is done and the third when both are; these are
@@ -1203,13 +1217,13 @@ root, which gives the depth by (8.2).
 A binary tree is *size-balanced* if the two subtrees of each node differ by
 one node at most. We test it by `isSizeBalanced( t )`, a postvisit that
 returns the size of each subtree, or a mark $\bot$ at the first node that is
-not balanced, which stops the visit ([Algorithm 8.20](08-tree.md#alg-8-20)),
+not balanced, which stops the visit ([Algorithm 8.21](08-tree.md#alg-8-21)),
 with an explicit stack, as the height may be $n - 1$ (exercise 6.6 of [Morin
 2013](Z-bibliography.md#ref-morin-cpp)). One can write instead the obvious
 test, which calls a function of the size at each node; the following lemma
 compares the two.
 
-<span id="alg-8-20"></span>**Algorithm 8.20.** The test of
+<span id="alg-8-21"></span>**Algorithm 8.21.** The test of
 the balance of the sizes ([Morin 2013, exercise
 6.6](Z-bibliography.md#ref-morin-cpp)).
 
@@ -1251,9 +1265,9 @@ values are kept in a table (the root of the subtree of $m$ nodes is then the
 last of its $m$ values in the invisit). Instead,
 `fromPreorderInorder( pre , in )` keeps a stack $S$ of the nodes whose right
 subtree is still open, and needs only the equality of the values ([Algorithm
-8.21](08-tree.md#alg-8-21)).
+8.22](08-tree.md#alg-8-22)).
 
-<span id="alg-8-21"></span>**Algorithm 8.21.** The binary tree
+<span id="alg-8-22"></span>**Algorithm 8.22.** The binary tree
 of a previsit $P$ and of an invisit $I$ of distinct values; $j$ is the next
 place of $I$.
 
@@ -1319,12 +1333,12 @@ node in the previsit, whether it has a left child and whether it has a right
 child, and drops the two bits of the last node, which is a leaf ([Figure
 8.17](08-tree.md#fig-8-17)). Conversely, `fromShapeCode( c , n )` reads them
 back, with a stack of the nodes whose right child is still due ([Algorithm
-8.22](08-tree.md#alg-8-22)), and gives each node the number of its place in
+8.23](08-tree.md#alg-8-23)), and gives each node the number of its place in
 the previsit as its value.
 
 ![Figure 8.17. The code `shapeCode()` of a tree of 5 nodes, numbered in the previsit: the two bits of each node (a left child, a right child), none for the last node, give the code of $2 ( 5 - 1 ) = 8$ bits.](../figures/tree-shape.svg){#fig-8-17}
 
-<span id="alg-8-22"></span>**Algorithm 8.22.** The tree of a
+<span id="alg-8-23"></span>**Algorithm 8.23.** The tree of a
 shape code ([Morin 2013, exercise 6.11](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/BinaryTreeAlgorithms-fromShapeCode.pseudo.md"
@@ -1350,7 +1364,7 @@ code of all of them. $\square$
 By the links to the parents, `lowestCommonAncestor( u , v )` returns the
 deepest node that is an ancestor of both $u$ and $v$. The deeper node climbs
 to the depth of the other, and then the two climb together until they meet
-([Algorithm 8.23](08-tree.md#alg-8-23)), the depths being counted by two
+([Algorithm 8.24](08-tree.md#alg-8-24)), the depths being counted by two
 climbs to the root. A usual alternative pushes the two paths on two stacks and
 pops them while their tops agree, in $O( h )$ space. With many queries on a
 fixed tree, the reduction of [Bender and Farach-Colton
@@ -1361,7 +1375,7 @@ answers each in $O( 1 )$ after $O( n )$ preprocessing
 nodes of the same tree and check that the node returned is a common ancestor
 none of whose children is one.
 
-<span id="alg-8-23"></span>**Algorithm 8.23.** The comparisons
+<span id="alg-8-24"></span>**Algorithm 8.24.** The comparisons
 and the checks: the lowest common ancestor, the equality of two trees, the
 order of a search tree and the coloring of a Red-Black tree.
 
@@ -1430,13 +1444,13 @@ child. $\square$
 On a binary search tree, `searchTreeRange( t , lo , hi , f )` calls `f( u )`
 on the nodes whose keys are in $[ \mathit{lo} , \mathit{hi} ]$, in increasing
 order. The function is an invisit pruned where the keys leave the range
-([Algorithm 8.24](08-tree.md#alg-8-24) and [Figure
+([Algorithm 8.25](08-tree.md#alg-8-25) and [Figure
 8.18](08-tree.md#fig-8-18)), and it returns the number of the nodes it
 examines; the contracts require $\mathit{lo} \le \mathit{hi}$.
 
 ![Figure 8.18. The query `searchTreeRange(t,4,10)` on a binary search tree of 13 keys: the six keys reported in violet, and the edges that the visit follows in violet; the nodes 3, 12 and 11 are examined and not reported, the visit going on from each only on the side of the range (the left subtree of 11 being empty).](../figures/tree-range.svg){#fig-8-18}
 
-<span id="alg-8-24"></span>**Algorithm 8.24.** The keys of a
+<span id="alg-8-25"></span>**Algorithm 8.25.** The keys of a
 binary search tree in a range, those not larger than $x$ ([Morin 2013,
 exercise 6.14](Z-bibliography.md#ref-morin-cpp)), and the descents that the
 search trees of this chapter share ([Morin 2013, §6.2 and exercise
@@ -1494,7 +1508,7 @@ i.e., the insertion, the removal and the rotations. Thus
 `searchTreeLowerBound( t , k )` returns the node of the smallest key not
 smaller than $k$ (the `find( x )` of a sorted set of Morin). Its descent takes
 $O( h )$ time and remembers the last node where the search turned left
-([Algorithm 8.24](08-tree.md#alg-8-24)). From it, `searchTreeFindKey()`,
+([Algorithm 8.25](08-tree.md#alg-8-25)). From it, `searchTreeFindKey()`,
 `searchTreeLowerBoundKey()` and `searchTreeLowerBoundEntry()` give the address
 of the key, that of the smallest key not smaller and the pair that the
 dictionaries return, and `searchTreeLookup()` gives the value from the former.
@@ -1519,10 +1533,10 @@ while it descends, and the nodes of `BTree` and `BPlusTree` are not binary.
 Conversely, `minimumHeightSearchTree( A , make )` builds the binary search
 tree of the strictly increasing keys of $A$ of the least height, by putting
 the lower middle key at the root and the two halves below, recursively
-([Algorithm 8.25](08-tree.md#alg-8-25)), with the nodes made by the callable
+([Algorithm 8.26](08-tree.md#alg-8-26)), with the nodes made by the callable
 `make`; the overload without it returns a `BinaryTree`.
 
-<span id="alg-8-25"></span>**Algorithm 8.25.** The search tree of
+<span id="alg-8-26"></span>**Algorithm 8.26.** The search tree of
 least height of the keys $A[ i .. j )$, and the Cartesian tree of a vector
 ([Vuillemin 1980](Z-bibliography.md#ref-vuillemin1980)).
 
@@ -1647,7 +1661,7 @@ The property of the keys makes a node $u$ a separator: a key $x$ smaller
 than the key of $u$ can only be in the left subtree of $u$, a larger one only
 in its right subtree. Hence `lookupNode( x )` starts at the root and, at each
 node, either stops on the key $x$ or goes to the child on the side of $x$
-([Algorithm 8.26](08-tree.md#alg-8-26)). If it reaches the
+([Algorithm 8.27](08-tree.md#alg-8-27)). If it reaches the
 sentinel, $x$ is not there. Also, `lookup( k )` returns the value of the node
 found, and `contains( k )` whether there is one.
 [Figure 8.19](08-tree.md#fig-8-19) shows a successful and an
@@ -1659,7 +1673,7 @@ the smallest key larger than $10$, which is the subject of
 
 ![Figure 8.19. The searches for 6 (left) and for 10 (right) in the binary search tree of Morin's figure 6.5, the nodes and the edges of each path in violet; the search for 10 ends at the sentinel below 9, and $z = 11$ is the last node at which it went left.](../figures/tree-bst-search.svg){#fig-8-19}
 
-<span id="alg-8-26"></span>**Algorithm 8.26.** The search
+<span id="alg-8-27"></span>**Algorithm 8.27.** The search
 of a binary search tree ([Montresor 2025, §6.1](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/SearchTree-lookupNode.pseudo.md"
@@ -1669,9 +1683,9 @@ examines the keys in increasing order. Hence the smallest key is at the end of t
 path of the left children from the root (`min()`), and the largest at the
 end of that of the right children (`max()`). Note that the key that follows the one
 of a node $t$ is found by `successorNode( t )` along the links to the
-parents ([Algorithm 8.27](08-tree.md#alg-8-27)).
+parents ([Algorithm 8.28](08-tree.md#alg-8-28)).
 
-<span id="alg-8-27"></span>**Algorithm 8.27.** The successor of
+<span id="alg-8-28"></span>**Algorithm 8.28.** The successor of
 a node in a binary search tree with the links to the parents ([Montresor
 2025, §6.1](Z-bibliography.md#ref-montresor2025)).
 
@@ -1720,9 +1734,9 @@ SSET) wants from `find( x )` the smallest key not smaller than $x$, rather
 than only whether $x$ is there. On a binary search tree the answer lies on the
 path that the search for $x$ follows, and `lowerBoundNode( x )` finds it by
 remembering the last node at which that path turned left
-([Algorithm 8.28](08-tree.md#alg-8-28)).
+([Algorithm 8.29](08-tree.md#alg-8-29)).
 
-<span id="alg-8-28"></span>**Algorithm 8.28.** The successor search
+<span id="alg-8-29"></span>**Algorithm 8.29.** The successor search
 of a binary search tree ([Morin 2013, §6.2.1](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/SearchTree-lowerBoundNode.pseudo.md"
@@ -1762,14 +1776,14 @@ parent $p$ of the node it is at. If $x$ is there, its value becomes $v$.
 Otherwise, the search ends at the sentinel below $p$, where a new leaf of
 $( x , v )$ is hung on the side of $x$
 ([Figure 8.20](08-tree.md#fig-8-20)). The first eight lines of
-[Algorithm 8.29](08-tree.md#alg-8-29) are the insertion of the
+[Algorithm 8.30](08-tree.md#alg-8-30) are the insertion of the
 plain tree, but for line 7, which concerns the Red-Black tree and is
 discussed in [§8.5.5](08-tree.md#sec-8-5-5). Line 6 increments the sizes
 of the subtrees of the ancestors of the new leaf, one per level.
 
 ![Figure 8.20. The insertion of 8.5 in the tree of Morin's figure 6.5 (his figure 6.7): the search for 8.5 (violet, left) ends at the sentinel to the right of 8, where the new leaf is hung (orange, right).](../figures/tree-bst-add.svg){#fig-8-20}
 
-<span id="alg-8-29"></span>**Algorithm 8.29.** The insertion
+<span id="alg-8-30"></span>**Algorithm 8.30.** The insertion
 in a binary search tree, the balancing of a Red-Black tree and the left
 rotation ([Montresor 2025, §6.1 and §6.2](Z-bibliography.md#ref-montresor2025)).
 
@@ -1785,7 +1799,7 @@ right subtree, is copied into $u$. Then $s$ is removed instead, and since it
 has no left child it falls under the first two cases
 ([Figure 8.22](08-tree.md#fig-8-22)). The sizes of the
 ancestors of the node spliced are decremented on the way;
-[Algorithm 8.30](08-tree.md#alg-8-30) shows the procedure with
+[Algorithm 8.31](08-tree.md#alg-8-31) shows the procedure with
 the balancing of the Red-Black tree, which line 7 calls only when `RB`
 holds.
 
@@ -1793,7 +1807,7 @@ holds.
 
 ![Figure 8.22. The removal of 11, a node with two children (Morin's figure 6.9): its successor 12, the leftmost node of its right subtree, is reached through 13 (violet, left), its pair moved into the node of 11, and the leaf 12 detached (right, the node rewritten in orange).](../figures/tree-bst-remove.svg){#fig-8-22}
 
-<span id="alg-8-30"></span>**Algorithm 8.30.** The removal from
+<span id="alg-8-31"></span>**Algorithm 8.31.** The removal from
 a binary search tree and the balancing of a Red-Black tree, the cases (1) to
 (4) of `balanceDelete()` written once for the two sides of $p$, with
 $\mathit{near}$ the side of $t$ and $\mathit{far}$ the other one
@@ -1821,7 +1835,7 @@ right one if $x > y$, and the search stops at the node of $x$ or at nil,
 whose subtree is empty. The insertion follows the same path and hangs the
 new leaf at the nil where the search ended, which is the only place where
 a leaf of key $x$ keeps the property of the keys at each node of the path.
-The removal ([Algorithm 8.30](08-tree.md#alg-8-30)) splices a node with at
+The removal ([Algorithm 8.31](08-tree.md#alg-8-31)) splices a node with at
 most one child, which keeps the order of the other keys, or else gives the
 node the key of its successor, the smallest key of its right subtree, which
 is larger than the keys of the left subtree and smaller than the other keys
@@ -1949,7 +1963,7 @@ A rotation rewrites three links, each with its link to the parent, and the
 sizes of the two nodes it turns, the lower one first (since the size of the
 upper one includes it). The left rotation of `SearchTree`
 is the function $\mathrm{rotateLeft}$ of the lines 19 to 22 of [Algorithm
-8.29](08-tree.md#alg-8-29), and the right one, `rotateRight()`, is its
+8.30](08-tree.md#alg-8-30), and the right one, `rotateRight()`, is its
 mirror. Since the depths of a whole subtree may change, the tree of
 [§8.5.6](08-tree.md#sec-8-5-6), which keeps them, has no rotation (cf.
 exercise 7.7 of Morin, discussed in [§8.6](08-tree.md#sec-8-6)). The
@@ -2019,7 +2033,7 @@ restore the constraints that they break.
 *Insertion.* The new leaf $t$ is colored red, which keeps (V4) and may
 break (V1), if $t$ is the root, or (V3), if its parent is red. Then
 `balanceInsert( t )` (lines 9 to 18 of
-[Algorithm 8.29](08-tree.md#alg-8-29)) repairs the fault, with $p$
+[Algorithm 8.30](08-tree.md#alg-8-30)) repairs the fault, with $p$
 the parent of $t$, $n$ its grandparent and $z$ its uncle (the other child of
 $n$). In the case (1), $t$ is the root and is painted black, while in the case (2), with $p$
 black, there is nothing to repair. When $p$ is red, $n$ exists and is black
@@ -2065,7 +2079,7 @@ when the key was already there.
 possibly the sentinel. If $u$ was red, the constraints hold. If it was
 black, the paths through $t$ have lost a black node, and
 `balanceDelete( t , p )` (lines 9 to 19 of
-[Algorithm 8.30](08-tree.md#alg-8-30)) repairs (V4) by moving up
+[Algorithm 8.31](08-tree.md#alg-8-31)) repairs (V4) by moving up
 a *black token* that $t$ carries. A red $t$ absorbs the token by turning
 black (the last line); otherwise the sibling $f$ of $t$ and its two
 children, the nephews $a$ (near $t$) and $b$ (far from it), decide among
@@ -2153,21 +2167,21 @@ the getLE of exercise 6.14 and the three measures of each node, which
 The insertion adds a leaf of depth one more than its parent. Only the nodes
 of its path change their size (by 1) and possibly their height, which is
 recomputed from the children on the way up
-([Algorithm 8.31](08-tree.md#alg-8-31)). Removals need more
+([Algorithm 8.32](08-tree.md#alg-8-32)). Removals need more
 care, since the splice of the plain tree lifts a whole subtree by one level
 and changes the depths of all its nodes, which would cost the size of that
 subtree. Here the node that goes is always a leaf: the pair removed is
 replaced by that of its successor (or of its predecessor, when there is no
 right subtree), whose node is then emptied in the same way. Each step goes
-down ([Algorithm 8.32](08-tree.md#alg-8-32)).
+down ([Algorithm 8.33](08-tree.md#alg-8-33)).
 
-<span id="alg-8-31"></span>**Algorithm 8.31.** The insertion in
+<span id="alg-8-32"></span>**Algorithm 8.32.** The insertion in
 `MeasuredSearchTree` ([Morin 2013, exercise 6.19](Z-bibliography.md#ref-morin-cpp)),
 $s$, $d$ and $h$ the three measures.
 
 --8<-- "generated/MeasuredSearchTree-insert.pseudo.md"
 
-<span id="alg-8-32"></span>**Algorithm 8.32.** The removal from
+<span id="alg-8-33"></span>**Algorithm 8.33.** The removal from
 `MeasuredSearchTree`, by a chain of pairs moved up until a leaf is reached.
 
 --8<-- "generated/MeasuredSearchTree-remove.pseudo.md"
@@ -2193,7 +2207,7 @@ A removal moves up to $h$ pairs instead of one, the price of the depths that
 never change. A rotation would keep the sizes and the heights in $O( 1 )$
 but not the depths, which change in a whole subtree, and the tree has
 therefore no rotation (Morin gives no code for it). Both updates start from
-`findLast()`, the search of [Algorithm 8.26](08-tree.md#alg-8-26) that
+`findLast()`, the search of [Algorithm 8.27](08-tree.md#alg-8-27) that
 returns the node of the key if the key is there and otherwise the last node
 of the path (nil on the empty tree), i.e., the parent of a new leaf.
 
@@ -2496,12 +2510,12 @@ left rotation is its mirror. Each keeps the order of the keys, lifts
 one node by one level and lowers the other by one. A new key is inserted
 at a leaf, as in a binary search tree, with a fresh priority; while its
 priority is larger than its parent's, a rotation at the parent lifts it
-by one level ([Algorithm 8.33](08-tree.md#alg-8-33)). Morin walks the new node up by the links to the parents. `Treap` has no such
+by one level ([Algorithm 8.34](08-tree.md#alg-8-34)). Morin walks the new node up by the links to the parents. `Treap` has no such
 link, and rotates on the way back of the recursive descent, where the test of the line 5 (or of its mirror, after line 6) is made at each level of the path;
 above the first level where it fails it fails again ([Theorem
 8.4](08-tree.md#thm-8-4) below).
 
-<span id="alg-8-33"></span>**Algorithm 8.33.** The insertion
+<span id="alg-8-34"></span>**Algorithm 8.34.** The insertion
 into a treap ([Seidel and Aragon 1996](Z-bibliography.md#ref-seidel1996));
 $p$ is the priority.
 
@@ -2561,7 +2575,7 @@ removal changes $O( 1 )$ links in expectation, as in a skip list
 ([§7.9](07-dictionary.md#sec-7-9)), the search being the part of the cost
 that grows with $n$.
 
-Our removal ([Algorithm 8.34](08-tree.md#alg-8-34)) finds the node
+Our removal ([Algorithm 8.35](08-tree.md#alg-8-35)) finds the node
 of the key and rotates it down, lifting each time the child of larger priority (which keeps the heap property above), until the node has one
 child at most, which takes its place. Morin rotates the node down to a
 leaf and then unlinks it; `Treap` stops one or more rotations earlier, when
@@ -2569,7 +2583,7 @@ the node has one child, and the tree that results is the same, the only
 treap of the other keys and their priorities
 ([Lemma 8.34](08-tree.md#lem-8-34)).
 
-<span id="alg-8-34"></span>**Algorithm 8.34.** The removal from
+<span id="alg-8-35"></span>**Algorithm 8.35.** The removal from
 a treap ([Seidel and Aragon 1996](Z-bibliography.md#ref-seidel1996)).
 
 --8<-- "generated/Treap-remove.pseudo.md"
@@ -2674,13 +2688,13 @@ per rotation, the sizes of the subtrees give the access by rank ([Morin 2013, ex
 7.10](Z-bibliography.md#ref-morin-cpp)). `select( i )` returns the pair of rank $i$, i.e., with $i$ smaller keys. At a node $t$, the keys of its left
 subtree are the $s( t.\mathit{left} )$ smallest of its subtree, and hence the pair is in the left subtree, at $t$, or in the right subtree with the rank
 decreased by $s( t.\mathit{left} ) + 1$
-([Algorithm 8.35](08-tree.md#alg-8-35)). `rank( k )`, the number
+([Algorithm 8.36](08-tree.md#alg-8-36)). `rank( k )`, the number
 of keys smaller than $k$, adds $s( t.\mathit{left} ) + 1$ at each node of
 the path where the path turns right, going left at each node whose key is
 not smaller than $k$ (the node of $k$ included). `select()` requires $i < n$,
 which its contract checks.
 
-<span id="alg-8-35"></span>**Algorithm 8.35.** The access by rank
+<span id="alg-8-36"></span>**Algorithm 8.36.** The access by rank
 ([Morin 2013, exercise 7.10](Z-bibliography.md#ref-morin-cpp)); $s$ is the
 size of a subtree, 0 for nil.
 
@@ -2716,10 +2730,10 @@ since it is the largest. `fromSorted()` keeps that spine on a stack $S$, the
 root at the bottom. A new node $u$ pops the nodes of smaller priority,
 which must go below it, and takes the last one popped, with its subtree, as
 its left child, and then becomes the right child of the node left on top
-([Algorithm 8.36](08-tree.md#alg-8-36),
+([Algorithm 8.37](08-tree.md#alg-8-37),
 [Figure 8.38](08-tree.md#fig-8-38)).
 
-<span id="alg-8-36"></span>**Algorithm 8.36.** The treap of
+<span id="alg-8-37"></span>**Algorithm 8.37.** The treap of
 sorted keys ([Vuillemin 1980](Z-bibliography.md#ref-vuillemin1980);
 [Morin 2013, exercise 7.8](Z-bibliography.md#ref-morin-cpp)); $S$ is the
 right spine of the treap of the pairs read so far.
@@ -2806,7 +2820,7 @@ above that root before the insertion, as in the proof of [Theorem
 8.4](08-tree.md#thm-8-4)), and the hashes of the other ancestors are not
 computed.
 
-<span id="alg-8-37"></span>**Algorithm 8.37.** The insertion and the
+<span id="alg-8-38"></span>**Algorithm 8.38.** The insertion and the
 removal of `HashedTreap`, $h$ the tabulation hash of the addresses.
 
 --8<-- "generated/HashedTreap-insert.pseudo.md"
@@ -2872,10 +2886,10 @@ according to the distance between the two, not to the size of the tree
 its smallest and largest nodes, $u.\mathit{lo}$ and $u.\mathit{hi}$, which
 bound the keys below $u$. `fingerFind( k , u )` climbs from $u$
 to the first ancestor $w$ whose interval holds $k$, and goes down from $w$
-as a search does ([Algorithm 8.38](08-tree.md#alg-8-38),
+as a search does ([Algorithm 8.39](08-tree.md#alg-8-39),
 [Figure 8.39](08-tree.md#fig-8-39)). At the latest, the climb stops at the root, from which the descent is the ordinary search.
 
-<span id="alg-8-38"></span>**Algorithm 8.38.** The search from a
+<span id="alg-8-39"></span>**Algorithm 8.39.** The search from a
 finger ([Morin 2013, exercise 7.9](Z-bibliography.md#ref-morin-cpp);
 [Seidel and Aragon 1996](Z-bibliography.md#ref-seidel1996)).
 
@@ -2956,7 +2970,7 @@ the parents, each rotation updating the size and the extremes of its two
 nodes in $O( 1 )$ as in [Remark 8.1](08-tree.md#rem-8-1). Then it
 walks to the root to update those of the ancestors, which the new key
 changed. Its removal rotates the node down until it has one child at most, the child
-of larger priority going up as in [Algorithm 8.34](08-tree.md#alg-8-34),
+of larger priority going up as in [Algorithm 8.35](08-tree.md#alg-8-35),
 splices it, and walks to the root in the same way.
 
 Both cost $O( \log n )$ expected time ([Lemma 8.42](08-tree.md#lem-8-42)).
@@ -2997,14 +3011,14 @@ they would make it. An insertion into a subtree $t$ of $m$ keys makes the
 new key the root of $t$ with probability $1 / ( m + 1 )$, the probability that its priority would be the largest of the $m + 1$. Then
 it splits $t$ at the key into two trees, which become its subtrees, and otherwise it goes
 down into the left or the right subtree
-([Algorithm 8.39](08-tree.md#alg-8-39)). Its split goes down the path of the key and cuts each edge of the path that crosses it, with no
+([Algorithm 8.40](08-tree.md#alg-8-40)). Its split goes down the path of the key and cuts each edge of the path that crosses it, with no
 rotation. A removal replaces the node with the join of its two subtrees,
 whose root is that of the left one, of $a$ keys, with probability
 $a / ( a + b )$ and that of the right one, of $b$ keys, otherwise,
 recursively along the two facing spines. Its random choices are words of `SplitMix64` turned into an integer below $m + 1$, with no bias, by
 `uniformBelow()` of `RandomGenerators.h` ([§17.9](17-numeric.md#sec-17-9)).
 
-<span id="alg-8-39"></span>**Algorithm 8.39.** The insertion and
+<span id="alg-8-40"></span>**Algorithm 8.40.** The insertion and
 the join of a randomized binary search tree ([Martínez and Roura
 1998](Z-bibliography.md#ref-martinez1998)); $s$ is the size of a subtree,
 $\mathrm{below}( m )$ a uniform integer in $[ 0 , m )$, and the insertion
@@ -3147,8 +3161,8 @@ is paid in the updates.
 
 An insertion and a removal go down recursively, as in the plain tree, and on
 the way back they call `balance()` on each node of the path
-([Algorithm 8.40](08-tree.md#alg-8-40) and
-[Algorithm 8.41](08-tree.md#alg-8-41), after [Knuth 1998,
+([Algorithm 8.41](08-tree.md#alg-8-41) and
+[Algorithm 8.42](08-tree.md#alg-8-42), after [Knuth 1998,
 §6.2.3](Z-bibliography.md#ref-knuth1998v3)). This function recomputes the
 height and the size of the node from its children. If the heights of the
 subtrees differ by 2, it restores the balance by a single or a double
@@ -3158,13 +3172,13 @@ suffices if the left grandchild is not lower than the right one, i.e., if
 the higher grandchild is outside; otherwise a left rotation of the left
 child first brings it outside.
 
-<span id="alg-8-40"></span>**Algorithm 8.40.** The insertion
+<span id="alg-8-41"></span>**Algorithm 8.41.** The insertion
 in an AVL tree and the rebalancing of a node ([Knuth 1998,
 §6.2.3](Z-bibliography.md#ref-knuth1998v3)).
 
 --8<-- "generated/AVLTree-insert.pseudo.md"
 
-<span id="alg-8-41"></span>**Algorithm 8.41.** The removal
+<span id="alg-8-42"></span>**Algorithm 8.42.** The removal
 from an AVL tree, with the `balance()` of the insertion on the way back.
 
 --8<-- "generated/AVLTree-remove.pseudo.md"
@@ -3352,14 +3366,14 @@ $k$, it sets aside the nodes met into a tree $L$ of the keys smaller than
 $k$, which grows at its largest key, and a tree $R$ of the larger ones,
 which grows at its smallest, rotating at each zig-zig. At the end, it hangs
 the two subtrees of the last node to $L$ and to $R$, and makes $L$ and $R$
-the subtrees of that node ([Algorithm 8.42](08-tree.md#alg-8-42)).
+the subtrees of that node ([Algorithm 8.43](08-tree.md#alg-8-43)).
 This is the simplified top-down splay of [Sleator and Tarjan 1985,
 §4](Z-bibliography.md#ref-sleator1985), which treats a zig-zag as a zig
 followed by the next step. In the end, the node at the root is $k$, if it is
 there, or the last node of its path, i.e., its predecessor or its successor
 among the keys.
 
-<span id="alg-8-42"></span>**Algorithm 8.42.** The top-down
+<span id="alg-8-43"></span>**Algorithm 8.43.** The top-down
 splay ([Sleator and Tarjan 1985](Z-bibliography.md#ref-sleator1985)).
 
 --8<-- "generated/SplayTree-splay.pseudo.md"
@@ -3492,7 +3506,7 @@ factor of the best binary search tree that may rotate (the dynamic
 optimality conjecture of the same paper) is, to our knowledge, still open.
 
 The updates use the splay as their first step
-([Algorithm 8.43](08-tree.md#alg-8-43)). Thus,
+([Algorithm 8.44](08-tree.md#alg-8-44)). Thus,
 `insert( k , v )` splays $k$, and if $k$ is at the root its value changes.
 Otherwise the root holds the predecessor or the successor of $k$, and the
 new node of $k$ takes as its two children the root and the subtree of the
@@ -3501,7 +3515,7 @@ there, splays $k$ once more in the left subtree of the root. This brings up
 the largest key of that subtree, with no right child, to which the right
 subtree of the root removed is hung.
 
-<span id="alg-8-43"></span>**Algorithm 8.43.** The
+<span id="alg-8-44"></span>**Algorithm 8.44.** The
 insertion and the removal of a splay tree ([Sleator and Tarjan
 1985](Z-bibliography.md#ref-sleator1985)).
 
@@ -3514,9 +3528,9 @@ predecessor. The private function `lowerBoundNode( k )`, under `lowerBound()`
 and `lowerBoundKey()`, splays $k$ and returns the root if its key is not
 smaller than $k$. Otherwise it splays $k$ in the right subtree of the root,
 whose keys are all larger than $k$, which brings up its smallest key
-([Algorithm 8.44](08-tree.md#alg-8-44)).
+([Algorithm 8.45](08-tree.md#alg-8-45)).
 
-<span id="alg-8-44"></span>**Algorithm 8.44.** The
+<span id="alg-8-45"></span>**Algorithm 8.45.** The
 successor search of a splay tree.
 
 --8<-- "generated/SplayTree-lowerBoundNode.pseudo.md"
@@ -3597,11 +3611,11 @@ right subtrees, prepending each node to the list built so far. Then
 `fromList()` builds the tree of the first $s$ nodes of the list as the tree
 of its first $\lfloor ( s - 1 ) / 2 \rfloor$ nodes, the next node as the
 root, and the tree of the remaining ones, advancing along the list
-([Algorithm 8.45](08-tree.md#alg-8-45)). Finally, `count()`
+([Algorithm 8.46](08-tree.md#alg-8-46)). Finally, `count()`
 returns the size of a subtree by a stack of its nodes, for the trees that do
 not store the sizes.
 
-<span id="alg-8-45"></span>**Algorithm 8.45.** The two
+<span id="alg-8-46"></span>**Algorithm 8.46.** The two
 rebuilds of a subtree: by a vector of its nodes in symmetric order ([Morin
 2013, §8.1](Z-bibliography.md#ref-morin-cpp)), and by a list of them linked
 by their right links, with no vector ([Morin 2013, exercise
@@ -3685,7 +3699,7 @@ descent, which the class keeps in a vector. If the depth $d$ of $u$
 satisfies $d \le \log_b q$, nothing else happens. Otherwise $u$ is the only
 node deeper than $\log_b q$, and the insertion climbs from $u$ along $P$ to
 an ancestor $w$ of $u$, the *scapegoat*, whose subtree it rebuilds
-perfectly balanced ([Algorithm 8.46](08-tree.md#alg-8-46)).
+perfectly balanced ([Algorithm 8.47](08-tree.md#alg-8-47)).
 We let the class choose the scapegoat by one of two rules (the enumeration
 `Scapegoats`), and the lemmas below prove both correct. Here $s( x )$ is the
 number of nodes of the subtree of $x$ after the insertion.
@@ -3707,7 +3721,7 @@ spliced), followed by a decrement of $n$. Here $q$ does not change,
 unless $2 n < q$, in which case the tree is rebuilt from its root and
 $q \gets n$.
 
-<span id="alg-8-46"></span>**Algorithm 8.46.** The insertion
+<span id="alg-8-47"></span>**Algorithm 8.47.** The insertion
 and the removal of `ScapegoatTree` ([Morin 2013,
 §8.1](Z-bibliography.md#ref-morin-cpp), the rule `HEIGHT` from [Galperin
 and Rivest 1993](Z-bibliography.md#ref-galperin1993)).
@@ -4094,13 +4108,13 @@ name the trees:
   after the operation, drawn by `uniformBelow()` from a `SplitMix64` whose
   seed is the argument of the constructor.
 
-The insertion is then that of [Algorithm 8.47](08-tree.md#alg-8-47), and
+The insertion is then that of [Algorithm 8.48](08-tree.md#alg-8-48), and
 the removal is the same with the removal of the plain tree and the sizes
 decreased; under `COUNTDOWN` the rule decrements the timer of each node it
 passes before it tests it, and under `WEIGHT` and `DYNAMITE` it reads the
 sizes after the update.
 
-<span id="alg-8-47"></span>**Algorithm 8.47.** The insertion into a tree
+<span id="alg-8-48"></span>**Algorithm 8.48.** The insertion into a tree
 of partial rebuilding ([Morin 2013, exercises 8.8 to
 8.10](Z-bibliography.md#ref-morin-cpp)); $P$ is the path of the search from
 the root, $s$ the sizes, and the rule is that of the parameter `P`.
@@ -4531,7 +4545,7 @@ An insertion adds a leaf $u$ of the new key as a binary search tree does, red,
 and no black height changes. This leaf may then break the left-leaning
 property, if $u$ is a right child, and the no-red-edge property, if the parent
 of $u$ is red, and `addFixup( u )` restores them going up ([Algorithm
-8.48](08-tree.md#alg-8-48), [Figure 8.52](08-tree.md#fig-8-52)). At each round
+8.49](08-tree.md#alg-8-49), [Figure 8.52](08-tree.md#fig-8-52)). At each round
 $u$ is red. If it is the root, it becomes black and the round ends. Otherwise,
 if the parent $w$ of $u$ has a black left child (i.e., $u$ is its right child
 and breaks the left-leaning property at $w$), `flipLeft( w )` makes $u$ the
@@ -4547,7 +4561,7 @@ and the round starts again with $u = g$. In terms of the 2-4 tree, the last
 case is the split of a node of five children, while the others end the
 insertion.
 
-<span id="alg-8-48"></span>**Algorithm 8.48.** The repair of
+<span id="alg-8-49"></span>**Algorithm 8.49.** The repair of
 the insertion of `LeftLeaningRedBlackTree` ([Morin 2013,
 §9.2.3](Z-bibliography.md#ref-morin-cpp)).
 
@@ -4605,7 +4619,7 @@ from the paths through it. Hence the removal adds the color of $w$ to
 that of $u$, which keeps all the black heights. This may leave $u$ double
 black (a black node spliced over a black child), or a black node where a
 red one was, which may break the left-leaning property at its parent.
-`removeFixup( u )` repairs both ([Algorithm 8.49](08-tree.md#alg-8-49)).
+`removeFixup( u )` repairs both ([Algorithm 8.50](08-tree.md#alg-8-50)).
 While $u$ is double black, with $w$ its parent and $v$ its sibling, one of
 four cases applies ([Morin 2013, §9.2.4](Z-bibliography.md#ref-morin-cpp)):
 
@@ -4635,7 +4649,7 @@ and the key between them, the rounds that go on are merges that leave
 their parent in underflow, and the cases that end are borrowings from a
 sibling, or merges that the parent absorbs (when $w$ is red).
 
-<span id="alg-8-49"></span>**Algorithm 8.49.** The
+<span id="alg-8-50"></span>**Algorithm 8.50.** The
 repair of the removal of `LeftLeaningRedBlackTree` ([Morin 2013,
 §9.2.4](Z-bibliography.md#ref-morin-cpp)).
 
@@ -4805,7 +4819,7 @@ all larger, and leaves $t$ empty ([Morin 2013, exercises 9.10 and
 The smallest key $m$ of $t$ is removed from $t$, and becomes a red node
 with two subtrees of the same black height, one of each tree, which keeps
 the black heights, and `addFixup()` restores the other two properties
-([Algorithm 8.50](08-tree.md#alg-8-50)). If $t$ is the
+([Algorithm 8.51](08-tree.md#alg-8-51)). If $t$ is the
 lower of the two, in black height, $m$ takes the place of the first black
 node of that black height on the right spine of this tree, which becomes
 the left child of $m$, and the root of $t$ becomes its right child.
@@ -4815,7 +4829,7 @@ $m$ joins the two roots and becomes the root (the case of [Morin 2013,
 exercise 9.10](Z-bibliography.md#ref-morin-cpp), in $O( h )$ time), and a
 $t$ of one key becomes a red leaf at the end of the right spine.
 
-<span id="alg-8-50"></span>**Algorithm 8.50.** The join of
+<span id="alg-8-51"></span>**Algorithm 8.51.** The join of
 two left-leaning red-black trees whose keys are separated.
 
 --8<-- "generated/LeftLeaningRedBlackTree-absorb.pseudo.md"
@@ -5073,7 +5087,7 @@ A search goes down one path from the root. In each node it finds by a binary
 search the first place $i$ whose key is not smaller than the one it looks for:
 either that key is the one looked for, or the search goes on in the child
 $x.c[ i ]$, or it stops at a leaf ([Algorithm
-8.51](08-tree.md#alg-8-51)). The successor search of the sorted set of [Morin
+8.52](08-tree.md#alg-8-52)). The successor search of the sorted set of [Morin
 2013, §6.2](Z-bibliography.md#ref-morin-cpp), `lowerBound( k )`, remembers on
 the same descent the last place not past the end of its node, and stops at a
 key equal to $k$. Its variants `findKey()` and `lowerBoundKey()` give the
@@ -5082,7 +5096,7 @@ Morin through `DictionarySet` ([§10.4](10-set.md#sec-10-4) and
 [§8.14](08-tree.md#sec-8-14)); `contains()` is `lookup()` with the value
 dropped.
 
-<span id="alg-8-51"></span>**Algorithm 8.51.** The search in
+<span id="alg-8-52"></span>**Algorithm 8.52.** The search in
 a B-tree ([Bayer and McCreight 1972](Z-bibliography.md#ref-bayer1972); [Cormen
 et al. 2009, §18.2](Z-bibliography.md#ref-cormen2009)).
 
@@ -5126,10 +5140,10 @@ parent between them becoming one node of $2 t - 1$ keys. A *borrowing* moves
 the key of the parent down into a node, and a key of a sibling with at least
 $t$ keys up in its place, which keeps the order of the keys. The split, which is the core of the
 insertion, is the procedure $\mathrm{split}$ of the lines 14 to 17 of
-[Algorithm 8.52](08-tree.md#alg-8-52).
+[Algorithm 8.53](08-tree.md#alg-8-53).
 
 `insert( k , v )` goes down from the root and splits each full node it is
-about to enter ([Algorithm 8.52](08-tree.md#alg-8-52)), so that the parent of
+about to enter ([Algorithm 8.53](08-tree.md#alg-8-53)), so that the parent of
 a node being split always has room for the median. Then the key goes into the
 leaf reached, which is not full, and a key already there gets the new value. A
 full root is split under a new root, which is the only way the height grows;
@@ -5150,7 +5164,7 @@ path, and it is paid at most once per node of the path.
 
 ![Figure 8.56. Exercise 14.1 of [Morin 2013](Z-bibliography.md#ref-morin-cpp) by `BTree` of degree $t = 2$ on the tree of his figure 14.2: the tree before, after `insert(1.5)` and after `insert(7.5)`; the nodes that an insertion writes are in orange, those it only reads in violet, and the edges it follows thick.](../figures/tree-btree-insert.svg){#fig-8-56}
 
-<span id="alg-8-52"></span>**Algorithm 8.52.** The insertion
+<span id="alg-8-53"></span>**Algorithm 8.53.** The insertion
 in one pass of a B-tree ([Cormen et al. 2009,
 §18.2](Z-bibliography.md#ref-cormen2009)).
 
@@ -5158,7 +5172,7 @@ in one pass of a B-tree ([Cormen et al. 2009,
 
 `remove( k )` enters only nodes with at least $t$ keys, the root apart, so that
 a key can always leave the node entered without breaking (8.9)
-([Algorithm 8.53](08-tree.md#alg-8-53)). Before going down
+([Algorithm 8.54](08-tree.md#alg-8-54)). Before going down
 into a child of $t - 1$ keys, `fill()` borrows a key from its left sibling, or
 from its right one, if that sibling has $t$ keys or more; otherwise it merges
 the child with a sibling of $t - 1$ keys. A key found in an internal node is
@@ -5170,7 +5184,7 @@ key, which goes down with them. A root left with no key gives way to its only
 child, which is the only way the height falls. The three cases (a borrowing
 from the left sibling, one from the right sibling, and a merge) are those of
 the function $\mathrm{fill}$ of the lines 12 to 19 of [Algorithm
-8.53](08-tree.md#alg-8-53).
+8.54](08-tree.md#alg-8-54).
 
 [Figure 8.57](08-tree.md#fig-8-57) solves [Morin 2013, exercise
 14.2](Z-bibliography.md#ref-morin-cpp) in the same way. Then [Figure
@@ -5183,7 +5197,7 @@ the first child of the sibling moves with the key.
 
 ![Figure 8.58. The fill of `remove()` on the tree left by [Figure 8.57](08-tree.md#fig-8-57): `remove(5)` borrows the key 2 from the left sibling of the leaf $\{ 5 \}$ through their parent, `remove(0)` merges the leaves $\{ 0 \}$ and $\{ 2 \}$ around the key 1, and `remove(6)` borrows the key 10 from the right sibling of the node $\{ 6 \}$, the subtree $\{ 11 , 12 , 13 \}$ moving with it (the edge in orange), and then replaces 6 by its predecessor 2.](../figures/tree-btree-fill.svg){#fig-8-58}
 
-<span id="alg-8-53"></span>**Algorithm 8.53.** The removal
+<span id="alg-8-54"></span>**Algorithm 8.54.** The removal
 from a B-tree, each node entered having $t$ keys at least ([Cormen et al. 2009,
 §18.3](Z-bibliography.md#ref-cormen2009)).
 
@@ -5220,7 +5234,7 @@ $2 ( h + 1 )$ nodes, still $O( \log_t n )$.
 Visiting the pairs by increasing keys takes either `forEach()` or the iterators
 of `begin()` and `end()`. Its `forEach()` is the symmetric visit of a node of
 many keys (each child $x.c[ i ]$ before the key $x.k[ i ]$, and the last child
-at the end, [Algorithm 8.54](08-tree.md#alg-8-54)), and the
+at the end, [Algorithm 8.55](08-tree.md#alg-8-55)), and the
 iterators keep the path of the places $( x , i )$ from the root. A step goes
 into the child after the key, if the node is internal, and down its leftmost
 path; in a leaf it moves to the next place, and at the end of a leaf it climbs
@@ -5238,7 +5252,7 @@ standard library run on the three. Finally, `size()`, `empty()` and `height()`
 (0 for a single leaf, $-1$ for the empty tree) complete the class, a DICTIONARY
 of `ADT.h`.
 
-<span id="alg-8-54"></span>**Algorithm 8.54.** The visit of a
+<span id="alg-8-55"></span>**Algorithm 8.55.** The visit of a
 B-tree by increasing keys, and the step of its iterator (beyond the book).
 
 --8<-- "generated/BTree-visit.pseudo.md"
@@ -5283,7 +5297,7 @@ leaves gives the pairs of an interval with no climb.
 
 A search goes down to the first child whose separator is not smaller than the
 key, which `leaf( x )` follows to the leaf where $x$ is or would be
-([Algorithm 8.55](08-tree.md#alg-8-55)). An insertion puts the pair in that
+([Algorithm 8.56](08-tree.md#alg-8-56)). An insertion puts the pair in that
 leaf. A leaf that gets $m + 1$ pairs splits them between a new leaf on its
 left, with the first $\lceil ( m + 1 ) / 2 \rceil$, and itself, and the
 largest key of the new leaf goes into the parent next to it. A parent that
@@ -5300,7 +5314,7 @@ turn under a new root.
 
 ![Figure 8.59. Figure 6.7 of [Montresor 2025](Z-bibliography.md#ref-montresor2025) by `BPlusTree` of order $m = 3$: the tree after the insertions of 10, 12, 13, 15, 8, 11 and 9, and after `insert(6)`, which splits a leaf and then the root; the nodes written are in orange, and the arrows are the list of the leaves.](../figures/tree-bplus-insert.svg){#fig-8-59}
 
-<span id="alg-8-55"></span>**Algorithm 8.55.** The search, the
+<span id="alg-8-56"></span>**Algorithm 8.56.** The search, the
 insertion and the interval of a B+-tree ([Montresor 2025,
 §6.3](Z-bibliography.md#ref-montresor2025)).
 
@@ -5313,7 +5327,7 @@ insertion and the interval of a B+-tree ([Montresor 2025,
 Since the book describes the removal only as a set of cases like those of the
 insertion, `remove()` is that of [Morin 2013, exercise
 14.8](Z-bibliography.md#ref-morin-cpp) ([Algorithm
-8.56](08-tree.md#alg-8-56)), with $h = \lceil m / 2 \rceil$
+8.57](08-tree.md#alg-8-57)), with $h = \lceil m / 2 \rceil$
 the least number of pairs of a leaf and of children of an internal node. First
 the key goes out of its leaf. A leaf left with fewer than $h$ pairs takes the
 nearest pair of a sibling that has more than $h$, through their separator,
@@ -5326,7 +5340,7 @@ left with one child gives its place to it. A separator need not be a key that
 is still in the tree, only a bound of the keys on its two sides; thus a removal
 changes no separator but those of its borrowings and merges. The fix of one
 node, which is the core, is a round of the loop of the lines 4 to 7 of
-[Algorithm 8.56](08-tree.md#alg-8-56).
+[Algorithm 8.57](08-tree.md#alg-8-57).
 
 [Figure 8.60](08-tree.md#fig-8-60) removes two keys from the tree of [Figure
 8.59](08-tree.md#fig-8-59): `remove( 9 )` leaves the leaf $\{ 10 \}$ short,
@@ -5338,7 +5352,7 @@ the separator becoming 8.
 
 ![Figure 8.60. Exercise 14.8 of [Morin 2013](Z-bibliography.md#ref-morin-cpp) by `BPlusTree` of order $m = 3$ on the second tree of [Figure 8.59](08-tree.md#fig-8-59): `remove(9)` merges two leaves and then two internal nodes, and the height falls; `remove(11)` borrows a pair from the left sibling; the nodes written are in orange.](../figures/tree-bplus-remove.svg){#fig-8-60}
 
-<span id="alg-8-56"></span>**Algorithm 8.56.** The removal
+<span id="alg-8-57"></span>**Algorithm 8.57.** The removal
 from a B+-tree by borrowings and merges ([Morin 2013, exercise
 14.8](Z-bibliography.md#ref-morin-cpp)).
 
@@ -5443,7 +5457,7 @@ prefetched at once, and their misses overlap instead of following one another,
 as in the prefetching B+-trees of [Chen, Gibbons and Mowry
 2001](Z-bibliography.md#ref-chen2001). A search of a value prefetches the
 values of the leaf too, whose line is read right after the keys ([Algorithm
-8.57](08-tree.md#alg-8-57)). Third, the nodes come from two
+8.58](08-tree.md#alg-8-58)). Third, the nodes come from two
 pools of `ObjectPool.h` on huge pages ([chapter 5](05-memory.md#ch-5)), whence
 a descent usually misses the TLB once per 2 MB rather than once per node.
 Fourth, an iterator steps to the next leaf through the children of the parent
@@ -5452,7 +5466,7 @@ places ahead to prefetch with no chase of the links between the leaves. In a
 scan of a tree larger than the cache those misses would otherwise follow one
 another.
 
-<span id="alg-8-57"></span>**Algorithm 8.57.** The search of
+<span id="alg-8-58"></span>**Algorithm 8.58.** The search of
 `BTreeMap`, with the prefetching of the next node, and the step of its iterator
 (beyond the book).
 
@@ -5460,7 +5474,7 @@ another.
 
 --8<-- "generated/BTreeMap-next.pseudo.md"
 
-An insertion ([Algorithm 8.58](08-tree.md#alg-8-58)) splits a
+An insertion ([Algorithm 8.59](08-tree.md#alg-8-59)) splits a
 full node into two halves, the largest key of the left one going up into the
 parent, which may split in turn, up to the root. On the edges of the tree,
 however, the split is uneven. An insertion past the largest key of the tree
@@ -5475,11 +5489,11 @@ the B-trees of Abseil and of the bulk loaders, and it fills the nodes that a
 sorted sequence builds, instead of leaving them half full ([Figure
 8.61](08-tree.md#fig-8-61)). The climb, which carries the rule, is the
 procedure $\mathrm{climb}$ of the lines 14 to 19 of [Algorithm
-8.58](08-tree.md#alg-8-58).
+8.59](08-tree.md#alg-8-59).
 
 ![Figure 8.61. The splits on the right edge of `BTreeMap` with $L = I = 4$ (nodes of 32 bytes, keys and values of 4 bytes): the keys $1 , \ldots , 20$ inserted in increasing order fill every leaf and the internal node, which holds $I = 4$ keys, and `insert(21)` puts the key alone in a new leaf and splits the full root so that the old node keeps 3 keys; the nodes written are in orange, and the arrows are the list of the leaves.](../figures/tree-btreemap-edge.svg){#fig-8-61}
 
-<span id="alg-8-58"></span>**Algorithm 8.58.** The insertion
+<span id="alg-8-59"></span>**Algorithm 8.59.** The insertion
 of `BTreeMap`, with the splits on the edges ([Comer
 1979](Z-bibliography.md#ref-comer1979), beyond the book).
 
@@ -5506,7 +5520,7 @@ first leaf and the first node of each level. $\square$
 With the halving split only, the same sequence would leave each node but the
 last one half full, and the tree higher. When a removal leaves a leaf with
 fewer than $\lfloor L / 2 \rfloor$ pairs, or an internal node with fewer than
-$\lfloor I / 2 \rfloor$ keys ([Algorithm 8.59](08-tree.md#alg-8-59)), it
+$\lfloor I / 2 \rfloor$ keys ([Algorithm 8.60](08-tree.md#alg-8-60)), it
 either merges the node with a sibling, if the two fit in one node, or
 moves pairs (or keys and children, through the separator) between them so
 that the left one keeps half of the two, rounded down, and the next
@@ -5515,13 +5529,13 @@ turn, and a root with a single child gives way to it. [Lemma
 8.81](08-tree.md#lem-8-81) below bounds the fill of the nodes and the height
 that follow.
 
-<span id="alg-8-59"></span>**Algorithm 8.59.** The removal of
+<span id="alg-8-60"></span>**Algorithm 8.60.** The removal of
 `BTreeMap` ([Comer 1979](Z-bibliography.md#ref-comer1979), beyond the book).
 
 --8<-- "generated/BTreeMap-remove.pseudo.md"
 
 `build()` loads a sorted sequence of pairs bottom up
-([Algorithm 8.60](08-tree.md#alg-8-60); [Graefe
+([Algorithm 8.61](08-tree.md#alg-8-61); [Graefe
 2011](Z-bibliography.md#ref-graefe2011)). It makes $\lceil n / L \rceil$ leaves
 with the pairs spread as evenly as possible, and then the levels of internal
 nodes, each with the next nodes of the level below as children and the largest
@@ -5529,7 +5543,7 @@ key below each child but the last as a separator, until a level has one node.
 Its keys must increase strictly, an audit. Since the input is read once, into a
 vector, any input iterator will do.
 
-<span id="alg-8-60"></span>**Algorithm 8.60.** The bulk loading
+<span id="alg-8-61"></span>**Algorithm 8.61.** The bulk loading
 of `BTreeMap` ([Graefe 2011](Z-bibliography.md#ref-graefe2011), beyond the
 book).
 
@@ -5544,12 +5558,12 @@ thus each node touched costs $O( I )$ time.
 Then `rank( k )`, the number of the keys smaller than $k$, is the sum of the
 counts of the children before the way down plus the place in the leaf.
 Conversely, the pair of rank $i$ from 0, `select( i )`, goes down to the child
-whose counts pass $i$ ([Algorithm 8.61](08-tree.md#alg-8-61)):
+whose counts pass $i$ ([Algorithm 8.62](08-tree.md#alg-8-62)):
 the order-statistic tree of [Cormen et al. 2022, chapter
 17](Z-bibliography.md#ref-cormen2022) on a B-tree. We remark that the insertion with no descent is
 off when `R` is on, since the counts of the right edge must grow.
 
-<span id="alg-8-61"></span>**Algorithm 8.61.** The rank and the
+<span id="alg-8-62"></span>**Algorithm 8.62.** The rank and the
 selection of `BTreeMap` with the counts (beyond the book).
 
 --8<-- "generated/BTreeMap-rank.pseudo.md"
@@ -5647,7 +5661,7 @@ leaf of the descent, and `findKey()` and `lowerBoundKey()` the addresses of the
 keys that `DictionarySet` reads. `forRange( lo , hi , f )` calls $f$ on the
 pairs with keys in $[ \mathit{lo} , \mathit{hi} )$, by increasing keys, from
 `lowerBound( lo )` along the iterators, in $O( ( L + I ) \log n + k )$ time
-([Algorithm 8.62](08-tree.md#alg-8-62)), and `forEach()` on all
+([Algorithm 8.63](08-tree.md#alg-8-63)), and `forEach()` on all
 of them. `erase( it )` is a removal followed by `lowerBound()` of the key of
 `it`, and returns the iterator on the next pair; `clear()` removes the pairs,
 at once (for keys and values with a trivial destructor the pools give all
@@ -5660,7 +5674,7 @@ contract level 3 on the trees of up to 4096 pairs, is the order of the keys and
 their bounds, the depth of the leaves, the list of the leaves, the counts and
 the padding of the unused places.
 
-<span id="alg-8-62"></span>**Algorithm 8.62.** The visit of an
+<span id="alg-8-63"></span>**Algorithm 8.63.** The visit of an
 interval of keys of `BTreeMap` (beyond the book).
 
 --8<-- "generated/BTreeMap-forRange.pseudo.md"
@@ -5802,11 +5816,11 @@ being its mirror. When $L$ is higher, the join goes down the right spine
 of $L$ until it meets a subtree $c$ whose rank is that of $R$, or close to
 it, and hangs $k$ there with $c$ and $R$ as its children. On the way back
 up, it restores the balance by at most a double rotation per level
-([Algorithm 8.63](08-tree.md#alg-8-63)). In [Figure
+([Algorithm 8.64](08-tree.md#alg-8-64)). In [Figure
 8.62](08-tree.md#fig-8-62), an AVL join ends with a double
 rotation.
 
-<span id="alg-8-63"></span>**Algorithm 8.63.** The joins of
+<span id="alg-8-64"></span>**Algorithm 8.64.** The joins of
 the AVL trees, of the Red-Black trees (after [Tarjan 1983, chapter
 4](Z-bibliography.md#ref-tarjan1983)), of the trees balanced by weight
 (after [Nievergelt and Reingold 1973](Z-bibliography.md#ref-nievergelt1973))
@@ -5909,7 +5923,7 @@ $T$ and recurs on the side of $k$, and then it joins the other side with
 $m$ and with the part of the recursion on that side. It returns the tree of
 the keys smaller than $k$, the single node of $k$ (nil if $k$ is not in
 $T$) and the tree of the keys larger than $k$ ([Algorithm
-8.64](08-tree.md#alg-8-64), [Figure
+8.65](08-tree.md#alg-8-65), [Figure
 8.63](08-tree.md#fig-8-63)). In the same way,
 `splitLast( T )` takes off the largest key, and a join with no key in
 between, `join2( L , R )`, is a `splitLast()` of $L$ followed by a join. To insert
@@ -5921,7 +5935,7 @@ keys of $[ \mathit{lo} , \mathit{hi} ]$ out of $T$ into a tree, by two
 splits, two joins that put back the nodes of the two ends, and a
 `join2()` of the two outer parts.
 
-<span id="alg-8-64"></span>**Algorithm 8.64.** Split,
+<span id="alg-8-65"></span>**Algorithm 8.65.** Split,
 join2 and the operations on one key, on the join of any scheme ([Blelloch,
 Ferizovic and Sun 2022](Z-bibliography.md#ref-blelloch2022)).
 
@@ -5991,7 +6005,7 @@ the smaller tree and split the larger one at $k$. Then we take the union of
 the two left sides and that of the two right sides, which are
 independent, and join them with $k$. Intersection and difference differ
 only in whether $k$ survives; when it does not, they join their two halves
-by `join2()` ([Algorithm 8.65](08-tree.md#alg-8-65)). On a
+by `join2()` ([Algorithm 8.66](08-tree.md#alg-8-66)). On a
 key of both trees, the union and the intersection keep the node of the
 smaller tree, with the value $f( a , b )$. Here $a$ is the value in the
 first tree and $b$ that in the second, in this order whichever tree is
@@ -6001,7 +6015,7 @@ always splits the larger tree by the keys of the smaller one, and it frees
 the nodes of $B$ and those of $A$ that leave. Similarly, an intersection
 frees the nodes of both trees that it does not keep.
 
-<span id="alg-8-65"></span>**Algorithm 8.65.** The union,
+<span id="alg-8-66"></span>**Algorithm 8.66.** The union,
 the intersection and the difference of two trees ([Blelloch, Ferizovic and
 Sun 2016](Z-bibliography.md#ref-blelloch2016); [Adams
 1993](Z-bibliography.md#ref-adams1993) for the trees balanced by weight).
@@ -6143,9 +6157,9 @@ predicate, `filter( p )` joins the filtered subtrees with the root or by
 `join2()`. Last, `mapReduce( map , reduce , id )` combines the values
 $\mathrm{map}( k , v )$ of the pairs in the order of the keys. Thus
 $\mathrm{reduce}$ needs to be associative only, with identity
-$\mathit{id}$ ([Algorithm 8.66](08-tree.md#alg-8-66)).
+$\mathit{id}$ ([Algorithm 8.67](08-tree.md#alg-8-67)).
 
-<span id="alg-8-66"></span>**Algorithm 8.66.** The batches,
+<span id="alg-8-67"></span>**Algorithm 8.67.** The batches,
 the construction from sorted nodes, the filter and the reduction
 ([Blelloch, Ferizovic and Sun 2022](Z-bibliography.md#ref-blelloch2022)).
 
@@ -6216,9 +6230,9 @@ whence the span.
 For the treaps, with the priorities independent, uniform and distinct, a
 join costs $O( 1 )$ in expectation. If the key of $v$ stays, its priority
 is higher than those of all the keys below it, and the join of the treaps
-of [Algorithm 8.63](08-tree.md#alg-8-63) returns $\mathrm{node}( L' , v ,
+of [Algorithm 8.64](08-tree.md#alg-8-64) returns $\mathrm{node}( L' , v ,
 R' )$ at once, $L'$ and $R'$ being the results of the two recursive calls.
-If it leaves, `join2( L' , R' )` of [Algorithm 8.64](08-tree.md#alg-8-64)
+If it leaves, `join2( L' , R' )` of [Algorithm 8.65](08-tree.md#alg-8-65)
 goes down the right spine of $L'$ to its last
 key $u$, and then joins the rest with $R'$ by $u$, which goes down the right
 spine of the rest (that of $L'$ without $u$, and that of the left subtree of
@@ -6374,13 +6388,13 @@ else. Its scheme is one of the empty tags `AVLBalance` (the default),
 the four, `JoinAVLTree`, `JoinRedBlackTree`, `WeightBalancedTree` and
 `JoinTreap`, and `AugmentedMap< K , V , G >` is the map augmented by `G`
 and balanced by weight, as in PAM. Its insertion and its removal are those
-of [Algorithm 8.64](08-tree.md#alg-8-64), i.e., a
+of [Algorithm 8.65](08-tree.md#alg-8-65), i.e., a
 descent followed by joins. All the operations of `Joinable` are those of
 the four schemes alike.
 
-<span id="alg-8-67"></span>**Algorithm 8.67.** The insertion and the
+<span id="alg-8-68"></span>**Algorithm 8.68.** The insertion and the
 removal of `JoinTree`, on the functions $\mathrm{insert}( T , \cdot )$ and
-$\mathrm{remove}( T , \cdot )$ of [Algorithm 8.64](08-tree.md#alg-8-64); $T$
+$\mathrm{remove}( T , \cdot )$ of [Algorithm 8.65](08-tree.md#alg-8-65); $T$
 is the root.
 
 --8<-- "generated/JoinTree-insert.pseudo.md"
@@ -6459,10 +6473,10 @@ subtrees that these pairs leave behind. Then comes the pair of $t$, and on the
 path to $\mathit{hi}$ the pairs not larger than $\mathit{hi}$ and their left
 subtrees. By combining those pieces we get `augRange( lo , hi )`;
 `augPrefix( k )` combines the pieces of the keys not larger than $k$, along
-the path to $k$ ([Algorithm 8.68](08-tree.md#alg-8-68), [Figure
+the path to $k$ ([Algorithm 8.69](08-tree.md#alg-8-69), [Figure
 8.64](08-tree.md#fig-8-64)).
 
-<span id="alg-8-68"></span>**Algorithm 8.68.** The pieces
+<span id="alg-8-69"></span>**Algorithm 8.69.** The pieces
 of a range and the prefix of an augmented map ([Sun, Ferizovic and
 Blelloch 2018](Z-bibliography.md#ref-sun2018)).
 
@@ -6582,7 +6596,7 @@ shape of the tree, since it makes no join. When `G` is an abelian group of
 exact values, it combines the augmented value of each node of the path to
 $k$ with the difference $d$ of the new value and the old one; otherwise, it
 recomputes the values of the path from the children, from $k$ up, as
-`connect()` does ([Algorithm 8.69](08-tree.md#alg-8-69)).
+`connect()` does ([Algorithm 8.70](08-tree.md#alg-8-70)).
 
 <span id="lem-8-91"></span>**Lemma 8.91.** *Let $u$ be the node of the key
 $k$, at the depth $\delta \le h$ of a tree of height $h$, with the value $w$,
@@ -6641,7 +6655,7 @@ false on the identity and *distributes* over the combination, i.e., $q( a
 \otimes b ) = q( a ) \lor q( b )$, as $q( a ) = a \ge \theta$ does on the
 maxima and $q( a ) = a > 0$ on the sums of values that are not negative.
 
-<span id="alg-8-69"></span>**Algorithm 8.69.** The assignment, by the
+<span id="alg-8-70"></span>**Algorithm 8.70.** The assignment, by the
 difference of a group or by recomputation, and the two descents by the
 augmented values of `JoinTree`.
 
@@ -6728,7 +6742,7 @@ calls it after each event; the test `join_trees.materialized-aggregate`
 also audits the observer of each kind by a `Shadow` against one that keeps
 the pairs and recomputes from scratch.
 
-<span id="alg-8-70"></span>**Algorithm 8.70.** The events and the value
+<span id="alg-8-71"></span>**Algorithm 8.71.** The events and the value
 of `MaterializedAggregate`, by the kind of `G`.
 
 --8<-- "generated/MaterializedAggregate-inserted.pseudo.md"
@@ -6861,7 +6875,7 @@ trees form the *virtual tree*, which represents the forest.
 The operation $\mathrm{access}( v )$ makes the path from the root of the tree
 of $v$ to $v$ preferred, with $v$ at the root of its splay tree and no deeper
 node on its path ([Algorithm
-8.71](08-tree.md#alg-8-71)). It splays $v$ and drops
+8.72](08-tree.md#alg-8-72)). It splays $v$ and drops
 the deeper part of its path, which becomes a separate path whose path-parent is
 $v$. Then it climbs, and at each path-parent $x$ it splays $x$ in its splay
 tree and replaces the path below $x$ by the one just built, i.e., it makes the
@@ -6871,7 +6885,7 @@ It returns the last node at which the climb entered a new path, as `lca()`
 needs. [Figure 8.65](08-tree.md#fig-8-65) follows an access on a
 tree of 10 nodes, with the splay trees that the class leaves after it.
 
-<span id="alg-8-71"></span>**Algorithm 8.71.** The
+<span id="alg-8-72"></span>**Algorithm 8.72.** The
 access of a link-cut tree and the splay of a node in its splay tree ([Sleator
 and Tarjan 1983](Z-bibliography.md#ref-sleator1983);
 [1985](Z-bibliography.md#ref-sleator1985)).
@@ -6893,7 +6907,7 @@ parent has the node as a child (`isRoot()`).
 ### 8.13.3 The operations {#sec-8-13-3}
 
 Each other operation is one or two accesses and a few pointers ([Algorithm
-8.72](08-tree.md#alg-8-72)). `evert( v )` makes $v$ the root of its
+8.73](08-tree.md#alg-8-73)). `evert( v )` makes $v$ the root of its
 tree by reversing the path from the root to $v$ after its access, with a flag
 on the root of the splay tree that the next splays push down lazily (`push()`
 swaps the children and passes the flag on). In this way the trees are unrooted
@@ -6920,7 +6934,7 @@ associative. `setValue( v , x )` accesses $v$, after which no aggregate above
 $v$ needs to change, and recomputes that of $v$; `value()`, `addNode()` (a new
 isolated node, with its number) and `n()` complete the class.
 
-<span id="alg-8-72"></span>**Algorithm 8.72.** The operations of a
+<span id="alg-8-73"></span>**Algorithm 8.73.** The operations of a
 link-cut tree on the access ([Sleator and Tarjan
 1983](Z-bibliography.md#ref-sleator1983)).
 
@@ -7232,7 +7246,7 @@ without it every walk that comes back up (the visits, the next node, the
 rebalancing of [§8.7](08-tree.md#sec-8-7) and of
 [§8.10](08-tree.md#sec-8-10)) needs a stack of the path. The library keeps
 the link in every tree with pointers, which is what lets
-[Algorithm 8.17](08-tree.md#alg-8-17) and the ranges of the
+[Algorithm 8.18](08-tree.md#alg-8-18) and the ranges of the
 standard interface run with no stack; a traversal with neither the parents
 nor a stack is also possible, by threads made temporarily in the nil links
 and removed on the way (the traversal of Morris), but the library does not
@@ -9058,7 +9072,7 @@ a proof by the lemmas cited.
 60. Add to a treap the access by rank, `get( i )`, by the sizes of the
     subtrees ([Morin 2013, exercise 7.10](Z-bibliography.md#ref-morin-cpp)).
     Solved by `Treap::select()` and `Treap::rank()` ([Algorithm
-    8.35](08-tree.md#alg-8-35)). Test: `ods_trees.ods7.2.treap-exercises`.
+    8.36](08-tree.md#alg-8-36)). Test: `ods_trees.ods7.2.treap-exercises`.
 61. Realize the LIST on a treap ordered by the positions, with `get( i )`,
     `set(i,x)`, `add( i , x )` and `remove( i )` in $O( \log n )$ expected
     time ([Morin 2013, exercise 7.11](Z-bibliography.md#ref-morin-cpp)).
@@ -9120,7 +9134,7 @@ a proof by the lemmas cited.
     instead ([Morin 2013, exercise 8.6](Z-bibliography.md#ref-morin-cpp));
     rebuild a subtree with no array, by a list of its nodes and recursion
     ([Morin 2013, exercise 8.7](Z-bibliography.md#ref-morin-cpp),
-    [Algorithm 8.45](08-tree.md#alg-8-45)); check
+    [Algorithm 8.46](08-tree.md#alg-8-46)); check
     that all the variants make the same rebuilds. Test:
     `ods_trees.ods-ex8.5.scapegoat-variants`.
 73. Analyze and realize the tree balanced by weight by partial rebuilding,
