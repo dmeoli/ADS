@@ -28,7 +28,9 @@ void DynamicCsr< I , V >::reserve( std::size_t r , std::size_t z )
 template< class I , class V >
 void DynamicCsr< I , V >::clear( void )
 {
- f_beg.resize( 1 );
+ // the first start 0, also on a vector emptied by a move, where a resize
+ // would leave it unset [see DefaultInitAllocator]
+ f_beg.assign( 1 , I( 0 ) );
  f_ind.clear();
  f_val.clear();
  }

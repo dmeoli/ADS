@@ -256,6 +256,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `DynamicCsr::clear()` sets the first start of its rows to 0 by an
+  assignment, where a resize to 1 left it unset on a vector emptied by a
+  move (the allocator of the vector does not initialize the numbers) and
+  made g++ 13 warn of a write out of the block, through the construction
+  of `DefaultInitAllocator`, on the path that grows an empty vector
 - on a target of 32 bits the hash tables, the filters and the perfect hash
   functions take the 64 bits of the hash of `FastHash`, which its new
   member `hash64()` gives whatever the width of a `std::size_t`
