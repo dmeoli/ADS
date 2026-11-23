@@ -886,7 +886,7 @@ default). Both are built on the `MinStack` of `ADS/stack/MinStack.h`
 ([§3.5](03-stack.md#sec-3-5)), the stack of [Morin 2013, exercise
 3.14](Z-bibliography.md#ref-morin-cpp) that keeps, beside the vector of
 its items, a second vector of the record lows, whose top is the least item
-of the stack ([Algorithm 3.3](03-stack.md#alg-3-3) and
+of the stack ([Algorithm 3.4](03-stack.md#alg-3-4) and
 [Lemma 3.4](03-stack.md#lem-3-4)); each of its operations costs $O( 1 )$
 time, but for the doublings of the two vectors.
 
@@ -1371,7 +1371,7 @@ that $q$ holds its old items in their old order.
 A queue also reverses a stack, since it keeps the order in which the items
 are popped: this is `reverseWithQueue()` of `ADS/stack/StackAlgorithms.h`
 ([Morin 2013, exercise 1.4](Z-bibliography.md#ref-morin-cpp)), described
-with the algorithms on a stack ([Algorithm 3.7](03-stack.md#alg-3-7)).
+with the algorithms on a stack ([Algorithm 3.8](03-stack.md#alg-3-8)).
 
 Three of the problems on the lines of a text of [Morin 2013, exercise
 1.1](Z-bibliography.md#ref-morin-cpp) call for a queue. The first writes,

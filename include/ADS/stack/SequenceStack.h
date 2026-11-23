@@ -66,14 +66,41 @@ class SequenceStack
  [[nodiscard]] bool empty( void ) const;
 
  /// the item on top, `read( head() )`
+ ///
+ /// In pseudocode (section 4.3.1), \f$ S \f$ the sequence:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{top}() \cr
+ /// 2 & \quad \textbf{return}\ S.\mathrm{read}( S.\mathrm{head}() )
+ /// \end{array}}
+ /// \f]
  /// \pre the stack is not empty
  [[nodiscard]] const Item & top( void ) const;
 
  /// removes the item on top and returns it, `remove( head() )`
+ ///
+ /// In pseudocode (section 4.3.1), the item copied before the removal,
+ /// since a SEQUENCE does not hand out the item it removes:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{pop}() \cr
+ /// 2 & \quad v \gets S.\mathrm{read}( S.\mathrm{head}() ) \cr
+ /// 3 & \quad S.\mathrm{remove}( S.\mathrm{head}() ) \cr
+ /// 4 & \quad \textbf{return}\ v
+ /// \end{array}}
+ /// \f]
  /// \pre the stack is not empty
  Item pop( void );
 
  /// puts \f$ v \f$ on top, `insert( head() , v )`
+ ///
+ /// In pseudocode (section 4.3.1):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{push}( v ) \cr
+ /// 2 & \quad S.\mathrm{insert}( S.\mathrm{head}() , v )
+ /// \end{array}}
+ /// \f]
  /// \post the stack is not empty, \f$ v \f$ on top
  void push( const Item & v );
 

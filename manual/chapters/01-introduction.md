@@ -340,7 +340,7 @@ items into the queue, and push them back in the order in which they leave
 it. Indeed, the queue keeps the order of the pops, i.e., from the top down,
 and the first item pushed back (the old top) ends at the bottom; hence, the
 order is reversed, in $O( n )$ time
-([Algorithm 3.7](03-stack.md#alg-3-7)).
+([Algorithm 3.8](03-stack.md#alg-3-8)).
 
 ### 1.3.2 Sequences and lists {#sec-1-3-2}
 
