@@ -51,9 +51,9 @@ give for use. It is *internal* when a block is larger than its request
 a header). It is *external* when the free memory is in pieces too small
 for a request, which then fails (or takes new memory from the system)
 although the free words would be enough. Merging adjacent free blocks
-(*coalescing*) fights the external fragmentation; giving each request a
-block of one of a few sizes (a *size class*) removes it within a class, at
-the price of an internal one; the allocators of the chapter are points
+(*coalescing*) fights the external fragmentation, while giving each request
+a block of one of a few sizes (a *size class*) removes it within a class,
+at the price of an internal one. The allocators of the chapter are points
 between the two extremes (cf. [Table 5.1](05-memory.md#tab-5-1)). Throughout
 the chapter, $n$ (or $b$) is the size of a request and $a$ its alignment,
 $s( p )$ is the number of words of the block at the address $p$, $F$ is a
@@ -313,7 +313,7 @@ $\beta$ the number of the blocks.
 We call an *epoch* of the arena the time from its construction, or from a
 call of `clear()`, to the next call of `clear()` (or to the destruction).
 Since `make()` builds the object as `T( args... )`, a call with no
-arguments value-initializes it in every epoch, so that an object of trivial
+arguments value-initializes it in each epoch. Hence an object of trivial
 type made on a place of an old epoch is all zeros, whatever the object of
 that epoch held (the test `engineered_memory.pool-epochs-value-init`
 checks it, and the same holds for `ObjectPool` below, on a freed slot as on
@@ -325,7 +325,7 @@ in an epoch that return an object, and any number of calls that throw, an
 satisfies $z = c n + \mathit{used}$, with $0 \le \mathit{used} \le n$
 (and $z = 0$ while it has no block); the object made by the $j$-th of these
 calls (from $j = 0$) is at the place $j \bmod n$ of the block
-$\lfloor j / n \rfloor$ and keeps that address until the epoch ends.
+$\lfloor j / n \rfloor$, and it keeps that address until the epoch ends.
 Hence the epoch uses $\lceil z / n \rceil$ blocks, or one more with no
 object in it, and the arena takes a new block from `A` only when all the
 blocks it has are in use in the epoch. Each `make()` costs $O( 1 )$ time,
@@ -365,11 +365,10 @@ nodes of a search, which keep a pointer to the node they come from). The
 arena also gives a random access iterator over the objects in the order
 in which they were made: the object of index $j$ is in the place
 $j \bmod n$ of the block $\lfloor j / n \rfloor$, and a new object only
-moves the end of the sequence, by [Lemma 5.4](05-memory.md#lem-5-4). An iterator holds the address of the vector of the
-blocks, not that of the array
-of its elements, which an append of a block may move,
-and it reads a block through that vector at each access; hence, the
-iterators stay valid for the whole life of the arena, as the pointers that
+moves the end of the sequence, by [Lemma 5.4](05-memory.md#lem-5-4). An
+iterator holds the address of the vector of the blocks (rather than that
+of the array of its elements, which an append of a block may move), and it
+reads a block through that vector at each access. Hence, the iterators stay valid for the whole life of the arena, as the pointers that
 `make()` returns do, whatever blocks are appended. As a container in the sense of
 the standard library, the arena has the types `value_type`,
 `size_type`, `difference_type`, `reference`, `const_reference`, `iterator`
@@ -448,10 +447,9 @@ slots of 8 bytes, or one of 16 or more); the pool reaches all its blocks
 from the last one, and needs no vector for them. In fact, the pool is seven
 words (the free list, the place $\mathit{next}$ and the end of the block in
 use, the last block, the first block kept by `clear()` and not yet used
-again, $n$ and the number of objects alive), besides its
-allocator, which takes no room when it has no state (as
-`HugePageAllocator`); it allocates only its blocks
-([Figure 5.4](05-memory.md#fig-5-4)).
+again, $n$ and the number of objects alive), besides its allocator, which
+takes no room when it has no state (as `HugePageAllocator`). It allocates
+only its blocks ([Figure 5.4](05-memory.md#fig-5-4)).
 
 ![Figure 5.4. An `ObjectPool` with blocks of 1, 2 and 4 slots, each one after its header `H` (linked to the header of the block before), before and after `free(e)`; the slots are numbered below the cells, a free slot holds the number of the next free slot (`-` for nil), and the last block has its place $\mathit{next}$ at the slot 6.](../figures/memory-pool.svg){#fig-5-4}
 
@@ -757,8 +755,8 @@ $2^{21}$ bytes, aligned to their size so that they may lie on huge pages
 ([§5.9](05-memory.md#sec-5-9)), and cuts them into *pages* of $2^{16}$ bytes.
 A page holds the slots of one class after a header of 64 bytes. The header
 keeps the free list of the page, its first slot never given, the end of its
-slots, the number of its slots given and not freed, its class and its owner;
-it also keeps the link of the page on the list
+slots, the number of its slots given and not freed, its class and its
+owner. It also keeps the link of the page on the list
 of the pages of its class with free slots, and whether the page is *listed*
 (current, or on that list). Since the pages are aligned to their size, the
 page of a slot $p$ is found by masking the low 16 bits of its address,
@@ -782,9 +780,9 @@ the page or by the bump of its pointer. When the page is exhausted, it is
 marked as not listed, and the class moves to the next page of its list
 $A_c$, or to a new page cut from the segment (a new segment when it is
 used up). A free pushes the slot on the list of its page, and puts the
-page back on $A_c$ if it was not listed; the free of the last slot given of
-a page empties its list instead and puts its pointer back at its first
-slot, so that a page emptied is cut again in the order of its addresses,
+page back on $A_c$ if it was not listed. The free of the last slot given
+of a page empties its list instead and puts its pointer back at its first
+slot, and hence a page emptied is cut again in the order of its addresses,
 as the pages of [Leijen et al. 2019](Z-bibliography.md#ref-leijen2019)
 that go back to the bump when they are free
 ([Algorithm 5.6](05-memory.md#alg-5-6) and
@@ -813,13 +811,13 @@ than $( c + 1 ) g$ bytes at its end.*
 
 *Proof.* A page enters $A_c$ only in `give()`, when a slot is pushed on
 its free list while the page is not listed. A page is not listed only
-after `more()` has found it exhausted, when it was current; from then on,
+after `more()` has found it exhausted, when it was current. From then on,
 no slot of it is given until it is popped from $A_c$ and becomes current
 again, while a free adds a slot to its list or, at the last slot given,
 makes all of its slots free again by its pointer. A new page has at least 8
 slots, since the classes are at most $( 2^{16} - 64 ) / 8$ bytes (a static
 assertion checks it). Therefore, the round of `more()` after a page was
-popped from $A_c$, or cut new, finds a slot. (At the start, every class
+popped from $A_c$, or cut new, finds a slot. (At the start, each class
 has as current page a sentinel with no slot, which the first round leaves
 at once.) A page enters $A_c$ only when it is not listed, and is listed
 from then on; hence, no page is twice on $A_c$, nor on $A_c$ while it is
@@ -1126,7 +1124,7 @@ request of at least one huge page ($P = 2^{21}$ bytes) a block aligned to
 $P$ and rounded up to whole huge pages; a smaller request goes to
 `std::allocator` ([Algorithm 5.9](05-memory.md#alg-5-9) and [Figure
 5.8](05-memory.md#fig-5-8)). It does not advise the kernel, since neither
-the standard library nor Boost nor hwloc can ask for huge pages; under the
+the standard library nor Boost nor hwloc has a call for huge pages; under the
 policy `madvise`, and on the other systems, the large requests are thus only
 aligned. In any case, the allocators have no state, and are all equal,
 also when they are of different types, the allocator of `T` being built from
@@ -1195,20 +1193,34 @@ class HugePageAllocator
 **The prefetch.** A structure that knows the next address before it needs
 it (the slots of a group of a hash table while its control bytes are
 compared, the next node of a search, the item a few steps ahead of a scan)
-asks the processor to bring that line into its caches, and the load issued
+issues a prefetch of that line into the caches of the processor, and the load issued
 later finds it there. `ADS::prefetch( p )` and `ADS::prefetch( p , l )` of
 `memory/Prefetch.h` are the forms on a pointer of the customization point
 `prefetch` of `Capabilities.h`, both `noexcept`. Every prefetch of ADS goes
 through `detail::prefetchLine()`, which they call, and this is the only
-place that issues one. A prefetch never faults, whatever $p$ points to, and
-changes nothing that the program can read. With `ADS_WITH_HIGHWAY` it is
-`hwy::Prefetch()` of Google Highway, which keeps the line in every level of
-the cache, and without it, it does nothing. The `Locality` (`None`, `Low`,
-`Moderate`, `High`) tells how soon and how often the line is read again.
-Highway has a single level and no prefetch for writing, hence every
-locality and every prefetch for a write give the same instruction for now;
-we leave to the next campaign on an idle machine whether the hints of the
-processor are worth a backend of their own.
+place that issues one. With `ADS_WITH_HIGHWAY` it is `hwy::Prefetch()` of
+Google Highway, which keeps the line in all the levels of the cache, and
+without it, it does nothing. The `Locality` (`None`, `Low`, `Moderate`,
+`High`) gives how soon and how often the line is read again. Highway has a
+single level and no prefetch for writing, and hence all the localities and
+the prefetches for a write give the same instruction (whether the separate
+hints of the processors would be worth a backend of their own has not been
+measured).
+
+<span id="lem-5-12"></span>**Lemma 5.12.** *For any pointer $p$ (null,
+past the end of an array, or to memory freed) and any locality $l$,
+`prefetch( p )` and `prefetch( p , l )` take $O( 1 )$ time, throw no
+exception, and change no value that the program can read; hence adding or
+removing a prefetch in a structure changes its time, but none of its
+results.*
+
+*Proof.* Both forms are the `operator()` of `detail::Prefetch` in
+`Capabilities.h`, which calls `detail::prefetchLine( p , l )`. This
+function is `noexcept`, does nothing without `ADS_WITH_HIGHWAY`, and
+otherwise makes one call of `hwy::Prefetch()`, which issues the prefetch
+instruction of the processor (on x86-64 and on AArch64 a hint that raises
+no fault and writes no register or memory that the program reads), and
+ignores $l$. $\square$
 
 ```cpp
 enum class Locality : int { None = 0 , Low = 1 , Moderate = 2 , High = 3 };
@@ -1234,16 +1246,16 @@ A field is of the type `CellHeap::Value` (a `long`); the constant `nil` is
 $-1$, `atom( k )` gives the atom $k \ge 0$ and `isCell( v )` is true when $v$
 is the address of a cell. We read the fields of a cell in use by `car( c )`
 and `cdr( c )`, and write them by `setCar( c , v )` and `setCdr( c , v )`,
-whose precondition is that $c$ is a cell of the heap in use; `addRoot( c )`,
-with the same precondition, adds one more occurrence of the cell $c$ to the
+whose precondition is that $c$ is a cell of the heap in use. With the same
+precondition, `addRoot( c )` adds one more occurrence of the cell $c$ to the
 roots, and `removeRoot( c )` removes one of them, if there is one (and does
 nothing otherwise). Finally, `freeCells()` is the number of the free cells,
 and `collect()` returns the number of the cells that it frees, i.e., of the
 cells in use before it that are unreachable. The heap relies on the program
 for what it does not check: the fields of the cells in use hold only nil,
-atoms and cells in use, and a root stays a cell in use until it is removed (a
-free cell named by a root, for instance, would bring the free list into the
-marking, which is why `addRoot()` refuses a free cell).
+atoms and cells in use, and a root stays a cell in use until it is removed.
+A free cell named by a root, for instance, would bring the free list into
+the marking, and for this reason `addRoot()` refuses a free cell.
 
 A marking by a visit in depth needs a stack as deep as the longest path of
 cells, which a collector (run when the memory is exhausted) cannot
@@ -1267,7 +1279,7 @@ reversed pointer of the cell $x$ is in its `cdr`.
 
 --8<-- "generated/CellHeap-collect.pseudo.md"
 
-<span id="lem-5-12"></span>**Lemma 5.12.** *During the marking by pointer
+<span id="lem-5-13"></span>**Lemma 5.13.** *During the marking by pointer
 reversal, let $\mathrm{back}( x )$ be the field of the cell $x$ named by
 $\mathit{side}( x )$. Then the sequence*
 
@@ -1304,7 +1316,7 @@ with no space besides one mark bit and one side bit per cell, and a
 collection costs $O( n + r )$ time on a heap of $n$ cells with $r$
 occurrences of roots.*
 
-*Proof.* By [Lemma 5.12](05-memory.md#lem-5-12), the marking of a root
+*Proof.* By [Lemma 5.13](05-memory.md#lem-5-13), the marking of a root
 ends when $p$ is nil, i.e., with an empty path, and hence with all the
 fields restored. A cell is marked when the visit enters it, and a marked
 cell is never entered again; hence, only reachable cells are marked, since
@@ -1326,7 +1338,7 @@ The code of the marking is made of three loops, one for each move of the
 induction, i.e., the loops of lines 10 and 13 and the move of line 17 of
 `mark()` in [Algorithm 5.10](05-memory.md#alg-5-10).
 
-<span id="lem-5-13"></span>**Lemma 5.13.** *A `cons()` costs $O( 1 )$
+<span id="lem-5-14"></span>**Lemma 5.14.** *A `cons()` costs $O( 1 )$
 time, but for the collection. If each collection frees at least $\alpha n$
 cells, for a constant $0 < \alpha \le 1$, and the roots are $O( n )$, then
 any sequence of $s$ calls of `cons()` costs $O( s / \alpha + n )$ time,
@@ -1479,11 +1491,44 @@ arena of bytes of any type and alignment, which is a resource of the
 `PoolAllocator` of [§5.7](05-memory.md#sec-5-7). A request of $b$ bytes
 aligned to $a$ moves a pointer in the current block, and a block of $\max( n ,
 b + a )$ bytes is taken from the allocator of the resource when the request
-does not fit. A deallocation leaves the block as it is, and the blocks go back
-only with `release()` or with the resource, as those of
-`std::pmr::monotonic_buffer_resource`, though with no virtual call. The other
-way round, `PmrResource` of `ADS/interop/std/Pmr.h` makes any resource of the
-library, `ArenaResource` included, a `std::pmr::memory_resource`. For
+does not fit ([Algorithm 5.11](05-memory.md#alg-5-11)). A deallocation
+leaves the block as it is, and the blocks go back only with `release()` or
+with the resource, as those of `std::pmr::monotonic_buffer_resource`,
+though with no virtual call. The other way round, `PmrResource` of
+`ADS/interop/std/Pmr.h` makes any resource of the library, `ArenaResource`
+included, a `std::pmr::memory_resource`, whose `do_allocate()` and
+`do_deallocate()` call `allocate( b , a )` and `deallocate( p , b , a )` of
+the resource.
+
+<span id="alg-5-11"></span>**Algorithm 5.11.** A request to
+`ArenaResource` (the arena of [Hanson 1990](Z-bibliography.md#ref-hanson1990),
+beyond the book), with $[ \mathit{next} , \mathit{end} )$ the free bytes
+of the current block.
+
+--8<-- "generated/Arena-ArenaResource-allocate.pseudo.md"
+
+<span id="lem-5-15"></span>**Lemma 5.15.** *Let $a$ be a power of 2.
+(i) `allocate( b , a )` of `ArenaResource` returns a pointer $p$ that is a
+multiple of $a$ and such that $[ p , p + b )$ lies in a block of the
+resource and meets the bytes returned by no other call since the
+construction or the last `release()`. (ii) It takes $O( 1 )$ time besides
+at most one call of the allocator of the blocks, and if it throws, the
+resource is as it was. (iii) A `PmrResource` on a resource $R$ returns the
+memory that $R$ returns and gives back to $R$ what it is given, and two of
+them are equal if and only if they adapt the same object $R$.*
+
+*Proof.* (i) Line 2 rounds $\mathit{next}$ up by fewer than $a$ bytes to
+a multiple of $a$, and line 3 keeps $p$ only if $p + b \le \mathit{end}$.
+Otherwise the new block has at least $b + a$ bytes after its header, and
+its first byte aligned to $a$ leaves room for $b$ more. Since line 4 sets
+$\mathit{next}$ past the bytes returned, and no block is given back before
+`release()` or the destructor, the ranges returned are disjoint. (ii) The
+code makes a constant number of steps, and before calling the allocator it
+only tests that $b + a$ bytes and the header fit in a `std::size_t`
+(throwing `std::bad_alloc` otherwise); no member changes before the
+allocator returns. (iii) `do_allocate()` and `do_deallocate()` forward
+their arguments to the resource, and `do_is_equal()` compares the pointers
+to the resources of the two adapters. $\square$ For
 instance, with the headers `ADS/memory/Arena.h` and
 `ADS/memory/PoolAllocator.h`, a table on a monotonic buffer and a heap on an
 arena are
