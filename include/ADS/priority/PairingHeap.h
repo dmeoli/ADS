@@ -51,6 +51,13 @@
  * come from the allocator `A`, `HugePageAllocator` by default; the heap
  * moves with its pool and its allocator, and is never copied.
  *
+ * `IntrusivePairingHeap` is the two-pass heap on the nodes of the caller,
+ * with the same trees (their linking, the two passes and the cut are shared
+ * by the two classes) and no pool: it is only its root, so that a program
+ * keeps many small heaps of the nodes of one array and moves a node from one
+ * to another with no allocation (e.g., the edges of a graph in the heaps of
+ * their classes, in `PerfectMatching.h`).
+ *
  * The contracts [see `Contract.h`]: `min()`, `minPriority()` and `deleteMin()`
  * need a heap that is not empty, `decrease()` a handle of a node of this
  * heap and a priority not larger than its own, `increase()` one not
@@ -116,6 +123,37 @@
 
 namespace ADS
 {
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE TREES OF THE HEAPS -------------------------*/
+/*--------------------------------------------------------------------------*/
+
+namespace detail
+{
+
+/// the operations on the trees of a pairing heap, for any node \f$ N \f$
+/// with the members `priority`, `child`, `next` and `prev` of
+/// `PairingHeap::Node`, shared by `PairingHeap` and `IntrusivePairingHeap`
+struct PairingTrees
+{
+ /// the root of the two trees a and b, the other its leftmost child
+ template< class N >
+ static N * link( N * a , N * b );
+
+ /// the trees of the list from x joined by two passes
+ template< class N >
+ static N * twoPass( N * x );
+
+ /// the trees of the list from x joined by multiple passes
+ template< class N >
+ static N * multiPass( N * x );
+
+ /// x, not the root, leaves its list
+ template< class N >
+ static void cut( N * x );
+ };
+
+}  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS PairingHeap -----------------------------*/
@@ -347,16 +385,22 @@ class PairingHeap
 /*--------------------------------------------------------------------------*/
  private:
  /// the root of the two trees a and b, the other its leftmost child
- static Node * link( Node * a , Node * b );
+ static Node * link( Node * a , Node * b ) {
+  return( detail::PairingTrees::link( a , b ) );
+  }
 
  /// the trees of the list from x joined by two passes
- static Node * twoPass( Node * x );
+ static Node * twoPass( Node * x ) {
+  return( detail::PairingTrees::twoPass( x ) );
+  }
 
  /// the trees of the list from x joined by multiple passes
- static Node * multiPass( Node * x );
+ static Node * multiPass( Node * x ) {
+  return( detail::PairingTrees::multiPass( x ) );
+  }
 
  /// x, not the root, leaves its list
- static void cut( Node * x );
+ static void cut( Node * x ) { detail::PairingTrees::cut( x ); }
 
  /// f_min out of the heap, the children joined, the size unchanged
  void unlinkMin( void );
@@ -384,6 +428,52 @@ class PairingHeap
  Pool f_pool;  ///< the nodes
 
  };  // end( class PairingHeap )
+
+/*--------------------------------------------------------------------------*/
+/*---------------------- CLASS IntrusivePairingHeap ------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// a two-pass pairing heap on the nodes of the caller, beyond the book: the
+/// trees of `PairingHeap`, with no pool and no item, the node \f$ N \f$
+/// having the members `priority`, `child`, `next` and `prev` of
+/// `PairingHeap::Node` and a node being in at most one heap at a time
+///
+/// The heap is only its root, so that a program keeps many small heaps of
+/// the nodes of one array (e.g., the edges of a graph, each in the queue of
+/// its class) and moves a node from one to another by `erase()` and
+/// `insert()`, with no allocation; the costs are those of `PairingHeap`.
+/// The contracts: `min()` needs a heap that is not empty, `insert()` a node
+/// with no link, `erase()` a node of this heap.
+template< class N >
+class IntrusivePairingHeap
+{
+
+/*--------------------------------------------------------------------------*/
+ public:
+ /// whether the heap has no node
+ [[nodiscard]] bool empty( void ) const { return( f_root == nullptr ); }
+
+ /// the node of smallest priority
+ /// \pre the heap is not empty
+ [[nodiscard]] N * min( void ) const;
+
+ /// inserts the node x, linked with the root
+ /// \pre x has no link
+ void insert( N * x );
+
+ /// removes the node x, wherever it is, the trees of its children joined
+ /// by two passes in its place, and leaves it with no link
+ /// \pre x is a node of this heap
+ void erase( N * x );
+
+ /// forgets all the nodes, whose links the caller resets
+ void clear( void ) { f_root = nullptr; }
+
+/*--------------------------------------------------------------------------*/
+ private:
+ N * f_root = nullptr;  ///< the root
+
+ };  // end( class IntrusivePairingHeap )
 
 /// the items of a pairing heap stay in their nodes, which the handles point
 /// to [see `Capabilities.h`]

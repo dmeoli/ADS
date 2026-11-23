@@ -248,9 +248,8 @@ void PairingHeap< T , P , Aux , A >::detach( Node * x )
 /*------------------------------ THE TREES ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class T , std::totally_ordered P , bool Aux , class A >
-inline typename PairingHeap< T , P , Aux , A >::Node *
-PairingHeap< T , P , Aux , A >::link( Node * a , Node * b )
+template< class N >
+inline N * detail::PairingTrees::link( N * a , N * b )
 {
  if( b->priority < a->priority )
   std::swap( a , b );
@@ -262,29 +261,28 @@ PairingHeap< T , P , Aux , A >::link( Node * a , Node * b )
  return( a );
  }
 
-template< class T , std::totally_ordered P , bool Aux , class A >
-inline typename PairingHeap< T , P , Aux , A >::Node *
-PairingHeap< T , P , Aux , A >::twoPass( Node * x )
+template< class N >
+inline N * detail::PairingTrees::twoPass( N * x )
 {
  if( ! x )
   return( nullptr );
- Node * acc = nullptr;  // the pairs, the last first
+ N * acc = nullptr;  // the pairs, the last first
  while( x ) {
-  Node * a = x;
-  Node * b = a->next;
+  N * a = x;
+  N * b = a->next;
   if( ! b ) {
    a->next = acc;
    acc = a;
    break;
    }
   x = b->next;
-  Node * t = link( a , b );
+  N * t = link( a , b );
   t->next = acc;
   acc = t;
   }
- Node * r = acc;  // from the right
+ N * r = acc;  // from the right
  for( acc = acc->next ; acc ; ) {
-  Node * n = acc->next;
+  N * n = acc->next;
   r = link( r , acc );
   acc = n;
   }
@@ -292,18 +290,17 @@ PairingHeap< T , P , Aux , A >::twoPass( Node * x )
  return( r );
  }
 
-template< class T , std::totally_ordered P , bool Aux , class A >
-typename PairingHeap< T , P , Aux , A >::Node *
-PairingHeap< T , P , Aux , A >::multiPass( Node * x )
+template< class N >
+N * detail::PairingTrees::multiPass( N * x )
 {
- Node * tail = x;
+ N * tail = x;
  while( tail->next )
   tail = tail->next;
  while( x != tail ) {  // a queue: two from the front,
-  Node * a = x;        // their link to the back
-  Node * b = a->next;
-  Node * n = b->next;
-  Node * t = link( a , b );
+  N * a = x;           // their link to the back
+  N * b = a->next;
+  N * n = b->next;
+  N * t = link( a , b );
   t->next = nullptr;
   if( b == tail )
    x = tail = t;
@@ -317,8 +314,8 @@ PairingHeap< T , P , Aux , A >::multiPass( Node * x )
  return( x );
  }
 
-template< class T , std::totally_ordered P , bool Aux , class A >
-inline void PairingHeap< T , P , Aux , A >::cut( Node * x )
+template< class N >
+inline void detail::PairingTrees::cut( N * x )
 {
  if( x->prev->child == x )
   x->prev->child = x->next;
@@ -326,6 +323,40 @@ inline void PairingHeap< T , P , Aux , A >::cut( Node * x )
   x->prev->next = x->next;
  if( x->next )
   x->next->prev = x->prev;
+ x->next = x->prev = nullptr;
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------ THE INTRUSIVE PAIRING HEAP ----------------------*/
+/*--------------------------------------------------------------------------*/
+
+template< class N >
+inline N * IntrusivePairingHeap< N >::min( void ) const
+{
+ ADS_PRE( ! empty() );
+ return( f_root );
+ }
+
+template< class N >
+inline void IntrusivePairingHeap< N >::insert( N * x )
+{
+ ADS_PRE( ( x != nullptr ) && ! x->child && ! x->next && ! x->prev );
+ f_root = f_root ? detail::PairingTrees::link( f_root , x ) : x;
+ }
+
+template< class N >
+inline void IntrusivePairingHeap< N >::erase( N * x )
+{
+ ADS_PRE( ( x != nullptr ) && ! empty() );
+ N * t = detail::PairingTrees::twoPass( x->child );
+ x->child = nullptr;
+ if( x == f_root )
+  f_root = t;
+ else {
+  detail::PairingTrees::cut( x );
+  if( t )
+   f_root = detail::PairingTrees::link( f_root , t );
+  }
  x->next = x->prev = nullptr;
  }
 

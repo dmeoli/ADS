@@ -207,6 +207,7 @@ graph/MaxFlow.h                       base
 graph/MinimumSpanningTree.h           base
 graph/Observable.h                    advanced
 graph/Paths.h                         base
+graph/PerfectMatching.h               advanced
 graph/PointerGraph.h                  advanced
 graph/Properties.h                    base
 graph/PushRelabel.h                   advanced the PUSH_RELABEL of

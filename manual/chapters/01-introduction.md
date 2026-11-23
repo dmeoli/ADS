@@ -1951,7 +1951,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `priority/MeldableHeap.h` | base | `MeldableHeap` | [9](09-priority.md#ch-9) |
 | `priority/MinMaxHeap.h` | advanced | `MinMaxHeap`, `IntervalHeap` | [9](09-priority.md#ch-9) |
 | `priority/MultiwayMerge.h` | advanced | `FlatLoserTree` | [9](09-priority.md#ch-9) |
-| `priority/PairingHeap.h` | advanced | `PairingHeap` | [9](09-priority.md#ch-9) |
+| `priority/PairingHeap.h` | advanced | `PairingHeap`, `IntrusivePairingHeap` | [9](09-priority.md#ch-9) |
 | `priority/RadixHeap.h` | advanced | `RadixHeap` | [9](09-priority.md#ch-9) |
 | `priority/SequenceHeap.h` | advanced | `SequenceHeap` | [9](09-priority.md#ch-9) |
 | `priority/TreePriorityQueue.h` | base | `TreePriorityQueue` | [9](09-priority.md#ch-9) |
@@ -2001,6 +2001,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `graph/MaxFlow.h` | base | `FlowNetwork`, `BoundedEdge` | [14](14-graph.md#ch-14) |
 | `graph/MinimumSpanningTree.h` | base | `WeightedEdge`, `MergeCounts` | [14](14-graph.md#ch-14) |
 | `graph/Observable.h` | advanced | `NodeInserted`, `NodeDeleted`, `EdgeInserted`, `EdgeDeleted`, `WeightChanged`, `GraphEvents`, `coalesce_traits`, `ObservedGraph`, `Observable` | [14](14-graph.md#ch-14) |
+| `graph/PerfectMatching.h` | advanced | `BlossomVOptions`, `PerfectMatchingResult` | [14](14-graph.md#ch-14) |
 | `graph/PointerGraph.h` | advanced | `PointerGraph` | [14](14-graph.md#ch-14) |
 | `graph/Reoptimization.h` | advanced | `EventQueue`, `ShortestPathsObserver`, `SpanningForestObserver`, `AugmentEngine`, `MaxFlowObserver`, `AssignmentObserver` | [14](14-graph.md#ch-14) |
 | `graph/ShortestPaths.h` | base | `ShortestPathTree`, `FrontierCounts`, `PriorityFrontier`, `QueueFrontier`, `StackFrontier`, `DequeFrontier` | [14](14-graph.md#ch-14) |

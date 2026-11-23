@@ -1499,7 +1499,7 @@ longest common prefixes). Closer sources come from a walk of the suffix array
 away from the rank of $i$, by decreasing lcp, for at most
 `LZBicriteriaModel::candidates` suffixes. Also, each class inherits from $i -
 1$ the copy one symbol shorter from the same distance (line 15 of [Algorithm
-21.23](21-compression.md#alg-21-Zlz3)). Hence, the lengths of the bounded windows
+21.Zlz3](21-compression.md#alg-21-Zlz3)). Hence, the lengths of the bounded windows
 are exact when the walk ends before its bound, and possibly too short
 otherwise, and what follows holds w.r.t. the best parse of this graph, which
 need not be the best parse of the text.
@@ -1590,7 +1590,7 @@ $w_\lambda( \pi_A ) + w_\lambda( \pi_B ) = w_\lambda( \pi_1 ) + w_\lambda(
 \pi_2 )$. If $v$ is inside the arc $( v' , v'' )$ of $\pi_1$, this arc is
 replaced by $( v' , v )$ in $\pi_A$ and by $( v , v'' )$ in $\pi_B$, and since
 $w_\lambda( v' , v ) \le w_\lambda( v' , v'' )$ by (i) of [Lemma
-21.13](21-compression.md#lem-21-Zlz1) one has $w_\lambda( \pi_A ) + w_\lambda(
+21.Zlz1](21-compression.md#lem-21-Zlz1) one has $w_\lambda( \pi_A ) + w_\lambda(
 \pi_B ) \le w_\lambda( \pi_1 ) + w_\lambda( \pi_2 ) + c_{\max} + \lambda
 r_{\max}$; the case of $v$ inside an arc of $\pi_2$ is symmetric. Hence
 $\Lambda( \pi_A , \lambda ) + \Lambda( \pi_B , \lambda ) \le 2 \varphi( \lambda
@@ -1613,7 +1613,7 @@ paper takes $\sigma = 2 t_{\max}$ when the time is bounded; the following bound
 covers any slack, $\sigma = 0$ (a parse within the bound) included.
 
 <span id="thm-21-Zlz4"></span>**Theorem 21.Zlz4.** *If the loop of [Algorithm
-21.23](21-compression.md#alg-21-Zlz3) stops at line 8 with the multiplier
+21.Zlz3](21-compression.md#alg-21-Zlz3) stops at line 8 with the multiplier
 $\lambda^*$, then the parse $\pi$ returned with the slack $\sigma$ has $r( \pi
 ) \le R + \sigma$ and*
 
@@ -1633,7 +1633,7 @@ $R$, and $\pi_L$, the swap at $n$. If $r( \pi_L ) \le R + \sigma$, then $c(
 \lambda^* )$, since $r( \pi_L ) > R$. Otherwise, as $v$ runs over the places of
 the two paths from 0 to $n$, the weight $r$ of the swap goes from at most $R$
 to more than $R + \sigma$ by steps of at most $r_{\max}$ ([Lemma
-21.14](21-compression.md#lem-21-Zlz2), (ii)); hence some swap $\pi'$ has $R +
+21.Zlz2](21-compression.md#lem-21-Zlz2), (ii)); hence some swap $\pi'$ has $R +
 \sigma - r_{\max} < r( \pi' ) \le R + \sigma$, and by (i) of the same lemma $c(
 \pi' ) \le \varphi( \lambda^* ) + c_{\max} + \lambda^* ( R + r_{\max} - r( \pi'
 ) ) < \varphi( \lambda^* ) + c_{\max} + \lambda^* ( 2 r_{\max} - \sigma )$. The
@@ -1765,7 +1765,7 @@ replaces each symbol with its place in a list of the alphabet, and then moves
 it to the front. Hence the runs of few symbols of $L$ become runs of small
 integers (on the alphabet abcno, bananacocco becomes 1 1 3 1 1 1 3 4 1 0 1), in
 $O( \sigma )$ time per symbol here ([Algorithm
-21.25](21-compression.md#alg-21-24)).
+21.24](21-compression.md#alg-21-24)).
 
 <span id="lem-21-15"></span>**Lemma 21.15.** *Writing the place $p$ of each
 symbol in the move-to-front of $s$ as $\gamma( p + 1 )$ takes at most
@@ -2044,7 +2044,7 @@ $\mathit{SA}[ 3 ] = 0$. By (21.23) with $y = 0 = \mathit{SA}[ p_3 ]$, $\phi( 0
 and 7. All of it takes $O( r )$ words: 5 sequences of $r$ integers of at most
 $\lceil \log_2 n \rceil$ bits, and the heads, whose rank is that of
 `CompactRankSelect`, the smallest ([Algorithm
-21.29](21-compression.md#alg-21-28)). We build the transform from the suffix
+21.28](21-compression.md#alg-21-28)). We build the transform from the suffix
 array, in $O( n )$ time and words, while in the literature the r-index is built
 in $O( r )$ words from the run-length transform, which `RIndex` does not
 attempt.

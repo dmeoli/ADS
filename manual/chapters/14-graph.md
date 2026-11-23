@@ -6,7 +6,8 @@
 `GridGraph.h`, `Paths.h`, `Properties.h`, `ShortestPaths.h`,
 `AllPairsShortestPaths.h`, `MinimumSpanningTree.h`, `MaxFlow.h`,
 `PushRelabel.h`, `FlowApplications.h`, `Matching.h`, `BlossomMatching.h`,
-`Assignment.h`, `EulerianCycle.h`, `Observable.h`, `Reoptimization.h`, and
+`PerfectMatching.h`, `Assignment.h`, `EulerianCycle.h`, `Observable.h`,
+`Reoptimization.h`, and
 `include/ADS/interop/lemon/Heaps.h`, `Maps.h`, `Digraphs.h`, `Observers.h`,
 `Parallel.h`, `include/ADS/interop/Csr.h`, `metis/Metis.h`, `kahip/KaHIP.h`,
 `graphblas/GraphBLAS.h`, and `networkit/NetworKit.h`]
@@ -40,11 +41,11 @@ are all here, with each of his exercises solved on the code of the library
 ([§14.16](14-graph.md#sec-14-16)). In the sets of
 [§1.9](01-introduction.md#sec-1-9), `Assignment.h`, `BlossomMatching.h`
 (the blossoms of `Matching.h`, which includes it), `GraphBuilder.h`,
-`GridGraph.h`, `Observable.h`, `PointerGraph.h`, `PushRelabel.h` (the
-push-relabel of `MaxFlow.h`, which includes it), `Reoptimization.h`,
-`StaticGraph.h`, `StrongComponents.h` (the components of `Visit.h` by one
-visit, which `Visit.h` includes) and `Biconnectivity.h` are advanced and
-the other headers of this chapter are base; the headers of
+`GridGraph.h`, `Observable.h`, `PerfectMatching.h`, `PointerGraph.h`,
+`PushRelabel.h` (the push-relabel of `MaxFlow.h`, which includes it),
+`Reoptimization.h`, `StaticGraph.h`, `StrongComponents.h` (the components
+of `Visit.h` by one visit, which `Visit.h` includes) and `Biconnectivity.h`
+are advanced and the other headers of this chapter are base; the headers of
 `interop/lemon/` ([§14.14](14-graph.md#sec-14-14)) are of the set interop.
 
 ## 14.1 Definitions and the interface {#sec-14-1}
@@ -1436,9 +1437,9 @@ is correct, and it takes $O( n + m \log n )$ time.*
 *Proof.* Two nodes of one component reach each other, and a node of $C$
 reaches a node of $C'$ if and only if $C$ reaches $C'$ in $H$. If $H$ has a
 unique topological order $C_1 , \ldots , C_k$, then by [Lemma
-14.29](14-graph.md#lem-14-26) each $( C_i , C_{i+1} )$ is an edge of $H$,
+14.26](14-graph.md#lem-14-26) each $( C_i , C_{i+1} )$ is an edge of $H$,
 and so $C_i$ reaches $C_j$ for $i < j$. Otherwise, again by [Lemma
-14.29](14-graph.md#lem-14-26), the algorithm of Kahn on $H$ finds two
+14.26](14-graph.md#lem-14-26), the algorithm of Kahn on $H$ finds two
 sources $a \ne b$ of the graph left at some step. The components taken
 before that step are closed under predecessors, since a component is taken
 only after all those with an edge into it. If $a$ reached $b$, the last
@@ -1774,7 +1775,7 @@ the lists of adjacency. `gridDistances()` is the visit in breadth of
 [§14.5.2](14-graph.md#sec-14-5-2) from several sources at once, all of them at
 distance 0 in the queue. It gives each cell its distance in moves from the
 nearest source, `INF` if none reaches it ([Algorithm
-14.13](14-graph.md#alg-14-12)). This is the algorithm of [Lee
+14.12](14-graph.md#alg-14-12)). This is the algorithm of [Lee
 1961](Z-bibliography.md#ref-lee1961) for the routing of the wires on a board,
 after the maze of [Moore 1959](Z-bibliography.md#ref-moore1959). With the
 sources a whole set of pixels it is the distance transform of an image; with
@@ -2526,7 +2527,7 @@ The *prototype* of [Montresor 2025,
 While some edge violates (14.6), it sets $d[ v ] = d[ u ] + w( u , v )$ and
 makes $u$ the parent of $v$; a structure $S$, the *frontier*, holds the nodes
 whose edges have to be checked again ([Algorithm
-14.14](14-graph.md#alg-14-13)). The kind of $S$ decides how many times a node
+14.13](14-graph.md#alg-14-13)). The kind of $S$ decides how many times a node
 is extracted, and therefore the cost ([Table 14.3](14-graph.md#tab-14-3)), but
 not the result.
 
@@ -2962,7 +2963,7 @@ lighter than $e$, or as light and before it in the stable order, have been
 examined already, and each was kept or had its ends in one tree of $F$;
 hence none crosses the cut $( C , V \setminus C )$, and $e$ is a lightest
 edge across it, which no edge of $F$ crosses. [Lemma
-14.36](14-graph.md#lem-14-33), applied in the component of $u$, gives the
+14.33](14-graph.md#lem-14-33), applied in the component of $u$, gives the
 induction. The edges dropped have their ends in one tree, and so the final
 forest has a tree per component, i.e., it is spanning (the stop after
 $n - 1$ edges only ends a scan that would keep nothing more). The sort and
@@ -3172,7 +3173,7 @@ by saturating the edges that leave $s$. Then a node $u$ with an excess
 either pushes it on an edge with $c_f( u , v ) > 0$ and $d( v ) = d( u ) -
 1$, or, if there is none, raises $d( u )$ to the least $d( v ) + 1$ over its
 residual edges, which keeps the labels valid ([Algorithm
-14.16](14-graph.md#alg-14-15)).
+14.15](14-graph.md#alg-14-15)).
 
 <span id="lem-14-37"></span>**Lemma 14.37.** *A label never decreases and
 stays below $2 n$; hence there are $O( n^2 )$ relabelings and $O( n m )$
@@ -3534,7 +3535,7 @@ labels of [Gabow 1976](Z-bibliography.md#ref-gabow1976) do. The path from such
 a node to the root goes back along the path of $a$ down to $a$ and then
 follows that of $b$, and the augmentation rematches the two parts in turn,
 each stopping at the node whose mate it has changed already ([Algorithm
-14.18](14-graph.md#alg-14-17)). The result gives the mate of each node, `NIL`
+14.17](14-graph.md#alg-14-17)). The result gives the mate of each node, `NIL`
 for a node left unmatched.
 
 <span id="alg-14-17"></span>**Algorithm 14.17.** The matching of largest
@@ -3574,11 +3575,11 @@ returns a matching of largest size in $O( n m \, \alpha( m , n ) )$ time.*
 
 *Proof.* A search that succeeds augments the matching by an augmenting
 path of $G$, lifted from the graph with the blossoms shrunk by [Lemma
-14.46](14-graph.md#lem-14-43) applied once per blossom. A search that fails
+14.43](14-graph.md#lem-14-43) applied once per blossom. A search that fails
 leaves out its tree, which by [Lemma 14.44](14-graph.md#lem-14-44) loses
 no matching edge that a largest matching needs; at the end no free node
 is left whose search can succeed, and so, by [Lemma
-14.46](14-graph.md#lem-14-43) and [Lemma 14.42](14-graph.md#lem-14-42),
+14.43](14-graph.md#lem-14-43) and [Lemma 14.42](14-graph.md#lem-14-42),
 no augmenting path exists in the graph left, and the matching is largest
 there and, with the trees left out, in $G$. A search examines each edge of
 its tree at most twice and merges each node once, i.e., it costs
@@ -3632,7 +3633,7 @@ may be shifted by a constant, the free nodes having the least dual.
 primal-dual algorithm of Edmonds in the $O( n^3 )$ of Gabow and of [Lawler
 1976](Z-bibliography.md#ref-lawler1976), as [Galil
 1986](Z-bibliography.md#ref-galil1986) surveys it ([Algorithm
-14.19](14-graph.md#alg-14-18)). It keeps the conditions (i) and (iii), and
+14.18](14-graph.md#alg-14-18)). It keeps the conditions (i) and (iii), and
 approaches (ii): each $y_v$ starts at the largest weight (0 if no weight is
 positive) and the matching empty, and the free nodes, whose duals are always
 equal and the least, are the roots of the trees grown on the edges of slack 0
@@ -3771,7 +3772,7 @@ column reached and the row matched to it). It then raises $u$ and lowers $v$
 along the tree of the search by $\mu - \delta_j$, $\delta_j$ the distance of
 each column $j$ scanned, which keeps (14.9) and makes the edges of the path
 tight; finally, it flips the pairs along the path ([Algorithm
-14.20](14-graph.md#alg-14-19)). On the dense matrix a search costs $O( n^2 )$,
+14.19](14-graph.md#alg-14-19)). On the dense matrix a search costs $O( n^2 )$,
 with an array in place of the heap, and $n$ of them give $O( n^3 )$. Its
 potentials start from $u_i = \min_j c( i , j )$ and $v = 0$, which satisfy
 (14.9) whatever the signs of the costs.
@@ -3908,6 +3909,271 @@ t = A.total();  // t is 6, by one augmentation:
 ```
 
 ![Figure 14.14. The reduced costs $c( i , j ) - u_i - v_j$ of an `Assignment` of the $3 \times 3$ costs of rows $( 4 , 1 , 3 )$, $( 2 , 0 , 5 )$ and $( 3 , 2 , 2 )$, with the potentials $v_j$ above the columns and $u_i$ beside the rows, before and after `setRow(1, (8, 0, 7))`: the pairs of the assignment (in violet) have reduced cost 0, the row changed is in orange, and every reduced cost stays nonnegative; one augmentation from the freed row gives the new assignment, of cost 6.](../figures/graph-assign.svg){#fig-14-14}
+
+### 14.11.Zbl6 Perfect matchings of least cost {#sec-14-11-Zbl6}
+
+We now consider the *perfect matching of least cost* of a general graph
+(beyond the book), i.e., a matching $M$ that covers all the nodes, of least
+total cost $c( M )$ for integer costs $c( e )$ of any sign. By the
+description of the polytope of
+[Edmonds 1965](Z-bibliography.md#ref-edmonds1965), the linear program
+with $x( \delta( v ) ) = 1$ at each node and $x( \delta( S ) ) \ge 1$ on
+each set $S$ of an odd number $\lvert S \rvert \ge 3$ of nodes
+($\delta( S )$ being the edges with one end in $S$) has an integral
+optimum. Its dual has a variable $y_S$ per odd set, the nodes included,
+which is free on the nodes and nonnegative on the other sets, and it requires
+the slack of each edge to be nonnegative,
+
+$$
+\pi( e ) = 2 c( e ) - \sum_{S : e \in \delta( S )} y_S \ge 0 ,
+\tag{14.11}
+$$
+
+with the duals doubled, as in [§14.11.2](14-graph.md#sec-14-11-2), so that
+integer costs keep them integer. The sets of positive dual that the
+algorithm keeps are its blossoms, which form a laminar family, and its
+certificate of optimality is the following one.
+
+<span id="lem-14-Zbl1"></span>**Lemma 14.Zbl1.** *Let $M$ be a perfect
+matching, and let the duals $y$ of a laminar family of odd sets, the nodes
+included, satisfy $y_S \ge 0$ whenever $\lvert S \rvert \ge 3$ and (14.11)
+on each edge. Then $\sum_S y_S \le 2 c( M' )$ for each perfect matching
+$M'$, and if $\sum_S y_S = 2 c( M )$, then $M$ is of least cost; this
+equality holds if and only if $\pi( e ) = 0$ on each edge of $M$ and a
+single edge of $M$ leaves each set $S$ with $y_S > 0$.*
+
+*Proof.* Summing (14.11) over the edges of $M'$ gives $2 c( M' ) =
+\sum_{e \in M'} \pi( e ) + \sum_S y_S \lvert M' \cap \delta( S ) \rvert$.
+Each node is the end of one edge of $M'$, and an odd set cannot be covered
+by edges within it; hence $\lvert M' \cap \delta( S ) \rvert \ge 1$, with
+equality on the nodes. Since $\pi \ge 0$, and $y_S \ge 0$ on the sets that
+are not nodes, one has $2 c( M' ) \ge \sum_S y_S$. For $M' = M$ both
+inequalities are equalities under the two conditions stated, and only
+under them. $\square$
+
+The matching of largest weight among those of largest size of
+[§14.11.2](14-graph.md#sec-14-11-2) already solves this problem, with the
+costs negated, in $O( n^3 )$. However, the algorithm of Galil grows the trees
+of all the free nodes by a single change of the duals and builds them again
+after each augmentation. On the large sparse graphs of the applications
+(e.g., the matchings of the odd nodes in the heuristics of the TSP), it may
+thus spend most of its time on trees that an augmentation did not touch.
+`minCostPerfectMatching( n , E )` (beyond the book, in
+`PerfectMatching.h`) is the primal-dual algorithm of Edmonds in the form of
+Blossom V ([Kolmogorov 2009](Z-bibliography.md#ref-kolmogorov2009);
+[Algorithm 14.Zbl5](14-graph.md#alg-14-Zbl5)). Kolmogorov reports its
+engineering (the trees kept across the augmentations, a change of the duals
+per tree, and heaps of the slacks per tree and per pair of trees) as faster
+than the Blossom IV of [Cook and Rohe 1999](Z-bibliography.md#ref-cook1999)
+on most of the families of his experiments.
+
+Each free node is the root of an alternating tree $T$, whose outer and
+inner nodes are the outermost blossoms, as in
+[§14.11.2](14-graph.md#sec-14-11-2). The tree carries its own change
+$\varepsilon_T$ of the duals: a node of $T$ stores the dual it had when it
+joined $T$, and its true dual is that value plus $\varepsilon_T$ if it is
+outer, minus $\varepsilon_T$ if inner. An edge, in turn, stores its slack
+relative to the $\varepsilon$ of the trees of its ends, and therefore a
+change of the duals of a tree costs $O( 1 )$. The edges that may bound a
+change are kept in pairing heaps on the nodes of the caller
+(`IntrusivePairingHeap`, cf. [§9.8](09-priority.md#sec-9-8)), each edge
+in one heap at most. These are, per tree, the edges from its outer nodes
+to the free nodes, those between two of its outer nodes, and its inner
+blossoms by their duals; per pair of trees joined by an edge, the edges
+between their outer nodes and, in each direction, those from the outer nodes
+of one to the inner nodes of the other. All the slacks of a heap shift by
+the same amount when the $\varepsilon$ of its trees change, and so its order
+is never touched by a change of the duals.
+
+A tree grows on a tight edge to a free node, which becomes inner while its
+mate becomes outer. It shrinks the cycle closed by a tight edge between two
+of its outer nodes into an outer blossom of dual 0, and it expands an inner
+blossom whose dual has fallen to 0: the children on the even way from the
+edge of entry to the base become inner and outer in turn, and the other
+children become free. As soon as a tight edge joins one of its outer nodes to
+an outer node of another tree, the tree augments the matching along the two
+paths to the roots, and then the two trees dissolve while the others go on.
+The augmentation rematches, within each blossom on the paths, the pairs of
+the cycle of its children, so that the new matched edge enters at the base,
+at each level of the nesting (cf. [§14.11.2](14-graph.md#sec-14-11-2)).
+Each end of an edge sits in the list of the largest node that holds it and
+not the other end, i.e., of the outermost blossom when the edge joins two of
+them; a node thus reaches the edges that leave it and none of those within
+it. A shrink moves to the new blossom the edges that leave its children, and
+an expansion gives back to each child the edges that leave the blossom
+through it.
+
+When the trees have no tight edge left, the duals change as in [Algorithm
+14.Zbl5](14-graph.md#alg-14-Zbl5). The trees joined by a tight edge from an outer
+node of one to an inner node of another must change together, since the
+slack of that edge grows by the change of the inner side and falls by that
+of the outer one. Hence, we take the connected components of the graph of
+the trees by these edges (the rule of Blossom IV and of Blossom V). Each
+component, in turn, takes the largest change that the current slacks of its
+edges allow. The greedy start sets each $y_v$ to the least cost at $v$,
+raises the duals node by node by the least slack, and matches each node to
+a free neighbor along a tight edge (if there is one), so that only the nodes
+left free are roots; with the option `greedy` false each node is a tree of
+its own.
+
+<span id="alg-14-Zbl5"></span>**Algorithm 14.Zbl5.** The perfect matching of
+least cost (the primal-dual algorithm of Edmonds in the form of Blossom V,
+beyond the book).
+
+--8<-- "generated/PerfectMatching-minCostPerfectMatching.pseudo.md"
+
+--8<-- "generated/PerfectMatching-dualUpdate.pseudo.md"
+
+The two lemmas that follow state what a step and a change of the duals
+keep; the first also gives the evidence of the graphs with no perfect
+matching.
+
+<span id="lem-14-Zbl2"></span>**Lemma 14.Zbl2.** *Before and after each step of
+[Algorithm 14.Zbl5](14-graph.md#alg-14-Zbl5), the slacks (14.11) and the duals
+of the blossoms are nonnegative, and the matched edges, the edges of the
+trees and those of the cycles of the blossoms are tight. If the change of a
+component $C$ of the trees is unbounded, the graph has no perfect
+matching.*
+
+*Proof.* A grow, a shrink and an expansion do not change the true duals
+(the blossom of a shrink or of an expansion has dual 0), and an
+augmentation only exchanges matched and unmatched tight edges. Under a
+change $\delta$ of the trees of $C$, the true slack of an edge falls by
+$\delta$ at each outer end in $C$ and grows by $\delta$ at each inner end in
+$C$. Hence it is unchanged on the edges between an outer and an inner node
+of $C$ (those of the trees among them) and on those within a blossom, and it
+grows from an inner node of $C$ to any node not outer in $C$. On the edges
+from an outer node of $C$ to a free node, on those between two outer nodes
+of one tree, and on the duals of the inner blossoms the fall is at most the
+bound of line 3. Between an outer node of $C$ and an outer node of a tree
+out of $C$, the slack falls by $\delta$, after the change of that tree if
+it was taken before, and so by at most its current value (line 4); between
+two outer nodes of distinct trees of $C$ it falls by $2 \delta$, at most the
+slack (line 5). The edges from an outer node of $C$ to an inner node out of
+$C$ are bounded by line 4 as well, while an edge from an outer node out of
+$C$ to an inner node of $C$ only gains. If the change of $C$ is unbounded,
+none of these bounds exists: the trees of $C$ have no inner blossom, and
+each edge that leaves an outer node of $C$ goes to an inner node of $C$,
+which is a single node. Removing these $k$ inner nodes then leaves each
+outer node of $C$ (a node, or a blossom of an odd number of nodes) as a
+component of its own, and these are $k$ plus the number of trees of $C$;
+by the theorem of [Tutte 1947](Z-bibliography.md#ref-tutte1947), the graph
+has no perfect matching. $\square$
+
+<span id="lem-14-Zbl3"></span>**Lemma 14.Zbl3.** *With integer costs, the
+slack of an edge between two outer nodes of the trees of one component is
+even; hence the changes of the duals and the duals stay integers.*
+
+*Proof.* We assume that the duals are integers so far, and we let
+$\varphi( a ) = \sum_{S \ni a} y_S$ for a node $a$. By (14.11), $\pi( e )
+\equiv \varphi( a ) + \varphi( b ) \pmod 2$ for $e = [ a , b ]$, since $2
+c( e )$ is even and the sets that hold both ends count twice in $\varphi( a
+) + \varphi( b )$; a tight edge thus joins two nodes of the same parity of
+$\varphi$. The nodes of a tree are joined by tight edges (those of the tree
+and of the cycles of its blossoms), and so are the trees of a component;
+hence they all have the same parity of $\varphi$, which a change by an
+integer $\delta$ keeps, since it adds $\delta$ on the outer nodes and
+$-\delta$ on the inner ones. The slack of an edge between two outer nodes of
+the component is then even, and the bounds of [Algorithm
+14.Zbl5](14-graph.md#alg-14-Zbl5) are integers. $\square$
+
+<span id="lem-14-Zbl4"></span>**Lemma 14.Zbl4.** *`minCostPerfectMatching( n , E
+)` ends after at most $n / 2$ augmentations, with $O( n )$ grows, shrinks
+and expansions between two of them and at most $n$ changes of the duals
+between two of these steps. At the end, either the matching is perfect and
+the duals certify it as in [Lemma 14.Zbl1](14-graph.md#lem-14-Zbl1), or the
+graph has no perfect matching.*
+
+*Proof.* An augmentation matches two free nodes, and no step frees a matched
+node. A blossom formed after the last augmentation stays outer, or within an
+outer blossom, until the next one, since its tree dissolves only at an
+augmentation; hence an expansion removes a blossom that existed at the last
+augmentation, of which there are at most $n / 2$. A shrink lowers the
+number of the outermost nodes by 2 at least, while the expansions raise it
+by at most the number of children of those blossoms, less than $3 n / 2$ in
+all; this bounds the shrinks by $O( n )$. A grow takes a free outermost node
+into a tree, and the nodes leave the trees only at an augmentation or as the
+free children of an expansion, and therefore the grows are $O( n )$ as well.
+A finite change of the duals makes tight the edge or the blossom of its
+bound. An edge to a free node, an edge between two outer nodes, or a blossom
+of dual 0 give a step (possibly an augmentation) at the next visit of the
+trees. An edge from an outer node to an inner node of another component,
+instead, joins the two components at the next change, which can happen at
+most $n - 1$ times in a row. By [Lemma 14.Zbl2](14-graph.md#lem-14-Zbl2) the
+duals stay feasible and the matched edges tight, and a blossom of positive
+dual, whose cycle alternates around its base, has one matched edge leaving
+it; when no tree is left all the nodes are matched, and [Lemma
+14.Zbl1](14-graph.md#lem-14-Zbl1) applies. $\square$
+
+Thus all the arithmetic is on integers of 64 bits (the costs doubled), and
+at the end the audits check the certificate of [Lemma
+14.Zbl1](14-graph.md#lem-14-Zbl1), which the tests also check from scratch on
+the laminar family and on the doubled duals of the result. The bounds of
+[Lemma 14.Zbl4](14-graph.md#lem-14-Zbl4) are rather crude, since a change of the
+duals reads the heaps of all the pairs of trees and a step reads the lists
+of the nodes it relabels; the worst case is thus a polynomial of high
+degree, as for Blossom V. We do not implement the start of Blossom V by an
+optimal fractional matching, nor its changes of the duals by a linear
+program when few trees are left, which Kolmogorov reports to pay off on some
+families of instances; our greedy start is the one of his experiments
+without them. A matching of largest weight (not necessarily perfect) reduces
+to a perfect matching of least cost on the graph doubled, with two copies of
+the edges of positive weight, of costs the weights negated, and an edge of
+cost 0 from each node to its copy. Its perfect matchings of least cost are
+twice the matchings of largest weight, the cost negated, and
+`maxWeightMatching( n , E , BlossomVOptions() )` solves the problem in this
+way, on $2 n$ nodes and at most $2 m + n$ edges, with the same weight as the
+`maxWeightMatching()` of `BlossomMatching.h`.
+
+In `PerfectMatching.h` we declare
+
+```cpp
+// declarations of <ADS/graph/PerfectMatching.h>
+struct BlossomVOptions
+{
+ bool greedy = true;
+ };
+template< class W >
+struct PerfectMatchingResult
+{
+ bool perfect = false;
+ W cost = W( 0 );
+ std::vector< std::size_t > edges;
+ std::vector< int > parent;
+ std::vector< W > dual;
+ };
+template< class W >
+ requires std::is_integral_v< W > && std::is_signed_v< W >
+PerfectMatchingResult< W >
+minCostPerfectMatching( int n ,
+                        const std::vector< std::tuple< int , int , W > > & E ,
+                        const BlossomVOptions & o = BlossomVOptions() );
+template< class W , ArcLayout L >
+ requires std::is_integral_v< W > && std::is_signed_v< W >
+PerfectMatchingResult< W >
+minCostPerfectMatching( const StaticGraph< W , L > & g ,
+                        const BlossomVOptions & o = BlossomVOptions() );
+template< class W >
+ requires std::is_integral_v< W > && std::is_signed_v< W >
+std::pair< W , std::vector< std::size_t > >
+maxWeightMatching( int n ,
+                   const std::vector< std::tuple< int , int , W > > & E ,
+                   const BlossomVOptions & o );
+```
+
+where `parent` gives, for the nodes $0 , \ldots , n - 1$ and then for the
+blossoms, the least blossom that holds each of them (`NIL` if none), and
+`dual` twice the dual of each, in the same order; on a `StaticGraph` the
+edges are the places of the arcs $( u , v )$ with $u < v$. For instance,
+with the header `ADS/graph/PerfectMatching.h`,
+
+```cpp
+std::vector< std::tuple< int , int , long long > > E = {
+ { 0 , 1 , 4 } , { 1 , 2 , 1 } , { 2 , 3 , 4 } , { 0 , 3 , 1 }
+ };
+auto R = ADS::minCostPerfectMatching( 4 , E );  // R.cost is 2, R.edges
+                                                // is ( 1 , 3 )
+```
 
 ## 14.12 Eulerian cycles and trails {#sec-14-12}
 
@@ -4245,7 +4511,7 @@ $$
 \mathrm{EdgeInserted}( s_1 ) & \text{if } s_0 = \bot \ne s_1 , \cr
 \mathrm{EdgeDeleted}( s_0 ) & \text{if } s_0 \ne \bot = s_1 , \cr
 \mathrm{WeightChanged}( s_0 , s_1 ) & \text{otherwise} ,
-\end{array} \right. \tag{14.11}
+\end{array} \right. \tag{14.12}
 $$
 
 the weights compared by `==` when their type has it (never equal
@@ -4254,16 +4520,16 @@ with all its edges. Finally, the batch is sent as one span made of the
 nodes inserted, then of the net events of the edges in the order of their
 first event, then of the nodes deleted ([Figure 14.16](14-graph.md#fig-14-16)).
 
-![Figure 14.16. The events $B$ of a batch (`ins` an insertion, `del` a deletion and `w` a change of weight, each with its edge and weights) and their net effect $C$ by (14.11): the insertion of $( 0 , 1 )$ and the change of its weight become one insertion of weight 7, the insertion and the deletion of $( 2 , 3 )$ cancel, and the deletion and the insertion of $( 1 , 4 )$ become a change of weight.](../figures/graph-observable.svg){#fig-14-16}
+![Figure 14.16. The events $B$ of a batch (`ins` an insertion, `del` a deletion and `w` a change of weight, each with its edge and weights) and their net effect $C$ by (14.12): the insertion of $( 0 , 1 )$ and the change of its weight become one insertion of weight 7, the insertion and the deletion of $( 2 , 3 )$ cancel, and the deletion and the insertion of $( 1 , 4 )$ become a change of weight.](../figures/graph-observable.svg){#fig-14-16}
 
 <span id="lem-14-53"></span>**Lemma 14.53.** *Let $B$ be the sequence of
-the events of a batch on a graph $G$, and $C$ the sequence that (14.11)
+the events of a batch on a graph $G$, and $C$ the sequence that (14.12)
 gives. Replaying $C$ on $G$ gives the graph that replaying $B$ gives, and
 $\lvert C \rvert \le \lvert B \rvert$; `coalesce()` builds $C$ in
 $O( \lvert B \rvert )$ expected time.*
 
 *Proof.* We observe that the state of an edge after $B$ depends on its last
-event only, and (14.11) gives an event that leads from $s_0$ to $s_1$, or none
+event only, and (14.12) gives an event that leads from $s_0$ to $s_1$, or none
 if the two are equal. The nodes inserted come first, and thus each edge of $C$
 finds its ends; the nodes deleted come last, after the deletions of their
 edges, which the wrapper sends before the deletion of a node. Each event of $C$
@@ -4280,7 +4546,7 @@ filtered copy). The coalescing of the batches is that of the parallel
 batch-dynamic algorithms of [Acar et al. 2019](Z-bibliography.md#ref-acar2019)
 and of [Tseng, Dhulipala and Shun 2022](Z-bibliography.md#ref-tseng2022),
 and the masks are the sets of interest of an event service. The
-graph uses the coalescing (14.11) of its own, specialized in
+graph uses the coalescing (14.12) of its own, specialized in
 `coalesce_traits`, in place of the general rule of
 [§1.13](01-introduction.md#sec-1-13), since the events of the edges of a node
 deleted must vanish with it.
@@ -4299,7 +4565,7 @@ brings the solution up to date. Then `outcome()` records how the last
 computation at all. Events are queued, and the work is done at the next query
 (the lazy flush), which the base class `EventQueue< W , P >` organizes, `P`
 the recompute policy of the observer ([§14.13.4](14-graph.md#sec-14-13-4)).
-First, the queue $Q$ is coalesced by (14.11) into $P$. If the policy says so
+First, the queue $Q$ is coalesced by (14.12) into $P$. If the policy says so
 (by default, if $\lvert P \rvert > \rho \max( m , 1 )$, $\rho$ the ratio of
 `setRecomputeRatio()`, $1 / 4$ by default), the solution is computed from
 scratch, since a repair that touches a large part of the graph costs about as
@@ -4353,7 +4619,7 @@ $P$. Set $d[ x ] = \infty$ for $x \in A$, then*
 
 $$
 d[ x ] = \min_{( u , x ) \in E} \{ d[ u ] + w( u , x ) \} \quad
-\forall x \in A \tag{14.12}
+\forall x \in A \tag{14.13}
 $$
 
 *on the weights after $P$, and run the prototype with $S$ made of the
@@ -4363,11 +4629,11 @@ tree of shortest paths.*
 
 *Proof.* A node out of $A$ keeps its path in $T$, whose edges were not
 raised; hence $d$ stays an upper bound of its distance. The nodes of $A$
-get $\infty$ or, by (14.12), the cost of a path, again an upper bound. The
+get $\infty$ or, by (14.13), the cost of a path, again an upper bound. The
 prototype keeps the upper bounds, and it stops when no edge violates
 (14.6). In fact, the edges between two nodes out of $A$ whose weight did
 not fall satisfied (14.6) before $P$ and still do, and the edges that
-enter $A$ satisfy it after (14.12). Also, the edges out of the nodes whose
+enter $A$ satisfy it after (14.13). Also, the edges out of the nodes whose
 $d$ changes are examined when these leave $S$, and the lowered ones are in
 $S$ by their tails. Hence (14.6) holds with $d[ r ] = 0$, and by
 [Theorem 14.3](14-graph.md#thm-14-3) $d$ is at most each distance and
@@ -4379,7 +4645,7 @@ Bauer and Wagner, beyond the book).
 
 --8<-- "generated/Reoptimization-ShortestPathsObserver-solve.pseudo.md"
 
-![Figure 14.17. The repair of Lemma 14.55: the edge $( r , a )$ of the tree of the shortest paths raised from 2 to 9, the subtree $A = \{ a , b , c \}$ under its head (in violet), whose distances are set to $\infty$ and then, by (14.12), to the least over the edges that enter them, the dashed ones out of the tree: $c$ gets 7 through $d$, $b$ gets 10 through $e$, and $a$ keeps $( r , a )$ at 9.](../figures/graph-reopt.svg){#fig-14-17}
+![Figure 14.17. The repair of Lemma 14.55: the edge $( r , a )$ of the tree of the shortest paths raised from 2 to 9, the subtree $A = \{ a , b , c \}$ under its head (in violet), whose distances are set to $\infty$ and then, by (14.13), to the least over the edges that enter them, the dashed ones out of the tree: $c$ gets 7 through $d$, $b$ gets 10 through $e$, and $a$ keeps $( r , a )$ at 9.](../figures/graph-reopt.svg){#fig-14-17}
 
 The repair costs the scan of the edges that enter $A$, plus the prototype on
 the nodes whose distance changes. An oriented graph keeps those edges in
@@ -4408,7 +4674,7 @@ and that of the cuts (14.8):
 $$
 w( f ) \ge \max_{e \in F( u , v )} w( e ) \quad
 \forall f = [ u , v ] \notin F , \qquad
-w( e ) \le w( \rho( e ) ) \quad \forall e \in F , \tag{14.13}
+w( e ) \le w( \rho( e ) ) \quad \forall e \in F , \tag{14.14}
 $$
 
 $\rho( e )$ the *replacement* of $e$, the lightest edge out of $F$ whose
@@ -4419,12 +4685,12 @@ path holds $e$ (the sensitivity analysis of [Tarjan
 tree of [chapter 8](08-tree.md#ch-8) ([Sleator and Tarjan
 1983](Z-bibliography.md#ref-sleator1983)), with a node in the middle of
 each of its edges that carries its weight (a `Heavy`, aggregated by
-`Heavier`). Hence the maximum of (14.13) on a path, and the edge that
+`Heavier`). Hence the maximum of (14.14) on a path, and the edge that
 attains it, take $O( \log n )$ amortized time, and an edge enters or
 leaves $F$ by two links or two cuts, in the same time. The events of $P$
 are applied one at a time, each keeping $F$ minimum for the graph after it
 ([Algorithm 14.23](14-graph.md#alg-14-23)). Raising an edge out of $F$,
-lowering one of $F$ and deleting one out of $F$ keep (14.13), and change
+lowering one of $F$ and deleting one out of $F$ keep (14.14), and change
 only a weight. Lowering or inserting an edge $f = [ u , v ]$ out of
 $F$ is harmless if $w( f )$ is at least the maximum on $F( u , v )$. If it
 is less, the edge of that maximum leaves and $f$ enters, by (14.8) on the
@@ -4683,8 +4949,8 @@ change of the edge $( u , v )$, and the work of each outcome.
 
 | Observer | Harmless | Repairable | Fatal |
 |---|---|---|---|
-| `ShortestPathsObserver` | off $T$ with $d[ u ] + w' \ge d[ v ]$, $O( 1 )$ | an improving edge, the prototype from its tail; an edge of $T$ raised or deleted, (14.12) on its subtree and the prototype | a subtree of more than $n / 2$ nodes |
-| `SpanningForestObserver` | (14.13) still true, $O( \log n )$ | a swap on a cycle, $O( \log n )$; an edge of $F$ raised or deleted, the lightest edge out of the smaller part | more than $\rho m$ events |
+| `ShortestPathsObserver` | off $T$ with $d[ u ] + w' \ge d[ v ]$, $O( 1 )$ | an improving edge, the prototype from its tail; an edge of $T$ raised or deleted, (14.13) on its subtree and the prototype | a subtree of more than $n / 2$ nodes |
+| `SpanningForestObserver` | (14.14) still true, $O( \log n )$ | a swap on a cycle, $O( \log n )$; an edge of $F$ raised or deleted, the lightest edge out of the smaller part | more than $\rho m$ events |
 | `MaxFlowObserver` | $c' \ge f( u , v )$ off the cut, $O( 1 )$ | an edge of the cut raised, the maximum from $f$; $c' < f( u , v )$, the excess and the deficit routed first | more than $\rho m$ events |
 | `AssignmentObserver` | a cost off the assignment with reduced cost still $\ge 0$, $O( 1 )$ | a row or a column changed, one augmentation | more than $n / 2$ rows and columns changed |
 
@@ -4940,7 +5206,7 @@ subject send `Rebuilt` to that observer instead of the events (the early
 stop of [Hammer et al. 2014](Z-bibliography.md#ref-hammer2014)). The
 observer then forgets its queue, ignores the events until its next query,
 and computes from scratch there, correctly by [Lemma
-14.64](14-graph.md#lem-14-61). This saves the copy and the coalescing of a
+14.61](14-graph.md#lem-14-61). This saves the copy and the coalescing of a
 batch that would be thrown away anyway. However, it may change the counts,
 since the events after the batch might cancel enough of it to fall below the
 threshold at the query, and for this reason it is not the default. We also
@@ -5424,7 +5690,7 @@ Each exercise names the test of the library that solves it (run it with
 7. Decide in $O( n )$ time whether a graph on an adjacency matrix has a
    universal sink ([Morin 2013, exercise
    12.10](Z-bibliography.md#ref-morin-cpp); [Lemma
-   14.28](14-graph.md#lem-14-25)). Tests:
+   14.25](14-graph.md#lem-14-25)). Tests:
    `ods_ints.ods.ex12.10.universal-sink`, `lib_graphs.universal-sink`.
 8. Compare the memory of the adjacency matrix and of the lists with $d$
    bits per pointer and per integer, and find the number of edges below
@@ -5456,7 +5722,7 @@ Each exercise names the test of the library that solves it (run it with
     wrong with negative costs, while the prototype stays correct, and detect a
     negative cycle reachable from $r$ in $O( n m )$ ([Montresor 2025, exercises
     11.1 and 11.2](Z-bibliography.md#ref-montresor2025); [Lemma
-    14.32](14-graph.md#lem-14-29)). Tests: `ch11.ex11.1`, `ch11.ex11.2`.
+    14.29](14-graph.md#lem-14-29)). Tests: `ch11.ex11.1`, `ch11.ex11.2`.
 16. Find the most reliable path, i.e., the largest product of the
     reliabilities of its edges, as a shortest path with the costs
     $- \log r( u , v )$ ([Montresor 2025, exercise
@@ -5572,7 +5838,7 @@ Each exercise names the test of the library that solves it (run it with
     `engineered_graph.grid-graph-huge`,
     `engineered_graph.grid-graph-cost-models`, `engineered_graph.grid-map`.
 38. Turn the changes of a graph into events with masks, coalesce a batch
-    by (14.11), and keep the shortest paths, the minimum spanning forest,
+    by (14.12), and keep the shortest paths, the minimum spanning forest,
     the maximum flow and the assignment through the changes
     ([§14.13](14-graph.md#sec-14-13), [§14.11.3](14-graph.md#sec-14-11-3)).
     Tests: `engineered_dynamic.observable-events`,

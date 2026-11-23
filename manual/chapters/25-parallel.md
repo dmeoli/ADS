@@ -1431,7 +1431,7 @@ out of it, the tour of each tree is a list, which a sparse ruling set ranks
 the first arc of each list and about one arc in 64, picked by a hash. Each
 ruler walks the list up to the next one, ranking the arcs that it meets, and
 then the walks of each list are added up in their order ([Algorithm
-25.19](25-parallel.md#alg-25-Zbc3)).
+25.Zbc3](25-parallel.md#alg-25-Zbc3)).
 
 <span id="lem-25-Zbc1"></span>**Lemma 25.Zbc1.** *In the list of a tree of $s$
 nodes rooted at $r$, the $2 ( s - 1 )$ arcs of the tree come once each,
@@ -1582,7 +1582,7 @@ per suffix, the scan makes $O( n )$ comparisons ([Kasai et al.
 $\Phi$, and at the end $\mathit{LCP}[ r - 1 ] = \mathit{PLCP}[ \mathit{SA}[
 r ] ]$, by parallel loops of scattered moves. In between, it cuts the scan
 into $4 p$ parts of the text, each scanned from $h = 0$ ([Algorithm
-25.20](25-parallel.md#alg-25-19)).
+25.19](25-parallel.md#alg-25-19)).
 
 Inequality (25.8) is then not used across the borders of the parts, which
 leaves the result the same; by [Lemma 25.15](25-parallel.md#lem-25-15),
@@ -2018,7 +2018,7 @@ In the code, the threads of the $\Delta$-stepping are those of the calls of one
 `bulk()` of the executor, which run the whole computation and meet at a barrier
 that a call may join late: a thread that joins is counted at the next release,
 so that the barrier waits only for threads already in it ([Algorithm
-25.26](25-parallel.md#alg-25-25)). A thread that waits spins for 1024 pauses
+25.25](25-parallel.md#alg-25-25)). A thread that waits spins for 1024 pauses
 and then sleeps on the word of the generation, which the release wakes;
 spinning alone, an executor with more threads than the free cores of a loaded
 machine (e.g., a runtime that takes all the cores of the machine) passes each
@@ -2051,7 +2051,7 @@ the first call does all the work. $\square$
 Zhang 2021](Z-bibliography.md#ref-dong2021)) takes the $\rho$ active nodes of
 least distance, or all of them when they are no more than $\rho$, the threshold
 being estimated on a sample of 1024 of them ([Algorithm
-25.27](25-parallel.md#alg-25-26)). In this way the steps have frontiers of
+25.26](25-parallel.md#alg-25-26)). In this way the steps have frontiers of
 about the same size whatever the scale of the costs. A node is active when its
 distance fell since its arcs were last relaxed, and it is made active once, by
 a flag. Then the prefix sums of the degrees cut the arcs of a step into blocks
@@ -2510,7 +2510,7 @@ again. Then each message retained in an outbox is pushed in finite time, and
 
 *Proof.* A worker with a message in an outbox fails its `flush()`, stays active
 and holds its activity in $C$. Hence, (25.10) and the argument of [Lemma
-25.24](25-parallel.md#lem-25-22) do not change: the retained messages are not
+25.22](25-parallel.md#lem-25-22) do not change: the retained messages are not
 in $M$, but their sender is in $A$. A queue is full only of messages pushed but
 not yet drained, and its receiver drains all its queues at each poll. By
 hypothesis, the workers poll between two calls of `quiescent()`, and therefore
@@ -2554,7 +2554,7 @@ quiescence before the next one starts. `rearm( active )`, called by one thread
 at the barrier, sets the activity of each worker `me` to `active( me )` and
 $C$ to the number of the active workers, and withdraws the stop; `rearm()`
 makes them all active, as the constructor does ([Algorithm
-25.31](25-parallel.md#alg-25-30)). We keep the channels and the outboxes,
+25.30](25-parallel.md#alg-25-30)). We keep the channels and the outboxes,
 i.e., the $p^2$ queues of the mesh with their buffers, so that a phase costs
 $O( p )$ instead of their construction. Its precondition is the quiescence of
 the computation before: the outboxes are empty, and either $C = 0$ or the
@@ -2600,7 +2600,7 @@ which gives the place of the last message of that key sent with a merge since
 the last push. If there is one, `merge( pending , x )` either merges $x$ into
 it and returns true, or returns false; in the second case, as when the key is
 not found, $x$ is appended and becomes the last of its key ([Algorithm
-25.32](25-parallel.md#alg-25-31)). A merge with no result always merges, and
+25.31](25-parallel.md#alg-25-31)). A merge with no result always merges, and
 one probe of the map serves both the search and the update. Note that a push
 that the channel takes $j > 0$ messages of shifts the rest of the outbox by
 $j$ places, and therefore empties the map, while a push of which the channel
@@ -2631,7 +2631,7 @@ that key was sent without a merge after it, or $\bot$ if one was, and no
 other place; hence, a message of a key is never merged into one sent before
 a message of the same key sent without a merge. (ii)
 [Lemma 25.22](25-parallel.md#lem-25-22), [Lemma
-25.25](25-parallel.md#lem-25-23) and [Lemma 25.25](25-parallel.md#lem-25-25)
+25.23](25-parallel.md#lem-25-23) and [Lemma 25.25](25-parallel.md#lem-25-25)
 hold as they are, and [Lemma 25.24](25-parallel.md#lem-25-24) holds with
 each message given to `send()` either handed once or merged into a message
 handed once. (iii) A message $x$ merged into a pending message $y$ reaches
@@ -2649,7 +2649,7 @@ before a shifted place can be read, one that takes none moves no message, and
 before its push, so that the messages of an outbox are not in $C$ (cf.
 (25.10)). A merge removes $x$ before it is counted, and leaves $y$ uncounted
 where it was; $C$, $A$ and $M$ do not change, and the argument of [Lemma
-25.24](25-parallel.md#lem-25-22) stays as it is. Also, a `flush()` faces an
+25.22](25-parallel.md#lem-25-22) stays as it is. Also, a `flush()` faces an
 outbox no longer than without the merge, and succeeds no later. After a stop
 the merges go on in the outboxes, which `leftovers()` hands as they are. When
 the outboxes are empty the maps are empty by (i), and `rearm()` thus leaves no

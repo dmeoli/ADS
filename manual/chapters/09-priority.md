@@ -1328,6 +1328,35 @@ takes `decrease()` or `increase()` as the new priority requires (test
 
 --8<-- "generated/PairingHeap-increase.pseudo.md"
 
+The same trees serve a program that keeps many small heaps of the nodes of
+one array and moves the nodes among them, e.g., the edges of a graph, each in
+the heap of its class, in the perfect matchings of
+[§14.11.Zbl6](14-graph.md#sec-14-11-Zbl6): `IntrusivePairingHeap< N >` (beyond the
+book) is the two-pass heap of a node type $N$ of the caller, with the members
+`priority`, `child`, `next` and `prev` of the nodes above, and is only its
+root, with no pool and no item. A node is in at most one heap at a time, and
+moves from one to another by `erase()` and `insert()`, with no allocation;
+the linking, the two passes and the cut are those of `PairingHeap`, shared by
+the two classes, and so are the costs (test
+`engineered_search.intrusive-pairing-heap`). Its public members are
+
+```cpp
+// declarations of <ADS/priority/PairingHeap.h>
+template< class N >
+class IntrusivePairingHeap
+{
+ public:
+ [[nodiscard]] bool empty( void ) const;
+ [[nodiscard]] N * min( void ) const;
+ void insert( N * x );
+ void erase( N * x );
+ void clear( void );
+ };
+```
+
+where `clear()` forgets all the nodes, whose links the caller resets before
+it inserts them again.
+
 ## 9.9 Monotone queues of integer keys {#sec-9-9}
 
 On a monotone queue whose keys are "small" integers, the least key can be found
@@ -2141,7 +2170,7 @@ union-find on the items (§10.3 of [Haeupler et al.
 intervals of insertions, we number the insertions instead and keep the first
 number of each heap, so that the heap of an item is found by comparing its
 number with those of the at most 5 heaps ([Lemma
-9.22](09-priority.md#lem-9-Zws1)). This takes 7 comparisons of integers and no
+9.Zws1](09-priority.md#lem-9-Zws1)). This takes 7 comparisons of integers and no
 branch, i.e., constant time on a word of 64 bits, the same assumption under
 which the bits $b_i$ fit in a word and the next and the previous bit set are
 found in $O( 1 )$ time (§10.4 of the paper).
@@ -2253,7 +2282,7 @@ applied to $H_{i - 1}$, at the beginning of the insertion (after $H_0$ is made)
 $| H_{i - 2} | > 2^{2^{i - 2}} - 2^{2^{i - 3}}$: indeed, the insertion does not
 meld $H_{i - 3}$ with $H_{i - 2}$, which hold together more than
 $2^{2^{i - 2}}$ items, and $| H_{i - 3} | \le 2^{2^{i - 3}}$ by (ii) of [Lemma
-9.22](09-priority.md#lem-9-Zws1) (for $i = 2$, $H_0$ holds one item, more than
+9.Zws1](09-priority.md#lem-9-Zws1) (for $i = 2$, $H_0$ holds one item, more than
 $2 - \sqrt{2}$). The insertion moves $H_{i - 2}$ to the place $i - 1$, and by
 (i) of [Lemma 9.Zws1](09-priority.md#lem-9-Zws1) its items were inserted after
 every item of $H_i$, $x$ included, while $x$ was in the heap; they are thus in
@@ -2582,6 +2611,6 @@ Each exercise names the test of the library that solves it (run it with
     heaps, check that the comparisons of a round of an insertion and a
     deletion of a recent item do not grow with the size of the heap, and
     run on it the algorithms of Dijkstra and Prim ([Theorem
-    9.5](09-priority.md#thm-9-Zws4)). Tests: `heaps.working-set-heap`,
+    9.Zws4](09-priority.md#thm-9-Zws4)). Tests: `heaps.working-set-heap`,
     `heaps.working-set-bound`, `engineered_graph.working-set-dijkstra`,
     `engineered_emitters.emit-working-set-heap`.

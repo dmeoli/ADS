@@ -3070,7 +3070,7 @@ after the announce of the guard and after the push of its record. The
 cursor thus meets the record, and reads its announce $2 e + 1$ or a later
 value; since $2 e + 1 \notin \{ 0 , 2 ( e + 1 ) + 1 \}$, the cursor stays
 there until the guard ends. (ii) As in the proof of [Lemma
-24.37](24-concurrent.md#lem-24-Zrc1), the announce $2 a + 1$ of $g$ precedes
+24.Zrc1](24-concurrent.md#lem-24-Zrc1), the announce $2 a + 1$ of $g$ precedes
 $u$ in $S$. By (i), applied to the guard of the retirement, $E$ is at most
 $\ell + 1$ at $u$, and hence $a \le \ell + 1$; by (i), applied to $g$, $E$
 stays at most $a + 1 \le \ell + 2$ while $g$ is open. A node of the label
@@ -3202,9 +3202,9 @@ stack empty, at its read of the top.*
 
 *Proof.* The pop protected $t$ by a read of the top that returned $t$
 after the write of its slot, or inside its guard. By [Lemma
-24.39](24-concurrent.md#lem-24-Zrc3) (the top never holds $t$ again once a
+24.Zrc3](24-concurrent.md#lem-24-Zrc3) (the top never holds $t$ again once a
 pop has swung it), or by [Lemmas 24.Zrc1](24-concurrent.md#lem-24-Zrc1) and
-[24.38](24-concurrent.md#lem-24-Zrc2), $t$ is not freed before the pop ends.
+[24.Zrc2](24-concurrent.md#lem-24-Zrc2), $t$ is not freed before the pop ends.
 A node not freed is not allocated again, and a push always links a new
 node; hence the top equals $t$ at the CAS only if no pop has swung it from
 $t$ since $t$ was pushed. Also, $t.\mathit{next}$ is written once, before
@@ -3229,9 +3229,9 @@ retired only after the head has passed it, hence after the tail has. (ii)
 After the CAS from $h$ to $n$, $n$ is the dummy, whose item no dequeue
 reads. It is retired only by the dequeue that swings the head past it, and
 then the guard of the first dequeue still protects it, by [Lemma
-24.39](24-concurrent.md#lem-24-Zrc3) (with the reads of the head discussed
+24.Zrc3](24-concurrent.md#lem-24-Zrc3) (with the reads of the head discussed
 above) or by [Lemmas 24.Zrc1](24-concurrent.md#lem-24-Zrc1) and
-[24.38](24-concurrent.md#lem-24-Zrc2). As in the stack, a protected node is
+[24.Zrc2](24-concurrent.md#lem-24-Zrc2). As in the stack, a protected node is
 not allocated again, and the CAS of the head, of the tail and of the
 successors find the nodes that they read; the linearizability is then
 that of [Michael and Scott 1996](Z-bibliography.md#ref-michael1996).

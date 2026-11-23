@@ -2100,7 +2100,7 @@ equal to $t$ with probability $2^{-f}$, and the union bound over the
 fingerprints of the two buckets yields the claim. $\square$
 
 At the load $\alpha$ of the slots, $n = \alpha s B$, and the bound of Lemma
-10.21 is $2 \alpha ( s / c ) 2^{-f}$, i.e., $1.2 \alpha / 256$ for $f = 8$ and
+10.Zqf2 is $2 \alpha ( s / c ) 2^{-f}$, i.e., $1.2 \alpha / 256$ for $f = 8$ and
 $1.56 \alpha / 65536$ for $f = 16$, in $512 / ( s \alpha )$ bits per key (11.9
 and 20.3 at $\alpha = 0.9$). By the two choices the most loaded block typically
 stays close to the mean. In the tests of the library the blocks fill to a load

@@ -32,6 +32,7 @@
 #include "ADS/graph/Assignment.h"
 #include "ADS/graph/ListGraph.h"
 #include "ADS/graph/Matching.h"
+#include "ADS/graph/PerfectMatching.h"
 #include "ADS/graph/MaxFlow.h"
 #include "ADS/graph/Observable.h"
 #include "ADS/graph/Reoptimization.h"
@@ -78,6 +79,7 @@
  #include <lemon/kruskal.h>
  #include <lemon/list_graph.h>
  #include <lemon/maps.h>
+ #include <lemon/matching.h>
  #include <lemon/network_simplex.h>
  #include <lemon/preflow.h>
  #include <lemon/smart_graph.h>
@@ -916,6 +918,50 @@ ADS_TEST( "lemon-matching" )
   const auto [ cw , cm ] = maxWeightMatching( n , E , true );
   CHECK( 2 * static_cast< long long >( cm.size() ) == size );
   ( void )cw;
+  }
+ }
+
+// the perfect matching of least cost of Blossom V against the
+// MaxWeightedPerfectMatching of LEMON (the costs negated) with
+// ADS_WITH_LEMON, and against the blossoms of maxWeightMatching() among the
+// matchings of largest size otherwise, on random graphs with parallel
+// edges, some with no perfect matching
+ADS_TEST( "lemon-perfect-matching" )
+{
+ std::mt19937 rng( 14 );
+ for( int rep = 0 ; rep < 60 ; ++rep ) {
+  const int n = 2 * ( 5 + int( rng() % 200 ) ) + ( rep % 10 == 0 ? 1 : 0 );
+  std::vector< std::tuple< int , int , long long > > E , N;
+  for( int k = 0 ; k < ( 1 + rep % 4 ) * n ; ++k ) {
+   const int u = int( rng() % unsigned( n ) ) ,
+	     v = int( rng() % unsigned( n ) );
+   if( u != v ) {
+    const long long c = static_cast< long long >( rng() % 1000 ) - 100;
+    E.emplace_back( u , v , c );
+    N.emplace_back( u , v , -c );
+    }
+   }
+  const auto R = minCostPerfectMatching( n , E );
+#if defined( ADS_WITH_LEMON )
+  ::lemon::SmartGraph G;
+  ::lemon::SmartGraph::EdgeMap< long long > W( G );
+  for( int u = 0 ; u < n ; ++u )
+   G.addNode();
+  for( const auto & [ u , v , c ] : N )
+   W.set( G.addEdge( G.nodeFromId( u ) , G.nodeFromId( v ) ) , c );
+  ::lemon::MaxWeightedPerfectMatching<
+    ::lemon::SmartGraph , ::lemon::SmartGraph::EdgeMap< long long > >
+    M( G , W );
+  const bool perfect = M.run();
+  CHECK( R.perfect == perfect );
+  if( perfect )
+   CHECK( R.cost == -static_cast< long long >( M.matchingWeight() ) );
+#else
+  const auto M = maxWeightMatching( n , N , true );
+  CHECK( R.perfect == ( 2 * M.second.size() == std::size_t( n ) ) );
+  if( R.perfect )
+   CHECK( R.cost == -M.first );
+#endif
   }
  }
 

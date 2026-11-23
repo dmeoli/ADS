@@ -662,7 +662,7 @@ and a sum of up to 8 words per rank, the second with one miss of the cache
 instead of two. `TinyRankSelect` costs about 4 times fewer bits than these two
 for the rank, and a sum of up to 4 lines instead of one. Its select has a
 number of steps bounded in the worst case ([Lemma
-22.8](22-succinct.md#lem-22-Zrs2)); hence it is arguably the one to choose when
+22.Zrs2](22-succinct.md#lem-22-Zrs2)); hence it is arguably the one to choose when
 the directory must be small and the vector may be far from random.
 `RRRBitVector` ([§22.5](22-succinct.md#sec-22-5)) is perhaps the one to choose
 when the 1s (or the 0s) are "rare", since its space follows (22.2) instead of

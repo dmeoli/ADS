@@ -432,6 +432,12 @@ using ADS::endsOf;
 using ADS::inverse;
 using ADS::kindOf;
 
+// graph/PerfectMatching.h
+using ADS::BlossomVOptions;
+using ADS::PerfectMatchingResult;
+using ADS::maxWeightMatching;
+using ADS::minCostPerfectMatching;
+
 // graph/PointerGraph.h
 using ADS::PointerGraph;
 
@@ -676,6 +682,7 @@ using ADS::MinMaxHeap;
 using ADS::FlatLoserTree;
 
 // priority/PairingHeap.h
+using ADS::IntrusivePairingHeap;
 using ADS::PairingHeap;
 
 // priority/QueueCustomization.h

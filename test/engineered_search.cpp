@@ -45,6 +45,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <random>
 #include <set>
@@ -406,6 +407,61 @@ ADS_TEST( "pairing-heap-erase" )
  CHECK( A.min() == 2 && A.size() == 2 );
  auto y = A.insert( 3 , 80 );  // in the list, no child
  CHECK( A.erase( y ) == 3 && A.min() == 2 && A.size() == 2 );
+ }
+
+// the intrusive pairing heap: 8 heaps on the nodes of one array, against
+// a multiset per heap, on random inserts, erasures anywhere and moves of a
+// node from one heap to another; ties of the priorities, the heap of one
+// node, its root erased, the extreme priorities and the contracts
+ADS_TEST( "intrusive-pairing-heap" )
+{
+ struct N
+ {
+  long long priority = 0;
+  N * child = nullptr;
+  N * next = nullptr;
+  N * prev = nullptr;
+  };
+ constexpr int n = 1024 , H = 8;
+ std::vector< N > X( n );
+ std::vector< int > in( n , -1 );  // the heap of each node
+ std::vector< IntrusivePairingHeap< N > > Q( H );
+ std::vector< std::multiset< std::pair< long long , int > > > R( H );
+ std::mt19937 g( 23 );
+ auto out = [ & ]( int i ) {
+  Q[ in[ i ] ].erase( &X[ i ] );
+  R[ in[ i ] ].erase( { X[ i ].priority , i } );
+  in[ i ] = -1;
+  };
+ for( int op = 0 ; op < 200000 ; ++op ) {
+  const int i = int( g() % n ) , h = int( g() % H );
+  if( in[ i ] >= 0 )
+   out( i );
+  if( g() % 4 != 0 ) {  // into h, often a tie
+   X[ i ].priority = op % 97 == 0 ? std::numeric_limits< long long >::min()
+				  : ( long long )( g() % 64 );
+   Q[ h ].insert( &X[ i ] );
+   R[ h ].emplace( X[ i ].priority , i );
+   in[ i ] = h;
+   }
+  for( int k = 0 ; k < H ; ++k ) {
+   CHECK( Q[ k ].empty() == R[ k ].empty() );
+   if( ! R[ k ].empty() )
+    CHECK( Q[ k ].min()->priority == R[ k ].begin()->first );
+   }
+  }
+ for( int k = 0 ; k < H ; ++k )  // emptied by the least
+  while( ! Q[ k ].empty() )
+   out( int( Q[ k ].min() - X.data() ) );
+ CHECK( std::all_of( R.begin() , R.end() ,
+		     []( const auto & S ) { return( S.empty() ); } ) );
+ IntrusivePairingHeap< N > A;  // one node, then its root erased
+ X[ 0 ].priority = std::numeric_limits< long long >::max();
+ A.insert( &X[ 0 ] );
+ CHECK( A.min() == &X[ 0 ] );
+ A.erase( &X[ 0 ] );
+ CHECK( A.empty() && ! X[ 0 ].child && ! X[ 0 ].next && ! X[ 0 ].prev );
+ CHECK_THROWS( ( void )A.min() , contract_violation );
  }
 
 // the pair of heaps against two sets, by the key and by the bound, on
