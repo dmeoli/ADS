@@ -6552,7 +6552,7 @@ the trees they read and put the result back, by the functions `take()` and
 (e.g., the second tree of a union, or a tree moved from) get `Cleared`, and
 those of a tree whose nodes are put back (the first tree of a union, the
 tree left by a split, both trees of a swap) get `Rebuilt`, which a batch
-reduces to the net effect of Lemma [1.14](01-introduction.md#lem-1-15).
+reduces to the net effect of Lemma [1.15](01-introduction.md#lem-1-15).
 With someone listening, `insert()` and `remove()` make one more descent, to
 read the old value. Since the mutators follow the pattern of
 [§1.13](01-introduction.md#sec-1-13), with `NoObservers` (and with static
@@ -6569,7 +6569,7 @@ the strong guarantee of `emit( e , undo )`.
 <span id="lem-8-90"></span>**Lemma 8.90.** *Let $P$ be the set of the pairs
 of a `JoinTree` before one of its operations and $P'$ the set after it.
 Outside a batch, the events that the observers of the tree receive form a
-history (in the sense of Lemma [1.14](01-introduction.md#lem-1-15)) that
+history (in the sense of Lemma [1.15](01-introduction.md#lem-1-15)) that
 leads from $P$ to $P'$, and the same holds for a batch, whose net effect is
 sent at its close.*
 
@@ -6584,7 +6584,7 @@ may have changed, as `Rebuilt` states. A swap may change both sets, and
 both trees get `Rebuilt`. Since an event is sent when the tree is in the
 state that it describes (an erasure before the removal, with the state
 after it), the events of a sequence of operations compose, and Lemma
-[1.14](01-introduction.md#lem-1-15) gives the claim for a batch. $\square$
+[1.15](01-introduction.md#lem-1-15) gives the claim for a batch. $\square$
 
 An augmentation may declare its algebra by static members, which refine the
 concept `Augmentation` without changing it: `commutative`, for a

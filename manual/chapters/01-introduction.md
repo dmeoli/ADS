@@ -3327,8 +3327,8 @@ Each exercise names the test of the library that solves it (run it with
     recomputes them from scratch ([Lemma 1.21](01-introduction.md#lem-1-21)),
     and the aggregate of a sliding window of a monoid that does not commute
     by each algorithm of `SlidingAggregate` against a scan of the window
-    (Lemmas [1.21](01-introduction.md#lem-1-22) and
-    [1.22](01-introduction.md#lem-1-23)). Tests:
+    (Lemmas [1.22](01-introduction.md#lem-1-22) and
+    [1.23](01-introduction.md#lem-1-23)). Tests:
     `engineered_emitters.emit-heap-relocated`,
     `engineered_emitters.fenwick-observer` and
     `engineered_emitters.sliding-aggregate`.

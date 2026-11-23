@@ -1947,7 +1947,7 @@ and Rabin ([Montresor 2025, §17.2](Z-bibliography.md#ref-montresor2025)).
 --8<-- "generated/NumberTheory-millerRabin.pseudo.md"
 
 Beyond the book, `isPrime()` is exact on 64 bits ([Algorithm
-17.26](17-numeric.md#alg-17-27)). It first divides by the 46 odd primes up
+17.27](17-numeric.md#alg-17-27)). It first divides by the 46 odd primes up
 to 211, by one product each with no branch, all at once on vectors. For
 an odd $p$, in fact, $p \mid n$ if and only if $n p^{-1} \bmod 2^{64} \le
 \lfloor ( 2^{64} - 1 ) / p \rfloor$, since $x \mapsto x p^{-1}$ is a
@@ -2061,7 +2061,7 @@ increasing order, after fewer than $\log_2 n$ splits of a composite
 cofactor.*
 
 *Proof.* We show that, at each test of the loop of line 4 of [Algorithm
-17.27](17-numeric.md#alg-17-28), (a) the product of the items of $F$ and of $T$
+17.28](17-numeric.md#alg-17-28), (a) the product of the items of $F$ and of $T$
 is $n$, (b) each item of $F$ is a prime, and (c) each item of $T$ is greater
 than 1 and is a prime or has no prime factor below 4096. The divisions of lines
 2 and 3 move each prime $p$ that divides the current cofactor from it to $F$,
@@ -2365,7 +2365,7 @@ division. `uniformBelow( g , s )` is the method of [Lemire
 2019](Z-bibliography.md#ref-lemire2019): for the word $x$,
 $x s = h 2^{64} + l$, and the result is $h$, once the $l$ below
 $t = 2^{64} \bmod s$ are rejected ([Algorithm
-17.32](17-numeric.md#alg-17-33)).
+17.33](17-numeric.md#alg-17-33)).
 
 <span id="alg-17-33"></span>**Algorithm 17.33.** Integer uniform in
 $[ 0 , s )$ of [Lemire 2019](Z-bibliography.md#ref-lemire2019).
