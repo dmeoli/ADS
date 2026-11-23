@@ -6,7 +6,8 @@
  * Google Highway, with `ADS_WITH_HIGHWAY`: a comparison of the 16 control
  * bytes of a group of a hash table with a fingerprint, the place of a byte
  * among the 16 keys of a node of a tree, a count of the keys below a key
- * in a block, where a call through the table of the kernels of Simd.h
+ * in a block, the first slot of a range of a block of a filter equal to a
+ * fingerprint, where a call through the table of the kernels of Simd.h
  * would cost more than the kernel. They are compiled for the set of vector
  * instructions that the flags of the compiler give (the static target of
  * Highway, SSE2 on x86-64 and NEON on AArch64 by default), in the
@@ -195,6 +196,31 @@ HWY_INLINE std::uint64_t bytesEqual( const std::uint8_t * p , std::uint8_t b )
   r |= m << i;
   }
  return( r );
+ }
+
+/// the first lane \f$ i \f$, \f$ l \le i < u \le W \f$, of the \f$ W \f$
+/// lanes of the unsigned type `T` at \f$ p \f$ (of any alignment) equal to
+/// \f$ t \f$, -1 if none: the comparison of all the lanes and the lanes
+/// \f$ [ l , u ) \f$ as masks, and the first of the two, with no transfer
+/// of the bits to a word
+template< std::size_t W , class T >
+HWY_INLINE std::intptr_t firstEqualIn( const T * p , T t , std::size_t l ,
+				       std::size_t u )
+{
+ const hn::CappedTag< T , W > d;
+ const std::size_t L = hn::Lanes( d );
+ const auto vt = hn::Set( d , t );
+ for( std::size_t i = 0 ; i < u ; i += L ) {
+  const auto in =
+    hn::AndNot( hn::FirstN( d , l > i ? l - i : 0 ) ,
+		hn::FirstN( d , u - i ) );
+  const std::intptr_t f =
+    hn::FindFirstTrue( d ,
+		       hn::And( hn::Eq( hn::LoadU( d , p + i ) , vt ) , in ) );
+  if( f >= 0 )
+   return( std::intptr_t( i ) + f );
+  }
+ return( -1 );
  }
 
 /// the bits \f$ j \f$, \f$ 0 \le j < W \le 64 \f$, of the bytes

@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the quotient filters of Pandey et al.: `CountingQuotientFilter`, a
+  dynamic filter that counts the copies of its keys in the slots of their
+  runs, on the table of the rank-and-select quotient filter (`QuotientTable`,
+  blocks of 64 slots with their bits occupied and end and an offset), with
+  insertions and removals of any number of copies, a removal of more copies
+  than counted refused, `merge()` and `resize()` with the same fingerprints;
+  `VectorQuotientFilter`, of fingerprints of 8 or 16 bits in blocks of one
+  line whose quotients are written in unary in a word or two, two blocks per
+  key by the power of two choices, the slots of a block compared at once by
+  the vectors of Highway (the kernel `firstEqualIn()` of `SimdInline.h`)
+  before the select of the bucket; the dynamic range filter `MementoFilter`
+  of Eslami and Dayan, the prefixes of the keys hashed into the same table
+  and their mementos in keepsake boxes, with a bound on the false positives
+  of the ranges of up to $2^r$ keys that holds whatever the keys and the
+  queries, insertions, removals and `resize()`; the tests
+  `hashing.counting-quotient-filter`, `hashing.vector-quotient-filter` and
+  `hashing.memento-filter` and their persistence, the cells of the three in
+  `bench/hashing.cpp` against the filters of their authors (cqf, vqf and
+  Memento_Filter, each built in a unit of its own from the sources given by
+  HASHING), and the parts of sections 10.9 and 10.11 of the manual on them
+  (Lemmas 10.20, 10.21 and 10.26)
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits

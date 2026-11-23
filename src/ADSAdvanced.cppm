@@ -687,12 +687,18 @@ using ADS::BinaryFuseFilter;
 // set/BlockedBloomFilter.h
 using ADS::BlockedBloomFilter;
 
+// set/CountingQuotientFilter.h
+using ADS::CountingQuotientFilter;
+
 // set/CuckooFilter.h
 using ADS::CuckooFilter;
 
 // set/GrafiteFilter.h
 using ADS::BucketingFilter;
 using ADS::GrafiteFilter;
+
+// set/MementoFilter.h
+using ADS::MementoFilter;
 
 // set/PrefixFilter.h
 using ADS::PrefixFilter;
@@ -709,6 +715,9 @@ using ADS::setUnion;
 
 // set/VectorIntersection.h
 using ADS::intersect;
+
+// set/VectorQuotientFilter.h
+using ADS::VectorQuotientFilter;
 
 // sort/PdqSort.h
 using ADS::pdqSort;

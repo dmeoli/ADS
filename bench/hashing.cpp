@@ -25,19 +25,23 @@
  *   of ADS with FastHash;
  * - "filters": the build of a filter of n random keys of 64 bits (by n
  *   insertions for the dynamic ones), n queries of present and of absent
- *   keys and, for the cuckoo filters, the n removals, by the filters of
- *   ADS against the blocked filter of Bloom, the cuckoo filter and the
- *   standard Ribbon filter (of RocksDB) of fastfilter_cpp and the xor and
- *   binary fuse filters of xor_singleheader; the prefix filter of ADS
- *   against the cuckoo filters (its pair in summary.py, of the same false
- *   positives) and the blocked filters of Bloom, since the prefix filter
- *   of fastfilter_cpp lives in its benchmark driver;
+ *   keys and, for the cuckoo and the quotient filters, the n removals, by
+ *   the filters of ADS against the blocked filter of Bloom, the cuckoo
+ *   filter and the standard Ribbon filter (of RocksDB) of fastfilter_cpp,
+ *   the xor and binary fuse filters of xor_singleheader, and the counting
+ *   and vector quotient filters of their authors (cqf and vqf, at the same
+ *   slots and remainders, see QuotientCompetitors.h); the prefix filter of
+ *   ADS against the cuckoo filters (its pair in summary.py, of the same
+ *   false positives) and the blocked filters of Bloom, since the prefix
+ *   filter of fastfilter_cpp lives in its benchmark driver;
  * - "ranges": the range filters, built on n random keys of 64 bits and
  *   asked n empty ranges of \f$ \ell \f$ = 1, 32 and 1024 keys, at random
  *   (uncorrelated) and right after a key (correlated, the queries of a
- *   key-value store that defeat the heuristics), by GrafiteFilter and
- *   BucketingFilter of ADS against the binary fuse filter asked the
- *   \f$ \ell \f$ points of the range (for \f$ \ell \le 32 \f$);
+ *   key-value store that defeat the heuristics), by GrafiteFilter,
+ *   BucketingFilter and MementoFilter of ADS against the binary fuse filter
+ *   asked the \f$ \ell \f$ points of the range (for \f$ \ell \le 32 \f$)
+ *   and the Memento filter of its authors (at the same slots, mementos and
+ *   fingerprints);
  * - "perfect hashing": the build of a minimal perfect hash function of n
  *   random keys of 64 bits and n queries, by those of ADS (by pilots, by
  *   recursive splitting and by levels of fingerprints, the method of
@@ -98,10 +102,13 @@
 #include "ADS/set/BlockedBloomFilter.h"
 #include "ADS/set/BloomFilter.h"
 #include "ADS/set/BloomVariants.h"
+#include "ADS/set/CountingQuotientFilter.h"
 #include "ADS/set/CuckooFilter.h"
 #include "ADS/set/GrafiteFilter.h"
+#include "ADS/set/MementoFilter.h"
 #include "ADS/set/PrefixFilter.h"
 #include "ADS/set/RibbonFilter.h"
+#include "ADS/set/VectorQuotientFilter.h"
 
 #if __has_include( <boost/unordered/unordered_flat_map.hpp> )
  #include <boost/container_hash/hash.hpp>
@@ -149,6 +156,9 @@
 #ifdef ADS_HAS_FASTFILTER
  #include <bloom/simd-block.h>
 #endif
+// the quotient filters of their authors, with ADS_HAS_CQF, ADS_HAS_VQF and
+// ADS_HAS_MEMENTO, which the build defines where their units compile
+#include "QuotientCompetitors.h"
 #if __has_include( <cuckoo/cuckoofilter.h> )
  #include <cuckoo/cuckoofilter.h>
  #define ADS_HAS_CUCKOOFILTER 1
@@ -927,6 +937,83 @@ void allFilters( const std::vector< Key > & K , const std::vector< Key > & H ,
    []( auto & f , Key k ) { return( f->Delete( k ) == 0 ); } ,
    []( const auto & f ) { return( 8 * f->SizeInBytes() ); } );
 #endif
+ for( const char * who : { "ADS::CountingQuotientFilter 8" ,
+			   "ADS::CountingQuotientFilter 8 A/A" } )
+  dynamic(
+    who , K , H , Q , r ,
+    []( std::size_t m ) {
+     return( ADS::CountingQuotientFilter< Key , std::uint8_t >( m ) );
+     } ,
+    []( auto & f , Key k ) { f.insert( k ); } ,
+    []( const auto & f , Key k ) { return( f.maybe( k ) ); } ,
+    []( auto & f , Key k ) { return( f.remove( k ) ); } ,
+    []( const auto & f ) { return( f.bits() ); } );
+ dynamic(
+   "ADS::CountingQuotientFilter 16" , K , H , Q , r ,
+   []( std::size_t m ) {
+    return( ADS::CountingQuotientFilter< Key , std::uint16_t >( m ) );
+    } ,
+   []( auto & f , Key k ) { f.insert( k ); } ,
+   []( const auto & f , Key k ) { return( f.maybe( k ) ); } ,
+   []( auto & f , Key k ) { return( f.remove( k ) ); } ,
+   []( const auto & f ) { return( f.bits() ); } );
+ dynamic(
+   "ADS::VectorQuotientFilter 8" , K , H , Q , r ,
+   []( std::size_t m ) {
+    return( ADS::VectorQuotientFilter< Key , std::uint8_t >( m ) );
+    } ,
+   []( auto & f , Key k ) { f.insert( k ); } ,
+   []( const auto & f , Key k ) { return( f.maybe( k ) ); } ,
+   []( auto & f , Key k ) { return( f.remove( k ) ); } ,
+   []( const auto & f ) { return( f.bits() ); } );
+ dynamic(
+   "ADS::VectorQuotientFilter 16" , K , H , Q , r ,
+   []( std::size_t m ) {
+    return( ADS::VectorQuotientFilter< Key , std::uint16_t >( m ) );
+    } ,
+   []( auto & f , Key k ) { f.insert( k ); } ,
+   []( const auto & f , Key k ) { return( f.maybe( k ) ); } ,
+   []( auto & f , Key k ) { return( f.remove( k ) ); } ,
+   []( const auto & f ) { return( f.bits() ); } );
+#ifdef ADS_HAS_CQF
+ {  // of its authors, at the slots and the remainders of 8 bits of ADS
+  struct Cqf
+  {
+   void * f;
+   explicit Cqf( std::size_t m ) {
+    const auto s = std::max< std::size_t >(
+      64 , std::bit_ceil( std::size_t( std::ceil( double( m ) / 0.95 ) ) ) );
+    f = cqfNew( s , std::countr_zero( s ) + 8 );
+    }
+   ~Cqf() { cqfFree( f ); }
+   };
+  dynamic(
+    "cqf::QF 8" , K , H , Q , r ,
+    []( std::size_t m ) { return( std::make_unique< Cqf >( m ) ); } ,
+    []( auto & f , Key k ) { cqfInsert( f->f , k ); } ,
+    []( const auto & f , Key k ) { return( cqfCount( f->f , k ) > 0 ); } ,
+    []( auto & f , Key k ) { return( cqfRemove( f->f , k ) != 0 ); } ,
+    []( const auto & f ) { return( 8 * cqfBytes( f->f ) ); } );
+  }
+#endif
+#ifdef ADS_HAS_VQF
+ {  // of its authors, at the slots of ADS
+  struct Vqf
+  {
+   void * f;
+   explicit Vqf( std::size_t m )
+       : f( vqfNew( std::uint64_t( std::ceil( double( m ) / 0.9 ) ) ) ) { }
+   ~Vqf() { vqfFree( f ); }
+   };
+  dynamic(
+    "vqf::vqf 8" , K , H , Q , r ,
+    []( std::size_t m ) { return( std::make_unique< Vqf >( m ) ); } ,
+    []( auto & f , Key k ) { vqfInsert( f->f , k ); } ,
+    []( const auto & f , Key k ) { return( vqfContains( f->f , k ) != 0 ); } ,
+    []( auto & f , Key k ) { return( vqfRemove( f->f , k ) != 0 ); } ,
+    []( const auto & f ) { return( 8 * vqfBytes( f->f ) ); } );
+  }
+#endif
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1020,6 +1107,61 @@ void rangeFilters( const std::vector< Key > & K , int r , std::uint64_t seed )
    "ADS::BucketingFilter 16" , K , r , seed ,
    []( const auto & S ) { return( ADS::BucketingFilter< Key >( S , 16 ) ); } ,
    may , bits );
+ // the Memento filters of slots of 16 bits, mementos of 5 bits (the ranges
+ // of 1 to 32 keys in at most two partitions, those of 1024 keys in 33)
+ // and of slots of 32 bits, mementos of 10 bits and fingerprints of 14
+ ranges(
+   "ADS::MementoFilter 16 r=5" , K , r , seed ,
+   []( const auto & S ) {
+    ADS::MementoFilter< Key , std::uint16_t > f( S.size() , 5 );
+    for( Key k : S )
+     f.insert( k );
+    return( f );
+    } ,
+   may , []( const auto & f ) { return( f.bits() ); } );
+ ranges(
+   "ADS::MementoFilter 32 r=10" , K , r , seed ,
+   []( const auto & S ) {
+    ADS::MementoFilter< Key , std::uint32_t > f( S.size() , 10 , 14 );
+    for( Key k : S )
+     f.insert( k );
+    return( f );
+    } ,
+   may , []( const auto & f ) { return( f.bits() ); } );
+#ifdef ADS_HAS_MEMENTO
+ {  // of its authors, at the slots, the mementos and the fingerprints of
+    // ADS, by insertions
+  struct Memento
+  {
+   void * f;
+   Memento( const std::vector< Key > & S , int rb , int fb ) {
+    const auto s = std::max< std::size_t >(
+      64 ,
+      std::bit_ceil( std::size_t( std::ceil( double( S.size() ) / 0.95 ) ) ) );
+    f = mementoNew( s , std::countr_zero( s ) + fb , rb );
+    for( Key k : S )
+     mementoInsert( f , k );
+    }
+   ~Memento() { mementoFree( f ); }
+   };
+  auto mayM = []( const auto & f , Key a , Key b ) {
+   return( mementoRange( f->f , a , b ) != 0 );
+   };
+  auto bitsM = []( const auto & f ) { return( 8 * mementoBytes( f->f ) ); };
+  ranges(
+    "Memento::QF 16 r=5" , K , r , seed ,
+    []( const auto & S ) {
+     return( std::make_unique< Memento >( S , 5 , 11 ) );
+     } ,
+    mayM , bitsM );
+  ranges(
+    "Memento::QF 24 r=10" , K , r , seed ,
+    []( const auto & S ) {
+     return( std::make_unique< Memento >( S , 10 , 14 ) );
+     } ,
+    mayM , bitsM );
+  }
+#endif
  // a filter of points asked the l points of the range
  ranges(
    "ADS::BinaryFuseFilter 16 (points)" , K , r , seed ,

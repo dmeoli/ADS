@@ -406,12 +406,14 @@ set/BlockedBloomFilter.h              advanced
 set/BloomFilter.h                     base
 set/BloomVariants.h                   base
 set/BoolSet.h                         base
+set/CountingQuotientFilter.h          advanced
 set/CuckooFilter.h                    advanced
 set/DictionarySet.h                   base
 set/GrafiteFilter.h                   advanced
 set/HashMultiset.h                    base
 set/LinkedHashSet.h                   base
 set/ListSet.h                         base
+set/MementoFilter.h                   advanced
 set/PrefixFilter.h                    advanced
 set/RibbonFilter.h                    advanced
 set/RoaringBitmap.h                   advanced
@@ -421,6 +423,7 @@ set/SortedIntersection.h              base
 set/SortedListSet.h                   base
 set/SpaceEfficientSortedSet.h         base
 set/VectorIntersection.h              advanced
+set/VectorQuotientFilter.h            advanced
 
 sort/CountingSort.h                   base
 sort/EngineeredQuickSorts.h           base
