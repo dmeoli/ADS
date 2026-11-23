@@ -403,9 +403,8 @@ DenseHashMap< K , V , H , Eq , A , P >::place( KK && k , Args &&... a )
   return( std::pair< V * , bool >( &f_kv[ p ].second , false ) );
   }
  ADS_PRE( f_kv.size() < 0xFFFFFFFFULL );
- // the empty places counted only if a removal may have left some
- if( ( f_kv.size() + f_deleted >= f_max ) &&
-     ( ( f_deleted == 0 ) || ! recount() ) ) [[unlikely]]
+ // the places full or counted, both known exactly [see unlink()]
+ if( f_kv.size() + f_deleted >= f_max ) [[unlikely]]
   grow();
  // the pair first, so that an exception leaves the index as it was
  f_kv.emplace_back( std::piecewise_construct ,
@@ -497,8 +496,11 @@ void DenseHashMap< K , V , H , Eq , A , P >::unlink( Group & c ,
 						     std::size_t j ,
 						std::size_t p )
 {
+ // the place counted only in a group with some overflow, where it stays
+ // full for the inspections: that group was full when it got the overflow,
+ // so that each place counted was emptied there and the count is exact
+ f_deleted += std::size_t( c.c[ OVER ] != 0 );
  vacate( c , j );
- ++f_deleted;  // a bound, see recount()
  const std::size_t last = f_kv.size() - 1;
  if( p != last ) {  // the last pair into p
   holder( mix( f_kv[ last ].first ) , last ) = std::uint32_t( p );
@@ -534,18 +536,7 @@ double DenseHashMap< K , V , H , Eq , A , P >::load( void ) const
 template< class K , class V , class H , class Eq , class A , class P >
 std::size_t DenseHashMap< K , V , H , Eq , A , P >::deleted( void ) const
 {
- std::size_t d = 0;  // the empty places counted
- for( std::size_t g = 0 ; f_cap && ( g <= f_mask ) ; ++g )
-  if( f_ctrl[ g ].c[ OVER ] )
-   d += std::size_t( std::popcount( empties( f_ctrl[ g ] ) ) );
- return( d );
- }
-
-template< class K , class V , class H , class Eq , class A , class P >
-bool DenseHashMap< K , V , H , Eq , A , P >::recount( void )
-{
- f_deleted = deleted();
- return( f_kv.size() + f_deleted + f_cap / 16 < f_max );
+ return( f_deleted );
  }
 
 template< class K , class V , class H , class Eq , class A , class P >
@@ -688,8 +679,10 @@ bool DenseHashMap< K , V , H , Eq , A ,
   return( true );
   }
  std::vector< char > held( n , 0 );  // each position exactly once
- std::size_t full = 0;
- for( std::size_t g = 0 ; g <= f_mask ; ++g )
+ std::size_t full = 0 , counted = 0;
+ for( std::size_t g = 0 ; g <= f_mask ; ++g ) {
+  if( f_ctrl[ g ].c[ OVER ] )  // the empty places counted
+   counted += std::size_t( std::popcount( empties( f_ctrl[ g ] ) ) );
   for( Mask m = fulls( g ) ; m ; m &= m - 1 ) {
    const std::size_t j = std::size_t( std::countr_zero( m ) );
    if( ! reached( g , j ) || held[ f_ctrl[ g ].at[ j ] ] )
@@ -697,7 +690,8 @@ bool DenseHashMap< K , V , H , Eq , A ,
    held[ f_ctrl[ g ].at[ j ] ] = 1;
    ++full;
    }
- return( full == n );
+  }
+ return( ( full == n ) && ( counted == f_deleted ) );
  }
 
 /*--------------------------------------------------------------------------*/

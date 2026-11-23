@@ -38,10 +38,12 @@
  * written as a whole group, at an address that depends only on the hash,
  * so that the loads of the next operations need not wait for the control
  * bytes [see `FlatHashTable.h`]. A place emptied in a group with some
- * overflow still counts as full until the next rebuild; the places counted
- * are bounded by one more per removal and counted exactly only when the
- * full places and the bound reach \f$ 7 m / 8 \f$ of the \f$ m \f$ places,
- * the index being rebuilt if fewer than \f$ m / 16 \f$ places are left,
+ * overflow still counts as full until the next rebuild, while one emptied
+ * in a group with none is free at once; since only a full group gets some
+ * overflow, the places counted are exactly those emptied in groups with
+ * some, one more per removal there and one less per insertion there, with
+ * no scan of the groups, and when the full places and the counted ones
+ * reach \f$ 7 m / 8 \f$ of the \f$ m \f$ places the index is rebuilt,
  * twice as large if the pairs exceed half of \f$ 7 m / 8 \f$. A rebuild
  * reads the keys in the vector in order, hashes them again and fills the
  * new groups, each in the order of its places; so each operation costs
@@ -273,7 +275,7 @@ class DenseHashMap
  /// 2 & \quad \textbf{if}\ k \text{ is there }\ \textbf{then}\ \text{give it }
  ///     \text{the value } v;\ \textbf{return false} \cr
  /// 3 & \quad \textbf{if}\ \text{the places full or counted reach }
- ///     7 m / 8\ \textbf{then}\ \text{recount, or rebuild the index} \cr
+ ///     7 m / 8\ \textbf{then}\ \text{rebuild the index} \cr
  /// 4 & \quad ( g , j ) \gets \text{the first empty place of the inspection,}
  ///     \text{ with } \beta \text{ set in the overflow of the full groups}
  ///     \text{ passed} \cr
@@ -342,7 +344,7 @@ class DenseHashMap
 
  /// the places of the index emptied by `remove()` in groups that some
  /// inspection went past, which count as full until the index is
- /// rebuilt; \f$ O( m ) \f$ time, by a scan of the groups
+ /// rebuilt; \f$ O( 1 ) \f$ time, the count kept by the operations
  [[nodiscard]] std::size_t deleted( void ) const;
 
  /// room for \f$ n \f$ pairs before the map grows
@@ -543,11 +545,6 @@ class DenseHashMap
  /// vector
  void rebuild( std::size_t G );
 
- /// `f_deleted` set to `deleted()`; true if the index has room for
- /// \f$ m / 16 \f$ more
- /// pairs or places counted before the next recount
- ADS_FLAT_NOINLINE bool recount( void );
-
  /// the index rebuilt for one more pair, larger if needed
  ADS_FLAT_NOINLINE void grow( void );
 
@@ -619,7 +616,7 @@ class DenseHashMap
  std::size_t f_cap = 0;                ///< the places
  int f_shift = 63;                     ///< 64 - log2 of the groups
  std::size_t f_max = 0;                ///< `bound( f_cap )`
- std::size_t f_deleted = 0;            ///< a bound of `deleted()`
+ std::size_t f_deleted = 0;            ///< `deleted()`
  H f_h;                                ///< the hash of the keys
  Eq f_eq;                              ///< the equality of the keys
  ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers

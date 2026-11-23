@@ -1174,7 +1174,10 @@ ADS_TEST( "dense-hash-map" )
    CHECK( T.remove( k ) );
    R.erase( k );
    }
-  CHECK( T.deleted() > 0 && ! T.remove( 0 ) );
+  // the places counted: those of the 100 removals but the ones of the
+  // last group, which no inspection went past (checked against a scan
+  // of the groups by the invariant, on fewer than 1024 places)
+  CHECK( T.deleted() >= 100 - 12 && T.deleted() <= 100 && ! T.remove( 0 ) );
   sameAs( T , R );
   for( std::uint64_t k = 1000 ; k < 1100 ; ++k ) {  // the places reused
    CHECK( T.insert( k , 1 ) );
@@ -1182,7 +1185,7 @@ ADS_TEST( "dense-hash-map" )
    }
   sameAs( T , R );
   }
- {  // churn at a steady size: recounts, no drift
+ {  // churn at a steady size: rebuilds of the same size, no drift
   DenseHashMap< std::uint64_t , std::uint64_t > T;
   std::unordered_map< std::uint64_t , std::uint64_t > R;
   std::mt19937_64 g( 44 );

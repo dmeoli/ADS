@@ -1932,10 +1932,13 @@ the place of the key and moves the last pair of $A$ into the position left free
 (a swap with the last and a pop). Then the place of the last pair in the index,
 found by the inspection of its key comparing the positions rather than the
 keys, takes the new position ([Algorithm 7.10](07-dictionary.md#alg-7-10),
-[Figure 7.10](07-dictionary.md#fig-7-10)). As for the places counted, the
-recount and the rebuilds follow the rules of `FlatHashTable` (with $m / 16$ and
-$b( m )$), and Lemmas [7.16](07-dictionary.md#lem-7-16) to
-[7.18](07-dictionary.md#lem-7-18) hold with groups of 12 places; a removal
+[Figure 7.10](07-dictionary.md#fig-7-10)). As for the places counted, a
+removal adds 1 to $d$ only when the overflow of its group is not 0, which costs
+no load, since the removal has read that group; thus $d = D$ after each
+operation, no recount is needed, and the index is rebuilt when $n + d$ reaches
+$b( m )$, by the rules of `FlatHashTable`, and Lemmas
+[7.16](07-dictionary.md#lem-7-16) to [7.18](07-dictionary.md#lem-7-18) hold
+with groups of 12 places; a removal
 makes one more inspection, that of the key of the last pair, as a search of a
 key of the table. Its space is $16 n$ bytes for pairs of 16 bytes plus 64 bytes
 per 12 places of the index, about 5.3 bytes per place, at a load between $7 /

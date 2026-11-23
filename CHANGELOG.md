@@ -78,6 +78,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   events, so that the events of an item that is several times in a queue
   with no handles coalesce into those of a multiset of pairs, and
   `priority_t< Q >` is `Q::Key` when the queue has no `Priority`
+- `DenseHashMap` counts exactly the places that a removal empties in a
+  group with some overflow, the only ones that still count as full, adding
+  one at a removal only in such a group (whose control bytes the removal
+  has read), so that `deleted()` takes O(1) time and an insertion that
+  reaches 7 m / 8 of the places rebuilds the index with no scan of the
+  groups to count them again
 - the tables of the benchmarks in the README and in `results/` are those
   of a new run on the AMD EPYC 9654, built with Highway and, the parallel
   benchmarks, with hwloc, and each comparison of the README carries its
