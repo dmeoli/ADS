@@ -370,7 +370,8 @@ Its declarations are the following.
 // declarations of <ADS/mfset/UnionFind.h>
 enum class Union { SIZE , RANK };
 enum class Compression { HALVING , FULL };
-template< Union L = Union::SIZE , Compression C = Compression::HALVING >
+template< Union L = Union::SIZE , Compression C = Compression::HALVING ,
+          class Policy = NoObservers >
 class DisjointSets
 {
  public:

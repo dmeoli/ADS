@@ -1989,7 +1989,7 @@ struct BWT
  std::string last;
  std::size_t primary;
  };
-BWT bwt( std::string_view s );
+BWT bwt( std::string_view s , std::size_t wideFrom = bwtWideFrom );
 std::vector< std::size_t > lfMapping( const BWT & b );
 std::string inverseBwt( const BWT & b );
 std::vector< std::uint8_t > moveToFront( std::string_view s ,

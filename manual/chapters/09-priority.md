@@ -1373,7 +1373,7 @@ The public members of `RadixHeap` are the following:
 ```cpp
 // declarations of <ADS/priority/RadixHeap.h>
 template< class T , std::integral K = std::uint32_t , unsigned B = 4 ,
-          class A = std::allocator< T > >
+          class A = std::allocator< T > , class Policy = NoObservers >
 class RadixHeap
 {
  public:
@@ -1452,7 +1452,8 @@ The public members of `DialQueue` are the following:
 
 ```cpp
 // declarations of <ADS/priority/DialQueue.h>
-template< class T , std::integral K = std::uint32_t >
+template< class T , std::integral K = std::uint32_t ,
+          class Policy = NoObservers >
 class DialQueue
 {
  public:
@@ -1537,7 +1538,8 @@ The public members of `BucketQueue` are the following:
 
 ```cpp
 // declarations of <ADS/priority/BucketQueue.h>
-template< class T , std::integral K = int , BucketTie Tie = LargestSecondKey >
+template< class T , std::integral K = int , BucketTie Tie = LargestSecondKey ,
+          class Policy = NoObservers >
 class BucketQueue
 {
  public:

@@ -8286,13 +8286,14 @@ class LeftLeaningRedBlackTree
 
 ```cpp
 // declarations of <ADS/tree/BTree.h>
-template< std::totally_ordered K , class V >
+template< std::totally_ordered K , class V , class Policy = NoObservers >
 class BTree
 {
  public:
  using Key = K;
  using Value = V;
- explicit BTree( int t = 3 );
+ template< class... O >
+ explicit BTree( int t = 3 , O &... o );
  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
  void insert( const K & k , const V & v );
  void remove( const K & k );
@@ -8311,7 +8312,7 @@ class BTree
  using value_type = std::pair< K , V >;
  using key_type = K;
  using mapped_type = V;
- using reference = PairRef< const K & , const V & >;
+ using reference = typename const_iterator::reference;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
  };
@@ -8345,7 +8346,7 @@ class BPlusTree
  using value_type = std::pair< K , V >;
  using key_type = K;
  using mapped_type = V;
- using reference = PairRef< const K & , const V & >;
+ using reference = typename const_iterator::reference;
  [[nodiscard]] const_iterator begin( void ) const;
  [[nodiscard]] const_iterator end( void ) const;
  };
@@ -8389,7 +8390,7 @@ class BTreeMap
  void forEach( F && f ) const;
  template< class F >
  void forRange( const K & lo , const K & hi , F && f ) const;
- void swap( BTreeMap & o ) noexcept;
+ void swap( BTreeMap & o ) noexcept( detail::swapNoexcept< A > );
  class const_iterator;
  using value_type = std::pair< K , V >;
  using key_type = K;
@@ -8727,7 +8728,8 @@ class MaterializedAggregate
 
 ```cpp
 // declarations of <ADS/tree/LinkCutTree.h>
-template< class T = long long , class Op = std::plus< T > >
+template< class T = long long , class Op = std::plus< T > ,
+          class Policy = NoObservers >
 class LinkCutTree
 {
  public:

@@ -1888,7 +1888,7 @@ class FlatHashTable
  void forEach( F && f ) const;
  template< class F >
  void forEach( F && f );
- void swap( FlatHashTable & o ) noexcept;
+ void swap( FlatHashTable & o ) noexcept( detail::swapNoexcept< A > );
  class const_iterator;
  const_iterator erase( const_iterator it );
  };
@@ -1963,14 +1963,16 @@ We declare `DenseHashMap` as follows.
 // declarations of <ADS/dictionary/DenseHashMap.h>
 template< class K , class V , class H = DefaultHash< K > ,
           class Eq = std::equal_to< K > ,
-          class A = std::allocator< std::pair< const K , V > > >
+          class A = std::allocator< std::pair< const K , V > > ,
+          class Policy = NoObservers >
 class DenseHashMap
 {
  public:
  using Key = K;
  using Value = V;
+ template< class... O >
  explicit DenseHashMap( std::size_t n = 0 , H h = H() , Eq eq = Eq() ,
-                        const A & alloc = A() );
+                        const A & alloc = A() , O &... o );
  DenseHashMap( const DenseHashMap & o );
  DenseHashMap( const DenseHashMap & o , const A & alloc );
  DenseHashMap( DenseHashMap && o ) noexcept;
@@ -1997,7 +1999,7 @@ class DenseHashMap
  template< class F >
  void forEach( F && f ) const;
  const std::pair< K , V > * data( void ) const;
- void swap( DenseHashMap & o ) noexcept;
+ void swap( DenseHashMap & o ) noexcept( detail::swapNoexcept< A > );
  using const_iterator =
    typename detail::AllocVector< A , std::pair< K , V > >::const_iterator;
  };
@@ -2042,12 +2044,14 @@ In C++, `PointerTable` is declared as follows.
 ```cpp
 // declarations of <ADS/dictionary/PointerTable.h>
 template< class T , class Eq = StateEqual ,
-          class A = std::allocator< std::byte > >
+          class A = std::allocator< std::byte > , class Policy = NoObservers >
 class PointerTable
 {
  public:
+ template< class... O >
+  requires( ! kIndex )
  explicit PointerTable( std::size_t capacity = 16 , Eq eq = Eq() ,
-                        const A & alloc = A() );
+                        const A & alloc = A() , O &... o );
  PointerTable( const PointerTable & ) = default;
  PointerTable( PointerTable && o ) noexcept;
  void clear( void );
