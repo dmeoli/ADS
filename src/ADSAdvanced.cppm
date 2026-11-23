@@ -715,6 +715,9 @@ using ADS::CountMinSketch;
 using ADS::CountMinUpdate;
 using ADS::CountSketch;
 
+// set/CountingQuotientFilter.h
+using ADS::CountingQuotientFilter;
+
 // set/CuckooFilter.h
 using ADS::CuckooFilter;
 
@@ -724,6 +727,9 @@ using ADS::GrafiteFilter;
 
 // set/KllSketch.h
 using ADS::KllSketch;
+
+// set/MementoFilter.h
+using ADS::MementoFilter;
 
 // set/MinHashSketch.h
 using ADS::MinHashSketch;
@@ -746,6 +752,9 @@ using ADS::UltraLogLog;
 
 // set/VectorIntersection.h
 using ADS::intersect;
+
+// set/VectorQuotientFilter.h
+using ADS::VectorQuotientFilter;
 
 // sort/PdqSort.h
 using ADS::pdqSort;

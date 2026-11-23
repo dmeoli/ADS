@@ -347,9 +347,9 @@ HWLOCON   = $(if $(filter 1,$(ADSHWLOCON)),-DADS_WITH_HWLOC $(libHwlocINC) \
 # HASHING=<dir> adds to hashing the libraries whose sources are in <dir>
 # (unordered_dense, robin-map, libcuckoo, xxHash, wyhash, rapidhash,
 # fastfilter_cpp, xor_singleheader, pthash, BBHash, sux,
-# datasketches-cpp, ConsensusRecSplit), ABSL=<prefix> Abseil;
-# LIBSAIS=<prefix> and DIVSUFSORT=<prefix> add libsais and libdivsufsort to
-# suffix, EDLIB=<prefix> and RAPIDFUZZ=<prefix> edlib and
+# datasketches-cpp, ConsensusRecSplit, cqf, vqf, Memento_Filter),
+# ABSL=<prefix> Abseil; LIBSAIS=<prefix> and DIVSUFSORT=<prefix> add libsais
+# and libdivsufsort to suffix, EDLIB=<prefix> and RAPIDFUZZ=<prefix> edlib and
 # rapidfuzz-cpp to edit; PRIORITY=<dir> adds to priority the libraries
 # whose sources are in <dir> (tlx, radix-heap); MIMALLOC=<prefix> and
 # JEMALLOC=<prefix> add to memory mimalloc (built without the override of
@@ -461,6 +461,27 @@ HASHFLAGS = $(if $(HASHING),$(addprefix -isystem $(HASHING)/,$(HASHINC)) \
             $(if $(ABSL),-DADS_HAS_ABSL -isystem $(ABSL)/include \
             $(shell PKG_CONFIG_PATH=$(ABSL)/lib/pkgconfig pkg-config \
              --libs absl_flat_hash_map absl_hash 2>/dev/null)) -pthread
+# the quotient filters of their authors from the sources in $(HASHING)
+# (cqf, vqf and Memento_Filter), each in a unit of its own [see
+# bench/QuotientCompetitors.h], taken where the unit compiles (once, at the
+# first use)
+QFCQF     = -I$(HASHING)/cqf/include -I$(HASHING)/cqf/src -D__SSE4_2_
+QFVQF     = -I$(HASHING)/vqf/include -I$(HASHING)/vqf/src
+QFMEM     = -I$(HASHING)/Memento_Filter/include \
+            -I$(HASHING)/Memento_Filter/src
+QFCC      = -O3 -march=native -DNDEBUG -Ibench -w
+UNITOK    = $(shell $(1) $(QFCC) $(2) -fsyntax-only $(3) >/dev/null 2>&1 && \
+            echo 1)
+QFOBJS    = $(eval QFOBJS := $$(if $$(HASHING),\
+            $$(if $$(call UNITOK,$$(CC),$$(QFCQF),bench/qf_cqf.c),\
+            $$(BUILD)/qf_cqf.o) \
+            $$(if $$(call UNITOK,$$(CXX) -std=c++20,$$(QFVQF),\
+            bench/qf_vqf.cpp),$$(BUILD)/qf_vqf.o) \
+            $$(if $$(call UNITOK,$$(CC),$$(QFMEM),bench/qf_memento.c),\
+            $$(BUILD)/qf_memento.o)))$(QFOBJS)
+QFFLAGS   = $(if $(filter %/qf_cqf.o,$(QFOBJS)),-DADS_HAS_CQF) \
+            $(if $(filter %/qf_vqf.o,$(QFOBJS)),-DADS_HAS_VQF) \
+            $(if $(filter %/qf_memento.o,$(QFOBJS)),-DADS_HAS_MEMENTO)
 # the libraries of the other benchmarks, each from its prefix or source
 # directory if given: OPENBLAS=<prefix> for matrix, EIGEN=<include dir>
 # for matrix and sparse, CGAL=<include dir> (with GMP) for geometry,
@@ -530,8 +551,18 @@ $(BUILD)/bench-bignum-own: bench/bignum.cpp bench/Bench.h $(HEADERS) \
                           | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -DADS_BENCH_OWN -o $@ $< $(BENCHLIBS)
 
-$(BUILD)/bench-hashing: bench/hashing.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(HASHFLAGS)
+$(BUILD)/bench-hashing: bench/hashing.cpp bench/Bench.h \
+                       bench/QuotientCompetitors.h $(HEADERS) $(QFOBJS) \
+                       | $(BUILD)
+	$(CXX) $(BENCHFLAGS) $(QFFLAGS) -o $@ $< $(QFOBJS) $(BENCHLIBS) \
+	       $(HASHFLAGS)
+$(BUILD)/qf_cqf.o: bench/qf_cqf.c bench/QuotientCompetitors.h | $(BUILD)
+	$(CC) $(QFCC) $(QFCQF) -c -o $@ $<
+$(BUILD)/qf_vqf.o: bench/qf_vqf.cpp bench/QuotientCompetitors.h | $(BUILD)
+	$(CXX) -std=c++20 $(QFCC) $(QFVQF) -c -o $@ $<
+$(BUILD)/qf_memento.o: bench/qf_memento.c bench/QuotientCompetitors.h \
+                       | $(BUILD)
+	$(CC) $(QFCC) $(QFMEM) -c -o $@ $<
 $(BUILD)/bench-search: bench/search.cpp bench/Bench.h bench/Texts.h \
                       $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS)

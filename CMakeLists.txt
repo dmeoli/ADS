@@ -688,6 +688,38 @@ if (ADS_BENCHMARKS)
             target_compile_definitions(bench-hashing
                                        PRIVATE ADS_HAS_FASTFILTER)
         endif ()
+        # the quotient filters of their authors (cqf, vqf, Memento_Filter),
+        # each in a unit of its own [see bench/QuotientCompetitors.h], where
+        # the unit compiles at the flags of the benchmarks
+        include(CheckLanguage)
+        check_language(C)
+        if (CMAKE_C_COMPILER)
+            enable_language(C)
+        endif ()
+        function(ads_quotient_unit file macro)
+            set(dirs ${ARGN})
+            list(TRANSFORM dirs PREPEND ${ADS_HASHING}/)
+            list(APPEND dirs ${CMAKE_CURRENT_SOURCE_DIR}/bench)
+            set(opts -O3 -march=native -DNDEBUG -D__SSE4_2_ -w)
+            set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+            try_compile(ok ${CMAKE_BINARY_DIR}/qf-${macro}
+                        SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/bench/${file}
+                        CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${dirs}"
+                        COMPILE_DEFINITIONS ${opts} CXX_STANDARD 20)
+            if (ok)
+                target_sources(bench-hashing PRIVATE bench/${file})
+                set_source_files_properties(bench/${file} PROPERTIES
+                        INCLUDE_DIRECTORIES "${dirs}"
+                        COMPILE_OPTIONS "${opts}")
+                target_compile_definitions(bench-hashing PRIVATE ${macro})
+            endif ()
+        endfunction()
+        if (CMAKE_C_COMPILER)
+            ads_quotient_unit(qf_cqf.c ADS_HAS_CQF cqf/include cqf/src)
+            ads_quotient_unit(qf_memento.c ADS_HAS_MEMENTO
+                              Memento_Filter/include Memento_Filter/src)
+        endif ()
+        ads_quotient_unit(qf_vqf.cpp ADS_HAS_VQF vqf/include vqf/src)
     endif ()
     find_package(absl QUIET)
     if (absl_FOUND)

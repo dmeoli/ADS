@@ -36,10 +36,13 @@
 #include "ADS/parallel/ThreadPool.h"
 #include "ADS/set/BinaryFuseFilter.h"
 #include "ADS/set/BlockedBloomFilter.h"
+#include "ADS/set/CountingQuotientFilter.h"
 #include "ADS/set/CuckooFilter.h"
 #include "ADS/set/GrafiteFilter.h"
+#include "ADS/set/MementoFilter.h"
 #include "ADS/set/PrefixFilter.h"
 #include "ADS/set/RibbonFilter.h"
+#include "ADS/set/VectorQuotientFilter.h"
 
 #include <algorithm>
 #include <bit>
@@ -108,6 +111,12 @@ std::vector< std::string > randomStrings( std::size_t n , unsigned seed )
 /// the answers of the prefix filter of 10^6 random keys to 10^6 absent
 /// ones, folded, the same on every machine
 constexpr std::uint64_t kPrefixAnswers = 6080367913530849277ULL;
+
+/// the answers of the vector quotient filters of 8 and 16 bits of
+/// 9 * 10^5 random keys to 10^6 absent ones, folded, the same on every
+/// machine
+constexpr std::uint64_t kVectorAnswers8 = 4473595884742287525ULL;
+constexpr std::uint64_t kVectorAnswers16 = 11341926651226538773ULL;
 
 /// the answers of the Ribbon filters of 8, 16 and 32 bits of 10^5 random
 /// keys to 10^5 absent ones, folded, the same on every machine
@@ -606,6 +615,288 @@ ADS_TEST( "prefix-filter" )
  CHECK( Z.bins() == 1 && Z.capacity() == 0 && ! Z.maybe( 3 ) );
  CHECK( ! Z.insert( 3 ) && Z.empty() && ! Z.maybe( 3 ) );
  }
+
+/// n random hashes whose high p bits, their fingerprints in a quotient
+/// filter of p bits, are distinct
+std::vector< std::uint64_t > distinctPrints( std::size_t n , int p ,
+					     unsigned seed )
+{
+ std::mt19937_64 g( seed );
+ std::unordered_set< std::uint64_t > seen;
+ std::vector< std::uint64_t > H;
+ while( H.size() < n ) {
+  const std::uint64_t h = g();
+  if( seen.insert( h >> ( 64 - p ) ).second )
+   H.push_back( h );
+  }
+ return( H );
+ }
+
+// the counting quotient filter: for 0, 1, 2, 63, 64, 65, 100, 1000 and
+// 10^5 random keys every key in, counted at least once, all removed and
+// the filter empty with no slot in use; the counts of 20000 hashes of
+// distinct fingerprints exact along 4 * 10^5 random insertions and
+// removals of 1 to 2^40 copies, a removal of more copies than counted or
+// of an absent hash rejected with nothing changed; the counters of the
+// remainders 0, 1, 2^r - 2 and 2^r - 1, side by side in one run, counted
+// up to 600 one copy at a time and down again; at 10^6 keys the false
+// positives on 10^6 absent keys near the bound D / 2^p; filled until an
+// insertion fails, at the load 0.95, every key still there and the
+// failed insertion changing nothing; the table doubled, halved and merged
+// with itself and with another, the counts kept or added; remainders of
+// 16 bits, consecutive keys by std::hash and strings
+ADS_TEST( "counting-quotient-filter" )
+{
+ for( std::size_t n : { 0 , 1 , 2 , 63 , 64 , 65 , 100 , 1000 , 100000 } ) {
+  const auto K = randomKeys( n , unsigned( n + 61 ) );
+  CountingQuotientFilter< std::uint64_t > F( n );
+  CHECK( F.empty() && std::has_single_bit( F.capacity() ) &&
+	 F.capacity() >= 64 && 0.95 * double( F.capacity() ) >= double( n ) );
+  CHECK( F.remainderBits() == 8 && F.bits() >= 10 * F.capacity() );
+  for( std::uint64_t k : K )
+   CHECK( F.insert( k ) );
+  CHECK( F.size() == n && F.distinct() <= n && F.slotsUsed() >= F.distinct() );
+  for( std::uint64_t k : K )
+   CHECK( F.maybe( k ) && F.count( k ) >= 1 );
+  for( std::uint64_t k : K )
+   CHECK( F.remove( k ) );
+  CHECK( F.empty() && F.slotsUsed() == 0 && F.distinct() == 0 );
+  if( n > 0 )
+   CHECK( ! F.maybe( K[ 0 ] ) && ! F.remove( K[ 0 ] ) );
+  }
+ {  // exact counts of distinct fingerprints
+  CountingQuotientFilter< std::uint64_t > F( 100000 );
+  const int p = F.fingerprintBits();
+  const auto H = distinctPrints( 20000 , p , 62 );
+  std::vector< std::uint64_t > C( H.size() , 0 );
+  std::mt19937_64 g( 63 );
+  for( int it = 0 ; it < 400000 ; ++it ) {
+   const std::size_t i = g() % H.size();
+   const std::uint64_t c =
+     1 +
+     ( g() % 8 == 0 ? g() % ( std::uint64_t( 1 ) << ( 1 + g() % 40 ) ) : 0 );
+   if( g() % 3 != 0 ) {
+    if( F.insertHash( H[ i ] , c ) )
+     C[ i ] += c;
+    }
+   else {
+    const std::size_t u = F.slotsUsed();
+    const bool r = F.removeHash( H[ i ] , c );
+    CHECK( r == ( C[ i ] >= c ) );
+    if( r )
+     C[ i ] -= c;
+    else
+     CHECK( F.slotsUsed() == u );
+    }
+   }
+  std::uint64_t sum = 0;
+  for( std::size_t i = 0 ; i < H.size() ; ++i ) {
+   CHECK( F.countHash( H[ i ] ) == C[ i ] );
+   sum += C[ i ];
+   }
+  CHECK( F.size() == sum );
+  for( std::size_t i = 0 ; i < H.size() ; ++i )
+   if( C[ i ] > 0 )
+    CHECK( ! F.removeHash( H[ i ] , C[ i ] + 1 ) &&
+	   F.removeHash( H[ i ] , C[ i ] ) );
+  CHECK( F.empty() && F.slotsUsed() == 0 );
+  }
+ {  // the special remainders, side by side in the run of the quotient 5
+  CountingQuotientFilter< std::uint64_t > F( 1000 );
+  const int p = F.fingerprintBits() , r = F.remainderBits();
+  const std::uint64_t q = 5 , X[] = { 0 , 1 , 254 , 255 };
+  auto h = [ & ]( std::uint64_t x ) {
+   return( ( ( q << r ) | x ) << ( 64 - p ) );
+   };
+  for( std::uint64_t c = 1 ; c <= 600 ; ++c )
+   for( std::uint64_t x : X ) {
+    CHECK( F.insertHash( h( x ) ) );
+    for( std::uint64_t z : X )
+     CHECK( F.countHash( h( z ) ) == ( z <= x ? c : c - 1 ) );
+    }
+  CHECK( F.countHash( h( 2 ) ) == 0 && F.size() == 2400 );
+  for( std::uint64_t c = 600 ; c >= 1 ; --c )
+   for( std::uint64_t x : X ) {
+    CHECK( F.removeHash( h( x ) ) );
+    CHECK( F.countHash( h( x ) ) == c - 1 );
+    }
+  CHECK( F.empty() && F.slotsUsed() == 0 );
+  CHECK( F.insertHash( h( 0 ) , ~std::uint64_t( 0 ) ) &&
+	 F.countHash( h( 0 ) ) == ~std::uint64_t( 0 ) );
+  CHECK( F.removeHash( h( 0 ) , ~std::uint64_t( 0 ) ) && F.empty() );
+  }
+ {  // the false positives and the bits
+  const auto K = randomKeys( 2000000 , 64 );
+  CountingQuotientFilter< std::uint64_t > F( 1000000 );
+  for( std::size_t i = 0 ; i < 1000000 ; ++i )
+   CHECK( F.insert( K[ i ] ) );
+  std::size_t f = 0;
+  for( std::size_t i = 1000000 ; i < K.size() ; ++i )
+   f += F.maybe( K[ i ] );
+  const double e = 1e6 * F.falsePositiveBound();
+  CHECK( double( f ) < e + 3 * std::sqrt( e ) && double( f ) > 0.85 * e );
+  CHECK( F.capacity() == ( std::size_t( 1 ) << 21 ) &&
+	 F.fingerprintBits() == 29 );
+  for( std::size_t i = 0 ; i < 1000000 ; ++i )
+   CHECK( F.maybe( K[ i ] ) );
+  }
+ {  // full, then resized and merged
+  const auto K = randomKeys( 1 << 16 , 65 );
+  CountingQuotientFilter< std::uint64_t > F( 20000 );
+  std::size_t i = 0;
+  while( i < K.size() && F.insert( K[ i ] ) )
+   ++i;
+  CHECK( i < K.size() && F.size() == i && F.load() > 0.94 &&
+	 F.load() <= 0.95 );
+  for( std::size_t j = 0 ; j < i ; ++j )
+   CHECK( F.maybe( K[ j ] ) );
+  const std::size_t u = F.slotsUsed();
+  CHECK( ! F.insert( K[ i + 1 ] ) && F.size() == i && F.slotsUsed() == u );
+  auto G = F;
+  CHECK( G.resize( 2 * F.capacity() ) && G.remainderBits() == 7 &&
+	 G.fingerprintBits() == F.fingerprintBits() && G.size() == i );
+  for( std::size_t j = 0 ; j < i ; ++j )
+   CHECK( G.count( K[ j ] ) == F.count( K[ j ] ) );
+  CHECK( G.insert( K[ i ] ) && G.maybe( K[ i ] ) );
+  CHECK( ! G.resize( F.capacity() ) && G.size() == i + 1 );  // too many
+  auto M = F;
+  CHECK( M.merge( F ) && M.size() == 2 * i &&
+	 M.capacity() == 2 * F.capacity() );
+  for( std::size_t j = 0 ; j < i ; ++j )
+   CHECK( M.count( K[ j ] ) == 2 * F.count( K[ j ] ) );
+  CountingQuotientFilter< std::uint64_t > A( 1000 ) , B( 1000 );
+  for( std::size_t j = 0 ; j < 50 ; ++j )
+   CHECK( A.insert( K[ j ] , j + 1 ) && B.insert( K[ j + 25 ] , 3 ) );
+  CHECK( A.merge( B ) && A.size() == 1275 + 150 );
+  for( std::size_t j = 0 ; j < 75 ; ++j )
+   CHECK( A.count( K[ j ] ) >= ( j < 50 ? j + 1 : 0 ) + ( j >= 25 ? 3 : 0 ) );
+  auto Z = A;  // doubled, then halved back
+  CHECK( Z.resize( 2 * A.capacity() ) && Z.remainderBits() == 7 &&
+	 Z.resize( A.capacity() ) && Z.remainderBits() == 8 &&
+	 Z.size() == A.size() );
+  for( std::size_t j = 0 ; j < 75 ; ++j )
+   CHECK( Z.count( K[ j ] ) == A.count( K[ j ] ) );
+  }
+ {  // remainders of 16 bits, consecutive keys, strings
+  CountingQuotientFilter< std::uint64_t , std::uint16_t > L( 300000 );
+  CountingQuotientFilter< std::uint64_t , std::uint8_t ,
+			  std::hash< std::uint64_t > >
+    C( 100000 );
+  CHECK( L.remainderBits() == 16 );
+  for( std::uint64_t k = 0 ; k < 90000 ; ++k )
+   CHECK( L.insert( k , k % 5 + 1 ) && C.insert( k ) );
+  std::size_t f = 0;
+  for( std::uint64_t k = 0 ; k < 90000 ; ++k ) {
+   CHECK( L.count( k ) >= k % 5 + 1 && C.maybe( k ) );
+   f += C.maybe( k + 90000 );
+   }
+  CHECK( double( f ) < 3 * 9e4 * C.falsePositiveBound() + 10 );
+  const auto S = randomStrings( 30000 , 66 );
+  CountingQuotientFilter< std::string > T( 2 * S.size() );
+  for( const auto & s : S )
+   CHECK( T.insert( s , 2 ) );
+  for( const auto & s : S )
+   CHECK( T.count( s ) >= 2 );
+  }
+ }
+
+// the vector quotient filter of 8 and 16 bits: 0, 1, 2, 47, 48, 49, 100,
+// 1000 and 10^5 random keys, every one maybe there, all removed and the
+// filter empty; at 9 * 10^5 keys the false positives on 10^6 absent keys
+// within 3 sigma of the bound 2 n / ( R 2^f ), and their answers equal to
+// known ones, which the paths of Highway and of any machine must give
+// alike; filled until an insertion fails, at a load above 0.93 (0.88 for
+// 16 bits), every key still there, the failed insertion changing nothing
+// and a removal making room; a key inserted 40 times and removed 40
+// times; consecutive keys by std::hash, strings; the removal of a key
+// absent from an empty filter
+ADS_TEST( "vector-quotient-filter" )
+{
+ auto all = [ & ]( auto tag , unsigned s , double full ,
+		   std::uint64_t answers ) {
+  using V = VectorQuotientFilter< std::uint64_t , decltype( tag ) >;
+  for( std::size_t n : { 0 , 1 , 2 , 47 , 48 , 49 , 100 , 1000 , 100000 } ) {
+   const auto K = randomKeys( n , unsigned( n + 71 ) );
+   V Q( n );
+   CHECK( Q.empty() && Q.capacity() % s == 0 && Q.capacity() >= n );
+   CHECK( Q.bits() == 512 * ( Q.capacity() / s ) );
+   for( std::uint64_t k : K )
+    CHECK( Q.insert( k ) );
+   CHECK( Q.size() == n );
+   for( std::uint64_t k : K )
+    CHECK( Q.maybe( k ) );
+   for( std::uint64_t k : K )
+    CHECK( Q.remove( k ) );
+   CHECK( Q.empty() );
+   if( n > 0 )
+    CHECK( ! Q.maybe( K[ 0 ] ) && ! Q.remove( K[ 0 ] ) );
+   }
+  {
+   const auto K = randomKeys( 1900000 , 72 );
+   V Q( 1000000 );
+   for( std::size_t i = 0 ; i < 900000 ; ++i )
+    CHECK( Q.insert( K[ i ] ) );
+   std::size_t f = 0;
+   std::uint64_t sum = 0;
+   for( std::size_t i = 900000 ; i < K.size() ; ++i ) {
+    const bool y = Q.maybe( K[ i ] );
+    f += y;
+    sum = sum * 31 + ( y ? i : 0 );
+    }
+   const double e = 1e6 * Q.falsePositiveBound();
+   CHECK( double( f ) < e + 3 * std::sqrt( e ) + 3 &&
+	  double( f ) > e - 3 * std::sqrt( e ) - 3 );
+   CHECK( sum == answers );
+   for( std::size_t i = 0 ; i < 900000 ; ++i )
+    CHECK( Q.maybe( K[ i ] ) );
+   }
+  {  // filled until full
+   const auto K = randomKeys( 1 << 18 , 73 );
+   V Q( 100000 );
+   std::size_t i = 0;
+   while( i < K.size() && Q.insert( K[ i ] ) )
+    ++i;
+   CHECK( i < K.size() && Q.size() == i && Q.load() > full );
+   for( std::size_t j = 0 ; j < i ; ++j )
+    CHECK( Q.maybe( K[ j ] ) );
+   CHECK( ! Q.insert( K[ i ] ) && Q.size() == i );
+   for( std::size_t j = 0 ; j < i && ! Q.insert( K[ i ] ) ; ++j )
+    CHECK( Q.remove( K[ j ] ) );  // room near the key, at last
+   CHECK( Q.maybe( K[ i ] ) );
+   Q.clear();
+   CHECK( Q.empty() && ! Q.maybe( K[ 1 ] ) && Q.insert( K[ 1 ] ) );
+   }
+  {  // repeated
+   V Q( 1000 );
+   for( int i = 0 ; i < 40 ; ++i )
+    CHECK( Q.insert( 77 ) );
+   CHECK( Q.size() == 40 && Q.maybe( 77 ) );
+   for( int i = 0 ; i < 40 ; ++i )
+    CHECK( Q.remove( 77 ) );
+   CHECK( Q.empty() && ! Q.maybe( 77 ) && ! Q.remove( 77 ) );
+   }
+  };
+ all( std::uint8_t( 0 ) , 48 , 0.93 , kVectorAnswers8 );
+ all( std::uint16_t( 0 ) , 28 , 0.88 , kVectorAnswers16 );
+ VectorQuotientFilter< std::uint64_t , std::uint8_t ,
+		       std::hash< std::uint64_t > >
+   C( 100000 );
+ for( std::uint64_t k = 0 ; k < 90000 ; ++k )
+  CHECK( C.insert( k ) );
+ std::size_t f = 0;
+ for( std::uint64_t k = 0 ; k < 90000 ; ++k ) {
+  CHECK( C.maybe( k ) );
+  f += C.maybe( k + 90000 );
+  }
+ CHECK( double( f ) < 1.3 * 9e4 * C.falsePositiveBound() + 10 );
+ const auto S = randomStrings( 30000 , 74 );
+ VectorQuotientFilter< std::string > T( S.size() );
+ for( const auto & s : S )
+  CHECK( T.insert( s ) );
+ for( const auto & s : S )
+  CHECK( T.maybe( s ) );
+ }
+
 
 // the Ribbon filter of 8 and 16 bits: every key maybe there for 0, 1, 2,
 // 3, 10, 63, 64, 65, 100, 1000 and 10^5 random keys, 10^5 consecutive
@@ -1742,6 +2033,139 @@ ADS_TEST( "range-filters-32" )
  rangeFilters32< std::uint32_t >();
  rangeFilters32< std::int32_t >();
  rangeFilters32< float >();
+ }
+
+/// the ranges [ a , a + l - 1 ] of S, an ordered set, that hold no key,
+/// from random points and from the keys plus one (the correlated ones)
+template< class M >
+void mementoRates( const M & F , const std::set< std::uint64_t > & S ,
+		   std::uint64_t l , std::mt19937_64 & g )
+{
+ const std::vector< std::uint64_t > V( S.begin() , S.end() );
+ for( int c = 0 ; c < 2 ; ++c ) {
+  std::size_t q = 0 , f = 0;
+  while( q < 300000 ) {
+   const std::uint64_t a = c ? V[ g() % V.size() ] + 1 : g() , b = a + l - 1;
+   if( b < a )
+    continue;
+   const auto it = S.lower_bound( a );
+   if( it != S.end() && *it <= b )
+    continue;
+   ++q;
+   f += F.mayContain( a , b );
+   }
+  const double e = double( q ) * F.falsePositiveBound();
+  CHECK( double( f ) < e + 3 * std::sqrt( e ) );
+  }
+ }
+
+// the Memento filter, mementos of 2, 3, 5 and 8 bits: 1.2 * 10^5 random
+// insertions and removals of random keys, of keys dense in few partitions
+// (whose boxes hold long lists, and lengths of more than one chunk for
+// r = 2) and of keys in clusters, each range of at most 2^r keys holding
+// a key answered true, every key maybe there, a removal of an absent key
+// rejected unless the filter says maybe, the table doubled with every key
+// still there, all removed and the filter empty; at 10^6 random keys the
+// false positives of the empty ranges of 1 and 2^r keys, at random and
+// right after a key, within 3 sigma of the bound 2 n rho / m; the keys
+// 0 and 2^64 - 1, a range wider than the table, the empty filter, and
+// keys of 32 bits, signed and floating
+ADS_TEST( "memento-filter" )
+{
+ std::mt19937_64 g( 81 );
+ for( int r : { 2 , 3 , 5 , 8 } )
+  for( int kind : { 0 , 1 , 2 } ) {
+   MementoFilter<> F( 50000 , r );
+   CHECK( F.mementoBits() == r && F.fingerprintBits() == 16 - r );
+   std::multiset< std::uint64_t > S;
+   auto key = [ & ]( void ) {
+    return( kind == 0   ? g()
+	     : kind == 1 ? g() % 20000
+			 : ( g() % 3000 ) * 1000003 + g() % 64 );
+    };
+   for( int it = 0 ; it < 120000 ; ++it ) {
+    const std::uint64_t k = key();
+    if( ( g() % 3 == 0 ) && ! S.empty() ) {
+     auto i = S.lower_bound( k );
+     if( i == S.end() )
+      i = S.begin();
+     CHECK( F.remove( *i ) );
+     S.erase( i );
+     }
+    else if( g() % 7 == 0 ) {
+     if( S.count( k + 1 ) ) {
+      CHECK( F.remove( k + 1 ) );
+      S.erase( S.find( k + 1 ) );
+      }
+     else if( ! F.maybe( k + 1 ) )
+      CHECK( ! F.remove( k + 1 ) );
+     }
+    else if( F.insert( k ) )
+     S.insert( k );
+    }
+   CHECK( F.size() == S.size() && F.boxes() <= S.size() );
+   const std::uint64_t R = std::uint64_t( 1 ) << r;
+   auto ranges = [ & ]( const MementoFilter<> & G ) {
+    for( int it = 0 ; it < 20000 ; ++it ) {
+     std::uint64_t a = g();
+     if( ( it % 2 ) && ! S.empty() ) {
+      auto i = S.lower_bound( g() );
+      a = ( i == S.end() ? *S.begin() : *i ) - g() % ( 2 * R );
+      }
+     const std::uint64_t b = a + g() % R;
+     if( b < a )
+      continue;
+     const auto i = S.lower_bound( a );
+     if( i != S.end() && *i <= b )
+      CHECK( G.mayContain( a , b ) );
+     }
+    for( std::uint64_t k : S )
+     CHECK( G.maybe( k ) );
+    };
+   ranges( F );
+   auto D = F;
+   CHECK( D.resize( 2 * F.capacity() ) && D.size() == S.size() &&
+	  D.fingerprintBits() == F.fingerprintBits() - 1 );
+   ranges( D );
+   for( std::uint64_t k : S )
+    CHECK( F.remove( k ) );
+   CHECK( F.empty() && F.boxes() == 0 && F.load() == 0 );
+   }
+ for( int r : { 5 , 8 } ) {  // the false positives
+  const auto K = randomKeys( 1000000 , unsigned( 82 + r ) );
+  MementoFilter<> F( K.size() , r );
+  for( std::uint64_t k : K )
+   CHECK( F.insert( k ) );
+  const std::set< std::uint64_t > S( K.begin() , K.end() );
+  mementoRates( F , S , 1 , g );
+  mementoRates( F , S , std::uint64_t( 1 ) << r , g );
+  CHECK( F.falsePositiveBound() < ( r == 5 ? 5e-4 : 4e-3 ) );
+  }
+ {  // the ends of the universe, the wide ranges, the empty filter
+  constexpr std::uint64_t kMax = ~std::uint64_t( 0 );
+  MementoFilter<> F( 100 , 4 );
+  CHECK( ! F.mayContain( 0 , kMax ) && ! F.maybe( 0 ) && ! F.remove( 0 ) );
+  CHECK( F.insert( 0 ) && F.insert( kMax ) && F.insert( kMax ) );
+  CHECK( F.maybe( 0 ) && F.maybe( kMax ) && F.mayContain( 0 , kMax ) );
+  CHECK( F.mayContain( kMax - 15 , kMax ) && F.mayContain( 0 , 15 ) );
+  CHECK( F.remove( kMax ) && F.maybe( kMax ) && F.remove( kMax ) );
+  CHECK( F.size() == 1 && F.mayContain( 1000 , kMax ) );  // wide
+  }
+ {  // keys of 32 bits
+  MementoFilter< std::uint32_t > U( 1000 , 4 );
+  MementoFilter< std::int32_t > I( 1000 , 4 );
+  MementoFilter< float > R( 1000 , 4 , 6 );
+  for( std::uint32_t k : { 0U , 1U , 0xFFFFFFF0U , 0xFFFFFFFFU } )
+   CHECK( U.insert( k ) );
+  CHECK( U.mayContain( 0xFFFFFFF1U , 0xFFFFFFFFU ) && U.maybe( 1 ) );
+  for( std::int32_t k : { -5 , 0 , 7 } )
+   CHECK( I.insert( k ) );
+  CHECK( I.mayContain( -7 , -3 ) && I.mayContain( 1 , 8 ) && I.maybe( 0 ) );
+  for( float k : { -1.5F , 0.0F , 2.25F } )
+   CHECK( R.insert( k ) );
+  CHECK( R.maybe( -1.5F ) && R.maybe( 2.25F ) && R.mayContain( 2.0F , 2.5F ) &&
+	 R.fingerprintBits() == 6 );
+  }
  }
 
 }  // end( namespace )

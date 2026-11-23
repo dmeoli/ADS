@@ -4,9 +4,10 @@
 `DictionarySet.h`, `SetOperations.h`, `LinkedHashSet.h`, `HashMultiset.h`,
 `RoaringBitmap.h`, `SortedIntersection.h`, `VectorIntersection.h`,
 `BloomFilter.h`, `BloomVariants.h`, `BlockedBloomFilter.h`,
-`CuckooFilter.h`, `PrefixFilter.h`, `BinaryFuseFilter.h`, `RibbonFilter.h`,
-`GrafiteFilter.h`, `SpaceEfficientSortedSet.h`, `UltraLogLog.h`,
-`CountMinSketch.h`, `KllSketch.h`, `MinHashSketch.h`,
+`CuckooFilter.h`, `PrefixFilter.h`, `CountingQuotientFilter.h`,
+`VectorQuotientFilter.h`, `BinaryFuseFilter.h`, `RibbonFilter.h`,
+`GrafiteFilter.h`, `MementoFilter.h`, `SpaceEfficientSortedSet.h`,
+`UltraLogLog.h`, `CountMinSketch.h`, `KllSketch.h`, `MinHashSketch.h`,
 `include/ADS/parallel/ParallelSketch.h`; `SetInterfaces.h` and
 `Bag.h` are described in [Chapter 1](01-introduction.md#ch-1)]
 
@@ -32,11 +33,12 @@ space that does not depend on the items ([§10.7](10-set.md#sec-10-7) to
 frequencies, the quantiles and the similarity of a stream in a space that
 grows at most with the logarithm of its length. In the sets of
 [§1.9](01-introduction.md#sec-1-9), `BinaryFuseFilter.h`,
-`BlockedBloomFilter.h`, `CountMinSketch.h`, `CuckooFilter.h`,
-`GrafiteFilter.h`, `KllSketch.h`, `MinHashSketch.h`, `PrefixFilter.h`,
-`RibbonFilter.h`, `RoaringBitmap.h`, `UltraLogLog.h`,
-`VectorIntersection.h` and `ParallelSketch.h` are advanced and the other
-headers of this chapter are base.
+`BlockedBloomFilter.h`, `CountMinSketch.h`, `CountingQuotientFilter.h`,
+`CuckooFilter.h`, `GrafiteFilter.h`, `KllSketch.h`, `MementoFilter.h`,
+`MinHashSketch.h`, `PrefixFilter.h`, `RibbonFilter.h`, `RoaringBitmap.h`,
+`UltraLogLog.h`, `VectorIntersection.h`, `VectorQuotientFilter.h` and
+`ParallelSketch.h` are advanced and the other headers of this chapter are
+base.
 
 ## 10.1 The interface {#sec-10-1}
 
@@ -1529,7 +1531,8 @@ class BlockedBloomFilter
 A filter of fingerprints keeps, for each key, a *fingerprint* of $f$ bits
 of its hash, and a key out of $S$ is a false positive when its fingerprint
 equals one of those that it is compared with. Two of them take insertions
-one at a time.
+one at a time, and the two quotient filters at the end of the section also
+take removals and, the first, counts.
 
 **The cuckoo filter.** `CuckooFilter` is the filter of [Fan et al.
 2014](Z-bibliography.md#ref-fan2014): a cuckoo table (cf. [Pagh and Rodler
@@ -1833,6 +1836,303 @@ class PrefixFilter
  std::size_t spareSize( void ) const;
  double expectedSpareSize( void ) const;
  double falsePositiveRate( void ) const;
+ };
+```
+
+**The counting quotient filter.** `CountingQuotientFilter` is the filter of
+[Pandey et al. 2017](Z-bibliography.md#ref-pandey2017b), which counts the
+copies of each key of a multiset $S$ and takes insertions and removals of any
+number of them. It is built on `QuotientTable`, the table of the
+rank-and-select quotient filter of the same paper, which the range filter of
+[§10.11](10-set.md#sec-10-11) uses as well. This table is an engineering of the
+quotient filter of [Bender et al. 2012](Z-bibliography.md#ref-bender2012),
+whose quotients by the place go back to [Cleary
+1984](Z-bibliography.md#ref-cleary1984b). A key has the fingerprint $y$ of $p =
+\ell + r$ bits, the high $p$ bits of its hash, which we split into the quotient
+$q = \lfloor y / 2^r \rfloor < m = 2^\ell$ and the remainder $y \bmod 2^r$. The
+table has $m$ slots and, past them, the spare slots of $\lceil 10 \sqrt m / 64
+\rceil$ blocks (which take the overflow of the last quotients). The remainders
+of one quotient, its *run*, are in consecutive slots, and the runs follow the
+order of their quotients. In particular, the run of $q$ starts at the slot $q$,
+or just after the runs before it if these reach that slot, as in the hashing of
+Robin Hood of [Celis et al. 1985](Z-bibliography.md#ref-celis1985) (cf. the
+linear probing of [§7.5](07-dictionary.md#sec-7-5)).
+
+Two bits per slot describe the runs: $\mathrm{occ}( q )$ is set when the
+quotient $q$ has a run, and $\mathrm{end}( i )$ when the slot $i$ is the last
+of a run. Hence the run of the quotient of rank $j$ among those with the bit
+occ set ends at the slot of the end bit of rank $j$. In the table, the slots
+are cut into blocks of 64. A block also keeps a byte, its *offset* $o_b$, i.e.,
+the number of its slots, from the first, that the runs of the quotients of the
+blocks before it take (saturated at 255, and then computed again from the
+blocks before). Thus, the end of the run of $q$ is found by one rank on the
+word occ of its block and one select on the words end from the slot $64 b +
+o_b$, which usually stays in the block. A block is made of the offset, the two
+words and the 64 slots, in $17 + 64 s$ bytes for slots of $s$ bytes, i.e., $8
+s + 2.125$ bits per slot (the layout of the paper).
+
+--8<-- "generated/CountingQuotientFilter-QuotientTable-runEnd.pseudo.md"
+
+Both this filter and that of [§10.11](10-set.md#sec-10-11) change the table
+through one operation, `replace()`, which turns the $o$ slots of a run from a
+place into $k$ others. When $k > o$, it opens $k - o$ slots, each by shifting
+by one slot the slots from the place up to the first free one, and adds 1 to
+the offsets of the blocks crossed. As in the paper, the distance to the free
+slot has a lower bound in the offset and in the two words of a block. When $k <
+o$, it moves back the slots of the runs that follow, each run no further than
+its quotient (the removal of the linear probing), and computes again the
+offsets of the blocks after it until one does not change. An insertion that
+would take the slots in use past $0.95 \, m$, or that finds no free slot in the
+table, is refused before any write. Indeed, the mean length of a cluster (a
+maximal sequence of slots in use) grows as $( 1 - \alpha )^{-2}$ at the load
+$\alpha$, and so does the cost of the operations.
+
+--8<-- "generated/CountingQuotientFilter-QuotientTable-replace.pseudo.md"
+
+A run holds its remainders in increasing order. A remainder $x$ inserted $c \le
+2$ times takes the slots $x$ or $x x$. Otherwise it takes the slots $x \,
+d_{k-1} \cdots d_0 \, x$, the digits of $c - 3$ in base $2^r - 2$, each shifted
+to avoid 0 and $x$, with a 0 before them if the first is not below $x$. (For $x
+= 0$, the slots are $0 0 0$ for $c = 3$ and, for more copies, $0 \, d \cdots d
+\, 0 0$ in base $2^r - 1$ with no digit 0.) In an increasing run a slot below
+the one before it thus opens a counter. The counter of $c$ copies takes $O( 1 +
+\log c / r )$ slots, which `code()` writes and `decode()` reads from its first
+slot. An insertion of $c$ copies looks for the counter of its remainder in the
+run of its quotient, and replaces it by that of the new count (or inserts the
+counter of $c$ before the first larger remainder, or at the end of the run). A
+removal of $c$ copies replaces the counter by that of the count less $c$, or by
+no slot, and it is refused if fewer copies are counted.
+
+--8<-- "generated/CountingQuotientFilter-insertHash.pseudo.md"
+
+--8<-- "generated/CountingQuotientFilter-countHash.pseudo.md"
+
+--8<-- "generated/CountingQuotientFilter-removeHash.pseudo.md"
+
+<span id="lem-10-Zqf1"></span>**Lemma 10.Zqf1.** *Let the table of a
+`CountingQuotientFilter` be changed only by its operations. (i) For each hash
+$h$, `countHash( h )` is the number of copies inserted, by the insertions that
+returned true, of the hashes with the fingerprint of $h$, less those removed by
+the removals that returned true. Hence the filter has no false negative, and a
+removal of more copies than counted returns false and changes the table in no
+way. (ii) If the fingerprint of a hash with no copy in the filter is uniform on
+$[ 0 , 2^p )$ and independent of the content of the table, the hash is counted
+more than 0 with probability at most $D / 2^p$, where $D$ is the number of the
+distinct fingerprints in the filter.*
+
+*Proof.* We first show that the table keeps the invariant of the quotient
+filter. The slots in use are the runs of the quotients with the bit occ set, in
+the order of the quotients. The run of $q$ starts at the slot $\max( q , e' + 1
+)$, $e'$ the end of the runs before it, and ends at the end bit of its rank.
+Finally, the offset of a block, unless saturated, is the number of its slots
+taken by the runs of the quotients before it. Under the invariant, `runEnd( q
+)` returns the end of the run of the last quotient up to $q$ that has one: at
+line 3 if no quotient of the block up to $q$ has a run, and otherwise at line
+4, as the end bit of rank $j - 1$ from $64 b + o_b$, the first slot that the
+blocks before do not take. Hence `runStart( q )`, the slot after `runEnd( q - 1
+)`, is the first slot of the run of $q$, or the slot where it would start. A
+slot opened by `replace()` at $p$ shifts by one the slots from $p$ to the first
+free one with their end bits, which keeps the order and the ranks of the runs.
+Furthermore, in each block between the block of $q$ and that of the free slot
+the runs of the quotients before it take one more slot, and its offset grows by
+1 (line 3). Also, a new run gets its bits occ and end together, and a run that
+grows at its end moves its end bit. When slots are removed, the runs after them
+move back one slot at a time, each no further than its quotient. The offsets
+are then computed again from the block of $q$ up to the first that does not
+change, past which no slot has moved. Hence the invariant holds after each
+operation, and an operation that returns false has checked, before any write,
+the free slots that it needs (line 2).
+
+In a run, the counters are decoded in order, since the remainders increase. A
+counter starts with its remainder $x$, and its digits are neither 0 nor $x$,
+but they come after a 0 when the first of them is not below $x$; hence
+`decode()` distinguishes $x$, $x x$, $x 0 x$ and the longer forms, and finds
+the last slot of each. Thus `countHash()` reads the counter of the remainder of
+$h$ in the run of its quotient, i.e., that of its fingerprint, which the
+insertions and the removals change by their counts. A removal of more copies
+than counted stops at line 3 of `removeHash()`, which proves (i). For (ii), a
+hash with no copy in the filter is counted more than 0 only if its fingerprint
+is one of the $D$ in the filter, each equal to it with probability $2^{-p}$,
+and the claim follows by the union bound. $\square$
+
+By Lemma 10.Zqf1, the false positive rate is $D / 2^p \le \alpha \, 2^{-r}$ at
+the load $\alpha$ of the slots, in $( r + 2.125 ) / \alpha$ bits per key for
+distinct keys, as for the filter of [Pandey et al.
+2017](Z-bibliography.md#ref-pandey2017b). For $n$ keys, the constructor takes
+the least power of 2 of slots, at least 64, with $0.95 \, m \ge n$, and
+remainders of 8 or 16 bits (the type `F`). Of course, a key whose fingerprint
+is shared with another key of $S$ is counted with the copies of both; this is
+the only error of the counts.
+
+`resize()` takes the table to $m' = 2^{\ell'}$ slots with the same
+fingerprints, i.e., with remainders of $r' = p - \ell'$ bits; doubling the
+slots thus takes one bit from the remainders, and doubles the false positives
+at the same load. It inserts each fingerprint with its count, in order, into a
+new table. Also, `merge()` adds to a filter the counts of another with the same
+hash and the same $p$. It merges their two sequences of fingerprints and
+inserts them, in order, into a new table, which is doubled while the slots of
+both pass $0.95$ of it and more than 2 bits of remainder are left (i.e., while
+$p - \log_2 m' > 2$, $m'$ the slots of the new table); past that, the merge
+returns false and changes nothing. A fingerprint inserted in order goes after
+all the others, at the end of its run or in a free slot; hence both operations
+take a time linear in the slots in the expected case.
+
+--8<-- "generated/CountingQuotientFilter-merge.pseudo.md"
+
+Its declarations are the following.
+
+```cpp
+// declarations of <ADS/set/CountingQuotientFilter.h>
+template< class T , class F = std::uint8_t , class H = DefaultHash< T > >
+class CountingQuotientFilter
+{
+ public:
+ explicit CountingQuotientFilter( std::size_t n , H h = H() );
+ bool insert( const T & x , std::uint64_t c = 1 );
+ bool remove( const T & x , std::uint64_t c = 1 );
+ std::uint64_t count( const T & x ) const;
+ bool maybe( const T & x ) const;
+ bool insertHash( std::uint64_t h , std::uint64_t c = 1 );
+ bool removeHash( std::uint64_t h , std::uint64_t c = 1 );
+ std::uint64_t countHash( std::uint64_t h ) const;
+ bool maybeHash( std::uint64_t h ) const;
+ bool merge( const CountingQuotientFilter & o );
+ bool resize( std::size_t m );
+ void clear( void );
+ std::uint64_t size( void ) const;
+ std::size_t distinct( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
+ std::size_t slotsUsed( void ) const;
+ double load( void ) const;
+ int remainderBits( void ) const;
+ int fingerprintBits( void ) const;
+ double falsePositiveBound( void ) const;
+ std::size_t bits( void ) const;
+ };
+```
+
+**The vector quotient filter.** `VectorQuotientFilter` is the filter of [Pandey
+et al. 2021](Z-bibliography.md#ref-pandey2021). Its blocks of one line of the
+cache are small quotient filters, with the quotients written in a word or two
+of bits, and each key chooses between two blocks; hence no key moves once
+placed, and an operation reads two lines at any load. A block of 64 bytes has
+$s$ slots of fingerprints of $f$ bits for $c$ buckets ($s = 48$ and $c = 80$
+for $f = 8$, $s = 28$ and $c = 36$ for $f = 16$) and, in front of them, $s + c$
+bits of metadata (128 and 64). From the low bit, the metadata hold a 0 for each
+fingerprint of the bucket $j = 0 , 1 , \ldots , c - 1$ followed by a 1, and the
+free slots as 1s at the top. The fingerprints of the bucket $j$ are therefore
+the slots $[ \sigma_{j-1} - j + 1 , \sigma_j - j )$, where $\sigma_j$ is the
+place of the 1 of rank $j$ (the slots $[ 0 , \sigma_0 )$ for $j = 0$). This is
+much as the bits occ and end of the counting quotient filter would write them,
+with one bit per slot and one per bucket. An insertion into the bucket $j$ puts
+a 0 at $\sigma_j$, shifting up the bits above (the top one, a free slot, is
+lost) and the slots from $\sigma_j - j$ on. A removal does the opposite, with a
+1 entering at the top.
+
+A key with the hash $h$ has the fingerprint $t$, the high $f$ bits of $h a
+\bmod 2^{64}$ for an odd constant $a$. Its two buckets, among the $R = c B$
+buckets of the $B$ blocks, are
+
+$$
+b_1 = \lfloor h_1( h ) \, R / 2^{32} \rfloor , \qquad
+b_2 = ( g( t ) - b_1 ) \bmod R ,
+$$
+
+where $h_1( h )$ is the high half of $h$ and $g( t )$ a hash of $t$ onto $[ 0 ,
+R )$. Since $b \mapsto ( g( t ) - b ) \bmod R$ is an involution, each bucket of
+a fingerprint determines the other, as in the partial-key cuckoo hashing; the
+bucket $j$ is the bucket $j \bmod c$ of the block $\lfloor j / c \rfloor$. An
+insertion puts $t$ in $b_1$ if the block of $b_1$ has at most $3 s / 4$ slots
+in use, and otherwise in the bucket of the block with fewer, by the power of
+two choices of [Azar et al. 1999](Z-bibliography.md#ref-azar1999) with the
+shortcut of the paper. It fails, and changes nothing, when both blocks are
+full.
+
+--8<-- "generated/VectorQuotientFilter-insertHash.pseudo.md"
+
+A query compares $t$ with all the slots of each of its two blocks at once,
+i.e., with the bytes or the words of 16 bits of the line, by the vectors of
+Highway (cf. `firstEqualIn()` of `SimdInline.h`). Only when a slot equals $t$
+(which for an absent key has probability at most $s \alpha 2^{-f}$ per block)
+does it find the slots of the bucket, by one select on the metadata and the 1
+just below the place found; meanwhile, the second block is prefetched. The word
+of the metadata that holds the 1 of rank $j$ is chosen with no branch. Indeed,
+about half of the buckets of a block have it in each word, and a branch would
+be mispredicted about half of the times. Without the vectors, a query finds the
+slots of the bucket first and compares them one by one. A removal finds $t$ in
+$b_1$ or in $b_2$ in the same way, and removes its slot and its 0.
+
+--8<-- "generated/VectorQuotientFilter-maybeHash.pseudo.md"
+
+--8<-- "generated/VectorQuotientFilter-removeHash.pseudo.md"
+
+<span id="lem-10-Zqf2"></span>**Lemma 10.Zqf2.** *Let each removal of a
+`VectorQuotientFilter` concern a key whose insertion returned true and that is
+still in the filter. (i) An insertion that returns false changes nothing, and
+`maybe( x )` is true for each key $x$ still in the filter. (ii) An operation
+reads two blocks and makes $O( 1 )$ operations on words and vectors. (iii) If
+the fingerprint and the first bucket of a key out of $S$ are uniform and
+independent of the content of the table, the key is a false positive with
+probability at most $2 n / ( R \, 2^f )$, where $n$ is the number of the keys
+in the filter.*
+
+*Proof.* As for Lemma 10.17, we show that the multiset of the pairs $( t , \{ b
+, ( g( t ) - b ) \bmod R \} )$ of the fingerprints stored, $b$ the bucket of
+their slot, is that of the pairs $( t , \{ b_1 , b_2 \} )$ of the keys in the
+filter (by the involution, a pair is the same from either bucket). Each block
+keeps its metadata in the form described above. Indeed, an insertion into a
+block that is not full puts a 0 at the place of the 1 of its bucket, which
+moves neither the 0s of the buckets before it nor the slots of their
+fingerprints. It also puts $t$ in the slot $\sigma_j - j$, the first after the
+fingerprints of the bucket $j$. In turn, a removal deletes a 0 of the bucket
+and its slot, both found among the slots $[ \sigma_{j-1} - j + 1 , \sigma_j - j
+)$ of the bucket. An insertion that returns false finds both blocks full before
+any write (line 5 of `insertHash()`). A removal removes a slot of $b_1$ or of
+$b_2$ that holds $t$, i.e., one copy of the pair of the key removed, which by
+the hypothesis is there. Hence a key in the filter has $t$ in a slot of $b_1$
+or $b_2$, which `maybeHash()` finds, since the comparison of the whole block
+contains that of the bucket (lines 3 and 6 of `maybeHash()`). This proves (i),
+and (ii) holds since a select on a word and the comparison of a line are $O( 1
+)$ operations. For (iii), $b_1$ is uniform on $[ 0 , R )$, and so is $b_2$
+given $t$; hence each bucket holds $n / R$ fingerprints on the average, each
+equal to $t$ with probability $2^{-f}$, and the union bound over the
+fingerprints of the two buckets yields the claim. $\square$
+
+At the load $\alpha$ of the slots, $n = \alpha s B$, and the bound of Lemma
+10.21 is $2 \alpha ( s / c ) 2^{-f}$, i.e., $1.2 \alpha / 256$ for $f = 8$ and
+$1.56 \alpha / 65536$ for $f = 16$, in $512 / ( s \alpha )$ bits per key (11.9
+and 20.3 at $\alpha = 0.9$). By the two choices the most loaded block typically
+stays close to the mean. In the tests of the library the blocks fill to a load
+of about 0.95 for $f = 8$, and of about 0.9 for $f = 16$ (whose blocks are
+smaller), before an insertion fails; for $n$ keys, the constructor therefore
+takes the blocks that hold them at the load 0.9 for $f = 8$ and 0.85 for $f =
+16$. A key inserted $j$ times takes $j$ slots, and is removed once by each
+removal. As for `CuckooFilter`, the removal of a key that was not inserted may
+clear the fingerprint of another, which no contract can check.
+
+Its declarations are the following.
+
+```cpp
+// declarations of <ADS/set/VectorQuotientFilter.h>
+template< class T , class F = std::uint8_t , class H = DefaultHash< T > >
+class VectorQuotientFilter
+{
+ public:
+ explicit VectorQuotientFilter( std::size_t n , H h = H() );
+ bool insert( const T & x );
+ bool remove( const T & x );
+ bool maybe( const T & x ) const;
+ bool insertHash( std::uint64_t h );
+ bool removeHash( std::uint64_t h );
+ bool maybeHash( std::uint64_t h ) const;
+ void clear( void );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
+ double load( void ) const;
+ double falsePositiveBound( void ) const;
+ std::size_t bits( void ) const;
  };
 ```
 
@@ -2205,13 +2505,142 @@ class BucketingFilter
  };
 ```
 
-After Grafite, the dynamic range filters Memento ([Eslami and Dayan
-2024](Z-bibliography.md#ref-eslami2024)) and Diva ([Eslami et al.
-2025](Z-bibliography.md#ref-eslami2025)), keep a similar guarantee while
-they take insertions and keys of any length, at the price of more bits and
-slower queries; Oasis ([Chen et al. 2024](Z-bibliography.md#ref-chen2024)),
-a learned filter of segments, shares the weakness of the learned filters
-on correlated queries.
+**The Memento filter.** `MementoFilter`, the filter of [Eslami and Dayan
+2024](Z-bibliography.md#ref-eslami2024), keeps a bound of the same kind as
+(10.12) for each set and each range of at most $2^r$ keys. Furthermore, it
+takes insertions and removals of keys one at a time and the growth of its
+table, which Grafite, a static structure, does not. The universe is cut into
+*partitions* of $2^r$ consecutive keys: a key $x$ has the *prefix* $\pi( x ) =
+\lfloor x / 2^r \rfloor$ and the *memento* $\mu( x ) = x \bmod 2^r$, its place
+in its partition. Each prefix is hashed into the table of the counting quotient
+filter of [§10.9](10-set.md#sec-10-9), whose slots hold $f + r$ bits, a
+fingerprint and a memento. The high $\ell + f$ bits $y$ of the hash of $\pi( x
+)$ give the quotient $\lfloor y / 2^f \rfloor$ and the fingerprint $\phi = y
+\bmod 2^f$. The latter is replaced by 1 if it is 0, and hence no fingerprint
+is 0.
+
+A run holds its *keepsake boxes*, one per fingerprint, in increasing order of
+the fingerprints. The box of $\phi$ holds the mementos $\mu_1 \le \cdots \le
+\mu_k$ of the keys in the filter with that quotient and that fingerprint, in
+one of three forms. For $k = 1$ it is the slot $( \phi , \mu_1 )$, and for $k =
+2$ the slots $( \phi , \mu_1 ) ( \phi , \mu_2 )$. Otherwise it is the slots $(
+\phi , \mu_1 ) ( 0 , \mu_k )$, followed by the length $k - 2$, in chunks of $r$
+bits, and by $\mu_2 , \ldots , \mu_{k-1}$ in $r$ bits each, packed in the $f +
+r$ bits of the next slots. In an increasing run, the fingerprint 0, below that
+of the box, marks the third case. Its length is written in one chunk when it is
+below $2^r - 1$, and otherwise in base $2^r - 1$ after as many chunks $2^r - 1$
+as its digits but one; hence one finds from it the last slot of the box. Thus
+the smallest and the largest memento of a box are in its first two slots, and a
+box of $k \le 2^r$ keys takes at most $k$ slots when $r \le f$.
+
+A range $[ a , b ]$ with $b - a < 2^r$ meets the partition of $\pi( a )$ and,
+if it differs, that of $\pi( b ) = \pi( a ) + 1$. In the first case it may hold
+a key if the box of $\pi( a )$ has a memento in $[ \mu( a ) , \mu( b ) ]$. This
+is decided by the first two slots of the box unless $\mu_1 < \mu( a )$ and
+$\mu_k > \mu( b )$ (and otherwise by a binary search on the list). In the
+second case it may hold a key if the box of $\pi( a )$ has $\mu_k \ge \mu( a )$
+or that of $\pi( b )$ has $\mu_1 \le \mu( b )$. For a longer range, the library
+also checks whether a partition between the two has a box, up to $m$ of them.
+Beyond them, the result is true if the filter is not empty, a choice of the
+library that bounds the time of a query. An insertion adds its memento to the
+box of its prefix, or makes a box of one slot in the place of its fingerprint,
+both by `replace()`. A removal takes one equal memento out of the box, and it
+is refused if there is none.
+
+--8<-- "generated/MementoFilter-mayContain.pseudo.md"
+
+--8<-- "generated/MementoFilter-insert.pseudo.md"
+
+<span id="lem-10-Zqf3"></span>**Lemma 10.Zqf3.** *Let each removal of a
+`MementoFilter` concern a key whose insertion returned true and that is still
+in the filter. (i) `mayContain( a , b )` is true for each range that holds a
+key in, whatever its length. (ii) Let the high $\ell + f$ bits of the hash of
+each prefix be uniform and independent of those of the other prefixes, and $P$
+be the number of partitions that hold a key in. Then an empty range with $b - a
+< 2^r$ is a false positive with probability at most $2 P \rho / m$, and an
+absent point with probability at most $P \rho / m$, $\rho = ( 2^f + 2 ) / 4^f$,
+whatever the keys and the range.*
+
+*Proof.* By the proof of Lemma 10.Zqf1 the table keeps its invariant, and by
+construction a run holds boxes of distinct fingerprints in increasing order,
+each in one of the three forms. Since no fingerprint is 0, the form of a box is
+known from the slot after its first: a larger fingerprint starts another box,
+an equal one is the second slot, and a 0 is the third form. In the latter, the
+length (with a first chunk $2^r - 1$ only when more digits follow) determines
+the last slot, and thus `box()` reads the mementos of each box. The box of $( q
+, \phi )$ holds, in order, the mementos of the keys in the filter whose
+prefixes have the quotient $q$ and the fingerprint $\phi$. Indeed, an insertion
+adds its memento there, and a removal takes away one equal memento, which by
+the hypothesis belongs to the key removed or to one with the same box and the
+same memento.
+
+Let a key $x$ in the filter lie in $[ a , b ]$. If $\pi( a ) = \pi( b )$, the
+box of $\pi( a )$ holds $\mu( x ) \in [ \mu( a ) , \mu( b ) ]$, and lines 4 to
+6 of `mayContain()` find a memento in that range. If the range meets two
+partitions or more, $x$ is either in that of $\pi( a )$, whose largest memento
+is then at least $\mu( x ) \ge \mu( a )$ (line 7), or in that of $\pi( b )$,
+whose smallest is at most $\mu( x ) \le \mu( b )$ (line 8). Otherwise it is in
+a partition between them, which has a box (line 9, or the result true of a
+filter that is not empty); this proves (i). For (ii), the box consulted for a
+partition $\pi$ holds the mementos of keys out of $\pi$ only if another
+partition $\pi'$ that holds a key has the same quotient and the same
+fingerprint. This happens with probability $( 1 / m ) \sum_v \Pr[ \phi = v ]^2
+= \rho / m$, since the fingerprint takes the value 1 with probability $2^{1-f}$
+and each other nonzero value with $2^{-f}$; the mementos of $\pi$ itself, in
+turn, lie out of an empty range. A range of fewer than $2^r$ keys consults at
+most two boxes, and a point one; the union bound over the $P$ partitions then
+yields the claim. $\square$
+
+Since $P \le n$, the bound of Lemma 10.Zqf3 is at most $2 n \rho / m \approx ( n
+/ m ) \, 2^{1-f}$, which `falsePositiveBound()` returns. The mementos lower the
+rate further on most keys, and the bound also holds for the correlated queries,
+since its only randomness is that of the hash. The table takes $8 s + 2.125$
+bits per slot for slots of $s$ bytes (the type `S`), i.e., $f + r + 2.125$ bits
+when $f + r$ fills them. The paper writes this as $( 3.125 + \log_2( R /
+\varepsilon ) ) / \alpha$ bits per key, for $\varepsilon = \alpha 2^{1-f}$ and
+$R = 2^r$.
+
+`resize()` doubles the quotients $k$ times by taking the $k$ high bits of the
+fingerprints into the quotients, as the counting quotient filter does. Hence
+the fingerprints lose $k$ bits, the bound doubles each time at the same load,
+and the new keys get the same shorter fingerprints. The paper instead keeps
+fingerprints of $f$ bits for the new keys, by an age counter in each slot (the
+fluid fingerprints of InfiniFilter, [Dayan et al.
+2023](Z-bibliography.md#ref-dayan2023)), which the library does not have. Among
+the later range filters, Diva ([Eslami et al.
+2025](Z-bibliography.md#ref-eslami2025)) takes keys and queries of any length.
+Also, Oasis ([Chen et al. 2024](Z-bibliography.md#ref-chen2024)) is a learned
+filter of segments, which shares the weakness of the learned filters on
+correlated queries; neither is in the library.
+
+Its declarations are the following ($r = 8$, and $f$ the bits of `S` left by
+$r$, by default).
+
+```cpp
+// declarations of <ADS/set/MementoFilter.h>
+template< RadixKey T = std::uint64_t , class S = std::uint16_t >
+class MementoFilter
+{
+ public:
+ explicit MementoFilter( std::size_t n , int r = 8 , int f = 0 ,
+                         std::uint64_t seed = 1 );
+ bool insert( const T & x );
+ bool remove( const T & x );
+ bool mayContain( const T & a , const T & b ) const;
+ bool maybe( const T & x ) const;
+ bool resize( std::size_t m );
+ double falsePositiveBound( void ) const;
+ void clear( void );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t boxes( void ) const;
+ std::size_t capacity( void ) const;
+ double load( void ) const;
+ int mementoBits( void ) const;
+ int fingerprintBits( void ) const;
+ std::size_t bits( void ) const;
+ };
+```
 
 ## 10.Zsk8 Sketches of streams {#sec-10-Zsk8}
 
@@ -2867,10 +3296,14 @@ bitmaps of a word. The lower bound on the space of the filters is that of
 1970](Z-bibliography.md#ref-bloom1970) and its variants are surveyed by [Broder
 and Mitzenmacher 2004](Z-bibliography.md#ref-broder2004), and chapter 8 of
 [Ferragina 2023](Z-bibliography.md#ref-ferragina2023) has their analysis. The
-quotient filters of Bender et al. (which the library does not have) are another
-dynamic filter of fingerprints. A comparison of the realizations, of the
+quotient filters of [Bender et al. 2012](Z-bibliography.md#ref-bender2012),
+counting in [Pandey et al. 2017](Z-bibliography.md#ref-pandey2017b) and in
+blocks of a line in [Pandey et al. 2021](Z-bibliography.md#ref-pandey2021),
+are the dynamic filters of fingerprints of [§10.9](10-set.md#sec-10-9) that
+also count, merge and grow. A comparison of the realizations, of the
 intersections and of the filters with the best implementations available
-(CRoaring, the libraries of the filters of their authors) belongs to the
+(CRoaring, the libraries of the filters of their authors, among them cqf, vqf
+and Memento) belongs to the
 campaign of Appendix B; we give no number here.
 
 The sketches of [§10.Zsk8](10-set.md#sec-10-Zsk8) and their analyses are surveyed

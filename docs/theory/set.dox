@@ -479,6 +479,13 @@
  <tr><td><tt>PrefixFilter</tt></td><td>insertions, up to \f$ n \f$ keys</td>
      <td>about 11.55 for \f$ \varepsilon \approx 0.39 \f$ per cent</td>
      <td>1, rarely 2</td></tr>
+ <tr><td><tt>CountingQuotientFilter</tt></td>
+     <td>insertions, removals, counts, merge, resize</td>
+     <td>\f$ ( r + 2.125 ) / \alpha \f$,
+     \f$ \varepsilon \le \alpha \, 2^{-r} \f$</td><td>1, rarely 2</td></tr>
+ <tr><td><tt>VectorQuotientFilter</tt></td><td>insertions, removals</td>
+     <td>\f$ 512 / ( s \alpha ) \f$,
+     \f$ \varepsilon \le 2 \alpha ( s / c ) 2^{-f} \f$</td><td>2</td></tr>
  <tr><td><tt>BinaryFuseFilter</tt></td><td>static</td>
      <td>\f$ 1.125 b \f$, \f$ \varepsilon = 2^{-b} \f$</td><td>3</td></tr>
  <tr><td><tt>RibbonFilter</tt></td><td>static</td>
@@ -543,6 +550,17 @@
  random independently of the keys; but an empty range inside the bucket of
  a key, at distance below \f$ s \f$ from it, is always a false positive, so
  that no bound like (8) holds for every query.
+
+ `MementoFilter` (Eslami and Dayan) takes insertions and removals: the
+ prefixes \f$ \lfloor x / 2^r \rfloor \f$ of the keys are hashed into the
+ table of a quotient filter, and the slot of each holds a fingerprint and the
+ memento \f$ x \bmod 2^r \f$, those of one fingerprint in a box of their
+ run. A range of at most \f$ 2^r \f$ keys meets at most two partitions,
+ whose boxes give its answer from their smallest and largest mementos, and
+ for a random hash an empty one is a false positive with probability at most
+ \f$ 2 P \rho / m \f$, \f$ P \f$ the partitions with a key,
+ \f$ m \f$ the slots and \f$ \rho = ( 2^f + 2 ) / 4^f \f$, whatever the
+ keys and the range.
 
  \section theory_set_sesset The space-efficient sorted set
 

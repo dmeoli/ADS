@@ -1960,12 +1960,14 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `set/BloomFilter.h` | base | `BloomFilter` | [10](10-set.md#ch-10) |
 | `set/BloomVariants.h` | base | `SpectralBloomFilter`, `PartitionedBloomFilter` | [10](10-set.md#ch-10) |
 | `set/BoolSet.h` | base | `BoolSet` | [10](10-set.md#ch-10) |
+| `set/CountingQuotientFilter.h` | advanced | `CountingQuotientFilter` | [10](10-set.md#ch-10) |
 | `set/CuckooFilter.h` | advanced | `CuckooFilter` | [10](10-set.md#ch-10) |
 | `set/DictionarySet.h` | base | `DictionarySet`, `ChainedHashSet`, `OpenHashSet`, `TreeSet` | [10](10-set.md#ch-10) |
 | `set/GrafiteFilter.h` | advanced | `GrafiteFilter`, `BucketingFilter` | [10](10-set.md#ch-10) |
 | `set/HashMultiset.h` | base | `HashMultiset` | [10](10-set.md#ch-10) |
 | `set/LinkedHashSet.h` | base | `LinkedHashSet` | [10](10-set.md#ch-10) |
 | `set/ListSet.h` | base | `ListSet` | [10](10-set.md#ch-10) |
+| `set/MementoFilter.h` | advanced | `MementoFilter` | [10](10-set.md#ch-10) |
 | `set/PrefixFilter.h` | advanced | `PrefixFilter` | [10](10-set.md#ch-10) |
 | `set/RibbonFilter.h` | advanced | `RibbonFilter` | [10](10-set.md#ch-10) |
 | `set/RoaringBitmap.h` | advanced | `RoaringBitmap` | [10](10-set.md#ch-10) |
@@ -1973,6 +1975,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `set/SortedListSet.h` | base | `SortedListSet` | [10](10-set.md#ch-10) |
 | `set/SpaceEfficientSortedSet.h` | base | `SpaceEfficientSortedSet` | [10](10-set.md#ch-10) |
 | `set/UltraLogLog.h` | advanced | `UltraLogLog` | [10](10-set.md#ch-10) |
+| `set/VectorQuotientFilter.h` | advanced | `VectorQuotientFilter` | [10](10-set.md#ch-10) |
 | `mfset/ListMFSet.h` | base | `ListMFSet` | [11](11-mfset.md#ch-11) |
 | `mfset/MFSet.h` | base | `MFSet` | [11](11-mfset.md#ch-11) |
 | `mfset/RemUnionFind.h` | advanced | `RemUnionFind` | [11](11-mfset.md#ch-11) |

@@ -313,7 +313,7 @@ allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-455 headers: 245 base, 163 advanced, 19 core and 28 interop.
+458 headers: 245 base, 166 advanced, 19 core and 28 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
@@ -353,7 +353,7 @@ allow.
 | `queue/` | `ArrayQueue`, `Dequeue`, `LinkedQueue`, `MinDeque`, `MinQueue`, `QueueAlgorithms`, `RandomQueue`, `RealTimeMinDeque`, `RealTimeMinQueue`, `UniqueQueue` | `RingDeque`, `SlidingAggregate` |  |  |
 | `search/` | `BinarySearch`, `InterpolationSearch`, `KnuthSearches`, `LocalOptima`, `Minimum`, `MonotoneSearch`, `PGMIndex`, `Selection`, `SortedSearches` | `CompressedPGMIndex`, `CountLess`, `DynamicPGMIndex`, `NthElement`, `RangeMinimum`, `StaticSearch`, `WordRangeMinimum` |  |  |
 | `sequence/` | `ArraySequence`, `ContiguousDeque`, `CubishArrayStack`, `CursorList`, `DualArrayDeque`, `IndexedList`, `List`, `OrderMaintenanceList`, `Rearrangements`, `RootishArrayStack`, `SEList`, `SequenceAlgorithms`, `SequenceRange`, `SinglyList`, `SkipListSequence`, `TreapList`, `Treque`, `XorList` | `Fenwick`, `ListSort`, `ObservableArray`, `SmallVector`, `TieredVector` |  |  |
-| `set/` | `Bag`, `BloomFilter`, `BloomVariants`, `BoolSet`, `DictionarySet`, `HashMultiset`, `LinkedHashSet`, `ListSet`, `SetInterfaces`, `SetOperations`, `SortedIntersection`, `SortedListSet`, `SpaceEfficientSortedSet` | `BinaryFuseFilter`, `BlockedBloomFilter`, `CountMinSketch`, `CuckooFilter`, `GrafiteFilter`, `KllSketch`, `MinHashSketch`, `PrefixFilter`, `RibbonFilter`, `RoaringBitmap`, `UltraLogLog`, `VectorIntersection` |  |  |
+| `set/` | `Bag`, `BloomFilter`, `BloomVariants`, `BoolSet`, `DictionarySet`, `HashMultiset`, `LinkedHashSet`, `ListSet`, `SetInterfaces`, `SetOperations`, `SortedIntersection`, `SortedListSet`, `SpaceEfficientSortedSet` | `BinaryFuseFilter`, `BlockedBloomFilter`, `CountMinSketch`, `CountingQuotientFilter`, `CuckooFilter`, `GrafiteFilter`, `KllSketch`, `MementoFilter`, `MinHashSketch`, `PrefixFilter`, `RibbonFilter`, `RoaringBitmap`, `UltraLogLog`, `VectorIntersection`, `VectorQuotientFilter` |  |  |
 | `sort/` | `CountingSort`, `EngineeredQuickSorts`, `ExchangeSorts`, `ExternalSort`, `Heapsort`, `InsertionSort`, `KnuthSorts`, `MergeSort`, `MultikeyQuickSort`, `PigeonholeSort`, `QuickSort`, `SelectionSort`, `ShellSort`, `SortingNetworks`, `StrandSort`, `TreeSort` | `LearnedSort`, `PdqSort`, `QuicksortAdversary`, `RadixSort`, `RunSorts`, `SampleSort`, `Sort`, `StringSort`, `VectorQuickSort` | `Sorted` |  |
 | `stack/` | `ArrayStack`, `Expressions`, `MinStack`, `MultiStack`, `SequenceStack`, `StackAlgorithms` |  |  |  |
 | `string/` | `Alignment`, `Anagrams`, `ApproximateMatching`, `FrontCoding`, `Huffman`, `LongestCommonSubsequence`, `Lyndon`, `Palindromes`, `Parentheses`, `PrefixSearch`, `RearCoding`, `Segmentations`, `StringBreaking`, `StringMatching`, `SubsequenceProblems`, `SuffixApplications`, `SuffixArray`, `SuffixTree`, `WordBreak` | `AhoCorasick`, `EditDistance`, `LongestCommonExtension`, `MultiSearch`, `StringSearch`, `SuffixAutomaton`, `SuffixSorting` |  |  |
@@ -674,7 +674,9 @@ library, Boost and Eigen.
 | filter of Bloom in blocks of 256 bits, one bit in each of 8 words (Putze et al.; Parquet) | [`set/BlockedBloomFilter.h`](include/ADS/set/BlockedBloomFilter.h) | `hashing.blocked-bloom` |
 | binary fuse filter, fingerprints of 8 or 16 bits (Graf and Lemire) | [`set/BinaryFuseFilter.h`](include/ADS/set/BinaryFuseFilter.h) | `hashing.binary-fuse` |
 | cuckoo filter with removals, fingerprints of 8 or 16 bits, buckets of 4 places in one word (Fan et al.) | [`set/CuckooFilter.h`](include/ADS/set/CuckooFilter.h) | `hashing.cuckoo-filter` |
+| counting quotient filter, runs of remainders by rank and select on blocks of 64 slots, counters in the slots, merge and resize (Pandey, Bender, Johnson and Patro) | [`set/CountingQuotientFilter.h`](include/ADS/set/CountingQuotientFilter.h) | `hashing.counting-quotient-filter` |
 | prefix filter, bins of 25 fingerprints as pocket dictionaries of 32 bytes, the overflow in a blocked filter of Bloom (Even, Even and Morrison) | [`set/PrefixFilter.h`](include/ADS/set/PrefixFilter.h) | `hashing.prefix-filter` |
+| vector quotient filter, blocks of one line with the quotients in unary, two choices, the slots compared by vectors (Pandey, Conway, Durie, Bender, Farach-Colton and Johnson) | [`set/VectorQuotientFilter.h`](include/ADS/set/VectorQuotientFilter.h) | `hashing.vector-quotient-filter` |
 | standard Ribbon filter, Gauss elimination on the fly, solution by columns (Dillinger and Walzer) | [`set/RibbonFilter.h`](include/ADS/set/RibbonFilter.h) | `hashing.ribbon-filter` |
 | range filter Grafite, false positives at most $\ell / 2^{B-2}$ for a range of $\ell$ keys with B bits per key whatever the queries, by a locality-preserving hash and Elias-Fano; the bucketing filter of the same paper (Costa, Ferragina and Vinciguerra) | [`set/GrafiteFilter.h`](include/ADS/set/GrafiteFilter.h) | `hashing.grafite-filter`, `hashing.bucketing-filter` |
 | distinct items in registers of a byte with the two bits below the top level, FGRA and maximum likelihood estimators, merge and downsizing (UltraLogLog of Ertl) | [`set/UltraLogLog.h`](include/ADS/set/UltraLogLog.h) | `sketches.ultraloglog-estimates`, `sketches.ultraloglog-merge` |
@@ -682,6 +684,7 @@ library, Boost and Eigen.
 | quantiles by compactors of geometric capacities, lazy compaction in one buffer (KLL; DataSketches) | [`set/KllSketch.h`](include/ADS/set/KllSketch.h) | `sketches.kll-ranks`, `sketches.kll-merge` |
 | similarity of Jaccard by minwise hashing of one permutation with the optimal densification (Li et al.; Shrivastava) | [`set/MinHashSketch.h`](include/ADS/set/MinHashSketch.h) | `sketches.minhash-jaccard` |
 | parallel construction of the mergeable sketches by the merges of the sketches of blocks | [`parallel/ParallelSketch.h`](include/ADS/parallel/ParallelSketch.h) | `sketches.parallel-sketch` |
+| dynamic range filter Memento, prefixes in a quotient filter and their mementos in keepsake boxes, false positives at most about $(n/m)\,2^{1-f}$ for a range of up to $2^r$ keys whatever the queries (Eslami and Dayan) | [`set/MementoFilter.h`](include/ADS/set/MementoFilter.h) | `hashing.memento-filter` |
 | minimal perfect hash function by pilots, about 3 bits per key (PTHash) | [`dictionary/MinimalPerfectHash.h`](include/ADS/dictionary/MinimalPerfectHash.h) | `hashing.minimal-perfect-hash` |
 | minimal perfect hash function by recursive splitting, about 1.8 bits per key, leaves by rotation fitting (RecSplit; Bez et al.) | [`dictionary/RecSplit.h`](include/ADS/dictionary/RecSplit.h) | `hashing.recsplit` |
 | minimal perfect hash function by pilots of 8 bits placed by evictions, parts of equal slots, streaming queries with prefetching, parts built in parallel (PtrHash; Groot Koerkamp) | [`dictionary/PtrHash.h`](include/ADS/dictionary/PtrHash.h) | `hashing.ptrhash` |

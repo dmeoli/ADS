@@ -70,13 +70,16 @@
 #include "ADS/set/BloomFilter.h"
 #include "ADS/set/BloomVariants.h"
 #include "ADS/set/CountMinSketch.h"
+#include "ADS/set/CountingQuotientFilter.h"
 #include "ADS/set/CuckooFilter.h"
 #include "ADS/set/GrafiteFilter.h"
 #include "ADS/set/KllSketch.h"
+#include "ADS/set/MementoFilter.h"
 #include "ADS/set/MinHashSketch.h"
 #include "ADS/set/PrefixFilter.h"
 #include "ADS/set/RibbonFilter.h"
 #include "ADS/set/UltraLogLog.h"
+#include "ADS/set/VectorQuotientFilter.h"
 
 #if defined( ADS_WITH_CEREAL )
  #include "ADS/interop/cereal/Cereal.h"
@@ -789,6 +792,14 @@ ADS_TEST( "persistence-filters" )
  roundTrip< CuckooFilter< std::uint64_t > >( C , same );
  roundTrip< PrefixFilter< std::uint64_t > >(
    fill( PrefixFilter< std::uint64_t >( keys.size() ) ) , same );
+ roundTrip< CountingQuotientFilter< std::uint64_t > >(
+   fill( CountingQuotientFilter< std::uint64_t >( keys.size() ) ) , same );
+ roundTrip< VectorQuotientFilter< std::uint64_t > >(
+   fill( VectorQuotientFilter< std::uint64_t >( keys.size() ) ) , same );
+ roundTrip< VectorQuotientFilter< std::uint64_t , std::uint16_t > >(
+   fill( VectorQuotientFilter< std::uint64_t ,
+			       std::uint16_t >( keys.size() ) ) ,
+   same );
  roundTrip< RibbonFilter< std::uint64_t > >(
    RibbonFilter< std::uint64_t >( keys ) , same );
  roundTrip< BinaryFuseFilter< std::uint64_t > >(
@@ -807,6 +818,8 @@ ADS_TEST( "persistence-filters" )
   };
  roundTrip< GrafiteFilter<> >( GrafiteFilter<>( keys ) , ranges );
  roundTrip< BucketingFilter<> >( BucketingFilter<>( keys ) , ranges );
+ roundTrip< MementoFilter<> >( fill( MementoFilter<>( keys.size() ) ) ,
+			       ranges );
  // a filter of 16 bits of fingerprint is not one of 8
  const auto f = store( BinaryFuseFilter< std::uint64_t >( keys ) );
  CHECK( message( [ & ] {

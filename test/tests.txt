@@ -536,6 +536,8 @@ hashing  binary-fuse           filtro binary fuse
 hashing  binary-fuse-32        filtro binary fuse su 32 bit
 hashing  cuckoo-filter         filtro cuckoo, inserimenti e rimozioni
 hashing  prefix-filter         filtro prefix, dizionari tascabili e spare
+hashing  counting-quotient-filter filtro a quozienti con contatori
+hashing  vector-quotient-filter filtro a quozienti vettoriale, due blocchi
 hashing  ribbon-filter         filtro Ribbon, eliminazione a bande
 hashing  filters-fingerprint-rate falsi positivi dei filtri statici, 3 sigma
 hashing  minimal-perfect-hash  hash perfetto minimo a piloti
@@ -548,6 +550,7 @@ hashing  bucket-cuckoo-stash   cuckoo a bucket, hash costante e stash
 hashing  grafite-filter        filtro di intervalli Grafite, query correlate
 hashing  bucketing-filter      filtro di intervalli a bucket
 hashing  range-filters-32      filtri di intervalli su chiavi di 32 bit
+hashing  memento-filter        filtro di intervalli Memento, dinamico
 
 # the sketches of streams, beyond the book
 sketches  ultraloglog-estimates  UltraLogLog, FGRA e massima verosimiglianza
