@@ -8,9 +8,10 @@
 #   optional backends of ADS, each turned on by its macro, and adds the       #
 #   necessary -I, -D and compiler options to $(ADSINC) and the external       #
 #   libraries + -L< libdirs > to $(ADSLIB), with -pthread for the pool of     #
-#   threads of ADS. The makefiles dealing with the external libraries are     #
-#   in the extlib/ folder of ADS, i.e., in $(ADSSDR)/extlib/, together with   #
-#   the paths where the libraries are to be found.                            #
+#   threads of ADS and -latomic where the compiler needs it for the wide      #
+#   atomics. The makefiles dealing with the external libraries are in the     #
+#   extlib/ folder of ADS, i.e., in $(ADSSDR)/extlib/, together with the      #
+#   paths where the libraries are to be found.                                #
 #                                                                             #
 #   Input:  $(CXX)               = compiler command                           #
 #           $(CXXFLAGS)          = compiler options                           #
@@ -160,6 +161,17 @@ endif
 
 ADSINC := $(ADSSWOS)
 ADSLIB := -pthread
+
+# libatomic for the atomics wider than two words, which std::atomic_ref
+# reads and writes under a lock [see ConcurrentCuckooTable.h]: linked only
+# where the compiler calls it instead of building those atomics in (e.g.,
+# GCC and Clang on x86-64)
+ADSATOMICTRY = printf '$(ADShash)include <atomic>\n$(ADShash)include \
+	<cstdint>\nstruct W{std::int64_t a,b,c;};std::atomic<W> w;\
+	int main(){w.store(W{1,2,3});return int(w.load().a)-1;}\n' | \
+	$(CXX) -x c++ - -o $(ADSTRY)
+ADSLIB += $(shell $(ADSATOMICTRY) 2>$(ADSNULL) || \
+	( $(ADSATOMICTRY) -latomic 2>$(ADSNULL) && echo -latomic ))
 
 # the sanitizers named by the options of the compiler (-fsanitize= of GCC
 # and Clang), told to the headers and to the tests by ADS_SANITIZE_ADDRESS

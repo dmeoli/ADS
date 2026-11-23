@@ -1191,10 +1191,11 @@ Use).
 
 The makefile takes ADS from `lib/makefile-c`, which defines `ADSH` (the
 headers), `ADSINC` (the `-I`, the `-D` and the options of the backends
-turned on), `ADSLIB` (their libraries, and `-pthread`) and `ADSOBJ`, the
-object of the C++20 module when it is built. Of the other files,
-`lib/makefile` gives only the headers, `lib/makefile-OS` the settings of the
-operating system and of the compiler, and `lib/makefile-mod` the module.
+turned on), `ADSLIB` (their libraries, `-pthread`, and `-latomic` where
+the compiler needs it) and `ADSOBJ`, the object of the C++20 module when it
+is built. Of the other files, `lib/makefile` gives only the headers,
+`lib/makefile-OS` the settings of the operating system and of the compiler,
+and `lib/makefile-mod` the module.
 GMP, a CBLAS, the headers of Boost and Highway are used wherever a program
 that calls them compiles and links (`ADS_WITH_GMP`, `ADS_WITH_BLAS`,
 `ADS_WITH_BOOST` and `ADS_WITH_HIGHWAY` are `auto`), and `make backends`

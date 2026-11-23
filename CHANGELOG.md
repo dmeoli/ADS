@@ -272,6 +272,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the link of the programs that include `ConcurrentCuckooTable.h` with a
+  value wider than two words, whose atomics the compiler calls in libatomic
+  (e.g., GCC and Clang on x86-64): the target `ADS::ADS`, `ads.pc` and
+  `$(ADSLIB)` of the makefile carry `-latomic` where a probe program needs
+  it, and `engineered_capabilities` links with Clang
 - `ArrayGraph` has `weighted`, `arcs()`, `arcHeads()` and `arcWeights()`,
   with the meaning of those of `StaticGraph`, so that `CsrInput` of
   `Csr.h` and `view()` of `GraphBLAS.h` take it, as their documentation
