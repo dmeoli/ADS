@@ -21,7 +21,7 @@ of the makefile.
 
 An example whose first line is a comment `// with <library>` needs that
 library, and it is compiled only where the library is found, whereas the
-others need only the standard library. Every example is also a test,
+others need only the standard library. Each example is also a test,
 `interop_examples.<name>` (or `interop_examples_mpi.<name>` for MPI, run on
 one to four processes), whose source holds the code of the example as it is
 printed here, with the checks of its result between its lines. The checker
@@ -59,6 +59,40 @@ whereas an insertion or an erasure moves $O( \sqrt{n} )$ keys instead of
 $O( n )$. Of course, the alias exists only where the standard library has
 `<flat_map>` (e.g., GCC 15), and the test is compiled as C++23 where the
 compiler takes it.
+
+The costs above rest on two facts: the members by iterator of the
+sequences make one operation by rank each, and the single insertions of
+`std::flat_map` are specified by C++23 ([flat.map.modifiers]) as a binary
+search of the keys followed by one `insert( p , x )` on each container.
+
+<span id="lem-C-1"></span>**Lemma C.1 (flat containers).** *Let $S$ be a
+sequence of ADS with `insert( i , x )` and `erase( i )` by rank and with
+random-access iterators. Then `insert( p , x )`, `emplace( p , ... )` and
+`erase( p )` of `StdSequence< S >` make one call of `insert()` or `erase()`
+of $S$ at the rank $i$ of $p$, and return an iterator on the rank $i$; the
+range forms on $k$ items make $k$ such calls at consecutive ranks (at the
+rank of `first`, for the erasure). In a `TieredFlatMap` of $n$ keys, an
+insertion of a new key, or an erasure, takes therefore $O( \log n )$
+comparisons and moves $O( 1 + \min\{ i , \sqrt{n} , n - i \} )$ keys and
+as many values, plus $O( 1 )$ amortized for the blocks, where $i$ is the
+rank of the key.*
+
+*Proof.* Each member computes the rank as the difference of $p$ and
+`cbegin()`, in $O( 1 )$ time since the iterators are random-access, and
+calls the member of $S$ at that rank (or, in the range forms, at the ranks
+$i , i + 1 , \ldots$ of the insertion and $k$ times at the rank $i$ of the
+erasure); the iterator returned is `begin()` plus that rank. A
+`TieredVector` has the same members by iterator in its class, written
+in the same way, and its iterators are random-access in $O( 1 )$ time;
+hence the binary search of the keys makes $O( \log n )$ comparisons, and
+the one insertion (or erasure) by rank on each of the two `TieredVector`s
+moves the items of (2.7) by [Lemma 2.14](02-sequence.md#lem-2-14).
+$\square$
+
+The lemma holds for the containers of the standard library that follow the
+effects of the standard; an implementation that inserted by other means
+(e.g., by appending and sorting again a batch of keys, as `insert()` of a
+range may do) would pay the moves of its scheme instead.
 
 Also, the algorithms of `std::ranges` take the dictionaries and the search
 trees of ADS as they are, since their iterators model the concepts of
@@ -124,6 +158,26 @@ whose distance falls is pushed again, and its stale copies are skipped when
 they reach the top. Hence the queue may hold up to $m$ pairs instead of $n$;
 the heaps of ADS, and those of Boost.Heap in [§C.3](C-libraries.md#sec-C-3),
 lower their keys in place.
+
+<span id="lem-C-2"></span>**Lemma C.2 (the memory resource).** *Let $r$ be
+a resource of ADS with `allocate( b , a )` and `deallocate( p , b , a )`
+that outlives a `PmrResource< R >` on it and the memory that it gives. Then
+each allocation and each deallocation of the adapter is one virtual call
+followed by one call of $r$ with the same arguments, and two adapters
+compare equal if and only if both are `PmrResource< R >` on the same object
+$r$; hence a block allocated through an adapter may be freed through any
+adapter equal to it, as `std::pmr` requires of equal resources.*
+
+*Proof.* `do_allocate()` and `do_deallocate()` forward their arguments to
+$r$, and `do_is_equal()` is true exactly when the other resource is a
+`PmrResource< R >` (by `dynamic_cast`) holding the same pointer to $r$.
+Two equal adapters therefore pass the block to the same object $r$, which
+frees it as if it had been given back to the adapter that allocated it.
+$\square$
+
+The costs and the alignment of the blocks are thus those of $r$, e.g., of
+`PoolResource` by [Lemma 5.9](05-memory.md#lem-5-9), and the only price
+of the adapter is the virtual call.
 
 ## C.2 Boost.Graph {#sec-C-2}
 
@@ -208,6 +262,40 @@ Boost while it sends its events to the observers. In
 [§14.8](14-graph.md#sec-14-8), `std::priority_queue` and the heaps of
 Boost.Heap included, and the line that changes is the declaration of the
 queue.
+
+<span id="lem-C-3"></span>**Lemma C.3 (the view of Boost.Graph).** *Let
+the vertex index of a graph $g$ of Boost.Graph with $n$ vertices be a
+bijection onto $[ 0 , n )$. Then `FromBGL` on $g$ is built in $O( n )$ time
+and space, with no copy of the edges; `forEachAdj( u , f )` and
+`forEachEdge( u , f )` call $f$ once per out-edge of the vertex of index
+$u$, in the order of `out_edges()`, with $O( 1 )$ work besides the
+iterators and the property maps of $g$. On a graph whose vertices are
+their indices, the names of the nodes never change: `deleteNode( u )`
+removes the edges of $u$ and leaves its vertex isolated and marked, and
+`insertNode()` names the new vertex by its index, which is $n'$ for a graph
+of $n'$ vertices on `vecS`.*
+
+*Proof.* The constructor sizes the vector of the vertices and the marks to
+$n$, and visits the vertices once to store each at its index; no other data
+is copied. The visits run the iterators of `out_edges()` of the vertex
+stored at $u$, and map each target to its index (and, for `forEachEdge()`,
+read its weight) by one `get()`. `deleteNode()` calls `clear_vertex()` and
+marks $u$, so that `remove_vertex()`, which on `vecS` would renumber the
+vertices after $u$, is never called; `insertNode()` appends the vertex of
+`add_vertex()`, which on `vecS` is the next index, and returns its index.
+$\square$
+
+The visit of `dijkstraShortestPaths()` is that of
+`boost::breadth_first_visit()`, with the queue of ADS behind the buffer of
+Boost.Graph and a visitor that relaxes the arcs; [Algorithm
+C.1](C-libraries.md#alg-C-1) gives it in the form of the prototype of
+[§14.8](14-graph.md#sec-14-8), with the colors of Boost.Graph.
+
+<span id="alg-C-1"></span>**Algorithm C.1.** The algorithm of Dijkstra of
+Boost.Graph on a queue $Q$ of ADS: white the vertices not reached, gray
+those in $Q$.
+
+--8<-- "generated/Dijkstra-dijkstraShortestPaths.pseudo.md"
 
 ## C.3 Boost.Heap and Boost.Unordered {#sec-C-3}
 
@@ -965,6 +1053,34 @@ another type by `std::invalid_argument`. Where nanoarrow is found, the test
 `interop_columnar.arrow-nanoarrow` validates with it the columns that ADS
 exports, and imports into ADS those that nanoarrow builds.
 
+<span id="lem-C-4"></span>**Lemma C.4 (the columns of Arrow).** *Let
+`exportArrow()` be called on a structure $x$ of $n$ items. (i) If $x$ is a
+`BitVector`, or a `PackedArray` of 1, 8, 16 or 32 bits, on a little-endian
+processor, or a contiguous range of numbers, the buffer of the values of
+the array is the memory of $x$ (of the object into which $x$ is moved, for
+the form that takes it by value), and no value is copied; otherwise the
+values are copied, in $O( n )$ time. (ii) The buffers stay valid until
+the consumer calls `release` of the array, which frees them once and sets
+`release` to null, and the same holds for the name and `release` of the
+schema. (iii) An `ArrowColumn` built on an array leaves the source
+released, without calling its callback, and calls the callback exactly
+once, when it is destroyed or assigned.*
+
+*Proof.* (i) The branches of `exportArrow()` take the words, or
+`std::ranges::data()` of $x$, in exactly these cases, and otherwise fill the
+copy of the private data, by one pass over the items. (ii) The private data of
+the array holds $x$ by a `std::shared_ptr` and the copy, if any, and the
+callback of the array deletes it and clears `release`, as that of the schema
+does with its name; the consumer, as the specification prescribes, calls each
+callback once. (iii) The constructor moves the structure into the object and
+sets `release` of the source to null, the move constructor and the move
+assignment do the same with the object moved from, and `reset()` calls the
+callback only if `release` is not null, and then clears it. $\square$
+
+The structure exported must not change until the array is released, which
+is a precondition of `exportArrow()`, since the consumer reads its memory
+in place.
+
 ## C.19 CRoaring {#sec-C-19}
 
 `RoaringBitmap` ([chapter 10](10-set.md#ch-10)) writes and reads the
@@ -1003,6 +1119,27 @@ bytes of the file `bitmapwithoutruns.bin` of CRoaring. Also, the test
 writes it with runs (the file `bitmapwithruns.bin`), and it passes random
 sets in both directions.
 
+<span id="lem-C-5"></span>**Lemma C.5 (the bitmaps of CRoaring).** *Let
+$s$ be a `RoaringBitmap` of $b$ bytes in the portable format, and $r$ a
+bitmap of CRoaring of $b'$ bytes in it. Then `toCRoaring( s )` is a bitmap
+of CRoaring of the same set as $s$, and `fromCRoaring( r )` a
+`RoaringBitmap` of the same set as $r$, in $O( b )$ and $O( b' )$ time
+besides the work of CRoaring on the same bytes; in particular,
+`fromCRoaring( toCRoaring( s ) )` equals $s$.*
+
+*Proof.* `toCRoaring()` writes $s$ by `writePortable()` into a buffer of
+$b$ bytes and gives it to `roaring_bitmap_portable_deserialize_safe()`;
+`fromCRoaring()` sizes a buffer by `roaring_bitmap_portable_size_in_bytes()`,
+fills it by `roaring_bitmap_portable_serialize()` and reads it by
+`readPortable()`. Both sides write and read the same format (the
+specification of Roaring, which [Lemire et al.
+2018](Z-bibliography.md#ref-lemire2018) describes), and each pass of ADS
+is linear in the bytes. $\square$
+
+The lemma assumes that CRoaring writes and reads the format as specified,
+which the tests check on the samples of the specification and on random
+sets.
+
 ## C.20 sdsl-lite {#sec-C-20}
 
 In its version 3, header-only and under the BSD license, sdsl-lite keeps
@@ -1031,6 +1168,24 @@ const sdsl::bit_vector v = ADS::toSdsl( b );       // a copy of the words
 const sdsl::rank_support_v5< 1 > r( &v );          // a rank of sdsl
 const ADS::RankSelect q( ADS::toBitVector( v ) );  // and one of ADS
 ```
+
+<span id="lem-C-6"></span>**Lemma C.6 (the vectors of sdsl-lite).** *For a
+`BitVector` or a `PackedArray< B >` of $n$ items, `toSdsl()` gives a
+`bit_vector` or an `int_vector< B >` with the same $n$ bits or fields, by
+a copy of $\lceil n B / 64 \rceil$ words ($B = 1$ for the bits), and
+`toBitVector()` and `toPackedArray< B >()` of a vector of width $B$ do the
+converse in the same time. A vector of another width $W$ is read field by
+field in $O( n )$ time: each field equals the one of the input when it
+fits in $B$ bits, and else it is clamped to $2^B - 1$ if the array
+saturates, while without saturation the conversion throws
+`std::invalid_argument`.*
+
+*Proof.* By the layouts stated above, the bit or the field $i$ lies in the
+same place of the same word in both libraries, and the functions copy the
+first $\lceil n B / 64 \rceil$ words by `memcpy()`, or build the array on
+them. For a width $W \ne B$, `toPackedArray< B >()` first scans the fields
+for one above $2^B - 1$ when the array does not saturate, and then builds
+the array by one call per field. $\square$
 
 Neither library can take the words of the other without a copy, since each
 one owns them: ADS aligns them to a line of the cache, and sdsl allocates
