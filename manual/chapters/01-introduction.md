@@ -73,7 +73,7 @@ magnitude (typically, not more), according to how the items they examine lie
 in memory. In ADS, the textbook structures are written to show the first
 effect (the organization of the items), and the engineered ones also take the
 second (somewhat harder to predict) into account
-([§1.9](01-introduction.md#sec-1-9)).
+(cf. [§1.9](01-introduction.md#sec-1-9)).
 
 ## 1.2 Abstract data types {#sec-1-2}
 
@@ -96,7 +96,7 @@ construct, as in $\mathrm{top}( \mathrm{push}( S , v ) ) = v$.
 In the *constructive* way, it is the precondition and the
 postcondition of each operation, written in terms of a type
 already known (e.g., the finite sequences of items). As for the
-operations, they are of four kinds, i.e., the *constructors*,
+operations, they are of four kinds: the *constructors*,
 which make a value of the type (`create()`, `insert()`,
 `push()`), the *modifiers*, which change it, the *observers*,
 which return a property of it (`empty()`, `top()`, `read()`),
@@ -139,10 +139,10 @@ fails. However, a concept checks the syntax and nothing more: two types with
 the same operations and different axioms (say, a stack and a queue whose
 operations had the same names) model the same concepts, and the compiler
 cannot tell them apart. We therefore state the axioms of each type in the
-comments of `ADS/ADT.h`, and the library checks them in two ways, i.e., the
+comments of `ADS/ADT.h`, and the library checks them in two ways: the
 tests check them on each realization (the tests `contract_*.*-axioms`), and
 the code checks the constructive form, i.e., the preconditions and the
-postconditions of the operations ([§1.7](01-introduction.md#sec-1-7)).
+postconditions of the operations (cf. [§1.7](01-introduction.md#sec-1-7)).
 
 We write the axioms of the STACK, with $\mathrm{create}$ the empty stack,
 as
@@ -218,10 +218,10 @@ term $A$, by induction on $A$. Hence, if we take two sets as equal when they
 contain the same items (the only equality that (1.6) can define, since it has
 no equation among sets), each term is equal to a term made of
 $\mathrm{insert}$ only, on the distinct items that it contains, in any order.
-Of course, the axioms say nothing about the cost of the operations, which is
+Of course, the axioms do not fix the cost of the operations, which is
 rather the business of the realizations; a stack on a vector and a stack on a
 list satisfy (1.1) in the same way, and differ in time and space
-([§3.2](03-stack.md#sec-3-2) and [§3.3](03-stack.md#sec-3-3)).
+(cf. [§3.2](03-stack.md#sec-3-2) and [§3.3](03-stack.md#sec-3-3)).
 
 ## 1.3 The interfaces {#sec-1-3}
 
@@ -314,7 +314,7 @@ the final height is $s_n$, which is 0 exactly when the stack is empty at the
 end. Finally, `isDyckWord()` ([Algorithm 1.1](01-introduction.md#alg-1-1))
 keeps $h = s_j$ and returns false at the first $j$ with $h = 0$ and $w_j =
 -1$; it makes $O( 1 )$ operations per item, and its counter $h \le n$ takes
-one word ([§1.6](01-introduction.md#sec-1-6)). $\square$
+one word (cf. [§1.6](01-introduction.md#sec-1-6)). $\square$
 
 <span id="alg-1-1"></span>**Algorithm 1.1.** The Dyck words and the
 matched strings of brackets by a stack ([Morin 2013, exercises 1.2 and
@@ -481,7 +481,7 @@ set of Morin. Finally, a BAG is a USet that keeps all the items equal to one
 another ([Morin 2013, exercise 1.5](Z-bibliography.md#ref-morin-cpp)). Its
 `insert( x )` always adds $x$, `find( x )` gives one of the items equal to
 $x$, and `findAll( x )` gives them all. Its realization `Bag` models `USet`,
-with an `insert()` that is always true ([§1.4](01-introduction.md#sec-1-4)).
+with an `insert()` that is always true (cf. [§1.4](01-introduction.md#sec-1-4)).
 
 ## 1.4 Reference realizations {#sec-1-4}
 
@@ -515,7 +515,7 @@ not move it at all when the item removed is the last one.
 `ArraySSet`, instead, keeps the items in strictly increasing order by the
 order `C` (`std::less<>` by default), two items being equal when neither is
 smaller than the other. This is the invariant that its contracts check at the
-level 3 ([§1.7](01-introduction.md#sec-1-7)), and both classes give their
+level 3 (cf. [§1.7](01-introduction.md#sec-1-7)), and both classes give their
 vector, read-only, by `items()`. Hence we can make `lowerBound( x )` a binary
 search, which [Morin 2013, exercise 1.7](Z-bibliography.md#ref-morin-cpp)
 suggests among the improvements of the realization on a vector, and
@@ -799,7 +799,7 @@ $\varepsilon = b' - b$; the last one is $n^{b'} / c^n = 2^{b' \log n - n
 unchanged. $\square$
 
 With more than one variable, as in the $O( n +
-k )$ space of $k$ stacks of $n$ items in all ([§3.4](03-stack.md#sec-3-4)),
+k )$ space of $k$ stacks of $n$ items in all (cf. [§3.4](03-stack.md#sec-3-4)),
 $g = O( f )$ means that there are $c > 0$ and $z$ such that $g( n_1 ,
 \ldots , n_k ) \le c f( n_1 , \ldots , n_k )$ whenever $g( n_1 , \ldots ,
 n_k ) \ge z$, which agrees with (1.10) when $f$ increases, while other texts
@@ -933,8 +933,9 @@ the products of their halves (after [Knuth 1998, Algorithm
 ![Figure 1.6. The product of two words on halves of 32 bits, as in (1.13): the four partial products at their shifts, the three halves summed into $\mathit{mid}$ in violet, and the two halves of $\mathit{mid}$ in orange: its low half, the bits 32 to 63 of the product, and its high half, the carry into the high word.](../figures/intro-product.svg){#fig-1-6}
 
 <span id="lem-1-8"></span>**Lemma 1.8.** *The computation of
-`wideProductHalves()` ([Algorithm 1.4](01-introduction.md#alg-1-4)) gives the product $a b$ exactly, i.e., its low
-word and its high word, with no overflow of an intermediate word.*
+`wideProductHalves()` ([Algorithm 1.4](01-introduction.md#alg-1-4)) gives
+the product $a b$ exactly, i.e., its low word and its high word, with no
+overflow of an intermediate word.*
 
 *Proof.* Each partial product $p_{ij} = a_i b_j$ is below $( 2^{32} - 1 )^2
 < 2^{64}$; write $p_{ij} = h_{ij} 2^{32} + l_{ij}$ with $0 \le h_{ij} ,
@@ -997,9 +998,9 @@ and bound of chapter [20](20-complexity.md#ch-20) use `Int128`, and the sorts
 of strings of chapter [12](12-sort.md#ch-12) and the search of several
 patterns of chapter [15](15-string.md#ch-15) use `byteSwap()`.
 
-The word-RAM ignores the memory hierarchy, which (as
-[§1.1](01-introduction.md#sec-1-1) recalls) may make two equal
-counts of operations differ by one order of magnitude in time.
+The word-RAM ignores the memory hierarchy, which may make two equal
+counts of operations differ by one order of magnitude in time (cf.
+[§1.1](01-introduction.md#sec-1-1)).
 Instead, the *external-memory model* of [Aggarwal and Vitter
 1988](Z-bibliography.md#ref-aggarwal1988) counts the transfers of
 blocks of $B$ words between a memory of $M$ words and a disk.
@@ -1074,8 +1075,9 @@ $\Theta( n )$ takes $\Theta( k n )$ time.*
 
 *Proof.* The first claim follows from the definition (1.10), since $t( n ) +
 g( n ) \le 2 \max\{ t( n ) , g( n ) \}$. The second rests on the rule of
-[Table 1.2](01-introduction.md#tab-1-2), which the library follows and its tests cannot prove, i.e., a condition checked by `ADS_PRE` or `ADS_POST` costs at
-most as much as its operation. The third follows from the first, with $t(
+[Table 1.2](01-introduction.md#tab-1-2), which the library follows and its
+tests cannot prove, i.e., a condition checked by `ADS_PRE` or `ADS_POST`
+costs at most as much as its operation. The third follows from the first, with $t(
 n ) = O( 1 )$ and $g( n ) = \Theta( n )$, summed over the $k$ operations.
 $\square$
 
@@ -1118,7 +1120,7 @@ $m$ operations that starts from an empty structure takes at most $m f( n )$
 time, although some of its operations may take longer ([Tarjan
 1985](Z-bibliography.md#ref-tarjan1985)). An *expected* bound $f( n )$
 bounds the expected value of the running time, which is a random variable
-over the choices of the structure ([§1.5.4](01-introduction.md#sec-1-5-4)).
+over the choices of the structure (cf. [§1.5.4](01-introduction.md#sec-1-5-4)).
 These kinds may combine; for instance, the insertion into a hash table that is
 rebuilt when it grows takes $O( 1 )$ expected amortized time (chapter
 [7](07-dictionary.md#ch-7), and the `Bag` of [Lemma
@@ -1154,7 +1156,7 @@ the first insertion costs 1 and leaves $\Phi = 1$. The first part, with
 $f( n ) = 3$, gives the bound. $\square$
 
 The growth of `std::vector` by any constant factor $\gamma > 1$ behaves in
-the same way ([Lemma 3.3](03-stack.md#lem-3-3)). A worst-case bound is
+the same way (cf. [Lemma 3.3](03-stack.md#lem-3-3)). A worst-case bound is
 the strongest of the three, and the other two are accepted since they often
 (but not always) give "simpler" structures, or a lower cost on average, or
 both. An amortized bound suits a program that needs a bound on the total
@@ -1169,7 +1171,8 @@ items and that of the data it adds (pointers, indices, capacities, the free
 places of a vector), and the latter is its *overhead*. Typically, a list
 with pointers takes one or two words per item besides the items, and a
 vector that doubles its capacity up to twice the words of its items
-([Lemma 1.11](01-introduction.md#lem-1-11)). In chapter [2](02-sequence.md#ch-2) the
+(cf. [Lemma 1.11](01-introduction.md#lem-1-11)). In chapter
+[2](02-sequence.md#ch-2) the
 rootish and tiered arrays bring the "wasted" free places down to $O(
 \sqrt{n} )$, and the blocked lists bring the overhead down to $O( b + n / b
 )$, with blocks of $b$ items. On the other hand, the succinct structures of
@@ -1320,10 +1323,12 @@ hence follows $x$ (if there is no such ancestor, $x$ is the last node of the
 tree). The code of `step()` does exactly this. It descends from the right
 child pushing the left path (lines 4 and 5 of `next()`), or it pops $\pi$ as
 long as the node popped is the right child of the new last node of $\pi$
-(lines 7 to 9), leaving $y$ last, or $\pi$ empty at the end. Hence $\pi$ is always the path from the root to the current node. In a whole visit, from
+(lines 7 to 9), leaving $y$ last, or $\pi$ empty at the end. Hence $\pi$ is
+always the path from the root to the current node. In a whole visit, from
 the first node to the end, each node is pushed once, when the visit first
 reaches it going down from its parent (or as the root), and popped once,
-when the visit leaves its subtree, and the visit therefore makes $n$ pushes and $n$ pops. A single step pushes or pops nodes of one path from the root,
+when the visit leaves its subtree, and the visit therefore makes $n$ pushes
+and $n$ pops. A single step pushes or pops nodes of one path from the root,
 at most $h + 1$ of them, and $\pi$ never holds more. $\square$
 
 The amortized bound holds for a whole visit (or for a visit of $s$
@@ -1497,11 +1502,11 @@ once. Similarly, the quicksort of the book stands beside `ADS::sort`, which
 is compared with the sorts of the standard library and of Boost. Each
 engineered structure cites the work it follows, and the benchmarks of
 `bench/` compare it with the best implementations available ([appendix
-B](B-benchmarks.md#app-B)). Each chapter describes both levels, and says
-what the second changes and why it is faster.
+B](B-benchmarks.md#app-B)). Each chapter describes both levels, and states
+what the second changes and why it is (usually) faster.
 
-Also, the code follows a few conventions. We write each realization as one header, included by its path (e.g.,
-`#include "ADS/stack/ArrayStack.h"`), which declares its classes and
+Also, the code follows a few conventions. We write each realization as one
+header, included by its path (e.g., `#include "ADS/stack/ArrayStack.h"`), which declares its classes and
 functions with their contracts. At its end the header includes the
 definitions of its templates, in the folder `impl/` next to it (e.g.,
 `ADS/stack/impl/ArrayStack.tpp`). All the names are in the namespace `ADS`,
@@ -1538,10 +1543,9 @@ control bytes of the hash tables (`ADS_FLAT_SIMD`), the compare-and-swap of
 free of locks on x86-64 under `-mcx16` and `-march=x86-64-v2`), the
 delegation of `FlatHashTable` to Boost, and the set of vector instructions
 at which Google Highway compiles the kernels inlined in the searches. A
-program often compiles a
-hot file with `-march=x86-64-v3` and the rest with the default, and its two
-translation units then hold two definitions of one class, which the linker
-merges without a word; an object of one unit may then run the code of the
+program often compiles a hot file with `-march=x86-64-v3` and the rest with
+the default, and its two translation units then hold two definitions of one
+class, which the linker merges silently; an object of one unit may then run the code of the
 other. For this reason `ADS/Abi.h` spells the four options in the name
 of an inline namespace, e.g., `abi_s1c1b0_N_AVX2`, the last part being the
 namespace that Highway gives to the set (`none` without Highway), in which
@@ -1573,13 +1577,13 @@ to the compiler, which is why that set enters the name of the namespace
 above. Without Highway every structure runs its scalar code, with the same
 results, and so it does on Highway with `ADS_SIMD_SCALAR` set to 1, which
 turns off every vector branch at once (each is taken on `ADS_SIMD`, which
-`Simd.h` defines), so that one build tests both codes. We leave the times of the kernels of Highway against those of the
-intrinsics they replace to the campaign of `bench/simd.py` on an idle
-machine, which also counts their instructions. No kernel of ADS runs on
-the intrinsics of the target any longer: the strips of the edit distance,
-the filter of the search of many patterns, the vector parts of the suffix
-sorting and the back substitution of `RibbonFilter` are inlined from
-`ADS/SimdInline.h` too.
+`Simd.h` defines), so that one build tests both codes. No kernel of ADS is
+written on the intrinsics of a target, and also the strips of the edit
+distance, the filter of the search of many patterns, the vector parts of the
+suffix sorting and the back substitution of `RibbonFilter` are inlined from
+`ADS/SimdInline.h`; the times of the kernels of Highway against those of
+the intrinsics of each target are left to the campaign of `bench/simd.py` on
+an idle machine, which also counts their instructions.
 
 The two levels are also two sets of headers, which a program may take
 apart; we divide them by the origin of the code, whatever its speed. In the
@@ -1616,10 +1620,10 @@ use an advanced one inside (e.g., `SuffixArray.h` sorts the ranks by
 `RadixSort.h`, and `ExternalSort.h` merges its runs on a `DaryHeap`). We
 list each use of this kind, with its reason, in the file of the sets; the
 advanced header is then compiled with the base one, but its names are not
-part of the base set. Five headers held a part of each set, and we split
-each of them into a base header, which keeps its path, and a new advanced
-one, which the base header includes; an include of the former thus gives
-every name it gave before. Hence the push-relabel of `MaxFlow.h` is in
+part of the base set. Five headers have a part in each set, and each of
+them is split into a base header and an advanced one, which the base header
+includes; an include of the base header thus gives the names of both. Hence
+the push-relabel of `MaxFlow.h` is in
 `PushRelabel.h`, the blossoms of `Matching.h` in `BlossomMatching.h`, the
 components by one visit of `Visit.h` in `StrongComponents.h`, the
 quicksort of Peters of `EngineeredQuickSorts.h` in `PdqSort.h`, and the
@@ -1629,12 +1633,11 @@ customization points of the queues of `PriorityQueue.h` in
 Each set has an *entry point*, a header that includes all the headers of
 the set and the core. Thus `#include "ADS/base.h"` gives the base set,
 `ADS/advanced.h` the advanced one, `ADS/core.h` the core and `ADS/ADS.h`
-the three. Also, each header keeps its path, and one can still include any
-of them as before. The modules follow the same division: `ads.core`,
+the three. Also, one can include any header by itself. The modules follow the same division: `ads.core`,
 `ads.base` and `ads.advanced` export the names of the headers of their sets
 (the last two also those of `ads.core`, without importing it), and `ads`
 exports the three. A
-program that writes `import ads;` gets all the names as before, whereas one
+program that writes `import ads;` gets all the names, whereas one
 that writes `import ads.base;` compiles neither the concurrent structures
 nor the executors of OpenMP, oneTBB and MPI. The headers of `ADS/interop/`
 ([§1.8.1](01-introduction.md#sec-1-8-1),
@@ -1732,9 +1735,8 @@ their chapters prove them. [Table 1.5](01-introduction.md#tab-1-5) then
 maps each class of the library to the chapter that describes it, one row
 per header, and [Table 1.6](01-introduction.md#tab-1-6) lists by chapter
 the headers that declare functions only. A script,
-`manual/build/structmap.py`, writes the two tables from the headers
-themselves. It lists a class when the class is defined at the scope of the
-namespace `ADS`, or of a namespace nested in it other than `ADS::detail`,
+`manual/build/structmap.py`, writes the two tables from the headers. It
+lists a class when the class is defined at the scope of the namespace `ADS`, or of a namespace nested in it other than `ADS::detail`,
 outside the sections hidden from the API reference, and lists an alias of
 such a class with it (e.g., `UnionFind`, the `DisjointSets` of the default
 parameters). It also checks that each header and class of the tables
@@ -3046,8 +3048,8 @@ Each exercise names the test of the library that solves it (run it with
    moving the items as one block ([Morin 2013, exercise
    1.7](Z-bibliography.md#ref-morin-cpp)). Test:
    `ods_lists.ods-ex1.6.reference-sets`, which checks `ArraySSet` against
-   `std::set`. Furthermore, the faster LISTs of chapter [2](02-sequence.md#ch-2), whose
-   insertions and removals take $O( 1 + \min\{ i , n - i \} )$ amortized
+   `std::set`. Furthermore, the faster LISTs of chapter
+   [2](02-sequence.md#ch-2), whose insertions and removals take $O( 1 + \min\{ i , n - i \} )$ amortized
    time, are checked by `ods_lists.ods-2.4.array-deque` and
    `ods_lists.ods-2.5.dual-array-deque`.
 8. Check that the realizations of the LIST and of the DEQUE model the
