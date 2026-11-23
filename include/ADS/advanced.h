@@ -50,6 +50,7 @@
 #include "ADS/compression/StreamVByte.h"
 #include "ADS/compression/Tans.h"
 #include "ADS/concurrent/Backoff.h"
+#include "ADS/concurrent/ConcurrentBTreeMap.h"
 #include "ADS/concurrent/ConcurrentCuckooTable.h"
 #include "ADS/concurrent/ConcurrentFlatTable.h"
 #include "ADS/concurrent/ConcurrentUnionFind.h"

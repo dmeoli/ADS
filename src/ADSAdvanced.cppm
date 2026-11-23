@@ -201,6 +201,9 @@ using ADS::tansDecompress;
 // concurrent/Backoff.h
 using ADS::Backoff;
 
+// concurrent/ConcurrentBTreeMap.h
+using ADS::ConcurrentBTreeMap;
+
 // concurrent/ConcurrentCuckooTable.h
 using ADS::ConcurrentCuckooTable;
 

@@ -4,8 +4,8 @@
 `MPSCInbox.h`, `MPMCQueue.h`, `WorkStealingDeque.h`,
 `ConcurrentUnionFind.h`, `ConcurrentCuckooTable.h`,
 `ConcurrentFlatTable.h`, `MultiQueue.h`, `EventCount.h`, `Backoff.h`,
-`StealablePriorityQueue.h`, `LockFreePriorityQueue.h`, and their
-`impl/*.tpp`]
+`StealablePriorityQueue.h`, `LockFreePriorityQueue.h`,
+`ConcurrentBTreeMap.h`, and their `impl/*.tpp`]
 
 We are concerned in this chapter with the structures that several threads of
 one process read and change at the same time, without a lock or with as few
@@ -13,14 +13,15 @@ locks as possible. They are the queues between producers and consumers, the
 deque of the scheduling by work stealing, the union-find and the hash tables
 that the threads share, the relaxed priority queue, the event count on which a
 thread sleeps until a condition holds, the priority queues of the workers of a
-parallel search, from which the idle workers steal, and an exact priority queue
-without locks. These structures are the bricks of the parallel algorithms and
-of the runtime of the workers of [chapter 25](25-parallel.md#ch-25), and of the
-parallel searches of the library. Each of them gives, in a precise sense, the
-result of a sequential structure of the earlier chapters; its cost, however,
-depends on how the threads meet in memory more than on the number of its
-operations. In the sets of [§1.9](01-introduction.md#sec-1-9), the headers of
-this chapter are all advanced.
+parallel search, from which the idle workers steal, an exact priority queue
+without locks, and an ordered map whose lookups take no lock. These structures
+are the bricks of the parallel algorithms and of the runtime of the workers of
+[chapter 25](25-parallel.md#ch-25), and of the parallel searches of the
+library. Each of them gives, in a precise sense, the result of a sequential
+structure of the earlier chapters; its cost, however, depends on how the
+threads meet in memory more than on the number of its operations. In the sets
+of [§1.9](01-introduction.md#sec-1-9), the headers of this chapter are all
+advanced.
 
 We organize the chapter as follows. In
 [§24.1](24-concurrent.md#sec-24-1) we fix the model of the threads and of
@@ -35,7 +36,9 @@ the two hash tables. We treat the MultiQueue in
 [§24.9](24-concurrent.md#sec-24-9), the ways in which a thread waits in
 [§24.10](24-concurrent.md#sec-24-10), the priority queues that are
 stolen in [§24.11](24-concurrent.md#sec-24-11), and the exact priority
-queue without locks in [§24.12](24-concurrent.md#sec-24-12). The file
+queue without locks in [§24.12](24-concurrent.md#sec-24-12); the
+structures of one writer are in [§24.13](24-concurrent.md#sec-24-13), and
+the ordered map in [§24.14](24-concurrent.md#sec-24-14). The file
 `impl/Spin.tpp`
 holds only two helpers that the other headers share (the pause of the
 processor in a loop that spins, and the prefetch of a line of cache), and
@@ -151,6 +154,7 @@ MultiQueue, and $k$ that of the messages taken at once.
 | `MultiQueue` | any, by a handle each | blocking (a lock per queue, taken at the first try) | $O( \log m )$ amortized, $q / ( q - 1 )$ draws expected; relaxed |
 | `StealablePriorityQueue` | one owner, many thieves | wait-free for the owner, lock-free steal | $O( \log m )$ for the owner, no read-modify-write; one exchange per steal |
 | `LockFreePriorityQueue` | any, by a handle each | lock-free but for the allocation of a node; reclamation blocking | $O( \log m )$ expected insertion, two CAS on average; one FAO per DeleteMin, plus the prefix walked; exact |
+| `ConcurrentBTreeMap` | any, by a handle each | lookups that write nothing and wait only for a lock held; modifications blocking (a lock per node changed), deadlock-free; reclamation blocking | $O( h \log C )$ reads per lookup on a tree of height $h$ and nodes of $C$ keys, plus $O( C )$ per modification, restarts excluded; ordered scans |
 | `EventCount` | any | a waiter sleeps, a notifier never waits | a fence and a read when nobody waits |
 | `SingleWriterFlatTable` | one writer, many readers | wait-free for the writer but for the allocation of a growth, wait-free lookups but across a growth | $O( 1 )$ expected, no read-modify-write; $O( 1 )$ amortized for the growths |
 | `MinBoard` | one writer per slot, many readers | wait-free | a load and at most a store per publish, $p$ loads per `min()`; coherence only |
@@ -2923,7 +2927,373 @@ publish costs a load of a line that the owner holds, and a store only
 when the key changes; `min()` costs $p$ loads of lines that only their
 owners write.
 
-## 24.14 Discussion and references {#sec-24-14}
+## 24.14 An ordered map under optimistic locks {#sec-24-14}
+
+The hash tables of [§24.7](24-concurrent.md#sec-24-7) and
+[§24.8](24-concurrent.md#sec-24-8) answer the lookups of one key; an index
+shared by threads, however, is also asked for the least key not smaller
+than a given one, and for the pairs of a range in the order of their keys
+(e.g., the scans of the mix E of YCSB), which a table cannot give without
+reading all its places. Three designs of a concurrent ordered map stand out
+in the literature. The skiplists without locks ([Fraser
+2004](Z-bibliography.md#ref-fraser2004)), or with the locks of the lazy
+skiplist of [Herlihy et al. 2007](Z-bibliography.md#ref-herlihy2007), on which
+`folly::ConcurrentSkipList` and `tbb::concurrent_map` are built, make a lookup
+visit about $\log_2 m$ nodes of $m$ pairs, each node on a line of its own and
+reached through a pointer read just before, so that the misses of a search
+follow one another; a scan, moreover, reads one line per pair. The B+-trees
+with *optimistic lock coupling* (OLC) of [Leis et al.
+2016](Z-bibliography.md#ref-leis2016) and [Leis et al.
+2019](Z-bibliography.md#ref-leis2019), whose readers write no shared word,
+visit instead $\log_{C} m$ nodes of a few lines each (with $C$ the pairs of a
+node), and their scans read consecutive pairs; in the comparison of the
+indexes in main memory of [Wang et al. 2018](Z-bibliography.md#ref-wang2018)
+the B+-tree with OLC and the radix tree with OLC were the fastest, ahead of
+the Bw-tree, of the skiplists and of Masstree, on the mixes of YCSB. The
+elimination (a,b)-tree of [Srivastava and Brown
+2022](Z-bibliography.md#ref-srivastava2022) is a tree of the same kind, with
+unsorted leaves, in which an insertion and an erasure of the same key that
+meet at a leaf cancel each other; it gains over the tree with OLC when the
+updates concentrate on a few keys, and is about as fast otherwise. We
+therefore realize the B+-tree with OLC, which serves any key with a strict
+weak order, and we do not make concurrent the radix tree of
+[§7.10](07-dictionary.md#sec-7-10) (`AdaptiveRadixTree`), whose keys are
+strings of bytes compared in their binary order, and whose four kinds of node
+would each need a version and a protocol of their own. The elimination of
+Srivastava and Brown could be added on top of the leaves of the tree, if the
+benchmarks on skewed keys called for it.
+
+`ConcurrentBTreeMap` has the layout of `BTreeMap` (cf.
+[§8.11](08-tree.md#sec-8-11)): the pairs are in the leaves, sorted, up to $L$
+in a leaf, the keys in one array and the values in another; an internal node
+holds up to $I$ keys and one child more, the child $c[ i ]$ having the keys in
+$( k[ i - 1 ] , k[ i ] ]$, and all the leaves are at one depth. $L$ and $I$
+come from the bytes $B$ of a node (1024 by default, which gives $L = 62$ and $I
+= 61$ for keys and values of 64 bits). Each node has a *version*, a word of 64
+bits whose bit 1 is the lock of the node, whose bit 0 marks the node
+*obsolete*, i.e., unlinked from the tree, and whose upper bits count the times
+the node was unlocked. Every field of a node is an atomic word, and the keys
+and the values are therefore trivially copyable, with atomic words free of
+locks (8 bytes at most on the usual processors), since a reader copies them out
+of a node that a writer may be changing. A thread reads a node
+*optimistically*: it reads the version, waiting while the lock is held and
+starting the operation over if the node is obsolete, then the fields it needs,
+by loads with acquire, and then the version again (a *check*), by a
+sequentially consistent load; a writer takes the lock by a compare-and-swap of
+the version from the value it read (an *upgrade*), writes the fields by stores
+with release, and lets the lock go by adding 2 to the version (by 3, when the
+node is now obsolete), which clears the lock and raises the count in one
+addition. This is the seqlock of [Boehm 2012](Z-bibliography.md#ref-boehm2012),
+in which the stores with release and the loads with acquire take the place of
+the fences, which the sanitizer of threads does not model.
+
+<span id="lem-24-37"></span>**Lemma 24.37.** *Let a thread read the
+version $v$ of a node $n$ with the lock clear, then some fields of $n$, and
+then the version of $n$ again, and let the second read give $v$. Then each
+field read has the value that it had when the version of $n$ became $v$,
+i.e., the values read are those of one state of $n$, which held from the
+write of $v$ to the next upgrade of $n$.*
+
+*Proof.* The version of a node only grows (an upgrade adds 2, an unlock 2 or
+3), and therefore a read that gives $v$ again follows no upgrade of $n$ made
+after $v$ in the order of the modifications of the version. Every write of a
+field of $n$ in the tree is a store with release made by a thread that holds
+the lock, between its upgrade and its unlock (a node not yet linked is
+written by its maker alone, before the store with release that links it, and
+read only after a load with acquire of that link). If a field read gave the
+value of a store made under a lock taken after $v$, the load with acquire of
+the reader would synchronize with that store, the upgrade would happen
+before the second read of the version, and that read would give the upgrade
+or a later value, by the coherence of the version, and not $v$. Conversely,
+the first read of the version, with acquire, gives the value $v$ written by
+an unlock (or the initial 0), which is a write with release sequenced after
+the stores of its thread; hence each field read gives the last value
+written to it before $v$, or a later one, and a later one is excluded
+above. $\square$
+
+The operations rest on this lemma through two rules. A descent reads the
+child of a node, checks the node before it reads the version of the child,
+and checks it again afterwards (the *coupling*), so that the child it
+reaches was the child of its key in the state checked; a modification
+upgrades from the version it read, so that it changes the node in the state
+it saw, or else starts over. An insertion splits on its way down every full
+node it meets, with the lock of the node and of its parent, which has room
+since it was not full when the descent passed it, as in [Leis et al.
+2016](Z-bibliography.md#ref-leis2016); a full root splits with its own lock,
+and a new root above it. The paper leaves the erasures to the leaves, so that
+its tree never shrinks. Our erasure, instead, merges on its way down, as the
+insertion splits: when it meets a child with fewer than $\lfloor C / 4
+\rfloor$ keys (with $C$ the capacity of the child), and the node has a
+sibling for it, it locks the node, the child and the sibling, from the left,
+and either moves the right one into the left one, if their keys (with the
+separator of the parent, for internal nodes) fit in $3 C / 4$, or shares them
+evenly between the two, and starts over; a root with no key, and therefore
+one child, gives way to its child. The node merged away and the root replaced
+are unlocked as obsolete and *retired*, i.e., handed to the reclamation
+below. No thread waits for a lock while it holds one: a thread waits only in
+the first read of a version, before it takes any lock, and every lock is
+taken by an upgrade, which fails at once if the node changed. [Algorithm
+24.16](24-concurrent.md#alg-24-16) gives the insertion, the erasure and the
+least key not smaller than a given one.
+
+We write the *range* of a node for the keys that the path from the root
+gives it: the root has all the keys, and the child $c[ i ]$ of a node of
+range $R$ has $R \cap ( k[ i - 1 ] , k[ i ] ]$, with $k[ - 1 ] = - \infty$
+and $k[ |n| ] = + \infty$, where $|n|$ is the number of the keys of $n$.
+
+<span id="lem-24-38"></span>**Lemma 24.38.** *In every state in which no
+node is locked, (i) the keys of each node of the tree increase, an
+internal node of $j$ keys has $j + 1$ children, and all the leaves are at
+one depth; (ii) each key of a node lies in its range, and the ranges of the
+leaves partition the keys; (iii) the range of a node changes only by a
+split, a merge, a share or a replacement of the root, each of which locks
+the node, or its parent and the node, while it changes the fields that
+define the range.*
+
+*Proof.* The fields of the nodes in the tree change only under their locks,
+and an operation that changes several nodes locks them all first. (i) and
+(ii) hold for the leaf alone of the empty map, and each change keeps them.
+An insertion or an erasure in a leaf puts or takes a key at its place, found
+in the state locked (cf. [Lemma 24.37](24-concurrent.md#lem-24-37) and its
+descent below), and within the range of the leaf. A split of a node of $j$
+keys keeps the first $\lceil j / 2 \rceil$ in a leaf (the first $\lfloor j /
+2 \rfloor$ in an internal node, whose next key goes up), moves the rest to
+the new node, and puts in the parent, right after the node, the greatest key
+left in a leaf (the key that goes up, for an internal node) and the new
+node; the two ranges are then the two parts of the old one. A merge moves
+the pairs of the right node to the end of the left one (with the separator
+in between, for internal nodes) and drops the separator and the right child
+from the parent, so that the left node takes the union of the two ranges,
+and a share redistributes the keys of the two and sets the separator
+between them. A root of one child gives way to it, which has the range of
+all the keys already. None of these changes the depth of a leaf but the new
+root and its replacement, which change all of them by one. As to (iii),
+the range of a node is defined by the keys of its ancestors around its
+path, and the only writes of these keys are the four changes listed, made
+by a thread that holds the lock of the node itself (a split, a merge or a
+share of it and of a sibling) or of the node and of its parent; a split of
+the parent of a node moves the node to a new parent with the keys around it,
+and leaves its range as it was. $\square$
+
+<span id="lem-24-39"></span>**Lemma 24.39.** *Let a descent for the key $x$
+reach the leaf $l$, whose version it read as $w$, and let a later check of
+$l$ give $w$. Then at that check $l$ is in the tree, its range holds $x$
+(the least key above $x$, in a strict descent), and the bound $f$ that the
+descent kept, the key $k[ i ]$ of the last node that it passed with $i <
+|n|$, is the upper end of that range, or the range is unbounded if the
+descent kept none.*
+
+*Proof.* At the root, the descent reads the root, its version $v$, and the
+root again, which gives the same node, so that the node was the root while
+its version was $v$; the root changes only by a split or a replacement of
+the root, both under its lock. Let the descent be at the node $n$ of version
+$v$, with $n$ in the tree and of a range holding $x$ while its version is
+$v$. It reads the place $i$ of $x$ and the child $c = n.c[ i ]$, checks
+$n$, reads the version $u$ of $c$, and checks $n$ again: by [Lemma
+24.37](24-concurrent.md#lem-24-37) the place and the child are those of the
+state $v$ of $n$, in which $c$ is a child of $n$ of range $R \cap ( n.k[ i -
+1 ] , n.k[ i ] ]$, which holds $x$, and that state still held at the
+second check, after the read of $u$. Hence $c$ was in the tree with that
+range when its version was $u$, and by [Lemma
+24.38](24-concurrent.md#lem-24-38) (iii) it keeps the range while its version
+is $u$, since a change of the range, or the unlink of $c$ by a merge, locks
+$c$. At the leaf, the check that gives $w$ extends this to the moment of the
+check. The bound $f$ is the right end of the range by the same induction,
+the last node with $i < |n|$ being the deepest one whose key bounds the
+path on the right. $\square$
+
+<span id="lem-24-40"></span>**Lemma 24.40.** *The operations of a handle
+are linearizable as those of a map: `insert()`, `assign()` and `erase()` at
+the upgrade of their leaf after which they return (or, when `insert()`
+finds the key and `erase()` does not, at the check of their leaf),
+`find()` and `contains()` at the check of their leaf, and `lowerBound()`
+and `upperBound()` at the first of the checks of the leaves they read,
+which they repeat at their end (line 10 of the third procedure of
+[Algorithm 24.16](24-concurrent.md#alg-24-16)). A scan reads each leaf in
+one state, and is therefore linearizable leaf by leaf.*
+
+*Proof.* Each point lies between the invocation and the response of its
+operation. Let the abstract map be the union of the pairs of the leaves of
+the tree, in a state with no lock held, as in [Lemma
+24.38](24-concurrent.md#lem-24-38). By [Lemma
+24.39](24-concurrent.md#lem-24-39) an operation of the key $k$ reaches the
+leaf whose range holds $k$, the only one where $k$ may lie, by (ii). An
+upgrade from the version $w$ of the descent succeeds only if the leaf is still
+in the state read, and the operation then reads and writes it under the lock,
+so that its answer and its change are those of the sequential map at the
+upgrade; no other thread sees the state in between, by [Lemma
+24.37](24-concurrent.md#lem-24-37), and a split, a merge or a share moves
+pairs between leaves without changing the abstract map. A lookup returns
+what the leaf held in the state that its check confirms. A bound reads the
+leaves $l_1 , \ldots , l_s$ of consecutive ranges, by [Lemma
+24.39](24-concurrent.md#lem-24-39) and since the bound $f$ of one is the
+start of the next, until it finds a pair above $x$ or the range of the last
+leaf is unbounded; each leaf $l_j$ was in the state read, of version $w_j$,
+from its first read on, and the checks at the end give $w_j$ again. At the
+first of them every leaf read is therefore still in its state, its range
+included, and the answer is that of the abstract map at that moment: no
+leaf before $l_s$ holds a key of the range from $k$ on, and the pair
+returned is the least of $l_s$ in it. $\square$
+
+A scan does not check the leaves it read again, since it calls the
+function of the caller after each leaf (out of any operation, so that the
+function may use the handle); it therefore reports each pair in the order
+of the keys, a pair reported was in the map during the scan, and a pair in
+the map during the whole scan, within the keys it visits, is reported (the
+weak consistency of the iterators of `tbb::concurrent_map` and of
+`folly::ConcurrentSkipList`, which are not linearizable either).
+
+The memory of the nodes retired is reclaimed by the epochs of [Fraser
+2004](Z-bibliography.md#ref-fraser2004), which the map owns as the queue of
+[§24.12](24-concurrent.md#sec-24-12) does (`impl/OwnedEpochs.tpp`): each
+handle has a record that announces the epoch in which its thread runs an
+operation, by a sequentially consistent exchange made before any read of the
+tree, a node retired waits in the record of the thread that retired it,
+stamped with the epoch read after its unlink, and it is freed once the epoch
+has grown by 2; a record raises the epoch once per 64 retirements, if every
+record inside an operation announces it.
+
+<span id="lem-24-41"></span>**Lemma 24.41.** *(i) No node is freed while a
+thread inside an operation may still read it. (ii) The operations do not
+deadlock, and a lookup writes no shared word; if no modification runs, a
+lookup completes after one read of each node of its path and two checks of
+each internal one.*
+
+*Proof.* (i) A thread reaches a node only from the root, or as a child read
+in its parent and confirmed by a check of the parent, a sequentially
+consistent load that gives the version $v$ of the descent. The node is
+retired only after the upgrade, a sequentially consistent compare-and-swap,
+of the node that linked it (its parent, or the root, for the root replaced),
+which in the order of the modifications of that version follows $v$; the
+check is therefore coherence-ordered before the upgrade, and precedes it in
+the total order $S$ of the sequentially consistent operations, which ends
+with the read of the epoch $r$ by the retirement. The argument of
+[§24.12](24-concurrent.md#sec-24-12) then applies word for word: the
+announce of the thread precedes the check in $S$, its epoch is at most $r$,
+and the epoch cannot grow from $r + 1$ to $r + 2$ while the thread stays
+inside its operation. A thread that reads the root or a child it does not
+then confirm only reads its version, which the epoch protects in the same
+way, since the read precedes the check that would fail. (ii) A thread waits
+only in $\mathrm{stable}$, holding no lock (an insertion and an erasure read
+the versions of all the nodes they will lock before they take the first lock,
+and an upgrade does not wait), and a thread that holds locks lets them go
+after a bounded number of its own steps, with no wait in between; hence no
+cycle of waits can form. The lookups only read, and with no modification
+running every check succeeds and no version is locked. $\square$
+
+We remark that the operations are not lock-free: a thread stopped while it
+holds the lock of a node holds up the modifications of that node and the
+lookups that read it, and the restarts may in principle repeat without end,
+as in the paper (each restart follows the change of a node by another
+operation, which completed or holds a lock). The reclamation is blocking, as
+in [§24.12](24-concurrent.md#sec-24-12): a thread stopped inside an operation
+keeps the nodes retired afterwards from being freed. As to the cost, a
+descent reads one node per level and searches its keys by a binary search
+without branches, $O( \log C )$ reads per node; a modification also shifts
+up to $C$ pairs of its leaf, and a split or a merge up to $2 C$ more, plus
+the separators of the parent. The height grows only by a split of the root,
+and with insertions alone every node but the root keeps, after each split,
+at least $\lfloor C / 2 \rfloor$ keys, so that a tree of $m$ pairs has at
+most $1 + \log_{\lfloor I / 2 \rfloor + 1} ( m / \lfloor L / 2 \rfloor )$
+levels; the erasures merge a short node only when an erasure passes by its
+parent towards it, so that after many erasures the nodes that no erasure
+visits again may stay below a quarter of their capacity (the map then
+holds more nodes than it needs, never fewer pairs than it should).
+
+The tests `engineered.concurrent-btree-map` check the operations on one thread
+against `std::map`, on nodes of 4 places (the least) and of the default size,
+with the extreme keys of 32 and 64 bits and sizes around the powers of 2;
+`engineered.concurrent-btree-map-threads` checks on 2, 4 and 8 threads that the
+successful insertions and erasures of each key alternate, and that the final
+map is that of their replay; and `engineered.concurrent-btree-map-linearizable`
+finds a linearization of short histories by the search of Wing and Gong, as for
+the queue of [§24.12](24-concurrent.md#sec-24-12). Each handle counts in
+`counts()` its restarts, splits, merges and shares, by which two runs can be
+compared on a busy machine without timing them. The public members of the map
+are
+
+```cpp
+// declarations of <ADS/concurrent/ConcurrentBTreeMap.h>
+template< class K , class V , class Less = std::less< K > ,
+          std::size_t B = 1024 >
+class ConcurrentBTreeMap
+{
+ public:
+ using Key = K;
+ using Value = V;
+ struct Counts
+ {
+  std::uint64_t restarts = 0;
+  std::uint64_t splits = 0;
+  std::uint64_t merges = 0;
+  std::uint64_t shares = 0;
+  };
+ class Handle
+ {
+  public:
+  bool insert( K k , V x );
+  bool assign( K k , V x );
+  bool erase( K k );
+  std::optional< V > find( K k );
+  bool contains( K k );
+  std::optional< std::pair< K , V > > lowerBound( K k );
+  std::optional< std::pair< K , V > > upperBound( K k );
+  template< class F >
+  std::size_t scan( K from , F && f );
+  const Counts & counts( void ) const;
+  };
+ explicit ConcurrentBTreeMap( Less less = Less() );
+ Handle handle( void );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ int height( void ) const;
+ std::size_t retired( void ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ bool consistent( void ) const;
+ };
+```
+
+where `size()`, `empty()`, `height()`, `retired()`, `forEach()` and
+`consistent()` are called with no operation running, and `scan( from , f )`
+calls `f( k , v )` on the pairs from the least key not smaller than `from`,
+until `f` returns false (when it returns a `bool`). Each thread takes a
+handle:
+
+```cpp
+ADS::ConcurrentBTreeMap< std::uint64_t , std::uint64_t > M;
+std::vector< std::thread > T;
+for( std::uint64_t t = 0 ; t < 4 ; ++t )
+ T.emplace_back( [ & , t ]() {
+  auto h = M.handle();
+  for( std::uint64_t i = 0 ; i < 1000 ; ++i )
+   h.insert( 4 * i + t , i );
+  } );
+for( auto & t : T )
+ t.join();
+auto h = M.handle();
+std::uint64_t n = 0;
+h.scan( 100 , [ &n ]( std::uint64_t , std::uint64_t ) {
+ return( ++n < 10 );
+ } );  // the keys 100, ..., 109
+```
+
+<span id="alg-24-16"></span>**Algorithm 24.16.** The insertion, the erasure
+and the least key not smaller than a given one of
+`ConcurrentBTreeMap::Handle` ([Leis et al.
+2016](Z-bibliography.md#ref-leis2016), with our merges on the way down and our
+bound over several leaves); $\mathrm{stable}( n )$ reads the version of $n$
+once its lock is clear, $\mathrm{check}( n , v )$ starts over if the version
+of $n$ is no longer $v$, and $\mathrm{lock}( n , v )$ upgrades $n$ from $v$,
+or starts over after letting the locks held go.
+
+--8<-- "generated/ConcurrentBTreeMap-insert.pseudo.md"
+
+--8<-- "generated/ConcurrentBTreeMap-erase.pseudo.md"
+
+--8<-- "generated/ConcurrentBTreeMap-lowerBound.pseudo.md"
+
+## 24.15 Discussion and references {#sec-24-15}
 
 We follow the model of [Herlihy and Shavit
 2008](Z-bibliography.md#ref-herlihy2008), whose book covers
@@ -3000,12 +3370,26 @@ priority work. The exact queue without locks is that of [Lindén and Jonsson
 2005](Z-bibliography.md#ref-sundell2005); its reclamation by epochs is that of
 [Fraser 2004](Z-bibliography.md#ref-fraser2004), compared with the hazard
 pointers and the other schemes by [Hart et al.
-2007](Z-bibliography.md#ref-hart2007). A comparison of these structures with
-those of other libraries (e.g., oneTBB, Folly, the queues of FastFlow) belongs
+2007](Z-bibliography.md#ref-hart2007). The
+ordered map is the B+-tree with optimistic lock coupling of [Leis et al.
+2016](Z-bibliography.md#ref-leis2016) and [Leis et al.
+2019](Z-bibliography.md#ref-leis2019), whose readers descend as in the
+B-link trees of [Lehman and Yao 1981](Z-bibliography.md#ref-lehman1981) and
+in the optimistic latch-free index traversal of [Cha et al.
+2001](Z-bibliography.md#ref-cha2001), without writing a shared word; [Wang et
+al. 2018](Z-bibliography.md#ref-wang2018) compare it with the other indexes
+in main memory, and [Srivastava and Brown
+2022](Z-bibliography.md#ref-srivastava2022) add to a tree of its kind the
+elimination of the updates of one key. The skiplists that it replaces for
+ordered maps are those of [Fraser 2004](Z-bibliography.md#ref-fraser2004) and
+[Herlihy et al. 2007](Z-bibliography.md#ref-herlihy2007). A comparison of
+these structures with
+those of other libraries (e.g., oneTBB, Folly, the queues of FastFlow, the
+B+-tree of Leis et al.) belongs
 to the benchmarks of appendix B, made on an idle machine, and it is not
 reported here.
 
-## 24.15 Exercises {#sec-24-15}
+## 24.16 Exercises {#sec-24-16}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
@@ -3070,3 +3454,10 @@ Each exercise names the test of the library that solves it (run it with
     Wing and Gong. Tests: `engineered_queues.lockfree-pq`,
     `engineered_queues.lockfree-pq-threads`,
     `engineered_queues.lockfree-pq-linearizable`.
+15. Realize a B+-tree shared by threads whose lookups write no shared word,
+    whose insertions split and whose erasures merge on the way down, with
+    its memory reclaimed by epochs, and find a linearization of short
+    histories of its operations, lower bounds included. Tests:
+    `engineered.concurrent-btree-map`,
+    `engineered.concurrent-btree-map-threads`,
+    `engineered.concurrent-btree-map-linearizable`.

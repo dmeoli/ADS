@@ -522,6 +522,9 @@ engineered  concurrent-flat-table-epochs clear() in O(1) per epoche, più thread
 engineered  concurrent-flat-table-find-key findKey(), la chiave tenuta, più thread
 engineered  single-writer-flat-table tabella di un solo scrittore, un thread
 engineered  single-writer-flat-table-threads un solo scrittore e più lettori
+engineered  concurrent-btree-map  B+-albero concorrente, su un thread
+engineered  concurrent-btree-map-threads B+-albero concorrente, su più thread
+engineered  concurrent-btree-map-linearizable B+-albero, storie linearizzabili
 
 # the engineered combinatorial algorithms, beyond the book
 engineered_combinatorial  fast-bitwise     Harley-Seal, pdep, select

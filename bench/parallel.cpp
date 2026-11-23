@@ -70,6 +70,16 @@
  *   set of a search (each key twice) and a mix of 90% lookups and 10%
  *   insertions; and the find-or-insert and the lookups of states of 32
  *   bytes, the CLOSED set of a search;
+ * - the concurrent ordered maps (ConcurrentBTreeMap against
+ *   tbb::concurrent_map and, when found, the BTreeOLC of Leis et al.),
+ *   each thread of the pool with a session of its own over a slice of the
+ *   operations, per operation, for 10^6 and 4 10^6 keys of 64 bits drawn
+ *   uniformly: the load of the keys into an empty map, and the mixes of
+ *   YCSB on the loaded map, read-heavy (95% lookups and 5% overwrites),
+ *   update-heavy (50% and 50%), churn (50% insertions of absent keys and
+ *   50% erasures, only for the maps that erase) and scans (95% scans of
+ *   up to 100 pairs and 5% insertions, on a tenth of the operations); the
+ *   scan of BTreeOLC stops at the end of its leaf (-b omap);
  * - the concurrent priority queues (the MultiQueue of ADS, relaxed and exact,
  *   against tbb::concurrent_priority_queue, the reference MultiQueue of
  *   Williams, Sanders and Dementiev, the k-LSM of Wimmer et al. and the
@@ -103,7 +113,7 @@
  *
  *   parallel [ -r runs ] [ -s seed ] [ -t threads ] [ -w family ]
  *            [ -b sort|patterns|merge|spmv|gemm|graphs|sssp|succinct|lcp|
- *                 hash|closed|pq|rank|bnb ]
+ *                 hash|closed|omap|pq|rank|bnb ]
  *            n1 n2 ...
  *
  * \author Donato Meoli \n
@@ -124,6 +134,7 @@
 
 #include "ADS/parallel/Executor.h"
 #include "ADS/parallel/FastFlowExecutor.h"
+#include "ADS/concurrent/ConcurrentBTreeMap.h"
 #include "ADS/concurrent/ConcurrentCuckooTable.h"
 #include "ADS/concurrent/ConcurrentFlatTable.h"
 #include "ADS/concurrent/MultiQueue.h"
@@ -157,6 +168,7 @@
 
 #if defined( ADS_HAS_TBB )
  #include <tbb/concurrent_hash_map.h>
+ #include <tbb/concurrent_map.h>
  #include <tbb/concurrent_priority_queue.h>
  #include <tbb/concurrent_unordered_map.h>
  #include <tbb/global_control.h>
@@ -238,6 +250,15 @@
  #include <utils/hash/murmur2_hash.hpp>
  #include <data-structures/table_config.hpp>
  #define ADS_HAS_GROWT 1
+#endif
+
+// the B+-tree with optimistic lock coupling of Leis et al., from the
+// directory of BTreeOLC.h of index-microbench (BTREEOLC=<dir> of the
+// makefile, which defines ADS_HAS_BTREEOLC)
+#if defined( ADS_HAS_BTREEOLC ) && __has_include( <BTreeOLC.h> )
+ #include <BTreeOLC.h>
+#else
+ #undef ADS_HAS_BTREEOLC
 #endif
 
 #if defined( ADS_HAS_SDSL ) && __has_include( <sdsl/wavelet_trees.hpp> )
@@ -2358,6 +2379,266 @@ void closed( const std::vector< std::size_t > & sizes , int r , unsigned seed ,
  }
 
 /*--------------------------------------------------------------------------*/
+/*------------------------------ ORDERED MAPS ------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// a concurrent ordered map of the benchmark: make() an empty one, drop(),
+/// and a session of one thread, session(), through which ins( k , v ) is
+/// true if k was absent, put( k , v ) inserts or overwrites, del( k ) is
+/// true if k was present (if erases), get( k ) is true if k is present,
+/// and scan( k , m ) visits up to m pairs from the least key not smaller
+/// than k and gives how many
+struct AdsOMap
+{
+ static constexpr bool erases = true;
+ using M = ADS::ConcurrentBTreeMap< HK , HK >;
+ std::unique_ptr< M > t;
+ void make( void ) { t = std::make_unique< M >(); }
+ void drop( void ) { t.reset(); }
+ struct Session
+ {
+  M::Handle h;
+  bool ins( HK k , HK v ) { return( h.insert( k , v ) ); }
+  void put( HK k , HK v ) { h.assign( k , v ); }
+  bool del( HK k ) { return( h.erase( k ) ); }
+  bool get( HK k ) { return( h.find( k ).has_value() ); }
+  std::size_t scan( HK k , std::size_t m ) {
+   std::size_t s = 0;
+   h.scan( k , [ &s , m ]( HK , HK ) { return( ++s < m ); } );
+   return( s );
+   }
+  };
+ Session session( void ) { return( Session{ t->handle() } ); }
+ };
+
+#if defined( ADS_HAS_TBB )
+/// tbb::concurrent_map, a skiplist; its values atomic, so that put() may
+/// overwrite one while others read it; no concurrent erasure
+struct TbbOMap
+{
+ static constexpr bool erases = false;
+ using M = tbb::concurrent_map< HK , std::atomic< HK > >;
+ std::unique_ptr< M > t;
+ void make( void ) { t = std::make_unique< M >(); }
+ void drop( void ) { t.reset(); }
+ struct Session
+ {
+  M * t;
+  bool ins( HK k , HK v ) { return( t->emplace( k , v ).second ); }
+  void put( HK k , HK v ) {
+   auto r = t->emplace( k , v );
+   if( ! r.second )
+    r.first->second.store( v , std::memory_order_relaxed );
+   }
+  bool del( HK ) { return( false ); }
+  bool get( HK k ) { return( t->find( k ) != t->end() ); }
+  std::size_t scan( HK k , std::size_t m ) {
+   std::size_t s = 0;
+   for( auto i = t->lower_bound( k ) ; ( i != t->end() ) && ( s < m ) ; ++i )
+    s += i->second.load( std::memory_order_relaxed ) != ~HK( 0 );
+   return( s );
+   }
+  };
+ Session session( void ) { return( Session{ t.get() } ); }
+ };
+#endif
+
+#if defined( ADS_HAS_BTREEOLC )
+/// the B+-tree with optimistic lock coupling of Leis et al., the code of
+/// the authors (BTreeOLC.h of index-microbench): pages of 4 KB, no
+/// erasure, an insertion of a key present overwrites its value, and a scan
+/// that stops at the end of its leaf; its tree has no destructor, and is
+/// freed here by its pages
+struct OlcOMap
+{
+ static constexpr bool erases = false;
+ using M = btreeolc::BTree< HK , HK >;
+ std::unique_ptr< M > t;
+ void make( void ) { t = std::make_unique< M >(); }
+ static void free( btreeolc::NodeBase * n ) {
+  if( n->type == btreeolc::PageType::BTreeInner ) {
+   auto * in = static_cast< btreeolc::BTreeInner< HK > * >( n );
+   for( unsigned i = 0 ; i <= in->count ; ++i )
+    free( in->children[ i ] );
+   delete in;
+   }
+  else
+   delete static_cast< btreeolc::BTreeLeaf< HK , HK > * >( n );
+  }
+ void drop( void ) {
+  if( t )
+   free( t->root.load() );
+  t.reset();
+  }
+ struct Session
+ {
+  M * t;
+  HK out[ 128 ];
+  bool ins( HK k , HK v ) {
+   t->insert( k , v );
+   return( true );
+   }
+  void put( HK k , HK v ) { t->insert( k , v ); }
+  bool del( HK ) { return( false ); }
+  // the value read, which the answer depends on (lookup() leaves its
+  // flag unset when the key is absent)
+  bool get( HK k ) {
+   HK v = ~HK( 0 );
+   t->lookup( k , v );
+   return( v != ~HK( 0 ) );
+   }
+  std::size_t scan( HK k , std::size_t m ) {
+   return( std::size_t(
+     t->scan( k , int( std::min< std::size_t >( m , 128 ) ) , out ) ) );
+   }
+  };
+ Session session( void ) { return( Session{ t.get() , {} } ); }
+ };
+#endif
+
+/// an operation of a mix of the ordered maps: a lookup, an overwrite, an
+/// insertion of a new key, an erasure, or a scan of up to 100 pairs
+enum class OOp : std::uint8_t { get , put , ins , del , scan };
+
+/// the works of the ordered maps on the map A, for n keys K loaded (and
+/// n others X, absent), each thread i of the pool taking the i-th slice
+/// of the operations through a session of its own: the load of the n
+/// keys into an empty map, and the mixes of YCSB on the loaded map,
+/// read-heavy (95% lookups, 5% overwrites, YCSB-B), update-heavy (50%
+/// and 50%, YCSB-A), churn (50% insertions of absent keys, 50% erasures
+/// of present ones, if A erases) and scans (95% scans of up to 100 pairs,
+/// 5% insertions, YCSB-E, n / 10 operations), each operation of a key
+/// drawn uniformly
+template< class A >
+void orderedMap( const std::string & who , std::size_t n , int r ,
+		 ADS::ThreadPool & pool , const std::vector< HK > & K ,
+		 const std::vector< HK > & X , unsigned seed )
+{
+ if( ADS::bench::skip( who ) )
+  return;
+ A a;
+ Tally t;
+ const std::size_t p = std::size_t( threads );
+ // the slice of the thread i over m operations, run on the pool
+ auto onThreads = [ & ]( std::size_t m , auto && op ) {
+  t.n.store( 0 , std::memory_order_relaxed );
+  pool.run( p , [ & ]( std::size_t i ) {
+   auto s = a.session();
+   std::size_t c = 0;
+   for( std::size_t j = i * m / p , e = ( i + 1 ) * m / p ; j < e ; ++j )
+    c += op( s , j );
+   t.n.fetch_add( c , std::memory_order_relaxed );
+   } );
+  };
+ auto load = [ & ] {
+  a.drop();
+  a.make();
+  onThreads( n , [ &K ]( auto & s , std::size_t j ) {
+   return( std::size_t( s.ins( K[ j ] , K[ j ] ) ) );
+   } );
+  };
+ ADS::bench::print( bench( "omap load" ).c_str() , "uint64" , n , who ,
+		    timeRuns(
+		      n ,
+		      [ & ] {
+		       a.drop();
+		       a.make();
+		       } ,
+		      [ & ] {
+		       onThreads( n , [ &K ]( auto & s , std::size_t j ) {
+			return( std::size_t( s.ins( K[ j ] , K[ j ] ) ) );
+		        } );
+		       } ,
+		      r , [ & ] { return( t.n.load() == n ); } ) );
+ // a mix: the share of each operation in percent, the operations drawn
+ // once for all the runs
+ auto mix = [ & ]( const char * what , std::size_t m ,
+		   std::initializer_list< std::pair< OOp , int > > shares ) {
+  std::mt19937_64 g( seed + 7 );
+  std::vector< OOp > op( m );
+  std::vector< HK > key( m );
+  std::size_t fresh = 0 , gone = 0;
+  for( std::size_t j = 0 ; j < m ; ++j ) {
+   int d = int( g() % 100 );
+   OOp o = shares.begin()->first;
+   for( const auto & [ x , s ] : shares )
+    if( d < s ) {
+     o = x;
+     break;
+     }
+    else
+     d -= s;
+   op[ j ] = o;
+   // the insertions take absent keys, the erasures present ones, each
+   // once, so that each succeeds
+   key[ j ] = ( o == OOp::ins )   ? X[ fresh++ % n ]
+	      : ( o == OOp::del ) ? K[ gone++ % n ]
+				  : K[ g() % n ];
+   }
+  ADS::bench::print( bench( what ).c_str() , "uint64" , n , who ,
+		     timeRuns(
+		       m , load ,
+		       [ & ] {
+			onThreads(
+			  m , [ &op , &key ]( auto & s , std::size_t j ) {
+			   const HK k = key[ j ];
+			   switch( op[ j ] ) {
+			    case OOp::get:
+			     return( std::size_t( s.get( k ) ) );
+			    case OOp::put:
+			     s.put( k , j );
+			     return( std::size_t( 1 ) );
+			    case OOp::ins:
+			     return( std::size_t( s.ins( k , j ) ) );
+			    case OOp::del:
+			     return( std::size_t( s.del( k ) ) );
+			    default:
+			     return( std::size_t( s.scan( k , 100 ) > 0 ) );
+			    }
+			   } );
+		        } ,
+		       r , [] { return( true ); } ) );
+  };
+ mix( "omap read-heavy 95/5" , n , { { OOp::get , 95 } , { OOp::put , 5 } } );
+ mix( "omap update-heavy 50/50" , n ,
+      { { OOp::get , 50 } , { OOp::put , 50 } } );
+ if constexpr( A::erases )
+  mix( "omap churn 50/50" , n , { { OOp::ins , 50 } , { OOp::del , 50 } } );
+ mix( "omap scan 95/5" , n / 10 , { { OOp::scan , 95 } , { OOp::ins , 5 } } );
+ a.drop();
+ }
+
+/// the concurrent ordered maps, all driven by the threads of the pool of
+/// ADS, one session each: ConcurrentBTreeMap against tbb::concurrent_map
+/// and the BTreeOLC of Leis et al.
+void orderedMaps( const std::vector< std::size_t > & sizes , int r ,
+		  unsigned seed , Executors & X )
+{
+ if( ! runs( "pool" ) )
+  return;
+ for( std::size_t n : sizes ) {
+  auto all = ADS::bench::keys( 2 * n , seed );
+  const std::vector< HK > keys( all.begin() , all.begin() + n ) ,
+    absent( all.begin() + n , all.end() );
+  auto & pool = X.pool();
+  orderedMap< AdsOMap >( "ADS::ConcurrentBTreeMap" , n , r , pool , keys ,
+			 absent ,
+			 seed );
+  orderedMap< AdsOMap >( "ADS::ConcurrentBTreeMap A/A" , n , r , pool , keys ,
+			 absent , seed );
+#if defined( ADS_HAS_TBB )
+  orderedMap< TbbOMap >( "tbb::concurrent_map" , n , r , pool , keys , absent ,
+			 seed );
+#endif
+#if defined( ADS_HAS_BTREEOLC )
+  orderedMap< OlcOMap >( "BTreeOLC (Leis et al.)" , n , r , pool , keys ,
+			 absent ,
+			 seed );
+#endif
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
 /*---------------------------- PRIORITY QUEUES -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
@@ -3223,6 +3504,8 @@ int main( int argc , char ** argv )
   hashing( { 1000000 , 4000000 } , o.runs , o.seed , X );
  if( only.empty() || ( only == "closed" ) )
   closed( { 1000000 , 4000000 } , o.runs , o.seed , X );
+ if( only.empty() || ( only == "omap" ) )
+  orderedMaps( { 1000000 , 4000000 } , o.runs , o.seed , X );
  if( only.empty() || ( only == "pq" ) )
   priority( { 1000000 , 4000000 } , o.runs , o.seed , X );
  if( only.empty() || ( only == "rank" ) )
