@@ -618,6 +618,37 @@ the state of the $( \lfloor X / 2^k \rfloor - f_c )$-th place of $c$
 [Dube and Yokoo 2019](Z-bibliography.md#ref-dube2019) analyze the loss of
 the spread. We show the table of a "small" decoder in [Table 21.4](21-compression.md#tab-21-4).
 
+Both directions of (21.11) are then exact, and we can state them as
+follows (with $L = 2^R$, $R \ge 3$, as in `Tans.h`).
+
+<span id="lem-21-6"></span>**Lemma 21.6.** *(i) The step
+$L / 2 + L / 8 + 3$ modulo $L$ deals each of the $L$ states once. (ii) Let
+$f_c \ge 1$ and $m = \lfloor \log_2 f_c \rfloor$. In a state
+$X \in [ L , 2 L )$ the encoder of $c$ emits $k \in \{ R - m - 1 , R - m
+\}$ bits and moves to a state $X' \in [ L , 2 L )$; in the state $X' - L$
+the decoder emits $c$, reads $b = k$ bits, those emitted, and by (21.11)
+moves to $X - L$.*
+
+*Proof.* (i) Since $R \ge 3$, $L / 2$ and $L / 8$ are even, and the step
+is odd, i.e., prime to $L = 2^R$; hence its multiples modulo $L$ are
+distinct. (ii) Let $a = \lfloor X / 2^{R - m} \rfloor$, which lies in
+$[ 2^m , 2^{m + 1} )$ since $2^R \le X < 2^{R + 1}$. If $a \ge f_c$, then
+$a < 2^{m + 1} \le 2 f_c$ and $k = R - m$; otherwise
+$\lfloor X / 2^{R - m - 1} \rfloor \in \{ 2 a , 2 a + 1 \}$ is below
+$2 f_c$ and at least $2^{m + 1} > f_c$, and $k = R - m - 1$. In both cases
+$\lfloor X / 2^k \rfloor = f_c + i$ with $0 \le i < f_c$, and the encoder
+moves to $L$ plus the $i$-th state $x$ of $c$ (line 8 of
+[Algorithm 21.10](21-compression.md#alg-21-10)), a state of $[ 0 , L )$
+by (i). From $( f_c + i ) 2^k \le X < ( f_c + i + 1 ) 2^k$ and
+$2^R \le X < 2^{R + 1}$ one has $2^{R - k} \le f_c + i < 2^{R + 1 - k}$,
+i.e., $\lfloor \log_2( f_c + i ) \rfloor = R - k$, and the decoder in $x$
+reads $b = k$ bits. Since the stream is read backward from its end, these
+are the $k$ low bits of $X$, the last ones written, and (21.11) gives
+$( f_c + i ) 2^k - L + ( X \bmod 2^k ) = X - L$. $\square$
+
+By induction from the final states, which the decoder reads first
+(line 6), `tansDecompress()` thus returns the input of `tansCompress()`.
+
 <span id="tab-21-4"></span>**Table 21.4.** The decoding table of tANS with
 $L = 16$ states ($R = 4$, step 13) for $f_a = 8$, $f_b = f_c = 4$: the
 symbol of each state, its rank $i$ among the states of the symbol, the bits
@@ -683,6 +714,30 @@ reading in the code whether each context escapes
 ([Algorithm 21.11](21-compression.md#alg-21-11)), and
 [Table 21.5](21-compression.md#tab-21-5) follows the walk on a symbol.
 
+The walk is decodable, and its totals stay within those of the coder,
+by the following lemma.
+
+<span id="lem-21-7"></span>**Lemma 21.7.** *Between two symbols the
+counts of each context sum to at most $2^{16}$. Hence each step of
+`steps( c )` codes an item of count at least 1 out of a total
+$N \le 2^{17}$, within the totals $T \le M / 4$ of the coder on $w = 32$
+bits; and `ppmDecode( ppmEncode( s , K ) , |s| , K )` is $s$.*
+
+*Proof.* An update adds 1 to a count of each context of the symbol. If
+the sum then exceeds $2^{16}$, it is $2^{16} + 1$, and the halving with
+rounding up leaves at most $( 2^{16} + 1 + q ) / 2$, $q \le \sigma \le
+2^{16}$ being the symbols of the context; since the sum is an integer, it
+is at most $2^{16}$. A symbol enters a context with count 1, which the
+halving keeps at 1 at least; hence, in a context that codes, each symbol
+not excluded has a count of at least 1, the escape has the count
+$q \ge 1$, and $N \le 2^{16} + 2^{16}$. The excluded symbols are those of
+the contexts that escaped, which did not predict $c$; hence $c$ has the
+count 1 out of $\sigma - | X | \ge 1$ in the context of order $-1$.
+Finally, `decode()` makes the walk of `steps()` on the same counts, since
+both sides update the model after each symbol, and at each context it
+takes the item whose range holds the target of the decoder, which is the
+item coded by [Lemma 21.4](21-compression.md#lem-21-4). $\square$
+
 <span id="alg-21-11"></span>**Algorithm 21.11.** The steps that code a
 symbol $c$ in PPM with exclusion, version C, the update of the counts, and
 the coder and the decoder of a text; $h$ is the history of the last $K$
@@ -693,6 +748,8 @@ symbols and $X$ the set of the symbols excluded.
 --8<-- "generated/PPM-PPMModel-update.pseudo.md"
 
 --8<-- "generated/PPM-ppmEncode.pseudo.md"
+
+--8<-- "generated/PPM-ppmDecode.pseudo.md"
 
 <span id="tab-21-5"></span>**Table 21.5.** The steps of PPM of order
 $K = 2$ on the bytes for the symbol c after abra (the fifth symbol of
@@ -749,8 +806,6 @@ ensure at the level of the postconditions; `binaryLength( x )` is
 $\lvert B( x ) \rvert$, `naturalToSigned()` inverts `signedToNatural()`,
 and `prefixSums()` inverts `dGaps()`.
 We list the codes, with their lengths and their codewords for $x = 9$, in
---8<-- "generated/PPM-ppmDecode.pseudo.md"
-
 [Table 21.6](21-compression.md#tab-21-6); of course, the "optimal"
 distributions of its fourth column are those of
 [Lemma 21.1](21-compression.md#lem-21-1).
@@ -862,7 +917,7 @@ range that $x[ m ]$ leaves it ([Algorithm 21.15](21-compression.md#alg-21-15)).
 
 --8<-- "generated/IntegerCodes-interpolative.pseudo.md"
 
-<span id="lem-21-6"></span>**Lemma 21.6.** *The middle item of
+<span id="lem-21-8"></span>**Lemma 21.8.** *The middle item of
 $x[ l .. r - 1 ]$ lies in $[ \mathit{low} + m - l , \mathit{hi} - ( r - 1 -
 m ) ]$, and is written in*
 
@@ -958,6 +1013,33 @@ A block of the patched code is $b$ and $c$ in a byte each, $\beta$ in a
 byte if $c > 0$, the block of width $b$, the places and the high bits; 8
 bytes of 0 end the code.
 
+<span id="lem-21-9"></span>**Lemma 21.9.** *Let $B = \lceil n / 128
+\rceil$ and $b_k$ the bit width of the largest integer of the block $k$
+(of the differences $d_i$ if `sorted`, with $x_{-4} = \cdots = x_{-1} =
+0$). (i) `binaryPack()` writes $16 \lceil B / 16 \rceil + \sum_k 16 b_k$
+bytes, and `binaryUnpack()` of them, with the same $n$ and `sorted`,
+returns $x$. (ii) `patchedPack()` gives each block the width $b$ that
+minimizes (21.14), the largest one on a tie, and writes for it
+$2 + [ c > 0 ] + 16 b + c + \lceil c ( \beta - b ) / 8 \rceil$ bytes,
+$c = c( b )$, plus 8 bytes at the end; `patchedUnpack()` of them returns
+$x$. Both take $O( n )$ time.*
+
+*Proof.* (i) Each group of up to 16 blocks has its 16 widths, and a block
+of width $b_k$ fills $32 b_k$ bits in each of its 4 lanes, $16 b_k$ bytes
+in all. Every integer of the block is below $2^{b_k}$, and (21.13) reads
+back its $b_k$ bits. If `sorted`, the decoder adds to each register the
+previous one, i.e., $x_i = d_i + x_{i - 4}$ modulo $2^{32}$, which is
+$x_i$ since $x$ is nondecreasing. (ii) The code scans $t = \beta - 1 ,
+\ldots , 0$ with $c( t )$ accumulated from the counts of the widths, and
+replaces the best width only on a strictly smaller cost. The block holds
+$b$ and $c$, $\beta$ if $c > 0$, the $b$ low bits of each integer in
+$16 b$ bytes, a place below 128 in a byte for each exception and the
+$\beta - b$ high bits of each, packed; the decoder adds $2^b$ times these
+high bits to the integers at their places, which gives the integers of
+the block, and then sums at a distance of 4 as in (i). Each block takes
+$O( 128 + 33 )$ operations. $\square$
+
+
 *Stream VByte.* The variable-byte code of
 [§21.7](21-compression.md#sec-21-7) keeps the length of an integer in the bytes of the integer, a flag bit per byte, which the decoder tests one byte at a time, as we have seen.
 The Stream VByte of [Lemire, Kurz and Rupp 2018](Z-bibliography.md#ref-lemire2018svb)
@@ -1038,7 +1120,7 @@ $$
 \tag{21.17}
 $$
 
-<span id="lem-21-7"></span>**Lemma 21.7.** *$\mathcal{C}_h( 0 )$ is the
+<span id="lem-21-10"></span>**Lemma 21.10.** *$\mathcal{C}_h( 0 )$ is the
 least number of bits, counted as above, of the levels of a cut of the bits
 $[ 0 , w )$ into at most $h$ levels, and the dynamic program of
 `DirectAccessCodes` finds a cut that attains it in $O( h w^2 )$ time from
@@ -1108,7 +1190,7 @@ search of the window, and its decoding.
 
 A search of the window takes $O( w ( \ell + 1 ) )$ time for a phrase of
 length $\ell$, hence $O( n w )$ in the worst case
-([Lemma 21.8](21-compression.md#lem-21-8) below). LZSS
+([Lemma 21.11](21-compression.md#lem-21-11) below). LZSS
 ([Storer and Szymanski 1982](Z-bibliography.md#ref-storer1982),
 `lzssParse()`, decoded by `lzssDecode()`,
 [Algorithm 21.20](21-compression.md#alg-21-20)) emits either a copy
@@ -1124,6 +1206,10 @@ and the lengths and one for the distances).
 <span id="alg-21-20"></span>**Algorithm 21.20.** LZSS by the search of the
 longest copy in the window, its decoder, and LZSS by the chains of the
 hashes of gzip.
+
+--8<-- "generated/LempelZiv-lzssParse.pseudo.md"
+
+--8<-- "generated/LempelZiv-lzssDecode.pseudo.md"
 
 --8<-- "generated/LempelZiv-lzssParseHashed.pseudo.md"
 
@@ -1165,7 +1251,7 @@ prove that the decoders are right in this case and in the overlapping
 copies of LZ77, and that the dictionary of LZ78 is a trie with one symbol
 per edge.
 
-<span id="lem-21-8"></span>**Lemma 21.8.** *(i) The decoder of LZ77,
+<span id="lem-21-11"></span>**Lemma 21.11.** *(i) The decoder of LZ77,
 which copies one symbol at a time, writes $s[ p .. p + \ell - 1 ]$ for a
 phrase $\langle d , \ell , c \rangle$ at the place $p$ also when $d <
 \ell$. (ii) The dictionary of LZ78 is closed under prefixes, and each
@@ -1203,14 +1289,10 @@ $O( n )$ time from the suffix array of the text (`lz77ParseLinear()` of
 which [Kärkkäinen, Kempa and Puglisi 2013](Z-bibliography.md#ref-karkkainen2013)
 exploit.
 
-<span id="lem-21-9"></span>**Lemma 21.9.** *Let $r$ be the rank of the
+<span id="lem-21-12"></span>**Lemma 21.12.** *Let $r$ be the rank of the
 suffix $i$ in $\mathit{SA}$, and let*
 
 $$
---8<-- "generated/LempelZiv-lzssParse.pseudo.md"
-
---8<-- "generated/LempelZiv-lzssDecode.pseudo.md"
-
 \mathit{PSV}( i ) = \mathit{SA}[ \max \{ j < r : \mathit{SA}[ j ] < i \} ]
 , \qquad
 \mathit{NSV}( i ) = \mathit{SA}[ \min \{ j > r : \mathit{SA}[ j ] < i \} ]
@@ -1259,7 +1341,7 @@ $z$ and before $x$ is larger than $x$: otherwise $w$, or a place smaller
 than $w$ that popped it, would be in the stack above $z$; hence $z =
 \mathit{PSV}( x )$. A place that is never popped has no next smaller
 value, and one that finds the stack empty has no previous one. By
-[Lemma 21.9](21-compression.md#lem-21-9) the length of each phrase is then
+[Lemma 21.12](21-compression.md#lem-21-12) the length of each phrase is then
 that of the longest earlier copy. Also, the scan costs $O( n )$, and so does the suffix array of SA-IS
 ([Nong, Zhang and Chan 2011](Z-bibliography.md#ref-nong2011)), which is
 freed before the parse. At the start $i$ of a phrase of length $\ell$ the
@@ -1322,7 +1404,7 @@ LF-mapping and the inverse transform
 
 The transform can be inverted, by a property that links its two columns.
 
-<span id="lem-21-10"></span>**Lemma 21.10 (the LF-mapping).** *The $k$-th
+<span id="lem-21-13"></span>**Lemma 21.13 (the LF-mapping).** *The $k$-th
 occurrence of a symbol $c$ in $L$ and the $k$-th occurrence of $c$ in $F$
 are the same symbol of $s$; hence the row*
 
@@ -1340,7 +1422,7 @@ row $j$ (without its last symbol), which compare as the rows $i$ and $j$
 did. Hence the rows that start with $c$ are in the order of the occurrences
 of $c$ in $L$, and they begin at the row $C[ c ]$ of $F$. $\square$
 
-<span id="lem-21-11"></span>**Lemma 21.11.** *Starting from the row 0,
+<span id="lem-21-14"></span>**Lemma 21.14.** *Starting from the row 0,
 the $n$ symbols $L[ i_0 ] , L[ i_1 ] , \ldots , L[ i_{n-1} ]$ with $i_0 = 0$
 and $i_{j+1} = \mathit{LF}( i_j )$ are $s[ n - 1 ] , s[ n - 2 ] , \ldots ,
 s[ 0 ]$; hence the inverse transform of
@@ -1348,7 +1430,7 @@ s[ 0 ]$; hence the inverse transform of
 \sigma )$ time.*
 
 *Proof.* The row 0 is the rotation $\$ s$, whose last symbol is $s[ n -
-1 ]$. By [Lemma 21.10](21-compression.md#lem-21-10) the row $\mathit{LF}( i
+1 ]$. By [Lemma 21.13](21-compression.md#lem-21-13) the row $\mathit{LF}( i
 )$ is the row $i$ rotated by one place to the right, and its last symbol is
 therefore the symbol that precedes, in the cyclic string $s \$$, the last
 symbol of the row $i$. By induction the row $i_j$ is $s \$$ rotated right
@@ -1378,7 +1460,7 @@ small integers (on the alphabet abcno, bananacocco becomes
 1 1 3 1 1 1 3 4 1 0 1), in $O( \sigma )$ time per symbol here
 ([Algorithm 21.24](21-compression.md#alg-21-24)).
 
-<span id="lem-21-12"></span>**Lemma 21.12.** *Writing the place $p$ of each
+<span id="lem-21-15"></span>**Lemma 21.15.** *Writing the place $p$ of each
 symbol in the move-to-front of $s$ as $\gamma( p + 1 )$ takes at most
 $n ( 2 H_0 + 1 ) + O( \sigma \log \sigma )$ bits.*
 
@@ -1402,9 +1484,15 @@ run-length codes, as bzip2 chains them, with their inverses.
 
 --8<-- "generated/BurrowsWheeler-moveToFront.pseudo.md"
 
+--8<-- "generated/BurrowsWheeler-inverseMoveToFront.pseudo.md"
+
 --8<-- "generated/BurrowsWheeler-runLengthEncode.pseudo.md"
 
+--8<-- "generated/BurrowsWheeler-runLengthDecode.pseudo.md"
+
 --8<-- "generated/BurrowsWheeler-zeroRunEncode.pseudo.md"
+
+--8<-- "generated/BurrowsWheeler-zeroRunDecode.pseudo.md"
 
 --8<-- "generated/BurrowsWheeler-bzipCompress.pseudo.md"
 
@@ -1438,7 +1526,7 @@ space by `sizeInBits()`)
 ([Ferragina and Manzini 2005](Z-bibliography.md#ref-ferragina2005a)). Indeed, the occurrences of a pattern $P$ are the rows of $M'$ prefixed by $P$, a range
 of rows, and the range can be found from $L$ with no access to the text.
 
-<span id="lem-21-13"></span>**Lemma 21.13 (the backward search).** *If the
+<span id="lem-21-16"></span>**Lemma 21.16 (the backward search).** *If the
 rows prefixed by a string $Q$ are $[ \mathit{first} , \mathit{last} )$,
 those prefixed by $c Q$ are*
 
@@ -1452,7 +1540,7 @@ $$
 of $c$ in $L[ \mathit{first} .. \mathit{last} - 1 ]$ are those of ranks
 $\mathrm{rank}_c( L , \mathit{first} )$ to
 $\mathrm{rank}_c( L , \mathit{last} ) - 1$ among the occurrences of $c$ in
-$L$, and by [Lemma 21.10](21-compression.md#lem-21-10) their images are the
+$L$, and by [Lemma 21.13](21-compression.md#lem-21-13) their images are the
 consecutive rows that (21.21) gives. $\square$
 
 Hence `count( P )` of `FMIndex.h` applies (21.21) from the last symbol of
@@ -1469,6 +1557,8 @@ in $L$, the backward search, the location of the occurrences and the
 extraction of a substring in the FM-index
 ([Ferragina and Manzini 2005](Z-bibliography.md#ref-ferragina2005a)).
 
+--8<-- "generated/FMIndex-FMIndex.pseudo.md"
+
 --8<-- "generated/FMIndex-rank.pseudo.md"
 
 --8<-- "generated/FMIndex-range.pseudo.md"
@@ -1484,23 +1574,17 @@ To locate the occurrences, the rows of the suffixes that start at a
 multiple of $\mu$ are marked, with their places. From any row, the
 LF-mapping, which moves one place to the left in $s$, reaches a marked row
 in $t < \mu$ steps, and the place is that of the marked row plus $t$. Since the marks are a vector of bits with the rank of `RankSelect` ([§22.3](22-succinct.md#sec-22-3)), a row is tested and its sample
---8<-- "generated/BurrowsWheeler-inverseMoveToFront.pseudo.md"
-
 found in $O( 1 )$ time; the samples take $O( ( n / \mu ) \log n )$ bits.
 The function `extract( i , j )` gives $s[ i .. j - 1 ]$ from the row of the first
---8<-- "generated/BurrowsWheeler-runLengthDecode.pseudo.md"
-
 sampled suffix at or after $j$, by $j - i + O( \mu )$ steps of the
 LF-mapping, each of which reads the symbol before the current suffix.
---8<-- "generated/BurrowsWheeler-zeroRunDecode.pseudo.md"
 
-
-<span id="lem-21-14"></span>**Lemma 21.14.** *From any row, at most $\mu
+<span id="lem-21-17"></span>**Lemma 21.17.** *From any row, at most $\mu
 - 1$ steps of the LF-mapping reach a marked row, and the suffix of the
 starting row is the sample of the marked row plus the number of steps;
 `extract( i , j )` makes at most $j - i + \mu$ steps.*
 
-*Proof.* By [Lemma 21.10](21-compression.md#lem-21-10), a step from the row
+*Proof.* By [Lemma 21.13](21-compression.md#lem-21-13), a step from the row
 of the suffix $x \ge 1$ leads to the row of the suffix $x - 1$. Among $x ,
 x - 1 , \ldots , x - \mu + 1$ one is a multiple of $\mu$ (or the suffix 0
 is reached first, which is a multiple of $\mu$), and the row of a multiple
@@ -1543,9 +1627,13 @@ backward search, the location and the extraction in the FM-index on the
 wavelet tree of Huffman
 ([Mäkinen and Navarro 2005](Z-bibliography.md#ref-makinen2005)).
 
+--8<-- "generated/HuffmanFMIndex-HuffmanFMIndex.pseudo.md"
+
 --8<-- "generated/HuffmanFMIndex-range.pseudo.md"
 
 --8<-- "generated/HuffmanFMIndex-locate.pseudo.md"
+
+--8<-- "generated/HuffmanFMIndex-extract.pseudo.md"
 
 Also, the samples each $\mu$ places cost $O( ( n / \mu ) \log n )$ bits. This may be far more than $L$ on a "repetitive" text (the versions of a document, the
 genomes of a species), where the number $r$ of the runs of $L$ is far
@@ -1558,8 +1646,6 @@ $h_j$) in a wavelet tree of Huffman. A further Elias-Fano sequence holds
 the starts of the runs in the column $F$, those of each symbol $c$ after
 those of the symbols before it, in one sequence of $r$ items rather than
 one for each symbol. Then the rank of $c$ in $L[ 0 .. i - 1 ]$ is
---8<-- "generated/FMIndex-FMIndex.pseudo.md"
-
 
 $$
 \mathrm{rank}_c( L , i ) = S_c[ k ] + [ h_j = c ] \, ( i - p_j ) ,
@@ -1592,7 +1678,7 @@ LF-mapping of their first rows, onto which each run is shifted alike.
 To locate the occurrences, two properties of the suffix array on the runs
 replace the samples each $\mu$ places.
 
-<span id="lem-21-15"></span>**Lemma 21.15 (the toehold).** *Let
+<span id="lem-21-18"></span>**Lemma 21.18 (the toehold).** *Let
 $[ \mathit{first} , \mathit{last} )$ be the rows prefixed by $Q$, and
 $v = \mathit{SA}[ \mathit{last} - 1 ]$. If $L[ \mathit{last} - 1 ] = c$,
 the last row prefixed by $c Q$ is $\mathit{LF}( \mathit{last} - 1 )$, of
@@ -1601,7 +1687,7 @@ last occurrence of $c$ in $L[ \mathit{first} .. \mathit{last} - 2 ]$,
 which ends a run, and its suffix is the sample at the end of that run less
 1.*
 
-*Proof.* By [Lemma 21.13](21-compression.md#lem-21-13), the last row
+*Proof.* By [Lemma 21.16](21-compression.md#lem-21-16), the last row
 prefixed by $c Q$ is the image of the last row $k$ of the range with
 $L[ k ] = c$. Since the LF-mapping moves one place to the left in $s$, the
 suffix of the image is $\mathit{SA}[ k ] - 1$. If
@@ -1616,7 +1702,7 @@ the ranks. All the other occurrences follow from the function
 $\phi( \mathit{SA}[ i ] ) = \mathit{SA}[ i - 1 ]$, which lists the suffixes
 of the range from the last row up.
 
-<span id="lem-21-16"></span>**Lemma 21.16 (the function $\phi$).** *With
+<span id="lem-21-19"></span>**Lemma 21.19 (the function $\phi$).** *With
 $p_j$ the first row of the run $j$,*
 
 $$
@@ -1627,14 +1713,10 @@ $$
 *and $\phi( \mathit{SA}[ p_j ] ) = \mathit{SA}[ p_j - 1 ]$ is the sample at
 the end of the run $j - 1$.*
 
---8<-- "generated/HuffmanFMIndex-HuffmanFMIndex.pseudo.md"
-
 *Proof.* If the row $i$ of $x = \mathit{SA}[ i ]$ starts no run, then
-$L[ i - 1 ] = L[ i ]$, and [Lemma 21.10](21-compression.md#lem-21-10) maps
+$L[ i - 1 ] = L[ i ]$, and [Lemma 21.13](21-compression.md#lem-21-13) maps
 the rows $i - 1$ and $i$ to adjacent rows, those of the suffixes
 $\phi( x ) - 1$ and $x - 1$. Hence $\phi( x - 1 ) = \phi( x ) - 1$, i.e.,
---8<-- "generated/HuffmanFMIndex-extract.pseudo.md"
-
 $\phi$ shifts $x - 1$ and $x$ alike. Now, the places $x$ whose row starts
 a run are the $\mathit{SA}[ p_j ]$, and (21.23) follows by induction on $x - y$.
 $\square$
@@ -1696,6 +1778,34 @@ r-index on move structures, its count and its location
 --8<-- "generated/MoveRIndex-count.pseudo.md"
 
 --8<-- "generated/MoveRIndex-locate.pseudo.md"
+
+The backward search of `MoveRIndex` gives the same ranges as that of
+`RIndex`, with a constant number of moves per symbol.
+
+<span id="lem-21-20"></span>**Lemma 21.20.** *For a pattern $P$ of
+$p \ge 1$ symbols, `count( P )` returns the number of the occurrences of
+$P$ in $s$, after at most $2 p$ moves of the LF-mapping and, for each
+symbol $c$ of $P$ whose tag differs from that of $i_s$ (or $i_e$), one
+rank and one select of $c$ on the tags. `locate( P )` returns their places
+in increasing order, after the same search, $\mathit{occ} - 1$ moves of
+$\phi$ and a sort; each move takes $O( 1 )$ time.*
+
+*Proof.* The rows prefixed by the suffix $Q$ of $P$ already read are
+$[ s , e ]$ (at the start all the rows $[ 0 , n ]$). Each interval of the
+LF-mapping lies inside a run of $L$, and carries its symbol as its tag;
+hence the first row at or after $s$ with $L = c$ is $s$ if the tag of
+$i_s$ is $c$, and otherwise the start of the next interval of tag $c$,
+found by a rank and a select on the tags, and symmetrically for $e$. If
+these two rows cross, $c Q$ does not occur; otherwise, by
+[Lemma 21.16](21-compression.md#lem-21-16), their images are the first and
+the last row prefixed by $c Q$. For `locate()`, the sample of $e$ follows
+[Lemma 21.18](21-compression.md#lem-21-18), each interval keeping the
+sample $\mathit{SA}$ of its last row with the interval of $\phi$ of the
+place before, and the other occurrences follow by
+[Lemma 21.19](21-compression.md#lem-21-19), $\phi$ shifting alike the
+places between two samples of the starts of the runs. Both move
+structures are balanced, and each move takes at most 3 steps by
+[Lemma 22.19](22-succinct.md#lem-22-19). $\square$
 
 We compare the four indexes in [Table 21.8](21-compression.md#tab-21-8). Their
 space and speed, measured on a common set of texts, belong to the campaign
@@ -2330,7 +2440,7 @@ Each exercise names the test of the library that solves it (run it with
     LF-mapping of a step of `locate()` in one descent. Test:
     `engineered_succinct.huffman-fm-index`.
 19. Realize the r-index, with the rank on the runs (21.22), the toehold
-    and the function $\phi$ ([Lemma 21.15](21-compression.md#lem-21-15)
-    and [Lemma 21.16](21-compression.md#lem-21-16)), and then replace its
+    and the function $\phi$ ([Lemma 21.18](21-compression.md#lem-21-18)
+    and [Lemma 21.19](21-compression.md#lem-21-19)), and then replace its
     predecessor searches with move structures. Tests:
     `engineered_succinct.r-index`, `engineered_succinct.move-r-index`.
