@@ -21,12 +21,12 @@ of [Knuth 1998, §4.3 to §4.6](Z-bibliography.md#ref-knuth1998v2), the
 sparse matrices, and the generators of random numbers with their tests
 and the samplings. We follow the order in which the objects build on each
 other: the integers of $n$ bits and the polynomials
-([§17.2](17-numeric.md#sec-17-2)), the integers of any length
-([§17.3](17-numeric.md#sec-17-3)) and the fractions
-([§17.4](17-numeric.md#sec-17-4)), the recurrences that count
-([§17.5](17-numeric.md#sec-17-5)), the dense and the sparse matrices
+(cf. [§17.2](17-numeric.md#sec-17-2)), the integers of any length
+(cf. [§17.3](17-numeric.md#sec-17-3)) and the fractions
+(cf. [§17.4](17-numeric.md#sec-17-4)), the recurrences that count
+(cf. [§17.5](17-numeric.md#sec-17-5)), the dense and the sparse matrices
 ([§17.6](17-numeric.md#sec-17-6) and [§17.7](17-numeric.md#sec-17-7)),
-the number theory ([§17.8](17-numeric.md#sec-17-8)), and the random
+the number theory (cf. [§17.8](17-numeric.md#sec-17-8)), and the random
 numbers and samplings ([§17.9](17-numeric.md#sec-17-9) and
 [§17.10](17-numeric.md#sec-17-10)). Some functions are handed to a mature
 library (GMP for the integers and the fractions, a CBLAS for the dense
@@ -506,7 +506,7 @@ once, $( u , v ) \gets ( A u + B v , C u + D v )$, which typically takes
 about 30 bits off both. A pass in which the leading bits cannot decide
 even one step ($B = 0$) is a long division (Algorithm 4.5.2A), and the
 last digit goes by the binary algorithm on words
-([§17.8](17-numeric.md#sec-17-8)).
+(cf. [§17.8](17-numeric.md#sec-17-8)).
 
 <span id="alg-17-8"></span>**Algorithm 17.8.** Gcd of Lehmer, and
 that of Euclid, `gcdEuclid()`, which the audits compare with it.
@@ -522,7 +522,8 @@ of at most $n$ digits makes $O( n^2 )$ operations on words.*
 the leading bits, at least one, by two products of the long numbers by
 words and two sums, i.e., $O( n )$ operations; a pass with $B = 0$ is one
 step of Euclid by a long division, of $O( n ( 1 + \log_\beta q ) )$
-operations for a quotient $q$ ([Lemma 17.4](17-numeric.md#lem-17-4)). The numbers of
+operations for a quotient $q$ (cf. [Lemma 17.4](17-numeric.md#lem-17-4)). The
+numbers of
 the pairs reached are those of the algorithm of Euclid, since the matrix
 reproduces its steps exactly, and by the theorem of Lamé ([Knuth 1998,
 §4.5.3](Z-bibliography.md#ref-knuth1998v2)) that algorithm makes
@@ -577,7 +578,7 @@ $r \gets r + a b$. Next to the conversions, `toStringSchool()` and
 with no backend, with which the audits of `toString()` and of the constructor
 compare. Finally, the product of two words of 64 bits into 128, on which the
 school, the short division and the steps of Lehmer rest, is `wideProduct()` of
-`Wide.h` ([§1.6](01-introduction.md#sec-1-6)): that of Boost.Multiprecision
+`Wide.h` (cf. [§1.6](01-introduction.md#sec-1-6)): that of Boost.Multiprecision
 with `ADS_WITH_BOOST`, and four products of halves of 32 bits
 (`wideProductHalves()`) without it, or with `ADS_BIGINT_PORTABLE` defined;
 the division of two digits by one is `wideDivide()` of the same header. The
@@ -1828,7 +1829,8 @@ product of all of ADS. It uses the product of 64 bits for $m \le 2^{32}$,
 hashing (four products of 32 bits folded by $2^{61} \equiv 1 \pmod{p}$,
 typically faster than a division of 128 bits), and otherwise the product
 of two words and the division of two words by one of `Wide.h`
-([§1.6](01-introduction.md#sec-1-6)). As for $x^v \bmod m$, `powMod()` computes it by repeated
+(cf. [§1.6](01-introduction.md#sec-1-6)). As for $x^v \bmod m$, `powMod()`
+computes it by repeated
 squaring (exercise 17.1 of the book). With $v = \sum_i v_i 2^i$, one has
 $x^v = \prod_{i : v_i = 1} x^{2^i}$, whose factors are squares of one
 another; the time is thus $\lfloor \log_2 v \rfloor + 1$ squarings and at
@@ -2763,7 +2765,8 @@ of Vitter.
 **$N$ unknown.** For a stream of unknown length, `heapSampling()` gives a
 random key to each item and keeps the $n$ items of the largest keys in a
 heap (`DaryHeap` of `ADS/priority`), in $O( N \log n )$ time, and its keys
-make the sample uniform ([Lemma 17.25](17-numeric.md#lem-17-25)). As for the reservoir, Algorithm 3.4.2R of
+make the sample uniform (cf. [Lemma 17.25](17-numeric.md#lem-17-25)). As for
+the reservoir, Algorithm 3.4.2R of
 [Knuth 1998](Z-bibliography.md#ref-knuth1998v2), it is `reservoirSampling()` of
 `RandomNumbers.h`, in $O( N )$ time and $n$ items of space, which is
 optimal in this model ([Vitter 1985](Z-bibliography.md#ref-vitter1985);
@@ -2912,7 +2915,7 @@ to the benchmarks of the appendix B. By design, the code of ADS is not
 tuned to any processor, and it is not expected to match the backends on
 long operands.
 
-A `BasicCsrMatrix` is persistent ([§23.7](23-external.md#sec-23-7)), with
+A `BasicCsrMatrix` is persistent (cf. [§23.7](23-external.md#sec-23-7)), with
 the types of its values, of its columns and of its offsets in the file, so
 that a matrix of other types is rejected on the reading; `restoreMapped()`
 makes its three arrays views of the file, which (as in memory) are left
