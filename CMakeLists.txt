@@ -653,7 +653,11 @@ if (ADS_BENCHMARKS)
                    xor_singleheader/include pthash/include
                    pthash/external/bits pthash/external/bits/include
                    pthash/external/bits/external/essentials/include
-                   pthash/external/mm_file/include BBHash sux)
+                   pthash/external/mm_file/include BBHash sux
+                   datasketches-cpp/common/include
+                   datasketches-cpp/hll/include datasketches-cpp/kll/include
+                   datasketches-cpp/count/include
+                   datasketches-cpp/theta/include)
             target_include_directories(bench-hashing SYSTEM
                                        PRIVATE ${ADS_HASHING}/${d})
         endforeach ()
