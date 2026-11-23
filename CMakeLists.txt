@@ -568,6 +568,23 @@ if (ADS_BENCHMARKS)
             target_link_libraries(bench-${b} PRIVATE ADS::LEMON)
         endforeach ()
     endif ()
+    # the Blossom V of Kolmogorov in the perfect matchings of graphs, from
+    # the directory of its sources BLOSSOM5_DIR, under its licence for
+    # research: built for the comparison only, with no warning
+    set(BLOSSOM5_DIR "" CACHE PATH
+        "the sources of the Blossom V of Kolmogorov")
+    if (BLOSSOM5_DIR)
+        set(ADS_BLOSSOM5_SRC)
+        foreach (f misc PMduals PMexpand PMinit PMinterface PMmain PMrepair
+                   PMshrink MinCost/MinCost)
+            list(APPEND ADS_BLOSSOM5_SRC ${BLOSSOM5_DIR}/${f}.cpp)
+        endforeach ()
+        add_library(ads_blossom5 OBJECT ${ADS_BLOSSOM5_SRC})
+        target_compile_options(ads_blossom5 PRIVATE -w)
+        target_compile_definitions(bench-graphs PRIVATE ADS_HAS_BLOSSOM5)
+        target_include_directories(bench-graphs SYSTEM PRIVATE ${BLOSSOM5_DIR})
+        target_link_libraries(bench-graphs PRIVATE ads_blossom5)
+    endif ()
     # the sets of Morin in ssets, from the C++ sources of Open Data
     # Structures in ODS_DIR
     set(ODS_DIR "" CACHE PATH "the C++ sources of Open Data Structures")

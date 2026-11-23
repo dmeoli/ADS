@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `minCostPerfectMatching()` of `PerfectMatching.h`, the perfect matching
+  of least cost of a general graph with integer costs of any sign, on a list
+  of edges or on an unoriented `StaticGraph`, by the primal-dual algorithm
+  of Edmonds in the form of Blossom V of Kolmogorov (the alternating trees
+  kept across the augmentations, each with its own change of the duals, the
+  slacks in pairing heaps per tree and per pair of trees, the changes of the
+  duals by the components of the trees, a greedy start), which gives the
+  laminar family of the blossoms and the doubled duals that certify the
+  optimum, or says that the graph has no perfect matching, and the overload
+  `maxWeightMatching( n , E , BlossomVOptions )`, the matching of largest
+  weight by the same algorithm on the graph doubled;
+  `IntrusivePairingHeap` of `PairingHeap.h`, the two-pass pairing heap on
+  the nodes of the caller, with the trees of `PairingHeap` shared by the two
+  classes; the tests `engineered_graph.perfect-matching`,
+  `engineered_lemon.lemon-perfect-matching` and
+  `engineered_search.intrusive-pairing-heap`, the cells `pmatching` of
+  `bench/graphs.cpp` against LEMON, Boost and, with `BLOSSOM5=<dir>` (or
+  `BLOSSOM5_DIR`), the code of Kolmogorov built for the comparison, and
+  section 14.11.4 of the manual (Algorithm 14.20, Lemmas 14.50 to 14.53)
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits

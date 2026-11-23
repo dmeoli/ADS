@@ -92,6 +92,7 @@
 #include "ADS/graph/GraphBuilder.h"
 #include "ADS/graph/GridGraph.h"
 #include "ADS/graph/Observable.h"
+#include "ADS/graph/PerfectMatching.h"
 #include "ADS/graph/PointerGraph.h"
 #include "ADS/graph/PushRelabel.h"
 #include "ADS/graph/Reoptimization.h"

@@ -1795,6 +1795,7 @@ engineered_graph  scc-one-pass        componenti forti in una visita
 engineered_graph  euler-trails        cammini e cicli euleriani, orientati e no
 engineered_graph  blossom-matching    abbinamento massimo, fiori di Edmonds
 engineered_graph  weighted-blossom    abbinamento di peso massimo, fiori pesati
+engineered_graph  perfect-matching    abbinamento perfetto di costo minimo, Blossom V
 
 # the files of records on the disk, beyond the book
 engineered_external  record-file-empty          file assente, vuoto, tolto
@@ -2040,6 +2041,7 @@ engineered_search  pointer-table-presize  tabella presizzata, pagine enormi
 engineered_search  indexed-heap-erase     heap indicizzato: increase, erase
 engineered_search  indexed-heap-grow      heap indicizzato: grow degli id
 engineered_search  pairing-heap-erase     pairing heap: erase, increase, update
+engineered_search  intrusive-pairing-heap pairing heap sui nodi del chiamante
 engineered_search  indexed-heap-pair      coppia di heap, chiave e limite
 engineered_search  ordered-frontier       B+-albero come frontiera ordinata
 engineered_search  packed-array           campi di B bit, saturati, paralleli
@@ -2083,6 +2085,7 @@ engineered_lemon  lemon-tap              notificatore di LEMON verso ADS
 engineered_lemon  lemon-mirror           ListDigraph allineato a un grafo ADS
 engineered_lemon  lemon-parallel         k Dijkstra di LEMON sui thread di ADS
 engineered_lemon  lemon-matching         abbinamenti, LEMON o ADS
+engineered_lemon  lemon-perfect-matching abbinamento perfetto, Blossom V e LEMON
 engineered_lemon  lemon-assignment       assegnamento da zero, LEMON o ADS
 engineered_lemon  lemon-flow-engine      motore dei flussi di MaxFlowObserver
 engineered_lemon  lemon-warm-mcf         flussi di costo minimo a caldo

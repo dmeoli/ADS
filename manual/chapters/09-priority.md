@@ -1322,6 +1322,35 @@ takes `decrease()` or `increase()` as the new priority requires (test
 
 --8<-- "generated/PairingHeap-increase.pseudo.md"
 
+The same trees serve a program that keeps many small heaps of the nodes of
+one array and moves the nodes among them, e.g., the edges of a graph, each in
+the heap of its class, in the perfect matchings of
+[§14.11.4](14-graph.md#sec-14-11-4): `IntrusivePairingHeap< N >` (beyond the
+book) is the two-pass heap of a node type $N$ of the caller, with the members
+`priority`, `child`, `next` and `prev` of the nodes above, and is only its
+root, with no pool and no item. A node is in at most one heap at a time, and
+moves from one to another by `erase()` and `insert()`, with no allocation;
+the linking, the two passes and the cut are those of `PairingHeap`, shared by
+the two classes, and so are the costs (test
+`engineered_search.intrusive-pairing-heap`). Its public members are
+
+```cpp
+// declarations of <ADS/priority/PairingHeap.h>
+template< class N >
+class IntrusivePairingHeap
+{
+ public:
+ [[nodiscard]] bool empty( void ) const;
+ [[nodiscard]] N * min( void ) const;
+ void insert( N * x );
+ void erase( N * x );
+ void clear( void );
+ };
+```
+
+where `clear()` forgets all the nodes, whose links the caller resets before
+it inserts them again.
+
 ## 9.9 Monotone queues of integer keys {#sec-9-9}
 
 On a monotone queue whose keys are "small" integers, the least key can be found

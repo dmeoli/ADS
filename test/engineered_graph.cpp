@@ -36,6 +36,7 @@
 #include "ADS/graph/GridGraph.h"
 #include "ADS/graph/ListGraph.h"
 #include "ADS/graph/Matching.h"
+#include "ADS/graph/PerfectMatching.h"
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
@@ -53,13 +54,27 @@
 #include "ADS/stack/ArrayStack.h"
 #include "ADS/complexity/EasyCases.h"
 
+// the weighted matching of Boost from its version 1.87, whose new code
+// ends on the graphs on which that of the versions before it loops
+#if __has_include( <boost/graph/maximum_weighted_matching.hpp> )
+ #include <boost/version.hpp>
+ #if BOOST_VERSION >= 108700
+  #include <boost/graph/adjacency_list.hpp>
+  #include <boost/graph/maximum_weighted_matching.hpp>
+  #define ADS_TEST_BOOST_MATCHING 1
+ #endif
+#endif
+
 #include <algorithm>
 #include <bit>
 #include <climits>
 #include <cmath>
+#include <cstddef>
 #include <functional>
 #include <iterator>
+#include <limits>
 #include <map>
+#include <optional>
 #include <queue>
 #include <random>
 #include <ranges>
@@ -1840,6 +1855,391 @@ ADS_TEST( "weighted-blossom" )
  CHECK_THROWS( maxWeightMatching( 2 , WE{ { 0 , 2 , 1 } } ) ,
 	       contract_violation );
  CHECK_THROWS( maxWeightMatching( 2 , WE{ { 1 , 1 , 1 } } ) ,
+	       contract_violation );
+ }
+
+/// the least cost of a perfect matching of the edges E on n <= 16 nodes,
+/// by the dynamic programming on the subsets that hold an even number of
+/// nodes, nothing if there is none
+template< class W >
+std::optional< long long >
+bestPerfect( int n , const std::vector< std::tuple< int , int , W > > & E )
+{
+ constexpr long long none = std::numeric_limits< long long >::max();
+ std::vector< long long > f( std::size_t( 1 ) << n , none );
+ f[ 0 ] = 0;
+ for( unsigned S = 1 ; S < ( 1u << n ) ; ++S ) {
+  if( std::popcount( S ) % 2 == 1 )
+   continue;
+  const int u = std::countr_zero( S );  // the least node, matched
+  for( const auto & [ a , b , c ] : E ) {
+   const int v = a == u ? b : ( b == u ? a : -1 );
+   if( ( v < 0 ) || ( v == u ) || ! ( S & ( 1u << v ) ) )
+    continue;
+   const long long g = f[ S & ~( 1u << u ) & ~( 1u << v ) ];
+   if( g != none )
+    f[ S ] = std::min( f[ S ] , g + ( long long )c );
+   }
+  }
+ const long long r = f[ ( std::size_t( 1 ) << n ) - 1 ];
+ return( r == none ? std::nullopt : std::optional< long long >( r ) );
+ }
+
+/// whether R is a perfect matching of the edges E with duals that certify
+/// it, checked from scratch: the edges disjoint and covering the n nodes,
+/// of the cost given, the laminar family of odd sets of three nodes or
+/// more, every slack of a doubled cost and every dual of a set nonnegative,
+/// and the duals summing to twice the cost
+template< class W >
+bool certifiedPerfect( int n ,
+		       const std::vector< std::tuple< int , int , W > > & E ,
+		       const PerfectMatchingResult< W > & R )
+{
+ const int K = int( R.parent.size() );
+ if( ! R.perfect || ( K < n ) || ( int( R.dual.size() ) != K ) ||
+     ! std::is_sorted( R.edges.begin() , R.edges.end() ) )
+  return( false );
+ std::vector< bool > used( std::size_t( n ) , false );
+ long long cost = 0;
+ for( std::size_t e : R.edges ) {
+  const auto & [ u , v , c ] = E[ e ];
+  if( ( u == v ) || used[ u ] || used[ v ] )
+   return( false );
+  used[ u ] = used[ v ] = true;
+  cost += c;
+  }
+ if( ( cost != ( long long )R.cost ) ||
+     ( std::count( used.begin() , used.end() , true ) != n ) )
+  return( false );
+ std::vector< int > size( std::size_t( K ) , 0 );
+ for( int v = 0 ; v < n ; ++v ) {
+  int depth = 0;
+  for( int x = R.parent[ v ] ; x != NIL ; x = R.parent[ x ] ) {
+   if( ( x < n ) || ( x >= K ) || ( ++depth > K ) )
+    return( false );
+   ++size[ x ];
+   }
+  }
+ long long dual = 0;
+ for( int x = 0 ; x < K ; ++x ) {
+  dual += R.dual[ x ];
+  if( ( x >= n ) &&
+      ( ( R.dual[ x ] < 0 ) || ( size[ x ] < 3 ) || ( size[ x ] % 2 == 0 ) ) )
+   return( false );
+  }
+ auto chain = [ & ]( int a ) {
+  std::vector< int > C;
+  for( int x = a ; x != NIL ; x = R.parent[ x ] )
+   C.push_back( x );
+  return( C );
+  };
+ for( const auto & [ u , v , c ] : E ) {
+  if( u == v )
+   continue;
+  auto A = chain( u ) , B = chain( v );
+  while( ! A.empty() && ! B.empty() && ( A.back() == B.back() ) ) {
+   A.pop_back();
+   B.pop_back();
+   }
+  long long sl = 2 * ( long long )c;
+  for( int x : A )
+   sl -= R.dual[ x ];
+  for( int x : B )
+   sl -= R.dual[ x ];
+  if( sl < 0 )
+   return( false );
+  }
+ return( dual == 2 * cost );
+ }
+
+/// the edges of the k nearest neighbors of n random points of the square
+/// of side 10^6, the costs their rounded distances (as in the
+/// 2-matchings of the TSP), each pair once
+std::vector< std::tuple< int , int , long long > >
+geometricGraph( int n , int k , std::mt19937 & g )
+{
+ std::vector< std::pair< long long , long long > > P(
+   static_cast< std::size_t >( n ) );
+ for( auto & [ x , y ] : P ) {
+  x = g() % 1000000;
+  y = g() % 1000000;
+  }
+ std::set< std::pair< int , int > > seen;
+ std::vector< std::tuple< int , int , long long > > E;
+ for( int u = 0 ; u < n ; ++u ) {
+  std::vector< std::pair< long long , int > > D;
+  for( int v = 0 ; v < n ; ++v )
+   if( v != u ) {
+    const long long dx = P[ u ].first - P[ v ].first;
+    const long long dy = P[ u ].second - P[ v ].second;
+    D.emplace_back( dx * dx + dy * dy , v );
+    }
+  const std::size_t h = std::min( D.size() , std::size_t( k ) );
+  std::partial_sort( D.begin() , D.begin() + std::ptrdiff_t( h ) , D.end() );
+  for( std::size_t i = 0 ; i < h ; ++i ) {
+   const int v = D[ i ].second;
+   if( seen.emplace( std::min( u , v ) , std::max( u , v ) ).second )
+    E.emplace_back( u , v ,
+		    std::llround( std::sqrt( double( D[ i ].first ) ) ) );
+   }
+  }
+ return( E );
+ }
+
+// the perfect matching of least cost of Blossom V, with and without the
+// greedy start: against the dynamic programming on every set of edges of
+// the graphs of up to 6 nodes (costs of every sign and zero), on random
+// graphs of up to 14 nodes with parallel edges and loops, and against the
+// blossoms of maxWeightMatching() among the matchings of largest size, the
+// costs negated, on random, geometric and grid graphs of up to some
+// thousands of nodes and sizes around the powers of 2, with the duals
+// checked from scratch as a certificate each time; the graphs with no
+// perfect matching (n odd, a node with no edge, a star, two triangles), the
+// StaticGraph, costs of 32 bits and of extreme magnitude, the matching of
+// largest weight on the graph doubled, the contracts
+ADS_TEST( "perfect-matching" )
+{
+ using WE = std::vector< std::tuple< int , int , long long > >;
+ std::mt19937 g( 31 );
+ BlossomVOptions plain;
+ plain.greedy = false;
+ auto check = [ & ]( int n , const WE & E ) {
+  const std::optional< long long > b = bestPerfect( n , E );
+  for( const BlossomVOptions & o : { BlossomVOptions() , plain } ) {
+   const auto R = minCostPerfectMatching( n , E , o );
+   CHECK( R.perfect == b.has_value() );
+   if( b )
+    CHECK( ( R.cost == *b ) && certifiedPerfect( n , E , R ) );
+   else
+    CHECK( R.edges.empty() );
+   }
+  };
+ for( int n = 0 ; n <= 6 ; ++n ) {  // every set of edges
+  std::vector< std::pair< int , int > > P;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v )
+    P.emplace_back( u , v );
+  for( unsigned mask = 0 ; mask < ( 1u << P.size() ) ; ++mask ) {
+   WE E;
+   for( std::size_t i = 0 ; i < P.size() ; ++i )
+    if( mask & ( 1u << i ) )
+     E.emplace_back( P[ i ].first , P[ i ].second ,
+		     ( long long )( g() % 9 ) - 4 );
+   check( n , E );
+   }
+  }
+ for( int it = 0 ; it < 4000 ; ++it ) {  // random, with ties and loops
+  const int n = 2 + it % 13;
+  const long long range[] = { 1 , 3 , 100 , 1000000 };
+  const long long R = range[ it % 4 ];
+  WE E;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v )
+    if( g() % 4 < 1 + unsigned( it % 3 ) )
+     E.emplace_back( u , v ,
+		     ( long long )( g() % R ) - ( it % 5 == 0 ? R / 2 : 0 ) );
+  if( ! E.empty() && ( it % 3 == 0 ) ) {  // parallel, one cheaper
+   auto f = E[ g() % E.size() ];
+   E.push_back( f );
+   std::get< 2 >( f ) -= 1;
+   E.push_back( f );
+   }
+  if( it % 7 == 0 )
+   E.emplace_back( 0 , 0 , -1000 );  // a loop, never matched
+  check( n , E );
+  }
+
+ // larger graphs: the blossoms of maxWeightMatching() as the reference
+ auto against = [ & ]( int n , const WE & E ) {
+  WE N;
+  for( const auto & [ u , v , c ] : E )
+   N.emplace_back( u , v , -c );
+  const auto G = maxWeightMatching( n , N , true );
+  const bool perfect = 2 * int( G.second.size() ) == n;
+  for( const BlossomVOptions & o : { BlossomVOptions() , plain } ) {
+   const auto R = minCostPerfectMatching( n , E , o );
+   CHECK( R.perfect == perfect );
+   if( perfect )
+    CHECK( ( R.cost == -G.first ) && certifiedPerfect( n , E , R ) );
+   }
+  };
+ for( int it = 0 ; it < 40 ; ++it ) {  // random, a cycle through all
+  const int n = 2 * ( 50 + int( g() % 400 ) );
+  WE E;
+  for( int u = 0 ; u < n ; ++u )
+   E.emplace_back( u , ( u + 1 ) % n , ( long long )( g() % 1000 ) );
+  for( int i = 0 ; i < n * ( 1 + it % 6 ) ; ++i ) {
+   const int a = int( g() % unsigned( n ) ) , b = int( g() % unsigned( n ) );
+   if( a != b )
+    E.emplace_back( a , b , ( long long )( g() % ( it % 2 ? 10 : 100000 ) ) );
+   }
+  against( n , E );
+  }
+ for( int it = 0 ; it < 12 ; ++it )  // geometric, perhaps not perfect
+  against( 2 * ( 100 + 70 * it ) + it % 2 ,
+	   geometricGraph( 2 * ( 100 + 70 * it ) + it % 2 , 3 + it % 6 , g ) );
+ for( int s : { 2 , 3 , 8 , 31 , 40 } ) {  // grids, n odd if s is
+  WE E;
+  for( int i = 0 ; i < s ; ++i )
+   for( int j = 0 ; j < s ; ++j ) {
+    const int v = i * s + j;
+    if( j + 1 < s )
+     E.emplace_back( v , v + 1 , ( long long )( g() % 50 ) );
+    if( i + 1 < s )
+     E.emplace_back( v , v + s , ( long long )( g() % 50 ) );
+    }
+  against( s * s , E );
+  }
+ for( int k = 1 ; k <= 10 ; ++k )  // around the powers of 2
+  for( int d : { -2 , 0 , 2 } ) {
+   const int n = std::max( 2 , ( 1 << k ) + d );
+   WE E;
+   for( int u = 0 ; u + 1 < n ; ++u )
+    E.emplace_back( u , u + 1 , ( long long )( g() % 100 ) );
+   for( int i = 0 ; i < 3 * n ; ++i ) {
+    const int a = int( g() % unsigned( n ) ) , b = int( g() % unsigned( n ) );
+    if( a != b )
+     E.emplace_back( a , b , ( long long )( g() % 100 ) );
+    }
+   against( n , E );
+   }
+
+ // no perfect matching
+ CHECK(
+   ! minCostPerfectMatching( 3 ,
+			     WE{ { 0 , 1 , 1 } , { 1 , 2 , 1 } } ).perfect );
+ CHECK( ! minCostPerfectMatching( 4 , WE{ { 0 , 1 , 1 } , { 1 , 2 , 1 } } )
+	    .perfect );  // node 3 alone
+ CHECK(
+   ! minCostPerfectMatching( 4 ,
+			     WE{ { 0 , 1 , 1 } , { 0 , 2 , 1 } ,
+				 { 0 , 3 , 1 } } )
+       .perfect );
+ CHECK( ! minCostPerfectMatching( 6 , WE{ { 0 , 1 , 1 } ,
+					 { 1 , 2 , 1 } ,
+					 { 0 , 2 , 1 } ,
+					 { 3 , 4 , 1 } ,
+					 { 4 , 5 , 1 } ,
+					 { 3 , 5 , 1 } } )
+	    .perfect );
+ CHECK(
+   ! minCostPerfectMatching( 2 ,
+			     WE{ { 0 , 0 , 1 } , { 1 , 1 , 1 } } ).perfect );
+ const auto Z = minCostPerfectMatching( 0 , WE{} );  // no node
+ CHECK( Z.perfect && ( Z.cost == 0 ) && Z.edges.empty() && Z.parent.empty() );
+
+ // the StaticGraph: its edges as the places of the arcs ( u , v ), u < v
+ for( int it = 0 ; it < 50 ; ++it ) {
+  const int n = 2 + 2 * int( g() % 30 );
+  std::vector< std::tuple< int , int , long long > > E;
+  for( int u = 0 ; u + 1 < n ; ++u )
+   E.emplace_back( u , u + 1 , ( long long )( g() % 1000 ) - 500 );
+  for( int i = 0 ; i < 2 * n ; ++i ) {
+   const int a = int( g() % unsigned( n ) ) , b = int( g() % unsigned( n ) );
+   if( a != b )
+    E.emplace_back( a , b , ( long long )( g() % 1000 ) - 500 );
+   }
+  const StaticGraph< long long > S( n , E , false );
+  const auto R = minCostPerfectMatching( S );
+  const auto Q = minCostPerfectMatching( n , E );
+  CHECK( R.perfect && Q.perfect && ( R.cost == Q.cost ) );
+  std::vector< int > mate( std::size_t( n ) , NIL );
+  long long c = 0;
+  for( std::size_t k : R.edges ) {
+   int u = 0;  // the row of the place k
+   while( k >= std::size_t( S.degree( u ) ) )
+    k -= std::size_t( S.degree( u++ ) );
+   const auto a = S.out( u )[ std::ptrdiff_t( k ) ];
+   CHECK( ( u < a.to ) && ( mate[ u ] == NIL ) && ( mate[ a.to ] == NIL ) );
+   mate[ u ] = a.to;
+   mate[ a.to ] = u;
+   c += a.w;
+   }
+  CHECK( c == R.cost );
+  }
+
+ // costs of 32 bits, and of a magnitude near the bound of the contracts
+ for( int it = 0 ; it < 200 ; ++it ) {
+  const int n = 2 + 2 * int( g() % 6 );
+  std::vector< std::tuple< int , int , int > > I;
+  WE L;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v )
+    if( g() % 2 ) {
+     const int c = int( g() % 2001 ) - 1000;
+     I.emplace_back( u , v , c );
+     L.emplace_back( u , v , ( long long )c * ( 1LL << 40 ) );
+     }
+  const auto RI = minCostPerfectMatching( n , I );
+  const auto RL = minCostPerfectMatching( n , L );
+  const std::optional< long long > b = bestPerfect( n , I );
+  CHECK( ( RI.perfect == b.has_value() ) && ( RL.perfect == RI.perfect ) );
+  if( b )
+   CHECK( ( RI.cost == *b ) && ( RL.cost == *b * ( 1LL << 40 ) ) &&
+	  certifiedPerfect( n , I , RI ) && certifiedPerfect( n , L , RL ) );
+  }
+
+ // the matching of largest weight on the graph doubled, against the
+ // blossoms of maxWeightMatching()
+ for( int it = 0 ; it < 300 ; ++it ) {
+  const int n = 1 + it % 40;
+  WE E;
+  for( int i = 0 ; i < 2 * n ; ++i ) {
+   const int a = int( g() % unsigned( n ) ) , b = int( g() % unsigned( n ) );
+   if( a != b )
+    E.emplace_back( a , b , ( long long )( g() % 200 ) - 50 );
+   }
+  const auto M = maxWeightMatching( n , E , BlossomVOptions() );
+  CHECK( checkedMatching( n , E , M ).second ==
+	 maxWeightMatching( n , E ).first );
+  }
+ CHECK( maxWeightMatching( 0 , WE{} , BlossomVOptions() ).second.empty() );
+
+#ifdef ADS_TEST_BOOST_MATCHING
+ // against maximum_weighted_matching() of the Boost Graph Library, the
+ // weights a large constant minus the costs, so that its matching of
+ // largest weight has the largest size
+ for( int it = 0 ; it < 30 ; ++it ) {
+  const int n = 2 * ( 10 + int( g() % 150 ) );
+  std::map< std::pair< int , int > , long long > P;  // no parallel edge
+  for( int u = 0 ; u + 1 < n ; u += 2 )
+   P[ { u , u + 1 } ] = ( long long )( g() % 1000 );
+  for( int i = 0 ; i < 3 * n ; ++i ) {
+   const int a = int( g() % unsigned( n ) ) , b = int( g() % unsigned( n ) );
+   if( a != b )
+    P[ { std::min( a , b ) ,
+	 std::max( a , b ) } ] = ( long long )( g() % 1000 );
+   }
+  WE E;
+  for( const auto & [ p , c ] : P )
+   E.emplace_back( p.first , p.second , c );
+  using BG = boost::adjacency_list<
+    boost::vecS , boost::vecS , boost::undirectedS , boost::no_property ,
+    boost::property< boost::edge_weight_t , long long > >;
+  BG G( static_cast< std::size_t >( n ) );
+  const long long big = 1000LL * n + 1;
+  for( const auto & [ u , v , c ] : E )
+   boost::add_edge( std::size_t( u ) , std::size_t( v ) , big - c , G );
+  std::vector< boost::graph_traits< BG >::vertex_descriptor > mate(
+    static_cast< std::size_t >( n ) );
+  boost::maximum_weighted_matching( G , mate.data() );
+  long long cost = 0;
+  for( int u = 0 ; u < n ; ++u ) {
+   const int v = int( mate[ std::size_t( u ) ] );
+   CHECK( ( v >= 0 ) && ( v < n ) );
+   if( u < v )
+    cost += P.at( { u , v } );
+   }
+  const auto R = minCostPerfectMatching( n , E );
+  CHECK( R.perfect && ( R.cost == cost ) );
+  }
+#endif
+
+ CHECK_THROWS( minCostPerfectMatching( -1 , WE{} ) , contract_violation );
+ CHECK_THROWS( minCostPerfectMatching( 2 , WE{ { 0 , 2 , 1 } } ) ,
+	       contract_violation );
+ CHECK_THROWS( minCostPerfectMatching(
+		 StaticGraph< long long >( 2 , WE{ { 0 , 1 , 1 } } , true ) ) ,
 	       contract_violation );
  }
 

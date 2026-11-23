@@ -313,7 +313,7 @@ allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-445 headers: 245 base, 153 advanced, 19 core and 28 interop.
+446 headers: 245 base, 154 advanced, 19 core and 28 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
@@ -328,7 +328,7 @@ allow.
 | `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  | `BoostMPI` |
 | `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `MappedFile`, `Persistence`, `RecordFile` |  |
 | `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |
-| `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `Matching`, `MatrixGraph`, `MaxFlow`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths`, `Visit` | `Assignment`, `BlossomMatching`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `PushRelabel`, `Reoptimization`, `StaticGraph`, `StrongComponents` |  |  |
+| `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `Matching`, `MatrixGraph`, `MaxFlow`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths`, `Visit` | `Assignment`, `BlossomMatching`, `GraphBuilder`, `GridGraph`, `Observable`, `PerfectMatching`, `PointerGraph`, `PushRelabel`, `Reoptimization`, `StaticGraph`, `StrongComponents` |  |  |
 | `interop/` |  |  |  | `Csr` |
 | `interop/arrow/` |  |  |  | `Arrow` |
 | `interop/boost/` |  |  |  | `Dijkstra`, `FromBGL`, `Graph`, `Heap`, `Iterator` |

@@ -376,7 +376,9 @@ HWLOCON   = $(if $(filter 1,$(ADSHWLOCON)),-DADS_WITH_HWLOC $(libHwlocINC) \
 # tsl::htrie_map to stringdicts, MARISA=<prefix> marisa-trie, TX=<prefix>
 # the tx-trie (tx/tx.hpp and libtx.a) and PDT=<dir> (its source, with its
 # succinct) the path-decomposed tries of Grossi and Ottaviano; ODS=<dir>
-# (the C++ sources of Open Data Structures) adds the sets of Morin to ssets
+# (the C++ sources of Open Data Structures) adds the sets of Morin to ssets;
+# BLOSSOM5=<dir> (the sources of the Blossom V of Kolmogorov, under its
+# licence for research) adds it to the perfect matchings of graphs
 BENCHES   = sort dictionaries priority sequences memory bignum hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression external graphs combinatorial \
@@ -706,8 +708,19 @@ $(BUILD)/bench-assignment: bench/assignment.cpp bench/Bench.h $(HEADERS) \
                           | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(LEMONFLAGS)
 
-$(BUILD)/bench-graphs: bench/graphs.cpp bench/Bench.h $(HEADERS) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(LEMONFLAGS)
+# the Blossom V of Kolmogorov from BLOSSOM5=<dir>, its sources compiled
+# apart with their own flags and no warning, for the comparison only
+BLOSSOM5SRC = misc PMduals PMexpand PMinit PMinterface PMmain PMrepair \
+              PMshrink MinCost/MinCost
+BLOSSOM5OBJ = $(if $(BLOSSOM5),$(BLOSSOM5SRC:%=$(BUILD)/blossom5/%.o))
+$(BUILD)/blossom5/%.o: $(BLOSSOM5)/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) -O3 -DNDEBUG -w -c -o $@ $<
+
+$(BUILD)/bench-graphs: bench/graphs.cpp bench/Bench.h $(HEADERS) \
+                       $(BLOSSOM5OBJ) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(LEMONFLAGS) \
+	       $(if $(BLOSSOM5),-DADS_HAS_BLOSSOM5 -I$(BLOSSOM5) $(BLOSSOM5OBJ))
 
 # the sort and the mailbox over the processes of MPI, by mpicxx (not among
 # BENCHES): make $(BUILD)/bench-mpi, then mpirun -np P $(BUILD)/bench-mpi

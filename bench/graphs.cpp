@@ -59,6 +59,15 @@
  *   unoriented with n / 50 nodes and costs in [ 1 , 10^5 ], against
  *   MaxWeightedMatching of LEMON and maximum_weighted_matching() of the
  *   Boost Graph Library;
+ * - pmatching, minCostPerfectMatching(), the blossoms of Blossom V with
+ *   a tree per free node, on n / 10 nodes: G( n , 4 n ) with a random
+ *   perfect matching added, the 6 nearest neighbors of random points and
+ *   the grid of an even side, against MaxWeightedPerfectMatching of LEMON
+ *   (the costs negated), maximum_weighted_matching() of the Boost Graph
+ *   Library (up to 2000 nodes, the weights a large constant minus the
+ *   costs) and the Blossom V of Kolmogorov, with its fractional start and
+ *   with the greedy one, when BLOSSOM5=<dir> gives its sources (under its
+ *   licence for research, built for the comparison only);
  * - union-find, n random merges and n finds on each MFSET;
  * - grid-bfs and grid-dijkstra, distance() and shortestPaths() on an
  *   IndexedDaryHeap of arity 4 on a square map of about n cells, a fifth
@@ -110,6 +119,7 @@
 #include "ADS/graph/EulerianCycle.h"
 #include "ADS/graph/GridGraph.h"
 #include "ADS/graph/Matching.h"
+#include "ADS/graph/PerfectMatching.h"
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
@@ -127,6 +137,13 @@
  #include <lemon/matching.h>
  #include <lemon/smart_graph.h>
  #define ADS_LEMON_MATCHING 1
+#endif
+
+// the Blossom V of Kolmogorov, from the directory of its sources
+// (BLOSSOM5=<dir>), under its licence for research: it is built for the
+// comparison only, and none of its code is in ADS
+#ifdef ADS_HAS_BLOSSOM5
+ #include "PerfectMatching.h"
 #endif
 
 #if __has_include( <boost/graph/compressed_sparse_row_graph.hpp> )
@@ -151,7 +168,10 @@
 #include <fstream>
 #include <functional>
 #include <initializer_list>
+#include <map>
+#include <numeric>
 #include <queue>
+#include <string>
 #include <set>
 #include <sstream>
 #include <tuple>
@@ -276,9 +296,10 @@ Input dimacs( const std::string & path , bool directed )
  return( I );
  }
 
-/// points in the unit square, each joined to its 3 nearest neighbors by
-/// a bucket grid, costs the distances times 10^5
-Input geometric( int n , bool directed , std::mt19937_64 & g )
+/// points in the unit square, each joined to its k nearest neighbors
+/// among those of the 9 buckets around it, by a bucket grid of about 2
+/// points per bucket, costs the distances times 10^5
+Input geometric( int n , bool directed , std::mt19937_64 & g , int k = 3 )
 {
  std::uniform_real_distribution< double > U( 0 , 1 );
  std::vector< double > x( n ) , y( n );
@@ -306,12 +327,12 @@ Input geometric( int n , bool directed , std::mt19937_64 & g )
       near.emplace_back( std::hypot( x[ i ] - x[ j ] , y[ i ] - y[ j ] ) , j );
     }
   std::sort( near.begin() , near.end() );
-  for( std::size_t k = 0 ; k < std::min< std::size_t >( 3 , near.size() ) ;
-       ++k ) {
-   const int j = near[ k ].second;
+  for( std::size_t h = 0 ; h < std::min( std::size_t( k ) , near.size() ) ;
+       ++h ) {
+   const int j = near[ h ].second;
    if( ! seen.emplace( std::min( i , j ) , std::max( i , j ) ).second )
     continue;
-   const int w = 1 + int( near[ k ].first * 1e5 );
+   const int w = 1 + int( near[ h ].first * 1e5 );
    I.E.emplace_back( i , j , w );
    if( directed )
     I.E.emplace_back( j , i , w );
@@ -1282,6 +1303,108 @@ void wmatching( int n , int r , unsigned seed )
 #endif
  }
 
+/// the perfect matching of least cost on n nodes: G( n , 4 n ) with a
+/// random perfect matching added (gnm4), the 6 nearest neighbors of random
+/// points (geom6) and the grid of an even side (grid)
+void pmatching( const std::string & c , int n0 , int r , unsigned seed )
+{
+ std::mt19937_64 g( seed + unsigned( n0 ) );
+ Input I;
+ if( c == "gnm4" ) {
+  const int n = std::max( 2 , n0 - n0 % 2 );
+  I = gnm( n , 4 * std::size_t( n ) , false , g );
+  std::vector< int > P( static_cast< std::size_t >( n ) );
+  std::iota( P.begin() , P.end() , 0 );
+  std::shuffle( P.begin() , P.end() , g );
+  for( std::size_t i = 0 ; i + 1 < P.size() ; i += 2 )
+   I.E.emplace_back( P[ i ] , P[ i + 1 ] , 1 + int( g() % MAXW ) );
+  }
+ else if( c == "geom6" )
+  I = geometric( std::max( 2 , n0 - n0 % 2 ) , false , g , 6 );
+ else {
+  int s = std::max( 2 , int( std::sqrt( double( n0 ) ) ) );
+  I = grid( ( s + s % 2 ) * ( s + s % 2 ) , false , g );
+  }
+ const int n = I.n;
+ std::vector< std::tuple< int , int , long long > > L;
+ for( const auto & [ u , v , w ] : I.E )
+  L.emplace_back( u , v , w );
+ Cell C( "pmatching" , c , std::size_t( n ) , L.size() , r );
+ for( const char * who : { "ADS" , "ADS A/A" } )
+  C( who , [ & ]( Counts & k ) {
+   const auto R = ADS::minCostPerfectMatching( n , L );
+   k = { { "blossoms" , ( long long )( R.parent.size() ) - n } };
+   return( R.perfect ? ( long long )R.cost : -1LL );
+   } );
+#ifdef ADS_LEMON_MATCHING
+ if( measured( { "LEMON MaxWeightedPerfectMatching" } ) ) {
+  lemon::SmartGraph G;
+  lemon::SmartGraph::EdgeMap< long long > W( G );
+  for( int u = 0 ; u < n ; ++u )
+   G.addNode();
+  for( const auto & [ u , v , w ] : L )
+   W.set( G.addEdge( G.nodeFromId( u ) , G.nodeFromId( v ) ) , -w );
+  C( "LEMON MaxWeightedPerfectMatching" , [ & ]( Counts & ) {
+   lemon::MaxWeightedPerfectMatching< lemon::SmartGraph ,
+				      lemon::SmartGraph::EdgeMap< long long > >
+     M( G , W );
+   return( M.run() ? -( long long )M.matchingWeight() : -1LL );
+   } );
+  }
+#endif
+#ifdef ADS_HAS_BLOSSOM5
+ for( const char * who : { "Blossom V" , "Blossom V greedy" } )
+  C( who , [ & ]( Counts & ) {  // its fractional start, or the greedy one
+   PerfectMatching M( n , int( L.size() ) );
+   M.options.verbose = false;
+   M.options.fractional_jumpstart = std::string( who ) == "Blossom V";
+   for( const auto & [ u , v , w ] : L )
+    M.AddEdge( u , v , PerfectMatching::REAL( w ) );
+   M.Solve();
+   long long s = 0;
+   for( std::size_t e = 0 ; e < L.size() ; ++e )
+    if( M.GetSolution( int( e ) ) )
+     s += std::get< 2 >( L[ e ] );
+   return( s );
+   } );
+#endif
+#ifdef ADS_HAS_BOOST
+ // up to 2000 nodes, on which it takes some seconds, the weights a large
+ // constant minus the costs, so that a matching of largest weight has the
+ // largest size, the parallel edges but the lightest left out
+ if( ( n <= 2000 ) && measured( { "Boost adjacency_list" } ) ) {
+  using BG = boost::adjacency_list<
+    boost::vecS , boost::vecS , boost::undirectedS , boost::no_property ,
+    boost::property< boost::edge_weight_t , long long > >;
+  const long long big = ( long long )n * MAXW + 1;
+  std::map< std::pair< int , int > , long long > P;  // the lightest of
+  for( const auto & [ u , v , w ] : L ) {            // the parallel edges
+   const std::pair< int , int > k( std::min( u , v ) , std::max( u , v ) );
+   const auto it = P.find( k );
+   if( ( it == P.end() ) || ( w < it->second ) )
+    P[ k ] = w;
+   }
+  BG G( static_cast< std::size_t >( n ) );
+  for( const auto & [ k , w ] : P )
+   boost::add_edge( std::size_t( k.first ) , std::size_t( k.second ) ,
+		    big - w ,
+		    G );
+  C( "Boost adjacency_list" , [ & ]( Counts & ) {
+   std::vector< boost::graph_traits< BG >::vertex_descriptor > mate(
+     static_cast< std::size_t >( n ) );
+   boost::maximum_weighted_matching( G , mate.data() );
+   long long s = 0 , e = 0;
+   for( const auto & [ k , w ] : P )
+    if( mate[ std::size_t( k.first ) ] == std::size_t( k.second ) ) {
+     s += w;
+     ++e;
+     }
+   return( 2 * e == n ? s : -1LL );
+   } );
+  }
+#endif
+ }
+
 /// n random merges and n finds on the MFSET M
 template< class M >
 long long setsRun( int n , const std::vector< std::pair< int , int > > & U ,
@@ -1433,6 +1556,9 @@ int main( int argc , char ** argv )
     matching( c , n , r , o.seed );
   if( want( "wmatching" ) )
    wmatching( n / 50 , r , o.seed );
+  if( want( "pmatching" ) )
+   for( const char * c : { "gnm4" , "geom6" , "grid" } )
+    pmatching( c , n / 10 , r , o.seed );
   if( want( "union-find" ) )
    unionFind( n , r , o.seed );
   for( const char * b : { "grid-bfs" , "grid-dijkstra" } )

@@ -782,6 +782,26 @@
  the nearest common ancestors of the blossoms, a structure whose constants
  pay off only on large sparse graphs.
 
+ The perfect matching of least cost, with integer costs of any sign, has
+ the duals \f$ y_S \f$ of all the odd sets, the nodes included, free on
+ the nodes and nonnegative elsewhere, and the slacks
+ \f$ \pi( e ) = 2 c( e ) - \sum_{S : e \in \delta( S )} y_S \ge 0 \f$;
+ a perfect matching whose cost is half the sum of these duals is of least
+ cost, since each odd set is left by at least one of its edges.
+ `minCostPerfectMatching()` of `PerfectMatching.h` keeps the form of
+ Blossom V of Kolmogorov: each free node is the root of a tree with its own
+ change \f$ \varepsilon_T \f$ of the duals, the nodes and the edges of
+ the tree storing their duals and slacks relative to it, the slacks that
+ may bound a change in pairing heaps per tree and per pair of trees, and
+ the trees kept across the augmentations, those of the two roots matched
+ alone dissolving. When no tree has a tight edge, the trees joined by a
+ tight edge from an outer node of one to an inner node of another change
+ together, and each of these components takes in turn the largest change
+ that the current slacks allow; an unbounded change leaves, by the theorem
+ of Tutte, more odd components than the inner nodes removed, and the graph
+ has no perfect matching. Within a component the slack between two outer
+ nodes is even, as above, and the duals stay integers.
+
  \section theory_graph_euler Eulerian trails and other properties
 
  A trail is a path that uses each edge exactly once, and an Eulerian cycle
