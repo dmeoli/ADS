@@ -87,7 +87,8 @@ The memory is that of C++, which the headers use through `std::atomic`
 neither of them atomic and neither ordered before the other. A program with
 a data race has no defined meaning, and a word that two threads may access
 at once is therefore always an atomic. Each atomic access carries an
-*order*. A *relaxed* access is atomic and nothing more. A store with
+*order*. A *relaxed* access is atomic, and it orders no other access. A store
+with
 *release* and a load with *acquire* that reads its value *synchronize*: the
 writes that the storing thread made before the store *happen before* the
 reads that the loading thread makes after the load. This is how an item
@@ -463,10 +464,11 @@ count of the block the messages it has taken from it, by one fetch-and-add
 per run of messages of the block, and the one that brings the count to 64
 gives the block back to its owner, by a compare-and-swap on a stack that the
 owner empties by an exchange when it needs a block; a producer in a steady
-state thus allocates nothing. Hence `take()` costs one exchange however
+state thus makes no allocation. Hence `take()` costs one exchange however
 many messages there are, a fetch-and-add per run and a loop of
 compare-and-swap per block given back, and $O( k )$ time for the $k$
-messages taken ([Lemma 24.3](24-concurrent.md#lem-24-3)). Also, a push wakes
+messages taken (cf. [Lemma 24.3](24-concurrent.md#lem-24-3)). Also, a push
+wakes
 a sleeping consumer only when it finds the stack empty, since the pushes
 onto a stack that is not empty are taken with the one that found it empty.
 This inbox suits the messages that usually come in bursts.
@@ -1069,7 +1071,7 @@ parts of a doubling only while it waits for a lock and holds none. A part
 takes no lock of a region, but only, for a pair that finds no place in the
 new table (rarely), the spin lock of the list of such pairs, which is the
 innermost one: a thread takes it holding no other lock, appends one pair
-and releases it, and waits for nothing while it holds it, so that no cycle
+and releases it, and does not wait while it holds it, so that no cycle
 of waits goes through it. Hence the thread that doubles, which waits for
 the parts claimed, waits for no thread that waits for a lock of a region.
 $\square$
@@ -1158,7 +1160,7 @@ $[ 2 l , 2 h )$, which hold whole regions and receive no other pair. The
 old table is thus cut in parts of whole regions, of at least 4096 buckets,
 and the threads that wait for a lock claim parts, by a compare-and-swap of
 a counter that carries the number of the doubling (so that a thread late on
-a doubling claims nothing of the next), and migrate them with the thread
+a doubling claims no part of the next), and migrate them with the thread
 that doubles: each makes its part of the new table empty, places its pairs
 there and counts the pairs of its new regions (the cooperative migration of
 [Maier, Sanders and Dementiev 2019](Z-bibliography.md#ref-maier2019), here
@@ -1180,7 +1182,7 @@ would leave a table of at least 256 places less than 1/16 full is not
 made, since the key that finds no place then shares both buckets with 8
 others at every size (e.g., by equal hashes). The key goes instead to a
 *stash* ([Kirsch et al. 2009](Z-bibliography.md#ref-kirsch2009)), a
-vector of pairs under a mutex of its own, after the bit of overflow of its
+vector of pairs under a separate mutex, after the bit of overflow of its
 first bucket for its tag is set (see below), as for the stash of
 `BucketCuckooTable` in [§7.7](07-dictionary.md#sec-7-7). A pair enters the
 stash only under all the locks, and leaves it or changes there under the
@@ -1195,7 +1197,7 @@ those of the empty table and $n$ the most pairs that its buckets have
 held, since it doubles only when it is fuller than $1 / 16$ or smaller
 than 256 places.
 
-Each bucket has 4 bits of *overflow*, in a vector of their own of $B / 2$
+Each bucket has 4 bits of *overflow*, in a separate vector of $B / 2$
 bytes, i.e., $1 / 8$ of the tags. The bit $j$ of the bucket $b$ is set
 when a key with $b$ as its first bucket, and with $j$ in the top 2 bits of
 its tag, goes into its other bucket, by an insertion or by a move along a
@@ -1206,7 +1208,7 @@ key in its other bucket has its bit set in its first one, and a lookup
 reads the second bucket only when that bit is set: an absent key costs the
 tags of one bucket and a bit from a vector that the cache keeps. The bits
 set by keys removed since stay, and make the lookups read the second
-bucket for nothing until the next doubling.
+bucket in vain until the next doubling.
 
 A lookup without locks that reads, with acquire, the tags of the first
 bucket $b_1$ of its key $k$ in the table $T$ (the read $R_1$), finds no
@@ -1395,9 +1397,9 @@ class ConcurrentFlatTable
 besides `findOrInsertKey( k , h )` of a `packed` set and `entry( k , h )`,
 the node of a key of a table that is neither `packed` nor `inlined`. The
 lookup `findKey( k )` returns a copy of the key that the table holds equal
-to $k$ by `Eq`, or nothing, and inserts nothing; in a set of pointers to
+to $k$ by `Eq`, or no key, and it inserts none; in a set of pointers to
 nodes compared by the states they hold, a thread thus reads the pointer
-stored for a state equal to that of its own node, while the owner inserts,
+stored for a state equal to that of its node, while the owner inserts,
 with no second copy of the pointer in the value. It is the lookup of
 `find()`, with its progress and its point of linearization, and it reads
 the key of a node as `find()` reads its value.
@@ -1674,7 +1676,7 @@ class MultiQueue
 where $s$ is the stickiness and `tryPop()` answers nothing only when the
 queues it looked at were empty; the constant `decrease_key` of the class
 declares, in the vocabulary of [§1.14](01-introduction.md#sec-1-14), that
-a key is lowered lazily, by a new pair. Each thread takes its own handle:
+a key is lowered lazily, by a new pair. Each thread takes a handle:
 
 ```cpp
 ADS::MultiQueue< int , int > M( 8 );  // n = 8 queues
@@ -1813,12 +1815,12 @@ The lemma asks of $H$ only an exact queue, and `MultiQueue` takes it as its
 template parameter `H`, given the type of the pairs and their order, by
 default `MultiQueueHeap`, the 8-ary heap: with the keys of `packFG()`, the
 pairs $( f , g )$ of a best-first search with integer costs, $H$ can be the
-bucket queue of `BucketHeap` ([§9.9](09-priority.md#sec-9-9)), whose pushes
+bucket queue of `BucketHeap` (cf. [§9.9](09-priority.md#sec-9-9)), whose pushes
 and pops take $O( 1 )$ amortized time with bounded keys, so that the cost of
 an operation no longer grows with $m$ (test
 `engineered_queues.multi-queue-buckets`). The Multi Bucket Queue of [Zhang,
 Posluns and Jeffrey 2024](Z-bibliography.md#ref-zhang2024) shares the
-buckets among the threads, each bucket a MultiQueue of its own; here each
+buckets among the threads, each bucket a separate MultiQueue; here each
 queue keeps its buckets under its lock, and the choice of the queue is the
 one of [Theorem 24.1](24-concurrent.md#thm-24-1).
 We know of no theory of the stickiness yet: the measures of [Williams et al.
@@ -2016,7 +2018,7 @@ after $2^j - 1 = 2 T + 1 < 2 t + 1$ pauses; the looks are $j + 1 \le
 \log_2 ( t + 1 ) + 2$, i.e., $O( \log t )$. $\square$
 
 The looks of $p$ threads at one line thus thin out geometrically, while the
-delay added to a wait is less than the wait itself (plus one pause), and a
+delay added to a wait is less than the wait (plus one pause), and a
 wait longer than $2^{S + 1}$ pauses gives the processor back to the system.
 The test `engineered_search.backoff-threads` checks the steps and four
 threads that wait with it for a flag.
@@ -2072,7 +2074,7 @@ takes the better of the two least pairs. A thief takes the heap whose least
 pair is not the least of the queue, and the owner thus keeps its best pair
 and its next pop ([Figure 24.12](24-concurrent.md#fig-24-12)).
 
-![Figure 24.12. A `StealablePriorityQueue` whose owner pushed the keys 1 to 8, dealt to its two heaps (in the order of a 4-ary heap); `serve()` moves into the offer the heap whose least key 2 is not the least of the queue, and a thief claims it by an exchange and deals its pairs to two heaps of its own.](../figures/concurrent-spq.svg){#fig-24-12}
+![Figure 24.12. A `StealablePriorityQueue` whose owner pushed the keys 1 to 8, dealt to its two heaps (in the order of a 4-ary heap); `serve()` moves into the offer the heap whose least key 2 is not the least of the queue, and a thief claims it by an exchange and deals its pairs to two heaps of the thief.](../figures/concurrent-spq.svg){#fig-24-12}
 
 As to the price, a queue whose pairs a thief may take at any time makes its
 owner race the thieves at each pop. By the laws of order of [Attiya et al.
@@ -2177,7 +2179,8 @@ of Floyd, which costs time linear in its size. Answering a thief is the
 store of a pointer to a heap with release, and the heap moves with its
 pointer, with no copy of a pair. A thief raises the flag by a relaxed
 store, claims the offer by one exchange and, if it got it, moves the heap
-into its own, with no copy, and deals its $s$ pairs to its two heaps, again
+into a heap of the thief, with no copy, and deals its $s$ pairs to its two
+heaps, again
 by Floyd's construction. $\square$
 
 `StealingFrontier` holds the queues of $p$ workers, one per call $f( i )$ of
@@ -2434,7 +2437,7 @@ which unlinks only from the head (the fetch-and-and leaves the node that the
 word reaches, and its mark, as they are). As to (i), a FAO marks $x.\mathit{next}[ 0
 ]$ where $x$ is the head or a node reached by a marked word, and hence
 extends the prefix, while the CAS of an insertion succeeds only on an
-unmarked word, and writes an unmarked word to the new node, whose own word,
+unmarked word, and writes an unmarked word to the new node, whose word,
 $\langle S_0 , 0 \rangle$, is unmarked as well. Property (ii) holds since
 the first FAO marks the word of the head, the cut writes it with its mark
 set, and the fetch-and-and clears only the bit of the cut. As to (iii), the walk of $\mathrm{locate}( \kappa )$ stops at level 0
@@ -2702,7 +2705,7 @@ where `size()`, `empty()`, `prefix()` and `consistent()` of the queue are
 called with no operation running, while `empty()` of a handle is
 linearizable, as `tryMinKey()`; as in the MultiQueue, the constant
 `decrease_key` declares that a key is lowered by a new pair. Each thread
-takes its own handle, which holds its record of the epochs:
+takes a handle, which holds its record of the epochs:
 
 ```cpp
 ADS::LockFreePriorityQueue< int , int > Q;  // b = 32
@@ -2860,12 +2863,14 @@ $\square$
 The insertions of one writer thus cost the loads of their probe and one or
 two stores, against the two sequentially consistent read-modify-writes on
 the counter of a thread of `ConcurrentFlatTable`, which several writers
-need ([Lemma 24.16](24-concurrent.md#lem-24-16)). The price is that the table has one writer:
+need (cf. [Lemma 24.16](24-concurrent.md#lem-24-16)). The price is that the
+table has one writer:
 the threads of a search keep one table each, and a thread that looks for
 a state reads the table of the worker that may hold it.
 
 **A board of least keys.** `MinBoard< K >` keeps $p$ keys, one per thread,
-each in an atomic word on a line of cache of its own. `publish( i , k )`,
+each in an atomic word on a line of cache that no other slot shares. `publish(
+i , k )`,
 called by the owner of the slot $i$ only, reads the slot and stores $k$
 only if it differs, both relaxed; a worker whose key stays thus leaves
 its line shared in the caches of the readers. `min()` reads the $p$
@@ -2921,9 +2926,10 @@ holds at the end of the call; the minimum over the slots keeps both
 bounds, and two calls by one thread read each slot in the order of its
 publishes. $\square$
 
-The board orders nothing else: a thread that reads $k$ in a slot learns
-nothing of the writes that the owner made before publishing $k$, which
-need their own synchronization, and it uses the board as a bound only,
+The board orders no other access: a thread that reads $k$ in a slot is not
+thereby ordered after the writes that the owner made before publishing $k$,
+which need a separate synchronization, and it uses the board as a bound
+only,
 e.g., the least $f$ of the workers below which a search may prune. A
 publish costs a load of a line that the owner holds, and a store only
 when the key changes; `min()` costs $p$ loads of lines that only their
