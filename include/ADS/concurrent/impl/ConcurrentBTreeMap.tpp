@@ -561,7 +561,6 @@ void ConcurrentBTreeMap< K , V , Less , B , R >::Handle::rebalance( Inner * n ,
 								Node * a ,
 								Node * b )
 {
- ConcurrentBTreeMap & m = *f_m;
  const int cn = count( n ) , ca = count( a ) , cb = count( b );
  const bool leaf = a->leaf;
  const int cap = leaf ? kLeaf : kInner;
