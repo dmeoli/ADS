@@ -100,6 +100,8 @@ order 0 and of order $k$.
 
 --8<-- "generated/Entropy-entropy.pseudo.md"
 
+--8<-- "generated/Entropy-entropy-2.pseudo.md"
+
 --8<-- "generated/Entropy-entropy-3.pseudo.md"
 
 We remark that (21.2) divides by $n$ while only the $n - k$ symbols with a
@@ -478,6 +480,8 @@ static model of counts, and with the adaptive model of chapter 12 of
 
 --8<-- "generated/ArithmeticCoding-arithmeticEncode.pseudo.md"
 
+--8<-- "generated/ArithmeticCoding-arithmeticDecode.pseudo.md"
+
 --8<-- "generated/ArithmeticCoding-adaptiveArithmeticEncode.pseudo.md"
 
 --8<-- "generated/ArithmeticCoding-adaptiveArithmeticDecode.pseudo.md"
@@ -680,9 +684,9 @@ reading in the code whether each context escapes
 [Table 21.5](21-compression.md#tab-21-5) follows the walk on a symbol.
 
 <span id="alg-21-11"></span>**Algorithm 21.11.** The steps that code a
-symbol $c$ in PPM with exclusion, version C, and the update of the
-counts; $h$ is the history of the last $K$ symbols and $X$ the set of the
-symbols excluded.
+symbol $c$ in PPM with exclusion, version C, the update of the counts, and
+the coder and the decoder of a text; $h$ is the history of the last $K$
+symbols and $X$ the set of the symbols excluded.
 
 --8<-- "generated/PPM-PPMModel-steps.pseudo.md"
 
@@ -745,6 +749,8 @@ ensure at the level of the postconditions; `binaryLength( x )` is
 $\lvert B( x ) \rvert$, `naturalToSigned()` inverts `signedToNatural()`,
 and `prefixSums()` inverts `dGaps()`.
 We list the codes, with their lengths and their codewords for $x = 9$, in
+--8<-- "generated/PPM-ppmDecode.pseudo.md"
+
 [Table 21.6](21-compression.md#tab-21-6); of course, the "optimal"
 distributions of its fourth column are those of
 [Lemma 21.1](21-compression.md#lem-21-1).
@@ -1104,7 +1110,9 @@ A search of the window takes $O( w ( \ell + 1 ) )$ time for a phrase of
 length $\ell$, hence $O( n w )$ in the worst case
 ([Lemma 21.8](21-compression.md#lem-21-8) below). LZSS
 ([Storer and Szymanski 1982](Z-bibliography.md#ref-storer1982),
-`lzssParse()`, decoded by `lzssDecode()`) emits either a copy $\langle d , \ell \rangle$ or a literal
+`lzssParse()`, decoded by `lzssDecode()`,
+[Algorithm 21.20](21-compression.md#alg-21-20)) emits either a copy
+$\langle d , \ell \rangle$ or a literal
 $\langle 0 , c \rangle$, a copy only if $\ell$ reaches a minimum (1 in
 chapter 13 of Ferragina, 3 in gzip). We find the copies as gzip does in `lzssParseHashed()`, which is perhaps the most used form of the search: the places are chained by the hash of the 3 symbols
 that start there, from the most recent, and the search follows the chain of
@@ -1113,7 +1121,8 @@ with no bound on the chain, the function gives the parse of `lzssParse()`
 with minimum 3 ([Algorithm 21.20](21-compression.md#alg-21-20)). We keep the encoding of the fields of the phrases apart, and the codes of this chapter apply to them (gzip, e.g., uses a code of Huffman for the literals
 and the lengths and one for the distances).
 
-<span id="alg-21-20"></span>**Algorithm 21.20.** LZSS by the chains of the
+<span id="alg-21-20"></span>**Algorithm 21.20.** LZSS by the search of the
+longest copy in the window, its decoder, and LZSS by the chains of the
 hashes of gzip.
 
 --8<-- "generated/LempelZiv-lzssParseHashed.pseudo.md"
@@ -1198,6 +1207,10 @@ exploit.
 suffix $i$ in $\mathit{SA}$, and let*
 
 $$
+--8<-- "generated/LempelZiv-lzssParse.pseudo.md"
+
+--8<-- "generated/LempelZiv-lzssDecode.pseudo.md"
+
 \mathit{PSV}( i ) = \mathit{SA}[ \max \{ j < r : \mathit{SA}[ j ] < i \} ]
 , \qquad
 \mathit{NSV}( i ) = \mathit{SA}[ \min \{ j > r : \mathit{SA}[ j ] < i \} ]
@@ -1377,13 +1390,15 @@ to at most $n$, and by the concavity of the logarithm their logarithms sum
 to at most $m \log_2( n / m ) \le n_c \log_2( n / n_c ) + \log_2 e$. The
 sum over $c$ is $n H_0 + O( \sigma )$. $\square$
 
-Each of the three codes of Algorithm 21.24 has its inverse,
+Each of the three codes of
+[Algorithm 21.24](21-compression.md#alg-21-24) has its inverse,
 `inverseMoveToFront()` (on a string or on the bytes), `runLengthDecode()`
 and `zeroRunDecode()`, which the audits of the encoders apply to their
-output.
+output; the forms of `moveToFront()` and `inverseMoveToFront()` without an
+alphabet take the bytes $0 , \ldots , 255$ in their order.
 
 <span id="alg-21-24"></span>**Algorithm 21.24.** The move-to-front and the
-run-length codes, as bzip2 chains them.
+run-length codes, as bzip2 chains them, with their inverses.
 
 --8<-- "generated/BurrowsWheeler-moveToFront.pseudo.md"
 
@@ -1449,9 +1464,9 @@ bra and $[ 2 , 4 )$ of abra. The last step, from bra, is
 $C[ a ] + \mathrm{rank}_a( L , 6 ) = 1 + 1 = 2$ and $C[ a ] +
 \mathrm{rank}_a( L , 8 ) = 1 + 3 = 4$.
 
-<span id="alg-21-26"></span>**Algorithm 21.26.** The rank in $L$, the
-backward search, the location of the occurrences and the extraction of a
-substring in the FM-index
+<span id="alg-21-26"></span>**Algorithm 21.26.** The construction, the rank
+in $L$, the backward search, the location of the occurrences and the
+extraction of a substring in the FM-index
 ([Ferragina and Manzini 2005](Z-bibliography.md#ref-ferragina2005a)).
 
 --8<-- "generated/FMIndex-rank.pseudo.md"
@@ -1469,10 +1484,16 @@ To locate the occurrences, the rows of the suffixes that start at a
 multiple of $\mu$ are marked, with their places. From any row, the
 LF-mapping, which moves one place to the left in $s$, reaches a marked row
 in $t < \mu$ steps, and the place is that of the marked row plus $t$. Since the marks are a vector of bits with the rank of `RankSelect` ([§22.3](22-succinct.md#sec-22-3)), a row is tested and its sample
+--8<-- "generated/BurrowsWheeler-inverseMoveToFront.pseudo.md"
+
 found in $O( 1 )$ time; the samples take $O( ( n / \mu ) \log n )$ bits.
 The function `extract( i , j )` gives $s[ i .. j - 1 ]$ from the row of the first
+--8<-- "generated/BurrowsWheeler-runLengthDecode.pseudo.md"
+
 sampled suffix at or after $j$, by $j - i + O( \mu )$ steps of the
 LF-mapping, each of which reads the symbol before the current suffix.
+--8<-- "generated/BurrowsWheeler-zeroRunDecode.pseudo.md"
+
 
 <span id="lem-21-14"></span>**Lemma 21.14.** *From any row, at most $\mu
 - 1$ steps of the LF-mapping reach a marked row, and the suffix of the
@@ -1517,8 +1538,9 @@ the template parameter `RS` chooses the rank and select of the tree,
 `RankSelect` for time or `CompactRankSelect` for space
 ([Algorithm 21.27](21-compression.md#alg-21-27)).
 
-<span id="alg-21-27"></span>**Algorithm 21.27.** The backward search and
-the location in the FM-index on the wavelet tree of Huffman
+<span id="alg-21-27"></span>**Algorithm 21.27.** The construction, the
+backward search, the location and the extraction in the FM-index on the
+wavelet tree of Huffman
 ([Mäkinen and Navarro 2005](Z-bibliography.md#ref-makinen2005)).
 
 --8<-- "generated/HuffmanFMIndex-range.pseudo.md"
@@ -1536,6 +1558,8 @@ $h_j$) in a wavelet tree of Huffman. A further Elias-Fano sequence holds
 the starts of the runs in the column $F$, those of each symbol $c$ after
 those of the symbols before it, in one sequence of $r$ items rather than
 one for each symbol. Then the rank of $c$ in $L[ 0 .. i - 1 ]$ is
+--8<-- "generated/FMIndex-FMIndex.pseudo.md"
+
 
 $$
 \mathrm{rank}_c( L , i ) = S_c[ k ] + [ h_j = c ] \, ( i - p_j ) ,
@@ -1603,10 +1627,14 @@ $$
 *and $\phi( \mathit{SA}[ p_j ] ) = \mathit{SA}[ p_j - 1 ]$ is the sample at
 the end of the run $j - 1$.*
 
+--8<-- "generated/HuffmanFMIndex-HuffmanFMIndex.pseudo.md"
+
 *Proof.* If the row $i$ of $x = \mathit{SA}[ i ]$ starts no run, then
 $L[ i - 1 ] = L[ i ]$, and [Lemma 21.10](21-compression.md#lem-21-10) maps
 the rows $i - 1$ and $i$ to adjacent rows, those of the suffixes
 $\phi( x ) - 1$ and $x - 1$. Hence $\phi( x - 1 ) = \phi( x ) - 1$, i.e.,
+--8<-- "generated/HuffmanFMIndex-extract.pseudo.md"
+
 $\phi$ shifts $x - 1$ and $x$ alike. Now, the places $x$ whose row starts
 a run are the $\mathit{SA}[ p_j ]$, and (21.23) follows by induction on $x - y$.
 $\square$

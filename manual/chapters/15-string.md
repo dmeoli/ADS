@@ -2931,6 +2931,8 @@ answer in linear time with a much larger constant.
 
 --8<-- "generated/Palindromes-longestPalindrome.pseudo.md"
 
+--8<-- "generated/Palindromes-longestPalindromicSubstring.pseudo.md"
+
 For the longest palindromic subsequence (`longestPalindromicSubsequence()`) we
 have $\mathit{DP}[ i ][ j ]$, its length for $s[ i .. j ]$, equal to 1 if
 $i = j$, to $\mathit{DP}[ i + 1 ][ j - 1 ] + 2$ if $s_i = s_j$, and to the

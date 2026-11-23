@@ -1033,12 +1033,15 @@ binary tree over the $n / 8192$ groups, i.e., $O( \log( n / 8192 ) + 16 +
 cost of one miss of the cache.
 
 <span id="alg-22-15"></span>**Algorithm 22.15.** The range min-max tree, and
-the forward search of `findClose()`
+the forward search of `findClose()` with its general form
+`forwardSearch()`
 ([Navarro and Sadakane 2014](Z-bibliography.md#ref-navarro2014a)).
 
 --8<-- "generated/BalancedParentheses-build.pseudo.md"
 
 --8<-- "generated/BalancedParentheses-findClose.pseudo.md"
+
+--8<-- "generated/BalancedParentheses-forwardSearch.pseudo.md"
 
 --8<-- "generated/BalancedParentheses-findOpen.pseudo.md"
 
