@@ -27,6 +27,7 @@
 #include "ADSTest.h"
 
 #include "ADS/Modification.h"
+#include "ADS/graph/ArrayGraph.h"
 #include "ADS/graph/ListGraph.h"
 #include "ADS/graph/Observable.h"
 #include "ADS/graph/ShortestPaths.h"
@@ -45,6 +46,7 @@
 #include <set>
 #include <tuple>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #if defined( ADS_WITH_EIGEN )
@@ -264,7 +266,7 @@ ADS_TEST( "eigen-copies" )
 /*--------------------------------------------------------------------------*/
 
 // the arrays that CsrInput reads in place and those it copies, for the
-// layouts of StaticGraph
+// layouts of StaticGraph and for ArrayGraph
 ADS_TEST( "csr-input" )
 {
  const auto E = gridEdges( 6 , 1 );
@@ -292,6 +294,24 @@ ADS_TEST( "csr-input" )
 	 ( I3.heads()[ k ] == g1.heads()[ k ] ) );
  const CsrInput< int > I4( g1 , false );
  CHECK( I4.weights() == nullptr );
+ // an ArrayGraph, unweighted and weighted, in place, and copied to 64 bits
+ std::vector< std::tuple< int , int , std::monostate > > M;
+ for( const auto & [ u , v , w ] : E )
+  M.emplace_back( u , v , std::monostate() );
+ const ArrayGraph<> a0( 36 , M , false );
+ const CsrInput< int > J0( a0 );
+ CHECK( ( J0.offsets() == a0.offsets() ) && ( J0.heads() == a0.heads() ) &&
+	( J0.weights() == nullptr ) && ! J0.copied().heads &&
+	( a0.arcs() == g0.arcs() ) );
+ const ArrayGraph< int > a1( 36 , E , false );
+ const CsrInput< int > J1( a1 );
+ CHECK( ( J1.heads() == a1.heads() ) && ( J1.weights() == a1.weightData() ) &&
+	! J1.copied().weights );
+ const CsrInput< std::int64_t > J3( a1 );
+ CHECK( J3.copied().offsets && J3.copied().heads && J3.copied().weights );
+ for( int k = 0 ; k < a1.arcs() ; ++k )
+  CHECK( ( J3.heads()[ k ] == a1.heads()[ k ] ) &&
+	 ( J3.weights()[ k ] == a1.weightData()[ k ] ) );
  }
 
 // METIS on the rows of StaticGraph: in place for the separate layout,
@@ -457,7 +477,8 @@ std::vector< double > productOf( GrB_Matrix A ,
 
 // the views of the unweighted and of the weighted StaticGraph, iso-valued
 // and of the weights, and the copy of the interleaved one: the triangles
-// counted by GraphBLAS against those counted on the rows
+// counted by GraphBLAS against those counted on the rows; the view of an
+// ArrayGraph, in place if its rows increase and copied if not
 ADS_TEST( "graphblas-graphs" )
 {
 #if defined( ADS_WITH_GRAPHBLAS )
@@ -503,6 +524,19 @@ ADS_TEST( "graphblas-graphs" )
  CHECK( X == Y );
  CHECK( ( graphblas::toCsr< int , int >( graphblas::copy( g ) ) ==
 	  graphblas::toCsr< int , int >( A ) ) );
+ // an ArrayGraph of the arcs of gw row by row, viewed in place, and one of
+ // the same arcs backwards, whose rows decrease, copied
+ std::vector< std::tuple< int , int , int > > F;
+ for( int u = 0 ; u < n ; ++u )
+  for( const auto a : gw.out( u ) )
+   F.emplace_back( u , a.to , a.w );
+ const ArrayGraph< int > ga( n , F );
+ const graphblas::Matrix D = graphblas::view( ga );
+ CHECK( readOnly( D ) && ( graphblas::toCsr< int , int >( D ) == X ) );
+ std::reverse( F.begin() , F.end() );
+ const ArrayGraph< int > gb( n , F );
+ const graphblas::Matrix G = graphblas::view( gb );
+ CHECK( ! readOnly( G ) && ( graphblas::toCsr< int , int >( G ) == X ) );
  // the graph is untouched by GraphBLAS, and outlives the views
  CHECK( g.arcs() == 2 * g.m() );
 #else

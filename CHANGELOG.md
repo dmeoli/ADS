@@ -267,6 +267,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `ArrayGraph` has `weighted`, `arcs()`, `arcHeads()` and `arcWeights()`,
+  with the meaning of those of `StaticGraph`, so that `CsrInput` of
+  `Csr.h` and `view()` of `GraphBLAS.h` take it, as their documentation
+  says, where they did not compile on it; `view()` of a graph whose rows
+  are not known to be sorted copies it by `copy()`, which now takes any
+  graph of compressed rows, if the heads of a row do not increase, since
+  GraphBLAS reads them in increasing order
 - `DynamicCsr::clear()` sets the first start of its rows to 0 by an
   assignment, where a resize to 1 left it unset on a vector emptied by a
   move (the allocator of the vector does not initialize the numbers) and

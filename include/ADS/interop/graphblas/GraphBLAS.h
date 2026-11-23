@@ -12,7 +12,9 @@
  *   is an \f$ n \times n \f$ `GrB_Matrix` by rows whose offsets and
  *   columns are `offsets()` and `heads()`, and whose values are
  *   `weightData()`, or one value `true` of a matrix iso-valued (all its
- *   entries equal) if the graph is unweighted;
+ *   entries equal) if the graph is unweighted; the rows of an `ArrayGraph`,
+ *   whose heads are in the order of its edges, are checked first, and the
+ *   graph is copied by `copy( g )` if the heads of a row do not increase;
  * - `view( A )` of a `BasicCsrMatrix< T , I , P >` is the
  *   \f$ m \times n \f$ `GrB_Matrix` by rows of its three arrays.
  *
@@ -274,14 +276,57 @@ template< class P , class I , class T >
  return( M );
  }
 
+/// true if the heads of each row of a `G` increase, as in a `StaticGraph`
+template< class G >
+inline constexpr bool kSortedRows = false;
+
+template< class W , ArcLayout L >
+inline constexpr bool kSortedRows< StaticGraph< W , L > > = true;
+
+/// whether the heads of each row of \f$ g \f$ increase, in
+/// \f$ O( n + a ) \f$ time
+template< class G >
+[[nodiscard]] bool increasingRows( const G & g )
+{
+ const int * o = g.offsets();
+ const int * h = g.heads();
+ for( int u = 0 ; u < g.n() ; ++u )
+  for( int k = o[ u ] + 1 ; k < o[ u + 1 ] ; ++k )
+   if( h[ k - 1 ] >= h[ k ] )
+    return( false );
+ return( true );
+ }
+
+/// the graphs whose arcs `copy()` reads: the offsets of the rows, the heads
+/// and the weights of all the arcs in their places
+template< class G >
+concept ArcRows = requires( const G & g )
+{
+ g.offsets();
+ g.arcHeads();
+ g.arcs();
+ G::weighted;
+ };
+
 }  // end( namespace detail )
+
+template< class G >
+ requires( detail::ArcRows< G > )
+[[nodiscard]] Matrix copy( const G & g );
 
 /// the \f$ n \times n \f$ matrix of the arcs of \f$ g \f$ by rows, its
 /// offsets, heads and weights read in place, iso-valued `true` if \f$ g \f$
-/// is unweighted
+/// is unweighted; a graph whose rows are not known to be sorted (an
+/// `ArrayGraph`, in the order of its edges) is checked in
+/// \f$ O( n + a ) \f$ time, and copied by `copy()` if the heads of some
+/// row do not increase, since GraphBLAS reads the columns of a row of a
+/// matrix that is not jumbled in increasing order
 template< CsrArrays G >
 [[nodiscard]] Matrix view( const G & g )
 {
+ if constexpr( ! detail::kSortedRows< G > )
+  if( ! detail::increasingRows( g ) )
+   return( copy( g ) );
  const std::size_t n = std::size_t( g.n() ) , a = std::size_t( g.arcs() );
  if constexpr( G::weighted )
   return( detail::csrView( n , n , a , g.offsets() , g.heads() ,
@@ -423,11 +468,12 @@ template< class T >
 /// `GrB_Matrix_build()` (for the layouts that `view()` does not take), of
 /// the weights of \f$ g \f$, or `true` if it is unweighted
 /// \pre no two arcs of \f$ g \f$ have the same ends
-template< class W , ArcLayout L >
-[[nodiscard]] Matrix copy( const StaticGraph< W , L > & g )
+template< class G >
+ requires( detail::ArcRows< G > )
+[[nodiscard]] Matrix copy( const G & g )
 {
- constexpr bool weighted = StaticGraph< W , L >::weighted;
- using T = std::conditional_t< weighted , W , bool >;
+ constexpr bool weighted = G::weighted;
+ using T = std::conditional_t< weighted , typename G::Weight , bool >;
  const std::size_t n = std::size_t( g.n() ) , a = std::size_t( g.arcs() );
  std::vector< GrB_Index > R( a ) , C( a );
  // not a std::vector, which has no data() for bool

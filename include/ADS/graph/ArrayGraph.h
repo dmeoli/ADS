@@ -41,6 +41,7 @@
 #include <ranges>
 #include <span>
 #include <tuple>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -63,6 +64,9 @@ class ArrayGraph
 /*--------------------------------------------------------------------------*/
  public:
  using Weight = W;  ///< the type of the weights
+
+ /// whether the arcs have a weight, as in `StaticGraph`
+ static constexpr bool weighted = ! std::is_same_v< W , std::monostate >;
 
  /// the graph of the nodes \f$ 0 , \ldots , n - 1 \f$ and of the given edges;
  /// an unoriented edge \f$ [ u , v ] \f$ is given once
@@ -104,6 +108,10 @@ class ArrayGraph
 
  /// the number of edges, an unoriented one counted once
  [[nodiscard]] int m( void ) const { return( f_m ); }
+
+ /// the number of arcs, 2 `m()` if the graph is unoriented, as in
+ /// `StaticGraph`
+ [[nodiscard]] int arcs( void ) const { return( int( f_to.size() ) ); }
 
  /// the names of the nodes, \f$ [ 0 , \mathrm{bound}() ) = [ 0 , n ) \f$
  [[nodiscard]] int bound( void ) const { return( n() ); }
@@ -157,6 +165,17 @@ class ArrayGraph
 
  /// the weights, in the places of `heads()`
  [[nodiscard]] const W * weightData( void ) const { return( f_w.data() ); }
+
+ /// the heads of all the arcs read in place, `heads()`, as in `StaticGraph`
+ [[nodiscard]] const int * arcHeads( void ) const { return( heads() ); }
+
+ /// the weights of all the arcs read in place, `weightData()`, as in
+ /// `StaticGraph`
+ [[nodiscard]] const W * arcWeights( void ) const
+  requires( weighted )
+ {
+  return( weightData() );
+  }
 
 /*--------------------------------------------------------------------------*/
  private:
