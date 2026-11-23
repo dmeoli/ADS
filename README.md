@@ -1380,7 +1380,7 @@ finds ADS by `find_package(ADS REQUIRED COMPONENTS Boost)` (`GMP` and `BLAS`
 are components in the same way). With the standard library only,
 [`interop/std/FlatMap.h`](include/ADS/interop/std/FlatMap.h) gives
 `std::flat_set` and `std::flat_map` of C++23 on `TieredVector`
-(`TieredFlatMap`, insertions in $O( \sqrt{n} )$), and
+(`TieredFlatMap`, whose insertions take $O( \sqrt{n} )$ time), and
 [`interop/std/Pmr.h`](include/ADS/interop/std/Pmr.h) the pools of ADS as a
 `std::pmr::memory_resource`. The sorts take any random-access range
 (`std::span`, `std::deque`, the sequences of ADS) beside `std::vector`, in

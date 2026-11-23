@@ -153,12 +153,12 @@ checked by rereading the page as rendered, not the source.
   inside the cells of an HTML table; a code span never crosses a line,
   since the input filter of Doxygen ends it with its line. The abstract
   data types of the book in capitals (GRAPH, MFSET) are not code. The
-  symbols of the mathematics are not code either: a node is \f$ u \f$, not
-  `u`, and the function \f$ \mathrm{adj}( u ) \f$ of a formula is
+  symbols of the mathematics are not code either: a node is `\f$ u \f$`, not
+  `u`, and the function `\f$ \mathrm{adj}( u ) \f$` of a formula is
   `\mathrm{adj}` inside the formula.
 - The spacing of the code (`( u , v )`, `f( x )`) is for the code and for
   the inside of the formulae; the parentheses of the prose have no space
-  inside: "(\f$ 2 m \f$ for an unoriented graph)", "(see ...)". Doxygen
+  inside: "(`\f$ 2 m \f$` for an unoriented graph)", "(see ...)". Doxygen
   writes a space before every inline formula, and the build drops it after
   an opening bracket [see `mend_xml()` in `docs/conf.py` and the `sed` of
   `.github/workflows/docs.yml`], so a formula right after "(" or "[" is
@@ -167,20 +167,21 @@ checked by rereading the page as rendered, not the source.
   reference show up to its first colon) follows the same rules: every
   symbol and every formula in `\f$ ... \f$`, every name of the code in
   backquotes, e.g., "the distance in moves of each cell of the
-  \f$ \mathit{rows} \times \mathit{cols} \f$ grid from the nearest
+  `\f$ \mathit{rows} \times \mathit{cols} \f$` grid from the nearest
   source"; `docs/apiref.py` turns them into `:math:` and literals in the
   tables of Sphinx, and Doxygen renders them as everywhere else.
 - The first sentence describes the function, and never opens with its own
   name ("`bfs()`: ..."), which both sites already print in front of it:
-  "the visit in breadth from \f$ r \f$, calling `node( u )` when \f$ u \f$
-  is examined and `edge( u , v )` when \f$ ( u , v ) \f$ is examined". An
+  "the visit in breadth from `\f$ r \f$`, calling `node( u )` when `\f$ u \f$`
+  is examined and `edge( u , v )` when `\f$ ( u , v ) \f$` is examined". An
   overload says what it adds to the other one: "the distances of
-  `distance()` above, with the queue \f$ S \f$ given". The comment of a
+  `distance()` above, with the queue `\f$ S \f$` given". The comment of a
   member, of a function and of a type opens in lowercase, that of a header
   with a capital, and the tables of both sites show it as it is written.
 - The contracts (`\pre`, `\post`, `\invariant`) follow the rules of the
-  prose: "\f$ r \f$ is a node", "\f$ n \ge 0 \f$", "\f$ |B| = |R| - 1 \f$,
-  each edge of \f$ B \f$ from a node already in \f$ R \f$ (audit)"; an
+  prose: "`\f$ r \f$` is a node", "`\f$ n \ge 0 \f$`",
+  "`\f$ |B| = |R| - 1 \f$`, each edge of `\f$ B \f$` from a node already in
+  `\f$ R \f$` (audit)"; an
   expression of the code stays code, "not `hasEdge( u , v )`" for
   `! hasEdge( u , v )`. The lines that continue a `\pre` are indented by
   six spaces after `///`, those of a `\post` by seven, under its text.
@@ -265,7 +266,7 @@ The rules:
   letter as they are, of more letters in `\mathit{}` (`\mathit{visited}`);
 - a subscript or a superscript that is a word, or the abbreviation of
   one, is upright, `v_{\mathrm{in}}`, `d_{\mathrm{max}}`, never `v_{in}`,
-  which TeX reads as the product of \f$ i \f$ and \f$ n \f$; a subscript
+  which TeX reads as the product of `\f$ i \f$` and `\f$ n \f$`; a subscript
   that is a variable stays italic (`x_i`, `d^k`);
 - words in `\text{}` (`\text{an empty queue}`), with a space inside the
   braces on the side of a mathematical symbol (`\text{the nodes of } S`);
