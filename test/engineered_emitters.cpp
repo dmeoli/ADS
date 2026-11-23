@@ -36,6 +36,7 @@
 #include "ADS/priority/DialQueue.h"
 #include "ADS/priority/IndexedDaryHeap.h"
 #include "ADS/priority/RadixHeap.h"
+#include "ADS/priority/WorkingSetHeap.h"
 #include "ADS/queue/MinQueue.h"
 #include "ADS/queue/RealTimeMinQueue.h"
 #include "ADS/queue/SlidingAggregate.h"
@@ -487,6 +488,76 @@ ADS_TEST( "emit-heap-batch" )
   h.pop();
   }
  CHECK( ( rb.r == 1 ) && ( b.inserts == 4 ) );
+ }
+
+ADS_TEST( "emit-working-set-heap" )
+{
+ // nobody listens: no storage for the subject
+ static_assert( ! WorkingSetHeap< int >::Subject::template listened< HIns > );
+ // a static observer of the ids and keys, the heap checked by its audit
+ const int n = 64;
+ HeapKeys k( n );
+ WorkingSetHeap< int , Static< HeapKeys > > h( n , k );
+ heapRun( h , n , 7 , 4000 , [ & ] { CHECK( k.audit( h ) ); } );
+ h.clear();
+ CHECK( k.audit( h ) );
+ // the same operations on the plain heap give the same items
+ WorkingSetHeap< int > p( n );
+ HeapKeys k2( n );
+ WorkingSetHeap< int , Static< HeapKeys > > h2( n , k2 );
+ heapRun( p , n , 11 , 2000 , [] { } );
+ heapRun( h2 , n , 11 , 2000 , [] { } );
+ CHECK( p.size() == h2.size() );
+ while( ! p.empty() ) {
+  const auto a = p.pop();
+  const auto b = h2.pop();
+  CHECK( ( a.id == b.id ) && ( a.key == b.key ) );
+  }
+ // attached at run time; the erasure told before the removal, a batch
+ // coalesced, and a mute that sends Rebuilt only
+ struct Before
+ {
+  const WorkingSetHeap< int , Dynamic<> > * h = nullptr;
+  int seen = 0 , present = 0 , changes = 0 , inserts = 0 , rebuilt = 0;
+  void on( const HEra & e ) noexcept {
+   ++seen;
+   present += h->contains( e.h ) ? 1 : 0;
+   }
+  void on( const HChg & ) { ++changes; }
+  void on( const HIns & ) { ++inserts; }
+  void on( const mod::Rebuilt & ) noexcept { ++rebuilt; }
+  };
+ WorkingSetHeap< int , Dynamic<> > d( n );
+ HeapKeys k3( n );
+ d.attach( k3 );
+ heapRun( d , n , 5 , 3000 , [ & ] { CHECK( k3.audit( d ) ); } );
+ d.reset( n );
+ CHECK( k3.audit( d ) );
+ Before b;
+ b.h = &d;
+ const int id = d.attach( b );
+ d.push( 1 , 10 );
+ d.push( 2 , 20 );
+ d.push( 3 , 30 );
+ d.erase( 2 );
+ CHECK( ( b.seen == 1 ) && ( b.present == 1 ) && ( b.inserts == 3 ) );
+ {
+  auto t = batch( d );
+  d.decrease( 3 , 5 );  // a change then an erasure
+  d.pop();
+  d.push( 4 , 7 );  // an insertion then two changes
+  d.decrease( 4 , 6 );
+  d.increase( 4 , 8 );
+  }
+ CHECK( ( b.seen == 2 ) && ( b.inserts == 4 ) && ( d.top().id == 4 ) &&
+	( d.key( 4 ) == 8 ) );
+ {
+  auto q = quiet( d );
+  d.push( 5 , 1 );
+  d.pop();
+  }
+ CHECK( ( b.rebuilt == 1 ) && ( b.inserts == 4 ) && k3.audit( d ) );
+ d.detach( id );
  }
 
 /*--------------------------------------------------------------------------*/

@@ -21,7 +21,9 @@
  *   the interleaved layout, against the separate one run again as the row
  *   A/A), ArrayQueue, the priority queues of the book with handles
  *   (HeapPriorityQueue of arity 2 and 4, FibonacciHeapPriorityQueue,
- *   PairingHeap), IndexedDaryHeap, and MFSet, UnionFind and DisjointSets.
+ *   PairingHeap), IndexedDaryHeap, WorkingSetHeap (the heap with the
+ *   working-set bound of Haeupler et al.), and MFSet, UnionFind and
+ *   DisjointSets.
  *
  * The three graphs hold the same arcs in the same order (the rows sorted
  * by head, the graphs simple), and the priorities are the pairs
@@ -36,7 +38,18 @@
  *   (R-MAT, m = 8 n), unoriented;
  * - dijkstra, shortestPaths() on a priority queue (Johnson's algorithm in
  *   the book), on the same graphs oriented and on G( n , 16 n ), costs in
- *   [ 1 , 10^5 ];
+ *   [ 1 , 10^5 ], and on two graphs of small working sets: the graph of
+ *   Figure 1 of Haeupler et al. (fan: a path of n - t - 1 nodes from the
+ *   source, arcs of costs in [ 1 , 3 ], and t = sqrt( n ) arcs from the
+ *   source of costs above the length of the path, so that a heap holds t
+ *   items while each node of the path is pushed and popped alone) and a
+ *   comb (the same path of n / 2 nodes, each with an arc to a leaf of such
+ *   a cost, so that the heap grows to n / 2 items);
+ * - wsbound, the comparisons of the keys done by the queues of ADS in the
+ *   runs of dijkstra on fan, comb, grid and road, against
+ *   n + sum( log2 W( v ) ), W( v ) the number of the insertions made from
+ *   that of v to its extraction, the term of the bound of Theorem 7.4 of
+ *   Haeupler et al. that the heap controls (counts, not times);
  * - bfm, shortestPaths() on a queue (Bellman-Ford-Moore), on the grids
  *   and the road networks;
  * - prim, prim() on a priority queue, on the unoriented graphs;
@@ -120,6 +133,7 @@
 #include "ADS/priority/HeapPriorityQueue.h"
 #include "ADS/priority/IndexedDaryHeap.h"
 #include "ADS/priority/PairingHeap.h"
+#include "ADS/priority/WorkingSetHeap.h"
 #include "ADS/queue/ArrayQueue.h"
 
 #if __has_include( <lemon/matching.h> ) && \
@@ -147,6 +161,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <compare>
 #include <cstdlib>
 #include <fstream>
 #include <functional>
@@ -334,6 +349,24 @@ Input road( int n , bool directed , std::mt19937_64 & g )
  return( geometric( n , directed , g ) );
  }
 
+/// the graph of Figure 1 of Haeupler et al.: the path 0 -> 1 -> ... -> r
+/// of costs in [ 1 , 3 ] and t = sqrt( n ) arcs from 0 of costs above the
+/// length of the path; with comb, the arcs to the t = r leaves start from
+/// the nodes 1 , ... , r of the path instead, one each
+Input fan( int n , bool comb , bool directed , std::mt19937_64 & g )
+{
+ const int t = comb ? std::max( 1 , ( n - 1 ) / 2 )
+		    : std::max( 1 , int( std::sqrt( double( n ) ) ) );
+ const int r = comb ? t : std::max( 1 , n - t - 1 );
+ Input I{ r + 1 + t , {} , directed };
+ for( int j = 0 ; j < r ; ++j )  // the path first: the source is 0
+  I.E.emplace_back( j , j + 1 , 1 + int( g() % 3 ) );
+ for( int i = 0 ; i < t ; ++i )
+  I.E.emplace_back( comb ? i + 1 : 0 , r + 1 + i ,
+		    3 * r + 1 + int( g() % MAXW ) );
+ return( I );
+ }
+
 /// the input of a case
 Input make( const std::string & c , int n , bool directed , unsigned seed )
 {
@@ -346,6 +379,8 @@ Input make( const std::string & c , int n , bool directed , unsigned seed )
   return( grid( n , directed , g ) );
  if( c == "road" )
   return( road( n , directed , g ) );
+ if( ( c == "fan" ) || ( c == "comb" ) )
+  return( fan( n , c == "comb" , directed , g ) );
  return( rmat( n , 8 * std::size_t( n ) , directed , g ) );
  }
 
@@ -890,7 +925,8 @@ void priorityQueues( Cell & C , const Input & I ,
 		   "ADS StaticGraph interleaved IndexedDaryHeap<4>" ,
 		   "ADS StaticGraph IndexedDaryHeap<2>" ,
 		   "ADS StaticGraph PairingHeap" ,
-		   "ADS StaticGraph FibonacciHeapPriorityQueue" } ) )
+		   "ADS StaticGraph FibonacciHeapPriorityQueue" ,
+		   "ADS StaticGraph WorkingSetHeap" } ) )
   return;
  const ADS::StaticGraph< int > S( n , edgesOf( I , A ) , I.directed );
  C( "ADS StaticGraph HeapPriorityQueue<4>" ,
@@ -918,6 +954,8 @@ void priorityQueues( Cell & C , const Input & I ,
   ADS::FibonacciHeapPriorityQueue< int , P > q;
   return( run( S , src , q , k ) );
   } );
+ C( "ADS StaticGraph WorkingSetHeap" ,
+    withQueue< ADS::WorkingSetHeap< P > >( S , src , run ) );
  }
 
 void dijkstra( const std::string & c , int n0 , int r , unsigned seed )
@@ -929,6 +967,114 @@ void dijkstra( const std::string & c , int n0 , int r , unsigned seed )
 		 []( const auto & g , int s , auto & q , Counts & k ) {
 		  return( spRun( g , s , q , k ) );
 		  } );
+ }
+
+/// a priority ( distance , node ) whose comparisons are counted
+struct CountedPriority
+{
+ using first_type = int;
+ int first = 0;                      ///< the distance
+ int second = 0;                     ///< the node
+ static inline long long count = 0;  ///< the comparisons
+ CountedPriority( void ) = default;
+ CountedPriority( int d , int v ) : first( d ) , second( v ) { }
+ friend bool operator<( const CountedPriority & a ,
+			const CountedPriority & b ) {
+  ++count;
+  return( ( a.first < b.first ) ||
+	   ( ( a.first == b.first ) && ( a.second < b.second ) ) );
+  }
+ friend bool operator==( const CountedPriority & a ,
+			 const CountedPriority & b ) {
+  return( ( a.first == b.first ) && ( a.second == b.second ) );
+  }
+ friend std::strong_ordering operator<=>( const CountedPriority & a ,
+					  const CountedPriority & b ) {
+  ++count;
+  return( std::tie( a.first , a.second ) <=> std::tie( b.first , b.second ) );
+  }
+ };
+
+/// the frontier F that records the sum of log2 W( v ) over the nodes
+/// extracted, W( v ) the insertions made from that of v to its extraction
+template< class F >
+struct WorkingSets
+{
+ F & f;
+ std::vector< long long > at;
+ long long ins = 0;
+ double logs = 0;
+ WorkingSets( F & ff , int n ) : f( ff ) , at( std::size_t( n ) , 0 ) { }
+ template< class D >
+ void add( int v , const D & d , bool b ) {
+  at[ std::size_t( v ) ] = ++ins;
+  f.add( v , d , b );
+  }
+ int extract( void ) {
+  const int v = f.extract();
+  logs += std::log2( double( ins - at[ std::size_t( v ) ] + 1 ) );
+  return( v );
+  }
+ template< class D >
+ void update( int v , const D & d ) {
+  f.update( v , d );
+  }
+ bool empty( void ) const { return( f.empty() ); }
+ };
+
+/// the comparisons of the queues of ADS in Dijkstra on the case c, against
+/// n + sum( log2 W( v ) ); the distances checked equal
+void wsbound( const std::string & c , int n0 , unsigned seed )
+{
+ const Input I = make( c , n0 , true , seed );
+ const auto A = arcs( I );
+ const int n = I.n , src = source( I );
+ const ADS::StaticGraph< int > S( n , edgesOf( I , A ) , true );
+ using CP = CountedPriority;
+ long long ref = -1;
+ auto run = [ & ]( const char * who , auto & q , bool bound ) {
+  if( skip( who ) )
+   return;
+  ADS::PriorityFrontier F( q , n );
+  WorkingSets W( F , n );
+  CP::count = 0;
+  const long long d = digest( ADS::shortestPaths( S , src , W ).d , ADS::INF );
+  const long long k = CP::count;
+  if( ref < 0 )
+   ref = d;
+  else if( d != ref ) {
+   std::fprintf( stderr , "wsbound %s: %s differs\n" , c.c_str() , who );
+   std::exit( 1 );
+   }
+  if( bound )
+   std::printf( "wsbound:count\t%s\t%d\tn + sum log2 W\t%lld\n" , c.c_str() ,
+		n ,
+		n + ( long long )W.logs );
+  std::printf( "wsbound:count\t%s\t%d\t%s comparisons\t%lld\n" , c.c_str() ,
+	       n ,
+	       who , k );
+  std::fflush( stdout );
+  };
+ {
+  ADS::IndexedDaryHeap< CP , 4 > q( std::max( n , 1 ) );
+  run( "ADS IndexedDaryHeap<4>" , q , true );
+  }
+ {
+  ADS::IndexedDaryHeap< CP , 2 > q( std::max( n , 1 ) );
+  run( "ADS IndexedDaryHeap<2>" , q , false );
+  }
+ {
+  ADS::PairingHeap< int , CP > q;
+  run( "ADS PairingHeap" , q , false );
+  }
+ {
+  ADS::FibonacciHeapPriorityQueue< int , CP > q;
+  run( "ADS FibonacciHeapPriorityQueue" , q , false );
+  }
+ {
+  ADS::WorkingSetHeap< CP > q( std::max( n , 1 ) );
+  run( "ADS WorkingSetHeap" , q , false );
+  }
  }
 
 void bfm( const std::string & c , int n0 , int r , unsigned seed )
@@ -1411,8 +1557,12 @@ int main( int argc , char ** argv )
    for( const char * c : { "gnm4" , "grid" , "road" , "rmat" } )
     bfs( c , n , r , o.seed );
   if( want( "dijkstra" ) )
-   for( const char * c : { "gnm4" , "gnm16" , "grid" , "road" , "rmat" } )
+   for( const char * c :
+	{ "gnm4" , "gnm16" , "grid" , "road" , "rmat" , "fan" , "comb" } )
     dijkstra( c , n , r , o.seed );
+  if( want( "wsbound" ) && ! listing() )
+   for( const char * c : { "fan" , "comb" , "grid" , "road" } )
+    wsbound( c , n , o.seed );
   if( want( "bfm" ) )
    for( const char * c : { "grid" , "road" } )
     bfm( c , n , r , o.seed );

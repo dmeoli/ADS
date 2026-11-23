@@ -147,6 +147,7 @@
 #include "ADS/priority/QueueCustomization.h"
 #include "ADS/priority/RadixHeap.h"
 #include "ADS/priority/SequenceHeap.h"
+#include "ADS/priority/WorkingSetHeap.h"
 #include "ADS/queue/RingDeque.h"
 #include "ADS/queue/SlidingAggregate.h"
 #include "ADS/search/CompressedPGMIndex.h"

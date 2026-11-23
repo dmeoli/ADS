@@ -345,6 +345,7 @@ priority/QueueCustomization.h         advanced the CPOs of the queues,
 priority/RadixHeap.h                  advanced
 priority/SequenceHeap.h               advanced
 priority/TreePriorityQueue.h          base
+priority/WorkingSetHeap.h             advanced
 
 queue/ArrayQueue.h                    base
 queue/Dequeue.h                       base

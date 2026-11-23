@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `WorkingSetHeap`, the heap of the ids [ 0 , n ) with the working-set
+  bound of Haeupler, Hladik, Rozhon, Tarjan and Tetek (FOCS 2024), whose
+  `push()` and `decrease()` take O(1) amortized time and whose `pop()` of an
+  item takes the logarithm of the number of the insertions made since its
+  own, on at most 5 inner type-1 rank-pairing heaps sharing one vector of
+  nodes, found by the numbers of the insertions in place of a union-find,
+  with the interface and the events of `IndexedDaryHeap`, and
+  `universalDijkstra()`, the algorithm of Dijkstra on it, universally optimal
+  in time; the tests `heaps.working-set-heap`, `heaps.working-set-bound`
+  (the comparisons per round against the 4-ary heap and the pairing heap),
+  `engineered_graph.working-set-dijkstra` and
+  `engineered_emitters.emit-working-set-heap`, the row of the heap and the
+  graphs `fan` and `comb` of small working sets in the benchmark `dijkstra`
+  of `bench/graphs.cpp`, the benchmark `wsbound` of the comparisons of the
+  heaps against the bound, and section 9.13 of the manual (Algorithm 9.6,
+  Lemmas 9.22 and 9.23, Theorem 9.5), which moves the later sections of
+  chapter 9, with its part of section 14.8.1
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits

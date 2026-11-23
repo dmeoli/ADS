@@ -47,6 +47,7 @@
 #include "ADS/priority/IndexedDaryHeap.h"
 #include "ADS/priority/ListPriorityQueue.h"
 #include "ADS/priority/PairingHeap.h"
+#include "ADS/priority/WorkingSetHeap.h"
 #include "ADS/queue/ArrayQueue.h"
 #include "ADS/queue/Dequeue.h"
 #include "ADS/queue/LinkedQueue.h"
@@ -437,6 +438,69 @@ ADS_TEST( "indexed-dary-heap" )
  run( IndexedDaryHeap< int , 8 >( 300 ) );
  IndexedDaryHeap< double > Z( 0 );
  CHECK( Z.empty() && Z.ids() == 0 );
+ }
+
+// Dijkstra and Prim on the heap with the working-set bound against the
+// 4-ary heap of the ids, the priorities ( distance , node ): the same
+// distances, trees, orders and counts, and the distances of johnson() and
+// of universalDijkstra(); on random graphs with few and many costs, on
+// the graph of Figure 1 of Haeupler et al. (a path from the source below
+// t arcs from it of larger costs) and on a comb (the same path, each node
+// with an arc to a leaf of large cost), on one node and on a source with
+// no arc
+ADS_TEST( "working-set-dijkstra" )
+{
+ using P = std::pair< int , int >;
+ std::mt19937 g( 31 );
+ std::vector< std::pair< int , Edges > > cases;
+ for( int t = 0 ; t < 10 ; ++t ) {
+  const int n = 2 + int( g() % 400 );
+  cases.emplace_back( n + 1 ,
+		      randomEdges( n , 1 + int( g() % unsigned( 6 * n ) ) ,
+				   t % 3 ? 1 : 0 , t % 2 ? 1000 : 3 , g ) );
+  }
+ for( int t : { 1 , 8 , 40 } ) {  // the fan: 0 -> 1 -> ... -> r, 0 -> u_i
+  const int r = t * t;
+  Edges F , C;
+  for( int j = 0 ; j < r ; ++j ) {
+   F.emplace_back( j , j + 1 , 1 + int( g() % 3 ) );
+   C.emplace_back( j , j + 1 , 1 + int( g() % 3 ) );
+   C.emplace_back( j + 1 , r + 1 + j , 4 * r + int( g() % 100 ) );
+   }
+  for( int i = 0 ; i < t ; ++i )
+   F.emplace_back( 0 , r + 1 + i , 4 * r + int( g() % 100 ) );
+  cases.emplace_back( r + 1 + t , F );
+  cases.emplace_back( 2 * r + 1 , C );
+  }
+ cases.emplace_back( 1 , Edges{} );               // one node
+ cases.emplace_back( 5 , Edges{ { 1 , 2 , 4 } } );  // no arc from 0
+ for( const auto & [ n , E ] : cases ) {
+  const StaticGraph< int > S( n , E , true );
+  IndexedDaryHeap< P , 4 > q4( n );
+  WorkingSetHeap< P > qw( n );
+  PriorityFrontier F4( q4 , n );
+  PriorityFrontier FW( qw , n );
+  FrontierCounts k4 , kw;
+  const auto R4 = shortestPaths( S , 0 , F4 , &k4 );
+  const auto RW = shortestPaths( S , 0 , FW , &kw );
+  CHECK( RW.d == R4.d && RW.T == R4.T && RW.order == R4.order );
+  CHECK( kw.adds == k4.adds && kw.extracts == k4.extracts &&
+	 kw.decreases == k4.decreases && kw.edges == k4.edges );
+  CHECK( universalDijkstra( S , 0 ).d == johnson( S , 0 ).d );
+  CHECK( qw.empty() );
+  std::set< std::pair< int , int > > seen;  // Prim, unoriented and simple
+  Edges SE;
+  for( const auto & [ u , v , w ] : E )
+   if( ( u != v ) &&
+       seen.emplace( std::min( u , v ) , std::max( u , v ) ).second )
+    SE.emplace_back( u , v , w );
+  const StaticGraph< int > U( n , SE , false );
+  IndexedDaryHeap< P , 4 > p4( n );
+  WorkingSetHeap< P > pw( n );
+  FrontierCounts c4 , cw;
+  CHECK( prim( U , 0 , pw , &cw ) == prim( U , 0 , p4 , &c4 ) );
+  CHECK( cw.extracts == c4.extracts && cw.decreases == c4.decreases );
+  }
  }
 
 // the union-find against MFSet of the book on random merges: the same

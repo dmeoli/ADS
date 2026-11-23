@@ -638,6 +638,8 @@ heaps  radix-heap-floor      push dopo extractBelow: non sotto le chiavi estratt
 heaps  heap-priority-queue-pool  heap del libro con gli elementi in un pool
 heaps  linked-heap-pool      heap con puntatori, nodi in un pool
 heaps  pairing-heap          pairing heap a due passate e ausiliario
+heaps  working-set-heap      heap con il limite del working set
+heaps  working-set-bound     confronti per giro, working set contro heap d-ario
 hashing  dense-hash-map        mappa hash a vettore denso e indice
 hashing  flat-try-emplace      try_emplace delle mappe piatte
 
@@ -1781,6 +1783,7 @@ engineered_graph  static-graph-macros nessuna macro di prefetch inutilizzata
 engineered_graph  static-graph-arrays le tre schiere di un grafo pesato come CSR
 engineered_graph  static-graph-layouts le due disposizioni degli archi a confronto
 engineered_graph  indexed-dary-heap   heap d-ario indicizzato con decrease
+engineered_graph  working-set-dijkstra Dijkstra universale, distanze e Prim uguali
 engineered_graph  union-find          union-find per dimensione o rango
 engineered_graph  book-on-structures  algoritmi del libro su ogni struttura
 engineered_graph  grid-graph          griglia implicita, casi limite e mosse
@@ -2000,6 +2003,7 @@ engineered_modification  mod-observed-graph  grafo osservato, osservatori nuovi
 engineered_emitters  emit-heap            eventi dello heap indicizzato
 engineered_emitters  emit-heap-relocated  scambi dello heap su una copia
 engineered_emitters  emit-heap-batch      lotti e silenzi dello heap
+engineered_emitters  emit-working-set-heap eventi dello heap del working set
 engineered_emitters  emit-queues          eventi delle code senza maniglie
 engineered_emitters  emit-queues-records  sequenza esatta degli eventi
 engineered_emitters  emit-queues-batch    lotti di copie per chiave

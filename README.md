@@ -313,7 +313,7 @@ allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-445 headers: 245 base, 153 advanced, 19 core and 28 interop.
+446 headers: 245 base, 154 advanced, 19 core and 28 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
@@ -349,7 +349,7 @@ allow.
 | `numeric/` | `BigInteger`, `BinaryInteger`, `Catalan`, `Combinatorics`, `Matrix`, `MatrixChain`, `NumberTheory`, `Polynomial`, `RSA`, `RandomNumbers`, `RandomSampling`, `Rational`, `SparseMatrix` | `CsrMatrix`, `DenseMatrix`, `DynamicCsr`, `RandomGenerators`, `SellMatrix`, `SparseAssembly` |  |  |
 | `optimization/` | `CoinChange`, `CoinGame`, `FractionalKnapsack`, `GridPaths`, `HouseProblems`, `IntervalCover`, `Intervals`, `Knapsack`, `KnapsackVariants`, `LinearPartition`, `OptimalSearchTree`, `SequenceProblems`, `ShortestJobFirst`, `StockTrading`, `WeightedIntervals` |  |  |  |
 | `parallel/` |  | `Affinity`, `Channels`, `Farm`, `FastFlowExecutor`, `Mailbox`, `OpenMPExecutor`, `ParallelGraph`, `ParallelGreedy`, `ParallelMerge`, `ParallelNumeric`, `ParallelShortestPaths`, `ParallelSort`, `ParallelText`, `Scratch`, `SpeculativeFor`, `TBBExecutor`, `ThreadPool` | `Executor` |  |
-| `priority/` | `FibonacciHeapPriorityQueue`, `HeapPriorityQueue`, `ListPriorityQueue`, `LoserTree`, `MeldableHeap`, `PriorityQueue`, `TreePriorityQueue` | `BucketQueue`, `DaryHeap`, `DialQueue`, `IndexedDaryHeap`, `IndexedHeapPair`, `LinkedHeapPriorityQueue`, `MinMaxHeap`, `MultiwayMerge`, `OrderKey`, `PairingHeap`, `QueueCustomization`, `RadixHeap`, `SequenceHeap` |  |  |
+| `priority/` | `FibonacciHeapPriorityQueue`, `HeapPriorityQueue`, `ListPriorityQueue`, `LoserTree`, `MeldableHeap`, `PriorityQueue`, `TreePriorityQueue` | `BucketQueue`, `DaryHeap`, `DialQueue`, `IndexedDaryHeap`, `IndexedHeapPair`, `LinkedHeapPriorityQueue`, `MinMaxHeap`, `MultiwayMerge`, `OrderKey`, `PairingHeap`, `QueueCustomization`, `RadixHeap`, `SequenceHeap`, `WorkingSetHeap` |  |  |
 | `queue/` | `ArrayQueue`, `Dequeue`, `LinkedQueue`, `MinDeque`, `MinQueue`, `QueueAlgorithms`, `RandomQueue`, `RealTimeMinDeque`, `RealTimeMinQueue`, `UniqueQueue` | `RingDeque`, `SlidingAggregate` |  |  |
 | `search/` | `BinarySearch`, `InterpolationSearch`, `KnuthSearches`, `LocalOptima`, `Minimum`, `MonotoneSearch`, `PGMIndex`, `Selection`, `SortedSearches` | `CompressedPGMIndex`, `CountLess`, `DynamicPGMIndex`, `NthElement`, `RangeMinimum`, `StaticSearch`, `WordRangeMinimum` |  |  |
 | `sequence/` | `ArraySequence`, `ContiguousDeque`, `CubishArrayStack`, `CursorList`, `DualArrayDeque`, `IndexedList`, `List`, `OrderMaintenanceList`, `Rearrangements`, `RootishArrayStack`, `SEList`, `SequenceAlgorithms`, `SequenceRange`, `SinglyList`, `SkipListSequence`, `TreapList`, `Treque`, `XorList` | `Fenwick`, `ListSort`, `ObservableArray`, `SmallVector`, `TieredVector` |  |  |
