@@ -241,7 +241,7 @@ and only if $P[ 0 .. i ] = T[ j - i .. j ]$; hence `shiftOr()` reports
 $\mathrm{Occ}( P , T )$ in $\Theta( n )$ operations on words after a
 preparation of $O( m + \sigma )$.*
 
-*Proof.* By induction on $j$. We see that the shift brings the bit $i - 1$ of the old
+*Proof.* By induction on $j$. The shift brings the bit $i - 1$ of the old
 $D$ to the place $i$ and clears the bit 0, and the OR with $B[ T[ j ] ]$
 sets the bit $i$ unless $P[ i ] = T[ j ]$. Hence the bit $i$ is clear if and
 only if $P[ i ] = T[ j ]$ and either $i = 0$ or the old bit $i - 1$ was
@@ -734,8 +734,8 @@ one register of 16 bytes, the byte $x$ for the end $j + x$: the 8 ends of
 the current block of places $j , \ldots , j + 7$, and the 8 after them,
 which the masks of the block reach. For $d < 8$ the 11 bits of $x( j + d )$
 are those from the bit $8 ( d \bmod 4 )$ of the word of 8 bytes read at
-$j$ (for $d < 4$) or at $j + 4$ (for $d \ge 4$), so that two loads give
-the super characters of a block. Each mask is moved by $d$ bytes, with no
+$j$ (for $d < 4$) or at $j + 4$ (for $d \ge 4$), and therefore two loads
+give the super characters of a block. Each mask is moved by $d$ bytes, with no
 carry between the bytes, and ORed into the register: one load, one shift
 of bytes and one OR a place. In all, the table of the masks takes
 $2^{11} \times 8$ bytes, i.e., 16 KB, and before the first block the
@@ -812,7 +812,7 @@ nearly every place, on patterns that occur everywhere or on a text whose bytes
 the filter cannot tell apart (a small alphabet, against patterns that use all
 of it), or on long patterns whose first bytes occur everywhere. Each search
 therefore counts the *bytes* that it compares with the patterns, as
-`StringSearcher` does ([§15.2.2](15-string.md#sec-15-2-2)): a word of 8 bytes
+`StringSearcher` does (cf. [§15.2.2](15-string.md#sec-15-2-2)): a word of 8 bytes
 for each pattern compared at a candidate (in the filter of shuffles) or for
 each entry of the chains visited (in the filters of shift-or), and the bytes
 past the word that `memcmp()` compares when the word agrees. When they exceed
@@ -929,7 +929,7 @@ $j$ as a sequence of columns. Its last column aligns $P[ i - 1 ]$ with
 $T[ j - 1 ]$ (cost $\delta_{ij}$), or leaves $P[ i - 1 ]$ out (an
 insertion, cost 1), or leaves $T[ j - 1 ]$ out (a deletion, cost 1), and
 what precedes it is an alignment of the shorter prefixes, which in an
-optimal alignment is optimal itself. An occurrence may start anywhere, and
+optimal alignment is also optimal. An occurrence may start anywhere, and
 the empty prefix of $P$ costs 0 at every $j$; in the edit distance the
 prefix $T( j )$ must be used in full, and the empty prefix costs $j$. $\square$
 
@@ -1358,7 +1358,7 @@ most its width; once the bands have computed a quarter of the
 $n \lceil m / 64 \rceil$ blocks of the table, or span half of the column, all
 the blocks are computed instead, four columns at a time; indeed, the block $b$
 of the column $j + q$ needs only the block $b - 1$ of the same column and the
-block $b$ of the column before, so that the blocks $i - q$ of the columns
+block $b$ of the column before; hence the blocks $i - q$ of the columns
 $j + q$, $q < 4$, are independent (the four lanes of the vectors of
 Highway, two vectors of two lanes on SSE2 and NEON, and without Highway
 four chains of operations that overlap in the processor).
@@ -1602,7 +1602,7 @@ $$
 
 on an integer alphabet of $O( n )$ symbols. Since the algorithm reduces
 the problem to sorting, it takes the optimal number of transfers of
-sorting on disk (chapter 23).
+sorting on disk (cf. chapter 23).
 
 --8<-- "generated/SuffixArray-skew.pseudo.md"
 
@@ -2034,9 +2034,9 @@ and, e.g., `ADS::suffixArray( T )` gives the array of
 
 ### 15.5.3 The suffix tree {#sec-15-5-3}
 
-We call suffix tree of $T$ (`SuffixTree.h`) the compact trie (chapter 7)
+We call suffix tree of $T$ (`SuffixTree.h`) the compact trie (cf. chapter 7)
 of the $n + 1$ suffixes of $T \$$, where the terminator makes each suffix
-end in a leaf of its own ([Figure 15.4](15-string.md#fig-15-4)). Each edge has as label
+end in a separate leaf ([Figure 15.4](15-string.md#fig-15-4)). Each edge has as label
 a substring of $T$, kept as the place of one occurrence and
 the string depths of its two ends, and the children of a node are kept by
 their first symbol in a balanced search tree (`std::map`), whence
@@ -2485,7 +2485,7 @@ $\mathit{LCP}[ s + a + \mathrm{ctz}( M_r \gg a ) ]$.*
 
 *Proof.* The bits of $M_r$ mark the entries that are smaller than all the
 entries after them up to $r$, i.e., the stack of the suffix minima of the
-block up to $r$. We see that the first marked place at or after $s + a$ is smaller
+block up to $r$. The first marked place at or after $s + a$ is smaller
 than everything after it up to $r$, and not larger than anything between
 $s + a$ and itself (an unmarked entry there has a smaller or equal entry
 after it, and so on up to a marked one); hence it is the minimum. $\square$
@@ -2493,7 +2493,7 @@ after it, and so on up to a marked one); hence it is the minimum. $\square$
 These are the words of [Alstrup et al. 2002](Z-bibliography.md#ref-alstrup2002):
 one shift and one count of trailing zeros per block. In turn, the blocks form
 groups of 64, each with the sparse table of the minima of its blocks, and
-the minima of the groups are in a sparse table of their own. The blocks
+the minima of the groups are in a further sparse table. The blocks
 strictly between those of $a$ and $b - 1$ are covered by two overlapping
 ranges of one group, or by those of two partial groups and of the groups
 between them.
@@ -2583,7 +2583,7 @@ items gives the bound. $\square$
 Such a search is never worse than the binary search (up to a constant), and
 it takes $O( \log \log m )$ time with high probability on uniform keys, as
 the search by interpolation of [Perl, Itai and Avni
-1978](Z-bibliography.md#ref-perl1978) (chapter 6), whose worst case is
+1978](Z-bibliography.md#ref-perl1978) (cf. chapter 6), whose worst case is
 $O( m )$, at the price of the array of the bins. `BinnedStringSearch`
 does the same on strings, read as the integers of their first 8 symbols
 (padded with the symbol 0), which keep their order; the binary search in
@@ -2622,7 +2622,7 @@ $\hat s_i$:
 We write the length in the byte-aligned code of [Ferragina 2023, chapter
 9](Z-bibliography.md#ref-ferragina2023) (`encodeLength()`): the binary of
 $\ell$ padded to a whole number $k$ of bytes, with the first two bits of
-the padding giving $k - 1$, so that $\ell < 2^{30}$ takes 1 to 4 bytes,
+the padding giving $k - 1$; hence $\ell < 2^{30}$ takes 1 to 4 bytes,
 the most significant first:
 
 --8<-- "generated/FrontCoding-encodeLength.pseudo.md"
@@ -2638,8 +2638,8 @@ before it. `FrontCodedDictionary` therefore stores some strings whole (the
 the $\ell$ symbols that each pair takes from the previous string. Two
 policies choose the anchors. `bucketed()` is the front coding with buckets
 $\mathit{FC}_B$ of [Ferragina 2023](Z-bibliography.md#ref-ferragina2023):
-an anchor every $b$ strings, i.e., buckets of $b$ strings coded on their
-own. A larger $b$ compresses better and scans more, up to $\Theta( b^2 )$
+an anchor every $b$ strings, i.e., buckets of $b$ strings coded
+separately. A larger $b$ compresses better and scans more, up to $\Theta( b^2 )$
 symbols for a bucket like $a , aa , aaa , \ldots$.
 `localityPreserving()` is the locality-preserving front coding of [Bender,
 Farach-Colton and Kuszmaul 2006](Z-bibliography.md#ref-bender2006), which
@@ -2730,10 +2730,10 @@ need, since it decodes the strings that it compares). It is one string of
 bits in which each bucket of $b$ strings begins with its first string and
 goes on with a triple $( r_i , | \hat s_i | , \hat s_i )$ per string. The
 symbols, the rears and the lengths are each in a canonical code of Huffman
-of their own frequencies (chapter 21). Their codewords have at most 11 bits,
+of their frequencies (cf. chapter 21). Their codewords have at most 11 bits,
 whence a table of $2^{11}$ entries decodes a symbol by one read of 11 bits
 (and one of $2^{12}$ entries up to 3 symbols by one read of 12); the places
-of the buckets are kept by Elias-Fano (chapter 22). Moreover, the 16 bytes of each
+of the buckets are kept by Elias-Fano (cf. chapter 22). Moreover, the 16 bytes of each
 first string that follow the prefix common to all the strings are kept
 apart in two words, so that the binary search on the buckets decodes a
 first string only when those bytes do not decide. With
@@ -3123,7 +3123,7 @@ outputs at least one; by the uniqueness, they are (15.24).
 Cost. A run from $i$ makes one comparison for each value of $j$ from $i +
 1$ to the place $j$ where it stops, i.e., at most $j - i$ comparisons,
 and $j - i < ( h + 1 ) | w | \le 2 h | w |$; the next run starts at $i + h
-| w |$, so that the comparisons of a run are at most twice the symbols that
+| w |$, and hence the comparisons of a run are at most twice the symbols that
 it moves past, and at most $2 n$ in all. The space is that of $i$, $j$ and
 $k$. $\square$
 
@@ -3176,8 +3176,8 @@ subsequence can have.*
 find no open pending. Let $x$ be the last of these closes. When the scan
 meets $x$, each open before it has been matched to a close before it, and
 so the prefix up to $x$ holds at least $u$ closes more than opens. In a
-balanced subsequence each close follows the open matched to it, and so at least $u$
-closes of that prefix are left out; hence it has at most as many pairs as
+balanced subsequence each close follows the open matched to it, and
+therefore at least $u$ closes of that prefix are left out; hence it has at most as many pairs as
 the closes less $u$, which is the number that the scan matches.
 $\square$
 
