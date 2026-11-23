@@ -92,7 +92,7 @@ $p^{-n} ( 1 - p )^{-( m - n )}$ is $m H_0( B )$. $\square$
 $\Theta( \log m )$ bits, in which the sideways sum of a word (the number of
 its 1s, $\lvert x \rvert$ or $\mathrm{popcount}( x )$) and the place of
 its $k$-th 1 cost $O( 1 )$ time. Indeed, the first is one instruction of today's processors, and the second a few broadword operations
-([§22.2](22-succinct.md#sec-22-2)).
+(cf. [§22.2](22-succinct.md#sec-22-2)).
 
 <span id="tab-22-1"></span>**Table 22.1.** The notation of the chapter.
 
@@ -1024,7 +1024,7 @@ a complete binary tree over the groups, the total excess of its range and
 its minimum prefix excess. A search runs on the excess relative to its
 start, and needs no rank. It scans the leaf of $i$ a byte at a time, with the excess, the minimum and the place of each target of each of the 256 bytes in tables. Then it scans the leaves of the group of $i$ by their excess and minimum in 16 bits. At last it climbs the tree, whose leaves are the groups, to the first range on its side whose minimum reaches the target, and goes down to its group, its leaf and its byte
 ([Algorithm 22.15](22-succinct.md#alg-22-15)). A range whose minimum stays above the target holds no answer, by (iii) of
-[Lemma 22.14](22-succinct.md#lem-22-14), and it is skipped whole; the
+[Lemma 22.14](22-succinct.md#lem-22-14), and it is skipped; the
 first range on the side of the search whose minimum reaches the target
 holds the answer, again by (iii). The search thus scans at most two leaves
 of $512 / 8$ bytes, two groups of 16 leaves, and climbs and descends the
@@ -1254,7 +1254,7 @@ Finally, the move structure of [Nishimoto and Tabei 2021](Z-bibliography.md#ref-
 (`MoveStructure`) represents a permutation $\pi$ of $[ 0 , n )$ that
 shifts each of $r$ intervals $[ p_i , p_{i+1} )$ alike, such as the
 LF-mapping of a transform of Burrows and Wheeler on its runs, or the
-function $\phi$ of the r-index ([§21.11](21-compression.md#sec-21-11)). It
+function $\phi$ of the r-index (cf. [§21.11](21-compression.md#sec-21-11)). It
 keeps the starts $p_i$, their images $q_i$ and the interval $d_i$ that holds
 $q_i$, so that
 
