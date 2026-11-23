@@ -2234,7 +2234,7 @@ library meets this assumption on random keys, but not necessarily on structured
 ones. In fact, the folded product of `FastHash`
 ([§7.3.6](07-dictionary.md#sec-7-3-6)) maps consecutive integers to the
 multiples of a constant modulo $2^{64}$, whose top bits form a sequence of low
-discrepancy; an UltraLogLog fed with them may overestimate the distinct items
+discrepancy; an UltraLogLog fed with them overestimates the distinct items
 by tens of per cent. Hence, all the sketches of this section finish the hash of
 `FastHash` by the mixer of SplitMix64 ([§7.3.4](07-dictionary.md#sec-7-3-4)),
 which costs a few cycles and makes those sequences look random.
@@ -2496,8 +2496,8 @@ is the estimate. The Count sketch of [Charikar et al.
 2004](Z-bibliography.md#ref-charikar2004) adds instead $\pm c$, by a random
 sign of the row, and the other items cancel in expectation. It estimates $f_x$
 by the median of the $d$ signed counters, with an error relative to the norm
-$\| f \|_2$ instead of $N = \| f \|_1$ (usually much smaller on skewed streams,
-at the price of the counters of any sign). The conservative update of [Estan
+$\| f \|_2$ instead of $N = \| f \|_1$ (much smaller on flat streams, and
+close to it on skewed ones, at the price of the counters of any sign). The conservative update of [Estan
 and Varghese 2002](Z-bibliography.md#ref-estan2002) raises each counter of an
 item only up to the new estimate. Furthermore, the $d$ counters of an item come
 from one hash $h$ by the double hashing of [Kirsch and Mitzenmacher
