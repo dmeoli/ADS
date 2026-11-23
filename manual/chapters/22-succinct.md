@@ -508,21 +508,21 @@ most $127 \cdot 496 = 62992 < 2^{16}$. A superblock of 4096 bits has one entry
 of 128 bits, and a line of 512 bits gives 16 of them to its count. $\square$
 
 `TinyRankSelect` follows the 3$\star$ of [Kurpicz, Rigi-Luperti and Sanders
-2025](Z-bibliography.md#ref-kurpicz2025) (in the form of [Kurpicz, Rigi-Luperti
-and Sanders 2026](Z-bibliography.md#ref-kurpicz2026)), which brings the
-directory close to the lower bounds of [§22.1](22-succinct.md#sec-22-1) and
-still answers the select in $O( 1 )$ time in the worst case. Its superblocks
-have $L = 32 L_0$ bits, with blocks of $L_0 = 512$, 1024 or 2048 bits (the
-parameter `L0`, 2048 by default), and each superblock has an entry of 512 bits,
-i.e., a line of the cache. We keep in the first word of the entry the 1s before
-the superblock, $S[ s ]$, and cut the other 7 words in 8 fields of 56 bits, one
-for each group of 4 blocks $4 g , \ldots , 4 g + 3$. A field holds the 1s
-before its group since the superblock, $c_{4 g} \le 28 L_0$, in 16 bits, and
-the 1s of the blocks of the group before the block $4 g + t$, $d_{g , t} \le 3
-L_0$ for $t = 1 , 2 , 3$, in 13 bits each. (The paper keeps the count of each
-block in 12 bits, and rebuilds the prefix sums by additions of vectors. With 13
-bits the prefix sums fit in the same line, and a rank reads a single field.)
-Hence
+2025](Z-bibliography.md#ref-kurpicz2025), in the form of [Kurpicz, Rigi-Luperti
+and Sanders 2026](Z-bibliography.md#ref-kurpicz2026). This directory comes
+close to the lower bounds of [§22.1](22-succinct.md#sec-22-1), and it still
+answers the select in $O( 1 )$ time in the worst case. Its superblocks have $L
+= 32 L_0$ bits, with blocks of $L_0 = 512$, 1024 or 2048 bits (the parameter
+`L0`, 2048 by default), and each superblock has an entry of 512 bits, i.e., a
+line of the cache. The first word of the entry keeps the 1s before the
+superblock, $S[ s ]$. We cut the other 7 words in 8 fields of 56 bits, one for
+each group of 4 blocks $4 g , \ldots , 4 g + 3$. A field holds in 16 bits the
+1s before its group since the superblock, $c_{4 g} \le 28 L_0$. In 13 bits
+each, it also holds the 1s of the blocks of the group before the block $4 g +
+t$, $d_{g , t} \le 3 L_0$ for $t = 1 , 2 , 3$. (The paper keeps the count of
+each block in 12 bits, and rebuilds the prefix sums by additions of vectors;
+with 13 bits the prefix sums fit in the same line, and a rank reads a single
+field.) Hence
 
 $$
 \mathrm{rank}_1( i ) = S[ \lfloor i / L \rfloor ] + c_{4 g} + d_{g , t} +
@@ -534,9 +534,9 @@ with $d_{g , 0} = 0$, and the entries take $512 / L$ of the bits, i.e.,
 0.78125% with $L_0 = 2048$, about 4 times fewer than those of
 `CompactRankSelect`. Its price is the last term of (22.8), which counts up to
 $L_0 / 512 = 4$ lines instead of one. We compute it by `detail::lineRank()` on
-$L_0 / 512$ lines, which cuts the line of $i$ at $i$ and counts the lines
+$L_0 / 512$ lines: it cuts the line of $i$ at $i$, and it counts the lines
 before it by `detail::lineCount()`. A line past that of $i$ is replaced by the
-line of $i$ under a mask of 0s; hence there is no branch, and no line past that
+line of $i$ under a mask of 0s. Hence there is no branch, and no line past that
 of $i$ is read ([Algorithm 22.8](22-succinct.md#alg-22-8)).
 
 For the select of the bits $b$, one finds the superblock of the $k$-th of them
@@ -544,24 +544,24 @@ by a tree of samples of three levels. Let $c$ be the number of the bits $b$, $N
 = \lfloor m / L \rfloor$ the number of the last superblock, and $\sigma( x )$
 the superblock of the bit $b$ of rank $\min( x , c - 1 )$, counting from 0. At
 the top level we keep $T[ j ] = \sigma( j a )$ for $j = 0 , \ldots , \lceil c /
-a \rceil$, with $a = 2^A$ the largest power of 2 not above twice the bits $b$
-of a superblock on average; where the bits $b$ are spread "evenly", two samples
-are then usually 1 or 2 superblocks apart. We call long a range $[ T[ j ] , T[
-j + 1 ] ]$ of $\alpha = 16$ superblocks or more. A long range keeps a group of
-the middle level, $M_j[ i ] = \sigma( j a + i b' ) - T[ j ]$ for $i = 0 ,
-\ldots , a / b'$, where $b' = 2^{\lceil A / 2 \rceil}$ is about $\sqrt{a}$ (cf.
-the $\sqrt{2 a}$ of the paper), each value with the number of the long ranges
-of the group before it. In turn, a long range of the middle level (of $\alpha$
-superblocks or more between two values of $M_j$) keeps a group of the bottom
-level, i.e., the superblocks of its $b'$ bits $b$, relative to the first one of
-the range. We pack each level in a vector of bits
-([§22.2](22-succinct.md#sec-22-2)) at the width that its largest value needs,
-the fields of a group of the middle level, and those of its groups of the
-bottom level, at the widths of that group. Also, for each group of the middle
-level we keep three words (where its fields start, where its groups of the
-bottom level start, and its widths) in place of the arrays of counters by width
-of the paper. This spares an access, at the price of bottom fields as wide as
-the longest range of their group.
+a \rceil$, where $a = 2^A$ is the largest power of 2 not above twice the bits
+$b$ of a superblock on average. Where the bits $b$ are spread "evenly", two
+samples are then usually 1 or 2 superblocks apart. We call long a range $[ T[ j
+] , T[ j + 1 ] ]$ of $\alpha = 16$ superblocks or more. A long range keeps a
+group of the middle level, $M_j[ i ] = \sigma( j a + i b' ) - T[ j ]$ for $i =
+0 , \ldots , a / b'$, where $b' = 2^{\lceil A / 2 \rceil}$ is about $\sqrt{a}$
+(cf. the $\sqrt{2 a}$ of the paper); each value comes with the number of the
+long ranges of the group before it. In turn, a long range of the middle level
+(of $\alpha$ superblocks or more between two values of $M_j$) keeps a group of
+the bottom level. This group holds the superblocks of the $b'$ bits $b$ of the
+range, relative to the first one of the range. We pack each level in a vector
+of bits ([§22.2](22-succinct.md#sec-22-2)) at the width that its largest value
+needs; the fields of a group of the middle level, and those of its groups of
+the bottom level, take the widths of that group. Also, for each group of the
+middle level we keep three words (where its fields start, where its groups of
+the bottom level start, and its widths) in place of the arrays of counters by
+width of the paper. This spares an access, at the price of bottom fields as
+wide as the longest range of their group.
 
 Thus, a select reads two fields of the top level, two of the middle level if
 their range is long, and one of the bottom level if the range of the middle
@@ -576,10 +576,10 @@ complemented ($s L - S[ s ]$ for the superblocks, $4 g L_0 - c_{4 g}$ and $t
 L_0 - d_{g , t}$ for the blocks). We build the directory by one pass on the
 words, which fills each entry from the counts of its 32 blocks, and by one pass
 on the entries for each value. The latter moves a cursor on the superblocks for
-each level, which only goes forward since the ranks of the samples increase. On
-an executor the entries are filled in parallel, each superblock writing its
-line, while the sums of the counts and the trees, which read the $N + 2$
-entries and no word, follow on the calling thread.
+each level; the cursor only goes forward, since the ranks of the samples
+increase. On an executor the entries are filled in parallel (each superblock
+writes its line). The sums of the counts and the trees, which read the $N + 2$
+entries and no word, then follow on the calling thread.
 
 <span id="alg-22-8"></span>**Algorithm 22.8.** The tree of samples, the rank
 and the select of `TinyRankSelect` ([Kurpicz, Rigi-Luperti and Sanders
@@ -600,7 +600,7 @@ the entries and of the tree.
 
 *Proof.* Indeed, the places before $i$ are those before its superblock, those
 of the superblock before the group of its block, those of the group before its
-block, and those of the block before $i$, which are the four terms of (22.8).
+block, and those of the block before $i$; these are the four terms of (22.8).
 One has $c_{4 g} \le 4 \cdot 7 L_0 = 28 L_0 \le 57344 < 2^{16}$ and $d_{g , t}
 \le 3 L_0 \le 6144 < 2^{13}$; hence a field takes $16 + 3 \cdot 13 = 55 \le 56$
 bits, and the 8 fields fill the $8 \cdot 56 = 448$ bits of the 7 words past the
@@ -634,9 +634,9 @@ range, $i = \lfloor ( x \bmod a ) / b' \rfloor$ gives in the same way $\sigma(
 x )$ between $T[ j ] + M_j[ i ]$ and $T[ j ] + M_j[ i + 1 ]$, and in a long
 range of the middle level the field $x \bmod b'$ of the bottom level gives
 $\sigma( x )$. In any case the range left has fewer than $\alpha$ superblocks
-(or one). Note that the bits $b$ before a superblock do not decrease with it;
-the last superblock of the range with at most $x$ of them before it is then
-$\sigma( x )$, which a binary search finds in at most $\lceil \log_2 \alpha
+(or one). Note that the bits $b$ before a superblock do not decrease with it.
+The last superblock of the range with at most $x$ of them before it is then
+$\sigma( x )$, and a binary search finds it in at most $\lceil \log_2 \alpha
 \rceil$ steps. Finally, (22.9) counts the fields of the top level, of $w_o$
 bits for a superblock and $w_g$ for the number of a group of the middle level,
 and the three words and the $a / b' + 1$ fields of such a group. Its fields
@@ -645,13 +645,13 @@ hence at most $N$) and $\kappa$ for the count of the long ranges before them
 (at most $a / b'$). Similarly, the $b'$ fields of a group of the bottom level
 have at most $w_o$ bits. $\square$
 
-Where the bits $b$ are spread evenly one can usually expect no long range, and
-the tree is then the top level, one field of $w_o + w_g$ bits every 1 or 2
+Where the bits $b$ are spread evenly one can usually expect no long range. The
+tree is then the top level, one field of $w_o + w_g$ bits every 1 or 2
 superblocks, i.e., a few hundredths of a percent of $m$ bits for each value
 with $L_0 = 2048$. However, the lower levels of (22.9) grow with $N / \alpha$.
 A vector made, e.g., of runs of one bit of about $\alpha$ superblocks between
-"dense" stretches may come close to the bound, possibly at a few tenths of a
-percent of $m$ bits, since its groups hold about $a / b'$ and $b'$ fields of
+"dense" stretches may come close to the bound (possibly at a few tenths of a
+percent of $m$ bits), since its groups hold about $a / b'$ and $b'$ fields of
 somewhat more than $\log_2 \alpha$ bits each.
 
 [Table 22.2](22-succinct.md#tab-22-2) summarizes the five vectors of bits with
@@ -660,9 +660,9 @@ queries dominate, since its rank typically reads one entry and one word;
 `CompactRankSelect` and `InterleavedRankSelect` cost 8 to 10 times fewer bits
 and a sum of up to 8 words per rank, the second with one miss of the cache
 instead of two. `TinyRankSelect` costs about 4 times fewer bits than these two
-for the rank, and a sum of up to 4 lines instead of one, with a select whose
-number of steps is bounded in the worst case ([Lemma
-22.8](22-succinct.md#lem-22-8)), which makes it arguably the one to choose when
+for the rank, and a sum of up to 4 lines instead of one. Its select has a
+number of steps bounded in the worst case ([Lemma
+22.8](22-succinct.md#lem-22-8)); hence it is arguably the one to choose when
 the directory must be small and the vector may be far from random.
 `RRRBitVector` ([§22.5](22-succinct.md#sec-22-5)) is perhaps the one to choose
 when the 1s (or the 0s) are "rare", since its space follows (22.2) instead of
