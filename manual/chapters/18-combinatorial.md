@@ -1119,8 +1119,8 @@ larger word with as many 1 bits as $x$.*
 *Proof.* Let the lowest run of 1s of $x$ have $r$ bits from the place
 $\rho = \rho( x )$. By (18.1), $u = x + 2^{\rho} - 1$ is $x$ with the
 places below $\rho$ set; its lowest run goes from the place 0 to the place
-$\rho + r - 1$, and the carry of $u + 1$ clears it and sets the place $\rho
-+ r$, so that $u + 1$ is $v = x + 2^{\rho}$ of Lemma 18.4. The only 1 of
+$\rho + r - 1$, and the carry of $u + 1$ clears it and sets the place
+$\rho + r$, so that $u + 1$ is $v = x + 2^{\rho}$ of Lemma 18.4. The only 1 of
 $u + 1$ that is not in $u$ is the bit set by the carry, hence $\lnot u
 \,\&\, ( u + 1 ) = 2^{\rho + r}$. Subtracting 1 gives the $\rho + r$ ones
 of the places $0 , \ldots , \rho + r - 1$, and the shift by $\rho + 1$

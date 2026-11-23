@@ -1135,8 +1135,8 @@ then the $i$-th operation, of actual cost $c_i$, has the *amortized cost*
 $c_i + \Phi_i - \Phi_{i-1}$, where $\Phi_{i-1}$ and $\Phi_i$ are the
 potentials before and after it. Consider, for instance, a vector that
 starts empty with capacity $c = 0$, and doubles its capacity when it is
-full (from 0 to 1 at the first insertion), with the potential $\Phi = 2 n
-- c$ when it holds $n$ items.
+full (from 0 to 1 at the first insertion), with the potential $\Phi = 2
+n - c$ when it holds $n$ items.
 
 <span id="lem-1-11"></span>**Lemma 1.11.** *If each operation of every
 sequence that starts from the empty structure has amortized cost at most

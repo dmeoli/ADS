@@ -276,8 +276,8 @@ being half full ([Cormen et al. 2009,
 
 <span id="thm-2-1"></span>**Theorem 2.1.** *`ArraySequence` realizes the
 SEQUENCE and the LIST; `read()`, `write()`, `next()` and `prev()` take
-$O( 1 )$ time, and `insert()` and `remove()` at the index $i$ take $O( 1
-+ n - i )$ amortized time. The vector has at most $4 n$ places once a
+$O( 1 )$ time, and `insert()` and `remove()` at the index $i$ take $O(
+1 + n - i )$ amortized time. The vector has at most $4 n$ places once a
 removal has been made, and fewer than $2 n$ after insertions only.*
 
 *Proof.* A shift moves $n - i$ items, and the resizes cost $O( 1 )$
@@ -878,8 +878,8 @@ b( i ) = \Bigl\lceil \frac{ -3 + \sqrt{ 9 + 8 i } }{ 2 } \Bigr\rceil ,
 $$
 
 i.e., the least $b$ with $( b + 1 ) ( b + 2 ) / 2 > i$, at the place $i - b
-( b + 1 ) / 2$ of it. An insertion or a removal at the rank $i$ moves the $n
-- i$ items after it through these places ([Algorithm
+( b + 1 ) / 2$ of it. An insertion or a removal at the rank $i$ moves the
+$n - i$ items after it through these places ([Algorithm
 2.10](02-sequence.md#alg-2-10)). Conversely, the last block is freed while
 $( r - 2 ) ( r - 1 ) / 2 \ge n$, which keeps one empty block at most for the
 next insertions (cf. [Lemma 2.13](02-sequence.md#lem-2-13)). [Figure
@@ -1731,8 +1731,8 @@ $b + 1$ items, the blocks between the first and the last holding at least $b -
 <span id="lem-2-23"></span>**Lemma 2.23.** *An `SEList` of $n$ items has
 at most $n / ( b - 1 ) + 2$ blocks, i.e., $O( n / b )$ pointers, and it
 takes $n + O( b + n / b )$ places; the block of
-the rank $i$ is reached from the nearer end through $O( 1 + \min\{ i , n
-- i \} / b )$ blocks.*
+the rank $i$ is reached from the nearer end through $O( 1 + \min\{ i ,
+n - i \} / b )$ blocks.*
 
 *Proof.* All the blocks but two hold $b - 1$ items at least. A block has
 exactly $b + 1$ places, and hence a middle block wastes 2 places at most
@@ -2617,8 +2617,8 @@ and the heap holds the other items of the first $\min\{ i + k + 1 , n \}$
 places of the input. The item of rank $i$ was at most $k$ places after the
 place $i$, and hence it is in the heap, all of whose items have rank $i$ or
 more. Hence the least item of the heap has the value of the item of rank
-$i$, which the step writes at the place $i$, while the item of the place $i
-+ k + 1$ enters the heap. Each step costs one sift of the heap, $O( \log (
+$i$, which the step writes at the place $i$, while the item of the place
+$i + k + 1$ enters the heap. Each step costs one sift of the heap, $O( \log (
 k + 2 ) )$ time. As for the insertion sort, an inversion $A[ i ] > A[ j ]$
 with $i < j$ needs the rank of $A[ i ]$, at most $i + k$, to exceed that of
 $A[ j ]$, at least $j - k$; hence $j - i < 2 k$, the inversions are fewer

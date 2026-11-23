@@ -824,8 +824,8 @@ the others with $b_j \le x$ is the last block $j$ of the sequence with $b_j
 \le x$. The items before the block $j$ are at most $b_j - 1 < x$, and the
 last item of $j$ is at least $x$, since it is $b_{j+1} - 1 \ge x$ if $j$ is
 not the last block, and the last item of the sequence otherwise. The answer
-is therefore $B j$ plus the number of the values of the block below $v = x
-- b_j$: $v$ itself in a full block, and the 1s of the first $v$ bits in a
+is therefore $B j$ plus the number of the values of the block below $v =
+x - b_j$: $v$ itself in a full block, and the 1s of the first $v$ bits in a
 vector, counted from the 1 of rank 64 (plus 64) when $v$ is beyond it. In
 Elias-Fano the values with a high part below $\lfloor v / 2^\ell \rfloor$
 are those whose 1 precedes the 0 that closes the bucket $\lfloor v / 2^\ell

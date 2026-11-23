@@ -3974,8 +3974,8 @@ ancestor of $x$. When $x$ is added, after $x - 1$ insertions, $a( x ) = L +
 of the subtree of $v_k$, of $s$ nodes, changes $a$ only on its nodes; each
 of them keeps $v_0 , \ldots , v_{k-1}$ and at least the new root of the
 subtree, which is on the spine, and loses at most the nodes $v_j$, $j \ge
-k$, that were above it. Its nodes therefore lose at most $\sum_{j \ge k} S_j
-- s$ in all. The nodes $v_{k+1} , \ldots , v_{d-1}$ of the climb did not
+k$, that were above it. Its nodes therefore lose at most $\sum_{j \ge k}
+S_j - s$ in all. The nodes $v_{k+1} , \ldots , v_{d-1}$ of the climb did not
 qualify, i.e., $S_{j+1} \le S_j / b$, whence $\sum_{j > k} S_j \le s \, b /
 ( b - 1 )$, and the rebuilds of $W$ nodes in all lower the sum of $a$ by at
 most $W b / ( b - 1 )$. Finally, at the end a key $x$ lies in the left
@@ -6310,15 +6310,15 @@ in the proof of [Lemma 8.86](08-tree.md#lem-8-86); the work is thus $O( \sum_r
 times $O( \log n )$. For the treaps, the joins of a filtered treap are those of
 treaps of random priorities on fewer keys, of expected cost $O( \log( s_v + 2 )
 )$. Furthermore, the $s$ keys of consecutive ranks $i , \ldots , i + s - 1$ are
-a subtree only if the key of rank $i - 1$ or that of rank $i
-+ s$, if they exist, has the largest priority of the $s + 2$ keys from $i -
-1$ to $i + s$ and the other one the second largest, which has probability
-$2 / ( ( s + 2 ) ( s + 1 ) )$ when both exist. The expected number of the
-subtrees of $s$ nodes is therefore at most $2 n / s^2 + 2$, and the expected
-work is $O( \sum_s \log( s + 2 ) ( n / s^2 + 1 ) ) = O( n )$ (the sum
-running on $s \le n$, the second term giving $O( \log^2 n )$). Last,
-`mapReduce()` makes one call per node and per nil, with one map and two
-reductions each, and the two calls of a node run in parallel. $\square$
+a subtree only if the key of rank $i - 1$ or that of rank $i + s$, if they
+exist, has the largest priority of the $s + 2$ keys from $i - 1$ to $i + s$ and
+the other one the second largest, which has probability $2 / ( ( s + 2 ) ( s +
+1 ) )$ when both exist. The expected number of the subtrees of $s$ nodes is
+therefore at most $2 n / s^2 + 2$, and the expected work is $O( \sum_s \log(
+s + 2 ) ( n / s^2 + 1 ) ) = O( n )$ (the sum running on $s \le n$, the second
+term giving $O( \log^2 n )$). Last, `mapReduce()` makes one call per node and
+per nil, with one map and two reductions each, and the two calls of a node run
+in parallel. $\square$
 
 <span id="tab-8-8"></span>**Table 8.8.** The operations of
 `JoinAlgorithms` and their methods in `Joinable`, for trees of $n$ keys

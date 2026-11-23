@@ -887,8 +887,8 @@ dinamica](Z-bibliography.md#ref-montresor2025), exercise B2 of
 highest columns on its sides, and the total is
 
 $$
-\sum_{i=0}^{n-1} \bigl( \min\{ \max_{j \le i} h_j , \max_{j \ge i} h_j \}
-- h_i \bigr) , \tag{13.8}
+\sum_{i=0}^{n-1} \bigl( \min\{ \max_{j \le i} h_j , \max_{j \ge i} h_j
+\} - h_i \bigr) , \tag{13.8}
 $$
 
 which one can compute with two arrays of the maxima, or with a stack of
@@ -1868,8 +1868,8 @@ $p_i / v_i$ are optimal for the fractional knapsack.*
 
 *Proof.* If an optimal solution has $x_j > 0$ while an object $i$ of
 larger $p_i / v_i$ is not whole, moving a volume $\varepsilon > 0$ from $j$
-to $i$ keeps the volume and changes the profit by $\varepsilon ( p_i / v_i
-- p_j / v_j ) \ge 0$; repeating the exchange gives the greedy fractions
+to $i$ keeps the volume and changes the profit by $\varepsilon ( p_i /
+v_i - p_j / v_j ) \ge 0$; repeating the exchange gives the greedy fractions
 with a profit at least as large. $\square$
 
 By decreasing profit, or by increasing volume, the greedy is not optimal,

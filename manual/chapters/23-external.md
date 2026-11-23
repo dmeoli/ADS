@@ -968,8 +968,8 @@ of one shows tails, and the tail, excluded, is no item of the set. Each of
 the $n - 1$ items other than the tail enters with probability $1 / 4$ (its
 coin heads, that of its successor tails), which gives the mean. Since no
 two items of the set are consecutive, it has at most $\lceil n / 2 \rceil$
-items, and with $p = \Pr[ X \ge n / 8 ]$ one has $( n - 1 ) / 4 \le n / 8
-+ p \lceil n / 2 \rceil$ and $\lceil n / 2 \rceil \le ( n + 1 ) / 2$, whence
+items, and with $p = \Pr[ X \ge n / 8 ]$ one has $( n - 1 ) / 4 \le n /
+8 + p \lceil n / 2 \rceil$ and $\lceil n / 2 \rceil \le ( n + 1 ) / 2$, whence
   the bound on $p$, at least $1 / 10$ for $n \ge 4$. (ii) A local minimum is
   smaller than both its neighbors, and therefore two local minima are not
   adjacent. Between two consecutive local minima the colors first increase and
