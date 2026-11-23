@@ -5,13 +5,13 @@
  * Tests of the engineered structures, beyond the book: the bucket queue and
  * the d-ary heap of plain items, the hash table with control bytes, the
  * hash table of pointers, the arena, the pool, the allocator on huge
- * pages, the hashing with random tables, the queues between threads and
- * the concurrent cuckoo table. Each one is checked against a reference of
- * the standard library on random operations, at the level 3 of the
- * contracts, and the structures between threads on real threads. The
- * tables are those of ADS also where `ADS_WITH_BOOST` delegates them to
- * Boost, since these tests look at their places one by one [see
- * `engineered_boost.cpp` for the delegations].
+ * pages, the hashing with random tables, the queues between threads, the
+ * concurrent cuckoo table and the concurrent B+-tree. Each one is checked
+ * against a reference of the standard library on random operations, at
+ * the level 3 of the contracts, and the structures between threads on
+ * real threads. The tables are those of ADS also where `ADS_WITH_BOOST`
+ * delegates them to Boost, since these tests look at their places one by
+ * one [see `engineered_boost.cpp` for the delegations].
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -29,6 +29,7 @@
 
 #include "ADSTest.h"
 
+#include "ADS/concurrent/ConcurrentBTreeMap.h"
 #include "ADS/concurrent/ConcurrentCuckooTable.h"
 #include "ADS/concurrent/ConcurrentFlatTable.h"
 #include "ADS/concurrent/MPSCInbox.h"
@@ -47,11 +48,13 @@
 
 #include <algorithm>
 #include <atomic>
+#include <bit>
 #include <climits>
 #include <cstdint>
 #include <deque>
 #include <functional>
 #include <limits>
+#include <map>
 #include <queue>
 #include <random>
 #include <set>
@@ -3072,6 +3075,404 @@ ADS_TEST( "single-writer-flat-table-threads" )
    CHECK( E.empty() && E.epoch() == std::uint64_t( round + 2 ) );
    }
   }
+ }
+
+/// the map M against std::map on random operations of keys in [ 0 , u )
+/// drawn by g: insert, assign, erase, find, lowerBound, upperBound and a
+/// scan of up to 8 pairs, the tree checked every 64 steps; the bad answers
+template< class M , class G >
+int againstStdMap( M & T , typename M::Handle & h ,
+		   std::map< typename M::Key , typename M::Value > & R ,
+		   G & g ,
+		   std::uint64_t u , int steps )
+{
+ using K = typename M::Key;
+ using X = typename M::Value;
+ int bad = 0;
+ for( int s = 0 ; s < steps ; ++s ) {
+  const K k = K( g() % u );
+  const X x = X( g() );
+  switch( g() % 7 ) {
+   case 0:
+    bad += h.insert( k , x ) != R.emplace( k , x ).second;
+    break;
+   case 1:
+    bad += h.assign( k , x ) != R.insert_or_assign( k , x ).second;
+    break;
+   case 2:
+   case 3:
+    bad += h.erase( k ) != ( R.erase( k ) == 1 );
+    break;
+   case 4: {
+    const auto o = h.find( k );
+    const auto r = R.find( k );
+    bad +=
+      ( r == R.end() ) ? o.has_value() : ( ( ! o ) || ( *o != r->second ) );
+    break;
+    }
+   case 5: {
+    const auto lo = h.lowerBound( k );
+    const auto up = h.upperBound( k );
+    const auto rl = R.lower_bound( k );
+    const auto ru = R.upper_bound( k );
+    bad +=
+      ( rl == R.end() ) ? lo.has_value() : ( lo != std::pair< K , X >( *rl ) );
+    bad +=
+      ( ru == R.end() ) ? up.has_value() : ( up != std::pair< K , X >( *ru ) );
+    break;
+    }
+   default: {
+    auto r = R.lower_bound( k );
+    std::size_t calls = h.scan( k , [ & ]( const K & a , const X & b ) {
+     bad += ( r == R.end() ) || ( r->first != a ) || ( r->second != b );
+     if( r != R.end() )
+      ++r;
+     return( std::distance( R.lower_bound( k ) , r ) < 8 );
+     } );
+    bad += calls != std::size_t( std::min< std::ptrdiff_t >(
+		      8 , std::distance( R.lower_bound( k ) , R.end() ) ) );
+    }
+   }
+  if( s % 64 == 0 )
+   bad += ! T.consistent();
+  }
+ return( bad );
+ }
+
+// the concurrent B+-tree on one thread: the empty map, one pair, a key
+// inserted twice and assigned, the extreme keys of 64 and of 32 bits,
+// signed and unsigned, an order reversed, random operations against
+// std::map on nodes of the least capacity (deep trees, many merges) and of
+// the default one, for sizes around the powers of 2, and the erasure of
+// all the keys, after which the root is a leaf again
+ADS_TEST( "concurrent-btree-map" )
+{
+ {
+  ConcurrentBTreeMap< std::uint64_t , std::uint64_t > T;
+  auto h = T.handle();
+  CHECK( T.empty() && T.size() == 0 && T.height() == 1 && T.consistent() );
+  CHECK( ! h.find( 7 ) && ! h.contains( 0 ) && ! h.erase( 7 ) );
+  CHECK( ! h.lowerBound( 0 ) && ! h.upperBound( 0 ) );
+  CHECK( h.scan( 0 , []( std::uint64_t , std::uint64_t ) { } ) == 0 );
+  CHECK( h.insert( 7 , 1 ) && ! h.insert( 7 , 2 ) && h.find( 7 ) == 1u );
+  CHECK( ! h.assign( 7 , 3 ) && h.find( 7 ) == 3u && T.size() == 1 );
+  using P = std::pair< std::uint64_t , std::uint64_t >;
+  CHECK( h.lowerBound( 7 ) == P( 7 , 3 ) );
+  CHECK( h.lowerBound( 0 )->first == 7 && ! h.upperBound( 7 ) );
+  CHECK( h.erase( 7 ) && ! h.erase( 7 ) && T.empty() && T.consistent() );
+  constexpr std::uint64_t top = ~std::uint64_t( 0 );
+  CHECK( h.insert( top , 1 ) && h.insert( 0 , 2 ) && h.find( top ) == 1u );
+  CHECK( h.upperBound( 0 )->first == top && ! h.upperBound( top ) );
+  CHECK( h.lowerBound( top )->first == top );
+  }
+ {
+  // signed keys of 32 bits, their extremes, on nodes of 4 places
+  using I = std::int32_t;
+  ConcurrentBTreeMap< I , I , std::less< I > , 64 > T;
+  static_assert( decltype( T )::kLeaf == 4 && decltype( T )::kInner == 4 );
+  auto h = T.handle();
+  const I lo = std::numeric_limits< I >::min() ,
+	  hi = std::numeric_limits< I >::max();
+  for( I k : { hi , lo , I( 0 ) , I( -1 ) , I( 1 ) , hi - 1 , lo + 1 } )
+   CHECK( h.insert( k , k ) );
+  std::vector< I > got;
+  h.scan( lo , [ &got ]( I k , I ) { got.push_back( k ); } );
+  CHECK( got == std::vector< I >( { lo , lo + 1 , -1 , 0 , 1 , hi - 1 ,
+				    hi } ) );
+  CHECK( h.upperBound( hi - 1 )->first == hi && ! h.upperBound( hi ) );
+  CHECK( h.lowerBound( lo )->first == lo && T.consistent() );
+  }
+ {
+  // the order reversed: the scan goes down
+  ConcurrentBTreeMap< std::uint32_t , std::uint32_t ,
+		      std::greater< std::uint32_t > , 64 >
+    T;
+  auto h = T.handle();
+  for( std::uint32_t k = 0 ; k < 1000 ; ++k )
+   CHECK( h.insert( k , k + 1 ) );
+  std::uint32_t last = 1000;
+  int bad = 0;
+  CHECK( h.scan( 999 , [ & ]( std::uint32_t k , std::uint32_t v ) {
+   bad += ( k + 1 != last ) || ( v != k + 1 );
+   last = k;
+   } ) == 1000 );
+  CHECK( bad == 0 && h.lowerBound( 1500 )->first == 999 &&
+	 h.upperBound( 0 ) == std::nullopt && T.consistent() );
+  }
+ std::mt19937_64 g( 81 );
+ for( std::uint64_t n : { 1ull , 2ull , 3ull , 31ull , 32ull , 33ull , 255ull ,
+			  256ull , 257ull , 4095ull , 4096ull , 4097ull } ) {
+  ConcurrentBTreeMap< std::uint64_t , std::uint64_t , std::less<> , 64 > S;
+  ConcurrentBTreeMap< std::uint64_t , std::uint64_t > D;
+  auto hs = S.handle();
+  auto hd = D.handle();
+  std::map< std::uint64_t , std::uint64_t > RS , RD;
+  const int steps = int( std::min< std::uint64_t >( 20 * n + 64 , 30000 ) );
+  CHECK( againstStdMap( S , hs , RS , g , 2 * n , steps ) == 0 );
+  CHECK( againstStdMap( D , hd , RD , g , 2 * n , steps ) == 0 );
+  CHECK( S.size() == RS.size() && D.size() == RD.size() );
+  // the keys from 0 to n - 1 in order, then all erased
+  for( std::uint64_t k = 0 ; k < n ; ++k ) {
+   hs.assign( k , k );
+   RS.insert_or_assign( k , k );
+   }
+  std::vector< std::pair< std::uint64_t , std::uint64_t > > all;
+  S.forEach( [ &all ]( std::uint64_t k , std::uint64_t v ) {
+   all.emplace_back( k , v );
+   } );
+  using P = std::pair< std::uint64_t , std::uint64_t >;
+  CHECK( ( all == std::vector< P >( RS.begin() , RS.end() ) ) );
+  for( const auto & [ k , v ] : RS )
+   CHECK( hs.erase( k ) );
+  for( int r = 0 ; r < 3 ; ++r )
+   hs.erase( 0 );  // the root, with one child, gives way to it
+  CHECK( S.empty() && S.consistent() && ( S.height() == 1 ) );
+  if( n >= 256 )
+   CHECK( hs.counts().splits > 0 && hs.counts().merges > 0 &&
+	  hs.counts().shares > 0 );
+  }
+ }
+
+// the concurrent B+-tree on 2, 4 and 8 threads, on nodes of 4 places and
+// of the default ones: each thread inserts, assigns and erases keys of a
+// small range, which all the threads share, while a reader checks that
+// each scan comes out sorted; then, for each key, the successful
+// insertions (by insert() or assign()) and the successful erasures of all
+// the threads alternate, so that their difference is 0 or 1 and gives
+// whether the key is in the map at the end, and the value of a key there
+// is one that a thread wrote; then disjoint keys per thread, inserted and
+// all erased but one in 16, the final map being exactly those
+template< std::size_t B >
+void btreeMapThreads( int p )
+{
+ using M = ConcurrentBTreeMap< std::uint64_t , std::uint64_t ,
+			       std::less< std::uint64_t > , B >;
+ const std::uint64_t u = 512;
+ const int steps = int( ADS::test::scaled( 40000 , 4000 ) );
+ M T;
+ std::vector< std::atomic< std::int64_t > > net( u );
+ for( auto & x : net )
+  x = 0;
+ std::atomic< bool > done{ false };
+ std::atomic< int > bad{ 0 };
+ std::vector< std::thread > W;
+ for( int t = 0 ; t < p ; ++t )
+  W.emplace_back( [ & , t ] {
+   auto h = T.handle();
+   std::mt19937_64 g( 91 + std::uint64_t( t ) );
+   for( int s = 0 ; s < steps ; ++s ) {
+    const std::uint64_t k = g() % u;
+    // the value carries the key, so that a value of another key is seen
+    const std::uint64_t x = ( k << 32 ) | std::uint64_t( t );
+    switch( g() % 4 ) {
+     case 0:
+      net[ k ] += h.insert( k , x );
+      break;
+     case 1:
+      net[ k ] += h.assign( k , x );
+      break;
+     case 2:
+      net[ k ] -= h.erase( k );
+      break;
+     default:
+      if( const auto o = h.find( k ) )
+       bad += ( *o >> 32 ) != k;
+     }
+    }
+   } );
+ std::thread reader( [ & ] {
+  auto h = T.handle();
+  std::mt19937_64 g( 97 );
+  while( ! done.load() ) {
+   std::uint64_t last = 0;
+   bool first = true;
+   h.scan( g() % u , [ & ]( std::uint64_t k , std::uint64_t x ) {
+    bad += ( ! first && ( k <= last ) ) || ( ( x >> 32 ) != k );
+    last = k;
+    first = false;
+    } );
+   const std::uint64_t k = g() % u;
+   if( const auto e = h.lowerBound( k ) )
+    bad += ( e->first < k ) || ( e->first >= u );
+   if( const auto e = h.upperBound( k ) )
+    bad += e->first <= k;
+   }
+  } );
+ for( auto & w : W )
+  w.join();
+ done = true;
+ reader.join();
+ CHECK( bad == 0 && T.consistent() );
+ auto h = T.handle();
+ std::size_t n = 0;
+ for( std::uint64_t k = 0 ; k < u ; ++k ) {
+  const auto o = h.find( k );
+  const std::int64_t d = net[ k ].load();
+  CHECK( ( d == 0 || d == 1 ) && ( o.has_value() == ( d == 1 ) ) );
+  if( o )
+   CHECK( ( *o >> 32 ) == k && ( *o & 0xFFFFFFFFu ) < std::uint64_t( p ) );
+  n += std::size_t( d );
+  }
+ CHECK( T.size() == n );
+ // disjoint keys, and a key range of 2^16 so that the tree deepens
+ const std::uint64_t m = ADS::test::scaled( 1 << 16 , 1 << 12 );
+ W.clear();
+ for( int t = 0 ; t < p ; ++t )
+  W.emplace_back( [ & , t ] {
+   auto hh = T.handle();
+   for( std::uint64_t k = std::uint64_t( t ) ; k < m ;
+	k += std::uint64_t( p ) )
+    bad += ! hh.insert( u + k , k );
+   for( std::uint64_t k = std::uint64_t( t ) ; k < m ;
+	k += std::uint64_t( p ) )
+    if( k % 16 != 0 )
+     bad += ! hh.erase( u + k );
+   } );
+ for( auto & w : W )
+  w.join();
+ std::vector< std::uint64_t > keys;
+ T.forEach( [ & ]( std::uint64_t k , std::uint64_t x ) {
+  if( k >= u ) {
+   keys.push_back( k );
+   bad += x != k - u;
+   }
+  } );
+ std::vector< std::uint64_t > want;
+ for( std::uint64_t k = 0 ; k < m ; k += 16 )
+  want.push_back( u + k );
+ CHECK( bad == 0 && keys == want && T.consistent() );
+ }
+
+ADS_TEST( "concurrent-btree-map-threads" )
+{
+ for( int p : { 2 , 4 , 8 } ) {
+  btreeMapThreads< 64 >( p );
+  btreeMapThreads< 1024 >( p );
+  }
+ }
+
+/// an operation of a history of the map: an insertion, an erasure, a
+/// lookup or a lowerBound of the key k, with its answer r (the success, the
+/// presence, or the key found, -1 for none), between the ticks of its
+/// invocation and of its response
+struct MapOp
+{
+ int kind , k , r;
+ std::uint64_t inv , res;
+ };
+
+/// whether the operations not in done can be linearized after those in
+/// done from the set of keys S (a mask of 8 bits), by the search of Wing
+/// and Gong, the failures memoized by ( done , S )
+bool mapLinearizable(
+  const std::vector< MapOp > & h , std::uint32_t done , unsigned S ,
+  std::set< std::pair< std::uint32_t , unsigned > > & failed )
+{
+ const std::uint32_t all = ( std::uint32_t( 1 ) << h.size() ) - 1;
+ if( done == all )
+  return( true );
+ if( failed.count( { done , S } ) )
+  return( false );
+ std::uint64_t first = ~std::uint64_t( 0 );
+ for( std::size_t i = 0 ; i < h.size() ; ++i )
+  if( ! ( ( done >> i ) & 1 ) )
+   first = std::min( first , h[ i ].res );
+ for( std::size_t i = 0 ; i < h.size() ; ++i ) {
+  if( ( ( done >> i ) & 1 ) || ( h[ i ].inv > first ) )
+   continue;
+  const MapOp & o = h[ i ];
+  const unsigned bit = 1u << o.k;
+  const bool in = S & bit;
+  unsigned T = S;
+  bool legal = false;
+  switch( o.kind ) {
+   case 0:  // insert
+    legal = o.r == int( ! in );
+    T = S | bit;
+    break;
+   case 1:  // erase
+    legal = o.r == int( in );
+    T = S & ~bit;
+    break;
+   case 2:  // find
+    legal = o.r == int( in );
+    break;
+   default: {  // lowerBound
+    const unsigned above = S & ~( bit - 1 );
+    legal = o.r == ( above ? std::countr_zero( above ) : -1 );
+    }
+   }
+  if( legal &&
+      mapLinearizable( h , done | ( std::uint32_t( 1 ) << i ) , T , failed ) )
+   return( true );
+  }
+ failed.insert( { done , S } );
+ return( false );
+ }
+
+/// short histories of p threads on a fresh map of nodes of 4 places,
+/// filled with half of 8 keys, each operation between two ticks of a
+/// clock: a linearization exists that explains the answers
+ADS_TEST( "concurrent-btree-map-linearizable" )
+{
+ for( int p : { 2 , 3 , 4 } )
+  for( int round = 0 ; round < 300 ; ++round ) {
+   const int m = 16 / p;  // operations per thread
+   ConcurrentBTreeMap< std::uint64_t , std::uint64_t , std::less<> , 64 > T;
+   unsigned S = 0;
+   {
+    auto h = T.handle();
+    std::mt19937_64 g( 300 + std::uint64_t( round ) );
+    for( int k = 0 ; k < 8 ; ++k )
+     if( g() & 1 ) {
+      h.insert( std::uint64_t( k ) , 0 );
+      S |= 1u << k;
+      }
+    }
+   std::atomic< std::uint64_t > clock{ 0 };
+   std::atomic< int > ready{ 0 };
+   std::vector< std::vector< MapOp > > H( static_cast< std::size_t >( p ) );
+   std::vector< std::thread > W;
+   for( int t = 0 ; t < p ; ++t )
+    W.emplace_back( [ & , t ] {
+     auto h = T.handle();
+     std::mt19937_64 g( 77 + std::uint64_t( round * 8 + t ) );
+     ready.fetch_add( 1 );
+     while( ready.load() < p ) {
+      }
+     for( int i = 0 ; i < m ; ++i ) {
+      MapOp o{};
+      o.kind = int( g() % 4 );
+      o.k = int( g() % 8 );
+      const std::uint64_t k = std::uint64_t( o.k );
+      o.inv = clock.fetch_add( 1 );
+      switch( o.kind ) {
+       case 0:
+	o.r = h.insert( k , 1 );
+	break;
+       case 1:
+	o.r = h.erase( k );
+	break;
+       case 2:
+	o.r = h.contains( k );
+	break;
+       default: {
+	const auto e = h.lowerBound( k );
+	o.r = e ? int( e->first ) : -1;
+        }
+       }
+      o.res = clock.fetch_add( 1 );
+      H[ std::size_t( t ) ].push_back( o );
+      }
+     } );
+   for( auto & w : W )
+    w.join();
+   std::vector< MapOp > h;
+   for( const auto & v : H )
+    h.insert( h.end() , v.begin() , v.end() );
+   std::set< std::pair< std::uint32_t , unsigned > > failed;
+   CHECK( mapLinearizable( h , 0 , S , failed ) && T.consistent() );
+   }
  }
 
 }  // end( namespace )

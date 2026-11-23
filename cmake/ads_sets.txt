@@ -104,6 +104,7 @@ compression/StreamVByte.h             advanced
 compression/Tans.h                    advanced
 
 concurrent/Backoff.h                  advanced
+concurrent/ConcurrentBTreeMap.h       advanced
 concurrent/ConcurrentCuckooTable.h    advanced
 concurrent/ConcurrentFlatTable.h      advanced
 concurrent/ConcurrentUnionFind.h      advanced

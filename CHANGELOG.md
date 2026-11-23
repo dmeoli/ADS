@@ -200,6 +200,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `engineered_parallel.parallel-pack-flatten`, `parallel-integer-sort` and
   `parallel-semisort-shuffle`, and section 25.6 of the manual (Algorithms
   25.Zps5 to 25.Zps9, Lemmas 25.Zps1 to 25.Zps3)
+- `ConcurrentBTreeMap`, an ordered map shared by threads on the B+-tree
+  with optimistic lock coupling of Leis et al., whose lookups write no
+  shared word and whose modifications lock only the nodes they change, with
+  `insert()`, `assign()`, `erase()`, `find()`, the linearizable
+  `lowerBound()` and `upperBound()` and the ordered `scan()` of a handle per
+  thread, the erasures merging or evening the nodes left short on their
+  way down, and the nodes unlinked reclaimed by the epochs of Fraser that
+  the map owns (`impl/OwnedEpochs.tpp`); the tests
+  `engineered.concurrent-btree-map`, `-threads` and `-linearizable`, the
+  case omap of `bench-parallel` (the load and the mixes of YCSB against
+  `tbb::concurrent_map` and the BTreeOLC of Leis et al., `BTREEOLC=<dir>`
+  of the makefile), and section 24.Zcm7 of the manual (Lemmas 24.Zcm1 to
+  24.Zcm5, Algorithm 24.Zcm6)
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits

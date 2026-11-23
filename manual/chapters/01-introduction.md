@@ -2094,6 +2094,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `external/RecordFile.h` | core | `RecordFile`, `RecordWriter`, `TempDirectory` | [23](23-external.md#ch-23) |
 | `external/TwoLevelMemory.h` | base | `TwoLevelMemory`, `MemoryLease`, `DiskFile`, `DiskReader`, `DiskWriter` | [23](23-external.md#ch-23) |
 | `concurrent/Backoff.h` | advanced | `Backoff` | [24](24-concurrent.md#ch-24) |
+| `concurrent/ConcurrentBTreeMap.h` | advanced | `ConcurrentBTreeMap` | [24](24-concurrent.md#ch-24) |
 | `concurrent/ConcurrentCuckooTable.h` | advanced | `ConcurrentCuckooTable` | [24](24-concurrent.md#ch-24) |
 | `concurrent/ConcurrentFlatTable.h` | advanced | `ConcurrentFlatTable`, `ZeroingClear`, `EpochClear` | [24](24-concurrent.md#ch-24) |
 | `concurrent/ConcurrentUnionFind.h` | advanced | `ConcurrentUnionFind` | [24](24-concurrent.md#ch-24) |

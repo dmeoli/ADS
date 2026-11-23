@@ -12,13 +12,14 @@
  relaxed priority queue, the event count on which a thread sleeps until a
  condition holds, the priority queues of the workers of a search that the
  idle workers steal from, an exact priority queue without locks, the
- table of one writer and the board of the least keys of the workers. This
+ table of one writer, the board of the least keys of the workers and an
+ ordered map whose lookups take no lock. This
  page collects what the headers take for granted: the model of the threads
  and of the memory and the meaning of correct and of nonblocking (see
  \ref theory_concurrent_notation), the structures and the cost of their
  operations (see \ref theory_concurrent_real), and, for each family, the
  property on which its correctness rests and the argument behind its cost
- (from \ref theory_concurrent_queues to \ref theory_concurrent_board). The
+ (from \ref theory_concurrent_queues to \ref theory_concurrent_omap). The
  pseudocode of each operation is instead on the page of its header, in the
  comment of its function, together with the paper that it follows, and with
  the order of memory of each access to a shared word written as a comment.
@@ -1134,6 +1135,69 @@
  head that returns \f$ h \f$ again, which precedes the unlink of
  \f$ n \f$.
 
+ \section theory_concurrent_omap An ordered map under optimistic locks
+
+ `ConcurrentBTreeMap` is the B+-tree with optimistic lock coupling of Leis
+ et al.: each node has a version, whose bit 1 is its lock and bit 0 marks
+ it obsolete, and whose other bits count its unlocks; a reader reads the
+ version (waiting while the lock is held), the fields it needs by loads
+ with acquire, and the version again by a sequentially consistent load (a
+ check), while a writer takes the lock by a compare-and-swap from the
+ version it read (an upgrade), writes the fields by stores with release,
+ and adds 2 to the version (3 when the node is now obsolete). The range of
+ a node is the set of the keys that the path from the root gives it.
+
+ <em>Lemma 24 (a check that passes).</em> If a thread reads the version
+ \f$ v \f$ of a node with the lock clear, then some of its fields, then
+ \f$ v \f$ again, the fields read are those of the state of the node from
+ the write of \f$ v \f$ to its next upgrade.
+
+ Indeed, the version only grows, so that \f$ v \f$ read again excludes an
+ upgrade after \f$ v \f$; a field written under such an upgrade, read by a
+ load with acquire, would make the upgrade happen before the second read
+ of the version, which would not give \f$ v \f$ by coherence, and the
+ stores before the unlock that wrote \f$ v \f$ are seen by the reader,
+ whose first read of \f$ v \f$ synchronizes with that unlock.
+
+ <em>Lemma 25 (the shape and the descent).</em> In every state with no node
+ locked the keys of each node increase, the leaves are at one depth, each
+ key lies in the range of its node, and the ranges of the leaves partition
+ the keys; the range of a node changes only by a split, a merge, a share or
+ a replacement of the root, each under the lock of the node. A descent for
+ \f$ x \f$ that reads the child of a node, checks the node, reads the
+ version \f$ w \f$ of the child and checks the node again, reaching the
+ leaf \f$ l \f$ of version \f$ w \f$, finds at a later check of \f$ l \f$
+ that gives \f$ w \f$ a leaf in the tree whose range holds \f$ x \f$.
+
+ The first part holds by induction on the changes, made under the locks of
+ all the nodes they touch; the second by induction on the levels, by Lemma
+ 24 applied to each node between its two checks, since the range of the
+ child cannot change while its version stays \f$ w \f$.
+
+ <em>Lemma 26 (linearizability).</em> `insert()`, `assign()` and `erase()`
+ are linearizable at the upgrade of their leaf (at the check of the leaf,
+ when the key is found by `insert()` or missed by `erase()`), `find()` at
+ the check of its leaf, and `lowerBound()` and `upperBound()` at the first
+ of the checks of all the leaves they read, repeated at their end; a scan
+ reads each leaf in one state.
+
+ By Lemma 25 an operation works on the only leaf where its key may lie, in
+ a state that no other thread changes before its point; the bounds read
+ leaves of consecutive ranges, each still in the state read at the first
+ of the final checks.
+
+ <em>Lemma 27 (reclamation and progress).</em> No node is freed while a
+ thread inside an operation may read it, and the operations do not
+ deadlock.
+
+ A node is reached through a check of its parent that precedes, in the
+ total order of the sequentially consistent operations, the upgrade that
+ unlinks it, and hence the read of the epoch of its retirement; the
+ argument of the epochs of Lemma 16 then applies. A thread waits only for
+ the lock of a node while it holds none, and lets every lock go after a
+ bounded number of its own steps. The modifications are blocking, and the
+ restarts may in principle repeat, as in the paper.
+
  \section theory_concurrent_refs References
 
  \see T. E. Anderson, The performance of spin lock alternatives for
@@ -1281,6 +1345,12 @@
       Computing (PODC), 261-270, 2015, doi:10.1145/2767386.2767436
  \see K. Fraser, Practical lock-freedom, PhD thesis, technical report
       UCAM-CL-TR-579, University of Cambridge, 2004, doi:10.48456/tr-579
+ \see V. Leis, F. Scheibner, A. Kemper, T. Neumann, The ART of practical
+      synchronization, International Workshop on Data Management on New
+      Hardware (DaMoN), 3:1-3:8, 2016, doi:10.1145/2933349.2933352
+ \see V. Leis, M. Haubenschild, T. Neumann, Optimistic lock coupling: a
+      scalable and efficient general-purpose synchronization method, IEEE
+      Data Engineering Bulletin 42(1), 73-84, 2019
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File concurrent.dox -------------------------*/
