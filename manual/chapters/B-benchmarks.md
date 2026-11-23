@@ -11,11 +11,11 @@ with the method by which they are run. No chapter of this manual gives a
 measured time: wherever a comparison belongs, the chapter leaves it to a
 campaign on an idle machine. This appendix fixes what that campaign runs,
 how a cell is measured and how its noise is estimated, how a campaign is
-reproduced, and where each chapter reports its numbers. At the time of
-writing the campaign has not been run; hence the tables below give the
-structure of the results, and their values will be filled in from the
-files that `bench/run.sh` writes in `results/`
-([§B.7](B-benchmarks.md#sec-B-7)). We gave in
+reproduced, and where each chapter reports its numbers. The tables below
+give the structure of the results, and their values are to be filled in
+from the files that `bench/run.sh` writes in `results/`
+([§B.7](B-benchmarks.md#sec-B-7)), where `results/README.md` already
+tabulates a single run of the campaign. We gave in
 [§A.7](A-writing-structure.md#sec-A-7) the rules by which a new structure
 enters a benchmark.
 
@@ -181,17 +181,15 @@ the programs of Knuth, run as processes, the reading of the file and the start
 of the process). Also, `graphs` includes the building of the structures of the
 run, e.g., of the priority queue.
 
-Note that the programs of several threads (`parallel`, `runtime` and
-`mpi`) make a
-first run that is not timed, which starts the threads of the runtime. In
-`matrix`, an untimed product of the same library precedes each product of
-up to 512 rows, and 20 ms of scalar work precede each cell; thus each
-product starts with its operands in the cache and the processor at the
-same clock. A cell is printed as one line of five fields separated by
-tabs, `( benchmark , case , n , structure , ns/op )`, with four decimals
-below one nanosecond and two above. Each program takes the options `-r`
-(the runs, 5 by default), `-s` (the seed of the random input) and the
-sizes after them.
+Note that the programs of several threads (`parallel`, `runtime` and `mpi`)
+make a first run that is not timed, which starts the threads of the runtime. In
+`matrix`, an untimed product of the same library precedes each product of up to
+512 rows, and 20 ms of scalar work precede each cell; thus each product starts
+with its operands in the cache and the processor at the same clock. A cell is
+printed as one line of five fields separated by tabs, `( benchmark , case , n ,
+structure , ns/op )`, with four decimals below one nanosecond and two above.
+Each program takes the options `-r` (the runs, 5 by default), `-s` (the seed of
+the random input) and the sizes after them.
 
 ## B.3 The noise {#sec-B-3}
 
@@ -215,15 +213,15 @@ with more digits than the noise allows.
 
 ## B.4 The machine {#sec-B-4}
 
-A campaign runs on a machine that nobody else uses meanwhile, and we
-check its load before starting, by the load average and by the busy time
-of the processors in `/proc/stat` (the count of the processes is not a
-reliable measure). In the header of its file, `bench/run.sh` records the
-model of the processor, the number of cores, the compiler, the load
-average at the start and at the end, the date, the core, the runs per
-cell, the mode of the processes and the text of the compressors; thus
-each file carries the conditions of its measurements. A campaign whose load rose during the run is
-repeated, not reported (its A/A noise would usually show it, cf.
+A campaign runs on a machine that nobody else uses meanwhile, and we check its
+load before starting, by the load average and by the busy time of the
+processors in `/proc/stat` (the count of the processes is not a reliable
+measure). In the header of its file, `bench/run.sh` records the model of the
+processor, the number of cores, the compiler, the load average at the start and
+at the end, the date, the core, the runs per cell, the mode of the processes
+and the text of the compressors; thus each file carries the conditions of its
+measurements. A campaign whose load rose during the run is repeated, and its
+file is discarded (its A/A noise would usually show it, cf.
 [§B.3](B-benchmarks.md#sec-B-3)).
 
 Each program runs pinned by `taskset` on one core (`CORE`, 0 by default). Those
@@ -248,7 +246,7 @@ We compile the benchmarks by the makefile with `-std=c++20 -O3 -march=native
 which keeps the branches off the boundaries of 32 bytes, where the
 erratum JCC of Skylake slows a loop by its alignment only. These flags
 are the same for ADS and for the libraries it is compared with, and
-therefore a ratio does not depend on where the code falls. Finally,
+therefore a ratio should depend little on where the code falls. Finally,
 `queues` keeps the memory freed in the heap of `malloc` (by `mallopt`);
 otherwise a structure might pay the faults of pages that another one did
 not, depending on the order of the cells.
@@ -278,9 +276,9 @@ the programs from the folder `BUILD` (`build-make` by default), runs
 benchmark of each type of the sorts as `sort <type>` (e.g., `sort
 uint32`), its pattern being the case.
 
-Two inputs come from outside the repository when they are given. For instance,
-the text of the compressors is the file of `ADS_BENCH_TEXT`, repeated up to
-each size (otherwise, words drawn from a Zipf law). Also, the road networks of
+Two inputs come from outside the repository when they are given: the
+text of the compressors is the file of `ADS_BENCH_TEXT`, repeated up to
+each size (otherwise, words drawn from a Zipf law), and the road networks of
 `graphs` are those of the 9th DIMACS Implementation Challenge when the folder
 `ADS_DIMACS` holds them (otherwise, points of the unit square joined to their
 nearest neighbors). Then `bench/tables.py` turns a file into one Markdown
@@ -388,11 +386,12 @@ A/A noise of the table and the file of results it comes from.
 
 In both, the measured values are filled in from the files of the campaign,
 `results/<host>-<date>.tsv`, as the README does for its table, whose
-values come from `results/frangioni-20261019-1216.tsv` and
-`results/frangioni-20261019-1315.tsv`, an earlier campaign on the
-benchmarks of the sorts, of the dictionaries, of the priority queues, of
-the sequences and of the long integers, which `results/README.md`
-tabulates. No number of this manual is taken from elsewhere.
+values come from `results/fenchel-20261122-0228.tsv`, a run of
+`bench/run.sh` on an AMD EPYC 9654, which `results/README.md`
+tabulates together with the libraries compared and the conditions of the
+machine (the files `frangioni-20261019-*.tsv` hold an earlier campaign on
+the sorts, the dictionaries, the priority queues, the sequences and the
+long integers). No number of this manual is taken from elsewhere.
 
 <span id="tab-B-3"></span>**Table B.3.** The structure of the summary of
 a campaign, as `bench/summary.py` writes it: for each benchmark and each
