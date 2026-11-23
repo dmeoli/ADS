@@ -156,6 +156,14 @@ struct priority_of
  };
 
 template< class Q >
+ requires(
+   requires { typename Q::Key; } && ! requires { typename Q::Priority; } )
+struct priority_of< Q >
+{
+ using type = typename Q::Key;
+ };
+
+template< class Q >
  requires requires { typename Q::Priority; }
 struct priority_of< Q >
 {
@@ -176,7 +184,8 @@ using key_type_t = typename detail::key_type_of< S >::type;
 template< class S >
 using modifications_of = typename detail::modifications_of< S >::type;
 
-/// the priorities of the queue `Q`: `Q::Priority`, else its items
+/// the priorities of the queue `Q`: `Q::Priority`, else `Q::Key` (the
+/// first key of a queue of two, e.g., `BucketQueue`), else its items
 template< class Q >
 using priority_t = typename detail::priority_of< Q >::type;
 
@@ -197,7 +206,12 @@ inline constexpr bool enable_stable_references = false;
 /// fall, so that its concurrent fields are atomics under a seqlock instead
 /// of the monotone ones read without a lock: an explicit opt-in for the
 /// incremental searches whose \f$ g \f$ may rise (LPA*, D* Lite), false by
-/// default, so that A* pays nothing
+/// default, so that A* pays nothing. `ConcurrentCuckooTable` opts in, since
+/// a lookup reads a pair under the version of its region (a seqlock) or
+/// under its lock, so that a value that holds \f$ g \f$ and the parent
+/// together is read as one write left it, while a table whose readers
+/// assume that \f$ g \f$ only falls (a minimum written by a
+/// compare-and-swap and read with no version) does not
 template< class T >
 inline constexpr bool nonmonotone_values = false;
 
@@ -590,14 +604,15 @@ concept addressable =
 
 /// `update( id )`, the key of the item \f$ \mathit{id} \f$ read again from
 /// the table the queue observes (the queue of the open nodes as an observer
-/// of the node table, in the form of LaB-PQ)
+/// of the node table, in the form of LaB-PQ, e.g., `TableHeap`)
 template< class Q >
 concept observes_values = requires( Q & q , int id )
 { q.update( id ); };
 
 /// `extract( theta , out )`, every item of priority at most
 /// \f$ \theta \f$ moved to `out` at once (the stepping algorithms, the
-/// bulk-synchronous search)
+/// bulk-synchronous search; `IndexedDaryHeap`, `TableHeap`, `RadixHeap`,
+/// `DialQueue` and `BucketQueue`, by its first key)
 template< class Q >
 concept batch_extract = requires( Q & q , const priority_t< Q > & theta ,
 				  std::vector< queue_item_t< Q > > & out )
@@ -614,7 +629,7 @@ concept shiftable_keys =
 
 /// a queue whose extractions never decrease, with `rebase()`, which lets
 /// the next episode start below the last key extracted (the radix and Dial
-/// queues between the episodes of a search)
+/// queues between the episodes of a search, `RadixHeap` and `DialQueue`)
 template< class Q >
 concept monotone_extract =
   PriorityQueue< Q > &&
@@ -635,7 +650,8 @@ struct same_key
 /// \endcond
 
 /// `rekey( f )`, the key of each item recomputed by \f$ f \f$ and the
-/// order rebuilt in \f$ O( n ) \f$ (the change of the key function)
+/// order rebuilt in \f$ O( n ) \f$ (the change of the key function;
+/// `IndexedDaryHeap`)
 template< class Q , class F = detail::same_key< Q > >
 concept rekeyable = requires( Q & q , F f )
 { q.rekey( f ); };

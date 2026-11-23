@@ -9,8 +9,15 @@
  * the native ones; each capability concept on a structure of ADS that
  * models it and on one that does not, where they exist; the semantic
  * opt-ins; the queries, their defaults, their forwarding by ObservedGraph
- * and their meet in Shadow; and the customization points reserve(),
- * prefetch() and insert_bulk(). At the level 3 of the contracts.
+ * and their meet in Shadow; the customization points reserve(),
+ * prefetch() and insert_bulk(); the capabilities of the incremental
+ * searches on the structures that model them, i.e., extract() of every
+ * queue that has it against repeated pops, rebase() of the monotone
+ * queues between two episodes, rekey() of IndexedDaryHeap, TableHeap as
+ * an observer of an ObservableArray against a heap fed by hand, and the
+ * values of ConcurrentCuckooTable raised and lowered by writers while
+ * readers check that each pair they read is whole. At the level 3 of the
+ * contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -47,15 +54,19 @@
 #include "ADS/priority/PairingHeap.h"
 #include "ADS/priority/RadixHeap.h"
 #include "ADS/priority/TreePriorityQueue.h"
+#include "ADS/sequence/ObservableArray.h"
 #include "ADS/set/RoaringBitmap.h"
 #include "ADS/tree/JoinTree.h"
 
+#include <algorithm>
+#include <atomic>
 #include <cstdint>
 #include <list>
 #include <queue>
 #include <random>
 #include <set>
 #include <span>
+#include <thread>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -207,12 +218,23 @@ static_assert( augmented_by< Sum , SumAugmentation< int > > &&
 static_assert( range_actionable< Every , int > &&
 	       ! range_actionable< Sum , int > );
 static_assert( observes_values< Every > &&
+	       observes_values< TableHeap< std::vector< int > > > &&
+	       observes_values< TableHeap< ObservableArray< long > > > &&
 	       ! observes_values< IndexedDaryHeap< int > > );
-static_assert( batch_extract< Every > && ! batch_extract< RadixHeap< int > > );
+static_assert( batch_extract< Every > &&
+	       batch_extract< IndexedDaryHeap< int > > &&
+	       batch_extract< TableHeap< std::vector< int > > > &&
+	       batch_extract< RadixHeap< int > > &&
+	       batch_extract< DialQueue< int > > &&
+	       batch_extract< BucketQueue< int > > &&
+	       ! batch_extract< DaryHeap< int > > );
 static_assert( shiftable_keys< Every > &&
 	       ! shiftable_keys< DaryHeap< int > > );
-static_assert( ! monotone_extract< RadixHeap< int > > );
-static_assert( rekeyable< Every > && ! rekeyable< DaryHeap< int > > );
+static_assert( monotone_extract< RadixHeap< int > > &&
+	       monotone_extract< DialQueue< int > > &&
+	       ! monotone_extract< IndexedDaryHeap< int > > );
+static_assert( rekeyable< Every > && rekeyable< IndexedDaryHeap< int > > &&
+	       ! rekeyable< DaryHeap< int > > );
 static_assert( erasable< ConcurrentCuckooTable< int , int > > &&
 	       ! erasable< Zeroing > );
 static_assert( epoch_clearable< Epochs > && ! epoch_clearable< Zeroing > );
@@ -235,7 +257,9 @@ static_assert( declares_monotone< Every > &&
 	       monotone_of< Every >() == mod::effect::down );
 static_assert( ! declares_monotone< ListGraph< int > > &&
 	       ( monotone_of< ListGraph< int > >() & mod::effect::up ) );
-static_assert( ! nonmonotone_values< Every > );
+static_assert( ! nonmonotone_values< Every > &&
+	       nonmonotone_values< ConcurrentCuckooTable< int , int > > &&
+	       ! nonmonotone_values< Zeroing > );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ THE QUERIES -------------------------------*/
@@ -485,6 +509,262 @@ ADS_TEST( "cap-points" )
  RoaringBitmap b;
  ADS::insert_bulk( b , std::vector< std::uint32_t >{ 7 , 9 } );
  CHECK( b.rank( 9 ) == 1 );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*---------------------- THE CAPABILITIES OF THE SEARCHES ------------------*/
+/*--------------------------------------------------------------------------*/
+
+ADS_TEST( "cap-extract" )
+{
+ // extract( theta ) of each queue against pops while the key is at most
+ // theta, on the same random keys, a band at a time as a stepping
+ // algorithm takes them
+ std::mt19937 rng( 5 );
+ const int n = 300;
+ std::vector< int > key( n );
+ for( int & k : key )
+  k = int( rng() % 1000 );
+ IndexedDaryHeap< int > h( n ) , h2( n );
+ RadixHeap< int > r , r2;
+ DialQueue< int > q( 255 ) , q2( 255 );
+ BucketQueue< int > b , b2;
+ for( int i = 0 ; i < n ; ++i ) {
+  h.push( i , key[ i ] );
+  h2.push( i , key[ i ] );
+  r.push( i , unsigned( key[ i ] ) );
+  r2.push( i , unsigned( key[ i ] ) );
+  q.push( i , unsigned( key[ i ] ) );
+  q2.push( i , unsigned( key[ i ] ) );
+  b.push( i , key[ i ] , i % 7 );
+  b2.push( i , key[ i ] , i % 7 );
+  }
+ for( int theta = 99 ; theta < 1100 ; theta += 100 ) {
+  std::vector< int > a , c;
+  h.extract( theta , a );
+  while( ! h2.empty() && ( h2.top().key <= theta ) )
+   c.push_back( h2.pop().id );
+  CHECK( a == c );
+  a.clear();
+  c.clear();
+  r.extract( unsigned( theta ) , a );
+  while( ! r2.empty() && ( r2.peekKey() <= unsigned( theta ) ) )
+   c.push_back( r2.pop() );
+  CHECK( ( a.size() == c.size() ) &&
+	 std::is_permutation( a.begin() , a.end() , c.begin() ) );
+  for( std::size_t i = 1 ; i < a.size() ; ++i )
+   CHECK( key[ a[ i - 1 ] ] <= key[ a[ i ] ] );
+  a.clear();
+  c.clear();
+  q.extract( unsigned( theta ) , a );
+  while( ! q2.empty() && ( q2.peekKey() <= unsigned( theta ) ) )
+   c.push_back( q2.pop() );
+  CHECK( a == c );
+  // the keys pushed next need only be above the last one extracted
+  if( ! q.empty() )
+   CHECK( q.peekKey() > unsigned( theta ) );
+  a.clear();
+  c.clear();
+  b.extract( theta , a );
+  while( ! b2.empty() && ( b2.topF() <= theta ) )
+   c.push_back( b2.pop() );
+  CHECK( a == c );
+  }
+ CHECK( h.empty() && r.empty() && q.empty() && b.empty() );
+ // a push between the band extracted and the next key, which a top key
+ // read by topKey() would forbid
+ DialQueue< int > d( 63 );
+ d.push( 1 , 10 );
+ d.push( 2 , 50 );
+ std::vector< int > o;
+ d.extract( 20 , o );
+ d.push( 3 , 30 );
+ CHECK( ( o == std::vector< int >{ 1 } ) && ( d.pop() == 3 ) );
+ }
+
+ADS_TEST( "cap-rebase" )
+{
+ // the monotone queues between two episodes: the keys of the second start
+ // below the last key extracted in the first
+ RadixHeap< int > r;
+ DialQueue< int > q( 63 );
+ for( int i = 0 ; i < 50 ; ++i ) {
+  r.push( i , unsigned( 100 + 7 * i ) );
+  q.push( i , unsigned( 100 + 7 * i ) );
+  }
+ for( int i = 0 ; i < 20 ; ++i )
+  CHECK( ( r.pop() == i ) && ( q.pop() == i ) );
+ // the keys left are at least 240: the next episode starts from 50
+ r.rebase( 50 );
+ q.rebase( 50 );
+ r.push( 100 , 60 );
+ q.push( 100 , 60 );
+ r.push( 101 , 1000 );  // into the overflow of the Dial queue
+ q.push( 101 , 1000 );
+ CHECK( ( r.size() == 32 ) && ( q.size() == 32 ) );
+ CHECK( ( r.topKey() == 60 ) && ( q.topKey() == 60 ) );
+ CHECK( ( r.pop() == 100 ) && ( q.pop() == 100 ) );
+ for( int i = 20 ; i < 50 ; ++i ) {
+  CHECK( ( r.topKey() == unsigned( 100 + 7 * i ) ) &&
+	 ( q.topKey() == unsigned( 100 + 7 * i ) ) );
+  CHECK( ( r.pop() == i ) && ( q.pop() == i ) );
+  }
+ CHECK( ( r.pop() == 101 ) && ( q.pop() == 101 ) );
+ CHECK( r.empty() && q.empty() );
+ // on an empty queue, and with signed keys below zero
+ RadixHeap< int , int > s;
+ s.push( 1 , 5 );
+ CHECK( s.pop() == 1 );
+ s.rebase( -3 );
+ s.push( 2 , -3 );
+ s.push( 3 , -1 );
+ CHECK( ( s.topKey() == -3 ) && ( s.pop() == 2 ) && ( s.pop() == 3 ) );
+ }
+
+ADS_TEST( "cap-rekey" )
+{
+ // the keys of a heap recomputed, against a heap built from scratch on
+ // them; the observers told Rebuilt
+ struct Rb
+ {
+  int r = 0;
+  void on( const mod::Rebuilt & ) noexcept { ++r; }
+  };
+ const int n = 200;
+ Rb rb;
+ IndexedDaryHeap< int , 4 , Static< Rb > > h( n , rb );
+ std::mt19937 rng( 3 );
+ for( int i = 0 ; i < n ; i += 2 )
+  h.push( i , int( rng() % 100 ) );
+ auto f = []( int id ) { return( ( id * 37 ) % 101 ); };
+ h.rekey( f );
+ CHECK( rb.r == 1 );
+ IndexedDaryHeap< int > p( n );
+ for( int i = 0 ; i < n ; i += 2 )
+  p.push( i , f( i ) );
+ while( ! p.empty() ) {
+  CHECK( h.top().key == p.top().key );
+  CHECK( h.key( h.top().id ) == f( h.top().id ) );
+  h.pop();
+  p.pop();
+  }
+ CHECK( h.empty() );
+ }
+
+ADS_TEST( "cap-tableheap" )
+{
+ // the queue of LaB-PQ as an observer of an observable table, against a
+ // heap fed by hand with the same keys
+ using Table = ObservableArray< long , Dynamic<> >;
+ const int n = 64;
+ Table t( std::size_t( n ) , 1000 );
+ TableHeap< Table > q( t , n );
+ t.attach( q );
+ IndexedDaryHeap< long > p( n );
+ std::mt19937 rng( 9 );
+ for( int s = 0 ; s < 3000 ; ++s ) {
+  const int id = int( rng() % unsigned( n ) );
+  const int r = int( rng() % 5 );
+  if( r < 3 ) {  // a write of the table: the id enters or moves
+   const long k = long( rng() % 500 );
+   t.set( std::size_t( id ) , k );
+   if( p.contains( id ) )
+    p.update( id , k );
+   else
+    p.push( id , k );
+   }
+  else if( r == 3 ) {  // the frontier extracts a band
+   const long theta = long( rng() % 500 );
+   std::vector< int > a , c;
+   q.extract( theta , a );
+   p.extract( theta , c );
+   CHECK( a.size() == c.size() );
+   for( std::size_t i = 0 ; i < a.size() ; ++i )
+    CHECK( t[ std::size_t( a[ i ] ) ] == t[ std::size_t( c[ i ] ) ] );
+   for( int x : c )
+    CHECK( ! q.contains( x ) );
+   }
+  else if( ! q.empty() ) {
+   CHECK( t[ std::size_t( q.min() ) ] == p.top().key );
+   const int x = q.deleteMin();
+   p.erase( x );
+   }
+  CHECK( q.size() == p.size() );
+  for( int i = 0 ; i < n ; ++i )
+   CHECK( ( q.contains( i ) == p.contains( i ) ) &&
+	  ( ! q.contains( i ) || ( q.key( i ) == p.key( i ) ) ) );
+  }
+ // a value of the table erased, then the table rebuilt smaller
+ t.push_back( 3 );
+ CHECK( q.contains( n ) && ( q.min() == n ) );
+ t.pop_back();
+ CHECK( ! q.contains( n ) );
+ for( int i = 0 ; i < 10 ; ++i )
+  q.update( i );
+ const std::vector< long > w{ 9 , 8 , 7 , 6 , 5 };
+ t.assign( w.begin() , w.end() );
+ CHECK( ( q.size() == 5 ) && ( q.min() == 4 ) && ( q.key( 0 ) == 9 ) );
+ t.clear();
+ CHECK( q.empty() );
+ // a plain vector as the table, updated by hand
+ std::vector< int > v{ 5 , 3 , 8 };
+ TableHeap< std::vector< int > > u( v );
+ for( int i = 0 ; i < 3 ; ++i )
+  u.update( i );
+ v[ 2 ] = 1;
+ u.update( 2 );
+ CHECK( ( u.deleteMin() == 2 ) && ( u.deleteMin() == 1 ) );
+ }
+
+ADS_TEST( "cap-nonmonotone" )
+{
+ // the values of a concurrent table raised and lowered by one writer per
+ // key while readers check that each pair they read is whole, g and its
+ // parent written together (R2)
+ struct Node
+ {
+  std::int32_t g , parent;
+  };
+ struct Wide
+ {
+  std::int64_t g , parent , pad;
+  };
+ auto run = [ & ]< class V >( V ) {
+  ConcurrentCuckooTable< int , V > t( 64 );
+  const int keys = 32;
+  for( int k = 0 ; k < keys ; ++k )
+   t.insert( k , V{ 0 , 1 } );
+  std::atomic< bool > stop{ false };
+  std::atomic< long > reads{ 0 } , torn{ 0 };
+  std::vector< std::thread > W , R;
+  for( int w = 0 ; w < 2 ; ++w )
+   W.emplace_back( [ & , w ] {
+    std::mt19937 rng( unsigned( 11 + w ) );
+    for( int s = 0 ; s < 20000 ; ++s ) {
+     const int k = 2 * int( rng() % ( keys / 2 ) ) + w;  // its own keys
+     const auto g = decltype( V::g )( rng() % 1000 );    // up or down
+     t.insertOrAssign( k , V{ g , decltype( V::parent )( 3 * g + 1 ) } );
+     }
+    } );
+  for( int r = 0 ; r < 2 ; ++r )
+   R.emplace_back( [ & , r ] {
+    std::mt19937 rng( unsigned( 31 + r ) );
+    while( ! stop.load() ) {
+     const auto x = t.find( int( rng() % keys ) );
+     reads.fetch_add( 1 );
+     if( ! x || ( x->parent != 3 * x->g + 1 ) )
+      torn.fetch_add( 1 );
+     }
+    } );
+  for( auto & x : W )
+   x.join();
+  stop.store( true );
+  for( auto & x : R )
+   x.join();
+  CHECK( ( torn.load() == 0 ) && ( reads.load() > 0 ) );
+  };
+ run( Node{} );
+ run( Wide{} );
  }
 
 /*--------------------------------------------------------------------------*/

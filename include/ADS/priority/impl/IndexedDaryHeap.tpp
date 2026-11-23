@@ -220,6 +220,32 @@ void IndexedDaryHeap< K , D , P , A >::clear( void )
  }
 
 template< class K , unsigned D , class P , class A >
+void IndexedDaryHeap< K , D , P , A >::extract( const K & theta ,
+					     std::vector< int > & out )
+{
+ while( ! f_A.empty() && ! ( theta < f_A.front().key ) )
+  out.push_back( pop().id );
+ }
+
+template< class K , unsigned D , class P , class A >
+template< class F >
+void IndexedDaryHeap< K , D , P , A >::rekey( F && f )
+{
+ for( Entry & e : f_A )
+  e.key = f( e.id );
+ const std::size_t s = f_A.size();
+ if( s > 1 )
+  for( std::size_t i = ( s - 2 ) / D + 1 ; i-- > 0 ; )
+   down( i , f_A[ i ] );
+ if constexpr( heard< mod::Rebuilt > )
+  if( alive< mod::Rebuilt >() ) {
+   f_sub.emit( mod::Rebuilt{} );
+   f_sub.audit( *this );
+   }
+ ADS_INVARIANT( ordered() );
+ }
+
+template< class K , unsigned D , class P , class A >
 template< bool T >
 inline void
 IndexedDaryHeap< K , D , P , A >::up( std::size_t i , Entry x ,

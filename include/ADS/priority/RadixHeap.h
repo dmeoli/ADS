@@ -46,6 +46,31 @@
  * The buckets come from the allocator `A`, `std::allocator` by default,
  * with the rules of the standard [see `AllocatorAware.h`].
  *
+ * Between two episodes of a search, `rebase( k )` lets the keys pushed next
+ * start from \f$ k \f$, below the last one extracted, provided that no key
+ * in the heap is below \f$ k \f$: the items are placed again for the new
+ * \f$ \ell = k \f$, in \f$ O( n + 2^B W / B ) \f$ time (no move at all
+ * when the heap is empty). `extract( theta , out )` moves to `out` every
+ * item of key at most \f$ \theta \f$, in increasing order of the keys,
+ * reading the least key by `peekKey()`, so that a key above \f$ \theta
+ * \f$ is not taken for extracted and the keys pushed next need only be not
+ * smaller than the last one moved (the stepping algorithms, which extract a
+ * band of keys and then push the keys that its relaxations give).
+ *
+ * The heap tells its changes through the subject policy `Policy` [see
+ * `Modification.h`], `NoObservers` by default, with which every operation
+ * compiles to the code of the plain heap: `Inserted` by `push()`, after
+ * it, and `Erased` by `pop()`, before the removal, and by `extractBelow()`
+ * and `extract()`, as each item is extracted, both with the item as the
+ * handle and its key; `Cleared` after `clear()`, and `Rebuilt` at the end
+ * of a mute. A heap has no handles, and the same item may be in it several
+ * times (the lazy decrease of section 10.1, an item pushed again when its
+ * key improves): a batch then coalesces the events of an item by its key as
+ * well, an erasure cancelling an insertion of the same item and key [see
+ * `coalesce_traits`], so that the net events are those of a multiset of
+ * pairs. `rebase()` changes neither the items nor their keys, and tells
+ * nothing.
+ *
  * The contracts [see `Contract.h`]: a key pushed is not smaller than any
  * key extracted, by `pop()` or by `extractBelow()`, or read by `top()` and
  * `topKey()` (any key before the first of them and after `clear()`), which
@@ -82,6 +107,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Modification.h"
 #include "ADS/memory/AllocatorAware.h"
 
 #include <array>
@@ -108,7 +134,7 @@ namespace ADS
 /// a monotone queue of items with integer keys of the type `K`, the least
 /// key first, in buckets by digits of \f$ B \f$ bits
 template< class T , std::integral K = std::uint32_t , unsigned B = 4 ,
-	  class A = std::allocator< T > >
+	  class A = std::allocator< T > , class Policy = NoObservers >
 class RadixHeap
 {
 
@@ -119,12 +145,33 @@ class RadixHeap
  using Item = T;  ///< the type of the items
  using Key = K;   ///< the type of the keys
 
+ /// the events: an item inserted or erased with its key, the heap emptied
+ /// or rebuilt
+ using modifications = mod::list< mod::Inserted< T , K > ,
+				  mod::Erased< T , K > ,
+				  mod::Cleared , mod::Rebuilt >;
+ /// the subject
+ using Subject = typename Policy::template bind< modifications , RadixHeap >;
+
  /// the empty heap
  RadixHeap( void ) = default;
 
  /// the empty heap, its buckets from `alloc`
  explicit RadixHeap( const A & alloc )
      : f_B( buckets( alloc , std::make_index_sequence< NB >() ) ) { }
+
+ /// the empty heap, the static observers `o...`
+ template< class... O >
+  requires( ( sizeof...( O ) > 0 ) &&
+	    ( ! std::is_convertible_v< O & , const A & > && ... ) &&
+	    ( ! std::is_base_of_v< RadixHeap , O > && ... ) )
+ explicit RadixHeap( O &... o ) : f_sub( o... ) { }
+
+ /// the empty heap, its buckets from `alloc`, the static observers `o...`
+ template< class... O >
+ RadixHeap( std::allocator_arg_t , const A & alloc , O &... o )
+     : f_B( buckets( alloc , std::make_index_sequence< NB >() ) ) ,
+       f_sub( o... ) { }
 
  /// the type of the allocator
  using allocator_type = A;
@@ -243,9 +290,77 @@ class RadixHeap
  /// pushed next
  void clear( void );
 
+ /// the keys pushed next may start from \f$ k \f$, the items placed again
+ /// for \f$ \ell = k \f$, in \f$ O( n + 2^B W / B ) \f$ time
+ ///
+ /// In pseudocode (beyond the book), with \f$ \mathrm{bucket}() \f$ of
+ /// `push()`:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{rebase}( k ) \cr
+ /// 2 & \quad E \gets \text{the pairs } ( k' , x ) \text{ of all the}
+ ///     \text{ buckets};\ \text{empty the buckets} \cr
+ /// 3 & \quad \ell \gets k;\ \text{the largest key extracted} \gets
+ ///     k \cr
+ /// 4 & \quad \textbf{foreach}\ ( k' , x ) \in E\ \textbf{do}\ \text{push }
+ ///     ( k' , x ) \text{ on } B[ \mathrm{bucket}( k' ) ]
+ /// \end{array}}
+ /// \f]
+ /// \pre no key in the heap is below \f$ k \f$
+ void rebase( K k );
+
+ /// every item of key at most \f$ \theta \f$ appended to `out`, by
+ /// increasing keys, each extracted as by `pop()`
+ void extract( K theta , std::vector< T > & out );
+
+/*--------------------------- THE OBSERVERS --------------------------------*/
+
+ /// the subject, for `ADS::batch()` and `ADS::quiet()`
+ [[nodiscard]] Subject & subject( void ) { return( f_sub ); }
+ /// the subject
+ [[nodiscard]] const Subject & subject( void ) const { return( f_sub ); }
+
+ /// attaches the observer \f$ o \f$ and gives its number
+ /// \pre no batch is open
+ template< class O >
+ int attach( O & o )
+  requires( Subject::dynamic )
+ {
+  return( f_sub.attach( o ) );
+  }
+
+ /// detaches the observer number \f$ \mathit{id} \f$
+ /// \pre it is attached, no batch is open
+ void detach( int id )
+  requires( Subject::dynamic )
+ {
+  f_sub.detach( id );
+  }
+
 /*--------------------------------------------------------------------------*/
  private:
  using U = std::make_unsigned_t< K >;
+ using Ins = mod::Inserted< T , K >;  ///< an insertion
+ using Era = mod::Erased< T , K >;    ///< an erasure
+
+ /// whether someone may want `E`, at compile time
+ template< class E >
+ static constexpr bool heard = Subject::template listened< E >;
+
+ /// `pop()` with no event
+ T popPlain( void );
+
+ /// `extractBelow()` with no event
+ template< class F >
+ void extractPlain( K limit , F && f );
+
+ /// the change of an operation when someone listens
+ void pushTold( const T & x , K k );
+ T popTold( void );  ///< as pushTold()
+
+ /// the changes when someone listens, out of the hot code
+ ADS_COLD_PATH void pushCold( const T & x , K k ) { pushTold( x , k ); }
+ ADS_COLD_PATH T popCold( void ) { return( popTold() ); }
 
  static constexpr unsigned W = std::numeric_limits< U >::digits;
  static constexpr unsigned ROWS = ( W + B - 1 ) / B;
@@ -329,6 +444,7 @@ class RadixHeap
  U f_floor = 0;           ///< the largest key extracted or read
  unsigned f_cur = 0;      ///< the bucket of the top, if pulled
  std::size_t f_size = 0;  ///< the number of items
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  static std::array< U , NB > fill_max( void ) {
   std::array< U , NB > a;

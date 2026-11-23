@@ -62,6 +62,20 @@
  * give a dense layer a second key past \f$ 2^{32} - 2 \f$, throws
  * `std::length_error` and leaves the items of the queue as they were.
  *
+ * `extract( theta , out )` moves to `out` the items of first key at most
+ * \f$ \theta \f$, in the order of `pop()`, as the bulk-synchronous searches
+ * take a band of the least \f$ f \f$ at once.
+ *
+ * The queue tells its changes through the subject policy `Policy` [see
+ * `Modification.h`], `NoObservers` by default, with which every operation
+ * compiles to the code of the plain queue: `Inserted` by `push()`, after
+ * it, and `Erased` by `pop()`, `popEntry()` and `extract()`, before the
+ * removal, both with the item as the handle, \f$ f \f$ as the key and
+ * \f$ g \f$ as the value; `Cleared` after `clear()`, and `Rebuilt` at the
+ * end of a mute. The same item may be in the queue several times (the
+ * stale copies above), and a batch coalesces its events by its keys as
+ * well [see `RadixHeap.h`].
+ *
  * The contracts [see `Contract.h`]: the keys are nonnegative, and `top()`,
  * `topF()`, `topG()` and `pop()` need a queue that is not empty; the
  * invariant is that the counts of the layers add up to `size()`, and that the
@@ -100,6 +114,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Modification.h"
 
 #include <algorithm>
 #include <concepts>
@@ -107,6 +122,7 @@
 #include <cstdint>
 #include <iterator>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -149,7 +165,8 @@ concept BucketTie = requires {
 
 /// a two-level bucket queue: least \f$ f \f$ first, then largest (or, by
 /// the policy `Tie`, least) \f$ g \f$, then LIFO
-template< class T , std::integral K = int , BucketTie Tie = LargestSecondKey >
+template< class T , std::integral K = int , BucketTie Tie = LargestSecondKey ,
+	  class Policy = NoObservers >
 class BucketQueue
 {
 
@@ -158,6 +175,24 @@ class BucketQueue
  using Item = T;    ///< the type of the items
  using Key = K;     ///< the type of the keys
  using Ties = Tie;  ///< the order among the items of one f
+
+ /// the events: an item inserted or erased with its keys \f$ f \f$ and
+ /// \f$ g \f$, the queue emptied or rebuilt
+ using modifications =
+   mod::list< mod::Inserted< T , K , K > , mod::Erased< T , K , K > ,
+	      mod::Cleared ,
+	      mod::Rebuilt >;
+ /// the subject
+ using Subject = typename Policy::template bind< modifications , BucketQueue >;
+
+ /// the empty queue
+ BucketQueue( void ) = default;
+
+ /// the empty queue, the static observers `o...`
+ template< class... O >
+  requires( ( sizeof...( O ) > 0 ) &&
+	    ( ! std::is_base_of_v< BucketQueue , O > && ... ) )
+ explicit BucketQueue( O &... o ) : f_sub( o... ) { }
 
  /// pushes \f$ x \f$ with the keys \f$ f \f$ and \f$ g \f$
  ///
@@ -292,6 +327,34 @@ class BucketQueue
 
  /// removes all the items and frees the layers
  void clear( void );
+
+ /// every item of first key at most \f$ \theta \f$ appended to `out`, in
+ /// the order of `pop()`, each extracted as by it
+ void extract( K theta , std::vector< T > & out );
+
+/*--------------------------- THE OBSERVERS --------------------------------*/
+
+ /// the subject, for `ADS::batch()` and `ADS::quiet()`
+ [[nodiscard]] Subject & subject( void ) { return( f_sub ); }
+ /// the subject
+ [[nodiscard]] const Subject & subject( void ) const { return( f_sub ); }
+
+ /// attaches the observer \f$ o \f$ and gives its number
+ /// \pre no batch is open
+ template< class O >
+ int attach( O & o )
+  requires( Subject::dynamic )
+ {
+  return( f_sub.attach( o ) );
+  }
+
+ /// detaches the observer number \f$ \mathit{id} \f$
+ /// \pre it is attached, no batch is open
+ void detach( int id )
+  requires( Subject::dynamic )
+ {
+  f_sub.detach( id );
+  }
 
  /// the \f$ g \f$ below which the lists of a layer are always dense
  static constexpr std::size_t D = 256;
@@ -448,6 +511,21 @@ class BucketQueue
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
+ using Ins = mod::Inserted< T , K , K >;  ///< an insertion
+ using Era = mod::Erased< T , K , K >;    ///< an erasure
+
+ /// whether someone may want `E`, at compile time
+ template< class E >
+ static constexpr bool heard = Subject::template listened< E >;
+
+ /// `push()` and `pop()` with no event
+ void pushPlain( const T & x , K f , K g );
+ T popPlain( void );  ///< as pushPlain()
+
+ /// the changes when someone listens, out of the hot code
+ ADS_COLD_PATH void pushCold( const T & x , K f , K g );
+ ADS_COLD_PATH T popCold( void );  ///< as pushCold()
+
  /// the layer of the least f, its topG moved to its largest dense g if
  /// it has no run
  Layer & front( void );
@@ -494,13 +572,14 @@ class BucketQueue
  /// least g first) and with items, and none if l is dense, \f$ O( R ) \f$
  [[nodiscard]] bool ordered( const Layer & l ) const;
 
- std::vector< Layer > f_layers;  ///< a layer per f
- std::vector< Cell > f_cells;    ///< the cells of the items
- Index f_free = NIL;             ///< the cells freed, the last first
- std::size_t f_minF = 0;         ///< no layer below it has items
- std::size_t f_size = 0;         ///< the number of items
- std::vector< Runs > f_runs;     ///< the runs of the layers that have
- std::vector< Index > f_spare;   ///< the runs of no layer, empty
+ std::vector< Layer > f_layers;        ///< a layer per f
+ std::vector< Cell > f_cells;          ///< the cells of the items
+ Index f_free = NIL;                   ///< the cells freed, the last first
+ std::size_t f_minF = 0;               ///< no layer below it has items
+ std::size_t f_size = 0;               ///< the number of items
+ std::vector< Runs > f_runs;           ///< the runs of the layers that have
+ std::vector< Index > f_spare;         ///< the runs of no layer, empty
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  };  // end( class BucketQueue )
 

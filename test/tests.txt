@@ -1999,6 +1999,9 @@ engineered_modification  mod-observed-graph  grafo osservato, osservatori nuovi
 engineered_emitters  emit-heap            eventi dello heap indicizzato
 engineered_emitters  emit-heap-relocated  scambi dello heap su una copia
 engineered_emitters  emit-heap-batch      lotti e silenzi dello heap
+engineered_emitters  emit-queues          eventi delle code senza maniglie
+engineered_emitters  emit-queues-records  sequenza esatta degli eventi
+engineered_emitters  emit-queues-batch    lotti di copie per chiave
 engineered_emitters  emit-array           array osservabile, lotti, UndoLog
 engineered_emitters  fenwick              Fenwick su gruppi e monoidi
 engineered_emitters  fenwick-observer     somme prefisse, Shadow e ricalcolo
@@ -2011,6 +2014,11 @@ engineered_capabilities  cap-queue-points   punti di personalizzazione delle cod
 engineered_capabilities  cap-lazy-frontier  cammini minimi e Prim su code pigre
 engineered_capabilities  cap-queries        query inoltrate e incontro in Shadow
 engineered_capabilities  cap-points         reserve, prefetch, insert_bulk
+engineered_capabilities  cap-extract        estrazione di una banda di chiavi
+engineered_capabilities  cap-rebase         code monotone fra due episodi
+engineered_capabilities  cap-rekey          chiavi ricalcolate, heap rifatto
+engineered_capabilities  cap-tableheap      LaB-PQ osservatore della tabella
+engineered_capabilities  cap-nonmonotone    valori che salgono e scendono
 
 # the deterministic reservations and the parallel greedy algorithms
 engineered_speculative  speculative-for        prenotazioni deterministiche

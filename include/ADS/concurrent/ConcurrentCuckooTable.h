@@ -220,6 +220,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Capabilities.h"
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
 #include "ADS/dictionary/BucketCuckooTable.h"
@@ -795,6 +796,14 @@ class ConcurrentCuckooTable
  Eq f_eq;
 
  };  // end( class ConcurrentCuckooTable )
+
+/// the values of the table may rise as well as fall [see `Capabilities.h`]:
+/// a lookup reads a pair under the version of its region, or under its
+/// lock, so that it returns a value that one write left whole, whatever
+/// the direction of the writes
+template< class K , class V , class H , class Eq >
+inline constexpr bool
+  nonmonotone_values< ConcurrentCuckooTable< K , V , H , Eq > > = true;
 
 /*--------------------------------------------------------------------------*/
 

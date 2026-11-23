@@ -28,6 +28,27 @@
  * move into the window. The buckets keep their memory, so that a queue in a
  * steady state calls no allocator, and their items are contiguous.
  *
+ * Between two episodes of a search, `rebase( k )` lets the keys pushed next
+ * start from \f$ k \f$, below the last one extracted, provided that no key
+ * in the queue is below \f$ k \f$: the items of the buckets and of the
+ * overflow are placed again for \f$ \ell = k \f$, in \f$ O( n + W ) \f$
+ * time. `peekKey()` gives the least key without moving \f$ \ell \f$, and
+ * `extract( theta , out )` moves to `out` every item of key at most
+ * \f$ \theta \f$, in increasing order of the keys, reading the least key
+ * by `peekKey()`, so that the keys pushed next need only be not smaller
+ * than the last one moved.
+ *
+ * The queue tells its changes through the subject policy `Policy` [see
+ * `Modification.h`], `NoObservers` by default, with which every operation
+ * compiles to the code of the plain queue, by the events of `RadixHeap`:
+ * `Inserted` by `push()`, after it, and `Erased` by `pop()` and
+ * `extract()`, before the removal, both with the item as the handle and
+ * its key, `Cleared` after `clear()` and `Rebuilt` at the end of a mute;
+ * the moves between the overflow and the buckets, and `rebase()`, change
+ * neither the items nor their keys, and tell nothing. The same item may be
+ * in the queue several times, and a batch coalesces its events by its key
+ * as well [see `RadixHeap.h`].
+ *
  * The contracts [see `Contract.h`]: a key pushed is not smaller than the
  * last one extracted (any key before the first and after `clear()`),
  * `top()`, `topKey()` and `pop()` need a queue that is not empty; the
@@ -64,6 +85,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Modification.h"
 #include "ADS/priority/RadixHeap.h"
 
 #include <bit>
@@ -88,7 +110,8 @@ namespace ADS
 
 /// a monotone queue of items with integer keys of the type `K` on a
 /// circular window of buckets, the keys beyond it in a radix heap
-template< class T , std::integral K = std::uint32_t >
+template< class T , std::integral K = std::uint32_t ,
+	  class Policy = NoObservers >
 class DialQueue
 {
 
@@ -102,6 +125,20 @@ class DialQueue
  /// above \f$ c \f$, and 64 at least
  /// \pre \f$ c \ge 0 \f$
  explicit DialQueue( std::size_t c = 1023 );
+
+ /// the events: an item inserted or erased with its key, the queue emptied
+ /// or rebuilt
+ using modifications = mod::list< mod::Inserted< T , K > ,
+				  mod::Erased< T , K > ,
+				  mod::Cleared , mod::Rebuilt >;
+ /// the subject
+ using Subject = typename Policy::template bind< modifications , DialQueue >;
+
+ /// an empty queue as `DialQueue( c )`, the static observers `o...`
+ /// \pre \f$ c \ge 0 \f$
+ template< class... O >
+  requires( sizeof...( O ) > 0 )
+ DialQueue( std::size_t c , O &... o );
 
  /// pushes \f$ x \f$ with the key \f$ k \f$, in \f$ O( 1 ) \f$ time if
  /// \f$ k < \ell + W \f$
@@ -131,6 +168,12 @@ class DialQueue
  /// the least key
  /// \pre the queue is not empty
  [[nodiscard]] K topKey( void );
+
+ /// the least key, which does not move \f$ \ell \f$: the keys pushed next
+ /// need only be not smaller than the last one extracted, as if `peekKey()`
+ /// were not called
+ /// \pre the queue is not empty
+ [[nodiscard]] K peekKey( void ) const;
 
  /// removes `top()` and returns it, in \f$ O( 1 + W / 64 ) \f$ time if the
  /// overflow is not used
@@ -174,6 +217,52 @@ class DialQueue
  /// the number of buckets of the window, \f$ W \f$
  [[nodiscard]] std::size_t window( void ) const { return( f_B.size() ); }
 
+ /// the keys pushed next may start from \f$ k \f$, the items placed again
+ /// for \f$ \ell = k \f$, in \f$ O( n + W ) \f$ time
+ ///
+ /// In pseudocode (beyond the book), the bucket \f$ b \f$ holding the key
+ /// \f$ \ell + ( ( b - \ell ) \bmod W ) \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{rebase}( k ) \cr
+ /// 2 & \quad E \gets \text{the pairs } ( x , k' ) \text{ of the buckets}
+ ///     \text{ and of } O;\ \text{empty the buckets and } O \cr
+ /// 3 & \quad \ell \gets k;\ n \gets 0 \cr
+ /// 4 & \quad \textbf{foreach}\ ( x , k' ) \in E\ \textbf{do}
+ ///     \ \mathrm{push}( x , k' )
+ /// \end{array}}
+ /// \f]
+ /// \pre no key in the queue is below \f$ k \f$
+ void rebase( K k );
+
+ /// every item of key at most \f$ \theta \f$ appended to `out`, by
+ /// increasing keys, each extracted as by `pop()`
+ void extract( K theta , std::vector< T > & out );
+
+/*--------------------------- THE OBSERVERS --------------------------------*/
+
+ /// the subject, for `ADS::batch()` and `ADS::quiet()`
+ [[nodiscard]] Subject & subject( void ) { return( f_sub ); }
+ /// the subject
+ [[nodiscard]] const Subject & subject( void ) const { return( f_sub ); }
+
+ /// attaches the observer \f$ o \f$ and gives its number
+ /// \pre no batch is open
+ template< class O >
+ int attach( O & o )
+  requires( Subject::dynamic )
+ {
+  return( f_sub.attach( o ) );
+  }
+
+ /// detaches the observer number \f$ \mathit{id} \f$
+ /// \pre it is attached, no batch is open
+ void detach( int id )
+  requires( Subject::dynamic )
+ {
+  f_sub.detach( id );
+  }
+
 /*--------------------------------------------------------------------------*/
  private:
  using U = std::make_unsigned_t< K >;
@@ -205,12 +294,28 @@ class DialQueue
  /// count size() items
  [[nodiscard]] bool counted( void ) const;
 
+ using Ins = mod::Inserted< T , K >;  ///< an insertion
+ using Era = mod::Erased< T , K >;    ///< an erasure
+
+ /// whether someone may want `E`, at compile time
+ template< class E >
+ static constexpr bool heard = Subject::template listened< E >;
+
+ /// `push()` and `pop()` with no event
+ void pushPlain( const T & x , K k );
+ T popPlain( void );  ///< as pushPlain()
+
+ /// the changes when someone listens, out of the hot code
+ ADS_COLD_PATH void pushCold( const T & x , K k );
+ ADS_COLD_PATH T popCold( void );  ///< as pushCold()
+
  std::vector< std::vector< T > > f_B;  ///< the buckets, LIFO
  std::vector< std::uint64_t > f_bits;  ///< the buckets in use
  U f_cur = 0;                          ///< the last key extracted
  std::size_t f_in = 0;                 ///< the items in the buckets
  std::size_t f_n = 0;                  ///< the number of items
  RadixHeap< T , U > f_over;             ///< the keys beyond the window
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  };  // end( class DialQueue )
 

@@ -4,7 +4,11 @@
 /** @file
  * The tests of the structures that tell their changes and of the
  * aggregates they feed, beyond the book: the events of IndexedDaryHeap,
- * its exchanges applied to a copy of its vector, the events of
+ * its exchanges applied to a copy of its vector, the events of RadixHeap,
+ * DialQueue and BucketQueue, each kept by an observer as a multiset of
+ * pairs and checked against the queue and against a multiset kept by
+ * hand, alone, in a batch whose net events coalesce the copies of an item
+ * by their keys, and attached at run time, the events of
  * ObservableArray, their batches and their undo, the concepts of
  * Algebra.h, Fenwick over a group, a commutative monoid, a monoid and a
  * group that does not commute, FenwickObserver audited by Shadow against
@@ -28,7 +32,10 @@
 #include "ADS/ADT.h"
 #include "ADS/Algebra.h"
 #include "ADS/Modification.h"
+#include "ADS/priority/BucketQueue.h"
+#include "ADS/priority/DialQueue.h"
 #include "ADS/priority/IndexedDaryHeap.h"
+#include "ADS/priority/RadixHeap.h"
 #include "ADS/queue/MinQueue.h"
 #include "ADS/queue/RealTimeMinQueue.h"
 #include "ADS/queue/SlidingAggregate.h"
@@ -41,7 +48,9 @@
 #include <cstdint>
 #include <deque>
 #include <random>
+#include <set>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -478,6 +487,237 @@ ADS_TEST( "emit-heap-batch" )
   h.pop();
   }
  CHECK( ( rb.r == 1 ) && ( b.inserts == 4 ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE QUEUES WITH NO HANDLES ---------------------*/
+/*--------------------------------------------------------------------------*/
+
+namespace
+{
+
+/// an observer of a queue with no handles, items int and keys K (and the
+/// second keys V, if not void), that keeps from its events alone the
+/// multiset of the pairs ( item , code ), the code of a pair its key, or
+/// \f$ 1000 f + g \f$, and the events it received
+template< class K , class V = void >
+struct QueueMirror
+{
+ using Ins = mod::Inserted< int , K , V >;
+ using Era = mod::Erased< int , K , V >;
+ using Pairs = std::multiset< std::pair< int , long > >;
+ Pairs pairs;                     ///< the pairs
+ std::vector< std::string > log;  ///< the events
+ bool missing = false;            ///< an erasure of a pair not there
+ template< class E >
+ static long code( const E & e ) {
+  if constexpr( std::is_void_v< V > )
+   return( long( e.key ) );
+  else
+   return( long( e.key ) * 1000 + long( e.value ) );
+  }
+ void on( const Ins & e ) {
+  pairs.emplace( e.h , code( e ) );
+  log.push_back( "+" + std::to_string( e.h ) + ":" +
+		 std::to_string( code( e ) ) );
+  }
+ void on( const Era & e ) noexcept {
+  const auto it = pairs.find( { e.h , code( e ) } );
+  if( it == pairs.end() )
+   missing = true;
+  else
+   pairs.erase( it );
+  try {
+   log.push_back( "-" + std::to_string( e.h ) + ":" +
+		  std::to_string( code( e ) ) );
+   }
+  catch( ... ) {
+   }
+  }
+ void on( const mod::Cleared & ) noexcept {
+  pairs.clear();
+  try {
+   log.push_back( "C" );
+   }
+  catch( ... ) {
+   }
+  }
+ /// as many pairs as the queue, none erased without being there
+ template< class S >
+ [[nodiscard]] bool audit( const S & q ) const {
+  return( ! missing && ( pairs.size() == q.size() ) );
+  }
+ };
+
+using Mirror1 = QueueMirror< int >;       ///< of a queue of one key
+using Mirror2 = QueueMirror< int , int >;  ///< of a queue of two keys
+
+/// the three queues with keys int and the subject policy P
+template< class P >
+using Radix = RadixHeap< int , int , 4 , std::allocator< int > , P >;
+template< class P >
+using Dial = DialQueue< int , int , P >;
+template< class P >
+using Bucket = BucketQueue< int , int , LargestSecondKey , P >;
+
+/// random pushes and pops on q, the copies of an item allowed, with the
+/// multiset of the pairs kept by hand; the keys pushed are never below
+/// the last one extracted, as the monotone queues ask
+template< class Q , class C >
+void queueRun( Q & q , Mirror1::Pairs & ref , unsigned seed , int ops ,
+	       C && check )
+{
+ std::mt19937 rng( seed );
+ int last = 0;
+ for( int t = 0 ; t < ops ; ++t ) {
+  if( q.empty() || ( rng() % 3 != 0 ) ) {
+   const int x = int( rng() % 20 ) , k = last + int( rng() % 200 );
+   if constexpr( requires { q.topG(); } ) {
+    const int g = int( rng() % 5 );
+    q.push( x , k , g );
+    ref.emplace( x , long( k ) * 1000 + g );
+    }
+   else {
+    q.push( x , k );
+    ref.emplace( x , long( k ) );
+    }
+   }
+  else {
+   long c;
+   int x;
+   if constexpr( requires { q.topG(); } ) {
+    const auto e = q.popEntry();
+    x = e.item;
+    c = long( e.f ) * 1000 + e.g;
+    last = e.f;
+    }
+   else {
+    last = int( q.topKey() );
+    c = last;
+    x = q.pop();
+    }
+   const auto it = ref.find( { x , c } );
+   CHECK( it != ref.end() );
+   if( it != ref.end() )
+    ref.erase( it );
+   }
+  check();
+  }
+ }
+
+/// a static observer of the queue Q, checked by its audit and against the
+/// multiset kept by hand after each operation; the same operations on the
+/// queue with no observer give the same items
+template< class Q , class M , class Plain >
+void queueStatic( unsigned seed )
+{
+ M m;
+ Q q( m );
+ Mirror1::Pairs ref;
+ queueRun( q , ref , seed , 3000 ,
+	   [ & ] { CHECK( m.audit( q ) && ( m.pairs == ref ) ); } );
+ Plain p;
+ Mirror1::Pairs ref2;
+ queueRun( p , ref2 , seed , 3000 , [] { } );
+ CHECK( ref == ref2 );
+ while( p.size() > 1 )
+  CHECK( p.pop() == q.pop() );
+ CHECK( ( q.size() == 1 ) && ( m.pairs.size() == 1 ) && ! m.missing );
+ q.clear();
+ CHECK( m.pairs.empty() && ( m.log.back() == "C" ) );
+ }
+
+}  // end( namespace )
+
+ADS_TEST( "emit-queues" )
+{
+ // nobody listens: no storage and no test for the subject, the default
+ // policy NoObservers
+ static_assert( std::is_empty_v< RadixHeap< int >::Subject > &&
+		std::is_empty_v< DialQueue< int >::Subject > &&
+		std::is_empty_v< BucketQueue< int >::Subject > );
+ static_assert( ! RadixHeap< int >::Subject::template listened<
+		mod::Inserted< int , std::uint32_t > > );
+ static_assert(
+   std::is_same_v< Radix< NoObservers > , RadixHeap< int , int > > &&
+   std::is_same_v< Dial< NoObservers > , DialQueue< int , int > > &&
+   std::is_same_v< Bucket< NoObservers > , BucketQueue< int > > );
+ queueStatic< Radix< Static< Mirror1 > > , Mirror1 ,
+	      Radix< NoObservers > >( 3 );
+ queueStatic< Bucket< Static< Mirror2 > > , Mirror2 , Bucket< NoObservers > >(
+   5 );
+ // the Dial queue, whose constructor takes the window first, with the
+ // overflow in use
+ Mirror1 m;
+ Dial< Static< Mirror1 > > d( 15 , m );
+ Mirror1::Pairs ref;
+ queueRun( d , ref , 7 , 3000 ,
+	   [ & ] { CHECK( m.audit( d ) && ( m.pairs == ref ) ); } );
+ }
+
+ADS_TEST( "emit-queues-records" )
+{
+ // the exact records of a short sequence, an erasure told before the
+ // removal, and the items extracted by extract() and extractBelow()
+ Mirror1 m;
+ Radix< Static< Mirror1 > > r( m );
+ r.push( 4 , 10 );
+ r.push( 4 , 7 );  // a second copy of the item 4
+ r.push( 2 , 12 );
+ CHECK( r.pop() == 4 );
+ std::vector< int > out;
+ r.extract( 11 , out );
+ r.extractBelow( 100 , []( int , int ) { } );
+ CHECK( ( out == std::vector< int >{ 4 } ) && r.empty() );
+ CHECK( ( m.log == std::vector< std::string >{ "+4:10" , "+4:7" , "+2:12" ,
+					       "-4:7" , "-4:10" ,
+					       "-2:12" } ) );
+ Mirror2 m2;
+ Bucket< Static< Mirror2 > > b( m2 );
+ b.push( 1 , 3 , 2 );
+ b.push( 2 , 3 , 4 );
+ b.push( 3 , 1 , 0 );
+ CHECK( ( b.pop() == 3 ) && ( b.popEntry().item == 2 ) );
+ b.extract( 3 , out );
+ CHECK( ( m2.log == std::vector< std::string >{ "+1:3002" , "+2:3004" ,
+						"+3:1000" , "-3:1000" ,
+						"-2:3004" , "-1:3002" } ) );
+ }
+
+ADS_TEST( "emit-queues-batch" )
+{
+ // attached at run time; a batch coalesces the copies of an item by their
+ // keys, so that its net events rebuild the same multiset
+ Dial< Dynamic<> > q( 31 );
+ Mirror1 m , late;
+ q.attach( m );
+ q.push( 5 , 20 );  // a copy before the batch
+ {
+  auto t = batch( q );
+  q.push( 5 , 40 );  // the copies of the item 5 of keys 20, 40 and 30
+  q.push( 5 , 30 );
+  q.push( 6 , 25 );
+  CHECK( q.pop() == 5 );  // the copy of key 20, from before the batch
+  CHECK( q.pop() == 6 );  // an insertion and its erasure cancel
+  q.push( 7 , 35 );
+  CHECK( m.log.size() == 1 );
+  }
+ // the erasure of 5:20 does not cancel the insertion of 5:40 or 5:30
+ CHECK( ( m.pairs == Mirror1::Pairs{ { 5 , 40 } , { 5 , 30 } ,
+				     { 7 , 35 } } ) );
+ CHECK( ( m.log == std::vector< std::string >{ "+5:20" , "+5:40" , "+5:30" ,
+					       "-5:20" , "+7:35" } ) );
+ // a second observer, attached now, and a batch of a random run
+ m.pairs.clear();
+ q.clear();
+ q.attach( late );
+ Mirror1::Pairs ref;
+ {
+  auto t = batch( q );
+  queueRun( q , ref , 13 , 500 , [] { } );
+  }
+ CHECK( ( m.pairs == ref ) && ( late.pairs == ref ) && ! m.missing &&
+	! late.missing );
  }
 
 /*--------------------------------------------------------------------------*/

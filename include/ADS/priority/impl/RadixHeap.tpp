@@ -19,9 +19,17 @@
 namespace ADS
 {
 
-template< class T , std::integral K , unsigned B , class A >
-inline void RadixHeap< T , K , B , A >::push( const T & x , K k )
+template< class T , std::integral K , unsigned B , class A , class P >
+inline void RadixHeap< T , K , B , A , P >::push( const T & x , K k )
 {
+ if constexpr( heard< Ins > )
+  if( f_sub.template live< Ins >() ) [[unlikely]] {
+   if constexpr( Subject::dynamic )
+    pushCold( x , k );
+   else
+    pushTold( x , k );
+   return;
+   }
  const U u = encode( k );
  ADS_PRE( ( u >= f_floor ) && ( u >= f_last ) );
  place( bucket( u ) , Entry{ u , x } );
@@ -29,8 +37,8 @@ inline void RadixHeap< T , K , B , A >::push( const T & x , K k )
  ADS_INVARIANT( bucketed() );
  }
 
-template< class T , std::integral K , unsigned B , class A >
-inline void RadixHeap< T , K , B , A >::pull( void )
+template< class T , std::integral K , unsigned B , class A , class P >
+inline void RadixHeap< T , K , B , A , P >::pull( void )
 {
  ADS_PRE( f_size > 0 );
  if( ! f_B[ f_cur ].empty() && ( f_cur < R ) )
@@ -53,30 +61,43 @@ inline void RadixHeap< T , K , B , A >::pull( void )
   f_floor = f_last;  // the key read or extracted
  }
 
-template< class T , std::integral K , unsigned B , class A >
-inline const T & RadixHeap< T , K , B , A >::top( void )
+template< class T , std::integral K , unsigned B , class A , class P >
+inline const T & RadixHeap< T , K , B , A , P >::top( void )
 {
  pull();
  return( f_B[ f_cur ].back().item );
  }
 
-template< class T , std::integral K , unsigned B , class A >
-inline K RadixHeap< T , K , B , A >::topKey( void )
+template< class T , std::integral K , unsigned B , class A , class P >
+inline K RadixHeap< T , K , B , A , P >::topKey( void )
 {
  pull();
  return( decode( f_last ) );
  }
 
-template< class T , std::integral K , unsigned B , class A >
-inline K RadixHeap< T , K , B , A >::peekKey( void ) const
+template< class T , std::integral K , unsigned B , class A , class P >
+inline K RadixHeap< T , K , B , A , P >::peekKey( void ) const
 {
  ADS_PRE( f_size > 0 );
  const unsigned i = first();
  return( decode( i < R ? ( f_last & ~U( R - 1 ) ) | U( i ) : f_min[ i ] ) );
  }
 
-template< class T , std::integral K , unsigned B , class A >
-inline T RadixHeap< T , K , B , A >::pop( void )
+template< class T , std::integral K , unsigned B , class A , class P >
+inline T RadixHeap< T , K , B , A , P >::pop( void )
+{
+ if constexpr( heard< Era > )
+  if( f_sub.template live< Era >() ) [[unlikely]] {
+   if constexpr( Subject::dynamic )
+    return( popCold() );
+   else
+    return( popTold() );
+   }
+ return( popPlain() );
+ }
+
+template< class T , std::integral K , unsigned B , class A , class P >
+inline T RadixHeap< T , K , B , A , P >::popPlain( void )
 {
  pull();
  Bucket & b = f_B[ f_cur ];
@@ -91,9 +112,25 @@ inline T RadixHeap< T , K , B , A >::pop( void )
  return( x );
  }
 
-template< class T , std::integral K , unsigned B , class A >
+template< class T , std::integral K , unsigned B , class A , class P >
 template< class F >
-void RadixHeap< T , K , B , A >::extractBelow( K limit , F && f )
+void RadixHeap< T , K , B , A , P >::extractBelow( K limit , F && f )
+{
+ if constexpr( heard< Era > )
+  if( f_sub.template live< Era >() ) [[unlikely]] {
+   extractPlain( limit , [ & ]( T && x , K k ) {
+    f_sub.emit( Era{ x , k } );  // as it is extracted
+    f( std::move( x ) , k );
+    } );
+   f_sub.audit( *this );
+   return;
+   }
+ extractPlain( limit , std::forward< F >( f ) );
+ }
+
+template< class T , std::integral K , unsigned B , class A , class P >
+template< class F >
+void RadixHeap< T , K , B , A , P >::extractPlain( K limit , F && f )
 {
  const U u = encode( limit );
  while( f_size > 0 ) {
@@ -148,8 +185,8 @@ void RadixHeap< T , K , B , A >::extractBelow( K limit , F && f )
  ADS_INVARIANT( bucketed() );
  }
 
-template< class T , std::integral K , unsigned B , class A >
-void RadixHeap< T , K , B , A >::clear( void )
+template< class T , std::integral K , unsigned B , class A , class P >
+void RadixHeap< T , K , B , A , P >::clear( void )
 {
  for( auto & b : f_B )
   b.clear();
@@ -159,10 +196,73 @@ void RadixHeap< T , K , B , A >::clear( void )
  f_floor = 0;
  f_cur = 0;
  f_size = 0;
+ if constexpr( heard< mod::Cleared > )
+  if( f_sub.template live< mod::Cleared >() ) {
+   f_sub.emit( mod::Cleared{} );
+   f_sub.audit( *this );
+   }
  }
 
-template< class T , std::integral K , unsigned B , class A >
-bool RadixHeap< T , K , B , A >::bucketed( void ) const
+template< class T , std::integral K , unsigned B , class A , class P >
+void RadixHeap< T , K , B , A , P >::rebase( K k )
+{
+ const U u = encode( k );
+ std::vector< Entry > E;
+ E.reserve( f_size );
+ for( auto & b : f_B ) {
+  for( Entry & e : b ) {
+   ADS_PRE( e.key >= u );
+   E.push_back( std::move( e ) );
+   }
+  b.clear();
+  }
+ f_min = fill_max();
+ f_mask = {};
+ f_last = u;
+ f_floor = u;
+ f_cur = 0;
+ for( Entry & e : E )
+  place( bucket( e.key ) , std::move( e ) );
+ ADS_INVARIANT( bucketed() );
+ }
+
+template< class T , std::integral K , unsigned B , class A , class P >
+void RadixHeap< T , K , B , A , P >::extract( K theta ,
+					      std::vector< T > & out )
+{
+ const U t = encode( theta );
+ while( ( f_size > 0 ) && ( encode( peekKey() ) <= t ) )
+  out.push_back( pop() );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- WHEN SOMEONE LISTENS ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+template< class T , std::integral K , unsigned B , class A , class P >
+void RadixHeap< T , K , B , A , P >::pushTold( const T & x , K k )
+{
+ const U u = encode( k );
+ ADS_PRE( ( u >= f_floor ) && ( u >= f_last ) );
+ place( bucket( u ) , Entry{ u , x } );
+ ++f_size;
+ f_sub.emit( Ins{ x , k } );
+ f_sub.audit( *this );
+ ADS_INVARIANT( bucketed() );
+ }
+
+template< class T , std::integral K , unsigned B , class A , class P >
+T RadixHeap< T , K , B , A , P >::popTold( void )
+{
+ const K k = topKey();
+ f_sub.emit( Era{ top() , k } );  // before the removal
+ T x = popPlain();
+ f_sub.audit( *this );
+ return( x );
+ }
+
+template< class T , std::integral K , unsigned B , class A , class P >
+bool RadixHeap< T , K , B , A , P >::bucketed( void ) const
 {
  if( f_size > 1024 )
   return( true );

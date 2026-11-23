@@ -17,8 +17,26 @@
 namespace ADS
 {
 
-template< class T , std::integral K , BucketTie Tie >
-inline void BucketQueue< T , K , Tie >::push( const T & x , K f , K g )
+template< class T , std::integral K , BucketTie Tie , class P >
+inline void BucketQueue< T , K , Tie , P >::push( const T & x , K f , K g )
+{
+ if constexpr( heard< Ins > )
+  if( f_sub.template live< Ins >() ) [[unlikely]] {
+   if constexpr( Subject::dynamic )
+    pushCold( x , f , g );
+   else {
+    pushPlain( x , f , g );
+    f_sub.emit( Ins{ x , f , g } );
+    f_sub.audit( *this );
+    }
+   return;
+   }
+ pushPlain( x , f , g );
+ }
+
+template< class T , std::integral K , BucketTie Tie , class P >
+inline void BucketQueue< T , K , Tie , P >::pushPlain( const T & x , K f ,
+						       K g )
 {
  ADS_PRE( ( f >= 0 ) && ( g >= 0 ) );
  const auto F = std::size_t( f ) , G = std::size_t( g );
@@ -49,8 +67,8 @@ inline void BucketQueue< T , K , Tie >::push( const T & x , K f , K g )
  ADS_INVARIANT( counted() && ordered( l ) );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-inline auto BucketQueue< T , K , Tie >::cell( const T & x ) -> Index
+template< class T , std::integral K , BucketTie Tie , class P >
+inline auto BucketQueue< T , K , Tie , P >::cell( const T & x ) -> Index
 {
  if( f_free != NIL ) {  // the cell freed last
   const Index c = f_free;
@@ -64,8 +82,8 @@ inline auto BucketQueue< T , K , Tie >::cell( const T & x ) -> Index
  return( Index( f_cells.size() - 1 ) );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-bool BucketQueue< T , K , Tie >::pushRun( Layer & l , const T & x , K g )
+template< class T , std::integral K , BucketTie Tie , class P >
+bool BucketQueue< T , K , Tie , P >::pushRun( Layer & l , const T & x , K g )
 {
  if( ( l.runs != NIL ) && ( f_runs[ l.runs ].size() == R ) ) {
   densify( l );  // one run too many: dense
@@ -94,8 +112,8 @@ bool BucketQueue< T , K , Tie >::pushRun( Layer & l , const T & x , K g )
  return( true );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-auto BucketQueue< T , K , Tie >::run( Runs & v , K g ) -> Index &
+template< class T , std::integral K , BucketTie Tie , class P >
+auto BucketQueue< T , K , Tie , P >::run( Runs & v , K g ) -> Index &
 {
  // the runs by increasing g, or by decreasing g if the least comes first,
  // so that the last run is the top
@@ -120,8 +138,8 @@ auto BucketQueue< T , K , Tie >::run( Runs & v , K g ) -> Index &
  return( v.insert( it , Run{ g , NIL } )->head );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-void BucketQueue< T , K , Tie >::densify( Layer & l )
+template< class T , std::integral K , BucketTie Tie , class P >
+void BucketQueue< T , K , Tie , P >::densify( Layer & l )
 {
  const Runs & v = f_runs[ l.runs ];
  const std::size_t G = std::size_t( Tie::least ? v.front().g : v.back().g );
@@ -136,16 +154,16 @@ void BucketQueue< T , K , Tie >::densify( Layer & l )
  release( l );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-void BucketQueue< T , K , Tie >::release( Layer & l )
+template< class T , std::integral K , BucketTie Tie , class P >
+void BucketQueue< T , K , Tie , P >::release( Layer & l )
 {
  f_runs[ l.runs ].clear();     // kept for the next layer
  f_spare.push_back( l.runs );  // within its capacity
  l.runs = NIL;
  }
 
-template< class T , std::integral K , BucketTie Tie >
-inline bool BucketQueue< T , K , Tie >::inRuns( const Layer & l )
+template< class T , std::integral K , BucketTie Tie , class P >
+inline bool BucketQueue< T , K , Tie , P >::inRuns( const Layer & l )
 {
  // the dense lists first if the least g comes first, the runs otherwise
  if constexpr( Tie::least )
@@ -154,20 +172,20 @@ inline bool BucketQueue< T , K , Tie >::inRuns( const Layer & l )
   return( l.runs != NIL );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-inline auto BucketQueue< T , K , Tie >::top( Layer & l ) -> Index &
+template< class T , std::integral K , BucketTie Tie , class P >
+inline auto BucketQueue< T , K , Tie , P >::top( Layer & l ) -> Index &
 {
  return( inRuns( l ) ? f_runs[ l.runs ].back().head : l.head( l.topG ) );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-inline K BucketQueue< T , K , Tie >::topKey( const Layer & l ) const
+template< class T , std::integral K , BucketTie Tie , class P >
+inline K BucketQueue< T , K , Tie , P >::topKey( const Layer & l ) const
 {
  return( inRuns( l ) ? f_runs[ l.runs ].back().g : K( l.topG ) );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-inline auto BucketQueue< T , K , Tie >::front( void ) -> Layer &
+template< class T , std::integral K , BucketTie Tie , class P >
+inline auto BucketQueue< T , K , Tie , P >::front( void ) -> Layer &
 {
  ADS_PRE( f_size > 0 );
  while( f_layers[ f_minF ].count == 0 )  // forward to the least f
@@ -183,41 +201,59 @@ inline auto BucketQueue< T , K , Tie >::front( void ) -> Layer &
  return( l );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-inline const T & BucketQueue< T , K , Tie >::top( void )
+template< class T , std::integral K , BucketTie Tie , class P >
+inline const T & BucketQueue< T , K , Tie , P >::top( void )
 {
  return( f_cells[ top( front() ) ].item );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-inline K BucketQueue< T , K , Tie >::topF( void )
+template< class T , std::integral K , BucketTie Tie , class P >
+inline K BucketQueue< T , K , Tie , P >::topF( void )
 {
  front();
  return( K( f_minF ) );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-auto BucketQueue< T , K , Tie >::popEntry( void ) -> Entry
+template< class T , std::integral K , BucketTie Tie , class P >
+auto BucketQueue< T , K , Tie , P >::popEntry( void ) -> Entry
 {
  const K g = topKey( front() ) , f = K( f_minF );
  return( Entry{ pop() , f , g } );  // front() is now O( 1 )
  }
 
-template< class T , std::integral K , BucketTie Tie >
-auto BucketQueue< T , K , Tie >::topEntry( void ) -> TopEntry
+template< class T , std::integral K , BucketTie Tie , class P >
+auto BucketQueue< T , K , Tie , P >::topEntry( void ) -> TopEntry
 {
  Layer & l = front();
  return( TopEntry{ f_cells[ top( l ) ].item , K( f_minF ) , topKey( l ) } );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-inline K BucketQueue< T , K , Tie >::topG( void )
+template< class T , std::integral K , BucketTie Tie , class P >
+inline K BucketQueue< T , K , Tie , P >::topG( void )
 {
  return( topKey( front() ) );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-inline T BucketQueue< T , K , Tie >::pop( void )
+template< class T , std::integral K , BucketTie Tie , class P >
+inline T BucketQueue< T , K , Tie , P >::pop( void )
+{
+ if constexpr( heard< Era > )
+  if( f_sub.template live< Era >() ) [[unlikely]] {
+   if constexpr( Subject::dynamic )
+    return( popCold() );
+   else {
+    const TopEntry t = topEntry();
+    f_sub.emit( Era{ t.item , t.f , t.g } );  // before the removal
+    T x = popPlain();
+    f_sub.audit( *this );
+    return( x );
+    }
+   }
+ return( popPlain() );
+ }
+
+template< class T , std::integral K , BucketTie Tie , class P >
+inline T BucketQueue< T , K , Tie , P >::popPlain( void )
 {
  Layer & l = front();
  if( inRuns( l ) )  // from the last run
@@ -228,8 +264,8 @@ inline T BucketQueue< T , K , Tie >::pop( void )
  return( x );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-T BucketQueue< T , K , Tie >::popRun( Layer & l )
+template< class T , std::integral K , BucketTie Tie , class P >
+T BucketQueue< T , K , Tie , P >::popRun( Layer & l )
 {
  Runs & v = f_runs[ l.runs ];
  T x = take( v.back().head );
@@ -243,8 +279,8 @@ T BucketQueue< T , K , Tie >::popRun( Layer & l )
  return( x );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-inline T BucketQueue< T , K , Tie >::take( Index & h )
+template< class T , std::integral K , BucketTie Tie , class P >
+inline T BucketQueue< T , K , Tie , P >::take( Index & h )
 {
  const Index c = h;
  h = f_cells[ c ].next;
@@ -255,8 +291,8 @@ inline T BucketQueue< T , K , Tie >::take( Index & h )
  return( x );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-inline void BucketQueue< T , K , Tie >::taken( Layer & l )
+template< class T , std::integral K , BucketTie Tie , class P >
+inline void BucketQueue< T , K , Tie , P >::taken( Layer & l )
 {
  if( --l.count == 0 ) {  // free the heads of large g
   if( ! l.big.empty() )
@@ -265,20 +301,20 @@ inline void BucketQueue< T , K , Tie >::taken( Layer & l )
   }
  }
 
-template< class T , std::integral K , BucketTie Tie >
-bool BucketQueue< T , K , Tie >::empty( void ) const
+template< class T , std::integral K , BucketTie Tie , class P >
+bool BucketQueue< T , K , Tie , P >::empty( void ) const
 {
  return( f_size == 0 );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-std::size_t BucketQueue< T , K , Tie >::size( void ) const
+template< class T , std::integral K , BucketTie Tie , class P >
+std::size_t BucketQueue< T , K , Tie , P >::size( void ) const
 {
  return( f_size );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-void BucketQueue< T , K , Tie >::clear( void )
+template< class T , std::integral K , BucketTie Tie , class P >
+void BucketQueue< T , K , Tie , P >::clear( void )
 {
  std::vector< Layer >().swap( f_layers );
  std::vector< Cell >().swap( f_cells );
@@ -287,10 +323,41 @@ void BucketQueue< T , K , Tie >::clear( void )
  f_free = NIL;
  f_minF = 0;
  f_size = 0;
+ if constexpr( heard< mod::Cleared > )
+  if( f_sub.template live< mod::Cleared >() ) {
+   f_sub.emit( mod::Cleared{} );
+   f_sub.audit( *this );
+   }
  }
 
-template< class T , std::integral K , BucketTie Tie >
-bool BucketQueue< T , K , Tie >::counted( void ) const
+template< class T , std::integral K , BucketTie Tie , class P >
+void BucketQueue< T , K , Tie , P >::extract( K theta ,
+					      std::vector< T > & out )
+{
+ while( ( f_size > 0 ) && ( topF() <= theta ) )
+  out.push_back( pop() );
+ }
+
+template< class T , std::integral K , BucketTie Tie , class P >
+void BucketQueue< T , K , Tie , P >::pushCold( const T & x , K f , K g )
+{
+ pushPlain( x , f , g );
+ f_sub.emit( Ins{ x , f , g } );
+ f_sub.audit( *this );
+ }
+
+template< class T , std::integral K , BucketTie Tie , class P >
+T BucketQueue< T , K , Tie , P >::popCold( void )
+{
+ const TopEntry t = topEntry();
+ f_sub.emit( Era{ t.item , t.f , t.g } );  // before the removal
+ T x = popPlain();
+ f_sub.audit( *this );
+ return( x );
+ }
+
+template< class T , std::integral K , BucketTie Tie , class P >
+bool BucketQueue< T , K , Tie , P >::counted( void ) const
 {
  std::size_t n = 0;
  for( const Layer & l : f_layers )
@@ -298,8 +365,8 @@ bool BucketQueue< T , K , Tie >::counted( void ) const
  return( n == f_size );
  }
 
-template< class T , std::integral K , BucketTie Tie >
-bool BucketQueue< T , K , Tie >::ordered( const Layer & l ) const
+template< class T , std::integral K , BucketTie Tie , class P >
+bool BucketQueue< T , K , Tie , P >::ordered( const Layer & l ) const
 {
  if( l.runs == NIL )
   return( true );
