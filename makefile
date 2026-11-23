@@ -346,9 +346,10 @@ HWLOCON   = $(if $(filter 1,$(ADSHWLOCON)),-DADS_WITH_HWLOC $(libHwlocINC) \
 # (with GMP and MPFR in the same prefix);
 # HASHING=<dir> adds to hashing the libraries whose sources are in <dir>
 # (unordered_dense, robin-map, libcuckoo, xxHash, wyhash, rapidhash,
-# fastfilter_cpp, xor_singleheader, pthash, BBHash, sux), ABSL=<prefix>
-# Abseil; LIBSAIS=<prefix> and DIVSUFSORT=<prefix> add libsais and
-# libdivsufsort to suffix, EDLIB=<prefix> and RAPIDFUZZ=<prefix> edlib and
+# fastfilter_cpp, xor_singleheader, pthash, BBHash, sux,
+# datasketches-cpp), ABSL=<prefix> Abseil; LIBSAIS=<prefix> and
+# DIVSUFSORT=<prefix> add libsais and libdivsufsort to suffix,
+# EDLIB=<prefix> and RAPIDFUZZ=<prefix> edlib and
 # rapidfuzz-cpp to edit; PRIORITY=<dir> adds to priority the libraries
 # whose sources are in <dir> (tlx, radix-heap); MIMALLOC=<prefix> and
 # JEMALLOC=<prefix> add to memory mimalloc (built without the override of
@@ -428,7 +429,10 @@ HASHINC   = unordered_dense/include robin-map/include libcuckoo \
             xor_singleheader/include pthash/include pthash/external/bits \
             pthash/external/bits/include \
             pthash/external/bits/external/essentials/include \
-            pthash/external/mm_file/include BBHash sux
+            pthash/external/mm_file/include BBHash sux \
+            datasketches-cpp/common/include datasketches-cpp/hll/include \
+            datasketches-cpp/kll/include datasketches-cpp/count/include \
+            datasketches-cpp/theta/include
 # 1 if a unit that includes the header $(1) compiles at the flags of the
 # benchmarks with the options $(2): the competitors of AVX2 (fastfilter_cpp,
 # x86-simd-sort) are taken where it does [see bench/hashing.cpp and sort.cpp];

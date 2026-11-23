@@ -1827,6 +1827,9 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `interop/std/FlatMap.h` | interop | `StdSequence` | [1](01-introduction.md#ch-1) |
 | `interop/std/Pmr.h` | interop | `PmrResource` | [1](01-introduction.md#ch-1) |
 | `set/Bag.h` | base | `Bag` | [1](01-introduction.md#ch-1) |
+| `set/CountMinSketch.h` | advanced | `CountMinSketch`, `CountSketch` | [10](10-set.md#ch-10) |
+| `set/KllSketch.h` | advanced | `KllSketch` | [10](10-set.md#ch-10) |
+| `set/MinHashSketch.h` | advanced | `MinHashSketch` | [10](10-set.md#ch-10) |
 | `set/SetInterfaces.h` | base | `ArrayUSet`, `ArraySSet` | [1](01-introduction.md#ch-1) |
 | `sequence/ArraySequence.h` | base | `ArraySequence` | [2](02-sequence.md#ch-2) |
 | `sequence/ContiguousDeque.h` | base | `ContiguousDeque` | [2](02-sequence.md#ch-2) |
@@ -1967,6 +1970,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `set/SortedIntersection.h` | base | `PermutedBuckets` | [10](10-set.md#ch-10) |
 | `set/SortedListSet.h` | base | `SortedListSet` | [10](10-set.md#ch-10) |
 | `set/SpaceEfficientSortedSet.h` | base | `SpaceEfficientSortedSet` | [10](10-set.md#ch-10) |
+| `set/UltraLogLog.h` | advanced | `UltraLogLog` | [10](10-set.md#ch-10) |
 | `mfset/ListMFSet.h` | base | `ListMFSet` | [11](11-mfset.md#ch-11) |
 | `mfset/MFSet.h` | base | `MFSet` | [11](11-mfset.md#ch-11) |
 | `mfset/RemUnionFind.h` | advanced | `RemUnionFind` | [11](11-mfset.md#ch-11) |
@@ -2124,7 +2128,7 @@ only, by chapter.
 | [7](07-dictionary.md#ch-7) | `dictionary/HashFunctions.h`, `dictionary/RowFingerprint.h`, `dictionary/TableSize.h` |
 | [8](08-tree.md#ch-8) | `tree/BinaryTreeAlgorithms.h`, `tree/ExpressionTree.h`, `tree/HeapByInsertion.h` |
 | [9](09-priority.md#ch-9) | `priority/OrderKey.h`, `priority/PriorityQueue.h`, `priority/QueueCustomization.h` |
-| [10](10-set.md#ch-10) | `interop/croaring/CRoaring.h`, `set/SetOperations.h`, `set/VectorIntersection.h` |
+| [10](10-set.md#ch-10) | `interop/croaring/CRoaring.h`, `parallel/ParallelSketch.h`, `set/SetOperations.h`, `set/VectorIntersection.h` |
 | [12](12-sort.md#ch-12) | `sort/CountingSort.h`, `sort/EngineeredQuickSorts.h`, `sort/ExchangeSorts.h`, `sort/ExternalSort.h`, `sort/Heapsort.h`, `sort/InsertionSort.h`, `sort/KnuthSorts.h`, `sort/LearnedSort.h`, `sort/MergeSort.h`, `sort/MultikeyQuickSort.h`, `sort/PdqSort.h`, `sort/PigeonholeSort.h`, `sort/QuickSort.h`, `sort/RadixSort.h`, `sort/RunSorts.h`, `sort/SampleSort.h`, `sort/SelectionSort.h`, `sort/ShellSort.h`, `sort/Sort.h`, `sort/Sorted.h`, `sort/SortingNetworks.h`, `sort/StrandSort.h`, `sort/StringSort.h`, `sort/TreeSort.h`, `sort/VectorQuickSort.h` |
 | [13](13-algorithm.md#ch-13) | `algorithm/AkraBazzi.h`, `algorithm/BinaryCounter.h`, `algorithm/Hanoi.h`, `algorithm/MonteCarlo.h`, `algorithm/Paradigms.h`, `algorithm/SequenceQueries.h`, `algorithm/Subsequences.h`, `optimization/CoinChange.h`, `optimization/CoinGame.h`, `optimization/FractionalKnapsack.h`, `optimization/HouseProblems.h`, `optimization/IntervalCover.h`, `optimization/Intervals.h`, `optimization/Knapsack.h`, `optimization/KnapsackVariants.h`, `optimization/LinearPartition.h`, `optimization/SequenceProblems.h`, `optimization/ShortestJobFirst.h`, `optimization/StockTrading.h` |
 | [14](14-graph.md#ch-14) | `graph/BlossomMatching.h`, `graph/EulerianCycle.h`, `graph/FlowApplications.h`, `graph/Grid.h`, `graph/Matching.h`, `graph/Paths.h`, `graph/Properties.h`, `graph/PushRelabel.h`, `graph/StrongComponents.h`, `interop/lemon/Parallel.h` |

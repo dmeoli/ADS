@@ -558,6 +558,10 @@ using ADS::multiwayMerge;
 using ADS::deltaStepping;
 using ADS::rhoStepping;
 
+// parallel/ParallelSketch.h
+using ADS::MergeableSketch;
+using ADS::parallelSketch;
+
 // parallel/ParallelSort.h
 using ADS::kParallelSort;
 using ADS::kParallelSortThreads;
@@ -687,12 +691,23 @@ using ADS::BinaryFuseFilter;
 // set/BlockedBloomFilter.h
 using ADS::BlockedBloomFilter;
 
+// set/CountMinSketch.h
+using ADS::CountMinSketch;
+using ADS::CountMinUpdate;
+using ADS::CountSketch;
+
 // set/CuckooFilter.h
 using ADS::CuckooFilter;
 
 // set/GrafiteFilter.h
 using ADS::BucketingFilter;
 using ADS::GrafiteFilter;
+
+// set/KllSketch.h
+using ADS::KllSketch;
+
+// set/MinHashSketch.h
+using ADS::MinHashSketch;
 
 // set/PrefixFilter.h
 using ADS::PrefixFilter;
@@ -706,6 +721,9 @@ using ADS::setDifference;
 using ADS::setIntersection;
 using ADS::setSymmetricDifference;
 using ADS::setUnion;
+
+// set/UltraLogLog.h
+using ADS::UltraLogLog;
 
 // set/VectorIntersection.h
 using ADS::intersect;

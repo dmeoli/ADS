@@ -57,7 +57,8 @@ FILE = {
     26: '26-distributed',
 }
 # the headers described in a chapter other than that of their area
-EXCEPT = {'set/SetInterfaces.h': 1, 'set/Bag.h': 1}
+EXCEPT = {'set/SetInterfaces.h': 1, 'set/Bag.h': 1,
+          'parallel/ParallelSketch.h': 10}
 
 
 def strip(src):

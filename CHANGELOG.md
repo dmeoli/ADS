@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the sketches of streams, mergeable, persistent (by `store()` and the
+  bridge of cereal) and hashed by `FastHash::hash64()` finished by
+  `splitmix64()`, which consecutive integers need: `UltraLogLog` of Ertl in
+  registers of a byte, with the FGRA estimator, kept in $O( 1 )$ time by a
+  tally of the registers that the insertions update with no branch, the
+  estimator of maximum likelihood by the steps of Newton from a lower bound
+  of its root, the merge and the downsizing to a lower precision;
+  `CountMinSketch`, with the plain and the conservative update, and
+  `CountSketch`, with its estimate of the second moment; `KllSketch`, the
+  quantiles of Karnin, Lang and Liberty with the lazy compaction of
+  DataSketches in one buffer, the general compaction of the merges and a
+  `View` of the sorted items; `MinHashSketch`, the minwise hashing of one
+  permutation with the optimal densification of Shrivastava; and
+  `parallelSketch()` of `ParallelSketch.h`, which builds any of them on an
+  executor by the merges of the sketches of the blocks of `parallelReduce()`,
+  equal to the sequential one for the sketches whose merge is exact; the
+  tests `sketches`, `engineered_persistence.persistence-sketches` and the
+  sketches in `persistence-cereal`, the part `sketches` of `bench-hashing`
+  against DataSketches 5.3.1 (its HyperLogLog, KLL, theta and Count-Min
+  sketches, from the directory `datasketches-cpp` of `HASHING`) and a plain
+  HyperLogLog, and section 10.12 of the manual (Lemmas 10.24 to 10.30)
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits
