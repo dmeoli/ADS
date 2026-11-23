@@ -192,6 +192,7 @@
 #include "ADS/succinct/PackedArray.h"
 #include "ADS/succinct/PartitionedEliasFano.h"
 #include "ADS/succinct/RRRBitVector.h"
+#include "ADS/succinct/TinyRankSelect.h"
 #include "ADS/succinct/WaveletMatrix.h"
 #include "ADS/tree/BTreeMap.h"
 #include "ADS/tree/JoinAlgorithms.h"

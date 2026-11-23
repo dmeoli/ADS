@@ -13,7 +13,9 @@
  * no SSE2 (ADS_BP_SCALAR); the parallel construction of both directories
  * on chunks of 2 blocks and of 1 superblock (ADS_RANKSELECT_CHUNK and
  * ADS_COMPACT_CHUNK), so that the top regions start chunks or lie inside
- * them; rank and select against a scan, and Elias-Fano
+ * them; the rank and select of 3* by the scalar kernel of the lines
+ * (ADS_TINY_SCALAR) and its parallel construction a superblock at a time
+ * (ADS_TINY_CHUNK); rank and select against a scan, and Elias-Fano
  * and the balanced parentheses on top of them, at the level 3 of the
  * contracts.
  *
@@ -33,6 +35,8 @@
 #define ADS_BP_SCALAR 1
 #define ADS_RANKSELECT_CHUNK 2
 #define ADS_COMPACT_CHUNK 1
+#define ADS_TINY_SCALAR 1
+#define ADS_TINY_CHUNK 1
 
 #include "ADSTest.h"
 
@@ -42,6 +46,7 @@
 #include "ADS/succinct/CompactRankSelect.h"
 #include "ADS/succinct/EliasFano.h"
 #include "ADS/succinct/RankSelect.h"
+#include "ADS/succinct/TinyRankSelect.h"
 #include "ADS/parallel/ThreadPool.h"
 
 #include <algorithm>
@@ -190,7 +195,8 @@ ADS_TEST( "rank-select-words-top" )
 // of select that span 2^16 bits or more: dense runs of 1s (and of 0s)
 // separated by long empty stretches, so that the groups across them are
 // sparse, and a vector whose last group is sparse; a vector built from
-// its words; the directories with one select or none
+// its words; the directories with one select or none; the compact and the
+// tiny directories, the latter by the scalar kernel of the lines
 ADS_TEST( "rank-select-top" )
 {
  std::mt19937 g( 3 );
@@ -202,11 +208,13 @@ ADS_TEST( "rank-select-top" )
     R[ i ] = B( g );
    checkAll( R );
    }
- for( const std::size_t n : { 8191 , 8192 , 8193 , 40000 } ) {  // compact
+ for( const std::size_t n : { 8191 , 8192 , 8193 , 40000 } ) {  // compacts
   std::vector< bool > R( n );
   for( std::size_t i = 0 ; i < n ; ++i )
    R[ i ] = g() % 3 == 0;
   checkAll< CompactRankSelect >( R );
+  checkAll< TinyRankSelect >( R );  // the scalar kernel
+  checkAll< BasicTinyRankSelect< 1024 > >( R );
   }
  std::vector< bool > C;
  for( int run = 0 ; run < 6 ; ++run ) {
@@ -256,8 +264,9 @@ ADS_TEST( "rank-select-top" )
 // the directories built on pools of 2 and 5 threads against the sequential
 // ones, with the top level every 2^10 bits (every 4 blocks) and every 2^13
 // (every 2 superblocks): chunks of 2 blocks, inside the top blocks, and of
-// up to 8 or more, holding several of them, on vectors from bits and from
-// words with 1s past the size
+// up to 8 or more, holding several of them, and the tiny directory a
+// superblock to a chunk, on vectors from bits and from words with 1s past
+// the size
 ADS_TEST( "parallel-rank-select-top" )
 {
  std::mt19937_64 g( 41 );
@@ -296,6 +305,20 @@ ADS_TEST( "parallel-rank-select-top" )
      ok = Y.select1( k ) == X.select1( k ) && Z.select1( k ) == X.select1( k );
     for( std::size_t k = 1 ; ok && k <= X.zeros() ; ++k )
      ok = Y.select0( k ) == X.select0( k ) && Z.select0( k ) == X.select0( k );
+    CHECK( ok );
+    const BasicTinyRankSelect< 512 > U( b ) , V( pool , b ) ,
+      Y5( pool , W , n );
+    ok = V.bits() == U.bits() && Y5.bits() == U.bits() &&
+	 V.directoryBits() == U.directoryBits() &&
+	 Y5.directoryBits() == U.directoryBits();
+    for( std::size_t i = 0 ; ok && i <= n ; ++i )
+     ok = V.rank1( i ) == U.rank1( i ) && Y5.rank1( i ) == U.rank1( i );
+    for( std::size_t k = 1 ; ok && k <= U.ones() ; ++k )
+     ok =
+       V.select1( k ) == U.select1( k ) && Y5.select1( k ) == U.select1( k );
+    for( std::size_t k = 1 ; ok && k <= U.zeros() ; ++k )
+     ok =
+       V.select0( k ) == U.select0( k ) && Y5.select0( k ) == U.select0( k );
     CHECK( ok );
     }
   }

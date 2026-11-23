@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `TinyRankSelect` (`BasicTinyRankSelect< L0 >`, with blocks of `L0` =
+  512, 1024 or 2048 bits), the rank and select of 3* of Kurpicz,
+  Rigi-Luperti and Sanders: an entry of 512 bits per superblock of 32
+  blocks, i.e., 0.78125% of the bits for the rank with the default blocks of
+  2048 bits, and a select in constant time in the worst case through a tree
+  of samples of three levels packed at the widths that its values need, a
+  few hundredths of a percent of the bits for each value where the bits are
+  spread evenly; its parallel construction on an executor, its persistence,
+  and its use as the directory of `HuffmanWaveletTree` (whose parallel
+  construction now takes any directory built on an executor); the kernel
+  `detail::lineRank()` on several lines and `detail::lineCount()`; the
+  tests `engineered_succinct.tiny-rank-select` and `tiny-rank-select-large`
+  (on 2^32 + 70 bits), the tiny directories in the tests of the parallel
+  construction, of the persistence and of `succinct_top`, the cells
+  `ADS::TinyRankSelect` and `ADS::TinyRankSelect<1024>` of the benchmark
+  `bitvector` against pasta, sdsl-lite (with the new cell
+  `sdsl::rank_support_v5+mcl`) and sux, and the part of section 22.4 of the
+  manual on it (Algorithm 22.Zrs3, Lemmas 22.Zrs1 and 22.Zrs2)
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits

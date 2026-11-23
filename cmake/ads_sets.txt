@@ -505,6 +505,7 @@ succinct/PackedArray.h                advanced
 succinct/PartitionedEliasFano.h       advanced
 succinct/RRRBitVector.h               advanced beyond the notes, for speed
 succinct/RankSelect.h                 base     Ferragina's notes, even if fast
+succinct/TinyRankSelect.h             advanced beyond the notes, for space
 succinct/WaveletMatrix.h              advanced
 
 tree/AVLTree.h                        base

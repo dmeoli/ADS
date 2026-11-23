@@ -298,7 +298,7 @@ HWY_INLINE std::uint32_t parities8( const std::uint64_t * u ,
  return( y );
  }
 
-/// the 1 bits of the 8 words of \f$ w \f$ below the bit \f$ p < 512 \f$
+/// the 1 bits of the 8 words of \f$ w \f$ below the bit \f$ p \le 512 \f$
 HWY_INLINE std::size_t lineRank512( const std::uint64_t * w , unsigned p )
 {
  const hn::CappedTag< std::uint64_t , 8 > d;
