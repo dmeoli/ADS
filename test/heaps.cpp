@@ -634,7 +634,8 @@ ADS_TEST( "working-set-heap" )
  CHECK( C.empty() && ( C.ids() == 10 ) );
  }
 
-/// the comparisons of the keys of a run, counted
+/// the comparisons of the keys of a run, counted; == and <=> are there for
+/// std::totally_ordered, which PairingHeap asks of its keys
 struct CountedKey
 {
  long long v = 0;
@@ -643,10 +644,12 @@ struct CountedKey
   ++count;
   return( a.v < b.v );
   }
- friend bool operator==( const CountedKey & a , const CountedKey & b ) {
+ [[maybe_unused]] friend bool operator==( const CountedKey & a ,
+					  const CountedKey & b ) {
   return( a.v == b.v );
   }
- friend auto operator<=>( const CountedKey & a , const CountedKey & b ) {
+ [[maybe_unused]] friend auto operator<=>( const CountedKey & a ,
+					   const CountedKey & b ) {
   ++count;
   return( a.v <=> b.v );
   }
