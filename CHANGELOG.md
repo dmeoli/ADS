@@ -272,6 +272,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `lowestCommonAncestor()` of `BinaryTreeAlgorithms.h` returns the node
+  where the two climbs meet by the second of them, which GCC 15 compiles
+  right at `-O1` and above, where with the first it gave, on GCC 15.3, a
+  pointer that the caller took for different from every node it passed
+  (e.g., `lowestCommonAncestor( u , u ) != u`)
 - the link of the programs that include `ConcurrentCuckooTable.h` with a
   value wider than two words, whose atomics the compiler calls in libatomic
   (e.g., GCC and Clang on x86-64): the target `ADS::ADS`, `ads.pc` and
