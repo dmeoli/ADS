@@ -8,11 +8,14 @@
  * heads in the order of Eytzinger, uncompressed (spmae_settings) and
  * compressed (scpmae_settings), on keys of 64 bits, compiled in the unit
  * pma_authors.cpp from the sources in the directory of CPMA, since it
- * includes its own ParlayLib, which would clash with the one of PAM. Its
- * batches run on the workers of ParlayLib (PARLAY_NUM_THREADS). The unit
- * defines the functions below, which the benchmarks call; the build defines
- * ADS_HAS_CPMA where it compiles it. The key 0 is kept apart by that code,
- * which the benchmarks never draw.
+ * includes its own ParlayLib, which would clash with the one of PAM. The
+ * unit is sequential in bench/ordered.cpp, where any parallel loop of
+ * ParlayLib would wake its workers on the one core of the benchmark at
+ * each update, and parallel in bench/joins.cpp, whose batches run on the
+ * workers of ParlayLib (PARLAY_NUM_THREADS). The unit defines the functions
+ * below, which the benchmarks call; the build defines ADS_HAS_CPMA where it
+ * compiles it. The key 0 is kept apart by that code, which the benchmarks
+ * never draw.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

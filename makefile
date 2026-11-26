@@ -608,19 +608,27 @@ $(BUILD)/bench-backtrack: bench/backtrack.cpp bench/Bench.h $(HEADERS) \
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(BACKFLAGS)
 
 # the CPMA of its authors, in a unit of its own with its own ParlayLib [see
-# bench/PmaCompetitors.h], for ordered and joins
+# bench/PmaCompetitors.h], with the flags of its makefile (-Ofast, i.e.,
+# -O3 -ffast-math): sequential (PARLAY=0) for the point operations of
+# ordered, as its authors time them, and on ParlayLib (PARLAY=1) for the
+# batches of joins
 CPMAINC   = $(addprefix -isystem $(CPMA)/,include ParallelTools tlx \
             parlaylib/include StructOfArrays/include)
-CPMAOBJ   = $(if $(CPMA),$(BUILD)/pma_authors.o)
+CPMACXX   = $(CXX) -std=c++20 -O3 -ffast-math -march=native -DNDEBUG \
+            -DVQSORT=0 -w -Ibench $(CPMAINC)
+CPMASEQ   = $(if $(CPMA),$(BUILD)/pma_authors_seq.o)
+CPMAPAR   = $(if $(CPMA),$(BUILD)/pma_authors_par.o)
 CPMAFLAGS = $(if $(CPMA),-DADS_HAS_CPMA -pthread)
-$(BUILD)/pma_authors.o: bench/pma_authors.cpp bench/PmaCompetitors.h \
-                        | $(BUILD)
-	$(CXX) -std=c++20 -O3 -march=native -DNDEBUG -DPARLAY=1 -DVQSORT=0 -w \
-	       -Ibench $(CPMAINC) -c -o $@ $<
+$(BUILD)/pma_authors_seq.o: bench/pma_authors.cpp bench/PmaCompetitors.h \
+                            | $(BUILD)
+	$(CPMACXX) -DPARLAY=0 -DPARLAY_SEQUENTIAL -c -o $@ $<
+$(BUILD)/pma_authors_par.o: bench/pma_authors.cpp bench/PmaCompetitors.h \
+                            | $(BUILD)
+	$(CPMACXX) -DPARLAY=1 -c -o $@ $<
 
 $(BUILD)/bench-ordered: bench/ordered.cpp bench/Bench.h \
-                       bench/PmaCompetitors.h $(HEADERS) $(CPMAOBJ) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) $(CPMAFLAGS) -o $@ $< $(CPMAOBJ) $(BENCHLIBS) \
+                       bench/PmaCompetitors.h $(HEADERS) $(CPMASEQ) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) $(CPMAFLAGS) -o $@ $< $(CPMASEQ) $(BENCHLIBS) \
 	       $(ABSLFLAGS) $(if $(TLX),-I$(TLX))
 
 $(BUILD)/bench-arrays: bench/arrays.cpp bench/Bench.h $(HEADERS) | $(BUILD)
@@ -695,8 +703,8 @@ $(BUILD)/bench-parallel: bench/parallel.cpp bench/Bench.h $(HEADERS) \
 JOINFLAGS = $(if $(PAM),-DADS_HAS_PAM -isystem $(PAM)/include \
             -isystem $(PARLAY)/include) -pthread
 $(BUILD)/bench-joins: bench/joins.cpp bench/Bench.h bench/PmaCompetitors.h \
-                     $(HEADERS) $(CPMAOBJ) | $(BUILD)
-	$(CXX) $(BENCHFLAGS) $(CPMAFLAGS) -o $@ $< $(CPMAOBJ) $(BENCHLIBS) \
+                     $(HEADERS) $(CPMAPAR) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) $(CPMAFLAGS) -o $@ $< $(CPMAPAR) $(BENCHLIBS) \
 	       $(JOINFLAGS)
 
 # the runtime of the workers: OpenMP always, TBB=1 (or TBB=<prefix>)

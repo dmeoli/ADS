@@ -8383,6 +8383,7 @@ class BTreeMap
  [[nodiscard]] std::size_t size( void ) const;
  [[nodiscard]] bool empty( void ) const;
  [[nodiscard]] int height( void ) const;
+ [[nodiscard]] std::size_t bytes( void ) const;
  void clear( void );
  template< std::input_iterator It >
  void build( It first , It last );

@@ -186,11 +186,11 @@ ADS_TEST( "btree-map-counts" )
 // the selections of the counted tree too), with nodes of 4
 // places (every operation splits or merges) and of the default size, on
 // few and on many distinct keys; the empty tree, one key, the keys in
-// increasing and decreasing order (the nodes of the edges filled), the
-// largest and the smallest integer as keys (the padding), an infinite
-// key, strings (the binary search), build() from sorted pairs, copies,
-// moves, swaps, erase( it ), forRange(), a value of the tree inserted
-// again, and a key not sorted in build()
+// increasing and decreasing order (the nodes of the edges filled, and
+// their bytes), the largest and the smallest integer as keys (the
+// padding), an infinite key, strings (the binary search), build() from
+// sorted pairs, copies, moves, swaps, erase( it ), forRange(), a value of
+// the tree inserted again, and a key not sorted in build()
 ADS_TEST( "btree-map" )
 {
  std::mt19937 g( 31 );
@@ -206,7 +206,8 @@ ADS_TEST( "btree-map" )
  BTreeMap< int , int > e;
  CHECK( e.empty() && ! e.lookup( 1 ) && ! e.remove( 1 ) );
  CHECK( ( e.begin() == e.end() ) && ( e.lowerBound( 0 ) == e.end() ) &&
-	( e.upperBound( 0 ) == e.end() ) && ( e.height() == 0 ) );
+	( e.upperBound( 0 ) == e.end() ) && ( e.height() == 0 ) &&
+	( e.bytes() >= sizeof( e ) ) );
  CHECK( e.insert( 7 , 70 ) && ! e.insert( 7 ,
 					  71 ) && ( *e.lookup( 7 ) == 71 ) );
  CHECK( ( e.size() == 1 ) && ( e.height() == 1 ) );
@@ -222,6 +223,7 @@ ADS_TEST( "btree-map" )
    CHECK( m.insert( k , -k ) );
    }
   CHECK( m.size() == std::size_t( n ) );
+  CHECK( m.bytes() >= sizeof( m ) + std::size_t( n ) / 8 * 64 );
   int h = 1;  // the height of full nodes
   for( long c = 8 ; c < n ; c *= 8 )
    ++h;

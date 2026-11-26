@@ -23,10 +23,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pointer, for the codes in an array of a fixed size; the tests
   `ordered.packed-memory-array` and
   `engineered_parallel.parallel-packed-memory-array`, the cells of the sets
-  in `bench/ordered.cpp` (`std::set`, `absl::btree_set`) and of the batches
-  in `bench/joins.cpp`, against the CPMA of its authors with `CPMA=<dir>`
-  (the unit `bench/pma_authors.cpp`), and section 6.11 of the manual
-  (Algorithms 6.21 to 6.23, Lemmas 6.26 to 6.30)
+  in `bench/ordered.cpp` (`std::set`, `absl::btree_set`), with the bytes per
+  key of the packed memory arrays and of `BTreeMap` in the group space, and
+  of the batches in `bench/joins.cpp`, against the CPMA of its authors with
+  `CPMA=<dir>` (the unit `bench/pma_authors.cpp`, compiled with the flags of
+  their makefile, sequential for the point operations of `bench/ordered.cpp`
+  and on ParlayLib for the batches of `bench/joins.cpp`), and section 6.11
+  of the manual (Algorithms 6.21 to 6.23, Lemmas 6.26 to 6.30)
+- `BTreeMap::bytes()`, the bytes of the map and of the blocks of the pools
+  of its nodes
 - `PackedGraph` (`graph/PackedGraph.h`), the F-Graph of Wheatman, Burns,
   Buluç and Xu, a `DynamicGraph` whose arcs are the keys of one
   `CompressedPackedMemoryArray` of 64 bits, the adjacent nodes of a node

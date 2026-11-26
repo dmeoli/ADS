@@ -27,8 +27,12 @@
  * so that the sums are those of the maps: std::set, absl::btree_set where
  * it is found, PackedMemoryArray and CompressedPackedMemoryArray of ADS
  * and, if the CPMA of its authors is compiled in (-DADS_HAS_CPMA and the
- * unit pma_authors.cpp [see PmaCompetitors.h]), its two forms with the
- * heads in the order of Eytzinger, uncompressed and compressed.
+ * unit pma_authors.cpp, sequential [see PmaCompetitors.h]), its two forms
+ * with the heads in the order of Eytzinger, uncompressed and compressed.
+ * The packed memory arrays and BTreeMap, which the sets of ADS are
+ * compared with, give also their bytes per key after the n insertions in
+ * random order, in the group space ("space ordered"), i.e., the memory of
+ * the structure on which the searches run.
  *
  *   ordered [ -r runs ] [ -s seed ] n1 n2 ...
  *
@@ -221,6 +225,21 @@ void run( const std::string & who , const Data & X , int r , M && make ,
 	     del( e , k );
 	    } ,
 	   r , n ) );
+ }
+
+/// the bytes per key, by bytes( d ), of the structure that make() builds
+/// and ins( d , k ) fills with the keys in random order
+template< class M , class I , class B >
+void space( const std::string & who , const Data & X , M && make , I && ins ,
+	    B && bytes )
+{
+ if( ! wanted( who ) || skip( who ) )
+  return;
+ auto d = make();
+ for( Key k : X.K )
+  ins( d , k );
+ print( "space" , "ordered" , X.K.size() , who ,
+	double( bytes( d ) ) / double( X.K.size() ) );
  }
 
 /// the sum of the values of a range of pairs
@@ -538,6 +557,10 @@ int main( int argc , char ** argv )
        } );
       return( s );
       } );
+   space(
+     who , X , []() { return( P() ); } ,
+     []( auto & d , Key k ) { d.insert( k ); } ,
+     []( const auto & d ) { return( d.bytes() ); } );
    };
   pmaRun.template operator()< ADS::PackedMemoryArray< Key > >(
     "ADS::PackedMemoryArray" );
@@ -562,6 +585,12 @@ int main( int argc , char ** argv )
      []( const auto & d , Key k , std::size_t c ) {
       return( pma_authors::scan( d.p , d.z , k , c ) );
       } );
+  for( const bool z : { false , true } )
+   space(
+     z ? "CPMA authors scpmae" : "CPMA authors spmae" , X ,
+     [ z ]() { return( AuthorsPma( z ) ); } ,
+     []( auto & d , Key k ) { pma_authors::insert( d.p , d.z , k ); } ,
+     []( const auto & d ) { return( pma_authors::bytes( d.p , d.z ) ); } );
 #endif
   run(
     "ADS::BTreeMap" , X , r ,
@@ -575,6 +604,9 @@ int main( int argc , char ** argv )
     []( const auto & d , Key k , std::size_t c ) {
      return( walk( d , d.lowerBound( k ) , c ) );
      } );
+  space(
+    "ADS::BTreeMap" , X , []() { return( ADS::BTreeMap< Key , Key >() ); } ,
+    adsIns , []( const auto & d ) { return( d.bytes() ); } );
   run(
     "ADS::RedBlackTree" , X , r ,
     []() { return( ADS::RedBlackTree< Key , Key >() ); } , adsIns , adsFind ,

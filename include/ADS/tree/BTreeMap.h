@@ -383,6 +383,10 @@ class BTreeMap
  /// the levels of the tree, 0 if empty, 1 if a single leaf
  [[nodiscard]] int height( void ) const;
 
+ /// the bytes of the map: the object and the blocks of the two pools of
+ /// its nodes, the slots freed included
+ [[nodiscard]] std::size_t bytes( void ) const;
+
  /// removes the pairs, the pools keeping their memory
  void clear( void );
 

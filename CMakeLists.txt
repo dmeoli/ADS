@@ -664,25 +664,32 @@ if (ADS_BENCHMARKS)
     # the competitor of the packed memory arrays in bench-ordered and
     # bench-joins: the CPMA of its authors from the directory of its sources
     # ADS_CPMA (with its submodules), in a unit of its own with its own
-    # ParlayLib [see bench/PmaCompetitors.h]
+    # ParlayLib [see bench/PmaCompetitors.h] and the flags of its makefile
+    # (-Ofast, i.e., -O3 -ffast-math): sequential (PARLAY=0) for the point
+    # operations of bench-ordered, as its authors time them, and on
+    # ParlayLib (PARLAY=1) for the batches of bench-joins
     set(ADS_CPMA "" CACHE PATH "the sources of the CPMA of its authors")
     if (ADS_CPMA)
-        add_library(ads-pma-authors OBJECT bench/pma_authors.cpp)
-        target_include_directories(ads-pma-authors SYSTEM PRIVATE
-                ${ADS_CPMA}/include ${ADS_CPMA}/ParallelTools ${ADS_CPMA}/tlx
-                ${ADS_CPMA}/parlaylib/include
-                ${ADS_CPMA}/StructOfArrays/include)
-        target_include_directories(ads-pma-authors PRIVATE
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/bench)
-        target_compile_definitions(ads-pma-authors PRIVATE PARLAY=1
-                                                           VQSORT=0)
-        target_compile_features(ads-pma-authors PRIVATE cxx_std_20)
         foreach (b ordered joins)
-            target_sources(bench-${b}
-                           PRIVATE $<TARGET_OBJECTS:ads-pma-authors>)
+            set(o ads-pma-authors-${b})
+            add_library(${o} OBJECT bench/pma_authors.cpp)
+            target_include_directories(${o} SYSTEM PRIVATE
+                    ${ADS_CPMA}/include ${ADS_CPMA}/ParallelTools
+                    ${ADS_CPMA}/tlx ${ADS_CPMA}/parlaylib/include
+                    ${ADS_CPMA}/StructOfArrays/include)
+            target_include_directories(${o} PRIVATE
+                                       ${CMAKE_CURRENT_SOURCE_DIR}/bench)
+            target_compile_definitions(${o} PRIVATE VQSORT=0)
+            target_compile_options(${o} PRIVATE -O3 -ffast-math
+                                                -march=native -w)
+            target_compile_features(${o} PRIVATE cxx_std_20)
+            target_sources(bench-${b} PRIVATE $<TARGET_OBJECTS:${o}>)
             target_compile_definitions(bench-${b} PRIVATE ADS_HAS_CPMA)
             target_link_libraries(bench-${b} PRIVATE Threads::Threads)
         endforeach ()
+        target_compile_definitions(ads-pma-authors-ordered PRIVATE PARLAY=0
+                                   PARLAY_SEQUENTIAL)
+        target_compile_definitions(ads-pma-authors-joins PRIVATE PARLAY=1)
     endif ()
     if (TARGET Eigen3::Eigen)
         target_link_libraries(bench-matrix PRIVATE Eigen3::Eigen)

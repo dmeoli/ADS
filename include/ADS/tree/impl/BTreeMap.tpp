@@ -349,6 +349,12 @@ int ADS_BTM::height( void ) const
  }
 
 ADS_BTM_T
+std::size_t ADS_BTM::bytes( void ) const
+{
+ return( sizeof( *this ) + f_leaves.bytes() + f_inners.bytes() );
+ }
+
+ADS_BTM_T
 auto ADS_BTM::begin( void ) const -> const_iterator
 {
  return( const_iterator( this , f_first , 0 , edge( false ) , 0 ) );

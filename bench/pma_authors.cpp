@@ -5,8 +5,12 @@
  * The CPMA of wheatman/Packed-Memory-Array behind the functions of
  * PmaCompetitors.h, compiled alone with the headers of that repository
  * (include/, ParallelTools/, tlx/, parlaylib/include/ and
- * StructOfArrays/include/), PARLAY=1 for its parallel batches and
- * VQSORT=0, i.e., its sort of ParlayLib instead of the one of Highway.
+ * StructOfArrays/include/) and the flags of its makefile, twice: with
+ * PARLAY=0 and PARLAY_SEQUENTIAL for bench/ordered.cpp, the sequential
+ * code with which its authors time the point operations, and with
+ * PARLAY=1 for the parallel batches of bench/joins.cpp; VQSORT=0 in both,
+ * i.e., its sort of ParlayLib instead of the one of Highway, which the
+ * benchmarks never call since they pass their batches sorted.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
