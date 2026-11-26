@@ -313,7 +313,7 @@ allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-448 headers: 245 base, 156 advanced, 19 core and 28 interop.
+450 headers: 245 base, 158 advanced, 19 core and 28 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
@@ -324,7 +324,7 @@ allow.
 | `complexity/` | `Domino`, `EasyCases`, `Nondeterminism`, `Problems`, `Reductions` |  |  |  |
 | `compression/` | `ArithmeticCoding`, `BurrowsWheeler`, `CanonicalHuffman`, `Entropy`, `FMIndex`, `IntegerCodes`, `LempelZiv`, `PPM` | `BinaryPacking`, `DirectAccessCodes`, `HuffmanCoder`, `HuffmanFMIndex`, `LZ77Linear`, `MoveRIndex`, `RIndex`, `Rans`, `StreamVByte`, `Tans` | `PackedBits` |  |
 | `concurrent/` |  | `Backoff`, `ConcurrentCuckooTable`, `ConcurrentFlatTable`, `ConcurrentUnionFind`, `EventCount`, `LockFreePriorityQueue`, `MPMCQueue`, `MPSCInbox`, `MPSCQueue`, `MinBoard`, `MultiQueue`, `SPSCQueue`, `SingleWriterFlatTable`, `StealablePriorityQueue`, `WorkStealingDeque` |  |  |
-| `dictionary/` | `BinaryTrie`, `BitmapTrie`, `ChainedHashTable`, `CuckooHashing`, `DirectTable`, `HashFunctions`, `IndexedSkipList`, `KnuthHashing`, `OpenHashTable`, `PatriciaTrie`, `PerfectHashing`, `SkipList`, `SortedArrayDictionary`, `TableSize`, `Trie`, `TwoLevelDictionary`, `UniversalHashing`, `XFastTrie`, `YFastTrie` | `AdaptiveRadixTree`, `BucketCuckooTable`, `DenseHashMap`, `FastHash`, `FingerprintPerfectHash`, `FlatHashTable`, `MinimalPerfectHash`, `PointerTable`, `PositionIndex`, `RecSplit`, `RowFingerprint`, `SuccinctPatriciaTrie` | `RandomHashing` |  |
+| `dictionary/` | `BinaryTrie`, `BitmapTrie`, `ChainedHashTable`, `CuckooHashing`, `DirectTable`, `HashFunctions`, `IndexedSkipList`, `KnuthHashing`, `OpenHashTable`, `PatriciaTrie`, `PerfectHashing`, `SkipList`, `SortedArrayDictionary`, `TableSize`, `Trie`, `TwoLevelDictionary`, `UniversalHashing`, `XFastTrie`, `YFastTrie` | `AdaptiveRadixTree`, `BucketCuckooTable`, `ConsensusRecSplit`, `DenseHashMap`, `FastHash`, `FingerprintPerfectHash`, `FlatHashTable`, `MinimalPerfectHash`, `PointerTable`, `PositionIndex`, `PtrHash`, `RecSplit`, `RowFingerprint`, `SuccinctPatriciaTrie` | `RandomHashing` |  |
 | `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  | `BoostMPI` |
 | `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `MappedFile`, `Persistence`, `RecordFile` |  |
 | `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |
@@ -602,8 +602,8 @@ concurrent structures are also tested on real threads under ThreadSanitizer.
 section 7.2 of the book. Furthermore,
 [`bench/hashing.cpp`](bench/hashing.cpp) compares the hashing with Abseil,
 unordered_dense, robin-map, libcuckoo, XXH3, wyhash, rapidhash,
-fastfilter_cpp, xor_singleheader, PTHash, BBHash and RecSplit, and the
-concurrent cuckoo table with libcuckoo, `boost::concurrent_flat_map` and a
+fastfilter_cpp, xor_singleheader, PTHash, BBHash, RecSplit and
+Consensus-RecSplit, and the concurrent cuckoo table with libcuckoo, `boost::concurrent_flat_map` and a
 `std::unordered_map` under a `std::shared_mutex`.
 [`bench/priority.cpp`](bench/priority.cpp) compares the heaps with
 Boost.Heap, tlx and radix-heap, also in Dijkstra's algorithm and in
@@ -679,6 +679,8 @@ library, Boost and Eigen.
 | range filter Grafite, false positives at most $\ell / 2^{B-2}$ for a range of $\ell$ keys with B bits per key whatever the queries, by a locality-preserving hash and Elias-Fano; the bucketing filter of the same paper (Costa, Ferragina and Vinciguerra) | [`set/GrafiteFilter.h`](include/ADS/set/GrafiteFilter.h) | `hashing.grafite-filter`, `hashing.bucketing-filter` |
 | minimal perfect hash function by pilots, about 3 bits per key (PTHash) | [`dictionary/MinimalPerfectHash.h`](include/ADS/dictionary/MinimalPerfectHash.h) | `hashing.minimal-perfect-hash` |
 | minimal perfect hash function by recursive splitting, about 1.8 bits per key, leaves by rotation fitting (RecSplit; Bez et al.) | [`dictionary/RecSplit.h`](include/ADS/dictionary/RecSplit.h) | `hashing.recsplit` |
+| minimal perfect hash function by pilots of 8 bits placed by evictions, parts of equal slots, streaming queries with prefetching, parts built in parallel (PtrHash; Groot Koerkamp) | [`dictionary/PtrHash.h`](include/ADS/dictionary/PtrHash.h) | `hashing.ptrhash` |
+| minimal perfect hash function by recursive splitting with the seeds searched and encoded together, near 1.44 bits per key, chunks searched in parallel (Consensus-RecSplit; Lehmann, Sanders, Walzer, Ziegler) | [`dictionary/ConsensusRecSplit.h`](include/ADS/dictionary/ConsensusRecSplit.h) | `hashing.consensus-recsplit` |
 | minimal perfect hash function by levels of fingerprints, ranks by blocks of 512 bits (Müller, Sanders, Schulze, Zhou; BBHash; FMPH) | [`dictionary/FingerprintPerfectHash.h`](include/ADS/dictionary/FingerprintPerfectHash.h) | `hashing.fingerprint-perfect-hash` |
 | cuckoo table with buckets of 4 places, tags of 8 bits, search in breadth (Li et al.; libcuckoo) | [`dictionary/BucketCuckooTable.h`](include/ADS/dictionary/BucketCuckooTable.h) | `hashing.bucket-cuckoo` |
 | hash map with its pairs in a dense vector and an index of positions in groups of 12 control bytes, a removal by moving the last pair (the dictionaries of CPython 3.6; `ankerl::unordered_dense`) | [`dictionary/DenseHashMap.h`](include/ADS/dictionary/DenseHashMap.h) | `hashing.dense-hash-map` |
