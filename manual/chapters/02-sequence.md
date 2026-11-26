@@ -1991,7 +1991,7 @@ time.*
 *Proof.* On each level the widths telescope from the index $-1$ of the head to
 the index $n$ of nil. Along the search the sum of the widths followed is the
 index of the node reached. Hence the search is that of a skip list whose
-keys are the indices, and [Lemma 7.33](07-dictionary.md#lem-7-33) bounds its
+keys are the indices, and [Lemma 7.31](07-dictionary.md#lem-7-31) bounds its
 expected length by $2 \log_2 n + O( 1 )$. $\square$
 
 An insertion at the index $i$ draws the levels $\ell$ of the new node, and it
@@ -2057,7 +2057,7 @@ in $O( \log n )$ expected time.*
 *Proof.* Each operation follows one search path, of $O( \log n )$ expected
 length by [Lemma 2.27](02-sequence.md#lem-2-27), and changes $O( 1 )$
 links and widths per level, on $O( \log n )$ expected levels
-([Lemma 7.36](07-dictionary.md#lem-7-36)). An insertion and a removal keep
+([Lemma 7.34](07-dictionary.md#lem-7-34)). An insertion and a removal keep
 the sums of [Lemma 2.27](02-sequence.md#lem-2-27), since the width added or
 removed on a level is the one item added or removed below it. $\square$
 

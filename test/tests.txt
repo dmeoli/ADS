@@ -542,7 +542,6 @@ hashing  minimal-perfect-hash  hash perfetto minimo a piloti
 hashing  recsplit              hash perfetto minimo per divisione ricorsiva
 hashing  fingerprint-perfect-hash  hash perfetto minimo a impronte per livelli
 hashing  ptrhash               hash perfetto minimo a piloti di 8 bit, PtrHash
-hashing  consensus-recsplit    hash perfetto minimo per divisione, Consensus
 hashing  bucket-cuckoo         cuckoo a bucket di 4 posti
 hashing  bucket-cuckoo-stash   cuckoo a bucket, hash costante e stash
 hashing  grafite-filter        filtro di intervalli Grafite, query correlate
@@ -2290,6 +2289,6 @@ engineered_persistence  persistence-succinct-graphs  k2-tree, BV e Elias-Fano, m
 engineered_persistence  persistence-filters  Bloom, cuckoo, ribbon, binary fuse, prefix, Grafite
 engineered_persistence  persistence-filters-version1  Ribbon e binary fuse dei file della versione 1
 engineered_persistence  persistence-sketches  gli sketch dei flussi
-engineered_persistence  persistence-perfect-hash  PTHash, PtrHash, RecSplit, Consensus, BBHash, FKS, CHM
+engineered_persistence  persistence-perfect-hash  PTHash, PtrHash, RecSplit, BBHash, FKS, CHM
 engineered_persistence  persistence-graphs  StaticGraph e CsrMatrix, viste allineate
 engineered_persistence  persistence-cereal  gli archivi di cereal e il bit_vector di sdsl

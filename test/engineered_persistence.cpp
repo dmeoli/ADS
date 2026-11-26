@@ -59,7 +59,6 @@
 #include "ADS/succinct/RankSelect.h"
 #include "ADS/succinct/TinyRankSelect.h"
 #include "ADS/succinct/WaveletMatrix.h"
-#include "ADS/dictionary/ConsensusRecSplit.h"
 #include "ADS/dictionary/FingerprintPerfectHash.h"
 #include "ADS/dictionary/MinimalPerfectHash.h"
 #include "ADS/dictionary/PerfectHashing.h"
@@ -964,8 +963,6 @@ ADS_TEST( "persistence-perfect-hash" )
  using CompactPtrHash =
    PtrHash< std::uint64_t , PtrHashBucket::Cubic , PtrHashRemap::EliasFano >;
  roundTrip< CompactPtrHash >( CompactPtrHash( keys , 3.5 ) , same );
- roundTrip< ConsensusRecSplit< std::uint64_t , 256 > >(
-   ConsensusRecSplit< std::uint64_t , 256 >( keys , 0.1 ) , same );
  roundTrip< OrderedMinimalPerfectHash< std::uint64_t > >(
    OrderedMinimalPerfectHash< std::uint64_t >( keys ) , same );
  std::vector< std::uint64_t > small( keys.begin() , keys.begin() + 500 );

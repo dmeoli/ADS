@@ -71,7 +71,6 @@
 #include "ADS/concurrent/WorkStealingDeque.h"
 #include "ADS/dictionary/AdaptiveRadixTree.h"
 #include "ADS/dictionary/BucketCuckooTable.h"
-#include "ADS/dictionary/ConsensusRecSplit.h"
 #include "ADS/dictionary/DenseHashMap.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/dictionary/FingerprintPerfectHash.h"

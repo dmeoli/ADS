@@ -277,9 +277,6 @@ using ADS::AdaptiveRadixTree;
 // dictionary/BucketCuckooTable.h
 using ADS::BucketCuckooTable;
 
-// dictionary/ConsensusRecSplit.h
-using ADS::ConsensusRecSplit;
-
 // dictionary/DenseHashMap.h
 using ADS::DenseHashMap;
 

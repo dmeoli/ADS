@@ -675,10 +675,6 @@ if (ADS_BENCHMARKS)
     # directory of their sources ADS_HASHING, Abseil if found
     set(ADS_HASHING "" CACHE PATH "the sources of the hashing libraries")
     if (ADS_HASHING)
-        # the bit vectors of pasta, in a submodule of a submodule of
-        # ConsensusRecSplit, and the utilities of pasta, which its build
-        # fetches, cloned next to its submodules
-        set(pasta ConsensusRecSplit/extlib/fips/extlib/util/extern)
         foreach (d unordered_dense/include robin-map/include libcuckoo xxHash
                    wyhash rapidhash fastfilter_cpp/src
                    xor_singleheader/include pthash/include
@@ -688,14 +684,7 @@ if (ADS_BENCHMARKS)
                    datasketches-cpp/common/include
                    datasketches-cpp/hll/include datasketches-cpp/kll/include
                    datasketches-cpp/count/include
-                   datasketches-cpp/theta/include
-                   ConsensusRecSplit/include
-                   ConsensusRecSplit/extlib/util/include
-                   ConsensusRecSplit/extlib/ips2ra/include
-                   ConsensusRecSplit/extlib/tlx
-                   ConsensusRecSplit/extlib/fips/include
-                   ${pasta}/pasta-bit-vector/include
-                   ConsensusRecSplit/extlib/pasta-utils/include)
+                   datasketches-cpp/theta/include)
             target_include_directories(bench-hashing SYSTEM
                                        PRIVATE ${ADS_HASHING}/${d})
         endforeach ()

@@ -27,27 +27,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `bitvector` against pasta, sdsl-lite (with the new cell
   `sdsl::rank_support_v5+mcl`) and sux, and the part of section 22.4 of the
   manual on it (Algorithm 22.8, Lemmas 22.7 and 22.8)
-- `PtrHash`, the minimal perfect hash function of Groot Koerkamp by pilots of 8
-  bits stored as bytes, placed in parts of the same slots and buckets by
-  decreasing size and, when no pilot below 256 sends a bucket to free slots, by
-  the pilot of the least weighted collisions with the eviction of the buckets
-  it meets, with the linear or the cubic bucket function, the slots beyond n
-  remapped by an array or by an Elias-Fano sequence, `stream()` of a range of
-  keys with the pilot 32 keys ahead prefetched, `prefetch()`, and a constructor
-  that builds the parts on an executor with the same pilots;
-  `ConsensusRecSplit`, the Consensus-RecSplit of Lehmann, Sanders, Walzer and
-  Ziegler, buckets of `K` keys by a minimal `K`-perfect function by thresholds
-  with a `FingerprintPerfectHash` for the keys bumped twice, split by balanced
-  binary trees whose seeds are searched and encoded together by Consensus,
-  about 1.47 bits per key on a million keys at `K` = 4096 and the overhead
-  0.01, with a constructor that searches the chunks of 4194304 keys on an
-  executor with the same seeds; both persistent, in the advanced set and in the
-  module `ads.advanced`; the tests `hashing.ptrhash` and
-  `hashing.consensus-recsplit`, their round trips in
+- `PtrHash`, the minimal perfect hash function of Groot Koerkamp by pilots
+  of 8 bits stored as bytes, placed in parts of the same slots and buckets
+  by decreasing size and, when no pilot below 256 sends a bucket to free
+  slots, by the pilot of the least weighted collisions with the eviction of
+  the buckets it meets, with the linear or the cubic bucket function, the
+  slots beyond n remapped by an array or by an Elias-Fano sequence,
+  `stream()` of a range of keys with the pilot 32 keys ahead prefetched,
+  `prefetch()`, and a constructor that builds the parts on an executor with
+  the same pilots; persistent, in the advanced set and in the module
+  `ads.advanced`; the test `hashing.ptrhash`, its round trips in
   `engineered_persistence.persistence-perfect-hash`, the cells of
-  `bench/hashing.cpp` against PTHash, PHOBIC and the code of Consensus-RecSplit
-  of its authors (with the batch queries), and section 7.8.4 of the manual
-  (Algorithms 7.20 and 7.21, Lemmas 7.30 to 7.32)
+  `bench/hashing.cpp` against PTHash and PHOBIC (with the batch queries),
+  and section 7.8.4 of the manual (Algorithm 7.20, Lemma 7.30)
 - the sketches of streams, mergeable, persistent (by `store()` and the
   bridge of cereal) and hashed by `FastHash::hash64()` finished by
   `splitmix64()`, which consecutive integers need: `UltraLogLog` of Ertl in

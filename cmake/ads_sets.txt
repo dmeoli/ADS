@@ -129,7 +129,6 @@ dictionary/BitmapTrie.h               base
 dictionary/BucketCuckooTable.h        advanced
 dictionary/ChainedHashTable.h         base     the book, on a par with
                                                std::unordered_map
-dictionary/ConsensusRecSplit.h        advanced
 dictionary/CuckooHashing.h            base
 dictionary/DenseHashMap.h             advanced
 dictionary/DirectTable.h              base

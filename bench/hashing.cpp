@@ -56,10 +56,10 @@
  * - "perfect hashing": the build of a minimal perfect hash function of n
  *   random keys of 64 bits and n queries, one by one and in a batch, by
  *   those of ADS (by pilots, also of 8 bits as PtrHash, whose batch is its
- *   stream with prefetching, by recursive splitting, also with the seeds
- *   of Consensus, and by levels of fingerprints, the method of BBHash)
- *   against PTHash, PHOBIC, BBHash, RecSplit and Consensus-RecSplit (the
- *   batch of a function with none is its loop of the queries);
+ *   stream with prefetching, by recursive splitting and by levels of
+ *   fingerprints, the method of BBHash) against PTHash, PHOBIC, BBHash and
+ *   RecSplit (the batch of a function with none is its loop of the
+ *   queries);
  * - "concurrent maps": on p threads, each doing its share of the n
  *   operations, the n insertions into an empty map, n lookups of present
  *   and of absent keys, n operations of which 1 in 10 inserts a new key
@@ -101,7 +101,6 @@
 
 #include "ADS/concurrent/ConcurrentCuckooTable.h"
 #include "ADS/dictionary/BucketCuckooTable.h"
-#include "ADS/dictionary/ConsensusRecSplit.h"
 #include "ADS/dictionary/ChainedHashTable.h"
 #include "ADS/dictionary/CuckooHashing.h"
 #include "ADS/dictionary/DenseHashMap.h"
@@ -206,13 +205,6 @@
 #if __has_include( <sux/function/RecSplit.hpp> )
  #include <sux/function/RecSplit.hpp>
  #define ADS_HAS_RECSPLIT 1
-#endif
-// ConsensusRecSplit uses std::cout and assert() without including them
-#include <cassert>
-#include <iostream>
-#if __has_include( <ConsensusRecSplit.h> )
- #include <ConsensusRecSplit.h>
- #define ADS_HAS_CONSENSUS 1
 #endif
 
 #include <atomic>
@@ -1600,21 +1592,6 @@ void perfectHashing( const std::vector< Key > & K ,
    []( const auto & S ) { return( CompactPtr( S , 3.5 , 0.99 ) ); } ,
    []( const auto & f , const std::vector< Key > & Q ,
        std::vector< std::size_t > & V ) { f.stream( Q , V ); } );
- // Consensus-RecSplit at two points of the front of its authors
- perfect(
-   "ADS::ConsensusRecSplit k=512 e=0.03" , K , H , r ,
-   []( const auto & S ) {
-    return( ADS::ConsensusRecSplit< Key , 512 >( S , 0.03 ) );
-    } ,
-   []( const auto & f , Key k ) { return( f( k ) ); } ,
-   []( const auto & f ) { return( f.bits() ); } );
- perfect(
-   "ADS::ConsensusRecSplit k=4096 e=0.01" , K , H , r ,
-   []( const auto & S ) {
-    return( ADS::ConsensusRecSplit< Key , 4096 >( S , 0.01 ) );
-    } ,
-   []( const auto & f , Key k ) { return( f( k ) ); } ,
-   []( const auto & f ) { return( f.bits() ); } );
  perfectBatch(
    "ADS::RecSplit l=8 b=100" , K , H , r ,
    []( const auto & S ) { return( ADS::RecSplit< Key , 8 >( S , 100 ) ); } ,
@@ -1681,28 +1658,6 @@ void perfectHashing( const std::vector< Key > & K ,
      } ,
     [ & ]( const auto & f , const std::vector< Key > & Q ,
 	   std::vector< std::size_t > & V ) { loop( *f , Q , V ); } );
-  }
-#endif
-#ifdef ADS_HAS_CONSENSUS
- {
-  // the code of the authors, which prints the time of each level on the
-  // standard output (lines that bench/run.sh leaves out)
-  using C512 = consensus::ConsensusRecSplit< 512 , 0.03 >;
-  using C4096 = consensus::ConsensusRecSplit< 4096 , 0.01 >;
-  perfect(
-    "ConsensusRecSplit k=512 e=0.03" , K , H , r ,
-    []( const auto & S ) {
-     return( std::make_unique< C512 >( std::span< const Key >( S ) ) );
-     } ,
-    []( const auto & f , Key k ) { return( ( *f )( std::uint64_t( k ) ) ); } ,
-    []( const auto & f ) { return( f->getBits() ); } );
-  perfect(
-    "ConsensusRecSplit k=4096 e=0.01" , K , H , r ,
-    []( const auto & S ) {
-     return( std::make_unique< C4096 >( std::span< const Key >( S ) ) );
-     } ,
-    []( const auto & f , Key k ) { return( ( *f )( std::uint64_t( k ) ) ); } ,
-    []( const auto & f ) { return( f->getBits() ); } );
   }
 #endif
 #ifdef ADS_HAS_BBHASH
