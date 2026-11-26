@@ -572,10 +572,6 @@ using ADS::OpenMPExecutor;
 using ADS::OpenMPLock;
 #endif
 
-// parallel/ParallelBiconnectivity.h
-using ADS::biconnectedComponents;
-using ADS::twoEdgeConnectedComponents;
-
 // parallel/ParallelGraph.h
 using ADS::bfsDistances;
 using ADS::connectedComponents;

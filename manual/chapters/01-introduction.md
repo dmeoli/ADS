@@ -2088,13 +2088,18 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `concurrent/ConcurrentCuckooTable.h` | advanced | `ConcurrentCuckooTable` | [24](24-concurrent.md#ch-24) |
 | `concurrent/ConcurrentFlatTable.h` | advanced | `ConcurrentFlatTable`, `ZeroingClear`, `EpochClear` | [24](24-concurrent.md#ch-24) |
 | `concurrent/ConcurrentUnionFind.h` | advanced | `ConcurrentUnionFind` | [24](24-concurrent.md#ch-24) |
+| `concurrent/EpochReclaim.h` | advanced | `EpochDomain`, `FraserEpochs` | [24](24-concurrent.md#ch-24) |
 | `concurrent/EventCount.h` | advanced | `EventCount` | [24](24-concurrent.md#ch-24) |
+| `concurrent/HazardPointer.h` | advanced | `HazardDomain`, `hazard_pointer`, `hazard_pointer_obj_base`, `HazardPointers` | [24](24-concurrent.md#ch-24) |
 | `concurrent/LockFreePriorityQueue.h` | advanced | `LockFreePriorityQueue` | [24](24-concurrent.md#ch-24) |
+| `concurrent/LockFreeQueue.h` | advanced | `LockFreeQueue` | [24](24-concurrent.md#ch-24) |
+| `concurrent/LockFreeStack.h` | advanced | `LockFreeStack` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MPMCQueue.h` | advanced | `MPMCQueue` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MPSCInbox.h` | advanced | `MPSCInbox` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MPSCQueue.h` | advanced | `MPSCQueue` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MinBoard.h` | advanced | `MinBoard` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MultiQueue.h` | advanced | `MultiQueue`, `MultiQueueHeap` | [24](24-concurrent.md#ch-24) |
+| `concurrent/Reclaim.h` | advanced | `Retirable` | [24](24-concurrent.md#ch-24) |
 | `concurrent/SPSCQueue.h` | advanced | `SPSCQueue` | [24](24-concurrent.md#ch-24) |
 | `concurrent/SingleWriterFlatTable.h` | advanced | `SingleWriterFlatTable` | [24](24-concurrent.md#ch-24) |
 | `concurrent/StealablePriorityQueue.h` | advanced | `StealablePriorityQueue`, `StealingFrontier` | [24](24-concurrent.md#ch-24) |
