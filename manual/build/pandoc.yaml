@@ -69,8 +69,9 @@ include-in-header:
   - preamble.tex
 
 metadata:
-  title: "ADS — A User Manual"
-  subtitle: "Algorithms and Data Structures in C++20, for ADS 0.1.0 (November 2026)"
+  title: "ADS — Algorithms and Data Structures, and Advanced ones"
+  subtitle: "A User Manual"
+  date: "Version 0.1.0 (November 2026)"
   author: "Donato Meoli"
   lang: en
   colorlinks: true
