@@ -421,7 +421,6 @@ set/CuckooFilter.h                    advanced
 set/DictionarySet.h                   base
 set/GrafiteFilter.h                   advanced
 set/HashMultiset.h                    base
-set/KllSketch.h                       advanced
 set/LinkedHashSet.h                   base
 set/ListSet.h                         base
 set/MinHashSketch.h                   advanced
@@ -433,7 +432,6 @@ set/SetOperations.h                   base
 set/SortedIntersection.h              base
 set/SortedListSet.h                   base
 set/SpaceEfficientSortedSet.h         base
-set/UltraLogLog.h                     advanced
 set/VectorIntersection.h              advanced
 
 sort/CountingSort.h                   base

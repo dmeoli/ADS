@@ -39,20 +39,13 @@
  *   BucketingFilter of ADS against the binary fuse filter asked the
  *   \f$ \ell \f$ points of the range (for \f$ \ell \le 32 \f$);
  * - "sketches": the sketches of a stream of n items, each built by n
- *   insertions and asked its estimate: the distinct items of n random keys
- *   by UltraLogLog of precision 12 (its FGRA estimator and that of maximum
- *   likelihood), against a plain HyperLogLog of bytes and the HyperLogLog
- *   of DataSketches with registers of 8, 6 and 4 bits, with the merge of
- *   the sketches of two halves; the frequencies of n items of a Zipf law
- *   over n / 10 keys, by the Count-Min sketch (plain and conservative) and
- *   the Count sketch of 5 rows of 2719 counters against the Count-Min of
- *   DataSketches, and n queries; the quantiles of the keys, by KLL of
- *   k = 200 against that of DataSketches, and 999 quantiles; the
- *   similarity of Jaccard of two sets of 2 n / 3 keys sharing n / 3, by
- *   the minwise hashing of 256 bins against the theta sketch of
- *   DataSketches of 2^8 entries, one estimate per run; the errors to the
- *   standard error, beside those of Ertl for the UltraLogLog of hash4j,
- *   which is in Java;
+ *   insertions and asked its estimate: the frequencies of n items of a
+ *   Zipf law over n / 10 keys, by the Count-Min sketch (plain and
+ *   conservative) and the Count sketch of 5 rows of 2719 counters against
+ *   the Count-Min of DataSketches, and n queries; the similarity of
+ *   Jaccard of two sets of 2 n / 3 keys sharing n / 3, by the minwise
+ *   hashing of 256 bins against the theta sketch of DataSketches of 2^8
+ *   entries, one estimate per run, printed beside the exact 1 / 3;
  * - "perfect hashing": the build of a minimal perfect hash function of n
  *   random keys of 64 bits and n queries, one by one and in a batch, by
  *   those of ADS (by pilots, also of 8 bits as PtrHash, whose batch is its
@@ -120,11 +113,9 @@
 #include "ADS/set/CountMinSketch.h"
 #include "ADS/set/CuckooFilter.h"
 #include "ADS/set/GrafiteFilter.h"
-#include "ADS/set/KllSketch.h"
 #include "ADS/set/MinHashSketch.h"
 #include "ADS/set/PrefixFilter.h"
 #include "ADS/set/RibbonFilter.h"
-#include "ADS/set/UltraLogLog.h"
 
 #if __has_include( <boost/unordered/unordered_flat_map.hpp> )
  #include <boost/container_hash/hash.hpp>
@@ -193,12 +184,9 @@
  #include <BooPHF.h>
  #define ADS_HAS_BBHASH 1
 #endif
-#if __has_include( <hll.hpp> ) && __has_include( <kll_sketch.hpp> ) && \
-  __has_include( <count_min.hpp> ) && __has_include( <theta_sketch.hpp> )
+#if __has_include( <count_min.hpp> ) && __has_include( <theta_sketch.hpp> )
  #define ADS_HAS_DATASKETCHES
  #include <count_min.hpp>
- #include <hll.hpp>
- #include <kll_sketch.hpp>
  #include <theta_jaccard_similarity.hpp>
  #include <theta_sketch.hpp>
 #endif
@@ -1073,45 +1061,6 @@ void rangeFilters( const std::vector< Key > & K , int r , std::uint64_t seed )
 /*-------------------------------- SKETCHES --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the plain HyperLogLog of Flajolet et al., a byte per register with the
-/// highest level seen, the estimate of the harmonic mean and the linear
-/// counting below 5 m / 2, on the hash of the sketches of ADS
-struct PlainHyperLogLog
-{
- std::vector< std::uint8_t > R;  ///< the registers
- unsigned p;                     ///< the precision
-
- explicit PlainHyperLogLog( unsigned q )
-     : R( std::size_t( 1 ) << q , 0 ) , p( q ) { }
-
- void insert( Key k ) {
-  const std::uint64_t h = ADS::detail::sketchHash( ADS::FastHash< Key >() ,
-						   k );
-  const std::size_t i = std::size_t( h >> ( 64 - p ) );
-  const auto l = std::uint8_t(
-    std::countl_zero( ( h << p ) | ( ( std::uint64_t( 1 ) << p ) - 1 ) ) + 1 );
-  R[ i ] = std::max( R[ i ] , l );
-  }
-
- void merge( const PlainHyperLogLog & o ) {
-  for( std::size_t i = 0 ; i < R.size() ; ++i )
-   R[ i ] = std::max( R[ i ] , o.R[ i ] );
-  }
-
- double estimate( void ) const {
-  const double m = double( R.size() );
-  double s = 0;
-  std::size_t z = 0;
-  for( const std::uint8_t r : R ) {
-   s += std::ldexp( 1.0 , -int( r ) );
-   z += r == 0;
-   }
-  const double e = 0.7213 / ( 1 + 1.079 / m ) * m * m / s;
-  return( ( e <= 2.5 * m ) && ( z > 0 ) ? m * std::log( m / double( z ) )
-					 : e );
-  }
- };
-
 /// the build of a sketch of the stream X by make() and ins( s , x ), in
 /// nanoseconds per item, and the query of every item of Q by ask( s , q ),
 /// in nanoseconds per query (one query per run if Q is empty)
@@ -1150,158 +1099,16 @@ void sketch( const char * what , const std::string & who ,
 		r , std::max< std::size_t >( Q.size() , 1 ) ) );
  }
 
-/// the root mean square of the relative errors of est( keys ) over 20
-/// streams of n distinct keys, to the standard error
-template< class E >
-void distinctError( const std::string & who , std::size_t n ,
-		    std::uint64_t seed ,
-		    std::size_t bytes , E && est )
-{
- if( skip( who ) || listing() )
-  return;
- double s = 0;
- for( int t = 0 ; t < 20 ; ++t ) {
-  const double e =
-    est( keys( n , unsigned( seed + 1 + t ) ) ) / double( n ) - 1;
-  s += e * e;
-  }
- std::cerr << "sketches\t" << n << '\t' << who << "\tbytes " << bytes
-	   << "\trelative error " << std::sqrt( s / 20 ) << '\n';
- }
-
-/// the sketches of a stream: the distinct items of the n keys K by
-/// UltraLogLog of precision 12 and its two estimators against the plain
-/// HyperLogLog and the HyperLogLog of DataSketches of the same precision
-/// (registers of 8, 6 and 4 bits), with the merge of two sketches (one
-/// per run); the frequencies of n items of a Zipf law over n / 10 keys by
-/// the Count-Min sketch of 5 rows of 2719 counters, plain and
-/// conservative, and the Count sketch against the Count-Min of
-/// DataSketches; the quantiles of the n keys as doubles by KLL of
-/// k = 200 against that of DataSketches, 1000 quantiles per run; the
-/// similarity of Jaccard of two sets of 2 n / 3 keys sharing n / 3 by
-/// the minwise hashing of 256 bins against the theta sketch of
-/// DataSketches of 2^8 entries, one estimate per run; the errors to the
-/// standard error, those of UltraLogLog beside the ones of Ertl (which
-/// hash4j, in Java, reproduces)
+/// the sketches of a stream of the n keys K: the frequencies of n items
+/// of a Zipf law over n / 10 keys by the Count-Min sketch of 5 rows of
+/// 2719 counters, plain and conservative, and the Count sketch against
+/// the Count-Min of DataSketches; the similarity of Jaccard of two sets of
+/// 2 n / 3 keys sharing n / 3 by the minwise hashing of 256 bins against
+/// the theta sketch of DataSketches of 2^8 entries, one estimate per run,
+/// printed beside the exact 1 / 3
 void sketches( const std::vector< Key > & K , int r , std::uint64_t seed )
 {
  const std::size_t n = K.size();
- const std::vector< Key > none;
- // the distinct items
- sketch(
-   "distinct" , "ADS::UltraLogLog" , K , none , r ,
-   []() { return( ADS::UltraLogLog< Key >( 12 ) ); } ,
-   []( auto & s , Key x ) { s.insert( x ); } ,
-   []( const auto & s , Key ) { return( s.estimate() ); } );
- sketch(
-   "distinct" , "ADS::UltraLogLog ML" , K , none , r ,
-   []() { return( ADS::UltraLogLog< Key >( 12 ) ); } ,
-   []( auto & s , Key x ) { s.insert( x ); } ,
-   []( const auto & s , Key ) { return( s.estimateML() ); } );
- sketch(
-   "distinct" , "PlainHyperLogLog" , K , none , r ,
-   []() { return( PlainHyperLogLog( 12 ) ); } ,
-   []( auto & s , Key x ) { s.insert( x ); } ,
-   []( const auto & s , Key ) { return( s.estimate() ); } );
- distinctError( "ADS::UltraLogLog" , n , seed , 4096 ,
-		[]( const std::vector< Key > & S ) {
-		 ADS::UltraLogLog< Key > u( 12 );
-		 for( Key x : S )
-		  u.insert( x );
-		 return( u.estimate() );
-		 } );
- distinctError( "ADS::UltraLogLog" , n , seed , 2048 ,  // HLL_4's bytes
-		[]( const std::vector< Key > & S ) {
-		 ADS::UltraLogLog< Key > u( 11 );
-		 for( Key x : S )
-		  u.insert( x );
-		 return( u.estimate() );
-		 } );
- distinctError( "ADS::UltraLogLog ML" , n , seed , 4096 ,
-		[]( const std::vector< Key > & S ) {
-		 ADS::UltraLogLog< Key > u( 12 );
-		 for( Key x : S )
-		  u.insert( x );
-		 return( u.estimateML() );
-		 } );
- if( ! listing() && ! skip( "ADS::UltraLogLog" ) )
-  std::cerr << "sketches\t" << n << "\tErtl (hash4j)\tbytes 4096"
-	    << "\trelative error " << std::sqrt( 0.6119 / 4096 ) << " FGRA , "
-	    << std::sqrt( 0.5789 / 4096 ) << " ML\n";
- distinctError( "PlainHyperLogLog" , n , seed , 4096 ,
-		[]( const std::vector< Key > & S ) {
-		 PlainHyperLogLog h( 12 );
-		 for( Key x : S )
-		  h.insert( x );
-		 return( h.estimate() );
-		 } );
- {  // the merges of the sketches of the two halves
-  const std::vector< Key > A( K.begin() , K.begin() + long( n / 2 ) ) ,
-    B( K.begin() + long( n / 2 ) , K.end() );
-  const auto merge = [ & ]( const std::string & who , auto make ) {
-   if( skip( who ) )
-    return;
-   auto a = make() , b = make();
-   for( Key x : A )
-    a.insert( x );
-   for( Key x : B )
-    b.insert( x );
-   print( "sketches" , "distinct merge" , n , who ,
-	  median( [ & ]() { return( a ); } ,
-		  [ & ]( auto & c ) {
-		   c.merge( b );
-		   sink = sink + std::uint64_t( c.estimate() );
-		   } ,
-		  r , 1 ) );
-   };
-  merge( "ADS::UltraLogLog" ,
-	 []() { return( ADS::UltraLogLog< Key >( 12 ) ); } );
-  merge( "PlainHyperLogLog" , []() { return( PlainHyperLogLog( 12 ) ); } );
-#ifdef ADS_HAS_DATASKETCHES
-  const char * names[] = { "datasketches::hll_sketch HLL_8" ,
-			   "datasketches::hll_sketch HLL_6" ,
-			   "datasketches::hll_sketch HLL_4" };
-  const datasketches::target_hll_type types[] = { datasketches::HLL_8 ,
-						  datasketches::HLL_6 ,
-						  datasketches::HLL_4 };
-  const std::size_t bytes[] = { 4096 , 3072 , 2048 };
-  for( int t = 0 ; t < 3 ; ++t ) {
-   const auto type = types[ t ];
-   sketch(
-     "distinct" , names[ t ] , K , none , r ,
-     [ type ]() { return( datasketches::hll_sketch( 12 , type ) ); } ,
-     []( auto & s , Key x ) { s.update( x ); } ,
-     []( const auto & s , Key ) { return( s.get_estimate() ); } );
-   distinctError( names[ t ] , n , seed , bytes[ t ] ,
-		  [ type ]( const std::vector< Key > & S ) {
-		   datasketches::hll_sketch h( 12 , type );
-		   for( Key x : S )
-		    h.update( x );
-		   return( h.get_estimate() );
-		   } );
-   }
-  if( ! skip( names[ 0 ] ) ) {
-   datasketches::hll_sketch a( 12 , datasketches::HLL_8 ) ,
-     b( 12 , datasketches::HLL_8 );
-   for( Key x : A )
-    a.update( x );
-   for( Key x : B )
-    b.update( x );
-   print( "sketches" , "distinct merge" , n , names[ 0 ] ,
-	  median( []() { return( 0 ); } ,
-		  [ & ]( int ) {
-		   datasketches::hll_union u( 12 );
-		   u.update( a );
-		   u.update( b );
-		   sink =
-		     sink +
-		     std::uint64_t(
-		       u.get_result( datasketches::HLL_8 ).get_estimate() );
-		   } ,
-		  r , 1 ) );
-   }
-#endif
-  }
  // the frequencies: n items of a Zipf law over n / 10 keys
  std::vector< Key > X( n );
  {
@@ -1342,73 +1149,6 @@ void sketches( const std::vector< Key > & K , int r , std::uint64_t seed )
     } ,
    []( auto & s , Key x ) { s.update( x ); } ,
    []( const auto & s , Key q ) { return( s.get_estimate( q ) ); } );
-#endif
- // the quantiles of the keys as doubles, 1000 quantiles per run
- std::vector< double > D( n );
- for( std::size_t i = 0 ; i < n ; ++i )
-  D[ i ] = double( K[ i ] >> 11 );
- const auto quantiles = [ & ]( const std::string & who , auto make , auto ins ,
-			       auto ask , auto many ) {
-  if( skip( who ) )
-   return;
-  const auto fill = [ & ]() {
-   auto s = make();
-   for( const double x : D )
-    ins( s , x );
-   return( s );
-   };
-  print( "sketches" , "quantiles build" , n , who ,
-	 median( []() { return( 0 ); } ,
-		 [ & ]( int ) {
-		  auto s = fill();
-		  sink = sink + std::uint64_t( ask( s , 0.5 ) );
-		  } ,
-		 r , n ) );
-  const auto s = fill();
-  print(
-    "sketches" , "quantiles query" , n , who ,
-    median( [ & ]() { return( s ); } ,
-	    [ & ]( auto & t ) { sink = sink + std::uint64_t( many( t ) ); } ,
-	    r ,
-	    999 ) );
-  if( listing() )
-   return;
-  std::vector< double > S = D;
-  std::sort( S.begin() , S.end() );
-  double worst = 0;
-  for( int i = 1 ; i < 100 ; ++i ) {
-   const double q = ask( s , double( i ) / 100 );
-   const double rk =
-     double( std::upper_bound( S.begin() , S.end() , q ) - S.begin() ) /
-     double( n );
-   worst = std::max( worst , std::abs( rk - double( i ) / 100 ) );
-   }
-  std::cerr << "sketches\t" << n << '\t' << who << "\tworst rank error "
-	    << worst << '\n';
-  };
- quantiles(
-   "ADS::KllSketch" , []() { return( ADS::KllSketch< double >( 200 ) ); } ,
-   []( auto & s , double x ) { s.insert( x ); } ,
-   []( const auto & s , double q ) { return( s.quantile( q ) ); } ,
-   []( const auto & s ) {  // the view made once for the queries of a run
-    const auto v = s.view();
-    double z = 0;
-    for( int i = 1 ; i < 1000 ; ++i )
-     z += v.quantile( double( i ) / 1000 );
-    return( z );
-    } );
-#ifdef ADS_HAS_DATASKETCHES
- quantiles(
-   "datasketches::kll_sketch" ,
-   []() { return( datasketches::kll_sketch< double >( 200 ) ); } ,
-   []( auto & s , double x ) { s.update( x ); } ,
-   []( const auto & s , double q ) { return( s.get_quantile( q ) ); } ,
-   []( const auto & s ) {  // the sorted view made at the first query
-    double z = 0;
-    for( int i = 1 ; i < 1000 ; ++i )
-     z += s.get_quantile( double( i ) / 1000 );
-    return( z );
-    } );
 #endif
  // the similarity of two sets of 2 n / 3 keys sharing n / 3, J = 1 / 3
  {

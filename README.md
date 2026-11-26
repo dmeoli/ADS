@@ -313,7 +313,7 @@ allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-459 headers: 245 base, 167 advanced, 19 core and 28 interop.
+457 headers: 245 base, 165 advanced, 19 core and 28 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
@@ -353,7 +353,7 @@ allow.
 | `queue/` | `ArrayQueue`, `Dequeue`, `LinkedQueue`, `MinDeque`, `MinQueue`, `QueueAlgorithms`, `RandomQueue`, `RealTimeMinDeque`, `RealTimeMinQueue`, `UniqueQueue` | `RingDeque`, `SlidingAggregate` |  |  |
 | `search/` | `BinarySearch`, `InterpolationSearch`, `KnuthSearches`, `LocalOptima`, `Minimum`, `MonotoneSearch`, `PGMIndex`, `Selection`, `SortedSearches` | `CompressedPGMIndex`, `CountLess`, `DynamicPGMIndex`, `NthElement`, `RangeMinimum`, `StaticSearch`, `WordRangeMinimum` |  |  |
 | `sequence/` | `ArraySequence`, `ContiguousDeque`, `CubishArrayStack`, `CursorList`, `DualArrayDeque`, `IndexedList`, `List`, `OrderMaintenanceList`, `Rearrangements`, `RootishArrayStack`, `SEList`, `SequenceAlgorithms`, `SequenceRange`, `SinglyList`, `SkipListSequence`, `TreapList`, `Treque`, `XorList` | `Fenwick`, `ListSort`, `ObservableArray`, `SmallVector`, `TieredVector` |  |  |
-| `set/` | `Bag`, `BloomFilter`, `BloomVariants`, `BoolSet`, `DictionarySet`, `HashMultiset`, `LinkedHashSet`, `ListSet`, `SetInterfaces`, `SetOperations`, `SortedIntersection`, `SortedListSet`, `SpaceEfficientSortedSet` | `BinaryFuseFilter`, `BlockedBloomFilter`, `CountMinSketch`, `CuckooFilter`, `GrafiteFilter`, `KllSketch`, `MinHashSketch`, `PrefixFilter`, `RibbonFilter`, `RoaringBitmap`, `UltraLogLog`, `VectorIntersection` |  |  |
+| `set/` | `Bag`, `BloomFilter`, `BloomVariants`, `BoolSet`, `DictionarySet`, `HashMultiset`, `LinkedHashSet`, `ListSet`, `SetInterfaces`, `SetOperations`, `SortedIntersection`, `SortedListSet`, `SpaceEfficientSortedSet` | `BinaryFuseFilter`, `BlockedBloomFilter`, `CountMinSketch`, `CuckooFilter`, `GrafiteFilter`, `MinHashSketch`, `PrefixFilter`, `RibbonFilter`, `RoaringBitmap`, `VectorIntersection` |  |  |
 | `sort/` | `CountingSort`, `EngineeredQuickSorts`, `ExchangeSorts`, `ExternalSort`, `Heapsort`, `InsertionSort`, `KnuthSorts`, `MergeSort`, `MultikeyQuickSort`, `PigeonholeSort`, `QuickSort`, `SelectionSort`, `ShellSort`, `SortingNetworks`, `StrandSort`, `TreeSort` | `LearnedSort`, `PdqSort`, `QuicksortAdversary`, `RadixSort`, `RunSorts`, `SampleSort`, `Sort`, `StringSort`, `VectorQuickSort` | `Sorted` |  |
 | `stack/` | `ArrayStack`, `Expressions`, `MinStack`, `MultiStack`, `SequenceStack`, `StackAlgorithms` |  |  |  |
 | `string/` | `Alignment`, `Anagrams`, `ApproximateMatching`, `FrontCoding`, `Huffman`, `LongestCommonSubsequence`, `Lyndon`, `Palindromes`, `Parentheses`, `PrefixSearch`, `RearCoding`, `Segmentations`, `StringBreaking`, `StringMatching`, `SubsequenceProblems`, `SuffixApplications`, `SuffixArray`, `SuffixTree`, `WordBreak` | `AhoCorasick`, `EditDistance`, `LongestCommonExtension`, `MultiSearch`, `StringSearch`, `SuffixAutomaton`, `SuffixSorting` |  |  |
@@ -677,9 +677,7 @@ library, Boost and Eigen.
 | prefix filter, bins of 25 fingerprints as pocket dictionaries of 32 bytes, the overflow in a blocked filter of Bloom (Even, Even and Morrison) | [`set/PrefixFilter.h`](include/ADS/set/PrefixFilter.h) | `hashing.prefix-filter` |
 | standard Ribbon filter, Gauss elimination on the fly, solution by columns (Dillinger and Walzer) | [`set/RibbonFilter.h`](include/ADS/set/RibbonFilter.h) | `hashing.ribbon-filter` |
 | range filter Grafite, false positives at most $\ell / 2^{B-2}$ for a range of $\ell$ keys with B bits per key whatever the queries, by a locality-preserving hash and Elias-Fano; the bucketing filter of the same paper (Costa, Ferragina and Vinciguerra) | [`set/GrafiteFilter.h`](include/ADS/set/GrafiteFilter.h) | `hashing.grafite-filter`, `hashing.bucketing-filter` |
-| distinct items in registers of a byte with the two bits below the top level, FGRA and maximum likelihood estimators, merge and downsizing (UltraLogLog of Ertl) | [`set/UltraLogLog.h`](include/ADS/set/UltraLogLog.h) | `sketches.ultraloglog-estimates`, `sketches.ultraloglog-merge` |
 | frequencies by the Count-Min sketch, plain and conservative update, and by the Count sketch with its second moment (Cormode and Muthukrishnan; Estan and Varghese; Charikar et al.) | [`set/CountMinSketch.h`](include/ADS/set/CountMinSketch.h) | `sketches.count-min`, `sketches.count-sketch` |
-| quantiles by compactors of geometric capacities, lazy compaction in one buffer (KLL; DataSketches) | [`set/KllSketch.h`](include/ADS/set/KllSketch.h) | `sketches.kll-ranks`, `sketches.kll-merge` |
 | similarity of Jaccard by minwise hashing of one permutation with the optimal densification (Li et al.; Shrivastava) | [`set/MinHashSketch.h`](include/ADS/set/MinHashSketch.h) | `sketches.minhash-jaccard` |
 | parallel construction of the mergeable sketches by the merges of the sketches of blocks | [`parallel/ParallelSketch.h`](include/ADS/parallel/ParallelSketch.h) | `sketches.parallel-sketch` |
 | minimal perfect hash function by pilots, about 3 bits per key (PTHash) | [`dictionary/MinimalPerfectHash.h`](include/ADS/dictionary/MinimalPerfectHash.h) | `hashing.minimal-perfect-hash` |

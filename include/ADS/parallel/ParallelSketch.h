@@ -8,19 +8,16 @@
  * `parallelReduce()` [see `Executor.h`], fills a copy of the empty sketch
  * \f$ s \f$ with each block on the threads of the executor, and merges the
  * copies in the order of the blocks. Any sketch whose `merge()` gives the
- * sketch of the union of the two streams, i.e., `UltraLogLog`,
- * `CountMinSketch` with the plain update, `CountSketch` and
- * `MinHashSketch` [see `UltraLogLog.h`, `CountMinSketch.h` and
- * `MinHashSketch.h`], is then built equal to the sequential one, register
- * by register; a Count-Min sketch with the conservative update gets
- * counters between the frequencies and those of the plain update, and a
- * `KllSketch` [see `KllSketch.h`] the guarantee of the sketch of the whole
- * stream, since KLL is fully mergeable.
+ * sketch of the union of the two streams, i.e., `CountMinSketch` with the
+ * plain update, `CountSketch` and `MinHashSketch` [see `CountMinSketch.h`
+ * and `MinHashSketch.h`], is then built equal to the sequential one,
+ * counter by counter; a Count-Min sketch with the conservative update gets
+ * counters between the frequencies and those of the plain update.
  *
  * The blocks depend only on the number of items and on the grain, never on
  * the number of threads, so that the result is the same on every executor.
- * A sketch with a method `reseed( salt )`, as `KllSketch`, is reseeded in
- * each block by the index of its first item, since copies of one generator
+ * A randomized sketch with a method `reseed( salt )` is reseeded in each
+ * block by the index of its first item, since copies of one generator
  * would flip the same coins on all the blocks and their errors would not
  * average out.
  *

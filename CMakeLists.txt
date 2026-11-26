@@ -682,7 +682,6 @@ if (ADS_BENCHMARKS)
                    pthash/external/bits/external/essentials/include
                    pthash/external/mm_file/include BBHash sux
                    datasketches-cpp/common/include
-                   datasketches-cpp/hll/include datasketches-cpp/kll/include
                    datasketches-cpp/count/include
                    datasketches-cpp/theta/include)
             target_include_directories(bench-hashing SYSTEM

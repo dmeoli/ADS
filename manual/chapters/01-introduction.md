@@ -1828,7 +1828,6 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `interop/std/Pmr.h` | interop | `PmrResource` | [1](01-introduction.md#ch-1) |
 | `set/Bag.h` | base | `Bag` | [1](01-introduction.md#ch-1) |
 | `set/CountMinSketch.h` | advanced | `CountMinSketch`, `CountSketch` | [10](10-set.md#ch-10) |
-| `set/KllSketch.h` | advanced | `KllSketch` | [10](10-set.md#ch-10) |
 | `set/MinHashSketch.h` | advanced | `MinHashSketch` | [10](10-set.md#ch-10) |
 | `set/SetInterfaces.h` | base | `ArrayUSet`, `ArraySSet` | [1](01-introduction.md#ch-1) |
 | `sequence/ArraySequence.h` | base | `ArraySequence` | [2](02-sequence.md#ch-2) |
@@ -1971,7 +1970,6 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `set/SortedIntersection.h` | base | `PermutedBuckets` | [10](10-set.md#ch-10) |
 | `set/SortedListSet.h` | base | `SortedListSet` | [10](10-set.md#ch-10) |
 | `set/SpaceEfficientSortedSet.h` | base | `SpaceEfficientSortedSet` | [10](10-set.md#ch-10) |
-| `set/UltraLogLog.h` | advanced | `UltraLogLog` | [10](10-set.md#ch-10) |
 | `mfset/ListMFSet.h` | base | `ListMFSet` | [11](11-mfset.md#ch-11) |
 | `mfset/MFSet.h` | base | `MFSet` | [11](11-mfset.md#ch-11) |
 | `mfset/RemUnionFind.h` | advanced | `RemUnionFind` | [11](11-mfset.md#ch-11) |

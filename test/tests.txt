@@ -549,14 +549,8 @@ hashing  bucketing-filter      filtro di intervalli a bucket
 hashing  range-filters-32      filtri di intervalli su chiavi di 32 bit
 
 # the sketches of streams, beyond the book
-sketches  ultraloglog-estimates  UltraLogLog, FGRA e massima verosimiglianza
-sketches  ultraloglog-edges      UltraLogLog, nessun elemento, uno, duplicati
-sketches  ultraloglog-merge      UltraLogLog, unioni e riduzione di precisione
 sketches  count-min              Count-Min, semplice e conservativo
 sketches  count-sketch           Count sketch e secondo momento
-sketches  kll-ranks              KLL, errori dei ranghi su 32 semi
-sketches  kll-edges              KLL, casi limite e duplicati
-sketches  kll-merge              KLL, unioni di parti
 sketches  minhash-jaccard        minhash a una permutazione, densificazione
 sketches  minhash-edges          minhash, unioni e casi limite
 sketches  parallel-sketch        costruzione parallela per unione

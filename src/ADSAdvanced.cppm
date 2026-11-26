@@ -742,9 +742,6 @@ using ADS::CuckooFilter;
 using ADS::BucketingFilter;
 using ADS::GrafiteFilter;
 
-// set/KllSketch.h
-using ADS::KllSketch;
-
 // set/MinHashSketch.h
 using ADS::MinHashSketch;
 
@@ -760,9 +757,6 @@ using ADS::setDifference;
 using ADS::setIntersection;
 using ADS::setSymmetricDifference;
 using ADS::setUnion;
-
-// set/UltraLogLog.h
-using ADS::UltraLogLog;
 
 // set/VectorIntersection.h
 using ADS::intersect;

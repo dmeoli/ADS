@@ -430,8 +430,7 @@ HASHINC   = unordered_dense/include robin-map/include libcuckoo \
             pthash/external/bits/include \
             pthash/external/bits/external/essentials/include \
             pthash/external/mm_file/include BBHash sux \
-            datasketches-cpp/common/include datasketches-cpp/hll/include \
-            datasketches-cpp/kll/include datasketches-cpp/count/include \
+            datasketches-cpp/common/include datasketches-cpp/count/include \
             datasketches-cpp/theta/include
 # 1 if a unit that includes the header $(1) compiles at the flags of the
 # benchmarks with the options $(2): the competitors of AVX2 (fastfilter_cpp,

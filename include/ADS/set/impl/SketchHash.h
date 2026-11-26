@@ -2,16 +2,15 @@
 /*---------------------------- File SketchHash.h ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The hash of an item for the sketches of this folder [see UltraLogLog.h,
+ * The hash of an item for the sketches of this folder [see
  * CountMinSketch.h, MinHashSketch.h]: the 64 bits of `hash64()` [see
  * FastHash.h] finished by `splitmix64()` [see RandomHashing.h], whatever
  * the hash declares. A sketch reads its hashes as independent uniform
- * words, and the folded product of `FastHash` on consecutive integers
+ * words, while the folded product of `FastHash` on consecutive integers
  * gives the multiples of a constant modulo \f$ 2^{64} \f$ in their top
- * bits, a sequence of low discrepancy that fills the registers of a sketch
- * of the distinct items far more evenly than random words do, so that its
- * estimate is off by tens of per cent; the finalizer of SplitMix64, made
- * to turn such a sequence into random words, costs a few cycles.
+ * bits, a sequence of low discrepancy far from such words; the finalizer
+ * of SplitMix64, made to turn such a sequence into random words, costs a
+ * few cycles.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
