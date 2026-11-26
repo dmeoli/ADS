@@ -3303,40 +3303,28 @@ std::size_t waiting = Q.domain().pending();
 The interface of C++26, on the domain of the program, is that of
 `std::hazard_pointer`:
 
-HP```cpp
-// declarations of <ADS/concurrent/LockFreeQueue.h>
-//                 <ADS/concurrent/LockFreeStack.h>
-template< class T , reclamation_policy R = DebraEpochs >
-class LockFreeQueue
+```cpp
+// declarations of <ADS/concurrent/HazardPointer.h>
+class hazard_pointer
 {
  public:
- class Handle
- {
-  public:
-  void enqueue( T x );
-  std::optional< T > tryDequeue( void );
-  };
- LockFreeQueue( void );
- Handle handle( void );
- std::size_t size( void ) const;
- bool empty( void ) const;
- const Domain & domain( void ) const;
+ hazard_pointer( void ) noexcept = default;
+ bool empty( void ) const noexcept;
+ template< class T >
+ T * protect( const std::atomic< T * > & src ) noexcept;
+ template< class T >
+ bool try_protect( T *& ptr , const std::atomic< T * > & src ) noexcept;
+ template< class T >
+ void reset_protection( const T * ptr ) noexcept;
+ void reset_protection( std::nullptr_t = nullptr ) noexcept;
+ void swap( hazard_pointer & o ) noexcept;
  };
-template< class T , reclamation_policy R = DebraEpochs >
-class LockFreeStack
+hazard_pointer make_hazard_pointer( void );
+template< class T , class D = std::default_delete< T > >
+class hazard_pointer_obj_base
 {
  public:
- class Handle
- {
-  public:
-  void push( T x );
-  std::optional< T > tryPop( void );
-  };
- LockFreeStack( void ) = default;
- Handle handle( void );
- std::size_t size( void ) const;
- bool empty( void ) const;
- const Domain & domain( void ) const;
+ void retire( D d = D() ) noexcept;
  };
 ```
 
