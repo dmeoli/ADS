@@ -662,7 +662,8 @@ ADS_TEST( "pfordelta" )
  }
 
 // the variable-byte code and the ( s , c )-dense codes: the bytes of
-// figure 11.5, Fact 11.7, the words of figure 11.6 for s = c = 4 and for
+// figure 11.5, Fact 11.7, the same bytes written and read from a pointer
+// as from a vector, the words of figure 11.6 for s = c = 4 and for
 // s = 6, c = 2 with words of 3 bits, s c^(k-1) integers in k words, round
 // trips, and the optimal s against the lengths of the codes written; the
 // dense code of 2^64 - 1, the optimal s of no frequencies and of 1 bit, a
@@ -690,6 +691,16 @@ ADS_TEST( "vbyte-dense" )
  for( const auto x : X )
   CHECK( decodeVByte( v , p ) == x );
  CHECK( p == v.size() );
+ std::vector< std::uint8_t > w( v.size() );  // the same bytes from a pointer
+ std::size_t q = 0;
+ for( const auto x : X )
+  q += std::size_t( encodeVByte( w.data() + q , x ) );
+ CHECK( ( q == w.size() ) && ( w == v ) );
+ q = 0;
+ for( const auto x : X )
+  CHECK( decodeVByte( static_cast< const std::uint8_t * >( w.data() ) , q ) ==
+	 x );
+ CHECK( q == w.size() );
  auto words = []( std::uint64_t x , std::uint32_t s , std::uint32_t c ) {
   std::vector< std::uint32_t > o;
   encodeDense( o , x , s , c );
