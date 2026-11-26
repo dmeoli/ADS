@@ -378,9 +378,33 @@ class PackedMemoryArray
   return( f_tail.data() + l * tailCells() );
   }
 
+ /// the place in the order of Eytzinger of the head of the leaf \f$ \ell
+ /// \f$, the inverse of `leafAt()`: \f$ L \f$ for the leaf 0, else
+ /// \f$ 2^{H - 1 - t} + \lfloor \ell / 2^{t + 1} \rfloor \f$, \f$ t \f$
+ /// the trailing zeros of \f$ \ell \f$
+ [[nodiscard]] std::size_t pos( std::size_t l ) const {
+  if( l == 0 )
+   return( f_L );
+  const int t = std::countr_zero( l );
+  return( ( std::size_t( 1 ) << ( f_H - 1 - std::size_t( t ) ) ) +
+	   ( l >> ( t + 1 ) ) );
+  }
+
+ /// the leaf of the head at the place \f$ j \in [ 1 , L ] \f$ of the order
+ /// of Eytzinger, its rank in the visit in order of the implicit tree of
+ /// the \f$ L = 2^H \f$ places: 0 for the place \f$ L \f$, the leftmost,
+ /// else \f$ ( 2 ( j - 2^d ) + 1 ) 2^{H - 1 - d} \f$, \f$ d \f$ the depth
+ /// of \f$ j \f$
+ [[nodiscard]] std::size_t leafAt( std::size_t j ) const {
+  if( j == f_L )
+   return( 0 );
+  const std::size_t d = std::size_t( std::bit_width( j ) ) - 1;
+  return( ( 2 * ( j - ( std::size_t( 1 ) << d ) ) + 1 ) << ( f_H - 1 - d ) );
+  }
+
  /// the head of the leaf \f$ \ell \f$
  [[nodiscard]] const K & head( std::size_t l ) const {
-  return( f_head[ f_pos[ l ] ] );
+  return( f_head[ pos( l ) ] );
   }
 
  /// the units of a run of the keys \f$ x \f$, sorted, as a leaf
@@ -395,7 +419,7 @@ class PackedMemoryArray
  /// In pseudocode (the search of the order of Eytzinger of Khuong and
  /// Morin, beyond the book), \f$ E[ 1 .. L ] \f$ the heads in the heap
  /// order and \f$ \mathrm{leaf}( j ) \f$ the leaf of the head \f$ E[ j ]
- /// \f$:
+ /// \f$, computed from \f$ j \f$ by `leafAt()`:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{leafOf}( x ) \cr
@@ -512,12 +536,9 @@ class PackedMemoryArray
  std::size_t f_H = 0;  ///< the height of the tree, \f$ \log_2 L \f$
  std::size_t f_C = 0;  ///< the units of a leaf
 
- /// the heads in the order of Eytzinger, from 1
+ /// the heads in the order of Eytzinger, from 1, the head of the leaf
+ /// \f$ \ell \f$ at the place `pos( l )`
  std::vector< K > f_head;
- /// the place in f_head of the head of each leaf
- std::vector< std::uint32_t > f_pos;
- /// the leaf of each place of f_head, \f$ L \f$ at the place 0
- std::vector< std::uint32_t > f_leaf;
  /// the units of each leaf, the head included
  std::vector< std::uint32_t > f_units;
  /// the tails of the leaves, \f$ C \f$ less the head cells each

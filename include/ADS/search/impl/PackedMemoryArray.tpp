@@ -79,7 +79,9 @@ std::size_t ADS_PMA::leafOf( const K & x ) const
   j = 2 * j + ( x < E[ j ] ? 0 : 1 );
   }
  j >>= std::countr_one( j ) + 1;  // the first head > x, 0 if none
- const std::size_t first = f_leaf[ j ];
+ if( j == 0 )
+  return( L - 1 );
+ const std::size_t first = leafAt( j );
  return( first == 0 ? 0 : first - 1 );
  }
 
@@ -138,7 +140,7 @@ void ADS_PMA::encode( std::size_t l , const K * x , std::size_t c , bool h )
  ADS_PRE( c >= 1 );
  ADS_AUDIT( units( x , c ) <= f_C );
  if( h )
-  f_head[ f_pos[ l ] ] = x[ 0 ];
+  f_head[ pos( l ) ] = x[ 0 ];
  if constexpr( ! Z ) {
   std::copy_n( x + 1 , c - 1 , tail( l ) );
   f_units[ l ] = std::uint32_t( c );
@@ -303,25 +305,8 @@ void ADS_PMA::build( E & ex , std::vector< K > && x )
  f_H = std::size_t( std::countr_zero( L ) );
  f_C = C;
  f_head.assign( L + 1 , K() );
- f_pos.assign( L , 0 );
- f_leaf.assign( L + 1 , 0 );
  f_units.assign( L , 0 );
  f_tail.assign( L * ( C - kHead ) , Cell() );
- // the leaves in the order of the visit of the implicit tree in order
- std::vector< std::size_t > st;
- std::uint32_t i = 0;
- for( std::size_t j = 1 ; ( j <= L ) || ! st.empty() ; ) {
-  while( j <= L ) {
-   st.push_back( j );
-   j *= 2;
-   }
-  j = st.back();
-  st.pop_back();
-  f_pos[ i ] = std::uint32_t( j );
-  f_leaf[ j ] = i++;
-  j = 2 * j + 1;
-  }
- f_leaf[ 0 ] = std::uint32_t( L );
  const bool spread_ = spread( ex , 0 , L , x );
  ADS_POST( spread_ );
  ADS_INVARIANT( wellFormed() );
@@ -369,8 +354,6 @@ void ADS_PMA::clear( void )
 {
  f_n = f_L = f_H = f_C = 0;
  f_head = std::vector< K >();  // the memory given back
- f_pos = std::vector< std::uint32_t >();
- f_leaf = std::vector< std::uint32_t >();
  f_units = std::vector< std::uint32_t >();
  f_tail = std::vector< Cell >();
  }
@@ -379,8 +362,7 @@ ADS_PMA_T
 std::size_t ADS_PMA::bytes( void ) const
 {
  return( sizeof( *this ) + f_head.capacity() * sizeof( K ) +
-	  ( f_pos.capacity() + f_leaf.capacity() + f_units.capacity() ) *
-	    sizeof( std::uint32_t ) +
+	  f_units.capacity() * sizeof( std::uint32_t ) +
 	  f_tail.capacity() * sizeof( Cell ) );
  }
 
@@ -500,37 +482,69 @@ bool ADS_PMA::insert( const K & x )
   return( true );
   }
  const std::size_t l = leafOf( x );
- K buf[ kMaxUnits + 1 ];
- const std::size_t c = decode( l , buf );
- K * const at = std::lower_bound( buf , buf + c , x );
- if( ( at != buf + c ) && ! ( x < *at ) )
-  return( false );  // there already
+ const std::size_t u = f_units[ l ];
+ const K h = head( l );
+ Cell * const t = tail( l );
+ if( ! ( x < h ) && ! ( h < x ) )
+  return( false );  // the head already
  std::size_t lu;
- if constexpr( ! Z ) {
-  lu = c + 1;
-  if( lu <= f_C ) {  // in place, the keys after x moved by one
-   K * t = tail( l );
-   if( at == buf ) {  // a new head, only in the first leaf
-    std::copy_backward( t , t + ( c - 1 ) , t + c );
-    t[ 0 ] = buf[ 0 ];
-    f_head[ f_pos[ l ] ] = x;
+ if constexpr( ! Z ) {  // the keys after x moved by one cell, in place
+  lu = u + 1;
+  K * const e = t + ( u - 1 );
+  K * const p = x < h ? t : std::lower_bound( t , e , x );
+  if( ( p != e ) && ! ( x < h ) && ! ( x < *p ) )
+   return( false );  // there already
+  if( lu <= f_C ) {
+   std::copy_backward( p , e , e + 1 );
+   if( x < h ) {  // a new head, only in the first leaf
+    *p = h;
+    f_head[ pos( l ) ] = x;
     }
-   else {
-    K * p = t + ( at - buf - 1 );
-    std::copy_backward( p , t + ( c - 1 ) , t + c );
+   else
     *p = x;
-    }
    f_units[ l ] = std::uint32_t( lu );
    ++f_n;
    return( true );
    }
   }
- std::copy_backward( at , buf + c , buf + c + 1 );
- *at = x;
- if constexpr( Z ) {
-  lu = units( buf , c + 1 );
+ else {  // the bytes after x moved by the length of its code, in place
+  const std::size_t e = u - kHead;
+  std::size_t q = e , p = e;  // the code that x splits: [ q , p )
+  K a = h , k = h;            // the keys before and after x
+  // the differences of x from a and of k from x
+  std::uint64_t d1 = 0 , d2 = 0;
+  if( x < h ) {  // a new head, only in the first leaf
+   q = p = 0;
+   d1 = std::uint64_t( h - x );
+   }
+  else {
+   for( std::size_t r = 0 ; r < e ; ) {
+    const std::size_t at = r;
+    k = K( a + K( decodeVByte( t , r ) ) );
+    if( ! ( k < x ) ) {
+     q = at;
+     p = r;
+     break;
+     }
+    a = k;
+    }
+   if( k == x )
+    return( false );  // there already
+   d1 = std::uint64_t( x - a );
+   if( p > q )
+    d2 = std::uint64_t( k - x );
+   }
+  const std::size_t n1 = std::size_t( vbyteLength( d1 ) );
+  const std::size_t n2 = p > q ? std::size_t( vbyteLength( d2 ) ) : 0;
+  lu = u - ( p - q ) + n1 + n2;
   if( lu <= f_C ) {
-   encode( l , buf , c + 1 , at == buf );
+   std::copy_backward( t + p , t + e , t + ( lu - kHead ) );
+   const std::size_t w = q + std::size_t( encodeVByte( t + q , d1 ) );
+   if( n2 > 0 )
+    encodeVByte( t + w , d2 );
+   if( x < h )
+    f_head[ pos( l ) ] = x;
+   f_units[ l ] = std::uint32_t( lu );
    ++f_n;
    return( true );
    }
@@ -553,19 +567,73 @@ bool ADS_PMA::erase( const K & x )
  if( f_n == 0 )
   return( false );
  const std::size_t l = leafOf( x );
- K buf[ kMaxUnits + 1 ];
- const std::size_t c = decode( l , buf );
- K * const at = std::lower_bound( buf , buf + c , x );
- if( ( at == buf + c ) || ( x < *at ) )
+ const std::size_t u = f_units[ l ];
+ const K h = head( l );
+ Cell * const t = tail( l );
+ if( x < h )
   return( false );  // not there
+ std::size_t lu;     // the units of the leaf without x
+ bool more;          // whether the leaf keeps a key
+ // the keys after x moved back in place: the cells [ q + g , e ) to q
+ std::size_t q = 0 , g = 1 , e = u - 1;
+ std::uint64_t d = 0;    // the code written at q when compressed
+ std::optional< K > nh;  // the new head, if x is the head
+ if constexpr( ! Z ) {
+  if( h < x ) {
+   const K * const p = std::lower_bound( t , t + e , x );
+   if( ( p == t + e ) || ( x < *p ) )
+    return( false );  // not there
+   q = std::size_t( p - t );
+   }
+  else
+   nh = e > 0 ? t[ 0 ] : h;  // the first key of the tail the head
+  lu = u - 1;
+  more = u > 1;
+  }
+ else {
+  e = u - kHead;
+  more = e > 0;
+  if( ! ( h < x ) ) {  // the head: the first key of the tail in its place
+   std::size_t r = 0;
+   nh = more ? K( h + K( decodeVByte( t , r ) ) ) : h;
+   g = r;
+   lu = more ? u - r : 0;
+   }
+  else {
+   K a = h , k = h;  // the keys before x and x
+   std::size_t r = 0;
+   while( r < e ) {
+    q = r;
+    k = K( a + K( decodeVByte( t , r ) ) );
+    if( ! ( k < x ) )
+     break;
+    a = k;
+    }
+   if( k != x )
+    return( false );  // not there
+   std::size_t w = r;  // past the code of the key after x
+   if( r < e ) {       // the code of a key after x, from a
+    d = std::uint64_t( K( x + K( decodeVByte( t , w ) ) ) - a );
+    g = w - q - std::size_t( vbyteLength( d ) );
+    }
+   else
+    g = r - q;
+   lu = u - g;
+   }
+  }
  if( f_n == 1 ) {
   clear();
   return( true );
   }
- std::copy( at + 1 , buf + c , at );
- const std::size_t lu = units( buf , c - 1 );
- if( ( c > 1 ) && ( ( lu >= lower( 0 ) ) || ( f_L == 1 ) ) ) {
-  encode( l , buf , c - 1 , at == buf );  // in place
+ if( more && ( ( lu >= lower( 0 ) ) || ( f_L == 1 ) ) ) {  // in place
+  std::size_t at = q;
+  if constexpr( Z )
+   if( d > 0 )
+    at += std::size_t( encodeVByte( t + q , d ) );
+  std::copy( t + at + g , t + e , t + at );
+  if( nh )
+   f_head[ pos( l ) ] = *nh;
+  f_units[ l ] = std::uint32_t( lu );
   --f_n;
   return( true );
   }
@@ -910,7 +978,7 @@ bool ADS_PMA::wellFormed( void ) const
     return( false );
   if( ( l + 1 < f_L ) && ! ( x.back() < head( l + 1 ) ) )
    return( false );
-  if( f_leaf[ f_pos[ l ] ] != l )
+  if( leafAt( pos( l ) ) != l )
    return( false );
   n += x.size();
   }

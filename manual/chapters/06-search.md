@@ -1946,19 +1946,21 @@ of units (or $O( \log^2 n / B )$ transfers of lines of $B$ units) besides its
 search, and a building is paid for by the $\Omega( n )$ updates since the
 previous one.
 
-*The search.* By Lemma 6.28, a search of the key $x$ finds the last leaf
-whose head is at most $x$ (the first leaf if none), and then reads that leaf
-only. The heads lie in an array of their own, in the order of Eytzinger
-(the heap order of the implicit tree of the $L$ leaves): this is the
-search-optimized layout (SPMA) of [Wheatman et al.
-2023](Z-bibliography.md#ref-wheatman2023). We search it as [Khuong and Morin
-2017](Z-bibliography.md#ref-khuong2017) do, with a conditional move per
-level and the line 4 levels down prefetched ([Algorithm
+*The search.* By Lemma 6.28, a search of the key $x$ finds the last leaf whose
+head is at most $x$ (the first leaf if none), and then reads that leaf only.
+The heads lie in an array of their own, in the order of Eytzinger (the heap
+order of the implicit tree of the $L$ leaves): this is the search-optimized
+layout (SPMA) of [Wheatman et al. 2023](Z-bibliography.md#ref-wheatman2023). We
+search it as [Khuong and Morin 2017](Z-bibliography.md#ref-khuong2017) do, with
+a conditional move per level and the line 4 levels down prefetched ([Algorithm
 6.22](06-search.md#alg-6-22)), which reads again, at each search, the first
-lines of a small array. Indeed, this array has $L + 1$ keys, about $n / C$,
-and it typically stays in the cache when the leaves do not. A building
-fills it, together with the place of each head and the leaf of each place,
-by a visit in order of the implicit tree.
+lines of a small array. Indeed, this array has $L + 1$ keys, about $n / C$, and
+it typically stays in the cache when the leaves do not. The place of the head
+of a leaf and the leaf of a place are not kept in tables but computed from
+their indices (`pos()` and `leafAt()`, cf. [Lemma
+6.29](06-search.md#lem-6-29)), so that the descent reaches the leaf with no
+further load in between, as the search of [Wheatman et al.
+2023](Z-bibliography.md#ref-wheatman2023) tracks the leaf along the descent.
 
 <span id="alg-6-22"></span>**Algorithm 6.22.** The leaf of a key in
 `PackedMemoryArray`, by the heads in the order of Eytzinger ([Khuong and
@@ -1974,16 +1976,23 @@ or the leaf 0 if every head is larger than $x$, after $\lfloor \log_2 L
 \rfloor + 1$ comparisons.*
 
 *Proof.* The places $1 , \ldots , L$ are the nodes of a complete binary tree
-(the children of $j$ being $2 j$ and $2 j + 1$), which the building labels by
-the leaves in a visit in order; hence the heads, increasing with the leaves,
-form a binary search tree. The loop of line 3 descends it from the root,
-to the right exactly when the head is at most $x$, and stops below a leaf
-of the tree after one comparison per level, i.e., $\lfloor \log_2 L
-\rfloor + 1$ of them. The bits of $j$ after its leading 1 are the turns of
-the descent (1 to the right). Removing the trailing ones and the 0 before
-them gives the last node where the descent turned left, which holds the
-least head larger than $x$ (the in-order successor of the path), or 0 if
-the descent never turned left; line 5 takes the leaf before it. $\square$
+(the children of $j$ being $2 j$ and $2 j + 1$), labeled by the leaves in a
+visit in order. With $L = 2^H$, the places below $L$ form a perfect tree of
+height $H - 1$, in which the visit in order puts the root at the middle
+position $2^{H-1}$ (counting from 1) and, by induction on the depth, the $2^d$
+nodes of depth $d$ at the odd multiples of $2^{H-1-d}$ from left to right,
+i.e., the place $j = 2^d + o$ at $( 2 o + 1 ) 2^{H-1-d}$; the place $L$, the
+left child of the leftmost node of depth $H - 1$, comes first and takes the
+leaf 0, which leaves the leaf $( 2 o + 1 ) 2^{H-1-d}$ to the place $j$, as
+`leafAt()` computes, and `pos()` inverts it by the trailing zeros of the leaf.
+Hence the heads, increasing with the leaves, form a binary search tree. The
+loop of line 3 descends it from the root, to the right exactly when the head is
+at most $x$, and stops below a leaf of the tree after one comparison per level,
+i.e., $\lfloor \log_2 L \rfloor + 1$ of them. The bits of $j$ after its leading
+1 are the turns of the descent (1 to the right). Removing the trailing ones and
+the 0 before them gives the last node where the descent turned left, which
+holds the least head larger than $x$ (the in-order successor of the path), or 0
+if the descent never turned left; line 5 takes the leaf before it. $\square$
 
 *The compression.* In `CompressedPackedMemoryArray` a leaf keeps its head
 whole and each other key as the difference from the previous one, in the
@@ -1992,9 +2001,14 @@ variable-byte code of [§21.7](21-compression.md#sec-21-7) (by the form of
 the delta encoding of the sorted keys of [Wheatman et al.
 2024](Z-bibliography.md#ref-wheatman2024): a key of 64 bits close to the
 previous one takes 1 byte instead of 8, and a leaf of $C$ bytes holds up to
-$C - s + 1$ keys. A search decodes the leaf from its head. An insertion
-decodes the leaf, inserts the key and codes the leaf again, which moves
-$O( C )$ bytes, as the shift of the uncompressed array moves $O( C )$ keys.
+$C - s + 1$ keys. A search decodes the leaf from its head. An insertion that
+fits the leaf decodes it up to the first key $y > x$, replaces the code of $y -
+a$ ($a$ the key before $x$) by those of $x - a$ and of $y - x$, and shifts the
+bytes after them, as the CPMA does; a removal replaces the codes of $x - a$ and
+of $y - x$ by that of $y - a$, which is not longer than the two (the bits of $y
+- a$ are at most one more than those of the larger of the two differences).
+Both move $O( C )$ bytes, as the shift of the uncompressed array moves $O( C )$
+keys, and code at most two differences instead of the whole leaf.
 
 *The batches.* `insertBatch( ex , B )` sorts the batch on the executor (cf.
 [§25.7](25-parallel.md#sec-25-7)), drops the keys that appear twice and
