@@ -69,7 +69,7 @@ include-in-header:
   - preamble.tex
 
 metadata:
-  title: "ADS — Algorithms and Data Structures, and Advanced ones"
+  title: "ADS: Algorithms and Data Structures, and Advanced ones"
   subtitle: "A User Manual"
   date: "Version 0.1.0 (November 2026)"
   author: "Donato Meoli"
