@@ -358,6 +358,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the query of the similarity of `MinHashSketch` and of the theta sketch,
+  and the query without argument of the sketches of `bench/hashing.cpp`,
+  are asked 1024 times per run through a volatile pointer, where one call
+  per run left the cell at a tick of the clock; `bench/summary.py` pairs
+  `RecSplit` of ADS with that of sux alone, and `MinimalPerfectHash` with
+  PTHash and PHOBIC alone, pairs `CountMinSketch`, `MinHashSketch`,
+  `HazardPointers`, `FraserEpochs< 64 >` and `biconnectedComponents()`
+  with their competitors, as well as the parallel suffix array and
+  `ConcurrentBTreeMap`, and escapes the names in its HTML; the comment of `bench/succinct.cpp` says that each cell of
+  a building includes, for every library alike, the copy of the words into
+  the structure, where it said that the copy was left out
 - `lowestCommonAncestor()` of `BinaryTreeAlgorithms.h` returns the node
   where the two climbs meet by the second of them, which GCC 15 compiles
   right at `-O1` and above, where with the first it gave, on GCC 15.3, a

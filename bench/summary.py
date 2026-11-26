@@ -24,13 +24,15 @@
 # ADS is faster in some cells and slower in others.                           #
 ###############################################################################
 
+import html
 import statistics
 import sys
 
 # ( benchmark , structure of ADS , library , its structures ): the time of
 # the library in a cell is that of its fastest structure there; the compact
 # directories (about 3% of the bits) are compared with those of the same
-# space
+# space, and each minimal perfect hash function with those of its method
+# (pilots, recursive splitting, levels of fingerprints)
 PAIRS = [
     ('sort', 'ADS::sort', 'std', ['std::sort']),
     ('sort', 'ADS::sort', 'Boost', ['boost::pdqsort', 'boost::spreadsort']),
@@ -170,11 +172,8 @@ PAIRS = [
     ('perfect hashing', 'ADS::MinimalPerfectHash', 'PTHash', ['PTHash C']),
     ('perfect hashing', 'ADS::MinimalPerfectHash', 'PHOBIC',
      ['PHOBIC R-int']),
-    ('perfect hashing', 'ADS::MinimalPerfectHash', 'BBHash', ['BBHash g=2']),
     ('perfect hashing', 'ADS::FingerprintPerfectHash g=2', 'BBHash',
      ['BBHash g=2']),
-    ('perfect hashing', 'ADS::MinimalPerfectHash', 'RecSplit',
-     ['RecSplit l=8 b=100']),
     ('perfect hashing', 'ADS::PtrHash l=3', 'PTHash', ['PTHash C']),
     ('perfect hashing', 'ADS::PtrHash cubic l=3.5', 'PHOBIC',
      ['PHOBIC R-int']),
@@ -425,10 +424,22 @@ PAIRS = [
      ['Boost csr pairing_heap']),
     ('prim', 'ADS StaticGraph FibonacciHeapPriorityQueue', 'Boost',
      ['Boost csr fibonacci_heap']),
-    ('perfect hashing', 'ADS::RecSplit l=8 b=100', 'RecSplit',
+    ('perfect hashing', 'ADS::RecSplit l=8 b=100', 'sux',
      ['RecSplit l=8 b=100']),
-    ('perfect hashing', 'ADS::RecSplit l=8 b=100', 'BBHash',
-     ['BBHash g=2']),
+    ('sketches', 'ADS::CountMinSketch', 'DataSketches',
+     ['datasketches::count_min_sketch']),
+    ('sketches', 'ADS::MinHashSketch', 'DataSketches',
+     ['datasketches::theta_sketch']),
+    ('reclaim', 'ADS::LockFreeQueue HazardPointers', 'xenium',
+     ['xenium::michael_scott_queue hazard_pointer']),
+    ('reclaim', 'ADS::LockFreeQueue HazardPointers', 'Boost',
+     ['boost::lockfree::queue']),
+    ('reclaim', 'ADS::LockFreeQueue FraserEpochs<64>', 'xenium',
+     ['xenium::michael_scott_queue epoch_based']),
+    ('reclaim', 'ADS::LockFreeQueue FraserEpochs<64>', 'Boost',
+     ['boost::lockfree::queue']),
+    ('bcc', 'ADS StaticGraph', 'Boost', ['Boost adjacency_list']),
+    ('bcc', 'ADS StaticGraph arcBlocks', 'Boost', ['Boost adjacency_list']),
     ('concurrent maps', 'ADS::ConcurrentCuckooTable', 'libcuckoo',
      ['libcuckoo::cuckoohash_map']),
     ('concurrent maps', 'ADS::ConcurrentCuckooTable', 'Boost',
@@ -583,6 +594,13 @@ PARALLEL = [
     ('cc', 'ADS::connectedComponents', [
         ('GAPBS', ['gapbs Afforest', 'gapbs ShiloachVishkin'])]),
     ('lcp', 'ADS::lcpArrayPhi', [('ParlayLib', ['parlay lcp'])]),
+    ('suffix array', 'ADS::suffixArray', [
+        ('ParlayLib', ['parlay suffix_array']),
+        ('libsais', ['libsais_omp'])]),
+    ('bcc', 'ADS::biconnectedComponents', [
+        ('FAST-BCC', ['FAST-BCC']),
+        ('ADS Hopcroft-Tarjan',
+         ['ADS::biconnectedComponents (Hopcroft-Tarjan)'])]),
     ('sssp', 'ADS::deltaStepping', [
         ('GAPBS', ['gapbs DeltaStep']),
         ('GBBS', ['gbbs DeltaStepping', 'gbbs wBFS']),
@@ -603,15 +621,20 @@ PARALLEL = [
                     'tbb::concurrent_unordered_map']),
         ('libcuckoo', ['libcuckoo::cuckoohash_map']),
         ('ParlayLib', ['parlay::hashtable (keys only)'])]),
+    ('omap', 'ADS::ConcurrentBTreeMap', [
+        ('oneTBB', ['tbb::concurrent_map']),
+        ('BTreeOLC', ['BTreeOLC (Leis et al.)'])]),
 ]
 # the executors of ADS run the same algorithm: FastFlow, OpenMP and oneTBB
 # against the pool, and the sequential algorithm (in the groups of 1
-# thread); the tables are driven by the pool only
+# thread); the tables are driven by the pool only, and the concurrent maps,
+# which run on the pool alone, carry the name of the structure
 for b, ads, libs in PARALLEL:
-    pool = ads if b.startswith('hash') else ads + ' pool'
+    alone = b.startswith('hash') or b == 'omap'
+    pool = ads if alone else ads + ' pool'
     for lib, whos in libs:
         PAIRS.append(('parallel ' + b, pool, lib, whos))
-    if b.startswith('hash'):
+    if alone:
         continue
     for e in ['FastFlow', 'OpenMP', 'TBB']:
         PAIRS.append(('parallel ' + b, pool, 'ADS on ' + e,
@@ -674,11 +697,12 @@ def brief(rows):
         std = [r for r in S[ads] if r[0] == 'std']
         rest = [r for r in S[ads] if r[0] != 'std'
                 and not r[0].startswith('ADS')]
-        line = '<tr><td>%s</td><td><code>%s</code></td>' % (b, ads)
+        line = '<tr><td>%s</td><td><code>%s</code></td>' % (html.escape(b),
+                                                            html.escape(ads))
         line += cells(std[0][2:]) if std else '<td></td>' * 3
         if rest:
             r = min(rest, key=lambda r: r[2])
-            line += '<td>%s</td>' % r[0] + cells(r[2:])
+            line += '<td>%s</td>' % html.escape(r[0]) + cells(r[2:])
         else:
             line += '<td></td>' * 4
         print(line + '</tr>')
@@ -742,13 +766,15 @@ def main(p1, p2=None, short=False):
     print('<tr><th>benchmark</th><th>ADS</th><th>against</th>'
           '<th>cells</th><th>median</th><th>range</th><th></th></tr>')
     for b, S in rows.items():
-        first = '<td rowspan="%d">%s</td>' % (sum(map(len, S.values())), b)
+        first = '<td rowspan="%d">%s</td>' % (sum(map(len, S.values())),
+                                              html.escape(b))
         for ads, R in S.items():
             for k, r in enumerate(R):
                 print('<tr>' + first +
                       ('<td rowspan="%d"><code>%s</code></td>' %
-                       (len(R), ads) if k == 0 else '') +
-                      '<td>%s</td><td align="right">%d</td>' % r[:2] +
+                       (len(R), html.escape(ads)) if k == 0 else '') +
+                      '<td>%s</td><td align="right">%d</td>' %
+                      (html.escape(r[0]), r[1]) +
                       cells(r[2:]) + '</tr>')
                 first = ''
     print('</table>')

@@ -45,7 +45,9 @@
  *   the Count-Min of DataSketches, and n queries; the similarity of
  *   Jaccard of two sets of 2 n / 3 keys sharing n / 3, by the minwise
  *   hashing of 256 bins against the theta sketch of DataSketches of 2^8
- *   entries, one estimate per run, printed beside the exact 1 / 3;
+ *   entries, the estimate asked 1024 times per run (through a volatile
+ *   pointer, so that the compiler cannot hoist it out of the loop) and
+ *   printed beside the exact 1 / 3;
  * - "perfect hashing": the build of a minimal perfect hash function of n
  *   random keys of 64 bits and n queries, one by one and in a batch, by
  *   those of ADS (by pilots, also of 8 bits as PtrHash, whose batch is its
@@ -1061,9 +1063,15 @@ void rangeFilters( const std::vector< Key > & K , int r , std::uint64_t seed )
 /*-------------------------------- SKETCHES --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+/// how many times a query without argument (an estimate of the whole
+/// sketch) is asked in a run, so that the cell is not one tick of the clock
+constexpr std::size_t kAsks = 1024;
+
 /// the build of a sketch of the stream X by make() and ins( s , x ), in
 /// nanoseconds per item, and the query of every item of Q by ask( s , q ),
-/// in nanoseconds per query (one query per run if Q is empty)
+/// in nanoseconds per query; if Q is empty, ask( s , 0 ) is asked kAsks
+/// times through a volatile pointer to s, so that the compiler cannot hoist
+/// it out of the loop
 template< class M , class I , class A >
 void sketch( const char * what , const std::string & who ,
 	     const std::vector< Key > & X , const std::vector< Key > & Q ,
@@ -1090,13 +1098,16 @@ void sketch( const char * what , const std::string & who ,
 	median( [ & ]() { return( s ); } ,
 		[ & ]( auto & t ) {
 		 double z = 0;
-		 if( Q.empty() )
-		  z += double( ask( t , 0 ) );
+		 if( Q.empty() ) {
+		  const auto * volatile p = &t;
+		  for( std::size_t i = 0 ; i < kAsks ; ++i )
+		   z += double( ask( *p , 0 ) );
+		  }
 		 for( Key q : Q )
 		  z += double( ask( t , q ) );
 		 sink = sink + std::uint64_t( z );
 		 } ,
-		r , std::max< std::size_t >( Q.size() , 1 ) ) );
+		r , Q.empty() ? kAsks : Q.size() ) );
  }
 
 /// the sketches of a stream of the n keys K: the frequencies of n items
@@ -1104,8 +1115,8 @@ void sketch( const char * what , const std::string & who ,
 /// 2719 counters, plain and conservative, and the Count sketch against
 /// the Count-Min of DataSketches; the similarity of Jaccard of two sets of
 /// 2 n / 3 keys sharing n / 3 by the minwise hashing of 256 bins against
-/// the theta sketch of DataSketches of 2^8 entries, one estimate per run,
-/// printed beside the exact 1 / 3
+/// the theta sketch of DataSketches of 2^8 entries, kAsks estimates per
+/// run, printed beside the exact 1 / 3
 void sketches( const std::vector< Key > & K , int r , std::uint64_t seed )
 {
  const std::size_t n = K.size();
@@ -1177,9 +1188,14 @@ void sketches( const std::vector< Key > & K , int r , std::uint64_t seed )
    print( "sketches" , "similarity query" , n , who ,
 	  median( []() { return( 0 ); } ,
 		  [ & ]( int ) {
-		   sink = sink + std::uint64_t( 1000 * jac( a , b ) );
+		   const auto * volatile pa = &a;
+		   const auto * volatile pb = &b;
+		   double z = 0;
+		   for( std::size_t i = 0 ; i < kAsks ; ++i )
+		    z += jac( *pa , *pb );
+		   sink = sink + std::uint64_t( 1000 * z );
 		   } ,
-		  r , 1 ) );
+		  r , kAsks ) );
    if( ! listing() )
     std::cerr << "sketches\t" << n << '\t' << who << "\tJaccard "
 	      << jac( a , b ) << " of " << J << '\n';

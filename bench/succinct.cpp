@@ -34,8 +34,8 @@
  *   sdsl-lite, 10^5 queries a cell, and the building;
  * - dac: access to n integers of variable length (geometric of mean 100,
  *   one in 64 a thousand times larger) by the directly addressable codes
- *   (at most 3 levels, at most 2, with no bound, of 8 bits), against the dac_vector
- *   of sdsl-lite, and the building;
+ *   (at most 3 levels, at most 2, with no bound, of 8 bits), against the
+ *   dac_vector of sdsl-lite, and the building;
  * - space: the bits of each structure per bit (per item for Elias-Fano and
  *   the wavelet matrix), in the column of the time, so that the ratios of
  *   bench/summary.py read the same way (above 1 when ADS is smaller).
@@ -43,8 +43,15 @@
  * Each cell of a query is the median of r runs of q = 10^6 random queries
  * on a structure built once, in nanoseconds per query; the queries are
  * independent, so that the misses of the cache overlap. Each cell of a
- * building is the median of r buildings from a copy of the input, the copy
- * excluded. The contracts are off (ADS_CONTRACTS=0).
+ * building is the median of r buildings from the same input, which every
+ * structure keeps in storage of its own: the cells of bitvector, rrr and
+ * parentheses include, for every library alike, the copy of the words into
+ * the bit vector of the structure (the constructors of ADS from a span copy
+ * them into their BitVector, RankSelect while it counts them; sdsl-lite and
+ * pasta zero their vector and copy into it, sux copies the vector of the
+ * words, succinct fills its builder), and every directory with a select
+ * builds its inventories in its cell, but the lazy ones, whose inventories
+ * the cell "build+select" adds. The contracts are off (ADS_CONTRACTS=0).
  *
  *   succinct [ -r runs ] [ -s seed ] n1 n2 ...
  *
