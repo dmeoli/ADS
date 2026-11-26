@@ -685,6 +685,10 @@ if (ADS_BENCHMARKS)
                    pthash/external/bits pthash/external/bits/include
                    pthash/external/bits/external/essentials/include
                    pthash/external/mm_file/include BBHash sux
+                   datasketches-cpp/common/include
+                   datasketches-cpp/hll/include datasketches-cpp/kll/include
+                   datasketches-cpp/count/include
+                   datasketches-cpp/theta/include
                    ConsensusRecSplit/include
                    ConsensusRecSplit/extlib/util/include
                    ConsensusRecSplit/extlib/ips2ra/include

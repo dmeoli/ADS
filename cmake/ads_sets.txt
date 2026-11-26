@@ -321,6 +321,7 @@ parallel/ParallelGreedy.h             advanced
 parallel/ParallelMerge.h              advanced
 parallel/ParallelNumeric.h            advanced
 parallel/ParallelShortestPaths.h      advanced
+parallel/ParallelSketch.h             advanced
 parallel/ParallelSort.h               advanced
 parallel/ParallelText.h               advanced
 parallel/Scratch.h                    advanced
@@ -411,12 +412,15 @@ set/BlockedBloomFilter.h              advanced
 set/BloomFilter.h                     base
 set/BloomVariants.h                   base
 set/BoolSet.h                         base
+set/CountMinSketch.h                  advanced
 set/CuckooFilter.h                    advanced
 set/DictionarySet.h                   base
 set/GrafiteFilter.h                   advanced
 set/HashMultiset.h                    base
+set/KllSketch.h                       advanced
 set/LinkedHashSet.h                   base
 set/ListSet.h                         base
+set/MinHashSketch.h                   advanced
 set/PrefixFilter.h                    advanced
 set/RibbonFilter.h                    advanced
 set/RoaringBitmap.h                   advanced
@@ -425,6 +429,7 @@ set/SetOperations.h                   base
 set/SortedIntersection.h              base
 set/SortedListSet.h                   base
 set/SpaceEfficientSortedSet.h         base
+set/UltraLogLog.h                     advanced
 set/VectorIntersection.h              advanced
 
 sort/CountingSort.h                   base

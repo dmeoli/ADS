@@ -346,7 +346,8 @@ HWLOCON   = $(if $(filter 1,$(ADSHWLOCON)),-DADS_WITH_HWLOC $(libHwlocINC) \
 # (with GMP and MPFR in the same prefix);
 # HASHING=<dir> adds to hashing the libraries whose sources are in <dir>
 # (unordered_dense, robin-map, libcuckoo, xxHash, wyhash, rapidhash,
-# fastfilter_cpp, xor_singleheader, pthash, BBHash, sux, ConsensusRecSplit),
+# fastfilter_cpp, xor_singleheader, pthash, BBHash, sux,
+# datasketches-cpp, ConsensusRecSplit),
 # ABSL=<prefix> Abseil; LIBSAIS=<prefix> and DIVSUFSORT=<prefix> add libsais
 # and libdivsufsort to suffix, EDLIB=<prefix> and RAPIDFUZZ=<prefix> edlib and
 # rapidfuzz-cpp to edit; PRIORITY=<dir> adds to priority the libraries
@@ -429,6 +430,9 @@ HASHINC   = unordered_dense/include robin-map/include libcuckoo \
             pthash/external/bits/include \
             pthash/external/bits/external/essentials/include \
             pthash/external/mm_file/include BBHash sux \
+            datasketches-cpp/common/include datasketches-cpp/hll/include \
+            datasketches-cpp/kll/include datasketches-cpp/count/include \
+            datasketches-cpp/theta/include \
             $(CONSENSUS)/include $(CONSENSUS)/extlib/util/include \
             $(CONSENSUS)/extlib/ips2ra/include $(CONSENSUS)/extlib/tlx \
             $(CONSENSUS)/extlib/fips/include \
