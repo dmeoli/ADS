@@ -21,8 +21,12 @@
 
 #include "ADSTest.h"
 
+#include "ADS/concurrent/EpochReclaim.h"
 #include "ADS/concurrent/EventCount.h"
+#include "ADS/concurrent/HazardPointer.h"
 #include "ADS/concurrent/LockFreePriorityQueue.h"
+#include "ADS/concurrent/LockFreeQueue.h"
+#include "ADS/concurrent/LockFreeStack.h"
 #include "ADS/concurrent/MPMCQueue.h"
 #include "ADS/concurrent/MPSCInbox.h"
 #include "ADS/concurrent/MPSCQueue.h"
@@ -55,6 +59,7 @@
 #include <type_traits>
 #include <utility>
 #include <thread>
+#include <tuple>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -1855,7 +1860,8 @@ ADS_TEST( "lockfree-pq" )
  }
 
 /// the contract of the offset, and the epochs of the reclamation turned
-/// over and over: with an offset of 1 each DeleteMin but the first cuts
+/// over and over, with an attempt to raise them per retirement and per 64
+/// (the default): with an offset of 1 each DeleteMin but the first cuts
 /// the prefix, the nodes cut off wait in the limbo of their epoch, and the
 /// epochs keep growing while a second handle is alive and idle, so that the
 /// items not yet freed (each moved out of its node, which keeps the moved
@@ -1865,8 +1871,12 @@ ADS_TEST( "lockfree-pq-epochs" )
  CHECK_THROWS( ( LockFreePriorityQueue< int , int >( 0 ) ) ,
 	       contract_violation );
  const long alive = Counted::alive;
- {
-  LockFreePriorityQueue< std::uint64_t , Counted > Q( 1 , 5 );
+ // under an attempt per R retirements, the nodes of the last three epochs
+ // wait, R each at most
+ auto check = [ & ]( auto policy , long bound ) {
+  using P = decltype( policy );
+  LockFreePriorityQueue< std::uint64_t , Counted , std::less<> , P > Q( 1 ,
+									5 );
   auto h = Q.handle();
   auto idle = Q.handle();  // alive, never inside an operation
   long most = 0 , size = 0;
@@ -1883,13 +1893,15 @@ ADS_TEST( "lockfree-pq-epochs" )
    }
   CHECK( std::size_t( size ) == Q.size() );
   CHECK( right && Q.consistent() && ( h.counts().cuts > 10000 ) );
-  CHECK( most <= 16 );
+  CHECK( most <= bound );
   // the idle handle sees the queue as the other one left it
   CHECK( idle.tryMinKey() && ( idle.tryMinKey() == h.tryMinKey() ) );
   while( idle.tryDeleteMin() ) {
    }
   CHECK( Q.empty() && h.empty() );
-  }
+  };
+ check( FraserEpochs<>() , 16 );
+ check( FraserEpochs< 64 >() , 16 + 3 * 63 );
  CHECK( Counted::alive == alive );
  }
 
@@ -2076,6 +2088,651 @@ ADS_TEST( "lockfree-pq-linearizable" )
    std::vector< char > failed( std::size_t( 1 ) << h.size() , 0 );
    CHECK( linearizable( h , 0 , failed ) && Q.consistent() );
    }
+ }
+
+namespace
+{
+
+/// a node of the tests of the reclamations, which counts its frees and
+/// marks itself freed in a table of flags, so that a node freed twice or
+/// while protected is seen
+struct RNode : Retirable
+{
+ static inline std::atomic< long > frees{ 0 };
+ std::atomic< int > * flag = nullptr;  ///< 1 alive, 2 freed
+ std::uint64_t value = 0;
+ };
+
+/// the address or the free of an RNode
+void * reclaimRNode( Retirable * r , Retirable::Op op ) noexcept
+{
+ RNode * n = static_cast< RNode * >( r );
+ if( op == Retirable::Op::address )
+  return( n );
+ if( n->flag && ( n->flag->exchange( 2 ) != 1 ) )
+  std::abort();  // freed twice
+ RNode::frees.fetch_add( 1 );
+ delete n;
+ return( nullptr );
+ }
+
+/// a new RNode of the flag f
+RNode * makeRNode( std::atomic< int > * f , std::uint64_t v = 0 )
+{
+ RNode * n = new RNode;
+ n->reclaim = &reclaimRNode;
+ n->flag = f;
+ n->value = v;
+ if( f )
+  f->store( 1 );
+ return( n );
+ }
+
+/// an object of the hazard pointers of C++26, whose deleter counts
+struct HObj;
+
+/// the deleter of HObj, which counts the objects and marks them freed
+struct HDel
+{
+ static inline std::atomic< long > count{ 0 };
+ void operator()( HObj * p ) const noexcept;
+ };
+
+struct HObj : hazard_pointer_obj_base< HObj , HDel >
+{
+ std::atomic< bool > * freed = nullptr;
+ int value = 0;
+ };
+
+void HDel::operator()( HObj * p ) const noexcept
+{
+ if( p->freed )
+  p->freed->store( true );
+ count.fetch_add( 1 );
+ delete p;
+ }
+
+/// an item that counts the live ones on many threads at once
+struct SharedCounted
+{
+ static inline std::atomic< long > alive{ 0 };
+ std::string s;
+ explicit SharedCounted( std::string v = "" ) : s( std::move( v ) ) {
+  alive.fetch_add( 1 );
+  }
+ SharedCounted( const SharedCounted & o ) : s( o.s ) { alive.fetch_add( 1 ); }
+ SharedCounted( SharedCounted && o ) noexcept : s( std::move( o.s ) ) {
+  alive.fetch_add( 1 );
+  }
+ ~SharedCounted() { alive.fetch_sub( 1 ); }
+ };
+
+/// the policies of the structures of nodes under test, the default of the
+/// stack and of the queue among them
+using Policies = std::tuple< FraserEpochs<> , FraserEpochs< 16 > ,
+			     FraserEpochs< 64 > , HazardPointers >;
+
+/// the retirements per attempt to raise the epoch of a policy of epochs
+template< unsigned R >
+constexpr std::size_t perAttempt( FraserEpochs< R > )
+{
+ return( R );
+ }
+
+/// f called with a value of each policy of Policies
+template< class F >
+void forPolicies( F && f )
+{
+ std::apply( [ & ]( auto... p ) { ( f( p ) , ... ); } , Policies{} );
+ }
+
+}  // end( namespace )
+
+/// the hazard pointers of C++26 on the global domain: an empty hazard
+/// pointer, the moves and the swaps, protect() of nil and of a pointer that
+/// changes, try_protect() that fails and gives the new pointer, and an
+/// object retired while protected, which outlives the scans of the bin of
+/// its thread until its protection is dropped; then 1, 63, 64 and 65 hazard
+/// pointers at once, the slots made being reused
+ADS_TEST( "hazard-pointers" )
+{
+ static_assert( reclamation_policy< HazardPointers > &&
+		reclamation_policy< FraserEpochs< 4 > > &&
+		( ! HazardPointers::kRegions ) &&
+		FraserEpochs< 4 >::kRegions );
+ HazardDomain & D = HazardDomain::global();
+ hazard_pointer e;
+ CHECK( e.empty() );
+ hazard_pointer h = make_hazard_pointer();
+ CHECK( ! h.empty() && D.slots() >= 1 );
+ hazard_pointer m( std::move( h ) );
+ CHECK( h.empty() && ! m.empty() );
+ swap( h , m );
+ CHECK( ! h.empty() && m.empty() );
+ m = std::move( h );
+ CHECK( h.empty() && ! m.empty() );
+ std::atomic< HObj * > src{ nullptr };
+ CHECK( m.protect( src ) == nullptr );
+ std::atomic< bool > freed{ false };
+ HObj * a = new HObj;
+ a->freed = &freed;
+ a->value = 7;
+ src.store( a );
+ HObj * p = m.protect( src );
+ CHECK( p == a );
+ // a try_protect() of a stale pointer fails and gives the new one
+ HObj * b = new HObj;
+ HObj * stale = a;
+ src.store( b );
+ CHECK( ! m.try_protect( stale , src ) && stale == b );
+ CHECK( m.try_protect( stale , src ) );
+ m.reset_protection( a );  // a protected again, with no check
+ src.store( nullptr );
+ const long before = HDel::count.load();
+ a->retire();
+ b->retire();
+ // enough objects retired to scan the bin of this thread twice or more
+ const std::size_t n = 3 * D.threshold() + 3;
+ for( std::size_t i = 0 ; i < n ; ++i )
+  ( new HObj )->retire();
+ CHECK( ( ! freed.load() ) && ( a->value == 7 ) );
+ CHECK( HDel::count.load() >= before + long( n ) - long( D.threshold() ) );
+ m.reset_protection( nullptr );
+ for( std::size_t i = 0 ; i < n ; ++i )
+  ( new HObj )->retire();
+ CHECK( freed.load() );
+ // many hazard pointers at once, around a power of 2, the slots reused
+ for( std::size_t k : { 1u , 63u , 64u , 65u } ) {
+  const std::size_t s = D.slots();
+  {
+   std::vector< hazard_pointer > V;
+   for( std::size_t i = 0 ; i < k ; ++i )
+    V.push_back( make_hazard_pointer() );
+   CHECK( std::all_of( V.begin() , V.end() , []( const hazard_pointer & x ) {
+    return( ! x.empty() );
+    } ) );
+   }
+  std::vector< hazard_pointer > W;
+  for( std::size_t i = 0 ; i < k ; ++i )
+   W.push_back( make_hazard_pointer() );
+  CHECK( D.slots() <= std::max( s , k + 1 ) );
+  }
+ }
+
+/// a thread stopped inside an operation under the hazard pointers keeps
+/// only the node it protects from being freed: while it waits, the others
+/// retire many nodes, the nodes waiting in all the bins stay below the
+/// bound of the bins times 2 H + 64 at every check, and the protected node
+/// is not freed; once its guard ends, the node is freed by a later scan.
+/// Under the epochs the same stopped thread keeps every node retired after
+/// it entered from being freed, and the nodes waiting grow with the
+/// retirements, until it leaves
+ADS_TEST( "hazard-pointers-stalled" )
+{
+ const int p = 4;
+ const std::uint64_t n = ADS::test::scaled< std::uint64_t >( 200000 , 20000 );
+ std::atomic< int > fx{ 0 };  // made before the domain, which frees x
+ {
+  HazardDomain D;
+  std::atomic< RNode * > src{ makeRNode( &fx ) };
+  std::atomic< int > stage{ 0 };
+  std::atomic< bool > bounded{ true };
+  std::thread stopped( [ & ] {
+   HazardDomain::Local< 1 > l( D );
+   {
+    HazardDomain::Local< 1 >::Guard g( l );
+    RNode * x = g.protect( 0 , src );
+    stage = 1;
+    while( stage.load() < 2 ) {
+     }
+    // x was retired and scanned over many times meanwhile
+    if( x->flag->load() != 1 )
+     bounded = false;
+    }
+   stage = 3;
+   } );
+  while( stage.load() < 1 ) {
+   }
+  // the protected node unlinked and retired, then many others
+  RNode * x = src.exchange( nullptr );
+  {
+   HazardDomain::Local< 1 > l( D );
+   l.retire( x );
+   }
+  std::vector< std::thread > T;
+  for( int t = 0 ; t < p ; ++t )
+   T.emplace_back( [ & ] {
+    HazardDomain::Local< 1 > l( D );
+    std::atomic< RNode * > own{ nullptr };
+    for( std::uint64_t i = 0 ; i < n ; ++i ) {
+     HazardDomain::Local< 1 >::Guard g( l );
+     own.store( makeRNode( nullptr , i ) );
+     RNode * y = g.protect( 0 , own );
+     if( y->value != i )
+      bounded = false;
+     own.store( nullptr );
+     l.retire( y );
+     if( i % 1024 == 0 ) {
+      // the bins made so far, each below 2 H + 64 nodes
+      const std::size_t bound = D.bins() * D.threshold();
+      if( D.pending() > bound )
+       bounded = false;
+      }
+     }
+    } );
+  for( auto & t : T )
+   t.join();
+  CHECK( bounded.load() && ( fx.load() == 1 ) );
+  CHECK( D.pending() <= D.bins() * D.threshold() );
+  stage = 2;
+  while( stage.load() < 3 ) {
+   }
+  stopped.join();
+  CHECK( bounded.load() && ( D.freed() >= std::uint64_t( p ) * n ) );
+  {
+   // every bin taken again, and scanned when given back, now that no slot
+   // holds x
+   std::vector< HazardDomain::Local< 1 > > V;
+   for( std::size_t b = D.bins() ; b > 0 ; --b )
+    V.emplace_back( D );
+   }
+  CHECK( ( fx.load() == 2 ) && ( D.pending() == 0 ) );
+  }
+ // under the epochs, the stopped thread holds all the nodes retired since
+ forPolicies( [ & ]( auto policy ) {
+  using P = decltype( policy );
+  if constexpr( P::kRegions ) {
+   typename P::Domain D;
+   std::atomic< int > stage{ 0 };
+   std::thread stopped( [ & ] {
+    typename P::template Local< 0 > l( D );
+    {
+     typename P::template Local< 0 >::Guard g( l );
+     stage = 1;
+     while( stage.load() < 2 ) {
+      }
+     }
+    stage = 3;
+    } );
+   while( stage.load() < 1 ) {
+    }
+   const std::uint64_t m = 10000;
+   {
+    typename P::template Local< 0 > l( D );
+    for( std::uint64_t i = 0 ; i < m ; ++i ) {
+     typename P::template Local< 0 >::Guard g( l );
+     l.retire( makeRNode( nullptr ) );
+     }
+    // at most the nodes of the two epochs before the stop were freed
+    CHECK( D.pending() + 8 >= m );
+    stage = 2;
+    while( stage.load() < 3 ) {
+     }
+    stopped.join();
+    // the epoch moves again, and the nodes are freed
+    for( std::uint64_t i = 0 ; i < 200 ; ++i ) {
+     typename P::template Local< 0 >::Guard g( l );
+     l.retire( makeRNode( nullptr ) );
+     }
+    // the nodes of the last two epochs wait, R per attempt
+    CHECK( D.pending() <=
+	   std::max< std::size_t >( 64 , 2 * perAttempt( policy ) + 8 ) );
+    }
+   }
+  } );
+ }
+
+/// the epochs of Fraser on their own: a node retired is freed
+/// after a few guards of one thread, never inside a guard of another
+/// thread that started before it was retired, the epoch grows, a record
+/// given back is taken again with its limbo, and the domain frees the
+/// nodes still waiting
+ADS_TEST( "epoch-reclaim" )
+{
+ const long frees = RNode::frees.load();
+ auto check = [ & ]( auto policy ) {
+  using P = decltype( policy );
+  if constexpr( P::kRegions ) {
+   using L = typename P::template Local< 0 >;
+   std::vector< std::atomic< int > > F( 1000 );
+   {
+    typename P::Domain D;
+    CHECK( D.epoch() == 2 && D.pending() == 0 && D.records() == 0 );
+    const void * first = nullptr;
+    {
+     L l( D );
+     first = l.record();
+     // nothing retired: the epoch does not move under Fraser, which tries
+     // only after a retirement
+     for( int i = 0 ; i < 10 ; ++i ) {
+      typename L::Guard g( l );
+      }
+     const std::uint64_t e = D.epoch();
+     for( std::size_t i = 0 ; i < 500 ; ++i ) {
+      typename L::Guard g( l );
+      l.retire( makeRNode( &F[ i ] , i ) );
+      }
+     const std::size_t most =
+       3 * std::max< std::size_t >( 16 , perAttempt( policy ) );
+     CHECK( D.epoch() > e && D.pending() <= most );
+     CHECK( D.records() == 1 );
+     }
+    {
+     // the record taken again, its limbo kept
+     L l( D );
+     CHECK( l.record() == first && D.records() == 1 );
+     L k( D );
+     CHECK( k.record() != first && D.records() == 2 );
+     // a guard of k open: no node retired by l since is freed
+     typename L::Guard gk( k );
+     const std::uint64_t f0 = D.freed();
+     for( std::size_t i = 500 ; i < 1000 ; ++i ) {
+      typename L::Guard g( l );
+      l.retire( makeRNode( &F[ i ] , i ) );
+      }
+     bool alive = true;
+     for( std::size_t i = 500 ; i < 1000 ; ++i )
+      alive = alive && ( F[ i ].load() == 1 );
+     CHECK( alive && ( D.freed() <= f0 + 3 * 500 ) );
+     }
+    CHECK( D.pending() > 0 );
+    }
+   // the domain freed every node, each once
+   CHECK( std::all_of( F.begin() , F.end() , []( std::atomic< int > & x ) {
+    return( x.load() == 2 );
+    } ) );
+   }
+  };
+ forPolicies( check );
+ CHECK( RNode::frees.load() == frees + 3 * 1000 );
+ }
+
+/// the stack of Treiber under each policy, on one thread against a vector:
+/// the empty stack, one item, many items in the order of a stack, the items
+/// that own memory freed once, and none leaked
+ADS_TEST( "lockfree-stack" )
+{
+ const long alive = Counted::alive;
+ forPolicies( [ & ]( auto policy ) {
+  using P = decltype( policy );
+  LockFreeStack< Counted , P > S;
+  auto h = S.handle();
+  CHECK( S.empty() && S.size() == 0 && ! h.tryPop() );
+  h.push( Counted( "a" ) );
+  CHECK( S.size() == 1 );
+  auto x = h.tryPop();
+  CHECK( x && x->s == "a" && S.empty() && ! h.tryPop() );
+  std::vector< std::string > R;
+  std::mt19937_64 g( 91 );
+  bool right = true;
+  for( int s = 0 ; s < 20000 ; ++s )
+   if( ( g() % 3 ) || R.empty() ) {
+    R.push_back( std::to_string( s ) );
+    h.push( Counted( R.back() ) );
+    }
+   else {
+    auto y = h.tryPop();
+    right = right && y && ( y->s == R.back() );
+    R.pop_back();
+    }
+  CHECK( right && ( S.size() == R.size() ) );
+  // the items left in the stack are freed by its destructor
+  } );
+ CHECK( Counted::alive == alive );
+ }
+
+/// p threads that push and pop on one stack under each policy: every item
+/// comes out once, those of a thread that only pops come in the reverse
+/// order of each pusher, and no item is leaked
+ADS_TEST( "lockfree-stack-threads" )
+{
+ const long alive = SharedCounted::alive.load();
+ forPolicies( [ & ]( auto policy ) {
+  using P = decltype( policy );
+  for( int p : { 1 , 2 , 4 , 8 } ) {
+   const std::uint64_t n = ADS::test::scaled< std::uint64_t >( 40000 , 4000 );
+   std::vector< std::atomic< int > > got( n * std::uint64_t( p ) );
+   for( auto & x : got )
+    x = 0;
+   {
+    LockFreeStack< SharedCounted , P > S;
+    std::vector< std::thread > T;
+    for( int t = 0 ; t < p ; ++t )
+     T.emplace_back( [ & , t ] {
+      auto h = S.handle();
+      std::mt19937_64 g( 92 + std::uint64_t( t ) );
+      for( std::uint64_t i = 0 ; i < n ; ++i ) {
+       h.push( SharedCounted( std::to_string( std::uint64_t( t ) * n + i ) ) );
+       if( g() % 2 )
+	if( auto x = h.tryPop() )
+	 got[ std::stoull( x->s ) ].fetch_add( 1 );
+       }
+      } );
+    for( auto & t : T )
+     t.join();
+    auto h = S.handle();
+    while( auto x = h.tryPop() )
+     got[ std::stoull( x->s ) ].fetch_add( 1 );
+    CHECK( S.empty() );
+    }
+   CHECK(
+     std::all_of( got.begin() , got.end() ,
+		  []( const std::atomic< int > & x ) {
+      return( x.load() == 1 );
+      } ) );
+   }
+  } );
+ CHECK( SharedCounted::alive.load() == alive );
+ }
+
+/// the queue of Michael and Scott under each policy, on one thread against
+/// std::deque: the empty queue, one item, the order of a queue across many
+/// operations, and no item leaked, also of those left in the queue
+ADS_TEST( "lockfree-queue" )
+{
+ const long alive = Counted::alive;
+ forPolicies( [ & ]( auto policy ) {
+  using P = decltype( policy );
+  LockFreeQueue< Counted , P > Q;
+  auto h = Q.handle();
+  CHECK( Q.empty() && Q.size() == 0 && ! h.tryDequeue() );
+  h.enqueue( Counted( "a" ) );
+  CHECK( Q.size() == 1 );
+  auto x = h.tryDequeue();
+  CHECK( x && x->s == "a" && Q.empty() && ! h.tryDequeue() );
+  std::deque< std::string > R;
+  std::mt19937_64 g( 93 );
+  bool right = true;
+  for( int s = 0 ; s < 20000 ; ++s )
+   if( ( g() % 3 ) || R.empty() ) {
+    R.push_back( std::to_string( s ) );
+    h.enqueue( Counted( R.back() ) );
+    }
+   else {
+    auto y = h.tryDequeue();
+    right = right && y && ( y->s == R.front() );
+    R.pop_front();
+    }
+  CHECK( right && ( Q.size() == R.size() ) );
+  } );
+ CHECK( Counted::alive == alive );
+ }
+
+/// p producers and c consumers on one queue under each policy: every item
+/// comes out once, the items of each producer in the order it enqueued
+/// them as each consumer sees them, the retired nodes all freed by the
+/// domain, and none leaked
+ADS_TEST( "lockfree-queue-threads" )
+{
+ const long alive = SharedCounted::alive.load();
+ forPolicies( [ & ]( auto policy ) {
+  using P = decltype( policy );
+  for( auto [ p , c ] :
+       { std::pair( 1 , 1 ) , std::pair( 2 , 2 ) , std::pair( 4 , 4 ) ,
+	 std::pair( 1 , 7 ) , std::pair( 7 , 1 ) } ) {
+   const std::uint64_t n = ADS::test::scaled< std::uint64_t >( 40000 , 4000 );
+   const std::uint64_t all = n * std::uint64_t( p );
+   std::vector< std::atomic< int > > got( all );
+   for( auto & x : got )
+    x = 0;
+   std::atomic< bool > ordered{ true };
+   std::atomic< std::uint64_t > taken{ 0 };
+   {
+    LockFreeQueue< SharedCounted , P > Q;
+    std::vector< std::thread > T;
+    for( int t = 0 ; t < p ; ++t )
+     T.emplace_back( [ & , t ] {
+      auto h = Q.handle();
+      for( std::uint64_t i = 0 ; i < n ; ++i )
+       h.enqueue(
+	 SharedCounted( std::to_string( std::uint64_t( t ) * n + i ) ) );
+      } );
+    for( int t = 0 ; t < c ; ++t )
+     T.emplace_back( [ & ] {
+      auto h = Q.handle();
+      std::vector< std::uint64_t > last( std::size_t( p ) , 0 );
+      while( taken.load() < all )
+       if( auto x = h.tryDequeue() ) {
+	const std::uint64_t v = std::stoull( x->s );
+	const std::size_t q = std::size_t( v / n );
+	if( v % n + 1 <= last[ q ] )
+	 ordered = false;
+	last[ q ] = v % n + 1;
+	got[ v ].fetch_add( 1 );
+	taken.fetch_add( 1 );
+        }
+      } );
+    for( auto & t : T )
+     t.join();
+    CHECK( Q.empty() && ordered.load() );
+    }
+   CHECK(
+     std::all_of( got.begin() , got.end() ,
+		  []( const std::atomic< int > & x ) {
+      return( x.load() == 1 );
+      } ) );
+   }
+  } );
+ CHECK( SharedCounted::alive.load() == alive );
+ }
+
+/// the purpose-built race of the reclamation, for the sanitizers: readers
+/// that protect the node of a word and read it, while a writer swings the
+/// word to a new node and retires the old one as fast as it can, under
+/// each policy; a node freed too early is a use after free, which the
+/// sanitizer of addresses reports, and its flag shows
+ADS_TEST( "reclaim-races" )
+{
+ const std::uint64_t n = ADS::test::scaled< std::uint64_t >( 200000 , 20000 );
+ forPolicies( [ & ]( auto policy ) {
+  using P = decltype( policy );
+  using L = typename P::template Local< 2 >;
+  // the flags made before the domain, which frees the last nodes
+  std::vector< std::atomic< int > > F( static_cast< std::size_t >( n ) );
+  typename P::Domain D;
+  // a word swung to a new node by the writer, which retires the old one,
+  // and read by the readers through protect()
+  std::atomic< RNode * > head{ nullptr };
+  std::atomic< bool > done{ false };
+  std::atomic< bool > right{ true };
+  std::vector< std::thread > T;
+  for( int t = 0 ; t < 3 ; ++t )
+   T.emplace_back( [ & ] {
+    L l( D );
+    while( ! done.load() ) {
+     typename L::Guard g( l );
+     RNode * x = g.protect( 0 , head );
+     if( x && ( x->flag->load() != 1 ) )
+      right = false;  // protected, yet freed
+     }
+    } );
+  T.emplace_back( [ & ] {
+   L l( D );
+   for( std::uint64_t i = 0 ; i < n ; ++i ) {
+    typename L::Guard g( l );
+    RNode * x = head.exchange( makeRNode( &F[ i ] , i ) );
+    if( x )
+     l.retire( x );  // unlinked: no reader reaches it from now on
+    }
+   typename L::Guard g( l );
+   if( RNode * x = head.exchange( nullptr ) )
+    l.retire( x );
+   done = true;
+   } );
+  for( auto & t : T )
+   t.join();
+  CHECK( right.load() );
+  } );
+ }
+
+/// the queue of Lindén and Jonsson under the epochs of Fraser with an
+/// attempt per retirement and per 16 retirements, besides the default of
+/// 64: the order of
+/// one handle with items that own memory, the nodes cut off freed as the
+/// epochs go, and p threads that insert and delete, every pair once
+ADS_TEST( "lockfree-pq-policies" )
+{
+ const long alive = Counted::alive;
+ auto check = [ & ]( auto policy ) {
+  using P = decltype( policy );
+  {
+   LockFreePriorityQueue< std::uint64_t , Counted , std::less<> , P > Q( 4 );
+   auto h = Q.handle();
+   std::set< std::pair< std::uint64_t , int > > R;
+   std::mt19937_64 g( 94 );
+   bool right = true;
+   for( int s = 0 ; s < 20000 ; ++s )
+    if( ( g() % 3 ) || R.empty() ) {
+     const std::uint64_t k = g() % 64;
+     h.insert( k , Counted( std::to_string( s ) ) );
+     R.insert( { k , s } );
+     }
+    else {
+     const auto e = h.tryDeleteMin();
+     right = right && e && ( e->key == R.begin()->first ) &&
+	     ( e->item.s == std::to_string( R.begin()->second ) );
+     R.erase( R.begin() );
+     }
+   CHECK( right && Q.consistent() && ( Q.size() == R.size() ) );
+   // the nodes cut off are freed as the epochs go: a few cuts wait
+   CHECK( h.counts().cuts > 100 && Q.domain().pending() <= 4 * 5 * 16 );
+   }
+  for( int p : { 2 , 4 } ) {
+   const std::uint64_t n = ADS::test::scaled< std::uint64_t >( 20000 , 2000 );
+   LockFreePriorityQueue< std::uint64_t , std::uint64_t , std::less<> , P > Q(
+     8 );
+   std::vector< std::atomic< int > > got( n * std::uint64_t( p ) );
+   for( auto & x : got )
+    x = 0;
+   std::vector< std::thread > T;
+   for( int t = 0 ; t < p ; ++t )
+    T.emplace_back( [ & , t ] {
+     auto h = Q.handle();
+     std::mt19937_64 g( 95 + std::uint64_t( t ) );
+     for( std::uint64_t i = 0 ; i < n ; )
+      if( g() % 3 ) {
+       h.insert( g() % 4096 , std::uint64_t( t ) * n + i );
+       ++i;
+       }
+      else if( const auto e = h.tryDeleteMin() )
+       got[ e->item ].fetch_add( 1 );
+     } );
+   for( auto & t : T )
+    t.join();
+   auto h = Q.handle();
+   while( const auto e = h.tryDeleteMin() )
+    got[ e->item ].fetch_add( 1 );
+   CHECK( Q.empty() && Q.consistent() );
+   CHECK(
+     std::all_of( got.begin() , got.end() ,
+		  []( const std::atomic< int > & x ) {
+      return( x.load() == 1 );
+      } ) );
+   }
+  };
+ check( FraserEpochs<>() );
+ check( FraserEpochs< 16 >() );
+ CHECK( Counted::alive == alive );
  }
 
 

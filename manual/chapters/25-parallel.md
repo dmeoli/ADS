@@ -1411,6 +1411,138 @@ oriented graph is taken as unoriented, its arcs read from their tails only,
 and then no node is skipped, since the argument of [Lemma
 25.14](25-parallel.md#lem-25-14) needs each arc to be seen from both ends.
 
+**The biconnected components.** The visit of Hopcroft and Tarjan
+([§14.5.6](14-graph.md#sec-14-5-6)) is inherently sequential. Also, the
+parallel algorithms that follow a tree of a visit in breadth have a depth that
+grows with the diameter, which is large on the road networks and on the grids.
+In `ParallelBiconnectivity.h`, `biconnectedComponents( ex , g )` is FAST-BCC
+([Dong, Wang, Gu and Sun 2023](Z-bibliography.md#ref-dong2023)): it takes any
+spanning forest $F$ and keeps $O( n )$ words besides the graph, with no
+auxiliary graph of $O( m )$ edges as in the algorithm of [Tarjan and Vishkin
+1985](Z-bibliography.md#ref-tarjan1985vishkin). Its forest is that of the links
+of Afforest above that join two sets, rooted at the least node of each tree. We
+number the nodes of $F$ in a preorder, with $\mathit{pre}( v )$ the number of
+$v$, $\mathit{last}( v )$ the largest number in its subtree $T_v$ and $p( v )$
+its parent. This preorder comes from the tour of Euler of the arcs of $F$, in
+which the arc after $( u , v )$ is the arc after $( v , u )$ in the row of $v$
+(taken cyclically). Cut at the arc into its root that precedes the first arc
+out of it, the tour of each tree is a list, which a sparse ruling set ranks
+([Helman and JaJa 2001](Z-bibliography.md#ref-helman2001)). As rulers we take
+the first arc of each list and about one arc in 64, picked by a hash. Each
+ruler walks the list up to the next one, ranking the arcs that it meets, and
+then the walks of each list are added up in their order ([Algorithm
+25.19](25-parallel.md#alg-25-19)).
+
+<span id="lem-25-15"></span>**Lemma 25.15.** *In the list of a tree of $s$
+nodes rooted at $r$, the $2 ( s - 1 )$ arcs of the tree come once each,
+starting from the first arc out of $r$, and for each edge $[ u , v ]$ with $u =
+p( v )$ the arc $( u , v )$ precedes $( v , u )$, and the arcs between them are
+those of the edges of $T_v$. Hence numbering $r$ and then each node $v$ by the
+place of $( p( v ) , v )$ among the arcs going down (those that precede their
+reverse) gives a preorder, and $\mathit{last}( v ) = \mathit{pre}( v ) + (
+\mathit{rank}( v , p( v ) ) - \mathit{rank}( p( v ) , v ) - 1 ) / 2$.*
+
+*Proof.* The successor of an arc is a bijection on the arcs of the tree. Its
+cycle from the first arc out of $r$ is the tour of Euler of the tree, which
+goes down each edge and comes back up it after the whole subtree below ([Tarjan
+and Vishkin 1985](Z-bibliography.md#ref-tarjan1985vishkin)). In the list, this
+cycle is cut where it comes back to $r$ for the last time. Thus, the arcs of
+$T_v$ and the two arcs of $[ p( v ) , v ]$ thus fill an interval of the list,
+of $2 \lvert T_v \rvert$ arcs, and the nodes of $T_v$ are numbered after $v$
+and before the other nodes. Finally, the number of the nodes of $T_v$ other
+than $v$ is half the arcs between $( p( v ) , v )$ and $( v , p( v ) )$.
+$\square$
+
+FAST-BCC tags each node $v$ with $\mathit{low}( v )$ and $\mathit{high}( v )$,
+the least and the largest $\mathit{pre}$ of a node of $T_v$ or of a neighbor of
+one; these are the minimum and the maximum of the tags of the single nodes over
+the interval $[ \mathit{pre}( v ) , \mathit{last}( v ) ]$ of the preorder. They
+are answered by the sparse tables of `RangeMinimum.h` on the minima and the
+maxima of blocks of 64 places, with the prefixes and the suffixes of the blocks
+for the two ends ([§6.9](06-search.md#sec-6-9)). An edge $[ p( v ) , v ]$ of
+$F$ is a *fence* if $\mathit{low}( v ) \ge \mathit{pre}( p( v ) )$ and
+$\mathit{high}( v ) \le \mathit{last}( p( v ) )$, i.e., if no edge leaves $T_v$
+but into $T_{p( v )}$. In turn, the *skeleton* $S$ holds the edges of $F$ that
+are not fences and the edges of $G$ whose ends are not one an ancestor of the
+other; the other edges between an ancestor and a descendant, and the loops, are
+left out.
+
+<span id="lem-25-16"></span>**Lemma 25.16.** *Every connected component of $S$
+but the roots of $F$, which are alone, is a block of $G$ less its head; the
+head is the parent of each node $v$ of the component with $p( v )$ outside it,
+and the block of an edge $[ u , w ]$ that is not a loop is the component of its
+end of larger $\mathit{pre}$. Hence the result of `biconnectedComponents( ex ,
+g )` is that of `biconnectedComponents( g )`, whatever the forest.*
+
+*Proof.* Let an edge of $F$ above $v$ not be a fence. Then there is an edge $[
+x , y ]$ with $x \in T_v$ and $y \notin T_{p( v )}$, and the path of $F$ from
+$x$ to $y$ and $[ x , y ]$ form a simple cycle through $[ p( v ) , v ]$ and $[
+p( p( v ) ) , p( v ) ]$. Hence $v$ and $p( v )$ are in one block, of which
+neither is the head (the block holds $p( p( v ) )$, nearer to the root).
+Similarly, an edge $[ u , w ]$ between two subtrees closes a simple cycle with
+the path of $F$ through the least common ancestor of $u$ and $w$, which holds
+$[ p( u ) , u ]$ and $[ p( w ) , w ]$; again neither $u$ nor $w$ is the head. A
+node $v$ that is not a root is the head of every block that holds it but one
+(the block of the first edges of the paths from $v$ to the root), and therefore
+each component of $S$ lies in one block less its head. The converse, i.e., that
+the nodes of a block other than its head are joined in $S$, is the main theorem
+of [Dong, Wang, Gu and Sun 2023](Z-bibliography.md#ref-dong2023), proved by
+induction from the leaves of $F$. Its proof rests on two facts: the edges of
+$F$ restricted to a block span it, and a path in the block that avoids $p( v )$
+and leaves $T_v$ into the subtree of a sibling crosses an edge of $S$ between
+two subtrees. A root has only fences below it and edges to its descendants, and
+hence no edge in $S$. Finally, a node $v$ of a component with $p( v )$ outside
+it has $p( v )$ in the block, since the restriction of $F$ to the block spans
+it; then $p( v )$ is the head. As for the edges, the block of an edge is that
+of the edge of $F$ above its lower end. This follows from the cycles above and,
+for an edge between an ancestor and a descendant, from the cycle that it closes
+with the path of $F$ between them. $\square$
+
+We compute the components of $S$ by Afforest, on the arcs kept by a test of the
+tags of their two ends; this test gives the same answer from both ends, as
+required by [Lemma 25.14](25-parallel.md#lem-25-14). Then a node $v$ of a
+component with $p( v )$ outside it gives the head of its block. This block is a
+bridge if $v$ has no arc in $S$ and one arc to $p( v )$. Also, $p( v )$ is a
+cut node unless it is a root that heads only one block (a root compares the
+block of each child with the first one written, by a compare-and-swap).
+Finally, `twoEdgeConnectedComponents( ex , g )` runs Afforest once more on the
+arcs that are neither loops nor bridges, and its least nodes are those of the
+sequential function.
+
+<span id="alg-25-19"></span>**Algorithm 25.19.** The blocks by FAST-BCC ([Dong,
+Wang, Gu and Sun 2023](Z-bibliography.md#ref-dong2023)) on the forest of
+Afforest, rooted by the tour of Euler, and the 2-edge-connected components.
+
+--8<-- "generated/ParallelBiconnectivity-biconnectedComponents.pseudo.md"
+
+--8<-- "generated/ParallelBiconnectivity-rootForest.pseudo.md"
+
+--8<-- "generated/ParallelBiconnectivity-twoEdgeConnectedComponents.pseudo.md"
+
+The work is $O( n + m )$ expected, with the sparse table of the $n / 64$ blocks
+built on one thread in $O( ( n / 64 ) \log n )$. The depth is that of the hooks
+of Afforest and of the walks of the ruling set (whose longest walk has $O( \log
+n )$ arcs with high probability), but for the loops over the arcs of a node of
+large degree, which run on one thread. Each arc of $G$ is read up to four times
+(by the two runs of Afforest, by the tags and by the test of the heads), and
+each arc of $F$ about six times, against the two reads of the visit in depth.
+On one thread we therefore expect FAST-BCC to be slower than the sequential
+visit by a small factor. On a few threads it should be faster, the more so on
+the graphs of large diameter, where the visits in breadth of the other parallel
+algorithms take many rounds. Since neither ParlayLib nor the GAP benchmark
+suite has a biconnectivity, the competitor of the benchmark is the algorithm of
+Tarjan and Vishkin of GBBS ([Dhulipala, Blelloch and Shun
+2021](Z-bibliography.md#ref-dhulipala2021)), run as a program of its own on the
+graphs that the benchmark writes. The two functions are declared as
+
+```cpp
+// declarations of <ADS/parallel/ParallelBiconnectivity.h>
+template< Executor E , Graph G >
+BiconnectedComponents biconnectedComponents( E & ex , const G & g );
+template< Executor E , Graph G >
+std::vector< int > twoEdgeConnectedComponents( E & ex , const G & g );
+```
+
 **The LCP array.** The LCP array of a text $T$ of $n$ symbols and of its suffix
 array $\mathit{SA}$ holds the longest common prefixes of the suffixes adjacent
 in $\mathit{SA}$. `lcpArray( ex , T , SA )` of `ParallelText.h` reads it from
@@ -1419,7 +1551,7 @@ $\Phi[ i ]$ is the suffix before $i$ in the order of $\mathit{SA}$
 ([Kärkkäinen, Manzini and Puglisi 2009](Z-bibliography.md#ref-karkkainen2009)).
 We base the algorithm on the following property.
 
-<span id="lem-25-15"></span>**Lemma 25.15.** *For $i \ge 1$ such that the
+<span id="lem-25-17"></span>**Lemma 25.17.** *For $i \ge 1$ such that the
 suffix $i - 1$ is not the least,*
 
 $$
@@ -1450,10 +1582,10 @@ per suffix, the scan makes $O( n )$ comparisons ([Kasai et al.
 $\Phi$, and at the end $\mathit{LCP}[ r - 1 ] = \mathit{PLCP}[ \mathit{SA}[
 r ] ]$, by parallel loops of scattered moves. In between, it cuts the scan
 into $4 p$ parts of the text, each scanned from $h = 0$ ([Algorithm
-25.19](25-parallel.md#alg-25-19)).
+25.20](25-parallel.md#alg-25-20)).
 
 Inequality (25.8) is then not used across the borders of the parts, which
-leaves the result the same; by [Lemma 25.15](25-parallel.md#lem-25-15),
+leaves the result the same; by [Lemma 25.17](25-parallel.md#lem-25-17),
 summed over the $4 p$ parts, the work is $O( n + p \max_i \mathit{PLCP}[ i
 ] )$, and on a text of one repeated symbol, whose lcp are as long as the text,
 the parts save no work. Furthermore, the scan in the order of the text reads
@@ -1480,7 +1612,7 @@ std::vector< I > lcpArrayPhi( E & ex , std::string_view T ,
 the second for a text of bytes and a suffix array of indices of the type
 `I` ([chapter 15](15-string.md#ch-15)).
 
-<span id="alg-25-19"></span>**Algorithm 25.19.** The parallel LCP array by
+<span id="alg-25-20"></span>**Algorithm 25.20.** The parallel LCP array by
 the permuted LCP ([Kärkkäinen, Manzini and Puglisi
 2009](Z-bibliography.md#ref-karkkainen2009)) on the scan of [Kasai et al.
 2001](Z-bibliography.md#ref-kasai2001), and the comparison by words of
@@ -1510,7 +1642,7 @@ returns false to be tried in the next round; the holder of a reservation frees
 it, and at the end of a round all of them are free. A round runs in parallel
 the reserves of a prefix of $r$ iterations not yet done, then their commits. It
 keeps the failed ones, in their order and by a parallel pack, at the head of
-the next prefix ([Algorithm 25.20](25-parallel.md#alg-25-20)).
+the next prefix ([Algorithm 25.21](25-parallel.md#alg-25-21)).
 
 The loop, the concept of its step, the reservation of a place and the
 counts of a run are declared as
@@ -1546,14 +1678,14 @@ void speculativeFor( E & ex , S & step , std::size_t s , std::size_t e ,
                      std::size_t g = 50 , SpeculativeCounts * c = nullptr );
 ```
 
-<span id="alg-25-20"></span>**Algorithm 25.20.** The deterministic
+<span id="alg-25-21"></span>**Algorithm 25.21.** The deterministic
 reservations ([Blelloch, Fineman, Gibbons and Shun
 2012](Z-bibliography.md#ref-blelloch2012a)); $r_{\mathrm{max}} = \lfloor (
 e - s ) / g \rfloor + 1$ for the grain $g$, 50 by default.
 
 --8<-- "generated/SpeculativeFor-speculativeFor.pseudo.md"
 
-<span id="lem-25-16"></span>**Lemma 25.16.** *Assume that (i) each
+<span id="lem-25-18"></span>**Lemma 25.18.** *Assume that (i) each
 $\mathrm{reserve}( i )$ reserves every place that $\mathrm{commit}( i )$
 may change, but for the places that no other iteration changes or
 reserves; (ii) for each place
@@ -1593,7 +1725,7 @@ hypotheses with the first case of (ii) (an edge reserves the two ends that
 it reads and changes), and the maximal independent set with the second (a
 node reads only the states of its neighbors of earlier places, and waits
 while one is undecided); the forests of Kruskal need a lemma of their own
-([Lemma 25.17](25-parallel.md#lem-25-17)).
+([Lemma 25.19](25-parallel.md#lem-25-19)).
 
 As to its size, a prefix starts with $r = r_{\mathrm{max}}$. It halves when
 more than a fifth of a round fails, but not below $r_{\mathrm{max}} / 64 + 1$
@@ -1662,7 +1794,7 @@ which the chains of [§25.10](25-parallel.md#sec-25-10) are short.
 **The forests.** In `parallelKruskal()` the edge $e_i = [ u , v ]$ of place
 $i$ in the order reserves the roots $r_u$ and $r_v$ of its ends in a
 union-find if they differ, and its commit hangs under the other root a root
-that it holds ([Algorithm 25.21](25-parallel.md#alg-25-21)).
+that it holds ([Algorithm 25.22](25-parallel.md#alg-25-22)).
 
 The algorithms of `ParallelGreedy.h` are declared as
 
@@ -1690,7 +1822,7 @@ maximalMatching( E & ex , int n ,
                  const std::vector< int > & pi );
 ```
 
-<span id="alg-25-21"></span>**Algorithm 25.21.** The two steps of an edge in
+<span id="alg-25-22"></span>**Algorithm 25.22.** The two steps of an edge in
 `parallelKruskal()` ([Montresor 2025,
 §14.3](Z-bibliography.md#ref-montresor2025), on the reservations of
 [Blelloch, Fineman, Gibbons and Shun
@@ -1698,12 +1830,12 @@ maximalMatching( E & ex , int n ,
 
 --8<-- "generated/ParallelGreedy-reserve.pseudo.md"
 
-The commit of [Algorithm 25.21](25-parallel.md#alg-25-21) needs one of the
+The commit of [Algorithm 25.22](25-parallel.md#alg-25-22) needs one of the
 two reservations, not both, and therefore does not meet the hypothesis of
-[Lemma 25.16](25-parallel.md#lem-25-16) literally; the following lemma gives
+[Lemma 25.18](25-parallel.md#lem-25-18) literally; the following lemma gives
 what replaces it.
 
-<span id="lem-25-17"></span>**Lemma 25.17.** *In each round of
+<span id="lem-25-19"></span>**Lemma 25.19.** *In each round of
 `parallelKruskal()` the links form no cycle, and the edges taken are those
 of the sequential algorithm of Kruskal on the same order.*
 
@@ -1739,12 +1871,12 @@ the same steps on the edges in their given order, with no sort.
 the median of 1023 evenly spaced edges, into the light ones $e < p$ and the
 heavy ones. It solves the light ones first, and then drops by a parallel
 filter the heavy edges whose ends the forest already joins, before their
-recursion ([Algorithm 25.22](25-parallel.md#alg-25-22)). A heavy edge
+recursion ([Algorithm 25.23](25-parallel.md#alg-25-23)). A heavy edge
 dropped would be refused by Kruskal too, since the light edges come first in
 the order and the forest only grows. Hence the forest is the same, and
 the edges dropped are never sorted.
 
-<span id="alg-25-22"></span>**Algorithm 25.22.** Filter-Kruskal ([Osipov,
+<span id="alg-25-23"></span>**Algorithm 25.23.** Filter-Kruskal ([Osipov,
 Sanders and Singler 2009](Z-bibliography.md#ref-osipov2009)) and the
 spanning forest in the order of the edges.
 
@@ -1758,14 +1890,14 @@ the set leaves $v$ out, and one undecided makes $v$ wait. A node never waits
 for a later one, and therefore no reservation is needed; the commit only
 publishes the state computed by the reserve. In `maximalMatching()` an edge
 reserves its two ends if both are free, and is matched if it holds both
-([Algorithm 25.23](25-parallel.md#alg-25-23)). On a random order, the
+([Algorithm 25.24](25-parallel.md#alg-25-24)). On a random order, the
 iterations that wait for each other form chains of length $O( \log n )$ with
 high probability ([Blelloch, Fineman and Shun
 2012](Z-bibliography.md#ref-blelloch2012b) gave $O( \log^2 n )$, and
 [Fischer and Noever 2018](Z-bibliography.md#ref-fischer2018) the tight
 bound). Hence, few iterations fail, and the rounds are few.
 
-<span id="alg-25-23"></span>**Algorithm 25.23.** The two steps of a node of
+<span id="alg-25-24"></span>**Algorithm 25.24.** The two steps of a node of
 the maximal independent set and of an edge of the maximal matching
 ([Blelloch, Fineman and Shun 2012](Z-bibliography.md#ref-blelloch2012b)).
 
@@ -1793,7 +1925,7 @@ reads $x$ and, while $v$ is smaller than the value $x'$ last read, tries
 $\mathrm{CAS}( x , x' , v )$; it answers whether it lowered $x$, and a failed
 compare-and-swap reads the new $x'$.
 
-<span id="lem-25-18"></span>**Lemma 25.18.** *Start from $d( s ) = 0$ and
+<span id="lem-25-20"></span>**Lemma 25.20.** *Start from $d( s ) = 0$ and
 $d( v ) = \infty$ elsewhere, with $s$ active, and repeat, in any order and
 with any number of threads, steps that take some active nodes, make them not
 active, and relax their arcs, each relaxation atomic and making its head
@@ -1848,7 +1980,7 @@ rhoStepping( E & ex , const G & g , int s ,
              std::size_t rho = std::size_t( 1 ) << 20 );
 ```
 
-<span id="alg-25-24"></span>**Algorithm 25.24.** The $\Delta$-stepping
+<span id="alg-25-25"></span>**Algorithm 25.25.** The $\Delta$-stepping
 ([Meyer and Sanders 2003](Z-bibliography.md#ref-meyer2003)) on the buckets
 of each thread of the GAP benchmark suite ([Beamer, Asanović and Patterson
 2015](Z-bibliography.md#ref-beamer2015)).
@@ -1859,7 +1991,7 @@ We take the steps of the GAP benchmark suite. A thread appends the nodes that
 it improves to private buckets, with no flag. A node is thus in a bucket once
 per improvement, and it is skipped when its bucket comes if its distance has
 meanwhile fallen below the bucket (it was then relaxed in an earlier bucket at
-its last distance, which suffices by [Lemma 25.18](25-parallel.md#lem-25-18)).
+its last distance, which suffices by [Lemma 25.20](25-parallel.md#lem-25-20)).
 A step relaxes the frontier of the bucket $c$, the threads claiming 64 nodes at
 a time. Then each thread relaxes its bucket $c$ while it holds fewer than 1000
 nodes (the fusion of the buckets of [Zhang et al.
@@ -1886,7 +2018,7 @@ In the code, the threads of the $\Delta$-stepping are those of the calls of one
 `bulk()` of the executor, which run the whole computation and meet at a barrier
 that a call may join late: a thread that joins is counted at the next release,
 so that the barrier waits only for threads already in it ([Algorithm
-25.25](25-parallel.md#alg-25-25)). A thread that waits spins for 1024 pauses
+25.26](25-parallel.md#alg-25-26)). A thread that waits spins for 1024 pauses
 and then sleeps on the word of the generation, which the release wakes;
 spinning alone, an executor with more threads than the free cores of a loaded
 machine (e.g., a runtime that takes all the cores of the machine) passes each
@@ -1894,7 +2026,7 @@ of the two barriers of a step only when every thread has had its turn, and the
 tests of the stepping, on a machine loaded by other jobs, did not end within
 the hour that ctest grants them.
 
-<span id="alg-25-25"></span>**Algorithm 25.25.** The barrier of the
+<span id="alg-25-26"></span>**Algorithm 25.26.** The barrier of the
 $\Delta$-stepping, which a thread joins when the executor starts its call;
 $c$ is the number of the threads counted, $a$ that of those arrived, $q$
 that of those that joined since the last release, and $\gamma$ the
@@ -1902,11 +2034,11 @@ generation.
 
 --8<-- "generated/ParallelShortestPaths-join.pseudo.md"
 
-<span id="lem-25-19"></span>**Lemma 25.19.** *The $\Delta$-stepping ends on
+<span id="lem-25-21"></span>**Lemma 25.21.** *The $\Delta$-stepping ends on
 any executor, also on one that runs the calls of its `bulk()` one after the
 other on one thread.*
 
-*Proof.* By [Algorithm 25.25](25-parallel.md#alg-25-25), the first call that
+*Proof.* By [Algorithm 25.26](25-parallel.md#alg-25-26), the first call that
 joins starts the computation at once, counted alone. A later call is counted at
 the first release after its join, by the last thread that arrives, and waits
 until then. A barrier therefore waits only for calls that are running and
@@ -1919,7 +2051,7 @@ the first call does all the work. $\square$
 Zhang 2021](Z-bibliography.md#ref-dong2021)) takes the $\rho$ active nodes of
 least distance, or all of them when they are no more than $\rho$, the threshold
 being estimated on a sample of 1024 of them ([Algorithm
-25.26](25-parallel.md#alg-25-26)). In this way the steps have frontiers of
+25.27](25-parallel.md#alg-25-27)). In this way the steps have frontiers of
 about the same size whatever the scale of the costs. A node is active when its
 distance fell since its arcs were last relaxed, and it is made active once, by
 a flag. Then the prefix sums of the degrees cut the arcs of a step into blocks
@@ -1932,12 +2064,12 @@ Ford and Moore by rounds, and a smaller $\rho$ is needed there. Each step costs
 $O( \log n )$ depth for the gathering of its frontier, and therefore the steps
 should rather be few.
 
-<span id="alg-25-26"></span>**Algorithm 25.26.** The $\rho$-stepping ([Dong,
+<span id="alg-25-27"></span>**Algorithm 25.27.** The $\rho$-stepping ([Dong,
 Gu, Sun and Zhang 2021](Z-bibliography.md#ref-dong2021)).
 
 --8<-- "generated/ParallelShortestPaths-rhoStepping.pseudo.md"
 
-By [Lemma 25.18](25-parallel.md#lem-25-18), the distances of both algorithms
+By [Lemma 25.20](25-parallel.md#lem-25-20), the distances of both algorithms
 depend neither on the executor nor on the order of the relaxations, and they
 are those of the algorithm of Dijkstra value for value, also on floating
 point costs. They are sums in the type of the costs, not checked for
@@ -2014,7 +2146,7 @@ family to the worker $i$, with `tryPush( to , m )`, `drain( f )` and
 `ChannelsOf< E >` chooses for the executor `E`, `MeshChannels` unless an
 executor specializes it.
 
-<span id="alg-25-27"></span>**Algorithm 25.27.** The push and the drain of
+<span id="alg-25-28"></span>**Algorithm 25.28.** The push and the drain of
 the four families: under a lock, on a stack of Treiber, on lanes, and on the
 mesh.
 
@@ -2034,7 +2166,7 @@ mesh.
 
 --8<-- "generated/Channels-MeshChannels-drain.pseudo.md"
 
-<span id="lem-25-20"></span>**Lemma 25.20.** *Let a family of channels be
+<span id="lem-25-22"></span>**Lemma 25.22.** *Let a family of channels be
 used under the contracts of `Channels.h`, i.e., only the worker `from` pushes
 as `from`, only the worker `me` drains the inbox of `me`, and $f$ does not
 throw. Then (i) `tryPush( from , to , m )` pushes a prefix of $m$, the whole
@@ -2113,7 +2245,7 @@ al. 2017](Z-bibliography.md#ref-aldinucci2017)).
 `start( emit )` once, and then `onResult( r , emit )` on each result $r$,
 which returns false to stop the farm. Meanwhile the workers call `work( t )`
 on the tasks, and the farm returns when all the calls have returned
-([Algorithm 25.28](25-parallel.md#alg-25-28)).
+([Algorithm 25.29](25-parallel.md#alg-25-29)).
 
 The farm is declared as
 
@@ -2126,7 +2258,7 @@ void feedbackFarm( E & ex , std::size_t w , S && start , O && onResult ,
 
 with an overload for `FastFlowExecutor`, which runs the farm of FastFlow.
 
-<span id="alg-25-28"></span>**Algorithm 25.28.** The farm with feedback on
+<span id="alg-25-29"></span>**Algorithm 25.29.** The farm with feedback on
 the `run()` of an executor, and its emitter on a farm of FastFlow.
 
 --8<-- "generated/Farm-feedbackFarm.pseudo.md"
@@ -2167,7 +2299,7 @@ farm.
 | `TBBExecutor` | the call 0 of the run, on a thread of the arena (the caller or not) | the call $i + 1$, on a thread of the arena |
 | any, $w = 0$ | the caller, which is the master and the worker 0 | the caller |
 
-<span id="lem-25-21"></span>**Lemma 25.21.** *If `work()` returns on each
+<span id="lem-25-23"></span>**Lemma 25.23.** *If `work()` returns on each
 task and the master emits finitely many tasks, the farm ends; when it ends
 because no task is left, the master has seen the results of all the tasks it
 emitted.*
@@ -2203,7 +2335,7 @@ instead counted the messages sent and received, by waves that read the counters
 of all the processes.
 
 `Mailbox.h` solves it for the $p$ workers of a `run()` on any family of
-channels ([Algorithm 25.29](25-parallel.md#alg-25-29)). A worker `me` sends
+channels ([Algorithm 25.30](25-parallel.md#alg-25-30)). A worker `me` sends
 by `send( me , to , x )`, which appends $x$ to its *outbox* for `to`, and
 pushes the outbox as a batch when it holds `batch` messages (64 by default).
 Then `flush( me )` pushes all its outboxes, and `poll( me , f )` drains its
@@ -2289,7 +2421,7 @@ pool.run( 4 , [ & ]( std::size_t me ) {
  } );  // nodes is 131071
 ```
 
-<span id="alg-25-29"></span>**Algorithm 25.29.** The operations of
+<span id="alg-25-30"></span>**Algorithm 25.30.** The operations of
 `Mailbox`; $O_{\mathit{to}}$ is the outbox of the worker for `to`,
 $N_{\mathit{to}}$ its threshold, at first $\mathit{batch}$, and $C$ the
 shared counter.
@@ -2324,7 +2456,7 @@ batch of three messages, which adds 3 to the counter $C$ (3 at the start,
 all the workers active) before the messages enter the
 queue.](../figures/parallel-mailbox.svg){#fig-25-5}
 
-<span id="lem-25-22"></span>**Lemma 25.22.** *At any time*
+<span id="lem-25-24"></span>**Lemma 25.24.** *At any time*
 
 $$
 C \ge A + M , \tag{25.10}
@@ -2371,14 +2503,14 @@ the channels it builds (`channels()` gives them back), `size()` gives $p$, and
 pushed, the pushes that the channels took at least one message of, and the
 messages it drained.
 
-<span id="lem-25-23"></span>**Lemma 25.23.** *Let each worker whose
+<span id="lem-25-25"></span>**Lemma 25.25.** *Let each worker whose
 `quiescent()` returns false poll its inbox before it calls `quiescent()`
 again. Then each message retained in an outbox is pushed in finite time, and
-[Lemma 25.22](25-parallel.md#lem-25-22) holds as it is.*
+[Lemma 25.24](25-parallel.md#lem-25-24) holds as it is.*
 
 *Proof.* A worker with a message in an outbox fails its `flush()`, stays active
 and holds its activity in $C$. Hence, (25.10) and the argument of [Lemma
-25.22](25-parallel.md#lem-25-22) do not change: the retained messages are not
+25.24](25-parallel.md#lem-25-24) do not change: the retained messages are not
 in $M$, but their sender is in $A$. A queue is full only of messages pushed but
 not yet drained, and its receiver drains all its queues at each poll. By
 hypothesis, the workers poll between two calls of `quiescent()`, and therefore
@@ -2398,7 +2530,7 @@ the outboxes and those of the inboxes (`leftovers( me , f )` those left to the
 worker `me`, `leftovers( f )` those of all), which a search puts back into its
 frontier, where they bound the optimum of what was not explored.
 
-<span id="lem-25-24"></span>**Lemma 25.24.** *Whatever the moment of
+<span id="lem-25-26"></span>**Lemma 25.26.** *Whatever the moment of
 `stop()`, also during the sends and the polls of the workers, each message
 given to `send()` is handed to a function exactly once, by a `poll()` before
 the stop or by `leftovers()` after the run.*
@@ -2422,7 +2554,7 @@ quiescence before the next one starts. `rearm( active )`, called by one thread
 at the barrier, sets the activity of each worker `me` to `active( me )` and
 $C$ to the number of the active workers, and withdraws the stop; `rearm()`
 makes them all active, as the constructor does ([Algorithm
-25.30](25-parallel.md#alg-25-30)). We keep the channels and the outboxes,
+25.31](25-parallel.md#alg-25-31)). We keep the channels and the outboxes,
 i.e., the $p^2$ queues of the mesh with their buffers, so that a phase costs
 $O( p )$ instead of their construction. Its precondition is the quiescence of
 the computation before: the outboxes are empty, and either $C = 0$ or the
@@ -2433,15 +2565,15 @@ from its last call of the computation before `rearm()`, and makes its first
 call of the next one after it. Also, the counts of `sent()`, `batches()`,
 `merged()` and `received()` go on across the computations.
 
-<span id="alg-25-30"></span>**Algorithm 25.30.** `rearm()` of `Mailbox`,
+<span id="alg-25-31"></span>**Algorithm 25.31.** `rearm()` of `Mailbox`,
 with $\mathit{active}_{\mathit{me}}$ the activity of the worker
 $\mathit{me}$.
 
 --8<-- "generated/Mailbox-rearm.pseudo.md"
 
-<span id="lem-25-25"></span>**Lemma 25.25.** *Let `rearm()` be called at a
-barrier under its precondition. Then [Lemma 25.22](25-parallel.md#lem-25-22)
-and [Lemma 25.24](25-parallel.md#lem-25-24) hold for the computation that
+<span id="lem-25-27"></span>**Lemma 25.27.** *Let `rearm()` be called at a
+barrier under its precondition. Then [Lemma 25.24](25-parallel.md#lem-25-24)
+and [Lemma 25.26](25-parallel.md#lem-25-26) hold for the computation that
 follows it, with $A$ the workers made active.*
 
 *Proof.* Under the precondition no message exists: the outboxes are empty,
@@ -2468,7 +2600,7 @@ which gives the place of the last message of that key sent with a merge since
 the last push. If there is one, `merge( pending , x )` either merges $x$ into
 it and returns true, or returns false; in the second case, as when the key is
 not found, $x$ is appended and becomes the last of its key ([Algorithm
-25.31](25-parallel.md#alg-25-31)). A merge with no result always merges, and
+25.32](25-parallel.md#alg-25-32)). A merge with no result always merges, and
 one probe of the map serves both the search and the update. Note that a push
 that the channel takes $j > 0$ messages of shifts the rest of the outbox by
 $j$ places, and therefore empties the map, while a push of which the channel
@@ -2482,7 +2614,7 @@ that no merge moves a message of the key ahead of $x$; with `NoCoalescing`
 the plain `send()` makes no probe, and its instructions are those it had
 before the policies existed.
 
-<span id="alg-25-31"></span>**Algorithm 25.31.** `send()` with a merge, with
+<span id="alg-25-32"></span>**Algorithm 25.32.** `send()` with a merge, with
 $S_{\mathit{to}}$ the map of the outbox for `to` and $\kappa$ the key, and
 `audit()` of `Mailbox`.
 
@@ -2490,7 +2622,7 @@ $S_{\mathit{to}}$ the map of the outbox for `to` and $\kappa$ the key, and
 
 --8<-- "generated/Mailbox-audit.pseudo.md"
 
-<span id="lem-25-26"></span>**Lemma 25.26.** *Let the merges be made by
+<span id="lem-25-28"></span>**Lemma 25.28.** *Let the merges be made by
 `send()` with a merge whose function does not throw and does not change the
 key of the message pending. Then (i) the map gives, for each key, either
 the place of the last message of that key sent with a merge since the last
@@ -2498,9 +2630,9 @@ push that took a message, if it is still in the outbox and no message of
 that key was sent without a merge after it, or $\bot$ if one was, and no
 other place; hence, a message of a key is never merged into one sent before
 a message of the same key sent without a merge. (ii)
-[Lemma 25.22](25-parallel.md#lem-25-22), [Lemma
-25.23](25-parallel.md#lem-25-23) and [Lemma 25.25](25-parallel.md#lem-25-25)
-hold as they are, and [Lemma 25.24](25-parallel.md#lem-25-24) holds with
+[Lemma 25.24](25-parallel.md#lem-25-24), [Lemma
+25.25](25-parallel.md#lem-25-25) and [Lemma 25.27](25-parallel.md#lem-25-27)
+hold as they are, and [Lemma 25.26](25-parallel.md#lem-25-26) holds with
 each message given to `send()` either handed once or merged into a message
 handed once. (iii) A message $x$ merged into a pending message $y$ reaches
 the receiver with $y$, in a batch pushed after the call that sent $x$.*
@@ -2517,7 +2649,7 @@ before a shifted place can be read, one that takes none moves no message, and
 before its push, so that the messages of an outbox are not in $C$ (cf.
 (25.10)). A merge removes $x$ before it is counted, and leaves $y$ uncounted
 where it was; $C$, $A$ and $M$ do not change, and the argument of [Lemma
-25.22](25-parallel.md#lem-25-22) stays as it is. Also, a `flush()` faces an
+25.24](25-parallel.md#lem-25-24) stays as it is. Also, a `flush()` faces an
 outbox no longer than without the merge, and succeeds no later. After a stop
 the merges go on in the outboxes, which `leftovers()` hands as they are. When
 the outboxes are empty the maps are empty by (i), and `rearm()` thus leaves no
@@ -2554,7 +2686,7 @@ a recomputation. Below the level of the audits the call compiles to no code;
 after a stop, `leftovers()` comes first, since the audit drains the inboxes to
 check them.
 
-<span id="lem-25-27"></span>**Lemma 25.27.** *Let `audit()` be called at a
+<span id="lem-25-29"></span>**Lemma 25.29.** *Let `audit()` be called at a
 barrier, after each worker has returned from its last call of the
 computation and before any makes its first call of the next one. If its
 precondition holds, the predicate reads the state that the workers left,
@@ -2582,7 +2714,7 @@ A table of the states that declares `nonmonotone_values< T >`
 `ConcurrentCuckooTable` does, by the version of its region, so that a value
 which holds the distance and the parent together needs no further
 discipline; a table without it is read only at the barriers, where
-[Lemma 25.27](25-parallel.md#lem-25-27) applies. The frontier of a worker,
+[Lemma 25.29](25-parallel.md#lem-25-29) applies. The frontier of a worker,
 over the states that it owns, may in turn be a `TableHeap`
 ([§1.15.5](01-introduction.md#sec-1-15-5)), which reads the keys from the
 owned part of the table and gives a band of them by `extract()`, as the

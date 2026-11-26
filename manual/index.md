@@ -1,9 +1,12 @@
-# ADS — A User Manual
+# ADS: Algorithms and Data Structures,<br>and Advanced ones
 
-**Donato Meoli**
-*Dipartimento di Informatica, Università di Pisa*
+A User Manual
 
-*Version 0.1 — for ADS 0.1.0 (November 2026)*
+**Donato Meoli**  
+*Dipartimento di Informatica, Università di Pisa*  
+`donato.meoli@outlook.com`
+
+*Version 0.1.0 (November 2026)*
 
 ---
 

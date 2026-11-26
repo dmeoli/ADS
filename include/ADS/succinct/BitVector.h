@@ -318,20 +318,31 @@ concept RankSelectBits = requires( const R & r , std::size_t i )
  { r.rank1( i ) } -> std::convertible_to< std::size_t >;
  };
 
-/// the 1s among the first \f$ p < 512 \f$ bits of the line of 8 words at
-/// \f$ w \f$, aligned to 32 bytes: one kernel, its variant chosen by the
-/// instruction set (`Scalar` asks for the scalar one)
+/// the 1s among the first \f$ p < 512 \, \mathit{Lines} \f$ bits of the
+/// \f$ \mathit{Lines} \f$ lines of 8 words at \f$ w \f$, aligned to 32
+/// bytes: one kernel, its variant chosen by the instruction set (`Scalar`
+/// asks for the scalar one)
 ///
-/// With `ADS_WITH_HIGHWAY`, the 8 words are cut at \f$ p \f$ and counted
-/// a vector at a time, the masks of the words made from the lanes of
-/// \f$ \mathrm{clamp}( p - 64 i , 0 , 64 ) \f$ [see `SimdInline.h`]; else
-/// the words before the one of \f$ p \f$ are counted under a mask of all
-/// 1s or all 0s and that one under the mask of its \f$ p \bmod 64 \f$ low
-/// bits, with no branch. The words may lie past the size of the bits,
-/// which is why they are read whole [see `BitVector`].
-/// \pre \f$ p < 512 \f$
-template< bool Scalar = false >
+/// With `ADS_WITH_HIGHWAY`, the 8 words of a line are cut at \f$ p \f$ and
+/// counted a vector at a time, the masks of the words made from the lanes
+/// of \f$ \mathrm{clamp}( p - 64 i , 0 , 64 ) \f$ [see `SimdInline.h`];
+/// else the words before the one of \f$ p \f$ are counted under a mask of
+/// all 1s or all 0s and that one under the mask of its \f$ p \bmod 64 \f$
+/// low bits, with no branch. With more lines, the line of \f$ p \f$ is cut
+/// so and the lines before it are counted whole by `lineCount()` below,
+/// each line past it being read again in place of the line of \f$ p \f$
+/// and counted under a mask of 0s, so that no line past the one of
+/// \f$ p \f$ is read and there is no branch. The words of a line may lie
+/// past the size of the bits, which is why they are read whole [see
+/// `BitVector`].
+/// \pre \f$ p < 512 \, \mathit{Lines} \f$
+template< bool Scalar = false , unsigned Lines = 1 >
 [[nodiscard]] std::size_t lineRank( const Word * w , unsigned p );
+
+/// the 1s of the line of 8 words at \f$ w \f$, aligned to 32 bytes, by the
+/// kernel of `lineRank()` above
+template< bool Scalar = false >
+[[nodiscard]] std::size_t lineCount( const Word * w );
 
 /// the words \f$ [ w_0 , w_1 ) \f$ of the bits of a directory at \f$ P \f$,
 /// copied first from \f$ w \f$ of \f$ n \f$ bits if \f$ w \f$ is not null

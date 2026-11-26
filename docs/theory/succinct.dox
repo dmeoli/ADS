@@ -114,7 +114,7 @@
 
  \section theory_succinct_repr Realizations and their costs
 
- The vectors of bits with rank and select are five, which trade the space
+ The vectors of bits with rank and select are six, which trade the space
  of the directory against the number of accesses to the memory of a query.
 
  <table>
@@ -139,6 +139,12 @@
      <td>\f$ O( 1 ) \f$, one line</td>
      <td>\f$ O( 1 ) \f$ when the bits are spread evenly, the lines between
          two samples in the worst case</td></tr>
+ <tr><td><tt>TinyRankSelect</tt></td>
+     <td>0.78125% for the rank, and a few hundredths of a percent for the
+         select of each value when the bits are spread evenly</td>
+     <td>\f$ O( 1 ) \f$, one entry and up to the 4 lines of a block</td>
+     <td>\f$ O( 1 ) \f$, at most 3 fields of the tree and a binary search
+         of 4 steps on the entries</td></tr>
  <tr><td><tt>RRRBitVector</tt></td>
      <td>the whole vector in \f$ m H_0( B ) + 0.175 m \f$ bits</td>
      <td>\f$ O( 32 + b ) \f$, blocks of \f$ b = 63 \f$ bits</td>
@@ -291,9 +297,34 @@
  \f$ 127 - k \f$ to each, and the first marked byte, found by the trailing
  zeros, holds the bit, which is found inside it by clearing its lower 1s.
 
+ `TinyRankSelect` follows the 3\f$ \star \f$ of Kurpicz, Rigi-Luperti and
+ Sanders, which closes most of the gap between the bounds above and
+ practice: superblocks of \f$ L = 32 L_0 \f$ bits with an entry of 512
+ bits each (the count of the superblock and the counts of its 32 blocks),
+ \f$ 512 / L \f$ of the bits, and a select through a tree of samples of
+ three levels. <em>Lemma 2 (the tree of samples).</em> Let \f$ T[ j ] \f$
+ be the superblock of the bit \f$ b \f$ of rank \f$ j a \f$ (of the last
+ one for the last \f$ j \f$), \f$ N \f$ the number of the last superblock,
+ and call long a range \f$ [ T[ j ] , T[ j + 1 ] ] \f$, or a range of the
+ middle level inside it, of \f$ \alpha \f$ or more superblocks; then there
+ are at most \f$ N / \alpha \f$ long ranges at the top level and at most
+ \f$ N / \alpha \f$ at the middle level, and the range that the select
+ reaches spans fewer than \f$ \alpha \f$ superblocks.
+ Indeed, \f$ T \f$ is nondecreasing, so that the lengths of its ranges sum
+ to \f$ T[ t ] - T[ 0 ] \le N \f$, and the ranges of the middle level of a
+ long range sum to its length; a long range of either level is split by
+ the level below it, and the bottom level gives the superblock itself.
+ Hence the middle level takes at most \f$ N / \alpha \f$ groups of
+ \f$ a / b' + 1 \f$ fields and the bottom one at most \f$ N / \alpha \f$
+ groups of \f$ b' \f$ fields, each field of at most
+ \f$ \lceil \log_2( N + 1 ) \rceil \f$ bits plus the count of the long
+ ranges before it, and the select reads at most 3 fields of the tree and
+ ends by a binary search of at most \f$ \lceil \log_2 \alpha \rceil = 4 \f$
+ steps on the entries, which is \f$ O( 1 ) \f$ time in the worst case.
+
  \section theory_succinct_compressed Compressed vectors and Elias-Fano
 
- <em>Lemma 2 (the combinatorial number system).</em> The vectors of
+ <em>Lemma 3 (the combinatorial number system).</em> The vectors of
  \f$ b \f$ bits with \f$ c \f$ 1s at the places
  \f$ p_1 < \cdots < p_c \f$ are numbered from 0 to
  \f$ \binom{b}{c} - 1 \f$ by
@@ -757,6 +788,9 @@
  \see S. Vigna, Broadword implementation of rank/select queries, Proc.
       WEA 2008, LNCS 5038, 154-168, 2008,
       doi:10.1007/978-3-540-68552-4_12
+ \see F. Kurpicz, N. Rigi-Luperti, P. Sanders, Theory meets practice for
+      bit vectors supporting rank and select, arXiv:2509.17819, 2025,
+      doi:10.48550/arXiv.2509.17819
  \see F. Kurpicz, Engineering compact data structures for rank and select
       queries on bit vectors, Proc. 29th SPIRE, LNCS 13617, 257-272, 2022,
       doi:10.1007/978-3-031-20643-6_19

@@ -5,7 +5,9 @@
 `RoaringBitmap.h`, `SortedIntersection.h`, `VectorIntersection.h`,
 `BloomFilter.h`, `BloomVariants.h`, `BlockedBloomFilter.h`,
 `CuckooFilter.h`, `PrefixFilter.h`, `BinaryFuseFilter.h`, `RibbonFilter.h`,
-`GrafiteFilter.h`, `SpaceEfficientSortedSet.h`; `SetInterfaces.h` and
+`GrafiteFilter.h`, `SpaceEfficientSortedSet.h`, `CountMinSketch.h`,
+`MinHashSketch.h`, `include/ADS/parallel/ParallelSketch.h`;
+`SetInterfaces.h` and
 `Bag.h` are described in [Chapter 1](01-introduction.md#ch-1)]
 
 We are concerned in this chapter with the SET, i.e., a finite collection of
@@ -25,12 +27,16 @@ of [Ferragina 2023, chapter 6](Z-bibliography.md#ref-ferragina2023)
 that may answer yes for an item that they do not hold, in exchange for a
 space that does not depend on the items ([§10.7](10-set.md#sec-10-7) to
 [§10.10](10-set.md#sec-10-10)), together with the filters of ranges of
-[§10.11](10-set.md#sec-10-11). In the sets of
+[§10.11](10-set.md#sec-10-11) and the sketches of streams of
+[§10.12](10-set.md#sec-10-12), which estimate the frequencies and the
+similarity of a stream in a space that grows at most with the logarithm of
+its length. In the sets of
 [§1.9](01-introduction.md#sec-1-9), `BinaryFuseFilter.h`,
-`BlockedBloomFilter.h`, `CuckooFilter.h`, `GrafiteFilter.h`,
-`PrefixFilter.h`, `RibbonFilter.h`, `RoaringBitmap.h` and
-`VectorIntersection.h` are advanced and the other headers of this chapter
-are base.
+`BlockedBloomFilter.h`, `CountMinSketch.h`, `CuckooFilter.h`,
+`GrafiteFilter.h`, `MinHashSketch.h`, `PrefixFilter.h`, `RibbonFilter.h`,
+`RoaringBitmap.h`, `VectorIntersection.h` and `ParallelSketch.h` are
+advanced and the other
+headers of this chapter are base.
 
 ## 10.1 The interface {#sec-10-1}
 
@@ -2207,7 +2213,285 @@ slower queries; Oasis ([Chen et al. 2024](Z-bibliography.md#ref-chen2024)),
 a learned filter of segments, shares the weakness of the learned filters
 on correlated queries.
 
-## 10.12 Discussion and references {#sec-10-12}
+## 10.12 Sketches of streams {#sec-10-12}
+
+A filter answers a question about one item; a *sketch* answers instead a
+question about the stream that went into it (e.g., how often an item occurred,
+or how similar two sets are). Its space typically grows with the accuracy
+required and (at most) with the logarithm of the length of the stream. We are
+concerned with sketches that are *mergeable* in the sense of [Agarwal et al.
+2013](Z-bibliography.md#ref-agarwal2013), i.e., two sketches of two streams
+combine into a sketch of their concatenation with the guarantee of one built on
+it. The library uses this property in two ways. First, the sketches of the
+parts of a dataset kept on different machines, or written to files
+([§23.7](23-external.md#sec-23-7)), may be merged later; also, a large stream
+may be cut into blocks, whose sketches are built in parallel and then merged
+(cf. [§10.12.3](10-set.md#sec-10-12-3)). We follow the survey of [Cormode and
+Yi 2020](Z-bibliography.md#ref-cormode2020) for the common setting, in which
+the items are hashed to independent uniform words of 64 bits. A hash of the
+library meets this assumption on random keys, but not necessarily on structured
+ones. In fact, the folded product of `FastHash`
+([§7.3.6](07-dictionary.md#sec-7-3-6)) maps consecutive integers to the
+multiples of a constant modulo $2^{64}$, whose top bits form a sequence of low
+discrepancy, far from independent words. Hence, all the sketches of this
+section finish the hash of `FastHash` by the mixer of SplitMix64
+([§7.3.4](07-dictionary.md#sec-7-3-4)), which costs a few cycles and makes
+those sequences look random.
+
+### 10.12.1 Frequencies: the Count-Min and the Count sketch {#sec-10-12-1}
+
+The Count-Min sketch of [Cormode and Muthukrishnan
+2005](Z-bibliography.md#ref-cormode2005) keeps $d$ rows of $w$ counters, and an
+item adds its count to one counter per row, chosen by a hash of the row. Since
+the counters of an item are also raised by the other items that fall on them,
+each one overestimates the frequency $f_x$ of the item, and the least of them
+is the estimate. The Count sketch of [Charikar et al.
+2004](Z-bibliography.md#ref-charikar2004) adds instead $\pm c$, by a random
+sign of the row, and the other items cancel in expectation. It estimates $f_x$
+by the median of the $d$ signed counters, with an error relative to the norm
+$\| f \|_2$ instead of $N = \| f \|_1$ (much smaller on flat streams, and close
+to it on skewed ones, at the price of the counters of any sign). The
+conservative update of [Estan and Varghese
+2002](Z-bibliography.md#ref-estan2002) raises each counter of an item only up
+to the new estimate. Furthermore, the $d$ counters of an item come from one
+hash $h$ by the double hashing of [Kirsch and Mitzenmacher
+2006](Z-bibliography.md#ref-kirsch2006). In particular, the row $i$ takes $g_i
+= h + i h'$ modulo $2^{64}$, with $h'$ an odd hash of $h$, and its counter is
+the high half of $g_i w$ on 128 bits (the reduction of [Lemire
+2019](Z-bibliography.md#ref-lemire2019)); the sign of the Count sketch is the
+top bit of the low half.
+
+--8<-- "generated/CountMinSketch-insertHash.pseudo.md"
+
+--8<-- "generated/CountMinSketch-CountSketch-insertHash.pseudo.md"
+
+<span id="lem-10-24"></span>**Lemma 10.24.** *Let $f$ be the frequencies of the
+stream and $N = \sum_x f_x$. (i) The plain and the conservative estimates of
+`CountMinSketch` are at least $f_x$, and each counter of the conservative
+update is at most the same counter of the plain one. (ii) If the counters of an
+item in the $d$ rows are independent and each is uniform and pairwise
+independent of those of the other items, then with $w = \lceil e / \varepsilon
+\rceil$ and $d = \lceil \ln( 1 / \delta ) \rceil$ (the shape of `forError()`)
+the estimate exceeds $f_x + \varepsilon N$ with probability at most $\delta$,
+for either update. (iii) Under the same hypotheses, with the signs uniform and
+pairwise independent, each row of `CountSketch` gives $f_x$ in expectation,
+with a variance of at most $\sum_{y \ne x} f_y^2 / w$, and the median of $d$
+rows differs from $f_x$ by more than $\sqrt{3 / w} \, \| f \|_2$ with
+probability at most $e^{-d / 18}$. (iv) The merge of two plain Count-Min
+sketches, or of two Count sketches, gives the counters of the sketch of the
+concatenation of their streams; that of two conservative ones gives counters
+between the frequencies and the plain counters of the concatenation.*
+
+*Proof.* (i) By induction on the insertions: a plain counter is the sum of the
+counts of the items that fall on it, and that of $x$ is among them. In the
+conservative update of $x$ by $c$ (line 4), $e = \min_i C[ i ][ j_i ] + c$ is
+at least the old $f_x$ plus $c$ by the induction. Each counter of $x$ then
+becomes at least $e$, while the counters of the other items do not decrease.
+Also, $e \le C[ i ][ j_i ] + c$ for each row $i$, and hence a conservative
+counter grows by at most the $c$ by which the plain one grows. (ii) The excess
+of the counter of a row is the sum of the counts of the other items on it,
+whose expectation is at most $N / w \le \varepsilon N / e$. By the inequality
+of Markov it exceeds $\varepsilon N$ with probability at most $1 / e$, and the
+least of $d$ independent rows does so with probability at most $e^{-d} \le
+\delta$; (i) extends the bound to the conservative update. (iii) The error of a
+row is $\sum_{y \ne x} s( x ) s( y ) f_y [ j( y ) = j( x ) ]$, of mean 0 by the
+signs, and its variance is $\sum_{y \ne x} f_y^2 / w$ by the pairwise
+independence. By the inequality of Chebyshev, a row errs by more than $\sqrt{3
+/ w} \, \| f \|_2$ with probability at most $1 / 3$. The median errs only if
+half of the rows do, which by the inequality of Hoeffding has probability at
+most $e^{-2 d ( 1 / 2 - 1 / 3 )^2} = e^{-d / 18}$. (iv) The plain and the
+signed counters are sums of the counts (signed in the Count sketch), and the
+sum of two such sums is the sum over the concatenation. For the conservative
+update, (i) bounds each sketch, and the bounds add. $\square$
+
+Note that the double hashing gives rows that are pairwise distinct with high
+probability, but not independent ones. Hence, the lemma holds for it only in
+the measure in which its counters behave as independent ones (which [Kirsch and
+Mitzenmacher 2006](Z-bibliography.md#ref-kirsch2006) show for the filters of
+Bloom). In the library, the tests `sketches.count-min` and
+`sketches.count-sketch` check the bounds of (ii) and (iii) on a stream of a
+Zipf law. The Count sketch also estimates the second moment $\| f \|_2^2$
+(`secondMoment()`) by the median over the rows of the sums of the squares of
+their counters. Each of these sums is the estimator of Alon, Matias and Szegedy
+with the signs of the row.
+
+```cpp
+// declarations of <ADS/set/CountMinSketch.h>
+template< class T , class C = std::uint64_t , class H = DefaultHash< T > >
+class CountMinSketch
+{
+ public:
+ CountMinSketch( std::size_t w , std::size_t d ,
+                 CountMinUpdate u = CountMinUpdate::plain , H h = H() );
+ static CountMinSketch
+ forError( double epsilon , double delta ,
+           CountMinUpdate u = CountMinUpdate::plain , H h = H() );
+ void insert( const T & x , C c = 1 );
+ void insertHash( std::uint64_t h , C c = 1 );
+ C estimate( const T & x ) const;
+ C estimateHash( std::uint64_t h ) const;
+ void merge( const CountMinSketch & o );
+ C total( void ) const;
+ std::size_t width( void ) const;
+ std::size_t depth( void ) const;
+ CountMinUpdate update( void ) const;
+ double errorBound( void ) const;
+ void clear( void );
+ bool empty( void ) const;
+ };
+```
+
+```cpp
+// declarations of <ADS/set/CountMinSketch.h>
+template< class T , class C = std::int64_t , class H = DefaultHash< T > >
+class CountSketch
+{
+ public:
+ CountSketch( std::size_t w , std::size_t d , H h = H() );
+ void insert( const T & x , C c = 1 );
+ void insertHash( std::uint64_t h , C c = 1 );
+ double estimate( const T & x ) const;
+ double estimateHash( std::uint64_t h ) const;
+ double secondMoment( void ) const;
+ void merge( const CountSketch & o );
+ std::size_t width( void ) const;
+ std::size_t depth( void ) const;
+ void clear( void );
+ };
+```
+
+### 10.12.2 Similarity: minwise hashing by one permutation {#sec-10-12-2}
+
+The minwise hashing of [Broder 1997](Z-bibliography.md#ref-broder1997)
+estimates the similarity of Jaccard $J = | A \cap B | / | A \cup B |$ of two
+sets by the fraction of $K$ independent hashes whose least values over the two
+sets agree, since each of them agrees with probability $J$. Its cost is $K$
+hashes per item. The hashing by one permutation of [Li et al.
+2012](Z-bibliography.md#ref-li2012) cuts the range of one hash into $K$ bins
+and keeps the least value of each bin, at one hash per item. However, a set of
+fewer items than about $K \ln K$ usually leaves some bins empty, and an empty
+bin has no value to compare. The optimal densification of [Shrivastava
+2017](Z-bibliography.md#ref-shrivastava2017) fills each empty bin $i$ with the
+value of the first nonempty bin of a sequence $\pi( i , 1 ) , \pi( i , 2 ) ,
+\ldots$ of random bins, the same for all the sets of a seed. In
+`MinHashSketch`, the bin of a hash $h$ is the high half of $h K$ on 128 bits,
+and its value is the top 63 bits of the low half; an empty bin holds $2^{64} -
+1$, which no value equals. It keeps the raw bins, which merge by their
+least values, and densifies them only in `signature()`.
+
+--8<-- "generated/MinHashSketch-insertHash.pseudo.md"
+
+--8<-- "generated/MinHashSketch-signature.pseudo.md"
+
+<span id="lem-10-25"></span>**Lemma 10.25.** *(i) The bins of a `MinHashSketch`
+depend only on the set of the distinct hashes inserted, and `A.merge( B )`
+gives the bins of the sketch of $A \cup B$. (ii) Let the bins and the values of
+the distinct items be independent and uniform, let the sequences $\pi$ be
+independent of them, and let no two items of $A \cup B$ have the same value.
+Then for each place $i$ the signatures of two nonempty sets $A$ and $B$ of the
+same seed agree with probability exactly $J$. (iii) `insertHash()` costs $O( 1
+)$ time, `merge()` $O( K )$, and `signature()` $O( K + E K / F )$ expected time
+for $E$ empty and $F$ nonempty bins.*
+
+*Proof.* (i) A bin holds the least of the values of the hashes that fall into
+it (line 3 of `insertHash()`), and the least of a union is the least of the two
+least values. (ii) Let $j_0 = i$ and $j_a = \pi( i , a )$, and let $t$ be the
+first index for which the bin $j_t$ is nonempty in $A \cup B$, which exists
+since the sets are not empty. The bins $j_0 , \ldots , j_{t - 1}$ are empty in
+both sets. Let $y$ be the item of $A \cup B$ of least value in the bin $j_t$.
+If $y \in A \cap B$, the bin $j_t$ is nonempty in both sets with the value of
+$y$ in both, and both signatures take it at the place $i$. If $y \in A
+\setminus B$, $A$ takes the value of $y$, and $B$ takes the value of another
+item (from $j_t$ or a later bin), which differs by the hypothesis; likewise for
+$y \in B \setminus A$. By the symmetry of the uniform hashes among the items of
+$A \cup B$, given the bins of the union and the sequence, $y$ is uniform over
+$A \cup B$, and it lies in $A \cap B$ with probability $J$. (iii) Each probe of
+an empty bin finds a nonempty one with probability $F / K$, and hence the
+densification of an empty bin takes $K / F$ probes in expectation. $\square$
+
+Two distinct items of 63 random bits have the same value with probability
+$2^{-63}$, and the hypothesis of (ii) fails with probability at most $| A \cup
+B |^2 / 2^{64}$. Of course, when many bins are empty the variance of the
+estimate is somewhat larger than that of $K$ independent minima, $J ( 1 - J ) /
+K$, since these bins copy their values from few nonempty ones. [Shrivastava
+2017](Z-bibliography.md#ref-shrivastava2017) shows that his choice of
+independent bins keeps it below that of the earlier densifications, which
+borrow from the next nonempty bin in a fixed direction. The test
+`sketches.minhash-jaccard` checks the mean of 300 estimates against $J$ for
+sets of 20 to $10^4$ items, and their spread against $J ( 1 - J ) / K$ at
+$10^4$ items.
+
+```cpp
+// declarations of <ADS/set/MinHashSketch.h>
+template< class T , class H = DefaultHash< T > >
+class MinHashSketch
+{
+ public:
+ static constexpr std::uint64_t kEmpty = ~std::uint64_t( 0 );
+ explicit MinHashSketch( std::size_t K = 256 , std::uint64_t seed = 0 ,
+                         H h = H() );
+ void insert( const T & x );
+ void insertHash( std::uint64_t h );
+ void merge( const MinHashSketch & o );
+ std::vector< std::uint64_t > signature( void ) const;
+ double jaccard( const MinHashSketch & o ) const;
+ std::size_t bins( void ) const;
+ std::size_t filled( void ) const;
+ bool empty( void ) const;
+ const std::vector< std::uint64_t > & state( void ) const;
+ void clear( void );
+ };
+```
+
+### 10.12.3 Parallel construction {#sec-10-12-3}
+
+A sketch whose merge gives the sketch of the concatenation of two streams may
+be built in parallel by cutting the stream into blocks, filling one copy of the
+empty sketch per block, and merging the copies. `parallelSketch()` does so on
+the blocks of `parallelReduce()` ([§25.6](25-parallel.md#sec-25-6)), which
+depend only on the number of the items and on the grain:
+
+--8<-- "generated/ParallelSketch-parallelSketch.pseudo.md"
+
+<span id="lem-10-26"></span>**Lemma 10.26.** *For `CountMinSketch` with the
+plain update, for `CountSketch` and for `MinHashSketch`, `parallelSketch()`
+returns the sketch that the insertions of the items in their order make,
+counter by counter, on every executor.*
+
+*Proof.* The merge of these sketches is the sum or the least value, counter by
+counter (cf. Lemmas 10.24 and 10.25), and these operations are associative and
+commutative. $\square$
+
+A conservative Count-Min sketch built in parallel gets counters between the
+frequencies and those of the plain update (cf. Lemma 10.24 (iv)). Hence, it
+keeps the bound of the plain update, although its counters may differ from
+those of the sequential sketch. A randomized sketch with a method `reseed()`
+gets in each block a copy reseeded by the index of its first item, since
+copies of one generator would flip the same coins on all the blocks.
+
+```cpp
+// declarations of <ADS/parallel/ParallelSketch.h>
+template< Executor E , std::random_access_iterator I , class S >
+ requires MergeableSketch< S , I >
+S parallelSketch( E & ex , I first , I last , const S & s ,
+                  std::size_t grain = kGrain );
+```
+
+```cpp
+ADS::CountMinSketch< std::uint64_t > C( 2719 , 5 );
+ADS::MinHashSketch< std::uint64_t > A( 256 ) , B( 256 );
+for( std::uint64_t i = 0 ; i < 100000 ; ++i ) {
+ C.insert( i % 1000 );
+ A.insert( i );
+ B.insert( i + 50000 );
+ }
+const auto often = C.estimate( 7 );  // at least 100
+const double J = A.jaccard( B );     // about 1 / 3
+( void )often;
+( void )J;
+```
+
+## 10.13 Discussion and references {#sec-10-13}
 
 The realizations of [§10.2](10-set.md#sec-10-2) to [§10.4](10-set.md#sec-10-4),
 with their exercises, are those of chapter 8 of [Montresor
@@ -2234,8 +2518,18 @@ intersections and of the filters with the best implementations available
 (CRoaring, the libraries of the filters of their authors) belongs to the
 campaign of Appendix B; we give no number here.
 
+The sketches of [§10.12](10-set.md#sec-10-12) and their analyses are surveyed
+by [Cormode and Yi 2020](Z-bibliography.md#ref-cormode2020). The theta
+sketches of DataSketches ([Apache
+DataSketches](Z-bibliography.md#ref-datasketches)) estimate the similarity of
+Jaccard, and the unions, the intersections and the differences of sets, from
+the least hashes of each set below a threshold. The comparison of the sketches
+with the theta and the Count-Min sketches of DataSketches belongs to Appendix
+B.
+
 The filters of [§10.7](10-set.md#sec-10-7) to
-[§10.11](10-set.md#sec-10-11) are persistent
+[§10.11](10-set.md#sec-10-11) and the sketches of
+[§10.12](10-set.md#sec-10-12) are persistent
 ([§23.7](23-external.md#sec-23-7)). Thus a filter built once on the keys of
 a database may be written by `store()` and opened by `restoreMapped()`,
 with its blocks, buckets, lines and fingerprints viewed in the mapping;
@@ -2246,7 +2540,7 @@ standard library, since the values of `std::hash` depend on its
 implementation. Those on `FastHash` are read in the same way on any
 machine.
 
-## 10.13 Exercises {#sec-10-13}
+## 10.14 Exercises {#sec-10-14}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
@@ -2310,3 +2604,14 @@ Each exercise names the test of the library that solves it (run it with
 21. Build the range filter Grafite, and check its bound on correlated
     queries, where the bucketing filter fails. Tests:
     `hashing.grafite-filter`, `hashing.bucketing-filter`.
+22. Estimate the frequencies of a stream of a Zipf law by the Count-Min
+    sketch, with the plain and the conservative update, and by the Count
+    sketch, and check the bounds of Lemma 10.24. Tests: `sketches.count-min`,
+    `sketches.count-sketch`.
+23. Estimate the similarity of Jaccard by the minwise hashing of one
+    permutation with the optimal densification, and check that the estimate
+    has no bias on sets with many empty bins. Tests:
+    `sketches.minhash-jaccard`, `sketches.minhash-edges`.
+24. Build the sketches of a stream in parallel by the merges of the sketches
+    of its blocks, equal to the sequential ones. Test:
+    `sketches.parallel-sketch`.

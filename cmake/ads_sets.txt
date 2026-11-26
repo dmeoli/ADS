@@ -106,13 +106,18 @@ concurrent/Backoff.h                  advanced
 concurrent/ConcurrentCuckooTable.h    advanced
 concurrent/ConcurrentFlatTable.h      advanced
 concurrent/ConcurrentUnionFind.h      advanced
+concurrent/EpochReclaim.h             advanced
 concurrent/EventCount.h               advanced
+concurrent/HazardPointer.h            advanced
 concurrent/LockFreePriorityQueue.h    advanced
+concurrent/LockFreeQueue.h            advanced
+concurrent/LockFreeStack.h            advanced
 concurrent/MPMCQueue.h                advanced
 concurrent/MPSCInbox.h                advanced
 concurrent/MPSCQueue.h                advanced
 concurrent/MinBoard.h                 advanced
 concurrent/MultiQueue.h               advanced
+concurrent/Reclaim.h                  advanced
 concurrent/SPSCQueue.h                advanced
 concurrent/SingleWriterFlatTable.h    advanced
 concurrent/StealablePriorityQueue.h   advanced
@@ -140,6 +145,7 @@ dictionary/PatriciaTrie.h             base
 dictionary/PerfectHashing.h           base
 dictionary/PointerTable.h             advanced
 dictionary/PositionIndex.h            advanced
+dictionary/PtrHash.h                  advanced
 dictionary/RandomHashing.h            core     SplitMix64 and the universal
                                                hashing of the randomized
                                                structures
@@ -181,6 +187,8 @@ graph/AllPairsShortestPaths.h         base
 graph/ArrayGraph.h                    base     the vectors of adjacency of
                                                section 9.4
 graph/Assignment.h                    advanced
+graph/Biconnectivity.h                advanced the blocks by one visit, with
+                                               no stack of edges
 graph/BlossomMatching.h               advanced the blossoms of
                                                Matching.h, split off it
 graph/EulerianCycle.h                 base
@@ -312,11 +320,13 @@ parallel/Farm.h                       advanced
 parallel/FastFlowExecutor.h           advanced ?ADS_WITH_FASTFLOW
 parallel/Mailbox.h                    advanced
 parallel/OpenMPExecutor.h             advanced ?_OPENMP
+parallel/ParallelBiconnectivity.h     advanced
 parallel/ParallelGraph.h              advanced
 parallel/ParallelGreedy.h             advanced
 parallel/ParallelMerge.h              advanced
 parallel/ParallelNumeric.h            advanced
 parallel/ParallelShortestPaths.h      advanced
+parallel/ParallelSketch.h             advanced
 parallel/ParallelSort.h               advanced
 parallel/ParallelText.h               advanced
 parallel/Scratch.h                    advanced
@@ -407,12 +417,14 @@ set/BlockedBloomFilter.h              advanced
 set/BloomFilter.h                     base
 set/BloomVariants.h                   base
 set/BoolSet.h                         base
+set/CountMinSketch.h                  advanced
 set/CuckooFilter.h                    advanced
 set/DictionarySet.h                   base
 set/GrafiteFilter.h                   advanced
 set/HashMultiset.h                    base
 set/LinkedHashSet.h                   base
 set/ListSet.h                         base
+set/MinHashSketch.h                   advanced
 set/PrefixFilter.h                    advanced
 set/RibbonFilter.h                    advanced
 set/RoaringBitmap.h                   advanced
@@ -506,6 +518,7 @@ succinct/PackedArray.h                advanced
 succinct/PartitionedEliasFano.h       advanced
 succinct/RRRBitVector.h               advanced beyond the notes, for speed
 succinct/RankSelect.h                 base     Ferragina's notes, even if fast
+succinct/TinyRankSelect.h             advanced beyond the notes, for space
 succinct/WaveletMatrix.h              advanced
 
 tree/AVLTree.h                        base

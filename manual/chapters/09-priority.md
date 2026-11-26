@@ -1029,8 +1029,8 @@ E \le 1 + \tfrac{1}{2} \log_2( n_1 + 1 ) + \tfrac{1}{2} \log_2( n_2 + 1 )
 \le 1 + \log_2 \frac{n_1 + n_2 + 2}{2} = \log_2( n + 1 ) ,
 $$
 
-by the concavity of the logarithm, $( \log a + \log b ) / 2 \le \log ( ( a
-+ b ) / 2 )$. $\square$
+by the concavity of the logarithm, $( \log a + \log b ) / 2 \le \log ( (
+a + b ) / 2 )$. $\square$
 
 A second proof, also in [Morin 2013, §10.2](Z-bibliography.md#ref-morin-cpp),
 goes through the entropy. A binary tree of $n$ nodes has $n + 1$ external

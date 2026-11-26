@@ -720,7 +720,9 @@ ADS_TEST( "cap-nonmonotone" )
 {
  // the values of a concurrent table raised and lowered by one writer per
  // key while readers check that each pair they read is whole, g and its
- // parent written together (R2)
+ // parent written together (R2); the writers start after the first read
+ // and each reader reads 1000 pairs at least, so that the two overlap on
+ // any number of processors
  struct Node
  {
   std::int32_t g , parent;
@@ -730,30 +732,39 @@ ADS_TEST( "cap-nonmonotone" )
   std::int64_t g , parent , pad;
   };
  auto run = [ & ]< class V >( V ) {
+  auto make = []( auto g ) {  // pad, if any, 0
+   V x{};
+   x.g = decltype( V::g )( g );
+   x.parent = decltype( V::parent )( 3 * g + 1 );
+   return( x );
+   };
   ConcurrentCuckooTable< int , V > t( 64 );
   const int keys = 32;
   for( int k = 0 ; k < keys ; ++k )
-   t.insert( k , V{ 0 , 1 } );
+   t.insert( k , make( 0 ) );
   std::atomic< bool > stop{ false };
-  std::atomic< long > reads{ 0 } , torn{ 0 };
+  std::atomic< long > reads{ 0 } , missing{ 0 } , torn{ 0 };
   std::vector< std::thread > W , R;
-  for( int w = 0 ; w < 2 ; ++w )
-   W.emplace_back( [ & , w ] {
-    std::mt19937 rng( unsigned( 11 + w ) );
-    for( int s = 0 ; s < 20000 ; ++s ) {
-     const int k = 2 * int( rng() % ( keys / 2 ) ) + w;  // its own keys
-     const auto g = decltype( V::g )( rng() % 1000 );    // up or down
-     t.insertOrAssign( k , V{ g , decltype( V::parent )( 3 * g + 1 ) } );
-     }
-    } );
   for( int r = 0 ; r < 2 ; ++r )
    R.emplace_back( [ & , r ] {
     std::mt19937 rng( unsigned( 31 + r ) );
-    while( ! stop.load() ) {
+    for( long n = 0 ; ( n < 1000 ) || ! stop.load() ; ++n ) {
      const auto x = t.find( int( rng() % keys ) );
      reads.fetch_add( 1 );
-     if( ! x || ( x->parent != 3 * x->g + 1 ) )
+     if( ! x )
+      missing.fetch_add( 1 );
+     else if( x->parent != 3 * x->g + 1 )
       torn.fetch_add( 1 );
+     }
+    } );
+  for( int w = 0 ; w < 2 ; ++w )
+   W.emplace_back( [ & , w ] {
+    while( reads.load() == 0 )
+     std::this_thread::yield();
+    std::mt19937 rng( unsigned( 11 + w ) );
+    for( int s = 0 ; s < 20000 ; ++s ) {
+     const int k = 2 * int( rng() % ( keys / 2 ) ) + w;  // its own keys
+     t.insertOrAssign( k , make( rng() % 1000 ) );        // up or down
      }
     } );
   for( auto & x : W )
@@ -761,7 +772,9 @@ ADS_TEST( "cap-nonmonotone" )
   stop.store( true );
   for( auto & x : R )
    x.join();
-  CHECK( ( torn.load() == 0 ) && ( reads.load() > 0 ) );
+  CHECK( reads.load() >= 2000 );
+  CHECK( missing.load() == 0 );
+  CHECK( torn.load() == 0 );
   };
  run( Node{} );
  run( Wide{} );

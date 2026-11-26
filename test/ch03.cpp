@@ -325,7 +325,7 @@ ADS_TEST( "ex3.5" )
  h.set( 4 , 1 );
  h.set( 1 , -2 );
  h.set( 0 , 3 );
- CHECK( h.coefficient( 3 ) == 0 && h.coefficient( 5 ) == 0 );
+ CHECK( h.coefficient( 3 ) == 0 && h.coefficient( h.degree() + 1 ) == 0 );
  CHECK( near( h( 0 ) , 3 ) );
  for( double x : { -3.0 , -1.0 , -0.5 , 0.25 , 2.0 } ) {
   const double hx = x * x * x * x - 2 * x + 3;
