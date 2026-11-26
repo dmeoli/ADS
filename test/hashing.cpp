@@ -6,10 +6,11 @@
  * FastHash.h, the blocked filter of Bloom, the binary fuse filter, the
  * cuckoo filter, the prefix filter, the Ribbon filter, the range filters
  * of Grafite and by buckets, the minimal perfect hash functions by pilots
- * (also of 8 bits, PtrHash) and by recursive splitting and the cuckoo table
- * with buckets of 4 places. Each one is checked against a reference of the
- * standard library or against its own analysis, on random and adversarial
- * inputs, at the level 3 of the contracts.
+ * (also of 8 bits, PtrHash), by recursive splitting (also with the seeds of
+ * Consensus) and the cuckoo table with buckets of 4 places. Each one is
+ * checked against a reference of the standard library or against its own
+ * analysis, on random and adversarial inputs, at the level 3 of the
+ * contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -24,6 +25,7 @@
 #include "ADSTest.h"
 
 #include "ADS/dictionary/BucketCuckooTable.h"
+#include "ADS/dictionary/ConsensusRecSplit.h"
 #include "ADS/dictionary/DenseHashMap.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/dictionary/FingerprintPerfectHash.h"
@@ -1037,6 +1039,88 @@ ADS_TEST( "ptrhash" )
  CHECK_THROWS( PtrHash< int >( std::vector< int >{ 1 } , 3 , 0.4 ) ,
 	       contract_violation );
  CHECK_THROWS( PtrHash< int >( std::vector< int >{ 1 } , 3 , 1.1 ) ,
+	       contract_violation );
+ }
+
+// the minimal perfect hash function by Consensus-RecSplit: 0 to 3 keys and
+// the sizes around 8, 64, 512, 4096, 32768 and 65536 with buckets of 4, 64
+// and 4096 keys and the overheads 0.01, 0.1 and 1 (the sizes below K go
+// all to the fallback, those above a multiple of K leave the last values
+// to it); 10^6 random keys between log2 e and 1.53 bits per key (K 512,
+// epsilon 0.03) and below 1.48 (K 4096, epsilon 0.01); the adversarial
+// integers, strings and the keys of 32 bits with their extremes; two
+// chunks searched on a pool of threads as on one; a key out of the set
+// below n; equal hashes throw; repeated keys, epsilon out of range and an
+// empty function violate the contracts
+ADS_TEST( "consensus-recsplit" )
+{
+ auto bijective = []( const auto & f , const auto & K ) {
+  std::vector< char > seen( K.size() , 0 );
+  for( const auto & k : K ) {
+   const std::size_t v = f( k );
+   if( v >= K.size() || seen[ v ] )
+    return( false );
+   seen[ v ] = 1;
+   }
+  return( f.size() == K.size() );
+  };
+ for( const std::size_t n : sizesAroundPowers() ) {
+  const auto K = randomKeys( n , unsigned( 11 * n + 3 ) );
+  for( const double eps : { 0.01 , 0.1 , 1.0 } ) {
+   const ConsensusRecSplit< std::uint64_t , 4 > f( K , eps );
+   const ConsensusRecSplit< std::uint64_t , 64 > g( K , eps );
+   CHECK( bijective( f , K ) && bijective( g , K ) );
+   CHECK( ( f.buckets() == n / 4 ) && ( g.buckets() == n / 64 ) );
+   if( n > 0 )
+    CHECK( ( f( 0xDEADBEEF ) < n ) && ( g( 0xDEADBEEF ) < n ) );
+   }
+  const ConsensusRecSplit< std::uint64_t > h( K , 0.1 );
+  CHECK( bijective( h , K ) && ( h.bumped() <= n ) );
+  }
+ {
+  const auto K = randomKeys( 1000000 , 51 );
+  const ConsensusRecSplit< std::uint64_t , 512 > f( K , 0.03 );
+  const ConsensusRecSplit< std::uint64_t > g( K );
+  const double bf = double( f.bits() ) / 1e6 , bg = double( g.bits() ) / 1e6;
+  CHECK( bijective( f , K ) && ( bf > 1.4427 ) && ( bf < 1.53 ) );
+  CHECK( bijective( g , K ) && ( bg > 1.4427 ) && ( bg < 1.48 ) );
+  }
+ for( const auto & A : adversarialKeys( 100000 ) )
+  CHECK( bijective( ConsensusRecSplit< std::uint64_t , 256 >( A , 0.1 ) ,
+		    A ) );
+ const auto S = randomStrings( 50000 , 52 );
+ CHECK( bijective( ConsensusRecSplit< std::string , 256 >( S , 0.1 ) , S ) );
+ {
+  std::vector< std::uint32_t > K32 = { 0 , ~std::uint32_t( 0 ) };
+  for( std::uint32_t i = 1 ; i < 70000 ; ++i )
+   K32.push_back( i * 61 );
+  CHECK(
+    bijective( ConsensusRecSplit< std::uint32_t , 1024 >( K32 , 0.1 ) ,
+	       K32 ) );
+  }
+ {
+  // two chunks of 2^22 keys, the second one partial, on 4 threads and on
+  // one
+  ThreadPool pool( 4 );
+  const auto K = randomKeys( ( std::size_t( 1 ) << 22 ) + 5000 , 53 );
+  const ConsensusRecSplit< std::uint64_t , 64 > f( K , 1.0 ) ,
+    g( pool , K , 1.0 );
+  bool same = true;
+  for( const std::uint64_t k : K )
+   same = same && ( f( k ) == g( k ) );
+  CHECK( same && bijective( g , K ) );
+  }
+ const ConsensusRecSplit< std::uint64_t > E( std::vector< std::uint64_t >{} );
+ CHECK( E.empty() && E.size() == 0 && E.buckets() == 0 );
+ CHECK_THROWS( ( void )E( 3 ) , contract_violation );
+ CHECK_THROWS( ( ConsensusRecSplit< std::uint64_t , 64 , OneGroup >(
+		 std::vector< std::uint64_t >{ 1 , 2 } ) ) ,
+	       std::runtime_error );
+ CHECK_THROWS( ConsensusRecSplit< int >( std::vector< int >{ 1 , 2 , 1 } ) ,
+	       contract_violation );
+ CHECK_THROWS( ConsensusRecSplit< int >( std::vector< int >{ 1 } , 0.0 ) ,
+	       contract_violation );
+ CHECK_THROWS( ConsensusRecSplit< int >( std::vector< int >{ 1 } , 1.5 ) ,
 	       contract_violation );
  }
 

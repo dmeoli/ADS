@@ -129,6 +129,7 @@ dictionary/BitmapTrie.h               base
 dictionary/BucketCuckooTable.h        advanced
 dictionary/ChainedHashTable.h         base     the book, on a par with
                                                std::unordered_map
+dictionary/ConsensusRecSplit.h        advanced
 dictionary/CuckooHashing.h            base
 dictionary/DenseHashMap.h             advanced
 dictionary/DirectTable.h              base
@@ -432,6 +433,7 @@ set/SetOperations.h                   base
 set/SortedIntersection.h              base
 set/SortedListSet.h                   base
 set/SpaceEfficientSortedSet.h         base
+set/UltraLogLog.h                     advanced
 set/VectorIntersection.h              advanced
 
 sort/CountingSort.h                   base

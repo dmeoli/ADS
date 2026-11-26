@@ -2,16 +2,17 @@
 /*---------------------------- File sketches.cpp ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Tests of the sketches of streams, beyond the book: the Count-Min sketch
- * with the plain and the conservative update, the Count sketch, the
- * minwise hashing by one permutation with the optimal densification and
- * their parallel construction. The estimators are checked against their
+ * Tests of the sketches of streams, beyond the book: UltraLogLog with its
+ * two estimators, the Count-Min sketch with the plain and the conservative
+ * update, the Count sketch, the minwise
+ * hashing by one permutation with the optimal densification and their
+ * parallel construction. The estimators are checked against their
  * analysis by statistical tests over many seeds, each with a fixed seed
  * and the tolerance that its comment states, so that a test passes or
  * fails always in the same way; the merges are checked against the sketch
  * of the union, and the edge cases (no item, one item, duplicates, the
- * extreme parameters, items of 32 bits) one by one, at the level 3 of the
- * contracts.
+ * extreme parameters, items of 32 bits, sizes around the powers of 2) one
+ * by one, at the level 3 of the contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -29,11 +30,13 @@
 #include "ADS/parallel/ThreadPool.h"
 #include "ADS/set/CountMinSketch.h"
 #include "ADS/set/MinHashSketch.h"
+#include "ADS/set/UltraLogLog.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <random>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -99,6 +102,153 @@ zipf( std::size_t N , std::size_t u , std::uint64_t seed ,
   ++f[ x ];
   }
  return( X );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------ ULTRALOGLOG -------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the relative errors of the two estimators over R streams of n random
+/// words, at the precision p
+void ullErrors( unsigned p , std::size_t n , int R ,
+		std::vector< double > & F ,
+		std::vector< double > & M )
+{
+ F.clear();
+ M.clear();
+ for( int r = 0 ; r < R ; ++r ) {
+  UltraLogLog< std::uint64_t > U( p );
+  for( const auto k : words( n , 1000003 * std::uint64_t( r ) + n + p ) )
+   U.insert( k );
+  F.push_back( U.estimate() / double( n ) - 1 );
+  M.push_back( U.estimateML() / double( n ) - 1 );
+  }
+ }
+
+// the two estimators over 200 streams of each size from 1 to 10^5 at the
+// precisions 6 and 10 (100 streams at 12): the mean of the relative errors
+// within 4 standard errors of the mean of the asymptotic law,
+// sigma / 200^{1/2} with sigma = relativeStandardError(), plus 1 / m for
+// the bias of order 1 / m, and from 30 items on, where a collision of two
+// items in a register is no longer an error of 1 / n alone, their root
+// mean square within 1.25 sigma, whose own relative error over 200 streams
+// is about 5 per cent; the asymptotic errors of the two estimators,
+// sqrt( 0.6119 / m ) and sqrt( 0.5789 / m )
+ADS_TEST( "ultraloglog-estimates" )
+{
+ std::vector< double > F , M;
+ for( const unsigned p : { 6U , 10U , 12U } ) {
+  const int R = p == 12 ? 100 : 200;
+  const double m = double( 1U << p );
+  const UltraLogLog< std::uint64_t > E( p );
+  const double sF = E.relativeStandardError() ,
+	       sM = E.relativeStandardError( true );
+  CHECK( std::abs( sF * sF * m - 0.6119 ) < 1e-3 &&
+	 std::abs( sM * sM * m - 0.5789 ) < 1e-3 );
+  for( const std::size_t n :
+       { 1 , 2 , 5 , 10 , 30 , 100 , 300 , 1000 , 3000 , 10000 , 100000 } ) {
+   ullErrors( p , n , R , F , M );
+   const Moments f = moments( F ) , g = moments( M );
+   const double tF = 4 * sF / std::sqrt( double( R ) ) + 1 / m ,
+		tM = 4 * sM / std::sqrt( double( R ) ) + 1 / m;
+   CHECK( std::abs( f.mean ) < tF && std::abs( g.mean ) < tM );
+   CHECK( n < 30 || ( f.rms < 1.25 * sF && g.rms < 1.25 * sM ) );
+   }
+  }
+ }
+
+// the empty sketch, of estimate 0, and one item, estimated within 1 per
+// cent at the precisions 12 and 20 and within 15 per cent at 3, whose 8
+// registers give the estimators a bias of order 1 / 8; the same item many
+// times, the same
+// registers as once; a stream of items of 32 bits and one of strings,
+// within 4 sigma; the sketch of the highest precision, 26; the
+// precisions out of 3 to 26
+ADS_TEST( "ultraloglog-edges" )
+{
+ for( const unsigned p : { 3U , 12U , 20U } ) {
+  UltraLogLog< std::uint64_t > U( p );
+  CHECK( U.empty() && U.estimate() == 0 && U.estimateML() == 0 );
+  CHECK( U.precision() == p && U.state().size() == ( std::size_t( 1 ) << p ) );
+  U.insert( 42 );
+  CHECK( ! U.empty() );
+  const double t = p == 3 ? 0.15 : 0.01;
+  CHECK( std::abs( U.estimate() - 1 ) < t &&
+	 std::abs( U.estimateML() - 1 ) < t );
+  const auto once = U;
+  for( int i = 0 ; i < 1000 ; ++i )
+   U.insert( 42 );
+  CHECK( U == once );
+  U.clear();
+  CHECK( U.empty() );
+  }
+ {  // 32 bits and strings
+  UltraLogLog< std::uint32_t > A( 12 );
+  UltraLogLog< std::string > S( 12 );
+  for( std::uint32_t i = 0 ; i < 50000 ; ++i ) {
+   A.insert( i );
+   A.insert( i );  // a duplicate
+   S.insert( std::to_string( i ) );
+   }
+  const double s = A.relativeStandardError();
+  CHECK( std::abs( A.estimate() / 50000 - 1 ) < 4 * s );
+  CHECK( std::abs( S.estimate() / 50000 - 1 ) < 4 * s );
+  CHECK( std::abs( S.estimateML() / 50000 - 1 ) < 4 * s );
+  }
+ {  // the highest precision
+  UltraLogLog< std::uint64_t > U( 26 );
+  for( const auto k : words( 1000 , 5 ) )
+   U.insert( k );
+  CHECK( std::abs( U.estimate() / 1000 - 1 ) < 0.01 );
+  }
+ CHECK_THROWS( UltraLogLog< int >( 2 ) , contract_violation );
+ CHECK_THROWS( UltraLogLog< int >( 27 ) , contract_violation );
+ }
+
+// the merge of two sketches of the halves of a stream, equal to the sketch
+// of the stream at the precisions 3 to 14; the merge of a sketch of a
+// higher precision, equal to the merge of its downsizing; the downsizing
+// from 14 to each lower precision, equal to the sketch of the same stream
+// at that precision, register by register; a merge into the empty sketch,
+// and of an empty one; the merge of a lower precision and a downsizing
+// beyond the precision, rejected
+ADS_TEST( "ultraloglog-merge" )
+{
+ const auto K = words( 30000 , 11 );
+ for( unsigned p = 3 ; p <= 14 ; ++p ) {
+  UltraLogLog< std::uint64_t > A( p ) , B( p ) , U( p );
+  for( std::size_t i = 0 ; i < K.size() ; ++i ) {
+   ( i % 3 ? A : B ).insert( K[ i ] );
+   U.insert( K[ i ] );
+   }
+  auto C = A;
+  C.merge( B );
+  CHECK( C == U );
+  UltraLogLog< std::uint64_t > E( p );
+  E.merge( U );
+  CHECK( E == U );
+  U.merge( UltraLogLog< std::uint64_t >( p ) );
+  CHECK( E == U );
+  }
+ UltraLogLog< std::uint64_t > H( 14 );
+ for( const auto k : K )
+  H.insert( k );
+ for( unsigned q = 3 ; q <= 14 ; ++q ) {
+  UltraLogLog< std::uint64_t > D( q ) , L( q );
+  for( const auto k : K )
+   D.insert( k );
+  CHECK( H.downsize( q ) == D );
+  for( std::size_t i = 0 ; i < 1000 ; ++i )
+   L.insert( K[ i ] );
+  auto M = L;
+  M.merge( H );
+  L.merge( H.downsize( q ) );
+  CHECK( M == L && M == D );
+  }
+ UltraLogLog< std::uint64_t > X( 10 );
+ CHECK_THROWS( H.downsize( 15 ) , contract_violation );
+ CHECK_THROWS( H.downsize( 2 ) , contract_violation );
+ CHECK_THROWS( H.merge( X ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -310,23 +460,28 @@ ADS_TEST( "minhash-edges" )
 /*--------------------------------------------------------------------------*/
 
 // the parallel construction on 1 and 4 threads and on the calling thread
-// alone: the plain Count-Min, the Count sketch and the minwise hashing
-// equal to the sequential sketches; an empty range, the empty sketch
+// alone: UltraLogLog, the plain Count-Min, the Count sketch and the minwise
+// hashing equal to the sequential sketches; an empty range, the empty
+// sketch
 ADS_TEST( "parallel-sketch" )
 {
  const std::size_t n = 200000;
  const auto W = words( n , 21 );
  Sequential seq;
  ThreadPool one( 1 ) , four( 4 );
+ UltraLogLog< std::uint64_t > U( 12 );
  CountMinSketch< std::uint64_t > C( 1000 , 4 );
  CountSketch< std::uint64_t > S( 1000 , 5 );
  MinHashSketch< std::uint64_t > M( 256 , 7 );
  for( const auto w : W ) {
+  U.insert( w );
   C.insert( w );
   S.insert( w );
   M.insert( w );
   }
  const auto all = [ & ]( auto & ex ) {
+  CHECK( parallelSketch( ex , W.begin() , W.end() ,
+			 UltraLogLog< std::uint64_t >( 12 ) ) == U );
   CHECK( parallelSketch( ex , W.begin() , W.end() ,
 			 CountMinSketch< std::uint64_t >( 1000 , 4 ) ) == C );
   CHECK( parallelSketch( ex , W.begin() , W.end() ,
@@ -334,7 +489,7 @@ ADS_TEST( "parallel-sketch" )
   CHECK( parallelSketch( ex , W.begin() , W.end() ,
 			 MinHashSketch< std::uint64_t >( 256 , 7 ) ) == M );
   CHECK( parallelSketch( ex , W.begin() , W.begin() ,
-			 CountMinSketch< std::uint64_t >( 1000 , 4 ) )
+			 UltraLogLog< std::uint64_t >( 12 ) )
 	   .empty() );
   };
  all( seq );

@@ -59,6 +59,7 @@
 #include "ADS/succinct/RankSelect.h"
 #include "ADS/succinct/TinyRankSelect.h"
 #include "ADS/succinct/WaveletMatrix.h"
+#include "ADS/dictionary/ConsensusRecSplit.h"
 #include "ADS/dictionary/FingerprintPerfectHash.h"
 #include "ADS/dictionary/MinimalPerfectHash.h"
 #include "ADS/dictionary/PerfectHashing.h"
@@ -74,6 +75,7 @@
 #include "ADS/set/MinHashSketch.h"
 #include "ADS/set/PrefixFilter.h"
 #include "ADS/set/RibbonFilter.h"
+#include "ADS/set/UltraLogLog.h"
 
 #if defined( ADS_WITH_CEREAL )
  #include "ADS/interop/cereal/Cereal.h"
@@ -821,18 +823,22 @@ ADS_TEST( "persistence-sketches" )
  std::vector< std::uint64_t > keys( 20000 );
  for( auto & k : keys )
   k = g() >> 12;
+ UltraLogLog< std::uint64_t > U( 10 );
  CountMinSketch< std::uint64_t > C( 500 , 4 ) ,
    Cc( 500 , 4 , CountMinUpdate::conservative );
  CountSketch< std::uint64_t > S( 500 , 5 );
  MinHashSketch< std::uint64_t > M( 128 , 9 );
  const auto eq = std::equal_to<>();
+ roundTrip< UltraLogLog< std::uint64_t > >( U , eq );
  roundTrip< MinHashSketch< std::uint64_t > >( M , eq );
  for( const auto k : keys ) {
+  U.insert( k );
   C.insert( k , k % 5 );
   Cc.insert( k , k % 5 );
   S.insert( k , std::int64_t( k % 7 ) - 3 );
   M.insert( k );
   }
+ roundTrip< UltraLogLog< std::uint64_t > >( U , eq );
  roundTrip< CountMinSketch< std::uint64_t > >( C , eq );
  roundTrip< CountMinSketch< std::uint64_t > >( Cc , eq );
  roundTrip< CountSketch< std::uint64_t > >( S , eq );
@@ -942,6 +948,8 @@ ADS_TEST( "persistence-perfect-hash" )
  using CompactPtrHash =
    PtrHash< std::uint64_t , PtrHashBucket::Cubic , PtrHashRemap::EliasFano >;
  roundTrip< CompactPtrHash >( CompactPtrHash( keys , 3.5 ) , same );
+ roundTrip< ConsensusRecSplit< std::uint64_t , 256 > >(
+   ConsensusRecSplit< std::uint64_t , 256 >( keys , 0.1 ) , same );
  roundTrip< OrderedMinimalPerfectHash< std::uint64_t > >(
    OrderedMinimalPerfectHash< std::uint64_t >( keys ) , same );
  std::vector< std::uint64_t > small( keys.begin() , keys.begin() + 500 );
@@ -1123,22 +1131,22 @@ ADS_TEST( "persistence-cereal" )
   }
  // two sketches of streams in a binary archive
  {
+  UltraLogLog< std::uint64_t > u( 8 );
   CountMinSketch< std::uint64_t > c( 64 , 3 );
-  MinHashSketch< std::uint64_t > m( 64 , 5 );
   for( const auto x : keys ) {
+   u.insert( x );
    c.insert( x );
-   m.insert( x );
    }
   std::stringstream s;
   {
    cereal::BinaryOutputArchive a( s );
-   a( c , m );
+   a( u , c );
    }
   cereal::BinaryInputArchive a( s );
+  UltraLogLog< std::uint64_t > u2;
   CountMinSketch< std::uint64_t > c2;
-  MinHashSketch< std::uint64_t > m2;
-  a( c2 , m2 );
-  CHECK( c2 == c && m2 == m );
+  a( u2 , c2 );
+  CHECK( u2 == u && c2 == c );
   }
  // a JSON archive, by the names of the members
  {

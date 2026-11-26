@@ -276,6 +276,9 @@ using ADS::AdaptiveRadixTree;
 // dictionary/BucketCuckooTable.h
 using ADS::BucketCuckooTable;
 
+// dictionary/ConsensusRecSplit.h
+using ADS::ConsensusRecSplit;
+
 // dictionary/DenseHashMap.h
 using ADS::DenseHashMap;
 
@@ -752,6 +755,9 @@ using ADS::setDifference;
 using ADS::setIntersection;
 using ADS::setSymmetricDifference;
 using ADS::setUnion;
+
+// set/UltraLogLog.h
+using ADS::UltraLogLog;
 
 // set/VectorIntersection.h
 using ADS::intersect;

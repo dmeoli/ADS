@@ -5,9 +5,9 @@
 `RoaringBitmap.h`, `SortedIntersection.h`, `VectorIntersection.h`,
 `BloomFilter.h`, `BloomVariants.h`, `BlockedBloomFilter.h`,
 `CuckooFilter.h`, `PrefixFilter.h`, `BinaryFuseFilter.h`, `RibbonFilter.h`,
-`GrafiteFilter.h`, `SpaceEfficientSortedSet.h`, `CountMinSketch.h`,
-`MinHashSketch.h`, `include/ADS/parallel/ParallelSketch.h`;
-`SetInterfaces.h` and
+`GrafiteFilter.h`, `SpaceEfficientSortedSet.h`, `UltraLogLog.h`,
+`CountMinSketch.h`, `MinHashSketch.h`,
+`include/ADS/parallel/ParallelSketch.h`; `SetInterfaces.h` and
 `Bag.h` are described in [Chapter 1](01-introduction.md#ch-1)]
 
 We are concerned in this chapter with the SET, i.e., a finite collection of
@@ -28,14 +28,14 @@ that may answer yes for an item that they do not hold, in exchange for a
 space that does not depend on the items ([§10.7](10-set.md#sec-10-7) to
 [§10.10](10-set.md#sec-10-10)), together with the filters of ranges of
 [§10.11](10-set.md#sec-10-11) and the sketches of streams of
-[§10.12](10-set.md#sec-10-12), which estimate the frequencies and the
-similarity of a stream in a space that grows at most with the logarithm of
-its length. In the sets of
+[§10.12](10-set.md#sec-10-12), which estimate the distinct items, the
+frequencies and the similarity of a stream in a space that grows at most with
+the logarithm of its length. In the sets of
 [§1.9](01-introduction.md#sec-1-9), `BinaryFuseFilter.h`,
 `BlockedBloomFilter.h`, `CountMinSketch.h`, `CuckooFilter.h`,
 `GrafiteFilter.h`, `MinHashSketch.h`, `PrefixFilter.h`, `RibbonFilter.h`,
-`RoaringBitmap.h`, `VectorIntersection.h` and `ParallelSketch.h` are
-advanced and the other
+`RoaringBitmap.h`, `UltraLogLog.h`,
+`VectorIntersection.h` and `ParallelSketch.h` are advanced and the other
 headers of this chapter are base.
 
 ## 10.1 The interface {#sec-10-1}
@@ -2216,29 +2216,280 @@ on correlated queries.
 ## 10.12 Sketches of streams {#sec-10-12}
 
 A filter answers a question about one item; a *sketch* answers instead a
-question about the stream that went into it (e.g., how often an item occurred,
-or how similar two sets are). Its space typically grows with the accuracy
-required and (at most) with the logarithm of the length of the stream. We are
-concerned with sketches that are *mergeable* in the sense of [Agarwal et al.
+question about the stream that went into it (e.g., how many distinct items it
+holds, how often an item occurred, or how similar two sets are). Its space
+typically grows with the accuracy required and (at most) with the logarithm of
+the length of the stream. We are concerned with
+sketches that are *mergeable* in the sense of [Agarwal et al.
 2013](Z-bibliography.md#ref-agarwal2013), i.e., two sketches of two streams
 combine into a sketch of their concatenation with the guarantee of one built on
 it. The library uses this property in two ways. First, the sketches of the
 parts of a dataset kept on different machines, or written to files
 ([§23.7](23-external.md#sec-23-7)), may be merged later; also, a large stream
 may be cut into blocks, whose sketches are built in parallel and then merged
-(cf. [§10.12.3](10-set.md#sec-10-12-3)). We follow the survey of [Cormode and
+(cf. [§10.12.4](10-set.md#sec-10-12-4)). We follow the survey of [Cormode and
 Yi 2020](Z-bibliography.md#ref-cormode2020) for the common setting, in which
 the items are hashed to independent uniform words of 64 bits. A hash of the
 library meets this assumption on random keys, but not necessarily on structured
 ones. In fact, the folded product of `FastHash`
 ([§7.3.6](07-dictionary.md#sec-7-3-6)) maps consecutive integers to the
 multiples of a constant modulo $2^{64}$, whose top bits form a sequence of low
-discrepancy, far from independent words. Hence, all the sketches of this
-section finish the hash of `FastHash` by the mixer of SplitMix64
-([§7.3.4](07-dictionary.md#sec-7-3-4)), which costs a few cycles and makes
-those sequences look random.
+discrepancy; an UltraLogLog fed with them overestimates the distinct items
+by tens of per cent. Hence, all the sketches of this section finish the hash of
+`FastHash` by the mixer of SplitMix64 ([§7.3.4](07-dictionary.md#sec-7-3-4)),
+which costs a few cycles and makes those sequences look random.
 
-### 10.12.1 Frequencies: the Count-Min and the Count sketch {#sec-10-12-1}
+### 10.12.1 Distinct items: UltraLogLog {#sec-10-12-1}
+
+The HyperLogLog of [Flajolet et al. 2007](Z-bibliography.md#ref-flajolet2007)
+cuts the range of the hash into $m = 2^p$ registers by its top $p$ bits, and
+keeps in each register the largest *level* that it has seen. The level $\ell
+\ge 1$ of a hash is one plus the number of zeros that lead its other $64 - p$
+bits, and therefore $\Pr[ \ell ] = 2^{-\ell}$. Thus, a register of $n / m$
+items holds about $\log_2( n / m )$, and the harmonic mean of the $2^{-u}$ of
+the registers estimates $n$ with a relative standard error of about $1.04 /
+\sqrt{m}$. The UltraLogLog of [Ertl 2024](Z-bibliography.md#ref-ertl2024)
+keeps, besides the largest level $u$, whether the levels $u - 1$ and $u - 2$
+were also seen. These are the top bit and the two bits below it of the set of
+the levels of the register, written as a word in which the level $\ell$ is the
+bit $\ell + p - 2$. One byte holds them, as $4 ( u + p - 2 )$ plus the two
+bits, or 0 for an empty register. Thus, `UltraLogLog` inserts a hash by an or
+and a repacking of its register, with no branch:
+
+--8<-- "generated/UltraLogLog-insertHash.pseudo.md"
+
+The two bits cost two bits per register; however, they carry enough information
+on the lower levels to reduce the relative variance of the estimate by more
+than they cost. Ertl compares the sketches by the *Memory Variance Product*
+(MVP), i.e., the bits of the sketch times the relative variance of its
+estimate. The product is $6 \cdot 1.04^2 \approx 6.49$ for HyperLogLog with
+registers of 6 bits, and $4.895$ and $4.631$ for the two estimators of
+UltraLogLog below, which therefore need about 24 and 28 per cent less space at
+the same error. However, the registers of 4 bits of DataSketches (with a table
+for the few registers that overflow them) have a product of about $4 \cdot
+1.04^2 \approx 4.33$ before the table. Appendix B compares the two both at the
+same precision, i.e., at the same number $m$ of registers, and at about the
+same error. Since $\sqrt{0.6119 / m}$ exceeds $1.04 / \sqrt{2 m}$ by about 6
+per cent, the latter pairs an UltraLogLog of $m$ registers with a HyperLogLog
+of $2 m$, whose registers of 4 bits then take the same bytes, before the
+table.
+
+A register holds the top three bits of the set of its levels, and the top three
+bits of the union of two sets are among the top three bits of the two. Hence,
+two sketches of the same precision merge register by register by the union of
+their unpacked words, which gives the sketch of the union of their streams (cf.
+Lemma 10.24 below). From a sketch of precision $p$ one can also obtain the one
+of any precision $q < p$. With $d = p - q$, the register $j$ of precision $q$
+gathers the $2^d$ registers $2^d j + k$, whose hashes carry $k$ in the $d$ bits
+that follow their top $q$ bits. Their levels at the precision $q$ are those at
+$p$ for $k = 0$, and one plus the number of the leading zeros of $k$ in $d$
+bits for $k > 0$, whatever the other bits; one has
+
+--8<-- "generated/UltraLogLog-downsize.pseudo.md"
+
+--8<-- "generated/UltraLogLog-merge.pseudo.md"
+
+<span id="lem-10-24"></span>**Lemma 10.24.** *(i) The registers of an
+`UltraLogLog` depend only on the set of the distinct hashes inserted into it,
+not on their order nor on their repetitions. (ii) If $A$ and $B$ have the same
+precision, `A.merge( B )` gives the registers of the sketch of the union of the
+two sets of hashes. (iii) `downsize( q )` gives the registers of the sketch of
+precision $q$ of the same hashes, and `merge()` of a sketch of a higher
+precision equals the merge of its downsizing. (iv) `insertHash()` costs $O( 1
+)$ time, `merge( o )` and `downsize()` $O( 2^{p_o} )$ and $O( 2^p )$.*
+
+*Proof.* (i) Line 4 of `insertHash()` ors one bit into the word of the levels
+of the register and keeps its top three bits. Let $\tau( x )$ denote the top
+three bits of a word $x$ (no relation to the constant $\tau$ below). Then
+$\tau( \tau( x ) \vee y ) = \tau( x \vee y )$, since the top bit of $x \vee y$
+is the higher of the top bits of $x$ and $y$. Also, each of the two bits below
+it is set in $x \vee y$ only by a word whose top bit is at most two places
+above it, i.e., by $\tau( x )$ when it is set in $x$. Hence, the register is
+$\tau$ of the or of the bits of its hashes, an expression in which the order
+and the repetitions do not matter. (ii) Line 3 of `merge()` computes $\tau(
+\tau( x ) \vee \tau( y ) ) = \tau( x \vee y )$ by the identity of (i) applied
+twice. (iii) A hash in the register $2^d j + k$ at precision $p$ is in the
+register $j$ at precision $q$, and its $64 - q$ bits after the top $q$ are the
+$d$ bits of $k$ followed by its $64 - p$ bits after the top $p$. For $k > 0$
+their leading zeros are those of $k$ in $d$ bits, which give the bit of line 4
+of `downsize()`. For $k = 0$ they are $d$ more than at precision $p$, which
+moves the bit $z + p - 1$ to $( z + d ) + q - 1$, i.e., to the same bit (and
+the last level, when the $64 - p$ bits are all 0, is the bit 63 at both
+precisions). A register $k > 0$ that is not empty has seen at least one hash,
+and all its hashes give that bit; hence its test of line 4 suffices, and (i)
+gives the rest. Also, `merge()` of a higher precision runs the same block of
+lines 3 and 4 of `downsize()` on each register. (iv) The loops are over the
+registers, and `block()` scans each register of `o` once. $\square$
+
+We analyze the estimators in the model of Poisson, where the number of the
+items is itself a Poisson variable. Then the registers are independent, and
+each level $\ell$ of a register is seen by a Poisson number of items of mean
+$\lambda 2^{-\ell}$, with $\lambda = n / m$. We extend the model to the levels
+of every integer, $\ell \le 0$ included, whose registers are never empty. A
+register of largest level $u$ has then its two bits $b = ( b_1 , b_0 )$ with
+probability $e^{-x} ( 1 - e^{-x} ) \beta_1 \beta_0$, where $x = \lambda
+2^{-u}$. Here $\beta_1$ is $1 - e^{-2 x}$ or $e^{-2 x}$ as the level $u - 1$
+was seen or not, and $\beta_0$ is $1 - e^{-4 x}$ or $e^{-4 x}$ for the level
+$u - 2$. The Further Generalized Remaining Area (FGRA) estimator of Ertl, which
+extends the remaining area of [Pettie and Wang
+2021](Z-bibliography.md#ref-pettie2021), sums $g( u , b ) = \eta_b 2^{-\tau u}$
+over the registers, with the constants $\tau = 0.8194911\ldots$ and $\eta_0 ,
+\ldots , \eta_3$ that Ertl found to minimize its variance. One writes the
+probabilities of the two bits as sums of the powers $e^{-c x}$, $c = 0 , 2 , 4
+, 6$, of coefficients $a_0 = \eta_3$, $a_2 = \eta_1 - \eta_3$, $a_4 = \eta_2 -
+\eta_3$ and $a_6 = \eta_0 - \eta_1 - \eta_2 + \eta_3$. Replacing the sum over
+$u$ by the integral over $\log_2 x$, one then gets
+
+$$
+\mathrm{E}[ g ] \, \lambda^\tau \approx \xi = \frac{\Gamma( \tau )}{\ln 2}
+\sum_{c \in \{ 0 , 2 , 4 , 6 \}} a_c \bigl( ( 1 + c )^{-\tau} - ( 2 + c
+)^{-\tau} \bigr) , \tag{10.13}
+$$
+
+which is 1 at the constants of Ertl (they are normalized so). Similarly, the
+same formula with $\eta_b^2$ and $2 \tau$ gives $\mathrm{E}[ g^2 ] \lambda^{2
+\tau}$, and hence the relative variance $v = 0.4109\ldots$ of $g$; the
+constructor of the constants computes both. The estimate is then $m ( m \xi / S
+)^{1 / \tau}$, divided by $1 + ( 1 / \tau ) ( 1 / \tau + 1 ) v / ( 2 m )$,
+i.e., by the first term of the bias that the power $-1 / \tau$ of the sum adds
+by the inequality of Jensen. However, the registers of level at most 2 have not
+seen some of the levels that the model assumes (the levels $\ell \le 0$, which
+do not exist). They enter the sum by their conditional expectations given what
+they show, in the way [Ertl 2017](Z-bibliography.md#ref-ertl2017) corrects
+HyperLogLog, with $z = e^{-\lambda}$ estimated by the fraction of the empty
+registers. Thus, an empty register counts as $e_0( z ) = z^{-1} \sum_{j \ge 0}
+2^{\tau j} q_j ( 1 - q_j ) H( q_j )$, $q_j = z^{2^j}$, where $H$ is the sum of
+the $\eta_b$ weighted by the probabilities of the two bits. A register of level
+1 counts as the expectation of $g$ over its two unknown bits, which are seen
+with probabilities $1 - z$ and $1 - z^2$. Similarly, one of level 2 counts as
+the expectation over the bit of the level 0, which is seen with probability
+$1 - z$. Note that the insertions keep the counts of these registers, and the
+sum of the others, by two changes of counters and one of the sum with no
+branch; hence, the estimate costs $O( 1 )$ time:
+
+--8<-- "generated/UltraLogLog-estimate.pseudo.md"
+
+<span id="lem-10-25"></span>**Lemma 10.25.** *In the model of Poisson with the
+levels of every integer, let $S_\infty = \sum_i g( u_i , b_i )$ over the $m$
+registers. (i) $\mathrm{E}[ S_\infty ] = m \lambda^{-\tau} ( \xi + \omega(
+\log_2 \lambda ) )$, where $\xi$ is (10.13) and $\omega$ is a periodic function
+of period 1 and mean 0. (ii) If the $z$ of `estimate()` is replaced by
+$e^{-\lambda}$, the sum $S$ of its line 3 has the expectation of $S_\infty$ and
+at most its variance. (iii) Under the hypothesis of (ii), the estimate of line
+4 is $m \lambda ( 1 + \epsilon )^{-1 / \tau} / ( 1 + ( 1 / \tau ) ( 1 / \tau +
+1 ) v / ( 2 m ) )$ with $\epsilon = S / \mathrm{E}[ S ] - 1$ of mean 0 and
+variance at most $v / m$ (up to $\omega$); hence, when no register is of level
+2 or less, its relative bias is $O( m^{-2} ) + O( \omega )$ and its relative
+variance tends to $v / ( \tau^2 m ) = 0.6119 / m$, while otherwise its bias is
+$O( 1 / m )$ and its variance at most that.*
+
+*Proof.* (i) One has $\mathrm{E}[ S_\infty ] = m \sum_{u \in \mathbb{Z}} \sum_b
+\eta_b 2^{-\tau u} \Pr[ u , b ]$, and $2^{-\tau u} = ( x / \lambda )^\tau$ with
+$x = \lambda 2^{-u}$. Let $F( x ) = \sum_b \eta_b \Pr[ u , b ]$, written in
+$x$. The sum over $u$ of the function $x^\tau F( x )$ at the points $\lambda
+2^{-u}$ is a periodic function of $\log_2 \lambda$ whose mean is $( 1 / \ln 2 )
+\int_0^\infty x^{\tau - 1} F( x ) \, dx$; furthermore, $F$ is the sum of $a_c (
+e^{-( 1 + c ) x} - e^{-( 2 + c ) x} )$, whose integrals against $x^{\tau - 1}$
+are $\Gamma( \tau ) ( ( 1 + c )^{-\tau} - ( 2 + c )^{-\tau} )$. (ii) In the
+extended model, a register shows empty exactly when its largest level is at
+most 0, which has probability $z = e^{-\lambda}$. Also, $z e_0( z )$ is the sum
+of $g$ times the probability of each of the states $u = -j$, $j \ge 0$, with $x
+= \lambda 2^j$, i.e., $e^{-x} = q_j$; thus, $e_0( z )$ is the conditional
+expectation of $g$ given an empty register. A register of level 1 or 2 is of
+the same level in the extended model, whose levels 0 and $-1$ are seen with
+probabilities $1 - e^{-\lambda}$ and $1 - e^{-2 \lambda}$ independently of the
+rest. Then $e_1$ and $e_2$ are the conditional expectations of $g$ given what
+these registers show, while the other registers count by $g$ itself. A
+conditional expectation has the mean of its variable and at most its variance,
+and the registers are independent. (iii) The expansion of $( 1 + \epsilon )^{-1
+/ \tau}$ to the second order gives the mean $1 + ( 1 / \tau ) ( 1 / \tau + 1 )
+\mathrm{Var}( \epsilon ) / 2 + O( m^{-2} )$, which the divisor removes when the
+variance is $v / m$, and the relative variance $\mathrm{Var}( \epsilon ) /
+\tau^2$. By (ii) and by the independence of the registers, $\mathrm{Var}(
+\epsilon ) \le v / m$. $\square$
+
+At the constants of Ertl the amplitude of $\omega$ is about $4 \cdot 10^{-6}$
+of $\xi$, far below the error of any practical $m$. The lemma does not cover
+the case $z \ne e^{-\lambda}$, which is the one of the code. In fact, the
+fraction of the empty registers is a noisy estimate of $e^{-\lambda}$, and its
+noise may add to the variance in the range where many registers are empty. We
+have therefore checked this range by experiment. In the test
+`sketches.ultraloglog-estimates`, the errors of 200 streams of each size from 1
+to $10^5$, at $m = 64$, 1024 and 4096, are within the tolerances stated by the
+test, the small sizes included.
+
+A second estimator maximizes the likelihood of the registers. We use again the
+model of Poisson, now with the levels $1 , \ldots , L$, $L = 65 - p$ (the last
+of rate $2^{1 - L}$, since it takes the hashes of $64 - p$ zeros). Each level
+of each register is then seen with probability $1 - e^{-\lambda w_\ell}$
+independently, where $w_\ell = 2^{-\ell}$ for $\ell < L$ and $w_L = 2^{1 - L}$.
+A register shows of each level that it was seen, or that it was not, or nothing
+(the levels below $u - 2$); hence, the logarithm of the likelihood is
+
+$$
+\log \mathcal{L}( \lambda ) = -\alpha \lambda + \sum_{\ell = 1}^{L}
+\beta_\ell \log\bigl( 1 - e^{-\lambda w_\ell} \bigr) , \tag{10.14}
+$$
+
+where $\beta_\ell$ counts the registers that have seen the level $\ell$. In
+turn, $\alpha$ sums the rates of the levels that are known not to have been
+seen in a register (all the levels of an empty register, of total rate 1, those
+above $u$, of total rate $2^{-u}$, and the levels $u - 1$ and $u - 2$ whose
+bits are 0).
+
+--8<-- "generated/UltraLogLog-estimateML.pseudo.md"
+
+<span id="lem-10-26"></span>**Lemma 10.26.** *Let $B = \sum_\ell \beta_\ell >
+0$, $W = \sum_\ell \beta_\ell w_\ell$ and $\alpha > 0$. Then (10.14) is
+strictly concave, its derivative $f( \lambda ) = \sum_\ell \beta_\ell w_\ell /
+( e^{\lambda w_\ell} - 1 ) - \alpha$ is decreasing and convex, its maximum
+$\lambda^*$ lies in $[ B / ( \alpha + W / 2 ) , B / \alpha ]$, and the steps of
+Newton on $f$ from $\lambda_0 = B / ( \alpha + W / 2 )$ increase monotonically
+to $\lambda^*$. For $B = 0$ the maximum is at $\lambda = 0$.*
+
+*Proof.* Each term $\log( 1 - e^{-\lambda w} )$ is strictly concave in $\lambda
+> 0$, and $w / ( e^{\lambda w} - 1 )$ is decreasing and convex. The
+inequalities $1 / y - 1 / 2 \le 1 / ( e^y - 1 ) \le 1 / y$ for $y > 0$ give $B
+/ \lambda - W / 2 - \alpha \le f( \lambda ) \le B / \lambda - \alpha$, hence
+$f( \lambda_0 ) \ge 0$ and $f( B / \alpha ) \le 0$. From a point $\lambda_k \le
+\lambda^*$, where $f( \lambda_k ) \ge 0$ and $f'( \lambda_k ) < 0$, the step of
+Newton $\lambda_{k + 1} = \lambda_k - f( \lambda_k ) / f'( \lambda_k )$ does
+not decrease $\lambda$. By the convexity, $f( \lambda_{k + 1} ) \ge f(
+\lambda_k ) + f'( \lambda_k ) ( \lambda_{k + 1} - \lambda_k ) = 0$, i.e.,
+$\lambda_{k + 1} \le \lambda^*$. A monotone bounded sequence converges, and its
+limit is a root of $f$. With $B = 0$, (10.14) is $-\alpha \lambda$. $\square$
+
+The estimate by maximum likelihood is $m \lambda^*$, whose relative variance
+tends to the inverse of the information of Fisher of the registers, $0.5789 /
+m$ (a product of $4.631$). Its bias is of order $1 / m$, and we do not correct
+it. At $m = 8$ the bias is already a few per cent, as the test
+`sketches.ultraloglog-edges` records for one item at $p = 3$. Each step of
+Newton costs $O( L )$ time after one pass over the registers, and the estimate
+thus costs $O( m )$ time, against the $O( 1 )$ of `estimate()`.
+
+```cpp
+// declarations of <ADS/set/UltraLogLog.h>
+template< class T , class H = DefaultHash< T > >
+class UltraLogLog
+{
+ public:
+ explicit UltraLogLog( unsigned p = 12 , H h = H() );
+ void insert( const T & x );
+ void insertHash( std::uint64_t h );
+ void merge( const UltraLogLog & o );
+ UltraLogLog downsize( unsigned q ) const;
+ double estimate( void ) const;
+ double estimateML( void ) const;
+ double relativeStandardError( bool ml = false ) const;
+ void clear( void );
+ bool empty( void ) const;
+ unsigned precision( void ) const;
+ const std::vector< std::uint8_t > & state( void ) const;
+ bool operator==( const UltraLogLog & o ) const;
+ };
+```
+
+### 10.12.2 Frequencies: the Count-Min and the Count sketch {#sec-10-12-2}
 
 The Count-Min sketch of [Cormode and Muthukrishnan
 2005](Z-bibliography.md#ref-cormode2005) keeps $d$ rows of $w$ counters, and an
@@ -2265,7 +2516,7 @@ top bit of the low half.
 
 --8<-- "generated/CountMinSketch-CountSketch-insertHash.pseudo.md"
 
-<span id="lem-10-24"></span>**Lemma 10.24.** *Let $f$ be the frequencies of the
+<span id="lem-10-27"></span>**Lemma 10.27.** *Let $f$ be the frequencies of the
 stream and $N = \sum_x f_x$. (i) The plain and the conservative estimates of
 `CountMinSketch` are at least $f_x$, and each counter of the conservative
 update is at most the same counter of the plain one. (ii) If the counters of an
@@ -2360,7 +2611,7 @@ class CountSketch
  };
 ```
 
-### 10.12.2 Similarity: minwise hashing by one permutation {#sec-10-12-2}
+### 10.12.3 Similarity: minwise hashing by one permutation {#sec-10-12-3}
 
 The minwise hashing of [Broder 1997](Z-bibliography.md#ref-broder1997)
 estimates the similarity of Jaccard $J = | A \cap B | / | A \cup B |$ of two
@@ -2383,7 +2634,7 @@ least values, and densifies them only in `signature()`.
 
 --8<-- "generated/MinHashSketch-signature.pseudo.md"
 
-<span id="lem-10-25"></span>**Lemma 10.25.** *(i) The bins of a `MinHashSketch`
+<span id="lem-10-28"></span>**Lemma 10.28.** *(i) The bins of a `MinHashSketch`
 depend only on the set of the distinct hashes inserted, and `A.merge( B )`
 gives the bins of the sketch of $A \cup B$. (ii) Let the bins and the values of
 the distinct items be independent and uniform, let the sequences $\pi$ be
@@ -2443,7 +2694,7 @@ class MinHashSketch
  };
 ```
 
-### 10.12.3 Parallel construction {#sec-10-12-3}
+### 10.12.4 Parallel construction {#sec-10-12-4}
 
 A sketch whose merge gives the sketch of the concatenation of two streams may
 be built in parallel by cutting the stream into blocks, filling one copy of the
@@ -2453,17 +2704,17 @@ depend only on the number of the items and on the grain:
 
 --8<-- "generated/ParallelSketch-parallelSketch.pseudo.md"
 
-<span id="lem-10-26"></span>**Lemma 10.26.** *For `CountMinSketch` with the
-plain update, for `CountSketch` and for `MinHashSketch`, `parallelSketch()`
-returns the sketch that the insertions of the items in their order make,
-counter by counter, on every executor.*
+<span id="lem-10-29"></span>**Lemma 10.29.** *For `UltraLogLog`, for
+`CountMinSketch` with the plain update, for `CountSketch` and for
+`MinHashSketch`, `parallelSketch()` returns the sketch that the insertions of
+the items in their order make, register by register, on every executor.*
 
-*Proof.* The merge of these sketches is the sum or the least value, counter by
-counter (cf. Lemmas 10.24 and 10.25), and these operations are associative and
-commutative. $\square$
+*Proof.* The merge of these sketches is the union, the sum or the least value,
+counter by counter (cf. Lemmas 10.24, 10.27 and 10.28), and these operations
+are associative and commutative. $\square$
 
 A conservative Count-Min sketch built in parallel gets counters between the
-frequencies and those of the plain update (cf. Lemma 10.24 (iv)). Hence, it
+frequencies and those of the plain update (cf. Lemma 10.27 (iv)). Hence, it
 keeps the bound of the plain update, although its counters may differ from
 those of the sequential sketch. A randomized sketch with a method `reseed()`
 gets in each block a copy reseeded by the index of its first item, since
@@ -2478,15 +2729,19 @@ S parallelSketch( E & ex , I first , I last , const S & s ,
 ```
 
 ```cpp
+ADS::UltraLogLog< std::uint64_t > U( 12 );
 ADS::CountMinSketch< std::uint64_t > C( 2719 , 5 );
 ADS::MinHashSketch< std::uint64_t > A( 256 ) , B( 256 );
 for( std::uint64_t i = 0 ; i < 100000 ; ++i ) {
+ U.insert( i );
  C.insert( i % 1000 );
  A.insert( i );
  B.insert( i + 50000 );
  }
-const auto often = C.estimate( 7 );  // at least 100
-const double J = A.jaccard( B );     // about 1 / 3
+const double distinct = U.estimate();  // about 100000
+const auto often = C.estimate( 7 );    // at least 100
+const double J = A.jaccard( B );       // about 1 / 3
+( void )distinct;
 ( void )often;
 ( void )J;
 ```
@@ -2519,13 +2774,24 @@ intersections and of the filters with the best implementations available
 campaign of Appendix B; we give no number here.
 
 The sketches of [§10.12](10-set.md#sec-10-12) and their analyses are surveyed
-by [Cormode and Yi 2020](Z-bibliography.md#ref-cormode2020). The theta
-sketches of DataSketches ([Apache
-DataSketches](Z-bibliography.md#ref-datasketches)) estimate the similarity of
-Jaccard, and the unions, the intersections and the differences of sets, from
-the least hashes of each set below a threshold. The comparison of the sketches
-with the theta and the Count-Min sketches of DataSketches belongs to Appendix
-B.
+by [Cormode and Yi 2020](Z-bibliography.md#ref-cormode2020). The HyperLogLog of
+[Flajolet et al. 2007](Z-bibliography.md#ref-flajolet2007) has many engineered
+descendants, among which the sketch of DataSketches ([Apache
+DataSketches](Z-bibliography.md#ref-datasketches)), with registers of 4 bits
+and a table of the few registers that overflow them, and the UltraLogLog of
+[Ertl 2024](Z-bibliography.md#ref-ertl2024), whose reference implementation is
+the library hash4j, in Java. Furthermore, the SetSketch of [Ertl
+2021](Z-bibliography.md#ref-ertl2021), which the library does not have, fills
+the gap between the minwise hashing and HyperLogLog: its registers estimate
+both the cardinality of a set and the joint quantities of two sets, at a space
+between theirs. In turn, the theta sketches of DataSketches estimate the
+similarity of Jaccard, and the unions, the intersections and the differences of
+sets, from the least hashes of each set below a threshold. The comparison of
+the sketches with those of DataSketches (its HyperLogLog, theta and Count-Min
+sketches) and with a plain HyperLogLog belongs to Appendix B. There, the
+UltraLogLog of hash4j enters by the error that [Ertl
+2024](Z-bibliography.md#ref-ertl2024) reports, since it does not run in the
+same process.
 
 The filters of [§10.7](10-set.md#sec-10-7) to
 [§10.11](10-set.md#sec-10-11) and the sketches of
@@ -2604,14 +2870,22 @@ Each exercise names the test of the library that solves it (run it with
 21. Build the range filter Grafite, and check its bound on correlated
     queries, where the bucketing filter fails. Tests:
     `hashing.grafite-filter`, `hashing.bucketing-filter`.
-22. Estimate the frequencies of a stream of a Zipf law by the Count-Min
+22. Build UltraLogLog, merge two sketches into the sketch of the union, and
+    downsize a sketch into the one of a lower precision, register by
+    register. Tests: `sketches.ultraloglog-merge`,
+    `sketches.ultraloglog-edges`.
+23. Estimate the distinct items by the FGRA estimator and by maximum
+    likelihood, and check their errors over many streams against $\sqrt{
+    0.6119 / m }$ and $\sqrt{ 0.5789 / m }$. Test:
+    `sketches.ultraloglog-estimates`.
+24. Estimate the frequencies of a stream of a Zipf law by the Count-Min
     sketch, with the plain and the conservative update, and by the Count
-    sketch, and check the bounds of Lemma 10.24. Tests: `sketches.count-min`,
+    sketch, and check the bounds of Lemma 10.27. Tests: `sketches.count-min`,
     `sketches.count-sketch`.
-23. Estimate the similarity of Jaccard by the minwise hashing of one
+25. Estimate the similarity of Jaccard by the minwise hashing of one
     permutation with the optimal densification, and check that the estimate
     has no bias on sets with many empty bins. Tests:
     `sketches.minhash-jaccard`, `sketches.minhash-edges`.
-24. Build the sketches of a stream in parallel by the merges of the sketches
+26. Build the sketches of a stream in parallel by the merges of the sketches
     of its blocks, equal to the sequential ones. Test:
     `sketches.parallel-sketch`.

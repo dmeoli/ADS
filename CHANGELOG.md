@@ -27,34 +27,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `bitvector` against pasta, sdsl-lite (with the new cell
   `sdsl::rank_support_v5+mcl`) and sux, and the part of section 22.4 of the
   manual on it (Algorithm 22.8, Lemmas 22.7 and 22.8)
-- `PtrHash`, the minimal perfect hash function of Groot Koerkamp by pilots
-  of 8 bits stored as bytes, placed in parts of the same slots and buckets
-  by decreasing size and, when no pilot below 256 sends a bucket to free
-  slots, by the pilot of the least weighted collisions with the eviction of
-  the buckets it meets, with the linear or the cubic bucket function, the
-  slots beyond n remapped by an array or by an Elias-Fano sequence,
-  `stream()` of a range of keys with the pilot 32 keys ahead prefetched,
-  `prefetch()`, and a constructor that builds the parts on an executor with
-  the same pilots; persistent, in the advanced set and in the module
-  `ads.advanced`; the test `hashing.ptrhash`, its round trips in
+- `PtrHash`, the minimal perfect hash function of Groot Koerkamp by pilots of 8
+  bits stored as bytes, placed in parts of the same slots and buckets by
+  decreasing size and, when no pilot below 256 sends a bucket to free slots, by
+  the pilot of the least weighted collisions with the eviction of the buckets
+  it meets, with the linear or the cubic bucket function, the slots beyond n
+  remapped by an array or by an Elias-Fano sequence, `stream()` of a range of
+  keys with the pilot 32 keys ahead prefetched, `prefetch()`, and a constructor
+  that builds the parts on an executor with the same pilots;
+  `ConsensusRecSplit`, the Consensus-RecSplit of Lehmann, Sanders, Walzer and
+  Ziegler, buckets of `K` keys by a minimal `K`-perfect function by thresholds
+  with a `FingerprintPerfectHash` for the keys bumped twice, split by balanced
+  binary trees whose seeds are searched and encoded together by Consensus,
+  about 1.47 bits per key on a million keys at `K` = 4096 and the overhead
+  0.01, with a constructor that searches the chunks of 4194304 keys on an
+  executor with the same seeds; both persistent, in the advanced set and in the
+  module `ads.advanced`; the tests `hashing.ptrhash` and
+  `hashing.consensus-recsplit`, their round trips in
   `engineered_persistence.persistence-perfect-hash`, the cells of
-  `bench/hashing.cpp` against PTHash and PHOBIC (with the batch queries),
-  and section 7.8.4 of the manual (Algorithm 7.20, Lemma 7.30)
+  `bench/hashing.cpp` against PTHash, PHOBIC and the code of Consensus-RecSplit
+  of its authors (with the batch queries), the latter fed with the keys
+  finished by `splitmix64()` in the build and in the queries, since it reads
+  its keys of 64 bits as hashes, and section 7.8.4 of the manual (Algorithms
+  7.20 and 7.21, Lemmas 7.30 to 7.32)
 - the sketches of streams, mergeable, persistent (by `store()` and the
   bridge of cereal) and hashed by `FastHash::hash64()` finished by
-  `splitmix64()`, which consecutive integers need: `CountMinSketch`, with
-  the plain and the conservative update, and `CountSketch`, with its
-  estimate of the second moment; `MinHashSketch`, the minwise hashing of
-  one permutation with the optimal densification of Shrivastava; and
+  `splitmix64()`, which consecutive integers need: `UltraLogLog` of Ertl in
+  registers of a byte, with the FGRA estimator, kept in $O( 1 )$ time by a
+  tally of the registers that the insertions update with no branch, the
+  estimator of maximum likelihood by the steps of Newton from a lower bound
+  of its root, the merge and the downsizing to a lower precision;
+  `CountMinSketch`, with the plain and the conservative update, and
+  `CountSketch`, with its estimate of the second moment; `MinHashSketch`,
+  the minwise hashing of one permutation with the optimal densification of
+  Shrivastava; and
   `parallelSketch()` of `ParallelSketch.h`, which builds any of them on an
-  executor by the merges of the sketches of the blocks of
-  `parallelReduce()`, equal to the sequential one for the sketches whose
-  merge is exact; the tests `sketches`,
-  `engineered_persistence.persistence-sketches` and the sketches in
-  `persistence-cereal`, the part `sketches` of `bench-hashing` against
-  DataSketches 5.3.1 (its theta and Count-Min sketches, from the directory
-  `datasketches-cpp` of `HASHING`), and section 10.12 of the manual (Lemmas
-  10.24 to 10.26)
+  executor by the merges of the sketches of the blocks of `parallelReduce()`,
+  equal to the sequential one for the sketches whose merge is exact; the
+  tests `sketches`, `engineered_persistence.persistence-sketches` and the
+  sketches in `persistence-cereal`, the part `sketches` of `bench-hashing`
+  against DataSketches 5.3.1 (its HyperLogLog, theta and Count-Min sketches,
+  from the directory `datasketches-cpp` of `HASHING`) and a plain
+  HyperLogLog, with UltraLogLog against the HyperLogLogs both at the same
+  number of registers and at about the same error (half their registers),
+  the errors of the distinct items as the mean and the root mean square over
+  32 streams and the estimates that take no item timed over 1000 calls, and
+  section 10.12 of the manual (Lemmas 10.24 to 10.29)
 - the reclamation of the memory of the lock-free structures as policies of
   their templates [see `concurrent/Reclaim.h`]: the epochs of Fraser
   (`FraserEpochs< R >`, an attempt to raise the epoch per `R`

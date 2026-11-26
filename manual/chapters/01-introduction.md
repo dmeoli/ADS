@@ -1884,6 +1884,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `dictionary/BitmapTrie.h` | base | `BitmapTrie` | [7](07-dictionary.md#ch-7) |
 | `dictionary/BucketCuckooTable.h` | advanced | `BucketCuckooTable` | [7](07-dictionary.md#ch-7) |
 | `dictionary/ChainedHashTable.h` | base | `ChainedHashTable` | [7](07-dictionary.md#ch-7) |
+| `dictionary/ConsensusRecSplit.h` | advanced | `ConsensusRecSplit` | [7](07-dictionary.md#ch-7) |
 | `dictionary/CuckooHashing.h` | base | `CuckooHashTable` | [7](07-dictionary.md#ch-7) |
 | `dictionary/DenseHashMap.h` | advanced | `DenseHashMap` | [7](07-dictionary.md#ch-7) |
 | `dictionary/DirectTable.h` | base | `DirectTable` | [7](07-dictionary.md#ch-7) |
@@ -1970,6 +1971,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `set/SortedIntersection.h` | base | `PermutedBuckets` | [10](10-set.md#ch-10) |
 | `set/SortedListSet.h` | base | `SortedListSet` | [10](10-set.md#ch-10) |
 | `set/SpaceEfficientSortedSet.h` | base | `SpaceEfficientSortedSet` | [10](10-set.md#ch-10) |
+| `set/UltraLogLog.h` | advanced | `UltraLogLog` | [10](10-set.md#ch-10) |
 | `mfset/ListMFSet.h` | base | `ListMFSet` | [11](11-mfset.md#ch-11) |
 | `mfset/MFSet.h` | base | `MFSet` | [11](11-mfset.md#ch-11) |
 | `mfset/RemUnionFind.h` | advanced | `RemUnionFind` | [11](11-mfset.md#ch-11) |
