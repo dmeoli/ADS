@@ -1135,8 +1135,8 @@ then the $i$-th operation, of actual cost $c_i$, has the *amortized cost*
 $c_i + \Phi_i - \Phi_{i-1}$, where $\Phi_{i-1}$ and $\Phi_i$ are the
 potentials before and after it. Consider, for instance, a vector that
 starts empty with capacity $c = 0$, and doubles its capacity when it is
-full (from 0 to 1 at the first insertion), with the potential $\Phi = 2 n
-- c$ when it holds $n$ items.
+full (from 0 to 1 at the first insertion), with the potential $\Phi = 2
+n - c$ when it holds $n$ items.
 
 <span id="lem-1-11"></span>**Lemma 1.11.** *If each operation of every
 sequence that starts from the empty structure has amortized cost at most
@@ -1827,6 +1827,8 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `interop/std/FlatMap.h` | interop | `StdSequence` | [1](01-introduction.md#ch-1) |
 | `interop/std/Pmr.h` | interop | `PmrResource` | [1](01-introduction.md#ch-1) |
 | `set/Bag.h` | base | `Bag` | [1](01-introduction.md#ch-1) |
+| `set/CountMinSketch.h` | advanced | `CountMinSketch`, `CountSketch` | [10](10-set.md#ch-10) |
+| `set/MinHashSketch.h` | advanced | `MinHashSketch` | [10](10-set.md#ch-10) |
 | `set/SetInterfaces.h` | base | `ArrayUSet`, `ArraySSet` | [1](01-introduction.md#ch-1) |
 | `sequence/ArraySequence.h` | base | `ArraySequence` | [2](02-sequence.md#ch-2) |
 | `sequence/ContiguousDeque.h` | base | `ContiguousDeque` | [2](02-sequence.md#ch-2) |
@@ -1896,6 +1898,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `dictionary/PerfectHashing.h` | base | `PerfectHashTable`, `OrderedMinimalPerfectHash` | [7](07-dictionary.md#ch-7) |
 | `dictionary/PointerTable.h` | advanced | `StateEqual`, `WidePlaces`, `IndexPlaces`, `WithPlaces`, `PointerTable` | [7](07-dictionary.md#ch-7) |
 | `dictionary/PositionIndex.h` | advanced | `PositionIndex` | [7](07-dictionary.md#ch-7) |
+| `dictionary/PtrHash.h` | advanced | `PtrHash` | [7](07-dictionary.md#ch-7) |
 | `dictionary/RandomHashing.h` | core | `SplitMix64`, `ZobristTable`, `TabulationHash` | [7](07-dictionary.md#ch-7) |
 | `dictionary/RecSplit.h` | advanced | `RecSplit` | [7](07-dictionary.md#ch-7) |
 | `dictionary/SkipList.h` | base | `SkipList` | [7](07-dictionary.md#ch-7) |
@@ -1981,6 +1984,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `graph/AllPairsShortestPaths.h` | base | `AllPairs` | [14](14-graph.md#ch-14) |
 | `graph/ArrayGraph.h` | base | `ArrayGraph` | [14](14-graph.md#ch-14) |
 | `graph/Assignment.h` | advanced | `Assignment` | [14](14-graph.md#ch-14) |
+| `graph/Biconnectivity.h` | advanced | `BiconnectedComponents`, `BlockCutTree` | [14](14-graph.md#ch-14) |
 | `graph/Graph.h` | base | `GraphNodes` | [14](14-graph.md#ch-14) |
 | `graph/GraphBuilder.h` | advanced | `GraphBuilder` | [14](14-graph.md#ch-14) |
 | `graph/GridGraph.h` | advanced | `GridGraph` | [14](14-graph.md#ch-14) |
@@ -2073,6 +2077,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `succinct/PartitionedEliasFano.h` | advanced | `PartitionedEliasFano` | [22](22-succinct.md#ch-22) |
 | `succinct/RRRBitVector.h` | advanced | `RRRBitVector` | [22](22-succinct.md#ch-22) |
 | `succinct/RankSelect.h` | base | `RankSelectOptions`, `BasicRankSelect`, `RankSelect`, `LazyRankSelect` | [22](22-succinct.md#ch-22) |
+| `succinct/TinyRankSelect.h` | advanced | `BasicTinyRankSelect`, `TinyRankSelect` | [22](22-succinct.md#ch-22) |
 | `succinct/WaveletMatrix.h` | advanced | `WaveletMatrix` | [22](22-succinct.md#ch-22) |
 | `external/BlockBTree.h` | base | `BlockBTree` | [23](23-external.md#ch-23) |
 | `external/BlockStore.h` | base | `BlockStore` | [23](23-external.md#ch-23) |
@@ -2084,13 +2089,18 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `concurrent/ConcurrentCuckooTable.h` | advanced | `ConcurrentCuckooTable` | [24](24-concurrent.md#ch-24) |
 | `concurrent/ConcurrentFlatTable.h` | advanced | `ConcurrentFlatTable`, `ZeroingClear`, `EpochClear` | [24](24-concurrent.md#ch-24) |
 | `concurrent/ConcurrentUnionFind.h` | advanced | `ConcurrentUnionFind` | [24](24-concurrent.md#ch-24) |
+| `concurrent/EpochReclaim.h` | advanced | `EpochDomain`, `FraserEpochs` | [24](24-concurrent.md#ch-24) |
 | `concurrent/EventCount.h` | advanced | `EventCount` | [24](24-concurrent.md#ch-24) |
+| `concurrent/HazardPointer.h` | advanced | `HazardDomain`, `hazard_pointer`, `hazard_pointer_obj_base`, `HazardPointers` | [24](24-concurrent.md#ch-24) |
 | `concurrent/LockFreePriorityQueue.h` | advanced | `LockFreePriorityQueue` | [24](24-concurrent.md#ch-24) |
+| `concurrent/LockFreeQueue.h` | advanced | `LockFreeQueue` | [24](24-concurrent.md#ch-24) |
+| `concurrent/LockFreeStack.h` | advanced | `LockFreeStack` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MPMCQueue.h` | advanced | `MPMCQueue` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MPSCInbox.h` | advanced | `MPSCInbox` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MPSCQueue.h` | advanced | `MPSCQueue` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MinBoard.h` | advanced | `MinBoard` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MultiQueue.h` | advanced | `MultiQueue`, `MultiQueueHeap` | [24](24-concurrent.md#ch-24) |
+| `concurrent/Reclaim.h` | advanced | `Retirable` | [24](24-concurrent.md#ch-24) |
 | `concurrent/SPSCQueue.h` | advanced | `SPSCQueue` | [24](24-concurrent.md#ch-24) |
 | `concurrent/SingleWriterFlatTable.h` | advanced | `SingleWriterFlatTable` | [24](24-concurrent.md#ch-24) |
 | `concurrent/StealablePriorityQueue.h` | advanced | `StealablePriorityQueue`, `StealingFrontier` | [24](24-concurrent.md#ch-24) |
@@ -2125,7 +2135,7 @@ only, by chapter.
 | [7](07-dictionary.md#ch-7) | `dictionary/HashFunctions.h`, `dictionary/RowFingerprint.h`, `dictionary/TableSize.h` |
 | [8](08-tree.md#ch-8) | `tree/BinaryTreeAlgorithms.h`, `tree/ExpressionTree.h`, `tree/HeapByInsertion.h` |
 | [9](09-priority.md#ch-9) | `priority/OrderKey.h`, `priority/PriorityQueue.h`, `priority/QueueCustomization.h` |
-| [10](10-set.md#ch-10) | `interop/croaring/CRoaring.h`, `set/SetOperations.h`, `set/VectorIntersection.h` |
+| [10](10-set.md#ch-10) | `interop/croaring/CRoaring.h`, `parallel/ParallelSketch.h`, `set/SetOperations.h`, `set/VectorIntersection.h` |
 | [12](12-sort.md#ch-12) | `sort/CountingSort.h`, `sort/EngineeredQuickSorts.h`, `sort/ExchangeSorts.h`, `sort/ExternalSort.h`, `sort/Heapsort.h`, `sort/InsertionSort.h`, `sort/KnuthSorts.h`, `sort/LearnedSort.h`, `sort/MergeSort.h`, `sort/MultikeyQuickSort.h`, `sort/PdqSort.h`, `sort/PigeonholeSort.h`, `sort/QuickSort.h`, `sort/RadixSort.h`, `sort/RunSorts.h`, `sort/SampleSort.h`, `sort/SelectionSort.h`, `sort/ShellSort.h`, `sort/Sort.h`, `sort/Sorted.h`, `sort/SortingNetworks.h`, `sort/StrandSort.h`, `sort/StringSort.h`, `sort/TreeSort.h`, `sort/VectorQuickSort.h` |
 | [13](13-algorithm.md#ch-13) | `algorithm/AkraBazzi.h`, `algorithm/BinaryCounter.h`, `algorithm/Hanoi.h`, `algorithm/MonteCarlo.h`, `algorithm/Paradigms.h`, `algorithm/SequenceQueries.h`, `algorithm/Subsequences.h`, `optimization/CoinChange.h`, `optimization/CoinGame.h`, `optimization/FractionalKnapsack.h`, `optimization/HouseProblems.h`, `optimization/IntervalCover.h`, `optimization/Intervals.h`, `optimization/Knapsack.h`, `optimization/KnapsackVariants.h`, `optimization/LinearPartition.h`, `optimization/SequenceProblems.h`, `optimization/ShortestJobFirst.h`, `optimization/StockTrading.h` |
 | [14](14-graph.md#ch-14) | `graph/BlossomMatching.h`, `graph/EulerianCycle.h`, `graph/FlowApplications.h`, `graph/Grid.h`, `graph/Matching.h`, `graph/Paths.h`, `graph/Properties.h`, `graph/PushRelabel.h`, `graph/StrongComponents.h`, `interop/lemon/Parallel.h` |
@@ -2138,7 +2148,7 @@ only, by chapter.
 | [21](21-compression.md#ch-21) | `compression/ALP.h`, `compression/BinaryPacking.h`, `compression/Entropy.h`, `compression/FastLanes.h`, `compression/HuffmanCoder.h`, `compression/LZ77Linear.h`, `compression/Rans.h`, `compression/StreamVByte.h`, `compression/Tans.h` |
 | [22](22-succinct.md#ch-22) | `interop/sdsl/Sdsl.h` |
 | [23](23-external.md#ch-23) | `external/ExternalSorting.h`, `external/ListRanking.h`, `interop/cereal/Cereal.h` |
-| [25](25-parallel.md#ch-25) | `parallel/Affinity.h`, `parallel/Farm.h`, `parallel/ParallelGraph.h`, `parallel/ParallelGreedy.h`, `parallel/ParallelMerge.h`, `parallel/ParallelNumeric.h`, `parallel/ParallelShortestPaths.h`, `parallel/ParallelSort.h`, `parallel/ParallelText.h`, `parallel/Scratch.h` |
+| [25](25-parallel.md#ch-25) | `parallel/Affinity.h`, `parallel/Farm.h`, `parallel/ParallelBiconnectivity.h`, `parallel/ParallelGraph.h`, `parallel/ParallelGreedy.h`, `parallel/ParallelMerge.h`, `parallel/ParallelNumeric.h`, `parallel/ParallelShortestPaths.h`, `parallel/ParallelSort.h`, `parallel/ParallelText.h`, `parallel/Scratch.h` |
 | [26](26-distributed.md#ch-26) | `distributed/DistributedSort.h` |
 
 ## 1.13 Typed modifications {#sec-1-13}

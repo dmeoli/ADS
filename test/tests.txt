@@ -541,11 +541,19 @@ hashing  filters-fingerprint-rate falsi positivi dei filtri statici, 3 sigma
 hashing  minimal-perfect-hash  hash perfetto minimo a piloti
 hashing  recsplit              hash perfetto minimo per divisione ricorsiva
 hashing  fingerprint-perfect-hash  hash perfetto minimo a impronte per livelli
+hashing  ptrhash               hash perfetto minimo a piloti di 8 bit, PtrHash
 hashing  bucket-cuckoo         cuckoo a bucket di 4 posti
 hashing  bucket-cuckoo-stash   cuckoo a bucket, hash costante e stash
 hashing  grafite-filter        filtro di intervalli Grafite, query correlate
 hashing  bucketing-filter      filtro di intervalli a bucket
 hashing  range-filters-32      filtri di intervalli su chiavi di 32 bit
+
+# the sketches of streams, beyond the book
+sketches  count-min              Count-Min, semplice e conservativo
+sketches  count-sketch           Count sketch e secondo momento
+sketches  minhash-jaccard        minhash a una permutazione, densificazione
+sketches  minhash-edges          minhash, unioni e casi limite
+sketches  parallel-sketch        costruzione parallela per unione
 # the engineered algorithms on strings, beyond the book
 engineered_strings  string-search   filtro SIMD, q-grammi e Two-Way
 engineered_strings  suffix-sorting  SA-IS ingegnerizzato e LCP con Phi
@@ -606,6 +614,15 @@ engineered_queues  lockfree-pq             coda di priorità esatta senza lock
 engineered_queues  lockfree-pq-threads     più thread, ogni coppia una volta, in ordine
 engineered_queues  lockfree-pq-linearizable storie brevi, un ordine che le spiega
 engineered_queues  lockfree-pq-epochs      offset nullo, epoche, limbo
+engineered_queues  lockfree-pq-policies    coda esatta con le epoche di Fraser, R 1 e 16
+engineered_queues  hazard-pointers         puntatori di pericolo di C++26
+engineered_queues  hazard-pointers-stalled thread fermo, nodi in attesa limitati
+engineered_queues  epoch-reclaim           epoche di Fraser, limbo
+engineered_queues  lockfree-stack          pila di Treiber, ogni politica
+engineered_queues  lockfree-stack-threads  pila di Treiber su più thread
+engineered_queues  lockfree-queue          coda di Michael e Scott, ogni politica
+engineered_queues  lockfree-queue-threads  coda di Michael e Scott su più thread
+engineered_queues  reclaim-races           corse costruite per i sanitizer
 engineered_queues  min-board              lavagna dei minimi, un thread
 engineered_queues  min-board-threads      lavagna dei minimi, più scrittori e lettori
 
@@ -1746,6 +1763,8 @@ succinct_top  succinct-top      Elias-Fano e parentesi col livello alto
 
 # the engineered succinct structures and codes, beyond the book
 engineered_succinct  compact-rank-select  rank e select compatti, 3.5% di bit
+engineered_succinct  tiny-rank-select  rank e select di 3*, 0.8% di bit
+engineered_succinct  tiny-rank-select-large  rank e select di 3* oltre 2^32 bit
 engineered_succinct  rank-select-lazy  inventari di select costruiti al primo uso
 engineered_succinct  rank-select-words  RankSelect e compatto dalle parole, copiate contandole
 engineered_succinct  huffman-wavelet-tree  wavelet tree di Huffman, access rank select
@@ -1798,6 +1817,13 @@ engineered_graph  scc-one-pass        componenti forti in una visita
 engineered_graph  euler-trails        cammini e cicli euleriani, orientati e no
 engineered_graph  blossom-matching    abbinamento massimo, fiori di Edmonds
 engineered_graph  weighted-blossom    abbinamento di peso massimo, fiori pesati
+
+# the blocks, the cut nodes, the bridges and the 2-edge-connected
+# components, sequential and parallel
+engineered_biconnectivity  biconnected-definitions  blocchi contro la definizione
+engineered_biconnectivity  biconnected-shapes       vuoto, un arco, stella, cammino di 10^6
+engineered_biconnectivity  biconnected-parallel     FAST-BCC contro la visita, ogni famiglia
+engineered_biconnectivity  biconnected-boost        visita e FAST-BCC contro Boost.Graph
 
 # the files of records on the disk, beyond the book
 engineered_external  record-file-empty          file assente, vuoto, tolto
@@ -2259,6 +2285,7 @@ engineered_persistence  persistence-learned  PGM-index, anche compresso
 engineered_persistence  persistence-succinct-graphs  k2-tree, BV e Elias-Fano, move structure
 engineered_persistence  persistence-filters  Bloom, cuckoo, ribbon, binary fuse, prefix, Grafite
 engineered_persistence  persistence-filters-version1  Ribbon e binary fuse dei file della versione 1
-engineered_persistence  persistence-perfect-hash  PTHash, RecSplit, BBHash, FKS, CHM
+engineered_persistence  persistence-sketches  gli sketch dei flussi
+engineered_persistence  persistence-perfect-hash  PTHash, PtrHash, RecSplit, BBHash, FKS, CHM
 engineered_persistence  persistence-graphs  StaticGraph e CsrMatrix, viste allineate
 engineered_persistence  persistence-cereal  gli archivi di cereal e il bit_vector di sdsl

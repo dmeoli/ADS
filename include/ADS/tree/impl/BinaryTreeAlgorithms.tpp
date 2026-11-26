@@ -193,7 +193,7 @@ N lowestCommonAncestor( N u , N v )
     return( false );
   return( true );
   }() );
- return( u );
+ return( v );
  }
 
 template< KeyedBinaryNode N , KeyedBinaryNode M , class Equal >

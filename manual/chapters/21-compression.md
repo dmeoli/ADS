@@ -1888,7 +1888,7 @@ place before, and the other occurrences follow by
 [Lemma 21.19](21-compression.md#lem-21-19), $\phi$ shifting alike the
 places between two samples of the starts of the runs. Both move
 structures are balanced, and each move takes at most 3 steps by
-[Lemma 22.19](22-succinct.md#lem-22-19). $\square$
+[Lemma 22.21](22-succinct.md#lem-22-21). $\square$
 
 We compare the four indexes in [Table 21.8](21-compression.md#tab-21-8). Their
 space and speed, measured on a common set of texts, belong to the campaign

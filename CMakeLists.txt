@@ -126,6 +126,33 @@ endif ()
 find_package(Threads REQUIRED)
 target_link_libraries(ADS INTERFACE Threads::Threads)
 
+# libatomic for the atomics wider than two words, which std::atomic_ref
+# reads and writes under a lock [see ConcurrentCuckooTable.h]: linked only
+# where the compiler calls it instead of building those atomics in (e.g.,
+# GCC and Clang on x86-64).
+include(CheckCXXSourceCompiles)
+include(CMakePushCheckState)
+set(_ads_atomic "
+    #include <atomic>
+    #include <cstdint>
+    struct W { std::int64_t a , b , c; };
+    std::atomic< W > w;
+    int main( void ) {
+     w.store( W{ 1 , 2 , 3 } );
+     return( int( w.load().a ) - 1 );
+     }")
+cmake_push_check_state(RESET)
+set(CMAKE_REQUIRED_QUIET ON)
+check_cxx_source_compiles("${_ads_atomic}" ADS_ATOMIC_BUILTIN)
+if (NOT ADS_ATOMIC_BUILTIN)
+    set(CMAKE_REQUIRED_LIBRARIES atomic)
+    check_cxx_source_compiles("${_ads_atomic}" ADS_ATOMIC_LIBATOMIC)
+endif ()
+cmake_pop_check_state()
+if (ADS_ATOMIC_LIBATOMIC)
+    target_link_libraries(ADS INTERFACE atomic)
+endif ()
+
 # BigInteger and Rational on GMP [see BigInteger.h and Rational.h], gemm()
 # on a CBLAS [see DenseMatrix.h]: AUTO, the default, turns each on when a
 # program that calls the library compiles and links, ON requires it (an
@@ -653,7 +680,10 @@ if (ADS_BENCHMARKS)
                    xor_singleheader/include pthash/include
                    pthash/external/bits pthash/external/bits/include
                    pthash/external/bits/external/essentials/include
-                   pthash/external/mm_file/include BBHash sux)
+                   pthash/external/mm_file/include BBHash sux
+                   datasketches-cpp/common/include
+                   datasketches-cpp/count/include
+                   datasketches-cpp/theta/include)
             target_include_directories(bench-hashing SYSTEM
                                        PRIVATE ${ADS_HASHING}/${d})
         endforeach ()
@@ -895,7 +925,7 @@ install(FILES
 # gmp.pc, with a CBLAS its define, its headers and its library, with Boost
 # its define and its headers, with hwloc its define and hwloc.pc, and with
 # Highway its define and its two libraries, by libhwy-contrib.pc and
-# libhwy.pc.
+# libhwy.pc, and libatomic where the targets link it.
 if (IS_ABSOLUTE "${ADS_INSTALL_PKGCONFIGDIR}")
     set(ADS_PC_PREFIX "${CMAKE_INSTALL_PREFIX}")
 else ()
@@ -919,6 +949,9 @@ endif ()
 if (ADS_USE_BLAS)
     string(APPEND ADS_PC_CFLAGS " -DADS_WITH_BLAS ${ADS_BLAS_PC_CFLAGS}")
     set(ADS_PC_LIBS "${ADS_BLAS_PC_LIBS}")
+endif ()
+if (ADS_ATOMIC_LIBATOMIC)
+    string(APPEND ADS_PC_LIBS " -latomic")
 endif ()
 if (ADS_USE_BOOST)
     string(APPEND ADS_PC_CFLAGS " -DADS_WITH_BOOST${ADS_BOOST_PC_CFLAGS}")

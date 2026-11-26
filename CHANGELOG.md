@@ -9,6 +9,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `TinyRankSelect` (`BasicTinyRankSelect< L0 >`, with blocks of `L0` =
+  512, 1024 or 2048 bits), the rank and select of 3* of Kurpicz,
+  Rigi-Luperti and Sanders: an entry of 512 bits per superblock of 32
+  blocks, i.e., 0.78125% of the bits for the rank with the default blocks of
+  2048 bits, and a select in constant time in the worst case through a tree
+  of samples of three levels packed at the widths that its values need, a
+  few hundredths of a percent of the bits for each value where the bits are
+  spread evenly; its parallel construction on an executor, its persistence,
+  and its use as the directory of `HuffmanWaveletTree` (whose parallel
+  construction now takes any directory built on an executor); the kernel
+  `detail::lineRank()` on several lines and `detail::lineCount()`; the
+  tests `engineered_succinct.tiny-rank-select` and `tiny-rank-select-large`
+  (on 2^32 + 70 bits), the tiny directories in the tests of the parallel
+  construction, of the persistence and of `succinct_top`, the cells
+  `ADS::TinyRankSelect` and `ADS::TinyRankSelect<1024>` of the benchmark
+  `bitvector` against pasta, sdsl-lite (with the new cell
+  `sdsl::rank_support_v5+mcl`) and sux, and the part of section 22.4 of the
+  manual on it (Algorithm 22.8, Lemmas 22.7 and 22.8)
+- `PtrHash`, the minimal perfect hash function of Groot Koerkamp by pilots
+  of 8 bits stored as bytes, placed in parts of the same slots and buckets
+  by decreasing size and, when no pilot below 256 sends a bucket to free
+  slots, by the pilot of the least weighted collisions with the eviction of
+  the buckets it meets, with the linear or the cubic bucket function, the
+  slots beyond n remapped by an array or by an Elias-Fano sequence,
+  `stream()` of a range of keys with the pilot 32 keys ahead prefetched,
+  `prefetch()`, and a constructor that builds the parts on an executor with
+  the same pilots; persistent, in the advanced set and in the module
+  `ads.advanced`; the test `hashing.ptrhash`, its round trips in
+  `engineered_persistence.persistence-perfect-hash`, the cells of
+  `bench/hashing.cpp` against PTHash and PHOBIC (with the batch queries),
+  and section 7.8.4 of the manual (Algorithm 7.20, Lemma 7.30)
+- the sketches of streams, mergeable, persistent (by `store()` and the
+  bridge of cereal) and hashed by `FastHash::hash64()` finished by
+  `splitmix64()`, which consecutive integers need: `CountMinSketch`, with
+  the plain and the conservative update, and `CountSketch`, with its
+  estimate of the second moment; `MinHashSketch`, the minwise hashing of
+  one permutation with the optimal densification of Shrivastava; and
+  `parallelSketch()` of `ParallelSketch.h`, which builds any of them on an
+  executor by the merges of the sketches of the blocks of
+  `parallelReduce()`, equal to the sequential one for the sketches whose
+  merge is exact; the tests `sketches`,
+  `engineered_persistence.persistence-sketches` and the sketches in
+  `persistence-cereal`, the part `sketches` of `bench-hashing` against
+  DataSketches 5.3.1 (its theta and Count-Min sketches, from the directory
+  `datasketches-cpp` of `HASHING`), and section 10.12 of the manual (Lemmas
+  10.24 to 10.26)
+- the reclamation of the memory of the lock-free structures as policies of
+  their templates [see `concurrent/Reclaim.h`]: the epochs of Fraser
+  (`FraserEpochs< R >`, an attempt to raise the epoch per `R`
+  retirements) in `concurrent/EpochReclaim.h`, and the hazard pointers of
+  Michael in `concurrent/HazardPointer.h`, with the interface of
+  `std::hazard_pointer` of C++26 (`hazard_pointer_obj_base`,
+  `make_hazard_pointer()`, `protect()`, `try_protect()`,
+  `reset_protection()`, `retire()`) on a domain of the program and, as the
+  policy `HazardPointers`, on a domain owned by a structure, under which
+  fewer than `2 H + 64` nodes wait in the bin of each thread, `H` the
+  slots, whatever the threads do; `LockFreeStack`, the stack of Treiber,
+  and `LockFreeQueue`, the queue of Michael and Scott, which take either,
+  `FraserEpochs< 64 >` by default; `LockFreePriorityQueue` takes the epochs
+  as its last parameter, `FraserEpochs< 64 >` by default (with
+  `FraserEpochs<>` its reclamation is the one it had); the tests
+  `engineered_queues.hazard-pointers`, `hazard-pointers-stalled`,
+  `epoch-reclaim`, `lockfree-stack`, `lockfree-stack-threads`,
+  `lockfree-queue`, `lockfree-queue-threads`, `reclaim-races` and
+  `lockfree-pq-policies`, the case `reclaim` of `bench-concurrent` against
+  the queue of Michael and Scott of xenium under its reclamations
+  (`XENIUM=<include dir>` of the makefile) and `boost::lockfree::queue`,
+  and section 24.14 of the manual (Lemmas 24.37 to 24.41)
 - the light-weight codes of the columns of a database in
   `compression/`: `FastLanes.h`, the bit-packing of vectors of 1024
   unsigned integers of 8, 16, 32 or 64 bits in the lanes of a virtual
@@ -91,6 +159,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `BlockedBloomFilter`, `CuckooFilter`, `IndexedHeapPair`,
   `SequenceRange`, the prefetch, `ArenaResource` and `PmrResource`) and
   the pseudocodes of the headers that no chapter included
+- `Biconnectivity.h`, the blocks, the cut nodes, the bridges, the
+  2-edge-connected components and the block-cut tree of an unoriented graph
+  (`biconnectedComponents()`, `twoEdgeConnectedComponents()`,
+  `blockCutTree()` and the result `BiconnectedComponents`), by one visit in
+  depth of Hopcroft and Tarjan on an explicit stack and with no stack of
+  edges, the block of each edge read from the block of its deeper end; and
+  `ParallelBiconnectivity.h`, the same results on an executor by FAST-BCC of
+  Dong, Wang, Gu and Sun, on the spanning forest of the links of Afforest,
+  rooted by the tour of Euler ranked by a sparse ruling set; the tests
+  `engineered_biconnectivity`, against the definitions by brute force, the
+  sequential visit and Boost.Graph, the benchmark `bcc` of `graphs` against
+  `biconnected_components()` of Boost.Graph and of `parallel` (with the
+  graphs written for the Tarjan-Vishkin of GBBS under `ADS_BCC_DUMP`), and
+  section 14.5.6 of the manual (Algorithm 14.12, Lemmas 14.16 to 14.18) and
+  part of section 25.9 (Algorithm 25.19, Lemmas 25.15 and 25.16)
 
 ### Changed
 
@@ -98,7 +181,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the run-time path of their directory, as those of GMP, BLAS, hwloc and
   oneTBB already were, so that no library path is needed to run the
   programs
-
+- the connected components of `ParallelGraph.h` run on a function of the
+  links of Afforest that also takes a filter of the arcs and gives the
+  links that join two sets, a spanning forest, on which FAST-BCC rests; the
+  results and the order of the links are those of before
 - `FlatHashTable` keeps the code of ADS also where `ADS_WITH_BOOST` is
   defined, since on the benchmarks it is on a par with
   `boost::unordered_flat_map` (a median ratio of the times of 0.93 on the
@@ -289,6 +375,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `lowestCommonAncestor()` of `BinaryTreeAlgorithms.h` returns the node
+  where the two climbs meet by the second of them, which GCC 15 compiles
+  right at `-O1` and above, where with the first it gave, on GCC 15.3, a
+  pointer that the caller took for different from every node it passed
+  (e.g., `lowestCommonAncestor( u , u ) != u`)
+- the link of the programs that include `ConcurrentCuckooTable.h` with a
+  value wider than two words, whose atomics the compiler calls in libatomic
+  (e.g., GCC and Clang on x86-64): the target `ADS::ADS`, `ads.pc` and
+  `$(ADSLIB)` of the makefile carry `-latomic` where a probe program needs
+  it, and `engineered_capabilities` links with Clang
 - `ArrayGraph` has `weighted`, `arcs()`, `arcHeads()` and `arcWeights()`,
   with the meaning of those of `StaticGraph`, so that `CsrInput` of
   `Csr.h` and `view()` of `GraphBLAS.h` take it, as their documentation

@@ -750,11 +750,12 @@ ADS_TEST( "lemon-tap" )
   thrown = true;
   }
  CHECK( thrown && ! tap.spoiled() );
- #if __has_include( <lemon/bipartite_matching.h> )  // abLEMON removes it
- CHECK( ( lemon::countArcs( g ) == arcs ) && same( other ) );
- #else
- CHECK( lemon::countArcs( g ) == arcs + 1 );  // LEMON 1.3 keeps it
- #endif
+ // the arc refused: abLEMON (from 1.9.0-37) removes it, and the other
+ // observer then holds the graph; LEMON 1.3 keeps it
+ if( lemon::countArcs( g ) == arcs )
+  CHECK( same( other ) );
+ else
+  CHECK( lemon::countArcs( g ) == arcs + 1 );
  sh.refuse = 0;
  g.clear();
  CHECK( same( sh ) );

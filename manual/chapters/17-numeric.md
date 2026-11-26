@@ -1852,8 +1852,8 @@ $$
 q = T m^{-1} \bmod R . \tag{17.13}
 $$
 
-<span id="lem-17-18"></span>**Lemma 17.18 (Montgomery).** *For $T = h R
-+ l < m R$, (17.13) is an integer in $( - m , m )$, equal to $h - \lfloor q
+<span id="lem-17-18"></span>**Lemma 17.18 (Montgomery).** *For $T = h
+R + l < m R$, (17.13) is an integer in $( - m , m )$, equal to $h - \lfloor q
 m / R \rfloor$; hence one addition of $m$ when it is negative gives $T
 R^{-1} \bmod m$, with two products and no division.*
 

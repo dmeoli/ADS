@@ -4,8 +4,9 @@
 `MPSCInbox.h`, `MPMCQueue.h`, `WorkStealingDeque.h`,
 `ConcurrentUnionFind.h`, `ConcurrentCuckooTable.h`,
 `ConcurrentFlatTable.h`, `MultiQueue.h`, `EventCount.h`, `Backoff.h`,
-`StealablePriorityQueue.h`, `LockFreePriorityQueue.h`, and their
-`impl/*.tpp`]
+`StealablePriorityQueue.h`, `LockFreePriorityQueue.h`, `Reclaim.h`,
+`EpochReclaim.h`, `HazardPointer.h`, `LockFreeStack.h`,
+`LockFreeQueue.h`, and their `impl/*.tpp`]
 
 We are concerned in this chapter with the structures that several threads of
 one process read and change at the same time, without a lock or with as few
@@ -13,8 +14,10 @@ locks as possible. They are the queues between producers and consumers, the
 deque of the scheduling by work stealing, the union-find and the hash tables
 that the threads share, the relaxed priority queue, the event count on which a
 thread sleeps until a condition holds, the priority queues of the workers of a
-parallel search, from which the idle workers steal, and an exact priority queue
-without locks. These structures are the bricks of the parallel algorithms and
+parallel search, from which the idle workers steal, an exact priority queue
+without locks, and the reclamation of the memory of the nodes of the
+structures that any thread may unlink, with the stack and the queue that
+take it. These structures are the bricks of the parallel algorithms and
 of the runtime of the workers of [chapter 25](25-parallel.md#ch-25), and of the
 parallel searches of the library. Each of them gives, in a precise sense, the
 result of a sequential structure of the earlier chapters; its cost, however,
@@ -34,8 +37,11 @@ structures and their costs. Then [§24.3](24-concurrent.md#sec-24-3) and
 the two hash tables. We treat the MultiQueue in
 [§24.9](24-concurrent.md#sec-24-9), the ways in which a thread waits in
 [§24.10](24-concurrent.md#sec-24-10), the priority queues that are
-stolen in [§24.11](24-concurrent.md#sec-24-11), and the exact priority
-queue without locks in [§24.12](24-concurrent.md#sec-24-12). The file
+stolen in [§24.11](24-concurrent.md#sec-24-11), the exact priority
+queue without locks in [§24.12](24-concurrent.md#sec-24-12), the
+structures of one writer in [§24.13](24-concurrent.md#sec-24-13), and the
+reclamation of the memory of the nodes, with the stack and the queue
+without locks, in [§24.14](24-concurrent.md#sec-24-14). The file
 `impl/Spin.tpp`
 holds only two helpers that the other headers share (the pause of the
 processor in a loop that spins, and the prefetch of a line of cache), and
@@ -151,6 +157,10 @@ MultiQueue, and $k$ that of the messages taken at once.
 | `MultiQueue` | any, by a handle each | blocking (a lock per queue, taken at the first try) | $O( \log m )$ amortized, $q / ( q - 1 )$ draws expected; relaxed |
 | `StealablePriorityQueue` | one owner, many thieves | wait-free for the owner, lock-free steal | $O( \log m )$ for the owner, no read-modify-write; one exchange per steal |
 | `LockFreePriorityQueue` | any, by a handle each | lock-free but for the allocation of a node; reclamation blocking | $O( \log m )$ expected insertion, two CAS on average; one FAO per DeleteMin, plus the prefix walked; exact |
+| `LockFreeStack` | any, by a handle each | lock-free but for the allocation of a node and for the reclamation | one CAS per push and per pop without contention, plus the reclamation |
+| `LockFreeQueue` | any, by a handle each | lock-free but for the allocation of a node and for the reclamation | two CAS per enqueue, one per dequeue without contention, plus the reclamation |
+| `EpochDomain` (`FraserEpochs`) | any, by a record each | blocking: a thread stopped in a guard stops the frees | one exchange per guard; $O( N )$ per $R$ retirements, for $N$ records |
+| `HazardDomain` (`HazardPointers`, `hazard_pointer`) | any, by a record or a hazard pointer each | lock-free; fewer than $B ( 2 H + 64 )$ nodes waiting | one exchange per node protected; $O( \log H )$ amortized per node retired, for $H$ slots and $B$ bins |
 | `EventCount` | any | a waiter sleeps, a notifier never waits | a fence and a read when nobody waits |
 | `SingleWriterFlatTable` | one writer, many readers | wait-free for the writer but for the allocation of a growth, wait-free lookups but across a growth | $O( 1 )$ expected, no read-modify-write; $O( 1 )$ amortized for the growths |
 | `MinBoard` | one writer per slot, many readers | wait-free | a load and at most a store per publish, $p$ loads per `min()`; coherence only |
@@ -2559,45 +2569,35 @@ after $\nu$ by (ii). (iv) Follows from (iii) and from [Lemma
 24.30](24-concurrent.md#lem-24-30), since the pointers lead forward.
 $\square$
 
-The memory of the nodes cut off is reclaimed by epochs ([Fraser
-2004](Z-bibliography.md#ref-fraser2004); [Hart et al.
-2007](Z-bibliography.md#ref-hart2007)), which the queue owns, since the
-area has no other reclamation that fits a structure of nodes (the epochs of
-`ConcurrentFlatTable` clear a table, they do not free memory). The queue
-keeps an epoch $E$, and each handle a record with the epoch announced,
-$2 e + 1$ inside an operation of the epoch $e$ and 0 outside. An operation
-reads $E$ and makes the announce by a sequentially consistent exchange
-before it reads the list, whose words it then reads with sequential
-consistency too. The thread of a cut stamps the nodes cut off
-with $E$, read with sequential consistency after the cut and the
-restructure, keeps them in its record, and then raises $E$ by a CAS if all the
-records inside an operation announce $E$; a node stamped $r$ is freed once
-its thread reads $E \ge r + 2$. Let a thread $t$ reach a node stamped $r$
-inside an operation. If the announce of $t$ followed in the total order $S$
-of [§24.1](24-concurrent.md#sec-24-1) the last CAS of the cut and of its
-restructure, so would the reads of $t$, sequenced after it. A
-sequentially consistent read that precedes a write in the order of the
-modifications of its word precedes that write in $S$ (it is
-coherence-ordered before it), so that these reads would see the words
-written by the CAS, and $t$ would reach no node cut, by [Lemma
-24.32](24-concurrent.md#lem-24-32) (iv). Hence the announce of $t$
-precedes that CAS in $S$, which precedes the read of $E = r$. The read of
-$E$ by which $t$ made its announce $a$ precedes the announce, and therefore
-$a \le r$; the read of $E = r$ precedes the CAS from $r$ to $r + 1$.
-The scan that would raise $E$ from $r + 1$ to $r + 2$ follows that CAS,
-and hence the announce of $t$, in $S$; it sees the announce $a \ne r + 1$,
-or a later value of the record, and cannot raise $E$ while $t$ stays
-inside its operation. Of course, a relaxed store of the announce
-followed by a sequentially consistent fence, with reads that acquire,
-gives the same order through the rules of the fences. We prefer the
-exchange, since the sanitizer of threads does not model the fences, and
-on x86-64 it is one instruction where the store and the fence are two
-(a sequentially consistent load is there the same plain load as one that
-acquires). No node is leaked: the destructor frees those
-that wait for their epoch and those still in the list. The reclamation is
-blocking, as in the paper: a thread stopped inside an operation keeps $E$
-from growing, and the nodes cut off afterwards from being freed, while the
-operations of the other threads go on.
+The memory of the nodes cut off is reclaimed by a policy of
+[§24.14](24-concurrent.md#sec-24-14), owned by the queue: by default the epochs
+of [Fraser 2004](Z-bibliography.md#ref-fraser2004) (see also [Hart et al.
+2007](Z-bibliography.md#ref-hart2007)), `FraserEpochs< 64 >`, or those of any
+other $R$, while the hazard pointers do not fit, since the walk of a DeleteMin
+goes on from nodes that may have been cut off, and the queue refuses them when
+compiling (the epochs of `ConcurrentFlatTable`, on the other hand, clear a
+table, and free no memory). Each handle holds a record of the domain, whose
+guard announces the epoch $E$ by a sequentially consistent exchange before the
+operation reads the list, whose words it then reads with sequential consistency
+too. The thread of a cut retires the nodes cut off after the cut and the
+restructure, stamps them with $E$ read then, and tries to raise $E$ at the end
+of its DeleteMin once $R$ nodes have been retired since its last attempt; a
+node stamped $r$ is freed once its thread reads $E \ge r + 2$. By [Lemma
+24.32](24-concurrent.md#lem-24-32) (iv) the last CAS of the cut and of its
+restructure *unlinks* the nodes cut off, in the sense of
+[§24.14](24-concurrent.md#sec-24-14): a thread whose reads follow it in the
+total order $S$ of [§24.1](24-concurrent.md#sec-24-1) reaches no node cut off.
+Hence, by [Lemma 24.37](24-concurrent.md#lem-24-37), no node cut off is freed
+while an operation that reached it runs. Of course, a relaxed store of the
+announce followed by a sequentially consistent fence, with reads that acquire,
+gives the same order through the rules of the fences. We prefer the exchange,
+since the sanitizer of threads does not model the fences, and on x86-64 it is
+one instruction where the store and the fence are two (a sequentially
+consistent load is there the same plain load as one that acquires). No node is
+leaked: the destructor frees those still in the list, and the domain those that
+wait for their epoch. The reclamation is blocking, as in the paper: a thread
+stopped inside an operation keeps $E$ from growing, and the nodes cut off
+afterwards from being freed, while the operations of the other threads go on.
 
 <span id="lem-24-33"></span>**Lemma 24.33.** *The operations are
 lock-free but for the allocation of the nodes: in an infinite run of
@@ -2653,7 +2653,8 @@ timing them. The public members of the queue are
 
 ```cpp
 // declarations of <ADS/concurrent/LockFreePriorityQueue.h>
-template< class K , class T , class Less = std::less< K > >
+template< class K , class T , class Less = std::less< K > ,
+          reclamation_policy R = FraserEpochs< 64 > >
 class LockFreePriorityQueue
 {
  public:
@@ -2687,14 +2688,16 @@ class LockFreePriorityQueue
  bool empty( void ) const;
  std::size_t prefix( void ) const;
  bool consistent( void ) const;
+ const typename R::Domain & domain( void ) const;
  };
 ```
 
 where `size()`, `empty()`, `prefix()` and `consistent()` of the queue are
-called with no operation running, while `empty()` of a handle is
+called with no operation running, `domain()` gives the counters of the
+reclamation, while `empty()` of a handle is
 linearizable, as `tryMinKey()`; as in the MultiQueue, the constant
 `decrease_key` declares that a key is lowered by a new pair. Each thread
-takes a handle, which holds its record of the epochs:
+takes a handle, which holds its record of the reclamation:
 
 ```cpp
 ADS::LockFreePriorityQueue< int , int > Q;  // b = 32
@@ -2923,7 +2926,371 @@ publish costs a load of a line that the owner holds, and a store only
 when the key changes; `min()` costs $p$ loads of lines that only their
 owners write.
 
-## 24.14 Discussion and references {#sec-24-14}
+## 24.14 The reclamation of the memory of the nodes {#sec-24-14}
+
+We now turn to the structures of nodes that any thread may unlink: the
+stack of [Treiber 1986](Z-bibliography.md#ref-treiber1986), the queue of
+[Michael and Scott 1996](Z-bibliography.md#ref-michael1996) and the
+skiplist of [§24.12](24-concurrent.md#sec-24-12). In them a thread that
+has unlinked a node cannot free it at once, since another thread may have
+reached it just before and may still read it. The queues of the earlier
+sections avoid the problem by construction (the blocks of `MPSCQueue` and
+`MPSCInbox` go back to their producer, and the places of `MPMCQueue` are
+never freed), while `WorkStealingDeque` and `ConcurrentFlatTable` keep the
+vectors they replace until they are destroyed, which costs less than the
+vector in use. A list of nodes, however, may hold any number of them over
+time (typically, far more than it holds at once), and it needs a
+*reclamation*. We say that a node is *retired* when
+the thread that unlinked it hands it over, and the reclamation frees it
+once no thread may still hold it. Note that the reclamation also removes
+the ABA problem of [§24.1](24-concurrent.md#sec-24-1) from these
+structures: a node that is protected is not freed, and therefore it is not
+allocated again and linked anew while a compare-and-swap may still expect
+it (cf. [Lemma 24.40](24-concurrent.md#lem-24-40)).
+
+The reclamations of `Reclaim.h` are *policies*, i.e., parameters of the
+template of a structure. They are `FraserEpochs< R >`, the epochs of [Fraser
+2004](Z-bibliography.md#ref-fraser2004), and `HazardPointers`, the hazard
+pointers of [Michael 2004](Z-bibliography.md#ref-michael2004). A policy
+gives a domain, records and guards. The *domain* is the state that the threads
+of one structure share; the structure owns it, and its destructor frees the
+nodes still retired. The *record* of a thread on the domain (`Local< K >`, with
+$K$ slots under the hazard pointers) is held by the handle of the thread. The
+*guard* is the span of one operation on a record, and its `protect( i , s )`
+reads the pointer of the atomic $s$ and keeps the node it reaches from being
+freed. A node derives from `Retirable`, the link by which it waits in a list of
+the retired, together with the function that frees it. Under the epochs a guard
+protects all the nodes that its operation reaches (`kRegions` is true), whereas
+under the hazard pointers it protects only the node in each of its $K$ slots,
+the last one that `protect()` read into the slot. The hazard pointers therefore
+do not fit a structure whose walk goes on from a node that may have been
+retired, as the walk of the deleted prefix of the skiplist does, and
+`LockFreePriorityQueue` refuses them when compiling. The default of the
+skiplist (cf. [§24.12](24-concurrent.md#sec-24-12)), of the stack and of the
+queue is `FraserEpochs< 64 >`. In all three, the
+structure frees the nodes still in it and the domain those retired, and no
+node is leaked.
+
+Throughout the section we say that a sequentially consistent write $u$
+*unlinks* a node $x$ when no thread reaches $x$ by a read that follows $u$
+in the total order $S$ of [§24.1](24-concurrent.md#sec-24-1). In the stack,
+$u$ is the compare-and-swap of the pop that swings the top past $x$, which
+is never linked again. In the queue, it is the compare-and-swap of the
+dequeue that swings the head past $x$. In the skiplist, it is the last
+compare-and-swap of the cut of $x$ and of its restructure, by [Lemma
+24.32](24-concurrent.md#lem-24-32) (iv). A node is retired after $u$ by the
+thread of $u$, and the reads by which a thread reaches a node are all
+sequentially consistent (the `protect()` of the policies, and the reads
+`kWalk` of the skiplist); we recall that on x86-64 these are the plain
+loads of an acquire, and on AArch64 the same `ldar`.
+
+**The epochs.** The domain keeps an epoch $E$, from 2, and a list of
+records. A record announces $2 e + 1$ while its thread runs a guard of the
+epoch $e$, and 0 otherwise; it is pushed on the list by a sequentially
+consistent compare-and-swap, and it may be given back by its thread and
+taken by another, but it is freed only with the domain. A guard reads $E$
+and makes its announce by a sequentially consistent exchange, before its
+thread reads the structure. A node retired waits in one of three lists of
+its record, the *limbo* of its *label* modulo 3. The thread of the record
+frees it at the start of a later guard, or when the limbo of the same
+residue receives a node of a newer label.
+
+Under `FraserEpochs< R >` the label of a node is $E$, read after its
+unlink, and the node is freed once its thread reads $E \ge \ell + 2$ for
+the label $\ell$. A guard that ends after $R$ retirements of its record
+since the last attempt reads all the records, and raises $E$ by a CAS from
+$e$ to $e + 1$ if no record announces an odd value other than $2 e + 1$.
+With $R = 1$ the attempt follows each retirement (in
+`LockFreePriorityQueue`, in which only a cut retires, each cut), and the
+read of all the $N$ records is paid at each one; a larger $R$ shares it
+among $R$ retirements, at the price of more nodes waiting.
+
+<span id="alg-24-16"></span>**Algorithm 24.16.** The retirement of a node
+and the guard of an operation under the epochs of `EpochDomain`
+(`Local::retire()`, and the constructor and the destructor of
+`Local::Guard`).
+
+--8<-- "generated/EpochReclaim-EpochDomain-retire.pseudo.md"
+
+--8<-- "generated/EpochReclaim-EpochDomain-enter.pseudo.md"
+
+<span id="lem-24-37"></span>**Lemma 24.37.** *Under `FraserEpochs< R >`,
+let a node $x$ be unlinked by $u$ and retired with the label $\ell$, and
+let a guard $g$ reach $x$. Then $x$ is not freed before $g$ ends.*
+
+*Proof.* The reads of $g$ follow its announce in the order of its thread,
+and hence in $S$. If the announce followed $u$ in $S$, so would the read by
+which $g$ reaches $x$, against the definition of $u$; thus the announce
+precedes $u$, which precedes the read of $E = \ell$ by the retirement of
+$x$. The read of $E$ by which $g$ made its announce $2 a + 1$ precedes the
+announce, and therefore $a \le \ell$. The CAS that raises $E$ to $\ell + 2$
+follows a scan of the records that read $E = \ell + 1$, after the CAS from
+$\ell$ to $\ell + 1$, which follows in $S$ the read of $E = \ell$. The scan
+reads the first record after it, hence after the push of the record of $g$
+(which precedes the announce of $g$); it therefore reaches that record and
+reads the announce of $g$ or a later value of it. Since
+$2 a + 1 \ne 2 ( \ell + 1 ) + 1$, the scan finds an older announce, and it
+does not raise $E$ while $g$ is open. Finally, a node of the label $\ell$
+is freed only by a guard or by a retirement that reads $E \ge \ell + 2$,
+and none does so before $g$ ends. $\square$
+
+The epochs are thus blocking. Indeed, a thread stopped inside a guard keeps
+$E$ from growing past its epoch plus 1, and all the nodes retired
+afterwards from being freed, while the operations of the other threads go
+on. The nodes waiting then grow without bound (the test
+`engineered_queues.hazard-pointers-stalled` shows it), and they are freed
+once the thread leaves its guard.
+
+**The hazard pointers.** The domain of `HazardPointers` keeps a list of
+*slots* and a list of *bins*. A slot is a word that holds a node protected
+by its thread, or nil, and a bin is the list of the nodes retired by one
+thread; both are pushed by a sequentially consistent compare-and-swap,
+given back and taken again, and freed only with the domain, and we write
+$H$ for the number of the slots made so far. A guard protects the node
+reached by the atomic $s$ in its slot $h$ by reading $p$ from $s$, writing
+$p$ in $h$ and reading $s$ again, until the two reads agree; the write and
+the second read are sequentially consistent. A node retired goes into the
+bin of its thread. When the bin holds $2 H + 64$ nodes, the thread reads
+all the slots into a vector, sorts it, and frees each node of its bin that
+the vector does not hold (the *scan*). The same domain, as a static object
+of the program (`HazardDomain::global()`), serves the interface of
+`std::hazard_pointer` of C++26: there `retire()` puts the object into the
+bin of its thread, which the thread keeps in its thread-local storage and
+gives back, after a scan, when it ends.
+
+<span id="alg-24-17"></span>**Algorithm 24.17.** The protection of a
+node and the retirement with the scan under the hazard pointers
+(`hazard_pointer::protect()`, which is also the `protect()` of a guard,
+and `Local::retire()` of `HazardDomain`).
+
+--8<-- "generated/HazardPointer-hazard_pointer-protect.pseudo.md"
+
+--8<-- "generated/HazardPointer-HazardDomain-retire.pseudo.md"
+
+<span id="lem-24-38"></span>**Lemma 24.38.** *Let a thread write $x$ in
+its slot $h$ by the store $s$, and then make a read $r$ that precedes in
+$S$ the write $u$ that unlinks $x$, after which $x$ is retired. Then no scan
+frees $x$ before $h$ is written again.*
+
+*Proof.* The store $s$ precedes $r$ in $S$, being sequenced before it, and
+$r$ precedes $u$. In turn, $u$ happens before each scan that may free $x$:
+the scans of the thread that retired $x$ are sequenced after $u$, and those
+of a thread that took its bin later follow the release of the bin, which
+their acquire read. Such a scan reads the first slot after $s$ in $S$, and
+hence after the push of $h$, which precedes $s$; it therefore reaches $h$,
+and reads it after $s$. A sequentially consistent read that preceded a
+write in the order of the modifications of its word would precede it in
+$S$ too; thus the scan reads the value of $s$ or a later one. As long as
+$h$ is not written again, the vector of the scan holds $x$, and the scan
+keeps it. $\square$
+
+In `protect()` the read $r$ is the second read of $s$, which returns $x$.
+In the stack and in the queue, $s$ never holds $x$ again once $u$ has
+swung it, and $r$ therefore precedes $u$. In the dequeue of the queue, the
+successor $n$ of the head $h$ is protected by reading $h.\mathit{next}$,
+which may still hold $n$ after $n$ has been retired. There $r$ is the read
+of the head that returns $h$ again: it precedes the compare-and-swap from
+$h$ to $n$, and hence the one that unlinks $n$.
+
+<span id="lem-24-39"></span>**Lemma 24.39.** *Let no deleter retire, and
+let the vector of each scan fit in memory. Then, between two operations of
+its thread, each bin holds fewer than $2 H + 64$ nodes, where $H$ is the
+number of the slots made so far. Hence fewer than $B ( 2 H + 64 )$ nodes of
+$B$ bins wait to be freed, whatever the other threads do (a stopped one
+included). Each scan frees at least $H + 64$ nodes in
+$O( H \log H )$ time, i.e., in $O( \log H )$ per node freed.*
+
+*Proof.* The count $H$ grows by 1 before each slot is pushed, and a scan
+thus reads at most $H$ slots. A retirement adds one node to its bin, and
+scans it if the bin then holds at least $2 H' + 64$ nodes, for the count
+$H' \le H$ that it read. The scan keeps only the nodes whose address the
+vector holds, at most one per slot read (the addresses of distinct nodes
+alive are distinct), and hence at most $H$ nodes, fewer than $2 H + 64$. A
+bin changes only by the retirements and the scans of the thread that holds
+it, and $H$ only grows; hence the bound holds after each retirement, and
+the sum follows (a bin given back keeps at most $H$ nodes after the scan of
+its release, for the next thread that takes it). Finally, a scan that
+starts from $2 H' + 64$ nodes and keeps at most $H'$ frees at least
+$H' + 64$ of them, after reading $H'$ slots, sorting them and making one
+binary search per node, i.e., in $O( H' \log H' )$ time. $\square$
+
+The hazard pointers are therefore lock-free. A thread stopped anywhere (even
+between the write of its slot and the second read) keeps at most the $K$ nodes
+of its slots and the nodes of its bin from being freed. The price is a
+sequentially consistent write per node protected (an exchange on x86-64), where
+a guard of the epochs pays one per operation, plus the scans of all the slots.
+
+**The stack and the queue.** `LockFreeStack` is the stack of Treiber. A
+push links a new node above the top it read, by a CAS of the top; a pop
+protects the top $t$, swings the top from $t$ to the successor of $t$,
+moves the item out of $t$ and retires it. `LockFreeQueue` is the queue of
+Michael and Scott, with a dummy node first. An enqueue protects the tail
+$t$, links its node after $t$ by a CAS of $t.\mathit{next}$ from nil, and
+swings the tail to it; a thread that finds the tail behind the last node
+swings it first. A dequeue protects the head $h$ in its slot 0 and the
+successor $n$ in its slot 1, and reads the head again. It then swings the
+tail first if the tail is $h$; otherwise it swings the head from $h$ to $n$,
+moves the item out of $n$ (now the dummy) and retires $h$.
+
+<span id="alg-24-18"></span>**Algorithm 24.18.** The push and the pop of
+`LockFreeStack::Handle`, where $\mathrm{protect}$ and $\mathrm{retire}$
+are those of the policy.
+
+--8<-- "generated/LockFreeStack-push.pseudo.md"
+
+--8<-- "generated/LockFreeStack-tryPop.pseudo.md"
+
+<span id="alg-24-19"></span>**Algorithm 24.19.** The enqueue and the
+dequeue of `LockFreeQueue::Handle`, with the slots 0 and 1 of the policy.
+
+--8<-- "generated/LockFreeQueue-enqueue.pseudo.md"
+
+--8<-- "generated/LockFreeQueue-tryDequeue.pseudo.md"
+
+<span id="lem-24-40"></span>**Lemma 24.40.** *Under either policy, a
+pop of `LockFreeStack` whose compare-and-swap succeeds from
+$t$ writes the successor that $t$ had when it was pushed, and $t$ is the
+top at that moment. Hence the stack is linearizable: a push at its
+compare-and-swap, and a pop at its compare-and-swap or, when it finds the
+stack empty, at its read of the top.*
+
+*Proof.* The pop protected $t$ by a read of the top that returned $t$ after the
+write of its slot, or inside its guard. By [Lemma
+24.38](24-concurrent.md#lem-24-38) (the top never holds $t$ again once a pop
+has swung it), or by [Lemma 24.37](24-concurrent.md#lem-24-37), $t$ is not
+freed before the pop ends. A node not freed is not allocated again, and a push
+always links a new node; hence the top equals $t$ at the CAS only if no pop has
+swung it from $t$ since $t$ was pushed. Also, $t.\mathit{next}$ is written
+once, before the push, and it is still the node below $t$. The operations then
+act on the sequence of the nodes from the top as the push and the pop of a
+stack. $\square$
+
+<span id="lem-24-41"></span>**Lemma 24.41.** *In `LockFreeQueue`, under
+either policy, (i) the head never passes the tail, and the
+node of the tail is therefore never retired while it is the tail; (ii) the
+node whose item a dequeue moves out is touched by no other dequeue until
+it is retired. The queue is linearizable: an enqueue at the
+compare-and-swap that links its node, and a dequeue at the one that swings
+the head or, when it finds the queue empty, at its read of a nil
+successor.*
+
+*Proof.* (i) A dequeue swings the head from $h$ only after reading the tail
+different from $h$, which it reads after the head $h$, while the head was at
+$h$ and the tail at or after it. The tail only moves forward, and the head thus
+moves to $n$, at or before the tail; the node of the tail is retired only after
+the head has passed it, hence after the tail has. (ii) After the CAS from $h$
+to $n$, $n$ is the dummy, whose item no dequeue reads. It is retired only by
+the dequeue that swings the head past it, and then the guard of the first
+dequeue still protects it, by [Lemma 24.38](24-concurrent.md#lem-24-38) (with
+the reads of the head discussed above) or by [Lemma
+24.37](24-concurrent.md#lem-24-37). As in the stack, a protected node is not
+allocated again, and the CAS of the head, of the tail and of the successors
+find the nodes that they read; the linearizability is then that of [Michael and
+Scott 1996](Z-bibliography.md#ref-michael1996). $\square$
+
+Both structures are lock-free but for the allocation of a node per push
+and for the reclamation, which is blocking under the epochs. Each thread
+uses them through a handle, which holds its record of the policy:
+
+```cpp
+// declarations of <ADS/concurrent/LockFreeQueue.h>
+//                 <ADS/concurrent/LockFreeStack.h>
+template< class T , reclamation_policy R = FraserEpochs< 64 > >
+class LockFreeQueue
+{
+ public:
+ class Handle
+ {
+  public:
+  void enqueue( T x );
+  std::optional< T > tryDequeue( void );
+  };
+ LockFreeQueue( void );
+ Handle handle( void );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ const Domain & domain( void ) const;
+ };
+template< class T , reclamation_policy R = FraserEpochs< 64 > >
+class LockFreeStack
+{
+ public:
+ class Handle
+ {
+  public:
+  void push( T x );
+  std::optional< T > tryPop( void );
+  };
+ LockFreeStack( void ) = default;
+ Handle handle( void );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ const Domain & domain( void ) const;
+ };
+```
+
+where `size()` and `empty()` of the structure are called with no operation
+running, and `domain()` gives the counters of the reclamation (among them
+`pending()`, the number of the nodes retired that wait to be freed). The
+policies are interchangeable:
+
+```cpp
+ADS::LockFreeQueue< int , ADS::HazardPointers > Q;
+std::vector< std::thread > T;
+for( int k = 0 ; k < 4 ; ++k )
+ T.emplace_back( [ & , k ]() {
+  auto h = Q.handle();
+  for( int i = 0 ; i < 100 ; ++i ) {
+   h.enqueue( 4 * i + k );
+   ( void )h.tryDequeue();
+   }
+  } );
+for( auto & t : T )
+ t.join();
+// fewer than B ( 2 H + 64 ) nodes wait, by Lemma 24.39
+std::size_t waiting = Q.domain().pending();
+```
+
+The interface of C++26, on the domain of the program, is that of
+`std::hazard_pointer`:
+
+```cpp
+// declarations of <ADS/concurrent/HazardPointer.h>
+class hazard_pointer
+{
+ public:
+ hazard_pointer( void ) noexcept = default;
+ bool empty( void ) const noexcept;
+ template< class T >
+ T * protect( const std::atomic< T * > & src ) noexcept;
+ template< class T >
+ bool try_protect( T *& ptr , const std::atomic< T * > & src ) noexcept;
+ template< class T >
+ void reset_protection( const T * ptr ) noexcept;
+ void reset_protection( std::nullptr_t = nullptr ) noexcept;
+ void swap( hazard_pointer & o ) noexcept;
+ };
+hazard_pointer make_hazard_pointer( void );
+template< class T , class D = std::default_delete< T > >
+class hazard_pointer_obj_base
+{
+ public:
+ void retire( D d = D() ) noexcept;
+ };
+```
+
+As to the costs, the benchmark `concurrent` measures them (case `reclaim`)
+against the queue of Michael and Scott of xenium, under its hazard pointers,
+its epochs and its DEBRA, and against `boost::lockfree::queue`, which keeps its
+nodes on a free list and frees none. We expect the epochs to be (somewhat)
+faster when no thread stops, since a guard pays one exchange per operation. The
+hazard pointers pay one exchange per node protected (two per dequeue) and the
+scans; however, they are the only choice when a thread may stop inside an
+operation and the memory must stay bounded. Under `FraserEpochs< 1 >` the stack
+and the queue read all the records at each pop, and their default $R = 64$
+amortizes that read at the price of more nodes waiting.
+
+## 24.15 Discussion and references {#sec-24-15}
 
 We follow the model of [Herlihy and Shavit
 2008](Z-bibliography.md#ref-herlihy2008), whose book covers
@@ -3000,12 +3367,17 @@ priority work. The exact queue without locks is that of [Lindén and Jonsson
 2005](Z-bibliography.md#ref-sundell2005); its reclamation by epochs is that of
 [Fraser 2004](Z-bibliography.md#ref-fraser2004), compared with the hazard
 pointers and the other schemes by [Hart et al.
-2007](Z-bibliography.md#ref-hart2007). A comparison of these structures with
+2007](Z-bibliography.md#ref-hart2007). The hazard pointers are those of
+[Michael 2004](Z-bibliography.md#ref-michael2004), with the interface that
+C++26 adopted as `std::hazard_pointer`; the queue of nodes is that of
+[Michael and Scott
+1996](Z-bibliography.md#ref-michael1996), and the stack that of [Treiber
+1986](Z-bibliography.md#ref-treiber1986). A comparison of these structures with
 those of other libraries (e.g., oneTBB, Folly, the queues of FastFlow) belongs
 to the benchmarks of appendix B, made on an idle machine, and it is not
 reported here.
 
-## 24.15 Exercises {#sec-24-15}
+## 24.16 Exercises {#sec-24-16}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
@@ -3070,3 +3442,13 @@ Each exercise names the test of the library that solves it (run it with
     Wing and Gong. Tests: `engineered_queues.lockfree-pq`,
     `engineered_queues.lockfree-pq-threads`,
     `engineered_queues.lockfree-pq-linearizable`.
+15. Realize the hazard pointers and the epochs of Fraser as
+    policies of the stack of Treiber and of the queue of Michael and Scott,
+    and show that a thread stopped inside an operation keeps the nodes
+    waiting bounded under the former and unbounded under the latter.
+    Tests: `engineered_queues.hazard-pointers`,
+    `engineered_queues.hazard-pointers-stalled`,
+    `engineered_queues.epoch-reclaim`,
+    `engineered_queues.lockfree-stack-threads`,
+    `engineered_queues.lockfree-queue-threads`,
+    `engineered_queues.reclaim-races`.

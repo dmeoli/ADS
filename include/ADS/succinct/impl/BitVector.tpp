@@ -69,21 +69,47 @@ constexpr int selectInWord( Word x , int k )
 namespace detail
 {
 
-template< bool Scalar >
+template< bool Scalar , unsigned Lines >
 inline std::size_t lineRank( const Word * w , unsigned p )
 {
- ADS_PRE( p < 512 );
+ static_assert( Lines >= 1 , "lineRank: at least one line" );
+ ADS_PRE( p < 512 * Lines );
+ if constexpr( Lines > 1 ) {
+  // the line of p cut at p, those before it whole, and each one past it
+  // read again in place of that of p under a mask of 0s
+  const unsigned q = p / 512;
+  std::size_t r = lineRank< Scalar , 1 >( w + 8 * q , p % 512 );
+  for( unsigned l = 0 ; l + 1 < Lines ; ++l )
+   r +=
+     lineCount< Scalar >( w + 8 * std::min( l , q ) ) & -std::size_t( l < q );
+  return( r );
+  }
+ else {
+#if ADS_SIMD
+  if constexpr( ! Scalar )  // the 8 words at once [see SimdInline.h]
+   return( simd::here::lineRank512( w , p ) );
+#endif
+  // the words before the one of p whole, by a mask of all 1s or all 0s,
+  // and that one cut at p
+  const unsigned q = p / 64;
+  std::size_t r = std::size_t(
+    std::popcount( w[ q ] & ( ( Word( 1 ) << ( p % 64 ) ) - 1 ) ) );
+  for( unsigned j = 0 ; j < 8 ; ++j )
+   r += std::size_t( std::popcount( w[ j ] & -Word( j < q ) ) );
+  return( r );
+  }
+ }
+
+template< bool Scalar >
+inline std::size_t lineCount( const Word * w )
+{
 #if ADS_SIMD
  if constexpr( ! Scalar )  // the 8 words at once [see SimdInline.h]
-  return( simd::here::lineRank512( w , p ) );
+  return( simd::here::lineRank512( w , 512 ) );
 #endif
- // the words before the one of p whole, by a mask of all 1s or all 0s,
- // and that one cut at p
- const unsigned q = p / 64;
- std::size_t r = std::size_t(
-   std::popcount( w[ q ] & ( ( Word( 1 ) << ( p % 64 ) ) - 1 ) ) );
+ std::size_t r = 0;
  for( unsigned j = 0 ; j < 8 ; ++j )
-  r += std::size_t( std::popcount( w[ j ] & -Word( j < q ) ) );
+  r += std::size_t( std::popcount( w[ j ] ) );
  return( r );
  }
 

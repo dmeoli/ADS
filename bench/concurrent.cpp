@@ -35,6 +35,15 @@
  *   std::deque under a std::mutex; case owner: n pushes and n takes of
  *   the owner alone (ns per operation); case thief: the owner pushes n
  *   integers while a thief steals them (ns per item);
+ * - "reclaim", the queue of Michael and Scott under the reclamations of
+ *   the memory of its nodes: LockFreeQueue of ADS under the epochs of
+ *   Fraser and under the hazard pointers, against
+ *   xenium::michael_scott_queue under the hazard pointers, the epochs and
+ *   DEBRA of xenium (ADS_HAS_XENIUM), and boost::lockfree::queue, which
+ *   keeps its nodes on a free list and frees none; case pairs: each of the
+ *   two threads enqueues and dequeues an item n times on the same queue,
+ *   which stays nearly empty (ns per pair); case transfer: a producer
+ *   enqueues n items while a consumer dequeues them (ns per item);
  * - "wake", the consumer that sleeps until an item comes: SPSCQueue,
  *   MPSCQueue and MPSCInbox of ADS with their waits (waitPop(),
  *   waitTake(), the producer calling notify()) against a consumer that
@@ -76,6 +85,8 @@
 #endif
 #ifndef ADS_BENCH_OLD
  #include "ADS/concurrent/MPSCQueue.h"
+ #include "ADS/concurrent/HazardPointer.h"
+ #include "ADS/concurrent/LockFreeQueue.h"
 #endif
 #include "ADS/concurrent/SPSCQueue.h"
 #include "ADS/parallel/Affinity.h"
@@ -111,6 +122,11 @@
 #endif
 #ifdef ADS_HAS_FOLLY
  #include "folly/ProducerConsumerQueue.h"
+#endif
+#ifdef ADS_HAS_XENIUM
+ #include <xenium/michael_scott_queue.hpp>
+ #include <xenium/reclamation/generic_epoch_based.hpp>
+ #include <xenium/reclamation/hazard_pointer.hpp>
 #endif
 
 #include "ADS/parallel/Affinity.h"
@@ -634,6 +650,103 @@ int main( int argc , char ** argv )
      return( v.has_value() );
      } ,
     []( WS & q , Item & x ) { return( q.steal( x ) ); } );
+#endif
+  }
+ // ----- the reclamation of the nodes of a lock-free queue
+ for( std::size_t n : o.sizes ) {
+  const int r = o.runs;
+  // the cells of a queue that make() builds, by ops( q ), which gives the
+  // enqueue and the dequeue of a thread on the queue (on one handle)
+  auto cells = [ & ]( const std::string & who , auto make , auto ops ) {
+   if( skip( who ) )
+    return;
+   auto pairs = [ & ]( auto & q , std::size_t m ) {
+    auto [ e , d ] = ops( q );
+    Item s = 0 , x;
+    for( std::size_t i = 0 ; i < m ; ++i ) {
+     e( Item( i ) );
+     while( ! d( x ) ) {
+      }
+     s += x;
+     }
+    return( s );
+    };
+   print( "reclaim" , "pairs" , n , who ,
+	  transfer(
+	    n , r , make ,
+	    [ & ]( auto & q ,
+		   std::size_t m ) { sink = sink + pairs( q , m ); } ,
+	    pairs ) );
+   print( "reclaim" , "transfer" , n , who ,
+	  transfer(
+	    n , r , make ,
+	    [ & ]( auto & q , std::size_t m ) {
+	     auto e = ops( q ).first;
+	     for( std::size_t i = 0 ; i < m ; ++i )
+	      e( Item( i ) );
+	     } ,
+	    [ & ]( auto & q , std::size_t m ) {
+	     auto d = ops( q ).second;
+	     Item s = 0 , x;
+	     for( std::size_t got = 0 ; got < m ; )
+	      if( d( x ) ) {
+	       s += x;
+	       ++got;
+	       }
+	     return( s );
+	     } ) );
+   };
+#ifdef ADS_HAS_BOOST
+  using BQ = boost::lockfree::queue< Item >;
+  cells(
+    "boost::lockfree::queue" ,
+    [ & ]() { return( std::make_unique< BQ >( 1024 ) ); } ,
+    []( BQ & q ) {
+     return( std::pair( [ &q ]( Item x ) { q.push( x ); } ,
+			 [ &q ]( Item & x ) { return( q.pop( x ) ); } ) );
+     } );
+#endif
+#ifdef ADS_HAS_XENIUM
+  auto xenium = [ & ]( const std::string & who , auto policy ) {
+   using XQ = xenium::michael_scott_queue<
+     Item , xenium::policy::reclaimer< decltype( policy ) > >;
+   cells(
+     who , []() { return( std::make_unique< XQ >() ); } ,
+     []( XQ & q ) {
+      return(
+	std::pair( [ &q ]( Item x ) { q.push( x ); } ,
+		   [ &q ]( Item & x ) { return( q.try_pop( x ) ); } ) );
+      } );
+   };
+  xenium( "xenium::michael_scott_queue hazard_pointer" ,
+	  xenium::reclamation::hazard_pointer<>() );
+  xenium( "xenium::michael_scott_queue epoch_based" ,
+	  xenium::reclamation::epoch_based<>() );
+  xenium( "xenium::michael_scott_queue debra" ,
+	  xenium::reclamation::debra<>() );
+#endif
+#ifndef ADS_BENCH_OLD
+  auto ads = [ & ]( const std::string & who , auto policy ) {
+   using AQ = ADS::LockFreeQueue< Item , decltype( policy ) >;
+   // one handle per thread, shared by its two functions
+   cells(
+     who , []() { return( std::make_unique< AQ >() ); } ,
+     []( AQ & q ) {
+      auto h = std::make_shared< typename AQ::Handle >( q.handle() );
+      return( std::pair( [ h ]( Item x ) { h->enqueue( x ); } ,
+			  [ h ]( Item & x ) {
+			   auto v = h->tryDequeue();
+			   if( v )
+			    x = *v;
+			   return( v.has_value() );
+			   } ) );
+      } );
+   };
+  ads( "ADS::LockFreeQueue FraserEpochs<1>" , ADS::FraserEpochs< 1 >() );
+  for( const char * who : { "ADS::LockFreeQueue FraserEpochs<64>" ,
+			    "ADS::LockFreeQueue FraserEpochs<64> A/A" } )
+   ads( who , ADS::FraserEpochs< 64 >() );
+  ads( "ADS::LockFreeQueue HazardPointers" , ADS::HazardPointers() );
 #endif
   }
  // ----- the consumer that sleeps

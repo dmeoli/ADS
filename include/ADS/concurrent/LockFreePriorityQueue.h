@@ -79,17 +79,22 @@
  * thread, and costs nothing to the progress, since no operation ever waits
  * for the bit.
  *
- * The memory of the nodes cut off is reclaimed by epochs (Fraser), owned by
- * the queue, since the area has no other reclamation that fits: each thread
- * uses the queue through a `Handle`, whose record announces the epoch it
- * runs in; a node cut off waits in the record of the thread that cut it,
+ * The memory of the nodes cut off is reclaimed by a policy \f$ R \f$ [see
+ * `Reclaim.h`] on a domain owned by the queue: the epochs of Fraser
+ * (`FraserEpochs< R >`, with \f$ R = 64 \f$ by default) [see
+ * `EpochReclaim.h`], while the hazard pointers do not fit, since a walk goes
+ * on from a node that may have been cut off, and the queue refuses them.
+ * Each thread uses the queue through a `Handle`, which holds a record of the
+ * domain; a node cut off waits in the record of the thread that cut it,
  * stamped with the epoch of the cut, and is freed once the epoch has grown
  * by 2, which happens only after every thread running an operation has
- * announced the newer epoch. No node is leaked: the nodes not yet freed are
- * freed by the destructor. A thread stopped inside an operation stops the
- * epoch and keeps the nodes cut off afterwards from being freed (the
- * reclamation is blocking, as in the paper); the operations themselves
- * never wait for it.
+ * announced the newer epoch, and the thread of a cut tries to raise the
+ * epoch at the end of its DeleteMin once \f$ R \f$ nodes have been
+ * retired since its last attempt. No node is leaked: the
+ * nodes not yet freed are freed by the domain when the queue is destroyed.
+ * A thread stopped inside an operation stops the epoch and keeps the nodes
+ * cut off afterwards from being freed (the reclamation is blocking, as in
+ * the paper); the operations themselves never wait for it.
  *
  * The keys must be copyable without exceptions, the items movable without
  * exceptions; `Less` is a strict weak order. A key is lowered by a new
@@ -150,6 +155,8 @@
 
 #include "ADS/Capabilities.h"
 #include "ADS/Contract.h"
+#include "ADS/concurrent/EpochReclaim.h"
+#include "ADS/concurrent/Reclaim.h"
 
 #include <atomic>
 #include <cstddef>
@@ -171,8 +178,10 @@ namespace ADS
 /*--------------------------------------------------------------------------*/
 
 /// an exact PRIORITY QUEUE shared by threads, linearizable and lock-free:
-/// the skiplist of Lindén and Jonsson, its deleted prefix cut in batches
-template< class K , class T , class Less = std::less< K > >
+/// the skiplist of Lindén and Jonsson, its deleted prefix cut in batches,
+/// the nodes cut off reclaimed by the policy \f$ R \f$
+template< class K , class T , class Less = std::less< K > ,
+	  reclamation_policy R = FraserEpochs< 64 > >
 class LockFreePriorityQueue
 {
 
@@ -180,6 +189,9 @@ class LockFreePriorityQueue
 		"the keys are copied without exceptions" );
  static_assert( std::is_nothrow_move_constructible_v< T > ,
 		"the items are moved without exceptions" );
+ static_assert( R::kRegions ,
+		"the walks pass through nodes cut off, which only a "
+		"reclamation by regions (the epochs) protects" );
 
 /*--------------------------------------------------------------------------*/
  public:
@@ -226,12 +238,13 @@ class LockFreePriorityQueue
  /// no copy, since the threads share it by its address
  LockFreePriorityQueue & operator=( const LockFreePriorityQueue & ) = delete;
 
- /// the frees of the nodes, of those waiting for their epoch and of the
- /// records
+ /// the frees of the nodes in the list and of the records, then, by the
+ /// domain, of those cut off
  /// \pre no handle is alive
  ~LockFreePriorityQueue();
 
- /// a handle for one thread, on a record of the epochs of its own
+ /// a handle for one thread, on a record of its own and on one of the
+ /// reclamation
  [[nodiscard]] Handle handle( void );
 
  /// the length \f$ b \f$ of the prefix past which a DeleteMin cuts it
@@ -254,6 +267,11 @@ class LockFreePriorityQueue
  /// operation running
  [[nodiscard]] bool consistent( void ) const;
 
+ /// the domain of the reclamation, for its counters
+ [[nodiscard]] const typename R::Domain & domain( void ) const {
+  return( f_dom );
+  }
+
 /*--------------------------------------------------------------------------*/
  private:
  using Word = std::uintptr_t;  ///< a pointer with its two bits
@@ -264,16 +282,16 @@ class LockFreePriorityQueue
  /// the order of the reads of the words by the operations, sequentially
  /// consistent so that a read of a word older than a cut lies after the
  /// announce of the epoch of its thread in the total order of the
- /// sequentially consistent operations [see Handle::enter()]; on x86-64
+ /// sequentially consistent operations [see `EpochReclaim.h`]; on x86-64
  /// the same plain load as an acquire, on ARMv8.0 the same `ldar`
  static constexpr std::memory_order kWalk = std::memory_order_seq_cst;
 
- /// the links of a node, or of the head and of the tail: its height, its
- /// flag of an insertion in progress, and its \f$ h \f$ pointers
- struct Link
+ /// the links of a node, or of the head and of the tail: its link of the
+ /// reclamation, its height, its flag of an insertion in progress, and its
+ /// \f$ h \f$ pointers
+ struct Link : Retirable
  {
   std::atomic< Word > * next;     ///< the pointers, after the node
-  Link * later;                   ///< the next node of its limbo
   int height;                     ///< the levels of the node
   std::atomic< bool > inserting;  ///< true until the insertion ends
   };
@@ -286,13 +304,11 @@ class LockFreePriorityQueue
   T item;               ///< the item, moved out by its DeleteMin
   };
 
- /// the record of a handle for the epochs: the epoch it announces, the
- /// nodes it cut off by the epoch of their cut, and whether a handle holds
- /// it; the records are never freed but by the destructor
+ /// the record of a handle for the stamps: its number, its insertions, and
+ /// whether a handle holds it; the records are never freed but by the
+ /// destructor
  struct alignas( 64 ) Record
  {
-  /// \f$ 2 e + 1 \f$ inside an operation of the epoch \f$ e \f$, 0 out
-  std::atomic< std::uint64_t > local{ 0 };
   /// held by a handle
   std::atomic< bool > used{ true };
   /// the next record, fixed once the record is published
@@ -301,11 +317,6 @@ class LockFreePriorityQueue
   std::uint64_t id = 0;
   /// the insertions made on the record, in the stamps
   std::uint64_t count = 0;
-  /// the nodes cut off, by the epoch of their cut modulo 3, linked by
-  /// their field later
-  Link * limbo[ 3 ] = { nullptr , nullptr , nullptr };
-  /// the epoch of the nodes of each limbo
-  std::uint64_t epoch[ 3 ] = { 0 , 0 , 0 };
   };
 
  /// the node of w
@@ -339,8 +350,8 @@ class LockFreePriorityQueue
  /// the free of the head or of the tail p
  static void destroyLink( Link * p );
 
- /// the nodes of the limbo from p freed
- static void destroyAll( Link * p );
+ /// the address or the free of a node cut off
+ static void * reclaimNode( Retirable * r , Retirable::Op op ) noexcept;
 
  /// whether the node p is before the key ( k , s )
  [[nodiscard]] bool before( const Link * p , const K & k ,
@@ -360,15 +371,14 @@ class LockFreePriorityQueue
  /// one thread that holds the bit kCut; its read-modify-writes counted
  void restructure( Counts & c );
 
- /// the nodes of the records freed, and the records
+ /// the nodes of the list freed, and the records
  void release( void );
 
- unsigned f_b;   ///< the length of a cut
- Less f_less;    ///< the order of the keys
- Link * f_head;  ///< the head
- Link * f_tail;  ///< the tail
- alignas( 64 ) std::atomic< std::uint64_t > f_epoch{ 2 };
- ///< the epoch, from 2
+ typename R::Domain f_dom;  ///< the reclamation of the nodes cut off
+ unsigned f_b;              ///< the length of a cut
+ Less f_less;               ///< the order of the keys
+ Link * f_head;             ///< the head
+ Link * f_tail;             ///< the tail
  alignas( 64 ) std::atomic< Record * > f_records{ nullptr };
  ///< the records
  std::atomic< std::uint64_t > f_ids{ 0 };  ///< the numbers given
@@ -381,9 +391,9 @@ class LockFreePriorityQueue
 /*--------------------------------------------------------------------------*/
 
 /// the access of one thread to a `LockFreePriorityQueue`: its record of the
-/// epochs, the generator of its heights and the counter of its stamps
-template< class K , class T , class Less >
-class LockFreePriorityQueue< K , T , Less >::Handle
+/// reclamation, the generator of its heights and the counter of its stamps
+template< class K , class T , class Less , reclamation_policy R >
+class LockFreePriorityQueue< K , T , Less , R >::Handle
 {
 
 /*--------------------------------------------------------------------------*/
@@ -516,9 +526,11 @@ class LockFreePriorityQueue< K , T , Less >::Handle
  private:
  friend class LockFreePriorityQueue;
 
+ using Local = typename R::template Local< 0 >;  ///< the reclamation
+
  /// the handle of q on the record r, its heights drawn from the seed
  Handle( LockFreePriorityQueue & q , Record * r , std::uint64_t seed )
-     : f_q( &q ) , f_r( r ) , f_x( seed ) { }
+     : f_q( &q ) , f_r( r ) , f_l( q.f_dom ) , f_x( seed ) { }
 
  /// a random number of 64 bits (the splitmix64 of Steele et al.)
  std::uint64_t next( void );
@@ -527,21 +539,9 @@ class LockFreePriorityQueue< K , T , Less >::Handle
  /// at most \f$ L \f$
  int height( void );
 
- /// the epoch announced, and the nodes of the record freed whose epoch is
- /// 2 behind
- void enter( void );
-
- /// out of the operation
- void leave( void );
-
- /// the node p handed to the reclamation, in the epoch now
- void retire( Node * p );
-
- /// the epoch raised if every record inside an operation announces it
- void advance( void );
-
  LockFreePriorityQueue * f_q;  ///< the queue
  Record * f_r;                 ///< the record, nil once moved
+ Local f_l;                    ///< the record of the reclamation
  std::uint64_t f_x;            ///< the state of the generator
  Counts f_c;                   ///< the counts
 

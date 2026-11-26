@@ -45,6 +45,7 @@
 #include "ADS/succinct/PartitionedEliasFano.h"
 #include "ADS/succinct/RRRBitVector.h"
 #include "ADS/succinct/RankSelect.h"
+#include "ADS/succinct/TinyRankSelect.h"
 #include "ADS/succinct/WaveletMatrix.h"
 
 #include <algorithm>
@@ -108,6 +109,154 @@ ADS_TEST( "compact-rank-select" )
  for( int k = 0 ; k < 8 ; ++k )
   runs.insert( runs.end() , 30000 , k % 2 );
  check( runs );
+ }
+
+// the rank and select of 3* against a scan, with blocks of 512, 1024 and
+// 2048 bits: every rank and every select of both bits on vectors all 0s,
+// all 1s, alternating, sparse, dense and random, of the sizes 0, 1, 63,
+// 64, 65 and around the lines, the blocks and the superblocks; on runs of
+// one bit long enough that the samples of the top level are 16
+// superblocks or more apart, which the middle and the bottom levels
+// split; from words with 1s past the size, which the copy cuts; and the
+// bits of the directory, about 512 for each superblock
+template< unsigned L0 >
+void checkTiny( void )
+{
+ using T = BasicTinyRankSelect< L0 >;
+ constexpr std::size_t L = 32 * std::size_t( L0 );  // a superblock
+ std::mt19937_64 g( L0 );
+ auto check = [ & ]( const std::vector< bool > & R ) {
+  BitVector b;
+  for( const bool x : R )
+   b.push_back( x );
+  const T S( b );
+  std::size_t ones = 0 , zeros = 0;
+  bool ok = true;
+  for( std::size_t i = 0 ; i <= R.size() ; ++i ) {
+   ok = ok && S.rank1( i ) == ones && S.rank0( i ) == zeros;
+   if( i == R.size() )
+    break;
+   if( R[ i ] )
+    ok = ok && S.select1( ++ones ) == i;
+   else
+    ok = ok && S.select0( ++zeros ) == i;
+   }
+  CHECK( ok );
+  CHECK( S.ones() == ones && S.zeros() == zeros && S.size() == R.size() );
+  // the entries, and the trees of samples at most 1% of the bits more
+  CHECK( S.directoryBits() <=
+	 512 * ( R.size() / L + 2 ) + R.size() / 100 + 4096 );
+  CHECK_THROWS( ( void )S.select1( ones + 1 ) , contract_violation );
+  CHECK_THROWS( ( void )S.select0( zeros + 1 ) , contract_violation );
+  CHECK_THROWS( ( void )S.rank1( R.size() + 1 ) , contract_violation );
+  };
+ const std::size_t sizes[] = { 0 ,          1 ,          63 ,    64 ,     65 ,
+			       511 ,        512 ,        513 ,   L0 - 1 , L0 ,
+			       L0 + 1 ,     4 * L0 + 7 , L - 1 , L ,
+			       L + 1 ,
+			       2 * L + 65 , 3 * L - 1 };
+ for( const std::size_t n : sizes ) {
+  std::vector< bool > R( n );
+  check( R );  // all 0s
+  R.flip();
+  check( R );  // all 1s
+  for( std::size_t i = 0 ; i < n ; ++i )
+   R[ i ] = i % 2;
+  check( R );  // alternating
+  for( const double p : { 0.001 , 0.02 , 0.5 , 0.98 } ) {
+   std::bernoulli_distribution B( p );
+   for( std::size_t i = 0 ; i < n ; ++i )
+    R[ i ] = B( g );
+   check( R );  // sparse, random and dense
+   }
+  }
+ // runs of one bit between dense stretches: the top samples of the other
+ // bit far apart, split by the middle level, and its middle samples far
+ // apart, split by the bottom one
+ for( int rep = 0 ; rep < 3 ; ++rep ) {
+  std::vector< bool > R;
+  for( int k = 0 ; k < 12 ; ++k ) {
+   const std::size_t dense = g() % ( 4 * L ) , run = g() % ( 40 * L );
+   for( std::size_t i = 0 ; i < dense ; ++i )
+    R.push_back( g() & 1 );
+   R.insert( R.end() , run , ( k + rep ) % 2 == 0 );
+   for( std::size_t i = 0 ; i < 30 ; ++i )
+    R.push_back( g() % 5 == 0 );
+   }
+  check( R );
+  }
+ // from the words, the 1s past the size cut
+ for( const std::size_t n : { std::size_t( 0 ) , std::size_t( 70 ) ,
+			      L + 3 } ) {
+  std::vector< Word > w( ( n + 63 ) / 64 + 2 );
+  for( auto & x : w )
+   x = g();
+  const T A( std::span< const Word >( w ) , n );
+  const T C( BitVector( std::span< const Word >( w ) , n ) );
+  bool ok = A.bits() == C.bits() && A.ones() == C.ones() &&
+	    A.directoryBits() == C.directoryBits();
+  for( std::size_t i = 0 ; ok && i <= n ; ++i )
+   ok = A.rank1( i ) == C.rank1( i );
+  CHECK( ok );
+  }
+ }
+
+ADS_TEST( "tiny-rank-select" )
+{
+ checkTiny< 512 >();
+ checkTiny< 1024 >();
+ checkTiny< 2048 >();
+ }
+
+// the rank and select of 3* on 2^32 + 70 bits (2^22 + 70 with
+// ADS_TEST_SMALL), past the places of 32 bits:
+// the ranks at the ends of the superblocks around 2^32 and at random
+// places, and the selects of random ranks of both bits, against the
+// prefix sums of the words; a run of 0s of 2^24 bits leaves the top
+// samples of the 1s far apart
+ADS_TEST( "tiny-rank-select-large" )
+{
+ const std::size_t n = test::scaled( std::size_t( 1 ) << 32 , std::size_t( 1 )
+							       << 22 ) +
+		       70 ,
+		   nw = n / 64 + 1;
+ std::mt19937_64 g( 32 );
+ std::vector< Word > w( nw );
+ for( std::size_t i = 0 ; i < nw ; ++i )
+  w[ i ] = ( i >> 18 ) % 97 == 5 ? 0 : g() & g() & g();
+ w.back() &= detail::lowMask( int( n % 64 ) );
+ std::vector< std::uint64_t > P( nw + 1 , 0 );  // the 1s before each word
+ for( std::size_t i = 0 ; i < nw ; ++i )
+  P[ i + 1 ] = P[ i ] + std::uint64_t( std::popcount( w[ i ] ) );
+ auto rank = [ & ]( std::size_t i ) {
+  return( std::size_t( P[ i / 64 ] ) +
+	   std::size_t( std::popcount(
+	     i % 64 ? w[ i / 64 ] & detail::lowMask( int( i % 64 ) ) : 0 ) ) );
+  };
+ const TinyRankSelect S( std::span< const Word >( w ) , n );
+ CHECK( S.size() == n && S.ones() == P[ nw ] );
+ std::vector< std::size_t > I = { 0 , n , n - 1 , n - 70 };
+ constexpr std::size_t L = 65536;
+ for( std::size_t s = n / L - 2 ; s * L <= n ; ++s )
+  for( const std::size_t d : { std::size_t( 0 ) , std::size_t( 1 ) , L - 1 } )
+   if( s * L + d <= n )
+    I.push_back( s * L + d );
+ for( int q = 0 ; q < 20000 ; ++q )
+  I.push_back( std::size_t( g() % ( n + 1 ) ) );
+ bool ok = true;
+ for( const std::size_t i : I )
+  ok = ok && S.rank1( i ) == rank( i );
+ CHECK( ok );
+ for( const bool b : { false , true } ) {
+  const std::size_t c = b ? S.ones() : S.zeros();
+  for( int q = 0 ; q < 20000 ; ++q ) {
+   const std::size_t k = q < 2 ? ( q ? c : 1 ) : 1 + g() % c;
+   const std::size_t p = b ? S.select1( k ) : S.select0( k );
+   ok =
+     ok && p < n && S[ p ] == b && ( b ? rank( p ) : p - rank( p ) ) == k - 1;
+   }
+  }
+ CHECK( ok );
  }
 
 // the inventories of LazyRankSelect built by the first select:
@@ -725,8 +874,9 @@ ADS_TEST( "interleaved-rank-select" )
  }
 
 // the kernels shared by the directories of rank and select: the rank in a
-// line by its scalar and its vector variant (the same kernel) against a
-// scan, at every place of random lines; the copy and the count of the
+// line and in 2 and 4 lines, and the count of a line, by their scalar and
+// their vector variants (the same kernel) against a scan, at every place
+// of random lines; the copy and the count of the
 // words of a chunk, the word cut at n among them or not; the chunks of a
 // parallel directory, powers of 2 below a top region and its multiples
 // above; and the checks on a concept that every directory passes
@@ -742,6 +892,22 @@ ADS_TEST( "rank-kernels" )
    CHECK( detail::lineRank< false >( line , p ) == c );
    CHECK( detail::lineRank< true >( line , p ) == c );
    c += ( line[ p / 64 ] >> ( p % 64 ) ) & 1;
+   }
+  CHECK( detail::lineCount< false >( line ) == c );
+  CHECK( detail::lineCount< true >( line ) == c );
+  }
+ // the kernel on 4 lines, each place of each line, against a scan
+ alignas( 64 ) Word lines[ 32 ];
+ for( int t = 0 ; t < 8 ; ++t ) {
+  for( auto & x : lines )
+   x = t % 4 == 0 ? ~Word( 0 ) : t % 4 == 1 ? Word( 0 ) : g() & g();
+  std::size_t c = 0;
+  for( unsigned p = 0 ; p < 2048 ; ++p ) {
+   CHECK( ( detail::lineRank< false , 4 >( lines , p ) ) == c );
+   CHECK( ( detail::lineRank< true , 4 >( lines , p ) ) == c );
+   if( p < 1024 )
+    CHECK( ( detail::lineRank< false , 2 >( lines , p ) ) == c );
+   c += ( lines[ p / 64 ] >> ( p % 64 ) ) & 1;
    }
   }
  std::vector< Word > w( 40 ) , P( 48 , ~Word( 0 ) );
