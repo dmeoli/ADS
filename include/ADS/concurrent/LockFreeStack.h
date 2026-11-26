@@ -4,17 +4,17 @@
 /** @file
  * A stack shared by threads, lock-free and unbounded, beyond the book: the
  * stack of Treiber, a list of nodes whose top any thread swings by a
- * compare-and-swap, with the memory of the nodes popped reclaimed by a
- * policy [see `Reclaim.h`], the epochs of Fraser with an attempt to raise
- * the epoch per 64 retirements by default [see `EpochReclaim.h`], or the
- * hazard pointers [see `HazardPointer.h`]. A push links a new node above the top it read; a
- * pop protects the top \f$ t \f$, reads its successor and swings the top
- * from \f$ t \f$ to it, then moves the item out of \f$ t \f$ and retires
- * it. Since a node is pushed once, popped once and freed only when no
- * thread protects it, a pop that finds the top still \f$ t \f$ finds it
- * with the successor read, and the ABA problem of the stack, which the
- * inbox of many producers [see `MPSCInbox.h`] avoids by taking the whole
- * stack at once, cannot occur (see \ref theory_concurrent_reclaim).
+ * compare-and-swap, with the memory of the nodes popped reclaimed by a policy
+ * [see `Reclaim.h`], the epochs of Fraser with an attempt to raise the epoch
+ * per 64 retirements by default [see `EpochReclaim.h`], or the hazard pointers
+ * [see `HazardPointer.h`]. A push links a new node above the top it read; a
+ * pop protects the top \f$ t \f$, reads its successor and swings the top from
+ * \f$ t \f$ to it, then moves the item out of \f$ t \f$ and retires it. Since
+ * a node is pushed once, popped once and freed only when no thread protects
+ * it, a pop that finds the top still \f$ t \f$ finds it with the successor
+ * read, and the ABA problem of the stack, which the inbox of many producers
+ * [see `MPSCInbox.h`] avoids by taking the whole stack at once, cannot occur
+ * (see \ref theory_concurrent_reclaim).
  *
  * Both operations are linearizable at their successful compare-and-swap,
  * or, for a pop that finds the stack empty, at its read of the top, and

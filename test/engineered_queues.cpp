@@ -2174,7 +2174,10 @@ using Policies = std::tuple< FraserEpochs<> , FraserEpochs< 16 > ,
 
 /// the retirements per attempt to raise the epoch of a policy of epochs
 template< unsigned R >
-constexpr std::size_t perAttempt( FraserEpochs< R > ) { return( R ); }
+constexpr std::size_t perAttempt( FraserEpochs< R > )
+{
+ return( R );
+ }
 
 /// f called with a value of each policy of Policies
 template< class F >
@@ -2195,7 +2198,8 @@ ADS_TEST( "hazard-pointers" )
 {
  static_assert( reclamation_policy< HazardPointers > &&
 		reclamation_policy< FraserEpochs< 4 > > &&
-		( ! HazardPointers::kRegions ) && FraserEpochs< 4 >::kRegions );
+		( ! HazardPointers::kRegions ) &&
+		FraserEpochs< 4 >::kRegions );
  HazardDomain & D = HazardDomain::global();
  hazard_pointer e;
  CHECK( e.empty() );
@@ -2408,9 +2412,9 @@ ADS_TEST( "epoch-reclaim" )
       typename L::Guard g( l );
       l.retire( makeRNode( &F[ i ] , i ) );
       }
-     CHECK( D.epoch() > e &&
-	    D.pending() <=
-	      3 * std::max< std::size_t >( 16 , perAttempt( policy ) ) );
+     const std::size_t most =
+       3 * std::max< std::size_t >( 16 , perAttempt( policy ) );
+     CHECK( D.epoch() > e && D.pending() <= most );
      CHECK( D.records() == 1 );
      }
     {
