@@ -918,7 +918,10 @@
  \f$ r + 2 \f$. A relaxed announce followed by a full fence, with reads
  that acquire, gives the same order through the fence, but the sanitizer
  of threads does not model the fences, and on x86-64 the exchange is one
- instruction where the store and the fence are two.
+ instruction where the store and the fence are two. The argument is that of
+ Lemma 20 below, with the last compare-and-swap of the cut and of its
+ restructure as the write that unlinks the nodes cut off; under
+ `DebraEpochs` Lemma 21 holds instead.
 
  <em>Lemma 17 (lock-freedom and the prefix).</em> The operations are
  lock-free but for the allocation of a node, and in a run of one thread a
@@ -1036,6 +1039,100 @@
  store only when the key changes, which leaves the line shared in the
  caches of the readers otherwise; `min()` costs \f$ p \f$ loads, of lines
  that only their owners write.
+
+ \section theory_concurrent_reclaim Reclaiming the memory of the nodes
+
+ In a structure of nodes that any thread may unlink (the stack of Treiber,
+ the queue of Michael and Scott, the skiplist of \ref theory_concurrent_lfpq)
+ the thread that unlinks a node cannot free it at once, since another thread
+ may have reached it just before; it <em>retires</em> it, and a policy of
+ reclamation frees it once no thread may still hold it [see `Reclaim.h`].
+ We say that a sequentially consistent write \f$ u \f$ <em>unlinks</em> a
+ node \f$ x \f$ when no thread reaches \f$ x \f$ by a read that follows
+ \f$ u \f$ in the total order \f$ S \f$ of the sequentially consistent
+ operations; the node is retired after \f$ u \f$ by the thread of
+ \f$ u \f$, and the reads by which the threads reach the nodes are
+ sequentially consistent. The lists of the records, of the slots and of
+ the bins below are pushed by sequentially consistent compare-and-swaps and
+ read from their first element with sequential consistency, so that a scan
+ that follows a push in \f$ S \f$ reaches the element pushed.
+
+ Under the epochs [see `EpochReclaim.h`] a domain keeps an epoch
+ \f$ E \f$ and a record per thread, which announces \f$ 2 e + 1 \f$, by a
+ sequentially consistent exchange made before any read of the structure,
+ while its thread runs a guard of the epoch \f$ e \f$, and 0 otherwise; a
+ node waits in the limbo of its label, and is freed by its thread once
+ \f$ E \f$ is \f$ \lambda \f$ past the label.
+
+ <em>Lemma 20 (the epochs of Fraser).</em> Under `FraserEpochs`, where the
+ label of a node is \f$ E \f$ read after its unlink, \f$ \lambda = 2 \f$,
+ and a guard raises \f$ E \f$ from \f$ e \f$ only after a scan of all the
+ records finds none odd and other than \f$ 2 e + 1 \f$, a node is not freed
+ before every guard that reaches it ends.
+
+ Indeed, a guard \f$ g \f$ that reaches \f$ x \f$ announced before
+ \f$ u \f$ in \f$ S \f$ (its reads follow its announce, and none that
+ follows \f$ u \f$ reaches \f$ x \f$), and therefore an epoch
+ \f$ a \le \ell \f$ for the label \f$ \ell \f$; the scan that would raise
+ \f$ E \f$ from \f$ \ell + 1 \f$ follows \f$ u \f$ in \f$ S \f$, reaches
+ the record of \f$ g \f$ and reads its announce or a later value, and
+ \f$ 2 a + 1 \ne 2 ( \ell + 1 ) + 1 \f$.
+
+ <em>Lemma 21 (the epochs of DEBRA).</em> Under `DebraEpochs`, where a
+ guard reads \f$ E \f$ again after its announce until the two reads agree,
+ the label of a node is the epoch announced by the guard that retires it,
+ \f$ \lambda = 3 \f$, and each guard checks one record by a cursor that
+ starts from the first record in each epoch and raises \f$ E \f$ after the
+ last, (i) while a guard of the epoch \f$ e \f$ is open,
+ \f$ E \in \{ e , e + 1 \} \f$, and (ii) a node is not freed before every
+ guard that reaches it ends.
+
+ Indeed, the second read of \f$ E = e \f$ follows the announce, so that
+ the pass of the epoch \f$ e + 1 \f$ reads the record after the announce
+ and its cursor stays there until the guard ends; for (ii), a guard
+ \f$ g \f$ that reaches \f$ x \f$ announced \f$ a \le \ell + 1 \f$ before
+ \f$ u \f$, by (i) applied to the guard of the retirement, and by (i)
+ applied to \f$ g \f$ the epoch stays below \f$ \ell + 3 \f$ while
+ \f$ g \f$ is open. Both schemes are blocking: a thread stopped inside a
+ guard keeps every node retired afterwards from being freed.
+
+ Under the hazard pointers [see `HazardPointer.h`] a thread protects the
+ node of the atomic \f$ s \f$ by writing it in a slot of its own and
+ reading \f$ s \f$ again until the two reads agree, the write and the read
+ sequentially consistent; a node retired goes into the bin of its thread,
+ and a bin of \f$ 2 H + 64 \f$ nodes, \f$ H \f$ the slots made, is scanned:
+ its nodes held by no slot are freed.
+
+ <em>Lemma 22 (the hazard pointers).</em> (i) If a thread writes \f$ x \f$
+ in its slot \f$ h \f$ and then makes a read that precedes in \f$ S \f$ the
+ write that unlinks \f$ x \f$, no scan frees \f$ x \f$ before \f$ h \f$ is
+ written again. (ii) If no deleter retires and the vector of each scan
+ fits in memory, each bin holds fewer than \f$ 2 H + 64 \f$ nodes between
+ two operations of the thread that holds it, so that fewer than
+ \f$ B ( 2 H + 64 ) \f$ nodes of \f$ B \f$ bins wait, whatever the threads
+ do, a stopped one included; each scan frees at least \f$ H + 64 \f$ nodes
+ in \f$ O( H \log H ) \f$ time.
+
+ Indeed, for (i) the scan follows the retirement, and hence the unlink,
+ the read and the write of \f$ h \f$, in \f$ S \f$; it reaches \f$ h \f$
+ and reads there the value written or a later one. For (ii), a scan keeps
+ at most one node per slot read, at most \f$ H \f$, and starts from at
+ least \f$ 2 H' + 64 \f$ nodes for the count \f$ H' \le H \f$ read.
+
+ <em>Lemma 23 (the stack and the queue).</em> Under any of the policies,
+ a pop of `LockFreeStack` that swings the top from \f$ t \f$ writes the
+ successor that \f$ t \f$ had at its push; in `LockFreeQueue` the head
+ never passes the tail, and a node whose item a dequeue moves out is
+ touched by no other dequeue; both structures are linearizable.
+
+ Indeed, a node protected is not freed, hence not allocated again, and a
+ push links only new nodes, so that a top equal to \f$ t \f$ at the
+ compare-and-swap is the node \f$ t \f$ never popped; a dequeue swings the
+ head from \f$ h \f$ only after reading the tail different from \f$ h \f$,
+ and the tail only moves forward. In the dequeue the successor \f$ n \f$
+ of the head \f$ h \f$ is protected by Lemma 22 (i) with the read of the
+ head that returns \f$ h \f$ again, which precedes the unlink of
+ \f$ n \f$.
 
  \section theory_concurrent_refs References
 
@@ -1172,6 +1269,16 @@
  \see E. Burns, S. Lemons, W. Ruml, R. Zhou, Best-first heuristic search
       for multicore machines, Journal of Artificial Intelligence Research
       39, 689-743, 2010, doi:10.1613/jair.3094
+ \see M. M. Michael, M. L. Scott, Simple, fast, and practical
+      non-blocking and blocking concurrent queue algorithms, ACM Symposium
+      on Principles of Distributed Computing (PODC), 267-275, 1996,
+      doi:10.1145/248052.248106
+ \see M. M. Michael, Hazard pointers: safe memory reclamation for
+      lock-free objects, IEEE Transactions on Parallel and Distributed
+      Systems 15(6), 491-504, 2004, doi:10.1109/TPDS.2004.8
+ \see T. A. Brown, Reclaiming memory for lock-free data structures: there
+      has to be a better way, ACM Symposium on Principles of Distributed
+      Computing (PODC), 261-270, 2015, doi:10.1145/2767386.2767436
  \see K. Fraser, Practical lock-freedom, PhD thesis, technical report
       UCAM-CL-TR-579, University of Cambridge, 2004, doi:10.48456/tr-579
 */
