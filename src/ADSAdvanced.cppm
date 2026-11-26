@@ -810,6 +810,10 @@ using ADS::PartitionedEliasFano;
 // succinct/RRRBitVector.h
 using ADS::RRRBitVector;
 
+// succinct/TinyRankSelect.h
+using ADS::BasicTinyRankSelect;
+using ADS::TinyRankSelect;
+
 // succinct/WaveletMatrix.h
 using ADS::WaveletMatrix;
 

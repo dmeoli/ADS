@@ -5,8 +5,9 @@
  * The benchmark of the succinct structures: the rank and select directory,
  * Elias-Fano, the balanced parentheses and the wavelet matrix of ADS
  * against, when they are found, sdsl-lite (rank_support_v, rank_support_v5,
- * select_support_mcl, sd_vector, bp_support_sada, wm_int, wt_huff), sux
- * (Rank9, Rank9Sel, SimpleSelect, SimpleSelectZero, EliasFano), pasta
+ * each with select_support_mcl, sd_vector, bp_support_sada, wm_int,
+ * wt_huff), sux (Rank9, Rank9Sel, SimpleSelect, SimpleSelectZero,
+ * EliasFano), pasta
  * (FlatRankSelect, WideRankSelect) and succinct (rs_bit_vector,
  * elias_fano, bp_vector):
  *
@@ -14,7 +15,8 @@
  *   and 1% of 1s, the building of the directory from the words, and the
  *   building with a select of each value; RankSelect with its inventories
  *   of select built in the constructor and, as "lazy", at the first
- *   select of each value;
+ *   select of each value, and TinyRankSelect with blocks of 2048 and of
+ *   1024 bits;
  * - rrr: the same on the vectors compressed to their entropy, against the
  *   rrr_vector of sdsl-lite, for n up to 10^7;
  * - eliasfano: access and nextGEQ (the rank of the competitors) on n
@@ -72,6 +74,10 @@
 #if __has_include( "ADS/succinct/InterleavedRankSelect.h" )
  #include "ADS/succinct/InterleavedRankSelect.h"
  #define ADS_HAS_IRS 1
+#endif
+#if __has_include( "ADS/succinct/TinyRankSelect.h" )
+ #include "ADS/succinct/TinyRankSelect.h"
+ #define ADS_HAS_TINY 1
 #endif
 #if __has_include( "ADS/succinct/RRRBitVector.h" )
  #include "ADS/succinct/RRRBitVector.h"
@@ -418,6 +424,27 @@ void bitvectors( std::size_t n , int r , unsigned seed )
      } ,
     r );
 #endif
+#ifdef ADS_HAS_TINY
+  // the blocks of 2048 bits (0.78% for the rank) and of 1024 (1.56%)
+  auto tiny = [ & ]< class T >( const char * who , T * ) {
+   bitvector(
+     dname , b , who ,
+     []( const Bits & b ) {
+      return( std::make_unique< T >(
+	std::span< const std::uint64_t >( b.words ) , b.n ) );
+      } ,
+     []( const T & s , std::uint64_t i ) { return( s.rank1( i ) ); } ,
+     []( const T & s , std::uint64_t k ) { return( s.select1( k ) ); } ,
+     []( const T & s , std::uint64_t k ) { return( s.select0( k ) ); } ,
+     [ nb ]( const T & s ) {
+      return( double( s.size() + s.directoryBits() ) / nb );
+      } ,
+     r );
+   };
+  tiny( "ADS::TinyRankSelect" , ( ADS::TinyRankSelect * )nullptr );
+  tiny( "ADS::TinyRankSelect<1024>" ,
+	( ADS::BasicTinyRankSelect< 1024 > * )nullptr );
+#endif
 #ifdef ADS_HAS_IRS
   using IRS = ADS::InterleavedRankSelect;
   bitvector(
@@ -473,6 +500,38 @@ void bitvectors( std::size_t n , int r , unsigned seed )
    sdsl::bit_vector v;
    sdsl::rank_support_v5< 1 > rk;
    };
+  struct SdslV5Mcl
+  {
+   sdsl::bit_vector v;
+   sdsl::rank_support_v5< 1 > rk;
+   sdsl::select_support_mcl< 1 > s1;
+   sdsl::select_support_mcl< 0 > s0;
+   };
+  bitvector(
+    dname , b , "sdsl::rank_support_v5+mcl" ,
+    [ & ]( const Bits & b ) {
+     auto s = std::make_unique< SdslV5Mcl >();
+     s->v = sdslBits( b );
+     s->rk = sdsl::rank_support_v5< 1 >( &s->v );
+     s->s1 = sdsl::select_support_mcl< 1 >( &s->v );
+     s->s0 = sdsl::select_support_mcl< 0 >( &s->v );
+     return( s );
+     } ,
+    []( const SdslV5Mcl & s , std::uint64_t i ) { return( s.rk.rank( i ) ); } ,
+    []( const SdslV5Mcl & s , std::uint64_t k ) {
+     return( s.s1.select( k ) );
+     } ,
+    []( const SdslV5Mcl & s , std::uint64_t k ) {
+     return( s.s0.select( k ) );
+     } ,
+    [ nb ]( const SdslV5Mcl & s ) {
+     return(
+       8 *
+       double( sdsl::size_in_bytes( s.v ) + sdsl::size_in_bytes( s.rk ) +
+	       sdsl::size_in_bytes( s.s1 ) + sdsl::size_in_bytes( s.s0 ) ) /
+       nb );
+     } ,
+    r );
   bitvector(
     dname , b , "sdsl::rank_support_v5" ,
     [ & ]( const Bits & b ) {

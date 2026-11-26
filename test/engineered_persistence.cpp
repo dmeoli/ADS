@@ -56,6 +56,7 @@
 #include "ADS/succinct/PartitionedEliasFano.h"
 #include "ADS/succinct/RRRBitVector.h"
 #include "ADS/succinct/RankSelect.h"
+#include "ADS/succinct/TinyRankSelect.h"
 #include "ADS/succinct/WaveletMatrix.h"
 #include "ADS/dictionary/FingerprintPerfectHash.h"
 #include "ADS/dictionary/MinimalPerfectHash.h"
@@ -580,6 +581,8 @@ ADS_TEST( "persistence-succinct" )
 				  sameRanks< CompactRankSelect > );
   roundTrip< InterleavedRankSelect >( InterleavedRankSelect( b ) ,
 				      sameRanks< InterleavedRankSelect > );
+  roundTrip< TinyRankSelect >( TinyRankSelect( b ) ,
+			       sameRanks< TinyRankSelect > );
   roundTrip< RRRBitVector >( RRRBitVector( b ) , sameRanks< RRRBitVector > );
   }
  for( const std::size_t n :

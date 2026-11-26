@@ -313,7 +313,7 @@ allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-447 headers: 245 base, 155 advanced, 19 core and 28 interop.
+448 headers: 245 base, 156 advanced, 19 core and 28 interop.
 
 | Folder | Base | Advanced | Core | Interop |
 |---|---|---|---|---|
@@ -357,7 +357,7 @@ allow.
 | `sort/` | `CountingSort`, `EngineeredQuickSorts`, `ExchangeSorts`, `ExternalSort`, `Heapsort`, `InsertionSort`, `KnuthSorts`, `MergeSort`, `MultikeyQuickSort`, `PigeonholeSort`, `QuickSort`, `SelectionSort`, `ShellSort`, `SortingNetworks`, `StrandSort`, `TreeSort` | `LearnedSort`, `PdqSort`, `QuicksortAdversary`, `RadixSort`, `RunSorts`, `SampleSort`, `Sort`, `StringSort`, `VectorQuickSort` | `Sorted` |  |
 | `stack/` | `ArrayStack`, `Expressions`, `MinStack`, `MultiStack`, `SequenceStack`, `StackAlgorithms` |  |  |  |
 | `string/` | `Alignment`, `Anagrams`, `ApproximateMatching`, `FrontCoding`, `Huffman`, `LongestCommonSubsequence`, `Lyndon`, `Palindromes`, `Parentheses`, `PrefixSearch`, `RearCoding`, `Segmentations`, `StringBreaking`, `StringMatching`, `SubsequenceProblems`, `SuffixApplications`, `SuffixArray`, `SuffixTree`, `WordBreak` | `AhoCorasick`, `EditDistance`, `LongestCommonExtension`, `MultiSearch`, `StringSearch`, `SuffixAutomaton`, `SuffixSorting` |  |  |
-| `succinct/` | `BPTree`, `BVGraph`, `BalancedParentheses`, `BitStream`, `BitVector`, `EliasFano`, `EliasFanoGraph`, `HuffmanWaveletTree`, `JacobsonTree`, `K2Tree`, `LoudsTree`, `RankSelect` | `CompactRankSelect`, `InterleavedRankSelect`, `LAVector`, `MoveStructure`, `PackedArray`, `PartitionedEliasFano`, `RRRBitVector`, `WaveletMatrix` |  |  |
+| `succinct/` | `BPTree`, `BVGraph`, `BalancedParentheses`, `BitStream`, `BitVector`, `EliasFano`, `EliasFanoGraph`, `HuffmanWaveletTree`, `JacobsonTree`, `K2Tree`, `LoudsTree`, `RankSelect` | `CompactRankSelect`, `InterleavedRankSelect`, `LAVector`, `MoveStructure`, `PackedArray`, `PartitionedEliasFano`, `RRRBitVector`, `TinyRankSelect`, `WaveletMatrix` |  |  |
 | `tree/` | `AVLTree`, `ArrayBinaryTree`, `BPlusTree`, `BTree`, `BinaryTree`, `BinaryTreeAlgorithms`, `ChildListTree`, `CursorBinaryTree`, `CursorTree`, `ExpressionTree`, `FingerTreap`, `HashedTreap`, `HeapByInsertion`, `LeftLeaningRedBlackTree`, `MeasuredSearchTree`, `ParentTree`, `PartialRebuildingTree`, `PreorderArrayTree`, `RandomizedSearchTree`, `ScapegoatTree`, `SearchTree`, `ThreadedTree`, `Treap`, `Tree` | `BTreeMap`, `JoinAlgorithms`, `JoinTree`, `LinkCutTree`, `MaterializedAggregate`, `SplayTree` |  |  |
 
 <!-- end of sets -->
@@ -693,6 +693,7 @@ library, Boost and Eigen.
 | Stream VByte, the lengths apart, one shuffle per 4 integers (Lemire, Kurz and Rupp) | [`compression/StreamVByte.h`](include/ADS/compression/StreamVByte.h) | `engineered_succinct.stream-vbyte` |
 | rank and select in about 3.9% of the bits, one 128-bit entry per 4096 bits (Kurpicz; Zhou, Andersen and Kaminsky) | [`succinct/CompactRankSelect.h`](include/ADS/succinct/CompactRankSelect.h) | `engineered_succinct.compact-rank-select` |
 | rank and select with the counts inside the lines of the bits, rank in one access (SPIDER, Laws et al.) | [`succinct/InterleavedRankSelect.h`](include/ADS/succinct/InterleavedRankSelect.h) | `engineered_succinct.interleaved-rank-select` |
+| rank and select in about 0.8% of the bits, a select in constant time in the worst case by a tree of samples of three levels (3*, Kurpicz, Rigi-Luperti and Sanders) | [`succinct/TinyRankSelect.h`](include/ADS/succinct/TinyRankSelect.h) | `engineered_succinct.tiny-rank-select` |
 | compressed vector of bits in m H0 + 0.175 m bits with rank and select (Raman, Raman and Rao; Claude and Navarro) | [`succinct/RRRBitVector.h`](include/ADS/succinct/RRRBitVector.h) | `engineered_succinct.rrr-bit-vector` |
 | arrays of fields of 1 to 32 bits packed in words, saturated if asked, and of trits five to a byte (Breyer and Korf), built on an executor | [`succinct/PackedArray.h`](include/ADS/succinct/PackedArray.h) | `engineered_search.packed-array`, `engineered_search.trit-array` |
 | tANS of order 0 with 2^11 states, two halves of four states each (Duda) | [`compression/Tans.h`](include/ADS/compression/Tans.h) | `engineered_succinct.tans-coder` |

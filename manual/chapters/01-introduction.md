@@ -2073,6 +2073,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `succinct/PartitionedEliasFano.h` | advanced | `PartitionedEliasFano` | [22](22-succinct.md#ch-22) |
 | `succinct/RRRBitVector.h` | advanced | `RRRBitVector` | [22](22-succinct.md#ch-22) |
 | `succinct/RankSelect.h` | base | `RankSelectOptions`, `BasicRankSelect`, `RankSelect`, `LazyRankSelect` | [22](22-succinct.md#ch-22) |
+| `succinct/TinyRankSelect.h` | advanced | `BasicTinyRankSelect`, `TinyRankSelect` | [22](22-succinct.md#ch-22) |
 | `succinct/WaveletMatrix.h` | advanced | `WaveletMatrix` | [22](22-succinct.md#ch-22) |
 | `external/BlockBTree.h` | base | `BlockBTree` | [23](23-external.md#ch-23) |
 | `external/BlockStore.h` | base | `BlockStore` | [23](23-external.md#ch-23) |

@@ -1746,6 +1746,8 @@ succinct_top  succinct-top      Elias-Fano e parentesi col livello alto
 
 # the engineered succinct structures and codes, beyond the book
 engineered_succinct  compact-rank-select  rank e select compatti, 3.5% di bit
+engineered_succinct  tiny-rank-select  rank e select di 3*, 0.8% di bit
+engineered_succinct  tiny-rank-select-large  rank e select di 3* oltre 2^32 bit
 engineered_succinct  rank-select-lazy  inventari di select costruiti al primo uso
 engineered_succinct  rank-select-words  RankSelect e compatto dalle parole, copiate contandole
 engineered_succinct  huffman-wavelet-tree  wavelet tree di Huffman, access rank select
