@@ -17,7 +17,9 @@
 
 #include <numeric>
 #include <random>
+#include <type_traits>
 #include <unordered_map>
+#include <utility>
 
 namespace ADS
 {
@@ -28,14 +30,15 @@ namespace detail
 /// the concatenation of the vectors that f( b ) gives for the blocks
 /// b = 0 , ... , B - 1, in their order
 template< class E , class F >
-std::vector< int > gatherBlocks( E & ex , std::size_t B , F && f )
+auto gatherBlocks( E & ex , std::size_t B , F && f )
 {
- std::vector< std::vector< int > > L( B );
+ using V = std::invoke_result_t< F & , std::size_t >;
+ std::vector< V > L( B );
  parallelFor( ex , 0 , B , [ & ]( std::size_t b ) { L[ b ] = f( b ); } , 1 );
  std::vector< std::size_t > at( B + 1 , 0 );
  for( std::size_t b = 0 ; b < B ; ++b )
   at[ b + 1 ] = at[ b ] + L[ b ].size();
- std::vector< int > out( at[ B ] );
+ V out( at[ B ] );
  parallelFor(
    ex , 0 , B ,
    [ & ]( std::size_t b ) {
@@ -167,58 +170,105 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W , AL > & g ,
 
 /*--------------------------------------------------------------------------*/
 
-template< Executor E , class W , ArcLayout AL >
-std::vector< int > connectedComponents( E & ex ,
-					const StaticGraph< W , AL > & g )
+namespace detail
 {
- const int n = g.n();
- const int * off = g.offsets();
- const auto hd = g.arcHeads();
- ConcurrentUnionFind uf{ std::size_t( n ) };
- auto link = [ & ]( int u , int v ) { uf.unite( u , v ); };
+
+/// the links of Afforest on the union-find uf, over the n nodes of the
+/// compressed rows A [see Graph.h]: the arcs that keep( v , k ) keeps, those
+/// of the nodes in the largest set of a sample skipped if sample (keep
+/// must then keep an arc and its reverse alike), and the arcs ( v , u )
+/// whose links joined two sets, a spanning forest of the arcs kept,
+/// appended to *forest if it is not null
+template< class E , class R , class K >
+void afforest( E & ex , int n , const R & A , bool sample ,
+	       ConcurrentUnionFind & uf , K && keep ,
+	       std::vector< std::pair< int , int > > * forest )
+{
+ using Arcs = std::vector< std::pair< int , int > >;
+ std::vector< Arcs > taken;
+ // the calls body( v , t ) on the nodes, in the blocks of a parallel loop
+ // of the grain g, each block appending to t the arcs whose links joined
+ // two sets, if the forest is asked for
+ auto over = [ & ]( std::size_t g , auto && body ) {
+  const auto cut = blocksOf( 0 , std::size_t( n ) , g );
+  const std::size_t s = cut.second;
+  Arcs t = gatherBlocks( ex , cut.first , [ & ]( std::size_t b ) {
+   Arcs L;
+   const int v1 = int( std::min( std::size_t( n ) , ( b + 1 ) * s ) );
+   for( int v = int( b * s ) ; v < v1 ; ++v )
+    body( v , L );
+   return( L );
+   } );
+  if( forest != nullptr )
+   taken.push_back( std::move( t ) );
+  };
+ auto link = [ & ]( int v , std::size_t k , Arcs & L ) {
+  const int u = A.head( k );
+  if( keep( v , k ) && uf.unite( v , u ) && ( forest != nullptr ) )
+   L.emplace_back( v , u );
+  };
  // each node points to its root
  auto compress = [ & ] {
   parallelFor(
     ex , 0 , std::size_t( n ) ,
     [ & ]( std::size_t v ) { uf.compress( std::int32_t( v ) ); } , 4096 );
   };
- constexpr int rounds = 2;
- for( int r = 0 ; r < rounds ; ++r ) {
-  parallelFor(
-    ex , 0 , std::size_t( n ) ,
-    [ & ]( std::size_t i ) {
-     const int v = int( i );
-     if( off[ v ] + r < off[ v + 1 ] )
-      link( v , hd[ off[ v ] + r ] );
-     } ,
-    4096 );
+ constexpr std::size_t rounds = 2;
+ for( std::size_t r = 0 ; r < rounds ; ++r ) {
+  over( 4096 , [ & ]( int v , Arcs & L ) {
+   if( A.first( v ) + r < A.last( v ) )
+    link( v , A.first( v ) + r , L );
+   } );
   compress();
   }
  // the largest component, from a sample; skipped only if unoriented
  int c = -1;
- if( ( n > 0 ) && ! g.directed() ) {
+ if( ( n > 0 ) && sample ) {
   std::mt19937 rng( 0x5EED );
   std::unordered_map< int , int > count;
   int best = 0;
   for( int k = 0 ; k < 1024 ; ++k ) {
    const int x =
-     uf.parent( std::int32_t( detail::uniformIndex( rng , unsigned( n ) ) ) );
+     uf.parent( std::int32_t( uniformIndex( rng , unsigned( n ) ) ) );
    if( ++count[ x ] > best ) {
     best = count[ x ];
     c = x;
     }
    }
   }
- parallelFor(
-   ex , 0 , std::size_t( n ) ,
-   [ & ]( std::size_t i ) {
-    const int v = int( i );
-    if( uf.parent( v ) == c )
-     return;
-    for( int k = off[ v ] + rounds ; k < off[ v + 1 ] ; ++k )
-     link( v , hd[ k ] );
-    } ,
-   1024 );
+ over( 1024 , [ & ]( int v , Arcs & L ) {
+  if( uf.parent( v ) == c )
+   return;
+  for( std::size_t k = A.first( v ) + rounds ; k < A.last( v ) ; ++k )
+   link( v , k , L );
+  } );
+ if( forest == nullptr )
+  return;
+ std::size_t total = forest->size();
+ for( const Arcs & t : taken )
+  total += t.size();
+ std::size_t at = forest->size();
+ forest->resize( total );
+ for( const Arcs & t : taken ) {
+  parallelFor( ex , 0 , t.size() ,
+	       [ & ]( std::size_t i ) { ( *forest )[ at + i ] = t[ i ]; } );
+  at += t.size();
+  }
+ }
+
+}  // end( namespace detail )
+
+template< Executor E , class W , ArcLayout AL >
+std::vector< int > connectedComponents( E & ex ,
+					const StaticGraph< W , AL > & g )
+{
+ const int n = g.n();
+ const detail::Rows< StaticGraph< W , AL > > A( g );
+ ConcurrentUnionFind uf{ std::size_t( n ) };
+ detail::afforest(
+   ex , n , A , ! g.directed() , uf ,
+   []( int , std::size_t ) { return( true ); } ,
+   nullptr );
  std::vector< int > comp( static_cast< std::size_t >( n ) );
  parallelFor(
    ex , 0 , std::size_t( n ) ,

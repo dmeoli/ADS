@@ -1796,6 +1796,13 @@ engineered_graph  euler-trails        cammini e cicli euleriani, orientati e no
 engineered_graph  blossom-matching    abbinamento massimo, fiori di Edmonds
 engineered_graph  weighted-blossom    abbinamento di peso massimo, fiori pesati
 
+# the blocks, the cut nodes, the bridges and the 2-edge-connected
+# components, sequential and parallel
+engineered_biconnectivity  biconnected-definitions  blocchi contro la definizione
+engineered_biconnectivity  biconnected-shapes       vuoto, un arco, stella, cammino di 10^6
+engineered_biconnectivity  biconnected-parallel     FAST-BCC contro la visita, ogni famiglia
+engineered_biconnectivity  biconnected-boost        visita e FAST-BCC contro Boost.Graph
+
 # the files of records on the disk, beyond the book
 engineered_external  record-file-empty          file assente, vuoto, tolto
 engineered_external  record-file-append         accodati a pezzi, letti a buffer

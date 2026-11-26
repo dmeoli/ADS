@@ -88,6 +88,7 @@
 #include "ADS/geometry/IntervalTree.h"
 #include "ADS/geometry/RangeTree.h"
 #include "ADS/graph/Assignment.h"
+#include "ADS/graph/Biconnectivity.h"
 #include "ADS/graph/BlossomMatching.h"
 #include "ADS/graph/GraphBuilder.h"
 #include "ADS/graph/GridGraph.h"
@@ -121,6 +122,7 @@
 #if defined( _OPENMP )
  #include "ADS/parallel/OpenMPExecutor.h"
 #endif
+#include "ADS/parallel/ParallelBiconnectivity.h"
 #include "ADS/parallel/ParallelGraph.h"
 #include "ADS/parallel/ParallelGreedy.h"
 #include "ADS/parallel/ParallelMerge.h"
