@@ -85,7 +85,7 @@ namespace ADS
 /// the DOMAIN of a reclamation by epochs: the epoch and the records of the
 /// threads, with the scheme of Fraser (an attempt to raise the epoch per
 /// \f$ R \f$ retirements)
-template< unsigned R = 1 >
+template< unsigned R >
 class EpochDomain
 {
 
