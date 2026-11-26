@@ -2217,9 +2217,9 @@ on correlated queries.
 
 A filter answers a question about one item; a *sketch* answers instead a
 question about the stream that went into it (e.g., how often an item occurred,
-or how similar two sets are). Its space typically grows with the accuracy required and (at
-most) with the logarithm of the length of the stream. We are concerned with
-sketches that are *mergeable* in the sense of [Agarwal et al.
+or how similar two sets are). Its space typically grows with the accuracy
+required and (at most) with the logarithm of the length of the stream. We are
+concerned with sketches that are *mergeable* in the sense of [Agarwal et al.
 2013](Z-bibliography.md#ref-agarwal2013), i.e., two sketches of two streams
 combine into a sketch of their concatenation with the guarantee of one built on
 it. The library uses this property in two ways. First, the sketches of the
@@ -2233,9 +2233,10 @@ library meets this assumption on random keys, but not necessarily on structured
 ones. In fact, the folded product of `FastHash`
 ([§7.3.6](07-dictionary.md#sec-7-3-6)) maps consecutive integers to the
 multiples of a constant modulo $2^{64}$, whose top bits form a sequence of low
-discrepancy, far from independent words. Hence, all the sketches of this section finish the hash of
-`FastHash` by the mixer of SplitMix64 ([§7.3.4](07-dictionary.md#sec-7-3-4)),
-which costs a few cycles and makes those sequences look random.
+discrepancy, far from independent words. Hence, all the sketches of this
+section finish the hash of `FastHash` by the mixer of SplitMix64
+([§7.3.4](07-dictionary.md#sec-7-3-4)), which costs a few cycles and makes
+those sequences look random.
 
 ### 10.12.1 Frequencies: the Count-Min and the Count sketch {#sec-10-12-1}
 

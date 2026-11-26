@@ -5,9 +5,10 @@
  * A queue of many producers and many consumers, lock-free and unbounded,
  * beyond the book: the queue of Michael and Scott, a list of nodes from a
  * head to a tail with a dummy node first, with the memory of the nodes
- * dequeued reclaimed by a policy [see `Reclaim.h`], the epochs of DEBRA by
- * default [see `EpochReclaim.h`], or of Fraser, or the hazard pointers
- * [see `HazardPointer.h`], two slots per thread. An enqueue links a new
+ * dequeued reclaimed by a policy [see `Reclaim.h`], the epochs of Fraser
+ * with an attempt to raise the epoch per 64 retirements by default [see
+ * `EpochReclaim.h`], or the hazard pointers [see `HazardPointer.h`], two
+ * slots per thread. An enqueue links a new
  * node after the last one by a compare-and-swap on its pointer, from nil,
  * and then swings the tail to it; a thread that finds the tail behind the
  * last node swings it first, so that no operation waits for a stopped one.
@@ -87,7 +88,7 @@ namespace ADS
 
 /// a QUEUE of many producers and many consumers, the one of Michael and
 /// Scott, its nodes reclaimed by the policy \f$ R \f$
-template< class T , reclamation_policy R = DebraEpochs >
+template< class T , reclamation_policy R = FraserEpochs< 64 > >
 class LockFreeQueue
 {
 

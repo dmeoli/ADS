@@ -1860,7 +1860,8 @@ ADS_TEST( "lockfree-pq" )
  }
 
 /// the contract of the offset, and the epochs of the reclamation turned
-/// over and over: with an offset of 1 each DeleteMin but the first cuts
+/// over and over, with an attempt to raise them per retirement and per 64
+/// (the default): with an offset of 1 each DeleteMin but the first cuts
 /// the prefix, the nodes cut off wait in the limbo of their epoch, and the
 /// epochs keep growing while a second handle is alive and idle, so that the
 /// items not yet freed (each moved out of its node, which keeps the moved
@@ -1870,8 +1871,12 @@ ADS_TEST( "lockfree-pq-epochs" )
  CHECK_THROWS( ( LockFreePriorityQueue< int , int >( 0 ) ) ,
 	       contract_violation );
  const long alive = Counted::alive;
- {
-  LockFreePriorityQueue< std::uint64_t , Counted > Q( 1 , 5 );
+ // under an attempt per R retirements, the nodes of the last three epochs
+ // wait, R each at most
+ auto check = [ & ]( auto policy , long bound ) {
+  using P = decltype( policy );
+  LockFreePriorityQueue< std::uint64_t , Counted , std::less<> , P > Q( 1 ,
+									5 );
   auto h = Q.handle();
   auto idle = Q.handle();  // alive, never inside an operation
   long most = 0 , size = 0;
@@ -1888,13 +1893,15 @@ ADS_TEST( "lockfree-pq-epochs" )
    }
   CHECK( std::size_t( size ) == Q.size() );
   CHECK( right && Q.consistent() && ( h.counts().cuts > 10000 ) );
-  CHECK( most <= 16 );
+  CHECK( most <= bound );
   // the idle handle sees the queue as the other one left it
   CHECK( idle.tryMinKey() && ( idle.tryMinKey() == h.tryMinKey() ) );
   while( idle.tryDeleteMin() ) {
    }
   CHECK( Q.empty() && h.empty() );
-  }
+  };
+ check( FraserEpochs<>() , 16 );
+ check( FraserEpochs< 64 >() , 16 + 3 * 63 );
  CHECK( Counted::alive == alive );
  }
 
@@ -2160,10 +2167,14 @@ struct SharedCounted
  ~SharedCounted() { alive.fetch_sub( 1 ); }
  };
 
-/// the policies of the structures of nodes under test
-using Policies = std::tuple< DebraEpochs , FraserEpochs<> ,
-			     FraserEpochs< 16 > ,
-			     HazardPointers >;
+/// the policies of the structures of nodes under test, the default of the
+/// stack and of the queue among them
+using Policies = std::tuple< FraserEpochs<> , FraserEpochs< 16 > ,
+			     FraserEpochs< 64 > , HazardPointers >;
+
+/// the retirements per attempt to raise the epoch of a policy of epochs
+template< unsigned R >
+constexpr std::size_t perAttempt( FraserEpochs< R > ) { return( R ); }
 
 /// f called with a value of each policy of Policies
 template< class F >
@@ -2183,9 +2194,8 @@ void forPolicies( F && f )
 ADS_TEST( "hazard-pointers" )
 {
  static_assert( reclamation_policy< HazardPointers > &&
-		reclamation_policy< DebraEpochs > &&
 		reclamation_policy< FraserEpochs< 4 > > &&
-		( ! HazardPointers::kRegions ) && DebraEpochs::kRegions );
+		( ! HazardPointers::kRegions ) && FraserEpochs< 4 >::kRegions );
  HazardDomain & D = HazardDomain::global();
  hazard_pointer e;
  CHECK( e.empty() );
@@ -2360,13 +2370,15 @@ ADS_TEST( "hazard-pointers-stalled" )
      typename P::template Local< 0 >::Guard g( l );
      l.retire( makeRNode( nullptr ) );
      }
-    CHECK( D.pending() <= 64 );
+    // the nodes of the last two epochs wait, R per attempt
+    CHECK( D.pending() <=
+	   std::max< std::size_t >( 64 , 2 * perAttempt( policy ) + 8 ) );
     }
    }
   } );
  }
 
-/// the epochs of Fraser and of DEBRA on their own: a node retired is freed
+/// the epochs of Fraser on their own: a node retired is freed
 /// after a few guards of one thread, never inside a guard of another
 /// thread that started before it was retired, the epoch grows, a record
 /// given back is taken again with its limbo, and the domain frees the
@@ -2396,7 +2408,9 @@ ADS_TEST( "epoch-reclaim" )
       typename L::Guard g( l );
       l.retire( makeRNode( &F[ i ] , i ) );
       }
-     CHECK( D.epoch() > e && D.pending() <= 3 * 16 );
+     CHECK( D.epoch() > e &&
+	    D.pending() <=
+	      3 * std::max< std::size_t >( 16 , perAttempt( policy ) ) );
      CHECK( D.records() == 1 );
      }
     {
@@ -2647,8 +2661,9 @@ ADS_TEST( "reclaim-races" )
   } );
  }
 
-/// the queue of Lindén and Jonsson under the epochs of DEBRA and of Fraser
-/// with an attempt per 16 retirements, besides the default: the order of
+/// the queue of Lindén and Jonsson under the epochs of Fraser with an
+/// attempt per retirement and per 16 retirements, besides the default of
+/// 64: the order of
 /// one handle with items that own memory, the nodes cut off freed as the
 /// epochs go, and p threads that insert and delete, every pair once
 ADS_TEST( "lockfree-pq-policies" )
@@ -2711,7 +2726,7 @@ ADS_TEST( "lockfree-pq-policies" )
       } ) );
    }
   };
- check( DebraEpochs() );
+ check( FraserEpochs<>() );
  check( FraserEpochs< 16 >() );
  CHECK( Counted::alive == alive );
  }

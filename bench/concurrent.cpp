@@ -36,8 +36,8 @@
  *   the owner alone (ns per operation); case thief: the owner pushes n
  *   integers while a thief steals them (ns per item);
  * - "reclaim", the queue of Michael and Scott under the reclamations of
- *   the memory of its nodes: LockFreeQueue of ADS under the epochs of DEBRA
- *   and of Fraser and under the hazard pointers, against
+ *   the memory of its nodes: LockFreeQueue of ADS under the epochs of
+ *   Fraser and under the hazard pointers, against
  *   xenium::michael_scott_queue under the hazard pointers, the epochs and
  *   DEBRA of xenium (ADS_HAS_XENIUM), and boost::lockfree::queue, which
  *   keeps its nodes on a free list and frees none; case pairs: each of the
@@ -742,11 +742,10 @@ int main( int argc , char ** argv )
 			   } ) );
       } );
    };
-  for( const char * who : { "ADS::LockFreeQueue DebraEpochs" ,
-			    "ADS::LockFreeQueue DebraEpochs A/A" } )
-   ads( who , ADS::DebraEpochs() );
   ads( "ADS::LockFreeQueue FraserEpochs<1>" , ADS::FraserEpochs< 1 >() );
-  ads( "ADS::LockFreeQueue FraserEpochs<64>" , ADS::FraserEpochs< 64 >() );
+  for( const char * who : { "ADS::LockFreeQueue FraserEpochs<64>" ,
+			    "ADS::LockFreeQueue FraserEpochs<64> A/A" } )
+   ads( who , ADS::FraserEpochs< 64 >() );
   ads( "ADS::LockFreeQueue HazardPointers" , ADS::HazardPointers() );
 #endif
   }

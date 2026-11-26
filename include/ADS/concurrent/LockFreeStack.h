@@ -5,9 +5,9 @@
  * A stack shared by threads, lock-free and unbounded, beyond the book: the
  * stack of Treiber, a list of nodes whose top any thread swings by a
  * compare-and-swap, with the memory of the nodes popped reclaimed by a
- * policy [see `Reclaim.h`], the epochs of DEBRA by default [see
- * `EpochReclaim.h`], or of Fraser, or the hazard pointers [see
- * `HazardPointer.h`]. A push links a new node above the top it read; a
+ * policy [see `Reclaim.h`], the epochs of Fraser with an attempt to raise
+ * the epoch per 64 retirements by default [see `EpochReclaim.h`], or the
+ * hazard pointers [see `HazardPointer.h`]. A push links a new node above the top it read; a
  * pop protects the top \f$ t \f$, reads its successor and swings the top
  * from \f$ t \f$ to it, then moves the item out of \f$ t \f$ and retires
  * it. Since a node is pushed once, popped once and freed only when no
@@ -77,7 +77,7 @@ namespace ADS
 
 /// a STACK shared by threads, the one of Treiber, its nodes reclaimed by
 /// the policy \f$ R \f$
-template< class T , reclamation_policy R = DebraEpochs >
+template< class T , reclamation_policy R = FraserEpochs< 64 > >
 class LockFreeStack
 {
 

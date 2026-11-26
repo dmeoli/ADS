@@ -80,16 +80,17 @@
  * for the bit.
  *
  * The memory of the nodes cut off is reclaimed by a policy \f$ R \f$ [see
- * `Reclaim.h`] on a domain owned by the queue: by default the epochs of
- * Fraser (`FraserEpochs<>`), or those of DEBRA (`DebraEpochs`) [see
+ * `Reclaim.h`] on a domain owned by the queue: the epochs of Fraser
+ * (`FraserEpochs< R >`, with \f$ R = 64 \f$ by default) [see
  * `EpochReclaim.h`], while the hazard pointers do not fit, since a walk goes
  * on from a node that may have been cut off, and the queue refuses them.
  * Each thread uses the queue through a `Handle`, which holds a record of the
- * domain; under the default, a node cut off waits in the record of the
- * thread that cut it, stamped with the epoch of the cut, and is freed once
- * the epoch has grown by 2, which happens only after every thread running
- * an operation has announced the newer epoch, and the thread of a cut tries
- * to raise the epoch at the end of its DeleteMin. No node is leaked: the
+ * domain; a node cut off waits in the record of the thread that cut it,
+ * stamped with the epoch of the cut, and is freed once the epoch has grown
+ * by 2, which happens only after every thread running an operation has
+ * announced the newer epoch, and the thread of a cut tries to raise the
+ * epoch at the end of its DeleteMin once \f$ R \f$ nodes have been
+ * retired since its last attempt. No node is leaked: the
  * nodes not yet freed are freed by the domain when the queue is destroyed.
  * A thread stopped inside an operation stops the epoch and keeps the nodes
  * cut off afterwards from being freed (the reclamation is blocking, as in
@@ -180,7 +181,7 @@ namespace ADS
 /// the skiplist of Lindén and Jonsson, its deleted prefix cut in batches,
 /// the nodes cut off reclaimed by the policy \f$ R \f$
 template< class K , class T , class Less = std::less< K > ,
-	  reclamation_policy R = FraserEpochs<> >
+	  reclamation_policy R = FraserEpochs< 64 > >
 class LockFreePriorityQueue
 {
 

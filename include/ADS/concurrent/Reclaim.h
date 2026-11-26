@@ -12,7 +12,7 @@
  * frees it only when none of them may still hold it. The policies are
  * the hazard pointers of Michael [see `HazardPointer.h`], under which
  * a thread protects each node that it is about to read, and the epochs of
- * Fraser and of DEBRA [see `EpochReclaim.h`], under which a thread
+ * Fraser [see `EpochReclaim.h`], under which a thread
  * protects, for the whole of an operation, everything it may reach (see
  * \ref theory_concurrent_reclaim).
  *

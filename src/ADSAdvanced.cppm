@@ -214,7 +214,6 @@ using ADS::ZeroingClear;
 using ADS::ConcurrentUnionFind;
 
 // concurrent/EpochReclaim.h
-using ADS::DebraEpochs;
 using ADS::EpochDomain;
 using ADS::FraserEpochs;
 
