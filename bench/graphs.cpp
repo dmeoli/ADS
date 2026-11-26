@@ -47,6 +47,12 @@
  *   graphs of n / 10 nodes, and the visits of one pass, sccTarjan() and
  *   sccPearce() on the StaticGraph, against strong_components() of the
  *   Boost Graph Library (Tarjan's algorithm on its compressed rows);
+ * - bcc, biconnectedComponents(), the blocks and the cut nodes by one
+ *   visit in depth with no stack of edges, on the StaticGraph, also with
+ *   the block of each arc written out (arcBlocks), on the unoriented graphs,
+ *   against biconnected_components() of the Boost Graph Library on its
+ *   adjacency_list (the visit of Hopcroft and Tarjan with a stack of
+ *   edges), which writes the block of each edge and the cut nodes;
  * - euler, eulerianTrail(), the walk of Hierholzer, on a random closed walk
  *   of 4 n distinct edges among n nodes, oriented and not ("walk" and
  *   "uwalk"), the same code on the three families of graphs (the Boost
@@ -108,6 +114,7 @@
 
 #include "Bench.h"
 
+#include "ADS/graph/Biconnectivity.h"
 #include "ADS/graph/EulerianCycle.h"
 #include "ADS/graph/GridGraph.h"
 #include "ADS/graph/Matching.h"
@@ -136,6 +143,7 @@
  #include <boost/graph/compressed_sparse_row_graph.hpp>
  #include <boost/graph/grid_graph.hpp>
  #include <boost/graph/adjacency_list.hpp>
+ #include <boost/graph/biconnected_components.hpp>
  #include <boost/graph/max_cardinality_matching.hpp>
  #include <boost/graph/maximum_weighted_matching.hpp>
  #include <boost/graph/strong_components.hpp>
@@ -153,6 +161,7 @@
 #include <fstream>
 #include <functional>
 #include <initializer_list>
+#include <iterator>
 #include <queue>
 #include <set>
 #include <sstream>
@@ -1110,6 +1119,62 @@ void scc( const std::string & c , int n0 , int r , unsigned seed )
   } );
  }
 
+/// the blocks and the cut nodes of a decomposition, as one number
+long long bccDigest( long long blocks , long long cuts , Counts & k )
+{
+ k = { { "blocks" , blocks } , { "cuts" , cuts } };
+ return( blocks * 1000003 + cuts );
+ }
+
+void bcc( const std::string & c , int n0 , int r , unsigned seed )
+{
+ const Input I = make( c , n0 , false , seed );
+ const int n = I.n;
+ const auto A = arcs( I );
+ Cell C( "bcc" , c , std::size_t( n ) , A.size() , r );
+#ifdef ADS_HAS_BOOST
+ if( measured( { "Boost adjacency_list" , "Boost adjacency_list A/A" } ) ) {
+  using BG = boost::adjacency_list<
+    boost::vecS , boost::vecS , boost::undirectedS , boost::no_property ,
+    boost::property< boost::edge_index_t , std::size_t > >;
+  BG G{ std::size_t( n ) };
+  std::size_t m = 0;
+  for( const auto & [ u , v , w ] : edgesOf( I , A ) )
+   boost::add_edge( std::size_t( u ) , std::size_t( v ) , m++ , G );
+  for( const char * who :
+       { "Boost adjacency_list" , "Boost adjacency_list A/A" } )
+   C( who , [ & ]( Counts & k ) {
+    std::vector< std::size_t > comp( m );
+    std::vector< std::size_t > art;
+    const auto b = boost::biconnected_components(
+      G ,
+      boost::make_iterator_property_map( comp.begin() ,
+					 boost::get( boost::edge_index ,
+						     G ) ) ,
+      std::back_inserter( art ) );
+    return( bccDigest( ( long long )b.first , ( long long )art.size() , k ) );
+    } );
+  }
+#endif
+ if( ! measured( { "ADS StaticGraph" , "ADS StaticGraph arcBlocks" } ) )
+  return;
+ const ADS::StaticGraph<> S(
+   ADS::StaticGraph< int >( n , edgesOf( I , A ) , false ) );
+ C( "ADS StaticGraph" , [ & ]( Counts & k ) {
+  const ADS::BiconnectedComponents B = ADS::biconnectedComponents( S );
+  return( bccDigest( B.blocks() , ( long long )B.cutNodes().size() , k ) );
+  } );
+ // the block of each arc written out, as Boost writes that of each edge
+ C( "ADS StaticGraph arcBlocks" , [ & ]( Counts & k ) {
+  const ADS::BiconnectedComponents B = ADS::biconnectedComponents( S );
+  const std::vector< int > a = B.arcBlocks( S );
+  // a simple graph: every arc in a block
+  if( std::count( a.begin() , a.end() , -1 ) != 0 )
+   return( -1LL );
+  return( bccDigest( B.blocks() , ( long long )B.cutNodes().size() , k ) );
+  } );
+ }
+
 /// a closed walk of m distinct edges among n nodes, oriented or not, each
 /// step to a random node by an edge not yet used: an Eulerian graph
 Input closedWalk( int n , std::size_t m , bool directed , std::mt19937_64 & g )
@@ -1439,6 +1504,9 @@ int main( int argc , char ** argv )
   if( want( "scc" ) )
    for( const char * c : { "gnm4" , "road" , "rmat" } )
     scc( c , n / 10 , r , o.seed );
+  if( want( "bcc" ) )
+   for( const char * c : { "gnm4" , "grid" , "road" , "rmat" } )
+    bcc( c , n , r , o.seed );
   if( want( "euler" ) )
    for( const char * c : { "walk" , "uwalk" } )
     euler( c , n , r , o.seed );

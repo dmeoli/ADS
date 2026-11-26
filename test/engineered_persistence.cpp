@@ -11,8 +11,9 @@
  * a copy of the structure and never written back to the file; and the
  * round trip, by a buffer, a stream, a file and a mapping, of every
  * persistent structure: the succinct ones, the indexes of texts and the
- * learned ones, the filters, the perfect hash functions, and the graphs
- * and the matrices in CSR form. With `ADS_WITH_CEREAL`, the same
+ * learned ones, the filters, the sketches of streams, the perfect hash
+ * functions, and the graphs and the matrices in CSR form. With
+ * `ADS_WITH_CEREAL`, the same
  * structures in the archives of cereal, and a `BitVector` in the layout of
  * the `bit_vector` of sdsl-lite. At the level 3 of the contracts.
  *
@@ -56,17 +57,21 @@
 #include "ADS/succinct/PartitionedEliasFano.h"
 #include "ADS/succinct/RRRBitVector.h"
 #include "ADS/succinct/RankSelect.h"
+#include "ADS/succinct/TinyRankSelect.h"
 #include "ADS/succinct/WaveletMatrix.h"
 #include "ADS/dictionary/FingerprintPerfectHash.h"
 #include "ADS/dictionary/MinimalPerfectHash.h"
 #include "ADS/dictionary/PerfectHashing.h"
+#include "ADS/dictionary/PtrHash.h"
 #include "ADS/dictionary/RecSplit.h"
 #include "ADS/set/BinaryFuseFilter.h"
 #include "ADS/set/BlockedBloomFilter.h"
 #include "ADS/set/BloomFilter.h"
 #include "ADS/set/BloomVariants.h"
+#include "ADS/set/CountMinSketch.h"
 #include "ADS/set/CuckooFilter.h"
 #include "ADS/set/GrafiteFilter.h"
+#include "ADS/set/MinHashSketch.h"
 #include "ADS/set/PrefixFilter.h"
 #include "ADS/set/RibbonFilter.h"
 
@@ -580,6 +585,8 @@ ADS_TEST( "persistence-succinct" )
 				  sameRanks< CompactRankSelect > );
   roundTrip< InterleavedRankSelect >( InterleavedRankSelect( b ) ,
 				      sameRanks< InterleavedRankSelect > );
+  roundTrip< TinyRankSelect >( TinyRankSelect( b ) ,
+			       sameRanks< TinyRankSelect > );
   roundTrip< RRRBitVector >( RRRBitVector( b ) , sameRanks< RRRBitVector > );
   }
  for( const std::size_t n :
@@ -806,6 +813,32 @@ ADS_TEST( "persistence-filters" )
 	  .find( "of other parameters" ) != std::string::npos );
  }
 
+// the sketches of streams, each the same after the round trip, empty and
+// filled
+ADS_TEST( "persistence-sketches" )
+{
+ std::mt19937_64 g( 29 );
+ std::vector< std::uint64_t > keys( 20000 );
+ for( auto & k : keys )
+  k = g() >> 12;
+ CountMinSketch< std::uint64_t > C( 500 , 4 ) ,
+   Cc( 500 , 4 , CountMinUpdate::conservative );
+ CountSketch< std::uint64_t > S( 500 , 5 );
+ MinHashSketch< std::uint64_t > M( 128 , 9 );
+ const auto eq = std::equal_to<>();
+ roundTrip< MinHashSketch< std::uint64_t > >( M , eq );
+ for( const auto k : keys ) {
+  C.insert( k , k % 5 );
+  Cc.insert( k , k % 5 );
+  S.insert( k , std::int64_t( k % 7 ) - 3 );
+  M.insert( k );
+  }
+ roundTrip< CountMinSketch< std::uint64_t > >( C , eq );
+ roundTrip< CountMinSketch< std::uint64_t > >( Cc , eq );
+ roundTrip< CountSketch< std::uint64_t > >( S , eq );
+ roundTrip< MinHashSketch< std::uint64_t > >( M , eq );
+ }
+
 // the filters of the files of the version 1, written by the release 0.1.0
 // with the fingerprints of h ^ ( h >> 32 ): read back, they answer as
 // that release did, on their keys and on 10^5 other items, and written
@@ -904,6 +937,11 @@ ADS_TEST( "persistence-perfect-hash" )
    RecSplit< std::uint64_t , 5 >( keys ) , same );
  roundTrip< FingerprintPerfectHash< std::uint64_t > >(
    FingerprintPerfectHash< std::uint64_t >( keys ) , same );
+ roundTrip< PtrHash< std::uint64_t > >( PtrHash< std::uint64_t >( keys ) ,
+					same );
+ using CompactPtrHash =
+   PtrHash< std::uint64_t , PtrHashBucket::Cubic , PtrHashRemap::EliasFano >;
+ roundTrip< CompactPtrHash >( CompactPtrHash( keys , 3.5 ) , same );
  roundTrip< OrderedMinimalPerfectHash< std::uint64_t > >(
    OrderedMinimalPerfectHash< std::uint64_t >( keys ) , same );
  std::vector< std::uint64_t > small( keys.begin() , keys.begin() + 500 );
@@ -1082,6 +1120,25 @@ ADS_TEST( "persistence-cereal" )
   CHECK( w[ 0 ] == 1 && g == 1.5f && n == b.size() );
   CHECK( std::memcmp( w.data() + 13 , b.words().data() ,
 		      w.size() - 13 ) == 0 );
+  }
+ // two sketches of streams in a binary archive
+ {
+  CountMinSketch< std::uint64_t > c( 64 , 3 );
+  MinHashSketch< std::uint64_t > m( 64 , 5 );
+  for( const auto x : keys ) {
+   c.insert( x );
+   m.insert( x );
+   }
+  std::stringstream s;
+  {
+   cereal::BinaryOutputArchive a( s );
+   a( c , m );
+   }
+  cereal::BinaryInputArchive a( s );
+  CountMinSketch< std::uint64_t > c2;
+  MinHashSketch< std::uint64_t > m2;
+  a( c2 , m2 );
+  CHECK( c2 == c && m2 == m );
   }
  // a JSON archive, by the names of the members
  {

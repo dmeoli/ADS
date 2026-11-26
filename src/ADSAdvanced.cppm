@@ -213,11 +213,29 @@ using ADS::ZeroingClear;
 // concurrent/ConcurrentUnionFind.h
 using ADS::ConcurrentUnionFind;
 
+// concurrent/EpochReclaim.h
+using ADS::EpochDomain;
+using ADS::FraserEpochs;
+
 // concurrent/EventCount.h
 using ADS::EventCount;
 
+// concurrent/HazardPointer.h
+using ADS::HazardDomain;
+using ADS::HazardPointers;
+using ADS::hazard_pointer;
+using ADS::hazard_pointer_obj_base;
+using ADS::make_hazard_pointer;
+using ADS::swap;
+
 // concurrent/LockFreePriorityQueue.h
 using ADS::LockFreePriorityQueue;
+
+// concurrent/LockFreeQueue.h
+using ADS::LockFreeQueue;
+
+// concurrent/LockFreeStack.h
+using ADS::LockFreeStack;
 
 // concurrent/MPMCQueue.h
 using ADS::MPMCQueue;
@@ -234,6 +252,10 @@ using ADS::MinBoard;
 // concurrent/MultiQueue.h
 using ADS::MultiQueue;
 using ADS::MultiQueueHeap;
+
+// concurrent/Reclaim.h
+using ADS::Retirable;
+using ADS::reclamation_policy;
 
 // concurrent/SPSCQueue.h
 using ADS::SPSCQueue;
@@ -284,6 +306,11 @@ using ADS::WithPlaces;
 
 // dictionary/PositionIndex.h
 using ADS::PositionIndex;
+
+// dictionary/PtrHash.h
+using ADS::PtrHash;
+using ADS::PtrHashBucket;
+using ADS::PtrHashRemap;
 
 // dictionary/RandomHashing.h
 using ADS::SplitMix64;
@@ -345,6 +372,13 @@ using ADS::RangeTree;
 // graph/Assignment.h
 using ADS::Assignment;
 using ADS::AssignmentEngine;
+
+// graph/Biconnectivity.h
+using ADS::BiconnectedComponents;
+using ADS::BlockCutTree;
+using ADS::biconnectedComponents;
+using ADS::blockCutTree;
+using ADS::twoEdgeConnectedComponents;
 
 // graph/BlossomMatching.h
 using ADS::maxCardinalityMatching;
@@ -561,6 +595,10 @@ using ADS::multiwayMerge;
 using ADS::deltaStepping;
 using ADS::rhoStepping;
 
+// parallel/ParallelSketch.h
+using ADS::MergeableSketch;
+using ADS::parallelSketch;
+
 // parallel/ParallelSort.h
 using ADS::kParallelSort;
 using ADS::kParallelSortThreads;
@@ -694,12 +732,20 @@ using ADS::BinaryFuseFilter;
 // set/BlockedBloomFilter.h
 using ADS::BlockedBloomFilter;
 
+// set/CountMinSketch.h
+using ADS::CountMinSketch;
+using ADS::CountMinUpdate;
+using ADS::CountSketch;
+
 // set/CuckooFilter.h
 using ADS::CuckooFilter;
 
 // set/GrafiteFilter.h
 using ADS::BucketingFilter;
 using ADS::GrafiteFilter;
+
+// set/MinHashSketch.h
+using ADS::MinHashSketch;
 
 // set/PrefixFilter.h
 using ADS::PrefixFilter;
@@ -805,6 +851,10 @@ using ADS::PartitionedEliasFano;
 
 // succinct/RRRBitVector.h
 using ADS::RRRBitVector;
+
+// succinct/TinyRankSelect.h
+using ADS::BasicTinyRankSelect;
+using ADS::TinyRankSelect;
 
 // succinct/WaveletMatrix.h
 using ADS::WaveletMatrix;

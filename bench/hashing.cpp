@@ -2,7 +2,7 @@
 /*--------------------------- File hashing.cpp -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The benchmark of the hashing, in six parts, each with its competitors
+ * The benchmark of the hashing, in seven parts, each with its competitors
  * when their headers are found (and Abseil when ADS_HAS_ABSL is defined,
  * since it is linked):
  *
@@ -38,10 +38,21 @@
  *   key-value store that defeat the heuristics), by GrafiteFilter and
  *   BucketingFilter of ADS against the binary fuse filter asked the
  *   \f$ \ell \f$ points of the range (for \f$ \ell \le 32 \f$);
+ * - "sketches": the sketches of a stream of n items, each built by n
+ *   insertions and asked its estimate: the frequencies of n items of a
+ *   Zipf law over n / 10 keys, by the Count-Min sketch (plain and
+ *   conservative) and the Count sketch of 5 rows of 2719 counters against
+ *   the Count-Min of DataSketches, and n queries; the similarity of
+ *   Jaccard of two sets of 2 n / 3 keys sharing n / 3, by the minwise
+ *   hashing of 256 bins against the theta sketch of DataSketches of 2^8
+ *   entries, one estimate per run, printed beside the exact 1 / 3;
  * - "perfect hashing": the build of a minimal perfect hash function of n
- *   random keys of 64 bits and n queries, by those of ADS (by pilots, by
- *   recursive splitting and by levels of fingerprints, the method of
- *   BBHash) against PTHash, PHOBIC, BBHash and RecSplit;
+ *   random keys of 64 bits and n queries, one by one and in a batch, by
+ *   those of ADS (by pilots, also of 8 bits as PtrHash, whose batch is its
+ *   stream with prefetching, by recursive splitting and by levels of
+ *   fingerprints, the method of BBHash) against PTHash, PHOBIC, BBHash and
+ *   RecSplit (the batch of a function with none is its loop of the
+ *   queries);
  * - "concurrent maps": on p threads, each doing its share of the n
  *   operations, the n insertions into an empty map, n lookups of present
  *   and of absent keys, n operations of which 1 in 10 inserts a new key
@@ -92,14 +103,17 @@
 #include "ADS/dictionary/MinimalPerfectHash.h"
 #include "ADS/dictionary/OpenHashTable.h"
 #include "ADS/dictionary/PerfectHashing.h"
+#include "ADS/dictionary/PtrHash.h"
 #include "ADS/dictionary/RecSplit.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/set/BinaryFuseFilter.h"
 #include "ADS/set/BlockedBloomFilter.h"
 #include "ADS/set/BloomFilter.h"
 #include "ADS/set/BloomVariants.h"
+#include "ADS/set/CountMinSketch.h"
 #include "ADS/set/CuckooFilter.h"
 #include "ADS/set/GrafiteFilter.h"
+#include "ADS/set/MinHashSketch.h"
 #include "ADS/set/PrefixFilter.h"
 #include "ADS/set/RibbonFilter.h"
 
@@ -169,6 +183,12 @@
 #if __has_include( <BooPHF.h> )
  #include <BooPHF.h>
  #define ADS_HAS_BBHASH 1
+#endif
+#if __has_include( <count_min.hpp> ) && __has_include( <theta_sketch.hpp> )
+ #define ADS_HAS_DATASKETCHES
+ #include <count_min.hpp>
+ #include <theta_jaccard_similarity.hpp>
+ #include <theta_sketch.hpp>
 #endif
 #if __has_include( <sux/function/RecSplit.hpp> )
  #include <sux/function/RecSplit.hpp>
@@ -1038,6 +1058,153 @@ void rangeFilters( const std::vector< Key > & K , int r , std::uint64_t seed )
  }
 
 /*--------------------------------------------------------------------------*/
+/*-------------------------------- SKETCHES --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the build of a sketch of the stream X by make() and ins( s , x ), in
+/// nanoseconds per item, and the query of every item of Q by ask( s , q ),
+/// in nanoseconds per query (one query per run if Q is empty)
+template< class M , class I , class A >
+void sketch( const char * what , const std::string & who ,
+	     const std::vector< Key > & X , const std::vector< Key > & Q ,
+	     int r ,
+	     M && make , I && ins , A && ask )
+{
+ if( skip( who ) )
+  return;
+ const auto fill = [ & ]() {
+  auto s = make();
+  for( Key x : X )
+   ins( s , x );
+  return( s );
+  };
+ print( "sketches" , std::string( what ) + " build" , X.size() , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 auto s = fill();
+		 sink = sink + std::uint64_t( ask( s , X[ 0 ] ) );
+		 } ,
+		r , X.size() ) );
+ const auto s = fill();
+ print( "sketches" , std::string( what ) + " query" , X.size() , who ,
+	median( [ & ]() { return( s ); } ,
+		[ & ]( auto & t ) {
+		 double z = 0;
+		 if( Q.empty() )
+		  z += double( ask( t , 0 ) );
+		 for( Key q : Q )
+		  z += double( ask( t , q ) );
+		 sink = sink + std::uint64_t( z );
+		 } ,
+		r , std::max< std::size_t >( Q.size() , 1 ) ) );
+ }
+
+/// the sketches of a stream of the n keys K: the frequencies of n items
+/// of a Zipf law over n / 10 keys by the Count-Min sketch of 5 rows of
+/// 2719 counters, plain and conservative, and the Count sketch against
+/// the Count-Min of DataSketches; the similarity of Jaccard of two sets of
+/// 2 n / 3 keys sharing n / 3 by the minwise hashing of 256 bins against
+/// the theta sketch of DataSketches of 2^8 entries, one estimate per run,
+/// printed beside the exact 1 / 3
+void sketches( const std::vector< Key > & K , int r , std::uint64_t seed )
+{
+ const std::size_t n = K.size();
+ // the frequencies: n items of a Zipf law over n / 10 keys
+ std::vector< Key > X( n );
+ {
+  const std::size_t u = std::max< std::size_t >( 1 , n / 10 );
+  std::vector< double > c( u );
+  double t = 0;
+  for( std::size_t i = 0 ; i < u ; ++i )
+   c[ i ] = ( t += 1.0 / double( i + 1 ) );
+  std::mt19937_64 g( seed + 7 );
+  std::uniform_real_distribution< double > U( 0 , t );
+  for( auto & x : X )
+   x = K[ std::size_t( std::lower_bound( c.begin() , c.end() , U( g ) ) -
+		       c.begin() ) ];
+  }
+ sketch(
+   "frequency" , "ADS::CountMinSketch" , X , K , r ,
+   []() { return( ADS::CountMinSketch< Key >( 2719 , 5 ) ); } ,
+   []( auto & s , Key x ) { s.insert( x ); } ,
+   []( const auto & s , Key q ) { return( s.estimate( q ) ); } );
+ sketch(
+   "frequency" , "ADS::CountMinSketch conservative" , X , K , r ,
+   []() {
+    return( ADS::CountMinSketch< Key >( 2719 , 5 ,
+					 ADS::CountMinUpdate::conservative ) );
+    } ,
+   []( auto & s , Key x ) { s.insert( x ); } ,
+   []( const auto & s , Key q ) { return( s.estimate( q ) ); } );
+ sketch(
+   "frequency" , "ADS::CountSketch" , X , K , r ,
+   []() { return( ADS::CountSketch< Key >( 2719 , 5 ) ); } ,
+   []( auto & s , Key x ) { s.insert( x ); } ,
+   []( const auto & s , Key q ) { return( s.estimate( q ) ); } );
+#ifdef ADS_HAS_DATASKETCHES
+ sketch(
+   "frequency" , "datasketches::count_min_sketch" , X , K , r ,
+   []() {
+    return( datasketches::count_min_sketch< std::uint64_t >( 5 , 2719 ) );
+    } ,
+   []( auto & s , Key x ) { s.update( x ); } ,
+   []( const auto & s , Key q ) { return( s.get_estimate( q ) ); } );
+#endif
+ // the similarity of two sets of 2 n / 3 keys sharing n / 3, J = 1 / 3
+ {
+  const std::vector< Key > A( K.begin() , K.begin() + long( 2 * n / 3 ) ) ,
+    B( K.begin() + long( n / 3 ) , K.end() );
+  const double J = double( 2 * n / 3 - n / 3 ) / double( n );
+  const auto similarity = [ & ]( const std::string & who , auto make ,
+				 auto ins ,
+				 auto jac ) {
+   if( skip( who ) )
+    return;
+   const auto fill = [ & ]( const std::vector< Key > & S ) {
+    auto s = make();
+    for( Key x : S )
+     ins( s , x );
+    return( s );
+    };
+   print( "sketches" , "similarity build" , n , who ,
+	  median( []() { return( 0 ); } ,
+		  [ & ]( int ) {
+		   auto s = fill( K );
+		   sink = sink + std::uint64_t( jac( s , s ) );
+		   } ,
+		  r , n ) );
+   const auto a = fill( A ) , b = fill( B );
+   print( "sketches" , "similarity query" , n , who ,
+	  median( []() { return( 0 ); } ,
+		  [ & ]( int ) {
+		   sink = sink + std::uint64_t( 1000 * jac( a , b ) );
+		   } ,
+		  r , 1 ) );
+   if( ! listing() )
+    std::cerr << "sketches\t" << n << '\t' << who << "\tJaccard "
+	      << jac( a , b ) << " of " << J << '\n';
+   };
+  similarity(
+    "ADS::MinHashSketch" ,
+    []() { return( ADS::MinHashSketch< Key >( 256 ) ); } ,
+    []( auto & s , Key x ) { s.insert( x ); } ,
+    []( const auto & a , const auto & b ) { return( a.jaccard( b ) ); } );
+#ifdef ADS_HAS_DATASKETCHES
+  similarity(
+    "datasketches::theta_sketch" ,
+    []() {
+     return(
+       datasketches::update_theta_sketch::builder().set_lg_k( 8 ).build() );
+     } ,
+    []( auto & s , Key x ) { s.update( x ); } ,
+    []( const auto & a , const auto & b ) {
+     return( datasketches::theta_jaccard_similarity::jaccard( a , b )[ 1 ] );
+     } );
+#endif
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
 /*---------------------------- PERFECT HASHING -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
@@ -1081,9 +1248,37 @@ void perfect( const std::string & who , const std::vector< Key > & K ,
 		r , n ) );
  }
 
+/// the n queries of H in one batch by batch( f , H , V ) on the function
+/// build( K ), the values in V
+template< class B , class F >
+void perfectBatch( const std::string & who , const std::vector< Key > & K ,
+		   const std::vector< Key > & H , int r , B && build ,
+		   F && batch )
+{
+ if( skip( who ) )
+  return;
+ const std::size_t n = K.size();
+ auto f = build( K );
+ std::vector< std::size_t > V( H.size() );
+ print( "perfect hashing" , "batch query" , n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 batch( f , H , V );
+		 sink = sink + V[ n / 2 ];
+		 } ,
+		r , n ) );
+ }
+
 void perfectHashing( const std::vector< Key > & K ,
 		     const std::vector< Key > & H , int r )
 {
+ // the loop of the queries one by one, the batch of the functions that
+ // have none
+ auto loop = []( const auto & f , const std::vector< Key > & Q ,
+		 std::vector< std::size_t > & V ) {
+  for( std::size_t i = 0 ; i < Q.size() ; ++i )
+   V[ i ] = f( Q[ i ] );
+  };
  for( const char * who : { "ADS::OrderedMinimalPerfectHash r=3" ,
 			   "ADS::OrderedMinimalPerfectHash r=3 A/A" } )
   perfect(
@@ -1112,6 +1307,35 @@ void perfectHashing( const std::vector< Key > & K ,
     } ,
    []( const auto & f , Key k ) { return( f( k ) ); } ,
    []( const auto & f ) { return( f.bits() ); } );
+ // PtrHash in its fast (linear, lambda 3) and default (cubic, lambda 3.5,
+ // Elias-Fano) configurations, and its queries in a stream
+ using FastPtr = ADS::PtrHash< Key >;
+ using CompactPtr = ADS::PtrHash< Key , ADS::PtrHashBucket::Cubic ,
+				  ADS::PtrHashRemap::EliasFano >;
+ perfect(
+   "ADS::PtrHash l=3" , K , H , r ,
+   []( const auto & S ) { return( FastPtr( S , 3 , 0.99 ) ); } ,
+   []( const auto & f , Key k ) { return( f( k ) ); } ,
+   []( const auto & f ) { return( f.bits() ); } );
+ perfect(
+   "ADS::PtrHash cubic l=3.5" , K , H , r ,
+   []( const auto & S ) { return( CompactPtr( S , 3.5 , 0.99 ) ); } ,
+   []( const auto & f , Key k ) { return( f( k ) ); } ,
+   []( const auto & f ) { return( f.bits() ); } );
+ perfectBatch(
+   "ADS::PtrHash l=3" , K , H , r ,
+   []( const auto & S ) { return( FastPtr( S , 3 , 0.99 ) ); } ,
+   []( const auto & f , const std::vector< Key > & Q ,
+       std::vector< std::size_t > & V ) { f.stream( Q , V ); } );
+ perfectBatch(
+   "ADS::PtrHash cubic l=3.5" , K , H , r ,
+   []( const auto & S ) { return( CompactPtr( S , 3.5 , 0.99 ) ); } ,
+   []( const auto & f , const std::vector< Key > & Q ,
+       std::vector< std::size_t > & V ) { f.stream( Q , V ); } );
+ perfectBatch(
+   "ADS::RecSplit l=8 b=100" , K , H , r ,
+   []( const auto & S ) { return( ADS::RecSplit< Key , 8 >( S , 100 ) ); } ,
+   loop );
 #ifdef ADS_HAS_PTHASH
  {
   using C = pthash::build_configuration;
@@ -1154,6 +1378,26 @@ void perfectHashing( const std::vector< Key > & K ,
      } ,
     []( const auto & f , Key k ) { return( ( *f )( k ) ); } ,
     []( const auto & f ) { return( f->num_bits() ); } );
+  perfectBatch(
+    "PTHash C" , K , H , r ,
+    [ & ]( const auto & S ) {
+     auto f = std::make_unique< PT >();
+     f->build_in_internal_memory( S.begin() , S.size() ,
+				  config( 5 , 0.99 , 0 ) );
+     return( f );
+     } ,
+    [ & ]( const auto & f , const std::vector< Key > & Q ,
+	   std::vector< std::size_t > & V ) { loop( *f , Q , V ); } );
+  perfectBatch(
+    "PHOBIC R-int" , K , H , r ,
+    [ & ]( const auto & S ) {
+     auto f = std::make_unique< PH >();
+     f->build_in_internal_memory( S.begin() , S.size() ,
+				  config( 7 , 1 , 3000 ) );
+     return( f );
+     } ,
+    [ & ]( const auto & f , const std::vector< Key > & Q ,
+	   std::vector< std::size_t > & V ) { loop( *f , Q , V ); } );
   }
 #endif
 #ifdef ADS_HAS_BBHASH
@@ -1443,6 +1687,8 @@ int main( int argc , char ** argv )
    allFilters( K , H , Q , r );
   if( part( "ranges" ) )
    rangeFilters( K , r , o.seed );
+  if( part( "sketches" ) )
+   sketches( K , r , o.seed );
   if( part( "perfect" ) )
    perfectHashing( K , H , r );
   if( part( "concurrent" ) )

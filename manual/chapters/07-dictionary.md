@@ -1,15 +1,15 @@
 # 7. Hashing and dictionaries {#ch-7}
 
-[Source: `include/ADS/dictionary/DirectTable.h`,
-`SortedArrayDictionary.h`, `HashFunctions.h`, `UniversalHashing.h`,
-`RandomHashing.h`, `FastHash.h`, `RowFingerprint.h`, `TableSize.h`,
-`ChainedHashTable.h`, `OpenHashTable.h`, `KnuthHashing.h`,
-`FlatHashTable.h`, `DenseHashMap.h`, `PointerTable.h`, `PositionIndex.h`,
-`CuckooHashing.h`, `BucketCuckooTable.h`, `PerfectHashing.h`,
-`FingerprintPerfectHash.h`, `MinimalPerfectHash.h`, `RecSplit.h`,
-`SkipList.h`, `IndexedSkipList.h`, `Trie.h`, `PatriciaTrie.h`,
-`TwoLevelDictionary.h`, `AdaptiveRadixTree.h`, `SuccinctPatriciaTrie.h`,
-`BinaryTrie.h`, `XFastTrie.h`, `YFastTrie.h`, `BitmapTrie.h`]
+[Source: `include/ADS/dictionary/DirectTable.h`, `SortedArrayDictionary.h`,
+`HashFunctions.h`, `UniversalHashing.h`, `RandomHashing.h`, `FastHash.h`,
+`RowFingerprint.h`, `TableSize.h`, `ChainedHashTable.h`, `OpenHashTable.h`,
+`KnuthHashing.h`, `FlatHashTable.h`, `DenseHashMap.h`, `PointerTable.h`,
+`PositionIndex.h`, `CuckooHashing.h`, `BucketCuckooTable.h`,
+`PerfectHashing.h`, `FingerprintPerfectHash.h`, `MinimalPerfectHash.h`,
+`RecSplit.h`, `PtrHash.h`, `SkipList.h`, `IndexedSkipList.h`, `Trie.h`,
+`PatriciaTrie.h`, `TwoLevelDictionary.h`, `AdaptiveRadixTree.h`,
+`SuccinctPatriciaTrie.h`, `BinaryTrie.h`, `XFastTrie.h`, `YFastTrie.h`,
+`BitmapTrie.h`]
 
 We are concerned in this chapter with the DICTIONARY, i.e., a finite map from a
 set of keys to a set of values that is searched by key, and with its ordered
@@ -41,9 +41,10 @@ solved by the figures of this chapter, and the others by the tests named in
 [§1.9](01-introduction.md#sec-1-9), `AdaptiveRadixTree.h`,
 `BucketCuckooTable.h`, `DenseHashMap.h`, `FastHash.h`,
 `FingerprintPerfectHash.h`, `FlatHashTable.h`, `MinimalPerfectHash.h`,
-`PointerTable.h`, `PositionIndex.h`, `RecSplit.h`, `RowFingerprint.h` and
-`SuccinctPatriciaTrie.h` are advanced and the other headers of this chapter are
-base, while `RandomHashing.h` is in the core that the two sets include.
+`PointerTable.h`, `PositionIndex.h`, `PtrHash.h`, `RecSplit.h`,
+`RowFingerprint.h` and `SuccinctPatriciaTrie.h` are advanced and the other
+headers of this chapter are base, while `RandomHashing.h` is in the core that
+the two sets include.
 
 ## 7.1 The interface {#sec-7-1}
 
@@ -2485,7 +2486,7 @@ instead of $| U |$. Its price is that $S$ is static, or changes at a cost
 1994](Z-bibliography.md#ref-dietzfelbinger1994) inserts and removes in
 $O( 1 )$ amortized expected time). `PerfectHashing.h` has the two schemes
 of [Ferragina 2023, chapter 8](Z-bibliography.md#ref-ferragina2023), and
-three more headers the compressed minimal perfect functions of today.
+four more headers the compressed minimal perfect functions of today.
 
 ### 7.8.1 Two levels of universal hashing {#sec-7-8-1}
 
@@ -2598,7 +2599,8 @@ by the benchmarks.
 
 <span id="tab-7-3"></span>**Table 7.3.** The minimal perfect hash
 functions of the area; $\gamma$, $\lambda$, $b$ and $\ell$ are the
-parameters of the schemes described below.
+parameters of the schemes described below and $\alpha$ the load of the
+slots of the schemes by pilots.
 
 | Scheme | Header | Bits per key | Build | Evaluation |
 |---|---|---|---|---|
@@ -2606,6 +2608,7 @@ parameters of the schemes described below.
 | fingerprints (BBHash, FMPH) | `FingerprintPerfectHash.h` | $\gamma e^{1 / \gamma}$, 3.3 for $\gamma = 2$ | a few passes | $e^{1 / \gamma}$ levels expected |
 | pilots (PTHash) | `MinimalPerfectHash.h` | about 3 | slower | 2 accesses |
 | recursive splitting (RecSplit) | `RecSplit.h` | about 1.8 | slowest, $e^\ell$ per leaf | $O( \log ( b / \ell ) )$ levels |
+| pilots of 8 bits (PtrHash) | `PtrHash.h` | $8 / \lambda$ and the remap, 2.4 to 3 | as PTHash, by parts | 1 access, 2 for $1 - \alpha$ |
 
 ### 7.8.2 Order preserving functions on random graphs {#sec-7-8-2}
 
@@ -2861,7 +2864,8 @@ draw a new seed, and 100 seeds with no success throw `std::runtime_error`;
 the space. Both the parallel and external construction of [Pibiri and Trani
 2024](Z-bibliography.md#ref-pibiri2024) and the optimized bucket sizes of
 PHOBIC ([Hermann et al. 2024](Z-bibliography.md#ref-hermann2024)) are not done
-here.
+here; `PtrHash` ([§7.8.4](07-dictionary.md#sec-7-8-4)) builds its parts in
+parallel and approximates the optimal bucket function by a cubic.
 
 ![Figure 7.18. A `MinimalPerfectHash` of 6 keys in 3 buckets on $m = 8$ places ($\alpha = 0.75$): the bucket of 3 keys takes the pilot 0 and the places 2, 5, 7; the bucket of 2 keys fails with the pilot 0 on the place 5 (in violet) and takes the places 0 and 3 with the pilot 1; the bucket of one key takes 4 with the pilot 0; each row shows the places taken in its step (in orange), and the place 7, beyond $n = 6$ (in violet), is sent by $F$ to the free place 1.](../figures/dictionary-pthash.svg){#fig-7-18}
 
@@ -3049,6 +3053,144 @@ class RecSplit
  };
 ```
 
+### 7.8.4 Pilots of 8 bits {#sec-7-8-4}
+
+`PtrHash` is the method of [Groot Koerkamp
+2025](Z-bibliography.md#ref-grootkoerkamp2025). It keeps the pilots of PTHash
+but bounds them to $[ 0 , 256 )$, and therefore stores them as an array of
+bytes; a query reads one of them with no decoding. The price is paid in the
+build, since a bucket placed late (when few slots are free) may find no pilot
+below 256. Such a bucket takes the pilot of the least collisions and evicts the
+buckets it meets, much as cuckoo hashing evicts its keys
+([§7.7](07-dictionary.md#sec-7-7)). A key of hash $h$ goes to the part $\pi( h
+) = \lfloor P h / 2^{64} \rfloor$ of $P$ parts, all of the same $S$ slots and
+$B$ buckets. (This is the $\varepsilon$-cost sharding of [Vigna
+2025](Z-bibliography.md#ref-vigna2025), which needs no prefix sums of the sizes
+of the parts.) In its part, the key goes to the bucket $\lfloor B \gamma( r ) /
+2^{64} \rfloor$, where $r = P h \bmod 2^{64}$ are the bits of $h$ that the part
+leaves, and to the slot
+
+$$
+s( h , p ) = \pi( h ) S + \bigl( ( h \oplus c ( p \oplus x ) ) \bmod_{\!*}
+S \bigr) ,
+$$
+
+where $p$ is the pilot of the bucket, $c$ an odd constant and $x$ the seed.
+Here $\bmod_{\!*}$ is the fast modulo of [Lemire et al.
+2019](Z-bibliography.md#ref-lemire2019fastmod), i.e., the remainder for an
+operand below $2^{32}$ and a mixing of all its bits otherwise. As bucket
+function, $\gamma$ is either the identity or the cubic $\gamma_3( r ) =
+\frac{255}{256} r^2 ( 1 + r ) / 2 + r / 256$ of a fraction $r$. The latter is a
+Taylor approximation, with a slope of at least $1 / 256$, of the optimal
+function $r + ( 1 - r ) \ln ( 1 - r )$ of [Hermann et al.
+2024](Z-bibliography.md#ref-hermann2024). With the cubic one the first buckets
+are large, but usually not so large that two of their keys fall in one slot. A
+part has about $\kappa = ( 4 / \epsilon^2 ) \max\{ 1 , \ln ( n \epsilon^2 / 2 )
+\}$ keys, with $\epsilon = ( 1 - \alpha ) / 2$ (at least 160000 for $\alpha =
+0.99$, and the whole set for $\alpha = 1$). Also, $S = \lceil ( n / P ) /
+\alpha \rceil$ is rounded up to a number neither even nor a multiple of 3,
+since the modulo would otherwise ignore some bits of its operand.
+
+We take the buckets of a part by decreasing size, and give each one the first
+pilot that sends its keys to free slots, distinct among them ([Algorithm
+7.20](07-dictionary.md#alg-7-20)). When no pilot does, the bucket scans the
+pilots from a random one. It takes the one whose slots meet the buckets of the
+least sum of the squares of their sizes, since a large bucket is the hardest to
+place again. It skips the pilots that send two of its keys to one slot, and
+those whose slots meet one of the $\min\{ 16 , \lfloor B / 4 \rfloor \}$
+buckets placed last (which would possibly close a cycle of evictions). Evicted
+buckets are placed again in the same way, the largest first, before the next
+bucket of the order. A chain of more than $10 S$ evictions, or a part with more
+keys than slots, makes the build draw a new seed. Finally, the $P S - n$ slots
+beyond $n$ are remapped onto the slots below $n$ left free, by an array of 32
+bits or by an Elias-Fano sequence ([§22.6](22-succinct.md#sec-22-6)), as the
+remap is non-decreasing. Note that a part reads only its keys, its pilots, its
+words of the slots and a generator seeded by its index. Hence the constructor
+that takes an executor ([§25.2](25-parallel.md#sec-25-2)) builds the parts in
+parallel, with the same result as the sequential one. Furthermore, `stream()`
+evaluates a range of keys with the pilot of the key 32 places ahead prefetched
+(the streaming queries of PtrHash; cf. [§5.9](05-memory.md#sec-5-9), whose hint
+does nothing without `ADS_WITH_HIGHWAY`), and `prefetch()` prefetches the pilot
+of one key.
+
+<span id="alg-7-20"></span>**Algorithm 7.20.** The construction of a part,
+the evaluation and the streaming evaluation of `PtrHash` ([Groot Koerkamp
+2025](Z-bibliography.md#ref-grootkoerkamp2025)); $s( h , p )$ is the slot of
+$h$ with the pilot $p$, $o( t )$ the bucket that holds the slot $t$, $R$
+the buckets placed last and $F$ the remap.
+
+--8<-- "generated/PtrHash-build.pseudo.md"
+
+--8<-- "generated/PtrHash-value.pseudo.md"
+
+--8<-- "generated/PtrHash-stream.pseudo.md"
+
+Whatever the hash, a build that returns gives a minimal perfect hash.
+
+<span id="lem-7-30"></span>**Lemma 7.30.** *If the build of `PtrHash` on
+$n \ge 1$ distinct keys returns, then the evaluation maps the keys one to
+one onto $\{ 0 , \ldots , n - 1 \}$, and any key, of the set or not, into
+$\{ 0 , \ldots , n - 1 \}$, after one read of a pilot and, only for a slot
+$t \ge n$, one item of the remap. The pilots and the remap do not depend on
+the executor of the build.*
+
+*Proof.* In a part, $o( t ) = c$ holds after line 12 of [Algorithm
+7.20](07-dictionary.md#alg-7-20) exactly for the slots $t$ of the keys of a
+bucket $c$ with its pilot, and line 9 frees all the slots of a bucket before
+line 12 takes them for another. The slots of a bucket are distinct and, after
+line 9, free (lines 6 and 8); hence no two placed buckets share a slot. The
+loop of line 4 ends with $Q$ empty, i.e., with every bucket of the part placed.
+Thus the $n$ keys hold $n$ distinct slots of $[ 0 , P S )$, and the evaluation
+computes the same slot from $h$ and the pilot of its bucket. Below $n$, $n - j$
+slots are taken if $j$ are free, and therefore $j$ slots $\ge n$ are taken: the
+$i$-th of these goes to the $i$-th free slot below $n$, a bijection. Every slot
+$\ge n$ that is not taken gets a value below $n$ (the free slot before it, or
+$n - 1$). The part $q$ reads only its keys, its pilots, its words of the slots
+and a generator seeded by $x \oplus q$, which the threads do not change.
+$\square$
+
+The pilots take $8 P B \approx 8 n / \lambda$ bits, and the remap has
+$P S - n \approx n ( 1 / \alpha - 1 )$ items, of 32 bits each in the array or
+of about $2 + \log_2 ( n / ( P S - n ) )$ bits in the sequence of Elias and
+Fano. At $\alpha = 0.99$ one has thus about 3 bits per key for the linear
+function at $\lambda = 3$, and about 2.4 for the cubic one with Elias-Fano at
+$\lambda = 3.5$ (the two configurations of the paper). Compared with
+`MinimalPerfectHash`, the bound on the pilots makes a query read a byte of an
+array instead of a field of $\lceil \log_2 ( \max_b k_b + 1 ) \rceil$ bits.
+Also, the evictions should spare the build the long searches of the last
+buckets, at the cost of a table of the owners of the slots (of 32 bits per slot
+of a part) during the build. `parts()`, `buckets()`, `slots()`, `trials()` and
+`evictions()` report the layout and the work of the build.
+
+```cpp
+// declarations of <ADS/dictionary/PtrHash.h>
+enum class PtrHashBucket { Linear , Cubic };
+enum class PtrHashRemap { Array , EliasFano };
+template< class T , PtrHashBucket F = PtrHashBucket::Linear ,
+          PtrHashRemap R = PtrHashRemap::Array , class H = DefaultHash< T > >
+class PtrHash
+{
+ public:
+ using Key = T;
+ explicit PtrHash( const std::vector< T > & keys , double lambda = 3 ,
+                   double alpha = 0.99 , std::uint64_t seed = 1 , H h = H() );
+ template< Executor E >
+ PtrHash( E & ex , const std::vector< T > & keys , double lambda = 3 ,
+          double alpha = 0.99 , std::uint64_t seed = 1 , H h = H() );
+ std::size_t operator()( const T & k ) const;
+ void stream( std::span< const T > K , std::span< std::size_t > V ) const;
+ void prefetch( const T & k ) const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t bits( void ) const;
+ std::size_t parts( void ) const;
+ std::size_t buckets( void ) const;
+ std::size_t slots( void ) const;
+ std::size_t trials( void ) const;
+ std::size_t evictions( void ) const;
+ };
+```
+
 ## 7.9 Skip lists {#sec-7-9}
 
 A skip list, after [Pugh 1990](Z-bibliography.md#ref-pugh1990), is a sorted
@@ -3087,7 +3229,7 @@ $r$ (the head where there is none), which an insertion and a removal use.
 Our next result, proved in [§7.9.3](07-dictionary.md#sec-7-9-3), shows that
 the path is short.
 
-<span id="lem-7-30"></span>**Lemma 7.30.** *([Morin 2013, Lemma
+<span id="lem-7-31"></span>**Lemma 7.31.** *([Morin 2013, Lemma
 4.1](Z-bibliography.md#ref-morin-cpp).) The expected length of the search
 path of any key in a skip list of $n$ keys is at most
 $2 \log_2 n + O( 1 ) = O( \log n )$.*
@@ -3101,7 +3243,7 @@ by `lowerBound( x )`, the smallest key not smaller than $x$ ([Morin 2013,
 §4.2](Z-bibliography.md#ref-morin-cpp)). Its search, `before( k )`, follows
 the search path of $k$, dropping a level just before passing $k$, and returns
 the node after the last one met on the level 0 together with $U$ ([Algorithm
-7.20](07-dictionary.md#alg-7-20)). `lookup()` and `contains()` compare that
+7.21](07-dictionary.md#alg-7-21)). `lookup()` and `contains()` compare that
 node with $k$, and `lowerBound()` returns it. In contrast, the search of Morin
 compares $k$ again with the node that stopped it on the level above whenever
 the link it drops to on the next level leads to that same node, i.e., when
@@ -3110,7 +3252,7 @@ $u.\mathit{next}[ r ] = u.\mathit{next}[ r - 1 ]$ ([Morin 2013, exercise
 not smaller than $k$, and drops a level with no comparison when the next link
 leads to it, so that $k$ is compared once with each node.
 
-<span id="alg-7-20"></span>**Algorithm 7.20.** The search of `SkipList`
+<span id="alg-7-21"></span>**Algorithm 7.21.** The search of `SkipList`
 ([Pugh 1990](Z-bibliography.md#ref-pugh1990), with [Morin 2013, exercise
 4.8](Z-bibliography.md#ref-morin-cpp)); $x.\mathit{next}[ l ]$ is the
 successor of $x$ on the level $l$, and the head is a node with no key.
@@ -3135,7 +3277,7 @@ keys (Morin's code counts the trailing 1s of a word of 32 bits, with the same
 limit). An insertion of a new key draws $\ell$, extends the levels in use if
 $\ell > L$ (the new levels start at the head), and splices the node after
 $U[ l ]$ on each of its levels. An insertion of a key already there replaces
-its value ([Algorithm 7.21](07-dictionary.md#alg-7-21)). A removal unlinks the
+its value ([Algorithm 7.22](07-dictionary.md#alg-7-22)). A removal unlinks the
 node from each of its levels after `before( k )`, i.e., after $U[ l ]$, and
 drops the levels left empty. Here the vector $U$ is the *stack* of Morin, and
 [Figure 7.22](07-dictionary.md#fig-7-22) shows the insertion of 0.5 with 2
@@ -3144,7 +3286,7 @@ levels and then of 3.5 with 3 levels ([Morin 2013, exercise
 7.23](07-dictionary.md#fig-7-23) the removal of 1 and then of 3 ([Morin 2013,
 exercise 4.3](Z-bibliography.md#ref-morin-cpp)).
 
-<span id="alg-7-21"></span>**Algorithm 7.21.** The insertion and the removal of
+<span id="alg-7-22"></span>**Algorithm 7.22.** The insertion and the removal of
 `SkipList` ([Pugh 1990](Z-bibliography.md#ref-pugh1990)), the level of a new
 node drawn as the number of trailing 1s of a random word plus one.
 
@@ -3193,7 +3335,7 @@ of the level below, in $O( n \log n )$ time at the contract level 3.
 increasing order, and `size()`, `empty()` and `levels()` have the obvious
 meaning. The list cannot be copied, since its nodes are linked by pointers, but
 one can move it. Each step of a search, an insertion or a removal takes
-constant time, and [Lemma 7.30](07-dictionary.md#lem-7-30) gives the theorem of
+constant time, and [Lemma 7.31](07-dictionary.md#lem-7-31) gives the theorem of
 the book.
 
 <span id="thm-7-6"></span>**Theorem 7.6.** *([Morin 2013, Theorem
@@ -3204,7 +3346,7 @@ the DICTIONARY), with `insert()`, `remove()`, `lookup()` and
 An insertion or a removal also changes few links ([Morin 2013, exercise
 4.6](Z-bibliography.md#ref-morin-cpp)).
 
-<span id="lem-7-31"></span>**Lemma 7.31.** *An insertion of a key changes
+<span id="lem-7-32"></span>**Lemma 7.32.** *An insertion of a key changes
 4 links in expectation, and a removal 2.*
 
 *Proof.* An insertion of a node of $\ell$ levels writes its $\ell$ links
@@ -3215,12 +3357,12 @@ $\square$
 
 ### 7.9.3 The analysis {#sec-7-9-3}
 
-We now prove [Lemma 7.30](07-dictionary.md#lem-7-30), and bound the size
+We now prove [Lemma 7.31](07-dictionary.md#lem-7-31), and bound the size
 and the height of a skip list, following [Morin 2013,
 §4.4](Z-bibliography.md#ref-morin-cpp); the proofs rest on a simple fact
 about the tosses of a coin.
 
-<span id="lem-7-32"></span>**Lemma 7.32.** *Let $T$ be the number of tosses
+<span id="lem-7-33"></span>**Lemma 7.33.** *Let $T$ be the number of tosses
 of a fair coin up to and including the first heads. Then $E[ T ] = 2$.*
 
 *Proof.* Let $I_i$ be 1 if the coin is tossed at least $i$ times and 0
@@ -3229,7 +3371,7 @@ that $E[ I_i ] = 2^{-( i - 1 )}$, and $T = \sum_{i \ge 1} I_i$ gives
 $E[ T ] = \sum_{i \ge 1} 2^{-( i - 1 )} = 2$ by the linearity of the
 expectation. $\square$
 
-<span id="lem-7-33"></span>**Lemma 7.33.** *A skip list of $n$ keys has
+<span id="lem-7-34"></span>**Lemma 7.34.** *A skip list of $n$ keys has
 $2 n$ nodes in its lists in expectation, the head excluded, and
 $2 n + O( \log n )$ with the head; its expected height is at most
 $\log_2 n + 2$.*
@@ -3242,20 +3384,20 @@ that $E[ h ] \le \lfloor \log_2 n \rfloor + \sum_{r > \lfloor \log_2 n \rfloor}
 n / 2^r \le \log_2 n + 2$. Finally, the head occurs once per level, $h + 1$
 times. $\square$
 
-*Proof of [Lemma 7.30](07-dictionary.md#lem-7-30).* Consider the search path
+*Proof of [Lemma 7.31](07-dictionary.md#lem-7-31).* Consider the search path
 backwards, from the last node before $x$ on the level 0: at each node it goes
 up if the node has a further level, and left otherwise, and this *reverse
 search path* is the search path reversed. On a level $r$, the steps to the left
 before going up are those of a coin tossed until it comes up heads (the node
 has a further level), at most $E[ T ] - 1 = 1$ in expectation by [Lemma
-7.32](07-dictionary.md#lem-7-32). This bound also holds when the head stops the
+7.33](07-dictionary.md#lem-7-33). This bound also holds when the head stops the
 path earlier. Let $S_r$ be the number of the steps to the right of the search
 on the level $r$, with $E[ S_r ] \le \min\{ 1 , E[ | L_r | ] \} = \min\{ 1 , n
 / 2^r \}$, since the path cannot take more steps than $L_r$ has keys. The
 length of the path is $h + \sum_{r \ge 0} S_r$, whose expectation is at most
 $E[ h ] + \lfloor \log_2 n \rfloor + 1 + \sum_{r > \lfloor \log_2 n \rfloor} n
 / 2^r \le E[ h ] + \log_2 n + 3 \le 2 \log_2 n + 5$ by [Lemma
-7.33](07-dictionary.md#lem-7-33). $\square$
+7.34](07-dictionary.md#lem-7-34). $\square$
 
 <span id="thm-7-7"></span>**Theorem 7.7.** *([Morin 2013, Theorem
 4.3](Z-bibliography.md#ref-morin-cpp).) A skip list of $n$ keys takes
@@ -3266,7 +3408,7 @@ This analysis carries over to a promotion with any probability $p$,
 $0 < p < 1$, instead of $1 / 2$ ([Morin 2013, exercise
 4.7](Z-bibliography.md#ref-morin-cpp)).
 
-<span id="lem-7-34"></span>**Lemma 7.34.** *If each key is promoted from
+<span id="lem-7-35"></span>**Lemma 7.35.** *If each key is promoted from
 a level to the next with probability $p$, the expected height is
 $\log_{1/p} n + O( 1 )$, the expected number of nodes is $n / ( 1 - p )$,
 and the expected length of a search path is at most
@@ -3287,18 +3429,18 @@ Yet, the gain of $p = 1 / e$ is quite small, and the cost of drawing a level
 with probability $1 / e$, instead of counting the trailing 1s of a word, does
 not repay it in our view; the code keeps $p = 1 / 2$. In the same model one can
 count the saving of the comparisons of [Algorithm
-7.20](07-dictionary.md#alg-7-20) ([Morin 2013, exercise
+7.21](07-dictionary.md#alg-7-21) ([Morin 2013, exercise
 4.8](Z-bibliography.md#ref-morin-cpp)).
 
-<span id="lem-7-35"></span>**Lemma 7.35.** *With the promotion probability
-$p$, the search of [Algorithm 7.20](07-dictionary.md#alg-7-20) compares the
+<span id="lem-7-36"></span>**Lemma 7.36.** *With the promotion probability
+$p$, the search of [Algorithm 7.21](07-dictionary.md#alg-7-21) compares the
 key $( \frac{1}{p} - p ) \log_{1/p} n + O( 1 )$ times in expectation, i.e.,
 $1.5 \log_2 n + O( 1 )$ for $p = 1 / 2$, against
 $\frac{1}{p} \log_{1/p} n + O( 1 )$ for the search of Morin.*
 
 *Proof.* Morin's search compares the key once per step to the right and once
 per level to stop, about $\frac{1}{p}$ times per level by the proof of [Lemma
-7.34](07-dictionary.md#lem-7-34). Ours skips the comparison that stops the
+7.35](07-dictionary.md#lem-7-35). Ours skips the comparison that stops the
 level $l$ when the successor on the level $l$ of the node where the search
 stands is the node $s$ that stopped the level $l + 1$, i.e., when that
 successor has a further level. This happens with probability $p$, independently
@@ -3321,18 +3463,18 @@ $F$ of the previous `fingerLookup()`, $F[ l ]$ the last node before the
 previous key on the level $l$ (the head counting as $-\infty$). It climbs the
 finger from the bottom while the node of the level is not before $k$ or its
 successor is, and then goes down from the first one that brackets $k$,
-updating $F$ ([Algorithm 7.22](07-dictionary.md#alg-7-22)). Note that the
+updating $F$ ([Algorithm 7.23](07-dictionary.md#alg-7-23)). Note that the
 finger stays valid along the levels above the one the search starts from,
 whose nodes still bracket the new key, and an insertion or a removal brings it
 back to the head ([Pugh 1990b](Z-bibliography.md#ref-pugh1990b)).
 
-<span id="alg-7-22"></span>**Algorithm 7.22.** The finger search of
+<span id="alg-7-23"></span>**Algorithm 7.23.** The finger search of
 `SkipList` ([Pugh 1990b](Z-bibliography.md#ref-pugh1990b); [Morin 2013,
 exercise 4.10](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/SkipList-fingerLookup.pseudo.md"
 
-<span id="lem-7-36"></span>**Lemma 7.36.** *A finger search of a key with
+<span id="lem-7-37"></span>**Lemma 7.37.** *A finger search of a key with
 $r$ keys between it and the key of the previous finger search takes
 $O( 1 + \log r )$ expected time.*
 
@@ -3345,7 +3487,7 @@ at most $( r + 1 ) 2^{-j}$, and the level $l$ where it stops is $\log_2 ( r + 1
 ) + O( 1 )$ in expectation. Then the descent from $F[ l ]$ goes right only over
 keys before $k$ on each level $j \le l$. Read backwards from its end, it goes
 up at each node with probability $1 / 2$ and left otherwise, at most 2 steps
-per level in expectation by [Lemma 7.32](07-dictionary.md#lem-7-32), i.e., $O(
+per level in expectation by [Lemma 7.33](07-dictionary.md#lem-7-33), i.e., $O(
 l + 1 )$ steps in all. Both parts take $O( 1 + \log r )$ expected steps.
 $\square$
 
@@ -3371,13 +3513,13 @@ $O( \log n )$ expected time; `forEach( f )` visits the pairs by increasing
 keys. Here the ranks are shifted by one, the head at 0 and the nil at $n + 1$;
 hence, the widths of each level sum to $n + 1$, the invariant that its
 contracts check ([Figure 7.24](07-dictionary.md#fig-7-24), [Algorithm
-7.23](07-dictionary.md#alg-7-23)). Morin gives no code for it, and
+7.24](07-dictionary.md#alg-7-24)). Morin gives no code for it, and
 `SkipListSequence` of [Chapter 2](02-sequence.md#ch-2) is his `SkiplistList`,
 which uses the same widths for a sequence searched by index.
 
 ![Figure 7.24. The `IndexedSkipList` of the keys 0 to 6 of [Figure 7.20](07-dictionary.md#fig-7-20) with the width of each link (the lengths of [Morin 2013, Figure 4.5](Z-bibliography.md#ref-morin-cpp), and the links to the nil), each level summing to $n + 1 = 8$, and `select(3)` (in violet): it moves from the head to 2 on the level 3 ($j = 3$) and from 2 to 3 on the level 2 ($j = 4$), and returns the key 3.](../figures/dictionary-skiplist-widths.svg){#fig-7-24}
 
-<span id="alg-7-23"></span>**Algorithm 7.23.** The search by rank, the
+<span id="alg-7-24"></span>**Algorithm 7.24.** The search by rank, the
 insertion and the removal of `IndexedSkipList` ([Pugh
 1990b](Z-bibliography.md#ref-pugh1990b)); $x.w[ l ]$ is the width of the link
 of $x$ on the level $l$, $U[ l ]$ the last node before $k$ on the level $l$ and
@@ -3390,7 +3532,7 @@ shifted, those of the figures are), and $y$ the new node of $\ell$ levels.
 
 The search by key sums the widths along the path, with the saving of the
 comparisons of `SkipList`, and the search by rank needs no comparison of
-keys ([Algorithm 7.23](07-dictionary.md#alg-7-23)).
+keys ([Algorithm 7.24](07-dictionary.md#alg-7-24)).
 
 An insertion splits the link that it crosses on each of its levels, and
 adds 1 to the width of those that pass over it. A removal does the reverse,
@@ -3438,7 +3580,7 @@ const std::size_t r = S.rank( 20 );     // 1
 const int * y = S.lowerBoundKey( 15 );  // *y == 20
 ```
 
-<span id="lem-7-37"></span>**Lemma 7.37.** *The insertion and the removal of
+<span id="lem-7-38"></span>**Lemma 7.38.** *The insertion and the removal of
 `IndexedSkipList` keep the width of each link equal to the difference of the
 ranks of its ends; hence the widths of each level sum to $n + 1$. With these
 widths, `select( i )` and `rank( k )` take $O( \log n )$ expected time.*
@@ -3458,7 +3600,7 @@ the widths of the links it follows, and `select( i )` goes right on a level
 exactly over the nodes of rank at most $i$, i.e., of key at most the key $x_i$
 of rank $i$; it thus follows the search path of a value between $x_i$ and the
 key after it. Both paths have $O( \log n )$ expected length by [Lemma
-7.30](07-dictionary.md#lem-7-30), which holds for any value searched, and each
+7.31](07-dictionary.md#lem-7-31), which holds for any value searched, and each
 step costs $O( 1 )$. $\square$
 
 [Figure 7.25](07-dictionary.md#fig-7-25) applies the two operations to the
@@ -3504,7 +3646,7 @@ search tree ([Morin 2013, exercise 4.15](Z-bibliography.md#ref-morin-cpp),
 8](08-tree.md#ch-8)). It uses its links better, however: a binary search
 tree of $n$ nodes has $2 n$ links of which $n + 1$ are nil, while a skip
 list has $2 n$ links in expectation ([Lemma
-7.33](07-dictionary.md#lem-7-33)) of which only those at the end of each
+7.34](07-dictionary.md#lem-7-34)) of which only those at the end of each
 level, $O( \log n )$, are nil.
 
 ![Figure 7.26. A skip list of the keys 1 to 4 with 1, 3, 1, 2 levels, the links that enter a node below its top level drawn faint, and the binary tree of the pairs (node, level) that the other links make ([Morin 2013, exercise 4.15](Z-bibliography.md#ref-morin-cpp)): the down link is the left child, the kept right link the right child.](../figures/dictionary-skiplist-tree.svg){#fig-7-26}
@@ -3528,14 +3670,14 @@ coding are in [§15.6](15-string.md#sec-15-6).
 `Trie` keeps the children of a node in a sorted map (`std::map` by character),
 and hence a search, an insertion and a removal take $O( | k | \log \sigma )$
 time for a key of $| k |$ characters on an alphabet of $\sigma$ ([Algorithm
-7.24](07-dictionary.md#alg-7-24)). An insertion makes the nodes missing on the
+7.25](07-dictionary.md#alg-7-25)). An insertion makes the nodes missing on the
 path of $k$, and a removal removes, bottom up, the nodes of its path left with
 no value and no child. `keysWithPrefix( p )` gives the keys below the node of
 $p$ in increasing order, and `nodes()` the number of nodes, the root included.
 Its space is $O( N )$ nodes for keys of total length $N$, a node per character
 not shared with another key.
 
-<span id="alg-7-24"></span>**Algorithm 7.24.** The lookup of `Trie`
+<span id="alg-7-25"></span>**Algorithm 7.25.** The lookup of `Trie`
 ([Fredkin 1960](Z-bibliography.md#ref-fredkin1960); [Knuth 1998,
 §6.3](Z-bibliography.md#ref-knuth1998v3)) and the insertion of
 `RadixTree`, $\lambda( y )$ being the label of the edge into $y$.
@@ -3605,7 +3747,7 @@ label of the child.
 
 ![Figure 7.27. The `Trie` of the keys `tea`, `ted`, `ten`, `to`, `inn` (left), each edge with its character, and the `RadixTree` of the same keys before and after `insert(in)` (right), each edge with its label; the nodes that end a key are in violet, and the insertion splits the edge `inn` at the new node `in` (in orange).](../figures/dictionary-trie.svg){#fig-7-27}
 
-<span id="lem-7-38"></span>**Lemma 7.38.** *A compact trie of $n$ keys has
+<span id="lem-7-39"></span>**Lemma 7.39.** *A compact trie of $n$ keys has
 at most $2 n$ nodes besides the root, however long the keys are.*
 
 *Proof.* Marked nodes are $n$. An unmarked node other than the root has
@@ -3629,7 +3771,7 @@ another ends with a character smaller than all the others, and therefore
 the leaf of a string $s$ has length $| s | + 1$. The *blind search* of a
 pattern $P$ of $p$ characters finds its lexicographic position, the number
 of the strings smaller than $P$, reading a single string. It works in three
-stages ([Algorithm 7.25](07-dictionary.md#alg-7-25), [Figure
+stages ([Algorithm 7.26](07-dictionary.md#alg-7-26), [Figure
 7.28](07-dictionary.md#fig-7-28)). First, it goes down from the root
 comparing only the branching characters with the characters of $P$ at the
 lengths of the nodes, possibly skipping characters that do not match, until
@@ -3643,7 +3785,7 @@ comparison of $P[ \ell ]$ with $s[ \ell ]$.
 
 ![Figure 7.28. The `PatriciaTrie` of `abcde`, `abcxy`, `abq`, `bad`, `bed`, each node with the length of its prefix and each edge with its branching character, the strings stored apart: the blind search of $P$ = `azcz` descends by $P[ 0 ]$ and $P[ 2 ]$, skipping $P[ 1 ]$, and stops at $w$, which has no child for `z`; it reads the one string `abcde`, finds $\ell = 1$ on the edge from the root to $u$, and since `z` > `b` returns the position $u.\mathit{hi} = 3$ (the path and the string read in violet).](../figures/dictionary-patricia.svg){#fig-7-28}
 
-<span id="alg-7-25"></span>**Algorithm 7.25.** The blind search and the
+<span id="alg-7-26"></span>**Algorithm 7.26.** The blind search and the
 construction of `PatriciaTrie` ([Ferragina 2023,
 chapter 9](Z-bibliography.md#ref-ferragina2023)); $| x |$ is the depth of
 the node $x$, $x.\mathit{lo}$ and $x.\mathit{hi}$ the range of its strings,
@@ -3676,7 +3818,7 @@ class PatriciaTrie
  };
 ```
 
-<span id="lem-7-39"></span>**Lemma 7.39.** *The blind search returns the
+<span id="lem-7-40"></span>**Lemma 7.40.** *The blind search returns the
 number of the strings of $D$ smaller than $P$.*
 
 *Proof.* Let $\ell'$ be the longest prefix of $P$ shared by some string of
@@ -3719,7 +3861,7 @@ every $b$ (the bucketing) or as the locality-preserving coding decides, and the
 trie holds the anchors alone ([Figure 7.29](07-dictionary.md#fig-7-29)). A
 search by prefix is the blind search of the pattern among the anchors, which
 reads one anchor, and the scan of the one bucket where the pattern falls,
-decoded on the fly ([Algorithm 7.26](07-dictionary.md#alg-7-26)). With the trie
+decoded on the fly ([Algorithm 7.27](07-dictionary.md#alg-7-27)). With the trie
 in memory and the coding on disk, it costs $O( p / B + | s | / B )$ transfers
 of blocks plus the bucket, $s$ being the string read by the blind search, in
 $O( n_a )$ words of memory for $n_a$ anchors, and $( 1 + \epsilon )
@@ -3737,7 +3879,7 @@ bucket, and `anchorsOf()` extracts the anchors of a coding.
 
 ![Figure 7.29. A `TwoLevelDictionary` of nine sorted strings front-coded in three buckets of $b = 3$ (each string after the first of its bucket as the length of the prefix shared with the previous one and the rest), with a Patricia trie on the anchors `alpha`, `bamboo`, `cobalt`: the search of `banjo` reads the anchor `bamboo` and scans its bucket, decoding `banana` and `band` (in violet), and returns the position 6.](../figures/dictionary-twolevel.svg){#fig-7-29}
 
-<span id="alg-7-26"></span>**Algorithm 7.26.** The search of
+<span id="alg-7-27"></span>**Algorithm 7.27.** The search of
 `TwoLevelDictionary` ([Ferragina 2023, chapter
 9](Z-bibliography.md#ref-ferragina2023)), the trie $T$ in memory and the
 buckets of the coding on disk.
@@ -3746,15 +3888,15 @@ buckets of the coding on disk.
 
 --8<-- "generated/TwoLevelDictionary-prefixRange.pseudo.md"
 
-<span id="lem-7-40"></span>**Lemma 7.40.** *Let $S_0 < \cdots < S_{n-1}$ be
+<span id="lem-7-41"></span>**Lemma 7.41.** *Let $S_0 < \cdots < S_{n-1}$ be
 the strings of the coding. Then `lexicographicPosition( Q )` returns the
 number of the strings smaller than $Q$, and `prefixRange( P )` the range
 $[ l , r )$ of the positions of the strings prefixed by $P$; each of them
 reads one anchor in the blind search, and decodes at most the strings of
 one bucket.*
 
-*Proof.* By [Lemma 7.39](07-dictionary.md#lem-7-39) on the trie of the
-anchors, line 2 of [Algorithm 7.26](07-dictionary.md#alg-7-26) gives the
+*Proof.* By [Lemma 7.40](07-dictionary.md#lem-7-40) on the trie of the
+anchors, line 2 of [Algorithm 7.27](07-dictionary.md#alg-7-27) gives the
 number $j$ of the anchors smaller than $Q$, reading one anchor. If $j = 0$,
 then $Q$ is not larger than $S_0$, which is always an anchor, and the
 answer is 0. Otherwise the anchor $j - 1$ is smaller than $Q$ and the
@@ -3813,7 +3955,7 @@ node that branches (the *path compression*). The prefix is the length of the
 chain and its first 8 bytes, and a search skips the bytes past 8 (the
 optimistic compression of the paper, the hybrid of its section III.E) and
 compares the full key at the leaf, where each search ends ([Algorithm
-7.27](07-dictionary.md#alg-7-27)). A leaf holds the whole key, in one
+7.28](07-dictionary.md#alg-7-28)). A leaf holds the whole key, in one
 allocation with its value, and a pointer to a child is a leaf if its lowest bit
 is set (`isLeaf()`, `asLeaf()`, `tag()`). A key that ends at a node, a prefix
 of all the keys below it, hangs from the node apart from the children, so that
@@ -3827,7 +3969,7 @@ full prefixes of the nodes on the way being those of $l$. A removal shrinks the
 node of its key below a quarter of its places and merges a node left with a
 single child into its prefix.
 
-<span id="alg-7-27"></span>**Algorithm 7.27.** The search and the insertion
+<span id="alg-7-28"></span>**Algorithm 7.28.** The search and the insertion
 of `AdaptiveRadixTree` ([Leis et al.
 2013](Z-bibliography.md#ref-leis2013)); $d$ is the number of the bytes of
 $k$ consumed, a prefix being compared on its first 8 bytes only and the
@@ -3870,7 +4012,7 @@ class AdaptiveRadixTree
  };
 ```
 
-<span id="lem-7-41"></span>**Lemma 7.41.** *An adaptive radix tree of $n$
+<span id="lem-7-42"></span>**Lemma 7.42.** *An adaptive radix tree of $n$
 keys has at most $n - 1$ internal nodes and $n$ leaves, and a search, an
 insertion and a removal of a key of $k$ bytes take $O( k )$ time,
 whatever $n$.*
@@ -3919,7 +4061,7 @@ dictionary of $n$ strings by the degrees of its nodes in depth (DFUDS) of
 character of each edge in a byte and the rest of its label in a string
 apart. It maps a string to its rank in the lexicographic order. The $N$
 nodes of the compact trie, at most $2 n$ by [Lemma
-7.38](07-dictionary.md#lem-7-38), are visited in depth, the children of a
+7.39](07-dictionary.md#lem-7-39), are visited in depth, the children of a
 node by their first characters. The node of $d$ children is written as $d$
 open parentheses and a closed one, after an open parenthesis that balances
 the whole. This takes $2 N$ bits, in which the node of rank $v$ in the
@@ -3936,7 +4078,7 @@ $\sigma$ bytes.
 
 ![Figure 7.31. The compact trie of `ab`, `abc`, `b`, `bc`, each node with its rank in the visit in depth, and its succinct code: the parentheses of DFUDS, the first characters $\Lambda$ and the marks $T$ of the ends; the open parenthesis at the place 2 matches the closed one at 3 (in violet), after which the child `a` of the root, the node `ab`, begins at the place 4.](../figures/dictionary-dfuds.svg){#fig-7-31}
 
-<span id="lem-7-42"></span>**Lemma 7.42.** *The parentheses of the subtree
+<span id="lem-7-43"></span>**Lemma 7.43.** *The parentheses of the subtree
 of the node at the place $p$ are those from $p$ to the first place $e$ whose
 excess (the open parentheses less the closed ones up to it) is one less
 than at $p - 1$, and the nodes of the subtree are the consecutive ranks
@@ -3957,7 +4099,7 @@ node comes before its subtree, which holds the strings it prefixes, and the
 subtrees follow the order of their first characters). Also, the strings with a
 prefix $P$ are the marks of the subtree where the walk of $P$ ends, a range of
 ranks found by one forward search ([Algorithm
-7.28](07-dictionary.md#alg-7-28)). A lookup of $Q$ walks down $O( | Q | )$
+7.29](07-dictionary.md#alg-7-29)). A lookup of $Q$ walks down $O( | Q | )$
 nodes, each in $O( \log \sigma )$ time besides a rank, a select of Elias and
 Fano for the rest of its label and, but for the first child, a `findClose()`,
 and `contains( Q )` is a lookup that found $Q$. In turn,
@@ -3979,7 +4121,7 @@ strings with long shared prefixes. Its audit of the construction checks that
 `access()` and `lookup()` invert each other, and the test
 `engineered_strings.string-dictionaries` exercises both.
 
-<span id="alg-7-28"></span>**Algorithm 7.28.** The construction, the
+<span id="alg-7-29"></span>**Algorithm 7.29.** The construction, the
 lookup, the access and the range of a prefix of `SuccinctPatriciaTrie`
 ([Benoit et al. 2005](Z-bibliography.md#ref-benoit2005)); a node is the
 range $[ l , r )$ of the strings below it with the depth $h$ of its end,
@@ -4063,11 +4205,11 @@ child is there. Hence, all the keys below $u$ are larger than $x$ if $c =
 0$, and smaller if $c = 1$. The jump pointer of $u$ leads to the smallest
 of them, which is the successor of $x$, in the first case, and to the
 largest of them, whose next in the list is the successor, in the second
-case ([Algorithm 7.29](07-dictionary.md#alg-7-29), [Figure
+case ([Algorithm 7.30](07-dictionary.md#alg-7-30), [Figure
 7.33](07-dictionary.md#fig-7-33)). Its time is that of the walk down, $O( w
 )$.
 
-<span id="alg-7-29"></span>**Algorithm 7.29.** The successor, the
+<span id="alg-7-30"></span>**Algorithm 7.30.** The successor, the
 insertion and the removal of `BinaryTrie` ([Morin 2013,
 §13.1](Z-bibliography.md#ref-morin-cpp)); $u$ is the deepest node of the
 path of $x$, at depth $i$, $c$ the bit $i$ of $x$, and $\ell$ the leaf of
@@ -4128,14 +4270,14 @@ key and a value. A search that falls off the trie keeps, on its walk down,
 the child 1 of the deepest node where the path of $x$ goes to the child 0
 while the child 1 is there, the root $a$ of the nearest larger keys. It then
 returns the leftmost leaf below $a$, $O( w )$ more steps ([Algorithm
-7.30](07-dictionary.md#alg-7-30), [Figure
+7.31](07-dictionary.md#alg-7-31), [Figure
 7.36](07-dictionary.md#fig-7-36)). An insertion adds the missing nodes of
 its path, a removal removes the nodes of its path left with no child, both
 in $O( w )$ time, and `forEach()` visits the pairs by increasing keys. It
 takes less memory than `BinaryTrie`, at the price of the walk down to the
 leftmost leaf.
 
-<span id="alg-7-30"></span>**Algorithm 7.30.** The successor in
+<span id="alg-7-31"></span>**Algorithm 7.31.** The successor in
 `SimpleBinaryTrie` ([Morin 2013, exercise
 13.1](Z-bibliography.md#ref-morin-cpp)).
 
@@ -4210,7 +4352,7 @@ lookup of a prefix). The node $u$ is at depth $i$ or below exactly when the
 prefix of $i$ bits of $x$ is in $t[ i ]$ ([Figure
 7.37](07-dictionary.md#fig-7-37)).
 
-<span id="lem-7-43"></span>**Lemma 7.43.** *If the prefix of $i$ bits of
+<span id="lem-7-44"></span>**Lemma 7.44.** *If the prefix of $i$ bits of
 $x$ is the prefix of some key, so is its prefix of $j$ bits for each
 $j < i$. Hence the depth $\ell$ of the deepest node of the path of $x$ is
 found by a binary search on $[ 0 , w ]$, with
@@ -4251,18 +4393,18 @@ each one is what counts.
 13.2](Z-bibliography.md#ref-morin-cpp), with no trie at all. The keys are a
 doubly linked list in increasing order, and the table $t[ i ]$ maps each
 prefix of $i$ bits to the smallest and the largest key with that prefix (an
-`Entry`), which are all that [Lemma 7.43](07-dictionary.md#lem-7-43) needs.
+`Entry`), which are all that [Lemma 7.44](07-dictionary.md#lem-7-44) needs.
 The binary search finds $\ell$ as above, and the entry gives the successor
 directly. An insertion links the new key before its successor and widens the
 entries of its $w$ prefixes. A removal replaces the smallest key of a prefix
 by the next one in the list and the largest by the previous one; this is
 correct since the keys of a prefix are consecutive in the list ([Algorithm
-7.31](07-dictionary.md#alg-7-31)). `find()`, `lookup()` and `contains()` look
+7.32](07-dictionary.md#alg-7-32)). `find()`, `lookup()` and `contains()` look
 at $t[ w ]$ alone, in $O( 1 )$ expected time, `seek( x )` gives the iterator
 on the successor, as in `XFastTrie`, and `entries()` counts the entries of the
 tables.
 
-<span id="alg-7-31"></span>**Algorithm 7.31.** The successor, the
+<span id="alg-7-32"></span>**Algorithm 7.32.** The successor, the
 insertion and the removal of `ListXFastTrie` ([Morin 2013, exercise
 13.2](Z-bibliography.md#ref-morin-cpp)); $t[ i ]( p )$ is the entry of the
 prefix $p$ of depth $i$, and $\ell$ the key $x$ in the list.
@@ -4276,9 +4418,9 @@ prefix $p$ of depth $i$, and $\ell$ the key $x$ in the list.
 Both tries also have `findNear( x )`, the search of [Morin 2013, exercise
 13.4](Z-bibliography.md#ref-morin-cpp), whose time depends on the distance
 $d( x )$ between $x$ and its successor ($2^w$ if there is none) rather than on
-$w$ ([Algorithm 7.32](07-dictionary.md#alg-7-32)).
+$w$ ([Algorithm 7.33](07-dictionary.md#alg-7-33)).
 
-<span id="lem-7-44"></span>**Lemma 7.44.** *Let
+<span id="lem-7-45"></span>**Lemma 7.45.** *Let
 $k = \lceil \log_2 ( d( x ) + 1 ) \rceil$. Then `findNear( x )` takes
 $O( 1 + \log \log d( x ) )$ expected time in `ListXFastTrie` and
 $O( 1 + \log d( x ) )$ in `XFastTrie`.*
@@ -4302,7 +4444,7 @@ upwards, takes $\Theta( w )$ when the successor is past a carry ($x = 01
 \ldots 1$ and its successor $10 \ldots 0$, at distance 1, share no prefix),
 which the block $p + 1$ covers.
 
-<span id="alg-7-32"></span>**Algorithm 7.32.** The search near the
+<span id="alg-7-33"></span>**Algorithm 7.33.** The search near the
 successor of `XFastTrie` ([Morin 2013, exercise
 13.4](Z-bibliography.md#ref-morin-cpp)); $t[ i ]( p )$ is the node of the
 prefix $p$ of depth $i$, or nil. `ListXFastTrie` reads the smallest key of
@@ -4397,11 +4539,11 @@ comes up, the group is split at $x$, the keys up to $x$ go into a new group
 whose representative is $x$, and $x$ is inserted in the x-fast trie. A
 removal takes $x$ out of its group, and if $x$ was a representative (other
 than $2^w - 1$), it joins its group to the next one and removes $x$ from
-the x-fast trie ([Algorithm 7.33](07-dictionary.md#alg-7-33)). The split
+the x-fast trie ([Algorithm 7.34](07-dictionary.md#alg-7-34)). The split
 and the join of the treaps take $O( \log w )$ expected time, and the change
 of the x-fast trie $O( w )$, with probability $1 / w$.
 
-<span id="alg-7-33"></span>**Algorithm 7.33.** The successor, the
+<span id="alg-7-34"></span>**Algorithm 7.34.** The successor, the
 insertion and the removal of `YFastTrie` ([Morin 2013,
 §13.3](Z-bibliography.md#ref-morin-cpp)); $X$ is the x-fast trie of the
 representatives.
@@ -4452,7 +4594,7 @@ const std::uint32_t * s = Y.lowerBound( 10 );  // *s == 12
 The size of the groups rests on two coin experiments
 ([Figure 7.39](07-dictionary.md#fig-7-39)).
 
-<span id="lem-7-45"></span>**Lemma 7.45.** *([Morin 2013, Lemma
+<span id="lem-7-46"></span>**Lemma 7.46.** *([Morin 2013, Lemma
 13.1](Z-bibliography.md#ref-morin-cpp).) The group of a key $x$ of a
 y-fast trie has $n_x$ keys with $E[ n_x ] \le 2 w - 1$.*
 
@@ -4518,9 +4660,9 @@ after $c$ is the next bit set, which a hash table could not give. Methods
 A search that stops at the node $u$ of depth $i$, whose child of $s_i$ is
 missing, returns the smallest string below the next child of $u$, if there
 is one. Otherwise it returns the string after the largest one below $u$, by
-the argument of [Lemma 7.43](07-dictionary.md#lem-7-43) on the bytes, in
+the argument of [Lemma 7.44](07-dictionary.md#lem-7-44) on the bytes, in
 $O( 1 )$ time after the walk of $O( | s | )$ nodes ([Algorithm
-7.34](07-dictionary.md#alg-7-34)). An insertion adds the missing nodes of
+7.35](07-dictionary.md#alg-7-35)). An insertion adds the missing nodes of
 the path of $s$, and links the new string before its successor. Going back
 to the root, it makes it the smallest string of each node in which nothing
 precedes it (no string ends there and no child has a smaller byte) and the
@@ -4534,7 +4676,7 @@ interface. Its invariant (the list in order, the smallest and the largest
 string of each node, the bitmaps) is checked in $O( N )$ time for $N$ nodes
 at the contract level 3 while there are at most 256 strings.
 
-<span id="alg-7-34"></span>**Algorithm 7.34.** The successor, the
+<span id="alg-7-35"></span>**Algorithm 7.35.** The successor, the
 insertion and the removal of `BitmapTrie` ([Morin 2013, exercise
 13.3](Z-bibliography.md#ref-morin-cpp)); $u.\mathit{min}$ and
 $u.\mathit{max}$ are the smallest and the largest string below $u$, and
@@ -4546,7 +4688,7 @@ $\ell$ the item of $s$ in the list.
 
 --8<-- "generated/BitmapTrie-remove.pseudo.md"
 
-<span id="lem-7-46"></span>**Lemma 7.46.** *Let a `BitmapTrie` hold the set
+<span id="lem-7-47"></span>**Lemma 7.47.** *Let a `BitmapTrie` hold the set
 $S$ of strings. Then `lowerBound( s )` returns the smallest string of $S$
 not smaller than $s$ (nil if there is none), and `insert( s )` and
 `remove( s )` take $O( | s | )$ time and keep the invariant: the list of $S$
@@ -4556,7 +4698,7 @@ byte, one for each bit of its bitmap.*
 
 *Proof.* The strings below the node of a prefix $x$ are those prefixed by
 $x$, which are consecutive in the order of the bytes, and hence in the
-list. If the walk of [Algorithm 7.34](07-dictionary.md#alg-7-34) reads all
+list. If the walk of [Algorithm 7.35](07-dictionary.md#alg-7-35) reads all
 of $s$ (lines 3 and 4), the strings below the node $u$ reached are not
 smaller than $s$ and precede all the others not smaller than $s$, whence
 line 7. If it stops at $u$ with no child of $s_i$, the strings below the
@@ -4665,7 +4807,7 @@ path of the $i$-th key has been analyzed precisely, with its variance
 [Kirschenhofer and Prodinger
 1994](Z-bibliography.md#ref-kirschenhofer1994); [Kirschenhofer et al.
 1995](Z-bibliography.md#ref-kirschenhofer1995), the last one for the search
-that saves the comparisons of [Lemma 7.35](07-dictionary.md#lem-7-35)).
+that saves the comparisons of [Lemma 7.36](07-dictionary.md#lem-7-36)).
 Also, there are deterministic ([Munro et al.
 1992](Z-bibliography.md#ref-munro1992)), biased ([Ergun et al.
 2001](Z-bibliography.md#ref-ergun2001); [Bagchi et al.
@@ -4694,7 +4836,7 @@ in $O( n )$ space. Lower bounds of [Pătrașcu and Thorup
 less optimal for the structures in $O( n )$ space.
 
 The perfect hash functions of this chapter (`MinimalPerfectHash`,
-`RecSplit`, `FingerprintPerfectHash`, `PerfectHashTable` and
+`PtrHash`, `RecSplit`, `FingerprintPerfectHash`, `PerfectHashTable` and
 `OrderedMinimalPerfectHash`) are persistent
 ([§23.7](23-external.md#sec-23-7)), as their users typically need, since
 they build a function once on a static set of keys and evaluate it for the
@@ -4883,7 +5025,7 @@ chapter, and the others by the lemmas and the code cited.
     4.6](Z-bibliography.md#ref-morin-cpp)). Solved by [Figure
     7.21](07-dictionary.md#fig-7-21), [Figure 7.22](07-dictionary.md#fig-7-22),
     [Figure 7.23](07-dictionary.md#fig-7-23) and [Lemma
-    7.31](07-dictionary.md#lem-7-31); test: `ods_trees.ods4.2.skiplist-sset`.
+    7.32](07-dictionary.md#lem-7-32); test: `ods_trees.ods4.2.skiplist-sset`.
 39. Illustrate `remove( 2 )` and `add( 3 , x )` with a height of 4 on the skip
     list with the lengths of [Morin 2013, Figure
     4.5](Z-bibliography.md#ref-morin-cpp) ([Morin 2013, exercises 4.4 and
@@ -4891,20 +5033,20 @@ chapter, and the others by the lemmas and the code cited.
     access by rank ([Morin 2013, exercise
     4.9](Z-bibliography.md#ref-morin-cpp)). Solved by [Figure
     7.25](07-dictionary.md#fig-7-25) and [Lemma
-    7.37](07-dictionary.md#lem-7-37); tests:
+    7.38](07-dictionary.md#lem-7-38); tests:
     `ods_trees.ods-ex4.9.rank-skiplist` and `ods_trees.ods4.3.skiplist-list`.
 40. Promote the keys with a probability $p$ instead of $1 / 2$: bound the
     search path, the height and the nodes, and find the best $p$ ([Morin 2013,
     exercise 4.7](Z-bibliography.md#ref-morin-cpp)). Solved by [Lemma
-    7.34](07-dictionary.md#lem-7-34); test: `ods_trees.ods4.2.skiplist-sset`.
+    7.35](07-dictionary.md#lem-7-35); test: `ods_trees.ods4.2.skiplist-sset`.
 41. Remove the redundant comparisons of the search of a skip list, and count
     the comparisons of the new search ([Morin 2013, exercise
     4.8](Z-bibliography.md#ref-morin-cpp)). Solved by [Lemma
-    7.35](07-dictionary.md#lem-7-35); test:
+    7.36](07-dictionary.md#lem-7-36); test:
     `ods_trees.ods-ex4.8.no-redundant-comparisons`.
 42. Realize the finger search of a skip list, in $O( 1 + \log r )$ expected
     time ([Morin 2013, exercise 4.10](Z-bibliography.md#ref-morin-cpp)). Solved
-    by [Lemma 7.36](07-dictionary.md#lem-7-36); test:
+    by [Lemma 7.37](07-dictionary.md#lem-7-37); test:
     `ods_trees.ods-ex4.10.finger-search`.
 43. Truncate a `SkiplistList` at a position and absorb another one, in $O( \log
     n )$ time ([Morin 2013, exercises 4.11 and
@@ -4927,13 +5069,13 @@ chapter, and the others by the lemmas and the code cited.
     `taocp.tries`.
 48. Run the blind search on the Patricia trie of [Ferragina 2023, Figures 9.7
     and 9.8](Z-bibliography.md#ref-ferragina2023), and put it over the front
-    coding of a dictionary ([Lemma 7.39](07-dictionary.md#lem-7-39)). Tests:
+    coding of a dictionary ([Lemma 7.40](07-dictionary.md#lem-7-40)). Tests:
     `pearls_hashing.patricia` and `pearls_hashing.two-level`.
 49. Realize the adaptive radix tree on strings, with values that own
     memory. Test: `ordered.adaptive-radix-tree`.
 50. Code a static dictionary of strings as a Patricia trie in DFUDS, with
     `access()` and `lookup()` inverse of each other ([Lemma
-    7.42](07-dictionary.md#lem-7-42)). Test:
+    7.43](07-dictionary.md#lem-7-43)). Test:
     `engineered_strings.string-dictionaries`.
 51. Realize the binary trie of the integers of $w$ bits ([Theorem
     7.8](07-dictionary.md#thm-7-8)). Test: `ods_ints.ods13.1.binary-trie`.
@@ -4954,7 +5096,7 @@ chapter, and the others by the lemmas and the code cited.
     )$ and in $O( 1 + \log \log d( x ) )$ expected time, $d( x )$ the distance
     of $x$ from its successor ([Morin 2013, exercise
     13.4](Z-bibliography.md#ref-morin-cpp)). Solved by [Lemma
-    7.44](07-dictionary.md#lem-7-44); test: `ods_ints.ods.ex13.4.find-near`.
+    7.45](07-dictionary.md#lem-7-45); test: `ods_ints.ods.ex13.4.find-near`.
 56. Realize the y-fast trie ([Theorem 7.10](07-dictionary.md#thm-7-10) and
-    [Lemma 7.45](07-dictionary.md#lem-7-45)). Test:
+    [Lemma 7.46](07-dictionary.md#lem-7-46)). Test:
     `ods_ints.ods13.3.y-fast-trie`.

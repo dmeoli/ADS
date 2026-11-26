@@ -70,7 +70,7 @@ program), and the chapter where its comparison belongs.
 | `bignum` | products, quotients, conversion, gcd and square roots of long integers, sums of rationals | `boost::multiprecision::cpp_int`, `boost::rational`, (GMP, FLINT) | [§17.11](17-numeric.md#sec-17-11) |
 | `combinatorial` | population counts, Morton codes, permutations and combinations | `std::popcount`, `std::next_permutation`, `boost::dynamic_bitset`, (libpopcnt, libmorton, Hinnant's combinations) | [§18.10](18-combinatorial.md#sec-18-10) |
 | `compression` | entropy coders, codes of integers, BWT, FM-index and r-index, LZ parses, space | (huff0, FSE, Stream VByte, FastPFor, sdsl-lite, libsais, LZ4, ryg_rans, r-index of Prezza) | [§21.13](21-compression.md#sec-21-13) |
-| `concurrent` | queues between two threads, work-stealing deques, the wait of a consumer | Boost.Lockfree, `std::deque` under a mutex, (rigtorp, moodycamel, folly) | [§24.14](24-concurrent.md#sec-24-14) |
+| `concurrent` | queues between two threads, work-stealing deques, the wait of a consumer, the reclamation of the nodes of a lock-free queue | Boost.Lockfree, `std::deque` under a mutex, (rigtorp, moodycamel, folly, xenium) | [§24.14](24-concurrent.md#sec-24-14), [§24.15](24-concurrent.md#sec-24-15) |
 | `dictionaries` | insertions, lookups and visits of hash tables and search trees | `std::unordered_map`, `std::map`, `boost::unordered_flat_map`, `boost::container::flat_map` | [§7.6](07-dictionary.md#sec-7-6), [8](08-tree.md#ch-8) |
 | `dynamic` | the observers that keep shortest paths, spanning forests and flows after a change; link-cut trees; union-find with rollback; offline connectivity | the algorithms of the book from scratch, a vector of parents, `UnionFind` | [§14.14](14-graph.md#sec-14-14), [8](08-tree.md#ch-8), [§11.6](11-mfset.md#sec-11-6) |
 | `edit` | edit distance, longest common subsequence, approximate search | the dynamic programming of the textbook, (edlib, rapidfuzz-cpp) | [§15.9](15-string.md#sec-15-9) |
@@ -78,10 +78,10 @@ program), and the chapter where its comparison belongs.
 | `fingerprints` | hashes of rows of doubles, the comparison of two rows | `std::hash` combined, `std::equal`, `boost::hash_range` | [7](07-dictionary.md#ch-7) |
 | `flows` | maximum flows from scratch and after a change of a capacity | Boost `push_relabel_max_flow`, (LEMON `Preflow`) | [§14.14](14-graph.md#sec-14-14) |
 | `geometry` | convex hull, closest pair | Boost.Geometry, (CGAL) | [§16.5](16-geometry.md#sec-16-5) |
-| `graphs` | visits, shortest paths, spanning trees, components, Eulerian trails, matchings, union-find, grid maps, each on the structures of `std`, Boost and ADS (the visit in breadth also on `PackedGraph`) | the same code on `std` and Boost structures, Boost Graph Library | [§14.14](14-graph.md#sec-14-14), [§9.13](09-priority.md#sec-9-13), [§11.6](11-mfset.md#sec-11-6), [§14.4.4](14-graph.md#sec-14-4-4) |
+| `graphs` | visits, shortest paths, spanning trees, components, blocks and cut nodes, Eulerian trails, matchings, union-find, grid maps, each on the structures of `std`, Boost and ADS (the visit in breadth also on `PackedGraph`) | the same code on `std` and Boost structures, Boost Graph Library | [§14.14](14-graph.md#sec-14-14), [§9.13](09-priority.md#sec-9-13), [§11.6](11-mfset.md#sec-11-6), [§14.4.4](14-graph.md#sec-14-4-4) |
 | `greedy` | parallel Kruskal, spanning forest, independent set and matching by deterministic reservations | the sequential algorithms, (ParlayLib) | [§25.16](25-parallel.md#sec-25-16) |
 | `hashattack` | the keys of exercise 5.11 of Morin's book against random keys | `std::unordered_map` | [7](07-dictionary.md#ch-7), [§B.6](B-benchmarks.md#sec-B-6) |
-| `hashing` | hash functions, hash maps, filters, range filters, perfect hashing, concurrent maps | `std::hash`, `std::unordered_map`, Boost, (Abseil, unordered_dense, XXH3, wyhash, rapidhash, robin-map, libcuckoo, fastfilter_cpp, xor filters, PTHash, BBHash, RecSplit) | [§7.6](07-dictionary.md#sec-7-6), [§10.12](10-set.md#sec-10-12), [§24.14](24-concurrent.md#sec-24-14) |
+| `hashing` | hash functions, hash maps, filters, range filters, sketches of streams, perfect hashing, concurrent maps | `std::hash`, `std::unordered_map`, Boost, (Abseil, unordered_dense, XXH3, wyhash, rapidhash, robin-map, libcuckoo, fastfilter_cpp, xor filters, DataSketches, PTHash, BBHash, RecSplit) | [§7.6](07-dictionary.md#sec-7-6), [§7.8](07-dictionary.md#sec-7-8), [§10.12](10-set.md#sec-10-12), [§10.13](10-set.md#sec-10-13), [§24.15](24-concurrent.md#sec-24-15) |
 | `joins` | union, intersection, difference, batch insertion and building of trees based on join, and the batches of the packed memory arrays, on $t$ threads | `std::map`, (PAM), (CPMA of its authors) | [8](08-tree.md#ch-8), [§25.16](25-parallel.md#sec-25-16), [§6.11](06-search.md#sec-6-11) |
 | `lce` | longest common extensions | the suffix array of the textbook, direct comparison, (sdsl-lite) | [§15.9](15-string.md#sec-15-9) |
 | `learned` | LA-vector, PGM-index, dynamic PGM-index | Elias-Fano, `std::map`, `BTreeMap`, (sdsl-lite, la_vector, PGM-index) | [§6.10](06-search.md#sec-6-10), [§22.13](22-succinct.md#sec-22-13) |
@@ -91,14 +91,14 @@ program), and the chapter where its comparison belongs.
 | `multi` | search of many patterns at once | `std::string_view::find()`, (Vectorscan) | [§15.9](15-string.md#sec-15-9) |
 | `numeric` | gcd, modular powers, primality, factorization, generators, deviates, shuffles, alias tables, sampling | `std`, Boost, (GMP, hurchalla, PCG, Random123) | [§17.11](17-numeric.md#sec-17-11) |
 | `ordered` | ordered dictionaries and sorted sets (the packed memory arrays): insertions, lookups, lower bounds, removals, scans | `std::map`, `std::set`, `boost::container::flat_map`, Boost.Intrusive trees, (Abseil and tlx B-trees, CPMA of its authors) | [8](08-tree.md#ch-8), [§6.11](06-search.md#sec-6-11) |
-| `parallel` | parallel sorts, patterns, merges, sparse and dense products, graphs, shortest paths, succinct builds, LCP, concurrent tables and queues, branch and bound, on $t$ threads | GNU parallel mode, OpenMP, (oneTBB, `std::execution` on oneTBB, IPS4o, ParlayLib, FastFlow, tlx, GAP benchmark suite, Eigen, OpenBLAS, sdsl-lite, libcuckoo, growt, MultiQueue, k-LSM, SprayList) | [§25.16](25-parallel.md#sec-25-16) |
+| `parallel` | parallel sorts, patterns, merges, sparse and dense products, graphs, blocks and cut nodes, shortest paths, succinct builds, LCP, concurrent tables and queues, branch and bound, on $t$ threads | GNU parallel mode, OpenMP, (oneTBB, `std::execution` on oneTBB, IPS4o, ParlayLib, FastFlow, tlx, GAP benchmark suite, Eigen, OpenBLAS, sdsl-lite, libcuckoo, growt, MultiQueue, k-LSM, SprayList) | [§25.16](25-parallel.md#sec-25-16) |
 | `positions` | indices from the addresses of objects to their positions | `std::unordered_map`, `FlatHashTable`, `boost::unordered_flat_map` | [7](07-dictionary.md#ch-7) |
 | `priority` | heaps, sequence heap, bucket queues and radix heap in the hold model, double-ended queues, Dijkstra, best-first searches | `std::priority_queue`, `std::multiset`, Boost.Heap, (tlx, radix-heap) | [§9.13](09-priority.md#sec-9-13) |
 | `queues` | queues, deques and stacks | `std::deque`, `std::vector`, `boost::circular_buffer`, `boost::container::devector` | [3](03-stack.md#sec-3-9), [4](04-queue.md#ch-4) |
 | `runtime` | the channels, the mailbox and the termination of the long-lived workers | the workers of OpenMP, (oneTBB, FastFlow) | [§25.13](25-parallel.md#sec-25-13) |
 | `search` | exact search of a pattern | `std::string_view::find()`, the searchers of `std`, `memmem()`, Boost.Algorithm | [§15.9](15-string.md#sec-15-9) |
 | `sequences` | sequences, tiered and small vectors, stacks, rearrangements and sorts of lists | `std::vector`, `std::list`, `std::forward_list`, `std::deque`, `std::stack`, Boost.Container | [2](02-sequence.md#ch-2), [3](03-stack.md#sec-3-9), [§12.15](12-sort.md#sec-12-15) |
-| `sets` | intersections of sorted lists, union-find, boolean vectors, compressed bitmaps | `std::set_intersection`, `boost::disjoint_sets`, `boost::dynamic_bitset`, (SIMD intersections of Lemire et al., CRoaring) | [§10.6](10-set.md#sec-10-6), [§10.12](10-set.md#sec-10-12), [§11.6](11-mfset.md#sec-11-6) |
+| `sets` | intersections of sorted lists, union-find, boolean vectors, compressed bitmaps | `std::set_intersection`, `boost::disjoint_sets`, `boost::dynamic_bitset`, (SIMD intersections of Lemire et al., CRoaring) | [§10.6](10-set.md#sec-10-6), [§10.13](10-set.md#sec-10-13), [§11.6](11-mfset.md#sec-11-6) |
 | `sort` | sorts of integers, doubles, strings and records in six patterns | `std::sort`, `std::stable_sort`, Boost.Sort, (IPS4o, IPS2Ra, x86-simd-sort, ska_sort, fluxsort, crumsort, quadsort, vqsort) | [§12.15](12-sort.md#sec-12-15) |
 | `sparse` | sparse products by a vector and transposition | the orthogonal lists of the book, (Eigen) | [§17.11](17-numeric.md#sec-17-11) |
 | `ssets` | the sorted sets of Open Data Structures (exercise 9.14 of Morin's book) | `std::set`, (the code of Morin) | [7](07-dictionary.md#ch-7), [8](08-tree.md#ch-8), [§B.6](B-benchmarks.md#sec-B-6) |
@@ -138,11 +138,11 @@ one part of `arrays` (`array search`, `select` or `rmq`) or of `sets`
 `ordered` or `packed`). In `parallel`, `ADS_SSSP_DELTA` and `ADS_SSSP_RHO` set
 the parameters of the shortest paths (32 and $2^{20}$ by default, 256 and
 $2^{12}$ on the grid), `ADS_SSSP_CASE` keeps one graph (e.g., `kronecker20`),
-and `ADS_SSSP_DUMP` and `ADS_WAVELET_DUMP` name folders where the graphs and
-the sequences are written for the programs of GBBS and of pwm. Finally,
-`joins` sets `PARLAY_NUM_THREADS` to the number of its threads unless it is
-given, and `numeric` built with the macro `ADS_BENCH_OLD` leaves out what the
-previous release lacks.
+and `ADS_SSSP_DUMP`, `ADS_BCC_DUMP` and `ADS_WAVELET_DUMP` name folders where
+the graphs and the sequences are written for the programs of GBBS and of pwm.
+Finally, `joins` sets `PARLAY_NUM_THREADS` to the number of its threads unless
+it is given, and `numeric` built with the macro `ADS_BENCH_OLD` leaves out what
+the previous release lacks.
 
 ## B.2 The measure of a cell {#sec-B-2}
 

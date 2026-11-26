@@ -6,10 +6,10 @@
  * FastHash.h, the blocked filter of Bloom, the binary fuse filter, the
  * cuckoo filter, the prefix filter, the Ribbon filter, the range filters
  * of Grafite and by buckets, the minimal perfect hash functions by pilots
- * and by recursive splitting and the cuckoo table with buckets of 4
- * places. Each one is checked against a reference of
- * the standard library or against its own analysis, on random and
- * adversarial inputs, at the level 3 of the contracts.
+ * (also of 8 bits, PtrHash) and by recursive splitting and the cuckoo table
+ * with buckets of 4 places. Each one is checked against a reference of the
+ * standard library or against its own analysis, on random and adversarial
+ * inputs, at the level 3 of the contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -29,7 +29,9 @@
 #include "ADS/dictionary/FingerprintPerfectHash.h"
 #include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/dictionary/MinimalPerfectHash.h"
+#include "ADS/dictionary/PtrHash.h"
 #include "ADS/dictionary/RecSplit.h"
+#include "ADS/parallel/ThreadPool.h"
 #include "ADS/set/BinaryFuseFilter.h"
 #include "ADS/set/BlockedBloomFilter.h"
 #include "ADS/set/CuckooFilter.h"
@@ -905,6 +907,136 @@ ADS_TEST( "recsplit" )
  CHECK_THROWS( RecSplit< int >( std::vector< int >{ 1 } , 0 ) ,
 	       contract_violation );
  CHECK_THROWS( RecSplit< int >( std::vector< int >{ 1 } , 2001 ) ,
+	       contract_violation );
+ }
+
+// the keys of the adversarial inputs of the minimal perfect hash
+// functions: 0 to n - 1, their multiples of 2^32 (only the high bits
+// vary) and of 2^20 + 1, and the 64 powers of 2
+std::vector< std::vector< std::uint64_t > > adversarialKeys( std::size_t n )
+{
+ std::vector< std::vector< std::uint64_t > > A( 4 );
+ for( std::size_t i = 0 ; i < n ; ++i ) {
+  A[ 0 ].push_back( i );
+  A[ 1 ].push_back( std::uint64_t( i ) << 32 );
+  A[ 2 ].push_back( std::uint64_t( i ) *
+		    ( ( std::uint64_t( 1 ) << 20 ) + 1 ) );
+  }
+ for( unsigned b = 0 ; b < 64 ; ++b )
+  A[ 3 ].push_back( std::uint64_t( 1 ) << b );
+ return( A );
+ }
+
+/// the sizes around the powers of 2 up to 2^16, and 0, 1, 2 and 3
+std::vector< std::size_t > sizesAroundPowers( void )
+{
+ std::vector< std::size_t > N = { 0 , 1 , 2 , 3 };
+ for( std::size_t p = 8 ; p <= 65536 ; p *= 8 )
+  N.insert( N.end() , { p - 1 , p , p + 1 } );
+ return( N );
+ }
+
+// the minimal perfect hash function by pilots of 8 bits: 0 to 3 keys and
+// the sizes around 8, 64, 512, 4096, 32768 and 65536 with the linear and
+// the cubic bucket functions and the two remaps, at ( lambda , alpha )
+// ( 3 , 0.99 ), ( 3.5 , 0.99 ), ( 1 , 0.5 ) and ( 3 , 1 ); 10^6 random keys
+// in about 3 bits per key (linear, lambda 3) and 2.4 (cubic and
+// Elias-Fano, lambda 3.5); the adversarial integers, strings and the keys
+// of 32 bits with their extremes; stream() as the queries one by one, also
+// on keys out of the set; the parts built on a pool of threads as on one;
+// a key out of the set below n; equal hashes throw; repeated keys, the
+// parameters out of range and an empty function violate the contracts
+ADS_TEST( "ptrhash" )
+{
+ auto bijective = []( const auto & f , const auto & K ) {
+  std::vector< char > seen( K.size() , 0 );
+  for( const auto & k : K ) {
+   const std::size_t v = f( k );
+   if( v >= K.size() || seen[ v ] )
+    return( false );
+   seen[ v ] = 1;
+   }
+  return( f.size() == K.size() );
+  };
+ using Fast = PtrHash< std::uint64_t >;
+ using Compact =
+   PtrHash< std::uint64_t , PtrHashBucket::Cubic , PtrHashRemap::EliasFano >;
+ for( const std::size_t n : sizesAroundPowers() ) {
+  const auto K = randomKeys( n , unsigned( 7 * n + 1 ) );
+  for( auto [ lambda , alpha ] :
+       { std::pair( 3.0 , 0.99 ) , std::pair( 3.5 , 0.99 ) ,
+	 std::pair( 1.0 , 0.5 ) ,
+	 std::pair( 3.0 , 1.0 ) } ) {
+   const Fast f( K , lambda , alpha );
+   const Compact g( K , lambda , alpha );
+   CHECK( bijective( f , K ) && bijective( g , K ) );
+   CHECK( ( f.empty() == ( n == 0 ) ) && ( f.slots() >= n ) );
+   if( n > 0 )
+    CHECK( ( f( 0xDEADBEEF ) < n ) && ( g( 0xDEADBEEF ) < n ) );
+   }
+  }
+ {
+  const auto K = randomKeys( 1000000 , 41 );
+  const Fast f( K );
+  const Compact g( K , 3.5 );
+  const double bf = double( f.bits() ) / 1e6 , bg = double( g.bits() ) / 1e6;
+  CHECK( bijective( f , K ) && ( bf > 2.6 ) && ( bf < 3.1 ) );
+  CHECK( bijective( g , K ) && ( bg > 2.2 ) && ( bg < 2.5 ) );
+  CHECK( ( f.trials() >= 1 ) && ( f.parts() >= 1 ) &&
+	 ( f.buckets() >= 1000000 / 3 ) );
+  std::vector< std::uint64_t > Q( K.begin() , K.begin() + 1000 );
+  for( std::size_t i = 0 ; i < 1000 ; ++i )
+   Q.push_back( 0xABCDEF0123456789ULL * ( i + 1 ) );  // also out of S
+  std::vector< std::size_t > V( Q.size() ) , W( Q.size() );
+  f.stream( Q , V );
+  g.stream( Q , W );
+  bool same = true;
+  for( std::size_t i = 0 ; i < Q.size() ; ++i )
+   same = same && ( V[ i ] == f( Q[ i ] ) ) && ( W[ i ] == g( Q[ i ] ) );
+  CHECK( same );
+  f.prefetch( K[ 0 ] );
+  f.stream( std::span< const std::uint64_t >() , std::span< std::size_t >() );
+  }
+ for( const auto & A : adversarialKeys( 100000 ) ) {
+  CHECK( bijective( Fast( A ) , A ) );
+  CHECK( bijective( Compact( A , 3.5 ) , A ) );
+  }
+ const auto S = randomStrings( 50000 , 42 );
+ CHECK( bijective( PtrHash< std::string >( S ) , S ) );
+ {
+  std::vector< std::uint32_t > K32 = { 0 , ~std::uint32_t( 0 ) };
+  for( std::uint32_t i = 1 ; i < 70000 ; ++i )
+   K32.push_back( i * 61 );
+  CHECK( bijective( PtrHash< std::uint32_t >( K32 ) , K32 ) );
+  CHECK( bijective(
+    PtrHash< std::uint32_t , PtrHashBucket::Cubic , PtrHashRemap::EliasFano >(
+      K32 , 3.9 ) ,
+    K32 ) );
+  }
+ {
+  // 12 parts of 10^5 keys at alpha = 0.9, on 4 threads and on one
+  ThreadPool pool( 4 );
+  const auto K = randomKeys( 100000 , 43 );
+  const Fast f( K , 3 , 0.9 ) , g( pool , K , 3 , 0.9 );
+  bool same = f.parts() > 1;
+  for( const std::uint64_t k : K )
+   same = same && ( f( k ) == g( k ) );
+  CHECK( same && bijective( g , K ) );
+  }
+ const Fast E( std::vector< std::uint64_t >{} );
+ CHECK( E.empty() && E.size() == 0 && E.trials() == 0 );
+ CHECK_THROWS( ( void )E( 3 ) , contract_violation );
+ CHECK_THROWS(
+   ( PtrHash< std::uint64_t , PtrHashBucket::Linear , PtrHashRemap::Array ,
+	      OneGroup >( std::vector< std::uint64_t >{ 1 , 2 } ) ) ,
+   std::runtime_error );
+ CHECK_THROWS( PtrHash< int >( std::vector< int >{ 1 , 2 , 1 } ) ,
+	       contract_violation );
+ CHECK_THROWS( PtrHash< int >( std::vector< int >{ 1 } , 0.5 ) ,
+	       contract_violation );
+ CHECK_THROWS( PtrHash< int >( std::vector< int >{ 1 } , 3 , 0.4 ) ,
+	       contract_violation );
+ CHECK_THROWS( PtrHash< int >( std::vector< int >{ 1 } , 3 , 1.1 ) ,
 	       contract_violation );
  }
 
