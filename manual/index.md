@@ -1,4 +1,4 @@
-# ADS<br>Algorithms and Data Structures,<br>and Advanced ones
+# ADS: Algorithms and Data Structures,<br>and Advanced ones
 
 A User Manual
 
