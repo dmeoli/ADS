@@ -1305,7 +1305,7 @@ At last it climbs the tree, whose leaves are the groups, to the first range on
 its side whose minimum reaches the target, and goes down to its group, its leaf
 and its byte ([Algorithm 22.16](22-succinct.md#alg-22-16)). A range whose
 minimum stays above the target holds no answer, by (iii) of [Lemma
-22.14](22-succinct.md#lem-22-16), and it is skipped; the first range on the
+22.16](22-succinct.md#lem-22-16), and it is skipped; the first range on the
 side of the search whose minimum reaches the target holds the answer, again by
 (iii). The search thus scans at most two leaves of $512 / 8$ bytes, two groups
 of 16 leaves, and climbs and descends the binary tree over the $n / 8192$
@@ -1518,7 +1518,7 @@ gives `access( i )`, together with the rank of the symbol found
 $\mathrm{rank}_c( i )$, one rank a step, while $\mathrm{select}_c( k )$ climbs
 from the leaf of $c$ by one select a step, $k' = \mathrm{select}_b( B ,
 \mathrm{rank}_b( B , o_v ) + k ) - o_v + 1$ ([Algorithm
-22.18](22-succinct.md#alg-22-19)).
+22.19](22-succinct.md#alg-22-19)).
 
 ![Figure 22.12. The wavelet tree of abracadabra shaped by the canonical code a 0, b 100, c 101, d 110, r 111 of its frequencies: each internal node keeps a bit for each item that reaches it (the items above the bits), and the bits of all the nodes are one vector, the nodes laid by levels.](../figures/succinct-huffmanwt.svg){#fig-22-12}
 
@@ -1574,7 +1574,7 @@ part holds 2; the new start may weigh on another image (the cut may cascade),
 which is checked in turn ([Algorithm 22.20](22-succinct.md#alg-22-20)). Then
 the intervals become at most $2 r$ (Nishimoto and Tabei, for this balance), and
 the search forward takes at most 3 steps ([Lemma
-22.19](22-succinct.md#lem-22-21) below); hence each step of a walk costs $O( 1
+22.21](22-succinct.md#lem-22-21) below); hence each step of a walk costs $O( 1
 )$ time, in $O( r )$ words instead of the $n$ of the permutation written in
 full. On the runs of the transform of abracadabra (cf. [Table
 21.7](21-compression.md#tab-21-7)) the image of the run of a, the rows $[ 6 ,
@@ -1676,7 +1676,7 @@ Next come the successors not copied, the *extra nodes*. These are the runs of
 at least $L_{\min}$ consecutive integers as intervals (each an `Interval`, its
 left extreme and its length), and the *residuals* as gaps less 1, the first
 ones of each relative to $x$ by `signedToNatural()` ([Algorithm
-22.21](22-succinct.md#alg-22-22)).
+22.22](22-succinct.md#alg-22-22)).
 
 <span id="alg-22-22"></span>**Algorithm 22.22.** The coding and the
 decoding of a list of `BVGraph`, and two of its steps
@@ -1731,7 +1731,7 @@ function `neighbors( u )` walks down the children that cross the row $u$, $k$
 of the $k^2$ at each level. Similarly, `reverseNeighbors( v )` walks down those
 that cross the column $v$, and the same bits therefore give the successors and
 the predecessors, which the lists give only by doubling them ([Algorithm
-22.22](22-succinct.md#alg-22-23)).
+22.23](22-succinct.md#alg-22-23)).
 
 <span id="alg-22-23"></span>**Algorithm 22.23.** The construction of the
 $k^2$-tree by levels from the edges, the successors of a node, and the test of
@@ -1768,7 +1768,7 @@ first pass counts the 1s of each chunk, and the prefix sums of the counts give
 the 1s before each chunk, $c_k$. A second pass writes the entries of each chunk
 from $c_k$ on; these are those of the sequential scan, since the entry of a
 block depends only on the 1s before it ([Algorithm
-22.23](22-succinct.md#alg-22-24)). The counts of the top level are the $c_k$ of
+22.24](22-succinct.md#alg-22-24)). The counts of the top level are the $c_k$ of
 the chunks that start a top block. Indeed, the chunks are a power of 2 of
 blocks below the size of a top block, which then holds whole chunks, or a
 multiple of it above; a top block that does not start a chunk lies in one,
