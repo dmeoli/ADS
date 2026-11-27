@@ -2375,7 +2375,7 @@ channel or a batch opened inside a channel only counts, as a batch inside a
 batch does, while a structure that a batch already holds when the channel
 opens sends its events at the close of that batch. The channel adds a test of
 a pointer of the thread to the close of a batch, and nothing to a change; over
-structures that all have `NoObservers` it has no member and no code, which
+structures that all have `NoObservers` it holds nothing and does nothing, which
 its constant `silent` states at compile time. Attaching or detaching an
 observer while a channel is open violates the contract of the batches.
 

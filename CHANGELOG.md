@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   channel or a batch inside a channel only counts, an exception in its
   scope abandons every batch as `Batch` does, one thrown by an observer at
   the close abandons the batches not yet closed and ends the groups begun,
-  and over structures with `NoObservers` only it has no member and no code
+  and over structures with `NoObservers` only it holds nothing and does nothing
   (`silent`); the test `engineered_modification.mod-channel`, a channel over
   the three `ObservedMap`s of `MinCostFlowObserver` in
   `engineered_lemon.lemon-warm-observers` and in the benchmark `reopt`,

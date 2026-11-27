@@ -507,7 +507,7 @@
  exception, every batch is abandoned as above; if an observer throws while
  a batch sends its events, the batches not yet closed are abandoned, the
  group hooks begun are ended, and the exception goes on. A channel over
- structures with `NoObservers` only has no member and no code.
+ structures with `NoObservers` only holds nothing and does nothing.
 
  \section theory_ADS_capabilities Capabilities
 

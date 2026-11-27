@@ -2300,6 +2300,15 @@ inline constexpr bool silent =
 struct NoHooks
 { };
 
+/// the state of an open channel: its group hooks, the exceptions in flight
+/// at its open, and whether it is open
+struct OpenChannel
+{
+ ChannelHooks hooks;  ///< the group hooks begun
+ int ex = 0;          ///< the exceptions in flight at the open
+ bool live = true;    ///< whether open
+ };
+
 }  // end( namespace mod::detail )
 /// \endcond
 
@@ -2318,8 +2327,8 @@ struct NoHooks
 /// to its checkpoint when it is undoable, `Rebuilt` otherwise); if an
 /// observer throws at the close, the batches not yet closed are left in
 /// the same way, the group hooks begun are ended, and the exception goes
-/// on. With `NoObservers` on every structure the channel has no member and
-/// no code (`silent`)
+/// on. With `NoObservers` on every structure the channel holds nothing and
+/// does nothing (`silent`)
 ///
 /// In pseudocode (beyond the book), \f$ H \f$ the observers begun:
 /// \f[
@@ -2348,16 +2357,18 @@ class Channel
  /// the hooks, none if nobody may listen
  using Hooks =
    std::conditional_t< none , mod::detail::NoHooks ,
-		       mod::detail::ChannelHooks >;
+		       mod::detail::OpenChannel >;
 
  public:
- /// whether the channel has no member and no code: nobody may listen to
- /// any of its structures
+ /// whether the channel holds nothing and does nothing: nobody may listen
+ /// to any of its structures
  static constexpr bool silent = none;
 
  /// opens a batch on each of the structures \f$ s \f$
- explicit Channel( S &... s )
-     : f_b( open( s... ) ) , f_ex( std::uncaught_exceptions() ) { }
+ explicit Channel( S &... s ) : f_b( open( s... ) ) {
+  if constexpr( ! none )
+   f_hooks.ex = std::uncaught_exceptions();
+  }
 
  /// not copied
  Channel( const Channel & ) = delete;
@@ -2368,15 +2379,15 @@ class Channel
  /// exception, each batch is abandoned [see `Batch`]
  ~Channel() noexcept( false ) {
   if constexpr( ! none )
-   if( std::exchange( f_open , false ) )
-    finish( std::uncaught_exceptions() > f_ex );
+   if( std::exchange( f_hooks.live , false ) )
+    finish( std::uncaught_exceptions() > f_hooks.ex );
   }
 
  /// closes the channel: each outermost batch sends its net effect, and
  /// each observer gets its group hooks once; idempotent
  void close( void ) {
   if constexpr( ! none )
-   if( std::exchange( f_open , false ) )
+   if( std::exchange( f_hooks.live , false ) )
     finish( false );
   }
 
@@ -2396,22 +2407,22 @@ class Channel
  void finish( bool failing ) {
   mod::detail::ChannelHooks * const outer = mod::detail::t_channel;
   if( outer == nullptr )
-   mod::detail::t_channel = &f_hooks;
+   mod::detail::t_channel = &f_hooks.hooks;
   std::exception_ptr first;
   std::apply( [ & ]( auto &... b ) { ( closeOne( b , failing , first ) ,
 				       ... ); } ,
 	      f_b );
   if( outer == nullptr ) {
    mod::detail::t_channel = nullptr;
-   for( std::size_t i = f_hooks.open.size() ; i-- > 0 ; )
+   for( std::size_t i = f_hooks.hooks.open.size() ; i-- > 0 ; )
     try {
-     f_hooks.open[ i ].end( f_hooks.open[ i ].o );
+     f_hooks.hooks.open[ i ].end( f_hooks.hooks.open[ i ].o );
      }
     catch( ... ) {
      if( ! first )
       first = std::current_exception();
      }
-   f_hooks.open.clear();
+   f_hooks.hooks.open.clear();
    }
   if( first && ! failing )
    std::rethrow_exception( first );
@@ -2433,10 +2444,8 @@ class Channel
    }
   }
 
- Batches f_b;                          ///< the batches
- ADS_NO_UNIQUE_ADDRESS Hooks f_hooks;  ///< the group hooks begun
- int f_ex;            ///< the exceptions in flight at the open
- bool f_open = true;  ///< whether open
+ ADS_NO_UNIQUE_ADDRESS Batches f_b;    ///< the batches
+ ADS_NO_UNIQUE_ADDRESS Hooks f_hooks;  ///< the hooks and the state
 
  };  // end( class Channel )
 
