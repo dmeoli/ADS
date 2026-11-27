@@ -384,7 +384,7 @@ BENCHES   = sort dictionaries priority sequences memory bignum hashing \
             backtrack ordered arrays sets tries allocators positions \
             assembly fingerprints multi lce parallel joins dynamic greedy \
             learned stringdicts flows assignment runtime bestfirst \
-            hashattack ssets \
+            hashattack ssets modifications reopt \
             $(if $(GMPON),bignum-own) $(if $(BLASON),matrix-own)
 # on x86 the branches are kept off the 32-byte boundaries, where the
 # erratum JCC of Skylake slows a loop by the alignment alone (about 10%):
@@ -712,6 +712,14 @@ $(BUILD)/bench-assignment: bench/assignment.cpp bench/Bench.h $(HEADERS) \
 
 $(BUILD)/bench-graphs: bench/graphs.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(LEMONFLAGS)
+
+# the reoptimization: the Preflow, the MinCostAssignment and the
+# NetworkSimplex of abLEMON, and the warm starts of its headers rewritten
+# for ADS, wherever the tests find it (ADS_WITH_LEMON, as $(ADSLEMONINC)
+# says); the Dijkstra, the Kruskal and the push-relabel of Boost when their
+# headers are found
+$(BUILD)/bench-reopt: bench/reopt.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) $(ADSLEMONINC) -o $@ $< $(BENCHLIBS)
 
 # the sort and the mailbox over the processes of MPI, by mpicxx (not among
 # BENCHES): make $(BUILD)/bench-mpi, then mpirun -np P $(BUILD)/bench-mpi

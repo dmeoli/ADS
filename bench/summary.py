@@ -15,7 +15,11 @@
 #                                                                             #
 # With --short, a row per sequential benchmark: its structure of ADS against  #
 # the standard library and against the strongest library, the one of the      #
-# smallest median.                                                            #
+# smallest median. With --crossover, the tables of the benchmarks "resolve"   #
+# of bench/reopt.cpp instead: for each problem, kind of change and size, the  #
+# time of a round by the size k of the batches, the reoptimization against    #
+# the solves from scratch, the outcomes of its queries, and the least k at    #
+# which it stops paying.                                                      #
 #                                                                             #
 # The last column of each comparison is its verdict against the noise band,   #
 # the 90th percentile b of the A/A: + when the whole range is above 1 + b     #
@@ -499,6 +503,18 @@ PAIRS = [
     ('space', 'ADS::HuffmanFMIndex', 'sdsl', ['sdsl::csa_wt<wt_huff>']),
     ('space', 'ADS::HuffmanFMIndex compact', 'sdsl',
      ['sdsl::csa_wt<wt_huff>']),
+    # the reoptimization against the solves from scratch, over the kinds of
+    # change and the sizes of the batches [see crossover()]
+    ('resolve sssp', 'ADS reopt', 'ADS scratch', ['ADS scratch']),
+    ('resolve sssp', 'ADS reopt', 'Boost', ['Boost dijkstra']),
+    ('resolve mst', 'ADS reopt', 'ADS scratch', ['ADS scratch']),
+    ('resolve mst', 'ADS reopt', 'Boost', ['Boost kruskal']),
+    ('resolve flow', 'ADS reopt', 'ADS scratch', ['ADS scratch']),
+    ('resolve flow', 'ADS reopt', 'LEMON', ['LEMON Preflow']),
+    ('resolve flow', 'ADS reopt', 'Boost', ['Boost push-relabel']),
+    ('resolve assign', 'ADS reopt', 'ADS scratch', ['ADS scratch']),
+    ('resolve assign', 'ADS reopt', 'LEMON', ['LEMON MinCostAssignment']),
+    ('resolve mcf', 'ADS reopt', 'LEMON', ['LEMON NetworkSimplex']),
 ]
 
 # the parallel algorithms [see bench/parallel.cpp], on the pool of ADS
@@ -684,7 +700,90 @@ def brief(rows):
         print(line + '</tr>')
     print('</table>')
 
-def main(p1, p2=None, short=False):
+# the structures of ADS in the table of the crossovers, in their order,
+# and the outcomes of the queries of "ADS reopt"
+REOPT = ['ADS reopt', 'ADS reopt Preflow', 'ADS repair', 'ADS scratch']
+OUTCOMES = [('certified', 'cert.'), ('warm', 'warm'),
+            ('scratch by size', 'size'), ('scratch by abort', 'abort'),
+            ('scratch by event', 'event'), ('scratch', 'scratch')]
+
+def crossover(c1, c2):
+    # the benchmarks "resolve ..." of bench/reopt.cpp: for each problem,
+    # kind of change and size, a row per size k of the batches with the time
+    # of a round of each structure of ADS and of the fastest other library,
+    # the ratios of the solve from scratch to the reoptimization, and the
+    # share of the queries of "ADS reopt" by outcome; then the least k at
+    # which the reoptimization is no faster than the scratch of ADS and
+    # than the library (a cell measured in both runs is their mean, a wrong
+    # one, -1, stays wrong)
+    def merged(c, k):
+        a, b = c1.get(k), c2.get(k)
+        if a is None or b is None:
+            return a if b is None else b
+        return -1.0 if a < 0 or b < 0 else (a + b) / 2
+    keys = set(c1) | set(c2)
+    groups = {}
+    for b, case, n, who in keys:
+        if not b.startswith('resolve ') or ' k=' not in case:
+            continue
+        kind, k = case.rsplit(' k=', 1)
+        groups.setdefault((b.split(':')[0], kind, n), set()).add(int(k))
+    def show(v):
+        if v is None:
+            return ''
+        if v < 0:
+            return 'wrong'
+        return '%.0f' % v if v >= 100 else '%.3g' % v
+    for b, kind, n in sorted(groups):
+        ks = sorted(groups[(b, kind, n)])
+        whos = {w for bb, case, nn, w in keys
+                if bb == b and nn == n and case.startswith(kind + ' k=')}
+        ads = [w for w in REOPT if w in whos]
+        libs = sorted(w for w in whos
+                      if not w.startswith('ADS') and not w.endswith('A/A'))
+        print('<p><b>%s</b>, %s, n = %d: ns per round (the k changes and '
+              'the solve)</p>' % (b, kind, n))
+        print('<table>')
+        print('<tr><th>k</th>' + ''.join('<th>%s</th>' % w for w in ads) +
+              '<th>library</th><th>scratch / reopt</th>'
+              '<th>library / reopt</th>' +
+              ''.join('<th>%s</th>' % h for _, h in OUTCOMES) + '</tr>')
+        cross = {'ADS scratch': None, 'library': None}
+        for k in ks:
+            case = '%s k=%d' % (kind, k)
+            t = {w: merged(c1 if (b, case, n, w) in c1 else c2,
+                           (b, case, n, w)) for w in ads}
+            lib = [(merged(c1, (b, case, n, w)), w) for w in libs]
+            lib = [(v, w) for v, w in lib if v is not None and v > 0]
+            best = min(lib) if lib else None
+            r = t.get('ADS reopt')
+            line = '<tr><td>%d</td>' % k
+            line += ''.join('<td align="right">%s</td>' % show(t[w])
+                            for w in ads)
+            line += ('<td>%s %s</td>' % (show(best[0]), best[1])
+                     if best else '<td></td>')
+            for name, other in (('ADS scratch', t.get('ADS scratch')),
+                                ('library', best[0] if best else None)):
+                if r and r > 0 and other and other > 0:
+                    line += '<td align="right">%s</td>' % ratio(other / r)
+                    if other <= r and cross[name] is None:
+                        cross[name] = k
+                else:
+                    line += '<td></td>'
+            q = merged(c1, (b + ':count', case, n, 'ADS reopt queries'))
+            for o, _ in OUTCOMES:
+                x = merged(c1, (b + ':count', case, n, 'ADS reopt ' + o))
+                line += ('<td align="right">%.0f%%</td>' % (100 * x / q)
+                         if q and x is not None else '<td></td>')
+            print(line + '</tr>')
+        print('</table>')
+        print('<p>crossover: %s</p>' % ', '.join(
+            'against %s %s' % (name, 'at k = %d' % k if k is not None else
+                               'none up to k = %d' % ks[-1])
+            for name, k in cross.items()))
+        print()
+
+def main(p1, p2=None, short=False, cross=False):
     h1, c1 = read(p1)
     if p2 is None:
         # the one run: the noise from its rows "A/A", left out of the cells
@@ -697,6 +796,9 @@ def main(p1, p2=None, short=False):
                    if k in c1 and c1[k] > 0 and v > 0)
     else:
         h2, c2 = read(p2)
+    if cross:
+        crossover(c1, c2)
+        return
     both = [k for k in c1 if k in c2 and c1[k] > 0 and c2[k] > 0]
     if p2 is not None:
         d = sorted(abs(c2[k] - c1[k]) / c1[k] for k in both)
@@ -754,8 +856,8 @@ def main(p1, p2=None, short=False):
     print('</table>')
 
 if __name__ == '__main__':
-    short = '--short' in sys.argv
-    main(*[a for a in sys.argv[1:] if a != '--short'], short=short)
+    main(*[a for a in sys.argv[1:] if not a.startswith('--')],
+         short='--short' in sys.argv, cross='--crossover' in sys.argv)
 
 ###############################################################################
 #                            End of summary.py                                #

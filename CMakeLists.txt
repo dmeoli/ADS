@@ -574,7 +574,8 @@ if (ADS_BENCHMARKS)
                sparse external graphs combinatorial backtrack ordered arrays
                sets tries allocators positions assembly fingerprints multi lce
                parallel joins dynamic greedy learned stringdicts flows
-               assignment runtime bestfirst hashattack ssets)
+               assignment runtime bestfirst hashattack ssets modifications
+               reopt)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         # the code of ADS, which the benchmarks compare with Boost and with
@@ -594,6 +595,11 @@ if (ADS_BENCHMARKS)
         foreach (b graphs flows assignment)
             target_link_libraries(bench-${b} PRIVATE ADS::LEMON)
         endforeach ()
+    endif ()
+    # the warm starts of abLEMON measured by reopt, on the headers that
+    # ADS::LEMON rewrites, when it has them
+    if (ADS_USE_LEMON)
+        target_link_libraries(bench-reopt PRIVATE ADS::LEMON)
     endif ()
     # the sets of Morin in ssets, from the C++ sources of Open Data
     # Structures in ODS_DIR

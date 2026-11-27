@@ -49,6 +49,11 @@
 # from their sources, and with all of them in the job interop, by CMake and   #
 # by the makefile; the wheel of the package of Python is built and its tests  #
 # run on Linux, macOS and Windows.                                            #
+# The benchmarks of the typed modifications and of the reoptimization, and    #
+# dynamic, flows and assignment, which share their headers, are built by      #
+# CMake on Boost and on abLEMON with its warm starts (modifications and reopt #
+# also by the makefile) and run once on small sizes, where a cell that prints #
+# -1, an answer that differs from the solve from scratch, fails the job.      #
 ###############################################################################
 
 name: CI
@@ -626,6 +631,73 @@ jobs:
               test/interop_parallel.cpp -pthread -ltbb
           ./tsan-interop sender-executor
           ./tsan-interop taskflow-executor
+
+  # the benchmarks of the typed modifications and of the reoptimization,
+  # with those that share their headers (dynamic, flows and assignment), by
+  # CMake on Boost and on abLEMON with the warm starts of its rewritten
+  # headers, and the two new ones by the makefile, run once on small sizes:
+  # no timing is read, but a cell whose answers differ from those of the
+  # solve from scratch prints -1 and fails the job, each problem and the
+  # warm start of abLEMON must be there, a structure must run alone as
+  # bench/run.sh runs it, and bench/summary.py --crossover must tabulate
+  # the cells
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Boost and abLEMON
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libboost-dev ninja-build
+          git clone --quiet --depth 1 https://github.com/dmeoli/abLEMON.git \
+              "$RUNNER_TEMP/ablemon"
+          cmake -S "$RUNNER_TEMP/ablemon" -B "$RUNNER_TEMP/ablemon-build" \
+                -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/ablemon-inst"
+          cmake --build "$RUNNER_TEMP/ablemon-build"
+          cmake --install "$RUNNER_TEMP/ablemon-build"
+      - name: the benchmarks by CMake, run once on small sizes
+        run: |
+          set -o pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                -DADS_BENCHMARKS=ON -DADS_WITH_BOOST=ON -DADS_WITH_LEMON=ON \
+                -DLEMON_ROOT="$RUNNER_TEMP/ablemon-inst" | tee cmake.log
+          grep -q 'its warm start ON' cmake.log
+          cmake --build build --target bench-modifications bench-reopt \
+                bench-dynamic bench-flows bench-assignment
+          build/bench-modifications -r 1 1000 | tee cells.tsv
+          build/bench-reopt -r 1 1000 | tee -a cells.tsv
+          build/bench-dynamic -r 1 1000 | tee -a cells.tsv
+          build/bench-flows -r 1 1000 | tee -a cells.tsv
+          build/bench-assignment -r 1 50 | tee -a cells.tsv
+          awk -F'\t' 'NF == 5 && $5 < 0 { print "wrong: " $0; bad = 1 }
+                      END { exit bad }' cells.tsv
+          for b in 'modifications graph' 'modifications array' \
+                   'modifications heap' 'modifications dictionary' \
+                   'resolve sssp' 'resolve mst' 'resolve flow' \
+                   'resolve assign' 'resolve mcf'; do
+            grep -qP "^$b\t" cells.tsv
+          done
+          grep -q 'ADS reopt Preflow' cells.tsv
+          grep -qP '^resolve sssp:count\t' cells.tsv
+          python3 bench/summary.py --crossover cells.tsv > crossover.html
+          grep -q 'crossover' crossover.html
+          ADS_BENCH_LIST=1 build/bench-reopt 1000 > labels.txt
+          grep -qx 'ADS reopt' labels.txt
+          ADS_BENCH_WHO='ADS repair' build/bench-reopt -r 1 1000 > one.tsv
+          test -s one.tsv
+          test "$(cut -f4 one.tsv | grep -v '^ADS repair' | wc -l)" -eq 0
+      - name: the two new benchmarks by the makefile
+        run: |
+          make -j4 BUILD=build-make LEMON_ROOT="$RUNNER_TEMP/ablemon-inst" \
+               ADS_WITH_BOOST=1 build-make/bench-modifications \
+               build-make/bench-reopt
+          build-make/bench-modifications -r 1 500 > make.tsv
+          build-make/bench-reopt -r 1 500 >> make.tsv
+          awk -F'\t' 'NF == 5 && $5 < 0 { print "wrong: " $0; bad = 1 }
+                      END { exit bad }' make.tsv
+          grep -qP '^resolve mcf\t' make.tsv
 
   # the package of Python: the wheel built by pip from python/ (one wheel on
   # the stable ABI of Python 3.12, on scikit-build-core and nanobind),
