@@ -3989,10 +3989,11 @@ change of the inner side and falls by that of the outer one. Hence, we take
 the connected components of the graph of the trees by these edges (the rule
 of Blossom IV and of Blossom V). Each component, in turn, takes the largest
 change that the current slacks of its edges allow; one visit of the pairs of
-trees from each of its trees finds it, together with this change, since
-an edge to a tree of a component found before is bounded by the change of
-that component, and an edge to a tree not yet reached by none, the later
-component being bounded by this one in turn. The pairs of trees joined by
+trees from each of its trees finds it, together with this change. An edge
+to a tree of a component found before is bounded after the change of that
+component, while an edge to a tree not yet reached waits until the component
+is complete: within it if its tree has joined meanwhile, else bounded by its
+slack alone, the later component being bounded by this one in turn. The pairs of trees joined by
 an edge are kept in a list per tree, and a pair whose trees are both gone
 is freed when the second of them is read. The greedy start sets each $y_v$ to the least cost at $v$,
 raises the duals node by node by the least slack, and matches each node to

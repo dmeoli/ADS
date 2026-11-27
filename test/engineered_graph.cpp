@@ -1983,7 +1983,8 @@ geometricGraph( int n , int k , std::mt19937 & g )
 // costs negated, on random, geometric and grid graphs of up to some
 // thousands of nodes and sizes around the powers of 2, with the duals
 // checked from scratch as a certificate each time; the graphs with no
-// perfect matching (n odd, a node with no edge, a star, two triangles), the
+// perfect matching (n odd, a node with no edge, a star, two triangles, the
+// trees of a component of the duals reached through a later tree), the
 // StaticGraph, costs of 32 bits and of extreme magnitude, the matching of
 // largest weight on the graph doubled, the contracts
 ADS_TEST( "perfect-matching" )
@@ -2114,6 +2115,23 @@ ADS_TEST( "perfect-matching" )
  CHECK(
    ! minCostPerfectMatching( 2 ,
 			     WE{ { 0 , 0 , 1 } , { 1 , 1 , 1 } } ).perfect );
+ // no perfect matching, the trees reaching in a change of the duals a tree
+ // that joins their component only through a tree found after them,
+ // without the greedy start
+ {
+  std::istringstream F(  // the edges ( u , v , c )
+    "0 9 2  0 19 0  0 26 2  1 23 0  2 12 1  3 8 0  3 10 1 "
+    "3 15 1  3 21 1  4 15 0  4 26 2  5 14 2  5 22 0  5 26 2 "
+    "6 16 2  6 17 2  7 8 1  7 14 0  8 16 1  8 25 2  9 10 1 "
+    "9 13 2  9 19 1  9 20 0  9 22 0  9 25 0  11 14 1  11 23 0 "
+    "12 26 2  13 24 0  14 29 1  15 28 1  16 26 0  17 24 1  18 25 0 "
+    "19 21 2  19 22 1  22 24 0  22 25 1  22 27 1  22 29 1 " );
+  WE E;
+  for( int u , v , c ; F >> u >> v >> c ; )
+   E.emplace_back( u , v , c );
+  CHECK( ! minCostPerfectMatching( 30 , E , plain ).perfect &&
+	 ! minCostPerfectMatching( 30 , E ).perfect );
+  }
  const auto Z = minCostPerfectMatching( 0 , WE{} );  // no node
  CHECK( Z.perfect && ( Z.cost == 0 ) && Z.edges.empty() && Z.parent.empty() );
 

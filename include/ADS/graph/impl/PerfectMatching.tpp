@@ -949,6 +949,9 @@ struct PerfectBlossoms
  std::vector< D > delta;            ///< the change of the duals of each tree
  std::vector< signed char > state;  ///< 0 untaken, 1 in the component, 2 done
  std::vector< int > comp;           ///< the trees of the component taken
+ /// the bounds ( pp , out ) of the edges to a tree o not yet taken, which
+ /// may still join the component
+ std::vector< std::tuple< D , D , int > > later;
 
  /// the least slack of the edges of the queue q, less the changes of the
  /// duals a and b of their ends, INF if none
@@ -994,19 +997,27 @@ struct PerfectBlossoms
       return( false );
       }
      const D out = least( X.pm[ k ] , et , -eo );
-     D e2 = 0;  // the change of o, 0 for a component after this one
-     if( state[ std::size_t( o ) ] == 2 )
-      e2 = delta[ std::size_t( o ) ];
+     if( state[ std::size_t( o ) ] == 2 ) {  // of a component taken before
+      const D e2 = delta[ std::size_t( o ) ];
+      d = std::min( { d , pp - e2 , e2 + out } );
+      }
      else if( ( out <= 0 ) || ( least( X.pm[ 1 - k ] , eo , -et ) <= 0 ) ) {
       state[ std::size_t( o ) ] = 1;  // o joins the component
       comp.push_back( o );
       d = std::min( { d , pp , delta[ std::size_t( o ) ] } );
-      return( false );
       }
-     d = std::min( { d , pp - e2 , e2 + out } );
+     else
+      later.emplace_back( pp , out , o );
      return( false );
      } );
     }
+   // the edges to the trees not taken, once the component is complete:
+   // within it if their tree joined it after them, else to a component
+   // after this one, whose change is 0 so far
+   for( const auto & [ pp , out , o ] : later )
+    d = state[ std::size_t( o ) ] == 1 ? std::min( d , pp / 2 )
+				       : std::min( { d , pp , out } );
+   later.clear();
    if( d >= INF / 2 )
     return( false );
    if( d < 0 )
