@@ -11,7 +11,7 @@
 #    Boost and on Highway, which are then the components GMP, BLAS, Boost     #
 #    and Highway of find_package(ADS COMPONENTS ...), and it finds again the  #
 #    threads, OpenMP, oneTBB and MPI when ADS was built with their executors; #
-#    the component LEMON, ADS::LEMON, when ADS was built with it and abLEMON  #
+#    the component LEMON, ADS::LEMON, when ADS was built with it and LEMON    #
 #    is found again (find_package(ADS COMPONENTS LEMON) requires it), and the #
 #    runtimes of the components ADS::StdPar, ADS::stdexec, ADS::Taskflow,     #
 #    ADS::Kokkos and ADS::BoostMPI [see ADSInterop.cmake].                    #
@@ -97,10 +97,14 @@ if (NOT TARGET ADS::ADS)
     include("${ADS_CMAKE_DIR}/ADSTargets.cmake")
 endif ()
 
-# the component LEMON, if ADS was built with it and abLEMON is found again
+# the component LEMON, if ADS was built with it and LEMON is found again
 set(ADS_LEMON_FOUND FALSE)
 if (@ADS_USE_LEMON@)
     set(ADS_LEMON_HINTS "@ADS_LEMON_HINTS@")
+    # LEMON 1.3 rewritten for C++20 here too, if it is the one found
+    set(ADS_LEMON_SHIM_SRC "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@")
+    string(APPEND ADS_LEMON_SHIM_SRC "/ADS/interop/lemon/shim")
+    set(ADS_LEMON_COMPAT_DIR ${CMAKE_BINARY_DIR}/ads-lemon-compat)
     include("${ADS_CMAKE_DIR}/ADSLemon.cmake")
     if (ADS_LEMON_FOUND AND NOT TARGET ADS::LEMON)
         include("${ADS_CMAKE_DIR}/ADSLemonTargets.cmake")
@@ -108,11 +112,8 @@ if (@ADS_USE_LEMON@)
         # include path
         include("${ADS_CMAKE_DIR}/ADSLemonShim.cmake")
         set(ADS_LEMON_SHIM_DIR ${CMAKE_BINARY_DIR}/ads-lemon-shim)
-        set(_ads_src "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@")
         ads_lemon_shim(${ADS_LEMON_SHIM_DIR} ${LEMON_INCLUDE_DIR}
-                       "${_ads_src}/ADS/interop/lemon/shim"
-                       ADS_LEMON_SHIM_FOUND)
-        unset(_ads_src)
+                       "${ADS_LEMON_SHIM_SRC}" ADS_LEMON_SHIM_FOUND)
         if (ADS_LEMON_SHIM_FOUND)
             get_target_property(_ads_inc ADS::LEMON
                                 INTERFACE_INCLUDE_DIRECTORIES)

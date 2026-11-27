@@ -1306,6 +1306,10 @@
  `ADS::LEMON` of CMake): a program written on abLEMON takes a structure of ADS
  by the named template parameters of its algorithms, with no other change,
  and a program written on ADS runs the algorithms of abLEMON on its graphs.
+ LEMON 1.3 serves too, on private copies of the headers whose maps call
+ members of `std::allocator` that C++20 removed, rewritten by the rules of
+ `shim/compat.txt` and put before it on the include path, but without
+ `MinCostAssignment` and without the warm starts below.
  The algorithms of abLEMON take their heap by their traits, with the concept
  `lemon::concepts::Heap`, whose protocol has a part that is not in the
  signatures: the cross-reference map from the items to `int` belongs to the

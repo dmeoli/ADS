@@ -354,16 +354,17 @@ the code of ADS for one structure; `FlatHashTable` keeps its items in a
 ## C.4 abLEMON {#sec-C-4}
 
 We compile the headers of `ADS/interop/lemon/`, which join ADS to abLEMON
-([abLEMON](Z-bibliography.md#ref-ablemon)), the maintained C++20 fork of
-LEMON ([Dezső, Jüttner and Kovács 2011](Z-bibliography.md#ref-dezso2011)),
-with `ADS_WITH_LEMON`,
-which the target `ADS::LEMON` of CMake defines (the component `LEMON` of
-`find_package(ADS COMPONENTS LEMON)`). The option is `AUTO`, i.e., it is on
-where abLEMON, or another LEMON whose headers compile in C++20, is found
-(`LEMON_ROOT` where it is not), and the makefile puts the flags of abLEMON in
-`$(ADSLEMONINC)` (`LEMON=<prefix>`). Unlike the backends of
-[§C.2](C-libraries.md#sec-C-2), abLEMON is never included by `ADS::ADS`, and
-thus a program that does not link `ADS::LEMON` compiles none of it. A
+([abLEMON](Z-bibliography.md#ref-ablemon)), the maintained C++20 fork of LEMON
+([Dezső, Jüttner and Kovács 2011](Z-bibliography.md#ref-dezso2011)), with
+`ADS_WITH_LEMON`, which the target `ADS::LEMON` of CMake defines (the component
+`LEMON` of `find_package(ADS COMPONENTS LEMON)`). The option is `AUTO`, i.e.,
+it is on where abLEMON, or another LEMON whose headers compile in C++20, is
+found (`LEMON_ROOT` where it is not), and also where LEMON 1.3 is found, on the
+copies of its headers rewritten for C++20 that [§14.14](14-graph.md#sec-14-14)
+describes together with what LEMON 1.3 lacks; the makefile puts the flags of
+LEMON in `$(ADSLEMONINC)` (`LEMON=<prefix>`). Unlike the backends of
+[§C.2](C-libraries.md#sec-C-2), LEMON is never included by `ADS::ADS`, and thus
+a program that does not link `ADS::LEMON` compiles none of it. A
 program written on abLEMON takes a heap of ADS by the named template
 parameters of an algorithm, i.e., by one type. In the first example the
 `Dijkstra` of abLEMON runs on the `DaryHeap` of `Heaps.h`, and the shortest

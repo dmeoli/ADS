@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `ADS::LEMON` and `$(ADSLEMONINC)` also build against LEMON 1.3, whose
+  maps call members of `std::allocator` that C++20 removed: where the
+  check of the configuration does not compile, CMake, the makefile and an
+  installed `ADSConfig.cmake` write private copies of the headers named by
+  the rules of `include/ADS/interop/lemon/shim/compat.txt`, whose calls go
+  through `std::allocator_traits`, before LEMON on the include path (and
+  install them for `ads-lemon.pc`), and the job `lemon13` of the CI tests
+  the interoperation on LEMON 1.3.1; abLEMON stays the one recommended,
+  since with LEMON 1.3 the assignment from scratch stays with ADS (there is
+  no `MinCostAssignment`), there is no warm start, whose rules are written
+  on the lines of abLEMON, and an arc whose insertion an observer refused
+  is left in the graph
 - `TinyRankSelect` (`BasicTinyRankSelect< L0 >`, with blocks of `L0` =
   512, 1024 or 2048 bits), the rank and select of 3* of Kurpicz,
   Rigi-Luperti and Sanders: an entry of 512 bits per superblock of 32

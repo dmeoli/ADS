@@ -1395,13 +1395,16 @@ place on a contiguous one (and, those of the book, on any). With
 `mpz_class` and `mpq_class` pass the numbers to and from GMP. The tests are
 in [`test/engineered_interop.cpp`](test/engineered_interop.cpp).
 
-With [abLEMON](https://github.com/dmeoli/abLEMON), the maintained C++20 fork
-of [LEMON](https://lemon.cs.elte.hu) (or any LEMON whose headers compile in
-C++20, which LEMON 1.3 does not), the headers
-of `include/ADS/interop/lemon` let a program written on abLEMON take a
-structure of ADS where it may do better, by the named template parameters of
-the algorithms of abLEMON. Conversely, they let the algorithms of ADS run on
-the graphs of abLEMON. They give the heaps of ADS as heaps of abLEMON (e.g.,
+With [abLEMON](https://github.com/dmeoli/abLEMON), the maintained C++20 fork of
+[LEMON](https://lemon.cs.elte.hu) and the one we recommend (any LEMON whose
+headers compile in C++20 also serves, and so does LEMON 1.3, on private copies
+of its headers rewritten by the rules of
+`include/ADS/interop/lemon/shim/compat.txt` so that its maps compile in C++20,
+without `MinCostAssignment` and without the warm starts below), the headers of
+`include/ADS/interop/lemon` let a program written on abLEMON take a structure
+of ADS where it may do better, by the named template parameters of the
+algorithms of abLEMON. Conversely, they let the algorithms of ADS run on the
+graphs of abLEMON. They give the heaps of ADS as heaps of abLEMON (e.g.,
 `Dijkstra< GR , LM >::SetStandardHeap< ADS::lemon_interop::DaryHeap< int ,
 GR::NodeMap< int > > >`), the arrays of ADS as maps of abLEMON, a
 `StaticGraph` as a digraph of abLEMON and a digraph of abLEMON as a GRAPH of
@@ -1421,9 +1424,10 @@ included by `ADS::ADS` and `$(ADSINC)`, so that a program that does not
 request it compiles none of it, and its headers are left out of the module
 `ads`.
 
-With abLEMON, ADS also writes the warm starts that abLEMON lacks into private
-copies of six of its headers (`network_simplex.h`, `cost_scaling.h`,
-`cycle_canceling.h`, `capacity_scaling.h`, `bits/mcf_feasible_flow.h` and
+With abLEMON (not with LEMON 1.3, whose lines are not those of the rules), ADS
+also writes the warm starts that abLEMON lacks into private copies of six of
+its headers (`network_simplex.h`, `cost_scaling.h`, `cycle_canceling.h`,
+`capacity_scaling.h`, `bits/mcf_feasible_flow.h` and
 `preflow.h`). The warm starts are `runWarm()` of the four minimum cost flows
 from the last basis or flow, the setters of one arc or node in constant time
 (`warmCost()`, `warmUpper()`, `warmSupply()`), and `Preflow::initWarm()`

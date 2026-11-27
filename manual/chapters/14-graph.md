@@ -5040,10 +5040,22 @@ of abLEMON on its graphs. Both are served by the headers of
 `ADS/interop/lemon` (beyond the book), and they are optional, since a
 program includes them with abLEMON and with `ADS_WITH_LEMON` defined, as the
 target `ADS::LEMON` of CMake does. `ADS::ADS` never includes abLEMON, and thus
-a program that does not need it compiles none of it. What follows holds as
-well for any LEMON whose headers compile in C++20; LEMON 1.3 does not, since
-its maps call members of `std::allocator` that C++20 removed, and the
-configuration then leaves the option off.
+a program that does not need it compiles none of it. What follows holds as well
+for any LEMON whose headers compile in C++20, and for LEMON 1.3, whose maps
+call `construct()` and `destroy()` of `std::allocator`, which C++20 removed:
+where a program with such a map does not compile, CMake and the makefile write
+private copies of the headers that call them, rewritten by the rules of
+`shim/compat.txt` (with the mechanism of the warm starts of
+[§14.14.4](14-graph.md#sec-14-14-4)) so that the calls go through
+`std::allocator_traits`, and put them before LEMON on the include path of
+`ADS::LEMON` and of `$(ADSLEMONINC)`. We recommend abLEMON all the same, since
+LEMON 1.3 lacks three things that ADS then does without, i.e., (i)
+`MinCostAssignment`, so that the assignment from scratch stays with ADS
+([§14.14.3](14-graph.md#sec-14-14-3)), (ii) the lines on which the rules of the
+warm starts are written, so that it has none
+([§14.14.4](14-graph.md#sec-14-14-4)), and (iii) the removal of an arc whose
+insertion an observer refused, which it leaves in the graph
+([§14.14.2](14-graph.md#sec-14-14-2)).
 The other libraries of graphs that run on the graphs of ADS (the
 partitioners METIS and KaHIP, SuiteSparse:GraphBLAS and the dynamic
 algorithms of NetworKit) have adapters of the same kind, beyond the book,
@@ -5189,7 +5201,8 @@ abLEMON, and `what` either inserts a block of the shim before it, or appends a
 text to it, or replaces it. The anchor must occur exactly once, and
 otherwise the rewrite stops and names the line, rather than go on with a
 header rewritten in part; CMake then leaves the warm start off when
-`ADS_WITH_LEMON` is `AUTO`. The rules give `runWarm()` to the four minimum
+`ADS_WITH_LEMON` is `AUTO`, or LEMON 1.3 is found, whose lines are not
+those of the rules. The rules give `runWarm()` to the four minimum
 cost flows. `NetworkSimplex` goes on from the basis of the last run, whose
 tree flow is computed again and repaired after a change of the bounds or of
 the supplies, while `CostScaling` and `CycleCanceling` start from the flow

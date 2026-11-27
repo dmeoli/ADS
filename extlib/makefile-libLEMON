@@ -21,6 +21,9 @@
 #                              in C++20 with them (abLEMON does, LEMON 1.3    #
 #                              does not), empty otherwise (evaluated once,    #
 #                              when first used)                               #
+#           $(libLEMONcheck) = the same with the flags $(1), which            #
+#                              lib/makefile-c calls on the headers of LEMON   #
+#                              1.3 rewritten for C++20                        #
 #                                                                             #
 ###############################################################################
 
@@ -36,15 +39,18 @@ libLEMONINC = $(if $(libLEMONBSCDIR),-I"$(libLEMONBSCDIR)/include") \
 libLEMONLIB =
 
 # a program with a map of arcs, a map of nodes to arcs and Dijkstra's
-# algorithm, compiled once in C++20
-libLEMONFOUND = $(eval libLEMONFOUND := $$(shell printf '$$(ADShash)include \
-	<lemon/dijkstra.h>\n$$(ADShash)include <lemon/list_graph.h>\n\
+# algorithm, compiled in C++20 with the flags $(1): 1 if it compiles
+libLEMONcheck = $(shell printf '$(ADShash)include <lemon/dijkstra.h>\n\
+	$(ADShash)include <lemon/list_graph.h>\n\
 	int main(){lemon::ListDigraph g;lemon::ListDigraph::ArcMap<int> l(g);\
 	lemon::ListDigraph::NodeMap<lemon::ListDigraph::Arc> p(g);\
 	lemon::ListDigraph::Node s=g.addNode();l[g.addArc(s,g.addNode())]=1;\
 	lemon::Dijkstra<lemon::ListDigraph> d(g,l);d.run(s);\
 	return d.reached(s)?0:1;}\n' | \
-	$$(CXX) -std=c++20 -x c++ -fsyntax-only - $$(libLEMONINC) \
-	2>/dev/null && echo 1))$(libLEMONFOUND)
+	$(CXX) -std=c++20 -x c++ -fsyntax-only - $(1) 2>/dev/null && echo 1)
+
+# the same with $(libLEMONINC), once
+libLEMONFOUND = $(eval libLEMONFOUND := $$(call libLEMONcheck,\
+	$$(libLEMONINC)))$(libLEMONFOUND)
 
 ########################## End of makefile-libLEMON ###########################
