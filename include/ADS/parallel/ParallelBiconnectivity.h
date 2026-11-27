@@ -122,18 +122,18 @@ namespace ADS
 ///     F ) \cr
 /// 4 & \quad \textbf{foreach}\ v \in V\ \textbf{do in parallel}\ \ell[
 ///     \mathit{pre}( v ) ] \gets \min \{ \mathit{pre}( w ) : w \in \{ v \}
-///     \cup G.\mathrm{adj}( v ) \};\ h[ \mathit{pre}( v ) ] \gets \max \{
-///     \ldots \} \cr
+///     \cup G.\mathrm{adj}( v ) \}; \cr
+///   & \qquad h[ \mathit{pre}( v ) ] \gets \max \{ \ldots \} \cr
 /// 5 & \quad \textbf{foreach}\ v \in V\ \textbf{with}\ p( v ) \ne
 ///     \textbf{nil}\ \textbf{do in parallel} \cr
 /// 6 & \qquad \mathit{fence}( v ) \gets \min \ell[ \mathit{pre}( v ) ..
-///     \mathit{last}( v ) ] \ge \mathit{pre}( p( v ) )\ \textbf{and}\ \max
-///     h[ \mathit{pre}( v ) .. \mathit{last}( v ) ] \le \mathit{last}( p( v
-///     ) ) \cr
+///     \mathit{last}( v ) ] \ge \mathit{pre}( p( v ) ) \cr
+///   & \qquad\quad \textbf{and}\ \max h[ \mathit{pre}( v ) .. \mathit{last}(
+///     v ) ] \le \mathit{last}( p( v ) ) \cr
 /// 7 & \quad S \gets \text{the edges } [ p( v ) , v ] \text{ of } F
-///     \text{ with } \textbf{not}\ \mathit{fence}( v ) , \text{and those }
-///     [ u , w ] \text{ of } G \text{ with neither an ancestor of the other}
-///     \cr
+///     \text{ with } \textbf{not}\ \mathit{fence}( v ) , \cr
+///   & \qquad \text{and those } [ u , w ] \text{ of } G \text{ with neither}
+///     \text{ an ancestor of the other} \cr
 /// 8 & \quad C \gets \text{the least node of the component of each node in }
 ///     S \text{, by Afforest} \cr
 /// 9 & \quad \textbf{foreach}\ v\ \textbf{with}\ p( v ) \ne \textbf{nil}

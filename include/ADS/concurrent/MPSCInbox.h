@@ -137,8 +137,9 @@ class MPSCInbox
  /// 3 & \quad L \gets \text{the values of the cells from } c \text{, newest}
  ///     \text{ first} \cr
  /// 4 & \quad \text{add to the count of each block the cells taken from}
- ///     \text{ it};\ \text{give back to its owner a block whose count}
- ///     \text{ is } 64 \cr
+ ///     \text{ it}; \cr
+ ///   & \qquad \text{give back to its owner a block whose count is } 64
+ ///     \cr
  /// 5 & \quad \textbf{return}\ L \text{ reversed}
  /// \end{array}}
  /// \f]

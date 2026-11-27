@@ -188,7 +188,7 @@ the ordered and of the binary trees, and the cost of their operations
 §5.5](Z-bibliography.md#ref-montresor2025)).
 
 | Realization | Representation | Parent | First child, next sibling | Insert a child | Space |
-|----|---|---|---|---|---|
+|----|----|---|---|---|---|
 | `Tree` | pointers to the parent, the first child and the next sibling | $O( 1 )$ | $O( 1 )$ | $O( 1 )$ | $\Theta( n )$ |
 | `CursorTree` | the same links as indices in a vector, with a free list | $O( 1 )$ | $O( 1 )$ | $O( 1 )$ amortized | $\Theta( n )$ |
 | `ChildListTree` | a list of the children per node, each node with its cell | $O( 1 )$ | $O( 1 )$ | $O( 1 )$ amortized | $\Theta( n )$ |
@@ -7204,7 +7204,7 @@ the dictionary; $n$ is the number of keys, $h$ the height, $t$ the minimum
 degree of a B-tree, $r$ the distance in rank from a finger.
 
 | Tree | Section | Invariant | Height | Search, update | Beyond the dictionary |
-|------|---|---|---|---|---|
+|------|---|---|----|---|----|
 | `BinarySearchTree` | [8.5](08-tree.md#sec-8-5) | none | $n - 1$ at worst | $O( h )$ | none (`NotJoinable`) |
 | `RedBlackTree` | [8.5](08-tree.md#sec-8-5) | colors (V1)-(V4) | $\le 2 \log_2( n + 1 )$ | $O( \log n )$ | the operations by join of [§8.12](08-tree.md#sec-8-12) |
 | `MeasuredSearchTree` | [8.5](08-tree.md#sec-8-5) | none; size, depth, height kept | $n - 1$ at worst | $O( h )$ | the three measures of each node |
