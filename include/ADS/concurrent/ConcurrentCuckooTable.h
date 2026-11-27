@@ -284,17 +284,19 @@ class ConcurrentCuckooTable
  ///     \text{the first bucket of } h \text{ in } T;\ \text{fetch its lines}
  ///     \cr
  /// 6 & \qquad\quad \textbf{if}\ t \text{ is not among the tags of } b_1
- ///     \text{, its bit of overflow for } t \text{ is clear and } T
- ///     \text{ is still in use}\ \textbf{then return nil} \cr
+ ///     \text{, its bit of overflow for } t \text{ is clear} \cr
+ ///   & \qquad\qquad \text{and } T \text{ is still in use}
+ ///     \ \textbf{then return nil} \cr
  /// 7 & \qquad\quad v \gets v_R\quad \triangleright\ \text{acquire, } R
  ///     \text{ the region of } b_1 \cr
  /// 8 & \qquad\quad \textbf{if}\ v \text{ is odd}\ \textbf{or}\ T
  ///     \text{ is no longer in use}\ \textbf{then}\ \text{a pause};
  ///     \ \textbf{continue} \cr
  /// 9 & \qquad\quad x \gets \text{the value of the place of } b_1
- ///     \text{, or of } b_2 \text{ or of the stash if that bit is set, with}
- ///     \text{ the tag } t \text{ and the key } k \text{, or}\textbf{ nil}
- ///     \quad \triangleright\ \text{acquire} \cr
+ ///     \text{, or of } b_2 \text{ or of the stash if that bit is set,}
+ ///     \cr
+ ///   & \qquad\qquad \text{with the tag } t \text{ and the key } k
+ ///     \text{, or}\textbf{ nil}\quad \triangleright\ \text{acquire} \cr
  /// 10 & \qquad\quad \textbf{if}\ v_R = v\ \textbf{then return}\ x \cr
  /// 11 & \quad \text{lock the region of } h \text{ in the table in use} \cr
  /// 12 & \quad \textbf{return}\ \text{the value of } k \text{ in } b_1 , b_2
@@ -345,8 +347,9 @@ class ConcurrentCuckooTable
  /// 17 & \qquad\quad \textbf{foreach}\ \text{bucket } c \ne b_1 , b_2
  ///     \text{ on the path to } b \text{, from } b\ \textbf{do} \cr
  /// 18 & \qquad\qquad \text{move into } c \text{ the key of its parent that}
- ///     \text{ led to it, setting the bit of overflow of the parent for}
- ///     \text{ its tag} \cr
+ ///     \text{ led to it,} \cr
+ ///   & \qquad\qquad\quad \text{setting the bit of overflow of the parent}
+ ///     \text{ for its tag} \cr
  /// 19 & \qquad\quad \textbf{return}\ \text{the place freed in } b_1
  ///     \text{ or } b_2 \cr
  /// 20 & \qquad \textbf{if}\ \text{the depth of } b < 5\ \textbf{then} \cr
@@ -366,21 +369,23 @@ class ConcurrentCuckooTable
  ///     \ \textbf{then}\quad \triangleright\ \text{too many equal hashes}
  ///     \cr
  /// 29 & \qquad \textbf{if}\ k \text{ is not in } T \text{ nor in the}
- ///     \text{ stash, and finds no place in } T \textbf{ then} \text{ set}
- ///     \text{ its bit of overflow in } b_1 \cr
+ ///     \text{ stash, and finds no place in } T \textbf{ then} \cr
+ ///   & \qquad\quad \text{set its bit of overflow in } b_1 \cr
  /// 30 & \qquad\quad \text{put } ( k , v ) \text{ in the stash, under its}
  ///     \text{ mutex} \cr
  /// 31 & \qquad \textbf{else if}\ k \text{ is not there}\ \textbf{then}
  ///     \ \text{put } ( k , v ) \text{ in its place} \cr
  /// 32 & \qquad \text{unlock all};\ \textbf{return true} \cr
  /// 33 & \quad T' \gets \text{a table of } 2 B \text{ buckets; place each}
- ///     \text{ pair of } T \text{ in } T' \text{, with the threads that}
- ///     \text{ wait for a lock, each on its parts of } T \cr
+ ///     \text{ pair of } T \text{ in } T' \text{,} \cr
+ ///   & \qquad \text{with the threads that wait for a lock, each on its}
+ ///     \text{ parts of } T \cr
  /// 34 & \quad \text{place the pairs of the stash in } T' \text{; those}
- ///     \text{ that find no place, there and in the parts, go to the new}
- ///     \text{ stash} \cr
+ ///     \text{ that find no place, there and in the parts,} \cr
+ ///   & \qquad \text{go to the new stash} \cr
  /// 35 & \quad \text{lock the new stripes too};\ \text{count the pairs of}
- ///     \text{ each region};\ \text{make } T' \text{ the table in use}\quad
+ ///     \text{ each region}; \cr
+ ///   & \qquad \text{make } T' \text{ the table in use}\quad
  ///     \triangleright\ \text{release} \cr
  /// 36 & \quad \text{unlock all};\ \textbf{return false}
  /// \end{array}}

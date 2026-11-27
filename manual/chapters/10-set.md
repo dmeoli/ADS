@@ -72,7 +72,7 @@ and the cost of their operations; $c$ is the number of the containers of a
 Roaring bitmap.
 
 | Realization | Space | `contains`, `insert`, `remove` | `forEach` | Two sets |
-|---|---|---|---|---|
+|-----|---|---|---|---|
 | `BoolSet` | $\Theta( N )$ bits | $O( 1 )$ | $O( N )$ | $\Theta( N )$ |
 | `ListSet` | $\Theta( n )$ | $O( n )$ | $O( n )$ | $O( n m )$ |
 | `SortedListSet` | $\Theta( n )$ | $O( n )$ | $O( n )$ | $O( n + m )$ |

@@ -355,6 +355,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (e.g., `--cxx "g++ -m32"`), as the makefile passes `$(CXX)`
 - `VectorQuickSort.h` includes `Simd.h` before the sort of Highway, so that
   the dispatch of the kernels comes before `hwy/highway.h` in every unit
+- the site of the manual sets its text at 16 px in a column as wide as the
+  line of the PDF, with two buttons that scale the whole page, and the
+  code within the prose breaks, there and in the PDF, only between the
+  parts of a name; the tables and the displays that no longer fit are
+  split or given wider columns, the pseudocode of
+  `ConcurrentCuckooTable` included
 
 ### Fixed
 
