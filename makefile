@@ -314,7 +314,7 @@ backends:
 	@echo "ADS: hwloc $(if $(filter 1,$(ADSHWLOCON)),ON,OFF)"
 	@echo "ADS: Highway $(if $(filter 1,$(ADSHWYON)),ON,OFF)"
 	@echo "ADS: LEMON $(if $(filter 1,$(ADSLEMONON)),ON,OFF)"
-	@$(if $(ADSLEMONCOMPAT),echo "ADS: LEMON 1.3, rewritten for C++20",:)
+	@$(if $(ADSLEMONCOMPAT),echo "ADS: LEMON 1.3 rewritten for C++20",:)
 	@echo "ADS: MPI $(if $(filter 1,$(ADSMPION)),ON,OFF)"
 	@echo "ADS: StdPar $(if $(filter 1,$(ADSSTDPARON)),ON,OFF)," \
 	      "stdexec $(if $(filter 1,$(ADSSTDEXECON)),ON,OFF)," \
