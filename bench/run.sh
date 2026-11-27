@@ -34,7 +34,8 @@
 #                           [MULTIQUEUE=<dir>] [KLSM=<dir>] [GROWT=<dir>]     #
 #                           [SPRAYLIST=<lib> GSL=<prefix>] (with KLSM=<dir>)  #
 #                           [GAPBS=<dir>] [EIGEN=<dir>] [OPENBLAS=<prefix>]   #
-#                           [LEMON=1] (flows and assignment)                  #
+#                           [LEMON=<prefix>] (flows, assignment, graphs:      #
+#                           found by default, as for the tests)               #
 #                           [BLOSSOM5=<dir>] (graphs)                         #
 ###############################################################################
 

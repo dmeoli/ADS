@@ -96,9 +96,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `engineered_graph.perfect-matching`,
   `engineered_lemon.lemon-perfect-matching` and
   `engineered_search.intrusive-pairing-heap`, the cells `pmatching` of
-  `bench/graphs.cpp` against LEMON, Boost and, with `BLOSSOM5=<dir>` (or
-  `BLOSSOM5_DIR`), the code of Kolmogorov built for the comparison, and
-  section 14.11.4 of the manual (Algorithm 14.21, Lemmas 14.53 to 14.56)
+  `bench/graphs.cpp` against LEMON, Boost (ended after the seconds of
+  `ADS_BENCH_TIMEOUT`, as in the cells `wmatching`) and, with
+  `BLOSSOM5=<dir>` (or `BLOSSOM5_DIR`), the code of Kolmogorov built for the
+  comparison, and section 14.11.4 of the manual (Algorithm 14.21, Lemmas
+  14.53 to 14.56)
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits
@@ -182,6 +184,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the makefile builds the benchmarks of the flows, of the assignment and
+  of the graphs on the LEMON of the tests wherever it finds it (abLEMON by
+  its headers alone, `LEMON=<prefix>` to point to it), as CMake does, where
+  `LEMON=1` linked a `liblemon` that abLEMON does not install
 - the makefiles link the shared libraries of Highway and of libomp with
   the run-time path of their directory, as those of GMP, BLAS, hwloc and
   oneTBB already were, so that no library path is needed to run the

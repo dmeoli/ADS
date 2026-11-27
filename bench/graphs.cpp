@@ -58,22 +58,26 @@
  *   Graph Library has no Eulerian trail);
  * - matching, maxCardinalityMatching(), the blossoms of Edmonds, on the
  *   unoriented graphs (G( n , 4 n ), grids, R-MAT), against
- *   MaxMatching of LEMON (with LEMON=1 or ADS_WITH_LEMON) on a SmartGraph
+ *   MaxMatching of LEMON (ADS_WITH_LEMON, found by default) on a SmartGraph
  *   and edmonds_maximum_cardinality_matching() of the Boost Graph Library
  *   on its adjacency_list;
  * - wmatching, maxWeightMatching(), the primal-dual blossoms, on G( n , 4 n )
  *   unoriented with n / 50 nodes and costs in [ 1 , 10^5 ], against
  *   MaxWeightedMatching of LEMON and maximum_weighted_matching() of the
- *   Boost Graph Library;
+ *   Boost Graph Library (within the seconds of ADS_BENCH_TIMEOUT, as in
+ *   pmatching);
  * - pmatching, minCostPerfectMatching(), the blossoms of Blossom V with
  *   a tree per free node, on n / 10 nodes: G( n , 4 n ) with a random
  *   perfect matching added, the 6 nearest neighbors of random points and
  *   the grid of an even side, against MaxWeightedPerfectMatching of LEMON
  *   (the costs negated), maximum_weighted_matching() of the Boost Graph
  *   Library (up to 2000 nodes, the weights a large constant minus the
- *   costs) and the Blossom V of Kolmogorov, with its fractional start and
- *   with the greedy one, when BLOSSOM5=<dir> gives its sources (under its
- *   licence for research, built for the comparison only);
+ *   costs, the process ended if it takes more than the seconds of
+ *   ADS_BENCH_TIMEOUT, 300 by default, since before its version 1.87 it
+ *   loops on some graphs) and the Blossom V of Kolmogorov, with its
+ *   fractional start and with the greedy one, when BLOSSOM5=<dir> gives its
+ *   sources (under its licence for research, built for the comparison
+ *   only);
  * - union-find, n random merges and n finds on each MFSET;
  * - grid-bfs and grid-dijkstra, distance() and shortestPaths() on an
  *   IndexedDaryHeap of arity 4 on a square map of about n cells, a fifth
@@ -175,6 +179,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <functional>
+#include <future>
 #include <initializer_list>
 #include <iterator>
 #include <map>
@@ -810,6 +815,30 @@ struct Cell
   }
  };
 
+/// the result of f(), unless f takes more than the seconds of
+/// ADS_BENCH_TIMEOUT (300 by default): then the process ends with a line on
+/// stderr, and the cells of who that it has not printed are missing; for
+/// the codes that may not end (the weighted matching of Boost before its
+/// version 1.87 loops on some graphs), each in a process of its own under
+/// bench/run.sh
+template< class F >
+long long bounded( const char * who , F && f )
+{
+ static const double limit = []() {
+  const char * s = std::getenv( "ADS_BENCH_TIMEOUT" );
+  return( s && *s ? std::atof( s ) : 300.0 );
+  }();
+ auto r = std::async( std::launch::async , std::forward< F >( f ) );
+ if( r.wait_for( std::chrono::duration< double >( limit ) ) ==
+     std::future_status::timeout ) {
+  std::fprintf( stderr , "TIMEOUT %s after %g s\n" , who , limit );
+  std::fflush( stdout );
+  std::fflush( stderr );
+  std::_Exit( 0 );  // the thread of f cannot be stopped
+  }
+ return( r.get() );
+ }
+
 Counts counts( const ADS::FrontierCounts & k )
 {
  return( Counts{ { "adds" , k.adds } ,
@@ -1352,17 +1381,19 @@ void wmatching( int n , int r , unsigned seed )
   for( const auto & [ u , v , w ] : L )
    boost::add_edge( std::size_t( u ) , std::size_t( v ) , w , G );
   C( "Boost adjacency_list" , [ & ]( Counts & k ) {
-   std::vector< boost::graph_traits< BG >::vertex_descriptor > mate(
-     static_cast< std::size_t >( n ) );
-   boost::maximum_weighted_matching( G , mate.data() );
-   long long s = 0 , e = 0;
-   for( const auto & [ u , v , w ] : L )
-    if( mate[ std::size_t( u ) ] == std::size_t( v ) ) {
-     s += w;
-     ++e;
-     }
-   k = { { "edges" , e } };
-   return( s );
+   return( bounded( "Boost adjacency_list" , [ & ]() {
+    std::vector< boost::graph_traits< BG >::vertex_descriptor > mate(
+      static_cast< std::size_t >( n ) );
+    boost::maximum_weighted_matching( G , mate.data() );
+    long long s = 0 , e = 0;
+    for( const auto & [ u , v , w ] : L )
+     if( mate[ std::size_t( u ) ] == std::size_t( v ) ) {
+      s += w;
+      ++e;
+      }
+    k = { { "edges" , e } };
+    return( s );
+    } ) );
    } );
   }
 #endif
@@ -1436,7 +1467,8 @@ void pmatching( const std::string & c , int n0 , int r , unsigned seed )
 #ifdef ADS_HAS_BOOST
  // up to 2000 nodes, on which it takes some seconds, the weights a large
  // constant minus the costs, so that a matching of largest weight has the
- // largest size, the parallel edges but the lightest left out
+ // largest size, the parallel edges but the lightest left out; bounded in
+ // time, as it may not end
  if( ( n <= 2000 ) && measured( { "Boost adjacency_list" } ) ) {
   using BG = boost::adjacency_list<
     boost::vecS , boost::vecS , boost::undirectedS , boost::no_property ,
@@ -1455,16 +1487,18 @@ void pmatching( const std::string & c , int n0 , int r , unsigned seed )
 		    big - w ,
 		    G );
   C( "Boost adjacency_list" , [ & ]( Counts & ) {
-   std::vector< boost::graph_traits< BG >::vertex_descriptor > mate(
-     static_cast< std::size_t >( n ) );
-   boost::maximum_weighted_matching( G , mate.data() );
-   long long s = 0 , e = 0;
-   for( const auto & [ k , w ] : P )
-    if( mate[ std::size_t( k.first ) ] == std::size_t( k.second ) ) {
-     s += w;
-     ++e;
-     }
-   return( 2 * e == n ? s : -1LL );
+   return( bounded( "Boost adjacency_list" , [ & ]() {
+    std::vector< boost::graph_traits< BG >::vertex_descriptor > mate(
+      static_cast< std::size_t >( n ) );
+    boost::maximum_weighted_matching( G , mate.data() );
+    long long s = 0 , e = 0;
+    for( const auto & [ k , w ] : P )
+     if( mate[ std::size_t( k.first ) ] == std::size_t( k.second ) ) {
+      s += w;
+      ++e;
+      }
+    return( 2 * e == n ? s : -1LL );
+    } ) );
    } );
   }
 #endif

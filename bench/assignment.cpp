@@ -5,7 +5,7 @@
  * The benchmark of the assignment problem of Assignment.h, from scratch
  * and after the change of a row, against the MinCostAssignment of abLEMON
  * (the shortest augmenting paths with potentials, the first competitor,
- * with LEMON=1 or ADS_WITH_LEMON), the minimum cost flows of LEMON
+ * with ADS_WITH_LEMON, found by default), the minimum cost flows of LEMON
  * (NetworkSimplex; the CostScaling of LEMON 1.3 does not build in C++20,
  * its StaticDigraph using the members of std::allocator removed by it) on
  * the bipartite network of the assignment, and the weighted matching of the

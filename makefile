@@ -698,13 +698,13 @@ $(BUILD)/bench-greedy: bench/greedy.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	       $(if $(PARLAY),-isystem $(PARLAY)/include -isystem $(PARLAY)) \
 	       -pthread
 
-# the maximum flows, the assignment and the matchings: LEMON=1 (or
-# LEMON=<prefix>) the Preflow, the MinCostAssignment (abLEMON), the minimum
-# cost flows and the matchings of LEMON, the first competitors; the
-# push-relabel and the weighted matching of Boost when their headers are
-# found
-LEMONFLAGS = $(if $(LEMON),-DADS_HAS_LEMON $(if $(filter-out 1,$(LEMON)),\
-             -I$(LEMON)/include -L$(LEMON)/lib) -llemon)
+# the maximum flows, the assignment and the matchings: the Preflow, the
+# MinCostAssignment (abLEMON), the minimum cost flows and the matchings of
+# LEMON, the first competitors, wherever the LEMON of the tests is found
+# (ADS_WITH_LEMON, LEMON=<prefix>), by its headers alone, as the tests use
+# it; the push-relabel and the weighted matching of Boost when their
+# headers are found
+LEMONFLAGS = $(if $(filter 1,$(ADSLEMONON)),-DADS_HAS_LEMON $(ADSLEMONINC))
 $(BUILD)/bench-flows: bench/flows.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(LEMONFLAGS)
 
@@ -724,7 +724,8 @@ $(BUILD)/blossom5/%.o: $(BLOSSOM5)/%.cpp
 $(BUILD)/bench-graphs: bench/graphs.cpp bench/Bench.h $(HEADERS) \
                        $(BLOSSOM5OBJ) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $< $(BENCHLIBS) $(LEMONFLAGS) \
-	       $(if $(BLOSSOM5),-DADS_HAS_BLOSSOM5 -I$(BLOSSOM5) $(BLOSSOM5OBJ))
+	       $(if $(BLOSSOM5),-DADS_HAS_BLOSSOM5 -I$(BLOSSOM5) $(BLOSSOM5OBJ)) \
+	       -pthread
 
 # the sort and the mailbox over the processes of MPI, by mpicxx (not among
 # BENCHES): make $(BUILD)/bench-mpi, then mpirun -np P $(BUILD)/bench-mpi
