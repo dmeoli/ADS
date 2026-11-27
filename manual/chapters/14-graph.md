@@ -3967,39 +3967,38 @@ paths to the roots, and then the two trees dissolve while the others go on.
 The augmentation rematches, within each blossom on the paths, the pairs of
 the cycle of its children, so that the new matched edge enters at the base,
 at each level of the nesting (cf. [§14.11.2](14-graph.md#sec-14-11-2)).
-Each end of an edge sits in the list of the largest node that holds it and
-not the other end, i.e., of the outermost blossom when the edge joins two of
-them; a node thus reaches the edges that leave it and none of those within
-it. A shrink gives to the new blossom the list of its outer child with the
-most ends, and it reads only the lists of the other children, from which it
-moves to the blossom the ends of the edges that leave it, while the edges
-between them and that child go back to the list of the child. Otherwise a
-blossom grown by many shrinks, as happens on some random graphs, would read
-all the edges that leave it at each of them. An expansion gives back to each
-child the edges that leave the blossom through it, the child of an end
-being found by going up the nesting from its vertex, once per node.
+Each end of an edge sits in the list of the largest node that holds it and not
+the other end, i.e., of the outermost blossom when the edge joins two of them;
+a node thus reaches the edges that leave it and none of those within it. A
+shrink gives to the new blossom the list of its outer child with the most ends,
+and it reads only the lists of the other children, from which it moves to the
+blossom the ends of the edges that leave it, while the edges between them and
+that child go back to the list of the child. Otherwise a blossom grown by many
+shrinks, as happens on some random graphs, would read all the edges that leave
+it at each of them. An expansion gives back to each child the edges that leave
+the blossom through it, the child of an end being found by going up the nesting
+from its vertex, once per node.
 
-When a visit of all the trees ends with no augmentation, no tree has a
-tight edge left, and the duals change as in [Algorithm
-14.21](14-graph.md#alg-14-21); after an augmentation the trees are visited
-again instead, since the nodes freed may give tight edges to the others. The
-trees joined by a tight edge from an outer node of one to an inner node of
-another must change together, since the slack of that edge grows by the
-change of the inner side and falls by that of the outer one. Hence, we take
-the connected components of the graph of the trees by these edges (the rule
-of Blossom IV and of Blossom V). Each component, in turn, takes the largest
-change that the current slacks of its edges allow; one visit of the pairs of
-trees from each of its trees finds it, together with this change. An edge
-to a tree of a component found before is bounded after the change of that
-component, while an edge to a tree not yet reached waits until the component
-is complete: within it if its tree has joined meanwhile, else bounded by its
-slack alone, the later component being bounded by this one in turn. The pairs of trees joined by
-an edge are kept in a list per tree, and a pair whose trees are both gone
-is freed when the second of them is read. The greedy start sets each $y_v$ to the least cost at $v$,
-raises the duals node by node by the least slack, and matches each node to
-a free neighbor along a tight edge (if there is one), so that only the nodes
-left free are roots; with the option `greedy` false each node is a tree of
-its own.
+When a visit of all the trees ends with no augmentation, no tree has a tight
+edge left, and the duals change as in [Algorithm 14.21](14-graph.md#alg-14-21);
+after an augmentation the trees are visited again instead, since the nodes
+freed may give tight edges to the others. The trees joined by a tight edge from
+an outer node of one to an inner node of another must change together, since
+the slack of that edge grows by the change of the inner side and falls by that
+of the outer one. Hence, we take the connected components of the graph of the
+trees by these edges (the rule of Blossom IV and of Blossom V). Each component,
+in turn, takes the largest change that the current slacks of its edges allow;
+one visit of the pairs of trees from each of its trees finds it, together with
+this change. An edge to a tree of a component found before is bounded after the
+change of that component, while an edge to a tree not yet reached waits until
+the component is complete: within it if its tree has joined meanwhile, else
+bounded by its slack alone, the later component being bounded by this one in
+turn. The pairs of trees joined by an edge are kept in a list per tree, and a
+pair whose trees are both gone is freed when the second of them is read. The
+greedy start sets each $y_v$ to the least cost at $v$, raises the duals node by
+node by the least slack, and matches each node to a free neighbor along a tight
+edge (if there is one), so that only the nodes left free are roots; with the
+option `greedy` false each node is a tree of its own.
 
 <span id="alg-14-21"></span>**Algorithm 14.21.** The perfect matching of
 least cost (the primal-dual algorithm of Edmonds in the form of Blossom V,
