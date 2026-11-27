@@ -2,17 +2,17 @@
 /*------------------------------ File Maps.h -------------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The maps of LEMON on the structures of ADS, beyond the book: models of
+ * The maps of abLEMON on the structures of ADS, beyond the book: models of
  * the concepts `ReadMap`, `ReadWriteMap` and `ReferenceMap` of
- * `lemon/concepts/maps.h`, which the algorithms of LEMON take for their
+ * `lemon/concepts/maps.h`, which the algorithms of abLEMON take for their
  * input and output maps by named parameters (`SetPredMap`, `SetDistMap`,
  * `SetHeap< H , CR >`, `lengthMap()`) [see \ref theory_graph_lemon]:
  *
  * - `DenseMap< GR , T , Item >`, a `ReferenceMap` from the nodes, the arcs
- *   or the edges of a graph of LEMON to an array of `maxId( Item() ) + 1`
+ *   or the edges of a graph of abLEMON to an array of `maxId( Item() ) + 1`
  *   values of `T` (never a `std::vector< bool >`, so that `Reference` is a
  *   true `bool &`) that does not attach to the notifier of the graph: a map
- *   of LEMON attaches at its construction under the lock of the notifier,
+ *   of abLEMON attaches at its construction under the lock of the notifier,
  *   so that \f$ k \f$ algorithms started at once on one graph serialize on
  *   that lock and change one shared list, while with `DenseMap` they share
  *   no mutable state and run on the threads of an executor of ADS [see
@@ -26,9 +26,9 @@
  *   a read by `operator[]( i )` or `get( i )`; it does not own the
  *   structure, which must have room for `maxId( Item() ) + 1` values;
  * - `ObservedMap< GR , Map , A , Policy >`, a `ReadWriteMap` over a map of
- *   LEMON whose `set()` tells `Changed< A , int , V >` (the id of the item,
+ *   abLEMON whose `set()` tells `Changed< A , int , V >` (the id of the item,
  *   the old and the new value) through the subject policy `Policy` [see
- *   `Modification.h`], since the maps of LEMON cannot be observed; a read
+ *   `Modification.h`], since the maps of abLEMON cannot be observed; a read
  *   costs that of the map below, and a write one more read of the old value
  *   when someone listens. A change of a cost or of a capacity must go
  *   through it to reach the observers; a direct write to the map below is
@@ -64,7 +64,7 @@
 /*--------------------------------------------------------------------------*/
 
 #if ! __has_include( <lemon/core.h> )
- #error "the interoperation with LEMON needs the headers of LEMON"
+ #error "the interoperation with abLEMON needs the headers of abLEMON"
 #endif
 
 #include "ADS/Contract.h"
@@ -89,7 +89,7 @@ namespace ADS::lemon_interop
 /*---------------------------- CLASS DenseMap ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a `ReferenceMap` of LEMON by the ids of the items of a graph, on an
+/// a `ReferenceMap` of abLEMON by the ids of the items of a graph, on an
 /// array of its own, not attached to the notifier of the graph
 template< class GR , class T , class Item = typename GR::Node >
 class DenseMap
@@ -160,7 +160,7 @@ decltype( auto ) readAt( const S & s , std::size_t i )
 
 }  // end( namespace detail )
 
-/// a `ReadWriteMap` of LEMON over a structure of ADS indexed by the ids of
+/// a `ReadWriteMap` of abLEMON over a structure of ADS indexed by the ids of
 /// the items of a graph, `ObservableArray` or `Fenwick` among them
 template< class GR , class S , class Item = typename GR::Node >
 class IndexMap
@@ -216,7 +216,7 @@ class IndexMap
 /*--------------------------- CLASS ObservedMap ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a map of LEMON whose writes are told as `Changed< A , int , V >`, the
+/// a map of abLEMON whose writes are told as `Changed< A , int , V >`, the
 /// id of the item its handle
 template< class GR , class Map , class A = mod::Cost ,
 	  class Policy = Dynamic<> >

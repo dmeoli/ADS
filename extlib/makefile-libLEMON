@@ -2,19 +2,19 @@
 ############################## makefile-libLEMON ##############################
 ###############################################################################
 #                                                                             #
-#   makefile of LEMON, for the interoperation of include/ADS/interop/lemon    #
+#   makefile of abLEMON, for the interoperation of include/ADS/interop/lemon  #
 #   and for the solves that ADS delegates to it [see Matching.h and           #
 #   Assignment.h]                                                             #
 #                                                                             #
-#   Input:  $(LEMON_ROOT) = the prefix where LEMON is installed, empty if     #
+#   Input:  $(LEMON_ROOT) = the prefix where abLEMON is installed, empty if   #
 #                           it is where the compiler looks                    #
 #                                                                             #
 #   Output: accordingly, there is no *H and *OBJ in output, since there is    #
 #           no need to check for changes in the .h and rebuild the .o / .a    #
 #                                                                             #
-#           $(libLEMONINC)   = the -I$(include directories) for LEMON, and    #
+#           $(libLEMONINC)   = the -I$(include directories) for abLEMON, and  #
 #                              -DLEMON_ONLY_TEMPLATES, so that nothing of     #
-#                              LEMON is linked                                #
+#                              abLEMON is linked                              #
 #           $(libLEMONLIB)   = nothing, the headers alone are used            #
 #           $(libLEMONFOUND) = 1 if a program with a map of arcs of a         #
 #                              ListDigraph and Dijkstra's algorithm compiles  #
@@ -26,7 +26,7 @@
 
 # internal macros - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# basic LEMON directory without quotes, if any
+# basic abLEMON directory without quotes, if any
 libLEMONBSCDIR = $(subst $\",,$(LEMON_ROOT))
 
 # macros to be exported - - - - - - - - - - - - - - - - - - - - - - - - - - -

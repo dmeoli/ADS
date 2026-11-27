@@ -14,12 +14,12 @@
 #        concurrent and parallel structures, the executors, the distributed   #
 #        layer, the typed modifications and the observers;                    #
 #      - core, the infrastructure that the two include;                       #
-#      - interop, the interoperation with Boost, LEMON, the newest parts of   #
+#      - interop, the interoperation with Boost, abLEMON, the newest parts of #
 #        the standard library, the parallel runtimes of a program and the     #
 #        formats of Arrow, cereal, CRoaring and sdsl-lite (interop/, and      #
-#        distributed/BoostMPI.h), in no entry point and no                    #
-#        module, since each includes the headers of another library and a     #
-#        program includes it next to them.                                    #
+#        distributed/BoostMPI.h), in no entry point and no module, since each #
+#        includes the headers of another library and a program includes it    #
+#        next to them.                                                        #
 #                                                                             #
 #    A line "<header> <set> [?<macro>] [<reason>]" gives the set of a header  #
 #    (relative to include/ADS), the macro without which the header declares   #

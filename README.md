@@ -16,7 +16,7 @@ libraries lack. Its structures report their changes as typed modifications,
 which observers follow incrementally, check their contracts at a level
 chosen at compile time, and expose capabilities that the algorithms query
 through concepts. It is meant to complement the standard library, Boost,
-LEMON and GMP, leaving to them what they already do as well, and it runs its
+abLEMON and GMP, leaving to them what they already do as well, and it runs its
 parallelism on TBB, OpenMP or MPI.
 
 ADS also realizes the algorithms and the data structures of the (Italian)
@@ -294,7 +294,7 @@ concept of the executors, the pool of the nodes, the random hashing). A
 header that held a part of each set is split into a base header, which keeps
 its path, and an advanced one that it includes (e.g., `MaxFlow.h` and
 `PushRelabel.h`), and therefore its includes give the same as before. The
-headers of `ADS/interop/`, which join ADS to Boost, to LEMON, to the newest
+headers of `ADS/interop/`, which join ADS to Boost, to abLEMON, to the newest
 parts of the standard library and to the parallel runtimes of a program,
 form with `distributed/BoostMPI.h` a fourth set, interop. No entry point
 includes them and no module exports them, since each is included by the
@@ -1030,7 +1030,7 @@ manual gives an example of each case, and the examples are also the tests
 | standard library | `std::flat_map` on `TieredVector`, `std::ranges` on the dictionaries, the sorts on any range, the pools as `std::pmr` resources, `std::priority_queue` as a frontier | none | [C.1](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-1) |
 | Boost.Graph | its algorithms on `StaticGraph`, `ArrayGraph`, `ListGraph`; the algorithms of ADS on its graphs; the heaps of ADS in its Dijkstra | `ADS_WITH_BOOST` | [C.2](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-2) |
 | Boost.Heap, Boost.Unordered | its heaps as frontiers of ADS; `FastHash` as its hasher | `ADS_WITH_BOOST` | [C.3](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-3) |
-| LEMON | the heaps and maps of ADS in its algorithms, the graphs both ways, its notifier told to the observers of ADS | `ADS_WITH_LEMON`, `ADS::LEMON` | [C.4](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-4) |
+| abLEMON | the heaps and maps of ADS in its algorithms, the graphs both ways, its notifier told to the observers of ADS | `ADS_WITH_LEMON`, `ADS::LEMON` | [C.4](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-4) |
 | GMP | `BigInteger` and `Rational` to and from `mpz_class` and `mpq_class` | `ADS_WITH_GMP` | [C.5](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-5) |
 | BLAS | any CBLAS on `DenseMatrix`, `gemm()` on the CBLAS | `ADS_WITH_BLAS` | [C.6](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-6) |
 | oneTBB, OpenMP | the parallel algorithms in an arena or a region of the program | `ADS_WITH_TBB`, `ADS_WITH_OPENMP` | [C.7](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-7), [C.8](https://dmeoli.github.io/ADS/manual/chapters/C-libraries.html#sec-C-8) |
@@ -1048,7 +1048,7 @@ boost::dijkstra_shortest_paths( g , s , boost::weight_map(
   get( boost::edge_weight , g ) ).distance_map( d.data() ) );
 ```
 
-Similarly, that of LEMON runs on a heap of ADS.
+Similarly, that of abLEMON runs on a heap of ADS.
 
 ```cpp
 #include "ADS/interop/lemon/Heaps.h"
@@ -1395,32 +1395,33 @@ place on a contiguous one (and, those of the book, on any). With
 `mpz_class` and `mpq_class` pass the numbers to and from GMP. The tests are
 in [`test/engineered_interop.cpp`](test/engineered_interop.cpp).
 
-With [LEMON](https://lemon.cs.elte.hu) (the maintained fork abLEMON, or any
-LEMON whose headers compile in C++20, which LEMON 1.3 does not), the headers
-of `include/ADS/interop/lemon` let a program written on LEMON take a
+With [abLEMON](https://github.com/dmeoli/abLEMON), the maintained C++20 fork
+of [LEMON](https://lemon.cs.elte.hu) (or any LEMON whose headers compile in
+C++20, which LEMON 1.3 does not), the headers
+of `include/ADS/interop/lemon` let a program written on abLEMON take a
 structure of ADS where it may do better, by the named template parameters of
-the algorithms of LEMON. Conversely, they let the algorithms of ADS run on
-the graphs of LEMON. They give the heaps of ADS as heaps of LEMON (e.g.,
+the algorithms of abLEMON. Conversely, they let the algorithms of ADS run on
+the graphs of abLEMON. They give the heaps of ADS as heaps of abLEMON (e.g.,
 `Dijkstra< GR , LM >::SetStandardHeap< ADS::lemon_interop::DaryHeap< int ,
-GR::NodeMap< int > > >`), the arrays of ADS as maps of LEMON, a
-`StaticGraph` as a digraph of LEMON and a digraph of LEMON as a GRAPH of
-ADS. Also, the notifications of LEMON are forwarded to the observers of ADS,
-a `ListDigraph` is kept in step with a graph of ADS, and the runs of LEMON
+GR::NodeMap< int > > >`), the arrays of ADS as maps of abLEMON, a
+`StaticGraph` as a digraph of abLEMON and a digraph of abLEMON as a GRAPH of
+ADS. Also, the notifications of abLEMON are forwarded to the observers of ADS,
+a `ListDigraph` is kept in step with a graph of ADS, and the runs of abLEMON
 may use the threads of ADS (see the chapter of the graphs of the manual).
 With them, `maxCardinalityMatching()` and `maxWeightMatching()` solve on the
-matchings of LEMON, and `Assignment` solves from scratch on the
+matchings of abLEMON, and `Assignment` solves from scratch on the
 `MinCostAssignment` of abLEMON, the warm repairs staying those of ADS
 (`ADS_MATCHING_LEMON` or `ADS_ASSIGNMENT_LEMON` defined to 0 keeps the code
 of ADS, as the benchmarks do). With CMake, `ADS_WITH_LEMON` builds the
 target `ADS::LEMON` (the component `LEMON` of
 `find_package(ADS COMPONENTS LEMON)`, and `ads-lemon.pc`), and with the
-makefile its flags go in `$(ADSLEMONINC)` (`LEMON=<prefix>` where LEMON is
-not where the compiler looks). Unlike the other backends, LEMON is never
+makefile its flags go in `$(ADSLEMONINC)` (`LEMON=<prefix>` where abLEMON is
+not where the compiler looks). Unlike the other backends, abLEMON is never
 included by `ADS::ADS` and `$(ADSINC)`, so that a program that does not
 request it compiles none of it, and its headers are left out of the module
 `ads`.
 
-With LEMON, ADS also writes the warm starts that LEMON lacks into private
+With abLEMON, ADS also writes the warm starts that abLEMON lacks into private
 copies of six of its headers (`network_simplex.h`, `cost_scaling.h`,
 `cycle_canceling.h`, `capacity_scaling.h`, `bits/mcf_feasible_flow.h` and
 `preflow.h`). The warm starts are `runWarm()` of the four minimum cost flows
@@ -1429,17 +1430,17 @@ from the last basis or flow, the setters of one arc or node in constant time
 from a flow with deficits, with its `runWarm()`. These copies are rewritten
 at configure time by the rules of
 `include/ADS/interop/lemon/shim/rewrites.txt`, each a line
-`header|anchor|what` whose anchor is a line of LEMON that must occur exactly
+`header|anchor|what` whose anchor is a line of abLEMON that must occur exactly
 once (otherwise the rewrite stops). CMake writes them in the build directory
 and the makefile in `$(ADSODR)/lemon-shim` (`ADS_LEMON_WARM=0` leaves them
-out), and they come before LEMON on the include path of `ADS::LEMON` and of
+out), and they come before abLEMON on the include path of `ADS::LEMON` and of
 `$(ADSLEMONINC)`, which define `ADS_LEMON_SHIM`; an installed ADS writes
 them again from the LEMON that its user finds. On them,
 `ADS/interop/lemon/Warm.h` builds an engine of `MaxFlowObserver` on
 `Preflow`, one of `Assignment` on `NetworkSimplex` and an observer of a
 minimum cost flow. A program must compile all its translation units on the
-same rewritten copies, and a module of LEMON must be built from them too. In
-fact, two different copies of a header of LEMON in one binary give two
+same rewritten copies, and a module of abLEMON must be built from them too. In
+fact, two different copies of a header of abLEMON in one binary give two
 layouts of one class, a violation of the one definition rule that compilers
 do not diagnose.
 

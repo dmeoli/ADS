@@ -351,19 +351,22 @@ the code of ADS for one structure; `FlatHashTable` keeps its items in a
 `boost::unordered_flat_map` only when `ADS_FLATHASH_BOOST` is defined to
 1, since its own code is on a par with it.
 
-## C.4 LEMON {#sec-C-4}
+## C.4 abLEMON {#sec-C-4}
 
-We compile the headers of `ADS/interop/lemon/` with `ADS_WITH_LEMON`,
+We compile the headers of `ADS/interop/lemon/`, which join ADS to abLEMON
+([abLEMON](Z-bibliography.md#ref-ablemon)), the maintained C++20 fork of
+LEMON ([Dezső, Jüttner and Kovács 2011](Z-bibliography.md#ref-dezso2011)),
+with `ADS_WITH_LEMON`,
 which the target `ADS::LEMON` of CMake defines (the component `LEMON` of
 `find_package(ADS COMPONENTS LEMON)`). The option is `AUTO`, i.e., it is on
 where abLEMON, or another LEMON whose headers compile in C++20, is found
-(`LEMON_ROOT` where it is not), and the makefile puts the flags of LEMON in
+(`LEMON_ROOT` where it is not), and the makefile puts the flags of abLEMON in
 `$(ADSLEMONINC)` (`LEMON=<prefix>`). Unlike the backends of
-[§C.2](C-libraries.md#sec-C-2), LEMON is never included by `ADS::ADS`, and
+[§C.2](C-libraries.md#sec-C-2), abLEMON is never included by `ADS::ADS`, and
 thus a program that does not link `ADS::LEMON` compiles none of it. A
-program written on LEMON takes a heap of ADS by the named template
+program written on abLEMON takes a heap of ADS by the named template
 parameters of an algorithm, i.e., by one type. In the first example the
-`Dijkstra` of LEMON runs on the `DaryHeap` of `Heaps.h`, and the shortest
+`Dijkstra` of abLEMON runs on the `DaryHeap` of `Heaps.h`, and the shortest
 paths of ADS then run on the same digraph through `GraphView` of
 `Digraphs.h`.
 
@@ -390,18 +393,18 @@ const ADS::lemon_interop::GraphView< GR , GR::ArcMap< int > > view( g , l );
 const auto T = ADS::johnson( view , g.id( s ) );  // T.d[ g.id( t ) ] is 3
 ```
 
-Each operation of `DaryHeap` makes one read of the cross-reference map of LEMON
-more than the `IndexedDaryHeap` under it, i.e., one dependent load more than
-the `BinHeap` of LEMON, which may or may not be visible (we have not measured
-it). In exchange, with the policy `Dynamic<>` its observers receive every
-change that the algorithm makes on its frontier
+Each operation of `DaryHeap` makes one read of the cross-reference map of
+abLEMON more than the `IndexedDaryHeap` under it, i.e., one dependent load more
+than the `BinHeap` of abLEMON, which may or may not be visible (we have not
+measured it). In exchange, with the policy `Dynamic<>` its observers receive
+every change that the algorithm makes on its frontier
 ([§14.14.1](14-graph.md#sec-14-14-1)). On the other hand, `GraphView` makes no
-copy, since its nodes are named by the ids of LEMON; where an algorithm runs
+copy, since its nodes are named by the ids of abLEMON; where an algorithm runs
 often on the same digraph, `toStatic()` copies it into a `StaticGraph` once, in
 $\Theta( n + m )$ time.
 
-Conversely, `StaticDigraphView` is a digraph of LEMON over a
-`StaticGraph`, on which the second example runs the `Preflow` of LEMON.
+Conversely, `StaticDigraphView` is a digraph of abLEMON over a
+`StaticGraph`, on which the second example runs the `Preflow` of abLEMON.
 Then a `LemonTap` of `Observers.h` passes the insertions and the erasures
 of the arcs of a `ListDigraph` to an observer of ADS.
 
@@ -442,14 +445,14 @@ h.erase( a );  // k.live is 1
 This view uses the rows of the `StaticGraph` and reads the capacities where
 they lie, but it builds once the tails and the lists of the arcs into each
 node, which `Preflow` needs and the rows lack, in $8 a + 4 n$ bytes for
-$a$ arcs. As to the tap, it is an observer of the notifier of LEMON, and
+$a$ arcs. As to the tap, it is an observer of the notifier of abLEMON, and
 it adds to
 each insertion and erasure of an arc the calls of the observers attached to
 it. Note that it does not see the changes that the notifier does not notify
 (e.g., `changeTarget()`), which [§14.14.2](14-graph.md#sec-14-14-2) lists,
 while the opposite direction, a `ListDigraph` kept in step with an
 `ObservedGraph` of ADS, is `LemonMirror`. Finally, the warm starts that ADS
-writes into private copies of six headers of LEMON are described in
+writes into private copies of six headers of abLEMON are described in
 [§14.14.4](14-graph.md#sec-14-14-4); they need the rewritten headers first
 on the include path, as `ADS::LEMON` and `$(ADSLEMONINC)` arrange.
 
@@ -1358,7 +1361,7 @@ Arrow, CRoaring and sdsl-lite by `interop_columnar.*`.
 |-------------------|--------------------|------|----------|-------------------|
 | standard library | none | | none | `std-*` |
 | Boost.Graph, Boost.Heap, Boost.Unordered | `ADS_WITH_BOOST` | `AUTO` | `Boost` | `bgl-*`, `boost-*` |
-| LEMON | `ADS_WITH_LEMON` | `AUTO` | `LEMON` | `lemon-*` |
+| abLEMON | `ADS_WITH_LEMON` | `AUTO` | `LEMON` | `lemon-*` |
 | GMP | `ADS_WITH_GMP` | `AUTO` | `GMP` | `gmp-numbers` |
 | BLAS | `ADS_WITH_BLAS` | `AUTO` | `BLAS` | `blas-dense-matrix` |
 | oneTBB | `ADS_WITH_TBB` | `OFF` | none | `tbb-arena-sort` |

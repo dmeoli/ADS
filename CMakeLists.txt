@@ -287,12 +287,13 @@ if (ADS_USE_HIGHWAY)
 endif ()
 message(STATUS "ADS: Highway ${ADS_USE_HIGHWAY}")
 
-# The interoperation with LEMON [see include/ADS/interop/lemon] and the
+# The interoperation with abLEMON [see include/ADS/interop/lemon] and the
 # solves from scratch that ADS delegates to it [see Matching.h and
 # Assignment.h], in the target ADS::LEMON, which defines ADS_WITH_LEMON and
-# links LEMON (abLEMON, or a LEMON whose headers compile in C++20): AUTO,
-# the default, builds it when LEMON is found, ON requires it, OFF leaves it
-# out. ADS::ADS never includes LEMON, so that nothing of it is compiled for
+# links abLEMON (the maintained C++20 fork of LEMON, or any LEMON whose
+# headers compile in C++20): AUTO,
+# the default, builds it when abLEMON is found, ON requires it, OFF leaves it
+# out. ADS::ADS never includes abLEMON, so that nothing of it is compiled for
 # a program that does not link ADS::LEMON.
 set(ADS_WITH_LEMON AUTO CACHE STRING
     "the target ADS::LEMON of LEMON: AUTO (if found), ON or OFF")
@@ -316,10 +317,10 @@ if (ADS_USE_LEMON)
     target_link_libraries(ADS_LEMON INTERFACE ADS ADS::LEMON_library)
     target_compile_definitions(ADS_LEMON INTERFACE ADS_WITH_LEMON)
     set(ADS_LEMON_HINTS "${LEMON_INCLUDE_DIR}")
-    # the warm start of the algorithms of LEMON [see
+    # the warm start of the algorithms of abLEMON [see
     # include/ADS/interop/lemon/Warm.h], private copies of some of its
     # headers rewritten by the rules of include/ADS/interop/lemon/shim, put
-    # on the include path before LEMON; with a LEMON whose lines are not
+    # on the include path before abLEMON; with a LEMON whose lines are not
     # those of the rules, ON stops and AUTO goes on without it. An installed
     # ADS writes them again from the LEMON that its user finds [see
     # ADSConfig.cmake].
@@ -578,7 +579,7 @@ if (ADS_BENCHMARKS)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         # the code of ADS, which the benchmarks compare with Boost and with
-        # LEMON, also where ADS::ADS and ADS::LEMON delegate to them
+        # abLEMON, also where ADS::ADS and ADS::LEMON delegate to them
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0
                 ADS_POINTERTABLE_BOOST=0 ADS_FLATHASH_BOOST=0
                 ADS_SMALLVECTOR_BOOST=0 ADS_RANDOM_BOOST=0
@@ -588,7 +589,7 @@ if (ADS_BENCHMARKS)
                                        PRIVATE ${Boost_INCLUDE_DIRS})
         endif ()
     endforeach ()
-    # LEMON, the first competitor of the graphs, of the flows and of the
+    # abLEMON, the first competitor of the graphs, of the flows and of the
     # assignment, with ADS::LEMON
     if (ADS_USE_LEMON)
         foreach (b graphs flows assignment)
@@ -860,8 +861,8 @@ set(ADS_INSTALL_PKGCONFIGDIR ${CMAKE_INSTALL_DATADIR}/pkgconfig
 # Install the library
 install(TARGETS ADS EXPORT ADSTargets)
 
-# Install the target of the interoperation with LEMON, in a file of its own
-# that ADSConfig.cmake includes when LEMON is found again
+# Install the target of the interoperation with abLEMON, in a file of its own
+# that ADSConfig.cmake includes when abLEMON is found again
 if (ADS_USE_LEMON)
     install(TARGETS ADS_LEMON EXPORT ADSLemonTargets)
     install(EXPORT ADSLemonTargets
@@ -902,7 +903,7 @@ write_basic_package_version_file(
         ARCH_INDEPENDENT)
 
 # Install the package version and configuration files, with the modules of
-# GMP, of the CBLAS, of Boost, of hwloc, of Highway, of LEMON and of the
+# GMP, of the CBLAS, of Boost, of hwloc, of Highway, of abLEMON and of the
 # runtimes of a program that the configuration file includes.
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/ADSConfig.cmake
@@ -969,7 +970,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ads.pc
         DESTINATION ${ADS_INSTALL_PKGCONFIGDIR})
 
 # Generate and install ads-lemon.pc, ads.pc with the define and the flags of
-# LEMON, when the target ADS::LEMON is built.
+# abLEMON, when the target ADS::LEMON is built.
 if (ADS_USE_LEMON)
     configure_file(cmake/ads-lemon.pc.in
                    ${CMAKE_CURRENT_BINARY_DIR}/ads-lemon.pc @ONLY)

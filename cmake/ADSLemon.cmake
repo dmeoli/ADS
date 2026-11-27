@@ -1,10 +1,10 @@
 # --------------------------------------------------------------------------- #
 #    ADSLemon.cmake                                                           #
 #                                                                             #
-#    LEMON for the interoperation of include/ADS/interop/lemon and for the    #
+#    abLEMON for the interoperation of include/ADS/interop/lemon and for the  #
 #    solves that ADS delegates to it [see Matching.h, Assignment.h]: the      #
-#    target ADS::LEMON_library, with the headers of LEMON found by            #
-#    find_path() (LEMON_INCLUDE_DIR in the cache points to another LEMON,     #
+#    target ADS::LEMON_library, with the headers of abLEMON found by          #
+#    find_path() (LEMON_INCLUDE_DIR in the cache points to another abLEMON,   #
 #    ADS_LEMON_HINTS and LEMON_ROOT are directories to look in first) and its #
 #    library, or LEMON_ONLY_TEMPLATES where there is none, and                #
 #    ADS_LEMON_FOUND, true when they are found and, where C++ is enabled, a   #

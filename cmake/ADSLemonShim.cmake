@@ -1,15 +1,15 @@
 # --------------------------------------------------------------------------- #
 #    ADSLemonShim.cmake                                                       #
 #                                                                             #
-#    The warm start of the algorithms of LEMON [see                           #
+#    The warm start of the algorithms of abLEMON [see                         #
 #    include/ADS/interop/lemon/Warm.h]: ads_lemon_shim(<out> <inc> <src>      #
-#    <ok>) writes into <out>/lemon the headers of LEMON in <inc>/lemon that   #
+#    <ok>) writes into <out>/lemon the headers of abLEMON in <inc>/lemon that #
 #    the rules of <src>/rewrites.txt name, rewritten by them, the same as     #
-#    <src>/rewrite.awk of the makefiles: each rule is header|anchor|what,     #
-#    the anchor a whole line that has to be there exactly once, and what is   #
-#    <file (the file of <src> inserted before the line), +text (appended to   #
-#    the line) or =text (in place of the line). <ok> is TRUE if every header  #
-#    was written, FALSE, with the line missing in <ok>_WHY, otherwise, and    #
+#    <src>/rewrite.awk of the makefiles: each rule is header|anchor|what, the #
+#    anchor a whole line that has to be there exactly once, and what is <file #
+#    (the file of <src> inserted before the line), +text (appended to the     #
+#    line) or =text (in place of the line). <ok> is TRUE if every header was  #
+#    written, FALSE, with the line missing in <ok>_WHY, otherwise, and        #
 #    nothing is then written. <out> goes on the include path before <inc>.    #
 #    CMakeLists.txt and ADSConfig.cmake include it.                           #
 # --------------------------------------------------------------------------- #

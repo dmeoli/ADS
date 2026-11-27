@@ -615,7 +615,7 @@
  still a lower bound of their distance (the lazy update of the HIPR of
  Cherkassky and Goldberg, in its version 4); the second phase labels only
  the nodes left at the top, the side of \f$ s \f$ of the cut, as the
- Preflow of LEMON does; and a node scans its edges once, pushing to the
+ Preflow of abLEMON does; and a node scans its edges once, pushing to the
  lower neighbors and taking the least label of the others, which is its
  new label if an excess is left. The first labeling takes a node by a
  conditional write instead of a branch, its tests on the labels and on
@@ -1297,15 +1297,16 @@
  recursion (exercise 12.9). Exercises 12.1 and 12.3 are the drawings of the
  representations and of the visits of figure 12.7.
 
- \section theory_graph_lemon Interoperation with LEMON
+ \section theory_graph_lemon Interoperation with abLEMON
 
- Beyond the book, the headers of `ADS/interop/lemon` connect ADS with LEMON
- (Dezső, Jüttner and Kovács) in both directions, compiled only by a program
- that includes them with LEMON, `ADS_WITH_LEMON` defined (the target
- `ADS::LEMON` of CMake): a program written on LEMON takes a structure of ADS
+ Beyond the book, the headers of `ADS/interop/lemon` connect ADS with abLEMON,
+ the maintained C++20 fork of LEMON (Dezső, Jüttner and Kovács), in both
+ directions, compiled only by a program
+ that includes them with abLEMON, `ADS_WITH_LEMON` defined (the target
+ `ADS::LEMON` of CMake): a program written on abLEMON takes a structure of ADS
  by the named template parameters of its algorithms, with no other change,
- and a program written on ADS runs the algorithms of LEMON on its graphs.
- The algorithms of LEMON take their heap by their traits, with the concept
+ and a program written on ADS runs the algorithms of abLEMON on its graphs.
+ The algorithms of abLEMON take their heap by their traits, with the concept
  `lemon::concepts::Heap`, whose protocol has a part that is not in the
  signatures: the cross-reference map from the items to `int` belongs to the
  caller, `Dijkstra::init()` writes `PRE_HEAP` into it for every node without
@@ -1328,7 +1329,7 @@
  list is empty, i.e., when every slot is in use, whence the bound. Each
  operation costs that of the heap of ADS plus one read of the map, one
  dependent load more than `BinHeap` makes, whose map holds the place itself;
- removing it needs the place of an item to be kept in the map of LEMON by
+ removing it needs the place of an item to be kept in the map of abLEMON by
  the heap of ADS, a parameter that `IndexedDaryHeap` does not have.
 
  <em>Lemma 21 (the lazy heap).</em> Let a monotone queue without
@@ -1348,15 +1349,15 @@
  with nonnegative integer lengths satisfies the hypothesis, and pushes each
  node once, so that the slots are at most \f$ n \f$.
 
- The maps of LEMON are observers of the notifier of their graph, attached at
+ The maps of abLEMON are observers of the notifier of their graph, attached at
  their construction under its lock; the `DenseMap` of ADS is an array by the
  ids that attaches to nothing, so that \f$ k \f$ runs of an algorithm of
- LEMON on one graph that does not change share no mutable state and run on
+ abLEMON on one graph that does not change share no mutable state and run on
  the threads of an executor of ADS. The `LemonTap` is the converse
  observer: an `ObserverBase` of the notifier whose `add()`, `erase()`,
  `build()` and `clear()` become the events of ADS `Inserted`, `Erased`,
  `Rebuilt` and `Cleared`, the id of the item being the handle, which keeps
- the parallel arcs of LEMON apart. The notifier tells an insertion after it
+ the parallel arcs of abLEMON apart. The notifier tells an insertion after it
  and an erasure before it, and it calls its observers from the oldest on
  `add()` and `build()` and from the newest on `erase()` and `clear()`, which
  we read in the code of the notifier and which its header does not state: a
@@ -1364,40 +1365,40 @@
  the value still there at `erase()`. An insertion is told with the strong
  guarantee of `emit( e , undo )`, so that an observer of ADS that throws
  leaves those before it as they were, and abLEMON removes the item again;
- the erasures cannot fail, since LEMON forbids it. The `LemonMirror` keeps a
+ the erasures cannot fail, since abLEMON forbids it. The `LemonMirror` keeps a
  `ListDigraph` in step with a graph of ADS, in \f$ O( 1 ) \f$ expected time
  per event, and records the kinds of the events since the last query, so
- that an algorithm of LEMON with a state of its own knows when it must be
+ that an algorithm of abLEMON with a state of its own knows when it must be
  built again.
 
- Two solves from scratch are delegated to LEMON when `ADS_WITH_LEMON` is
+ Two solves from scratch are delegated to abLEMON when `ADS_WITH_LEMON` is
  defined, by its public interface only. `maxCardinalityMatching()` and
  `maxWeightMatching()` copy the graph into a `SmartGraph` and run
  `MaxMatching` and `MaxWeightedMatching`; the matching of largest weight
- among those of largest size stays with ADS, since LEMON has none. The
+ among those of largest size stays with ADS, since abLEMON has none. The
  solve from scratch of `Assignment` runs `MinCostAssignment` of abLEMON,
  whose potentials \f$ \pi \f$ satisfy \f$ c( i , j ) \ge \pi( b_j ) - \pi(
  r_i ) \f$ on every edge, with equality on the matching.
 
- <em>Lemma 22 (the potentials of LEMON).</em> With \f$ u_i = - \pi( r_i ) \f$
+ <em>Lemma 22 (the potentials of abLEMON).</em> With \f$ u_i = - \pi( r_i ) \f$
  and \f$ v_j = \pi( b_j ) \f$ the reduced costs \f$ c( i , j ) - u_i - v_j \f$
  of the finite costs are nonnegative and zero on the pairs of the
  assignment, i.e., \f$ ( u , v ) \f$ satisfies (11) with the pairs of the
- assignment of LEMON tight, the hypothesis of Lemma 15, from which the
+ assignment of abLEMON tight, the hypothesis of Lemma 15, from which the
  repairs of ADS go on.
 
  Indeed, \f$ c( i , j ) - u_i - v_j = c( i , j ) + \pi( r_i ) - \pi( b_j )
- \f$, which is the slack of the inequality of LEMON. The same conversion
+ \f$, which is the slack of the inequality of abLEMON. The same conversion
  holds for the potentials of `NetworkSimplex` on the network of the
  assignment, whose reduced cost of an arc is \f$ c + \pi( \mathit{tail} )
  - \pi( \mathit{head} ) \f$, and `NetworkSimplexAssignment` gives them to
  `Assignment` in the same way.
 
- LEMON has no warm start of its minimum cost flows nor of its maximum flow,
+ abLEMON has no warm start of its minimum cost flows nor of its maximum flow,
  and ADS writes one into private copies of six of its headers, rewritten at
  configure time by the rules of `ADS/interop/lemon/shim/rewrites.txt`, each
  a line `header|anchor|what` whose anchor must occur once in the header,
- and put on the include path before LEMON. `NetworkSimplex` goes on from the
+ and put on the include path before abLEMON. `NetworkSimplex` goes on from the
  basis of the last run, `CostScaling` and `CycleCanceling` from its flow
  made feasible again, `CapacityScaling` from its flow and potentials, each
  with setters of one arc or node in \f$ O( 1 ) \f$, and `Preflow` from a
@@ -1422,7 +1423,7 @@
  the concept `FlowEngine` of `Reoptimization.h`, the augmentations of ADS by
  default and `PreflowEngine` on this warm start; the choice between them
  waits for the measures of the two. A program must see one rewritten
- copy of each header of LEMON, since two layouts of one class in one binary
+ copy of each header of abLEMON, since two layouts of one class in one binary
  violate the one definition rule, which compilers do not diagnose.
 
  \section theory_graph_refs References

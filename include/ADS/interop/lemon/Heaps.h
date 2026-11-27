@@ -2,9 +2,9 @@
 /*----------------------------- File Heaps.h -------------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The heaps of ADS as heaps of LEMON, beyond the book: models of the concept
+ * The heaps of ADS as heaps of abLEMON, beyond the book: models of the concept
  * `lemon::concepts::Heap< PR , IM , CMP >` (the file `lemon/concepts/heap.h`
- * of LEMON 1.3 and of abLEMON), so that an algorithm of LEMON that takes its
+ * of LEMON 1.3 and of abLEMON), so that an algorithm of abLEMON that takes its
  * heap by its traits (`Dijkstra`, `Prim`, `AStar`, the bidirectional
  * Dijkstra, `CapacityScaling` and the others) runs on a heap of ADS by one
  * named template parameter, e.g.,
@@ -12,7 +12,7 @@
  *     using H = ADS::lemon_interop::DaryHeap< int , GR::NodeMap< int > >;
  *     lemon::Dijkstra< GR , LM >::SetStandardHeap< H >::Create d( g , l );
  *
- * (see \ref theory_graph_lemon). LEMON's protocol has two parts that are not
+ * (see \ref theory_graph_lemon). abLEMON's protocol has two parts that are not
  * in the signatures: the cross-reference map, from the items to `int`, is
  * owned by the caller, and the algorithm writes it directly
  * (`Dijkstra::init()` sets `PRE_HEAP` for every node without calling the
@@ -22,7 +22,7 @@
  * - `DaryHeap< PR , IM , CMP , D , Policy >` runs on `IndexedDaryHeap< K , D
  *   , Policy >` [see `IndexedDaryHeap.h`]: the map holds, for an item in the
  *   heap, a slot of the heap of ADS (\f$ \ge 0 \f$), and `PRE_HEAP` or
- *   `POST_HEAP` otherwise, as LEMON's `FibHeap` does; the slots are recycled
+ *   `POST_HEAP` otherwise, as abLEMON's `FibHeap` does; the slots are recycled
  *   by a list of the free ones, so that the heap of ADS has as many ids as
  *   the largest frontier, and the space is \f$ ( 4 + k ) s + 4 f + w f \f$
  *   bytes for \f$ s \f$ items, \f$ f \f$ slots, keys of \f$ k \f$ bytes and
@@ -31,7 +31,7 @@
  *   map; with `Policy = Dynamic<>` an observer attached to `subject()`
  *   receives the events of the heap of ADS for every operation of the
  *   algorithm on its frontier, the handles being the slots (`item()` gives
- *   their items), which no heap of LEMON tells. The comparator must be
+ *   their items), which no heap of abLEMON tells. The comparator must be
  *   stateless, since the heap of ADS compares its keys by `<`.
  * - `MonotoneHeap< Q , PR , IM >` puts under the same concept a monotone
  *   queue without decrease-key, `DialQueue` or `RadixHeap` [see
@@ -46,10 +46,10 @@
  *   most \f$ C \f$.
  *
  * The concurrent queues of ADS (`MultiQueue`, `LockFreePriorityQueue`) are
- * relaxed, and cannot be given to an algorithm of LEMON that takes a popped
+ * relaxed, and cannot be given to an algorithm of abLEMON that takes a popped
  * item as final.
  *
- * The contracts [see `Contract.h`]: those of the concept of LEMON (`top()`,
+ * The contracts [see `Contract.h`]: those of the concept of abLEMON (`top()`,
  * `prio()` and `pop()` on a heap that is not empty, `decrease()` and
  * `increase()` on an item in the heap with a priority not greater, or not
  * less, than its own), checked by those of the heap of ADS below, and, for
@@ -81,7 +81,7 @@
 /*--------------------------------------------------------------------------*/
 
 #if ! __has_include( <lemon/core.h> )
- #error "the interoperation with LEMON needs the headers of LEMON"
+ #error "the interoperation with abLEMON needs the headers of abLEMON"
 #endif
 
 #include "ADS/Contract.h"
@@ -105,7 +105,7 @@ namespace ADS::lemon_interop
 /*---------------------------- CLASS CmpKey --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a priority of LEMON as a key of ADS, ordered by the comparator `CMP`
+/// a priority of abLEMON as a key of ADS, ordered by the comparator `CMP`
 template< class PR , class CMP >
 struct CmpKey
 {
@@ -120,7 +120,7 @@ struct CmpKey
 /*---------------------------- CLASS DaryHeap ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// an `IndexedDaryHeap` of ADS as a heap of LEMON, on the cross-reference
+/// an `IndexedDaryHeap` of ADS as a heap of abLEMON, on the cross-reference
 /// map `IM` of the caller
 template< class PR , class IM , class CMP = std::less< PR > , unsigned D = 4 ,
 	  class Policy = NoObservers >
@@ -138,7 +138,7 @@ class DaryHeap
  using Key = CmpKey< PR , CMP >;         ///< the keys of the heap of ADS
  using Heap = IndexedDaryHeap< Key , D , Policy >;  ///< the heap of ADS
 
- /// the states of an item, those of LEMON
+ /// the states of an item, those of abLEMON
  enum State { IN_HEAP = 0 , PRE_HEAP = -1 , POST_HEAP = -2 };
 
  /// the empty heap on the map \f$ m \f$
@@ -153,7 +153,7 @@ class DaryHeap
  /// whether there is no item
  [[nodiscard]] bool empty( void ) const { return( f_q.empty() ); }
 
- /// all the items removed, the map left as it is (as in LEMON)
+ /// all the items removed, the map left as it is (as in abLEMON)
  void clear( void ) {
   f_q.reset( 0 );
   f_item.clear();
@@ -288,7 +288,7 @@ void DaryHeap< PR , IM , CMP , D , Policy >::push( const Item & i ,
 /*--------------------------------------------------------------------------*/
 
 /// a monotone queue of ADS without decrease-key, `Q` either
-/// `DialQueue< int , K >` or `RadixHeap< int , K >`, as a heap of LEMON by
+/// `DialQueue< int , K >` or `RadixHeap< int , K >`, as a heap of abLEMON by
 /// the lazy deletion
 template< class Q , class PR , class IM >
 class MonotoneHeap
@@ -305,7 +305,7 @@ class MonotoneHeap
  using Item = typename IM::Key;         ///< the items
  using Pair = std::pair< Item , Prio >;  ///< an item with its priority
 
- /// the states of an item, those of LEMON
+ /// the states of an item, those of abLEMON
  enum State { IN_HEAP = 0 , PRE_HEAP = -1 , POST_HEAP = -2 };
 
  /// the empty heap on the map \f$ m \f$

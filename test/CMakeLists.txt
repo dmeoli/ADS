@@ -73,7 +73,7 @@ foreach (line IN LISTS lines)
         list(APPEND programs ${program})
         add_executable(${program} ${program}.cpp)
         target_link_libraries(${program} PRIVATE ADS::ADS Threads::Threads)
-        # with LEMON, the tests run on the solves that ADS delegates to it,
+        # with abLEMON, the tests run on the solves that ADS delegates to it,
         # and engineered_lemon on the interoperation
         if (ADS_USE_LEMON)
             target_link_libraries(${program} PRIVATE ADS::LEMON)

@@ -160,6 +160,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the README, the manual, the theory pages, the comments of the headers,
+  of the tests and of the benchmarks and those of CMake and of the
+  makefiles name abLEMON, the maintained C++20 fork of LEMON, as the
+  library that `ADS::LEMON` builds against and that the benchmarks
+  measure, the bibliography holds it next to the paper of LEMON, which is
+  still cited where the original library is meant, and no option, target,
+  macro or name of a benchmark changes
 - the makefiles link the shared libraries of Highway and of libomp with
   the run-time path of their directory, as those of GMP, BLAS, hwloc and
   oneTBB already were, so that no library path is needed to run the

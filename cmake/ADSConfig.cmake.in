@@ -10,12 +10,11 @@
 #    ADS::Boost and ADS::Highway when it was built on GMP, on a CBLAS, on     #
 #    Boost and on Highway, which are then the components GMP, BLAS, Boost     #
 #    and Highway of find_package(ADS COMPONENTS ...), and it finds again the  #
-#    threads, OpenMP, oneTBB and MPI when ADS                                 #
-#    was built with their executors; the component LEMON, ADS::LEMON, when    #
-#    ADS was built with it and LEMON is found again (find_package(ADS         #
-#    COMPONENTS LEMON) requires it), and the runtimes of the components       #
-#    ADS::StdPar, ADS::stdexec, ADS::Taskflow, ADS::Kokkos and ADS::BoostMPI  #
-#    [see ADSInterop.cmake].                                                  #
+#    threads, OpenMP, oneTBB and MPI when ADS was built with their executors; #
+#    the component LEMON, ADS::LEMON, when ADS was built with it and abLEMON  #
+#    is found again (find_package(ADS COMPONENTS LEMON) requires it), and the #
+#    runtimes of the components ADS::StdPar, ADS::stdexec, ADS::Taskflow,     #
+#    ADS::Kokkos and ADS::BoostMPI [see ADSInterop.cmake].                    #
 #                                                                             #
 #    ADSTargets.cmake (to be found alongside this file) is the target import  #
 #    file that tells where the headers are.                                   #
@@ -98,7 +97,7 @@ if (NOT TARGET ADS::ADS)
     include("${ADS_CMAKE_DIR}/ADSTargets.cmake")
 endif ()
 
-# the component LEMON, if ADS was built with it and LEMON is found again
+# the component LEMON, if ADS was built with it and abLEMON is found again
 set(ADS_LEMON_FOUND FALSE)
 if (@ADS_USE_LEMON@)
     set(ADS_LEMON_HINTS "@ADS_LEMON_HINTS@")

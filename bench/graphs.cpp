@@ -58,12 +58,12 @@
  *   Graph Library has no Eulerian trail);
  * - matching, maxCardinalityMatching(), the blossoms of Edmonds, on the
  *   unoriented graphs (G( n , 4 n ), grids, R-MAT), against
- *   MaxMatching of LEMON (with LEMON=1 or ADS_WITH_LEMON) on a SmartGraph
+ *   MaxMatching of abLEMON (with LEMON=1 or ADS_WITH_LEMON) on a SmartGraph
  *   and edmonds_maximum_cardinality_matching() of the Boost Graph Library
  *   on its adjacency_list;
  * - wmatching, maxWeightMatching(), the primal-dual blossoms, on G( n , 4 n )
  *   unoriented with n / 50 nodes and costs in [ 1 , 10^5 ], against
- *   MaxWeightedMatching of LEMON and maximum_weighted_matching() of the
+ *   MaxWeightedMatching of abLEMON and maximum_weighted_matching() of the
  *   Boost Graph Library;
  * - union-find, n random merges and n finds on each MFSET;
  * - grid-bfs and grid-dijkstra, distance() and shortestPaths() on an
