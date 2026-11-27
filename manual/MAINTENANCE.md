@@ -138,13 +138,13 @@ number; and code blocks are framed by a breakable `tcolorbox`, since the
 
 `build/extra.css`, `build/code-break.js`, `build/text-size.js` and
 `build/break-code.lua` are byte-identical copies of the files shared by
-the manuals of the family and are never tuned here: a text of 16 px in a
-column of about 110 characters, the line of the PDF, and code within the
-prose broken only after / . _ , ( and :: (`\emergencystretch` in
-`preamble.tex` stretches a line that cannot be broken otherwise). A table
-or block that does not fit is fixed in the Markdown: a table whose code
-column overflows in the PDF gets a wider first column through the dashes
-of its separator row.
+the manuals of the family and are never tuned here: a text of 16 px (18
+px on a screen of 95em or more) in a column of about 110 characters, the
+line of the PDF, and code within the prose broken only after / . _ , ( and
+:: (`\emergencystretch` in `preamble.tex` stretches a line that cannot be
+broken otherwise). A table or block that does not fit is fixed in the
+Markdown: a table whose code column overflows in the PDF gets a wider
+first column through the dashes of its separator row.
 
 ---
 
