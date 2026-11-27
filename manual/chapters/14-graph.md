@@ -100,7 +100,6 @@ of the headers of `ADS/graph`.
 | $p[ v ]$, $T[ v ]$ | the parent of $v$ in a tree rooted at the source, `NIL` ($-1$) for the root and for the nodes not reached |
 | $\mathit{dt}[ u ]$, $\mathit{ft}[ u ]$ | the discovery and the finish times of $u$ in a visit in depth, on one clock that each event advances by 1 |
 | $\mathit{low}[ u ]$, $B[ u ]$ | the least $\mathit{dt}$ that the subtree of $u$ reaches by one edge out of the tree of a visit in depth, and the block of the edge from $u$ to its parent |
-| $\mathit{low}[ u ]$, $B[ u ]$ | the least $\mathit{dt}$ that the subtree of $u$ reaches by one edge out of the tree of a visit in depth, and the block of the edge from $u$ to its parent |
 | $c( u , v )$, $f( u , v )$, $c_f( u , v )$ | the capacity of an edge of a network, its flow, and its residual capacity $c( u , v ) - f( u , v )$ |
 | $( S , V \setminus S )$ | a cut, i.e., the edges with one end in $S$ and the other out of it |
 
