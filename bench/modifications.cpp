@@ -20,12 +20,17 @@
  * - modifications dictionary, the removal of a random key of the
  *   DenseHashMap of n keys alternated with the insertion of a new one, on the
  *   case "insert-erase";
+ * - modifications channel, n changes of three ObservableArrays with one
+ *   observer attached to all of them (with group hooks), the change j to
+ *   the array j mod 3, in groups of 256: under a batch on each array ("3
+ *   batches 256", three groups per observer) and under one channel over
+ *   the three ("channel 256", one group);
  *
- * each on the variants "NoObservers" (the default policy, which must take
- * the time of the plain structure, a check of the claim that a change
- * nobody listens to costs nothing), "Static 1" (one observer called
- * directly), "Dynamic 0", "Dynamic 1" and "Dynamic 4" (none, one and four
- * observers attached at run time), "Dynamic 1 batch 16" and "Dynamic 1
+ * the first four each on the variants "NoObservers" (the default policy,
+ * which must take the time of the plain structure, a check of the claim
+ * that a change nobody listens to costs nothing), "Static 1" (one observer
+ * called directly), "Dynamic 0", "Dynamic 1" and "Dynamic 4" (none, one and
+ * four observers attached at run time), "Dynamic 1 batch 16" and "Dynamic 1
  * batch 256" (the changes in batches of 16 and of 256, each sent coalesced
  * at its close) and "Dynamic 1 quiet" (all the changes under one mute,
  * which ends with Rebuilt, or with nothing for the graph, whose events have
@@ -524,6 +529,74 @@ void dictionary( std::size_t n , int r , unsigned seed )
     } );
  }
 
+/// an observer of the values of several arrays, with group hooks
+struct GroupSum
+{
+ std::uint64_t h = 0;
+ void on( const mod::Assigned< std::size_t , long long > & e ) {
+  h += std::uint64_t( e.to );
+  }
+ void group_begin( const mod::Group & ) { ++h; }
+ void group_end( void ) { ++h; }
+ };
+
+/// three arrays of n values, one observer attached to all of them
+struct Three
+{
+ GroupSum o;
+ ObservableArray< long long , Dynamic<> > a , b , c;
+
+ explicit Three( std::size_t n ) : a( n , 0 ) , b( n , 0 ) , c( n , 0 ) {
+  a.attach( o );
+  b.attach( o );
+  c.attach( o );
+  }
+ };
+
+/// the cells of the channels: n changes of three arrays, the change j to
+/// the array j mod 3, in groups of 256 under a batch on each array or
+/// under one channel over the three
+void channels( std::size_t n , int r , unsigned seed )
+{
+ std::mt19937_64 g( seed + 9 );
+ std::vector< long long > X( n );
+ for( auto & x : X )
+  x = static_cast< long long >( g() % 1000000 );
+ const auto H = handles( n , n , false , seed + 10 );
+ for( const std::string who :
+      { "3 batches 256" , "3 batches 256 A/A" , "channel 256" } ) {
+  if( ADS::bench::skip( who ) )
+   continue;
+  const bool chan = who == "channel 256";
+  const double ns = ADS::bench::median(
+    [ & ]( void ) { return( std::make_unique< Three >( n ) ); } ,
+    [ & ]( auto & t ) {
+     for( std::size_t i = 0 ; i < n ; i += 256 ) {
+      const std::size_t e = std::min( n , i + 256 );
+      auto body = [ & ]( void ) {
+       for( std::size_t j = i ; j < e ; ++j ) {
+	auto & x = j % 3 == 0 ? t->a : ( j % 3 == 1 ? t->b : t->c );
+	x.set( H[ j ] , X[ j ] );
+        }
+       };
+      if( chan ) {
+       auto ch = ADS::channel( t->a , t->b , t->c );
+       body();
+       }
+      else {
+       auto ba = ADS::batch( t->a );
+       auto bb = ADS::batch( t->b );
+       auto bc = ADS::batch( t->c );
+       body();
+       }
+      }
+     ADS::bench::sink = t->o.h;
+     } ,
+    r , n );
+  ADS::bench::print( "modifications channel" , "random" , n , who , ns );
+  }
+ }
+
 }  // end( namespace )
 
 /*--------------------------------------------------------------------------*/
@@ -536,6 +609,7 @@ int main( int argc , char ** argv )
   array( n , o.runs , o.seed );
   heap( n , o.runs , o.seed );
   dictionary( n , o.runs , o.seed );
+  channels( n , o.runs , o.seed );
   }
  return( 0 );
  }

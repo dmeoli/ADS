@@ -128,7 +128,13 @@ run dynamic 10000 100000
 run flows 10000 100000
 run assignment 300 1000
 run modifications 100000 1000000
+# the minimum cost flows on smaller networks, whose solves from scratch by
+# the network simplex would take most of the campaign at 10^5 nodes
+export ADS_REOPT=sssp,mst,flow,assign
 run reopt 10000 100000
+export ADS_REOPT=mcf
+run reopt 1000 10000
+unset ADS_REOPT
 run bestfirst 100000 1000000 10000000
 # the parallel algorithms and the runtime of the workers on the cores
 # PCORES (default the core CORE alone), on 1, 2, 4, ... threads up to their

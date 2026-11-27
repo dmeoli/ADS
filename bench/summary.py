@@ -702,7 +702,8 @@ def brief(rows):
 
 # the structures of ADS in the table of the crossovers, in their order,
 # and the outcomes of the queries of "ADS reopt"
-REOPT = ['ADS reopt', 'ADS reopt Preflow', 'ADS repair', 'ADS scratch']
+REOPT = ['ADS reopt', 'ADS reopt Preflow', 'ADS repair', 'ADS scratch',
+         'ADS scratch rebuilt']
 OUTCOMES = [('certified', 'cert.'), ('warm', 'warm'),
             ('scratch by size', 'size'), ('scratch by abort', 'abort'),
             ('scratch by event', 'event'), ('scratch', 'scratch')]

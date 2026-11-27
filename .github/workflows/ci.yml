@@ -675,6 +675,7 @@ jobs:
                       END { exit bad }' cells.tsv
           for b in 'modifications graph' 'modifications array' \
                    'modifications heap' 'modifications dictionary' \
+                   'modifications channel' \
                    'resolve sssp' 'resolve mst' 'resolve flow' \
                    'resolve assign' 'resolve mcf'; do
             grep -qP "^$b\t" cells.tsv

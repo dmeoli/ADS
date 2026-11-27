@@ -2020,6 +2020,7 @@ engineered_modification  mod-revisions       revisioni per tipo, versioni
 engineered_modification  mod-audit           audit e conteggi per osservatore
 engineered_modification  mod-shadow          Shadow contro il ricalcolo
 engineered_modification  mod-observed-graph  grafo osservato, osservatori nuovi
+engineered_modification  mod-channel         lotto su più strutture, gruppi unici
 
 # the structures that tell their changes and the aggregates they feed,
 # beyond the book

@@ -20,9 +20,13 @@
  * - resolve flow, the maximum flow from 0 to n - 1, capacities in
  *   [ 1 , 1000 ]: MaxFlowObserver on the augmentations of Dinic, and with
  *   the warm Preflow of abLEMON as its engine ("ADS reopt Preflow", with
- *   the rewritten headers of ADS::LEMON), against FlowNetwork built and
- *   solved from scratch by Dinic, the Preflow of abLEMON ("LEMON Preflow")
- *   and push_relabel_max_flow() of Boost ("Boost push-relabel");
+ *   the rewritten headers of ADS::LEMON), against a FlowNetwork built
+ *   once, its capacities set and its flow set back to zero by assignFlow()
+ *   before each solve by Dinic ("ADS scratch", as the networks of the
+ *   other libraries are kept), a FlowNetwork built again from the graph at
+ *   each solve, as the observer does when it computes from scratch ("ADS
+ *   scratch rebuilt"), the Preflow of abLEMON ("LEMON Preflow") and
+ *   push_relabel_max_flow() of Boost ("Boost push-relabel");
  * - resolve assign, the assignment of the q = sqrt( n ) rows to the q
  *   columns of random costs in [ 1 , 10^6 ]: Assignment by setCost(),
  *   against a new Assignment and the MinCostAssignment of abLEMON ("LEMON
@@ -32,8 +36,9 @@
  *   costs and capacities in [ 1 , 1000 ], with a ring of arcs of cost 10^4
  *   and unbounded capacity that keeps every change feasible:
  *   MinCostFlowObserver on the NetworkSimplex of abLEMON, told the changes
- *   by its ObservedMaps, against a NetworkSimplex run from scratch ("LEMON
- *   NetworkSimplex").
+ *   of each round by its three ObservedMaps under one channel, which sends
+ *   their net effect [see Channel of Modification.h], against a
+ *   NetworkSimplex run from scratch ("LEMON NetworkSimplex").
  *
  * The kinds of change are "up", a cost (a capacity, for the flows) raised
  * by a random amount, "down", lowered to a random value at least 1, and
@@ -69,7 +74,10 @@
  * [see Bench.h]; the first structure of each cell is run twice, the second
  * time as "A/A". The contracts are off.
  *
- *   reopt [ -r runs ] [ -s seed ] n1 n2 ...
+ *   [ ADS_REOPT=p1,p2,... ] reopt [ -r runs ] [ -s seed ] n1 n2 ...
+ *
+ * runs the problems p1, p2, ... only (sssp, mst, flow, assign, mcf), if
+ * ADS_REOPT is set.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -99,6 +107,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -173,6 +182,19 @@ std::vector< std::size_t > batchSizes( std::size_t m ,
   if( ( kind != "erase" ) || ( roundsFor( k ) * k <= m / 2 ) )
    K.push_back( k );
  return( K );
+ }
+
+/// whether the problem p is to be run: every one, or those that
+/// ADS_REOPT names, separated by commas
+bool chosen( const char * p )
+{
+ static const std::string only = []( void ) {
+  const char * e = std::getenv( "ADS_REOPT" );
+  return( std::string( e ? e : "" ) );
+  }();
+ return( only.empty() ||
+	  ( ( "," + only + "," ).find( std::string( "," ) + p + "," ) !=
+	    std::string::npos ) );
  }
 
 /// whether one of the structures L is to be measured
@@ -419,15 +441,16 @@ std::unique_ptr< LG > plainGraph( int n , bool directed , const Edges & E )
 
 /// the cells of a problem on a graph of n nodes and the edges E: make( g )
 /// its observer and query( o ) the answer of the observer, fresh( g ) the
-/// answer from scratch on the graph of ADS; more( c , C , k , ref ) the
-/// cells of the other competitors, L all the structures
+/// answer from scratch on the graph of ADS, under the label `scratch`;
+/// more( c , C , k , ref ) the cells of the other competitors, L all the
+/// structures
 template< class Make , class Query , class Fresh , class More >
 void graphProblem( const char * bench , int n , bool directed ,
 		   const Edges & E ,
 		   const std::vector< std::string > & L , int r ,
 		   unsigned seed ,
-		   Make && make , Query && query , Fresh && fresh ,
-		   More && more )
+		   const char * scratch , Make && make , Query && query ,
+		   Fresh && fresh , More && more )
 {
  if( ! wanted( L ) )
   return;
@@ -463,7 +486,7 @@ void graphProblem( const char * bench , int n , bool directed ,
        return( std::uint64_t( query( *s.o ) ) );
        } ,
       [ & ]( const auto & s ) { return( causes( *s.o ) ); } );
-   cell( bench , c , std::size_t( n ) , "ADS scratch" , r , C , k , R0 , ref ,
+   cell( bench , c , std::size_t( n ) , scratch , r , C , k , R0 , ref ,
 	 plain ,
 	 plainRound , []( const auto & s ) { return( noCounts( s ) ); } );
    more( c , C , k , ref );
@@ -555,6 +578,41 @@ struct BoostNet
  long long run( void ) { return( boost::push_relabel_max_flow( g , s , t ) ); }
  };
 #endif
+
+/// the network of ADS, built once as those of the other libraries are, an
+/// erased arc kept with capacity 0, the flow set back to zero by
+/// assignFlow() before each solve from scratch
+struct KeptFlow
+{
+ FlowNetwork net;
+ std::unordered_map< std::uint64_t , int > arc;
+ std::vector< long long > zero;
+ int s , t;
+
+ KeptFlow( int n , const Edges & E , int s0 , int t0 )
+     : net( n ) , s( s0 ) , t( t0 ) {
+  for( const auto & [ u , v , c ] : E )
+   add( u , v , c );
+  }
+
+ void add( int u , int v , long long c ) {
+  arc[ keyOf( u , v , true ) ] = net.addEdge( u , v , c );
+  }
+
+ void apply( const Change & c ) {
+  const auto it = arc.find( keyOf( c.u , c.v , true ) );
+  if( it == arc.end() )
+   add( c.u , c.v , c.w );
+  else
+   net.setCapacity( it->second , c.op == 'e' ? 0 : c.w );
+  }
+
+ long long run( void ) {
+  zero.assign( std::size_t( net.places() / 2 ) , 0 );
+  net.assignFlow( zero );
+  return( net.maxFlow( s , t , Augment::DINIC ) );
+  }
+ };
 
 #ifdef ADS_LEMON_FLOW
 /// the network of abLEMON, an erased arc kept with capacity 0
@@ -658,7 +716,7 @@ void sssp( int n , int r , unsigned seed )
  L.emplace_back( "Boost dijkstra" );
 #endif
  graphProblem(
-   "resolve sssp" , n , true , E , L , r , seed ,
+   "resolve sssp" , n , true , E , L , r , seed , "ADS scratch" ,
    []( LG & g ) {
     return( std::make_unique< ShortestPathsObserver< LG > >( g , 0 ) );
     } ,
@@ -717,7 +775,7 @@ void mst( int n , int r , unsigned seed )
  L.emplace_back( "Boost kruskal" );
 #endif
  graphProblem(
-   "resolve mst" , n , false , E , L , r , seed ,
+   "resolve mst" , n , false , E , L , r , seed , "ADS scratch" ,
    []( LG & g ) {
     return( std::make_unique< SpanningForestObserver< LG > >( g ) );
     } ,
@@ -762,7 +820,7 @@ void flow( int n , int r , unsigned seed )
  const auto E = gnm( n , seed , 1000 );
  std::vector< std::string > L = { "ADS reopt" , "ADS reopt A/A" ,
 				  "ADS repair" ,
-				  "ADS scratch" };
+				  "ADS scratch rebuilt" , "ADS scratch" };
 #ifdef ADS_LEMON_WARM
  L.emplace_back( "ADS reopt Preflow" );
 #endif
@@ -774,7 +832,7 @@ void flow( int n , int r , unsigned seed )
 #endif
  auto value = []( auto & o ) { return( o.value() ); };
  graphProblem(
-   "resolve flow" , n , true , E , L , r , seed ,
+   "resolve flow" , n , true , E , L , r , seed , "ADS scratch rebuilt" ,
    [ n ]( LG & g ) {
     return( std::make_unique< MaxFlowObserver< LG > >( g , 0 , n - 1 ,
 							Augment::DINIC ) );
@@ -793,6 +851,17 @@ void flow( int n , int r , unsigned seed )
     const std::size_t N = std::size_t( n );
     ( void )b;
     ( void )N;
+    cell(
+      b , c , N , "ADS scratch" , r , C , k , R0 , ref ,
+      [ & ]( void ) {
+       return( std::make_unique< KeptFlow >( n , E , 0 , n - 1 ) );
+       } ,
+      []( KeptFlow & F , std::span< const Change > D ) {
+       for( const auto & x : D )
+	F.apply( x );
+       return( std::uint64_t( F.run() ) );
+       } ,
+      []( const auto & s ) { return( noCounts( s ) ); } );
 #ifdef ADS_LEMON_WARM
     using PF =
       MaxFlowObserver< LG , RatioPolicy , lemon_interop::PreflowEngine >;
@@ -1102,8 +1171,12 @@ void mcf( int n , int r , unsigned seed )
        return( std::make_unique< NetWatched >( n , E , seed + 29 ) );
        } ,
       []( NetWatched & W , std::span< const NetChange > X ) {
-       for( const auto & x : X )
-	W.apply( x );
+       {
+	// the changes of the three maps, their net effect sent once
+	auto ch = ADS::channel( W.oc , W.ou , W.os );
+	for( const auto & x : X )
+	 W.apply( x );
+        }
        const auto p = W.o.solve();
        return( costOf( W.o.algorithm() , p ) );
        } ,
@@ -1129,12 +1202,17 @@ int main( int argc , char ** argv )
  const Options o( argc , argv , { 10000 , 100000 } );
  for( std::size_t n0 : o.sizes ) {
   const int n = int( n0 );
-  sssp( n , o.runs , o.seed );
-  mst( n , o.runs , o.seed );
-  flow( n , o.runs , o.seed );
-  assign( n , o.runs , o.seed );
+  if( chosen( "sssp" ) )
+   sssp( n , o.runs , o.seed );
+  if( chosen( "mst" ) )
+   mst( n , o.runs , o.seed );
+  if( chosen( "flow" ) )
+   flow( n , o.runs , o.seed );
+  if( chosen( "assign" ) )
+   assign( n , o.runs , o.seed );
 #ifdef ADS_LEMON_WARM
-  mcf( n , o.runs , o.seed );
+  if( chosen( "mcf" ) )
+   mcf( n , o.runs , o.seed );
 #endif
   }
  return( 0 );

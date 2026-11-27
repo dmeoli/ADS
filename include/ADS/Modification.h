@@ -38,7 +38,9 @@
  * groups only count, and the outermost one sends the events coalesced into
  * their net effect per handle (by `coalesce_traits`), as one span per
  * observer; `quiet( s )` suspends the events and sends `Rebuilt` at its end
- * (nothing with `no_rebuild`); `emit( e , undo )` gives the strong
+ * (nothing with `no_rebuild`); `channel( s1 , s2 , ... )` is a batch over
+ * several structures, each observer getting its group hooks once;
+ * `emit( e , undo )` gives the strong
  * guarantee against an observer that throws, by the inverse events and the
  * undo of the structure; each kind has a revision counter. `UndoLog` makes
  * any structure with `apply()` undoable, and `Shadow` checks an incremental
@@ -1192,6 +1194,65 @@ struct Trail
  std::size_t dy = 0;
  };
 
+/// the group hooks of the batches that a channel closes: the observers
+/// whose `group_begin()` was called, in their order, each with its
+/// `group_end()`, which the channel calls when all its batches are closed
+/// [see `Channel`]
+struct ChannelHooks
+{
+ /// an observer begun, and its `group_end()`
+ struct Open
+ {
+  void * o;                 ///< the observer
+  void ( *end )( void * );  ///< its `group_end()`
+  };
+
+ std::vector< Open > open;  ///< the observers begun
+
+ /// whether the observer \f$ o \f$ was begun
+ [[nodiscard]] bool begun( const void * o ) const {
+  for( const auto & x : open )
+   if( x.o == o )
+    return( true );
+  return( false );
+  }
+ };
+
+/// the hooks of the channel of this thread that is closing its batches,
+/// null if none
+inline thread_local ChannelHooks * t_channel = nullptr;
+
+/// `begin()` of the group of the observer \f$ o \f$, whose `group_end()`
+/// is `end`, once per channel: true if the caller ends the group itself (no
+/// channel is closing), false if the channel ends it
+template< class B >
+bool beginGroup( void * o , void ( *end )( void * ) , B && begin )
+{
+ ChannelHooks * const c = t_channel;
+ if( c == nullptr ) {
+  begin();
+  return( true );
+  }
+ if( ! c->begun( o ) ) {
+  c->open.push_back( { o , end } );
+  try {
+   begin();
+   }
+  catch( ... ) {
+   c->open.pop_back();
+   throw;
+   }
+  }
+ return( false );
+ }
+
+/// the address of the observer \f$ o \f$, the key of a channel
+template< class O >
+void * addressOf( O & o )
+{
+ return( const_cast< void * >( static_cast< const void * >( &o ) ) );
+ }
+
 /// the part of a subject with no static observers
 template< class L >
 struct NoStatic
@@ -1416,8 +1477,10 @@ class StaticSet
     rebuiltOne< I >( g );  // Rebuilt instead of the events
     return;
     }
+  bool ends = true;
   if constexpr( calls_group< Ai< I > , Oi< I > > )
-   Ai< I >::begin( o , g );
+   ends = beginGroup( addressOf( o ) , &endOf< I > ,
+		      [ & ]( void ) { Ai< I >::begin( o , g ); } );
   bool leave = false;
   if constexpr( calls_span< Ai< I > , Oi< I > , Var > ) {
    if( ( kinds & ~m ) == 0 )
@@ -1448,7 +1511,8 @@ class StaticSet
     }
    }
   if constexpr( calls_group< Ai< I > , Oi< I > > )
-   Ai< I >::end( o );
+   if( ends )
+    Ai< I >::end( o );
   if constexpr( may_leave )
    if( leave )
     f_off.set( I );
@@ -1458,11 +1522,21 @@ class StaticSet
  ADS_COLD_PATH void rebuiltOne( const Group & g ) {
   auto & o = std::get< I >( f_o );
   f_counts.rebuild( I );
+  bool ends = true;
   if constexpr( calls_group< Ai< I > , Oi< I > > )
-   Ai< I >::begin( o , g );
+   ends = beginGroup( addressOf( o ) , &endOf< I > ,
+		      [ & ]( void ) { Ai< I >::begin( o , g ); } );
   Ai< I >::rebuilt( o );
   if constexpr( calls_group< Ai< I > , Oi< I > > )
-   Ai< I >::end( o );
+   if( ends )
+    Ai< I >::end( o );
+  }
+
+ /// `group_end()` of the observer I at \f$ p \f$, for a channel
+ template< std::size_t I >
+ static void endOf( void * p ) {
+  if constexpr( calls_group< Ai< I > , Oi< I > > )
+   Ai< I >::end( *static_cast< Oi< I > * >( p ) );
   }
 
  template< std::size_t... I >
@@ -2013,6 +2087,10 @@ class Batch
 
  using T = typename mod::detail::checkpoint_of< S >::type;
 
+ /// a channel abandons its batches [see `Channel`]
+ template< class... C >
+ friend class Channel;
+
  public:
  /// opens a batch on \f$ s \f$
  explicit Batch( S & s )
@@ -2203,6 +2281,172 @@ template< class S >
 [[nodiscard]] Quiet< S > quiet( S & s , no_rebuild_t )
 {
  return( Quiet< S >( s , false ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------ CLASS Channel -----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// \cond
+namespace mod::detail
+{
+
+/// whether nobody may listen to the structure S (`NoObservers`)
+template< class S >
+inline constexpr bool silent =
+  std::remove_cvref_t< decltype( std::declval< S & >().subject() ) >::none;
+
+/// an empty member
+struct NoHooks
+{ };
+
+}  // end( namespace mod::detail )
+/// \endcond
+
+/// a batch of RAII over the structures \f$ s_1 , \ldots , s_k \f$, one
+/// change of several structures told as one [see channel()]: a batch is
+/// opened on each, and at the close of the channel the outermost batch of
+/// each structure sends its net effect, in the order of the structures,
+/// while every observer with group hooks gets one `group_begin()`, before
+/// its first events of the channel, and one `group_end()`, after the last
+/// batch has sent its events, however many of the structures it observes
+/// (an observer is the same if it has the same address); the `Group` of
+/// its `group_begin()` is that of the first structure that sends it
+/// events. A channel or a batch opened inside a channel only counts, as a
+/// batch inside a batch does. If the scope of the channel exits by an
+/// exception, each batch is left as `Batch` leaves it (the structure back
+/// to its checkpoint when it is undoable, `Rebuilt` otherwise); if an
+/// observer throws at the close, the batches not yet closed are left in
+/// the same way, the group hooks begun are ended, and the exception goes
+/// on. With `NoObservers` on every structure the channel has no member and
+/// no code (`silent`)
+///
+/// In pseudocode (beyond the book), \f$ H \f$ the observers begun:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{close}() \cr
+/// 2 & \quad H \gets \emptyset \cr
+/// 3 & \quad \textbf{foreach}\ s_i\ \textbf{do}\ \text{close the batch of }
+///     s_i \text{, a } \mathrm{group\_begin}( o ) \text{ only for }
+///     o \notin H \text{, then } H \gets H \cup \{ o \} \text{, and no }
+///     \mathrm{group\_end} \cr
+/// 4 & \quad \textbf{foreach}\ o \in H \text{, the last begun first}
+///     \ \textbf{do}\ o.\mathrm{group\_end}()
+/// \end{array}}
+/// \f]
+template< class... S >
+class Channel
+{
+
+ /// whether nobody may listen to any of the structures
+ static constexpr bool none = ( mod::detail::silent< S > && ... );
+
+ /// the batches, none if nobody may listen
+ using Batches =
+   std::conditional_t< none , std::tuple<> , std::tuple< Batch< S >... > >;
+
+ /// the hooks, none if nobody may listen
+ using Hooks =
+   std::conditional_t< none , mod::detail::NoHooks ,
+		       mod::detail::ChannelHooks >;
+
+ public:
+ /// whether the channel has no member and no code: nobody may listen to
+ /// any of its structures
+ static constexpr bool silent = none;
+
+ /// opens a batch on each of the structures \f$ s \f$
+ explicit Channel( S &... s )
+     : f_b( open( s... ) ) , f_ex( std::uncaught_exceptions() ) { }
+
+ /// not copied
+ Channel( const Channel & ) = delete;
+ /// not assigned
+ Channel & operator=( const Channel & ) = delete;
+
+ /// closes the channel, if still open; if its scope exits by an
+ /// exception, each batch is abandoned [see `Batch`]
+ ~Channel() noexcept( false ) {
+  if constexpr( ! none )
+   if( std::exchange( f_open , false ) )
+    finish( std::uncaught_exceptions() > f_ex );
+  }
+
+ /// closes the channel: each outermost batch sends its net effect, and
+ /// each observer gets its group hooks once; idempotent
+ void close( void ) {
+  if constexpr( ! none )
+   if( std::exchange( f_open , false ) )
+    finish( false );
+  }
+
+ private:
+ /// a batch on each structure, if anyone may listen
+ static Batches open( S &... s ) {
+  if constexpr( none ) {
+   ( ( void )s , ... );
+   return( Batches() );
+   }
+  else
+   return( Batches( Batch< S >( s )... ) );
+  }
+
+ /// closes the batches, abandoned if failing or after an exception, then
+ /// ends the groups begun
+ void finish( bool failing ) {
+  mod::detail::ChannelHooks * const outer = mod::detail::t_channel;
+  if( outer == nullptr )
+   mod::detail::t_channel = &f_hooks;
+  std::exception_ptr first;
+  std::apply( [ & ]( auto &... b ) { ( closeOne( b , failing , first ) ,
+				       ... ); } ,
+	      f_b );
+  if( outer == nullptr ) {
+   mod::detail::t_channel = nullptr;
+   for( std::size_t i = f_hooks.open.size() ; i-- > 0 ; )
+    try {
+     f_hooks.open[ i ].end( f_hooks.open[ i ].o );
+     }
+    catch( ... ) {
+     if( ! first )
+      first = std::current_exception();
+     }
+   f_hooks.open.clear();
+   }
+  if( first && ! failing )
+   std::rethrow_exception( first );
+  }
+
+ /// closes the batch \f$ b \f$, or abandons it if failing or after the
+ /// exception `first`
+ template< class B >
+ static void closeOne( B & b , bool failing , std::exception_ptr & first ) {
+  if( failing || first ) {
+   b.abandon();
+   return;
+   }
+  try {
+   b.close();
+   }
+  catch( ... ) {
+   first = std::current_exception();
+   }
+  }
+
+ Batches f_b;                          ///< the batches
+ ADS_NO_UNIQUE_ADDRESS Hooks f_hooks;  ///< the group hooks begun
+ int f_ex;            ///< the exceptions in flight at the open
+ bool f_open = true;  ///< whether open
+
+ };  // end( class Channel )
+
+/// a channel over the structures \f$ s \f$, open while it lives: their
+/// events are collected, and at its end each outermost batch sends its net
+/// effect, every observer getting its group hooks once [see `Channel`]
+template< class... S >
+[[nodiscard]] Channel< S... > channel( S &... s )
+{
+ return( Channel< S... >( s... ) );
  }
 
 /*--------------------------------------------------------------------------*/

@@ -9,11 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `Channel` and `channel( s1 , ... , sk )` of `Modification.h`, a batch of
+  RAII over several structures: at its close the outermost batch of each
+  structure sends its net effect, in the order of the structures, and each
+  observer gets one `group_begin()` and one `group_end()` around all its
+  events of the channel, however many of the structures it observes (the
+  observers told apart by their addresses, static and dynamic alike); a
+  channel or a batch inside a channel only counts, an exception in its
+  scope abandons every batch as `Batch` does, one thrown by an observer at
+  the close abandons the batches not yet closed and ends the groups begun,
+  and over structures with `NoObservers` only it has no member and no code
+  (`silent`); the test `engineered_modification.mod-channel`, a channel over
+  the three `ObservedMap`s of `MinCostFlowObserver` in
+  `engineered_lemon.lemon-warm-observers` and in the benchmark `reopt`,
+  the cell `modifications channel`, the export in the module
+  `ads.advanced`, the theory page of the modifications and Lemma 1.16 of
+  section 1.13 of the manual (the later lemmas of chapter 1 renumbered)
 - the benchmark `modifications`, the time of one change of a graph wrapped
   by `ObservedGraph`, of an `ObservableArray`, of an `IndexedDaryHeap` and
   of a `DenseHashMap` under `NoObservers`, one static observer, zero, one
   and four dynamic observers, batches of 16 and 256 changes and a mute,
-  against the plain structure, on random handles and on 64 hot ones; and
+  against the plain structure, on random handles and on 64 hot ones, and
+  a channel over three arrays against a batch on each; and
   the benchmark `reopt`, the solve after each batch of k changes (k = 1, 4,
   16, ... up to the arcs) of `ShortestPathsObserver`,
   `SpanningForestObserver`, `MaxFlowObserver` (also on the warm `Preflow`
@@ -21,8 +38,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `NetworkSimplex`, on raises, decreases, random values, insertions and
   erasures of arcs, upper bounds and supplies, with the default recompute
   policy and with one that never computes from scratch, against the
-  algorithms of ADS from scratch and those of Boost and abLEMON on the same
-  stream of changes, each round checked against the solve from scratch and
+  algorithms of ADS from scratch (for the maximum flow, a `FlowNetwork`
+  kept from round to round with its flow set back to zero, as the
+  networks of the other libraries are kept, and one built again at each
+  round) and those of Boost and abLEMON on the same stream of changes,
+  the problems chosen by `ADS_REOPT` (the minimum cost flow on 10^3 and
+  10^4 nodes in `bench/run.sh`), each round checked against the solve
+  from scratch and
   the outcomes of the queries by cause printed as rows `<name>:count`;
   both in the makefile, in CMake, in `bench/run.sh` and in a job of the CI
   that builds them with Boost and abLEMON and runs them on small sizes;

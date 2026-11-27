@@ -243,15 +243,17 @@ void Slots< L , Obs >::deliverGroup( std::span< const Var > C ,
   if( s.early && s.early( s.o , eventsFor( C , m , ( kinds & ~m ) == 0 ) ) ) {
    if constexpr( ADS_CONTRACTS >= 3 )
     ++s.counts.rebuilds;  // Rebuilt instead of the events
+   bool ends = true;
    if( s.begin )
-    s.begin( s.o , g );
+    ends = beginGroup( s.o , s.end , [ & ]( void ) { s.begin( s.o , g ); } );
    s.rebuilt( s.o );
-   if( s.end )
+   if( s.end && ends )
     s.end( s.o );
    continue;
    }
+  bool ends = true;
   if( s.begin )
-   s.begin( s.o , g );
+   ends = beginGroup( s.o , s.end , [ & ]( void ) { s.begin( s.o , g ); } );
   bool leave = false;
   if( s.all ) {
    if( ( kinds & ~m ) == 0 )
@@ -276,7 +278,7 @@ void Slots< L , Obs >::deliverGroup( std::span< const Var > C ,
     a = b;
     }
    }
-  if( s.end )
+  if( s.end && ends )
    s.end( s.o );
   if( leave ) {
    s.o = nullptr;

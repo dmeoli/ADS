@@ -33,6 +33,7 @@
 #include "ADS/Modification.h"
 #include "ADS/graph/ListGraph.h"
 #include "ADS/graph/Observable.h"
+#include "ADS/sequence/ObservableArray.h"
 
 #include <cstddef>
 #include <optional>
@@ -1306,6 +1307,158 @@ ADS_TEST( "mod-observed-graph" )
  ob.attach( n2 );
  ob.insertNode();
  CHECK( n2.n == 1 );
+ }
+
+// a channel over several structures: one group per observer, whatever the
+// structures it observes, the net effect of each, the nesting, and the
+// exceptions in the scope and in an observer at the close
+ADS_TEST( "mod-channel" )
+{
+ using Arr = ObservableArray< int , Dynamic<> >;
+ using AS = mod::Assigned< std::size_t , int >;
+ using LG = ListGraph< long long >;
+ using W = WeightChanged< long long >;
+ struct Grouped
+ {
+  int begins = 0 , ends = 0 , depth = 0 , events = 0 , outside = 0 ,
+  rebuilt = 0;
+  std::vector< std::size_t > sizes;
+  void group_begin( const mod::Group & g ) {
+   ++begins;
+   ++depth;
+   sizes.push_back( g.size );
+   }
+  void group_end( void ) {
+   ++ends;
+   --depth;
+   }
+  void seen( void ) {
+   ++events;
+   outside += depth == 0 ? 1 : 0;
+   }
+  void on( const AS & ) { seen(); }
+  void on( const W & ) { seen(); }
+  void on( const KC & ) { seen(); }
+  void on( const Ins & ) { seen(); }
+  void on( const mod::Rebuilt & ) noexcept { ++rebuilt; }
+  };
+ // three structures of two kinds, an observer on all of them (also as a
+ // static one), another on one
+ Grouped x , y;
+ Arr a( 4 ) , b( 4 );
+ ObservableArray< int , Static< Grouped > > c( 4 , 0 , x );
+ LG g( 3 );
+ g.insertEdge( 0 , 1 , 5 );
+ ObservedGraph< LG , Dynamic<> > og( g );
+ a.attach( x );
+ b.attach( x );
+ og.attach( x );
+ a.attach( y );
+ {
+  auto ch = ADS::channel( a , b , c , og );
+  a.set( 0 , 1 );
+  a.set( 0 , 2 );  // one net change
+  b.set( 1 , 3 );
+  c.set( 2 , 4 );
+  og.setWeight( 0 , 1 , 7 );
+  {
+   auto inner = ADS::batch( b );  // nested: it only counts
+   b.set( 2 , 4 );
+   }
+  {
+   auto ch2 = ADS::channel( a , og );  // nested too
+   a.set( 3 , 5 );
+   }
+  CHECK( ( x.events == 0 ) && ( x.begins == 0 ) && ( y.events == 0 ) );
+  ch.close();
+  ch.close();  // idempotent
+  }
+ CHECK( ( x.begins == 1 ) && ( x.ends == 1 ) && ( x.depth == 0 ) );
+ CHECK( ( x.events == 6 ) && ( x.outside == 0 ) );
+ CHECK( ( x.sizes.size() == 1 ) && ( x.sizes[ 0 ] == 2 ) );  // that of a
+ CHECK( ( y.begins == 1 ) && ( y.ends == 1 ) && ( y.events == 2 ) );
+ CHECK( ( a[ 0 ] == 2 ) && ( b[ 2 ] == 4 ) && ( g.weight( 0 , 1 ) == 7 ) );
+ // separate batches: a group each
+ {
+  auto ba = ADS::batch( a );
+  auto bb = ADS::batch( b );
+  a.set( 1 , 1 );
+  b.set( 1 , 1 );
+  }
+ CHECK( ( x.begins == 3 ) && ( x.ends == 3 ) && ( y.begins == 2 ) );
+ // a channel with no change sends nothing; one on a structure that a
+ // batch already holds leaves its events to that batch
+ {
+  auto ch = ADS::channel( a , b );
+  }
+ CHECK( x.begins == 3 );
+ {
+  auto outer = ADS::batch( b );
+  {
+   auto ch = ADS::channel( a , b );
+   a.set( 2 , 7 );
+   b.set( 3 , 7 );
+   }
+  CHECK( ( x.begins == 4 ) && ( x.events == 9 ) );  // a alone
+  }
+ CHECK( ( x.begins == 5 ) && ( x.events == 10 ) && ( x.depth == 0 ) );
+ // nobody listens: no member and no code
+ static_assert(
+   Channel< Keyed< NoObservers > , Keyed< NoObservers > >::silent );
+ static_assert( ! Channel< Keyed< NoObservers > , Arr >::silent );
+ {
+  Keyed< NoObservers > p( 2 ) , q( 2 );
+  auto ch = ADS::channel( p , q );
+  p.insert( 0 , 1 , 1 );
+  q.insert( 1 , 2 , 2 );
+  }
+ // the scope exits by an exception: the undoable structures go back to
+ // their checkpoints and tell nothing, the others send Rebuilt, in one
+ // group
+ using KU = Keyed< Dynamic<> , true >;
+ using KN = Keyed< Dynamic<> >;
+ KU u1( 2 ) , u2( 2 );
+ KN n1( 2 );
+ Grouped z;
+ u1.subject().attach( z );
+ u2.subject().attach( z );
+ n1.subject().attach( z );
+ try {
+  auto ch = ADS::channel( u1 , u2 , n1 );
+  u1.insert( 0 , 1 , 1 );
+  u2.insert( 1 , 2 , 2 );
+  n1.insert( 0 , 3 , 3 );
+  throw( std::runtime_error( "abort" ) );
+  }
+ catch( const std::runtime_error & ) {
+  }
+ CHECK( ! u1.item( 0 ).live && ! u2.item( 1 ).live );
+ CHECK( ( z.events == 0 ) && ( z.rebuilt == 1 ) );
+ CHECK( ( z.begins == 1 ) && ( z.ends == 1 ) );
+ // an observer throws at the close: the batches not yet closed go back to
+ // their checkpoints, the groups begun end, and the exception goes on
+ struct Thrower
+ {
+  void on( const Ins & ) { throw( std::runtime_error( "observer" ) ); }
+  };
+ Thrower t;
+ KU v1( 2 ) , v2( 2 );
+ Grouped w;
+ v1.subject().attach( w );
+ v1.subject().attach( t );
+ v2.subject().attach( w );
+ bool thrown = false;
+ try {
+  auto ch = ADS::channel( v1 , v2 );
+  v1.insert( 0 , 1 , 1 );
+  v2.insert( 0 , 2 , 2 );
+  ch.close();
+  }
+ catch( const std::runtime_error & ) {
+  thrown = true;
+  }
+ CHECK( thrown && ! v2.item( 0 ).live );
+ CHECK( ( w.begins == 1 ) && ( w.ends == 1 ) && ( w.depth == 0 ) );
  }
 
 /*--------------------------------------------------------------------------*/

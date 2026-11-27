@@ -87,7 +87,7 @@ program), and the chapter where its comparison belongs.
 | `learned` | LA-vector, PGM-index, dynamic PGM-index | Elias-Fano, `std::map`, `BTreeMap`, (sdsl-lite, la_vector, PGM-index) | [§6.10](06-search.md#sec-6-10), [§22.13](22-succinct.md#sec-22-13) |
 | `matrix` | dense products and transposition | the products of the book, (Eigen, OpenBLAS) | [§17.11](17-numeric.md#sec-17-11) |
 | `memory` | arenas, object pools, allocators of blocks of any size | `new`/`delete`, `std::pmr`, Boost.Pool, (mimalloc, jemalloc) | [§5.11](05-memory.md#sec-5-11) |
-| `modifications` | the time of one change of a graph, an array, a heap and a dictionary that tell their changes, by subject policy, by observers attached, in batches and under a mute | the plain structure, its own code with `NoObservers` | [§1.13](01-introduction.md#sec-1-13) |
+| `modifications` | the time of one change of a graph, an array, a heap and a dictionary that tell their changes, by subject policy, by observers attached, in batches and under a mute; a channel over three arrays against a batch on each | the plain structure, its own code with `NoObservers` | [§1.13](01-introduction.md#sec-1-13) |
 | `mpi` | the sort and the mailbox over the processes of MPI | none (the scaling over $P$) | [§26.6](26-distributed.md#sec-26-6) |
 | `multi` | search of many patterns at once | `std::string_view::find()`, (Vectorscan) | [§15.9](15-string.md#sec-15-9) |
 | `numeric` | gcd, modular powers, primality, factorization, generators, deviates, shuffles, alias tables, sampling | `std`, Boost, (GMP, hurchalla, PCG, Random123) | [§17.11](17-numeric.md#sec-17-11) |
@@ -192,7 +192,11 @@ handles and on handles among the first 64 (whose changes a batch coalesces),
 under each subject policy: `NoObservers`, which should take the time of the
 plain structure (the A/A of the claim that a change nobody listens to costs
 nothing), one static observer, zero, one and four dynamic ones, one dynamic
-observer with the changes in batches of 16 and of 256, and one under a mute.
+observer with the changes in batches of 16 and of 256, and one under a mute;
+its case `modifications channel` makes the changes of three `ObservableArray`s
+with one observer attached to all of them, in groups of 256 under a batch on
+each array (`3 batches 256`) and under one `Channel` over the three (`channel
+256`).
 In `reopt` a cell is one *round*, i.e., $k$ changes followed by a solve, and
 its case is `<kind> k=<k>`: the kinds are a cost (or a capacity) raised,
 lowered or set at random, an arc inserted or erased, and, for the minimum
@@ -204,7 +208,16 @@ with a policy that never computes from scratch, so that the cost of a repair
 is also seen past the threshold of the policy; both are compared with `ADS
 scratch` and with the other libraries, which run from scratch on the first 8
 rounds of the same stream of changes (the warm rounds are
-$\max( 8 , 1024 / k )$). The answer of each round is compared with that of
+$\max( 8 , 1024 / k )$). For the maximum flow `ADS scratch` keeps its
+`FlowNetwork` from round to round, sets the capacities changed and the flow
+back to zero (by `assignFlow()`) and solves by Dinic, as the networks of
+abLEMON and of Boost are kept, while `ADS scratch rebuilt` builds the network
+again from the graph at each round, as the observer does when it computes
+from scratch; the minimum cost flow takes its changes of a round through one
+channel over its three maps. The variable `ADS_REOPT` keeps some of the
+problems (`sssp`, `mst`, `flow`, `assign`, `mcf`), by which `bench/run.sh`
+runs the minimum cost flow on $10^3$ and $10^4$ nodes and the others on
+$10^4$ and $10^5$. The answer of each round is compared with that of
 the solve from scratch of ADS, a cell whose answers differ printing $-1$, and
 the outcomes of the queries of `ADS reopt` by cause
 ([§14.13.4](14-graph.md#sec-14-13-4)) are printed as rows of the benchmark

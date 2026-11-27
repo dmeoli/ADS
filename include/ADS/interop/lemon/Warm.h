@@ -330,7 +330,10 @@ class NetworkSimplexAssignment
 
 /// a minimum cost flow of a digraph of LEMON by the algorithm `A`, kept up
 /// to date as an observer of the maps of its costs, upper bounds and
-/// supplies, and of the taps of its arcs and nodes
+/// supplies, and of the taps of its arcs and nodes; the changes of several
+/// maps made under one `channel()` over them [see `Channel`] reach it as
+/// their net effect at the end of the channel, e.g., a supply moved back
+/// and forth as one change of each node, or none
 template< class GR , class A = ::lemon::NetworkSimplex< GR > ,
 	  class CM = typename GR::template ArcMap< typename A::Cost > ,
 	  class UM = typename GR::template ArcMap< typename A::Value > ,

@@ -41,6 +41,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <numeric>
+#include <optional>
 #include <random>
 #include <set>
 #include <stdexcept>
@@ -1279,6 +1280,12 @@ ADS_TEST( "lemon-warm-observers" )
    if( a == lemon::INVALID )
     a = G::ArcIt( g );
    const int kind = int( rng() % 4 );
+   // every other step the changes of the maps go through a channel, which
+   // sends their net effect at its end
+   std::optional< Channel< decltype( oc ) , decltype( ou ) , decltype( os ) > >
+     ch;
+   if( step % 2 )
+    ch.emplace( oc , ou , os );
    if( kind == 0 )
     oc.set( a , rng() % 100 );
    else if( kind == 1 )
@@ -1293,6 +1300,7 @@ ADS_TEST( "lemon-warm-observers" )
     oc.set( x , rng() % 100 );
     ou.set( x , 1 + rng() % 20 );
     }
+   ch.reset();
    const auto r = o.solve();
    const auto [ rc , tc ] = cold();
    CHECK( r == rc );

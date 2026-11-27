@@ -118,6 +118,7 @@ using ADS::WalkIterator;
 
 // Modification.h
 using ADS::Batch;
+using ADS::Channel;
 using ADS::Dynamic;
 using ADS::Keep;
 using ADS::NeumaierSum;
@@ -132,6 +133,7 @@ using ADS::Shadow;
 using ADS::Static;
 using ADS::UndoLog;
 using ADS::batch;
+using ADS::channel;
 using ADS::no_rebuild;
 using ADS::no_rebuild_t;
 using ADS::quiet;

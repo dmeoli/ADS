@@ -485,6 +485,30 @@
  otherwise. `UndoLog` keeps the events of a history, from which the inverses
  in the reverse order give a history back to any of its checkpoints.
 
+ A change of several structures that one observer follows (e.g., the
+ costs, the upper bounds and the supplies of a network, each in a map of
+ its own) is made under a <em>channel</em>, a batch on each of the
+ structures \f$ s_1 , \ldots , s_k \f$ whose close (`Channel`) closes the
+ batches in this order and calls the group hooks of each observer once:
+ its `group_begin()` before the first events that it receives from the
+ channel, and its `group_end()` after the last batch has sent its events,
+ the observers being told apart by their addresses, so that a static
+ observer of one structure and a dynamic one of another are the same
+ observer when they are the same object. By Lemma 1 applied to each
+ structure, an observer receives, between its two hooks, for each
+ \f$ s_i \f$ that it observes, a history that leads from the state of
+ \f$ s_i \f$ before the channel to its state after it, and nothing else;
+ its hooks are called once each, since the channel records each observer
+ whose `group_begin()` it called and suppresses its later ones and all its
+ `group_end()` until the end. A channel or a batch opened on a structure
+ inside a channel only counts, as a batch inside a batch does, and a
+ structure that a batch holds before the channel opens sends its events at
+ the close of that batch. If the scope of the channel exits by an
+ exception, every batch is abandoned as above; if an observer throws while
+ a batch sends its events, the batches not yet closed are abandoned, the
+ group hooks begun are ended, and the exception goes on. A channel over
+ structures with `NoObservers` only has no member and no code.
+
  \section theory_ADS_capabilities Capabilities
 
  An algorithm that takes a structure as a type may ask what the structure
