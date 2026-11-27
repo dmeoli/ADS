@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the benchmark `modifications`, the time of one change of a graph wrapped
+  by `ObservedGraph`, of an `ObservableArray`, of an `IndexedDaryHeap` and
+  of a `DenseHashMap` under `NoObservers`, one static observer, zero, one
+  and four dynamic observers, batches of 16 and 256 changes and a mute,
+  against the plain structure, on random handles and on 64 hot ones; and
+  the benchmark `reopt`, the solve after each batch of k changes (k = 1, 4,
+  16, ... up to the arcs) of `ShortestPathsObserver`,
+  `SpanningForestObserver`, `MaxFlowObserver` (also on the warm `Preflow`
+  of abLEMON), `Assignment` and `MinCostFlowObserver` on the warm
+  `NetworkSimplex`, on raises, decreases, random values, insertions and
+  erasures of arcs, upper bounds and supplies, with the default recompute
+  policy and with one that never computes from scratch, against the
+  algorithms of ADS from scratch and those of Boost and abLEMON on the same
+  stream of changes, each round checked against the solve from scratch and
+  the outcomes of the queries by cause printed as rows `<name>:count`;
+  both in the makefile, in CMake, in `bench/run.sh` and in a job of the CI
+  that builds them with Boost and abLEMON and runs them on small sizes;
+  `bench/summary.py --crossover`, the table of the least k at which the
+  reoptimization stops paying next to the outcomes of its policy, and the
+  pairs of `reopt` in its summary; the programs in appendix B of the
+  manual, and their use in sections 1.13 and 14.13.4
 - `TinyRankSelect` (`BasicTinyRankSelect< L0 >`, with blocks of `L0` =
   512, 1024 or 2048 bits), the rank and select of 3* of Kurpicz,
   Rigi-Luperti and Sanders: an entry of 512 bits per superblock of 32
@@ -358,6 +379,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the `initWarm()` that the shim writes into the `Preflow` of LEMON marks
+  its flag used by a cast to `void` instead of
+  `ignore_unused_variable_warning()`, which `lemon/preflow.h` does not
+  declare, so that a program that includes the rewritten `preflow.h` before
+  `lemon/concept_check.h` (as the benchmarks `flows` and `reopt` do)
+  compiles with GCC
 - `lowestCommonAncestor()` of `BinaryTreeAlgorithms.h` returns the node
   where the two climbs meet by the second of them, which GCC 15 compiles
   right at `-O1` and above, where with the first it gave, on GCC 15.3, a

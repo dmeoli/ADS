@@ -21,7 +21,7 @@ enters a benchmark.
 
 ## B.1 The programs {#sec-B-1}
 
-There are 45 programs of timing in `bench/`, one per family of structures or of
+There are 47 programs of timing in `bench/`, one per family of structures or of
 algorithms, each a file `bench/<name>.cpp` built as `bench-<name>` (by `make
 bench`, or with the CMake option `-DADS_BENCHMARKS=ON`, which builds all of
 them but `compression`, `succinct` and `mpi`). Each program states in its
@@ -87,6 +87,7 @@ program), and the chapter where its comparison belongs.
 | `learned` | LA-vector, PGM-index, dynamic PGM-index | Elias-Fano, `std::map`, `BTreeMap`, (sdsl-lite, la_vector, PGM-index) | [§6.10](06-search.md#sec-6-10), [§22.13](22-succinct.md#sec-22-13) |
 | `matrix` | dense products and transposition | the products of the book, (Eigen, OpenBLAS) | [§17.11](17-numeric.md#sec-17-11) |
 | `memory` | arenas, object pools, allocators of blocks of any size | `new`/`delete`, `std::pmr`, Boost.Pool, (mimalloc, jemalloc) | [§5.11](05-memory.md#sec-5-11) |
+| `modifications` | the time of one change of a graph, an array, a heap and a dictionary that tell their changes, by subject policy, by observers attached, in batches and under a mute | the plain structure, its own code with `NoObservers` | [§1.13](01-introduction.md#sec-1-13) |
 | `mpi` | the sort and the mailbox over the processes of MPI | none (the scaling over $P$) | [§26.6](26-distributed.md#sec-26-6) |
 | `multi` | search of many patterns at once | `std::string_view::find()`, (Vectorscan) | [§15.9](15-string.md#sec-15-9) |
 | `numeric` | gcd, modular powers, primality, factorization, generators, deviates, shuffles, alias tables, sampling | `std`, Boost, (GMP, hurchalla, PCG, Random123) | [§17.11](17-numeric.md#sec-17-11) |
@@ -95,6 +96,7 @@ program), and the chapter where its comparison belongs.
 | `positions` | indices from the addresses of objects to their positions | `std::unordered_map`, `FlatHashTable`, `boost::unordered_flat_map` | [7](07-dictionary.md#ch-7) |
 | `priority` | heaps, sequence heap, bucket queues and radix heap in the hold model, double-ended queues, Dijkstra, best-first searches | `std::priority_queue`, `std::multiset`, Boost.Heap, (tlx, radix-heap) | [§9.13](09-priority.md#sec-9-13) |
 | `queues` | queues, deques and stacks | `std::deque`, `std::vector`, `boost::circular_buffer`, `boost::container::devector` | [3](03-stack.md#sec-3-9), [4](04-queue.md#ch-4) |
+| `reopt` | the solve after each batch of $k$ changes of the observers of the shortest paths, of the spanning forest, of the maximum flow, of `Assignment` and of the warm minimum cost flow, by kind of change and by $k$ | the algorithms of ADS from scratch, Boost `dijkstra_shortest_paths`, `kruskal_minimum_spanning_tree`, `push_relabel_max_flow`, (abLEMON `Preflow`, `MinCostAssignment`, `NetworkSimplex`) | [§14.13.4](14-graph.md#sec-14-13-4) |
 | `runtime` | the channels, the mailbox and the termination of the long-lived workers | the workers of OpenMP, (oneTBB, FastFlow) | [§25.13](25-parallel.md#sec-25-13) |
 | `search` | exact search of a pattern | `std::string_view::find()`, the searchers of `std`, `memmem()`, Boost.Algorithm | [§15.9](15-string.md#sec-15-9) |
 | `sequences` | sequences, tiered and small vectors, stacks, rearrangements and sorts of lists | `std::vector`, `std::list`, `std::forward_list`, `std::deque`, `std::stack`, Boost.Container | [2](02-sequence.md#ch-2), [3](03-stack.md#sec-3-9), [§12.15](12-sort.md#sec-12-15) |
@@ -180,6 +182,33 @@ the preparation of the pattern, which a searcher pays at each pattern, and
 the programs of Knuth, run as processes, the reading of the file and the start
 of the process). Also, `graphs` includes the building of the structures of the
 run, e.g., of the priority queue.
+
+The programs `modifications` and `reopt` measure the machinery of
+[§1.13](01-introduction.md#sec-1-13) rather than a structure. In
+`modifications` a cell is the time of one change of a graph (`setWeight()`),
+of an `ObservableArray` (`set()`), of an `IndexedDaryHeap` (`decrease()`) or
+of a `DenseHashMap` (a removal alternated with an insertion), on random
+handles and on handles among the first 64 (whose changes a batch coalesces),
+under each subject policy: `NoObservers`, which should take the time of the
+plain structure (the A/A of the claim that a change nobody listens to costs
+nothing), one static observer, zero, one and four dynamic ones, one dynamic
+observer with the changes in batches of 16 and of 256, and one under a mute.
+In `reopt` a cell is one *round*, i.e., $k$ changes followed by a solve, and
+its case is `<kind> k=<k>`: the kinds are a cost (or a capacity) raised,
+lowered or set at random, an arc inserted or erased, and, for the minimum
+cost flow, an upper bound changed or a supply moved, while $k$ runs over
+$1 , 4 , 16 , \ldots$ up to the arcs $m$ (up to $m / 16$ for the erasures,
+which must leave half of the arcs). The algorithm that keeps its solution
+runs as `ADS reopt`, with the default recompute policy, and as `ADS repair`,
+with a policy that never computes from scratch, so that the cost of a repair
+is also seen past the threshold of the policy; both are compared with `ADS
+scratch` and with the other libraries, which run from scratch on the first 8
+rounds of the same stream of changes (the warm rounds are
+$\max( 8 , 1024 / k )$). The answer of each round is compared with that of
+the solve from scratch of ADS, a cell whose answers differ printing $-1$, and
+the outcomes of the queries of `ADS reopt` by cause
+([§14.13.4](14-graph.md#sec-14-13-4)) are printed as rows of the benchmark
+`<name>:count`, which `bench/tables.py` leaves out.
 
 Note that the programs of several threads (`parallel`, `runtime` and `mpi`)
 make a first run that is not timed, which starts the threads of the runtime. In
@@ -416,3 +445,13 @@ of the second. It also gives the A/A noise across the two runs (its
 median, its 90th percentile and its largest value over all the cells);
 thus one reads each ratio against the noise of the campaign that
 produced it.
+
+With `--crossover`, `bench/summary.py` writes instead one table per problem
+of `reopt`, kind of change and size: a row per $k$ with the time of a round
+of each structure of ADS and of the fastest other library, the ratios of the
+solves from scratch to `ADS reopt`, and the share of its queries by outcome,
+followed by the least $k$ at which `ADS reopt` is no faster than the
+scratch of ADS and than the library. The size at which the policy stops
+repairing (the rows `scratch by size`) can thus be read next to the size at
+which a repair stops paying, which is what a campaign on an idle machine
+should settle for each algorithm.

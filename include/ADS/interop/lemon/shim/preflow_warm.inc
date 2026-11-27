@@ -24,7 +24,7 @@
   repairDeficits();
   const bool ok = init( *_flow );
   LEMON_ASSERT( ok , "A deficit is left after the repair" );
-  ignore_unused_variable_warning( ok );
+  ( void )ok;
   }
 
  /// \brief Run the algorithm again from the flow of the last run.

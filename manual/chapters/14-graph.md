@@ -5029,6 +5029,27 @@ catch( const std::runtime_error & ) {
 long long k = P.byCause( ADS::Reopt::SCRATCH_BY_SIZE );  // k is 1
 ```
 
+The default $\rho = 1 / 4$ is a threshold on counts, and whether a repair
+still pays at a quarter of the arcs depends on the algorithm and on the kind
+of the changes. The benchmark `reopt` of [§B.1](B-benchmarks.md#sec-B-1)
+measures it as the reoptimization of a solver is usually measured, i.e., by
+the time of a solve after each batch of $k$ changes, for $k = 1 , 4 , 16 ,
+\ldots$ up to $m$, against the solve from scratch on the same changes, with
+the default policy and with one that never computes from scratch (so that
+the repair is also timed past the threshold), on raises, decreases, random
+values, insertions and erasures of arcs for the three observers of the
+graphs, on the costs for `Assignment`, and on the costs, the upper bounds
+and the supplies for `MinCostFlowObserver` on the warm `NetworkSimplex` of
+[§14.14.4](14-graph.md#sec-14-14-4). Each cell is printed with the counts
+of `byCause()` over its queries; hence, `bench/summary.py --crossover` shows
+next to each other the least $k$ at which the repair stops paying and the
+$k$ at which the policy starts computing from scratch, and a mismatch
+between the two is a reason to change $\rho$ (or $\alpha$) for that
+observer. We expect the certificate to make the raises off the tree, the
+forest or the cut almost free for any $k$, and the decreases and the
+erasures of the arcs of a solution to cross over at a smaller $k$, but this
+is left to the campaign.
+
 ## 14.14 Interoperation with LEMON {#sec-14-14}
 
 We are concerned here with two users. One has a program written on LEMON
