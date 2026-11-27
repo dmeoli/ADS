@@ -172,6 +172,19 @@ binaryPack( std::span< const std::uint32_t > x , bool sorted = false );
 binaryUnpack( std::span< const std::uint8_t > in , std::size_t n ,
 	      bool sorted = false );
 
+/// the code of `binaryPack( x , sorted )` written in `out` in place of what
+/// it held, in the room that `out` already has when it suffices
+inline void binaryPack( std::span< const std::uint32_t > x ,
+			std::vector< std::uint8_t > & out ,
+			bool sorted = false );
+
+/// the integers of `binaryUnpack( in , out.size() , sorted )` written in
+/// `out`
+/// \pre `in` is the code of `out.size()` integers
+inline void binaryUnpack( std::span< const std::uint8_t > in ,
+			  std::span< std::uint32_t > out ,
+			  bool sorted = false );
+
 /// the patched binary packing (PFor) of \f$ x \f$ in blocks of 128
 /// integers, of their differences at a distance of 4 if `sorted`
 ///

@@ -181,6 +181,18 @@ template< ALPFloat F >
 [[nodiscard]] std::vector< F >
 alpDecompress( std::span< const std::uint8_t > code , std::size_t n );
 
+/// the code of `alpCompress( x )` written in `out` in place of what it
+/// held, in the room that `out` already has when it suffices
+template< std::ranges::contiguous_range R >
+ requires ALPFloat< std::ranges::range_value_t< R > >
+void alpCompress( const R & x , std::vector< std::uint8_t > & out );
+
+/// the values of `alpDecompress< F >( code , out.size() )` written in `out`
+/// \pre `code` is the ALP code of `out.size()` values of type `F`
+template< ALPFloat F >
+void alpDecompress( std::span< const std::uint8_t > code ,
+		    std::span< F > out );
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )

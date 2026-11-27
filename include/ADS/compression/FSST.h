@@ -20,7 +20,11 @@
  * or else the escape. The greedy choice is therefore not always the longest
  * match (two symbols of 3 bytes or more with the same first 3 bytes, or in
  * the same slot, do not both enter the table), which the construction takes
- * into account.
+ * into account. As in the encoder of the authors, the byte least frequent
+ * in the sample, the terminator, enters no symbol of 2 bytes or more, so
+ * that the last 7 bytes of a string are read as one word followed by the
+ * terminator, with no symbol able to run past its end, and coded by the
+ * same step as the others, with no test of the bytes left.
  *
  * The table is built by 5 generations on a sample of about 16 KB of the
  * strings (pieces of 512 bytes of strings drawn at random, or all the
@@ -209,14 +213,18 @@ class FSSTTable
 
 /*--------------------------------------------------------------------------*/
  private:
+ friend class FSSTColumn;
+
  /// the slots of the hash table
  static constexpr std::size_t kHash = 1024;
 
- /// a symbol of 3 bytes or more in the hash table, len 0 if none
+ /// a symbol of 3 bytes or more in the hash table, its bytes kept by the
+ /// shift of the mask of a word; len 0 if none, with a symbol that no word
+ /// masked by the shift equals
  struct Slot
  {
-  std::uint64_t sym = 0;
-  std::uint8_t len = 0 , code = 0;
+  std::uint64_t sym = 2;
+  std::uint8_t len = 0 , code = 0 , shift = 63;
   };
 
  /// the slot of the first 3 bytes of the word w
@@ -234,11 +242,17 @@ class FSSTTable
  template< bool Done = true >
  std::uint16_t match( std::uint64_t w , std::size_t r ) const;
 
+ /// the codes of the n bytes from p written at out, which has room for
+ /// 2 n bytes; the end of the codes
+ std::uint8_t * encode( const char * p , std::size_t n ,
+			std::uint8_t * out ) const;
+
  /// whether the symbol of the bytes sym, len bytes, enters the lookups,
  /// and enters it with the next code if it does
  bool add( std::uint64_t sym , unsigned len );
 
- /// the table of the pairs of bytes from the symbols of 1 and 2 bytes
+ /// the table of the pairs of bytes from the symbols of 1 and 2 bytes,
+ /// and the terminator
  void finish( void );
 
  /// the table of the strings of the sample Z
@@ -250,6 +264,7 @@ class FSSTTable
  std::vector< Slot > f_hash;                 ///< the symbols of 3+ bytes
  std::vector< std::uint16_t > f_pair;        ///< the codes of 2 bytes
  std::array< std::uint16_t , 256 > f_byte{};  ///< the codes of 1 byte
+ std::uint16_t f_term = 256;  ///< a byte of no symbol of 2+ bytes, or 256
 
  };  // end( class FSSTTable )
 
@@ -273,6 +288,16 @@ class FSSTColumn
   requires std::convertible_to< std::ranges::range_reference_t< R > ,
 				std::string_view >
  explicit FSSTColumn( const R & S );
+
+ /// the column of the strings of \f$ S \f$ in place of the strings it
+ /// held, in the room that it already has when it suffices (that of the
+ /// codes is kept at 2 bytes per byte of the strings, the most that they
+ /// take)
+ /// \post each string is the one of \f$ S \f$ at its place (audit)
+ template< std::ranges::forward_range R >
+  requires std::convertible_to< std::ranges::range_reference_t< R > ,
+				std::string_view >
+ void assign( const R & S );
 
  /// the number of the strings
  [[nodiscard]] std::size_t size( void ) const {
@@ -318,6 +343,15 @@ class FSSTColumn
 
 /*--------------------------------------------------------------------------*/
  private:
+ /// the codes of the strings of S written from o, and their places in
+ /// f_at, which has room for them; the bytes of the codes
+ template< std::ranges::forward_range R >
+ std::size_t encodeAll( const R & S , std::uint8_t * o );
+
+ /// whether the strings of the column are those of S
+ template< std::ranges::forward_range R >
+ bool holds( const R & S ) const;
+
  FSSTTable f_table;                   ///< the table
  std::vector< std::uint8_t > f_code;  ///< the codes, one string after another
  std::vector< std::size_t > f_at;  ///< where each string begins, and the end

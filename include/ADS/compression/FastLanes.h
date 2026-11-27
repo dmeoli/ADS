@@ -241,6 +241,22 @@ template< FastLanesWord T >
 fastLanesDecode( std::span< const std::uint8_t > code , std::size_t n ,
 		 FastLanesScheme s = FastLanesScheme::FOR );
 
+/// the code of `fastLanesEncode( x , s )` written in `out` in place of what
+/// it held, in the room that `out` already has when it suffices
+template< std::ranges::contiguous_range R >
+ requires FastLanesWord< std::ranges::range_value_t< R > >
+void fastLanesEncode( const R & x , std::vector< std::uint8_t > & out ,
+		      FastLanesScheme s = FastLanesScheme::FOR );
+
+/// the values of `fastLanesDecode< T >( code , out.size() , s )` written in
+/// `out`
+/// \pre `code` is the code of `out.size()` values of type `T` by
+///      \f$ s \f$
+template< FastLanesWord T >
+void fastLanesDecode( std::span< const std::uint8_t > code ,
+		      std::span< T > out ,
+		      FastLanesScheme s = FastLanesScheme::FOR );
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )

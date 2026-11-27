@@ -1958,7 +1958,10 @@ the lane $l$ is the place $16 \rho( o ) + 128 s + l$. A vector of differences
 (DELTA) keeps the first value of each lane, its $L$ bases, in $L W / 8 = 128$
 bytes, i.e., a bit per value. Its decoder unpacks a row and adds it to the sums
 of the lanes in the same loop, and then moves each value to its place $\tau( p
-)$; the decoders of the authors leave the vector in the transposed order, which
+)$ by three loops on $c < 16$, $r < 8$ and $a < 8$, as $64 c + 8 r + a = \tau(
+128 a + 16 \rho( r ) + c )$, whose indices the compiler knows and turns into
+vector operations (the encoder transposes its differences in the same way); the
+decoders of the authors leave the vector in the transposed order, which
 the operators of a query that do not depend on the order may take as it is,
 while `fastLanesDecode()` gives it back in the order of the column. Finally, a
 vector of runs (RLE) is the values of its $k$ runs and, for each of its values,
@@ -2060,9 +2063,11 @@ typically has few distinct high parts (the sign, the exponent and the top of
 the mantissa), while the low parts are packed as they are. A high part takes an
 index of at most 3 bits into a dictionary of up to 8 entries, and one outside
 the dictionary is an exception, with its place and its $\lambda$ bits in 2
-bytes each. The cut and the dictionary minimize the cost on the sample of the
-row group, and the row group takes ALP-RD instead of ALP when the cost per
-value of the former is lower.
+bytes each; the encoder finds the index of each high part in a table of
+$2^\lambda$ bytes, filled once per row group, with no search of the dictionary
+and no branch per value. The cut and the dictionary minimize the cost on the
+sample of the row group, and the row group takes ALP-RD instead of ALP when the
+cost per value of the former is lower.
 
 <span id="lem-21-22"></span>**Lemma 21.22.** *Assume that the products of the
 type are those of IEEE 754, evaluated as they are written (i.e., with no
@@ -2114,7 +2119,11 @@ table of $2^{16}$ entries gives, for the next 2 bytes, the code of the symbol
 of 2 bytes, or else of the symbol of 1 byte, or else the escape. The greedy
 choice is not necessarily the longest match, since two symbols of 3 bytes or
 more with the same slot do not both enter the table; however, the construction
-takes this into account.
+takes this into account. As in the encoder of the authors, the byte least
+frequent in the sample, the terminator, enters no symbol of 2 bytes or more, so
+that the last 7 bytes of a string are read as one word followed by the
+terminator, which no symbol can run past, and are coded by the same step as
+the others, with no test of the bytes left.
 
 We build the table in 5 generations on a sample of about 16 KB of the strings
 (pieces of 512 bytes of strings drawn at random, or all the strings if they are
@@ -2129,8 +2138,12 @@ the same symbol add up, and the next table takes the 255 of largest gain that
 fit in its lookups. Hence, a symbol that the greedy encoder uses often grows by
 the symbol that tends to follow it, while one that it no longer uses leaves the
 table. `FSSTColumn` keeps the codes of all the strings one after the other,
-with the place where each one begins, and `serialize()` writes the table as the
-number of its symbols, their lengths and their bytes.
+with the place where each one begins; it writes them into one buffer of $2$
+bytes per byte of the strings (the most that they take, by Lemma 21.23), so
+that its construction takes time linear in the bytes of the strings besides
+that of the table, and `assign()` rebuilds it in the room that it already has.
+Finally, `serialize()` writes the table as the number of its symbols, their
+lengths and their bytes.
 
 <span id="lem-21-23"></span>**Lemma 21.23.** *(i) For every table and every
 string $s$, `encode()` writes at most $2 | s |$ bytes, as many only if every
@@ -2138,14 +2151,17 @@ byte is escaped, and `decode()` of them gives back $s$, writing at most 8 bytes
 per code. (ii) Every table, built or deserialized, holds at most 255 distinct
 symbols of 1 to 8 bytes, at most one of 3 bytes or more per slot of the hash
 table, and the construction takes 5 generations, each in time linear in the
-sample plus the sorting of its candidates.*
+sample plus the sorting of at most its candidates.*
 
 *Proof.* (i) At each place, with $r$ bytes left, the encoder takes either the
 symbol of the slot of the next 3 bytes, if it has at most $r$ bytes, equal to
 the next ones (the comparison of the word masked to its length), or the entry
 of the next 2 bytes, which is a symbol of 2 bytes only if it is equal to them,
 or else the entry of the next byte, a symbol of that byte or the escape of
-length 1. Each step thus consumes $\ell \ge 1$ bytes and writes the code of a
+length 1. When fewer than 8 bytes are left, the word holds the terminator after
+the last byte; since no symbol of 2 bytes or more holds it, a symbol equal to
+the word has at most $r$ bytes, and the step takes what it takes with the test
+of $r$. Each step thus consumes $\ell \ge 1$ bytes and writes the code of a
 symbol equal to them, or consumes 1 byte and writes 2 (the escape and the
 byte). The decoder copies the 8 bytes of the symbol, padded with 0, and moves
 by $\ell$, the bytes past $\ell$ being overwritten by the next code, so that by
@@ -2155,7 +2171,8 @@ moves by at most 8. (ii) `add()` refuses a 256th symbol, a slot already taken,
 and a symbol of 1 or 2 bytes already present; the candidates are the symbols of
 the table and their concatenations cut at 8 bytes, and the bytes, each of 1 to
 8 bytes. Each generation codes at most the sample, counts the pairs that occur
-(and only those, which it lists), and sorts its candidates. $\square$
+(and only those, which it lists), merges the equal candidates by a hash table,
+and sorts at most all of them by their gains. $\square$
 
 <span id="alg-21-32"></span>**Algorithm 21.32.** The construction of the table
 of FSST, its encoder and its decoder ([Boncz, Neumann and Leis

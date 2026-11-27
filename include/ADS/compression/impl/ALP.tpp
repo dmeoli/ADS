@@ -134,6 +134,16 @@ struct Cut
  unsigned lambda = 1;
  std::vector< std::uint16_t > dict;
  std::size_t cost = ~std::size_t( 0 );
+ /// the index in dict of each of the 2^lambda high parts, the size of
+ /// dict for one that is not there, filled by index()
+ std::vector< std::uint8_t > at;
+
+ /// the table at of the cut
+ void index( void ) {
+  at.assign( std::size_t( 1 ) << lambda , std::uint8_t( dict.size() ) );
+  for( std::size_t k = 0 ; k < dict.size() ; ++k )
+   at[ dict[ k ] ] = std::uint8_t( k );
+  }
  };
 
 template< class F >
@@ -173,6 +183,7 @@ Cut< F > bestCut( std::span< const F > s )
     best.dict.push_back( run[ k ].second );
    }
   }
+ best.index();
  return( best );
  }
 
@@ -242,15 +253,14 @@ void encodeVectorRD( const F * x , std::size_t m , const Cut< F > & cut ,
   const U u = bitsOf( x[ i ] );
   const std::uint16_t h = std::uint16_t( u >> r );
   low[ i ] = u & mask;
-  std::size_t k = 0;
-  while( ( k < q ) && ( cut.dict[ k ] != h ) )
-   ++k;
-  if( k == q ) {
-   pos[ c ] = std::uint16_t( i );
-   exc[ c++ ] = h;
-   k = 0;
-   }
-  idx[ i ] = std::uint16_t( k );
+  // the index of h by the table of the cut, and h written as an exception
+  // in any case and kept only if it is one, with no branch
+  const std::size_t k = cut.at[ h ];
+  const bool out_of = k == q;
+  pos[ c ] = std::uint16_t( i );
+  exc[ c ] = h;
+  c += out_of;
+  idx[ i ] = std::uint16_t( out_of ? 0 : k );
   }
  std::fill( low + m , low + kVector , U( 0 ) );
  std::fill( idx + m , idx + kVector , std::uint16_t( 0 ) );
@@ -364,13 +374,13 @@ void encodeGroup( const F * x , std::size_t n ,
 
 template< std::ranges::contiguous_range R >
  requires ALPFloat< std::ranges::range_value_t< R > >
-std::vector< std::uint8_t > alpCompress( const R & x )
+void alpCompress( const R & x , std::vector< std::uint8_t > & out )
 {
  using F = std::ranges::range_value_t< R >;
  using namespace detail::alp;
  const F * const p = std::ranges::data( x );
  const std::size_t n = std::size_t( std::ranges::size( x ) );
- std::vector< std::uint8_t > out;
+ out.clear();
  for( std::size_t a = 0 ; a < n ; a += kGroup * kVector )
   encodeGroup< F >( p + a , std::min( kGroup * kVector , n - a ) , out );
  ADS_AUDIT( [ & ]() {
@@ -380,6 +390,14 @@ std::vector< std::uint8_t > alpCompress( const R & x )
     return( false );
   return( true );
   }() );
+ }
+
+template< std::ranges::contiguous_range R >
+ requires ALPFloat< std::ranges::range_value_t< R > >
+std::vector< std::uint8_t > alpCompress( const R & x )
+{
+ std::vector< std::uint8_t > out;
+ alpCompress( x , out );
  return( out );
  }
 
@@ -387,13 +405,23 @@ template< ALPFloat F >
 std::vector< F > alpDecompress( std::span< const std::uint8_t > code ,
 				std::size_t n )
 {
+ std::vector< F > out( n );
+ alpDecompress< F >( code , std::span< F >( out ) );
+ return( out );
+ }
+
+template< ALPFloat F >
+void alpDecompress( std::span< const std::uint8_t > code ,
+		    std::span< F > out )
+{
  using namespace detail::alp;
  using T = Traits< F >;
  using U = typename T::U;
  using I = typename T::I;
  constexpr unsigned W = unsigned( 8 * sizeof( F ) );
+ const std::size_t n = out.size();
  const std::size_t vectors = ( n + kVector - 1 ) / kVector;
- std::vector< F > out( vectors * kVector );
+ alignas( 64 ) F last[ kVector ];
  std::size_t at = 0;
  alignas( 64 ) U d[ kVector ];
  alignas( 64 ) std::uint16_t idx[ kVector ];
@@ -419,7 +447,8 @@ std::vector< F > alpDecompress( std::span< const std::uint8_t > code ,
    at += 2 + 2 * q;
    }
   for( std::size_t k = g ; k < std::min( vectors , g + kGroup ) ; ++k ) {
-   F * const v = out.data() + k * kVector;
+   // the last vector, if not full, into a buffer of its own
+   F * const v = ( k + 1 ) * kVector <= n ? out.data() + k * kVector : last;
    if( scheme == 0 ) {
     ADS_PRE( at + 5 + sizeof( U ) <= code.size() );
     const int e = code[ at ] , f = code[ at + 1 ];
@@ -469,10 +498,10 @@ std::vector< F > alpDecompress( std::span< const std::uint8_t > code ,
      }
     at += 2 + 128 * std::size_t( ib + r ) + 4 * c;
     }
+   if( v == last )
+    std::copy( last , last + ( n - k * kVector ) , out.data() + k * kVector );
    }
   }
- out.resize( n );
- return( out );
  }
 
 }  // end( namespace ADS )

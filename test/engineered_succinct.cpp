@@ -646,10 +646,19 @@ ADS_TEST( "binary-packing" )
     bytes += 16 * std::size_t( std::bit_width( o ) );
     }
    CHECK( c.size() == bytes && binaryUnpack( c , n ) == x );
+   // the code and the integers written in the room of the caller
+   std::vector< std::uint8_t > into( 3 , 1 );
+   std::vector< std::uint32_t > y( n , 7 );
+   binaryPack( x , into );
+   binaryUnpack( into , std::span< std::uint32_t >( y ) );
+   CHECK( ( into == c ) && ( y == x ) );
    CHECK( patchedUnpack( patchedPack( x ) , n ) == x );
    CHECK( patchedPack( x ).size() <= bytes + 2 * ( ( n + 127 ) / 128 ) + 8 );
    std::sort( x.begin() , x.end() );
    CHECK( binaryUnpack( binaryPack( x , true ) , n , true ) == x );
+   binaryPack( x , into , true );
+   binaryUnpack( into , std::span< std::uint32_t >( y ) , true );
+   CHECK( ( into == binaryPack( x , true ) ) && ( y == x ) );
    CHECK( patchedUnpack( patchedPack( x , true ) , n , true ) == x );
    }
  // a few large integers in each block: the patched code writes them apart
@@ -1570,6 +1579,12 @@ static void fastLanesCase( std::mt19937_64 & g )
 			 FastLanesScheme::RLE } ) {
     const auto c = fastLanesEncode( x , s );
     CHECK( fastLanesDecode< T >( c , n , s ) == x );
+    // the code and the values written in the room of the caller
+    std::vector< std::uint8_t > into( 5 , 1 );
+    std::vector< T > y( n , T( 3 ) );
+    fastLanesEncode( x , into , s );
+    fastLanesDecode< T >( into , std::span< T >( y ) , s );
+    CHECK( ( into == c ) && ( y == x ) );
     if( ( s == FastLanesScheme::FOR ) && ( kind == 0 ) )
      CHECK( c.size() == ( n + 1023 ) / 1024 * ( 1 + sizeof( T ) ) );
     if( n > 0 )
@@ -1627,6 +1642,12 @@ static void alpCase( std::mt19937_64 & g )
  auto check = [ & ]( const std::vector< F > & x ) {
   const auto c = alpCompress( x );
   CHECK( same( alpDecompress< F >( c , x.size() ) , x ) );
+  // the code and the values written in the room of the caller
+  std::vector< std::uint8_t > into( 5 , 1 );
+  std::vector< F > y( x.size() , F( 2 ) );
+  alpCompress( x , into );
+  alpDecompress< F >( into , std::span< F >( y ) );
+  CHECK( ( into == c ) && same( y , x ) );
   if( ! x.empty() )
    CHECK_THROWS( ( void )alpDecompress< F >(
 		   std::span( c ).first( c.size() - 1 ) , x.size() ) ,
@@ -1672,8 +1693,9 @@ ADS_TEST( "alp" )
 // table serialized and read back; the strings with every byte from 0 to
 // 255 (each one escaped or a symbol), the empty strings, a column of only
 // empty strings, one string, the empty column, long strings over the
-// sample of 16 KB; a code with an escape at its end or a code past the
-// symbols breaks the contracts
+// sample of 16 KB; a deserialized table whose symbols of 2 bytes hold
+// every byte, so that no byte can end a string; a code with an escape at
+// its end or a code past the symbols breaks the contracts
 ADS_TEST( "fsst" )
 {
  std::mt19937_64 g( 79 );
@@ -1695,8 +1717,17 @@ ADS_TEST( "fsst" )
    CHECK( T.symbol( c ) == C.table().symbol( c ) );
    CHECK( ( T.symbol( c ).size() >= 1 ) && ( T.symbol( c ).size() <= 8 ) );
    }
-  for( std::size_t i = 0 ; i < S.size() ; ++i )
+  for( std::size_t i = 0 ; i < S.size() ; ++i ) {
    CHECK( T.decode( C.code( i ) ) == S[ i ] );
+   CHECK( T.encode( S[ i ] ) == std::vector< std::uint8_t >(
+				  C.code( i ).begin() , C.code( i ).end() ) );
+   }
+  // the column rebuilt in the room of another one
+  FSSTColumn D( std::vector< std::string >{ "xyz" , "" , "abcabcabc" } );
+  D.assign( S );
+  CHECK( ( D.size() == S.size() ) && ( D.codeBytes() == C.codeBytes() ) );
+  for( std::size_t i = 0 ; i < S.size() ; ++i )
+   CHECK( D[ i ] == S[ i ] );
   return( C );
   };
  std::vector< std::string > urls;
@@ -1738,6 +1769,16 @@ ADS_TEST( "fsst" )
  const FSSTTable T( urls );
  for( const auto & s : every )
   CHECK( T.decode( T.encode( s ) ) == s );
+ std::vector< std::uint8_t > full( 1 + 128 , 2 );
+ full[ 0 ] = 128;
+ for( int b = 0 ; b < 256 ; ++b )
+  full.push_back( std::uint8_t( b ) );
+ const FSSTTable U = FSSTTable::deserialize( full );
+ CHECK( U.symbols() == 128 );
+ for( const auto & s : every )
+  CHECK( U.decode( U.encode( s ) ) == s );
+ for( const auto & s : urls )
+  CHECK( U.decode( U.encode( s ) ) == s );
  const std::vector< std::uint8_t > open = { FSSTTable::ESCAPE } ,
 				   past = { std::uint8_t( 254 ) };
  CHECK_THROWS( ( void )T.decode( open ) , contract_violation );

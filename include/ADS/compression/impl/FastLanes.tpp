@@ -208,12 +208,19 @@ template< class T >
 void encodeDelta( const T * v , std::vector< std::uint8_t > & out )
 {
  constexpr std::size_t L = kL< T >;
- alignas( 64 ) T d[ kVector ];
+ alignas( 64 ) T e[ kVector ] , d[ kVector ];
+ // the differences in the order of v, 0 at the head of a chain, and then
+ // d_p = e_tau( p ) by the places of the decoder, from indices the compiler
+ // knows
  T r = 0;
- for( std::size_t p = 0 ; p < kVector ; ++p ) {
-  const std::size_t i = kTau[ p ];
-  r |= d[ p ] = i % kW< T > == 0 ? T( 0 ) : T( v[ i ] - v[ i - 1 ] );
+ for( std::size_t i = 0 ; i < kVector ; ++i ) {
+  e[ i ] = i % kW< T > == 0 ? T( 0 ) : T( v[ i ] - v[ i - 1 ] );
+  r |= e[ i ];
   }
+ for( std::size_t c = 0 ; c < 16 ; ++c )
+  for( std::size_t q = 0 ; q < 8 ; ++q )
+   for( std::size_t a = 0 ; a < 8 ; ++a )
+    d[ 128 * a + 16 * rho( q ) + c ] = e[ 64 * c + 8 * q + a ];
  const unsigned b = unsigned( std::bit_width( r ) );
  const std::size_t at = out.size();
  out.resize( at + 1 + L * sizeof( T ) + 128 * std::size_t( b ) );
@@ -239,8 +246,13 @@ void decodeDelta( std::span< const std::uint8_t > in , std::size_t & at ,
  for( std::size_t l = 0 ; l < L ; ++l , p += sizeof( T ) )
   base[ l ] = loadLE< T >( p );
  kUndelta< T >[ b ]( p , t , base );
- for( std::size_t q = 0 ; q < kVector ; ++q )
-  v[ kTau[ q ] ] = t[ q ];
+ // v_tau( p ) = t_p by the places 64 c + 8 r + a = tau( 128 a + 16 rho( r )
+ // + c ), the 8 values of a row stored one after the other, from indices
+ // the compiler knows, which it turns into vector operations
+ for( std::size_t c = 0 ; c < 16 ; ++c )
+  for( std::size_t r = 0 ; r < 8 ; ++r )
+   for( std::size_t a = 0 ; a < 8 ; ++a )
+    v[ 64 * c + 8 * r + a ] = t[ 128 * a + 16 * rho( r ) + c ];
  at += 1 + L * sizeof( T ) + 128 * std::size_t( b );
  }
 
@@ -265,14 +277,15 @@ void fastLanesUnpack( const std::uint8_t * in , T * out , unsigned b , T base )
 
 template< std::ranges::contiguous_range R >
  requires FastLanesWord< std::ranges::range_value_t< R > >
-std::vector< std::uint8_t > fastLanesEncode( const R & x , FastLanesScheme s )
+void fastLanesEncode( const R & x , std::vector< std::uint8_t > & out ,
+		      FastLanesScheme s )
 {
  using T = std::ranges::range_value_t< R >;
  using namespace detail::fl;
  const std::span< const T > v( std::ranges::data( x ) ,
 			       std::size_t( std::ranges::size( x ) ) );
  const std::size_t n = v.size();
- std::vector< std::uint8_t > out;
+ out.clear();
  alignas( 64 ) T buf[ kVector ];
  for( std::size_t a = 0 ; a < n ; a += kVector ) {
   // the vector, the last one filled with its last value
@@ -314,19 +327,29 @@ std::vector< std::uint8_t > fastLanesEncode( const R & x , FastLanesScheme s )
   }
  ADS_AUDIT( fastLanesDecode< T >( out , n , s ) ==
 	    std::vector< T >( v.begin() , v.end() ) );
+ }
+
+template< std::ranges::contiguous_range R >
+ requires FastLanesWord< std::ranges::range_value_t< R > >
+std::vector< std::uint8_t > fastLanesEncode( const R & x , FastLanesScheme s )
+{
+ std::vector< std::uint8_t > out;
+ fastLanesEncode( x , out , s );
  return( out );
  }
 
 template< FastLanesWord T >
-std::vector< T > fastLanesDecode( std::span< const std::uint8_t > code ,
-				  std::size_t n , FastLanesScheme s )
+void fastLanesDecode( std::span< const std::uint8_t > code ,
+		      std::span< T > out ,
+		      FastLanesScheme s )
 {
  using namespace detail::fl;
- const std::size_t vectors = ( n + kVector - 1 ) / kVector;
- std::vector< T > out( vectors * kVector );
+ const std::size_t n = out.size();
+ alignas( 64 ) T buf[ kVector ];
  std::size_t at = 0;
- for( std::size_t k = 0 ; k < vectors ; ++k ) {
-  T * const v = out.data() + k * kVector;
+ for( std::size_t a = 0 ; a < n ; a += kVector ) {
+  // the last vector, if not full, into a buffer of its own
+  T * const v = a + kVector <= n ? out.data() + a : buf;
   if( s == FastLanesScheme::FOR ) {
    ADS_PRE( at < code.size() );
    const unsigned b = code[ at ];
@@ -353,8 +376,17 @@ std::vector< T > fastLanesDecode( std::span< const std::uint8_t > code ,
    for( std::size_t i = 0 ; i < kVector ; ++i )
     v[ i ] = detail::loadLE< T >( vals + sizeof( T ) * run[ i ] );
    }
+  if( v == buf )
+   std::copy( buf , buf + ( n - a ) , out.data() + a );
   }
- out.resize( n );
+ }
+
+template< FastLanesWord T >
+std::vector< T > fastLanesDecode( std::span< const std::uint8_t > code ,
+				  std::size_t n , FastLanesScheme s )
+{
+ std::vector< T > out( n );
+ fastLanesDecode< T >( code , std::span< T >( out ) , s );
  return( out );
  }
 

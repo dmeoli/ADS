@@ -89,11 +89,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Kuffó and Boncz); and `FSST.h`, the static table of up to 255 symbols of
   1 to 8 bytes built in 5 generations on a sample, and `FSSTColumn`, the
   strings coded one by one and decoded one by one (Boncz, Neumann and
-  Leis); the tests `engineered_succinct.fastlanes`, `.alp` and `.fsst`, the
+  Leis), whose encoder reads the last bytes of a string as one word ended
+  by the terminator of the authors and whose column writes its codes into
+  one buffer, in time linear in the bytes of the strings; the overloads of
+  `fastLanesEncode()`, `alpCompress()`, `binaryPack()` and of their
+  decoders that write into a vector or a span of the caller, and
+  `FSSTColumn::assign()`, which rebuild a code in the room that it already
+  has; the tests `engineered_succinct.fastlanes`, `.alp` and `.fsst`, the
   cells of `bench/compression.cpp` against the fsst, the ALP and the
   kernels of FastLanes of their authors, Chimp128, LZ4, Zstandard and the
-  binary packing, and section 21.12 of the manual (Lemmas 21.21 to 21.23,
-  Algorithms 21.30 to 21.32)
+  binary packing, all writing into storage made before the timed runs,
+  and section 21.12 of the manual (Lemmas 21.21 to 21.23, Algorithms 21.30
+  to 21.32)
 - the row `h=2` of the benchmark of the directly addressable codes, at most
   2 levels, which on its integers takes 10.3 to 10.4 bits each, against 9.4
   of the default of 3 levels and 10.1 of the levels of 8 bits

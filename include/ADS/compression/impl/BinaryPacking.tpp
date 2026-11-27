@@ -105,6 +105,14 @@ inline void unpackBlock( const std::uint8_t * in , std::uint32_t * out ,
 inline std::vector< std::uint8_t >
 binaryPack( std::span< const std::uint32_t > x , bool sorted )
 {
+ std::vector< std::uint8_t > out;
+ binaryPack( x , out , sorted );
+ return( out );
+ }
+
+inline void binaryPack( std::span< const std::uint32_t > x ,
+			std::vector< std::uint8_t > & out , bool sorted )
+{
  using namespace detail::bp;
  ADS_AUDIT( ! sorted || std::is_sorted( x.begin() , x.end() ) );
  const std::size_t n = x.size() , blocks = ( n + kBlock - 1 ) / kBlock;
@@ -134,7 +142,7 @@ binaryPack( std::span< const std::uint32_t > x , bool sorted )
   std::copy( w , w + g , o );
   std::fill( o + g , o + kGroup , std::uint8_t( 0 ) );
   };
- std::vector< std::uint8_t > out;
+ out.clear();
  if( ! sorted ) {
   // the widths first, the full blocks read from x, and then the output
   // of its exact size, the full blocks packed from x
@@ -184,16 +192,24 @@ binaryPack( std::span< const std::uint32_t > x , bool sorted )
   }
  ADS_AUDIT( binaryUnpack( out , n , sorted ) ==
 	    std::vector< std::uint32_t >( x.begin() , x.end() ) );
- return( out );
  }
 
 inline std::vector< std::uint32_t >
 binaryUnpack( std::span< const std::uint8_t > in , std::size_t n ,
 	      bool sorted )
 {
+ std::vector< std::uint32_t > out( n );
+ binaryUnpack( in , std::span< std::uint32_t >( out ) , sorted );
+ return( out );
+ }
+
+inline void binaryUnpack( std::span< const std::uint8_t > in ,
+			  std::span< std::uint32_t > out , bool sorted )
+{
  using namespace detail::bp;
+ const std::size_t n = out.size();
  const std::size_t blocks = ( n + kBlock - 1 ) / kBlock;
- std::vector< std::uint32_t > out( blocks * kBlock );
+ alignas( 16 ) std::uint32_t last[ kBlock ];
  std::uint32_t prev[ 4 ] = { 0 , 0 , 0 , 0 };
  std::size_t at = 0;
  const std::uint8_t * width = nullptr;
@@ -205,11 +221,14 @@ binaryUnpack( std::span< const std::uint8_t > in , std::size_t n ,
    }
   const int b = width[ k % kGroup ];
   ADS_PRE( ( b <= 32 ) && ( at + 16 * std::size_t( b ) <= in.size() ) );
-  unpackBlock( in.data() + at , out.data() + k * kBlock , b , sorted , prev );
+  // the last block, if not full, into a buffer of its own
+  const bool full = ( k + 1 ) * kBlock <= n;
+  unpackBlock( in.data() + at , full ? out.data() + k * kBlock : last , b ,
+	       sorted , prev );
+  if( ! full )
+   std::copy( last , last + ( n - k * kBlock ) , out.data() + k * kBlock );
   at += 16 * std::size_t( b );
   }
- out.resize( n );
- return( out );
  }
 
 inline std::vector< std::uint8_t >
