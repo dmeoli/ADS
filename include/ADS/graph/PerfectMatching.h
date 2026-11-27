@@ -23,12 +23,17 @@
  *   each step of a tree reads the least slacks of its own heaps only. A
  *   tree grows, shrinks and expands blossoms on its tight edges, and
  *   augments the matching as soon as a tight edge joins it to another
- *   tree, while the other trees go on; when no tree has a tight edge left,
- *   the change of the duals is the largest one of each connected component
- *   of the trees joined by the tight edges from an outer node of one to an
- *   inner node of another (the rule of Blossom IV and of Blossom V), the
- *   components taken in turn. A greedy matching on the duals raised node by
- *   node starts the trees;
+ *   tree, while the other trees go on. A shrink gives to the blossom the
+ *   list of the edges of its outer child with the most of them, and moves
+ *   only those of the other children, so that a blossom grown by many
+ *   shrinks does not read its own edges at each of them. When a visit of
+ *   all the trees ends with no augmentation, and so no tree has a tight
+ *   edge left, the change of the duals is the largest one of each connected
+ *   component of the trees joined by the tight edges from an outer node of
+ *   one to an inner node of another (the rule of Blossom IV and of Blossom
+ *   V), each component found by one visit of the pairs of its trees and
+ *   bounded by the changes of those found before it. A greedy matching on
+ *   the duals raised node by node starts the trees;
  * - `maxWeightMatching( n , E , BlossomVOptions )`, the matching of largest
  *   weight by the same algorithm on the graph doubled: two copies of the
  *   edges of positive weight, of costs the weights negated, and an edge of
@@ -177,7 +182,8 @@ struct PerfectMatchingResult
 ///     \text{ of dual 0}\ \textbf{do} \cr
 /// 9 & \qquad\qquad \text{grow } T \text{, shrink the cycle into an outer}
 ///     \text{ blossom, or expand the blossom};\ \text{augment as in 7} \cr
-/// 10 & \qquad \textbf{if not}\ \mathrm{dualUpdate}()\ \textbf{then}
+/// 10 & \qquad \textbf{if}\ \text{no augmentation in } 6\text{--}9
+///     \ \textbf{and not}\ \mathrm{dualUpdate}()\ \textbf{then}
 ///     \ \textbf{return}\ \text{none} \cr
 /// 11 & \quad \textbf{return}\ \text{the matching, the } y_v \text{ and
 ///     the duals of the blossoms}

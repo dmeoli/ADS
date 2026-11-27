@@ -77,20 +77,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the queue of Michael and Scott of xenium under its reclamations
   (`XENIUM=<include dir>` of the makefile) and `boost::lockfree::queue`,
   and section 24.14 of the manual (Lemmas 24.37 to 24.41)
-- `minCostPerfectMatching()` of `PerfectMatching.h`, the perfect matching
-  of least cost of a general graph with integer costs of any sign, on a list
-  of edges or on an unoriented `StaticGraph`, by the primal-dual algorithm
-  of Edmonds in the form of Blossom V of Kolmogorov (the alternating trees
-  kept across the augmentations, each with its own change of the duals, the
-  slacks in pairing heaps per tree and per pair of trees, the changes of the
-  duals by the components of the trees, a greedy start), which gives the
-  laminar family of the blossoms and the doubled duals that certify the
+- `minCostPerfectMatching()` of `PerfectMatching.h`, the perfect matching of
+  least cost of a general graph with integer costs of any sign, on a list of
+  edges or on an unoriented `StaticGraph`, by the primal-dual algorithm of
+  Edmonds in the form of Blossom V of Kolmogorov (the alternating trees kept
+  across the augmentations, each with its own change of the duals, the
+  slacks in pairing heaps per tree and per pair of trees, kept in a list per
+  tree, the changes of the duals by the components of the trees, each found
+  by one visit of its pairs of trees after a visit of the trees with no
+  augmentation, a shrink that gives to the blossom the list of the edges of
+  its outer child with the most of them, and a greedy start), which gives
+  the laminar family of the blossoms and the doubled duals that certify the
   optimum, or says that the graph has no perfect matching, and the overload
   `maxWeightMatching( n , E , BlossomVOptions )`, the matching of largest
-  weight by the same algorithm on the graph doubled;
-  `IntrusivePairingHeap` of `PairingHeap.h`, the two-pass pairing heap on
-  the nodes of the caller, with the trees of `PairingHeap` shared by the two
-  classes; the tests `engineered_graph.perfect-matching`,
+  weight by the same algorithm on the graph doubled; `IntrusivePairingHeap`
+  of `PairingHeap.h`, the two-pass pairing heap on the nodes of the caller,
+  with the trees of `PairingHeap` shared by the two classes; the tests
+  `engineered_graph.perfect-matching`,
   `engineered_lemon.lemon-perfect-matching` and
   `engineered_search.intrusive-pairing-heap`, the cells `pmatching` of
   `bench/graphs.cpp` against LEMON, Boost and, with `BLOSSOM5=<dir>` (or

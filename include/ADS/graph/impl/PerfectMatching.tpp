@@ -54,6 +54,8 @@ struct PerfectBlossoms
   void drop( void ) { h.clear(); }
   };
 
+ struct TreeEdge;
+
  /// a tree: its root, its change of the duals and its three queues, the
  /// edges to the free nodes, the edges within it, the inner blossoms
  struct Tree
@@ -62,34 +64,50 @@ struct PerfectBlossoms
   D eps = 0;
   Queue q0 , q00;
   IntrusivePairingHeap< QNode > qB;
-  std::vector< std::pair< int , unsigned > > te;  ///< ( edge , generation )
-  int at = NIL;      ///< the place in the list of the trees alive
-  bool hot = false;  ///< whether an edge to another tree may be tight
+  TreeEdge * te = nullptr;  ///< the list of its edges to the other trees
+  int at = NIL;             ///< the place in the list of the trees alive
+  bool hot = false;         ///< whether an edge to another tree may be tight
   };
 
  /// the edges between two trees: those between their outer nodes, and
- /// those from an outer node of t[ d ] to an inner one of t[ 1 - d ]
+ /// those from an outer node of t[ d ] to an inner one of t[ 1 - d ], in
+ /// the list of t[ d ] by next[ d ]; t[ d ] is NIL once t[ d ] is gone,
+ /// and the edge leaves the list of the other tree when this next reads it
  struct TreeEdge
  {
   int t[ 2 ] = { NIL , NIL };
+  TreeEdge * next[ 2 ] = { nullptr , nullptr };
   Queue pp , pm[ 2 ];
-  unsigned gen = 0;
-  bool alive = false;
   };
 
  int n , m;
+ /// what the operations read of an edge, in one line of the cache: its
+ /// node in its queue, whose priority is the slack of the edge relative to
+ /// the eps of its ends (an edge leaves its queue before its slack
+ /// changes), the queue, and, of the end 2 e + 0 (at eu) and 2 e + 1 (at
+ /// ev) of the edge e, the list it is in and its links in that list
+ struct alignas( 64 ) EdgeRec
+ {
+  QNode q;
+  Queue * where = nullptr;
+  int at[ 2 ] = { NIL , NIL };
+  int next[ 2 ] = { NIL , NIL };
+  int prev[ 2 ] = { NIL , NIL };
+  };
+
  std::vector< int > eu , ev;  ///< the ends of the edges
- std::vector< D > s;         ///< the slack, relative to the eps of the ends
  std::vector< D > cost2;     ///< the costs doubled
- /// of the end 2 e + 0 (at eu) and 2 e + 1 (at ev) of the edge e, the
- /// node it is at, and the links of the list of that node
- std::vector< int > hd , anext , aprev;
- std::vector< QNode > qe;       ///< the node of each edge in its queue
- std::vector< Queue * > where;  ///< the queue of each edge, or none
- std::vector< QNode > qb;       ///< the node of each blossom in qB
+ std::vector< EdgeRec > ed;
+ std::vector< QNode > qb;  ///< the node of each blossom in qB
+
+ // the lists of the ends, each the list of one node: a shrink gives to
+ // the blossom the list of its outer child with the most ends
+ std::vector< int > lid;    ///< the list of each node
+ std::vector< int > lnode;  ///< the node of each list
+ std::vector< int > first;  ///< the first end of each list
+ std::vector< int > cnt;    ///< the number of the ends of each list
 
  // the nodes, the n vertices and then the blossoms
- std::vector< int > first;  ///< the first end in the list of the node
  std::vector< int > bparent , base , tpar , fchild , snext , sprev , tree;
  std::vector< signed char > lab;
  std::vector< D > y;
@@ -98,34 +116,42 @@ struct PerfectBlossoms
  std::vector< int > freeB;
  std::vector< int > mate;  ///< the matched edge of each vertex
 
- std::deque< Tree > T;
+ std::vector< Tree > T;  ///< reserved at once, so that its queues stay
  std::vector< int > freeT;
- std::vector< int > alive;  ///< the trees alive
- std::deque< TreeEdge > TE;
- std::vector< int > freeTE;
+ std::vector< int > alive;   ///< the trees alive
+ std::deque< TreeEdge > TE;  ///< whose places stay, as the pointers to them
+ std::vector< TreeEdge * > freeTE;
 
- std::vector< int > markTE;
+ std::vector< TreeEdge * > markTE;
  std::vector< unsigned > markStamp;
  unsigned stamp = 0;
  int cur = NIL;  ///< the tree whose marks are set
 
  std::vector< unsigned > seen;
  unsigned seenStamp = 0;
+ std::vector< int > memo;  ///< the child of the blossom expanded, by node
+ std::vector< unsigned > memoAt;
+ unsigned memoStamp = 0;
  std::vector< int > collected , N1 , N2 , Pu , Eu , Pv , Ev;
  std::vector< std::pair< int , int > > work;
  int pendingAug = NIL;
+ std::size_t augments = 0;  ///< the augmentations so far
  bool infeasible = false;
 
  PerfectBlossoms( int n0 , const std::vector< int > & U ,
 		  const std::vector< int > & V , const std::vector< D > & C2 )
-     : n( n0 ) , m( int( U.size() ) ) , eu( U ) , ev( V ) , s( C2 ) ,
-       cost2( C2 ) ,
-       hd( 2 * std::size_t( m ) , NIL ) , anext( 2 * std::size_t( m ) , NIL ) ,
-       aprev( 2 * std::size_t( m ) , NIL ) , qe( std::size_t( m ) ) ,
-       where( std::size_t( m ) , nullptr ) {
+     : n( n0 ) , m( int( U.size() ) ) , eu( U ) , ev( V ) , cost2( C2 ) ,
+       ed( std::size_t( m ) ) {
+  for( int e = 0 ; e < m ; ++e )
+   ed[ std::size_t( e ) ].q.priority = C2[ std::size_t( e ) ];
   const std::size_t N = std::size_t( n ) + std::size_t( n ) / 2 + 1;
   qb.resize( N );
+  lid.resize( N );
+  lnode.resize( N );
+  for( std::size_t x = 0 ; x < N ; ++x )
+   lid[ x ] = lnode[ x ] = int( x );
   first.assign( N , NIL );
+  cnt.assign( N , 0 );
   bparent.assign( N , NIL );
   base.assign( N , NIL );
   tpar.assign( N , NIL );
@@ -140,6 +166,8 @@ struct PerfectBlossoms
   kend.resize( N );
   balive.assign( N , false );
   seen.assign( N , 0 );
+  memo.assign( N , NIL );
+  memoAt.assign( N , 0 );
   for( int b = int( N ) - 1 ; b >= n ; --b )
    freeB.push_back( b );
   mate.assign( std::size_t( n ) , NIL );
@@ -158,6 +186,23 @@ struct PerfectBlossoms
 
  int other( int e , int a ) const { return( eu[ e ] ^ ev[ e ] ^ a ); }
 
+ /// the slack of the edge e, relative to the eps of its ends
+ D & s( int e ) { return( ed[ std::size_t( e ) ].q.priority ); }
+ D s( int e ) const { return( ed[ std::size_t( e ) ].q.priority ); }
+
+ /// the node of the end k, and the links of its list
+ int hd( int k ) const {
+  return( lnode[ std::size_t( ed[ std::size_t( k >> 1 ) ].at[ k & 1 ] ) ] );
+  }
+ int & at( int k ) { return( ed[ std::size_t( k >> 1 ) ].at[ k & 1 ] ); }
+ int & anext( int k ) { return( ed[ std::size_t( k >> 1 ) ].next[ k & 1 ] ); }
+ int & aprev( int k ) { return( ed[ std::size_t( k >> 1 ) ].prev[ k & 1 ] ); }
+
+ /// the edge of the node x of a queue
+ int edgeOf( const QNode * x ) const {
+  return( int( reinterpret_cast< const EdgeRec * >( x ) - ed.data() ) );
+  }
+
  /// the vertex of the end k
  int vertexOf( int k ) const {
   return( k & 1 ? ev[ k >> 1 ] : eu[ k >> 1 ] );
@@ -165,29 +210,32 @@ struct PerfectBlossoms
 
  /// the end k into the list of the node x
  void link( int k , int x ) {
-  hd[ k ] = x;
-  aprev[ k ] = NIL;
-  anext[ k ] = first[ x ];
-  if( first[ x ] != NIL )
-   aprev[ first[ x ] ] = k;
-  first[ x ] = k;
+  const int L = lid[ std::size_t( x ) ];
+  at( k ) = L;
+  aprev( k ) = NIL;
+  anext( k ) = first[ L ];
+  if( first[ L ] != NIL )
+   aprev( first[ L ] ) = k;
+  first[ L ] = k;
+  ++cnt[ L ];
   }
 
  /// the end k out of the list of its node
  void unlink( int k ) {
-  if( aprev[ k ] != NIL )
-   anext[ aprev[ k ] ] = anext[ k ];
+  if( aprev( k ) != NIL )
+   anext( aprev( k ) ) = anext( k );
   else
-   first[ hd[ k ] ] = anext[ k ];
-  if( anext[ k ] != NIL )
-   aprev[ anext[ k ] ] = aprev[ k ];
+   first[ at( k ) ] = anext( k );
+  if( anext( k ) != NIL )
+   aprev( anext( k ) ) = aprev( k );
+  --cnt[ at( k ) ];
   }
 
  /// f( k ) on each end k in the list of the node x, which f may move
  template< class F >
  void forEnds( int x , F && f ) {
-  for( int k = first[ x ] ; k != NIL ; ) {
-   const int nx = anext[ k ];
+  for( int k = first[ lid[ std::size_t( x ) ] ] ; k != NIL ; ) {
+   const int nx = anext( k );
    f( k );
    k = nx;
    }
@@ -202,17 +250,17 @@ struct PerfectBlossoms
 
  /// the true slack of the edge e
  D slack( int e ) const {
-  return( s[ e ] - shift( hd[ 2 * e ] ) - shift( hd[ 2 * e + 1 ] ) );
+  return( s( e ) - shift( hd( 2 * e ) ) - shift( hd( 2 * e + 1 ) ) );
   }
 
  /// the node at the other end of the edge e from the node x
  int across( int e , int x ) const {
-  return( hd[ 2 * e ] == x ? hd[ 2 * e + 1 ] : hd[ 2 * e ] );
+  return( hd( 2 * e ) == x ? hd( 2 * e + 1 ) : hd( 2 * e ) );
   }
 
  /// the end of the edge e in the node x
  int endIn( int e , int x ) const {
-  return( hd[ 2 * e ] == x ? eu[ e ] : ev[ e ] );
+  return( hd( 2 * e ) == x ? eu[ e ] : ev[ e ] );
   }
 
  /// the mate node of the surface node x, through the matched edge at its
@@ -253,13 +301,13 @@ struct PerfectBlossoms
   else {
    t = int( T.size() );
    T.emplace_back();
-   markTE.push_back( NIL );
+   markTE.push_back( nullptr );
    markStamp.push_back( 0 );
    }
   Tree & R = T[ std::size_t( t ) ];
   R.root = r;
   R.eps = 0;
-  R.te.clear();
+  R.te = nullptr;
   R.at = int( alive.size() );
   R.hot = true;
   alive.push_back( t );
@@ -277,75 +325,87 @@ struct PerfectBlossoms
   R.root = NIL;
   R.q0.drop();
   R.q00.drop();
-  for( const auto & [ i , g ] : R.te ) {
-   TreeEdge & X = TE[ std::size_t( i ) ];
-   if( X.alive && ( X.gen == g ) ) {
-    X.alive = false;
-    X.pp.drop();
-    X.pm[ 0 ].drop();
-    X.pm[ 1 ].drop();
-    freeTE.push_back( i );
-    }
+  for( TreeEdge * X = R.te ; X ; ) {
+   const int k = X->t[ 0 ] == t ? 0 : 1;
+   TreeEdge * const nx = X->next[ k ];
+   X->pp.drop();
+   X->pm[ 0 ].drop();
+   X->pm[ 1 ].drop();
+   X->t[ k ] = NIL;
+   if( X->t[ 1 - k ] == NIL )  // in no list now
+    freeTE.push_back( X );
+   X = nx;
    }
-  R.te.clear();
+  R.te = nullptr;
   freeT.push_back( t );
   }
 
- /// the edge e out of its queue
+ /// the edge e out of its queue, so that its slack may change
  void dequeue( int e ) {
-  if( where[ e ] )
-   where[ e ]->h.erase( &qe[ e ] );
-  where[ e ] = nullptr;
+  EdgeRec & r = ed[ std::size_t( e ) ];
+  if( r.where )
+   r.where->h.erase( &r.q );
+  r.where = nullptr;
+  }
+
+ /// f( X , k ) on each edge X from the tree t to a tree alive, t being
+ /// X.t[ k ], until f returns true; the edges to the trees gone leave the
+ /// list and are freed
+ template< class F >
+ void forTreeEdges( int t , F && f ) {
+  TreeEdge ** p = &T[ std::size_t( t ) ].te;
+  while( TreeEdge * X = *p ) {
+   const int k = X->t[ 0 ] == t ? 0 : 1;
+   if( X->t[ 1 - k ] == NIL ) {  // of a tree gone
+    *p = X->next[ k ];
+    freeTE.push_back( X );
+    continue;
+    }
+   if( f( *X , k ) )
+    return;
+   p = &X->next[ k ];
+   }
   }
 
  /// the marks of the trees adjacent to t, for teOf()
  void setCur( int t ) {
   cur = t;
   ++stamp;
-  auto & L = T[ std::size_t( t ) ].te;
-  std::size_t k = 0;
-  for( std::size_t h = 0 ; h < L.size() ; ++h ) {
-   const auto [ i , g ] = L[ h ];
-   const TreeEdge & X = TE[ std::size_t( i ) ];
-   if( ! X.alive || ( X.gen != g ) )
-    continue;  // of a tree gone
-   L[ k++ ] = { i , g };
-   const int o = X.t[ 0 ] == t ? X.t[ 1 ] : X.t[ 0 ];
-   markTE[ std::size_t( o ) ] = i;
+  forTreeEdges( t , [ & ]( TreeEdge & X , int k ) {
+   const int o = X.t[ 1 - k ];
+   markTE[ std::size_t( o ) ] = &X;
    markStamp[ std::size_t( o ) ] = stamp;
-   }
-  L.resize( k );
+   return( false );
+   } );
   }
 
  /// the tree edge between the trees a and b, one of them cur
  TreeEdge & teOf( int a , int b ) {
   const int o = a == cur ? b : a;
   if( markStamp[ std::size_t( o ) ] == stamp )
-   return( TE[ std::size_t( markTE[ std::size_t( o ) ] ) ] );
-  int i;
+   return( *markTE[ std::size_t( o ) ] );
+  TreeEdge * x;
   if( ! freeTE.empty() ) {
-   i = freeTE.back();
+   x = freeTE.back();
    freeTE.pop_back();
    }
-  else {
-   i = int( TE.size() );
-   TE.emplace_back();
-   }
-  TreeEdge & X = TE[ std::size_t( i ) ];
+  else
+   x = &TE.emplace_back();
+  TreeEdge & X = *x;
   X.t[ 0 ] = cur;
   X.t[ 1 ] = o;
-  ++X.gen;
-  X.alive = true;
-  T[ std::size_t( cur ) ].te.emplace_back( i , X.gen );
-  T[ std::size_t( o ) ].te.emplace_back( i , X.gen );
-  markTE[ std::size_t( o ) ] = i;
+  X.next[ 0 ] = T[ std::size_t( cur ) ].te;
+  T[ std::size_t( cur ) ].te = x;
+  X.next[ 1 ] = T[ std::size_t( o ) ].te;
+  T[ std::size_t( o ) ].te = x;
+  markTE[ std::size_t( o ) ] = x;
   markStamp[ std::size_t( o ) ] = stamp;
   return( X );
   }
 
  /// the edge e into the queue of its class, out of the one it was in
  void place( int e ) {
-  int u = hd[ 2 * e ] , v = hd[ 2 * e + 1 ];
+  int u = hd( 2 * e ) , v = hd( 2 * e + 1 );
   if( lab[ u ] != PLUS )
    std::swap( u , v );
   Queue * q = nullptr;
@@ -356,7 +416,7 @@ struct PerfectBlossoms
     q = &T[ std::size_t( tree[ u ] ) ].q00;
    else {
     q = &teOf( tree[ u ] , tree[ v ] ).pp;
-    if( s[ e ] - eps( tree[ u ] ) - eps( tree[ v ] ) == 0 ) {
+    if( s( e ) - eps( tree[ u ] ) - eps( tree[ v ] ) == 0 ) {
      pendingAug = e;
      T[ std::size_t( tree[ u ] ) ].hot = T[ std::size_t( tree[ v ] ) ].hot =
        true;
@@ -369,34 +429,17 @@ struct PerfectBlossoms
    TreeEdge & X = teOf( tree[ u ] , tree[ v ] );
    q = &X.pm[ X.t[ 0 ] == tree[ u ] ? 0 : 1 ];
    }
-  if( where[ e ] ) {
-   if( ( where[ e ] == q ) && ( qe[ e ].priority == s[ e ] ) )
-    return;  // where it was
-   where[ e ]->h.erase( &qe[ e ] );
+  EdgeRec & r = ed[ std::size_t( e ) ];
+  if( r.where ) {
+   if( r.where == q )
+    return;  // where it was, its slack unchanged
+   r.where->h.erase( &r.q );
    }
-  where[ e ] = q;
+  r.where = q;
   if( q ) {
-   QNode & x = qe[ e ];
-   x.priority = s[ e ];
-   x.child = x.next = x.prev = nullptr;  // perhaps of a queue dropped
-   q->h.insert( &x );
+   r.q.child = r.q.next = r.q.prev = nullptr;  // perhaps of a queue dropped
+   q->h.insert( &r.q );
    }
-  }
-
- /// the nodes L[ i ] = ( x , label , tree ) relabeled, their duals and the
- /// slacks of their edges kept, and these edges placed again (an edge
- /// between two of them twice, the second time where it is)
- void relabel(
-   std::initializer_list< std::tuple< int , signed char , int > > L ) {
-  for( const auto & [ x , l , t ] : L ) {
-   const D d = ( l == FREE ? 0 : l * eps( t ) ) - shift( x );
-   y[ x ] -= d;
-   forEnds( x , [ & ]( int k ) { s[ k >> 1 ] += d; } );
-   }
-  for( const auto & [ x , l , t ] : L )
-   setLabel( x , l , t );
-  for( const auto & [ x , l , t ] : L )
-   forEnds( x , [ & ]( int k ) { place( k >> 1 ); } );
   }
 
  /// the label and the tree of x, and an inner blossom in the queue qB
@@ -435,6 +478,23 @@ struct PerfectBlossoms
   while( bparent[ a ] != B )
    a = bparent[ a ];
   return( a );
+  }
+
+ /// the child of the blossom B that holds the vertex a, kept for each node
+ /// on the way up until memoStamp changes, so that the ends of B find their
+ /// children in time linear in the nodes of B and in the ends
+ int childOfMemo( int B , int a ) {
+  int x = a;
+  while( ( bparent[ x ] != B ) && ( memoAt[ x ] != memoStamp ) )
+   x = bparent[ x ];
+  const int c = bparent[ x ] == B ? x : memo[ x ];
+  for( int z = a ; ; z = bparent[ z ] ) {
+   memo[ z ] = c;
+   memoAt[ z ] = memoStamp;
+   if( z == x )
+    break;
+   }
+  return( c );
   }
 
  /// the vertex v made the base of the blossom x, the matching within it
@@ -489,7 +549,7 @@ struct PerfectBlossoms
  void shrink( int e ) {
   const int t = cur;
   const D E = eps( t );
-  const int u = hd[ 2 * e ] , v = hd[ 2 * e + 1 ];
+  const int u = hd( 2 * e ) , v = hd( 2 * e + 1 );
   ++seenStamp;  // the first common ancestor
   int r = NIL;
   for( int x = u , z = v ; ; ) {
@@ -546,17 +606,33 @@ struct PerfectBlossoms
   KA.resize( K.size() );
   for( std::size_t i = 0 ; i < K.size() ; ++i )
    KA[ i ] = endIn( KE[ i ] , K[ i ] );
+  // the outer child with the most ends, whose list becomes that of B; its
+  // children in the tree pass to B as they are, but for those on the cycle
+  int big = NIL;
+  for( int c : K )
+   if( ( lab[ c ] == PLUS ) &&
+       ( ( big == NIL ) || ( cnt[ lid[ std::size_t( c ) ] ] >
+			     cnt[ lid[ std::size_t( big ) ] ] ) ) )
+    big = c;
+  for( int c : K )
+   if( ( lab[ c ] == MINUS ) && ( across( tpar[ c ] , c ) == big ) )
+    removeChild( big , c );
   for( int c : K )
    bparent[ c ] = B;
   base[ B ] = base[ r ];
   bparent[ B ] = NIL;
   tpar[ B ] = NIL;
-  first[ B ] = fchild[ B ] = snext[ B ] = sprev[ B ] = NIL;
-  // the place of r in the tree, and the children of the outer nodes
+  snext[ B ] = sprev[ B ] = NIL;
+  fchild[ B ] = fchild[ big ];
+  fchild[ big ] = NIL;
+  std::swap( lid[ std::size_t( B ) ] , lid[ std::size_t( big ) ] );
+  lnode[ std::size_t( lid[ std::size_t( B ) ] ) ] = B;
+  lnode[ std::size_t( lid[ std::size_t( big ) ] ) ] = big;
+  // the place of r in the tree, and the children of the other outer nodes
   if( T[ std::size_t( t ) ].root == r )
    T[ std::size_t( t ) ].root = B;
   for( int c : K )
-   if( lab[ c ] == PLUS )
+   if( ( lab[ c ] == PLUS ) && ( c != big ) )
     for( int d = fchild[ c ] ; d != NIL ; ) {
      const int nx = snext[ d ];
      if( bparent[ d ] != B )
@@ -564,25 +640,36 @@ struct PerfectBlossoms
      d = nx;
      }
   // the edges within B frozen, those that leave it moved to its list,
-  // those of its inner children shifted to an outer end
+  // those of its inner children shifted to an outer end; the ends of big,
+  // already in the list of B, are reached from the other children, which
+  // give back to big those of the edges within B
   collected.clear();
   for( int c : K )
-   forEnds( c , [ & ]( int k ) {
-    const int f = k >> 1 , o = hd[ k ^ 1 ];
-    if( bparent[ o ] == B ) {
-     if( ( k & 1 ) == 0 ) {
-      s[ f ] -= ( lab[ c ] + lab[ o ] ) * E;
+   if( c != big )
+    forEnds( c , [ & ]( int k ) {
+     const int f = k >> 1 , o = hd( k ^ 1 );
+     if( o == B ) {  // to big: within B
       dequeue( f );
+      s( f ) -= ( lab[ c ] + PLUS ) * E;
+      unlink( k ^ 1 );
+      link( k ^ 1 , big );
+      return;
       }
-     return;
-     }
-    unlink( k );
-    link( k , B );
-    if( lab[ c ] == MINUS ) {
-     s[ f ] += 2 * E;
-     collected.push_back( f );
-     }
-    } );
+     if( bparent[ o ] == B ) {
+      if( ( k & 1 ) == 0 ) {
+       dequeue( f );
+       s( f ) -= ( lab[ c ] + lab[ o ] ) * E;
+       }
+      return;
+      }
+     unlink( k );
+     link( k , B );
+     if( lab[ c ] == MINUS ) {
+      dequeue( f );
+      s( f ) += 2 * E;
+      collected.push_back( f );
+      }
+     } );
   for( int c : K ) {
    y[ c ] += lab[ c ] * E;
    if( ( c >= n ) && ( lab[ c ] == MINUS ) )
@@ -645,17 +732,20 @@ struct PerfectBlossoms
   collected.clear();
   for( int x : K )  // the edges between two children, now apart
    forEnds( x , [ & ]( int h ) {
-    const int o = hd[ h ^ 1 ];
+    const int o = hd( h ^ 1 );
     if( ( ( h & 1 ) == 0 ) && ( bparent[ o ] == B ) ) {
-     s[ h >> 1 ] += ( lab[ x ] + lab[ o ] ) * E;
+     dequeue( h >> 1 );
+     s( h >> 1 ) += ( lab[ x ] + lab[ o ] ) * E;
      collected.push_back( h >> 1 );
      }
     } );
+  ++memoStamp;
   forEnds( B , [ & ]( int h ) {  // the edges that left B, to its children
-   const int x = childOf( B , vertexOf( h ) );
+   const int x = childOfMemo( B , vertexOf( h ) );
    unlink( h );
    link( h , x );
-   s[ h >> 1 ] += ( lab[ x ] + 1 ) * E;
+   dequeue( h >> 1 );
+   s( h >> 1 ) += ( lab[ x ] + 1 ) * E;
    collected.push_back( h >> 1 );
    } );
   for( int x : K ) {
@@ -682,29 +772,83 @@ struct PerfectBlossoms
 /*--------------------------------------------------------------------------*/
 
  /// the tight edge e from an outer node of cur to a free node grows the
- /// tree by the free node, inner, and its mate, outer
+ /// tree by the free node, inner, and its mate, outer: their duals and the
+ /// slacks of their edges kept, each edge placed in the queue of its new
+ /// class in one pass over the ends of each node (an edge between the two
+ /// nodes twice, the second time with its slack complete)
  void grow( int e ) {
-  int u = hd[ 2 * e ] , v = hd[ 2 * e + 1 ];
+  int u = hd( 2 * e ) , v = hd( 2 * e + 1 );
   if( lab[ u ] != PLUS )
    std::swap( u , v );
   const int t = tree[ u ];
+  const D E = eps( t );
   const int w = mateNode( v );
   tpar[ v ] = e;
   fchild[ v ] = NIL;
   addChild( u , v );
   tpar[ w ] = NIL;
   fchild[ w ] = NIL;
-  relabel( { { v , MINUS , t } , { w , PLUS , t } } );
+  y[ v ] += E;  // before the queue of an inner blossom reads it
+  y[ w ] -= E;
+  setLabel( v , MINUS , t );
+  setLabel( w , PLUS , t );
+  Tree & R = T[ std::size_t( t ) ];
+  auto into = [ & ]( EdgeRec & r , Queue * q ) {
+   r.where = q;
+   r.q.child = r.q.next = r.q.prev = nullptr;  // perhaps of a queue dropped
+   q->h.insert( &r.q );
+   };
+  forEnds( v , [ & ]( int k ) {  // v inner: from the outer nodes of others
+   EdgeRec & r = ed[ std::size_t( k >> 1 ) ];
+   if( r.where ) {
+    r.where->h.erase( &r.q );
+    r.where = nullptr;
+    }
+   r.q.priority -= E;
+   const int o = hd( k ^ 1 );
+   if( ( lab[ o ] == PLUS ) && ( tree[ o ] != t ) ) {
+    TreeEdge & X = teOf( tree[ o ] , t );
+    into( r , &X.pm[ X.t[ 0 ] == t ? 1 : 0 ] );
+    }
+   } );
+  forEnds( w , [ & ]( int k ) {  // w outer
+   const int f = k >> 1;
+   EdgeRec & r = ed[ std::size_t( f ) ];
+   if( r.where ) {
+    r.where->h.erase( &r.q );
+    r.where = nullptr;
+    }
+   r.q.priority += E;
+   const int o = hd( k ^ 1 );
+   if( lab[ o ] == FREE )
+    into( r , &R.q0 );
+   else if( lab[ o ] == PLUS ) {
+    if( tree[ o ] == t )
+     into( r , &R.q00 );
+    else {
+     into( r , &teOf( t , tree[ o ] ).pp );
+     if( r.q.priority - E - eps( tree[ o ] ) == 0 ) {
+      pendingAug = f;
+      R.hot = T[ std::size_t( tree[ o ] ) ].hot = true;
+      }
+     }
+    }
+   else if( tree[ o ] != t ) {
+    TreeEdge & X = teOf( t , tree[ o ] );
+    into( r , &X.pm[ X.t[ 0 ] == t ? 0 : 1 ] );
+    }
+   } );
   }
 
  /// the tight edge e between the outer nodes of two trees augments the
  /// matching along the paths to their roots, and the two trees dissolve
  void augment( int e ) {
-  const int t1 = tree[ hd[ 2 * e ] ] , t2 = tree[ hd[ 2 * e + 1 ] ];
+  ++augments;
+  const int t1 = tree[ hd( 2 * e ) ] , t2 = tree[ hd( 2 * e + 1 ) ];
   treeNodes( t1 , N1 );
   treeNodes( t2 , N2 );
   for( int side = 0 ; side < 2 ; ++side ) {
-   int x = hd[ 2 * e + side ] , at = side ? ev[ e ] : eu[ e ] , ne = e;
+   int x = hd( 2 * e + side ) , at = side ? ev[ e ] : eu[ e ] , ne = e;
    while( true ) {
     const int w = mateNode( x );
     rebase( x , at );
@@ -728,7 +872,7 @@ struct PerfectBlossoms
    for( int x : *L ) {
     const D d = -shift( x );
     y[ x ] -= d;
-    forEnds( x , [ & ]( int k ) { s[ k >> 1 ] += d; } );
+    forEnds( x , [ & ]( int k ) { s( k >> 1 ) += d; } );
     }
   for( const auto * L : { &N1 , &N2 } )
    for( int x : *L ) {
@@ -742,8 +886,8 @@ struct PerfectBlossoms
   for( const auto * L : { &N1 , &N2 } )
    for( int x : *L )
     forEnds( x , [ & ]( int k ) {
-     where[ k >> 1 ] = nullptr;
-     if( lab[ hd[ k ^ 1 ] ] == PLUS )
+     ed[ std::size_t( k >> 1 ) ].where = nullptr;
+     if( lab[ hd( k ^ 1 ) ] == PLUS )
       place( k >> 1 );
      } );
   ++stamp;
@@ -760,14 +904,17 @@ struct PerfectBlossoms
   setCur( t );
   if( R.hot ) {
    R.hot = false;
-   for( const auto & [ i , g ] : R.te ) {
-    TreeEdge & X = TE[ std::size_t( i ) ];
-    if( ! X.pp.h.empty() &&
-	( X.pp.h.min()->priority - eps( X.t[ 0 ] ) - eps( X.t[ 1 ] ) == 0 ) ) {
-     augment( int( X.pp.h.min() - qe.data() ) );
-     progress = true;
-     return;
-     }
+   int e = NIL;
+   forTreeEdges( t , [ & ]( TreeEdge & X , int ) {
+    if( least( X.pp , eps( X.t[ 0 ] ) , eps( X.t[ 1 ] ) ) != 0 )
+     return( false );
+    e = edgeOf( X.pp.h.min() );
+    return( true );
+    } );
+   if( e != NIL ) {
+    augment( e );
+    progress = true;
+    return;
     }
    }
   pendingAug = NIL;
@@ -775,7 +922,7 @@ struct PerfectBlossoms
    if( pendingAug != NIL ) {
     const int e = pendingAug;
     pendingAug = NIL;
-    const int u = hd[ 2 * e ] , v = hd[ 2 * e + 1 ];
+    const int u = hd( 2 * e ) , v = hd( 2 * e + 1 );
     if( ( lab[ u ] == PLUS ) && ( lab[ v ] == PLUS ) &&
 	( tree[ u ] != tree[ v ] ) && ( slack( e ) == 0 ) ) {
      augment( e );
@@ -784,9 +931,9 @@ struct PerfectBlossoms
      }
     }
    if( ! R.q0.h.empty() && ( R.q0.h.min()->priority - R.eps == 0 ) )
-    grow( int( R.q0.h.min() - qe.data() ) );
+    grow( edgeOf( R.q0.h.min() ) );
    else if( ! R.q00.h.empty() && ( R.q00.h.min()->priority - 2 * R.eps == 0 ) )
-    shrink( int( R.q00.h.min() - qe.data() ) );
+    shrink( edgeOf( R.q00.h.min() ) );
    else if( ! R.qB.empty() && ( R.qB.min()->priority - R.eps == 0 ) )
     expand( int( R.qB.min() - qb.data() ) );
    else
@@ -799,96 +946,87 @@ struct PerfectBlossoms
 /*---------------------------- THE DUAL UPDATE -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
- std::vector< int > uf , chead , cnext;
- std::vector< D > ub;
+ std::vector< D > delta;            ///< the change of the duals of each tree
+ std::vector< signed char > state;  ///< 0 untaken, 1 in the component, 2 done
+ std::vector< int > comp;           ///< the trees of the component taken
 
- int find( int t ) {
-  while( uf[ t ] != t ) {
-   uf[ t ] = uf[ uf[ t ] ];
-   t = uf[ t ];
-   }
-  return( t );
+ /// the least slack of the edges of the queue q, less the changes of the
+ /// duals a and b of their ends, INF if none
+ static D least( const Queue & q , D a , D b ) {
+  return( q.h.empty() ? INF : q.h.min()->priority - a - b );
   }
 
  /// the change of the duals of each tree, the same in each component of
  /// the trees joined by the tight edges from an outer node of one to an
- /// inner node of another; false if a change is unbounded
+ /// inner node of another, each component found by one visit of the edges
+ /// between its trees, which bounds its change by the changes of the
+ /// components already taken (and by none for those after it, which are
+ /// bounded by it in turn); false if a change is unbounded
  bool dualUpdate( bool & moved ) {
   const std::size_t NT = T.size();
-  uf.resize( NT );
-  ub.resize( NT );
-  chead.resize( NT );
-  cnext.resize( NT );
+  delta.resize( NT );
+  state.resize( NT );
   for( int t : alive ) {
-   uf[ t ] = t;
-   chead[ t ] = NIL;
-   const Tree & R = T[ std::size_t( t ) ];
-   D b = INF;
-   if( ! R.q0.h.empty() )
-    b = std::min( b , R.q0.h.min()->priority - R.eps );
+   Tree & R = T[ std::size_t( t ) ];
+   D b = least( R.q0 , R.eps , 0 );
    if( ! R.q00.h.empty() )
     b = std::min( b , ( R.q00.h.min()->priority - 2 * R.eps ) / 2 );
    if( ! R.qB.empty() )
     b = std::min( b , R.qB.min()->priority - R.eps );
-   ub[ t ] = b;
+   delta[ std::size_t( t ) ] = b;
+   state[ std::size_t( t ) ] = 0;
    }
-  for( int t : alive )  // the components
-   for( const auto & [ i , g ] : T[ std::size_t( t ) ].te ) {
-    const TreeEdge & X = TE[ std::size_t( i ) ];
-    if( ! X.alive || ( X.gen != g ) || ( X.t[ 0 ] != t ) )
-     continue;
-    for( int d = 0 ; d < 2 ; ++d )
-     if( ! X.pm[ d ].h.empty() && ( X.pm[ d ].h.min()->priority -
-				      eps( X.t[ d ] ) + eps( X.t[ 1 - d ] ) ==
-				    0 ) ) {
-      const int a = find( X.t[ 0 ] ) , b = find( X.t[ 1 ] );
-      if( a != b )
-       uf[ a ] = b;
-      }
-    }
-  for( int t : alive ) {  // the trees of each component, in a list
-   const int c = find( t );
-   cnext[ t ] = chead[ c ];
-   chead[ c ] = t;
-   }
-  for( int c : alive ) {
-   if( uf[ c ] != c )
+  for( int t0 : alive ) {
+   if( state[ std::size_t( t0 ) ] != 0 )
     continue;
-   D d = INF;
-   for( int t = chead[ c ] ; t != NIL ; t = cnext[ t ] ) {
-    d = std::min( d , ub[ t ] );
-    for( const auto & [ x , g ] : T[ std::size_t( t ) ].te ) {
-     const TreeEdge & X = TE[ std::size_t( x ) ];
-     if( ! X.alive || ( X.gen != g ) )
-      continue;
-     const int k = X.t[ 0 ] == t ? 0 : 1;
+   comp.assign( 1 , t0 );
+   state[ std::size_t( t0 ) ] = 1;
+   D d = delta[ std::size_t( t0 ) ];
+   for( std::size_t h = 0 ; h < comp.size() ; ++h ) {
+    const int t = comp[ h ];
+    const D et = eps( t );
+    forTreeEdges( t , [ & ]( TreeEdge & X , int k ) {
      const int o = X.t[ 1 - k ];
-     const int co = find( o );
-     // the slacks after the changes of the components taken before
-     if( ! X.pp.h.empty() ) {
-      const D sl = X.pp.h.min()->priority - eps( t ) - eps( o );
-      d = std::min( d , co == c ? sl / 2 : sl );
+     const D eo = eps( o );
+     const D pp = least( X.pp , et , eo );
+     if( state[ std::size_t( o ) ] == 1 ) {  // within the component
+      d = std::min( d , pp / 2 );
+      return( false );
       }
-     if( ! X.pm[ k ].h.empty() && ( co != c ) )
-      d = std::min( d , X.pm[ k ].h.min()->priority - eps( t ) + eps( o ) );
-     }
+     const D out = least( X.pm[ k ] , et , -eo );
+     D e2 = 0;  // the change of o, 0 for a component after this one
+     if( state[ std::size_t( o ) ] == 2 )
+      e2 = delta[ std::size_t( o ) ];
+     else if( ( out <= 0 ) || ( least( X.pm[ 1 - k ] , eo , -et ) <= 0 ) ) {
+      state[ std::size_t( o ) ] = 1;  // o joins the component
+      comp.push_back( o );
+      d = std::min( { d , pp , delta[ std::size_t( o ) ] } );
+      return( false );
+      }
+     d = std::min( { d , pp - e2 , e2 + out } );
+     return( false );
+     } );
     }
    if( d >= INF / 2 )
     return( false );
    if( d < 0 )
     d = 0;
    moved = moved || ( d > 0 );
-   for( int t = chead[ c ] ; t != NIL ; t = cnext[ t ] )
-    T[ std::size_t( t ) ].eps += d;
-   }
-  for( int t : alive )  // the edges between outer nodes made tight
-   for( const auto & [ i , g ] : T[ std::size_t( t ) ].te ) {
-    const TreeEdge & X = TE[ std::size_t( i ) ];
-    if( X.alive && ( X.gen == g ) && ( X.t[ 0 ] == t ) && ! X.pp.h.empty() &&
-	( X.pp.h.min()->priority - eps( X.t[ 0 ] ) - eps( X.t[ 1 ] ) == 0 ) )
-     T[ std::size_t( X.t[ 0 ] ) ].hot = T[ std::size_t( X.t[ 1 ] ) ].hot =
-       true;
+   for( int t : comp ) {
+    delta[ std::size_t( t ) ] = d;
+    state[ std::size_t( t ) ] = 2;
     }
+   }
+  for( int t : alive )
+   T[ std::size_t( t ) ].eps += delta[ std::size_t( t ) ];
+  for( int t : alive )  // the edges between outer nodes made tight
+   if( delta[ std::size_t( t ) ] > 0 )
+    forTreeEdges( t , [ & ]( TreeEdge & X , int ) {
+     if( least( X.pp , eps( X.t[ 0 ] ) , eps( X.t[ 1 ] ) ) == 0 )
+      T[ std::size_t( X.t[ 0 ] ) ].hot = T[ std::size_t( X.t[ 1 ] ) ].hot =
+	true;
+     return( false );
+     } );
   return( true );
   }
 
@@ -898,11 +1036,12 @@ struct PerfectBlossoms
 
  /// the duals of the vertices and a matching on the tight edges
  void initialize( bool greedy ) {
-  for( int v = 0 ; v < n ; ++v ) {
-   D b = INF;
-   forEnds( v , [ & ]( int k ) { b = std::min( b , cost2[ k >> 1 ] / 2 ); } );
-   y[ v ] = b;
-   }
+  std::fill( y.begin() , y.begin() + n , INF );
+  for( int e = 0 ; e < m ; ++e )  // in the order of the edges
+   if( eu[ e ] != ev[ e ] ) {
+    y[ eu[ e ] ] = std::min( y[ eu[ e ] ] , cost2[ e ] / 2 );
+    y[ ev[ e ] ] = std::min( y[ ev[ e ] ] , cost2[ e ] / 2 );
+    }
   if( greedy )
    for( int v = 0 ; v < n ; ++v ) {
     if( mate[ v ] != NIL )
@@ -913,7 +1052,8 @@ struct PerfectBlossoms
      b = std::min( b , cost2[ e ] - y[ v ] - y[ other( e , v ) ] );
      } );
     y[ v ] += b;
-    for( int k = first[ v ] ; k != NIL ; k = anext[ k ] ) {
+    for( int k = first[ lid[ std::size_t( v ) ] ] ; k != NIL ;
+	 k = anext( k ) ) {
      const int e = k >> 1 , u = other( e , v );
      if( ( mate[ u ] == NIL ) && ( cost2[ e ] - y[ v ] - y[ u ] == 0 ) ) {
       mate[ u ] = mate[ v ] = e;
@@ -922,7 +1062,8 @@ struct PerfectBlossoms
      }
     }
   for( int e = 0 ; e < m ; ++e )
-   s[ e ] = cost2[ e ] - y[ eu[ e ] ] - y[ ev[ e ] ];
+   s( e ) = cost2[ e ] - y[ eu[ e ] ] - y[ ev[ e ] ];
+  T.reserve( std::size_t( std::count( mate.begin() , mate.end() , NIL ) ) );
   for( int v = 0 ; v < n ; ++v )
    if( mate[ v ] == NIL ) {
     const int t = newTree( v );
@@ -933,7 +1074,7 @@ struct PerfectBlossoms
    if( mate[ v ] == NIL ) {
     setCur( tree[ v ] );
     forEnds( v , [ & ]( int k ) {
-     const int u = hd[ k ^ 1 ];
+     const int u = hd( k ^ 1 );
      if( ( lab[ u ] != PLUS ) || ( v < u ) )  // else placed from u
       place( k >> 1 );
      } );
@@ -949,7 +1090,7 @@ struct PerfectBlossoms
    return;
    }
   for( int v = 0 ; v < n ; ++v )
-   if( first[ v ] == NIL ) {
+   if( cnt[ lid[ std::size_t( v ) ] ] == 0 ) {
     infeasible = true;
     return;
     }
@@ -957,6 +1098,7 @@ struct PerfectBlossoms
   std::vector< int > L;
   while( ! alive.empty() ) {
    bool progress = false;
+   const std::size_t a0 = augments;
    L = alive;
    for( int t : L )
     if( T[ std::size_t( t ) ].at != NIL )
@@ -965,6 +1107,8 @@ struct PerfectBlossoms
    ++stamp;
    if( alive.empty() )
     break;
+   if( augments != a0 )
+    continue;  // the trees left may grow on the nodes freed
    bool moved = false;
    if( ! dualUpdate( moved ) ) {
     infeasible = true;
