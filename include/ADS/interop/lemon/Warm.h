@@ -2,16 +2,16 @@
 /*------------------------------ File Warm.h -------------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The warm starts of the algorithms of LEMON and the solvers of ADS that
- * use them, beyond the book (see \ref theory_graph_lemon). LEMON has no
+ * The warm starts of the algorithms of abLEMON and the solvers of ADS that
+ * use them, beyond the book (see \ref theory_graph_lemon). abLEMON has no
  * warm start of its minimum cost flows and of its maximum flow: they are
  * written, with `ADS_WITH_LEMON`, into private copies of six of its
  * headers (`network_simplex.h`, `cost_scaling.h`, `cycle_canceling.h`,
  * `capacity_scaling.h`, `bits/mcf_feasible_flow.h`, `preflow.h`), rewritten
  * at configure time by the rules of `ADS/interop/lemon/shim/rewrites.txt`
- * and put on the include path before LEMON, which defines `ADS_LEMON_SHIM`.
+ * and put on the include path before abLEMON, which defines `ADS_LEMON_SHIM`.
  * Each rule is `header|anchor|what`, the anchor a whole line of the header
- * of LEMON that must be there exactly once, or the rewrite stops, and
+ * of abLEMON that must be there exactly once, or the rewrite stops, and
  * `what` a block inserted before the line, a text appended to it or a line
  * in its place. They add:
  *
@@ -38,32 +38,32 @@
  *   left at a node other than the source, after a capacity fell below the
  *   flow of its arc, moved forward along the arcs that carry flow out of
  *   it, until only the source has one; the excesses left at the tails are
- *   those that the two phases send on. `init( flow )` of LEMON refuses such
+ *   those that the two phases send on. `init( flow )` of abLEMON refuses such
  *   a flow.
  *
  * A program must see one rewritten copy of each of these headers: two
  * different rewrites of one header in one binary give two layouts of one
  * class, a violation of the one definition rule that compilers do not
- * diagnose. The same holds for a C++20 module of LEMON, which must be built
+ * diagnose. The same holds for a C++20 module of abLEMON, which must be built
  * from the rewritten headers.
  *
- * On these, the solvers of ADS that keep a solution of LEMON warm:
+ * On these, the solvers of ADS that keep a solution of abLEMON warm:
  *
  * - `PreflowEngine`, the engine of `MaxFlowObserver` [see
- *   `Reoptimization.h`] on the `Preflow` of LEMON: the network of ADS
+ *   `Reoptimization.h`] on the `Preflow` of abLEMON: the network of ADS
  *   copied into a `SmartDigraph` once, its new edges appended, the
  *   capacities and the flow of the network read in \f$ \Theta( m ) \f$, a
  *   warm run, and the flow written back by `FlowNetwork::assignFlow()`. The
  *   push-relabel of ADS stays the default engine of the observer;
  * - `NetworkSimplexAssignment< W >`, an engine of `Assignment` [see
- *   `Assignment.h`] on the `NetworkSimplex` of LEMON, the rows of supply 1,
+ *   `Assignment.h`] on the `NetworkSimplex` of abLEMON, the rows of supply 1,
  *   the columns of demand 1 and an arc for each finite cost: after changes
  *   of finite costs alone, one `warmCost()` per pair and `runWarm()`, and a
  *   new solve when a pair is forbidden or allowed again; the potentials of
- *   LEMON, \f$ c( i , j ) + \pi( r_i ) - \pi( b_j ) \ge 0 \f$, give
+ *   abLEMON, \f$ c( i , j ) + \pi( r_i ) - \pi( b_j ) \ge 0 \f$, give
  *   \f$ u_i = - \pi( r_i ) \f$ and \f$ v_j = \pi( b_j ) \f$;
  * - `MinCostFlowObserver< GR , A , CM , UM , SM >`, a minimum cost flow of a
- *   digraph of LEMON by the algorithm `A` (`NetworkSimplex` by default, or
+ *   digraph of abLEMON by the algorithm `A` (`NetworkSimplex` by default, or
  *   `CostScaling`, `CycleCanceling`, `CapacityScaling`), kept up to date as
  *   an observer of the `ObservedMap`s of its costs, of its upper bounds and
  *   of its supplies (the attributes `mod::Cost`, `mod::Upper`,
@@ -73,7 +73,7 @@
  *   is reset; `solve()` runs `runWarm()`, or `run()` after a reset, and
  *   counts both.
  *
- * The contracts [see `Contract.h`]: those of LEMON; the digraph of a
+ * The contracts [see `Contract.h`]: those of abLEMON; the digraph of a
  * `MinCostFlowObserver` changes only through the taps and the maps
  * observed. The classes are defined in this file.
  *
@@ -136,7 +136,7 @@ namespace ADS::lemon_interop
 /*-------------------------- CLASS PreflowEngine ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the engine of `MaxFlowObserver` on the `Preflow` of LEMON, with its warm
+/// the engine of `MaxFlowObserver` on the `Preflow` of abLEMON, with its warm
 /// start from the flow of the network
 class PreflowEngine
 {
@@ -200,7 +200,7 @@ class PreflowEngine
   f_pf->flowMap( f_flow );
   }
 
- /// the flow of LEMON written into `net`, and its value
+ /// the flow of abLEMON written into `net`, and its value
  long long giveBack( FlowNetwork & net ) const {
   std::vector< long long > F( f_arc.size() );
   for( std::size_t k = 0 ; k < f_arc.size() ; ++k )
@@ -224,7 +224,7 @@ class PreflowEngine
 /*--------------------- CLASS NetworkSimplexAssignment ---------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// an engine of `Assignment` on the `NetworkSimplex` of LEMON, warm after
+/// an engine of `Assignment` on the `NetworkSimplex` of abLEMON, warm after
 /// changes of finite costs
 template< class W = long long >
 class NetworkSimplexAssignment
@@ -328,7 +328,7 @@ class NetworkSimplexAssignment
 /*------------------------ CLASS MinCostFlowObserver -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a minimum cost flow of a digraph of LEMON by the algorithm `A`, kept up
+/// a minimum cost flow of a digraph of abLEMON by the algorithm `A`, kept up
 /// to date as an observer of the maps of its costs, upper bounds and
 /// supplies, and of the taps of its arcs and nodes; the changes of several
 /// maps made under one `channel()` over them [see `Channel`] reach it as

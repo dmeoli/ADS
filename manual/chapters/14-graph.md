@@ -33,7 +33,7 @@ the observers that keep a shortest path tree, a minimum
 spanning forest, a maximum flow and an assignment optimal through such
 changes, often by a test of the certificate of the previous solution alone,
 and in [§14.14](14-graph.md#sec-14-14) the headers by which the structures,
-the graphs and the changes pass between ADS and LEMON.
+the graphs and the changes pass between ADS and abLEMON.
 The adjacency matrix, the lists of adjacency, the matrix of incidence and
 the two visits of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin-cpp)
 are all here, with each of his exercises solved on the code of the library
@@ -603,8 +603,8 @@ runs on the other. In both, `out( u )` is a range of random access of
 `arcData()` is then a plain pointer). The members `arcHeads()` and
 `arcWeights()` read the head and the weight of the place $k$ where they lie,
 and the parallel visits, the stepping algorithms and the adapters of
-Boost.Graph and LEMON read the arcs through them. Only the separate layout has
-`heads()` and `weightData()`, the plain arrays that a library in compressed
+Boost.Graph and abLEMON read the arcs through them. Only the separate layout
+has `heads()` and `weightData()`, the plain arrays that a library in compressed
 rows takes without a copy; the concept `CsrArrays`, which `ArrayGraph` also
 satisfies, is what such a call requires of its graph. Of course, the default
 stays the separate layout until a campaign on an idle machine has compared
@@ -3821,7 +3821,7 @@ and `count( o )` gives the queries of each outcome. Also, `augmentations()`
 gives the augmentations so far, while `cost( i , j )` and `n()` read the
 problem. In [Figure 14.14](14-graph.md#fig-14-14) we show the reduced costs
 before and after the change of a row. Other libraries of graphs solve the
-assignment from scratch (LEMON by its minimum cost flows, SciPy by the
+assignment from scratch (abLEMON by its minimum cost flows, SciPy by the
 algorithm of Crouse), and, as far as we know, none keeps the potentials for a
 warm start. The class is
 
@@ -5050,20 +5050,33 @@ forest or the cut almost free for any $k$, and the decreases and the
 erasures of the arcs of a solution to cross over at a smaller $k$, but this
 is left to the campaign.
 
-## 14.14 Interoperation with LEMON {#sec-14-14}
+## 14.14 Interoperation with abLEMON {#sec-14-14}
 
-We are concerned here with two users. One has a program written on LEMON
-([Dezső, Jüttner and Kovács 2011](Z-bibliography.md#ref-dezso2011)) and
+We are concerned here with two users. One has a program written on abLEMON
+([abLEMON](Z-bibliography.md#ref-ablemon)), the maintained C++20 fork of
+LEMON ([Dezső, Jüttner and Kovács 2011](Z-bibliography.md#ref-dezso2011)), and
 wants a structure of ADS where it does better, without changing the rest of
 the program; the other has a program written on ADS and wants the algorithms
-of LEMON on its graphs. Both are served by the headers of
+of abLEMON on its graphs. Both are served by the headers of
 `ADS/interop/lemon` (beyond the book), and they are optional, since a
-program includes them with LEMON and with `ADS_WITH_LEMON` defined, as the
-target `ADS::LEMON` of CMake does. `ADS::ADS` never includes LEMON, and thus
-a program that does not need it compiles none of it. By LEMON we mean here
-abLEMON, the maintained fork, or any LEMON whose headers compile in C++20;
-LEMON 1.3 does not, since its maps call members of `std::allocator` that
-C++20 removed, and the configuration then leaves the option off.
+program includes them with abLEMON and with `ADS_WITH_LEMON` defined, as the
+target `ADS::LEMON` of CMake does. `ADS::ADS` never includes abLEMON, and thus
+a program that does not need it compiles none of it. What follows holds as well
+for any LEMON whose headers compile in C++20, and for LEMON 1.3, whose maps
+call `construct()` and `destroy()` of `std::allocator`, which C++20 removed:
+where a program with such a map does not compile, CMake and the makefile write
+private copies of the headers that call them, rewritten by the rules of
+`shim/compat.txt` (with the mechanism of the warm starts of
+[§14.14.4](14-graph.md#sec-14-14-4)) so that the calls go through
+`std::allocator_traits`, and put them before LEMON on the include path of
+`ADS::LEMON` and of `$(ADSLEMONINC)`. We recommend abLEMON all the same, since
+LEMON 1.3 lacks three things that ADS then does without, i.e., (i)
+`MinCostAssignment`, so that the assignment from scratch stays with ADS
+([§14.14.3](14-graph.md#sec-14-14-3)), (ii) the lines on which the rules of the
+warm starts are written, so that it has none
+([§14.14.4](14-graph.md#sec-14-14-4)), and (iii) the removal of an arc whose
+insertion an observer refused, which it leaves in the graph
+([§14.14.2](14-graph.md#sec-14-14-2)).
 The other libraries of graphs that run on the graphs of ADS (the
 partitioners METIS and KaHIP, SuiteSparse:GraphBLAS and the dynamic
 algorithms of NetworKit) have adapters of the same kind, beyond the book,
@@ -5073,24 +5086,24 @@ each behind its own option ([§C.15](C-libraries.md#sec-C-15) to
 library agree, and a `NetworKitMirror` is an observer of the changes of
 [§14.13](14-graph.md#sec-14-13), as `LemonMirror` is.
 
-### 14.14.1 The structures of ADS in LEMON {#sec-14-14-1}
+### 14.14.1 The structures of ADS in abLEMON {#sec-14-14-1}
 
-The algorithms of LEMON take their heap by their traits, e.g., `Dijkstra< GR
+The algorithms of abLEMON take their heap by their traits, e.g., `Dijkstra< GR
 , LM >::SetStandardHeap< H >`, and their output maps by named parameters,
 `SetPredMap`, `SetDistMap` and `SetHeap< H , CR >`; the change for the user
 is therefore one template argument. `DaryHeap< PR , IM , CMP , D , Policy >`
 of `Heaps.h` puts the `IndexedDaryHeap` of [chapter 9](09-priority.md#ch-9)
-under the concept of the heaps of LEMON, in which the cross-reference map
+under the concept of the heaps of abLEMON, in which the cross-reference map
 belongs to the caller and the algorithm writes it directly. Here the map
 holds a slot of the heap of ADS for an item in the heap, and the state
-`PRE_HEAP` or `POST_HEAP` otherwise, as in the `FibHeap` of LEMON. Since the
+`PRE_HEAP` or `POST_HEAP` otherwise, as in the `FibHeap` of abLEMON. Since the
 freed slots are taken again, the heap of ADS has as many ids as the largest
 frontier (Lemma 20 of the theory page of the graphs). Each operation costs
 one read of the map more than in the heap of ADS, i.e., one dependent load
 more than `BinHeap` makes, which may or may not be visible (we have not
-measured it). In exchange, it brings to LEMON the subject of ADS, and with
+measured it). In exchange, it brings to abLEMON the subject of ADS, and with
 `Policy = Dynamic<>` an observer of `subject()` receives every insertion,
-erasure and change of key that the algorithm of LEMON makes on its frontier.
+erasure and change of key that the algorithm of abLEMON makes on its frontier.
 
 `MonotoneHeap< Q , PR , IM >` puts `DialQueue` and `RadixHeap` under the
 same concept, although they have no decrease-key. A decrease pushes a second
@@ -5100,15 +5113,15 @@ for Dijkstra's algorithm with nonnegative integer lengths (Lemma 21). In
 this use the window of the queue of [Dial
 1969](Z-bibliography.md#ref-dial1969) then takes $O( C )$ buckets for the
 lengths at most $C$, against the bucket per distance of the `BucketHeap` of
-LEMON.
+abLEMON.
 
 Three maps are in `Maps.h`. First, `DenseMap< GR , T , Item >` is a
-`ReferenceMap` of LEMON on an array, by the ids of the items, which does not
-attach to the notifier of the graph. A map of LEMON instead attaches at its
+`ReferenceMap` of abLEMON on an array, by the ids of the items, which does not
+attach to the notifier of the graph. A map of abLEMON instead attaches at its
 construction, under the lock of the notifier, and $k$ runs started at once
 on one graph would serialize on that lock. With `DenseMap` the runs share no
 mutable state, and `dijkstraFrom( ex , g , l , S )` of `Parallel.h` runs one
-`Dijkstra` of LEMON per source of $S$ on the threads of an executor of
+`Dijkstra` of abLEMON per source of $S$ on the threads of an executor of
 [chapter 25](25-parallel.md#ch-25):
 
 --8<-- "generated/Parallel-dijkstraFrom.pseudo.md"
@@ -5119,26 +5132,26 @@ mutable state, and `dijkstraFrom( ex , g , l , S )` of `Parallel.h` runs one
 the observers of the array, and on a `Fenwick` of [Fenwick
 1994](Z-bibliography.md#ref-fenwick1994) `prefix()` gives the sum of the
 values of the ids up to an item. Finally, `ObservedMap< GR , Map , A ,
-Policy >` wraps a map of LEMON, whose writes cannot be observed, and its
+Policy >` wraps a map of abLEMON, whose writes cannot be observed, and its
 `set()` emits `Changed< A , int , V >` with the old and the new value. Thus
 a change of a cost or of a capacity that the observers must see goes through
 it. Besides the maps, `sortedArcs( ex , g , c )` sorts the pairs ( edge ,
-cost ) of a graph of LEMON by the parallel sort of [chapter
-25](25-parallel.md#ch-25). Since `kruskal()` of LEMON takes such a sequence
+cost ) of a graph of abLEMON by the parallel sort of [chapter
+25](25-parallel.md#ch-25). Since `kruskal()` of abLEMON takes such a sequence
 as already sorted, the sort, which dominates the algorithm of [Kruskal
 1956](Z-bibliography.md#ref-kruskal1956) on a sparse graph, then runs on the
 threads.
 
 In `Digraphs.h` the graphs cross in both directions. `StaticDigraphView< W
->` is a digraph of LEMON over a `StaticGraph< W >` of
+>` is a digraph of abLEMON over a `StaticGraph< W >` of
 [§14.4.1](14-graph.md#sec-14-4-1), with no copy of its rows. The arc $k$ is
 the place $k$ of the rows, `OutArcIt` walks a row in memory, and `weights()`
 reads the weights stored next to the heads; the tails and the lists of the
 arcs into each node, which the rows lack, take $8 a + 4 n$ bytes, built
-once. `Dijkstra`, `Bfs`, `Preflow` and `NetworkSimplex` of LEMON then
+once. `Dijkstra`, `Bfs`, `Preflow` and `NetworkSimplex` of abLEMON then
 run on the graph of ADS, replacing the graph and the length map. Conversely,
-`GraphView< GR , LM >` is a GRAPH of ADS over a digraph of LEMON and a
-length map, with no copy. Its nodes are named by the ids of LEMON, and
+`GraphView< GR , LM >` is a GRAPH of ADS over a digraph of abLEMON and a
+length map, with no copy. Its nodes are named by the ids of abLEMON, and
 `bound()` is `maxNodeId() + 1`, so that the algorithms of this chapter run
 on it unchanged. `toStatic( g , l )` copies such a digraph into a
 `StaticGraph` once, in $\Theta( n + m )$ time, and the parallel shortest
@@ -5148,42 +5161,42 @@ compressed rows.
 ### 14.14.2 The changes passed between the libraries {#sec-14-14-2}
 
 `LemonTap< GR , Item , CostMap , Policy >` of `Observers.h` is an observer
-of the notifier of LEMON, for the nodes or for the arcs. It turns `add()`,
+of the notifier of abLEMON, for the nodes or for the arcs. It turns `add()`,
 `erase()`, `build()` and `clear()` into the events `Inserted`, `Erased`,
 `Rebuilt` and `Cleared` of [§1.13](01-introduction.md#sec-1-13). The handle
-of an event is the id of the item, which keeps the parallel arcs of LEMON
-apart, and the key of an arc is the pair of its ends. In LEMON an insertion
+of an event is the id of the item, which keeps the parallel arcs of abLEMON
+apart, and the key of an arc is the pair of its ends. In abLEMON an insertion
 is notified after it and an erasure before it, and the notifier calls its
 observers from the oldest on `add()` and from the newest on `erase()`, an
 order that we read in the code of the notifier, since its header does not
-state it. Hence a tap constructed after the map of the costs reads the cost
-of an arc before LEMON removes it. However, the idiom of LEMON sets the cost
-after inserting the arc, and the insertion thus carries the default cost;
-the write that follows reaches the observers only through an `ObservedMap`.
+state it. Hence a tap constructed after the map of the costs reads the cost of
+an arc before abLEMON removes it. However, the idiom of abLEMON sets the cost
+after inserting the arc, and the insertion thus carries the default cost; the
+write that follows reaches the observers only through an `ObservedMap`.
 An insertion is emitted with the strong guarantee of `emit()`, i.e., if an
 observer of ADS throws, those that received the insertion receive the
-erasure, and abLEMON removes the arc again. LEMON forbids an exception
+erasure, and abLEMON removes the arc again. abLEMON forbids an exception
 within an erasure, and the tap catches it and becomes `spoiled()`. We remark
 that the tap does not see what the notifier does not notify, i.e.,
 `changeTarget()`, `changeSource()`, `reverseArc()`, the moves of
 `contract()` and `split()`, the writes that bypass the observed maps, and
-the changes through an adaptor of LEMON.
+the changes through an adaptor of abLEMON.
 
 `LemonMirror< G >` goes the other way. It is an observer of the
 `ObservedGraph` of [§14.13.1](14-graph.md#sec-14-13-1), and keeps a
 `ListDigraph` and its weights in step with the graph of ADS, in $O( 1 )$
 expected time per event. It also records the kinds of the events since the
-last `clearKinds()`, from which an algorithm of LEMON that keeps a state
+last `clearKinds()`, from which an algorithm of abLEMON that keeps a state
 learns whether it must be built again.
 
-### 14.14.3 The solves delegated to LEMON {#sec-14-14-3}
+### 14.14.3 The solves delegated to abLEMON {#sec-14-14-3}
 
 With `ADS_WITH_LEMON`, `maxCardinalityMatching()` and `maxWeightMatching()`
 of [§14.11.2](14-graph.md#sec-14-11-2) copy the graph into a `SmartGraph`,
-and solve it by the `MaxMatching` and the `MaxWeightedMatching` of LEMON.
+and solve it by the `MaxMatching` and the `MaxWeightedMatching` of abLEMON.
 Contracts and audits are the same, and the matching has the size or the
 weight of that of ADS, though not necessarily the same edges. The largest
-weight among the matchings of largest size stays with ADS, since LEMON lacks
+weight among the matchings of largest size stays with ADS, since abLEMON lacks
 it, and so do `bipartiteBMatching()` and `branchAndBoundMatching()`, the
 book's part. Similarly, the solve from scratch of the `Assignment` of
 [§14.11.3](14-graph.md#sec-14-11-3) runs the `MinCostAssignment` of abLEMON,
@@ -5193,23 +5206,24 @@ the assignment (Lemma 22 of the theory page); from them the repairs after
 repairs stay with ADS by default. Defining `ADS_MATCHING_LEMON` or
 `ADS_ASSIGNMENT_LEMON` to 0 keeps the code of ADS, as the benchmarks do.
 
-### 14.14.4 The warm starts of LEMON {#sec-14-14-4}
+### 14.14.4 The warm starts of abLEMON {#sec-14-14-4}
 
-LEMON has no warm start of its minimum cost flows nor of its maximum flow,
+abLEMON has no warm start of its minimum cost flows nor of its maximum flow,
 and ADS writes one into private copies of six of its headers
 (`network_simplex.h`, `cost_scaling.h`, `cycle_canceling.h`,
 `capacity_scaling.h`, `bits/mcf_feasible_flow.h` and `preflow.h`). The
 copies are rewritten at configure time by the rules of
 `ADS/interop/lemon/shim/rewrites.txt`, and put on the include path before
-LEMON, which defines `ADS_LEMON_SHIM`; CMake applies the rules by
+abLEMON, which defines `ADS_LEMON_SHIM`; CMake applies the rules by
 `ads_lemon_shim()` of `ADSLemonShim.cmake`, and the makefiles by
 `rewrite.awk`, so that the two agree by construction. Each rule has the form
 `header|anchor|what`, where the anchor is a whole line of the header of
-LEMON, and `what` either inserts a block of the shim before it, or appends a
+abLEMON, and `what` either inserts a block of the shim before it, or appends a
 text to it, or replaces it. The anchor must occur exactly once, and
 otherwise the rewrite stops and names the line, rather than go on with a
 header rewritten in part; CMake then leaves the warm start off when
-`ADS_WITH_LEMON` is `AUTO`. The rules give `runWarm()` to the four minimum
+`ADS_WITH_LEMON` is `AUTO`, or LEMON 1.3 is found, whose lines are not
+those of the rules. The rules give `runWarm()` to the four minimum
 cost flows. `NetworkSimplex` goes on from the basis of the last run, whose
 tree flow is computed again and repaired after a change of the bounds or of
 the supplies, while `CostScaling` and `CycleCanceling` start from the flow
@@ -5225,14 +5239,14 @@ out of its node, and `runWarm()`, which does so from the last flow.
 [§14.13.2](14-graph.md#sec-14-13-2) takes its solves from an engine, the
 concept `FlowEngine`, whose default `AugmentEngine` runs the augmentations
 of ADS from scratch and from the flow that the network keeps.
-`PreflowEngine` is the engine on the `Preflow` of LEMON, on a copy of the
+`PreflowEngine` is the engine on the `Preflow` of abLEMON, on a copy of the
 network of ADS whose flow is given back by `FlowNetwork::assignFlow()`, and
 the default stays that of ADS until the measures decide (we have not taken
 them). `NetworkSimplexAssignment< W >` is an engine of `Assignment`, the
 third template argument, which after changes of finite costs gives one
 `warmCost()` per pair to a `NetworkSimplex` and runs it warm. Finally,
 `MinCostFlowObserver< GR , A , CM , UM , SM >` keeps a minimum cost flow of
-a digraph of LEMON by any of the four algorithms. It observes the
+a digraph of abLEMON by any of the four algorithms. It observes the
 `ObservedMap`s of the costs, of the upper bounds and of the supplies and a
 `LemonTap`, and it runs `runWarm()` or, after a change of the digraph,
 `run()`.
@@ -5240,9 +5254,9 @@ a digraph of LEMON by any of the four algorithms. It observes the
 The one constraint is on the build of a program. A program must see one
 rewritten copy of each of these headers, i.e., it may not compile some
 translation units on the copies of ADS and others on the plain headers of
-LEMON, or on a copy rewritten by other rules. Two layouts of one class in
+abLEMON, or on a copy rewritten by other rules. Two layouts of one class in
 one binary violate the one definition rule, which compilers and linkers do
-not diagnose. The same holds for a module of C++20 of LEMON, which must be
+not diagnose. The same holds for a module of C++20 of abLEMON, which must be
 built from the rewritten headers, the shim first on its include path.
 
 

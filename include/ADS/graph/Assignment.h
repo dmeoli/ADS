@@ -27,7 +27,7 @@
  * that a scratch frees]; the observer
  * `AssignmentObserver` of `Reoptimization.h` keeps an assignment on the
  * weights of a bipartite graph that changes. The libraries of graphs solve
- * the assignment from scratch (LEMON by its minimum cost flows, SciPy by
+ * the assignment from scratch (abLEMON by its minimum cost flows, SciPy by
  * the algorithm of Crouse), and none keeps the duals for a warm start.
  *
  * With `ADS_WITH_LEMON` and a LEMON that has `MinCostAssignment` (abLEMON)
@@ -96,7 +96,7 @@
 #include <variant>
 #include <vector>
 
-// the solve from scratch on the MinCostAssignment of LEMON with
+// the solve from scratch on the MinCostAssignment of abLEMON with
 // ADS_WITH_LEMON, where LEMON has it (abLEMON), unless ADS_ASSIGNMENT_LEMON
 // is 0 (the benchmarks keep the code of ADS)
 #if defined( ADS_WITH_LEMON ) && ! defined( ADS_ASSIGNMENT_LEMON ) &&         \
@@ -281,7 +281,7 @@ class Assignment
 
 #if defined( ADS_ASSIGNMENT_LEMON ) && ADS_ASSIGNMENT_LEMON
  /// the assignment and its potentials from scratch by the MinCostAssignment
- /// of LEMON; false, with nothing changed, if it is not perfect
+ /// of abLEMON; false, with nothing changed, if it is not perfect
  bool lemonScratch( void );
 #endif
 

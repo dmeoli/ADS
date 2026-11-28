@@ -6,7 +6,7 @@
  * run: each test holds the code of one example as the manual prints it
  * (`declcheck.py --tests` checks that it does), followed by the checks of
  * its result. The examples use the standard library, Boost.Graph,
- * Boost.Heap, Boost.Unordered, LEMON, GMP, a CBLAS, oneTBB, OpenMP, the
+ * Boost.Heap, Boost.Unordered, abLEMON, GMP, a CBLAS, oneTBB, OpenMP, the
  * parallel algorithms of the standard library, stdexec, Taskflow, Kokkos,
  * Eigen, METIS, KaHIP, SuiteSparse:GraphBLAS, NetworKit, the C Data
  * Interface of Arrow, CRoaring and sdsl-lite; a test whose library is not
@@ -322,8 +322,8 @@ ADS_TEST( "boost-heap-unordered" )
 /*--------------------------------- LEMON ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-// section C.4: LEMON's Dijkstra on a heap of ADS, and the shortest paths of
-// ADS on the same digraph of LEMON
+// section C.4: abLEMON's Dijkstra on a heap of ADS, and the shortest paths of
+// ADS on the same digraph of abLEMON
 ADS_TEST( "lemon-dijkstra-ads-heap" )
 {
 #if defined( ADS_WITH_LEMON )
@@ -347,8 +347,8 @@ ADS_TEST( "lemon-dijkstra-ads-heap" )
 #endif
  }
 
-// section C.4: LEMON's Preflow on a StaticGraph, and a LemonTap that tells
-// the changes of a digraph of LEMON to an observer of ADS
+// section C.4: abLEMON's Preflow on a StaticGraph, and a LemonTap that tells
+// the changes of a digraph of abLEMON to an observer of ADS
 ADS_TEST( "lemon-preflow-tap" )
 {
 #if defined( ADS_WITH_LEMON )

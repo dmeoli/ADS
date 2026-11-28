@@ -1,4 +1,4 @@
-# The rewrites of the headers of LEMON that insert the warm start of its
+# The rewrites of the headers of abLEMON that insert the warm start of its
 # algorithms, read by the CMake build [see ADSLemonShim.cmake] and by the
 # makefiles [see rewrite.awk]: one a line, header|anchor|what, the anchor a
 # whole line of the header, which has to be there exactly once, and what

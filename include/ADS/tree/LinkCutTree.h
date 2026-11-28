@@ -55,7 +55,7 @@
  * values of the forest, and thus its trees.
  *
  * The libraries of graphs do not have the dynamic trees (neither the Boost
- * Graph Library nor LEMON), and those of competitive programming have them
+ * Graph Library nor abLEMON), and those of competitive programming have them
  * for fixed numbers of nodes; the batch-parallel ones cited by
  * `JoinAlgorithms.h` answer batches of links and cuts instead.
  *

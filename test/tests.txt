@@ -1917,7 +1917,7 @@ interop_examples  std-sorts-pmr-queues    ordinamenti, pmr, std::priority_queue
 interop_examples  bgl-dijkstra-on-ads     Dijkstra di Boost.Graph su StaticGraph
 interop_examples  bgl-ads-on-boost        johnson su adjacency_list, heap di ADS
 interop_examples  boost-heap-unordered    Boost.Heap come frontiera, FastHash
-interop_examples  lemon-dijkstra-ads-heap Dijkstra di LEMON su DaryHeap, GraphView
+interop_examples  lemon-dijkstra-ads-heap Dijkstra di abLEMON su DaryHeap, GraphView
 interop_examples  lemon-preflow-tap       Preflow su StaticGraph, LemonTap
 interop_examples  gmp-numbers             BigInteger da e verso mpz_class
 interop_examples  blas-dense-matrix       cblas_dgemm su DenseMatrix
@@ -2098,19 +2098,19 @@ engineered_interop  sort-ranges               ordinamenti su span, deque, Tiered
 engineered_interop  queue-cpo                 code della libreria standard
 engineered_interop  gmp-conversions           BigInteger e Rational con GMP
 
-# the interoperation with LEMON with ADS_WITH_LEMON, beyond the book: the
-# algorithms of LEMON on the structures of ADS against LEMON's own, and the
-# solves that ADS delegates to LEMON; without it, the code of ADS
-engineered_lemon  lemon-dary-heap        heap di ADS come heap di LEMON
+# the interoperation with abLEMON with ADS_WITH_LEMON, beyond the book: the
+# algorithms of abLEMON on the structures of ADS against abLEMON's own, and the
+# solves that ADS delegates to abLEMON; without it, the code of ADS
+engineered_lemon  lemon-dary-heap        heap di ADS come heap di abLEMON
 engineered_lemon  lemon-monotone-heap    code monotone di ADS in Dijkstra
-engineered_lemon  lemon-maps             mappe di LEMON sulle strutture di ADS
-engineered_lemon  lemon-static-digraph   StaticGraph come digrafo di LEMON
-engineered_lemon  lemon-graph-view       digrafo di LEMON come Graph di ADS
-engineered_lemon  lemon-tap              notificatore di LEMON verso ADS
+engineered_lemon  lemon-maps             mappe di abLEMON su strutture di ADS
+engineered_lemon  lemon-static-digraph   StaticGraph come digrafo di abLEMON
+engineered_lemon  lemon-graph-view       digrafo di abLEMON come Graph di ADS
+engineered_lemon  lemon-tap              notificatore di abLEMON verso ADS
 engineered_lemon  lemon-mirror           ListDigraph allineato a un grafo ADS
-engineered_lemon  lemon-parallel         k Dijkstra di LEMON sui thread di ADS
-engineered_lemon  lemon-matching         abbinamenti, LEMON o ADS
-engineered_lemon  lemon-assignment       assegnamento da zero, LEMON o ADS
+engineered_lemon  lemon-parallel         k Dijkstra di abLEMON su thread di ADS
+engineered_lemon  lemon-matching         abbinamenti, abLEMON o ADS
+engineered_lemon  lemon-assignment       assegnamento da zero, abLEMON o ADS
 engineered_lemon  lemon-flow-engine      motore dei flussi di MaxFlowObserver
 engineered_lemon  lemon-warm-mcf         flussi di costo minimo a caldo
 engineered_lemon  lemon-warm-preflow     Preflow da un flusso con deficit

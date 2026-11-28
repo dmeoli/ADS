@@ -48,7 +48,9 @@
 # package manager of the runner has, or that are small enough to be built     #
 # from their sources, and with all of them in the job interop, by CMake and   #
 # by the makefile; the wheel of the package of Python is built and its tests  #
-# run on Linux, macOS and Windows.                                            #
+# run on Linux, macOS and Windows. The interoperation with LEMON 1.3.1 runs   #
+# on its headers rewritten for C++20, by CMake and by the makefile, in the    #
+# job lemon13.                                                                #
 # The benchmarks of the typed modifications and of the reoptimization, and    #
 # dynamic, flows and assignment, which share their headers, are built by      #
 # CMake on Boost and on abLEMON with its warm starts (modifications and reopt #
@@ -699,6 +701,61 @@ jobs:
           awk -F'\t' 'NF == 5 && $5 < 0 { print "wrong: " $0; bad = 1 }
                       END { exit bad }' make.tsv
           grep -qP '^resolve mcf\t' make.tsv
+
+  # the interoperation with LEMON 1.3.1, whose headers do not compile in
+  # C++20 as they are: its tarball from the site of LEMON, checked by its
+  # SHA-256 (the tag 1.3.1 of the mirror on GitHub already has the
+  # allocator fixed, and would not exercise the rewrites), installed as
+  # headers alone, on which CMake and the makefile rewrite those named by
+  # include/ADS/interop/lemon/shim/compat.txt; the tests of the
+  # interoperation and of the solves delegated to LEMON, with no warm start
+  # and the assignment on the code of ADS, since LEMON 1.3 has neither, by
+  # CMake and by the makefile, and ads-lemon.pc of the package installed
+  lemon13:
+    runs-on: ubuntu-latest
+    env:
+      LEMON_VERSION: 1.3.1
+      LEMON_SHA256: >-
+        71b7c725f4c0b4a8ccb92eb87b208701586cf7a96156ebd821ca3ed855bad3c8
+    steps:
+      - uses: actions/checkout@v4
+      - name: LEMON 1.3.1, its headers
+        run: |
+          t="$RUNNER_TEMP/lemon-$LEMON_VERSION.tar.gz"
+          curl -fsSL --retry 5 --retry-all-errors -o "$t" \
+               "https://lemon.cs.elte.hu/pub/sources/${t##*/}"
+          echo "$LEMON_SHA256  $t" | sha256sum -c -
+          tar -xzf "$t" -C "$RUNNER_TEMP"
+          src="$RUNNER_TEMP/lemon-$LEMON_VERSION"
+          inc="$RUNNER_TEMP/lemon13/include"
+          mkdir -p "$inc"
+          (cd "$src" &&
+            find lemon -name '*.h' -exec cp --parents -t "$inc" {} +)
+          # config.h as its CMake writes it, with no solver of LPs
+          sed -e "s/@PROJECT_VERSION@/$LEMON_VERSION/" \
+              -e 's/^#cmakedefine \(LEMON_HAVE_LONG_LONG 1\)/#define \1/' \
+              -e 's|^#cmakedefine \(.*\)$|/* #undef \1 */|' \
+              "$src/lemon/config.h.in" > "$inc/lemon/config.h"
+      - name: by CMake, and the package installed
+        run: |
+          set -o pipefail
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+                -DADS_WITH_LEMON=ON -DLEMON_ROOT="$RUNNER_TEMP/lemon13" \
+                -DCMAKE_INSTALL_PREFIX="$PWD/inst" | tee cmake.log
+          grep -q 'LEMON ON (LEMON 1.3, rewritten for C++20)' cmake.log
+          cmake --build build -j4 --target engineered_lemon interop_examples
+          ctest --test-dir build --output-on-failure \
+                -R '^(engineered_lemon|interop_examples)[.]'
+          cmake --install build
+          grep -q 'lemon-compat' "$(find inst -name ads-lemon.pc)"
+          test -f inst/include/ADS/lemon-compat/lemon/bits/array_map.h
+      - name: by the makefile
+        run: |
+          set -o pipefail
+          make backends LEMON="$RUNNER_TEMP/lemon13" | tee backends.log
+          grep -q 'ADS: LEMON 1.3 rewritten for C++20' backends.log
+          make -j4 test-engineered_lemon test-interop_examples \
+               LEMON="$RUNNER_TEMP/lemon13"
 
   # the package of Python: the wheel built by pip from python/ (one wheel on
   # the stable ABI of Python 3.12, on scikit-build-core and nanobind),

@@ -90,7 +90,9 @@
 #                                  $(ADSHWLOCON) the same for hwloc           #
 #           $(ADSLEMONINC)       = -DADS_WITH_LEMON and the flags of LEMON,   #
 #                                  if found, for the programs that use it,    #
-#                                  with those of its warm start               #
+#                                  with those of its warm start, or with the  #
+#                                  copies of the headers of LEMON 1.3         #
+#                                  rewritten for C++20                        #
 #           $(ADSLEMONH)         = the headers of LEMON rewritten for the     #
 #                                  warm start, unless ADS_LEMON_WARM=0, which #
 #                                  the programs that use LEMON depend on      #
@@ -251,8 +253,39 @@ ifdef LEMON
     LEMON_ROOT = $(filter-out 1,$(LEMON))
 endif
 ADSLEMONINC :=
+ADSLEMONCOMPAT :=
 ifneq ($(ADS_WITH_LEMON),0)
     include $(ADSSDR)/extlib/makefile-libLEMON
+    ADSLEMONSRC := $(ADSSDR)/include/ADS/interop/lemon/shim
+    # the directory of the headers of LEMON, where the rules read them
+    ADSLEMONDIR := $(patsubst %/lemon/core.h,%,$(firstword $(wildcard \
+	$(addsuffix /lemon/core.h,$(if $(libLEMONBSCDIR),\
+	$(libLEMONBSCDIR)/include,/usr/local/include /usr/include)))))
+    # LEMON 1.3, whose maps do not compile in C++20: the copies of its
+    # headers rewritten by include/ADS/interop/lemon/shim/rewrite.awk with
+    # the rules of compat.txt there, the same as the CMake build, written
+    # now into $(ADSODR)/lemon-compat and put on the include path before
+    # LEMON if the check compiles on them
+    ifneq ($(ADSLEMONDIR),)
+    ifneq ($(libLEMONFOUND),1)
+        ADSLEMONCOMPATDIR := $(ADSODR)/lemon-compat
+        ADSLEMONCOMPATH := $(sort $(shell awk -F'|' \
+	'!/^$(ADShash)/ && NF > 2 { print $$1 }' $(ADSLEMONSRC)/compat.txt))
+        ADSLEMONCOMPATOK := $(shell for h in $(ADSLEMONCOMPATH); do \
+	mkdir -p $(ADSLEMONCOMPATDIR)/lemon/$$(dirname $$h) && \
+	awk -v hdr=$$h -v dir=$(ADSLEMONSRC) -f $(ADSLEMONSRC)/rewrite.awk \
+	$(ADSLEMONSRC)/compat.txt $(ADSLEMONDIR)/lemon/$$h \
+	> $(ADSLEMONCOMPATDIR)/lemon/$$h || exit 1; done 2>/dev/null && echo 1)
+        ifeq ($(ADSLEMONCOMPATOK),1)
+            ADSLEMONCOMPAT := $(call libLEMONcheck,-I$(ADSLEMONCOMPATDIR) \
+	    $(libLEMONINC))
+        endif
+        ifeq ($(ADSLEMONCOMPAT),1)
+            libLEMONINC := -I$(ADSLEMONCOMPATDIR) $(libLEMONINC)
+            libLEMONFOUND := 1
+        endif
+    endif
+    endif
     ADSLEMONON := $(strip $(if $(filter auto,$(ADS_WITH_LEMON)),\
 	$(libLEMONFOUND),$(filter 1,$(ADS_WITH_LEMON))))
 endif
@@ -267,16 +300,12 @@ endif
 # there, the same as the CMake build, put on the include path before LEMON;
 # a header is not written, and the build stops, if a line of its rules is
 # not there exactly once. $(ADSLEMONH) are the headers written, which the
-# programs that use LEMON depend on.
-ADS_LEMON_WARM ?= 1
+# programs that use LEMON depend on. The rules are written on the lines of
+# abLEMON, and thus LEMON 1.3 has no warm start.
+ADS_LEMON_WARM ?= $(if $(ADSLEMONCOMPAT),0,1)
 ADSLEMONH :=
 ifeq ($(ADSLEMONON)$(ADS_LEMON_WARM),11)
     ADSLEMONSHIM := $(ADSODR)/lemon-shim
-    ADSLEMONSRC := $(ADSSDR)/include/ADS/interop/lemon/shim
-    # the directory of the headers of LEMON, where the rules read them
-    ADSLEMONDIR := $(patsubst %/lemon/core.h,%,$(firstword $(wildcard \
-	$(addsuffix /lemon/core.h,$(if $(libLEMONBSCDIR),\
-	$(libLEMONBSCDIR)/include,/usr/local/include /usr/include)))))
     ADSLEMONH := $(addprefix $(ADSLEMONSHIM)/lemon/,$(sort $(shell \
 	awk -F'|' '!/^$(ADShash)/ && NF > 2 { print $$1 }' \
 	$(ADSLEMONSRC)/rewrites.txt)))

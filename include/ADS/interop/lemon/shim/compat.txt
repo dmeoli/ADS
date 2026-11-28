@@ -1,0 +1,16 @@
+# The rewrites of the headers of LEMON 1.3, whose maps call members of
+# std::allocator that C++20 removed, so that they compile in C++20, in the
+# format of rewrites.txt: they are applied only where a program with a map
+# of LEMON does not compile as it is [see ADSLemon.cmake and
+# extlib/makefile-libLEMON], and abLEMON needs none of them.
+#
+# the allocator of ArrayMap and of ListPath (compat_allocator.inc), whose
+# construct() and destroy() go through std::allocator_traits
+bits/array_map.h|namespace lemon {|<compat_allocator.inc
+bits/array_map.h|    typedef std::allocator<Value> Allocator;|=    typedef ADS::lemon_interop::CompatAllocator<Value> Allocator;
+path.h|namespace lemon {|<compat_allocator.inc
+path.h|    std::allocator<Node> alloc;|=    ADS::lemon_interop::CompatAllocator<Node> alloc;
+# the storage class register, which C++17 removed, in the generator of
+# Random
+random.h|        register Word *curr = state + length - 1;|=        Word *curr = state + length - 1;
+random.h|        register long num;|=        long num;

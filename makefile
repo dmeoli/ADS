@@ -21,7 +21,7 @@
 #     make test ADS_WITH_GMP=0 ADS_WITH_BLAS=0 ADS_WITH_BOOST=0               #
 #               ADS_WITH_HIGHWAY=0 ADS_WITH_LEMON=0                           #
 #                      the same without the backends of GMP, of a CBLAS, of   #
-#                      Boost, of Highway and of LEMON, on by default where    #
+#                      Boost, of Highway and of abLEMON, on by default where  #
 #                      they are found [GMP=<prefix>] [BLAS=<prefix>]          #
 #                      [BOOST=<prefix>] [HWY=<prefix>] [LEMON=<prefix>]       #
 #     make test ADSMOD=1                                                      #
@@ -30,8 +30,8 @@
 #     make sets        writes the entry points of the sets of the headers     #
 #                      [see cmake/ads_sets.txt], as each make does            #
 #     make test-sets   compiles each alone, which make test also does         #
-#     make backends    tells whether GMP, a CBLAS, Boost, Highway, LEMON, MPI #
-#                      and the runtimes of a program were found               #
+#     make backends    tells whether GMP, a CBLAS, Boost, Highway, abLEMON,   #
+#                      MPI and the runtimes of a program were found           #
 #     make bench       builds the benchmarks in $(BUILD)                      #
 #     bench/run.sh     runs them and writes the tables of the README          #
 #     make install     copies include/ADS into $(PREFIX)/include, with        #
@@ -314,6 +314,7 @@ backends:
 	@echo "ADS: hwloc $(if $(filter 1,$(ADSHWLOCON)),ON,OFF)"
 	@echo "ADS: Highway $(if $(filter 1,$(ADSHWYON)),ON,OFF)"
 	@echo "ADS: LEMON $(if $(filter 1,$(ADSLEMONON)),ON,OFF)"
+	@$(if $(ADSLEMONCOMPAT),echo "ADS: LEMON 1.3 rewritten for C++20",:)
 	@echo "ADS: MPI $(if $(filter 1,$(ADSMPION)),ON,OFF)"
 	@echo "ADS: StdPar $(if $(filter 1,$(ADSSTDPARON)),ON,OFF)," \
 	      "stdexec $(if $(filter 1,$(ADSSTDEXECON)),ON,OFF)," \
@@ -395,7 +396,7 @@ JCCFLAGS := $(shell echo 'int main(){}' | $(CXX) -x c++ -c -o /dev/null \
             echo -Wa,-mbranches-within-32B-boundaries)
 # the benchmarks are built as a program that uses ADS is, i.e., on Boost,
 # Highway and hwloc where they are found, but for the code of ADS kept
-# where a structure would delegate to Boost or to LEMON, since the
+# where a structure would delegate to Boost or to abLEMON, since the
 # benchmarks compare it with them (the same as the targets of CMake)
 BOOSTON   = $(if $(filter 1,$(ADSBOOSTON)),-DADS_WITH_BOOST $(libBoostINC))
 HWYON     = $(if $(filter 1,$(ADSHWYON)),-DADS_WITH_HIGHWAY $(libHighwayINC))
@@ -698,7 +699,7 @@ $(BUILD)/bench-greedy: bench/greedy.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 
 # the maximum flows, the assignment and the matchings: LEMON=1 (or
 # LEMON=<prefix>) the Preflow, the MinCostAssignment (abLEMON), the minimum
-# cost flows and the matchings of LEMON, the first competitors; the
+# cost flows and the matchings of abLEMON, the first competitors; the
 # push-relabel and the weighted matching of Boost when their headers are
 # found
 LEMONFLAGS = $(if $(LEMON),-DADS_HAS_LEMON $(if $(filter-out 1,$(LEMON)),\

@@ -52,6 +52,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reoptimization stops paying next to the outcomes of its policy, and the
   pairs of `reopt` in its summary; the programs in appendix B of the
   manual, and their use in sections 1.13 and 14.13.4
+- `ADS::LEMON` and `$(ADSLEMONINC)` also build against LEMON 1.3, whose
+  maps call members of `std::allocator` that C++20 removed: where the
+  check of the configuration does not compile, CMake, the makefile and an
+  installed `ADSConfig.cmake` write private copies of the headers named by
+  the rules of `include/ADS/interop/lemon/shim/compat.txt`, whose calls go
+  through `std::allocator_traits`, before LEMON on the include path (and
+  install them for `ads-lemon.pc`), and the job `lemon13` of the CI tests
+  the interoperation on LEMON 1.3.1; abLEMON stays the one recommended,
+  since with LEMON 1.3 the assignment from scratch stays with ADS (there is
+  no `MinCostAssignment`), there is no warm start, whose rules are written
+  on the lines of abLEMON, and an arc whose insertion an observer refused
+  is left in the graph
 - `TinyRankSelect` (`BasicTinyRankSelect< L0 >`, with blocks of `L0` =
   512, 1024 or 2048 bits), the rank and select of 3* of Kurpicz,
   Rigi-Luperti and Sanders: an entry of 512 bits per superblock of 32
@@ -203,6 +215,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the README, the manual, the theory pages, the comments of the headers,
+  of the tests and of the benchmarks and those of CMake and of the
+  makefiles name abLEMON, the maintained C++20 fork of LEMON, as the
+  library that `ADS::LEMON` builds against and that the benchmarks
+  measure, the bibliography holds it next to the paper of LEMON, which is
+  still cited where the original library is meant, and no option, target,
+  macro or name of a benchmark changes
 - the makefiles link the shared libraries of Highway and of libomp with
   the run-time path of their directory, as those of GMP, BLAS, hwloc and
   oneTBB already were, so that no library path is needed to run the

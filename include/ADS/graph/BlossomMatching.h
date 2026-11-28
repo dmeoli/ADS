@@ -33,7 +33,7 @@
  * With `ADS_WITH_LEMON` [see \ref theory_graph_lemon],
  * `maxCardinalityMatching()` and `maxWeightMatching()` (without
  * `maxCardinality`) are delegated to the `MaxMatching` and to the
- * `MaxWeightedMatching` of LEMON, on a copy of the graph in a
+ * `MaxWeightedMatching` of abLEMON, on a copy of the graph in a
  * `lemon::SmartGraph`, in \f$ \Theta( n + m ) \f$ time and space more, with
  * the same contracts and audits, the matching given being one of the same
  * size or of the same weight, not necessarily the same edges;
@@ -100,7 +100,7 @@
 #include <utility>
 #include <vector>
 
-// the solves from scratch on the matchings of LEMON with ADS_WITH_LEMON,
+// the solves from scratch on the matchings of abLEMON with ADS_WITH_LEMON,
 // unless ADS_MATCHING_LEMON is 0 (the benchmarks keep the code of ADS)
 #if defined( ADS_WITH_LEMON ) && ! defined( ADS_MATCHING_LEMON )
  #define ADS_MATCHING_LEMON 1

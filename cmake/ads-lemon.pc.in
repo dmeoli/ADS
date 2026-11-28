@@ -2,7 +2,7 @@ prefix=@ADS_PC_PREFIX@
 includedir=@ADS_PC_INCLUDEDIR@
 
 Name: ADS-LEMON
-Description: ADS with the interoperation with LEMON
+Description: ADS with the interoperation with abLEMON
 URL: https://github.com/dmeoli/ADS
 Version: @PROJECT_VERSION@
 Requires: ads

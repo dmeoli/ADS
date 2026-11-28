@@ -12,7 +12,7 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 cc_library(
     name = "ads",
-    # the interoperation with LEMON, which needs LEMON, is left out
+    # the interoperation with abLEMON, which needs abLEMON, is left out
     hdrs = glob(
         ["include/ADS/**/*.h"],
         exclude = ["include/ADS/interop/lemon/**"],

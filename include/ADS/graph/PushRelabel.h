@@ -72,7 +72,7 @@ namespace ADS
 /// global relabelings and the gaps of Cherkassky and Goldberg, the
 /// labelings that stop at the last node with an excess of their HIPR,
 /// and the two phases and the scan of the edges of a node that pushes
-/// and finds its new label at once of the Preflow of LEMON), with
+/// and finds its new label at once of the Preflow of abLEMON), with
 /// \f$ e( x ) \f$
 /// the excess of \f$ x \f$ and \f$ d( x ) \f$ its label, a lower bound of
 /// its distance from the target in the residual network, \f$ D \f$ the

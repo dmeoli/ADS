@@ -2,11 +2,11 @@
 /*---------------------------- File Parallel.h -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The algorithms of LEMON on the threads of ADS, beyond the book (see
+ * The algorithms of abLEMON on the threads of ADS, beyond the book (see
  * \ref theory_graph_lemon):
  *
  * - `dijkstraFrom( ex , g , l , S )`, the shortest distances from each
- *   source of \f$ S \f$ by \f$ |S| \f$ runs of the `Dijkstra` of LEMON on
+ *   source of \f$ S \f$ by \f$ |S| \f$ runs of the `Dijkstra` of abLEMON on
  *   the threads of the executor \f$ \mathit{ex} \f$ [see `Executor.h`], all
  *   on the one digraph \f$ g \f$, which nobody changes meanwhile: each run
  *   takes its distances, its predecessors and its cross references in a
@@ -52,7 +52,7 @@
 /*--------------------------------------------------------------------------*/
 
 #if ! __has_include( <lemon/core.h> )
- #error "the interoperation with LEMON needs the headers of LEMON"
+ #error "the interoperation with abLEMON needs the headers of abLEMON"
 #endif
 
 #include "ADS/graph/ShortestPaths.h"
@@ -82,7 +82,7 @@ namespace ADS::lemon_interop
 /*--------------------------------------------------------------------------*/
 
 /// the distances from each node of \f$ S \f$ in the digraph \f$ g \f$ of
-/// the lengths \f$ l \f$, by one run of the `Dijkstra` of LEMON per source
+/// the lengths \f$ l \f$, by one run of the `Dijkstra` of abLEMON per source
 /// on the threads of \f$ \mathit{ex} \f$: the vector of each source, by the
 /// ids of the nodes, `infinity()` for those not reached [see
 /// `ShortestPaths.h`]
