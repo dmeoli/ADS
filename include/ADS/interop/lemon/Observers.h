@@ -2,51 +2,52 @@
 /*---------------------------- File Observers.h ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The changes of a graph of LEMON told to the observers of ADS, and a graph
- * of LEMON kept in step with one of ADS, beyond the book (see
+ * The changes of a graph of abLEMON told to the observers of ADS, and a graph
+ * of abLEMON kept in step with one of ADS, beyond the book (see
  * \ref theory_graph_lemon):
  *
  * - `LemonTap< GR , Item , CostMap , Policy >`, an observer of the alteration
- *   notifier of LEMON for the nodes or for the arcs of `GR` (an `ObserverBase`
- *   of `GR::NodeNotifier` or of `GR::ArcNotifier`) that tells each change
- *   through the subject policy `Policy` of ADS [see `Modification.h`]:
- *   `Inserted` after `add()`, `Erased` before the item leaves (`erase()`),
- *   `Rebuilt` after `build()` and `Cleared` before `clear()`, the handle being
- *   the id of the item, so that the parallel arcs of LEMON stay distinct, and
- *   the key of an arc its ends ( u , v ), read at both times since LEMON tells
- *   an insertion after it and an erasure before it. With a `CostMap` the
- *   erasure of an arc carries its cost, read before LEMON removes it, and the
- *   insertion the cost that the map holds at `add()`, which in the idiom of
- *   LEMON, `a = g.addArc( u , v ); cost[ a ] = c;`, is still the default, so
- *   that a write that must be seen goes through an `ObservedMap` [see
- *   `Maps.h`]. An insertion is told with the strong guarantee of ADS [see
- *   `Modification.h`]: if an observer of ADS throws, those already told
- *   receive its erasure, and the exception reaches LEMON, which removes the
- *   item again (abLEMON; LEMON 1.3 leaves it in the graph). The vector forms
- *   of `add()` and `erase()` open a batch of ADS [see `ADS::batch()`], whose
- *   events are coalesced into their net effect per id. LEMON calls its
- *   observers in an order that its header does not state, and that we read in
- *   the code of the notifier: the oldest first on `add()` and `build()`, the
- *   newest first on `erase()` and `clear()`; a tap that reads a map must
- *   therefore be constructed after that map, so that at `add()` the map has
- *   grown and at `erase()` the value is still there. The `erase()` and
- *   `clear()` of LEMON must not throw, and an exception of an observer of ADS
- *   within them is caught and marks the tap `spoiled()`. The operations of
- *   LEMON that the notifier does not tell (`changeTarget()`, `changeSource()`,
- *   `reverseArc()`, the moves of `contract()` and `split()`), the writes of
- *   the maps that bypass `ObservedMap`, and the changes through an adaptor of
- *   LEMON are not seen. Its cost is that of one more map of LEMON, a virtual
- *   call per item inserted or erased, and one test of the subject when nobody
- *   of ADS listens;
+ *   notifier of abLEMON for the nodes or for the arcs of `GR` (an
+ *   `ObserverBase` of `GR::NodeNotifier` or of `GR::ArcNotifier`) that tells
+ *   each change through the subject policy `Policy` of ADS [see
+ *   `Modification.h`]: `Inserted` after `add()`, `Erased` before the item
+ *   leaves (`erase()`), `Rebuilt` after `build()` and `Cleared` before
+ *   `clear()`, the handle being the id of the item, so that the parallel arcs
+ *   of abLEMON stay distinct, and the key of an arc its ends ( u , v ), read
+ *   at both times since abLEMON tells an insertion after it and an erasure
+ *   before it. With a `CostMap` the erasure of an arc carries its cost, read
+ *   before abLEMON removes it, and the insertion the cost that the map holds
+ *   at `add()`, which in the idiom of abLEMON,
+ *   `a = g.addArc( u , v ); cost[ a ] = c;`, is still the default, so that a
+ *   write that must be seen goes through an `ObservedMap` [see `Maps.h`]. An
+ *   insertion is told with the strong guarantee of ADS [see `Modification.h`]:
+ *   if an observer of ADS throws, those already told receive its erasure, and
+ *   the exception reaches abLEMON, which removes the item again (LEMON 1.3
+ *   leaves it in the graph). The vector forms of `add()` and `erase()` open a
+ *   batch of ADS [see `ADS::batch()`], whose events are coalesced into their
+ *   net effect per id. abLEMON calls its observers in an order that its header
+ *   does not state, and that we read in the code of the notifier: the oldest
+ *   first on `add()` and `build()`, the newest first on `erase()` and
+ *   `clear()`; a tap that reads a map must therefore be constructed after that
+ *   map, so that at `add()` the map has grown and at `erase()` the value is
+ *   still there. The `erase()` and `clear()` of abLEMON must not throw, and an
+ *   exception of an observer of ADS within them is caught and marks the tap
+ *   `spoiled()`. The operations of abLEMON that the notifier does not tell
+ *   (`changeTarget()`, `changeSource()`, `reverseArc()`, the moves of
+ *   `contract()` and `split()`), the writes of the maps that bypass
+ *   `ObservedMap`, and the changes through an adaptor of abLEMON are not seen.
+ *   Its cost is that of one more map of abLEMON, a virtual call per item
+ *   inserted or erased, and one test of the subject when nobody of ADS
+ *   listens;
  * - `LemonMirror< G >`, an observer of an `ObservedGraph` of ADS [see
  *   `Observable.h`] that keeps a `lemon::ListDigraph` and its map of the
  *   weights in step with the graph \f$ g \f$ of ADS, in \f$ O( 1 ) \f$
  *   expected time per event (a vector from the names of ADS to the nodes of
- *   LEMON, a hash table from the pairs ( u , v ) to the arcs; an unoriented
+ *   abLEMON, a hash table from the pairs ( u , v ) to the arcs; an unoriented
  *   edge is mirrored by its two arcs), and that records the kinds of the
  *   events since the last `clearKinds()` (nodes, arcs, weights, and whether
  *   a weight fell or an arc left), so that the caller knows whether an
- *   algorithm of LEMON that keeps a state must be built again. The events
+ *   algorithm of abLEMON that keeps a state must be built again. The events
  *   of ADS name an edge by its ends, and the graphs of ADS have no parallel
  *   edges, so that the mirror has none either.
  *
@@ -81,7 +82,7 @@
 /*--------------------------------------------------------------------------*/
 
 #if ! __has_include( <lemon/core.h> )
- #error "the interoperation with LEMON needs the headers of LEMON"
+ #error "the interoperation with abLEMON needs the headers of abLEMON"
 #endif
 
 #include "ADS/Contract.h"
@@ -149,7 +150,7 @@ struct TapEvents
 }  // end( namespace detail )
 /// \endcond
 
-/// the alteration notifier of LEMON for the items `Item` of `GR` told as
+/// the alteration notifier of abLEMON for the items `Item` of `GR` told as
 /// events of ADS, through `Policy`
 template< class GR , class Item = typename GR::Arc , class CostMap = void ,
 	  class Policy = Dynamic<> >
@@ -194,7 +195,7 @@ class LemonTap
   }
 
  /// whether an observer of ADS threw within `erase()` or `clear()`, which
- /// LEMON forbids: its state may no longer match the graph
+ /// abLEMON forbids: its state may no longer match the graph
  [[nodiscard]] bool spoiled( void ) const { return( f_spoiled ); }
 
  /// the subject, for `ADS::batch()` and `ADS::quiet()`
@@ -330,7 +331,7 @@ class LemonMirror
 /*--------------------------------------------------------------------------*/
  public:
  using Weight = typename G::Weight;       ///< the type of the weights
- using LG = ::lemon::ListDigraph;         ///< the digraph of LEMON
+ using LG = ::lemon::ListDigraph;         ///< the digraph of abLEMON
  using WeightMap = LG::ArcMap< Weight >;  ///< its weights
 
  /// what the events since the last `clearKinds()` changed
@@ -348,7 +349,7 @@ class LemonMirror
  /// time
  explicit LemonMirror( const G & g );
 
- /// not copied: the maps of LEMON are bound to their digraph
+ /// not copied: the maps of abLEMON are bound to their digraph
  LemonMirror( const LemonMirror & ) = delete;
  /// not assigned
  LemonMirror & operator=( const LemonMirror & ) = delete;
@@ -364,20 +365,20 @@ class LemonMirror
  /// the weight of an edge changed
  void on( const WeightChanged< Weight > & e );
 
- /// the digraph of LEMON
+ /// the digraph of abLEMON
  [[nodiscard]] const LG & digraph( void ) const { return( f_lg ); }
 
  /// the weights of its arcs
  [[nodiscard]] const WeightMap & weights( void ) const { return( f_w ); }
 
- /// the node of LEMON of the name \f$ u \f$ of ADS, `INVALID` if none
+ /// the node of abLEMON of the name \f$ u \f$ of ADS, `INVALID` if none
  [[nodiscard]] LG::Node node( int u ) const {
   return( ( u >= 0 ) && ( std::size_t( u ) < f_node.size() )
 	     ? f_node[ std::size_t( u ) ]
 	     : LG::Node( ::lemon::INVALID ) );
   }
 
- /// the arc of LEMON of the arc \f$ ( u , v ) \f$ of ADS, `INVALID` if
+ /// the arc of abLEMON of the arc \f$ ( u , v ) \f$ of ADS, `INVALID` if
  /// none
  [[nodiscard]] LG::Arc arc( int u , int v ) const {
   const auto it = f_arc.find( key( u , v ) );
@@ -390,7 +391,7 @@ class LemonMirror
  /// whether something changed since the last `clearKinds()`
  [[nodiscard]] bool stale( void ) const { return( f_kinds.any() ); }
 
- /// the kinds forgotten, e.g., after an algorithm of LEMON ran again
+ /// the kinds forgotten, e.g., after an algorithm of abLEMON ran again
  void clearKinds( void ) { f_kinds = Kinds{}; }
 
 /*--------------------------------------------------------------------------*/

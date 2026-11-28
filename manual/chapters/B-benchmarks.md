@@ -64,7 +64,7 @@ program), and the chapter where its comparison belongs.
 | `allocators` | `PoolAllocator` in the node containers and in `std::allocate_shared`, also freed by another thread | `std::allocator`, `std::pmr` pools, `boost::fast_pool_allocator`, (mimalloc) | [§5.11](05-memory.md#sec-5-11) |
 | `arrays` | lower bound in sorted arrays, selection by rank, range minima | `std::lower_bound`, Eytzinger layout, `std::nth_element`, (PGM-index, miniselect, sdsl-lite) | [§6.10](06-search.md#sec-6-10) |
 | `assembly` | sparse matrices by columns from triplets, rows of cuts appended and removed | `std::map`, a vector of rows, (Eigen) | [§17.11](17-numeric.md#sec-17-11) |
-| `assignment` | the assignment from scratch and after the change of a row, `maxWeightMatching()` | Boost `maximum_weighted_matching`, (LEMON `NetworkSimplex`) | [§14.14](14-graph.md#sec-14-14) |
+| `assignment` | the assignment from scratch and after the change of a row, `maxWeightMatching()` | Boost `maximum_weighted_matching`, (abLEMON `NetworkSimplex`) | [§14.14](14-graph.md#sec-14-14) |
 | `backtrack` | dancing links on exact covers; clause learning, A* and subset sum on the structures of each library | `ExactCover` of the book, `std`, Boost, (DLX1, DLX2, SSXCC of Knuth) | [§19.8](19-backtrack.md#sec-19-8) |
 | `bestfirst` | the closed set, the addressable frontier, the ordered frontier and the packed arrays of a best-first search | `std::unordered_set`, `std::set`, `std::vector< bool >`, Boost.Heap, `boost::unordered_flat_set`, `boost::dynamic_bitset` | [7](07-dictionary.md#ch-7), [8](08-tree.md#ch-8), [§9.13](09-priority.md#sec-9-13), [22](22-succinct.md#ch-22) |
 | `bignum` | products, quotients, conversion, gcd and square roots of long integers, sums of rationals | `boost::multiprecision::cpp_int`, `boost::rational`, (GMP, FLINT) | [§17.11](17-numeric.md#sec-17-11) |
@@ -76,7 +76,7 @@ program), and the chapter where its comparison belongs.
 | `edit` | edit distance, longest common subsequence, approximate search | the dynamic programming of the textbook, (edlib, rapidfuzz-cpp) | [§15.9](15-string.md#sec-15-9) |
 | `external` | multiway merges, the mergesort of the notes in two-level memory, random sampling | `std::priority_queue`, `__gnu_parallel::multiway_merge`, `std::ranges::sample`, Boost.Heap, (tlx) | [§23.9](23-external.md#sec-23-9) |
 | `fingerprints` | hashes of rows of doubles, the comparison of two rows | `std::hash` combined, `std::equal`, `boost::hash_range` | [7](07-dictionary.md#ch-7) |
-| `flows` | maximum flows from scratch and after a change of a capacity | Boost `push_relabel_max_flow`, (LEMON `Preflow`) | [§14.14](14-graph.md#sec-14-14) |
+| `flows` | maximum flows from scratch and after a change of a capacity | Boost `push_relabel_max_flow`, (abLEMON `Preflow`) | [§14.14](14-graph.md#sec-14-14) |
 | `geometry` | convex hull, closest pair | Boost.Geometry, (CGAL) | [§16.5](16-geometry.md#sec-16-5) |
 | `graphs` | visits, shortest paths, spanning trees, components, blocks and cut nodes, Eulerian trails, matchings, union-find, grid maps, each on the structures of `std`, Boost and ADS | the same code on `std` and Boost structures, Boost Graph Library | [§14.14](14-graph.md#sec-14-14), [§9.13](09-priority.md#sec-9-13), [§11.6](11-mfset.md#sec-11-6) |
 | `greedy` | parallel Kruskal, spanning forest, independent set and matching by deterministic reservations | the sequential algorithms, (ParlayLib) | [§25.16](25-parallel.md#sec-25-16) |

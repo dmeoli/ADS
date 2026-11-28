@@ -7436,7 +7436,7 @@ library does not support. [Tarjan and Werneck
 their instances the link-cut trees were the fastest on links, cuts and queries
 on paths, and the plain vector of parents on shallow trees, which is why
 `LinkCutTree` starts from it (cf. [§8.13.5](08-tree.md#sec-8-13-5)). As
-far as we know, the libraries of graphs (the Boost Graph Library and LEMON)
+far as we know, the libraries of graphs (the Boost Graph Library and abLEMON)
 have no dynamic trees, and those of competitive programming have them for a
 number of nodes fixed in advance.
 

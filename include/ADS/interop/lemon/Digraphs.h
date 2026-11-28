@@ -2,7 +2,7 @@
 /*---------------------------- File Digraphs.h -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The graphs of ADS as digraphs of LEMON and the digraphs of LEMON as
+ * The graphs of ADS as digraphs of abLEMON and the digraphs of abLEMON as
  * graphs of ADS, beyond the book (see \ref theory_graph_lemon):
  *
  * - `StaticDigraphView< W , L >`, a model of `lemon::concepts::Digraph`
@@ -15,29 +15,29 @@
  *   same places of `arcWeights()`. `source()` and
  *   `InArcIt` need what the rows lack, a tail per arc and the lists of the
  *   arcs into each node, built once in \f$ \Theta( n + a ) \f$ time and
- *   \f$ 8 a + 4 n \f$ bytes (the `StaticDigraph` of LEMON keeps
+ *   \f$ 8 a + 4 n \f$ bytes (the `StaticDigraph` of abLEMON keeps
  *   16 a + 8 n). An unoriented `StaticGraph` is seen with its two arcs per
- *   edge. The algorithms of LEMON (`Dijkstra`, `Bfs`, `Dfs`, `Preflow`,
+ *   edge. The algorithms of abLEMON (`Dijkstra`, `Bfs`, `Dfs`, `Preflow`,
  *   `NetworkSimplex`, ...) then run on the graph of ADS by replacing the
  *   graph and the length map, and any other graph of ADS reaches them
  *   through the copy `StaticGraph( g )`. A static graph never changes, so
  *   that the notifiers tell only the `build()` of the construction, as
- *   those of the `StaticDigraph` of LEMON;
+ *   those of the `StaticDigraph` of abLEMON;
  * - `GraphView< GR , LM >`, a GRAPH of ADS [see `Graph.h`] over a digraph
- *   of LEMON and a length map, with no copy: the names of the nodes are the
- *   ids of LEMON, `bound()` is `maxNodeId() + 1`, `hasNode()` asks `valid()`
+ *   of abLEMON and a length map, with no copy: the names of the nodes are the
+ *   ids of abLEMON, `bound()` is `maxNodeId() + 1`, `hasNode()` asks `valid()`
  *   where the graph has it, and `forEachEdge()` walks `OutArcIt` and reads
  *   the map, so that the algorithms of the book [see `ShortestPaths.h`,
- *   `Visit.h`] run on the graph of LEMON; the layout is that of LEMON;
- * - `toStatic( g , l )`, the copy of a digraph of LEMON into a
+ *   `Visit.h`] run on the graph of abLEMON; the layout is that of abLEMON;
+ * - `toStatic( g , l )`, the copy of a digraph of abLEMON into a
  *   `StaticGraph` of ADS, once, in \f$ \Theta( n + m ) \f$ time and
  *   \f$ 4 n + ( 4 + s ) m \f$ bytes for lengths of \f$ s \f$ bytes, the
  *   nodes by their ids and the loops left out, on which the parallel
  *   algorithms of ADS [see `ParallelShortestPaths.h`, `ParallelGraph.h`]
  *   take their path on the compressed rows; their results, by the ids, go
- *   back into a map of LEMON by `nodeFromId()`.
+ *   back into a map of abLEMON by `nodeFromId()`.
  *
- * Reading a graph of LEMON from several threads is safe while nobody
+ * Reading a graph of abLEMON from several threads is safe while nobody
  * changes it, since its iterators and its maps only read arrays.
  *
  * The contracts [see `Contract.h`]: the graph of ADS outlives its view; the
@@ -67,7 +67,7 @@
 /*--------------------------------------------------------------------------*/
 
 #if ! __has_include( <lemon/core.h> )
- #error "the interoperation with LEMON needs the headers of LEMON"
+ #error "the interoperation with abLEMON needs the headers of abLEMON"
 #endif
 
 #include "ADS/Contract.h"
@@ -108,7 +108,7 @@ class StaticDigraphBase
   Node( void ) = default;
   /// the node \f$ i \f$
   explicit Node( int i ) : id( i ) { }
-  /// the invalid node of LEMON
+  /// the invalid node of abLEMON
   Node( ::lemon::Invalid ) { }
   /// whether the two nodes are the same
   bool operator==( Node o ) const { return( id == o.id ); }
@@ -126,7 +126,7 @@ class StaticDigraphBase
   Arc( void ) = default;
   /// the arc \f$ i \f$
   explicit Arc( int i ) : id( i ) { }
-  /// the invalid arc of LEMON
+  /// the invalid arc of abLEMON
   Arc( ::lemon::Invalid ) { }
   /// whether the two arcs are the same
   bool operator==( Arc o ) const { return( id == o.id ); }
@@ -232,7 +232,7 @@ void StaticDigraphBase< W , L >::attach( const StaticGraph< W , L > & g )
 /*----------------------- CLASS StaticDigraphView --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a `StaticGraph< W , L >` of ADS as a digraph of LEMON, with no copy of
+/// a `StaticGraph< W , L >` of ADS as a digraph of abLEMON, with no copy of
 /// its rows
 template< class W , ArcLayout L = ArcLayout::Separate >
 class StaticDigraphView
@@ -250,12 +250,12 @@ class StaticDigraphView
   P::notifier( typename P::Arc() ).build();
   }
 
- /// not copied, as the graphs of LEMON
+ /// not copied, as the graphs of abLEMON
  StaticDigraphView( const StaticDigraphView & ) = delete;
  /// not assigned
  StaticDigraphView & operator=( const StaticDigraphView & ) = delete;
 
- /// the weights of the arcs, a `ReadMap` of LEMON
+ /// the weights of the arcs, a `ReadMap` of abLEMON
  struct WeightMap
  {
   using Key = typename P::Arc;  ///< the arcs
@@ -278,7 +278,7 @@ class StaticDigraphView
 /*---------------------------- CLASS GraphView -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a digraph of LEMON and a length map as a GRAPH of ADS, with no copy, the
+/// a digraph of abLEMON and a length map as a GRAPH of ADS, with no copy, the
 /// names of the nodes their ids
 template< class GR , class LM >
 class GraphView
@@ -297,7 +297,7 @@ class GraphView
  /// the names are in \f$ [ 0 , \mathrm{bound}() ) \f$, `maxNodeId() + 1`
  [[nodiscard]] int bound( void ) const { return( f_g.maxNodeId() + 1 ); }
 
- /// oriented, as the digraphs of LEMON
+ /// oriented, as the digraphs of abLEMON
  [[nodiscard]] bool directed( void ) const { return( true ); }
 
  /// whether \f$ u \f$ is the id of a node
@@ -344,7 +344,7 @@ class GraphView
   return( v );
   }
 
- /// the digraph of LEMON
+ /// the digraph of abLEMON
  [[nodiscard]] const GR & digraph( void ) const { return( f_g ); }
 
 /*--------------------------------------------------------------------------*/
@@ -358,7 +358,7 @@ class GraphView
 /*------------------------------- toStatic ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// the copy of the digraph \f$ g \f$ of LEMON with the lengths \f$ l \f$
+/// the copy of the digraph \f$ g \f$ of abLEMON with the lengths \f$ l \f$
 /// into a `StaticGraph` of ADS, the nodes by their ids and the loops left
 /// out, in \f$ \Theta( n + m ) \f$ time
 template< class GR , class LM >

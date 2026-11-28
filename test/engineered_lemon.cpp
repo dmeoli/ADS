@@ -2,14 +2,14 @@
 /*------------------------ File engineered_lemon.cpp -----------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Tests of the interoperation with LEMON, beyond the book: the heaps of
- * ADS in the algorithms of LEMON, the maps of LEMON on the structures of
+ * Tests of the interoperation with abLEMON, beyond the book: the heaps of
+ * ADS in the algorithms of abLEMON, the maps of abLEMON on the structures of
  * ADS, the graphs of either library seen by the other, the notifier of
- * LEMON told to the observers of ADS, a graph of LEMON kept in step with
- * one of ADS, the runs of LEMON on the threads of ADS, and the solves
+ * abLEMON told to the observers of ADS, a graph of abLEMON kept in step with
+ * one of ADS, the runs of abLEMON on the threads of ADS, and the solves
  * from scratch of the matchings and of the assignment that ADS delegates
- * to LEMON. Each runs an algorithm of LEMON on the structure of ADS and
- * compares its result with that of LEMON on its own structures, or with
+ * to abLEMON. Each runs an algorithm of abLEMON on the structure of ADS and
+ * compares its result with that of abLEMON on its own structures, or with
  * that of ADS. Built with and without `ADS_WITH_LEMON`: without it the
  * tests of the adapters check that the code of ADS is the one in use, and
  * those of the matchings, of the assignment and of the engine of the flows
@@ -96,14 +96,14 @@ namespace
 /*------------------------------- HELPERS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// whether the interoperation with LEMON is on, as `ADS_WITH_LEMON` asks
+/// whether the interoperation with abLEMON is on, as `ADS_WITH_LEMON` asks
 #if defined( ADS_WITH_LEMON )
 constexpr bool withLemon = true;
 #else
 constexpr bool withLemon = false;
 #endif
 
-/// whether the matchings are solved by LEMON
+/// whether the matchings are solved by abLEMON
 #if defined( ADS_MATCHING_LEMON ) && ADS_MATCHING_LEMON
 constexpr bool matchingLemon = true;
 #else
@@ -178,7 +178,7 @@ std::vector< int > distances( const GR & g , D & d , GR::Node s )
  return( r );
  }
 
-/// the sequence of LEMON's heap_test.cc, sorted by a heap of type `H`
+/// the sequence of abLEMON's heap_test.cc, sorted by a heap of type `H`
 template< class H >
 void heapSort( void )
 {
@@ -227,7 +227,7 @@ void heapSort( void )
   }
  }
 
-/// the shortest path tree of LEMON's Dijkstra on the heap `H` checked arc
+/// the shortest path tree of abLEMON's Dijkstra on the heap `H` checked arc
 /// by arc, as dijkstraHeapTest() of heap_test.cc, and its distances against
 /// those of `BinHeap`
 template< class H >
@@ -279,8 +279,8 @@ struct HeapCounter
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-// DaryHeap: the concept of LEMON, the sequences of its heap_test.cc, the
-// heap of maxima, LEMON's Dijkstra against BinHeap on a digraph with a hole
+// DaryHeap: the concept of abLEMON, the sequences of its heap_test.cc, the
+// heap of maxima, abLEMON's Dijkstra against BinHeap on a digraph with a hole
 // in the ids and parallel arcs, and the events of the frontier
 ADS_TEST( "lemon-dary-heap" )
 {
@@ -323,7 +323,7 @@ ADS_TEST( "lemon-dary-heap" )
  randomDigraph( g , l , 400 , 3000 , 1 );
  heapDijkstra< LI::DaryHeap< int , NM > >( g , l );
  heapDijkstra< LI::DaryHeap< int , NM , std::less< int > , 8 > >( g , l );
- {  // the events of the frontier of LEMON's Dijkstra, told by ADS
+ {  // the events of the frontier of abLEMON's Dijkstra, told by ADS
   using H = LI::DaryHeap< int , NM , std::less< int > , 4 , Dynamic<> >;
   NM cr( g , -1 );
   H h( cr );
@@ -344,7 +344,7 @@ ADS_TEST( "lemon-dary-heap" )
 
 // MonotoneHeap on DialQueue and on RadixHeap: the sequences of heap_test.cc
 // but the raises, a randomized monotone sequence against std::set, and
-// LEMON's Dijkstra against BinHeap
+// abLEMON's Dijkstra against BinHeap
 ADS_TEST( "lemon-monotone-heap" )
 {
  checkBackends();
@@ -430,7 +430,7 @@ ADS_TEST( "lemon-monotone-heap" )
 #endif
  }
 
-// DenseMap as the maps of LEMON's Dijkstra, IndexMap over an
+// DenseMap as the maps of abLEMON's Dijkstra, IndexMap over an
 // ObservableArray as its length map (its writes told) and over a Fenwick
 // (its prefix sums), ObservedMap with the old and the new value
 ADS_TEST( "lemon-maps" )
@@ -491,7 +491,7 @@ ADS_TEST( "lemon-maps" )
     }
    }
   }
- {  // the writes of a map of LEMON, observed
+ {  // the writes of a map of abLEMON, observed
   struct Changes
   {
    std::vector< std::tuple< int , int , int > > log;
@@ -512,9 +512,9 @@ ADS_TEST( "lemon-maps" )
 #endif
  }
 
-// StaticDigraphView: the concept of LEMON's digraphs, and Dijkstra, Bfs,
-// Preflow and NetworkSimplex of LEMON on a StaticGraph of ADS against ADS's
-// own algorithms and against LEMON on a SmartDigraph of the same arcs
+// StaticDigraphView: the concept of abLEMON's digraphs, and Dijkstra, Bfs,
+// Preflow and NetworkSimplex of abLEMON on a StaticGraph of ADS against ADS's
+// own algorithms and against abLEMON on a SmartDigraph of the same arcs
 ADS_TEST( "lemon-static-digraph" )
 {
  checkBackends();
@@ -561,7 +561,7 @@ ADS_TEST( "lemon-static-digraph" )
   else
    CHECK( T.d[ std::size_t( v ) ] == infinity< long long >() );
   }
- // Bfs with a map of LEMON on the view
+ // Bfs with a map of abLEMON on the view
  V::NodeMap< int > dist( lg );
  lemon::Bfs< V > b( lg );
  b.distMap( dist );
@@ -608,7 +608,7 @@ ADS_TEST( "lemon-static-digraph" )
  }
 
 // GraphView: the shortest paths of ADS on a ListDigraph with a hole in the
-// ids and parallel arcs, against LEMON; toStatic() and deltaStepping() on
+// ids and parallel arcs, against abLEMON; toStatic() and deltaStepping() on
 // four threads against the same
 ADS_TEST( "lemon-graph-view" )
 {
@@ -764,7 +764,7 @@ ADS_TEST( "lemon-tap" )
 
 // LemonMirror: a ListDigraph kept in step with a ListGraph of ADS, oriented
 // and not, through random insertions, deletions and changes of weights,
-// the maximum flow of LEMON's Preflow on the mirror against that of ADS
+// the maximum flow of abLEMON's Preflow on the mirror against that of ADS
 ADS_TEST( "lemon-mirror" )
 {
  checkBackends();
@@ -820,9 +820,9 @@ ADS_TEST( "lemon-mirror" )
 #endif
  }
 
-// k Dijkstras of LEMON at once on one ListDigraph, on the threads of ADS,
+// k Dijkstras of abLEMON at once on one ListDigraph, on the threads of ADS,
 // with the maps that do not attach to the notifier, against k runs one
-// after the other; LEMON's kruskal() on the edges sorted by ADS
+// after the other; abLEMON's kruskal() on the edges sorted by ADS
 ADS_TEST( "lemon-parallel" )
 {
  checkBackends();
@@ -869,7 +869,7 @@ ADS_TEST( "lemon-parallel" )
 #endif
  }
 
-// the matchings, by LEMON with ADS_WITH_LEMON and by ADS without, against
+// the matchings, by abLEMON with ADS_WITH_LEMON and by ADS without, against
 // the branch and bound and against each other's sizes, on random graphs
 ADS_TEST( "lemon-matching" )
 {
@@ -919,7 +919,7 @@ ADS_TEST( "lemon-matching" )
   }
  }
 
-// the assignment: the solves from scratch, by LEMON's MinCostAssignment
+// the assignment: the solves from scratch, by abLEMON's MinCostAssignment
 // with ADS_WITH_LEMON and abLEMON, by ADS otherwise, against the
 // enumeration of the permutations, then the warm repairs of ADS after
 // changes of rows, columns and single costs, and forbidden pairs
@@ -1019,7 +1019,7 @@ ADS_TEST( "lemon-flow-engine" )
 	( Counting::scratches + Counting::warms >= 2 ) );
  }
 
-// the warm starts of the four minimum cost flows of LEMON written by the
+// the warm starts of the four minimum cost flows of abLEMON written by the
 // rules of the shim: after each random change of a cost, of an upper bound
 // or of a pair of supplies, runWarm() against a new run() from scratch
 // (the same outcome and the same total cost), with the warm path entered;
@@ -1168,7 +1168,7 @@ ADS_TEST( "lemon-warm-preflow" )
 #endif
  }
 
-// the solvers of ADS on the warm starts of LEMON: MaxFlowObserver on
+// the solvers of ADS on the warm starts of abLEMON: MaxFlowObserver on
 // PreflowEngine against the push-relabel of ADS, Assignment on
 // NetworkSimplexAssignment against the code of ADS, and
 // MinCostFlowObserver, through the maps and the tap observed, against a

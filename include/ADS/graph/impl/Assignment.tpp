@@ -228,7 +228,7 @@ bool Assignment< W , P , E >::lemonScratch( void )
   }
  for( int j = 0 ; j < n ; ++j )
   f_v[ j ] = M.potential( B[ std::size_t( j ) ] );
- f_aug += n;  // the augmentations of LEMON, one per row
+ f_aug += n;  // the augmentations of abLEMON, one per row
  return( true );
  }
 #endif
@@ -321,7 +321,7 @@ void Assignment< W , P , E >::solve( void )
  const bool scratch = cause != Reopt::CERTIFIED;
  const long long aug = f_aug;
  int outcome;
- bool done = false;  // a perfect assignment from LEMON
+ bool done = false;  // a perfect assignment from abLEMON
 #if defined( ADS_ASSIGNMENT_LEMON ) && ADS_ASSIGNMENT_LEMON
  if constexpr( std::is_signed_v< W > )
   if( scratch )

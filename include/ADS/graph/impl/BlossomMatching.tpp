@@ -765,7 +765,7 @@ struct WeightedBlossom
 namespace detail
 {
 
-/// the mates of maxCardinalityMatching() by the MaxMatching of LEMON, on
+/// the mates of maxCardinalityMatching() by the MaxMatching of abLEMON, on
 /// a copy of the graph whose nodes are the names
 template< Graph G >
 std::vector< int > lemonCardinalityMatching( const G & g )
@@ -792,7 +792,7 @@ std::vector< int > lemonCardinalityMatching( const G & g )
  return( mate );
  }
 
-/// the matching of maxWeightMatching() by the MaxWeightedMatching of LEMON,
+/// the matching of maxWeightMatching() by the MaxWeightedMatching of abLEMON,
 /// on the edges of positive weight: its weight and its places in E
 template< class W >
 std::pair< W , std::vector< std::size_t > >

@@ -27,7 +27,7 @@ for the details of the checks); the load of 9 at the start, and of 228 at
 the end, is that of the other programs on the machine.
 The benchmarks were built with Highway and, the parallel ones, with hwloc,
 and they keep the code of ADS where a structure would otherwise run on
-Boost or on LEMON (e.g., `PointerTable` and `FlatHashTable`, which a build
+Boost or on abLEMON (e.g., `PointerTable` and `FlatHashTable`, which a build
 with Boost puts on `boost::unordered_flat_set` and
 `boost::unordered_flat_map`), so that the rows of Boost give the time of
 such a build. The file `fenchel-20261120-1020.tsv` is an earlier run on

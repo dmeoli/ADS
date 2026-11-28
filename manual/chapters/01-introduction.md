@@ -1479,7 +1479,7 @@ and `mpq_class` (and the same members of `Rational`) pass the numbers to
 and from GMP without a string. The tests are `engineered_interop.*`; with
 `ADS_WITH_BOOST` off, they check only the part of the standard library.
 [Appendix C](C-libraries.md#app-C) shows these adapters at work, with those
-of LEMON and of the runtimes of a program, by examples.
+of abLEMON and of the runtimes of a program, by examples.
 
 ## 1.9 The two levels of the library {#sec-1-9}
 
@@ -3239,7 +3239,7 @@ library ([Stroustrup 2013, ch.
 typed modifications carry the old values in the events, as the
 change propagation of [Acar et al.
 2002](Z-bibliography.md#ref-acar2002) does with its traces;
-their exception protocol is that of the notifier of LEMON
+their exception protocol is that of the notifier of abLEMON
 ([Dezső et al. 2011](Z-bibliography.md#ref-dezso2011)), with the
 rollback of an observer that throws; the counts of each observer
 follow the measures of the kinetic data structures of [Basch et

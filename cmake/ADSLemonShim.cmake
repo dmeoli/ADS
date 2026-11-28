@@ -1,23 +1,31 @@
 # --------------------------------------------------------------------------- #
 #    ADSLemonShim.cmake                                                       #
 #                                                                             #
-#    The warm start of the algorithms of LEMON [see                           #
-#    include/ADS/interop/lemon/Warm.h]: ads_lemon_shim(<out> <inc> <src>      #
-#    <ok>) writes into <out>/lemon the headers of LEMON in <inc>/lemon that   #
-#    the rules of <src>/rewrites.txt name, rewritten by them, the same as     #
-#    <src>/rewrite.awk of the makefiles: each rule is header|anchor|what,     #
-#    the anchor a whole line that has to be there exactly once, and what is   #
-#    <file (the file of <src> inserted before the line), +text (appended to   #
-#    the line) or =text (in place of the line). <ok> is TRUE if every header  #
-#    was written, FALSE, with the line missing in <ok>_WHY, otherwise, and    #
-#    nothing is then written. <out> goes on the include path before <inc>.    #
-#    CMakeLists.txt and ADSConfig.cmake include it.                           #
+#    The private copies of headers of LEMON rewritten by rules, for the warm  #
+#    start of the algorithms of abLEMON [see                                  #
+#    include/ADS/interop/lemon/Warm.h] and for the compatibility of LEMON 1.3 #
+#    with C++20 [see ADSLemon.cmake]: ads_lemon_shim(<out> <inc> <src> <ok>   #
+#    [<rules>]) writes into <out>/lemon the headers of LEMON in <inc>/lemon   #
+#    that the rules of <src>/<rules> (rewrites.txt by default, compat.txt for #
+#    LEMON 1.3) name, rewritten by them, the same as <src>/rewrite.awk of the #
+#    makefiles: each rule is header|anchor|what, the anchor a whole line that #
+#    has to be there exactly once, and what is <file (the file of <src>       #
+#    inserted before the line), +text (appended to the line) or =text (in     #
+#    place of the line). <ok> is TRUE if every header was written, FALSE,     #
+#    with the line missing in <ok>_WHY, otherwise, and nothing is then        #
+#    written. <out> goes on the include path before <inc>. CMakeLists.txt,    #
+#    ADSLemon.cmake and ADSConfig.cmake include it.                           #
 # --------------------------------------------------------------------------- #
 
 function(ads_lemon_shim out inc src ok)
     set(${ok} FALSE PARENT_SCOPE)
+    # the rules of rewrites.txt, or of the file given after <ok>
+    set(_file rewrites.txt)
+    if (ARGC GREATER 4)
+        set(_file ${ARGV4})
+    endif ()
     # the ';' of the rules kept out of the way of the CMake lists
-    file(READ ${src}/rewrites.txt _rules)
+    file(READ ${src}/${_file} _rules)
     string(REPLACE ";" "<semicolon>" _rules "${_rules}")
     string(REGEX REPLACE "#[^\n]*\n" "" _rules "${_rules}")
     string(REPLACE "\n" ";" _rules "${_rules}")
@@ -57,7 +65,7 @@ function(ads_lemon_shim out inc src ok)
             string(FIND "${_text}" "\n${_anchor}\n" _last REVERSE)
             if (_at EQUAL -1 OR NOT _at EQUAL _last)
                 set(${ok}_WHY "lemon/${_hdr} has not one line \"${_anchor}\" "
-                    "[see ADS/interop/lemon/shim/rewrites.txt]" PARENT_SCOPE)
+                    "[see ADS/interop/lemon/shim/${_file}]" PARENT_SCOPE)
                 return()
             endif ()
             if (_op STREQUAL "<")

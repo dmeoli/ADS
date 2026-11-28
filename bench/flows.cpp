@@ -4,7 +4,7 @@
 /** @file
  * The benchmark of the maximum flows of MaxFlow.h, from scratch and from
  * the flow there is after a change of the capacities, against the
- * push-relabel of LEMON (Preflow, two phases, the highest label first, the
+ * push-relabel of abLEMON (Preflow, two phases, the highest label first, the
  * global relabelings and the gaps) and of the Boost Graph Library
  * (push_relabel_max_flow), when their headers are found:
  *
@@ -142,7 +142,7 @@ std::pair< FlowNetwork , std::vector< int > > adsNet( const Net & N )
  }
 
 #ifdef ADS_LEMON_FLOW
-/// the network of LEMON
+/// the network of abLEMON
 struct LemonNet
 {
  lemon::SmartDigraph g;
