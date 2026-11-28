@@ -3861,7 +3861,7 @@ its DOI when it has one.
      Proceedings of the 6th ACM Conference on Web Search and Data Mining
      (WSDM 2013), 83–92, 2013, <https://doi.org/10.1145/2433396.2433409>.
 
-824. <span id="ref-vigna2025"></span>S. Vigna. *ε-cost sharding: scaling
+824. <span id="ref-vigna2025"></span>S. Vigna. *$\varepsilon$-cost sharding: scaling
      hypergraph-based data structures to trillions of keys.* arXiv
      preprint, 2025, <https://doi.org/10.48550/arXiv.2503.18397>.
 

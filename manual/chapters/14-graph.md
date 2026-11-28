@@ -2047,7 +2047,7 @@ auto [ d , p ] = ADS::distance( g , s );  // d[ t ] is 4 moves, since the
 --8<-- "generated/GridGraph-readGridMap.pseudo.md"
 
 The functions `manhattan( a , b , straight )`,
-`octile( a , b , straight , diagonal )` and `chebyshev( a , b , straight )`
+`chebyshev( a , b , straight )` and `octile( a , b , straight , diagonal )`
 are the lower bounds on the cost between two cells that the A* takes as
 heuristics, and `gridHeuristic( g , u , t )` is the one of the moves and of
 the costs of a grid ([Yap 2002](Z-bibliography.md#ref-yap2002)).

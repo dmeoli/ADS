@@ -1255,7 +1255,7 @@ X_h = ( ( ( \mathit{Eq}' \wedge P_v ) + P_v ) \oplus P_v ) \vee
 P_h = M_v \vee \neg( X_h \vee P_v ) , \quad M_h = P_v \wedge X_h ,
 \quad h_{\mathit{out}} = P_h[ 63 ] - M_h[ 63 ] , \\
 P_h \leftarrow ( P_h \ll 1 ) \vee [ h_{\mathit{in}} > 0 ] , \quad
-M_h \leftarrow ( M_h \ll 1 ) \vee [ h_{\mathit{in}} < 0 ] , \quad
+M_h \leftarrow ( M_h \ll 1 ) \vee [ h_{\mathit{in}} < 0 ] , \\
 P_v \leftarrow M_h \vee \neg( X_v \vee P_h ) , \quad
 M_v \leftarrow P_h \wedge X_v .
 \end{array} \tag{15.13}

@@ -188,7 +188,7 @@ the ordered and of the binary trees, and the cost of their operations
 §5.5](Z-bibliography.md#ref-montresor2025)).
 
 | Realization | Representation | Parent | First child, next sibling | Insert a child | Space |
-|---|---|---|---|---|---|
+|----|----|---|---|---|---|
 | `Tree` | pointers to the parent, the first child and the next sibling | $O( 1 )$ | $O( 1 )$ | $O( 1 )$ | $\Theta( n )$ |
 | `CursorTree` | the same links as indices in a vector, with a free list | $O( 1 )$ | $O( 1 )$ | $O( 1 )$ amortized | $\Theta( n )$ |
 | `ChildListTree` | a list of the children per node, each node with its cell | $O( 1 )$ | $O( 1 )$ | $O( 1 )$ amortized | $\Theta( n )$ |
@@ -2247,7 +2247,7 @@ is the number of keys and $r$ the number of keys between the one searched
 and the finger.
 
 | Class | A node holds | Search, insertion, removal | Rank | Other |
-|---|---|---|---|---|
+|----|---|---|---|---|
 | `Treap` | pair, priority, size, 2 links | $O( \log n )$ | $O( \log n )$ | `fromSorted()` in $O( n )$, the operations by join |
 | `HashedTreap` | pair, 2 links | $O( \log n )$ | none | priorities hashed from the addresses |
 | `FingerTreap` | pair, priority, size, extremes, 3 links | $O( \log n )$ | $O( \log n )$ | search from a finger in $O( 1 + \log r )$ |
@@ -5067,9 +5067,11 @@ smaller than $x.k[ 0 ]$ for $i = 0$, and those larger than $x.k[ j - 1 ]$ for
 $i = j$). We require the invariants
 
 $$
-t - 1 \le j \le 2 t - 1 \text{ for every node but the root, }
-1 \le j \le 2 t - 1 \text{ for the root, and all the leaves at the same
-depth} , \tag{8.9}
+\begin{aligned}
+& t - 1 \le j \le 2 t - 1 \text{ for every node but the root,} \\
+& 1 \le j \le 2 t - 1 \text{ for the root, and all the leaves at the same
+depth} ,
+\end{aligned} \tag{8.9}
 $$
 
 which the class checks at the contract level 3 together with the order of the
@@ -7202,7 +7204,7 @@ the dictionary; $n$ is the number of keys, $h$ the height, $t$ the minimum
 degree of a B-tree, $r$ the distance in rank from a finger.
 
 | Tree | Section | Invariant | Height | Search, update | Beyond the dictionary |
-|---|---|---|---|---|---|
+|------|---|---|----|---|----|
 | `BinarySearchTree` | [8.5](08-tree.md#sec-8-5) | none | $n - 1$ at worst | $O( h )$ | none (`NotJoinable`) |
 | `RedBlackTree` | [8.5](08-tree.md#sec-8-5) | colors (V1)-(V4) | $\le 2 \log_2( n + 1 )$ | $O( \log n )$ | the operations by join of [§8.12](08-tree.md#sec-8-12) |
 | `MeasuredSearchTree` | [8.5](08-tree.md#sec-8-5) | none; size, depth, height kept | $n - 1$ at worst | $O( h )$ | the three measures of each node |

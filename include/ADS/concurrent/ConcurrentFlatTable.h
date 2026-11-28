@@ -364,8 +364,9 @@ class ConcurrentFlatTable
  /// 10 & \qquad\qquad c_t \gets c_t - 1 + 2^{16}\quad \triangleright
  ///     \ \text{the pairs of the thread from the bit 16} \cr
  /// 11 & \qquad\qquad \textbf{if}\ \text{they are a multiple of } 2^{\min(
- ///     \max( l - 10 , 0 ) , 10 )} \text{ and the pairs of all the threads}
- ///     \text{ pass } 2^{l-1} \ \textbf{then}\ \mathrm{grow}( l + 1 ) \cr
+ ///     \max( l - 10 , 0 ) , 10 )} \cr
+ ///   & \qquad\qquad\quad \text{and the pairs of all the threads pass }
+ ///     2^{l-1} \ \textbf{then}\ \mathrm{grow}( l + 1 ) \cr
  /// 12 & \qquad\qquad \textbf{return}\ ( w , \textbf{true} ) \cr
  /// 13 & \qquad\quad \textbf{if}\ x = 0\ \textbf{then}\ x \gets W[ i ]
  ///     \quad \triangleright\ \text{written by another thread} \cr

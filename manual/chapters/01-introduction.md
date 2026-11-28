@@ -426,10 +426,12 @@ finite collection of distinct items, with `size()`, `contains( x )`,
 constructor,
 
 $$
-\mathrm{contains}( x , \mathrm{insert}( y , A ) ) =
-( x = y ) \lor \mathrm{contains}( x , A ) , \qquad
-\mathrm{contains}( x , \mathrm{remove}( y , A ) ) =
-( x \ne y ) \land \mathrm{contains}( x , A ) , \tag{1.6}
+\begin{aligned}
+\mathrm{contains}( x , \mathrm{insert}( y , A ) ) & =
+( x = y ) \lor \mathrm{contains}( x , A ) , \\
+\mathrm{contains}( x , \mathrm{remove}( y , A ) ) & =
+( x \ne y ) \land \mathrm{contains}( x , A ) ,
+\end{aligned} \tag{1.6}
 $$
 
 with $\mathrm{contains}( x , \mathrm{create} ) = \mathbf{false}$; inserting an

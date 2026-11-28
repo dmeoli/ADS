@@ -109,6 +109,7 @@ manual/
     Makefile  pandoc.yaml  preamble.tex  mkdocs.yml  snarf.py  declcheck.py
     snippets.lua  figure-ext.lua  crossref-link.lua  break-code.lua
     katex-init.js  figcaption.js   # the second shows the captions on the site
+    extra.css  code-break.js  text-size.js  # shared with the other manuals
 ```
 
 ---
@@ -134,6 +135,16 @@ figures keep their natural size, since the TikZ figures are drawn at it;
 figure captions have no LaTeX label, since they carry their hand-written
 number; and code blocks are framed by a breakable `tcolorbox`, since the
 `framed` package overran the text height when it split a block.
+
+`build/extra.css`, `build/code-break.js`, `build/text-size.js` and
+`build/break-code.lua` are byte-identical copies of the files shared by
+the manuals of the family and are never tuned here: a text of 16 px (18
+px on a screen of 95em or more) in a column of about 110 characters, the
+line of the PDF, and code within the prose broken only after / . _ , ( and
+:: (`\emergencystretch` in `preamble.tex` stretches a line that cannot be
+broken otherwise). A table or block that does not fit is fixed in the
+Markdown: a table whose code column overflows in the PDF gets a wider
+first column through the dashes of its separator row.
 
 ---
 

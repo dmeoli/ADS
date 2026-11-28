@@ -1359,7 +1359,7 @@ GraphBLAS and NetworKit are also tested by `interop_graphs.*`, and those of
 Arrow, CRoaring and sdsl-lite by `interop_columnar.*`.
 
 | Library | Option | Default | Component | Tests |
-|-------------------|--------------------|------|----------|-------------------|
+|--------------------------|------------------|--------|------------|------------------------------------|
 | standard library | none | | none | `std-*` |
 | Boost.Graph, Boost.Heap, Boost.Unordered | `ADS_WITH_BOOST` | `AUTO` | `Boost` | `bgl-*`, `boost-*` |
 | abLEMON | `ADS_WITH_LEMON` | `AUTO` | `LEMON` | `lemon-*` |

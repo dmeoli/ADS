@@ -148,7 +148,7 @@ an integer key, and "expected" is over the choice of the hash function or
 of the random levels.
 
 | Realization | `lookup` | `insert`, `remove` | Space | Keys in order |
-|---|---|---|---|---|
+|----|---|---|---|---|
 | `DirectTable` | $O( 1 )$ | $O( 1 )$ | $\Theta( \vert U \vert )$ | yes |
 | `SortedArrayDictionary` | $O( \log n )$ | $O( n )$ | $\Theta( n )$ | yes |
 | `ChainedHashTable` | $O( 1 + \alpha )$ expected | as `lookup`, amortized if restructured | $\Theta( n + m )$ | no |
@@ -2603,7 +2603,7 @@ parameters of the schemes described below and $\alpha$ the load of the
 slots of the schemes by pilots.
 
 | Scheme | Header | Bits per key | Build | Evaluation |
-|---|---|---|---|---|
+|---|-----|---|---|---|
 | order preserving (Czech, Havas and Majewski) | `PerfectHashing.h` | $c \lceil \log_2 n \rceil$, $c > 2$ or $c > 1.23$ | $O( n )$ expected | 2 or 3 accesses |
 | fingerprints (BBHash, FMPH) | `FingerprintPerfectHash.h` | $\gamma e^{1 / \gamma}$, 3.3 for $\gamma = 2$ | a few passes | $e^{1 / \gamma}$ levels expected |
 | pilots (PTHash) | `MinimalPerfectHash.h` | about 3 | slower | 2 accesses |

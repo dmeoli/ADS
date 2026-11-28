@@ -376,7 +376,7 @@ measured ratios of each case of `ssets` are filled in from the files of
 the campaign.
 
 | ADS | Morin | Reasons stated by the header |
-|-----------|----------|------------------------------|
+|--------------|----------|------------------------------|
 | `SkipList` | `SkiplistSSet` | levels from `SplitMix64` instead of `rand()`; $\ell$ links per node instead of $\ell + 1$; no comparison repeated across the levels |
 | `ScapegoatTree` | `ScapegoatTree1` | two links per node, the climb on the path kept in a vector; the depth tested against a table of the powers instead of a logarithm; each size counted once (`REUSE`) |
 | `Treap` | `Treap1` | priorities from `SplitMix64`; the insertion rotates on the way back up, with no link to the parent; the sizes cost one addition per level |
