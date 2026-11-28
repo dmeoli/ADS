@@ -1384,12 +1384,13 @@ ADS_TEST( "ods-ex9.12.avl-rebalancing" )
 {
  // exercise 9.12: an insertion rebalances once at most, by one or two
  // rotations; the removal of the deepest leaf on the shorter side of a
- // tree of Fibonacci rebalances on the order of its height
+ // tree of Fibonacci rebalances on the order of its height; the sizes are
+ // small, since the invariant of the tree costs O( n ) on each change
  AVLTree< int , int > T;
  std::mt19937 g( 81 );
- for( int s = 0 ; s < 20000 ; ++s ) {
+ for( int s = 0 ; s < 4000 ; ++s ) {
   const auto [ r0 , t0 ] = T.rebalancings();
-  T.insert( int( g() % 100000 ) , s );
+  T.insert( int( g() % 20000 ) , s );
   const auto [ r1 , t1 ] = T.rebalancings();
   CHECK( ( r1 - r0 <= 1 ) && ( t1 - t0 <= 2 ) );
   }
@@ -1399,7 +1400,7 @@ ADS_TEST( "ods-ex9.12.avl-rebalancing" )
   const auto [ r1 , t1 ] = T.rebalancings();
   CHECK( ( r1 - r0 <= 1 ) && ( t1 - t0 <= 2 ) );
   }
- for( int h = 6 ; h <= 22 ; h += 4 ) {
+ for( int h = 6 ; h <= 18 ; h += 4 ) {
   // the tree of Fibonacci of height h, left subtree of height h - 1 and
   // right of h - 2, its keys in symmetric order, inserted level by level,
   // which keeps every prefix balanced and needs no rotation
