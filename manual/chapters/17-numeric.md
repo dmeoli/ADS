@@ -1,7 +1,7 @@
 # 17. Numerical algorithms {#ch-17}
 
 [Source: `include/ADS/numeric/BinaryInteger.h`, `Polynomial.h`,
-`BigInteger.h`, `Rational.h`, `Combinatorics.h`, `Catalan.h`,
+`BigInteger.h`, `Rational.h`, `Catalan.h`, `Combinatorics.h`,
 `MatrixChain.h`, `Matrix.h`, `DenseMatrix.h`, `SparseMatrix.h`,
 `CsrMatrix.h`, `SellMatrix.h`, `DynamicCsr.h`, `SparseAssembly.h`,
 `NumberTheory.h`, `RSA.h`, `RandomNumbers.h`, `RandomGenerators.h`,
