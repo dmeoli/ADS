@@ -2193,7 +2193,9 @@ ADS_TEST( "concurrent-cuckoo-growth" )
   for( auto & r : R )
    r.join();
   CHECK( bad == 0 && T.size() == n && T.consistent() );
-  CHECK( T.rehashes() >= 10 );
+  // however early the reader reserves for n / 8 keys, 16384 buckets, the
+  // n keys take 3 doublings more at least, to 131072
+  CHECK( T.rehashes() >= 3 );
   for( std::uint64_t i = 0 ; i < n ; ++i )
    CHECK( T.find( key( i ) ) == i );
   }
